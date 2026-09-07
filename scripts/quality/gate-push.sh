@@ -48,6 +48,29 @@ if ! subject_sha=$(git rev-parse --verify "${subject_input}^{commit}" 2>/dev/nul
     exit 2
 fi
 
+# Optional second argument: the remote (pre-push) SHA from which
+# `subject_sha` is being pushed. When supplied and non-zero, the
+# diff-hygiene phase (GPUSH-6) inspects the entire range, not just
+# the subject commit. This is the pre-push hook contract:
+#
+#   <local_ref> <local_sha> <remote_ref> <remote_sha>
+#
+# When omitted, GPUSH-6 falls back to the original subject-commit-only
+# behavior, preserving every existing manual invocation pattern.
+#
+# See ACT-POLYC-FACTORY-PUSH-HERMETIC01-CORRECTION01.
+remote_input="${2:-}"
+range_base_sha=""
+if [ -n "$remote_input" ] && [ "$remote_input" != "0000000000000000000000000000000000000000" ]; then
+    if ! range_base_sha=$(git rev-parse --verify "${remote_input}^{commit}" 2>/dev/null); then
+        echo "POLYC_GATE=push"
+        echo "SUBJECT=$subject_input"
+        echo "STATUS=ERROR"
+        echo "REASON=cannot resolve remote commit: $remote_input"
+        exit 2
+    fi
+fi
+
 # Short form for human-readable output.
 subject_short=$(printf '%s' "$subject_sha" | cut -c1-12)
 
@@ -234,49 +257,85 @@ if ! run_check lsp sh -c 'make lsp-test'; then
     exit 1
 fi
 
-# --- GPUSH-5: subject-commit diff hygiene ----------------------------------
-
-# Inspect the diff that the SUBJECT COMMIT introduced against its parent,
-# not the (always-empty) diff of a freshly-created clean worktree.
+# --- GPUSH-6: range-aware diff hygiene -------------------------------------
 #
-# In a freshly-created detached worktree at $subject_sha, `git diff --check`
-# (with no args) compares the working tree to the index. Both are clean
-# by construction, so the command vacuously exits 0 and never sees any
-# whitespace or conflict-marker errors that the subject commit
-# introduced. That was the GPUSH-5 vacuous-green defect.
+# Two modes, controlled by the optional second positional argument
+# (the pre-push remote_sha):
 #
-# We instead run:
+#   * range mode  (remote_sha supplied, non-zero, valid commit):
+#         inspects every commit reachable from <subject_sha> but not
+#         from <remote_sha>. This is what the pre-push hook supplies.
 #
-#   git diff --check <parent> <subject>
+#   * tip-only mode  (no remote_sha, or new-branch sentinel):
+#         inspects only <subject_sha>^..<subject_sha>. Preserves the
+#         GPUSH-5 behavior for manual invocations
+#         (`gate-push.sh <commit>`) and for new-branch pushes where
+#         the remote side is the empty tree.
 #
-# which makes Git inspect the textual changes that the subject commit
-# actually added or removed, and flag whitespace / conflict markers
-# in those changes.
+# Implementation primitive:
 #
-# Root-commit handling: when the subject has no parent (the very first
-# commit of the repository), `git diff --check <empty-tree> <subject>`
-# is the correct way to inspect the entire initial tree as if it were
-# all "added". Git's documented null-tree mechanism is the SHA of the
-# well-known empty tree object:
+#     git format-patch --stdout <range> \
+#         | awk '/trailing-whitespace detector on + lines/'
 #
-#   4b825dc642cb6eb9a060e54bf8d69288fbee4904
+# We deliberately do NOT use `git diff --check <A> <B>`. That
+# primitive compares the *tree* state at B against the *tree* state
+# at A, which is blind to whitespace that existed only in an
+# intermediate commit (it never appears in the resulting tree if a
+# later commit overwrites the file). The format-patch primitive
+# inspects the textual patches of every commit in the range, which
+# is what "diff hygiene of the pushed series" actually means.
 #
-# We compute it explicitly via `git hash-object -t tree /dev/null`
-# rather than hard-coding the SHA, so that the value is always
-# verifiable against the installed Git version.
+# We also deliberately do NOT use `git log --check` because its exit
+# code is not reliable across Git versions (some versions exit 128 on
+# ambiguous refs). An awk-based scan over patch lines is portable and
+# matches exactly the semantics of `git diff --check`'s trailing-
+# whitespace detection, scoped to lines actually added by the push
+# (lines beginning with `+` that are not `+++` headers).
 #
-# Note: `/dev/null` is NOT a valid tree-ish revision for
-# `git diff <rev> <rev>` — it produces "Could not access" errors.
-# The earlier closure of CORRECTION01 claimed otherwise; that claim
-# was wrong. See ACT-POLYC-FACTORY-AGENT-GATES01-CORRECTION02 (P1).
-parent_arg="$subject_sha^"
-if ! git cat-file -e "${parent_arg}^{commit}" 2>/dev/null; then
-    parent_arg=$(git hash-object -t tree /dev/null)
+# See ACT-POLYC-FACTORY-PUSH-HERMETIC01-CORRECTION01.
+diff_base_arg=""
+if [ -n "$range_base_sha" ]; then
+    diff_base_arg="$range_base_sha"
+    diff_check_mode="range"
+else
+    diff_base_arg="$subject_sha^"
+    if ! git cat-file -e "${diff_base_arg}^{commit}" 2>/dev/null; then
+        diff_base_arg=$(git hash-object -t tree /dev/null)
+    fi
+    diff_check_mode="tip"
 fi
 
-if ! diff_check_output=$(cd "$tmp" && git diff --check "$parent_arg" "$subject_sha" 2>&1); then
-    echo "CHECK=diff-check STATUS=FAIL"
-    echo "REASON=subject commit introduced whitespace or conflict markers:"
+# Build the range. ^<base> means "reachable from <tip> but not from
+# <base>", which is what we want. For the empty-tree base case we
+# skip the ^ prefix (it would mean "not reachable from empty tree").
+range_arg=""
+if [ "$diff_check_mode" = "range" ]; then
+    range_arg="^${diff_base_arg} ${subject_sha}"
+else
+    range_arg="${diff_base_arg}..${subject_sha}"
+fi
+
+# Scan the textual patches of every commit in the range for trailing
+# whitespace on lines that the patch adds (`+` lines, excluding `+++`
+# headers and `+++` /dev/null binary markers). This is the
+# patch-textual analogue of `git diff --check`'s trailing-whitespace
+# detection, but applied to every commit's contribution rather than
+# to the resulting tree.
+if ! diff_check_output=$(cd "$tmp" && git format-patch --stdout $range_arg 2>/dev/null \
+    | awk '/^Subject: / { in_patch = 1; next }
+           in_patch && /^\+\+\+ / { next }
+           /^\+[ \t]+$/ || /^\+[^+].*[ \t]$/ {
+               print NR": "$0
+               found = 1
+           }
+           END { exit (found ? 1 : 0) }' 2>&1); then
+    if [ "$diff_check_mode" = "range" ]; then
+        echo "CHECK=diff-check STATUS=FAIL"
+        echo "REASON=pushed range $diff_base_arg..$subject_sha introduced whitespace or conflict markers:"
+    else
+        echo "CHECK=diff-check STATUS=FAIL"
+        echo "REASON=subject commit introduced whitespace or conflict markers:"
+    fi
     printf '%s\n' "$diff_check_output"
     gate_failed=1
 else

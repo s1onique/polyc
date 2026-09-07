@@ -1,0 +1,43 @@
+Negative controls on a synthetic repo with 3 commits:
+
+  C0 = initial                       (clean)
+  C1 = middle commit with whitespace (trailing <SP> on foo.txt)
+  C2 = tip commit clean              (overwrites the offending line)
+
+The literal trailing whitespace in C1's patch is rendered above as <SP>
+to keep this evidence file itself whitespace-clean (which GPUSH-6 now
+enforces on every commit in the range).
+
+Test 1 (range mode, C0..C2): expect FAIL (whitespace in C1 is in the range)
+  range = ^C0 C2
+  matched lines: line 16: +<SP>
+  exit-status: 1
+
+Test 2 (range mode, C1..C2): expect PASS
+  range = ^C1 C2   (whitespace in C1 is pre-existing at the base)
+  matched lines: (none)
+  exit-status: 0
+
+Test 3 (tip-only mode on C2, clean tip): expect PASS
+  range = C2^..C2
+  matched lines: (none)
+  exit-status: 0
+
+Test 4 (tip-only mode on C1, which itself has WS): expect FAIL
+  range = C1^..C1
+  matched lines: line 16: +<SP>
+  exit-status: 1
+
+Test 5 (empty range C2..C2): expect PASS
+  range = ^C2 C2
+  matched lines: (none)
+  exit-status: 0
+
+Summary: 2 fails + 3 passes, matching expectations.
+
+Raw exit codes from the synthetic test harness:
+  Test 1 (range mode, C0..C2):     awk exit 1   (expected 1)
+  Test 2 (range mode, C1..C2):     awk exit 0   (expected 0)
+  Test 3 (tip-only on C2):         awk exit 0   (expected 0)
+  Test 4 (tip-only on C1):         awk exit 1   (expected 1)
+  Test 5 (empty range C2..C2):     awk exit 0   (expected 0)
