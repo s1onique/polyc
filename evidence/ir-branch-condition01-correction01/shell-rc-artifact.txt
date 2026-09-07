@@ -1,0 +1,39 @@
+ACT-POLYC-IR-BRANCH-CONDITION01-CORRECTION01 — shell rc artifact
+===============================================================
+
+Reviewer flagged a suspicious "rc=0" from the original closure:
+  "An explicit error returning zero is suspicious in its own
+   right. I would record that as P1/P2."
+
+Root cause analysis:
+
+The original evidence file llvm-spike-test.txt contained:
+    hcc: --emit-llvm requested but this build was compiled
+         without LLVM support (rebuild with -DHCC_ENABLE_LLVM=on)
+    rc=0
+
+This "rc=0" was a SHELL RC-CLOBBER ARTIFACT, not an hcc bug.
+
+The prior transcript captured the rc via:
+    cmd
+    rc=$?
+but the transcript path had heredoc trickery where the rc
+of the LAST command in the chain was reported, not the
+hcc invocation itself.
+
+Verified in this session with explicit bash:
+    \$ bash -c './hcc --install-dir=build/hermetic-prefix \
+        --emit-llvm <file> > /tmp/out 2> /tmp/err'
+    rc=$?
+    echo "rc=$rc"   -> rc=1
+
+So the actual hcc exit code for --emit-llvm without LLVM
+is 1 (correct nonzero). Verified via src/main.c:585-588
+which explicitly `return 1` after writing the diagnostic.
+
+This is NOT a separate hcc bug. It IS a sloppy-evidence
+artifact that should be corrected in the closure record.
+
+ACTION TAKEN: this finding is recorded here so the next ACT
+that needs --emit-llvm exit codes uses an unambiguous
+invocation pattern (always bash -c + explicit echo).

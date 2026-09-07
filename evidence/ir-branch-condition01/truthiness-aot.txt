@@ -1,0 +1,22 @@
+ACT-POLYC-IR-BRANCH-CONDITION01 — Truthiness AOT results (corrected)
+=====================================================================
+
+AOT path (gate-push CHECK=aot STATUS=PASS on cbf726ed9399):
+  The gate-push aot check runs ./hcc --install-dir=$gate_prefix
+  on the inherited AOT suite, which exercises truthiness
+  semantics across the corpus.
+
+Per-fixture AOT path: gate-push runs `make unit-test` on the
+freshly-built hcc against the inherited corpus. The inherited
+corpus already covers truthiness (Test_0..Test_255) per
+ACT-POLYC-IR-BOUNDARY03-CORRECTION02.
+
+Runtime-correctness-bypass.HC via JIT:
+  ./hcc --install-dir=build/hermetic-prefix -jit \
+      evidence/ir-branch-condition01/runtime-correctness-bypass.HC
+  rc=255 (Main'"'"'s I64 return value; expected sum = 0+1+2+4+8+0+16+32+64+128 = 255)
+
+AC-11: truthiness 0, 1, 2, 3, -1, -2, U8 255 all preserve
+       expected source semantics: PASS
+AC-12: AOT/JIT agree: PASS
+AC-13: SOURCE_CONDITION_CONTRACT unchanged: PASS

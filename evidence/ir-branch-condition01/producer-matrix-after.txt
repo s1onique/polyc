@@ -1,0 +1,30 @@
+ACT-POLYC-IR-BRANCH-CONDITION01 — Producer matrix (after fix)
+==============================================================
+
+Captured from evidence/ir-branch-condition01/after/*.dump.txt
+(via fresh --dump-ir against impl HEAD cbf726ed9399).
+
+fixture                       | immediate-predecessor-of-IR_BR | producer-accepted | cmp_ne-inserted | IR_BR-pass-through
+------------------------------|-------------------------------|-------------------|-----------------|--------------------
+red-01-identity-bypass        | IR_CALL (Identity)            | NO                | YES             | (canonical)
+red-02-u8-param-direct        | IR_CALL (TestU8param)         | NO                | YES             | (canonical)
+red-03-i8-identity-bypass     | IR_CALL (IdentityI8)          | NO                | YES             | (canonical)
+red-04-i64-arbitrary          | IR_ICMP (cmp_ne of I64)       | YES               | NO              | (already-predicate)
+red-05-while-u8call           | IR_CALL (Identity)            | NO                | YES             | (canonical)
+red-06-do-while-i8call        | IR_CALL (NegOne)              | NO                | YES             | (canonical)
+red-07-for-u8cond             | IR_CALL (CountUpTo)           | NO                | YES             | (canonical)
+red-08-not-u8                 | IR_CALL (Invert)              | NO                | YES             | (canonical)
+red-09-and-u8                 | IR_CALL (Both)                | NO                | YES             | (canonical)
+red-10-nested                 | IR_CALL (Identity)            | NO                | YES             | (canonical)
+control-01-cmp-eq             | IR_ICMP (cmp_eq of I64)       | YES               | NO              | (already-predicate)
+
+Conclusion: every IR_BR is preceded by either
+  - an explicit cmp_ne inserted by irNormalizeBranchCondition
+    (for the bypass class), or
+  - the cmp_* that the source already produced
+    (for already-canonical comparisons).
+
+No raw integer reaches IR_BR.
+
+PREDICATE_PRODUCER_SET_AFTER = {IR_ICMP, IR_FCMP}
+RAW_INTEGER_TO_IR_BR         = NO  (was YES for bypass class)

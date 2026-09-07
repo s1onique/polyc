@@ -1,0 +1,86 @@
+i8 Identity(%p1 i8 param) {
+  bb1 -> predecessors:  {}  successors: {2}
+    store    %l2 i8 local, %p1 i8 param  ; line 1
+    alloca   %t3 i8 tmp, 1 i8 const int  ; line 1
+    zext     %t4 i64 tmp, %l2 i8 local  ; line 1
+    store    %t3 i8 tmp, %t4 i64 tmp  ; line 1
+    jmp      bb2  ; line 1
+
+  bb2 -> predecessors: {1}  successors:  {}
+    load     %t5 i8 tmp, %t3 i8 tmp  ; line 1
+    ret      %t5 i8 tmp  ; line 1
+}
+
+===== After basic optimisations =====
+i8 Identity(%p1 i8 param) {
+  bb1 -> predecessors:  {}  successors: {1}
+    store    %l2 i8 local, %p1 i8 param  ; line 1
+    zext     %t4 i64 tmp, %l2 i8 local  ; line 1
+    ret      %t4 i64 tmp  ; line 1
+}
+
+i8 Nested(%p6 i8 param, %p8 i8 param) {
+  bb3 -> predecessors:  {}  successors: {5, 6}
+    store    %l7 i8 local, %p6 i8 param  ; line 3
+    store    %l9 i8 local, %p8 i8 param  ; line 3
+    alloca   %t10 i8 tmp, 1 i8 const int  ; line 3
+    zext     %t12 i64 tmp, %l7 i8 local  ; line 4
+    arg       %t12 i64 tmp
+    call     %t11 i8 tmp, Identity  ; line 4
+    cmp_ne   %t13 i8 tmp, %t11 i8 tmp, 0 i8 const int  ; line 4
+    br       %t13 i8 tmp, bb5, bb6  ; line 4
+
+  bb5 -> predecessors: {3}  successors: {7, 8}
+    zext     %t15 i64 tmp, %l9 i8 local  ; line 5
+    arg       %t15 i64 tmp
+    call     %t14 i8 tmp, Identity  ; line 5
+    cmp_ne   %t16 i8 tmp, %t14 i8 tmp, 0 i8 const int  ; line 5
+    br       %t16 i8 tmp, bb7, bb8  ; line 5
+
+  bb7 -> predecessors: {5}  successors: {4}
+    store    %t10 i8 tmp, 1 i64 const int  ; line 5
+    jmp      bb4  ; line 5
+
+  bb8 -> predecessors: {5}  successors: {6}
+    jmp      bb6  ; line 5
+
+  bb6 -> predecessors: {3, 8}  successors: {4}
+    store    %t10 i8 tmp, 0 i64 const int  ; line 7
+    jmp      bb4  ; line 7
+
+  bb4 -> predecessors: {7, 6}  successors:  {}
+    load     %t17 i8 tmp, %t10 i8 tmp  ; line 7
+    ret      %t17 i8 tmp  ; line 7
+}
+
+===== After basic optimisations =====
+i8 Nested(%p6 i8 param, %p8 i8 param) {
+  bb3 -> predecessors:  {}  successors: {5, 6}
+    store    %l7 i8 local, %p6 i8 param  ; line 3
+    store    %l9 i8 local, %p8 i8 param  ; line 3
+    alloca   %t10 i8 tmp, 1 i8 const int  ; line 3
+    zext     %t12 i64 tmp, %l7 i8 local  ; line 4
+    arg       %t12 i64 tmp
+    call     %t11 i8 tmp, Identity  ; line 4
+    cmp_ne   %t13 i8 tmp, %t11 i8 tmp, 0 i8 const int  ; line 4
+    br       %t13 i8 tmp, bb5, bb6  ; line 4
+
+  bb5 -> predecessors: {3}  successors: {7, 6}
+    zext     %t15 i64 tmp, %l9 i8 local  ; line 5
+    arg       %t15 i64 tmp
+    call     %t14 i8 tmp, Identity  ; line 5
+    cmp_ne   %t16 i8 tmp, %t14 i8 tmp, 0 i8 const int  ; line 5
+    br       %t16 i8 tmp, bb7, bb6  ; line 5
+
+  bb7 -> predecessors: {5}  successors: {4}
+    store    %t10 i8 tmp, 1 i64 const int  ; line 5
+    jmp      bb4  ; line 5
+
+  bb6 -> predecessors: {3, 5}  successors: {4}
+    store    %t10 i8 tmp, 0 i64 const int  ; line 7
+    jmp      bb4  ; line 7
+
+  bb4 -> predecessors: {7, 6}  successors:  {}
+    load     %t17 i8 tmp, %t10 i8 tmp  ; line 7
+    ret      %t17 i8 tmp  ; line 7
+}

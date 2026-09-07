@@ -1,0 +1,25 @@
+ACT-POLYC-IR-BRANCH-CONDITION01 — Loop matrix
+=============================================
+
+Loops that go through IR_BR with potentially-bypass-class
+conditions (red-05 while, red-06 do-while, red-07 for, red-10
+nested) all canonicalize correctly:
+
+  red-05-while-u8call:
+    IR_BR operand dst = tmp (I8)  <-- canonical cmp_ne inserted
+    while-condition source is IR_CALL (Identity) returning I8
+
+  red-06-do-while-i8call:
+    IR_BR operand dst = tmp (I8)  <-- canonical cmp_ne inserted
+    do-while condition source is IR_CALL (NegOne) returning I8
+
+  red-07-for-u8cond:
+    IR_BR operand dst = tmp (I8)  <-- canonical cmp_ne inserted
+    for-loop condition source is IR_CALL (CountUpTo) returning I8
+
+  red-10-nested:
+    outer if + inner if both canonical; outer cmp_ne inserted
+    before the outer IR_BR, inner cmp_ne inserted before the
+    inner IR_BR.
+
+All four loop fixtures canonicalize via the same helper.

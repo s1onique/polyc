@@ -1,0 +1,105 @@
+ACT-POLYC-IR-BRANCH-CONDITION01-CORRECTION01 — L2 clarification
+==============================================================
+
+Reviewer P0-2: "even if L2 were removed for other reasons,
+branch semantics for this class would still be correct" is
+overclaimed for CURRENT NATIVE EXECUTION.
+
+This file records the corrected analysis.
+
+NEUTRAL IR SEMANTIC (correct):
+
+  The IR now contains an explicit `cmp_ne(call_result, 0)`
+  before every IR_BR where the producer was not an IR_ICMP
+  or IR_FCMP. The IR_BR operand is always the dst of a
+  recognized predicate producer, so the IR semantic of
+  "branch on truthiness of call_result" is established by
+  the IR alone.
+
+  IR-only claim PASS:
+    If L2 (callee epilogue widening) were removed and
+    the IR were re-interpreted (e.g. by an interpreter or
+    a different lowering), the IR semantics would still
+    be correct because the cmp_ne is in the IR.
+
+NATIVE MACHINE EXECUTION (overclaimed in original closure):
+
+  The CURRENT native lowering of `cmp_ne(call_result, 0)`
+  on x86_64 emits:
+
+      callq   _Identity
+      cmpq    $0, %rax       <-- reads full 64-bit register
+      je      .LIRBB1_6
+
+  The cmpq reads the full 64-bit %rax, not just %al. If L2
+  (callee epilogue movzbq %al, %rax) were absent, %rax could
+  carry garbage in its upper bytes and the cmpq $0 would
+  observe that garbage.
+
+  The PRE-FIX native lowering was:
+
+      callq   _Identity
+      testq   %rax, %rax     <-- reads full 64-bit register
+      jz      .LIRBB1_6
+
+  Same dependency on L2 (testq reads the full 64-bit register).
+
+  So the L2 dependency is UNCHANGED by the IR_BR canonicalization.
+  The x86_64 emit changed syntactically (testq->cmpq $0;
+  jz->je) but semantically both forms depend on the full
+  register being clean.
+
+  The aarch64 emit is BYTE-IDENTICAL (pre-fix and post-fix both
+  use `cmp x0, #0; b.eq .L`). The aarch64 backend was already
+  implicitly normalizing the raw-I8 branch operand to a
+  full-register cmp; the new explicit IR_ICMP lowers to the
+  same instruction sequence.
+
+CORRECTED AC-26 VERDICT:
+
+  IR_SEMANTIC_DEPENDENCY_ON_L2_REMOVED = YES (the IR now
+      explicitly carries the truthiness normalization;
+      an IR interpreter cannot regress here)
+
+  NATIVE_MACHINE_EXECUTION_DEPENDENCY_ON_L2_REMOVED = NO
+      (the x86_64 emit still depends on the callee'"'"'s
+      epilogue widening; the new IR_ICMP + IR_BR pair
+      lowers to `cmpq $0, %rax` which reads the full
+      register)
+
+  BRANCH_CORRECTNESS_FOR_THIS_CLASS_NOW_INDEPENDENT_OF_L2 = NO
+      (the demonstration would require proving that the
+      native lowering of cmp_ne(I8, 0) reads ONLY the
+      low byte, which the x86_64 cmpq $0 / aarch64 cmp
+      x0, #0 do not. Removing L2 would break native
+      execution of red-01 even with the new IR.)
+
+CORRECTION03 L1/L2/L3 CONSERVATION:
+
+  Per ACT-POLYC-IR-BOUNDARY03-CORRECTION03, the IR_BR
+  correctness decomposition was:
+    L1 = backend integer zero/nonzero test (cmpq / cmp x0)
+    L2 = callee epilogue movzbq / uxtb widening
+    L3 = the architectural separation between L1 and L2
+
+  CORRECTION01 of THIS ACT re-states that decomposition:
+    L1 is now produced by an IR-level IR_ICMP (was implicit
+        in IR_BR before; now explicit), but still lowers to
+        the same cmp/test family on the native side.
+    L2 is unchanged and remains required for native
+        execution of any IR_CALL returning a sub-register
+        width.
+    L3 is unchanged: the IR contract and the L2 contract
+        are now more cleanly separated (the IR is explicit),
+        but the native-machine lowering still needs both.
+
+NEXT_ACT IMPLICATION:
+
+  ACT-POLYC-LLVM-SPIKE01-RESUME01-CORRECTION01-RESUME01
+  (the next ACT the closure recommended) should be aware
+  that LLVM IR semantics are explicit-predicate, matching
+  the new IR contract exactly; but the JIT/native path
+  still requires the L2 callee-epilogue widening. The
+  LLVM spike does not need to address L2 (LLVM IR has no
+  callee epilogue), but the native/AOT path should not
+  regress it.

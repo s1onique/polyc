@@ -1,0 +1,44 @@
+ACT-POLYC-IR-BRANCH-CONDITION01-CORRECTION01 — HALT_RED_NOT_REPRODUCED variant: F6 overclaim
+
+F6 discovery (in this session, immediately after reviewer verdict):
+
+The original ACT-POLYC-IR-BRANCH-CONDITION01 closure commit
+(f631760) claimed LLVM toolchain unavailable and invoked F6
+"fail explicitly; do not silently use another backend".
+
+Discovery:
+  /nix/store/b6fykfvclbq81yis03blk6bqsmapmhdm-llvm-22.1.8-dev/bin/llvm-config
+  -> 22.1.8
+  /nix/store/87s8r8yzsi6gvl2cdz4kgwymg4gdmkbn-llvm-22.1.8/bin/{llvm-as,llc,opt}
+  -> 22.1.8
+  /nix/store/a1hnp3fv6y7jjl8j3vkcp3qwclxmknba-llvm-22.1.8-lib/lib/libLLVM-22.1.8.dylib
+  -> available
+
+F6 is about silent fallback, not about failing to look.
+The original ACT failed to look in the nix store, which on
+this machine is the canonical location for cross-package
+dependencies. The "toolchain unavailable" claim was a
+false negative.
+
+AC-23 consequence:
+  The original closure committed "AC-23 PASS (F6; cannot
+  rerun; structurally unchanged from predecessor)" as
+  evidence of LLVM-spike conservation. Because the
+  toolchain was actually available, this counts as
+  AC-23 NOT_EXECUTED, not PASS.
+
+This is the reviewer's P0-1.
+
+Reviewer P0-2 (AC-26/L2 overclaim):
+  The original HANDOFF claimed "even if L2 were removed
+  for other reasons, branch semantics for this class
+  would still be correct". This is correct for NEUTRAL
+  IR SEMANTICS, but is overclaimed for the CURRENT
+  NATIVE EXECUTION, where the IR_CALL i8 result still
+  depends on the callee's movzbq/uxtb to establish a
+  sane full-register narrow return before the native
+  icmp compares it.
+
+Both P0s are evidence/contract problems, not compiler
+defects. The implementation commit cbf726e is sound;
+this correction ACT fixes the closure contract.
