@@ -106,7 +106,6 @@ run_check() {
     # Stream output to a temp file so we can both display it (when the
     # check passes) and grep it (when we need to verify no failures).
     out_file=$(mktemp "${TMPDIR:-/tmp}/polyc-gate-out.XXXXXX")
-    trap 'rm -f "$out_file" 2>/dev/null || true' RETURN
 
     # Run the command, capturing output.
     set +e
@@ -116,6 +115,14 @@ run_check() {
 
     # Stream the captured output so the engineer sees what happened.
     cat "$out_file"
+
+    # Always remove the captured output file before returning. We do not
+    # use `trap ... RETURN` because RETURN is a Bash extension and is not
+    # portable to a strict POSIX /bin/sh. POSIX trap only standardizes
+    # EXIT and signal names; RETURN would silently no-op under dash,
+    # BSD sh, or any shell that does not implement the Bash pseudo-signal,
+    # leaving out_file behind. We always remove it explicitly here.
+    rm -f "$out_file"
 
     if [ "$rc" -ne 0 ]; then
         echo "CHECK=$name STATUS=FAIL"
@@ -180,13 +187,38 @@ if ! run_check lsp sh -c 'make lsp-test'; then
     exit 1
 fi
 
-# --- GPUSH-5: diff hygiene over the isolated tree --------------------------
+# --- GPUSH-5: subject-commit diff hygiene ----------------------------------
 
-# Standalone mode: validate the tree itself is clean in the index sense.
-# (No pushed range to diff against when invoked standalone on a SHA.)
-if ! (cd "$tmp" && git diff --check >/dev/null 2>&1); then
+# Inspect the diff that the SUBJECT COMMIT introduced against its parent,
+# not the (always-empty) diff of a freshly-created clean worktree.
+#
+# In a freshly-created detached worktree at $subject_sha, `git diff --check`
+# (with no args) compares the working tree to the index. Both are clean
+# by construction, so the command vacuously exits 0 and never sees any
+# whitespace or conflict-marker errors that the subject commit
+# introduced. That was the GPUSH-5 vacuous-green defect.
+#
+# We instead run:
+#
+#   git diff --check <parent> <subject>
+#
+# which makes Git inspect the textual changes that the subject commit
+# actually added or removed, and flag whitespace / conflict markers
+# in those changes.
+#
+# Root-commit handling: when the subject has no parent (the very first
+# commit of the repository), `git diff --check <empty> <subject>` is the
+# correct way to inspect the entire initial tree as if it were all
+# "added". Pass /dev/null as the first arg to mean "the empty tree".
+parent_arg="$subject_sha^"
+if ! git cat-file -e "${parent_arg}^{commit}" 2>/dev/null; then
+    parent_arg="/dev/null"
+fi
+
+if ! diff_check_output=$(cd "$tmp" && git diff --check "$parent_arg" "$subject_sha" 2>&1); then
     echo "CHECK=diff-check STATUS=FAIL"
-    echo "REASON=git diff --check reported whitespace or conflict markers"
+    echo "REASON=subject commit introduced whitespace or conflict markers:"
+    printf '%s\n' "$diff_check_output"
     gate_failed=1
 else
     echo "CHECK=diff-check STATUS=PASS"

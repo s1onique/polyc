@@ -101,15 +101,52 @@ pass shell-syntax
 
 # --- GFAST-3: documentation structure invariants ---------------------------
 
+# Required documents MUST exist in the staged index, not just on disk.
+#
+# Checking the worktree ([ -f "$required" ]) is a vacuous green for any
+# commit that stages a deletion of one of these canonical documents
+# while leaving an unstaged working-tree copy of the old content in
+# place. The proposed commit would silently drop the document, but the
+# gate would still PASS. We therefore validate presence via
+# `git cat-file -e ":$path"`, which inspects the index object
+# database — exactly what the proposed commit will produce when
+# created.
+#
+# This invariant only inspects documents that the proposed commit is
+# NOT itself adding. A commit whose entire purpose is to introduce a
+# missing required document is allowed: in that case the staged index
+# contains the new blob and the check passes naturally.
 for required in \
     AGENTS.md \
     docs/CHARTER.md \
     docs/ROADMAP.md \
     docs/DESIGN-NOTES.md
 do
-    if [ ! -f "$required" ]; then
+    # Is this path staged for deletion?
+    if printf '%s\n' "$staged_paths" | grep -qx "$required"; then
+        # Path is staged for some change. If it's a deletion or rename,
+        # the new index entry does not exist as a regular blob. Detect
+        # this via diff-filter and pass only when something is added
+        # back in the same commit.
+        diff_filter=$(git diff --cached --name-status -- "$required" \
+                      | awk 'NR==1 {print $1}')
+        case "$diff_filter" in
+            A|C|M|T) ;;
+            *)  echo "CHECK=doc-invariants STATUS=FAIL"
+                echo "REASON=required document $required is staged for $diff_filter (deletion/rename without re-introduction)"
+                echo "VERDICT=FAIL"
+                exit 1
+                ;;
+        esac
+    fi
+
+    # Index-level presence check: does the staged tree contain this
+    # path as a regular blob? This catches the
+    # "index-empty / worktree-restored" pathological state that
+    # `[ -f "$required" ]` cannot.
+    if ! git cat-file -e ":$required" 2>/dev/null; then
         echo "CHECK=doc-invariants STATUS=FAIL"
-        echo "REASON=missing required document: $required"
+        echo "REASON=required document $required is missing from the staged index"
         echo "VERDICT=FAIL"
         exit 1
     fi
