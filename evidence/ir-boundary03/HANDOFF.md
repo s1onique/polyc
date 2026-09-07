@@ -10,7 +10,7 @@ ACT-POLYC-IR-BOUNDARY03
     RED_HEAD           = 596ffc35a5268bfa1193ba88498713bafd53a850
     IMPLEMENTATION_HEAD = dab8cc72497256b0bcd945f054df5e94cbad155d
     EVIDENCE_HEAD      = 4f30c2b2c0f756c7a67c6aa0fedfb1efdf853e76
-    CLOSURE_HEAD       = efcfcc526da26181553f68f21bc4fff290139e88
+    CLOSURE_HEAD       = e4a63bdd372eeb0721db0d1fb1a182ebfadf1e5d
     WORKTREE_STATUS    = clean
 
     Principal RED          = HALT_LLVM_FUSION_NOT_REPRODUCED
@@ -42,7 +42,7 @@ IDENTITY
     RED_HEAD              = 596ffc35a5268bfa1193ba88498713bafd53a850
     IMPLEMENTATION_HEAD   = dab8cc72497256b0bcd945f054df5e94cbad155d
     EVIDENCE_HEAD         = 4f30c2b2c0f756c7a67c6aa0fedfb1efdf853e76
-    CLOSURE_HEAD          = efcfcc526da26181553f68f21bc4fff290139e88
+    CLOSURE_HEAD          = e4a63bdd372eeb0721db0d1fb1a182ebfadf1e5d
     WORKTREE_STATUS       = clean
 
 PREDECESSOR
@@ -333,7 +333,7 @@ ENTRY_HEAD                  = f652f3c9ca7724b191bc6cd41c6a400316e30c0a
 Commit 1 RED_HEAD           = 596ffc35a5268bfa1193ba88498713bafd53a850
 Commit 2 IMPLEMENTATION_HEAD = dab8cc72497256b0bcd945f054df5e94cbad155d
 Commit 3 EVIDENCE_HEAD      = 4f30c2b2c0f756c7a67c6aa0fedfb1efdf853e76
-Commit 4 CLOSURE_HEAD       = efcfcc526da26181553f68f21bc4fff290139e88
+Commit 4 CLOSURE_HEAD       = e4a63bdd372eeb0721db0d1fb1a182ebfadf1e5d
 
 C1-AC-8 equivalent
   (git diff --check
@@ -350,7 +350,7 @@ C1-AC-13 equivalent
   (gate-push against
    CLOSURE_HEAD)            = PASS  (see gate-push-closure.txt;
                                       SUBJECT=b13516e43a1f;
-                                      gate-push.sh efcfcc526da26181553f68f21bc4fff290139e88
+                                      gate-push.sh e4a63bdd372eeb0721db0d1fb1a182ebfadf1e5d
                                       returned VERDICT=PASS for
                                       build/install/aot/jit/lsp/diff-check
                                       against the immutable CLOSURE_HEAD).
