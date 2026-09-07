@@ -1,0 +1,32 @@
+# raw_sha256: 02ddb342bee08a53fb042dfd8989dfd7626be43abf5390f11faa69b179d1f0e4
+# raw_bytes:  588
+.section __TEXT,__cstring,cstring_literals
+.L0:
+	.asciz "./"
+.globl argc
+	.comm argc, 8, 8
+.globl argv
+	.comm argv, 8, 8
+.text
+	.p2align 2
+	.globl _Max
+_Max:
+	stp x29, x30, [sp, #-16]!
+	mov x29, sp
+	sub sp, sp, #32
+	stur x0, [x29, #-16]
+	stur x1, [x29, #-8]
+	cmp x0, x1
+	b.le    .LIRBB0_4
+	ldur x0, [x29, #-16]
+	stur x0, [x29, #-24]
+	b   .LIRBB0_2
+.LIRBB0_4:
+	ldur x0, [x29, #-8]
+	stur x0, [x29, #-24]
+.LIRBB0_2:
+	ldur x0, [x29, #-24]
+	add sp, sp, #32
+	ldp x29, x30, [sp], #16
+	ret
+.ident      "hcc: apple aarch64-apple-darwin v0.0.15-beta hash: b65d9ab3fcb02e4d6c0649a11671bdba990df102"
