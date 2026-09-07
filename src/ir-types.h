@@ -119,6 +119,22 @@ typedef enum IrValueType {
     IR_TYPE_LABEL,       /* Label reference type */
 } IrValueType;
 
+/* ACT-POLYC-IR-BOUNDARY01: per-parameter ABI classification stored
+ * on `IrValue->param_kind` for IR_VAL_PARAM values. Set during the
+ * neutral IR lowering (`irLowerFunction`), consumed by the native
+ * post-pass (`irAssignAbiParamLocations`) which stamps the physical
+ * arrival register location. A neutral consumer can ignore this
+ * field; it carries no physical-register identity on its own. */
+typedef enum IrParamKind {
+    IR_PARAM_KIND_NORMAL = 0,        /* ordinary scalar parameter */
+    IR_PARAM_KIND_VARARGS_ARGC,      /* implicit argc of a varargs list */
+    IR_PARAM_KIND_VARARGS_ARGV,      /* implicit argv pointer */
+    IR_PARAM_KIND_BYVAL_STRUCT,      /* by-value struct/union param */
+    IR_PARAM_KIND_PINNED_REG,        /* TempleOS-style pinned reg */
+    IR_PARAM_KIND_HIDDEN_SRET,       /* hidden out-pointer for indirect
+                                      * struct return */
+} IrParamKind;
+
 typedef enum IrValueKind {
     IR_VAL_CONST_INT,    /* Integer constant */
     IR_VAL_CONST_FLOAT,  /* Floating point constant */
@@ -221,6 +237,15 @@ struct IrValue {
     IrValueType type;
     IrValueKind kind;
     u64 flags;
+    /* ACT-POLYC-IR-BOUNDARY01: classification metadata for
+     * IR_VAL_PARAM values, set during `irLowerFunction` and consumed
+     * by `irAssignAbiParamLocations`. Zero means "ordinary parameter"
+     * (IR_PARAM_KIND_NORMAL); non-zero indicates a special ABI class
+     * whose post-pass stamp differs from the default int/float arg
+     * register lookup. The neutral IR consumer can ignore this field
+     * entirely; the field is opaque at the neutral boundary and only
+     * meaningful to the native ABI post-pass. */
+    u8 param_kind;
     /* When non-NULL, this value is bound to a specific machine
      * register (TempleOS-style `<Type> reg <REG> name`). The codegen
      * uses the register name verbatim for reads / writes; the slot

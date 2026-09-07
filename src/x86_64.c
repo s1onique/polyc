@@ -2555,6 +2555,7 @@ AoStr *x86_64AsmGenerate(Cctrl *cc) {
         Ast *ast = it->value;
         if (ast->kind == AST_FUNC) {
             IrFunction *fn = irLowerFunction(ir_ctx, ast);
+            irAssignAbiParamLocations(fn, ast, irRegPoolGet());
             irBasicFunctionOptimisations(fn);
             irFunctionPrepForCodeGen(&ctx, fn, ast);
             x86_64GenerateFunction(&ctx, ast);
@@ -2565,6 +2566,7 @@ AoStr *x86_64AsmGenerate(Cctrl *cc) {
 
     if (synth_main) {
         IrFunction *fn = irLowerFunction(ir_ctx, synth_main);
+        irAssignAbiParamLocations(fn, synth_main, irRegPoolGet());
         irBasicFunctionOptimisations(fn);
         irFunctionPrepForCodeGen(&ctx, fn, synth_main);
         x86_64GenerateFunction(&ctx, synth_main);

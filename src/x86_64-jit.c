@@ -1578,6 +1578,7 @@ static void jitEmitEpilogue(JitFnCtx *ctx) {
 
 static int jitCompileFunction(HccJit *jit, Ast *ast, IrCtx *ir_ctx) {
     IrFunction *fn = irLowerFunction(ir_ctx, ast);
+    irAssignAbiParamLocations(fn, ast, irRegPoolGet());
     irBasicFunctionOptimisations(fn);
 
     /* Layout passes (slot offsets, IR-CG ctx). The text path goes
