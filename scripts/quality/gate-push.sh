@@ -168,15 +168,47 @@ run_check() {
 # user sees partial state when something fails.
 gate_failed=0
 
+# --- hermetic local install prefix -----------------------------------------
+#
+# Build hcc with a disposable local prefix compiled into it, then install
+# hcc, tos.HH, and libtos into that prefix. The freshly-compiled ./hcc
+# therefore defaults to --install-dir=$gate_prefix, which contains the
+# installed tos.HH and libtos. `make unit-test` and `make jit-unit-test`
+# can then run without any global install under /usr/local.
+#
+# The prefix lives inside the gate's temporary worktree, so the existing
+# cleanup trap removes it with the worktree.
+#
+# See ACT-POLYC-FACTORY-PUSH-HERMETIC01.
+gate_prefix="$tmp/build/gate-prefix"
+mkdir -p "$gate_prefix"
+
 # --- GPUSH-1: clean build ---------------------------------------------------
 
-if ! run_check build sh -c 'make clean && make'; then
+if ! run_check build sh -c "make clean && make INSTALL_PREFIX='$gate_prefix'"; then
     gate_failed=1
     echo "VERDICT=FAIL"
     exit 1
 fi
 
-# --- GPUSH-2: AOT suite -----------------------------------------------------
+# --- GPUSH-2: install hcc + tos.HH into the hermetic prefix -----------------
+
+# `make install` puts hcc at $gate_prefix/bin/ and tos.HH at
+# $gate_prefix/include/. libtos.a / libtos.dylib still need to be
+# built into $gate_prefix/lib/. We do that by invoking hcc's `-lib tos`
+# with --install-dir pointing at the hermetic prefix, identical to how
+# Makefile's `lsp-test` recipe populates build/test-prefix/.
+#
+# See ACT-POLYC-FACTORY-PUSH-HERMETIC01.
+if ! run_check install sh -c "make install INSTALL_PREFIX='$gate_prefix' && \
+    mkdir -p '$gate_prefix/lib' && \
+    cd ./src/holyc-lib && ../../hcc -fPIC -lib tos --install-dir='$gate_prefix' ./all.HC"; then
+    gate_failed=1
+    echo "VERDICT=FAIL"
+    exit 1
+fi
+
+# --- GPUSH-3: AOT suite -----------------------------------------------------
 
 if ! run_check aot sh -c 'make unit-test'; then
     gate_failed=1
@@ -184,7 +216,7 @@ if ! run_check aot sh -c 'make unit-test'; then
     exit 1
 fi
 
-# --- GPUSH-3: JIT suite -----------------------------------------------------
+# --- GPUSH-4: JIT suite -----------------------------------------------------
 
 if ! run_check jit sh -c 'make jit-unit-test'; then
     gate_failed=1
