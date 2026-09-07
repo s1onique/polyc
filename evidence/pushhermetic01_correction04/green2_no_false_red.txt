@@ -1,0 +1,19 @@
+POLYC_TEST_C04 GREEN-EVIDENCE-2 (false-RED scenario, now correct)
+Setup: origin has only A; zoo has A,B,C (B has WS); local D (clean)
+Push: git push zoo feature:new-feature
+Git invokes hook with $1=zoo $2=zoo-location
+
+CORRECTION04 hook -- CORRECT destination binding:
+  - destination_name=zoo, destination_kind=named
+  - calls gate with: --new-branch zoo
+  - rev-list inspects: reachable(D) MINUS reachable(zoo/*)
+  - inspection set: D only (zoo has D's full ancestry)
+  - result: PASS (no false-RED; B is in z's history already)
+
+Hook output:
+POLYC_PRE_PUSH_VALIDATING=17191118e0c7 mode=new-branch dest=named
+GATE_ARGS: 17191118e0c7cef4a74ba1dc1a5d1c28a5a19228 --new-branch zoo
+GATE_INVOKED_AT: 1788783821
+
+Per-commit inspection result:
+  1719111: clean

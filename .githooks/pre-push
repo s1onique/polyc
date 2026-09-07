@@ -1,9 +1,21 @@
 #!/bin/sh
 # .githooks/pre-push
 #
-# Git passes ref updates over stdin, one per line, in the form:
+# Git invokes this hook with two positional arguments and a stream
+# of ref updates on stdin:
 #
-#   <local_ref> <local_sha> <remote_ref> <remote_sha>
+#   $1 = name of destination remote (a configured remote name like
+#        "origin", OR the URL itself when the user pushes to an
+#        anonymous URL)
+#   $2 = location of destination remote (always a URL)
+#
+# If the push uses a named remote, $1 is the remote name and $2 is
+# its URL. If the push uses an unnamed URL, $1 == $2 (both are the
+# URL). This is documented in githooks(5).
+#
+# On stdin, Git passes one line per ref update:
+#
+#   <local_ref> SP <local_sha> SP <remote_ref> SP <remote_sha> LF
 #
 # We validate the local side of every non-delete push by running
 # scripts/quality/gate-push.sh against the local SHA in an isolated
@@ -13,18 +25,24 @@
 #
 #   * We consume ALL stdin lines before deciding anything. Git's hook
 #     contract requires this; otherwise Git can hang.
-#   * Deletes (local_sha = 0000...000) are ignored.
-#   * Dedupe key is (local_sha, remote_sha, mode), NOT just local_sha.
-#     Git's contract permits the same local_sha to appear with
-#     different remote_shas (existing-branch update + new-branch push
-#     in the same push), and each combination requires a different
-#     hygiene range. See
+#   * Deletes (local_sha = 0000...0000) are ignored.
+#   * Dedupe key is (local_sha, remote_sha, destination, mode), NOT
+#     just local_sha. Git's contract permits the same local_sha to
+#     appear with different remote_shas (existing-branch update +
+#     new-branch push in the same push), and each combination
+#     requires a different hygiene range. See
 #     ACT-POLYC-FACTORY-PUSH-HERMETIC01-CORRECTION03 (P0-1).
 #   * For new branches (remote_sha = 0000...0000), the hook passes
-#     `--new-branch <remote>` to gate-push.sh so the gate computes
-#     `reachable(local) \ reachable(remote's tracking refs)` rather
-#     than re-validating the entire local history. See
-#     ACT-POLYC-FACTORY-PUSH-HERMETIC01-CORRECTION03 (P0-2).
+#     `--new-branch <destination>` to gate-push.sh so the gate
+#     computes `reachable(local) \ reachable(<destination>'s
+#     tracking refs)`. The destination is Git's $1 (the actual
+#     remote the user pushed to), NOT the first configured remote.
+#     See ACT-POLYC-FACTORY-PUSH-HERMETIC01-CORRECTION04.
+#   * For anonymous URL pushes, $1 is the URL itself, which is not
+#     a valid remote name for --remotes=<>. In that degenerate
+#     case we fall back to --root-range (full reachable history)
+#     and log POLYC_PRE_PUSH_NOTE. We do NOT guess a remote by
+#     sorting `git remote` output.
 #   * We do not invoke git commit/push from quality scripts, so no
 #     recursive hook execution is possible.
 
@@ -36,17 +54,32 @@ cd "$REPO_ROOT"
 # Read all stdin lines into memory up front.
 stdin_lines=$(cat)
 
-# Determine the default remote for new-branch mode. We try the first
-# configured remote (typically "origin"); if none exists, fall back to
-# --root-range mode (degenerate, but documented).
-default_remote=$(git remote 2>/dev/null | head -n1)
-if [ -z "$default_remote" ]; then
-    default_remote=""
+# Bind the destination remote from Git's documented pre-push hook
+# contract. $1 is the destination remote NAME (or the URL when the
+# push is to an unnamed URL); $2 is the destination URL. We must
+# use $1 to determine which remote's tracking refs are relevant.
+#
+# CORRECTION04: do NOT derive this from `git remote | head -n1`.
+# That picks whichever remote happens to sort first, which has no
+# relation to the actual destination of this push.
+destination_name="${1:-}"
+destination_url="${2:-}"
+
+# Detect an anonymous-URL push: per githooks(5), when the user does
+# not use a named remote, both $1 and $2 are the URL and $1 == $2.
+# In that case --new-branch can't bind a remote namespace and we
+# must fall back to --root-range.
+if [ -z "$destination_name" ]; then
+    destination_kind="empty"
+elif [ "$destination_name" = "$destination_url" ]; then
+    destination_kind="anonymous"
+else
+    destination_kind="named"
 fi
 
 # Parse stdin once. For each ref update we compute a stable key
-# (local_sha + remote_sha) and a mode hint, dedupe across the whole
-# push, and call gate-push.sh for each unique combination.
+# (local_sha, remote_sha, destination, mode) and dedupe across the
+# whole push, then call gate-push.sh for each unique combination.
 seen_keys=""
 
 while IFS=' ' read -r local_ref local_sha remote_ref remote_sha; do
@@ -82,17 +115,28 @@ while IFS=' ' read -r local_ref local_sha remote_ref remote_sha; do
     # tracking-ref state.
     case "$remote_sha" in
         0000000000000000000000000000000000000000)
-            # New-branch mode. Use the default remote. If no
-            # remote is configured, fall back to --root-range and
-            # document the reason.
             mode="new-branch"
-            mode_remote="$default_remote"
-            dedupe_key="newbranch:${default_remote}:$local_sha"
+            case "$destination_kind" in
+                named)
+                    new_branch_remote="$destination_name"
+                    new_branch_fallback=""
+                    ;;
+                *)
+                    # anonymous or empty destination: no trustworthy
+                    # remote-tracking namespace. Fall back to root
+                    # range (full reachable history) so we at least
+                    # catch inherited WS.
+                    new_branch_remote=""
+                    new_branch_fallback="root-range"
+                    ;;
+            esac
+            dedupe_key="newbranch:${destination_kind}:${destination_name}:$local_sha"
             ;;
         *)
             mode="range"
-            mode_remote=""
-            dedupe_key="range:${remote_sha}:$local_sha"
+            new_branch_remote=""
+            new_branch_fallback=""
+            dedupe_key="range:${remote_sha}:${destination_name}:$local_sha"
             ;;
     esac
 
@@ -103,30 +147,31 @@ while IFS=' ' read -r local_ref local_sha remote_ref remote_sha; do
     seen_keys="$seen_keys $dedupe_key"
 
     short=$(printf '%s' "$local_sha" | cut -c1-12)
-    echo "POLYC_PRE_PUSH_VALIDATING=$short mode=$mode"
+    echo "POLYC_PRE_PUSH_VALIDATING=$short mode=$mode dest=$destination_kind"
 
     # Build the gate-push.sh command for this ref update.
     if [ "$mode" = "new-branch" ]; then
-        if [ -n "$mode_remote" ]; then
-            # Default case: pass the destination remote name.
-            if ! ./scripts/quality/gate-push.sh \
-                    "$local_sha" --new-branch "$mode_remote"; then
-                echo "POLYC_PRE_PUSH_HALTED_AT=$short"
-                exit 1
-            fi
-        else
-            # Degenerate fallback: no remote configured. Use
-            # --root-range so the gate at least runs over the
-            # full reachable history. Documented behavior.
-            echo "POLYC_PRE_PUSH_NOTE=no remote configured; falling back to --root-range for $short"
+        if [ -n "$new_branch_fallback" ]; then
+            # Degenerate fallback: no named destination (anonymous
+            # URL push or no remote configured). Use --root-range
+            # so the gate at least runs over the full reachable
+            # history.
+            echo "POLYC_PRE_PUSH_NOTE=$destination_kind destination ($destination_name); falling back to --root-range for $short"
             if ! ./scripts/quality/gate-push.sh \
                     "$local_sha" --root-range; then
                 echo "POLYC_PRE_PUSH_HALTED_AT=$short"
                 exit 1
             fi
+        else
+            # Named destination: pass it directly to --new-branch.
+            if ! ./scripts/quality/gate-push.sh \
+                    "$local_sha" --new-branch "$new_branch_remote"; then
+                echo "POLYC_PRE_PUSH_HALTED_AT=$short"
+                exit 1
+            fi
         fi
     else
-        # Range mode.
+        # Range mode (existing-branch push).
         if ! ./scripts/quality/gate-push.sh \
                 "$local_sha" "$remote_sha"; then
             echo "POLYC_PRE_PUSH_HALTED_AT=$short"
