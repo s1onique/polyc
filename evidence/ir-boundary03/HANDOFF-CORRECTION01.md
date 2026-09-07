@@ -13,7 +13,7 @@ ACT-POLYC-IR-BOUNDARY03-CORRECTION01
     STATUS             = PASS_WITH_NEXT_ACT_DECISION
     BRANCH             = main
     ENTRY_HEAD         = 715a6b83f34cceb5f6be553efec3b6a74760b27b
-    CLOSURE_HEAD       = (pinned at commit time per ACT §54)
+    CLOSURE_HEAD       = 7329c3da2097dbbcd0e9090b71f055dd3f259cf6
     WORKTREE_STATUS    = clean
 
     Predecessor verdict (corrected):
@@ -55,7 +55,7 @@ ACT-POLYC-IR-BOUNDARY03-CORRECTION01
 IDENTITY
     BRANCH             = main
     ENTRY_HEAD         = 715a6b83f34cceb5f6be553efec3b6a74760b27b
-    CLOSURE_HEAD       = (pinned at commit time per ACT §54)
+    CLOSURE_HEAD       = 7329c3da2097dbbcd0e9090b71f055dd3f259cf6
     WORKTREE_STATUS    = clean
 
 PREDECESSOR
