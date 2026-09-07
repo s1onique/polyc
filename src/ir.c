@@ -94,6 +94,38 @@ IrInstr *irICmp(IrValue *result,
     return instr;
 }
 
+/* Canonicalize a branch-condition value into an explicit IR_BR
+ * predicate. Returns a value whose semantics are explicitly Boolean
+ * (zero/nonzero truthiness) and whose producer is a recognized
+ * predicate producer (IR_ICMP / IR_FCMP).
+ *
+ * The check is producer-driven: if the immediately-preceding
+ * instruction in the same block is an IR_ICMP/IR_FCMP whose dst is
+ * `cond`, then `cond` is already a predicate and is returned as-is.
+ * Otherwise, an explicit `cmp_ne(cond, 0)` is appended before the
+ * branch and its dst is returned.
+ *
+ * This replaces the historical type-driven check at the old
+ * src/ir.c:107 (`if (cond->type != IR_TYPE_I8)`), which used IR
+ * type as a proxy for predicate semantics and silently bypassed
+ * truthiness normalization for any IR_CALL / IR_LOAD / IR_PARAM /
+ * constant that happened to carry IR_TYPE_I8. See
+ * ACT-POLYC-IR-BRANCH-CONDITION01 for the RED that motivated this.
+ */
+static IrValue *irNormalizeBranchCondition(IrBlock *block, IrValue *cond) {
+    if (!listEmpty(block->instructions)) {
+        IrInstr *last = (IrInstr *)block->instructions->prev->value;
+        if (irOpIsCmp(last->op) && last->dst == cond) {
+            return cond;
+        }
+    }
+    IrValue *zero = irConstInt(IR_TYPE_I8, 0);
+    IrValue *bool_cond = irTmp(IR_TYPE_I8, 1);
+    IrInstr *cmp = irICmp(bool_cond, IR_CMP_NE, cond, zero);
+    listAppend(block->instructions, cmp);
+    return bool_cond;
+}
+
 IrInstr *irBranch(IrFunction *func,
                   IrBlock *block,
                   IrValue *cond,
@@ -104,23 +136,7 @@ IrInstr *irBranch(IrFunction *func,
         loggerPanic("irBranch: NULL parameter provided\n");
     }
 
-    if (cond->type != IR_TYPE_I8) {
-        int isa_bool = 0;
-        if (!listEmpty(block->instructions)) {
-            IrInstr *last = (IrInstr *)block->instructions->prev->value;
-            if (irOpIsCmp(last->op) && last->dst == cond) {
-                isa_bool = 1;
-            }
-        }
-        
-        if (!isa_bool) {
-            IrValue *zero = irConstInt(IR_TYPE_I8, 0);
-            IrValue *bool_cond = irTmp(IR_TYPE_I8, 1);
-            IrInstr *cmp = irICmp(bool_cond, IR_CMP_NE, cond, zero);
-            listAppend(block->instructions, cmp);
-            cond = bool_cond;
-        }
-    }
+    cond = irNormalizeBranchCondition(block, cond);
 
     IrInstr *instr = irInstrNew(IR_BR, cond, NULL, NULL);
     instr->extra.blocks.target_block = true_block;
