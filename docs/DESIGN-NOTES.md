@@ -144,6 +144,69 @@ matters.
 
 ## 9. Minimal generics
 
+Compiler self-hosting strongly benefits from types such as:
+
+    Vec<Token>
+    Vec<Node>
+    Option<Type>
+    Map<Symbol, Definition>
+
+The intended direction is parameterized types/functions, not a
+metaprogramming universe.
+
+Likely initial strategy:
+
+- monomorphization;
+- constrained semantics;
+- no SFINAE-like machinery;
+- no accidental second compile-time language.
+
+## 10. Compile-time execution
+
+HolyC already legitimizes runtime/compiler-time continuity.
+
+PolyC should explore using PolyC itself rather than proliferating:
+
+- preprocessors;
+- build DSLs;
+- shell generators;
+- Python code generation scripts.
+
+The design must keep execution stages explicit enough to reason about.
+
+## 11. Cost inspection
+
+Future compiler/runtime introspection might expose conceptual operations
+such as:
+
+    inspect function
+    show IR
+    show assembly
+    show code size
+    show stack usage
+    show allocations
+    show compilation-stage timings
+
+Exact syntax is not decided.
+
+## 12. Structured diagnostics
+
+Compiler errors should have structural identity independently of rendered
+prose.
+
+Conceptually:
+
+    {
+      code,
+      kind,
+      span,
+      expected,
+      found,
+      context
+    }
+
+Human and agent consumers can render the same semantic diagnostic
+differently.
 
 ## 13. Effects
 
@@ -213,6 +276,32 @@ Useful concepts such as:
 - interfaces/traits where justified;
 
 do not require access-control machinery whose main effect is preventing
+inspection.
+
+## 19. Functional-programming influence
+
+PolyC does not aim to become Haskell or ML.
+
+The useful FP question is:
+
+> Does this mechanism make state, alternatives, invariants, or effects
+> easier to represent and reason about?
+
+Functional ideas are welcome when they reduce conceptual state.
+
+## 20. Performance engineering influence
+
+A systems language should make performance evidence cheap to obtain.
+
+PolyC should eventually treat:
+
+- compiler latency;
+- generated-code quality;
+- memory consumption;
+- code size;
+- JIT latency;
+
+as normal engineering evidence attached to changes.
 
 ## 21. Native vs LLVM
 
@@ -283,94 +372,3 @@ alien feature.
 
 Self-hosting must follow semantic and architectural stability rather than
 be used to justify premature complexity.
-
-inspection.
-
-## 19. Functional-programming influence
-
-PolyC does not aim to become Haskell or ML.
-
-The useful FP question is:
-
-> Does this mechanism make state, alternatives, invariants, or effects
-> easier to represent and reason about?
-
-Functional ideas are welcome when they reduce conceptual state.
-
-## 20. Performance engineering influence
-
-A systems language should make performance evidence cheap to obtain.
-
-PolyC should eventually treat:
-
-- compiler latency;
-- generated-code quality;
-- memory consumption;
-- code size;
-- JIT latency;
-
-as normal engineering evidence attached to changes.
-
-Compiler self-hosting strongly benefits from types such as:
-
-    Vec<Token>
-    Vec<Node>
-    Option<Type>
-    Map<Symbol, Definition>
-
-The intended direction is parameterized types/functions, not a
-metaprogramming universe.
-
-Likely initial strategy:
-
-- monomorphization;
-- constrained semantics;
-- no SFINAE-like machinery;
-- no accidental second compile-time language.
-
-## 10. Compile-time execution
-
-HolyC already legitimizes runtime/compiler-time continuity.
-
-PolyC should explore using PolyC itself rather than proliferating:
-
-- preprocessors;
-- build DSLs;
-- shell generators;
-- Python code generation scripts.
-
-The design must keep execution stages explicit enough to reason about.
-
-## 11. Cost inspection
-
-Future compiler/runtime introspection might expose conceptual operations
-such as:
-
-    inspect function
-    show IR
-    show assembly
-    show code size
-    show stack usage
-    show allocations
-    show compilation-stage timings
-
-Exact syntax is not decided.
-
-## 12. Structured diagnostics
-
-Compiler errors should have structural identity independently of rendered
-prose.
-
-Conceptually:
-
-    {
-      code,
-      kind,
-      span,
-      expected,
-      found,
-      context
-    }
-
-Human and agent consumers can render the same semantic diagnostic
-differently.
