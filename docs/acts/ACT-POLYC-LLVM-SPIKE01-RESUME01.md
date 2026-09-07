@@ -209,3 +209,73 @@ done
 - IR_CMP_BR canonical-only (deprecate IR_ICMP+IR_BR pair)
 
 Each step gated by a new ACT.
+
+---
+
+## 11. Post-closure HALT addendum (added at commit 130098c+)
+
+**Status:** VERDICT downgraded from PASS to `HALT_LLVM_BOUNDARY_CONTRACT`
+following independent reviewer audit of commit `130098c`.
+
+**Binding defects identified:**
+
+```text
+P0  src/llvm-backend.c lowers IR_CMP_BR — below-boundary native
+    fusion reaches an above-boundary consumer; violates the
+    boundary doctrine in src/ir-types.h:39-41 and the original
+    ACT §21-§36.
+
+P0  src/llvm-backend.c emits LLVMBuildAlloca / LLVMBuildLoad2 /
+    LLVMBuildStore (lines 409, 496-498, 727) — explicit ACT §13
+    prohibition on stack allocation in the spike was violated.
+
+P0  evidence/llvmspike01-resume01/native_gate.txt records
+    SUBJECT=b65d9ab (entry HEAD) — gate was run against the
+    predecessor, not against the implementation HEAD 130098c;
+    AC26 ("gate-push PASS against committed implementation
+    subject") was not actually demonstrated.
+
+P0  git diff --check b65d9ab..HEAD reports 20 trailing-whitespace
+    errors in evidence/llvmspike01-resume01/native_gate.txt — AC33
+    violated.
+
+P1  cmp-predicate matrix reduced to sgt-only; the original ACT
+    required all six signed predicates (eq / ne / slt / sle /
+    sgt / sge) with one real source witness each.
+
+P1  IR_ICMP + IR_BR trunc-to-i1 path is untested; the spike
+    silently relied on IR_CMP_BR to skip the i64→i1 truncation
+    on a genuine i1 operand.
+
+P1  12 generated .bc files + c_api_smoke executable + c_api_smoke.o
+    committed under evidence/ — violates the text-evidence contract.
+
+P1  neg_asm.HC fails at parse time, not at the LLVM backend;
+    the witness does not prove IR_ASM → LLVM_BACKEND_UNSUPPORTED_IR.
+```
+
+**Reviewer verdict (verbatim):**
+
+```text
+LLVM-SPIKE01-RESUME01
+    TOOLCHAIN      PASS
+    BASIC LLVM     PASS
+    ARCH BOUNDARY  RED
+    ACT HYGIENE    RED
+
+VERDICT = HALT_LLVM_BOUNDARY_CONTRACT
+```
+
+**Corrective response:** opened at
+`docs/acts/ACT-POLYC-LLVM-SPIKE01-RESUME01-CORRECTION01.md`.
+That ACT authorises only the boundary-enforcement, evidence-
+hygiene, and full cmp-predicate matrix repairs. SPIKE02 is NOT
+authorised here; it remains a future recommendation contingent on
+the correction ACT closing GREEN or halting with
+`HALT_LLVM_SPIKE_SUBSET_NOT_REACHABLE`.
+
+**Closure of this addendum does NOT modify the original PASS
+claim** — that claim is preserved as historical evidence of what
+the spike author believed was achieved at commit `130098c`. The
+fresh reproduction supersedes it (AGENTS.md §"Source-of-truth
+hierarchy").

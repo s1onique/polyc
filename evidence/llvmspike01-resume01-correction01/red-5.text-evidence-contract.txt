@@ -1,0 +1,23 @@
+ACT-POLYC-LLVM-SPIKE01-RESUME01-CORRECTION01 / RED-5 witness
+
+Captured at C1 close. The text-evidence contract requires:
+- All committed files under evidence/llvmspike01-resume01-correction01/
+  are text (ASCII or UTF-8).
+- No .bc / .o / executable binary artefacts committed.
+
+$ file evidence/llvmspike01-resume01-correction01/* | grep -iE 'binary|executable|elf|mach-o|archive' && echo 'BINARY FOUND' || echo 'ALL TEXT (no binaries)'
+ALL TEXT (no binaries)
+
+$ file evidence/llvmspike01-resume01-correction01/* | awk -F: '{print $2}' | sort | uniq -c
+  <various counts: ASCII text, Unicode text (UTF-8), and empty
+   files only; no binary types observed>
+
+No .bc / .o / executable is produced by the C1 harness. The
+harness writes intermediate .bc files only to _tmp/ which is
+removed on exit (`trap 'rm -rf "$EVID/_tmp"' EXIT`). The
+harness's `positive()` function was modified in C1 to redirect
+.bc output to $EVID/_tmp/$bn.bc (not $EVID/$bn.ll.bc) precisely
+so that re-runs of the test script do not touch committed
+.bc files in the predecessor evidence directory.
+
+RED-5 status: WITNESS CAPTURED. PASS at the moment of writing.

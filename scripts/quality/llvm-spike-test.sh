@@ -53,7 +53,7 @@ positive() {
     fi
     DYLD_LIBRARY_PATH="$LLVM_LIBDIR:${DYLD_LIBRARY_PATH:-}" \
     LD_LIBRARY_PATH="$LLVM_LIBDIR:${LD_LIBRARY_PATH:-}" \
-        "$LLVM_AS" "$out" -o "$out.bc" >"$EVID/_tmp/$bn.as_stdout" 2>"$EVID/_tmp/$bn.as_stderr" || {
+        "$LLVM_AS" "$out" -o "$EVID/_tmp/$bn.bc" >"$EVID/_tmp/$bn.as_stdout" 2>"$EVID/_tmp/$bn.as_stderr" || {
         echo "FAIL  $f: llvm-as rejected output" >&2
         echo "  stderr: $(cat "$EVID/_tmp/$bn.as_stderr")" >&2
         FAIL=$((FAIL+1))
@@ -99,12 +99,146 @@ done
 
 echo
 echo "=== cmp predicate matrix ==="
-# 04_cmp_branch.HC exercises `icmp sgt` (the only compare the fixture
-# uses). The other LLVM predicates (eq/ne/slt/sle/sge) are reachable
-# through the same `llCmpKindToLLVMPred` switch, but adding fixtures
-# for each is outside the bounded ACT scope. The spike proves the
-# switch + dispatch wiring with one witness; broader predicate
-# coverage belongs to a future ACT.
+# ACT-POLYC-LLVM-SPIKE01-RESUME01-CORRECTION01 / RED-6 + RED-1A + RED-1B.
+#
+# The spike proves the switch + dispatch wiring with one witness for
+# each of the six signed predicates from PolyC source. CORRECTION01
+# records whatever the existing compiler actually produces — no
+# success/failure distribution is assumed. Each predicate's transcripts
+# (both --dump-ir and --emit-llvm) are written under $EVID_CORR for
+# independent inspection. Successful emission through IR_CMP_BR is
+# also evidence for RED-1A / RED-1B, not a GREEN boundary result.
+EVID_CORR="$REPO_ROOT/evidence/llvmspike01-resume01-correction01"
+mkdir -p "$EVID_CORR"
+
+# dump_ir_capture <src> <out_base>
+#
+# Capture `hcc --dump-ir <src>` and write:
+#   <out_base>.dump-ir.txt        NORMALISED textual transcript
+#                                 (trailing horizontal whitespace
+#                                 stripped per line; passes
+#                                 `git diff --check`).
+#   <out_base>.dump-ir.txt.sha256 SHA256 of the ORIGINAL raw bytes.
+#   <out_base>.dump-ir.txt.b64    Base64 encoding of the ORIGINAL
+#                                 raw bytes (chunked at 76 columns).
+#
+# The PolyC IR printer (src/ir.c:3311) emits one line with a
+# trailing space before EOL. Committing the raw transcript
+# would violate `git diff --check`; the base64 + sha256 sidecars
+# preserve the byte-faithful witness without committing the
+# trailing whitespace.
+#
+# See ACT-POLYC-LLVM-SPIKE01-RESUME01-CORRECTION01 §4 and the
+# HANDOFF section on dump-ir transcript hygiene for the
+# verification procedure.
+dump_ir_capture() {
+    src="$1"
+    base="$2"
+    raw_tmp=$(mktemp -t polyc-dump-ir.XXXXXX)
+    if ! "$HCC" --dump-ir "$src" >"$raw_tmp" 2>/dev/null; then
+        : # hcc may exit non-zero on some fixtures; capture anyway
+    fi
+
+    # Compute SHA256 of raw bytes (always, even on empty output).
+    if command -v shasum >/dev/null 2>&1; then
+        sha=$(shasum -a 256 "$raw_tmp" | awk '{print $1}')
+    elif command -v sha256sum >/dev/null 2>&1; then
+        sha=$(sha256sum "$raw_tmp" | awk '{print $1}')
+    else
+        sha="UNAVAILABLE-no-sha-tool"
+    fi
+    nbytes=$(wc -c < "$raw_tmp" | tr -d ' ')
+
+    # Write SHA256 sidecar.
+    printf '%s  %s\n' "$sha" "$(basename "$src")" \
+        > "${base}.dump-ir.txt.sha256"
+
+    # Write base64 sidecar (chunked at 76 columns for git-friendliness).
+    if command -v base64 >/dev/null 2>&1; then
+        base64 < "$raw_tmp" | fold -w 76 > "${base}.dump-ir.txt.b64"
+    else
+        : > "${base}.dump-ir.txt.b64"  # tool missing; placeholder
+    fi
+
+    # Write normalised .dump-ir.txt with a verification header.
+    {
+        printf '# Normalised transcript. Source: hcc --dump-ir %s\n' "$src"
+        printf '# raw_sha256: %s\n' "$sha"
+        printf '# raw_bytes:  %s\n' "$nbytes"
+        printf '# Normalisation: trailing horizontal whitespace stripped per line.\n'
+        printf '# See dump-ir-manifest.md for verification procedure.\n'
+        # Strip trailing whitespace per line; collapse trailing blank
+        # lines so the file ends with exactly one trailing newline
+        # (POSIX text-file convention; avoids `git diff --check`
+        # "new blank line at EOF").
+        python3 -c '
+import sys
+with open(sys.argv[1], "r") as f:
+    text = f.read()
+lines = [line.rstrip() for line in text.split("\n")]
+# Drop trailing blank lines
+while lines and lines[-1] == "":
+    lines.pop()
+# Write back with exactly one trailing newline
+sys.stdout.write("\n".join(lines) + "\n")
+' "$raw_tmp"
+    } > "${base}.dump-ir.txt"
+
+    rm -f "$raw_tmp"
+}
+
+matrix_record() {
+    bn="$1"
+    src="$2"
+    expected_llvm_pred="$3"
+    dump="$EVID_CORR/red-6.${bn}.dump-ir.txt"
+    emit="$EVID_CORR/red-6.${bn}.emit-llvm.txt"
+    aserr="$EVID_CORR/red-6.${bn}.llvm-as.stderr"
+
+    # --dump-ir capture (the shape above the LLVM consumer).
+    # Use dump_ir_capture to write the normalised .dump-ir.txt plus
+    # the .sha256 + .b64 sidecars (see dump_ir_capture above).
+    dump_ir_capture "$src" "$EVID_CORR/red-6.${bn}"
+
+    # --emit-llvm capture (the shape at the LLVM boundary).
+    set +e
+    "$HCC" --emit-llvm "$src" -o "$EVID/_tmp/${bn}.ll" \
+        >"$EVID/_tmp/${bn}.emit.stdout" 2>"$EVID/_tmp/${bn}.emit.stderr"
+    rc=$?
+    set -e
+    {
+        echo "source operator: see $src"
+        echo "expected llvm predicate: $expected_llvm_pred"
+        echo "hcc --emit-llvm rc: $rc"
+        if [ "$rc" -eq 0 ] && [ -s "$EVID/_tmp/${bn}.ll" ]; then
+            obs=$(grep -m1 -oE 'icmp [a-z]+' "$EVID/_tmp/${bn}.ll" || true)
+            echo "observed icmp: ${obs:-<none>}"
+            echo "emitted .ll path: $EVID/_tmp/${bn}.ll  (transient, _tmp is rm'd on exit)"
+            set +e
+            "$LLVM_AS" "$EVID/_tmp/${bn}.ll" -o "$EVID/_tmp/${bn}.bc" \
+                2>"$aserr"
+            asrc=$?
+            set -e
+            echo "llvm-as rc: $asrc"
+            if [ "$asrc" -ne 0 ]; then
+                echo "llvm-as stderr: $(cat "$aserr")"
+            fi
+        else
+            echo "hcc stderr: $(cat "$EVID/_tmp/${bn}.emit.stderr")"
+        fi
+    } >"$emit"
+}
+
+matrix_record red_pred_eq   src/tests/llvm-spike/red_pred_eq.HC   eq
+matrix_record red_pred_ne   src/tests/llvm-spike/red_pred_ne.HC   ne
+matrix_record red_pred_slt  src/tests/llvm-spike/red_pred_slt.HC  slt
+matrix_record red_pred_sle  src/tests/llvm-spike/red_pred_sle.HC  sle
+matrix_record red_pred_sgt  src/tests/llvm-spike/red_pred_sgt.HC  sgt
+matrix_record red_pred_sge  src/tests/llvm-spike/red_pred_sge.HC  sge
+
+
+# Legacy sgt-only assertion (kept for backward compatibility with the
+# predecessor's PASS count; not the RED-6 measurement).
 if grep -q "icmp sgt" "$EVID/04_cmp_branch.ll"; then
     echo "PASS  04_cmp_branch: icmp sgt"
     PASS=$((PASS+1))
@@ -113,15 +247,100 @@ else
     FAIL=$((FAIL+1))
 fi
 
+# RED-1A / RED-1B: capture the existing 04_cmp_branch.HC pair of
+# transcripts so RED-1A (--dump-ir shape) and RED-1B (--emit-llvm +
+# consumer behaviour) are recorded as text witnesses.
+dump_ir_capture src/tests/llvm-spike/04_cmp_branch.HC \
+    "$EVID_CORR/red-1A"
+set +e
+"$HCC" --emit-llvm src/tests/llvm-spike/04_cmp_branch.HC \
+    -o "$EVID_CORR/red-1B.emit-llvm.ll" \
+    >"$EVID_CORR/red-1B.emit.stdout" \
+    2>"$EVID_CORR/red-1B.emit.stderr"
+rc=$?
+set -e
+{
+    echo "hcc --emit-llvm rc: $rc"
+    if [ "$rc" -ne 0 ]; then
+        echo "hcc stderr: $(cat "$EVID_CORR/red-1B.emit.stderr")"
+    else
+        grep -m1 -oE 'icmp [a-z]+' "$EVID_CORR/red-1B.emit-llvm.ll" \
+            | sed 's/^/observed icmp: /'
+    fi
+} >"$EVID_CORR/red-1B.emit-llvm.txt"
+
+# RED-2: alloca / load / store witness. Capture two fixtures:
+#   - 04_cmp_branch.HC: diamond CFG that defeats collapse-elimination,
+#     forces real alloca/store/load on locals.
+#   - red_local_alloca_emitted.HC: simple sequential locals; observe
+#     whether collapse-elimination folds them to a bare `add`.
+set +e
+"$HCC" --emit-llvm src/tests/llvm-spike/04_cmp_branch.HC \
+    -o "$EVID_CORR/red-2.emit-llvm.ll" \
+    >"$EVID_CORR/red-2.emit.stdout" \
+    2>"$EVID_CORR/red-2.emit.stderr"
+rc1=$?
+"$HCC" --emit-llvm src/tests/llvm-spike/red_local_alloca_emitted.HC \
+    -o "$EVID_CORR/red-2b.locals.ll" \
+    >"$EVID_CORR/red-2b.emit.stdout" \
+    2>"$EVID_CORR/red-2b.emit.stderr"
+rc2=$?
+set -e
+{
+    echo "==== 04_cmp_branch.HC ===="
+    echo "hcc --emit-llvm rc: $rc1"
+    if [ "$rc1" -eq 0 ] && [ -s "$EVID_CORR/red-2.emit-llvm.ll" ]; then
+        echo "alloca count:  $(grep -c 'alloca ' "$EVID_CORR/red-2.emit-llvm.ll" || true)"
+        echo "store  count:  $(grep -c 'store '  "$EVID_CORR/red-2.emit-llvm.ll" || true)"
+        echo "load   count:  $(grep -c 'load '   "$EVID_CORR/red-2.emit-llvm.ll" || true)"
+    fi
+    echo
+    echo "==== red_local_alloca_emitted.HC ===="
+    echo "hcc --emit-llvm rc: $rc2"
+    if [ "$rc2" -eq 0 ] && [ -s "$EVID_CORR/red-2b.locals.ll" ]; then
+        echo "alloca count:  $(grep -c 'alloca ' "$EVID_CORR/red-2b.locals.ll" || true)"
+        echo "store  count:  $(grep -c 'store '  "$EVID_CORR/red-2b.locals.ll" || true)"
+        echo "load   count:  $(grep -c 'load '   "$EVID_CORR/red-2b.locals.ll" || true)"
+    fi
+} >"$EVID_CORR/red-2.emit-llvm.txt"
+
+
 echo
 echo "=== negative matrix ==="
 negative src/tests/llvm-spike/neg_f64.HC      LLVM_BACKEND_UNSUPPORTED_TYPE
 negative src/tests/llvm-spike/neg_pointer.HC  LLVM_BACKEND_UNSUPPORTED_TYPE
 negative src/tests/llvm-spike/neg_struct.HC   LLVM_BACKEND_UNSUPPORTED_TYPE
-# neg_asm.HC fails at PARSE time (asm-block syntax not accepted in this
-# configuration). We still assert rc != 0 + an "error:" token; the
-# exact token depends on the parser.
-negative src/tests/llvm-spike/neg_asm.HC      error:
+# RED-8 reclassification: neg_asm.HC fails at PARSE time (the inline
+# `asm { ... }` block is rejected by the parser in this configuration).
+# It is therefore NOT a backend witness — it does not prove IR_ASM
+# reaches the LLVM consumer. The assertion below accepts any "error:"
+# token from the parser and records the transcript under
+# $EVID_CORR/red-8.neg-asm.txt for honest reclassification.
+"$HCC" src/tests/llvm-spike/neg_asm.HC -o /tmp/__neg_asm_out__ \
+    >"$EVID_CORR/red-8.neg-asm.stdout" \
+    2>"$EVID_CORR/red-8.neg-asm.stderr" \
+    && rc=0 || rc=$?
+{
+    echo "hcc rc (no --emit-llvm): $rc"
+    echo "stderr (first 5 lines):"
+    head -5 "$EVID_CORR/red-8.neg-asm.stderr" 2>/dev/null || true
+    echo
+    echo "RED-8 verdict: this is a PARSE-TIME gate, not a backend witness."
+    echo "  neg_asm.HC exercises inline asm syntax; the parser rejects it"
+    echo "  before the IR or LLVM consumer ever sees the IR_ASM opcode."
+    echo "  The negative assertion only proves \"parser rejects asm blocks\"."
+    echo "  It does NOT prove IR_ASM reachability through the LLVM backend."
+    echo "  IR_ASM is recorded as residue (RED-8 + §8 P2)."
+} >"$EVID_CORR/red-8.llvm-spike-test.txt"
+if [ "$rc" -ne 0 ] && grep -q "error:" "$EVID_CORR/red-8.neg-asm.stderr"; then
+    echo "PASS  neg_asm: parse-time rejection (NOT a backend witness)"
+    PASS=$((PASS+1))
+else
+    echo "FAIL  neg_asm: expected parse-time rejection with 'error:'" >&2
+    FAIL=$((FAIL+1))
+fi
+rm -f /tmp/__neg_asm_out__
+
 
 echo
 echo "=== conservation: no native fallback ==="

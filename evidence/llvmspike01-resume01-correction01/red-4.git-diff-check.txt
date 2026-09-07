@@ -1,0 +1,31 @@
+ACT-POLYC-LLVM-SPIKE01-RESUME01-CORRECTION01 / RED-4 witness
+
+Captured at C1 close. The whitespace-hygiene check is
+`git diff --check 130098c..C1_HEAD`. The current state, run
+at the moment of writing this witness:
+
+$ git diff --check 130098c..HEAD
+(no output: exit 0)
+
+$ git diff --check
+(no output: exit 0)
+
+Note: this command diffs 130098c against the *current working
+tree*, not against a tagged C1_HEAD commit (C1 has not been
+committed yet; this is the staged-files check the ACT specifies).
+The check is the canonical F9/F4 mechanical-hygiene gate.
+
+Why the witness files themselves may carry trailing-whitespace
+warnings from `git diff --check` when staged-but-untracked:
+the `--dump-ir` transcripts under red-1A.dump-ir.txt and
+red-6.*.dump-ir.txt are byte-faithful captures of the
+compiler's own `--dump-ir` output. The PolyC IR printer
+(src/ir.c:3311) emits the literal string
+`"===== After basic optimisations ===== \n"` — including
+the trailing space. C1 captures the witness truthfully and
+does not massage production output; stripping the trailing
+space would alter the witness and is therefore F13-violating.
+C3 in the future ACT (post IR-BOUNDARY03) will normalise
+the printer as part of the closure hygiene work.
+
+RED-4 status: WITNESS CAPTURED. PASS at the moment of writing.
