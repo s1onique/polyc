@@ -1,0 +1,20 @@
+# 47_struct_abi.HC — post-fix targeted witness
+#
+# ACT-POLYC-IR-BOUNDARY02-REQUAL01.
+#
+# Reducer from original IR-BOUNDARY02 RED:
+#   ./hcc ... -S src/tests/47_struct_abi.HC
+#   ERROR: ir-regalloc: no slot for var.id=95 kind=4
+#
+# Post-fix (commit 404644d, qualified by ACT-POLYC-FACTORY-PUSH-HERMETIC01):
+test=47_struct_abi.HC
+target=aarch64-apple-darwin
+install-dir=build/hermetic-prefix
+command=../../hcc --target=aarch64-apple-darwin --install-dir=$PWD/build/hermetic-prefix 47_struct_abi.HC -o /tmp/47.s
+exit-status=0
+output-bytes=35208
+canonical-gate=scripts/quality/gate-push.sh 404644d
+canonical-gate-line=CHECK=aot STATUS=PASS
+
+# Diagnostic detail (printed by hcc for cross-checks):
+#   %p95 f64 param loc=reg xmm0

@@ -1,0 +1,23 @@
+# 48_arg_overflow.HC — post-fix targeted witness
+#
+# ACT-POLYC-IR-BOUNDARY02-REQUAL01.
+#
+# Reducer from original IR-BOUNDARY02 RED:
+#   ./hcc ... -S src/tests/48_arg_overflow.HC
+#   ERROR: ir-regalloc: no slot for var.id=24 kind=4
+#
+# Post-fix (commit 404644d, qualified by ACT-POLYC-FACTORY-PUSH-HERMETIC01):
+test=48_arg_overflow.HC
+target=aarch64-apple-darwin
+install-dir=build/hermetic-prefix
+command=../../hcc --target=aarch64-apple-darwin --install-dir=$PWD/build/hermetic-prefix 48_arg_overflow.HC -o /tmp/48.s
+exit-status=0
+output-bytes=34088
+canonical-gate=scripts/quality/gate-push.sh 404644d
+canonical-gate-line=CHECK=aot STATUS=PASS
+
+# Diagnostic detail: the overflow param `i` in Sum9 (var.id=24) is read
+# from its stack slot; the backend prologue fills the slot from the
+# incoming stack-arg area. The post-pass leaves the arrive at loc=NONE
+# (correctly) and NOPs the entry IR_STORE so the body keeps reading the
+# slot rather than the unslotted arrive.

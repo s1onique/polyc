@@ -1,0 +1,22 @@
+# 64_sret_x8.HC — post-fix targeted witness
+#
+# ACT-POLYC-IR-BOUNDARY02-REQUAL01.
+#
+# Reducer from original IR-BOUNDARY02 RED:
+#   ./hcc ... -S src/tests/64_sret_x8.HC
+#   ERROR: ir-regalloc: no slot for var.id=N kind=4
+#
+# Post-fix (commit 404644d, qualified by ACT-POLYC-FACTORY-PUSH-HERMETIC01):
+test=64_sret_x8.HC
+target=aarch64-apple-darwin
+install-dir=build/hermetic-prefix
+command=../../hcc --target=aarch64-apple-darwin --install-dir=$PWD/build/hermetic-prefix 64_sret_x8.HC -o /tmp/64.s
+exit-status=0
+output-bytes=195864
+canonical-gate=scripts/quality/gate-push.sh 404644d
+canonical-gate-line=CHECK=aot STATUS=PASS
+
+# Diagnostic detail: large hidden-sret struct (x8) returns through
+# the hidden-out-pointer (now correctly stamped to sret register) +
+# indirect return. fn_param_idx cursor correctly advances over the
+# by-value struct params in the function's prototype.
