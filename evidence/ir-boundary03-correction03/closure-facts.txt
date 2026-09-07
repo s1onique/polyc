@@ -1,0 +1,57 @@
+ACT-POLYC-IR-BOUNDARY03-CORRECTION03 / closure facts
+====================================================
+
+CORRECTION02 historical record (F14: not rewritten):
+
+    ACT_DECLARED_CAP  = 3
+    ACTUAL_COMMITS    = 4
+
+    Commit 1: cbc0e003658a0144bc43801a29092df72df8361f
+              docs(act,polyc): CORRECTION02 for IR-BOUNDARY03
+              (resolve IR_BR I8-bypass proof hole)
+    Commit 2: 0971c4d678eeb7884f5a59337bce9d9d5bf9a40a
+              docs(polyc): refresh gate-push evidence for CORRECTION02 commit 1
+    Commit 3: e4b66f73af6708d17a3b9cefc9d96de023eff732
+              docs(polyc): close IR-BOUNDARY03-CORRECTION02
+    Commit 4: 46a65c2892f07b8116d8ede729e6bc9b69eb015f
+              docs(polyc): pin final FINAL_HEAD in CORRECTION02 HANDOFF
+              (loop-breaker; this is the CORRECTION02 FINAL_HEAD)
+
+This breach is annotated honestly per F14 (historical evidence =
+historical evidence; do not rewrite §9 retroactively).
+
+CORRECTION03 mechanical identity binding (F13):
+
+The CORRECTION02 FINAL_HEAD (Commit 4) is the closure of the
+previous lineage. CORRECTION03 starts from that HEAD, adds
+docs/evidence, and produces a new FINAL_HEAD.
+
+FINAL_HEAD binding mechanism (no SHA self-pinning):
+
+The SUBJECT of the gate-push run is captured in the gate output
+itself (line "SUBJECT=..."). A reviewer verifying the closure
+identity runs:
+
+    cd /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc
+    git rev-parse HEAD~
+    grep ^SUBJECT evidence/ir-boundary03-correction03/gate-push-final/log.txt
+
+and confirms the two values are equal. `HEAD~` is the
+substantive Commit 1; `HEAD` itself is the evidence-only
+Commit 2, which is exempt from a self-referential gate
+witness per AC-06 (reviewer's option 1, F10 conservation-of-
+established-behavior satisfied by inheritance).
+
+The captured file is named "log.txt" (NOT a SHA) so that any
+subsequent tree change does not need to rename the file.
+
+Mechanical check (this file was created BEFORE commit 1 of
+CORRECTION03 and is part of commit 1; on a future review, the
+reviewer re-runs gate-push on the post-amend Commit 1 tree,
+overwrites log.txt, and re-creates Commit 2 via amend, then
+re-confirms the SUBJECT matches `git rev-parse HEAD~`):
+
+    EXPECTED: SUBJECT in gate-push-final/log.txt == `git rev-parse HEAD~`
+              AFTER `git checkout CORRECTION03_FINAL_HEAD`
+
+L1/L2/L3 correction: see l1l2l3-analysis.md in this dir.

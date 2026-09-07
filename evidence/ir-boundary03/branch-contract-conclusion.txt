@@ -72,6 +72,48 @@ THREE-AXIS CLASSIFICATION
         predecessor MIXED_OR_UNPROVEN. The reviewer
         demonstrated the proof from src/ir.c alone.
 
+        ----CORRECTION03 F14 ANNOTATION (supersedes proof
+             steps 1-6 above; verbatim text retained as
+             historical CORRECTION01 evidence)----
+        CORRECTION02 (predecessor) downgraded the above
+        claim from PROVEN to OVERPROVEN: real witnesses
+        demonstrate that cond can carry values in [0,255]
+        (U8) or [-128,127] (I8) when the source is a
+        function-call return (the case 2 / case (a)
+        passthrough bypass). The proof steps 1-6 above
+        assume irBranch is the SOLE producer, but they do
+        not account for case (a) where an already-I8 cond
+        BYPASSES normalization entirely at src/ir.c:107
+        (`if (cond->type != IR_TYPE_I8)`). The cond
+        value-domain at IR_BR is therefore NOT in {0, 1}
+        for all reachable IR shapes.
+
+        CORRECTION03 further decomposed the runtime-
+        correctness mechanism into L1/L2/L3:
+            L1: IR_BR emits an integer test on the raw
+                operand register (testq / cmp + b.ne);
+                L1 does NOT itself enforce a value-domain.
+            L2: For the demonstrated IR_CALL bypass case,
+                the callee IR_RET epilogue emits the
+                zero-extension (movzbq / uxtb) because IR
+                `ret` is i64 after narrow widening on
+                store / parameter-arrival.
+            L3: L1 + L2 compose to runtime-correct
+                zero/nonzero truthiness.
+        The runtime correctness witnesses
+        (evidence/ir-boundary03-correction02/runtime-
+        correctness-u8.rc, runtime-correctness-i8u8-bypass.rc)
+        were and remain PROVEN under this decomposed
+        model. See ACT-POLYC-IR-BOUNDARY03-CORRECTION03.md
+        and evidence/ir-boundary03-correction03/l1l2l3-
+        analysis.md for the full decomposition.
+
+        The IR_BR_VALUE_CONTRACT claim (BOOLEAN_0_OR_1)
+        as stated above is OVERPROVEN; the corrected
+        contract is I8_OR_I64_ZERO_NONZERO_TRUTHINESS
+        (recorded in HANDOFF-CORRECTION02.md VERDICT
+        and in CORRECTION03 ACT M1.1).
+
     IR_BR_TYPE_CONTRACT = MIXED_I64_I8
         scope: representation width
         empirical: CONFIRMED as a latent bug

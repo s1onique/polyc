@@ -23,6 +23,36 @@
     class entirely (LLVM_BACKEND_UNSUPPORTED_IR at
     src/llvm-backend.c:585).
 
+    ----CORRECTION03 F14 ANNOTATION (supersedes the mechanism
+         attribution in the preceding sentence; verbatim text
+         retained above as historical evidence)----
+    The "all four native backends zero-extend the operand and
+    test the full register against zero" sentence above is
+    HISTORICALLY ACCURATE for runtime correctness but
+    MISATTRIBUTES THE MECHANISM. CORRECTION03 decomposed it
+    into L1/L2/L3:
+        L1: IR_BR emits an integer test (testq / cmp + b.ne)
+            on the raw operand register; L1 does NOT itself
+            emit a zero-extension.
+        L2: For the demonstrated IR_CALL bypass case, the
+            callee IR_RET epilogue emits the zero-extension
+            (movzbq / uxtb). This happens because IR-level
+            `ret` is i64 after narrow widening on store /
+            parameter-arrival, so the callee must widen its
+            narrow return value back to i64 before `ret`.
+        L3: L1 + L2 compose to runtime-correct zero/nonzero
+            truthiness under the demonstrated IR shape.
+    The runtime correctness witnesses
+    (runtime-correctness-u8.rc, runtime-correctness-i8u8-bypass.rc)
+    are unaffected by this attribution correction; they were
+    and remain PROVEN under the L1/L2/L3 model. See
+    ACT-POLYC-IR-BOUNDARY03-CORRECTION03.md P1 finding and
+    evidence/ir-boundary03-correction03/l1l2l3-analysis.md
+    for the decomposed mechanism and the emitted-assembly
+    witnesses (x86_64-apple-darwin.s, aarch64-apple-darwin.s).
+    The LLVM-backend rejection at src/llvm-backend.c:585 is
+    unchanged.
+
     The CORRECTION01 verdict for the IR_BR_VALUE_CONTRACT
     claim is downgraded from PROVEN to OVERPROVEN; the rest of
     the CORRECTION01 ACT stands (FACTORY + predecessor HALT
@@ -183,3 +213,45 @@ loop-breaker) was amended once to include the runtime-correctness
 not silent misrepresentation.
 
 Per F4 / F13, this residue is acknowledged rather than erased.
+
+## CORRECTION03 annotated (F14 historical record)
+
+This HANDOFF is annotated, not rewritten, per F14.
+
+    ACT_DECLARED_CAP = 3
+    ACTUAL_COMMITS   = 4
+        cbc0e00   substantive content
+        0971c4d   gate-evidence refresh
+        e4b66f7   closure metadata
+        46a65c2   loop-breaker (FINAL_HEAD pin)
+
+The closure loop-breaker (commit 4) was necessary because any
+edit to this HANDOFF during the closure loop changed the SHA it
+was supposed to pin. The amend-loop is a known problem in this
+ACT family (see ACT-POLYC-IR-BOUNDARY03-CORRECTION01 §54/§71
+for the same loop in the predecessor lineage).
+
+CORRECTION03 fix: the FINAL_HEAD evidence is now stored
+mechanically (without SHA self-pinning) at
+    evidence/ir-boundary03-correction03/gate-push-final/log.txt
+and is bound by `git rev-parse HEAD~` (the substantive
+Commit 1) matching the SUBJECT line in that log file, rather
+than by an embedded SHA. FINAL_HEAD itself (HEAD) is the
+evidence-carrier Commit 2 and is exempt from a self-
+referential gate-push witness per AC-06 reviewer option (1);
+F10 conservation-of-established-behavior is satisfied by
+inheritance from Commit 1's PASS. See
+ACT-POLYC-IR-BOUNDARY03-CORRECTION03.md AC-06 and
+evidence/ir-boundary03-correction03/closure-facts.txt.
+
+CORRECTION03 also corrects the "all four native backends
+zero-extend the operand" claim in
+evidence/ir-boundary03-correction02/backend-emission-analysis.md
+into the L1/L2/L3 model (see the rewritten file). The runtime
+correctness witness is unchanged; only the mechanism
+attribution is corrected.
+
+The corrected FINAL_HEAD (the post-CORRECTION03 tree) will be
+recorded in
+    evidence/ir-boundary03-correction03/HANDOFF-CORRECTION03.md
+per the ACT's own closure convention.
