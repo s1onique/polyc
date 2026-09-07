@@ -1,0 +1,130 @@
+Pipeline before BOUNDARY03 implementation
+=========================================
+
+Required fields per ACT §7.
+
+FRONTEND_ENTRY
+    src/main.c:539-580
+    If --emit-llvm requested AND HCC_ENABLE_LLVM defined:
+        include "llvm-backend.h"
+        IrCtx *ir_ctx = irLowerProgram(cc)
+        IrProgram *prog = ir_ctx->prog
+        llvmEmitProgram(prog, cc, out_fp, out_path)
+
+IR_BUILD_ENTRY
+    src/ir.c:2768 irLowerFunction(ctx, ast_func)
+    Per AST_FUNC: builds IrFunction with entry/exit blocks,
+    lowers parameters as arrive/slot pairs (loc=UNASSIGNED),
+    walks AST -> IR for body. Does NOT call irOptPinResultReg.
+
+NEUTRAL_OPT_ENTRY
+    src/ir.c:3380 irLowerProgram(cc)
+    Per AST_FUNC: irLowerFunction + irBasicFunctionOptimisations.
+    irBasicFunctionOptimisations is at src/ir-optimise.c:949
+    and runs: irRemoveAllNops, irRemoveRedundantBlocks,
+    irFoldPassThroughBlocks, irFoldGlobalDeref, irForwardReturnSlot,
+    irEvalConstantExpressions (fixed point),
+    irForwardStoreToReads (fixed point),
+    irDeadStoreEliminate,
+    irFuseIaddIntoMemAddressing (fixed point),
+    irFuseLoadOpStore (fixed point),
+    irRemoveAllNops.
+
+    None of these produce IR_CMP_BR. IR_CMP_BR is created
+    exclusively by irOptPinResultReg (src/ir-optimise.c:1079-1122)
+    and is invoked only from irFunctionPrepForCodeGen
+    (src/ir.c:3095).
+
+DUMP_IR_SNAPSHOT
+    src/ir.c:3301 irDump(cc)
+    Walks cc->ast_list; for each AST_FUNC does:
+        IrFunction *fn = irLowerFunction(ctx, ast);
+        irPrintFunction(fn);
+        irBasicFunctionOptimisations(fn);
+        printf("===== After basic optimisations ===== \n");
+        irPrintFunction(fn);
+
+    Same neutral opt pass as the LLVM dispatch receives.
+    So --dump-ir's "After basic optimisations" snapshot IS the
+    IR the LLVM backend receives.
+
+LLVM_CALLER
+    src/main.c:571-573
+    rc = llvmEmitProgram(prog, cc, out_fp|out_path)
+
+LLVM_PREP_CALLS
+    src/llvm-backend.c:859-941 llvmEmitProgram
+    Inside: per function calls llFunction which calls llLowerBlock.
+    llFunction does NOT call irBasicFunctionOptimisations,
+    irOptPinResultReg, or irAssignAbiParamLocations. It only
+    walks the already-prepared IrFunction* that arrived from
+    irLowerProgram.
+    Source: src/llvm-backend.c:807-857
+
+NATIVE_PREP_ENTRY
+    src/ir.c:3085 irFunctionPrepForCodeGen(ctx, fn, ast)
+    Called from:
+        src/aarch64.c:2211   (AOT AArch64)
+        src/x86_64.c:2560    (AOT x86-64)
+        src/aarch64-jit.c:1704 (JIT AArch64)
+        src/x86_64-jit.c:1583 (JIT x86-64)
+    NOT called from the LLVM dispatch.
+    NOT called from irLowerProgram.
+    NOT called from irDump.
+
+    The function body (src/ir.c:3085-3118):
+        ctx->fn = fn; ctx->cur_block = NULL; ctx->next_block = NULL;
+        fn->uuid = ircg_func_seq++;
+        fn->ra.func = fn;
+        fn->ra.id_to_loff = mapNew(32, &map_uint_to_uint_type);
+        fn->ra.extra_stack = 0;
+        irOptPinResultReg(fn);   <-- creates IR_CMP_BR
+        irOptDeadCodeElim(fn);
+        int locals_params_space = irCgComputeAstLayout(ast_fn, fn);
+        irCgBindAstLoffs(&fn->ra, ast_fn);
+        irCgAllocAllTmps(&fn->ra, locals_params_space);
+        int total_stack = locals_params_space + fn->ra.extra_stack;
+        if (total_stack > 0) total_stack = align(total_stack, 16);
+        fn->stack_space = (u16)total_stack;
+
+CMP_BR_FUSION_FUNCTION
+    src/ir-optimise.c:1079-1122 irOptPinResultReg
+    Sole producer of IR_CMP_BR (see header comment at
+    src/ir-types.h:140-150 explicitly stating "this opcode is
+    BELOW THE NEUTRAL BOUNDARY ... The lowering
+    (irLowerFunction) NEVER produces it").
+
+ABI_PREP_FUNCTION
+    src/ir.c:3141 irAssignAbiParamLocations(fn, ast_func, pool)
+    Called from same four paths as irFunctionPrepForCodeGen:
+        src/aarch64.c:2209
+        src/x86_64.c:2558
+        src/aarch64-jit.c:1703
+        src/x86_64-jit.c:1581
+    Reads active IrRegPool, stamps physical-register locations
+    on arrive values. NATIVE-only post-pass.
+
+NATIVE_CODEGEN_ENTRY
+    src/aarch64.c:2212 aarch64GenerateFunction(&ctx, ast)
+    src/x86_64.c:2561  x86_64GenerateFunction(&ctx, ast)
+    Both consume fn after irFunctionPrepForCodeGen + ABI prep.
+
+JIT_CODEGEN_ENTRY
+    src/aarch64-jit.c:1707+ aarch64-jit's jitCompileFunction
+    src/x86_64-jit.c:1587+ x86_64-jit's jitCompileFunction
+    Same prep stack.
+
+KEY ARCHITECTURAL OBSERVATION
+    The LLVM dispatch path:
+        main.c:561  irLowerProgram(cc)
+        ir.c:3380   -> per func: irLowerFunction + irBasicFunctionOptimisations
+        llvmEmitProgram(prog, ...)   <-- IrProgram is consumed here
+    NEVER enters irFunctionPrepForCodeGen and therefore
+    NEVER creates IR_CMP_BR. The LLVM backend's IR_CMP_BR
+    switch arm at src/llvm-backend.c:610-636 is DEAD CODE
+    in the current source.
+
+    This contradicts the literal RED-1A premise in the
+    predecessor C1 ACT, which claimed the LLVM consumer
+    walks IR after native fusion. The fusion is NOT
+    triggered on the LLVM path.

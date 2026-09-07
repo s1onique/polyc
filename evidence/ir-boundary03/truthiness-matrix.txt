@@ -1,0 +1,34 @@
+ACT-POLYC-IR-BOUNDARY03 / Truthiness matrix (ACT §15, §16)
+=========================================================
+
+Source: /tmp/truthiness_main.HC (self-contained: BranchOn
++ main that runs all six discriminators and prints results).
+
+The BranchOn function lowers to:
+
+    cmp_ne  %t i8, %v, 0
+    br      %t, true_bb, false_bb
+
+when the condition is not a preceding CMP (which it isn't,
+since `v` is the parameter). This is case 2 of the
+branch-condition-producers.txt analysis.
+
+The lowering inserts an explicit IR_ICMP(NE, v, 0) coercion,
+producing an I8 result. The IR representation is "truthiness
+of the I64 parameter captured as I8 {0, 1}".
+
+Native execution results:
+AOT| 0 -> 0
+AOT| 1 -> 1
+AOT| 2 -> 1
+AOT| 3 -> 1
+AOT| -1 -> 1
+AOT| -2 -> 1
+AOT| TOTAL=5
+JIT| 0 -> 0
+JIT| 1 -> 1
+JIT| 2 -> 1
+JIT| 3 -> 1
+JIT| -1 -> 1
+JIT| -2 -> 1
+JIT| TOTAL=5

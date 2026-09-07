@@ -1,0 +1,171 @@
+# raw_sha256: 53c32c6716bad06957901e5b390dfc04fc30c8844d144cf4ed76d5bc62986018
+# raw_bytes:  5281
+i64 BranchOn(%p1 i64 param) {
+  bb1 -> predecessors:  {}  successors: {3, 4}
+    store    %l2 i64 local, %p1 i64 param  ; line 3
+    alloca   %t3 i64 tmp, 8 i64 const int  ; line 3
+    cmp_ne   %t4 i8 tmp, %l2 i64 local, 0 i8 const int  ; line 5
+    br       %t4 i8 tmp, bb3, bb4  ; line 5
+
+  bb3 -> predecessors: {1}  successors: {2}
+    store    %t3 i64 tmp, 1 i64 const int  ; line 4
+    jmp      bb2  ; line 4
+
+  bb4 -> predecessors: {1}  successors: {2}
+    store    %t3 i64 tmp, 0 i64 const int  ; line 5
+    jmp      bb2  ; line 5
+
+  bb2 -> predecessors: {3, 4}  successors:  {}
+    load     %t5 i64 tmp, %t3 i64 tmp  ; line 5
+    ret      %t5 i64 tmp  ; line 5
+}
+
+===== After basic optimisations =====
+i64 BranchOn(%p1 i64 param) {
+  bb1 -> predecessors:  {}  successors: {3, 4}
+    alloca   %t3 i64 tmp, 8 i64 const int  ; line 3
+    cmp_ne   %t4 i8 tmp, %p1 i64 param, 0 i8 const int  ; line 5
+    br       %t4 i8 tmp, bb3, bb4  ; line 5
+
+  bb3 -> predecessors: {1}  successors: {2}
+    store    %t3 i64 tmp, 1 i64 const int  ; line 4
+    jmp      bb2  ; line 4
+
+  bb4 -> predecessors: {1}  successors: {2}
+    store    %t3 i64 tmp, 0 i64 const int  ; line 5
+    jmp      bb2  ; line 5
+
+  bb2 -> predecessors: {3, 4}  successors:  {}
+    load     %t5 i64 tmp, %t3 i64 tmp  ; line 5
+    ret      %t5 i64 tmp  ; line 5
+}
+
+i64 TestZero() {
+  bb5 -> predecessors:  {}  successors: {6}
+    alloca   %t6 i64 tmp, 8 i64 const int  ; line 8
+    arg       0 i64 const int
+    call     %t7 i64 tmp, BranchOn  ; line 8
+    store    %t6 i64 tmp, %t7 i64 tmp  ; line 8
+    jmp      bb6  ; line 8
+
+  bb6 -> predecessors: {5}  successors:  {}
+    load     %t8 i64 tmp, %t6 i64 tmp  ; line 8
+    ret      %t8 i64 tmp  ; line 8
+}
+
+===== After basic optimisations =====
+i64 TestZero() {
+  bb5 -> predecessors:  {}  successors: {5}
+    arg       0 i64 const int
+    call     %t7 i64 tmp, BranchOn  ; line 8
+    ret      %t7 i64 tmp  ; line 8
+}
+
+i64 TestOne() {
+  bb7 -> predecessors:  {}  successors: {8}
+    alloca   %t9 i64 tmp, 8 i64 const int  ; line 9
+    arg       1 i64 const int
+    call     %t10 i64 tmp, BranchOn  ; line 9
+    store    %t9 i64 tmp, %t10 i64 tmp  ; line 9
+    jmp      bb8  ; line 9
+
+  bb8 -> predecessors: {7}  successors:  {}
+    load     %t11 i64 tmp, %t9 i64 tmp  ; line 9
+    ret      %t11 i64 tmp  ; line 9
+}
+
+===== After basic optimisations =====
+i64 TestOne() {
+  bb7 -> predecessors:  {}  successors: {7}
+    arg       1 i64 const int
+    call     %t10 i64 tmp, BranchOn  ; line 9
+    ret      %t10 i64 tmp  ; line 9
+}
+
+i64 TestTwo() {
+  bb9 -> predecessors:  {}  successors: {10}
+    alloca   %t12 i64 tmp, 8 i64 const int  ; line 10
+    arg       2 i64 const int
+    call     %t13 i64 tmp, BranchOn  ; line 10
+    store    %t12 i64 tmp, %t13 i64 tmp  ; line 10
+    jmp      bb10  ; line 10
+
+  bb10 -> predecessors: {9}  successors:  {}
+    load     %t14 i64 tmp, %t12 i64 tmp  ; line 10
+    ret      %t14 i64 tmp  ; line 10
+}
+
+===== After basic optimisations =====
+i64 TestTwo() {
+  bb9 -> predecessors:  {}  successors: {9}
+    arg       2 i64 const int
+    call     %t13 i64 tmp, BranchOn  ; line 10
+    ret      %t13 i64 tmp  ; line 10
+}
+
+i64 TestThree() {
+  bb11 -> predecessors:  {}  successors: {12}
+    alloca   %t15 i64 tmp, 8 i64 const int  ; line 11
+    arg       3 i64 const int
+    call     %t16 i64 tmp, BranchOn  ; line 11
+    store    %t15 i64 tmp, %t16 i64 tmp  ; line 11
+    jmp      bb12  ; line 11
+
+  bb12 -> predecessors: {11}  successors:  {}
+    load     %t17 i64 tmp, %t15 i64 tmp  ; line 11
+    ret      %t17 i64 tmp  ; line 11
+}
+
+===== After basic optimisations =====
+i64 TestThree() {
+  bb11 -> predecessors:  {}  successors: {11}
+    arg       3 i64 const int
+    call     %t16 i64 tmp, BranchOn  ; line 11
+    ret      %t16 i64 tmp  ; line 11
+}
+
+i64 TestNegOne() {
+  bb13 -> predecessors:  {}  successors: {14}
+    alloca   %t18 i64 tmp, 8 i64 const int  ; line 12
+    ineg     %t20 i64 tmp, 1 i64 const int  ; line 12
+    arg       %t20 i64 tmp
+    call     %t19 i64 tmp, BranchOn  ; line 12
+    store    %t18 i64 tmp, %t19 i64 tmp  ; line 12
+    jmp      bb14  ; line 12
+
+  bb14 -> predecessors: {13}  successors:  {}
+    load     %t21 i64 tmp, %t18 i64 tmp  ; line 12
+    ret      %t21 i64 tmp  ; line 12
+}
+
+===== After basic optimisations =====
+i64 TestNegOne() {
+  bb13 -> predecessors:  {}  successors: {13}
+    ineg     %t20 i64 tmp, 1 i64 const int  ; line 12
+    arg       %t20 i64 tmp
+    call     %t19 i64 tmp, BranchOn  ; line 12
+    ret      %t19 i64 tmp  ; line 12
+}
+
+i64 TestNegTwo() {
+  bb15 -> predecessors:  {}  successors: {16}
+    alloca   %t22 i64 tmp, 8 i64 const int  ; line 13
+    ineg     %t24 i64 tmp, 2 i64 const int  ; line 13
+    arg       %t24 i64 tmp
+    call     %t23 i64 tmp, BranchOn  ; line 13
+    store    %t22 i64 tmp, %t23 i64 tmp  ; line 13
+    jmp      bb16  ; line 13
+
+  bb16 -> predecessors: {15}  successors:  {}
+    load     %t25 i64 tmp, %t22 i64 tmp  ; line 13
+    ret      %t25 i64 tmp  ; line 13
+}
+
+===== After basic optimisations =====
+i64 TestNegTwo() {
+  bb15 -> predecessors:  {}  successors: {15}
+    ineg     %t24 i64 tmp, 2 i64 const int  ; line 13
+    arg       %t24 i64 tmp
+    call     %t23 i64 tmp, BranchOn  ; line 13
+    ret      %t23 i64 tmp  ; line 13
+}

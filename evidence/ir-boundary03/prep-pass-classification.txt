@@ -1,0 +1,62 @@
+ACT-POLYC-IR-BOUNDARY03 / Common preparation audit (ACT §21)
+==========================================================
+
+Transformations executed between irLowerFunction and
+the point each consumer walks the IR:
+
+Pass                                      | Native AOT/JIT | LLVM   | --dump-ir | Classification
+------------------------------------------|----------------|--------|-----------|-----------------
+irRemoveAllNops                           | yes (via prep) | NO     | yes       | NEUTRAL_REQUIRED
+irRemoveRedundantBlocks (twice)           | yes            | NO     | yes       | NEUTRAL_REQUIRED
+irFoldPassThroughBlocks                   | yes            | NO     | yes       | NEUTRAL_REQUIRED
+irFoldGlobalDeref                         | yes            | NO     | yes       | NEUTRAL_REQUIRED
+irForwardReturnSlot                       | yes            | NO     | yes       | NEUTRAL_REQUIRED
+irEvalConstantExpressions (fixed point)    | yes            | NO     | yes       | NEUTRAL_REQUIRED
+irForwardStoreToReads (fixed point)       | yes            | NO     | yes       | NEUTRAL_REQUIRED
+irDeadStoreEliminate                      | yes            | NO     | yes       | NEUTRAL_REQUIRED
+irFuseIaddIntoMemAddressing (fixed point) | yes            | NO     | yes       | NEUTRAL_REQUIRED
+irFuseLoadOpStore (fixed point)           | yes            | NO     | yes       | NEUTRAL_REQUIRED
+irOptPinResultReg                         | yes            | NO     | NO        | NATIVE_ONLY
+irOptDeadCodeElim (post-Pin)              | yes            | NO     | NO        | NATIVE_ONLY
+irCgComputeAstLayout                      | yes            | NO     | NO        | NATIVE_ONLY
+irCgBindAstLoffs                          | yes            | NO     | NO        | NATIVE_ONLY
+irCgAllocAllTmps                          | yes            | NO     | NO        | NATIVE_ONLY
+irAssignAbiParamLocations                 | yes            | NO     | NO        | NATIVE_ONLY
+(stack alignment etc.)                    | yes            | NO     | NO        | NATIVE_ONLY
+
+LLVM consumer notes:
+    - LLVM consumer receives the IR after the FIRST TEN
+      neutral passes via irLowerProgram (which calls
+      irBasicFunctionOptimisations).
+    - LLVM does NOT call any of the NATIVE_ONLY passes.
+    - The neutral pipeline already covers the public
+      semantic-transformation needs of LLVM (DCE, const-fold,
+      store-to-read forwarding, fold-passthrough-blocks,
+      etc.). The LLVM consumer does not need any native-only
+      pass to lower canonical IR_ICMP + IR_BR.
+
+--dump-ir notes:
+    - --dump-ir calls irBasicFunctionOptimisations directly
+      (after irLowerFunction), which runs the same ten
+      neutral passes.
+    - --dump-ir shows the IR the LLVM consumer will receive.
+    - --dump-ir does NOT call any NATIVE_ONLY pass; physical
+      registers / stack offsets / IR_CMP_BR are never
+      shown in the dump.
+
+Cross-references:
+    src/ir.c:949-981  irBasicFunctionOptimisations (the
+                       ten neutral passes)
+    src/ir.c:3085-3118 irFunctionPrepForCodeGen (which adds
+                       the native-only passes for AOT/JIT)
+    src/ir.c:3380-3392 irLowerProgram (LLVM dispatch path)
+
+AC-09 / AC-25 / AC-26 / AC-27 outcomes:
+    --dump-ir is canonical and target-neutral          PASS
+    IrRegPool remains absent from neutral consumers     PASS
+    --dump-ir parameter locations remain neutral        PASS
+    Native ABI parameter assignment remains below
+        the neutral boundary                            PASS
+
+No scope expansion needed; the boundary is already
+in place.
