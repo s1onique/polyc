@@ -1,0 +1,19 @@
+POLYC_GATE=push
+SUBJECT=4180088797d6
+rm -rf ./build ./hcc
+cmake -S ./src \
+		-B ./build \
+		-G 'Unix Makefiles' \
+		-DCMAKE_C_COMPILER=gcc \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_INSTALL_PREFIX=/tmp/polyc-gate.7Pw4IZ/build/gate-prefix \
+		-DCMAKE_C_FLAGS='-Wextra -Wall -Wpedantic' \
+		-DCMAKE_EXPORT_COMPILE_COMMANDS=on \
+		-DHCC_ENABLE_JIT=on \
+		-DHCC_ENABLE_LLVM=OFF \
+		&& /Library/Developer/CommandLineTools/usr/bin/make -C ./build -j2
+/bin/sh: cmake: command not found
+make: *** [all] Error 127
+CHECK=build STATUS=FAIL
+REASON=build exited with status 2
+VERDICT=FAIL

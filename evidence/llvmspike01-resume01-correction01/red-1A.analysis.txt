@@ -1,0 +1,112 @@
+ACT-POLYC-LLVM-SPIKE01-RESUME01-CORRECTION01 / RED-1A analysis
+
+This file documents an honest discrepancy between RED-1A as
+written in the ACT and what the source actually shows at the
+--dump-ir snapshot. Per F13 and F4, this is reported as a
+HALT-conditional finding rather than silently absorbed.
+
+## 1. The literal RED-1A claim
+
+The ACT's RED-1A says:
+
+  expected: the dumped IR (the shape above the LLVM consumer)
+            contains an IR_CMP_BR instruction
+  today:    observed in current source — the pipeline emits
+            IR_CMP_BR, not the canonical IR_ICMP + IR_BR pair
+
+## 2. What the dump actually shows
+
+Source: src/tests/llvm-spike/04_cmp_branch.HC
+Command: ./hcc --dump-ir src/tests/llvm-spike/04_cmp_branch.HC
+
+See red-1A.dump-ir.txt for the full transcript.
+
+Key lines (after "After basic optimisations"):
+
+    cmp_gt   %t6 i64 tmp, %p1 i64 param, %p3 i64 param  ; line 3
+    br       %t6 i64 tmp, bb3, bb4  ; line 3
+
+The textual mnemonic for IR_CMP_BR is `cmp_br_<kind>`
+(src/ir-debug.c:418, 506-517). It does NOT appear in the dump.
+
+## 3. Why the fusion is invisible to --dump-ir
+
+src/ir.c:3301-3315 defines `irDump`:
+
+    void irDump(Cctrl *cc) {
+        ...
+        irLowerFunction(ctx, ast);
+        irPrintFunction(fn);
+        irBasicFunctionOptimisations(fn);
+        printf("===== After basic optimisations ===== \n");
+        irPrintFunction(fn);
+    }
+
+`irDump` calls `irBasicFunctionOptimisations`, NOT
+`irOptPinResultReg`. The latter is the only producer of
+IR_CMP_BR (src/ir-optimise.c:1079-1122; src/ir-types.h:140-150).
+`irOptPinResultReg` is called from
+`irFunctionPrepForCodeGen` (src/ir.c:3085-3095), which is
+the codegen prep path used by the native backend and the
+LLVM consumer, but NOT by the dump pipeline.
+
+## 4. RED-1A status
+
+RED-1A as literally written DOES NOT REPRODUCE at the
+--dump-ir snapshot. The dump pipeline is a witness of the
+neutral IR above the boundary, and the neutral IR is the
+two-instruction IR_ICMP + IR_BR form as expected.
+
+The fusion happens between the dump snapshot and the LLVM
+consumer code path. The LLVM consumer therefore DOES see
+IR_CMP_BR; that is proven by RED-1B (the consumer's
+IR_CMP_BR switch arm at src/llvm-backend.c:610-639
+successfully emits `icmp sgt` + `br i1` for 04_cmp_branch.HC,
+and the emitted .ll is verifier-clean).
+
+## 5. What this means for IR-BOUNDARY03
+
+The placement defect is real but slightly different from
+the predecessor's literal RED-1A wording:
+
+  - The neutral IR (above the boundary) is the canonical
+    IR_ICMP + IR_BR form. This is what every backend-neutral
+    analysis tool sees. Good.
+
+  - The codegen-prep IR (below the boundary, what the
+    LLVM consumer and the native codegen see) is the fused
+    IR_CMP_BR form, produced by an architectural
+    transformation that the neutral-IR spec does not
+    authorise.
+
+  - The LLVM consumer must silently re-translate the
+    fused form back into LLVM's native icmp+condbr (its
+    IR_CMP_BR arm at src/llvm-backend.c:610-639).
+
+The defect is the silent transformation between neutral
+and below-neutral IR, not the presence of IR_CMP_BR in
+the neutral IR itself. The reviewer's intuition that
+"IR_CMP_BR is below-boundary" (src/ir-types.h:140-150) is
+literally true; what is missing is an explicit boundary
+event the dump pipeline can witness.
+
+## 6. C1 outcome
+
+This is still `HALT_LLVM_SEES_NATIVE_FUSION`. The cause
+statement in the HANDOFF is updated:
+
+  ORIGINAL: "RED-1A reproduces — the neutral IR pipeline
+             emits IR_CMP_BR for comparison sources."
+
+  REVISED:  "The codegen-prep IR (below the neutral
+             boundary) fuses IR_ICMP + IR_BR into IR_CMP_BR
+             without an above-boundary witness, and the
+             LLVM consumer silently re-translates the fused
+             form. RED-1A's literal claim does not reproduce
+             at the --dump-ir snapshot because --dump-ir is
+             above the boundary. The defect is real, the
+             halt is mandatory, and ACT-POLYC-IR-BOUNDARY03
+             owns the fix."
+
+The C1 close is still the expected halt. The architectural
+finding strengthens rather than weakens.

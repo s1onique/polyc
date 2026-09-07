@@ -1,0 +1,47 @@
+# Normalised transcript. Source: hcc --dump-ir src/tests/llvm-spike/red_pred_slt.HC
+# raw_sha256: 704d818d6f5f5b56a52bdafc06286f47862bca9007420b4130692d9c19d2c6c9
+# raw_bytes:  1501
+# Normalisation: trailing horizontal whitespace stripped per line.
+# See dump-ir-manifest.md for verification procedure.
+i64 Max(%p1 i64 param, %p3 i64 param) {
+  bb1 -> predecessors:  {}  successors: {3, 4}
+    store    %l2 i64 local, %p1 i64 param  ; line 4
+    store    %l4 i64 local, %p3 i64 param  ; line 4
+    alloca   %t5 i64 tmp, 8 i64 const int  ; line 4
+    cmp_lt   %t6 i64 tmp, %l2 i64 local, %l4 i64 local  ; line 6
+    br       %t6 i64 tmp, bb3, bb4  ; line 6
+
+  bb3 -> predecessors: {1}  successors: {2}
+    store    %t5 i64 tmp, %l2 i64 local  ; line 7
+    jmp      bb2  ; line 7
+
+  bb4 -> predecessors: {1}  successors: {2}
+    store    %t5 i64 tmp, %l4 i64 local  ; line 8
+    jmp      bb2  ; line 8
+
+  bb2 -> predecessors: {3, 4}  successors:  {}
+    load     %t7 i64 tmp, %t5 i64 tmp  ; line 8
+    ret      %t7 i64 tmp  ; line 8
+}
+
+===== After basic optimisations =====
+i64 Max(%p1 i64 param, %p3 i64 param) {
+  bb1 -> predecessors:  {}  successors: {3, 4}
+    store    %l2 i64 local, %p1 i64 param  ; line 4
+    store    %l4 i64 local, %p3 i64 param  ; line 4
+    alloca   %t5 i64 tmp, 8 i64 const int  ; line 4
+    cmp_lt   %t6 i64 tmp, %p1 i64 param, %p3 i64 param  ; line 6
+    br       %t6 i64 tmp, bb3, bb4  ; line 6
+
+  bb3 -> predecessors: {1}  successors: {2}
+    store    %t5 i64 tmp, %l2 i64 local  ; line 7
+    jmp      bb2  ; line 7
+
+  bb4 -> predecessors: {1}  successors: {2}
+    store    %t5 i64 tmp, %l4 i64 local  ; line 8
+    jmp      bb2  ; line 8
+
+  bb2 -> predecessors: {3, 4}  successors:  {}
+    load     %t7 i64 tmp, %t5 i64 tmp  ; line 8
+    ret      %t7 i64 tmp  ; line 8
+}

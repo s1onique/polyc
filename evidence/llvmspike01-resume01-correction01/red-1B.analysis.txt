@@ -1,0 +1,27 @@
+ACT-POLYC-LLVM-SPIKE01-RESUME01-CORRECTION01 / RED-1B analysis
+
+RED-1B claims the LLVM consumer accepts IR_CMP_BR and
+silently re-translates it to LLVM's native icmp+condbr.
+
+This DOES reproduce: src/llvm-backend.c:610-639 implements
+the IR_CMP_BR switch arm, and the existing 04_cmp_branch.HC
+emits a verifier-clean .ll containing:
+
+  %4 = icmp sgt i64 %0, %1
+  br i1 %4, label %bb3, label %bb4
+
+(See red-1B.emit-llvm.ll for the full transcript; the
+`hcc --emit-llvm rc: 0` line in red-1B.emit-llvm.txt is
+the witness.) That can only happen if the consumer's
+IR_CMP_BR arm fired during emission, because the neutral-IR
+dump (see red-1A.dump-ir.txt) shows IR_ICMP + IR_BR, not
+IR_CMP_BR. The fused form was created somewhere between
+the dump snapshot and the LLVM consumer code path, and the
+consumer's arm (src/llvm-backend.c:610-639) consumed it.
+
+RED-1B status: RED REPRODUCES. This is the architectural
+finding: the consumer's IR_CMP_BR arm is the canary for the
+silent below-boundary transformation. The fix is in
+ACT-POLYC-IR-BOUNDARY03 (remove the architectural
+transformation and remove the consumer arm in the same
+upstream fix).
