@@ -536,6 +536,58 @@ int main(int argc, char **argv) {
         goto success;
     }
 
+#ifdef HCC_ENABLE_LLVM
+    if (args.emit_llvm) {
+        /* ACT-POLYC-LLVM-SPIKE01-RESUME01 §16: --emit-llvm must not
+         * silently compose with execution / native-assembly modes.
+         * Reject combinations explicitly using the project's existing
+         * diagnostic style. */
+        if (args.jit || args.repl || args.run ||
+            args.assemble_only || args.emit_object || args.emit_dylib ||
+            args.transpile || args.lsp)
+        {
+            fprintf(stderr,
+                "hcc: --emit-llvm is mutually exclusive with "
+                "-jit/-repl/-run/-S/-c/-lib/-transpile/-lsp\n");
+            memoryRelease();
+            return 1;
+        }
+        /* §18: silent native fallback is forbidden. If the build does
+         * not have LLVM enabled at compile time, --emit-llvm must
+         * surface an explicit unavailable error. We already gated this
+         * entire branch on HCC_ENABLE_LLVM, so reaching here implies
+         * LLVM is linked in. */
+        #include "llvm-backend.h"
+        IrCtx *ir_ctx = irLowerProgram(cc);
+        if (!ir_ctx || !ir_ctx->prog) {
+            fprintf(stderr, "hcc: --emit-llvm: irLowerProgram produced no IR\n");
+            memoryRelease();
+            return 1;
+        }
+        IrProgram *prog = ir_ctx->prog;
+        const char *out_path = args.output_filename;
+        int rc;
+        if (out_path && out_path[0] != '\0') {
+            rc = llvmEmitProgram(prog, cc, NULL, out_path);
+        } else {
+            rc = llvmEmitProgram(prog, cc, stdout, NULL);
+        }
+        if (rc != 0) {
+            memoryRelease();
+            return rc;
+        }
+        goto success;
+    }
+#else
+    if (args.emit_llvm) {
+        fprintf(stderr,
+            "hcc: --emit-llvm requested but this build was compiled "
+            "without LLVM support (rebuild with -DHCC_ENABLE_LLVM=on)\n");
+        memoryRelease();
+        return 1;
+    }
+#endif
+
 #ifdef HCC_ENABLE_JIT
     if (args.jit) {
         /* Arm the tracking allocator before compiling - the JIT's

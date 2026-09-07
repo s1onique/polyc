@@ -124,6 +124,7 @@ static CliParser parsers[] = {
     {str_lit("-D"),         0, CLI_DEFINES_LIST, "-D<VAR>", "Set a compiler #define (does not accept a value)", &cliParseDefine},
     {str_lit("--dump-ir"),  0, CLI_DUMP_IR, "--dump-ir", "Dump ir to stdout" , &cliParseNop},
     {str_lit("--dump-ir-pooled"), 0, CLI_DUMP_IR_POOLED, "--dump-ir-pooled", "ACT-POLYC-IR-BOUNDARY01 RED witness: dump the IR with a fake x86_64 IrRegPool set, so the parameter-arrival lowering's pool consultation is observable. Internal/ACT-debug only; not for users." , &cliParseNop},
+    {str_lit("--emit-llvm"), 0, CLI_EMIT_LLVM, "--emit-llvm", "ACT-POLYC-LLVM-SPIKE01-RESUME01: emit verified textual LLVM IR (LLVM 22 C-API consumer; only the deliberately-bounded I64 subset is supported). Writes to -o path if set, else stdout." , &cliParseNop},
     {str_lit("--mem-stats"),  0, CLI_MEM_STATS, "--mem-stats", "Stats about memory usage when compiling" , &cliParseNop},
     {str_lit("--version"),  0, CLI_VERSION, "--version", "Print the version of the compiler", &cliParseNop},
     {str_lit("--help"),     0, CLI_HELP, "--help", "Print this message", &cliParseNop},
@@ -517,6 +518,7 @@ int cliParseArgs(CliArgs *args, int argc, char **argv) {
             case CLI_INSTALL_DIR: args->install_dir = value.str; break;
             case CLI_DUMP_IR:   args->dump_ir = 1; break;
             case CLI_DUMP_IR_POOLED: args->dump_ir_pooled = 1; break;
+            case CLI_EMIT_LLVM: args->emit_llvm = 1; break;
             case CLI_MEM_STATS: args->print_mem_stats = 1; break;
             case CLI_HELP:    cliPrintUsage(); break;
             case CLI_VERSION: cliVersionPrint(args); break;
