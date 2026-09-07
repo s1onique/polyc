@@ -1,0 +1,22 @@
+void Main() {
+  bb1 -> predecessors:  {}  successors: {2}
+    store    %l1 i64 local, 10 i64 const int  ; line 1
+    iadd     %l1 i64 local, %l1 i64 local, 5 i64 const int  ; line 1
+    arg       "%d\n" array const str
+    arg       %l1 i64 local
+    call     %t3 i64 tmp, printf  ; line 1
+    jmp      bb2  ; line 1
+
+  bb2 -> predecessors: {1}  successors:  {}
+    ret      0 i32 const int  ; line 1
+}
+
+===== After basic optimisations ===== 
+void Main() {
+  bb1 -> predecessors:  {}  successors: {1}
+    arg       "%d\n" array const str
+    arg       15 i64 const int
+    call     %t3 i64 tmp, printf  ; line 1
+    ret      0 i32 const int  ; line 1
+}
+
