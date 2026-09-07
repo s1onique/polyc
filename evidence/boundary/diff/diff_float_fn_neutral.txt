@@ -1,0 +1,43 @@
+f64 Hypot(%p1 f64 param, %p3 f64 param) {
+  bb1 -> predecessors:  {}  successors: {2}
+    store    %l2 f64 local, %p1 f64 param  ; line 1
+    store    %l4 f64 local, %p3 f64 param  ; line 1
+    alloca   %t5 f64 tmp, 8 f64 const int  ; line 1
+    fadd     %t6 f64 tmp, %l2 f64 local, %l4 f64 local  ; line 1
+    store    %t5 f64 tmp, %t6 f64 tmp  ; line 1
+    jmp      bb2  ; line 1
+
+  bb2 -> predecessors: {1}  successors:  {}
+    load     %t7 f64 tmp, %t5 f64 tmp  ; line 1
+    ret      %t7 f64 tmp  ; line 1
+}
+
+===== After basic optimisations =====
+f64 Hypot(%p1 f64 param, %p3 f64 param) {
+  bb1 -> predecessors:  {}  successors: {1}
+    fadd     %t6 f64 tmp, %p1 f64 param, %p3 f64 param  ; line 1
+    ret      %t6 f64 tmp  ; line 1
+}
+
+i64 Main() {
+  bb3 -> predecessors:  {}  successors: {4}
+    alloca   %t8 i64 tmp, 8 i64 const int  ; line 2
+    arg       3.000000 f64 const float
+    arg       4.000000 f64 const float
+    call     %t9 f64 tmp, Hypot  ; line 2
+    store    %t8 i64 tmp, 0 i64 const int  ; line 2
+    jmp      bb4  ; line 2
+
+  bb4 -> predecessors: {3}  successors:  {}
+    load     %t10 i64 tmp, %t8 i64 tmp  ; line 2
+    ret      %t10 i64 tmp  ; line 2
+}
+
+===== After basic optimisations =====
+i64 Main() {
+  bb3 -> predecessors:  {}  successors: {3}
+    arg       3.000000 f64 const float
+    arg       4.000000 f64 const float
+    call     %t9 f64 tmp, Hypot  ; line 2
+    ret      0 i64 const int  ; line 2
+}
