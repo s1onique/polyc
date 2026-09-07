@@ -312,6 +312,22 @@ AoStr *irValueToString(IrValue *ir_value) {
             aoStrCatFmt(buf," %s %s",ir_value_type_str, ir_value_kind_str);
         }
 
+        /* ACT-POLYC-IR-BOUNDARY01: surface the post-lower `loc` so the
+         * contamination from `IrRegPool` consultation in
+         * `irLowerFunction` (src/ir.c:2799-3024) is observable in
+         * --dump-ir output. Pre-ACT this code path silently swallowed
+         * the loc; post-ACT a neutral dump should show `loc=ir_param_<n>`
+         * for params (no physical register) and the native post-pass
+         * will replace it with `loc=reg <name>` before codegen. */
+        if (ir_value->loc.kind == IR_LOC_REG && ir_value->loc.as.reg) {
+            aoStrCatFmt(buf, " loc=reg %S", ir_value->loc.as.reg);
+        } else if (ir_value->loc.kind == IR_LOC_SLOT) {
+            aoStrCatFmt(buf, " loc=slot %d", ir_value->loc.as.loff);
+        } else if (ir_value->loc.kind == IR_LOC_IMM) {
+            aoStrCatFmt(buf, " loc=imm %lld", (long long)ir_value->loc.as.imm);
+        } else if (ir_value->loc.kind != IR_LOC_NONE) {
+            aoStrCatFmt(buf, " loc=kind%d", (int)ir_value->loc.kind);
+        }
     }
     return buf;
 }

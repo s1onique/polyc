@@ -531,6 +531,11 @@ int main(int argc, char **argv) {
         goto success;
     }
 
+    if (args.dump_ir_pooled) {
+        irDumpWithFakePool(cc);
+        goto success;
+    }
+
 #ifdef HCC_ENABLE_JIT
     if (args.jit) {
         /* Arm the tracking allocator before compiling - the JIT's

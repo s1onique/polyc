@@ -3127,12 +3127,56 @@ void irDump(Cctrl *cc) {
             ctx->cur_func = NULL;
             IrFunction *fn = irLowerFunction(ctx, ast);
             irPrintFunction(fn);
- 
+
             irBasicFunctionOptimisations(fn);
             printf("===== After basic optimisations ===== \n");
             irPrintFunction(fn);
         }
     }
+}
+
+/* ACT-POLYC-IR-BOUNDARY01 RED witness: build the smallest possible
+ * x86_64-like IrRegPool and call irDump under it, so the
+ * `IrRegPool` consultation inside `irLowerFunction`
+ * (`src/ir.c:2799-3024`) is forced visible in the dump's `loc=reg ...`
+ * annotations on parameter `IR_VAL_PARAM` values. This is the runtime
+ * evidence that today's neutral consumer cannot ignore the pool.
+ *
+ * Post-ACT (Commit 2) the same call must produce IR where no param
+ * carries `loc=reg ...` because the pool consultation moves out of
+ * the lowering path.
+ *
+ * The pool itself is deliberately minimal — it just needs enough
+ * surface (int_arg_regs, float_arg_regs, sret_reg, scratch_regs) to
+ * exercise every code branch in the parameter-lowering block. Real
+ * backend pools (see src/x86_64.c, src/aarch64.c) carry the same
+ * fields. */
+static Vec *irDumpMakeFakeAoStrVec(const char **names, int n) {
+    Vec *v = vecNew(n);
+    for (int i = 0; i < n; ++i) {
+        vecPush(v, aoStrDupRaw((char *)names[i], strlen(names[i])));
+    }
+    return v;
+}
+
+void irDumpWithFakePool(Cctrl *cc) {
+    static const char *kIntArgs[] = {"rdi","rsi","rdx","rcx","r8","r9"};
+    static const char *kFloatArgs[] = {"xmm0","xmm1","xmm2","xmm3","xmm4","xmm5","xmm6","xmm7"};
+    static const char *kScratch[] = {"rax","rcx","rdx","rsi","rdi","r8","r9","r10","r11"};
+    IrRegPool pool;
+    memset(&pool, 0, sizeof(pool));
+    pool.int_arg_regs    = irDumpMakeFakeAoStrVec(kIntArgs, 6);
+    pool.float_arg_regs  = irDumpMakeFakeAoStrVec(kFloatArgs, 8);
+    pool.int_return_reg  = aoStrDupRaw((char *)"rax", 3);
+    pool.float_return_reg= aoStrDupRaw((char *)"xmm0", 4);
+    pool.sret_reg        = NULL; /* SysV uses rdi for sret, like a normal arg */
+    pool.scratch_regs    = irDumpMakeFakeAoStrVec(kScratch, 9);
+    pool.op_clobbers     = NULL; /* conservative: assume every scratch is clobbered */
+    pool.variadic_on_stack = 0;
+
+    irRegPoolSet(&pool);
+    irDump(cc);
+    irRegPoolSet(NULL);
 }
 
 IrCtx *irLowerProgram(Cctrl *cc) {
