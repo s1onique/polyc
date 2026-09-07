@@ -12,7 +12,7 @@ ENTRY_HEAD            = 774602a966584b34b355ec00e5f63a088f84164c
 RED_HEAD              = 341939ca7c56081e0bb45a435524219a4bd4a630
 IMPLEMENTATION_HEAD   = cbf726ed939956ebc79790371a9d372942b10b05
 ORIGINAL_CLOSURE      = f631760ac2bf674a8997d40a62db36ffc43d56d9 (RESCINDED)
-CORRECTION01_FINAL    = TBD (this commit, evidence-carrier)
+CORRECTION01_FINAL    = de90851fe3e389385eb3f732e6ac0932de2506de (this commit, evidence-carrier)
 BRANCH                = main
 WORKTREE              = clean
 ```
@@ -293,3 +293,24 @@ The canonical IR_BR operand model established by this ACT is exactly
 what LLVM's `br i1` requirement needs. Real llvm-spike-test PASS=12
 on the implementation commit confirms the mapping. LLVM support work
 can now resume against a much cleaner branch semantic boundary.
+
+## DRIFT NOTE (F4/F13 honest accounting)
+
+The CORRECTION01 FINAL_HEAD pin above may be off by 1 amend
+iteration due to the well-known amend-loop problem (any
+change to the HANDOFF file during the closure commit changes
+the SHA it is supposed to pin; see the same loop in
+ACT-POLYC-IR-BOUNDARY03-CORRECTION02 HANDOFF-CORRECTION02.md
+§166).
+
+CORRECTION01 has 3 commits (cap=3 incl loop-breaker):
+  Commit 1: 574840d  RED+impl-doc combined (substantive)
+  Commit 2: <hash>   closure evidence (gate-push log + closure-facts)
+  Commit 3: <this>   loop-breaker (FINAL_HEAD pin)
+
+The actual final HEAD = <this commit> (after amend). The pin
+above is the closure commit SHA; the drift between pin and
+actual HEAD is at most 1 amend and is documented here per
+F4/F13.
+
+Per F4/F13, this residue is acknowledged rather than erased.
