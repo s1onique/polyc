@@ -33,8 +33,8 @@
     ENTRY_HEAD             = 075e9f66eb7389f260a1a9a9a53b81ec71e464b1  (CORRECTION01 FINAL_HEAD)
     ENTRY_BRANCH           = main
     CORRECTION02_RED_HEAD  = <pinned at commit 1>
-    CORRECTION02_CLOSURE_HEAD = <pinned at commit 2 / commit 3 per topology>
-    FINAL_HEAD             = <pinned at commit 3>
+    CORRECTION02_CLOSURE_HEAD = 0971c4d678eeb7884f5a59337bce9d9d5bf9a40a
+    FINAL_HEAD             = 0971c4d678eeb7884f5a59337bce9d9d5bf9a40a
     BRANCH                 = main
     WORKTREE               = clean
 
