@@ -1,0 +1,20 @@
+Test 1: ordinary range C0..C2 with trailing WS in C1.
+
+Setup (Fixture 1 on /tmp/polyc-c02-test/):
+
+  C0 = clean: foo.txt contains "clean0"
+  C1 = bar.txt contains "dirty line \nmore dirty\t\n" (trailing WS on both lines)
+  C2 = bar.txt rewritten clean: "clean line\nclean again\n"
+
+GPUSH-6 in range mode iterates every commit in C0..C2 and calls
+`git diff-tree --check --root -m --no-commit-id -r <commit>` on
+each. The per-commit scan catches C1's trailing WS:
+
+  FAIL commit b144b0bafec7 (C1_with_WS):
+    bar.txt:1: trailing whitespace.
+    bar.txt:2: trailing whitespace.
+
+EXIT: 1  (expected: 1)
+
+This is the original CORRECTION01 finding, still passing under
+CORRECTION02: ordinary range mode catches non-tip whitespace.

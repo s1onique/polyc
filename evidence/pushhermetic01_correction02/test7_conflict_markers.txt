@@ -1,0 +1,21 @@
+Test 7: conflict markers (<<<<<<< HEAD, =======, >>>>>>>) in a
+non-merge commit.
+
+Setup: a commit that adds a file containing the literal text of a
+merge conflict marker.
+
+  $ git diff-tree --check --root -m --no-commit-id -r CM
+  markers.txt:1: leftover conflict marker
+  markers.txt:3: leftover conflict marker
+  markers.txt:5: leftover conflict marker
+  EXIT: 2
+
+This is the CORRECTION02 P1 fix: Git's --check policy detects
+leftover conflict markers. The CORRECTION01 awk scanner did not
+have a regex for conflict markers and would have reported PASS for
+this commit, allowing the bug to ship.
+
+Note: the conflict-marker commit CM also includes a separate file
+with trailing whitespace (the same conflict.txt from the merge
+test, which was not reset). Git reports both errors in a single
+diff-tree invocation.

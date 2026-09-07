@@ -49,26 +49,49 @@ if ! subject_sha=$(git rev-parse --verify "${subject_input}^{commit}" 2>/dev/nul
 fi
 
 # Optional second argument: the remote (pre-push) SHA from which
-# `subject_sha` is being pushed. When supplied and non-zero, the
-# diff-hygiene phase (GPUSH-6) inspects the entire range, not just
-# the subject commit. This is the pre-push hook contract:
+# `subject_sha` is being pushed. This is the pre-push hook contract:
 #
 #   <local_ref> <local_sha> <remote_ref> <remote_sha>
 #
-# When omitted, GPUSH-6 falls back to the original subject-commit-only
-# behavior, preserving every existing manual invocation pattern.
+# Three modes:
 #
-# See ACT-POLYC-FACTORY-PUSH-HERMETIC01-CORRECTION01.
+#   * range mode (default when second arg is a real SHA):
+#         inspect every commit reachable from <subject_sha> but not
+#         from <remote_sha>. This is the pre-push hook contract for
+#         ordinary existing-branch pushes.
+#
+#   * root-range mode (when second arg is the new-branch sentinel
+#         0000...0000):
+#         inspect every commit reachable from <subject_sha>, down to
+#         the root. This is the pre-push hook contract for a brand
+#         new branch where the remote side is the empty tree.
+#
+#   * tip-only mode (no second arg):
+#         inspect only <subject_sha>^..<subject_sha>. Preserves every
+#         existing manual invocation pattern
+#         (`gate-push.sh <commit>`).
+#
+# See ACT-POLYC-FACTORY-PUSH-HERMETIC01-CORRECTION02.
 remote_input="${2:-}"
 range_base_sha=""
-if [ -n "$remote_input" ] && [ "$remote_input" != "0000000000000000000000000000000000000000" ]; then
-    if ! range_base_sha=$(git rev-parse --verify "${remote_input}^{commit}" 2>/dev/null); then
-        echo "POLYC_GATE=push"
-        echo "SUBJECT=$subject_input"
-        echo "STATUS=ERROR"
-        echo "REASON=cannot resolve remote commit: $remote_input"
-        exit 2
-    fi
+range_mode="tip"  # "tip" | "range" | "root-range"
+if [ -n "$remote_input" ]; then
+    case "$remote_input" in
+        0000000000000000000000000000000000000000)
+            # New branch: the entire local tip's history is "added".
+            range_mode="root-range"
+            ;;
+        *)
+            if ! range_base_sha=$(git rev-parse --verify "${remote_input}^{commit}" 2>/dev/null); then
+                echo "POLYC_GATE=push"
+                echo "SUBJECT=$subject_input"
+                echo "STATUS=ERROR"
+                echo "REASON=cannot resolve remote commit: $remote_input"
+                exit 2
+            fi
+            range_mode="range"
+            ;;
+    esac
 fi
 
 # Short form for human-readable output.
@@ -259,83 +282,118 @@ fi
 
 # --- GPUSH-6: range-aware diff hygiene -------------------------------------
 #
-# Two modes, controlled by the optional second positional argument
+# Three modes, controlled by the optional second positional argument
 # (the pre-push remote_sha):
 #
-#   * range mode  (remote_sha supplied, non-zero, valid commit):
-#         inspects every commit reachable from <subject_sha> but not
-#         from <remote_sha>. This is what the pre-push hook supplies.
+#   * range mode (real remote commit supplied):
+#         inspect every commit reachable from <subject_sha> but not
+#         from <remote_sha>. This is what the pre-push hook supplies
+#         for ordinary existing-branch pushes.
 #
-#   * tip-only mode  (no remote_sha, or new-branch sentinel):
-#         inspects only <subject_sha>^..<subject_sha>. Preserves the
-#         GPUSH-5 behavior for manual invocations
-#         (`gate-push.sh <commit>`) and for new-branch pushes where
-#         the remote side is the empty tree.
+#   * root-range mode (new-branch sentinel 0000...0000):
+#         inspect every commit reachable from <subject_sha>, down to
+#         the root. The remote side is the empty tree, so the entire
+#         local history is "added" by the push.
 #
-# Implementation primitive:
+#   * tip-only mode (no second arg):
+#         inspect only <subject_sha>^..<subject_sha>. Preserves every
+#         existing manual invocation pattern
+#         (`gate-push.sh <commit>`).
 #
-#     git format-patch --stdout <range> \
-#         | awk '/trailing-whitespace detector on + lines/'
+# Implementation primitive: per-commit `git diff-tree --check --root -m`.
 #
-# We deliberately do NOT use `git diff --check <A> <B>`. That
-# primitive compares the *tree* state at B against the *tree* state
-# at A, which is blind to whitespace that existed only in an
-# intermediate commit (it never appears in the resulting tree if a
-# later commit overwrites the file). The format-patch primitive
-# inspects the textual patches of every commit in the range, which
-# is what "diff hygiene of the pushed series" actually means.
+#   --check    Apply Git's documented whitespace + conflict-marker policy
+#              (trailing whitespace, space-before-tab, <<<<<<< / >>>>>>>
+#              markers, plus anything configured via core.whitespace).
+#              We do not reimplement Git's semantics in awk; we call Git.
 #
-# We also deliberately do NOT use `git log --check` because its exit
-# code is not reliable across Git versions (some versions exit 128 on
-# ambiguous refs). An awk-based scan over patch lines is portable and
-# matches exactly the semantics of `git diff --check`'s trailing-
-# whitespace detection, scoped to lines actually added by the push
-# (lines beginning with `+` that are not `+++` headers).
+#   --root     Include the root commit in the inspection set even when
+#              there is no parent to diff against.
 #
-# See ACT-POLYC-FACTORY-PUSH-HERMETIC01-CORRECTION01.
-diff_base_arg=""
-if [ -n "$range_base_sha" ]; then
-    diff_base_arg="$range_base_sha"
-    diff_check_mode="range"
-else
-    diff_base_arg="$subject_sha^"
-    if ! git cat-file -e "${diff_base_arg}^{commit}" 2>/dev/null; then
-        diff_base_arg=$(git hash-object -t tree /dev/null)
-    fi
-    diff_check_mode="tip"
-fi
+#   -m         For merge commits, diff against every parent. Without -m,
+#              a merge commit's tree is compared only against one parent
+#              (the first by default), so a conflict resolution that
+#              introduced whitespace on the other side would be missed.
+#              With -m, every parent gets its own diff-tree and every
+#              dirty resolution is caught.
+#
+#   --no-commit-id -r   Recurse into trees, omit the commit-id header so
+#              each line of output corresponds to one file in one diff.
+#
+# We deliberately do NOT use `git diff --check <A> <B>`. That primitive
+# compares the *tree* state at B against the *tree* state at A, which
+# is blind to whitespace that existed only in an intermediate commit
+# (it never appears in the resulting tree if a later commit overwrites
+# the file). The per-commit diff-tree primitive inspects every commit's
+# contribution to the resulting tree, which is what "diff hygiene of
+# the pushed series" actually means.
+#
+# We also deliberately do NOT use `git format-patch --stdout <range> |
+# awk`. `format-patch` omits merge commits from its output (documented
+# Git behavior), and an awk reimplementation of Git's whitespace policy
+# is strictly weaker than `git diff --check`. Both defects are fixed
+# by switching to per-commit `git diff-tree --check --root -m`.
+#
+# See ACT-POLYC-FACTORY-PUSH-HERMETIC01-CORRECTION02.
+case "$range_mode" in
+    range)
+        range_desc="pushed range $range_base_sha..$subject_sha"
+        rev_list_args="$range_base_sha..$subject_sha"
+        ;;
+    root-range)
+        # New branch: every commit reachable from $subject_sha> is
+        # "added" by the push. --reverse so output reads chronologically.
+        range_desc="new branch (full history reachable from $subject_sha)"
+        rev_list_args="--reverse $subject_sha"
+        ;;
+    tip)
+        range_desc="subject commit (tip-only)"
+        rev_list_args="$subject_sha -n1"
+        ;;
+esac
 
-# Build the range. ^<base> means "reachable from <tip> but not from
-# <base>", which is what we want. For the empty-tree base case we
-# skip the ^ prefix (it would mean "not reachable from empty tree").
-range_arg=""
-if [ "$diff_check_mode" = "range" ]; then
-    range_arg="^${diff_base_arg} ${subject_sha}"
-else
-    range_arg="${diff_base_arg}..${subject_sha}"
-fi
+# Capture every commit in the range (or root-range, or single tip).
+# The shell expands $rev_list_args unquoted (as a list of words) so we
+# don't need bash arrays; the entire rest of the script stays POSIX.
+commit_list=$(cd "$tmp" && git rev-list $rev_list_args)
 
-# Scan the textual patches of every commit in the range for trailing
-# whitespace on lines that the patch adds (`+` lines, excluding `+++`
-# headers and `+++` /dev/null binary markers). This is the
-# patch-textual analogue of `git diff --check`'s trailing-whitespace
-# detection, but applied to every commit's contribution rather than
-# to the resulting tree.
-if ! diff_check_output=$(cd "$tmp" && git format-patch --stdout $range_arg 2>/dev/null \
-    | awk '/^Subject: / { in_patch = 1; next }
-           in_patch && /^\+\+\+ / { next }
-           /^\+[ \t]+$/ || /^\+[^+].*[ \t]$/ {
-               print NR": "$0
-               found = 1
-           }
-           END { exit (found ? 1 : 0) }' 2>&1); then
-    if [ "$diff_check_mode" = "range" ]; then
-        echo "CHECK=diff-check STATUS=FAIL"
-        echo "REASON=pushed range $diff_base_arg..$subject_sha introduced whitespace or conflict markers:"
-    else
-        echo "CHECK=diff-check STATUS=FAIL"
-        echo "REASON=subject commit introduced whitespace or conflict markers:"
+# Per-commit hygiene scan. For each commit, diff-tree --check emits
+# zero or more "<path>: <reason>." lines if Git's whitespace policy is
+# violated, and exits non-zero. We prefix each line with the commit
+# short SHA so failures are traceable back to a specific commit.
+diff_check_failed=0
+diff_check_output=""
+while IFS= read -r commit; do
+    [ -z "$commit" ] && continue
+    short=$(printf '%s' "$commit" | cut -c1-12)
+    # Capture both stdout and exit status. The 2>&1 merges stderr so
+    # Git's diagnostic lines ("warning: CRLF will be replaced by LF")
+    # are surfaced.
+    if ! single_commit_output=$(cd "$tmp" && git diff-tree \
+            --check \
+            --root \
+            -m \
+            --no-commit-id \
+            -r \
+            "$commit" 2>&1); then
+        # Build a header showing which commit caused the failure and
+        # the mode context, then concatenate Git's per-file output.
+        # When --root is in effect for the root commit, Git emits
+        # nothing on stderr in normal cases; the file list comes on
+        # stdout. When -m is in effect for a merge commit, Git emits
+        # one diff-tree block per parent; --check applies to each.
+        diff_check_output="${diff_check_output}commit ${short} (${range_mode}):
+${single_commit_output}
+"
+        diff_check_failed=1
     fi
+done << EOF
+$commit_list
+EOF
+
+if [ "$diff_check_failed" -ne 0 ]; then
+    echo "CHECK=diff-check STATUS=FAIL"
+    echo "REASON=${range_desc} introduced whitespace or conflict markers:"
     printf '%s\n' "$diff_check_output"
     gate_failed=1
 else
