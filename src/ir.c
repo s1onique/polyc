@@ -3001,12 +3001,25 @@ IrFunction *irLowerFunction(IrCtx *ctx, Ast *ast_func) {
          * func->return_value is the slot so RET sees a stable stack
          * location. The arrival location is stamped by
          * `irAssignAbiParamLocations` from `pool->sret_reg` /
-         * `pool->int_arg_regs[0]`. */
+         * `pool->int_arg_regs[0]`.
+         *
+         * ACT-POLYC-IR-BOUNDARY02: push the hidden-out-pointer arrive
+         * into fn->params so the post-pass can locate it via the
+         * IR_PARAM_KIND_HIDDEN_SRET scan. Before this, the post-pass
+         * silently skipped the hidden-out-pointer arrival (it walked
+         * fn->params, but the hidden arrive was never pushed), and the
+         * body - after the store->read forwarder rewrote `slot`
+         * references into `out_arrive` references - dereferenced an
+         * arrive whose loc.kind was still IR_LOC_NONE. Codegen then
+         * hit `irCgGetLoff` on an IR_VAL_PARAM without a slot binding,
+         * producing
+         *     ir-regalloc: no slot for var.id=N kind=4. */
         IrValue *out_arrive = irTmp(IR_TYPE_PTR, 8);
         out_arrive->kind = IR_VAL_PARAM;
         out_arrive->param_kind = IR_PARAM_KIND_HIDDEN_SRET;
         IrValue *out_slot = irTmp(IR_TYPE_PTR, 8);
         out_slot->kind = IR_VAL_LOCAL;
+        vecPush(func->params, out_arrive);
         irAddStackSpace(ctx, 8);
         irBlockAddInstr(ctx, irInstrNew(IR_STORE, out_slot, out_arrive, NULL));
         ir_return_var = out_slot;
@@ -3190,6 +3203,20 @@ void irAssignAbiParamLocations(IrFunction *fn, Ast *ast_func, IrRegPool *pool) {
             } else {
                 if (int_arg_idx < 8) int_arg_idx++;
             }
+            /* ACT-POLYC-IR-BOUNDARY02: by-value struct params push exactly
+             * one IR_VAL_LOCAL slot into fn->params (see irLowerFunction
+             * around line 2907). The fn_param_idx cursor must advance by
+             * 1 here too, otherwise a scalar param AFTER the struct
+             * reads the wrong fn->params slot - typically the struct's
+             * own IR_VAL_LOCAL, which fails the IR_VAL_PARAM guard and
+             * leaves the scalar's arrive at IR_LOC_NONE. That loc=NONE
+             * arrive then reaches irCgGetLoff in codegen after the
+             * store-forwarding pass rewrites slot-reads into
+             * arrive-reads, producing
+             *     ir-regalloc: no slot for var.id=N kind=4
+             * This was the principal regression introduced by
+             * f75259b's parameter-boundary extraction. */
+            fn_param_idx++;
             continue;
         }
         int idx = is_float ? float_arg_idx++ : int_arg_idx++;
@@ -3238,6 +3265,35 @@ void irAssignAbiParamLocations(IrFunction *fn, Ast *ast_func, IrRegPool *pool) {
                 }
             }
             fn_param_idx++;
+        }
+    }
+
+    /* ACT-POLYC-IR-BOUNDARY02: NOP the entry IR_STORE for every arrive
+     * that ended up at IR_LOC_NONE (stack-overflow param). The
+     * per-backend prologue (x86_64EmitSysvParamPrologue / aarch64's
+     * EmitParamPrologue / the JIT equivalents) is responsible for
+     * copying the overflow arg from the caller's incoming stack
+     * area into the matching frame slot, so the slot is the only
+     * queryable location. If the entry IR_STORE survived to the
+     * store->read forwarder, the body would be rewritten to read
+     * `arrive` directly - and `arrive` has no loff, so codegen
+     * panics with
+     *     ir-regalloc: no slot for var.id=N kind=4.
+     * Removing the entry IR_STORE here (BEFORE the basic-optimisations
+     * forwarder runs) keeps body references on the slot, restoring
+     * the pre-refactor invariant for overflow params. We only touch
+     * the entry block - normal stores live in body blocks and have
+     * nothing to do with this arrival binding. */
+    if (fn->entry_block) {
+        listForEach(fn->entry_block->instructions) {
+            IrInstr *instr = (IrInstr *)it->value;
+            if (instr->op == IR_NOP) continue;
+            if (instr->op != IR_STORE) continue;
+            if (!instr->r1) continue;
+            if (instr->r1->kind != IR_VAL_PARAM) continue;
+            if (instr->r1->loc.kind != IR_LOC_NONE) continue;
+            instr->op = IR_NOP;
+            instr->dst = instr->r1 = instr->r2 = NULL;
         }
     }
 }
