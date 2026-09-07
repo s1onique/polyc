@@ -1,0 +1,31 @@
+ACT-POLYC-IR-BRANCH-CONDITION01 — Comparison-result conservation (corrected)
+=============================================================================
+
+AC-09: Already-predicate comparison paths do not receive redundant
+       truthiness wrapping.
+
+control-01 if (x == 2):
+
+  pre-fix (from control/control-01-cmp-eq.dump.txt at ENTRY_HEAD):
+      cmp_eq %t5 i64 tmp, %t4 i64 tmp, 2 i64 const int  ; line 2
+      br     %t5 i64 tmp, bb3, bb4  ; line 2
+
+  post-fix (from after/control-01-cmp-eq.dump.txt at cbf726ed9399):
+      cmp_eq %t5 i64 tmp, %t4 i64 tmp, 2 i64 const int  ; line 2
+      br     %t5 i64 tmp, bb3, bb4  ; line 2
+
+  diff: byte-identical (the IR is unchanged).
+
+Forbidden post-fix shape (would fail AC-09):
+      cmp_eq %t5 i64 tmp, ...
+      cmp_ne %t6 i8 tmp, %t5 i64 tmp, 0 i8 const int  <- never seen
+      br     %t6 i8 tmp, bb3, bb4
+
+Also verified for red-04 (I64 arbitrary cmp_ne):
+  pre-fix:  cmp_ne %t4 i8 tmp, %p1 i64 param, 0 i8 const int
+            br     %t4 i8 tmp, bb3, bb4
+  post-fix: cmp_ne %t4 i8 tmp, %p1 i64 param, 0 i8 const int
+            br     %t4 i8 tmp, bb3, bb4
+  diff: byte-identical.
+
+AC-09 PASS: comparison result is not double-normalized.

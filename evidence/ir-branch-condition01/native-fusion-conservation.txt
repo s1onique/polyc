@@ -1,0 +1,18 @@
+ACT-POLYC-IR-BRANCH-CONDITION01 — Native fusion conservation
+============================================================
+
+The IR_CMP_BR fusion that the predecessor ACT-POLYC-IR-BOUNDARY03
+established must remain intact. AC-22 verifies that the
+post-fix IR for already-canonical comparisons (control-01
+if (x==2)) is byte-identical to the pre-fix IR.
+
+Verified in comparison-conservation.txt:
+  pre-fix  control-01: cmp_eq %t5 i64 tmp, ..., 2 i64 const int
+                       br     %t5 i64 tmp, bb3, bb4
+  post-fix control-01: cmp_eq %t5 i64 tmp, ..., 2 i64 const int
+                       br     %t5 i64 tmp, bb3, bb4
+
+  diff: byte-identical (other than the .ident hash line in the
+  emitted assembly; verified via diff -u ignoring .ident).
+
+AC-22 (IR_CMP_BR fusion input shape unchanged) PASS.

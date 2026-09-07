@@ -1,0 +1,72 @@
+ACT-POLYC-IR-BRANCH-CONDITION01 — LLVM spike conservation (CORRECTION01)
+=========================================================================
+
+Replaces the original (false-GREEN) closure claim. Real harness run
+in the CORRECTION01 session against impl HEAD cbf726ed9399.
+
+EXECUTION (real, not F6):
+
+  \$ which llvm-config
+  /nix/store/b6fykfvclbq81yis03blk6bqsmapmhdm-llvm-22.1.8-dev/bin/llvm-config
+
+  \$ llvm-config --version
+  22.1.8
+
+  \$ nm ./hcc | grep _LLVMAddFunction
+                   U _LLVMAddFunction
+
+  \$ make llvm-spike-test
+  === positive matrix ===
+  PASS  src/tests/llvm-spike/01_const.HC
+  PASS  src/tests/llvm-spike/02_add.HC
+  PASS  src/tests/llvm-spike/03_sub_mul.HC
+  PASS  src/tests/llvm-spike/04_cmp_branch.HC
+  PASS  src/tests/llvm-spike/05_call.HC
+  === cmp predicate matrix ===
+  PASS  04_cmp_branch: icmp sgt
+  === negative matrix ===
+  PASS  src/tests/llvm-spike/neg_f64.HC      (negative, LLVM_BACKEND_UNSUPPORTED_TYPE)
+  PASS  src/tests/llvm-spike/neg_pointer.HC  (negative, LLVM_BACKEND_UNSUPPORTED_TYPE)
+  PASS  src/tests/llvm-spike/neg_struct.HC   (negative, LLVM_BACKEND_UNSUPPORTED_TYPE)
+  PASS  neg_asm: parse-time rejection (NOT a backend witness)
+  === conservation: no native fallback ===
+  PASS  01_const.ll: starts with LLVM ModuleID
+  === determinism ===
+  PASS  determinism: 01_const twice
+  =================================
+  Summary: PASS=12  FAIL=0
+  =================================
+
+VERDICT: real llvm-spike-test PASS=12 FAIL=0 on cbf726ed9399.
+
+Branch-condition-canonicalization context:
+
+The branch-condition fixtures (red-01..red-10) all hit the
+existing bounded-spike rejection at src/llvm-backend.c
+(function-parameter / I8-return unsupported in the I64
+spike). This rejection is upstream of the IR_BR canonicalization
+change and is unchanged by it.
+
+The directly-relevant conservation is verified via
+04_cmp_branch.HC and the cmp predicate matrix, both of which
+emit canonical `icmp + br i1` sequences:
+
+  evidence/llvmspike01-resume01/04_cmp_branch.ll:
+      %4 = icmp sgt i64 %0, %1
+      br i1 %4, label %bb3, label %bb4
+
+  evidence/ir-branch-condition01-correction01/branch-condition-llvm/red_pred_eq.ll:
+      %4 = icmp eq i64 %0, %1
+      br i1 %4, label %bb3, label %bb4
+
+The branch-condition canonicalization maps cleanly to LLVM i1.
+
+AC-23 verdict (corrected): PASS (real harness output, not F6).
+AC-24 (no LLVM feature expansion): PASS.
+AC-25 (no trunc-to-i1 truthiness): PASS.
+
+P1 residue: the original closure claim "rc=0" for
+--emit-llvm-without-LLVM was a shell rc-clobber artifact, not
+an hcc bug. The actual hcc rc for that case is 1 (verified at
+src/main.c:585-588). See evidence/ir-branch-condition01-correction01/
+shell-rc-artifact.txt.

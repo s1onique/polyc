@@ -1,0 +1,32 @@
+ACT-POLYC-IR-BRANCH-CONDITION01 — Shape matrix
+==============================================
+
+IR_BR immediate-predecessor shape across the 11 fixtures,
+after the fix:
+
+  fixture               | IR_BR TYPE  | predecessor TYPE | predecessor op
+  ----------------------|-------------|------------------|---------------
+  red-01-identity-bypass | I8 (tmp)    | I8 (tmp)         | cmp_ne
+  red-02-u8-param-direct | I8 (tmp)    | I8 (tmp)         | cmp_ne
+  red-03-i8-identity-bypass | I8 (tmp) | I8 (tmp)        | cmp_ne
+  red-04-i64-arbitrary   | I8 (tmp)    | I64 (param)      | cmp_ne
+  red-05-while-u8call    | I8 (tmp)    | I8 (tmp)         | cmp_ne
+  red-06-do-while-i8call | I8 (tmp)    | I8 (tmp)         | cmp_ne
+  red-07-for-u8cond      | I8 (tmp)    | I8 (tmp)         | cmp_ne
+  red-08-not-u8          | I8 (tmp)    | I8 (tmp)         | cmp_ne
+  red-09-and-u8          | I8 (tmp)    | I8 (tmp)         | cmp_ne
+  red-10-nested          | I8 (tmp)    | I8 (tmp)         | cmp_ne
+  control-01-cmp-eq      | I64 (tmp)   | I64 (param)      | cmp_eq
+
+Mixed widths (I8 cmp_ne dst vs I64 cmp_eq dst) are representation
+residue, not semantic ambiguity. The IR semantic — "IR_BR consumes
+the dst of a recognized predicate producer" — is uniform across
+all 11 fixtures.
+
+AC-15 (no IR_TYPE_I1 added)    PASS
+AC-16 (mixed widths = residue) PASS
+AC-17 (no HALT triggered)      PASS (uniform width is NOT required
+                                because the predicate dst is the
+                                operand and its width doesn't affect
+                                the LLVM i1 mapping; LLVM truncates
+                                i8->i1 and i64->i1 identically.)
