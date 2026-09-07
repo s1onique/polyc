@@ -1,0 +1,54 @@
+ACT-POLYC-IR-BOUNDARY03 / Phase 0 RED witness
+LLVM input opcode shape across all comparison fixtures
+=====================================================
+
+Premise of ACT §10 (principal RED):
+    CURRENT  LLVM_INPUT_CONTAINS_IR_CMP_BR = YES
+    REQUIRED LLVM_INPUT_CONTAINS_IR_CMP_BR = NO
+
+Method:
+    1. hcc --emit-llvm <fixture> -o /tmp/<name>.ll   (real seam)
+    2. llvm-as /tmp/<name>.ll -o /tmp/<name>.bc      (LLVM verifier)
+    3. Walk the IR the LLVM backend received.
+       The LLVM backend walks the same IrProgram as --dump-ir
+       (both come from irLowerProgram; see pipeline-before.txt).
+       --dump-ir therefore witnesses the IR the LLVM backend sees.
+
+Per-fixture --dump-ir opcode summary (post basic opts):
+fixture=04_cmp_branch        dump-ir cmp_br_count=0 dump-ir cmp_count=2 dump-ir br_count=2 emit-llvm_rc=0 llvm-as_rc=0
+fixture=red_pred_eq          dump-ir cmp_br_count=0 dump-ir cmp_count=2 dump-ir br_count=2 emit-llvm_rc=0 llvm-as_rc=0
+fixture=red_pred_ne          dump-ir cmp_br_count=0 dump-ir cmp_count=2 dump-ir br_count=2 emit-llvm_rc=0 llvm-as_rc=0
+fixture=red_pred_slt         dump-ir cmp_br_count=0 dump-ir cmp_count=2 dump-ir br_count=2 emit-llvm_rc=0 llvm-as_rc=0
+fixture=red_pred_sle         dump-ir cmp_br_count=0 dump-ir cmp_count=2 dump-ir br_count=2 emit-llvm_rc=0 llvm-as_rc=0
+fixture=red_pred_sgt         dump-ir cmp_br_count=0 dump-ir cmp_count=2 dump-ir br_count=2 emit-llvm_rc=0 llvm-as_rc=0
+fixture=red_pred_sge         dump-ir cmp_br_count=0 dump-ir cmp_count=2 dump-ir br_count=2 emit-llvm_rc=0 llvm-as_rc=0
+
+RESULT
+    LLVM_INPUT_CONTAINS_IR_CMP_BR = NO  (zero across all seven fixtures)
+    LLVM_INPUT_CONTAINS_IR_ICMP   = YES (matches cmp_<kind> dump shapes)
+    LLVM_INPUT_CONTAINS_IR_BR     = YES (matches br lines)
+    llvm-as verifier: clean on all seven fixtures
+
+F4 / F13 INTERPRETATION
+    The premise of ACT §10 (LLVM receives IR after native fusion)
+    DOES NOT REPRODUCE in the current source. The LLVM dispatch
+    (main.c:561 -> irLowerProgram -> irBasicFunctionOptimisations)
+    does NOT call irFunctionPrepForCodeGen, and therefore does
+    NOT call irOptPinResultReg, and therefore does NOT create
+    IR_CMP_BR. The IR_CMP_BR switch arm at src/llvm-backend.c:610-636
+    is DEAD CODE in the current source.
+
+    This is consistent with:
+        - src/ir-types.h:140-150 ("an LLVM-style consumer does
+          not need to recognise IR_CMP_BR")
+        - the predecessor C1 ACT's analysis file
+          evidence/llvmspike01-resume01-correction01/red-1A.analysis.txt
+          which documented that RED-1A's literal claim does not
+          reproduce at the --dump-ir snapshot.
+
+    The boundary is already mechanically enforced. What is left
+    is dead code that should be removed (per ACT §11: "preserve
+    boundary by removing the dead arm"), or, equivalently, an
+    explicit boundary assertion (per ACT §25) so the dead arm
+    cannot silently re-activate if some future refactor moves
+    the fusion pass into the shared pipeline.

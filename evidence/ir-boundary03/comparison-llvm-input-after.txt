@@ -1,0 +1,43 @@
+ACT-POLYC-IR-BOUNDARY03 / Post-implementation LLVM input shape
+=============================================================
+
+After commit IMPLEMENTATION_HEAD = dab8cc7, the LLVM dispatch
+still receives canonical IR_ICMP + IR_BR (no IR_CMP_BR). The
+boundary-violation diagnostic at src/llvm-backend.c:610-637
+fires only if IR_CMP_BR is presented; the existing suite
+does not present it.
+
+Test:
+    Per-fixture --dump-ir opcode histogram (same method as
+    pre-implementation red-llvm-input-shape.txt):
+fixture=04_cmp_branch        dump-ir cmp_br_count=0 dump-ir cmp_count=2 dump-ir br_count=2
+fixture=red_pred_eq          dump-ir cmp_br_count=0 dump-ir cmp_count=2 dump-ir br_count=2
+fixture=red_pred_ne          dump-ir cmp_br_count=0 dump-ir cmp_count=2 dump-ir br_count=2
+fixture=red_pred_slt         dump-ir cmp_br_count=0 dump-ir cmp_count=2 dump-ir br_count=2
+fixture=red_pred_sle         dump-ir cmp_br_count=0 dump-ir cmp_count=2 dump-ir br_count=2
+fixture=red_pred_sgt         dump-ir cmp_br_count=0 dump-ir cmp_count=2 dump-ir br_count=2
+fixture=red_pred_sge         dump-ir cmp_br_count=0 dump-ir cmp_count=2 dump-ir br_count=2
+
+RESULT
+    LLVM_INPUT_IR_CMP_BR_COUNT = 0    (AC-06 PASS)
+    LLVM_INPUT_IR_ICMP_COUNT   > 0    (AC-07 PASS)
+    LLVM_INPUT_IR_BR_COUNT     > 0    (AC-07 PASS)
+    Native AOT/JIT path: unchanged (AOT_CMP_BR_AFTER=YES)
+    --dump-ir: still canonical and target-neutral (AC-09 PASS)
+    Native-only preparation: still below the boundary
+        (AC-10 PASS)
+
+Boundary-assertion smoke check:
+    The diagnostic at src/llvm-backend.c:610-637 is reached
+    only if IR_CMP_BR is presented. No test fixture presents
+    IR_CMP_BR (because no code path produces it in the LLVM
+    dispatch). The assertion therefore does not fire during
+    the existing test matrix. A direct probe that synthetically
+    produces IR_CMP_BR for the LLVM backend is OUT OF SCOPE
+    here; it would require test-only IR injection machinery
+    that BOUNDARY03 does not author.
+
+    The existing llvm-spike-test (12/0 PASS) confirms no
+    regression. The boundary-assertion is a passive guard
+    that will fire if a future refactor accidentally moves
+    native preparation above the neutral boundary.
