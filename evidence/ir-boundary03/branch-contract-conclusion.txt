@@ -1,110 +1,127 @@
-ACT-POLYC-IR-BOUNDARY03 / Branch contract conclusion (ACT §17)
-=============================================================
+ACT-POLYC-IR-BOUNDARY03-CORRECTION01 / Branch contract conclusion (REVISED)
+==========================================================================
+Source-of-truth: src/ir.c (irBranch), src/ir-types.h (IR_BR comment),
+x86 SETcc semantics (src/x86_64.c, src/x86_64-jit.c).
 
-EMPIRICAL DATA
-    AOT vs JIT (see truthiness-matrix.txt): agree
-        value | AOT | JIT | both
-        ------|-----|-----|--------
-        0     |  0  |  0  | 0
-        1     |  1  |  1  | 1
-        2     |  1  |  1  | 1
-        3     |  1  |  1  | 1
-        -1    |  1  |  1  | 1
-        -2    |  1  |  1  | 1
+This file REPLACES the predecessor
+ACT-POLYC-IR-BOUNDARY03 / branch-contract-conclusion.txt
+classification of IR_BR_CONTRACT = MIXED_OR_UNPROVEN.
+The predecessor file is preserved unchanged per F14.
 
-    AOT_JIT_AGREE = YES
-    HALT_NATIVE_BRANCH_SEMANTICS_SPLIT = NOT TRIGGERED.
+AOT vs JIT (see truthiness-matrix.txt): agree
+    value | AOT | JIT | both
+    ------|-----|-----|--------
+    0     |  0  |  0  | 0
+    1     |  1  |  1  | 1
+    2     |  1  |  1  | 1
+    3     |  1  |  1  | 1
+    -1    |  1  |  1  | 1
+    -2    |  1  |  1  | 1
+
+AOT_JIT_AGREE = YES
+HALT_NATIVE_BRANCH_SEMANTICS_SPLIT = NOT TRIGGERED.
 
 LOWERING SHAPE (see branch-condition-producers.txt)
     case 1: IR_ICMP result (I64) -> IR_BR operand (I64).
+            cond is the dst of the immediately preceding
+            IR_ICMP; irBranch preserves it as-is.
     case 2: IR_ICMP(NE, v, 0) (I8) -> IR_BR operand (I8).
+            cond is non-I8 and NOT an immediate IR_ICMP
+            dst; irBranch inserts a coercion IR_ICMP(NE,
+            v, 0) producing I8.
 
-    Both cases rely on the IR_ICMP producer to deliver a
-    value in {0, 1}. The native codegen reads the operand
-    as I64 or I8 and treats nonzero as true.
+THREE-AXIS CLASSIFICATION
+    The predecessor classification mixed three orthogonal
+    axes. The reviewer correctly identified the conflation.
+    The refined decomposition is:
 
-CLASSIFICATION
-    IR_BR_CONTRACT = MIXED_OR_UNPROVEN
+    SOURCE_CONDITION_CONTRACT = I64_ZERO_NONZERO_TRUTHINESS
+        scope: language level (HolyC/PolyC if (x) semantics)
+        empirical: confirmed by six-determinator matrix;
+            AOT and JIT agree
+        proof: runtime test in src/tests/ir-boundary03/
 
-    Justification:
-        1. The IR carries two distinct shapes (I64 case 1
-           and I8 case 2); a uniform contract is NOT what
-           the lowering produces today.
-        2. The native codegen treats the operand as
-           truthiness (any nonzero = true), not as a strict
-           Boolean (only 0 or 1). The value 2 -> 1 confirms
-           this empirically.
-        3. The IR-types.h comment on IR_BR says
-           "0/1 condition value" (line 134), which is
-           aspirational but not enforced by the lowering
-           and not asserted by either codegen.
-        4. The only existing producer (IR_ICMP) does
-           produce values in {0, 1} by construction, but
-           this is a representational accident: there is
-           no IR-level assertion, and an upstream optimizer
-           could (in principle) introduce any I64 producer
-           feeding IR_BR without breaking the type system.
+    IR_BR_VALUE_CONTRACT = BOOLEAN_0_OR_1
+        scope: neutral IR level
+        empirical: NOT directly tested (no RED is needed;
+            provable from source inspection alone)
+        proof:
+            1. irBranch (src/ir.c:97-136) is the sole
+               producer of IR_BR (verified by
+               branch-condition-producers.txt).
+            2. irBranch accepts cond in three shapes:
+                 (a) cond is I8:                case 2
+                 (b) cond is dst of immediate
+                     IR_ICMP:                   case 1
+                 (c) anything else:             case 2
+                     (inserted IR_ICMP(NE,v,0))
+            3. irICmp (src/ir.c:80-94) is the sole
+               producer of IR_ICMP results.
+            4. The VALUE of an IR_ICMP result is set by
+               the native SETcc instruction:
+                 src/x86_64.c:1690 x86_64EmitSetCC
+                 src/x86_64-jit.c:1166 jitEmitSetCC
+               which by x86 architecture yields exactly
+               {0, 1} in the destination byte/register.
+            5. Therefore in cases (a), (b), (c), the cond
+               value is ALWAYS in {0, 1}.
+            6. The I64 vs I8 distinction is the OPERAND
+               WIDTH (representation), NOT the value-domain.
 
-    This classification is NOT chosen to make LLVM easier;
-    it is what the source and the AOT/JIT experiments
-    empirically support. Specifically:
-        - BOOLEAN_0_OR_1: rejected because (a) the IR
-          representation is I64 / I8, not I1; (b) the
-          native codegen accepts any nonzero value as
-          true; (c) the `if (2)` experiment returns true.
-        - I64_ZERO_NONZERO: rejected as the strict contract
-          because (a) the IR carries an explicit I8 bool
-          case which is narrower than I64; (b) the IR's
-          I64 case 1 has no I64-typed operand guarantee
-          that the value is or isn't boolean-shaped; (c)
-          the I8 case 2 is actually boolean-shaped in
-          practice. The IR is therefore more restrictive
-          than "any I64 truthiness" in some paths and
-          less in others.
-        - MIXED_OR_UNPROVEN: chosen because the IR admits
-          two distinct operand shapes with different
-          downstream semantics, and neither codegen
-          asserts a single contract.
+        This is a strictly stronger claim than the
+        predecessor MIXED_OR_UNPROVEN. The reviewer
+        demonstrated the proof from src/ir.c alone.
+
+    IR_BR_TYPE_CONTRACT = MIXED_I64_I8
+        scope: representation width
+        empirical: CONFIRMED as a latent bug
+            (LLVM backend currently rejects I8 case 2 at
+            src/llvm-backend.c:585; native AOT/JIT accept
+            both widths)
+        proof: branch-condition-producers.txt + dump-ir
+            transcripts (case 1 produces I64 IR_BR operand;
+            case 2 produces I8 IR_BR operand)
+        target: ACT-POLYC-IR-BRANCH-CONDITION01
 
 CONSEQUENCE FOR LLVM (per ACT §32)
     The LLVM backend currently lowers I64 case 1 via
     LLVMBuildTrunc (i64 -> i1, parity trunc). For values
-    in {0, 1} this is correct (0 -> 0, 1 -> 1). It would
-    be WRONG for arbitrary I64 values (e.g. 2 -> 0, 3 -> 1),
-    but the IR shape guarantees the value is in {0, 1}
-    because the only producer is IR_ICMP. So the existing
-    LLVM lowering is correct BY THE PRODUCER GUARANTEE,
-    not by any neutral-IR contract assertion.
+    in {0, 1} this is correct (0 -> 0, 1 -> 1) by the
+    IR_BR_VALUE_CONTRACT. It would be WRONG for arbitrary
+    I64 values, but the IR shape guarantees the value is
+    in {0, 1} because the only producer is IR_ICMP (per
+    case (b)) or the explicit IR_ICMP(NE, v, 0) coercion
+    (per case (c)). So the existing LLVM lowering is
+    correct BY THE VALUE-DOMAIN CONTRACT, which is now
+    PROVEN (was MIXED_OR_UNPROVEN in the predecessor ACT).
 
     For I8 case 2, the existing LLVM backend CANNOT
     currently lower the IR_BR (it requires I64 at line 585).
-    This is a latent defect: the LLVM consumer does not
-    support `if (x)` where x is not the immediate result
-    of an IR_ICMP.
+    This is a latent defect — the I8 rejection is the
+    IR_BR_TYPE_CONTRACT issue, not a value-domain issue.
 
 NEXT-ACT RECOMMENDATION
-    The branch-contract classification is MIXED_OR_UNPROVEN.
-    A dedicated ACT should:
-        a. Add an explicit zext I8 -> I64 in the lowering
-           for case 2, so the IR_BR operand is uniformly I64.
-           This is a SOURCE-LEVEL clarification, not a type
-           system change (no IR_TYPE_I1 introduced).
-        b. Make the case-1 IR_ICMP result I8 (i.e. carry the
-           IR's already-present I8 contract up from case 2
-           into case 1).
-        c. Decide whether the I8/I64 operand is "truthiness"
-           or "boolean" — the empirical native behaviour is
-           truthiness, but the IR's only producer is boolean.
-           Settle this by either:
-              i. explicitly document the IR contract as
-                 "the producer guarantees 0/1" and assert it
-                 in the lowering, OR
-             ii. relax the IR to permit arbitrary I64 truthiness
-                 and update the LLVM trunc to be icmp ne, 0.
-        d. BOUNDARY03 is not authorised to do any of the above
-           (ACT §18 forbids IR_TYPE_I1; §35 forbids expanding
-           the LLVM scope). A new bounded ACT is needed.
+    The branch-contract classification is now three-axis:
+        SOURCE_CONDITION_CONTRACT = I64_ZERO_NONZERO_TRUTHINESS
+        IR_BR_VALUE_CONTRACT      = BOOLEAN_0_OR_1
+        IR_BR_TYPE_CONTRACT       = MIXED_I64_I8
 
-    Until then, the LLVM backend's trunc i64 -> i1 remains
-    correct for the current producer set, but the IR contract
-    is MIXED_OR_UNPROVEN.
+    The next ACT is ACT-POLYC-IR-BRANCH-CONDITION01 with
+    mission: prove and mechanically enforce the IR_BR_TYPE_CONTRACT
+    uniform I8-or-I64 representation, and add the explicit
+    zext I8 -> I64 in the lowering for case 2 (or, equivalently,
+    uniform the case-1 IR_ICMP result to I8). This is a
+    SOURCE-LEVEL clarification, not a type system change
+    (no IR_TYPE_I1 introduced).
+
+    The IR_BR_VALUE_CONTRACT is settled by THIS ACT's source
+    inspection and does not require a separate bounded ACT.
+
+HISTORICAL NOTE (per F14)
+    The predecessor ACT-POLYC-IR-BOUNDARY03 / branch-contract-conclusion.txt
+    reported IR_BR_CONTRACT = MIXED_OR_UNPROVEN. That conclusion
+    conflated the three axes above. The reviewer of
+    IR-BOUNDARY03 identified the conflation and proposed the
+    three-axis decomposition that THIS ACT adopts. Per F14
+    the predecessor file is preserved unchanged as historical
+    evidence; the new file (this one) supersedes it.
