@@ -1,0 +1,40 @@
+Tests 5 and 6: merge commit with trailing WS in conflict resolution.
+
+Setup: branchA and branchB both edit conflict.txt on the same line,
+producing a real merge conflict. The conflict is resolved with a
+line containing trailing whitespace.
+
+The merge commit M has tree state that, when diffed against parent
+A1 (branchA), is identical at the byte level to M_base+A1 (because
+git auto-resolved the conflict and accepted "resolved line "). The
+trailing whitespace is only visible when diffed against the other
+parent (B1).
+
+Test 5: WITHOUT -m flag (CORRECTION01 behavior would have been
+similar: format-patch does not emit the merge commit at all).
+
+  $ git diff-tree --check --root --no-commit-id -r M
+  (no output)
+  EXIT: 0
+
+The merge commit's whitespace is INVISIBLE. This is the
+CORRECTION01 false-GREEN path that --check-on-merge-without-m
+demonstrates. format-patch omits merges entirely, so the
+CORRECTION01 implementation never even saw the merge commit.
+
+Test 6: WITH -m flag (CORRECTION02 implementation).
+
+  $ git diff-tree --check --root -m --no-commit-id -r M
+  conflict.txt:1: trailing whitespace.
+  +resolved line
+  conflict.txt:1: trailing whitespace.
+  +resolved line
+  EXIT: 2
+
+The merge commit is now diffed against BOTH parents. Both diff
+paths produce a "trailing whitespace" line, so the gate correctly
+fails. The duplicate output reflects that -m produces one
+diff-tree block per parent.
+
+This is the CORRECTION02 P0-2 fix: `git diff-tree --check -m`
+inspects every parent of a merge commit.

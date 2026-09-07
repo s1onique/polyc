@@ -1,0 +1,24 @@
+Test 4: new-branch (root-range mode) with trailing WS in N1.
+
+Setup (Fixture 4 on /tmp/polyc-c02-test/):
+
+  N0 = clean bar.txt = "clean\n"
+  N1 = bar.txt = "dirty \n" (trailing WS)
+  N2 = bar.txt = "clean\n" (overwrites the WS)
+
+GPUSH-6 in root-range mode (triggered when gate-push.sh is called
+with second arg = 0000...0000) iterates every commit reachable
+from the new-branch tip N2 via `git rev-list --reverse NB`. The
+per-commit scan catches N1's trailing WS even though N2 itself is
+clean:
+
+  FAIL commit 8c15c352075c (N1_with_WS):
+    bar.txt:1: trailing whitespace.
+
+EXIT: 1  (expected: 1)
+
+This is the CORRECTION01 false-GREEN that the reviewer flagged:
+CORRECTION01 mapped the new-branch sentinel to tip-only mode,
+which would inspect only N2 and miss N1's WS. CORRECTION02
+introduces explicit root-range mode that walks the entire local
+history.

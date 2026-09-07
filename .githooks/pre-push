@@ -63,16 +63,21 @@ if [ -z "$shas_to_check" ]; then
     exit 0
 fi
 
-# Run gate-push.sh against each SHA, passing the remote_sha as the
-# optional second argument so the diff-hygiene phase inspects the
-# entire pushed range, not just the tip commit.
+# Run gate-push.sh against each unique SHA, passing the remote_sha as
+# the optional second argument so the diff-hygiene phase inspects the
+# correct range:
+#
+#   * real remote commit  ->  range mode (base..local)
+#   * new-branch sentinel  ->  root-range mode (full local history)
+#   * no second arg        ->  tip-only mode (local^..local, manual use)
 #
 # Pairing: we re-read stdin_lines here to pair each local_sha with its
-# remote_sha, skipping duplicates we already validated and skipping
-# new-branch (remote_sha=0000...0) and delete (local_sha=0000...0)
-# entries (those are filtered earlier in this hook).
+# remote_sha. We also skip duplicates we already validated, because
+# Git's stdin contract can list the same (local_ref, local_sha) pair
+# across multiple hook invocations or with different remote_refs.
 #
-# See ACT-POLYC-FACTORY-PUSH-HERMETIC01-CORRECTION01.
+# See ACT-POLYC-FACTORY-PUSH-HERMETIC01-CORRECTION02.
+seen_local_shas=""
 while IFS=' ' read -r local_ref local_sha remote_ref remote_sha; do
     [ -z "$local_sha" ] && continue
     case "$local_sha" in
@@ -82,14 +87,28 @@ while IFS=' ' read -r local_ref local_sha remote_ref remote_sha; do
         [0-9a-f]*) ;;
         *) continue ;;
     esac
+
+    # De-duplicate: do not re-run gate-push.sh for a local_sha we
+    # already validated. Git's hook contract does not forbid repeated
+    # (local_ref, local_sha) lines, but each full push-gate run is
+    # expensive (build + test + diff-check), so we honor the first
+    # sighting and ignore subsequent ones.
+    case " $seen_local_shas " in
+        *" $local_sha "*) continue ;;
+    esac
+    seen_local_shas="$seen_local_shas $local_sha"
+
     case "$remote_sha" in
         0000000000000000000000000000000000000000)
-            # New branch: the entire local tip's tree is "added".
-            # gate-push.sh's GPUSH-6 tip-only fallback covers this
-            # case correctly (parent_arg falls back to empty tree).
-            remote_arg=""
+            # New branch: the entire local tip's history is "added"
+            # by the push. We pass the new-branch sentinel unchanged
+            # to gate-push.sh so its GPUSH-6 enters root-range mode
+            # (inspects every commit reachable from local_sha).
+            remote_arg="$remote_sha"
             ;;
         *)
+            # Existing branch: inspect only the commits added since
+            # the remote side. Range mode.
             remote_arg="$remote_sha"
             ;;
     esac

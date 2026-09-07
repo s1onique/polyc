@@ -1,0 +1,20 @@
+Test 8: space-before-tab in initial indent of an added line.
+
+Setup: a commit that adds a file whose first line begins with a
+literal " " followed by a tab.
+
+  $ git diff-tree --check --root -m --no-commit-id -r SP
+  indent.txt:1: space before tab in indent.
+  + \tindented with space-tab
+  EXIT: 2
+
+This is also part of the CORRECTION02 P1 fix. Git's --check
+policy covers space-before-tab in addition to trailing
+whitespace. The CORRECTION01 awk scanner happened to match this
+case (the regex /^\+[ \t]+$/ catches a "+\t" line), but it was
+incidental rather than principled.
+
+With the diff-tree primitive, ALL of Git's documented --check
+rules apply uniformly, including any future additions to
+core.whitespace configuration. We do not reimplement Git's
+whitespace policy; we call Git.
