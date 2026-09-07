@@ -1,0 +1,86 @@
+i8 Identity(%p1 i8 param) {
+  bb1 -> predecessors:  {}  successors: {2}
+    store    %l2 i8 local, %p1 i8 param  ; line 1
+    alloca   %t3 i8 tmp, 1 i8 const int  ; line 1
+    zext     %t4 i64 tmp, %l2 i8 local  ; line 1
+    store    %t3 i8 tmp, %t4 i64 tmp  ; line 1
+    jmp      bb2  ; line 1
+
+  bb2 -> predecessors: {1}  successors:  {}
+    load     %t5 i8 tmp, %t3 i8 tmp  ; line 1
+    ret      %t5 i8 tmp  ; line 1
+}
+
+===== After basic optimisations =====
+i8 Identity(%p1 i8 param) {
+  bb1 -> predecessors:  {}  successors: {1}
+    store    %l2 i8 local, %p1 i8 param  ; line 1
+    zext     %t4 i64 tmp, %l2 i8 local  ; line 1
+    ret      %t4 i64 tmp  ; line 1
+}
+
+i8 FirstPositive(%p6 i8 param) {
+  bb3 -> predecessors:  {}  successors: {5}
+    store    %l7 i8 local, %p6 i8 param  ; line 3
+    alloca   %t8 i8 tmp, 1 i8 const int  ; line 3
+    store    %l9 i8 local, 0 i8 const int  ; line 4
+    jmp      bb5  ; line 8
+
+  bb5 -> predecessors: {3, 9}  successors: {6, 7}
+    zext     %t11 i64 tmp, %l7 i8 local  ; line 5
+    arg       %t11 i64 tmp
+    call     %t10 i8 tmp, Identity  ; line 5
+    br       %t10 i8 tmp, bb6, bb7  ; line 5
+
+  bb6 -> predecessors: {5}  successors: {8, 9}
+    zext     %t12 i64 tmp, %l9 i8 local  ; line 6
+    cmp_eq   %t13 i64 tmp, %t12 i64 tmp, 10 i64 const int  ; line 6
+    br       %t13 i64 tmp, bb8, bb9  ; line 6
+
+  bb8 -> predecessors: {6}  successors: {7}
+    jmp      bb7  ; line 6
+
+  bb9 -> predecessors: {6}  successors: {5}
+    zext     %t14 i64 tmp, %l9 i8 local  ; line 7
+    iadd     %t15 i64 tmp, %t14 i64 tmp, 1 i64 const int  ; line 7
+    trunc    %l9 i8 local, %t15 i64 tmp  ; line 7
+    jmp      bb5  ; line 7
+
+  bb7 -> predecessors: {5, 8}  successors: {4}
+    zext     %t17 i64 tmp, %l9 i8 local  ; line 9
+    store    %t8 i8 tmp, %t17 i64 tmp  ; line 9
+    jmp      bb4  ; line 9
+
+  bb4 -> predecessors: {7}  successors:  {}
+    load     %t18 i8 tmp, %t8 i8 tmp  ; line 9
+    ret      %t18 i8 tmp  ; line 9
+}
+
+===== After basic optimisations =====
+i8 FirstPositive(%p6 i8 param) {
+  bb3 -> predecessors:  {}  successors: {5}
+    store    %l7 i8 local, %p6 i8 param  ; line 3
+    store    %l9 i8 local, 0 i8 const int  ; line 4
+    jmp      bb5  ; line 8
+
+  bb5 -> predecessors: {3, 9}  successors: {6, 7}
+    zext     %t11 i64 tmp, %l7 i8 local  ; line 5
+    arg       %t11 i64 tmp
+    call     %t10 i8 tmp, Identity  ; line 5
+    br       %t10 i8 tmp, bb6, bb7  ; line 5
+
+  bb6 -> predecessors: {5}  successors: {9, 7}
+    zext     %t12 i64 tmp, %l9 i8 local  ; line 6
+    cmp_eq   %t13 i64 tmp, %t12 i64 tmp, 10 i64 const int  ; line 6
+    br       %t13 i64 tmp, bb7, bb9  ; line 6
+
+  bb9 -> predecessors: {6}  successors: {5}
+    zext     %t14 i64 tmp, %l9 i8 local  ; line 7
+    iadd     %t15 i64 tmp, %t14 i64 tmp, 1 i64 const int  ; line 7
+    trunc    %l9 i8 local, %t15 i64 tmp  ; line 7
+    jmp      bb5  ; line 7
+
+  bb7 -> predecessors: {5, 6}  successors: {7}
+    zext     %t17 i64 tmp, %l9 i8 local  ; line 9
+    ret      %t17 i64 tmp  ; line 9
+}

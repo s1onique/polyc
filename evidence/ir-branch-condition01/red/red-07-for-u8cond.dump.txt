@@ -1,0 +1,63 @@
+i8 CountUpTo(%p1 i8 param) {
+  bb1 -> predecessors:  {}  successors: {3}
+    store    %l2 i8 local, %p1 i8 param  ; line 1
+    alloca   %t3 i8 tmp, 1 i8 const int  ; line 1
+    store    %l5 i8 local, 0 i8 const int  ; line 3
+    store    %l4 i8 local, 0 i8 const int  ; line 4
+    jmp      bb3  ; line 4
+
+  bb3 -> predecessors: {1, 5}  successors: {4, 6}
+    zext     %t6 i64 tmp, %l4 i8 local  ; line 4
+    zext     %t7 i64 tmp, %l2 i8 local  ; line 4
+    cmp_lt   %t8 i64 tmp, %t6 i64 tmp, %t7 i64 tmp  ; line 4
+    br       %t8 i64 tmp, bb4, bb6  ; line 4
+
+  bb4 -> predecessors: {3}  successors: {5}
+    zext     %t9 i64 tmp, %l5 i8 local  ; line 5
+    iadd     %t10 i64 tmp, %t9 i64 tmp, 1 i64 const int  ; line 5
+    trunc    %l5 i8 local, %t10 i64 tmp  ; line 5
+    jmp      bb5  ; line 5
+
+  bb5 -> predecessors: {4}  successors: {3}
+    load     %t12 i8 tmp, %l4 i8 local  ; line 4
+    iadd     %t13 i8 tmp, %t12 i8 tmp, 1 i8 const int  ; line 4
+    store    %l4 i8 local, %t13 i8 tmp  ; line 4
+    jmp      bb3  ; line 4
+
+  bb6 -> predecessors: {3}  successors: {2}
+    zext     %t14 i64 tmp, %l5 i8 local  ; line 7
+    store    %t3 i8 tmp, %t14 i64 tmp  ; line 7
+    jmp      bb2  ; line 7
+
+  bb2 -> predecessors: {6}  successors:  {}
+    load     %t15 i8 tmp, %t3 i8 tmp  ; line 7
+    ret      %t15 i8 tmp  ; line 7
+}
+
+===== After basic optimisations =====
+i8 CountUpTo(%p1 i8 param) {
+  bb1 -> predecessors:  {}  successors: {3}
+    store    %l2 i8 local, %p1 i8 param  ; line 1
+    store    %l5 i8 local, 0 i8 const int  ; line 3
+    store    %l4 i8 local, 0 i8 const int  ; line 4
+    jmp      bb3  ; line 4
+
+  bb3 -> predecessors: {1, 4}  successors: {4, 6}
+    zext     %t6 i64 tmp, %l4 i8 local  ; line 4
+    zext     %t7 i64 tmp, %l2 i8 local  ; line 4
+    cmp_lt   %t8 i64 tmp, %t6 i64 tmp, %t7 i64 tmp  ; line 4
+    br       %t8 i64 tmp, bb4, bb6  ; line 4
+
+  bb4 -> predecessors: {3}  successors: {4}
+    zext     %t9 i64 tmp, %l5 i8 local  ; line 5
+    iadd     %t10 i64 tmp, %t9 i64 tmp, 1 i64 const int  ; line 5
+    trunc    %l5 i8 local, %t10 i64 tmp  ; line 5
+    load     %t12 i8 tmp, %l4 i8 local  ; line 4
+    iadd     %t13 i8 tmp, %t12 i8 tmp, 1 i8 const int  ; line 4
+    store    %l4 i8 local, %t13 i8 tmp  ; line 4
+    jmp      bb3  ; line 4
+
+  bb6 -> predecessors: {3}  successors: {6}
+    zext     %t14 i64 tmp, %l5 i8 local  ; line 7
+    ret      %t14 i64 tmp  ; line 7
+}

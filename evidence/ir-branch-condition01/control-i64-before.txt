@@ -1,0 +1,47 @@
+ACT-POLYC-IR-BRANCH-CONDITION01 — Control RED: I64 truthiness path
+ENTRY_HEAD = 774602a966584b34b355ec00e5f63a088f84164c
+
+Fixture:
+    I64 TestI64(I64 x) {
+        if (x) return 1;
+        return 0;
+    }
+
+Captured via:
+    ./hcc --install-dir=build/hermetic-prefix --dump-ir \
+        evidence/ir-branch-condition01/red/red-04-i64-arbitrary.HC
+        > evidence/ir-branch-condition01/red/red-04-i64-arbitrary.dump.txt
+
+Observed IR (after basic optimisations):
+
+    i64 TestI64(%p1 i64 param) {
+      bb1 -> predecessors:  {}  successors: {3, 4}
+        store    %l2 i64 local, %p1 i64 param  ; line 1
+        alloca   %t3 i64 tmp, 8 i64 const int  ; line 1
+        cmp_ne   %t4 i8 tmp, %p1 i64 param, 0 i8 const int  ; line 3
+        br       %t4 i8 tmp, bb3, bb4  ; line 3
+
+      bb3 -> predecessors: {1}  successors: {2}
+        store    %t3 i64 tmp, 1 i64 const int  ; line 2
+        jmp      bb2  ; line 2
+
+      bb4 -> predecessors: {1}  successors: {2}
+        store    %t3 i64 tmp, 0 i64 const int  ; line 3
+        jmp      bb2  ; line 3
+
+      bb2 -> predecessors: {3, 4}  successors:  {}
+        load     %t6 i64 tmp, %t3 i64 tmp  ; line 3
+        ret      %t6 i64 tmp  ; line 3
+    }
+
+CLASSIFICATION (per §14):
+
+  I64_TRUTHINESS_ALREADY_NORMALIZED = YES
+  Shape: cmp_ne + br (one compare, one branch, NO redundant wrapping).
+  This is the canonical "non-I8 type" path that goes through the
+  existing src/ir.c:107-122 normalization block and produces a
+  IR_TYPE_I8 predicate.
+
+  Required post-fix shape: same single cmp_ne + br, OR (acceptable
+  under §42) the predicate is a fresh IR_ICMP with the explicit
+  "!= 0" comparison. Both are 1-compare, 1-branch structures.

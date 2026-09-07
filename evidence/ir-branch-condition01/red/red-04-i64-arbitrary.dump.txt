@@ -1,0 +1,39 @@
+i64 TestI64(%p1 i64 param) {
+  bb1 -> predecessors:  {}  successors: {3, 4}
+    store    %l2 i64 local, %p1 i64 param  ; line 1
+    alloca   %t3 i64 tmp, 8 i64 const int  ; line 1
+    cmp_ne   %t4 i8 tmp, %l2 i64 local, 0 i8 const int  ; line 3
+    br       %t4 i8 tmp, bb3, bb4  ; line 3
+
+  bb3 -> predecessors: {1}  successors: {2}
+    store    %t3 i64 tmp, 1 i64 const int  ; line 2
+    jmp      bb2  ; line 2
+
+  bb4 -> predecessors: {1}  successors: {2}
+    store    %t3 i64 tmp, 0 i64 const int  ; line 3
+    jmp      bb2  ; line 3
+
+  bb2 -> predecessors: {3, 4}  successors:  {}
+    load     %t5 i64 tmp, %t3 i64 tmp  ; line 3
+    ret      %t5 i64 tmp  ; line 3
+}
+
+===== After basic optimisations =====
+i64 TestI64(%p1 i64 param) {
+  bb1 -> predecessors:  {}  successors: {3, 4}
+    alloca   %t3 i64 tmp, 8 i64 const int  ; line 1
+    cmp_ne   %t4 i8 tmp, %p1 i64 param, 0 i8 const int  ; line 3
+    br       %t4 i8 tmp, bb3, bb4  ; line 3
+
+  bb3 -> predecessors: {1}  successors: {2}
+    store    %t3 i64 tmp, 1 i64 const int  ; line 2
+    jmp      bb2  ; line 2
+
+  bb4 -> predecessors: {1}  successors: {2}
+    store    %t3 i64 tmp, 0 i64 const int  ; line 3
+    jmp      bb2  ; line 3
+
+  bb2 -> predecessors: {3, 4}  successors:  {}
+    load     %t5 i64 tmp, %t3 i64 tmp  ; line 3
+    ret      %t5 i64 tmp  ; line 3
+}

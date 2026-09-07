@@ -40,3 +40,15 @@ build-x86
 # and `nix shell nixpkgs#llvmPackages_22.llvm.dev`. Never commit
 # absolute Nix store paths into the repository.
 .llvm-shim
+
+# ACT-POLYC-IR-BRANCH-CONDITION01: emitted-assembly witnesses
+# captured verbatim under evidence/ for AC-22/AC-34/AC-35. The blanket
+# *.s rule above would otherwise silently drop them. List each file
+# explicitly (git's negation rules are order-dependent; a directory-
+# level negation after a *.s rule is not sufficient in this version).
+!evidence/ir-branch-condition01/emit/red-01-x86_64.s
+!evidence/ir-branch-condition01/emit/red-01-aarch64.s
+!evidence/ir-branch-condition01/emit/red-03-i8-bypass-x86_64.s
+!evidence/ir-branch-condition01/emit/red-03-i8-bypass-aarch64.s
+!evidence/ir-branch-condition01/emit/control-01-cmp-eq-x86_64.s
+!evidence/ir-branch-condition01/emit/control-01-cmp-eq-aarch64.s

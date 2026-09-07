@@ -1,0 +1,90 @@
+ACT-POLYC-IR-BRANCH-CONDITION01 — Phase 0 recon
+ENTRY_HEAD = 774602a966584b34b355ec00e5f63a088f84164c
+Branch = main
+Worktree = clean
+
+Mechanical checks (rg from §9):
+
+  irBranch() call sites (rg 'irBranch\(' src):
+    src/ir.c:97   irBranch definition (THE seam)
+    src/ir.c:501  range-operator short-circuit (a OP1 b)
+    src/ir.c:538  logical && short-circuit
+    src/ir.c:564  logical || short-circuit
+    src/ir.c:1930 try/catch enter_ret != 0 branch
+    src/ir.c:1978 if-statement (irLowerIf)
+    src/ir.c:2026 for-loop condition
+    src/ir.c:2072 while-loop condition
+    src/ir.c:2116 do-while condition
+    src/ir.c:2358 switch single-value case (==)
+    src/ir.c:2368 switch range-case lower bound (>=)
+    src/ir.c:2377 switch range-case upper bound (<=)
+
+  IR_BR constructors (rg 'IR_BR' src):
+    Only ONE: irBranch() at src/ir.c:97-136.
+    All 11 callers listed above route through that one function.
+
+  IR_ICMP / IR_FCMP producers (rg 'IR_ICMP|IR_FCMP' src):
+    src/ir.c:92   irICmp (sole constructor of IR_ICMP)
+    src/ir.c:281  irOpIsCmp switch case (validation only)
+    src/ir.c:721-741 irLowerBinaryOp FCMP dispatch
+    src/ir.c:792-840 irLowerBinaryOp ICMP dispatch
+    src/ir.c:2355 switch single-case cmp (inline)
+    src/ir.c:2365 switch range cmp (inline, IR_ICMP)
+    src/ir.c:2374 switch range cmp (inline, IR_ICMP)
+
+Observed irBranch() (src/ir.c:97-136):
+
+  107   if (cond->type != IR_TYPE_I8) {
+  108       int isa_bool = 0;
+  109       if (!listEmpty(block->instructions)) {
+  110           IrInstr *last = block->instructions->prev->value;
+  111           if (irOpIsCmp(last->op) && last->dst == cond) {
+  112               isa_bool = 1;
+  113           }
+  114       }
+  115       if (!isa_bool) {
+  116           IrValue *zero = irConstInt(IR_TYPE_I8, 0);
+  117           IrValue *bool_cond = irTmp(IR_TYPE_I8, 1);
+  118           IrInstr *cmp = irICmp(bool_cond, IR_CMP_NE, cond, zero);
+  119           listAppend(block->instructions, cmp);
+  120           cond = bool_cond;
+  121       }
+  122   }
+  123   IrInstr *instr = irInstrNew(IR_BR, cond, NULL, NULL);
+
+Defect: the `if (cond->type != IR_TYPE_I8)` early-out uses the IR
+type as a proxy for predicate semantics. When cond already has type
+IR_TYPE_I8 (regardless of producer), the entire truthiness-
+normalization block is skipped.
+
+The `isa_bool` fallback at line 111 only triggers for the very
+common but fragile case where the previous instruction in the same
+block is an IR_ICMP/IR_FCMP whose dst equals cond. It does NOT
+catch:
+  - cross-block branch callers (try L1930, switch L2358/L2368/L2377)
+  - call-return I8 paths (L538, L564 pass left directly)
+  - any IR_CALL returning IR_TYPE_I8 (most direct demonstration
+    of the bypass)
+  - logical ! / && / || chain operands
+
+This ACT's principal RED (red-01-identity-bypass.HC) demonstrates
+that IR_CALL returning IR_TYPE_I8 followed immediately by IR_BR with
+that value as the condition reproduces the bypass:
+    call     %t9 i8 tmp, Identity  ; line 4
+    br       %t9 i8 tmp, bb5, bb6  ; line 4
+with NO cmp_ne between them.
+
+Recon summary:
+
+  IR_BR_CONSTRUCTORS          = 1 (src/ir.c:97 irBranch)
+  IR_BRANCH_CALLERS           = 11 (listed above)
+  TRUTHINESS_NORMALIZATION_SITE = src/ir.c:107-122
+                                  (type-driven, NOT producer-driven)
+  PREDICATE_PRODUCER_SET_BEFORE = {IR_ICMP, IR_FCMP}
+                                  (semantically known; structurally
+                                  exploited only via the fragile
+                                  `last->dst==cond` fallback at L111)
+
+The defect: type as a proxy for semantics. After the fix, the rule
+must be: predicate-ness is determined by producer/opcode identity,
+not by IR_TYPE_I8.
