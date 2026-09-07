@@ -1,0 +1,42 @@
+i8 TestLocal() {
+  bb1 -> predecessors:  {}  successors: {3, 4}
+    alloca   %t1 i8 tmp, 1 i8 const int  ; line 1
+    store    %l2 i8 local, 5 i8 const int  ; line 3
+    zext     %t3 i64 tmp, %l2 i8 local  ; line 5
+    cmp_ne   %t4 i8 tmp, %t3 i64 tmp, 0 i8 const int  ; line 5
+    br       %t4 i8 tmp, bb3, bb4  ; line 5
+
+  bb3 -> predecessors: {1}  successors: {2}
+    store    %t1 i8 tmp, 1 i64 const int  ; line 4
+    jmp      bb2  ; line 4
+
+  bb4 -> predecessors: {1}  successors: {2}
+    store    %t1 i8 tmp, 0 i64 const int  ; line 5
+    jmp      bb2  ; line 5
+
+  bb2 -> predecessors: {3, 4}  successors:  {}
+    load     %t5 i8 tmp, %t1 i8 tmp  ; line 5
+    ret      %t5 i8 tmp  ; line 5
+}
+
+===== After basic optimisations =====
+i8 TestLocal() {
+  bb1 -> predecessors:  {}  successors: {3, 4}
+    alloca   %t1 i8 tmp, 1 i8 const int  ; line 1
+    store    %l2 i8 local, 5 i8 const int  ; line 3
+    zext     %t3 i64 tmp, %l2 i8 local  ; line 5
+    cmp_ne   %t4 i8 tmp, %t3 i64 tmp, 0 i8 const int  ; line 5
+    br       %t4 i8 tmp, bb3, bb4  ; line 5
+
+  bb3 -> predecessors: {1}  successors: {2}
+    store    %t1 i8 tmp, 1 i64 const int  ; line 4
+    jmp      bb2  ; line 4
+
+  bb4 -> predecessors: {1}  successors: {2}
+    store    %t1 i8 tmp, 0 i64 const int  ; line 5
+    jmp      bb2  ; line 5
+
+  bb2 -> predecessors: {3, 4}  successors:  {}
+    load     %t5 i8 tmp, %t1 i8 tmp  ; line 5
+    ret      %t5 i8 tmp  ; line 5
+}

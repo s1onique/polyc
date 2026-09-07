@@ -1,0 +1,85 @@
+i16 TestI16(%p1 i16 param) {
+  bb1 -> predecessors:  {}  successors: {3, 4}
+    store    %l2 i16 local, %p1 i16 param  ; line 1
+    alloca   %t3 i16 tmp, 2 i16 const int  ; line 1
+    sext     %t4 i64 tmp, %l2 i16 local  ; line 1
+    cmp_ne   %t5 i8 tmp, %t4 i64 tmp, 0 i8 const int  ; line 1
+    br       %t5 i8 tmp, bb3, bb4  ; line 1
+
+  bb3 -> predecessors: {1}  successors: {2}
+    store    %t3 i16 tmp, 1 i64 const int  ; line 1
+    jmp      bb2  ; line 1
+
+  bb4 -> predecessors: {1}  successors: {2}
+    store    %t3 i16 tmp, 0 i64 const int  ; line 1
+    jmp      bb2  ; line 1
+
+  bb2 -> predecessors: {3, 4}  successors:  {}
+    load     %t6 i16 tmp, %t3 i16 tmp  ; line 1
+    ret      %t6 i16 tmp  ; line 1
+}
+
+===== After basic optimisations =====
+i16 TestI16(%p1 i16 param) {
+  bb1 -> predecessors:  {}  successors: {3, 4}
+    store    %l2 i16 local, %p1 i16 param  ; line 1
+    alloca   %t3 i16 tmp, 2 i16 const int  ; line 1
+    sext     %t4 i64 tmp, %l2 i16 local  ; line 1
+    cmp_ne   %t5 i8 tmp, %t4 i64 tmp, 0 i8 const int  ; line 1
+    br       %t5 i8 tmp, bb3, bb4  ; line 1
+
+  bb3 -> predecessors: {1}  successors: {2}
+    store    %t3 i16 tmp, 1 i64 const int  ; line 1
+    jmp      bb2  ; line 1
+
+  bb4 -> predecessors: {1}  successors: {2}
+    store    %t3 i16 tmp, 0 i64 const int  ; line 1
+    jmp      bb2  ; line 1
+
+  bb2 -> predecessors: {3, 4}  successors:  {}
+    load     %t6 i16 tmp, %t3 i16 tmp  ; line 1
+    ret      %t6 i16 tmp  ; line 1
+}
+
+i32 TestI32(%p7 i32 param) {
+  bb5 -> predecessors:  {}  successors: {7, 8}
+    store    %l8 i32 local, %p7 i32 param  ; line 2
+    alloca   %t9 i32 tmp, 4 i32 const int  ; line 2
+    sext     %t10 i64 tmp, %l8 i32 local  ; line 2
+    cmp_ne   %t11 i8 tmp, %t10 i64 tmp, 0 i8 const int  ; line 2
+    br       %t11 i8 tmp, bb7, bb8  ; line 2
+
+  bb7 -> predecessors: {5}  successors: {6}
+    store    %t9 i32 tmp, 1 i64 const int  ; line 2
+    jmp      bb6  ; line 2
+
+  bb8 -> predecessors: {5}  successors: {6}
+    store    %t9 i32 tmp, 0 i64 const int  ; line 2
+    jmp      bb6  ; line 2
+
+  bb6 -> predecessors: {7, 8}  successors:  {}
+    load     %t12 i32 tmp, %t9 i32 tmp  ; line 2
+    ret      %t12 i32 tmp  ; line 2
+}
+
+===== After basic optimisations =====
+i32 TestI32(%p7 i32 param) {
+  bb5 -> predecessors:  {}  successors: {7, 8}
+    store    %l8 i32 local, %p7 i32 param  ; line 2
+    alloca   %t9 i32 tmp, 4 i32 const int  ; line 2
+    sext     %t10 i64 tmp, %l8 i32 local  ; line 2
+    cmp_ne   %t11 i8 tmp, %t10 i64 tmp, 0 i8 const int  ; line 2
+    br       %t11 i8 tmp, bb7, bb8  ; line 2
+
+  bb7 -> predecessors: {5}  successors: {6}
+    store    %t9 i32 tmp, 1 i64 const int  ; line 2
+    jmp      bb6  ; line 2
+
+  bb8 -> predecessors: {5}  successors: {6}
+    store    %t9 i32 tmp, 0 i64 const int  ; line 2
+    jmp      bb6  ; line 2
+
+  bb6 -> predecessors: {7, 8}  successors:  {}
+    load     %t12 i32 tmp, %t9 i32 tmp  ; line 2
+    ret      %t12 i32 tmp  ; line 2
+}

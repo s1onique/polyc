@@ -1,0 +1,204 @@
+ACT-POLYC-IR-BOUNDARY03-CORRECTION02 / Branch contract conclusion (REVISED)
+============================================================================
+
+Source-of-truth:
+    src/ir.c:97-136           (irBranch; sole IR_BR producer)
+    src/ir.c:80-94            (irICmp)
+    src/x86_64.c:1883-1908    (x86_64 AOT IR_BR handler)
+    src/x86_64-jit.c:1229-1257 (x86_64 JIT IR_BR handler)
+    src/aarch64.c:1635-1670   (aarch64 AOT IR_BR handler)
+    src/aarch64-jit.c:1466-1494 (aarch64 JIT IR_BR handler)
+    src/llvm-backend.c:583-609 (LLVM IR_BR handler)
+    src/llvm-backend.c:327-329 (llTypeSupported = I64 only)
+    evidence/ir-boundary03-correction02/witness-*.HC  (real source)
+    evidence/ir-boundary03-correction02/dump-ir-*.txt  (real --dump-ir output)
+
+This file REPLACES the CORRECTION01 classification of
+IR_BR_VALUE_CONTRACT = BOOLEAN_0_OR_1 (which the
+CORRECTION02 reviewer rejected as unproven). The
+CORRECTION01 file is preserved unchanged per F14.
+
+REVIEWER FINDING (verbatim, abridged)
+    "irBranch bypasses normalization whenever
+     cond->type == IR_TYPE_I8. Nothing in that function
+     establishes cond->type == IR_TYPE_I8 implies cond
+     originated from IR_ICMP. If HolyC permits something
+     like `U8 x = 2; if (x) ...` and that reaches irBranch()
+     as an IR_TYPE_I8 value, then the neutral IR can
+     potentially contain `br %x:i8 where %x == 2` and
+     BOOLEAN_0_OR_1 is false."
+
+WITNESS TRANSCRIPT (real --dump-ir, captured in this directory)
+    witness-01-u8-param-direct.HC:
+        U8 TestU8(U8 x) { if (x) return 1; return 0; }
+        IR dump excerpt:
+            zext     %t4 i64 tmp, %l2 i8 local
+            cmp_ne   %t5 i8 tmp, %t4 i64 tmp, 0 i8 const int
+            br       %t5 i8 tmp, bb3, bb4
+        OBSERVATION: NORMALIZED (cmp_ne precedes br)
+        The zext widens the local to i64; irBranch sees cond
+        as i64 (not i8) and inserts cmp_ne via src/ir.c:107.
+
+    witness-02-u8-identity-bypass.HC:
+        U8 Identity(U8 x) { return x; }
+        U8 TestId(U8 x) { if (Identity(x)) return 1; return 0; }
+        IR dump excerpt:
+            call     %t9 i8 tmp, Identity
+            br       %t9 i8 tmp, bb5, bb6
+        OBSERVATION: BYPASS REPRODUCES
+        cond %t9 is i8 from a function call; irBranch sees
+        cond->type == IR_TYPE_I8 at src/ir.c:107, skips the
+        cmp_ne insertion, and emits `br %t9 i8 tmp, ...`
+        directly. The value of %t9 ranges over [0, 255] for
+        U8, NOT over {0, 1}.
+
+    witness-03-u8-eq-2-normalized.HC: cmp_eq precedes br (normalized)
+    witness-04-u8-passthrough-bypass.HC: bypass reproduces again
+    witness-05-i8-identity-bypass.HC: bypass reproduces for I8 too
+    witness-06-other-widths-normalized.HC: I16/I32 always normalized
+    witness-07-i8-eq-zero-normalized.HC: explicit comparison -> normalized
+    witness-08-u8-local-normalized.HC: locals always zext -> normalized
+    witness-09-u8-arith-normalized.HC: arithmetic result type I64 -> normalized
+    witness-10-u8-sub-normalized.HC: same as 09 with sub
+
+CONCLUSION (mechanical, with witness numbers)
+    AC-05 (which source shapes trigger which path):
+        Source shape                                   IR_BR path
+        -------------------------------------------    -----------
+        local/param ref + non-ICMP (witnesses 1,8)     normalized
+            (because locals are loaded with movzbq/movslq
+             first, then the load result is i64 in the
+             IR_BR operand; src/ir.c:107 takes the
+             non-i8 path and inserts cmp_ne)
+        explicit comparison (witnesses 3,7)            normalized
+        arithmetic result (witnesses 9,10)             normalized
+            (arithmetic widens operands to i64)
+        I16/I32/I64 non-ICMP source (witness 6)        normalized
+            (these are non-I8 types; cmp_ne inserted)
+        U8/I8 function-call return (witnesses 2,4,5)   BYPASS
+            (the call result is IR_TYPE_I8; irBranch sees
+             cond->type == IR_TYPE_I8 and skips cmp_ne)
+
+    The bypass is triggered specifically when:
+        cond->type == IR_TYPE_I8
+            AND
+        cond is NOT the immediate dst of an IR_ICMP/IR_FCMP
+            AND
+        the source shape yields i8 (function-call return,
+            struct field access, array load, etc.)
+
+    All other shapes are normalized.
+
+REVISED 3-AXIS CLASSIFICATION
+
+    SOURCE_CONDITION_CONTRACT = I64_ZERO_NONZERO_TRUTHINESS
+        scope: language level (HolyC/PolyC if (x) semantics)
+        empirical: PROVEN by witness 11 (six-determinator
+            matrix) and reaffirmed by witness 12 (I8/U8
+            bypass runtime = 55 = 1+2+4+16+32, correct)
+        proof: AOT/JIT agreement in the truthiness matrix;
+            consistent interpretation at the full-register
+            level for any value in any width
+
+    IR_BR_VALUE_CONTRACT = I8_OR_I64_ZERO_NONZERO_TRUTHINESS
+        scope: neutral IR level (replaces CORRECTION01's
+            "BOOLEAN_0_OR_1" which was UNPROVEN)
+        empirical: PROVEN that the IR permits values outside
+            {0,1} when the bypass class triggers (witnesses
+            2, 4, 5). PROVEN that the native backends all
+            interpret the operand as the full register
+            compared against zero (backend-emission-analysis.md).
+        proof:
+            1. irBranch (src/ir.c:97-136) is the sole
+               IR_BR producer.
+            2. irBranch (src/ir.c:107) bypasses cmp_ne
+               insertion when cond->type == IR_TYPE_I8.
+            3. The bypass class is reachable from real
+               source: any U8/I8 function-return value
+               passed to `if ()`.
+            4. Therefore the IR permits IR_BR operands in
+               [0, 255] (U8) or [-128, 127] (I8).
+            5. The native backends (x86_64 AOT, x86_64 JIT,
+               aarch64 AOT, aarch64 JIT) all zero-extend the
+               operand and then test the full register against
+               zero, yielding consistent
+               I8_OR_I64_ZERO_NONZERO_TRUTHINESS semantics.
+            6. The LLVM backend REJECTS the bypass class
+               (src/llvm-backend.c:585) because its narrow
+               llTypeSupported = I64 only (line 327-329)
+               contract cannot accept IR_BR with i8 operand.
+
+    IR_BR_TYPE_CONTRACT = MIXED_I64_I8
+        scope: representation width
+        empirical: CONFIRMED (witnesses 1, 8 -> i64 br operand
+            after cmp_ne insertion; witnesses 2, 4, 5 -> i8 br
+            operand from bypass class)
+        proof: dump-ir transcripts in this directory
+        target: ACT-POLYC-IR-BRANCH-CONDITION01
+
+CORRECTION TO CORRECTION01
+
+    The CORRECTION01 ACT claimed:
+        "The VALUE of an IR_ICMP result is set by the native
+         SETcc instruction ... which by x86 architecture yields
+         exactly {0, 1} in the destination byte/register.
+         Therefore in cases (a), (b), (c), the cond value is
+         ALWAYS in {0, 1}."
+
+    This was incorrect. Cases (b) and (c) ARE in {0,1} (because
+    they come from IR_ICMP, which IS produced via SETcc). But
+    case (a) -- cond is already I8 and NOT from an immediate
+    IR_ICMP -- bypasses normalization entirely. The conditional
+    "in case (a), the I8 is the result of IR_ICMP(NE, v, 0)"
+    was an inference that does not follow from src/ir.c:107-123.
+
+    Per AGENTS.md F4, this claim is now downgraded. The IR permits
+    arbitrary I8 values in IR_BR when the bypass class triggers;
+    the backends compensate by treating the operand as the full
+    register compared to zero.
+
+CONSEQUENCE FOR LLVM (per ACT §32)
+
+    The existing LLVM backend's narrow contract (I64 only) means
+    the bypass class CANNOT reach LLVM IR_BR lowering. So the
+    IR_BR correctness problem for LLVM is bounded by the
+    normalized class (case b/c only), where IR_BR operands are
+    in {0,1} and the existing trunc path at
+    src/llvm-backend.c:594 is correct.
+
+    The bypass class would surface ONLY if the LLVM backend's
+    llTypeSupported is broadened to include IR_TYPE_I8 (a future
+    ACT's decision). In that hypothetical case, a generic
+    lowering for i8 IR_BR would need to mirror the native
+    backends' testq/cmp semantics, not the SETcc/trunc semantics.
+
+NEXT-ACT RECOMMENDATION
+
+    ACT-POLYC-IR-BRANCH-CONDITION01 mission is now NARROWER, not
+    wider. The two candidates are:
+
+        (i)  Widen IR_BR_TYPE_CONTRACT to UNIFORM_I8_OR_I64:
+             enforce a uniform representation at the IR_BR
+             operand (e.g., always i8 OR always i64). This is
+             what ACT-POLYC-IR-BRANCH-CONDITION01's predecessor
+             suggested.
+
+        (ii) Tighten IR_BR_VALUE_CONTRACT to a formal invariant
+             that ALL producers of i8 IR_BR operands must come
+             through a truthiness coercion (e.g., always emit
+             `cmp_ne %bool, %x, 0` before the br, even when
+             %x is already i8).
+
+    The witnesses show the bypass class is RUNTIME-CORRECT for
+    the existing native backends (full-register test). So the
+    defect is REPRESENTER-FACING (LLVM future-proofing +
+    backend portability), not user-visible today. The next
+    ACT should select (i) OR (ii) and propose the bound.
+
+HISTORICAL NOTE (per F14)
+    ACT-POLYC-IR-BOUNDARY03-CORRECTION01 / branch-contract-conclusion.txt
+    reported IR_BR_VALUE_CONTRACT = BOOLEAN_0_OR_1. That claim
+    was an over-proven inference (the case-a "always ICMP" claim
+    is not supported by src/ir.c:107-123). Per F14 the predecessor
+    file is preserved unchanged as historical evidence; this
+    file (the CORRECTION02 one) supersedes it.
