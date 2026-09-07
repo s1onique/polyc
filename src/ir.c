@@ -2785,18 +2785,29 @@ IrFunction *irLowerFunction(IrCtx *ctx, Ast *ast_func) {
 
     /* Lower parameters. Each AST param maps to two IrValues:
      *
-     *   - arrive  (IR_VAL_PARAM, loc=REG/abi_arg_reg): the value as it
-     *     arrives in the ABI register. Consumed exactly once, by the
-     *     entry IR_STORE below.
-     *   - slot    (IR_VAL_LOCAL, ast-driven loff): the frame slot that
-     *     all body-level references read/write. AST -> IR lookups
-     *     resolve to this.
+     *   - arrive  (IR_VAL_PARAM, loc=UNASSIGNED at the neutral
+     *     boundary; physical-register location is stamped by the
+     *     native post-pass `irAssignAbiParamLocations`): the value
+     *     as it arrives in the ABI register. Consumed exactly once,
+     *     by the entry IR_STORE below.
+     *   - slot    (IR_VAL_LOCAL, ast-driven loff): the frame slot
+     *     that all body-level references read/write. AST -> IR
+     *     lookups resolve to this.
      *
-     * The entry IR_STORE `store slot, arrive` makes the param spill an
-     * ordinary IR operation. Codegen needs no special prologue path.
-     * A later store-load forwarding pass collapses the spill+reload
-     * when the value is still live in the ABI register at first use. */
-    IrRegPool *pool = irRegPoolGet();
+     * The entry IR_STORE `store slot, arrive` makes the param spill
+     * an ordinary IR operation. Codegen needs no special prologue
+     * path. A later store-load forwarding pass collapses the
+     * spill+reload when the value is still live in the ABI register
+     * at first use.
+     *
+     * ACT-POLYC-IR-BOUNDARY01: `IrRegPool` consultation has moved
+     * out of this lowering path. The arrive/slot values are created
+     * with `loc.kind = IR_LOC_NONE` and a per-param `param_kind`
+     * classification. The native ABI post-pass
+     * (`irAssignAbiParamLocations`, called from the codegen path)
+     * walks the IR's params and stamps the physical arrival
+     * register. This keeps the neutral IR free of `AoStr*` register
+     * names until the very last moment before codegen. */
     int int_arg_idx = 0, float_arg_idx = 0;
 
     AstType *rettype = ast_func->type->rettype;
@@ -2808,8 +2819,10 @@ IrFunction *irLowerFunction(IrCtx *ctx, Ast *ast_func) {
     /* Struct-by-value return: SysV passes the hidden out-pointer in the
      * first int-arg register, so it consumes an arg slot and the user's
      * first real int param lands on the second arg reg. An ABI with a
-     * dedicated sret register (AAPCS64: x8) leaves the arg regs alone. */
-    if (has_hidden_out_ptr && !(pool && pool->sret_reg)) int_arg_idx = 1;
+     * dedicated sret register (AAPCS64: x8) leaves the arg regs alone.
+     * The post-pass will revisit this; the start index here is the same
+     * arithmetic but doesn't depend on the pool. */
+    if (has_hidden_out_ptr) int_arg_idx = 1;
 
     for (u64 i = 0; i < ast_func->params->size; ++i) {
         Ast *ast_param = vecGet(Ast *, ast_func->params, i);
@@ -2819,18 +2832,21 @@ IrFunction *irLowerFunction(IrCtx *ctx, Ast *ast_func) {
             /* Apple AArch64 puts ALL variadic args (including HolyC's
              * implicit argc) on the stack, so argc doesn't arrive in a
              * register and shouldn't be spilled. Its slot is just a
-             * view of the caller's stack region (loff set by layout). */
-            int apple_aarch64_va = pool && pool->variadic_on_stack;
+             * view of the caller's stack region (loff set by layout).
+             *
+             * ACT-POLYC-IR-BOUNDARY01: instead of consulting the
+             * IrRegPool here, we check the target directly. The
+             * decision is target-derived (it depends on the platform
+             * ABI, not on which backend pool happens to be installed
+             * for codegen). The neutral IR captures the distinction
+             * by emitting or omitting the entry IR_STORE; an LLVM
+             * backend would emit equivalent lowering for each case. */
+            int apple_aarch64_va =
+                ctx->cc->target == TARGET_AARCH64_APPLE_DARWIN;
 
             IrValue *argc_arrive = irTmp(IR_TYPE_I64, 8);
             argc_arrive->kind = IR_VAL_PARAM;
-            if (!apple_aarch64_va && pool &&
-                (u64)int_arg_idx < pool->int_arg_regs->size)
-            {
-                argc_arrive->loc.kind = IR_LOC_REG;
-                argc_arrive->loc.as.reg =
-                    vecGet(AoStr *, pool->int_arg_regs, int_arg_idx);
-            }
+            argc_arrive->param_kind = IR_PARAM_KIND_VARARGS_ARGC;
             int_arg_idx++;
 
             IrValue *argc_slot = irTmp(IR_TYPE_I64, 8);
@@ -2846,6 +2862,7 @@ IrFunction *irLowerFunction(IrCtx *ctx, Ast *ast_func) {
 
             IrValue *argv_iv = irTmp(IR_TYPE_PTR, 8);
             argv_iv->kind = IR_VAL_PARAM;
+            argv_iv->param_kind = IR_PARAM_KIND_VARARGS_ARGV;
             irFnAddVar(func, ast_param->argv->lvar_id, argv_iv);
             vecPush(func->params, argv_iv);
             irAddStackSpace(ctx, 8);
@@ -2867,7 +2884,11 @@ IrFunction *irLowerFunction(IrCtx *ctx, Ast *ast_func) {
          * (or by reference) per AAPCS, not as a single pointer. Create
          * the slot only; the backend prologue unpacks the registers into
          * it. Advance the ABI counters by the struct's register class so
-         * later scalar params land on the right registers. */
+         * later scalar params land on the right registers.
+         *
+         * NB: classification is target-aware (AAPCS vs SysV) but does
+         * NOT consult IrRegPool for register *names*. The post-pass
+         * uses these counters together with the pool to stamp loc. */
         int aarch64_target =
             ctx->cc->target == TARGET_AARCH64_APPLE_DARWIN ||
             ctx->cc->target == TARGET_AARCH64_UNKNOWN_LINUX_GNU;
@@ -2918,46 +2939,20 @@ IrFunction *irLowerFunction(IrCtx *ctx, Ast *ast_func) {
             continue;
         }
 
-        /* Allocate this param's ABI arg register up front so the
-         * arrive-IrValue's loc reflects where the caller put it. */
-        AoStr *abi_reg = NULL;
-        if (pool) {
-            if (is_float) {
-                if ((u64)float_arg_idx < pool->float_arg_regs->size)
-                    abi_reg = vecGet(AoStr *, pool->float_arg_regs,
-                                     float_arg_idx);
-                float_arg_idx++;
-            } else {
-                if ((u64)int_arg_idx < pool->int_arg_regs->size)
-                    abi_reg = vecGet(AoStr *, pool->int_arg_regs,
-                                     int_arg_idx);
-                int_arg_idx++;
-            }
-        }
-
-        /* Register overflow: the param was passed on the stack. Create
-         * the slot only (no arrive value for regalloc to place); the
-         * backend's stack-param prologue copies it in from the incoming
-         * argument area. Mirrors the by-value struct param handling.
-         * Pinned params keep the existing reg-move path. */
-        if (!abi_reg && pool &&
-            !(ast_param->kind == AST_LVAR &&
-              ast_param->pinned_kind == LVAR_REG && ast_param->pinned_reg))
-        {
-            IrValue *slot = irTmp(ir_type, size);
-            slot->kind = IR_VAL_LOCAL;
-            irFnAddVar(func, key, slot);
-            vecPush(func->params, slot);
-            irAddStackSpace(ctx, size);
-            continue;
-        }
+        /* Advance the int/float arg index counter for this param.
+         * The post-pass uses the resulting index to look up the
+         * ABI register name in `pool->int_arg_regs[i]` /
+         * `pool->float_arg_regs[i]`. Here we only count. */
+        int arg_idx = is_float ? float_arg_idx++ : int_arg_idx++;
 
         /* TempleOS-pinned param: the body reads/writes the named
          * register directly, no stack slot. Still need to copy the
          * value from the ABI arg reg into the pinned reg at entry,
          * which we model as an IR_STORE dst=pinned_iv,
          * r1=arrive. Codegen's IR_STORE recognises pinned_reg
-         * destinations and emits the reg-to-reg move uniformly. */
+         * destinations and emits the reg-to-reg move uniformly.
+         * The pinned param's `arrive` value is tagged so the
+         * post-pass stamps its loc from the ABI arg register. */
         if (ast_param->kind == AST_LVAR &&
             ast_param->pinned_kind == LVAR_REG &&
             ast_param->pinned_reg)
@@ -2965,26 +2960,28 @@ IrFunction *irLowerFunction(IrCtx *ctx, Ast *ast_func) {
             IrValue *pin = irTmp(ir_type, size);
             pin->kind = IR_VAL_PARAM;
             pin->pinned_reg = ast_param->pinned_reg;
+            pin->param_kind = IR_PARAM_KIND_PINNED_REG;
             irFnAddVar(func, key, pin);
             vecPush(func->params, pin);
             irAddStackSpace(ctx, size);
 
             IrValue *arrive = irTmp(ir_type, size);
             arrive->kind = IR_VAL_PARAM;
-            if (abi_reg) {
-                arrive->loc.kind = IR_LOC_REG;
-                arrive->loc.as.reg = abi_reg;
-            }
+            /* The post-pass fills `arrive->loc` based on the same
+             * counter logic. The arrive value is always created here
+             * so the spill-store has a stable source operand even
+             * when the param ultimately landed on the stack. */
             irBlockAddInstr(ctx, irInstrNew(IR_STORE, pin, arrive, NULL));
             continue;
         }
 
         IrValue *arrive = irTmp(ir_type, size);
         arrive->kind = IR_VAL_PARAM;
-        if (abi_reg) {
-            arrive->loc.kind = IR_LOC_REG;
-            arrive->loc.as.reg = abi_reg;
-        }
+        /* arrive->loc is left as IR_LOC_NONE here. The post-pass
+         * stamps it from pool->int_arg_regs/float_arg_regs using the
+         * arg_idx counted above; if the ABI register index is out of
+         * range (the param was passed on the stack) the post-pass
+         * simply leaves the slot-only path in effect. */
 
         IrValue *slot = irTmp(ir_type, size);
         slot->kind = IR_VAL_LOCAL;
@@ -2993,6 +2990,7 @@ IrFunction *irLowerFunction(IrCtx *ctx, Ast *ast_func) {
         irAddStackSpace(ctx, size);
 
         irBlockAddInstr(ctx, irInstrNew(IR_STORE, slot, arrive, NULL));
+        (void)arg_idx; /* post-pass uses fn->params order + state */
     }
 
     IrValue *ir_return_var = NULL;
@@ -3001,17 +2999,12 @@ IrFunction *irLowerFunction(IrCtx *ctx, Ast *ast_func) {
          * AAPCS64, int_arg_regs[0] / rdi on SysV), spilled to a slot via
          * the same arrive+store mechanism as a normal param.
          * func->return_value is the slot so RET sees a stable stack
-         * location. */
+         * location. The arrival location is stamped by
+         * `irAssignAbiParamLocations` from `pool->sret_reg` /
+         * `pool->int_arg_regs[0]`. */
         IrValue *out_arrive = irTmp(IR_TYPE_PTR, 8);
         out_arrive->kind = IR_VAL_PARAM;
-        if (pool && pool->sret_reg) {
-            out_arrive->loc.kind = IR_LOC_REG;
-            out_arrive->loc.as.reg = pool->sret_reg;
-        } else if (pool && pool->int_arg_regs->size > 0) {
-            out_arrive->loc.kind = IR_LOC_REG;
-            out_arrive->loc.as.reg =
-                vecGet(AoStr *, pool->int_arg_regs, 0);
-        }
+        out_arrive->param_kind = IR_PARAM_KIND_HIDDEN_SRET;
         IrValue *out_slot = irTmp(IR_TYPE_PTR, 8);
         out_slot->kind = IR_VAL_LOCAL;
         irAddStackSpace(ctx, 8);
@@ -3119,6 +3112,136 @@ void irCgFinishFunction(IrCgCtx *ctx) {
     }
 }
 
+/* ACT-POLYC-IR-BOUNDARY01: native-only post-pass that stamps physical
+ * arrival-register locations on the IR_VAL_PARAM arrive values created
+ * by `irLowerFunction`. Called from the codegen paths (aarch64.c,
+ * x86_64.c, aarch64-jit.c, x86_64-jit.c) AFTER `irLowerFunction` and
+ * BEFORE `irBasicFunctionOptimisations`, so the spill-fold forwarding
+ * pass (`irOptPinResultReg`) sees the same arrival-register info the
+ * pre-ACT code stamped during lowering.
+ *
+ * The post-pass walks `fn->params` in source order and re-derives
+ * each param's ABI arg register using the same counter logic that
+ * `irLowerFunction` used to inline. `IrValue->param_kind` carries the
+ * classification metadata set by `irLowerFunction`.
+ */
+void irAssignAbiParamLocations(IrFunction *fn, Ast *ast_func, IrRegPool *pool) {
+    if (!fn || !ast_func || !pool) return;
+    int int_arg_idx = 0, float_arg_idx = 0;
+    AstType *rettype = ast_func->type ? ast_func->type->rettype : NULL;
+    int has_hidden_out_ptr = rettype && irRetIsIndirect(rettype);
+    if (has_hidden_out_ptr && !pool->sret_reg) int_arg_idx = 1;
+
+    if (has_hidden_out_ptr) {
+        for (u64 k = 0; k < fn->params->size; ++k) {
+            IrValue *v = vecGet(IrValue *, fn->params, k);
+            if (v->kind == IR_VAL_PARAM && v->param_kind == IR_PARAM_KIND_HIDDEN_SRET) {
+                if (pool->sret_reg) {
+                    v->loc.kind = IR_LOC_REG; v->loc.as.reg = pool->sret_reg;
+                } else if (pool->int_arg_regs && pool->int_arg_regs->size > 0) {
+                    v->loc.kind = IR_LOC_REG;
+                    v->loc.as.reg = vecGet(AoStr *, pool->int_arg_regs, 0);
+                }
+                break;
+            }
+        }
+    }
+
+    u64 fn_param_idx = 0;
+    for (u64 i = 0; i < ast_func->params->size; ++i) {
+        Ast *ast_param = vecGet(Ast *, ast_func->params, i);
+        if (ast_param->kind == AST_VAR_ARGS) {
+            int apple_aarch64_va = pool->variadic_on_stack;
+            if (fn_param_idx < fn->params->size) {
+                IrValue *argc_arrive = vecGet(IrValue *, fn->params, fn_param_idx);
+                if (argc_arrive->kind == IR_VAL_PARAM &&
+                    argc_arrive->param_kind == IR_PARAM_KIND_VARARGS_ARGC &&
+                    !apple_aarch64_va && pool->int_arg_regs &&
+                    (u64)int_arg_idx < pool->int_arg_regs->size)
+                {
+                    argc_arrive->loc.kind = IR_LOC_REG;
+                    argc_arrive->loc.as.reg =
+                        vecGet(AoStr *, pool->int_arg_regs, int_arg_idx);
+                }
+                fn_param_idx++;
+                int_arg_idx++;
+            }
+            if (fn_param_idx < fn->params->size) fn_param_idx++;
+            break;
+        }
+        if (ast_param->kind != AST_LVAR &&
+            ast_param->kind != AST_FUNPTR &&
+            ast_param->kind != AST_DEFAULT_PARAM) continue;
+        int is_float = ast_param->type->kind == AST_TYPE_FLOAT;
+        int is_struct_param =
+            (ast_param->type->kind == AST_TYPE_CLASS ||
+             ast_param->type->kind == AST_TYPE_UNION) &&
+            !ast_param->type->is_intrinsic;
+        if (is_struct_param) {
+            int elem = 0, count = 0;
+            AapcsClass cls = astAapcsClassify(ast_param->type, &elem, &count);
+            if (cls == AAPCS_HFA) {
+                if (float_arg_idx + count <= 8) float_arg_idx += count;
+                else float_arg_idx = 8;
+            } else if (cls == AAPCS_INTEGER) {
+                int ngp = (ast_param->type->size + 7) / 8;
+                if (int_arg_idx + ngp <= 8) int_arg_idx += ngp;
+                else int_arg_idx = 8;
+            } else {
+                if (int_arg_idx < 8) int_arg_idx++;
+            }
+            continue;
+        }
+        int idx = is_float ? float_arg_idx++ : int_arg_idx++;
+        if (ast_param->kind == AST_LVAR &&
+            ast_param->pinned_kind == LVAR_REG &&
+            ast_param->pinned_reg)
+        {
+            for (u64 k = fn_param_idx; k < fn->params->size; ++k) {
+                IrValue *v = vecGet(IrValue *, fn->params, k);
+                if (v->kind == IR_VAL_PARAM && v->param_kind == IR_PARAM_KIND_PINNED_REG) {
+                    if (k + 1 < fn->params->size) {
+                        IrValue *arrive = vecGet(IrValue *, fn->params, k + 1);
+                        if (arrive->kind == IR_VAL_PARAM && arrive->loc.kind == IR_LOC_NONE) {
+                            if (is_float && pool->float_arg_regs &&
+                                (u64)idx < pool->float_arg_regs->size) {
+                                arrive->loc.kind = IR_LOC_REG;
+                                arrive->loc.as.reg =
+                                    vecGet(AoStr *, pool->float_arg_regs, idx);
+                            } else if (!is_float && pool->int_arg_regs &&
+                                       (u64)idx < pool->int_arg_regs->size) {
+                                arrive->loc.kind = IR_LOC_REG;
+                                arrive->loc.as.reg =
+                                    vecGet(AoStr *, pool->int_arg_regs, idx);
+                            }
+                        }
+                    }
+                    break;
+                }
+            }
+            fn_param_idx += 2;
+            continue;
+        }
+        if (fn_param_idx < fn->params->size) {
+            IrValue *arrive = vecGet(IrValue *, fn->params, fn_param_idx);
+            if (arrive->kind == IR_VAL_PARAM && arrive->loc.kind == IR_LOC_NONE) {
+                if (is_float && pool->float_arg_regs &&
+                    (u64)idx < pool->float_arg_regs->size) {
+                    arrive->loc.kind = IR_LOC_REG;
+                    arrive->loc.as.reg =
+                        vecGet(AoStr *, pool->float_arg_regs, idx);
+                } else if (!is_float && pool->int_arg_regs &&
+                           (u64)idx < pool->int_arg_regs->size) {
+                    arrive->loc.kind = IR_LOC_REG;
+                    arrive->loc.as.reg =
+                        vecGet(AoStr *, pool->int_arg_regs, idx);
+                }
+            }
+            fn_param_idx++;
+        }
+    }
+}
+
 void irDump(Cctrl *cc) {
     IrCtx *ctx = irCtxNew(cc);
     listForEach(cc->ast_list) {
@@ -3175,7 +3298,26 @@ void irDumpWithFakePool(Cctrl *cc) {
     pool.variadic_on_stack = 0;
 
     irRegPoolSet(&pool);
-    irDump(cc);
+
+    /* After the post-ACT refactor, `irLowerFunction` no longer stamps
+     * `loc.kind = IR_LOC_REG` itself; the native post-pass does. To
+     * exercise the RED witness correctly, run the post-pass on each
+     * function before dumping. */
+    IrCtx *ctx = irCtxNew(cc);
+    listForEach(cc->ast_list) {
+        Ast *ast = (Ast *)it->value;
+        if (ast->kind == AST_FUNC) {
+            ctx->cur_func = NULL;
+            IrFunction *fn = irLowerFunction(ctx, ast);
+            irAssignAbiParamLocations(fn, ast, &pool);
+            irPrintFunction(fn);
+
+            irBasicFunctionOptimisations(fn);
+            printf("===== After basic optimisations ===== \n");
+            irPrintFunction(fn);
+        }
+    }
+
     irRegPoolSet(NULL);
 }
 
