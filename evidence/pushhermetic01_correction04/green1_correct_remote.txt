@@ -1,0 +1,30 @@
+POLYC_TEST_C04 GREEN-EVIDENCE-1 (false-GREEN scenario, now correct)
+Setup: origin has A,B,C (B has WS); zoo has only A; local D (clean)
+Push: git push zoo feature:new-feature
+Git invokes hook with $1=zoo $2=zoo-location
+
+CORRECTION04 hook -- CORRECT destination binding:
+  - reads destination from Git's $1
+  - destination_name=zoo, destination_kind=named
+  - calls gate with: --new-branch zoo
+  - rev-list inspects: reachable(D) MINUS reachable(zoo/*)
+  - inspection set: A,B,C,D (B has WS)
+  - result: B caught by gate-push.sh diff-check -> FAIL (correct)
+
+Hook command-line invocation:
+  .git/hooks/pre-push zoo /tmp/c04-red/backup.git
+
+Stdin line fed:
+refs/heads/feature 17191118e0c7cef4a74ba1dc1a5d1c28a5a19228 refs/heads/new-feature 0000000000000000000000000000000000000000
+
+Hook output:
+POLYC_PRE_PUSH_VALIDATING=17191118e0c7 mode=new-branch dest=named
+GATE_ARGS: 17191118e0c7cef4a74ba1dc1a5d1c28a5a19228 --new-branch zoo
+GATE_INVOKED_AT: 1788783821
+
+Per-commit inspection result:
+  1719111: clean
+  fc2bbf8: clean
+  4d17ac5: WS -> FAIL
+    b.txt:1: trailing whitespace.
+    +B

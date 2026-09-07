@@ -1,0 +1,30 @@
+POLYC_TEST_C04 RED-EVIDENCE-1 (false-GREEN scenario)
+Setup: origin has A,B,C (B has WS); zoo has only A; local D (clean)
+Push: git push zoo feature:new-feature (D is the new tip)
+Git invokes hook with $1=zoo $2=zoo-location
+
+CORRECTION03 hook (1fa0a6b) -- WRONG destination binding:
+  - ignores $1=$2 from Git
+  - uses 'git remote | head -n1' = origin
+  - calls gate with: --new-branch origin
+  - rev-list inspects: reachable(D) MINUS reachable(origin/*)
+  - inspection set: D only (origin has D's full ancestry)
+  - result: false PASS (WS in B never inspected)
+
+Stdin line fed to hook (as Git would):
+refs/heads/feature 17191118e0c7cef4a74ba1dc1a5d1c28a5a19228 refs/heads/new-feature 0000000000000000000000000000000000000000
+
+Hook command-line invocation:
+  .git/hooks/pre-push zoo /tmp/c04-red/backup.git
+
+Hook output:
+POLYC_PRE_PUSH_VALIDATING=17191118e0c7 mode=new-branch
+GATE_ARGS: 17191118e0c7cef4a74ba1dc1a5d1c28a5a19228 --new-branch origin
+GATE_INVOKED_AT: 1788783652
+
+What CORRECTION04 should compute:
+  rev-list D --not --remotes=zoo  ->  A,B,C,D  (B inspected, B FAILS)
+
+Actually observed:
+  rev-list D --not --remotes=origin
+17191118e0c7cef4a74ba1dc1a5d1c28a5a19228

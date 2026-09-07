@@ -1,0 +1,14 @@
+POLYC_TEST_C04 GREEN-EVIDENCE-3 (anonymous URL fallback)
+Push: git push https://example.com/repo.git feature:new-feature
+Git invokes hook with $1=URL $2=URL (both the URL)
+
+CORRECTION04 hook -- correct anonymous detection:
+  - destination_name=URL, destination_kind=anonymous
+  - falls back to --root-range with POLYC_PRE_PUSH_NOTE
+  - inspects reachable(D) MINUS empty = all ancestors
+
+Hook output:
+POLYC_PRE_PUSH_VALIDATING=17191118e0c7 mode=new-branch dest=anonymous
+POLYC_PRE_PUSH_NOTE=anonymous destination (https://example.com/repo.git); falling back to --root-range for 17191118e0c7
+GATE_ARGS: 17191118e0c7cef4a74ba1dc1a5d1c28a5a19228 --root-range
+GATE_INVOKED_AT: 1788783821

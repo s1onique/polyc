@@ -1,0 +1,33 @@
+POLYC_TEST_C04 RED-ON-OLD-HOOK (CORRECTION03 hook at 1fa0a6b)
+
+Setup: synthetic repo with origin (ahead, A+B+C with WS in B)
+       and zoo (behind, only A); local D (clean).
+Push: git push zoo feature:new-feature
+Hook invocation: .git/hooks/pre-push zoo /tmp/c04-red/backup.git
+
+OLD hook (CORRECTION03) -- WRONG destination binding:
+  - ignores Git's $1, $2 contract
+  - uses 'git remote | head -n1' = 'origin'
+  - calls gate with: --new-branch origin  (NOT zoo)
+  - rev-list inspects: reachable(D) MINUS reachable(origin/*)
+  - inspection set: D only (origin has D's full ancestry)
+  - result: false PASS, B's WS never inspected
+
+Per-remote comparison of rev-list output:
+
+git rev-list D --not --remotes=origin  (what OLD hook used):
+17191118e0c7cef4a74ba1dc1a5d1c28a5a19228
+
+git rev-list D --not --remotes=zoo     (what NEW hook should use):
+17191118e0c7cef4a74ba1dc1a5d1c28a5a19228
+fc2bbf81de4cb216c6439abfaafb3335357a5712
+4d17ac577ff8bbb595f2edc69dd604c412aacb49
+
+OLD hook ACTUAL output (when invoked as if git push zoo ...):
+--- OLD HOOK OUTPUT ---
+POLYC_PRE_PUSH_VALIDATING=17191118e0c7 mode=new-branch
+GATE_ARGS: 17191118e0c7cef4a74ba1dc1a5d1c28a5a19228 --new-branch origin
+--- END OLD HOOK OUTPUT ---
+
+VERDICT: OLD hook chose 'origin' (alphabetical first),
+         but the actual destination is 'zoo'.

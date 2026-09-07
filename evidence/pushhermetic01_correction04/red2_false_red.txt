@@ -1,0 +1,34 @@
+POLYC_TEST_C04 RED-EVIDENCE-2 (false-RED scenario)
+Setup: origin has only A; zoo has A,B,C (B has WS); local D (clean)
+Push: git push zoo feature:new-feature (D is the new tip)
+Git invokes hook with $1=zoo $2=zoo-location
+
+CORRECTION03 hook (1fa0a6b) -- WRONG destination binding:
+  - uses 'git remote | head -n1' = origin
+  - calls gate with: --new-branch origin
+  - rev-list D --not --remotes=origin
+  - origin has only A, so reachable(origin/*) = {A}
+  - inspection set: D, C, B, A (B has WS)
+  - result: false FAIL (B is in z's history, should not be inspected)
+
+Stdin line fed to hook (as Git would):
+refs/heads/feature 17191118e0c7cef4a74ba1dc1a5d1c28a5a19228 refs/heads/new-feature 0000000000000000000000000000000000000000
+
+Hook command-line invocation:
+  .git/hooks/pre-push zoo /tmp/c04-red/backup.git
+
+Hook output:
+POLYC_PRE_PUSH_VALIDATING=17191118e0c7 mode=new-branch
+GATE_ARGS: 17191118e0c7cef4a74ba1dc1a5d1c28a5a19228 --new-branch origin
+GATE_INVOKED_AT: 1788783661
+
+What CORRECTION04 should compute:
+  rev-list D --not --remotes=zoo
+17191118e0c7cef4a74ba1dc1a5d1c28a5a19228
+  result: only D, B/C excluded (PASS)
+
+Actually observed by CORRECTION03:
+  rev-list D --not --remotes=origin
+17191118e0c7cef4a74ba1dc1a5d1c28a5a19228
+fc2bbf81de4cb216c6439abfaafb3335357a5712
+4d17ac577ff8bbb595f2edc69dd604c412aacb49
