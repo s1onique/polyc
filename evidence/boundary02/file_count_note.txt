@@ -1,0 +1,34 @@
+# IR-BOUNDARY02 closure file count
+
+# The reviewer flagged a discrepancy: "the digest shows 9 changed files,
+# not 8." The IR-BOUNDARY02 closure commit (`be7451f`) contains:
+
+git show --stat be7451f | tail -10:
+
+ docs/acts/ACT-POLYC-IR-BOUNDARY02.md               |  699 +++++++++++++++
+ evidence/boundary02/47_post.txt                   |    0
+ evidence/boundary02/48_post.txt                   |    0
+ evidence/boundary02/58_post.txt                   |    0
+ evidence/boundary02/64_post.txt                   |    0
+ evidence/boundary02/native_dump.txt               |   16 +
+ evidence/boundary02/neutral_dump.txt              |   13 +
+ evidence/boundary02/targeted_green.txt            |    2 +
+ 8 files changed, 720 insertions(+)
+
+# Canonical count = 8 files in the closure commit `be7451f`:
+#   1 ACT document
+#   7 evidence files (4 targeted + 2 boundary dumps + 1 summary)
+#
+# The reviewer's "9" almost certainly referred to the
+# implementation commit `404644d` (which has `src/ir.c` plus its
+# separate diff) merged into the same conversation. The two commits
+# together account for:
+#   src/ir.c
+#   docs/acts/ACT-POLYC-IR-BOUNDARY02.md
+#   evidence/boundary02/{47,48,58,64}_post.txt  (4)
+#   evidence/boundary02/{native,neutral}_dump.txt  (2)
+#   evidence/boundary02/targeted_green.txt  (1)
+# = 9 distinct paths touched in the ACT family.
+#
+# Implementation commit = 404644d, 1 file (src/ir.c).
+# Closure commit       = be7451f, 8 files (1 doc + 7 evidence).

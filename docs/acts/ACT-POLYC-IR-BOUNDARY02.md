@@ -58,6 +58,21 @@ where `kind=4` is `IR_VAL_PARAM`. All four originally failing tests
 `64_sret_x8.HC`) are now GREEN on a fresh build. The full inherited baseline
 is restored. Neutral IR boundary is preserved (see §6).
 
+The original closure recorded `GATE_PUSH=FAIL` for an environment reason
+(missing `/usr/local/include/tos.HH`). The hermetic product path used by
+LLVM-SPIKE01 was reproduced GREEN, but the canonical push gate was RED.
+The reviewer correctly identified that AC13 made the canonical push gate a
+mandatory acceptance criterion and that the recorded `SUBJECT` was the
+broken entry HEAD, not the implementation commit.
+
+`ACT-POLYC-FACTORY-PUSH-HERMETIC01` (committed as `17572b2`) repaired the
+gate's environment-dependence without touching any test or marker, and
+`ACT-POLYC-IR-BOUNDARY02-REQUAL01` records the resulting green push-gate
+run on `404644d`. After those two follow-up ACTs, the canonical push gate
+is green on the implementation commit (see §16).
+
+Final verdict (after REQUAL01): **VERDICT=PASS_WITH_NEXT_ACT_DECISION**
+
 Next ACT: **ACT-POLYC-LLVM-SPIKE01-RESUME01** (per LLVM-SPIKE01 §4.3).
 
 ---
@@ -65,9 +80,11 @@ Next ACT: **ACT-POLYC-LLVM-SPIKE01-RESUME01** (per LLVM-SPIKE01 §4.3).
 # 2. Identity
 
 ```text
-ENTRY_HEAD   = faf2548903423185b3f8bd6965f0ad9bebeacea1
-FINAL_HEAD   = 404644d283cc916d01e2b0b176faa4b5392b190f
-WORKTREE     = clean
+ENTRY_HEAD          = faf2548903423185b3f8bd6965f0ad9bebeacea1
+IMPLEMENTATION_HEAD = 404644d283cc916d01e2b0b176faa4b5392b190f
+CLOSURE_HEAD        = be7451f64cb1c551e085f1a5a1732f8367b6399a
+REQUAL_HEAD         = (filled in by ACT-POLYC-IR-BOUNDARY02-REQUAL01)
+WORKTREE            = clean
 ```
 
 The single commit in this ACT:
@@ -531,7 +548,9 @@ VERDICT=PASS_WITH_NEXT_ACT_DECISION
 
 IDENTITY
 ENTRY_HEAD=faf2548903423185b3f8bd6965f0ad9bebeacea1
-FINAL_HEAD=404644d283cc916d01e2b0b176faa4b5392b190f
+IMPLEMENTATION_HEAD=404644d283cc916d01e2b0b176faa4b5392b190f
+CLOSURE_HEAD=be7451f64cb1c551e085f1a5a1732f8367b6399a
+REQUAL_HEAD=(filled in by ACT-POLYC-IR-BOUNDARY02-REQUAL01)
 WORKTREE_STATUS=clean
 
 REGRESSION
@@ -697,3 +716,41 @@ RESIDUE
 > environment reason - and that is exactly the failure-mode the ACT
 > describes as "expected product RED via the hermetic predecessor
 > reproduction path". The product moves; the gate does not.
+---
+
+# 16. Requalification addendum (filled in by REQUAL01)
+
+`ACT-POLYC-FACTORY-PUSH-HERMETIC01` (commit `17572b2`) subsequently turned
+the canonical push gate green on the implementation commit `404644d`:
+
+```text
+$ scripts/quality/gate-push.sh 404644d
+POLYC_GATE=push
+SUBJECT=404644d283cc
+CHECK=build STATUS=PASS
+CHECK=install STATUS=PASS
+CHECK=aot STATUS=PASS
+CHECK=jit STATUS=PASS
+CHECK=lsp STATUS=PASS
+CHECK=diff-check STATUS=PASS
+VERDICT=PASS
+```
+
+(Full transcript in `evidence/boundary02/gate_push_404644d.txt`.)
+
+`ACT-POLYC-IR-BOUNDARY02-REQUAL01` records this requalification. It does
+not modify the implementation commit, the closure commit, the gate, or the
+compiler source.
+
+After REQUAL01:
+
+```text
+IMPLEMENTATION_HEAD = 404644d283cc916d01e2b0b176faa4b5392b190f
+CLOSURE_HEAD       = be7451f64cb1c551e085f1a5a1732f8367b6399a
+REQUAL_HEAD        = (see ACT-POLYC-IR-BOUNDARY02-REQUAL01)
+GATE_PUSH_404644d  = PASS
+AOT                = 90/90
+JIT                = 90/90
+LSP                = 43/43
+CORPUS             = 17/17
+```
