@@ -240,16 +240,49 @@ emission boundary. The soundness of B rests on a
 **Boolean invariant** (IR_BR condition in `{0, 1}`) that is
 nowhere enforced in neutral IR.
 
-The invariant is in fact maintained today, but only
-implicitly: every IR_ICMP result lives as `i1` inside the
-LLVM-C `lc` state, and the only path that takes the value
-out of `lc` and back to `ins->dst->type == IR_TYPE_I64`
-is the trunc in section 3.2. So the invariant holds by
-structural accident of the consumer's representation, not
-by any neutral-IR proof obligation.
+What has been observed:
 
-This is a stronger statement than the previous draft's
-"hybrid trunc-at-emission" wording. It is also correct.
+```text
+- The current LLVM consumer happens to materialise
+  IR_ICMP as LLVM `i1` inside the LLVM-C `lc` state.
+
+- The only path that takes the value out of `lc` and
+  back to `ins->dst->type == IR_TYPE_I64` is the trunc
+  in section 3.2.
+
+- Therefore, within the LLVM consumer's representation,
+  the value is `i1` between IR_ICMP emission and the
+  IR_BR trunc, and is in `{0, 1}` at the trunc.
+```
+
+What this does NOT establish:
+
+```text
+- That neutral IR (above the boundary) semantically
+  guarantees `IR_BR condition ∈ {0, 1}`. The neutral-IR
+  proof obligation is absent; nothing in the neutral
+  IR contract asserts the value is in `{0, 1}`.
+
+- That the `{0, 1}` invariant would survive a change to
+  the LLVM consumer's representation, a future
+  alternate consumer, or any pass that touches the
+  IR_ICMP result outside the LLVM-C state.
+
+- That contract B is therefore "sound today" in any
+  stronger sense than "the current LLVM consumer
+  happens to keep the value in `{0, 1}` between the
+  IR_ICMP arm and the IR_BR trunc."
+```
+
+Whether neutral IR guarantees the `{0, 1}` Boolean
+invariant (contract A or B above) or only the
+`zero=false / nonzero=true` Truthiness invariant
+(listed as option C above) is an OPEN question.
+That question is the input to ACT-POLYC-IR-BOUNDARY03,
+not something this note proves. IR-BOUNDARY03 must
+NOT inherit "contract B is sound today" as an
+established fact; it must re-derive the answer from
+neutral-IR semantics.
 
 ### What contract B requires of neutral-IR producers
 

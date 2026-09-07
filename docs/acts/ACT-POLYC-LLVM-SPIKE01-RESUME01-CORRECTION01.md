@@ -951,25 +951,31 @@ PRODUCTION_AUTHORIZATION
 
 ## 12. Identity at close
 
-Filled in at C1 close. The close entry is appended in the
-final commit (see `git log -1` and `HANDOFF.md §11/§12`
-for the SHA recorded against this ACT). The C1 commit
-contains exactly the authorised scope (no production
-code) and produces a real `C1_HEAD` SHA that
-`git diff --check 130098c..C1_HEAD` is required to pass.
+Filled in at C1 close. See `git log -1` and
+`HANDOFF.md §11` and `§14` for the SHA recorded against
+this ACT. The C1 commit contains exactly the authorised
+scope (no production code) and produces a real `C1_HEAD`
+SHA that `git diff --check 130098c..C1_HEAD` passes.
 
 The full closure record (gates, residue, next ACT) lives
 at `evidence/llvmspike01-resume01-correction01/HANDOFF.md`,
-which is updated to reflect the four pre-closure
-corrections (RED-1A contract refactor, boolean-contract
-trunc-UB correction, dump-ir transcript hygiene
-normalisation, real C1 commit + gate-push).
+which is updated to reflect the pre-closure corrections
+(RED-1A contract refactor, boolean-contract trunc-UB
+correction, dump-ir transcript hygiene normalisation,
+real C1 commit + gate-push, and the CLOSURE01 docs-only
+correction).
 
 ```text
 branch:               main
 entry HEAD:           130098c7344c4fb430c1dec0291bbd16ce0bf3e6
-C1 working tree:      uncommitted (the commit step belongs to a
-                      future acceptance-and-commit session, not C1)
-C1 halt:              HALT_LM_SEES_NATIVE_FUSION  (mandatory, achieved)
+C1_HEAD:              fedfcbc44edb3013fdd5d2749e6bec0a486ae3ad
+C1 working tree:      clean
+C1 halt:              HALT_LLVM_SEES_NATIVE_FUSION  (mandatory, achieved)
+C1 gate-push:         VERDICT=PASS against fedfcbc44edb3013fdd5d2749e6bec0a486ae3ad
+                      (build/install/aot/jit/lsp/diff-check all PASS;
+                      log: evidence/llvmspike01-resume01-correction01/
+                      gate-push-fedfcbc.log)
+C1 closure commit:    ACT-POLYC-LLVM-SPIKE01-RESUME01-CORRECTION01-CLOSURE01
+                      (docs + evidence only; no production code)
 C1 next-act pointer:  ACT-POLYC-IR-BOUNDARY03
 ```
