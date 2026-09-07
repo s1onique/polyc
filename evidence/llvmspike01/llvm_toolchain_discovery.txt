@@ -1,0 +1,45 @@
+=== LLVM toolchain discovery ===
+
+Goal: LLVM 22.x as required by ACT-POLYC-LLVM-SPIKE01 §3.1.
+
+PATH:
+  /Volumes/UserData/Users/chistyakov/.nix-profile/bin:/etc/profiles/per-user/chistyakov/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+
+1) which llvm-config  -> NOT FOUND
+2) ls /usr/local/bin/llvm-config*  -> NOT FOUND
+3) find / -maxdepth 6 -name 'llvm-config*'  -> finds only nix store entries
+4) nixpkgs attribute namespace (let p = import <nixpkgs> {};
+   builtins.filter (n: ...) (builtins.attrNames p))  ->
+   llvmPackages_{12,13,14,15,16,17,18,19,20,21,git,latest}
+   NO llvmPackages_22 attribute in default nixpkgs.
+5) llvmPackages_latest.llvm.version  -> "21.1.7"
+6) No llvm-config in /opt/homebrew (Homebrew not installed).
+7) Apple CommandLineTools ships llvm-{cov,cxxfilt,dwarfdump,nm,objdump,otool,
+   profdata,size} but no llvm-config and no headers.
+
+Available LLVM installations on this machine:
+
+  a) llvm-16.0.6-dev  (full: bin + include + lib + nix-support)
+     /nix/store/23p2rimyf7bgs0k02i0z3wis0krxz9r3-llvm-16.0.6-dev/
+     Provides Core.h, Analysis.h headers; libLLVM-16.dylib available.
+
+  b) llvm-21.1.7     (bin only - no headers, no lib)
+     /nix/store/fgxdhjfb9pw1wf1rrxvv5jbnqkw829kb-llvm-21.1.7/
+
+  c) llvm-21.1.7-lib (lib only - no bin, no headers)
+     /nix/store/czw4hx456nlg2hfp2ly841a2g7s5rb9r-llvm-21.1.7-lib/
+
+  d) llvm-binutils-16.0.6  (llvm-as, etc. - no llvm-config)
+     /nix/store/*-llvm-binutils-16.0.6/bin/
+
+LLVM 22.x: NOT AVAILABLE on this machine in any form.
+
+ACT §3.1 strictly limits acceptable LLVM versions to "another LLVM 22 patch
+release when the required Core C API is available". LLVM 16 and 21 are
+not LLVM 22 patch releases.
+
+ACT §5 says: "If LLVM mode is explicitly requested but a compatible
+installation cannot be found: HALT_LLVM_TOOLCHAIN_UNAVAILABLE. Do not
+silently fall back to native codegen while claiming LLVM mode."
+
+Conclusion: LLVM mode requested but no LLVM 22 toolchain. HALT per §5.
