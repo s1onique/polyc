@@ -14,9 +14,18 @@ ACCEPT for the staged CORRECTION01 ACT.
 ACT-POLYC-LLVM-SPIKE01-RESUME01-CORRECTION01
     STAGE           = C1 ONLY
     STATUS          = HALT_LLVM_SEES_NATIVE_FUSION
+                      (mandatory C1 halt; achieved)
+    C1_HEAD         = fedfcbc44edb3013fdd5d2749e6bec0a486ae3ad
+    GATE-PUSH       = VERDICT=PASS against C1_HEAD
+                      (build/install/aot/jit/lsp/diff-check all PASS;
+                      see §11.5 and §14 for evidence)
     REPRODUCED REDs = RED-1B, RED-2, RED-3..8 (witnesses captured)
     DID NOT REPRODUCE = RED-1A (literal claim; see analysis)
-    BOOLEAN CONTRACT  = documented (RED-7 PASS)
+    BOOLEAN CONTRACT  = documented (RED-7 PASS); §4 tightened at
+                        CLOSURE01 (LLVM-consumer representation
+                        fact distinguished from neutral-IR proof
+                        obligation; IR-BOUNDARY03 cannot inherit
+                        "contract B is sound today")
     PREDICATE COVERAGE = six predicates exercised (RED-6 PASS)
     NEXT ACT          = ACT-POLYC-IR-BOUNDARY03 (upstream fix)
 ```
@@ -32,10 +41,11 @@ a fresh ACT after ACT-POLYC-IR-BOUNDARY03 closes GREEN.
 ```text
 branch:               main
 entry HEAD:           130098c7344c4fb430c1dec0291bbd16ce0bf3e6
-C1 commit:            CREATED IN THIS SESSION (C1_HEAD)
-                      See §11 for the recorded SHA.
-                      See §11 for the gate-push result against
-                      C1_HEAD.
+C1 commit:            CREATED IN THIS SESSION
+                      C1_HEAD = fedfcbc44edb3013fdd5d2749e6bec0a486ae3ad
+                      (see §14 for the recorded SHA).
+                      Gate-push against this SHA: VERDICT=PASS
+                      (see §11.5 and §14).
 toolchain (probed):   hcc (built Sep 7 with HCC_ENABLE_LLVM=ON,
                       links /nix/store/.../libLLVM.dylib = LLVM 22.1.8)
                       llvm-config / llvm-as (Homebrew llvm@21.1.8);
@@ -45,6 +55,11 @@ toolchain (probed):   hcc (built Sep 7 with HCC_ENABLE_LLVM=ON,
                       LLVM_AS_21_RESULT = informational;
                       LLVM_AS_22_RESULT = authoritative for future
                       acceptance testing.
+                      Gate-push build toolchain (CLOSURE01):
+                      cmake 4.1.6
+                      (/run/current-system/sw/bin/cmake,
+                      provided by the project Nix migration)
+                      + AppleClang 15.0.0.15000040 + llvm@21.
 ```
 
 
@@ -176,7 +191,7 @@ This matrix evidence hands off to ACT-POLYC-IR-BOUNDARY03.
 | scope-strict file list (F7) | PASS | §5 above |
 | F10 conservation (production untouched) | PASS | git diff --stat shows only docs + tests + harness + fixtures |
 | llvm-spike-test.sh | PASS, 12/0 | tail of harness output captured in this directory |
-| gate-push against C1 working tree | DEFERRED to C3 | per staged topology; C1 only captures the witness |
+| gate-push against C1_HEAD=fedfcbc44edb | PASS, VERDICT=PASS | gate-push-fedfcbc.log (build/install/aot/jit/lsp/diff-check all PASS) |
 
 
 ## 8. SCOPE
@@ -209,20 +224,17 @@ This matrix evidence hands off to ACT-POLYC-IR-BOUNDARY03.
 ## 9. RESIDUE (P0/P1/P2; F11)
 
 ```text
-P0  = HALT_GATE_PUSH_TOOLCHAIN_MISSING (recorded this session).
-       Reason: gate-push.sh GPUSH-1 invokes `cmake` for the
-       hermetic clean build; cmake is not on PATH in this
-       sandboxed shell, so gate-push cannot run here. The
-       build artefact (`./hcc`) DOES exist (the
-       Makefile-driven build works), so this is purely a
-       gate-script toolchain dependency, NOT a C1 product
-       defect. Re-run gate-push in an environment with cmake
-       installed (any standard dev machine; CI; or install
-       via Homebrew: `brew install cmake`).
-       Status: NOT a C1 blocker; C1-AC-11 evidence captured
-       in gate-push-c1.log / red-c1-ac11.gate-push-attempt.log.
-       F10 conservation holds trivially because C1 touched
-       no production code.
+P0  = none remaining in C1.
+
+       The earlier P0 (HALT_GATE_PUSH_TOOLCHAIN_MISSING) was
+       resolved at CLOSURE01 once cmake was available in the
+       sandboxed shell. gate-push against
+       fedfcbc44edb3013fdd5d2749e6bec0a486ae3ad returns
+       VERDICT=PASS (build / install / aot / jit / lsp /
+       diff-check all PASS). The earlier transcript
+       (gate-push-c1.log / red-c1-ac11.gate-push-attempt.log)
+       is superseded by gate-push-fedfcbc.log in this
+       directory.
 
 P1  = none introduced by C1.
 
@@ -354,6 +366,51 @@ transcripts must capture compiler output that itself
 contains trailing whitespace or other non-conforming
 bytes.
 
+## 11.5. Gate-push evidence hygiene (CLOSURE01)
+
+The gate-push transcript against `C1_HEAD=fedfcbc44edb3013fdd5d2749e6bec0a486ae3ad`
+is captured in this directory as the same
+two-paired-form shape used for the dump-ir transcripts in
+§11:
+
+```text
+gate-push-fedfcbc.log         NORMALISED textual representation
+                              (trailing horizontal whitespace
+                              stripped per line; passes
+                              `git diff --check`).
+
+gate-push-fedfcbc.log.sha256  SHA256 of the ORIGINAL raw bytes
+                              (captured from the live
+                              `./scripts/quality/gate-push.sh
+                              fedfcbc44edb...` invocation).
+
+gate-push-fedfcbc.log.b64     Base64 encoding of the ORIGINAL
+                              raw bytes (chunked at 76 columns
+                              for git-friendliness).
+```
+
+Reconstruct and verify with:
+
+```sh
+base64 -d gate-push-fedfcbc.log.b64 | shasum -a 256
+# must print the SHA256 listed in
+# gate-push-fedfcbc.log.sha256
+```
+
+Summary line of the gate-push result:
+
+```text
+POLYC_GATE=push
+SUBJECT=fedfcbc44edb
+CHECK=build      STATUS=PASS
+CHECK=install    STATUS=PASS
+CHECK=aot        STATUS=PASS
+CHECK=jit        STATUS=PASS
+CHECK=lsp        STATUS=PASS
+CHECK=diff-check STATUS=PASS
+VERDICT=PASS
+```
+
 ## 12. Next ACT (after IR-BOUNDARY03)
 
 The corrected boolean-contract question from §1 of
@@ -384,7 +441,7 @@ specific architectural question the next ACT must answer.
 ## 13. C1 closing state
 
 ```text
-CORRECTION01 (live progress at this draft)
+CORRECTION01 (live progress at CLOSURE01)
     staged architecture       PASS
     scope/HALT discipline     PASS
     C1/C2/C3 separation       PASS
@@ -400,13 +457,32 @@ CORRECTION01 (live progress at this draft)
                                       Boolean vs Truthiness
                                       invariant question installed
                                       as input to IR-BOUNDARY03)
+    boolean-contract §4
+      tightened               DONE (CLOSURE01; reviewer correction:
+                                      distinguishes LLVM-consumer
+                                      representation fact from
+                                      neutral-IR proof obligation;
+                                      IR-BOUNDARY03 cannot inherit
+                                      "contract B is sound today"
+                                      as established fact)
     dump-ir transcript
       hygiene                 NORMALISED (raw bytes SHA256-pinned
                                       outside Git; normalised
                                       representation committed
                                       so `git diff --check` passes)
-    C1 commit                 CREATED  (C1_HEAD = real SHA, §11)
-    gate-push                 RUN against C1_HEAD (§11)
+    C1 commit                 CREATED  (C1_HEAD = fedfcbc44edb,
+                                      see §14)
+    gate-push                 RUN against C1_HEAD=fedfcbc44edb
+                              VERDICT=PASS (build/install/aot/
+                              jit/lsp/diff-check all PASS;
+                              see §14 and gate-push-fedfcbc.log)
+    stale ACT §12 + HANDOFF
+      §7/§13/§14 closure
+      statements              RECONCILED (CLOSURE01; all three
+                              now agree on C1_HEAD and gate
+                              PASS; HALT_LM typo fixed to
+                              HALT_LLVM; "uncommitted" replaced
+                              with C1_HEAD and "clean")
     C1 halt                   HALT_LLVM_SEES_NATIVE_FUSION
 
 PRODUCTION_AUTHORIZATION
@@ -419,13 +495,7 @@ PRODUCTION_AUTHORIZATION
 ## 14. HANDOFF signature
 
 ```text
-C1_HEAD                = (see `git log -1` at the tip of the
-                         branch at the time C1 closed; this
-                         field is intentionally not pinned
-                         to a specific value in the
-                         committed HANDOFF to avoid the
-                         amend-loop where each new commit
-                         invalidates its own recorded SHA)
+C1_HEAD                = fedfcbc44edb3013fdd5d2749e6bec0a486ae3ad
 
 C1 commit message      = "docs(test): CORRECTION01 stage C1
                           - REDs + boolean contract + closure
@@ -441,32 +511,35 @@ C1-AC-8
 
 C1-AC-11
   (gate-push against
-   C1_HEAD)            = COULD NOT RUN in this environment.
-                         Reason: cmake is not on PATH in this
-                         sandboxed shell (gate-push.sh invokes
-                         cmake for the hermetic clean build,
-                         see GPUSH-1 in scripts/quality/
-                         gate-push.sh). The Makefile-driven
-                         build works in this environment
-                         (./hcc was produced by it), so the
-                         build artefact exists; the gate
-                         script's cmake dependency is what is
-                         missing.
-                         Transcript: gate-push-c1.log and
-                         red-c1-ac11.gate-push-attempt.log
-                         in this directory (both contain the
-                         same content; one is the
-                         audit-filename variant for the
-                         AC-11 binder).
-                         Status: HALT_GATE_PUSH_TOOLCHAIN_MISSING
-                         (recorded as residue, NOT a C1
-                         defect; see HANDOFF §9 P0 residue).
-                         Expected re-run environment: a
-                         machine with cmake installed.
+   C1_HEAD)            = PASS, VERDICT=PASS
+                         Subject: fedfcbc44edb3013fdd5d2749e6bec0a486ae3ad
+                         Per-check status:
+                             CHECK=build     STATUS=PASS
+                             CHECK=install   STATUS=PASS
+                             CHECK=aot       STATUS=PASS
+                             CHECK=jit       STATUS=PASS
+                             CHECK=lsp       STATUS=PASS
+                             CHECK=diff-check STATUS=PASS
+                             VERDICT=PASS
+                         Transcript: gate-push-fedfcbc.log in
+                         this directory (hygiene-normalised,
+                         with .sha256 + .b64 sidecars of the
+                         raw bytes; b64 round-trip verified).
+                         Toolchain: cmake 4.1.6
+                         (/run/current-system/sw/bin/cmake,
+                         provided by the project Nix migration)
+                         + AppleClang 15.0.0 + llvm@21.
 
 C1 halt                = HALT_LLVM_SEES_NATIVE_FUSION
                          (mandatory C1 halt; achieved)
 ```
+
+The earlier `gate-push-c1.log` / `red-c1-ac11.gate-push-attempt.log`
+transcripts in this directory capture the initial
+`cmake: command not found` attempt; they are SUPERSEDED by
+`gate-push-fedfcbc.log` and remain in place only as
+historical residue. The earlier P0 residue
+`HALT_GATE_PUSH_TOOLCHAIN_MISSING` is RESOLVED; see §9.
 
 C1 produced its mandatory halt honestly. REDs were captured
 truthfully (RED-1A's literal claim did not reproduce at
