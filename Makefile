@@ -5,7 +5,7 @@ CFLAGS         ?= '-Wextra -Wall -Wpedantic'
 
 default: all
 
-.PHONY: all
+.PHONY: all gate-fast gate-push install-hooks
 
 # To add sqlite3 support add -DHCC_LINK_SQLITE3=1 to the below like so:
 #```
@@ -57,3 +57,15 @@ lib-tos:
 
 clean:
 	rm -rf ./build ./hcc
+
+# Convenience surfaces only. Gate logic lives in the scripts.
+# See scripts/quality/gate-fast.sh and scripts/quality/gate-push.sh.
+
+gate-fast:
+	./scripts/quality/gate-fast.sh
+
+gate-push:
+	./scripts/quality/gate-push.sh HEAD
+
+install-hooks:
+	./scripts/install-git-hooks.sh
