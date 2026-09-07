@@ -113,6 +113,28 @@ run_check() {
     rc=$?
     set -e
 
+    # Exit status was 0 — but the HolyC test runner does not propagate
+    # test failures via exit status. Scan the captured output for the
+    # narrowest possible per-test failure markers emitted by the
+    # existing test harness.
+    #
+    # IMPORTANT: we must derive marker_failed BEFORE removing
+    # out_file. If we delete the file first and grep then operates on
+    # a non-existent path, grep returns 2, the `if` is false, and a
+    # command that exited 0 while emitting FAILED: markers would be
+    # certified as PASS — a silent false GREEN. See
+    # ACT-POLYC-FACTORY-AGENT-GATES01-CORRECTION02 (P0).
+    #
+    # We look for these tokens anywhere on a line (not just at line
+    # start) because the harness sometimes prefixes them with the test
+    # name, e.g.:
+    #
+    #   "Test - indirect struct return C interop: FAILED: 1/3"
+    marker_failed=0
+    if grep -E -q 'FAILED: |Failed to compile|Failed to run' "$out_file"; then
+        marker_failed=1
+    fi
+
     # Stream the captured output so the engineer sees what happened.
     cat "$out_file"
 
@@ -122,6 +144,8 @@ run_check() {
     # EXIT and signal names; RETURN would silently no-op under dash,
     # BSD sh, or any shell that does not implement the Bash pseudo-signal,
     # leaving out_file behind. We always remove it explicitly here.
+    # The scan above has already completed before this point, so removing
+    # the file is now safe.
     rm -f "$out_file"
 
     if [ "$rc" -ne 0 ]; then
@@ -130,16 +154,7 @@ run_check() {
         return 1
     fi
 
-    # Exit status was 0 — but the HolyC test runner does not propagate
-    # test failures via exit status. Scan for the narrowest possible
-    # per-test failure markers emitted by the existing test harness.
-    #
-    # We look for these tokens anywhere on a line (not just at line
-    # start) because the harness sometimes prefixes them with the test
-    # name, e.g.:
-    #
-    #   "Test - indirect struct return C interop: FAILED: 1/3"
-    if grep -E -q 'FAILED: |Failed to compile|Failed to run' "$out_file"; then
+    if [ "$marker_failed" -ne 0 ]; then
         echo "CHECK=$name STATUS=FAIL"
         echo "REASON=$name emitted test-failure markers despite zero exit status"
         return 1
@@ -207,12 +222,24 @@ fi
 # in those changes.
 #
 # Root-commit handling: when the subject has no parent (the very first
-# commit of the repository), `git diff --check <empty> <subject>` is the
-# correct way to inspect the entire initial tree as if it were all
-# "added". Pass /dev/null as the first arg to mean "the empty tree".
+# commit of the repository), `git diff --check <empty-tree> <subject>`
+# is the correct way to inspect the entire initial tree as if it were
+# all "added". Git's documented null-tree mechanism is the SHA of the
+# well-known empty tree object:
+#
+#   4b825dc642cb6eb9a060e54bf8d69288fbee4904
+#
+# We compute it explicitly via `git hash-object -t tree /dev/null`
+# rather than hard-coding the SHA, so that the value is always
+# verifiable against the installed Git version.
+#
+# Note: `/dev/null` is NOT a valid tree-ish revision for
+# `git diff <rev> <rev>` — it produces "Could not access" errors.
+# The earlier closure of CORRECTION01 claimed otherwise; that claim
+# was wrong. See ACT-POLYC-FACTORY-AGENT-GATES01-CORRECTION02 (P1).
 parent_arg="$subject_sha^"
 if ! git cat-file -e "${parent_arg}^{commit}" 2>/dev/null; then
-    parent_arg="/dev/null"
+    parent_arg=$(git hash-object -t tree /dev/null)
 fi
 
 if ! diff_check_output=$(cd "$tmp" && git diff --check "$parent_arg" "$subject_sha" 2>&1); then
