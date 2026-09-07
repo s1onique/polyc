@@ -1,0 +1,10 @@
+void PrintResult(%p1 i64 param loc=reg rdi, %p3 i64 param loc=reg rsi) {
+  bb1 -> predecessors:  {}  successors: {3, 4}
+    store    %l2 i64 local, %p1 i64 param loc=reg rdi  ; line 1
+    store    %l4 i64 local, %p3 i64 param loc=reg rsi  ; line 1
+    cmp_ne   %t5 i64 tmp, %l2 i64 local, %l4 i64 local  ; line 2
+    br       %t5 i64 tmp, bb3, bb4  ; line 2
+
+  bb3 -> predecessors: {1}  successors: {5}
+    arg       "\033[0;31mFAILED: %d/%d\033[0;0m\n" array const str
+    arg       %l2 i64 local
