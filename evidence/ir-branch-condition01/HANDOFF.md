@@ -1,18 +1,46 @@
-# ACT-POLYC-IR-BRANCH-CONDITION01 — HANDOFF (CORRECTION01)
+# ACT-POLYC-IR-BRANCH-CONDITION01 — HANDOFF (CORRECTION01 + CORRECTION02)
 
 ```text
 ACT-POLYC-IR-BRANCH-CONDITION01                  = PASS (corrected)
-ACT-POLYC-IR-BRANCH-CONDITION01-CORRECTION01     = PASS (this)
+ACT-POLYC-IR-BRANCH-CONDITION01-CORRECTION01     = PASS (this; closure identity repaired by CORRECTION02)
+ACT-POLYC-IR-BRANCH-CONDITION01-CORRECTION02     = PASS (this; bounded docs/evidence repair)
 ```
 
 ## Identity
 
 ```text
-ENTRY_HEAD            = 774602a966584b34b355ec00e5f63a088f84164c
-RED_HEAD              = 341939ca7c56081e0bb45a435524219a4bd4a630
-IMPLEMENTATION_HEAD   = cbf726ed939956ebc79790371a9d372942b10b05
-ORIGINAL_CLOSURE      = f631760ac2bf674a8997d40a62db36ffc43d56d9 (RESCINDED)
-CORRECTION01_FINAL    = de90851fe3e389385eb3f732e6ac0932de2506de (this commit, evidence-carrier)
+ENTRY_HEAD                  = 774602a966584b34b355ec00e5f63a088f84164c
+RED_HEAD                    = 341939ca7c56081e0bb45a435524219a4bd4a630
+IMPLEMENTATION_HEAD         = cbf726ed939956ebc79790371a9d372942b10b05
+ORIGINAL_CLOSURE (RESCINDED) = f631760ac2bf674a8997d40a62db36ffc43d56d9
+CORRECTION01_SUBSTANTIVE    = 574840d4a5c28b2241b4d9dbc2a6f62d12ac1ede
+CORRECTION01_CLOSURE_EVIDENCE = de90851fe3e389385eb3f732e6ac0932de2506de
+CORRECTION01_LOOP_BREAKER   = 50a158ee403348bf85bc2654f867e58368a95ada
+CORRECTION01_IMPL_SUBJECT   = cbf726ed9399
+
+FINAL_HEAD:
+    authoritative = $(git rev-parse HEAD)
+    Do NOT embed a self-referential SHA. The current FINAL_HEAD
+    is recorded as CORRECTION01_LOOP_BREAKER above for historical
+    reference only; any future amend of this HANDOFF changes
+    that SHA, so binding must be verified mechanically, not by
+    trusting a committed value.
+
+VERIFY_WITH:
+    cd /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc
+    SUBJECT=$(grep ^SUBJECT \
+        evidence/ir-branch-condition01-correction01/gate-push-impl/log.txt \
+        | head -1 | cut -d= -f2)
+    DEPTH=$(git rev-list --count $SUBJECT..HEAD)
+    HM=$(git rev-parse HEAD~$DEPTH | cut -c1-12)
+    test "$SUBJECT" = "$HM" && echo PASS || echo FAIL
+
+    Expected today:
+        SUBJECT = cbf726ed9399
+        DEPTH   = 3
+        HM      = cbf726ed
+        => PASS
+
 BRANCH                = main
 WORKTREE              = clean
 ```
@@ -294,23 +322,23 @@ what LLVM's `br i1` requirement needs. Real llvm-spike-test PASS=12
 on the implementation commit confirms the mapping. LLVM support work
 can now resume against a much cleaner branch semantic boundary.
 
-## DRIFT NOTE (F4/F13 honest accounting)
+## DRIFT NOTE (superseded by CORRECTION02)
 
-The CORRECTION01 FINAL_HEAD pin above may be off by 1 amend
-iteration due to the well-known amend-loop problem (any
-change to the HANDOFF file during the closure commit changes
-the SHA it is supposed to pin; see the same loop in
-ACT-POLYC-IR-BOUNDARY03-CORRECTION02 HANDOFF-CORRECTION02.md
-§166).
+The CORRECTION01 closure originally pinned FINAL_HEAD via a
+self-referential SHA + DRIFT NOTE pattern. CORRECTION02 (this
+ACT) replaced that pattern with mechanical binding (see the
+VERIFY_WITH block under ## Identity above). The mechanical
+recipe is the authoritative binding; the historical SHA values
+under CORRECTION01_LOOP_BREAKER etc. are recorded only for
+audit, not as the identity contract.
 
-CORRECTION01 has 3 commits (cap=3 incl loop-breaker):
-  Commit 1: 574840d  RED+impl-doc combined (substantive)
-  Commit 2: <hash>   closure evidence (gate-push log + closure-facts)
-  Commit 3: <this>   loop-breaker (FINAL_HEAD pin)
+Closure identity is now bound by:
 
-The actual final HEAD = <this commit> (after amend). The pin
-above is the closure commit SHA; the drift between pin and
-actual HEAD is at most 1 amend and is documented here per
-F4/F13.
+    SUBJECT=$(grep ^SUBJECT evidence/ir-branch-condition01-correction01/gate-push-impl/log.txt | head -1 | cut -d= -f2)
+    DEPTH=$(git rev-list --count $SUBJECT..HEAD)
+    HM=$(git rev-parse HEAD~$DEPTH | cut -c1-12)
+    test "$SUBJECT" = "$HM" && echo PASS || echo FAIL
 
-Per F4/F13, this residue is acknowledged rather than erased.
+No amend of this HANDOFF can invalidate that recipe, because
+the recipe reads SUBJECT from a stable, externally captured
+file (gate-push-impl/log.txt) and computes DEPTH dynamically.

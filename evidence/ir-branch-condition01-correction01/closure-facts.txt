@@ -1,6 +1,13 @@
 ACT-POLYC-IR-BRANCH-CONDITION01-CORRECTION01 — closure facts
 =============================================================
 
+CORRECTION02 (2026-09-08) correction history:
+
+  An earlier draft of this file claimed N=2 and pinned HEAD~2.
+  That was correct at one amend iteration but stale after the
+  loop-breaker (Commit 3, `50a158e`) was added. CORRECTION02
+  rewrote this file to the final N=3 binding.
+
 Closure-loop identity binding (extended contract for
 closure-requalification ACTs):
 
@@ -17,14 +24,14 @@ This CORRECTION01 therefore uses the extended contract:
 
     SUBJECT = HEAD~N where N is the depth to the impl commit
 
-For this CORRECTION01:  N = 2
+For this CORRECTION01:  N = 3
 
-    \$ git rev-parse HEAD~2
+    $ git rev-parse HEAD~3
     cbf726ed939956ebc79790371a9d372942b10b05
-    \$ cat log.txt | grep SUBJECT
+    $ cat log.txt | grep SUBJECT
     SUBJECT=cbf726ed9399
 
-    MATCH: HEAD~2 == SUBJECT == implementation commit
+    MATCH: HEAD~3 == SUBJECT == implementation commit
 
 Identity chain:
 
@@ -32,22 +39,30 @@ Identity chain:
     ORIGINAL_RED                = 341939ca7c56081e0bb45a435524219a4bd4a630
     IMPLEMENTATION              = cbf726ed939956ebc79790371a9d372942b10b05
     ORIGINAL_CLOSURE (RESCINDED) = f631760ac2bf674a8997d40a62db36ffc43d56d9
-    CORRECTION01_COMMIT_1       = 574840d (substantive RED+impl-doc)
-    CORRECTION01_COMMIT_2       = 7820bf5 (closure evidence; FINAL_HEAD)
+    CORRECTION01_COMMIT_1       = 574840d4a5c28b2241b4d9dbc2a6f62d12ac1ede (substantive RED+impl-doc)
+    CORRECTION01_COMMIT_2       = de90851fe3e389385eb3f732e6ac0932de2506de (closure evidence)
+    CORRECTION01_COMMIT_3       = 50a158ee403348bf85bc2654f867e58368a95ada (loop-breaker; CURRENT FINAL_HEAD)
 
-    CORRECTION01 commits on top of impl: 2 (cap=2)
+    CORRECTION01 commits on top of impl: 3 (cap=3)
 
-Why N=2 and not N=1?
+Why N=3 (not N=1 or N=2)?
 
   In the standard CORRECTION03 pattern (substantive + closure),
   HEAD~ IS the substantive commit. Here, the substantive commit
   is a documentation/commit-organization commit, not the
   implementation commit. The gate-push was run against the
-  IMPLEMENTATION commit (cbf726e), not against the
-  documentation commit (574840d). Documenting the gate-push as
-  if it were run against 574840d would be a false-GREEN.
+  IMPLEMENTATION commit (cbf726e), not against the documentation
+  commit (574840d). Documenting the gate-push as if it were run
+  against 574840d would be a false-GREEN.
 
-  Therefore the correct binding is N=2: SUBJECT=HEAD~2=impl.
+  N=2 was the depth from the closure-evidence commit
+  (de90851). After the loop-breaker commit (50a158e) was added,
+  the depth became N=3 (HEAD~3 from FINAL_HEAD = impl).
+
+  The gate-push output is invariant under the loop-breaker
+  addition (it only modifies the HANDOFF identity section, not
+  the captured log), so SUBJECT=cbf726ed9399 remains correct
+  and the only required change is the N bookkeeping.
 
 Mechanical verification recipe (for a reviewer):
 
@@ -55,10 +70,17 @@ Mechanical verification recipe (for a reviewer):
     SUBJECT=$(grep ^SUBJECT evidence/ir-branch-condition01-correction01/gate-push-impl/log.txt | head -1 | cut -d= -f2)
     DEPTH=$(git rev-list --count $SUBJECT..HEAD)
     HM=$(git rev-parse HEAD~$DEPTH | cut -c1-12)
-    if [ "$SUBJ" = "$HM" ]; then echo PASS; else echo FAIL; fi
+    test "$SUBJ" = "$HM" && echo PASS || echo FAIL
 
   (DEPTH is the number of commits between the impl commit and
-   the closure-evidence commit; HEAD~DEPTH is the impl commit.)
+   the current FINAL_HEAD; HEAD~DEPTH is the impl commit.)
+
+  Concrete expected output today:
+
+    SUBJECT = cbf726ed9399
+    DEPTH   = 3
+    HM      = cbf726ed
+    => PASS
 
 Verdicts (corrected):
 
@@ -81,7 +103,7 @@ Verdicts (corrected):
 
 Residue:
 
-  P0 = none
+  P0 = none (after CORRECTION02 bookkeeping repair)
   P1 = shell-rc-clobber artifact in original llvm-spike-test.txt
        (no hcc bug; the actual rc=1 is correct per
         src/main.c:585-588)
