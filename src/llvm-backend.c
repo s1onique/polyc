@@ -608,31 +608,31 @@ static LLVMBasicBlockRef llLowerBlock(LLCtx *lc, IrBlock *b) {
             continue;
         }
         if (ins->op == IR_CMP_BR) {
-            /* fused cmp+br: emit icmp; condbr */
-            if (!ins->r1 || !ins->r2 ||
-                ins->r1->type != IR_TYPE_I64 || ins->r2->type != IR_TYPE_I64) {
-                fprintf(stderr,
-                    "%s: IR_CMP_BR operands must be i64\n",
-                    LLVM_BACKEND_UNSUPPORTED_IR);
-                exit(1);
-            }
-            LLVMValueRef a = llLowerI64Value(lc, ins->r1);
-            LLVMValueRef b = llLowerI64Value(lc, ins->r2);
-            LLVMIntPredicate p = llCmpKindToLLVMPred(ins->extra.cmp_br.cmp_kind);
-            LLVMValueRef cmp = LLVMBuildICmp(lc->bld, p, a, b, "");
-            IrBlock *tt = ins->extra.cmp_br.target_block;
-            IrBlock *ff = ins->extra.cmp_br.fallthrough_block;
-            LLVMBasicBlockRef t = llbmGet(&lc->blocks, tt->id);
-            LLVMBasicBlockRef f = llbmGet(&lc->blocks, ff->id);
-            if (!t || !f) {
-                fprintf(stderr,
-                    "%s: IR_CMP_BR branch targets missing\n",
-                    LLVM_BACKEND_INTERNAL);
-                exit(1);
-            }
-            LLVMBuildCondBr(lc->bld, cmp, t, f);
-            node = next;
-            continue;
+            /* ACT-POLYC-IR-BOUNDARY03 (commit 2):
+             *   IR_CMP_BR is a NATIVE-ONLY fusion (src/ir-types.h:140-150;
+             *   src/ir-optimise.c:1079-1122 creates it via
+             *   irOptPinResultReg). The LLVM dispatch never invokes
+             *   irFunctionPrepForCodeGen, so IR_CMP_BR should never
+             *   reach this consumer. If it does, the neutral/native
+             *   boundary has been crossed above this point and the
+             *   emission must fail LOUDLY rather than silently re-
+             *   translate the fused form.
+             *
+             * Pre-BOUNDARY03 this arm silently re-emitted icmp +
+             * condbr (the predecessor RED-1B proved this worked
+             * for the supported subset). That arm is now dead and
+             * is replaced by an explicit boundary-violation
+             * diagnostic. The neutral IR shape IR_ICMP + IR_BR
+             * continues to be handled by the IR_BR arm above. */
+            fprintf(stderr,
+                "%s: function %s: IR_CMP_BR reached LLVM backend; "
+                "this opcode is below the neutral boundary "
+                "(src/ir-types.h:140-150) and must not be presented "
+                "to a backend-neutral consumer. The neutral IR "
+                "should contain IR_ICMP + IR_BR instead. This is a "
+                "boundary violation; refusing to emit.\n",
+                LLVM_BACKEND_INTERNAL, lc->fn->name->data);
+            return NULL;
         }
         if (ins->op == IR_RET) {
             if (lc->collapsed && b == lc->fn->exit_block) {
