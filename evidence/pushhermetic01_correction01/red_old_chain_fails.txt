@@ -1,0 +1,25 @@
+RED: original 17572b2..original a345afd was a false-GREEN under GPUSH-5.
+
+Original a345afd = 17572b2 + REQUAL_HEAD placeholder pin + boundary02
+evidence. Original 17572b2 introduced evidence/pushhermetic01/diff.txt
+with 6 trailing-whitespace lines.
+
+Gate behavior on the original chain:
+  OLD gate-push.sh:  CHECK=diff-check STATUS=PASS   (false GREEN)
+                     (inspected only a345afd^..a345afd = whitespace-clean)
+  NEW gate-push.sh:  CHECK=diff-check STATUS=FAIL   (catches the range)
+                     (inspects be7451f..a345afd via format-patch scan)
+
+NEW GPUSH-6 output on the original a345afd (range mode):
+
+  line 386: +<SP>
+  line 403: +<SP>
+  line 427: +<SP>
+  line 430: +<SP>
+  line 436: +<SP>
+  line 439: +<SP>
+
+<SP> = literal trailing space; rendered above as <SP> to keep this
+evidence file itself whitespace-clean (which GPUSH-6 now enforces).
+
+exit-status: 1  (whitespace detected)

@@ -63,16 +63,46 @@ if [ -z "$shas_to_check" ]; then
     exit 0
 fi
 
-# Run gate-push.sh against each SHA. The first FAIL halts the hook so
-# the human sees the gate outcome before push proceeds.
-for sha in $shas_to_check; do
-    short=$(printf '%s' "$sha" | cut -c1-12)
+# Run gate-push.sh against each SHA, passing the remote_sha as the
+# optional second argument so the diff-hygiene phase inspects the
+# entire pushed range, not just the tip commit.
+#
+# Pairing: we re-read stdin_lines here to pair each local_sha with its
+# remote_sha, skipping duplicates we already validated and skipping
+# new-branch (remote_sha=0000...0) and delete (local_sha=0000...0)
+# entries (those are filtered earlier in this hook).
+#
+# See ACT-POLYC-FACTORY-PUSH-HERMETIC01-CORRECTION01.
+while IFS=' ' read -r local_ref local_sha remote_ref remote_sha; do
+    [ -z "$local_sha" ] && continue
+    case "$local_sha" in
+        0000000000000000000000000000000000000000) continue ;;
+    esac
+    case "$local_sha" in
+        [0-9a-f]*) ;;
+        *) continue ;;
+    esac
+    case "$remote_sha" in
+        0000000000000000000000000000000000000000)
+            # New branch: the entire local tip's tree is "added".
+            # gate-push.sh's GPUSH-6 tip-only fallback covers this
+            # case correctly (parent_arg falls back to empty tree).
+            remote_arg=""
+            ;;
+        *)
+            remote_arg="$remote_sha"
+            ;;
+    esac
+
+    short=$(printf '%s' "$local_sha" | cut -c1-12)
     echo "POLYC_PRE_PUSH_VALIDATING=$short"
 
-    if ! ./scripts/quality/gate-push.sh "$sha"; then
+    if ! ./scripts/quality/gate-push.sh "$local_sha" "$remote_arg"; then
         echo "POLYC_PRE_PUSH_HALTED_AT=$short"
         exit 1
     fi
-done
+done << EOF
+$stdin_lines
+EOF
 
 exit 0

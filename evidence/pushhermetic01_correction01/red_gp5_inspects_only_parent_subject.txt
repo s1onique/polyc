@@ -1,0 +1,35 @@
+RED: GPUSH-5 inspected only subject^..subject, missing middle commits.
+
+GPUSH-5 code (before this ACT):
+    parent_arg="$subject_sha^"
+    if ! git cat-file -e "${parent_arg}^{commit}" 2>/dev/null; then
+        parent_arg=$(git hash-object -t tree /dev/null)
+    fi
+    git diff --check "$parent_arg" "$subject_sha"
+
+For subject=a345afd, GPUSH-5 ran:
+    git diff --check a345afd^..a345afd
+  = git diff --check 17572b2..a345afd  (using new tooling commit tree)
+
+That range is the *requalification* commit, which was whitespace-clean.
+The whitespace in the parent commit (17572b2's evidence/diff.txt) was
+never inspected.
+
+For subject=17572b2, GPUSH-5 ran:
+    git diff --check 17572b2^..17572b2
+  = git diff --check be7451f..17572b2
+
+That range would have caught the bug. But the reviewer ran
+`gate-push HEAD` (= a345afd), not `gate-push 17572b2`. So the bug
+remained invisible until this ACT was opened.
+
+NEW GPUSH-6 (with remote_sha=be7451f) on the original a345afd:
+    git format-patch --stdout ^be7451f a345afd
+        | awk '...trailing-WS detector...'
+
+That range covers BOTH 17572b2 and a345afd, catching the bug.
+
+See evidence/pushhermetic01_correction01/red_old_chain_fails.txt for
+the actual GPUSH-6 output on the broken chain.
+
+exit-status: 1  (whitespace detected)
