@@ -1,0 +1,185 @@
+ACT-POLYC-IR-BOUNDARY03 / Branch-condition producers (ACT §14)
+==============================================================
+
+The IR_BR condition operand's "what feeds it" question
+needs to be enumerated exhaustively. Source-tracing
+shows that `irBranch` (src/ir.c:97-136) is the ONLY
+producer of IR_BR, and it does the following normalisation
+on the condition:
+
+    if (cond->type != IR_TYPE_I8) {
+        // ... check whether the preceding instr is a CMP ...
+        if (last->op in {IR_ICMP,IR_FCMP} && last->dst == cond) {
+            isa_bool = 1;
+        }
+        if (!isa_bool) {
+            // Insert an explicit IR_ICMP(NE, cond, 0) coercion
+            // result is IR_TYPE_I8
+            IrValue *zero = irConstInt(IR_TYPE_I8, 0);
+            IrValue *bool_cond = irTmp(IR_TYPE_I8, 1);
+            IrInstr *cmp = irICmp(bool_cond, IR_CMP_NE, cond, zero);
+            listAppend(block->instructions, cmp);
+            cond = bool_cond;
+        }
+    }
+    IrInstr *instr = irInstrNew(IR_BR, cond, NULL, NULL);
+
+Producers observed:
+
+1. Comparison result (CMP as preceding instruction)
+   ----------------------------------------------------
+   Source construct: `if (a > b) ...`
+   Neutral IR shape:
+       cmp_gt %t i64, %a, %b
+       br     %t, true_bb, false_bb
+   IR_BR operand type: I64 (the ICMP result)
+   Value-domain guarantee: in PRACTICE 0 or 1 (hardware CMPs
+       produce a single-bit result stored in an I64-sized
+       SSA value; the only bit that can be nonzero is bit 0).
+   Native evaluator: src/aarch64.c:1635 / src/x86_64.c:1882
+       (case IR_BR); reads the operand as I64, expects the
+       bits-set-anywhere contract at the native I64 level.
+   JIT/native semantics: same.
+   - The IR representation is I64, NOT I1 or I8.
+   - There is no IR_TYPE_I1 in the type system
+     (ACT §18 forbids it).
+   - The LLVM backend truncates I64 -> I1 (LLVM i1); this is
+     PARITY trunc, but the values are 0 or 1 in practice so
+     it works for the current producer set.
+
+2. Explicit coercion of arbitrary I64 condition
+   ----------------------------------------------------
+   Source construct: `if (x) ...` where x is I64 (not a CMP)
+   Neutral IR shape (forced by irBranch):
+       cmp_ne  %t i8, %x, 0
+       br      %t, true_bb, false_bb
+   IR_BR operand type: I8 (the ICMP result)
+   Value-domain guarantee: 0 or 1 (CMP NE produces 1/0 by
+       bit-setting in the lowest bit).
+   Native evaluator: same as case 1.
+   - The IR coerces the I64 to I8 via ICMP(NE, x, 0).
+   - This is "truthiness" semantics: any nonzero I64 -> 1;
+     zero -> 0. (Note: x is treated as truthiness BEFORE the
+     coercion, not after.)
+   - The LLVM path currently does NOT have a special case
+     for I8 condition; llLowerI64Value is called on the
+     operand (line 593), and llLowerI64Value expects I64.
+     The I8 condition would currently fail type-check at
+     src/llvm-backend.c:585 (require I64 type). THIS IS A
+     GAP: the LLVM consumer cannot currently lower an I8
+     IR_BR condition (i.e. an `if (x)` with non-comparison
+     x).
+
+3. Boolean variable used as condition
+   ----------------------------------------------------
+   Source construct: `I64 b = a > b; if (b) ...`
+   Neutral IR shape: depends on whether `b` was originally
+   a comparison result. If yes, the IR is essentially case 1.
+   If `b` was produced by something else, the IR is case 2.
+   Conclusion: same as 1 or 2.
+
+4. Function-call result used as condition
+   ----------------------------------------------------
+   Source construct: `if (foo()) ...`
+   Neutral IR shape: same as case 2 (the call result is not
+   a CMP, so irBranch inserts ICMP(NE, call_result, 0)).
+   The IR_BR operand is I8 (the coerced bool).
+
+5. Integer variable used as condition
+   ----------------------------------------------------
+   Source construct: `if (x) ...` where x is I64
+   Neutral IR shape: case 2 (I8 bool after coercion).
+
+6. Constant used as condition
+   ----------------------------------------------------
+   Source construct: `if (0) ...` or `if (2) ...`
+   irBasicFunctionOptimisations will constant-fold these
+   into dead-block-elimination before reaching the dump or
+   the LLVM backend. In --dump-ir for truthiness_literals.HC
+   the per-literal TestZero/TestOne/etc functions show
+   NO cmp/br in their post-basic-opts IR — the dead-block
+   elimination removed the branch entirely.
+   - This is consistent with both contracts: an
+     irreducible 0/1/2 literal either becomes a constant
+     (no branch) or (if not eliminated) would generate
+     case-2 coercion IR.
+
+7. Assignment expression as condition (if syntax permits)
+   ----------------------------------------------------
+   Source construct: `if ((x = foo())) ...`
+   HolyC does support this. The lowering treats the
+   assignment as an expression that produces an I64, and
+   `irBranch` then applies case 2.
+
+8. Pointer used as condition
+   ----------------------------------------------------
+   Source construct: `if (ptr) ...` where ptr is a pointer
+   The lowering coerces ptr to I64 (load), then case 2
+   applies. The I8 coercion is over an I64-loaded value.
+
+9. Loop conditions (while/for/do)
+   ----------------------------------------------------
+   Source construct: `while (cond) ...`
+   Same lowering path as `if`. Same case 1 or 2.
+
+10. Ternary / select
+    ----------------------------------------------------
+    PolyC does not have a `?:` operator; this case is
+    not applicable.
+
+CLASSIFICATION (ACT §17)
+    The neutral IR contract for IR_BR conditions is:
+
+    IR_BR_CONTRACT = MIXED_OR_UNPROVEN
+
+    Reasoning:
+        - There are TWO distinct lowering shapes
+          (case 1 and case 2).
+        - Case 1 carries an I64 IR_ICMP result.
+        - Case 2 carries an I8 IR_ICMP(NE, x, 0) result.
+        - Neither case relies on the operand being
+          exactly {0, 1}; both could in principle carry
+          any I64 or I8 value (the lowering does not
+          insert any further normalisation, and the
+          native backend treats the operand as "bits-set-
+          anywhere" semantics — see case 1 row).
+        - In practice, the ONLY producers are IR_ICMP and
+          the explicit IR_ICMP(NE, x, 0) coercion. Both
+          produce values in {0, 1} by construction. But
+          this is a REPRESENTATIONAL ACCIDENT, not an
+          enforced invariant.
+
+        - The IR-types.h comment on IR_BR is
+          "Conditional branch off a 0/1 condition value"
+          (line 134), which suggests the author intended
+          a Boolean contract. But the lowering does not
+          enforce it.
+
+        - The native AArch64 / x86_64 IR_BR handlers
+          (src/aarch64.c:1635 / src/x86_64.c:1882) read
+          the operand as I64 and emit generic cmp + branch
+          (no truncation), which means the native backend
+          treats the operand as truthiness on I64 in
+          practice (any nonzero value is true).
+
+    To definitively settle this, the next ACT should:
+        a. Add explicit `I8 → I64 zext` semantics to the
+           IR so the I8 case-2 operand becomes I64.
+        b. Verify native AOT and JIT produce the same
+           result for `if (2) ...` vs `if (1) ...`.
+        c. Decide whether the IR representation should
+           be I64 (truthiness) or introduce IR_TYPE_I1
+           (Boolean). ACT §18 forbids IR_TYPE_I1 in
+           BOUNDARY03, so this is deferred.
+
+    Until then, BOUNDARY03 records MIXED_OR_UNPROVEN.
+
+EVIDENCE: src/ir.c:97-136 (irBranch)
+         src/ir.c:80-95   (irICmp)
+         src/ir.c:585-665 (irLowerBinOpExpr — comparison
+                            result coercion to I64)
+         src/aarch64.c:1635 (native IR_BR handler)
+         src/x86_64.c:1882   (native IR_BR handler)
+         src/llvm-backend.c:583-609 (LLVM IR_BR handler;
+                                       requires I64 and
+                                       trunc to i1)

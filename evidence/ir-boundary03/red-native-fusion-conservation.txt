@@ -1,0 +1,71 @@
+ACT-POLYC-IR-BOUNDARY03 / native fusion conservation baseline
+============================================================
+
+Method:
+    hcc -S <fixture> -o /tmp/<name>.s    (AOT native assembly)
+    Read the assembly and observe whether the IR_CMP_BR fusion
+    is consumed directly by the native codegen.
+
+Fixture: 04_cmp_branch.HC (Max(a, b))
+Source: src/tests/llvm-spike/04_cmp_branch.HC
+
+Relevant AArch64 native assembly (aarch64-apple-darwin):
+# raw_sha256: 02ddb342bee08a53fb042dfd8989dfd7626be43abf5390f11faa69b179d1f0e4
+# raw_bytes:  588
+.section __TEXT,__cstring,cstring_literals
+.L0:
+	.asciz "./"
+.globl argc
+	.comm argc, 8, 8
+.globl argv
+	.comm argv, 8, 8
+.text
+	.p2align 2
+	.globl _Max
+_Max:
+	stp x29, x30, [sp, #-16]!
+	mov x29, sp
+	sub sp, sp, #32
+	stur x0, [x29, #-16]
+	stur x1, [x29, #-8]
+	cmp x0, x1
+	b.le    .LIRBB0_4
+	ldur x0, [x29, #-16]
+	stur x0, [x29, #-24]
+	b   .LIRBB0_2
+.LIRBB0_4:
+	ldur x0, [x29, #-8]
+	stur x0, [x29, #-24]
+.LIRBB0_2:
+	ldur x0, [x29, #-24]
+	add sp, sp, #32
+	ldp x29, x30, [sp], #16
+	ret
+.ident      "hcc: apple aarch64-apple-darwin v0.0.15-beta hash: b65d9ab3fcb02e4d6c0649a11671bdba990df102"
+
+Observation:
+    The AArch64 backend produces:
+        cmp x0, x1
+        b.le .LIRBB0_4
+    i.e. a single CMP feeding a conditional branch with no
+    intervening materialisation of the comparison result.
+    This is the IR_CMP_BR fusion consumed at native codegen
+    (src/aarch64.c:1565-1595 and src/x86_64.c:1930-1965 both
+    lower IR_CMP_BR directly to fused CMP + branch).
+
+Conclusion:
+    AOT_CMP_BR_BEFORE = YES  (native backend uses IR_CMP_BR)
+    JIT_CMP_BR_BEFORE  = YES  (src/aarch64-jit.c:1412 / src/x86_64-jit.c:1182
+                               consume IR_CMP_BR the same way)
+
+    The native path depends on the IR_CMP_BR fusion. This
+    establishes the "native conservation" baseline: if a
+    future ACT removes IR_CMP_BR entirely, the native
+    backend will need a different lowering or will lose
+    the EFLAGS / flags-set fusion.
+
+    Per ACT §11: this witness prevents the easiest but
+    architecturally weaker repair of "delete IR_CMP_BR
+    everywhere". The fusion is native-useful; only its
+    presence ABOVE the neutral boundary (which is currently
+    not happening) would be wrong.

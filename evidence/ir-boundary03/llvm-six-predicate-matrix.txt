@@ -1,0 +1,15 @@
+ACT-POLYC-IR-BOUNDARY03 / Six-predicate LLVM structural matrix (ACT §31)
+======================================================================
+
+Per fixture, two observations:
+    A. hcc --dump-ir post-basic-opts: what IR_BR input shape looks like
+    B. hcc --emit-llvm <f> | grep '^[[:space:]]*icmp\|br i1': what LLVM sees
+
+predicate    dump-ir cmp_<kind>     dump-ir br count          LLVM icmp predicate
+-------------------------------------------------------------------------------
+EQ           cmp_eq                 2                         icmp eq
+NE           cmp_ne                 2                         icmp ne
+SLT          cmp_lt                 2                         icmp slt
+SLE          cmp_le                 2                         icmp sle
+SGT          cmp_gt                 2                         icmp sgt
+SGE          cmp_ge                 2                         icmp sge

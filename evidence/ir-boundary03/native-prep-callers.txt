@@ -1,0 +1,44 @@
+Native-preparation callers (ACT §8)
+====================================
+
+Caller                              File:line              Consumer  Native?  NeedsCmpBrFusion  NeedsAbiLoc  NeedsRegPool
+----------------------------------- ---------------------- --------- -------- ----------------- ------------ -------------
+aarch64GenerateFunction             src/aarch64.c:2211     native    YES      YES               YES          YES
+x86_64GenerateFunction              src/x86_64.c:2560      native    YES      YES               YES          YES
+aarch64-jit jitCompileFunction      src/aarch64-jit.c:1704 native    YES      YES               YES          YES
+x86_64-jit jitCompileFunction       src/x86_64-jit.c:1583  native    YES      YES               YES          YES
+llvmEmitProgram (per func llFunction) src/llvm-backend.c:807 LLVM       NO       NO                NO           NO
+irDump                              src/ir.c:3301          neutral   NO       NO                NO           NO
+irLowerProgram                      src/ir.c:3380          neutral   NO       NO                NO           NO
+
+CALLERS of irFunctionPrepForCodeGen (grep "irFunctionPrepForCodeGen"):
+    src/ir.c:3085                definition
+    src/ir-types.h:14            (comment)
+    src/ir.h:18                  declaration
+    src/aarch64.c:2211           caller
+    src/x86_64.c:2560            caller
+    docs/acts/*                 (documentation only)
+
+CALLERS of irOptPinResultReg:
+    src/ir-optimise.c:1079      definition
+    src/ir-optimise.h:14        declaration
+    src/ir.c:3095               caller (from irFunctionPrepForCodeGen)
+    docs/*                      documentation only
+
+CALLERS of irAssignAbiParamLocations:
+    src/ir.c:3141               definition
+    src/ir.h:25                 declaration
+    src/aarch64.c:2209          caller
+    src/x86_64.c:2558           caller
+    src/aarch64-jit.c:1703      caller
+    src/x86_64-jit.c:1581       caller
+    docs/*                      documentation only
+
+VERIFIED discovery (ACT §8 hypothesis: confirmed for native; contradicted for LLVM):
+    AOT native         YES native prep    (aarch64.c, x86_64.c)
+    JIT native         YES native prep    (aarch64-jit.c, x86_64-jit.c)
+    LLVM               NO  native prep    (llvm-backend.c does NOT call these)
+    dump/debug         NO  native prep    (irDump, irLowerProgram)
+
+The boundary IS already in place. The LLVM dispatch never
+crosses into native-only preparation.
