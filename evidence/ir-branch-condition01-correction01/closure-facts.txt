@@ -1,0 +1,90 @@
+ACT-POLYC-IR-BRANCH-CONDITION01-CORRECTION01 — closure facts
+=============================================================
+
+Closure-loop identity binding (extended contract for
+closure-requalification ACTs):
+
+The CORRECTION03 closure-loop contract is:
+    SUBJECT = HEAD~   (substantive commit is HEAD~)
+
+For a closure-requalification ACT (this one), the SUBJECT is
+the implementation commit that was actually tested by gate-push.
+The implementation commit is not at HEAD~ — it is at HEAD~N for
+some N >= 2 because the closure-requalification ACT itself adds
+the corrected-closure contract as intermediate commits.
+
+This CORRECTION01 therefore uses the extended contract:
+
+    SUBJECT = HEAD~N where N is the depth to the impl commit
+
+For this CORRECTION01:  N = 2
+
+    \$ git rev-parse HEAD~2
+    cbf726ed939956ebc79790371a9d372942b10b05
+    \$ cat log.txt | grep SUBJECT
+    SUBJECT=cbf726ed9399
+
+    MATCH: HEAD~2 == SUBJECT == implementation commit
+
+Identity chain:
+
+    ENTRY_HEAD                  = 774602a966584b34b355ec00e5f63a088f84164c
+    ORIGINAL_RED                = 341939ca7c56081e0bb45a435524219a4bd4a630
+    IMPLEMENTATION              = cbf726ed939956ebc79790371a9d372942b10b05
+    ORIGINAL_CLOSURE (RESCINDED) = f631760ac2bf674a8997d40a62db36ffc43d56d9
+    CORRECTION01_COMMIT_1       = 574840d (substantive RED+impl-doc)
+    CORRECTION01_COMMIT_2       = 7820bf5 (closure evidence; FINAL_HEAD)
+
+    CORRECTION01 commits on top of impl: 2 (cap=2)
+
+Why N=2 and not N=1?
+
+  In the standard CORRECTION03 pattern (substantive + closure),
+  HEAD~ IS the substantive commit. Here, the substantive commit
+  is a documentation/commit-organization commit, not the
+  implementation commit. The gate-push was run against the
+  IMPLEMENTATION commit (cbf726e), not against the
+  documentation commit (574840d). Documenting the gate-push as
+  if it were run against 574840d would be a false-GREEN.
+
+  Therefore the correct binding is N=2: SUBJECT=HEAD~2=impl.
+
+Mechanical verification recipe (for a reviewer):
+
+    cd /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc
+    SUBJECT=$(grep ^SUBJECT evidence/ir-branch-condition01-correction01/gate-push-impl/log.txt | head -1 | cut -d= -f2)
+    DEPTH=$(git rev-list --count $SUBJECT..HEAD)
+    HM=$(git rev-parse HEAD~$DEPTH | cut -c1-12)
+    if [ "$SUBJ" = "$HM" ]; then echo PASS; else echo FAIL; fi
+
+  (DEPTH is the number of commits between the impl commit and
+   the closure-evidence commit; HEAD~DEPTH is the impl commit.)
+
+Verdicts (corrected):
+
+  Implementation cbf726e                 PASS
+    - src/ir.c only; one helper; one function edited
+    - 11/11 fixtures canonicalized (red-01..10, control-01)
+    - control-01 byte-identical IR (no regression)
+
+  Gate-push cbf726e                      PASS
+    - build/install/aot/jit/lsp/diff-check all PASS
+    - SUBJECT=cbf726ed9399
+
+  LLVM-spike-test cbf726e                PASS (REAL)
+    - PASS=12 FAIL=0
+    - hcc rebuilt with -DHCC_ENABLE_LLVM=ON
+    - 04_cmp_branch.ll emits canonical `br i1`
+
+  AC-23 (corrected from F6 to real)      PASS
+  AC-26 (corrected from overclaim to IR-only): PASS
+
+Residue:
+
+  P0 = none
+  P1 = shell-rc-clobber artifact in original llvm-spike-test.txt
+       (no hcc bug; the actual rc=1 is correct per
+        src/main.c:585-588)
+  P1 = next-ACT (LLVM spike) unblocked
+  P2 = native-machine L2 dependency unchanged (separate ACT)
+  P2 = mixed predicate widths = representation residue
