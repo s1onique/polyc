@@ -7,6 +7,54 @@
 #include "containers.h"
 #include "list.h"
 
+/* ACT-POLYC-IR-BOUNDARY01: neutral IR contract.
+ *
+ * The boundary between backend-neutral IR (produced by
+ * `irLowerFunction`) and native-specific preparation is at
+ * `irFunctionPrepForCodeGen` plus the `irAssignAbiParamLocations`
+ * post-pass. The neutral IR must:
+ *
+ *   - Carry typed values, constants, locals, globals,
+ *     function parameters, function signatures, calls, returns,
+ *     integer and floating arithmetic, casts, pointer operations,
+ *     loads and stores (including the canonical `load* + binop +
+ *     store*` triple in place of `IR_RMW_DEREF`).
+ *   - Carry CFG, unconditional branch (`IR_JMP`), conditional
+ *     branch (`IR_BR`), comparison (`IR_ICMP` / `IR_FCMP`).
+ *   - Carry struct/class field addressing (`IR_GEP`) and function
+ *     pointers, external symbols.
+ *   - Carry `IR_ASM` / language-visible inline assembly as an
+ *     explicit escape hatch. Inline asm is classified
+ *     `TARGET_SPECIFIC_BY_LANGUAGE_DESIGN` rather than
+ *     accidental contamination; a future LLVM backend may
+ *     reject, pass through, or target-condition it under a
+ *     separate ACT.
+ *
+ * The neutral IR must NOT contain:
+ *
+ *   - Physical-register assignment produced by `IrRegPool`
+ *     (committed to memory in `IrValue->loc`). The post-pass
+ *     stamps `loc.kind = IR_LOC_REG` only after the neutral
+ *     consumer has finished reading.
+ *   - `IR_CMP_BR` or `IR_RMW_DEREF` as canonical forms. Both
+ *     are below-boundary optimisations; the canonical neutral
+ *     shapes are `IR_ICMP/IR_FCMP + IR_BR` and
+ *     `IR_LOAD_DEREF + binop + IR_STORE_DEREF`.
+ *
+ * The neutral IR MAY contain (these are *metadata*, not physical
+ * identity):
+ *
+ *   - SSA value numbers / virtual value ids.
+ *   - `IrValue->param_kind` (the classification enum used by the
+ *     native post-pass to look up the ABI arrival register).
+ *
+ * The neutral consumer (e.g. ACT-POLYC-LLVM-SPIKE01) is
+ * responsible for making its own ABI decisions based on the
+ * function's parameter types and order; the inherited
+ * `pool->int_arg_regs[i]` strings are not part of the neutral
+ * contract.
+ */
+
 typedef struct IrInstr IrInstr;
 typedef struct IrBlock IrBlock;
 typedef struct IrBlockMapping IrBlockMapping;
@@ -23,9 +71,16 @@ typedef enum IrOp {
     /* Read-modify-write on memory: `*addr <op>= r1` where the op is
      * carried in extra.rmw_op (IR_IADD/IR_ISUB/IR_AND/IR_OR/IR_XOR).
      * dst is the base pointer; idx/scale/disp form the SIB if set.
-     * The fusion pass replaces matching load/binop/store triples with
-     * this op so codegen can emit x86's memory-destination forms
-     * (`incb mem`, `addq $k, mem`, etc.). */
+     *
+     * ACT-POLYC-IR-BOUNDARY01: this opcode is BELOW THE NEUTRAL
+     * BOUNDARY. It is created exclusively by `irFuseLoadOpStore`
+     * (src/ir-optimise.c:872) which collapses a `load* + binop +
+     * store*` triple into a single IR_RMW_DEREF. The lowering
+     * (`irLowerFunction`) NEVER produces it. Classification:
+     * OPT_FUSION. The neutral IR contract uses the canonical
+     * `load* + binop + store*` form; an LLVM-style consumer does
+     * not need to recognise IR_RMW_DEREF. A native backend MAY
+     * reconstruct the fused form. */
     IR_RMW_DEREF,
     IR_LEA,         /* dst = &r1 (address of a stack slot, as a pointer) */
     IR_GEP,         /* Get element pointer (array/struct indexing) */
@@ -80,7 +135,19 @@ typedef enum IrOp {
     IR_CMP_BR,      /* Fused compare-and-branch: cmp r1, r2; j<cc> target,
                      * fallthrough. r1/r2 carry the operands, extra.cmp_br
                      * carries cmp_kind and both blocks. dst is unused
-                     * (the result lives in EFLAGS for one instruction). */
+                     * (the result lives in EFLAGS for one instruction).
+                     *
+                     * ACT-POLYC-IR-BOUNDARY01: this opcode is BELOW THE
+                     * NEUTRAL BOUNDARY. It is created exclusively by
+                     * `irOptPinResultReg` (src/ir-optimise.c:1079, line
+                     * 1113) which collapses an `IR_ICMP + IR_BR` pair
+                     * into a single IR_CMP_BR when the cmp result has
+                     * exactly one use (the immediate BR). The lowering
+                     * (`irLowerFunction`) NEVER produces it. Classification:
+                     * OPT_FUSION (alias: MOVED_BELOW_BOUNDARY). The
+                     * neutral IR contract uses the canonical
+                     * `IR_ICMP + IR_BR` form; an LLVM-style consumer
+                     * does not need to recognise IR_CMP_BR. */
     IR_JMP,         /* Unconditional jump */
     IR_SWITCH,      /* Switch statement */
     IR_CALL,        /* Function call */
