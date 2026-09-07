@@ -1,0 +1,78 @@
+#!/bin/sh
+# .githooks/pre-push
+#
+# Git passes ref updates over stdin, one per line, in the form:
+#
+#   <local_ref> <local_sha> <remote_ref> <remote_sha>
+#
+# We validate the local side of every non-delete push by running
+# scripts/quality/gate-push.sh against the local SHA in an isolated
+# detached worktree.
+#
+# Implementation notes:
+#
+#   * We consume ALL stdin lines before deciding anything. Git's hook
+#     contract requires this; otherwise Git can hang.
+#   * Deletes (local_sha = 0000...000) are ignored.
+#   * Identical local SHAs may cause duplicate gate runs. The ACT
+#     accepts this in favor of correctness; gate-push.sh is idempotent
+#     on the same SHA.
+#   * We do not invoke git commit/push from quality scripts, so no
+#     recursive hook execution is possible.
+
+set -eu
+
+REPO_ROOT=$(git rev-parse --show-toplevel)
+cd "$REPO_ROOT"
+
+# Read all stdin lines into memory up front.
+stdin_lines=$(cat)
+
+# Parse and collect unique local SHAs that need validation.
+shas_to_check=""
+
+while IFS=' ' read -r local_ref local_sha remote_ref remote_sha; do
+    # Skip empty lines.
+    [ -z "$local_sha" ] && continue
+
+    # Skip deletes (remote-only refs that have no local side).
+    case "$local_sha" in
+        0000000000000000000000000000000000000000) continue ;;
+    esac
+
+    # Validate SHA form (avoid garbage from malformed input).
+    case "$local_sha" in
+        [0-9a-f]*)
+            ;;
+        *)
+            continue
+            ;;
+    esac
+
+    # De-duplicate.
+    case " $shas_to_check " in
+        *" $local_sha "*) ;;
+        *) shas_to_check="$shas_to_check $local_sha" ;;
+    esac
+done << EOF
+$stdin_lines
+EOF
+
+# If there is nothing to validate, exit cleanly.
+if [ -z "$shas_to_check" ]; then
+    exit 0
+fi
+
+# Run gate-push.sh against each SHA. The first FAIL halts the hook so
+# the human sees the gate outcome before push proceeds.
+for sha in $shas_to_check; do
+    short=$(printf '%s' "$sha" | cut -c1-12)
+    echo "POLYC_PRE_PUSH_VALIDATING=$short"
+
+    if ! ./scripts/quality/gate-push.sh "$sha"; then
+        echo "POLYC_PRE_PUSH_HALTED_AT=$short"
+        exit 1
+    fi
+done
+
+exit 0
