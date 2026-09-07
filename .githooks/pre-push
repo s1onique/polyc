@@ -14,9 +14,17 @@
 #   * We consume ALL stdin lines before deciding anything. Git's hook
 #     contract requires this; otherwise Git can hang.
 #   * Deletes (local_sha = 0000...000) are ignored.
-#   * Identical local SHAs may cause duplicate gate runs. The ACT
-#     accepts this in favor of correctness; gate-push.sh is idempotent
-#     on the same SHA.
+#   * Dedupe key is (local_sha, remote_sha, mode), NOT just local_sha.
+#     Git's contract permits the same local_sha to appear with
+#     different remote_shas (existing-branch update + new-branch push
+#     in the same push), and each combination requires a different
+#     hygiene range. See
+#     ACT-POLYC-FACTORY-PUSH-HERMETIC01-CORRECTION03 (P0-1).
+#   * For new branches (remote_sha = 0000...0000), the hook passes
+#     `--new-branch <remote>` to gate-push.sh so the gate computes
+#     `reachable(local) \ reachable(remote's tracking refs)` rather
+#     than re-validating the entire local history. See
+#     ACT-POLYC-FACTORY-PUSH-HERMETIC01-CORRECTION03 (P0-2).
 #   * We do not invoke git commit/push from quality scripts, so no
 #     recursive hook execution is possible.
 
@@ -28,8 +36,18 @@ cd "$REPO_ROOT"
 # Read all stdin lines into memory up front.
 stdin_lines=$(cat)
 
-# Parse and collect unique local SHAs that need validation.
-shas_to_check=""
+# Determine the default remote for new-branch mode. We try the first
+# configured remote (typically "origin"); if none exists, fall back to
+# --root-range mode (degenerate, but documented).
+default_remote=$(git remote 2>/dev/null | head -n1)
+if [ -z "$default_remote" ]; then
+    default_remote=""
+fi
+
+# Parse stdin once. For each ref update we compute a stable key
+# (local_sha + remote_sha) and a mode hint, dedupe across the whole
+# push, and call gate-push.sh for each unique combination.
+seen_keys=""
 
 while IFS=' ' read -r local_ref local_sha remote_ref remote_sha; do
     # Skip empty lines.
@@ -49,76 +67,71 @@ while IFS=' ' read -r local_ref local_sha remote_ref remote_sha; do
             ;;
     esac
 
-    # De-duplicate.
-    case " $shas_to_check " in
-        *" $local_sha "*) ;;
-        *) shas_to_check="$shas_to_check $local_sha" ;;
-    esac
-done << EOF
-$stdin_lines
-EOF
-
-# If there is nothing to validate, exit cleanly.
-if [ -z "$shas_to_check" ]; then
-    exit 0
-fi
-
-# Run gate-push.sh against each unique SHA, passing the remote_sha as
-# the optional second argument so the diff-hygiene phase inspects the
-# correct range:
-#
-#   * real remote commit  ->  range mode (base..local)
-#   * new-branch sentinel  ->  root-range mode (full local history)
-#   * no second arg        ->  tip-only mode (local^..local, manual use)
-#
-# Pairing: we re-read stdin_lines here to pair each local_sha with its
-# remote_sha. We also skip duplicates we already validated, because
-# Git's stdin contract can list the same (local_ref, local_sha) pair
-# across multiple hook invocations or with different remote_refs.
-#
-# See ACT-POLYC-FACTORY-PUSH-HERMETIC01-CORRECTION02.
-seen_local_shas=""
-while IFS=' ' read -r local_ref local_sha remote_ref remote_sha; do
-    [ -z "$local_sha" ] && continue
-    case "$local_sha" in
-        0000000000000000000000000000000000000000) continue ;;
-    esac
-    case "$local_sha" in
-        [0-9a-f]*) ;;
-        *) continue ;;
-    esac
-
-    # De-duplicate: do not re-run gate-push.sh for a local_sha we
-    # already validated. Git's hook contract does not forbid repeated
-    # (local_ref, local_sha) lines, but each full push-gate run is
-    # expensive (build + test + diff-check), so we honor the first
-    # sighting and ignore subsequent ones.
-    case " $seen_local_shas " in
-        *" $local_sha "*) continue ;;
-    esac
-    seen_local_shas="$seen_local_shas $local_sha"
-
+    # Determine the mode for this ref update.
+    #
+    # For an existing-branch push (remote_sha is a real commit), the
+    # gate inspects remote_sha..local_sha. The dedupe key MUST include
+    # remote_sha because the same local_sha can legitimately be pushed
+    # to two refs with different remote_shas (existing narrow update
+    # + new-branch introduction).
+    #
+    # For a new-branch push (remote_sha = 0000...0000), the gate
+    # inspects reachable(local_sha) MINUS reachable(<remote>'s
+    # tracking refs). The dedupe key includes the remote name for
+    # the same reason: different remotes may have different
+    # tracking-ref state.
     case "$remote_sha" in
         0000000000000000000000000000000000000000)
-            # New branch: the entire local tip's history is "added"
-            # by the push. We pass the new-branch sentinel unchanged
-            # to gate-push.sh so its GPUSH-6 enters root-range mode
-            # (inspects every commit reachable from local_sha).
-            remote_arg="$remote_sha"
+            # New-branch mode. Use the default remote. If no
+            # remote is configured, fall back to --root-range and
+            # document the reason.
+            mode="new-branch"
+            mode_remote="$default_remote"
+            dedupe_key="newbranch:${default_remote}:$local_sha"
             ;;
         *)
-            # Existing branch: inspect only the commits added since
-            # the remote side. Range mode.
-            remote_arg="$remote_sha"
+            mode="range"
+            mode_remote=""
+            dedupe_key="range:${remote_sha}:$local_sha"
             ;;
     esac
 
-    short=$(printf '%s' "$local_sha" | cut -c1-12)
-    echo "POLYC_PRE_PUSH_VALIDATING=$short"
+    # De-duplicate on the full key, not just local_sha.
+    case " $seen_keys " in
+        *" $dedupe_key "*) continue ;;
+    esac
+    seen_keys="$seen_keys $dedupe_key"
 
-    if ! ./scripts/quality/gate-push.sh "$local_sha" "$remote_arg"; then
-        echo "POLYC_PRE_PUSH_HALTED_AT=$short"
-        exit 1
+    short=$(printf '%s' "$local_sha" | cut -c1-12)
+    echo "POLYC_PRE_PUSH_VALIDATING=$short mode=$mode"
+
+    # Build the gate-push.sh command for this ref update.
+    if [ "$mode" = "new-branch" ]; then
+        if [ -n "$mode_remote" ]; then
+            # Default case: pass the destination remote name.
+            if ! ./scripts/quality/gate-push.sh \
+                    "$local_sha" --new-branch "$mode_remote"; then
+                echo "POLYC_PRE_PUSH_HALTED_AT=$short"
+                exit 1
+            fi
+        else
+            # Degenerate fallback: no remote configured. Use
+            # --root-range so the gate at least runs over the
+            # full reachable history. Documented behavior.
+            echo "POLYC_PRE_PUSH_NOTE=no remote configured; falling back to --root-range for $short"
+            if ! ./scripts/quality/gate-push.sh \
+                    "$local_sha" --root-range; then
+                echo "POLYC_PRE_PUSH_HALTED_AT=$short"
+                exit 1
+            fi
+        fi
+    else
+        # Range mode.
+        if ! ./scripts/quality/gate-push.sh \
+                "$local_sha" "$remote_sha"; then
+            echo "POLYC_PRE_PUSH_HALTED_AT=$short"
+            exit 1
+        fi
     fi
 done << EOF
 $stdin_lines

@@ -12,8 +12,25 @@
 #
 # Usage:
 #   scripts/quality/gate-push.sh [<commit>]
+#   scripts/quality/gate-push.sh <commit> <remote_sha>
+#   scripts/quality/gate-push.sh <commit> --new-branch <remote>
+#   scripts/quality/gate-push.sh <commit> --root-range
 #
 # Default commit: HEAD
+#
+# Modes:
+#   <commit>            tip-only: inspect <commit>^..<commit>
+#   <commit> <sha>      range:    inspect <sha>..<commit>
+#   <commit> --new-branch <remote>
+#                       new-branch: inspect commits reachable from
+#                       <commit> but not from <remote>'s
+#                       remote-tracking refs. Recommended for a
+#                       brand-new branch pushed against a remote
+#                       that may already hold its ancestors.
+#   <commit> --root-range
+#                       full history reachable from <commit>,
+#                       down to the root. Degenerate fallback for
+#                       anonymous URL pushes.
 #
 # Exit code:
 #   0  all checks PASS
@@ -48,37 +65,53 @@ if ! subject_sha=$(git rev-parse --verify "${subject_input}^{commit}" 2>/dev/nul
     exit 2
 fi
 
-# Optional second argument: the remote (pre-push) SHA from which
-# `subject_sha` is being pushed. This is the pre-push hook contract:
+# Optional second argument. Three forms:
 #
-#   <local_ref> <local_sha> <remote_ref> <remote_sha>
+#   * <remote_sha>           -- range mode
+#                                inspect reachable(subject) \ reachable(remote_sha)
+#                                ordinary existing-branch push
 #
-# Three modes:
+#   * --new-branch <remote>  -- new-branch mode
+#                                inspect reachable(subject) \ reachable(<remote>'s
+#                                remote-tracking refs)
+#                                brand-new branch against a remote that may
+#                                already hold its ancestors
 #
-#   * range mode (default when second arg is a real SHA):
-#         inspect every commit reachable from <subject_sha> but not
-#         from <remote_sha>. This is the pre-push hook contract for
-#         ordinary existing-branch pushes.
+#   * --root-range           -- root-range mode
+#                                inspect every commit reachable from <subject>
+#                                down to the root. Degenerate fallback for
+#                                new branches pushed where no destination
+#                                remote can be determined (e.g. anonymous
+#                                URL push with no configured remote).
 #
-#   * root-range mode (when second arg is the new-branch sentinel
-#         0000...0000):
-#         inspect every commit reachable from <subject_sha>, down to
-#         the root. This is the pre-push hook contract for a brand
-#         new branch where the remote side is the empty tree.
+#   (omitted)                -- tip-only mode
+#                                inspect <subject>^..<subject>
+#                                manual invocation pattern
 #
-#   * tip-only mode (no second arg):
-#         inspect only <subject_sha>^..<subject_sha>. Preserves every
-#         existing manual invocation pattern
-#         (`gate-push.sh <commit>`).
-#
-# See ACT-POLYC-FACTORY-PUSH-HERMETIC01-CORRECTION02.
+# See ACT-POLYC-FACTORY-PUSH-HERMETIC01-CORRECTION02 and
+# ACT-POLYC-FACTORY-PUSH-HERMETIC01-CORRECTION03.
 remote_input="${2:-}"
+third_input="${3:-}"
 range_base_sha=""
-range_mode="tip"  # "tip" | "range" | "root-range"
+new_branch_remote=""
+range_mode="tip"  # "tip" | "range" | "new-branch" | "root-range"
 if [ -n "$remote_input" ]; then
     case "$remote_input" in
-        0000000000000000000000000000000000000000)
-            # New branch: the entire local tip's history is "added".
+        --new-branch)
+            # New-branch mode: <remote> is the destination remote name.
+            # The hook passes this from the remote_ref field (e.g. for
+            # refs/heads/feature, the remote is the configured upstream
+            # such as 'origin'). The third positional argument is the
+            # remote name; default to 'origin' if absent.
+            new_branch_remote="${third_input:-origin}"
+            range_mode="new-branch"
+            ;;
+        --root-range)
+            # Explicit full-history mode. Invoked when the hook has no
+            # destination remote available (e.g. anonymous URL push).
+            # This is the CORRECTION02 default for new branches; kept
+            # as a deliberate fallback, NOT the default new-branch
+            # semantics.
             range_mode="root-range"
             ;;
         *)
@@ -282,22 +315,28 @@ fi
 
 # --- GPUSH-6: range-aware diff hygiene -------------------------------------
 #
-# Three modes, controlled by the optional second positional argument
-# (the pre-push remote_sha):
+# Four modes, controlled by the optional second positional argument:
 #
-#   * range mode (real remote commit supplied):
+#   * range mode (a real SHA is supplied as $2):
 #         inspect every commit reachable from <subject_sha> but not
-#         from <remote_sha>. This is what the pre-push hook supplies
-#         for ordinary existing-branch pushes.
+#         from <range_base_sha>. This is what the pre-push hook
+#         supplies for ordinary existing-branch pushes.
 #
-#   * root-range mode (new-branch sentinel 0000...0000):
+#   * new-branch mode ($2 is "--new-branch", $3 is the remote name):
+#         inspect reachable(subject) MINUS reachable(remote's
+#         remote-tracking refs). The set of commits newly asked of
+#         the destination remote by a brand-new branch whose
+#         ancestors may already live there. Implemented as
+#         `git rev-list <subj> --not --remotes=<remote>`.
+#
+#   * root-range mode ($2 is "--root-range"):
 #         inspect every commit reachable from <subject_sha>, down to
-#         the root. The remote side is the empty tree, so the entire
-#         local history is "added" by the push.
+#         the root. Degenerate fallback for anonymous URL pushes
+#         where the hook cannot determine a destination remote.
 #
 #   * tip-only mode (no second arg):
-#         inspect only <subject_sha>^..<subject_sha>. Preserves every
-#         existing manual invocation pattern
+#         inspect only <subject_sha>^..<subject_sha>. Preserves
+#         every existing manual invocation pattern
 #         (`gate-push.sh <commit>`).
 #
 # Implementation primitive: per-commit `git diff-tree --check --root -m`.
@@ -334,16 +373,40 @@ fi
 # is strictly weaker than `git diff --check`. Both defects are fixed
 # by switching to per-commit `git diff-tree --check --root -m`.
 #
-# See ACT-POLYC-FACTORY-PUSH-HERMETIC01-CORRECTION02.
+# See ACT-POLYC-FACTORY-PUSH-HERMETIC01-CORRECTION02 and
+# ACT-POLYC-FACTORY-PUSH-HERMETIC01-CORRECTION03.
 case "$range_mode" in
     range)
         range_desc="pushed range $range_base_sha..$subject_sha"
         rev_list_args="$range_base_sha..$subject_sha"
         ;;
+    new-branch)
+        # New branch against a remote that may already hold the
+        # branch's ancestors. The set of commits newly asked of the
+        # remote is reachable(subject) MINUS reachable(<remote>'s
+        # remote-tracking refs). Implemented as
+        # `git rev-list <subj> --not --remotes=<remote>`.
+        #
+        # If no remote-tracking refs exist for <remote>, --not
+        # resolves to nothing and rev-list returns the full
+        # reachable set, which is the previous (CORRECTION02)
+        # behavior. We document this fallback but do not silently
+        # widen the inspection set.
+        #
+        # Caveat: remote-tracking refs can be stale. That is a
+        # client-side limitation; Git provides only the old OID
+        # for refs being updated, not a complete remote
+        # reachability graph.
+        range_desc="new branch (commits not in remote $new_branch_remote)"
+        rev_list_args="$subject_sha --not --remotes=$new_branch_remote"
+        ;;
     root-range)
-        # New branch: every commit reachable from $subject_sha> is
-        # "added" by the push. --reverse so output reads chronologically.
-        range_desc="new branch (full history reachable from $subject_sha)"
+        # Degenerate fallback: every commit reachable from
+        # <subject_sha> down to the root. Used when the hook has
+        # no destination remote available (e.g. anonymous URL
+        # push). The CORRECTION02 default for new branches; kept
+        # as an explicit, opt-in fallback in CORRECTION03.
+        range_desc="full history reachable from $subject_sha (root-range fallback)"
         rev_list_args="--reverse $subject_sha"
         ;;
     tip)
@@ -356,6 +419,12 @@ esac
 # The shell expands $rev_list_args unquoted (as a list of words) so we
 # don't need bash arrays; the entire rest of the script stays POSIX.
 commit_list=$(cd "$tmp" && git rev-list $rev_list_args)
+
+# Echo the resolved range so the engineer running the gate can see
+# what was actually inspected (matters most for new-branch mode where
+# the inspection set can be much smaller than the full history).
+echo "POLYC_GATE_RANGE_MODE=$range_mode"
+echo "POLYC_GATE_RANGE_DESC=$range_desc"
 
 # Per-commit hygiene scan. For each commit, diff-tree --check emits
 # zero or more "<path>: <reason>." lines if Git's whitespace policy is

@@ -1,0 +1,45 @@
+=== Test 1: reviewer's RED scenario ===
+Two stdin lines, same local_sha=X, different remote_shas
+
+Input:
+  refs/heads/existing 8bd0c152f391c1f16acf6b6c9a3962372ea53541 refs/heads/existing 0000000000000000000000000000000000000001
+  refs/heads/newbranch 8bd0c152f391c1f16acf6b6c9a3962372ea53541 refs/heads/newbranch 0000000000000000000000000000000000000000
+
+POLYC_PRE_PUSH_VALIDATING=8bd0c152f391
+
+Gate calls observed:
+ARGS: 8bd0c152f391c1f16acf6b6c9a3962372ea53541 0000000000000000000000000000000000000001
+
+
+Total gate calls: 1
+FAIL: hook only ran gate-push.sh 1 time(s); dedup-by-local-sha BUG
+
+=== Test 2: same local_sha, same remote_sha (should dedupe) ===
+
+Input:
+  refs/heads/foo 8bd0c152f391c1f16acf6b6c9a3962372ea53541 refs/heads/foo 0000000000000000000000000000000000000001
+  refs/heads/bar 8bd0c152f391c1f16acf6b6c9a3962372ea53541 refs/heads/bar 0000000000000000000000000000000000000001
+
+POLYC_PRE_PUSH_VALIDATING=8bd0c152f391
+
+Gate calls observed:
+ARGS: 8bd0c152f391c1f16acf6b6c9a3962372ea53541 0000000000000000000000000000000000000001
+
+
+Total gate calls: 1
+PASS: hook deduped identical (local_sha, remote_sha) pairs
+
+=== Test 3: same local_sha to existing and to new-branch ===
+
+Input:
+  refs/heads/foo 8bd0c152f391c1f16acf6b6c9a3962372ea53541 refs/heads/foo 0000000000000000000000000000000000000001
+  refs/heads/bar 8bd0c152f391c1f16acf6b6c9a3962372ea53541 refs/heads/bar 0000000000000000000000000000000000000000
+
+POLYC_PRE_PUSH_VALIDATING=8bd0c152f391
+
+Gate calls observed:
+ARGS: 8bd0c152f391c1f16acf6b6c9a3962372ea53541 0000000000000000000000000000000000000001
+
+
+Total gate calls: 1 (expected 2: one range mode + one new-branch mode)
+FAIL: hook ran gate-push.sh 1 time(s); expected 2

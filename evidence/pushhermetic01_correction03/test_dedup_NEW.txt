@@ -1,0 +1,51 @@
+=== Test 1: reviewer's RED scenario ===
+Two stdin lines, same local_sha=X, different remote_shas
+
+Input:
+  refs/heads/existing e56acbda53bd03353cb357ff30597b9fa1b5afb8 refs/heads/existing 0000000000000000000000000000000000000001
+  refs/heads/newbranch e56acbda53bd03353cb357ff30597b9fa1b5afb8 refs/heads/newbranch 0000000000000000000000000000000000000000
+
+POLYC_PRE_PUSH_VALIDATING=e56acbda53bd mode=range
+POLYC_PRE_PUSH_VALIDATING=e56acbda53bd mode=new-branch
+POLYC_PRE_PUSH_NOTE=no remote configured; falling back to --root-range for e56acbda53bd
+
+Gate calls observed:
+ARGS: e56acbda53bd03353cb357ff30597b9fa1b5afb8 0000000000000000000000000000000000000001
+ARGS: e56acbda53bd03353cb357ff30597b9fa1b5afb8 --root-range
+
+
+Total gate calls: 2
+PASS: hook ran gate-push.sh for BOTH (local_sha, remote_sha) pairs
+
+=== Test 2: same local_sha, same remote_sha (should dedupe) ===
+
+Input:
+  refs/heads/foo e56acbda53bd03353cb357ff30597b9fa1b5afb8 refs/heads/foo 0000000000000000000000000000000000000001
+  refs/heads/bar e56acbda53bd03353cb357ff30597b9fa1b5afb8 refs/heads/bar 0000000000000000000000000000000000000001
+
+POLYC_PRE_PUSH_VALIDATING=e56acbda53bd mode=range
+
+Gate calls observed:
+ARGS: e56acbda53bd03353cb357ff30597b9fa1b5afb8 0000000000000000000000000000000000000001
+
+
+Total gate calls: 1
+PASS: hook deduped identical (local_sha, remote_sha) pairs
+
+=== Test 3: same local_sha to existing and to new-branch ===
+
+Input:
+  refs/heads/foo e56acbda53bd03353cb357ff30597b9fa1b5afb8 refs/heads/foo 0000000000000000000000000000000000000001
+  refs/heads/bar e56acbda53bd03353cb357ff30597b9fa1b5afb8 refs/heads/bar 0000000000000000000000000000000000000000
+
+POLYC_PRE_PUSH_VALIDATING=e56acbda53bd mode=range
+POLYC_PRE_PUSH_VALIDATING=e56acbda53bd mode=new-branch
+POLYC_PRE_PUSH_NOTE=no remote configured; falling back to --root-range for e56acbda53bd
+
+Gate calls observed:
+ARGS: e56acbda53bd03353cb357ff30597b9fa1b5afb8 0000000000000000000000000000000000000001
+ARGS: e56acbda53bd03353cb357ff30597b9fa1b5afb8 --root-range
+
+
+Total gate calls: 2 (expected 2: one range mode + one new-branch mode)
+PASS: hook ran gate-push.sh for BOTH modes
