@@ -38,17 +38,17 @@ Acceptance criteria AC01-AC11 all pass. Next ACT: **ACT-POLYC-LLVM-SPIKE01**.
 
 ```
 ENTRY_HEAD   = 60811e60a70b3adbe107b93449f0d85d40c75a54
-FINAL_HEAD   = see `git log --oneline -5` at closure
+FINAL_HEAD   = 42fe6b042550fc12ec2ffb33c95ff1bee599fa5a
 WORKTREE     = clean
 ```
 
 The four commits in this ACT (see `git log --oneline 60811e6..HEAD`):
 
 ```
-<Commit 4>  docs(polyc): close IR boundary extraction evidence
-<Commit 3>  docs(ir): mark IR_CMP_BR and IR_RMW_DEREF as below-boundary fusions
-<Commit 2>  refactor(ir): separate neutral IR from native parameter lowering
-<Commit 1>  test(ir): expose backend-neutral boundary RED witnesses
+42fe6b0  docs(polyc): close IR boundary extraction evidence
+914d020  docs(ir): mark IR_CMP_BR and IR_RMW_DEREF as below-boundary fusions
+f75259b  refactor(ir): separate neutral IR from native parameter lowering
+d54a592  test(ir): expose backend-neutral boundary RED witnesses
 ```
 
 ---
@@ -382,7 +382,7 @@ VERDICT=PASS_WITH_NEXT_ACT_DECISION
 
 IDENTITY
 ENTRY_HEAD=60811e60a70b3adbe107b93449f0d85d40c75a54
-FINAL_HEAD=<filled at closure>
+FINAL_HEAD=42fe6b042550fc12ec2ffb33c95ff1bee599fa5a
 WORKTREE_STATUS=clean
 
 PREDECESSOR_BASELINE
