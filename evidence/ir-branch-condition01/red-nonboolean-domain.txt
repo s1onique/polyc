@@ -1,0 +1,38 @@
+ACT-POLYC-IR-BRANCH-CONDITION01 — Secondary RED: non-{0,1} value reaches IR_BR
+ENTRY_HEAD = 774602a966584b34b355ec00e5f63a088f84164c
+
+The raw-I8 branch operand can carry values outside {0, 1}. The
+runtime-correctness-bypass.HC fixture exercises the principal
+bypass class with values:
+
+  IdentityU8(0)    : cond = 0x00  (== 0 -> false)
+  IdentityU8(1)    : cond = 0x01  (truthy)
+  IdentityU8(2)    : cond = 0x02  (non-{0,1}, truthy)
+  IdentityU8(3)    : cond = 0x03  (non-{0,1}, truthy)
+  IdentityU8(255)  : cond = 0xFF  (non-{0,1}, truthy)
+
+  IdentityI8(0)    : cond = 0x00  (== 0 -> false)
+  IdentityI8(1)    : cond = 0x01  (truthy)
+  IdentityI8(-1)   : cond = 0xFF  (non-{0,1}, truthy)
+  IdentityI8(-2)   : cond = 0xFE  (non-{0,1}, truthy)
+  IdentityI8(-128) : cond = 0x80  (non-{0,1}, truthy)
+
+The IR dump shows the raw `br %t9 i8 tmp, bb5, bb6` with cond
+carrying whatever value the call returned; no normalization to
+{0, 1} occurs at IR level. The raw I8 branch path is reached
+for every value above.
+
+Runtime outcome (JIT, exit code = Main's I64 return value):
+  rc = 255 = 0+1+2+4+8+0+16+32+64+128
+All truthy branches fired; all zero branches did not. Matches
+expected.
+
+CLASSIFICATION (per §12):
+
+  RAW_BRANCH_OPERAND_DOMAIN_CONTAINS_NON_BOOLEAN = YES
+  Demonstrated non-{0,1} values: 2, 3, 255 (U8), -1, -2, -128 (I8).
+  Source semantics = source truthiness = ZERO_NONZERO (PROVEN).
+
+This separates the structural shape defect (raw I8 reaching IR_BR)
+from the runtime semantics, which are correct today because of
+backend L2 widening (movzbq/uxtb in the callee epilogue).

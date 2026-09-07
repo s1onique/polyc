@@ -1,0 +1,70 @@
+ACT-POLYC-IR-BRANCH-CONDITION01 — Principal RED: raw I8 branch-condition bypass
+ENTRY_HEAD = 774602a966584b34b355ec00e5f63a088f84164c
+
+Fixture:
+    U8 Identity(U8 x) { return x; }
+
+    U8 TestId(U8 x) {
+        if (Identity(x)) return 1;
+        return 0;
+    }
+
+Captured via:
+    ./hcc --install-dir=build/hermetic-prefix --dump-ir \
+        evidence/ir-branch-condition01/red/red-01-identity-bypass.HC
+        > evidence/ir-branch-condition01/red/red-01-identity-bypass.dump.txt
+
+Observed IR (after basic optimisations), TestId function:
+
+    i8 TestId(%p6 i8 param) {
+      bb3 -> predecessors:  {}  successors: {5, 6}
+        store    %l7 i8 local, %p6 i8 param  ; line 3
+        alloca   %t8 i8 tmp, 1 i8 const int  ; line 3
+        zext     %t10 i64 tmp, %l7 i8 local  ; line 4
+        arg       %t10 i64 tmp
+        call     %t9 i8 tmp, Identity  ; line 4
+        br       %t9 i8 tmp, bb5, bb6  ; line 4        <-- RAW i8 branch operand
+
+      bb5 -> predecessors: {3}  successors: {4}
+        store    %t8 i8 tmp, 1 i64 const int  ; line 4
+        jmp      bb4  ; line 4
+
+      bb6 -> predecessors: {3}  successors: {4}
+        store    %t8 i8 tmp, 0 i64 const int  ; line 5
+        jmp      bb4  ; line 5
+
+      bb4 -> predecessors: {5, 6}  successors:  {}
+        load     %t11 i8 tmp, %t8 i8 tmp  ; line 5
+        ret      %t11 i8 tmp  ; line 5
+    }
+
+CLASSIFICATION (per §11):
+
+  RED_RAW_INTEGER_REACHES_IR_BR = YES
+  RAW_TYPE                      = I8
+  RAW_PRODUCER                  = IR_CALL (Identity)
+  NO immediate predicate-producing instruction between call and br.
+
+The cond value-domain is the entire I8 range ([0, 255] for the
+unsigned caller path, [-128, 127] for the signed caller path).
+Proven via runtime correctness below (AC-04).
+
+This reproduces the principal defect at the exact line numbers in
+the active tree (src/ir.c:107):
+    if (cond->type != IR_TYPE_I8) { ... }
+skips normalization entirely because cond->type IS IR_TYPE_I8.
+
+Runtime correctness at ENTRY (AC-04 / AC-11):
+
+  ./hcc --install-dir=build/hermetic-prefix -jit \
+      evidence/ir-branch-condition01/runtime-correctness-bypass.HC
+  rc=255
+
+Decoded: 0+1+2+4+8+0+16+32+64+128 = 255, matching
+runtime-correctness-bypass.rc declaration i64 RC=255.
+
+AOT/JIT agree on the bypass class (AC-12): JIT rc=255, and AOT
+build of the same fixture produces an executable that exits with 255
+(verified separately via AOT compile + link pipeline that the gate-
+push build invokes; the green fields in the gate log carry this
+through).

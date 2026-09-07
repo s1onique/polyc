@@ -1,0 +1,42 @@
+i8 Invert(%p1 i8 param) {
+  bb1 -> predecessors:  {}  successors: {3, 4}
+    store    %l2 i8 local, %p1 i8 param  ; line 1
+    alloca   %t3 i8 tmp, 1 i8 const int  ; line 1
+    zext     %t4 i64 tmp, %l2 i8 local  ; line 2
+    cmp_eq   %t5 i64 tmp, %t4 i64 tmp, 0 i64 const int  ; line 2
+    br       %t5 i64 tmp, bb3, bb4  ; line 2
+
+  bb3 -> predecessors: {1}  successors: {2}
+    store    %t3 i8 tmp, 1 i64 const int  ; line 2
+    jmp      bb2  ; line 2
+
+  bb4 -> predecessors: {1}  successors: {2}
+    store    %t3 i8 tmp, 0 i64 const int  ; line 3
+    jmp      bb2  ; line 3
+
+  bb2 -> predecessors: {3, 4}  successors:  {}
+    load     %t6 i8 tmp, %t3 i8 tmp  ; line 3
+    ret      %t6 i8 tmp  ; line 3
+}
+
+===== After basic optimisations =====
+i8 Invert(%p1 i8 param) {
+  bb1 -> predecessors:  {}  successors: {3, 4}
+    store    %l2 i8 local, %p1 i8 param  ; line 1
+    alloca   %t3 i8 tmp, 1 i8 const int  ; line 1
+    zext     %t4 i64 tmp, %l2 i8 local  ; line 2
+    cmp_eq   %t5 i64 tmp, %t4 i64 tmp, 0 i64 const int  ; line 2
+    br       %t5 i64 tmp, bb3, bb4  ; line 2
+
+  bb3 -> predecessors: {1}  successors: {2}
+    store    %t3 i8 tmp, 1 i64 const int  ; line 2
+    jmp      bb2  ; line 2
+
+  bb4 -> predecessors: {1}  successors: {2}
+    store    %t3 i8 tmp, 0 i64 const int  ; line 3
+    jmp      bb2  ; line 3
+
+  bb2 -> predecessors: {3, 4}  successors:  {}
+    load     %t6 i8 tmp, %t3 i8 tmp  ; line 3
+    ret      %t6 i8 tmp  ; line 3
+}

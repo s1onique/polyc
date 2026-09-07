@@ -1,0 +1,55 @@
+ACT-POLYC-IR-BRANCH-CONDITION01 — Producer matrix BEFORE fix
+ENTRY_HEAD = 774602a966584b34b355ec00e5f63a088f84164c
+
+This matrix enumerates the actual IR_BR operand source shapes
+observed via fresh --dump-ir witnesses on ENTRY_HEAD. Each row
+records:
+  fixture        : source file (under evidence/ir-branch-condition01/)
+  source expr    : the source-level expression feeding the branch
+  pre-fix cond type : IR type reaching IR_BR (the "operand")
+  pre-fix producer  : the immediate producer opcode (or "raw" if
+                     the IR_CALL / IR_LOAD value flows directly)
+  pre-fix normalized? : YES if cmp_ne/cmp_eq/cmp_xx precedes the
+                     branch in the same block, NO otherwise
+
+=================================================================
+shape              | pre-fix cond type | pre-fix producer | normalized?
+=================================================================
+red-01 U8 call ret | i8 tmp           | IR_CALL (Identity) | NO  (BYPASS)
+red-02 U8 param    | i8 tmp (after cmp_ne dst) | IR_ICMP   | YES
+red-03 I8 call ret | i8 tmp           | IR_CALL (IdentityI8) | NO  (BYPASS)
+red-04 I64 param   | i8 tmp (after cmp_ne dst) | IR_ICMP   | YES
+red-05 while(U8call) | i8 tmp         | IR_CALL (Identity) | NO  (BYPASS)
+red-06 do-while(I8call) | i8 tmp     | IR_CALL (NegOne)   | NO  (BYPASS)
+red-07 for(i<x)   | i64 tmp (cmp_lt dst) | IR_ICMP          | YES (comparison)
+red-08 !U8        | i64 tmp (cmp_eq dst) | IR_ICMP          | YES (comparison)
+red-09 U8&&U8     | i8 (cmp_ne dst) / i8 (Phi) | IR_ICMP / IR_PHI | YES (first op); cross-block short-circuit `br %t7 i8 tmp, bb5, bb6` for the phi
+red-10 nested U8call | i8 tmp         | IR_CALL (Identity) | NO  (BYPASS) (x2)
+control-01 if(x==2)| i64 tmp (cmp_eq dst) | IR_ICMP          | YES (comparison)
+
+Summary statistics:
+  total fixtures                     = 11
+  bypass (NO predicate producer)     = 4 (red-01, red-03, red-05, red-06, red-10 x2 = 5 occurrences)
+  normalized (predicate producer)    = 6 (red-02, red-04, red-07, red-08, red-09 first op, control-01)
+  cross-block short-circuit          = 1 (red-09 `br %t7 i8 tmp` is a phi/IR_PHI pass-through; in current code it survives only because %t7's previous instr happens to be the cmp_ne)
+
+The 5 bypass occurrences all share the same root cause: cond arrives
+at irBranch() with type IR_TYPE_I8, so the entire normalization block
+at src/ir.c:107-122 is skipped. The runtime is correct today because
+backends rely on L2 (callee epilogue movzbq/uxtb) to widen the
+operand; this is brittle and architecture-dependent, exactly the
+"backend must reason about producer history" anti-pattern this ACT
+is designed to eliminate.
+
+L1/L2 model verified (per CORRECTION03):
+  L1 (src/ir.c) emits the IR_BR with raw I8 cond → no normalization
+  L2 (src/x86_64.c, src/aarch64.c) receives I8 cond via the call-result
+     operand, the callee epilogue widens it (movzbq / uxtb), and L1
+     emits a full-register testq / cbz on the widened value.
+  Runtime correct because L1+L2 compose.
+
+After this ACT, L1+L2 will no longer be needed for branch correctness
+in this class: explicit predicate formation moves the truthiness
+compare out of L2 into the canonical IR. L2 remains for non-branch
+call-result consumers (e.g. `U8 x = f();` store-back) and is not
+redesigned.
