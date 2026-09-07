@@ -1,0 +1,12 @@
+# Negative LLVM Spike Matrix (ACT-POLYC-LLVM-SPIKE01-RESUME01)
+
+fixture        hcc rc  diagnostic token
+neg_f64.HC     1       LLVM_BACKEND_UNSUPPORTED_TYPE (parameter F64)
+neg_pointer.HC 1       LLVM_BACKEND_UNSUPPORTED_TYPE (parameter I64*)
+neg_struct.HC  1       LLVM_BACKEND_UNSUPPORTED_TYPE (parameter class Box)
+neg_asm.HC     1       parse error (asm-block syntax not accepted by parser
+                       in this configuration — out-of-scope for the spike)
+
+All non-parse errors surface the explicit "LLVM_BACKEND_UNSUPPORTED_TYPE"
+diagnostic token from the LLVM backend, matching the §18 "no silent fallback"
+invariant.

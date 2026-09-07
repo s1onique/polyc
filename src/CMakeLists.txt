@@ -120,11 +120,69 @@ if (HCC_ENABLE_JIT)
                                 PROPERTIES COMPILE_FLAGS "-w")
 endif()
 
+# ACT-POLYC-LLVM-SPIKE01-RESUME01: experimental LLVM 22 C-API consumer.
+# Opt-in for the spike. Defaults OFF so existing native gates pass
+# without requiring LLVM on the build host. When ON, hcc links
+# against the LLVM 22 C API and --emit-llvm becomes available.
+#
+# The discovery is mechanical: find llvm-config, derive include
+# flags / libraries / link flags. We require major version 22 - any
+# other version is rejected up front so the spike cannot accidentally
+# be built against an older LLVM (whose C API surface differs).
+option(HCC_ENABLE_LLVM "Build the LLVM 22 C-API backend spike (ACT-POLYC-LLVM-SPIKE01-RESUME01)" OFF)
+if (HCC_ENABLE_LLVM)
+    find_program(LLVM_CONFIG_EXECUTABLE NAMES llvm-config
+                 DOC "llvm-config executable (LLVM 22.x required)")
+    if (NOT LLVM_CONFIG_EXECUTABLE)
+        message(FATAL_ERROR
+            "HCC_ENABLE_LLVM=ON but llvm-config is not on PATH. "
+            "Install LLVM 22.x (e.g. nixpkgs#llvmPackages_22.llvm.dev) "
+            "or set HCC_ENABLE_LLVM=OFF.")
+    endif()
+    execute_process(
+        COMMAND ${LLVM_CONFIG_EXECUTABLE} --version
+        OUTPUT_VARIABLE LLVM_CONFIG_VERSION
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+    string(REGEX MATCH "^([0-9]+)\\.([0-9]+)\\.([0-9]+)"
+           _ "${LLVM_CONFIG_VERSION}")
+    set(LLVM_VERSION_MAJOR "${CMAKE_MATCH_1}")
+    if (NOT LLVM_VERSION_MAJOR EQUAL 22)
+        message(FATAL_ERROR
+            "HCC_ENABLE_LLVM=ON but llvm-config reports version "
+            "${LLVM_CONFIG_VERSION}. ACT-POLYC-LLVM-SPIKE01-RESUME01 "
+            "requires LLVM 22.x exactly.")
+    endif()
+    execute_process(
+        COMMAND ${LLVM_CONFIG_EXECUTABLE} --cflags
+        OUTPUT_VARIABLE LLVM_CFLAGS
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+    execute_process(
+        COMMAND ${LLVM_CONFIG_EXECUTABLE} --libs core
+        OUTPUT_VARIABLE LLVM_LIBS_CORE
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+    execute_process(
+        COMMAND ${LLVM_CONFIG_EXECUTABLE} --ldflags
+        OUTPUT_VARIABLE LLVM_LDFLAGS
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+    separate_arguments(LLVM_CFLAGS UNIX_COMMAND "${LLVM_CFLAGS}")
+    separate_arguments(LLVM_LIBS_CORE UNIX_COMMAND "${LLVM_LIBS_CORE}")
+    separate_arguments(LLVM_LDFLAGS UNIX_COMMAND "${LLVM_LDFLAGS}")
+    message(STATUS "LLVM 22 C-API: ${LLVM_CONFIG_EXECUTABLE} (${LLVM_CONFIG_VERSION})")
+    list(APPEND SOURCES llvm-backend.c)
+    list(APPEND HEADERS llvm-backend.h)
+endif()
+
 add_executable(hcc ${SOURCES} ${HEADERS})
 
 if (HCC_ENABLE_JIT)
     target_compile_definitions(hcc PRIVATE HCC_ENABLE_JIT)
     target_link_libraries(hcc tasm ${CMAKE_DL_LIBS})
+endif()
+
+if (HCC_ENABLE_LLVM)
+    target_compile_definitions(hcc PRIVATE HCC_ENABLE_LLVM)
+    target_compile_options(hcc PRIVATE ${LLVM_CFLAGS})
+    target_link_libraries(hcc ${LLVM_LDFLAGS} ${LLVM_LIBS_CORE})
 endif()
 
 set(HCC_PATH "${CMAKE_INSTALL_PREFIX}/bin/hcc")

@@ -1,0 +1,7 @@
+=== c_api_smoke_build ===
+command: clang -I/nix/store/b6fykfvclbq81yis03blk6bqsmapmhdm-llvm-22.1.8-dev/include  -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -c c_api_smoke.c -o c_api_smoke.o
+compile_exit=0
+command: clang -L/nix/store/a1hnp3fv6y7jjl8j3vkcp3qwclxmknba-llvm-22.1.8-lib/lib -Wl,-search_paths_first -Wl,-headerpad_max_install_names c_api_smoke.o -lLLVM-22 -o c_api_smoke
+link_exit=0
+-rwxr-xr-x 1 chistyakov staff 34712 Sep  7 15:49 c_api_smoke
+-rw-r--r-- 1 chistyakov staff  3568 Sep  7 15:49 c_api_smoke.o

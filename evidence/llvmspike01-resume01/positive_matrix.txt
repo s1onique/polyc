@@ -1,0 +1,18 @@
+# Positive LLVM Spike Matrix (ACT-POLYC-LLVM-SPIKE01-RESUME01)
+
+LLVM 22.1.8 / C-API consumer / I64 subset.
+
+hcc --install-dir=<prefix> --emit-llvm <fixture.HC> -o <bn>.ll
+llvm-as <bn>.ll -o <bn>.bc
+
+fixture            hcc rc  llvm-as rc  notes
+01_const.HC        0       0          ret i64 42 (direct-branch return, collapse folded)
+02_add.HC          0       0          add i64 %0, %1
+03_sub_mul.HC      0       0          sub i64, then mul i64
+04_cmp_branch.HC   0       0          icmp sgt + br i1; collapse slot folded into ret
+05_call.HC         0       0          call i64 @Inc(i64 %arg)
+
+All 5 positive fixtures produce verifier-clean LLVM IR that
+llvm-as accepts without error. The 04_cmp_branch and 05_call
+fixtures exercise the parameter-rename + local-alloca prologue
+necessary for two-return-value + return-a-local patterns.
