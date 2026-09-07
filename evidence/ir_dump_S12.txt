@@ -1,0 +1,39 @@
+i64 FortyTwo() {
+  bb1 -> predecessors:  {}  successors: {2}
+    alloca   %t1 i64 tmp, 8 i64 const int  ; line 1
+    store    %t1 i64 tmp, 42 i64 const int  ; line 1
+    jmp      bb2  ; line 1
+
+  bb2 -> predecessors: {1}  successors:  {}
+    load     %t2 i64 tmp, %t1 i64 tmp  ; line 1
+    ret      %t2 i64 tmp  ; line 1
+}
+
+===== After basic optimisations ===== 
+i64 FortyTwo() {
+  bb1 -> predecessors:  {}  successors: {1}
+    ret      42 i64 const int  ; line 1
+}
+
+void Main() {
+  bb3 -> predecessors:  {}  successors: {4}
+    call     %t4 i64 tmp, FortyTwo  ; line 2
+    arg       "%d\n" array const str
+    arg       %t4 i64 tmp
+    call     %t3 i64 tmp, printf  ; line 2
+    jmp      bb4  ; line 2
+
+  bb4 -> predecessors: {3}  successors:  {}
+    ret      0 i32 const int  ; line 2
+}
+
+===== After basic optimisations ===== 
+void Main() {
+  bb3 -> predecessors:  {}  successors: {3}
+    call     %t4 i64 tmp, FortyTwo  ; line 2
+    arg       "%d\n" array const str
+    arg       %t4 i64 tmp
+    call     %t3 i64 tmp, printf  ; line 2
+    ret      0 i32 const int  ; line 2
+}
+

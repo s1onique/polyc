@@ -1,0 +1,23 @@
+void Main() {
+  bb1 -> predecessors:  {}  successors: {2}
+    store    %l1 f64 local, 3.500000 f64 const float  ; line 1
+    fadd     %t3 f64 tmp, %l1 f64 local, 1.500000 f64 const float  ; line 1
+    arg       "%.2f\n" array const str
+    arg       %t3 f64 tmp
+    call     %t2 i64 tmp, printf  ; line 1
+    jmp      bb2  ; line 1
+
+  bb2 -> predecessors: {1}  successors:  {}
+    ret      0 i32 const int  ; line 1
+}
+
+===== After basic optimisations ===== 
+void Main() {
+  bb1 -> predecessors:  {}  successors: {1}
+    fadd     %t3 f64 tmp, 3.500000 f64 const float, 1.500000 f64 const float  ; line 1
+    arg       "%.2f\n" array const str
+    arg       %t3 f64 tmp
+    call     %t2 i64 tmp, printf  ; line 1
+    ret      0 i32 const int  ; line 1
+}
+

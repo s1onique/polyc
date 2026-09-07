@@ -1,0 +1,43 @@
+void Main() {
+  bb1 -> predecessors:  {}  successors: {3, 4}
+    store    %l1 i64 local, 5 i64 const int  ; line 1
+    cmp_gt   %t2 i64 tmp, %l1 i64 local, 3 i64 const int  ; line 1
+    br       %t2 i64 tmp, bb3, bb4  ; line 1
+
+  bb3 -> predecessors: {1}  successors: {5}
+    arg       "yes\n" array const str
+    call     %t3 i64 tmp, printf  ; line 1
+    jmp      bb5  ; line 1
+
+  bb4 -> predecessors: {1}  successors: {5}
+    arg       "no\n" array const str
+    call     %t4 i64 tmp, printf  ; line 1
+    jmp      bb5  ; line 1
+
+  bb5 -> predecessors: {3, 4}  successors: {2}
+    jmp      bb2  ; line 1
+
+  bb2 -> predecessors: {5}  successors:  {}
+    ret      0 i32 const int  ; line 1
+}
+
+===== After basic optimisations ===== 
+void Main() {
+  bb1 -> predecessors:  {}  successors: {3, 4}
+    store    %l1 i64 local, 5 i64 const int  ; line 1
+    br       1 i64 const int, bb3, bb4  ; line 1
+
+  bb3 -> predecessors: {1}  successors: {5}
+    arg       "yes\n" array const str
+    call     %t3 i64 tmp, printf  ; line 1
+    jmp      bb5  ; line 1
+
+  bb4 -> predecessors: {1}  successors: {5}
+    arg       "no\n" array const str
+    call     %t4 i64 tmp, printf  ; line 1
+    jmp      bb5  ; line 1
+
+  bb5 -> predecessors: {3, 4}  successors: {5}
+    ret      0 i32 const int  ; line 1
+}
+

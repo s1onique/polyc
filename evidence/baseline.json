@@ -1,0 +1,52 @@
+{
+  "act": "ACT-POLYC-BOOTSTRAP-RECON01",
+  "entry_head": "7412f72a981ab859e78216c7007c68e34651f341",
+  "branch": "main",
+  "host": {
+    "os": "macOS 14.7.4 (Darwin 23.6.0, arm64, Apple M3 Max)",
+    "cc": "Apple clang 15.0.0 (clang-1500.0.40.1)",
+    "cmake": "3.28.3 (nix store)"
+  },
+  "build": {
+    "rc": 0,
+    "wall_seconds": 3.74,
+    "binary_size_bytes": 723776
+  },
+  "tests": {
+    "aot_unit": "90/90",
+    "jit_unit": "90/90",
+    "lsp": "43/43"
+  },
+  "performance_ms": {
+    "B2_aot_compile_link":  {"min": 55.3, "median": 59.0, "p95": 74.5, "max": 227.2, "n": 20},
+    "B2e2e_aot":            {"min": 217.8,"median": 225.0,"p95": 265.1,"max": 415.7,"n": 20},
+    "B3_jit":               {"min": 3.0,  "median": 3.4,  "p95": 4.0,  "max": 5.5,  "n": 20},
+    "B4_repl_startup":      {"min": 3.3,  "median": 3.6,  "p95": 4.5,  "max": 5.2,  "n": 20},
+    "B5_repl_warm":         {"min": 3.3,  "median": 3.7,  "p95": 4.6,  "max": 4.8,  "n": 20},
+    "B6_jit_square":        {"min": 3.1,  "median": 3.7,  "p95": 5.0,  "max": 5.5,  "n": 20}
+  },
+  "architecture": {
+    "ir_class": "B",
+    "common_prefix_end": "irFunctionPrepForCodeGen",
+    "first_aot_only_stage": "aarch64GenerateFunction / x86_64GenerateFunction",
+    "first_jit_only_stage": "jitEmitPrologue / jitEmitInstr",
+    "repl_reuses_jit": true,
+    "jit_executable_memory": "mmap MAP_PRIVATE|MAP_ANONYMOUS (+ MAP_JIT on Apple Silicon); mprotect RX on non-Apple-Silicon; pthread_jit_write_protect_np on Apple Silicon",
+    "aot_external_toolchain": "cc (native) / clang --target=<triple> (cross) writing /tmp/holyc-asm.s",
+    "supported_targets": [
+      "aarch64-apple-darwin",
+      "aarch64-unknown-linux-gnu",
+      "x86_64-apple-darwin",
+      "x86_64-unknown-linux-gnu"
+    ]
+  },
+  "corpus": {
+    "items": 16,
+    "aot_jit_repl_byte_identical_for_S01_to_S15": true,
+    "S16_ifjit_ifaot_split_observed": true
+  },
+  "ir_dump_deterministic": true,
+  "production_code_files_changed": 0,
+  "scope_violation": false,
+  "next_act": "ACT-POLYC-IR-BOUNDARY01"
+}

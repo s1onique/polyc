@@ -1,0 +1,66 @@
+mkdir -p ./build/test-prefix/include ./build/test-prefix/lib
+cp ./src/holyc-lib/tos.HH ./build/test-prefix/include/tos.HH
+cd ./src/holyc-lib && ../../hcc -lib tos --install-dir=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/test-prefix ./all.HC
+clang: warning: argument unused during compilation: '-shared' [-Wunused-command-line-argument]
+cc -shared -fPIC -c /tmp/holyc-asm.s -o ./all.o
+ar: error: couldn't create cache file '/var/folders/0g/mpt_55f524ndzxymkp20wjfc0000gn/T/xcrun_db-EIFyyleX' (errno=Operation not permitted)
+ar rcs libtos.a all.o
+cc -dynamiclib -Wl,-install_name,/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/test-prefix/lib/libtos.0.0.1.dylib all.o -o libtos.dylib -lpthread -lc -lm 
+cp -pPR ./libtos.a /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/test-prefix/lib/libtos.a && cp -pPR ./libtos.dylib /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/test-prefix/lib/libtos.0.0.1.dylib
+cd ./src/tests/lsp && ../../../hcc --install-dir=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/test-prefix ./run_lsp_tests.HC -o lsp-test-runner && ./lsp-test-runner
+hcc -lsp tests (/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/hcc)
+handshake
+  [0;32mok[0;0m advertises definition/hover/completion
+  [0;32mok[0;0m clean shutdown exit code
+document sync
+  [0;32mok[0;0m didOpen publishes exactly once
+  [0;32mok[0;0m clean file has 0 diagnostics
+  [0;32mok[0;0m broken file gets an error diagnostic on the right line
+  [0;32mok[0;0m didClose clears diagnostics
+  [0;32mok[0;0m clean shutdown
+definition
+  [0;32mok[0;0m function resolves into the included file
+  [0;32mok[0;0m local resolves to its declaration
+  [0;32mok[0;0m field resolves through the member chain
+  [0;32mok[0;0m include jump: plain relative
+  [0;32mok[0;0m include jump: dot-slash
+  [0;32mok[0;0m include jump: subdirectory
+  [0;32mok[0;0m missing include target answers null
+  (skipped <tos.HH> jump: no installed stdlib)
+  [0;32mok[0;0m clean shutdown
+hover & completion
+  [0;32mok[0;0m hover shows the function prototype
+  [0;32mok[0;0m hover past end of line is null
+  [0;32mok[0;0m completion is prefix-filtered
+  [0;32mok[0;0m completion right after an edit sees the new symbol
+  [0;32mok[0;0m member completion after `.` offers exactly the fields
+  [0;32mok[0;0m member completion respects the typed prefix
+  [0;32mok[0;0m member completion after `->`
+  [0;32mok[0;0m member completion on an untypable receiver offers nothing
+  [0;32mok[0;0m clean shutdown
+debounce
+  [0;32mok[0;0m keystroke storm publishes exactly once
+  [0;32mok[0;0m continuous typing still publishes via the max-age cap
+  [0;32mok[0;0m clean shutdown
+crash survival
+  [0;32mok[0;0m hostile input produces diagnostics
+  [0;32mok[0;0m hover still answers after a crash storm
+  [0;32mok[0;0m server survives to shut down cleanly
+rename
+  [0;32mok[0;0m local rename: decl + both uses in one file
+  [0;32mok[0;0m global rename spans the definition file and the caller
+  [0;32mok[0;0m field rename: typed uses + declaration, params spared
+  [0;32mok[0;0m rename onto an existing local errors
+  [0;32mok[0;0m invalid new name errors
+  [0;32mok[0;0m prepareRename yields the symbol's range
+  [0;32mok[0;0m prepareRename on a non-symbol is null
+  (skipped stdlib rename guard: no installed stdlib)
+  [0;32mok[0;0m clean shutdown
+references & highlight
+  [0;32mok[0;0m references: definition + call site across files
+  [0;32mok[0;0m references: includeDeclaration=false drops the definition
+  [0;32mok[0;0m references: field decl + typed uses, params spared
+  [0;32mok[0;0m documentHighlight: all three occurrences of the local
+  (skipped stdlib references: no installed stdlib)
+  [0;32mok[0;0m clean shutdown
+[0;32mlsp: 43/43 passed[0;0m
