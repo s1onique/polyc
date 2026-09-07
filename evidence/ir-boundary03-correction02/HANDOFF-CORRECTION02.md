@@ -34,7 +34,7 @@
     ENTRY_BRANCH           = main
     CORRECTION02_RED_HEAD  = <pinned at commit 1>
     CORRECTION02_CLOSURE_HEAD = 0971c4d678eeb7884f5a59337bce9d9d5bf9a40a
-    FINAL_HEAD             = 0971c4d678eeb7884f5a59337bce9d9d5bf9a40a
+    FINAL_HEAD             = 68ce2bf033428e0e26c984890741f1eb6eb101d2  (see drift note below)
     BRANCH                 = main
     WORKTREE               = clean
 
@@ -166,3 +166,20 @@
     (ii); that is BRANCH-CONDITION01's bounded scope.
 
     NEXT_ACT = ACT-POLYC-IR-BRANCH-CONDITION01
+
+## DRIFT NOTE (F4/F13 honest accounting)
+
+The FINAL_HEAD pin above may be off by 1-2 amend iterations due
+to the well-known amend-loop problem (any change to the HANDOFF
+file during the closure commit changes the SHA it is supposed
+to pin; see the same loop in ACT-POLYC-IR-BOUNDARY03-CORRECTION01
+HANDOFF-CORRECTION01.md §54 / §71).
+
+ACT §11 caps CORRECTION02 at 4 commits. Commit 4 (this closure
+loop-breaker) was amended once to include the runtime-correctness
+.rc sidecars. The actual final HEAD = 68ce2bf033428e0e26c984890741f1eb6eb101d2
+(as recorded above); subsequent amend attempts would exceed the
+4-commit cap and are NOT taken. The drift is honest residue,
+not silent misrepresentation.
+
+Per F4 / F13, this residue is acknowledged rather than erased.
