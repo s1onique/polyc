@@ -1,0 +1,74 @@
+i64 Sum(%p1 i64 param) {
+  bb1 -> predecessors:  {}  successors: {3}
+    store    %l2 i64 local, %p1 i64 param  ; line 1
+    alloca   %t3 i64 tmp, 8 i64 const int  ; line 1
+    store    %l4 i64 local, 0 i64 const int  ; line 2
+    store    %l5 i64 local, 0 i64 const int  ; line 3
+    jmp      bb3  ; line 3
+
+  bb3 -> predecessors: {1, 5}  successors: {4, 6}
+    cmp_lt   %t6 i64 tmp, %l5 i64 local, %l2 i64 local  ; line 3
+    br       %t6 i64 tmp, bb4, bb6  ; line 3
+
+  bb4 -> predecessors: {3}  successors: {5}
+    iadd     %l4 i64 local, %l4 i64 local, %l5 i64 local  ; line 3
+    jmp      bb5  ; line 3
+
+  bb5 -> predecessors: {4}  successors: {3}
+    load     %t8 i64 tmp, %l5 i64 local  ; line 3
+    iadd     %t9 i64 tmp, %t8 i64 tmp, 1 i64 const int  ; line 3
+    store    %l5 i64 local, %t9 i64 tmp  ; line 3
+    jmp      bb3  ; line 3
+
+  bb6 -> predecessors: {3}  successors: {2}
+    store    %t3 i64 tmp, %l4 i64 local  ; line 4
+    jmp      bb2  ; line 4
+
+  bb2 -> predecessors: {6}  successors:  {}
+    load     %t10 i64 tmp, %t3 i64 tmp  ; line 4
+    ret      %t10 i64 tmp  ; line 4
+}
+
+===== After basic optimisations =====
+i64 Sum(%p1 i64 param) {
+  bb1 -> predecessors:  {}  successors: {3}
+    store    %l2 i64 local, %p1 i64 param  ; line 1
+    store    %l4 i64 local, 0 i64 const int  ; line 2
+    store    %l5 i64 local, 0 i64 const int  ; line 3
+    jmp      bb3  ; line 3
+
+  bb3 -> predecessors: {1, 4}  successors: {4, 6}
+    cmp_lt   %t6 i64 tmp, %l5 i64 local, %l2 i64 local  ; line 3
+    br       %t6 i64 tmp, bb4, bb6  ; line 3
+
+  bb4 -> predecessors: {3}  successors: {4}
+    iadd     %l4 i64 local, %l4 i64 local, %l5 i64 local  ; line 3
+    load     %t8 i64 tmp, %l5 i64 local  ; line 3
+    iadd     %t9 i64 tmp, %t8 i64 tmp, 1 i64 const int  ; line 3
+    store    %l5 i64 local, %t9 i64 tmp  ; line 3
+    jmp      bb3  ; line 3
+
+  bb6 -> predecessors: {3}  successors: {6}
+    ret      %l4 i64 local  ; line 4
+}
+
+i64 Main() {
+  bb7 -> predecessors:  {}  successors: {8}
+    alloca   %t11 i64 tmp, 8 i64 const int  ; line 6
+    arg       10 i64 const int
+    call     %t12 i64 tmp, Sum  ; line 6
+    store    %t11 i64 tmp, %t12 i64 tmp  ; line 6
+    jmp      bb8  ; line 6
+
+  bb8 -> predecessors: {7}  successors:  {}
+    load     %t13 i64 tmp, %t11 i64 tmp  ; line 6
+    ret      %t13 i64 tmp  ; line 6
+}
+
+===== After basic optimisations =====
+i64 Main() {
+  bb7 -> predecessors:  {}  successors: {7}
+    arg       10 i64 const int
+    call     %t12 i64 tmp, Sum  ; line 6
+    ret      %t12 i64 tmp  ; line 6
+}
