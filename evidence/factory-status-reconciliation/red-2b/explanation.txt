@@ -1,0 +1,50 @@
+RED-2B — principal witness: new exact checker detects the four
+         exact verdict mismatches that the seed oracle hides
+==================================================================
+
+Captured BEFORE any HANDOFF reconciliation edit.
+
+Command:
+  sh scripts/quality/factory-closure-status-check.sh ; echo "rc=$?"
+
+Output (verbatim, see run.txt):
+  POLYC_GATE=factory-closure-status
+  MANIFEST=docs/factory/act-handoff-map.tsv
+  FAIL  docs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION01.md  act=HALT_TOPOLOGY_RECORDED                       handoff=PASS
+  FAIL  docs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION02.md  act=HALT_SCOPE_CONTRACT_VIOLATED                 handoff=PASS
+  FAIL  docs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION03.md  act=HALT_CORRECTION03_WIRE_AND_IDENTITY_CONTRACT handoff=PASS
+  FAIL  docs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION04.md  act=HALT_CORRECTION04_STATUS_AND_LF_EVIDENCE     handoff=HALT_STATUS_RECONCILIATION_AT_CAP
+  OK    docs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION05.md  HALT_CORRECTION05_OWN_GATE_RED
+
+  MANIFEST_ROWS=5
+  MANIFEST_PARSE_ERRORS=0
+  DUPLICATE_ACT_PATHS=0
+  DUPLICATE_HANDOFF_PATHS=0
+  MISSING_ACT_FILES=0
+  MISSING_HANDOFF_FILES=0
+  MALFORMED_ACT_STATUS=0
+  MALFORMED_HANDOFF_VERDICT=0
+  EXACT_VERDICT_MISMATCHES=4
+  PAIR_OK=1
+  PAIR_FAIL=4
+  STATUS=FAIL
+  VERDICT=FAIL
+
+  rc=1
+
+Interpretation:
+  EXACT_OK=1   (CORRECTION05 already exact)
+  EXACT_FAIL=4 (CORRECTION01..04 mismatch on exact token)
+  rc=1
+
+  This is the defect-before-treatment witness. It demonstrates
+  that the new oracle is strictly more discerning than the seed
+  oracle in the worst possible way: it correctly identifies
+  CORRECTION04 as a mismatch (the seed reported OK because both
+  collapsed to "HALT"), which is precisely the third-time
+  closure-status reconciliation defect that CORRECTION05's
+  reviewer flagged.
+
+  Per the ACT's binding C2 ordering this witness MUST exist
+  before HANDOFF reconciliation edits. It is captured here at
+  the unreconciled real tree.
