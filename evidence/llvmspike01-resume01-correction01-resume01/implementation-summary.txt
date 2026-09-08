@@ -1,0 +1,55 @@
+=== Implementation Summary ===
+
+ACT-POLYC-LLVM-SPIKE01-RESUME01-CORRECTION01-RESUME01
+ENTRY_HEAD = bde6045a200a1526435fd161f41b59e02df012b7
+RED_HEAD   = 50a43c64fa3dc9ba70976300b4a7aeafa0332258
+IMPLEMENTATION_HEAD = (this commit)
+
+FILES CHANGED:
+    src/llvm-backend.h   + new diagnostic codes
+    src/llvm-backend.c   - removed llPreallocateLocals
+                          - reworked llLowerValue (IR_VAL_LOCAL binds)
+                          - reworked llLowerI64Value (no load)
+                          - rewrote IR_STORE/IR_LOAD/IR_ALLOCA arms in
+                            llLowerBlock (block-level, SSA binding)
+                          - removed IR_STORE/IR_LOAD/IR_ALLOCA cases
+                            from llLowerInstr (defensive unreachable)
+    scripts/quality/llvm-spike-test.sh
+                          + HCC_INSTALL_DIR env var (hermetic)
+                          + structural no-memory-op assertion in
+                            positive() function
+
+FILES UNCHANGED (conservation):
+    src/ir.c
+    src/ir-types.h
+    src/ir-types.c
+    src/ir-optimise.c
+    src/ir-regalloc.c
+    src/x86_64.c, src/x86_64-jit.c
+    src/aarch64.c, src/aarch64-jit.c
+    src/cli.c
+    src/main.c
+    src/jit.c
+    src/repl.c
+    src/lsp.c
+    src/CMakeLists.txt
+    Makefile
+    All other src/* files
+
+HELPERS INTRODUCED: none at the API level.
+The only added names are diagnostic codes:
+    LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL
+    LLVM_BACKEND_INTERNAL_UNBOUND_VALUE
+
+The local-binding mechanism is implemented by reusing the
+existing `lc->values` map (per-function vector of LLVMValueRef)
+that already carries constant/parameter/instruction-result
+bindings. IR_STORE local, value simply calls llvmSet(lc->values,
+local-id, llLowerI64Value(value)); no new container, no new
+helper.
+
+MEMORY_FALLBACK = NO
+    The backend never does:
+        SSA lookup failed -> allocate stack slot -> continue
+    Instead it exits with LLVM_BACKEND_INTERNAL_UNBOUND_VALUE
+    or LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL.

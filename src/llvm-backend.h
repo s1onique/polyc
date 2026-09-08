@@ -43,5 +43,14 @@ int llvmEmitProgram(IrProgram *prog,
 #define LLVM_BACKEND_UNSUPPORTED_TYPE  "LLVM_BACKEND_UNSUPPORTED_TYPE"
 #define LLVM_BACKEND_VERIFY_FAILED     "LLVM_BACKEND_VERIFY_FAILED"
 #define LLVM_BACKEND_INTERNAL          "LLVM_BACKEND_INTERNAL"
+/* ACT-POLYC-LLVM-SPIKE01-RESUME01-CORRECTION01-RESUME01:
+ * scalar SSA lowering rejects local shapes that would require
+ * a stack slot, PHI, or address-taken semantics. Surfaced as an
+ * explicit diagnostic rather than silently falling back to
+ * LLVMBuildAlloca / LLVMBuildStore / LLVMBuildLoad2. */
+#define LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL \
+    "LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL"
+#define LLVM_BACKEND_INTERNAL_UNBOUND_VALUE \
+    "LLVM_BACKEND_INTERNAL_UNBOUND_VALUE"
 
 #endif
