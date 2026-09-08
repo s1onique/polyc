@@ -53,6 +53,98 @@ fi
 PASS=0
 FAIL=0
 
+# ACT-POLYC-LLVM-CORE04-RESUME01 C2: aggregate per-class counters
+# across the full matrix. Each positive() / negative() invocation
+# captures stderr at $EVID/_tmp/<bn>.stderr; we parse every such
+# file at the end and sum the per-class fields.
+#
+# Each fixture must produce EXACTLY ONE CAPABILITY_COUNTERS line on
+# stderr (the contract). Multiple lines in one stderr fail the
+# probe. A zero lines fail the probe (counters=missing RED).
+#
+# Counters are aggregated monotonically; the harness binds
+# inequalities (SUPPORTED>0, REJECTED>0, ...), not golden numbers.
+TOTAL_SUPPORTED=0
+TOTAL_REJECTED=0
+TOTAL_SHAPE_DEPENDENT=0
+TOTAL_DEFENSIVE=0
+TOTAL_UNREACHABLE=0
+COUNTER_AGG_FAILURES=0
+
+# check_counter_purity <fixture-name>
+# ASSERTION: the .ll output contains no CAPABILITY_COUNTERS line.
+# Per ACT §6.1 + §7: the line goes to stderr only; if it appears
+# in the LLVM IR output, instrumentation has contaminated the IR.
+# Returns 0 on PASS, 1 on FAIL.
+check_counter_purity() {
+    bn="$1"
+    out="$2"
+    if grep -q '^CAPABILITY_COUNTERS ' "$out"; then
+        echo "FAIL  $bn: CAPABILITY_COUNTERS contaminated LLVM IR output" >&2
+        FAIL=$((FAIL+1))
+        COUNTER_AGG_FAILURES=$((COUNTER_AGG_FAILURES+1))
+        return 1
+    fi
+    return 0
+}
+
+# parse_and_sum_counters <fixture-name> <stderr-file>
+# Parse one CAPABILITY_COUNTERS line from <stderr-file>; verify
+# exactly one record; sum the per-class fields into the matrix
+# totals. Returns 0 on PASS, 1 on FAIL (or no record).
+parse_and_sum_counters() {
+    bn="$1"
+    se="$2"
+    if [ ! -f "$se" ]; then
+        echo "FAIL  $bn: counters stderr file missing" >&2
+        FAIL=$((FAIL+1))
+        COUNTER_AGG_FAILURES=$((COUNTER_AGG_FAILURES+1))
+        return 1
+    fi
+    n=$(grep -c '^CAPABILITY_COUNTERS ' "$se" || true)
+    if [ "$n" = "0" ]; then
+        echo "FAIL  $bn: no CAPABILITY_COUNTERS line in stderr" >&2
+        echo "  (captured stderr:)" >&2
+        sed 's/^/    /' "$se" >&2
+        FAIL=$((FAIL+1))
+        COUNTER_AGG_FAILURES=$((COUNTER_AGG_FAILURES+1))
+        return 1
+    fi
+    if [ "$n" != "1" ]; then
+        echo "FAIL  $bn: expected exactly one CAPABILITY_COUNTERS line, got $n" >&2
+        sed -n '/^CAPABILITY_COUNTERS /p' "$se" >&2
+        FAIL=$((FAIL+1))
+        COUNTER_AGG_FAILURES=$((COUNTER_AGG_FAILURES+1))
+        return 1
+    fi
+    line=$(grep '^CAPABILITY_COUNTERS ' "$se" | head -1)
+    # Parse fields. Field set is fixed by ACT §6.1.
+    sup=$(printf '%s\n' "$line" | sed -n 's/^CAPABILITY_COUNTERS supported=\([0-9][0-9]*\) .*/\1/p')
+    rej=$(printf '%s\n' "$line" | sed -n 's/^.* rejected=\([0-9][0-9]*\) .*/\1/p')
+    sdp=$(printf '%s\n' "$line" | sed -n 's/^.* shape_dependent=\([0-9][0-9]*\) .*/\1/p')
+    def=$(printf '%s\n' "$line" | sed -n 's/^.* defensive=\([0-9][0-9]*\) .*/\1/p')
+    unr=$(printf '%s\n' "$line" | sed -n 's/^.* unreachable=\([0-9][0-9]*\).*/\1/p')
+    if [ -z "$sup" ] || [ -z "$rej" ] || [ -z "$sdp" ] || [ -z "$def" ] || [ -z "$unr" ]; then
+        echo "FAIL  $bn: malformed CAPABILITY_COUNTERS line: $line" >&2
+        FAIL=$((FAIL+1))
+        COUNTER_AGG_FAILURES=$((COUNTER_AGG_FAILURES+1))
+        return 1
+    fi
+    if [ "$unr" != "0" ]; then
+        # ACT §5.1: UNREACHABLE_ON_LLVM is always 0; a non-zero is
+        # HALT_UNREACHABLE_OPCODE_REACHED territory.
+        echo "FAIL  $bn: unreachable=$unr (expected 0)" >&2
+        FAIL=$((FAIL+1))
+        COUNTER_AGG_FAILURES=$((COUNTER_AGG_FAILURES+1))
+        return 1
+    fi
+    TOTAL_SUPPORTED=$((TOTAL_SUPPORTED + sup))
+    TOTAL_REJECTED=$((TOTAL_REJECTED + rej))
+    TOTAL_SHAPE_DEPENDENT=$((TOTAL_SHAPE_DEPENDENT + sdp))
+    TOTAL_DEFENSIVE=$((TOTAL_DEFENSIVE + def))
+    return 0
+}
+
 # Run a positive fixture. Args: <fixture> <out-ll>
 positive() {
     f="$1"
@@ -68,6 +160,9 @@ positive() {
         FAIL=$((FAIL+1))
         return 1
     fi
+    # ACT-POLYC-LLVM-CORE04-RESUME01 C2 §6.1: CAPABILITY_COUNTERS
+    # is NOT LLVM IR; assert it never appears in the .ll file.
+    check_counter_purity "$bn" "$out" || return 1
     DYLD_LIBRARY_PATH="$LLVM_LIBDIR:${DYLD_LIBRARY_PATH:-}" \
     LD_LIBRARY_PATH="$LLVM_LIBDIR:${LD_LIBRARY_PATH:-}" \
         "$LLVM_AS" "$out" -o "$EVID/_tmp/$bn.bc" >"$EVID/_tmp/$bn.as_stdout" 2>"$EVID/_tmp/$bn.as_stderr" || {
@@ -93,6 +188,8 @@ positive() {
         FAIL=$((FAIL+1))
         return 1
     fi
+    # Parse this fixture's counter record into the matrix totals.
+    parse_and_sum_counters "$bn" "$EVID/_tmp/$bn.stderr" || return 1
     PASS=$((PASS+1))
     echo "PASS  $f"
 }
@@ -116,6 +213,10 @@ negative() {
         FAIL=$((FAIL+1))
         return 1
     fi
+    # ACT-POLYC-LLVM-CORE04-RESUME01 C2 §6.3: rejected invocations
+    # must still emit exactly one CAPABILITY_COUNTERS line on
+    # stderr. Parse and sum.
+    parse_and_sum_counters "$bn" "$EVID/_tmp/$bn.neg.err" || true
     # also ensure no spurious .ll was written (none requested anyway)
     PASS=$((PASS+1))
     echo "PASS  $f (negative, $code)"
@@ -487,39 +588,59 @@ else
 fi
 
 echo
-echo "=== capability counters (RESUME01 RED-M2) ==="
-# ACT-POLYC-LLVM-CORE04-RESUME01 RED-M2: the harness must observe a
-# `CAPABILITY_COUNTERS` line in the compiler's LLVM IR output. Until
-# the compiler emits one, this section reports `counters=missing`
-# and FAILs. This is the executable RED; C2 IMPL adds the emission
-# and flips this to PASS.
-#
-# The fixture used is a small positive that lowers cleanly
-# (01_const.HC). The output is captured but discarded after grep.
-COUNTERS_FIXTURE="$REPO_ROOT/src/tests/llvm-spike/01_const.HC"
-COUNTERS_OUT="$EVID/_tmp/counters_probe.ll"
-if [ ! -f "$COUNTERS_FIXTURE" ]; then
-    echo "FAIL  counters probe: fixture not found at $COUNTERS_FIXTURE" >&2
-    FAIL=$((FAIL+1))
-    echo "counters=missing"
-else
-    if "$HCC" --emit-llvm $HCC_INSTALL_ARG "$COUNTERS_FIXTURE" \
-        -o "$COUNTERS_OUT" >"$EVID/_tmp/counters_probe.stdout" \
-        2>"$EVID/_tmp/counters_probe.stderr"; then
-        if [ -f "$COUNTERS_OUT" ] && grep -q '^CAPABILITY_COUNTERS ' "$COUNTERS_OUT"; then
-            echo "PASS  capability counters: CAPABILITY_COUNTERS line present"
-            PASS=$((PASS+1))
-        else
-            echo "FAIL  capability counters: CAPABILITY_COUNTERS line missing from compiler output" >&2
-            echo "counters=missing"
-            FAIL=$((FAIL+1))
-        fi
-    else
-        echo "FAIL  capability counters: hcc --emit-llvm on $COUNTERS_FIXTURE failed" >&2
-        echo "counters=missing"
-        FAIL=$((FAIL+1))
-    fi
+echo "=== capability counters (RESUME01 C2) ==="
+# ACT-POLYC-LLVM-CORE04-RESUME01 §8: aggregate per-class counters
+# across the full matrix. The totals were accumulated by
+# parse_and_sum_counters during each positive() / negative()
+# invocation. Here we (a) print the aggregation block, (b) bind
+# the matrix-wide inequality assertions.
+echo "=== capability counters ==="
+echo "SUPPORTED           : $TOTAL_SUPPORTED"
+echo "REJECTED            : $TOTAL_REJECTED"
+echo "SHAPE_DEPENDENT     : $TOTAL_SHAPE_DEPENDENT"
+echo "DEFENSIVE_INVARIANT : $TOTAL_DEFENSIVE"
+echo "UNREACHABLE_ON_LLVM : $TOTAL_UNREACHABLE"
+echo "=============================="
+
+# Required matrix-wide inequalities (§8 + §10 F):
+#   SUPPORTED           > 0   (at least one supported invocation)
+#   REJECTED            > 0   (at least one table-REJECTED invocation)
+#   SHAPE_DEPENDENT     >= 0  (matrix may or may not exercise it; record
+#                              honestly and do not add new fixtures
+#                              purely to make this counter positive)
+#   DEFENSIVE_INVARIANT = 0   (supported subset must keep this at 0)
+#   UNREACHABLE_ON_LLVM = 0   (always; invariant)
+COUNTER_GATE_PASS=1
+if [ "$TOTAL_SUPPORTED" -le 0 ]; then
+    echo "FAIL  counter gate: SUPPORTED=$TOTAL_SUPPORTED (expected > 0)" >&2
+    COUNTER_GATE_PASS=0
 fi
+if [ "$TOTAL_REJECTED" -le 0 ]; then
+    echo "FAIL  counter gate: REJECTED=$TOTAL_REJECTED (expected > 0)" >&2
+    COUNTER_GATE_PASS=0
+fi
+if [ "$TOTAL_DEFENSIVE" -ne 0 ]; then
+    echo "FAIL  counter gate: DEFENSIVE_INVARIANT=$TOTAL_DEFENSIVE (expected 0 on supported subset)" >&2
+    COUNTER_GATE_PASS=0
+fi
+if [ "$TOTAL_UNREACHABLE" -ne 0 ]; then
+    echo "FAIL  counter gate: UNREACHABLE_ON_LLVM=$TOTAL_UNREACHABLE (expected 0; invariant)" >&2
+    COUNTER_GATE_PASS=0
+fi
+if [ "$COUNTER_AGG_FAILURES" -ne 0 ]; then
+    echo "FAIL  counter gate: $COUNTER_AGG_FAILURES per-fixture counter failures" >&2
+    COUNTER_GATE_PASS=0
+fi
+if [ "$COUNTER_GATE_PASS" = "1" ]; then
+    echo "PASS  counter gate: matrix-wide inequalities bound"
+    PASS=$((PASS+1))
+fi
+
+# ACT §10 D: report the legacy matrix separately so C1/C2's added
+# counter PASS row does not silently distort the 18-fixture baseline.
+echo
+echo "LEGACY_MATRIX_PASS=$((PASS - 1))"   # subtract the counter gate row
+echo "COUNTER_GATE=$( [ "$COUNTER_GATE_PASS" = "1" ] && echo PASS || echo FAIL )"
 
 echo
 echo "================================="

@@ -1,0 +1,106 @@
+cmake -S ./src \
+		-B ./build \
+		-G 'Unix Makefiles' \
+		-DCMAKE_C_COMPILER=gcc \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_INSTALL_PREFIX=/usr/local \
+		-DCMAKE_C_FLAGS='-Wextra -Wall -Wpedantic' \
+		-DCMAKE_EXPORT_COMPILE_COMMANDS=on \
+		-DHCC_ENABLE_JIT=on \
+		-DHCC_ENABLE_LLVM=ON \
+		&& /Library/Developer/CommandLineTools/usr/bin/make -C ./build -j2
+-- The C compiler identification is AppleClang 15.0.0.15000040
+-- The CXX compiler identification is AppleClang 15.0.0.15000040
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/gcc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE
+-- LLVM 22 C-API: /run/current-system/sw/bin/llvm-config (22.1.8)
+-- Configuring done (1.0s)
+-- Generating done (0.1s)
+-- Build files have been written to: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build
+[  3%] Building C object asm/CMakeFiles/tasm.dir/asm.c.o
+[  3%] Building C object asm/CMakeFiles/tasm.dir/asm_enc.c.o
+[  5%] Building C object asm/CMakeFiles/tasm.dir/asm_jit.c.o
+[  7%] Building C object asm/CMakeFiles/tasm.dir/dis_arm64.c.o
+[  9%] Building C object asm/CMakeFiles/tasm.dir/dis_x86_64.c.o
+[ 11%] Building C object asm/CMakeFiles/tasm.dir/enc_arm64.c.o
+[ 13%] Building C object asm/CMakeFiles/tasm.dir/enc_x86_64.c.o
+[ 15%] Building C object asm/CMakeFiles/tasm.dir/target.c.o
+[ 17%] Building C object asm/CMakeFiles/tasm.dir/tasm_debug.c.o
+[ 19%] Building C object asm/CMakeFiles/tasm.dir/tasm_util.c.o
+[ 21%] Linking C static library libtasm.a
+ar: error: couldn't create cache file '/var/folders/0g/mpt_55f524ndzxymkp20wjfc0000gn/T/xcrun_db-Lb5TeY60' (errno=Operation not permitted)
+ranlib: error: couldn't create cache file '/var/folders/0g/mpt_55f524ndzxymkp20wjfc0000gn/T/xcrun_db-j08ucAF8' (errno=Operation not permitted)
+[ 21%] Built target tasm
+[ 23%] Building C object CMakeFiles/hcc.dir/asm.c.o
+[ 25%] Building C object CMakeFiles/hcc.dir/aostr.c.o
+[ 27%] Building C object CMakeFiles/hcc.dir/arena.c.o
+[ 29%] Building C object CMakeFiles/hcc.dir/ast.c.o
+[ 31%] Building C object CMakeFiles/hcc.dir/cctrl.c.o
+[ 33%] Building C object CMakeFiles/hcc.dir/cfg-print.c.o
+[ 35%] Building C object CMakeFiles/hcc.dir/cfg.c.o
+[ 37%] Building C object CMakeFiles/hcc.dir/cli.c.o
+[ 39%] Building C object CMakeFiles/hcc.dir/containers.c.o
+[ 41%] Building C object CMakeFiles/hcc.dir/compile.c.o
+[ 43%] Building C object CMakeFiles/hcc.dir/aarch64.c.o
+[ 45%] Building C object CMakeFiles/hcc.dir/ir.c.o
+/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/src/ir.c:3350:21: warning: incompatible integer to pointer conversion passing 'int' to parameter of type 'VecType *' (aka 'struct VecType *') [-Wint-conversion]
+    Vec *v = vecNew(n);
+                    ^
+/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/src/containers.h:44:22: note: passing argument to parameter 'type' here
+Vec *vecNew(VecType *type);
+                     ^
+[ 47%] Building C object CMakeFiles/hcc.dir/ir-debug.c.o
+1 warning generated.
+[ 49%] Building C object CMakeFiles/hcc.dir/ir-eval.c.o
+[ 50%] Building C object CMakeFiles/hcc.dir/ir-optimise.c.o
+[ 52%] Building C object CMakeFiles/hcc.dir/ir-regalloc.c.o
+[ 54%] Building C object CMakeFiles/hcc.dir/ir-types.c.o
+[ 56%] Building C object CMakeFiles/hcc.dir/json.c.o
+[ 58%] Building C object CMakeFiles/hcc.dir/lexer.c.o
+[ 60%] Building C object CMakeFiles/hcc.dir/list.c.o
+[ 62%] Building C object CMakeFiles/hcc.dir/lsp.c.o
+[ 64%] Building C object CMakeFiles/hcc.dir/main.c.o
+/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/src/main.c:585:9: warning: use of out-of-scope declaration of 'llValidateCapabilityContract' [-Wout-of-scope-function]
+        llValidateCapabilityContract();
+        ^
+/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/src/llvm-backend-cap.h:57:6: note: previous declaration is here
+void llValidateCapabilityContract(void);
+     ^
+1 warning generated.
+[ 66%] Building C object CMakeFiles/hcc.dir/memory.c.o
+[ 68%] Building C object CMakeFiles/hcc.dir/mempool.c.o
+[ 70%] Building C object CMakeFiles/hcc.dir/parser.c.o
+[ 72%] Building C object CMakeFiles/hcc.dir/prsasm.c.o
+[ 74%] Building C object CMakeFiles/hcc.dir/prslib.c.o
+[ 76%] Building C object CMakeFiles/hcc.dir/prsutil.c.o
+[ 78%] Building C object CMakeFiles/hcc.dir/transpiler.c.o
+[ 80%] Building C object CMakeFiles/hcc.dir/x86.c.o
+[ 82%] Building C object CMakeFiles/hcc.dir/x86_64.c.o
+[ 84%] Building C object CMakeFiles/hcc.dir/jit-common.c.o
+[ 86%] Building C object CMakeFiles/hcc.dir/aarch64-jit.c.o
+[ 88%] Building C object CMakeFiles/hcc.dir/x86_64-jit.c.o
+[ 90%] Building C object CMakeFiles/hcc.dir/repl.c.o
+[ 92%] Building C object CMakeFiles/hcc.dir/memsafe.c.o
+[ 94%] Building C object CMakeFiles/hcc.dir/linenoise/linenoise.c.o
+[ 96%] Building C object CMakeFiles/hcc.dir/llvm-backend.c.o
+/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/src/llvm-backend.c:1361:9: warning: variable 'bidx' set but not used [-Wunused-but-set-variable]
+    int bidx = 0;
+        ^
+/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/src/llvm-backend.c:326:12: warning: unused function 'irInstrListLen' [-Wunused-function]
+static int irInstrListLen(List *l) {
+           ^
+2 warnings generated.
+[ 98%] Building C object CMakeFiles/hcc.dir/llvm-backend-cap.c.o
+[100%] Linking C executable /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/hcc
+[100%] Built target hcc

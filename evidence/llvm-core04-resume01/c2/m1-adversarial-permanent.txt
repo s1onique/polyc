@@ -1,0 +1,19 @@
+=== m1-adversarial-permanent.txt ===
+Permanent adversarial fixture verification.
+
+The adversarial snippet defines:
+  not_a_dispatch_helper(ins) -> { if (ins->op == IR_ADD)...; if (ins->op == IR_SUB)... }
+  also_not_a_dispatch_helper(ins) -> { if (ins->op == IR_MUL)... }
+
+Both are static functions, neither is called from llFunction().
+
+Unified model scope_fn_names (excluding llFunction):
+  llCmpKindToLLVMPred, llCollapseStoreValue, llDetectCollapsibleReturn,
+  llLowerBlock, llLowerInstr
+
+Neither not_a_dispatch_helper nor also_not_a_dispatch_helper
+is in scope_fn_names. The structural discovery excludes them.
+
+Self-test PASSES (unified model rejects the adversarial fixture):
+INFO  scope-tight self-test: discovered dispatch functions = ['llCmpKindToLLVMPred', 'llCollapseStoreValue', 'llDetectCollapsibleReturn', 'llLowerBlock', 'llLowerInstr']; unified model set: 48 case arms, 9 if-arms in scope.
+PASS  scope-tight self-test (RESUME01 AC13): permanent adversarial fixture rejected by unified scope; unified model is internally consistent; no rogue `if`-arms outside discovered scope.

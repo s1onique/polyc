@@ -46,6 +46,8 @@
 
 #include "llvm-backend.h"
 
+#include "llvm-backend-cap.h"   /* LLTotals, llEmitCapabilityCountersOnce */
+
 #include "containers.h"
 #include "ir.h"
 #include "ir-debug.h"
@@ -319,9 +321,34 @@ typedef struct LLCtx {
      * i64->i1 trunc arm). The supported subset must keep this at
      * zero; the harness asserts it. */
     int            defensive_trips;
+
+    /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: per-invocation counter
+     * totals (SUPPORTED / REJECTED / SHAPE_DEPENDENT / DEFENSIVE).
+     * Owned by llvmEmitProgram(); this is a non-owning pointer.
+     * llFunction() aggregates lc.defensive_trips into *totals at
+     * end-of-function (one contribution per function, before the
+     * LLCtx stack frame is destroyed). The totals->emitted guard
+     * ensures exactly one CAPABILITY_COUNTERS line per invocation
+     * even if a backend-owned terminating REJECTED path emits
+     * before the success path. May be NULL when the dispatch is
+     * exercised outside --emit-llvm (e.g. legacy helpers); the
+     * increment macros tolerate NULL defensively to keep the
+     * dispatch readable. */
+    LLTotals      *totals;
 } LLCtx;
 
 /* --- per-block helpers ------------------------------------------------- */
+
+/* ACT-POLYC-LLVM-CORE04-RESUME01 M2: tiny per-class counter increments.
+ *
+ * Each macro is a single field write; the NULL guard is purely
+ * defensive (legitimate code paths always set lc->totals). Keeping
+ * these as macros instead of static inlines avoids polluting the
+ * existing control-flow shape; the comment near each call site
+ * identifies the dispatch event being counted. */
+#define LL_INC_SUPPORTED(lc)      do { if ((lc)->totals) (lc)->totals->supported++; } while (0)
+#define LL_INC_REJECTED(lc)       do { if ((lc)->totals) (lc)->totals->rejected++; } while (0)
+#define LL_INC_SHAPE_DEPENDENT(lc) do { if ((lc)->totals) (lc)->totals->shape_dependent++; } while (0)
 
 static int irInstrListLen(List *l) {
     int n = 0;
@@ -499,12 +526,14 @@ static void llPass1(LLCtx *lc, IrProgram *prog) {
             IrValue *pv = vecGet(IrValue*, fn->params, p);
             if (!pv || !llTypeSupported(pv->type)) {
                 llErrUnsupportedType(pv, fn, "function parameter");
+                llEmitCapabilityCountersOnce(lc->totals);
                 exit(1);
             }
         }
         if (!fn->return_value || !llTypeSupported(fn->return_value->type)) {
             llErrUnsupportedType(fn->return_value, fn,
                 "function return value (only I64 supported)");
+            llEmitCapabilityCountersOnce(lc->totals);
             exit(1);
         }
         LLVMTypeRef param_tys[64];
@@ -512,6 +541,7 @@ static void llPass1(LLCtx *lc, IrProgram *prog) {
         if (np > 64) {
             fprintf(stderr, "%s: too many parameters in %s (%u)\n",
                 LLVM_BACKEND_INTERNAL, fn->name->data, np);
+            llEmitCapabilityCountersOnce(lc->totals);
             exit(1);
         }
         for (u32 p = 0; p < np; ++p) {
@@ -600,6 +630,7 @@ static LLVMValueRef llLowerValue(LLCtx *lc, IrValue *v) {
     if (v->kind == IR_VAL_CONST_INT) {
         if (!llTypeSupported(v->type)) {
             llErrUnsupportedType(v, lc->fn, "constant");
+            llEmitCapabilityCountersOnce(lc->totals);
             exit(1);
         }
         LLVMValueRef c = LLVMConstInt(llType(lc, v->type),
@@ -622,6 +653,7 @@ static LLVMValueRef llLowerValue(LLCtx *lc, IrValue *v) {
             "shape this spike does not support)\n",
             LLVM_BACKEND_INTERNAL_UNBOUND_VALUE,
             lc->fn->name->data, irVarId(v));
+        llEmitCapabilityCountersOnce(lc->totals);
         exit(1);
     }
     if (v->kind == IR_VAL_CONST_STR || v->kind == IR_VAL_CONST_FLOAT ||
@@ -629,11 +661,13 @@ static LLVMValueRef llLowerValue(LLCtx *lc, IrValue *v) {
         v->kind == IR_VAL_LABEL    || v->kind == IR_VAL_UNDEFINED ||
         v->kind == IR_VAL_UNRESOLVED) {
         llErrUnsupportedType(v, lc->fn, "value kind");
+        llEmitCapabilityCountersOnce(lc->totals);
         exit(1);
     }
     fprintf(stderr, "%s: value %s (id=%u) used before definition\n",
         LLVM_BACKEND_INTERNAL,
         irValueKindToString(v->kind), irVarId(v));
+    llEmitCapabilityCountersOnce(lc->totals);
     exit(1);
 }
 
@@ -719,9 +753,15 @@ static LLVMBasicBlockRef llLowerBlock(LLCtx *lc, IrBlock *b) {
                 }
                 LLVMValueRef lv = llLowerI64Value(lc, v);
                 LLVMBuildRet(lc->bld, lv);
+                /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: collapse path
+                 * delivers SUPPORTED via the IR_RET arm; this jmp
+                 * is the architectural trigger and is NOT counted
+                 * a second time. */
                 node = next;
                 continue;
             }
+            /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: SUPPORTED terminator. */
+            LL_INC_SUPPORTED(lc);
             LLVMBasicBlockRef dst = llbmGet(&lc->blocks, t->id);
             if (!dst) {
                 fprintf(stderr,
@@ -746,6 +786,7 @@ static LLVMBasicBlockRef llLowerBlock(LLCtx *lc, IrBlock *b) {
                     LLVM_BACKEND_UNSUPPORTED_IR,
                     ins->dst ? ins->dst->kind : -1,
                     ins->dst ? ins->dst->type : -1);
+                llEmitCapabilityCountersOnce(lc->totals);
                 exit(1);
             }
             /* ACT-POLYC-LLVM-CORE01-CORRECTION01 (RED-4):
@@ -813,6 +854,11 @@ static LLVMBasicBlockRef llLowerBlock(LLCtx *lc, IrBlock *b) {
                     LLVM_BACKEND_DEFENSIVE_INVARIANT_TRIPPED,
                     lc->fn->name->data, ins->line);
                 lc->defensive_trips++;
+                /* ACT-POLYC-LLVM-CORE04-RESUME01 §6.3: the defensive
+                 * path terminates with exit(1); flush counters before
+                 * the process dies so REJECTED via defensive trip is
+                 * captured (idempotent vs. the success-path emission). */
+                llEmitCapabilityCountersOnce(lc->totals);
                 exit(1);
             } else {
                 fprintf(stderr,
@@ -823,6 +869,7 @@ static LLVMBasicBlockRef llLowerBlock(LLCtx *lc, IrBlock *b) {
                     LLVM_BACKEND_UNSUPPORTED_IR,
                     lc->fn->name->data,
                     (int)LLVMGetIntTypeWidth(cond_ty));
+                llEmitCapabilityCountersOnce(lc->totals);
                 exit(1);
             }
             IrBlock *tt = ins->extra.blocks.target_block;
@@ -835,11 +882,22 @@ static LLVMBasicBlockRef llLowerBlock(LLCtx *lc, IrBlock *b) {
                     LLVM_BACKEND_INTERNAL);
                 exit(1);
             }
+            /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: SUPPORTED terminator
+             * (i1 cond path; the i64-cond defensive path above has
+             * already exited via lc->defensive_trips++). */
+            LL_INC_SUPPORTED(lc);
             LLVMBuildCondBr(lc->bld, cond1, t, f);
             node = next;
             continue;
         }
         if (ins->op == IR_CMP_BR) {
+            /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: IR_CMP_BR capability
+             * class is REJECTED (boundary violation). Count before the
+             * diagnostic, then bail with NULL (the existing
+             * ACT-POLYC-IR-BOUNDARY03 contract). The CAPABILITY_COUNTERS
+             * record is emitted by the driver's failure-handling path
+             * (see llFunction's return-1 plumbing below). */
+            LL_INC_REJECTED(lc);
             /* ACT-POLYC-IR-BOUNDARY03 (commit 2):
              *   IR_CMP_BR is a NATIVE-ONLY fusion (src/ir-types.h:140-150;
              *   src/ir-optimise.c:1079-1122 creates it via
@@ -864,10 +922,15 @@ static LLVMBasicBlockRef llLowerBlock(LLCtx *lc, IrBlock *b) {
                 "should contain IR_ICMP + IR_BR instead. This is a "
                 "boundary violation; refusing to emit.\n",
                 LLVM_BACKEND_INTERNAL, lc->fn->name->data);
+            llEmitCapabilityCountersOnce(lc->totals);
             return NULL;
         }
         if (ins->op == IR_RET) {
             if (lc->collapsed && b == lc->fn->exit_block) {
+                /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: the collapse
+                 * exit block becomes `unreachable`; this IR_RET
+                 * is structurally absorbed by the predecessor's
+                 * `ret` and is NOT counted as SUPPORTED again. */
                 LLVMBuildUnreachable(lc->bld);
                 node = next;
                 continue;
@@ -885,11 +948,19 @@ static LLVMBasicBlockRef llLowerBlock(LLCtx *lc, IrBlock *b) {
                 }
                 v = llLowerI64Value(lc, ins->dst);
             }
+            /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: SUPPORTED terminator. */
+            LL_INC_SUPPORTED(lc);
             LLVMBuildRet(lc->bld, v);
             node = next;
             continue;
         }
         if (ins->op == IR_STORE) {
+            /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: SHAPE_DEPENDENT
+             * dispatch seam reached; count once per dispatched
+             * IR_STORE regardless of which sub-shape is taken below.
+             * Per ACT §5.3, a rejected shape is NOT also counted
+             * as REJECTED (IR_STORE is SHAPE_DEPENDENT, not REJECTED). */
+            LL_INC_SHAPE_DEPENDENT(lc);
             /* ACT-POLYC-LLVM-SPIKE01-RESUME01-CORRECTION01-RESUME01:
              * scalar SSA binding.
              *
@@ -915,6 +986,7 @@ static LLVMBasicBlockRef llLowerBlock(LLCtx *lc, IrBlock *b) {
                 fprintf(stderr,
                     "%s: function %s: IR_STORE missing dst\n",
                     LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL, lc->fn->name->data);
+                llEmitCapabilityCountersOnce(lc->totals);
                 exit(1);
             }
             /* Case 2: return-slot store consumed by collapse. */
@@ -933,11 +1005,13 @@ static LLVMBasicBlockRef llLowerBlock(LLCtx *lc, IrBlock *b) {
                     irValueKindToString(ins->dst->kind),
                     (int)ins->dst->type,
                     ins->line);
+                llEmitCapabilityCountersOnce(lc->totals);
                 exit(1);
             }
             if (ins->dst->type != IR_TYPE_I64) {
                 llErrUnsupportedType(ins->dst, lc->fn,
                     "IR_STORE local type (only I64 supported)");
+                llEmitCapabilityCountersOnce(lc->totals);
                 exit(1);
             }
             if (!ins->r1) {
@@ -946,6 +1020,7 @@ static LLVMBasicBlockRef llLowerBlock(LLCtx *lc, IrBlock *b) {
                     "value operand at line %d\n",
                     LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL,
                     lc->fn->name->data, ins->line);
+                llEmitCapabilityCountersOnce(lc->totals);
                 exit(1);
             }
             LLVMValueRef v = llLowerI64Value(lc, ins->r1);
@@ -983,6 +1058,7 @@ static LLVMBasicBlockRef llLowerBlock(LLCtx *lc, IrBlock *b) {
                         "does not insert phi nodes); line %d\n",
                         LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL,
                         lc->fn->name->data, lid, ins->line);
+                    llEmitCapabilityCountersOnce(lc->totals);
                     exit(1);
                 }
                 lc->local_defs[lid] = 1;
@@ -993,6 +1069,12 @@ static LLVMBasicBlockRef llLowerBlock(LLCtx *lc, IrBlock *b) {
             continue;
         }
         if (ins->op == IR_LOAD) {
+            /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: SHAPE_DEPENDENT
+             * dispatch seam reached; count once per dispatched
+             * IR_LOAD regardless of which sub-shape is taken below.
+             * Per ACT §5.3, a rejected shape is NOT also counted
+             * as REJECTED (IR_LOAD is SHAPE_DEPENDENT, not REJECTED). */
+            LL_INC_SHAPE_DEPENDENT(lc);
             /* ACT-POLYC-LLVM-SPIKE01-RESUME01-CORRECTION01-RESUME01:
              * scalar SSA resolution. There is no load; the result
              * is the cached SSA binding.
@@ -1012,6 +1094,7 @@ static LLVMBasicBlockRef llLowerBlock(LLCtx *lc, IrBlock *b) {
                 fprintf(stderr,
                     "%s: function %s: IR_LOAD missing dst\n",
                     LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL, lc->fn->name->data);
+                llEmitCapabilityCountersOnce(lc->totals);
                 exit(1);
             }
             if (lc->collapsed && ins->dst->kind == IR_VAL_TMP) {
@@ -1029,6 +1112,7 @@ static LLVMBasicBlockRef llLowerBlock(LLCtx *lc, IrBlock *b) {
                 lc->fn->name->data,
                 ins->line,
                 irValueKindToString(ins->dst->kind));
+            llEmitCapabilityCountersOnce(lc->totals);
             exit(1);
         }
         if (ins->op == IR_ALLOCA) {
@@ -1038,6 +1122,15 @@ static LLVMBasicBlockRef llLowerBlock(LLCtx *lc, IrBlock *b) {
              * collapse-elimination. Any other alloca is a
              * bounded-spike defect. */
             if (lc->collapsed && ins->dst == lc->collapse_slot) {
+                /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: IR_ALLOCA
+                 * capability class is REJECTED; consumed by the
+                 * collapse pattern but still a REJECTED-class op
+                 * reaching its REJECTED-class path. The grouped
+                 * case-arm in llLowerInstr below would also fire
+                 * for uncaught allocas; this branch is the
+                 * collapse-aware sink and is the canonical counting
+                 * site for ALLOCA in this spike. */
+                LL_INC_REJECTED(lc);
                 /* dead; collapse eliminates it. */
                 node = next;
                 continue;
@@ -1051,6 +1144,12 @@ static LLVMBasicBlockRef llLowerBlock(LLCtx *lc, IrBlock *b) {
                 ins->line,
                 irVarId(ins->dst),
                 ins->dst ? irValueKindToString(ins->dst->kind) : "(null)");
+            /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: REJECTED via the
+             * SSA-local fail-fast. Emit counters before exit so the
+             * rejected invocation still produces a CAPABILITY_COUNTERS
+             * record (§6.3 load-bearing requirement). */
+            LL_INC_REJECTED(lc);
+            llEmitCapabilityCountersOnce(lc->totals);
             exit(1);
         }
 
@@ -1068,6 +1167,8 @@ static LLVMValueRef llLowerInstr(LLCtx *lc, IrInstr *ins) {
         case IR_IADD:
         case IR_ISUB:
         case IR_IMUL: {
+            /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: SUPPORTED arithmetic. */
+            LL_INC_SUPPORTED(lc);
             if (!llTypeSupported(ins->dst->type)) {
                 llErrUnsupportedType(ins->dst, lc->fn, "i64-arith dst");
                 exit(1);
@@ -1079,6 +1180,8 @@ static LLVMValueRef llLowerInstr(LLCtx *lc, IrInstr *ins) {
             return LLVMBuildMul(lc->bld, a, b, "");
         }
         case IR_ICMP: {
+            /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: SUPPORTED comparison. */
+            LL_INC_SUPPORTED(lc);
             if (!llTypeSupported(ins->dst->type)) {
                 llErrUnsupportedType(ins->dst, lc->fn, "icmp dst");
                 exit(1);
@@ -1089,6 +1192,8 @@ static LLVMValueRef llLowerInstr(LLCtx *lc, IrInstr *ins) {
             return LLVMBuildICmp(lc->bld, p, a, b, "");
         }
         case IR_CALL: {
+            /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: SUPPORTED direct call. */
+            LL_INC_SUPPORTED(lc);
             if (!llTypeSupported(ins->dst->type)) {
                 llErrUnsupportedType(ins->dst, lc->fn, "call dst");
                 exit(1);
@@ -1147,28 +1252,37 @@ static LLVMValueRef llLowerInstr(LLCtx *lc, IrInstr *ins) {
          * for opcodes NOT_YET_CLASSIFIED. */
         case IR_IDIV:
         case IR_UDIV: {
+            /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: REJECTED class. */
+            LL_INC_REJECTED(lc);
             fprintf(stderr,
                 "%s: function %s: integer division is not supported "
                 "(opcode %s); use IR_IADD/IR_ISUB/IR_IMUL\n",
                 LLVM_BACKEND_UNSUPPORTED_INT_DIVISION,
                 lc->fn->name->data, irOpcodeToString(ins));
+            llEmitCapabilityCountersOnce(lc->totals);
             exit(1);
         }
         case IR_IREM:
         case IR_UREM: {
+            /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: REJECTED class. */
+            LL_INC_REJECTED(lc);
             fprintf(stderr,
                 "%s: function %s: integer remainder is not supported "
                 "(opcode %s); use IR_IADD/IR_ISUB/IR_IMUL\n",
                 LLVM_BACKEND_UNSUPPORTED_INT_REMAINDER,
                 lc->fn->name->data, irOpcodeToString(ins));
+            llEmitCapabilityCountersOnce(lc->totals);
             exit(1);
         }
         case IR_INEG: {
+            /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: REJECTED class. */
+            LL_INC_REJECTED(lc);
             fprintf(stderr,
                 "%s: function %s: integer negation is not supported "
                 "(opcode %s)\n",
                 LLVM_BACKEND_UNSUPPORTED_INT_NEGATION,
                 lc->fn->name->data, irOpcodeToString(ins));
+            llEmitCapabilityCountersOnce(lc->totals);
             exit(1);
         }
         case IR_FADD:
@@ -1176,40 +1290,52 @@ static LLVMValueRef llLowerInstr(LLCtx *lc, IrInstr *ins) {
         case IR_FMUL:
         case IR_FDIV:
         case IR_FNEG: {
+            /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: REJECTED class. */
+            LL_INC_REJECTED(lc);
             fprintf(stderr,
                 "%s: function %s: float arithmetic is not supported "
                 "(opcode %s); the CORE backend supports only i64 scalars\n",
                 LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH,
                 lc->fn->name->data, irOpcodeToString(ins));
+            llEmitCapabilityCountersOnce(lc->totals);
             exit(1);
         }
         case IR_FCMP: {
+            /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: REJECTED class. */
+            LL_INC_REJECTED(lc);
             fprintf(stderr,
                 "%s: function %s: float compare is not supported "
                 "(opcode %s); use IR_ICMP with i64 scalars\n",
                 LLVM_BACKEND_UNSUPPORTED_FLOAT_CMP,
                 lc->fn->name->data, irOpcodeToString(ins));
+            llEmitCapabilityCountersOnce(lc->totals);
             exit(1);
         }
         case IR_AND:
         case IR_OR:
         case IR_XOR:
         case IR_NOT: {
+            /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: REJECTED class. */
+            LL_INC_REJECTED(lc);
             fprintf(stderr,
                 "%s: function %s: bitwise ops are not supported "
                 "(opcode %s)\n",
                 LLVM_BACKEND_UNSUPPORTED_INT_BITWISE,
                 lc->fn->name->data, irOpcodeToString(ins));
+            llEmitCapabilityCountersOnce(lc->totals);
             exit(1);
         }
         case IR_SHL:
         case IR_SHR:
         case IR_SAR: {
+            /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: REJECTED class. */
+            LL_INC_REJECTED(lc);
             fprintf(stderr,
                 "%s: function %s: integer shift is not supported "
                 "(opcode %s)\n",
                 LLVM_BACKEND_UNSUPPORTED_INT_SHIFT,
                 lc->fn->name->data, irOpcodeToString(ins));
+            llEmitCapabilityCountersOnce(lc->totals);
             exit(1);
         }
         case IR_TRUNC:
@@ -1223,62 +1349,83 @@ static LLVMValueRef llLowerInstr(LLCtx *lc, IrInstr *ins) {
         case IR_SITOFP:
         case IR_PTRTOINT:
         case IR_INTTOPTR: {
+            /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: REJECTED class. */
+            LL_INC_REJECTED(lc);
             fprintf(stderr,
                 "%s: function %s: type conversion is not supported "
                 "(opcode %s); the CORE backend supports only i64 scalars\n",
                 LLVM_BACKEND_UNSUPPORTED_CONVERSION,
                 lc->fn->name->data, irOpcodeToString(ins));
+            llEmitCapabilityCountersOnce(lc->totals);
             exit(1);
         }
         case IR_BITCAST: {
+            /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: REJECTED class. */
+            LL_INC_REJECTED(lc);
             fprintf(stderr,
                 "%s: function %s: bitcast is not supported "
                 "(opcode %s)\n",
                 LLVM_BACKEND_UNSUPPORTED_BITCAST,
                 lc->fn->name->data, irOpcodeToString(ins));
+            llEmitCapabilityCountersOnce(lc->totals);
             exit(1);
         }
         case IR_PHI: {
+            /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: REJECTED class. */
+            LL_INC_REJECTED(lc);
             fprintf(stderr,
                 "%s: function %s: PHI is not supported by the CORE backend; "
                 "the supported subset uses direct-branch return and "
                 "single-definition locals instead\n",
                 LLVM_BACKEND_UNSUPPORTED_PHI,
                 lc->fn->name->data);
+            llEmitCapabilityCountersOnce(lc->totals);
             exit(1);
         }
         case IR_SWITCH: {
+            /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: REJECTED class. */
+            LL_INC_REJECTED(lc);
             fprintf(stderr,
                 "%s: function %s: switch is not supported "
                 "(opcode %s); use IR_BR / IR_JMP / IR_ICMP chains\n",
                 LLVM_BACKEND_UNSUPPORTED_SWITCH,
                 lc->fn->name->data, irOpcodeToString(ins));
+            llEmitCapabilityCountersOnce(lc->totals);
             exit(1);
         }
         case IR_SELECT: {
+            /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: REJECTED class. */
+            LL_INC_REJECTED(lc);
             fprintf(stderr,
                 "%s: function %s: select is not supported "
                 "(opcode %s)\n",
                 LLVM_BACKEND_UNSUPPORTED_SELECT,
                 lc->fn->name->data, irOpcodeToString(ins));
+            llEmitCapabilityCountersOnce(lc->totals);
             exit(1);
         }
         case IR_VA_ARG:
         case IR_VA_START:
         case IR_VA_END: {
+            /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: REJECTED class. */
+            LL_INC_REJECTED(lc);
             fprintf(stderr,
                 "%s: function %s: variadic args are not supported "
                 "(opcode %s)\n",
                 LLVM_BACKEND_UNSUPPORTED_VARARGS,
                 lc->fn->name->data, irOpcodeToString(ins));
+            llEmitCapabilityCountersOnce(lc->totals);
             exit(1);
         }
         case IR_ASM: {
+            /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: REJECTED class. */
+            LL_INC_REJECTED(lc);
             fprintf(stderr,
                 "%s: function %s: inline asm is not supported "
                 "(opcode %s)\n",
                 LLVM_BACKEND_UNSUPPORTED_ASM,
                 lc->fn->name->data, irOpcodeToString(ins));
+            llEmitCapabilityCountersOnce(lc->totals);
             exit(1);
         }
         case IR_ALLOCA:
@@ -1286,35 +1433,63 @@ static LLVMValueRef llLowerInstr(LLCtx *lc, IrInstr *ins) {
         case IR_STORE_DEREF:
         case IR_RMW_DEREF:
         case IR_LEA: {
+            /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: REJECTED class
+             * (pointer / memory address). Note: IR_ALLOCA normally
+             * passes through llLowerBlock's collapse-aware if-arm;
+             * this case-arm is the canonical REJECTED counting site
+             * for ALLOCA / LOAD_DEREF / STORE_DEREF / RMW_DEREF / LEA
+             * when they reach llLowerInstr without prior collapse
+             * handling. The two paths are mutually exclusive per
+             * dispatched instruction; one REJECTED per op either way. */
+            LL_INC_REJECTED(lc);
             fprintf(stderr,
                 "%s: function %s: pointer / memory address ops are not "
                 "supported (opcode %s); the CORE backend uses scalar SSA "
                 "binding only (no alloca, no load/store, no address-of)\n",
                 LLVM_BACKEND_UNSUPPORTED_POINTER,
                 lc->fn->name->data, irOpcodeToString(ins));
+            llEmitCapabilityCountersOnce(lc->totals);
             exit(1);
         }
         case IR_GEP: {
+            /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: REJECTED class. */
+            LL_INC_REJECTED(lc);
             fprintf(stderr,
                 "%s: function %s: getelementptr is not supported "
                 "(opcode %s); no aggregate / pointer in CORE\n",
                 LLVM_BACKEND_UNSUPPORTED_AGGREGATE,
                 lc->fn->name->data, irOpcodeToString(ins));
+            llEmitCapabilityCountersOnce(lc->totals);
             exit(1);
         }
         default: {
-            /* Safety net for NOT_YET_CLASSIFIED opcodes (e.g. IR_NOP,
-             * IR_LABEL). The CORE contract requires every opcode to
-             * be classified; if the default arm fires in practice,
-             * the capability matrix has a gap that needs filling. */
+            /* ACT-POLYC-LLVM-CORE04-RESUME01 §5.3 + §13: the default
+             * arm is the safety net for NOT_YET_CLASSIFIED opcodes
+             * (e.g. IR_NOP, IR_LABEL). Reaching the default arm with
+             * a UNREACHABLE_ON_LLVM opcode is an invariant violation
+             * (HALT_UNREACHABLE_OPCODE_REACHED). The CORE contract
+             * requires every opcode to be classified; if the default
+             * arm fires in practice, the capability matrix has a gap
+             * that needs filling. */
+            if (ins->op == IR_NOP || ins->op == IR_LABEL) {
+                fprintf(stderr,
+                    "%s: function %s: UNREACHABLE_ON_LLVM opcode %s "
+                    "reached the dispatch default arm; this is an "
+                    "invariant violation (HALT_UNREACHABLE_OPCODE_REACHED).\n",
+                    LLVM_BACKEND_INTERNAL, lc->fn->name->data,
+                    irOpcodeToString(ins));
+                llEmitCapabilityCountersOnce(lc->totals);
+                abort();
+            }
             llErrUnsupportedOp(ins, lc->fn, irOpcodeToString(ins));
+            llEmitCapabilityCountersOnce(lc->totals);
             exit(1);
         }
     }
 }
 
 static int llFunction(IrProgram *prog, IrFunction *fn, LLVMContextRef ctx,
-                      LLVMModuleRef mod)
+                      LLVMModuleRef mod, LLTotals *totals)
 {
     (void)prog;
     LLCtx lc;
@@ -1322,6 +1497,7 @@ static int llFunction(IrProgram *prog, IrFunction *fn, LLVMContextRef ctx,
     lc.ctx = ctx;
     lc.mod = mod;
     lc.fn  = fn;
+    lc.totals = totals;
     lc.bld = LLVMCreateBuilderInContext(ctx);
     llvmInit(&lc.values, 1024);
     llbmInit(&lc.blocks, 1024);
@@ -1354,6 +1530,7 @@ static int llFunction(IrProgram *prog, IrFunction *fn, LLVMContextRef ctx,
             "%s: function %s: return shape not collapsible "
             "(every I64 function must end in collapse-eligible shape)\n",
             LLVM_BACKEND_UNSUPPORTED_IR, fn->name->data);
+        llEmitCapabilityCountersOnce(lc.totals);
         return 1;
     }
 
@@ -1365,6 +1542,16 @@ static int llFunction(IrProgram *prog, IrFunction *fn, LLVMContextRef ctx,
         llLowerBlock(&lc, b);
         bidx++;
         node = next;
+    }
+
+    /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: aggregate this function's
+     * defensive-trip contribution into the per-invocation totals
+     * exactly once, before LLCtx is destroyed. The per-function
+     * counter remains in lc.defensive_trips for diagnostic context
+     * but is no longer the canonical observer; the harness reads
+     * totals->defensive. */
+    if (lc.totals) {
+        lc.totals->defensive += (unsigned long)lc.defensive_trips;
     }
 
     LLVMDisposeBuilder(lc.bld);
@@ -1386,6 +1573,17 @@ int llvmEmitProgram(IrProgram *prog,
         return 1;
     }
 
+    /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: own the per-invocation
+     * counters. One LLTotals per hcc --emit-llvm invocation; passed
+     * by pointer into llFunction() so each function contributes
+     * exactly once. This stack-local + pointer-plumbing approach
+     * is mechanism B from the C1 recon
+     * (evidence/llvm-core04-resume01/c1/red-m2-recon.txt).
+     * No module-static/global state; no heap registry of LLCtx;
+     * no later walk over destroyed LLCtx instances. */
+    LLTotals totals;
+    memset(&totals, 0, sizeof(totals));
+
     LLVMContextRef ctx = LLVMContextCreate();
     if (!ctx) {
         fprintf(stderr, "%s: LLVMContextCreate returned NULL\n",
@@ -1405,6 +1603,10 @@ int llvmEmitProgram(IrProgram *prog,
     memset(&lc, 0, sizeof(lc));
     lc.ctx = ctx;
     lc.mod = mod;
+    /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: pre-dispatch pass uses the
+     * same LLTotals so capability-classified pre-dispatch rejections
+     * (e.g. unsupported function param type) can emit counters too. */
+    lc.totals = &totals;
     llvmInit(&lc.values, 1024);
     llPass1(&lc, prog);
     free(lc.values.values);
@@ -1412,7 +1614,12 @@ int llvmEmitProgram(IrProgram *prog,
     for (u64 i = 0; i < prog->functions->size; ++i) {
         IrFunction *fn = vecGet(IrFunction*, prog->functions, i);
         if (!fn) continue;
-        if (llFunction(prog, fn, ctx, mod) != 0) {
+        if (llFunction(prog, fn, ctx, mod, &totals) != 0) {
+            /* ACT-POLYC-LLVM-CORE04-RESUME01 §6.3: emit counters
+             * before the function-level bail-out so rejected
+             * invocations still produce a CAPABILITY_COUNTERS line.
+             * Idempotent vs. the success-path emission below. */
+            llEmitCapabilityCountersOnce(&totals);
             LLVMDisposeModule(mod);
             LLVMContextDispose(ctx);
             return 1;
@@ -1424,6 +1631,7 @@ int llvmEmitProgram(IrProgram *prog,
         fprintf(stderr, "%s: %s\n",
             LLVM_BACKEND_VERIFY_FAILED, err ? err : "(null error)");
         if (err) LLVMDisposeMessage(err);
+        llEmitCapabilityCountersOnce(&totals);
         LLVMDisposeModule(mod);
         LLVMContextDispose(ctx);
         return 1;
@@ -1454,6 +1662,12 @@ int llvmEmitProgram(IrProgram *prog,
             LLVMDisposeMessage(s);
         }
     }
+
+    /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: success-path emission.
+     * Per ACT §6.2, emit after LLVMVerifyModule + LLVMPrintModule*.
+     * Per ACT §6.1, the line goes to stderr and is NEVER inside the
+     * .ll output (fputs/LLVMPrintModuleToFile are pure LLVM IR). */
+    llEmitCapabilityCountersOnce(&totals);
 
     LLVMDisposeModule(mod);
     LLVMContextDispose(ctx);
