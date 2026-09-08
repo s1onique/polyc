@@ -142,7 +142,15 @@ echo "=== cmp predicate matrix ==="
 # (both --dump-ir and --emit-llvm) are written under $EVID_CORR for
 # independent inspection. Successful emission through IR_CMP_BR is
 # also evidence for RED-1A / RED-1B, not a GREEN boundary result.
-EVID_CORR="$REPO_ROOT/evidence/llvmspike01-resume01-correction01"
+#
+# ACT-POLYC-LLVM-SPIKE01-RESUME01-CORRECTION01-RESUME01-CORRECTION01:
+# $EVID_CORR was previously hardcoded to the C1 evidence dir
+# (evidence/llvmspike01-resume01-correction01/), which is HISTORICAL
+# (F14). Running the harness overwrote those historical RED files
+# on every invocation. The directory is now redirected to THIS ACT's
+# evidence dir, prefixed `live-` to make it clear these transcripts
+# are regenerated on every harness run, NOT historical records.
+EVID_CORR="$REPO_ROOT/evidence/llvmspike01-resume01-correction01-resume01-correction01/live-red-transcripts"
 mkdir -p "$EVID_CORR"
 
 # dump_ir_capture <src> <out_base>

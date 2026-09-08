@@ -1,0 +1,14 @@
+hcc rc (no --emit-llvm): 1
+stderr (first 5 lines):
+error: MOV: bad dst
+ --> src/tests/llvm-spike/neg_asm.HC:4:1
+     |
+   4 |            mov rax, rdi
+     |    ^^^
+
+RED-8 verdict: this is a PARSE-TIME gate, not a backend witness.
+  neg_asm.HC exercises inline asm syntax; the parser rejects it
+  before the IR or LLVM consumer ever sees the IR_ASM opcode.
+  The negative assertion only proves "parser rejects asm blocks".
+  It does NOT prove IR_ASM reachability through the LLVM backend.
+  IR_ASM is recorded as residue (RED-8 + §8 P2).
