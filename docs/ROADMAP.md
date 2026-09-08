@@ -497,6 +497,30 @@ CLOSE commit + one HANDOFF + one new ACT authorization),
 no SHA-table surgery, no ACT-document mutation at closure,
 verdict identity lives in the trailer.
 
+Reviewer-accepted phase bookkeeping after the pre-IMPL
+review:
+
+- `0604467` is the **documentary-RED commit** — it opens
+  the ACT and captures RED-M1 (CORRECTION03 residue line
+  246-247) and RED-M2 (`grep` returns no matches) in
+  prose. Both REDs are observable from committed tree
+  state.
+- The first *code* commit (C1) is the **executable RED**
+  — adds `check_dispatch_scope_is_tight()` with permanent
+  adversarial fixture, and a `counters=missing` line in
+  `llvm-spike-test.sh`. Trailer `ACT-Phase: RED`.
+- The next commit (C2) is **IMPL** — flips both to PASS.
+  Trailer `ACT-Phase: IMPL`.
+- The adversarial fixture is **permanent** (AC13); not
+  removed at GREEN.
+- Closure hygiene uses the **ACT-derived range**:
+  `git diff --check <RESUME01-entry>..<RESUME01-CLOSE>`,
+  not `git diff --check HEAD`. The grandfathered EOF
+  whitespace in `evidence/llvm-core04/HANDOFF.md:229`
+  (committed at `4be5df3`) is recorded as P2 residue
+  and does NOT block RESUME01 closure per F14 (historical
+  HALT evidence is not rewritten).
+
 
 ## Things that may never happen
 

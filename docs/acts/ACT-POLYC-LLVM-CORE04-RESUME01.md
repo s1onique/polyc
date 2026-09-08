@@ -86,6 +86,33 @@ row) checks, an adversarial `if (ins->op == IR_X)` placed
 verifier, and the spike harness prints per-class
 dispatch counts.
 
+**Reviewer-accepted phase bookkeeping (post-review fix):**
+
+- `0604467` is treated as the **legitimate RESUME01
+  documentary-RED commit**. It captures the already-
+  reproduced REDs in prose: RED-M1 documented in
+  `CORE03-CORRECTION03` line 246-247, RED-M2 reproduced
+  by `grep -nE 'n_support|n_rejected' src/llvm-backend.c
+  scripts/quality/llvm-spike-test.sh` (no matches). Both
+  REDs are observable from committed tree state without
+  any new executable test.
+- The next commit (the one that adds the executable
+  `check_dispatch_scope_is_tight()` self-test and the
+  `counters=missing` harness line) is **also RED-phase**
+  in Factory v2: it adds failing tests that prove the
+  REDs against the live tree, with `ACT-Phase: RED`
+  trailer. This second RED commit is the one that
+  satisfies the strict Factory-v2 reading that a RED
+  phase must contain a reproducible failing witness.
+- IMPL is then a separate commit that flips the verifier
+  + harness to PASS, with `ACT-Phase: IMPL` trailer.
+
+This three-commit RED-then-RED-then-IMPL shape replaces
+the earlier "C1 RED = verifier-self-test" plan because
+the first commit (`0604467`) was already documentary and
+the test code needed to live in a code commit, not a docs
+commit.
+
 ---
 
 ## 1. Why
@@ -243,8 +270,19 @@ Minimum production change:
      (clearly delimited and labelled as adversarial),
      parses it as if it were source, and FAILs if the
      parser accepts an `if (ins->op == IR_X)` outside
-     the scoped dispatch set. The seeded constant is
-     removed after IMPL passes.
+     the scoped dispatch set.
+   - **The adversarial fixture is permanent.** It stays
+     in the verifier for the lifetime of the project so
+     that any future regression in the dispatch-scope
+     parser re-detects it. The fixture is NOT removed
+     after IMPL passes. GREEN means:
+     `old parser + permanent fixture → FAIL`,
+     `new parser + same fixture → PASS`,
+     `future weaker parser + same fixture → FAIL again`.
+   - The fixture must be unambiguously labelled
+     (e.g. `/* RESUME01-ADVERSARIAL-FIXTURE: not a real
+     IR op; do not delete */`) so a careless reader does
+     not remove it.
 
 3. **Counter fields** in `LLCtx`:
    - `unsigned long n_support_dispatched;`
@@ -312,12 +350,16 @@ Explicitly **not** included:
 | AC09  | before IMPL: seeded adversarial fixture causes the verifier to FAIL the scope-tight test    | observed (RED evidence)                     |
 | AC10  | after IMPL: same fixture passes                                                              | observed (GREEN evidence)                   |
 | AC11  | `scripts/quality/gate-fast.sh`                                                              | PASS                                        |
+| AC12  | `git diff --check <RESUME01-entry>..<RESUME01-CLOSE>` (ACT-range, NOT `HEAD`)              | rc=0 (no whitespace errors in the ACT range) |
+| AC13  | permanent adversarial fixture (`/* RESUME01-ADVERSARIAL-FIXTURE: ... */`) remains in tree  | observed (fixture not deleted at GREEN)     |
 
-AC09/AC10 establish the M1 RED→GREEN cycle inside the
+AC09/AC10/AC13 establish the M1 RED→GREEN cycle inside the
 verifier itself (the production source does not contain a
 malicious `if (ins->op == IR_X)`, so the RED is a
-synthetic adversarial constant inside the verifier's own
-self-test).
+permanent adversarial constant inside the verifier's own
+self-test). AC13 is the permanence invariant — the fixture
+must remain after IMPL passes so future regressions are
+caught.
 
 ---
 
@@ -331,7 +373,14 @@ self-test).
 - `llvm-cap-table-verifier` — PASS for I1, I2, I3
   (the verifier cannot regress).
 - `gate-fast` — PASS.
-- `git diff --check HEAD` — rc=0.
+- `git diff --check <RESUME01-entry>..<RESUME01-CLOSE>`
+  — rc=0. (ACT-range check, NOT `git diff --check HEAD`,
+  which only sees the current worktree and can give a
+  false PASS for an already-committed whitespace error.
+  The CORE04 HALT HANDOFF carries a grandfathered EOF
+  blank line at `evidence/llvm-core04/HANDOFF.md:229`
+  recorded as P2 residue and is NOT in scope for
+  RESUME01's ACT-range check.)
 
 ---
 
@@ -354,6 +403,12 @@ self-test).
 
 - P2 — per-fixture counter deltas (not in this ACT).
 - P2 — per-opcode histogram (not in this ACT).
+- P2 — **grandfathered EOF whitespace in
+  `evidence/llvm-core04/HANDOFF.md:229`** (new blank line
+  at EOF; committed at `4be5df3`). Per F14 the closed
+  HALT HANDOFF is historical evidence; not rewritten.
+  RESUME01 uses ACT-range diff-check, not `HEAD`, so this
+  residue does not block closure.
 - P2 — moving the verifier into a C runtime check (would
   duplicate source scanning in C — not justified yet).
 - P2 — FT1 closure-oracle trust relocation (Factory backlog).
@@ -366,20 +421,41 @@ self-test).
 
 ## 10. Commit topology (suggested; not capped)
 
+Note: `0604467` (already committed) is the *documentary*
+RED commit — it captures the already-reproduced REDs in
+prose only. The first *code* commit is the *executable*
+RED; the next code commit is IMPL.
+
 ```text
-C1 (RED)
+0604467 (already on main; documentary RED)
+    ACT: ACT-POLYC-LLVM-CORE04-RESUME01
+    ACT-Phase: RED
+    ACT-Supersedes: ACT-POLYC-LLVM-CORE04
+
+    docs-only: opens the ACT, captures REDs in prose.
+    RED-M1 reproducible via committed CORRECTION03
+    residue line 246-247. RED-M2 reproducible via
+    `grep -nE 'n_support|n_rejected' src/llvm-backend.c
+    scripts/quality/llvm-spike-test.sh` returning no
+    matches. No production/test change.
+
+C1 (executable RED)
     ACT: ACT-POLYC-LLVM-CORE04-RESUME01
     ACT-Phase: RED
 
     Add scripts/quality/llvm-cap-table-verifier.py
     scope-tight self-test check_dispatch_scope_is_tight()
-    with seeded adversarial fixture.
+    with seeded adversarial fixture (labelled
+    /* RESUME01-ADVERSARIAL-FIXTURE: not a real IR op;
+    do not delete */).
     Verify RED: rc=1 (scope-tight FAIL on seeded
     adversarial constant).
 
     Also add scripts/quality/llvm-spike-test.sh line that
     emits "counters=missing" when CAPABILITY_COUNTERS line
     is absent in compiler output.
+    Verify RED-M2: harness summary contains
+    "counters=missing".
 
 C2 (IMPL)
     ACT: ACT-POLYC-LLVM-CORE04-RESUME01
@@ -391,6 +467,7 @@ C2 (IMPL)
     Increment counters in LlFunction() arms.
     Update harness to parse counters and emit
     === capability counters === block.
+    Adversarial fixture is **NOT** removed (AC13).
 
     Verify GREEN: scope-tight test PASSes (rc=0);
     spike-test PASS=18 FAIL=0; counters block has
@@ -400,9 +477,9 @@ C3 (EVIDENCE)
     ACT: ACT-POLYC-LLVM-CORE04-RESUME01
     ACT-Phase: EVIDENCE
 
-    Update docs/ROADMAP.md CORE04 entry to record
-    HALT + RESUME01; remove defunct M1 wording.
-    Capture counter baselines.
+    Update docs/ROADMAP.md CORE04/RESUME01 entry to
+    reflect the corrected missions and the permanence
+    invariant (AC13). Capture counter baselines.
     No production code change.
 
 C4 (CLOSE)
@@ -410,11 +487,15 @@ C4 (CLOSE)
     ACT-Phase: CLOSE
     ACT-Verdict: PASS
 
-    Final gate run; submit_and_exit with closure handoff.
+    Final gate run including
+    `git diff --check <RESUME01-entry>..<RESUME01-CLOSE>`;
+    submit_and_exit with closure handoff.
 ```
 
-The 4-commit structure is the *minimum* for proof; an
-extra commit is allowed but not a numeric cap.
+The 4-commit C1..C4 code structure is the *minimum* for
+proof; an extra commit is allowed but not a numeric cap.
+The opening documentary-RED commit `0604467` is the
+authorisation artifact and counts as commit zero.
 
 ---
 
