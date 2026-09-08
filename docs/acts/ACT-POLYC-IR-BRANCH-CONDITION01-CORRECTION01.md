@@ -71,8 +71,13 @@ In scope:
   using the now-located LLVM 22.1.8 toolchain.
 - Recording actual LLVM spike output (positive + negative matrices).
 - Distinguishing IR-semantic vs native-machine in AC-26.
-- Recording the `tos.HH rc=0` finding as P1 residue (independent
-  bug discovered during this re-investigation).
+- [historical; see CORRECTION03 for corrected wording] Recording
+  the `tos.HH rc=0` finding as P1 residue (independent bug
+  discovered during this re-investigation).
+  CORRECTION02 later established that the actual finding was the
+  `--emit-llvm without LLVM support rc=0` transcript (a shell-
+  capture artifact, not an hcc bug). CORRECTION03 added this F14
+  annotation preserving the historical wording above for audit.
 - Issuing a new closure commit with corrected PASS verdict.
 
 Out of scope:
