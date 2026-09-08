@@ -1,0 +1,101 @@
+=== ACT-POLYC-LLVM-CORE03-CORRECTION02 HALT RECORD ===
+recorded: Tue Sep  8 12:33 MSK 2026
+recorder: agent (post-reviewer rejection of PASS)
+HEAD at halt: be53986 (the original CORRECTION02 DOCS commit)
+
+VERDICT: HALT_SCOPE_CONTRACT_VIOLATED
+SUCCESSOR: ACT-POLYC-LLVM-CORE03-CORRECTION03
+
+Why HALT and not PASS-with-residue
+----------------------------------
+The CORRECTION02 ACT explicitly listed "Changing the actual diagnostic
+macro values in src/llvm-backend-cap.c or src/llvm-backend.c" under
+"Out of scope (F7)" (lines 141-145), with the wording:
+
+  "(these are pre-existing binding defects surfaced by M2's arm-local
+   check; the fix would change semantics and requires its own ACT).
+   CORRECTION02 only HARDENS the check; the row content remains
+   residue."
+
+The "Files authorised for change" section (line 154) further narrowed
+src/llvm-backend-cap.c to:
+
+  "(M1: length-delimited wire format)"
+
+The IMPL commit 857ecf2 nonetheless modified two capability rows
+(IR_ALLOCA and IR_CMP_BR) under M2's banner. The mechanical correctness
+of those row edits is not in dispute — both now match what the dispatch
+arms actually emit. The procedural violation is that the edits were not
+authorised.
+
+This is the F7 / F15 failure mode the Factory doctrine names:
+
+  "new evidence discovers additional necessary production change
+   ≠
+   existing ACT automatically authorises that change"
+
+The correct sequence at the moment M2's arm-local checker REDed the
+original row values would have been:
+
+  M2 verifier turns RED on real tree
+      ↓
+  HALT_TABLE_DISPATCH_PREEXISTING_DRIFT
+      ↓
+  fresh bounded ACT authorises the two row corrections
+      ↓
+  IMPL re-lands them (or first IMPL of this new ACT)
+
+CORRECTION02 instead inlined the production change into M2 and
+declared PASS. CORRECTION03 is the missed-bounded ACT.
+
+Additionally CORRECTION02 itself reproduced the stale-closure bug it
+was supposed to close in CORRECTION01: ACT says "Status: OPEN",
+HANDOFF says "VERDICT: PASS". CORRECTION03's M3 reconciles that.
+
+Scope of the halt
+-----------------
+M1 wire-format hardening:        IN SCOPE, PASS, kept
+M2 arm-local check structure:    IN SCOPE, PASS, kept
+M2 IR_ALLOCA row correction:     OUT OF SCOPE, deferred to CORRECTION03
+M2 IR_CMP_BR row correction:     OUT OF SCOPE, deferred to CORRECTION03
+M3 harness set-membership:       IN SCOPE, PASS, kept
+M4 CORRECTION01 status reconcile: IN SCOPE, PASS, kept
+CORRECTION02 own status:         OUT OF SCOPE, deferred to CORRECTION03
+Wire-format ASCII-only claim:    OUT OF SCOPE, deferred to CORRECTION03
+
+The IMPL commit 857ecf2 remains in HEAD because (a) reverting the
+two row edits would re-RED the M2 arm-local check that CORRECTION02
+itself introduced, (b) the row values are mechanically correct, and
+(c) F14 prohibits historical rewriting. The CORRECTION03 IMPL
+legitimises the row edits; future audits should treat the row values
+as authorised by CORRECTION03, not CORRECTION02.
+
+Topology at halt
+----------------
+CORRECTION02 declared cap = 3 (RED + IMPL + DOCS).
+CORRECTION02 actual       = 3 commits: b42480d (RED) + 857ecf2 (IMPL)
+                                          + be53986 (DOCS).
+This is AT CAP (declared = actual = 3). The reviewer noted that
+CORE03 and CORRECTION01 each breached cap (declared 3, actual 4); this
+halt preserves the historical commits per F14.
+
+What the reviewer got right
+---------------------------
+1. CORRECTION02 silently enlarged its scope (F7/F15).
+2. CORRECTION02's own ACT/HANDOFF status was contradictory (the
+   exact bug it closed for CORRECTION01).
+3. The "length-delimited / byte-for-byte" claim was true only for
+   ASCII; the C emitter writes strlen() (byte count) but the parser
+   uses Python len() (code-point count). A non-ASCII payload
+   produces "header says N, actual M" with N != M. Witnessed live.
+4. The arm-local discovery scope differs from the body-extraction
+   scope: get_dispatch_arms() finds if-arms anywhere in the file,
+   while body extraction is scoped to llLowerInstr / llLowerBlock.
+   Recorded as P1 residue for CORE04.
+
+What survives intact
+--------------------
+* The verifier's arm-local check structure (CORRECTION02's M2 work).
+* The harness's per-fixture set-membership contract (M3).
+* The CORRECTION01 status reconciliation (CORRECTION02's M4).
+* The CORRECTION02 RED/IMPL/DOCS commit chain (F14).

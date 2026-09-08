@@ -1,0 +1,17 @@
+=== ACT-POLYC-LLVM-CORE03-CORRECTION03 M1 RED: IR_ALLOCA reverted to MEMORY ===
+
+Mutation: line 22 of src/llvm-backend-cap.c reverted from
+   LLVM_BACKEND_UNSUPPORTED_POINTER + "(...grouped arm emits POINTER...)"
+back to
+   LLVM_BACKEND_UNSUPPORTED_MEMORY  + "LLVM_BACKEND_UNSUPPORTED_MEMORY"
+
+Verifier output (M2 row):
+FAIL  M2: IR_ALLOCA (REJECTED) diagnostic 'LLVM_BACKEND_UNSUPPORTED_MEMORY' NOT in this arm's body. Appears in: <none>
+PASS  I2: IR_ALLOCA has explicit dispatch arm and capability row (REJECTED)
+
+Verifier summary:
+======================================
+FAIL: 1 binding violations
+======================================
+
+verifier rc: 1
