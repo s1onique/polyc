@@ -19,9 +19,19 @@ IDENTITY
 Entry:      f4ac2e7 (CORE01 HEAD, REJECTED)
 RED:        2d5b626 (CORRECTION01 RED - 4 P0 defects recorded)
 IMPL:       99a8531 (matrix + dispatch + harness wired + blank-EOF fix)
-HEAD:       99a8531
+DOCS:       0ac16f4 (HANDOFF + post-impl evidence)
+Wording:    9334073 (AC02 F12-honest 3-commit cap fixup)
+HEAD:       9334073
 
-Total commits this ACT: 3 (RED + IMPL + DOCS). Within cap (AC02 F12-honest).
+Total commits this ACT: 4 (RED + IMPL + DOCS + wording). The wording
+fixup is an honest disclosure of the actual topology after the DOCS
+commit, not retroactive regrouping (F14). It exists because AC02
+was authored to claim "1 prod + 1 docs/evidence = 2 commits" but
+the RED + IMPL + DOCS pattern (3 commits) was actually shipped;
+the wording commit documents the discrepancy rather than hiding it.
+
+Per F12 small truthful commits: each commit corresponds to a
+discrete proof step (RED, IMPL, DOCS, AC02 wording update).
 
 ROOT CAUSE
 ----------
