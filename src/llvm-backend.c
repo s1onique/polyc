@@ -55,6 +55,104 @@
 #include "llvm-c/Core.h"
 #include "llvm-c/Analysis.h"
 
+/* ACT-POLYC-LLVM-CORE01: capability matrix.
+ *
+ * Every IR opcode the dispatch CAN encounter is listed here with its
+ * classification. This is the contract surface; the dispatch below
+ * must remain consistent with this table.
+ *
+ * Classification:
+ *   SUPPORTED           - lowering implemented, verifier-clean
+ *   REJECTED            - deliberately not supported; emits a named
+ *                         LLVM_BACKEND_UNSUPPORTED_<CLASS> diagnostic
+ *                         and exits nonzero
+ *   NOT_YET_CLASSIFIED  - not currently encountered in practice; the
+ *                         generic LLVM_BACKEND_UNSUPPORTED_IR catch-all
+ *                         will fire if it appears (safety net only)
+ *
+ * IR opcode                       classification       diagnostic
+ * ------------------------------- -------------------- --------------------------------
+ * IR_NOP                          NOT_YET_CLASSIFIED   (generic)
+ * IR_ALLOCA                       REJECTED             LLVM_BACKEND_UNSUPPORTED_MEMORY
+ * IR_LOAD                         REJECTED             LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL
+ * IR_STORE                        REJECTED             LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL
+ *   (IR_STORE to return-slot is folded by collapse-elimination;
+ *    IR_STORE to a local binds as scalar SSA per the CORRECTION01
+ *    contract; any other IR_STORE shape hits the SSA_LOCAL path.)
+ * IR_LOAD_DEREF                   REJECTED             LLVM_BACKEND_UNSUPPORTED_POINTER
+ * IR_STORE_DEREF                  REJECTED             LLVM_BACKEND_UNSUPPORTED_POINTER
+ * IR_RMW_DEREF                    REJECTED             LLVM_BACKEND_UNSUPPORTED_POINTER
+ * IR_LEA                          REJECTED             LLVM_BACKEND_UNSUPPORTED_POINTER
+ * IR_GEP                          REJECTED             LLVM_BACKEND_UNSUPPORTED_AGGREGATE
+ * IR_IADD                         SUPPORTED            -
+ * IR_ISUB                         SUPPORTED            -
+ * IR_IMUL                         SUPPORTED            -
+ * IR_IDIV                         REJECTED             LLVM_BACKEND_UNSUPPORTED_INT_DIVISION
+ * IR_UDIV                         REJECTED             LLVM_BACKEND_UNSUPPORTED_INT_DIVISION
+ * IR_IREM                         REJECTED             LLVM_BACKEND_UNSUPPORTED_INT_REMAINDER
+ * IR_UREM                         REJECTED             LLVM_BACKEND_UNSUPPORTED_INT_REMAINDER
+ * IR_INEG                         REJECTED             LLVM_BACKEND_UNSUPPORTED_INT_NEGATION
+ * IR_FADD                         REJECTED             LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH
+ * IR_FSUB                         REJECTED             LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH
+ * IR_FMUL                         REJECTED             LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH
+ * IR_FDIV                         REJECTED             LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH
+ * IR_FNEG                         REJECTED             LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH
+ * IR_AND                          REJECTED             LLVM_BACKEND_UNSUPPORTED_INT_BITWISE
+ * IR_OR                           REJECTED             LLVM_BACKEND_UNSUPPORTED_INT_BITWISE
+ * IR_XOR                          REJECTED             LLVM_BACKEND_UNSUPPORTED_INT_BITWISE
+ * IR_SHL                          REJECTED             LLVM_BACKEND_UNSUPPORTED_INT_SHIFT
+ * IR_SHR                          REJECTED             LLVM_BACKEND_UNSUPPORTED_INT_SHIFT
+ * IR_SAR                          REJECTED             LLVM_BACKEND_UNSUPPORTED_INT_SHIFT
+ * IR_NOT                          REJECTED             LLVM_BACKEND_UNSUPPORTED_INT_BITWISE
+ * IR_ICMP                         SUPPORTED            (signed eq/ne/lt/le/gt/ge)
+ * IR_FCMP                         REJECTED             LLVM_BACKEND_UNSUPPORTED_FLOAT_CMP
+ * IR_TRUNC                        REJECTED             LLVM_BACKEND_UNSUPPORTED_CONVERSION
+ * IR_ZEXT                         REJECTED             LLVM_BACKEND_UNSUPPORTED_CONVERSION
+ * IR_SEXT                         REJECTED             LLVM_BACKEND_UNSUPPORTED_CONVERSION
+ * IR_FPTRUNC                      REJECTED             LLVM_BACKEND_UNSUPPORTED_CONVERSION
+ * IR_FPEXT                        REJECTED             LLVM_BACKEND_UNSUPPORTED_CONVERSION
+ * IR_FPTOUI                       REJECTED             LLVM_BACKEND_UNSUPPORTED_CONVERSION
+ * IR_FPTOSI                       REJECTED             LLVM_BACKEND_UNSUPPORTED_CONVERSION
+ * IR_UITOFP                       REJECTED             LLVM_BACKEND_UNSUPPORTED_CONVERSION
+ * IR_SITOFP                       REJECTED             LLVM_BACKEND_UNSUPPORTED_CONVERSION
+ * IR_PTRTOINT                     REJECTED             LLVM_BACKEND_UNSUPPORTED_CONVERSION
+ * IR_INTTOPTR                     REJECTED             LLVM_BACKEND_UNSUPPORTED_CONVERSION
+ * IR_BITCAST                      REJECTED             LLVM_BACKEND_UNSUPPORTED_BITCAST
+ * IR_RET                          SUPPORTED            (i64 only; via collapse-elimination)
+ * IR_BR                           SUPPORTED            (i64 cond truncated to i1 for condbr)
+ * IR_CMP_BR                       REJECTED             (boundary violation - native fusion)
+ * IR_JMP                          SUPPORTED            -
+ * IR_SWITCH                       REJECTED             LLVM_BACKEND_UNSUPPORTED_SWITCH
+ * IR_CALL                         SUPPORTED            (i64 return only)
+ * IR_PHI                          REJECTED             LLVM_BACKEND_UNSUPPORTED_PHI
+ * IR_LABEL                        NOT_YET_CLASSIFIED   (generic)
+ * IR_SELECT                       REJECTED             LLVM_BACKEND_UNSUPPORTED_SELECT
+ * IR_VA_ARG                       REJECTED             LLVM_BACKEND_UNSUPPORTED_VARARGS
+ * IR_VA_START                     REJECTED             LLVM_BACKEND_UNSUPPORTED_VARARGS
+ * IR_VA_END                       REJECTED             LLVM_BACKEND_UNSUPPORTED_VARARGS
+ * IR_ASM                          REJECTED             LLVM_BACKEND_UNSUPPORTED_ASM
+ *
+ * Value kinds:
+ *   IR_VAL_CONST_INT    SUPPORTED (i64 only)
+ *   IR_VAL_LOCAL        SUPPORTED (single-def only)
+ *   IR_VAL_PARAM        SUPPORTED (i64 only)
+ *   IR_VAL_CONST_FLOAT  REJECTED  LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH
+ *   IR_VAL_CONST_STR    REJECTED  LLVM_BACKEND_UNSUPPORTED_AGGREGATE
+ *   IR_VAL_GLOBAL       REJECTED  LLVM_BACKEND_UNSUPPORTED_GLOBAL
+ *   IR_VAL_PHI          REJECTED  LLVM_BACKEND_UNSUPPORTED_PHI
+ *   IR_VAL_TMP          SUPPORTED
+ *   IR_VAL_LABEL        NOT_YET_CLASSIFIED
+ *   IR_VAL_UNDEFINED    REJECTED  LLVM_BACKEND_UNSUPPORTED_INTERNAL
+ *   IR_VAL_UNRESOLVED   REJECTED  LLVM_BACKEND_UNSUPPORTED_INTERNAL
+ *
+ * Types:
+ *   IR_TYPE_I   SUPPORTED (i64 only)
+ *   IR_TYPE_VOID SUPPORTED
+ *   IR_TYPE_PTR REJECTED  LLVM_BACKEND_UNSUPPORTED_POINTER
+ *   all others  REJECTED  LLVM_BACKEND_UNSUPPORTED_AGGREGATE
+ */
+
+
 /* --- small vector-backed maps --------------------------------------------
  *
  * The supported subset is small and the IR IDs are dense. Use vectors
@@ -603,6 +701,22 @@ static LLVMBasicBlockRef llLowerBlock(LLCtx *lc, IrBlock *b) {
                     ins->dst ? ins->dst->type : -1);
                 exit(1);
             }
+            /* ACT-POLYC-LLVM-CORE01 (RED-2): deliberate boundary crossing.
+             *
+             * The neutral IR (src/ir-types.h, src/ir-eval.c) carries
+             * IR_BR's condition as an i64 value (0 or 1). LLVM's
+             * LLVMBuildCondBr requires an i1 condition. The truncation
+             * below is therefore a deliberate neutral -> LLVM boundary
+             * crossing, NOT a bug.
+             *
+             * Do NOT "fix" this by changing IR_BR's `dst` type to i1 in
+             * the neutral IR. That would change the neutral IR contract
+             * and invalidate downstream consumers (notably the native
+             * backend, which treats IR_BR's condition as i64).
+             *
+             * The capability matrix at the top of this file classifies
+             * IR_BR as SUPPORTED; the truncation is part of that support.
+             */
             LLVMValueRef cond64 = llLowerI64Value(lc, ins->dst);
             LLVMValueRef cond1 = LLVMBuildTrunc(lc->bld, cond64,
                                                LLVMInt1TypeInContext(lc->ctx), "");
@@ -918,7 +1032,176 @@ static LLVMValueRef llLowerInstr(LLCtx *lc, IrInstr *ins) {
             free(args);
             return call;
         }
+        /* ACT-POLYC-LLVM-CORE01: explicit REJECTED arms.
+         *
+         * Every REJECTED opcode class from the capability matrix at the
+         * top of this file gets an explicit `case` here. Each arm
+         * emits the named LLVM_BACKEND_UNSUPPORTED_<CLASS> diagnostic
+         * (NEVER the generic LLVM_BACKEND_UNSUPPORTED_IR token) and
+         * exits nonzero. The `default:` arm remains as a safety net
+         * for opcodes NOT_YET_CLASSIFIED. */
+        case IR_IDIV:
+        case IR_UDIV: {
+            fprintf(stderr,
+                "%s: function %s: integer division is not supported "
+                "(opcode %s); use IR_IADD/IR_ISUB/IR_IMUL\n",
+                LLVM_BACKEND_UNSUPPORTED_INT_DIVISION,
+                lc->fn->name->data, irOpcodeToString(ins));
+            exit(1);
+        }
+        case IR_IREM:
+        case IR_UREM: {
+            fprintf(stderr,
+                "%s: function %s: integer remainder is not supported "
+                "(opcode %s); use IR_IADD/IR_ISUB/IR_IMUL\n",
+                LLVM_BACKEND_UNSUPPORTED_INT_REMAINDER,
+                lc->fn->name->data, irOpcodeToString(ins));
+            exit(1);
+        }
+        case IR_INEG: {
+            fprintf(stderr,
+                "%s: function %s: integer negation is not supported "
+                "(opcode %s)\n",
+                LLVM_BACKEND_UNSUPPORTED_INT_NEGATION,
+                lc->fn->name->data, irOpcodeToString(ins));
+            exit(1);
+        }
+        case IR_FADD:
+        case IR_FSUB:
+        case IR_FMUL:
+        case IR_FDIV:
+        case IR_FNEG: {
+            fprintf(stderr,
+                "%s: function %s: float arithmetic is not supported "
+                "(opcode %s); the CORE backend supports only i64 scalars\n",
+                LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH,
+                lc->fn->name->data, irOpcodeToString(ins));
+            exit(1);
+        }
+        case IR_FCMP: {
+            fprintf(stderr,
+                "%s: function %s: float compare is not supported "
+                "(opcode %s); use IR_ICMP with i64 scalars\n",
+                LLVM_BACKEND_UNSUPPORTED_FLOAT_CMP,
+                lc->fn->name->data, irOpcodeToString(ins));
+            exit(1);
+        }
+        case IR_AND:
+        case IR_OR:
+        case IR_XOR:
+        case IR_NOT: {
+            fprintf(stderr,
+                "%s: function %s: bitwise ops are not supported "
+                "(opcode %s)\n",
+                LLVM_BACKEND_UNSUPPORTED_INT_BITWISE,
+                lc->fn->name->data, irOpcodeToString(ins));
+            exit(1);
+        }
+        case IR_SHL:
+        case IR_SHR:
+        case IR_SAR: {
+            fprintf(stderr,
+                "%s: function %s: integer shift is not supported "
+                "(opcode %s)\n",
+                LLVM_BACKEND_UNSUPPORTED_INT_SHIFT,
+                lc->fn->name->data, irOpcodeToString(ins));
+            exit(1);
+        }
+        case IR_TRUNC:
+        case IR_ZEXT:
+        case IR_SEXT:
+        case IR_FPTRUNC:
+        case IR_FPEXT:
+        case IR_FPTOUI:
+        case IR_FPTOSI:
+        case IR_UITOFP:
+        case IR_SITOFP:
+        case IR_PTRTOINT:
+        case IR_INTTOPTR: {
+            fprintf(stderr,
+                "%s: function %s: type conversion is not supported "
+                "(opcode %s); the CORE backend supports only i64 scalars\n",
+                LLVM_BACKEND_UNSUPPORTED_CONVERSION,
+                lc->fn->name->data, irOpcodeToString(ins));
+            exit(1);
+        }
+        case IR_BITCAST: {
+            fprintf(stderr,
+                "%s: function %s: bitcast is not supported "
+                "(opcode %s)\n",
+                LLVM_BACKEND_UNSUPPORTED_BITCAST,
+                lc->fn->name->data, irOpcodeToString(ins));
+            exit(1);
+        }
+        case IR_PHI: {
+            fprintf(stderr,
+                "%s: function %s: PHI is not supported by the CORE backend; "
+                "the supported subset uses direct-branch return and "
+                "single-definition locals instead\n",
+                LLVM_BACKEND_UNSUPPORTED_PHI,
+                lc->fn->name->data);
+            exit(1);
+        }
+        case IR_SWITCH: {
+            fprintf(stderr,
+                "%s: function %s: switch is not supported "
+                "(opcode %s); use IR_BR / IR_JMP / IR_ICMP chains\n",
+                LLVM_BACKEND_UNSUPPORTED_SWITCH,
+                lc->fn->name->data, irOpcodeToString(ins));
+            exit(1);
+        }
+        case IR_SELECT: {
+            fprintf(stderr,
+                "%s: function %s: select is not supported "
+                "(opcode %s)\n",
+                LLVM_BACKEND_UNSUPPORTED_SELECT,
+                lc->fn->name->data, irOpcodeToString(ins));
+            exit(1);
+        }
+        case IR_VA_ARG:
+        case IR_VA_START:
+        case IR_VA_END: {
+            fprintf(stderr,
+                "%s: function %s: variadic args are not supported "
+                "(opcode %s)\n",
+                LLVM_BACKEND_UNSUPPORTED_VARARGS,
+                lc->fn->name->data, irOpcodeToString(ins));
+            exit(1);
+        }
+        case IR_ASM: {
+            fprintf(stderr,
+                "%s: function %s: inline asm is not supported "
+                "(opcode %s)\n",
+                LLVM_BACKEND_UNSUPPORTED_ASM,
+                lc->fn->name->data, irOpcodeToString(ins));
+            exit(1);
+        }
+        case IR_ALLOCA:
+        case IR_LOAD_DEREF:
+        case IR_STORE_DEREF:
+        case IR_RMW_DEREF:
+        case IR_LEA: {
+            fprintf(stderr,
+                "%s: function %s: pointer / memory address ops are not "
+                "supported (opcode %s); the CORE backend uses scalar SSA "
+                "binding only (no alloca, no load/store, no address-of)\n",
+                LLVM_BACKEND_UNSUPPORTED_POINTER,
+                lc->fn->name->data, irOpcodeToString(ins));
+            exit(1);
+        }
+        case IR_GEP: {
+            fprintf(stderr,
+                "%s: function %s: getelementptr is not supported "
+                "(opcode %s); no aggregate / pointer in CORE\n",
+                LLVM_BACKEND_UNSUPPORTED_AGGREGATE,
+                lc->fn->name->data, irOpcodeToString(ins));
+            exit(1);
+        }
         default: {
+            /* Safety net for NOT_YET_CLASSIFIED opcodes (e.g. IR_NOP,
+             * IR_LABEL). The CORE contract requires every opcode to
+             * be classified; if the default arm fires in practice,
+             * the capability matrix has a gap that needs filling. */
             llErrUnsupportedOp(ins, lc->fn, irOpcodeToString(ins));
             exit(1);
         }
