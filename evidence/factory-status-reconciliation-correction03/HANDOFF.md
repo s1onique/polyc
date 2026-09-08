@@ -33,11 +33,24 @@ CORRECTION03 chain (this ACT):
 CORRECTION03_PRE_ENTRY_HEAD = 849677ade3d6275996409846bbe99be49c6145b1
                               (immutable predecessor; = CORRECTION02_DOCS_HEAD)
 
-CORRECTION03_RED_HEAD       = <C1 SHA hard-baked at C2 commit time>
-CORRECTION03_CLEAN_HEAD     = <C2 SHA hard-baked at C2 commit time>
+CORRECTION03_RED_HEAD       = 8888efbe535435ca84572ae41d517bf443afba33
+                              (CORRECTION03 C1 RED: ACT contract +
+                               RED witness + non-self-pinning
+                               CORRECTION02 closure-identity record
+                               + initial HANDOFF)
 
-(Mechanically verified after C2 lands; see identity-green.txt
-for the CORRECTION02 chain and the C1/C2 SHAs of CORRECTION03.)
+This ACT closes with one further commit (C2 CLEAN) that finalizes
+the worktree (removing the four untracked `closure/` captures that
+contradicted the CORRECTION02 `worktree = clean` claim) and flips
+this HANDOFF's verdict confirmation. No forward-reference SHA is
+required: downstream ACTs that need to cite the CORRECTION03
+closure identity should reference the immutable CORRECTION02
+DOCS_HEAD `849677a` (predecessor entry) plus this ACT's C1 RED
+SHA `8888efb` plus `git rev-list --count 8888efb..HEAD` evaluated
+at their own capture time.
+
+This pattern intentionally avoids the "<C2 SHA hard-baked at C2
+commit time>" self-pinning loop that this ACT is correcting.
 
 WHY THIS ACT EXISTS
 -------------------
