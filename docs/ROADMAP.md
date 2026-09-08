@@ -416,6 +416,88 @@ Dedicated ACT: `ACT-POLYC-FACTORY-TRAILER-CASING-POLICY01`
 formalising the rule, or if the case-sensitive grep is ever
 inadvertently relaxed).
 
+
+### CORE04 — first real Factory-v2 compiler ACT (HALT → RESUME01)
+
+Status: HALT_RED_NOT_REPRODUCED recorded at `4be5df3`;
+continuation `ACT-POLYC-LLVM-CORE04-RESUME01` authorised
+and ready to enter C1.
+
+CORE04 originally proposed two missions transcribed from
+`ACT-POLYC-LLVM-CORE03 §8`:
+
+- M1: assert every `case IR_X:` in the dispatch has a
+  matching `kLLVMBackendCapability[]` row (the reverse of
+  CORE03 M1).
+- M2: per-class execution counters in the harness summary.
+
+Pre-C1 recon (F2) established that M1 was **stale**: the
+predecessor chain (`CORE03-CORRECTION01`,
+`CORE03-CORRECTION02`, `CORE03-CORRECTION03`) already
+delivered the I2 reverse check inside
+`scripts/quality/llvm-cap-table-verifier.py`. The current
+verifier runs rc=0 with all three invariants (I1, I2, I3)
+green; CORE04's `grep` for `inverse|dispatch_count|case_count`
+searched only the C runtime, not the verifier, so it missed
+the implementation. AC09 (`case IR_FAKE_OP:`) also failed
+to bind — `IR_FAKE_OP` is not in the `IrOp` enum and would
+fail C compilation before any runtime check runs.
+
+The genuine remaining CORE04 work, per
+`CORE03-CORRECTION03` P1 residue and `llvm-cap-table-verifier.py`
+header, is the **dispatch-discovery scope mismatch**:
+`get_dispatch_arms()` still scans file-wide for
+`if (ins->op == IR_X)` short-circuits, while the
+arm-local body extractor scopes to `llLowerInstr` and
+explicit switch helpers. CORE04-CORRECTION03 closed the
+symptom (bad rows in `kLLVMBackendCapability[]`); RESUME01
+closes the cause.
+
+CORE04 was also critiqued for proposing a third
+hand-maintained dispatch list (`llValidateDispatchCoverage()`
+runtime C list) when the verifier was already the canonical
+seam. The proposed C-side list is dropped, not deferred.
+
+Reviewer disposition:
+
+- **CORE04** — `HALT_RED_NOT_REPRODUCED`. Verdict recorded
+  in CLOSE commit trailer on main. ACT document remains
+  historically stable (F14; Factory v2).
+- **CORE04-RESUME01** — authorised with the corrected
+  missions:
+
+```text
+M1  unify get_dispatch_arms() discovery with arm-local
+    body extraction into one scoped dispatch model in
+    scripts/quality/llvm-cap-table-verifier.py;
+    reproduce the discovery-scope mismatch adversarially
+    via an in-file seeded constant; GREEN only after the
+    unified scoped model rejects the adversarial
+    `if (ins->op == IR_X)` outside the real dispatch
+    functions.
+
+M2  per-class execution counters in the harness summary;
+    decide explicitly where counters live and how
+    multiple functions/modules aggregate into harness-
+    level totals.
+```
+
+Production-semantic changes: none. Production diagnostic
+additions: none. LLVM IR lowering additions: none. Language
+change authorization: none.
+
+Reviewer discipline rule baked into RESUME01 §13:
+
+> No Factory implementation changes inside RESUME01 unless
+> a RESUME01 RED actually demonstrates that Factory v2
+> prevents or invalidates the compiler ACT.
+
+Factory v2 exercises correctly: the halt was cheap (one
+CLOSE commit + one HANDOFF + one new ACT authorization),
+no SHA-table surgery, no ACT-document mutation at closure,
+verdict identity lives in the trailer.
+
+
 ## Things that may never happen
 
 Not every interesting language mechanism belongs in PolyC.
