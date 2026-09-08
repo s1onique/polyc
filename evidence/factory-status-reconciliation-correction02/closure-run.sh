@@ -45,17 +45,18 @@ COUNT_END=$(git rev-list --count 31564feb987dbe725305658712170d899caa6798..HEAD)
     echo '#'
     echo '# Produced by: closure-run.sh at'
     echo "#   $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
-    echo '# This ACT HEAD (where these values are bound):'
+    echo '# Captured at this ACT HEAD (values are about CORRECTION01):'
     echo "#   $(git rev-parse HEAD)"
     echo
     echo "ENTRY_HEAD       = $ENTRY"
     echo "RED_HEAD         = $RED_HEAD"
     echo "IMPL_HEAD        = $IMPL_HEAD"
     echo "CLOSURE_HEAD     = $CLOSURE_HEAD"
-    echo "git rev-list --count ${ENTRY:0:7}^..${CLOSURE_HEAD:0:7} = $COUNT_3"
+    echo "git rev-list --count ${ENTRY:0:7}..${CLOSURE_HEAD:0:7} = $COUNT_3"
     echo
-    echo '# Total commits in this ACT (CORRECTION02):'
-    echo "# git rev-list --count ${ENTRY:0:7}^..HEAD = $COUNT_END"
+    echo '# Total commits from predecessor entry to current HEAD'
+    echo '# (CORRECTION01 3 + CORRECTION02 N at capture time):'
+    echo "# git rev-list --count ${ENTRY:0:7}..HEAD = $COUNT_END"
 } > "$OUT_DIR/identity-green.txt"
 
 echo "captured:"
