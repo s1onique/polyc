@@ -1,0 +1,44 @@
+RED-2 — exact-token oracle is missing; lifecycle normalization
+       reports distinct HALT reasons as identical
+=============================================================
+
+Defect:
+  The seed checker (scripts/quality/llvm-closure-status-check.sh
+  lines 157-168) collapses every HALT_<...> to "HALT". Therefore
+  the following distinct exact reasons all map to the same
+  normalized class:
+
+    HALT_TOPOLOGY_RECORDED                       -> "HALT"
+    HALT_SCOPE_CONTRACT_VIOLATED                 -> "HALT"
+    HALT_CORRECTION03_WIRE_AND_IDENTITY_CONTRACT -> "HALT"
+    HALT_CORRECTION04_STATUS_AND_LF_EVIDENCE     -> "HALT"
+    HALT_CORRECTION05_OWN_GATE_RED               -> "HALT"
+
+  An exact-token checker is required to distinguish these. The
+  current tool cannot.
+
+Demonstration:
+  Two ACTs with different authoritative HALT reasons (CORRECTION01
+  and CORRECTION02) will both be normalized to "HALT" by the seed.
+  If we replace CORRECTION02's authoritative token with
+  HALT_SCOPE_CONTRACT_VIOLATED (as is now committed at HEAD), the
+  seed continues to report the same "OK HALT/HALT" line for that
+  pair.
+
+  In other words: the seed is RED for the WRONG reason (it
+  reports CORRECTION04 and CORRECTION05 as OK because both
+  reduce to "HALT"), and the seed is GREEN for the WRONG reason
+  (it cannot see that CORRECTION04 historically said
+  HALT_STATUS_RECONCILIATION_AT_CAP, an older distinct token).
+
+Consequence:
+  The reviewer-flagged third-time closure-status reconciliation
+  defect cannot be prevented or detected by the seed oracle.
+  RED-2B demonstrates that the new exact checker correctly
+  detects the four real mismatches once it is implemented.
+
+Required treatment:
+  Implement scripts/quality/factory-closure-status-check.sh with
+  exact-token extraction (regex
+    ^(OPEN|PASS(?:_[A-Z0-9_]+)*|HALT_[A-Z0-9_]+)$
+  applied to the extracted first token, not the prose line).

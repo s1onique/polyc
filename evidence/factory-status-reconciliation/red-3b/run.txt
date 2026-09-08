@@ -1,0 +1,26 @@
+RED-3B — seed silently omits a managed ACT whose HANDOFF is absent
+==================================================================
+
+Defect:
+  scripts/quality/llvm-closure-status-check.sh iterates ACTs
+  whose filenames match the special-case patterns. For each one
+  it builds the inferred evidence path and then:
+    [ -f "$handoff" ] || continue
+  If the HANDOFF file is absent, the loop body is skipped and
+  no error, warning, or count is emitted. The absence is
+  invisible.
+
+Reproduction:
+  Fixture ACT at evidence/factory-status-reconciliation/red-3b/fixture/managed/missing-handoff-ACT/docs/acts/ACT-POLYC-FACTORY-MISSINGHO.md
+  is paired (by seed inference) with
+    evidence/missingho/HANDOFF.md
+  which does not exist. The seed silently skips the pair.
+
+  Captured live in evidence/factory-status-reconciliation/red-3a1/run-output.txt:
+    OMIT  ACT-POLYC-FACTORY-MISSINGHO.md  ->  evidence/missingho/HANDOFF.md  (NOT FOUND, seed skips)
+
+Required treatment:
+  The new checker (scripts/quality/factory-closure-status-check.sh)
+  must enumerate the manifest bijection and report
+    MISSING_HANDOFF_FILES > 0
+  with rc != 0 if any managed ACT lacks its HANDOFF.

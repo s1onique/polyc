@@ -1,0 +1,22 @@
+RED-1 — lossy normalization source fragment
+============================================
+
+File:   scripts/quality/llvm-closure-status-check.sh
+Lines:  157-168 (commit at ENTRY_HEAD)
+
+  case "$act_token" in
+      PASS*)    act_norm=PASS;;
+      HALT*)    act_norm=HALT;;
+      OPEN)     act_norm=OPEN;;
+      *)        act_norm="$act_token";;
+  esac
+  case "$handoff_token" in
+      PASS*)    h_norm=PASS;;
+      HALT*)    h_norm=HALT;;
+      OPEN)     h_norm=OPEN;;
+      *)        h_norm="$handoff_token";;
+  esac
+
+Every HALT_* is collapsed to the literal string "HALT". This is
+the structural defect that RED-2 isolates and the new exact
+checker eliminates.

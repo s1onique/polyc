@@ -1,0 +1,74 @@
+#!/bin/sh
+# Demonstrate that the seed silently skips the two fixtures.
+# We invoke the existing seed pairing logic directly.
+REPO="$1"
+ACTS_DIR="$REPO/docs/acts"
+EVID_DIR="$REPO/evidence"
+fail=0
+for act_path in "$ACTS_DIR"/ACT-*.md "$REPO/evidence/factory-status-reconciliation/red-3a1/fixture/managed/extra-scope-factory-NON_INFERRED/docs/acts/ACT-POLYC-FACTORY-NONINFERRED.md" "$REPO/evidence/factory-status-reconciliation/red-3b/fixture/managed/missing-handoff-ACT/docs/acts/ACT-POLYC-FACTORY-MISSINGHO.md"; do
+    [ -f "$act_path" ] || continue
+    fname="$(basename "$act_path")"
+    # Use the seed's act_to_evid_dir function
+    base="${fname%.md}"
+    base="${base#ACT-POLYC-}"
+    case "$base" in
+        LLVM-*)    tail="${base#LLVM-}";;
+        IR-*)      tail="${base#IR-}";;
+        FACTORY-*) tail="${base#FACTORY-}";;
+        *)         tail="$base";;
+    esac
+    tail="$(echo "$tail" | tr '[:upper:]' '[:lower:]')"
+    if [ "${tail#core}" != "$tail" ]; then
+        dir="llvmspike01-$tail"
+    elif [ "${tail#boundary}" != "$tail" ]; then
+        dir="ir-$tail"
+    elif [ "${tail#factory-}" != "$tail" ]; then
+        dir="$tail"
+    else
+        dir="$tail"
+    fi
+    handoff="$EVID_DIR/$dir/HANDOFF.md"
+    if [ -f "$handoff" ]; then
+        echo "DISCOVER  $fname  ->  $handoff"
+    else
+        echo "OMIT      $fname  ->  $handoff  (NOT FOUND, seed skips)"
+    fi
+done
+OMIT      ACT-POLYC-BOOTSTRAP-RECON01.md  ->  /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/evidence/bootstrap-recon01/HANDOFF.md  (NOT FOUND, seed skips)
+OMIT      ACT-POLYC-FACTORY-AGENT-GATES01-CORRECTION01.md  ->  /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/evidence/agent-gates01-correction01/HANDOFF.md  (NOT FOUND, seed skips)
+OMIT      ACT-POLYC-FACTORY-AGENT-GATES01-CORRECTION02.md  ->  /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/evidence/agent-gates01-correction02/HANDOFF.md  (NOT FOUND, seed skips)
+OMIT      ACT-POLYC-FACTORY-AGENT-GATES01.md  ->  /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/evidence/agent-gates01/HANDOFF.md  (NOT FOUND, seed skips)
+OMIT      ACT-POLYC-FACTORY-PUSH-HERMETIC01-CORRECTION01.md  ->  /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/evidence/push-hermetic01-correction01/HANDOFF.md  (NOT FOUND, seed skips)
+OMIT      ACT-POLYC-FACTORY-PUSH-HERMETIC01-CORRECTION02.md  ->  /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/evidence/push-hermetic01-correction02/HANDOFF.md  (NOT FOUND, seed skips)
+OMIT      ACT-POLYC-FACTORY-PUSH-HERMETIC01-CORRECTION03.md  ->  /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/evidence/push-hermetic01-correction03/HANDOFF.md  (NOT FOUND, seed skips)
+OMIT      ACT-POLYC-FACTORY-PUSH-HERMETIC01-CORRECTION04.md  ->  /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/evidence/push-hermetic01-correction04/HANDOFF.md  (NOT FOUND, seed skips)
+OMIT      ACT-POLYC-FACTORY-PUSH-HERMETIC01.md  ->  /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/evidence/push-hermetic01/HANDOFF.md  (NOT FOUND, seed skips)
+OMIT      ACT-POLYC-FACTORY-STATUS-RECONCILIATION.md  ->  /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/evidence/status-reconciliation/HANDOFF.md  (NOT FOUND, seed skips)
+OMIT      ACT-POLYC-IR-BOUNDARY01.md  ->  /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/evidence/ir-boundary01/HANDOFF.md  (NOT FOUND, seed skips)
+OMIT      ACT-POLYC-IR-BOUNDARY02-REQUAL01.md  ->  /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/evidence/ir-boundary02-requal01/HANDOFF.md  (NOT FOUND, seed skips)
+OMIT      ACT-POLYC-IR-BOUNDARY02.md  ->  /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/evidence/ir-boundary02/HANDOFF.md  (NOT FOUND, seed skips)
+OMIT      ACT-POLYC-IR-BOUNDARY03-CORRECTION01.md  ->  /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/evidence/ir-boundary03-correction01/HANDOFF.md  (NOT FOUND, seed skips)
+OMIT      ACT-POLYC-IR-BOUNDARY03-CORRECTION02.md  ->  /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/evidence/ir-boundary03-correction02/HANDOFF.md  (NOT FOUND, seed skips)
+OMIT      ACT-POLYC-IR-BOUNDARY03-CORRECTION03.md  ->  /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/evidence/ir-boundary03-correction03/HANDOFF.md  (NOT FOUND, seed skips)
+DISCOVER  ACT-POLYC-IR-BOUNDARY03.md  ->  /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/evidence/ir-boundary03/HANDOFF.md
+OMIT      ACT-POLYC-IR-BRANCH-CONDITION01-CORRECTION01.md  ->  /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/evidence/branch-condition01-correction01/HANDOFF.md  (NOT FOUND, seed skips)
+OMIT      ACT-POLYC-IR-BRANCH-CONDITION01-CORRECTION02.md  ->  /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/evidence/branch-condition01-correction02/HANDOFF.md  (NOT FOUND, seed skips)
+OMIT      ACT-POLYC-IR-BRANCH-CONDITION01-CORRECTION03.md  ->  /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/evidence/branch-condition01-correction03/HANDOFF.md  (NOT FOUND, seed skips)
+OMIT      ACT-POLYC-IR-BRANCH-CONDITION01.md  ->  /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/evidence/branch-condition01/HANDOFF.md  (NOT FOUND, seed skips)
+DISCOVER  ACT-POLYC-LLVM-CORE01-CORRECTION01.md  ->  /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/evidence/llvmspike01-core01-correction01/HANDOFF.md
+DISCOVER  ACT-POLYC-LLVM-CORE01-CORRECTION02.md  ->  /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/evidence/llvmspike01-core01-correction02/HANDOFF.md
+DISCOVER  ACT-POLYC-LLVM-CORE01.md  ->  /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/evidence/llvmspike01-core01/HANDOFF.md
+DISCOVER  ACT-POLYC-LLVM-CORE02.md  ->  /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/evidence/llvmspike01-core02/HANDOFF.md
+DISCOVER  ACT-POLYC-LLVM-CORE03-CORRECTION01.md  ->  /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/evidence/llvmspike01-core03-correction01/HANDOFF.md
+DISCOVER  ACT-POLYC-LLVM-CORE03-CORRECTION02.md  ->  /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/evidence/llvmspike01-core03-correction02/HANDOFF.md
+DISCOVER  ACT-POLYC-LLVM-CORE03-CORRECTION03.md  ->  /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/evidence/llvmspike01-core03-correction03/HANDOFF.md
+DISCOVER  ACT-POLYC-LLVM-CORE03-CORRECTION04.md  ->  /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/evidence/llvmspike01-core03-correction04/HANDOFF.md
+DISCOVER  ACT-POLYC-LLVM-CORE03-CORRECTION05.md  ->  /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/evidence/llvmspike01-core03-correction05/HANDOFF.md
+DISCOVER  ACT-POLYC-LLVM-CORE03.md  ->  /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/evidence/llvmspike01-core03/HANDOFF.md
+OMIT      ACT-POLYC-LLVM-SPIKE01-RESUME01-CORRECTION01-RESUME01-CORRECTION01.md  ->  /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/evidence/spike01-resume01-correction01-resume01-correction01/HANDOFF.md  (NOT FOUND, seed skips)
+OMIT      ACT-POLYC-LLVM-SPIKE01-RESUME01-CORRECTION01-RESUME01-CORRECTION02.md  ->  /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/evidence/spike01-resume01-correction01-resume01-correction02/HANDOFF.md  (NOT FOUND, seed skips)
+OMIT      ACT-POLYC-LLVM-SPIKE01-RESUME01-CORRECTION01.md  ->  /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/evidence/spike01-resume01-correction01/HANDOFF.md  (NOT FOUND, seed skips)
+OMIT      ACT-POLYC-LLVM-SPIKE01-RESUME01.md  ->  /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/evidence/spike01-resume01/HANDOFF.md  (NOT FOUND, seed skips)
+OMIT      ACT-POLYC-LLVM-SPIKE01.md  ->  /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/evidence/spike01/HANDOFF.md  (NOT FOUND, seed skips)
+OMIT      ACT-POLYC-FACTORY-NONINFERRED.md  ->  /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/evidence/noninferred/HANDOFF.md  (NOT FOUND, seed skips)
+OMIT      ACT-POLYC-FACTORY-MISSINGHO.md  ->  /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/evidence/missingho/HANDOFF.md  (NOT FOUND, seed skips)

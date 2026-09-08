@@ -1,0 +1,38 @@
+RED-1 — seed closure-status reconciliation RED at ENTRY_HEAD
+=============================================================
+
+ENTRY_HEAD = 862d2cc8c9c0873158c9b60707ab625e08794260
+branch     = main
+working tree = clean
+
+Command:
+  sh scripts/quality/llvm-closure-status-check.sh ; echo "rc=$?"
+
+Output (verbatim):
+  FAIL  ACT-POLYC-LLVM-CORE03-CORRECTION01.md              act=HALT   handoff=PASS
+  FAIL  ACT-POLYC-LLVM-CORE03-CORRECTION02.md              act=HALT   handoff=PASS
+  FAIL  ACT-POLYC-LLVM-CORE03-CORRECTION03.md              act=HALT   handoff=PASS
+  OK    ACT-POLYC-LLVM-CORE03-CORRECTION04.md              act=HALT   handoff=HALT
+  OK    ACT-POLYC-LLVM-CORE03-CORRECTION05.md              act=HALT   handoff=HALT
+
+  ====================================
+  Closure-status reconciliation summary
+  OK=2  FAIL=3
+  ====================================
+  rc=1
+
+Interpretation:
+  The seed oracle reports rc=1 (RED) at ENTRY_HEAD.
+  Three pairs disagree (CORRECTION01/02/03 HALT vs PASS).
+  Two pairs accidentally agree (CORRECTION04/05 HALT vs HALT),
+  but for the WRONG reason: the seed collapses every HALT_*
+  to the lifecycle class "HALT", so the underlying exact
+  distinction between
+    HALT_TOPOLOGY_RECORDED
+    HALT_SCOPE_CONTRACT_VIOLATED
+    HALT_CORRECTION03_WIRE_AND_IDENTITY_CONTRACT
+    HALT_CORRECTION04_STATUS_AND_LF_EVIDENCE
+    HALT_CORRECTION05_OWN_GATE_RED
+  is invisible.
+
+  This RED is the binding precondition for ACT-POLYC-FACTORY-STATUS-RECONCILIATION.
