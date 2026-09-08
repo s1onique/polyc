@@ -2,7 +2,68 @@
 
 ## Status
 
-OPEN — closing CORE03-CORRECTION01 reviewer P0s and P1s.
+HALT_SCOPE_CONTRACT_VIOLATED — HALTED at HEAD be53986.
+
+Predecessor: ACT-POLYC-LLVM-CORE03-CORRECTION01
+(verdict: HALT_CORE03_CORRECTION01_BINDING_STILL_PARTIAL).
+
+### Supersession
+
+Authorised successor: ACT-POLYC-LLVM-CORE03-CORRECTION03.
+
+CORRECTION02's IMPL commit (857ecf2) modified two capability rows in
+src/llvm-backend-cap.c (IR_ALLOCA: MEMORY -> POINTER, IR_CMP_BR:
+descriptive string -> LLVM_BACKEND_INTERNAL). Those changes were
+explicitly OUT OF SCOPE under the "Out of scope (F7)" section
+(lines 141-145), which stated:
+
+  "Changing the actual diagnostic macro values in src/llvm-backend-cap.c
+   or src/llvm-backend.c (these are pre-existing binding defects
+   surfaced by M2's arm-local check; the fix would change semantics
+   and requires its own ACT). CORRECTION02 only HARDENS the check;
+   the row content remains residue."
+
+and under "Files authorised for change" (line 154):
+
+  "src/llvm-backend-cap.c    (M1: length-delimited wire format)"
+
+The row-content corrections were made under M2's banner because M2's
+new arm-local check REDs the original values, but F7/F15 require a
+fresh bounded ACT to authorise semantic production changes. CORRECTION02
+silently enlarged itself.
+
+In addition, CORRECTION02 reproduced the same stale-closure bug
+CORRECTION02 was supposed to close: ACT says "Status: OPEN", HANDOFF
+says "VERDICT: PASS".
+
+A second reviewer finding noted the wire format's byte-length claim
+was only true for ASCII (Python's `len()` counts code points, not
+UTF-8 bytes); CORRECTION03 also closes that.
+
+The M1 wire-format hardening, M2 arm-local check structure, M3
+harness set-membership contract, and CORRECTION01 status reconciliation
+themselves are NOT invalidated — they are mechanical contract work
+that did not exceed scope. Only the two row-content changes exceed
+scope and require CORRECTION03's legitimisation.
+
+CORRECTION03 also tightens the verifier parser to byte-mode (closing
+the P1 ASCII-only claim). Per F14, CORRECTION02's commit chain is
+preserved at HEAD; no rewriting.
+
+Verdict at HALT
+---------------
+
+  M1 wire-format hardening:        PASS (in scope)
+  M2 arm-local check structure:    PASS (in scope)
+  M2 row content (IR_ALLOCA):      OUT OF SCOPE -> CORRECTION03
+  M2 row content (IR_CMP_BR):      OUT OF SCOPE -> CORRECTION03
+  M3 harness set-membership:       PASS (in scope)
+  M4 status reconciliation (01):   PASS (in scope)
+  CORRECTION02 own status:         OUT OF SCOPE -> CORRECTION03
+  Wire format byte-vs-codepoint:   OUT OF SCOPE -> CORRECTION03
+
+Pre-halt snapshot: HEAD be53986, evidence/llvmspike01-core03-correction02/HANDOFF.md.
+
 
 Predecessor: ACT-POLYC-LLVM-CORE03-CORRECTION01
 (verdict: HALT_CORE03_CORRECTION01_BINDING_STILL_PARTIAL).
