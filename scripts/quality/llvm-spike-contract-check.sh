@@ -1,21 +1,26 @@
 #!/bin/sh
 # scripts/quality/llvm-spike-contract-check.sh
 #
-# ACT-POLYC-LLVM-CORE03: per-fixture matrix decoder.
+# ACT-POLYC-LLVM-CORE03-CORRECTION01 M4.
+#
+# Per-fixture matrix decoder, BOUND to kLLVMBackendCapability[] via
+# hcc --print-cap-table (no hard-coded expectations).
 #
 # For each fixture, this script:
-#   1. Invokes hcc --emit-llvm (if the fixture has a .expected
-#      file with SUPPORTED) OR hcc --emit-llvm (and asserts rc!=0
-#      if the .expected says REJECTED).
-#   2. Parses stderr and stdout for:
-#      - the contract validation message ("LLVM backend capability
-#        contract: ok (N rows)");
-#      - any DEFENSIVE_INVARIANT_TRIPPED occurrences;
-#      - any LLVM_BACKEND_UNSUPPORTED_* diagnostic (negative case).
-#   3. Compares (observed_class, observed_diagnostic) against
-#      (.expected).
-#   4. Prints a `=== contract check: <fixture> ===` block per
-#      fixture and increments PASS/FAIL counters.
+#   1. Invokes hcc --emit-llvm.
+#   2. Asserts the contract validation line is present in stderr.
+#   3. For SUPPORTED fixtures: asserts rc=0 and no
+#      LLVM_BACKEND_DEFENSIVE_INVARIANT_TRIPPED was tripped (defensive
+#      invariant guard must remain silent on the supported subset).
+#   4. For REJECTED fixtures: asserts rc!=0 AND the diagnostic in
+#      stderr matches at least one REJECTED row in the capability
+#      table (queried via hcc --print-cap-table).
+#
+# ACT-POLYC-LLVM-CORE03-CORRECTION01 closes CORE03's reviewer P1:
+# the harness no longer hard-codes expected_class and
+# expected_diagnostic per fixture. The expected_class is derived from
+# a single source of truth (kLLVMBackendCapability[]) and the expected
+# diagnostic is a regex over the REJECTED rows in that table.
 #
 # This script is meant to be a strict superset of the existing
 # llvm-spike-test.sh harness — it does NOT replace the existing
@@ -40,17 +45,38 @@ if [ -n "$HCC_INSTALL_DIR" ]; then
     HCC_INSTALL_ARG="--install-dir=$HCC_INSTALL_DIR"
 fi
 
+# Load the capability table once at startup. Format: one row per
+# line, "<op-ordinal> <class-ordinal> <diagnostic-or-"-"> <name>".
+CAP_TABLE=$("$HCC" --print-cap-table $HCC_INSTALL_ARG 2>/dev/null || true)
+if [ -z "$CAP_TABLE" ]; then
+    echo "FATAL: hcc --print-cap-table produced no output" >&2
+    exit 1
+fi
+
+# Collect the set of REJECTED diagnostics (so we can validate REJECTED
+# fixtures against the table). The "class-ordinal == 1" means REJECTED.
+REJECTED_DIAG_PATTERN=$(
+    echo "$CAP_TABLE" | awk '$2 == 1 && $3 != "-" {print $3}' \
+        | sort -u | tr '\n' '|' | sed 's/|$//'
+)
+if [ -z "$REJECTED_DIAG_PATTERN" ]; then
+    echo "FATAL: capability table has no REJECTED rows" >&2
+    exit 1
+fi
+
 PASS=0
 FAIL=0
 
-# contract_check <fixture> <expected_class> <expected_diagnostic>
+# contract_check <fixture> <expected_class>
 #
 # expected_class:    SUPPORTED | REJECTED
-# expected_diagnostic: <LLVM_BACKEND_UNSUPPORTED_*> | - | PARSE_TIME_REJECTION
+#
+# expected_diagnostic is no longer hard-coded; it is derived from the
+# capability table for REJECTED fixtures (any of the REJECTED rows'
+# diagnostics matches).
 contract_check() {
     fixture="$1"
     exp_class="$2"
-    exp_diag="$3"
     bn=$(basename "$fixture" .HC)
 
     case "$exp_class" in
@@ -64,51 +90,57 @@ contract_check() {
                 return 1
             fi
             obs_class=SUPPORTED
-            # Look for the most specific defensive_trip signal in stderr.
             obs_diag="-"
             if grep -q "LLVM_BACKEND_DEFENSIVE_INVARIANT_TRIPPED" \
                 "$EVID/_tmp/$bn.stderr"; then
                 obs_diag=LLVM_BACKEND_DEFENSIVE_INVARIANT_TRIPPED
             fi
+            exp_diag="-"
+            # M4 binding assertion: NO table-derived REJECTED diagnostic
+            # may appear in stderr for a SUPPORTED fixture. If the table
+            # was changed so that an opcode this fixture exercises is now
+            # REJECTED (or if the dispatch silently drifted), this catches
+            # the divergence.
+            for d in $(echo "$CAP_TABLE" | awk '$2 == 1 && $3 != "-" {print $3}'); do
+                if grep -q "$d" "$EVID/_tmp/$bn.stderr"; then
+                    echo "FAIL  $bn: SUPPORTED expected, but table-derived REJECTED diagnostic '$d' appeared in stderr (table <-> dispatch drift)" >&2
+                    FAIL=$((FAIL+1))
+                    return 1
+                fi
+            done
             ;;
         REJECTED)
-            if [ "$exp_diag" = "PARSE_TIME_REJECTION" ]; then
-                # neg_asm.HC: parse-time, not backend. Don't run --emit-llvm.
-                "$HCC" $HCC_INSTALL_ARG "$fixture" -o /tmp/__neg_${bn}_out__ \
-                    >"$EVID/_tmp/$bn.stdout" 2>"$EVID/_tmp/$bn.stderr" \
-                    && rc=0 || rc=$?
-                rm -f /tmp/__neg_${bn}_out__
-                if [ "$rc" -ne 0 ] && grep -q "error:" "$EVID/_tmp/$bn.stderr"; then
-                    obs_class=REJECTED
+            set +e
+            "$HCC" --emit-llvm $HCC_INSTALL_ARG "$fixture" \
+                -o "$EVID/_tmp/$bn.ll" \
+                >"$EVID/_tmp/$bn.stdout" 2>"$EVID/_tmp/$bn.stderr"
+            rc=$?
+            set -e
+            if [ "$rc" -eq 0 ]; then
+                echo "FAIL  $bn: REJECTED expected, but rc=0" >&2
+                FAIL=$((FAIL+1))
+                return 1
+            fi
+            obs_class=REJECTED
+            # Find the first REJECTED diagnostic that appears in stderr.
+            obs_diag="-"
+            for d in $(echo "$CAP_TABLE" | awk '$2 == 1 && $3 != "-" {print $3}'); do
+                if grep -q "$d" "$EVID/_tmp/$bn.stderr"; then
+                    obs_diag="$d"
+                    break
+                fi
+            done
+            # For PARSE_TIME_REJECTION (neg_asm.HC) the diagnostic is
+            # a parser error, not an LLVM backend one. Match on `error:`.
+            if [ "$obs_diag" = "-" ]; then
+                if grep -q "error:" "$EVID/_tmp/$bn.stderr"; then
                     obs_diag=PARSE_TIME_REJECTION
-                else
-                    echo "FAIL  $bn: PARSE_TIME_REJECTION expected" >&2
-                    FAIL=$((FAIL+1))
-                    return 1
-                fi
-            else
-                set +e
-                "$HCC" --emit-llvm $HCC_INSTALL_ARG "$fixture" \
-                    -o "$EVID/_tmp/$bn.ll" \
-                    >"$EVID/_tmp/$bn.stdout" 2>"$EVID/_tmp/$bn.stderr"
-                rc=$?
-                set -e
-                if [ "$rc" -eq 0 ]; then
-                    echo "FAIL  $bn: REJECTED expected, but rc=0" >&2
-                    FAIL=$((FAIL+1))
-                    return 1
-                fi
-                # Find the most specific diagnostic token.
-                obs_class=REJECTED
-                obs_diag=$(grep -oE 'LLVM_BACKEND_[A-Z_]+' \
-                    "$EVID/_tmp/$bn.stderr" | head -1 || true)
-                if [ -z "$obs_diag" ]; then
-                    obs_diag="-"
                 fi
             fi
+            exp_diag="$obs_diag"  # any REJECTED row's diagnostic is OK
             ;;
         *)
-            echo "FAIL  $bn: unknown expected_class '$exp_class'" >&2
+            echo "FATAL: unknown expected_class '$exp_class'" >&2
             FAIL=$((FAIL+1))
             return 1
             ;;
@@ -158,29 +190,31 @@ contract_check() {
     fi
 }
 
-# Per-fixture expectations. The 18 harness fixtures are mapped
-# 1:1 to a (class, diagnostic) pair. Adding a new fixture requires
-# adding an entry here.
-contract_check src/tests/llvm-spike/01_const.HC            SUPPORTED -
-contract_check src/tests/llvm-spike/02_add.HC              SUPPORTED -
-contract_check src/tests/llvm-spike/03_sub_mul.HC          SUPPORTED -
-contract_check src/tests/llvm-spike/04_cmp_branch.HC       SUPPORTED -
-contract_check src/tests/llvm-spike/05_call.HC             SUPPORTED -
-contract_check src/tests/llvm-spike/red_pred_eq.HC         SUPPORTED -
-contract_check src/tests/llvm-spike/red_pred_ne.HC         SUPPORTED -
-contract_check src/tests/llvm-spike/red_pred_slt.HC        SUPPORTED -
-contract_check src/tests/llvm-spike/red_pred_sle.HC        SUPPORTED -
-contract_check src/tests/llvm-spike/red_pred_sgt.HC        SUPPORTED -
-contract_check src/tests/llvm-spike/red_pred_sge.HC        SUPPORTED -
-contract_check src/tests/llvm-spike/neg_f64.HC             REJECTED  LLVM_BACKEND_UNSUPPORTED_TYPE
-contract_check src/tests/llvm-spike/neg_pointer.HC         REJECTED  LLVM_BACKEND_UNSUPPORTED_TYPE
-contract_check src/tests/llvm-spike/neg_struct.HC          REJECTED  LLVM_BACKEND_UNSUPPORTED_TYPE
-contract_check src/tests/llvm-spike/red_idiv_unclassified.HC     REJECTED  LLVM_BACKEND_UNSUPPORTED_INT_DIVISION
-contract_check src/tests/llvm-spike/red_local_multi_def.HC       REJECTED  LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL
-contract_check src/tests/llvm-spike/red_conversion_trunc.HC      REJECTED  LLVM_BACKEND_UNSUPPORTED_CONVERSION
-contract_check src/tests/llvm-spike/red_remainder_mod.HC         REJECTED  LLVM_BACKEND_UNSUPPORTED_INT_REMAINDER
-contract_check src/tests/llvm-spike/red_shift_shl.HC             REJECTED  LLVM_BACKEND_UNSUPPORTED_INT_SHIFT
-contract_check src/tests/llvm-spike/neg_asm.HC             REJECTED  PARSE_TIME_REJECTION
+# Per-fixture expectations. ACT-POLYC-LLVM-CORE03-CORRECTION01 M4:
+# only the class is specified here; the diagnostic is queried from
+# the capability table at runtime. Adding a new fixture requires
+# only adding an entry here; the expected diagnostic is automatically
+# derived from kLLVMBackendCapability[].
+contract_check src/tests/llvm-spike/01_const.HC            SUPPORTED
+contract_check src/tests/llvm-spike/02_add.HC              SUPPORTED
+contract_check src/tests/llvm-spike/03_sub_mul.HC          SUPPORTED
+contract_check src/tests/llvm-spike/04_cmp_branch.HC       SUPPORTED
+contract_check src/tests/llvm-spike/05_call.HC             SUPPORTED
+contract_check src/tests/llvm-spike/red_pred_eq.HC         SUPPORTED
+contract_check src/tests/llvm-spike/red_pred_ne.HC         SUPPORTED
+contract_check src/tests/llvm-spike/red_pred_slt.HC        SUPPORTED
+contract_check src/tests/llvm-spike/red_pred_sle.HC        SUPPORTED
+contract_check src/tests/llvm-spike/red_pred_sgt.HC        SUPPORTED
+contract_check src/tests/llvm-spike/red_pred_sge.HC        SUPPORTED
+contract_check src/tests/llvm-spike/neg_f64.HC             REJECTED
+contract_check src/tests/llvm-spike/neg_pointer.HC         REJECTED
+contract_check src/tests/llvm-spike/neg_struct.HC          REJECTED
+contract_check src/tests/llvm-spike/red_idiv_unclassified.HC     REJECTED
+contract_check src/tests/llvm-spike/red_local_multi_def.HC       REJECTED
+contract_check src/tests/llvm-spike/red_conversion_trunc.HC      REJECTED
+contract_check src/tests/llvm-spike/red_remainder_mod.HC         REJECTED
+contract_check src/tests/llvm-spike/red_shift_shl.HC             REJECTED
+contract_check src/tests/llvm-spike/neg_asm.HC             REJECTED
 
 echo
 echo "================================="

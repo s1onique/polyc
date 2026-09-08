@@ -434,6 +434,22 @@ int main(int argc, char **argv) {
     args.install_dir = INSTALL_PREFIX;
     cliParseArgs(&args,argc,argv);
 
+#ifdef HCC_ENABLE_LLVM
+    /* ACT-POLYC-LLVM-CORE03-CORRECTION01 M4: --print-cap-table mode.
+     * Prints kLLVMBackendCapability[] to stdout, one row per IrOp,
+     * then exits. Used by the build-time verifier to bind dispatch
+     * <-> table <-> harness without hard-coded expectations. Must
+     * run BEFORE the LSP/Cctrl branches, which require a valid
+     * input file. */
+    if (args.print_cap_table) {
+        #include "llvm-backend-cap.h"
+        llPrintCapabilityTable();
+        /* Skip memoryRelease() here because the runtime was not
+         * fully initialised (no input file was processed). */
+        return 0;
+    }
+#endif
+
     /* The LSP owns its Cctrl lifecycle (fresh one after a parser
      * crash), so it dispatches before the shared `cc` is made. */
     if (args.lsp) {

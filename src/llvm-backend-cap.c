@@ -86,18 +86,27 @@ void llValidateCapabilityContract(void) {
             kLLVMBackendCapabilityCount, IR_ASM + 1);
         abort();
     }
-    /* No duplicate opcodes + well-formed diagnostic. */
+    /* ACT-POLYC-LLVM-CORE03-CORRECTION01 M1: prove that table[i] is
+     * exactly the row for IrOp i (no gaps, no duplicates, no out-of-
+     * range opcodes, correct ordering). This is a stronger invariant
+     * than "count == IR_ASM+1 and no duplicates": an out-of-range op
+     * like (IrOp)99 would have passed the old check but is caught here. */
     for (int i = 0; i < kLLVMBackendCapabilityCount; i++) {
-        for (int j = i + 1; j < kLLVMBackendCapabilityCount; j++) {
-            if (kLLVMBackendCapability[i].op == kLLVMBackendCapability[j].op) {
-                fprintf(stderr,
-                    "LLVM backend capability contract FAILED: duplicate opcode %d"
-                    " at rows %d and %d.\n",
-                    (int)kLLVMBackendCapability[i].op, i, j);
-                abort();
-            }
-        }
         const LLVMBackendCapabilityDef *row = &kLLVMBackendCapability[i];
+        if ((int)row->op != i) {
+            fprintf(stderr,
+                "LLVM backend capability contract FAILED: row %d has"
+                " op=%d, expected op=%d (one row per IrOp ordinal).\n",
+                i, (int)row->op, i);
+            abort();
+        }
+        if ((int)row->op < 0 || (int)row->op > IR_ASM) {
+            fprintf(stderr,
+                "LLVM backend capability contract FAILED: row %d has"
+                " out-of-range op=%d (must be 0..%d).\n",
+                i, (int)row->op, IR_ASM);
+            abort();
+        }
         if (row->class_ == LLVMBC_REJECTED && row->diagnostic == NULL) {
             fprintf(stderr,
                 "LLVM backend capability contract FAILED: REJECTED row %d"
@@ -115,6 +124,18 @@ void llValidateCapabilityContract(void) {
         }
     }
     fprintf(stderr,
-        "LLVM backend capability contract: ok (%d rows)\n",
+        "LLVM backend capability contract: ok (%d rows, ordinal binding)\n",
         kLLVMBackendCapabilityCount);
+}
+
+void llPrintCapabilityTable(void) {
+    for (int i = 0; i < kLLVMBackendCapabilityCount; i++) {
+        const LLVMBackendCapabilityDef *row = &kLLVMBackendCapability[i];
+        /* <op-ordinal> <class-ordinal> <diagnostic-or-"-"> <note> */
+        printf("%d %d %s %s\n",
+               (int)row->op,
+               (int)row->class_,
+               row->diagnostic ? row->diagnostic : "-",
+               row->note ? row->note : "-");
+    }
 }

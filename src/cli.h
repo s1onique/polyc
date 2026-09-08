@@ -35,6 +35,7 @@ enum CliArgType {
     CLI_DUMP_IR_POOLED,
     CLI_EMIT_DYLIB,
     CLI_EMIT_LLVM,
+    CLI_PRINT_CAP_TABLE,
     CLI_EMIT_OBJECT,
     CLI_fPIC,
     CLI_HELP,
@@ -87,6 +88,7 @@ typedef struct CliArgs {
     int dump_ir;
     int dump_ir_pooled;
     int emit_llvm;
+    int print_cap_table;
     int asm_debug_comments;
     int assemble_only;
     int emit_dylib;
