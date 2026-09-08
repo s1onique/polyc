@@ -1,0 +1,58 @@
+RED-2 (GSUB): factory-v2-commit-msg-check.sh normalizes the
+parsed trailer value by replacing runs of whitespace with `_`
+before validation.
+
+Implementation
+(scripts/quality/factory-v2-commit-msg-check.sh in the
+trailer_value() helper):
+
+    gsub(/[[:space:]]+/, "_", $0)
+
+This is conceptually: "transform an invalid trailer value
+into something that looks valid, then validate the
+transformed string."
+
+Git's trailer parser (git-interpret-trailers(1), section
+"Trailers"):
+  - allows whitespace inside the value;
+  - with --parse returns the parsed (and minimally
+    normalized) trailer text;
+  - does not define application-specific value grammars.
+
+So if a user writes:
+
+    ACT-Verdict: PASS WITH NEXT ACT
+
+the validator's gsub turns the parsed value into
+"PASS_WITH_NEXT_ACT", which then matches
+^(PASS(_[A-Z0-9_]+)*|...)$ and is accepted as STATUS=PASS.
+
+But the literal trailer on disk still contains a space.
+Git and humans will disagree about what was committed.
+
+Reproduction (verbatim, live, before correction):
+
+    $ printf '...\nACT: ACT-POLYC-FOO_BAR-01\nACT-Phase: CLOSE\nACT-Verdict: PASS WITH NEXT ACT\n' > /tmp/msg-pass-space.txt
+    $ sh scripts/quality/factory-v2-commit-msg-check.sh /tmp/msg-pass-space.txt
+    MODE=ACT
+    ACT=ACT-POLYC-FOO_BAR-01
+    PHASE=CLOSE
+    VERDICT=PASS_WITH_NEXT_ACT
+    SUPERSEDES=
+    CORRECTED_VERDICT=
+    STATUS=PASS
+    rc=0
+
+The literal input "PASS WITH NEXT ACT" is silently rewritten
+to PASS_WITH_NEXT_ACT for validation only.
+
+Identical false-GREEN for ACT: ids:
+
+    $ printf '...\nACT: ACT-POLYC-AA BAD\nACT-Phase: RED\n' > /tmp/msg-space.txt
+    $ sh scripts/quality/factory-v2-commit-msg-check.sh /tmp/msg-space.txt
+    ACT=ACT-POLYC-AA_BAD
+    STATUS=PASS
+    rc=0
+
+The validator must validate the literal parsed value, not a
+transformation of it.
