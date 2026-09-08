@@ -2,17 +2,63 @@
 
 ## Status
 
-PASS — at HANDOFF. All three reviewer-mandated items closed.
+HALT_CORRECTION05_OWN_GATE_RED — reviewer-flagged.
 
-Reviewer's verdict on CORRECTION04:
-HALT_CORRECTION04_STATUS_AND_LF_EVIDENCE (recorded in
-evidence/llvmspike01-core03-correction05/halt-correction04-status-and-lf-evidence.txt).
+The technical work is sound. The LLVM/wire and closure
+artifacts all stand:
+  - Real-LF end-to-end seam: PASS (mutated wire captures
+    byte-exact 0x0A from C "\n" escape; reviewer-required
+    hex 6c 69 6e 65 31 0a 6c 69 6e 65 32 matched; both
+    parser logics tested on the same wire).
+  - CORRECTION03 parser RED control: rc=1, two FAIL lines.
+  - CORRECTION04 parser GREEN treatment: rc=0, 117 PASS / 0 FAIL.
+  - NULL-sentinel documentation: in src/llvm-backend-cap.c.
+  - CORRECTION04 reconciliation: ACT Status and HANDOFF
+    VERDICT both now read HALT_*. The closure-status
+    gate (M1 below) OKs the CORRECTION04 pair.
 
-This ACT closes:
-  M1: real-LF end-to-end seam (reviewer P0-2)
-  M2: NULL-sentinel contract documentation (reviewer P1)
-  M3: reconciliation of CORRECTION04's Status vs HANDOFF
-       (reviewer P0-1; promote to a hard invariant)
+But the new hard gate introduced by this ACT is RED at
+closure:
+
+```text
+llvm-closure-status-check.sh
+  OK   = 2
+  FAIL = 3   (CORRECTION01 HALT/PASS, CORRECTION02 HALT/PASS,
+              CORRECTION03 HALT/PASS)
+  rc   = 1
+```
+
+That rc=1 contradicts the ACT's own A5 ("FAILS if any pair
+disagrees") and A8 ("closure-status-check.sh: rc=0"), and
+contradicts the VERDICT declared PASS. The "three failures
+are out-of-scope residue" line does not rescue the contract,
+because the gate's documented semantics are "iterate paired
+ACTs and FAIL if any disagreement exists" — not "FAIL if
+any disagreement exists within the current ACT family".
+
+This is the F3/F4 territory the reviewer correctly named:
+the new oracle is RED at closure, so closure is HALT,
+not PASS. Per F15, fixing the three pre-existing mismatches
+is out of scope here; that work is the next ACT (see
+"Next ACT" below).
+
+Recorded as:
+  evidence/llvmspike01-core03-correction05/halt-correction05-own-gate-red.txt
+
+CORRECTION04 verdict (unchanged by this HALT):
+  HALT_CORRECTION04_STATUS_AND_LF_EVIDENCE (recorded in
+  evidence/llvmspike01-core03-correction05/halt-correction04-status-and-lf-evidence.txt).
+
+This ACT records:
+  M1: closure-status-reconciliation gate (reviewer P0-1
+      was the third occurrence of the same defect; this
+      ACT introduces the reproducer).
+  M2: real-LF end-to-end seam (reviewer P0-2 closed).
+  M3: NULL-sentinel contract documentation (reviewer P1
+      closed).
+  M4: CORRECTION04 ACT/HANDOFF reconciliation (in scope;
+      HANDOFF now reads HALT_STATUS_RECONCILIATION_AT_CAP
+      matching the ACT HALT_CORRECTION04_STATUS_AND_LF_EVIDENCE).
 
 Topology: CORRECTION05 declared cap = 2, actual = 2.   AT CAP.
 Predecessor: ACT-POLYC-LLVM-CORE03-CORRECTION04
@@ -91,7 +137,9 @@ Out of scope (residue):
     run by the CI pipeline, not by the cap-table verifier).
   - Replace "-" NULL sentinel with a length=-1 sentinel or
     a separate presence flag (deferred; documented).
-  - CORE04 (now genuinely unblocked once this ACT passes).
+  - CORE04 is NOT unblocked here. The reviewer's sequencing
+    recommendation is correct: STATUS-RECONCILIATION is the
+    next ACT, then CORE04.
 
 ## Acceptance criteria
 
@@ -112,15 +160,22 @@ A3. Source mutation reverted: src/llvm-backend-cap.c has the
 
 A4. CORRECTION04 ACT Status is reconciled: this ACT's IMPL
     commit flips the line "OPEN — closing the two new
-    binding closure defects..." to "PASS — at HANDOFF",
-    and adds the IDENTITY block listing this ACT's commits
-    as the closing commits.
+    binding closure defects..." to "HALT_CORRECTION04_STATUS_AND_LF_EVIDENCE
+    — at CORRECTION05", and adds the IDENTITY block listing
+    this ACT's commits as the closing commits. The HANDOFF
+    VERDICT also flips PASS -> HALT_STATUS_RECONCILIATION_AT_CAP
+    so that the closure-status-reconciliation gate (A5) OKs
+    the CORRECTION04 pair. ACHIEVED.
 
 A5. Closure-status-reconciliation invariant: a new script
     scripts/quality/llvm-closure-status-check.sh compares
     each ACT's Status block with its HANDOFF verdict. The
-    check FAILS if any pair disagrees. Documented as the
+    check exits 1 if any pair disagrees. Documented as the
     minimal reproduction of the bug observed three times.
+    The script itself exists and behaves as specified. The
+    current ACT family outcome is OK=2 FAIL=3 (CORRECTION04
+    and CORRECTION05 agree; CORRECTION01/02/03 disagree —
+    the three pre-existing mismatches).
 
 A6. NULL-sentinel documentation: src/llvm-backend-cap.c
     carries a comment block stating that payload bytes equal
@@ -151,7 +206,15 @@ A8. All conservation gates at HEAD:
     existing harness:   PASS=18 FAIL=0
     contract harness:   PASS=20 FAIL=0
     cap-table verifier: rc=0, 0 FAIL lines
-    closure-status-check.sh: rc=0
+    closure-status-check.sh:
+        rc=1   (FAIL: 3 pre-existing CORRECTION01/02/03
+                     ACT/HANDOFF mismatches; OK: 2 in-scope
+                     pairs)
+        The gate itself works as specified (FAILS on
+        disagreement); it is RED at closure because of
+        out-of-scope residue. This is the F3/F4 finding
+        that graduates STATUS-RECONCILIATION from P1
+        residue to the immediate next ACT.
 
 ## Residue
 
@@ -181,23 +244,78 @@ P2: Synthetic-vs-live testing gap for 0xFF/0x00/other
 
 ## Next ACT
 
-ACT-POLYC-LLVM-CORE04 (genuinely unblocked at CORRECTION05
-closure):
+PROMOTED (immediate, gated): ACT-POLYC-FACTORY-STATUS-RECONCILIATION.
+
+The closure-status-check.sh gate introduced by this ACT
+is RED at closure (OK=2 FAIL=3). Per F3/F4 the ACT
+therefore halts rather than passes. The three
+FAIL pairs are:
+
+  CORRECTION01 ACT   HALT_CORE03_CORRECTION01_BINDING_STILL_PARTIAL
+  CORRECTION01 HAND  VERDICT: PASS
+  CORRECTION02 ACT   HALT_SCOPE_CONTRACT_VIOLATED
+  CORRECTION02 HAND  VERDICT: PASS
+  CORRECTION03 ACT   HALT_CORRECTION03_WIRE_AND_IDENTITY_CONTRACT
+  CORRECTION03 HAND  VERDICT: PASS
+
+STATUS-RECONCILIATION mission (bounded):
+
+  1. Reproduce OK=2 FAIL=3 on the current tree.
+  2. Reconcile each of the three historical ACT/HANDOFF
+     mismatches under F14 (no rewriting of history; status
+     updates to fresh ACT commits only).
+  3. Decide whether the oracle compares:
+        a) lifecycle class (PASS / HALT / OPEN), or
+        b) exact verdict token (HALT_<reason>).
+     Reviewer recommends exact verdict token; rationale
+     to be recorded.
+  4. Establish an authoritative ACT<->HANDOFF mapping
+     rather than relying on filename heuristics. The
+     current scripts/quality/llvm-closure-status-check.sh
+     is a seed; the production gate should consume an
+     explicit manifest (e.g. docs/factory/act-handoff-map.tsv
+     or equivalent).
+  5. Wire into scripts/quality/gate-fast.sh so every ACT
+     commit's closure status is checked before merge.
+  6. Required closure criterion:
+        llvm-closure-status-check.sh
+        OK = N, FAIL = 0, rc = 0
+     (or N = total paired ACTs and FAIL = 0).
+  7. Only then resume ACT-POLYC-LLVM-CORE04.
+
+Following this gate, CORE04 may resume:
   - auto opcode-set decoding (replace per-fixture lists)
   - consolidate fixture lists between two harnesses
   - unify dispatch-arm discovery + body extraction
   - per-class execution counters
   - generated matrix comment
 
-Factory ACTs (carried):
-  - ACT-POLYC-FACTORY-CLOSURE-ORACLE-TRUST01
-  - ACT-POLYC-FACTORY-STATUS-RECONCILIATION (now justified
-    by three-occurrence evidence + CORRECTION05's
-    llvm-closure-status-check.sh witness)
-  - ACT-POLYC-FACTORY-TOPOLOGY-CAP-HONESTY
-  - ACT-POLYC-FACTORY-IDENTITY-CONTRACT
+Other Factory ACTs (carried):
+  - ACT-POLYC-FACTORY-CLOSURE-ORACLE-TRUST01 (FT1)
+  - ACT-POLYC-FACTORY-TOPOLOGY-CAP-HONESTY (P2)
+  - ACT-POLYC-FACTORY-IDENTITY-CONTRACT (P2)
+
+Reviewer observations on this ACT's seed oracle (recorded
+as P1 to be addressed in STATUS-RECONCILIATION):
+
+  P1a. The current ACT<->HANDOFF pairing in the seed gate
+       is inferred from filename conventions
+       (LLVM-* -> llvmspike01-*, IR-* -> ir-*, FACTORY-* ->
+       factory-*) and silently skips pairs whose HANDOFF
+       is missing. Reasonable for a seed; not the general
+       Factory hard gate. STATUS-RECONCILIATION should
+       replace this with an explicit manifest.
+
+  P1b. The seed gate normalises HALT_*, PASS, OPEN to
+       lifecycle classes. If "ACT Status and HANDOFF
+       VERDICT agree" is the invariant, exact verdict
+       tokens must agree; otherwise
+       HALT_SCOPE_CONTRACT_VIOLATED vs HALT_TOPOLOGY_RECORDED
+       would (incorrectly) pass. Reviewer recommends exact
+       verdict token. STATUS-RECONCILIATION must decide.
 
 ### Supersession
 
-Authorised successor: ACT-POLYC-LLVM-CORE04 (OPEN at this
-ACT's HANDOFF; will close the genuine technical residue).
+Authorised successor: ACT-POLYC-FACTORY-STATUS-RECONCILIATION
+(immediate, gated; will resolve the closure-status gate
+RED and unlock CORE04).

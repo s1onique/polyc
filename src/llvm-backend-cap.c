@@ -144,6 +144,18 @@ void llPrintCapabilityTable(void) {
          * Python verifier's round-trip test). The previous format
          * was space-delimited and truncated IR_CMP_BR's diagnostic
          * `"(boundary violation - native fusion)"` to `"(boundary"`. */
+        /* ACT-POLYC-LLVM-CORE03-CORRECTION05 M3: NULL-sentinel contract.
+         *
+         * The wire format reserves the single byte sequence "-"
+         * (length 1) as the NULL sentinel for both diag and note.
+         * A legitimate diagnostic or note whose contents are
+         * exactly the ASCII character "-" cannot be represented
+         * distinctly from NULL on the wire. This is an inherent
+         * value-collision in the current protocol and is
+         * documented as a contract limitation. The two
+         * reasonable fixes (length=-1 sentinel, or a separate
+         * presence flag column) require a wire-format change and
+         * are deferred; see CORRECTION05 Residue. */
         const char *diag = row->diagnostic ? row->diagnostic : "-";
         const char *note = row->note ? row->note : "-";
         printf("%d\t%d\t%zu\t%s\t%zu\t%s\n",

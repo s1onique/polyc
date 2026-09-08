@@ -3,10 +3,33 @@ HANDOFF — ACT-POLYC-LLVM-CORE03-CORRECTION04
 
 VERDICT
 -------
-PASS
+HALT_STATUS_RECONCILIATION_AT_CAP
 
-CORRECTION04 closes every defect the reviewer flagged on
-CORRECTION03's PASS (HALT_CORRECTION03_WIRE_AND_IDENTITY_CONTRACT):
+CORRECTION04 closes the M2 (true length-framed parser) defect
+that the reviewer flagged on CORRECTION03's PASS
+(HALT_CORRECTION03_WIRE_AND_IDENTITY_CONTRACT). CORRECTION04
+itself was rejected by the reviewer as
+HALT_CORRECTION04_STATUS_AND_LF_EVIDENCE for two further
+binding closure defects:
+
+  P0-1: ACT Status block said "OPEN" while this HANDOFF
+        said "PASS" (reproduced three-time closure-status
+        reconciliation defect).
+  P0-2: real-LF end-to-end seam was not exercised; only
+        synthetic coverage existed.
+
+The actual technical defect (M2 true length-framed parser)
+is genuinely closed. The closure is corrected by
+ACT-POLYC-LLVM-CORE03-CORRECTION05 which:
+  M1: introduces scripts/quality/llvm-closure-status-check.sh
+      (a fast gate that catches this class of bug);
+  M2: provides the real-LF end-to-end witness (mutated op=46
+      note -> real 0x0A byte in wire stream -> CORRECTION04
+      parser GREEN);
+  M3: documents the "-" NULL sentinel as a contract
+      limitation;
+  M4: this verdict-update (the ACT Status and this HANDOFF
+      now agree).
 
   P0-1 self-pinned final HEAD: CLOSED — CORRECTION03 ACT Status
     block no longer contains "PASS at HEAD <sha>". The Status
