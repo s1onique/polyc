@@ -5,7 +5,7 @@
 ```
 raw SUBJECT (from log) = a5818c66cbbb
 resolved SUBJECT_FULL  = a5818c66cbbb6f447ea636f30925b63e408d0aa4
-git rev-parse HEAD     = a5818c66cbbb6f447ea636f30925b63e408d0aa4
+git rev-parse HEAD     = 8f5c16756c9c4af1f9c7de60b63f7fc65aca0727
 ```
 
 ## merge-base --is-ancestor check
@@ -17,9 +17,12 @@ SUBJECT_FULL is ancestor of HEAD: YES
 ## Interpretation
 
 SUBJECT=a5818c66cbbb -> SUBJECT_FULL=a5818c66cbbb6f447ea636f30925b63e408d0aa4
-HEAD (live)           = a5818c66cbbb6f447ea636f30925b63e408d0aa4
+HEAD (live)      = 8f5c16756c9c4af1f9c7de60b63f7fc65aca0727
 
 The gate transcript is committed against the substantive final tree.
-Any future HEAD (which adds CORRECTION02 docs commits) is a strict
-ancestor of this SUBJECT_FULL because SUBJECT_FULL == current HEAD
-and HEAD monotonically advances with new commits.
+SUBJECT_FULL == a5818c6 (the substantive tree commit).
+HEAD (live)   == 8f5c167 (this ACT adds one docs commit on top).
+
+merge-base --is-ancestor is YES, demonstrating dynamic binding:
+the substantive closure subject is the ancestor, and any subsequent
+docs commits advance HEAD while preserving the relationship.
