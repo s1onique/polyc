@@ -1,0 +1,41 @@
+RED-1 reproduction (ACT-POLYC-LLVM-CORE01)
+=========================================
+
+Fixture:    src/tests/llvm-spike/red_idiv_unclassified.HC
+Opcode:     IR_IDIV (integer division)
+Diagnostic: LLVM_BACKEND_UNSUPPORTED_IR  (generic, catch-all at line 922)
+            NOT  LLVM_BACKEND_UNSUPPORTED_INT_DIVISION  (class-specific)
+
+Command:
+
+    $ ./hcc --emit-llvm --install-dir=/tmp/__polyc_prefix__ \
+        src/tests/llvm-spike/red_idiv_unclassified.HC -o /tmp/red_idiv.ll
+
+Exit code:  1
+stderr:
+
+    LLVM_BACKEND_UNSUPPORTED_IR: function DivMod: opcode idiv \
+        is not supported by the LLVM backend
+      IR dst id: 6, line 14
+
+No .ll output produced.
+
+Interpretation:
+
+The current dispatch falls into the default arm of the per-instruction
+switch (line 922 of src/llvm-backend.c). The diagnostic token is
+generic ("IR"), which is the same token used for every opcode the
+spike does not handle. A reader cannot tell from the diagnostic
+whether the opcode was:
+
+  - SUPPORTED but encountered out-of-spec shape;
+  - REJECTED deliberately (e.g. memory ops, floats);
+  - NOT_YET_CLASSIFIED (not yet decided either way).
+
+CORE01 fix: add LLVM_BACKEND_UNSUPPORTED_INT_DIVISION to the header,
+add an explicit REJECTED arm in the dispatch that uses the new token,
+and add IR_IDIV (and IR_UDIV, IR_IREM, IR_UREM) to the capability
+matrix as REJECTED.
+
+After the fix, the same fixture must emit a diagnostic containing
+the token LLVM_BACKEND_UNSUPPORTED_INT_DIVISION (or equivalent).
