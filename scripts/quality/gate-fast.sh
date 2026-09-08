@@ -219,5 +219,32 @@ pass large-file-guard
 
 echo "BUILD_RUN=NO"
 
+# --- GFAST-6: factory closure-status reconciliation ------------------------
+#
+# ACT-POLYC-FACTORY-STATUS-RECONCILIATION: the new hard normal-path
+# gate. Runs the exact-token factory closure-status checker, which
+# compares the ## Status block of every managed ACT against the
+# VERDICT block of its paired HANDOFF on exact-token grounds (no
+# lifecycle-class lossy normalization).
+#
+# The check is unconditional: it is run on every commit regardless
+# of which files are staged, because the closure-status reconciliation
+# defect is orthogonal to the staged diff.
+#
+# Exit code 0 -> pass.
+# Exit code 1 -> fail; we exit 1 with CHECK=factory-closure-status.
+# Exit code 2 -> manifest missing; we treat as hard fail.
+
+if factory_closure_output=$(sh scripts/quality/factory-closure-status-check.sh 2>&1); then
+    printf '%s\n' "$factory_closure_output" | grep -E '^(STATUS|POLYC_GATE|VERDICT|PAIR_OK|PAIR_FAIL|EXACT_VERDICT_MISMATCHES|MANIFEST_ROWS|MISSING_HANDOFF_FILES|MALFORMED_ACT_STATUS|MALFORMED_HANDOFF_VERDICT)=' || true
+    pass factory-closure-status
+else
+    echo "CHECK=factory-closure-status STATUS=FAIL"
+    printf '%s\n' "$factory_closure_output"
+    echo "REASON=scripts/quality/factory-closure-status-check.sh exited non-zero"
+    echo "VERDICT=FAIL"
+    exit 1
+fi
+
 echo "VERDICT=PASS"
 exit 0
