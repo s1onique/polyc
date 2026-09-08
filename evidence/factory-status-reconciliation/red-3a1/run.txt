@@ -1,0 +1,49 @@
+RED-3A1 — seed silently omits a managed ACT/HANDOFF pair at a
+         non-inferred path
+==================================================================
+
+Defect:
+  scripts/quality/llvm-closure-status-check.sh derives the
+  expected evidence directory from the ACT filename via
+  act_to_evid_dir(). The function only handles the special-case
+  tails "core*" (mapped to llvmspike01-...) and "boundary*"
+  (mapped to ir-...). A pair whose ACT filename tail does not
+  match any special case is mapped to the lowercased tail as a
+  literal evidence directory.
+
+  For ACT-POLYC-FACTORY-NONINFERRED.md the inferred directory is
+  evidence/noninferred/. The actual HANDOFF is placed at
+  evidence/factory-status-reconciliation/red-3a1/fixture/managed/extra-scope-factory-NON_INFERRED/evidence/handoff-noninfer/HANDOFF.md
+  which is not inferable.
+
+  The seed then enters the line:
+    [ -f "$handoff" ] || continue
+  and silently skips the pair, emitting no diagnostic at all.
+
+Reproduction:
+  See evidence/factory-status-reconciliation/red-3a1/run-output.txt
+  (captured live at ENTRY_HEAD via /tmp/test_seed_skips.sh which
+  replays the seed pairing rule against the two fixture ACTs).
+  The relevant lines are:
+    OMIT  ACT-POLYC-FACTORY-NONINFERRED.md -> evidence/noninferred/HANDOFF.md (NOT FOUND, seed skips)
+    OMIT  ACT-POLYC-FACTORY-MISSINGHO.md   -> evidence/missingho/HANDOFF.md   (NOT FOUND, seed skips)
+
+Demonstration of the defect:
+  The seed reports OK=2 FAIL=3 against the real repo (RED-1).
+  Adding the two fixtures does not change that count. The
+  fixtures are invisible to the seed.
+
+Required treatment:
+  Implement scripts/quality/factory-closure-status-check.sh that
+  enumerates managed pairs from a manifest bijection
+  (docs/factory/act-handoff-map.tsv) rather than inferring them
+  from ACT filenames. Then:
+    RED-3A2: same pair explicitly listed in fixture manifest
+             -> new checker discovers and validates it (PASS).
+    RED-3A3: manifest row removed while both files remain
+             -> new checker reports UNMAPPED_* and exits
+                non-zero (FAIL).
+
+Fixtures:
+  ACT     : evidence/factory-status-reconciliation/red-3a1/fixture/managed/extra-scope-factory-NON_INFERRED/docs/acts/ACT-POLYC-FACTORY-NONINFERRED.md
+  HANDOFF : evidence/factory-status-reconciliation/red-3a1/fixture/managed/extra-scope-factory-NON_INFERRED/evidence/handoff-noninfer/HANDOFF.md
