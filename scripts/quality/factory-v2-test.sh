@@ -2,6 +2,7 @@
 # scripts/quality/factory-v2-test.sh
 #
 # ACT-POLYC-FACTORY-GIT-METADATA-SIMPLIFY01
+# ACT-POLYC-FACTORY-GIT-METADATA-SIMPLIFY01-CORRECTION01
 #
 # Test matrix for Factory v2 tooling.
 #
@@ -30,6 +31,32 @@
 #   T16  ACT ID changes inside range                   FAIL
 #   T17  multiple CLOSE commits                        FAIL
 #   T18  CLOSE with subsequent same-ACT IMPL           FAIL
+#
+# CORRECTION01 additions (RED-1..RED-3 grammar binding):
+#
+#   T19  ACT id with shell-glob chars (AAevil)         FAIL
+#   T20  ACT id with slash (AA/BAD)                    FAIL
+#   T21  ACT id with whitespace (AA BAD)               FAIL
+#   T22  ACT id single-character suffix (A)            FAIL
+#   T23  ACT-Verdict with whitespace
+#        (PASS WITH NEXT ACT)                          FAIL
+#   T24  ACT-Verdict hyphen in segment
+#        (PASS_X-bad)                                  FAIL
+#   T25  ACT-Verdict slash in segment
+#        (HALT_X/bad)                                  FAIL
+#   T26  ACT-Corrected-Verdict space
+#        (HALT_X bad)                                  FAIL
+#   T27  positive boundary ACT-POLYC-A1                PASS
+#   T28  positive boundary ACT-POLYC-LLVM-CORE04       PASS
+#   T29  positive boundary ACT-POLYC-FOO_BAR-01        PASS
+#   T30  positive verdict PASS                         PASS
+#   T31  positive verdict
+#        PASS_WITH_NEXT_ACT_DECISION                   PASS
+#   T32  positive verdict
+#        HALT_RED_NOT_REPRODUCED                       PASS
+#   T33  range-check: ACT id arg single-char rejected  FAIL
+#   T34  range-check: CLOSE with verdict
+#        PASS_X-bad rejected                           FAIL
 
 set -eu
 
@@ -104,6 +131,23 @@ expect_range_pass() {
 expect_range_fail() {
     name="$1"; id="$2"; close="$3"
     cd "$SYNTH/$id"
+    set +e
+    out=$(sh "$RANGE_CHECK" "$id" "$close" 2>&1); rc=$?
+    set -e
+    if [ "$rc" != "0" ]; then
+        echo "  PASS  $name  (rejected as expected)"
+        PASS_COUNT=$((PASS_COUNT+1))
+    else
+        echo "  FAIL  $name  expected reject, got rc=0 out=$out"
+        FAIL_COUNT=$((FAIL_COUNT+1))
+    fi
+}
+
+# Like expect_range_fail but does not cd into $SYNTH/<id>.
+# Used when the test exercises the validator's id-arg grammar
+# check and the synth repo path would differ from the id arg.
+expect_range_fail_no_cd() {
+    name="$1"; id="$2"; close="$3"
     set +e
     out=$(sh "$RANGE_CHECK" "$id" "$close" 2>&1); rc=$?
     set -e
@@ -255,6 +299,96 @@ ACT-Verdict: PASS
 ACT-Corrected-Verdict: HALT_BUG"
 expect_fail T12b
 
+# --- CORRECTION01: trailer-grammar binding tests ---
+
+# T19: shell-glob-defeating ACT id suffix
+mkmsg T19 "feat: glob evil" "RED-1 RED-2 RED-3 negative matrix" \
+         "ACT: ACT-POLYC-AAevil
+ACT-Phase: RED"
+expect_fail T19
+
+# T20: slash in ACT id
+mkmsg T20 "feat: slash" "RED-1 shell glob also accepts slashes" \
+         "ACT: ACT-POLYC-AA/BAD
+ACT-Phase: RED"
+expect_fail T20
+
+# T21: whitespace in ACT id (gsub used to silently rewrite)
+mkmsg T21 "feat: space in id" "RED-2 gsub would silently PASS this" \
+         "ACT: ACT-POLYC-AA BAD
+ACT-Phase: RED"
+expect_fail T21
+
+# T22: single-character suffix (RED-4 doctrine fix)
+mkmsg T22 "feat: one char" "RED-4: regex now uses + not *" \
+         "ACT: ACT-POLYC-A
+ACT-Phase: RED"
+expect_fail T22
+
+# T23: whitespace inside ACT-Verdict (gsub used to silently rewrite)
+mkmsg T23 "docs: close spaced" "RED-2 verdict with spaces" \
+         "ACT: ACT-POLYC-GRAMMAR-CHECK
+ACT-Phase: CLOSE
+ACT-Verdict: PASS WITH NEXT ACT"
+expect_fail T23
+
+# T24: hyphen inside a verdict segment
+mkmsg T24 "docs: close hyphen" "RED-3 verdict glob accepts this" \
+         "ACT: ACT-POLYC-GRAMMAR-CHECK
+ACT-Phase: CLOSE
+ACT-Verdict: PASS_X-bad"
+expect_fail T24
+
+# T25: slash inside a verdict segment
+mkmsg T25 "docs: close slash" "RED-3 verdict glob accepts this" \
+         "ACT: ACT-POLYC-GRAMMAR-CHECK
+ACT-Phase: CLOSE
+ACT-Verdict: HALT_X/bad"
+expect_fail T25
+
+# T26: whitespace inside ACT-Corrected-Verdict
+mkmsg T26 "docs: corrected spaced" "RED-3 corrected verdict with space" \
+         "ACT: ACT-POLYC-GRAMMAR-CHECK
+ACT-Phase: CLOSE
+ACT-Verdict: PASS
+ACT-Supersedes: ACT-POLYC-ORIG
+ACT-Corrected-Verdict: HALT_X bad"
+expect_fail T26
+
+# T27-T32: positive boundary cases
+mkmsg T27 "feat: A1" "smallest legal ACT id" \
+         "ACT: ACT-POLYC-A1
+ACT-Phase: RED"
+expect_pass T27
+
+mkmsg T28 "feat: LLVM-CORE04" "real-world id shape" \
+         "ACT: ACT-POLYC-LLVM-CORE04
+ACT-Phase: RED"
+expect_pass T28
+
+mkmsg T29 "feat: FOO_BAR-01" "underscore and dash in suffix" \
+         "ACT: ACT-POLYC-FOO_BAR-01
+ACT-Phase: RED"
+expect_pass T29
+
+mkmsg T30 "docs: close bare PASS" "bare PASS verdict" \
+         "ACT: ACT-POLYC-GRAMMAR-CHECK
+ACT-Phase: CLOSE
+ACT-Verdict: PASS"
+expect_pass T30
+
+mkmsg T31 "docs: close qualified" "qualified PASS verdict" \
+         "ACT: ACT-POLYC-GRAMMAR-CHECK
+ACT-Phase: CLOSE
+ACT-Verdict: PASS_WITH_NEXT_ACT_DECISION"
+expect_pass T31
+
+mkmsg T32 "docs: close halt" "HALT verdict" \
+         "ACT: ACT-POLYC-GRAMMAR-CHECK
+ACT-Phase: CLOSE
+ACT-Verdict: HALT_RED_NOT_REPRODUCED"
+expect_pass T32
+
 echo
 echo "--- T13-T18 range-check matrix ---"
 
@@ -302,6 +436,21 @@ synth_act_commit ACT-POLYC-RANGE-T18 IMPL  ""    b
 synth_act_commit ACT-POLYC-RANGE-T18 CLOSE PASS c
 synth_act_commit ACT-POLYC-RANGE-T18 IMPL  ""    d
 expect_range_fail T18 ACT-POLYC-RANGE-T18 "$(git -C $SYNTH/ACT-POLYC-RANGE-T18 rev-parse HEAD~1)"
+
+# T33: range-check ACT id arg single-character (RED-4 also applies)
+# Use the T13 synth repo as the history to operate on, but pass
+# a malformed single-character-suffix id to the range-check so
+# the validator must reject it.
+cd "$SYNTH/ACT-POLYC-RANGE-T13"
+expect_range_fail_no_cd T33 ACT-POLYC-A "$(git rev-parse HEAD)"
+
+# T34: range-check verdict grammar binding.
+# Same shape as T13 but verdict contains a hyphen -> rejected.
+mk_synth_repo ACT-POLYC-RANGE-T34
+synth_act_commit ACT-POLYC-RANGE-T34 RED  "" a
+synth_act_commit ACT-POLYC-RANGE-T34 IMPL "" b
+synth_act_commit ACT-POLYC-RANGE-T34 CLOSE PASS_X-bad c
+expect_range_fail T34 ACT-POLYC-RANGE-T34 "$(git -C $SYNTH/ACT-POLYC-RANGE-T34 rev-parse HEAD)"
 
 echo
 echo "--- summary ---"

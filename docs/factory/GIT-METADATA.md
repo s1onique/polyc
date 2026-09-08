@@ -41,11 +41,12 @@ ACT-Phase: <RED | IMPL | EVIDENCE | CLOSE>
 `<id>` regex:
 
 ```
-^ACT-POLYC-[A-Z0-9][A-Z0-9_-]*$
+^ACT-POLYC-[A-Z0-9][A-Z0-9_-]+$
 ```
 
-The identifier MUST contain at least two characters after
-the `ACT-POLYC-` prefix.
+The `+` quantifier requires at least two characters after
+the `ACT-POLYC-` prefix. A single-character suffix such as
+`ACT-POLYC-A` is rejected.
 
 Cardinality:
 
@@ -59,10 +60,14 @@ Cardinality:
 When present (CLOSE only), `ACT-Verdict:` MUST match:
 
 ```
-^(PASS(?:_[A-Z0-9_]+)*|HALT_[A-Z0-9_]+)$
+^(PASS(_[A-Z0-9_]+)*|HALT_[A-Z0-9_]+)$
 ```
 
 `OPEN` is not a closure verdict.
+
+This is POSIX-ERE (used by `grep -E`). Do NOT use
+shell-glob `case` patterns or PCRE-only constructs
+(`(?:...)`, lookarounds, backreferences).
 
 Examples:
 
