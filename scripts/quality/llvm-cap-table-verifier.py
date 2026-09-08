@@ -629,6 +629,211 @@ def check_harness_queries_table():
              " expectations are still hard-coded. (See CORE03 P1 review.)")
 
 
+# -----------------------------------------------------------------------------
+# ACT-POLYC-LLVM-CORE04-RESUME01 — permanent adversarial scope-tight test.
+#
+# The CORE03-CORRECTION03 P1 residue observes that the verifier's
+# `if`-arm extractor (in get_dispatch_arms()) collects `if (ins->op
+# == IR_X)` short-circuits anywhere in src/llvm-backend.c, while the
+# I1 forward check and the arm-local body extractor (I2 reverse
+# check) scope to llLowerInstr and the explicit switch helpers.
+#
+# The asymmetry means a new `if (ins->op == IR_X)` arm added outside
+# llLowerInstr would silently be counted as a handler without being
+# bound to a capability-table row. RESUME01 unifies these scopes.
+#
+# This self-test is PERMANENT. It contains a labelled adversarial
+# source snippet (a function named `not_a_dispatch_helper` carrying
+# an `if (ins->op == IR_ADD) return ...;`). The verifier parses this
+# snippet and asserts that the scope-tighter REJECTS it (i.e. IR_ADD
+# outside the real dispatch is NOT accepted as a handler). The
+# fixture is NOT removed after IMPL passes; it is the canonical
+# demonstration invariant. Future regressions re-trigger the FAIL.
+#
+# Fixture must remain labelled so a careless reader does not delete it.
+# -----------------------------------------------------------------------------
+
+RESUME01_ADVERSARIAL_DISPATCH_SNIPPET = r"""
+/* RESUME01-ADVERSARIAL-FIXTURE: not real dispatch code; do not delete.
+ *
+ * Purpose: demonstrate that the dispatch-scope parser does NOT
+ * pick up if-statements referencing IrOp constants when those
+ * if-statements live outside the canonical dispatch functions.
+ * If this snippet is ever deleted, the
+ * check_dispatch_scope_is_tight() self-test loses its canonical
+ * regression witness. See ACT-POLYC-LLVM-CORE04-RESUME01 sec 5.2
+ * and AC13.
+ */
+
+static int not_a_dispatch_helper(IrInstr *ins)
+{
+    /* This is NOT inside llLowerInstr. A scope-tight parser must
+     * refuse to treat the matching opcodes here as registered
+     * handlers. */
+    if (ins->op == IR_ADD) {
+        return -1;
+    }
+    if (ins->op == IR_SUB) {
+        return -2;
+    }
+    return 0;
+}
+
+static int also_not_a_dispatch_helper(IrInstr *ins)
+{
+    if (ins->op == IR_MUL) {
+        return -3;
+    }
+    return 0;
+}
+"""
+
+
+def _loose_if_arm_extract(text):
+    """Replicate the CURRENT (loose) regex the verifier uses to find
+    `if (ins->op == IR_X)` short-circuits anywhere in a source file.
+    Returns the set of opcode names picked up.
+
+    This intentionally mirrors the loose semantics of
+    get_dispatch_arms()['if_in_llLowerInstr_or_switch'] (the name is
+    misleading: it actually scans the entire file). RESUME01 C2
+    unifies the extractor to scope tightly; until then, this
+    function demonstrates that the loose extractor DOES pick up
+    `if (ins->op == IR_X)` from any function in any source file,
+    including adversarial ones.
+    """
+    ifs = set()
+    for m in re.finditer(
+        r"if\s*\(\s*ins->op\s*==\s*(IR_[A-Z_0-9]+)\s*\)", text
+    ):
+        ifs.add(m.group(1))
+    return ifs
+
+
+def _scoped_if_arm_extract(text, scope_fn_names):
+    """The PROPOSED (scope-tight) extractor used by RESUME01 C2 IMPL.
+    It only collects `if (ins->op == IR_X)` arms from functions whose
+    name is in `scope_fn_names`. Anything outside the scope is
+    rejected.
+    """
+    ifs = set()
+    for fn_name in scope_fn_names:
+        m = re.search(
+            r"\b" + re.escape(fn_name) + r"\s*\([^)]*\)\s*\{",
+            text,
+        )
+        if not m:
+            continue
+        start = m.end()
+        depth = 1
+        i = start
+        while i < len(text) and depth > 0:
+            if text[i] == "{":
+                depth += 1
+            elif text[i] == "}":
+                depth -= 1
+            i += 1
+        body = text[start:i]
+        for n in re.finditer(
+            r"if\s*\(\s*ins->op\s*==\s*(IR_[A-Z_0-9]+)\s*\)", body
+        ):
+            ifs.add(n.group(1))
+    return ifs
+
+
+def check_dispatch_scope_is_tight(dispatch):
+    """ACT-POLYC-LLVM-CORE04-RESUME01 §5.2 / AC13: PERMANENT scope-tight
+    self-test.
+
+    RED phase: the loose extractor picks up `if (ins->op == IR_X)`
+    from non-dispatch helpers (currently true). The test FAILs when
+    the scope-tighter ALSO picks them up, because that means the
+    proposed scope is not actually tight.
+
+    After C2 IMPL unifies the dispatch-scope model, the scope-tighter
+    is the only path; the loose extractor is retired. The permanent
+    adversarial fixture continues to assert that the scope-tighter
+    REJECTS the non-dispatch `if (ins->op == IR_X)` arms.
+
+    `dispatch` is the dict returned by get_dispatch_arms() on the
+    real src/llvm-backend.c. Used to compare the loose discovery
+    against the proposed scope-tight discovery.
+    """
+    adversarial = RESUME01_ADVERSARIAL_DISPATCH_SNIPPET
+    loose = _loose_if_arm_extract(adversarial)
+
+    expected_adversarial_loose = {"IR_ADD", "IR_SUB", "IR_MUL"}
+    expected_adversarial_scoped = set()
+
+    if loose != expected_adversarial_loose:
+        fail(
+            "scope-tight self-test: LOOSE extractor on adversarial "
+            "fixture produced {0!r}, expected {1!r}. Regex semantics "
+            "have drifted; update the test or the adversarial "
+            "fixture.".format(loose, expected_adversarial_loose)
+        )
+        return
+
+    scoped = _scoped_if_arm_extract(adversarial, ["llLowerInstr"])
+    if scoped != expected_adversarial_scoped:
+        fail(
+            "scope-tight self-test: SCOPED extractor on adversarial "
+            "fixture picked up {0!r}, expected {1!r}. The scope "
+            "extractor is NOT tight — non-dispatch `if (ins->op == "
+            "IR_X)` arms leak through. This is the asymmetry RESUME01 "
+            "C2 IMPL fixes.".format(scoped, expected_adversarial_scoped)
+        )
+        return
+
+    # Informational: delta between loose and scoped on the real
+    # src/llvm-backend.c. After IMPL, the loose extractor must be
+    # retired (no rogue `if (ins->op == IR_X)` arms remain outside
+    # llLowerInstr, OR all such arms are listed in the explicit
+    # switch helpers used by LlFunction).
+    real_text = read(SRC_BACKEND)
+    real_loose = _loose_if_arm_extract(real_text)
+    real_scoped = _scoped_if_arm_extract(real_text, ["llLowerInstr"])
+    rogue = sorted(real_loose - real_scoped)
+    print(
+        "INFO  scope-tight self-test: on real src/llvm-backend.c, "
+        "{0} loose-only opcodes (potential rogue `if` arms outside "
+        "llLowerInstr): {1}".format(len(rogue), rogue)
+    )
+
+    # RED-M1 wiring: the CURRENT get_dispatch_arms() (used by I1 + I2)
+    # reports `if_in_llLowerInstr_or_switch` which actually collects
+    # `if (ins->op == IR_X)` anywhere in the file. The asymmetric
+    # discovery is the bug. This assertion enforces that the loose
+    # set on the real source equals the scoped set, which is FALSE
+    # today (that's the RED) and must be TRUE after IMPL. Until IMPL
+    # unifies get_dispatch_arms(), this assertion FAILs.
+    real_dispatch_loose = dispatch["if_in_llLowerInstr_or_switch"]
+    if real_dispatch_loose != real_scoped:
+        # The current dispatch_arms() picks up `if`s outside
+        # llLowerInstr, the proposed scope-tight extractor does
+        # not. Their sets MUST differ right now — that's the
+        # asymmetry bug.
+        loose_minus_scoped = sorted(real_dispatch_loose - real_scoped)
+        scoped_minus_loose = sorted(real_scoped - real_dispatch_loose)
+        fail(
+            "scope-tight self-test: get_dispatch_arms() loose set "
+            "differs from scope-tight set on real src/llvm-backend.c. "
+            "loose-only (rogue `if (ins->op == IR_X)` arms outside "
+            "llLowerInstr): {0}; scoped-only (missing from loose "
+            "extractor): {1}. This is the discovery-scope mismatch "
+            "RESUME01 M1 fixes; C2 IMPL unifies the extractor."
+            .format(loose_minus_scoped, scoped_minus_loose)
+        )
+        return
+
+    ok(
+        "scope-tight self-test (RESUME01 AC13): permanent "
+        "adversarial fixture rejected by scope-tighter; loose "
+        "extractor still picks it up (C1 RED evidence; C2 IMPL "
+        "unifies the dispatch-scope model)."
+    )
+
+
 def main():
     print("=== llvm-cap-table-verifier (CORE03-CORRECTION01) ===")
     enum_ops = get_ir_op_enum()
@@ -673,6 +878,11 @@ def main():
     check_dispatch(enum_ops, by_name, dispatch)
     check_reverse(enum_ops, by_name, dispatch)
     check_harness_queries_table()
+
+    # ACT-POLYC-LLVM-CORE04-RESUME01 §5.2 / AC13: permanent
+    # scope-tight self-test. Runs on every invocation. Fixture stays
+    # in tree forever.
+    check_dispatch_scope_is_tight(dispatch)
 
     print()
     if failures:
