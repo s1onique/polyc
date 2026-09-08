@@ -1,0 +1,82 @@
+RED-5 GIT-TRAILER-FEASIBILITY RED
+=================================
+
+NEED_CUSTOM_MARKDOWN_IDENTITY_DATABASE = NO
+
+Demonstration that Git itself can carry and parse ACT
+metadata as trailers, using only stock Git tooling. No
+custom metadata parser is required.
+
+------------------------------------------------------------
+(1) `git interpret-trailers --parse` correctly extracts
+    ACT/ACT-Phase/ACT-Verdict trailers from a commit
+    message with the standard "subject / blank / body /
+    blank / trailers" shape.
+------------------------------------------------------------
+
+  $ cat <<'MSG' | git interpret-trailers --parse
+  > test(llvm): expose unsupported pointer lowering
+  >
+  > This is the RED commit for the bounded LLVM pointer
+  > lowering experiment.
+  >
+  > ACT: ACT-POLYC-LLVM-CORE04
+  > ACT-Phase: RED
+  > MSG
+  ACT: ACT-POLYC-LLVM-CORE04
+  ACT-Phase: RED
+
+  $ cat <<'MSG' | git interpret-trailers --parse
+  > docs(polyc): close LLVM CORE04
+  >
+  > Factory v2 CLOSE commit. Verdict lives on this trailer.
+  >
+  > ACT: ACT-POLYC-LLVM-CORE04
+  > ACT-Phase: CLOSE
+  > ACT-Verdict: PASS_WITH_NEXT_ACT_DECISION
+  > MSG
+  ACT: ACT-POLYC-LLVM-CORE04
+  ACT-Phase: CLOSE
+  ACT-Verdict: PASS_WITH_NEXT_ACT_DECISION
+
+------------------------------------------------------------
+(2) `git log --pretty=format:` exposes the same trailers
+    through %(trailers) machinery (Git 2.32+).
+------------------------------------------------------------
+
+  Git's `%((trailers:key=value,key=value))` format token is
+  documented in `git-log(1)` under "PRETTY FORMATS". It is
+  the standard mechanism for retrieving trailers from any
+  commit object in the repository.
+
+  Example (after the RED+IMPL+CLOSE commits above exist):
+
+    git log -1 --format='%(trailers:key=ACT,key=ACT-Phase,key=ACT-Verdict,separator=_)' HEAD
+
+  This is sufficient for a reviewer or a tool to derive
+  ACT identity, phase, and verdict from any commit. No
+  Markdown authority is needed.
+
+------------------------------------------------------------
+(3) Implication for Factory v2
+------------------------------------------------------------
+
+  A Factory-v2 ACT's authoritative record is the run of
+  commits carrying `ACT: <id>` trailers, terminated by a
+  commit carrying `ACT-Phase: CLOSE` + `ACT-Verdict: ...`.
+
+  Range derivations (FIRST, ENTRY, CLOSE, COMMITS, VERDICT)
+  are mechanical `git log` / `git rev-list` / `git show`
+  queries. They are NOT pre-baked SHAs in a Markdown doc.
+
+  This RED establishes that a second metadata parser is
+  unnecessary; git-interpret-trailers + git-log %(trailers)
+  are sufficient.
+
+------------------------------------------------------------
+Conclusion
+------------------------------------------------------------
+
+  NEED_CUSTOM_MARKDOWN_IDENTITY_DATABASE = NO
+  FACTORY_V2_TRAILER_PARSER = git interpret-trailers --parse
+  FACTORY_V2_TRAILER_READER = git log %(trailers:...)

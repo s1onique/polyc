@@ -1,0 +1,70 @@
+RED-1 SELF-PINNING RED
+======================
+
+PATTERN=self_pinning
+REPRODUCED=YES
+
+Historical witness: ACT-POLYC-FACTORY-STATUS-RECONCILIATION-CORRECTION02
+
+  commit 849677ade3d6275996409846bbe99be49c6145b1
+  evidence/factory-status-reconciliation-correction02/HANDOFF.md
+  lines 28-33:
+
+    This ACT's IDENTITY chain (CORRECTION02):
+
+    ENTRY_HEAD (CORRECTION02)  = 2d7ff45de22b826abb3096ed611cd7ac02f05134
+    RED_HEAD   (CORRECTION02)  = b62f940 <C1 RED commit for this ACT>
+    IMPL_HEAD  (CORRECTION02)  = <C2 IMPL commit; this commit>
+    DOCS_HEAD  (CORRECTION02)  = <C3 DOCS commit; committed in the next commit>
+
+This is exactly the self-pinning pattern Factory v2 forbids:
+
+  * "this commit"                 -- a textual placeholder that
+                                     resolves only against the
+                                     commit that contains the
+                                     placeholder itself; the SHA
+                                     is by definition impossible
+                                     to write into the document
+                                     before the document exists.
+  * "committed in the next commit" -- a forward-reference to a
+                                     SHA that does not exist yet
+                                     and whose identity will
+                                     change if any byte of C2 or
+                                     C3 is amended.
+  * "<C1 RED commit for this ACT>" -- a placeholder using the
+                                     ACT's commit topology rather
+                                     than Git's commit identity.
+
+The defect became observable at the next ACT. The committed
+CORRECTION02 HANDOFF at C3 contained a bound ENTRY_HEAD and
+RED_HEAD but unbound IMPL_HEAD and DOCS_HEAD. Two new commits
+(8888efb = C1 RED of CORRECTION03 and 29fb9afc = C2 CLEAN of
+CORRECTION03) had to be authored entirely to repair the
+self-pinning defect left in 849677a. The repair ACT is
+ACT-POLYC-FACTORY-STATUS-RECONCILIATION-CORRECTION03; its
+HANDOFF (also committed) explicitly documents:
+
+    "This intentionally avoids the
+     '<C2 SHA hard-baked at C2 commit time>' self-pinning loop
+     that this ACT is correcting."
+
+Other historical examples (illustrative, not exhaustive):
+the IR-BOUNDARY03-CORRECTION02 HANDOFF pinned
+FINAL_HEAD = 68ce2bf033428e0e26c984890741f1eb6eb101d2 with a
+"DRIFT NOTE: may be off by 1-2 amend iterations", explicitly
+acknowledged as P0-2 by IR-BOUNDARY03-CORRECTION03 § "P0-2:
+FINAL_HEAD self-pinning (amend-loop residual)".
+
+Many ACTs under docs/acts/ continue to embed ENTRY_HEAD,
+FINAL_HEAD, DOCS_HEAD, CLOSURE_HEAD, or IMPLEMENTATION_HEAD
+SHA fields in their bodies. They are LEGACY_ONLY per V2-13
+and not rewritten by this ACT. The negative scan in ACT §13
+is scoped to Factory-v2 templates and new docs only.
+
+Conclusion:
+  Git, not Markdown, owns commit identity.
+  v2 forbids FINAL_HEAD/CLOSURE_HEAD/DOCS_HEAD/IMPLEMENTATION_HEAD
+  SHA fields that purport to identify the commit containing
+  them. Self-pinning loops are mechanically unrepresentable
+  in v2 because Git trailers carry phase/verdict, not the
+  SHA of the committing commit.

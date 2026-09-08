@@ -1,0 +1,78 @@
+RED-2 DUPLICATE-VERDICT-AUTHORITY RED
+====================================
+
+PATTERN=duplicate_verdict_authority
+REPRODUCED=YES
+
+Historical witness:
+  ACT    docs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION01.md
+         ## Status = HALT_TOPOLOGY_RECORDED
+  HANDOFF evidence/llvmspike01-core03-correction01/HANDOFF.md
+         VERDICT = PASS
+
+These two tokens are independently authored, both claim to be
+"the verdict", and they disagree. The factory-closure-status
+checker (CORRECTION01/CORRECTION02/CORRECTION03) was created
+explicitly to detect this drift on a bounded managed universe
+of ACT/HANDOFF pairs. Until that checker existed, the
+ACT/HANDOFF pair was checked only by reviewer inspection.
+
+The reviewer also caught a deeper false-GREEN at
+ACT-POLYC-LLVM-CORE03-CORRECTION05 (commit 862d2cc):
+the ACT introduced a hard gate (closure-status-check) and
+declared PASS, but the new gate was RED at the very tree
+where the ACT declared PASS (OK=2 FAIL=3). This is recorded
+in evidence/llvmspike01-core03-correction05/HANDOFF.md:
+
+    "Yet the ACT simultaneously records:
+        A5 = PASS
+        A8 = PASS
+        VERDICT = PASS
+     That is a direct false-GREEN under the ACT's own
+     newly-created oracle."
+
+Both defects have the same shape: two documents
+(## Status vs VERDICT) each claim to be the verdict, with
+no single mechanical source of truth. They drift.
+
+The CORRECTION01/02/03/04 chain was the entire reason the
+factory-closure-status oracle exists today, and even that
+checker (still v1) is bolted on rather than replacing the
+duplicated authority. Its hard-coded managed universe is
+still only 6 pairs. Factory v1 has had to expand it manually
+each time a new ACT/HANDOFF pair needs reconciliation.
+
+Factory v2 solution: one ACT-verdict source = the CLOSE
+commit's ACT-Verdict trailer. ACT documents and HANDOFFs are
+descriptive only; they may not contain a mutable verdict
+field. Historical ACT/HANDOFFs remain grandfathered (V2-13).
+
+Pair map used by the v1 checker (docs/factory/act-handoff-map.tsv):
+  ACT-POLYC-LLVM-CORE03-CORRECTION01
+    ACT   ## Status    HALT_TOPOLOGY_RECORDED
+    HAND  VERDICT      PASS                          (MISMATCH)
+  ACT-POLYC-LLVM-CORE03-CORRECTION02
+    ACT   ## Status    HALT_SCOPE_CONTRACT_VIOLATED
+    HAND  VERDICT      PASS                          (MISMATCH)
+  ACT-POLYC-LLVM-CORE03-CORRECTION03
+    ACT   ## Status    HALT_CORRECTION03_WIRE_AND_IDENTITY_CONTRACT
+    HAND  VERDICT      PASS                          (MISMATCH)
+  ACT-POLYC-LLVM-CORE03-CORRECTION04
+    ACT   ## Status    HALT_CORRECTION04_STATUS_AND_LF_EVIDENCE
+    HAND  VERDICT      HALT_STATUS_RECONCILIATION_AT_CAP
+                                                    (RESOLVED)
+  ACT-POLYC-LLVM-CORE03-CORRECTION05
+    ACT   ## Status    HALT_CORRECTION05_OWN_GATE_RED
+    HAND  VERDICT      HALT_CORRECTION05_OWN_GATE_RED
+                                                    (RESOLVED)
+  ACT-POLYC-FACTORY-STATUS-RECONCILIATION-CORRECTION02
+    ACT   ## Status    PASS
+    HAND  VERDICT      PASS                          (RESOLVED)
+
+The three (corrected01..03) mismatches required three
+further correction ACTs to converge on exact-token agreement.
+Each drift correction was its own bounded ACT; without it,
+the v1 checker would block every commit.
+
+This is precisely the duplicate-authority drift Factory v2
+forbids.

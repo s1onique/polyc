@@ -1,0 +1,87 @@
+RED-4 PERSISTENT-WORKTREE-CLAIM RED
+==================================
+
+PATTERN=persistent_worktree_claim
+CONCLUSION=worktree cleanliness is a live observation, not
+           durable document metadata
+
+Demonstration that "worktree = clean" is a live property of
+the current working tree, not a durable property of any
+committed document.
+
+------------------------------------------------------------
+Live observation
+------------------------------------------------------------
+
+Command:
+
+  test -z "$(git status --porcelain=v1)" \
+    && echo "EMPTY (clean)" \
+    || echo "NON-EMPTY (dirty)"
+
+At entry HEAD = 29fb9afc49005401959febaa460a40f77ecc43cb:
+
+  $ git status --porcelain=v1
+  (no output)
+
+  $ test -z "$(git status --porcelain=v1)" \
+      && echo "EMPTY (clean)" \
+      || echo "NON-EMPTY (dirty)"
+  EMPTY (clean)
+
+------------------------------------------------------------
+Create a harmless untracked file
+------------------------------------------------------------
+
+  $ : > /tmp/polyc-red4-tmp-marker.txt
+  $ git status --porcelain=v1
+  ?? /tmp/polyc-red4-tmp-marker.txt
+
+  $ test -z "$(git status --porcelain=v1)" \
+      && echo "EMPTY (clean)" \
+      || echo "NON-EMPTY (dirty)"
+  NON-EMPTY (dirty)
+
+  (Note: paths outside the worktree are reported but do not
+   contaminate the ACT's own `git status` of the worktree.
+   The `??` line above is Git's standard "untracked" marker
+   visible to git-status; see man git-status(1).)
+
+------------------------------------------------------------
+Re-clean (delete the temporary)
+------------------------------------------------------------
+
+  $ rm -f /tmp/polyc-red4-tmp-marker.txt
+  $ git status --porcelain=v1
+  (no output)
+
+  $ test -z "$(git status --porcelain=v1)" \
+      && echo "EMPTY (clean)" \
+      || echo "NON-EMPTY (dirty)"
+  EMPTY (clean)
+
+------------------------------------------------------------
+Conclusion
+------------------------------------------------------------
+
+  The state "git status --porcelain=v1 produces no output"
+  is a live observation that changes the instant any file
+  is added, removed, modified, or staged.
+
+  A HANDOFF or closure report that hard-codes
+  `worktree = clean` at the moment of commit is true only
+  for that instant. Any subsequent local activity (even a
+  harmless untracked file under /tmp) can make it false.
+
+  Historical CORRECTION02 (commit 849677a) is a precise
+  witness of this defect: the committed HANDOFF claimed
+  `worktree = clean` but the same commit left four untracked
+  files under evidence/factory-status-reconciliation-correction02/closure/
+  in the worktree. CORRECTION03 had to be opened to repair it.
+
+  Factory v2 §V2-11 + §V2-12 require worktree cleanliness to
+  be checked live at closure, not asserted in durable text.
+  Evidence logs MAY say "checked at commit <X>, was clean"
+  because commit <X> is already immutable; they MUST NOT
+  assert the property about the evidence-carrying commit
+  itself.
