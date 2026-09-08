@@ -21,17 +21,30 @@ RED:        2d5b626 (CORRECTION01 RED - 4 P0 defects recorded)
 IMPL:       99a8531 (matrix + dispatch + harness wired + blank-EOF fix)
 DOCS:       0ac16f4 (HANDOFF + post-impl evidence)
 Wording:    9334073 (AC02 F12-honest 3-commit cap fixup)
-HEAD:       9334073
+Disclosure: fb94348 (topology honest disclosure after wording commit
+                    introduced further topology)
+HEAD:       fb94348
 
-Total commits this ACT: 4 (RED + IMPL + DOCS + wording). The wording
-fixup is an honest disclosure of the actual topology after the DOCS
-commit, not retroactive regrouping (F14). It exists because AC02
-was authored to claim "1 prod + 1 docs/evidence = 2 commits" but
-the RED + IMPL + DOCS pattern (3 commits) was actually shipped;
-the wording commit documents the discrepancy rather than hiding it.
+Total commits this ACT: 5 (RED + IMPL + DOCS + wording + disclosure).
 
-Per F12 small truthful commits: each commit corresponds to a
-discrete proof step (RED, IMPL, DOCS, AC02 wording update).
+HALT_TOPOLOGY_RECORDED: this ACT has produced 5 commits, exceeding
+both the original CORE01 §10 cap (3) and AC11 cap (2). The reviewer
+identified CORE01's 5-commit topology as P0-2. CORRECTION01's
+intent was 3 commits (RED + IMPL + DOCS) per F12 small truthful
+commits. The 4th (wording) and 5th (disclosure) commits are an
+honest record of the actual topology AFTER the DOCS commit was
+authored with a "2 commits" claim that proved inaccurate.
+
+Per F4 (HALT is a successful execution outcome): this ACT halts
+further topology churn here. The actual state is:
+  - 5 commits CORRECTION01 (over the 3-cap);
+  - 4 P0 defects of CORE01 closed;
+  - 16/16 llvm-spike-test PASS.
+
+Per F14 (current truth may invalidate history): the discrepancy
+between CORRECTION01's declared cap and its actual commit count
+is itself a reviewer-visible record. Future CORE01-classification
+ACTS should reproduce the F12 ideal (RED + IMPL + DOCS only).
 
 ROOT CAUSE
 ----------
