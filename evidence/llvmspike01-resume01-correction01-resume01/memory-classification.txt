@@ -1,0 +1,103 @@
+=== ACT-POLYC-LLVM-SPIKE01-RESUME01-CORRECTION01-RESUME01 ===
+=== Memory-Op Classification at HEAD bde6045 ===
+
+Method: For each authorized fixture, locate every alloca/store/load
+in the emitted .ll and trace it back to the corresponding IR_STORE
+or IR_LOAD in the neutral IR (--dump-ir).
+
+FIXTURE: 04_cmp_branch.HC (Max(a, b))
+IR shape (post-basic-opts):
+    bb1: store %l2, %p1   (local a := param 1)
+    bb1: store %l4, %p3   (local b := param 3)
+    bb1: alloca %t5, 8    (return-slot alloc)
+    bb1: cmp_gt %t6, %p1, %p3   (compares via params, not locals)
+    bb1: br   %t6, bb3, bb4
+    bb3: store %t5, %l2   (ret slot := a)
+    bb3: jmp  bb2
+    bb4: store %t5, %l4   (ret slot := b)
+    bb4: jmp  bb2
+    bb2: load %t7, %t5    (ret := slot)
+    bb2: ret  %t7
+
+LLVM-emitted (verbatim):
+    bb1:
+      %2 = alloca i64, align 8       <-- pre-allocated for %l2
+      %3 = alloca i64, align 8       <-- pre-allocated for %l4
+      store i64 %0, ptr %2           <-- corresponds to store %l2, %p1
+      store i64 %1, ptr %3           <-- corresponds to store %l4, %p3
+      %4 = icmp sgt i64 %0, %1       <-- uses params directly!
+      br i1 %4, label %bb3, label %bb4
+    bb3:
+      %5 = load i64, ptr %2          <-- load %l2 for ret slot
+      ret i64 %5                     <-- (collapse absorbs ret slot)
+    bb4:
+      %6 = load i64, ptr %3          <-- load %l4 for ret slot
+      ret i64 %6
+
+CLASSIFICATION:
+    %2 alloca  -> PARAM_COPY (local for param %p1)
+    %3 alloca  -> PARAM_COPY (local for param %p3)
+    store %0 -> %2  -> PARAM_COPY
+    store %1 -> %3  -> PARAM_COPY
+    load %2 -> %5    -> PARAM_COPY (consumed by ret)
+    load %3 -> %6    -> PARAM_COPY (consumed by ret)
+
+The return-slot pattern (store %t5, v; jmp; load %t5; ret) is
+COLLAPSED: bb3/bb4 emit `ret <param>` directly via the existing
+collapse-elimination (src/llvm-backend.c:llDetectCollapsibleReturn).
+So the only memory ops that remain are PARAM_COPY.
+
+FIXTURE: 05_call.HC (Inc + Caller)
+IR shape for Caller (post-basic-opts):
+    bb3: store %l7, %p6   (local a := param 1)
+    bb3: alloca %t8, 8    (ret slot)
+    bb3: arg  %l7         (call arg)
+    bb3: call %t9, Inc
+    bb3: ret  %t9
+
+LLVM-emitted:
+    %12 = alloca i64, align 8    <-- pre-allocated for %l7
+    store i64 %0, ptr %12        <-- PARAM_COPY
+    ...
+    ret i64 %13                  <-- call result, SSA
+
+CLASSIFICATION:
+    %12 alloca  -> PARAM_COPY (local for param %p6)
+    store %0 -> %12 -> PARAM_COPY
+
+The call's argument (%l7) is read via llvmGet at the call site,
+which now maps %l7 to %12 (the alloca). The LLVM emission should
+read %l7 directly as the param %0 (SSA), not via the alloca.
+
+FIXTURE: red_pred_*.HC (six signed predicates)
+Same pattern as 04_cmp_branch.HC — two param-copy locals + return
+slot (collapsed). All 2 alloca / 2 store / 2 load are PARAM_COPY.
+
+CLASSES (per ACT §17):
+    PARAM_COPY: 04_cmp_branch (4 ops), 05_call (2 ops),
+                red_pred_* (6 each x 6 = 36 ops)
+    LOCAL_SINGLE_DEF: 0
+    LOCAL_MULTI_DEF: 0
+    RETURN_COLLAPSE_SLOT: 0 (collapsed)
+    ADDRESS_TAKEN: 0
+    CROSS_BLOCK_MERGE: 0
+    OTHER: 0
+
+SUMMARY:
+    All observed memory ops are PARAM_COPY.
+    No local has multiple reaching definitions.
+    No local crosses blocks.
+    No address is taken.
+    No return-slot survives collapse.
+    No PHI is required.
+
+REACHABILITY:
+    SUBSET_REACHABLE=YES (all PARAM_COPY patterns can be replaced
+    by direct SSA aliasing: local -> LLVMValueRef of the underlying
+    param, then never emit load/store/alloca for that local).
+
+EXPECTED FIXTURE 01_const, 02_add, 03_sub_mul, red_local_alloca_emitted:
+    0 memory ops each.
+    These are baseline-PASS fixtures; the SSA representation
+    they exercise either uses constants (no alloca needed) or
+    gets folded by the existing collapse-elimination.

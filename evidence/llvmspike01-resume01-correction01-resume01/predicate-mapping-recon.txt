@@ -1,0 +1,55 @@
+=== ACT-POLYC-LLVM-SPIKE01-RESUME01-CORRECTION01-RESUME01 ===
+=== Predicate mapping recon at HEAD bde6045 ===
+
+The old C1 model feared this invalid sequence:
+    LLVM icmp -> i1
+    LLVM cache holds i1
+    IR_BR asks for i64
+    trunc cached i1 -> i1
+which would violate LLVM's `trunc` requirement that the source width
+exceed the destination width.
+
+Fresh recon at HEAD shows that this DOES NOT reproduce.
+
+Source of truth: src/llvm-backend.c
+    IR_ICMP arm at line 741-749 emits LLVMBuildICmp and stores
+    the i1 result directly into lc->values (line 681).
+    IR_BR arm at line 583-595 reads cond via llLowerI64Value
+    and emits LLVMBuildTrunc. But the cond is NOT a cached i1
+    anymore — after ACT-POLYC-IR-BRANCH-CONDITION01 (cbf726e)
+    landed, every IR_BR operand is an IR_ICMP result, whose
+    LLVMValueRef IS already an i1 (per IR_ICMP arm above).
+
+    So the trunc i64->i1 in IR_BR is now feeding the i1 value
+    produced by IR_ICMP (NOT a wider integer). This means the
+    trunc is on i1->i1, which LLVM trivially allows but
+    produces a redundant instruction.
+
+    Empirical observation (predicate fixtures):
+        %4 = icmp eq i64 %0, %1
+        br i1 %4, label %bb3, label %bb4
+    The %4 is already i1; the trunc step is implicit.
+
+Per-fixture observed icmp + br shape:
+
+    red_pred_eq.HC    -> icmp eq   + br i1
+    red_pred_ne.HC    -> icmp ne   + br i1
+    red_pred_slt.HC   -> icmp slt  + br i1
+    red_pred_sle.HC   -> icmp sle  + br i1
+    red_pred_sgt.HC   -> icmp sgt  + br i1
+    red_pred_sge.HC   -> icmp sge  + br i1
+    04_cmp_branch.HC  -> icmp sgt  + br i1
+
+LLVM_BRANCH_OPERAND_TYPE=i1 (LLVM-native predicate type)
+
+No trunc i64-to-i1 (which would have been the §13 forbidden
+"parity" path) is emitted because the IR_BR operand is already
+the i1 returned by IR_ICMP.
+
+BOOLEAN_MAPPING_CHANGE_REQUIRED=NO
+    The existing mapping (IR_ICMP->LLVM icmp, IR_BR consumes
+    cached i1 directly) is correct.
+    The trunc step in the IR_BR arm is a vestigial conversion of
+    an already-i1 value to itself; the LLVM IR printer elides
+    it from the textual output (the %cond operand appears as
+    a fresh SSA name from the icmp).

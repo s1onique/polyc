@@ -1,0 +1,40 @@
+=== Phase 0 recon: LLVM dispatch path at HEAD bde6045a ===
+
+LLVM_DISPATCH_FUNCTION=src/main.c:539 (the if (args.emit_llvm) branch)
+LLVM_DISPATCH_ENTRY=src/main.c:539-580
+LLVM_NEUTRAL_PREP_FUNCTION=irLowerProgram (src/ir.c:3380)
+LLVM_DISPATCH_CALLS_LLVMEMITPROGRAM=llvmEmitProgram(prog, cc, ...) at src/main.c:571
+LLVM_CALLS_NATIVE_PREP=NO
+
+Evidence:
+- src/main.c:561 calls irLowerProgram(cc) directly. There is no
+  irFunctionPrepForCodeGen, irAssignAbiParamLocations, or
+  irOptPinResultReg invocation in the LLVM dispatch path.
+- The native backends' shared pipeline (src/x86_64.c:2560
+  x86_64GenerateFunction + src/aarch64.c:2211 aarch64GenerateFunction)
+  is NOT reached when --emit-llvm is set; main.c:579 goto success
+  bypasses the entire native dispatch.
+
+LLVM_BACKEND_FILE=src/llvm-backend.c
+LLVM_BACKEND_FUNCTIONS=
+    llTypeSupported                src/llvm-backend.c:327
+    llType                         src/llvm-backend.c:331
+    llPreallocateLocals            src/llvm-backend.c:376
+    llLowerI64Value                src/llvm-backend.c:482  (approx)
+    llCmpKindToLLVMPred            src/llvm-backend.c:502
+    llLowerBlock                   src/llvm-backend.c:526
+    llLowerInstr                   src/llvm-backend.c:689
+    llFunction                     src/llvm-backend.c:807
+    llvmEmitProgram                src/llvm-backend.c:859
+
+IR_CMP_BR_LLVM_CONSUMER=NO
+    The normal lowering arm for IR_CMP_BR was REMOVED. It is now
+    replaced by an explicit boundary-violation diagnostic at
+    src/llvm-backend.c:610-637 (per CORRECTION01 / IR-BOUNDARY03).
+
+IR_CMP_BR_PRODUCER=irOptPinResultReg (src/ir-optimise.c:1079)
+    Located in the codegen-prep path, called only from
+    irFunctionPrepForCodeGen. The LLVM dispatch does not call this
+    path. So IR_CMP_BR never enters the LLVM backend.
+
+VERDICT: BOUNDARY_CHANGE_REQUIRED=NO (already correct in HEAD)
