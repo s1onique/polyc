@@ -1,0 +1,76 @@
+ * IR opcode                       classification       diagnostic
+ * ------------------------------- -------------------- --------------------------------
+ * IR_NOP                          UNREACHABLE_ON_LLVM  (irRemoveAllNops strips every
+ *                                                    IR_NOP node before emission; the generic
+ *                                                    default arm stays as a regression safety net)
+ * IR_ALLOCA                       REJECTED             LLVM_BACKEND_UNSUPPORTED_MEMORY
+ * IR_LOAD                         SHAPE-DEPENDENT       (see IR_LOAD below)
+ * IR_STORE                        SHAPE-DEPENDENT       (see IR_STORE below)
+ *
+ * IR_STORE per shape:
+ *   local, single reaching store   SUPPORTED            (binds local -> scalar SSA)
+ *   return-slot                    FOLDED               (collapse-elimination)
+ *   local, multiple reaching defs  REJECTED             LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL
+ *   non-local dst                  REJECTED             LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL
+ *   missing dst                    REJECTED             LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL
+ *
+ * IR_LOAD per shape:
+ *   local with single reaching store SUPPORTED          (resolves to bound SSA value)
+ *   local with multiple reaching    REJECTED            LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL
+ *   unbound local (no reaching)    REJECTED            LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL
+ *
+ * IR_LOAD_DEREF                   REJECTED             LLVM_BACKEND_UNSUPPORTED_POINTER
+ * IR_STORE_DEREF                  REJECTED             LLVM_BACKEND_UNSUPPORTED_POINTER
+ * IR_RMW_DEREF                    REJECTED             LLVM_BACKEND_UNSUPPORTED_POINTER
+ * IR_LEA                          REJECTED             LLVM_BACKEND_UNSUPPORTED_POINTER
+ * IR_GEP                          REJECTED             LLVM_BACKEND_UNSUPPORTED_AGGREGATE
+ * IR_IADD                         SUPPORTED            -
+ * IR_ISUB                         SUPPORTED            -
+ * IR_IMUL                         SUPPORTED            -
+ * IR_IDIV                         REJECTED             LLVM_BACKEND_UNSUPPORTED_INT_DIVISION
+ * IR_UDIV                         REJECTED             LLVM_BACKEND_UNSUPPORTED_INT_DIVISION
+ * IR_IREM                         REJECTED             LLVM_BACKEND_UNSUPPORTED_INT_REMAINDER
+ * IR_UREM                         REJECTED             LLVM_BACKEND_UNSUPPORTED_INT_REMAINDER
+ * IR_INEG                         REJECTED             LLVM_BACKEND_UNSUPPORTED_INT_NEGATION
+ * IR_FADD                         REJECTED             LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH
+ * IR_FSUB                         REJECTED             LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH
+ * IR_FMUL                         REJECTED             LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH
+ * IR_FDIV                         REJECTED             LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH
+ * IR_FNEG                         REJECTED             LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH
+ * IR_AND                          REJECTED             LLVM_BACKEND_UNSUPPORTED_INT_BITWISE
+ * IR_OR                           REJECTED             LLVM_BACKEND_UNSUPPORTED_INT_BITWISE
+ * IR_XOR                          REJECTED             LLVM_BACKEND_UNSUPPORTED_INT_BITWISE
+ * IR_SHL                          REJECTED             LLVM_BACKEND_UNSUPPORTED_INT_SHIFT
+ * IR_SHR                          REJECTED             LLVM_BACKEND_UNSUPPORTED_INT_SHIFT
+ * IR_SAR                          REJECTED             LLVM_BACKEND_UNSUPPORTED_INT_SHIFT
+ * IR_NOT                          REJECTED             LLVM_BACKEND_UNSUPPORTED_INT_BITWISE
+ * IR_ICMP                         SUPPORTED            (signed eq/ne/lt/le/gt/ge)
+ * IR_FCMP                         REJECTED             LLVM_BACKEND_UNSUPPORTED_FLOAT_CMP
+ * IR_TRUNC                        REJECTED             LLVM_BACKEND_UNSUPPORTED_CONVERSION
+ * IR_ZEXT                         REJECTED             LLVM_BACKEND_UNSUPPORTED_CONVERSION
+ * IR_SEXT                         REJECTED             LLVM_BACKEND_UNSUPPORTED_CONVERSION
+ * IR_FPTRUNC                      REJECTED             LLVM_BACKEND_UNSUPPORTED_CONVERSION
+ * IR_FPEXT                        REJECTED             LLVM_BACKEND_UNSUPPORTED_CONVERSION
+ * IR_FPTOUI                       REJECTED             LLVM_BACKEND_UNSUPPORTED_CONVERSION
+ * IR_FPTOSI                       REJECTED             LLVM_BACKEND_UNSUPPORTED_CONVERSION
+ * IR_UITOFP                       REJECTED             LLVM_BACKEND_UNSUPPORTED_CONVERSION
+ * IR_SITOFP                       REJECTED             LLVM_BACKEND_UNSUPPORTED_CONVERSION
+ * IR_PTRTOINT                     REJECTED             LLVM_BACKEND_UNSUPPORTED_CONVERSION
+ * IR_INTTOPTR                     REJECTED             LLVM_BACKEND_UNSUPPORTED_CONVERSION
+ * IR_BITCAST                      REJECTED             LLVM_BACKEND_UNSUPPORTED_BITCAST
+ * IR_RET                          SUPPORTED            (i64 only; via collapse-elimination)
+ * IR_BR                           SUPPORTED            (normal LLVM-path conditional branch;
+ *                                                    cond is the dst of the preceding IR_ICMP,
+ *                                                    so it is physically i1; the i64→i1 trunc
+ *                                                    arm is a defensive invariant guard and is
+ *                                                    not reachable from current neutral IR)
+ * IR_CMP_BR                       REJECTED             (boundary violation - native fusion)
+ * IR_JMP                          SUPPORTED            -
+ * IR_SWITCH                       REJECTED             LLVM_BACKEND_UNSUPPORTED_SWITCH
+ * IR_CALL                         SUPPORTED            (i64 return only)
+ * IR_PHI                          REJECTED             LLVM_BACKEND_UNSUPPORTED_PHI
+ * IR_LABEL                        UNREACHABLE_ON_LLVM  (reserved-but-unused per
+ *                                                    src/ir-types.h:155; never created by
+ *                                                    the canonical lowerer; generic default
+ *                                                    arm stays as a regression safety net)
+ * IR_SELECT                       REJECTED             LLVM_BACKEND_UNSUPPORTED_SELECT
