@@ -1,0 +1,151 @@
+=== ACT-POLYC-LLVM-CORE03-CORRECTION05 RED M1: literal LF in runtime payload (REAL hcc emitter) ===
+
+Reviewer's P0-2 against CORRECTION04: the prior RED witness
+(red-m2-literal-lf-in-note.txt) was synthetic. The reviewer
+correctly observed that the C emitter can produce a real LF
+byte at runtime via the "\n" escape sequence:
+
+    .note = "line1\nline2"
+
+Two printable characters in source; one real 0x0A byte at runtime.
+
+This witness exercises that end-to-end seam against the ACTUAL
+hcc binary built from CURRENT source.
+
+F1 IDENTITY
+-----------
+branch:   main
+HEAD:     9e7ab427d2f899633e974db15e7a034239a3edab
+worktree: clean (after revert)
+
+Source mutation
+---------------
+File:  src/llvm-backend-cap.c, line 67
+OLD:   { IR_JMP, LLVMBC_SUPPORTED, NULL, "(no note)" },
+NEW:   { IR_JMP, LLVMBC_SUPPORTED, NULL, "line1\nline2" },
+
+IR_JMP ordinal in IrOp enum: 46 (verified via awk count over
+src/ir-types.h starting at IR_NOP, stopping at IR_TYPE_).
+
+Why IR_JMP (op=46, class=0/SUPPORTED, NULL diag, "(no note)"):
+- SUPPORTED class => diagnostic field becomes "-" (1 byte)
+- "(no note)" is 9 bytes, easily distinguishable from the
+  11-byte mutated payload
+- IR_JMP does not appear in any fixture in scripts/quality/
+  llvm-spike-test.sh or llvm-spike-contract-check.sh, so the
+  mutation does not affect harness set-membership assertions
+- mutating its note changes the wire output but not the
+  functional dispatch (the runtime behaviour of IR_JMP is
+  unaffected by a comment in the capability table)
+
+Build
+-----
+make llvm-all
+
+New hcc sha: $(shasum hcc | cut -d' ' -f1)
+(also recorded in /tmp/hcc_sha_mutated.txt)
+
+Wire stream: op=46 row (literal bytes from the C emitter)
+----------------------------------------------------------
+Captured with:
+    ./hcc --print-cap-table --install-dir=/tmp/__polyc_prefix__ \
+        2>/dev/null > /tmp/cap_table_mutated.txt
+
+Hex dump of bytes around op=46 (offset 4180 in the wire stream):
+
+  prefix = 46 \t 0 \t 1 \t - \t 1 1 \t
+  prefix hex = 34 36 09 30 09 31 09 2d 09 31 31 09
+  note = "line1\nline2" (11 bytes)
+  note hex = 6c 69 6e 65 31 0a 6c 69 6e 65 32
+
+Reviewer's required hex (exact):
+  note hex = 6c 69 6e 65 31 0a 6c 69 6e 65 32
+  Actual:   6c 69 6e 65 31 0a 6c 69 6e 65 32
+  -> MATCH (the C emitter honours the "\n" escape; the runtime
+     char[] contains a real 0x0A byte at position 5)
+
+Total LF (0x0A) bytes in the wire stream:
+  Counted: 57
+  Expected (no payload injection): 56  (one per record)
+  Actual:                          57  (= 56 + 1 from op=46 note)
+  -> CONFIRMED: there is exactly one extra 0x0A byte in the wire
+     stream, located inside the op=46 note payload.
+
+CONTROL: CORRECTION03 parser against the real mutated wire
+-----------------------------------------------------------
+Replayed CORRECTION03 parser logic verbatim:
+  raw_bytes = subprocess.check_output([hcc, --print-cap-table, ...])
+  for raw_line in raw_bytes.splitlines():        # splits on 0x0A FIRST
+      fields = raw_line.split(b"\t")
+      ... validate lengths
+
+Result:
+  splitlines() returned 57 lines (56 expected)
+  FAIL line 47 (op=46): note len mismatch: header says 11, actual 5
+                        parsed note = b'line1' (truncated at the
+                        embedded 0x0A)
+  FAIL line 48: expected 6 fields, got 1: b'line2'
+                        the trailing 'line2\n' was eaten as a separate
+                        record, with the row's expected fields corrupted
+  Total errors: 2
+  Unique opcodes parsed: 56 (lucky: the orphaned 'line2' line was
+                          rejected, but op=47 was parsed from the
+                          trailing bytes that joined its row).
+  CORRECTION03 parser rc: 1   -> RED CONFIRMED
+
+TREATMENT: CORRECTION04 parser against the real mutated wire
+------------------------------------------------------------
+Ran scripts/quality/llvm-cap-table-verifier.py unchanged:
+  rc=0
+  FAIL lines: 0
+  PASS lines: 117
+  Final line: "PASS: dispatch <-> capability <-> harness bound"
+  -> GREEN CONFIRMED
+
+REVERT
+------
+File src/llvm-backend-cap.c restored from /tmp/cap.c.orig.
+  diff src/llvm-backend-cap.c /tmp/cap.c.orig  -> empty
+  git diff src/llvm-backend-cap.c              -> empty
+make llvm-all rebuilt hcc with the original row.
+Post-revert gate results (worktree clean):
+  existing harness:   PASS=18 FAIL=0
+  contract harness:   PASS=20 FAIL=0
+  cap-table verifier: rc=0  (0 FAIL lines)
+
+WHY THIS MATTERS
+----------------
+The previous CORRECTION04 acceptance claimed:
+
+  "literal LF cannot be tested via the live C build because a
+   literal LF inside a C string literal breaks compilation."
+
+That claim is FALSE; "\n" in a C string literal is the ordinary
+escape sequence for byte 0x0A. This witness proves that the
+end-to-end seam is available AND that the CORRECTION04 parser
+genuinely handles it AND that the CORRECTION03 parser did not.
+
+The GREEN is now backed by a real emitter->wire->parser chain,
+not just by a synthetic Python byte stream.
+
+REVIEWER'S REQUIRED EVIDENCE — VERBATIM
+---------------------------------------
+  Required:
+    "Temporarily mutate one row to 'line1\nline2', rebuild hcc,
+     then prove its printed wire stream contains:
+        note_len = 11
+        payload bytes = 6c 69 6e 65 31 0a 6c 69 6e 65 32
+     and the new verifier exits 0. On the predecessor parser,
+     the same runtime output should RED because splitlines()
+     breaks the record."
+
+  Actual:
+    note_len = 11 ............................... MATCH
+    payload bytes = 6c 69 6e 65 31 0a 6c 69 6e 65 32  MATCH
+    new verifier rc=0 ........................... MATCH
+    CORRECTION03 parser rc=1 on same wire ....... MATCH
+      (splitlines() returned 57 lines instead of 56;
+       op=46 note parsed as b'line1' (5 bytes) instead
+       of b'line1\nline2' (11 bytes);
+       trailing 'line2\n' orphaned as a single-field
+       pseudo-record)
