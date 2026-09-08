@@ -159,3 +159,73 @@ Future ACTs may reference earlier handoffs verbatim. That only works
 if the structure is stable.
 
 Keep it stable.
+
+
+---
+
+## Factory v2 HANDOFF template (additive)
+
+For ACTs opened after
+`ACT-POLYC-FACTORY-GIT-METADATA-SIMPLIFY01` closes, use this
+template. The v1 template above remains binding for the
+grandfathered v1 managed universe and historical ACTs.
+
+The Factory v2 HANDOFF is descriptive only. It does NOT
+carry an authoritative verdict field; the verdict lives on
+the ACT's CLOSE commit `ACT-Verdict` trailer.
+
+```markdown
+# HANDOFF -- <ACT-ID>
+
+Factory-Version: 2
+
+## Result
+
+<short human-readable result>
+
+Closure verdict is authoritative in the `ACT-Verdict`
+trailer of the ACT's CLOSE commit.
+
+## What changed
+
+- ...
+
+## Evidence
+
+- ...
+
+## Production delta
+
+- ...
+
+## Residue
+
+- P1 ...
+- P2 ...
+
+## Recommended next ACT
+
+<ACT-ID>
+```
+
+### Forbidden fields
+
+The Factory v2 HANDOFF MUST NOT carry:
+
+* `Status:`
+* `VERDICT:`
+* `FINAL_HEAD:`
+* `CLOSURE_HEAD:`
+* `DOCS_HEAD:`
+* `IMPLEMENTATION_HEAD:`
+* `worktree=clean` (live observation, not durable text)
+
+### Reviewer procedure
+
+```sh
+sh scripts/quality/factory-v2-range-check.sh <ACT-ID> HEAD
+git show --stat <close>
+git log <entry>..<close> --format=full
+git status --porcelain=v1
+git diff --check <entry>..<close>
+```
