@@ -200,3 +200,101 @@ Otherwise prefer this template.
 
 Shorter ACTs are easier to read, easier to review, and easier to
 amend.
+
+
+---
+
+## Factory v2 ACT template (additive)
+
+For ACTs opened after
+`ACT-POLYC-FACTORY-GIT-METADATA-SIMPLIFY01` closes, use this
+template. The v1 template above remains binding for the
+grandfathered v1 managed universe and historical ACTs.
+
+```markdown
+# <ACT-ID>
+
+Factory-Version: 2
+Lifecycle: AUTHORIZATION_ARTIFACT
+
+**Class:** IMPLEMENTATION | RECON | TOOLING | DOCUMENTATION | ...
+
+**Repository:** https://github.com/s1onique/polyc
+
+**Branch:** main
+
+**Predecessor:** ACT-... (optional; if applicable)
+
+**Production semantic changes:** FORBIDDEN | AUTHORIZED (scoped)
+
+**IR / ABI / LLVM authorization:** NONE | SCOPED
+
+---
+
+## Mission
+
+One paragraph. State the bounded objective in observable
+terms.
+
+## Scope
+
+### allowed
+
+- ...
+
+### forbidden
+
+- ...
+
+## Principal RED
+
+Describe the real failing witness before any production
+change. State where it lives and how to reproduce it.
+
+## Acceptance criteria
+
+List AC01, AC02, ... with concrete commands and expected
+results.
+
+## HALT conditions
+
+List the HALT_* tokens that apply to this ACT.
+
+## Residue
+
+Pre-declare known side observations (P0/P1/P2) where
+possible.
+
+## Execution metadata
+
+Execution identity is stored in Git commit trailers.
+
+Every ACT commit:
+    ACT: <ACT-ID>
+    ACT-Phase: RED|IMPL|EVIDENCE|CLOSE
+
+CLOSE additionally:
+    ACT-Verdict: <exact verdict>
+
+The original authorization artifact remains historically
+stable; there is no OPEN -> PASS / HALT mutation. The
+ACT document is NOT modified at closure.
+
+## Closure handoff
+
+Use the Factory v2 HANDOFF template at
+`docs/factory/HANDOFF-TEMPLATE.md` (Factory v2 section).
+Reviewers run:
+
+```sh
+sh scripts/quality/factory-v2-range-check.sh <ACT-ID> HEAD
+```
+```
+
+### Notes
+
+* Do NOT pin SHAs into the ACT body.
+* Do NOT prescribe a numeric commit cap. Bounded by scope,
+  contiguity, honest classification, individual meaning.
+* The ACT document is not updated at closure. Closure
+  happens via the CLOSE commit's `ACT-Verdict` trailer.

@@ -406,3 +406,42 @@ Is the inconvenience protecting something important?
 ```
 
 Often the answer is yes.
+
+
+---
+
+## 21. Factory v2 mechanics (additive)
+
+For ACTs opened after
+`ACT-POLYC-FACTORY-GIT-METADATA-SIMPLIFY01` closes, the
+following additive mechanics apply. They do not replace or
+contradict sections 1–20; they formalize what the long-form
+ACTs already do implicitly (commit trailers, no SHA
+self-pinning, no duplicate verdict authority).
+
+* Git owns execution identity. No Factory-v2 ACT, HANDOFF,
+  closure report, or evidence file may claim the SHA of the
+  commit that contains the claim.
+* ACT documents are authorization artifacts. They do not
+  mutate from OPEN to PASS / HALT after execution. The
+  original authorization artifact remains historically
+  stable.
+* Every ACT commit carries `ACT:` and `ACT-Phase:` trailers
+  (RED / IMPL / EVIDENCE / CLOSE). CLOSE additionally
+  carries `ACT-Verdict:` matching the verdict grammar.
+* The closure verdict exists ONLY on the CLOSE commit. A
+  HANDOFF must not carry an authoritative verdict field.
+* ACT range identity is derived (FIRST, ENTRY, CLOSE,
+  COMMITS, VERDICT), never pre-baked into Markdown.
+* One ACT is one contiguous Git range. ACTs may not
+  interleave on the same linear branch.
+* No numeric commit-count cap. Commits must be bounded by
+  ACT scope, contiguous, honestly classified, and
+  individually meaningful.
+* Historical Factory v1 ACTs and HANDOFFs are grandfathered
+  (F14). No migration; no rewrites; no retroactive
+  trailers. The legacy closure-status oracle remains
+  responsible for its bounded v1 managed universe.
+
+The canonical binding detail is at
+[`docs/factory/GIT-METADATA.md`](GIT-METADATA.md).

@@ -1,0 +1,39 @@
+#!/bin/sh
+# .githooks/commit-msg
+#
+# Thin wrapper that delegates to
+# scripts/quality/factory-v2-commit-msg-check.sh.
+#
+# Per ACT-POLYC-FACTORY-GIT-METADATA-SIMPLIFY01:
+#
+#   - The hook is opt-in by trailer presence. A commit
+#     message with no `ACT:` trailer is permitted (rc=0).
+#   - When an `ACT:` trailer is present, the validator
+#     enforces the trailer grammar (see
+#     docs/factory/GIT-METADATA.md).
+#
+# Git invokes this hook with one positional argument: the
+# path to the proposed commit message file.
+
+set -eu
+
+MSG_FILE="$1"
+
+if [ -z "$MSG_FILE" ] || [ ! -f "$MSG_FILE" ]; then
+    echo "POLYC_COMMIT_MSG_HOOK=ERROR reason='no commit message file'"
+    exit 2
+fi
+
+# Locate the validator relative to this hook. The hook lives
+# in .githooks/ at the repo root; the validator lives in
+# scripts/quality/.
+HOOK_DIR=$(cd "$(dirname "$0")" && pwd)
+REPO_ROOT=$(cd "$HOOK_DIR/.." && pwd)
+VALIDATOR="$REPO_ROOT/scripts/quality/factory-v2-commit-msg-check.sh"
+
+if [ ! -x "$VALIDATOR" ]; then
+    echo "POLYC_COMMIT_MSG_HOOK=ERROR reason='validator not executable: $VALIDATOR'"
+    exit 2
+fi
+
+exec "$VALIDATOR" "$MSG_FILE"

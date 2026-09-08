@@ -285,3 +285,29 @@ shortcuts. The Factory rejects that pressure.
 - It does not interpret broad human gestures as broad authorization.
 
 The bounded ACT is the contract. Everything else is residue.
+
+
+---
+
+## Factory v2 lifecycle (additive)
+
+For ACTs opened after
+`ACT-POLYC-FACTORY-GIT-METADATA-SIMPLIFY01` closes, the
+lifecycle above remains valid. The following
+mechanics-only changes apply:
+
+* The HANDOFF stage remains the last workflow stage, but
+  for Factory v2 the HANDOFF is descriptive only. The
+  closure verdict is authoritative in the `ACT-Verdict`
+  trailer of the ACT's CLOSE commit.
+* ACT documents are not mutated from OPEN to PASS / HALT.
+  Their `Status:` field is not authoritative. The original
+  ACT document is preserved as a historical authorization
+  artifact (F14).
+* The "DECISIONS" sub-tree below REVIEW/NEXT ACT remains;
+  however, the four-dimensional separation (human
+  authorization / agent capability / technical evidence /
+  review opinion) is unchanged.
+
+The canonical v2 detail is at
+[`docs/factory/GIT-METADATA.md`](GIT-METADATA.md).

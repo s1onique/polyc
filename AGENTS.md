@@ -344,3 +344,42 @@ Factory:
 
 Current volatile state (test counts, toolchain availability) belongs in
 `docs/ROADMAP.md` and the active ACT, not in this contract.
+
+
+---
+
+## Factory version pointer
+
+The operating laws in this file (F1–F15) remain binding for
+all Factory work.
+
+For ACTs opened after
+`ACT-POLYC-FACTORY-GIT-METADATA-SIMPLIFY01` closes, an
+**additive** layer of process mechanics applies. That layer
+is documented canonically in:
+
+* [`docs/factory/GIT-METADATA.md`](docs/factory/GIT-METADATA.md)
+
+The layer changes only the SHA / verdict / lifecycle
+bookkeeping mechanics:
+
+* Git owns execution identity and topology (no Markdown SHA
+  table may claim the SHA of the commit containing it).
+* ACT documents own authorization only (no OPEN -> PASS
+  mutation, no mutable authoritative `Status:` field).
+* Commit trailers (`ACT:`, `ACT-Phase:`, `ACT-Verdict:`)
+  own execution phase and closure verdict.
+* HANDOFF documents are descriptive only; the verdict
+  authority is the CLOSE commit's `ACT-Verdict` trailer.
+* There is no numeric commit-count cap; ACTs are bounded
+  by scope, contiguity, honest classification, and
+  individual meaning.
+* Historical Factory v1 ACTs and HANDOFFs are
+  grandfathered (F14) and remain valid as evidence of
+  process evolution. The legacy status-reconciliation
+  oracle remains responsible for its bounded v1 managed
+  universe.
+
+The Factory v2 laws do not weaken F1–F15. RED-before-fix,
+HALT-as-outcome, scope discipline, evidence-over-prose, and
+historical-truth-preservation all persist.
