@@ -251,7 +251,19 @@ echo "=== cmp predicate matrix ==="
 # on every invocation. The directory is now redirected to THIS ACT's
 # evidence dir, prefixed `live-` to make it clear these transcripts
 # are regenerated on every harness run, NOT historical records.
-EVID_CORR="$REPO_ROOT/evidence/llvmspike01-resume01-correction01-resume01-correction01/live-red-transcripts"
+#
+# ACT-POLYC-LLVM-CORE04-RESUME01 C2 IMPL P0-1 conservation fix:
+# `$EVID_CORR` previously redirected to a CLOSED-ACT evidence dir
+# (`evidence/llvmspike01-resume01-correction01-resume01-correction01/
+# live-red-transcripts/`) and persisted `red-{1B,2,2b}.emit.stderr`
+# into it. Those tracked files became byte-different on every C2
+# harness invocation (the live stderr grew a CAPABILITY_COUNTERS
+# record). That violated F14 evidence conservation.
+# This ACT now redirects the live transcripts to its own evidence
+# dir (`evidence/llvm-core04-resume01/c2/live-red-transcripts/`).
+# The historical `live-red-transcripts/` dir in the closed ACT's
+# evidence tree is no longer touched by the harness.
+EVID_CORR="$REPO_ROOT/evidence/llvm-core04-resume01/c2/live-red-transcripts"
 mkdir -p "$EVID_CORR"
 
 # dump_ir_capture <src> <out_base>
@@ -543,7 +555,18 @@ echo "=== multi-def SSA-local rejection (CORRECTION01-CORRECTION01) ==="
 # It must NOT be written into any other ACT's evidence directory.
 # Historical C1 evidence has been restored byte-for-byte (see
 # $REPO_ROOT/evidence/llvmspike01-resume01-correction01-resume01-correction01/C1-RESTORATION.txt).
-EVID_CORR2="$REPO_ROOT/evidence/llvmspike01-resume01-correction01-resume01-correction01"
+#
+# ACT-POLYC-LLVM-CORE04-RESUME01 C2 IMPL P0-1 conservation fix:
+# The CORRECTION01 ACT closed with `red-multi_def.live.{stderr,summary}`
+# tracked under its evidence dir, and that dir was also the
+# destination for the harness's live-write. Each subsequent harness
+# run mutated those tracked files, violating F14 evidence
+# conservation. The harness now writes to
+# `evidence/llvm-core04-resume01/c2/red-multi_def/` (the CURRENT
+# ACT's evidence dir); the closed ACT's
+# `evidence/llvmspike01-resume01-correction01-resume01-correction01/red-multi_def/`
+# is no longer touched by the harness.
+EVID_CORR2="$REPO_ROOT/evidence/llvm-core04-resume01/c2"
 EVID_MULTIDEF="$EVID_CORR2/red-multi_def"
 mkdir -p "$EVID_MULTIDEF"
 

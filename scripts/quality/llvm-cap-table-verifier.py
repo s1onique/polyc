@@ -332,6 +332,90 @@ def _function_body(text, name):
     return text[start:i - 1]
 
 
+def _function_span(text, name):
+    """Return (body_start_offset, body_end_offset) of the body of
+    `static ... name(...)` in `text`, where offsets are absolute
+    file offsets (indices into `text`). Returns None if not found.
+
+    `body_start_offset` is the position of the first character inside
+    the opening brace. `body_end_offset` is the position of the
+    closing brace (exclusive).
+
+    ACT-POLYC-LLVM-CORE04-RESUME01 C2 IMPL P0-2: location-aware
+    rogue-arm checks need per-occurrence identity (function + offset),
+    not just opcode sets. This helper provides the offset half.
+    """
+    pat = re.compile(
+        r"static\s+\w[\w\s\*]*\b" + re.escape(name) + r"\s*\([^)]*\)\s*\{"
+    )
+    m = pat.search(text)
+    if not m:
+        return None
+    start = m.end()
+    depth = 1
+    i = start
+    while i < len(text) and depth > 0:
+        if text[i] == "{":
+            depth += 1
+        elif text[i] == "}":
+            depth -= 1
+        i += 1
+    return (start, i - 1)
+
+
+def _enclosing_function(text, offset):
+    """Return the function name whose body contains the absolute
+    file offset `offset`, or None if not inside any tracked
+    `static ... { ... }` function. Walks the function spans in
+    text and returns the smallest-enclosing function name.
+
+    Used by the location-aware rogue-arm check.
+    """
+    # Re-derive all function spans from text (slow O(n) per call,
+    # but only invoked in the small set of rogue-arm checks).
+    fn_pat = re.compile(
+        r"static\s+\w[\w\s\*]*\b([a-zA-Z_]\w*)\s*\([^)]*\)\s*\{"
+    )
+    best = None
+    best_size = None
+    for m in fn_pat.finditer(text):
+        fn_name = m.group(1)
+        span = _function_span(text, fn_name)
+        if span is None:
+            continue
+        s, e = span
+        if s <= offset < e:
+            size = e - s
+            if best is None or size < best_size:
+                best = fn_name
+                best_size = size
+    return best
+
+
+def _collect_if_arms(text, enum_ops):
+    """Walk every `if (ins->op == IR_X)` occurrence file-wide and
+    return a list of (op, function_name_or_None, file_offset) triples.
+
+    ACT-POLYC-LLVM-CORE04-RESUME01 C2 IMPL P0-2: occurrence-level
+    identity. Two arms with the same opcode but in different
+    functions (or the same function but different offsets) yield
+    different triples.
+
+    `enum_ops` filters out non-IrOp identifiers (e.g. IrCmpKind).
+    """
+    if_re = re.compile(
+        r"if\s*\(\s*ins->op\s*==\s*(IR_[A-Z_0-9]+)\s*\)"
+    )
+    out = []
+    for m in if_re.finditer(text):
+        op = m.group(1)
+        if op not in enum_ops:
+            continue
+        fn = _enclosing_function(text, m.start())
+        out.append((op, fn, m.start()))
+    return out
+
+
 def _is_dispatch_function_body(body):
     """Return True if the body contains a dispatch-shaped construct
     (`case IR_X:` arm OR `if (ins->op == IR_X)` short-circuit)."""
@@ -450,6 +534,17 @@ def get_dispatch_arms():
     virtue of NOT being called from llFunction().
     """
     text = read(SRC_BACKEND)
+    return _build_dispatch_arms_for_text(text)
+
+
+def _build_dispatch_arms_for_text(text):
+    """Internal: build the dispatch-arm model for an arbitrary
+    source text. Used by `get_dispatch_arms()` for the real source
+    AND by the strong-NC1 self-test for an in-memory augmented
+    source. The signature differs from `get_dispatch_arms()` only
+    in that it accepts text directly rather than reading
+    SRC_BACKEND.
+    """
     scope_fn_names = sorted(discover_dispatch_functions(text))
     if not scope_fn_names:
         scope_fn_names = []
@@ -473,21 +568,33 @@ def get_dispatch_arms():
     )
 
     for fn_name in scope_fn_names:
+        span = _function_span(text, fn_name)
         body = _function_body(text, fn_name)
-        if body is None:
+        if body is None or span is None:
             continue
+        body_start, _body_end = span
         for m in case_re.finditer(body):
             op = m.group(1)
             if op not in enum_ops:
                 continue  # predicate or other non-IrOp identifier
             case_in.add(op)
-            model.append({"op": op, "kind": "CASE", "function": fn_name})
+            model.append({
+                "op": op,
+                "kind": "CASE",
+                "function": fn_name,
+                "file_offset": body_start + m.start(),
+            })
         for m in if_re.finditer(body):
             op = m.group(1)
             if op not in enum_ops:
                 continue
             if_in.add(op)
-            model.append({"op": op, "kind": "IF_SHORT", "function": fn_name})
+            model.append({
+                "op": op,
+                "kind": "IF_SHORT",
+                "function": fn_name,
+                "file_offset": body_start + m.start(),
+            })
 
     for m in case_re.finditer(text):
         op = m.group(1)
@@ -860,9 +967,17 @@ def check_dispatch_scope_is_tight(dispatch):
          discovery scope is too narrow (a real dispatch arm lives
          in a helper that the call-graph did not reach).
 
+      4. The location-aware rogue-arm check rejects an in-memory
+         adversarial source that contains a rogue `if (ins->op ==
+         IR_ADD)` inside a non-dispatch helper (IR_ADD is
+         already-supported by the real dispatch). This is the
+         strong NC1: the old set-based check would have missed it
+         because the legitimate scope already contains IR_ADD.
+
     This test FAILS if any future regression widens the scope
-    (file-wide scan) or narrows it (drops a real dispatch
-    function from the discovery set).
+    (file-wide scan), narrows it (drops a real dispatch function),
+    or weakens the rogue-arm identity (collapses occurrences to
+    opcodes again).
     """
     adversarial = RESUME01_ADVERSARIAL_DISPATCH_SNIPPET
     # Re-run the unified scope on the adversarial fixture using
@@ -915,24 +1030,62 @@ def check_dispatch_scope_is_tight(dispatch):
         )
         return
 
-    # No rogue arms: every `if (ins->op == IR_X)` in src/llvm-backend.c
-    # must live inside a discovered dispatch function.
-    loose_real = set()
-    for m in re.finditer(
-        r"if\s*\(\s*ins->op\s*==\s*(IR_[A-Z_0-9]+)\s*\)", real_text
-    ):
-        loose_real.add(m.group(1))
-    rogue = sorted(loose_real - expected_scoped_real)
+    # No rogue arms (location-aware): every `if (ins->op == IR_X)`
+    # occurrence in src/llvm-backend.c must live inside a discovered
+    # dispatch function.
+    #
+    # ACT-POLYC-LLVM-CORE04-RESUME01 C2 IMPL P0-2: the previous
+    # set-based check collapsed occurrences to opcode sets, which
+    # silently passed when a rogue `if (ins->op == IR_ADD)` (or any
+    # already-supported opcode) appeared outside the dispatch scope.
+    # Occurrences are now compared by (function_name, file_offset);
+    # the set of legitimate occurrences is derived from the canonical
+    # `model` records. Two arms with the same opcode but in
+    # different functions (or even the same function but different
+    # offsets) are distinct.
+    real_enum_ops = get_ir_op_enum()
+    loose_real = _collect_if_arms(real_text, real_enum_ops)
+    # Build the legitimate occurrence set from the canonical model
+    # (records with op + kind = IF_SHORT and a function).
+    legit_real = set()
+    for rec in dispatch["model"]:
+        if rec["kind"] != "IF_SHORT":
+            continue
+        legit_real.add((rec["function"], rec["file_offset"]))
+
+    rogue = []
+    for op, fn, off in loose_real:
+        # An occurrence is rogue if its enclosing function is not a
+        # discovered dispatch function (None or unknown), OR if it
+        # is in a dispatch function but at an offset that the
+        # canonical model did not record (e.g. a duplicate dispatch
+        # arm inside an already-scoped helper that wasn't counted).
+        if fn is None:
+            rogue.append((op, fn, off))
+            continue
+        if fn not in set(dispatch["scope_fn_names"]):
+            rogue.append((op, fn, off))
+            continue
+        if (fn, off) not in legit_real:
+            rogue.append((op, fn, off))
     if rogue:
+        # Format rogue list as sorted (op, function, offset) tuples
+        # for the FAIL message.
+        rogue_fmt = sorted(
+            "{0}@{1}:{2}".format(op, fn or "<none>", off)
+            for op, fn, off in rogue
+        )
         fail(
             "scope-tight self-test: rogue `if (ins->op == IR_X)` "
-            "arms exist outside the discovered dispatch functions: "
-            "{0}. The structural discovery must cover every real "
+            "arms exist outside the discovered dispatch scope "
+            "(location-aware, occurrence identity): {0}. "
+            "The structural discovery must cover every real "
             "dispatch arm; helpers containing dispatch-shaped "
             "constructs are NOT real dispatch unless called from "
-            "llFunction() / its transitive helpers. RESUME01 M1 "
-            "FAILS on the verifier (the discovery scope is too "
-            "narrow).".format(rogue)
+            "llFunction() / its transitive helpers, and any "
+            "occurrence already in a discovered function must be "
+            "in the canonical model. RESUME01 M1 FAILS on the "
+            "verifier.".format(rogue_fmt)
         )
         return
 
@@ -946,11 +1099,93 @@ def check_dispatch_scope_is_tight(dispatch):
         )
     )
 
+    # Strong NC1: location-aware rogue-arm check on an augmented
+    # source that has a rogue `if (ins->op == IR_IADD)` arm in a
+    # non-dispatch helper. IR_IADD is already-supported in the real
+    # dispatch, so the OLD set-based check would have returned
+    # `rogue = empty` and FAILED to detect this. The new
+    # location-aware check MUST return a non-empty rogue list.
+    #
+    # This is the strong NC1 requested by the C2 IMPL reviewer:
+    # a rogue ALREADY-SUPPORTED opcode outside the reachable
+    # dispatch scope.
+    #
+    # Note: we use `IR_IADD` (not the reviewer's suggested `IR_ADD`,
+    # which is not a member of the IrOp enum in this codebase;
+    # the actual PolyC opcode for integer add is IR_IADD). The
+    # enum filter would discard `IR_ADD` as a non-IrOp identifier;
+    # `IR_IADD` is the correct already-supported duplicate to use.
+    augmented = real_text + "\n\n" + (
+        "/* RESUME01-STRONG-NC1: not real dispatch code; do not delete.\n"
+        " *\n"
+        " * Purpose: demonstrate that the location-aware rogue-arm\n"
+        " * check rejects an `if (ins->op == IR_IADD)` arm placed\n"
+        " * inside a non-dispatch helper. IR_IADD is already a\n"
+        " * supported opcode in the real dispatch scope, so the\n"
+        " * old opcode-set check would have silently passed.\n"
+        " */\n"
+        "static int rogue_dup_iadd_helper(IrInstr *ins)\n"
+        "{\n"
+        "    if (ins->op == IR_IADD) {\n"
+        "        return 999;\n"
+        "    }\n"
+        "    return 0;\n"
+        "}\n"
+    )
+    # Re-derive the dispatch model on the augmented source.
+    augmented_dispatch = _build_dispatch_arms_for_text(augmented)
+    # Run the location-aware rogue-arm check on the augmented
+    # source; we expect it to produce a non-empty rogue list.
+    aug_enum_ops = get_ir_op_enum()
+    aug_loose = _collect_if_arms(augmented, aug_enum_ops)
+    aug_legit = set()
+    for rec in augmented_dispatch["model"]:
+        if rec["kind"] != "IF_SHORT":
+            continue
+        aug_legit.add((rec["function"], rec["file_offset"]))
+    aug_rogue = []
+    for op, fn, off in aug_loose:
+        if fn is None or fn not in set(augmented_dispatch["scope_fn_names"]):
+            aug_rogue.append((op, fn, off))
+            continue
+        if (fn, off) not in aug_legit:
+            aug_rogue.append((op, fn, off))
+    # The strong NC1 expects exactly one rogue occurrence:
+    # IR_IADD inside rogue_dup_iadd_helper.
+    if not aug_rogue:
+        fail(
+            "scope-tight self-test (strong NC1): location-aware "
+            "rogue-arm check FAILED to detect a rogue "
+            "`if (ins->op == IR_IADD)` placed inside a "
+            "non-dispatch helper. IR_IADD is already in the "
+            "real dispatch scope, so the OLD set-based check "
+            "would also have missed this. The location-aware "
+            "check must return non-empty rogue list. This means "
+            "the check has been weakened back to opcode-set "
+            "identity."
+        )
+        return
+    # Confirm the rogue is specifically IR_IADD outside scope.
+    ir_iadd_rogue = [
+        (op, fn, off) for (op, fn, off) in aug_rogue
+        if op == "IR_IADD" and fn == "rogue_dup_iadd_helper"
+    ]
+    if not ir_iadd_rogue:
+        fail(
+            "scope-tight self-test (strong NC1): location-aware "
+            "rogue-arm check returned {0!r} but did not include "
+            "the expected rogue IR_IADD inside "
+            "rogue_dup_iadd_helper.".format(aug_rogue)
+        )
+        return
+
     ok(
         "scope-tight self-test (RESUME01 AC13): permanent "
         "adversarial fixture rejected by unified scope; "
         "unified model is internally consistent; no rogue "
-        "`if`-arms outside discovered scope."
+        "`if`-arms outside discovered scope; strong NC1 "
+        "(already-supported IR_IADD in non-dispatch helper) "
+        "is correctly detected by the location-aware check."
     )
 
 
