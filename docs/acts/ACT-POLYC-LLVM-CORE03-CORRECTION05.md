@@ -17,6 +17,20 @@ artifacts all stand:
     VERDICT both now read HALT_*. The closure-status
     gate (M1 below) OKs the CORRECTION04 pair.
 
+    SUPERSEDED (by ACT-POLYC-FACTORY-STATUS-RECONCILIATION):
+    The previous sentence described CORRECTION04 as "OK" under
+    the legacy seed oracle's lossy lifecycle normalization, which
+    collapsed both HALT_* tokens to "HALT" and therefore reported
+    OK. Under the new exact-token contract, CORRECTION04's
+    authoritative ACT token is HALT_CORRECTION04_STATUS_AND_LF_EVIDENCE
+    and the HANDOFF verdict token is now reconciled to match
+    exactly. The pair still agrees (PASS under the new oracle),
+    but for the substantive reason of exact-token equality rather
+    than lossy normalization. This note is preserved per F14
+    (historical documents are historical evidence; current truth
+    is recorded in current docs and the new HANDOFF Supersession
+    block).
+
 But the new hard gate introduced by this ACT is RED at
 closure:
 

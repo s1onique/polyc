@@ -3,7 +3,23 @@ HANDOFF — ACT-POLYC-LLVM-CORE03-CORRECTION02
 
 VERDICT
 -------
-PASS
+HALT_SCOPE_CONTRACT_VIOLATED
+
+SUPERSESSION (added by ACT-POLYC-FACTORY-STATUS-RECONCILIATION)
+---------------------------------------------------------------
+
+The verbatim verdict token was historically "PASS" (see historical
+reviewer evidence below). Per F14 (current truth may invalidate
+history), the authoritative verdict is now reconciled to the exact
+ACT authoritative token:
+
+    ACT       -> HALT_SCOPE_CONTRACT_VIOLATED
+    HANDOFF   -> HALT_SCOPE_CONTRACT_VIOLATED     (this update)
+
+The historical PASS claim is preserved as historical evidence (the
+prose below); only the verbatim verdict token is corrected to
+match the ACT's ## Status block under the new exact-token
+factory closure-status contract.
 
 CORRECTION02 closes every defect the reviewer flagged on
 CORRECTION01 (HALT_CORE03_CORRECTION01_BINDING_STILL_PARTIAL):

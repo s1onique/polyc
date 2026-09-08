@@ -3,7 +3,24 @@ HANDOFF — ACT-POLYC-LLVM-CORE03-CORRECTION01
 
 VERDICT
 -------
-PASS
+HALT_TOPOLOGY_RECORDED
+
+SUPERSESSION (added by ACT-POLYC-FACTORY-STATUS-RECONCILIATION)
+---------------------------------------------------------------
+
+The verbatim verdict token was historically "PASS" (see historical
+reviewer evidence below). Per F14 (current truth may invalidate
+history), the authoritative verdict is now reconciled to the exact
+ACT authoritative token:
+
+    ACT       -> HALT_TOPOLOGY_RECORDED
+    HANDOFF   -> HALT_TOPOLOGY_RECORDED     (this update)
+
+The reconciliation reflects that CORRECTION01 was the entry point
+of the closure-status-reconciliation defect that later surfaced as
+HALT_CORRECTION05_OWN_GATE_RED in CORRECTION05. The original PASS
+claim is preserved as historical evidence (the prose below); only
+the verbatim verdict token is corrected.
 
 CORE03 was rejected as
 HALT_CORE03_CONTRACT_NOT_ACTUALLY_BOUND because the validator
