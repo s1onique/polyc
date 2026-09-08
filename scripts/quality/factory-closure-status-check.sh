@@ -40,12 +40,16 @@ cd "$REPO_ROOT"
 MANIFEST="docs/factory/act-handoff-map.tsv"
 
 # Bounded managed universe (R1: independent enumeration, hard-coded).
+#
+# ACT-POLYC-FACTORY-STATUS-RECONCILIATION-CORRECTION02 grew the
+# universe from 5 pairs to 6 pairs by adding this ACT's own pair.
 MANAGED_ACTS="
 docs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION01.md
 docs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION02.md
 docs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION03.md
 docs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION04.md
 docs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION05.md
+docs/acts/ACT-POLYC-FACTORY-STATUS-RECONCILIATION-CORRECTION02.md
 "
 MANAGED_HANDOFFS="
 evidence/llvmspike01-core03-correction01/HANDOFF.md
@@ -53,6 +57,7 @@ evidence/llvmspike01-core03-correction02/HANDOFF.md
 evidence/llvmspike01-core03-correction03/HANDOFF.md
 evidence/llvmspike01-core03-correction04/HANDOFF.md
 evidence/llvmspike01-core03-correction05/HANDOFF.md
+evidence/factory-status-reconciliation-correction02/HANDOFF.md
 "
 
 if [ ! -f "$MANIFEST" ]; then
