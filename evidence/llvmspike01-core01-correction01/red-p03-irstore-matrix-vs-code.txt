@@ -1,0 +1,37 @@
+RED for P0-3 (IR_STORE matrix vs code)
+
+The capability matrix at the top of src/llvm-backend.c (committed at
+bd2be78) classifies:
+
+    IR_STORE   REJECTED   LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL
+
+but the comment immediately below qualifies:
+
+    (IR_STORE to return-slot is folded by collapse-elimination;
+     IR_STORE to a local binds as scalar SSA per the CORRECTION01
+     contract; any other IR_STORE shape hits the SSA_LOCAL path.)
+
+This is materially false: the opcode IS supported in two specific
+shapes (return-slot folding, local-binding). Three other shapes are
+REJECTED (multi-def, non-local dst, missing dst). The matrix says
+"REJECTED" — a reader cannot tell which shapes are supported.
+
+ACTUAL state (verified by reading src/llvm-backend.c lines 352-510,
+783-830):
+
+  Shape                                Result
+  -----------------------------------  ----------------------------------
+  IR_STORE local, value (unique-def)   SUPPORTED (scalar SSA bind)
+  IR_STORE to return-slot              FOLDED by collapse-elimination
+  IR_STORE local, second reaching def  REJECTED (LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL)
+  IR_STORE non-local dst               REJECTED (LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL)
+  IR_STORE missing dst                 REJECTED (LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL)
+
+A truthful capability matrix must distinguish these. The reviewer is
+correct that an opcode-only three-state matrix cannot describe the
+backend as it actually behaves.
+
+The CORRECTION01 fix introduces a SHAPE-DEPENDENT row classification
+and updates the matrix to honestly reflect:
+  - supported shape(s): 2
+  - rejected shapes: 3 (each with its own diagnostic class)
