@@ -1,0 +1,84 @@
+RED-3 ARBITRARY-COMMIT-CAP RED
+=============================
+
+PATTERN=arbitrary_commit_cap
+REPRODUCED=YES
+
+The RED is not "many commits are good". The RED is:
+
+  An arbitrary numeric topology rule (typically the
+  RED + IMPL + DOCS = 3 commits contract) caused otherwise
+  bounded, auditable ACTs to require a process correction
+  unrelated to product correctness.
+
+Two historical cases (load-bearing examples; many more exist
+under docs/acts/):
+
+------------------------------------------------------------
+Case A: ACT-POLYC-IR-BOUNDARY03-CORRECTION02
+------------------------------------------------------------
+  Declared cap (in ACT-POLYC-IR-BOUNDARY03-CORRECTION02.md
+  §9): 3 commits.
+
+  Actual honest commits in the chain (from CORRECTION03 §P0-1):
+    cbc0e00, 0971c4d, e4b66f7, 46a65c2  =  4 commits.
+
+  The fourth commit (46a65c2) was an evidence-only
+  amendment to make the closure-status-check output
+  truthful; it was not product code. The ACT's own §9
+  declared the 3-commit cap and AC-12 said
+  "CORRECTION02 commit cap = 3", but the work
+  honestly required one more commit.
+
+  Outcome: CORRECTION03 was opened exclusively to acknowledge
+  the breach ("P0-1: cap-violation (3 vs 4)") and to mark
+  the historical act as PASS_WITH_TOPOLOGY_BREACH rather
+  than silently rewrite history. No product defect;
+  purely a process bookkeeping correction.
+
+------------------------------------------------------------
+Case B: ACT-POLYC-FACTORY-STATUS-RECONCILIATION-CORRECTION02
+------------------------------------------------------------
+  Declared cap: 3 commits (RED + IMPL + DOCS+HANDOFF).
+  Actual honest commits: 3 (b62f940, d9b9961, 849677a).
+  But the C3 commit's HANDOFF left two of its own identity
+  fields (IMPL_HEAD, DOCS_HEAD) as "<this commit>" and
+  "<committed in the next commit>" placeholders -- the
+  exact self-pinning defect recorded in red-self-pinning.txt.
+  Removing those placeholders truthfully required another
+  commit, which exceeded the cap, so CORRECTION03 was
+  opened to repair the closure-state defect.
+
+  Outcome: two commits (8888efb + 29fb9afc) of
+  CORRECTION03 exist entirely to repair the CORRECTION02
+  HANDOFF's identity placeholders. No product defect;
+  purely a process bookkeeping correction.
+
+------------------------------------------------------------
+Conclusion
+------------------------------------------------------------
+  Both cases share the same shape:
+
+    declared numeric cap < actual honest commits
+    excess commit existed only because the closure
+        evidence / status reconciliation / amendment work
+        was honestly preserved
+    the excess caused a process correction ACT
+        (with its own review cycle, its own HANDOFF,
+        its own residue, its own gate wiring)
+        unrelated to product correctness
+
+  Factory v2's response: there is no numeric commit cap.
+  The closure topology is bounded by ACT scope, not by an
+  integer. ACT §V2-7 replaces the rule explicitly:
+
+    "Commits must be bounded by ACT scope, contiguous,
+     honestly classified, and individually meaningful."
+
+  T14 (RED matrix §12) load-bears this: a 5-commit synthetic
+  ACT (RED, IMPL, EVIDENCE, IMPL, CLOSE) is valid under v2.
+
+  This is not a license for unbounded growth; it is a
+  rejection of arbitrary integer caps that force honest
+  process work into either silent history rewriting or
+  yet another correction ACT.

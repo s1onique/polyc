@@ -1,0 +1,187 @@
+FACTORY_V2_RECON
+===============
+
+Recon of all current Factory authorities that may encode the
+old (v1) Markdown-as-identity bookkeeping. Each row classified
+as KEEP, REPLACE_IN_V2, LEGACY_ONLY, or UNRELATED.
+
+Search corpus (relative to repo root):
+
+  AGENTS.md
+  docs/factory/DOCTRINE.md
+  docs/factory/LLM-WORKFLOW.md
+  docs/factory/ACT-TEMPLATE.md
+  docs/factory/HANDOFF-TEMPLATE.md
+  docs/factory/act-handoff-map.tsv
+  .clinerules/10-factory-act.md
+  scripts/quality/gate-fast.sh
+  scripts/quality/gate-push.sh
+  scripts/quality/factory-closure-status-check.sh
+  scripts/quality/llvm-closure-status-check.sh
+  scripts/install-git-hooks.sh
+  .githooks/pre-commit
+  .githooks/pre-push
+
+Patterns searched:
+
+  ENTRY_HEAD
+  RED_HEAD
+  IMPL_HEAD
+  IMPLEMENTATION_HEAD
+  DOCS_HEAD
+  CLOSURE_HEAD
+  FINAL_HEAD
+  this commit
+  next commit
+  commit cap
+  max commits
+  RED + IMPL + DOCS
+  Status:
+  VERDICT
+  HANDOFF
+  worktree clean
+  git status
+
+
+--------------------------------------------------------------------
+File                                       | Class
+--------------------------------------------------------------------
+AGENTS.md                                  | REPLACE_IN_V2
+  Contains F1-F15 (operational laws). The Handoff discipline
+  subsection names VERDICT/IDENTITY/RED/IMPLEMENTATION/GATES/SCOPE/
+  RESIDUE/NEXT_ACT fields. These are not Factory v2 itself, but
+  the existing ACT template references them. Factory v2 keeps
+  F1-F15 epistemologically and only supersedes the
+  mutable-SHA-table mechanics (see red-self-pinning.txt). No
+  rewrite of F1-F15 needed; only a v2 pointer note appended.
+
+docs/factory/DOCTRINE.md                   | REPLACE_IN_V2
+  Epistemological doctrine. Sections 1-20 (rationale for F1-F15
+  plus auxiliary discipline) remain. Factory v2 is an
+  architectural delta over these laws, not a contradiction.
+  Append a "Factory v2 delta" note; do not rewrite existing
+  rationale.
+
+docs/factory/LLM-WORKFLOW.md              | REPLACE_IN_V2
+  Describes the lifecycle (REQUEST -> ACT -> RECON -> ... ->
+  HANDOFF -> REVIEW). The HANDOFF section names "VERDICT" as
+  a required structured handoff field. v2 supersedes this for
+  new ACTs: HANDOFF is descriptive, not verdict-authoritative.
+  Append a Factory v2 note; preserve existing lifecycle text.
+
+docs/factory/ACT-TEMPLATE.md              | REPLACE_IN_V2
+  Template fills `Entry gate` with `git rev-parse HEAD` and
+  prescribes SHA-style identity throughout. v2 ACTs do not pin
+  SHAs in the document body. Add a Factory v2 ACT template
+  alongside; do not delete the v1 template (legacy still uses
+  it; F14/V2-13 grandfather it).
+
+docs/factory/HANDOFF-TEMPLATE.md          | REPLACE_IN_V2
+  Authoritative VERDICT / ENTRY_HEAD / FINAL_HEAD / WORKTREE_STATUS
+  fields. v2 HANDOFF is descriptive; the CLOSE commit trailer
+  owns the verdict. Add a Factory v2 HANDOFF template; do not
+  delete the v1 template (it is still the bound for the
+  legacy factory-closure-status-check.sh, which compares the
+  v1 ## Status against the v1 VERDICT).
+
+docs/factory/act-handoff-map.tsv          | LEGACY_ONLY
+  This is the v1 factory-closure-status oracle's pairing
+  manifest. It is grandfathered (V2-13 / ACT §14). Factory v2
+  does not add rows to it. No edit.
+
+.clinerules/10-factory-act.md              | KEEP
+  Generic ACT-execution discipline. No SHA-pinning or
+  verdict-authority instructions. Remains binding for v2.
+
+scripts/quality/gate-fast.sh               | LEGACY_ONLY (GFAST-6)
+  Already invokes the v1 factory-closure-status-check.sh as
+  GFAST-6. Factory v2 does not displace that gate; it
+  supplements it with opt-in trailer validation in the
+  commit-msg hook. No edit to gate-fast.sh.
+
+scripts/quality/gate-push.sh               | KEEP
+  Hygiene + range diff-check gate. No SHA-pinning or verdict
+  authority. No edit.
+
+scripts/quality/factory-closure-status-check.sh
+                                          | LEGACY_ONLY
+  v1 exact-token checker for the bounded 6-pair managed
+  universe. Grandfathered per ACT §14. Factory v2 ACTs are not
+  added. No edit.
+
+scripts/quality/llvm-closure-status-check.sh
+                                          | LEGACY_ONLY
+  Thin compatibility wrapper for the predecessor oracle.
+  Grandfathered. No edit.
+
+scripts/install-git-hooks.sh              | KEEP
+  Idempotent. Sets core.hooksPath = .githooks. Does not
+
+--------------------------------------------------------------------
+Historical files (NOT modified by this ACT)
+--------------------------------------------------------------------
+
+  docs/acts/ACT-POLYC-*.md                  | LEGACY_ONLY
+    Every committed ACT under docs/acts/. Each may carry
+    Status:, FINAL_HEAD, ENTRY_HEAD, DOCS_HEAD, CLOSURE_HEAD,
+    "this commit", "next commit" placeholders, or a numeric
+    commit cap. Per V2-13 / ACT §13, no historical rewrite.
+    The Factory v2 negative scan in §13 explicitly scopes
+    itself to "Factory-v2 templates/new docs only".
+
+  evidence/**/HANDOFF.md                    | LEGACY_ONLY
+    Same. Verdict authority for these is the v1 checker; the
+    new v2 trailer authority does not compete with them.
+
+
+--------------------------------------------------------------------
+Net rewrite set for this ACT
+--------------------------------------------------------------------
+
+Files modified (canonical doctrine + new tooling):
+
+  AGENTS.md                                   (pointer note only)
+  docs/factory/DOCTRINE.md                    (v2 delta note)
+  docs/factory/LLM-WORKFLOW.md               (v2 delta note)
+  docs/factory/ACT-TEMPLATE.md               (append v2 template)
+  docs/factory/HANDOFF-TEMPLATE.md           (append v2 template)
+  docs/factory/GIT-METADATA.md               (new file; canonical
+                                              v2 detail)
+  .clinerules/10-factory-act.md               (no edit)
+
+Files added (tooling):
+
+  scripts/quality/factory-v2-commit-msg-check.sh
+  scripts/quality/factory-v2-range-check.sh
+  scripts/quality/factory-v2-test.sh
+  .githooks/commit-msg
+
+Files added (this ACT itself):
+
+  docs/acts/ACT-POLYC-FACTORY-GIT-METADATA-SIMPLIFY01.md
+  evidence/factory-git-metadata-simplify01/**
+
+Files NOT modified (per recon classification + scope rules):
+
+  src/**
+  scripts/quality/gate-fast.sh
+  scripts/quality/gate-push.sh
+  scripts/quality/factory-closure-status-check.sh
+  scripts/quality/llvm-closure-status-check.sh
+  scripts/install-git-hooks.sh
+  .githooks/pre-commit
+  .githooks/pre-push
+  docs/factory/act-handoff-map.tsv
+  docs/acts/ACT-POLYC-*.md
+  evidence/**/HANDOFF.md
+  Makefile
+  CI configuration
+
+  enforce SHA/verdict bookkeeping. Will pick up a new
+  .githooks/commit-msg automatically. No edit.
+
+.githooks/pre-commit                       | KEEP
+  Thin wrapper around gate-fast.sh. No edit.
+
+.githooks/pre-push                         | KEEP
+  Thin wrapper around gate-push.sh. No edit.
