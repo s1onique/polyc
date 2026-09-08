@@ -1,0 +1,108 @@
+IMPLEMENTATION SUMMARY
+======================
+
+Two bounded changes against HALT_LLVM_SSA_BINDING_CONTRACT:
+
+P0-1 (SS-2): SSA-local multi-store rejection
+--------------------------------------------
+
+src/llvm-backend.c:
+
+* Added `u8 *local_defs; u32 local_defs_cap;` to LLCtx. Lazy u8
+  bitmap keyed by ir.id. Falsy `local_defs` = "no store seen".
+* In IR_STORE PARAM_COPY branch:
+    u32 lid = irDstVarId(ins);
+    if (lid + 1 > lc->local_defs_cap) {
+        grow + zero-fill bitmap
+    }
+    if (lc->local_defs[lid]) {
+        fprintf(stderr,
+            "%s: function %s: local id=%u has multiple reaching "
+            "stores (this spike is SSA-only and does not insert phi "
+            "nodes); line %d\n", LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL, ...);
+        exit(1);
+    }
+    lc->local_defs[lid] = 1;
+* The check runs BEFORE llvmSet, so on the failure path the cache
+  is not corrupted.
+* Initial param bindings (llBindParams) and lazy constant bindings
+  (llLowerValue) do not pass through IR_STORE; they do not poison
+  the bitmap.
+* lc->local_defs is freed in llFunction() at the end of each
+  function lowering.
+
+No new container, no new helper, no PHI, no alloca/store/load.
+
+P0-2: C1 historical evidence immutability
+-----------------------------------------
+
+* Restored three C1 RED evidence files in
+  evidence/llvmspike01-resume01-correction01/ from
+  bde6045a200a1526435fd161f41b59e02df012b7 byte-for-byte.
+  SHA256 of restored blobs match SHA256 of ENTRY blobs (recorded
+  in C1-RESTORATION.txt).
+* Harness script redirects the new multi-def RED output to this
+  ACT's evidence dir
+  (evidence/llvmspike01-resume01-correction01-resume01-correction01/red-multi_def/).
+  It does NOT write into the C1 evidence dir or any other ACT.
+
+Mechanical AC for P0-2 (verified after both RED and IMPL commits):
+
+    git diff bde6045a200a1526435fd161f41b59e02df012b7..HEAD -- \
+        evidence/llvmspike01-resume01-correction01/red-1B.emit-llvm.ll \
+        evidence/llvmspike01-resume01-correction01/red-2.emit-llvm.ll \
+        evidence/llvmspike01-resume01-correction01/red-2.emit-llvm.txt
+    (empty)
+
+VERIFICATION
+============
+
+* llvmspike01 matrix: PASS=13/FAIL=0 (12 original + new multi_def).
+* LLVM verifier: all emitted .ll pass llvm-as.
+* Memory-op matrix after: 0/0/0 across all 12 original fixtures.
+* gate-push.sh HEAD: VERDICT=PASS (build/install/aot/jit/lsp/diff-check
+  all PASS; SUBJECT=5eed2af).
+* diff-check on full ACT diff: rc=0.
+* Identities verified via git merge-base --is-ancestor.
+
+DIAGNOSTIC MESSAGES
+===================
+
+On multi-def:
+
+    LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL: function MultiDef: local id=9
+    has multiple reaching stores (this spike is SSA-only and does not
+    insert phi nodes); line 22
+
+Process exit code: 1.
+
+Emitted .ll file: NOT written (hcc removes it on non-zero exit,
+or it is never created in the first place because the rejection
+fires before file finalisation).
+
+RATIONALE
+=========
+
+The bounded I64 spike is authorised to be SSA-only. Multiple reaching
+stores require either (a) phi nodes at every join block, or (b)
+rejection of the shape. The previous IMPL chose (a) silently by
+emitting nothing for the second store and letting the last-encountered
+binding survive — which is wrong. This IMPL chooses (b) explicitly
+by rejecting any second IR_STORE.
+
+A "second IR_STORE" is, by construction, a multi-def. There is no
+need for dominance analysis: if two IR_STOREs target the same local
+id, the local has at least two reaching definitions and therefore
+must be either phi'd or rejected. The spike rejects.
+
+This matches the ACT's contract: "no PHI, no alloca/store/load
+fallback". The shape is closed off at the IR_STORE boundary; the
+test fixture makes that visible.
+
+LIMITS / OUT OF SCOPE
+=====================
+
+* `LLVMBuildTrunc(i1 -> i1)` residue (P1). The reviewer accepted
+  this as residue for LLVM-CORE01.
+* C1 boundary reclassification. Not touched.
+* Dominance-aware SSA construction. Closed off, not implemented.
