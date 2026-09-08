@@ -1,0 +1,31 @@
+=== RED P0-harness-tautology: contract harness accepts any REJECTED diagnostic ===
+
+scripts/quality/llvm-spike-contract-check.sh:140:
+  exp_diag="$obs_diag"  # any REJECTED row's diagnostic is OK
+
+This line assigns the EXPECTED diagnostic to the OBSERVED diagnostic.
+The subsequent comparison:
+  if [ "$obs_diag" != "$exp_diag" ]; then FAIL
+can never fail because exp_diag is whatever obs_diag is.
+
+Demonstration: build a test case where a REJECTED fixture's actual
+stderr diagnostic is X, but X does not match any per-opcode table row
+for that fixture's opcode set.
+
+Specifically: change src/llvm-backend.c to emit a wrong diagnostic
+macro from the IR_IDIV handler, then run neg_f64-style fixture.
+The harness should RED but currently GREENs.
+
+The deeper issue (per reviewer): the harness builds a GLOBAL regex
+over ALL REJECTED diagnostics. A fixture exercising IR_IDIV could
+emit LLVM_BACKEND_UNSUPPORTED_INT_SHIFT (which is also in the table,
+for IR_SHL/SHR/SAR) and the harness would still pass, because
+INT_SHIFT is in the global REJECTED set.
+
+Fix direction (CORRECTION02 M3):
+  - The harness must associate each REJECTED fixture with a specific
+    opcode (or opcode set) and assert the diagnostic is one of that
+    opcode's table rows.
+  - Honest narrow contract: expected_class is fixture-declared, but
+    expected_diagnostic is now fixture+opcode-set-derived.
+  - Remove the tautological `exp_diag="$obs_diag"` line.
