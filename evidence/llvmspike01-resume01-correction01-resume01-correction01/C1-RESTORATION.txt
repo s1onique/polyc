@@ -1,0 +1,60 @@
+C1 EVIDENCE RESTORATION (P0-2)
+==============================
+
+The previous IMPL commit (1cfc34a6) regenerated three historical
+C1 RED evidence files in evidence/llvmspike01-resume01-correction01/
+with post-IMPL output. F14 forbids this. The C1 RED is a record of
+the predecessor spike's behaviour against a different commit tree,
+and must remain historically truthful.
+
+Files restored byte-for-byte from ENTRY=bde6045a200a1526435fd161f41b59e02df012b7:
+
+    evidence/llvmspike01-resume01-correction01/red-1B.emit-llvm.ll
+        SHA256(bde6045a): 6403f350d0a0c543a9a03135756ffcee1581160efe25e7578a408a90c706a96a
+        SHA256(worktree): 6403f350d0a0c543a9a03135756ffcee1581160efe25e7578a408a90c706a96a
+
+    evidence/llvmspike01-resume01-correction01/red-2.emit-llvm.ll
+        SHA256(bde6045a): 6403f350d0a0c543a9a03135756ffcee1581160efe25e7578a408a90c706a96a
+        SHA256(worktree): 6403f350d0a0c543a9a03135756ffcee1581160efe25e7578a408a90c706a96a
+
+    evidence/llvmspike01-resume01-correction01/red-2.emit-llvm.txt
+        SHA256(bde6045a): b31abbcb33dfaf1097752226d590398d864b5e11b8264fd1735d65657b708156
+        SHA256(worktree): b31abbcb33dfaf1097752226d590398d864b5e11b8264fd1735d65657b708156
+
+Mechanical AC (post-closure):
+
+    $ git diff bde6045a200a1526435fd161f41b59e02df012b7..HEAD -- \
+        evidence/llvmspike01-resume01-correction01/red-1B.emit-llvm.ll \
+        evidence/llvmspike01-resume01-correction01/red-2.emit-llvm.ll \
+        evidence/llvmspike01-resume01-correction01/red-2.emit-llvm.txt
+    (empty)
+
+Note that red-1B.emit-llvm.ll and red-2.emit-llvm.ll share the
+same SHA256 because at C1 they were both produced from the same
+`04_cmp_branch.HC` source via the same C1 harness script. The
+post-IMPL commit regenerated one from the post-IMPL compiler and
+copied it over both. The C1 record is restored verbatim from ENTRY.
+
+Other C1 evidence files (sha256/b64 sidecars added by the previous
+IMPL for whitespace normalisation, etc.) are not historical content;
+they are F14 annotations describing what happened during the IMPL
+commit. Those stay. Only the three blobs that were OVERWRITTEN to
+mask the IMPL change are restored.
+
+Harness redirection (P0-2 second half):
+---------------------------------------
+
+The previous IMPL's harness script regenerates C1 evidence files
+on every run. This is wrong: C1 evidence is historical. The fix
+redirects the multi_def RED output to this ACT's evidence dir
+(evidence/llvmspike01-resume01-correction01-resume01-correction01/
+red-multi_def/) and not into C1.
+
+The 12-fixture matrix harness remains intact (it writes to
+$REPO_ROOT/evidence/llvmspike01-resume01/, the predecessor spike's
+matrix evidence dir, which is the *active* matrix, not a historical
+RED). That dir is the ACT's own evidence and is updated freely.
+
+The new multi_def fixture is registered in a SEPARATE invocation
+section of the harness that writes ONLY into this ACT's
+correction01-resume01-correction01/ evidence dir.

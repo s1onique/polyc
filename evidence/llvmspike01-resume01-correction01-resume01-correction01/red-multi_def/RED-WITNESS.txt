@@ -1,0 +1,88 @@
+RED WITNESS: SSA-local multi-definition silently miscompiled
+============================================================
+
+Fixture:   src/tests/llvm-spike/red_local_multi_def.HC
+Toolchain: hcc built at HEAD (d52d5af4beda)
+Subject:   CURRENT_BUGGY_IMPL (before this ACT's IMPL).
+
+Source
+------
+
+    I64 MultiDef(I64 a, I64 b, I64 c)
+    {
+        I64 x = a;
+        I64 y = b;
+        if (c > 0)
+            y = a;
+        return x + y;
+    }
+
+Behaviour observed today
+------------------------
+
+    $ ./hcc --emit-llvm --install-dir=$HCC_INSTALL_DIR \
+            src/tests/llvm-spike/red_local_multi_def.HC \
+            -o red-multi_def.emit-llvm.ll
+    hcc rc=0
+    $ llvm-as red-multi_def.emit-llvm.ll -o /dev/null
+    llvm-as rc=0
+
+Emitted IR (verifier-clean):
+
+    define i64 @MultiDef(i64 %0, i64 %1, i64 %2) {
+    bb1:
+      %3 = icmp sgt i64 %2, 0
+      br i1 %3, label %bb3, label %bb4
+
+    bb3:                                              ; preds = %bb1
+      br label %bb4
+
+    bb4:                                              ; preds = %bb3, %bb1
+      %4 = add i64 %0, %0
+      ret i64 %4
+    }
+
+Why this is a miscompile
+------------------------
+
+The IR shape (from --dump-ir) records three reaching stores for the
+local id %l9:
+
+    bb1: store  %l9 i64 local, %p3 i64 param   ; line 20
+    bb3: store  %l9 i64 local, %l2 i64 local   ; line 22
+
+When `c > 0` the second store runs and binds %l9 -> %l2 (== %0 == a).
+When `c <= 0` the second store is skipped and the binding %l9 -> %p3
+(== %1 == b) survives. The two paths reach bb4 with different
+intended values for `y`.
+
+Under today's IR_STORE handler, lc->values[%l9] is overwritten by the
+LAST IR_STORE encountered in block iteration order. The current
+ordering happens to make bb3 visited AFTER bb1 (it is iterated as a
+successor), so the bb3 store wins. Use site bb4 reads `%l9`, finds
+the surviving binding `%l2`, and emits `add %0, %0`.
+
+The "verifier-clean" status is a property of LLVM IR in isolation,
+not a proof of correct semantics. LLVM IR has no notion of "the
+result this function should compute" — it trusts the producer to
+encode the program faithfully. Our producer failed to encode the
+program.
+
+This is exactly the silent miscompile F3 forbids and exactly the
+"overwrite at lowering time, last traversal wins" bug the reviewer
+flagged.
+
+Required behaviour after IMPL
+-----------------------------
+
+    $ ./hcc --emit-llvm ... red_local_multi_def.HC -o /dev/null
+    hcc rc=1
+    stderr contains: LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL
+    "function MultiDef: local id=<...> has multiple reaching stores
+     (this spike is SSA-only and does not insert phi nodes)"
+    no .ll produced (or empty)
+    no llvm-as run (file missing)
+
+Constraint: no PHI, no alloca/store/load fallback.
+
+Status: RED captured. IMPL pending.
