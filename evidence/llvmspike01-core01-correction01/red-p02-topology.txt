@@ -1,0 +1,29 @@
+RED for P0-2 (commit topology violation)
+
+ACT-POLYC-LLVM-CORE01 §10 caps commits at:
+
+    Three commits maximum.
+
+AC11 caps commits at:
+
+    at most one production commit + one docs/evidence commit
+    = 2 commits
+
+ACTUAL commit topology in HEAD~5..HEAD (HEAD=f4ac2e7):
+
+  e304b86 docs(polyc): open ACT-POLYC-LLVM-CORE01 contract
+  9e3a034 test(llvm): CORE01 RED-1 (IR_IDIV generic diagnostic) + RED-2 (Trunc boundary)
+  bd2be78 fix(llvm): CORE01 contract - capability matrix + named diagnostics
+  8122e9d docs(llvm): CORE01 post-change matrix snapshot (14/14 PASS)
+  f4ac2e7 docs(llvm): CORE01 HANDOFF - PASS verdict + residue + next ACT
+
+Total: 5 commits
+Cap A (§10): 3
+Cap B (AC11): 2
+
+Either cap is exceeded. CORE01 closure claims "PASS" but the actual
+topology violates both internal constraints. The reviewer's
+"closure is false-GREEN" finding stands.
+
+A historical correction must record this honestly rather than
+retroactively regroup commits.

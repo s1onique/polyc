@@ -1,0 +1,69 @@
+RED for P0-4 (IR_BR trunc boundary crossing is unverified)
+
+Per the reviewer's requirement: prove which paths produce i1 vs i64
+LLVMValueRef when IR_BR fires.
+
+OBSERVATION 1: IR_BR is reached only when IR_ICMP+IR_BR fusion does
+NOT occur (src/ir-optimise.c:1105-1119). The fusion rule requires:
+
+    (cur->op == IR_ICMP || cur->op == IR_FCMP) &&
+    next->op == IR_BR &&
+    irOpReadsTmp(next, dst_id) &&
+    irTmpUseCount(cur->dst) == 1
+
+For every branch in the current positive matrix
+(src/tests/llvm-spike/04_cmp_branch.HC), the IR dump shows:
+
+    cmp_gt   %t6 i64 tmp, %p1 i64 param, %p3 i64 param
+    br       %t6 i64 tmp, bb3, bb4
+
+This is the shape the fusion rule consumes. The fusion rewrites BR
+into IR_CMP_BR; the IR_BR arm of the LLVM dispatch never sees this
+case.
+
+OBSERVATION 2: No current positive fixture produces IR_BR at the
+LLVM dispatch. The only way to exercise IR_BR is to construct a
+branch where the IR_ICMP+IR_BR pair is NOT adjacent in the same
+block. None of the existing positive or RED fixtures does this.
+
+OBSERVATION 3: The "deliberate boundary crossing" comment in
+src/llvm-backend.c lines 698-714 (added by CORE01 at bd2be78)
+defends a code path the current spike has never exercised.
+
+OBSERVATION 4: The condition variable's neutral IR type IS i64 (see
+src/ir.c:603 — `ir_result = irTmp(ir_type, ast->type->size)` where
+ir_type is IR_TYPE_I64 for an `a > b` of I64 args), so the i64
+guard at src/llvm-backend.c:695 is consistent with neutral IR.
+HOWEVER, the comment overclaims: it states "neutral IR carries
+IR_BR's condition as an i64 value (0 or 1)" — neutral IR does
+carry i64, but the cached LLVMValueRef at IR_BR dispatch time is
+an IR_ICMP result lowered to i1 via LLVMBuildICmp. The trunc from
+"neutral i64" to "LLVM i1" is therefore NOT a clean translation:
+either the cached value is already i1 (no trunc needed) or it is a
+constant i64 0/1 (trunc is safe), but it cannot be both a 0/1
+i64-typed runtime predicate AND an i1 IR_ICMP result.
+
+The CORRECTION01 fix:
+  - Documents honestly that IR_BR is the NON-FUSED FALLBACK.
+  - Replaces the overclaimed "deliberate boundary crossing" comment
+    with an LLVMTypeOf-based dispatch: if the cached LLVMValueRef
+    is i1, use directly; if i64, trunc; otherwise reject.
+  - Adds a small test (red_irbr_unfused.HC) that constructs an
+    IR_BR-emitting path bypassing the fusion rule, to actually
+    exercise the dispatch.
+
+The test fixture design (out-of-scope to fully explain here):
+A function with a non-adjacent IR_ICMP and IR_BR, OR a return value
+that depends on a comparison where the IR_ICMP result is used by
+something other than IR_BR before being consumed by the branch.
+
+In practice the simplest reproducer uses an IR_TMP that is set to
+a comparison result and then read by an IR_PRINT-like op, but no
+such op exists in the bounded spike. The CORRECTION01 RED therefore
+documents the IR shape via dump-ir transcripts and DOES NOT attempt
+to trigger IR_BR at the dispatch (because triggering it requires
+either (a) new IR producers or (b) neutral-IR changes, both of which
+are FORBIDDEN by CORE01).
+
+A direct dispatch-level test for IR_BR is deferred to ACT-LLVM-CORE02
+where classification work can construct a controlled unfused path.
