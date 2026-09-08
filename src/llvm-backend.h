@@ -41,6 +41,15 @@ int llvmEmitProgram(IrProgram *prog,
  * style. Mirrored here so scripts can grep for them. */
 #define LLVM_BACKEND_UNSUPPORTED_IR    "LLVM_BACKEND_UNSUPPORTED_IR"
 #define LLVM_BACKEND_UNSUPPORTED_TYPE  "LLVM_BACKEND_UNSUPPORTED_TYPE"
+/* ACT-POLYC-LLVM-CORE03: defensive invariant guard fired.
+ * The dispatch observed a value shape that the canonical
+ * lowerer is not supposed to produce (e.g. a non-i1 cond at
+ * the IR_BR arm). The dispatch continues with the existing
+ * fallback (trunc + condbr), but the diagnostic makes the
+ * violation visible. The supported subset must keep this
+ * counter at zero; the harness asserts it. */
+#define LLVM_BACKEND_DEFENSIVE_INVARIANT_TRIPPED \
+    "LLVM_BACKEND_DEFENSIVE_INVARIANT_TRIPPED"
 #define LLVM_BACKEND_VERIFY_FAILED     "LLVM_BACKEND_VERIFY_FAILED"
 #define LLVM_BACKEND_INTERNAL          "LLVM_BACKEND_INTERNAL"
 /* ACT-POLYC-LLVM-SPIKE01-RESUME01-CORRECTION01-RESUME01:

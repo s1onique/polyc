@@ -558,6 +558,15 @@ int main(int argc, char **argv) {
          * entire branch on HCC_ENABLE_LLVM, so reaching here implies
          * LLVM is linked in. */
         #include "llvm-backend.h"
+        /* ACT-POLYC-LLVM-CORE03: validate the capability contract
+         * before producing any --emit-llvm output. The contract
+         * asserts that every IrOp value has a row in
+         * kLLVMBackendCapability[] and that REJECTED rows have
+         * non-NULL diagnostics. On failure the validator aborts,
+         * so the harness sees a hard failure rather than a silent
+         * drift between matrix comment and dispatch. */
+        #include "llvm-backend-cap.h"
+        llValidateCapabilityContract();
         IrCtx *ir_ctx = irLowerProgram(cc);
         if (!ir_ctx || !ir_ctx->prog) {
             fprintf(stderr, "hcc: --emit-llvm: irLowerProgram produced no IR\n");
