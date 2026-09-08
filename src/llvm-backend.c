@@ -74,11 +74,21 @@
  * ------------------------------- -------------------- --------------------------------
  * IR_NOP                          NOT_YET_CLASSIFIED   (generic)
  * IR_ALLOCA                       REJECTED             LLVM_BACKEND_UNSUPPORTED_MEMORY
- * IR_LOAD                         REJECTED             LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL
- * IR_STORE                        REJECTED             LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL
- *   (IR_STORE to return-slot is folded by collapse-elimination;
- *    IR_STORE to a local binds as scalar SSA per the CORRECTION01
- *    contract; any other IR_STORE shape hits the SSA_LOCAL path.)
+ * IR_LOAD                         SHAPE-DEPENDENT       (see IR_LOAD below)
+ * IR_STORE                        SHAPE-DEPENDENT       (see IR_STORE below)
+ *
+ * IR_STORE per shape:
+ *   local, single reaching store   SUPPORTED            (binds local -> scalar SSA)
+ *   return-slot                    FOLDED               (collapse-elimination)
+ *   local, multiple reaching defs  REJECTED             LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL
+ *   non-local dst                  REJECTED             LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL
+ *   missing dst                    REJECTED             LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL
+ *
+ * IR_LOAD per shape:
+ *   local with single reaching store SUPPORTED          (resolves to bound SSA value)
+ *   local with multiple reaching    REJECTED            LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL
+ *   unbound local (no reaching)    REJECTED            LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL
+ *
  * IR_LOAD_DEREF                   REJECTED             LLVM_BACKEND_UNSUPPORTED_POINTER
  * IR_STORE_DEREF                  REJECTED             LLVM_BACKEND_UNSUPPORTED_POINTER
  * IR_RMW_DEREF                    REJECTED             LLVM_BACKEND_UNSUPPORTED_POINTER
@@ -119,7 +129,9 @@
  * IR_INTTOPTR                     REJECTED             LLVM_BACKEND_UNSUPPORTED_CONVERSION
  * IR_BITCAST                      REJECTED             LLVM_BACKEND_UNSUPPORTED_BITCAST
  * IR_RET                          SUPPORTED            (i64 only; via collapse-elimination)
- * IR_BR                           SUPPORTED            (i64 cond truncated to i1 for condbr)
+ * IR_BR                           SUPPORTED            (non-fused fallback; dispatches
+ *                                                    i1 / i64 cond to condbr; see IR_BR
+ *                                                    arm below for the LLVMTypeOf dispatch)
  * IR_CMP_BR                       REJECTED             (boundary violation - native fusion)
  * IR_JMP                          SUPPORTED            -
  * IR_SWITCH                       REJECTED             LLVM_BACKEND_UNSUPPORTED_SWITCH
@@ -692,7 +704,12 @@ static LLVMBasicBlockRef llLowerBlock(LLCtx *lc, IrBlock *b) {
             continue;
         }
         if (ins->op == IR_BR) {
-            /* IR_BR carries its condition via `dst` (per ir-eval.c). */
+            /* IR_BR carries its condition via `dst` (per ir-eval.c).
+             *
+             * Neutral IR contract: dst is IR_TYPE_I64 carrying a {0, 1}
+             * predicate value. This guard checks the neutral-IR side
+             * and rejects any non-i64 dst immediately.
+             */
             if (!ins->dst || ins->dst->type != IR_TYPE_I64) {
                 fprintf(stderr,
                     "%s: IR_BR condition must be i64 (got kind=%d type=%d)\n",
@@ -701,25 +718,56 @@ static LLVMBasicBlockRef llLowerBlock(LLCtx *lc, IrBlock *b) {
                     ins->dst ? ins->dst->type : -1);
                 exit(1);
             }
-            /* ACT-POLYC-LLVM-CORE01 (RED-2): deliberate boundary crossing.
+            /* ACT-POLYC-LLVM-CORE01-CORRECTION01 (RED-4):
              *
-             * The neutral IR (src/ir-types.h, src/ir-eval.c) carries
-             * IR_BR's condition as an i64 value (0 or 1). LLVM's
-             * LLVMBuildCondBr requires an i1 condition. The truncation
-             * below is therefore a deliberate neutral -> LLVM boundary
-             * crossing, NOT a bug.
+             * The cache may hold either an i1 (result of IR_ICMP
+             * lowered via LLVMBuildICmp) or an i64 (literal 0/1
+             * constant). LLVMBuildCondBr requires i1.
              *
-             * Do NOT "fix" this by changing IR_BR's `dst` type to i1 in
-             * the neutral IR. That would change the neutral IR contract
-             * and invalidate downstream consumers (notably the native
-             * backend, which treats IR_BR's condition as i64).
+             * ACT-POLYC-LLVM-SPIKE01-RESUME01-CORRECTION01-RESUME01 fused
+             * IR_ICMP+IR_BR into IR_CMP_BR; IR_BR is therefore the
+             * non-fused FALLBACK path that the current spike never
+             * exercises (verified via dump-ir transcripts:
+             *   evidence/llvmspike01-core01-correction01/red-p04-irbr-dead.txt).
              *
-             * The capability matrix at the top of this file classifies
-             * IR_BR as SUPPORTED; the truncation is part of that support.
+             * Dispatch by LLVM physical type:
+             *   i1 -> use directly (LLVMBuildCondBr accepts i1)
+             *   i64 with width 1 -> use directly (LLVM equates i1 and
+             *                         i1-typed i64 for condbr consumers
+             *                         in practice; defensively treat
+             *                         same-as-i1)
+             *   i64 width 8 -> trunc to i1 (preserves the historical
+             *                  {0,1} -> bool translation that the
+             *                  predecessor spike relied on)
+             *   any other width -> reject with a named boundary
+             *                      diagnostic; do NOT guess.
+             *
+             * Do NOT "fix" this by changing IR_BR's neutral-IR dst type
+             * to i1; that would break the native backend (which treats
+             * the condition as i64) and is FORBIDDEN by ACT §7.
              */
-            LLVMValueRef cond64 = llLowerI64Value(lc, ins->dst);
-            LLVMValueRef cond1 = LLVMBuildTrunc(lc->bld, cond64,
-                                               LLVMInt1TypeInContext(lc->ctx), "");
+            LLVMValueRef cond = llLowerI64Value(lc, ins->dst);
+            LLVMTypeRef cond_ty = LLVMTypeOf(cond);
+            LLVMValueRef cond1 = NULL;
+            if (cond_ty == LLVMInt1TypeInContext(lc->ctx)) {
+                cond1 = cond;
+            } else if (cond_ty == LLVMInt64TypeInContext(lc->ctx)) {
+                /* Historical: literal 0/1 i64 predicate. Truncate to i1.
+                 * This is the only path where LLVMBuildTrunc is legal
+                 * (source wider than dest). */
+                cond1 = LLVMBuildTrunc(lc->bld, cond,
+                                       LLVMInt1TypeInContext(lc->ctx), "");
+            } else {
+                fprintf(stderr,
+                    "%s: function %s: IR_BR cond has unexpected LLVM "
+                    "physical type (got %d-bit integer, expected i1 or "
+                    "i64 predicate); refusing to guess. This is a "
+                    "neutral/LLVM boundary violation.\n",
+                    LLVM_BACKEND_UNSUPPORTED_IR,
+                    lc->fn->name->data,
+                    (int)LLVMGetIntTypeWidth(cond_ty));
+                exit(1);
+            }
             IrBlock *tt = ins->extra.blocks.target_block;
             IrBlock *ff = ins->extra.blocks.fallthrough_block;
             LLVMBasicBlockRef t = llbmGet(&lc->blocks, tt->id);
