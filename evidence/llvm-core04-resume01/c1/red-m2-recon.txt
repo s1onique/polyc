@@ -1,0 +1,209 @@
+ACT-POLYC-LLVM-CORE04-RESUME01 -- C1 RED-M2 recon evidence
+======================================================
+
+Reconducted: 2026-09-08
+Toolchain: read-only inspection of src/llvm-backend.c at
+           commit ee91be8 (RESUME01 documentary-RED phase).
+           No production code change in this recon.
+
+QUESTION
+--------
+Where do per-class execution counters live so that the harness
+can observe one CAPABILITY_COUNTERS line per hcc invocation,
+with each function's contribution accumulated exactly once?
+
+CANDIDATE MECHANISMS (REVIEWER HYPOTHESIS)
+------------------------------------------
+A. "Driver walks all LLCtx instances and sums."
+   Lifecycle of LLCtx lc in src/llvm-backend.c:
+
+     $ grep -n 'LLCtx lc;' src/llvm-backend.c
+     1320:    LLCtx lc;          # stack-local in llFunction()
+     1404:    LLCtx lc;          # stack-local in llvmEmitProgram()
+
+   llFunction() owns its own LLCtx lc (line 1320); destroyed
+   on return (LLVMDisposeBuilder + free(lc.values/blocks/
+   local_defs)). The driver cannot walk a destroyed object.
+
+   VERDICT: REJECTED. Not implementable without changing the
+   LLCtx storage model (heap allocation + explicit registry).
+   That would be scope expansion.
+
+B. "Pass an LLTotals* output parameter from llvmEmitProgram()
+   into llFunction(); llFunction() sums into it on return."
+   Lifecycle fit: llvmEmitProgram() owns a stack-local
+   LLTotals totals, calls llFunction() in a loop, each call
+   mutates totals in place. Driver emits one
+   CAPABILITY_COUNTERS line after the loop.
+
+   VERDICT: ACCEPTED (cheapest, no new ownership, no new
+   storage on per-function path). RECOMMENDED for C2 IMPL.
+
+C. "Accumulate directly into an invocation-level stats
+   object owned by the LLVM backend (module-static)."
+   Lifecycle fit: works, but creates hidden global state
+   that survives across hcc invocations (process lifetime).
+   Makes multi-invocation tests in the same process leak
+   counters between runs. Worse than (B).
+
+   VERDICT: REJECTED. (B) is strictly better.
+
+D. "Module-attached user data via LLVMModuleRef opaque
+   payload."
+   Lifecycle fit: works (modules outlive functions), but
+   couples counter emission to LLVM's opaque payload
+   mechanism and forces emission inside the module dump
+   path (LLVMPrintModuleToFile / ToString).
+
+   VERDICT: REJECTED for the counter accumulation; the
+   counters should be a single line emitted by the driver,
+   not interleaved with the LLVM IR textual dump.
+
+OBSERVED SEAM (B)
+-----------------
+llvmEmitProgram() at src/llvm-backend.c:1383 is the only
+function that spans all per-function work. Its lifetime is
+exactly one hcc invocation. It already owns the LLVM context,
+module, and builder; adding an LLTotals struct here is a
+minimum-friction addition.
+
+Two LLCtx instances exist simultaneously inside one
+llvmEmitProgram() call:
+
+  - lc in llvmEmitProgram() (line 1404) -- used only for
+    llPass1(&lc, prog). Survives the entire function.
+  - lc in llFunction() (line 1320) -- created and destroyed
+    inside the per-function loop body.
+
+For counters, we want one struct owned by llvmEmitProgram()
+that llFunction() fills via a passed pointer. The compiler-
+level aggregation is therefore:
+
+  llvmEmitProgram():
+      LLTotals totals = {0};
+      for each fn:
+          llFunction(prog, fn, ctx, mod, &totals);
+      emit_one_capability_counters_line(totals);
+
+  llFunction():
+      ... lower each instruction ...
+      if instruction maps to a counter class:
+          totals->n_supported += 1;
+          (or n_rejected, n_defensive, ...)
+
+CONTRACT (NOT YET AUTHORIZED)
+-----------------------------
+The C2 IMPL commit will implement (B) with this exact
+contract:
+
+  COUNTER_SCOPE            = compiler invocation (one
+                             CAPABILITY_COUNTERS line per
+                             hcc --emit-llvm)
+  FUNCTION_CONTRIBUTION    = accumulated exactly once per
+                             llFunction() call; sums in
+                             place into the driver-owned
+                             LLTotals
+  EMISSION_COUNT           = exactly one CAPABILITY_COUNTERS
+                             record per hcc invocation
+  EMISSION_LOCATION        = after the per-function loop,
+                             after LLVMVerifyModule passes,
+                             before LLVMPrintModuleToFile/
+                             ToString (so a failed verify
+                             emits nothing -- counts reflect
+                             only lowered code, not verified
+                             code)
+  CLASS_SET                = SUPPORTED, REJECTED,
+                             DEFENSIVE_INVARIANT
+  UNREACHABLE_ON_LLVM      = 0 by definition (the counter
+                             records *executing*; if the
+                             counter increments, it wasn't
+                             unreachable -- invariant failure
+                             rather than meaningful positive
+                             count)
+  LINE_FORMAT              = "CAPABILITY_COUNTERS <n_support>
+                             <n_rejected> <n_defensive>
+                             <n_unreachable_on_llvm>"
+
+RATIONALE FOR UNREACHABLE_ON_LLVM = 0
+--------------------------------------
+Reviewer suggested: UNREACHABLE_ON_LLVM should probably
+remain 0 by definition. Reasoning: the counter records the
+number of times a class was *executed*. UNREACHABLE_ON_LLVM
+means the opcode is stripped (irRemoveAllNops) or never
+reached by the dispatch. If it executes, the IR is not
+unreachable -- that's an invariant failure, not a positive
+counter. C2 IMPL must therefore:
+
+  - NOT increment n_unreachable_on_llvm in the dispatch;
+  - emit "0" for that field;
+  - if the field is ever observed > 0 in a green run, that
+    is HALT_REACHED (different from HALT_COUNTER_REGRESSION).
+
+This is a contract tightening, not a backslide: it prevents
+the harness from greenwashing a future bug.
+
+COUNTED OPS
+-----------
+The dispatch already classifies each opcode into one of five
+classes (see src/llvm-backend-cap.h). C2 IMPL adds one
+increment per dispatch arm that fires:
+
+  case IR_IADD:        n_supported++     break;
+  case IR_FADD:        n_rejected++      break;
+  ...
+  default:             n_rejected++      /* fall-through */
+
+Grouped arms (multiple case labels per body, e.g. IR_LOAD_DEREF
++ IR_STORE_DEREF + IR_RMW_DEREF + IR_LEA all sharing the
+POINTER diagnostic) count once per dispatched instruction,
+not once per label.
+
+Defensive guards (e.g. the IR_BR i1 trunc arm that increments
+lc->defensive_trips) move their state into LLTotals at the
+same seam: llFunction() reads lc->defensive_trips at end of
+run and adds it to totals->n_defensive; defensive_trips
+remains per-function for diagnostics (unchanged), but the
+aggregation moves to the driver.
+
+RED-M2 (HARNESS EXECUTABLE WITNESS)
+------------------------------------
+scripts/quality/llvm-spike-test.sh now has a section
+"=== capability counters (RESUME01 RED-M2) ===" that runs
+hcc --emit-llvm on src/tests/llvm-spike/01_const.HC and
+greps for '^CAPABILITY_COUNTERS ' in the output. If absent,
+it emits `counters=missing` and FAIL=1.
+
+RED EVIDENCE (this machine)
+---------------------------
+Local toolchain does not include llvm-config/llvm-as (LLVM 22
+required by the Makefile); the spike-test harness cannot
+complete. The new RED section was syntax-checked and a
+single-shot dry-run with HCC=/nonexistent/hcc confirmed:
+
+  FAIL  capability counters: hcc --emit-llvm on
+        src/tests/llvm-spike/01_const.HC failed
+  counters=missing
+  PASS=0 FAIL=1
+
+This is the expected RED shape on any machine without the
+CAPABILITY_COUNTERS emission in the backend (which is the
+current state on every machine).
+
+GREEN EVIDENCE (C2 IMPL obligation)
+-----------------------------------
+C2 IMPL will, on a machine with LLVM 22 installed:
+
+  1. emit exactly one CAPABILITY_COUNTERS line per
+     hcc --emit-llvm call;
+  2. emit the line after LLVMVerifyModule passes;
+  3. emit "0" for the UNREACHABLE_ON_LLVM field by definition;
+  4. flip the harness section to PASS=1 FAIL=0 with
+     `grep -q '^CAPABILITY_COUNTERS ' $out` succeeding.
+
+SCOPE-NEUTRAL WITNESSES (C1 commit)
+-----------------------------------
+This file documents the recon. No production code change
+in C1. The harness has only a 33-line test-section addition.
+The verifier has only the permanent adversarial fixture and
+the check_dispatch_scope_is_tight() function (no production
+code change).

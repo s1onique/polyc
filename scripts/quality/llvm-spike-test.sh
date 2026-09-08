@@ -487,6 +487,41 @@ else
 fi
 
 echo
+echo "=== capability counters (RESUME01 RED-M2) ==="
+# ACT-POLYC-LLVM-CORE04-RESUME01 RED-M2: the harness must observe a
+# `CAPABILITY_COUNTERS` line in the compiler's LLVM IR output. Until
+# the compiler emits one, this section reports `counters=missing`
+# and FAILs. This is the executable RED; C2 IMPL adds the emission
+# and flips this to PASS.
+#
+# The fixture used is a small positive that lowers cleanly
+# (01_const.HC). The output is captured but discarded after grep.
+COUNTERS_FIXTURE="$REPO_ROOT/src/tests/llvm-spike/01_const.HC"
+COUNTERS_OUT="$EVID/_tmp/counters_probe.ll"
+if [ ! -f "$COUNTERS_FIXTURE" ]; then
+    echo "FAIL  counters probe: fixture not found at $COUNTERS_FIXTURE" >&2
+    FAIL=$((FAIL+1))
+    echo "counters=missing"
+else
+    if "$HCC" --emit-llvm $HCC_INSTALL_ARG "$COUNTERS_FIXTURE" \
+        -o "$COUNTERS_OUT" >"$EVID/_tmp/counters_probe.stdout" \
+        2>"$EVID/_tmp/counters_probe.stderr"; then
+        if [ -f "$COUNTERS_OUT" ] && grep -q '^CAPABILITY_COUNTERS ' "$COUNTERS_OUT"; then
+            echo "PASS  capability counters: CAPABILITY_COUNTERS line present"
+            PASS=$((PASS+1))
+        else
+            echo "FAIL  capability counters: CAPABILITY_COUNTERS line missing from compiler output" >&2
+            echo "counters=missing"
+            FAIL=$((FAIL+1))
+        fi
+    else
+        echo "FAIL  capability counters: hcc --emit-llvm on $COUNTERS_FIXTURE failed" >&2
+        echo "counters=missing"
+        FAIL=$((FAIL+1))
+    fi
+fi
+
+echo
 echo "================================="
 echo "Summary: PASS=$PASS  FAIL=$FAIL"
 echo "================================="
