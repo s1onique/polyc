@@ -1,0 +1,29 @@
+RED-M1 — capability table does not exist (matrix is comment-only)
+=================================================================
+
+A machine-readable capability table is the missing closure for
+the documented contract.
+
+Currently the matrix at the top of src/llvm-backend.c is a
+C comment. A compiler-internal grep can verify the matrix
+matches the dispatch, but:
+
+  - No runtime assertion exists.
+  - No harness check exists.
+  - If a future patch adds `case IR_NEW_OP:` to the dispatch
+    without updating the matrix comment, nothing catches the
+    drift.
+
+CORE03 M1 closes this by introducing:
+
+  src/llvm-backend-cap.h     - LLVMBackendCapability enum +
+                                LLVMBackendCapabilityDef struct +
+                                kLLVMBackendCapability[] extern.
+  src/llvm-backend-cap.c     - the table itself + runtime
+                                llValidateCapabilityContract().
+
+CLOSURE PROOF for M1:
+  - grep src/llvm-backend-cap.h -> must exist
+  - grep src/llvm-backend-cap.c -> must exist
+  - llValidateCapabilityContract() must be called from
+    src/main.c before any --emit-llvm invocation.

@@ -1,0 +1,46 @@
+RED-P1-A — IR_BR/i64 currently has NO defensive-detection path
+================================================================
+
+The IR_BR dispatch at src/llvm-backend.c:745-770 currently:
+
+    if (LLVMTypeOf(cond) == LLVMInt1TypeInContext(ctx)) {
+        /* direct-use path */
+    } else if (LLVMTypeOf(cond) == LLVMInt64TypeInContext(ctx)) {
+        cond = LLVMBuildTrunc(lc->bld, cond,
+            LLVMInt1TypeInContext(ctx), "br_i1");
+        /* defensive trunc; no logging */
+    } else {
+        /* REJECTED */
+        fprintf(stderr, "%s: function %s: IR_BR condition must be "
+            "i64 (got kind=%d type=%d)\n", ..., kind, type);
+        exit(1);
+    }
+
+Observation: the i64 arm has NO logging, NO counter increment,
+NO diagnostic emission. If the i64 arm ever fires in practice,
+the dispatch silently emits `trunc i64 %c to i1` and the
+harness would not catch it as a defensive trip.
+
+This is a MACHINE-ENFORCEMENT gap. CORE03 M4 closes it.
+
+Expected behaviour after CORE03:
+  - IR_BR/i64 arm emits
+    LLVM_BACKEND_DEFENSIVE_INVARIANT_TRIPPED to stderr;
+  - lc->defensive_trips is incremented;
+  - the dispatch continues (no exit);
+  - the harness counts defensive_trips and asserts == 0 for
+    the supported subset (it MUST be 0 because the supported
+    subset cannot produce a non-i1 cond; the assert is the
+    machine-enforcement closure for P1-a).
+
+How to test:
+  - The supported subset produces i1 cond (proven by CORE02's
+    7/7 fixtures).
+  - There is NO natural way to make the supported subset produce
+    a non-i1 cond without modifying the lowerer (out of CORE03
+    scope per F7).
+  - Therefore the harness assertion is `defensive_trips == 0`,
+    not a positive witness.
+  - The runtime machinery is the closure: a future ACT that
+    introduces a non-i1 cond producer (out of current scope)
+    will trip the counter and the harness will FAIL.

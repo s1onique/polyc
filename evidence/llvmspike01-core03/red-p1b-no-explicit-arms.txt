@@ -1,0 +1,30 @@
+RED-P1-B — IR_NOP / IR_LABEL have NO explicit case arms
+========================================================
+
+The CORE02 HANDOFF closure prose said:
+
+  > IR_CMP_BR / IR_RMW_DEREF / IR_NOP / IR_LABEL still have
+  > explicit REJECTED arms.
+
+But:
+
+(empty output means there is NO `case IR_NOP:` and NO `case
+IR_LABEL:` in src/llvm-backend.c.)
+
+Both opcodes fall to the `default:` arm at the end of the
+dispatch switch, which calls `llErrUnsupportedOp(ins, ...)`
+and `exit(1)`. They have NO explicit REJECTED arms.
+
+CORE02 classification is correct (UNREACHABLE_ON_LLVM);
+the closure prose bug is just that the matrix and the
+HANDOFF said "explicit REJECTED arm" when in fact it is
+the generic `default:` arm.
+
+CORE03 §1 P1-b fixes this by tightening the matrix comment
+in src/llvm-backend.c for IR_NOP and IR_LABEL rows. The
+CORE03 contract check (M1+M2) will also assert: every
+row whose class is REJECTED has a `case IR_X:` arm; every
+row whose class is UNREACHABLE_ON_LLVM has only the
+generic default fallback. This mechanically distinguishes
+"explicit-rejection fence" from "generic-unreachable
+invariant" — the distinction the CORE02 reviewer asked for.
