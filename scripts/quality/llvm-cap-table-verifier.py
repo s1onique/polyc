@@ -102,26 +102,60 @@ def get_ir_op_enum():
     return {n: i for i, n in enumerate(names)}
 
 
+def _read_int_at(buf, pos, terminator, line_no, rows_seen, malformed):
+    """Read ASCII-decimal integer starting at pos, ending at the byte
+    matching terminator (typically b'\\t'). Returns (int_value, new_pos).
+    Returns (None, pos) and records malformed on failure.
+    """
+    end = buf.find(terminator, pos)
+    if end < 0:
+        malformed.append((line_no, rows_seen,
+                          "no %r terminator after byte %d"
+                          % (terminator, pos)))
+        return None, pos
+    raw = buf[pos:end]
+    if not raw or not raw.isdigit():
+        malformed.append((line_no, rows_seen,
+                          "non-integer integer field %r at byte %d"
+                          % (raw, pos)))
+        return None, pos
+    return int(raw), end + 1  # advance past the terminator
+
+
+def _read_exact(buf, pos, n, line_no, rows_seen, malformed, label):
+    """Read exactly n bytes from buf starting at pos. Returns
+    (bytes, new_pos). Returns (None, pos) and records malformed
+    on insufficient bytes."""
+    end = pos + n
+    if end > len(buf):
+        malformed.append((line_no, rows_seen,
+                          "%s length says %d bytes from offset %d, "
+                          "but only %d remain"
+                          % (label, n, pos, len(buf) - pos)))
+        return None, pos
+    return buf[pos:end], end
+
+
 def get_cap_table_via_hcc():
     """Run hcc --print-cap-table and parse the output.
 
     ACT-POLYC-LLVM-CORE03-CORRECTION02 M1: the wire format is
     length-delimited. Each row is:
 
-      <op-ordinal>\t<class-ordinal>\t<diag-len>\t<diag>\t<note-len>\t<note>\n
+      <op-ordinal>\\t<class-ordinal>\\t<diag-len>\\t<diag>\\t<note-len>\\t<note>\\n
 
     ACT-POLYC-LLVM-CORE03-CORRECTION03 M2: framing is performed on
-    RAW BYTES, not on decoded str. The C emitter writes lengths via
-    strlen() (UTF-8 byte count). A diagnostic that contains a
-    multi-byte UTF-8 code point (e.g. U+2192 = 3 bytes, 1 code
-    point) would round-trip incorrectly if we framed on
-    len(decoded_str). Framing on bytes is the only way the
-    C <-> Python contract can be UTF-8-correct.
+    RAW BYTES, not on decoded str. The C emitter writes lengths
+    via strlen() (UTF-8 byte count).
 
-    Implementation: subprocess.check_output returns bytes. We split
-    lines on b'\\n' (still bytes), parse the integer length fields
-    from ASCII-decimal bytes, slice the field bytes by that many
-    bytes, and only then decode each field as UTF-8.
+    ACT-POLYC-LLVM-CORE03-CORRECTION04 M2: framing is now TRULY
+    length-framed. The parser reads ASCII-decimal integers until
+    the next TAB, then reads exactly <len> bytes for the variable
+    field (regardless of whether those bytes contain TAB or LF),
+    then expects the next TAB and the next length, etc. The C
+    emitter does not need to change; the printer's bytes are
+    already arranged so that a length-framed consumer can extract
+    each field.
     """
     if not HCC.exists():
         fail("hcc binary not found at " + str(HCC))
@@ -140,65 +174,85 @@ def get_cap_table_via_hcc():
         fail("hcc --print-cap-table failed: " + str(e))
         return {}
 
-    # out is bytes. Split lines on b'\n' (still bytes).
+    # out is bytes. Drive the parser off the lengths, not off
+    # delimiters. Payloads may contain raw TAB or LF; only the
+    # length prefix and the structural delimiters between fields
+    # are guaranteed.
     raw_bytes = out
     rows = {}
+    # Each malformed entry: (line_no, record_index, message).
     malformed = []
 
-    for line_no, raw_line in enumerate(raw_bytes.splitlines(), start=1):
-        # Layout (bytes):  op \t class \t <diag-len> \t <diag-bytes> \t <note-len> \t <note-bytes>
-        if raw_line.count(b"\t") != 5:
-            malformed.append((line_no,
-                              "expected 5 tabs, got %d: %r"
-                              % (raw_line.count(b"\t"), raw_line)))
-            continue
-        f1, f2, f3, f4, f5, f6 = raw_line.split(b"\t")
-        try:
-            op = int(f1)
-            cls = int(f2)
-            diag_len = int(f3)
-            note_len = int(f5)
-        except ValueError as e:
-            malformed.append((line_no, "non-integer length field: %s" % e))
-            continue
+    pos = 0
+    record_index = 0
+    line_no = 1
+    total_len = len(raw_bytes)
 
-        # Slice each field as bytes by the integer length the C emitter wrote.
-        # The literal "-" is a single byte and has byte-length 1; we treat
-        # it as the NULL marker rather than a length-1 payload.
-        if f4 == b"-":
-            if diag_len != 1:
-                malformed.append((line_no,
-                                  "diag is '-' but header length is %d, not 1"
-                                  % diag_len))
-                continue
+    while pos < total_len:
+        record_index += 1
+        start_pos = pos
+        op, pos = _read_int_at(raw_bytes, pos, b"\t",
+                               line_no, record_index, malformed)
+        if op is None:
+            break
+        cls, pos = _read_int_at(raw_bytes, pos, b"\t",
+                                line_no, record_index, malformed)
+        if cls is None:
+            break
+        diag_len, pos = _read_int_at(raw_bytes, pos, b"\t",
+                                    line_no, record_index, malformed)
+        if diag_len is None:
+            break
+        # SENTINEL: literal "-" encoded as length 1 with byte 0x2D.
+        if (diag_len == 1
+                and pos < total_len
+                and raw_bytes[pos:pos+1] == b"-"):
             diag_bytes = None
+            pos += 1
         else:
-            if len(f4) != diag_len:
-                malformed.append((line_no,
-                                  "diag length mismatch: header says %d, "
-                                  "actual %d (field=%r)"
-                                  % (diag_len, len(f4), f4)))
-                continue
-            diag_bytes = f4
-        if f6 == b"-":
-            if note_len != 1:
-                malformed.append((line_no,
-                                  "note is '-' but header length is %d, not 1"
-                                  % note_len))
-                continue
+            diag_bytes, pos = _read_exact(raw_bytes, pos, diag_len,
+                                          line_no, record_index, malformed,
+                                          "diag")
+            if diag_bytes is None:
+                break
+        if pos >= total_len or raw_bytes[pos:pos+1] != b"\t":
+            malformed.append((line_no, record_index,
+                              "expected TAB after diag payload at "
+                              "byte %d, got %r"
+                              % (pos, raw_bytes[pos:pos+1])))
+            break
+        pos += 1
+        note_len, pos = _read_int_at(raw_bytes, pos, b"\t",
+                                     line_no, record_index, malformed)
+        if note_len is None:
+            break
+        if (note_len == 1
+                and pos < total_len
+                and raw_bytes[pos:pos+1] == b"-"):
             note_bytes = None
+            pos += 1
         else:
-            if len(f6) != note_len:
-                malformed.append((line_no,
-                                  "note length mismatch: header says %d, "
-                                  "actual %d (field=%r)"
-                                  % (note_len, len(f6), f6)))
-                continue
-            note_bytes = f6
+            note_bytes, pos = _read_exact(raw_bytes, pos, note_len,
+                                          line_no, record_index, malformed,
+                                          "note")
+            if note_bytes is None:
+                break
+        if pos >= total_len:
+            malformed.append((line_no, record_index,
+                              "missing record terminator LF at EOF"))
+            break
+        if raw_bytes[pos:pos+1] != b"\n":
+            malformed.append((line_no, record_index,
+                              "expected LF after note payload at "
+                              "byte %d, got %r"
+                              % (pos, raw_bytes[pos:pos+1])))
+            break
+        pos += 1
 
-        # Decode AFTER framing. This is the only point at which UTF-8
-        # is consulted; replace on malformed bytes to avoid crashing
-        # the verifier on accidentally invalid input.
+        raw_record = raw_bytes[start_pos:pos]
+        # Decode AFTER framing. This is the only point at which
+        # UTF-8 is consulted; replace on malformed bytes to avoid
+        # crashing the verifier on accidentally invalid input.
         diag = (None if diag_bytes is None
                 else diag_bytes.decode("utf-8", "replace"))
         note = (None if note_bytes is None
@@ -208,16 +262,18 @@ def get_cap_table_via_hcc():
             "class": cls,
             "diagnostic": diag,
             "note": note,
-            # Save the raw line (bytes) for the round-trip assertion.
-            # Decoded form is kept for human-readable diagnostics only.
-            "_raw": raw_line,
-            "_raw_str": raw_line.decode("utf-8", "replace"),
+            # Save the raw record (bytes) for the round-trip
+            # assertion. Decoded form is kept for human-readable
+            # diagnostics only.
+            "_raw": raw_record,
+            "_raw_str": raw_record.decode("utf-8", "replace"),
             "_diag_len": diag_len,
             "_note_len": note_len,
         }
+        line_no += 1
 
-    for ln, msg in malformed:
-        fail("M1 wire-format: line %d: %s" % (ln, msg))
+    for ln, rec, msg in malformed:
+        fail("M1 wire-format: record %d (line %d): %s" % (rec, ln, msg))
     if not rows and not malformed:
         fail("M1 wire-format: no rows parsed")
     return rows
@@ -239,7 +295,7 @@ def check_wire_format_roundtrip(rows):
         # re-encoded as UTF-8 to match the on-wire byte sequence.
         diag_bytes = b"-" if diag == "-" else diag.encode("utf-8")
         note_bytes = b"-" if note == "-" else note.encode("utf-8")
-        expected = b"%d\t%d\t%d\t%s\t%d\t%s" % (
+        expected = b"%d\t%d\t%d\t%s\t%d\t%s\n" % (
             op, row["class"], len(diag_bytes), diag_bytes,
             len(note_bytes), note_bytes,
         )

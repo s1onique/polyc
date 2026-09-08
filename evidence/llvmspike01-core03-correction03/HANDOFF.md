@@ -209,10 +209,10 @@ P2: Closure status reconciliation should become a fast-gate
     gate-fast check that greps for "Status: OPEN" in ACTs whose
     HANDOFF says PASS.)
 
-P2: CORE03, CORRECTION01 each breached declared topology cap
-    (declared 3, actual 4, recorded honestly). CORRECTION02 and
-    CORRECTION03 are AT CAP. The Factory pattern of "declared 3,
-    actual 4" deserves a separate investigation.
+P2: CORE03 and CORRECTION01 each breached declared topology cap
+    (declared 3, actual 4, recorded honestly). CORRECTION02 = 3 == 3
+    (AT CAP). CORRECTION03 = 3 == 3 (AT CAP). The Factory pattern
+    of "declared 3, actual 4" deserves a separate investigation.
 
 P2: Pre-CORE03 history (CORE01, CORE02) preserved (F14).
 

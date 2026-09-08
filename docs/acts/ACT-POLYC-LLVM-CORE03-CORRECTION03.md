@@ -2,12 +2,42 @@
 
 ## Status
 
-PASS — at HEAD 4e192f2. All acceptance criteria (A1-A6) green.
+HALT_CORRECTION03_WIRE_AND_IDENTITY_CONTRACT — HALTED at
+reviewer's finding. Two new binding closure defects:
+
+  P0-1 self-pinned final HEAD — this Status block previously
+       read "PASS at HEAD 4e192f2" while the actual final HEAD
+       was 708d620 (4e192f2 was an intermediate DOCS commit
+       superseded by an amend). The recursion
+       (closure-doc embeds HEAD -> amended -> HEAD moves ->
+       doc is stale at instant of closure) was reproduced.
+  P0-2 framing still splits on delimiters first — lengths were
+       validated AFTER splitting, not used to slice. A literal
+       TAB or LF in any payload breaks parsing.
+  P1   topology residue prose claimed CORRECTION02 breached
+       cap; CORRECTION02 is AT CAP (3 == 3).
+
+Authorised successor: ACT-POLYC-LLVM-CORE03-CORRECTION04
+(which fixes all three defects above).
+
+### IDENTITY (non-self-pinning)
+
+ENTRY_HEAD   = be53986 (CORRECTION02 DOCS HEAD, this ACT's
+                       predecessor)
+RED_HEAD     = b382f73 (CORRECTION03 RED witness)
+IMPL_HEAD    = 4508f51 (CORRECTION03 IMPL — byte-mode parser)
+DOCS_HEAD    = 708d620 (CORRECTION03 DOCS — HANDOFF + post-impl)
+FINAL_HEAD   = reviewer resolves from repository topology
+
+Note: the FINAL_HEAD above is a reviewer observation, not a
+self-assertion. The Status block does NOT embed the SHA of the
+commit containing the Status block; that anti-pattern is what
+closed this ACT.
 
 Predecessor: ACT-POLYC-LLVM-CORE03-CORRECTION02 (verdict:
 HALT_SCOPE_CONTRACT_VIOLATED at HEAD be53986).
 
-### Verdict
+### Verdict-at-HALT
 
 CORRECTION03 closes every defect the reviewer flagged on
 CORRECTION02's PASS:
@@ -22,12 +52,9 @@ CORRECTION02's PASS:
                    Supersession block pointing to CORRECTION03.
                    The contradiction between ACT status and
                    HANDOFF is resolved.
-  P1-ASCII-only:   CLOSED — verifier parser now frames on raw
-                   bytes. Multi-byte UTF-8 payloads round-trip
-                   correctly. Live negative test (non-ASCII
-                   payload injected into IR_FADD note) reproduces
-                   the failure on ASCII-mode parser and the
-                   success on byte-mode parser.
+  P1-ASCII-only:   PARTIAL — verifier parser now frames on raw
+                   bytes, but the framing is still delimiter-
+                   first. CORRECTION04 closes the remaining gap.
   topology:        AT CAP — 3 commits (RED + IMPL + DOCS).
 
 See evidence/llvmspike01-core03-correction03/HANDOFF.md for
@@ -36,7 +63,9 @@ results.
 
 ### Supersession
 
-Authorised successor: deferred to ACT-POLYC-LLVM-CORE04.
+Authorised successor: ACT-POLYC-LLVM-CORE03-CORRECTION04
+(status: OPEN at this ACT's halt; will close P0-1 self-pin,
+P0-2 length framing, and P1 topology residue prose).
 
 Per F14, CORRECTION03's commit chain is preserved at HEAD; no
 rewriting. Per F4, the FAILURE in CORRECTION02 was HALTED (not
@@ -226,11 +255,13 @@ P2: Closure status reconciliation should become a fast-gate
     docs/acts/<act>.md must not say Status: OPEN. Currently checked
     manually for each ACT.
 
-P2: CORE03, CORRECTION01, and CORRECTION02 all breached their
-    declared topology cap (declared 3, actual 4 in each case,
-    recorded honestly). CORE03-CORRECTION03 declares 3 and aims for
-    3. (Reviewer noted this as a pattern worth addressing at the
-    factory level — out of scope here.)
+P2: CORE03 and CORRECTION01 each breached their declared
+    topology cap (declared 3, actual 4 in each case, recorded
+    honestly). CORRECTION02 = 3 == 3 (AT CAP). CORRECTION03 = 3 == 3
+    (AT CAP). The Factory pattern of "declared 3, actual 4"
+    deserves a separate investigation. (Reviewer noted this
+    as a pattern worth addressing at the factory level — out
+    of scope here.)
 
 P2: Pre-CORE03 history (CORE01, CORE02) preserved (F14).
 observe the M2 arm-local checker REDs with the exact "diagnostic
