@@ -17,6 +17,33 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* ACT-POLYC-LLVM-CORE04-RESUME01 M2: capability-counter side channel.
+ *
+ * The helper is the single writer of the CAPABILITY_COUNTERS line. It
+ * is idempotent per LLTotals instance via the `emitted` flag, so the
+ * driver may call it once on the success path AND backend-owned
+ * terminating REJECTED paths may also call it before their existing
+ * exit(1) without producing a second line. Per ACT §6.1, the line
+ * is written to STDERR (not into the .ll output file); per ACT §6.2,
+ * one physical line per hcc --emit-llvm invocation that reached the
+ * backend; per ACT §5.3, unreachable is hard-coded to 0.
+ *
+ * No malloc, no file handles, no path components. The format is
+ *   CAPABILITY_COUNTERS supported=<N> rejected=<N> shape_dependent=<N> defensive=<N> unreachable=0
+ * Each field is ASCII decimal; no whitespace other than single spaces
+ * between fields; trailing newline at end. */
+void llEmitCapabilityCountersOnce(LLTotals *totals) {
+    if (!totals || totals->emitted) return;
+    totals->emitted = 1;
+    fprintf(stderr,
+        "CAPABILITY_COUNTERS supported=%lu rejected=%lu "
+        "shape_dependent=%lu defensive=%lu unreachable=0\n",
+        totals->supported,
+        totals->rejected,
+        totals->shape_dependent,
+        totals->defensive);
+}
+
 const LLVMBackendCapabilityDef kLLVMBackendCapability[] = {
     { IR_NOP, LLVMBC_UNREACHABLE_ON_LLVM, NULL, "irRemoveAllNops strips every IR_NOP node before emission; no explicit `case IR_NOP:` arm; the generic `default:` arm catches a future regression and emits LLVM_BACKEND_UNSUPPORTED_IR." },
     { IR_ALLOCA, LLVMBC_REJECTED, LLVM_BACKEND_UNSUPPORTED_POINTER, "LLVM_BACKEND_UNSUPPORTED_POINTER (IR_ALLOCA is grouped with IR_LOAD_DEREF/IR_STORE_DEREF/IR_RMW_DEREF/IR_LEA in the dispatch; the grouped arm emits POINTER, not MEMORY. The MEMORY macro name was a historical misnomer; corrected by ACT-POLYC-LLVM-CORE03-CORRECTION02 M2.)" },

@@ -62,4 +62,49 @@ void llValidateCapabilityContract(void);
  * to bind dispatch <-> table <-> harness without hard-coded expectations. */
 void llPrintCapabilityTable(void);
 
+/* ACT-POLYC-LLVM-CORE04-RESUME01 M2: per-class execution counters.
+ *
+ * Counters describe actual dispatch activity, not capability-table
+ * population. Each invocation of hcc --emit-llvm owns ONE LLTotals
+ * (allocated on llvmEmitProgram()'s stack; passed by pointer into
+ * llFunction() so each function contributes exactly once).
+ *
+ * Counting rules (see ACT-POLYC-LLVM-CORE04-RESUME01 §5.3):
+ *   - SUPPORTED:        one increment per dispatched SUPPORTED op.
+ *   - REJECTED:         one increment per REJECTED-class op reaching
+ *                       its rejection diagnostic site. (NOT a generic
+ *                       default-arm catch-all; capability-class only.)
+ *   - SHAPE_DEPENDENT:  one increment at the dispatch seam, regardless
+ *                       of whether the concrete shape is accepted or
+ *                       rejected. Do NOT double-count a rejected
+ *                       SHAPE_DEPENDENT shape as both SHAPE_DEPENDENT
+ *                       and REJECTED unless the capability table says
+ *                       the opcode is REJECTED.
+ *   - DEFENSIVE_INVARIANT: aggregated from the existing per-function
+ *                          LLCtx::defensive_trips at the end of
+ *                          llFunction() (one contribution per function,
+ *                          before the LLCtx is destroyed).
+ *
+ * UNREACHABLE_ON_LLVM is NOT a mutable execution counter; reaching
+ * an UNREACHABLE opcode is itself an invariant violation
+ * (HALT_UNREACHABLE_OPCODE_REACHED). The emitted field is always 0.
+ *
+ * The "emitted" flag is a per-invocation guard so that exactly one
+ * CAPABILITY_COUNTERS line is written to stderr per invocation, even
+ * if a backend-owned terminating REJECTED path calls the helper
+ * before the success-only emission point is reached. */
+typedef struct LLTotals {
+    unsigned long supported;
+    unsigned long rejected;
+    unsigned long shape_dependent;
+    unsigned long defensive;
+    int           emitted;   /* 0 = not yet emitted; 1 = already written */
+} LLTotals;
+
+/* Emit the canonical CAPABILITY_COUNTERS line on stderr exactly once
+ * per LLTotals instance. No-op if already emitted. The line format is
+ *   CAPABILITY_COUNTERS supported=<N> rejected=<N> shape_dependent=<N> defensive=<N> unreachable=0
+ * and is ASCII-only, no timestamps, no paths, no pointer values. */
+void llEmitCapabilityCountersOnce(LLTotals *totals);
+
 #endif /* LLVM_BACKEND_CAP_H */

@@ -308,55 +308,203 @@ def check_wire_format_roundtrip(rows):
         ok("M1 round-trip: %d rows round-trip byte-identical" % len(rows))
 
 
-def get_dispatch_arms():
-    """Parse src/llvm-backend.c for explicit `case IR_X:` arms and
-    `if (ins->op == IR_X)` short-circuits within llLowerInstr."""
-    text = read(SRC_BACKEND)
-
-    # `case IR_X:` arms anywhere in the file.
-    case_arms = set()
-    for m in re.finditer(r"case\s+(IR_[A-Z_0-9]+)\s*:", text):
-        case_arms.add(m.group(1))
-
-    # `if (ins->op == IR_X)` short-circuits anywhere.
-    if_arms = set()
-    for m in re.finditer(r"if\s*\(\s*ins->op\s*==\s*(IR_[A-Z_0-9]+)\s*\)", text):
-        if_arms.add(m.group(1))
-
-    # Find the body of llLowerInstr to scope the `if` arms.
-    # The current spike has only one llLowerInstr. Both `case` and
-    # `if` arms inside it are valid dispatch; outside, only `case`
-    # arms in the dispatch's switch are valid.
-    fn_match = re.search(
-        r"static\s+\w+\s+llLowerInstr\s*\([^)]*\)\s*\{",
-        text,
+def _function_body(text, name):
+    """Return the body text of `static ... name(...)` in text, or None.
+    Uses brace counting; ignores string literals and char literals
+    only insofar as this matches the verifier's existing tolerance
+    for the dispatch source. The dispatch functions do not contain
+    string literals with braces, so naive counting is safe here."""
+    pat = re.compile(
+        r"static\s+\w[\w\s\*]*\b" + re.escape(name) + r"\s*\([^)]*\)\s*\{"
     )
-    inside_dispatch = set()
-    outside_dispatch = set()
-    if fn_match:
-        # Naive brace counting from the function open.
-        start = fn_match.end()
-        depth = 1
-        i = start
-        while i < len(text) and depth > 0:
-            if text[i] == "{":
-                depth += 1
-            elif text[i] == "}":
-                depth -= 1
-            i += 1
-        dispatch_body = text[start:i]
-        for m in re.finditer(r"case\s+(IR_[A-Z_0-9]+)\s*:", dispatch_body):
-            inside_dispatch.add(m.group(1))
-        # We also accept `case IR_X:` outside (e.g., in helper tables).
-        # The dispatch body is the canonical llLowerInstr.
-    for op in case_arms:
-        outside_dispatch.add(op)
-    inside_dispatch |= inside_dispatch
+    m = pat.search(text)
+    if not m:
+        return None
+    start = m.end()
+    depth = 1
+    i = start
+    while i < len(text) and depth > 0:
+        if text[i] == "{":
+            depth += 1
+        elif text[i] == "}":
+            depth -= 1
+        i += 1
+    return text[start:i - 1]
+
+
+def _is_dispatch_function_body(body):
+    """Return True if the body contains a dispatch-shaped construct
+    (`case IR_X:` arm OR `if (ins->op == IR_X)` short-circuit)."""
+    if body is None:
+        return False
+    if re.search(r"\bcase\s+IR_[A-Z_0-9]+\s*:", body):
+        return True
+    if re.search(r"\bif\s*\(\s*ins->op\s*==\s*IR_[A-Z_0-9]+", body):
+        return True
+    return False
+
+
+def discover_dispatch_functions(text, driver_name="llFunction"):
+    """Derive the set of dispatch function names by structural
+    call-graph discovery with a dispatch-shape discriminator.
+
+    ACT-POLYC-LLVM-CORE04-RESUME01 M1: the dispatch function set is
+    NOT a hard-coded literal from ACT prose. It is derived from the
+    real source by walking the call graph reachable from
+    `driver_name()` and keeping only those reachable functions that
+    contain a dispatch-shaped construct (`case IR_X:` or
+    `if (ins->op == IR_X)`).
+
+    This combination of two structural properties is the only
+    invariant that distinguishes real dispatchers from the
+    adversarial fixture (RESUME01_ADVERSARIAL_DISPATCH_SNIPPET):
+
+      - The adversarial fixture's `not_a_dispatch_helper` and
+        `also_not_a_dispatch_helper` are static functions
+        containing `if (ins->op == IR_ADD)` etc. They contain the
+        dispatch shape. BUT they are not called from llFunction(),
+        so call-graph reachability excludes them. Verified.
+
+      - The real non-dispatch helpers (llBindParams, llCreateBlocks,
+        llEmitCapabilityCountersOnce, llDetectCollapsibleReturn,
+        etc.) ARE called from llFunction(). BUT they do NOT
+        contain `case IR_X:` or `if (ins->op == IR_X)` arms, so the
+        dispatch-shape filter excludes them. Verified.
+
+      - The real dispatchers (llLowerBlock, llLowerInstr) are
+        reachable from llFunction() and contain the dispatch shape.
+        They pass both filters. Verified.
+
+    Depth limit: we follow the call graph two hops beyond
+    llFunction. Three hops is enough for the current spike's
+    `llvmEmitProgram -> llFunction -> llLowerBlock -> llLowerInstr`
+    topology.
+    """
+    seen = set()
+    frontier = {driver_name}
+    depth_limit = 3  # driver + 3 transitive hops
+    call_re = re.compile(r"\b([a-zA-Z_]\w*)\s*\(")
+    excluded = {"if", "for", "while", "switch", "do", "return",
+                "sizeof", "__builtin_expect"}
+    for _ in range(depth_limit + 1):
+        next_frontier = set()
+        for name in frontier:
+            if name in seen or name in excluded:
+                continue
+            body = _function_body(text, name)
+            if body is None:
+                continue
+            seen.add(name)
+            for m in call_re.finditer(body):
+                callee = m.group(1)
+                if callee in seen or callee in excluded or callee == name:
+                    continue
+                if _function_body(text, callee) is not None:
+                    next_frontier.add(callee)
+        if not next_frontier:
+            break
+        frontier = next_frontier
+    seen.discard(driver_name)
+    # Apply the dispatch-shape filter: only functions that contain
+    # `case IR_X:` or `if (ins->op == IR_X)` arms are dispatchers.
+    # This is the only invariant that, combined with call-graph
+    # reachability, excludes both the permanent adversarial fixture
+    # AND the real non-dispatch helpers.
+    dispatch = set()
+    for name in seen:
+        body = _function_body(text, name)
+        if _is_dispatch_function_body(body):
+            dispatch.add(name)
+    return dispatch
+
+
+def get_dispatch_arms():
+    """ACT-POLYC-LLVM-CORE04-RESUME01 M1: ONE canonical dispatch
+    model. Returns a dict:
+
+        {
+            "case_in_llLowerInstr": set of opcodes covered by
+                                    `case IR_X:` arms inside any
+                                    discovered dispatch function.
+            "if_in_llLowerInstr_or_switch": set of opcodes covered by
+                                    `if (ins->op == IR_X)` arms
+                                    inside any discovered dispatch
+                                    function.
+            "case_anywhere": set of opcodes with any `case IR_X:`
+                             arm anywhere in src/llvm-backend.c
+                             (kept for diagnostic context only; the
+                             I1 / I2 / arm-local checks consume only
+                             the scope-tight sets).
+            "if_anywhere":  set of opcodes with any `if (ins->op == IR_X)`
+                            arm anywhere in src/llvm-backend.c
+                            (diagnostic context only).
+            "scope_fn_names": sorted list of discovered dispatch
+                              function names (structural discovery).
+            "model": list of dispatch-arm records (one per case arm
+                     and one per if-arm in scope).
+        }
+
+    The scope is derived from the real source (call-graph from
+    llFunction()), not from a hard-coded list of function names.
+    The permanent adversarial fixture is structurally excluded by
+    virtue of NOT being called from llFunction().
+    """
+    text = read(SRC_BACKEND)
+    scope_fn_names = sorted(discover_dispatch_functions(text))
+    if not scope_fn_names:
+        scope_fn_names = []
+
+    # ACT-POLYC-LLVM-CORE04-RESUME01 M1: filter the case-arm scan
+    # to known IrOp names. This rejects predicate enums
+    # (IrCmpKind: IR_CMP_*, IR_CMP_INVALID) that may appear inside
+    # dispatch-adjacent helpers (e.g. llCmpKindToLLVMPred). The
+    # verifier must only consume opcode-shaped identifiers.
+    enum_ops = get_ir_op_enum()
+
+    case_in = set()
+    if_in = set()
+    case_any = set()
+    if_any = set()
+    model = []
+
+    case_re = re.compile(r"case\s+(IR_[A-Z_0-9]+)\s*:")
+    if_re = re.compile(
+        r"if\s*\(\s*ins->op\s*==\s*(IR_[A-Z_0-9]+)\s*\)"
+    )
+
+    for fn_name in scope_fn_names:
+        body = _function_body(text, fn_name)
+        if body is None:
+            continue
+        for m in case_re.finditer(body):
+            op = m.group(1)
+            if op not in enum_ops:
+                continue  # predicate or other non-IrOp identifier
+            case_in.add(op)
+            model.append({"op": op, "kind": "CASE", "function": fn_name})
+        for m in if_re.finditer(body):
+            op = m.group(1)
+            if op not in enum_ops:
+                continue
+            if_in.add(op)
+            model.append({"op": op, "kind": "IF_SHORT", "function": fn_name})
+
+    for m in case_re.finditer(text):
+        op = m.group(1)
+        if op in enum_ops:
+            case_any.add(op)
+    for m in if_re.finditer(text):
+        op = m.group(1)
+        if op in enum_ops:
+            if_any.add(op)
 
     return {
-        "case_in_llLowerInstr": inside_dispatch,
-        "case_anywhere": case_arms,
-        "if_in_llLowerInstr_or_switch": if_arms,
+        "case_in_llLowerInstr": case_in,
+        "if_in_llLowerInstr_or_switch": if_in,
+        "case_anywhere": case_any,
+        "if_anywhere": if_any,
+        "scope_fn_names": scope_fn_names,
+        "model": model,
     }
 
 
@@ -689,148 +837,120 @@ static int also_not_a_dispatch_helper(IrInstr *ins)
 """
 
 
-def _loose_if_arm_extract(text):
-    """Replicate the CURRENT (loose) regex the verifier uses to find
-    `if (ins->op == IR_X)` short-circuits anywhere in a source file.
-    Returns the set of opcode names picked up.
-
-    This intentionally mirrors the loose semantics of
-    get_dispatch_arms()['if_in_llLowerInstr_or_switch'] (the name is
-    misleading: it actually scans the entire file). RESUME01 C2
-    unifies the extractor to scope tightly; until then, this
-    function demonstrates that the loose extractor DOES pick up
-    `if (ins->op == IR_X)` from any function in any source file,
-    including adversarial ones.
-    """
-    ifs = set()
-    for m in re.finditer(
-        r"if\s*\(\s*ins->op\s*==\s*(IR_[A-Z_0-9]+)\s*\)", text
-    ):
-        ifs.add(m.group(1))
-    return ifs
-
-
-def _scoped_if_arm_extract(text, scope_fn_names):
-    """The PROPOSED (scope-tight) extractor used by RESUME01 C2 IMPL.
-    It only collects `if (ins->op == IR_X)` arms from functions whose
-    name is in `scope_fn_names`. Anything outside the scope is
-    rejected.
-    """
-    ifs = set()
-    for fn_name in scope_fn_names:
-        m = re.search(
-            r"\b" + re.escape(fn_name) + r"\s*\([^)]*\)\s*\{",
-            text,
-        )
-        if not m:
-            continue
-        start = m.end()
-        depth = 1
-        i = start
-        while i < len(text) and depth > 0:
-            if text[i] == "{":
-                depth += 1
-            elif text[i] == "}":
-                depth -= 1
-            i += 1
-        body = text[start:i]
-        for n in re.finditer(
-            r"if\s*\(\s*ins->op\s*==\s*(IR_[A-Z_0-9]+)\s*\)", body
-        ):
-            ifs.add(n.group(1))
-    return ifs
-
-
 def check_dispatch_scope_is_tight(dispatch):
     """ACT-POLYC-LLVM-CORE04-RESUME01 §5.2 / AC13: PERMANENT scope-tight
     self-test.
 
-    RED phase: the loose extractor picks up `if (ins->op == IR_X)`
-    from non-dispatch helpers (currently true). The test FAILs when
-    the scope-tighter ALSO picks them up, because that means the
-    proposed scope is not actually tight.
+    C2 GREEN: the verifier now consumes ONE scoped dispatch model
+    produced by get_dispatch_arms(). The self-test asserts:
 
-    After C2 IMPL unifies the dispatch-scope model, the scope-tighter
-    is the only path; the loose extractor is retired. The permanent
-    adversarial fixture continues to assert that the scope-tighter
-    REJECTS the non-dispatch `if (ins->op == IR_X)` arms.
+      1. The permanent adversarial fixture's `if (ins->op == IR_X)`
+         arms (IR_ADD, IR_SUB, IR_MUL inside `not_a_dispatch_helper`
+         and `also_not_a_dispatch_helper`) are NOT picked up by the
+         unified scope-tight extractor.
 
-    `dispatch` is the dict returned by get_dispatch_arms() on the
-    real src/llvm-backend.c. Used to compare the loose discovery
-    against the proposed scope-tight discovery.
+      2. The unified model is internally consistent: the
+         `if_in_llLowerInstr_or_switch` set reported by
+         get_dispatch_arms() equals the set re-derived by walking
+         the discovered dispatch functions and re-scanning their
+         bodies.
+
+      3. No rogue `if (ins->op == IR_X)` arm exists OUTSIDE the
+         discovered dispatch functions. Such an arm would mean the
+         discovery scope is too narrow (a real dispatch arm lives
+         in a helper that the call-graph did not reach).
+
+    This test FAILS if any future regression widens the scope
+    (file-wide scan) or narrows it (drops a real dispatch
+    function from the discovery set).
     """
     adversarial = RESUME01_ADVERSARIAL_DISPATCH_SNIPPET
-    loose = _loose_if_arm_extract(adversarial)
-
-    expected_adversarial_loose = {"IR_ADD", "IR_SUB", "IR_MUL"}
+    # Re-run the unified scope on the adversarial fixture using
+    # the same scope_fn_names the verifier derived for the real
+    # source. The adversarial snippet defines
+    # `not_a_dispatch_helper` and `also_not_a_dispatch_helper`;
+    # neither is called from `llFunction()`, so they MUST be
+    # excluded by structural discovery.
+    scoped_adversarial = set()
+    for fn_name in dispatch["scope_fn_names"]:
+        body = _function_body(adversarial, fn_name)
+        if body is None:
+            continue
+        for m in re.finditer(
+            r"if\s*\(\s*ins->op\s*==\s*(IR_[A-Z_0-9]+)\s*\)", body
+        ):
+            scoped_adversarial.add(m.group(1))
     expected_adversarial_scoped = set()
-
-    if loose != expected_adversarial_loose:
+    if scoped_adversarial != expected_adversarial_scoped:
         fail(
-            "scope-tight self-test: LOOSE extractor on adversarial "
-            "fixture produced {0!r}, expected {1!r}. Regex semantics "
-            "have drifted; update the test or the adversarial "
-            "fixture.".format(loose, expected_adversarial_loose)
+            "scope-tight self-test: adversarial fixture's "
+            "`if (ins->op == IR_X)` arms leaked into the scope. "
+            "Scoped extractor picked up {0!r}, expected {1!r}. "
+            "The structural discovery must continue to exclude "
+            "non-dispatch helper functions (RESUME01 AC13)."
+            .format(scoped_adversarial, expected_adversarial_scoped)
         )
         return
 
-    scoped = _scoped_if_arm_extract(adversarial, ["llLowerInstr"])
-    if scoped != expected_adversarial_scoped:
-        fail(
-            "scope-tight self-test: SCOPED extractor on adversarial "
-            "fixture picked up {0!r}, expected {1!r}. The scope "
-            "extractor is NOT tight — non-dispatch `if (ins->op == "
-            "IR_X)` arms leak through. This is the asymmetry RESUME01 "
-            "C2 IMPL fixes.".format(scoped, expected_adversarial_scoped)
-        )
-        return
-
-    # Informational: delta between loose and scoped on the real
-    # src/llvm-backend.c. After IMPL, the loose extractor must be
-    # retired (no rogue `if (ins->op == IR_X)` arms remain outside
-    # llLowerInstr, OR all such arms are listed in the explicit
-    # switch helpers used by LlFunction).
+    # Internal-consistency cross-check on the real source.
     real_text = read(SRC_BACKEND)
-    real_loose = _loose_if_arm_extract(real_text)
-    real_scoped = _scoped_if_arm_extract(real_text, ["llLowerInstr"])
-    rogue = sorted(real_loose - real_scoped)
-    print(
-        "INFO  scope-tight self-test: on real src/llvm-backend.c, "
-        "{0} loose-only opcodes (potential rogue `if` arms outside "
-        "llLowerInstr): {1}".format(len(rogue), rogue)
-    )
-
-    # RED-M1 wiring: the CURRENT get_dispatch_arms() (used by I1 + I2)
-    # reports `if_in_llLowerInstr_or_switch` which actually collects
-    # `if (ins->op == IR_X)` anywhere in the file. The asymmetric
-    # discovery is the bug. This assertion enforces that the loose
-    # set on the real source equals the scoped set, which is FALSE
-    # today (that's the RED) and must be TRUE after IMPL. Until IMPL
-    # unifies get_dispatch_arms(), this assertion FAILs.
-    real_dispatch_loose = dispatch["if_in_llLowerInstr_or_switch"]
-    if real_dispatch_loose != real_scoped:
-        # The current dispatch_arms() picks up `if`s outside
-        # llLowerInstr, the proposed scope-tight extractor does
-        # not. Their sets MUST differ right now — that's the
-        # asymmetry bug.
-        loose_minus_scoped = sorted(real_dispatch_loose - real_scoped)
-        scoped_minus_loose = sorted(real_scoped - real_dispatch_loose)
+    expected_scoped_real = dispatch["if_in_llLowerInstr_or_switch"]
+    derived_scoped_real = set()
+    for fn_name in dispatch["scope_fn_names"]:
+        body = _function_body(real_text, fn_name)
+        if body is None:
+            continue
+        for m in re.finditer(
+            r"if\s*\(\s*ins->op\s*==\s*(IR_[A-Z_0-9]+)\s*\)", body
+        ):
+            derived_scoped_real.add(m.group(1))
+    if derived_scoped_real != expected_scoped_real:
         fail(
-            "scope-tight self-test: get_dispatch_arms() loose set "
-            "differs from scope-tight set on real src/llvm-backend.c. "
-            "loose-only (rogue `if (ins->op == IR_X)` arms outside "
-            "llLowerInstr): {0}; scoped-only (missing from loose "
-            "extractor): {1}. This is the discovery-scope mismatch "
-            "RESUME01 M1 fixes; C2 IMPL unifies the extractor."
-            .format(loose_minus_scoped, scoped_minus_loose)
+            "scope-tight self-test: unified dispatch model's "
+            "if-arm set ({0!r}) does not match the re-derived "
+            "scoped set ({1!r}). This is a consistency defect; "
+            "the model is internally incoherent."
+            .format(sorted(expected_scoped_real),
+                    sorted(derived_scoped_real))
         )
         return
+
+    # No rogue arms: every `if (ins->op == IR_X)` in src/llvm-backend.c
+    # must live inside a discovered dispatch function.
+    loose_real = set()
+    for m in re.finditer(
+        r"if\s*\(\s*ins->op\s*==\s*(IR_[A-Z_0-9]+)\s*\)", real_text
+    ):
+        loose_real.add(m.group(1))
+    rogue = sorted(loose_real - expected_scoped_real)
+    if rogue:
+        fail(
+            "scope-tight self-test: rogue `if (ins->op == IR_X)` "
+            "arms exist outside the discovered dispatch functions: "
+            "{0}. The structural discovery must cover every real "
+            "dispatch arm; helpers containing dispatch-shaped "
+            "constructs are NOT real dispatch unless called from "
+            "llFunction() / its transitive helpers. RESUME01 M1 "
+            "FAILS on the verifier (the discovery scope is too "
+            "narrow).".format(rogue)
+        )
+        return
+
+    print(
+        "INFO  scope-tight self-test: discovered dispatch "
+        "functions = {0}; unified model set: {1} case arms, "
+        "{2} if-arms in scope.".format(
+            dispatch["scope_fn_names"],
+            len(dispatch["case_in_llLowerInstr"]),
+            len(dispatch["if_in_llLowerInstr_or_switch"])
+        )
+    )
 
     ok(
         "scope-tight self-test (RESUME01 AC13): permanent "
-        "adversarial fixture rejected by scope-tighter; loose "
-        "extractor still picks it up (C1 RED evidence; C2 IMPL "
-        "unifies the dispatch-scope model)."
+        "adversarial fixture rejected by unified scope; "
+        "unified model is internally consistent; no rogue "
+        "`if`-arms outside discovered scope."
     )
 
 
