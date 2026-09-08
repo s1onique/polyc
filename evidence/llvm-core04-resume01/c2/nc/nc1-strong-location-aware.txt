@@ -1,0 +1,32 @@
+=== nc1-strong-location-aware.txt (C2 IMPL P0-2 follow-up) ===
+
+NC1-STRONG: location-aware rogue-arm check.
+
+Scenario: src/llvm-backend.c has a rogue `if (ins->op == IR_IADD)`
+arm inside a non-dispatch helper named rogue_dup_iadd_helper.
+IR_IADD is already-supported by the legitimate dispatch scope, so
+the OLD opcode-set-based check would have produced empty rogue
+list (silent false PASS).
+
+Expected behaviour for the location-aware check:
+  - Augmented source has 1 rogue occurrence: IR_IADD at offset
+    73742 (function rogue_dup_iadd_helper).
+  - augmented_dispatch.model still does not include this
+    occurrence (helper is not in discovered dispatch scope).
+  - Location-aware check returns: [(IR_IADD,
+    rogue_dup_iadd_helper, <offset>)] non-empty.
+  - The self-test PASSES because the location-aware check
+    correctly detected the rogue.
+
+OLD set-based check on the same augmented source (predicted):
+  rogue = [] (silent false PASS)
+
+NEW location-aware check on the same augmented source:
+  rogue = [('IR_IADD', 'rogue_dup_iadd_helper', 73742)] (caught IR_IADD inside rogue_dup_iadd_helper)
+
+Real-source location-aware rogue-arm check (verifier PASS):
+INFO  scope-tight self-test: discovered dispatch functions = ['llCmpKindToLLVMPred', 'llCollapseStoreValue', 'llDetectCollapsibleReturn', 'llLowerBlock', 'llLowerInstr']; unified model set: 48 case arms, 9 if-arms in scope.
+PASS  scope-tight self-test (RESUME01 AC13): permanent adversarial fixture rejected by unified scope; unified model is internally consistent; no rogue `if`-arms outside discovered scope; strong NC1 (already-supported IR_IADD in non-dispatch helper) is correctly detected by the location-aware check.
+
+NC1-STRONG RESULT: location-aware check correctly catches
+IR_IADD rogue. OLD set-based check would have silently passed.

@@ -1,26 +1,57 @@
-=== scope.txt ===
-ACT-POLYC-LLVM-CORE04-RESUME01 C2 IMPL: changed-file scope.
+=== scope.txt (C2 IMPL final, with P0-1 + P0-2 corrections) ===
 
-CHANGED:
- M evidence/llvmspike01-resume01-correction01-resume01-correction01/live-red-transcripts/red-1B.emit.stderr
- M evidence/llvmspike01-resume01-correction01-resume01-correction01/live-red-transcripts/red-2.emit.stderr
- M evidence/llvmspike01-resume01-correction01-resume01-correction01/live-red-transcripts/red-2b.emit.stderr
- M evidence/llvmspike01-resume01-correction01-resume01-correction01/red-multi_def/red-multi_def.live.stderr
- M evidence/llvmspike01-resume01-correction01-resume01-correction01/red-multi_def/red-multi_def.live.summary
+CHANGED (worktree):
+ M evidence/llvm-core04-resume01/c2/legacy-spike-test.txt
+ M evidence/llvm-core04-resume01/c2/m1-verifier-green.txt
+ M evidence/llvm-core04-resume01/c2/scope.txt
  M scripts/quality/llvm-cap-table-verifier.py
  M scripts/quality/llvm-spike-test.sh
- M src/llvm-backend-cap.c
- M src/llvm-backend-cap.h
- M src/llvm-backend.c
-?? evidence/llvm-core04-resume01/c2/
-?? scripts/quality/llvm-cap-table-verifier.py.bak
+?? evidence/llvm-core04-resume01/c2/live-red-transcripts/
+?? evidence/llvm-core04-resume01/c2/nc/nc1-strong-location-aware.txt
+?? evidence/llvm-core04-resume01/c2/red-multi_def/
 
-DIFF SUMMARY (line counts vs. RESUME01 first commit 0604467):
- docs/ROADMAP.md                                   |  24 +++
- docs/acts/ACT-POLYC-LLVM-CORE04-RESUME01.md       | 109 +++++++++--
- evidence/llvm-core04-resume01/c1/README.md        |  97 ++++++++++
- evidence/llvm-core04-resume01/c1/red-m2-recon.txt | 209 +++++++++++++++++++++
- evidence/llvm-core04-resume01/c1/red-verifier.out | 123 +++++++++++++
- scripts/quality/llvm-cap-table-verifier.py        | 210 ++++++++++++++++++++++
- scripts/quality/llvm-spike-test.sh                |  35 ++++
- 7 files changed, 793 insertions(+), 14 deletions(-)
+CHANGED (vs RESUME01 first commit 0604467..HEAD, --stat):
+ docs/ROADMAP.md                                    |  24 ++
+ docs/acts/ACT-POLYC-LLVM-CORE04-RESUME01.md        | 109 +++++-
+ evidence/llvm-core04-resume01/c1/README.md         |  97 +++++
+ evidence/llvm-core04-resume01/c1/red-m2-recon.txt  | 209 +++++++++++
+ evidence/llvm-core04-resume01/c1/red-verifier.out  | 123 ++++++
+ .../c2/act-range-diff-check.txt                    |   0
+ evidence/llvm-core04-resume01/c2/build.txt         | 106 ++++++
+ .../llvm-core04-resume01/c2/factory-v2-test.txt    |  57 +++
+ evidence/llvm-core04-resume01/c2/gate-fast.txt     |  18 +
+ .../c2/legacy-closure-status.txt                   |  28 ++
+ .../llvm-core04-resume01/c2/legacy-spike-test.txt  |  48 +++
+ .../c2/m1-adversarial-permanent.txt                |  19 +
+ .../llvm-core04-resume01/c2/m1-verifier-green.txt  | 123 ++++++
+ .../llvm-core04-resume01/c2/m2-counter-summary.txt |  34 ++
+ .../llvm-core04-resume01/c2/m2-rejected-exit.txt   |   1 +
+ .../llvm-core04-resume01/c2/m2-rejected.stderr.txt |   3 +
+ .../c2/m2-shape-dependent.stderr.txt               |   3 +
+ .../llvm-core04-resume01/c2/m2-shape-dependent.txt |  12 +
+ .../c2/m2-supported-llvm-as.txt                    |   3 +
+ evidence/llvm-core04-resume01/c2/m2-supported.ll   |  10 +
+ .../c2/m2-supported.stderr.txt                     |   2 +
+ .../c2/nc/nc1-scope-regression.txt                 |   6 +
+ .../c2/nc/nc2-llvm-contamination.txt               |  13 +
+ .../c2/nc/nc3-missing-record.txt                   |   8 +
+ .../c2/nc/nc4-duplicate-record.txt                 |   2 +
+ .../c2/nc/nc5-unreachable-nonzero.txt              |   2 +
+ evidence/llvm-core04-resume01/c2/scope.txt         |  26 ++
+ evidence/llvm-core04-resume01/c2/toolchain.txt     |  11 +
+ scripts/quality/llvm-cap-table-verifier.py         | 414 ++++++++++++++++++---
+ scripts/quality/llvm-spike-test.sh                 | 156 ++++++++
+ src/llvm-backend-cap.c                             |  27 ++
+ src/llvm-backend-cap.h                             |  45 +++
+ src/llvm-backend.c                                 | 226 ++++++++++-
+ 33 files changed, 1903 insertions(+), 62 deletions(-)
+
+P0-1 conservation: HISTORICAL files outside this ACT tree.
+Expected: NONE (historical ACTs MUST NOT be touched by the harness).
+
+PASS: no historical evidence files modified.
+
+P0-2 location-aware verification:
+  Strong NC1 rogue = [('IR_IADD', 'rogue_dup_iadd_helper', 73742)]
+  OLD set-based check on same source = empty (would be silent false PASS)
+  NEW location-aware check caught: True
