@@ -337,8 +337,29 @@ ACT needs to remove the rule for forward-graph reasons).
 ### FT3 — Trailer-key casing policy (P2; deferred)
 
 Status: P2 residue recorded by reviewer; non-blocking for
-compiler work. Behaviour gap closed; only documentation gap
-remains.
+compiler work.
+
+Classification:
+
+```text
+POLICY_DECISION = MADE   (case-sensitive `ACT:` is canonical)
+IMPLEMENTATION  = NOT_DONE
+SEVERITY        = P2
+BLOCKS_CORE04   = NO
+```
+
+Important: behaviour gap is **not** closed. The current
+validator lets `act:` slip into `MODE=NON_ACT` rather than
+emitting a Factory-side `MODE=ACT STATUS=FAIL`. The proposed
+enforcement would explicitly route `act:` into
+`MODE=ACT STATUS=FAIL REASON=ACT trailer key must be
+uppercase`. Do not let a future reviewer infer that
+lowercase-key rejection is already mechanically enforced.
+
+Recorded against reviewer feedback. Wording correction
+applied here; the underlying validator behaviour is left
+untouched per the discipline rule that Factory
+implementation only changes inside a dedicated Factory ACT.
 
 Observed (verified against the committed validator):
 
