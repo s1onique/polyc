@@ -2,12 +2,45 @@
 
 ## Status
 
-OPEN — legitimising CORRECTION02's two out-of-scope row corrections
-and tightening the wire parser to byte-mode (closing the ASCII-only
-false-claim). Bounded, minimal.
+PASS — at HEAD 4e192f2. All acceptance criteria (A1-A6) green.
 
 Predecessor: ACT-POLYC-LLVM-CORE03-CORRECTION02 (verdict:
 HALT_SCOPE_CONTRACT_VIOLATED at HEAD be53986).
+
+### Verdict
+
+CORRECTION03 closes every defect the reviewer flagged on
+CORRECTION02's PASS:
+
+  P0-scope:        CLOSED — IR_ALLOCA and IR_CMP_BR row edits are
+                   now authorised by this bounded ACT. The row
+                   values that already exist in HEAD (committed
+                   by CORRECTION02 IMPL 857ecf2) are kept
+                   verbatim; CORRECTION03 legitimises them.
+  P1-stale-status: CLOSED — CORRECTION02's status now reads
+                   HALT_SCOPE_CONTRACT_VIOLATED with a
+                   Supersession block pointing to CORRECTION03.
+                   The contradiction between ACT status and
+                   HANDOFF is resolved.
+  P1-ASCII-only:   CLOSED — verifier parser now frames on raw
+                   bytes. Multi-byte UTF-8 payloads round-trip
+                   correctly. Live negative test (non-ASCII
+                   payload injected into IR_FADD note) reproduces
+                   the failure on ASCII-mode parser and the
+                   success on byte-mode parser.
+  topology:        AT CAP — 3 commits (RED + IMPL + DOCS).
+
+See evidence/llvmspike01-core03-correction03/HANDOFF.md for
+full closure evidence, negative witnesses, and acceptance
+results.
+
+### Supersession
+
+Authorised successor: deferred to ACT-POLYC-LLVM-CORE04.
+
+Per F14, CORRECTION03's commit chain is preserved at HEAD; no
+rewriting. Per F4, the FAILURE in CORRECTION02 was HALTED (not
+silently rolled forward); this ACT is the bounded remediation.
 
 ## Verdict at OPEN
 
