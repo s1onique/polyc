@@ -369,6 +369,12 @@ negative src/tests/llvm-spike/red_local_multi_def.HC      LLVM_BACKEND_UNSUPPORT
 # exercises the CONVERSION rejection class (IR_TRUNC). Without
 # it, AC08 of CORE01 had no CONVERSION-class backend witness.
 negative src/tests/llvm-spike/red_conversion_trunc.HC     LLVM_BACKEND_UNSUPPORTED_CONVERSION
+# ACT-POLYC-LLVM-CORE01-CORRECTION02 (AC02): widen the negative
+# matrix to six DISTINCT named backend rejection classes.
+# Each fixture must FAIL with a distinct
+# LLVM_BACKEND_UNSUPPORTED_<CLASS> token and nonzero RC.
+negative src/tests/llvm-spike/red_remainder_mod.HC       LLVM_BACKEND_UNSUPPORTED_INT_REMAINDER
+negative src/tests/llvm-spike/red_shift_shl.HC           LLVM_BACKEND_UNSUPPORTED_INT_SHIFT
 # RED-8 reclassification: neg_asm.HC fails at PARSE time (the inline
 # `asm { ... }` block is rejected by the parser in this configuration).
 # It is therefore NOT a backend witness — it does not prove IR_ASM
