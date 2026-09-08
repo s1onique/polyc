@@ -1,0 +1,74 @@
+ACT-POLYC-LLVM-CORE01-CORRECTION02 RED for IR_BR seam recon
+============================================================
+
+REVIEWER CHALLENGE: CORRECTION01's RED-4 (red-p04-irbr-dead.txt)
+asserted that IR_BR is dead code on the LLVM path because
+IR_ICMP+IR_BR fuses into IR_CMP_BR. The reviewer pointed out
+this contradicts the established pipeline recon:
+  src/main.c's --emit-llvm path calls irLowerProgram
+  irLowerProgram calls irBasicFunctionOptimisations
+  irBasicFunctionOptimisations does NOT call irOptPinResultReg
+  irOptPinResultReg is what fuses IR_ICMP+IR_BR into IR_CMP_BR
+  irFunctionPrepForCodeGen (which calls irOptPinResultReg) is
+  only called from native backends (aarch64.c, aarch64-jit.c,
+  x86_64.c, x86_64-jit.c), never from llvm-backend.c.
+
+FRESH TRACING (instrumented IR_BR and IR_CMP_BR arms of
+src/llvm-backend.c at HEAD=b05ea7e, ran every positive fixture,
+captured RECON output to stderr):
+
+  src/tests/llvm-spike/04_cmp_branch.HC
+    RECON IR_BR_REACHED fn=Max bb=1
+    RECON IR_BR_COND_TY kind=8 width=1
+
+  src/tests/llvm-spike/red_pred_eq.HC
+    RECON IR_BR_REACHED fn=Max bb=1
+    RECON IR_BR_COND_TY kind=8 width=1
+
+  src/tests/llvm-spike/red_pred_ne.HC
+    RECON IR_BR_REACHED fn=Max bb=1
+    RECON IR_BR_COND_TY kind=8 width=1
+
+  src/tests/llvm-spike/red_pred_sge.HC
+    RECON IR_BR_REACHED fn=Max bb=1
+    RECON IR_BR_COND_TY kind=8 width=1
+
+  src/tests/llvm-spike/red_pred_sgt.HC
+    RECON IR_BR_REACHED fn=Max bb=1
+    RECON IR_BR_COND_TY kind=8 width=1
+
+  src/tests/llvm-spike/red_pred_sle.HC
+    RECON IR_BR_REACHED fn=Max bb=1
+    RECON IR_BR_COND_TY kind=8 width=1
+
+  src/tests/llvm-spike/red_pred_slt.HC
+    RECON IR_BR_REACHED fn=Max bb=1
+    RECON IR_BR_COND_TY kind=8 width=1
+
+  (non-branched fixtures emit no IR_BR/IR_CMP_BR traces)
+
+INTERPRETATION:
+  LLVMTypeKind=8 = LLVMIntegerTypeKind
+  width=1 = i1
+
+  IR_BR is reached for every positive branched fixture.
+  IR_CMP_BR is reached for ZERO fixtures on the LLVM path.
+  Cond physical type is consistently i1 (from LLVMBuildICmp).
+
+CONSEQUENCE for CORRECTION01 IMPL at 99a8531:
+  The IMPL's LLVMTypeOf dispatch is correct for the live case:
+  cond is i1, the LLVMTypeOf==i1 branch fires, no trunc emitted,
+  br i1 cond is used directly.
+
+CONSEQUENCE for CORRECTION01 RED-4:
+  red-p04-irbr-dead.txt's "IR_BR is dead code" premise is FALSE.
+  The IMPL is correct, but the RED justification was wrong.
+
+CORRECTION02 reclassification:
+  P0-4 of CORE01 is closed, but the RED framing was wrong.
+  The IMPL change at 99a8531 stands; only the comment text
+  needs minor cleanup to remove the "non-fused fallback"
+  framing (since fusion never happens on the LLVM path).
+
+NO SOURCE CHANGE required in CORRECTION02 (reviewer confirmed:
+99a8531 is correct; only the RED premise was wrong).
