@@ -1,0 +1,119 @@
+ACT-POLYC-LLVM-CORE02 — IR_BR cond physical type reachability
+=============================================================
+
+Question:
+  In the IR_BR arm of src/llvm-backend.c (lines ~745-770), the
+  LLVMTypeOf dispatch handles two cases:
+    - cond == i1  : direct use (no trunc)
+    - cond == i64 : LLVMBuildTrunc to i1
+    - other       : reject (LLVM_BACKEND_UNSUPPORTED_IR)
+
+  CORRECTION01's P0-4 RED claimed:
+    "predicate fixtures exercise i64→i1 trunc"
+  CORRECTION02 (reviewer-corrected) showed:
+    "predicate fixtures exercise i1 direct-use"
+  Reviewer's P1: explicitly supersede CORRECTION01's claim and
+    classify whether the i64 path is reachable at all.
+
+FRESH EVIDENCE (HEAD=75983a8):
+
+  (a) `LLVMBuildICmp` ALWAYS returns i1. This is a fundamental
+      property of LLVM's C API (used at src/llvm-backend.c:1029).
+
+  (b) `irNormalizeBranchCondition` (src/ir.c:122-135) wraps any
+      non-predicate IR_BR cond in `irICmp(bool_cond, IR_CMP_NE,
+      cond, zero)`. The `bool_cond` tmp is freshly allocated via
+      `irTmp(IR_TYPE_I8, 1)` with a fresh monotonic id from
+      `ir_tmp_var_id` (src/ir-types.c:760-769). It cannot collide
+      with any other producer's var id.
+
+  (c) The ICMP that produces `bool_cond` is the immediately-
+      preceding instruction (per the producer-driven check at
+      src/ir.c:115-119), so its `dst` is exactly `bool_cond`.
+      `llLowerI64Value(bool_cond)` will look up the cache, find
+      the i1 from `LLVMBuildICmp`, and return it.
+
+  (d) `irLowerFunction` (src/ir.c:2784) never produces a non-ICMP
+      IR_BR. Every branch goes through `irBranch` (src/ir.c:129+)
+      which normalizes the cond first.
+
+  (e) `irBasicFunctionOptimisations` does NOT call `irOptPinResultReg`
+      (the only path that could materialise a non-i1 cond for IR_BR).
+      It also does NOT call `irFunctionPrepForCodeGen`.
+
+  (f) CORRECTION02 tracing at HEAD=b05ea7e captured
+      LLVMTypeOf(cond) for 7 branched fixtures (04_cmp_branch,
+      red_pred_eq/ne/slt/sle/sgt/sge) — every one returned
+      `kind=8 width=1` (LLVMIntegerTypeKind, 1 bit = i1).
+
+  (g) Inspection of generated `.ll` for the same fixtures confirms
+      `br i1 %2, label %bb3, label %bb4`. No `trunc` to i1 appears
+      in any output (the IR_BR arm never calls LLVMBuildTrunc).
+
+CONCLUSION:
+
+  The i64→i1 trunc branch of the LLVMTypeOf dispatch is
+  DEFENSIVE_INVARIANT — it cannot be reached from any neutral IR
+  that the canonical lowerer produces, because every IR_BR cond is
+  the dst of a preceding IR_ICMP, and IR_ICMP always yields i1 on
+  the LLVM path.
+
+  It is preserved as a defensive invariant guard against:
+    - a future regression in `irNormalizeBranchCondition` that
+      drops the ICMP wrap (e.g. someone reintroducing the old
+      type-driven `cond->type == IR_TYPE_I8` check);
+    - a future native-only fusion pass that gets called on the
+      LLVM path by mistake.
+
+  Classification: DEFENSIVE_INVARIANT (not REJECTED — the path is
+  correct if ever reached; it just isn't reachable today).
+
+SUPERSEDES:
+
+  CORRECTION01 HANDOFF claim:
+    "predicate fixtures exercise i64→i1 trunc"
+  Status:
+    FALSIFIED / SUPERSEDED
+    predicate fixtures exercise i1 direct-use (CONFIRMED by
+    CORRECTION02 fresh tracing + CORE02 re-analysis)
+
+  CORRECTION01 RED-4 red-p04-irbr-dead.txt:
+    "IR_BR is dead code"
+  Status:
+    PARTIALLY FALSIFIED
+    IR_BR IS live (7/7 branched fixtures) — that part was wrong.
+    The IR_CMP_BR IS dead — that part is correct.
+    The "non-fused fallback" framing is misleading because fusion
+    never happens on the LLVM path; IR_BR is the normal LLVM-path
+    branch representation, not a fallback.
+
+CORRECTION02 HANDOFF P2:
+  "CORE01's matrix comment for IR_BR mentions 'non-fused fallback'
+   which is misleading (fusion never happens on the LLVM path;
+   the code path IS the only path). A future cleanup ACT may
+   correct the comment to reflect live use."
+  → CORE02 implements this cleanup (DOCS-only comment edit in
+    src/llvm-backend.c).
+
+ACTION (CORE02, source change scope: 1 comment edit):
+
+  In src/llvm-backend.c matrix (around line 131-133), change:
+
+      * IR_BR   SUPPORTED  (non-fused fallback; dispatches
+      *                     i1 / i64 cond to condbr; see IR_BR
+      *                     arm below for the LLVMTypeOf dispatch)
+
+  To:
+
+      * IR_BR   SUPPORTED  (normal LLVM-path conditional branch;
+      *                     cond is the dst of the preceding
+      *                     IR_ICMP, so it is always physically
+      *                     i1; the i64→i1 trunc arm is a
+      *                     defensive invariant guard and is
+      *                     not reachable from current neutral IR)
+
+ACTION (CORE02, harness change scope: 0 — the 18/0 harness
+already covers the IR_BR live case via 7 branched fixtures):
+
+  None. The harness already exercises the live case. No new
+  fixtures needed for IR_BR classification.

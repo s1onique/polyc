@@ -72,7 +72,9 @@
  *
  * IR opcode                       classification       diagnostic
  * ------------------------------- -------------------- --------------------------------
- * IR_NOP                          NOT_YET_CLASSIFIED   (generic)
+ * IR_NOP                          UNREACHABLE_ON_LLVM  (irRemoveAllNops strips every
+ *                                                    IR_NOP node before emission; the generic
+ *                                                    default arm stays as a regression safety net)
  * IR_ALLOCA                       REJECTED             LLVM_BACKEND_UNSUPPORTED_MEMORY
  * IR_LOAD                         SHAPE-DEPENDENT       (see IR_LOAD below)
  * IR_STORE                        SHAPE-DEPENDENT       (see IR_STORE below)
@@ -129,15 +131,20 @@
  * IR_INTTOPTR                     REJECTED             LLVM_BACKEND_UNSUPPORTED_CONVERSION
  * IR_BITCAST                      REJECTED             LLVM_BACKEND_UNSUPPORTED_BITCAST
  * IR_RET                          SUPPORTED            (i64 only; via collapse-elimination)
- * IR_BR                           SUPPORTED            (non-fused fallback; dispatches
- *                                                    i1 / i64 cond to condbr; see IR_BR
- *                                                    arm below for the LLVMTypeOf dispatch)
+ * IR_BR                           SUPPORTED            (normal LLVM-path conditional branch;
+ *                                                    cond is the dst of the preceding IR_ICMP,
+ *                                                    so it is physically i1; the i64→i1 trunc
+ *                                                    arm is a defensive invariant guard and is
+ *                                                    not reachable from current neutral IR)
  * IR_CMP_BR                       REJECTED             (boundary violation - native fusion)
  * IR_JMP                          SUPPORTED            -
  * IR_SWITCH                       REJECTED             LLVM_BACKEND_UNSUPPORTED_SWITCH
  * IR_CALL                         SUPPORTED            (i64 return only)
  * IR_PHI                          REJECTED             LLVM_BACKEND_UNSUPPORTED_PHI
- * IR_LABEL                        NOT_YET_CLASSIFIED   (generic)
+ * IR_LABEL                        UNREACHABLE_ON_LLVM  (reserved-but-unused per
+ *                                                    src/ir-types.h:155; never created by
+ *                                                    the canonical lowerer; generic default
+ *                                                    arm stays as a regression safety net)
  * IR_SELECT                       REJECTED             LLVM_BACKEND_UNSUPPORTED_SELECT
  * IR_VA_ARG                       REJECTED             LLVM_BACKEND_UNSUPPORTED_VARARGS
  * IR_VA_START                     REJECTED             LLVM_BACKEND_UNSUPPORTED_VARARGS
