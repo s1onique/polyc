@@ -3,7 +3,7 @@ HANDOFF -- ACT-POLYC-FACTORY-STATUS-RECONCILIATION-CORRECTION02
 
 VERDICT
 -------
-OPEN
+PASS
 
 IDENTITY (mechanically derived; see identity-green.txt)
 -------------------------------------------------------
