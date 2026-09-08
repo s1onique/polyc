@@ -1,0 +1,29 @@
+=== ACT-POLYC-LLVM-CORE03-CORRECTION04 RED M1: literal TAB in note payload ===
+
+Mutation: IR_FADD note changed to "left\tright" (single literal TAB byte).
+
+Wire row that hcc emits (op=17):
+17	1	36	LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH	10	left	right
+
+Tabs in that wire row:
+0
+(expected 5 fields = 5 tabs; the literal tab in the payload makes 6)
+
+Verifier output (rc=1 expected; CORRECTION03 byte-mode parser fails because it splits on tabs first):
+PASS  I2: IR_STORE_DEREF has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_NOT has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_IMUL has explicit dispatch arm and capability row (SUPPORTED)
+PASS  I2: IR_FMUL has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_SHR has explicit dispatch arm and capability row (REJECTED)
+PASS  I3: harness queries hcc --print-cap-table (bound to table)
+
+======================================
+FAIL: 3 binding violations
+======================================
+
+verifier rc: 1  (expect 1)
+
+Restoring src/llvm-backend-cap.c...
+
+Post-restore verifier rc:
+rc=0

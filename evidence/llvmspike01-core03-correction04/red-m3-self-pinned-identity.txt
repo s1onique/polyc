@@ -1,0 +1,40 @@
+=== ACT-POLYC-LLVM-CORE03-CORRECTION04 RED M3: self-pinned final HEAD ===
+
+CORRECTION03 ACT status block says:
+## Status
+
+
+Actual final HEAD:
+708d620644e5841bc840606380f527e82d7b6f41
+
+CORRECTION03 commit chain (declared topology):
+708d620 docs(llvm): CORE03-CORRECTION03 HANDOFF + post-impl snapshots
+4508f51 impl(llvm): CORE03-CORRECTION03 - byte-mode parser + legitimise CORRECTION02 row edits
+b382f73 docs(llvm): CORE03-CORRECTION03 RED - legitimise 2 row edits + byte-mode parser
+
+The 'PASS at HEAD 4e192f2' string pins a SHA that is not the
+final commit of the closure range. 4e192f2 was an intermediate
+DOCS commit that was subsequently amended (HEAD became 708d620
+after the status-fix amend). The identity anti-pattern is
+this:
+
+    closure document embeds "current HEAD"
+        \/
+    document gets committed/amended
+        \/
+    HEAD changes
+        \/
+    document is stale at the instant it closes
+
+The fix is not 'update it to 708d620' -- that just recreates
+the recursion. The Status block must not self-reference the
+commit containing the relationship. Use:
+
+    Status: PASS
+    IDENTITY:
+        ENTRY_HEAD=<fixed predecessor>
+        RED_HEAD=<fixed>
+        IMPLEMENTATION_HEAD=<fixed>
+        FINAL_HEAD = reviewer resolves from repository topology
+
+=== END ===

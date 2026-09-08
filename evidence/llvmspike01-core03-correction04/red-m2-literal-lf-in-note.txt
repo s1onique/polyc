@@ -1,0 +1,25 @@
+=== ACT-POLYC-LLVM-CORE03-CORRECTION04 RED M2: literal LF in note payload ===
+
+Mutation: IR_FADD note changed to "line1\nline2" (single literal LF byte).
+
+Wire bytes that hcc emits (op=17 region):
+0000000   1   7  \t   1  \t   3   6  \t   L   L   V   M   _   B   A   C
+0000020   K   E   N   D   _   U   N   S   U   P   P   O   R   T   E   D
+0000040   _   F   L   O   A   T   _   A   R   I   T   H  \t   1   1  \t
+
+Verifier output (rc=1 expected; CORRECTION03 parser splits on LF first, so the payload LF is consumed as record terminator):
+PASS  I2: IR_FNEG has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_SWITCH has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_ICMP has explicit dispatch arm and capability row (SUPPORTED)
+PASS  I2: IR_UREM has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_FSUB has explicit dispatch arm and capability row (REJECTED)
+PASS  I3: harness queries hcc --print-cap-table (bound to table)
+
+======================================
+FAIL: 4 binding violations
+======================================
+
+verifier rc: 1  (expect 1)
+
+Post-restore verifier rc:
+rc=0

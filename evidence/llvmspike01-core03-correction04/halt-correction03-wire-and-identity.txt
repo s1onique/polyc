@@ -1,0 +1,61 @@
+=== HALT: ACT-POLYC-LLVM-CORE03-CORRECTION03 ===
+
+VERDICT: HALT_CORRECTION03_WIRE_AND_IDENTITY_CONTRACT
+
+IDENTITY:
+  ENTRY_HEAD:        be53986 (CORRECTION02 DOCS HEAD)
+  HALT_HEAD (now):   708d620
+
+A reviewer correctly identified two new binding closure defects
+in CORRECTION03:
+
+  P0-1: CORRECTION03 ACT self-pins a stale HEAD.
+         Status block reads: "PASS at HEAD 4e192f2."
+         Actual final HEAD:  708d620.
+         4e192f2 was an intermediate DOCS commit, superseded
+         by the post-amend HEAD. The closure document embeds
+         a SHA that is not the final SHA of the closure
+         range. The recursion is: closure document ->
+         committed -> amended -> HEAD moves -> document is
+         stale at the instant it closes.
+
+  P0-2: "Length-framed" wire protocol is a misnomer.
+         CORRECTION03 framed on bytes but still split on
+         b"\t" and b"\n" first. The lengths are validated
+         AFTER splitting, not used to slice. A literal TAB
+         or LF in the payload breaks framing. Live witnesses:
+           - red-m1-literal-tab-in-note.txt   (rc=1, 6 tabs)
+           - red-m2-literal-lf-in-note.txt    (rc=1, splits row)
+         The handbook claims ("round-trippable byte-for-byte",
+         "slice each field as bytes by that integer count")
+         are not implemented by the code.
+
+  P1: Topology residue prose says CORRECTION02 breached cap.
+       It did not. CORRECTION02 = 3 == 3, AT CAP. The ledger
+       is in the CORRECTION03 ACT; the Residue section
+       contradicts it. (Also load-bearing audit evidence.)
+
+ROOT CAUSE:
+  CORRECTION03 inherited the identity anti-pattern it was
+  supposed to fix, and stopped at "split on delimiters, then
+  validate lengths" instead of "use lengths as the primary
+  framing mechanism". The ASCII-mode bug closure made the
+  framing more honest about bytes but not more honest about
+  structure.
+
+NEXT ACT:
+  ACT-POLYC-LLVM-CORE03-CORRECTION04 will:
+    1. Replace self-pinned final identity with a non-self-
+       referential identity contract (STATUS = PASS, IDENTITY =
+       <fixed predecessors> + reviewer resolves FINAL_HEAD).
+    2. Implement a true sequential byte-length parser in the
+       verifier: read len bytes regardless of content. RED
+       with literal TAB in note payload (verifier must FAIL
+       on the current CORRECTION03 parser). RED with literal
+       LF in note payload. Both GREEN after the true
+       length-framed parser.
+    3. Repair the topology residue prose in CORRECTION03
+       HANDOFF and ACT (CORRECTION02 = AT CAP, not breach).
+    4. Keep total CORRECTION04 commit count to 3 or fewer.
+
+=== END ===
