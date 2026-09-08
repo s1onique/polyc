@@ -1,0 +1,32 @@
+CORE03 NEGATIVE TEST: validator catches a malformed table
+=========================================================
+
+Procedure:
+  1. Replaced IR_ALLOCA row diagnostic from
+     "LLVM_BACKEND_UNSUPPORTED_MEMORY" to NULL.
+  2. Rebuilt: make -C build (succeeded).
+  3. Ran: hcc --emit-llvm src/tests/llvm-spike/01_const.HC
+     -o /tmp/01_const.ll
+
+Observed stderr (verbatim):
+  LLVM backend capability contract FAILED: REJECTED row 1
+  (op=1) has NULL diagnostic.
+
+Observed rc: 134 (SIGABRT from abort()).
+
+Then restored the table to its original form and rebuilt.
+hcc --emit-llvm 01_const.HC now prints:
+  LLVM backend capability contract: ok (56 rows)
+and exits with rc=0.
+
+CONCLUSION:
+  llValidateCapabilityContract() mechanically rejects a
+  malformed capability table. The matrix and the dispatch
+  cannot silently drift apart in the table-vs-enum direction.
+  A future ACT (CORE04) closes the reverse direction
+  (dispatch-vs-table: assert every `case IR_X:` in the
+  dispatch has a matching kLLVMBackendCapability[] row).
+
+Closure oracle: the validator's abort() is itself a closure
+oracle. A misconfigured table is a hard failure, not a silent
+PASS.
