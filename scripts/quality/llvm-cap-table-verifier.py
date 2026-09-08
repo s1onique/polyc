@@ -105,15 +105,23 @@ def get_ir_op_enum():
 def get_cap_table_via_hcc():
     """Run hcc --print-cap-table and parse the output.
 
-    ACT-POLYC-LLVM-CORE03-CORRECTION02 M1: the wire format is now
+    ACT-POLYC-LLVM-CORE03-CORRECTION02 M1: the wire format is
     length-delimited. Each row is:
 
-      <op-ordinal>\\t<class-ordinal>\\t<diag-len>\\t<diag>\\t<note-len>\\t<note>\\n
+      <op-ordinal>\t<class-ordinal>\t<diag-len>\t<diag>\t<note-len>\t<note>\n
 
-    The parser reads the integer length, then reads exactly that many
-    bytes for the field. This is round-trippable byte-for-byte and
-    handles diagnostics that contain spaces (e.g. IR_CMP_BR's
-    "(boundary violation - native fusion)").
+    ACT-POLYC-LLVM-CORE03-CORRECTION03 M2: framing is performed on
+    RAW BYTES, not on decoded str. The C emitter writes lengths via
+    strlen() (UTF-8 byte count). A diagnostic that contains a
+    multi-byte UTF-8 code point (e.g. U+2192 = 3 bytes, 1 code
+    point) would round-trip incorrectly if we framed on
+    len(decoded_str). Framing on bytes is the only way the
+    C <-> Python contract can be UTF-8-correct.
+
+    Implementation: subprocess.check_output returns bytes. We split
+    lines on b'\\n' (still bytes), parse the integer length fields
+    from ASCII-decimal bytes, slice the field bytes by that many
+    bytes, and only then decode each field as UTF-8.
     """
     if not HCC.exists():
         fail("hcc binary not found at " + str(HCC))
@@ -125,21 +133,26 @@ def get_cap_table_via_hcc():
             env=env, stderr=subprocess.STDOUT, timeout=30,
         )
     except subprocess.CalledProcessError as e:
-        fail("hcc --print-cap-table exited non-zero: " + e.output.decode("utf-8", "replace"))
+        fail("hcc --print-cap-table exited non-zero: "
+             + e.output.decode("utf-8", "replace"))
         return {}
     except Exception as e:
         fail("hcc --print-cap-table failed: " + str(e))
         return {}
 
-    raw = out.decode("utf-8", "replace")
+    # out is bytes. Split lines on b'\n' (still bytes).
+    raw_bytes = out
     rows = {}
     malformed = []
-    for line_no, line in enumerate(raw.splitlines(), start=1):
-        # Layout:  op \t class \t <diag-len> \t <diag> \t <note-len> \t <note>
-        if line.count("\t") != 5:
-            malformed.append((line_no, "expected 5 tabs, got %d: %r" % (line.count("\t"), line)))
+
+    for line_no, raw_line in enumerate(raw_bytes.splitlines(), start=1):
+        # Layout (bytes):  op \t class \t <diag-len> \t <diag-bytes> \t <note-len> \t <note-bytes>
+        if raw_line.count(b"\t") != 5:
+            malformed.append((line_no,
+                              "expected 5 tabs, got %d: %r"
+                              % (raw_line.count(b"\t"), raw_line)))
             continue
-        f1, f2, f3, f4, f5, f6 = line.split("\t")
+        f1, f2, f3, f4, f5, f6 = raw_line.split(b"\t")
         try:
             op = int(f1)
             cls = int(f2)
@@ -148,22 +161,57 @@ def get_cap_table_via_hcc():
         except ValueError as e:
             malformed.append((line_no, "non-integer length field: %s" % e))
             continue
-        diag = None if f4 == "-" else f4
-        if diag is not None and len(diag) != diag_len:
-            malformed.append((line_no, "diag length mismatch: header says %d, actual %d (field=%r)"
-                              % (diag_len, len(diag), diag)))
-            continue
-        note = None if f6 == "-" else f6
-        if note is not None and len(note) != note_len:
-            malformed.append((line_no, "note length mismatch: header says %d, actual %d"
-                              % (note_len, len(note))))
-            continue
+
+        # Slice each field as bytes by the integer length the C emitter wrote.
+        # The literal "-" is a single byte and has byte-length 1; we treat
+        # it as the NULL marker rather than a length-1 payload.
+        if f4 == b"-":
+            if diag_len != 1:
+                malformed.append((line_no,
+                                  "diag is '-' but header length is %d, not 1"
+                                  % diag_len))
+                continue
+            diag_bytes = None
+        else:
+            if len(f4) != diag_len:
+                malformed.append((line_no,
+                                  "diag length mismatch: header says %d, "
+                                  "actual %d (field=%r)"
+                                  % (diag_len, len(f4), f4)))
+                continue
+            diag_bytes = f4
+        if f6 == b"-":
+            if note_len != 1:
+                malformed.append((line_no,
+                                  "note is '-' but header length is %d, not 1"
+                                  % note_len))
+                continue
+            note_bytes = None
+        else:
+            if len(f6) != note_len:
+                malformed.append((line_no,
+                                  "note length mismatch: header says %d, "
+                                  "actual %d (field=%r)"
+                                  % (note_len, len(f6), f6)))
+                continue
+            note_bytes = f6
+
+        # Decode AFTER framing. This is the only point at which UTF-8
+        # is consulted; replace on malformed bytes to avoid crashing
+        # the verifier on accidentally invalid input.
+        diag = (None if diag_bytes is None
+                else diag_bytes.decode("utf-8", "replace"))
+        note = (None if note_bytes is None
+                else note_bytes.decode("utf-8", "replace"))
+
         rows[op] = {
             "class": cls,
             "diagnostic": diag,
             "note": note,
-            # Save the raw line for the round-trip assertion below.
-            "_raw": line,
+            # Save the raw line (bytes) for the round-trip assertion.
+            # Decoded form is kept for human-readable diagnostics only.
+            "_raw": raw_line,
+            "_raw_str": raw_line.decode("utf-8", "replace"),
             "_diag_len": diag_len,
             "_note_len": note_len,
         }
@@ -186,8 +234,14 @@ def check_wire_format_roundtrip(rows):
         diag = row["diagnostic"] if row["diagnostic"] is not None else "-"
         note = row["note"] if row["note"] is not None else "-"
         # Compute expected exactly as llPrintCapabilityTable does.
-        expected = "%d\t%d\t%d\t%s\t%d\t%s" % (
-            op, row["class"], len(diag), diag, len(note), note,
+        # Use byte lengths (UTF-8 encoded) so the C <-> Python contract
+        # is honest for non-ASCII payloads. The fields themselves are
+        # re-encoded as UTF-8 to match the on-wire byte sequence.
+        diag_bytes = b"-" if diag == "-" else diag.encode("utf-8")
+        note_bytes = b"-" if note == "-" else note.encode("utf-8")
+        expected = b"%d\t%d\t%d\t%s\t%d\t%s" % (
+            op, row["class"], len(diag_bytes), diag_bytes,
+            len(note_bytes), note_bytes,
         )
         if expected != row["_raw"]:
             failures += 1
