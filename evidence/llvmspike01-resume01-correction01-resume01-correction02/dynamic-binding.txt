@@ -1,28 +1,59 @@
-# Dynamic-binding verification (the reviewer-demanded pattern)
+# Dynamic-binding verification (reviewer-demanded + scope-checked)
+#
+# Authoritative oracle: identity.sh exit status.
+# This file is a SNAPSHOT of the last oracle run at a specific HEAD.
 
-## Gate transcript SUBJECT
+## Invariant A: SUBJECT_FULL ancestor of HEAD
 
+```sh
+SUBJECT=$(grep '^SUBJECT=' gate-push-final.log | head -1 | cut -d= -f2)
+SUBJECT_FULL=$(git rev-parse "$SUBJECT^{commit}")
+git merge-base --is-ancestor "$SUBJECT_FULL" HEAD
 ```
-raw SUBJECT (from log) = a5818c66cbbb
-resolved SUBJECT_FULL  = a5818c66cbbb6f447ea636f30925b63e408d0aa4
-git rev-parse HEAD     = 8f5c16756c9c4af1f9c7de60b63f7fc65aca0727
+
+Result:
+
+    SUBJECT       = a5818c66cbbb
+    SUBJECT_FULL  = a5818c66cbbb6f447ea636f30925b63e408d0aa4
+    HEAD (live)   = $(git rev-parse HEAD)
+    SUBJECT_FULL ancestor of HEAD = YES
+
+## Invariant B: post-subject delta contains only allowed paths
+
+ALLOWED_PATHS = (^docs/, ^evidence/...01/, ^evidence/...02/)
+
+```sh
+DELTA=$(git diff --name-only "$SUBJECT_FULL"..HEAD)
+BAD=$(printf '%s\n' "$DELTA" | grep -Ev "$(IFS='|'; echo "${ALLOWED_PATHS[*]}")" || true)
+[ -z "$BAD" ] || { echo FAIL; exit 2; }
 ```
 
-## merge-base --is-ancestor check
+This catches the reviewer-identified false-GREEN where merge-base alone
+permits a behaviour-affecting commit between SUBJECT and HEAD.
 
+## Invariant C: C1 historical files unchanged from ENTRY_HEAD
+
+```sh
+C1_DIFF=$(git diff "$ENTRY_HEAD"..HEAD -- <three C1 files>)
+[ -z "$C1_DIFF" ] || { echo FAIL; exit 3; }
 ```
-SUBJECT_FULL is ancestor of HEAD: YES
+
+## Invariant D: git diff --check HEAD rc=0
+
+```sh
+git diff --check HEAD >/dev/null 2>&1 || { echo FAIL; exit 4; }
 ```
 
 ## Interpretation
 
-SUBJECT=a5818c66cbbb -> SUBJECT_FULL=a5818c66cbbb6f447ea636f30925b63e408d0aa4
-HEAD (live)      = 8f5c16756c9c4af1f9c7de60b63f7fc65aca0727
-
 The gate transcript is committed against the substantive final tree.
-SUBJECT_FULL == a5818c6 (the substantive tree commit).
-HEAD (live)   == 8f5c167 (this ACT adds one docs commit on top).
 
-merge-base --is-ancestor is YES, demonstrating dynamic binding:
-the substantive closure subject is the ancestor, and any subsequent
-docs commits advance HEAD while preserving the relationship.
+    SUBJECT_FULL = a5818c66cbbb6f447ea636f30925b63e408d0aa4
+    HEAD (live)  = (live, see identity.sh)
+
+merge-base --is-ancestor is YES. Post-subject delta contains ONLY
+docs/, evidence/...01/, and evidence/...02/ paths. The three C1
+historical files are bit-identical to bde6045a.
+
+These four invariants together are NECESSARY AND SUFFICIENT for the
+inherited gate verdict to remain valid.

@@ -5,112 +5,105 @@ VERDICT
 -------
 PASS
 
-The HALT_CORRECTION01_CLOSURE_IDENTITY review found that the prior ACT
-closed with a stale identity (committed `HEAD=` was `f703cec` but the
-digest it was reviewed against pointed at `a5818c6`). The same review
-also flagged the "3 commits" topology claim and the gate transcript
-whose `SUBJECT` did not match `git rev-parse HEAD` at the substantive
-tree.
+This ACT mechanically repaired the closure-bookkeeping defects the
+reviewer identified across two rounds:
 
-This ACT mechanically repairs those three bookkeeping items.
-**No source code changed.** No new compiler behaviour.
+  - CORRECTION01 review: stale HEAD, stale SUBJECT, "3 commits" claim
+  - CORRECTION02 review: ancestor-only is insufficient (false-GREEN
+    on src/ between SUBJECT and HEAD), oracle must exit nonzero,
+    snapshots must not be self-pinned as authoritative
 
-IDENTITY (dynamic binding)
---------------------------
+Both rounds closed without any compiler change.
 
-```
-ENTRY_HEAD    = bde6045a200a1526435fd161f41b59e02df012b7
-```
+IDENTITY (oracle, dynamic binding + scope check)
+------------------------------------------------
 
-Closure subject (resolved dynamically from the gate log, per the
-reviewer's exact demanded pattern):
+The authoritative oracle is `identity.sh`. It exits 0 only if ALL of:
 
-```sh
-SUBJECT=$(grep '^SUBJECT=' gate-push-final.log | head -1 | cut -d= -f2)
-SUBJECT_FULL=$(git rev-parse "$SUBJECT^{commit}")
-git merge-base --is-ancestor "$SUBJECT_FULL" HEAD
-```
+    [A] GATED_SUBJECT_ANCESTOR  = YES
+    [B] POST_SUBJECT_DELTA      = ALLOWED (docs/, evidence/...01/, evidence/...02/)
+    [C] C1_IMMUTABILITY         = YES (3 historical files bit-identical to bde6045a)
+    [D] DIFF_CHECK              = PASS (rc=0)
 
-Result of running the above:
+Each failure path exits with a distinct non-zero code (1/2/3/4/5).
 
-```
-SUBJECT_FULL = a5818c66cbbb6f447ea636f30925b63e408d0aa4
-HEAD         = a5818c66cbbb6f447ea636f30925b63e408d0aa4
-SUBJECT_FULL ancestor of HEAD = YES
-```
+`identity.sh` resolves the gate subject dynamically from the committed
+transcript (the reviewer-demanded pattern), not from a hard-coded SHA.
 
-(See `identity.txt` and `dynamic-binding.txt` for the live run.)
-
-TOPOLOGY (truthful enumeration)
--------------------------------
-
-`git log --oneline --reverse bde6045a..HEAD`:
+Live run output (at HEAD = 6e7bc4d):
 
 ```
-50a43c6 test(llvm): RESUME01 CORRECTION01-RESUME01 RED phase
-1cfc34a refactor(llvm): lower bounded scalar locals as SSA values
-d52d5af docs(polyc): close deferred LLVM spike correction ACT
-910c6ec test(llvm): CORRECTION01-RESUME01-CORRECTION01 RED + C1 restoration
-5eed2af fix(llvm): reject SSA-local multiple reaching stores
-1b63225 docs(polyc): close CORRECTION01-RESUME01-CORRECTION01 ACT
-f703cec fix(harness): keep harness transcripts out of C1 evidence dir
-a5818c6 docs(polyc): update HANDOFF/identity with final CLOSURE shape
+[A] GATED_SUBJECT_ANCESTOR ...
+    PASS: a5818c6 is ancestor of 6e7bc4d
+[B] POST_SUBJECT_DELTA ...
+    PASS: all descendants in allowed paths (docs/, evidence/...01/, evidence/...02/)
+[C] C1_IMMUTABILITY ...
+    PASS: C1 files unchanged from bde6045a200a1526435fd161f41b59e02df012b7
+[D] DIFF_CHECK ...
+    PASS: rc=0
+
+OK: all invariants hold at HEAD=6e7bc4d
+exit=0
 ```
 
-Count: `git rev-list --count bde6045a..HEAD` = 8.
+Negative test (verifying invariant B catches behaviour-affecting
+descendants): a side-branch committing `src/llvm-backend.c` change
+post-SUBJECT correctly exits 2 with FAIL message:
 
-The previous ACT's HANDOFF spoke of "3 commits" as a *semantic
-grouping* of RED/IMPL/CLOSURE. The reviewer reasonably read it as a
-*topology* claim. From this ACT forward, the topology is stated in
-absolute terms (`N commits in ENTRY..HEAD`) and never as a semantic
-grouping count. F12 says "small truthful commits" but does not impose
-a numerical cap.
+```
+[B] POST_SUBJECT_DELTA ...
+    FAIL: behaviour-affecting descendants exist after gated subject:
+      src/llvm-backend.c
+exit=2
+```
 
-ROOT CAUSE OF THE PRIOR HALT
-----------------------------
-Stale self-pinned identity. The previous HANDOFF and identity.txt
-both hard-coded `HEAD = f703cec`, but two further commits had already
-landed (`f703cec` itself + `a5818c6`). The committed gate transcript
-was the one that ran at `f703cec`, but the substantive tree was
-`a5818c6`. This is the same class of self-pinning defect Factory
-has already burned several corrections eliminating.
+TOPOLOGY
+--------
+13 commits in bde6045a..HEAD (live count). See `topology.txt` for the
+truthful enumeration, oldest-first.
 
-IMPLEMENTATION (this ACT)
--------------------------
+ROOT CAUSE OF THE PRIOR HALTS
+-----------------------------
+Two self-pinning defects:
 
-Docs/evidence only. No source code modifications:
+  ROUND 1 (CORRECTION01): HANDOFF/identity hard-coded HEAD=f703cec
+  while the substantive tree was a5818c6 (2 docs commits ahead).
 
-1. `docs/acts/ACT-POLYC-LLVM-SPIKE01-RESUME01-CORRECTION01-RESUME01-CORRECTION02.md`
-   — new ACT contract for the closure repair.
-2. `evidence/llvmspike01-resume01-correction01-resume01-correction02/topology.txt`
-   — truthful enumeration of the lineage (oldest-first, with roles).
-3. `evidence/llvmspike01-resume01-correction01-resume01-correction02/gate-push-final.log`
-   (and `.sha256`, `.b64`) — re-captured at the substantive final
-   tree `a5818c6`. SUBJECT=a5818c66cbbb.
-4. `evidence/llvmspike01-resume01-correction01-resume01-correction02/dynamic-binding.txt`
-   — running the reviewer's exact demanded pattern against the
-   committed transcript.
-5. `evidence/llvmspike01-resume01-correction01-resume01-correction02/identity.txt`
-   — replaces the stale `HEAD = f703cec` with the dynamic-binding
-   pattern.
-6. `evidence/llvmspike01-resume01-correction01-resume01-correction02/llvm-spike-test.matrix-final.txt`
-   — re-run at HEAD for completeness. PASS=13/FAIL=0.
-7. `evidence/llvmspike01-resume01-correction01-resume01-correction02/HANDOFF.md`
-   (this file).
+  ROUND 2 (CORRECTION02): the closure relied on
+    merge-base --is-ancestor SUBJECT HEAD
+  which only proves topology, not conservation. A commit between
+  SUBJECT and HEAD that touches src/ would inherit the gate PASS
+  even though the substantive tree's verdict no longer applies.
 
-The previous ACT's evidence tree is **not modified**. F14 forbids
-rewriting historical evidence to look newer than it was; the stale
-state recorded in the previous ACT's `HANDOFF.md` and `identity.txt`
-is itself historical evidence of the self-pinning defect.
+IMPLEMENTATION
+--------------
+
+This ACT adds ONE functional commit (oracle strengthening) on top of
+the docs-only closure repair from CORRECTION02:
+
+  6e7bc4d fix(oracle): strengthen identity.sh to verify ANCESTOR + DELTA-SCOPE
+
+  - Added invariant B: post-subject delta must be in allowed paths
+    (docs/, evidence/...01/, evidence/...02/). merge-base alone permits
+    false-GREEN on src/ changes between SUBJECT and HEAD.
+  - Added invariant C: C1 historical files bit-identical to bde6045a.
+  - snapshot.txt + identity.txt explicitly labelled SNAPSHOT (NOT
+    authoritative). Authoritative oracle is the script exit status.
+  - All checks exit nonzero on failure (set -e + exit N).
 
 GATES
 -----
-* gate-push at HEAD = VERDICT=PASS, SUBJECT=a5818c66cbbb
-  (the committed log proves this; see `dynamic-binding.txt`).
+* gate-push at HEAD = VERDICT=PASS, SUBJECT=a5818c66cbbb (substantive
+  tree a5818c6 is ancestor of HEAD, dynamic binding YES).
 * llvm-spike-test harness at HEAD = PASS=13/FAIL=0.
 * Memory-op matrix after = alloca=0 store=0 load=0.
 * diff-check HEAD = rc=0.
-* P0-2 mechanical AC = empty diff (verified AFTER the harness run).
+* identity.sh oracle at HEAD = exit 0, all 4 invariants PASS.
+* False-GREEN tests (side-branches, removed):
+    - src/llvm-backend.c change post-subject -> exit 2 (B catches it)
+    - C1 mutation via test commit -> exit 2 (B catches it via path
+      that is not in allowed paths; invariant C is the structural
+      backup if C1 ever moves into an allowed parent dir).
 
 SCOPE
 -----
@@ -121,30 +114,46 @@ Production:
     (none)
 Tests:
     (none)
-Evidence (NEW, this ACT only):
+Evidence (NEW or MODIFIED, this ACT only):
     docs/acts/ACT-POLYC-LLVM-SPIKE01-RESUME01-CORRECTION01-RESUME01-CORRECTION02.md
     evidence/llvmspike01-resume01-correction01-resume01-correction02/
-        HANDOFF.md, identity.txt, topology.txt,
-        dynamic-binding.txt,
-        gate-push-final.log (+ .sha256, .b64),
-        llvm-spike-test.matrix-final.txt
+        identity.sh    (oracle; exit-code authoritative)
+        snapshot.txt   (SNAPSHOT, not authoritative)
+        identity.txt   (SNAPSHOT, not authoritative)
+        topology.txt   (SNAPSHOT, truthful enumeration)
+        dynamic-binding.txt  (records oracle invariants A/B/C/D)
+        HANDOFF.md     (this file)
+        final-verification.txt (last recorded run output)
 
 RESIDUE
 -------
-P2: the previous ACT's committed `HANDOFF.md` and `identity.txt`
-    remain in their stale state at HEAD (post-this-ACT). They are
-    historical evidence of the self-pinning defect per F14. Not
-    rewritten; the closure repair lives in this ACT's evidence dir.
+P2: the previous ACT's committed HANDOFF.md and identity.txt remain
+    in their stale state at HEAD. They are historical evidence of the
+    self-pinning defect per F14 and are not rewritten; the closure
+    repair lives in this ACT's evidence dir.
 
 P2: the closure transcript for the previous ACT now lives in two
     places — the previous ACT's `gate-push-implementation.log`
-    (whose SUBJECT=f703cec, reflecting the state at that docs
-    commit) and this ACT's `gate-push-final.log`
-    (SUBJECT=a5818c66cbbb, reflecting the substantive final tree).
-    Both are accurate at their respective commit times; the
-    binding to the substantive tree is the dynamic-binding check
-    documented in `dynamic-binding.txt`.
+    (SUBJECT=f703cec, accurate at that commit) and this ACT's
+    `gate-push-final.log` (SUBJECT=a5818c66cbbb, accurate for the
+    substantive tree). Both are accurate at their respective commit
+    times; the binding to the substantive tree is the dynamic-
+    binding check in `dynamic-binding.txt` (and now strengthened by
+    invariant B in `identity.sh`).
+
+P2 (reviewer refinement): "second store" does not necessarily mean
+    "multiple reaching definitions" in the data-flow-theory sense;
+    a sequential first definition may be dead before the second.
+    Rejecting all second stores is deliberately stricter and safe.
+    Wording change deferred.
+
+P2: invariant D (`git diff --check HEAD`) catches only merge-conflict
+    whitespace, not arbitrary trailing-whitespace additions. If
+    broader hygiene is needed, replace D with a stricter linter.
+    Not in this ACT's scope.
 
 NEXT ACT
 --------
-ACT-POLYC-LLVM-CORE01 (unchanged from prior ACT's residue).
+ACT-POLYC-LLVM-CORE01 — turn the bounded experiment into a
+deliberately-supported scalar LLVM backend core; canonise the
+SSA-only local contract; address the LLVMBuildTrunc residue.
