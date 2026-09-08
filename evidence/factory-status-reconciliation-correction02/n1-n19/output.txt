@@ -1,0 +1,86 @@
+=== baseline (clean 6-pair universe) ===
+  PASS  BASELINE_PASS  expected=0 actual=0
+  PASS  BASELINE-MANAGED_ACTS_6  expected=yes actual=yes
+  PASS  BASELINE-MANAGED_HANDOFFS_6  expected=yes actual=yes
+  PASS  BASELINE-MANIFEST_ROWS_6  expected=yes actual=yes
+  PASS  BASELINE-PAIR_OK_6  expected=yes actual=yes
+=== N1 empty manifest -> FAIL MANIFEST_ROWS=0 ===
+  PASS  N1-FAIL  expected=1 actual=1
+  PASS  N1-MANIFEST_ROWS_0  expected=yes actual=yes
+  PASS  N1-UNMAPPED_ACTS_6  expected=yes actual=yes
+  PASS  N1-UNMAPPED_HANDOFFS_6  expected=yes actual=yes
+=== N2 manifest under-reports -> FAIL UNMAPPED_*=6 ===
+  PASS  N2-FAIL  expected=1 actual=1
+  PASS  N2-UNMAPPED_ACTS_6  expected=yes actual=yes
+  PASS  N2-UNMAPPED_HANDOFFS_6  expected=yes actual=yes
+=== N3 duplicate ACT path -> FAIL DUPLICATE_ACT_PATHS=1 ===
+  PASS  N3-FAIL  expected=1 actual=1
+  PASS  N3-DUPLICATE_ACTS_1  expected=yes actual=yes
+=== N4 duplicate HANDOFF path -> FAIL DUPLICATE_HANDOFF_PATHS=1 ===
+  PASS  N4-FAIL  expected=1 actual=1
+  PASS  N4-DUPLICATE_HANDOFFS_1  expected=yes actual=yes
+=== N5 exact-token mismatch -> FAIL EXACT_VERDICT_MISMATCHES=1 ===
+  PASS  N5-FAIL  expected=1 actual=1
+  PASS  N5-MISMATCH_1  expected=yes actual=yes
+=== N6 PASS vs PASS_WITH_NEXT_ACT_DECISION (5 mismatches) ===
+  PASS  N6-FAIL  expected=1 actual=1
+  PASS  N6-MISMATCH_5  expected=yes actual=yes
+=== N7 missing ## Status block -> FAIL MALFORMED_ACT_STATUS=1 ===
+  PASS  N7-FAIL  expected=1 actual=1
+  PASS  N7-MALFORMED_ACTS_1  expected=yes actual=yes
+=== N8 duplicate ## Status block -> FAIL MALFORMED_ACT_STATUS=1 ===
+  PASS  N8-FAIL  expected=1 actual=1
+  PASS  N8-MALFORMED_ACTS_1  expected=yes actual=yes
+=== N9 duplicate VERDICT block -> FAIL MALFORMED_HANDOFF_VERDICT=1 ===
+  PASS  N9-FAIL  expected=1 actual=1
+  PASS  N9-MALFORMED_HANDOFFS_1  expected=yes actual=yes
+=== N10 manifest row -> missing ACT file -> FAIL MISSING_ACT_FILES=1 ===
+  PASS  N10-FAIL  expected=1 actual=1
+  PASS  N10-MISSING_ACTS_1  expected=yes actual=yes
+=== N11 manifest row -> missing HANDOFF file -> FAIL MISSING_HANDOFF_FILES=1 ===
+  PASS  N11-FAIL  expected=1 actual=1
+  PASS  N11-MISSING_HANDOFFS_1  expected=yes actual=yes
+=== N12 empty manifest regression -> FAIL MANIFEST_ROWS=0 ===
+  PASS  N12-FAIL  expected=1 actual=1
+  PASS  N12-MANIFEST_ROWS_0  expected=yes actual=yes
+=== N13 PASS_WITH_NEXT_ACT_DECISION qualified equality -> PASS ===
+  PASS  N13-PASS  expected=0 actual=0
+  PASS  N13-PAIR_OK_6  expected=yes actual=yes
+=== N14 duplicate ACT path (alternate) -> FAIL DUPLICATE_ACT_PATHS=1 ===
+  PASS  N14-FAIL  expected=1 actual=1
+  PASS  N14-DUPLICATE_ACTS_1  expected=yes actual=yes
+=== N15 full real-tree mirror PASS (9 counter assertions) ===
+  PASS  N15-FULL_PASS  expected=0 actual=0
+  PASS  N15-STATUS_PASS  expected=yes actual=yes
+  PASS  N15-VERDICT_PASS  expected=yes actual=yes
+  PASS  N15-PAIR_OK_6  expected=yes actual=yes
+  PASS  N15-PAIR_FAIL_0  expected=yes actual=yes
+  PASS  N15-MANAGED_ACTS_6  expected=yes actual=yes
+  PASS  N15-MANAGED_HANDOFFS_6  expected=yes actual=yes
+  PASS  N15-UNMAPPED_ACTS_0  expected=yes actual=yes
+  PASS  N15-UNMAPPED_HANDOFFS_0  expected=yes actual=yes
+  PASS  N15-EXTRA_ACTS_0  expected=yes actual=yes
+  PASS  N15-EXTRA_HANDOFFS_0  expected=yes actual=yes
+=== N16 bounded completeness: remove CORE03-CORRECTION02 row ===
+  PASS  N16-COMPLETENESS_FAIL  expected=1 actual=1
+  PASS  N16-UNMAPPED_ACTS_1  expected=yes actual=yes
+  PASS  N16-UNMAPPED_HANDOFFS_1  expected=yes actual=yes
+  PASS  N16-PAIR_OK_5  expected=yes actual=yes
+=== N17 mirror negative (out-of-managed extra row) ===
+  PASS  N17-EXTRA_FAIL  expected=1 actual=1
+  PASS  N17-EXTRA_ACTS_1  expected=yes actual=yes
+  PASS  N17-EXTRA_HANDOFFS_1  expected=yes actual=yes
+  PASS  N17-PAIR_OK_7  expected=yes actual=yes
+=== N18 POSIX shell portability (dash) ===
+  PASS  N18-DASH_PASS  expected=0 actual=0
+  PASS  N18-DASH_PAIR_OK_6  expected=yes actual=yes
+  PASS  N18-DASH_MANAGED_ACTS_6  expected=yes actual=yes
+  PASS  N18-DASH_MANAGED_HANDOFFS_6  expected=yes actual=yes
+=== N19 bounded completeness: remove the CORRECTION02 row (this ACT) ===
+  PASS  N19-COMPLETENESS_FAIL  expected=1 actual=1
+  PASS  N19-UNMAPPED_ACTS_1  expected=yes actual=yes
+  PASS  N19-UNMAPPED_HANDOFFS_1  expected=yes actual=yes
+  PASS  N19-PAIR_OK_5  expected=yes actual=yes
+
+=== SUMMARY ===
+PASS=63  FAIL=0
