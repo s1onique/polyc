@@ -334,6 +334,67 @@ Dedicated ACT: `ACT-POLYC-FACTORY-RANGE-CHECK-DESCENDANT-SCAN01`
 (to be opened only if a real defect is observed or if a new
 ACT needs to remove the rule for forward-graph reasons).
 
+### FT3 — Trailer-key casing policy (P2; deferred)
+
+Status: P2 residue recorded by reviewer; non-blocking for
+compiler work. Behaviour gap closed; only documentation gap
+remains.
+
+Observed (verified against the committed validator):
+
+```text
+factory-v2-commit-msg-check.sh:73
+    grep -Eq '^ACT:[[:space:]]+.+'
+```
+
+is case-sensitive. So `ACT: ACT-POLYC-...` triggers the
+ACT path, but `act: ACT-POLYC-...` falls through to
+`MODE=NON_ACT`. Same for `trailer_value` (line 97) — the
+awk match is case-sensitive.
+
+Reviewer identifies a latent problem: Git's own trailer
+facilities treat configured trailer keys case-insensitively,
+so humans and tools that produce `act:` thinking they are
+supplying Factory metadata would silently get the ordinary
+NON_ACT treatment. That is a worse failure than the original
+case-sensitivity because the user clearly intended ACT
+metadata and got none of the validation.
+
+Proposed policy (reviewer option A — adopt):
+
+> Factory trailer keys are canonically case-sensitive in the
+> PolyC validator even though Git itself is more permissive.
+> `ACT:` is the only accepted spelling. `act:`, `Act:`,
+> `aCt:`, etc. are malformed Factory metadata.
+
+Two reasons to lock this in rather than relax it:
+
+1. **Diagnostic clarity.** Every Git pretty-format tool,
+   `git log`, `git log -10 --format=%(trailers:key=ACT,valueonly)`,
+   `git interpret-trailers`, and human eye all expect
+   uppercase. Lowercase would surprise reviewers reading
+   `git log` output. Keep one canonical spelling.
+2. **Validation totality.** The validator is case-sensitive
+   today; preserving that means malformed casing produces a
+   predictable FAIL with `REASON=...` rather than slipping
+   through.
+
+Implementation note (for the eventual ACT):
+
+- the case-sensitive grep on line 73 is the right behaviour;
+  add a test asserting that `act:` falls into MODE=ACT with
+  `STATUS=FAIL REASON=ACT trailer key must be uppercase`;
+- explicitly document the policy in `docs/factory/GIT-METADATA.md`
+  under the trailer schema table;
+- add a non-mandatory `git interpret-trailers --parse` cross
+  check is **not** required — the awk match is sufficient and
+  avoids depending on Git's case-insensitive behaviour.
+
+Dedicated ACT: `ACT-POLYC-FACTORY-TRAILER-CASING-POLICY01`
+(to be opened only if a future FAILer report requires
+formalising the rule, or if the case-sensitive grep is ever
+inadvertently relaxed).
+
 ## Things that may never happen
 
 Not every interesting language mechanism belongs in PolyC.
