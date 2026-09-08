@@ -363,4 +363,3 @@ The HANDOFF.md is a SNAPSHOT. The authoritative oracle for this
 ACT's closure is the script exit status (inherited from the
 previous ACT's `identity.sh`, or a CORE01-specific equivalent if
 the reviewer P1 is addressed first).
-

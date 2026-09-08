@@ -358,6 +358,17 @@ negative src/tests/llvm-spike/neg_struct.HC   LLVM_BACKEND_UNSUPPORTED_TYPE
 # that proves the capability matrix contract is honored for opcodes
 # that previously fell through to the default arm.
 negative src/tests/llvm-spike/red_idiv_unclassified.HC  LLVM_BACKEND_UNSUPPORTED_INT_DIVISION
+# ACT-POLYC-LLVM-CORE01-CORRECTION01 (AC06): widen the negative
+# matrix to six real backend-level REJECTED-class witnesses.
+# red_local_multi_def.HC was previously run as a separate
+# "multi-def SSA-local rejection" section; CORRECTION01 promotes
+# it to the canonical negative matrix because it IS a real
+# backend-level witness with a named diagnostic.
+negative src/tests/llvm-spike/red_local_multi_def.HC      LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL
+# red_conversion_trunc.HC is a NEW CORRECTION01 fixture that
+# exercises the CONVERSION rejection class (IR_TRUNC). Without
+# it, AC08 of CORE01 had no CONVERSION-class backend witness.
+negative src/tests/llvm-spike/red_conversion_trunc.HC     LLVM_BACKEND_UNSUPPORTED_CONVERSION
 # RED-8 reclassification: neg_asm.HC fails at PARSE time (the inline
 # `asm { ... }` block is rejected by the parser in this configuration).
 # It is therefore NOT a backend witness — it does not prove IR_ASM
