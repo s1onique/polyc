@@ -290,6 +290,50 @@ explicit gate/review rather than inheriting the old subject.
 
 Dedicated ACT: `ACT-POLYC-FACTORY-CLOSURE-ORACLE-TRUST01` (to be opened).
 
+### FT2 — Range checker post-CLOSE descendant scan (P2; deferred from CORRECTION01 close)
+
+Status: P2 residue recorded by reviewer; non-blocking for compiler work.
+
+Issue: `factory-v2-range-check.sh` currently walks the full
+reachable history with `git rev-list --children --all` to
+enforce the doctrine rule "no commit after CLOSE may carry
+`ACT: <id>`" (GIT-METADATA.md §7). Reviewer observes this is
+a global descendant invariant — exactly the kind of
+"increasingly clever history oracle" pattern Factory v1
+suffered from, and a recurrence the Factory-v2 thesis
+specifically aimed to escape.
+
+Cleaner model: a CLOSE terminates its own execution range.
+`factory-v2-range-check.sh` validates only the contiguous
+backward run ending at that CLOSE. Future misuse of the same
+ACT id (e.g. an agent reverting or hand-editing history) is
+caught at commit time by `factory-v2-commit-msg-check.sh`,
+not retroactively by the historical range checker.
+
+Proposed change (not yet authorised by an ACT):
+- remove the `git rev-list --children --all` block and the
+  per-child ACT scan from `factory-v2-range-check.sh`;
+- delete rule 7 ("No commit after CLOSE may carry `ACT: <id>`")
+  from `docs/factory/GIT-METADATA.md`, OR replace it with a
+  commit-policy rule (commit-msg check) rather than a
+  range-check rule;
+- add one positive test verifying that a CLOSE remains PASS
+  even after unrelated descendant commits are added;
+- record the precedent: corrections always use a new ACT id;
+  closed ACT ids are immutable execution identifiers.
+
+Reviewer explicitly recommended deferring this to P2 and
+proceeding to CORE04 rather than opening
+`SIMPLIFY01-CORRECTION02`. Adopted as policy here.
+
+No defect has been demonstrated against the current
+descendant scan; this is a complexity-reduction proposal,
+not a fix.
+
+Dedicated ACT: `ACT-POLYC-FACTORY-RANGE-CHECK-DESCENDANT-SCAN01`
+(to be opened only if a real defect is observed or if a new
+ACT needs to remove the rule for forward-graph reasons).
+
 ## Things that may never happen
 
 Not every interesting language mechanism belongs in PolyC.
