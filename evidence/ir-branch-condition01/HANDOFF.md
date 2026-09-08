@@ -1,9 +1,10 @@
-# ACT-POLYC-IR-BRANCH-CONDITION01 — HANDOFF (CORRECTION01 + CORRECTION02)
+# ACT-POLYC-IR-BRANCH-CONDITION01 — HANDOFF (CORRECTION01 + CORRECTION02 + CORRECTION03)
 
 ```text
 ACT-POLYC-IR-BRANCH-CONDITION01                  = PASS (corrected)
-ACT-POLYC-IR-BRANCH-CONDITION01-CORRECTION01     = PASS (this; closure identity repaired by CORRECTION02)
-ACT-POLYC-IR-BRANCH-CONDITION01-CORRECTION02     = PASS (this; bounded docs/evidence repair)
+ACT-POLYC-IR-BRANCH-CONDITION01-CORRECTION01     = PASS (closure identity repaired by CORRECTION02/03)
+ACT-POLYC-IR-BRANCH-CONDITION01-CORRECTION02     = SUPERSEDED by CORRECTION03 (dynamic-DEPTH contract)
+ACT-POLYC-IR-BRANCH-CONDITION01-CORRECTION03     = PASS (this; genuinely dynamic binding)
 ```
 
 ## Identity
@@ -28,18 +29,21 @@ FINAL_HEAD:
 
 VERIFY_WITH:
     cd /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc
-    SUBJECT=$(grep ^SUBJECT \
+    SUBJECT=$(grep '^SUBJECT=' \
         evidence/ir-branch-condition01-correction01/gate-push-impl/log.txt \
         | head -1 | cut -d= -f2)
-    DEPTH=$(git rev-list --count $SUBJECT..HEAD)
-    HM=$(git rev-parse HEAD~$DEPTH | cut -c1-12)
-    test "$SUBJECT" = "$HM" && echo PASS || echo FAIL
+    SUBJECT_FULL=$(git rev-parse "$SUBJECT^{commit}")
+    DEPTH=$(git rev-list --count "$SUBJECT_FULL"..HEAD)
+    BOUND=$(git rev-parse "HEAD~$DEPTH")
+    ANC=$(git merge-base --is-ancestor "$SUBJECT_FULL" HEAD \
+         && echo yes || echo no)
+    test "$SUBJECT_FULL" = "$BOUND" && test "$ANC" = "yes" \
+        && echo PASS || echo FAIL
 
-    Expected today:
-        SUBJECT = cbf726ed9399
-        DEPTH   = 3
-        HM      = cbf726ed
-        => PASS
+    (DEPTH is computed, not prescribed; no "today" snapshot
+    is part of the contract. Re-running this recipe at any
+    descendant HEAD produces PASS as long as SUBJECT is the
+    same impl commit.)
 
 BRANCH                = main
 WORKTREE              = clean
@@ -322,23 +326,20 @@ what LLVM's `br i1` requirement needs. Real llvm-spike-test PASS=12
 on the implementation commit confirms the mapping. LLVM support work
 can now resume against a much cleaner branch semantic boundary.
 
-## DRIFT NOTE (superseded by CORRECTION02)
+## DRIFT NOTE (superseded by CORRECTION02 / CORRECTION03)
 
 The CORRECTION01 closure originally pinned FINAL_HEAD via a
-self-referential SHA + DRIFT NOTE pattern. CORRECTION02 (this
-ACT) replaced that pattern with mechanical binding (see the
-VERIFY_WITH block under ## Identity above). The mechanical
-recipe is the authoritative binding; the historical SHA values
-under CORRECTION01_LOOP_BREAKER etc. are recorded only for
-audit, not as the identity contract.
+self-referential SHA + DRIFT NOTE pattern. CORRECTION02 replaced
+that with a `$SUBJECT` + dynamic-`DEPTH` recipe. CORRECTION03
+further strengthened the recipe (full-SHA resolution, ancestor
+check) and explicitly rejected any fixed-depth or fixed-snapshot
+prose (see the VERIFY_WITH block under ## Identity above).
 
-Closure identity is now bound by:
+The mechanical recipe (see ## Identity ## VERIFY_WITH) is the
+authoritative binding. Historical SHA values under
+CORRECTION01_LOOP_BREAKER etc. are recorded only for audit,
+not as the identity contract.
 
-    SUBJECT=$(grep ^SUBJECT evidence/ir-branch-condition01-correction01/gate-push-impl/log.txt | head -1 | cut -d= -f2)
-    DEPTH=$(git rev-list --count $SUBJECT..HEAD)
-    HM=$(git rev-parse HEAD~$DEPTH | cut -c1-12)
-    test "$SUBJECT" = "$HM" && echo PASS || echo FAIL
-
-No amend of this HANDOFF can invalidate that recipe, because
-the recipe reads SUBJECT from a stable, externally captured
+The recipe reads SUBJECT from a stable, externally captured
 file (gate-push-impl/log.txt) and computes DEPTH dynamically.
+No amend of this HANDOFF can invalidate that recipe.

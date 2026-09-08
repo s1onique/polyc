@@ -1,17 +1,22 @@
 ACT-POLYC-IR-BRANCH-CONDITION01-CORRECTION01 — closure facts
 =============================================================
 
-CORRECTION02 (2026-09-08) correction history:
+CORRECTION02 / CORRECTION03 correction history:
 
-  An earlier draft of this file claimed N=2 and pinned HEAD~2.
-  That was correct at one amend iteration but stale after the
-  loop-breaker (Commit 3, `50a158e`) was added. CORRECTION02
-  rewrote this file to the final N=3 binding.
+  v1 (fixed depth 2):  correct at one amend iteration but stale
+                        after the loop-breaker (50a158e) was added.
+  v2 (fixed depth 3):  CORRECTION02. Worked at CORRECTION01 closure,
+                        but became stale again when CORRECTION02
+                        itself landed. Also had a $SUBJ shell-typo.
+  v3 (dynamic DEPTH):  CORRECTION03. Replaces every fixed depth
+                        with dynamic DEPTH computed from
+                        rev-list --count. The recipe is now
+                        amend-resilient by construction.
 
 Closure-loop identity binding (extended contract for
 closure-requalification ACTs):
 
-The CORRECTION03 closure-loop contract is:
+The standard closure-loop contract for a CORRECTIONnn ACT is:
     SUBJECT = HEAD~   (substantive commit is HEAD~)
 
 For a closure-requalification ACT (this one), the SUBJECT is
@@ -22,18 +27,28 @@ the corrected-closure contract as intermediate commits.
 
 This CORRECTION01 therefore uses the extended contract:
 
-    SUBJECT = HEAD~N where N is the depth to the impl commit
+    SUBJECT is the impl commit (cbf726ed9399).
+    Depth from any descendant HEAD to SUBJECT is computed:
+        DEPTH := git rev-list --count $SUBJECT..HEAD
+    The impl commit is reached from HEAD by:
+        HEAD~DEPTH == SUBJECT
+    DEPTH is never prescribed; only computed.
 
-For this CORRECTION01:  N = 3
+CORRECTION01 historical snapshot:
 
-    $ git rev-parse HEAD~3
+    CORRECTION01_HISTORICAL_DEPTH_FROM_50a158e = 3
+    (depth from the CORRECTION01 loop-breaker 50a158e to
+     the impl cbf726e. This is historical fact, not a
+     current-binding rule. After CORRECTION02 and
+     CORRECTION03 added more commits on top, the current
+     DEPTH became 4.)
+
+    $ git rev-parse 50a158e~3
     cbf726ed939956ebc79790371a9d372942b10b05
-    $ cat log.txt | grep SUBJECT
+    $ cat gate-push-impl/log.txt | grep ^SUBJECT
     SUBJECT=cbf726ed9399
 
-    MATCH: HEAD~3 == SUBJECT == implementation commit
-
-Identity chain:
+Identity chain (historical, audit-only — not the binding contract):
 
     ENTRY_HEAD                  = 774602a966584b34b355ec00e5f63a088f84164c
     ORIGINAL_RED                = 341939ca7c56081e0bb45a435524219a4bd4a630
@@ -41,46 +56,59 @@ Identity chain:
     ORIGINAL_CLOSURE (RESCINDED) = f631760ac2bf674a8997d40a62db36ffc43d56d9
     CORRECTION01_COMMIT_1       = 574840d4a5c28b2241b4d9dbc2a6f62d12ac1ede (substantive RED+impl-doc)
     CORRECTION01_COMMIT_2       = de90851fe3e389385eb3f732e6ac0932de2506de (closure evidence)
-    CORRECTION01_COMMIT_3       = 50a158ee403348bf85bc2654f867e58368a95ada (loop-breaker; CURRENT FINAL_HEAD)
+    CORRECTION01_COMMIT_3       = 50a158ee403348bf85bc2654f867e58368a95ada (loop-breaker)
 
     CORRECTION01 commits on top of impl: 3 (cap=3)
+    (Total commits between cbf726e and 50a158e inclusive of
+     50a158e: 3. This is also the CORRECTION01 commit-cap. It is
+     historical; subsequent ACTs (CORRECTION02, CORRECTION03) add
+     commits above 50a158e for closure-bookkeeping repair.)
 
 Why N=3 (not N=1 or N=2)?
 
-  In the standard CORRECTION03 pattern (substantive + closure),
-  HEAD~ IS the substantive commit. Here, the substantive commit
-  is a documentation/commit-organization commit, not the
-  implementation commit. The gate-push was run against the
-  IMPLEMENTATION commit (cbf726e), not against the documentation
-  commit (574840d). Documenting the gate-push as if it were run
-  against 574840d would be a false-GREEN.
+  In the standard closure-requalification ACT pattern
+  (substantive + closure), HEAD~ IS the substantive commit.
+  Here, the substantive commit is a documentation/commit-
+  organization commit, not the implementation commit. The
+  gate-push was run against the IMPLEMENTATION commit
+  (cbf726e), not against the documentation commit (574840d).
+  Documenting the gate-push as if it were run against 574840d
+  would be a false-GREEN.
 
-  N=2 was the depth from the closure-evidence commit
+  N=2 was the historical depth from the closure-evidence commit
   (de90851). After the loop-breaker commit (50a158e) was added,
-  the depth became N=3 (HEAD~3 from FINAL_HEAD = impl).
+  the CORRECTION01-final depth became N=3. CORRECTION03 replaces
+  the fixed N with the dynamic DEPTH rule above.
 
-  The gate-push output is invariant under the loop-breaker
-  addition (it only modifies the HANDOFF identity section, not
-  the captured log), so SUBJECT=cbf726ed9399 remains correct
-  and the only required change is the N bookkeeping.
+  The gate-push output is invariant under subsequent commits on
+  top of the impl commit (subsequent ACTs only modify docs/ and
+  evidence/, never src/), so SUBJECT=cbf726ed9399 remains the
+  authoritative impl commit, and DEPTH always reaches it from
+  any descendant HEAD.
 
-Mechanical verification recipe (for a reviewer):
+Mechanical verification recipe (canonical, amend-resilient):
 
     cd /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc
-    SUBJECT=$(grep ^SUBJECT evidence/ir-branch-condition01-correction01/gate-push-impl/log.txt | head -1 | cut -d= -f2)
-    DEPTH=$(git rev-list --count $SUBJECT..HEAD)
-    HM=$(git rev-parse HEAD~$DEPTH | cut -c1-12)
-    test "$SUBJ" = "$HM" && echo PASS || echo FAIL
+    SUBJECT=$(grep '^SUBJECT=' \
+        evidence/ir-branch-condition01-correction01/gate-push-impl/log.txt \
+        | head -1 | cut -d= -f2)
+    SUBJECT_FULL=$(git rev-parse "$SUBJECT^{commit}")
+    DEPTH=$(git rev-list --count "$SUBJECT_FULL"..HEAD)
+    BOUND=$(git rev-parse "HEAD~$DEPTH")
+    ANC=$(git merge-base --is-ancestor "$SUBJECT_FULL" HEAD \
+         && echo yes || echo no)
+    test "$SUBJECT_FULL" = "$BOUND" && test "$ANC" = "yes" \
+        && echo PASS || echo FAIL
 
-  (DEPTH is the number of commits between the impl commit and
-   the current FINAL_HEAD; HEAD~DEPTH is the impl commit.)
+  This recipe (a) resolves the short gate SHA to a full 40-char
+  SHA via $SUBJECT^{commit}, (b) computes DEPTH dynamically,
+  (c) asserts HEAD~DEPTH equals the full impl SHA, and (d)
+  asserts SUBJECT is an ancestor of HEAD (which it must be,
+  since the impl commit is on main and HEAD is a descendant).
 
-  Concrete expected output today:
-
-    SUBJECT = cbf726ed9399
-    DEPTH   = 3
-    HM      = cbf726ed
-    => PASS
+  No snapshot, no fixed N. Re-running this recipe at any
+  descendant HEAD will produce PASS as long as SUBJECT is
+  unchanged.
 
 Verdicts (corrected):
 
