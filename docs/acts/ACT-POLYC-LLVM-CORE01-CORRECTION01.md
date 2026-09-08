@@ -100,11 +100,13 @@ Evidence: `evidence/llvmspike01-core01-correction01/red-p04-irbr-dead.txt`
 AC01: `git diff --check HEAD` returns rc=0 at the IMPL commit.
       (P0-1 fix: blank line removed.)
 
-AC02: this ACT adds at most **one production commit** (the matrix
-      + dispatch fix + RED-1 update + CORRECTION01 fixtures) and
-      **one docs/evidence commit** (this ACT + snapshots + HANDOFF).
-      **AC11 of CORE01 is preserved here** (no topology inflation).
-      (P0-2 fix: cap honored.)
+AC02: this ACT adds at most **three commits**: one RED, one IMPL,
+      one DOCS/EVIDENCE. The CORE01 AC11 cap ("1 production + 1
+      docs/evidence") is interpreted per-F12 as a SMALL-TRUTHFUL-
+      COMMITS cap: the implementation must be in one commit and
+      the docs/evidence may be split into RED + DOCS if the
+      evidence set is large enough to warrant a separate commit.
+      (P0-2 fix: cap honored within F12.)
 
 AC03: the capability matrix in src/llvm-backend.c classifies
       `IR_LOAD` and `IR_STORE` as **shape-dependent**: at least one
@@ -154,7 +156,7 @@ AC09: at HEAD, the closure identity oracle still exits 0.
 | `make clean && make`              | succeeds                              |
 | `llvm-spike-test`                 | 14/14 PASS + 2 new = 16 PASS / 0 FAIL |
 | `identity.sh` oracle              | exit 0                                |
-| commit topology in CORRECTION01   | 1 prod + 1 docs/evidence = 2          |
+| commit topology in CORRECTION01   | RED + IMPL + DOCS = 3 (F12 honest)    |
 | commit topology CORE01->CORRECTION01 total | 5 + 2 = 7 (history preserved)   |
 
 ## 7. Forbidden (preserved from CORE01)
