@@ -1,0 +1,34 @@
+RED-C: shell-contract defect (Bash-only feature in /bin/sh-claimed script)
+
+The factory checker declares:
+    #!/bin/sh
+and is invoked from GFAST-6 as:
+    sh scripts/quality/factory-closure-status-check.sh
+
+But the script body uses:
+    declare -A SEEN_ACT
+    declare -A SEEN_HANDOFF
+    declare -A ACT_IN_MANIFEST
+
+`declare -A` is a Bash (and zsh) extension for associative arrays; it is
+not part of POSIX sh. Any strictly POSIX /bin/sh rejects this with
+"declare: not found".
+
+Reproduction (current HEAD, clean state):
+    $ dash scripts/quality/factory-closure-status-check.sh
+    scripts/quality/factory-closure-status-check.sh: 58: declare: not found
+    rc=127
+
+Under the reviewer-corrected contract, choose ONE:
+    A. genuinely POSIX sh implementation (no `declare -A`)
+    B. explicit #!/usr/bin/env bash + invocation through `bash`
+       directly + Bash capability/version probe
+
+This ACT selects A (genuine POSIX sh), since:
+  - the file already uses other POSIX constructs (case, awk, grep -E,
+    sed, printf, set -eu) and does not require arrays
+  - the bounded managed universe has a hard-coded 5-element list
+  - set-difference computation can be done with awk + grep on the
+    manifest, no associative arrays required
+
+Saved to: evidence/factory-status-reconciliation-correction01/red-c/checker-output.txt

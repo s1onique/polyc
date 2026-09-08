@@ -1,0 +1,32 @@
+ACT-POLYC-FACTORY-STATUS-RECONCILIATION-CORRECTION01 — RED matrix
+================================================================
+
+RED-A  current checker silently skips an unmapped managed pair
+       (5 ACT/HANDOFF files on disk, 4-row manifest):
+         - expected: UNMAPPED_MANAGED_ACTS=1, rc=1
+         - observed: PAIR_OK=4 PAIR_FAIL=0 STATUS=PASS rc=0
+         - capture: evidence/factory-status-reconciliation-correction01/red-a/checker-output.txt
+
+RED-B  current checker does not emit the four UNMAPPED_*/EXTRA_*
+       counters at all (so closure-summary claims are documentary):
+         - observed emitted counters: MANIFEST_ROWS, MANIFEST_PARSE_ERRORS,
+           DUPLICATE_*, MISSING_*, MALFORMED_*, EXACT_VERDICT_MISMATCHES,
+           PAIR_OK, PAIR_FAIL
+         - observed missing counters: UNMAPPED_MANAGED_ACTS,
+           UNMAPPED_MANAGED_HANDOFFS, EXTRA_MANIFEST_ACTS,
+           EXTRA_MANIFEST_HANDOFFS
+         - capture: evidence/factory-status-reconciliation-correction01/red-b/checker-output.txt
+
+RED-C  current checker is not a genuine POSIX /bin/sh script;
+       `declare -A` is a Bash extension that fails under dash:
+         - $ dash scripts/quality/factory-closure-status-check.sh
+           scripts/quality/factory-closure-status-check.sh: 58: declare: not found
+           rc=127
+         - capture: evidence/factory-status-reconciliation-correction01/red-c/checker-output.txt
+
+All three REDs are reproduced BEFORE any production change to
+the checker. Per F3, the principal REDs precede the principal
+production fix.
+
+Manifest state preserved at:
+  evidence/factory-status-reconciliation-correction01/red-a/manifest.bak
