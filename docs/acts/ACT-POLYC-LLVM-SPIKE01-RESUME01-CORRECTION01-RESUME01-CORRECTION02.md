@@ -1,10 +1,14 @@
 # ACT-POLYC-LLVM-SPIKE01-RESUME01-CORRECTION01-RESUME01-CORRECTION02
 
-## Verdict so far
+## Verdicts so far
 
 **HALT_CORRECTION01_CLOSURE_IDENTITY** raised by review against
 `a5818c66cbbb6f447ea636f30925b63e408d0aa4` after the prior ACT was
-declared PASS.
+declared PASS — resolved by this ACT's first phase.
+
+**HALT_CORRECTION02_DYNAMIC_BINDING_SCOPE** raised by review after
+this ACT's first phase declared PASS — also resolved by this ACT's
+second phase (commit `6e7bc4d`).
 
 ## Scope (bounded)
 
@@ -97,3 +101,46 @@ CLOSURE     = (this ACT)
    `git diff bde6045a..HEAD -- <three C1 files>` remains empty.
 6. `git diff --check HEAD` returns rc=0.
 7. No production source files are modified.
+
+## Required actions (CORRECTION02-RESUME01 phase)
+
+After this ACT's first phase declared PASS, the reviewer raised
+**HALT_CORRECTION02_DYNAMIC_BINDING_SCOPE**:
+
+> merge-base --is-ancestor alone does not prove that later descendants
+> are docs/evidence-only descendants.
+
+Three corrections required (all docs/evidence-only; no source changes):
+
+1. **Strengthen the dynamic oracle with descendant-scope conservation.**
+   Add invariant B to `identity.sh`:
+
+   ```sh
+   DELTA=$(git diff --name-only "$SUBJECT_FULL"..HEAD)
+   BAD=$(printf '%s\n' "$DELTA" | grep -Ev "$(IFS='|'; echo "${ALLOWED_PATHS[*]}")" || true)
+   [ -z "$BAD" ] || { echo FAIL; exit 2; }
+   ```
+
+   ALLOWED_PATHS = (^docs/, ^evidence/...01/, ^evidence/...02/)
+
+2. **Make `identity.sh` exit nonzero on failure.**
+   Replace `[ -z "$x" ] && echo PASS || echo FAIL` with explicit
+   `|| { echo FAIL >&2; exit N; }` constructions under `set -e`.
+
+3. **Snapshot-vs-authority terminology.**
+   Rename generated HEAD/commit-count values from "authoritative identity"
+   to "SNAPSHOT (NOT authoritative)." The authoritative oracle is the
+   script's exit status, not the regenerated file.
+
+## Acceptance criteria (CORRECTION02-RESUME01)
+
+8. `identity.sh` exits 0 at HEAD iff all four invariants (A, B, C, D) hold.
+9. `identity.sh` exits 2 on a side-branch that modifies `src/llvm-backend.c`
+   post-SUBJECT (negative test for invariant B).
+10. `identity.sh` exits 3 on a side-branch that mutates any of the three
+    C1 files post-ENTRY_HEAD (negative test for invariant C).
+11. `identity.sh` exits 4 on a tree that violates `git diff --check`.
+12. `identity.sh` correctly identifies the repo root when invoked from
+    any cwd (negative test for portability).
+13. `snapshot.txt` and `identity.txt` are explicitly labelled SNAPSHOT
+    (NOT authoritative) at every header.
