@@ -2,9 +2,29 @@
 
 ## Status
 
-OPEN — closing CORE03 reviewer P0s and P1s.
+HALT_TOPOLOGY_RECORDED — CORE03-CORRECTION01's three reviewer P0s
+and two P1s were partially closed; the reviewer rejected PASS as
+HALT_CORE03_CORRECTION01_BINDING_STILL_PARTIAL. The closure prose
+in HANDOFF.md overstated what was actually bound:
+
+  - The verifier's `diag in backend_text` (whole-file) check was
+    not arm-local; a REJECTED opcode whose handler emits the wrong
+    diagnostic false-GREENed if the right macro existed elsewhere.
+  - The `hcc --print-cap-table` wire format truncated diagnostics
+    at the first space (IR_CMP_BR row).
+  - The contract harness's `exp_diag="$obs_diag"` was tautological;
+    the global diagnostic set accepted any REJECTED macro.
+
+Per F11 the unbound residue is filed. Per F14, this historical ACT
+is preserved as evidence of what was previously closed; superseded
+by ACT-POLYC-LLVM-CORE03-CORRECTION02.
 
 Predecessor: ACT-POLYC-LLVM-CORE03 (verdict: HALT_CORE03_CONTRACT_NOT_ACTUALLY_BOUND).
+
+Supersession: ACT-POLYC-LLVM-CORE03-CORRECTION02 closes the binding
+defects with M1 (length-delimited wire format + round-trip test),
+M2 (arm-local diagnostic binding check), M3 (per-fixture expected_opcodes
++ set-membership check; tautology removed), and M4 (status reconciliation).
 
 ## Verdict at OPEN
 

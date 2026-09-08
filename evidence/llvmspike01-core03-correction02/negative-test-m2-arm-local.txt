@@ -1,0 +1,12 @@
+=== M2 negative test: IR_GEP arm emits BITCAST instead of AGGREGATE ===
+
+CORRECTION01 verifier: would PASS because the BITCAST macro is in
+backend.c (in the IR_BITCAST arm) — the whole-file check would find it.
+
+CORRECTION02 verifier (arm-local check): should RED because IR_GEP arm
+body does not contain AGGREGATE (it contains BITCAST).
+
+FAIL  M2: IR_GEP (REJECTED) diagnostic 'LLVM_BACKEND_UNSUPPORTED_AGGREGATE' NOT in this arm's body. Appears in: <none>
+PASS  I2: IR_GEP has explicit dispatch arm and capability row (REJECTED)
+FAIL: 1 binding violations
+verifier rc: 1
