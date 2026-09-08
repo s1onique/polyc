@@ -1,0 +1,27 @@
+RED P0-2 REPRODUCTION — gap in enum coverage passes validator
+==============================================================
+
+Procedurally corrupted src/llvm-backend-cap.c:
+  Replaced row op=IR_AND with op=(IrOp)99 (out of valid enum range).
+  Result: count = 56 (unchanged); duplicates = none; but:
+    - IR_AND is missing
+    - op=99 is not in the IrOp enum
+    - The ordering by ordinal index is broken (row 22 has op=99)
+
+Rebuilt and ran hcc --emit-llvm:
+  Observed stderr: "LLVM backend capability contract: ok (56 rows)"
+  Observed rc:     0
+
+This confirms the reviewer's P0-2:
+  The validator does not prove "exactly one row per IrOp ordinal."
+  It only proves "count == 56 and no duplicates."
+
+After this RED the fix will add:
+    for (int i = 0; i < kLLVMBackendCapabilityCount; i++) {
+        if ((int)kLLVMBackendCapability[i].op != i)
+            abort();
+    }
+plus a range check 0 <= op <= IR_ASM.
+
+Restored source after the reproduction; no source committed
+during RED (F3).

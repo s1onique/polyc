@@ -1,0 +1,60 @@
+RED P1 — contract-check harness uses hard-coded expectations, not the table
+===========================================================================
+
+Reviewer's claim:
+  "The committed script instead contains a manually-maintained list:
+     contract_check ... SUPPORTED -
+     contract_check ... REJECTED LLVM_BACKEND_UNSUPPORTED_TYPE
+   No `.expected` sidecars are read. The script never queries
+   kLLVMBackendCapability[].
+   So we now have three separately-maintained representations:
+     1. matrix comment in llvm-backend.c
+     2. kLLVMBackendCapability[]
+     3. hard-coded expectations in llvm-spike-contract-check.sh
+   This is better test coverage, but not a single source of truth."
+
+Verification (committed source):
+  $ grep -E 'expect|table|class_|kLLVMBackendCapability' \
+      scripts/quality/llvm-spike-contract-check.sh
+  (no references to kLLVMBackendCapability or any table query)
+  $ grep 'contract_check.*SUPPORTED\|contract_check.*REJECTED' \
+      scripts/quality/llvm-spike-contract-check.sh | head -3
+  contract_check red-p1-irbr  SUPPORTED         -
+  contract_check red-p1b-cmp_branch REJECTED LLVM_BACKEND_UNSUPPORTED_IR
+  contract_check red-p2-type     REJECTED LLVM_BACKEND_UNSUPPORTED_TYPE
+
+  The expected class and expected diagnostic are literal strings in
+  the script, NOT queries against kLLVMBackendCapability[].
+
+Demonstrating the consequence:
+  If we change kLLVMBackendCapability[IR_ALLOCA].class_ from REJECTED
+  to SUPPORTED (a table change), the contract-check harness still
+  passes if the corresponding fixture happens to emit .ll successfully.
+  It does NOT verify that the table row was actually changed.
+
+  Three sources of truth, no binding.
+
+F3 (RED before production implementation):
+  The defect is reproducible by source inspection (no table query in
+  the script). No live runtime RED is needed before the production
+  fix.
+
+Fix (correction ACT):
+  Refactor scripts/quality/llvm-spike-contract-check.sh to query
+  kLLVMBackendCapability[] via a small introspection helper (printed
+  to stdout by hcc --emit-llvm with a debug flag, or via a separate
+  --print-cap-table mode). The expected class comes from the table,
+  not from a hand-written script constant.
+
+  Alternatively, move the table-of-fixtures into the C binary as a
+  static structure that the harness can query via stdout.
+
+  Whichever approach: the harness must query the table, not
+  hard-code expectations.
+
+Acceptance criterion (post-fix):
+  Change kLLVMBackendCapability[IR_ALLOCA].class_ to SUPPORTED.
+  Rebuild.
+  Run contract-check harness.
+  Expected: FAIL with a clear diagnostic that the table says
+  SUPPORTED but the fixture observed REJECTED.

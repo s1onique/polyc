@@ -1,0 +1,54 @@
+RED P0-1 REPRODUCTION — dispatch can drift from table, validator silent
+======================================================================
+
+Setup:
+  Fixture: src/tests/llvm-spike-red/red_p0_1_dispatch_drift.HC
+    I64 main(I64 a, I64 b) { return a & b; }
+  This naturally exercises IR_AND.
+
+Baseline (unmodified dispatch):
+  hcc --emit-llvm ... → rc=1
+    stderr: "LLVM backend capability contract: ok (56 rows)"
+            "LLVM_BACKEND_UNSUPPORTED_INT_BITWISE: function main:
+             bitwise ops are not supported (opcode and     )"
+
+Mutated dispatch (case IR_AND: removed from the explicit REJECTED group):
+  hcc --emit-llvm ... → rc=1
+    stderr: "LLVM backend capability contract: ok (56 rows)"
+            "LLVM_BACKEND_UNSUPPORTED_IR: function main:
+             opcode and      is not supported by the LLVM backend
+             IR dst id: 6, line 6"
+
+Validator verdict in both cases: "ok (56 rows)" — false GREEN.
+
+Diagnostic drift:
+  Table says: IR_AND = REJECTED, LLVM_BACKEND_UNSUPPORTED_INT_BITWISE
+  Dispatch now says: "LLVM_BACKEND_UNSUPPORTED_IR" (generic default arm)
+  ⇒ dispatch has silently drifted from the contract.
+
+Conclusion:
+  The validator validates the table against itself (count + duplicates +
+  diagnostic presence), not against the actual switch cases in the dispatch.
+  A dispatch mutation that doesn't add or remove rows from the table is
+  invisible to the validator.
+
+Required fix:
+  A build-time verifier that:
+    1. Parses `switch (ins->op) { case IR_X: ... }` arms from
+       src/llvm-backend.c (or a static table of arms).
+    2. For every IR_X in the enum:
+       - If kLLVMBackendCapability[IR_X].class_ == REJECTED,
+         require: an explicit case IR_X: arm that emits
+         kLLVMBackendCapability[IR_X].diagnostic.
+       - If kLLVMBackendCapability[IR_X].class_ == UNREACHABLE_ON_LLVM,
+         require: NO explicit case IR_X: arm (i.e., falls to default).
+       - If kLLVMBackendCapability[IR_X].class_ == SUPPORTED,
+         require: an explicit case IR_X: arm.
+       - If kLLVMBackendCapability[IR_X].class_ == DEFENSIVE_INVARIANT,
+         require: an explicit case IR_X: arm with the runtime
+         LLVM_BACKEND_DEFENSIVE_INVARIANT_TRIPPED diagnostic.
+       - If kLLVMBackendCapability[IR_X].class_ == SHAPE_DEPENDENT,
+         require: an explicit case IR_X: arm.
+    3. Print PASS/FAIL with the offending row.
+
+Restored dispatch after reproduction; no source committed during RED (F3).

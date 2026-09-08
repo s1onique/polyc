@@ -1,0 +1,37 @@
+TOPOLOGY BREACH (CORE03) — RECORDED, NOT REWRITTEN
+==================================================
+
+Per F14, historical ACT documents SHALL NOT be rewritten. The
+reviewer-correct verdict of CORE03 is recorded here:
+
+  CORE03 declared:  RED + IMPL + DOCS = 3 commits
+  CORE03 actual:    RED + IMPL + DOCS + negative-test = 4 commits
+  breach:           actual > declared
+
+Per F4 (Failures are evidence), a HALT is a successful execution
+outcome. CORE03 closes here as:
+
+  CORE03:
+    capability abstraction                     PASS
+    table exists for 56 rows                    PASS
+    basic table sanity                          PASS
+    malformed diagnostic negative test          PASS
+    existing harness                            PASS 18/0
+    contract harness                            PASS 20/0
+    normal IR_BR i1 path                        PASS
+    one row per real IrOp proven                FAIL
+    dispatch ↔ table binding                    FAIL
+    comment ↔ table binding                     FAIL
+    fixture decoder uses table                  FAIL
+    P1-b mechanically enforced                  FAIL
+    defensive i64 fallback semantics            FAIL / miscompile risk
+    commit cap                                  FAIL 4 > 3
+
+  VERDICT = HALT_CORE03_CONTRACT_NOT_ACTUALLY_BOUND
+
+  Per F4 the historical commits remain at HEAD.
+  ACT-POLYC-LLVM-CORE03-CORRECTION01 opens the next iteration.
+
+This is the same posture taken at CORE01 (REJECTED in audit) and
+the various CORRECTION01 ACTs that followed. The pattern is
+established; the breach is documented, not concealed.

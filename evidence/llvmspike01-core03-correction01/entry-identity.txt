@@ -1,0 +1,20 @@
+branch: main
+HEAD at entry: 350553c073bba6493f2f11c5be317d9b884ee09b
+previous ACT: ACT-POLYC-LLVM-CORE03 (REJECTED, HALT_CORE03_CONTRACT_NOT_ACTUALLY_BOUND)
+correcting ACT: ACT-POLYC-LLVM-CORE03-CORRECTION01
+
+Reviewer P0s:
+  P0-1: validator validates the table against itself, not against the dispatch
+  P0-2: '56 rows + no duplicates' does not prove one row per IrOp (no gap check)
+  P0-3: defensive IR_BR/i64 must NOT silently preserve trunc i64 -> i1 (silent miscompile)
+
+Reviewer P1s:
+  P1: contract-check harness uses hard-coded expectations, not the table
+  P1: P1-b (IR_NOP/LABEL explicit-arms) is documented, not mechanically bound
+
+Topology breach:
+  DECLARED_CAP = 3
+  ACTUAL = 4
+  Resolution: do NOT rewrite historical commits; classify honestly.
+
+CORE03-CORRECTION01 mission cap: RED + IMPL + DOCS = 3 commits (per F12 strict cap)
