@@ -1,0 +1,29 @@
+RED-B: closure-summary overclaims (UNMAPPED_*/EXTRA_* are documentary fiction)
+
+Observed current behaviour on the 5-pair clean state:
+  - The factory checker emits the following counters:
+      MANIFEST_ROWS, MANIFEST_PARSE_ERRORS,
+      DUPLICATE_ACT_PATHS, DUPLICATE_HANDOFF_PATHS,
+      MISSING_ACT_FILES, MISSING_HANDOFF_FILES,
+      MALFORMED_ACT_STATUS, MALFORMED_HANDOFF_VERDICT,
+      EXACT_VERDICT_MISMATCHES,
+      PAIR_OK, PAIR_FAIL
+  - It does NOT emit:
+      UNMAPPED_MANAGED_ACTS
+      UNMAPPED_MANAGED_HANDOFFS
+      EXTRA_MANIFEST_ACTS
+      EXTRA_MANIFEST_HANDOFFS
+  - Therefore the ACT-POLYC-FACTORY-STATUS-RECONCILIATION closure
+    summary's claim:
+        UNMAPPED_MANAGED_ACTS     = 0
+        UNMAPPED_MANAGED_HANDOFFS = 0
+        EXTRA_MANIFEST_ACTS       = 0
+        EXTRA_MANIFEST_HANDOFFS   = 0
+    is a documentary assertion, not a mechanically proven invariant.
+  - Counter-evidence (RED-A): with 5 ACT/HANDOFF files on disk and a
+    4-row manifest (one row removed), the checker reports
+    PAIR_OK=4 PAIR_FAIL=0 STATUS=PASS rc=0. The actual current
+    behaviour is precisely the false-GREEN the missing counters were
+    intended to prevent.
+
+Saved to: evidence/factory-status-reconciliation-correction01/red-b/checker-output.txt

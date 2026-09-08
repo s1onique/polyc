@@ -1,0 +1,31 @@
+RED-A: independent-managed-universe completeness defect (FALSE-GREEN)
+
+Setup (before running the current checker):
+  - 5 ACT files on disk:  ACT-POLYC-LLVM-CORE03-CORRECTION0[1-5].md
+  - 5 HANDOFF files on disk: evidence/llvmspike01-core03-correction0[1-5]/HANDOFF.md
+  - manifest reduced from 5 rows to 4 by removing the correction02 row
+  - all metadata inside the 4 listed pairs is correct (HALT_* tokens
+    match exactly between ACT and HANDOFF)
+
+Observed current behaviour:
+  - checker rc=0
+  - MANIFEST_ROWS=4
+  - PAIR_OK=4
+  - PAIR_FAIL=0
+  - STATUS=PASS
+  - correction02 ACT/HANDOFF (both still on disk) are SILENTLY SKIPPED
+    because the checker iterates only over manifest rows and never
+    enumerates the managed universe independently
+
+Expected behaviour under the ACT contract:
+  - The bounded managed universe (5 ACTs + 5 HANDOFFs) is authoritative.
+  - Removing a manifest row while the ACT and HANDOFF files remain
+    on disk means the checker should FAIL because:
+      UNMAPPED_MANAGED_ACTS    = 1   (correction02 ACT)
+      UNMAPPED_MANAGED_HANDOFFS = 1  (correction02 HANDOFF)
+  - The current implementation cannot fail this case because it does
+    not independently enumerate the managed universe and does not
+    print those counters at all.
+
+Saved to: evidence/factory-status-reconciliation-correction01/red-a/checker-output.txt
+Original manifest snapshot: evidence/factory-status-reconciliation-correction01/red-a/manifest.bak
