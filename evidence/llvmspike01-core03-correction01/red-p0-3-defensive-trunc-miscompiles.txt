@@ -1,0 +1,70 @@
+RED P0-3 — defensive IR_BR/i64 trunc silently miscompiles
+==========================================================
+
+Reviewer's claim:
+  "If an unexpected raw i64 reaches this point:
+     0  -> false
+     1  -> true
+     2  -> true   (truthiness)
+     3  -> true
+   But:
+     trunc i64 %x to i1   keeps only the low bit:
+     2 -> 0 -> false   WRONG
+     3 -> 1 -> true
+     4 -> 0 -> false   WRONG
+   LLVM conditional br requires i1 condition; comparison instructions
+   produce i1 normally. But if the defensive branch fires, you've
+   already established an upstream invariant failed. Continuing with
+   parity semantics risks a valid, verifier-clean miscompile."
+
+Code path in src/llvm-backend.c lines ~796-805 (CORE03 IMPL):
+  if (cond_ty == LLVMInt64TypeInContext(lc->ctx)) {
+      fprintf(stderr, "%s: ...", LLVM_BACKEND_DEFENSIVE_INVARIANT_TRIPPED, ...);
+      lc->defensive_trips++;
+      cond1 = LLVMBuildTrunc(lc->bld, cond, LLVMInt1TypeInContext(lc->ctx), "");
+  }
+
+Verification (textual): the trunc is real LLVM IR `trunc i64 %x to i1`,
+which keeps only the low bit. The user's source-level truthiness
+contract (0 -> false, nonzero -> true) is violated for values
+2, 4, 6, 8, ...
+
+Demonstration requires a producer of raw-i64 IR_BR conditions that
+bypasses irNormalizeBranchCondition. The current spike never produces
+one (verified: defensive_trips = 0 across 20 fixtures). To produce
+a controlled RED witness, the correction will either:
+  (a) write an internal helper that bypasses normalization and emits
+      raw IR_BR (a "test seam" acceptable per reviewer's note), OR
+  (b) rely on the textual review and fix the trunc regardless.
+
+The simpler and correct fix (textual + semantic) is to make the
+i64 path FATAL:
+
+  if (cond_ty == LLVMInt64TypeInContext(lc->ctx)) {
+      fprintf(stderr,
+          "%s: ... IR_BR cond is i64, not i1; "
+          "neutral/LLVM boundary violation. Refusing to emit "
+          "possibly wrong LLVM (trunc i64 -> i1 would miscompile "
+          "any non-{0,1} value).\\n",
+          LLVM_BACKEND_DEFENSIVE_INVARIANT_TRIPPED, ...);
+      exit(1);
+  }
+
+This is what the correction ACT will deliver.
+
+If an i64 truthiness condition were ever intentionally supported, it
+would require an icmp ne i64 %x, 0 conversion (NOT a trunc), and a
+fresh ACT.
+
+Why this is a P0 not P1:
+  - The behaviour is silent: it succeeds with rc=0.
+  - It produces verifier-clean LLVM IR that compiles and runs.
+  - The output is WRONG for any i64 value outside {0, 1}.
+  - This is exactly the class of bug Factory doctrine has repeatedly
+    tried to eliminate (F13: evidence over persuasive prose).
+
+F3 (RED before production implementation):
+  The defect is reproducible by code reading (the trunc is the only
+  outcome of the i64 branch). The current IR_BR is never exercised
+  with raw i64 because the canonical pipeline always emits i1; no
+  live runtime RED is needed before the production fix.

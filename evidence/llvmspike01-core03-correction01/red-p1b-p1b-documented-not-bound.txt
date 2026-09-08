@@ -1,0 +1,56 @@
+RED P1-b — IR_NOP / IR_LABEL explicit-arms absence is documented, not bound
+============================================================================
+
+Reviewer's claim:
+  "CORE03 does not mechanically distinguish explicit rejection from
+   generic-unreachable dispatch.
+   `red-p1b-no-explicit-arms.txt` says the new contract will
+   mechanically assert:
+     > every REJECTED row has a `case IR_X:` arm;
+     > every UNREACHABLE row has only the generic default.
+   But neither the validator nor the harness inspects switch cases.
+   Again: CORE04 is proposed to do this."
+
+Verification (committed source):
+  $ grep -E 'kLLVMBackendCapability|UNREACHABLE' \
+      scripts/quality/llvm-spike-contract-check.sh | head -3
+  (no table query; the script only inspects stderr)
+
+Demonstration:
+  Add a `case IR_NOP: { ... }` arm to llvm-backend.c that compiles
+  IR_NOP into `ret i64 0`. The current contract validator still
+  prints "ok (56 rows)". The harness still passes (no IR_NOP
+  fixture). The table still says IR_NOP = UNREACHABLE_ON_LLVM.
+  But the dispatch no longer matches the table: the row promises
+  "unreachable" but the dispatch now has an executable path.
+
+  Conversely, remove the `default:` arm. The validator still passes.
+
+F3:
+  Reproducible by code reading. No live runtime RED required.
+
+Fix (correction ACT):
+  Build-time verifier that:
+    - For every IrOp in the enum:
+        * If class == UNREACHABLE_ON_LLVM, require NO explicit
+          `case IR_X:` arm in the dispatch (must fall to default).
+        * If class == SUPPORTED or DEFENSIVE_INVARIANT, require
+          EXACTLY ONE explicit case arm (asserted by AST scan).
+        * If class == REJECTED, require EXACTLY ONE explicit case
+          arm that emits the named diagnostic.
+        * If class == SHAPE_DEPENDENT, require EXACTLY ONE explicit
+          case arm.
+
+  Implemented as a Python script (scripts/quality/llvm-cap-table-
+  verifier.py) that:
+    1. Parses src/llvm-backend.c for `case IR_X:` arms.
+    2. Loads kLLVMBackendCapability[] via a small hcc --print-cap-table
+       mode (or via header parsing if simpler).
+    3. Asserts the invariants above.
+    4. Returns rc=0 on PASS, rc=1 with a per-row diagnostic on FAIL.
+
+Acceptance criterion (post-fix):
+  Add `case IR_NOP: { ... }` to llvm-backend.c.
+  Run verifier.
+  Expected: FAIL with "IR_NOP is UNREACHABLE_ON_LLVM but has explicit
+  case arm in dispatch."
