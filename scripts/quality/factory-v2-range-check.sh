@@ -2,6 +2,7 @@
 # scripts/quality/factory-v2-range-check.sh
 #
 # ACT-POLYC-FACTORY-GIT-METADATA-SIMPLIFY01
+# ACT-POLYC-FACTORY-GIT-METADATA-SIMPLIFY01-CORRECTION01
 #
 # Factory v2 ACT range validator.
 #
@@ -28,6 +29,14 @@
 #   6. No commit after CLOSE carries ACT=<id>.
 #
 # No numeric commit-count rule.
+#
+# CORRECTION01 changes (vs SIMPLIFY01):
+#   - replaced shell-glob `case` patterns for ACT id and
+#     ACT-Verdict with `grep -Eq` against the documented
+#     regex grammar;
+#   - removed `gsub(/[[:space:]]+/, "_", $0)` from the
+#     ACT-Verdict extraction so the literal trailer value
+#     is what gets validated.
 #
 # Usage:
 #   factory-v2-range-check.sh <ACT-ID> <CLOSE-COMMIT>
@@ -69,12 +78,13 @@ fail() {
 }
 
 case "$ACT_ID" in
-    ACT-POLYC-[A-Z0-9][A-Z0-9_-]*)
-        ;;
-    *)
-        fail "ACT id '$ACT_ID' does not match ^ACT-POLYC-[A-Z0-9][A-Z0-9_-]*\$"
+    "")
+        fail "ACT id argument empty"
         ;;
 esac
+if ! printf '%s\n' "$ACT_ID" | grep -Eq '^ACT-POLYC-[A-Z0-9][A-Z0-9_-]+$'; then
+    fail "ACT id '$ACT_ID' does not match regex ^ACT-POLYC-[A-Z0-9][A-Z0-9_-]+\$"
+fi
 
 # Read CLOSE's trailers via git-log %(trailers). Use a sentinel
 # string ('@@@') as the trailer separator; NUL bytes cannot be
@@ -100,21 +110,19 @@ fi
 VERDICT_RAW=$(printf '%s' "$CLOSE_TRAILERS" | tr '@@@' '\n' \
     | awk '/^ACT-Verdict:[[:space:]]+/ {
         sub(/^ACT-Verdict:[[:space:]]+/, "", $0)
-        gsub(/[[:space:]]+/, "_", $0)
         print
         exit
     }')
 
-case "$VERDICT_RAW" in
-    "")
-        fail "CLOSE ACT-Verdict value empty"
-        ;;
-    PASS|PASS_[A-Z0-9_]*|HALT_[A-Z0-9_]*)
-        ;;
-    *)
-        fail "CLOSE ACT-Verdict '$VERDICT_RAW' does not match verdict grammar"
-        ;;
-esac
+# CORRECTION01: literal trailer value (no underscore
+# rewriting); regex match via grep -Eq, NOT shell glob.
+if [ -z "$VERDICT_RAW" ]; then
+    fail "CLOSE ACT-Verdict value empty"
+fi
+if ! printf '%s\n' "$VERDICT_RAW" \
+        | grep -Eq '^(PASS(_[A-Z0-9_]+)*|HALT_[A-Z0-9_]+)$'; then
+    fail "CLOSE ACT-Verdict '$VERDICT_RAW' does not match verdict grammar ^(PASS(_[A-Z0-9_]+)*|HALT_[A-Z0-9_]+)\$"
+fi
 
 # Walk parents backwards while commits carry ACT=<id>.
 tmp_matches=$(mktemp -t polyc-v2-range.XXXXXX)
