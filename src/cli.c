@@ -125,6 +125,7 @@ static CliParser parsers[] = {
     {str_lit("--dump-ir"),  0, CLI_DUMP_IR, "--dump-ir", "Dump ir to stdout" , &cliParseNop},
     {str_lit("--dump-ir-pooled"), 0, CLI_DUMP_IR_POOLED, "--dump-ir-pooled", "ACT-POLYC-IR-BOUNDARY01 RED witness: dump the IR with a fake x86_64 IrRegPool set, so the parameter-arrival lowering's pool consultation is observable. Internal/ACT-debug only; not for users." , &cliParseNop},
     {str_lit("--emit-llvm"), 0, CLI_EMIT_LLVM, "--emit-llvm", "ACT-POLYC-LLVM-SPIKE01-RESUME01: emit verified textual LLVM IR (LLVM 22 C-API consumer; only the deliberately-bounded I64 subset is supported). Writes to -o path if set, else stdout." , &cliParseNop},
+    {str_lit("--print-cap-table"), 0, CLI_PRINT_CAP_TABLE, "--print-cap-table", "ACT-POLYC-LLVM-CORE03-CORRECTION01: print the LLVM backend capability table (one row per IrOp) to stdout and exit. Used by the build-time verifier scripts/quality/llvm-cap-table-verifier.py to bind dispatch <-> table <-> harness without hard-coded expectations." , &cliParseNop},
     {str_lit("--mem-stats"),  0, CLI_MEM_STATS, "--mem-stats", "Stats about memory usage when compiling" , &cliParseNop},
     {str_lit("--version"),  0, CLI_VERSION, "--version", "Print the version of the compiler", &cliParseNop},
     {str_lit("--help"),     0, CLI_HELP, "--help", "Print this message", &cliParseNop},
@@ -519,6 +520,7 @@ int cliParseArgs(CliArgs *args, int argc, char **argv) {
             case CLI_DUMP_IR:   args->dump_ir = 1; break;
             case CLI_DUMP_IR_POOLED: args->dump_ir_pooled = 1; break;
             case CLI_EMIT_LLVM: args->emit_llvm = 1; break;
+            case CLI_PRINT_CAP_TABLE: args->print_cap_table = 1; break;
             case CLI_MEM_STATS: args->print_mem_stats = 1; break;
             case CLI_HELP:    cliPrintUsage(); break;
             case CLI_VERSION: cliVersionPrint(args); break;
@@ -538,8 +540,11 @@ int cliParseArgs(CliArgs *args, int argc, char **argv) {
     }
 
     /* The REPL and the LSP read from stdin - the two modes with no
-     * input file. */
-    if (args->infile == NULL && !args->repl && !args->lsp) {
+     * input file. ACT-POLYC-LLVM-CORE03-CORRECTION01: --print-cap-table
+     * is also a no-input-file mode (it prints the capability table
+     * and exits). */
+    if (args->infile == NULL && !args->repl && !args->lsp
+        && !args->print_cap_table) {
         cliNoInputFiles();
     }
     return 1;

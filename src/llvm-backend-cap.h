@@ -56,4 +56,10 @@ extern const int                       kLLVMBackendCapabilityCount;
  * to stderr. */
 void llValidateCapabilityContract(void);
 
+/* Print the capability table to stdout, one line per row:
+ *   <op-ordinal> <class-ordinal> <diagnostic-or-"-"> <name>
+ * Used by build-time verifiers (scripts/quality/llvm-cap-table-verifier.py)
+ * to bind dispatch <-> table <-> harness without hard-coded expectations. */
+void llPrintCapabilityTable(void);
+
 #endif /* LLVM_BACKEND_CAP_H */

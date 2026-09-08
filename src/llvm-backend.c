@@ -782,28 +782,38 @@ static LLVMBasicBlockRef llLowerBlock(LLCtx *lc, IrBlock *b) {
             if (cond_ty == LLVMInt1TypeInContext(lc->ctx)) {
                 cond1 = cond;
             } else if (cond_ty == LLVMInt64TypeInContext(lc->ctx)) {
-                /* ACT-POLYC-LLVM-CORE03: defensive invariant guard.
+                /* ACT-POLYC-LLVM-CORE03-CORRECTION01 M3: defensive
+                 * invariant guard made FATAL.
+                 *
                  * The canonical lowerer produces IR_BR cond as the
                  * dst of an immediately-preceding IR_ICMP, so the
                  * cond is physically i1 on the LLVM path. If we
                  * observe i64 here, an upstream regression has
                  * dropped the ICMP wrap (e.g. a future fusion pass
-                 * called on the LLVM path by mistake). Emit the
-                 * diagnostic, increment the counter, and continue
-                 * with the historical trunc so the user still gets
-                 * a usable .ll output rather than a hard error. */
+                 * called on the LLVM path by mistake).
+                 *
+                 * CORE03 originally defended with a trunc i64 -> i1
+                 * and a counter, but trunc is parity semantics:
+                 * trunc(i64 2) = 0 = false, while PolyC's source-level
+                 * truthiness contract says 2 -> true. The trunc would
+                 * produce a verifier-clean MISCOMPILE for any i64
+                 * value outside {0, 1}. This is exactly the silent
+                 * miscompile class Factory doctrine has repeatedly
+                 * tried to eliminate.
+                 *
+                 * The defensive path now REFUSES to emit possibly
+                 * wrong LLVM. If i64 truthiness is ever intentionally
+                 * supported, the correct conversion is icmp ne i64 %x, 0
+                 * (not trunc) and requires a fresh ACT. */
                 fprintf(stderr,
                     "%s: function %s: IR_BR cond is i64, not i1; "
-                    "defensively truncating. This indicates an "
-                    "upstream regression (likely a neutral-IR "
-                    "producer that bypassed irNormalizeBranchCondition "
-                    "or an IR_ICMP+IR_BR fusion pass that ran on "
-                    "the LLVM path). Line %d.\n",
+                    "neutral/LLVM boundary violation. Refusing to emit "
+                    "possibly wrong LLVM (trunc i64 -> i1 would miscompile "
+                    "any non-{0,1} value via parity). Line %d.\n",
                     LLVM_BACKEND_DEFENSIVE_INVARIANT_TRIPPED,
                     lc->fn->name->data, ins->line);
                 lc->defensive_trips++;
-                cond1 = LLVMBuildTrunc(lc->bld, cond,
-                                       LLVMInt1TypeInContext(lc->ctx), "");
+                exit(1);
             } else {
                 fprintf(stderr,
                     "%s: function %s: IR_BR cond has unexpected LLVM "
