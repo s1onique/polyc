@@ -1,0 +1,26 @@
+RED-M2 — harness has no per-fixture matrix decoder
+===================================================
+
+scripts/quality/llvm-spike-test.sh currently runs each fixture
+and checks:
+
+  positive fixture:  hcc --emit-llvm rc=0, .ll non-empty,
+                     llvm-as rc=0, no alloca/store/load ops.
+  negative fixture:  hcc --emit-llvm rc!=0, expected diagnostic
+                     string in stderr.
+
+But there is no per-fixture decoder that prints:
+
+  expected_class:    <SUPPORTED | REJECTED | ...>
+  observed_class:    <...>
+  expected_diagnostic: <LLVM_BACKEND_UNSUPPORTED_*>
+  observed_diagnostic: <from stderr>
+  defensive_trips:   <count>
+
+CORE03 M3 adds this decoder.
+
+CLOSURE PROOF for M2:
+  - For each of the 18 fixtures, the harness prints a
+    `=== contract check: <fixture> ===` block.
+  - The block has 5 fields as above.
+  - All 18 blocks PASS.
