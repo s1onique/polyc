@@ -18,8 +18,9 @@ IDENTITY
 ENTRY_HEAD  = bde6045a200a1526435fd161f41b59e02df012b7
 RED_HEAD    = 910c6ecb45e07e9e48bb91ad1c06564fc6c941d5
 IMPL_HEAD   = 5eed2af8eb5c853cbd5f61d67190c956788f634f
-CLOSURE     = 5eed2af8eb5c853cbd5f61d67190c956788f634f (same as IMPL)
-HEAD        = 5eed2af8eb5c853cbd5f61d67190c956788f634f (currently)
+CLOSURE     = f703cecab5c58ed178e427cb23e703f9c03932bc
+             (also includes the harness EVID_CORR redirection fix)
+HEAD        = f703cecab5c58ed178e427cb23e703f9c03932bc (currently)
 
 Verified: IMPL_HEAD is an ancestor of HEAD via
 git merge-base --is-ancestor.
@@ -62,6 +63,15 @@ to make the harness's matrix after-state "consistent". F14 forbids
 this: historical evidence is a record of the predecessor spike against
 a different commit tree and must remain historically truthful.
 
+A second-order problem (caught during this ACT's closure) was that
+the harness itself was wired to write those transcripts into the
+C1 dir on every run, not just during the original IMPL commit. Even
+after restoring the C1 files in commit 910c6ec, the very next harness
+run during the previous closure (1b63225) overwrote them again.
+The harness's `$EVID_CORR` was redirected to this ACT's evidence
+dir in commit f703cec so the harness can no longer mutate the C1
+files at all.
+
 RED
 ---
 Commit 910c6ec:
@@ -82,11 +92,22 @@ Commit 5eed2af:
   exercises the new fixture and writes ONLY into this ACT's
   evidence dir (no longer into C1).
 
+Commit f703cec (closure):
+
+* scripts/quality/llvm-spike-test.sh: redirected EVID_CORR (the
+  cmp predicate matrix's transcript destination) from the C1
+  evidence dir to this ACT's live-red-transcripts/ subdir. This
+  decouples harness execution from C1 immutability: harness runs
+  no longer mutate the historical RED files.
+* Re-restored the three C1 files (a second time) to the bde6045a
+  blob, since the previous closure (1b63225) had re-broken them
+  by running the harness during the closure phase.
+
 GATES
 -----
 * gate-fast: PASS (untouched from previous ACT)
 * gate-push HEAD: VERDICT=PASS
-    SUBJECT=5eed2af8eb5c853cbd5f61d67190c956788f634f
+    SUBJECT=f703cecab5c58ed178e427cb23e703f9c03932bc
     CHECK=build STATUS=PASS
     CHECK=install STATUS=PASS
     CHECK=aot STATUS=PASS
@@ -105,6 +126,12 @@ GATES
 * Memory-op matrix after: alloca=0 store=0 load=0 across all 12
   original fixtures (the 13th is rejection, no .ll emitted).
 * diff-check HEAD: rc=0.
+* P0-2 mechanical AC (the one the reviewer demanded):
+    git diff bde6045a200a1526435fd161f41b59e02df012b7..HEAD -- \
+        evidence/llvmspike01-resume01-correction01/red-1B.emit-llvm.ll \
+        evidence/llvmspike01-resume01-correction01/red-2.emit-llvm.ll \
+        evidence/llvmspike01-resume01-correction01/red-2.emit-llvm.txt
+    (empty) — confirmed after the final harness run.
 
 SCOPE
 -----
@@ -116,22 +143,21 @@ Production:
     src/llvm-backend.c          (LLCtx + IR_STORE rejection)
 Tests:
     src/tests/llvm-spike/red_local_multi_def.HC  (NEW)
-    scripts/quality/llvm-spike-test.sh           (multi-def section)
+    scripts/quality/llvm-spike-test.sh           (multi-def section,
+                                                  EVID_CORR redirect)
 Evidence:
     evidence/llvmspike01-resume01-correction01-resume01-correction01/
-        HANDOFF.md, ACT.md, RED-WITNESS.txt,
-        identity.txt, implementation-summary.txt,
+        HANDOFF.md, identity.txt, implementation-summary.txt,
         C1-RESTORATION.txt, diff-check.txt,
-        gate-push-implementation.log,
+        gate-push-implementation.log (+ .sha256, .b64),
         llvm-spike-test.matrix-after.txt,
-        red-multi_def/{RED-WITNESS.txt, red-multi_def.dump-ir.txt,
-                       red-multi_def.emit-llvm.ll,
-                       red-multi_def.emit.{stdout,stderr},
-                       red-multi_def.live.{stdout,stderr,summary}}
-Restored:
+        live-red-transcripts/  (harness transcripts, live only)
+        red-multi_def/         (P0-1 RED + live rejection summary)
+Restored (3 C1 files):
     evidence/llvmspike01-resume01-correction01/red-1B.emit-llvm.ll
     evidence/llvmspike01-resume01-correction01/red-2.emit-llvm.ll
     evidence/llvmspike01-resume01-correction01/red-2.emit-llvm.txt
+    SHA256s verified equal to bde6045a200a entries (see C1-RESTORATION.txt).
 
 RESIDUE
 -------
