@@ -32,6 +32,23 @@ LLVM_CONFIG=${LLVM_CONFIG:-llvm-config}
 LLVM_AS=${LLVM_AS:-llvm-as}
 LLVM_LIBDIR=$("$LLVM_CONFIG" --libdir 2>/dev/null || echo "")
 
+# Optional: pass --install-dir=<dir> to hcc invocations. Necessary in
+# fresh worktrees where /usr/local/include/tos.HH is not installed.
+# The hcc binary unconditionally tries to load
+# $install_dir/include/tos.HH at startup (src/compile.c:72-82), so
+# without this the harness cannot run unless hcc is installed
+# system-wide. Setting HCC_INSTALL_DIR to the test prefix (or any
+# directory containing include/tos.HH and lib/libtos.{a,dylib}) makes
+# the harness hermetic.
+#
+# This is harness strengthening, not feature expansion: the
+# underlying LLVM spike semantics are unchanged.
+HCC_INSTALL_DIR=${HCC_INSTALL_DIR:-}
+HCC_INSTALL_ARG=""
+if [ -n "$HCC_INSTALL_DIR" ]; then
+    HCC_INSTALL_ARG="--install-dir=$HCC_INSTALL_DIR"
+fi
+
 # Per-fixture exit codes
 PASS=0
 FAIL=0
@@ -40,7 +57,7 @@ FAIL=0
 positive() {
     f="$1"
     out="$2"
-    if ! "$HCC" --emit-llvm "$f" -o "$out" >"$EVID/_tmp/$bn.stdout" 2>"$EVID/_tmp/$bn.stderr"; then
+    if ! "$HCC" --emit-llvm $HCC_INSTALL_ARG "$f" -o "$out" >"$EVID/_tmp/$bn.stdout" 2>"$EVID/_tmp/$bn.stderr"; then
         echo "FAIL  $f: hcc --emit-llvm exited non-zero" >&2
         echo "  stderr: $(cat "$EVID/_tmp/$bn.stderr")" >&2
         FAIL=$((FAIL+1))
@@ -69,7 +86,7 @@ negative() {
     code="$2"
     bn=$(basename "$f" .HC)
     set +e
-    "$HCC" --emit-llvm "$f" >"$EVID/_tmp/$bn.neg.out" 2>"$EVID/_tmp/$bn.neg.err"
+    "$HCC" --emit-llvm $HCC_INSTALL_ARG "$f" >"$EVID/_tmp/$bn.neg.out" 2>"$EVID/_tmp/$bn.neg.err"
     rc=$?
     set -e
     if [ "$rc" -eq 0 ]; then
@@ -135,7 +152,7 @@ dump_ir_capture() {
     src="$1"
     base="$2"
     raw_tmp=$(mktemp -t polyc-dump-ir.XXXXXX)
-    if ! "$HCC" --dump-ir "$src" >"$raw_tmp" 2>/dev/null; then
+    if ! "$HCC" --dump-ir $HCC_INSTALL_ARG "$src" >"$raw_tmp" 2>/dev/null; then
         : # hcc may exit non-zero on some fixtures; capture anyway
     fi
 
@@ -202,7 +219,7 @@ matrix_record() {
 
     # --emit-llvm capture (the shape at the LLVM boundary).
     set +e
-    "$HCC" --emit-llvm "$src" -o "$EVID/_tmp/${bn}.ll" \
+    "$HCC" --emit-llvm $HCC_INSTALL_ARG "$src" -o "$EVID/_tmp/${bn}.ll" \
         >"$EVID/_tmp/${bn}.emit.stdout" 2>"$EVID/_tmp/${bn}.emit.stderr"
     rc=$?
     set -e
@@ -253,7 +270,7 @@ fi
 dump_ir_capture src/tests/llvm-spike/04_cmp_branch.HC \
     "$EVID_CORR/red-1A"
 set +e
-"$HCC" --emit-llvm src/tests/llvm-spike/04_cmp_branch.HC \
+"$HCC" --emit-llvm $HCC_INSTALL_ARG src/tests/llvm-spike/04_cmp_branch.HC \
     -o "$EVID_CORR/red-1B.emit-llvm.ll" \
     >"$EVID_CORR/red-1B.emit.stdout" \
     2>"$EVID_CORR/red-1B.emit.stderr"
@@ -275,12 +292,12 @@ set -e
 #   - red_local_alloca_emitted.HC: simple sequential locals; observe
 #     whether collapse-elimination folds them to a bare `add`.
 set +e
-"$HCC" --emit-llvm src/tests/llvm-spike/04_cmp_branch.HC \
+"$HCC" --emit-llvm $HCC_INSTALL_ARG src/tests/llvm-spike/04_cmp_branch.HC \
     -o "$EVID_CORR/red-2.emit-llvm.ll" \
     >"$EVID_CORR/red-2.emit.stdout" \
     2>"$EVID_CORR/red-2.emit.stderr"
 rc1=$?
-"$HCC" --emit-llvm src/tests/llvm-spike/red_local_alloca_emitted.HC \
+"$HCC" --emit-llvm $HCC_INSTALL_ARG src/tests/llvm-spike/red_local_alloca_emitted.HC \
     -o "$EVID_CORR/red-2b.locals.ll" \
     >"$EVID_CORR/red-2b.emit.stdout" \
     2>"$EVID_CORR/red-2b.emit.stderr"
@@ -316,7 +333,7 @@ negative src/tests/llvm-spike/neg_struct.HC   LLVM_BACKEND_UNSUPPORTED_TYPE
 # reaches the LLVM consumer. The assertion below accepts any "error:"
 # token from the parser and records the transcript under
 # $EVID_CORR/red-8.neg-asm.txt for honest reclassification.
-"$HCC" src/tests/llvm-spike/neg_asm.HC -o /tmp/__neg_asm_out__ \
+"$HCC" $HCC_INSTALL_ARG src/tests/llvm-spike/neg_asm.HC -o /tmp/__neg_asm_out__ \
     >"$EVID_CORR/red-8.neg-asm.stdout" \
     2>"$EVID_CORR/red-8.neg-asm.stderr" \
     && rc=0 || rc=$?
@@ -357,7 +374,7 @@ fi
 
 echo
 echo "=== determinism ==="
-"$HCC" --emit-llvm src/tests/llvm-spike/01_const.HC -o "$EVID/_tmp/01_const.b.ll"
+"$HCC" --emit-llvm $HCC_INSTALL_ARG src/tests/llvm-spike/01_const.HC -o "$EVID/_tmp/01_const.b.ll"
 if cmp -s "$EVID/01_const.ll" "$EVID/_tmp/01_const.b.ll"; then
     echo "PASS  determinism: 01_const twice"
     PASS=$((PASS+1))

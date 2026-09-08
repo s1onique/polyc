@@ -1,0 +1,76 @@
+=== ACT-POLYC-LLVM-SPIKE01-RESUME01-CORRECTION01-RESUME01 ===
+=== Memory-Op RED captured at HEAD bde6045 ===
+
+COMMAND (hermetic):
+    PATH=/nix/store/b6fykfvclbq81yis03blk6bqsmapmhdm-llvm-22.1.8-dev/bin:\
+         /nix/store/87s8r8yzsi6gvl2cdz4kgwymg4gdmkbn-llvm-22.1.8/bin:$PATH
+    DYLD_LIBRARY_PATH=/nix/store/a1hnp3fv6y7jjl8j3vkcp3qwclxmknba-llvm-22.1.8-lib/lib
+    HCC_INSTALL_DIR=$(pwd)/build/test-prefix
+    ./hcc --emit-llvm --install-dir=$HCC_INSTALL_DIR \
+          <fixture> -o /tmp/lltmp/<bn>.ll
+
+FIXTURE                alloca  store   load  icmp
+01_const.HC            0       0       0     none
+02_add.HC              0       0       0     none
+03_sub_mul.HC          0       0       0     none
+04_cmp_branch.HC       2       2       2     sgt
+05_call.HC             1       1       1     none
+red_pred_eq.HC         2       2       2     eq
+red_pred_ne.HC         2       2       2     ne
+red_pred_slt.HC        2       2       2     slt
+red_pred_sle.HC        2       2       2     sle
+red_pred_sgt.HC        2       2       2     sgt
+red_pred_sge.HC        2       2       2     sge
+red_local_alloca_emitted.HC  0  0       0     none
+
+RED_REPRODUCED=YES
+RED_LLVM_MEMORY_OPS_PRESENT=YES
+
+PRINCIPAL_RED_AT_FIXTURE=04_cmp_branch.HC
+    The fixture lowers Max(a, b) with diamond CFG. Param copies a and
+    b are pre-allocated to stack slots via llPreallocateLocals at
+    src/llvm-backend.c:376-414. Each load reads back through the
+    slot, even though SSA could express the params directly.
+
+Sample emitted LLVM IR (04_cmp_branch.HC, verbatim from /tmp/lltmp/04_cmp_branch.ll):
+
+    define i64 @Max(i64 %0, i64 %1) {
+    bb1:
+      %2 = alloca i64, align 8
+      %3 = alloca i64, align 8
+      store i64 %0, ptr %2, align 4
+      store i64 %1, ptr %3, align 4
+      %4 = icmp sgt i64 %0, %1
+      br i1 %4, label %bb3, label %bb4
+
+    bb3:                                              ; preds = %bb1
+      %5 = load i64, ptr %2, align 4
+      ret i64 %5
+
+    bb4:                                              ; preds = %bb1
+      %6 = load i64, ptr %3, align 4
+      ret i64 %6
+    ...
+
+Note: the icmp itself correctly uses %0/%1 directly (NOT through
+allocas), so the predicate mapping is fine. The waste is on the
+ret-value path: bb3 loads %2 instead of returning %0; bb4 loads %3
+instead of returning %1.
+
+This is exactly the "PARAM_COPY" pattern called out in ACT §24.
+
+PRINCIPAL_FIXTURE_FOR_REPAIR=red_pred_eq.HC and 04_cmp_branch.HC
+    These exhibit the canonical pattern:
+        param  ->  alloca  ->  store  ->  load  ->  use
+    which can be replaced by:
+        param  ->  SSA value  ->  use
+    without any LLVM stack slot.
+
+RED ALSO_REPRODUCED_AT=red_local_alloca_emitted.HC? = NO
+    This fixture intentionally contains a sequential local to be
+    re-allocated as a stack slot. The current backend collapse-
+    eliminates it; the .ll shows 0 alloca/store/load. So this
+    witness is actually a NEGATIVE witness (no regression).
+    It is a useful regression detector going forward.
+
+VERDICT: RED_REPRODUCED, IMPLEMENTATION AUTHORIZED.

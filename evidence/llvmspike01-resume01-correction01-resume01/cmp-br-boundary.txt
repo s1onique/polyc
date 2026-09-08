@@ -1,0 +1,54 @@
+=== ACT-POLYC-LLVM-SPIKE01-RESUME01-CORRECTION01-RESUME01 ===
+=== IR_CMP_BR boundary recon at HEAD bde6045 ===
+
+The principal architectural defect identified by CORRECTION01 was:
+    "src/llvm-backend.c lowers IR_CMP_BR — below-boundary native
+     fusion reaches an above-boundary consumer"
+
+Fresh recon at HEAD:
+
+Producer of IR_CMP_BR:
+    irOptPinResultReg in src/ir-optimise.c:1079-1122
+    (produces IR_CMP_BR via a CMP+BR fusion)
+
+Caller of irOptPinResultReg:
+    irFunctionPrepForCodeGen (src/ir-regalloc.c)
+    Called only from the NATIVE codegen path:
+        src/x86_64.c:2560 (via x86_64GenerateFunction)
+        src/aarch64.c:2211 (via aarch64GenerateFunction)
+        src/x86_64-jit.c:1583 (via jit path)
+        src/aarch64-jit.c:1707 (via jit path)
+
+LLVM dispatch (src/main.c:539-580):
+    - Calls irLowerProgram(cc) directly at line 561
+    - Does NOT call irFunctionPrepForCodeGen
+    - Therefore irOptPinResultReg is NOT invoked
+    - Therefore IR_CMP_BR is NOT produced for the LLVM path
+    - llvmEmitProgram(prog, cc, ...) consumes prog->functions
+      directly (src/llvm-backend.c:859)
+
+LLVM consumer behavior when IR_CMP_BR does appear:
+    src/llvm-backend.c:610-637 contains an explicit
+    boundary-violation diagnostic:
+        "%s: function %s: IR_CMP_BR reached LLVM backend;
+         this opcode is below the neutral boundary
+         (src/ir-types.h:140-150) and must not be presented
+         to a backend-neutral consumer..."
+    The normal lowering arm for IR_CMP_BR was REMOVED in
+    CORRECTION01 (the predecessor of this ACT).
+
+Empirical test: do the comparison fixtures produce IR_CMP_BR?
+
+    for f in src/tests/llvm-spike/{04_cmp_branch,red_pred_*}:
+        ./hcc --dump-ir $f | grep -c 'cmp_br\|CMP_BR'
+    Result: 0 occurrences.
+
+    For textual --emit-llvm output:
+        for f in src/tests/llvm-spike/{04_cmp_branch,red_pred_*}:
+            grep -E 'cmp_br|CMP_BR' /tmp/lltmp/$bn.ll
+    Result: 0 occurrences.
+
+VERDICT:
+    LLVM_INPUT_IR_CMP_BR=0          (for all comparison fixtures)
+    LLVM_IR_CMP_BR_LOWERING_ARM=absent (replaced by diagnostic)
+    BOUNDARY_CHANGE_REQUIRED=NO     (already correct in HEAD)
