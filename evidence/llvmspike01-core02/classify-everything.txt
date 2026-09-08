@@ -1,0 +1,68 @@
+ACT-POLYC-LLVM-CORE02 — Full opcode classification for LLVM backend
+====================================================================
+
+Pipeline (irLowerProgram, src/ir.c:3396-3405):
+    irLowerFunction          (src/ir.c:2784) — AST -> IR
+    irBasicFunctionOptimisations (src/ir-optimise.c:949):
+        irRemoveAllNops
+        irRemoveRedundantBlocks
+        irFoldPassThroughBlocks
+        irRemoveRedundantBlocks
+        irFoldGlobalDeref
+        irForwardReturnSlot
+        { irEvalConstantExpressions, irForwardStoreToReads }* (fixed point)
+        irDeadStoreEliminate
+        { irFuseIaddIntoMemAddressing, irFuseLoadOpStore }* (fixed point)
+        irRemoveAllNops
+
+  NOT called on the LLVM path:
+    irOptPinResultReg           (the IR_ICMP+IR_BR->IR_CMP_BR fusion)
+    irFunctionPrepForCodeGen    (ABI param locations + the above fusion)
+    irAssignAbiParamLocations   (per ACT §3)
+
+Consequence: any opcode that is ONLY produced by the above-not-called
+optimisations is UNREACHABLE on the LLVM path (regardless of whether
+its REJECTED arm in the dispatch table is reachable in principle).
+
+CLASSIFICATION:
+
+  opcode          emit site (canonical)              state on LLVM path
+  --------------- ----------------------------------- ----------------------
+  IR_NOP          irMakeNop (src/ir-optimise.c) +     UNREACHABLE
+                  others, but irRemoveAllNops
+                  unlinks the node before emission
+  IR_LABEL        (none — never created)              UNREACHABLE
+                                                      (reserved-but-unused
+                                                       per src/ir-types.h:155)
+  IR_CMP_BR       irOptPinResultReg (line 1113)       UNREACHABLE on LLVM
+                                                      (fusion never runs)
+  IR_RMW_DEREF    irFuseLoadOpStore (line 914)        UNREACHABLE on supported
+                                                      subset (needs IR_LOAD_DEREF
+                                                      input, which is REJECTED)
+                                                      But REJECTED arm stays as
+                                                      safety net per F4.
+
+CLASSIFICATION WITHIN NOT_YET_CLASSIFIED (CORE02 fills this gap):
+
+  IR_NOP      ->  UNREACHABLE_ON_LLVM_PATH (no REJECTED arm needed;
+                   the generic default arm would catch a future regression
+                   that lets a NOP through; KEEP the generic arm but mark
+                   the opcode UNREACHABLE in the matrix)
+  IR_LABEL    ->  UNREACHABLE_ON_LLVM_PATH (no REJECTED arm needed;
+                   same reasoning)
+
+REJECTED opcodes are still REJECTED in the matrix because:
+  - they might be added to the supported subset in a future ACT
+    (F8: framework after multiple consumers);
+  - removing the explicit arm would weaken the rejection surface
+    (F5: no test weakening; F7: scope conserved).
+
+CONSEQUENCE for the matrix:
+  IR_NOP     classification = UNREACHABLE_ON_LLVM_PATH (was NOT_YET_CLASSIFIED)
+  IR_LABEL   classification = UNREACHABLE_ON_LLVM_PATH (was NOT_YET_CLASSIFIED)
+  IR_CMP_BR  classification = UNREACHABLE_ON_LLVM_PATH (was REJECTED —
+                  the REJECTED arm is now a boundary-violation diagnostic
+                  that should NEVER fire; keep as a safety net)
+
+NO production code change is required for the classification update;
+this is a DOCS-ONLY refinement of the matrix comment in src/llvm-backend.c.

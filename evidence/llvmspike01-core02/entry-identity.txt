@@ -1,0 +1,30 @@
+ENTRY_IDENTITY for ACT-POLYC-LLVM-CORE02
+========================================
+
+Branch:           main
+Worktree state:   clean
+ENTRY_HEAD:       75983a882dd1e4e24f04ee10668f3a1b1ff98fb8
+
+Predecessors (F14):
+  ACT-POLYC-LLVM-CORE01              REJECTED (reviewer HALT_CORE01_CONTRACT_FALSE_GREEN)
+  ACT-POLYC-LLVM-CORE01-CORRECTION01 HALT_TOPOLOGY_RECORDED (6 commits)
+  ACT-POLYC-LLVM-CORE01-CORRECTION02 PASS (2 commits)
+
+CORRECTION02 evidence:
+  evidence/llvmspike01-core01-correction02/HANDOFF.md
+  evidence/llvmspike01-core01-correction02/red-p04-irbr-live.txt
+
+CORE02 commit plan (per AC08):
+  RED commit  - this ACT contract + recon evidence + IR_BR / IR_NOP /
+                IR_LABEL / IR_CMP_BR / IR_RMW_DEREF classification
+  IMPL commit - (only if RED finds any IR_NOP / IR_LABEL / IR_CMP_BR
+                reaching the LLVM dispatch; current recon: NONE)
+  DOCS commit - HANDOFF + post-classification matrix snapshot
+
+CORRECTION02 RED confirmed:
+  IR_BR     - LIVE (7/7 branched fixtures), i1 cond only
+  IR_CMP_BR - UNREACHABLE on LLVM path (no irOptPinResultReg call)
+  IR_NOP    - UNREACHABLE (irRemoveAllNops strips them)
+  IR_LABEL  - UNREACHABLE (never created by lowerer; reserved-but-unused enum)
+  IR_RMW_DEREF - UNREACHABLE for supported subset (needs IR_LOAD_DEREF input)
+  IR_ICMP   - LIVE; always produces i1 (LLVM API contract)
