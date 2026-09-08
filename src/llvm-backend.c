@@ -163,6 +163,19 @@ typedef struct LLCtx {
     LLValMap       values;       /* IrValue var.id -> LLVMValueRef */
     LLBlockMap     blocks;       /* IrBlock  id    -> LLVMBasicBlockRef */
 
+    /* ACT-POLYC-LLVM-SPIKE01-RESUME01-CORRECTION01-RESUME01-CORRECTION01:
+     * the bounded spike is SSA-only. Multiple reaching stores to the
+     * same IR_VAL_LOCAL need a phi (or rejection). The spike chooses
+     * rejection. Track which local ids have already been bound by an
+     * IR_STORE in the current function; reject a second bind.
+     *
+     * Initial param bindings (set in llBindParams) and constant
+     * bindings (set lazily in llLowerValue) are NOT recorded here:
+     * those go in via the `values` map at first observation, never
+     * via IR_STORE. */
+    u8            *local_defs;
+    u32            local_defs_cap;
+
     /* collapse state */
     int            collapsed;
     IrValue       *collapse_slot; /* the IR_VAL_LOCAL slot of the exit block */
@@ -717,6 +730,44 @@ static LLVMBasicBlockRef llLowerBlock(LLCtx *lc, IrBlock *b) {
                 exit(1);
             }
             LLVMValueRef v = llLowerI64Value(lc, ins->r1);
+
+            /* ACT-POLYC-LLVM-SPIKE01-RESUME01-CORRECTION01-RESUME01-CORRECTION01:
+             * reject a second reaching store to the same local id.
+             * The bounded I64 spike is SSA-only without phi nodes;
+             * multiple stores would require a phi to faithfully
+             * represent the merge at a join block. Per the ACT, the
+             * spike refuses the merge rather than silently picking
+             * whichever store happened to be visited last.
+             *
+             * Initial param bindings (llBindParams) and lazy constant
+             * bindings (llLowerValue) do NOT pass through IR_STORE,
+             * so they do not poison the bitmap.
+             *
+             * The check happens BEFORE llvmSet, so the cache is not
+             * corrupted on the failure path. */
+            {
+                u32 lid = irDstVarId(ins);
+                if (lid + 1 > lc->local_defs_cap) {
+                    u32 old_cap = lc->local_defs_cap;
+                    u32 new_cap = old_cap ? old_cap : 16;
+                    while (new_cap < lid + 1) new_cap *= 2;
+                    lc->local_defs = (u8 *)realloc(lc->local_defs,
+                        new_cap * sizeof(u8));
+                    memset(lc->local_defs + old_cap, 0,
+                        (new_cap - old_cap) * sizeof(u8));
+                    lc->local_defs_cap = new_cap;
+                }
+                if (lc->local_defs[lid]) {
+                    fprintf(stderr,
+                        "%s: function %s: local id=%u has multiple "
+                        "reaching stores (this spike is SSA-only and "
+                        "does not insert phi nodes); line %d\n",
+                        LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL,
+                        lc->fn->name->data, lid, ins->line);
+                    exit(1);
+                }
+                lc->local_defs[lid] = 1;
+            }
             /* Record the scalar SSA binding for this local. */
             llvmSet(&lc->values, irDstVarId(ins), v);
             node = next;
@@ -886,6 +937,11 @@ static int llFunction(IrProgram *prog, IrFunction *fn, LLVMContextRef ctx,
     lc.bld = LLVMCreateBuilderInContext(ctx);
     llvmInit(&lc.values, 1024);
     llbmInit(&lc.blocks, 1024);
+    /* ACT-POLYC-LLVM-SPIKE01-RESUME01-CORRECTION01-RESUME01-CORRECTION01:
+     * local_defs is a flat u8 bitmap keyed by ir.id; u8 is enough for
+     * the presence bit. Allocated lazily on first IR_STORE. */
+    lc.local_defs = NULL;
+    lc.local_defs_cap = 0;
 
     lc.cur_fn_value = LLVMGetNamedFunction(mod, fn->name->data);
     if (!lc.cur_fn_value) {
@@ -926,6 +982,7 @@ static int llFunction(IrProgram *prog, IrFunction *fn, LLVMContextRef ctx,
     LLVMDisposeBuilder(lc.bld);
     free(lc.values.values);
     free(lc.blocks.values);
+    free(lc.local_defs);
     return 0;
 }
 

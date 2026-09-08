@@ -401,6 +401,61 @@ else
 fi
 
 echo
+echo "=== multi-def SSA-local rejection (CORRECTION01-CORRECTION01) ==="
+# ACT-POLYC-LLVM-SPIKE01-RESUME01-CORRECTION01-RESUME01-CORRECTION01:
+# the previous IMPL silently overwrote the SSA binding on a second
+# reaching store. This section verifies the rejection contract.
+#
+# Output goes ONLY to this ACT's evidence dir
+# (evidence/llvmspike01-resume01-correction01-resume01-correction01/red-multi_def/).
+# It must NOT be written into any other ACT's evidence directory.
+# Historical C1 evidence has been restored byte-for-byte (see
+# $REPO_ROOT/evidence/llvmspike01-resume01-correction01-resume01-correction01/C1-RESTORATION.txt).
+EVID_CORR2="$REPO_ROOT/evidence/llvmspike01-resume01-correction01-resume01-correction01"
+EVID_MULTIDEF="$EVID_CORR2/red-multi_def"
+mkdir -p "$EVID_MULTIDEF"
+
+set +e
+"$HCC" --emit-llvm $HCC_INSTALL_ARG src/tests/llvm-spike/red_local_multi_def.HC \
+    >"$EVID_MULTIDEF/red-multi_def.live.stdout" \
+    2>"$EVID_MULTIDEF/red-multi_def.live.stderr"
+rc_multi=$?
+set -e
+
+{
+    echo "RED-WITNESS/CORRECTION fixture: src/tests/llvm-spike/red_local_multi_def.HC"
+    echo "Toolchain: hcc built at the current ACT's IMPL commit."
+    echo
+    echo "hcc --emit-llvm rc: $rc_multi"
+    echo
+    if [ "$rc_multi" -ne 0 ] && grep -q "LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL" \
+        "$EVID_MULTIDEF/red-multi_def.live.stderr"; then
+        echo "VERDICT: backend rejects multi-def with LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL"
+        echo "  $(cat "$EVID_MULTIDEF/red-multi_def.live.stderr")"
+    elif [ "$rc_multi" -eq 0 ]; then
+        echo "FAIL: backend silently accepted multi-def (no rejection)"
+    else
+        echo "FAIL: backend rejected multi-def but with unexpected diagnostic"
+        echo "  stderr: $(cat "$EVID_MULTIDEF/red-multi_def.live.stderr")"
+    fi
+} >"$EVID_MULTIDEF/red-multi_def.live.summary"
+
+if [ "$rc_multi" -ne 0 ] && grep -q "LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL" \
+    "$EVID_MULTIDEF/red-multi_def.live.stderr"; then
+    # Verify no .ll was produced.
+    if [ ! -e "$EVID_MULTIDEF/red-multi_def.live.ll" ]; then
+        echo "PASS  red_local_multi_def: SSA-local multi-def rejected"
+        PASS=$((PASS+1))
+    else
+        echo "FAIL  red_local_multi_def: rejection emitted but .ll file present" >&2
+        FAIL=$((FAIL+1))
+    fi
+else
+    echo "FAIL  red_local_multi_def: multi-def not rejected" >&2
+    FAIL=$((FAIL+1))
+fi
+
+echo
 echo "================================="
 echo "Summary: PASS=$PASS  FAIL=$FAIL"
 echo "================================="
