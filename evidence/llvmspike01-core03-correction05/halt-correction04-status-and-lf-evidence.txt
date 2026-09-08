@@ -1,0 +1,160 @@
+HALT — ACT-POLYC-LLVM-CORE03-CORRECTION04
+=========================================
+
+VERDICT: HALT_CORRECTION04_STATUS_AND_LF_EVIDENCE
+
+Reviewer's rejection is recorded verbatim and is reproduced below.
+
+F1 IDENTITY at halt:
+  branch:   main
+  HEAD:     9e7ab427d2f899633e974db15e7a034239a3edab
+  ENTRY_HEAD (CORRECTION04 predecessor): be53986
+  RED_HEAD:     ecf6dc0
+  IMPL_HEAD:    2cc7465
+  DOCS_HEAD:    9e7ab42 (CORRECTION04 closure commit)
+
+REVIEWER'S TWO BINDING DEFECTS
+-------------------------------
+
+P0-1 — CORRECTION04 ACT Status still says "OPEN" while HANDOFF says "PASS".
+
+  Reproduced at halt:
+    $ sed -n '1,10p' docs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION04.md
+    # ACT-POLYC-LLVM-CORE03-CORRECTION04
+
+    ## Status
+
+    OPEN — closing the two new binding closure defects a reviewer
+    flagged on CORRECTION03's PASS:
+    ...
+
+  while:
+    $ head -6 evidence/llvmspike01-core03-correction04/HANDOFF.md
+    HANDOFF — ACT-POLYC-LLVM-CORE03-CORRECTION04
+    ==========================================
+    VERDICT
+    -------
+    PASS
+
+  So:
+    ACT status = OPEN
+    HANDOFF verdict = PASS
+
+  Same closure-status-reconciliation bug as CORRECTION02 HANDOFF and
+  CORRECTION03 ACT Status block. Third occurrence.
+
+  Under the topology contract (declared=3, actual=3, AT CAP), this
+  cannot be repaired by a 4th commit on CORRECTION04. The ACT's
+  closure-status-reconciliation contract requires that the FINAL_HEAD
+  not be self-pinned AND that the Status block accurately reflect
+  the actual closure state. The reviewer's reading of the committed
+  ACT text is correct.
+
+  DO NOT amend the CORRECTION04 IMPL/DOCS commits to flip OPEN->PASS,
+  because:
+    1) The CORRECTION04 ACT declared cap = 3, actual = 3 (AT CAP).
+    2) F12 (small truthful commits) prohibits manufacturing commits
+       merely to satisfy a count, but it equally prohibits adding
+       a 4th commit that is purely cosmetic.
+    3) The fix has to be a real-witness ACT: reconcile the Status
+       AND exercise the real LF seam AND document the "-" NULL
+       sentinel. These three things are out of scope for
+       CORRECTION04 (declared scope was "self-pinned final HEAD +
+       true length-framed parser").
+
+  Classify CORRECTION04 as:
+    HALT_STATUS_RECONCILIATION_AT_CAP
+
+P0-2 — A5 "literal LF end-to-end" was not actually closed.
+
+  CORRECTION04 HANDOFF says:
+    "literal LF cannot be tested via the live C build because a
+     literal LF inside a C string literal breaks compilation."
+
+  This claim is FALSE. C has the ordinary escape sequence "\n" which
+  produces a 0x0A byte in the runtime char[]:
+    .note = "line1\nline2"
+  Two printable chars in the source; one real LF byte at runtime.
+
+  The reviewer is correct: this is exactly the end-to-end seam that
+  A5 required, and the constraint we declared to bypass it is wrong.
+
+  Currently:
+    RED witness (red-m2-literal-lf-in-note.txt) is synthetic;
+    IMPL GREEN is synthetic + live TAB only.
+
+  Required additional witness:
+    - temporary source mutation: change one row's note to
+      "line1\nline2" (C escape);
+    - rebuild hcc;
+    - inspect the printed wire stream: note_len == 11 and
+      payload bytes == 6c 69 6e 65 31 0a 6c 69 6e 65 32;
+    - run the new verifier -> rc=0 (GREEN);
+    - revert the mutation (no production semantic change).
+
+P1 — "-" is the reserved NULL sentinel (carry, not introduced here)
+
+  The parser reads:
+    if diag_len == 1 and raw_bytes[pos:pos+1] == b"-":
+        diag_bytes = None
+
+  So a payload whose contents are exactly "-" cannot be distinguished
+  from NULL. This is fine if documented. Defer to CORRECTION05 docs
+  update.
+
+WHY THIS HALT MATTERS
+---------------------
+
+The reviewer is observing a pattern: each ACT's closure-status
+reconciliation has failed three times in a row (CORRECTION02 HANDOFF,
+CORRECTION03 ACT Status, CORRECTION04 ACT Status). The pattern is
+now overwhelming evidence that "ACT status <-> HANDOFF verdict" must
+be a fast-gate invariant, not a per-ACT diligent handcraft. The
+three Factory ACTs queued (STATUS-RECONCILIATION, IDENTITY-CONTRACT,
+TOPOLOGY-CAP-HONESTY) are no longer optional.
+
+WHAT IS GENUINELY FIXED IN CORRECTION04
+---------------------------------------
+
+  - delimiter-first parser         CLOSED
+  - embedded TAB parsing (live)    PASS
+  - embedded LF parsing (synthetic) PASS
+  - UTF-8 multibyte payload        PASS
+  - CR payload                      PASS
+  - topology ledger                 PASS
+  - CORRECTION03 stale self-pin    CLOSED
+  - CORRECTION04 topology          PASS 3/3
+  - 18/0 harness                   PASS
+  - 20/0 harness                   PASS
+  - cap verifier                   PASS
+  - patch hygiene                  PASS
+  - CORRECTION04 ACT/HANDOFF       FAIL (this halt)
+
+NEXT ACT
+--------
+
+ACT-POLYC-LLVM-CORE03-CORRECTION05 (new, bounded):
+
+  Scope (declared cap = 2 or 3 commits):
+    1. RED + docs: halt record (this file); real-LF RED witness
+       (mutate one row to "line1\nline2", capture wire bytes,
+       revert);
+    2. IMPL: add a fast-gate check that grep-finds
+       "ACT-POLYC-LLVM-CORE03-CORRECTION04 Status" line != "PASS"
+       while HANDOFF says "VERDICT" + "PASS"; explicit
+       reconciliation rule.
+    3. DOCS: HANDOFF + post-impl snapshots; flip CORRECTION04 ACT
+       Status from "OPEN" to "PASS" via a CORRECTION05 IMPL-only
+       scope, NOT by adding a 4th commit on CORRECTION04.
+       Document "-" as reserved NULL sentinel in the protocol
+       contract.
+
+  Required witnesses:
+    - Real hcc with literal LF in runtime payload (the wire bytes
+      above);
+    - Same runtime wire stream parsed by CORRECTION04 parser ->
+      rc=0;
+    - SAME runtime wire stream fed to CORRECTION03 parser logic
+      -> rc != 0 (RED control).
+
+Do NOT begin ACT-POLYC-LLVM-CORE04 until CORRECTION05 PASS.
