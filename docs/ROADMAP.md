@@ -48,30 +48,54 @@ preserving the neutral contract.
 
 ### P3 — LLVM IR spike
 
-Blocked until:
+Status: **DONE** via ACT-POLYC-LLVM-SPIKE01 + RESUME01 +
+CORRECTION01 chains. Closure repair at
+ACT-POLYC-LLVM-SPIKE01-RESUME01-CORRECTION01-RESUME01-CORRECTION02.
 
-- IR-BOUNDARY02 restores the native baseline;
-- LLVM 22 development tooling is available.
+Final state (reviewer-accepted):
 
-First goal:
+```
+LLVM scalar spike
+    direct SSA scalar binding             PASS
+LLVM memory operations
+    alloca 0  load 0  store 0
+unsupported multi-store local
+    explicit rejection                    PASS
+PHI                                          not implemented (intentional)
+memory fallback                              absent                  PASS
+LLVM matrix                                  PASS=13 FAIL=0
+historical C1 evidence                       immutable              PASS
+native conservation                          PASS
+closure inheritance                          ancestry+scope+conserv  PASS
+```
 
-    PolyC neutral IR
-        ->
-    verifier-clean textual LLVM IR
+Spike was "can this work?" — answer is yes, with explicit semantic fences.
 
-Initial subset:
+### P3.5 — LLVM core semantic contract (CORE01)
 
-- I64 parameters;
-- I64 constants;
-- add/sub/mul;
-- comparisons;
-- conditional/unconditional branches;
-- direct calls;
-- return.
+Status: **AUTHORIZED** as next ACT (`ACT-POLYC-LLVM-CORE01`).
+Reviewer unblocked 2026-09-08.
 
-No ORC initially.
+Conceptual transition:
 
-No LLVM optimization initially.
+    SPIKE:  "Can this work?"
+        ↓
+    CORE:   "Exactly what do we promise works,
+             and exactly how do we refuse everything else?"
+
+Required deliverables:
+
+- capability table for neutral IR operations and types
+  (SUPPORTED / REJECTED / NOT_YET_CLASSIFIED);
+- canonise the single-definition-local SSA fence;
+- resolve the `LLVMBuildTrunc(i1 → i1)` residue
+  (current code widens the comparison to i64, then truncates — confirm
+  whether a direct i1 IR shape would avoid the residue entirely);
+- make backend diagnostics part of the contract
+  (every REJECTED opcode has a named diagnostic, no silent acceptance);
+- test rejection boundaries as seriously as successful lowering;
+- explicit non-support for: PHI, memory load/store, F64, pointers,
+  aggregates, target machine, ORC, execution.
 
 ### P4 — LLVM core semantic coverage
 
@@ -246,6 +270,25 @@ and define an appropriate reproducibility/equivalence criterion for:
 Reduce the normal bootstrap dependency to a small, auditable seed.
 
 Possible forms are intentionally undecided.
+
+## Factory-tooling roadmap
+
+### FT1 — Closure oracle trust (deferred from CORRECTION02)
+
+Status: P1 residue recorded by reviewer; non-blocking for compiler work.
+
+Issue: the closure oracle (`evidence/.../identity.sh`) lives inside
+its own allowed descendant set. A future commit could weaken the
+oracle (e.g. drop invariant B) and the path-classification rule would
+still classify it as allowed. Current descendants are all reviewed;
+the issue is reusability, not present correctness.
+
+Recommended fix (reviewer option C): relocate reusable closure oracles
+to `scripts/quality/` (or equivalent). Treat closure-validation code
+as gate machinery, not disposable evidence. Changes require an
+explicit gate/review rather than inheriting the old subject.
+
+Dedicated ACT: `ACT-POLYC-FACTORY-CLOSURE-ORACLE-TRUST01` (to be opened).
 
 ## Things that may never happen
 

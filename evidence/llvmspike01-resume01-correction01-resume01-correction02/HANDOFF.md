@@ -152,8 +152,24 @@ P2: invariant D (`git diff --check HEAD`) catches only merge-conflict
     broader hygiene is needed, replace D with a stricter linter.
     Not in this ACT's scope.
 
+P1 (reviewer, non-blocking): the closure oracle (`identity.sh`) lives
+    inside the allowed mutation set. A future descendant could modify
+    `identity.sh` itself to weaken invariant B (or any other
+    invariant), and the path-classification rule would still classify
+    it as an allowed evidence directory descendant. Reviewer prefers
+    option C: closure-validation logic is code, treat it like gate
+    machinery, not disposable evidence. This is non-blocking for the
+    LLVM-CORE01 start; recommended path is to relocate reusable
+    closure oracles to `scripts/quality/` (or equivalent) and require
+    an explicit gate/review for any change to that path. **Not in
+    this ACT's scope**; tracked for the Factory-tooling roadmap.
+
 NEXT ACT
 --------
 ACT-POLYC-LLVM-CORE01 — turn the bounded experiment into a
 deliberately-supported scalar LLVM backend core; canonise the
 SSA-only local contract; address the LLVMBuildTrunc residue.
+
+Also tracked (Factory-tooling, separate ACT):
+ACT-POLYC-FACTORY-CLOSURE-ORACLE-TRUST01 — move reusable closure
+    oracle out of its own mutable evidence allowance (reviewer P1).
