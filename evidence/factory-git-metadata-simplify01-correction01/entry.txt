@@ -1,0 +1,29 @@
+Factory v2 grammar-binding correction -- entry identity.
+
+F1 entry identity (verified live at correction open):
+  git branch --show-current : main
+  git status --short        : clean
+  git rev-parse HEAD        : 0c28b7c56567ad4b4ddf4dfeafd2633d8f295454
+
+Predecessor gate: ACT-POLYC-FACTORY-GIT-METADATA-SIMPLIFY01
+  Status at open               : PASS (architectural model)
+                                 HALT_FACTORY_V2_TRAILER_GRAMMAR_NOT_BOUND
+                                 (mechanical enforcement)
+  Closure commit               : 0c28b7c56567ad4b4ddf4dfeafd2633d8f295454
+  RED/IMPL/EVIDENCE/CLOSE total: 3 (at v1 cap)
+
+Correction scope (HALT-driven; bounded):
+  1. false-GREEN: shell-glob validation in
+     factory-v2-commit-msg-check.sh and factory-v2-range-check.sh
+     accepts malformed ACT ids and ACT-Verdict values that the
+     documented regex grammar rejects.
+  2. false-GREEN: gsub(/[[:space:]]+/, "_", $0) normalizes
+     the parsed trailer value before validation, so a literal
+     space in ACT: or ACT-Verdict: is silently transformed into
+     an underscore and may pass.
+  3. doctrine inconsistency: GIT-METADATA.md prose claims "at
+     least two characters" after ACT-POLYC- but the documented
+     regex allows a single-character suffix (regex uses *, not +).
+
+Factory v2 activation remains HALTED until this correction
+passes.

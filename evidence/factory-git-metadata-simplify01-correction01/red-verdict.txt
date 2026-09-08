@@ -1,0 +1,37 @@
+RED-3 (VERDICT GLOB): factory-v2-commit-msg-check.sh validates
+ACT-Verdict with the same shell-glob pattern (PASS_[A-Z0-9_]*,
+HALT_[A-Z0-9_]*) so anything after the first character-class
+match is silently accepted.
+
+Documented contract (GIT-METADATA.md section 2.2):
+
+    ^(PASS(?:_[A-Z0-9_]+)*|HALT_[A-Z0-9_]+)$
+
+Actual implementation (commit-msg-check lines 163, 170):
+
+    PASS|PASS_[A-Z0-9_]*)
+    HALT_[A-Z0-9_]*)
+
+Shell-glob semantics: PASS_ followed by one [A-Z0-9_] then any
+string. So "PASS_X-bad" and "HALT_X/bad" both pass.
+
+Reproduction:
+
+    $ printf '...\nACT-Verdict: PASS_X-bad\n' > /tmp/msg-verdict-bad.txt
+    $ sh scripts/quality/factory-v2-commit-msg-check.sh /tmp/msg-verdict-bad.txt
+    VERDICT=PASS_X-bad
+    STATUS=PASS
+    rc=0
+
+    $ printf '...\nACT-Verdict: HALT_X/bad\n' > /tmp/msg-halt-bad.txt
+    $ sh scripts/quality/factory-v2-commit-msg-check.sh /tmp/msg-halt-bad.txt
+    VERDICT=HALT_X/bad
+    STATUS=PASS
+    rc=0
+
+A hyphen or slash inside a verdict segment is silently accepted
+even though the documented regex would reject it.
+
+Identical defect in factory-v2-range-check.sh line 112:
+
+    PASS|PASS_[A-Z0-9_]*|HALT_[A-Z0-9_]*)

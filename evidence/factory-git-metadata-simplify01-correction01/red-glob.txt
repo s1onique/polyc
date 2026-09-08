@@ -1,0 +1,62 @@
+RED-1 (GLOB): factory-v2-commit-msg-check.sh validates ACT ids
+with shell-glob patterns instead of regex.
+
+Documented contract (docs/factory/GIT-METADATA.md section 2.1):
+
+    ^ACT-POLYC-[A-Z0-9][A-Z0-9_-]*$
+
+Actual implementation
+(scripts/quality/factory-v2-commit-msg-check.sh around line 124):
+
+    case "$ACT_ID_RAW" in
+        ACT-POLYC-[A-Z0-9][A-Z0-9_-]*)
+            : # accepted
+            ;;
+        ...
+    esac
+
+In POSIX shell pattern matching, `*` means "any string", not
+"zero or more repetitions of the preceding character class"
+(see The Open Group Base Specifications, Shell Command Language,
+section 2.13 Pattern Matching Notation). So the pattern above
+is logically:
+
+    ACT-POLYC- followed by one [A-Z0-9] followed by ANY STRING
+
+NOT
+
+    ACT-POLYC- followed by one [A-Z0-9] followed by zero-or-more
+    [A-Z0-9_-]
+
+This produces the false-GREEN below.
+
+Reproduction (verbatim, live, before correction):
+
+    $ printf 'docs(factory): grammar test\n\nbody\n\nACT: ACT-POLYC-AAevil\nACT-Phase: RED\n' > /tmp/msg-evil.txt
+    $ sh scripts/quality/factory-v2-commit-msg-check.sh /tmp/msg-evil.txt
+    MODE=ACT
+    ACT=ACT-POLYC-AAevil
+    PHASE=RED
+    VERDICT=
+    SUPERSEDES=
+    CORRECTED_VERDICT=
+    STATUS=PASS
+    rc=0
+
+The maliciously-suffixed id ACT-POLYC-AAevil is accepted with
+STATUS=PASS, even though the documented regex would reject it.
+
+Variant: ACT-POLYC-AA/BAD -- shell glob also accepts this:
+
+    $ printf '...\nACT: ACT-POLYC-AA/BAD\nACT-Phase: RED\n' > /tmp/msg-bad.txt
+    $ sh scripts/quality/factory-v2-commit-msg-check.sh /tmp/msg-bad.txt
+    STATUS=PASS
+    rc=0
+
+Identical defect in scripts/quality/factory-v2-range-check.sh
+line 72:
+
+    ACT-POLYC-[A-Z0-9][A-Z0-9_-]*)
+
+and lines 112, 161, 163, 170, 204, 206, 213 for ACT-Verdict
+values.

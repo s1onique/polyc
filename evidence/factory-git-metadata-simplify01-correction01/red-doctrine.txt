@@ -1,0 +1,18 @@
+RED-4 (DOCTRINE INCONSISTENCY): docs/factory/GIT-METADATA.md
+section 2.1 prose says:
+
+    The identifier MUST contain at least two characters after
+    the `ACT-POLYC-` prefix.
+
+but the immediately adjacent documented regex uses a `*`
+quantifier:
+
+    ^ACT-POLYC-[A-Z0-9][A-Z0-9_-]*$
+
+`*` allows zero or more, so the regex as written permits a
+one-character suffix such as `ACT-POLYC-A`. A reviewer cannot
+tell which contract binds.
+
+This is a smaller issue than RED-1..RED-3 but the correction
+should pick exactly one contract and make docs + tools + tests
+agree.
