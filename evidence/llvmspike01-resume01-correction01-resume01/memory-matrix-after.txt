@@ -1,0 +1,33 @@
+=== Memory-Op Matrix AFTER implementation ===
+
+COMMAND (hermetic):
+    ./hcc --emit-llvm --install-dir=build/test-prefix <fixture> -o /tmp/lltmp/<bn>.ll
+    grep -c 'alloca ' <bn>.ll
+    grep -c 'store '  <bn>.ll
+    grep -c 'load '   <bn>.ll
+
+Fixture              alloca  store  load  icmp      br operand type
+01_const.HC          0       0      0     none      n/a
+02_add.HC            0       0      0     none      n/a
+03_sub_mul.HC        0       0      0     none      n/a
+04_cmp_branch.HC     0       0      0     sgt       i1
+05_call.HC           0       0      0     none      n/a
+red_pred_eq.HC       0       0      0     eq        i1
+red_pred_ne.HC       0       0      0     ne        i1
+red_pred_slt.HC      0       0      0     slt       i1
+red_pred_sle.HC      0       0      0     sle       i1
+red_pred_sgt.HC      0       0      0     sgt       i1
+red_pred_sge.HC      0       0      0     sge       i1
+red_local_alloca_emitted.HC  0  0    0     none      n/a
+
+TOTAL_LLVM_ALLOCA = 0
+TOTAL_LLVM_LOAD   = 0
+TOTAL_LLVM_STORE  = 0
+
+LLVM_SCALAR_SPIKE = SSA_ONLY
+LLVM_ALLOCA = 0
+LLVM_LOAD   = 0
+LLVM_STORE  = 0
+LLVM_PHI    = 0
+
+VERIFIER_MATRIX: all 12 .ll pass `llvm-as` with rc=0.

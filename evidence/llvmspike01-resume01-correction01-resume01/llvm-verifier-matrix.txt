@@ -1,0 +1,29 @@
+=== LLVM Verifier Matrix AFTER implementation ===
+
+Each emitted .ll for the positive/predicate matrix passes
+`llvm-as` with rc=0:
+
+Fixture                  llvm-as rc
+01_const.HC              0
+02_add.HC                0
+03_sub_mul.HC            0
+04_cmp_branch.HC         0
+05_call.HC               0
+red_pred_eq.HC           0
+red_pred_ne.HC           0
+red_pred_slt.HC          0
+red_pred_sle.HC          0
+red_pred_sgt.HC          0
+red_pred_sge.HC          0
+red_local_alloca_emitted.HC  0
+
+NEGATIVE MATRIX (must produce explicit LLVM_BACKEND_* diagnostic):
+
+Fixture           rc   stderr code
+neg_f64.HC        1    LLVM_BACKEND_UNSUPPORTED_TYPE
+neg_pointer.HC    1    LLVM_BACKEND_UNSUPPORTED_TYPE
+neg_struct.HC     1    LLVM_BACKEND_UNSUPPORTED_TYPE
+neg_asm.HC        1    PARSE_TIME_REJECTION (NOT a backend witness)
+
+TOOLCHAIN: LLVM 22.1.8
+COMMAND: llvm-as <bn>.ll -o /tmp/__verify.bc

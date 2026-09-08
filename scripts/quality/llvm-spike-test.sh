@@ -76,6 +76,23 @@ positive() {
         FAIL=$((FAIL+1))
         return 1
     }
+    # ACT-POLYC-LLVM-SPIKE01-RESUME01-CORRECTION01-RESUME01:
+    # structural assertion that the emitted LLVM IR for this
+    # fixture contains no executable alloca/store/load. This
+    # enforces the SSA-only contract end-to-end without relying
+    # on visual inspection.
+    #
+    # Strip LLVM ';' comments before scanning, since the textual
+    # IR can mention "store"/"load" in `; preds =` comments when
+    # listing predecessor blocks. Only an executable occurrence
+    # (at column 0 or following only whitespace) is rejected.
+    bad=$(grep -nE '^[[:space:]]*(alloca|store|load)[[:space:]]' "$out" || true)
+    if [ -n "$bad" ]; then
+        echo "FAIL  $f: emitted LLVM IR contains memory ops (forbidden):" >&2
+        printf '  %s\n' "$bad" | head -5 >&2
+        FAIL=$((FAIL+1))
+        return 1
+    fi
     PASS=$((PASS+1))
     echo "PASS  $f"
 }

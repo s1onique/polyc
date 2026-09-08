@@ -369,49 +369,40 @@ static void llPass1(LLCtx *lc, IrProgram *prog) {
     }
 }
 
-/* Pre-allocate an i64 alloca at the top of the entry block for
- * every IR_VAL_LOCAL referenced anywhere in the function. This
- * guarantees the alloca dominates every use (load/store/ret),
- * which is required by LLVM verifier. */
-static void llPreallocateLocals(LLCtx *lc, IrFunction *fn) {
-    /* Collect unique local ids by scanning every block's instructions. */
-    u32 ids[256];
-    u32 n = 0;
-    listForEach(fn->blocks) {
-        IrBlock *b = (IrBlock *)it->value;
-        listForEach(b->instructions) {
-            IrInstr *ins = (IrInstr *)it->value;
-            IrValue *candidates[3] = { ins->dst, ins->r1, ins->r2 };
-            for (int k = 0; k < 3; ++k) {
-                IrValue *v = candidates[k];
-                if (!v) continue;
-                if (v->kind != IR_VAL_LOCAL) continue;
-                if (v->type != IR_TYPE_I64) continue;
-                u32 id = irVarId(v);
-                int dup = 0;
-                for (u32 j = 0; j < n; ++j) if (ids[j] == id) { dup = 1; break; }
-                if (!dup && n < 256) ids[n++] = id;
-            }
-        }
-    }
-    if (n == 0) return;
-    /* Find the entry block (first in fn->blocks list). */
-    List *first = fn->blocks->next;
-    if (!first || first == fn->blocks) return;
-    IrBlock *entry = (IrBlock *)first->value;
-    LLVMBasicBlockRef entry_bb = llbmGet(&lc->blocks, entry->id);
-    if (!entry_bb) return;
-    /* Position builder at the top of entry, emit allocas. */
-    LLVMBasicBlockRef save_bb = LLVMGetInsertBlock(lc->bld);
-    LLVMPositionBuilderAtEnd(lc->bld, entry_bb);
-    LLVMTypeRef i64t = LLVMInt64TypeInContext(lc->ctx);
-    for (u32 j = 0; j < n; ++j) {
-        LLVMValueRef a = LLVMBuildAlloca(lc->bld, i64t, "");
-        llvmSet(&lc->values, ids[j], a);
-    }
-    /* Restore builder. */
-    if (save_bb) LLVMPositionBuilderAtEnd(lc->bld, save_bb);
-}
+/* ACT-POLYC-LLVM-SPIKE01-RESUME01-CORRECTION01-RESUME01:
+ * scalar SSA lowering.
+ *
+ * The predecessor spike pre-allocated an LLVM alloca for every
+ * IR_VAL_LOCAL at function entry and emitted LLVMBuildStore /
+ * LLVMBuildLoad2 to materialise it. That made the spike a tiny
+ * memory-machine: every scalar local became a stack slot, and
+ * the resulting .ll carried `alloca` / `store` / `load`
+ * instructions for every PARAM_COPY pattern.
+ *
+ * The bounded I64 spike is authorised to be SSA-only. The
+ * smallest correct change is:
+ *
+ *   - No `llPreallocateLocals`. The entry block carries no
+ *     allocas at all.
+ *   - Each IR_VAL_LOCAL is resolved to an SSA LLVMValueRef
+ *     via lc->values.
+ *   - IR_STORE local, value  binds `local` to the SSA value
+ *     produced by `value`. No LLVMBuildStore is emitted.
+ *   - IR_LOAD local          looks up the binding; emits no
+ *     LLVMBuildLoad2. The binding is the SSA value.
+ *   - IR_ALLOCA local, size  is accepted ONLY when the
+ *     recognised return-slot collapse pattern needs it. Any
+ *     other alloca is a structural defect for this spike.
+ *   - If a local's address is taken, or if multiple reaching
+ *     definitions exist, the backend fails with an explicit
+ *     LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL diagnostic (or
+ *     LLVM_BACKEND_INTERNAL_UNBOUND_VALUE if a read preceeds
+ *     its bind). No silent alloca fallback.
+ *
+ * The bound SSA value must already be a scalar i64. For the
+ * supported subset (PARAM_COPY, single-def locals, call result
+ * forwarding, arithmetic/comparison temporaries) this holds.
+ */
 
 static void llBindParams(LLCtx *lc, IrFunction *fn) {
     for (u64 p = 0; p < fn->params->size; ++p) {
@@ -465,12 +456,19 @@ static LLVMValueRef llLowerValue(LLCtx *lc, IrValue *v) {
         return c;
     }
     if (v->kind == IR_VAL_LOCAL) {
-        /* locals are pre-allocated in the entry block (see
-         * `llPreallocateLocals`). If we reach here without a cached
-         * value, that's a bug. */
+        /* ACT-POLYC-LLVM-SPIKE01-RESUME01-CORRECTION01-RESUME01:
+         * a LOCAL is resolved through its scalar SSA binding
+         * (recorded by a prior IR_STORE). The predecessor spike
+         * pre-allocated an alloca for every local; we don't.
+         * If we reach here without a binding, the local was
+         * read before it was assigned (or its bind never
+         * happened). That is a bounded-spike defect: fail loud. */
         fprintf(stderr,
-            "%s: function %s: IR_VAL_LOCAL id=%u not pre-allocated\n",
-            LLVM_BACKEND_INTERNAL, lc->fn->name->data, irVarId(v));
+            "%s: function %s: IR_VAL_LOCAL id=%u read with no "
+            "SSA binding (use-before-def, or assigned in a "
+            "shape this spike does not support)\n",
+            LLVM_BACKEND_INTERNAL_UNBOUND_VALUE,
+            lc->fn->name->data, irVarId(v));
         exit(1);
     }
     if (v->kind == IR_VAL_CONST_STR || v->kind == IR_VAL_CONST_FLOAT ||
@@ -486,16 +484,18 @@ static LLVMValueRef llLowerValue(LLCtx *lc, IrValue *v) {
     exit(1);
 }
 
-/* Like llLowerValue, but if the value is a LOCAL (an alloca we
- * created), loads its i64 value. Use this when the operand needs
- * to be an i64 scalar, not a pointer. */
+/* Like llLowerValue, but specialised for IR_VAL_LOCAL: the
+ * binding is already a scalar i64, so no load is needed. The
+ * caller is expected to have already established the binding
+ * (otherwise llLowerValue would have errored with
+ * LLVM_BACKEND_INTERNAL_UNBOUND_VALUE). */
 static LLVMValueRef llLowerI64Value(LLCtx *lc, IrValue *v) {
     LLVMValueRef lv = llLowerValue(lc, v);
     if (!lv) return NULL;
-    if (v->kind == IR_VAL_LOCAL) {
-        return LLVMBuildLoad2(lc->bld,
-            LLVMInt64TypeInContext(lc->ctx), lv, "");
-    }
+    /* ACT-POLYC-LLVM-SPIKE01-RESUME01-CORRECTION01-RESUME01:
+     * the predecessor spike called LLVMBuildLoad2 here because
+     * the cache held a stack-slot pointer. Under SSA lowering,
+     * the cache holds the i64 value directly. */
     return lv;
 }
 
@@ -657,24 +657,131 @@ static LLVMBasicBlockRef llLowerBlock(LLCtx *lc, IrBlock *b) {
             node = next;
             continue;
         }
-        if (ins->op == IR_ALLOCA || ins->op == IR_STORE || ins->op == IR_LOAD) {
-            /* These lower directly to LLVM alloca/store/load. We only
-             * support i64 scalars here (any wider/narrower would need
-             * a pointer-typed local plus a GEP, which is a future
-             * ACT). Reject anything that isn't i64. */
-            if (ins->dst && ins->dst->type != IR_TYPE_I64) {
-                llErrUnsupportedType(ins->dst, lc->fn, "stack-slot value");
+        if (ins->op == IR_STORE) {
+            /* ACT-POLYC-LLVM-SPIKE01-RESUME01-CORRECTION01-RESUME01:
+             * scalar SSA binding.
+             *
+             *   IR_STORE local, value  bind local -> SSA(value)
+             *
+             * No LLVMBuildAlloca, no LLVMBuildStore is emitted.
+             *
+             * The bounded I64 spike supports exactly three shapes
+             * of IR_STORE:
+             *
+             *   1. local  := IR_VAL_LOCAL, value := any i64 SSA.
+             *      Bind local to value's SSA form. PARAM_COPY.
+             *
+             *   2. slot   := recognised return-slot (lc->collapse_slot)
+             *      from the collapse-elimination predecessor.
+             *      Skipped here; the IR_JMP arm above already
+             *      emitted `ret <stored value>` instead.
+             *
+             *   3. any other shape => bounded-spike defect.
+             *      Fail loud with LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL.
+             */
+            if (!ins->dst) {
+                fprintf(stderr,
+                    "%s: function %s: IR_STORE missing dst\n",
+                    LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL, lc->fn->name->data);
                 exit(1);
             }
-            LLVMValueRef v = llLowerInstr(lc, ins);
-            /* For ALLOCA and LOAD, `ins->dst` is a fresh SSA value
-             * (the slot pointer / the loaded i64). Cache them.
-             * For STORE, `ins->dst` is the SLOT BEING WRITTEN TO — a
-             * pre-existing value that must NOT be overwritten. */
-            if (ins->op != IR_STORE && ins->dst && v)
-                llvmSet(&lc->values, irDstVarId(ins), v);
+            /* Case 2: return-slot store consumed by collapse. */
+            if (lc->collapsed && ins->dst == lc->collapse_slot) {
+                /* dead; the predecessor already emitted `ret <v>`. */
+                node = next;
+                continue;
+            }
+            /* Case 1: PARAM_COPY / local bind. */
+            if (ins->dst->kind != IR_VAL_LOCAL) {
+                fprintf(stderr,
+                    "%s: function %s: IR_STORE into non-local dst "
+                    "(kind=%s, type=%d) at line %d\n",
+                    LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL,
+                    lc->fn->name->data,
+                    irValueKindToString(ins->dst->kind),
+                    (int)ins->dst->type,
+                    ins->line);
+                exit(1);
+            }
+            if (ins->dst->type != IR_TYPE_I64) {
+                llErrUnsupportedType(ins->dst, lc->fn,
+                    "IR_STORE local type (only I64 supported)");
+                exit(1);
+            }
+            if (!ins->r1) {
+                fprintf(stderr,
+                    "%s: function %s: IR_STORE local, value has no "
+                    "value operand at line %d\n",
+                    LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL,
+                    lc->fn->name->data, ins->line);
+                exit(1);
+            }
+            LLVMValueRef v = llLowerI64Value(lc, ins->r1);
+            /* Record the scalar SSA binding for this local. */
+            llvmSet(&lc->values, irDstVarId(ins), v);
             node = next;
             continue;
+        }
+        if (ins->op == IR_LOAD) {
+            /* ACT-POLYC-LLVM-SPIKE01-RESUME01-CORRECTION01-RESUME01:
+             * scalar SSA resolution. There is no load; the result
+             * is the cached SSA binding.
+             *
+             *   IR_LOAD local  -> the SSA value bound to `local`
+             *
+             * But under SSA lowering, IR_LOAD is unusual: an SSA
+             * consumer just reads the bound value directly. The
+             * neutral IR emits IR_LOAD only when the value flows
+             * through a phi-like slot (return slot, or future
+             * address-taken local). For the bounded I64 spike,
+             * the only legal IR_LOAD is the return-slot load in
+             * the exit block (which is collapsed). Any other
+             * IR_LOAD is a bounded-spike defect.
+             */
+            if (!ins->dst) {
+                fprintf(stderr,
+                    "%s: function %s: IR_LOAD missing dst\n",
+                    LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL, lc->fn->name->data);
+                exit(1);
+            }
+            if (lc->collapsed && ins->dst->kind == IR_VAL_TMP) {
+                /* return-slot load in collapsed exit block;
+                 * the result is unused (the predecessor already
+                 * emitted `ret`). Skip. */
+                node = next;
+                continue;
+            }
+            fprintf(stderr,
+                "%s: function %s: IR_LOAD on local not collapsed; "
+                "this spike requires SSA-only locals "
+                "(line %d, dst kind=%s)\n",
+                LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL,
+                lc->fn->name->data,
+                ins->line,
+                irValueKindToString(ins->dst->kind));
+            exit(1);
+        }
+        if (ins->op == IR_ALLOCA) {
+            /* ACT-POLYC-LLVM-SPIKE01-RESUME01-CORRECTION01-RESUME01:
+             * the only legal IR_ALLOCA in this spike is the
+             * return-slot alloc in the entry block, consumed by
+             * collapse-elimination. Any other alloca is a
+             * bounded-spike defect. */
+            if (lc->collapsed && ins->dst == lc->collapse_slot) {
+                /* dead; collapse eliminates it. */
+                node = next;
+                continue;
+            }
+            fprintf(stderr,
+                "%s: function %s: unexpected IR_ALLOCA "
+                "(this spike is SSA-only and does not allocate "
+                "stack slots). line %d, dst id=%u, kind=%s\n",
+                LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL,
+                lc->fn->name->data,
+                ins->line,
+                irVarId(ins->dst),
+                ins->dst ? irValueKindToString(ins->dst->kind) : "(null)");
+            exit(1);
         }
 
         LLVMValueRef v = llLowerInstr(lc, ins);
@@ -700,43 +807,6 @@ static LLVMValueRef llLowerInstr(LLCtx *lc, IrInstr *ins) {
             if (ins->op == IR_IADD) return LLVMBuildAdd(lc->bld, a, b, "");
             if (ins->op == IR_ISUB) return LLVMBuildSub(lc->bld, a, b, "");
             return LLVMBuildMul(lc->bld, a, b, "");
-        }
-        case IR_ALLOCA: {
-            /* alloca i64; size operand in r1 (const int). */
-            if (!ins->r1 || !irIsConstInt(ins->r1)) {
-                fprintf(stderr,
-                    "%s: function %s: IR_ALLOCA size must be const int\n",
-                    LLVM_BACKEND_UNSUPPORTED_IR, lc->fn->name->data);
-                exit(1);
-            }
-            s64 bytes = ins->r1->as._i64;
-            (void)bytes; /* size in bytes — we always emit i64 alloca */
-            LLVMTypeRef i64t = LLVMInt64TypeInContext(lc->ctx);
-            return LLVMBuildAlloca(lc->bld, i64t, "");
-        }
-        case IR_STORE: {
-            /* store slot, value -> store i64 %v, i64* %slot */
-            if (!ins->dst) {
-                fprintf(stderr,
-                    "%s: function %s: IR_STORE missing dst\n",
-                    LLVM_BACKEND_UNSUPPORTED_IR, lc->fn->name->data);
-                exit(1);
-            }
-            LLVMValueRef slot = llLowerValue(lc, ins->dst);
-            LLVMValueRef v    = llLowerI64Value(lc, ins->r1);
-            return LLVMBuildStore(lc->bld, v, slot);
-        }
-        case IR_LOAD: {
-            /* load i64* -> i64 */
-            if (!ins->dst) {
-                fprintf(stderr,
-                    "%s: function %s: IR_LOAD missing slot\n",
-                    LLVM_BACKEND_UNSUPPORTED_IR, lc->fn->name->data);
-                exit(1);
-            }
-            LLVMValueRef slot = llLowerValue(lc, ins->dst);
-            return LLVMBuildLoad2(lc->bld,
-                LLVMInt64TypeInContext(lc->ctx), slot, "");
         }
         case IR_ICMP: {
             if (!llTypeSupported(ins->dst->type)) {
@@ -830,7 +900,10 @@ static int llFunction(IrProgram *prog, IrFunction *fn, LLVMContextRef ctx,
 
     llBindParams(&lc, fn);
     llCreateBlocks(&lc, fn);
-    llPreallocateLocals(&lc, fn);
+    /* ACT-POLYC-LLVM-SPIKE01-RESUME01-CORRECTION01-RESUME01:
+     * no llPreallocateLocals — the entry block carries no allocas.
+     * SSA bindings are recorded into lc.values as IR_STORE / IR_RET
+     * (etc.) lower. */
 
     if (!lc.collapsed && fn->exit_block) {
         fprintf(stderr,

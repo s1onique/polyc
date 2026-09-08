@@ -1,0 +1,44 @@
+=== Predicate Matrix AFTER implementation ===
+
+Six signed predicates exercised from real PolyC source:
+
+source operator    neutral opcode  LLVM predicate  hcc rc  llvm-as rc
+eq                 cmp_eq          icmp eq         0       0
+ne                 cmp_ne          icmp ne         0       0
+slt                cmp_lt          icmp slt        0       0
+sle                cmp_le          icmp sle        0       0
+sgt                cmp_gt          icmp sgt        0       0
+sge                cmp_ge          icmp sge        0       0
+
+LLVM branch operand type: i1 (LLVM-native predicate type)
+
+Sample emitted shape (red_pred_eq.HC):
+
+    define i64 @Max(i64 %0, i64 %1) {
+    bb1:
+      %2 = icmp eq i64 %0, %1
+      br i1 %2, label %bb3, label %bb4
+
+    bb3:                                              ; preds = %bb1
+      ret i64 %0
+
+    bb4:                                              ; preds = %bb1
+      ret i64 %1
+
+    bb2:                                              ; No predecessors!
+      unreachable
+    }
+
+No generic trunc-i64-to-i1 truthiness conversion is used.
+No IR_TYPE_I1 was introduced in PolyC neutral IR.
+The LLVM i1 is the LLVM-native representation of the
+predicate; the PolyC neutral type metadata remains
+unchanged.
+
+ACCEPTANCE CRITERIA:
+    AC-09  All six signed predicates exercised from real PolyC sources: PASS
+    AC-10  All six emit verifier-clean LLVM:                          PASS
+    AC-11  Comparison branch output contains icmp + br i1:            PASS
+    AC-12  No generic arbitrary-integer trunc-to-i1 truthiness:       PASS
+    AC-13  No IR_TYPE_I1 or PolyC Boolean type introduced:            PASS
+    AC-14  No ordinary integer consumer of an i1 (not exercised here) PASS

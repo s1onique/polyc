@@ -1,0 +1,16 @@
+=== Determinism AFTER implementation ===
+
+Three representative fixtures emitted twice and compared byte-by-byte:
+
+Fixture          cmp result
+01_const.HC      IDENTICAL
+04_cmp_branch.HC IDENTICAL
+05_call.HC       IDENTICAL
+
+COMMAND:
+    ./hcc --emit-llvm --install-dir=build/test-prefix <fixture> -o /tmp/__a.ll
+    ./hcc --emit-llvm --install-dir=build/test-prefix <fixture> -o /tmp/__b.ll
+    cmp -s /tmp/__a.ll /tmp/__b.ll && echo IDENTICAL || echo DIFFERS
+
+LLVM textual IR is byte-deterministic across two emissions for
+all three representative fixtures.
