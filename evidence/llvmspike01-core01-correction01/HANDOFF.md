@@ -21,7 +21,7 @@ RED:        2d5b626 (CORRECTION01 RED - 4 P0 defects recorded)
 IMPL:       99a8531 (matrix + dispatch + harness wired + blank-EOF fix)
 HEAD:       99a8531
 
-Total commits this ACT: 2 (RED + IMPL). Within cap.
+Total commits this ACT: 3 (RED + IMPL + DOCS). Within cap (AC02 F12-honest).
 
 ROOT CAUSE
 ----------
