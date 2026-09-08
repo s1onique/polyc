@@ -1,0 +1,55 @@
+RED-2 reproduction (ACT-POLYC-LLVM-CORE01)
+==========================================
+
+Source location: src/llvm-backend.c, line 607 (IR_BR arm)
+
+    if (ins->op == IR_BR) {
+        /* IR_BR carries its condition via `dst` (per ir-eval.c). */
+        ...
+        LLVMValueRef cond64 = llLowerI64Value(lc, ins->dst);
+        LLVMValueRef cond1 = LLVMBuildTrunc(lc->bld, cond64,
+                                           LLVMInt1TypeInContext(lc->ctx), "");
+        ...
+
+The comment immediately above the LLVMBuildTrunc call states ONLY:
+
+    "IR_BR carries its condition via `dst` (per ir-eval.c)."
+
+It does NOT explain why cond64 is being truncated to cond1. To a
+reader unfamiliar with the neutral IR / LLVM boundary, this looks
+like a bug (an i64 -> i1 truncation of a comparison result).
+
+Verification command:
+
+    $ grep -nE 'LLVMBuildTrunc' src/llvm-backend.c
+    607:            LLVMValueRef cond1 = LLVMBuildTrunc(lc->bld, cond64,
+
+    $ grep -nE 'boundary.*trunc|trunc.*boundary' src/llvm-backend.c
+    (no matches)
+
+The word "boundary" appears 4 times in src/llvm-backend.c (lines
+572, 630, 637, 642) — all in OTHER contexts (collapse-elimination,
+IR_CMP_BR). NONE in the IR_BR arm.
+
+Why this is correct (and CORE01 must document it):
+
+The neutral IR shape (per src/ir-types.h and src/ir-eval.c) is that
+IR_BR's `dst` is an i64 condition value (0 or 1). LLVM's
+LLVMBuildCondBr wants an i1. Therefore the truncation is a
+deliberate neutral->LLVM boundary crossing: the neutral IR uses
+i64 for condition carriers (uniform with the scalar i64 type
+language), and the LLVM IR needs i1 for condbr.
+
+A future contributor might "fix" this by changing the IR_BR `dst`
+type to i1, which would change the neutral IR contract and
+invalidate downstream consumers (notably the native backend).
+CORE01 documents the existing behaviour as deliberate so the
+intent is preserved.
+
+CORE01 fix: add a paragraph immediately above the LLVMBuildTrunc
+call explaining:
+
+  1. The neutral IR carries IR_BR conditions as i64.
+  2. LLVM condbr wants i1.
+  3. The truncation is a deliberate boundary crossing.
+  4. Do NOT change the neutral IR contract to fix this.
