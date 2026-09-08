@@ -352,6 +352,12 @@ echo "=== negative matrix ==="
 negative src/tests/llvm-spike/neg_f64.HC      LLVM_BACKEND_UNSUPPORTED_TYPE
 negative src/tests/llvm-spike/neg_pointer.HC  LLVM_BACKEND_UNSUPPORTED_TYPE
 negative src/tests/llvm-spike/neg_struct.HC   LLVM_BACKEND_UNSUPPORTED_TYPE
+# ACT-POLYC-LLVM-CORE01 RED-1: integer division must produce a NAMED
+# diagnostic (LLVM_BACKEND_UNSUPPORTED_INT_DIVISION), not the generic
+# LLVM_BACKEND_UNSUPPORTED_IR catch-all. This is the regression test
+# that proves the capability matrix contract is honored for opcodes
+# that previously fell through to the default arm.
+negative src/tests/llvm-spike/red_idiv_unclassified.HC  LLVM_BACKEND_UNSUPPORTED_INT_DIVISION
 # RED-8 reclassification: neg_asm.HC fails at PARSE time (the inline
 # `asm { ... }` block is rejected by the parser in this configuration).
 # It is therefore NOT a backend witness — it does not prove IR_ASM
