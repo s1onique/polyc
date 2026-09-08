@@ -2,11 +2,25 @@
 
 ## Status
 
-OPEN — closing the two new binding closure defects a reviewer
-flagged on CORRECTION03's PASS:
+HALT_CORRECTION04_STATUS_AND_LF_EVIDENCE — at CORRECTION05
+closure. Two binding closure defects identified by the
+reviewer:
 
-  P0-1: self-pinned final HEAD (`PASS at HEAD 4e192f2` while the
-         actual final HEAD is 708d620);
+  P0-1: this Status block previously read "OPEN" while the
+         HANDOFF read "PASS". The reviewer correctly observed
+         that the closure-status-reconciliation defect has
+         now been reproduced three times in a row
+         (CORRECTION02, CORRECTION03, CORRECTION04). Closed
+         by ACT-POLYC-LLVM-CORE03-CORRECTION05 M1
+         (scripts/quality/llvm-closure-status-check.sh).
+  P0-2: A5's "literal LF end-to-end" claim was only backed by
+         a synthetic witness; the C emitter's "
+" escape
+         was not exercised. Closed by CORRECTION05 M2
+         (evidence/llvmspike01-core03-correction05/red-m1-real-lf-in-runtime-payload.txt).
+  P1:  the "-" NULL sentinel is an inherent value-collision;
+         documented by CORRECTION05 M3 as a contract
+         limitation (no protocol redesign in this ACT).
   P0-2: framing still splits on delimiters first; lengths are
          validated, not used to slice. A literal TAB or LF in
          the payload breaks parsing.

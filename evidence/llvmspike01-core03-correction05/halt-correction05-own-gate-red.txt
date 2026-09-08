@@ -1,0 +1,149 @@
+HALT record — ACT-POLYC-LLVM-CORE03-CORRECTION05
+================================================
+
+This is the HALT evidence file for CORRECTION05's
+reviewer-flagged HALT_CORRECTION05_OWN_GATE_RED.
+
+Status: HALT_CORRECTION05_OWN_GATE_RED
+Date:   2026-09-08 (after the original PASS claim was
+       filed at 2026-09-08 13:24 MSK, post-commit 45e1e6a)
+Reviewer verdict received: "REJECT PASS — HALT_CORRECTION05_OWN_GATE_RED"
+Subject ACT: docs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION05.md
+Subject HANDOFF: evidence/llvmspike01-core03-correction05/HANDOFF.md
+Predecessor: ACT-POLYC-LLVM-CORE03-CORRECTION04 (verdict:
+            HALT_CORRECTION04_STATUS_AND_LF_EVIDENCE)
+
+
+Reviewer's verbatim verdict
+---------------------------
+
+  "REJECT PASS — HALT_CORRECTION05_OWN_GATE_RED"
+
+  "The LLVM/wire work is now good. The real-LF seam is
+  genuinely closed: the witness uses C "\n" and captures
+  the exact runtime byte 0x0A; that is exactly how the C
+  escape is defined. The submitted digest also shows clean
+  patch hygiene.
+
+  But CORRECTION05 cannot close PASS, for one very simple
+  Factory reason: the new hard gate introduced by this ACT
+  is RED at closure.
+
+  A5/A8 contradict the actual gate result. The
+  implementation intentionally says:
+      if [ "$FAIL" -gt 0 ]; then exit 1; fi
+  And the committed post-implementation evidence says
+  OK=2 FAIL=3. Therefore mechanically:
+      closure-status-check.sh rc = 1
+  not 0.
+
+  Yet the ACT simultaneously records:
+      A5 = PASS
+      A8 = PASS
+      VERDICT = PASS
+
+  That is a direct false-GREEN under the ACT's own
+  newly-created oracle.
+
+  The distinction 'the three failures are out-of-scope
+  residue' does not rescue this contract. That would be
+  valid only if the gate itself were scoped to the current
+  ACT family/subject. But it isn't. Its documented
+  semantics are explicitly:
+      iterate paired ACTs
+      if ANY disagreement exists
+          FAIL
+
+  So once CORRECTION05 declares this script a hard gate,
+  inherited REDs are still gate REDs."
+
+
+Root cause
+----------
+
+F3/F4 territory. The ACT introduced a hard gate whose
+documented semantics are 'iterate paired ACTs and FAIL if
+ANY disagreement exists'. The ACT simultaneously recorded
+that 3 of 5 paired ACTs disagree (CORRECTION01/02/03),
+recorded its own A8 as 'closure-status-check.sh: rc=0',
+and recorded VERDICT: PASS.
+
+The technical work behind the gate (real-LF witness,
+CORRECTION04 reconciliation, NULL-sentinel docs) is
+sound and accepted by the reviewer. The defect is
+specifically: false-GREEN under the ACT's own newly-
+created oracle.
+
+
+What is now true after this halt
+--------------------------------
+
+1. The ACT's Status block reads HALT_CORRECTION05_OWN_GATE_RED.
+   The HANDOFF VERDICT reads the same. The closure-status-
+   check gate now reports OK=2 (CORRECTION04 HALT/HALT,
+   CORRECTION05 HALT/HALT) FAIL=3 (CORRECTION01/02/03
+   HALT/PASS).
+
+2. The reviewer-accepted technical work remains as evidence:
+     - Real-LF witness file: red-m1-real-lf-in-runtime-payload.txt
+     - NULL-sentinel comment in src/llvm-backend-cap.c
+     - CORRECTION04 ACT/HANDOFF reconciled (HALT/HALT)
+     - scripts/quality/llvm-closure-status-check.sh seed oracle
+
+3. The seed oracle is the seed of
+   ACT-POLYC-FACTORY-STATUS-RECONCILIATION (the immediate
+   next ACT, per the reviewer's sequencing recommendation).
+
+4. CORRECTION05 stays AT CAP (declared=2, actual=2). No
+   additional commits are required to record this HALT;
+   the ACT and HANDOFF are updated as truthful corrections
+   to existing DOCS, not new scope.
+
+
+Closure-status check after the halt
+-----------------------------------
+
+scripts/quality/llvm-closure-status-check.sh:
+  OK   ACT-POLYC-LLVM-CORE03-CORRECTION04.md  act=HALT  handoff=HALT
+  OK   ACT-POLYC-LLVM-CORE03-CORRECTION05.md  act=HALT  handoff=HALT
+  FAIL ACT-POLYC-LLVM-CORE03-CORRECTION01.md  act=HALT  handoff=PASS
+  FAIL ACT-POLYC-LLVM-CORE03-CORRECTION02.md  act=HALT  handoff=PASS
+  FAIL ACT-POLYC-LLVM-CORE03-CORRECTION03.md  act=HALT  handoff=PASS
+  ----
+  OK = 2   FAIL = 3   rc = 1
+
+The gate stays RED at HEAD; this is correct and is the
+artefact that graduates STATUS-RECONCILIATION from
+residue to immediate next ACT.
+
+
+Topology at halt
+----------------
+
+CORRECTION05 declared cap = 2, actual = 2 (RED + IMPL+DOCS).
+CORRECTION05 = HALT_CORRECTION05_OWN_GATE_RED.
+CORRECTION04 = HALT_CORRECTION04_STATUS_AND_LF_EVIDENCE
+               (was: PASS; now ACT and HANDOFF agree HALT/HALT).
+CORRECTION03 = HALT_CORRECTION03_WIRE_AND_IDENTITY_CONTRACT
+               (was: PASS; carried; out of scope here).
+CORRECTION02 = HALT_SCOPE_CONTRACT_VIOLATED
+               (was: PASS; carried; out of scope here).
+CORRECTION01 = HALT_CORE03_CORRECTION01_BINDING_STILL_PARTIAL
+               (carried; out of scope here).
+CORE03       = HALT_CORE03_CONTRACT_NOT_ACTUALLY_BOUND
+               (carried; out of scope here).
+
+The four-occurrence closure-status-reconciliation defect
+is now the F3/F4 evidence that immediately justifies
+ACT-POLYC-FACTORY-STATUS-RECONCILIATION.
+
+
+Next ACT
+--------
+
+ACT-POLYC-FACTORY-STATUS-RECONCILIATION (PROMOTED to P0;
+immediate next ACT; bounded mission in CORRECTION05
+HANDOFF's NEXT ACT section).
+
+CORE04 is NOT unblocked at CORRECTION05 closure. Per the
+reviewer's sequencing, FACTORY-STATUS-RECONCILIATION first.
