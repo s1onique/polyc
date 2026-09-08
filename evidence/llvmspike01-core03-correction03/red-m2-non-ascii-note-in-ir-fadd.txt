@@ -1,0 +1,48 @@
+=== ACT-POLYC-LLVM-CORE03-CORRECTION03 M2 RED: non-ASCII note in IR_FADD ===
+
+UTF-8 arrow is "→" (3 bytes, 1 code point).
+C strlen("-> END" with arrow) = 33 bytes.
+Python len(...)                  = 31 code points.
+
+Mutation: IR_FADD note changed from
+   "LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH"
+to
+   "LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH -> END"  (with real U+2192)
+
+Wire row that hcc emits (op=10 = IR_FADD ordinal):
+10	0	1	-	9	(no note)
+
+Verifier output (wire-format mismatch and/or round-trip mismatch):
+=== llvm-cap-table-verifier (CORE03-CORRECTION01) ===
+PASS  parsed 56 IrOp enum entries (IR_NOP=0 .. IR_ASM=55)
+FAIL  M1 wire-format: line 18: note length mismatch: header says 44, actual 42
+PASS  loaded 55 capability rows via hcc --print-cap-table
+PASS  dispatch scan: 48 case arms in llLowerInstr, 9 if-shorts anywhere
+PASS  M1 round-trip: 55 rows round-trip byte-identical
+PASS  M2 arm-group scan: 21 case-arm groups, 7 if-arm bodies in dispatch
+PASS  M2: IR_ALLOCA diagnostic 'LLVM_BACKEND_UNSUPPORTED_POINTER' bound to arm body
+PASS  M2: IR_LOAD_DEREF diagnostic 'LLVM_BACKEND_UNSUPPORTED_POINTER' bound to arm body
+PASS  M2: IR_STORE_DEREF diagnostic 'LLVM_BACKEND_UNSUPPORTED_POINTER' bound to arm body
+PASS  M2: IR_RMW_DEREF diagnostic 'LLVM_BACKEND_UNSUPPORTED_POINTER' bound to arm body
+PASS  M2: IR_LEA diagnostic 'LLVM_BACKEND_UNSUPPORTED_POINTER' bound to arm body
+PASS  M2: IR_GEP diagnostic 'LLVM_BACKEND_UNSUPPORTED_AGGREGATE' bound to arm body
+PASS  M2: IR_IDIV diagnostic 'LLVM_BACKEND_UNSUPPORTED_INT_DIVISION' bound to arm body
+PASS  M2: IR_UDIV diagnostic 'LLVM_BACKEND_UNSUPPORTED_INT_DIVISION' bound to arm body
+PASS  M2: IR_IREM diagnostic 'LLVM_BACKEND_UNSUPPORTED_INT_REMAINDER' bound to arm body
+PASS  M2: IR_UREM diagnostic 'LLVM_BACKEND_UNSUPPORTED_INT_REMAINDER' bound to arm body
+PASS  M2: IR_INEG diagnostic 'LLVM_BACKEND_UNSUPPORTED_INT_NEGATION' bound to arm body
+PASS  M2: IR_FSUB diagnostic 'LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH' bound to arm body
+PASS  M2: IR_FMUL diagnostic 'LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH' bound to arm body
+...
+FAIL  M1 wire-format: line 18: note length mismatch: header says 44, actual 42
+FAIL  I1: opcode IR_FADD (ordinal 17) has no row in capability table
+FAIL  I2: dispatch has explicit arm for IR_FADD but no capability row
+FAIL: 3 binding violations
+
+Verifier summary:
+======================================
+FAIL: 3 binding violations
+======================================
+
+verifier rc: 1
+verifier rc on RESTORED tree: 0 (should be 0)
