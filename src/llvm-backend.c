@@ -73,8 +73,10 @@
  * IR opcode                       classification       diagnostic
  * ------------------------------- -------------------- --------------------------------
  * IR_NOP                          UNREACHABLE_ON_LLVM  (irRemoveAllNops strips every
- *                                                    IR_NOP node before emission; the generic
- *                                                    default arm stays as a regression safety net)
+ *                                                    IR_NOP node before emission; no explicit
+ *                                                    `case IR_NOP:` arm; the generic `default:`
+ *                                                    arm catches a future regression and emits
+ *                                                    LLVM_BACKEND_UNSUPPORTED_IR)
  * IR_ALLOCA                       REJECTED             LLVM_BACKEND_UNSUPPORTED_MEMORY
  * IR_LOAD                         SHAPE-DEPENDENT       (see IR_LOAD below)
  * IR_STORE                        SHAPE-DEPENDENT       (see IR_STORE below)
@@ -134,8 +136,11 @@
  * IR_BR                           SUPPORTED            (normal LLVM-path conditional branch;
  *                                                    cond is the dst of the preceding IR_ICMP,
  *                                                    so it is physically i1; the i64→i1 trunc
- *                                                    arm is a defensive invariant guard and is
- *                                                    not reachable from current neutral IR)
+ *                                                    arm is a DEFENSIVE_INVARIANT — when it fires,
+ *                                                    LLVM_BACKEND_DEFENSIVE_INVARIANT_TRIPPED is
+ *                                                    emitted to stderr and lc->defensive_trips
+ *                                                    is incremented; the harness asserts it stays
+ *                                                    at zero for the supported subset)
  * IR_CMP_BR                       REJECTED             (boundary violation - native fusion)
  * IR_JMP                          SUPPORTED            -
  * IR_SWITCH                       REJECTED             LLVM_BACKEND_UNSUPPORTED_SWITCH
@@ -143,13 +148,24 @@
  * IR_PHI                          REJECTED             LLVM_BACKEND_UNSUPPORTED_PHI
  * IR_LABEL                        UNREACHABLE_ON_LLVM  (reserved-but-unused per
  *                                                    src/ir-types.h:155; never created by
- *                                                    the canonical lowerer; generic default
- *                                                    arm stays as a regression safety net)
+ *                                                    the canonical lowerer; no explicit
+ *                                                    `case IR_LABEL:` arm; the generic
+ *                                                    `default:` arm catches a future
+ *                                                    regression and emits
+ *                                                    LLVM_BACKEND_UNSUPPORTED_IR)
  * IR_SELECT                       REJECTED             LLVM_BACKEND_UNSUPPORTED_SELECT
  * IR_VA_ARG                       REJECTED             LLVM_BACKEND_UNSUPPORTED_VARARGS
  * IR_VA_START                     REJECTED             LLVM_BACKEND_UNSUPPORTED_VARARGS
  * IR_VA_END                       REJECTED             LLVM_BACKEND_UNSUPPORTED_VARARGS
  * IR_ASM                          REJECTED             LLVM_BACKEND_UNSUPPORTED_ASM
+ *
+ * ACT-POLYC-LLVM-CORE03: the table above is the SOURCE OF TRUTH
+ * for the machine-readable capability table in
+ * `src/llvm-backend-cap.c`. llValidateCapabilityContract() asserts
+ * the C table is well-formed (no gaps, no duplicates, every REJECTED
+ * row has a non-NULL diagnostic) at every program start, before
+ * any --emit-llvm invocation. If this comment and the C table
+ * disagree, the contract validator aborts.
  *
  * Value kinds:
  *   IR_VAL_CONST_INT    SUPPORTED (i64 only)
@@ -296,6 +312,13 @@ typedef struct LLCtx {
     /* collapse state */
     int            collapsed;
     IrValue       *collapse_slot; /* the IR_VAL_LOCAL slot of the exit block */
+
+    /* ACT-POLYC-LLVM-CORE03: defensive invariant guard counter.
+     * Incremented when a defensive invariant guard fires (e.g.
+     * IR_BR cond has non-i1 LLVM physical type, triggering the
+     * i64->i1 trunc arm). The supported subset must keep this at
+     * zero; the harness asserts it. */
+    int            defensive_trips;
 } LLCtx;
 
 /* --- per-block helpers ------------------------------------------------- */
@@ -759,9 +782,26 @@ static LLVMBasicBlockRef llLowerBlock(LLCtx *lc, IrBlock *b) {
             if (cond_ty == LLVMInt1TypeInContext(lc->ctx)) {
                 cond1 = cond;
             } else if (cond_ty == LLVMInt64TypeInContext(lc->ctx)) {
-                /* Historical: literal 0/1 i64 predicate. Truncate to i1.
-                 * This is the only path where LLVMBuildTrunc is legal
-                 * (source wider than dest). */
+                /* ACT-POLYC-LLVM-CORE03: defensive invariant guard.
+                 * The canonical lowerer produces IR_BR cond as the
+                 * dst of an immediately-preceding IR_ICMP, so the
+                 * cond is physically i1 on the LLVM path. If we
+                 * observe i64 here, an upstream regression has
+                 * dropped the ICMP wrap (e.g. a future fusion pass
+                 * called on the LLVM path by mistake). Emit the
+                 * diagnostic, increment the counter, and continue
+                 * with the historical trunc so the user still gets
+                 * a usable .ll output rather than a hard error. */
+                fprintf(stderr,
+                    "%s: function %s: IR_BR cond is i64, not i1; "
+                    "defensively truncating. This indicates an "
+                    "upstream regression (likely a neutral-IR "
+                    "producer that bypassed irNormalizeBranchCondition "
+                    "or an IR_ICMP+IR_BR fusion pass that ran on "
+                    "the LLVM path). Line %d.\n",
+                    LLVM_BACKEND_DEFENSIVE_INVARIANT_TRIPPED,
+                    lc->fn->name->data, ins->line);
+                lc->defensive_trips++;
                 cond1 = LLVMBuildTrunc(lc->bld, cond,
                                        LLVMInt1TypeInContext(lc->ctx), "");
             } else {
