@@ -1,0 +1,25 @@
+# Dynamic-binding verification (the reviewer-demanded pattern)
+
+## Gate transcript SUBJECT
+
+```
+raw SUBJECT (from log) = a5818c66cbbb
+resolved SUBJECT_FULL  = a5818c66cbbb6f447ea636f30925b63e408d0aa4
+git rev-parse HEAD     = a5818c66cbbb6f447ea636f30925b63e408d0aa4
+```
+
+## merge-base --is-ancestor check
+
+```
+SUBJECT_FULL is ancestor of HEAD: YES
+```
+
+## Interpretation
+
+SUBJECT=a5818c66cbbb -> SUBJECT_FULL=a5818c66cbbb6f447ea636f30925b63e408d0aa4
+HEAD (live)           = a5818c66cbbb6f447ea636f30925b63e408d0aa4
+
+The gate transcript is committed against the substantive final tree.
+Any future HEAD (which adds CORRECTION02 docs commits) is a strict
+ancestor of this SUBJECT_FULL because SUBJECT_FULL == current HEAD
+and HEAD monotonically advances with new commits.

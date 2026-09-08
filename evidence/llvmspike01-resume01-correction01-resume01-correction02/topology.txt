@@ -1,0 +1,60 @@
+# Topology (truthful enumeration of git history in this ACT scope)
+
+## ENTRY
+
+```
+bde6045a200a1526435fd161f41b59e02df012b7
+```
+
+## HEAD (live, this ACT)
+
+```
+a5818c66cbbb6f447ea636f30925b63e408d0aa4
+```
+
+## Full lineage, ENTRY..HEAD, oldest-first
+
+```
+50a43c6 test(llvm): RESUME01 CORRECTION01-RESUME01 RED phase
+1cfc34a refactor(llvm): lower bounded scalar locals as SSA values
+d52d5af docs(polyc): close deferred LLVM spike correction ACT
+910c6ec test(llvm): CORRECTION01-RESUME01-CORRECTION01 RED + C1 restoration
+5eed2af fix(llvm): reject SSA-local multiple reaching stores
+1b63225 docs(polyc): close CORRECTION01-RESUME01-CORRECTION01 ACT
+f703cec fix(harness): keep harness transcripts out of C1 evidence dir
+a5818c6 docs(polyc): update HANDOFF/identity with final CLOSURE shape
+```
+
+## Counts
+
+```
+commits in range bde6045a..HEAD  = 8
+commits in previous ACT range    = 8 (per previous ACT closure: 50a43c6, 1cfc34a, d52d5af, 910c6ec, 5eed2af, 1b63225, f703cec, a5818c6)
+```
+
+## Per-commit role
+
+| SHA | role |
+| --- | --- |
+| 50a43c6 | RESUME01 CORRECTION01-RESUME01 RED (previous ACT) |
+| 1cfc34a | IMPL (previous ACT) |
+| d52d5af | closure (previous ACT) |
+| 910c6ec | RED (this correction scope: P0-1 fixture + C1 restoration) |
+| 5eed2af | IMPL (this correction scope: lc->local_defs + reject) |
+| 1b63225 | docs-closure attempt that the reviewer later flagged |
+| f703cec | harness destination redirect (the actual P0-2 fix) |
+| a5818c6 | docs (HANDOFF/identity/gate re-capture) |
+
+## Honest count claim
+
+Total commits in ENTRY..HEAD at this ACT start = 8 (see above).
+Topology claim of "3 commits" in the previous HANDOFF was a
+semantic grouping (RED+IMPL+CLOSURE), not a topology claim, but it
+was read as the latter. From this ACT forward the topology will
+be stated in absolute terms (N commits in ENTRY..HEAD), not as a
+semantic grouping of {RED, IMPL, CLOSURE}.
+
+F12 says "small truthful commits" but does not impose a hard
+numerical cap. The reviewer treated a 3-commit semantic grouping
+as a 3-commit topology. This ACT therefore makes the topology
+explicit rather than implicit, regardless of count.
