@@ -1,0 +1,33 @@
+=== RED P0-arm-local: verifier accepts mismatched diagnostic between arms ===
+
+Setup:
+  IR_GEP is a standalone case arm in src/llvm-backend.c (no grouping).
+  Its handler emits LLVM_BACKEND_UNSUPPORTED_AGGREGATE.
+  The capability table says IR_GEP -> LLVM_BACKEND_UNSUPPORTED_AGGREGATE.
+
+Mutation: change IR_GEP handler to emit LLVM_BACKEND_UNSUPPORTED_BITCAST
+instead. (BITCAST is emitted by the IR_BITCAST arm, also standalone.)
+The capability table is unchanged.
+
+CORRECTION01 verifier I1 check:
+  backend_text = read(SRC_BACKEND)
+  if diag and diag not in backend_text: fail(...)
+
+After mutation:
+  - AGGREGATE appears in the matrix comment (line ~80) and in the
+    capability table source. It does NOT appear in any fprintf call.
+  - BITCAST appears in the IR_BITCAST handler.
+
+Therefore "AGGREGATE in backend_text" still passes (it is in the
+comment), and the verifier false-GREENs.
+
+Observed verifier output:
+PASS  I1: IR_GEP = REJECTED with diagnostic 'LLVM_BACKEND_UNSUPPORTED_AGGREGATE'
+PASS  I2: IR_GEP has explicit dispatch arm and capability row (REJECTED)
+
+verifier rc: 0 (false-PASS)
+
+CORRECTION02 M2 fix direction: the verifier must extract the body of
+each case arm (or grouped-case arm) and verify the diagnostic macro
+appears in that body specifically, not in backend.c as a whole. The
+matrix comment is not authoritative; the dispatch arm body is.

@@ -1,0 +1,32 @@
+=== RED P0-wire: hcc --print-cap-table wire format truncates IR_CMP_BR diagnostic at first space ===
+
+CORRECTION01 emitted one row per IrOp:
+  printf("%d %d %s %s\n", ordinal, class, diagnostic, note);
+
+The Python verifier parsed with:
+  line.split(None, 3)
+
+The IR_CMP_BR row contains a space in its diagnostic field:
+  src/llvm-backend-cap.c:65:
+    { IR_CMP_BR, LLVMBC_REJECTED, "(boundary violation - native fusion)", "(boundary violation - native fusion)" }
+
+Wire output (literal):
+45 1 (boundary violation - native fusion) (boundary violation - native fusion)
+
+Parsed by the verifier (run python3 ... llvm-cap-table-verifier.py):
+  op=45 class=1 diagnostic='(boundary' note='violation - native fusion) (boundary violation - native fusion)'
+
+The verifier then ran:
+  backend_text = read(SRC_BACKEND)
+  if diag and diag not in backend_text: fail(...)
+  else: ok("I1: IR_CMP_BR = REJECTED with diagnostic '(boundary'")
+False-PASS.
+
+The contract is: parser must recover the diagnostic string EXACTLY
+as stored in the table. Round-trip (table -> wire -> parse -> table)
+must be identity.
+
+Fix direction (CORRECTION02 M1): length-delimited wire format. The
+diagnostic and note columns must be prefixed by their byte length
+(in ASCII decimal, then a tab) so the parser can read exactly that
+many bytes regardless of content.
