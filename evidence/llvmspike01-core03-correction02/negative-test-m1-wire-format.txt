@@ -1,0 +1,20 @@
+=== M1 negative test: revert wire format -> verifier should RED ===
+
+Old wire format: printf('%d %d %s %s
+', ...)
+IR_CMP_BR row:
+45 1 LLVM_BACKEND_INTERNAL LLVM_BACKEND_INTERNAL (boundary violation - native fusion; the IR_CMP_BR handler in src/llvm-backend.c emits LLVM_BACKEND_INTERNAL because reaching this arm means the neutral/native boundary has been crossed. The previous table entry had a descriptive string that did not match any macro in the dispatch; corrected by ACT-POLYC-LLVM-CORE03-CORRECTION02 M2.)
+
+Verifier output (M1 round-trip test):
+FAIL  M1 wire-format: line 1: expected 5 tabs, got 0: '0 3 - irRemoveAllNops strips every IR_NOP node before emission; no explicit `case IR_NOP:` arm; the generic `default:` arm catches a future regression and emits LLVM_BACKEND_UNSUPPORTED_IR.'
+FAIL  M1 wire-format: line 2: expected 5 tabs, got 0: '1 1 LLVM_BACKEND_UNSUPPORTED_POINTER LLVM_BACKEND_UNSUPPORTED_POINTER (IR_ALLOCA is grouped with IR_LOAD_DEREF/IR_STORE_DEREF/IR_RMW_DEREF/IR_LEA in the dispatch; the grouped arm emits POINTER, not MEMORY. The MEMORY macro name was a historical misnomer; corrected by ACT-POLYC-LLVM-CORE03-CORRECTION02 M2.)'
+FAIL  M1 wire-format: line 3: expected 5 tabs, got 0: '2 2 - (see IR_LOAD below)'
+FAIL  M1 wire-format: line 4: expected 5 tabs, got 0: '3 2 - (see IR_STORE below)'
+FAIL  M1 wire-format: line 5: expected 5 tabs, got 0: '4 1 LLVM_BACKEND_UNSUPPORTED_POINTER LLVM_BACKEND_UNSUPPORTED_POINTER'
+FAIL  M1 wire-format: line 6: expected 5 tabs, got 0: '5 1 LLVM_BACKEND_UNSUPPORTED_POINTER LLVM_BACKEND_UNSUPPORTED_POINTER'
+FAIL  M1 wire-format: line 7: expected 5 tabs, got 0: '6 1 LLVM_BACKEND_UNSUPPORTED_POINTER LLVM_BACKEND_UNSUPPORTED_POINTER'
+FAIL  M1 wire-format: line 8: expected 5 tabs, got 0: '7 1 LLVM_BACKEND_UNSUPPORTED_POINTER LLVM_BACKEND_UNSUPPORTED_POINTER'
+FAIL  M1 wire-format: line 9: expected 5 tabs, got 0: '8 1 LLVM_BACKEND_UNSUPPORTED_AGGREGATE LLVM_BACKEND_UNSUPPORTED_AGGREGATE'
+FAIL  M1 wire-format: line 10: expected 5 tabs, got 0: '9 0 - (no note)'
+
+verifier rc: 1

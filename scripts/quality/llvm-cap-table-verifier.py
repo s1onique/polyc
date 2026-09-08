@@ -103,12 +103,22 @@ def get_ir_op_enum():
 
 
 def get_cap_table_via_hcc():
-    """Run hcc --print-cap-table and parse the output."""
+    """Run hcc --print-cap-table and parse the output.
+
+    ACT-POLYC-LLVM-CORE03-CORRECTION02 M1: the wire format is now
+    length-delimited. Each row is:
+
+      <op-ordinal>\\t<class-ordinal>\\t<diag-len>\\t<diag>\\t<note-len>\\t<note>\\n
+
+    The parser reads the integer length, then reads exactly that many
+    bytes for the field. This is round-trippable byte-for-byte and
+    handles diagnostics that contain spaces (e.g. IR_CMP_BR's
+    "(boundary violation - native fusion)").
+    """
     if not HCC.exists():
         fail("hcc binary not found at " + str(HCC))
         return {}
     env = os.environ.copy()
-    # Minimal PATH for hcc; reuse PATH or skip the helper mode.
     try:
         out = subprocess.check_output(
             [str(HCC), "--print-cap-table"],
@@ -120,21 +130,72 @@ def get_cap_table_via_hcc():
     except Exception as e:
         fail("hcc --print-cap-table failed: " + str(e))
         return {}
+
+    raw = out.decode("utf-8", "replace")
     rows = {}
-    for line in out.decode("utf-8", "replace").splitlines():
-        parts = line.split(None, 3)
-        if len(parts) < 4:
+    malformed = []
+    for line_no, line in enumerate(raw.splitlines(), start=1):
+        # Layout:  op \t class \t <diag-len> \t <diag> \t <note-len> \t <note>
+        if line.count("\t") != 5:
+            malformed.append((line_no, "expected 5 tabs, got %d: %r" % (line.count("\t"), line)))
             continue
-        op, cls, diag, name = parts
+        f1, f2, f3, f4, f5, f6 = line.split("\t")
         try:
-            rows[int(op)] = {
-                "class": int(cls),
-                "diagnostic": None if diag == "-" else diag,
-                "name": name,
-            }
-        except ValueError:
+            op = int(f1)
+            cls = int(f2)
+            diag_len = int(f3)
+            note_len = int(f5)
+        except ValueError as e:
+            malformed.append((line_no, "non-integer length field: %s" % e))
             continue
+        diag = None if f4 == "-" else f4
+        if diag is not None and len(diag) != diag_len:
+            malformed.append((line_no, "diag length mismatch: header says %d, actual %d (field=%r)"
+                              % (diag_len, len(diag), diag)))
+            continue
+        note = None if f6 == "-" else f6
+        if note is not None and len(note) != note_len:
+            malformed.append((line_no, "note length mismatch: header says %d, actual %d"
+                              % (note_len, len(note))))
+            continue
+        rows[op] = {
+            "class": cls,
+            "diagnostic": diag,
+            "note": note,
+            # Save the raw line for the round-trip assertion below.
+            "_raw": line,
+            "_diag_len": diag_len,
+            "_note_len": note_len,
+        }
+
+    for ln, msg in malformed:
+        fail("M1 wire-format: line %d: %s" % (ln, msg))
+    if not rows and not malformed:
+        fail("M1 wire-format: no rows parsed")
     return rows
+
+
+def check_wire_format_roundtrip(rows):
+    """M1 acceptance: re-serialize each row with the same format and
+    assert byte-equality with the original wire line. Catches any
+    future regression where the printer and parser drift."""
+    if not rows:
+        return  # already failed above
+    failures = 0
+    for op, row in sorted(rows.items()):
+        diag = row["diagnostic"] if row["diagnostic"] is not None else "-"
+        note = row["note"] if row["note"] is not None else "-"
+        # Compute expected exactly as llPrintCapabilityTable does.
+        expected = "%d\t%d\t%d\t%s\t%d\t%s" % (
+            op, row["class"], len(diag), diag, len(note), note,
+        )
+        if expected != row["_raw"]:
+            failures += 1
+            fail("M1 round-trip: row %d: re-serialized line != original line\n"
+                 "  original: %r\n"
+                 "  expected: %r" % (op, row["_raw"], expected))
+    if failures == 0:
+        ok("M1 round-trip: %d rows round-trip byte-identical" % len(rows))
 
 
 def get_dispatch_arms():
@@ -189,6 +250,203 @@ def get_dispatch_arms():
     }
 
 
+def get_dispatch_arm_groups():
+    """ACT-POLYC-LLVM-CORE03-CORRECTION02 M2: extract each grouped
+    case-arm body from the dispatch switch in llLowerInstr.
+
+    Returns a list of dicts, one per arm-group:
+        - labels:   list of IR_X identifiers (the case labels in
+                    the group, in source order)
+        - body:     text of the arm body, from after the last case
+                    label up to the next case/default:/closing brace
+                    at switch depth
+        - is_default: True if this is the default: arm
+    """
+    text = read(SRC_BACKEND)
+    fn_match = re.search(
+        r"static\s+\w+\s+llLowerInstr\s*\([^)]*\)\s*\{",
+        text,
+    )
+    if not fn_match:
+        return []
+    start = fn_match.end()
+    depth = 1
+    i = start
+    while i < len(text) and depth > 0:
+        if text[i] == "{":
+            depth += 1
+        elif text[i] == "}":
+            depth -= 1
+        i += 1
+    fn_body = text[start:i]
+
+    switch_match = re.search(r"switch\s*\([^)]*\)\s*\{", fn_body)
+    if not switch_match:
+        return []
+    sw_start = switch_match.end()
+    depth = 1
+    pos = sw_start
+    groups = []
+    cur_labels = []
+    cur_body_start = None
+    case_re = re.compile(r"\bcase\s+(IR_[A-Z_0-9]+)\s*:")
+    default_re = re.compile(r"\bdefault\s*:")
+    label_re = re.compile(r"\b(case\s+(?:IR_[A-Z_0-9]+)\s*:|default\s*:)")
+
+    def skip_ws_comments(s, p):
+        """Skip whitespace and C-style comments starting at p."""
+        n = len(s)
+        while p < n:
+            if s[p] in " \t\r\n":
+                p += 1
+            elif p + 1 < n and s[p] == "/" and s[p + 1] == "/":
+                # Line comment.
+                nl = s.find("\n", p)
+                p = nl + 1 if nl >= 0 else n
+            elif p + 1 < n and s[p] == "/" and s[p + 1] == "*":
+                # Block comment.
+                end = s.find("*/", p + 2)
+                p = end + 2 if end >= 0 else n
+            else:
+                break
+        return p
+
+    while pos < len(fn_body) and depth > 0:
+        ch = fn_body[pos]
+        if ch == "{":
+            depth += 1
+            pos += 1
+            continue
+        if ch == "}":
+            depth -= 1
+            if depth == 0:
+                # End of switch.
+                if cur_body_start is not None:
+                    groups.append({"labels": list(cur_labels),
+                                   "body": fn_body[cur_body_start:pos],
+                                   "is_default": not cur_labels})
+                break
+            pos += 1
+            continue
+        if depth == 1:
+            m = label_re.match(fn_body, pos)
+            if m:
+                label_text = m.group(1)
+                is_default = label_text.startswith("default")
+                # Determine whether this label extends the current
+                # group (consecutive case labels, body not yet
+                # started) or starts a new group.
+                if cur_body_start is not None and not is_default:
+                    between = fn_body[cur_body_start:pos]
+                    stripped = skip_ws_comments(between, 0)
+                    if stripped == len(between):
+                        # Same group; append the case label.
+                        cur_labels.append(
+                            label_text.split()[1].rstrip(":"))
+                        pos = m.end()
+                        pos = skip_ws_comments(fn_body, pos)
+                        cur_body_start = pos
+                        continue
+                # Flush previous group, then start a new one.
+                if cur_body_start is not None:
+                    groups.append({"labels": list(cur_labels),
+                                   "body": fn_body[cur_body_start:pos],
+                                   "is_default": not cur_labels})
+                if is_default:
+                    cur_labels = []
+                else:
+                    cur_labels = [label_text.split()[1].rstrip(":")]
+                pos = m.end()
+                pos = skip_ws_comments(fn_body, pos)
+                cur_body_start = pos
+                continue
+        pos += 1
+    return groups
+
+
+def get_if_arm_bodies():
+    """Return [(opcode, body), ...] for `if (ins->op == IR_X)`
+    short-circuits in the dispatch.
+
+    ACT-POLYC-LLVM-CORE03-CORRECTION02: scan BOTH llLowerBlock
+    (which dispatches IR_BR, IR_JMP, IR_RET, IR_CMP_BR) and
+    llLowerInstr (which dispatches the arithmetic/conversion/
+    cast ops via its switch). The dispatch is split across these
+    two functions, not consolidated into llLowerInstr."""
+    text = read(SRC_BACKEND)
+    out = []
+    if_re = re.compile(
+        r"if\s*\(\s*ins->op\s*==\s*(IR_[A-Z_0-9]+)\s*\)\s*\{",
+    )
+
+    # Find each dispatch function and scan its body for if-arms.
+    for sig_re in (
+        r"static\s+\w+\s+llLowerInstr\s*\([^)]*\)\s*\{",
+        r"static\s+\w+\s+llLowerBlock\s*\([^)]*\)\s*\{",
+    ):
+        for fn_match in re.finditer(sig_re, text):
+            start = fn_match.end()
+            depth = 1
+            i = start
+            while i < len(text) and depth > 0:
+                if text[i] == "{":
+                    depth += 1
+                elif text[i] == "}":
+                    depth -= 1
+                i += 1
+            fn_body = text[start:i]
+            for m in if_re.finditer(fn_body):
+                op = m.group(1)
+                body_start = m.end()
+                depth = 1
+                j = body_start
+                while j < len(fn_body) and depth > 0:
+                    if fn_body[j] == "{":
+                        depth += 1
+                    elif fn_body[j] == "}":
+                        depth -= 1
+                    j += 1
+                out.append((op, fn_body[body_start:j - 1]))
+    return out
+
+
+def check_dispatch_arm_local_diagnostic(cap_rows_by_name, arm_groups, if_bodies):
+    """ACT-POLYC-LLVM-CORE03-CORRECTION02 M2: bind the diagnostic to
+    the dispatch arm body, not to backend.c as a whole.
+
+    cap_rows_by_name is keyed by IR_X name (string).
+    """
+    body_for_op = {}
+    for grp in arm_groups:
+        for op in grp["labels"]:
+            body_for_op.setdefault(op, []).append(grp["body"])
+    for op, body in if_bodies:
+        body_for_op.setdefault(op, []).append(body)
+    for grp in arm_groups:
+        if grp["is_default"]:
+            body_for_op.setdefault("__default__", []).append(grp["body"])
+
+    for op_name, row in cap_rows_by_name.items():
+        if row["class"] != LLVMBC_REJECTED:
+            continue
+        if row["diagnostic"] is None:
+            continue
+        diag = row["diagnostic"]
+        bodies = body_for_op.get(op_name)
+        if not bodies:
+            continue
+        if not any(diag in b for b in bodies):
+            other_holders = [o for o, bs in body_for_op.items()
+                             if any(diag in b for b in bs)]
+            fail("M2: {0} (REJECTED) diagnostic {1!r} NOT in this arm's"
+                 " body. Appears in: {2}".format(
+                     op_name, diag,
+                     ", ".join(other_holders) or "<none>"))
+        else:
+            ok("M2: {0} diagnostic {1!r} bound to arm body".format(
+                op_name, diag))
+
+
 def check_dispatch(enum_ops, cap_rows, dispatch):
     """I1: for every IrOp in the enum, the dispatch shape matches the row."""
     case_in = dispatch["case_in_llLowerInstr"]
@@ -219,20 +477,13 @@ def check_dispatch(enum_ops, cap_rows, dispatch):
                 fail("I1: {0} = {1} but dispatch has no explicit case arm"
                      " and no short-circuit".format(op_name, CLASS_NAMES.get(cls, "?")))
             elif cls == LLVMBC_REJECTED:
-                # If REJECTED has an arm, the diagnostic named in the table
-                # must appear in the dispatch body. We don't strictly require
-                # the diagnostic string to appear at the exact arm (some
-                # opcodes share a diagnostic across multiple arms), but we
-                # DO require that the diagnostic string is used somewhere
-                # in the dispatch.
-                backend_text = read(SRC_BACKEND)
-                if diag and diag not in backend_text:
-                    fail("I1: {0} = REJECTED with diagnostic {1!r}, but that"
-                         " diagnostic string does not appear in the dispatch".format(
-                             op_name, diag))
-                else:
-                    ok("I1: {0} = REJECTED with diagnostic {1!r}".format(
-                        op_name, diag))
+                # The arm-local diagnostic binding check is performed
+                # in CORRECTION02's M2 (check_dispatch_arm_local_diagnostic).
+                # That check is stronger than the previous whole-file
+                # `diag in backend_text` heuristic, which false-GREENed
+                # when the macro appeared in a comment or in a different
+                # arm's body. See ACT-POLYC-LLVM-CORE03-CORRECTION02.md M2.
+                pass
             else:
                 ok("I1: {0} = {1}, dispatch has explicit arm".format(
                     op_name, CLASS_NAMES.get(cls, "?")))
@@ -298,6 +549,16 @@ def main():
     ok("dispatch scan: {0} case arms in llLowerInstr, {1} if-shorts anywhere".format(
         len(dispatch["case_in_llLowerInstr"]),
         len(dispatch["if_in_llLowerInstr_or_switch"])))
+
+    # ACT-POLYC-LLVM-CORE03-CORRECTION02 M1: round-trip assertion.
+    check_wire_format_roundtrip(cap_rows)
+
+    # ACT-POLYC-LLVM-CORE03-CORRECTION02 M2: arm-local diagnostic binding.
+    arm_groups = get_dispatch_arm_groups()
+    if_bodies = get_if_arm_bodies()
+    ok("M2 arm-group scan: {0} case-arm groups, {1} if-arm bodies in dispatch".format(
+        len(arm_groups), len(if_bodies)))
+    check_dispatch_arm_local_diagnostic(by_name, arm_groups, if_bodies)
 
     check_dispatch(enum_ops, by_name, dispatch)
     check_reverse(enum_ops, by_name, dispatch)

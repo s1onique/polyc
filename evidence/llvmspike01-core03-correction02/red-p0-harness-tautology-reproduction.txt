@@ -1,0 +1,18 @@
+=== RED P0-harness-tautology: REJECTED harness now REDs on table/diagnostic mismatch ===
+
+Mutation: change IR_IDIV/UDIV handler to emit LLVM_BACKEND_UNSUPPORTED_INT_SHIFT
+instead of LLVM_BACKEND_UNSUPPORTED_INT_DIVISION. INT_SHIFT is emitted by the
+IR_SHL/SHR/SAR group, so it remains in the file.
+
+CORRECTION01 harness: built a global union of all REJECTED diagnostics and
+accepted any match. red_idiv_unclassified fixture would still pass because
+INT_SHIFT is in the global union.
+
+CORRECTION02 harness: per-fixture expected_opcodes={IR_IDIV,IR_UDIV}, so the
+per-fixture acceptable set is {LLVM_BACKEND_UNSUPPORTED_INT_DIVISION, plus
+the always-acceptable generics}. INT_SHIFT is NOT in that set.
+
+Observed:
+FAIL  red_idiv_unclassified: REJECTED expected, but obs_diag '-' is NOT in the per-fixture acceptable set:  LLVM_BACKEND_UNSUPPORTED_INT_DIVISION LLVM_BACKEND_UNSUPPORTED_TYPE LLVM_BACKEND_INTERNAL LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL
+
+verdict: harness now REDs (was previously silently GREEN).

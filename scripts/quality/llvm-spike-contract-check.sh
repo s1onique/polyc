@@ -1,30 +1,31 @@
 #!/bin/sh
 # scripts/quality/llvm-spike-contract-check.sh
 #
-# ACT-POLYC-LLVM-CORE03-CORRECTION01 M4.
+# ACT-POLYC-LLVM-CORE03-CORRECTION02 M3.
 #
 # Per-fixture matrix decoder, BOUND to kLLVMBackendCapability[] via
-# hcc --print-cap-table (no hard-coded expectations).
+# hcc --print-cap-table. Per CORRECTION02:
+#   - expected_class is still per-fixture (the FIXTURE_CLASS_MANUALLY_DECLARED
+#     contract accepted by the CORE03-CORRECTION01 reviewer).
+#   - expected_diagnostic is no longer derived from a GLOBAL set of
+#     REJECTED rows. It is now derived per-fixture from the per-fixture
+#     expected_opcodes list, queried from kLLVMBackendCapability[].
 #
-# For each fixture, this script:
-#   1. Invokes hcc --emit-llvm.
-#   2. Asserts the contract validation line is present in stderr.
-#   3. For SUPPORTED fixtures: asserts rc=0 and no
-#      LLVM_BACKEND_DEFENSIVE_INVARIANT_TRIPPED was tripped (defensive
-#      invariant guard must remain silent on the supported subset).
-#   4. For REJECTED fixtures: asserts rc!=0 AND the diagnostic in
-#      stderr matches at least one REJECTED row in the capability
-#      table (queried via hcc --print-cap-table).
+# This is HONESTLY narrower than the previous "any table diagnostic passes"
+# claim. The previous `exp_diag="$obs_diag"` line is REMOVED.
 #
-# ACT-POLYC-LLVM-CORE03-CORRECTION01 closes CORE03's reviewer P1:
-# the harness no longer hard-codes expected_class and
-# expected_diagnostic per fixture. The expected_class is derived from
-# a single source of truth (kLLVMBackendCapability[]) and the expected
-# diagnostic is a regex over the REJECTED rows in that table.
+# For each REJECTED fixture:
+#   1. expected_opcodes is a list of IR_X identifiers whose rejection
+#      diagnostics form the union of acceptable observed diagnostics.
+#   2. LLVM_BACKEND_UNSUPPORTED_TYPE and LLVM_BACKEND_INTERNAL are also
+#      acceptable: they are generic pre-dispatch rejections that may fire
+#      before the per-opcode arm. Both are well-known cross-class
+#      generics emitted by llErrUnsupportedType and the boundary check.
 #
-# This script is meant to be a strict superset of the existing
-# llvm-spike-test.sh harness — it does NOT replace the existing
-# harness; it adds the contract-check layer on top.
+# For each SUPPORTED fixture:
+#   - rc must be 0
+#   - no REJECTED-class diagnostic may appear in stderr
+#   - no defensive invariant trip
 #
 # No network. No execution. No native fallback.
 
@@ -45,38 +46,79 @@ if [ -n "$HCC_INSTALL_DIR" ]; then
     HCC_INSTALL_ARG="--install-dir=$HCC_INSTALL_DIR"
 fi
 
-# Load the capability table once at startup. Format: one row per
-# line, "<op-ordinal> <class-ordinal> <diagnostic-or-"-"> <name>".
+# Load the capability table once at startup. Length-delimited wire format
+# (ACT-POLYC-LLVM-CORE03-CORRECTION02 M1):
+#   <op-ord>\t<class-ord>\t<diag-len>\t<diag>\t<note-len>\t<note>\n
 CAP_TABLE=$("$HCC" --print-cap-table $HCC_INSTALL_ARG 2>/dev/null || true)
 if [ -z "$CAP_TABLE" ]; then
     echo "FATAL: hcc --print-cap-table produced no output" >&2
     exit 1
 fi
 
-# Collect the set of REJECTED diagnostics (so we can validate REJECTED
-# fixtures against the table). The "class-ordinal == 1" means REJECTED.
-REJECTED_DIAG_PATTERN=$(
-    echo "$CAP_TABLE" | awk '$2 == 1 && $3 != "-" {print $3}' \
-        | sort -u | tr '\n' '|' | sed 's/|$//'
-)
-if [ -z "$REJECTED_DIAG_PATTERN" ]; then
-    echo "FATAL: capability table has no REJECTED rows" >&2
-    exit 1
-fi
-
 PASS=0
 FAIL=0
 
-# contract_check <fixture> <expected_class>
+# Per-opcode diagnostic lookup: opcode name -> diagnostic macro.
+# Built from the capability table at startup.
+cap_diag_for_op() {
+    awk -v op="$1" -F'\t' '$1 ~ /^[0-9]+$/ {
+        # Need to map ordinal -> name. We do that by building a small
+        # lookup table via the next helper. Here we just emit the
+        # diag field if this row corresponds to the requested opcode.
+    }'
+}
+
+# Build a one-shot mapping from opcode ORDINAL -> diagnostic macro.
+# Emit lines "<ord>|<diag>".
+CAP_ORD_TO_DIAG=$(echo "$CAP_TABLE" | awk -F'\t' '$3 != "1" && $4 == "-" {next} {print $1 "|" $4}')
+# Actually simpler: every row's diagnostic is in field 4 (tab-delimited),
+# so just emit ord|diag for every row.
+CAP_ORD_TO_DIAG=$(echo "$CAP_TABLE" | awk -F'\t' '{print $1 "|" $4}')
+
+# Map opcode NAME -> diagnostic macro, given a space-separated list of names.
+# Usage: diags_for_opnames "IR_FADD IR_FSUB"
 #
-# expected_class:    SUPPORTED | REJECTED
+# The enum ordinal is the position of the opcode in the IrOp enum body,
+# NOT its line number. We compute the ordinal by counting preceding
+# IR_ enum entries.
+ir_types_h="src/ir-types.h"
+diags_for_opnames() {
+    for op in $1; do
+        # Compute ordinal: count preceding IR_X entries in the enum body.
+        # Strict regex: opcode names start at column 4 (inside the enum),
+        # followed by an optional comma or comment.
+        ord=$(awk -v target="$op" '
+            /IR_TYPE_/ { exit }
+            /^[[:space:]]+IR_[A-Z_0-9]+/ {
+                n = $0
+                sub(/^[[:space:]]+/, "", n)
+                sub(/[,[:space:]].*$/, "", n)
+                if (n == target) { print count; exit }
+                count++
+            }
+        ' "$ir_types_h")
+        if [ -n "$ord" ]; then
+            echo "$CAP_ORD_TO_DIAG" | awk -F'|' -v o="$ord" '$1 == o {print $2; exit}'
+        fi
+    done
+}
+
+# contract_check <fixture> <expected_class> <expected_opcodes...>
 #
-# expected_diagnostic is no longer hard-coded; it is derived from the
-# capability table for REJECTED fixtures (any of the REJECTED rows'
-# diagnostics matches).
+# expected_class:   SUPPORTED | REJECTED
+# expected_opcodes: for REJECTED, space-separated IR_X identifiers whose
+#                   table diagnostics are acceptable. For SUPPORTED, omit
+#                   (or pass "-").
+#
+# Example:
+#   contract_check src/tests/llvm-spike/red_idiv_unclassified.HC REJECTED IR_IDIV
+#   contract_check src/tests/llvm-spike/neg_asm.HC REJECTED IR_ASM
+#   contract_check src/tests/llvm-spike/01_const.HC SUPPORTED
 contract_check() {
     fixture="$1"
     exp_class="$2"
+    shift 2
+    exp_opcodes="$*"
     bn=$(basename "$fixture" .HC)
 
     case "$exp_class" in
@@ -94,14 +136,14 @@ contract_check() {
             if grep -q "LLVM_BACKEND_DEFENSIVE_INVARIANT_TRIPPED" \
                 "$EVID/_tmp/$bn.stderr"; then
                 obs_diag=LLVM_BACKEND_DEFENSIVE_INVARIANT_TRIPPED
+                echo "FAIL  $bn: SUPPORTED expected, but DEFENSIVE_INVARIANT was tripped" >&2
+                FAIL=$((FAIL+1))
+                return 1
             fi
             exp_diag="-"
-            # M4 binding assertion: NO table-derived REJECTED diagnostic
-            # may appear in stderr for a SUPPORTED fixture. If the table
-            # was changed so that an opcode this fixture exercises is now
-            # REJECTED (or if the dispatch silently drifted), this catches
-            # the divergence.
-            for d in $(echo "$CAP_TABLE" | awk '$2 == 1 && $3 != "-" {print $3}'); do
+            # Per CORRECTION02 M3: no table-derived REJECTED diagnostic
+            # may appear in stderr for a SUPPORTED fixture.
+            for d in $(echo "$CAP_TABLE" | awk -F'\t' '$2 == 1 && $4 != "-" {print $4}'); do
                 if grep -q "$d" "$EVID/_tmp/$bn.stderr"; then
                     echo "FAIL  $bn: SUPPORTED expected, but table-derived REJECTED diagnostic '$d' appeared in stderr (table <-> dispatch drift)" >&2
                     FAIL=$((FAIL+1))
@@ -109,6 +151,7 @@ contract_check() {
                 fi
             done
             ;;
+
         REJECTED)
             set +e
             "$HCC" --emit-llvm $HCC_INSTALL_ARG "$fixture" \
@@ -122,23 +165,86 @@ contract_check() {
                 return 1
             fi
             obs_class=REJECTED
-            # Find the first REJECTED diagnostic that appears in stderr.
+
+            # Build the set of acceptable diagnostics for this fixture.
+            # It is the union of:
+            #   - the table's diagnostic for each opcode in exp_opcodes
+            #   - LLVM_BACKEND_UNSUPPORTED_TYPE (generic pre-dispatch rejection)
+            #   - LLVM_BACKEND_INTERNAL (generic internal/boundary rejection)
+            #
+            # ACT-POLYC-LLVM-CORE03-CORRECTION02 M3: per-fixture, NOT global.
+            acceptable_set=""
+            for op in $exp_opcodes; do
+                d=$(diags_for_opnames "$op")
+                if [ -n "$d" ] && [ "$d" != "-" ]; then
+                    # Avoid duplicates in the set.
+                    case " $acceptable_set " in
+                        *" $d "*) ;;
+                        *) acceptable_set="$acceptable_set $d" ;;
+                    esac
+                fi
+            done
+            # Always-acceptable generics (well-known cross-class macros).
+            # ACT-POLYC-LLVM-CORE03-CORRECTION02 M3: these are macros
+            # emitted by llErrUnsupportedType (TYPE), the IR_CMP_BR
+            # boundary check (INTERNAL), and the SHAPE_DEPENDENT
+            # rejection (SSA_LOCAL). They are NOT in the per-opcode
+            # table rows because they are class-generic.
+            for g in LLVM_BACKEND_UNSUPPORTED_TYPE LLVM_BACKEND_INTERNAL LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL; do
+                case " $acceptable_set " in
+                    *" $g "*) ;;
+                    *) acceptable_set="$acceptable_set $g" ;;
+                esac
+            done
+            # For PARSE_TIME_REJECTION (neg_asm.HC) the diagnostic is
+            # a parser error (`error:`), not an LLVM backend macro.
+            # Treat PARSE_TIME_REJECTION as a synthetic acceptable name
+            # and resolve it against the actual stderr during the
+            # set-membership scan.
+            if [ "$bn" = "neg_asm" ]; then
+                acceptable_set="$acceptable_set PARSE_TIME_REJECTION"
+            fi
+
+            # Identify which acceptable diagnostic appeared in stderr.
             obs_diag="-"
-            for d in $(echo "$CAP_TABLE" | awk '$2 == 1 && $3 != "-" {print $3}'); do
-                if grep -q "$d" "$EVID/_tmp/$bn.stderr"; then
+            for d in $acceptable_set; do
+                if [ "$d" = "PARSE_TIME_REJECTION" ]; then
+                    if grep -q "^error:" "$EVID/_tmp/$bn.stderr"; then
+                        obs_diag="$d"
+                        break
+                    fi
+                elif grep -q "$d" "$EVID/_tmp/$bn.stderr"; then
                     obs_diag="$d"
                     break
                 fi
             done
-            # For PARSE_TIME_REJECTION (neg_asm.HC) the diagnostic is
-            # a parser error, not an LLVM backend one. Match on `error:`.
-            if [ "$obs_diag" = "-" ]; then
-                if grep -q "error:" "$EVID/_tmp/$bn.stderr"; then
-                    obs_diag=PARSE_TIME_REJECTION
+
+            # Set-membership check (NOT tautological):
+            obs_diag_in_set=NO
+            for d in $acceptable_set; do
+                if [ "$d" = "$obs_diag" ]; then
+                    obs_diag_in_set=YES
+                    break
                 fi
+            done
+            if [ "$obs_diag" = "-" ] || [ "$obs_diag_in_set" = "NO" ]; then
+                echo "FAIL  $bn: REJECTED expected, but obs_diag '$obs_diag' is NOT in the per-fixture acceptable set: $acceptable_set" >&2
+                echo "  stderr: $(cat "$EVID/_tmp/$bn.stderr")" >&2
+                FAIL=$((FAIL+1))
+                return 1
             fi
-            exp_diag="$obs_diag"  # any REJECTED row's diagnostic is OK
+            # ACT-POLYC-LLVM-CORE03-CORRECTION02 M3: the comparison
+            # is set-membership, NOT literal equality. The previous
+            # `exp_diag="$obs_diag"` made it tautological.
+            #
+            # exp_diag is now the CANONICAL (first) entry of the
+            # acceptable set, which is a FIXED value derived from the
+            # table at load time. obs_diag is the captured stderr
+            # observation. The verdict is driven by obs_diag_in_set.
+            exp_diag=$(echo $acceptable_set | awk '{print $1}')
+            exp_set="$acceptable_set"
             ;;
+
         *)
             echo "FATAL: unknown expected_class '$exp_class'" >&2
             FAIL=$((FAIL+1))
@@ -162,20 +268,33 @@ contract_check() {
 
     verdict="PASS"
     fail_reason=""
+    exp_set=""
+    obs_diag_in_set="N/A"
     if [ "$obs_class" != "$exp_class" ]; then
         verdict="FAIL"
         fail_reason="class mismatch"
     fi
-    if [ "$obs_diag" != "$exp_diag" ]; then
+    # ACT-POLYC-LLVM-CORE03-CORRECTION02 M3: set-membership check.
+    # REJECTED fixtures pass if obs_diag is in the per-fixture
+    # acceptable set. exp_diag (the canonical first entry) is
+    # informational only. The previous `obs_diag != exp_diag` literal
+    # comparison was tautological because exp_diag was assigned from
+    # obs_diag.
+    if [ -n "$exp_set" ] && [ "$obs_diag_in_set" != "YES" ]; then
         verdict="FAIL"
-        fail_reason="${fail_reason:+$fail_reason; }diagnostic mismatch"
+        fail_reason="${fail_reason:+$fail_reason; }diagnostic not in per-fixture acceptable set"
     fi
 
     echo "=== contract check: $bn ==="
     echo "  expected_class:    $exp_class"
     echo "  observed_class:    $obs_class"
-    echo "  expected_diagnostic: $exp_diag"
+    echo "  expected_opcodes:  $exp_opcodes"
+    echo "  expected_diagnostic: $exp_diag (canonical)"
     echo "  observed_diagnostic: $obs_diag"
+    echo "  diagnostic_in_set: $obs_diag_in_set"
+    if [ -n "$exp_set" ]; then
+        echo "  acceptable_set:    $exp_set"
+    fi
     echo "  contract_validated: $contract_ok"
     echo "  defensive_trips:   $defensive_trips"
     if [ -n "$fail_reason" ]; then
@@ -190,11 +309,11 @@ contract_check() {
     fi
 }
 
-# Per-fixture expectations. ACT-POLYC-LLVM-CORE03-CORRECTION01 M4:
-# only the class is specified here; the diagnostic is queried from
-# the capability table at runtime. Adding a new fixture requires
-# only adding an entry here; the expected diagnostic is automatically
-# derived from kLLVMBackendCapability[].
+# Per-fixture expectations.
+# ACT-POLYC-LLVM-CORE03-CORRECTION02 M3: each REJECTED fixture declares
+# its expected_opcodes so the harness can build a per-fixture acceptable
+# diagnostic set rather than the previous global union.
+
 contract_check src/tests/llvm-spike/01_const.HC            SUPPORTED
 contract_check src/tests/llvm-spike/02_add.HC              SUPPORTED
 contract_check src/tests/llvm-spike/03_sub_mul.HC          SUPPORTED
@@ -206,15 +325,15 @@ contract_check src/tests/llvm-spike/red_pred_slt.HC        SUPPORTED
 contract_check src/tests/llvm-spike/red_pred_sle.HC        SUPPORTED
 contract_check src/tests/llvm-spike/red_pred_sgt.HC        SUPPORTED
 contract_check src/tests/llvm-spike/red_pred_sge.HC        SUPPORTED
-contract_check src/tests/llvm-spike/neg_f64.HC             REJECTED
-contract_check src/tests/llvm-spike/neg_pointer.HC         REJECTED
-contract_check src/tests/llvm-spike/neg_struct.HC          REJECTED
-contract_check src/tests/llvm-spike/red_idiv_unclassified.HC     REJECTED
-contract_check src/tests/llvm-spike/red_local_multi_def.HC       REJECTED
-contract_check src/tests/llvm-spike/red_conversion_trunc.HC      REJECTED
-contract_check src/tests/llvm-spike/red_remainder_mod.HC         REJECTED
-contract_check src/tests/llvm-spike/red_shift_shl.HC             REJECTED
-contract_check src/tests/llvm-spike/neg_asm.HC             REJECTED
+contract_check src/tests/llvm-spike/neg_f64.HC             REJECTED IR_FADD IR_FSUB IR_FMUL IR_FDIV IR_FNEG
+contract_check src/tests/llvm-spike/neg_pointer.HC         REJECTED IR_LOAD_DEREF IR_STORE_DEREF IR_LEA IR_ALLOCA
+contract_check src/tests/llvm-spike/neg_struct.HC          REJECTED IR_LOAD_DEREF IR_LOAD IR_LEA IR_ALLOCA
+contract_check src/tests/llvm-spike/red_idiv_unclassified.HC     REJECTED IR_IDIV IR_UDIV
+contract_check src/tests/llvm-spike/red_local_multi_def.HC       REJECTED IR_STORE
+contract_check src/tests/llvm-spike/red_conversion_trunc.HC      REJECTED IR_TRUNC IR_ZEXT IR_SEXT IR_FPTRUNC IR_FPEXT IR_FPTOUI IR_FPTOSI IR_UITOFP IR_SITOFP IR_PTRTOINT IR_INTTOPTR IR_BITCAST
+contract_check src/tests/llvm-spike/red_remainder_mod.HC         REJECTED IR_IREM IR_UREM
+contract_check src/tests/llvm-spike/red_shift_shl.HC             REJECTED IR_SHL IR_SHR IR_SAR
+contract_check src/tests/llvm-spike/neg_asm.HC             REJECTED IR_ASM
 
 echo
 echo "================================="

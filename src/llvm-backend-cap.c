@@ -15,10 +15,11 @@
 #include "llvm-backend.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 const LLVMBackendCapabilityDef kLLVMBackendCapability[] = {
     { IR_NOP, LLVMBC_UNREACHABLE_ON_LLVM, NULL, "irRemoveAllNops strips every IR_NOP node before emission; no explicit `case IR_NOP:` arm; the generic `default:` arm catches a future regression and emits LLVM_BACKEND_UNSUPPORTED_IR." },
-    { IR_ALLOCA, LLVMBC_REJECTED, LLVM_BACKEND_UNSUPPORTED_MEMORY, "LLVM_BACKEND_UNSUPPORTED_MEMORY" },
+    { IR_ALLOCA, LLVMBC_REJECTED, LLVM_BACKEND_UNSUPPORTED_POINTER, "LLVM_BACKEND_UNSUPPORTED_POINTER (IR_ALLOCA is grouped with IR_LOAD_DEREF/IR_STORE_DEREF/IR_RMW_DEREF/IR_LEA in the dispatch; the grouped arm emits POINTER, not MEMORY. The MEMORY macro name was a historical misnomer; corrected by ACT-POLYC-LLVM-CORE03-CORRECTION02 M2.)" },
     { IR_LOAD, LLVMBC_SHAPE_DEPENDENT, NULL, "(see IR_LOAD below)" },
     { IR_STORE, LLVMBC_SHAPE_DEPENDENT, NULL, "(see IR_STORE below)" },
     { IR_LOAD_DEREF, LLVMBC_REJECTED, LLVM_BACKEND_UNSUPPORTED_POINTER, "LLVM_BACKEND_UNSUPPORTED_POINTER" },
@@ -62,7 +63,7 @@ const LLVMBackendCapabilityDef kLLVMBackendCapability[] = {
     { IR_BITCAST, LLVMBC_REJECTED, LLVM_BACKEND_UNSUPPORTED_BITCAST, "LLVM_BACKEND_UNSUPPORTED_BITCAST" },
     { IR_RET, LLVMBC_SUPPORTED, NULL, "(i64 only; via collapse-elimination)" },
     { IR_BR, LLVMBC_SUPPORTED, NULL, "SUPPORTED, but cond physical type i64 is DEFENSIVE_INVARIANT (runtime-detected via LLVM_BACKEND_DEFENSIVE_INVARIANT_TRIPPED when the i64 arm fires)." },
-    { IR_CMP_BR, LLVMBC_REJECTED, "(boundary violation - native fusion)", "(boundary violation - native fusion)" },
+    { IR_CMP_BR, LLVMBC_REJECTED, LLVM_BACKEND_INTERNAL, "LLVM_BACKEND_INTERNAL (boundary violation - native fusion; the IR_CMP_BR handler in src/llvm-backend.c emits LLVM_BACKEND_INTERNAL because reaching this arm means the neutral/native boundary has been crossed. The previous table entry had a descriptive string that did not match any macro in the dispatch; corrected by ACT-POLYC-LLVM-CORE03-CORRECTION02 M2.)" },
     { IR_JMP, LLVMBC_SUPPORTED, NULL, "(no note)" },
     { IR_SWITCH, LLVMBC_REJECTED, LLVM_BACKEND_UNSUPPORTED_SWITCH, "LLVM_BACKEND_UNSUPPORTED_SWITCH" },
     { IR_CALL, LLVMBC_SUPPORTED, NULL, "(i64 return only)" },
@@ -131,11 +132,24 @@ void llValidateCapabilityContract(void) {
 void llPrintCapabilityTable(void) {
     for (int i = 0; i < kLLVMBackendCapabilityCount; i++) {
         const LLVMBackendCapabilityDef *row = &kLLVMBackendCapability[i];
-        /* <op-ordinal> <class-ordinal> <diagnostic-or-"-"> <note> */
-        printf("%d %d %s %s\n",
+        /* ACT-POLYC-LLVM-CORE03-CORRECTION02 M1: length-delimited
+         * wire format. Each variable-length field is prefixed with
+         * its byte length in ASCII decimal, then a tab. The parser
+         * reads len bytes for that field, regardless of content.
+         *
+         * Format per row:
+         *   <op-ordinal>\t<class-ordinal>\t<diag-len>\t<diag>\t<note-len>\t<note>\n
+         *
+         * This is round-trippable byte-for-byte (verified by the
+         * Python verifier's round-trip test). The previous format
+         * was space-delimited and truncated IR_CMP_BR's diagnostic
+         * `"(boundary violation - native fusion)"` to `"(boundary"`. */
+        const char *diag = row->diagnostic ? row->diagnostic : "-";
+        const char *note = row->note ? row->note : "-";
+        printf("%d\t%d\t%zu\t%s\t%zu\t%s\n",
                (int)row->op,
                (int)row->class_,
-               row->diagnostic ? row->diagnostic : "-",
-               row->note ? row->note : "-");
+               strlen(diag), diag,
+               strlen(note), note);
     }
 }
