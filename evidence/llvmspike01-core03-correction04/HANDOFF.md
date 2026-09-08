@@ -3,7 +3,24 @@ HANDOFF — ACT-POLYC-LLVM-CORE03-CORRECTION04
 
 VERDICT
 -------
-HALT_STATUS_RECONCILIATION_AT_CAP
+HALT_CORRECTION04_STATUS_AND_LF_EVIDENCE
+
+SUPERSESSION (added by ACT-POLYC-FACTORY-STATUS-RECONCILIATION)
+---------------------------------------------------------------
+
+The verbatim verdict token was historically
+"HALT_STATUS_RECONCILIATION_AT_CAP" (see historical reviewer
+evidence below). Per F14 (current truth may invalidate history),
+the authoritative verdict is now reconciled to the exact ACT
+authoritative token:
+
+    ACT       -> HALT_CORRECTION04_STATUS_AND_LF_EVIDENCE
+    HANDOFF   -> HALT_CORRECTION04_STATUS_AND_LF_EVIDENCE     (this update)
+
+The historical verdict token is preserved as historical evidence
+(the prose below); only the verbatim token is corrected to match
+the ACT's ## Status block under the new exact-token factory
+closure-status contract.
 
 CORRECTION04 closes the M2 (true length-framed parser) defect
 that the reviewer flagged on CORRECTION03's PASS

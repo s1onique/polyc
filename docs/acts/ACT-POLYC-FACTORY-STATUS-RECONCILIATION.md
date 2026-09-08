@@ -2,7 +2,7 @@
 
 ## Status
 
-OPEN
+PASS
 
 ## Goal
 
