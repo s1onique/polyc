@@ -1,0 +1,88 @@
+ACT-POLYC-FACTORY-STATUS-RECONCILIATION-CORRECTION01 — C2 IMPL summary
+===================================================================
+
+Production change
+-----------------
+
+scripts/quality/factory-closure-status-check.sh
+  - Rewritten in genuine POSIX /bin/sh (no `declare -A`, no Bash
+    extensions). Invokable under both `sh` and `dash`.
+  - Hard-codes the bounded 5-pair managed universe (R1).
+  - Emits the four new set-difference counters as part of its
+    standard output (R2):
+      MANAGED_ACTS, MANAGED_HANDOFFS,
+      UNMAPPED_MANAGED_ACTS, UNMAPPED_MANAGED_HANDOFFS,
+      EXTRA_MANIFEST_ACTS, EXTRA_MANIFEST_HANDOFFS
+  - Fails (rc=1, STATUS=FAIL) on any non-zero UNMAPPED_* or EXTRA_*
+    (R2+R6).
+  - Lines 12-23 of the previous (predecessor) checker:
+      MANAGED_ACTS_GLOB="docs/acts/ACT-*.md"
+      # For HANDOFFs, the manifest is the sole authority (the bounded
+      # managed universe is what the manifest enumerates). We don't
+      # infer HANDOFFs from disk; only the ACT-file presence is
+      # inferred and validated against the manifest.
+    have been removed. The checker no longer "trusts the document
+    it's meant to validate" (reviewer's wording).
+
+RED-A replay under new checker (5 ACT/HANDOFF files on disk,
+4-row manifest with correction02 omitted):
+  UNMAPPED_MANAGED_ACT     docs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION02.md
+  UNMAPPED_MANAGED_HANDOFF evidence/llvmspike01-core03-correction02/HANDOFF.md
+  UNMAPPED_MANAGED_ACTS=1
+  UNMAPPED_MANAGED_HANDOFFS=1
+  PAIR_OK=4  PAIR_FAIL=0  STATUS=FAIL  rc=1
+  Capture: evidence/factory-status-reconciliation-correction01/impl/red-a-replay.txt
+
+N17 mirror replay under new checker (5 managed rows + 1 extra row
+pointing to ACT-POLYC-FACTORY-STATUS-RECONCILIATION out-of-managed):
+  EXTRA_MANIFEST_ACT     docs/acts/ACT-POLYC-FACTORY-STATUS-RECONCILIATION.md
+  EXTRA_MANIFEST_HANDOFF evidence/factory-status-reconciliation/HANDOFF.md
+  EXTRA_MANIFEST_ACTS=1
+  EXTRA_MANIFEST_HANDOFFS=1
+  PAIR_OK=6  PAIR_FAIL=0  STATUS=FAIL  rc=1
+  Capture: same impl/red-a-replay.txt
+
+Negative test suite
+-------------------
+
+evidence/factory-status-reconciliation-correction01/n1-n18/run.sh
+18 tests + baseline, 52 assertions, 0 failures (rc=0).
+Coverage:
+  baseline                       clean 5-pair PASS
+  N1                             empty manifest -> FAIL MANIFEST_ROWS=0
+  N2                             manifest under-reports -> FAIL UNMAPPED_*=4
+  N3                             duplicate ACT path -> FAIL DUPLICATE_ACT_PATHS=1
+  N4                             duplicate HANDOFF path -> FAIL DUPLICATE_HANDOFF_PATHS=1
+  N5                             exact-token mismatch -> FAIL EXACT_VERDICT_MISMATCHES=1
+  N6                             PASS vs PASS_WITH_NEXT_ACT_DECISION -> FAIL EXACT_VERDICT_MISMATCHES=5
+  N7                             missing ## Status block -> FAIL MALFORMED_ACT_STATUS=1
+  N8                             duplicate ## Status block -> FAIL MALFORMED_ACT_STATUS=1
+  N9                             duplicate VERDICT block -> FAIL MALFORMED_HANDOFF_VERDICT=1
+  N10                            manifest row -> missing ACT file -> FAIL MISSING_ACT_FILES=1
+  N11                            manifest row -> missing HANDOFF file -> FAIL MISSING_HANDOFF_FILES=1
+  N12                            empty manifest regression -> FAIL MANIFEST_ROWS=0
+  N13                            PASS_WITH_NEXT_ACT_DECISION qualified equality -> PASS PAIR_OK=5
+  N14                            duplicate ACT path (alternate) -> FAIL DUPLICATE_ACT_PATHS=1
+  N15                            full real-tree mirror PASS with all 9 counter assertions
+  N16                            bounded completeness 4-row manifest -> FAIL UNMAPPED_*=1 (new)
+  N17                            mirror negative (extra row) -> FAIL EXTRA_*=1 (new)
+  N18                            POSIX shell portability (dash) -> PASS PAIR_OK=5 (new)
+
+Closure gates
+-------------
+
+sh scripts/quality/factory-closure-status-check.sh  rc=0
+dash scripts/quality/factory-closure-status-check.sh rc=0
+sh scripts/quality/gate-fast.sh                       rc=0
+bash .githooks/pre-commit                             rc=0 (clean state)
+
+Pre-commit regression (caught by the hook):
+  - mutate HANDOFF verdict token -> rc=1 (EXACT_VERDICT_MISMATCHES=1)
+  - reduce manifest from 5 rows to 4 -> rc=1 (UNMAPPED_*=1)
+  - restore -> rc=0
+
+The factory closure-status gate is now both:
+  - sufficient: any non-zero UNMAPPED_* / EXTRA_* / *_MISMATCHES /
+    MISSING_* / DUPLICATE_* / MALFORMED_* / PAIR_FAIL -> rc=1
+  - POSIX-portable: same script under `sh` and `dash` both exit 0
+    on the clean state.
