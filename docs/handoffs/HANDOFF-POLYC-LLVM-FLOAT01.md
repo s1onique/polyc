@@ -8,7 +8,8 @@ VERDICT: PASS
 - HEAD: (see FLOAT01 CLOSE commit; will be appended by `ACT-Verdict: PASS` trailer)
 - predecessor HEAD: 4043579f (MEMORY01-CORRECTION02 CLOSE)
 - ACT scope: scalar F64 (param/return/constants/FADD/FSUB/FMUL/FCMP/FCMP→BR)
-- companion file: `docs/acts/ACT-POLYC-LLVM-FLOAT01.md` (M3 contract)
+- companion file: `docs/acts/ACT-POLYC-LLVM-FLOAT01-CORRECTION01.md` (closure contract)
+- correction01 evidence: `evidence/llvm-float01/correction01/`
 
 ## Root cause / finding
 
@@ -30,10 +31,26 @@ The mapping is:
 | >        | LLVMRealOGT         |
 | >=       | LLVMRealOGE         |
 
-This is the unique semantics-preserving mapping for the
-host-native (aarch64) target: `fcmp NaN, x` sets NZCV=0011, and
-`cset mi/ls/gt/ge/eq` all return 0 while `cset ne` returns 1 — matching
-`oeq/olt/ole/ogt/oge` (false on NaN) and `une` (true on NaN) exactly.
+These predicates are bound to the LLVM Language Reference Manual's
+target-independent ordered/unordered semantics: `oeq/olt/ole/ogt/oge`
+return false when either operand is NaN; `une` returns true when
+either operand is NaN. This matches PolyC's docs/CHARTER.md commitment
+to the IEEE-754 unordered convention.
+
+The host (aarch64) JIT/AOT oracle is consistent with this binding:
+`fcmp NaN, x` sets NZCV=0011, and `cset mi/ls/gt/ge/eq` all return 0
+while `cset ne` returns 1 — exactly matching the ordered-predicate
+semantics. This is recorded as a witness, not as the binding
+authority. Full argument in
+`evidence/llvm-float01/red/recon-ll-semantics.txt`.
+
+Note: the PolyC x86_64 NATIVE backend currently emits
+`ucomisd` + `setb` / `setbe` / `setne`, which on NaN returns 1
+(unordered). This DIVERGES from the LLVM LangRef / IEEE-754
+convention. The LLVM backend's choice of `olt` is target-independent
+per the LLVM LangRef; the divergence is strictly in the PolyC
+native x86_64 backend, recorded as future residue under
+`ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01`.
 
 ## RED (PR-1 RED commit: 4592d79)
 
@@ -124,9 +141,14 @@ Out of scope and NOT modified:
 ## Residue (F11, classified)
 
 P2 (acknowledged, NOT silently fixed):
-- x86_64-native F64 float arithmetic. The x86_64 native backend uses
-  `ucomisd` + `setb`, which on NaN returns 1 (unordered), differing
-  from the aarch64 native semantic. FLOAT01 binds to host (aarch64)
+- x86_64-native F64 float arithmetic. The PolyC x86_64 native backend
+  emits `ucomisd` + `setb` / `setbe` / `setne`, which on NaN returns
+  1 (unordered), differing from the IEEE-754 / LLVM LangRef
+  convention used by the LLVM backend. LLVM IR `fcmp olt` semantics
+  are target-independent per the LLVM Language Reference Manual, so
+  the LLVM backend emits `fcmp olt double` regardless of host target
+  triple. The x86_64 native divergence is a PolyC native-backend
+  defect, recorded under ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01. FLOAT01 binds to host (aarch64)
   semantic per ACT author.
 - `IR_FDIV` / `IR_FREM` on F64 via LLVM backend. Authorized by
   future ACT.
