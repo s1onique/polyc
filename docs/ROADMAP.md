@@ -510,13 +510,19 @@ review:
   adversarial fixture, and a `counters=missing` line in
   `llvm-spike-test.sh`. Trailer `ACT-Phase: RED`.
 - The next commit (C2) is **IMPL** — flips both to PASS.
-  Trailer `ACT-Phase: IMPL`. C2 actually shipped as two
-  commits because the reviewer issued a HOLD C3 verdict
-  after the initial C2 GREEN, citing two binding defects
-  (P0-1 historical evidence conservation, P0-2
-  location-aware rogue-arm check). Both P0s were fixed
-  in commit `f5d0f84` (`ACT-Phase: IMPL`) before C3 was
-  authorized.
+  Trailer `ACT-Phase: IMPL`. C2 actually shipped as three
+  IMPL/EVIDENCE commits because the reviewer issued a
+  HOLD C3 verdict after the initial C2 GREEN, citing two
+  binding defects (P0-1 historical evidence conservation,
+  P0-2 location-aware rogue-arm check). The full C2 chain
+  is:
+    - `e10f9f9` initial C2 IMPL GREEN (`ACT-Phase: IMPL`)
+    - `f5d0f84` C2 P0-1/P0-2 corrections (`ACT-Phase: IMPL`)
+    - `a3d27e9` C2 evidence refresh — post-correction
+      snapshot of `legacy-spike-test.txt` and
+      `m1-verifier-green.txt` (`ACT-Phase: IMPL`)
+  After `a3d27e9`, the reviewer ACCEPTed C2 and
+  authorized C3 EVIDENCE.
 - The next commit (C3) is **EVIDENCE** — captures the
   reviewer-closed disposition, the strong NC1 for the
   location-aware rogue check, the post-rename adversarial
