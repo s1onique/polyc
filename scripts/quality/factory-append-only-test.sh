@@ -269,6 +269,3 @@ if [ "$FAIL_COUNT" -gt 0 ]; then
 fi
 echo "STATUS=PASS"
 exit 0
-
-
-
