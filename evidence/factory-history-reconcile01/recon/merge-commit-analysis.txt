@@ -1,0 +1,40 @@
+=== unique merge-commit topology analysis ===
+
+ACT-POLYC-FACTORY-HISTORY-RECONCILE01 §9 requires analysis of merge commits
+that appear patch-unique only because of rewritten parent identities.
+
+Local unique merges (5):
+  a589d42  Merge pull request #224 from Jamesbarford/feat/mem2reg
+  33e68a2  Merge pull request #223 from Jamesbarford/fix/hashtable
+  33b369d  Merge pull request #222 from Jamesbarford/feat/finish-ir
+  060b957  Merge pull request #2 from Jamesbarford/fix/io-library
+  1539200  Merge pull request #1 from Jamesbarford/fixes/linux
+
+Remote unique merges (5):
+  fc01ffd  Merge pull request #224 from Jamesbarford/feat/mem2reg
+  04fa184  Merge pull request #223 from Jamesbarford/fix/hashtable
+  753344b  Merge pull request #222 from Jamesbarford/feat/finish-ir
+  6afe5f5  Merge pull request #2 from Jamesbarford/fix/io-library
+  283a176  Merge pull request #1 from Jamesbarford/fixes/linux
+
+Tree equality (all 5 pairs):
+  PR #1   local=1539200^{tree}=b97d3e5413d1dddd363fbbc2f271d9ac9f3d7d62
+          remote=283a176^{tree}=b97d3e5413d1dddd363fbbc2f271d9ac9f3d7d62
+  PR #2   local=060b957^{tree}=73aa3368fa7ca32552cc76b07fc66e3774f54f6c
+          remote=6afe5f5^{tree}=73aa3368fa7ca32552cc76b07fc66e3774f54f6c
+  PR #222 local=33b369d^{tree}=5e75ec418aa7e7506196e6451571d82b1871bf94
+          remote=753344b^{tree}=5e75ec418aa7e7506196e6451571d82b1871bf94
+  PR #223 local=33e68a2^{tree}=11c1b24b43d96dda3bac3664605f65aa3726c1b6
+          remote=04fa184^{tree}=11c1b24b43d96dda3bac3664605f65aa3726c1b6
+  PR #224 local=a589d42^{tree}=23b04bf05528afe4307eb85d5961703ce8be8ac2
+          remote=fc01ffd^{tree}=23b04bf05528afe4307eb85d5961703ce8be8ac2
+
+Conclusion:
+  All 5 local/remote merge pairs have IDENTICAL trees.
+  Difference is purely in parent identities (rewritten topology).
+  Each pair carries the same merged PR content into the repo.
+  Both archives preserve equivalent content; the second parent of
+  the reconciliation merge carries remote-specific history that
+  already exists in local via the 738 cherry-equivalent path.
+
+Classification: MERGE_METADATA_ONLY (per ACT §9).

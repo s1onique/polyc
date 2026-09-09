@@ -1,0 +1,23 @@
+=== push-red: ordinary push is impossible ===
+
+The repository has two divergent authoritative lineages that share a
+common ancestor (d629c8977cc0d44b728b3b66d85c917168c80f1b) but have
+each received ~383 vs ~374 unique descendant commits, with 738
+cherry-equivalent commits in the middle.
+
+Attempting to advance origin/main from local HEAD would fail because
+neither is an ancestor of the other. The only mechanisms that could
+silently succeed in such a topology are:
+
+  * --force / --force-with-lease
+  * git rebase / cherry-pick-and-discard
+  * git filter-branch / filter-repo
+  * git replace
+  * reset + recommit
+
+ACT-POLYC-FACTORY-HISTORY-RECONCILE01 §2 (F-GIT-IMMUTABILITY)
+FORBIDS all of these mechanisms. The reconciliation must therefore
+produce a true merge commit that brings both archives in as
+ancestors of the resulting HEAD.
+
+RED status: confirmed reproducible.

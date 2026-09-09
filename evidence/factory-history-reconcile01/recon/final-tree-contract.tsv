@@ -1,0 +1,14 @@
+path_or_feature	authority	required_final_state	verification_command
+PARITY01 RED fixtures	src/tests/native-x86-float-cmp-parity01/red_nan.HC	local	present + RED defects reproducible only in cross-build context	git ls-files src/tests/native-x86-float-cmp-parity01/ | grep -E 'red_nan|finite_baseline|special_values'
+PARITY01 IMPL ModR/M fix	src/asm/enc_x86_64.c (x86_64_enc_setcc_cl)	local	modrm(3,0,1) = 0xC1 (destination %cl), not 0xC8	git grep -n 'modrm' src/asm/enc_x86_64.c
+PARITY01 IR_FCMP witness	src/tests/native-x86-float-cmp-parity01/ir_fcmp_witness.HC	local	present	git ls-files src/tests/native-x86-float-cmp-parity01/ | grep ir_fcmp
+PARITY01 test harness	scripts/quality/native-x86-float-cmp-parity01-test.sh	local	present + executable	git ls-files scripts/quality/native-x86-float-cmp-parity01-test.sh
+PARITY01 CLOSE evidence	evidence/native-x86-float-cmp-parity01/	local	present (PARITY01 frozen at 590f37b)	git ls-files evidence/native-x86-float-cmp-parity01/
+ROADMAP P4 self-host pivot	docs/ROADMAP.md (P4 heading)	local	P4 = "Self-hosting substrate" critical path	git grep -n 'Self-hosting substrate' docs/ROADMAP.md
+ROADMAP P3 wording tightening	docs/ROADMAP.md (P3 transition)	local	"bounded I64 memory subset", not "pointer arithmetic"	git grep -n 'bounded I64 memory subset' docs/ROADMAP.md
+INTOPS01 CLOSE addendum	evidence/llvm-intops01/HANDOFF-ADDENDUM.md	local	present + names APPEND_ONLY_START_POINT=baf5dbd	git grep -n 'APPEND_ONLY_START_POINT' evidence/llvm-intops01/HANDOFF-ADDENDUM.md
+APPEND_ONLY_START_POINT	baf5dbd	local	boundary marker present at baf5dbd	git rev-parse baf5dbd
+MEMORY01-CORRECTION01/02 patches	local	cherry-equivalent (no decision required; already in HEAD via 738 equivalent commits)	git log --oneline | grep -i 'MEMORY01-CORRECTION' | head -10
+FLOAT01-CORRECTION01 RE-CLOSE-2 + RE-CLOSE + CLOSE docs	docs/handoffs/ evidence/llvm-float01/	local + remote	cherry-equivalent; both forms already in HEAD via 738 equivalent commits	git log --oneline | grep -i 'FLOAT01-CORRECTION01' | head -10
+Merge topology preservation	a589d42 fc01ffd 33e68a2 04fa184 33b369d 753344b 060b957 6afe5f5 1539200 283a176	local + remote	both archives remain ancestors of HEAD after merge	git merge-base --is-ancestor archive/local-main-before-reconcile HEAD; git merge-base --is-ancestor archive/origin-main-before-reconcile HEAD
+Factory doctrine surface (post-merge)	docs/factory/DOCTRINE.md / GIT-METADATA.md / AGENTS.md / docs/ROADMAP.md	local	add minimal append-only section per ACT §19	git grep -n 'append-only' docs/factory/DOCTRINE.md AGENTS.md

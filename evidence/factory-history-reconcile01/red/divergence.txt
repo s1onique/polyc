@@ -1,0 +1,31 @@
+=== Principal RED: divergent authoritative topology ===
+
+ENTRY identity:
+  branch: main
+  HEAD:   4f60ba664e8dac6954f6366ea3860f758c993c44
+  archive/local-main-before-reconcile: adb202c0ce45577b36b3685d59cab93ed192dc3e
+  archive/origin-main-before-reconcile: 429b804b275712432963391c7cd212858e06e3a0
+  origin/main: 429b804b275712432963391c7cd212858e06e3a0
+  boundary (APPEND_ONLY_START_POINT): baf5dbd77cf89330685dffd932c54031c815c
+
+rev-list --left-right --count HEAD...origin/main:
+383	374
+
+rev-list --left-right --cherry-mark --count HEAD...origin/main:
+14	5	738
+
+rev-list --left-right --cherry-mark --count archive/local-main-before-reconcile...archive/origin-main-before-reconcile:
+13	5	738
+
+merge-base HEAD origin/main:
+d629c8977cc0d44b728b3b66d85c917168c80f1b
+
+merge-base --is-ancestor HEAD origin/main:        rc=1 (non-ancestor: FALSE)
+merge-base --is-ancestor origin/main HEAD:        rc=1 (non-ancestor: FALSE)
+
+Conclusion:
+  FAST_FORWARD_LOCAL_TO_REMOTE = NO
+  FAST_FORWARD_REMOTE_TO_LOCAL = NO
+  ordinary push cannot safely advance remote main without --force
+
+This is the principal RED for ACT-POLYC-FACTORY-HISTORY-RECONCILE01.
