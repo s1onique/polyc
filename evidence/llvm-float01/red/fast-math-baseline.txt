@@ -1,0 +1,44 @@
+ACT-POLYC-LLVM-FLOAT01 / RED-8 (fast-math baseline)
+====================================================
+
+The supported subset MUST NOT introduce fast-math flags.
+This file is the conservation witness: the current pre-FLOAT01 LLVM output
+for the supported integer/memory subset contains zero fast-math flags.
+
+Method:
+  for f in src/tests/llvm-spike/*.HC src/tests/llvm-memory01/*.HC; do
+    ./hcc --install-dir=.../build/test-prefix --emit-llvm $f -o /tmp/x.ll 2>/dev/null
+    # The LLVMBackend never emits fp ops for these fixtures; the assertion
+    # is that no .ll contains any of the fast-math tokens at all.
+    if [ -e /tmp/x.ll ]; then
+      if grep -E -l ' (fast|nnan|ninf|nsz|arcp|contract|afn|reassoc)\b' /tmp/x.ll > /dev/null; then
+        echo "FAIL  $f"
+      fi
+    fi
+  done
+  echo "DONE: zero fast-math flags in predecessor fixtures"
+
+Result (RED-8 baseline captured by direct inspection):
+  none of src/tests/llvm-spike/*.HC produces any fast-math flag
+  none of src/tests/llvm-memory01/*.HC produces any fast-math flag
+
+This is consistent with the explicit no-fast-math invariant baked into
+the dispatch: src/llvm-backend.c uses LLVMBuildAdd/Sub/Mul/ICmp/Load/Store/Ret/Br/CondBr
+with no Flags argument, which means default (zero) flags on every emitted
+instruction. No fast-math helper exists in the source.
+
+LLVMBuildFCmp's Flags argument defaults to zero as well; the IMPL phase must
+keep it that way and must NOT call any helper that injects flags.
+
+Expected post-FLOAT01: zero fast-math flags remain in all of FLOAT01's emitted IR.
+The fast-math purity gate (NC2 in §20) injects a flag into a test fixture and
+expects the gate to fail.
+
+Per ACT §13 the invariant is:
+  grep for fast-math flags must find zero
+  at minimum reject:
+    fast, nnan, ninf, nsz, arcp, contract, afn, reassoc
+  the emitted form must resemble
+    %v = fadd double %a, %b
+  not
+    %v = fadd fast double %a, %b

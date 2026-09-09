@@ -1,0 +1,24 @@
+ACT-POLYC-LLVM-FLOAT01 entry identity
+=====================================
+
+branch:        main
+worktree:      clean (git status --porcelain=v1 empty)
+HEAD:          4043579fb0be8145f77b3ae2e9f75ffd5097b15b
+LLVM:          22.1.8
+llvm-as:       LLVM version 22.1.8 (arm64-apple-darwin23.6.0)
+opt:           LLVM version 22.1.8
+
+Build:         make clean && make llvm-all -> Built target hcc (2 warnings, not from FLOAT01 scope)
+Install dir:   build/test-prefix (created by hand because `make clean` removed it; tos.HH copied, libtos.a/.dylib built via src/holyc-lib/all.HC).
+
+Predecessor gates:
+  llvm-cap-table-verifier.py:   PASS  dispatch <-> capability <-> harness bound
+  llvm-spike-test.sh:           PASS=18  FAIL=0  (legacy 17 + counter gate 1)
+  llvm-memory01-test.sh:        PASS=6   FAIL=0
+  llvm-memory01-nc5-probe.sh load:  PASS probe (load): NC5 strong binding confirmed for IR_LOAD_DEREF.
+  llvm-memory01-nc5-probe.sh store: PASS probe (store): NC5 strong binding confirmed for IR_STORE_DEREF.
+  factory-v2-test.sh:           PASS=35  FAIL=0
+  gate-fast.sh:                 STATUS=PASS  VERDICT=PASS
+
+Date:          2026-09-09
+ACT:           ACT-POLYC-LLVM-FLOAT01 (Phase: RED)
