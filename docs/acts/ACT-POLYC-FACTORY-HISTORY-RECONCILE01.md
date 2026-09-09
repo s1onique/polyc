@@ -525,6 +525,3 @@ git log ENTRY..HEAD --format=full
 git status --porcelain=v1
 git diff --check ENTRY..HEAD
 ```
-
-
-
