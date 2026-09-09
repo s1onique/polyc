@@ -414,4 +414,23 @@ or
 true merge (--no-ff) with both archive tips as parents
 ```
 
-The durable binding detail is at [`docs/factory/DOCTRINE.md`](docs/factory/DOCTRINE.md) §23 and [`docs/factory/GIT-METADATA.md`](docs/factory/GIT-METADATA.md) (Append-only invariant).
+### Mechanical enforcement
+
+The append-only invariant is mechanically enforced by the local
+pre-push hook (`.githooks/pre-push`) via three graph-property
+checks on `refs/heads/main`:
+
+1. `git replace -l` must be empty;
+2. `remote_sha == 0000...0000` (delete) is rejected;
+3. `git merge-base --is-ancestor $remote_sha $local_sha` must
+   hold (every non-fast-forward update, including force-push
+   shapes, is rejected).
+
+The hook enforces graph properties of the proposed ref
+transition; it does not parse `git push` command-line flags.
+The permanent regression suite is
+`scripts/quality/factory-append-only-test.sh` (NC1..NC7); the
+hook contract is locked to that suite and F5 forbids weakening
+it.
+
+The durable binding detail is at [`docs/factory/DOCTRINE.md`](docs/factory/DOCTRINE.md) §23 and §24, and [`docs/factory/GIT-METADATA.md`](docs/factory/GIT-METADATA.md) (Append-only invariant).

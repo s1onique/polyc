@@ -401,6 +401,28 @@ APPEND_ONLY_START_POINT = baf5dbd77cf89330699685dffd932c54031c815c
 * `git push --force` / `--force-with-lease` / force refspec
   markers to the authoritative remote
 
+### Mechanical binding (per ACT-POLYC-FACTORY-APPEND-ONLY-GUARD01)
+
+The local pre-push hook (`.githooks/pre-push`) is the binding
+artifact. It enforces three graph-property checks against
+`refs/heads/main`:
+
+```text
+1. git replace -l must be empty
+2. remote_sha == 0000...0000 is rejected (delete of main)
+3. git merge-base --is-ancestor $remote_sha $local_sha must hold
+   (every non-FF update, including force-push shapes, is rejected)
+```
+
+Topic branches are intentionally not policed by this rule.
+
+The hook enforces graph properties of the resulting ref
+transition; it does NOT parse `git push` command-line flags.
+The permanent regression suite is
+`scripts/quality/factory-append-only-test.sh` (NC1..NC7); the
+hook contract is locked to that suite and F5 forbids weakening
+the suite to obtain a green PASS.
+
 ### Required mechanism for divergence
 
 If two authoritative lineages diverge (e.g. parallel rewrites

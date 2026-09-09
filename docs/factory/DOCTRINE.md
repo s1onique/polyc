@@ -495,3 +495,51 @@ populated at any point during ACT execution.
 
 This section is the durable, normative binding for
 ACT-POLYC-FACTORY-HISTORY-RECONCILE01 §19.
+
+## 24. F-GIT-APPEND-ONLY (mechanical enforcement)
+
+`§23` declares the policy. This section binds the **enforcement
+posture** so the policy cannot quietly drift back into prose-only.
+
+The pre-push hook enforces graph properties of the proposed
+ref transition; it does **NOT** parse `git push` command-line
+strings. Git's hook contract gives us the local and remote
+SHAs of every ref being pushed; that is the information we
+need and the information we use.
+
+### Forbidden outcomes at the local push boundary
+
+For `refs/heads/main`, the hook MUST refuse any of:
+
+* `git replace -l` is non-empty (replacement objects are
+  forbidden at every push boundary, not just at ACT close);
+* `remote_sha == 0000...0000` (delete of `main`);
+* `git merge-base --is-ancestor $remote_sha $local_sha` is
+  false (non-fast-forward update, including every shape that
+  a `--force` push would produce).
+
+Topic branches are intentionally NOT policed by this rule;
+the rule names one authoritative ref and one class of
+forbidden outcomes.
+
+### Required outcome
+
+The hook MUST accept every fast-forward update of
+`refs/heads/main` whose remote tip is an ancestor of the
+local tip. The hook MUST also accept every update of any
+non-main ref whose transition is consistent with normal
+push semantics (the existing per-ref `gate-push.sh` validation
+remains responsible for the rest).
+
+### Regression binding
+
+`scripts/quality/factory-append-only-test.sh` exercises the
+seven shapes NC1..NC7 against synthetic repos. The hook
+contract is locked to that suite; changes to the hook MUST
+keep the suite green. Weakening the suite to obtain a green
+PASS is a F5 violation.
+
+### Scope
+
+This section is the durable, normative binding for
+ACT-POLYC-FACTORY-APPEND-ONLY-GUARD01 §Mission.
