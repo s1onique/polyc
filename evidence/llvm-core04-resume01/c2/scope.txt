@@ -1,29 +1,80 @@
-=== scope.txt (C2 IMPL final, with P0-1 + P0-2 corrections) ===
+=== scope.txt (C3 EVIDENCE: post-IR_IADD rename) ===
+ACT-POLYC-LLVM-CORE04-RESUME01 C3 EVIDENCE: scope state.
 
 CHANGED (worktree):
+ M docs/ROADMAP.md
+ M docs/acts/ACT-POLYC-LLVM-CORE04-RESUME01.md
  M evidence/llvm-core04-resume01/c2/legacy-spike-test.txt
+ M evidence/llvm-core04-resume01/c2/m1-adversarial-permanent.txt
  M evidence/llvm-core04-resume01/c2/m1-verifier-green.txt
+ M evidence/llvm-core04-resume01/c2/nc/nc1-scope-regression.txt
  M evidence/llvm-core04-resume01/c2/scope.txt
  M scripts/quality/llvm-cap-table-verifier.py
- M scripts/quality/llvm-spike-test.sh
-?? evidence/llvm-core04-resume01/c2/live-red-transcripts/
-?? evidence/llvm-core04-resume01/c2/nc/nc1-strong-location-aware.txt
-?? evidence/llvm-core04-resume01/c2/red-multi_def/
+?? evidence/llvm-core04-resume01/c2/m3-counter-baseline.txt
+?? evidence/llvm-core04-resume01/c2/m3-final-gates.txt
+?? evidence/llvm-core04-resume01/c2/m3-reviewer-disposition.txt
 
 CHANGED (vs RESUME01 first commit 0604467..HEAD, --stat):
- docs/ROADMAP.md                                    |  24 ++
- docs/acts/ACT-POLYC-LLVM-CORE04-RESUME01.md        | 109 +++++-
- evidence/llvm-core04-resume01/c1/README.md         |  97 +++++
- evidence/llvm-core04-resume01/c1/red-m2-recon.txt  | 209 +++++++++++
- evidence/llvm-core04-resume01/c1/red-verifier.out  | 123 ++++++
- .../c2/act-range-diff-check.txt                    |   0
- evidence/llvm-core04-resume01/c2/build.txt         | 106 ++++++
- .../llvm-core04-resume01/c2/factory-v2-test.txt    |  57 +++
- evidence/llvm-core04-resume01/c2/gate-fast.txt     |  18 +
- .../c2/legacy-closure-status.txt                   |  28 ++
- .../llvm-core04-resume01/c2/legacy-spike-test.txt  |  48 +++
- .../c2/m1-adversarial-permanent.txt                |  19 +
- .../llvm-core04-resume01/c2/m1-verifier-green.txt  | 123 ++++++
+ docs/ROADMAP.md                                    |  24 +
+ docs/acts/ACT-POLYC-LLVM-CORE04-RESUME01.md        | 109 +++-
+ evidence/llvm-core04-resume01/c1/README.md         |  97 +++
+ evidence/llvm-core04-resume01/c1/red-m2-recon.txt  | 209 +++++++
+ evidence/llvm-core04-resume01/c1/red-verifier.out  | 123 ++++
+ .../c2/act-range-diff-check.txt                    |   4 +
+ evidence/llvm-core04-resume01/c2/build.txt         | 106 ++++
+ .../llvm-core04-resume01/c2/factory-v2-test.txt    |  60 ++
+ evidence/llvm-core04-resume01/c2/gate-fast.txt     |  21 +
+ .../c2/legacy-closure-status.txt                   |  31 +
+ .../llvm-core04-resume01/c2/legacy-spike-test.txt  |  52 ++
+ .../c2/live-red-transcripts/red-1A.dump-ir.txt     |  47 ++
+ .../c2/live-red-transcripts/red-1A.dump-ir.txt.b64 |  27 +
+ .../live-red-transcripts/red-1A.dump-ir.txt.sha256 |   1 +
+ .../c2/live-red-transcripts/red-1B.emit-llvm.ll    |  17 +
+ .../c2/live-red-transcripts/red-1B.emit-llvm.txt   |   2 +
+ .../c2/live-red-transcripts/red-1B.emit.stderr     |   2 +
+ .../c2/live-red-transcripts/red-1B.emit.stdout     |   0
+ .../c2/live-red-transcripts/red-2.emit-llvm.ll     |  17 +
+ .../c2/live-red-transcripts/red-2.emit-llvm.txt    |  11 +
+ .../c2/live-red-transcripts/red-2.emit.stderr      |   2 +
+ .../c2/live-red-transcripts/red-2.emit.stdout      |   0
+ .../c2/live-red-transcripts/red-2b.emit.stderr     |   2 +
+ .../c2/live-red-transcripts/red-2b.emit.stdout     |   0
+ .../c2/live-red-transcripts/red-2b.locals.ll       |  11 +
+ .../red-6.red_pred_eq.dump-ir.txt                  |  47 ++
+ .../red-6.red_pred_eq.dump-ir.txt.b64              |  27 +
+ .../red-6.red_pred_eq.dump-ir.txt.sha256           |   1 +
+ .../red-6.red_pred_eq.emit-llvm.txt                |   6 +
+ .../red-6.red_pred_eq.llvm-as.stderr               |   0
+ .../red-6.red_pred_ne.dump-ir.txt                  |  47 ++
+ .../red-6.red_pred_ne.dump-ir.txt.b64              |  27 +
+ .../red-6.red_pred_ne.dump-ir.txt.sha256           |   1 +
+ .../red-6.red_pred_ne.emit-llvm.txt                |   6 +
+ .../red-6.red_pred_ne.llvm-as.stderr               |   0
+ .../red-6.red_pred_sge.dump-ir.txt                 |  47 ++
+ .../red-6.red_pred_sge.dump-ir.txt.b64             |  27 +
+ .../red-6.red_pred_sge.dump-ir.txt.sha256          |   1 +
+ .../red-6.red_pred_sge.emit-llvm.txt               |   6 +
+ .../red-6.red_pred_sge.llvm-as.stderr              |   0
+ .../red-6.red_pred_sgt.dump-ir.txt                 |  47 ++
+ .../red-6.red_pred_sgt.dump-ir.txt.b64             |  27 +
+ .../red-6.red_pred_sgt.dump-ir.txt.sha256          |   1 +
+ .../red-6.red_pred_sgt.emit-llvm.txt               |   6 +
+ .../red-6.red_pred_sgt.llvm-as.stderr              |   0
+ .../red-6.red_pred_sle.dump-ir.txt                 |  47 ++
+ .../red-6.red_pred_sle.dump-ir.txt.b64             |  27 +
+ .../red-6.red_pred_sle.dump-ir.txt.sha256          |   1 +
+ .../red-6.red_pred_sle.emit-llvm.txt               |   6 +
+ .../red-6.red_pred_sle.llvm-as.stderr              |   0
+ .../red-6.red_pred_slt.dump-ir.txt                 |  47 ++
+ .../red-6.red_pred_slt.dump-ir.txt.b64             |  27 +
+ .../red-6.red_pred_slt.dump-ir.txt.sha256          |   1 +
+ .../red-6.red_pred_slt.emit-llvm.txt               |   6 +
+ .../red-6.red_pred_slt.llvm-as.stderr              |   0
+ .../live-red-transcripts/red-8.llvm-spike-test.txt |  14 +
+ .../c2/live-red-transcripts/red-8.neg-asm.stderr   |  20 +
+ .../c2/live-red-transcripts/red-8.neg-asm.stdout   |   0
+ .../c2/m1-adversarial-permanent.txt                |  11 +
+ .../llvm-core04-resume01/c2/m1-verifier-green.txt  | 127 ++++
  .../llvm-core04-resume01/c2/m2-counter-summary.txt |  34 ++
  .../llvm-core04-resume01/c2/m2-rejected-exit.txt   |   1 +
  .../llvm-core04-resume01/c2/m2-rejected.stderr.txt |   3 +
@@ -33,18 +84,22 @@ CHANGED (vs RESUME01 first commit 0604467..HEAD, --stat):
  evidence/llvm-core04-resume01/c2/m2-supported.ll   |  10 +
  .../c2/m2-supported.stderr.txt                     |   2 +
  .../c2/nc/nc1-scope-regression.txt                 |   6 +
+ .../c2/nc/nc1-strong-location-aware.txt            |  32 +
  .../c2/nc/nc2-llvm-contamination.txt               |  13 +
  .../c2/nc/nc3-missing-record.txt                   |   8 +
  .../c2/nc/nc4-duplicate-record.txt                 |   2 +
  .../c2/nc/nc5-unreachable-nonzero.txt              |   2 +
- evidence/llvm-core04-resume01/c2/scope.txt         |  26 ++
+ .../c2/red-multi_def/red-multi_def.live.stderr     |   3 +
+ .../c2/red-multi_def/red-multi_def.live.stdout     |   0
+ .../c2/red-multi_def/red-multi_def.live.summary    |   9 +
+ evidence/llvm-core04-resume01/c2/scope.txt         |  57 ++
  evidence/llvm-core04-resume01/c2/toolchain.txt     |  11 +
- scripts/quality/llvm-cap-table-verifier.py         | 414 ++++++++++++++++++---
- scripts/quality/llvm-spike-test.sh                 | 156 ++++++++
- src/llvm-backend-cap.c                             |  27 ++
- src/llvm-backend-cap.h                             |  45 +++
- src/llvm-backend.c                                 | 226 ++++++++++-
- 33 files changed, 1903 insertions(+), 62 deletions(-)
+ scripts/quality/llvm-cap-table-verifier.py         | 647 +++++++++++++++++++--
+ scripts/quality/llvm-spike-test.sh                 | 183 +++++-
+ src/llvm-backend-cap.c                             |  27 +
+ src/llvm-backend-cap.h                             |  45 ++
+ src/llvm-backend.c                                 | 226 ++++++-
+ 84 files changed, 2909 insertions(+), 63 deletions(-)
 
 P0-1 conservation: HISTORICAL files outside this ACT tree.
 Expected: NONE (historical ACTs MUST NOT be touched by the harness).
@@ -55,3 +110,9 @@ P0-2 location-aware verification:
   Strong NC1 rogue = [('IR_IADD', 'rogue_dup_iadd_helper', 73742)]
   OLD set-based check on same source = empty (would be silent false PASS)
   NEW location-aware check caught: True
+
+C3 fix: permanent adversarial fixture now uses real IrOp enum names.
+  fixture IrOp enum names = ['IR_IADD', 'IR_IMUL', 'IR_ISUB']
+  fixture non-enum names = []
+  -> scope discovery now exercises STRUCTURAL exclusion (real enum names)
+     rather than enum-name filtering.

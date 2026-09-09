@@ -1,6 +1,15 @@
-NC1 scope (file-wide): ['also_not_a_dispatch_helper', 'llCmpKindToLLVMPred', 'llCollapseStoreValue', 'llDetectCollapsibleReturn', 'llLowerBlock', 'llLowerInstr', 'not_a_dispatch_helper']
+=== nc1-scope-regression.txt (C3 EVIDENCE: post-IR_IADD renaming) ===
+ACT-POLYC-LLVM-CORE04-RESUME01 C3 EVIDENCE: regression test that
+a SCOPE-WIDENING (file-wide scan) verifier would still fail on
+the adversarial fixture.
 
-FAIL  scope-tight self-test: adversarial fixture's `if (ins->op == IR_X)` arms leaked into the scope. Scoped extractor picked up {'IR_SUB', 'IR_MUL', 'IR_ADD'}, expected set(). The structural discovery must continue to exclude non-dispatch helper functions (RESUME01 AC13).
+NC1 scope (file-wide): ['also_not_a_dispatch_helper', 'not_a_dispatch_helper']
+  file-wide rogue-set = ['IR_IADD', 'IR_IMUL', 'IR_ISUB']
+  expected set() if scope is tight; non-empty if scope widens to file-wide.
 
-NC1 RESULT: CORRECTLY FAILED (weakened verifier rejects adversarial):
-  FAIL  scope-tight self-test: adversarial fixture's `if (ins->op == IR_X)` arms leaked into the scope. Scoped extractor picked up {'IR_SUB', 'IR_MUL', 'IR_ADD'}, expected set(). The structural discovery must continue to exclude non-dispatch helper functions (RESUME01 AC13).
+NC1 RESULT: A SCOPE-WIDENING verifier (file-wide scan) WOULD
+still fail on the renamed fixture because IR_IADD / IR_ISUB
+/ IR_IMUL are real enum names and the if-arms live in the
+structural helper functions. This confirms the rename made
+the fixture a more meaningful adversarial witness (it now
+exercises structural scope rather than enum-name filtering).
