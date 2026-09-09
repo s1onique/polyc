@@ -366,4 +366,3 @@ Factory v2 HANDOFF at
 No authoritative verdict field; verdict lives on the
 CLOSE commit's `ACT-Verdict` trailer per
 `docs/factory/GIT-METADATA.md` §2.2.
-
