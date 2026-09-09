@@ -97,6 +97,91 @@ Required deliverables:
 - explicit non-support for: PHI, memory load/store, F64, pointers,
   aggregates, target machine, ORC, execution.
 
+### P3.6 — LLVM memory slice (MEMORY01)
+
+Status: **DONE** via ACT-POLYC-LLVM-MEMORY01.
+
+Conceptual transition:
+
+    CORE:   "Exactly what do we promise works,
+             and exactly how do we refuse everything else?"
+        ↓
+    MEMORY: "Real semantic memory access, still refused for everything else."
+
+Promoted opcodes:
+
+- `IR_LOAD_DEREF` and `IR_STORE_DEREF` from `REJECTED` to
+  `SHAPE_DEPENDENT`. The supported shape is strictly:
+  address-space-0 pointer parameter + I64 access type. Every
+  other dereference shape remains rejected with a named
+  diagnostic (`LLVM_BACKEND_UNSUPPORTED_POINTER` /
+  `LLVM_BACKEND_UNSUPPORTED_TYPE`).
+
+Other semantic changes from MEMORY01:
+
+- IR_TYPE_PTR is now SUPPORTED as a function parameter type,
+  lowered to LLVM opaque `ptr` via `LLVMPointerTypeInContext(ctx, 0)`.
+- Pointer-typed SSA locals are now supported (no alloca, no
+  store-to-local, no load-from-local; the local is bound to the
+  SSA pointer value).
+- The constant-cache aliasing bug (constants' `as._i64 = N`
+  overlaid `as.var.id = N`, colliding with parameter/tmps at
+  the same id) is fixed locally in `llLowerValue` for IR_VAL_CONST_INT;
+  this also incidentally corrects a long-standing silent
+  miscompilation in the existing scalar spike (`x + 1` was
+  emitted as `x + x` because of the same aliasing).
+
+Closed (per ACT-POLYC-LLVM-MEMORY01):
+
+```
+LLVM memory slice
+    pointer-param I64 dereference load    supported       PASS
+    pointer-param I64 dereference store   supported       PASS
+LLVM opaque-pointer model                correct         PASS
+pointee/access type                       proven, not guessed
+llvm-as                                  PASS
+LLVM verifier (opt --passes=verify)      PASS
+GEP in MEMORY01 fixtures                 0               PASS
+alloca in MEMORY01 fixtures              0               PASS
+ptrtoint/inttoptr/bitcast in fixtures    0               PASS
+SSA-local memory fallback                0               PASS
+native semantics                         unchanged       PASS
+existing LLVM core spike                 GREEN           PASS (PASS=18 FAIL=0)
+historical evidence                      conserved       PASS
+Factory v2                               GREEN           PASS
+ACT-range hygiene (git diff --check)     PASS            PASS
+```
+
+Closure commit count: 3 (RED, IMPL, CLOSE) + a docs/ROADMAP
+update; bounded by ACT scope.
+
+Counter snapshot from the closure run:
+
+```
+=== capability counters (MEMORY01 matrix) ===
+SUPPORTED           : 7
+REJECTED            : 0
+SHAPE_DEPENDENT     : 8
+DEFENSIVE_INVARIANT : 0
+UNREACHABLE_ON_LLVM : 0
+```
+
+Residue intentionally left for later (per ACT §27):
+F64 memory, narrow int memory, struct/aggregate memory, arrays,
+field access, GEP, pointer arithmetic, pointer comparison,
+pointer casts, globals, heap memory, stack allocation,
+volatile/atomic, non-zero address spaces, pointer ABI
+generalization, LLVM execution, TargetMachine/object emission,
+ORC/JIT.
+
+P1 residue (IR-level):
+The IR-side `as._i64` / `as.var.id` union aliasing is now
+worked around in the LLVM backend; a neutral-IR-level fix
+(separate the `_i64` field from `var.id` storage, or assign
+constants a unique id space) is out of scope for MEMORY01 and
+would require a separate IR ACT (see ACT §23
+HALT_NEUTRAL_IR_CHANGE_REQUIRED).
+
 ### P4 — LLVM core semantic coverage
 
 Expand only from evidence.
@@ -105,8 +190,9 @@ Likely areas:
 
 - integer widths/signedness;
 - F32/F64;
-- memory load/store;
-- pointers/GEP;
+- struct/aggregate memory (after MEMORY01 closes the IR-side
+  constant-id aliasing or after a dedicated GEP ACT);
+- pointer arithmetic / GEP;
 - globals;
 - external functions;
 - aggregate layout;
