@@ -1,0 +1,35 @@
+=== ACT-POLYC-LLVM-MEMORY01-CORRECTION02 RED ===
+F14 archive hash mismatch (CORRECTION01 overclaim).
+
+Date: 09 Sep 2026
+COMMIT: 944ba8d (MEMORY01 CLOSE)
+
+=== Reference: sha256 of 944ba8d:nc-summary.md ===
+8bf0596ea06f32761d7bffb934f03c64633b8001cfa3411c0d6e18e7d3453657  -
+
+=== Current: sha256 of CORRECTION01 HEAD nc5-weak-historical.md ===
+8b05e54a6dea2943198173914b3d8bc5c4223cb0e3b60aa28c79cb5a0ef55370  evidence/llvm-memory01/negative-controls/nc5-weak-historical.md
+
+=== Line counts ===
+944ba8d nc-summary.md:                  67 lines
+015b8d8 nc5-weak-historical.md:         72 lines
+
+=== Diff (added lines after the original boundary, raw) ===
+67a68,72
+> # Historical NC5 form (weak)
+>
+> Captured at the original MEMORY01 closure commit. ACT-POLYC-LLVM-MEMORY01-CORRECTION01 replaced this with a strong per-fixture binding. See nc-summary.md for the corrected form.
+>
+> --- this file follows the original ---
+
+=== RED verdict ===
+CORRECTION01 RED/HANDOFF claim "byte-for-byte identical to the
+original MEMORY01 closure form" is FALSE:
+  944ba8d nc-summary.md sha256          = 8bf0596ea06f32761d7bffb934f03c64633b8001cfa3411c0d6e18e7d3453657
+  015b8d8 nc5-weak-historical.md sha256 = 8b05e54a6dea2943198173914b3d8bc5c4223cb0e3b60aa28c79cb5a0ef55370
+  67 vs 72 lines (5 lines appended after the original boundary)
+
+CORRECTION02 must generate a byte-exact archive under
+evidence/llvm-memory01-correction02/f14-archive/ and
+acknowledge the overclaim in writing (no rewrite of the
+historical MEMORY01 file; F14 forbids that).
