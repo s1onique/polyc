@@ -1,0 +1,51 @@
+RED NOTES -- ACT-POLYC-FACTORY-APPEND-ONLY-GUARD01
+=================================================
+
+Pre-IMPL state of `.githooks/pre-push` against
+`scripts/quality/factory-append-only-test.sh` (NC1..NC7).
+
+Observed result:
+
+    PASS  NC1  rc=0
+    FAIL  NC2  rc=0 expected=1   (non-FF main update ACCEPTED)
+    FAIL  NC3  rc=0 expected=1   (force-equivalent non-FF main
+                                 update ACCEPTED)
+    FAIL  NC4  rc=0 expected=1   (delete main ACCEPTED)
+    PASS  NC5  rc=1             (refs/replace non-empty REJECTED)
+    PASS  NC6  rc=0             (new non-main branch ACCEPTED)
+    PASS  NC7  rc=0             (FF non-main branch ACCEPTED)
+
+PASS=4  FAIL=3  STATUS=FAIL
+
+Full transcript: red-pre-impl-suite.txt.
+
+RED-1 (NC4) -- delete main ACCEPTED
+    The hook currently treats a delete of refs/heads/main as
+    a `new-branch` push and runs gate-push.sh against the
+    local SHA. There is no specific check that the ref being
+    pushed is refs/heads/main AND the remote SHA is the zero
+    sentinel. A delete-and-recreate bypass is therefore not
+    mechanically blocked.
+
+RED-2 (NC2/NC3) -- non-FF main update ACCEPTED
+    The hook currently invokes gate-push.sh against the
+    remote_sha..local_sha range. gate-push.sh executes the
+    full native quality gate (AOT unit, JIT unit, LSP,
+    diff-check). If the gate passes against the rewritten
+    tree, the push is accepted. There is no check that
+    `git merge-base --is-ancestor "$remote_sha" "$local_sha"`
+    for refs/heads/main. A force push is therefore not
+    mechanically blocked.
+
+RED-3 -- refs/replace non-empty has no permanent test
+    The hook does refuse when `git replace -l` is non-empty,
+    but the refusal lives in a one-line block of
+    `.githooks/pre-push` and has no regression test binding
+    it. A future cleanup that removes or short-circuits that
+    block would not be caught.
+
+RED-4 -- no executable regression suite
+    `scripts/quality/factory-append-only-test.sh` does not
+    exist prior to this ACT. NC5 passes today only because
+    the hook happens to have that one-line block; nothing
+    would catch it if the block were removed.
