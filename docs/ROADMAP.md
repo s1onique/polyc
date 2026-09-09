@@ -152,8 +152,11 @@ Factory v2                               GREEN           PASS
 ACT-range hygiene (git diff --check)     PASS            PASS
 ```
 
-Closure commit count: 3 (RED, IMPL, CLOSE) + a docs/ROADMAP
-update; bounded by ACT scope.
+Closure commit count: 5 commits across RED + IMPL +
+EVIDENCE + CLOSE phases (plus an in-range whitespace-normalisation
+fixup; see ACT-POLYC-LLVM-MEMORY01-CORRECTION01 for the NC5
+hardening that required a fresh tree). Factory v2 has no numeric
+commit cap; this number is descriptive only.
 
 Counter snapshot from the closure run:
 
@@ -165,6 +168,23 @@ SHAPE_DEPENDENT     : 8
 DEFENSIVE_INVARIANT : 0
 UNREACHABLE_ON_LLVM : 0
 ```
+
+Note on `REJECTED = 0`: ACT §11 expected `REJECTED > 0`,
+which is falsified for the MEMORY01 matrix. The MEMORY01
+negative matrix exercises exactly one fixture (`neg_struct.HC`)
+which is rejected at the function-parameter type admission
+seam (`llPass1`) BEFORE any per-opcode dispatch arm runs; that
+class-generic rejection fires `LLVM_BACKEND_UNSUPPORTED_TYPE`
+and exits, but does not increment the per-opcode REJECTED
+counter (the per-opcode counter exists in the capability table
+and is exercised by the predecessor `llvm-spike-test.sh`
+negative matrix, where each rejected fixture's per-opcode arm
+emits `LL_INC_REJECTED`). The MEMORY01 matrix is intentionally
+narrow: it tests the supported path plus exactly one class-
+generic rejection, not per-opcode rejection. The `REJECTED > 0`
+expectation was therefore NOT APPLICABLE TO MEMORY01 MATRIX;
+no code or counter bug exists. ACT-POLYC-LLVM-MEMORY01-
+CORRECTION01 records this falsification.
 
 Residue intentionally left for later (per ACT §27):
 F64 memory, narrow int memory, struct/aggregate memory, arrays,

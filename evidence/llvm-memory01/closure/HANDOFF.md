@@ -101,6 +101,37 @@ trailer of the ACT's CLOSE commit.
   isolate the spike evidence without touching the historical
   dirs.
 
+## CORRECTION01 follow-up
+
+A reviewer review of the MEMORY01 closure identified three
+closure-contract defects that are addressed in
+`ACT-POLYC-LLVM-MEMORY01-CORRECTION01`:
+
+1. **NC5 was weak**: the original counter gate proved
+   "some SHAPE_DEPENDENT execution happened", not "the
+   dereference counters increment correctly". CORRECTION01
+   hardens NC5 with per-fixture SHAPE_DEPENDENT assertions
+   in `llvm-memory01-test.sh` and an independent regression
+   probe `scripts/quality/llvm-memory01-nc5-probe.sh` that
+   mutates the source, rebuilds, runs the harness, and
+   verifies the harness REDs on the `red_load_deref`
+   per-fixture assertion.
+2. **`REJECTED > 0` expectation was falsified for the
+   MEMORY01 matrix** because the negative fixture is
+   rejected at the class-generic parameter-type seam
+   BEFORE any per-opcode dispatch arm runs. The expected
+   counter state is therefore "REJECTED = 0 (class-generic
+   rejection; per-opcode REJECTED exercised by predecessor
+   llvm-spike-test.sh)" — recorded as such in this ROADMAP
+   and the negative-controls summary.
+3. **Stale topology prose**: ROADMAP originally said
+   "3 commits (RED, IMPL, CLOSE) + a docs/ROADMAP update".
+   The actual range is 5 commits; the prose is corrected.
+
+The IMPL does NOT change any production code in `src/`;
+only the GREEN harness, the new regression-probe script,
+and the docs are touched.
+
 ## Recommended next ACT
 
 `ACT-POLYC-LLVM-FLOAT01` (F64 parameters / F64 constants /
