@@ -1,0 +1,33 @@
+=== Push evidence (ACT §29) ===
+
+Pre-push ancestry check:
+  git merge-base --is-ancestor origin/main HEAD
+  rc=0 (PASS)
+
+Push command:
+  git push origin HEAD:main
+
+Push output:
+  To github.com:s1onique/polyc.git
+     429b804..63b44ac  HEAD -> main
+
+Push characteristics:
+  --force                  : NOT USED
+  --force-with-lease       : NOT USED
+  force refspec marker     : NOT USED
+  git push origin HEAD:main: SUCCEEDED
+
+Post-push equality check:
+  git rev-parse origin/main = 63b44ac3d480d6abd7e91051b6330812b3e0d879
+  git rev-parse HEAD        = 63b44ac3d480d6abd7e91051b6330812b3e0d879
+  PASS (origin/main == HEAD)
+
+Post-push archive ancestry:
+  git merge-base --is-ancestor archive/local-main-before-reconcile HEAD
+    rc=0 (PASS)
+  git merge-base --is-ancestor archive/origin-main-before-reconcile HEAD
+    rc=0 (PASS)
+
+Archive refs unchanged after push:
+  archive/local-main-before-reconcile  = adb202c0ce45577b36b3685d59cab93ed192dc3e
+  archive/origin-main-before-reconcile = 429b804b275712432963391c7cd212858e06e3a0
