@@ -1,0 +1,387 @@
+=== INTOPS01 closure gates ===
+HEAD at INTOPS01 close: 28c778e63c02b2d1c84d1e2ff87d57d21e9ba544
+branch: main
+
+
+=== toolchain ===
+PASS  toolchain: hcc LLVM-enabled; llvm-as and opt available
+
+=== authorized-set echo ===
+AUTHORIZED_IMPLEMENT=0
+AUTHORIZED_DEFER=12
+AUTHORIZED_DEFER_BYTEMEMORY01=3
+AUTHORIZED_ALREADY_SUPPORTED=11
+PASS  authorized-set.txt present (frozen at recon close)
+
+=== positive matrix (B0-shape probe fixtures) ===
+PASS  B0-shape single-token recognizer  llvm-as OK, opt verify OK
+PASS  B0-shape digit accumulation  llvm-as OK, opt verify OK
+
+=== structural purity (no alloca / GEP / pointer casts / float in positive .ll) ===
+PASS  b0_digit_accum: structural purity
+PASS  b0_lexer_shape_probe: structural purity
+
+=== counter attribution ===
+PASS  cap verifier: dispatch <-> capability <-> harness bound
+
+=== determinism ===
+PASS  probe .ll byte-identical across two runs
+
+=== historical-evidence conservation ===
+PASS  evidence/llvm-memory01/spike present (predecessor SPIKE evidence intact)
+PASS  evidence/llvm-memory01/impl present (predecessor MEMORY01 evidence intact)
+PASS  evidence/llvm-float01/impl present (predecessor FLOAT01 evidence intact)
+
+=== summary ===
+INTOPS01 PASS=4 FAIL=0
+STATUS=PASS
+INTOPS01_PASS=4
+INTOPS01_FAIL=0
+
+=== spike ===
+=== positive matrix ===
+PASS  src/tests/llvm-spike/01_const.HC
+PASS  src/tests/llvm-spike/02_add.HC
+PASS  src/tests/llvm-spike/03_sub_mul.HC
+PASS  src/tests/llvm-spike/04_cmp_branch.HC
+PASS  src/tests/llvm-spike/05_call.HC
+
+=== cmp predicate matrix ===
+PASS  04_cmp_branch: icmp sgt
+
+=== negative matrix ===
+PASS  src/tests/llvm-spike/neg_f64.HC (negative, LLVM_BACKEND_UNSUPPORTED_TYPE)
+PASS  src/tests/llvm-spike/neg_struct.HC (negative, LLVM_BACKEND_UNSUPPORTED_TYPE)
+PASS  src/tests/llvm-spike/red_idiv_unclassified.HC (negative, LLVM_BACKEND_UNSUPPORTED_INT_DIVISION)
+PASS  src/tests/llvm-spike/red_local_multi_def.HC (negative, LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL)
+PASS  src/tests/llvm-spike/red_conversion_trunc.HC (negative, LLVM_BACKEND_UNSUPPORTED_CONVERSION)
+PASS  src/tests/llvm-spike/red_remainder_mod.HC (negative, LLVM_BACKEND_UNSUPPORTED_INT_REMAINDER)
+PASS  src/tests/llvm-spike/red_shift_shl.HC (negative, LLVM_BACKEND_UNSUPPORTED_INT_SHIFT)
+PASS  neg_asm: parse-time rejection (NOT a backend witness)
+
+=== conservation: no native fallback ===
+PASS  01_const.ll: starts with LLVM ModuleID
+
+=== determinism ===
+LLVM backend capability contract: ok (56 rows, ordinal binding)
+CAPABILITY_COUNTERS supported=1 rejected=0 shape_dependent=0 defensive=0 unreachable=0
+PASS  determinism: 01_const twice
+
+=== multi-def SSA-local rejection (CORRECTION01-CORRECTION01) ===
+PASS  red_local_multi_def: SSA-local multi-def rejected
+
+=== capability counters (RESUME01 C2) ===
+=== capability counters ===
+SUPPORTED           : 14
+REJECTED            : 4
+SHAPE_DEPENDENT     : 7
+DEFENSIVE_INVARIANT : 0
+UNREACHABLE_ON_LLVM : 0
+==============================
+PASS  counter gate: matrix-wide inequalities bound
+
+LEGACY_MATRIX_PASS=17
+COUNTER_GATE=PASS
+
+=================================
+Summary: PASS=18  FAIL=0
+=================================
+
+=== memory01 ===
+=== MEMORY01 positive matrix ===
+PASS  src/tests/llvm-memory01/red_pointer_param.HC
+PASS  src/tests/llvm-memory01/red_load_deref.HC
+PASS  src/tests/llvm-memory01/red_store_deref.HC
+PASS  src/tests/llvm-memory01/p4_load_add.HC
+PASS  src/tests/llvm-memory01/p5_store_inc.HC
+
+=== MEMORY01 negative matrix (struct aggregate -> REJECTED) ===
+PASS  neg_struct (negative, LLVM_BACKEND_UNSUPPORTED_TYPE)
+
+=== MEMORY01 counter gate ===
+=== capability counters (MEMORY01 matrix) ===
+SUPPORTED           : 7
+REJECTED            : 0
+SHAPE_DEPENDENT     : 8
+DEFENSIVE_INVARIANT : 0
+UNREACHABLE_ON_LLVM : 0
+==============================
+PASS  counter gate: SHAPE_DEPENDENT>=1, SUPPORTED>=1, DEFENSIVE=0, UNREACHABLE=0
+
+=== MEMORY01 NC5 per-fixture attribution ===
+PASS  NC5 red_pointer_param: shape_dependent=0 (== 0)
+PASS  NC5 red_load_deref: shape_dependent=1 (>= 1)
+PASS  NC5 red_store_deref: shape_dependent=2 (== 2)
+PASS  NC5 p4_load_add: shape_dependent=1 (>= 1)
+PASS  NC5 p5_store_inc: shape_dependent=4 (== 4)
+PASS  NC5 per-fixture attribution: SHAPE_DEPENDENT uniquely attributable to IR_LOAD_DEREF / IR_STORE_DEREF
+
+=================================
+MEMORY01 GREEN summary: PASS=6 FAIL=0
+=================================
+
+=== float01 ===
+
+=== toolchain ===
+PASS  toolchain: hcc is LLVM-enabled; llvm-as and opt available
+
+=== FLOAT01 positive matrix ===
+PASS  01_identity_f64  rc=0  supported=1 rejected=0
+PASS  02_const_f64  rc=0  supported=1 rejected=0
+PASS  03_fadd  rc=0  supported=2 rejected=0
+PASS  04_fsub  rc=0  supported=2 rejected=0
+PASS  05_fmul  rc=0  supported=2 rejected=0
+
+=== FLOAT01 comparison predicate matrix ===
+PASS  06_cmp_eq  rc=0  supported=2 rejected=0
+PASS  07_cmp_ne  rc=0  supported=2 rejected=0
+PASS  08_cmp_lt  rc=0  supported=2 rejected=0
+PASS  09_cmp_le  rc=0  supported=2 rejected=0
+PASS  10_cmp_gt  rc=0  supported=2 rejected=0
+PASS  11_cmp_ge  rc=0  supported=2 rejected=0
+
+=== FLOAT01 branch matrix ===
+PASS  12_cmp_branch  rc=0  supported=2 rejected=0
+
+=== FLOAT01 mixed expression ===
+PASS  13_mixed_float_expr  rc=0  supported=4 rejected=0
+
+=== FLOAT01 negative matrix ===
+PASS  neg_fdiv (negative, LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH, rejected=1)
+PASS  neg_float_to_int (negative, LLVM_BACKEND_UNSUPPORTED_CONVERSION, rejected=1)
+PASS  neg_int_to_float (negative, LLVM_BACKEND_UNSUPPORTED_CONVERSION, rejected=1)
+PASS  neg_fptosi_witness (negative, LLVM_BACKEND_UNSUPPORTED_CONVERSION, rejected=1)
+
+=== FLOAT01 counter attribution (per-fixture SUPPORTED attribution) ===
+PASS  attribution fadd_one: supported=2 (== 2)
+PASS  attribution fsub_one: supported=2 (== 2)
+PASS  attribution fmul_one: supported=2 (== 2)
+PASS  attribution fcmp_eq: supported=2 (== 2)
+PASS  attribution fcmp_lt: supported=2 (== 2)
+PASS  attribution fcmp_ge: supported=2 (== 2)
+PASS  attribution branch: supported=2 (== 2)
+
+=== FLOAT01 determinism (NC3 / NC6; byte-identical re-emission) ===
+PASS  determinism  02_const_f64  bytes identical
+PASS  determinism  03_fadd  bytes identical
+PASS  determinism  12_cmp_branch  bytes identical
+
+=== FLOAT01 capability counters (matrix totals) ===
+=== capability counters ===
+SUPPORTED           : 26
+REJECTED            : 4
+SHAPE_DEPENDENT     : 0
+DEFENSIVE_INVARIANT : 0
+UNREACHABLE_ON_LLVM : 0
+==============================
+PASS  counter gate: DEFENSIVE=0 UNREACHABLE=0 SUPPORTED>0 REJECTED>0
+
+FLOAT01_PASS=29
+FLOAT01_FAIL=0
+
+=== factory-v2 ===
+POLYC_GATE=factory-v2-tests
+
+--- T1-T12 commit-msg matrix ---
+  PASS  T1
+  PASS  T2
+  PASS  T3  (rejected as expected)
+  PASS  T4  (rejected as expected)
+  PASS  T5
+  PASS  T6
+  PASS  T7
+  PASS  T8  (rejected as expected)
+  PASS  T9  (rejected as expected)
+  PASS  T10  (rejected as expected)
+  PASS  T11  (rejected as expected)
+  PASS  T12
+  PASS  T12b  (rejected as expected)
+  PASS  T19  (rejected as expected)
+  PASS  T20  (rejected as expected)
+  PASS  T21  (rejected as expected)
+  PASS  T22  (rejected as expected)
+  PASS  T23  (rejected as expected)
+  PASS  T24  (rejected as expected)
+  PASS  T25  (rejected as expected)
+  PASS  T26  (rejected as expected)
+  PASS  T27
+  PASS  T28
+  PASS  T29
+  PASS  T30
+  PASS  T31
+  PASS  T32
+
+--- T13-T18 range-check matrix ---
+  PASS  T13  ACT=ACT-POLYC-RANGE-T13
+ENTRY=c91943aa8c6969a918890b2475f87ff0c8d4275a
+FIRST=9d8321c631082f64d09a86371f6cd297c2082025
+CLOSE=1dbbdaf5bf8f739636a92608cb11d4c83b2ed874
+COMMITS=3
+VERDICT=PASS
+STATUS=PASS
+  PASS  T14  ACT=ACT-POLYC-RANGE-T14
+ENTRY=c91943aa8c6969a918890b2475f87ff0c8d4275a
+FIRST=960fbaad4f70137f33d665d41a961fffc635ead3
+CLOSE=401504e577346a64342b14ab07c6be64c13c9eaa
+COMMITS=5
+VERDICT=PASS_WITH_NONBLOCKING_RESIDUE
+STATUS=PASS
+  PASS  T15  (rejected as expected)
+  PASS  T16  (rejected as expected)
+  PASS  T17  (rejected as expected)
+  PASS  T18  (rejected as expected)
+  PASS  T33  (rejected as expected)
+  PASS  T34  (rejected as expected)
+
+--- summary ---
+PASS=35
+FAIL=0
+STATUS=PASS
+
+=== gate-fast ===
+POLYC_GATE=fast
+CHECK=diff-check STATUS=PASS
+CHECK=shell-syntax STATUS=PASS
+CHECK=doc-invariants STATUS=PASS
+CHECK=large-file-guard STATUS=PASS
+BUILD_RUN=NO
+POLYC_GATE=factory-closure-status
+MANIFEST_ROWS=6
+MISSING_HANDOFF_FILES=0
+MALFORMED_ACT_STATUS=0
+MALFORMED_HANDOFF_VERDICT=0
+EXACT_VERDICT_MISMATCHES=0
+PAIR_OK=6
+PAIR_FAIL=0
+STATUS=PASS
+VERDICT=PASS
+CHECK=factory-closure-status STATUS=PASS
+VERDICT=PASS
+
+=== cap verifier ===
+=== llvm-cap-table-verifier (CORE03-CORRECTION01) ===
+PASS  parsed 56 IrOp enum entries (IR_NOP=0 .. IR_ASM=55)
+PASS  loaded 56 capability rows via hcc --print-cap-table
+PASS  dispatch scan: 48 case arms in llLowerInstr, 11 if-shorts anywhere
+PASS  M1 round-trip: 56 rows round-trip byte-identical
+PASS  M2 arm-group scan: 24 case-arm groups, 7 if-arm bodies in dispatch
+PASS  M2: IR_ALLOCA diagnostic 'LLVM_BACKEND_UNSUPPORTED_POINTER' bound to arm body
+PASS  M2: IR_RMW_DEREF diagnostic 'LLVM_BACKEND_UNSUPPORTED_POINTER' bound to arm body
+PASS  M2: IR_LEA diagnostic 'LLVM_BACKEND_UNSUPPORTED_POINTER' bound to arm body
+PASS  M2: IR_GEP diagnostic 'LLVM_BACKEND_UNSUPPORTED_AGGREGATE' bound to arm body
+PASS  M2: IR_IDIV diagnostic 'LLVM_BACKEND_UNSUPPORTED_INT_DIVISION' bound to arm body
+PASS  M2: IR_UDIV diagnostic 'LLVM_BACKEND_UNSUPPORTED_INT_DIVISION' bound to arm body
+PASS  M2: IR_IREM diagnostic 'LLVM_BACKEND_UNSUPPORTED_INT_REMAINDER' bound to arm body
+PASS  M2: IR_UREM diagnostic 'LLVM_BACKEND_UNSUPPORTED_INT_REMAINDER' bound to arm body
+PASS  M2: IR_INEG diagnostic 'LLVM_BACKEND_UNSUPPORTED_INT_NEGATION' bound to arm body
+PASS  M2: IR_FDIV diagnostic 'LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH' bound to arm body
+PASS  M2: IR_FNEG diagnostic 'LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH' bound to arm body
+PASS  M2: IR_AND diagnostic 'LLVM_BACKEND_UNSUPPORTED_INT_BITWISE' bound to arm body
+PASS  M2: IR_OR diagnostic 'LLVM_BACKEND_UNSUPPORTED_INT_BITWISE' bound to arm body
+PASS  M2: IR_XOR diagnostic 'LLVM_BACKEND_UNSUPPORTED_INT_BITWISE' bound to arm body
+PASS  M2: IR_SHL diagnostic 'LLVM_BACKEND_UNSUPPORTED_INT_SHIFT' bound to arm body
+PASS  M2: IR_SHR diagnostic 'LLVM_BACKEND_UNSUPPORTED_INT_SHIFT' bound to arm body
+PASS  M2: IR_SAR diagnostic 'LLVM_BACKEND_UNSUPPORTED_INT_SHIFT' bound to arm body
+PASS  M2: IR_NOT diagnostic 'LLVM_BACKEND_UNSUPPORTED_INT_BITWISE' bound to arm body
+PASS  M2: IR_TRUNC diagnostic 'LLVM_BACKEND_UNSUPPORTED_CONVERSION' bound to arm body
+PASS  M2: IR_ZEXT diagnostic 'LLVM_BACKEND_UNSUPPORTED_CONVERSION' bound to arm body
+PASS  M2: IR_SEXT diagnostic 'LLVM_BACKEND_UNSUPPORTED_CONVERSION' bound to arm body
+PASS  M2: IR_FPTRUNC diagnostic 'LLVM_BACKEND_UNSUPPORTED_CONVERSION' bound to arm body
+PASS  M2: IR_FPEXT diagnostic 'LLVM_BACKEND_UNSUPPORTED_CONVERSION' bound to arm body
+PASS  M2: IR_FPTOUI diagnostic 'LLVM_BACKEND_UNSUPPORTED_CONVERSION' bound to arm body
+PASS  M2: IR_FPTOSI diagnostic 'LLVM_BACKEND_UNSUPPORTED_CONVERSION' bound to arm body
+PASS  M2: IR_UITOFP diagnostic 'LLVM_BACKEND_UNSUPPORTED_CONVERSION' bound to arm body
+PASS  M2: IR_SITOFP diagnostic 'LLVM_BACKEND_UNSUPPORTED_CONVERSION' bound to arm body
+PASS  M2: IR_PTRTOINT diagnostic 'LLVM_BACKEND_UNSUPPORTED_CONVERSION' bound to arm body
+PASS  M2: IR_INTTOPTR diagnostic 'LLVM_BACKEND_UNSUPPORTED_CONVERSION' bound to arm body
+PASS  M2: IR_BITCAST diagnostic 'LLVM_BACKEND_UNSUPPORTED_BITCAST' bound to arm body
+PASS  M2: IR_CMP_BR diagnostic 'LLVM_BACKEND_INTERNAL' bound to arm body
+PASS  M2: IR_SWITCH diagnostic 'LLVM_BACKEND_UNSUPPORTED_SWITCH' bound to arm body
+PASS  M2: IR_PHI diagnostic 'LLVM_BACKEND_UNSUPPORTED_PHI' bound to arm body
+PASS  M2: IR_SELECT diagnostic 'LLVM_BACKEND_UNSUPPORTED_SELECT' bound to arm body
+PASS  M2: IR_VA_ARG diagnostic 'LLVM_BACKEND_UNSUPPORTED_VARARGS' bound to arm body
+PASS  M2: IR_VA_START diagnostic 'LLVM_BACKEND_UNSUPPORTED_VARARGS' bound to arm body
+PASS  M2: IR_VA_END diagnostic 'LLVM_BACKEND_UNSUPPORTED_VARARGS' bound to arm body
+PASS  M2: IR_ASM diagnostic 'LLVM_BACKEND_UNSUPPORTED_ASM' bound to arm body
+PASS  I1: IR_NOP = UNREACHABLE_ON_LLVM, no explicit arm (falls to default)
+PASS  I1: IR_LOAD = SHAPE_DEPENDENT, dispatch has explicit arm
+PASS  I1: IR_STORE = SHAPE_DEPENDENT, dispatch has explicit arm
+PASS  I1: IR_LOAD_DEREF = SHAPE_DEPENDENT, dispatch has explicit arm
+PASS  I1: IR_STORE_DEREF = SHAPE_DEPENDENT, dispatch has explicit arm
+PASS  I1: IR_IADD = SUPPORTED, dispatch has explicit arm
+PASS  I1: IR_ISUB = SUPPORTED, dispatch has explicit arm
+PASS  I1: IR_IMUL = SUPPORTED, dispatch has explicit arm
+PASS  I1: IR_FADD = SUPPORTED, dispatch has explicit arm
+PASS  I1: IR_FSUB = SUPPORTED, dispatch has explicit arm
+PASS  I1: IR_FMUL = SUPPORTED, dispatch has explicit arm
+PASS  I1: IR_ICMP = SUPPORTED, dispatch has explicit arm
+PASS  I1: IR_FCMP = SUPPORTED, dispatch has explicit arm
+PASS  I1: IR_RET = SUPPORTED, dispatch has explicit arm
+PASS  I1: IR_BR = SUPPORTED, dispatch has explicit arm
+PASS  I1: IR_JMP = SUPPORTED, dispatch has explicit arm
+PASS  I1: IR_CALL = SUPPORTED, dispatch has explicit arm
+PASS  I1: IR_LABEL = UNREACHABLE_ON_LLVM, no explicit arm (falls to default)
+PASS  I2: IR_IADD has explicit dispatch arm and capability row (SUPPORTED)
+PASS  I2: IR_UITOFP has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_NOT has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_CMP_BR has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_FPTRUNC has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_ICMP has explicit dispatch arm and capability row (SUPPORTED)
+PASS  I2: IR_IREM has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_LOAD has explicit dispatch arm and capability row (SHAPE_DEPENDENT)
+PASS  I2: IR_SEXT has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_OR has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_LOAD_DEREF has explicit dispatch arm and capability row (SHAPE_DEPENDENT)
+PASS  I2: IR_ALLOCA has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_BITCAST has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_CALL has explicit dispatch arm and capability row (SUPPORTED)
+PASS  I2: IR_STORE_DEREF has explicit dispatch arm and capability row (SHAPE_DEPENDENT)
+PASS  I2: IR_FNEG has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_VA_END has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_XOR has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_SHL has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_JMP has explicit dispatch arm and capability row (SUPPORTED)
+PASS  I2: IR_IMUL has explicit dispatch arm and capability row (SUPPORTED)
+PASS  I2: IR_STORE has explicit dispatch arm and capability row (SHAPE_DEPENDENT)
+PASS  I2: IR_SELECT has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_ZEXT has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_ASM has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_LEA has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_FDIV has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_FSUB has explicit dispatch arm and capability row (SUPPORTED)
+PASS  I2: IR_INEG has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_FMUL has explicit dispatch arm and capability row (SUPPORTED)
+PASS  I2: IR_RET has explicit dispatch arm and capability row (SUPPORTED)
+PASS  I2: IR_IDIV has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_GEP has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_FPTOUI has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_PHI has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_VA_ARG has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_FCMP has explicit dispatch arm and capability row (SUPPORTED)
+PASS  I2: IR_SAR has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_UREM has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_FPEXT has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_BR has explicit dispatch arm and capability row (SUPPORTED)
+PASS  I2: IR_SHR has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_SWITCH has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_VA_START has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_AND has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_SITOFP has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_RMW_DEREF has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_INTTOPTR has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_UDIV has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_TRUNC has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_FPTOSI has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_ISUB has explicit dispatch arm and capability row (SUPPORTED)
+PASS  I2: IR_FADD has explicit dispatch arm and capability row (SUPPORTED)
+PASS  I2: IR_PTRTOINT has explicit dispatch arm and capability row (REJECTED)
+PASS  I3: harness queries hcc --print-cap-table (bound to table)
+INFO  scope-tight self-test: discovered dispatch functions = ['llCmpKindToLLVMPred', 'llCollapseStoreValue', 'llDetectCollapsibleReturn', 'llFloatCmpKindToLLVMPred', 'llLowerBlock', 'llLowerInstr']; unified model set: 48 case arms, 11 if-arms in scope.
+PASS  scope-tight self-test (RESUME01 AC13): permanent adversarial fixture rejected by unified scope; unified model is internally consistent; no rogue `if`-arms outside discovered scope; strong NC1 (already-supported IR_IADD in non-dispatch helper) is correctly detected by the location-aware check.
+
+======================================
+PASS: dispatch <-> capability <-> harness bound
+======================================
+
+=== parity01 (host env limit) ===
+FAIL  host cannot run x86_64 binaries (Rosetta missing?)

@@ -1,0 +1,81 @@
+=== Topological snapshot: local main vs origin/main ===
+
+Date: 2026-09-09
+Pre-reconciliation. Both tips archived.
+
+--- raw counts ---
+
+local HEAD :   adb202c0ce45577b36b3685d59cab93ed192dc3e
+remote HEAD:   429b804b275712432963391c7cd212858e06e3a0
+merge-base :   d629c8977cc0d44b728b3b66d85c917168c80f1b
+
+git rev-list --left-right --count HEAD...origin/main
+    382   374
+
+--- cherry-equivalence breakdown ---
+
+git rev-list --left-right --cherry-mark --count HEAD...origin/main
+    13    5    738
+
+LOCAL_PATCH_UNIQUE  =  13
+REMOTE_PATCH_UNIQUE =   5
+CHERRY_EQUIVALENT   = 738
+TOTAL_SHA_DELTA     = 756
+
+--- substantive content of local-only (13 commits) ---
+
+8 PolyC Factory commits (substantive, not on remote at all):
+  0778954 PARITY01 RED: x86_64 native FCMP NaN defect reproducer
+  4102adc PARITY01 IMPL: x86_64 SETcc encoder ModR/M + float-cmp composition
+  f8bb456 PARITY01 EVIDENCE: IR_FCMP witness + harness + ACT + HANDOFF + evidence
+  be6a54a PARITY01 EVIDENCE: refactor fixtures to TRUE/FALSE format for clarity
+  590f37b PARITY01 CLOSE: PASS verdict (8/8 positive + 8/8 NC)
+  62d5128 ROADMAP: pivot critical path to self-hosting substrate
+  28c778e ROADMAP: tighten P3 transition wording (scalar + bounded I64 memory subset)
+  adb202c test(llvm): close INTOPS01 after B0-demand recon (HALT_RED_NOT_REPRODUCED)
+
+5 merge commits (same content as remote's, different parents):
+  1539200 Merge pull request #1 from Jamesbarford/fixes/linux
+  060b957 Merge pull request #2 from Jamesbarford/fix/io-library
+  33b369d Merge pull request #222 from Jamesbarford/feat/finish-ir
+  33e68a2 Merge pull request #223 from Jamesbarford/fix/hashtable
+  a589d42 Merge pull request #224 from Jamesbarford/feat/mem2reg
+
+--- substantive content of remote-only (5 commits) ---
+
+All 5 are merge commits, same conceptual merges as local's:
+  283a176 Merge pull request #1 from Jamesbarford/fixes/linux
+  6afe5f5 Merge pull request #2 from Jamesbarford/fix/io-library
+  753344b Merge pull request #222 from Jamesbarford/feat/finish-ir
+  04fa184 Merge pull request #223 from Jamesbarford/fix/hashtable
+  fc01ffd Merge pull request #224 from Jamesbarford/feat/mem2reg
+
+The remote's merge commits have different SHAs because the
+remote-side rewrites of FLOAT01-CORRECTION01 chain gave them
+different parents (e.g. fc01ffd's parents are 04fa184 + bb3a924,
+whereas local's a589d42's parents are 33e68a2 + 5d747c4e).
+
+--- archives ---
+
+Both tips protected before any reconciliation work:
+
+  git branch archive/local-main-before-reconcile    HEAD          (=adb202c)
+  git branch archive/origin-main-before-reconcile   origin/main   (=429b804)
+  git tag    archive-local-main-2026-09             HEAD          (=adb202c)
+  git tag    archive-origin-main-2026-09            origin/main   (=429b804)
+
+Both archive branches have no upstream tracking and are local-only.
+
+--- closure verification ---
+
+INTOPS01 gates (all green):
+  gate-fast.sh                          STATUS=PASS  VERDICT=PASS
+  factory-v2-test.sh                    PASS=35      FAIL=0
+  llvm-intops01-test.sh                 PASS=4       FAIL=0
+  llvm-spike-test.sh                    PASS=18      FAIL=0
+  llvm-memory01-test.sh                 PASS=6       FAIL=0
+  llvm-float01-test.sh                  PASS=29      FAIL=0
+  llvm-cap-table-verifier.py            PASS
+
+git diff --check : clean
+HEAD unchanged from INGRESS.

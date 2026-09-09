@@ -1,0 +1,18 @@
+=== closure/memory01-nc5-store.txt ===
+=== probe (mode=store): source mutated (IR_STORE_DEREF counter call removed) ===
+=== probe: rebuilding hcc (forced) ===
+=== probe: running harness (must FAIL on NC5 red_store_deref) ===
+SHAPE_DEPENDENT     : 6
+DEFENSIVE_INVARIANT : 0
+UNREACHABLE_ON_LLVM : 0
+==============================
+PASS  counter gate: SHAPE_DEPENDENT>=1, SUPPORTED>=1, DEFENSIVE=0, UNREACHABLE=0
+
+=== MEMORY01 NC5 per-fixture attribution ===
+PASS  NC5 red_pointer_param: shape_dependent=0 (== 0)
+PASS  NC5 red_load_deref: shape_dependent=1 (>= 1)
+FAIL  NC5 red_store_deref: expected SHAPE_DEPENDENT == 2, got 1
+
+PASS probe (store): NC5 strong binding confirmed for IR_STORE_DEREF.
+  harness rc        = 1 (expected non-zero)
+  NC5 trip observed = FAIL NC5 red_store_deref

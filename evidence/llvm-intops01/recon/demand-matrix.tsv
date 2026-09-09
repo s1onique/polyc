@@ -1,0 +1,27 @@
+semantic_operation	B0_source_use	HCC_source_reference	PolyC_source_expressible	neutral_IR_opcode	native_AOT_support	native_JIT_support	LLVM_ENTRY_class	B0_required	decision
+IADD	I64 cursor increment; decimal accumulation	lexCore (l->ptr += n); lexCharConst (`char_const |= ...`)	x = x + 1; v = v + 10 + d	IR_IADD	x86/aarch64 yes	JIT yes	SUPPORTED	yes	ALREADY_SUPPORTED
+ISUB	I64 cursor-start; char subtraction; digit value	cursor - tok_start; ch - '0'	x - y	IR_ISUB	x86/aarch64 yes	JIT yes	SUPPORTED	yes	ALREADY_SUPPORTED
+IMUL	I64 decimal accumulation base factor 10	(none directly; strtoll used in HCC)	v = v * 10 + d	IR_IMUL	x86/aarch64 yes	JIT yes	SUPPORTED	yes	ALREADY_SUPPORTED
+ICMP	I64 range checks; loop guards	c >= '0'; cursor < length	c < '9'; cursor < len	IR_ICMP	x86/aarch64 yes	JIT yes	SUPPORTED	yes	ALREADY_SUPPORTED
+BR/CMP_BR	loop while; if-else branches	while (cond) ...; if (cond) ...	if (cond) ...	IR_BR/IR_CMP_BR	x86/aarch64 yes	JIT yes	SUPPORTED	yes	ALREADY_SUPPORTED
+CALL	function invocation	lex() called from lexPreProcDirective	f()	IR_CALL	x86/aarch64 yes	JIT yes	SUPPORTED	yes	ALREADY_SUPPORTED
+RET	function return	lexCore returns 1/0	return v	IR_RET	x86/aarch64 yes	JIT yes	SUPPORTED	yes	ALREADY_SUPPORTED
+LOAD	I64 load of pre-lexed input buffer	hcc lexCore uses host C pointers (no IR_LOAD)	*p	IR_LOAD	x86/aarch64 yes	JIT yes	SUPPORTED (via MEMORY01)	no	ALREADY_SUPPORTED
+STORE	I64 store of lexed output	hcc lexCore writes via struct fields	*p = x	IR_STORE	x86/aarch64 yes	JIT yes	SUPPORTED (via MEMORY01)	no	ALREADY_SUPPORTED
+LOAD_DEREF	I64 load via pointer parameter	hcc parser uses *p (covered by MEMORY01)	*p	IR_LOAD_DEREF	x86/aarch64 yes	JIT yes	SUPPORTED (via MEMORY01)	no	ALREADY_SUPPORTED
+STORE_DEREF	I64 store via pointer parameter	hcc parser uses *p = x (covered by MEMORY01)	*p = x	IR_STORE_DEREF	x86/aarch64 yes	JIT yes	SUPPORTED (via MEMORY01)	no	ALREADY_SUPPORTED
+bitwise AND on I64	not in B0 sketch	not in core lexCore (only `|` in lexCharConst)	x & y	IR_AND	x86/aarch64 yes	JIT yes	REJECTED	no	DEFER
+bitwise OR on I64	not in B0 sketch	yes in lexCharConst (char_const |= ... << idx)	x | y	IR_OR	x86/aarch64 yes	JIT yes	REJECTED	no	DEFER
+bitwise XOR on I64	not in B0 sketch	not in lexer	x ^ y	IR_XOR	x86/aarch64 yes	JIT yes	REJECTED	no	DEFER
+bitwise NOT on I64	not in B0 sketch	not in lexer	~x	IR_NOT	x86/aarch64 yes	JIT yes	REJECTED	no	DEFER
+shift left on I64	not in B0 sketch	yes in lexCharConst (ch << idx)	x << n	IR_SHL	x86/aarch64 yes	JIT yes	REJECTED	no	DEFER
+shift right (logical) on I64	not in B0 sketch	not in lexer (HolyC >> on unsigned)	x >> n (unsigned)	IR_SHR	x86/aarch64 yes	JIT yes	REJECTED	no	DEFER
+shift right (arithmetic) on I64	not in B0 sketch	not in lexer (HolyC >> on signed)	x >> n (signed)	IR_SAR	x86/aarch64 yes	JIT yes	REJECTED	no	DEFER
+integer negation	not in B0 sketch	not in lexer	-x	IR_INEG	x86/aarch64 yes	JIT yes	REJECTED	no	DEFER
+integer division signed	not in B0 sketch	not in lexer	a / b	IR_IDIV	x86/aarch64 yes	JIT yes	REJECTED	no	DEFER
+integer division unsigned	not in B0 sketch	not in lexer	ua / ub	IR_UDIV	x86/aarch64 yes	JIT yes	REJECTED	no	DEFER
+integer remainder signed	not in B0 sketch	not in lexer	a % b	IR_IREM	x86/aarch64 yes	JIT yes	REJECTED	no	DEFER
+integer remainder unsigned	not in B0 sketch	not in lexer	ua % ub	IR_UREM	x86/aarch64 yes	JIT yes	REJECTED	no	DEFER
+truncate I64 -> I8	not in B0 sketch (BYTE-MEMORY01 territory)	not in lexer	(U8)x	IR_TRUNC	x86/aarch64 yes	JIT yes	REJECTED	no	DEFER (defer to BYTE-MEMORY01)
+zero-extend I8 -> I64	not in B0 sketch (BYTE-MEMORY01 territory)	not in lexer	(U64)(U8)x	IR_ZEXT	x86/aarch64 yes	JIT yes	REJECTED	no	DEFER (defer to BYTE-MEMORY01)
+sign-extend I8 -> I64	not in B0 sketch (BYTE-MEMORY01 territory)	not in lexer	(I64)(I8)x	IR_SEXT	x86/aarch64 yes	JIT yes	REJECTED	no	DEFER (defer to BYTE-MEMORY01)

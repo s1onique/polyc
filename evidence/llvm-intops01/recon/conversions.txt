@@ -1,0 +1,33 @@
+=== R9 — Integer width conversions recon (TRUNC / ZEXT / SEXT) ===
+
+## Source syntax (existing PolyC/HolyC)
+
+PolyC currently has:
+- IR_TRUNC (larger to smaller int)
+- IR_ZEXT  (smaller to larger, zero-extend)
+- IR_SEXT  (smaller to larger, sign-extend)
+
+These opcodes exist in the neutral IR but the surface syntax for
+explicit type conversion (e.g. `(U8)x`) is not yet stable for
+the I64/U8 boundary; that work belongs to BYTE-MEMORY01.
+
+## B0 demand
+
+The B0 sketch uses a U8 (byte) cursor input but does not require
+any explicit width conversion: the lexer's natural type would be
+I64, and the byte values would be loaded from memory (covered by
+BYTE-MEMORY01).
+
+There is no B0 source pattern that needs:
+  - truncate I64 -> I8 (that is the BYTE-MEMORY01 territory)
+  - zero/sign-extend I8 -> I64 (also BYTE-MEMORY01 territory)
+
+## Decision
+
+    IR_TRUNC -> DEFER (belongs to BYTE-MEMORY01)
+    IR_ZEXT  -> DEFER (belongs to BYTE-MEMORY01)
+    IR_SEXT  -> DEFER (belongs to BYTE-MEMORY01)
+
+Per ACT §9 decision rule:
+    If conversion is needed solely because BYTE-MEMORY01 has not landed:
+        DEFER conversion to BYTE-MEMORY01

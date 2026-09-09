@@ -1,0 +1,80 @@
+==================================
+ACT-POLYC-LLVM-INTOPS01 FINAL GATES
+==================================
+Date: Wed Sep  9 22:55:51 MSK 2026
+HEAD: 28c778e63c02b2d1c84d1e2ff87d57d21e9ba544
+Branch: main
+Host: Darwin MacBook-Pro-3.local 23.6.0 Darwin Kernel Version 23.6.0: Thu Dec 19 20:47:16 PST 2024; root:xnu-10063.141.1.703.2~1/RELEASE_ARM64_T6031 arm64 arm Darwin
+
+--- INTOPS01 harness ---
+=== summary ===
+INTOPS01 PASS=4 FAIL=0
+STATUS=PASS
+INTOPS01_PASS=4
+INTOPS01_FAIL=0
+
+--- SPIKE ---
+=================================
+Summary: PASS=18  FAIL=0
+=================================
+
+--- MEMORY01 ---
+=================================
+MEMORY01 GREEN summary: PASS=6 FAIL=0
+=================================
+
+--- MEMORY01 NC5 (load) ---
+
+PASS probe (load): NC5 strong binding confirmed for IR_LOAD_DEREF.
+  harness rc        = 1 (expected non-zero)
+  NC5 trip observed = FAIL NC5 red_load_deref
+
+--- MEMORY01 NC5 (store) ---
+
+PASS probe (store): NC5 strong binding confirmed for IR_STORE_DEREF.
+  harness rc        = 1 (expected non-zero)
+  NC5 trip observed = FAIL NC5 red_store_deref
+
+--- FLOAT01 ---
+
+FLOAT01_PASS=29
+FLOAT01_FAIL=0
+
+--- factory-v2 ---
+PASS=35
+FAIL=0
+STATUS=PASS
+
+--- gate-fast ---
+VERDICT=PASS
+CHECK=factory-closure-status STATUS=PASS
+VERDICT=PASS
+
+--- cap-table verifier ---
+======================================
+PASS: dispatch <-> capability <-> harness bound
+======================================
+
+--- parity01 (env limit, no Rosetta) ---
+FAIL  host cannot run x86_64 binaries (Rosetta missing?)
+
+==================================
+INTOPS01 PASS DEFINITION (per §39):
+==================================
+Minimum B0 integer demand established: YES (R1 + R2 + R3 + R4-R9)
+Every operation implemented:           N/A (HALT, zero IMPLEMENT rows)
+  - actually required by B0:           YES (probes mechanically confirm)
+  - has proven PolyC semantics:        YES (existing SPIKE01/CORE04/MEMORY01)
+  - reproduced a real LLVM RED:        N/A (no IMPLEMENT rows)
+  - lowered correctly:                 YES (probe fixtures produce clean IR)
+  - verifier-clean:                    YES (probe fixtures pass opt verify)
+  - preserves native semantics:        YES (no native changes)
+  - counter attribution:               N/A (no new dispatches)
+  - negative-control coverage:         YES (cap verifier covers; see negative-controls/)
+Every operation not required by B0:   DEFER (15 ops DEFER, see authorized-set.txt)
+No neutral IR change:                 YES (zero production code touched)
+No native backend change:             YES (zero production code touched)
+No BYTE-MEMORY/GEP/STRUCT/ARRAY scope creep: YES (next ACT = BYTE-MEMORY01)
+All predecessor compiler gates:       GREEN (see gates.txt)
+Factory v2 remains GREEN:             YES (PASS=35 FAIL=0)
+ACT range is clean:                   YES (git diff --check PASS, 0 modified tracked)

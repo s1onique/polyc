@@ -1,0 +1,29 @@
+=== INTOPS01 deferred-operation negative matrix ===
+
+Per the halt outcome, no IMPLEMENT rows were added. The deferred
+operations remain REJECTED in the LLVM backend (their REJECTED state
+is the correct outcome per F8 / Outcome E).
+
+To mechanically confirm this, the following fixtures are present
+in src/tests/llvm-spike/ (RED fixtures from prior ACTs):
+
+    red_idiv_unclassified.HC     IR_IDIV REJECTED  (expected: reject)
+    red_remainder_mod.HC         IR_IREM REJECTED  (expected: reject)
+    red_shift_shl.HC             IR_SHL  REJECTED  (expected: reject)
+    red_conversion_trunc.HC      IR_TRUNC REJECTED (expected: reject)
+
+These REDs are owned by SPIKE01/CORE04 ACTs and remain valid evidence
+that the corresponding opcodes are still REJECTED.
+
+Additionally, the pre-existing hcc --emit-llvm of any new
+`x & y`, `x | y`, `x ^ y`, `x << n`, `x >> n`, `x / y`, `x % y` PolyC
+source would be expected to fail with:
+
+    LLVM_BACKEND_UNSUPPORTED_INT_BITWISE   (for &, |, ^, ~)
+    LLVM_BACKEND_UNSUPPORTED_INT_SHIFT     (for <<, >>)
+    LLVM_BACKEND_UNSUPPORTED_INT_DIVISION  (for /)
+    LLVM_BACKEND_UNSUPPORTED_INT_REMAINDER (for %)
+    LLVM_BACKEND_UNSUPPORTED_CONVERSION    (for trunc/zext/sext)
+
+This state is unchanged from the predecessor baseline. No source
+file was added that exercises these ops.

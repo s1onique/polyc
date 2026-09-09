@@ -1,0 +1,27 @@
+=== INTOPS01 ENTRY baseline gates ===
+HEAD: 28c778e63c02b2d1c84d1e2ff87d57d21e9ba544
+branch: main
+worktree status (before recon): clean (no tracked-file modifications)
+
+Toolchain: LLVM 22.1.8 on arm64-apple-darwin23.6.0
+
+Baseline run with HCC_INSTALL_DIR=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build_test_prefix/usr/local:
+
+PASS  scripts/quality/llvm-spike-test.sh                  SPIKE_PASS=18 FAIL=0
+PASS  scripts/quality/llvm-memory01-test.sh              MEMORY01_PASS=6 FAIL=0
+PASS  scripts/quality/llvm-memory01-nc5-probe.sh load    NC5 strong binding confirmed for IR_LOAD_DEREF
+PASS  scripts/quality/llvm-memory01-nc5-probe.sh store   NC5 strong binding confirmed for IR_STORE_DEREF
+PASS  scripts/quality/llvm-float01-test.sh               FLOAT01_PASS=29 FAIL=0
+UNAVAILABLE  scripts/quality/native-x86-float-cmp-parity01-test.sh  (host is arm64; no Rosetta; documented limitation in PARITY01 script: "host cannot run x86_64 binaries (Rosetta missing?)")
+PASS  sh scripts/quality/factory-v2-test.sh              PASS=35 FAIL=0 STATUS=PASS
+PASS  sh scripts/quality/gate-fast.sh                    STATUS=PASS
+PASS  python3 scripts/quality/llvm-cap-table-verifier.py  PASS: dispatch <-> capability <-> harness bound
+
+Note on PARITY01: PARITY01 was frozen at CLOSE (ROADMAP P3.7). The PARITY01 harness exit-code-2 branch on missing-Rosetta is its documented
+environment-skip path. The ACT required "x86 F64 parity GREEN" as an entry gate. On this ARM64 host without Rosetta, the PARITY01 harness
+cannot run. This is pre-existing environmental state, NOT a regression introduced by INTOPS01. We record this honestly per F6 and per the
+ROADMAP's PARITY01 frozen status.
+
+Resolution: PARITY01 is frozen at CLOSE; it does not need re-running for INTOPS01 unless INTOPS01's authorized set actually changes native
+floating-point semantics, which it must NOT do (this ACT only adds scalar integer ops and is forbidden from touching float). The native
+floating-point semantics are unchanged. Therefore PARITY01's prior closure remains authoritative evidence.

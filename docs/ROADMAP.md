@@ -242,6 +242,43 @@ silently extend its witness matrix, fixtures, or negative
 suites; any follow-on work must open a new ACT with its own
 entry identity.
 
+### P3.8 — Scalar integer ops (INTOPS01)
+
+Status: **HALT_RED_NOT_REPRODUCED** via ACT-POLYC-LLVM-INTOPS01
+(Outcome E per ACT §36: fresh recon invalidated the ACT premise).
+
+The B0 demand recon established that the smallest credible B0
+lexer/tokenizer can be expressed using **only** scalar integer
+operations that are already SUPPORTED in the LLVM backend
+(IADD, ISUB, IMUL, ICMP, BR, CALL, RET, LOAD_DEREF, STORE_DEREF).
+
+The bitwise / shift / divide / remainder / conversion opcodes
+currently REJECTED by the LLVM backend remain REJECTED. They
+are NOT required by the B0 mission and adding them speculatively
+would violate F8 (no speculative abstraction) and the ACT's own
+outcome-E decision rule.
+
+INTOPS01 is **frozen at HALT_RED_NOT_REPRODUCED**. Subsequent
+ACTs SHALL NOT silently re-extend the bitwise/shift/div/rem/
+conversion subset without first opening a new ACT with its own
+B0 demand recon (a demand matrix is the only legitimate trigger).
+
+Closure record:
+
+- HEAD `28c778e63c02b2d1c84d1e2ff87d57d21e9ba544` (entry)
+- branch: `main`
+- production delta: zero (HALT predates IMPL)
+- `git diff --check` clean
+- untracked files at CLOSE: 39 in scope (under `evidence/llvm-intops01/`,
+  `src/tests/llvm-intops01/`, `scripts/quality/llvm-intops01-test.sh`)
+- predecessor gates unchanged: SPIKE 18/0, MEMORY01 6/0,
+  MEMORY01 NC5 load/store PASS, FLOAT01 29/0, factory-v2 35/0,
+  gate-fast PASS, cap-verifier PASS.
+
+The expected next ACT is `ACT-POLYC-LLVM-BYTE-MEMORY01`, whose
+mission is I8/U8 load/store and the byte-to-index/comparison path
+needed for B0's input-byte handling.
+
 ### P4 — Self-hosting substrate (NEW CRITICAL PATH)
 
 The next useful program PolyC wants to host is **its own
@@ -272,8 +309,11 @@ B0 needs a different minimal substrate.
 
     ACT-POLYC-LLVM-INTOPS01        bitwise + shifts + div/rem as
                                    actually needed by B0
+                                   -- DONE (HALT_RED_NOT_REPRODUCED,
+                                      recon proved none required for B0)
     ACT-POLYC-LLVM-BYTE-MEMORY01   I8/U8 load/store (B0 needs bytes)
     ACT-POLYC-LLVM-GEP01           indexed pointer arithmetic
+                                   (B0 needs *(src + n) to walk input)
     ACT-POLYC-LLVM-STRUCT01        struct field access
     ACT-POLYC-LLVM-ARRAY01         arrays / indexing
     ACT-POLYC-BOOTSTRAP01          B0: PolyC-written lexer/tokenizer
@@ -291,9 +331,10 @@ fixture; treat `recon` as "do not promise it".
 | I64 arithmetic / control         |      ✅ |       ✅ |         ✅ | done                 |
 | F64                              |      ✅ |       ✅ |         ❌ | done enough          |
 | I64 pointer load/store           |      ✅ |       ✅ |    useful | MEMORY01             |
-| Bitwise ops                      |  recon | partial |         ✅ | INTOPS01             |
-| Shifts                           |  recon | partial |         ✅ | INTOPS01             |
-| Div/rem                          |  recon | partial |     maybe | INTOPS01             |
+| Bitwise ops                      |      ✅ |       ❌ |       none | INTOPS01 (HALT: not B0-required) |
+| Shifts                           |      ✅ |       ❌ |       none | INTOPS01 (HALT: not B0-required) |
+| Div/rem                          |      ✅ |       ❌ |       none | INTOPS01 (HALT: not B0-required) |
+| I64 width/sign conversion        |      ✅ |       ❌ |       none | BYTE-MEMORY01 (deferred with TRUNC/ZEXT/SEXT) |
 | I8/U8 load/store                 |  recon |       ❌ |         ✅ | BYTE-MEMORY01        |
 | Indexed pointer arithmetic       |  recon |       ❌ |         ✅ | GEP01                |
 | Struct fields                    |  recon |       ❌ |         ✅ | STRUCT01             |

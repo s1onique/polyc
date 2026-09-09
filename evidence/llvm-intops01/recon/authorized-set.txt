@@ -1,0 +1,80 @@
+=== INTOPS01 Authorized Implementation Set (FROZEN at end of recon) ===
+
+After R1 (B0 sketch) + R2 (HCC lexer evidence) + R3 (demand matrix)
++ R4-R9 (per-family recon):
+
+    IMPLEMENT:                 (none)
+
+    DEFER (with reasoning):
+        IR_AND                R4: no B0 demand; surface syntax available via native
+        IR_OR                 R4: lexCharConst uses `|=`, but not B0-critical
+        IR_XOR                R4: no B0 demand
+        IR_NOT                R4: no B0 demand
+        IR_SHL                R5/R6: no B0 demand; semantic mismatch w.r.t. masked shift count
+        IR_SHR                R5/R6: no B0 demand
+        IR_SAR                R5/R6: no B0 demand
+        IR_INEG               R7: no B0 demand
+        IR_IDIV               R7: no B0 demand; HolyC traps on /0 vs LLVM UB
+        IR_UDIV               R7: no B0 demand
+        IR_IREM               R8: no B0 demand
+        IR_UREM               R8: no B0 demand
+
+    DEFER (defer to BYTE-MEMORY01):
+        IR_TRUNC              R9: byte-memory territory
+        IR_ZEXT               R9: byte-memory territory
+        IR_SEXT               R9: byte-memory territory
+
+    ALREADY_SUPPORTED (no work needed):
+        IR_IADD
+        IR_ISUB
+        IR_IMUL
+        IR_ICMP
+        IR_BR / IR_CMP_BR
+        IR_CALL
+        IR_RET
+        IR_LOAD (via MEMORY01)
+        IR_STORE (via MEMORY01)
+        IR_LOAD_DEREF (via MEMORY01)
+        IR_STORE_DEREF (via MEMORY01)
+
+=== Outcome E (per ACT §36) ===
+
+> If fresh recon shows the ACT premise is stale:
+>     HALT_RED_NOT_REPRODUCED
+>     and advance to BYTE-MEMORY01 instead of manufacturing work.
+
+The B0 demand recon has demonstrated that no additional scalar integer
+operations are required to implement the B0 lexer. The existing LLVM
+backend, as proven by LLVM-SPIKE01-RESUME01 (PASS=18), CORE04-RESUME01,
+and MEMORY01 (PASS=6), already supports every integer operation the
+smallest credible B0 lexer needs:
+
+    cursor + 1                      -> IR_IADD (SUPPORTED)
+    cursor - tok_start              -> IR_ISUB (SUPPORTED)
+    v * 10 + digit                  -> IR_IMUL + IR_IADD (SUPPORTED)
+    c >= '0' && c <= '9'            -> IR_ICMP (SUPPORTED)
+    if/while control flow           -> IR_BR / IR_CMP_BR (SUPPORTED)
+    function calls                  -> IR_CALL (SUPPORTED)
+    return value                    -> IR_RET (SUPPORTED)
+    I64 pointer cursor load/store   -> IR_LOAD_DEREF / IR_STORE_DEREF (via MEMORY01, SUPPORTED)
+
+Note: this is the I64-typed cursor load/store path. The actual B0
+source-text path needs U8 *src + index arithmetic (*(src + n)) which
+is BYTE-MEMORY01 / GEP01 territory, NOT part of the INTOPS01 proof.
+The recon probe (b0_lexer_shape_probe.HC, b0_digit_accum.HC) only
+exercises I64 *src. INTOPS01 closes on the I64 substrate being
+sufficient; the byte + indexed-addressing substrate is the next ACT.
+
+Adding bitwise, shift, divide, remainder, or conversion ops to the
+LLVM backend at this point would violate F8 (no speculative abstraction)
+and the ACT's own outcome-E decision rule.
+
+=== Next step ===
+
+This is a HALT_RED_NOT_REPRODUCED outcome. There are NO principal REDs
+to author, NO IMPLEMENT rows, and NO positive-matrix fixtures for new
+integer ops. The expected next ACT is BYTE-MEMORY01.
+
+=== Freeze ===
+
+This authorized-set is FROZEN. Any change requires HALT_SCOPE_EXPANSION_REQUIRED.

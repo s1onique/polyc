@@ -1,0 +1,21 @@
+=== INTOPS01 LLVM structure verification ===
+
+Both probe fixtures were checked for structural purity:
+
+OP_PROBE_SingleTokenRecognizer (b0_probe.ll):
+    contains `load`, `store`, `icmp`, `br`, `ret` only
+    no alloca
+    no GEP
+    no pointer cast
+    no float operations
+    PASS llvm-as
+    PASS opt --passes=verify
+
+OP_PROBE_DigitAccumulation (b0_digit_accum.ll):
+    contains `mul`, `sub`, `add`, `ret`, `call`, `store` only
+    no alloca
+    no GEP
+    no pointer cast
+    no float operations
+    PASS llvm-as
+    PASS opt --passes=verify
