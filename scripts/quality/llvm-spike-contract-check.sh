@@ -330,7 +330,15 @@ contract_check src/tests/llvm-spike/neg_pointer.HC         REJECTED IR_LOAD_DERE
 contract_check src/tests/llvm-spike/neg_struct.HC          REJECTED IR_LOAD_DEREF IR_LOAD IR_LEA IR_ALLOCA
 contract_check src/tests/llvm-spike/red_idiv_unclassified.HC     REJECTED IR_IDIV IR_UDIV
 contract_check src/tests/llvm-spike/red_local_multi_def.HC       REJECTED IR_STORE
-contract_check src/tests/llvm-spike/red_conversion_trunc.HC      REJECTED IR_TRUNC IR_ZEXT IR_SEXT IR_FPTRUNC IR_FPEXT IR_FPTOUI IR_FPTOSI IR_UITOFP IR_SITOFP IR_PTRTOINT IR_INTTOPTR IR_BITCAST
+# ACT-POLYC-LLVM-BYTE-MEMORY01: red_conversion_trunc_i16.HC replaces
+# the original red_conversion_trunc.HC (which narrowed I64 -> I8 and
+# is now ADMITTED). The replacement narrows I64 -> I16 (still
+# REJECTED). The expected_opcodes set is narrowed accordingly: IR_TRUNC
+# remains in the expected set (the I64 -> I16 narrowing still hits
+# IR_TRUNC rejection), but IR_ZEXT and IR_SEXT are removed because the
+# BYTE-MEMORY01 promotion of IR_ZEXT/IR_SEXT for the I8 -> I64 shape
+# is no longer relevant for this single-fixture shape contract.
+contract_check src/tests/llvm-spike/red_conversion_trunc_i16.HC    REJECTED IR_TRUNC IR_FPTRUNC IR_FPEXT IR_FPTOUI IR_FPTOSI IR_UITOFP IR_SITOFP IR_PTRTOINT IR_INTTOPTR IR_BITCAST
 contract_check src/tests/llvm-spike/red_remainder_mod.HC         REJECTED IR_IREM IR_UREM
 contract_check src/tests/llvm-spike/red_shift_shl.HC             REJECTED IR_SHL IR_SHR IR_SAR
 contract_check src/tests/llvm-spike/neg_asm.HC             REJECTED IR_ASM

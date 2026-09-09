@@ -1,0 +1,22 @@
+i8 ReadByte(%p1 ptr param) {
+  bb1 -> predecessors:  {}  successors: {2}
+    store    %l2 ptr local, %p1 ptr param  ; line 20
+    alloca   %t3 i8 tmp, 1 i8 const int  ; line 20
+    load*    %t4 i8 tmp, %l2 ptr local  ; line 22
+    zext     %t5 i64 tmp, %t4 i8 tmp  ; line 22
+    store    %t3 i8 tmp, %t5 i64 tmp  ; line 22
+    jmp      bb2  ; line 22
+
+  bb2 -> predecessors: {1}  successors:  {}
+    load     %t6 i8 tmp, %t3 i8 tmp  ; line 22
+    ret      %t6 i8 tmp  ; line 22
+}
+
+===== After basic optimisations ===== 
+i8 ReadByte(%p1 ptr param) {
+  bb1 -> predecessors:  {}  successors: {1}
+    load*    %t4 i8 tmp, %p1 ptr param  ; line 22
+    zext     %t5 i64 tmp, %t4 i8 tmp  ; line 22
+    ret      %t5 i64 tmp  ; line 22
+}
+

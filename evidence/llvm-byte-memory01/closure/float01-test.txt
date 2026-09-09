@@ -1,0 +1,57 @@
+
+=== toolchain ===
+PASS  toolchain: hcc is LLVM-enabled; llvm-as and opt available
+
+=== FLOAT01 positive matrix ===
+PASS  01_identity_f64  rc=0  supported=1 rejected=0
+PASS  02_const_f64  rc=0  supported=1 rejected=0
+PASS  03_fadd  rc=0  supported=2 rejected=0
+PASS  04_fsub  rc=0  supported=2 rejected=0
+PASS  05_fmul  rc=0  supported=2 rejected=0
+
+=== FLOAT01 comparison predicate matrix ===
+PASS  06_cmp_eq  rc=0  supported=2 rejected=0
+PASS  07_cmp_ne  rc=0  supported=2 rejected=0
+PASS  08_cmp_lt  rc=0  supported=2 rejected=0
+PASS  09_cmp_le  rc=0  supported=2 rejected=0
+PASS  10_cmp_gt  rc=0  supported=2 rejected=0
+PASS  11_cmp_ge  rc=0  supported=2 rejected=0
+
+=== FLOAT01 branch matrix ===
+PASS  12_cmp_branch  rc=0  supported=2 rejected=0
+
+=== FLOAT01 mixed expression ===
+PASS  13_mixed_float_expr  rc=0  supported=4 rejected=0
+
+=== FLOAT01 negative matrix ===
+PASS  neg_fdiv (negative, LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH, rejected=1)
+PASS  neg_float_to_int (negative, LLVM_BACKEND_UNSUPPORTED_CONVERSION, rejected=1)
+PASS  neg_int_to_float (negative, LLVM_BACKEND_UNSUPPORTED_CONVERSION, rejected=1)
+PASS  neg_fptosi_witness (negative, LLVM_BACKEND_UNSUPPORTED_CONVERSION, rejected=1)
+
+=== FLOAT01 counter attribution (per-fixture SUPPORTED attribution) ===
+PASS  attribution fadd_one: supported=2 (== 2)
+PASS  attribution fsub_one: supported=2 (== 2)
+PASS  attribution fmul_one: supported=2 (== 2)
+PASS  attribution fcmp_eq: supported=2 (== 2)
+PASS  attribution fcmp_lt: supported=2 (== 2)
+PASS  attribution fcmp_ge: supported=2 (== 2)
+PASS  attribution branch: supported=2 (== 2)
+
+=== FLOAT01 determinism (NC3 / NC6; byte-identical re-emission) ===
+PASS  determinism  02_const_f64  bytes identical
+PASS  determinism  03_fadd  bytes identical
+PASS  determinism  12_cmp_branch  bytes identical
+
+=== FLOAT01 capability counters (matrix totals) ===
+=== capability counters ===
+SUPPORTED           : 26
+REJECTED            : 4
+SHAPE_DEPENDENT     : 0
+DEFENSIVE_INVARIANT : 0
+UNREACHABLE_ON_LLVM : 0
+==============================
+PASS  counter gate: DEFENSIVE=0 UNREACHABLE=0 SUPPORTED>0 REJECTED>0
+
+FLOAT01_PASS=29
+FLOAT01_FAIL=0

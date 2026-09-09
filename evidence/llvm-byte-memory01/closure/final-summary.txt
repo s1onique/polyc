@@ -1,0 +1,68 @@
+=== ACT-POLYC-LLVM-BYTE-MEMORY01 final summary ===
+
+ENTRY IDENTITY
+  branch: main
+  entry:  bb6c2b39a0871a4c9081b179567d1425c92df0a5
+  impl:   b5c2e97d4f5ac3384fe83b9e89c94f45f4419662
+
+ROOT CAUSE / FINDING
+  Neutral IR already carried IR_TYPE_I8 (signedness discarded by
+  irConvertType). Backend admitted only I64 access for
+  IR_LOAD_DEREF / IR_STORE_DEREF; IR_ZEXT / IR_SEXT did not have the
+  I8 -> I64 promotion shape; IR_TRUNC rejected all shapes including
+  I64 -> I8 narrowing for byte-local storage. This ACT admits the
+  bounded minimum byte path.
+
+RED
+  Five principal RED fixtures now compile to verifiable LLVM IR
+  emitting load i8 / zext i8 -> i64 / sext i8 -> i64 / trunc i64 -> i8
+  as appropriate. Negative control red_i16_trunc_negative.HC is
+  rejected with the named LLVM_BACKEND_UNSUPPORTED_CONVERSION
+  diagnostic. pos_byte_compare_simple.HC passes llvm-as + opt verify.
+
+IMPLEMENTATION
+  src/llvm-backend-cap.c: IR_LOAD_DEREF, IR_ZEXT, IR_SEXT, IR_TRUNC
+    rows updated to SHAPE_DEPENDENT with explicit byte-shape notes;
+    IR_STORE_DEREF unchanged (I64 only; byte store DEFERRED).
+  src/llvm-backend.c: llTypeSupported / llParamTypeSupported / llType
+    admit IR_TYPE_I8 / IR_TYPE_U8; IR_LOAD_DEREF byte shape emits
+    load i8, ptr; IR_STORE local I8; IR_ZEXT / IR_SEXT / IR_TRUNC
+    SHAPE_DEPENDENT; IR_ICMP / IR_IADD / IR_ISUB / IR_IMUL narrow
+    I64 to i8 for byte ops then zext to i64; IR_RET truncates
+    widened I64 back to i8.
+
+GATES
+  llvm-intops01-test:                 PASS=4   FAIL=0  STATUS=PASS
+  llvm-spike-test:                    PASS=18  FAIL=0  Summary: PASS
+  llvm-memory01-test:                 PASS=6   FAIL=0
+  llvm-float01-test:                  PASS=29  FAIL=0
+  llvm-byte-memory01-test:            PASS=37  FAIL=0  STATUS=PASS
+  cap-table-verifier:                 PASS    (56 rows round-trip, 9 invariants)
+  factory-v2-test:                    PASS=35  FAIL=0
+  factory-append-only-test:           PASS=11  FAIL=0
+  gate-fast:                          VERDICT=PASS
+
+SCOPE
+  Authorised scope (per ACT §31): byte read through IR_TYPE_PTR
+  parameter into IR_TYPE_I8 / IR_TYPE_U8 local / direct consumer;
+  byte promotion via IR_ZEXT / IR_SEXT to IR_TYPE_I64; byte-local
+  narrowing via IR_TRUNC I64 -> I8; byte arithmetic via narrow-then-
+  zext pattern; byte output via IR_RET truncation. No GEP, no
+  indexing, no ptrtoint/inttoptr, no alloca byte array, no IR-builder
+  seam changes.
+
+RESIDUE
+  P1: LLVM IR builder collapse bug for conditional byte returns.
+    pos_b0_compare_digit.HC fails opt --passes=verify with SSA
+    dominance violation (cross-block reload missing). Root cause is
+    in llCollapseStoreValue; repair requires IR-builder changes and
+    is out of scope (F7 / F15). Documented as RESIDUE P1 in HANDOFF.md
+    and evidence/llvm-byte-memory01/impl/b0-digit-path.txt.
+    pos_byte_compare_simple.HC (single-block, direct byte comparison)
+    passes verifier; defect is specific to the multi-block
+    conditional byte pattern.
+
+NEXT ACT
+  ACT-POLYC-LLVM-IR-COLLAPSE-FIX01 (recommended) or
+  ACT-POLYC-LLVM-GEP01 (byte-store + array/struct access). See
+  HANDOFF.md RESIDUE P1 for justification.

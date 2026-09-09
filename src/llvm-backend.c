@@ -95,8 +95,8 @@
  *   local with multiple reaching    REJECTED            LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL
  *   unbound local (no reaching)    REJECTED            LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL
  *
- * IR_LOAD_DEREF                   SHAPE-DEPENDENT       (ACT-POLYC-LLVM-MEMORY01: address-space-0 ptr + I64 access supported; other shapes REJECTED with LLVM_BACKEND_UNSUPPORTED_POINTER)
- * IR_STORE_DEREF                  SHAPE-DEPENDENT       (ACT-POLYC-LLVM-MEMORY01: address-space-0 ptr + I64 access supported; other shapes REJECTED with LLVM_BACKEND_UNSUPPORTED_POINTER)
+ * IR_LOAD_DEREF                   SHAPE-DEPENDENT       (ACT-POLYC-LLVM-MEMORY01: address-space-0 ptr + I64 access supported; BYTE-MEMORY01 extends to I8 access; other shapes REJECTED with LLVM_BACKEND_UNSUPPORTED_POINTER)
+ * IR_STORE_DEREF                  SHAPE-DEPENDENT       (ACT-POLYC-LLVM-MEMORY01: address-space-0 ptr + I64 access supported; BYTE-MEMORY01 defers byte store; other shapes REJECTED with LLVM_BACKEND_UNSUPPORTED_POINTER)
  * IR_RMW_DEREF                    REJECTED             LLVM_BACKEND_UNSUPPORTED_POINTER
  * IR_LEA                          REJECTED             LLVM_BACKEND_UNSUPPORTED_POINTER
  * IR_GEP                          REJECTED             LLVM_BACKEND_UNSUPPORTED_AGGREGATE
@@ -122,9 +122,9 @@
  * IR_NOT                          REJECTED             LLVM_BACKEND_UNSUPPORTED_INT_BITWISE
  * IR_ICMP                         SUPPORTED            (signed eq/ne/lt/le/gt/ge)
  * IR_FCMP                         SUPPORTED            ACT-POLYC-LLVM-FLOAT01: F64 operands + six canonical IrCmpKind values; other shapes REJECTED via LLVM_BACKEND_UNSUPPORTED_FLOAT_CMP. Result i1 feeds IR_BR directly. Predicate map in evidence/llvm-float01/red/recon-comparison-semantics.txt.
- * IR_TRUNC                        REJECTED             LLVM_BACKEND_UNSUPPORTED_CONVERSION
- * IR_ZEXT                         REJECTED             LLVM_BACKEND_UNSUPPORTED_CONVERSION
- * IR_SEXT                         REJECTED             LLVM_BACKEND_UNSUPPORTED_CONVERSION
+ * IR_TRUNC                        SHAPE-DEPENDENT       ACT-POLYC-LLVM-BYTE-MEMORY01: I64 -> I8 narrowing (SSA local narrow via `trunc i64 to i8`); other src/dst shapes REJECTED with LLVM_BACKEND_UNSUPPORTED_CONVERSION
+ * IR_ZEXT                         SHAPE-DEPENDENT       ACT-POLYC-LLVM-BYTE-MEMORY01: I8 -> I64 widening (unsigned promotion via `zext i8 -> i64`); other src/dst shapes REJECTED with LLVM_BACKEND_UNSUPPORTED_CONVERSION
+ * IR_SEXT                         SHAPE-DEPENDENT       ACT-POLYC-LLVM-BYTE-MEMORY01: I8 -> I64 widening (signed promotion via `sext i8 -> i64`); other src/dst shapes REJECTED with LLVM_BACKEND_UNSUPPORTED_CONVERSION
  * IR_FPTRUNC                      REJECTED             LLVM_BACKEND_UNSUPPORTED_CONVERSION
  * IR_FPEXT                        REJECTED             LLVM_BACKEND_UNSUPPORTED_CONVERSION
  * IR_FPTOUI                       REJECTED             LLVM_BACKEND_UNSUPPORTED_CONVERSION
@@ -511,24 +511,34 @@ static LLVMValueRef llLowerInstr(LLCtx *lc, IrInstr *ins);
 static LLVMTypeRef llType(LLCtx *lc, IrValueType t);
 
 static int llTypeSupported(IrValueType t) {
-    return t == IR_TYPE_I64 || t == IR_TYPE_F64;
+    /* ACT-POLYC-LLVM-BYTE-MEMORY01: IR_TYPE_I8 admitted as a
+     * first-class value type. The IR_TYPE_I8 representation
+     * carries the byte access type on IR_LOAD_DEREF/IR_STORE_DEREF
+     * (the neutral IR's load/store access-type contract); the
+     * LLVM i8 bit width has no inherent signedness -- the IR's
+     * widening opcode (IR_ZEXT / IR_SEXT) carries signedness. */
+    return t == IR_TYPE_I64 || t == IR_TYPE_F64 || t == IR_TYPE_I8;
 }
 
 /* ACT-POLYC-LLVM-MEMORY01: function-parameter type authorisation.
  *
- * Only I64 (scalar), F64 (scalar, ACT-POLYC-LLVM-FLOAT01), and
- * IR_TYPE_PTR (pointer-to-I64) are accepted as function parameter
- * types. IR_TYPE_PTR is allowed here ONLY because the parameter
+ * Only I64 (scalar), F64 (scalar, ACT-POLYC-LLVM-FLOAT01), I8
+ * (scalar, ACT-POLYC-LLVM-BYTE-MEMORY01), and IR_TYPE_PTR
+ * (pointer-to-I64) are accepted as function parameter types.
+ * IR_TYPE_PTR is allowed here ONLY because the parameter
  * lowering seam (llPass1 + llBindParams) can map it directly to
  * LLVM opaque `ptr` without any local spill, alloca, or pointer
  * cast. Other value kinds (constants, locals, return values)
- * keep the strict llTypeSupported() contract: only IR_TYPE_I64
- * or IR_TYPE_F64.
+ * keep the strict llTypeSupported() contract: only IR_TYPE_I64,
+ * IR_TYPE_F64, or IR_TYPE_I8 (BYTE-MEMORY01).
  *
- * Function return values are I64 or F64 only: this ACT does not
- * authorise pointer return values (see ACT §7 excluded list). */
+ * Function return values are I64, F64, or I8 only: this ACT does
+ * not authorise pointer return values (see ACT §7 excluded list).
+ * I8 return values are emitted directly via the function's
+ * `LLVMFunctionType` return type (see llPass1 below). */
 static int llParamTypeSupported(IrValueType t) {
-    return t == IR_TYPE_I64 || t == IR_TYPE_PTR || t == IR_TYPE_F64;
+    return t == IR_TYPE_I64 || t == IR_TYPE_PTR || t == IR_TYPE_F64
+        || t == IR_TYPE_I8;
 }
 
 static LLVMTypeRef llType(LLCtx *lc, IrValueType t) {
@@ -546,9 +556,16 @@ static LLVMTypeRef llType(LLCtx *lc, IrValueType t) {
      * pointer type. The pointee type is NOT attached to the LLVM
      * pointer; it is supplied to load/store builders explicitly. */
     if (t == IR_TYPE_PTR) return LLVMPointerTypeInContext(lc->ctx, 0);
-    /* IR_TYPE_I1 is intentionally not in `IrValueType`; the spike
+    /* ACT-POLYC-LLVM-BYTE-MEMORY01: IR_TYPE_I8 maps to LLVM `i8`
+     * via LLVMInt8TypeInContext. Signedness is NOT a property of
+     * the LLVM i8 bit width; it lives in the IR's widening opcode
+     * (IR_ZEXT / IR_SEXT) per source/AST signedness. The LLVM
+     * backend loweres IR_ZEXT i8 -> i64 as `zext` and IR_SEXT i8
+     * -> i64 as `sext` (see llLowerInstr IR_ZEXT / IR_SEXT arms).
+     * IR_TYPE_I1 is intentionally not in `IrValueType`; the spike
      * only emits i64 / f64 for source values. The cond->i1 truncation for
      * IR_BR uses LLVMInt1TypeInContext directly. */
+    if (t == IR_TYPE_I8) return LLVMInt8TypeInContext(lc->ctx);
     return NULL;
 }
 
@@ -1146,12 +1163,35 @@ static LLVMBasicBlockRef llLowerBlock(LLCtx *lc, IrBlock *b) {
                  * path resolves either into an SSA LLVMValueRef of
                  * the appropriate physical type (i64 or double).
                  * No bitcast between i64 and double is performed
-                 * anywhere in this ACT (per ACT §1.2). */
+                 * anywhere in this ACT (per ACT §1.2).
+                 *
+                 * ACT-POLYC-LLVM-BYTE-MEMORY01: the IR_RET operand
+                 * may carry an IR_TYPE_I64 widened value (the result
+                 * of an IR_ZEXT/IR_SEXT byte->I64 promotion) while
+                 * the function's nominal return type is IR_TYPE_I8.
+                 * The LLVM function signature is built from
+                 * `fn->return_value->type` (in llPass1), so the
+                 * LLVM `ret` instruction must produce the narrower
+                 * physical type. The narrowing happens here at the
+                 * IR_RET site via LLVMBuildTrunc -- this is a
+                 * BACKEND-LOCAL narrow at the return boundary; it
+                 * does NOT introduce IR_TRUNC into the neutral IR
+                 * and does NOT change the byte-store / byte-narrowing
+                 * status of IR_TRUNC, which BYTE-MEMORY01 defers. */
                 if (!llTypeSupported(ins->dst->type)) {
                     llErrUnsupportedType(ins->dst, lc->fn, "ret value");
                     exit(1);
                 }
                 v = llLowerValue(lc, ins->dst);
+                /* If the function's nominal return type is narrower
+                 * than the IR_RET operand's type, narrow at the
+                 * boundary. This is the byte->I8 return case. */
+                if (lc->fn->return_value &&
+                    lc->fn->return_value->type == IR_TYPE_I8 &&
+                    ins->dst->type != IR_TYPE_I8) {
+                    v = LLVMBuildTrunc(lc->bld, v,
+                        LLVMInt8TypeInContext(lc->ctx), "ret_trunc_to_i8");
+                }
             }
             /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: SUPPORTED terminator. */
             LL_INC_SUPPORTED(lc);
@@ -1229,9 +1269,10 @@ static LLVMBasicBlockRef llLowerBlock(LLCtx *lc, IrBlock *b) {
              * alloca, no stack slot, no F64 memory. */
             if (ins->dst->type != IR_TYPE_I64 &&
                 ins->dst->type != IR_TYPE_PTR &&
-                ins->dst->type != IR_TYPE_F64) {
+                ins->dst->type != IR_TYPE_F64 &&
+                ins->dst->type != IR_TYPE_I8) {
                 llErrUnsupportedType(ins->dst, lc->fn,
-                    "IR_STORE local type (only I64, F64 or pointer supported)");
+                    "IR_STORE local type (only I64, I8, F64 or pointer supported)");
                 llEmitCapabilityCountersOnce(lc->totals);
                 exit(1);
             }
@@ -1400,32 +1441,104 @@ static LLVMBasicBlockRef llLowerBlock(LLCtx *lc, IrBlock *b) {
     return bb;
 }
 
+/* ACT-POLYC-LLVM-BYTE-MEMORY01: handle I8 char-literal operands in
+ * binary arithmetic / comparison.
+ *
+ * The IR builder may produce arithmetic / comparison instructions
+ * where one operand is a PolyC char literal (e.g. '0', 'a', '_')
+ * with neutral IR type IR_TYPE_I8, while the other operand is an
+ * I64 value (the result of an IR_ZEXT byte promotion). The LLVM
+ * `add` / `sub` / `mul` / `icmp` instructions require both operands
+ * to share the same LLVM type.
+ *
+ * Approach: when an arithmetic / comparison has an I8 constant
+ * operand (the byte-promoted I64 vs an I8 char literal pattern),
+ * narrow the I64 widened-byte operand down to I8 BEFORE the
+ * operation, perform the binary op at i8, then widen back to i64
+ * for the dst (which is always I64 in the byte path, per the IR
+ * builder's pattern). The narrowing is lossless because the IR
+ * builder's byte-promotion pattern keeps the value within byte
+ * range throughout.
+ *
+ * Why narrow rather than widen the constant? Widening an I8
+ * constant via LLVMBuildZExt produces a real SSA ZExt instruction
+ * that must be positioned at the current builder location. With
+ * the IR builder's collapse pattern (which can produce SSA-incorrect
+ * IR for byte locals), the widened-constant's ZExt instruction
+ * may end up in a block that does not dominate the binary op's
+ * user. Narrowing the I64 SSA value at the use site avoids this
+ * whole class of problems.
+ */
+static int llIsI8Const(IrValue *v) {
+    return v && v->kind == IR_VAL_CONST_INT && v->type == IR_TYPE_I8;
+}
+
+/* Lower a binary op's operand. If the other operand is an I8 const
+ * AND this operand is an SSA value, narrow the SSA value to I8
+ * (the bit pattern is preserved). For the I8 const operand, lower
+ * it directly as an LLVM i8 constant. */
+static LLVMValueRef llLowerBinaryOperand(LLCtx *lc, IrValue *v,
+                                          int is_i8_const_pair) {
+    if (is_i8_const_pair && v && v->kind != IR_VAL_CONST_INT) {
+        /* Narrow the I64 widened-byte value to I8. */
+        LLVMValueRef lv = llLowerI64Value(lc, v);
+        return LLVMBuildTrunc(lc->bld, lv,
+            LLVMInt8TypeInContext(lc->ctx), "i8_arg_trunc");
+    }
+    if (is_i8_const_pair && v && v->kind == IR_VAL_CONST_INT) {
+        /* Lower I8 const directly. */
+        return llLowerValue(lc, v);
+    }
+    return llLowerI64Value(lc, v);
+}
+
 static LLVMValueRef llLowerInstr(LLCtx *lc, IrInstr *ins) {
     switch (ins->op) {
         case IR_IADD:
         case IR_ISUB:
         case IR_IMUL: {
-            /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: SUPPORTED arithmetic. */
+            /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: SUPPORTED arithmetic.
+             *
+             * ACT-POLYC-LLVM-BYTE-MEMORY01: when an I8 char literal is
+             * one operand and the other is a byte-promoted I64, the
+             * arithmetic is performed at i8 level (both operands
+             * narrowed to i8) and the result widened back to i64 for
+             * the I64 dst. See `llLowerBinaryOperand` for rationale. */
             LL_INC_SUPPORTED(lc);
             if (!llTypeSupported(ins->dst->type)) {
                 llErrUnsupportedType(ins->dst, lc->fn, "i64-arith dst");
                 exit(1);
             }
-            LLVMValueRef a = llLowerI64Value(lc, ins->r1);
-            LLVMValueRef b = llLowerI64Value(lc, ins->r2);
-            if (ins->op == IR_IADD) return LLVMBuildAdd(lc->bld, a, b, "");
-            if (ins->op == IR_ISUB) return LLVMBuildSub(lc->bld, a, b, "");
-            return LLVMBuildMul(lc->bld, a, b, "");
+            int i8_pair = llIsI8Const(ins->r1) || llIsI8Const(ins->r2);
+            LLVMValueRef a = llLowerBinaryOperand(lc, ins->r1, i8_pair);
+            LLVMValueRef b = llLowerBinaryOperand(lc, ins->r2, i8_pair);
+            LLVMValueRef r;
+            if (ins->op == IR_IADD) r = LLVMBuildAdd(lc->bld, a, b, "");
+            else if (ins->op == IR_ISUB) r = LLVMBuildSub(lc->bld, a, b, "");
+            else r = LLVMBuildMul(lc->bld, a, b, "");
+            if (i8_pair && ins->dst->type == IR_TYPE_I64) {
+                /* Widen the i8 result back to i64 for the I64 dst.
+                 * Use ZExt (unsigned-byte convention). */
+                return LLVMBuildZExt(lc->bld, r,
+                    LLVMInt64TypeInContext(lc->ctx), "i8_arith_zext");
+            }
+            return r;
         }
         case IR_ICMP: {
-            /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: SUPPORTED comparison. */
+            /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: SUPPORTED comparison.
+             *
+             * ACT-POLYC-LLVM-BYTE-MEMORY01: when one operand is an I8
+             * char literal and the other is a byte-promoted I64, both
+             * are narrowed to i8 before the icmp. The result is an
+             * i1 either way. */
             LL_INC_SUPPORTED(lc);
             if (!llTypeSupported(ins->dst->type)) {
                 llErrUnsupportedType(ins->dst, lc->fn, "icmp dst");
                 exit(1);
             }
-            LLVMValueRef a = llLowerI64Value(lc, ins->r1);
-            LLVMValueRef b = llLowerI64Value(lc, ins->r2);
+            int i8_pair = llIsI8Const(ins->r1) || llIsI8Const(ins->r2);
+            LLVMValueRef a = llLowerBinaryOperand(lc, ins->r1, i8_pair);
+            LLVMValueRef b = llLowerBinaryOperand(lc, ins->r2, i8_pair);
             LLVMIntPredicate p = llCmpKindToLLVMPred(ins->extra.cmp_kind);
             return LLVMBuildICmp(lc->bld, p, a, b, "");
         }
@@ -1653,7 +1766,97 @@ static LLVMValueRef llLowerInstr(LLCtx *lc, IrInstr *ins) {
         }
         case IR_TRUNC:
         case IR_ZEXT:
-        case IR_SEXT:
+        case IR_SEXT: {
+            /* ACT-POLYC-LLVM-BYTE-MEMORY01: SHAPE_DEPENDENT class.
+             *
+             * The proven supported shape is the byte-widening
+             * shape:
+             *   - src type is IR_TYPE_I8
+             *   - dst type is IR_TYPE_I64
+             *   - op is IR_ZEXT (unsigned promotion) or IR_SEXT
+             *     (signed promotion)
+             *
+             * The widening is emitted via:
+             *   LLVMBuildZExt / LLVMBuildSExt
+             * which emit `zext i8 %v to i64` and `sext i8 %v to i64`
+             * respectively. Signedness comes from the IR opcode
+             * (the IR's irWidenToTargetWidth selects the opcode
+             * based on AstType->issigned); LLVM i8 has no
+             * inherent signedness.
+             *
+             * All other shapes (other src / dst types, other widths)
+             * are rejected with LLVM_BACKEND_UNSUPPORTED_CONVERSION
+             * because this ACT only authorises the bounded byte
+             * promotion path. */
+            LL_INC_SHAPE_DEPENDENT(lc);
+            if (!ins->dst || !ins->r1) {
+                fprintf(stderr,
+                    "%s: function %s: IR_ZEXT/IR_SEXT/IR_TRUNC "
+                    "missing dst or r1\n",
+                    LLVM_BACKEND_INTERNAL, lc->fn->name->data);
+                llEmitCapabilityCountersOnce(lc->totals);
+                exit(1);
+            }
+            /* BYTE-MEMORY01 frozen authorised shape:
+             *   IR_ZEXT / IR_SEXT: src = IR_TYPE_I8, dst = IR_TYPE_I64.
+             *   IR_TRUNC:          src = IR_TYPE_I64, dst = IR_TYPE_I8.
+             *   These are the natural byte widening / narrowing
+             * shapes the IR builder produces for byte locals and
+             * byte returns (see irWidenToTargetWidth at src/ir.c:218
+             * and irNarrowToTargetWidth at src/ir.c:184).
+             *
+             * IR_TRUNC for byte narrowing is NOT a byte STORE; it
+             * is the local-binding narrow that the IR builder
+             * emits when an I64 SSA value is consumed by a byte
+             * local. This is a backend-local narrow of an SSA
+             * value, not a memory write. */
+            if (ins->op == IR_TRUNC) {
+                if (ins->r1->type != IR_TYPE_I64 ||
+                    ins->dst->type != IR_TYPE_I8) {
+                    LL_INC_REJECTED(lc);
+                    fprintf(stderr,
+                        "%s: function %s: IR_TRUNC is not supported "
+                        "in this shape (src=%d, dst=%d; BYTE-MEMORY01 "
+                        "only supports I64 -> I8 narrowing for byte "
+                        "locals)\n",
+                        LLVM_BACKEND_UNSUPPORTED_CONVERSION,
+                        lc->fn->name->data,
+                        (int)ins->r1->type, (int)ins->dst->type);
+                    llEmitCapabilityCountersOnce(lc->totals);
+                    exit(1);
+                }
+                LLVMValueRef wide_val = llLowerI64Value(lc, ins->r1);
+                LLVMValueRef narrowed = LLVMBuildTrunc(lc->bld, wide_val,
+                    LLVMInt8TypeInContext(lc->ctx), "trunc_i64_i8");
+                llvmSet(&lc->values, irVarId(ins->dst), narrowed);
+                return narrowed;
+            }
+            if (ins->r1->type != IR_TYPE_I8 ||
+                ins->dst->type != IR_TYPE_I64) {
+                LL_INC_REJECTED(lc);
+                fprintf(stderr,
+                    "%s: function %s: IR_%s is not supported in this "
+                    "shape (src=%d, dst=%d; BYTE-MEMORY01 only "
+                    "supports I8 -> I64 widening)\n",
+                    LLVM_BACKEND_UNSUPPORTED_CONVERSION,
+                    lc->fn->name->data,
+                    (ins->op == IR_ZEXT ? "ZEXT" : "SEXT"),
+                    (int)ins->r1->type, (int)ins->dst->type);
+                llEmitCapabilityCountersOnce(lc->totals);
+                exit(1);
+            }
+            LLVMValueRef src_val = llLowerI64Value(lc, ins->r1);
+            LLVMValueRef widened;
+            if (ins->op == IR_ZEXT) {
+                widened = LLVMBuildZExt(lc->bld, src_val,
+                    LLVMInt64TypeInContext(lc->ctx), "zext_i8_i64");
+            } else {
+                widened = LLVMBuildSExt(lc->bld, src_val,
+                    LLVMInt64TypeInContext(lc->ctx), "sext_i8_i64");
+            }
+            llvmSet(&lc->values, irVarId(ins->dst), widened);
+            return widened;
+        }
         case IR_FPTRUNC:
         case IR_FPEXT:
         case IR_FPTOUI:
@@ -1745,9 +1948,10 @@ static LLVMValueRef llLowerInstr(LLCtx *lc, IrInstr *ins) {
             /* ACT-POLYC-LLVM-MEMORY01: SHAPE_DEPENDENT class.
              *
              * The proven supported shape is:
-             *   - dst->type == IR_TYPE_I64 (the I64 access type,
-             *     proven by the existing promotion/narrowing
-             *     contract; not guessed from LLVM pointer identity)
+             *   - dst->type == IR_TYPE_I64 OR dst->type == IR_TYPE_I8
+             *     (BYTE-MEMORY01 extension; the access type is
+             *     proven by the neutral IR's load/store access-type
+             *     contract; not guessed from LLVM pointer identity).
              *   - r1 (addr) is an SSA-resolvable pointer value of
              *     IR_TYPE_PTR (IR_VAL_PARAM bound by llBindParams,
              *     or a pointer-typed local bound by a prior
@@ -1756,13 +1960,16 @@ static LLVMValueRef llLowerInstr(LLCtx *lc, IrInstr *ins) {
              *   - idx == NULL && scale == 0 (no SIB)
              *
              * The opaque-pointer LLVM model is satisfied by:
-             *   LLVMBuildLoad2(builder, i64_ty, ptr_value, name)
-             * which emits `load i64, ptr %p` textually.
+             *   LLVMBuildLoad2(builder, access_ty, ptr_value, name)
+             * which emits `load <ty>, ptr %p` textually. The access
+             * type is supplied to the load builder explicitly; no
+             * typed-pointer reconstruction is attempted.
              *
-             * All other shapes (non-I64 access type, non-pointer
-             * addr, GEP-like addressing, non-zero disp, non-null
-             * idx) are rejected with LLVM_BACKEND_UNSUPPORTED_POINTER
-             * (or LLVM_BACKEND_UNSUPPORTED_TYPE for the access-type
+             * All other shapes (non-I64 / non-I8 access type,
+             * non-pointer addr, GEP-like addressing, non-zero disp,
+             * non-null idx) are rejected with
+             * LLVM_BACKEND_UNSUPPORTED_POINTER (or
+             * LLVM_BACKEND_UNSUPPORTED_TYPE for the access-type
              * failure). */
             LL_INC_SHAPE_DEPENDENT(lc);
             if (!ins->dst) {
@@ -1772,12 +1979,17 @@ static LLVMValueRef llLowerInstr(LLCtx *lc, IrInstr *ins) {
                 llEmitCapabilityCountersOnce(lc->totals);
                 exit(1);
             }
-            if (ins->dst->type != IR_TYPE_I64) {
+            /* ACT-POLYC-LLVM-BYTE-MEMORY01: IR_TYPE_I8 admitted as a
+             * byte access type (alongside the existing IR_TYPE_I64).
+             * Other access types (I16, I32, F32, etc.) remain
+             * rejected per the frozen authorised set. */
+            if (ins->dst->type != IR_TYPE_I64 &&
+                ins->dst->type != IR_TYPE_I8) {
                 fprintf(stderr,
                     "%s: function %s: IR_LOAD_DEREF access type is "
-                    "not I64 (got type=%d, MEMORY01 only supports "
-                    "I64 loads); rejected to avoid guessing the "
-                    "pointee type from LLVM pointer identity\n",
+                    "not I64 or I8 (got type=%d, MEMORY01/BYTE-MEMORY01 "
+                    "only supports I64 / I8 loads); rejected to avoid "
+                    "guessing the pointee type from LLVM pointer identity\n",
                     LLVM_BACKEND_UNSUPPORTED_TYPE,
                     lc->fn->name->data, (int)ins->dst->type);
                 llEmitCapabilityCountersOnce(lc->totals);
@@ -1814,8 +2026,13 @@ static LLVMValueRef llLowerInstr(LLCtx *lc, IrInstr *ins) {
                 exit(1);
             }
             LLVMValueRef addr = llLowerPointerValue(lc, ins->r1);
+            LLVMTypeRef access_ty = llType(lc, ins->dst->type);
+            /* ACT-POLYC-LLVM-BYTE-MEMORY01: access type is supplied
+             * to LLVMBuildLoad2 explicitly. For dst->type == IR_TYPE_I8,
+             * LLVM emits `load i8, ptr %p`; for IR_TYPE_I64, the existing
+             * `load i64, ptr %p`. No typed-pointer reconstruction. */
             LLVMValueRef loaded = LLVMBuildLoad2(lc->bld,
-                LLVMInt64TypeInContext(lc->ctx), addr, "ld_deref");
+                access_ty, addr, "ld_deref");
             llvmSet(&lc->values, irVarId(ins->dst), loaded);
             return loaded;
         }

@@ -1,0 +1,17 @@
+=== probe (mode=load): source mutated (IR_LOAD_DEREF counter call removed) ===
+=== probe: rebuilding hcc (forced) ===
+=== probe: running harness (must FAIL on NC5 red_load_deref) ===
+REJECTED            : 0
+SHAPE_DEPENDENT     : 4
+DEFENSIVE_INVARIANT : 0
+UNREACHABLE_ON_LLVM : 0
+==============================
+PASS  counter gate: SHAPE_DEPENDENT>=1, SUPPORTED>=1, DEFENSIVE=0, UNREACHABLE=0
+
+=== MEMORY01 NC5 per-fixture attribution ===
+PASS  NC5 red_pointer_param: shape_dependent=0 (== 0)
+FAIL  NC5 red_load_deref: expected SHAPE_DEPENDENT >= 1, got 0
+
+PASS probe (load): NC5 strong binding confirmed for IR_LOAD_DEREF.
+  harness rc        = 1 (expected non-zero)
+  NC5 trip observed = FAIL NC5 red_load_deref

@@ -1,0 +1,26 @@
+=== IR_BYTE shapes admitted in IMPL ===
+--- red_u8_param ---
+  %zext_i8_i64 = zext i8 %0 to i64
+  %ret_trunc_to_i8 = trunc i64 %zext_i8_i64 to i8
+--- red_i8_param ---
+  %sext_i8_i64 = sext i8 %0 to i64
+  %ret_trunc_to_i8 = trunc i64 %sext_i8_i64 to i8
+--- red_byte_load ---
+  %ld_deref = load i8, ptr %0, align 1
+  %zext_i8_i64 = zext i8 %ld_deref to i64
+  %ret_trunc_to_i8 = trunc i64 %zext_i8_i64 to i8
+--- red_byte_to_i64 ---
+  %zext_i8_i64 = zext i8 %0 to i64
+  %ret_trunc_to_i8 = trunc i64 %zext_i8_i64 to i8
+--- red_byte_pointer_param ---
+  %ld_deref = load i8, ptr %0, align 1
+  %zext_i8_i64 = zext i8 %ld_deref to i64
+  %ret_trunc_to_i8 = trunc i64 %zext_i8_i64 to i8
+--- pos_byte_compare_simple ---
+  %ld_deref = load i8, ptr %0, align 1
+  %zext_i8_i64 = zext i8 %ld_deref to i64
+  %trunc_i64_i8 = trunc i64 %zext_i8_i64 to i8
+  %zext_i8_i641 = zext i8 %trunc_i64_i8 to i64
+  %i8_arg_trunc = trunc i64 %zext_i8_i641 to i8
+  %zext_i8_i642 = zext i8 %trunc_i64_i8 to i64
+  %i8_arg_trunc3 = trunc i64 %zext_i8_i642 to i8

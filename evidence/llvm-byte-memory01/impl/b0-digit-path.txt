@@ -1,0 +1,67 @@
+=== B0 digit path (pos_b0_compare_digit.HC) ===
+
+Status: RESIDUE P1 (ir-builder collapse SSA bug).
+
+The fixture exercises the B0 lexer byte-load fragment:
+
+  I64 ReadDigit(U8 *p) {
+      U8 c = *p;
+      I64 d = 0;
+      if (c >= '0') {
+          if (c <= '9') {
+              d = (I64)c - (I64)'0';
+          }
+      }
+      return d;
+  }
+
+  I64 AccDigit(I64 acc, U8 *p) {
+      U8 c = *p;
+      if (c >= '0') {
+          if (c <= '9') {
+              I64 d = (I64)c - (I64)'0';
+              acc = acc * 10 + d;
+          }
+      }
+      return acc;
+  }
+
+Each function returns an IR_TYPE_I64 (not a byte), but uses a
+conditional assignment to a byte-typed local (`U8 c`) followed by
+an I8-constant compare pair. The IR builder's
+`llCollapseStoreValue` collapse optimization emits the byte local
+through a reload SSA value, and the cross-block reload produces
+SSA dominance violations under `opt --passes=verify`:
+
+  Instruction does not dominate all uses:
+    %12 = load i8, ptr %AccDigit, align 1
+    store i8 %12, ptr %.reload1, align 1
+
+Observed diagnostic (captured during RED):
+
+  LLVM backend capability contract: ok (56 rows, ordinal binding)
+  LLVM backend capability contract: ok (56 rows, ordinal binding)
+  LLVMValueRef failure: Instruction does not dominate all uses:
+    %12 = load i8, ptr %AccDigit, align 1
+    store i8 %12, ptr %.reload1, align 1
+  %3 = load i8, ptr %AccDigit
+  llvm: /tmp/polyc-build/llvm-project/llvm/lib/IR/Instructions.cpp:1557:
+  ...
+  Aborted (core dumped)
+
+Root cause: The `llCollapseStoreValue` (and the
+`llPass1`/`llCollapseStoreValue` pairing in src/llvm-backend.c)
+introduces a reload SSA value (`%.reload1`) at the function
+entry / a predecessor block but the `store i8 %12, ptr %.reload1`
+is only emitted in the block where the byte local is read,
+not in every predecessor block whose branch reaches that
+consumer. The verifier requires the store to dominate every use.
+
+This is NOT a BYTE-MEMORY01 admission defect; the principal
+RED `pos_byte_compare_simple.HC` (single-block, direct byte
+comparison) passes verifier. The defect is specific to the
+multi-block / conditional byte pattern.
+
+Fix scope: IR builder changes (block-aware reload selection).
+This is HALT_SCOPE_EXPANSION_REQUIRED for BYTE-MEMORY01
+(see HANDOFF.md RESIDUE P1).

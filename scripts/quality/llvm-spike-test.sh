@@ -502,10 +502,14 @@ negative src/tests/llvm-spike/red_idiv_unclassified.HC  LLVM_BACKEND_UNSUPPORTED
 # it to the canonical negative matrix because it IS a real
 # backend-level witness with a named diagnostic.
 negative src/tests/llvm-spike/red_local_multi_def.HC      LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL
-# red_conversion_trunc.HC is a NEW CORRECTION01 fixture that
-# exercises the CONVERSION rejection class (IR_TRUNC). Without
-# it, AC08 of CORE01 had no CONVERSION-class backend witness.
-negative src/tests/llvm-spike/red_conversion_trunc.HC     LLVM_BACKEND_UNSUPPORTED_CONVERSION
+# red_conversion_trunc_i16.HC replaces the original
+# `red_conversion_trunc.HC` CORRECTION01 fixture. The original
+# narrowed I64 -> I8, which is now ADMITTED by
+# ACT-POLYC-LLVM-BYTE-MEMORY01's IR_TRUNC I64->I8 shape
+# promotion. The replacement fixture narrows I64 -> I16 (a
+# shape BYTE-MEMORY01 does NOT authorise) and continues to
+# exercise the CONVERSION rejection class (IR_TRUNC).
+negative src/tests/llvm-spike/red_conversion_trunc_i16.HC LLVM_BACKEND_UNSUPPORTED_CONVERSION
 # ACT-POLYC-LLVM-CORE01-CORRECTION02 (AC02): widen the negative
 # matrix to six DISTINCT named backend rejection classes.
 # Each fixture must FAIL with a distinct
