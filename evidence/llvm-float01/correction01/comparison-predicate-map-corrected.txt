@@ -1,0 +1,60 @@
+ACT-POLYC-LLVM-FLOAT01 / comparison-predicate map (binding evidence)
+====================================================================
+
+Source: evidence/llvm-float01/red/recon-comparison-semantics.txt
+Implementation: src/llvm-backend.c (llFloatCmpKindToLLVMPred, ~line 866)
+Harness: scripts/quality/llvm-float01-test.sh (comparison predicate matrix)
+
+Binding predicate map (host = aarch64, native semantic oracle):
+
+| PolyC op | IrCmpKind      | LLVM predicate | LLVM C-API constant    | proof                                           |
+|----------|----------------|----------------|------------------------|-------------------------------------------------|
+| ==       | IR_CMP_EQ      | ordered equal  | LLVMRealOEQ            | oeq returns false for NaN; matches cset "eq"    |
+| !=       | IR_CMP_NE      | unordered not-equal | LLVMRealUNE       | une returns true for NaN; matches cset "ne"     |
+| <        | IR_CMP_LT      | ordered less-than  | LLVMRealOLT        | olt returns false for NaN; matches cset "mi"    |
+| <=       | IR_CMP_LE      | ordered less-or-equal | LLVMRealOLE      | ole returns false for NaN; matches cset "ls"    |
+| >        | IR_CMP_GT      | ordered greater-than | LLVMRealOGT       | ogt returns false for NaN; matches cset "gt"    |
+| >=       | IR_CMP_GE      | ordered greater-or-equal | LLVMRealOGE   | oge returns false for NaN; matches cset "ge"    |
+
+Native aarch64 fcmp-on-NaN flag state: NZCV = 0011 (per ARMv8 ARM).
+Mapping to aarch64 condition codes used by cset:
+    mi (N=1):       NZCV=0011 -> 0 (matches olt -> false)
+    pl (N=0):       NZCV=0011 -> 1
+    ls (C=0|Z=1):   NZCV=0011 -> 0 (matches ole -> false)
+    hi (C=1&Z=0):   NZCV=0011 -> 1
+    eq (Z=1):       NZCV=0011 -> 0 (matches oeq -> false)
+    ne (Z=0):       NZCV=0011 -> 1 (matches une -> true)
+    gt (Z=0&N=V):   NZCV=0011 -> 0 (matches ogt -> false; Z=0 but N!=V)
+    ge (N=V):       NZCV=0011 -> 0 (matches oge -> false; N=0,V=1)
+    lt (N!=V):      NZCV=0011 -> 1
+    le (Z=1|N!=V):  NZCV=0011 -> 1
+
+LLVM IR textual evidence (per positive fixture, captured at
+evidence/llvm-float01/impl/*.ll):
+
+  06_cmp_eq.HC:  fcmp oeq double %0, %1   (LLVMRealOEQ)
+  07_cmp_ne.HC:  fcmp une double %0, %1   (LLVMRealUNE)
+  08_cmp_lt.HC:  fcmp olt double %0, %1   (LLVMRealOLT)
+  09_cmp_le.HC:  fcmp ole double %0, %1   (LLVMRealOLE)
+  10_cmp_gt.HC:  fcmp ogt double %0, %1   (LLVMRealOGT)
+  11_cmp_ge.HC:  fcmp oge double %0, %1   (LLVMRealOGE)
+  12_cmp_branch.HC: fcmp ogt double %0, %1 + br i1 %2, label %bb3, label %bb4
+
+All emitted predicates match the binding map above byte-for-byte.
+
+Residue (does NOT block PASS):
+  The PolyC x86_64 NATIVE backend (a separate code path from the
+  LLVM backend) uses `ucomisd` + `setb` / `setbe` / `setne` for
+  IR_FCMP, which on x86 returns 1 for NaN (unordered). This
+  DIVERGES from the IEEE-754 / LLVM LangRef semantics (false on
+  NaN for ordered comparisons; true on NaN for une).
+
+  The LLVM backend's choice of `olt` is TARGET-INDEPENDENT per the
+  LLVM LangRef; the LLVM x86_64 code generator MUST preserve the
+  `olt` semantics and cannot simply emit `ucomisd + setb` (which
+  would change the result). The divergence is therefore strictly
+  in the PolyC native x86_64 backend, NOT in the LLVM backend
+  and NOT in any future LLVM x86_64 codegen.
+
+  Recorded as future residue: ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01
+  to repair the native x86_64 backend. Out of scope for this ACT.

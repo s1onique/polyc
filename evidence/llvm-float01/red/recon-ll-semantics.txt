@@ -1,0 +1,116 @@
+ACT-POLYC-LLVM-FLOAT01 / LLVM LangRef comparison-semantics binding
+==================================================================
+
+== Authority ==
+
+The binding contract for the LLVM backend's F64 comparison
+predicate selection is the LLVM Language Reference Manual
+(llvm.org/docs/LangRef.html), independent of any PolyC native
+backend. The native backends (aarch64, x86_64, JIT) are
+witnesses to host behaviour, not authorities for LLVM IR
+semantics.
+
+== LangRef predicates and their IEEE-754 unordered semantics ==
+
+For fcmp double operands where at least one is NaN:
+
+  oeq : ordered and equal              NaN -> false
+  ogt : ordered and greater than       NaN -> false
+  oge : ordered and greater or equal   NaN -> false
+  olt : ordered and less than          NaN -> false
+  ole : ordered and less or equal      NaN -> false
+  one : ordered and not equal          NaN -> false
+  ord : ordered (no NaN operands)      NaN -> false
+  ueq : unordered or equal             NaN -> true
+  ugt : unordered or greater than      NaN -> true
+  uge : unordered or greater or equal  NaN -> true
+  ult : unordered or less than         NaN -> true
+  ule : unordered or less or equal     NaN -> true
+  une : unordered or not equal         NaN -> true
+  uno : unordered (any NaN operand)    NaN -> true
+  true : always true                   NaN -> true
+  false: always false                  NaN -> false
+
+The "ordered" predicates return false when either operand is NaN;
+the "unordered" predicates return true. The "ord" and "uno"
+predicates directly test for NaN involvement.
+
+== PolyC's docs/CHARTER.md commitment ==
+
+PolyC's language-level contract for F64 comparisons is the
+standard C/IEEE-754 unordered convention: NaN compared to any
+finite value yields false for == and the ordering relations,
+and true for !=. This matches the LLVM ordered-predicate
+semantics.
+
+== ACT-POLYC-LLVM-FLOAT01 binding ==
+
+The LLVM backend emits:
+
+  ==  -> oeq    (PolyC commit: NaN -> false)
+  !=  -> une    (PolyC commit: NaN -> true)
+  <   -> olt    (PolyC commit: NaN -> false)
+  <=  -> ole    (PolyC commit: NaN -> false)
+  >   -> ogt    (PolyC commit: NaN -> false)
+  >=  -> oge    (PolyC commit: NaN -> false)
+
+These bindings are aligned with both the LLVM LangRef and the
+PolyC charter. This is the only sensible cross-backend
+contract: it preserves PolyC's source-level semantics regardless
+of which LLVM target triple the backend emits for.
+
+== Witness: aarch64 host (ARMv8.4-A reference) ==
+
+Observed via aarch64 JIT probe (NZCV after `fcmp d0, d1` with
+NaN operand):
+
+  NZCV=0011 (Z=1, C=1 -> "less than or equal" + "equal")
+  cset eq  -> 0    (matches oeq)
+  cset ne  -> 1    (matches une)
+  cset mi  -> 0    (matches olt)
+  cset ls  -> 0    (matches ole)
+  cset gt  -> 0    (matches ogt)
+  cset ge  -> 0    (matches oge)
+
+This witness is consistent with the LangRef ordered-predicate
+semantics. It is recorded as a witness, not as an authority.
+
+== Observed residue: x86_64 native backend ==
+
+The PolyC x86_64 native backend currently emits `ucomisd` +
+`setb`/`setbe`/`setne` for the FCMP dispatch. `setb`/`setbe`
+return 1 when CF=1 (the unordered condition), which corresponds
+to a NaN-involving comparison. This DIVERGES from both the
+IEEE-754 convention and the LLVM IR semantics:
+
+  PolyC op   x86_64 native result on NaN   correct IEEE result
+  --------   ---------------------------   ------------------
+  ==         true (via setne after ucomisd unordered)  false
+  <          true (via setb after ucomisd)             false
+  <=         true (via setbe after ucomisd)            false
+  >          true (via setnbe/seta inverse)            false
+  >=         true (via setnb/setae inverse)            false
+  !=         true (via setne)              true (matches)
+
+This is a PolyC x86_64 NATIVE backend defect, not an LLVM
+backend defect. It is OUT OF SCOPE for ACT-POLYC-LLVM-FLOAT01.
+
+Recommended future ACT: ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01,
+which would re-emit the x86_64 native FCMP lowering using
+`ucomisd + setnp / setp + setz / setnz` (or equivalent
+ordered-predicate equivalent sequence) to match IEEE-754.
+
+== Verification: emitted .ll grep ==
+
+Each emitted .ll file for the comparison fixtures contains
+exactly one of `oeq`, `une`, `olt`, `ole`, `ogt`, `oge` and no
+`ueq`, `ugt`, `uge`, `ult`, `ule`, `one`, `uno`. Verified in
+evidence/llvm-float01/impl/comparison-predicate-map.txt.
+
+== Conclusion ==
+
+The LLVM backend's comparison semantics are bound to the
+LLVM LangRef, which coincides with the aarch64 host oracle
+and PolyC's IEEE-754 contract. The x86_64 native backend
+divergence is a separate, non-blocking residue for a future
+ACT.

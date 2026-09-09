@@ -289,9 +289,10 @@ positive src/tests/llvm-float01/13_mixed_float_expr.HC "fadd double"            
 
 echo
 echo "=== FLOAT01 negative matrix ==="
-negative src/tests/llvm-float01/neg_fdiv.HC          LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH
-negative src/tests/llvm-float01/neg_float_to_int.HC  LLVM_BACKEND_UNSUPPORTED_CONVERSION
-negative src/tests/llvm-float01/neg_int_to_float.HC  LLVM_BACKEND_UNSUPPORTED_CONVERSION
+negative src/tests/llvm-float01/neg_fdiv.HC              LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH
+negative src/tests/llvm-float01/neg_float_to_int.HC      LLVM_BACKEND_UNSUPPORTED_CONVERSION
+negative src/tests/llvm-float01/neg_int_to_float.HC      LLVM_BACKEND_UNSUPPORTED_CONVERSION
+negative src/tests/llvm-float01/neg_fptosi_witness.HC    LLVM_BACKEND_UNSUPPORTED_CONVERSION
 
 echo
 echo "=== FLOAT01 counter attribution (per-fixture SUPPORTED attribution) ==="

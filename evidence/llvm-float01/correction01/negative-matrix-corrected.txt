@@ -1,0 +1,40 @@
+ACT-POLYC-LLVM-FLOAT01 / negative matrix
+=========================================
+
+Capture from scripts/quality/llvm-float01-test.sh (negative section).
+3 negative fixtures; all rejected with named diagnostics + nonzero rc.
+
+Fixture          Expected diagnostic                            rc  rejected  stderr evidence
+neg_fdiv         LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH            !=0 1        contains "float arithmetic opcode fdiv" + "FLOAT01 supports IR_FADD/IR_FSUB/IR_FMUL only"
+neg_float_to_int LLVM_BACKEND_UNSUPPORTED_CONVERSION            !=0 1        contains "type conversion is not supported (opcode sitofp)"
+neg_int_to_float LLVM_BACKEND_UNSUPPORTED_CONVERSION            !=0 1        contains "type conversion is not supported (opcode sitofp)"
+
+None of the negative fixtures produces a .ll file.
+
+Cross-checks:
+  * FDIV is rejected at the dispatch arm (src/llvm-backend.c:1515).
+  * IR_SITOFP / IR_FPTOSI (introduced by mixed-type arithmetic
+    `x + 0` / `x + 0.0`) is rejected by the existing
+    IR_TRUNC/IR_ZEXT/IR_SEXT/IR_FPTRUNC/IR_FPEXT/IR_FPTOUI/
+    IR_FPTOSI/IR_UITOFP/IR_SITOFP/IR_PTRTOINT/IR_INTTOPTR arm
+    (src/llvm-backend.c:1530, unchanged from CORE04).
+  * No new conversion path is introduced by FLOAT01.
+
+Per ACT §15 the negative matrix is intentionally bounded; FDIV,
+integer<->float conversion, and F64-pointer-deref (which is not
+expressible in current PolyC) are the three required rejection
+classes. The FLOAT01 matrix exercises all three (FDIV,
+int<->float, FPTOSI-via-AST_ASSIGN). F64-pointer-deref is
+recorded as NOT_EXPRESSIBLE_IN_CURRENT_LANGUAGE.
+
+Independent witnesses after CORRECTION01 M6:
+  - neg_fdiv              trips IR_FDIV dispatch arm (FLOAT_ARITH)
+  - neg_float_to_int      trips IR_SITOFP for int 0 -> F64 0.0
+                          (CONVERSION); NOT an IR_FPTOSI witness
+                          despite the original docstring claim
+  - neg_int_to_float      trips IR_SITOFP for int x -> F64
+                          (CONVERSION)
+  - neg_fptosi_witness    trips IR_FPTOSI dispatch arm directly
+                          (CONVERSION; diagnostic `opcode fptosi`)
+                          via AST_ASSIGN `j = x` lowering at
+                          src/ir.c:944
