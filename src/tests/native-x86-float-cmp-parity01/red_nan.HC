@@ -25,26 +25,25 @@ U0 Main() {
   qnan = 0x7FF8000000000000;
   MemCpy(&nan, &qnan, 8);
 
-  "PARITY01_NAN_MATRIX\n"
-  "  NaN == 1.0  -> %d  (expected 0)\n"
-  "  NaN != 1.0  -> %d  (expected 1)\n"
-  "  NaN <  1.0  -> %d  (expected 0)\n"
-  "  NaN <= 1.0  -> %d  (expected 0)\n"
-  "  NaN >  1.0  -> %d  (expected 0)\n"
-  "  NaN >= 1.0  -> %d  (expected 0)\n"
-  "  1.0 == NaN  -> %d  (expected 0)\n"
-  "  1.0 != NaN  -> %d  (expected 1)\n"
-  "  1.0 <  NaN  -> %d  (expected 0)\n"
-  "  1.0 <= NaN  -> %d  (expected 0)\n"
-  "  1.0 >  NaN  -> %d  (expected 0)\n"
-  "  1.0 >= NaN  -> %d  (expected 0)\n"
-  "  NaN == NaN  -> %d  (expected 0)\n"
-  "  NaN != NaN  -> %d  (expected 1)\n"
-  "  NaN <  NaN  -> %d  (expected 0)\n"
-  "  NaN <= NaN  -> %d  (expected 0)\n"
-  "  NaN >  NaN  -> %d  (expected 0)\n"
-  "  NaN >= NaN  -> %d  (expected 0)\n",
-    nan == 1.0, nan != 1.0, nan <  1.0, nan <= 1.0, nan >  1.0, nan >= 1.0,
-    1.0 == nan, 1.0 != nan, 1.0 <  nan, 1.0 <= nan, 1.0 >  nan, 1.0 >= nan,
-    nan == nan, nan != nan, nan <  nan, nan <= nan, nan >  nan, nan >= nan;
+  "PARITY01_NAN_MATRIX\n";
+  if (nan == 1.0) "  NaN == 1.0  -> TRUE  (expected false)\n"; else "  NaN == 1.0  -> FALSE (expected false)\n";
+  if (nan != 1.0) "  NaN != 1.0  -> TRUE  (expected true)\n";  else "  NaN != 1.0  -> FALSE (expected true)\n";
+  if (nan <  1.0) "  NaN <  1.0  -> TRUE  (expected false)\n"; else "  NaN <  1.0  -> FALSE (expected false)\n";
+  if (nan <= 1.0) "  NaN <= 1.0  -> TRUE  (expected false)\n"; else "  NaN <= 1.0  -> FALSE (expected false)\n";
+  if (nan >  1.0) "  NaN >  1.0  -> TRUE  (expected false)\n"; else "  NaN >  1.0  -> FALSE (expected false)\n";
+  if (nan >= 1.0) "  NaN >= 1.0  -> TRUE  (expected false)\n"; else "  NaN >= 1.0  -> FALSE (expected false)\n";
+
+  if (1.0 == nan) "  1.0 == NaN  -> TRUE  (expected false)\n"; else "  1.0 == NaN  -> FALSE (expected false)\n";
+  if (1.0 != nan) "  1.0 != NaN  -> TRUE  (expected true)\n";  else "  1.0 != NaN  -> FALSE (expected true)\n";
+  if (1.0 <  nan) "  1.0 <  NaN  -> TRUE  (expected false)\n"; else "  1.0 <  NaN  -> FALSE (expected false)\n";
+  if (1.0 <= nan) "  1.0 <= NaN  -> TRUE  (expected false)\n"; else "  1.0 <= NaN  -> FALSE (expected false)\n";
+  if (1.0 >  nan) "  1.0 >  NaN  -> TRUE  (expected false)\n"; else "  1.0 >  NaN  -> FALSE (expected false)\n";
+  if (1.0 >= nan) "  1.0 >= NaN  -> TRUE  (expected false)\n"; else "  1.0 >= NaN  -> FALSE (expected false)\n";
+
+  if (nan == nan) "  NaN == NaN  -> TRUE  (expected false)\n"; else "  NaN == NaN  -> FALSE (expected false)\n";
+  if (nan != nan) "  NaN != NaN  -> TRUE  (expected true)\n";  else "  NaN != NaN  -> FALSE (expected true)\n";
+  if (nan <  nan) "  NaN <  NaN  -> TRUE  (expected false)\n"; else "  NaN <  NaN  -> FALSE (expected false)\n";
+  if (nan <= nan) "  NaN <= NaN  -> TRUE  (expected false)\n"; else "  NaN <= NaN  -> FALSE (expected false)\n";
+  if (nan >  nan) "  NaN >  NaN  -> TRUE  (expected false)\n"; else "  NaN >  NaN  -> FALSE (expected false)\n";
+  if (nan >= nan) "  NaN >= NaN  -> TRUE  (expected false)\n"; else "  NaN >= NaN  -> FALSE (expected false)\n";
 }

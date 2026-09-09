@@ -10,17 +10,13 @@ U0 Main() {
   F64 pos_inf  = 1.0 / 0.0;   /* +Inf */
   F64 neg_inf  = -1.0 / 0.0;  /* -Inf */
 
-  "PARITY01_SPECIAL_VALUES\n"
-  "  +0.0 == -0.0 -> %d  (expected 1)\n"
-  "  +0.0 != -0.0 -> %d  (expected 0)\n"
-  "  -0.0 <  +0.0 -> %d  (expected 0)\n"
-  "  -0.0 <= +0.0 -> %d  (expected 1)\n"
-  "  +Inf >  1.0  -> %d  (expected 1)\n"
-  "  +Inf >= 1.0  -> %d  (expected 1)\n"
-  "  -Inf <  1.0  -> %d  (expected 1)\n"
-  "  -Inf <= 1.0  -> %d  (expected 1)\n",
-    pos_zero == neg_zero, pos_zero != neg_zero,
-    neg_zero < pos_zero, neg_zero <= pos_zero,
-    pos_inf > 1.0, pos_inf >= 1.0,
-    neg_inf < 1.0, neg_inf <= 1.0;
+  "PARITY01_SPECIAL_VALUES\n";
+  if (pos_zero == neg_zero) "  +0.0 == -0.0 -> TRUE  (expected true)\n";  else "  +0.0 == -0.0 -> FALSE (expected true)\n";
+  if (pos_zero != neg_zero) "  +0.0 != -0.0 -> TRUE  (expected false)\n"; else "  +0.0 != -0.0 -> FALSE (expected false)\n";
+  if (neg_zero <  pos_zero) "  -0.0 <  +0.0 -> TRUE  (expected false)\n"; else "  -0.0 <  +0.0 -> FALSE (expected false)\n";
+  if (neg_zero <= pos_zero) "  -0.0 <= +0.0 -> TRUE  (expected true)\n";  else "  -0.0 <= +0.0 -> FALSE (expected true)\n";
+  if (pos_inf  >  1.0)     "  +Inf >  1.0  -> TRUE  (expected true)\n";  else "  +Inf >  1.0  -> FALSE (expected true)\n";
+  if (pos_inf  >= 1.0)     "  +Inf >= 1.0  -> TRUE  (expected true)\n";  else "  +Inf >= 1.0  -> FALSE (expected true)\n";
+  if (neg_inf  <  1.0)     "  -Inf <  1.0  -> TRUE  (expected true)\n";  else "  -Inf <  1.0  -> FALSE (expected true)\n";
+  if (neg_inf  <= 1.0)     "  -Inf <= 1.0  -> TRUE  (expected true)\n";  else "  -Inf <= 1.0  -> FALSE (expected true)\n";
 }

@@ -5,18 +5,16 @@
  */
 
 U0 Main() {
-  "PARITY01_FINITE_MATRIX\n"
-  "  1.0 == 1.0 -> %d  (expected 1)\n"
-  "  1.0 != 1.0 -> %d  (expected 0)\n"
-  "  1.0 <  2.0 -> %d  (expected 1)\n"
-  "  1.0 <= 1.0 -> %d  (expected 1)\n"
-  "  2.0 >  1.0 -> %d  (expected 1)\n"
-  "  2.0 >= 2.0 -> %d  (expected 1)\n"
-  "  1.0 == -1.0 -> %d  (expected 0)\n"
-  "  2.0 <  1.0 -> %d  (expected 0)\n"
-  "  1.0 >  2.0 -> %d  (expected 0)\n"
-  "  1.0 <  2.0 -> %d  (expected 1)\n"
-  "  2.0 <  1.0 -> %d  (expected 0)\n",
-    1.0 == 1.0, 1.0 != 1.0, 1.0 < 2.0, 1.0 <= 1.0, 2.0 > 1.0, 2.0 >= 2.0,
-    1.0 == -1.0, 2.0 < 1.0, 1.0 > 2.0, 1.0 < 2.0, 2.0 < 1.0;
+  "PARITY01_FINITE_MATRIX\n";
+  if (1.0 == 1.0) "  1.0 == 1.0 -> TRUE  (expected true)\n";  else "  1.0 == 1.0 -> FALSE (expected true)\n";
+  if (1.0 != 1.0) "  1.0 != 1.0 -> TRUE  (expected false)\n"; else "  1.0 != 1.0 -> FALSE (expected false)\n";
+  if (1.0 <  2.0) "  1.0 <  2.0 -> TRUE  (expected true)\n";  else "  1.0 <  2.0 -> FALSE (expected true)\n";
+  if (1.0 <= 1.0) "  1.0 <= 1.0 -> TRUE  (expected true)\n";  else "  1.0 <= 1.0 -> FALSE (expected true)\n";
+  if (2.0 >  1.0) "  2.0 >  1.0 -> TRUE  (expected true)\n";  else "  2.0 >  1.0 -> FALSE (expected true)\n";
+  if (2.0 >= 2.0) "  2.0 >= 2.0 -> TRUE  (expected true)\n";  else "  2.0 >= 2.0 -> FALSE (expected true)\n";
+  if (1.0 == -1.0) "  1.0 == -1.0 -> TRUE  (expected false)\n"; else "  1.0 == -1.0 -> FALSE (expected false)\n";
+  if (2.0 <  1.0) "  2.0 <  1.0 -> TRUE  (expected false)\n"; else "  2.0 <  1.0 -> FALSE (expected false)\n";
+  if (1.0 >  2.0) "  1.0 >  2.0 -> TRUE  (expected false)\n"; else "  1.0 >  2.0 -> FALSE (expected false)\n";
+  if (1.0 <  2.0) "  1.0 <  2.0 -> TRUE  (expected true)\n";   else "  1.0 <  2.0 -> FALSE (expected true)\n";
+  if (2.0 <  1.0) "  2.0 <  1.0 -> TRUE  (expected false)\n";  else "  2.0 <  1.0 -> FALSE (expected false)\n";
 }
