@@ -401,17 +401,39 @@ APPEND_ONLY_START_POINT = baf5dbd77cf89330699685dffd932c54031c815c
 * `git push --force` / `--force-with-lease` / force refspec
   markers to the authoritative remote
 
-### Mechanical binding (per ACT-POLYC-FACTORY-APPEND-ONLY-GUARD01)
+### Mechanical binding (per ACT-POLYC-FACTORY-APPEND-ONLY-GUARD01 and its CORRECTION01)
 
 The local pre-push hook (`.githooks/pre-push`) is the binding
-artifact. It enforces three graph-property checks against
-`refs/heads/main`:
+artifact. It enforces three graph-property checks against the
+authoritative destination ref `refs/heads/main`, using the
+protocol fields defined by `githooks(5)`:
+
+```text
+authoritative destination:
+    remote_ref == refs/heads/main
+
+deletion:
+    local_sha == 0000...0000
+
+existing-main update:
+    remote_sha != 0000...0000
+
+required FF condition:
+    git merge-base --is-ancestor $remote_sha $local_sha
+
+remote_sha == 0000...0000:
+    creation of a previously nonexistent remote main,
+    not deletion
+```
+
+Graph-property checks against `refs/heads/main`:
 
 ```text
 1. git replace -l must be empty
-2. remote_sha == 0000...0000 is rejected (delete of main)
+2. local_sha == 0000...0000 is rejected (delete of main)
 3. git merge-base --is-ancestor $remote_sha $local_sha must hold
-   (every non-FF update, including force-push shapes, is rejected)
+   (every non-FF update of an existing main, including force-push
+   shapes, is rejected)
 ```
 
 Topic branches are intentionally not policed by this rule.
@@ -419,9 +441,13 @@ Topic branches are intentionally not policed by this rule.
 The hook enforces graph properties of the resulting ref
 transition; it does NOT parse `git push` command-line flags.
 The permanent regression suite is
-`scripts/quality/factory-append-only-test.sh` (NC1..NC7); the
+`scripts/quality/factory-append-only-test.sh` (NC1..NC11); the
 hook contract is locked to that suite and F5 forbids weakening
 the suite to obtain a green PASS.
+
+The binding to `remote_ref` (not `local_ref`) and to
+`local_sha == ZERO` (not `remote_sha == ZERO`) is governed by
+`ACT-POLYC-FACTORY-APPEND-ONLY-GUARD01-CORRECTION01`.
 
 ### Required mechanism for divergence
 
