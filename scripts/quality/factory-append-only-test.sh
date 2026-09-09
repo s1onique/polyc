@@ -11,15 +11,29 @@
 # All tests run against synthetic repos in temporary
 # directories. No production state is touched.
 #
-# Binding matrix (per ACT-POLYC-FACTORY-APPEND-ONLY-GUARD01):
+# Binding matrix (per ACT-POLYC-FACTORY-APPEND-ONLY-GUARD01
+# and ACT-POLYC-FACTORY-APPEND-ONLY-GUARD01-CORRECTION01):
 #
 #   NC1  normal FF main push                       PASS
 #   NC2  non-FF main update                        REJECT
 #   NC3  force-equivalent non-FF transition        REJECT
-#   NC4  delete main                               REJECT
+#   NC4  create main when remote has none          PASS
+#        (was: encoded "delete main" with the wrong
+#         protocol shape; per CORRECTION01 the real
+#         delete shape is NC8)
 #   NC5  refs/replace present                      REJECT
 #   NC6  new non-main branch                       PASS
 #   NC7  FF non-main branch                        PASS
+#   NC8  real delete of main (CORRECTION01)        REJECT
+#        local_ref=(delete), local_sha=ZERO,
+#        remote_ref=refs/heads/main, remote_sha=<tip>
+#   NC9  feature -> main, non-FF (CORRECTION01)    REJECT
+#        local_ref=refs/heads/feature,
+#        remote_ref=refs/heads/main
+#   NC10 HEAD -> main, non-FF (CORRECTION01)       REJECT
+#        local_ref=HEAD (literal),
+#        remote_ref=refs/heads/main
+#   NC11 feature -> main, FF (CORRECTION01)        PASS
 #
 # The hook enforces graph properties of the proposed ref
 # transition, NOT a blacklist of `git push` command-line
@@ -128,6 +142,48 @@ build_linear_repo() {
     cd "$TMPROOT"
 }
 
+# Build a synthetic repo with a single seed commit, then a
+# `feature` branch with one extra commit on top of seed, and
+# a `main` branch with a DIFFERENT extra commit on top of
+# seed. Emits (in order, on stdout):
+#
+#   <seed> <feature_tip> <main_tip>
+#
+# feature_tip and main_tip are siblings (neither is an
+# ancestor of the other); this lets NC9 / NC10 build a
+# non-fast-forward `feature -> main` transition, and NC11
+# build a fast-forward one by using seed as the remote tip.
+build_fork_repo() {
+    name="$1"
+    repo="$TMPROOT/$name"
+    rm -rf "$repo"
+    mkdir -p "$repo"
+    cd "$repo"
+    git init -q -b main .
+    git -c core.hooksPath=/dev/null config user.email "append-only-test@polyc.local"
+    git -c core.hooksPath=/dev/null config user.name "polyc-append-only-test"
+    mkdir -p scripts/quality
+    printf '#!/bin/sh\nexit 0\n' > scripts/quality/gate-push.sh
+    chmod +x scripts/quality/gate-push.sh
+    echo s > s
+    git add s
+    git -c core.hooksPath=/dev/null commit -qm "seed"
+    seed=$(git rev-parse HEAD)
+    git checkout -q -b feature
+    echo f > f
+    git add f
+    git -c core.hooksPath=/dev/null commit -qm "feature-step"
+    feature_tip=$(git rev-parse HEAD)
+    git checkout -q main
+    echo m > m
+    git add m
+    git -c core.hooksPath=/dev/null commit -qm "main-step"
+    main_tip=$(git rev-parse HEAD)
+    git config core.hooksPath "$REPO_ROOT/.githooks"
+    printf '%s %s %s\n' "$seed" "$feature_tip" "$main_tip"
+    cd "$TMPROOT"
+}
+
 # Run the production pre-push hook against an existing
 # synthetic repo at $TMPROOT/$name using the given stdin line.
 # Compares the hook's exit code against expect_rc and updates
@@ -220,12 +276,21 @@ UNRELATED=$(git rev-parse HEAD)
 cd "$TMPROOT"
 run_hook NC3 refs/heads/main "$B_TIP" refs/heads/main "$UNRELATED" 1 nc2
 
-# ---- NC4: delete main -> REJECT ------------------------------------
-# Build a linear repo with 3 commits; simulate a push whose
-# remote_sha is the zero sentinel (delete).
+# ---- NC4: create main when remote has none -> PASS -----------------
+# Build a linear repo with 3 commits; simulate the push
+# shape that creates a brand-new `main` (no existing remote
+# tip). Per githooks(5), this is `remote_sha == ZERO_SHA`,
+# which is a legitimate push shape -- NOT a deletion. The
+# real delete shape is NC8 below. The hook MUST accept
+# this; the previous ACT's NC4 named this shape "delete
+# main" but the encoding was the create shape; the parent
+# NC4's rc=1 was an accidental consequence of the
+# implementation-defined `merge-base --is-ancestor ZERO X`
+# behaviour. CORRECTION01 renames this test to reflect the
+# shape it actually exercises.
 set -- $(build_linear_repo nc4 2)
 HEAD="$1"
-run_hook NC4 refs/heads/main "$HEAD" refs/heads/main "$ZERO_SHA" 1
+run_hook NC4 refs/heads/main "$HEAD" refs/heads/main "$ZERO_SHA" 0
 
 # ---- NC5: refs/replace present -> REJECT ---------------------------
 # Build a single-commit repo, then populate refs/replace so the
@@ -257,6 +322,43 @@ run_hook NC6 refs/heads/feature "$HEAD" refs/heads/feature "$ZERO_SHA" 0
 set -- $(build_linear_repo nc7 2)
 HEAD="$1"; PARENT="$2"
 run_hook NC7 refs/heads/feature "$HEAD" refs/heads/feature "$PARENT" 0
+
+# ---- NC8: real delete of main -> REJECT ----------------------------
+# Per githooks(5), a ref deletion is encoded as
+# (delete) ZERO refs/heads/main <remote-tip>. The hook MUST
+# refuse. (Note: NC4's encoding in the parent ACT was the
+# "create main" shape, NOT the delete shape; that test was
+# mis-named.)
+set -- $(build_linear_repo nc8 2)
+HEAD="$1"
+run_hook NC8 "(delete)" "$ZERO_SHA" refs/heads/main "$HEAD" 1
+
+# ---- NC9: feature -> main, non-FF -> REJECT ------------------------
+# Per githooks(5), `git push origin feature:main` is encoded
+# as `refs/heads/feature <NEW> refs/heads/main <OLD>`.
+# When NEW is not a descendant of OLD (diverging branches),
+# this is a non-fast-forward rewrite of main. The hook MUST
+# refuse.
+set -- $(build_fork_repo nc9)
+SEED="$1"; FTIP="$2"; MTIP="$3"
+run_hook NC9 refs/heads/feature "$FTIP" refs/heads/main "$MTIP" 1
+
+# ---- NC10: HEAD -> main, non-FF -> REJECT --------------------------
+# Per githooks(5), `git push origin HEAD:refs/heads/main`
+# is encoded with `local_ref = HEAD` (literal). Same
+# forbidden outcome as NC9; different source-name shape.
+set -- $(build_fork_repo nc10)
+SEED="$1"; FTIP="$2"; MTIP="$3"
+run_hook NC10 "HEAD" "$FTIP" refs/heads/main "$MTIP" 1
+
+# ---- NC11: feature -> main, FF -> PASS -----------------------------
+# Positive control: when NEW IS a descendant of OLD on the
+# remote main (e.g. remote main is at `seed`, feature_tip
+# sits on top of seed), the rewrite IS a fast-forward and
+# MUST be accepted.
+set -- $(build_fork_repo nc11)
+SEED="$1"; FTIP="$2"; MTIP="$3"
+run_hook NC11 refs/heads/feature "$FTIP" refs/heads/main "$SEED" 0
 
 echo
 echo "--- summary ---"

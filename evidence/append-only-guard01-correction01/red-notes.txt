@@ -1,0 +1,118 @@
+RED notes -- ACT-POLYC-FACTORY-APPEND-ONLY-GUARD01-CORRECTION01
+=============================================================
+
+Hook under test: production `.githooks/pre-push` at the
+parent ACT's CLOSE commit `a537672`, with the hygiene
+follow-up `38ac434` already applied. No correction applied
+yet at this point.
+
+All four REDs below are reproductions against a single
+synthetic repo (`/tmp/...`) and use the documented Git
+pre-push protocol field names from
+`https://git-scm.com/docs/githooks`.
+
+The hook receives the protocol-correct stdin lines and
+**does not halt**; in three of four cases it then proceeds
+into the `gate-push.sh` validation path (and fails there
+because the synthetic repo has no gate), which masks the
+append-only bug behind a downstream error. We therefore
+check the rc of the **entire hook invocation**, not the
+`POLYC_PRE_PUSH_HALTED` echo (which the buggy hook never
+emits for these shapes).
+
+----------------------------------------------------------------
+RED-1: real deletion of refs/heads/main
+----------------------------------------------------------------
+stdin (verbatim):
+    (delete) 0000000000000000000000000000000000000000 \
+        refs/heads/main <tip>
+
+What the protocol says this means: a `git push origin
+:main` for refs/heads/main. The hook MUST refuse.
+
+What the closed hook does:
+    - The outer `if [ "$local_ref" = "refs/heads/main" ]`
+      is FALSE (local_ref is `(delete)`).
+    - The deletion guard does not fire.
+    - The hook proceeds into the per-ref loop.
+    - The `case "$local_sha" in 000000... ) continue ;;`
+      line skips deletes entirely (the append-only block
+      lives INSIDE the loop, after that skip).
+
+Observed: rc=0 (delete accepted).
+
+This is exactly the bug the reviewer flagged as P0-1.
+
+----------------------------------------------------------------
+RED-2: non-FF push from refs/heads/feature to refs/heads/main
+----------------------------------------------------------------
+stdin (verbatim):
+    refs/heads/feature <NEW> refs/heads/main <OLD>
+
+where OLD is not an ancestor of NEW (the branches
+diverged). What the protocol says this means: a `git push
+origin feature:main` whose source tip does not fast-forward
+the remote main. The hook MUST refuse.
+
+What the closed hook does:
+    - The outer `if [ "$local_ref" = "refs/heads/main" ]`
+      is FALSE (local_ref is `refs/heads/feature`).
+    - The non-FF guard does not fire.
+    - The hook calls `gate-push.sh <NEW> <OLD>`.
+    - In the synthetic repo, gate-push.sh is a stub that
+      returns 0, so the whole hook returns 0.
+
+Observed: rc=0 (rewriting main via feature accepted).
+
+This is exactly the bug the reviewer flagged as P0-2.
+
+----------------------------------------------------------------
+RED-3: non-FF push from literal HEAD to refs/heads/main
+----------------------------------------------------------------
+stdin (verbatim):
+    HEAD <NEW> refs/heads/main <OLD>
+
+where OLD is not an ancestor of NEW. Same protocol as
+RED-2 but with a literal source name. Per githooks(5):
+"If the local commit was specified by something other
+than a name which could be expanded (such as HEAD~, or
+an object name) it will be supplied as it was originally
+given." So `HEAD` arrives literally.
+
+What the closed hook does: same as RED-2.
+
+Observed: rc=0.
+
+----------------------------------------------------------------
+RED-4: parent NC4 was encoding the wrong shape
+----------------------------------------------------------------
+The closed `factory-append-only-test.sh` NC4 sends:
+
+    refs/heads/main <real SHA> refs/heads/main <ZERO>
+
+Per the protocol, this is "create main when remote has
+none" (a legitimate push shape). The closed hook "rejects"
+it because of the unrelated non-FF check on the new tip
+against the zero sentinel (`merge-base --is-ancestor` of
+zero is implementation-defined; in modern Git it errors
+out non-zero, which the `2>/dev/null` hides -- but the
+hook exits 1 regardless). So NC4's PASS-after-IMPL
+proves the wrong thing.
+
+The real delete shape (RED-1) was not exercised by
+NC1..NC7 at all.
+
+----------------------------------------------------------------
+Test suite status at this RED point
+----------------------------------------------------------------
+After extending the suite with NC8..NC11 encoding the
+four RED shapes above (without changing the hook), the
+suite reports:
+
+    PASS = NC1, NC2, NC3, NC5, NC6, NC7, NC11 = 7
+    FAIL = NC8 (real delete), NC9 (feature non-FF),
+           NC10 (HEAD non-FF)                   = 3
+    STATUS = FAIL
+
+That is the RED witness the IMPL phase closes.
+

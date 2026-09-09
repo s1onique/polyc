@@ -1,0 +1,29 @@
+=== RED transcript: ACT-POLYC-FACTORY-APPEND-ONLY-GUARD01-CORRECTION01 ===
+Hook under test: production .githooks/pre-push at HEAD before correction
+
+--- NC8 (real delete of main) ---
+stdin: (delete) 0000000000000000000000000000000000000000 refs/heads/main fd60000df0331367192f84cc0cb58c0c0fd6204c
+rc=0
+Expected after CORRECTION01: rc=1 (POLYC_PRE_PUSH_HALTED=main-deletion)
+Observed now: rc=0 (delete accepted -- bug P0-1).
+
+--- NC9 (feature -> main, non-FF) ---
+stdin: refs/heads/feature db58372aaea292fb52bb0b6a66912dddbc376863 refs/heads/main 5dd5bbfa4d05f43e42f2b4b571939d3ee7ae6cbb
+POLYC_PRE_PUSH_VALIDATING=db58372aaea2 mode=range dest=named
+rc=0
+Expected after CORRECTION01: rc=1 (POLYC_PRE_PUSH_HALTED=main-non-fast-forward)
+Observed now: rc=0 (rewriting main via feature accepted -- bug P0-2).
+
+--- NC10 (HEAD -> main, non-FF) ---
+stdin: HEAD fd60000df0331367192f84cc0cb58c0c0fd6204c refs/heads/main 5dd5bbfa4d05f43e42f2b4b571939d3ee7ae6cbb
+POLYC_PRE_PUSH_VALIDATING=fd60000df033 mode=range dest=named
+rc=0
+Expected after CORRECTION01: rc=1
+Observed now: rc=0 (literal-source rewriting main accepted -- bug P0-2).
+
+--- NC11 (feature -> main, FF) -> sanity positive ---
+stdin: refs/heads/feature db58372aaea292fb52bb0b6a66912dddbc376863 refs/heads/main b036d520e9ef4780ae6950acf00c9a408a8be615
+POLYC_PRE_PUSH_VALIDATING=db58372aaea2 mode=range dest=named
+rc=0
+Expected after CORRECTION01: rc=0 (legitimate FF accepted)
+Observed now: rc=0 (works by accident because the buggy hook ignores everything).
