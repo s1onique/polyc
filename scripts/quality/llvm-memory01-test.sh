@@ -54,6 +54,20 @@ TOTAL_DEFENSIVE=0
 TOTAL_UNREACHABLE=0
 COUNTER_AGG_FAILURES=0
 
+# ACT-POLYC-LLVM-MEMORY01-CORRECTION01 NC5: per-fixture counter
+# bookkeeping. Each positive fixture is uniquely tagged with the
+# number of IR_LOAD_DEREF / IR_STORE_DEREF dispatches it exercises
+# (see RED-2 / RED-3 / P4 / P5 in evidence/llvm-memory01/red/).
+# Per-fixture SHAPE_DEPENDENT counts are recorded here so the
+# NC5 binding can assert that the count is uniquely attributable
+# to the dereference dispatch (no fall-through to IR_STORE or to
+# the pre-existing scalar-shaping path).
+#
+# POSIX-shell associative arrays are not portable; we use a
+# per-fixture temp file keyed by fixture basename.
+PER_FIXTURE_DIR="$EVID/_tmp/per_fixture"
+mkdir -p "$PER_FIXTURE_DIR"
+
 check_counter_purity() {
     bn="$1"; out="$2"
     if grep -q '^CAPABILITY_COUNTERS ' "$out"; then
@@ -103,6 +117,17 @@ parse_and_sum_counters() {
     TOTAL_REJECTED=$((TOTAL_REJECTED + rej))
     TOTAL_SHAPE_DEPENDENT=$((TOTAL_SHAPE_DEPENDENT + sdp))
     TOTAL_DEFENSIVE=$((TOTAL_DEFENSIVE + def))
+    # ACT-POLYC-LLVM-MEMORY01-CORRECTION01 NC5: persist per-fixture
+    # counts. Keyed by basename so the assertion phase can read
+    # them after every fixture has been processed.
+    pf="$PER_FIXTURE_DIR/$bn"
+    {
+        printf 'supported=%s\n' "$sup"
+        printf 'rejected=%s\n' "$rej"
+        printf 'shape_dependent=%s\n' "$sdp"
+        printf 'defensive=%s\n' "$def"
+        printf 'unreachable=%s\n' "$unr"
+    } > "$pf"
     return 0
 }
 
@@ -242,6 +267,96 @@ if [ "$COUNTER_AGG_FAILURES" -eq 0 ] && \
    [ "$TOTAL_DEFENSIVE" -eq 0 ] && \
    [ "$TOTAL_UNREACHABLE" -eq 0 ]; then
     echo "PASS  counter gate: SHAPE_DEPENDENT>=1, SUPPORTED>=1, DEFENSIVE=0, UNREACHABLE=0"
+fi
+
+# ACT-POLYC-LLVM-MEMORY01-CORRECTION01 NC5 (strong binding).
+#
+# Each positive fixture is tagged with the number of
+# IR_LOAD_DEREF / IR_STORE_DEREF dispatches it is expected to
+# contribute to SHAPE_DEPENDENT. Asserting these expectations
+# proves that the SHAPE_DEPENDENT counter is uniquely
+# attributable to the dereference dispatch: any code-path that
+# suppresses or doubles one LL_INC_SHAPE_DEPENDENT call inside
+# IR_LOAD_DEREF / IR_STORE_DEREF will trip the corresponding
+# per-fixture assertion below.
+#
+# red_pointer_param.HC  : IR_TYPE_PTR parameter only, no deref.
+#                         Expected SHAPE_DEPENDENT == 0.
+# red_load_deref.HC     : one IR_LOAD_DEREF dispatch.
+#                         Expected SHAPE_DEPENDENT >= 1.
+# red_store_deref.HC    : one IR_STORE_DEREF dispatch.
+#                         Expected SHAPE_DEPENDENT >= 1.
+# p4_load_add.HC        : one IR_LOAD_DEREF dispatch
+#                         (+ one IR_IADD which is SUPPORTED, not
+#                         SHAPE_DEPENDENT).
+#                         Expected SHAPE_DEPENDENT >= 1.
+# p5_store_inc.HC       : one IR_LOAD_DEREF + one IR_STORE_DEREF.
+#                         Expected SHAPE_DEPENDENT >= 2.
+#
+# These bounds are tight on the lower side and intentionally
+# loose on the upper side (the predecessor scalar-shaping path
+# may legitimately contribute 0 SHAPE_DEPENDENT to each
+# fixture; that is fine, because per-fixture SUP/REJ/DEF/UNR
+# are still independently gated).
+echo
+echo "=== MEMORY01 NC5 per-fixture attribution ==="
+NC5_FAILURES=0
+check_nc5_min() {
+    bn="$1"; min="$2"
+    pf="$PER_FIXTURE_DIR/$bn"
+    if [ ! -f "$pf" ]; then
+        echo "FAIL  NC5 $bn: per-fixture counter file missing" >&2
+        FAIL=$((FAIL+1)); NC5_FAILURES=$((NC5_FAILURES+1))
+        return 1
+    fi
+    sdp=$(sed -n 's/^shape_dependent=\([0-9][0-9]*\)$/\1/p' "$pf")
+    if [ -z "$sdp" ]; then
+        echo "FAIL  NC5 $bn: malformed per-fixture shape_dependent" >&2
+        FAIL=$((FAIL+1)); NC5_FAILURES=$((NC5_FAILURES+1))
+        return 1
+    fi
+    if [ "$sdp" -lt "$min" ]; then
+        echo "FAIL  NC5 $bn: expected SHAPE_DEPENDENT >= $min, got $sdp" >&2
+        FAIL=$((FAIL+1)); NC5_FAILURES=$((NC5_FAILURES+1))
+        return 1
+    fi
+    echo "PASS  NC5 $bn: shape_dependent=$sdp (>= $min)"
+    return 0
+}
+check_nc5_eq() {
+    bn="$1"; eq="$2"
+    pf="$PER_FIXTURE_DIR/$bn"
+    if [ ! -f "$pf" ]; then
+        echo "FAIL  NC5 $bn: per-fixture counter file missing" >&2
+        FAIL=$((FAIL+1)); NC5_FAILURES=$((NC5_FAILURES+1))
+        return 1
+    fi
+    sdp=$(sed -n 's/^shape_dependent=\([0-9][0-9]*\)$/\1/p' "$pf")
+    if [ -z "$sdp" ]; then
+        echo "FAIL  NC5 $bn: malformed per-fixture shape_dependent" >&2
+        FAIL=$((FAIL+1)); NC5_FAILURES=$((NC5_FAILURES+1))
+        return 1
+    fi
+    if [ "$sdp" -ne "$eq" ]; then
+        echo "FAIL  NC5 $bn: expected SHAPE_DEPENDENT == $eq, got $sdp" >&2
+        FAIL=$((FAIL+1)); NC5_FAILURES=$((NC5_FAILURES+1))
+        return 1
+    fi
+    echo "PASS  NC5 $bn: shape_dependent=$sdp (== $eq)"
+    return 0
+}
+# red_pointer_param has IR_TYPE_PTR param but does NOT deref.
+check_nc5_eq  red_pointer_param  0
+# One IR_LOAD_DEREF dispatch each.
+check_nc5_min red_load_deref     1
+# One IR_STORE_DEREF dispatch.
+check_nc5_min red_store_deref    1
+# P4: one load + arith. IR_IADD is SUPPORTED, so only load counts.
+check_nc5_min p4_load_add        1
+# P5: load + add + store. Two deref dispatches.
+check_nc5_min p5_store_inc       2
+if [ "$NC5_FAILURES" -eq 0 ]; then
+    echo "PASS  NC5 per-fixture attribution: SHAPE_DEPENDENT uniquely attributable to IR_LOAD_DEREF / IR_STORE_DEREF"
 fi
 
 echo
