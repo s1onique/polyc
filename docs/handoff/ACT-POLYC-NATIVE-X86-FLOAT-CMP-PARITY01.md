@@ -109,3 +109,39 @@ LLVM backend is untouched (out of scope, see Residue).
 `ACT-POLYC-LLVM-FLOAT02` — audit the LLVM backend for the same
 float-comparison composition. Also fold in the pre-existing
 IR_FPTOSI bug as a separate scoped ACT if desired.
+
+## Closure repair
+
+Reviewer feedback after the first CLOSE flagged two
+closure-only defects that had to be fixed without touching
+the compiler semantics:
+
+1. The original RED commit message contained a blank line
+   between `ACT:` and `ACT-Phase: RED`, which caused git's
+   trailer parser to drop the `ACT:` key. The first CLOSE
+   used a `git replace` ref to paper over this locally, but
+   per Factory-v2 principles identity and verdict must be
+   derivable from immutable history alone (i.e. visible to
+   `git --no-replace-objects` and to a fresh clone).
+2. The HANDOFF had a trailing blank line at EOF that failed
+   `git diff --check a8ff7c7..HEAD`.
+
+Both were repaired by `git filter-branch` runs that rewrote
+the five PARITY01 commits in immutable history so the RED
+trailer block is contiguous and the HANDOFF has a single
+trailing newline. The `refs/replace/87384ce...` ref was
+deleted. The compiler fix was not touched.
+
+A fresh clone into `/tmp/polyc-fresh-clone` was used as the
+strongest closure witness and confirmed:
+
+```text
+git replace -l                 -> (empty)
+git diff --check a8ff7c7..HEAD -> rc=0
+factory-v2-range-check.sh      -> VERDICT=PASS, STATUS=PASS
+RED trailer    -> ACT: ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01
+                  ACT-Phase: RED   (contiguous)
+CLOSE trailer  -> ACT: ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01
+                  ACT-Verdict: PASS
+                  ACT-Phase: CLOSE (contiguous)
+```
