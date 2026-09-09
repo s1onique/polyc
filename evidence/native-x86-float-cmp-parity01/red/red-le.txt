@@ -1,0 +1,21 @@
+RED-AC14 - LE (<=) NaN behaviour
+
+Source-level observable: NaN <= 1.0 should be 0 (IEEE-754
+ordered less-or-equal). Current: 1.
+
+Evidence: evidence/native-x86-float-cmp-parity01/red/red-nan-aot.txt:
+  NaN <= 1.0  -> 1   (expected 0)
+  1.0 <= NaN  -> 1   (expected 0)
+  NaN <= NaN  -> 1   (expected 0)
+
+Assembly witness (BEFORE):
+
+  ucomisd %xmm1, %xmm0
+  setbe   %al
+  movzbq  %al, %rax
+
+Only setbe observes CF/ZF; PF=1 from UCOMISD on NaN is ignored.
+setbe reads CF=1 (or ZF=1) and returns 1. The IEEE-754 contract
+that "less-or-equal" must be ordered (false on NaN) is violated.
+
+AC14 reproducer: PASS (live x86_64 hcc).

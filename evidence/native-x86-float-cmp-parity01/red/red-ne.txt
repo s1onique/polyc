@@ -1,0 +1,25 @@
+RED-AC12 - NE (!=) NaN behaviour
+
+Source-level observable: NaN != 1.0 should be 1 (IEEE-754
+unordered not-equal). Current: 0.
+
+Evidence: evidence/native-x86-float-cmp-parity01/red/red-nan-aot.txt:
+  NaN != 1.0  -> 0   (expected 1)
+  1.0 != NaN  -> 0   (expected 1)
+  NaN != NaN  -> 0   (expected 1)
+
+Assembly witness (BEFORE):
+
+  ucomisd %xmm1, %xmm0
+  setne   %al
+  movzbq  %al, %rax
+
+Only setne observes ZF; PF=1 from UCOMISD on NaN is ignored. setne
+reads ZF=1 and returns 0. The IEEE-754 contract that "not-equal"
+includes the unordered case (NaN != x == true) is violated.
+
+Critical observation: the natural-looking wrong fix
+(setne AND setnp) is also wrong because AND-of-unordered produces
+false for NaN != x; the contract needs OR, not AND. NC2 binds this.
+
+AC12 reproducer: PASS (live x86_64 hcc).

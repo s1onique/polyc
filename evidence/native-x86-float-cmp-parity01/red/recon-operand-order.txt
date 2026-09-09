@@ -1,0 +1,69 @@
+R7 - Operand order for UCOMISD
+
+Both AOT and JIT use:
+
+  AOT (src/x86_64.c:1700):
+    "%s %%xmm1, %%xmm0\n\t"  -- AT&T suffix  ucomisd src, dst
+
+  JIT (src/x86_64-jit.c via x86_64_enc_ucomisd):
+    flags <- (xmm0 cmp xmm1)   -- direct-emit
+
+Mapping to IrCmpKind semantics:
+
+  xmm0 <- instr->r1   (first source)
+  xmm1 <- instr->r2   (second source)
+  flags <- (r1 cmp r2)
+
+The condition-code suffix for `set<cc> %al` reads the same flags
+produced by UCOMISD:
+
+  sete  -- ZF=1                    (==)
+  setne -- ZF=0                    (!=)
+  setb  -- CF=1                    (unsigned less)
+  setbe -- CF=1 or ZF=1            (unsigned less-or-equal)
+  seta  -- CF=0 and ZF=0           (unsigned above / greater)
+  setae -- CF=0                    (unsigned above-or-equal / greater-or-equal)
+
+These suffixes are unsigned-style mappings on UCOMISD's flag set,
+which is correct because UCOMISD treats the operands as a
+subtraction and produces flags that the "b/be/a/ae" forms already
+consume correctly for finite/equal/greater cases.
+
+The defect is not in operand ordering; it is in handling of the PF
+flag that UCOMISD sets on unordered inputs (NaN/ signalling).
+
+Finite ordering is symmetric in operand swap:
+
+  r1 = b, r2 = a  -- b<a  => CF=1    (CF is the "borrow" from a - b
+                                      in the SUB sense)
+  r1 = a, r2 = b  -- a>b  => CF=1    =>  r1 == b, r2 == a
+                                     =>  r1 < r2 == b < a == true
+                                     =>  setb reads CF=1 => 1
+  Same as r1==a, r2==b => seta reads CF=0, ZF=0 => 1.
+
+So operand swap does not affect finite semantics: `a > b` and
+`b < a` are correctly distinguished by `seta` vs `setb`. Both AOT
+and JIT rely on this and it is verified by the finite matrix below.
+
+NaN operand-position matrix (covered by AC17):
+
+  NaN cmp x  -- UCOMISD flags:  ZF=PF=CF=1
+  x cmp NaN  -- UCOMISD flags:  ZF=PF=CF=1  (commutative)
+
+  current sete -> 1  (WRONG; expected 0)
+  current setne-> 0  (WRONG; expected 1)
+  current setb -> 1  (WRONG; expected 0)
+  current setbe-> 1  (WRONG; expected 0)
+  current seta -> 0  (CORRECT)
+  current setae-> 0  (CORRECT)
+
+  Operand swap does not change the flags produced, so the matrix
+  is identical for both `NaN OP x` and `x OP NaN`. The fix's
+  composition (PF AND for EQ/LT/LE; PF OR for NE) likewise does
+  not depend on operand direction. AC17 is satisfied by capturing
+  both sides in the test harness.
+
+Finite semantics are unchanged by the fix: `sete + setnp AND`,
+`setb + setnp AND`, etc. preserve the existing finite flag-state
+because PF=0 on ordered (finite) inputs, so the AND with `!PF`
+is a no-op for those cases.

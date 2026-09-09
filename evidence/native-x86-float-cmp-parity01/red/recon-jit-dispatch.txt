@@ -1,0 +1,78 @@
+R2 - JIT comparison dispatch path (x86_64 native)
+
+Source-of-truth for the JIT path (lines captured at HEAD 429b804b):
+
+1. Condition-code table (src/x86_64-jit.c:424-449):
+       static int jitCcFor(IrCmpKind cmp, int is_float) {
+           if (is_float) {
+               switch (cmp) {
+                   case IR_CMP_EQ: return X86_CC_E;
+                   case IR_CMP_NE: return X86_CC_NE;
+                   case IR_CMP_LT: return X86_CC_B;
+                   case IR_CMP_LE: return X86_CC_BE;
+                   case IR_CMP_GT: return X86_CC_A;
+                   case IR_CMP_GE: return X86_CC_AE;
+                   ...
+               }
+           }
+           ...
+       }
+
+2. SETcc encoder wrapper (src/x86_64-jit.c:456-459):
+       static void jitEmitSetCC(AsmEnc *enc, IrCmpKind cmp, int is_float) {
+           x86_64_enc_setcc_al(enc, jitCcFor(cmp, is_float));
+           x86_64_enc_movzbq_al_rax(enc);
+       }
+
+3. IR_FCMP dispatch arm (src/x86_64-jit.c:1171-1180):
+       case IR_FCMP: {
+           int is_dbl = jitFpDbl(instr->r1);
+           jitLoadFirstSrcFpr(ctx, instr->r1);          /* xmm0 <- r1 */
+           jitLoadToFpr(ctx, instr->r2, 1 /* xmm1 */);   /* xmm1 <- r2 */
+           if (is_dbl) x86_64_enc_ucomisd(enc, 0, 1);
+           else        x86_64_enc_ucomiss(enc, 0, 1);
+           jitEmitSetCC(enc, instr->extra.cmp_kind, 1);
+           jitSpillDst(ctx, instr, R_RAX);
+           break;
+       }
+
+Encoder helpers:
+- x86_64_enc_setcc_al(enc, cc)  (src/asm/enc_x86_64.c:388-394):
+      0F 9x C0   (x86 SETcc AL; cc & 0xF -> opcode suffix)
+  Supports all 16 X86Cc enum values including X86_CC_P (0xA) and
+  X86_CC_NP (0xB), which are needed for the new unordered-masking
+  pattern. No new encoder required for setnp.
+
+- x86_64_enc_ucomisd(enc, a, b) (src/asm/enc_x86_64.c:786):
+      66 0F 2E ModRM(b, a)   flags <- (a cmp b) at scalar-double
+  Operand order: a is xmm0 (first source), b is xmm1 (second source).
+  Flags reflect (r1 cmp r2) with the natural numeric direction,
+  matching the AOT `ucomisd %xmm1, %xmm0` line.
+
+- x86_64_enc_movzbq_al_rax(enc) (src/asm/enc_x86_64.c:396-403):
+      48 0F B6 C0  movzbq %al, %rax
+  Zero-extends %al into full %rax; result is canonical {0, 1} in rax
+  when SETcc wrote 0x00 / 0x01.
+
+AOT/JIT parity (R2 outcome):
+
+  Both paths use the same logical table {e, ne, b, be, a, ae} mapped
+  to the same X86Cc enum values {E, NE, B, BE, A, AE}. AOT emits raw
+  AT&T text via `aoStrCatFmt`; JIT uses direct-emit encoders. The
+  defect surface is identical: neither path handles PF for the four
+  broken predicates.
+
+  Both paths use identical operand order: xmm0 = r1, xmm1 = r2,
+  flags reflect (r1 cmp r2). UCOMISD operand ordering matches.
+
+  No shared helper exists between AOT and JIT for SETcc composition.
+  Both emit a single `setcc %al` followed by `movzbq %al, %rax`.
+  Both need to be modified in parallel.
+
+  jitEmitSetCC currently only takes (AsmEnc *, IrCmpKind, int) and
+  has no path to issue a second SETcc or a byte ALU. This is the
+  encoder layer that must be extended (or bypassed) to implement the
+  four unordered-masking sequences.
+
+  x86_64_enc_setcc_al already supports arbitrary cc values 0..0xF,
+  so `setp` and `setnp` are reachable with no new encoder.

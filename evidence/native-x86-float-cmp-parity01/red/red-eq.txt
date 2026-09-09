@@ -1,0 +1,22 @@
+RED-AC11 - EQ (==) NaN behaviour
+
+Source-level observable: NaN == 1.0 should be 0 (IEEE-754 ordered-equal).
+Current: 1.
+
+Evidence: evidence/native-x86-float-cmp-parity01/red/red-nan-aot.txt:
+  NaN == 1.0  -> 1   (expected 0)
+  1.0 == NaN  -> 1   (expected 0)
+  NaN == NaN  -> 1   (expected 0)
+
+Assembly witness (BEFORE), grepped from
+evidence/.../assembly-before/red_nan.s:
+
+  ucomisd %xmm1, %xmm0
+  sete    %al
+  movzbq  %al, %rax
+
+Only sete observes ZF; PF=1 from UCOMISD on NaN is ignored. sete reads
+ZF=1, returns 1, and the IEEE-754 contract that ordered-equal must be
+false on NaN is violated.
+
+AC11 reproducer: PASS (live x86_64 hcc).

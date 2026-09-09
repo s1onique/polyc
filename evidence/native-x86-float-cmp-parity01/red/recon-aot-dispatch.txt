@@ -1,0 +1,67 @@
+R1 - AOT comparison dispatch path (x86_64 native)
+
+Source-of-truth for the AOT path (lines captured at HEAD 429b804b):
+
+1. Condition-code table (src/x86_64.c:669-679):
+       static const char *x86_64CcFor(IrCmpKind cmp, int is_float) {
+           if (is_float) {
+               switch (cmp) {
+                   case IR_CMP_EQ: return "e";
+                   case IR_CMP_NE: return "ne";
+                   case IR_CMP_LT: return "b";
+                   case IR_CMP_LE: return "be";
+                   case IR_CMP_GT: return "a";
+                   case IR_CMP_GE: return "ae";
+                   ...
+               }
+           }
+           ...
+       }
+
+2. SETcc + zero-extend helper (src/x86_64.c:727-737):
+       static void x86_64EmitSetCC(IrCgCtx *ctx, IrCmpKind cmp, int is_float) {
+           const char *cc = x86_64CcFor(cmp, is_float);
+           ...
+           aoStrCatFmt(ctx->buf,
+                       "set%s    %%al\n\t"
+                       "movzbq  %%al, %%rax\n\t",
+                       cc);
+       }
+
+3. IR_FCMP dispatch arm (src/x86_64.c:1695-1706):
+       case IR_FCMP: {
+           x86_64LoadFirstSrcFpr(ctx, instr, instr->r1);   /* xmm0 <- r1 */
+           x86_64LoadToFpr(ctx, instr->r2, "xmm1");        /* xmm1 <- r2 */
+           /* ucomiss/ucomisd %xmm1, %xmm0 sets flags from
+            * (xmm0 cmp xmm1) at the operand precision. */
+           aoStrCatFmt(ctx->buf, "%s %%xmm1, %%xmm0\n\t",
+                       (int)irValueByteSize(instr->r1) == 4 ? "ucomiss"
+                                                            : "ucomisd");
+           x86_64EmitSetCC(ctx, instr->extra.cmp_kind, 1);
+           x86_64SpillDst(ctx, instr, "rax");
+           break;
+       }
+
+Complete chain:
+  IR_FCMP (kind)
+    -> x86_64CcFor(kind, 1)  returns "e"|"ne"|"b"|"be"|"a"|"ae"
+    -> text:  ucomisd %xmm1, %xmm0
+    -> text:  set<cc> %al
+    -> text:  movzbq %al, %rax
+    -> x86_64SpillDst stores %rax to dst's location
+
+Result location: dst is stored in IR_LOC_REG %rax (GPR) for the duration
+of this instruction; later spill/load takes it from %rax to its home
+slot or pinned register. Boolean representation is therefore an 8-bit
+byte in %al zero-extended to a 64-bit GPR.
+
+UCOMISD operand order: AT&T ucomisd src, dst compares dst - src
+(numerical subtraction with flags set per UCOMISD table).
+PolyC emits "ucomisd %xmm1, %xmm0", which means
+flags <- (xmm0 cmp xmm1) at operand precision. So:
+  - xmm0 = first source (instr->r1)
+  - xmm1 = second source (instr->r2)
+  - flags reflect (r1 cmp r2) from the natural numeric ordering.
+  - This matches the semantic that `r1 OP r2` reads
+    "first-source cmp second-source" with the same direction the
+    SETcc suffix expects for an unsigned compare.

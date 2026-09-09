@@ -1,0 +1,37 @@
+ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01
+ACT-Phase: RED
+
+Entry identity:
+  branch: main
+  HEAD:   429b804b275712432963391c7cd212858e06e3a0
+  worktree: clean (no edits at entry)
+
+Toolchain:
+  host arch:    arm64 (Apple Silicon, macOS)
+  x86_64 runner: rosetta (`arch -x86_64`)
+  cross-built x86_64 hcc: ./hcc-x86_64 (built with -arch x86_64)
+  baseline arm64 hcc: ./hcc (LLVM-enabled, used for LLVM/IR/AArch64 gates)
+
+Baseline gates (run before any change):
+  FLOAT01           29/0  PASS
+  llvm-spike-test   18/0  PASS
+  llvm-memory01      6/0  PASS
+  NC5 load           PASS
+  NC5 store          PASS
+  llvm-cap-table     PASS
+  factory-v2-test   35/0  PASS
+  gate-fast          PASS
+
+Reachable x86_64 execution environment:
+  - ./hcc-x86_64: built locally as Mach-O x86_64 from same source
+    tree, with HCC_ENABLE_LLVM=OFF + CMAKE_OSX_ARCHITECTURES=x86_64.
+    Uses native x86_64 backend for both AOT and JIT paths.
+  - Compiled .HC files are Mach-O x86_64 executables that run under
+    Rosetta (`file` reports "Mach-O 64-bit executable x86_64").
+
+R1-R10 recon in companion files:
+  recon-aot-dispatch.txt
+  recon-jit-dispatch.txt
+  recon-result-representation.txt
+  recon-temp-registers.txt
+  recon-operand-order.txt

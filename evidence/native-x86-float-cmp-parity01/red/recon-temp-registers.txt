@@ -1,0 +1,56 @@
+R5 - Register-pressure / temp-register strategy
+
+Both AOT and JIT dispatch IR_FCMP at a point where:
+
+  - xmm0 is alive (the loaded first source operand).
+  - xmm1 is alive (the loaded second source operand).
+  - The IR_FCMP site owns no GPR; x86_64LoadToReg uses %rax as the
+    default load target, but here we are loading FPRs, so the GPR
+    pool is free for the SETcc composition.
+
+Temp-register strategy: use %cl (R_RCX = 1) as the temporary
+byte target for the SETNP / SETP second condition. Both paths
+leave %rcx free at this point:
+
+  - AOT: x86_64LoadToFpr only touches xmm regs; no GPR load happens.
+    %rcx / %cl is free.
+  - JIT: jitLoadFirstSrcFpr + jitLoadToFpr only touch xmm regs;
+    no GPR load happens. %rcx / %cl is free.
+
+Lifetimes:
+
+  - %al: written by SETcc, AND/OR'd with %cl, then zero-extended
+    into %rax by `movzbq %al, %rax`. Lifetime: 3-4 instructions.
+  - %cl: written by SETNP/SETP, read once by AND/OR, then dead.
+    Lifetime: 2 instructions.
+  - %rax: written by movzbq from %al; then x86_64SpillDst (AOT) or
+    jitSpillDst (JIT) stores the 64-bit result to the dst slot.
+
+Clobber policy:
+
+  - The downstream consumer of IR_FCMP's result is either IR_BR
+    (uses test %rax,%rax) or a stored dst that later becomes an
+    operand to another arithmetic instruction. Neither depends on
+    the previous %rcx value at the IR_FCMP site.
+  - x86_64SpillDst / jitSpillDst only touches %rax.
+  - The framework does NOT enforce a callee-save contract for %rcx
+    in the JIT path because the JIT builds each function's code
+    in isolation; %rcx is volatile in the System V AMD64 ABI.
+
+AOT register availability (src/x86_64.c frame layout):
+  - rbp-based frame; locals live at negative offsets from %rbp.
+  - Pinned GPRs are saved by x86_64SavePinnedRegs at function entry.
+  - %rcx is one of the volatile (caller-save) GPRs and does not
+    need explicit preservation around IR_FCMP. Confirmed by
+    looking at x86_64SavePinnedRegs (src/x86_64.c:753-762), which
+    only iterates the function's pinned-reg vector.
+
+JIT register availability (src/x86_64-jit.c):
+  - JIT does not maintain a callee-save convention across calls
+    (calls are lowered to direct relative calls; clobbers are
+    handled per-call-site via known register usage).
+  - %rcx is volatile in the System V AMD64 ABI; JIT emits no save
+    code around it.
+
+No regalloc redesign is required. HALT_REGALLOC_CHANGE_REQUIRED
+is NOT triggered.

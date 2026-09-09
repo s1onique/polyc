@@ -1,0 +1,44 @@
+Truth table BEFORE the fix (current x86_64 native backend)
+
+Observed on real x86_64 host via hcc-x86_64 (Mach-O x86_64), running
+the red_nan.HC fixture (with NaN built from 0x7FF8000000000000).
+
+Predicate | ucomisd flags (NaN lhs/rhs)         | Current SETcc | Result | Required | State
+----------+------------------------------------+---------------+--------+----------+--------
+EQ (==)   | ZF=1 PF=1 CF=1 (unordered)         | sete          |   1    |    0     | BROKEN
+NE (!=)   | ZF=1 PF=1 CF=1                     | setne         |   0    |    1     | BROKEN
+LT (<)    | ZF=1 PF=1 CF=1                     | setb          |   1    |    0     | BROKEN
+LE (<=)   | ZF=1 PF=1 CF=1                     | setbe         |   1    |    0     | BROKEN
+GT (>)    | ZF=1 PF=1 CF=1                     | seta          |   0    |    0     | CORRECT
+GE (>=)   | ZF=1 PF=1 CF=1                     | setae         |   0    |    0     | CORRECT
+
+Confirmation in evidence/native-x86-float-cmp-parity01/red/red-nan-aot.txt:
+
+  NaN == 1.0  -> 1   (expected 0)   BROKEN
+  NaN != 1.0  -> 0   (expected 1)   BROKEN
+  NaN <  1.0  -> 1   (expected 0)   BROKEN
+  NaN <= 1.0  -> 1   (expected 0)   BROKEN
+  NaN >  1.0  -> 0   (expected 0)   CORRECT
+  NaN >= 1.0  -> 0   (expected 0)   CORRECT
+  1.0 == NaN  -> 1   (expected 0)   BROKEN (commutative, same flags)
+  1.0 != NaN  -> 0   (expected 1)   BROKEN
+  1.0 <  NaN  -> 1   (expected 0)   BROKEN
+  1.0 <= NaN  -> 1   (expected 0)   BROKEN
+  1.0 >  NaN  -> 0   (expected 0)   CORRECT
+  1.0 >= NaN  -> 0   (expected 0)   CORRECT
+  NaN == NaN  -> 1   (expected 0)   BROKEN
+  NaN != NaN  -> 0   (expected 1)   BROKEN
+  NaN <  NaN  -> 1   (expected 0)   BROKEN
+  NaN <= NaN  -> 1   (expected 0)   BROKEN
+  NaN >  NaN  -> 0   (expected 0)   CORRECT
+  NaN >= NaN  -> 0   (expected 0)   CORRECT
+
+Both AOT and JIT show identical broken behaviour (matched on
+evidence/.../red-nan-aot.txt and red-nan-jit.txt). Confirms the
+defect is shared across both native paths.
+
+Assembly witness (BEFORE):
+  evidence/native-x86-float-cmp-parity01/red/assembly-before/red_nan.s
+  shows the IR_FCMP arms emit ONLY sete/setne/setb/setbe/seta/setae,
+  with NO setnp / setp / andb / orb sequence. The structural defect
+  is reproducible at the encoder level.

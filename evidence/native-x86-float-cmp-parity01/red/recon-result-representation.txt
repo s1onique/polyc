@@ -1,0 +1,71 @@
+R3 - Result representation
+
+Boolean materialisation (src/x86_64.c:727-737):
+
+  setcc   %al          ; SETcc writes 0x00 or 0x01 to %al only
+  movzbq  %al, %rax    ; zero-extend to 64-bit register
+
+The result of IR_FCMP is an i64 value stored in %rax; the canonical
+representation is {0, 1} in %al / %rax.
+
+Consumers downstream:
+
+  - IR_BR (src/ir.c around IR_BR normalisation; src/x86_64.c IR_BR
+    arm uses `testq %rax, %rax` so it consumes full-register
+    truthiness; nonzero => branch).
+
+  - jitEmitSetCC mirrors the AOT path (src/x86_64-jit.c:456-459).
+    JIT IR_BR also tests %rax,%rax (src/x86_64-jit.c:1233).
+
+  - Spilled-to-stack / pinned-register destinations take %rax; later
+    loads restore the 64-bit value.
+
+Fix constraint:
+
+  The new emit must preserve the {0, 1} canonical representation.
+  This means we cannot simply OR/AND a PF predicate into %al if the
+  result needs to remain zero-extended: any bytes-OR that happens on
+  the low 8 bits and leaves them as {0, 1} is fine; any operation
+  that produces arbitrary bits in the upper bytes must be followed
+  by another `movzbq` (or equivalent zero-extension).
+
+  For EQ (sete + setnp AND):
+      sete   %al    -> %al in {0,1}
+      setnp  %cl    -> %cl in {0,1}
+      andb   %cl, %al   -> %al in {0,1} (bit-and of 1-bit values)
+      movzbq %al, %rax -> zero-extend to {0,1} in rax
+    No intermediate upper-byte clobber is introduced: the AND is on
+    bytes, %al is preserved as {0,1}, movzbq cleans up the upper
+    bytes. This pattern is already used in src/x86.c:693-700 for
+    AST_BIN_OP_EQ.
+
+  For NE (setne + setp OR):
+      setne  %al    -> %al in {0,1}
+      setp   %cl    -> %cl in {0,1}
+      orb    %cl, %al   -> %al in {0,1} (bit-or of 1-bit values)
+      movzbq %al, %rax -> zero-extend to {0,1} in rax
+    Same shape as the EQ case, with OR substituting for AND. This
+    pattern matches IEEE-754 ordered NE: "equal OR unordered".
+
+  For LT (setb + setnp AND), LE (setbe + setnp AND):
+      setb / setbe %al
+      setnp %cl
+      andb  %cl, %al
+      movzbq %al, %rax
+    Same shape.
+
+Implication for AOT (src/x86_64.c):
+  Reuse the byte-only ALU by emitting raw AT&T text:
+      setnp  %cl
+      andb   %cl, %al      (or  orb   %cl, %al   for NE)
+  No REX prefix needed for byte ops on %al / %cl. No new helper
+  required; the existing `x86_64EmitSetCC` text-buffer approach
+  trivially extends.
+
+Implication for JIT (src/x86_64-jit.c):
+  `x86_64_enc_setcc_al` already accepts arbitrary cc (0..0xF), so
+  emitting SETP/SETNP for %cl is a single line via the same encoder.
+  The byte ALU step (andb %cl,%al / orb %cl,%al) needs a new
+  minimal encoder because the existing `x86_64_enc_alu_reg_reg`
+  uses REX.W=1 and would produce a 64-bit AND that corrupts the
+  upper bits of %rax. We need a byte form.
