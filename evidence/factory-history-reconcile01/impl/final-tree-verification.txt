@@ -1,0 +1,58 @@
+=== Final tree verification per ACT §22 ===
+
+Each row of final-tree-contract.tsv must PASS its verification.
+
+--- PARITY01 RED fixtures ---
+  authority  : src/tests/native-x86-float-cmp-parity01/red_nan.HC
+  required   : local
+  PASS       3 fixtures present
+--- PARITY01 IMPL ModR/M fix ---
+  authority  : src/asm/enc_x86_64.c (x86_64_enc_setcc_cl)
+  required   : local
+  PASS       x86_64_enc_setcc_cl with modrm(3, 0, 1) = 0xC1 present
+--- PARITY01 IR_FCMP witness ---
+  authority  : src/tests/native-x86-float-cmp-parity01/ir_fcmp_witness.HC
+  required   : local
+  PASS       ir_fcmp_witness.HC present
+--- PARITY01 test harness ---
+  authority  : scripts/quality/native-x86-float-cmp-parity01-test.sh
+  required   : local
+  PASS       harness script present
+--- PARITY01 CLOSE evidence ---
+  authority  : evidence/native-x86-float-cmp-parity01/
+  required   : local
+  PASS       31 evidence files present
+--- ROADMAP P4 self-host pivot ---
+  authority  : docs/ROADMAP.md (P4 heading)
+  required   : local
+  PASS       P4 = Self-hosting substrate present
+--- ROADMAP P3 wording tightening ---
+  authority  : docs/ROADMAP.md (P3 transition)
+  required   : local
+  PASS       bounded I64 memory subset present
+--- INTOPS01 CLOSE addendum ---
+  authority  : evidence/llvm-intops01/HANDOFF-ADDENDUM.md
+  required   : local
+  PASS       APPEND_ONLY_START_POINT marker present in addendum
+--- APPEND_ONLY_START_POINT ---
+  authority  : baf5dbd
+  required   : local
+  PASS       boundary baf5dbd resolves
+--- MEMORY01-CORRECTION01/02 patches ---
+  authority  : local
+  required   : cherry-equivalent (no decision required; already in HEAD via 738 equivalent commits)
+  PASS       18 MEMORY01-CORRECTION commits reachable in HEAD (cherry-equivalent path)
+--- FLOAT01-CORRECTION01 RE-CLOSE-2 + RE-CLOSE + CLOSE docs ---
+  authority  : docs/handoffs/ evidence/llvm-float01/
+  required   : local + remote
+  PASS       16 FLOAT01 CORRECTION01 commits reachable in HEAD (cherry-equivalent)
+--- Merge topology preservation ---
+  authority  : a589d42 fc01ffd 33e68a2 04fa184 33b369d 753344b 060b957 6afe5f5 1539200 283a176
+  required   : local + remote
+  PASS       both archives are ancestors of HEAD
+--- Factory doctrine surface (post-merge) ---
+  authority  : docs/factory/DOCTRINE.md / GIT-METADATA.md / AGENTS.md / docs/ROADMAP.md
+  required   : local
+  POSTPONED  doctrine update is a separate EVIDENCE commit (next phase)
+
+=== Total rows FAIL: 0 ===

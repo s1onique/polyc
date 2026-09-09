@@ -367,3 +367,58 @@ Factory v2 does NOT decide:
 * concurrent ACTs on multiple branches;
 * merge-commit semantics;
 * autonomous agent closure of ACTs.
+
+---
+
+## Append-only invariant (post-RECONCILE01)
+
+Per ACT-POLYC-FACTORY-HISTORY-RECONCILE01 §19, the following
+normative rule binds all Factory-v2 ACTs opened after that ACT
+closes:
+
+```text
+Commits at and after APPEND_ONLY_START_POINT are immutable
+evidence. Corrections are new commits. Authoritative main is
+synchronized by fast-forward or true merge, never by history
+replacement.
+```
+
+Where:
+
+```text
+APPEND_ONLY_START_POINT = baf5dbd77cf89330699685dffd932c54031c815c
+```
+
+### Prohibited mechanisms (additive, do not weaken existing rules)
+
+* `git commit --amend` on any commit at or after the boundary
+* `git rebase` / `git rebase -i` / autosquash / fixup rewriting
+  on any commit at or after the boundary
+* `git filter-branch` / `git filter-repo` on the authoritative
+  repository state
+* `git replace` (the replacement namespace must remain empty
+  throughout every ACT lifecycle)
+* `git push --force` / `--force-with-lease` / force refspec
+  markers to the authoritative remote
+
+### Required mechanism for divergence
+
+If two authoritative lineages diverge (e.g. parallel rewrites
+during ACT execution), they are reconciled by **true merge**:
+
+```sh
+git merge --no-ff --no-commit <archive-tip>
+# resolve conflicts per unique-patch-ledger + final-tree-contract
+git commit
+```
+
+The merge commit has both archive tips as parents. The archive
+refs themselves remain frozen at their ENTRY SHAs.
+
+### Compatibility with Factory v2 trailers
+
+Append-only does not weaken F1–F15 or the Factory-v2 trailer
+grammar. ACTs continue to carry `ACT:`, `ACT-Phase:`, and (for
+CLOSE) `ACT-Verdict:` trailers. Merge commits inside an ACT range
+follow the same grammar; their message documents the parent
+identities and the resolution ledger.

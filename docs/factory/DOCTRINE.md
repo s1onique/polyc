@@ -445,3 +445,53 @@ self-pinning, no duplicate verdict authority).
 
 The canonical binding detail is at
 [`docs/factory/GIT-METADATA.md`](GIT-METADATA.md).
+
+## 23. Append-only history (F-GIT-IMMUTABILITY)
+
+PolyC authoritative Git history is append-only from the declared
+boundary forward. Once a commit exists, it is evidence; corrections
+are new commits and conflicts are resolved in new commits.
+
+```text
+APPEND_ONLY_START_POINT = baf5dbd77cf89330699685dffd932c54031c815c
+```
+
+All authoritative history at and after this boundary SHALL be
+treated as immutable. The policy is prospective: this doctrine does
+not attempt to prove that no rewrite occurred before the boundary;
+it freezes the immutable-evidence invariant for everything at and
+after the boundary.
+
+### Forbidden mechanisms
+
+Authoritative main must NEVER be advanced via any of:
+
+* `git commit --amend`
+* `git rebase` / `git rebase -i` / autosquash / fixup rewriting
+* `git filter-branch`
+* `git filter-repo`
+* `git replace`
+* `reset + recommit`
+* `squash merge` (because it discards the second lineage)
+* `cherry-pick` used to rebuild and discard lineage
+* `--force` / `--force-with-lease`
+* `git push --force` / force refspec markers
+
+### Required mechanism
+
+Divergent authoritative histories are reconciled by **true merge**
+(`git merge --no-ff`), never by history replacement. The resulting
+merge commit carries both archive tips as ancestors of HEAD; the
+archive refs themselves are frozen at their entry SHAs.
+
+### Diagnostic
+
+`git replace -l` must be empty at ENTRY and at CLOSE of every
+Factory-v2 ACT. The `git reflog` may show pre-boundary rewrites
+as historical evidence; the `git replace` namespace must not be
+populated at any point during ACT execution.
+
+### Scope
+
+This section is the durable, normative binding for
+ACT-POLYC-FACTORY-HISTORY-RECONCILE01 §19.

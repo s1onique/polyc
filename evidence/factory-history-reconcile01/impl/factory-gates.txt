@@ -1,0 +1,57 @@
+=== Post-merge compiler gates (ACT §23) ===
+
+gate-fast:
+MALFORMED_HANDOFF_VERDICT=0
+EXACT_VERDICT_MISMATCHES=0
+PAIR_OK=6
+PAIR_FAIL=0
+STATUS=PASS
+VERDICT=PASS
+CHECK=factory-closure-status STATUS=PASS
+VERDICT=PASS
+
+Factory v2:
+
+--- summary ---
+PASS=35
+FAIL=0
+STATUS=PASS
+
+cap-table verifier:
+======================================
+PASS: dispatch <-> capability <-> harness bound
+======================================
+
+INTOPS01:
+=== summary ===
+INTOPS01 PASS=4 FAIL=0
+STATUS=PASS
+INTOPS01_PASS=4
+INTOPS01_FAIL=0
+
+SPIKE:
+=================================
+Summary: PASS=18  FAIL=0
+=================================
+
+MEMORY01:
+=================================
+MEMORY01 GREEN summary: PASS=6 FAIL=0
+=================================
+
+FLOAT01:
+
+FLOAT01_PASS=29
+FLOAT01_FAIL=0
+
+MEMORY01 NC5 probe load:
+FAIL  NC5 red_load_deref: expected SHAPE_DEPENDENT >= 1, got 0
+PASS probe (load): NC5 strong binding confirmed for IR_LOAD_DEREF.
+  NC5 trip observed = FAIL NC5 red_load_deref
+
+MEMORY01 NC5 probe store:
+FAIL  NC5 red_store_deref: expected SHAPE_DEPENDENT == 2, got 1
+PASS probe (store): NC5 strong binding confirmed for IR_STORE_DEREF.
+  NC5 trip observed = FAIL NC5 red_store_deref
+
+PARITY01_RUNTIME = UNAVAILABLE_ON_HOST (darwin/arm64 vs x86_64 native)

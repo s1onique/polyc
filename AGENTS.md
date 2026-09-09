@@ -383,3 +383,35 @@ bookkeeping mechanics:
 The Factory v2 laws do not weaken F1–F15. RED-before-fix,
 HALT-as-outcome, scope discipline, evidence-over-prose, and
 historical-truth-preservation all persist.
+
+---
+
+## Append-only Git history
+
+Per ACT-POLYC-FACTORY-HISTORY-RECONCILE01 §19, PolyC authoritative
+Git history is append-only from `baf5dbd77cf89330699685dffd932c54031c815c`
+forward. Once a commit exists at or after this boundary, it is
+immutable evidence. Corrections are new commits; conflicts are
+resolved in new commits; divergent lineages are reconciled by true
+merge, never by history replacement.
+
+```text
+APPEND_ONLY_START_POINT = baf5dbd77cf89330699685dffd932c54031c815c
+```
+
+Forbidden mechanisms for advancing authoritative main:
+
+```text
+amend, rebase, filter-branch, filter-repo, git replace,
+reset + recommit, squash merge, force push
+```
+
+Required mechanism:
+
+```text
+fast-forward update
+or
+true merge (--no-ff) with both archive tips as parents
+```
+
+The durable binding detail is at [`docs/factory/DOCTRINE.md`](docs/factory/DOCTRINE.md) §23 and [`docs/factory/GIT-METADATA.md`](docs/factory/GIT-METADATA.md) (Append-only invariant).
