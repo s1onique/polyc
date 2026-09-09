@@ -345,16 +345,29 @@ check_nc5_eq() {
     echo "PASS  NC5 $bn: shape_dependent=$sdp (== $eq)"
     return 0
 }
+# ACT-POLYC-LLVM-MEMORY01-CORRECTION02 NC5 (store-side strong binding):
+# the store-side fixtures require EXACT (==) assertions, not floor
+# (>=) assertions, because the IR_STORE (non-deref) shape-handling
+# path in the same file contributes +1 to any fixture that emits
+# an IR_STORE. Suppressing the IR_STORE_DEREF counter call would
+# drop red_store_deref from 2 to 1 and p5_store_inc from 4 to 3,
+# still satisfying a floor assertion of 1 / 2 respectively. The
+# exact assertions below close that gap; see
+# evidence/llvm-memory01-correction02/red/store-deref-explore.txt
+# for the RED that proves the false-GREEN.
+
 # red_pointer_param has IR_TYPE_PTR param but does NOT deref.
 check_nc5_eq  red_pointer_param  0
-# One IR_LOAD_DEREF dispatch each.
+# One IR_LOAD_DEREF dispatch.
 check_nc5_min red_load_deref     1
-# One IR_STORE_DEREF dispatch.
-check_nc5_min red_store_deref    1
+# One IR_STORE_DEREF dispatch + IR_STORE (non-deref) shape-handling
+# in `return 0;` is +1, so the EXPECTED total is exactly 2.
+check_nc5_eq  red_store_deref    2
 # P4: one load + arith. IR_IADD is SUPPORTED, so only load counts.
 check_nc5_min p4_load_add        1
-# P5: load + add + store. Two deref dispatches.
-check_nc5_min p5_store_inc       2
+# P5: load + add + store. Two deref dispatches + IR_STORE (non-deref)
+# shape-handling for the local being assigned to, EXPECTED = 4.
+check_nc5_eq  p5_store_inc       4
 if [ "$NC5_FAILURES" -eq 0 ]; then
     echo "PASS  NC5 per-fixture attribution: SHAPE_DEPENDENT uniquely attributable to IR_LOAD_DEREF / IR_STORE_DEREF"
 fi
