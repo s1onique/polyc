@@ -418,19 +418,30 @@ true merge (--no-ff) with both archive tips as parents
 
 The append-only invariant is mechanically enforced by the local
 pre-push hook (`.githooks/pre-push`) via three graph-property
-checks on `refs/heads/main`:
+checks on the destination ref `refs/heads/main`:
 
 1. `git replace -l` must be empty;
-2. `remote_sha == 0000...0000` (delete) is rejected;
-3. `git merge-base --is-ancestor $remote_sha $local_sha` must
-   hold (every non-fast-forward update, including force-push
-   shapes, is rejected).
+2. ref deletions are rejected. Per `githooks(5)`, a deletion
+   is encoded as `(delete) ZERO refs/heads/main <remote-tip>`,
+   i.e. `remote_ref = refs/heads/main` AND
+   `local_sha = 0000...0000`;
+3. non-fast-forward updates are rejected. Per `githooks(5)`,
+   the `local_ref` is the user's source ref name (which may be
+   `refs/heads/main`, `refs/heads/feature`, `HEAD`, or a raw
+   SHA), but the **destination** is `remote_ref`. The hook
+   refuses any update with `remote_ref = refs/heads/main`
+   AND `remote_sha != 0000...0000` (i.e. the remote already
+   has a `main`) AND
+   `!git merge-base --is-ancestor $remote_sha $local_sha`.
 
 The hook enforces graph properties of the proposed ref
 transition; it does not parse `git push` command-line flags.
 The permanent regression suite is
-`scripts/quality/factory-append-only-test.sh` (NC1..NC7); the
+`scripts/quality/factory-append-only-test.sh` (NC1..NC11); the
 hook contract is locked to that suite and F5 forbids weakening
 it.
 
-The durable binding detail is at [`docs/factory/DOCTRINE.md`](docs/factory/DOCTRINE.md) §23 and §24, and [`docs/factory/GIT-METADATA.md`](docs/factory/GIT-METADATA.md) (Append-only invariant).
+The durable binding detail is at [`docs/factory/DOCTRINE.md`](docs/factory/DOCTRINE.md) §23 and §24, and [`docs/factory/GIT-METADATA.md`](docs/factory/GIT-METADATA.md) (Append-only invariant). The
+binding to `remote_ref` (not `local_ref`) and to `local_sha ==
+ZERO` (not `remote_sha == ZERO`) is governed by
+`ACT-POLYC-FACTORY-APPEND-ONLY-GUARD01-CORRECTION01`.

@@ -509,32 +509,44 @@ need and the information we use.
 
 ### Forbidden outcomes at the local push boundary
 
-For `refs/heads/main`, the hook MUST refuse any of:
+The hook MUST refuse any of the following **graph
+properties** of the proposed ref transition whose
+`remote_ref` is `refs/heads/main`:
 
 * `git replace -l` is non-empty (replacement objects are
   forbidden at every push boundary, not just at ACT close);
-* `remote_sha == 0000...0000` (delete of `main`);
-* `git merge-base --is-ancestor $remote_sha $local_sha` is
-  false (non-fast-forward update, including every shape that
-  a `--force` push would produce).
+* `local_sha == 0000...0000` -- this is Git's documented
+  sentinel for a ref deletion (per `githooks(5)`, a
+  deletion is encoded as `(delete) ZERO refs/heads/main
+  <remote-tip>`);
+* `remote_sha != 0000...0000` AND
+  `!git merge-base --is-ancestor $remote_sha $local_sha`
+  -- a non-fast-forward update of the existing remote
+  `main`. The `local_ref` value is intentionally not
+  consulted: `git push origin feature:main` and
+  `git push origin HEAD:refs/heads/main` and any other
+  source-name shape all reach `remote_ref =
+  refs/heads/main` and are subject to this rule.
 
 Topic branches are intentionally NOT policed by this rule;
-the rule names one authoritative ref and one class of
-forbidden outcomes.
+the rule names one authoritative destination ref and one
+class of forbidden outcomes.
 
 ### Required outcome
 
 The hook MUST accept every fast-forward update of
 `refs/heads/main` whose remote tip is an ancestor of the
-local tip. The hook MUST also accept every update of any
-non-main ref whose transition is consistent with normal
-push semantics (the existing per-ref `gate-push.sh` validation
-remains responsible for the rest).
+local tip. The hook MUST also accept a push that creates a
+new remote `main` (i.e. `remote_sha == 0000...0000`, no
+existing remote tip to compare against); that push is then
+validated by the existing per-ref `gate-push.sh` path.
+The hook MUST accept every update of any non-main ref whose
+transition is consistent with normal push semantics.
 
 ### Regression binding
 
-`scripts/quality/factory-append-only-test.sh` exercises the
-seven shapes NC1..NC7 against synthetic repos. The hook
+`scripts/quality/factory-append-only-test.sh` exercises
+eleven shapes NC1..NC11 against synthetic repos. The hook
 contract is locked to that suite; changes to the hook MUST
 keep the suite green. Weakening the suite to obtain a green
 PASS is a F5 violation.
@@ -542,4 +554,6 @@ PASS is a F5 violation.
 ### Scope
 
 This section is the durable, normative binding for
-ACT-POLYC-FACTORY-APPEND-ONLY-GUARD01 §Mission.
+ACT-POLYC-FACTORY-APPEND-ONLY-GUARD01 §Mission and its
+descendant correction
+ACT-POLYC-FACTORY-APPEND-ONLY-GUARD01-CORRECTION01 §Mission.

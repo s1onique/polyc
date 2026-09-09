@@ -25,7 +25,11 @@
 #
 #   * We consume ALL stdin lines before deciding anything. Git's hook
 #     contract requires this; otherwise Git can hang.
-#   * Deletes (local_sha = 0000...0000) are ignored.
+#   * Deletes (local_sha = 0000...0000) are NOT simply ignored;
+#     the append-only guard for `refs/heads/main` MUST inspect
+#     them before the per-ref hygiene loop skips them, otherwise
+#     a real `git push origin :main` would bypass the guard.
+#     See ACT-POLYC-FACTORY-APPEND-ONLY-GUARD01-CORRECTION01.
 #   * Dedupe key is (local_sha, remote_sha, destination, mode), NOT
 #     just local_sha. Git's contract permits the same local_sha to
 #     appear with different remote_shas (existing-branch update +
@@ -53,6 +57,7 @@ cd "$REPO_ROOT"
 
 # --- ACT-POLYC-FACTORY-HISTORY-RECONCILE01 §20 ---
 # --- ACT-POLYC-FACTORY-APPEND-ONLY-GUARD01 ---
+# --- ACT-POLYC-FACTORY-APPEND-ONLY-GUARD01-CORRECTION01 ---
 # Append-only enforcement for authoritative main. The hook
 # enforces graph properties of the proposed ref transition,
 # NOT a blacklist of `git push` command-line flags.
@@ -60,9 +65,22 @@ cd "$REPO_ROOT"
 # 1. refuse to push if `git replace` namespace is non-empty
 #    (no replacement objects are ever permitted);
 # 2. refuse to delete `refs/heads/main` (delete-and-recreate
-#    is the canonical rewrite bypass);
-# 3. refuse any update of `refs/heads/main` that is not a
-#    fast-forward of the remote tip.
+#    is the canonical rewrite bypass). Detected by
+#    `remote_ref = refs/heads/main` AND
+#    `local_sha = 0000...0000` (per githooks(5));
+# 3. refuse any non-fast-forward update of
+#    `refs/heads/main`. Detected by
+#    `remote_ref = refs/heads/main` AND
+#    `remote_sha != 0000...0000` AND
+#    `!git merge-base --is-ancestor $remote_sha $local_sha`.
+#
+# CORRECTION01 rebinds the guard from `local_ref` to
+# `remote_ref` (the authoritative ref is the destination,
+# not the source), and from `remote_sha == ZERO` (which
+# encodes "create", per githooks(5)) to `local_sha == ZERO`
+# (which encodes "delete"). The closed hook's encoding was
+# backwards on both axes; see
+# ACT-POLYC-FACTORY-APPEND-ONLY-GUARD01-CORRECTION01 §Why.
 #
 # Topic branches are intentionally NOT policed by this ACT.
 # The git-command-string blacklist approach (parsing
@@ -114,7 +132,91 @@ while IFS=' ' read -r local_ref local_sha remote_ref remote_sha; do
     # Skip empty lines.
     [ -z "$local_sha" ] && continue
 
-    # Skip deletes (remote-only refs that have no local side).
+    # --- ACT-POLYC-FACTORY-APPEND-ONLY-GUARD01-CORRECTION01 ---
+    # Authoritative-main guard. Applies ONLY to updates whose
+    # `remote_ref` is `refs/heads/main`, regardless of what
+    # the local source ref name is. Per githooks(5):
+    #
+    #   * `git push origin :main`             -> delete
+    #       local_ref  = (delete)
+    #       local_sha  = 0000...0000
+    #       remote_ref = refs/heads/main
+    #       remote_sha = <existing remote tip>
+    #
+    #   * `git push origin feature:main`      -> feature -> main
+    #       local_ref  = refs/heads/feature
+    #       local_sha  = <feature tip>
+    #       remote_ref = refs/heads/main
+    #       remote_sha = <existing remote tip>
+    #
+    #   * `git push origin HEAD:main`         -> literal source
+    #       local_ref  = HEAD  (literal, per githooks(5))
+    #       remote_ref = refs/heads/main
+    #
+    # Rule 1: refuse to delete refs/heads/main. Deletion is
+    # the all-zero `local_sha` shape (`(delete) ZERO
+    # refs/heads/main <remote-tip>`). Detected by
+    # `local_sha == 0000...`.
+    #
+    # Rule 2: refuse any non-fast-forward update of
+    # refs/heads/main. We use `git merge-base --is-ancestor`
+    # against the resulting transition: remote_sha must be
+    # an ancestor of local_sha. The "remote has no main yet"
+    # shape (`remote_sha == 0000...`) is a legitimate push
+    # and is therefore NOT policed here -- it falls through
+    # to the per-ref `gate-push.sh` validation just like any
+    # other new-branch push.
+    #
+    # We do NOT parse `git push` arguments; we look at the
+    # resulting ref transition, which is what matters. This
+    # correction rebinds the guard from `local_ref` to
+    # `remote_ref`, and from `remote_sha == ZERO` to
+    # `local_sha == ZERO`, per the protocol.
+    case "$remote_ref" in
+        refs/heads/main)
+            # Deletion: local_sha is the all-zero sentinel
+            # (`(delete)` ref + ZERO sha is the protocol
+            # shape; bare local_sha == ZERO would be
+            # malformed input but we treat it the same way
+            # because the only legitimate reason for a
+            # zero local_sha here is a deletion).
+            case "$local_sha" in
+                "$ZERO_SHA")
+                    echo "POLYC_PRE_PUSH_HALTED=main-deletion"
+                    echo "REASON=authoritative main must not be deleted;"
+                    echo "       refusing push (ACT-POLYC-FACTORY-APPEND-ONLY-GUARD01-CORRECTION01)."
+                    exit 1
+                    ;;
+            esac
+            # Update: only fire when the remote ALREADY has
+            # a main tip to compare against. Creation of a
+            # new remote main (remote_sha == ZERO) is left
+            # alone.
+            case "$remote_sha" in
+                "$ZERO_SHA") ;;
+                *)
+                    if ! git merge-base --is-ancestor "$remote_sha" "$local_sha" 2>/dev/null; then
+                        echo "POLYC_PRE_PUSH_HALTED=main-non-fast-forward"
+                        echo "REASON=authoritative main transition is not a fast-forward;"
+                        echo "       remote_ref=$remote_ref"
+                        echo "       local_ref=$local_ref"
+                        echo "       remote_sha=$(printf '%s' "$remote_sha" | cut -c1-12)"
+                        echo "       local_sha=$(printf '%s' "$local_sha" | cut -c1-12)"
+                        echo "       refusing push (ACT-POLYC-FACTORY-APPEND-ONLY-GUARD01-CORRECTION01)."
+                        exit 1
+                    fi
+                    ;;
+            esac
+            ;;
+    esac
+
+    # Skip deletes (remote-only refs that have no local side)
+    # AFTER the append-only guard has had a chance to inspect
+    # them. The guard above is keyed on `remote_ref`, which is
+    # set on every line including delete lines; without this
+    # ordering, deletes of `refs/heads/main` would never reach
+    # the guard. For all other refs, a delete has no local
+    # SHA to validate, so we skip the rest of the loop.
     case "$local_sha" in
         0000000000000000000000000000000000000000) continue ;;
     esac
@@ -128,36 +230,6 @@ while IFS=' ' read -r local_ref local_sha remote_ref remote_sha; do
             ;;
     esac
 
-    # --- ACT-POLYC-FACTORY-APPEND-ONLY-GUARD01 ---
-    # Authoritative-main guard. Applies ONLY to refs/heads/main.
-    #
-    # Rule 1: refuse to delete refs/heads/main. The proposed
-    # transition is `local_sha -> 0000...`, regardless of what
-    # the user typed on the command line.
-    #
-    # Rule 2: refuse any update of refs/heads/main that is not
-    # a fast-forward of the remote tip. We use
-    # `git merge-base --is-ancestor` against the resulting
-    # transition: remote_sha must be an ancestor of local_sha.
-    #
-    # We do NOT parse `git push` arguments; we look at the
-    # resulting ref transition, which is what matters.
-    if [ "$local_ref" = "refs/heads/main" ]; then
-        if [ "$remote_sha" = "$ZERO_SHA" ]; then
-            echo "POLYC_PRE_PUSH_HALTED=main-deletion"
-            echo "REASON=authoritative main must not be deleted;"
-            echo "       refusing push (ACT-POLYC-FACTORY-APPEND-ONLY-GUARD01)."
-            exit 1
-        fi
-        if ! git merge-base --is-ancestor "$remote_sha" "$local_sha" 2>/dev/null; then
-            echo "POLYC_PRE_PUSH_HALTED=main-non-fast-forward"
-            echo "REASON=authoritative main transition is not a fast-forward;"
-            echo "       remote_sha=$(printf '%s' "$remote_sha" | cut -c1-12)"
-            echo "       local_sha=$(printf '%s' "$local_sha" | cut -c1-12)"
-            echo "       refusing push (ACT-POLYC-FACTORY-APPEND-ONLY-GUARD01)."
-            exit 1
-        fi
-    fi
 
     # Determine the mode for this ref update.
     #
