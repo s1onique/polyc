@@ -59,8 +59,23 @@ run_emit() {
 run_dump_ir() {
     f="$1"
     bn=$(basename "$f" .HC)
+    raw_tmp="$EVID/_tmp/$bn.dump-ir.raw"
     "$HCC" $HCC_INSTALL_ARG --dump-ir "$f" \
-        > "$EVID/dump-ir/$bn.dump-ir.txt" 2>&1 || true
+        > "$raw_tmp" 2>&1 || true
+    # Normalise: strip trailing whitespace per line, collapse trailing
+    # blank lines, ensure exactly one trailing newline. Mirrors the
+    # pattern in scripts/quality/llvm-spike-test.sh:dump_ir_capture
+    # so the evidence files pass `git diff --check`.
+    python3 -c '
+import sys
+with open(sys.argv[1], "r") as f:
+    text = f.read()
+lines = [line.rstrip() for line in text.split("\n")]
+while lines and lines[-1] == "":
+    lines.pop()
+sys.stdout.write("\n".join(lines) + "\n")
+' "$raw_tmp" > "$EVID/dump-ir/$bn.dump-ir.txt"
+    rm -f "$raw_tmp"
 }
 
 # Assert a fixture currently fails with the given named diagnostic.
