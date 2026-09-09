@@ -1,0 +1,36 @@
+# Direct NC2 and NC3 verification (run 2025-09-09)
+
+NC2 (accidental GEP) — inject getelementptr into a positive .ll and
+verify the MEMORY01 structural purity check catches it:
+
+    $ cp evidence/llvm-memory01/impl/ll/red_load_deref.ll /tmp/nc2_ll.ll
+    $ sed -i.bak 's/ret i64 %ld_deref/%x = getelementptr i64, ptr %0, i32 0\n  ret i64 %x/' /tmp/nc2_ll.ll
+    $ cat /tmp/nc2_ll.ll
+    ; ModuleID = 'polyc_module'
+    source_filename = "polyc_module"
+
+    define i64 @Load(ptr %0) {
+    bb1:
+      %ld_deref = load i64, ptr %0, align 4
+      %x = getelementptr i64, ptr %0, i32 0
+      ret i64 %x
+
+    dead_exit:                                        ; No predecessors!
+      unreachable
+    }
+
+    $ body_no_comments=$(sed 's/;.*$//' /tmp/nc2_ll.ll)
+    $ printf '%s\n' "$body_no_comments" | grep -nE '(^|[[:space:]])getelementptr([[:space:]]|$)'
+    7:  %x = getelementptr i64, ptr %0, i32 0
+    -> WOULD FAIL: getelementptr detected
+
+NC3 (accidental alloca) — inject alloca and verify:
+
+    $ cp evidence/llvm-memory01/impl/ll/red_load_deref.ll /tmp/nc3_ll.ll
+    $ sed -i.bak 's/ret i64 %ld_deref/%y = alloca i64\n  ret i64 %ld_deref/' /tmp/nc3_ll.ll
+    $ printf '%s\n' "$(sed 's/;.*$//' /tmp/nc3_ll.ll)" | grep -nE '(^|[[:space:]])alloca([[:space:]]|$)'
+    7:  %y = alloca i64
+    -> WOULD FAIL: alloca detected
+
+Both NC2 and NC3 are real witnesses that the structural purity gate
+correctly fires on accidental memory-machine regression.

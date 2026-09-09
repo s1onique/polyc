@@ -22,7 +22,24 @@ set -eu
 REPO_ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 cd "$REPO_ROOT"
 
-EVID="$REPO_ROOT/evidence/llvmspike01-resume01"
+# ACT-POLYC-LLVM-MEMORY01: the spike evidence redirect.
+#
+# Historically EVID pointed at $REPO_ROOT/evidence/llvmspike01-resume01,
+# the closed-ACT evidence dir. Each `positive()` invocation wrote its
+# canonical .ll into that dir, which worked only because the IR was
+# stable across ACTs. MEMORY01 changes the IR (the constant-cache fix
+# flips `add i64 %0, %0` -> `add i64 %0, 1`, and the IR_LOAD_DEREF /
+# IR_STORE_DEREF dispatch arms now emit load/store instructions for
+# the supported shapes), so re-running the spike overwrites historical
+# files with semantically different output.
+#
+# Redirect to a MEMORY01-specific dir so the historical evidence
+# (which captured the pre-MEMORY01 IR shape) stays bit-identical
+# (F14). The MEMORY01 evidence dir captures the new IR shape.
+#
+# If a future ACT wants the historical EVID layout, it can set
+# LLVM_SPIKE_EVID_OVERRIDE to a different dir.
+EVID=${LLVM_SPIKE_EVID_OVERRIDE:-"$REPO_ROOT/evidence/llvm-memory01/spike"}
 mkdir -p "$EVID"
 mkdir -p "$EVID/_tmp"
 trap 'rm -rf "$EVID/_tmp"' EXIT
@@ -258,12 +275,14 @@ echo "=== cmp predicate matrix ==="
 # live-red-transcripts/`) and persisted `red-{1B,2,2b}.emit.stderr`
 # into it. Those tracked files became byte-different on every C2
 # harness invocation (the live stderr grew a CAPABILITY_COUNTERS
-# record). That violated F14 evidence conservation.
-# This ACT now redirects the live transcripts to its own evidence
-# dir (`evidence/llvm-core04-resume01/c2/live-red-transcripts/`).
-# The historical `live-red-transcripts/` dir in the closed ACT's
-# evidence tree is no longer touched by the harness.
-EVID_CORR="$REPO_ROOT/evidence/llvm-core04-resume01/c2/live-red-transcripts"
+# ACT-POLYC-LLVM-MEMORY01: also redirect the cmp-predicate
+# live transcripts. RESUME01 closed with EVID_CORR pointing at
+# the closed ACT's own evidence dir; MEMORY01 changes the path
+# of the emitted .ll (via $EVID redirect), so the transcript
+# path string would also drift. Redirect to a MEMORY01-specific
+# location to keep the historical evidence dir bit-identical
+# (F14).
+EVID_CORR=${LLVM_SPIKE_EVID_CORR_OVERRIDE:-"$REPO_ROOT/evidence/llvm-memory01/spike/red-6-live-transcripts"}
 mkdir -p "$EVID_CORR"
 
 # dump_ir_capture <src> <out_base>
@@ -463,7 +482,12 @@ set -e
 echo
 echo "=== negative matrix ==="
 negative src/tests/llvm-spike/neg_f64.HC      LLVM_BACKEND_UNSUPPORTED_TYPE
-negative src/tests/llvm-spike/neg_pointer.HC  LLVM_BACKEND_UNSUPPORTED_TYPE
+# ACT-POLYC-LLVM-MEMORY01: src/tests/llvm-spike/neg_pointer.HC
+# (the predecessor's pointer-deref negative fixture) has been
+# moved to src/tests/llvm-memory01/ as a positive fixture, since
+# the basic I64 *p parameter + *p deref shape is now SUPPORTED.
+# See scripts/quality/llvm-memory01-test.sh for the new positive
+# and shape-dependent negative matrix.
 negative src/tests/llvm-spike/neg_struct.HC   LLVM_BACKEND_UNSUPPORTED_TYPE
 # ACT-POLYC-LLVM-CORE01 RED-1: integer division must produce a NAMED
 # diagnostic (LLVM_BACKEND_UNSUPPORTED_INT_DIVISION), not the generic

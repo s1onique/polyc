@@ -95,8 +95,8 @@
  *   local with multiple reaching    REJECTED            LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL
  *   unbound local (no reaching)    REJECTED            LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL
  *
- * IR_LOAD_DEREF                   REJECTED             LLVM_BACKEND_UNSUPPORTED_POINTER
- * IR_STORE_DEREF                  REJECTED             LLVM_BACKEND_UNSUPPORTED_POINTER
+ * IR_LOAD_DEREF                   SHAPE-DEPENDENT       (ACT-POLYC-LLVM-MEMORY01: address-space-0 ptr + I64 access supported; other shapes REJECTED with LLVM_BACKEND_UNSUPPORTED_POINTER)
+ * IR_STORE_DEREF                  SHAPE-DEPENDENT       (ACT-POLYC-LLVM-MEMORY01: address-space-0 ptr + I64 access supported; other shapes REJECTED with LLVM_BACKEND_UNSUPPORTED_POINTER)
  * IR_RMW_DEREF                    REJECTED             LLVM_BACKEND_UNSUPPORTED_POINTER
  * IR_LEA                          REJECTED             LLVM_BACKEND_UNSUPPORTED_POINTER
  * IR_GEP                          REJECTED             LLVM_BACKEND_UNSUPPORTED_AGGREGATE
@@ -172,7 +172,7 @@
  * Value kinds:
  *   IR_VAL_CONST_INT    SUPPORTED (i64 only)
  *   IR_VAL_LOCAL        SUPPORTED (single-def only)
- *   IR_VAL_PARAM        SUPPORTED (i64 only)
+ *   IR_VAL_PARAM        SUPPORTED (i64 or pointer-to-I64 [ACT-POLYC-LLVM-MEMORY01])
  *   IR_VAL_CONST_FLOAT  REJECTED  LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH
  *   IR_VAL_CONST_STR    REJECTED  LLVM_BACKEND_UNSUPPORTED_AGGREGATE
  *   IR_VAL_GLOBAL       REJECTED  LLVM_BACKEND_UNSUPPORTED_GLOBAL
@@ -185,7 +185,7 @@
  * Types:
  *   IR_TYPE_I   SUPPORTED (i64 only)
  *   IR_TYPE_VOID SUPPORTED
- *   IR_TYPE_PTR REJECTED  LLVM_BACKEND_UNSUPPORTED_POINTER
+ *   IR_TYPE_PTR SUPPORTED (function parameter only [ACT-POLYC-LLVM-MEMORY01]; lowered to LLVM opaque ptr)
  *   all others  REJECTED  LLVM_BACKEND_UNSUPPORTED_AGGREGATE
  */
 
@@ -508,9 +508,31 @@ static int llTypeSupported(IrValueType t) {
     return t == IR_TYPE_I64;
 }
 
+/* ACT-POLYC-LLVM-MEMORY01: function-parameter type authorisation.
+ *
+ * Only I64 (scalar) and IR_TYPE_PTR (pointer-to-I64) are accepted
+ * as function parameter types. IR_TYPE_PTR is allowed here ONLY
+ * because the parameter lowering seam (llPass1 + llBindParams)
+ * can map it directly to LLVM opaque `ptr` without any local
+ * spill, alloca, or pointer cast. Other value kinds (constants,
+ * locals, return values) keep the strict llTypeSupported()
+ * contract: only IR_TYPE_I64.
+ *
+ * Function return values remain I64-only: this ACT does not
+ * authorise pointer return values (see ACT §7 excluded list). */
+static int llParamTypeSupported(IrValueType t) {
+    return t == IR_TYPE_I64 || t == IR_TYPE_PTR;
+}
+
 static LLVMTypeRef llType(LLCtx *lc, IrValueType t) {
     (void)lc;
     if (t == IR_TYPE_I64) return LLVMInt64TypeInContext(lc->ctx);
+    /* ACT-POLYC-LLVM-MEMORY01: opaque pointer for IR_TYPE_PTR. The
+     * C API function LLVMPointerTypeInContext(ctx, AS) with AS=0
+     * is the canonical LLVM 22 way to materialise the opaque
+     * pointer type. The pointee type is NOT attached to the LLVM
+     * pointer; it is supplied to load/store builders explicitly. */
+    if (t == IR_TYPE_PTR) return LLVMPointerTypeInContext(lc->ctx, 0);
     /* IR_TYPE_I1 is intentionally not in `IrValueType`; the spike
      * only emits i64 for source values. The cond->i1 truncation for
      * IR_BR uses LLVMInt1TypeInContext directly. */
@@ -524,7 +546,12 @@ static void llPass1(LLCtx *lc, IrProgram *prog) {
         if (!fn) continue;
         for (u64 p = 0; p < fn->params->size; ++p) {
             IrValue *pv = vecGet(IrValue*, fn->params, p);
-            if (!pv || !llTypeSupported(pv->type)) {
+            /* ACT-POLYC-LLVM-MEMORY01: parameter-only pointer
+             * admission. The function body itself still uses
+             * llTypeSupported() for locals/return/operands; the
+             * pointer exception is bound to the function
+             * signature ONLY, exactly as the ACT authorises. */
+            if (!pv || !llParamTypeSupported(pv->type)) {
                 llErrUnsupportedType(pv, fn, "function parameter");
                 llEmitCapabilityCountersOnce(lc->totals);
                 exit(1);
@@ -544,8 +571,14 @@ static void llPass1(LLCtx *lc, IrProgram *prog) {
             llEmitCapabilityCountersOnce(lc->totals);
             exit(1);
         }
+        /* ACT-POLYC-LLVM-MEMORY01: per-parameter LLVM type mapping.
+         * IR_TYPE_PTR -> opaque ptr; everything else still -> i64.
+         * LLVMGetParam() in llBindParams then yields the
+         * corresponding LLVMValueRef directly, with no alloca,
+         * store-to-local, load-from-local, inttoptr, or ptrtoint. */
         for (u32 p = 0; p < np; ++p) {
-            param_tys[p] = i64;
+            IrValue *pv = vecGet(IrValue*, fn->params, p);
+            param_tys[p] = llType(lc, pv->type);
         }
         LLVMTypeRef fty = LLVMFunctionType(i64, param_tys, (unsigned)np, 0);
         LLVMAddFunction(lc->mod, fn->name->data, fty);
@@ -625,8 +658,36 @@ static void llCreateBlocks(LLCtx *lc, IrFunction *fn) {
 
 static LLVMValueRef llLowerValue(LLCtx *lc, IrValue *v) {
     if (!v) return NULL;
-    LLVMValueRef cached = llvmGet(&lc->values, irVarId(v));
-    if (cached) return cached;
+    /* ACT-POLYC-LLVM-MEMORY01: constants bypass the SSA cache.
+     *
+     * The IR constant value's `as._i64` overlaps the `as.var` union
+     * member (the first 4 bytes of as are the IrVar id, the next 2
+     * are its size). Storing `as._i64 = N` therefore ALSO sets
+     * `irVarId(v) = (u32)N`. This collides with any other IR value
+     * whose id happens to equal N (most notably: a function
+     * parameter created via irTmp() at id 1 collides with the
+     * constant `1`).
+     *
+     * The pre-existing scalar spike has been silently miscompiling
+     * `x + 1` as `x + x` for this reason; the LLVM verifier accepts
+     * the result so the bug stayed invisible. MEMORY01 surfaces the
+     * bug because the constant value collides with the pointer
+     * parameter id and the LLVM verifier now refuses `add i64, ptr`.
+     *
+     * The fix is local to the LLVM backend: do NOT cache constants
+     * by `irVarId(v)`. Always materialise a fresh LLVMConstInt
+     * from `v->as._i64`. The cache stays in sync for parameters,
+     * locals, and tmps (whose `as.var.id` is set explicitly and
+     * uniquely by irTmp / var->lvar_id).
+     *
+     * A neutral-IR-level correction (separating `as._i64` and
+     * `as.var` storage, or giving constants a unique id space) is
+     * out of scope for MEMORY01 and would require an IR ACT (see
+     * ACT §23 HALT_NEUTRAL_IR_CHANGE_REQUIRED). */
+    if (v->kind != IR_VAL_CONST_INT) {
+        LLVMValueRef cached = llvmGet(&lc->values, irVarId(v));
+        if (cached) return cached;
+    }
     if (v->kind == IR_VAL_CONST_INT) {
         if (!llTypeSupported(v->type)) {
             llErrUnsupportedType(v, lc->fn, "constant");
@@ -636,7 +697,6 @@ static LLVMValueRef llLowerValue(LLCtx *lc, IrValue *v) {
         LLVMValueRef c = LLVMConstInt(llType(lc, v->type),
                                       (unsigned long long)v->as._i64,
                                       1 /*signed*/);
-        llvmSet(&lc->values, irVarId(v), c);
         return c;
     }
     if (v->kind == IR_VAL_LOCAL) {
@@ -684,6 +744,41 @@ static LLVMValueRef llLowerI64Value(LLCtx *lc, IrValue *v) {
      * the cache held a stack-slot pointer. Under SSA lowering,
      * the cache holds the i64 value directly. */
     return lv;
+}
+
+/* ACT-POLYC-LLVM-MEMORY01: pointer SSA value resolver.
+ *
+ * Mirrors llLowerI64Value but specialised for IR_TYPE_PTR. The
+ * binding is the LLVMValueRef returned by LLVMGetParam when the
+ * underlying IR value is a function parameter (set by
+ * llBindParams), or a prior IR_STORE of a pointer-typed local
+ * (set by the IR_STORE handler). The cache holds the opaque ptr
+ * directly; no LLVMBuildLoad2 is emitted.
+ *
+ * Rejected if:
+ *   - the underlying value has not been bound (use-before-def or
+ *     RESERVED memory shape) -- fails via the use-before-def path
+ *     inside llLowerValue.
+ *   - the value's type is not IR_TYPE_PTR -- silently rejected by
+ *     the cache lookup (no binding would have been recorded under
+ *     a different type). The caller is expected to know the
+ *     context. */
+static LLVMValueRef llLowerPointerValue(LLCtx *lc, IrValue *v) {
+    if (!v) return NULL;
+    /* The SSA cache key is the IR var id (set by llvmSet in
+     * llBindParams / IR_STORE). Pointer values never go through
+     * the IR_VAL_CONST_INT path in llLowerValue, so the cache is
+     * the only valid source. */
+    LLVMValueRef lv = llvmGet(&lc->values, irVarId(v));
+    if (lv) return lv;
+    fprintf(stderr,
+        "%s: function %s: pointer value (id=%u, kind=%s) used "
+        "before definition\n",
+        LLVM_BACKEND_INTERNAL,
+        lc->fn->name->data, irVarId(v),
+        irValueKindToString(v->kind));
+    llEmitCapabilityCountersOnce(lc->totals);
+    exit(1);
 }
 
 static LLVMIntPredicate llCmpKindToLLVMPred(IrCmpKind k) {
@@ -1008,9 +1103,18 @@ static LLVMBasicBlockRef llLowerBlock(LLCtx *lc, IrBlock *b) {
                 llEmitCapabilityCountersOnce(lc->totals);
                 exit(1);
             }
-            if (ins->dst->type != IR_TYPE_I64) {
+            /* ACT-POLYC-LLVM-MEMORY01: also accept IR_TYPE_PTR locals.
+             * The MEMORY01 ACT authorises pointer values to flow
+             * through SSA locals without materialising memory
+             * (pointer locals requiring memory representation are
+             * still excluded by ACT §7). The local is bound to the
+             * LLVMValueRef of its source (e.g. a pointer parameter)
+             * via llLowerPointerValue; no alloca/store-to-local is
+             * emitted. */
+            if (ins->dst->type != IR_TYPE_I64 &&
+                ins->dst->type != IR_TYPE_PTR) {
                 llErrUnsupportedType(ins->dst, lc->fn,
-                    "IR_STORE local type (only I64 supported)");
+                    "IR_STORE local type (only I64 or pointer supported)");
                 llEmitCapabilityCountersOnce(lc->totals);
                 exit(1);
             }
@@ -1023,7 +1127,19 @@ static LLVMBasicBlockRef llLowerBlock(LLCtx *lc, IrBlock *b) {
                 llEmitCapabilityCountersOnce(lc->totals);
                 exit(1);
             }
-            LLVMValueRef v = llLowerI64Value(lc, ins->r1);
+            /* ACT-POLYC-LLVM-MEMORY01: dst->type selects the
+             * value-lowering path. IR_TYPE_PTR locals need
+             * llLowerPointerValue (which only resolves through the
+             * existing SSA cache, populated earlier by llBindParams
+             * for parameters and by prior IR_STORE for pointer
+             * locals). Constants are forbidden; PolyC has no
+             * pointer constants. */
+            LLVMValueRef v;
+            if (ins->dst->type == IR_TYPE_PTR) {
+                v = llLowerPointerValue(lc, ins->r1);
+            } else {
+                v = llLowerI64Value(lc, ins->r1);
+            }
 
             /* ACT-POLYC-LLVM-SPIKE01-RESUME01-CORRECTION01-RESUME01-CORRECTION01:
              * reject a second reaching store to the same local id.
@@ -1428,24 +1544,181 @@ static LLVMValueRef llLowerInstr(LLCtx *lc, IrInstr *ins) {
             llEmitCapabilityCountersOnce(lc->totals);
             exit(1);
         }
+        case IR_LOAD_DEREF: {
+            /* ACT-POLYC-LLVM-MEMORY01: SHAPE_DEPENDENT class.
+             *
+             * The proven supported shape is:
+             *   - dst->type == IR_TYPE_I64 (the I64 access type,
+             *     proven by the existing promotion/narrowing
+             *     contract; not guessed from LLVM pointer identity)
+             *   - r1 (addr) is an SSA-resolvable pointer value of
+             *     IR_TYPE_PTR (IR_VAL_PARAM bound by llBindParams,
+             *     or a pointer-typed local bound by a prior
+             *     IR_STORE).
+             *   - disp == 0 (no GEP, no address arithmetic)
+             *   - idx == NULL && scale == 0 (no SIB)
+             *
+             * The opaque-pointer LLVM model is satisfied by:
+             *   LLVMBuildLoad2(builder, i64_ty, ptr_value, name)
+             * which emits `load i64, ptr %p` textually.
+             *
+             * All other shapes (non-I64 access type, non-pointer
+             * addr, GEP-like addressing, non-zero disp, non-null
+             * idx) are rejected with LLVM_BACKEND_UNSUPPORTED_POINTER
+             * (or LLVM_BACKEND_UNSUPPORTED_TYPE for the access-type
+             * failure). */
+            LL_INC_SHAPE_DEPENDENT(lc);
+            if (!ins->dst) {
+                fprintf(stderr,
+                    "%s: function %s: IR_LOAD_DEREF missing dst\n",
+                    LLVM_BACKEND_INTERNAL, lc->fn->name->data);
+                llEmitCapabilityCountersOnce(lc->totals);
+                exit(1);
+            }
+            if (ins->dst->type != IR_TYPE_I64) {
+                fprintf(stderr,
+                    "%s: function %s: IR_LOAD_DEREF access type is "
+                    "not I64 (got type=%d, MEMORY01 only supports "
+                    "I64 loads); rejected to avoid guessing the "
+                    "pointee type from LLVM pointer identity\n",
+                    LLVM_BACKEND_UNSUPPORTED_TYPE,
+                    lc->fn->name->data, (int)ins->dst->type);
+                llEmitCapabilityCountersOnce(lc->totals);
+                exit(1);
+            }
+            if (ins->disp != 0 || ins->idx != NULL || ins->scale != 0) {
+                fprintf(stderr,
+                    "%s: function %s: IR_LOAD_DEREF with non-zero "
+                    "disp or scaled-index addressing is rejected "
+                    "(MEMORY01 forbids GEP / pointer arithmetic); "
+                    "disp=%d idx=%p scale=%d\n",
+                    LLVM_BACKEND_UNSUPPORTED_POINTER,
+                    lc->fn->name->data, ins->disp,
+                    (void*)ins->idx, ins->scale);
+                llEmitCapabilityCountersOnce(lc->totals);
+                exit(1);
+            }
+            if (!ins->r1) {
+                fprintf(stderr,
+                    "%s: function %s: IR_LOAD_DEREF missing addr "
+                    "operand\n",
+                    LLVM_BACKEND_INTERNAL, lc->fn->name->data);
+                llEmitCapabilityCountersOnce(lc->totals);
+                exit(1);
+            }
+            if (ins->r1->type != IR_TYPE_PTR) {
+                fprintf(stderr,
+                    "%s: function %s: IR_LOAD_DEREF addr is not a "
+                    "pointer (got type=%d, MEMORY01 requires "
+                    "pointer parameter / pointer SSA value)\n",
+                    LLVM_BACKEND_UNSUPPORTED_POINTER,
+                    lc->fn->name->data, (int)ins->r1->type);
+                llEmitCapabilityCountersOnce(lc->totals);
+                exit(1);
+            }
+            LLVMValueRef addr = llLowerPointerValue(lc, ins->r1);
+            LLVMValueRef loaded = LLVMBuildLoad2(lc->bld,
+                LLVMInt64TypeInContext(lc->ctx), addr, "ld_deref");
+            llvmSet(&lc->values, irVarId(ins->dst), loaded);
+            return loaded;
+        }
+        case IR_STORE_DEREF: {
+            /* ACT-POLYC-LLVM-MEMORY01: SHAPE_DEPENDENT class.
+             *
+             * The proven supported shape is:
+             *   - dst (addr) is an SSA-resolvable pointer value of
+             *     IR_TYPE_PTR (IR_VAL_PARAM bound by llBindParams,
+             *     or a pointer-typed local / tmp bound by a prior
+             *     IR_STORE / llLowerValue).
+             *   - r1 (value) type is IR_TYPE_I64 (the I64 access
+             *     type, not guessed from LLVM pointer identity).
+             *   - disp == 0 (no GEP, no address arithmetic)
+             *   - idx == NULL && scale == 0 (no SIB)
+             *
+             * The opaque-pointer LLVM model is satisfied by:
+             *   LLVMBuildStore(builder, i64_value, ptr_value)
+             * which emits `store i64 %v, ptr %p` textually.
+             *
+             * All other shapes (non-I64 value, non-pointer addr,
+             * GEP-like addressing, non-zero disp, non-null idx) are
+             * rejected with LLVM_BACKEND_UNSUPPORTED_POINTER (or
+             * LLVM_BACKEND_UNSUPPORTED_TYPE for the access-type
+             * failure). */
+            LL_INC_SHAPE_DEPENDENT(lc);
+            if (!ins->dst) {
+                fprintf(stderr,
+                    "%s: function %s: IR_STORE_DEREF missing dst "
+                    "(addr)\n",
+                    LLVM_BACKEND_INTERNAL, lc->fn->name->data);
+                llEmitCapabilityCountersOnce(lc->totals);
+                exit(1);
+            }
+            if (ins->dst->type != IR_TYPE_PTR) {
+                fprintf(stderr,
+                    "%s: function %s: IR_STORE_DEREF addr is not a "
+                    "pointer (got type=%d)\n",
+                    LLVM_BACKEND_UNSUPPORTED_POINTER,
+                    lc->fn->name->data, (int)ins->dst->type);
+                llEmitCapabilityCountersOnce(lc->totals);
+                exit(1);
+            }
+            if (ins->disp != 0 || ins->idx != NULL || ins->scale != 0) {
+                fprintf(stderr,
+                    "%s: function %s: IR_STORE_DEREF with non-zero "
+                    "disp or scaled-index addressing is rejected "
+                    "(MEMORY01 forbids GEP / pointer arithmetic); "
+                    "disp=%d idx=%p scale=%d\n",
+                    LLVM_BACKEND_UNSUPPORTED_POINTER,
+                    lc->fn->name->data, ins->disp,
+                    (void*)ins->idx, ins->scale);
+                llEmitCapabilityCountersOnce(lc->totals);
+                exit(1);
+            }
+            if (!ins->r1) {
+                fprintf(stderr,
+                    "%s: function %s: IR_STORE_DEREF missing value "
+                    "operand\n",
+                    LLVM_BACKEND_INTERNAL, lc->fn->name->data);
+                llEmitCapabilityCountersOnce(lc->totals);
+                exit(1);
+            }
+            if (ins->r1->type != IR_TYPE_I64) {
+                fprintf(stderr,
+                    "%s: function %s: IR_STORE_DEREF value type is "
+                    "not I64 (got type=%d, MEMORY01 only supports "
+                    "I64 stores); rejected to avoid guessing the "
+                    "pointee type from LLVM pointer identity\n",
+                    LLVM_BACKEND_UNSUPPORTED_TYPE,
+                    lc->fn->name->data, (int)ins->r1->type);
+                llEmitCapabilityCountersOnce(lc->totals);
+                exit(1);
+            }
+            LLVMValueRef addr = llLowerPointerValue(lc, ins->dst);
+            LLVMValueRef val  = llLowerI64Value(lc, ins->r1);
+            LLVMBuildStore(lc->bld, val, addr);
+            return NULL;
+        }
         case IR_ALLOCA:
-        case IR_LOAD_DEREF:
-        case IR_STORE_DEREF:
         case IR_RMW_DEREF:
         case IR_LEA: {
             /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: REJECTED class
-             * (pointer / memory address). Note: IR_ALLOCA normally
-             * passes through llLowerBlock's collapse-aware if-arm;
-             * this case-arm is the canonical REJECTED counting site
-             * for ALLOCA / LOAD_DEREF / STORE_DEREF / RMW_DEREF / LEA
-             * when they reach llLowerInstr without prior collapse
-             * handling. The two paths are mutually exclusive per
-             * dispatched instruction; one REJECTED per op either way. */
+             * (pointer / memory address). IR_ALLOCA normally passes
+             * through llLowerBlock's collapse-aware if-arm; this
+             * case-arm is the canonical REJECTED counting site for
+             * ALLOCA / RMW_DEREF / LEA when they reach llLowerInstr
+             * without prior collapse handling. The two paths are
+             * mutually exclusive per dispatched instruction; one
+             * REJECTED per op either way.
+             *
+             * ACT-POLYC-LLVM-MEMORY01: IR_LOAD_DEREF and IR_STORE_DEREF
+             * are no longer in this grouped arm; they have their own
+             * SHAPE_DEPENDENT arms above. */
             LL_INC_REJECTED(lc);
             fprintf(stderr,
                 "%s: function %s: pointer / memory address ops are not "
-                "supported (opcode %s); the CORE backend uses scalar SSA "
-                "binding only (no alloca, no load/store, no address-of)\n",
+                "supported (opcode %s); MEMORY01 only supports "
+                "IR_LOAD_DEREF / IR_STORE_DEREF for address-space-0 "
+                "ptr + I64 access (no alloca, no GEP, no address-of)\n",
                 LLVM_BACKEND_UNSUPPORTED_POINTER,
                 lc->fn->name->data, irOpcodeToString(ins));
             llEmitCapabilityCountersOnce(lc->totals);
