@@ -1,0 +1,69 @@
+=== ACT-POLYC-LLVM-MEMORY01-CORRECTION02 RED ===
+Pre-IMPL reproduction: store-side counter suppression
+demonstrates the existing harness false-GREENs.
+
+Date: 09 Sep 2026
+HEAD before: 015b8d8 (CORRECTION01 CLOSE)
+Source under test: src/llvm-backend.c (unmodified)
+
+=== Step 1: capture baseline per-fixture counts ===
+HCC_INSTALL_DIR=/tmp/polyc-test-prefix sh scripts/quality/llvm-memory01-test.sh
+
+=== MEMORY01 NC5 per-fixture attribution ===
+PASS  NC5 red_pointer_param: shape_dependent=0 (== 0)
+PASS  NC5 red_load_deref: shape_dependent=1 (>= 1)
+PASS  NC5 red_store_deref: shape_dependent=2 (>= 1)
+PASS  NC5 p4_load_add: shape_dependent=1 (>= 1)
+PASS  NC5 p5_store_inc: shape_dependent=4 (>= 2)
+PASS  NC5 per-fixture attribution: SHAPE_DEPENDENT uniquely attributable to IR_LOAD_DEREF / IR_STORE_DEREF
+MEMORY01 GREEN summary: PASS=6 FAIL=0
+
+=== Step 2: snapshot source and mutate (suppress IR_STORE_DEREF counter) ===
+\$ cp src/llvm-backend.c /tmp/store-red-explore.orig.c
+STORE_DEREF case range: 1625..1703
+Verification: mutated-file SHAPE_DEPENDENT count in case range (must be 0):
+0
+
+=== Step 3: rebuild + run harness under suppression ===
+build: OK
+
+=== MEMORY01 negative matrix (struct aggregate -> REJECTED) ===
+PASS  neg_struct (negative, LLVM_BACKEND_UNSUPPORTED_TYPE)
+
+=== MEMORY01 counter gate ===
+=== capability counters (MEMORY01 matrix) ===
+SUPPORTED           : 7
+REJECTED            : 0
+SHAPE_DEPENDENT     : 6
+DEFENSIVE_INVARIANT : 0
+UNREACHABLE_ON_LLVM : 0
+==============================
+PASS  counter gate: SHAPE_DEPENDENT>=1, SUPPORTED>=1, DEFENSIVE=0, UNREACHABLE=0
+
+=== MEMORY01 NC5 per-fixture attribution ===
+PASS  NC5 red_pointer_param: shape_dependent=0 (== 0)
+PASS  NC5 red_load_deref: shape_dependent=1 (>= 1)
+PASS  NC5 red_store_deref: shape_dependent=1 (>= 1)
+PASS  NC5 p4_load_add: shape_dependent=1 (>= 1)
+PASS  NC5 p5_store_inc: shape_dependent=3 (>= 2)
+PASS  NC5 per-fixture attribution: SHAPE_DEPENDENT uniquely attributable to IR_LOAD_DEREF / IR_STORE_DEREF
+
+=================================
+MEMORY01 GREEN summary: PASS=6 FAIL=0
+=================================
+
+=== Step 4: restore source ===
+restore: OK
+
+=== RED verdict ===
+After STORE_DEREF counter suppression:
+  red_store_deref: 2 -> 1 (delta -1)
+  p5_store_inc:    4 -> 3 (delta -1)
+  Harness result:  PASS=6 FAIL=0  (still GREEN)
+
+The pre-IMPL harness DOES NOT trip on STORE_DEREF counter
+suppression because the existing assertions are
+  check_nc5_min red_store_deref 1  (floor only)
+  check_nc5_min p5_store_inc     2  (floor only)
+and IR_STORE shape-handling contributes +1 to both.
+This is the false-GREEN the IMPL must close.
