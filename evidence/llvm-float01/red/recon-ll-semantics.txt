@@ -168,8 +168,9 @@ authority. The x86_64 native backend's FCMP lowering
 diverges from IEEE-754 / LangRef on FOUR of six predicates
 when at least one operand is NaN (EQ, NE, LT, LE), and
 coincidentally matches the LangRef on the remaining two
-(GT, GE, which return 0 on unordered by accident of the
-UCOMISD CF=ZF=0 branch). That divergence is a separate,
+(GT, GE, which return 0 on unordered because UCOMISD sets
+ZF=PF=CF=1 for unordered operands, causing seta (CF=0 && ZF=0)
+and setae (CF=0) to evaluate false). That divergence is a separate,
 non-blocking residue for
 ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01; its defect set
 binds to the four broken predicates listed above.

@@ -60,8 +60,10 @@ IEEE-754 / LangRef result:
   GE (setae):   NaN -> 0   CORRECT (matches oge NaN->false)
 
 GT and GE produce the correct result by accident of the UCOMISD
-CF=ZF=0 branch (seta/setae require CF=0 and CF=0 respectively,
-which is what UCOMISD reports on unordered operands). EQ/NE/LT/LE
+flag state on unordered operands. UCOMISD sets ZF=PF=CF=1 for
+unordered/NaN operands, which means the predicates that test
+seta (CF=0 && ZF=0) and setae (CF=0) evaluate to 0 because
+their preconditions fail. EQ/NE/LT/LE
 must be re-emitted to mask unordered. This DIVERGES from both the
 LLVM LangRef binding used by the LLVM backend and from the
 aarch64 host oracle for the four broken predicates. The x86_64

@@ -133,8 +133,10 @@ dispatch:
   IR_CMP_GE (setae,   CF=0)              -> 0   CORRECT (matches oge)
 
 FOUR of six predicates (EQ, NE, LT, LE) are WRONG against
-IEEE-754 / LangRef. Two (GT, GE) already match by accident of
-the UCOMISD CF=ZF=0 branch. The HANDOFF residue was promoted
+IEEE-754 / LangRef. Two (GT, GE) already match because
+UCOMISD sets ZF=PF=CF=1 for unordered operands, causing
+seta (CF=0 && ZF=0) and setae (CF=0) to evaluate false.
+The HANDOFF residue was promoted
 from P2 to P0 (next ACT
 ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01) with defect set
 EQ/NE/LT/LE and conservation controls GT/GE.

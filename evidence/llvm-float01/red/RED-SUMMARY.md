@@ -80,9 +80,11 @@ addressed in CORRECTION01:
       >  : 0 (seta, CF=0&&ZF=0)    CORRECT (matches ogt NaN->false)
       >= : 0 (setae, CF=0)         CORRECT (matches oge NaN->false)
   - FOUR of six predicates (EQ, NE, LT, LE) diverge from
-    IEEE-754 / LangRef. Two (GT, GE) already match by accident
-    of the UCOMISD CF=ZF=0 branch. Defect set for the next ACT:
-    EQ/NE/LT/LE; conservation controls: GT/GE.
+    IEEE-754 / LangRef. Two (GT, GE) already match because
+    UCOMISD sets ZF=PF=CF=1 for unordered operands, causing
+    seta (CF=0 && ZF=0) and setae (CF=0) to evaluate false.
+    Defect set for the next ACT: EQ/NE/LT/LE; conservation
+    controls: GT/GE.
   - Recorded as P0 residue under
     ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01.
 
