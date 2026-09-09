@@ -186,6 +186,28 @@ expectation was therefore NOT APPLICABLE TO MEMORY01 MATRIX;
 no code or counter bug exists. ACT-POLYC-LLVM-MEMORY01-
 CORRECTION01 records this falsification.
 
+F14 archive overclaim acknowledgement: ACT-POLYC-LLVM-
+MEMORY01-CORRECTION01's RED text and CLOSE commit message
+claimed that `evidence/llvm-memory01/negative-controls/
+nc5-weak-historical.md` is "byte-for-byte identical to the
+original MEMORY01 closure form." This claim was empirically
+refuted: the historical file from MEMORY01 closure
+(944ba8d:evidence/llvm-memory01/negative-controls/
+nc-summary.md) has sha256
+`8bf0596ea06f32761d7bffb934f03c64633b8001cfa3411c0d6e18e7d3453657`
+and 67 lines, while the CORRECTION01 file has sha256
+`8b05e54a6dea2943198173914b3d8bc5c4223cb0e3b60aa28c79cb5a0ef55370`
+and 72 lines (5 lines of commentary appended after the
+original boundary). ACT-POLYC-LLVM-MEMORY01-CORRECTION02
+generates a byte-exact archive under
+`evidence/llvm-memory01-correction02/f14-archive/nc-summary.944ba8d.md`
+without rewriting the historical MEMORY01 evidence file
+(F14 forbids rewriting historical evidence merely because
+later evidence supersedes it). Readers consulting the
+CORRECTION01-era `nc5-weak-historical.md` should consult
+the new `f14-archive/` directory for the genuine historical
+witness.
+
 Residue intentionally left for later (per ACT §27):
 F64 memory, narrow int memory, struct/aggregate memory, arrays,
 field access, GEP, pointer arithmetic, pointer comparison,
