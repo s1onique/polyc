@@ -1,0 +1,123 @@
+=== llvm-cap-table-verifier (CORE03-CORRECTION01) ===
+PASS  parsed 56 IrOp enum entries (IR_NOP=0 .. IR_ASM=55)
+PASS  loaded 56 capability rows via hcc --print-cap-table
+PASS  dispatch scan: 48 case arms in llLowerInstr, 9 if-shorts anywhere
+PASS  M1 round-trip: 56 rows round-trip byte-identical
+PASS  M2 arm-group scan: 23 case-arm groups, 7 if-arm bodies in dispatch
+PASS  M2: IR_ALLOCA diagnostic 'LLVM_BACKEND_UNSUPPORTED_POINTER' bound to arm body
+PASS  M2: IR_RMW_DEREF diagnostic 'LLVM_BACKEND_UNSUPPORTED_POINTER' bound to arm body
+PASS  M2: IR_LEA diagnostic 'LLVM_BACKEND_UNSUPPORTED_POINTER' bound to arm body
+PASS  M2: IR_GEP diagnostic 'LLVM_BACKEND_UNSUPPORTED_AGGREGATE' bound to arm body
+PASS  M2: IR_IDIV diagnostic 'LLVM_BACKEND_UNSUPPORTED_INT_DIVISION' bound to arm body
+PASS  M2: IR_UDIV diagnostic 'LLVM_BACKEND_UNSUPPORTED_INT_DIVISION' bound to arm body
+PASS  M2: IR_IREM diagnostic 'LLVM_BACKEND_UNSUPPORTED_INT_REMAINDER' bound to arm body
+PASS  M2: IR_UREM diagnostic 'LLVM_BACKEND_UNSUPPORTED_INT_REMAINDER' bound to arm body
+PASS  M2: IR_INEG diagnostic 'LLVM_BACKEND_UNSUPPORTED_INT_NEGATION' bound to arm body
+PASS  M2: IR_FADD diagnostic 'LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH' bound to arm body
+PASS  M2: IR_FSUB diagnostic 'LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH' bound to arm body
+PASS  M2: IR_FMUL diagnostic 'LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH' bound to arm body
+PASS  M2: IR_FDIV diagnostic 'LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH' bound to arm body
+PASS  M2: IR_FNEG diagnostic 'LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH' bound to arm body
+PASS  M2: IR_AND diagnostic 'LLVM_BACKEND_UNSUPPORTED_INT_BITWISE' bound to arm body
+PASS  M2: IR_OR diagnostic 'LLVM_BACKEND_UNSUPPORTED_INT_BITWISE' bound to arm body
+PASS  M2: IR_XOR diagnostic 'LLVM_BACKEND_UNSUPPORTED_INT_BITWISE' bound to arm body
+PASS  M2: IR_SHL diagnostic 'LLVM_BACKEND_UNSUPPORTED_INT_SHIFT' bound to arm body
+PASS  M2: IR_SHR diagnostic 'LLVM_BACKEND_UNSUPPORTED_INT_SHIFT' bound to arm body
+PASS  M2: IR_SAR diagnostic 'LLVM_BACKEND_UNSUPPORTED_INT_SHIFT' bound to arm body
+PASS  M2: IR_NOT diagnostic 'LLVM_BACKEND_UNSUPPORTED_INT_BITWISE' bound to arm body
+PASS  M2: IR_FCMP diagnostic 'LLVM_BACKEND_UNSUPPORTED_FLOAT_CMP' bound to arm body
+PASS  M2: IR_TRUNC diagnostic 'LLVM_BACKEND_UNSUPPORTED_CONVERSION' bound to arm body
+PASS  M2: IR_ZEXT diagnostic 'LLVM_BACKEND_UNSUPPORTED_CONVERSION' bound to arm body
+PASS  M2: IR_SEXT diagnostic 'LLVM_BACKEND_UNSUPPORTED_CONVERSION' bound to arm body
+PASS  M2: IR_FPTRUNC diagnostic 'LLVM_BACKEND_UNSUPPORTED_CONVERSION' bound to arm body
+PASS  M2: IR_FPEXT diagnostic 'LLVM_BACKEND_UNSUPPORTED_CONVERSION' bound to arm body
+PASS  M2: IR_FPTOUI diagnostic 'LLVM_BACKEND_UNSUPPORTED_CONVERSION' bound to arm body
+PASS  M2: IR_FPTOSI diagnostic 'LLVM_BACKEND_UNSUPPORTED_CONVERSION' bound to arm body
+PASS  M2: IR_UITOFP diagnostic 'LLVM_BACKEND_UNSUPPORTED_CONVERSION' bound to arm body
+PASS  M2: IR_SITOFP diagnostic 'LLVM_BACKEND_UNSUPPORTED_CONVERSION' bound to arm body
+PASS  M2: IR_PTRTOINT diagnostic 'LLVM_BACKEND_UNSUPPORTED_CONVERSION' bound to arm body
+PASS  M2: IR_INTTOPTR diagnostic 'LLVM_BACKEND_UNSUPPORTED_CONVERSION' bound to arm body
+PASS  M2: IR_BITCAST diagnostic 'LLVM_BACKEND_UNSUPPORTED_BITCAST' bound to arm body
+PASS  M2: IR_CMP_BR diagnostic 'LLVM_BACKEND_INTERNAL' bound to arm body
+PASS  M2: IR_SWITCH diagnostic 'LLVM_BACKEND_UNSUPPORTED_SWITCH' bound to arm body
+PASS  M2: IR_PHI diagnostic 'LLVM_BACKEND_UNSUPPORTED_PHI' bound to arm body
+PASS  M2: IR_SELECT diagnostic 'LLVM_BACKEND_UNSUPPORTED_SELECT' bound to arm body
+PASS  M2: IR_VA_ARG diagnostic 'LLVM_BACKEND_UNSUPPORTED_VARARGS' bound to arm body
+PASS  M2: IR_VA_START diagnostic 'LLVM_BACKEND_UNSUPPORTED_VARARGS' bound to arm body
+PASS  M2: IR_VA_END diagnostic 'LLVM_BACKEND_UNSUPPORTED_VARARGS' bound to arm body
+PASS  M2: IR_ASM diagnostic 'LLVM_BACKEND_UNSUPPORTED_ASM' bound to arm body
+PASS  I1: IR_NOP = UNREACHABLE_ON_LLVM, no explicit arm (falls to default)
+PASS  I1: IR_LOAD = SHAPE_DEPENDENT, dispatch has explicit arm
+PASS  I1: IR_STORE = SHAPE_DEPENDENT, dispatch has explicit arm
+PASS  I1: IR_LOAD_DEREF = SHAPE_DEPENDENT, dispatch has explicit arm
+PASS  I1: IR_STORE_DEREF = SHAPE_DEPENDENT, dispatch has explicit arm
+PASS  I1: IR_IADD = SUPPORTED, dispatch has explicit arm
+PASS  I1: IR_ISUB = SUPPORTED, dispatch has explicit arm
+PASS  I1: IR_IMUL = SUPPORTED, dispatch has explicit arm
+PASS  I1: IR_ICMP = SUPPORTED, dispatch has explicit arm
+PASS  I1: IR_RET = SUPPORTED, dispatch has explicit arm
+PASS  I1: IR_BR = SUPPORTED, dispatch has explicit arm
+PASS  I1: IR_JMP = SUPPORTED, dispatch has explicit arm
+PASS  I1: IR_CALL = SUPPORTED, dispatch has explicit arm
+PASS  I1: IR_LABEL = UNREACHABLE_ON_LLVM, no explicit arm (falls to default)
+PASS  I2: IR_LEA has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_IREM has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_VA_ARG has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_VA_END has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_RET has explicit dispatch arm and capability row (SUPPORTED)
+PASS  I2: IR_LOAD has explicit dispatch arm and capability row (SHAPE_DEPENDENT)
+PASS  I2: IR_UREM has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_FMUL has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_SITOFP has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_RMW_DEREF has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_STORE has explicit dispatch arm and capability row (SHAPE_DEPENDENT)
+PASS  I2: IR_IMUL has explicit dispatch arm and capability row (SUPPORTED)
+PASS  I2: IR_TRUNC has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_BR has explicit dispatch arm and capability row (SUPPORTED)
+PASS  I2: IR_NOT has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_STORE_DEREF has explicit dispatch arm and capability row (SHAPE_DEPENDENT)
+PASS  I2: IR_FPTRUNC has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_FPTOSI has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_ISUB has explicit dispatch arm and capability row (SUPPORTED)
+PASS  I2: IR_XOR has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_PTRTOINT has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_SELECT has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_BITCAST has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_FDIV has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_FNEG has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_ICMP has explicit dispatch arm and capability row (SUPPORTED)
+PASS  I2: IR_INTTOPTR has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_LOAD_DEREF has explicit dispatch arm and capability row (SHAPE_DEPENDENT)
+PASS  I2: IR_ALLOCA has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_FCMP has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_UDIV has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_ASM has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_CMP_BR has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_SAR has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_FPEXT has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_INEG has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_SWITCH has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_UITOFP has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_FADD has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_OR has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_SHL has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_ZEXT has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_CALL has explicit dispatch arm and capability row (SUPPORTED)
+PASS  I2: IR_AND has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_IDIV has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_GEP has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_SEXT has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_SHR has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_PHI has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_FSUB has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_FPTOUI has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_JMP has explicit dispatch arm and capability row (SUPPORTED)
+PASS  I2: IR_VA_START has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_IADD has explicit dispatch arm and capability row (SUPPORTED)
+PASS  I3: harness queries hcc --print-cap-table (bound to table)
+INFO  scope-tight self-test: discovered dispatch functions = ['llCmpKindToLLVMPred', 'llCollapseStoreValue', 'llDetectCollapsibleReturn', 'llLowerBlock', 'llLowerInstr']; unified model set: 48 case arms, 9 if-arms in scope.
+PASS  scope-tight self-test (RESUME01 AC13): permanent adversarial fixture rejected by unified scope; unified model is internally consistent; no rogue `if`-arms outside discovered scope; strong NC1 (already-supported IR_IADD in non-dispatch helper) is correctly detected by the location-aware check.
+
+======================================
+PASS: dispatch <-> capability <-> harness bound
+======================================
