@@ -1,0 +1,31 @@
+=== MEMORY01 positive matrix ===
+PASS  src/tests/llvm-memory01/red_pointer_param.HC
+PASS  src/tests/llvm-memory01/red_load_deref.HC
+PASS  src/tests/llvm-memory01/red_store_deref.HC
+PASS  src/tests/llvm-memory01/p4_load_add.HC
+PASS  src/tests/llvm-memory01/p5_store_inc.HC
+
+=== MEMORY01 negative matrix (struct aggregate -> REJECTED) ===
+PASS  neg_struct (negative, LLVM_BACKEND_UNSUPPORTED_TYPE)
+
+=== MEMORY01 counter gate ===
+=== capability counters (MEMORY01 matrix) ===
+SUPPORTED           : 7
+REJECTED            : 0
+SHAPE_DEPENDENT     : 8
+DEFENSIVE_INVARIANT : 0
+UNREACHABLE_ON_LLVM : 0
+==============================
+PASS  counter gate: SHAPE_DEPENDENT>=1, SUPPORTED>=1, DEFENSIVE=0, UNREACHABLE=0
+
+=== MEMORY01 NC5 per-fixture attribution ===
+PASS  NC5 red_pointer_param: shape_dependent=0 (== 0)
+PASS  NC5 red_load_deref: shape_dependent=1 (>= 1)
+PASS  NC5 red_store_deref: shape_dependent=2 (>= 1)
+PASS  NC5 p4_load_add: shape_dependent=1 (>= 1)
+PASS  NC5 p5_store_inc: shape_dependent=4 (>= 2)
+PASS  NC5 per-fixture attribution: SHAPE_DEPENDENT uniquely attributable to IR_LOAD_DEREF / IR_STORE_DEREF
+
+=================================
+MEMORY01 GREEN summary: PASS=6 FAIL=0
+=================================
