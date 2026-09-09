@@ -249,8 +249,9 @@ compiler**, not a wider set of LLVM opcodes.
 
 Conceptual transition:
 
-    P3 LLVM SPIKE/CORE/MEMORY  "Can we lower straight-line scalar
-                                + I64 pointer arithmetic to LLVM?"
+    P3 LLVM SPIKE/CORE/MEMORY  "Can we lower the proven scalar
+                                + bounded I64 memory subset
+                                to LLVM?"
                                 -> YES, with explicit fences
         ↓
     P4 SELF-HOSTING SUBSTRATE  "What is the minimum LLVM substrate
