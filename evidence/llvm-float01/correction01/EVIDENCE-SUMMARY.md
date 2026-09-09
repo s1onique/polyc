@@ -65,10 +65,17 @@ The F64 lowering implementation that was already in tree
     The PolyC x86_64 NATIVE backend's IR_FCMP dispatch
     (src/x86_64.c:670-679, src/x86_64-jit.c:425-433) emits
     sete/setne/setb/setbe/seta/setae after `ucomisd`. With
-    UCOMISD setting ZF=PF=CF=1 on NaN/unordered operands, all
-    six predicates produce the WRONG IEEE-754 / LangRef result:
-    ==, <, <= return 1; !=, >, >= return 0. The defect matrix
-    is mechanically derived in
+    UCOMISD setting ZF=PF=CF=1 on NaN/unordered operands, FOUR
+    of six predicates produce the WRONG IEEE-754 / LangRef result:
+      EQ (sete):    NaN -> 1   WRONG; expected 0
+      NE (setne):   NaN -> 0   WRONG; expected 1
+      LT (setb):    NaN -> 1   WRONG; expected 0
+      LE (setbe):   NaN -> 1   WRONG; expected 0
+      GT (seta):    NaN -> 0   CORRECT (matches ogt)
+      GE (setae):   NaN -> 0   CORRECT (matches oge)
+    Defect set for the next ACT: EQ/NE/LT/LE. Conservation
+    controls: GT/GE must NOT change. The defect matrix is
+    mechanically derived in
     evidence/llvm-float01/red/recon-ll-semantics.txt (Observed
     residue section). Out of scope for this ACT; recorded as
     future work.

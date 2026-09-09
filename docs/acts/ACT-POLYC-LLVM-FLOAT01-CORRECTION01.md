@@ -126,15 +126,21 @@ docs/CHARTER.md.
 The x86_64 native backend's IR_FCMP dispatch
 (src/x86_64.c:670-679, src/x86_64-jit.c:425-433) emits
 sete/setne/setb/setbe/seta/setae after `ucomisd`. With UCOMISD
-setting ZF=PF=CF=1 on NaN/unordered operands, all six
+setting ZF=PF=CF=1 on NaN/unordered operands, FOUR of six
 predicates produce the WRONG IEEE-754 / LangRef result:
-==, <, <= return 1; !=, >, >= return 0. The defect matrix is
-mechanically derived from `ucomisd` flag behaviour in
-evidence/llvm-float01/red/recon-ll-semantics.txt. This is a
-PolyC native-backend defect independent of the LLVM backend.
-It is recorded as P0 residue under
-ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01 (NOT scoped to this
-ACT and NOT silently fixed here).
+  EQ (sete):    NaN -> 1   WRONG; expected 0
+  NE (setne):   NaN -> 0   WRONG; expected 1
+  LT (setb):    NaN -> 1   WRONG; expected 0
+  LE (setbe):   NaN -> 1   WRONG; expected 0
+  GT (seta):    NaN -> 0   CORRECT (matches ogt NaN->false)
+  GE (setae):   NaN -> 0   CORRECT (matches oge NaN->false)
+The defect matrix is mechanically derived from `ucomisd` flag
+behaviour in evidence/llvm-float01/red/recon-ll-semantics.txt.
+Defect set for the next ACT: EQ/NE/LT/LE. Conservation
+controls: GT/GE must NOT change. This is a PolyC native-backend
+defect independent of the LLVM backend. It is recorded as P0
+residue under ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01 (NOT
+scoped to this ACT and NOT silently fixed here).
 
 Per F15, this ACT does NOT modify the x86_64 native backend.
 ```

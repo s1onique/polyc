@@ -40,22 +40,36 @@ either operand is NaN. This matches PolyC's docs/CHARTER.md commitment
 to the IEEE-754 unordered convention.
 
 The host (aarch64) JIT/AOT oracle is consistent with this binding:
-`fcmp NaN, x` sets NZCV=0011, and `cset mi/ls/gt/ge/eq` all return 0
-while `cset ne` returns 1 — exactly matching the ordered-predicate
-semantics. This is recorded as a witness, not as the binding
-authority. Full argument in
-`evidence/llvm-float01/red/recon-ll-semantics.txt`.
+`fcmp NaN, x` sets NZCV=0011 (binary: N=0 Z=0 C=1 V=1), and
+`cset mi/ls/gt/ge/eq` all return 0 while `cset ne` returns 1 —
+exactly matching the ordered-predicate semantics. This is
+recorded as a witness, not as the binding authority. Full
+argument in `evidence/llvm-float01/red/recon-ll-semantics.txt`.
 
 Note: the PolyC x86_64 NATIVE backend's IR_FCMP dispatch (see
 `src/x86_64.c:670-679` and `x86_64-jit.c:425-433`) emits
 `sete/setne/setb/setbe/seta/setae` after `ucomisd`. With
-`ZF=PF=CF=1` on NaN, all six predicates produce the WRONG
-IEEE-754 / LangRef result (==, <, <= return 1; !=, >, >=
-return 0). This DIVERGES from both the LLVM LangRef binding
-used by the LLVM backend and from the aarch64 host oracle.
-The x86_64 native defect is strictly a PolyC native-backend
-issue and is recorded as future residue under
-`ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01`.
+`ZF=PF=CF=1` on NaN, FOUR of six predicates produce the WRONG
+IEEE-754 / LangRef result:
+
+  EQ (sete):    NaN -> 1   WRONG; expected 0
+  NE (setne):   NaN -> 0   WRONG; expected 1
+  LT (setb):    NaN -> 1   WRONG; expected 0
+  LE (setbe):   NaN -> 1   WRONG; expected 0
+  GT (seta):    NaN -> 0   CORRECT (matches ogt NaN->false)
+  GE (setae):   NaN -> 0   CORRECT (matches oge NaN->false)
+
+GT and GE produce the correct result by accident of the UCOMISD
+CF=ZF=0 branch (seta/setae require CF=0 and CF=0 respectively,
+which is what UCOMISD reports on unordered operands). EQ/NE/LT/LE
+must be re-emitted to mask unordered. This DIVERGES from both the
+LLVM LangRef binding used by the LLVM backend and from the
+aarch64 host oracle for the four broken predicates. The x86_64
+native defect is strictly a PolyC native-backend issue and is
+recorded as P0 future residue under
+`ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01` with defect set:
+EQ/NE/LT/LE must change; GT/GE are conservation controls
+(must NOT change).
 
 ## RED (PR-1 RED commit: 4592d79)
 
@@ -162,13 +176,23 @@ P0 (recommended next ACT): ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01
   The PolyC x86_64 native backend's IR_FCMP dispatch (src/x86_64.c:670-679,
   src/x86_64-jit.c:425-433) emits sete/setne/setb/setbe/seta/setae
   after ucomisd. With UCOMISD setting ZF=PF=CF=1 on NaN/unordered
-  operands, all six predicates produce the WRONG IEEE-754 / LangRef
-  result: ==, <, <= return 1; !=, >, >= return 0. The defect matrix
-  is mechanically derived in
+  operands, FOUR of six predicates produce the WRONG IEEE-754 /
+  LangRef result:
+    EQ (sete):    NaN -> 1   WRONG; expected 0
+    NE (setne):   NaN -> 0   WRONG; expected 1
+    LT (setb):    NaN -> 1   WRONG; expected 0
+    LE (setbe):   NaN -> 1   WRONG; expected 0
+    GT (seta):    NaN -> 0   CORRECT (matches ogt)
+    GE (setae):   NaN -> 0   CORRECT (matches oge)
+  The defect matrix is mechanically derived in
   evidence/llvm-float01/red/recon-ll-semantics.txt (Observed residue
-  section). The next ACT should re-emit the x86_64 native FCMP
-  lowering using ordered-predicate equivalent sequences so == and
-  the four orderings return 0 on NaN and != returns 1 on NaN,
+  section). Defect set for the next ACT: EQ, NE, LT, LE must be
+  re-emitted to mask unordered. GT and GE are CONSERVATION
+  CONTROLS — the next ACT must verify they remain unchanged on
+  finite and unordered inputs. The next ACT should re-emit the
+  x86_64 native FCMP lowering using ordered-predicate equivalent
+  sequences so == and the four orderings return 0 on NaN and !=
+  returns 1 on NaN,
   matching both IEEE-754 and the LLVM LangRef.
 
 P2 (acknowledged, NOT silently fixed):
@@ -179,6 +203,14 @@ P2 (acknowledged, NOT silently fixed):
 
 ## Next ACT (recommendation)
 
-`ACT-POLYC-LLVM-FLOAT02`: F64 FDIV/FREM, or F32 promotion, or
-x86_64-native F64 parity. The choice depends on native-backend parity
-decisions pending F14 historical review.
+`ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01` (P0): repair the x86_64
+native backend's IR_FCMP lowering for the four broken predicates
+(EQ, NE, LT, LE) so they match the LLVM LangRef / IEEE-754
+ordered-predicate convention. GT and GE are CONSERVATION CONTROLS
+and must NOT change. Principal defect set and conservation controls
+are documented in the Residue section above and in
+`evidence/llvm-float01/red/recon-ll-semantics.txt`.
+
+`ACT-POLYC-LLVM-FLOAT02` (P2 carry-over): F64 FDIV/FREM, F32
+promotion, and F64 vector types via the LLVM backend. Authorized
+by future ACTs after the native-backend parity ACT closes.
