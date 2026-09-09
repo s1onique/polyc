@@ -95,14 +95,21 @@ VERDICT: PASS
        The PolyC x86_64 native backend's IR_FCMP dispatch
        (src/x86_64.c:670-679, src/x86_64-jit.c:425-433) emits
        sete/setne/setb/setbe/seta/setae after `ucomisd`. With
-       UCOMISD setting ZF=PF=CF=1 on NaN/unordered operands, all
-       six predicates produce the WRONG IEEE-754 / LangRef result:
-       ==, <, <= return 1; !=, >, >= return 0. The defect matrix
-       is mechanically derived from `ucomisd` flag behaviour in
+       UCOMISD setting ZF=PF=CF=1 on NaN/unordered operands, FOUR
+       of six predicates produce the WRONG IEEE-754 / LangRef result:
+         EQ (sete):    NaN -> 1   WRONG; expected 0
+         NE (setne):   NaN -> 0   WRONG; expected 1
+         LT (setb):    NaN -> 1   WRONG; expected 0
+         LE (setbe):   NaN -> 1   WRONG; expected 0
+         GT (seta):    NaN -> 0   CORRECT (matches ogt)
+         GE (setae):   NaN -> 0   CORRECT (matches oge)
+       Defect set for the next ACT: EQ/NE/LT/LE. Conservation
+       controls: GT/GE must NOT change. The defect matrix is
+       mechanically derived from `ucomisd` flag behaviour in
        evidence/llvm-float01/red/recon-ll-semantics.txt. The LLVM
        backend binds to the LangRef semantics (which coincide with
        the aarch64 host oracle for NaN inputs). A separate ACT
-       should repair the x86_64 native backend.
+       should repair the four broken x86_64 native predicates.
 
   P2 (carry-over from original FLOAT01 CLOSE):
        F64 FDIV/FREM via LLVM backend (FLOAT02 candidate)

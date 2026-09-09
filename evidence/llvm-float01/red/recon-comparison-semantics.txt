@@ -125,19 +125,24 @@ table from `ucomisd` flag behaviour (Felix Cloutier pseudo-op
 table; SETcc reference) and the actual src/x86_64.c:670-679
 dispatch:
 
-  IR_CMP_EQ (sete,    ZF=1)              -> 1
-  IR_CMP_NE (setne,   ZF=0)              -> 0
-  IR_CMP_LT (setb,    CF=1)              -> 1
-  IR_CMP_LE (setbe,   CF=1 || ZF=1)      -> 1
-  IR_CMP_GT (seta,    CF=0 && ZF=0)      -> 0
-  IR_CMP_GE (setae,   CF=0)              -> 0
+  IR_CMP_EQ (sete,    ZF=1)              -> 1   WRONG (expected 0)
+  IR_CMP_NE (setne,   ZF=0)              -> 0   WRONG (expected 1)
+  IR_CMP_LT (setb,    CF=1)              -> 1   WRONG (expected 0)
+  IR_CMP_LE (setbe,   CF=1 || ZF=1)      -> 1   WRONG (expected 0)
+  IR_CMP_GT (seta,    CF=0 && ZF=0)      -> 0   CORRECT (matches ogt)
+  IR_CMP_GE (setae,   CF=0)              -> 0   CORRECT (matches oge)
 
-All six predicates are WRONG against IEEE-754 / LangRef. The
-HANDOFF residue was promoted from P2 to P0 (next ACT
-ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01).
+FOUR of six predicates (EQ, NE, LT, LE) are WRONG against
+IEEE-754 / LangRef. Two (GT, GE) already match by accident of
+the UCOMISD CF=ZF=0 branch. The HANDOFF residue was promoted
+from P2 to P0 (next ACT
+ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01) with defect set
+EQ/NE/LT/LE and conservation controls GT/GE.
 
 The earlier claim "x86_64 native uses `ucomisd + setb` for IR_CMP_LT
 returning 1 for NaN (unordered mapping)" was directionally correct
-for IR_CMP_LT specifically but incorrect for IR_CMP_GT/GE (which
-return 0 on NaN, not 1) and for IR_CMP_EQ/NE (which use
-sete/setne, not setb).
+for IR_CMP_LT specifically but understated the scope: the same
+unordered mapping returns 1 on `setb` (LT) and `setbe` (LE) and
+`sete` (EQ) while returning 0 on `seta` (GT) and `setae` (GE) and
+`setne` (NE). The set-ne branch is the inverse of the unordered
+mapping; sete/setne are NOT the same dispatch as setb/setbe.

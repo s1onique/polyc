@@ -64,7 +64,7 @@ of which LLVM target triple the backend emits for.
 Observed via aarch64 JIT probe (NZCV after `fcmp d0, d1` with
 NaN operand):
 
-  NZCV=0011 (Z=1, C=1 -> "less than or equal" + "equal")
+  NZCV=0011  (binary 0011: N=0 Z=0 C=1 V=1)
   cset eq  -> 0    (matches oeq)
   cset ne  -> 1    (matches une)
   cset mi  -> 0    (matches olt)
@@ -99,31 +99,50 @@ table; SETcc). Substituting:
    IR_CMP_NE (setne,   ZF=0)              -> 0   WRONG; expected 1
    IR_CMP_LT (setb,    CF=1)              -> 1   WRONG; expected 0
    IR_CMP_LE (setbe,   CF=1 || ZF=1)      -> 1   WRONG; expected 0
-   IR_CMP_GT (seta,    CF=0 && ZF=0)      -> 0   WRONG; expected 1
-   IR_CMP_GE (setae,   CF=0)              -> 0   WRONG; expected 1
+   IR_CMP_GT (seta,    CF=0 && ZF=0)      -> 0   CORRECT (matches ogt NaN->false)
+   IR_CMP_GE (setae,   CF=0)              -> 0   CORRECT (matches oge NaN->false)
 
-So all six PolyC FCMP predicates diverge from IEEE-754 / LangRef
-on NaN inputs. Compiled truth table for the PolyC x86_64 native
-backend (NaN operand):
+So FOUR of six PolyC FCMP predicates diverge from IEEE-754 /
+LangRef on NaN inputs (EQ, NE, LT, LE). Two (GT, GE) already
+produce the correct ordered-predicate result by accident of
+the unordered flag state. Compiled truth table for the
+PolyC x86_64 native backend (NaN operand):
 
-  PolyC op   x86_64 native result on NaN   correct (LangRef/IEEE-754)
-  --------   ---------------------------   -------------------------
-  ==         1                              0
-  !=         0                              1
-  <          1                              0
-  <=         1                              0
-  >          0                              1
-  >=         0                              1
+  PolyC op   x86_64 native result on NaN   correct (LangRef/IEEE-754)   status
+  --------   ---------------------------   -------------------------   ------
+  ==         1                              0                            WRONG
+  !=         0                              1                            WRONG
+  <          1                              0                            WRONG
+  <=         1                              0                            WRONG
+  >          0                              0                            CORRECT
+  >=         0                              0                            CORRECT
+
+Defect set for the next ACT (must mask unordered on the four
+broken predicates; must PRESERVE the two correct ones):
+
+  EQ : sete  -> must mask unordered (currently returns 1; should return 0)
+  NE : setne -> must include unordered (currently returns 0; should return 1)
+  LT : setb  -> must mask unordered (currently returns 1; should return 0)
+  LE : setbe -> must mask unordered (currently returns 1; should return 0)
+
+Conservation controls (must NOT change):
+
+  GT : seta  -> 0 on unordered (already matches ogt)
+  GE : setae -> 0 on unordered (already matches oge)
 
 This is a PolyC x86_64 NATIVE backend defect, not an LLVM
 backend defect. It is OUT OF SCOPE for ACT-POLYC-LLVM-FLOAT01.
 
 Note: the inline comment at src/x86_64.c:663-666
 ("we treat IR cmps as loose-ordered (matches aarch64's
-behaviour)") is incorrect. The x86_64 unordered-flag dispatch
-produces the OPPOSITE of the aarch64 host oracle on every
-predicate when at least one operand is NaN. The two backends
-do not agree on NaN; they only agree on finite operands.
+behaviour)") is incorrect for the four broken predicates
+(EQ, NE, LT, LE). The x86_64 unordered-flag dispatch
+produces the OPPOSITE of the aarch64 host oracle on those
+four predicates when at least one operand is NaN. For GT/GE
+the dispatch happens to coincide with the aarch64 host
+oracle (both return 0 on unordered). The two backends agree
+on finite operands and on GT/GE NaN; they disagree on
+EQ/NE/LT/LE NaN.
 
 Recommended future ACT: ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01,
 which would re-emit the x86_64 native FCMP lowering using
@@ -145,8 +164,12 @@ The LLVM backend's comparison semantics are bound to the
 LLVM LangRef. The aarch64 host oracle (cset mi/ls/gt/ge/eq/ne
 after fcmp on NaN) is consistent with that binding and
 therefore corroborates it as a witness; it is not the
-authority. The x86_64 native backend's FCMP lowering produces
-a truth table that diverges from IEEE-754 / LangRef on every
-predicate when at least one operand is NaN. That divergence
-is a separate, non-blocking residue for
-ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01.
+authority. The x86_64 native backend's FCMP lowering
+diverges from IEEE-754 / LangRef on FOUR of six predicates
+when at least one operand is NaN (EQ, NE, LT, LE), and
+coincidentally matches the LangRef on the remaining two
+(GT, GE, which return 0 on unordered by accident of the
+UCOMISD CF=ZF=0 branch). That divergence is a separate,
+non-blocking residue for
+ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01; its defect set
+binds to the four broken predicates listed above.

@@ -77,11 +77,16 @@ addressed in CORRECTION01:
       != : 0 (setne, ZF=0)         WRONG; expected 1
       <  : 1 (setb, CF=1)          WRONG; expected 0
       <= : 1 (setbe, CF=1||ZF=1)   WRONG; expected 0
-      >  : 0 (seta, CF=0&&ZF=0)    WRONG; expected 1
-      >= : 0 (setae, CF=0)         WRONG; expected 1
-  - This is recorded as P0 residue under
+      >  : 0 (seta, CF=0&&ZF=0)    CORRECT (matches ogt NaN->false)
+      >= : 0 (setae, CF=0)         CORRECT (matches oge NaN->false)
+  - FOUR of six predicates (EQ, NE, LT, LE) diverge from
+    IEEE-754 / LangRef. Two (GT, GE) already match by accident
+    of the UCOMISD CF=ZF=0 branch. Defect set for the next ACT:
+    EQ/NE/LT/LE; conservation controls: GT/GE.
+  - Recorded as P0 residue under
     ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01.
 
 The historical paragraph above is preserved unmodified per F14
 (Historical document = historical evidence). Authoritative
-current truth: evidence/llvm-float01/correction01/RED-SUMMARY-corrected.md.
+current truth: evidence/llvm-float01/correction01/RED-SUMMARY-corrected.md
+and evidence/llvm-float01/red/recon-ll-semantics.txt.

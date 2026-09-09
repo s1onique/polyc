@@ -88,17 +88,21 @@ correct binding for the LLVM backend is:
      docs/CHARTER.md commitment.
 
   2. The host (aarch64) JIT/AOT oracle confirms this: NZCV=0011
-     from `fcmp NaN, x` causes `cset eq/mi/ls/gt/ge` to return 0
-     and `cset ne` to return 1. This is consistent with the
-     LLVM IR ordered-predicate semantics.
+     (binary: N=0 Z=0 C=1 V=1) from `fcmp NaN, x` causes
+     `cset eq/mi/ls/gt/ge` to return 0 and `cset ne` to return 1.
+     This is consistent with the LLVM IR ordered-predicate
+     semantics.
 
   3. The PolyC x86_64 NATIVE backend's IR_FCMP dispatch
      (src/x86_64.c:670-679, src/x86_64-jit.c:425-433) emits
      sete/setne/setb/setbe/seta/setae after `ucomisd`. With
-     UCOMISD setting ZF=PF=CF=1 on NaN/unordered operands, all
-     six predicates produce the WRONG IEEE-754 / LangRef result:
-     ==, <, <= return 1; !=, >, >= return 0. The x86_64 native
-     divergence is recorded as residue under
+     UCOMISD setting ZF=PF=CF=1 on NaN/unordered operands, FOUR
+     of six predicates produce the WRONG IEEE-754 / LangRef
+     result (==, <, <= return 1; != returns 0). The remaining
+     two (>, >=) coincidentally return 0, which matches ogt/oge.
+     The defect set for the next ACT is EQ/NE/LT/LE; GT/GE are
+     conservation controls. The x86_64 native divergence is
+     recorded as P0 residue under
      ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01 and is NOT scoped
      to or fixed by this ACT.
 
