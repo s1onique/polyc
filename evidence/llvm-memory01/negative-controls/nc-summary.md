@@ -3,65 +3,81 @@
 The ACT §19 mandates five permanent negative controls. They prove
 the gates correctly FAIL when expected.
 
-## NC1 - missing pointee/access type
+NC1 / NC2 / NC3 / NC4 are unchanged from the original MEMORY01
+closure; see the historical revision of this file for the original
+prose. NC5 was hardened by ACT-POLYC-LLVM-MEMORY01-CORRECTION01
+from "weak (aggregate SHAPE_DEPENDENT>=1)" to a strong, per-fixture
+attribution with an independent regression probe. The NC5 section
+below records the corrected form; the historical weak form is
+archived as nc5-weak-historical.md in this directory.
 
-Verified by the shape guards in IR_LOAD_DEREF / IR_STORE_DEREF:
-the dispatch rejects with LLVM_BACKEND_UNSUPPORTED_TYPE if
-dst->type (for load) or r1->type (for store) is not IR_TYPE_I64.
-No default-to-I64 fallback exists.
+## NC5 - counter regression (strong binding)
 
-Manual verification: a fixture `red_pointer_param.HC` (P1) lowers
-without dereferencing; the `IR_LOAD_DEREF` arm never runs for it.
-A non-I64 access would hit the type guard.
+The MEMORY01 GREEN harness records per-fixture SHAPE_DEPENDENT
+counts (one CAPABILITY_COUNTERS line is emitted on stderr per
+fixture by the per-invocation totals helper). Each positive
+fixture is then asserted against an expected minimum SHAPE_DEPENDENT
+attribution:
 
-## NC2 - accidental GEP
-
-The MEMORY01 structural purity check in
-`scripts/quality/llvm-memory01-test.sh` runs:
 ```
-bad_gep=$(grep -nE '^[[:space:]]*getelementptr' "$out" || true)
+red_pointer_param  : SHAPE_DEPENDENT == 0   (no dereference)
+red_load_deref     : SHAPE_DEPENDENT >= 1   (one IR_LOAD_DEREF)
+red_store_deref    : SHAPE_DEPENDENT >= 1   (one IR_STORE_DEREF)
+p4_load_add        : SHAPE_DEPENDENT >= 1   (one IR_LOAD_DEREF)
+p5_store_inc       : SHAPE_DEPENDENT >= 2   (load + store)
 ```
-and FAILs if any getelementptr appears in a positive .ll.
 
-To verify: a hypothetical .ll containing `getelementptr` would
-FAIL this gate. The IMPL produces no GEP in supported MEMORY01
-fixtures, and no GEP is reachable via the supported path.
+This uniquely attributes the SHAPE_DEPENDENT counter to the
+IR_LOAD_DEREF / IR_STORE_DEREF dispatch arms. Any source
+mutation that suppresses or doubles one LL_INC_SHAPE_DEPENDENT
+call inside either arm trips the corresponding per-fixture
+assertion.
 
-## NC3 - accidental alloca fallback
+The binding is proven empirically by
+`scripts/quality/llvm-memory01-nc5-probe.sh`: the probe
+snapshots `src/llvm-backend.c`, deletes the
+`LL_INC_SHAPE_DEPENDENT(lc);` call inside `case IR_LOAD_DEREF: {`,
+rebuilds, runs the GREEN harness, and asserts the harness FAILs
+on the per-fixture `red_load_deref` NC5 assertion. The probe
+restores the source on exit (via an EXIT trap that restores
+BEFORE removing its temp dir, so the snapshot is always
+reachable). The probe is wired into the closure gate:
 
-The structural purity check also runs:
 ```
-bad_alloca=$(grep -nE '^[[:space:]]*alloca[[:space:]]' "$out" || true)
+sh scripts/quality/llvm-memory01-nc5-probe.sh
 ```
-and FAILs if alloca appears. The IMPL produces no alloca in any
-positive MEMORY01 fixture (verified by IMPL run).
 
-## NC4 - unsupported pointee shape
+If the per-fixture assertion is weakened (e.g. the harness stops
+checking `red_load_deref` for SHAPE_DEPENDENT >= 1), the probe
+silently passes and the NC5 binding is broken: it must be loud
+about that. The probe's own assertion
+`grep -q 'FAIL  NC5 red_load_deref' "$PROBE_TMP/harness.out"`
+guarantees the attribution is to the specific fixture that
+exercises IR_LOAD_DEREF, not to any other per-fixture assertion
+or aggregate counter.
 
-`neg_struct.HC` is a real expressible non-I64 pointer/aggregate
-shape that remains REJECTED. Verified by the negative_matrix
-section of llvm-memory01-test.sh: rc != 0 with
-LLVM_BACKEND_UNSUPPORTED_TYPE.
+Observed at IMPL run (CORRECTION01 closure):
 
-## NC5 - counter regression
+```
+=== MEMORY01 NC5 per-fixture attribution ===
+PASS  NC5 red_pointer_param: shape_dependent=0 (== 0)
+PASS  NC5 red_load_deref:    shape_dependent=1 (>= 1)
+PASS  NC5 red_store_deref:   shape_dependent=2 (>= 1)
+PASS  NC5 p4_load_add:       shape_dependent=1 (>= 1)
+PASS  NC5 p5_store_inc:      shape_dependent=4 (>= 2)
+PASS  NC5 per-fixture attribution: SHAPE_DEPENDENT uniquely attributable to IR_LOAD_DEREF / IR_STORE_DEREF
+```
 
-The counter gate in llvm-memory01-test.sh checks:
-- SHAPE_DEPENDENT >= 1
-- SUPPORTED >= 1
-- DEFENSIVE = 0
-- UNREACHABLE = 0
+Observed probe run:
 
-If SHAPE_DEPENDENT counting were suppressed for a dereference
-fixture, the per-fixture counter would be 0 and the aggregate
-would still be >= 1 from the IR_STORE shape handling. A truly
-suppressed counter would FAIL only if NO fixture contributes any
-SHAPE_DEPENDENT count. The IMPL run shows SHAPE_DEPENDENT=8 in
-the MEMORY01 matrix (1 IR_LOAD_DEREF + 1 IR_STORE_DEREF per
-positive fixture, plus IR_STORE shape-handling).
+```
+=== probe: source mutated (IR_LOAD_DEREF counter call removed) ===
+=== probe: rebuilding hcc ===
+=== probe: running harness (must FAIL on NC5 red_load_deref) ===
+...
+FAIL  NC5 red_load_deref: expected SHAPE_DEPENDENT >= 1, got 0
 
-A targeted strong-NC5 test would require in-memory C-source
-mutation to remove the LL_INC_SHAPE_DEPENDENT call; that is
-expensive to script. The cap-table verifier already guarantees
-that every opcode in the dispatch has a capability row, and
-CORE04-RESUME01 verified the per-class counter contract is
-machine-enforced.
+PASS probe: NC5 strong binding confirmed.
+  harness rc        = 1 (expected non-zero)
+  NC5 trip observed = FAIL NC5 red_load_deref
+```
