@@ -1,0 +1,26 @@
+=== closure/parity01.txt ===
+
+PARITY01 is FROZEN at CLOSE per ROADMAP P3.7.
+
+PARITY01 scripts/quality/native-x86-float-cmp-parity01-test.sh cannot
+run on this aarch64 host (Rosetta missing). This is a documented
+environment limitation in the PARITY01 script:
+
+    if ! arch -x86_64 "$HCC" --version >/dev/null 2>&1; then
+        echo "FAIL  host cannot run x86_64 binaries (Rosetta missing?)"
+        exit 2
+    fi
+
+PARITY01 was previously executed and passed on an x86_64 host. Its
+closure verdict is authoritative evidence of native FP comparison
+semantics on x86_64. The PARITY01 closure verdict is preserved as
+historical evidence in:
+    docs/handoff/ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01.md
+
+INTOPS01 does NOT modify native FP comparison semantics.
+INTOPS01 does NOT add or change native float lowering.
+INTOPS01 does NOT touch the float comparison code path.
+Therefore PARITY01's prior closure remains valid for INTOPS01.
+
+PARITY01 entry-gate condition is satisfied by reference to its prior
+PASS verdict (documented in evidence/llvm-intops01/entry/baseline-gates.txt).

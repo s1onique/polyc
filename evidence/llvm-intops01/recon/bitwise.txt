@@ -1,0 +1,69 @@
+=== R4 — Bitwise AND / OR / XOR recon ===
+
+## Source syntax (existing PolyC/HolyC)
+
+```c
+I64 a = x & y;   // bitwise AND  -> IR_AND
+I64 b = x | y;   // bitwise OR   -> IR_OR
+I64 c = x ^ y;   // bitwise XOR  -> IR_XOR
+I64 d = ~x;      // bitwise NOT  -> IR_NOT
+```
+
+Mapped in src/ir.c:
+- AST_BIN_OP_BIT_AND -> IR_AND
+- AST_BIN_OP_BIT_OR  -> IR_OR
+- AST_BIN_OP_BIT_XOR -> IR_XOR
+- (unary)            -> IR_NOT
+
+## Neutral IR opcodes (already exist in src/ir-types.h)
+
+- IR_AND   (line 106)
+- IR_OR    (line 107)
+- IR_XOR   (line 108)
+- IR_NOT   (line 112)
+
+All four are scalar I64.
+
+## LLVM capability table state (src/llvm-backend-cap.c)
+
+| Opcode  | Status    | Diagnostic                            |
+|---------|-----------|---------------------------------------|
+| IR_AND  | REJECTED  | LLVM_BACKEND_UNSUPPORTED_INT_BITWISE  |
+| IR_OR   | REJECTED  | LLVM_BACKEND_UNSUPPORTED_INT_BITWISE  |
+| IR_XOR  | REJECTED  | LLVM_BACKEND_UNSUPPORTED_INT_BITWISE  |
+| IR_NOT  | REJECTED  | LLVM_BACKEND_UNSUPPORTED_INT_BITWISE  |
+
+## Native AOT support
+
+Both x86_64 and aarch64 backends lower these via:
+- x86: `and`, `or`, `xor`, `not` (per src/x86.c and src/x86_64.c)
+- aarch64: `and`, `orr`, `eor`, `eon` (per src/aarch64.c)
+
+## Native JIT support
+
+Both x86_64-jit and aarch64-jit lower these via inline asm emission.
+
+## B0 demand
+
+- AND: NOT demanded by sketch or HCC lexer core (lexCharConst OR does not use AND)
+- OR:  demanded only by lexCharConst, NOT by B0 critical path
+- XOR: NOT demanded
+- NOT: NOT demanded
+
+## Decision
+
+Without B0 demand proof, the mandated ACT rule is:
+
+    If no B0 use can be demonstrated:
+        DEFER
+        not "support for completeness."
+
+Therefore:
+    IR_AND  -> DEFER
+    IR_OR   -> DEFER
+    IR_XOR  -> DEFER
+    IR_NOT  -> DEFER
+
+Note: the surface syntax `&`, `|`, `^` remain available via native
+backends (x86, aarch64, JIT). The LLVM backend's REJECTED status
+remains correct.

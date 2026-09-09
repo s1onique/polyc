@@ -1,0 +1,16 @@
+=== INTOPS01 native parity ===
+
+Per the recon outcome, there are no new LLVM operations to compare
+against native backends. The B0-required operations (IADD, ISUB, IMUL,
+ICMP, BR, CALL, RET, LOAD_DEREF, STORE_DEREF) are already proven
+semantically consistent with the native AOT and JIT backends by:
+
+- LLVM-SPIKE01-RESUME01 (PASS=18, all scalars)
+- CORE04-RESUME01
+- MEMORY01 (PASS=6, all derefs)
+- FLOAT01 (PASS=29, all floats; not in scope for INTOPS01)
+
+No native integer semantic change has been made by INTOPS01
+(this ACT introduced no production code changes; the halt predates IMPL).
+
+PARITY01 remains frozen at CLOSE per ROADMAP P3.7.

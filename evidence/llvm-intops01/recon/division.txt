@@ -1,0 +1,43 @@
+=== R7 — Division recon (IDIV / UDIV) ===
+
+## Source syntax (existing PolyC/HolyC)
+
+```c
+I64 q = a / b;   // signed division
+U64 u = ua / ub; // unsigned division
+```
+
+Mapped in src/ir.c line 770-775:
+```c
+case AST_BIN_OP_DIV:
+    if (ast->type->issigned) op = IR_IDIV;
+    else                     op = IR_UDIV;
+    break;
+```
+
+## LLVM semantics
+
+LLVM `sdiv`: signed division, rounds toward zero. Division by zero
+is **undefined behavior** (the LLVM IR verifier allows it but the
+result is poison/UB).
+
+LLVM `udiv`: unsigned division. Division by zero is also UB.
+
+HolyC/x86 behavior:
+- x86 `idiv` traps (raises SIGFPE) on division by zero.
+- aarch64 `sdiv`: division by zero returns zero (per ARM ARM).
+
+So there is a **semantic divergence** between HolyC (trap on /0)
+and LLVM (UB on /0). Any LLVM lowering of `IR_IDIV` would need
+explicit zero-check + diagnostic or trap emission, which is
+non-trivial work and out of scope for INTOPS01.
+
+## B0 demand
+
+- IDIV: NOT demanded by B0 sketch (v * 10 + digit uses mul+add).
+- UDIV: NOT demanded.
+
+## Decision
+
+    IR_IDIV -> DEFER (no B0 demand; semantic divergence with HolyC)
+    IR_UDIV -> DEFER (no B0 demand)

@@ -1,0 +1,42 @@
+=== R8 — Remainder / Modulo recon (IREM / UREM) ===
+
+## Source syntax (existing PolyC/HolyC)
+
+```c
+I64 r = a % b;   // signed remainder
+```
+
+Mapped in src/ir.c line 778-782:
+```c
+case AST_BIN_OP_MOD:
+    if (ast->type->issigned) op = IR_IREM;
+    else                     op = IR_UREM;
+    break;
+```
+
+## Semantic question
+
+HolyC `%` follows the underlying machine remainder:
+- x86 `idiv` remainder: sign of remainder follows dividend.
+- LLVM `srem`: sign of remainder also follows dividend (matches x86).
+- LLVM `urem`: standard unsigned remainder.
+
+For positive operands, x86 idiv and LLVM srem agree.
+For negative operands:
+  - x86: `-7 % 3 = -1` (sign of dividend)
+  - LLVM `srem`: `-7 % 3 = -1` (sign of dividend)
+  - Mathematical modulo: `-7 mod 3 = 2` (sign of divisor)
+
+So LLVM `srem` happens to match HolyC's machine-level remainder
+on x86. But aarch64 backend behavior might differ. The existing
+HCC code in src/lexer.c does NOT use `%` on integers.
+
+## B0 demand
+
+- IREM: NOT demanded.
+- UREM: NOT demanded.
+
+## Decision
+
+    IR_IREM -> DEFER (no B0 demand)
+    IR_UREM -> DEFER (no B0 demand)

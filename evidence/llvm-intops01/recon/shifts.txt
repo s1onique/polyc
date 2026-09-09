@@ -1,0 +1,69 @@
+=== R5/R6 — Shifts recon (SHL / SHR / SAR) ===
+
+## Source syntax (existing PolyC/HolyC)
+
+```c
+I64 a = x << n;   // left shift        -> IR_SHL
+I64 b = x >> n;   // right shift       -> IR_SHR (unsigned) or IR_SAR (signed)
+```
+
+Mapped in src/ir.c line 794-797:
+```c
+case AST_BIN_OP_SHL: op = IR_SHL; break;
+case AST_BIN_OP_SHR:
+    op = ast->type->issigned ? IR_SAR : IR_SHR;
+    break;
+```
+
+Key semantic:
+- HolyC `>>` is **arithmetic** for signed types (matches x86 `sarq`),
+  **logical** for unsigned types.
+- HolyC does NOT have a separate logical-shift-right operator.
+
+## Neutral IR opcodes (already exist in src/ir-types.h)
+
+- IR_SHL (line 109)
+- IR_SHR (line 110) - logical
+- IR_SAR (line 111) - arithmetic
+
+## LLVM semantics vs PolyC semantics
+
+LLVM `shl`:
+- If the shift count >= bitwidth, the result is **poison**.
+- LLVM IR explicitly does not mask the shift count.
+
+LLVM `lshr`:
+- If the shift count >= bitwidth, the result is **poison**.
+
+LLVM `ashr`:
+- If the shift count >= bitwidth, the result is **poison**.
+
+HolyC (via the x86 backend) shifts:
+- The shift count is **implicitly masked** by the architecture.
+  - x86: SHL/SHL/SAR only look at low 6 bits of count (so count is mod 64).
+  - aarch64: similar, count masked to width.
+
+This means: if a PolyC source does `1 << 64`, the x86 backend gives 0
+(low 6 bits of 64 = 0), but LLVM `shl` with count=64 is **poison**.
+
+## B0 demand
+
+- IR_SHL on I64: NOT demanded by B0 sketch or HCC lexer core.
+- IR_SHR on I64: NOT demanded by B0 sketch or HCC lexer core.
+- IR_SAR on I64: NOT demanded by B0 sketch or HCC lexer core.
+
+(B0 needs only `value = value * 10 + digit` for decimal accumulation,
+which is IADD + IMUL, no shifts.)
+
+## Decision
+
+Without B0 demand proof, and with a non-trivial semantic mismatch
+between PolyC's masked-shift-count and LLVM's poison-on-overshift:
+
+    IR_SHL -> DEFER (no B0 demand; semantic mismatch unresolved)
+    IR_SHR -> DEFER
+    IR_SAR -> DEFER
+
+Note: even if a future ACT added shifts, it would need to either:
+    (a) prove PolyC's shift semantics are already LLVM-compatible (HALT_SHIFT_SEMANTICS_MISMATCH), or
+    (b) insert count masking in the lowering, which is non-trivial work.

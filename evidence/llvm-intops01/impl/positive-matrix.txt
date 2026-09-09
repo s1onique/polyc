@@ -1,0 +1,23 @@
+=== INTOPS01 positive matrix ===
+
+Per the recon outcome (HALT_RED_NOT_REPRODUCED, Outcome E), there are
+NO new IMPLEMENT rows to test.
+
+The two mechanical-confirmation probes are listed for completeness:
+
+OP_PROBE_SingleTokenRecognizer:
+    source:        src/tests/llvm-intops01/b0_lexer_shape_probe.HC
+    LLVM IR:       evidence/llvm-intops01/recon/b0_probe.ll
+    llvm-as:       PASS
+    opt verify:    PASS
+    exercises:     IADD, ISUB, ICMP, BR, CALL, RET, LOAD_DEREF, STORE_DEREF
+
+OP_PROBE_DigitAccumulation:
+    source:        evidence/llvm-intops01/recon/b0_digit_accum.HC
+    LLVM IR:       evidence/llvm-intops01/recon/b0_digit_accum.ll
+    llvm-as:       PASS
+    opt verify:    PASS
+    exercises:     IMUL, ISUB, IADD, CALL, RET, STORE_DEREF
+
+Both probes demonstrate that the B0-required integer operations
+already produce clean, verifier-accepted LLVM IR.
