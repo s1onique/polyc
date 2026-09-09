@@ -1,0 +1,22 @@
+i64 Store(%p1 ptr param, %p3 i64 param) {
+  bb1 -> predecessors:  {}  successors: {2}
+    store    %l2 ptr local, %p1 ptr param  ; line 13
+    store    %l4 i64 local, %p3 i64 param  ; line 13
+    alloca   %t5 i64 tmp, 8 i64 const int  ; line 13
+    store*   %l2 ptr local, %l4 i64 local  ; line 15
+    store    %t5 i64 tmp, 0 i64 const int  ; line 16
+    jmp      bb2  ; line 16
+
+  bb2 -> predecessors: {1}  successors:  {}
+    load     %t6 i64 tmp, %t5 i64 tmp  ; line 16
+    ret      %t6 i64 tmp  ; line 16
+}
+
+===== After basic optimisations ===== 
+i64 Store(%p1 ptr param, %p3 i64 param) {
+  bb1 -> predecessors:  {}  successors: {1}
+    store    %l2 ptr local, %p1 ptr param  ; line 13
+    store*   %l2 ptr local, %p3 i64 param  ; line 15
+    ret      0 i64 const int  ; line 16
+}
+
