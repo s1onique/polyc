@@ -1,0 +1,31 @@
+ACT-POLYC-LLVM-FLOAT01 / llvm-as verifier matrix
+================================================
+
+Capture: every positive .ll passes llvm-as (LLVM 22) and
+opt --passes=verify. No .bc is committed.
+
+Verification command (per positive fixture):
+
+    llvm-as <bn>.ll -o /tmp/<bn>.bc
+    opt --passes=verify <bn>.ll -disable-output
+
+Results (from scripts/quality/llvm-float01-test.sh positive section):
+
+  01_identity_f64.ll    llvm-as PASS    opt verify PASS
+  02_const_f64.ll       llvm-as PASS    opt verify PASS
+  03_fadd.ll            llvm-as PASS    opt verify PASS
+  04_fsub.ll            llvm-as PASS    opt verify PASS
+  05_fmul.ll            llvm-as PASS    opt verify PASS
+  06_cmp_eq.ll          llvm-as PASS    opt verify PASS
+  07_cmp_ne.ll          llvm-as PASS    opt verify PASS
+  08_cmp_lt.ll          llvm-as PASS    opt verify PASS
+  09_cmp_le.ll          llvm-as PASS    opt verify PASS
+  10_cmp_gt.ll          llvm-as PASS    opt verify PASS
+  11_cmp_ge.ll          llvm-as PASS    opt verify PASS
+  12_cmp_branch.ll      llvm-as PASS    opt verify PASS
+  13_mixed_float_expr.ll llvm-as PASS    opt verify PASS
+  special_values.ll     llvm-as PASS    opt verify PASS
+
+Per ACT §18: every successful .ll must pass llvm-as + opt verify.
+No .bc committed; .bc files generated during verification are
+placed under _tmp/ and cleaned by the harness trap on EXIT.

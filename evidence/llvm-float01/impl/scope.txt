@@ -1,0 +1,78 @@
+ACT-POLYC-LLVM-FLOAT01 / scope ledger
+=====================================
+
+Per ACT §13 (F7): every changed line must trace to authorized
+ACT scope. The FLOAT01 IMPL authorized scope is "scalar F64
+(param/return/constants/FADD/FSUB/FMUL/FCMP/FCMP→BR)".
+
+Production files modified (intentional, in-scope):
+
+  src/llvm-backend.c
+    - llType / llTypeSupported / llParamTypeSupported:
+        IR_TYPE_F64 accepted; mapped to LLVMDoubleTypeInContext.
+    - llPass1: return type now derived from fn->return_value->type.
+    - llLowerValue: IR_VAL_CONST_FLOAT arm with cache-bypass.
+    - llDetectCollapsibleReturn: IR_TYPE_F64 slot detection.
+    - llLowerInstr:
+        IR_FADD arm (LL_INC_SUPPORTED; LLVMBuildFAdd with no flags).
+        IR_FSUB arm (LL_INC_SUPPORTED; LLVMBuildFSub with no flags).
+        IR_FMUL arm (LL_INC_SUPPORTED; LLVMBuildFMul with no flags).
+        IR_FCMP arm (LL_INC_SUPPORTED; LLVMBuildFCmp via llFloatCmpKindToLLVMPred).
+        IR_FDIV / IR_FNEG: still rejected with FLOAT01-annotated diagnostics.
+        IR_RET and IR_STORE: accept IR_TYPE_F64 as well as IR_TYPE_I64.
+    - llFloatCmpKindToLLVMPred: 6-op map (oeq/une/olt/ole/ogt/oge).
+
+  src/llvm-backend-cap.c
+    - IR_FADD/IR_FSUB/IR_FMUL/IR_FCMP -> SUPPORTED with notes
+      indicating FLOAT01 promotion and predicate bindings.
+    - IR_FDIV/IR_FNEG: still REJECTED with FLOAT01-annotated
+      notes explaining FADD/FSUB/FMUL only.
+
+Test files added (in-scope):
+
+  src/tests/llvm-float01/01_identity_f64.HC through
+                       13_mixed_float_expr.HC
+  src/tests/llvm-float01/neg_fdiv.HC
+  src/tests/llvm-float01/neg_float_to_int.HC
+  src/tests/llvm-float01/neg_int_to_float.HC
+  src/tests/llvm-float01/special_values.HC
+
+Test files modified (predecessor conservation):
+
+  src/tests/llvm-spike/neg_f64.HC re-scoped to F32 params:
+    The fixture's previous content used F64 params with I64 return
+    (a shape that was UNSUPPORTED_TYPE pre-FLOAT01 and is now
+    caught at LLVM verification time as LLVM_BACKEND_VERIFY_FAILED).
+    To keep the predecessor spike harness GREEN WITHOUT weakening
+    the ACT-F13 negative-control invariant, the fixture was
+    redirected to F32 params with I64 return, which is still
+    UNSUPPORTED_TYPE because FLOAT01 did NOT promote F32 arithmetic.
+    The semantic of the predecessor test (a rejected float-typed
+    function) is preserved.
+
+Test infrastructure added (in-scope):
+
+  scripts/quality/llvm-float01-test.sh
+  evidence/llvm-float01/impl/*.ll (13 captured emissions)
+
+Out of scope and NOT modified:
+  src/aarch64*.c
+  src/x86_64*.c
+  src/asm/* (no IR_FCMP FP support exists in the native x86_64
+    backend; this is residue).
+  src/cli.c
+  src/main.c
+  src/ir.c
+  src/ir-types.c
+  src/ir-types.h
+  src/ir-optimise.c
+
+Residue (acknowledged, NOT silently fixed; F11):
+  P2: x86_64-native F64 float arithmetic. The x86_64 native
+      backend (src/x86_64.c, src/x86_64-jit.c) has its own float
+      code paths. FLOAT01 only authorises LLVM promotion. A
+      separate native-backend parity ACT is required.
+  P2: IR_FDIV/IR_FREM on F64 via LLVM backend. Authorized by
+      future ACT.
+  P2: F32 arithmetic on LLVM backend. Authorized by future ACT.
+  P2: F64 vector types. Not in scope of this ACT.

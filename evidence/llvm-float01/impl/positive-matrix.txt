@@ -1,0 +1,30 @@
+ACT-POLYC-LLVM-FLOAT01 / positive matrix
+=========================================
+
+Capture from scripts/quality/llvm-float01-test.sh.
+13 positive fixtures; all produce verifier-clean LLVM IR.
+
+Fixture          Expected LLVM substring           rc   supported   rejected
+01_identity_f64  define double @Identity(double)  0   1           0
+02_const_f64     define double @Const()           0   1           0
+03_fadd          fadd double %0, %1               0   2           0
+04_fsub          fsub double %0, %1               0   2           0
+05_fmul          fmul double %0, %1               0   2           0
+06_cmp_eq        fcmp oeq double %0, %1           0   2           0
+07_cmp_ne        fcmp une double %0, %1           0   2           0
+08_cmp_lt        fcmp olt double %0, %1           0   2           0
+09_cmp_le        fcmp ole double %0, %1           0   2           0
+10_cmp_gt        fcmp ogt double %0, %1           0   2           0
+11_cmp_ge        fcmp oge double %0, %1           0   2           0
+12_cmp_branch    br i1 %                          0   2           0
+13_mixed         fadd double                      0   4           0
+
+All 13 fixtures:
+  * return rc=0
+  * llvm-as succeeds
+  * opt --passes=verify succeeds
+  * textual IR contains zero fast-math flags
+  * CAPABILITY_COUNTERS line is present and parseable
+
+The complete textual IR for each fixture is captured under
+evidence/llvm-float01/impl/*.ll.

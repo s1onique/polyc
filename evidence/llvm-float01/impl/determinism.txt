@@ -1,0 +1,25 @@
+ACT-POLYC-LLVM-FLOAT01 / determinism
+=====================================
+
+ACT §21: emit twice and compare byte-for-byte. Three fixtures are
+tested: 02_const_f64, 03_fadd, 12_cmp_branch.
+
+Mechanism: scripts/quality/llvm-float01-test.sh's determinism_check()
+emits the fixture twice into _tmp/<bn>.emit-a.ll and
+_tmp/<bn>.emit-b.ll, plus stderr captures. cmp -s asserts byte
+equality of both .ll and stderr.
+
+Results:
+
+  determinism  02_const_f64  bytes identical   PASS
+  determinism  03_fadd       bytes identical   PASS
+  determinism  12_cmp_branch bytes identical   PASS
+
+Counter matrix DETERMINISM_FAILURES = 0.
+
+Implications:
+  * No timestamps / addresses / unstable names added by FLOAT01.
+  * LLVM module names, block names, and value names are stable
+    across invocations.
+  * CAPABILITY_COUNTERS line is also byte-identical between
+    runs (counters reflect the same dispatch path; deterministic).

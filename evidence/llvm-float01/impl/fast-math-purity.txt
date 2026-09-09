@@ -1,0 +1,43 @@
+ACT-POLYC-LLVM-FLOAT01 / fast-math purity
+========================================
+
+The fast-math structural invariant (ACT §13) requires every emitted
+.fp instruction to have ZERO fast-math flags. The FLOAT01 harness
+enforces this via a bounded grep:
+
+    grep -E '^[[:space:]]*(%[A-Za-z0-9._]+[[:space:]]*=[[:space:]]*)?(fadd|fsub|fmul|fdiv|fcmp)[[:space:]]+(fast|nnan|ninf|nsz|arcp|contract|afn|reassoc)([[:space:]]|$)'
+
+This regex matches ONLY LLVM fp-instruction lines (whose mnemonic
+is fadd/fsub/fmul/fdiv/fcmp) that have a fast-math keyword immediately
+following. Ordinary identifiers (e.g. a local named "fast_route" or
+"contract_id") cannot trigger a false positive because the regex
+requires the LLVM instruction mnemonic.
+
+Pre-FLOAT01 baseline (per evidence/llvm-float01/red/fast-math-baseline.txt):
+  none of src/tests/llvm-spike/*.HC produces any fast-math flag
+  none of src/tests/llvm-memory01/*.HC produces any fast-math flag
+
+Post-FLOAT01 (captured by scripts/quality/llvm-float01-test.sh):
+  13 positive fixtures each checked; zero fast-math contaminations.
+  Total fast-math failures = 0.
+  Counter matrix FAST_MATH_FAILURES = 0.
+
+Sanity inspection of evidence/llvm-float01/impl/*.ll:
+  grep -E ' (fast|nnan|ninf|nsz|arcp|contract|afn|reassoc)( |,|$)' *.ll
+  -> no matches in any of the 13 emitted .ll files.
+
+The structural mechanism is built into the C API: LLVMBuildFAdd /
+LLVMBuildFSub / LLVMBuildFMul / LLVMBuildFCmp with only two/three
+arguments default the fast-math flags argument to zero. The IMPL
+phase does NOT pass any flag arguments; NC2 (inject a fast-math
+flag into a synthetic input) would fail this gate if the gate
+were ever bypassed.
+
+Emitted form resembles:
+  %v = fadd double %a, %b
+NOT:
+  %v = fadd fast double %a, %b
+or:
+  %v = fadd nnan ninf arcp double %a, %b
+
+This invariant is permanent and is exercised on every .ll emission.
