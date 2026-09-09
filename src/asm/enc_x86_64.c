@@ -402,6 +402,54 @@ x86_64_enc_movzbq_al_rax(AsmEnc *e)
     put_byte(e, modrm(3, 0, 0));
 }
 
+/* ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01: legacy 8-bit AND AL, CL
+ * (opcode 0x20, ModRM(C=CL, /4=AND, R/M=AL)). No REX prefix - this
+ * is the byte-only encoding that operates on the low 8 bits of
+ * %rax / %rcx (i.e. %al / %cl) without touching the upper bytes.
+ * Only valid for AL/CL/DL/BL register quartet; the JIT caller
+ * constrains %cl via the x86_64_enc_setcc_al encoder that emits
+ * 0F 9x C1 (reg field = CL). */
+void
+x86_64_enc_andb_al_cl(AsmEnc *e)
+{
+    put_byte(e, 0x20);
+    put_byte(e, modrm(3, 1 /* CL */, 0 /* AL */));
+}
+
+/* ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01: legacy 8-bit OR AL, CL
+ * (opcode 0x08, ModRM(C=CL, /1=OR, R/M=AL)). */
+void
+x86_64_enc_orb_al_cl(AsmEnc *e)
+{
+    put_byte(e, 0x08);
+    put_byte(e, modrm(3, 1 /* CL */, 0 /* AL */));
+}
+
+/* ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01: SETcc %cl - same shape
+ * as x86_64_enc_setcc_al but with rm field = 1 (CL). The cc value
+ * lives in the opcode byte; ModR/M.reg is reserved (must be 0) and
+ * ModR/M.rm selects the destination byte register. Used to
+ * materialise SETNP / SETP into %cl so it can be byte-ALU-combined
+ * with the SETcc result on %al. */
+void
+x86_64_enc_setcc_cl(AsmEnc *e, int cc)
+{
+    put_byte(e, 0x0F);
+    put_byte(e, (uint8_t)(0x90 | (cc & 0xF)));
+    put_byte(e, modrm(3, 0 /* reg reserved */, 1 /* CL = rm */));
+}
+
+/* ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01: TEST %al, %al - 84 C0
+ * (legacy 8-bit TEST, no REX). Sets ZF off the low byte so Jcc can
+ * read the masked SETcc boolean. Used by the IR_CMP_BR float branch
+ * after the sete/setne/setb/setbe + setnp AND/OR composition. */
+void
+x86_64_enc_testb_al(AsmEnc *e)
+{
+    put_byte(e, 0x84);
+    put_byte(e, modrm(3, 0 /* AL = r/m */, 0 /* AL = reg */));
+}
+
 void
 x86_64_enc_xor_eax_eax(AsmEnc *e)
 {

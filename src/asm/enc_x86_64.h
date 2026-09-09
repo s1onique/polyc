@@ -92,6 +92,26 @@ void x86_64_enc_test_reg_reg(AsmEnc *e, X86Reg a, X86Reg c);
 void x86_64_enc_setcc_al(AsmEnc *e, int cc);
 void x86_64_enc_movzbq_al_rax(AsmEnc *e);
 
+/* ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01: byte-only AND / OR + SETcc-CL.
+ *
+ * Used by the IR_FCMP dispatch on x86_64 JIT to combine a SETcc
+ * result on %al with a SETP/SETNP result on %cl without corrupting
+ * the upper bytes of %rax (a 64-bit AND would zero-extend the upper
+ * bytes anyway, but emit the explicit byte form to match the AOT
+ * backend's `andb %cl,%al` / `orb %cl,%al` shape).
+ *
+ * Encodes to the legacy 8-bit form (no REX); valid for the AL, CL,
+ * DL, BL register quartet. */
+void x86_64_enc_andb_al_cl(AsmEnc *e);
+void x86_64_enc_orb_al_cl(AsmEnc *e);
+/* SETcc %cl: same encoding as x86_64_enc_setcc_al but targeting %cl
+ * (reg field = 1 = CL). Used by the float-cmp dispatch to read PF
+ * via SETNP into a byte temp. */
+void x86_64_enc_setcc_cl(AsmEnc *e, int cc);
+/* TEST %al, %al: 84 C0. Used after the masked SETcc sequence in the
+ * IR_CMP_BR float branch to set ZF from the byte result. */
+void x86_64_enc_testb_al(AsmEnc *e);
+
 void x86_64_enc_push_reg(AsmEnc *e, X86Reg reg);
 void x86_64_enc_pop_reg(AsmEnc *e, X86Reg reg);
 void x86_64_enc_pushq_rbp(AsmEnc *e);

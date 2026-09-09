@@ -418,8 +418,17 @@ static int jitIdxReg(JitFnCtx *ctx, IrInstr *instr, X86Reg *out) {
 /* ---------------- condition codes ----------------
  *
  * The float column follows ucomisd, whose flags use unsigned-int
- * semantics (b/be/a/ae). NaN sets CF=ZF=PF=1; we treat IR cmps as
- * loose-ordered (matches the AOT backend and aarch64). */
+ * semantics (b/be/a/ae) plus PF for unordered. NaN sets CF=ZF=PF=1.
+ *
+ * ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01: EQ / NE / LT / LE
+ * MUST observe PF and produce the IEEE-754 ordered-equal /
+ * unordered-not-equal / ordered-less results on NaN. The masking
+ * is performed by jitEmitFloatSetCC at the IR_FCMP dispatch site,
+ * not here; this table only carries the unsigned-style cc value
+ * that SETcc consumes.
+ *
+ * GT / GE remain unchanged: their CF=0 (and ZF=0 for seta)
+ * preconditions already reject the unordered case under UCOMISD. */
 
 static int jitCcFor(IrCmpKind cmp, int is_float) {
     if (is_float) {
@@ -455,6 +464,40 @@ static int jitCcInvFor(IrCmpKind cmp, int is_float) {
 
 static void jitEmitSetCC(AsmEnc *enc, IrCmpKind cmp, int is_float) {
     x86_64_enc_setcc_al(enc, jitCcFor(cmp, is_float));
+    x86_64_enc_movzbq_al_rax(enc);
+}
+
+/* ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01: ordered-float SETcc for
+ * the JIT path. Mirrors x86_64EmitFloatSetCC in src/x86_64.c.
+ *
+ * Emitted sequence for the four broken predicates (EQ / NE / LT / LE):
+ *
+ *   set<primary> %al     ; 0F 9x C0
+ *   setnp        %cl     ; 0F 9B C1
+ *   andb/orb %cl, %al    ; 8-bit ALU on the byte registers
+ *   movzbq %al, %rax     ; canonical {0,1} in %rax
+ *
+ * For GT / GE: single-sete form (same as jitEmitSetCC); UCOMISD's
+ * unordered encoding happens to make seta/setae return 0 on NaN. */
+static void jitEmitFloatSetCC(AsmEnc *enc, IrCmpKind cmp) {
+    int primary;
+    int pf_cc;        /* X86_CC_NP for AND-mask, X86_CC_P for OR-include */
+    int combine;  /* 0=none, 1=andb, 2=orb */
+    switch (cmp) {
+        case IR_CMP_EQ: primary = X86_CC_E;  pf_cc = X86_CC_NP; combine = 1; break;
+        case IR_CMP_NE: primary = X86_CC_NE; pf_cc = X86_CC_P;  combine = 2; break;
+        case IR_CMP_LT: primary = X86_CC_B;  pf_cc = X86_CC_NP; combine = 1; break;
+        case IR_CMP_LE: primary = X86_CC_BE; pf_cc = X86_CC_NP; combine = 1; break;
+        case IR_CMP_GT: primary = X86_CC_A;  pf_cc = 0;        combine = 0; break;
+        case IR_CMP_GE: primary = X86_CC_AE; pf_cc = 0;        combine = 0; break;
+        default: loggerPanic("jit-x86_64: bad float cmp %d\n", cmp);
+    }
+    x86_64_enc_setcc_al(enc, primary);
+    if (combine) {
+        x86_64_enc_setcc_cl(enc, pf_cc);
+        if (combine == 1) x86_64_enc_andb_al_cl(enc);
+        else              x86_64_enc_orb_al_cl(enc);
+    }
     x86_64_enc_movzbq_al_rax(enc);
 }
 
@@ -1174,7 +1217,12 @@ static void jitEmitInstr(JitFnCtx *ctx, IrInstr *instr) {
             jitLoadToFpr(ctx, instr->r2, 1 /* xmm1 */);
             if (is_dbl) x86_64_enc_ucomisd(enc, 0, 1);
             else        x86_64_enc_ucomiss(enc, 0, 1);
-            jitEmitSetCC(enc, instr->extra.cmp_kind, 1);
+            /* ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01: float cmp must
+             * observe PF (UCOMISD's unordered bit) for EQ, NE, LT, LE
+             * so NaN yields the IEEE-754 ordered result. GT/GE pass
+             * through unchanged - their CF=0 preconditions already
+             * reject the unordered case. */
+            jitEmitFloatSetCC(enc, instr->extra.cmp_kind);
             jitSpillDst(ctx, instr, R_RAX);
             break;
         }
@@ -1199,8 +1247,52 @@ static void jitEmitInstr(JitFnCtx *ctx, IrInstr *instr) {
                     x86_64_enc_cmp_reg_reg(enc, R_RAX, R_RCX);
                 }
             }
-            int cc_t = jitCcFor(kind, is_float);
-            int cc_f = jitCcInvFor(kind, is_float);
+            /* ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01: for float cmps,
+             * EQ / NE / LT / LE need PF-aware branching. UCOMISD sets
+             * ZF=PF=CF=1 on unordered inputs; Jcc suffixes cannot read
+             * PF and a primary-condition value of "equal" / "below" /
+             * "below-or-equal" would otherwise fire on NaN.
+             *
+             * The cheapest correct shape is to materialise the same
+             * ordered-aware Boolean into %al, then testb + jcc. This
+             * mirrors jitEmitFloatSetCC's materialisation pattern and
+             * keeps the upper bytes of %rax clean for the next user.
+             *
+             * GT / GE remain single-Jcc because their CF=0 (and ZF=0 for
+             * seta) preconditions already reject the unordered case. */
+            int cc_t;
+            int cc_f;
+            if (is_float) {
+                int primary;
+                int pf_cc;
+                int combine;  /* 0=none, 1=andb, 2=orb */
+                switch (kind) {
+                    case IR_CMP_EQ: primary = X86_CC_E;  pf_cc = X86_CC_NP; combine = 1; break;
+                    case IR_CMP_NE: primary = X86_CC_NE; pf_cc = X86_CC_P;  combine = 2; break;
+                    case IR_CMP_LT: primary = X86_CC_B;  pf_cc = X86_CC_NP; combine = 1; break;
+                    case IR_CMP_LE: primary = X86_CC_BE; pf_cc = X86_CC_NP; combine = 1; break;
+                    case IR_CMP_GT: primary = X86_CC_A;  pf_cc = 0;        combine = 0; break;
+                    case IR_CMP_GE: primary = X86_CC_AE; pf_cc = 0;        combine = 0; break;
+                    default: loggerPanic("jit-x86_64: bad float cmp %d\n", kind);
+                }
+                if (combine) {
+                    x86_64_enc_setcc_al(enc, primary);
+                    x86_64_enc_setcc_cl(enc, pf_cc);
+                    if (combine == 1) x86_64_enc_andb_al_cl(enc);
+                    else              x86_64_enc_orb_al_cl(enc);
+                    /* testb %al, %al - 84 C0 - sets ZF off the byte. */
+                    x86_64_enc_testb_al(enc);
+                    /* Branch on the masked {0,1}. */
+                    cc_t = X86_CC_NE;
+                    cc_f = X86_CC_E;
+                } else {
+                    cc_t = jitCcFor(kind, is_float);
+                    cc_f = jitCcInvFor(kind, is_float);
+                }
+            } else {
+                cc_t = jitCcFor(kind, is_float);
+                cc_f = jitCcInvFor(kind, is_float);
+            }
             int t_ln = hccJitBlockLocalNum(jit, ctx->fn, t);
             int f_ln = hccJitBlockLocalNum(jit, ctx->fn, f);
             int t_phi = irBlockHasPhi(t);

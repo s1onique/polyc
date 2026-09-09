@@ -662,10 +662,17 @@ static const char *x86_64IdxReg(IrCgCtx *ctx, IrInstr *instr) {
 }
 
 /* The float branch uses ucomisd, whose flags follow unsigned-int
- * semantics (b/be/a/ae). NaN sets CF=ZF=PF=1; we treat IR cmps as
- * loose-ordered (matches aarch64's behaviour - the IR_CMP_O* /
- * IR_CMP_UNO / IR_CMP_ORD strict variants aren't currently emitted
- * by the HolyC frontend). */
+ * semantics (b/be/a/ae) plus PF for unordered. NaN sets CF=ZF=PF=1.
+ *
+ * ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01: EQ / NE / LT / LE
+ * MUST observe PF and produce the IEEE-754 ordered-equal /
+ * unordered-not-equal / ordered-less results on NaN. That masking
+ * is performed by x86_64EmitFloatSetCC at the IR_FCMP dispatch site,
+ * not here; this table only carries the unsigned-style cc suffix
+ * that SETcc consumes.
+ *
+ * GT / GE remain unchanged: their CF=0 (and ZF=0 for seta)
+ * preconditions already reject the unordered case under UCOMISD. */
 static const char *x86_64CcFor(IrCmpKind cmp, int is_float) {
     if (is_float) {
         switch (cmp) {
@@ -734,6 +741,76 @@ static void x86_64EmitSetCC(IrCgCtx *ctx, IrCmpKind cmp, int is_float) {
                 "set%s    %%al\n\t"
                 "movzbq  %%al, %%rax\n\t",
                 cc);
+}
+
+/* ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01: ordered-float SETcc.
+ *
+ * UCOMISD sets ZF=PF=CF=1 on unordered (NaN) inputs. The IEEE-754
+ * / LLVM LangRef contract requires:
+ *
+ *   ==  : NaN -> false     (ordered-equal)
+ *   !=  : NaN -> true      (unordered not-equal)
+ *   <   : NaN -> false     (ordered less-than)
+ *   <=  : NaN -> false     (ordered less-or-equal)
+ *   >   : NaN -> false     (ordered greater-than) - matches ucomisd
+ *   >=  : NaN -> false     (ordered greater-or-equal) - matches ucomisd
+ *
+ * GT / GE already produce 0 on NaN because their CF=0 (and ZF=0 for
+ * seta) preconditions fail; they pass through unchanged.
+ *
+ * EQ / NE / LT / LE need explicit PF handling. The boolean equations
+ * are:
+ *
+ *   EQ =  ZF && !PF
+ *   NE = !ZF ||  PF
+ *   LT =  CF && !PF
+ *   LE = (CF || ZF) && !PF
+ *
+ * Emitted shape (single 8-bit ALU on %al / %cl; no REX):
+ *
+ *   sete/setne/setb/setbe %al      ; primary condition (1-bit, {0,1})
+ *   setnp %cl                      ; unordered bit (1=unordered)
+ *   andb %cl, %al      (EQ/LT/LE)  ; bit-AND of 1-bit values stays {0,1}
+ *   orb  %cl, %al      (NE)        ; bit-OR  of 1-bit values stays {0,1}
+ *   movzbq %al, %rax               ; canonical {0,1} in %rax
+ *
+ * %rcx is volatile in the System V AMD64 ABI and is free at the
+ * IR_FCMP site (only xmm regs are live across the UCOMISD). The
+ * clobber is harmless: subsequent instructions either load fresh
+ * values or store the result. */
+static void x86_64EmitFloatSetCC(IrCgCtx *ctx, IrCmpKind cmp) {
+    const char *primary;
+    const char *pf_helper;  /* "setnp" for AND (mask off unordered), "setp" for OR (include unordered) */
+    const char *combiner;
+    switch (cmp) {
+        case IR_CMP_EQ: primary = "sete";  pf_helper = "setnp"; combiner = "andb"; break;
+        case IR_CMP_NE: primary = "setne"; pf_helper = "setp";  combiner = "orb";  break;
+        case IR_CMP_LT: primary = "setb";  pf_helper = "setnp"; combiner = "andb"; break;
+        case IR_CMP_LE: primary = "setbe"; pf_helper = "setnp"; combiner = "andb"; break;
+        /* GT / GE: the single-sete form is already correct because
+         * UCOMISD's unordered encoding pushes CF=1 (and ZF=1 for
+         * sete/seta), which the unordered-aware forms need explicitly
+         * masked in but the non-unordered-aware forms reject on CF=0
+         * / ZF=0 alone. */
+        case IR_CMP_GT: primary = "seta";  pf_helper = NULL;    combiner = NULL;   break;
+        case IR_CMP_GE: primary = "setae"; pf_helper = NULL;    combiner = NULL;   break;
+        default:
+            loggerPanic("ir-cg-x86_64: bad float cmp %s\n",
+                        irCmpKindToString(cmp));
+    }
+    if (combiner) {
+        aoStrCatFmt(ctx->buf,
+                    "%s      %%al\n\t"
+                    "%s   %%cl\n\t"
+                    "%s     %%cl, %%al\n\t"
+                    "movzbq  %%al, %%rax\n\t",
+                    primary, pf_helper, combiner);
+    } else {
+        aoStrCatFmt(ctx->buf,
+                    "%s      %%al\n\t"
+                    "movzbq  %%al, %%rax\n\t",
+                    primary);
+    }
 }
 
 /* XMM register names start with x/X; GPR names never do. */
@@ -1700,7 +1777,12 @@ static void x86_64EmitInstr(IrCgCtx *ctx, IrInstr *instr) {
             aoStrCatFmt(ctx->buf, "%s %%xmm1, %%xmm0\n\t",
                         (int)irValueByteSize(instr->r1) == 4 ? "ucomiss"
                                                              : "ucomisd");
-            x86_64EmitSetCC(ctx, instr->extra.cmp_kind, 1);
+            /* ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01: float cmp must
+             * observe PF (UCOMISD's unordered bit) for EQ, NE, LT, LE
+             * so NaN yields the IEEE-754 ordered result. GT/GE pass
+             * through unchanged - their CF=0 preconditions already
+             * reject the unordered case. */
+            x86_64EmitFloatSetCC(ctx, instr->extra.cmp_kind);
             x86_64SpillDst(ctx, instr, "rax");
             break;
         }
@@ -1959,8 +2041,59 @@ static void x86_64EmitInstr(IrCgCtx *ctx, IrInstr *instr) {
                 }
             }
 
-            const char *cc_t = x86_64CcFor(kind, is_float);
-            const char *cc_f = x86_64CcInvFor(kind, is_float);
+            /* ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01: for float cmps,
+             * EQ / NE / LT / LE need PF-aware branching. UCOMISD sets
+             * ZF=PF=CF=1 on unordered inputs; Jcc suffixes cannot read
+             * PF and a primary-condition value of "equal" / "below" /
+             * "below-or-equal" would otherwise fire on NaN.
+             *
+             * The cheapest correct shape is to materialise the same
+             * ordered-aware Boolean into %al, then test+jcc on the
+             * fall-through-friendly side. This reuses x86_64EmitFloatSetCC's
+             * style (sete+setnp+andb / setne+setp+orb / setb+setnp+andb /
+             * setbe+setnp+andb) without spilling to dst - we only need
+             * it to set EFLAGS for the branch.
+             *
+             * GT / GE remain single-Jcc because their CF=0 (and ZF=0 for
+             * seta) preconditions already reject the unordered case. */
+            const char *cc_t;
+            const char *cc_f;
+            int float_branch_needs_mask = 0;
+            if (is_float) {
+                const char *primary;
+                const char *pf_helper;  /* "setnp" for AND, "setp" for OR */
+                const char *combiner;
+                switch (kind) {
+                    case IR_CMP_EQ: primary = "sete";  pf_helper = "setnp"; combiner = "andb"; break;
+                    case IR_CMP_NE: primary = "setne"; pf_helper = "setp";  combiner = "orb";  break;
+                    case IR_CMP_LT: primary = "setb";  pf_helper = "setnp"; combiner = "andb"; break;
+                    case IR_CMP_LE: primary = "setbe"; pf_helper = "setnp"; combiner = "andb"; break;
+                    case IR_CMP_GT: primary = "seta";  pf_helper = NULL;    combiner = NULL;   break;
+                    case IR_CMP_GE: primary = "setae"; pf_helper = NULL;    combiner = NULL;   break;
+                    default: loggerPanic("ir-cg-x86_64: bad float cmp %s\n",
+                                         irCmpKindToString(kind));
+                }
+                if (combiner) {
+                    aoStrCatFmt(ctx->buf,
+                                "%s      %%al\n\t"
+                                "%s   %%cl\n\t"
+                                "%s     %%cl, %%al\n\t"
+                                "testb   %%al, %%al\n\t",
+                                primary, pf_helper, combiner);
+                    /* The mask produced {0,1} in %al; "branch if true" is
+                     * simply jne, "branch if false" is je. */
+                    cc_t = "ne";
+                    cc_f = "e";
+                    float_branch_needs_mask = 1;
+                } else {
+                    cc_t = x86_64CcFor(kind, 1);
+                    cc_f = x86_64CcInvFor(kind, 1);
+                }
+            } else {
+                cc_t = x86_64CcFor(kind, 0);
+                cc_f = x86_64CcInvFor(kind, 0);
+            }
+            (void)float_branch_needs_mask;
             int t_phi = irBlockHasPhi(t);
             int f_phi = irBlockHasPhi(f);
             if (!t_phi && !f_phi) {
