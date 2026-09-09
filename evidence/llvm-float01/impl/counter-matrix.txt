@@ -1,0 +1,40 @@
+ACT-POLYC-LLVM-FLOAT01 / counter matrix
+======================================
+
+Capture from scripts/quality/llvm-float01-test.sh.
+
+Matrix totals (across 13 positive + 3 negative fixtures):
+
+  SUPPORTED           : 26
+  REJECTED            : 3
+  SHAPE_DEPENDENT     : 0
+  DEFENSIVE_INVARIANT : 0
+  UNREACHABLE_ON_LLVM : 0
+
+Per-fixture attribution (SUPPORTED count per positive fixture):
+
+  01_identity_f64    1   (collapse path delivers IR_RET; no other ops)
+  02_const_f64       1   (constant + collapse ret)
+  03_fadd            2   (IR_FADD + IR_RET)
+  04_fsub            2   (IR_FSUB + IR_RET)
+  05_fmul            2   (IR_FMUL + IR_RET)
+  06_cmp_eq          2   (IR_FCMP + IR_BR; collapse ret via JMP, not counted 2nd time)
+  07_cmp_ne          2   (same shape)
+  08_cmp_lt          2   (same shape)
+  09_cmp_le          2   (same shape)
+  10_cmp_gt          2   (same shape)
+  11_cmp_ge          2   (same shape)
+  12_cmp_branch      2   (IR_FCMP + IR_BR; collapse ret via JMP, not counted 2nd time)
+  13_mixed           4   (IR_FADD + IR_FMUL + IR_FSUB + IR_RET)
+
+Per ACT §12:
+  * DEFENSIVE_INVARIANT = 0   (FCMP result is i1; consumed by IR_BR via the direct-i1 path)
+  * UNREACHABLE_ON_LLVM = 0   (invariant)
+
+Per ACT §32 PASS definition:
+  SUPPORTED > 0               YES (26)
+  REJECTED  > 0               YES (3, from neg_fdiv/neg_float_to_int/neg_int_to_float)
+  DEFENSIVE = 0               YES
+  UNREACHABLE = 0             YES
+
+Per ACT §32 PASS criteria on counters all satisfied.

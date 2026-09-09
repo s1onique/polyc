@@ -1,0 +1,20 @@
+ACT-POLYC-LLVM-FLOAT01 / opt --passes=verify matrix
+=================================================
+
+Same matrix as llvm-as.txt. The opt verifier is a stricter check
+that exercises LLVM's IR validation pass (not just the parser).
+Both must pass for every positive fixture.
+
+The opt verifier would catch:
+  - type mismatches in instruction operands
+  - SSA violations
+  - block terminator errors
+  - inconsistent function attributes
+
+All 14 captured .ll files pass opt --passes=verify with rc=0 and
+no diagnostic output.
+
+The negative fixtures produce no .ll (the backend rejects them
+before module construction), so no opt verification is performed
+on them. Their rejection is at the dispatch-arm site via
+exit(1) + named diagnostic.

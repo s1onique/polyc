@@ -1,0 +1,55 @@
+ACT-POLYC-LLVM-FLOAT01 / native conservation
+==============================================
+
+ACT §10 (F10): verify required behavior changed AND unrelated
+established behavior remained unchanged.
+
+Required behavior changed:
+  * Pre-FLOAT01: LLVM backend rejected any F64 source with
+    LLVM_BACKEND_UNSUPPORTED_TYPE rc=1.
+  * Post-FLOAT01: scalar F64 subset (param, return, constant,
+    FADD, FSUB, FMUL, FCMP+BR) emits verifier-clean IR.
+
+Unrelated established behavior (no drift):
+  * I64 params / return / arithmetic unchanged.
+  * I32 params / return / arithmetic unchanged.
+  * F32 params / return / arithmetic unchanged (still rejected
+    via the existing float-arithmetic arm for IR_FADD/IR_FSUB/
+    IR_FMUL, even though IR_TYPE_F32 has long been SUPPORTED
+    as a value type for return — but the FLOAT01 IMPL did not
+    promote F32 float arithmetic; that promotion is a separate
+    scope).
+  * IR_TRUNC / IR_ZEXT / IR_SEXT / IR_FPTRUNC / IR_FPEXT /
+    IR_FPTOUI / IR_FPTOSI / IR_UITOFP / IR_SITOFP /
+    IR_PTRTOINT / IR_INTTOPTR still rejected with
+    LLVM_BACKEND_UNSUPPORTED_CONVERSION.
+  * IR_FDIV / IR_FREM still rejected with
+    LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH.
+  * IR_BR direct-i1 path (the FCMP consumer) unchanged.
+  * IR_RET/IR_STORE work with IR_TYPE_F64 in addition to the
+    previously-supported IR_TYPE_I64 / IR_TYPE_I32.
+
+Predecessor gate evidence:
+  scripts/quality/llvm-spike-test.sh            PASS=18 FAIL=0
+  scripts/quality/llvm-memory01-test.sh         PASS=6  FAIL=0
+  scripts/quality/llvm-memory01-nc5-probe.sh    PASS   FAIL=0
+  scripts/quality/llvm-cap-table-verifier.py    PASS   FAIL=0
+  scripts/quality/factory-v2-test.sh            PASS=35 FAIL=0
+  scripts/quality/gate-fast.sh                  PASS       PASS
+
+The FLOAT01 IMPL did not modify any non-F64 source path in
+src/llvm-backend.c beyond:
+  * llType / llTypeSupported / llParamTypeSupported adding the
+    IR_TYPE_F64 case (additive).
+  * llPass1's return-type lookup switched from hard-coded i64 to
+    fn->return_value->type (a generic improvement that still
+    returns LLVMDoubleTypeInContext for F64-returning functions
+    and i64 for I64-returning functions).
+  * llDetectCollapsibleReturn adding IR_TYPE_F64 slot detection
+    (additive).
+  * IR_FADD/IR_FSUB/IR_FMUL/IR_FCMP dispatch arms (additive).
+  * llLowerValue adding IR_VAL_CONST_FLOAT path with cache-bypass
+    (extends the same union-aliasing fix MEMORY01 added for
+    IR_VAL_CONST_INT; no change to existing paths).
+
+No negative-control gate weakened.
