@@ -123,12 +123,18 @@ are target-independent and aligned with the canonical IEEE-754
 unordered-compared-to-NaN convention that PolyC documents in
 docs/CHARTER.md.
 
-The x86_64 native backend currently uses `ucomisd + setb` /
-`setbe` / `setne` and produces a NaN->true result for the
-ordering comparisons; this is a PolyC native-backend defect
-independent of the LLVM backend. It is recorded as residue
-under ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01 (NOT scoped to
-this ACT and NOT silently fixed here).
+The x86_64 native backend's IR_FCMP dispatch
+(src/x86_64.c:670-679, src/x86_64-jit.c:425-433) emits
+sete/setne/setb/setbe/seta/setae after `ucomisd`. With UCOMISD
+setting ZF=PF=CF=1 on NaN/unordered operands, all six
+predicates produce the WRONG IEEE-754 / LangRef result:
+==, <, <= return 1; !=, >, >= return 0. The defect matrix is
+mechanically derived from `ucomisd` flag behaviour in
+evidence/llvm-float01/red/recon-ll-semantics.txt. This is a
+PolyC native-backend defect independent of the LLVM backend.
+It is recorded as P0 residue under
+ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01 (NOT scoped to this
+ACT and NOT silently fixed here).
 
 Per F15, this ACT does NOT modify the x86_64 native backend.
 ```

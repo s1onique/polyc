@@ -5,7 +5,8 @@ Source: evidence/llvm-float01/red/recon-comparison-semantics.txt
 Implementation: src/llvm-backend.c (llFloatCmpKindToLLVMPred, ~line 866)
 Harness: scripts/quality/llvm-float01-test.sh (comparison predicate matrix)
 
-Binding predicate map (host = aarch64, native semantic oracle):
+Binding predicate map (authority = LLVM LangRef; aarch64 host
+oracle is a corroborating witness, not the authority):
 
 | PolyC op | IrCmpKind      | LLVM predicate | LLVM C-API constant    | proof                                           |
 |----------|----------------|----------------|------------------------|-------------------------------------------------|
@@ -44,10 +45,13 @@ All emitted predicates match the binding map above byte-for-byte.
 
 Residue (does NOT block PASS):
   The PolyC x86_64 NATIVE backend (a separate code path from the
-  LLVM backend) uses `ucomisd` + `setb` / `setbe` / `setne` for
-  IR_FCMP, which on x86 returns 1 for NaN (unordered). This
-  DIVERGES from the IEEE-754 / LLVM LangRef semantics (false on
-  NaN for ordered comparisons; true on NaN for une).
+  LLVM backend) emits sete/setne/setb/setbe/seta/setae after
+  `ucomisd` (src/x86_64.c:670-679, src/x86_64-jit.c:425-433).
+  With UCOMISD setting ZF=PF=CF=1 on NaN/unordered operands, all
+  six predicates produce the WRONG IEEE-754 / LangRef result:
+  ==, <, <= return 1; !=, >, >= return 0. The defect matrix is
+  mechanically derived in evidence/llvm-float01/red/recon-ll-semantics.txt
+  (Observed residue section).
 
   The LLVM backend's choice of `olt` is TARGET-INDEPENDENT per the
   LLVM LangRef; the LLVM x86_64 code generator MUST preserve the

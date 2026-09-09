@@ -92,13 +92,17 @@ VERDICT: PASS
 
 == Residue ==
   P0  (recommended next): ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01
-       The PolyC x86_64 native backend's FCMP lowering
-       (`ucomisd + setb` / `setbe` / `setne`) produces NaN->true
-       for the ordering comparisons and ==, which diverges from
-       the IEEE-754 / LLVM LangRef convention. The LLVM backend
-       already binds to the LangRef semantics (which match the
-       aarch64 host oracle). A separate ACT should repair the
-       x86_64 native backend.
+       The PolyC x86_64 native backend's IR_FCMP dispatch
+       (src/x86_64.c:670-679, src/x86_64-jit.c:425-433) emits
+       sete/setne/setb/setbe/seta/setae after `ucomisd`. With
+       UCOMISD setting ZF=PF=CF=1 on NaN/unordered operands, all
+       six predicates produce the WRONG IEEE-754 / LangRef result:
+       ==, <, <= return 1; !=, >, >= return 0. The defect matrix
+       is mechanically derived from `ucomisd` flag behaviour in
+       evidence/llvm-float01/red/recon-ll-semantics.txt. The LLVM
+       backend binds to the LangRef semantics (which coincide with
+       the aarch64 host oracle for NaN inputs). A separate ACT
+       should repair the x86_64 native backend.
 
   P2 (carry-over from original FLOAT01 CLOSE):
        F64 FDIV/FREM via LLVM backend (FLOAT02 candidate)

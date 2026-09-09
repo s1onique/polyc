@@ -17,8 +17,10 @@ The LLVM backend was rejecting the entire `IR_TYPE_F64` value family at
 `llTypeSupported` with `LLVM_BACKEND_UNSUPPORTED_TYPE`, which prevented
 any source-level F64 use from compiling. The FLOAT01 ACT authorises a
 bounded scalar-F64 slice (param, return, constants, FADD/FSUB/FMUL,
-FCMP, FCMP→IR_BR) and binds the comparison semantics to the host's
-native aarch64 `fcmp` + `cset` oracle.
+FCMP, FCMP→IR_BR) and binds the comparison semantics to the LLVM
+Language Reference Manual (target-independent ordered/unordered
+semantics). The aarch64 host oracle is a corroborating witness, not
+the authority.
 
 The mapping is:
 
@@ -44,21 +46,26 @@ semantics. This is recorded as a witness, not as the binding
 authority. Full argument in
 `evidence/llvm-float01/red/recon-ll-semantics.txt`.
 
-Note: the PolyC x86_64 NATIVE backend currently emits
-`ucomisd` + `setb` / `setbe` / `setne`, which on NaN returns 1
-(unordered). This DIVERGES from the LLVM LangRef / IEEE-754
-convention. The LLVM backend's choice of `olt` is target-independent
-per the LLVM LangRef; the divergence is strictly in the PolyC
-native x86_64 backend, recorded as future residue under
+Note: the PolyC x86_64 NATIVE backend's IR_FCMP dispatch (see
+`src/x86_64.c:670-679` and `x86_64-jit.c:425-433`) emits
+`sete/setne/setb/setbe/seta/setae` after `ucomisd`. With
+`ZF=PF=CF=1` on NaN, all six predicates produce the WRONG
+IEEE-754 / LangRef result (==, <, <= return 1; !=, >, >=
+return 0). This DIVERGES from both the LLVM LangRef binding
+used by the LLVM backend and from the aarch64 host oracle.
+The x86_64 native defect is strictly a PolyC native-backend
+issue and is recorded as future residue under
 `ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01`.
 
 ## RED (PR-1 RED commit: 4592d79)
 
-Seven RED witnesses (RED-1 .. RED-7) reproduced at
-`LLVM_BACKEND_UNSUPPORTED_TYPE` rc=1 in
+The principal RED is RED-A: 16 reproducer fixtures rejected at
+`LLVM_BACKEND_UNSUPPORTED_TYPE` rc=1 at `llTypeSupported` /
+`llParamTypeSupported` in the pre-IMPL tree, captured in
 `evidence/llvm-float01/red/`. The recon
-(`evidence/llvm-float01/red/recon-f64-type.txt` and
-`recon-comparison-semantics.txt`) captures:
+(`evidence/llvm-float01/red/recon-f64-type.txt`,
+`recon-comparison-semantics.txt`, and
+`recon-ll-semantics.txt`) captures:
 
 - F64 neutral-IR shape (F64 params become `double %0`, F64 constants
   become `double 0x...`).
@@ -67,10 +74,19 @@ Seven RED witnesses (RED-1 .. RED-7) reproduced at
 - IR_FCMP returns i1 in LLVM, but IR_VAL_TMP target is i64 (the IR's
   neutral type for comparison results). The bridge uses `irDstVarId`
   which already handles i1-into-i64 binding.
-- The 6-op comparison-semantic oracle derived from aarch64-native
-  `fcmp` + `cset` semantics.
+- The 6-op comparison-semantic binding to the LLVM LangRef (authority)
+  with the aarch64 host oracle as a corroborating witness. The x86_64
+  native defect is recorded separately under
+  `ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01`.
 
-RED summary: `evidence/llvm-float01/red/RED-SUMMARY.md`.
+Post-admission qualification checks (Q-3..Q-7) exercise the
+FADD/FSUB/FMUL/FCMP/FCMP→BR dispatch arms against the IR shape and
+were never independently reproducible in the pre-IMPL tree. They are
+documented for traceability, not as principal REDs.
+
+RED summary: `evidence/llvm-float01/red/RED-SUMMARY.md` (and the
+corrected taxonomy at
+`evidence/llvm-float01/correction01/RED-SUMMARY-corrected.md`).
 
 ## Implementation (IMPL commit: 99391c4)
 
@@ -104,18 +120,20 @@ Predecessor evidence conservation:
 ## Test harness
 
 - `scripts/quality/llvm-float01-test.sh` (NEW): 13 positive + 6
-  comparison-predicate + 1 branch + 1 mixed + 3 negative fixtures.
+  comparison-predicate + 1 branch + 1 mixed + 4 negative fixtures
+  (neg_fdiv, neg_float_to_int, neg_fptosi_witness, neg_int_to_float).
   Per-fixture SUPPORTED attribution (7 attributions). 3 determinism
   fixtures. llvm-as + opt --passes=verify. Fast-math purity grep.
   DEFENSIVE/UNREACHABLE counter gates.
 
-- `src/tests/llvm-float01/` (NEW): 13 positive .HC + 3 negative .HC
-  + 1 special_values.HC exercising +/-0, +/-inf, NaN paths.
+- `src/tests/llvm-float01/` (NEW): 13 positive .HC + 1 special_values.HC
+  + 4 negative .HC. Total 18 fixtures. The `neg_fptosi_witness.HC`
+  fixture was added in CORRECTION01 to close the IR_FPTOSI gap.
 
 ## Gates
 
 ```
-scripts/quality/llvm-float01-test.sh        FLOAT01_PASS=28 FAIL=0
+scripts/quality/llvm-float01-test.sh        FLOAT01_PASS=29 FAIL=0
 scripts/quality/llvm-spike-test.sh          PASS=18  FAIL=0
 scripts/quality/llvm-memory01-test.sh       PASS=6   FAIL=0
 scripts/quality/llvm-memory01-nc5-probe.sh  PASS  (NC5 strong binding confirmed for IR_LOAD_DEREF)
@@ -129,10 +147,10 @@ scripts/quality/gate-fast.sh                VERDICT=PASS
 In-scope files modified:
 - `src/llvm-backend.c` (additive F64 paths only)
 - `src/llvm-backend-cap.c` (F64 promotion rows)
-- `src/tests/llvm-float01/*.HC` (13 + 3 + 1 = 17 new fixtures)
+- `src/tests/llvm-float01/*.HC` (13 + 1 + 4 = 18 new fixtures)
 - `src/tests/llvm-spike/neg_f64.HC` (predecessor conservation redirect)
 - `scripts/quality/llvm-float01-test.sh` (new harness)
-- `evidence/llvm-float01/{red,impl}/*` (capture)
+- `evidence/llvm-float01/{red,impl,correction01}/*` (capture)
 
 Out of scope and NOT modified:
 - `src/aarch64*.c`, `src/x86_64*.c`, `src/asm/*`, `src/cli.c`,
@@ -140,16 +158,20 @@ Out of scope and NOT modified:
 
 ## Residue (F11, classified)
 
+P0 (recommended next ACT): ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01
+  The PolyC x86_64 native backend's IR_FCMP dispatch (src/x86_64.c:670-679,
+  src/x86_64-jit.c:425-433) emits sete/setne/setb/setbe/seta/setae
+  after ucomisd. With UCOMISD setting ZF=PF=CF=1 on NaN/unordered
+  operands, all six predicates produce the WRONG IEEE-754 / LangRef
+  result: ==, <, <= return 1; !=, >, >= return 0. The defect matrix
+  is mechanically derived in
+  evidence/llvm-float01/red/recon-ll-semantics.txt (Observed residue
+  section). The next ACT should re-emit the x86_64 native FCMP
+  lowering using ordered-predicate equivalent sequences so == and
+  the four orderings return 0 on NaN and != returns 1 on NaN,
+  matching both IEEE-754 and the LLVM LangRef.
+
 P2 (acknowledged, NOT silently fixed):
-- x86_64-native F64 float arithmetic. The PolyC x86_64 native backend
-  emits `ucomisd` + `setb` / `setbe` / `setne`, which on NaN returns
-  1 (unordered), differing from the IEEE-754 / LLVM LangRef
-  convention used by the LLVM backend. LLVM IR `fcmp olt` semantics
-  are target-independent per the LLVM Language Reference Manual, so
-  the LLVM backend emits `fcmp olt double` regardless of host target
-  triple. The x86_64 native divergence is a PolyC native-backend
-  defect, recorded under ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01. FLOAT01 binds to host (aarch64)
-  semantic per ACT author.
 - `IR_FDIV` / `IR_FREM` on F64 via LLVM backend. Authorized by
   future ACT.
 - F32 arithmetic on LLVM backend. Authorized by future ACT.

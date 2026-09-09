@@ -61,18 +61,17 @@ The F64 lowering implementation that was already in tree
 
 == Residue ==
 
-  P2 ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01:
-    The PolyC x86_64 NATIVE backend emits `ucomisd + setb` /
-    `setbe` / `setne` for IR_FCMP, returning 1 for NaN. This
-    diverges from the IEEE-754 / LLVM LangRef convention.
-    Out of scope for this ACT; recorded for future work.
-
-  P2 ACT-POLYC-LLVM-FLOAT02 (carry-over from original CLOSE):
-    F64 FDIV / FREM via LLVM backend.
-  P2 ACT-POLYC-LLVM-FLOAT03 (carry-over):
-    F32 arithmetic on LLVM backend.
-  P2 ACT-POLYC-LLVM-FLOAT04 (carry-over):
-    F64 vector types on LLVM backend.
+  P0 ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01:
+    The PolyC x86_64 NATIVE backend's IR_FCMP dispatch
+    (src/x86_64.c:670-679, src/x86_64-jit.c:425-433) emits
+    sete/setne/setb/setbe/seta/setae after `ucomisd`. With
+    UCOMISD setting ZF=PF=CF=1 on NaN/unordered operands, all
+    six predicates produce the WRONG IEEE-754 / LangRef result:
+    ==, <, <= return 1; !=, >, >= return 0. The defect matrix
+    is mechanically derived in
+    evidence/llvm-float01/red/recon-ll-semantics.txt (Observed
+    residue section). Out of scope for this ACT; recorded as
+    future work.
 
 == Next ACT ==
 

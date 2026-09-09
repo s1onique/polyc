@@ -92,12 +92,15 @@ correct binding for the LLVM backend is:
      and `cset ne` to return 1. This is consistent with the
      LLVM IR ordered-predicate semantics.
 
-  3. The PolyC x86_64 NATIVE backend currently emits
-     `ucomisd` + `setb`/`setbe`/`setne`, which on NaN returns 1
-     (unordered). This DIVERGES from the IEEE-754 / LangRef
-     convention. The x86_64 native divergence is recorded as
-     residue under ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01 and
-     is NOT scoped to or fixed by this ACT.
+  3. The PolyC x86_64 NATIVE backend's IR_FCMP dispatch
+     (src/x86_64.c:670-679, src/x86_64-jit.c:425-433) emits
+     sete/setne/setb/setbe/seta/setae after `ucomisd`. With
+     UCOMISD setting ZF=PF=CF=1 on NaN/unordered operands, all
+     six predicates produce the WRONG IEEE-754 / LangRef result:
+     ==, <, <= return 1; !=, >, >= return 0. The x86_64 native
+     divergence is recorded as residue under
+     ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01 and is NOT scoped
+     to or fixed by this ACT.
 
   4. The LLVM backend binds to the LangRef semantics (which
      happen to coincide with the aarch64 host oracle). The

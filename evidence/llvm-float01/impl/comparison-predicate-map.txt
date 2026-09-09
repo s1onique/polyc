@@ -43,11 +43,17 @@ evidence/llvm-float01/impl/*.ll):
 All emitted predicates match the binding map above byte-for-byte.
 
 Residue (does NOT block PASS):
-  The x86_64 native backend uses ucomisd + setb for IR_CMP_LT, which
-  on x86 returns 1 for NaN (unordered). The LLVM backend's choice of
-  olt would, on x86_64, produce LLVM IR whose x86_64 code generator
-  would emit ucomisd + setb (returning 1 for NaN) — DIFFERENT from
-  the aarch64 native semantic we use as oracle. This is a known
-  target-specific native semantic divergence. FLOAT01 binds to the
-  host's native semantic (aarch64); future x86_64-native preservation
-  ACTs would have to address the divergence independently.
+  The PolyC x86_64 native backend's IR_FCMP dispatch
+  (src/x86_64.c:670-679, src/x86_64-jit.c:425-433) emits
+  sete/setne/setb/setbe/seta/setae after ucomisd. With UCOMISD
+  setting ZF=PF=CF=1 on NaN/unordered operands, all six
+  predicates produce the WRONG IEEE-754 / LangRef result: ==, <, <=
+  return 1; !=, >, >= return 0. This is a PolyC x86_64 NATIVE
+  backend defect, not an LLVM-backend defect. LLVM IR `fcmp olt`
+  semantics are target-independent per the LLVM Language
+  Reference Manual; the LLVM backend binds to the LangRef, not
+  to any native-backend emission. The x86_64 native divergence
+  is recorded as future residue under
+  ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01. The defect matrix is
+  mechanically derived from `ucomisd` flag behaviour in
+  evidence/llvm-float01/red/recon-ll-semantics.txt.

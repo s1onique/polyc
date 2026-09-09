@@ -64,3 +64,24 @@ Counters observed at RED: supported=0 rejected=0 shape_dependent=0 defensive=0
 unreachable=0 (all REDs trip parameter-type rejection BEFORE the per-opcounter
 increment; the IMPL phase will exercise the per-op counters in the post-fix
 passes).
+
+== Note appended by CORRECTION01 (F14: historical evidence preserved) ==
+
+The x86_64 native semantic paragraph above (lines 53-58) was
+addressed in CORRECTION01:
+  - The defect matrix was mechanically derived from `ucomisd`
+    flag behaviour (see evidence/llvm-float01/red/recon-ll-semantics.txt
+    "Observed residue" section).
+  - The corrected truth table for PolyC x86_64 native on NaN is:
+      == : 1 (sete, ZF=1)         WRONG; expected 0
+      != : 0 (setne, ZF=0)         WRONG; expected 1
+      <  : 1 (setb, CF=1)          WRONG; expected 0
+      <= : 1 (setbe, CF=1||ZF=1)   WRONG; expected 0
+      >  : 0 (seta, CF=0&&ZF=0)    WRONG; expected 1
+      >= : 0 (setae, CF=0)         WRONG; expected 1
+  - This is recorded as P0 residue under
+    ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01.
+
+The historical paragraph above is preserved unmodified per F14
+(Historical document = historical evidence). Authoritative
+current truth: evidence/llvm-float01/correction01/RED-SUMMARY-corrected.md.
