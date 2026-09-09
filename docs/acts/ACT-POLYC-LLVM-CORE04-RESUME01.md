@@ -339,7 +339,7 @@ Explicitly **not** included:
 
 | ID    | Command / observation                                                                       | Expected                                   |
 |-------|---------------------------------------------------------------------------------------------|--------------------------------------------|
-| AC01  | `git diff --check HEAD`                                                                     | rc=0                                        |
+| AC01  | `git diff --check <RESUME01-entry>..<RESUME01-CLOSE>` (ACT-range; see AC12)                 | rc=0 (no whitespace errors in the ACT range) |
 | AC02  | `make clean && make`                                                                        | succeeds                                    |
 | AC03  | `scripts/quality/llvm-spike-test.sh` (full run)                                             | PASS=18 FAIL=0                              |
 | AC04  | harness summary contains `=== capability counters ===` block with non-zero SUPPORTED + REJECTED | printed, non-empty, both > 0              |
@@ -541,3 +541,64 @@ separate Factory ACT will be opened; RESUME01 will not
 silently absorb Factory refactoring.
 
   requires touching Factory v2 or any closed ACT.
+
+---
+
+## 14. Reviewer disposition log (post-C2)
+
+After the C2 IMPL commit (`e10f9f9`) the reviewer issued a
+HOLD C3 verdict citing two binding defects:
+
+- **P0-1 (F14 historical evidence conservation).** The
+  harness redirect targets in `llvm-spike-test.sh`
+  (`EVID_CORR`, `EVID_CORR2`) had been left pointing at the
+  closed `evidence/llvmspike01-resume01-correction01-resume01-correction01/`
+  tree, so re-running the harness overwrote 5 tracked
+  historical files inside that tree (3 stderr transcripts in
+  `live-red-transcripts/` and 2 files in `red-multi_def/`).
+  **Fix:** the two redirect targets now point at this ACT's
+  evidence tree
+  (`evidence/llvm-core04-resume01/c2/{live-red-transcripts,}/`).
+  The 5 historical files were restored byte-for-byte via
+  `git restore`. Re-running the harness leaves the historical
+  ACT tree untouched
+  (`git status --porcelain` shows no dirty tracked files
+  outside this ACT's own evidence tree).
+
+- **P0-2 (location-aware rogue-arm check).** The C2 IMPL
+  rogue-arm check collapsed occurrences to opcode sets. A
+  rogue `if (ins->op == IR_X)` outside the dispatch scope
+  was invisible to the check whenever the same opcode also
+  appeared legitimately inside the scope. **Fix:** the
+  canonical `model` records now retain occurrence identity
+  (op, kind, function, file_offset); the rogue-arm check
+  compares occurrences by (function, file_offset), not by
+  opcode. A new strong NC1
+  (`nc1-strong-location-aware.txt`) demonstrates the
+  duplicate-opcode hole is closed: an in-memory augmented
+  source containing
+  `static int rogue_dup_iadd_helper(...) { if (ins->op == IR_IADD) return 999; }`
+  is correctly flagged as rogue; the OLD set-based check
+  would have produced an empty rogue list.
+
+Reviewer disposition after C2 corrections (commit
+`f5d0f84`): both P0s **CLOSED**; C3 EVIDENCE authorized;
+no further C2 implementation work is justified.
+
+The permanent adversarial fixture was also renamed in
+C3 EVIDENCE from the placeholder names
+`IR_ADD/IR_SUB/IR_MUL` (which were filtered out by the
+enum gate before scope discovery even ran, making the
+test trivially pass on name alone) to the real PolyC
+IrOp enum names `IR_IADD/IR_ISUB/IR_IMUL` (which pass
+the enum gate and therefore genuinely exercise
+structural scope discovery from `llFunction()`). This
+is a fixture clarity fix, not a behavior change: the
+scope discovery result is unchanged.
+
+AC01 was also reconciled with AC12 in C3 EVIDENCE: both
+now reference the ACT-range `git diff --check` form
+(`<RESUME01-entry>..<RESUME01-CLOSE>`), which is the
+authoritative form per F14 (closed historical HANDOFF
+EOF whitespace in `evidence/llvm-core04/HANDOFF.md:229`
+must not block closure).

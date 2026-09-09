@@ -510,7 +510,24 @@ review:
   adversarial fixture, and a `counters=missing` line in
   `llvm-spike-test.sh`. Trailer `ACT-Phase: RED`.
 - The next commit (C2) is **IMPL** — flips both to PASS.
-  Trailer `ACT-Phase: IMPL`.
+  Trailer `ACT-Phase: IMPL`. C2 actually shipped as two
+  commits because the reviewer issued a HOLD C3 verdict
+  after the initial C2 GREEN, citing two binding defects
+  (P0-1 historical evidence conservation, P0-2
+  location-aware rogue-arm check). Both P0s were fixed
+  in commit `f5d0f84` (`ACT-Phase: IMPL`) before C3 was
+  authorized.
+- The next commit (C3) is **EVIDENCE** — captures the
+  reviewer-closed disposition, the strong NC1 for the
+  location-aware rogue check, the post-rename adversarial
+  fixture (real IrOp names so scope discovery is exercised
+  rather than enum-name filtering), and the final counter
+  baseline (supported=14, rejected=4, shape_dependent=7,
+  defensive=0, unreachable=0). Trailer `ACT-Phase:
+  EVIDENCE`.
+- The final commit (C4) will be **CLOSE** — `ACT-Verdict:
+  PASS` trailer only; no production code, no
+  semantic change.
 - The adversarial fixture is **permanent** (AC13); not
   removed at GREEN.
 - Closure hygiene uses the **ACT-derived range**:

@@ -899,11 +899,21 @@ def check_harness_queries_table():
 #
 # This self-test is PERMANENT. It contains a labelled adversarial
 # source snippet (a function named `not_a_dispatch_helper` carrying
-# an `if (ins->op == IR_ADD) return ...;`). The verifier parses this
-# snippet and asserts that the scope-tighter REJECTS it (i.e. IR_ADD
-# outside the real dispatch is NOT accepted as a handler). The
-# fixture is NOT removed after IMPL passes; it is the canonical
-# demonstration invariant. Future regressions re-trigger the FAIL.
+# an `if (ins->op == IR_IADD) return ...;`). The verifier parses this
+# snippet and asserts that the scope-tighter REJECTS it (i.e. IR_IADD
+# outside the real dispatch is NOT accepted as a handler, even though
+# IR_IADD is a real IrOp enum member and is otherwise supported in
+# the legitimate dispatch scope). The fixture is NOT removed after
+# IMPL passes; it is the canonical demonstration invariant. Future
+# regressions re-trigger the FAIL.
+#
+# NOTE: IR_IADD/IR_ISUB/IR_IMUL are real PolyC IrOp enum members;
+# earlier revisions of this fixture used the non-enum names
+# IR_ADD/IR_SUB/IR_MUL which were filtered out by the enum gate
+# before the scope check even ran. The real IrOp names are used here
+# so the fixture actually exercises structural scope discovery
+# rather than name filtering. See ACT-POLYC-LLVM-CORE04-RESUME01
+# sec 5.2 and AC13.
 #
 # Fixture must remain labelled so a careless reader does not delete it.
 # -----------------------------------------------------------------------------
@@ -924,11 +934,14 @@ static int not_a_dispatch_helper(IrInstr *ins)
 {
     /* This is NOT inside llLowerInstr. A scope-tight parser must
      * refuse to treat the matching opcodes here as registered
-     * handlers. */
-    if (ins->op == IR_ADD) {
+     * handlers. IR_IADD / IR_ISUB are real IrOp enum members
+     * (and are legitimately handled inside llLowerInstr), but
+     * this arm lives outside the dispatch scope, so it must be
+     * excluded by structural discovery from llFunction(). */
+    if (ins->op == IR_IADD) {
         return -1;
     }
-    if (ins->op == IR_SUB) {
+    if (ins->op == IR_ISUB) {
         return -2;
     }
     return 0;
@@ -936,7 +949,7 @@ static int not_a_dispatch_helper(IrInstr *ins)
 
 static int also_not_a_dispatch_helper(IrInstr *ins)
 {
-    if (ins->op == IR_MUL) {
+    if (ins->op == IR_IMUL) {
         return -3;
     }
     return 0;
@@ -952,9 +965,12 @@ def check_dispatch_scope_is_tight(dispatch):
     produced by get_dispatch_arms(). The self-test asserts:
 
       1. The permanent adversarial fixture's `if (ins->op == IR_X)`
-         arms (IR_ADD, IR_SUB, IR_MUL inside `not_a_dispatch_helper`
-         and `also_not_a_dispatch_helper`) are NOT picked up by the
-         unified scope-tight extractor.
+         arms (IR_IADD, IR_ISUB inside `not_a_dispatch_helper` and
+         IR_IMUL inside `also_not_a_dispatch_helper`) are NOT picked
+         up by the unified scope-tight extractor. These are real
+         IrOp enum members (already supported by the legitimate
+         scope) — the fixture therefore exercises structural scope
+         discovery rather than enum-name filtering.
 
       2. The unified model is internally consistent: the
          `if_in_llLowerInstr_or_switch` set reported by
@@ -969,10 +985,10 @@ def check_dispatch_scope_is_tight(dispatch):
 
       4. The location-aware rogue-arm check rejects an in-memory
          adversarial source that contains a rogue `if (ins->op ==
-         IR_ADD)` inside a non-dispatch helper (IR_ADD is
+         IR_IADD)` inside a non-dispatch helper (IR_IADD is
          already-supported by the real dispatch). This is the
          strong NC1: the old set-based check would have missed it
-         because the legitimate scope already contains IR_ADD.
+         because the legitimate scope already contains IR_IADD.
 
     This test FAILS if any future regression widens the scope
     (file-wide scan), narrows it (drops a real dispatch function),
@@ -1036,7 +1052,7 @@ def check_dispatch_scope_is_tight(dispatch):
     #
     # ACT-POLYC-LLVM-CORE04-RESUME01 C2 IMPL P0-2: the previous
     # set-based check collapsed occurrences to opcode sets, which
-    # silently passed when a rogue `if (ins->op == IR_ADD)` (or any
+    # silently passed when a rogue `if (ins->op == IR_IADD)` (or any
     # already-supported opcode) appeared outside the dispatch scope.
     # Occurrences are now compared by (function_name, file_offset);
     # the set of legitimate occurrences is derived from the canonical
