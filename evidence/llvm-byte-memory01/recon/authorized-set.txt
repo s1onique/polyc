@@ -1,0 +1,39 @@
+IMPLEMENT
+  byte scalar admission (IR_TYPE_I8 in llType / llTypeSupported / llParamTypeSupported)
+  byte pointer parameter admission (already IR_TYPE_PTR; access type is byte)
+  IR_LOAD_DEREF byte shape (load i8, ptr %p)
+  IR_ZEXT I8 -> I64 (zext i8 to i64)  -- unsigned promotion only
+
+DEFER
+  IR_SEXT I8 -> I64 (sext i8 to i64) -- not required for B0 read-only path
+  IR_STORE_DEREF byte shape (store i8 %v, ptr %p) -- B0 is read-only
+  IR_TRUNC I64 -> I8 (trunc i64 to i8) -- not required without byte store
+
+ALREADY_SUPPORTED
+  IR_LOAD / IR_STORE (I64 SSA scalar shape)
+  IR_IADD / IR_ISUB / IR_IMUL
+  IR_ICMP (signed eq/ne/lt/le/gt/ge)
+  IR_BR / IR_RET
+  opaque ptr (IR_TYPE_PTR) for parameter identity
+
+FORBIDDEN (in this ACT)
+  GEP / getelementptr (IR_GEP / LLVMBuildGEP*)
+  pointer arithmetic (p++, src + n)
+  ptrtoint / inttoptr
+  alloca / malloc / free
+  multi-byte arbitrary-width memory (I16, I32 support)
+  byte constants as IR-level byte (char literals remain I64 per ACT §7)
+  F32 / F64 widening work
+  bitwise / shift / division opcodes
+  new frontend syntax, neutral IR opcode, neutral IR redesign
+  new native backend semantics
+  unaligned / volatile / atomic memory
+  general pointer aliasing machinery, TBAA metadata
+
+AUTH_STATUS
+  ZEXT_PROMOTION = SHAPE_DEPENDENT (only I8->I64, I8 source only)
+  ZEXT_PROMOTION_REJECTED_OTHER = any src != I8 or dst != I64 -> LLVM_BACKEND_UNSUPPORTED_CONVERSION
+
+FREEZE
+  Recon freeze: ACT-POLYC-LLVM-BYTE-MEMORY01 §18
+  Discovery of any further need after RED: HALT_SCOPE_EXPANSION_REQUIRED.

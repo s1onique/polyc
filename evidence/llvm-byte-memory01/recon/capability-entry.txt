@@ -1,0 +1,71 @@
+# R9 — Capability Table Entry State
+
+## Status before BYTE-MEMORY01 IMPL
+
+Per `src/llvm-backend-cap.c:47-104`:
+
+| Opcode         | Current classification | Diagnostic                          | Notes                                                                          |
+|----------------|------------------------|-------------------------------------|--------------------------------------------------------------------------------|
+| IR_TYPE_I8 (admission) | REJECTED (via llTypeSupported) | LLVM_BACKEND_UNSUPPORTED_TYPE | llTypeSupported only accepts IR_TYPE_I64 / IR_TYPE_F64; llParamTypeSupported adds IR_TYPE_PTR. IR_TYPE_I8 → NULL from llType. |
+| IR_LOAD_DEREF  | SHAPE_DEPENDENT (I64 only) | LLVM_BACKEND_UNSUPPORTED_TYPE / POINTER | Only `dst->type == IR_TYPE_I64` accepted. Any other dst type → LLVM_BACKEND_UNSUPPORTED_TYPE. |
+| IR_STORE_DEREF | SHAPE_DEPENDENT (I64 only) | LLVM_BACKEND_UNSUPPORTED_TYPE / POINTER | Only `r1->type == IR_TYPE_I64` accepted. Any other r1 type → LLVM_BACKEND_UNSUPPORTED_TYPE. |
+| IR_ZEXT        | REJECTED               | LLVM_BACKEND_UNSUPPORTED_CONVERSION | Fully rejected; the byte-widening path requires this for unsigned promotion. |
+| IR_SEXT        | REJECTED               | LLVM_BACKEND_UNSUPPORTED_CONVERSION | Fully rejected; required for signed promotion. |
+| IR_TRUNC       | REJECTED               | LLVM_BACKEND_UNSUPPORTED_CONVERSION | Required only if byte store is later authorised. |
+
+## RED-discipline classification (per ACT §16)
+
+A capability is RED only if execution reaches it. Currently:
+
+| Capability           | Execution reachable with current source? |
+|----------------------|-------------------------------------------|
+| IR_TYPE_I8 admission | NO — `llTypeSupported(I8)` returns NULL → admission seam rejects before dispatch. |
+| IR_LOAD_DEREF byte   | NO — byte pointer parameter is rejected at admission before the dereference is reached. |
+| IR_STORE_DEREF byte  | NO — same. |
+| IR_ZEXT              | NO — current source does not produce `IR_TYPE_I8` values that survive to LLVM lowering; widening is folded into the native cast path. |
+| IR_SEXT              | NO — same. |
+| IR_TRUNC             | NO — same. |
+
+So the **only** RED that is genuinely reachable is the **type-admission
+gate** (`llTypeSupported` / `llParamTypeSupported` rejecting `IR_TYPE_I8`).
+
+If the admission seam is widened to admit `IR_TYPE_I8`, the byte-load
+arm of `IR_LOAD_DEREF` becomes reachable. At that point the byte-shaped
+load would emit `load i8, ptr %p`. **No GEP is required.**
+
+If the widening opcodes (`IR_ZEXT` / `IR_SEXT`) are then lowered, the
+byte→I64 promotion becomes reachable. Without lowering those, any
+widening site would fail with `LLVM_BACKEND_UNSUPPORTED_CONVERSION`.
+
+## Recommended authorised-set shape
+
+Given the analysis:
+
+* `IMPLEMENT`: byte-type admission (LL: `i8`), byte-shaped
+  `IR_LOAD_DEREF`, and unsigned `IR_ZEXT` (LLVM `zext i8 -> i64`).
+  Signed promotion (`IR_SEXT`) and byte store (`IR_STORE_DEREF` byte
+  shape) and `IR_TRUNC` are NOT in scope for the read-only B0 path.
+
+* `DEFER`: byte store, `IR_TRUNC`, signed byte promotion
+  (`IR_SEXT` for i8). These are NOT required by B0's read-only fragment;
+  they are out of scope per ACT §37 and §19.
+
+* `FORBIDDEN`: GEP, pointer arithmetic, inttoptr / ptrtoint, byte
+  constants (char constants remain I64 per ACT §7).
+
+* `ALREADY_SUPPORTED`: scalar integer arithmetic, IR_ICMP, IR_BR,
+  IR_RET (for byte loads that promote to I64), and the existing I64
+  load / store path.
+
+## Note on `IR_ZEXT` rejection
+
+`IR_ZEXT` is `LLVMBC_REJECTED` today. For BYTE-MEMORY01 to authorise a
+byte→I64 promotion, this row must be promoted to either `SUPPORTED` or
+`SHAPE_DEPENDENT`. The natural shape is: `IR_ZEXT` from `IR_TYPE_I8` to
+`IR_TYPE_I64`, addressed at `LL_INC_SHAPE_DEPENDENT(lc)`. No widening
+from other widths (e.g., I16→I64) is authorised by this ACT.
+
+## Conclusion
+
+`CAPABILITY_ENTRY_STATE = OK`. The freeze-pending authorised set is
+recorded in `evidence/llvm-byte-memory01/recon/authorized-set.txt`.

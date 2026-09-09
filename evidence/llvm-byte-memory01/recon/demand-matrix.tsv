@@ -1,0 +1,12 @@
+capability	B0_expression	source_type	neutral_IR_shape	native_semantics	LLVM_ENTRY_state	required_for_B0	decision
+i8 scalar admission	*src; c = ...	U8 / I8	IR_TYPE_I8	tmp / param / ret	REJECTED at llTypeSupported	yes	IMPLEMENT
+U8 parameter admission	ReadByte(U8 *p)	U8	IR_TYPE_I8 IR_VAL_PARAM + IR_TYPE_PTR	address-space-0 ptr + 1-byte slot	REJECTED at llParamTypeSupported	yes	IMPLEMENT
+IR_LOAD_DEREF byte shape	*src	U8 / I8	IR_LOAD_DEREF dst=I8 r1=PTR disp=0	load 1 byte via movsxb / movzxb or native load	opaque-ptr load i64, ptr	yes	IMPLEMENT
+IR_ZEXT i8 -> i64	(c - '0') where c was loaded as U8	U8	IR_ZEXT src=I8 dst=I64	movzbq (x86_64) / uxtb (aarch64) on AST cast	REJECTED LLVM_BACKEND_UNSUPPORTED_CONVERSION	yes (unsigned)	IMPLEMENT (unsigned only)
+IR_SEXT i8 -> i64	(c - '0') where c was loaded as I8	I8	IR_SEXT src=I8 dst=I64	movsbq (x86_64) / sxtb (aarch64) on AST cast	REJECTED LLVM_BACKEND_UNSUPPORTED_CONVERSION	yes (signed)	DEFER (B0 source bytes are conventionally unsigned; signed I8 widen is for non-lexer code)
+IR_STORE_DEREF byte shape	src[0] = ...	U8	IR_STORE_DEREF dst=PTR r1=I8	store 1 byte to memory	opaque-ptr store i64, ptr	NO (B0 read-only)	DEFER
+IR_TRUNC I64 -> byte	x = (U8) v	U8	IR_TRUNC src=I64 dst=I8	native narrow	REJECTED LLVM_BACKEND_UNSUPPORTED_CONVERSION	NO	DEFER
+GEP	*(src + n)	U8 *	IR_GEP (NOT emitted by current source)	native GEP / lea	REJECTED LLVM_BACKEND_UNSUPPORTED_AGGREGATE	NO	forbidden (NEXT_ACT=GEP01)
+pointer arithmetic	src + n	U8 *	not currently supported	native	n/a	NO	forbidden
+IR_FADD / IR_FSUB / IR_FMUL / IR_FDIV / IR_FNEG / IR_ICMP / IR_BR / IR_RET	N/A	N/A	already supported	already supported	mixed	yes (after widening)	ALREADY_SUPPORTED
+IR_LOAD / IR_STORE (SSA scalar)	N/A	N/A	already SHAPE_DEPENDENT	already SHAPE_DEPENDENT	SHAPE_DEPENDENT (I64)	yes (after widening)	ALREADY_SUPPORTED
