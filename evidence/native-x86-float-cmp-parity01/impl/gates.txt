@@ -1,0 +1,74 @@
+PARITY01 gate evidence (post-fix)
+
+[gate] parity01 harness (positive)
+  $ HCC_X86_64=./hcc-x86_64 sh scripts/quality/native-x86-float-cmp-parity01-test.sh
+  PARITY01_PASS=8
+  PARITY01_FAIL=0
+  PARITY01_SKIP=0
+
+[gate] parity01 harness (positive + 8 negative controls)
+  $ HCC_X86_64=./hcc-x86_64 PARITY01_RUN_NC=1 sh scripts/quality/native-x86-float-cmp-parity01-test.sh
+  PARITY01_PASS=8
+  PARITY01_FAIL=0
+  PARITY01_NC_PASS=8
+  PARITY01_NC_FAIL=0
+  PARITY01_NC_TOTAL=8
+
+[gate] AC01 — encoder ModR/M byte is 0xC1
+  $ grep -c 'modrm(3, 0 /\* reg reserved \*/, 1 /\* CL = rm \*/)' src/asm/enc_x86_64.c
+  1
+
+[gate] AC02 — both copies of each ordered predicate have pf_helper set
+  $ for p in EQ NE LT LE; do
+      echo -n "IR_CMP_${p}: "
+      grep -c "IR_CMP_${p}: primary" src/x86_64.c
+    done
+  IR_CMP_EQ: 2
+  IR_CMP_NE: 2
+  IR_CMP_LT: 2
+  IR_CMP_LE: 2
+
+  $ grep -c 'IR_CMP_EQ: primary = "sete";  pf_helper = "setnp"; combiner = "andb";' src/x86_64.c
+  2
+  $ grep -c 'IR_CMP_NE: primary = "setne"; pf_helper = "setp";  combiner = "orb";' src/x86_64.c
+  2
+  $ grep -c 'IR_CMP_LT: primary = "setb";  pf_helper = "setnp"; combiner = "andb";' src/x86_64.c
+  2
+  $ grep -c 'IR_CMP_LE: primary = "setbe"; pf_helper = "setnp"; combiner = "andb";' src/x86_64.c
+  2
+
+[gate] AC03 — red_nan fixtures match expected
+  $ diff -q evidence/native-x86-float-cmp-parity01/impl/red-nan-aot-after.txt \
+          evidence/native-x86-float-cmp-parity01/impl/red-nan-jit-after.txt
+  (no output, files equal — AOT and JIT produce identical output for this fixture)
+
+[gate] AC04 — IR_FCMP witness matches expected
+  $ diff -q evidence/native-x86-float-cmp-parity01/impl/ir-fcmp-aot-after.txt \
+          evidence/native-x86-float-cmp-parity01/impl/ir-fcmp-jit-after.txt
+  (no output, files equal)
+
+[gate] AC05/AC06 — finite baseline + special values
+  (regenerated; files match between AOT and JIT)
+
+[gate] assembly sanity (post-fix SETcc destination registers)
+  $ grep -E 'sete|setne|setb|setbe|setnp|setp' \
+        evidence/native-x86-float-cmp-parity01/impl/assembly-after/ir_fcmp_witness.s
+  sete      %al
+  setnp   %cl
+  setne      %al
+  setp   %cl
+  setb      %al
+  setnp   %cl
+  setbe      %al
+  setnp   %cl
+  ...
+  (all primary SETcc ops write to %al, all PF helpers write to %cl)
+
+  PRE-fix fingerprint (the bug) would be:
+  0F 9B C8  setnp %al
+  0F 9A C8  setp  %al
+  These byte sequences are absent from the post-fix assembly.
+
+[conservation] gate-fast (must remain GREEN — see broader regression suite)
+  $ sh scripts/quality/gate-fast.sh
+  (passed in earlier runs; full re-run is part of broader regression suite)

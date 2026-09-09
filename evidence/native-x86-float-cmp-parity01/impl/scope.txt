@@ -1,0 +1,28 @@
+PARITY01 scope evidence (post-fix)
+
+Modified production files (all are within authorized scope):
+  src/asm/enc_x86_64.c   — SETcc ModR/M encoder fix (0xC8 -> 0xC1)
+  src/asm/enc_x86_64.h   — comment alignment (no semantic change)
+  src/x86_64.c           — float-setcc composition table for FCMP + CMP_BR
+  src/x86_64-jit.c       — mirror float-setcc composition into JIT
+
+New test files (within authorized scope):
+  src/tests/native-x86-float-cmp-parity01/red_nan.HC          — principal RED
+  src/tests/native-x86-float-cmp-parity01/finite_baseline.HC  — finite (non-NaN) baseline
+  src/tests/native-x86-float-cmp-parity01/special_values.HC   — +0/-0/±Inf conservation
+  src/tests/native-x86-float-cmp-parity01/ir_fcmp_witness.HC  — IR_FCMP-only witness
+
+New tooling (within authorized scope):
+  scripts/quality/native-x86-float-cmp-parity01-test.sh       — harness (positive + 8 NCs)
+
+NOT modified (out of scope):
+  src/llvm/                                                  — Residue P1, future ACT-POLYC-LLVM-FLOAT02
+  src/x86_64.c IR_FPTOSI path                                — Residue P1, pre-existing bug, not widened
+  src/x86_64-jit.c IR_FPTOSI path                            — Residue P1
+  CI / build system / dependencies                           — forbidden
+
+Residue:
+  P0 none.
+  P1 IR_FPTOSI bug (pre-existing).
+  P1 LLVM backend parity not audited.
+  P2 NC1 uses JIT byte fingerprint (HCC_JIT_DUMP=1) due to register-clobber flakiness.

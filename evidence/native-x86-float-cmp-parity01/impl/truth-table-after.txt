@@ -1,0 +1,42 @@
+PARITY01 Truth Table (post-fix)
+
+NaN matrix (qnan vs 1.0, vs NaN, in both orders):
+  NaN == 1.0 -> FALSE   (IEEE-754: ordered EQ on NaN -> false)
+  NaN != 1.0 -> TRUE    (IEEE-754: ordered NE on NaN -> true)
+  NaN <  1.0 -> FALSE   (IEEE-754: ordered LT on NaN -> false)
+  NaN <= 1.0 -> FALSE   (IEEE-754: ordered LE on NaN -> false)
+  NaN >  1.0 -> FALSE   (IEEE-754: ordered GT on NaN -> false)
+  NaN >= 1.0 -> FALSE   (IEEE-754: ordered GE on NaN -> false)
+
+Finite baseline:
+  1.0 == 1.0 -> TRUE
+  1.0 != 1.0 -> FALSE
+  1.0 <  2.0 -> TRUE
+  1.0 <= 1.0 -> TRUE
+  2.0 >  1.0 -> TRUE
+  2.0 >= 2.0 -> TRUE
+  1.0 == -1.0 -> FALSE
+  2.0 <  1.0 -> FALSE
+  1.0 >  2.0 -> FALSE
+
+Special values:
+  +0.0 == -0.0 -> TRUE   (IEEE-754: +0 == -0)
+  +0.0 != -0.0 -> FALSE
+  -0.0 <  +0.0 -> FALSE
+  -0.0 <= +0.0 -> TRUE
+  +Inf >  1.0 -> TRUE
+  +Inf >= 1.0 -> TRUE
+  -Inf <  1.0 -> TRUE
+  -Inf <= 1.0 -> TRUE
+
+Boolean equations (post-fix):
+  EQ:  sete  %al; setnp %cl; andb %cl, %al    -> (a==b) & ~PF
+  NE:  setne %al; setp  %cl; orb   %cl, %al    -> (a!=b) |  PF
+  LT:  setb  %al; setnp %cl; andb %cl, %al    -> (a<b)  & ~PF
+  LE:  setbe %al; setnp %cl; andb %cl, %al    -> (a<=b) & ~PF
+  GT:  seta  %al                              -> (a>b)         [CF=0∧ZF=0 → unordered rejected]
+  GE:  setae %al                              -> (a>=b)        [CF=0         → unordered rejected]
+
+Encoder (post-fix):
+  x86_64_enc_setcc_cl: put 0x0F; put (0x90|cc); put modrm(3,0,1) = 0xC1
+  → writes to %cl (correct, per Intel SDM: ModR/M.reg is reserved for SETcc)
