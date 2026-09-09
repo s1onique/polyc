@@ -108,11 +108,11 @@
  * IR_IREM                         REJECTED             LLVM_BACKEND_UNSUPPORTED_INT_REMAINDER
  * IR_UREM                         REJECTED             LLVM_BACKEND_UNSUPPORTED_INT_REMAINDER
  * IR_INEG                         REJECTED             LLVM_BACKEND_UNSUPPORTED_INT_NEGATION
- * IR_FADD                         REJECTED             LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH
- * IR_FSUB                         REJECTED             LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH
- * IR_FMUL                         REJECTED             LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH
- * IR_FDIV                         REJECTED             LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH
- * IR_FNEG                         REJECTED             LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH
+ * IR_FADD                         SUPPORTED            ACT-POLYC-LLVM-FLOAT01: F64 only (other shapes REJECTED via LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH). No fast-math flags.
+ * IR_FSUB                         SUPPORTED            ACT-POLYC-LLVM-FLOAT01: F64 only. No fast-math flags.
+ * IR_FMUL                         SUPPORTED            ACT-POLYC-LLVM-FLOAT01: F64 only. No fast-math flags.
+ * IR_FDIV                         REJECTED             LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH (excluded by ACT §1.2)
+ * IR_FNEG                         REJECTED             LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH (excluded by ACT §1.2)
  * IR_AND                          REJECTED             LLVM_BACKEND_UNSUPPORTED_INT_BITWISE
  * IR_OR                           REJECTED             LLVM_BACKEND_UNSUPPORTED_INT_BITWISE
  * IR_XOR                          REJECTED             LLVM_BACKEND_UNSUPPORTED_INT_BITWISE
@@ -121,7 +121,7 @@
  * IR_SAR                          REJECTED             LLVM_BACKEND_UNSUPPORTED_INT_SHIFT
  * IR_NOT                          REJECTED             LLVM_BACKEND_UNSUPPORTED_INT_BITWISE
  * IR_ICMP                         SUPPORTED            (signed eq/ne/lt/le/gt/ge)
- * IR_FCMP                         REJECTED             LLVM_BACKEND_UNSUPPORTED_FLOAT_CMP
+ * IR_FCMP                         SUPPORTED            ACT-POLYC-LLVM-FLOAT01: F64 operands + six canonical IrCmpKind values; other shapes REJECTED via LLVM_BACKEND_UNSUPPORTED_FLOAT_CMP. Result i1 feeds IR_BR directly. Predicate map in evidence/llvm-float01/red/recon-comparison-semantics.txt.
  * IR_TRUNC                        REJECTED             LLVM_BACKEND_UNSUPPORTED_CONVERSION
  * IR_ZEXT                         REJECTED             LLVM_BACKEND_UNSUPPORTED_CONVERSION
  * IR_SEXT                         REJECTED             LLVM_BACKEND_UNSUPPORTED_CONVERSION
@@ -171,9 +171,9 @@
  *
  * Value kinds:
  *   IR_VAL_CONST_INT    SUPPORTED (i64 only)
- *   IR_VAL_LOCAL        SUPPORTED (single-def only)
- *   IR_VAL_PARAM        SUPPORTED (i64 or pointer-to-I64 [ACT-POLYC-LLVM-MEMORY01])
- *   IR_VAL_CONST_FLOAT  REJECTED  LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH
+ *   IR_VAL_LOCAL        SUPPORTED (single-def only; i64, f64, or pointer)
+ *   IR_VAL_PARAM        SUPPORTED (i64, f64, or pointer-to-I64 [ACT-POLYC-LLVM-MEMORY01])
+ *   IR_VAL_CONST_FLOAT  SUPPORTED (f64 only [ACT-POLYC-LLVM-FLOAT01]; lowered via LLVMConstReal)
  *   IR_VAL_CONST_STR    REJECTED  LLVM_BACKEND_UNSUPPORTED_AGGREGATE
  *   IR_VAL_GLOBAL       REJECTED  LLVM_BACKEND_UNSUPPORTED_GLOBAL
  *   IR_VAL_PHI          REJECTED  LLVM_BACKEND_UNSUPPORTED_PHI
@@ -185,6 +185,7 @@
  * Types:
  *   IR_TYPE_I   SUPPORTED (i64 only)
  *   IR_TYPE_VOID SUPPORTED
+ *   IR_TYPE_F64  SUPPORTED [ACT-POLYC-LLVM-FLOAT01]; lowered to LLVM double
  *   IR_TYPE_PTR SUPPORTED (function parameter only [ACT-POLYC-LLVM-MEMORY01]; lowered to LLVM opaque ptr)
  *   all others  REJECTED  LLVM_BACKEND_UNSUPPORTED_AGGREGATE
  */
@@ -422,7 +423,7 @@ static int llDetectCollapsibleReturn(IrFunction *fn, IrValue **out_slot) {
     if (ret->op != IR_RET) return 0;
     if (!ret->dst) return 0;
     if (ret->dst != ld->dst) return 0;
-    if (ld->dst->type != IR_TYPE_I64) return 0;
+    if (ld->dst->type != IR_TYPE_I64 && ld->dst->type != IR_TYPE_F64) return 0;
 
     IrValue *slot = ld->r1;
     if (!slot) return 0;
@@ -452,7 +453,12 @@ static int llDetectCollapsibleReturn(IrFunction *fn, IrValue **out_slot) {
             if (ins->op == IR_STORE && ins->dst == slot) {
                 if (seen_store) { ok = 0; break; }
                 seen_store = 1;
-                if (!ins->r1 || ins->r1->type != IR_TYPE_I64) {
+                /* ACT-POLYC-LLVM-FLOAT01: collapse-eligible store now
+                 * accepts both I64 and F64 stored values. The type
+                 * of the stored value MUST match the slot/ret
+                 * type (ld->dst->type); a mixed-type return slot
+                 * cannot collapse cleanly. */
+                if (!ins->r1 || ins->r1->type != ld->dst->type) {
                     ok = 0; break;
                 }
                 /* store must be immediately before jmp */
@@ -505,28 +511,35 @@ static LLVMValueRef llLowerInstr(LLCtx *lc, IrInstr *ins);
 static LLVMTypeRef llType(LLCtx *lc, IrValueType t);
 
 static int llTypeSupported(IrValueType t) {
-    return t == IR_TYPE_I64;
+    return t == IR_TYPE_I64 || t == IR_TYPE_F64;
 }
 
 /* ACT-POLYC-LLVM-MEMORY01: function-parameter type authorisation.
  *
- * Only I64 (scalar) and IR_TYPE_PTR (pointer-to-I64) are accepted
- * as function parameter types. IR_TYPE_PTR is allowed here ONLY
- * because the parameter lowering seam (llPass1 + llBindParams)
- * can map it directly to LLVM opaque `ptr` without any local
- * spill, alloca, or pointer cast. Other value kinds (constants,
- * locals, return values) keep the strict llTypeSupported()
- * contract: only IR_TYPE_I64.
+ * Only I64 (scalar), F64 (scalar, ACT-POLYC-LLVM-FLOAT01), and
+ * IR_TYPE_PTR (pointer-to-I64) are accepted as function parameter
+ * types. IR_TYPE_PTR is allowed here ONLY because the parameter
+ * lowering seam (llPass1 + llBindParams) can map it directly to
+ * LLVM opaque `ptr` without any local spill, alloca, or pointer
+ * cast. Other value kinds (constants, locals, return values)
+ * keep the strict llTypeSupported() contract: only IR_TYPE_I64
+ * or IR_TYPE_F64.
  *
- * Function return values remain I64-only: this ACT does not
+ * Function return values are I64 or F64 only: this ACT does not
  * authorise pointer return values (see ACT §7 excluded list). */
 static int llParamTypeSupported(IrValueType t) {
-    return t == IR_TYPE_I64 || t == IR_TYPE_PTR;
+    return t == IR_TYPE_I64 || t == IR_TYPE_PTR || t == IR_TYPE_F64;
 }
 
 static LLVMTypeRef llType(LLCtx *lc, IrValueType t) {
     (void)lc;
     if (t == IR_TYPE_I64) return LLVMInt64TypeInContext(lc->ctx);
+    /* ACT-POLYC-LLVM-FLOAT01: scalar F64 maps to LLVM `double`
+     * via LLVMDoubleTypeInContext. The C API does not expose
+     * a different precision here: LLVM's binary64 IS the IEEE 754
+     * double-precision type. No F32 mapping, no target-dependent
+     * `long double`. */
+    if (t == IR_TYPE_F64) return LLVMDoubleTypeInContext(lc->ctx);
     /* ACT-POLYC-LLVM-MEMORY01: opaque pointer for IR_TYPE_PTR. The
      * C API function LLVMPointerTypeInContext(ctx, AS) with AS=0
      * is the canonical LLVM 22 way to materialise the opaque
@@ -534,7 +547,7 @@ static LLVMTypeRef llType(LLCtx *lc, IrValueType t) {
      * pointer; it is supplied to load/store builders explicitly. */
     if (t == IR_TYPE_PTR) return LLVMPointerTypeInContext(lc->ctx, 0);
     /* IR_TYPE_I1 is intentionally not in `IrValueType`; the spike
-     * only emits i64 for source values. The cond->i1 truncation for
+     * only emits i64 / f64 for source values. The cond->i1 truncation for
      * IR_BR uses LLVMInt1TypeInContext directly. */
     return NULL;
 }
@@ -559,7 +572,7 @@ static void llPass1(LLCtx *lc, IrProgram *prog) {
         }
         if (!fn->return_value || !llTypeSupported(fn->return_value->type)) {
             llErrUnsupportedType(fn->return_value, fn,
-                "function return value (only I64 supported)");
+                "function return value (only I64 or F64 supported)");
             llEmitCapabilityCountersOnce(lc->totals);
             exit(1);
         }
@@ -575,12 +588,21 @@ static void llPass1(LLCtx *lc, IrProgram *prog) {
          * IR_TYPE_PTR -> opaque ptr; everything else still -> i64.
          * LLVMGetParam() in llBindParams then yields the
          * corresponding LLVMValueRef directly, with no alloca,
-         * store-to-local, load-from-local, inttoptr, or ptrtoint. */
+         * store-to-local, load-from-local, inttoptr, or ptrtoint.
+         *
+         * ACT-POLYC-LLVM-FLOAT01: per-function return type mapping.
+         * The return type is now driven by fn->return_value->type:
+         *   IR_TYPE_I64 -> LLVM i64
+         *   IR_TYPE_F64 -> LLVM double (via llType)
+         * Hard-coding i64 here would silently mismatch the IR_RET
+         * operand for F64-returning functions and the LLVM verifier
+         * would reject the module. */
         for (u32 p = 0; p < np; ++p) {
             IrValue *pv = vecGet(IrValue*, fn->params, p);
             param_tys[p] = llType(lc, pv->type);
         }
-        LLVMTypeRef fty = LLVMFunctionType(i64, param_tys, (unsigned)np, 0);
+        LLVMTypeRef ret_ty = llType(lc, fn->return_value->type);
+        LLVMTypeRef fty = LLVMFunctionType(ret_ty, param_tys, (unsigned)np, 0);
         LLVMAddFunction(lc->mod, fn->name->data, fty);
     }
 }
@@ -684,7 +706,7 @@ static LLVMValueRef llLowerValue(LLCtx *lc, IrValue *v) {
      * `as.var` storage, or giving constants a unique id space) is
      * out of scope for MEMORY01 and would require an IR ACT (see
      * ACT §23 HALT_NEUTRAL_IR_CHANGE_REQUIRED). */
-    if (v->kind != IR_VAL_CONST_INT) {
+    if (v->kind != IR_VAL_CONST_INT && v->kind != IR_VAL_CONST_FLOAT) {
         LLVMValueRef cached = llvmGet(&lc->values, irVarId(v));
         if (cached) return cached;
     }
@@ -697,6 +719,33 @@ static LLVMValueRef llLowerValue(LLCtx *lc, IrValue *v) {
         LLVMValueRef c = LLVMConstInt(llType(lc, v->type),
                                       (unsigned long long)v->as._i64,
                                       1 /*signed*/);
+        return c;
+    }
+    if (v->kind == IR_VAL_CONST_FLOAT) {
+        /* ACT-POLYC-LLVM-FLOAT01: F64 constant materialisation.
+         *
+         * R3 (per ACT §6): the canonical neutral-IR F64 representation
+         * is IR_VAL_CONST_FLOAT with the value in `as._f64` (per
+         * src/ir.c:66-69 irConstFloat and src/ir-types.h:336). The
+         * constant is bypassed from the SSA cache lookup for the SAME
+         * reason IR_VAL_CONST_INT is bypassed (per the MEMORY01 fix
+         * at src/llvm-backend.c:687 above): the union aliasing between
+         * `as._f64` and `as.var` (4 bytes of the IEEE 754 bits land
+         * in `var.id`) would otherwise cause constants whose bit
+         * pattern collides with another TMP / PARAM id to be silently
+         * substituted.
+         *
+         * LLVMConstReal preserves the host `double` bits verbatim;
+         * the C API does not introduce any rounding. The mapping is
+         * exact for binary64 <-> double on every supported host.
+         */
+        if (!llTypeSupported(v->type)) {
+            llErrUnsupportedType(v, lc->fn, "constant");
+            llEmitCapabilityCountersOnce(lc->totals);
+            exit(1);
+        }
+        LLVMValueRef c = LLVMConstReal(llType(lc, v->type),
+                                       (double)v->as._f64);
         return c;
     }
     if (v->kind == IR_VAL_LOCAL) {
@@ -716,7 +765,7 @@ static LLVMValueRef llLowerValue(LLCtx *lc, IrValue *v) {
         llEmitCapabilityCountersOnce(lc->totals);
         exit(1);
     }
-    if (v->kind == IR_VAL_CONST_STR || v->kind == IR_VAL_CONST_FLOAT ||
+    if (v->kind == IR_VAL_CONST_STR ||
         v->kind == IR_VAL_GLOBAL    || v->kind == IR_VAL_PHI ||
         v->kind == IR_VAL_LABEL    || v->kind == IR_VAL_UNDEFINED ||
         v->kind == IR_VAL_UNRESOLVED) {
@@ -797,6 +846,50 @@ static LLVMIntPredicate llCmpKindToLLVMPred(IrCmpKind k) {
     }
 }
 
+/* ACT-POLYC-LLVM-FLOAT01: float predicate mapping.
+ *
+ * Maps the six PolyC float-comparison IrCmpKind values to the LLVM
+ * LLVMRealPredicate enum values. The mapping is derived from the
+ * native semantic oracle captured during RED (see
+ *   evidence/llvm-float01/red/recon-comparison-semantics.txt)
+ * which exercised aarch64-native fcmp + cset behaviour for NaN
+ * operands and proved:
+ *
+ *   ==  -> oeq   (NaN -> false)
+ *   !=  -> une   (NaN -> true)
+ *   <   -> olt   (NaN -> false)
+ *   <=  -> ole   (NaN -> false)
+ *   >   -> ogt   (NaN -> false)
+ *   >=  -> oge   (NaN -> false)
+ *
+ * The strict-ordered predicates for ==, <, <=, >, >= and the
+ * unordered predicate for != are exactly the IEEE 754 semantics
+ * the aarch64 backend produces via cset "eq"/"mi"/"ls"/"gt"/"ge"
+ * and "ne" for fcmp-on-NaN.
+ *
+ * Other IrCmpKind values (e.g. IR_CMP_OEQ, IR_CMP_UNO, IR_CMP_ORD)
+ * are NOT emitted by the HolyC frontend (per src/ir.c:722-758 which
+ * only produces IR_CMP_EQ/NE/LT/LE/GT/GE); they reach here only via
+ * an upstream regression. In that case we fail loud rather than
+ * guess an LLVM predicate.
+ */
+static LLVMRealPredicate llFloatCmpKindToLLVMPred(IrCmpKind k) {
+    switch (k) {
+        case IR_CMP_EQ: return LLVMRealOEQ;
+        case IR_CMP_NE: return LLVMRealUNE;
+        case IR_CMP_LT: return LLVMRealOLT;
+        case IR_CMP_LE: return LLVMRealOLE;
+        case IR_CMP_GT: return LLVMRealOGT;
+        case IR_CMP_GE: return LLVMRealOGE;
+        default:
+            fprintf(stderr,
+                "%s: unsupported float cmp kind %d; "
+                "FLOAT01 only supports == != < <= > >=\n",
+                LLVM_BACKEND_UNSUPPORTED_FLOAT_CMP, (int)k);
+            exit(1);
+    }
+}
+
 static int llIsCollapseAlloca(IrInstr *ins, IrValue *slot) {
     return ins->op == IR_ALLOCA && ins->dst == slot;
 }
@@ -846,7 +939,18 @@ static LLVMBasicBlockRef llLowerBlock(LLCtx *lc, IrBlock *b) {
                         LLVM_BACKEND_INTERNAL, b->id);
                     exit(1);
                 }
-                LLVMValueRef lv = llLowerI64Value(lc, v);
+                /* ACT-POLYC-LLVM-FLOAT01: collapse path now
+                 * dispatches on the slot's neutral-IR type: I64
+                 * lowers via llLowerI64Value (the historical path),
+                 * F64 lowers via llLowerValue which returns an SSA
+                 * LLVMValueRef of physical type `double`. No
+                 * bitcast between integer and floating types. */
+                LLVMValueRef lv;
+                if (v->type == IR_TYPE_I64) {
+                    lv = llLowerI64Value(lc, v);
+                } else {
+                    lv = llLowerValue(lc, v);
+                }
                 LLVMBuildRet(lc->bld, lv);
                 /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: collapse path
                  * delivers SUPPORTED via the IR_RET arm; this jmp
@@ -1037,11 +1141,17 @@ static LLVMBasicBlockRef llLowerBlock(LLCtx *lc, IrBlock *b) {
              * is the §30 ideal "direct-branch return" shape. */
             LLVMValueRef v = NULL;
             if (ins->dst) {
-                if (ins->dst->type != IR_TYPE_I64) {
+                /* ACT-POLYC-LLVM-FLOAT01: the return value may be
+                 * IR_TYPE_I64 or IR_TYPE_F64; the same llLowerValue
+                 * path resolves either into an SSA LLVMValueRef of
+                 * the appropriate physical type (i64 or double).
+                 * No bitcast between i64 and double is performed
+                 * anywhere in this ACT (per ACT §1.2). */
+                if (!llTypeSupported(ins->dst->type)) {
                     llErrUnsupportedType(ins->dst, lc->fn, "ret value");
                     exit(1);
                 }
-                v = llLowerI64Value(lc, ins->dst);
+                v = llLowerValue(lc, ins->dst);
             }
             /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: SUPPORTED terminator. */
             LL_INC_SUPPORTED(lc);
@@ -1110,11 +1220,18 @@ static LLVMBasicBlockRef llLowerBlock(LLCtx *lc, IrBlock *b) {
              * still excluded by ACT §7). The local is bound to the
              * LLVMValueRef of its source (e.g. a pointer parameter)
              * via llLowerPointerValue; no alloca/store-to-local is
-             * emitted. */
+             * emitted.
+             *
+             * ACT-POLYC-LLVM-FLOAT01: also accept IR_TYPE_F64 locals.
+             * The F64 local is bound to the SSA LLVMValueRef of its
+             * source via llLowerValue (which handles IR_VAL_CONST_FLOAT,
+             * IR_VAL_PARAM, and prior IR_STORE of F64 values). No
+             * alloca, no stack slot, no F64 memory. */
             if (ins->dst->type != IR_TYPE_I64 &&
-                ins->dst->type != IR_TYPE_PTR) {
+                ins->dst->type != IR_TYPE_PTR &&
+                ins->dst->type != IR_TYPE_F64) {
                 llErrUnsupportedType(ins->dst, lc->fn,
-                    "IR_STORE local type (only I64 or pointer supported)");
+                    "IR_STORE local type (only I64, F64 or pointer supported)");
                 llEmitCapabilityCountersOnce(lc->totals);
                 exit(1);
             }
@@ -1133,12 +1250,17 @@ static LLVMBasicBlockRef llLowerBlock(LLCtx *lc, IrBlock *b) {
              * existing SSA cache, populated earlier by llBindParams
              * for parameters and by prior IR_STORE for pointer
              * locals). Constants are forbidden; PolyC has no
-             * pointer constants. */
+             * pointer constants.
+             *
+             * ACT-POLYC-LLVM-FLOAT01: IR_TYPE_F64 dst lowers its
+             * value via llLowerValue, which handles IR_VAL_CONST_FLOAT
+             * (via LLVMConstReal) and resolves F64 SSA bindings
+             * through the cache. */
             LLVMValueRef v;
             if (ins->dst->type == IR_TYPE_PTR) {
                 v = llLowerPointerValue(lc, ins->r1);
             } else {
-                v = llLowerI64Value(lc, ins->r1);
+                v = llLowerValue(lc, ins->r1);
             }
 
             /* ACT-POLYC-LLVM-SPIKE01-RESUME01-CORRECTION01-RESUME01-CORRECTION01:
@@ -1403,29 +1525,104 @@ static LLVMValueRef llLowerInstr(LLCtx *lc, IrInstr *ins) {
         }
         case IR_FADD:
         case IR_FSUB:
-        case IR_FMUL:
+        case IR_FMUL: {
+            /* ACT-POLYC-LLVM-FLOAT01: SUPPORTED float arithmetic for
+             * IR_TYPE_F64 dst / operands. The supported shape is
+             *   dst->type == IR_TYPE_F64
+             *   r1 / r2 -> SSA F64 (constant, parameter, local,
+             *                      or result of a prior float op).
+             *
+             * LLVMBuildFAdd / LLVMBuildFSub / LLVMBuildFMul produce
+             * LLVM `fadd` / `fsub` / `fmul double` with NO fast-math
+             * flags (the C API defaults the flags argument to 0 when
+             * only the two operand arguments are passed). The
+             * fast-math invariant is therefore automatic; the NC2
+             * probe in scripts/quality/llvm-float01-test.sh enforces
+             * it on the emitted textual IR.
+             *
+             * FDIV and FNEG remain in the same REJECTED arm below.
+             * They share the diagnostic prefix but are not promoted
+             * by this ACT.
+             */
+            LL_INC_SUPPORTED(lc);
+            if (ins->dst->type != IR_TYPE_F64 ||
+                !ins->r1 || ins->r1->type != IR_TYPE_F64 ||
+                !ins->r2 || ins->r2->type != IR_TYPE_F64) {
+                fprintf(stderr,
+                    "%s: function %s: float arithmetic operand is not "
+                    "F64 (opcode %s; dst type=%d, r1 type=%d, r2 type=%d); "
+                    "FLOAT01 supports only scalar F64\n",
+                    LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH,
+                    lc->fn->name->data, irOpcodeToString(ins),
+                    (int)(ins->dst ? ins->dst->type : -1),
+                    (int)(ins->r1 ? ins->r1->type : -1),
+                    (int)(ins->r2 ? ins->r2->type : -1));
+                llEmitCapabilityCountersOnce(lc->totals);
+                exit(1);
+            }
+            LLVMValueRef a = llLowerValue(lc, ins->r1);
+            LLVMValueRef b = llLowerValue(lc, ins->r2);
+            if (ins->op == IR_FADD) return LLVMBuildFAdd(lc->bld, a, b, "");
+            if (ins->op == IR_FSUB) return LLVMBuildFSub(lc->bld, a, b, "");
+            return LLVMBuildFMul(lc->bld, a, b, "");
+        }
         case IR_FDIV:
         case IR_FNEG: {
-            /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: REJECTED class. */
+            /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: REJECTED class.
+             * FDIV and FNEG are not promoted by FLOAT01 (see ACT §1.2). */
             LL_INC_REJECTED(lc);
             fprintf(stderr,
-                "%s: function %s: float arithmetic is not supported "
-                "(opcode %s); the CORE backend supports only i64 scalars\n",
+                "%s: function %s: float arithmetic opcode %s is not "
+                "supported; FLOAT01 supports IR_FADD/IR_FSUB/IR_FMUL only\n",
                 LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH,
                 lc->fn->name->data, irOpcodeToString(ins));
             llEmitCapabilityCountersOnce(lc->totals);
             exit(1);
         }
         case IR_FCMP: {
-            /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: REJECTED class. */
-            LL_INC_REJECTED(lc);
-            fprintf(stderr,
-                "%s: function %s: float compare is not supported "
-                "(opcode %s); use IR_ICMP with i64 scalars\n",
-                LLVM_BACKEND_UNSUPPORTED_FLOAT_CMP,
-                lc->fn->name->data, irOpcodeToString(ins));
-            llEmitCapabilityCountersOnce(lc->totals);
-            exit(1);
+            /* ACT-POLYC-LLVM-FLOAT01: SUPPORTED float comparison for
+             * IR_TYPE_F64 operands. The neutral-IR FCMP dst is
+             * IR_TYPE_I64 (per src/ir.c:856-858, "Force result tmp to
+             * int for the ICMP/FCMP path below"), and the LLVM FCMP
+             * result is LLVM i1. The cache binding (irDstVarId) makes
+             * the i1 value visible to IR_BR via the existing
+             * direct-i1 path (src/llvm-backend.c:907-921, the
+             * `LLVMIntTypeWidth(cond_ty) == 1` arm).
+             *
+             * Predicate mapping is derived from the aarch64-native
+             * semantic oracle captured in
+             *   evidence/llvm-float01/red/recon-comparison-semantics.txt:
+             *     ==  -> oeq  (NaN -> false)
+             *     !=  -> une  (NaN -> true)
+             *     <   -> olt  (NaN -> false)
+             *     <=  -> ole  (NaN -> false)
+             *     >   -> ogt  (NaN -> false)
+             *     >=  -> oge  (NaN -> false)
+             *
+             * The LLVMRealPredicate enum values are the public C API
+             * constants from <llvm-c/Core.h> (LLVMRealOEQ == 1, ...).
+             * The mapping is performed via llFloatCmpKindToLLVMPred
+             * below, which is the FLOAT01 analogue of the integer
+             * helper llCmpKindToLLVMPred (src/llvm-backend.c:783).
+             */
+            LL_INC_SUPPORTED(lc);
+            if (!ins->r1 || ins->r1->type != IR_TYPE_F64 ||
+                !ins->r2 || ins->r2->type != IR_TYPE_F64) {
+                fprintf(stderr,
+                    "%s: function %s: float compare operand is not "
+                    "F64 (opcode IR_FCMP; r1 type=%d, r2 type=%d); "
+                    "FLOAT01 supports only scalar F64 compares\n",
+                    LLVM_BACKEND_UNSUPPORTED_FLOAT_CMP,
+                    lc->fn->name->data,
+                    (int)(ins->r1 ? ins->r1->type : -1),
+                    (int)(ins->r2 ? ins->r2->type : -1));
+                llEmitCapabilityCountersOnce(lc->totals);
+                exit(1);
+            }
+            LLVMValueRef a = llLowerValue(lc, ins->r1);
+            LLVMValueRef b = llLowerValue(lc, ins->r2);
+            LLVMRealPredicate p = llFloatCmpKindToLLVMPred(ins->extra.cmp_kind);
+            return LLVMBuildFCmp(lc->bld, p, a, b, "");
         }
         case IR_AND:
         case IR_OR:
