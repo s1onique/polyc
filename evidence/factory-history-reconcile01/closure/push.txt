@@ -4,30 +4,38 @@ Pre-push ancestry check:
   git merge-base --is-ancestor origin/main HEAD
   rc=0 (PASS)
 
-Push command:
+Push commands (in order):
+
+  # First push after reconciliation merges
   git push origin HEAD:main
+  -> 429b804..63b44ac  HEAD -> main
 
-Push output:
-  To github.com:s1onique/polyc.git
-     429b804..63b44ac  HEAD -> main
+  # Second push after CLOSE commit
+  git push origin HEAD:main
+  -> 63b44ac..3e07d26  HEAD -> main
 
-Push characteristics:
-  --force                  : NOT USED
-  --force-with-lease       : NOT USED
-  force refspec marker     : NOT USED
-  git push origin HEAD:main: SUCCEEDED
+  # Third push after range-check documentation commit
+  git push origin HEAD:main
+  -> 3e07d26..325bb6d  HEAD -> main
 
-Post-push equality check:
-  git rev-parse origin/main = 63b44ac3d480d6abd7e91051b6330812b3e0d879
-  git rev-parse HEAD        = 63b44ac3d480d6abd7e91051b6330812b3e0d879
+All three pushes succeeded without:
+  --force
+  --force-with-lease
+  force refspec marker
+
+Post-push equality check (most recent fetch):
+  git rev-parse origin/main = 325bb6d9334dd21f3ec85d268c28d2cf9333af7c
+  git rev-parse HEAD        = 325bb6d9334dd21f3ec85d268c28d2cf9333af7c
   PASS (origin/main == HEAD)
 
-Post-push archive ancestry:
+Post-push archive ancestry (verified):
   git merge-base --is-ancestor archive/local-main-before-reconcile HEAD
     rc=0 (PASS)
   git merge-base --is-ancestor archive/origin-main-before-reconcile HEAD
     rc=0 (PASS)
 
-Archive refs unchanged after push:
+Archive refs unchanged after all pushes:
   archive/local-main-before-reconcile  = adb202c0ce45577b36b3685d59cab93ed192dc3e
   archive/origin-main-before-reconcile = 429b804b275712432963391c7cd212858e06e3a0
+  archive-local-main-2026-09           = adb202c0ce45577b36b3685d59cab93ed192dc3e
+  archive-origin-main-2026-09          = 429b804b275712432963391c7cd212858e06e3a0
