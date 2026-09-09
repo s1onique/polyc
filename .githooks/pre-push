@@ -51,6 +51,17 @@ set -eu
 REPO_ROOT=$(git rev-parse --show-toplevel)
 cd "$REPO_ROOT"
 
+# --- ACT-POLYC-FACTORY-HISTORY-RECONCILE01 §20 ---
+# Minimal append-only enforcement: refuse to push if the
+# replacement namespace is non-empty. A larger Git-command
+# firewall is a future Factory ACT (not in scope here).
+if [ -n "$(git replace -l 2>/dev/null)" ]; then
+    echo "POLYC_PRE_PUSH_HALTED=replace-namespace-non-empty"
+    echo "REASON=git replace -l is non-empty; refuse to push."
+    exit 1
+fi
+
+
 # Read all stdin lines into memory up front.
 stdin_lines=$(cat)
 
