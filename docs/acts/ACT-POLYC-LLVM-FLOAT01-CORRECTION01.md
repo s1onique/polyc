@@ -165,13 +165,20 @@ The HANDOFF says:
 Rewrite to:
 
 > x86_64-native F64 float arithmetic. The PolyC x86_64 native
-> backend emits `ucomisd` + `setb` / `setbe` / `setne`, which on
-> NaN returns 1 (unordered), differing from the IEEE-754
-> ordered-comparison convention used by PolyC's LLVM backend.
-> LLVM IR `fcmp olt` semantics are target-independent and always
-> produce false on NaN (per the LLVM LangRef), so the LLVM
-> backend emits `fcmp olt double` regardless of the host target
-> triple. The x86_64 native backend divergence is a PolyC
+> backend emits `ucomisd` + `setb` / `setbe`, which on NaN
+> return 1 (unordered because UCOMISD sets CF=ZF=PF=1), and
+> `sete` / `setne`, which on NaN return 1 and 0 respectively
+> (because unordered sets ZF=1). These four unordered-derived
+> results on sete/setne/setb/setbe diverge from the IEEE-754
+> ordered-comparison convention used by PolyC's LLVM backend;
+> the `seta` / `setae` branches happen to return 0 on NaN
+> because their CF=0 (and ZF=0 for `seta`) preconditions fail
+> under UCOMISD's unordered flags. LLVM IR `fcmp olt` /
+> `fcmp oeq` / `fcmp une` semantics are target-independent
+> and always produce false (ordered) or true (une) on NaN
+> (per the LLVM LangRef), so the LLVM backend emits
+> `fcmp <pred> double` regardless of the host target triple.
+> The x86_64 native backend divergence is a PolyC
 > native-backend defect.
 
 ### M5 - correct fast-math C-API explanation
