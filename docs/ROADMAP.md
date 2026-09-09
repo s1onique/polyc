@@ -224,23 +224,147 @@ constants a unique id space) is out of scope for MEMORY01 and
 would require a separate IR ACT (see ACT §23
 HALT_NEUTRAL_IR_CHANGE_REQUIRED).
 
-### P4 — LLVM core semantic coverage
+### P3.7 — x86 F64 PARITY (PARITY01)
 
-Expand only from evidence.
+Status: **DONE** via ACT-POLYC-NATIVE-X86-FLOAT-CMP-PARITY01.
 
-Likely areas:
+Closure record:
 
-- integer widths/signedness;
-- F32/F64;
-- struct/aggregate memory (after MEMORY01 closes the IR-side
-  constant-id aliasing or after a dedicated GEP ACT);
-- pointer arithmetic / GEP;
-- globals;
-- external functions;
-- aggregate layout;
-- ABI-sensitive values.
+- range `a8ff7c7..590f37b`, five commits (RED, IMPL, EVIDENCE×2, CLOSE);
+- `git diff --check` on the ACT range: `pass`;
+- whitespace errors: 0;
+- untracked files at CLOSE: none in scope;
+- production delta bounded to the x86 backend/encoder surfaces
+  plus tests and evidence.
 
-### P5 — LLVM execution
+PARITY01 is **frozen at CLOSE**. Subsequent ACTs SHALL NOT
+silently extend its witness matrix, fixtures, or negative
+suites; any follow-on work must open a new ACT with its own
+entry identity.
+
+### P4 — Self-hosting substrate (NEW CRITICAL PATH)
+
+The next useful program PolyC wants to host is **its own
+compiler**, not a wider set of LLVM opcodes.
+
+Conceptual transition:
+
+    P3 LLVM SPIKE/CORE/MEMORY  "Can we lower straight-line scalar
+                                + I64 pointer arithmetic to LLVM?"
+                                -> YES, with explicit fences
+        ↓
+    P4 SELF-HOSTING SUBSTRATE  "What is the minimum LLVM substrate
+                                that lets a PolyC-written lexer
+                                compile and run?"
+        ↓
+    B0  BOOTSTRAP01 (lexer/tokenizer)
+        ↓
+    B1  bounded subsystem self-host
+        ↓
+    B2  first self-host
+        ↓
+    B3  bootstrap stability (stage-2 ~= stage-3)
+
+The ACT sequence below is **provisional**. Reorder or merge
+only when fresh bootstrap-capability recon demonstrates that
+B0 needs a different minimal substrate.
+
+    ACT-POLYC-LLVM-INTOPS01        bitwise + shifts + div/rem as
+                                   actually needed by B0
+    ACT-POLYC-LLVM-BYTE-MEMORY01   I8/U8 load/store (B0 needs bytes)
+    ACT-POLYC-LLVM-GEP01           indexed pointer arithmetic
+    ACT-POLYC-LLVM-STRUCT01        struct field access
+    ACT-POLYC-LLVM-ARRAY01         arrays / indexing
+    ACT-POLYC-BOOTSTRAP01          B0: PolyC-written lexer/tokenizer
+                                   that compiles and runs
+
+#### P4 bootstrap capability table
+
+The table below is the live substrate snapshot. Mark `recon`
+where the real LLVM seam has not yet been classified against a
+fixture; treat `recon` as "do not promise it".
+
+| Capability                       | Native | LLVM    | Needed B0 | Planned              |
+| -------------------------------- | -----: | ------: | --------: | -------------------- |
+| Functions/calls                  |      ✅ |       ✅ |         ✅ | done                 |
+| I64 arithmetic / control         |      ✅ |       ✅ |         ✅ | done                 |
+| F64                              |      ✅ |       ✅ |         ❌ | done enough          |
+| I64 pointer load/store           |      ✅ |       ✅ |    useful | MEMORY01             |
+| Bitwise ops                      |  recon | partial |         ✅ | INTOPS01             |
+| Shifts                           |  recon | partial |         ✅ | INTOPS01             |
+| Div/rem                          |  recon | partial |     maybe | INTOPS01             |
+| I8/U8 load/store                 |  recon |       ❌ |         ✅ | BYTE-MEMORY01        |
+| Indexed pointer arithmetic       |  recon |       ❌ |         ✅ | GEP01                |
+| Struct fields                    |  recon |       ❌ |         ✅ | STRUCT01             |
+| Arrays / indexing                |  recon |       ❌ |         ✅ | ARRAY01              |
+| Allocation                       |  recon |    recon |    likely | **decide before B0** |
+| String/byte-slice representation |  recon |    recon |         ✅ | derived from above   |
+
+Rule:
+
+> **The ACT names/order are provisional. Reorder or merge only
+> when fresh bootstrap-capability recon demonstrates that B0
+> needs a different minimal substrate.**
+
+The single most important pre-B0 decision is **allocation**:
+whether the B0 lexer allocates anything at all, or operates
+on a caller-provided byte buffer with a caller-provided
+output array. That decision is recorded here as an explicit
+open question, not as an ACT yet.
+
+#### P4 bootstrap milestones
+
+```text
+B0 — COMPILER-SHAPED
+     A lexer/tokenizer written in PolyC consumes a source byte
+     buffer and emits a deterministic Token stream.
+
+B1 — PARTIAL SELF-HOST
+     One bounded production compiler subsystem is implemented
+     in PolyC and passes differential tests against the existing
+     implementation.
+
+B2 — FIRST SELF-HOST
+     The existing compiler builds a PolyC-written compiler that
+     can compile its own source.
+
+B3 — BOOTSTRAP STABILITY
+     Stage-2 and stage-3 compiler outputs are equivalent under
+     the project's defined reproducibility comparison.
+```
+
+`ACT-POLYC-BOOTSTRAP01` targets **B0 only**. The lexer/tokenizer
+is a deliberately narrow substrate: bytes in, deterministic
+token stream out, no parser, no AST, no codegen, no allocation
+unless the recon proves otherwise.
+
+The SH1–SH6 progression below remains the long-horizon
+vocabulary, but it is **no longer the active critical path**.
+SH1–SH6 vocabulary will be re-stated in B0–B3 terms when
+each milestone ACT opens.
+
+### P5 — LLVM feature depth (PARALLEL BACKLOG, NON-BLOCKING)
+
+The previously-promised "expand only from evidence" widening
+of LLVM core coverage is demoted from the critical path to a
+**parallel backlog**. Each item below opens only when fresh
+recon demonstrates a concrete consumer.
+
+```text
+ACT-POLYC-LLVM-FLOAT02     F64 division / FREM
+F32                         narrow FP conversion / parity
+vectors                     SIMD / fixed / scalable
+broader FP conversions      signed/unsigned, sitofp/uitofp, casts
+LLVM JIT / ORC              execution + persistent session
+debug information           DWARF / source maps
+TargetMachine / object      object emission before execution
+globals                     address-space, linkage, initializers
+external functions          declarations + calling conventions
+```
+
+None of these block B0. None of these is the next ACT.
+
+### P6 — LLVM execution (deferred)
 
 Establish native-code execution and semantic parity before introducing a
 persistent LLVM JIT environment.
@@ -253,7 +377,7 @@ Possible progression:
       ->
     executable witness
 
-### P6 — LLVM ORC
+### P7 — LLVM ORC (deferred)
 
 Only after core lowering and execution semantics are trustworthy.
 
@@ -270,7 +394,7 @@ Measure separately:
 
 Compare against the inherited native JIT rather than against intuition.
 
-### P7 — Persistent compiler session
+### P8 — Persistent compiler session
 
 Generalize the live environment around a persistent semantic/compiler
 session shared by:
@@ -279,7 +403,7 @@ session shared by:
 - agent API;
 - embedded API.
 
-### P8 — Agent protocol
+### P9 — Agent protocol
 
 Candidate operations:
 
