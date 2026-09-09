@@ -1,0 +1,114 @@
+ACT-POLYC-LLVM-FLOAT01 / R7 / R8 / R9 recon (native semantic oracle)
+====================================================================
+
+Host:        aarch64-apple-darwin23.6.0 (Apple M3)
+Native:      aarch64 JIT + AOT (the host's native backends)
+Probe:       hcc -jit /tmp/probe*.HC  (results below)
+
+Probe inputs:
+    F64 a = 1.0, b = 1.0, c = 2.0
+    F64 nan_v = 0.0 / 0.0
+    F64 pinf  = 1.0 / 0.0
+    F64 ninf  = -1.0 / 0.0
+    F64 pzero = 0.0, nzero = -0.0
+
+=== ordinal semantics (PolyC source -> native JIT) ===
+    a==b (1.0==1.0):        1
+    a!=b (1.0!=1.0):        0
+    a<c  (1.0<2.0):         1
+    a<=b (1.0<=1.0):        1
+    c>a  (2.0>1.0):         1
+    c>=c (2.0>=2.0):        1
+
+=== NaN operand semantics ===
+    nan_v==a:               0
+    nan_v!=a:               1
+    nan_v<a:                0
+    nan_v<=a:               0
+    nan_v>a:                0
+    nan_v>=a:               0
+    a==nan_v:               0
+    a!=nan_v:               1
+    a<nan_v:                0
+    a<=nan_v:               0
+    a>nan_v:                0
+    a>=nan_v:               0
+
+=== +/- inf operand semantics ===
+    pinf==pinf:             1
+    pinf<a:                 0
+    ninf<a:                 1
+    ninf==ninf:             1
+    pinf<ninf:              0
+
+=== +0.0 vs -0.0 ===
+    pzero==nzero:           1   (positive and negative zero compare equal)
+    pzero<nzero:            0   (neither < nor >)
+    pzero>nzero:            0
+    1.0/pzero == 1.0/nzero: 0   (1/+0 = +inf, 1/-0 = -inf; distinct)
+
+=== LLVM FCMP predicate derivation ===
+
+LLVM's `fcmp` distinguishes ordered (NaN -> false) and unordered (NaN -> true) predicates:
+
+    ordered predicates (NaN -> false): oeq, one, olt, ole, ogt, oge, ord
+    unordered predicates (NaN -> true): ueq, une, ult, ule, ugt, uge, uno
+
+The probe results above show PolyC's behaviour for NaN:
+    ==  -> 0 (NaN is NOT equal)
+    !=  -> 1 (NaN is NOT equal, hence != is true)
+    <   -> 0 (NaN is incomparable)
+    <=  -> 0
+    >   -> 0
+    >=  -> 0
+
+This pattern matches ONLY the strict-ordered LLVM predicates + unordered for !=:
+
+    ==  -> oeq
+    !=  -> une
+    <   -> olt
+    <=  -> ole
+    >   -> ogt
+    >=  -> oge
+
+Native aarch64 codegen confirmation:
+
+The aarch64 AOT lowers IR_CMP_BR for IR_FCMP via `fcmp d0, d1; b.<cond>` with cond =
+aarch64CcFor(kind, is_float). The condition codes are:
+
+    IR_CMP_LT (float) -> "mi" -> aarch64 cset "mi" returns 0 for NZCV=0011 (NaN fcmp result)
+    IR_CMP_LE (float) -> "ls" -> cset "ls" returns 0 for NZCV=0011
+    IR_CMP_GT (float) -> "gt" -> cset "gt" returns 0 for NZCV=0011
+    IR_CMP_GE (float) -> "ge" -> cset "ge" returns 0 for NZCV=0011
+    IR_CMP_EQ (float) -> "eq" -> cset "eq" returns 0 for NZCV=0011
+    IR_CMP_NE (float) -> "ne" -> cset "ne" returns 1 for NZCV=0011
+
+Probe results exactly match the cset / b.<cond> semantics on aarch64 for NZCV=0011.
+
+NaN operand availability: 0.0 / 0.0 produces NaN at runtime; no syntax extension required.
++-inf: 1.0/0.0 and -1.0/0.0 produce +-inf; no syntax extension required.
++-0.0: -0.0 is a direct literal; positive 0.0 too. No syntax extension required.
+
+CONFLICT NOTE: x86_64 backend uses `ucomisd + setb` for IR_CMP_LT, which on x86 returns
+1 for NaN (unordered mapping). x86_64 native semantic thus diverges from aarch64 native
+semantic on `<`, `<=`, `!=` (NaN -> true on x86, false on aarch64). The FLOAT01 ACT's
+host is aarch64 (Apple M3). The LLVM backend produces target-independent IR; LLVM's
+own code-generator decides which machine instruction to emit per predicate. The binding
+predicate map is therefore the **aarch64-native** one, because (a) the LLVM backend runs
+on the host, (b) the host is aarch64, (c) the host's native semantic is the de facto
+PolyC semantic on this machine, and (d) any future x86_64 native preservation ACT would
+have to resolve its own x86_64 vs aarch64 conflict independently.
+
+This is recorded as residue, not as a HALT: the ACT authorises a vertical path on the
+host; host-native semantic IS the binding semantic for that vertical path.
+
+=== binding comparison matrix (host = aarch64) ===
+
+| PolyC op | NaN result | LLVM predicate | proof |
+|----------|------------|----------------|-------|
+| ==       | 0 (false)  | LLVMRealOEQ    | probe + cset "eq" returns 0 for NZCV=0011; LLVM `oeq` returns false for NaN |
+| !=       | 1 (true)   | LLVMRealUNE    | probe + cset "ne" returns 1 for NZCV=0011; LLVM `une` returns true for NaN |
+| <        | 0 (false)  | LLVMRealOLT    | probe + cset "mi" returns 0 for NZCV=0011; LLVM `olt` returns false for NaN |
+| <=       | 0 (false)  | LLVMRealOLE    | probe + cset "ls" returns 0 for NZCV=0011; LLVM `ole` returns false for NaN |
+| >        | 0 (false)  | LLVMRealOGT    | probe + cset "gt" returns 0 for NZCV=0011; LLVM `ogt` returns false for NaN |
+| >=       | 0 (false)  | LLVMRealOGE    | probe + cset "ge" returns 0 for NZCV=0011; LLVM `oge` returns false for NaN |

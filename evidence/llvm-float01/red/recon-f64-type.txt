@@ -1,0 +1,112 @@
+ACT-POLYC-LLVM-FLOAT01 / R1-R6 / R10 recon (neutral-IR shapes)
+==============================================================
+
+Command: ./hcc --install-dir=.../build/test-prefix --dump-ir <file>
+
+R1 / R2: F64 source spelling and neutral-IR type
+-----------------------------------------------
+Source for parameter:
+    F64 Identity(F64 x) { return x; }
+
+--dump-ir (after opt):
+    f64 Identity(%p1 f64 param) {
+      bb1 -> predecessors:  {}  successors: {1}
+        ret      %p1 f64 param  ; line 3
+    }
+
+Findings:
+    * `F64` is the keyword; lowercase `f64` is the printer form.
+    * The neutral-IR type field is printed as `f64` (mapped from IR_TYPE_F64).
+    * The IR function header line is `f64 Identity(%p1 f64 param)` - return type and parameter type are both `f64`.
+    * F64 is **explicit at the neutral-IR boundary** (R2 PASS).
+    * No F32 / extended precision appears for the F64 source.
+
+R3: F64 constant representation
+-------------------------------
+Source: F64 Const() { return 3.14; }
+
+--dump-ir:
+    f64 Const() {
+      bb1 ...
+        ret      3.140000 f64 const float  ; line 3
+    }
+
+Findings:
+    * Constant IR value kind: IR_VAL_CONST_FLOAT (per src/ir-types.h:207).
+    * Printer label: `f64 const float`.
+    * Canonical member carrying the value: `as._f64` (per src/ir-types.h:336 and src/ir.c:66-69 irConstFloat()).
+    * The canonical constructor sets `ir_value->as._f64 = _f64;` and `type = IR_TYPE_F64`.
+    * Same union-aliasing concern as MEMORY01 RED: `as._f64` overlaps `as.var` (the first 4 bytes of as are IrVar.id, next 2 are size). A literal constant's bit pattern sets `irVarId(v)` to (u32)(lower 4 bytes of double bits).
+      Example: 0.0 -> bits 0x0000000000000000 -> irVarId=0 (collides with id 0).
+      Example: 1.0 -> bits 0x3FF0000000000000 -> irVarId=0 (still collides!).
+      Example: 0x100000000 (2^-1022 subnormal-ish) -> irVarId=1 (collides with first TMP!).
+    * Implication for FLOAT01: the cache-bypass fix MEMORY01 applied for IR_VAL_CONST_INT
+      (src/llvm-backend.c:687) MUST be extended to also bypass the cache for IR_VAL_CONST_FLOAT,
+      otherwise the constant will be silently substituted with whatever TMP / PARAM happens to share its id.
+    * Conclusion: R3 PASS, with the explicit cache-bypass obligation for IR_VAL_CONST_FLOAT documented for IMPL.
+
+R4 / R5: arithmetic / comparison opcode shapes
+---------------------------------------------
+Source for FADD:
+    F64 Add(F64 a, F64 b) { return a + b; }
+
+--dump-ir (after opt):
+    f64 Add(%p1 f64 param, %p3 f64 param) {
+      bb1 ...
+        fadd     %t6 f64 tmp, %p1 f64 param, %p3 f64 param  ; line 3
+        ret      %t6 f64 tmp  ; line 3
+    }
+
+Source for FSUB / FMUL: identical pattern, opcode `fsub` / `fmul`.
+
+Source for FCMP:
+    I64 CmpEq(F64 a, F64 b) { if (a == b) return 1; return 0; }
+
+--dump-ir (after opt):
+    i64 CmpEq(%p1 f64 param, %p3 f64 param) {
+      bb1 ...
+        cmp_eq   %t8 i64 tmp, %p1 f64 param, %p3 f64 param  ; line 1
+        br       %t8 i64 tmp, bb3, bb4  ; line 1
+      ...
+    }
+
+Findings:
+    * IR_FADD dst is f64-typed (`%t6 f64 tmp`), src operands are f64. dst->type = IR_TYPE_F64.
+    * IR_FSUB / IR_FMUL: same shape.
+    * IR_FCMP dst is **i64-typed** (`%t8 i64 tmp`) - per src/ir.c:856-858, the result tmp is forced to IR_TYPE_I64 to carry the 0/1 predicate, same as IR_ICMP. extra.cmp_kind carries IR_CMP_EQ / IR_CMP_NE / IR_CMP_LT / IR_CMP_LE / IR_CMP_GT / IR_CMP_GE (no ordered/unordered variants are emitted by the frontend).
+    * IR_BR consumes the i64 dst of IR_FCMP via `dst` (per src/ir-eval.c).
+
+R6: FCMP -> IR_BR branch contract
+---------------------------------
+Findings:
+    * IR_FCMP dst is IR_TYPE_I64 (same neutral-IR type as IR_ICMP).
+    * IR_BR consumes a `IR_TYPE_I64` predicate via its `dst` field (per src/llvm-backend.c:871-878).
+    * The existing LLVM IR_BR code path (src/llvm-backend.c:871-987) does:
+        - Refuse non-i64 dst.
+        - Look up the LLVMValueRef bound to irVarId(dst).
+        - Dispatch by LLVM physical type:
+            - i1 -> LLVMBuildCondBr directly.
+            - i64 -> DEFENSIVE_INVARIANT_TRIPPED (refuses to miscompile).
+        - This means the path is i1-only for the supported subset; if FCMP physically produces i1 (which LLVMBuildFCmp does) and is cached under irVarId, IR_BR uses it directly.
+    * Conclusion: **R6 PASS**. FCMP result can remain LLVM i1, and the existing IR_BR direct-i1 path accepts it without any new infrastructure.
+    * No i64-trunc, no truthiness reconstruction, no new branch representation is needed for FLOAT01.
+
+R10: Capability table state
+---------------------------
+Pre-FLOAT01 capability table (relevant rows only, class 0=SUPPORTED 1=REJECTED 2=SHAPE_DEPENDENT 3=UNREACHABLE):
+
+ordinal=17 op=IR_FADD     class=1 diag=LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH
+ordinal=18 op=IR_FSUB     class=1 diag=LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH
+ordinal=19 op=IR_FMUL     class=1 diag=LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH
+ordinal=20 op=IR_FDIV     class=1 diag=LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH
+ordinal=21 op=IR_FNEG     class=1 diag=LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH
+ordinal=30 op=IR_FCMP     class=1 diag=LLVM_BACKEND_UNSUPPORTED_FLOAT_CMP
+ordinal=31 op=IR_FPTRUNC  class=1 diag=LLVM_BACKEND_UNSUPPORTED_CONVERSION
+ordinal=32 op=IR_FPEXT    class=1 diag=LLVM_BACKEND_UNSUPPORTED_CONVERSION
+ordinal=33 op=IR_FPTOUI   class=1 diag=LLVM_BACKEND_UNSUPPORTED_CONVERSION
+ordinal=34 op=IR_FPTOSI   class=1 diag=LLVM_BACKEND_UNSUPPORTED_CONVERSION
+ordinal=35 op=IR_UITOFP   class=1 diag=LLVM_BACKEND_UNSUPPORTED_CONVERSION
+ordinal=36 op=IR_SITOFP   class=1 diag=LLVM_BACKEND_UNSUPPORTED_CONVERSION
+ordinal=42 op=IR_BITCAST  class=1 diag=LLVM_BACKEND_UNSUPPORTED_BITCAST
+
+All F64-relevant opcodes are REJECTED. The REDs will exercise these and observe non-zero rc + the named diagnostic on stderr.
