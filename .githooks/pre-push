@@ -52,14 +52,31 @@ REPO_ROOT=$(git rev-parse --show-toplevel)
 cd "$REPO_ROOT"
 
 # --- ACT-POLYC-FACTORY-HISTORY-RECONCILE01 §20 ---
-# Minimal append-only enforcement: refuse to push if the
-# replacement namespace is non-empty. A larger Git-command
-# firewall is a future Factory ACT (not in scope here).
+# --- ACT-POLYC-FACTORY-APPEND-ONLY-GUARD01 ---
+# Append-only enforcement for authoritative main. The hook
+# enforces graph properties of the proposed ref transition,
+# NOT a blacklist of `git push` command-line flags.
+#
+# 1. refuse to push if `git replace` namespace is non-empty
+#    (no replacement objects are ever permitted);
+# 2. refuse to delete `refs/heads/main` (delete-and-recreate
+#    is the canonical rewrite bypass);
+# 3. refuse any update of `refs/heads/main` that is not a
+#    fast-forward of the remote tip.
+#
+# Topic branches are intentionally NOT policed by this ACT.
+# The git-command-string blacklist approach (parsing
+# `--force`, `+main`, etc.) is explicitly avoided because
+# Git's pre-push hook contract gives us the resulting ref
+# transition directly, which is both simpler and stronger.
 if [ -n "$(git replace -l 2>/dev/null)" ]; then
     echo "POLYC_PRE_PUSH_HALTED=replace-namespace-non-empty"
     echo "REASON=git replace -l is non-empty; refuse to push."
     exit 1
 fi
+
+# Zero-SHA sentinel that Git uses for ref deletion.
+ZERO_SHA=0000000000000000000000000000000000000000
 
 
 # Read all stdin lines into memory up front.
@@ -110,6 +127,37 @@ while IFS=' ' read -r local_ref local_sha remote_ref remote_sha; do
             continue
             ;;
     esac
+
+    # --- ACT-POLYC-FACTORY-APPEND-ONLY-GUARD01 ---
+    # Authoritative-main guard. Applies ONLY to refs/heads/main.
+    #
+    # Rule 1: refuse to delete refs/heads/main. The proposed
+    # transition is `local_sha -> 0000...`, regardless of what
+    # the user typed on the command line.
+    #
+    # Rule 2: refuse any update of refs/heads/main that is not
+    # a fast-forward of the remote tip. We use
+    # `git merge-base --is-ancestor` against the resulting
+    # transition: remote_sha must be an ancestor of local_sha.
+    #
+    # We do NOT parse `git push` arguments; we look at the
+    # resulting ref transition, which is what matters.
+    if [ "$local_ref" = "refs/heads/main" ]; then
+        if [ "$remote_sha" = "$ZERO_SHA" ]; then
+            echo "POLYC_PRE_PUSH_HALTED=main-deletion"
+            echo "REASON=authoritative main must not be deleted;"
+            echo "       refusing push (ACT-POLYC-FACTORY-APPEND-ONLY-GUARD01)."
+            exit 1
+        fi
+        if ! git merge-base --is-ancestor "$remote_sha" "$local_sha" 2>/dev/null; then
+            echo "POLYC_PRE_PUSH_HALTED=main-non-fast-forward"
+            echo "REASON=authoritative main transition is not a fast-forward;"
+            echo "       remote_sha=$(printf '%s' "$remote_sha" | cut -c1-12)"
+            echo "       local_sha=$(printf '%s' "$local_sha" | cut -c1-12)"
+            echo "       refusing push (ACT-POLYC-FACTORY-APPEND-ONLY-GUARD01)."
+            exit 1
+        fi
+    fi
 
     # Determine the mode for this ref update.
     #
