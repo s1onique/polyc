@@ -1,0 +1,51 @@
+== ACT-POLYC-LLVM-MEMORY01-CORRECTION02 EVIDENCE ==
+Date: 09 Sep 2026
+Build: make clean; make llvm-all
+
+=== positive matrix ===
+PASS  src/tests/llvm-spike/01_const.HC
+PASS  src/tests/llvm-spike/02_add.HC
+PASS  src/tests/llvm-spike/03_sub_mul.HC
+PASS  src/tests/llvm-spike/04_cmp_branch.HC
+PASS  src/tests/llvm-spike/05_call.HC
+
+=== cmp predicate matrix ===
+PASS  04_cmp_branch: icmp sgt
+
+=== negative matrix ===
+PASS  src/tests/llvm-spike/neg_f64.HC (negative, LLVM_BACKEND_UNSUPPORTED_TYPE)
+PASS  src/tests/llvm-spike/neg_struct.HC (negative, LLVM_BACKEND_UNSUPPORTED_TYPE)
+PASS  src/tests/llvm-spike/red_idiv_unclassified.HC (negative, LLVM_BACKEND_UNSUPPORTED_INT_DIVISION)
+PASS  src/tests/llvm-spike/red_local_multi_def.HC (negative, LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL)
+PASS  src/tests/llvm-spike/red_conversion_trunc.HC (negative, LLVM_BACKEND_UNSUPPORTED_CONVERSION)
+PASS  src/tests/llvm-spike/red_remainder_mod.HC (negative, LLVM_BACKEND_UNSUPPORTED_INT_REMAINDER)
+PASS  src/tests/llvm-spike/red_shift_shl.HC (negative, LLVM_BACKEND_UNSUPPORTED_INT_SHIFT)
+PASS  neg_asm: parse-time rejection (NOT a backend witness)
+
+=== conservation: no native fallback ===
+PASS  01_const.ll: starts with LLVM ModuleID
+
+=== determinism ===
+LLVM backend capability contract: ok (56 rows, ordinal binding)
+CAPABILITY_COUNTERS supported=1 rejected=0 shape_dependent=0 defensive=0 unreachable=0
+PASS  determinism: 01_const twice
+
+=== multi-def SSA-local rejection (CORRECTION01-CORRECTION01) ===
+PASS  red_local_multi_def: SSA-local multi-def rejected
+
+=== capability counters (RESUME01 C2) ===
+=== capability counters ===
+SUPPORTED           : 14
+REJECTED            : 4
+SHAPE_DEPENDENT     : 7
+DEFENSIVE_INVARIANT : 0
+UNREACHABLE_ON_LLVM : 0
+==============================
+PASS  counter gate: matrix-wide inequalities bound
+
+LEGACY_MATRIX_PASS=17
+COUNTER_GATE=PASS
+
+=================================
+Summary: PASS=18  FAIL=0
+=================================
