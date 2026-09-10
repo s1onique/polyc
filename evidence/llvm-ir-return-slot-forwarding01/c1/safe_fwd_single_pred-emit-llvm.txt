@@ -1,0 +1,14 @@
+LLVM backend capability contract: ok (56 rows, ordinal binding)
+CAPABILITY_COUNTERS supported=2 rejected=0 shape_dependent=1 defensive=0 unreachable=0
+; ModuleID = 'polyc_module'
+source_filename = "polyc_module"
+
+define i64 @FwdSafe(ptr %0) {
+bb1:
+  %ld_deref = load i64, ptr %0, align 4
+  %1 = add i64 %ld_deref, 1
+  ret i64 %1
+
+dead_exit:                                        ; No predecessors!
+  unreachable
+}

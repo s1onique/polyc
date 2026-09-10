@@ -85,10 +85,10 @@ Defence-in-depth changes to `llCollapseStoreValue` /
 proves those seams are not the producer of the invalid IR;
 a simultaneous change would destroy causal attribution.
 
-## 2. RED (mandatory, all must fail under `opt --passes=verify`)
+## 2. RED (mandatory, all must fail `LLVMVerifyModule`)
 
-The RED fixtures must be committed BEFORE this ACT's IMPL
-commit (so the failing witness is on record):
+The RED fixtures are committed BEFORE this ACT's IMPL
+commit so the failing witness is on record:
 
 ```text
 pos_b0_compare_digit.HC        FAIL  (B0-shaped multi-block
@@ -104,13 +104,63 @@ single_cond_probe.HC           FAIL  (I64-only generic
                                        multi-predecessor exit)
 ```
 
-All three fixtures must produce LLVM IR that
-`opt --passes=verify` rejects with
-`"Instruction does not dominate all uses!"`.
+For each fixture, the actual RED seam is the
+compiler's INTERNAL `LLVMVerifyModule` (src/llvm-backend.c
+around line 2317):
 
-## 3. Source change scope (bounded)
+```text
+$ ./hcc --install-dir=/tmp/polyc-install --emit-llvm \
+    src/tests/llvm-byte-memory01/<fixture>.HC
+LLVM_BACKEND_VERIFY_FAILED: Instruction does not dominate all uses!
+  <bad instruction + use>
+LLVM_BACKEND_VERIFY_FAILED: Instruction does not dominate all uses!
+  <bad instruction + use>
+CAPABILITY_COUNTERS ...
+EXIT=1
+```
 
-1. `src/ir-optimise.c` — repair `irForwardReturnSlot`
+The compiler rejects the invalid module BEFORE
+producing a `.ll` file. **No `.ll` file is produced at
+RED.** `opt --passes=verify` is therefore not the
+observable RED seam unless a pre-verifier dump facility
+is added to the compiler -- and that machinery is
+explicitly FORBIDDEN for this ACT (reviewer P0: "Do not
+add a debug/dump production feature merely to satisfy
+the ACT wording").
+
+The CAPABILITY_COUNTERS line is the post-condition
+evidence that the LLVM backend was invoked and reached
+the verifier gate.
+
+## 3. GREEN (mandatory, all must pass full pipeline)
+
+For each fixture, after IMPL:
+
+```text
+$ ./hcc --install-dir=/tmp/polyc-install --emit-llvm \
+    src/tests/llvm-byte-memory01/<fixture>.HC
+EXIT=0
+CAPABILITY_COUNTERS supported=N rejected=0 shape_dependent=K defensive=0 unreachable=0
+# (a .ll file is emitted)
+
+$ llvm-as <module.ll | opt --passes=verify
+EXIT=0
+```
+
+The GREEN contract is strictly stronger than RED:
+the compiler must NOT reject the module internally,
+AND an independent `llvm-as` + `opt --passes=verify`
+chain must accept it. This is the ideal before/after
+proof:
+
+```text
+RED    internal verifier catches malformed SSA
+GREEN  compiler emits module + independent LLVM tools accept it
+```
+
+## 4. Source change scope (bounded)
+
+1. `src/ir-optimise.c` -- repair `irForwardReturnSlot`
    (lines 256-309) so the rewrite `rt->dst = st->r1;` only
    fires when the exit block has a single predecessor.
    The exact mechanism is:
@@ -142,22 +192,56 @@ All three fixtures must produce LLVM IR that
 4. NO change to the neutral-IR opcode grammar.
 5. NO change to dispatch-table coverage machinery.
 
-## 4. GREEN (mandatory)
+## 5. Negative control (mandatory, structural)
+
+A single-predecessor exit block case
+(`src/tests/llvm-byte-memory01/safe_fwd_single_pred.HC`)
+must STILL observe the `irForwardReturnSlot` rewrite.
+This proves the guard is not over-broad (it does not
+regress the safe-case forwarding).
+
+**Structural proof required:** the NC is verified
+NOT by "the program still passes" (a future change that
+disables `irForwardReturnSlot` entirely would also pass
+the binary compile, falsifying the ACT's claim). The NC
+is verified by neutral-IR before/after inspection:
 
 ```text
-pos_b0_compare_digit.HC        PASS
-i64_collapse_probe.HC          PASS
-single_cond_probe.HC           PASS
+before:
+  bb -> predecessors: {1}
+    store    %t3 i64 tmp, %l6 i64 local
+    load     %t8 i64 tmp, %t3 i64 tmp
+    ret      %t8 i64 tmp
+
+after (pre-IMPL, current behaviour):
+  bb -> predecessors: {1}
+    ret      %l6 i64 local
+
+after (post-IMPL, with guard):
+  bb -> predecessors: {1}
+    ret      %l6 i64 local   <- identical to pre-IMPL
 ```
 
-## 5. Negative control (mandatory)
+If the rewrite fires in BOTH the pre-IMPL AND post-IMPL
+shapes (the ret's operand is a function-local rather than
+a load-result tmp), the guard is proven not over-broad.
+If a future change disables the rewrite entirely, the
+post-IMPL shape will revert to `ret %t8` (or
+`store; load; ret %t8` unchanged), falsifying the
+ACT's claim.
 
-A single-predecessor exit block case (e.g. a previously
-forwarding fixture from `evidence/llvm-intops01/` or a
-purpose-built fixture) must STILL observe the
-`irForwardReturnSlot` rewrite. This proves the guard is
-not over-broad (it does not regress the safe-case
-forwarding).
+The structural before/after dump is captured at C1 RED
+via:
+
+```text
+$ ./hcc --install-dir=/tmp/polyc-install --dump-ir \
+    src/tests/llvm-byte-memory01/safe_fwd_single_pred.HC \
+    > evidence/llvm-ir-return-slot-forwarding01/c1/safe_fwd_single_pred-dump-ir.txt
+```
+
+The post-IMPL dump (at C3 EVIDENCE / CLOSE) must show
+the same rewrite fired (ret operand is `%l6`, a function-
+local, not `%t8`, a load result).
 
 ## 6. IR / ABI / neutral-IR boundary changes
 
@@ -168,26 +252,28 @@ blocks.
 
 ## 7. Closure gates
 
-| Gate                         | Status requirement                                        |
-|------------------------------|-----------------------------------------------------------|
-| `byte-memory01-test.sh`      | PASS — including `pos_b0_compare_digit` GREEN            |
-| `pos_b0_compare_digit` verify| PASS — `opt --passes=verify` accepts                     |
-| `i64_collapse_probe` verify  | PASS — `opt --passes=verify` accepts                     |
-| `single_cond_probe` verify   | PASS — `opt --passes=verify` accepts                     |
-| Negative control             | PASS — single-predecessor forwarding still observed      |
-| `cap-table-verifier`         | PASS                                                      |
-| `intops01-test`              | PASS=4 FAIL=0                                             |
-| `spike-test`                 | PASS=18 FAIL=0                                            |
-| `memory01-test`              | PASS=6 FAIL=0                                             |
-| `float01-test`               | PASS=29 FAIL=0                                            |
-| `factory-v2-test`            | PASS=35 FAIL=0                                            |
-| `factory-append-only-test`   | PASS=11 FAIL=0                                            |
-| `gate-fast`                  | VERDICT=PASS, `git diff --check` clean                    |
+| Gate                              | Status requirement                                        |
+|-----------------------------------|-----------------------------------------------------------|
+| `pos_b0_compare_digit` (RED->GREEN)| `hcc --emit-llvm` EXIT=0 AND `.ll` is produced AND independent `opt --passes=verify` accepts |
+| `i64_collapse_probe` (RED->GREEN) | same                                                     |
+| `single_cond_probe` (RED->GREEN)  | same                                                     |
+| Negative control (NC, structural) | pre-IMPL AND post-IMPL `--dump-ir` show the same rewrite (`ret %l6`) on the single-predecessor exit block; binary compile still EXIT=0 |
+| `byte-memory01-test.sh`           | PASS — including `pos_b0_compare_digit` GREEN            |
+| `cap-table-verifier`              | PASS                                                      |
+| `intops01-test`                   | PASS=4 FAIL=0                                             |
+| `spike-test`                      | PASS=18 FAIL=0                                            |
+| `memory01-test`                   | PASS=6 FAIL=0                                             |
+| `float01-test`                    | PASS=29 FAIL=0                                            |
+| `factory-v2-test`                 | PASS=35 FAIL=0                                            |
+| `factory-append-only-test`        | PASS=11 FAIL=0                                            |
+| `gate-fast`                       | VERDICT=PASS, `git diff --check` clean                    |
 
 ## 8. Out-of-scope
 
 - changes to `src/llvm-backend.c` (defence-in-depth
   excluded; causal attribution preserved)
+- changes to `llCollapseStoreValue`
+- changes to `llDetectCollapsibleReturn`
 - GEP / pointer indexing
 - `ptrtoint` / `inttoptr`
 - `alloca` byte array
@@ -208,12 +294,12 @@ blocks.
 After IR-RETURN-SLOT-FORWARDING01 closes, the next ACTs in
 sequence are:
 
-- `ACT-POLYC-LLVM-GEP01` — bounded GEP/indexing for arrays
+- `ACT-POLYC-LLVM-GEP01` -- bounded GEP/indexing for arrays
   / structs (can now proceed safely; the dominance bug no
   longer lurks upstream).
-- `ACT-POLYC-LLVM-STRUCT01` — struct field access.
-- `ACT-POLYC-LLVM-ARRAY01` — arrays / indexing.
-- `ACT-POLYC-BOOTSTRAP01` — B0: PolyC-written lexer /
+- `ACT-POLYC-LLVM-STRUCT01` -- struct field access.
+- `ACT-POLYC-LLVM-ARRAY01` -- arrays / indexing.
+- `ACT-POLYC-BOOTSTRAP01` -- B0: PolyC-written lexer /
   tokenizer that compiles and runs.
 
 If after IMPL the GREEN test suite demonstrates that
@@ -226,17 +312,31 @@ opens with the newly authorized second seam.
 ## 10. Hand-off summary (descriptive)
 
 ```text
-ENTRY       = dc99882 (CORRECTION01 CLOSE)
+ENTRY       = 8871f32 (ROADMAP range-check note)
 FIRST       = <RED commit for this ACT>
 CLOSE       = pending
 
 Substance   = neutral-IR irForwardReturnSlot single-
               predecessor guard (Repair E, ~2 lines in
               src/ir-optimise.c).
-RED         = pos_b0_compare_digit.HC FAIL,
-              i64_collapse_probe.HC FAIL,
-              single_cond_probe.HC FAIL.
-GREEN       = all three + negative control + conservation.
+
+RED         = pos_b0_compare_digit.HC  EXIT=1
+                LLVM_BACKEND_VERIFY_FAILED
+              i64_collapse_probe.HC    EXIT=1
+                LLVM_BACKEND_VERIFY_FAILED
+              single_cond_probe.HC     EXIT=1
+                LLVM_BACKEND_VERIFY_FAILED
+
+NC          = safe_fwd_single_pred.HC EXIT=0,
+              before/after --dump-ir proves the
+              irForwardReturnSlot rewrite fires on the
+              single-predecessor exit block (ret operand
+              is %l6, a function-local, not %t8, a load
+              result).
+
+GREEN (post-IMPL) = all three + structural NC +
+                    conservation.
+
 CONSERVATION= ALREADY_SUPPORTED LLVM collapse seam
               preserved verbatim; byte-memory01-test still
               PASS=37; spike/memory01/float01 tests

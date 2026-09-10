@@ -411,15 +411,32 @@ CORRECTION01  ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME01-CORRECTION01
               itself remains immutable evidence.
 
 IR-RETURN-SLOT-FORWARDING01  ACT-POLYC-IR-RETURN-SLOT-FORWARDING01
-  ENTRY    = <HALT-CLOSE commit for RESUME01>
-  FIRST    = <RED commit for this ACT, contains the three
-              failing regression fixtures>
-  CLOSE    = pending  (awaiting C2 IMPL)
+  ENTRY    = 8871f32 (ROADMAP range-check note)
+  FIRST    = <C1 RED commit, contains the three failing
+              regression fixtures and the structural NC>
+  CLOSE    = pending  (awaiting C2 IMPL after C1 RED review)
   MISSION  = make irForwardReturnSlot dominance-safe
   REPAIR   = Repair E: single-predecessor guard before
               the rewrite. ~2 lines in src/ir-optimise.c.
               CONSERVATIVE sufficient condition, not a
               general-necessity claim.
+  RED SEAM = the compiler's INTERNAL LLVMVerifyModule
+              (src/llvm-backend.c ~line 2317), NOT
+              `opt --passes=verify`. Per reviewer P0:
+              "Do not add a debug/dump production feature
+              merely to satisfy the ACT wording." The RED
+              contract is:
+                hcc --emit-llvm <fixture>.HC  EXIT=1
+                  LLVM_BACKEND_VERIFY_FAILED: Instruction
+                    does not dominate all uses!
+              No .ll file is produced at RED.
+  NC SEAM  = STRUCTURAL, not binary. The NC fixture
+              (safe_fwd_single_pred.HC) must show the
+              irForwardReturnSlot rewrite firing on its
+              single-predecessor exit block in BOTH the
+              pre-IMPL AND post-IMPL --dump-ir output. The
+              ret operand is a function-local (%l6) not a
+              load-result tmp (%t8).
   CONSERVATION:
               ALREADY_SUPPORTED LLVM collapse seam preserved
               verbatim (defence-in-depth EXCLUDED to preserve
@@ -482,25 +499,42 @@ Range-check PASS expected when:
 
 #### C2 IMPL authorisation gate (next reviewer action)
 
-C2 IMPL on `IR-RETURN-SLOT-FORWARDING01` requires:
+C1 RED is now authorised. C2 IMPL on
+`IR-RETURN-SLOT-FORWARDING01` requires:
 
 ```text
-1. RED phase: commit i64_collapse_probe.HC and
-   single_cond_probe.HC as regression fixtures in
-   src/tests/llvm-byte-memory01/ (alongside the
-   existing pos_b0_compare_digit.HC). All three must
-   FAIL `opt --passes=verify` at the RED witness.
-2. Substance: single-predecessor guard at
+1. C1 RED phase (DONE at the commit that follows this
+   ROADMAP update): commit i64_collapse_probe.HC,
+   single_cond_probe.HC, safe_fwd_single_pred.HC as
+   regression fixtures in src/tests/llvm-byte-memory01/.
+   RED witness:
+     hcc --emit-llvm <fixture>.HC  EXIT=1
+       LLVM_BACKEND_VERIFY_FAILED: Instruction does
+       not dominate all uses!
+   NC witness (structural):
+     --dump-ir shows rewrite fires pre-IMPL on
+     single-predecessor exit block.
+
+2. C2 IMPL: single-predecessor guard at
    irForwardReturnSlot (Repair E, ~2 lines in
    src/ir-optimise.c). Do NOT change llvm-backend.c,
    llCollapseStoreValue, llDetectCollapsibleReturn.
-3. GREEN fixtures:
+
+3. C2 GREEN fixtures:
    - pos_b0_compare_digit.HC        PASS
-   - i64_collapse_probe.HC          PASS
-   - single_cond_probe.HC           PASS
-4. Negative control:
-   - safe single-predecessor case still observes
-     forwarding (proves the guard is not over-broad).
+     hcc --emit-llvm EXIT=0 AND .ll emitted AND
+     independent opt --passes=verify accepts
+   - i64_collapse_probe.HC          PASS (same contract)
+   - single_cond_probe.HC           PASS (same contract)
+
+4. Negative control (STRUCTURAL, per reviewer P1):
+   - safe_fwd_single_pred.HC: pre-IMPL AND post-IMPL
+     --dump-ir show the same rewrite on the
+     single-predecessor exit block (ret operand is a
+     function-local, not a load-result tmp).
+   - Binary compile EXIT=0 is NECESSARY but NOT
+     SUFFICIENT proof of the rewrite firing.
+   - The structural dump comparison is the proof.
 5. Range hygiene:
    - git diff --check clean at CLOSE.
 6. factory-v2-range-check PASS at CLOSE.
