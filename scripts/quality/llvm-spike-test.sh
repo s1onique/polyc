@@ -39,7 +39,35 @@ cd "$REPO_ROOT"
 #
 # If a future ACT wants the historical EVID layout, it can set
 # LLVM_SPIKE_EVID_OVERRIDE to a different dir.
-EVID=${LLVM_SPIKE_EVID_OVERRIDE:-"$REPO_ROOT/evidence/llvm-memory01/spike"}
+#
+# ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 C5 (harness-isolation
+# producer fix): $EVID is now ALSO governed by EVIDENCE_OUT. When
+# EVIDENCE_OUT is unset, the harness defaults to a scratch dir under
+# build/ (gitignored) so ordinary regression does NOT mutate any
+# tracked historical evidence tree. Explicit evidence regeneration
+# (e.g. via `make evidence-update`) sets EVIDENCE_OUT to the intended
+# destination, which may be a closed-ACT tree when the engineer
+# intentionally wants to refresh that tree's evidence.
+if [ -n "${EVIDENCE_OUT:-}" ]; then
+    # EVIDENCE_OUT governs the per-run root. LLVM_SPIKE_EVID_OVERRIDE
+    # is preserved for backwards compatibility (it sets only $EVID).
+    EVID="$EVIDENCE_OUT/spike"
+    if [ -n "${LLVM_SPIKE_EVID_OVERRIDE:-}" ]; then
+        EVID="$LLVM_SPIKE_EVID_OVERRIDE"
+    fi
+else
+    if [ -n "${LLVM_SPIKE_EVID_OVERRIDE:-}" ]; then
+        EVID="$LLVM_SPIKE_EVID_OVERRIDE"
+    else
+        # Default to a gitignored scratch dir under build/. Ordinary
+        # regression therefore produces no durable tracked evidence;
+        # the producer stops mutating historical evidence trees.
+        # Use a per-host/per-run subdir so concurrent runs don't
+        # collide and so stale evidence from a previous run is
+        # visibly distinguishable from the current one.
+        EVID="$REPO_ROOT/build/evidence/spike/$$-$RANDOM"
+    fi
+fi
 mkdir -p "$EVID"
 mkdir -p "$EVID/_tmp"
 trap 'rm -rf "$EVID/_tmp"' EXIT
@@ -282,7 +310,20 @@ echo "=== cmp predicate matrix ==="
 # path string would also drift. Redirect to a MEMORY01-specific
 # location to keep the historical evidence dir bit-identical
 # (F14).
-EVID_CORR=${LLVM_SPIKE_EVID_CORR_OVERRIDE:-"$REPO_ROOT/evidence/llvm-memory01/spike/red-6-live-transcripts"}
+EVID_CORR=${LLVM_SPIKE_EVID_CORR_OVERRIDE:-}
+if [ -z "$EVID_CORR" ]; then
+    if [ -n "${EVIDENCE_OUT:-}" ]; then
+        EVID_CORR="$EVIDENCE_OUT/red-6-live-transcripts"
+    else
+        # ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 C5 fix: the
+        # historical closed-ACT path
+        # evidence/llvm-memory01/spike/red-6-live-transcripts/ is
+        # no longer the default. Co-locate with $EVID under the
+        # gitignored scratch dir so ordinary regression never
+        # mutates tracked historical evidence.
+        EVID_CORR="$EVID/red-6-live-transcripts"
+    fi
+fi
 mkdir -p "$EVID_CORR"
 
 # dump_ir_capture <src> <out_base>
@@ -594,7 +635,16 @@ echo "=== multi-def SSA-local rejection (CORRECTION01-CORRECTION01) ==="
 # ACT's evidence dir); the closed ACT's
 # `evidence/llvmspike01-resume01-correction01-resume01-correction01/red-multi_def/`
 # is no longer touched by the harness.
-EVID_CORR2="$REPO_ROOT/evidence/llvm-core04-resume01/c2"
+EVID_CORR2=${EVIDENCE_OUT:-}
+if [ -z "$EVID_CORR2" ]; then
+    # ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 C5 fix: the
+    # historical closed-ACT path
+    # evidence/llvm-core04-resume01/c2/red-multi_def/ is no
+    # longer the default. Co-locate with $EVID under the
+    # gitignored scratch dir so ordinary regression never
+    # mutates tracked historical evidence.
+    EVID_CORR2="$EVID"
+fi
 EVID_MULTIDEF="$EVID_CORR2/red-multi_def"
 mkdir -p "$EVID_MULTIDEF"
 

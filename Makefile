@@ -96,6 +96,43 @@ llvm-spike-test:
 	fi
 	./scripts/quality/llvm-spike-test.sh
 
+# ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 C5 (harness-isolation
+# producer fix): explicit evidence regeneration path. Sets EVIDENCE_OUT
+# to a tracked destination and runs the spike test against it. This
+# is the ONLY way ordinary users can refresh closed-ACT evidence
+# trees; ordinary `make llvm-spike-test` writes to a gitignored
+# scratch dir and never mutates tracked historical evidence.
+#
+# Usage:
+#   make evidence-update EVIDENCE_OUT=evidence/<dest>
+#
+# Example:
+#   make evidence-update \
+#     EVIDENCE_OUT=evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02/c5/harness-emit
+evidence-update:
+	@if [ -z "$$EVIDENCE_OUT" ]; then \
+		echo "evidence-update: EVIDENCE_OUT is required" >&2; \
+		echo "  Example: make evidence-update EVIDENCE_OUT=evidence/<dest>" >&2; \
+		exit 2; \
+	fi
+	@if ! command -v llvm-config >/dev/null 2>&1; then \
+		echo "evidence-update: llvm-config not on PATH" >&2; exit 2; \
+	fi
+	@if [ "$$(llvm-config --version | cut -d. -f1)" != "22" ]; then \
+		echo "evidence-update: llvm-config reports $$(llvm-config --version); need 22.x" >&2; exit 2; \
+	fi
+	@if [ ! -x ./hcc ] || ! nm ./hcc 2>/dev/null | grep -q '_LLVMAddFunction'; then \
+		echo "evidence-update: ./hcc is not an LLVM-enabled build; run 'make llvm-all' first" >&2; exit 2; \
+	fi
+	./scripts/quality/llvm-spike-test.sh
+
+# ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 C5 (harness-isolation
+# producer fix): the regression test that proves a fresh
+# `make llvm-spike-test` run does NOT modify any tracked closed-ACT
+# evidence tree. Exits 0 on PASS, non-zero on FAIL.
+harness-evidence-isolation-test:
+	./scripts/quality/harness-evidence-isolation-test.sh
+
 clean:
 	rm -rf ./build ./hcc
 
