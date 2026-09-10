@@ -1386,25 +1386,55 @@ LOCAL-MEM2REG01-CORRECTION02  ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02
              corrections at 7a991a9 (gate cycle split;
              C9 escape hatch removed; DA rule; e286f59
              re-framed as NON_ACT residue).
-  C2.1     = RED (this commit's lineage). P0-1/P0-2/P1
-             reviewer-board second-pass contract corrections:
-             §2 rule 3 admits both IR_STORE-source and
-             arithmetic-dst definitions (without enumerating
-             the case-(b) opcode list — that is C3's job);
-             §6 RED-3 PASS criteria are structural / semantic
-             (no PHI-topology prescription); §2 rule 5
-             void-returning near-miss withdrawn.
+  C2.1     = RED. P0-1/P0-2/P1 reviewer-board second-pass
+              contract corrections:
+              §2 rule 3 admits both IR_STORE-source and
+              arithmetic-dst definitions (without enumerating
+              the case-(b) opcode list — that is C3’s job);
+              §6 RED-3 PASS criteria are structural / semantic
+              (no PHI-topology prescription); §2 rule 5
+              void-returning near-miss withdrawn.
+  C2.2     = RED (this commit’s lineage). P0/P1
+              reviewer-board third-pass contract-mechanics
+              corrections:
+              P0  §11 C5/C6 prescribed illegal Factory v2
+                  trailer form `ACT-Phase: IMPL (TOOLING)`
+                  / `ACT-Phase: IMPL (COMPILER)`. Factory
+                  v2 permits only the literal token `IMPL`
+                  in the `ACT-Phase:` trailer (enforced by
+                  `factory-v2-commit-msg-check.sh`). §11
+                  now separates descriptive lane
+                  classification (`IMPL-TOOLING` /
+                  `IMPL-COMPILER`, valid prose) from the
+                  authoritative trailer (`ACT-Phase: IMPL`,
+                  mechanically enforced).
+              P1  §5 / §6 named RED-2 / RED-3 evidence
+                  paths under `c1/`, but those artefacts
+                  are committed by C3 and C4 respectively.
+                  RED-2 / RED-3 evidence cannot pre-date
+                  the commit that captures it. §5 path
+                  now `.../c3/red-p02-def-use-tables.txt`;
+                  §6 path now
+                  `.../c4/red-p03-option-w-proof/`.
+              CORRECTION02 contract-only RED descendants
+              (C1, C2, C2.1, C2.2) carry no separate
+              evidence subdirs; their evidence is the
+              immutable commit diff and the reproducible
+              post-commit gates (F13 / F14 / append-only
+              doctrine from
+              `baf5dbd77cf89330699685dffd932c54031c815c`
+              forward).
   TOOLING_IMPL_AUTH = RED-1 reproduced ✅ (C1)
-                      + reviewer-board C2.1 independent
-                        release of C5 ✅
+                       + reviewer-board C2.1 independent
+                         release of C5 ✅
   COMPILER_IMPL_AUTH =
       TOOLING_IMPL_AUTH
       AND RED-1 producer fix GREEN (C5)
       AND RED-2 PASS               (C3)
       AND RED-3 PASS               (C4)
-  EVIDENCE = evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02/c1/
-             (C2.1 evidence lives at c2.1/ subdir once
-              committed)
+  EVIDENCE = RED-1  at evidence/.../c1/             (already captured)
+             RED-2  at evidence/.../c3/red-p02-def-use-tables.txt
+             RED-3  at evidence/.../c4/red-p03-option-w-proof/
 ```
 
 The CORRECTION02 contract enforces the reviewer-board
@@ -1422,19 +1452,22 @@ classified as memory-backed. The C9 machinery
 IR_JMP/IR_BR synthetic store injection) is on the
 remove-list, not the extend-list.
 
-**Commit topology (eight commits):**
+**Commit topology (nine commits):**
 
 ```text
 C1   RED     contract open + RED-1 reproduced         (659bbd1)
 C2   RED     reviewer-board P0-1/P0-2/P0-3/P1 corrections (7a991a9)
 C2.1 RED     reviewer-board P0-1 (case-(b) defn) /
                   P0-2 (PHI topology) /
-                  P1 (rule-5 wording) corrections      (this lineage)
+                  P1 (rule-5 wording) corrections      (316144c)
+C2.2 RED     reviewer-board P0 (Factory v2 trailer) /
+                  P1 (RED-2/3 evidence paths) corrections
+                                                     (this lineage)
 C3   RED     RED-2 def/use tables + frozen case-(b) opcode list
 C4   RED     RED-3 hand-translated Option-W proof under §6 PASS criteria
-C5   IMPL-TOOLING     harness-isolation producer fix
-C6   IMPL-COMPILER    bounded backend change (cases a + b)
-C7   CLOSE            acceptance-criteria evidence + verdict
+C5   IMPL    descriptive: IMPL-TOOLING; harness-isolation producer fix
+C6   IMPL    descriptive: IMPL-COMPILER; bounded backend change (cases a + b)
+C7   CLOSE   acceptance-criteria evidence + verdict
 ```
 
 C5 IMPL-TOOLING is independently released by the

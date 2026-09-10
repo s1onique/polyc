@@ -413,7 +413,24 @@ against the actual neutral IR produced by the current
 spike (`make ir-dump`) before being committed.
 
 Evidence:
-`evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02/c1/red-p02-def-use-tables.txt`
+`evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02/c3/red-p02-def-use-tables.txt`
+
+The evidence path uses the lifecycle commit number
+(C3), not the RED-opening commit number (C1).
+Historically, the RED-opening C1 contract named the
+evidence path under `c1/`. That was a §5 contract
+defect that the C2.1 reviewer-board second pass
+exposed: RED-2 evidence is bound to the C3 commit
+that actually produces it (a table artefact cannot
+pre-date the RED commit that captures it).
+
+For contrast, RED-1's `c1/` evidence path
+(`evidence/.../c1/red-p01-harness-isolation.txt`,
+referenced in §4.1) is the legitimate C1-bound
+artefact: RED-1 was reproduced at C1 and that file
+was committed by C1 itself. The `c1/` path is
+correct for RED-1; it is incorrect for RED-2 and
+RED-3, which are C3 and C4 artefacts.
 
 If any fixture fails the §2 discriminator, document
 that explicitly in the table (the discriminator
@@ -494,7 +511,14 @@ the PASS criteria above, close
 PASS criteria, not to a particular PHI topology.
 
 Evidence:
-`evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02/c1/red-p03-option-w-proof/`
+`evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02/c4/red-p03-option-w-proof/`
+
+The evidence path uses the lifecycle commit number
+(C4), not the RED-opening commit number (C1). This
+mirrors the §5 correction in C2.2: RED-3 evidence
+is bound to the C4 commit that actually produces
+the hand-translated pre-IR and runs
+`opt -passes=mem2reg,verify` on it.
 
 ---
 
@@ -689,7 +713,7 @@ C2  RED
             defect)
     ACT-Phase: RED
 
-C2.1 RED  (this commit)
+C2.1 RED
     reviewer-board second-pass corrections to contract:
       P0-1 §2 rule 3 re-framed to admit both
             IR_STORE-source definitions AND ordinary
@@ -715,6 +739,35 @@ C2.1 RED  (this commit)
             enumerates."
     ACT-Phase: RED
 
+C2.2 RED  (this commit)
+    reviewer-board third-pass corrections to contract
+    mechanics:
+      P0  §11 C5/C6 prescribed illegal Factory v2
+           trailer `ACT-Phase: IMPL (TOOLING)` and
+           `ACT-Phase: IMPL (COMPILER)`. Factory v2
+           permits only the literal token `IMPL` in
+           the `ACT-Phase:` trailer (enforced by
+           `factory-v2-commit-msg-check.sh`). §11 now
+           separates descriptive lane classification
+           (`IMPL-TOOLING` / `IMPL-COMPILER`, valid
+           prose) from the authoritative trailer
+           (`ACT-Phase: IMPL`, mechanically enforced).
+           A Factory v2 grammar note is appended to
+           §11's closing prose.
+      P1  §5 and §6 named RED-2 / RED-3 evidence
+           paths under `c1/`, but those artefacts
+           are committed by C3 and C4 respectively.
+           RED-2 / RED-3 evidence cannot pre-date the
+           commit that captures them (F2 / F9
+           fresh-tree evidence). §5 path now reads
+           `.../c3/red-p02-def-use-tables.txt`; §6
+           path now reads `.../c4/red-p03-option-w-proof/`.
+           ROADMAP "c2.1/" subdir reference is
+           withdrawn; C2.1's historical evidence is
+           its immutable commit diff and reproducible
+           post-commit gates.
+    ACT-Phase: RED
+
 C3  RED
     RED-2: def/use tables for six fixtures
            (must enumerate real definition forms per
@@ -731,20 +784,31 @@ C4  RED
     ACT-Phase: RED
 
 C5  IMPL-TOOLING
+    descriptive classification = IMPL-TOOLING
+                                 (lane name, NOT a
+                                 trailer)
     harness-isolation producer fix
     scripts/quality/* and Makefile only
     no src/ change
-    ACT-Phase: IMPL (TOOLING)
+    ACT-Phase: IMPL            (authoritative trailer;
+                                Factory v2 grammar
+                                permits only
+                                RED | IMPL |
+                                EVIDENCE | CLOSE)
     AUTHORISATION: independently released by the
                   reviewer board at C2.1; may run in
                   parallel with C3 and C4.
 
 C6  IMPL-COMPILER
+    descriptive classification = IMPL-COMPILER
+                                 (lane name, NOT a
+                                 trailer)
     bounded backend change: delete C9 remove-list,
     implement §2 discriminator (cases a + b), implement
     §7 invariant (case a + b lowering skeleton)
     src/llvm-backend.c only
-    ACT-Phase: IMPL (COMPILER)
+    ACT-Phase: IMPL            (authoritative trailer;
+                                see C5 above)
     AUTHORISATION: gated on C5 GREEN, C3 PASS, C4 PASS.
 
 C7  CLOSE
@@ -752,10 +816,29 @@ C7  CLOSE
     ACT-Phase: CLOSE
 ```
 
-Eight commits (one extra RED descendant). F12 honest
+Nine commits (two extra RED descendants). F12 honest
 classification per phase; TOOLING and COMPILER IMPL
 are distinct phases because they have distinct
 authorisation predicates (§4.1, §4.3).
+
+Factory v2 grammar note (added in C2.2):
+
+```text
+ACT-Phase permitted values = RED | IMPL | EVIDENCE | CLOSE
+```
+
+The qualified strings `IMPL-TOOLING`, `IMPL-COMPILER`,
+`IMPL (TOOLING)`, `IMPL (COMPILER)`, etc., are
+descriptive lane names and are valid §11 prose.
+They MUST NOT appear in an `ACT-Phase:` trailer;
+the trailer must be the literal token `IMPL`. This
+rule is enforced mechanically by
+`scripts/quality/factory-v2-commit-msg-check.sh`,
+which rejects any other spelling. C2.2 captured a
+P0 contract defect where §11 prescribed the
+illegal `ACT-Phase: IMPL (TOOLING)` form; the
+prescription now reads `ACT-Phase: IMPL` and the
+qualifier lives in descriptive prose only.
 
 ---
 
@@ -820,6 +903,56 @@ authorisation predicates (§4.1, §4.3).
   in its own RED descendant commit so the contract
   diff between any two RED commits is small and
   auditable (F12 honest classification).
+
+* C2.2 reviewer-board third-pass corrections (this
+  commit lineage): two contract mechanics defects
+  identified while the reviewer board reviewed the
+  committed C2.1 digest against the Factory v2
+  grammar (enforced by
+  `scripts/quality/factory-v2-commit-msg-check.sh`)
+  and against the lifecycle commit topology:
+
+  - P0 — §11 prescribed `ACT-Phase: IMPL (TOOLING)`
+    and `ACT-Phase: IMPL (COMPILER)`. Factory v2
+    permits only the literal token `IMPL` in the
+    `ACT-Phase:` trailer. A commit following the
+    contract literally at C5 or C6 would have
+    failed the trailer validator and rejected the
+    commit. Corrected: §11 now states the
+    descriptive lane classification
+    (`IMPL-TOOLING` / `IMPL-COMPILER`) as
+    §11-prose only, and the authoritative
+    `ACT-Phase:` trailer as the literal `IMPL` for
+    both. An explicit Factory v2 grammar note is
+    added to §11's closing prose so future agents
+    do not reintroduce the bug.
+
+  - P1 — §5 and §6 named RED-2 / RED-3 evidence
+    paths under `c1/`, but the RED-2 and RED-3
+    artefacts are committed by C3 and C4
+    respectively. RED-2 and RED-3 evidence cannot
+    pre-date the RED commit that captures them
+    (F2/F9 fresh-tree evidence). Corrected: §5
+    evidence path now reads `.../c3/red-p02-def-use-tables.txt`
+    and §6 evidence path now reads
+    `.../c4/red-p03-option-w-proof/`.
+
+  Corrections recorded inline in §5, §6, §11
+  (Factory v2 grammar note), and the closing prose
+  of §11. No production code change. The C2.2
+  commit also explicitly notes that C2.1 has no
+  separate `c2.1/` evidence artefact: it was a
+  contract-only RED descendant whose historical
+  evidence is its commit diff and its
+  reproducible post-commit gates (F13
+  evidence-over-prose; F14 immutable evidence;
+  append-only doctrine from
+  `baf5dbd77cf89330699685dffd932c54031c815c`
+  forward).
+
+  C2.2 follows the C2 → C2.1 trajectory pattern:
+  separate RED descendant commit, contract-only
+  diff, audit-friendly (F12).
 
 ---
 
