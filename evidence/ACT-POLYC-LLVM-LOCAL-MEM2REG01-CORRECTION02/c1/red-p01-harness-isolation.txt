@@ -1,0 +1,106 @@
+RED-1 (P0-1) — HARNESS EVIDENCE ISOLATION
+
+ACT: ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02
+Phase: RED
+Date: 2026-09-10
+
+## Symptom
+
+Running any regression / conservation harness that emits
+live transcripts (in particular, `make llvm-spike-test`)
+DIRTIES four files inside historical, already-closed
+ACT evidence trees:
+
+  evidence/llvm-core04-resume01/c2/red-multi_def/red-multi_def.live.stderr
+  evidence/llvm-core04-resume01/c2/red-multi_def/red-multi_def.live.summary
+  evidence/llvm-memory01/spike/red-6-live-transcripts/red-1B.emit.stderr
+  evidence/llvm-memory01/spike/red-6-live-transcripts/red-2.emit.stderr
+
+This violates the conservation invariant:
+
+  run every regression/conservation harness
+  then: git status --porcelain
+  must NOT contain anything under:
+    evidence/llvm-core04-resume01/
+    evidence/llvm-memory01/
+    any other closed ACT evidence tree
+
+The contamination is reproducible (see diff.txt: the same
+four files appear every run) and the drift is a counter
+that should not be re-emitted during ordinary regression:
+
+  before: CAPABILITY_COUNTERS supported=2 ... =0
+  after : CAPABILITY_COUNTERS supported=7 ... =0
+
+## Reproduction
+
+Run the reproduce script (committed alongside this
+README in this directory's parent):
+
+  /tmp/red1_reproduce.sh
+
+Mechanically:
+
+  $ git status --porcelain > before.txt    # clean
+  $ HCC_INSTALL_DIR=/tmp/polyc-install \
+        make llvm-spike-test               # run regression
+  $ git status --porcelain > after.txt     # dirty
+
+Captured artefacts in this directory:
+
+  before.txt    — pre-run porcelain (must be empty mod
+                  in-progress docs/ROADMAP edit)
+  run-stdout.txt — harness stdout
+  run-stderr.txt — harness stderr
+  after.txt     — post-run porcelain (always includes
+                  the four historical paths above)
+  diff.txt      — diff of before vs after; binds the
+                  contamination set
+  dirty-sample-summary.diff
+               — counter drift sample (supported=2 → 7)
+  dirty-sample-stderr.diff
+               — stderr drift sample
+  dirty-sample-mem01-1B.diff
+               — memory01 spike transcript drift
+  dirty-sample-mem01-2.diff
+               — memory01 spike transcript drift
+
+## Contamination producer (identified)
+
+scripts/quality/llvm-spike-test.sh
+  line 42 : EVID=${LLVM_SPIKE_EVID_OVERRIDE:-"$REPO_ROOT/evidence/llvm-memory01/spike"}
+  line 285: EVID_CORR=${LLVM_SPIKE_EVID_CORR_OVERRIDE:-"$REPO_ROOT/evidence/llvm-memory01/spike/red-6-live-transcripts"}
+
+The harness hard-codes the closed-ACT evidence paths
+when `LLVM_SPIKE_EVID_*` is not overridden.
+
+scripts/quality/llvm-byte-memory01-test.sh and
+scripts/quality/llvm-memory01-*.sh also write into
+closed-ACT paths by default.
+
+## Required fix (binding choice, to be made in IMPL)
+
+Either (a) accept `EVIDENCE_OUT` env var and route
+re-emissions into the current ACT's namespace; or
+(b) stop emitting evidence during ordinary regression
+and move emission to a separate `make evidence-update`
+target.
+
+The binding choice is committed as part of the IMPL
+phase with its own evidence artefact.
+
+## RED status: PASS (RED-1 reproduced)
+
+RED-1 is REPRODUCED today. Per the §4 contract, this
+binds the producer fix as an ENTRY GATE for IMPL. IMPL
+proceeds only after the producer fix is committed and
+verified (a fresh regression run yields an empty
+`git status --porcelain` mod in-progress edits).
+
+## Verdict
+
+RED-1: REPRODUCED (PASS as a RED)
+RED-1 fix: PENDING (must be in IMPL phase)
+
+ACT: ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02
+ACT-Phase: RED

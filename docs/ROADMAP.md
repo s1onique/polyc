@@ -1204,7 +1204,10 @@ LOCAL-MEM2REG01-CORRECTION01  ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION01
   STATE    = CLOSED (HALT_DEFECTIVE_IMPL at C10); opened 69c886f,
              textual consistency tightened at 5aeb562 / 0dc947e /
              6eb4078 / a96d935; C9 IMPL at 6d8b6ea; C10 halt
-             docs/evidence at this commit.
+             docs/evidence at 8072b9a; post-CLOSE reviewer board
+             Option-W evidence append at e286f59 (no ACT: trailer;
+             recorded as residue per Factory v2; cannot be fixed
+             retroactively under append-only doctrine).
   CLASS    = 7 commits in CORRECTION01 ACT id:
              C4 RED (69c886f; opens new ACT id)
              C5 RED (5aeb562; grammar + rule-6 + worktree)
@@ -1238,10 +1241,19 @@ LOCAL-MEM2REG01-CORRECTION01  ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION01
                 definition of the stored value that reaches each
                 predecessor.
   NEXT_ACT   = ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02:
-                architectural decision between (X) frontend SSA
-                rename, (Y) input-SSA lowering, or (Z) stricter
-                discriminator + IR-side optimisation to widen the
-                narrower admitted form.
+                Option W (memory-back the eligible mutable local:
+                alloca in entry block, store at each ORIGINAL
+                definition site, load at each ORIGINAL use site,
+                let mem2reg own reaching-def + PHI construction).
+                X/Y/Z framing is recorded in HALT-SUMMARY as
+                architecturally incomplete and is SUPERSEDED by
+                Option W. Reviewer board authorised writing the
+                full CORRECTION02 contract but did NOT authorise
+                production IMPL — RED-1 (harness isolation),
+                RED-2 (def/use recon for six fixtures), and
+                RED-3 (hand-translated Option-W proof for five
+                eligible fixtures via opt -passes=mem2reg +
+                verify) must PASS before IMPL.
   EVIDENCE   = evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION01/c10/
   OPEN commit (NON_ACT, pre-RED):
              d2ffe21 (no ACT: trailer; mirrors the d89a5cd OPEN
@@ -1334,3 +1346,53 @@ The C1 + C1.5 + C3 RED evidence is bound in
 - `capi/cleanup-exit-summary.txt` — aggregate STATUS line.
 - `Q1-Q6-SUMMARY.md` — RED evidence summary table for all
   six recon questions.
+
+#### ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 status (RED; contract opened; IMPL NOT authorised)
+
+```text
+LOCAL-MEM2REG01-CORRECTION02  ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02
+  ENTRY    = e286f59 (parent commit of contract opening)
+  STATE    = OPEN / RED
+             (Phase trailer will be added with the
+             RED opening commit; the contract itself is
+             committed at this commit and carries
+             ACT-Phase: RED.)
+  PRECEDE  = CORRECTION01 closed at 8072b9a (HALT_DEFECTIVE_IMPL)
+             with post-CLOSE reviewer board Option-W evidence
+             at e286f59 (no ACT: trailer; recorded as residue).
+  MISSION  = faithful memory-backed lowering of the smallest
+             mutable-local class (Option W); no frontend SSA
+             reconstruction. Replace C9 predecessor-store
+             synthesis with original-site store/load lowering.
+  RED-1    = harness evidence isolation (binding choice between
+             EVIDENCE_OUT env var or make evidence-update target).
+             Required before any other RED; HALT_RED1_NOT_REPRODUCED
+             if today the contamination is already fixed.
+  RED-2    = mutable-local def/use recon for six fixtures
+             (ProbePath, Diamond, pos_b0_compare_digit,
+             i64_collapse_probe, single_cond_probe,
+             safe_fwd_single_pred).
+  RED-3    = hand-translated Option-W proof for five eligible
+             fixtures via opt -passes=mem2reg + verify. HALT
+             verdict HALT_OPTION_W_FALSIFIED if mem2reg cannot
+             promote.
+  IMPL_AUTH= bound to RED-1 AND RED-2 AND RED-3 all PASS.
+             Reviewer board explicitly did NOT authorise IMPL
+             until the hand-translated Option-W RED is green.
+  EVIDENCE = evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02/c1/
+```
+
+The CORRECTION02 contract enforces the reviewer-board
+invariant:
+
+```text
+A store is emitted because a PolyC definition occurs HERE.
+NEVER: A store is emitted because a CFG successor will
+       eventually need one.
+```
+
+`lc->values[V]` is NOT authoritative for V once V is
+classified as memory-backed. The C9 machinery
+(`llEmitMem2RegStoreAtPredEnd`, `lc->mem2reg_store_*`,
+IR_JMP/IR_BR synthetic store injection) is on the
+remove-list, not the extend-list.
