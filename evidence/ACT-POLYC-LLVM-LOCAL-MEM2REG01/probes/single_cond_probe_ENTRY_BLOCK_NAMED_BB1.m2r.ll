@@ -1,5 +1,5 @@
-; ModuleID = 'evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01/probes/single_cond_probe_NOT_IN_ENTRY.ll'
-source_filename = "evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01/probes/single_cond_probe_NOT_IN_ENTRY.ll"
+; ModuleID = 'evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01/probes/single_cond_probe_ENTRY_BLOCK_NAMED_BB1.ll'
+source_filename = "evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01/probes/single_cond_probe_ENTRY_BLOCK_NAMED_BB1.ll"
 
 define i64 @Probe(i64 %p1, ptr %p3) {
 bb1:

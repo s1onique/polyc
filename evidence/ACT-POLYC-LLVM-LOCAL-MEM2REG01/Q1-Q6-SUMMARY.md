@@ -1,6 +1,6 @@
 # Q1–Q6 RED evidence summary (ACT-POLYC-LLVM-LOCAL-MEM2REG01)
 
-**Subject tree:** `d2ffe21` (ACT OPEN) → C1 RED commit (this commit)
+**Subject tree:** `d2ffe21` (ACT OPEN) → `6059298` (C1 RED) → C1.5 EVIDENCE (this commit)
 **Date:** 2026-09-10
 **Toolchain:** `opt --version` = LLVM 22.1.8 (Nix store)
 **Hypothesis under test:** option D from
@@ -9,30 +9,60 @@ generated scalar local/return slots to LLVM entry-block
 allocas with direct loads/stores, then run LLVM's `mem2reg`
 pass to construct SSA.
 
+**Reviewer HOLD verdict (post-C1) addressed in this C1.5
+commit**: Q1 producer provenance was wrong (it named a
+consumer, `irForwardReturnSlot`, as the producer). C1.5
+derives the actual producers from `src/ir.c` and
+`src/ir-optimise.c` directly. The function-API C-API probe
+was vacuous (ran on an already-promoted module); C1.5 fixes
+it with two fresh parses. The placement probe was mislabeled;
+C1.5 renames it.
+
 ---
 
-## Q1. Producer surface enumeration
+## Q1. Producer surface enumeration (corrected in C1.5)
 
-Three candidate sites exist for `IR_ALLOCA` in `src/`:
+There are EXACTLY THREE `IR_ALLOCA` emitters in the PolyC
+tree. They are not all eligible for option D.
 
-| Site | Source location | Slot type | Producer | Consumers | Escapes? |
-|---|---|---|---|---|---|
-| `irAlloca(AstType*)` | `src/ir.c:72` | depends on AstType | `buf_alloca` at `src/ir.c:443` (array/buffer), `ir_return_alloca` at `src/ir.c:3043` (return-by-value small aggregates) | various IR_LOAD / IR_STORE | usually yes (address binds via IR_LEA) |
-| `frame_alloca` | `src/ir.c:1916` | depends on size | `irCgBindAstLoffs` | various IR_LOAD / IR_STORE | usually yes (frame address binds) |
-| Forwarder-emitted `IR_ALLOCA` | `src/ir-optimise.c::ir_forwardReturnSlot` | synthetic return slot, I64 | RSF01 §4 produces this candidate only on multi-predecessor exit blocks | exit-block IR_LOAD of the slot, then IR_RET | **no** (slot consumed locally) |
+| # | Source site | Slot type | Size | Consumer set | Escapes? | Eligible? |
+|---|---|---|---|---|---|---|
+| P1 | `irLowerFunction` at `src/ir.c:3042-3047` | scalar (I64 / F64 / I8 / ...) | rettype->size | IR_STORE + IR_LOAD + IR_RET in fn->exit_block | **no** | **YES** (first IMPL slice) |
+| P2 | `irFnCallTo` at `src/ir.c:443-448` | aggregate | ast->type->size | IR_LEA → call arg → memcpy | yes (call arg) | NO (REJECT_SCOPE_LOCAL_MEM2REG01) |
+| P3 | `irLowerTry` at `src/ir.c:1916-1918` | 256-byte opaque | 256 | IR_LEA → HCC_TryEnter/HCC_TryLeave args | yes (call arg) | NO (REJECT_SCOPE_LOCAL_MEM2REG01) |
 
-The **bounded candidate class for this ACT** is the third row:
-the IR_ALLOCA arriving from the forwarder's multi-predecessor
-exit case. It is I64 at the slot (the byte source for
-`pos_b0_compare_digit` is `zext`-promoted to I64 before the
-slot write).
+**C1.5 correction**: the C1 draft of this table named
+`irForwardReturnSlot` (src/ir-optimise.c:256) as a producer.
+That is wrong: `irForwardReturnSlot` is a CONSUMER that
+rewrites or NOPs an already-existing return-slot pattern; it
+does NOT emit any `IR_ALLOCA`. The reviewer demanded
+mechanical provenance.
 
-The other two sites are **out of scope** for this ACT:
+The **bounded candidate class for this ACT** is **P1 only**:
+the synthetic scalar return slot emitted by `irLowerFunction`
+in `src/ir.c:3042-3047`. It survives neutral-IR optimisation
+because `irForwardReturnSlot` (src/ir-optimise.c:256) refuses
+the rewrite on exit blocks with >=2 predecessors (the
+ACT-POLYC-IR-RETURN-SLOT-FORWARDING01 HALT_SCOPE guard).
 
-- `buf_alloca` / `ir_return_alloca` carry an array or aggregate
-  type and/or escape. They are REJECTed by Q2 (aggregate →
-  `REJECT_SCOPE_LOCAL_MEM2REG01`; escape → `REJECT_PRODUCT_BOUNDARY`).
-- `frame_alloca` similarly escapes.
+**Eligibility discriminator for the future IMPL** (what
+`llvm-backend.c` will recognise):
+
+```text
+fn->return_value exists (kind == IR_VAL_LOCAL)  AND
+fn->exit_block exists                           AND
+llDetectCollapsibleReturn(fn, &slot) == 0      AND
+    -- i.e. the slot survives irForwardReturnSlot
+    -- because the exit block has PN>=2 predecessors
+slot->type == IR_TYPE_I64 (scalar I64 only)     AND
+single IR_ALLOCA of size 8 at top of entry block
+```
+
+This is NOT "arbitrary IR_ALLOCA". The discriminator uses
+the same predicate structure `llDetectCollapsibleReturn`
+already evaluates, so a future CORRECTION01 can reuse the
+existing detection logic without inventing a new
+classification.
 
 ---
 
@@ -43,8 +73,8 @@ The other two sites are **out of scope** for this ACT:
 | `pos_b0_compare_digit` synthetic return slot (I64) | yes | no | no | no | no | **PASS** |
 | `i64_collapse_probe` synthetic return slot (I64) | yes | no | no | no | no | **PASS** |
 | `single_cond_probe` synthetic return slot (I64) | yes | no | no | no | no | **PASS** |
-| `buf_alloca` (array/buffer) | mixed | no | no | usually yes (LEA) | yes | **REJECT_SCOPE_LOCAL_MEM2REG01** (future SROA ACT) |
-| `frame_alloca` | mixed | no | no | usually yes | yes | **REJECT_PRODUCT_BOUNDARY** (PolyC language semantic; future ACT only) |
+| P2 `buf_alloca` (array/buffer) | mixed | no | no | usually yes (LEA) | yes | **REJECT_SCOPE_LOCAL_MEM2REG01** (future SROA ACT) |
+| P3 `frame_alloca` | mixed | no | no | usually yes | yes | **REJECT_SCOPE_LOCAL_MEM2REG01** |
 
 The three RED fixtures are all PASS. The first authorised IMPL
 slice is I64 single-slot scalar local/return slots; other shapes
@@ -52,27 +82,76 @@ are DEFERRED.
 
 ---
 
-## Q3. Entry-block placement requirement
+## Q3. Entry-block placement requirement (corrected in C1.5)
 
-**Q3.1** Where does the neutral-IR IR_ALLOCA currently occur?
+**Q3.1** Where does the neutral-IR IR_ALLOCA currently occur
+(in the PolyC IR list at the point it would be lowered)?
 
-The synthetic return slot's IR_ALLOCA is materialised in the
-**exit block** of the forwarder's multi-predecessor shape
-(after PolyC's basic optimisations, this is bb4 in each of
-the three fixtures). The IR_ALLOCA's entry into the LLVM
-backend is at `src/llvm-backend.c:1397-1418` (the spike-stage
-accept site).
+ANSWER (verified): at the top of the entry block of
+`fn->blocks`, immediately after `irBlockAddInstr(ctx,
+ir_return_alloca)` at `src/ir.c:3045`. The PolyC IR list
+places it before any IR_LABEL of any user block.
 
-**Q3.2** If lowered literally using the current builder position,
-where does it land?
+**Q3.2** If lowered literally using the current
+LLVMBuildAlloca builder position, where does it land in
+the resulting LLVM module?
 
-**It never lands.** The current spike at `src/llvm-backend.c:1397-
-1418` only checks for the presence of an `IR_ALLOCA` whose dst
-matches `lc->collapse_slot`; it never calls `LLVMBuildAlloca`.
-The alloca is rejected with `LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL`
-before any LLVM-level alloca is constructed.
+ANSWER (verified): the current spike at
+`src/llvm-backend.c:1397-1418` NEVER calls LLVMBuildAlloca
+at all -- it only COUNTS IR_ALLOCA reachability as a
+reject-class trigger. So today, the answer to Q3.2 is:
+there is no LLVM-level alloca to inspect, and CORRECTION01
+must introduce one from scratch, into the LLVM module's
+function entry block, with a save/restore insertion-point
+discipline.
 
-**Empirical confirmation** (probe
+**Q3.3** What insertion-point discipline must
+LOCAL-MEM2REG01-CORRECTION01 establish so the resulting
+alloca lands in the function entry block?
+
+ANSWER (verified): save the current builder insertion point
+via LLVMSaveInsertPoint, call LLVMPositionBuilderAtEnd(builder,
+fn_entry_bb), emit LLVMBuildAlloca + LLVMBuildStore, restore
+via LLVMRestoreInsertPoint(builder, saved_ip). The Q4.1 C-API
+harness already exercises the LLVM side of this discipline
+on every RED fixture.
+
+**Q3 placement probe evidence (renamed in C1.5)**
+
+Reviewer correction (post-C1 HOLD): the C1 fixture named
+`single_cond_probe_NOT_IN_ENTRY.ll` was misnamed. The
+fixture has no preceding basic block, so its `bb1` IS the
+function entry block -- LLVM entry-ness is structural, not
+driven by the block name. The fixture is a POSITIVE CONTROL
+demonstrating that the block-name "entry" is irrelevant.
+
+```text
+single_cond_probe_ENTRY_BLOCK_NAMED_BB1.ll
+    renamed from single_cond_probe_NOT_IN_ENTRY.ll in C1.5
+    positive control: alloca structurally in entry block
+                     (function's first block, just named bb1)
+    opt -passes=mem2reg exits 0
+    post-mem2reg IR identical to single_cond_probe.m2r.ll
+    (target alloca eliminated, single phi at bb4)
+    CONCLUSION: "block name entry" is irrelevant. mem2reg
+                only cares that the alloca be in the function
+                entry block. The first basic block is the
+                entry block regardless of label.
+
+single_cond_probe_NOT_IN_ENTRY_ADVERSARIAL.ll
+    unchanged in C1.5
+    actual negative witness: alloca placed inside bb3, a
+    conditional predecessor of bb2 (the function has bb1
+    as entry). The alloca does NOT dominate its only use.
+    opt -passes=mem2reg exits 1 with:
+        "Instruction does not dominate all uses!
+          %slot = alloca i64, align 8
+          %t10 = load i64, ptr %slot, align 4"
+    CONCLUSION: if CORRECTION01 forgets to save/restore the
+                insertion point to the entry block, the
+                resulting LLVM module fails the verifier
+                exactly as this probe does.
+```
 `single_cond_probe_NOT_IN_ENTRY_ADVERSARIAL.ll`): when the
 alloca is placed in a conditional block (bb3), the verifier
 rejects the module with `Instruction does not dominate all
@@ -119,26 +198,37 @@ and `<fixt>.m2r.ll`.
 
 ---
 
-## Q4.1 Module-API vs Function-API C-API probe
+## Q4.1 Module-API vs Function-API C-API probe (independent)
 
-A minimal C harness
-(`evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01/capi/capi_probe.c`)
-links against the project's LLVM 22.1.8 distribution and
-exercises both API paths on each of the three fixtures.
+Reviewer correction (post-C1 HOLD): the C1 version of this
+probe ran the module API first and then the function API on
+the SAME (already-promoted) module. That proved only that
+the function API is a no-op on already-promoted IR -- NOT
+that the function API actually promotes unpromoted IR.
 
-| Fixture | LLVMRunPasses("mem2reg,verify") | LLVMRunPassesOnFunction("mem2reg,verify") |
+The C1.5 harness (`capi_probe.c` v2) parses each fixture
+TWICE from disk into independent modules, runs only the
+module API on the first copy, runs only the function API on
+the second copy, and prints both post-pipeline IRs to stdout
+from `LLVMPrintModuleToString`. The captured stdout IS what
+the C API produced (no `opt`->copy step).
+
+| Fixture | LLVMRunPasses (fresh parse A) | LLVMRunPassesOnFunction (fresh parse B) |
 |---|---|---|
-| `single_cond_probe.ll` | **PASS** (no error) | **PASS** (no error) |
-| `i64_collapse_probe.ll` | **PASS** | **PASS** |
-| `pos_b0_compare_digit.ll` | **PASS** | **PASS** |
+| `single_cond_probe.ll` | **PASS** (alloca gone, phi at bb4, verifier clean) | **PASS** (alloca gone, phi at bb4, verifier clean) |
+| `i64_collapse_probe.ll` | **PASS** (3-edge phi at bb4) | **PASS** (3-edge phi at bb4) |
+| `pos_b0_compare_digit.ll` | **PASS** (3-edge phi at bb4) | **PASS** (3-edge phi at bb4) |
 
-**C-API MODULE API:  PASS** (verified on all three fixtures;
-LLVMRunPasses returns no error, post-pipeline IR is correctly
-mem2reg-promoted, verifier passes inside the pipeline.)
+**C-API MODULE API (fresh parse): PASS** on all 3 fixtures.
+**C-API FUNCTION API (fresh parse): PASS** on all 3 fixtures.
 
-**C-API FUNCTION API: PASS** (verified on all three fixtures;
-LLVMRunPassesOnFunction returns no error, post-pipeline IR is
-correctly mem2reg-promoted, verifier passes inside the pipeline.)
+**Both post-pipeline IRs are captured verbatim in
+`<fixt>.capi-stdout.txt`**, each in its own tagged section
+(`===== MODULE-API RESULT (fresh parse, LLVMRunPasses only) =====`
+and `===== FUNCTION-API RESULT (fresh parse, LLVMRunPassesOnFunction only) =====`).
+The captured IRs are byte-for-byte identical between the two
+APIs, which is the expected outcome: both APIs run the same
+new-pass-manager pipeline and produce equivalent SSA.
 
 **C-API ERROR PATH OBSERVED: yes.** When given a deliberately
 bad pipeline string (`mem2reggg`), both `LLVMRunPasses` and
@@ -168,8 +258,26 @@ existing `libLLVM-22` link.
 `LLVMRunPassesOnFunction` (function-scoped). Rationale: the
 forwarder's multi-predecessor case is per-function; running
 the pipeline module-wide would needlessly re-process unrelated
-functions. (Either API is mechanically sound; this is a product
-boundary.)
+functions. C1.5 evidence now proves (not merely asserts)
+that the function API actually performs promotion on a fresh
+unpromoted module.
+
+**Implementation note on harness cleanup**: the v2 harness
+currently SIGSEGVs during cleanup (after both verdict lines
+are printed and both IR sections are flushed to stdout). The
+verdict is captured correctly because:
+
+- `stderr` is unbuffered by default, so the verdict lines
+  are emitted before the crash.
+- `print_module` calls `fflush(stdout)` after each
+  `LLVMPrintModuleToString` capture, so the IR stdout is
+  flushed to the file before the dispose sequence.
+
+The crash is in the harness dispose sequence, not in the
+`LLVMRunPasses` / `LLVMRunPassesOnFunction` call paths. The
+recommendation to use `LLVMRunPassesOnFunction` in
+CORRECTION01 is therefore still supported by the captured
+verdict and the captured post-pipeline IR.
 
 ---
 
@@ -236,30 +344,63 @@ follow-on fixture proves they are needed (P1 residue).
 
 ## Conclusion
 
-**Q1 PASS.** Three RED-fixture slots are the bounded candidate
-class; other IR_ALLOCA sites are out of scope or REJECTed.
+**Q1 PASS.** Three `IR_ALLOCA` emitters exist in `src/`;
+only **P1** (`irLowerFunction` at `src/ir.c:3042-3047`,
+synthetic scalar return slot) is eligible. P2
+(`irFnCallTo` aggregate callee buffer) and P3 (`irLowerTry`
+256-byte CatchFrame) are REJECT_SCOPE_LOCAL_MEM2REG01.
+The bounded eligibility discriminator for the future
+IMPL is derived from `llDetectCollapsibleReturn` + scalar
+I64 type + single alloca at top of entry block.
 
-**Q2 PASS.** All three candidates are PASS (single-slot
-scalar, direct, non-volatile, non-escaping).
+**Q2 PASS.** All three RED-fixture slots are PASS (single-slot
+scalar, direct, non-volatile, non-escaping, non-aggregate).
 
 **Q3 PASS.** Placement requirement is determined: entry-block
 alloca, with a save/restore insertion-point discipline
-prescribed for CORRECTION01.
+prescribed for CORRECTION01 (LLVMSaveInsertPoint →
+LLVMPositionBuilderAtEnd(fn_entry_bb) → LLVMBuildAlloca →
+LLVMRestoreInsertPoint). Positive control fixture
+(single_cond_probe_ENTRY_BLOCK_NAMED_BB1.ll) confirms the
+block-name "entry" is irrelevant. Negative witness fixture
+(single_cond_probe_NOT_IN_ENTRY_ADVERSARIAL.ll) confirms
+that a misplaced alloca breaks the verifier with
+"Instruction does not dominate all uses!".
 
 **Q4 PASS.** Architectural probe succeeds for all three
-fixtures with the project's LLVM 22.1.8.
+fixtures with the project's LLVM 22.1.8: opt -passes=mem2reg
+exits 0, opt -passes=verify exits 0, target alloca
+eliminated, target mem ops eliminated, single phi at the
+natural successor block.
 
-**Q4.1 PASS.** Both `LLVMRunPasses` and `LLVMRunPassesOnFunction`
-parse and execute `"mem2reg,verify"` cleanly on all three
-fixtures. Error path observed and documented.
+**Q4.1 PASS (independent).** `LLVMRunPasses` and
+`LLVMRunPassesOnFunction` are run on TWO FRESHLY-PARSED
+copies of each fixture (independent modules, no shared
+state). Both APIs PASS on all three fixtures; both
+post-pipeline IRs are captured verbatim from
+`LLVMPrintModuleToString` (with `fflush(stdout)`); the
+captured IRs are byte-for-byte identical between the two
+APIs. Error path observed on both APIs via
+`LLVMRunPasses("mem2reggg,verify", ...)` →
+"unknown pass name 'mem2reggg'" and
+`LLVMRunPassesOnFunction(fn, "mem2reggg,verify", ...)` →
+"unknown function pass 'mem2reggg' in pipeline 'mem2reggg'".
+Header `llvm-c/Transforms/PassBuilder.h` present at the
+project's LLVM 22.1.8 include dir; link surface is
+clean against `-lLLVM-22`.
 
 **Q5 PASS.** LLVM mem2reg constructs a single phi at the
-natural successor block (`bb4` for `single_cond_probe`),
-with per-edge operands that match the original PolyC semantics.
+natural successor block (`bb4` for `single_cond_probe`,
+with two per-edge operands; `bb4` for `i64_collapse_probe`,
+with three per-edge operands; `bb4` for
+`pos_b0_compare_digit`, with three per-edge operands).
+The per-edge operands match the original PolyC semantics.
 
 **Q6 PASS.** All three RED fixtures are I64 at the slot.
 Future IMPL freeze is I64 single-slot scalar only.
 
 **Option D is RECONFIRMED.** Recommend opening
-`ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION01` for the bounded
-IMPL freeze.
+`ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION01` for the
+bounded IMPL freeze (LLVMRunPassesOnFunction +
+entry-block alloca + I64 scalar only, with the
+Q1-derived eligibility discriminator).

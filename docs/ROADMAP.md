@@ -1179,78 +1179,63 @@ and [`evidence/llvm-ir-return-slot-forwarding01/c3/EVIDENCE-SUMMARY.md`](../evid
 
 ---
 
-#### ACT-POLYC-LLVM-LOCAL-MEM2REG01 status (C1 RED in progress)
+#### ACT-POLYC-LLVM-LOCAL-MEM2REG01 status (C1.5 EVIDENCE in progress)
 
 ```text
 LOCAL-MEM2REG01  ACT-POLYC-LLVM-LOCAL-MEM2REG01
   ENTRY    = 0501569 (post-RSF01-hygiene; pre-CLOSE of LOCAL-MEM2REG01)
-  CLASS    = C1 RED / C2 CLOSE (Factory v2 phase grammar; RECON is
-             not a phase; architectural hypothesis testing IS RED)
-  STATE    = OPEN; C1 RED commit in this branch
+  CLASS    = C1 RED / C1.5 EVIDENCE / C2 CLOSE (Factory v2 phase
+             grammar; RECON is not a phase; architectural hypothesis
+             testing IS RED; an EVIDENCE commit is permitted between
+             RED and CLOSE to tighten reviewer-flagged evidence)
+  STATE    = OPEN; C1 RED committed; C1.5 EVIDENCE commit in
+             this branch (post-reviewer HOLD); C2 CLOSE pending
   OPEN commit (NON_ACT, pre-RED):
              d2ffe21 (no ACT: trailer; mirrors the d89a5cd OPEN
              pattern from RSF01)
+  C1 RED commit:
+             6059298 (ACT: ACT-POLYC-LLVM-LOCAL-MEM2REG01 +
+                      ACT-Phase: RED)
+             Bound: ACT doc Q1..Q6 + probes + v1 C-API harness +
+                    Q1-Q6-SUMMARY.md + ROADMAP row
+  C1.5 EVIDENCE commit (this branch):
+             Post-reviewer HOLD verdict (function-API probe was
+             vacuous; Q1 producer provenance wrong; placement
+             probe mislabeled).
+             Bound: ACT doc §4 Q1/Q3/Q4.1 sections rewritten;
+                    v2 C-API harness parses each fixture twice,
+                    runs module API on one copy and function API
+                    on the other, captures both post-pipeline IRs
+                    from LLVMPrintModuleToString with fflush;
+                    single_cond_probe_NOT_IN_ENTRY.ll renamed to
+                    single_cond_probe_ENTRY_BLOCK_NAMED_BB1.ll
+                    (positive control); adversarial probe stays
+                    as the negative witness; Q1-Q6-SUMMARY.md
+                    rewritten with correct provenance.
   MISSION  = determine whether PolyC should lower a tightly
              bounded class of compiler-generated scalar local/
              return slots to LLVM entry-block allocas with
              direct loads/stores, then run LLVM's mem2reg
              pass to construct SSA, instead of extending
              PolyC's bespoke collapse machinery
-  REQUIRED RED (Q4 architectural probe) — captured in C1:
-             - hand-written LLVM IR equivalents of the three
-               RSF01 RED fixtures (pos_b0_compare_digit,
-               i64_collapse_probe, single_cond_probe)
-             - opt -passes=mem2reg PASS   (all three PASS)
-             - opt -passes=verify PASS    (all three PASS)
-             - target alloca eliminated in post-mem2reg IR
-             - target mem ops eliminated in post-mem2reg IR
-             - merge mechanism observed at the natural
-               successor block (phi for all three; observed
-               via post-mem2reg IR capture)
-  Q4.1 C-API PROBE (NEW per reviewer correction) — captured in C1:
-             - LLVMRunPasses("mem2reg,verify") PASS (module API)
-             - LLVMRunPassesOnFunction("mem2reg,verify") PASS
-               (function API)
-             - error path observed: bad pipeline "mem2reggg"
-               returns LLVMErrorRef with "unknown pass name"
-               (CORRECTION01 must consume/report this)
-             - header llvm-c/Transforms/PassBuilder.h present
-               at the project's LLVM 22.1.8 include dir
-  Q3 PLACEMENT PROBE — captured in C1:
-             - entry-block alloca is REQUIRED (adversarial
-               conditional-block placement breaks the verifier:
-               "Instruction does not dominate all uses!")
-             - the current spike at src/llvm-backend.c:1397-1418
-               NEVER calls LLVMBuildAlloca; CORRECTION01 must
-               introduce the alloca from scratch with a
-               save/restore insertion-point discipline at the
-               entry block
-  FORBIDDEN:
-             - PromoteMemToReg direct call (C++ utility;
-               use LLVMRunPasses / LLVMRunPassesOnFunction
-               from llvm-c/Transforms/PassBuilder.h)
-             - any production edit (RED only)
-  NEXT     = if C1 RED evidence convinces reviewer:
-                C2 CLOSE ACT-POLYC-LLVM-LOCAL-MEM2REG01
-                  ACT-Verdict: PASS
-                  then ACT-POLYC-LLVM-LOCAL-MEM2REG01-
-                  CORRECTION01 (IMPL freeze)
-             if C1 RED evidence is insufficient:
-                C2 CLOSE ACT-POLYC-LLVM-LOCAL-MEM2REG01
-                  ACT-Verdict: HALT_OPTION_D_FALSIFIED
-                  then recommend option A/B/C fallback
 ```
 
 The full RED contract is in
 [`docs/acts/ACT-POLYC-LLVM-LOCAL-MEM2REG01.md`](../acts/ACT-POLYC-LLVM-LOCAL-MEM2REG01.md).
-The C1 RED evidence is bound in
+The C1 + C1.5 RED evidence is bound in
 [`evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01/`](../evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01/):
 
 - `probes/<fixt>.ll` — hand-written LLVM IR equivalent for
   each of the three RED fixtures.
 - `probes/<fixt>.m2r.ll` — post-mem2reg IR (verifier clean).
-- `capi/capi_probe.c` — minimal C harness linked against the
-  project's `-lLLVM-22` (rebuild instructions in capi/README.md).
-- `capi/<fixt>.capi-stderr.txt` — C-API probe stderr.
+- `probes/single_cond_probe_ENTRY_BLOCK_NAMED_BB1.ll` —
+  positive control (renamed from NOT_IN_ENTRY in C1.5).
+- `probes/single_cond_probe_NOT_IN_ENTRY_ADVERSARIAL.ll` —
+  negative witness (unchanged in C1.5).
+- `capi/capi_probe.c` — v2 C harness (independent parses;
+  rebuild instructions in capi/README.md).
+- `capi/<fixt>.capi-stdout.txt` — both post-pipeline IRs
+  captured verbatim from LLVMPrintModuleToString.
+- `capi/<fixt>.capi-stderr.txt` — verdict log per fixture.
 - `Q1-Q6-SUMMARY.md` — RED evidence summary table for all
   six recon questions.
