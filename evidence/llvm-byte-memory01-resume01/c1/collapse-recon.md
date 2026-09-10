@@ -228,4 +228,3 @@ containment sites." The actual root cause is the IR
 optimisation pass. RESUME01 must address BOTH sites (or, if
 one site alone is sufficient to suppress the defect, that
 one site with a documented rationale).
-

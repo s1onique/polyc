@@ -159,4 +159,3 @@ recommended); produce a minimal diff to the authorised
 seam; verify with pos_b0_compare_digit.HC + i64_collapse_probe
 + single_cond_probe as GREEN fixtures. Re-run all existing
 gate-fast gates to confirm no regression.
-
