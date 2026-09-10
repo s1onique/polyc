@@ -902,3 +902,247 @@ distribution, (b) include them in src/llvm-backend.c, and (c)
 add any needed link flags. This is RED-only observation; it
 is not a permission to touch build files under this ACT id.
 ```
+
+## 12. Closure handoff (appended at C2 CLOSE, verdict PASS)
+
+Appended at C2 CLOSE. Verdict authority is the
+`ACT-Verdict: PASS` trailer on the C2 commit, NOT this
+section. The reviewer-corrected close criterion is
+reproduced verbatim and verified line-by-line against the
+evidence bound under
+`evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01/`.
+
+### Verdict
+
+```
+ACT-Verdict: PASS
+```
+
+Option D is RECONFIRMED. The bounded eligibility
+discriminator, the function-C-API binding, and the
+placement requirement are all determined; future
+CORRECTION01 may authorise the IMPL freeze.
+
+### Identity
+
+```
+ACT id         = ACT-POLYC-LLVM-LOCAL-MEM2REG01
+branch         = main
+entry (EN)     = 0501569 (post-RSF01-hygiene; pre-CLOSE)
+ACT OPEN       = d2ffe21 (NON_ACT; mirrors d89a5cd RSF01
+                 OPEN pattern; no ACT: trailer)
+C1 RED         = 6059298 (first trailer-bearing commit;
+                 ACT: ACT-POLYC-LLVM-LOCAL-MEM2REG01 +
+                 ACT-Phase: RED)
+C1.5 EVIDENCE  = f45ba38 (post-reviewer HOLD; ACT: +
+                 ACT-Phase: RED; not a verdict commit)
+C2 CLOSE       = <C2 commit SHA; this file>
+```
+
+### Close criterion (reviewer-specified)
+
+```text
+Option D architectural probe             PASS
+actual candidate producer identified      PASS
+bounded eligibility discriminator         PASS
+module C API independent promotion        PASS
+function C API independent promotion      PASS
+C API error handling observed             PASS
+entry-placement positive/negative         PASS
+I64-only first slice                      PASS
+production delta                          0
+```
+
+Each line, mechanically verified:
+
+1. **Option D architectural probe: PASS.** All three RED
+   fixtures survive `opt -passes=mem2reg` (exit=0) and
+   `opt -passes=verify` (exit=0). Post-mem2reg IR
+   captures:
+     - target alloca eliminated
+     - target mem ops eliminated
+     - single phi at natural successor block (bb4)
+     - per-edge operands matching original PolyC semantics
+   Evidence:
+     `evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01/probes/{single_cond_probe,i64_collapse_probe,pos_b0_compare_digit}.m2r.ll`
+
+2. **Actual candidate producer identified: PASS.**
+   Derived from `src/ir.c` and `src/ir-optimise.c`
+   directly (no inference):
+     - P1: `irLowerFunction` at `src/ir.c:3042-3047`
+       (synthetic scalar return slot; ELIGIBLE)
+     - P2: `irFnCallTo` at `src/ir.c:443-448`
+       (aggregate callee buffer; REJECT_SCOPE)
+     - P3: `irLowerTry` at `src/ir.c:1916-1918`
+       (256-byte CatchFrame; REJECT_SCOPE)
+   C1 misidentified `irForwardReturnSlot` (a consumer)
+   as the producer; C1.5 corrected this. Documented in
+   ACT §4 Q1 and `Q1-Q6-SUMMARY.md` Q1.
+
+3. **Bounded eligibility discriminator: PASS.**
+   ```
+   fn->return_value exists (kind == IR_VAL_LOCAL) AND
+   fn->exit_block exists AND
+   llDetectCollapsibleReturn(fn, &slot) == 0 AND
+   slot->type == IR_TYPE_I64 AND
+   single IR_ALLOCA of size 8 at top of entry block
+   ```
+   Reuses the existing `llDetectCollapsibleReturn`
+   predicate structure; CORRECTION01 does not need to
+   invent a new classification. NOT arbitrary
+   IR_ALLOCA.
+
+4. **Module C API independent promotion: PASS.**
+   `LLVMRunPasses(M, "mem2reg,verify", NULL, opts)` on a
+   fresh parse of each RED fixture returns OK; post-
+   pipeline IR captured verbatim from
+   `LLVMPrintModuleToString`. Captured in
+   `evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01/capi/<fixt>.capi-stdout.txt`
+   under the `MODULE-API RESULT (fresh parse, LLVMRunPasses only)`
+   section header.
+
+5. **Function C API independent promotion: PASS.**
+   `LLVMRunPassesOnFunction(fn, "mem2reg,verify", NULL, opts)`
+   on an INDEPENDENT fresh parse of each RED fixture
+   returns OK; post-pipeline IR captured verbatim. The
+   module API and the function API do NOT share state;
+   each runs on its own `LLVMModuleRef` from its own
+   `LLVMMemoryBufferRef`. Captured under the
+   `FUNCTION-API RESULT (fresh parse, LLVMRunPassesOnFunction only)`
+   section header. The captured post-pipeline IR is
+   byte-for-byte identical between the two APIs.
+   Recommendation: `LLVMRunPassesOnFunction` is now
+   load-bearing for CORRECTION01.
+
+6. **C API error handling observed: PASS.** Bad pipeline
+   `"mem2reggg,verify"` returns a non-NULL `LLVMErrorRef`:
+     - module API:   "unknown pass name 'mem2reggg'"
+     - function API: "unknown function pass 'mem2reggg' in pipeline 'mem2reggg'"
+   Captured in
+   `evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01/capi/err-path.stderr`
+   and
+   `evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01/capi/function-api-err-path.stderr`.
+   CORRECTION01 MUST consume/report this error path.
+
+7. **Entry-placement positive/negative: PASS.**
+     - positive control: `single_cond_probe_ENTRY_BLOCK_NAMED_BB1.ll`
+       (function's first block is named `bb1`, with no
+       predecessor, so it IS the function entry block
+       regardless of label). `opt -passes=mem2reg` exits 0;
+       post-mem2reg IR identical to `single_cond_probe.m2r.ll`.
+     - negative witness: `single_cond_probe_NOT_IN_ENTRY_ADVERSARIAL.ll`
+       (alloca placed inside bb3, a conditional predecessor
+       of bb2 whose entry is bb1). `opt -passes=mem2reg`
+       exits 1 with
+       `"Instruction does not dominate all uses!"`.
+   CORRECTION01 must use
+   `LLVMSaveInsertPoint` /
+   `LLVMPositionBuilderAtEnd(fn_entry_bb)` /
+   `LLVMRestoreInsertPoint` discipline.
+
+8. **I64-only first slice: PASS.** All three RED fixtures
+   are I64 at the slot:
+     - `pos_b0_compare_digit`: slot is I64 (the byte
+       source is `zext`-promoted to I64 before the slot
+       write)
+     - `i64_collapse_probe`: I64 by construction
+     - `single_cond_probe`: I64 by construction
+   Future IMPL freeze is I64 single-slot scalar only.
+   I8 allocas are DEFERRED.
+
+9. **Production delta: 0.** `git diff 0501569..HEAD -- src/
+   scripts/` is empty. Only `docs/acts/`, `docs/ROADMAP.md`,
+   and `evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01/` are
+   touched.
+
+### Gates (all PASS at C2 CLOSE)
+
+```text
+git diff --check (working tree)              clean
+git diff --check 0501569..HEAD               clean
+git diff --check db6404e..HEAD               clean
+trailing-whitespace on all touched files     0 lines
+gate-fast                                    VERDICT=PASS
+factory-v2-test                              PASS=35 FAIL=0
+factory-append-only-test                     PASS=11 FAIL=0
+ir-return-slot-forwarding01-test (HALT
+  matrix preserved; not a regression)        PASS=3 FAIL=3
+factory-v2-range-check.sh
+  ACT-POLYC-IR-RETURN-SLOT-FORWARDING01 69f7d3a
+                                              STATUS=PASS
+                                              VERDICT=HALT_SECOND_SEAM_REQUIRED
+factory-v2-commit-msg-check                  all 3 commits PASS
+                                              (d2ffe21 NON_ACT;
+                                               6059298 ACT RED;
+                                               f45ba38 ACT RED)
+```
+
+### Scope (F7 conserved)
+
+```text
+git diff 0501569..HEAD --stat
+    docs/ROADMAP.md                                   ~2 row updates
+    docs/acts/ACT-POLYC-LLVM-LOCAL-MEM2REG01.md       C1 + C1.5 RED
+                                                       contract
+    evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01/
+        probes/         5 .ll + 4 .m2r.ll + stderr/verify logs
+        capi/           v2 C harness + stderr verdicts + README
+        Q1-Q6-SUMMARY.md
+git diff 0501569..HEAD -- src/ scripts/    EMPTY (correct F7)
+```
+
+### Residue (carry forward to ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION01)
+
+```text
+P1  I8 allocas are DEFERRED. If a future BYTE-MEMORY01
+    follow-on fixture proves they are needed, a separate
+    ACT extends the IMPL freeze.
+
+P1  safe_fwd_single_pred.HC must continue to fire its
+    forwarding rewrite BEFORE any mem2reg-eligible alloca
+    is materialised. CORRECTION01 must keep
+    irForwardReturnSlot's PN<=1 guard intact (F5).
+
+P2  The LLVM C API surface (LLVMRunPasses*,
+    LLVMCreatePassBuilderOptions*) is reconnoitred and
+    links cleanly, but the project does NOT yet include
+    `llvm-c/Transforms/PassBuilder.h`. CORRECTION01 must
+    add the include.
+
+P2  The pre-existing collapse-elimination spike
+    (lc->collapsed && ins->dst == lc->collapse_slot) at
+    src/llvm-backend.c:1397-1418 is for a SHAPE-DEPENDENT
+    subset (single load-then-ret pattern with the synthetic
+    return slot). CORRECTION01 must NOT silently merge it
+    with the new bounded mem2reg pipeline; the two should
+    compose orthogonally.
+
+P2  The v2 C-API harness SIGSEGVs during cleanup after the
+    verdict and the IR stdout are captured. CORRECTION01
+    uses the C API from inside src/llvm-backend.c with
+    proper LLVMDisposeModule / LLVMDisposePassBuilderOptions
+    ordering, so this harness defect does not propagate.
+```
+
+### Next ACT
+
+```
+ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION01
+    Open after this CLOSE
+    Authorise the bounded IMPL freeze:
+        src/llvm-backend.c: introduce llPromoteLocalAllocas
+            (or equivalent) that runs after llFunction()
+            body construction and before llVerifyModule();
+            calls LLVMRunPassesOnFunction with a pass-
+            pipeline string equivalent to "mem2reg,verify";
+            uses the Q1-derived eligibility discriminator;
+            uses save/restore insertion-point discipline.
+        src/llvm-backend-cap.h: cap-table classification
+            for the new bounded class.
+    Expected to flip ir-return-slot-forwarding01-test.sh
+    from PASS=3 FAIL=3 (HALT matrix) to PASS=6 FAIL=0.
+```
+
+The handoff is now APPENDED; the closure verdict is the
+`ACT-Verdict: PASS` trailer on the C2 commit, not the text
+above.
