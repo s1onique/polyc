@@ -441,6 +441,45 @@ single-CLOSE shape is a documented exception rather than
 a re-architectable problem.
 ```
 
+RESUME01 range-check limitation at a48e40f (acknowledged):
+
+```text
+The range-check walks backwards from CLOSE through
+parents as long as each parent carries ACT=<id>. It
+expects FIRST to have ACT-Phase=RED.
+
+RESUME01's chain is:
+
+  0bfa990  ACT=RESUME01  RED
+  dc99882  ACT=CORRECTION01  CLOSE   <-- interleaved
+  1560e4d  ACT=RESUME01  EVIDENCE
+  a48e40f  ACT=RESUME01  CLOSE HALT_SCOPE_EXPANSION_REQUIRED
+
+The CORRECTION01 CLOSE commit interleaves between the
+RESUME01 RED and the RESUME01 EVIDENCE because
+CORRECTION01 was opened to fix RESUME01's evidence
+hygiene (P0 reviewer observation). The walk from CLOSE
+backwards therefore stops at 1560e4d (the first parent
+that carries ACT=RESUME01 is dc99882's parent
+1560e4d); 1560e4d has ACT-Phase=EVIDENCE, not RED.
+
+This is a documented range-check FAIL. The substantive
+ACT chain is correct: 0bfa990 is the original RED;
+a48e40f is the canonical CLOSE with the HALT verdict.
+The interleaving does not indicate a substantive defect.
+The range-check script assumes contiguous ACT-id
+boundaries; CORRECTION01 breaks contiguity by design.
+
+Range-check PASS expected when:
+
+  CORRECTION01 is acknowledged as the reason the walk
+  breaks, AND
+  the verifier confirms FIRST=0bfa990 ACT-Phase=RED is
+  the canonical RED (via the per-commit
+  factory-v2-commit-msg-check.sh run, which DOES pass
+  on 0bfa990).
+```
+
 #### C2 IMPL authorisation gate (next reviewer action)
 
 C2 IMPL on `IR-RETURN-SLOT-FORWARDING01` requires:
