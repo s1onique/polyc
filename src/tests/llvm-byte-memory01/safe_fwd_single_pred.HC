@@ -1,13 +1,14 @@
 /* SAFE_FWD_SINGLE_PRED: structural negative control for
  * ACT-POLYC-IR-RETURN-SLOT-FORWARDING01.
  *
- * This fixture exercises the SAME neutral-IR shape that
- * triggers the defect in the RED fixtures (a function-
- * local return-slot L modified conditionally and returned
- * through an alloca-based load), but on a SAFE CFG shape:
- * the exit block has exactly ONE predecessor, so the
- * irForwardReturnSlot rewrite (`store; load; ret` →
- * `ret stored_value`) is dominance-safe.
+ * This fixture exercises the SAME return-slot forwarding
+ * mechanism that the C1 RED defect (`store; load; ret`
+ * substituted into a multi-predecessor exit block) breaks,
+ * but on a SAFE CFG topology: the function body is
+ * deliberately UNCONDITIONAL, and the exit block has
+ * exactly ONE predecessor. The irForwardReturnSlot rewrite
+ * (`store; load; ret` → `ret stored_value`) is therefore
+ * dominance-safe on this fixture.
  *
  * Structural intent:
  *   - The function returns a function-local `acc`.
