@@ -431,14 +431,31 @@ Q3.3  What insertion-point discipline must LOCAL-MEM2REG01-
 
       Because the alloca builder is dedicated and
       short-lived, it carries no shared state and no
-      ordering obligation with the normal builder. If
-      future recon shows a second builder would interfere
-      with the ordering of existing entry instructions,
-      the recipe falls back to
-      `LLVMClearInsertionPosition` +
-      `LLVMPositionBuilderAtEnd` on the existing builder;
-      it does NOT introduce a save/restore primitive
-      (none exists in `llvm-c/Core.h`).
+      ordering obligation with the normal builder.
+      The normal lowering builder is left COMPLETELY
+      UNTOUCHED. This invariant is FROZEN for
+      CORRECTION01 IMPL:
+
+      ```text
+      normal builder   -> CFG/instruction lowering
+                          (UNTOUCHED by entry-block
+                           alloca materialisation)
+      alloca builder   -> entry-block stack-slot
+                          materialisation only
+                          (CREATED + POSITIONED + USED
+                           + DISPOSED inside this helper)
+      ```
+
+      There is NO fallback recipe in this ACT. The
+      dedicated builder is the only recipe. If the
+      IMPL discovers a defect that the dedicated builder
+      cannot satisfy, that is NEW EVIDENCE that triggers
+      a HALT / new recon / new ACT id — it is NOT a
+      license to mutate the normal lowering builder.
+      A normal-builder mutation would silently re-create
+      the impossible `LLVMSaveInsertPoint` /
+      `LLVMRestoreInsertPoint` pattern that the C3 RED
+      evidence tightening eliminated.
 
       The Q4.1 C-API harness already exercises the LLVM
       side of this discipline on every RED fixture
@@ -829,12 +846,14 @@ C1 RED  (this ACT, first trailer-bearing commit)
 
 C1.5 RED evidence tightening  (informal commit-name
     "C1.5 EVIDENCE"; the Factory trailer carried by this
-    commit is `ACT-Phase: RED` -- per Factory v2 §3.6
-    "RED | IMPL | EVIDENCE | CLOSE" there is no
-    `EVIDENCE` phase, so RED commits that only tighten
-    the bound evidence are still RED phase, not a new
-    phase. See §13 wording convention below for the
-    historical-vs-authority reconciliation.)
+    commit is `ACT-Phase: RED` -- under the Factory v2
+    4-phase grammar `RED | IMPL | EVIDENCE | CLOSE`
+    `EVIDENCE` IS a legal phase. This commit chose to
+    carry `RED` (permissive reading: an evidence-
+    tightening commit within the same ACT id is still
+    RED until CLOSE). Either label is valid. See §13
+    wording convention below for the historical-vs-
+    authority reconciliation.)
     Reviewer HOLD verdict (post-C1) demanded three corrections
     before C2 CLOSE:
         P0-1: function-API probe was vacuous (ran on already-
@@ -890,8 +909,11 @@ not yet ready to close (e.g. one fixture probe is ambiguous), the
 ACT may produce one or more additional RED evidence-tightening
 commits between C1 and C2 to tighten the evidence, before the
 C2 CLOSE. C1.5 is exactly such an evidence-tightening commit;
-informally labelled "EVIDENCE" in conversation but carrying the
-Factory trailer `ACT-Phase: RED` (no `EVIDENCE` phase exists).
+the descriptive prose label was "EVIDENCE" but the Factory
+trailer carried was `ACT-Phase: RED`. Under the 4-phase
+grammar `RED | IMPL | EVIDENCE | CLOSE`, `EVIDENCE` IS a
+legal phase token; this particular commit chose the permissive
+reading and stayed `RED` for historical continuity with C1.
 It does not change the verdict, only the bound evidence.
 
 The three RSF01 RED fixtures (`pos_b0_compare_digit.HC`,
@@ -1290,9 +1312,24 @@ The normal lowering builder is left untouched. See ACT
 
 ### Wording convention (RESOLVED)
 
-"EVIDENCE" is descriptive prose in commit subjects; it
-is NEVER a Factory phase token. The trailer is
-authoritative. See §13 below.
+HISTORICAL WRONG WORDING / SUPERSEDED:
+The original C3 wording-convention note asserted that
+"EVIDENCE is NEVER a Factory phase token." That
+assertion was incorrect. Under the Factory v2 4-phase
+grammar `RED | IMPL | EVIDENCE | CLOSE`, `EVIDENCE`
+IS a legal Factory phase token (the validator at
+`scripts/quality/factory-v2-commit-msg-check.sh`
+accepts `EVIDENCE`; the lifecycle tests at
+`scripts/quality/factory-v2-test.sh` exercise a
+`RED→IMPL→EVIDENCE→IMPL→CLOSE` range as PASS; the
+canonical doctrine at
+`docs/factory/GIT-METADATA.md` lists `EVIDENCE` as a
+phase). The corrected wording convention is in §13
+below. The original "NEVER a Factory phase token"
+wording is preserved here ONLY as historical evidence
+of the C3 reviewer-HOLD correction, per F14
+(historical documents remain valid as evidence of
+process evolution; corrections are new commits).
 
 ### Architectural PASS at C2 STANDS
 

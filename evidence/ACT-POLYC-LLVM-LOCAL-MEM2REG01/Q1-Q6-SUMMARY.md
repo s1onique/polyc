@@ -159,12 +159,11 @@ normal builder   -> CFG/instruction lowering
 alloca builder   -> entry-block stack-slot materialisation only
 ```
 
-If CORRECTION01 RED recon shows a second builder would
-interfere with the ordering of existing entry instructions,
-the recipe falls back to `LLVMClearInsertionPosition` +
-`LLVMPositionBuilderAtEnd` on the existing builder; it
-does NOT introduce a save/restore primitive (none exists
-in `llvm-c/Core.h`).
+If the CORRECTION01 IMPL discovers a defect that the
+dedicated entry-block builder cannot satisfy, that is
+NEW EVIDENCE that triggers a HALT / new recon / new
+ACT id — it is NOT a license to mutate the normal
+lowering builder. There is NO fallback recipe.
 
 **Q3 placement probe evidence (renamed in C1.5)**
 

@@ -1242,8 +1242,11 @@ LOCAL-MEM2REG01-CORRECTION01  ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION01
              (LLVMParseIRInContext consumes the buffer ->
              double-free SIGSEGV; LLVMSaveInsertPoint /
              LLVMRestoreInsertPoint are not in llvm-c/Core.h);
-             plus a wording convention note (EVIDENCE is
-             not a Factory phase).
+             plus a wording convention note (see ACT §13
+             for the corrected 4-phase grammar; the
+             original C3 "EVIDENCE is not a Factory phase"
+             wording was incorrect and is retracted per
+             §13 wording-convention reconciliation).
              Bound: v3 C-API harness uses LLVMParseIRInContext2
                     (caller owns buffer; exactly-one dispose);
                     errpath_probe.c companion for bad-pipeline
