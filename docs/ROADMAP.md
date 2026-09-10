@@ -1353,10 +1353,9 @@ The C1 + C1.5 + C3 RED evidence is bound in
 LOCAL-MEM2REG01-CORRECTION02  ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02
   ENTRY    = e286f59 (parent commit of contract opening)
   STATE    = OPEN / RED
-             (Phase trailer will be added with the
-             RED opening commit; the contract itself is
-             committed at this commit and carries
-             ACT-Phase: RED.)
+             (Phase trailer added with the RED opening
+             commit; the contract itself is committed
+             with ACT-Phase: RED.)
   PRECEDE  = CORRECTION01 closed at 8072b9a (HALT_DEFECTIVE_IMPL)
              with post-CLOSE reviewer board Option-W evidence
              at e286f59 (no ACT: trailer; recorded as residue).
@@ -1366,24 +1365,46 @@ LOCAL-MEM2REG01-CORRECTION02  ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02
              synthesis with original-site store/load lowering.
   RED-1    = harness evidence isolation (REPRODUCED at C1).
              Producer fix authorised as TOOLING IMPL (C5).
-             RED-2/RED-3 may proceed in parallel.
   RED-2    = mutable-local def/use recon for six fixtures
              (ProbePath, Diamond, pos_b0_compare_digit,
              i64_collapse_probe, single_cond_probe,
              safe_fwd_single_pred). Mandatory rows include
              "every read definitely assigned on every CFG
-             path" (§2 rule 6 / §3 table).
+             path" (§2 rule 6 / §3 table) AND the frozen
+             opcode list for case (b) definitions per
+             §2 rule 3 (reviewer-board C2.1 direction).
   RED-3    = hand-translated Option-W proof for five eligible
-             fixtures via opt -passes=mem2reg + verify. HALT
-             verdict HALT_OPTION_W_FALSIFIED if mem2reg cannot
-             promote.
+             fixtures via opt -passes=mem2reg + verify.
+             PASS criteria are structural / semantic, not
+             a single-PHI-at-exit criterion (reviewer-board
+             C2.1 direction: mem2reg's iterated-dominator-
+             frontier PHI placement is owned by LLVM).
+             HALT verdict HALT_OPTION_W_FALSIFIED if
+             opt -passes=mem2reg + verify cannot satisfy
+             the §6 PASS criteria on the hand-written pre-IR.
+  C2       = RED. P0-1/P0-2/P0-3/P1 reviewer-board contract
+             corrections at 7a991a9 (gate cycle split;
+             C9 escape hatch removed; DA rule; e286f59
+             re-framed as NON_ACT residue).
+  C2.1     = RED (this commit's lineage). P0-1/P0-2/P1
+             reviewer-board second-pass contract corrections:
+             §2 rule 3 admits both IR_STORE-source and
+             arithmetic-dst definitions (without enumerating
+             the case-(b) opcode list — that is C3's job);
+             §6 RED-3 PASS criteria are structural / semantic
+             (no PHI-topology prescription); §2 rule 5
+             void-returning near-miss withdrawn.
   TOOLING_IMPL_AUTH = RED-1 reproduced ✅ (C1)
+                      + reviewer-board C2.1 independent
+                        release of C5 ✅
   COMPILER_IMPL_AUTH =
       TOOLING_IMPL_AUTH
       AND RED-1 producer fix GREEN (C5)
       AND RED-2 PASS               (C3)
       AND RED-3 PASS               (C4)
   EVIDENCE = evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02/c1/
+             (C2.1 evidence lives at c2.1/ subdir once
+              committed)
 ```
 
 The CORRECTION02 contract enforces the reviewer-board
@@ -1400,3 +1421,23 @@ classified as memory-backed. The C9 machinery
 (`llEmitMem2RegStoreAtPredEnd`, `lc->mem2reg_store_*`,
 IR_JMP/IR_BR synthetic store injection) is on the
 remove-list, not the extend-list.
+
+**Commit topology (eight commits):**
+
+```text
+C1   RED     contract open + RED-1 reproduced         (659bbd1)
+C2   RED     reviewer-board P0-1/P0-2/P0-3/P1 corrections (7a991a9)
+C2.1 RED     reviewer-board P0-1 (case-(b) defn) /
+                  P0-2 (PHI topology) /
+                  P1 (rule-5 wording) corrections      (this lineage)
+C3   RED     RED-2 def/use tables + frozen case-(b) opcode list
+C4   RED     RED-3 hand-translated Option-W proof under §6 PASS criteria
+C5   IMPL-TOOLING     harness-isolation producer fix
+C6   IMPL-COMPILER    bounded backend change (cases a + b)
+C7   CLOSE            acceptance-criteria evidence + verdict
+```
+
+C5 IMPL-TOOLING is independently released by the
+reviewer board at C2.1 and may run in parallel with
+C3 and C4. C6 IMPL-COMPILER is gated on
+COMPILER_IMPL_AUTH = C5 GREEN ∧ C3 PASS ∧ C4 PASS.

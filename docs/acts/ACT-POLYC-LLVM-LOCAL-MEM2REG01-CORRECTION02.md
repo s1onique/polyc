@@ -161,16 +161,61 @@ ONLY if all of the following hold:
 ```text
 1. type == I64
 2. not address-taken (no GEP, no escape, no &V)
-3. all definitions are ordinary scalar assignments
-   (IR_STORE to V's slot, with no nested GEP, no nested
-   address-of, no IR_CALL argument passing)
+3. every definition of V is a supported scalar value
+   definition at an explicit neutral-IR instruction site.
+
+   Each definition site is one of:
+
+     (a) IR_STORE to V's slot (an ordinary assignment
+         whose RHS is a non-V scalar expression); OR
+
+     (b) a scalar-arithmetic opcode from the currently
+         authorised neutral-IR subset whose dst is V
+         itself (the local IS the destination of the
+         computation, not just a source operand).
+
+   Both forms are translated identically:
+
+     rhs = lower(that neutral-IR instruction)
+     store rhs -> V.slot
+
+   No definition requires CFG-edge synthesis, address
+   reconstruction, GEP, escape, aggregate storage, or
+   predecessor analysis. If a definition site would
+   need any of those, V is INELIGIBLE.
+
+   The authoritative opcode list for case (b) is NOT
+   enumerated in this contract. C3 RED-2 must enumerate
+   the real definition forms from the six fixtures'
+   neutral IR and freeze the exact opcode list as an
+   evidence artefact before IMPL. A wider opcode list
+   may be approved by a future ACT after evidence
+   exists to justify it.
+
+   C10 evidence already binds three concrete shapes
+   for ProbePath's %l6:
+     store %l6, 10                          ← case (a)
+     iadd %l6, %l4, 1                       ← case (b)
+     isub %l6, 0, %l4                       ← case (b)
+   so ProbePath MUST be eligible under the case-(b)
+   rule — failing that, this discriminator is
+   self-contradictory with §5/§6/AC07.
 4. all reads can be lowered directly (no IR_CALL passes
    V by address, no field access, no indexing)
-5. compiler-generated return handling only
-   (V is the source local feeding the synthetic return
-   slot, or V is itself the function return local for
-   void-returning functions — never a user-declared
-   pointer alias)
+5. V is the source local feeding compiler-generated
+   return handling, or V is another mechanically-proven
+   I64 return-local shape that RED-2 enumerates and
+   freezes in its evidence table.
+
+   V is NOT itself the "function return local for
+   void-returning functions" — that phrase was a
+   near-miss in C2 and is withdrawn here. A function
+   with no value-bearing return slot is OUT OF SCOPE
+   for this ACT's mutable-local class; C3 RED-2 is
+   the right place to discover whether the shape
+   arises from any of the six fixtures.
+
+   V is never a user-declared pointer alias.
 6. DEFINITE ASSIGNMENT
 
    Every eligible read of V must have at least one
@@ -380,41 +425,73 @@ expansion must be a future ACT, not C0).
 
 For each of the five fixtures above, hand-write the
 pre-mem2reg LLVM IR that Option W SHOULD produce
-(entry-block alloca, store at each original definition,
-load at each original use), and require:
+(entry-block alloca, store at each ORIGINAL definition
+site, load at each ORIGINAL use site), and require:
 
 ```text
-opt -passes=mem2reg     PASS
-opt -passes=verify      PASS
-target alloca           gone
-target loads/stores     gone
-path merge              represented in SSA
+PASS iff:
+
+  pre-mem2reg structural invariants:
+    each ORIGINAL definition of V ↔ store at same CFG
+    site (same basic block, no synthetic predecessor
+    store, no terminator-injected store)
+    each ORIGINAL read of V       ↔ load at same CFG
+    site
+    store/load pairs never cross basic-block
+    boundaries that weren't in the source IR
+
+  post-mem2reg invariants (under
+    opt -passes=mem2reg then opt -passes=verify):
+    target alloca is gone
+    target loads are gone
+    target stores are gone
+    opt -passes=verify exits 0
+    every PHI has valid predecessor/value
+    correspondence (no undef incoming where a real
+    reaching definition exists on that path)
+    the function's returned value preserves all
+    source paths (each original definition's value
+    is observable on the CFG paths that reach a
+    read or return)
 ```
 
-For ProbePath, the hand-written pre-mem2reg IR MUST be
-structurally equivalent to:
+```text
+NOT REQUIRED:
+    exact number of PHIs
+    a single PHI located at the final exit block
 
-```llvm
-entry:
-    %r = alloca i64
-    store i64 10, ptr %r
+Rationale: LLVM documents mem2reg as placing PHIs
+using iterated dominator frontiers. For a function
+with sequential joins (e.g. ProbePath's two merges:
+bb1→bb3→bb4 then bb4→bb5→bb6), the produced SSA may
+legitimately contain a PHI at each merge — that is
+standard SSA construction, not a defect.
 
-positive:
-    %x1 = add i64 %x, 1
-    store i64 %x1, ptr %r
-
-negative:
-    %nx = sub i64 0, %x
-    store i64 %nx, ptr %r
-
-exit:
-    %value = load i64, ptr %r
-    ret i64 %value
+The architecture's whole point is to delegate PHI
+placement policy to LLVM. Prescribing the resulting
+PHI topology would partially take that responsibility
+back and would create the same kind of over-specification
+that allowed C9 to drift.
 ```
 
-If `opt -passes=mem2reg + verify` does NOT promote
-the alloca and produce a single PHI at exit, close
-`HALT_OPTION_W_FALSIFIED`. Do not start IMPL.
+For ProbePath specifically, a hand-translated pre-
+mem2reg IR whose structure mirrors the source IR
+sequence — entry-block alloca + initial store, a
+positive-path store, a negative-path store, an
+exit-block load+ret — is acceptable as long as the
+PASS criteria above hold. The reviewer's diagnostic
+shape (one entry block, two branches, one exit) is a
+valid SHAPE but not the only valid shape; the two-
+sequential-merge shape that C10 evidence binds
+(bb1→bb3→bb4→bb5→bb6) is equally valid as long as
+each original definition site carries exactly one
+store and each original use site carries exactly one
+load.
+
+If `opt -passes=mem2reg + verify` does NOT satisfy
+the PASS criteria above, close
+`HALT_OPTION_W_FALSIFIED`. The halt is bound to the
+PASS criteria, not to a particular PHI topology.
 
 Evidence:
 `evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02/c1/red-p03-option-w-proof/`
@@ -439,7 +516,13 @@ The replacement invariant:
 
 ```text
 on definition of memory-backed V (at the ORIGINAL site):
-    rhs = lower(...)
+    # case (a) — IR_STORE source:
+    #     rhs is the lowered RHS of the IR_STORE
+    # case (b) — arithmetic dst:
+    #     rhs is the lowered opcode result
+    #       (the opcode's neutral-IR instruction IS
+    #        the definition; rhs is its value)
+    rhs = lower(that neutral-IR instruction)
     LLVMBuildStore(rhs, slot)
 
 on read of memory-backed V (at the ORIGINAL site):
@@ -451,6 +534,12 @@ after function construction:
 lc->values[V]:
     NOT authoritative while V is memory-backed
 ```
+
+Both case (a) and case (b) from §2 rule 3 share the
+same lowering skeleton (`lower(...)` then `store`).
+The IMPL MUST NOT introduce a third case that calls
+into the deleted C9 helper, even if the case-(b)
+lowering happens to look like "compute, then store".
 
 A backend store must ALWAYS have a direct neutral-IR
 semantic cause. The "store is needed because a CFG
@@ -587,7 +676,7 @@ C1  RED
     contract open + RED-1 reproduced
     ACT-Phase: RED
 
-C2  RED   (this commit)
+C2  RED
     reviewer board corrections to contract:
       P0-1 gate cycle split into TOOLING_IMPL_AUTH vs
             COMPILER_IMPL_AUTH
@@ -600,14 +689,45 @@ C2  RED   (this commit)
             defect)
     ACT-Phase: RED
 
+C2.1 RED  (this commit)
+    reviewer-board second-pass corrections to contract:
+      P0-1 §2 rule 3 re-framed to admit both
+            IR_STORE-source definitions AND ordinary
+            scalar-arithmetic-dst definitions; the
+            exact opcode list for case (b) is
+            deferred to C3 RED-2 evidence (reviewer
+            board: "let C3 enumerate the real
+            definition forms first, then freeze the
+            exact opcode list from evidence").
+      P0-2 §6 RED-3 PASS criteria replaced with
+            structural / semantic properties; the
+            "single PHI at exit" requirement is
+            withdrawn because mem2reg legitimately
+            produces iterated dominator-frontier PHIs
+            and prescribing PHI topology would take
+            back responsibility we deliberately
+            delegated to LLVM.
+      P1  §2 rule 5 "void-returning" near-miss
+            withdrawn; wording now reads "source local
+            feeding compiler-generated return
+            handling, or another mechanically-proven
+            I64 return-local shape that RED-2
+            enumerates."
+    ACT-Phase: RED
+
 C3  RED
     RED-2: def/use tables for six fixtures
+           (must enumerate real definition forms per
+           §2 rule 3; must record frozen opcode list
+           for case (b) per §2 rule 3)
     ACT-Phase: RED
 
 C4  RED
     RED-3: hand-translated Option-W proof for five
            eligible fixtures via
-           `opt -passes=mem2reg + verify`
+           `opt -passes=mem2reg + verify` under the
+           structural / semantic PASS criteria of §6
+           (NOT a single-PHI-at-exit criterion)
     ACT-Phase: RED
 
 C5  IMPL-TOOLING
@@ -615,23 +735,27 @@ C5  IMPL-TOOLING
     scripts/quality/* and Makefile only
     no src/ change
     ACT-Phase: IMPL (TOOLING)
+    AUTHORISATION: independently released by the
+                  reviewer board at C2.1; may run in
+                  parallel with C3 and C4.
 
 C6  IMPL-COMPILER
     bounded backend change: delete C9 remove-list,
-    implement §2 discriminator, implement §7
-    invariant
+    implement §2 discriminator (cases a + b), implement
+    §7 invariant (case a + b lowering skeleton)
     src/llvm-backend.c only
     ACT-Phase: IMPL (COMPILER)
+    AUTHORISATION: gated on C5 GREEN, C3 PASS, C4 PASS.
 
 C7  CLOSE
     acceptance-criteria evidence + verdict
     ACT-Phase: CLOSE
 ```
 
-Seven commits. F12 honest classification per phase;
-TOOLING and COMPILER IMPL are distinct phases because
-they have distinct authorisation predicates (§4.1,
-§4.3).
+Eight commits (one extra RED descendant). F12 honest
+classification per phase; TOOLING and COMPILER IMPL
+are distinct phases because they have distinct
+authorisation predicates (§4.1, §4.3).
 
 ---
 
@@ -668,9 +792,34 @@ they have distinct authorisation predicates (§4.1,
   gate remains the local-environment binding.
 
 * P0-1/P0-2/P0-3 reviewer-board corrections (this
-  commit C2): three contract defects identified during
-  the C1 review. Corrections recorded inline in §1.1,
-  §2, §3, §4, §10, §11, §14. No production code change.
+  commit C2.1): three contract defects identified
+  during the C2 second review — §2 rule 3 was
+  IR_STORE-only and would have made ProbePath
+  ineligible despite being the central fixture;
+  §6 RED-3 prescribed "single PHI at exit" which
+  contradicts LLVM's iterated-dominator-frontier PHI
+  placement; §2 rule 5 carried a "void-returning
+  function" near-miss. Corrections recorded inline
+  in §2 (rules 3 and 5), §6 (PASS criteria), §7
+  (case-a + case-b lowering skeleton), §11 (commit
+  topology adds C2.1 entry). No production code
+  change.
+
+* P0-1/P0-2/P0-3 reviewer-board corrections (commit
+  C2 at `7a991a9`): three contract defects identified
+  during the C1 review. Corrections recorded inline
+  in §1.1, §2, §3, §4, §10, §11, §14. No production
+  code change.
+
+* C2.1 was a separate RED descendant commit (not
+  folded into C2 or C3) because the reviewer board
+  prescribed it as a single small contract-fix
+  commit before C3/C4 could run. The C2 → C2.1
+  trajectory is the canonical pattern for this ACT:
+  every reviewer-board second-pass correction lives
+  in its own RED descendant commit so the contract
+  diff between any two RED commits is small and
+  auditable (F12 honest classification).
 
 ---
 
@@ -693,7 +842,8 @@ HALT_RED2_INELIGIBLE          (a fixture fails the §2
                                ACT is impossible because
                                the fixture is B0-binding)
 HALT_OPTION_W_FALSIFIED       (opt -passes=mem2reg +
-                               verify cannot promote the
+                               verify cannot satisfy the
+                               §6 PASS criteria on the
                                hand-written pre-IR; the
                                architecture is wrong)
 HALT_IMPL_SCOPE_EXPANSION     (COMPILER IMPL cannot
