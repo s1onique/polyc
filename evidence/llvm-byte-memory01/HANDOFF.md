@@ -219,3 +219,39 @@ Mission:
 4. preserve STORE_DEREF byte as deferred
 5. fix the spike-contract-check pre-existing FAIL
 6. fix the documentation hygiene (already done at this commit)
+
+## Trailer-correctness residue (P0, reviewer)
+
+The HALT commit e5e49f579a0d6ee3dede40abf2fe0b602bf4d4aa carries a
+malformed Factory-v2 trailer block:
+
+- Two ACT identities (ACT-POLYC-LLVM-BYTE-MEMORY01 and
+  ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME01) interleaved without the
+  canonical `ACT:` prefix token.
+- `ACT-Phase: OPEN` is not a legal Factory-v2 phase (legal: RED |
+  IMPL | EVIDENCE | CLOSE).
+- `ACT-Verdict: PENDING` is not a legal Factory-v2 verdict (legal
+  grammar: `^(PASS(_[A-Z0-9_]+)*|HALT_[A-Z0-9_]+)$`).
+
+`git interpret-trailers --parse` collapses both blocks, leaving
+only `ACT-Phase: OPEN / ACT-Verdict: PENDING` on record. The HALT
+verdict for `ACT-POLYC-LLVM-BYTE-MEMORY01` is therefore not
+recorded by the trailer block of `e5e49f5`.
+
+`scripts/quality/factory-v2-commit-msg-check.sh` returns
+`MODE=NON_ACT` because no `ACT:` trailer is recognised -- this is
+a coincidence that hides the malformed structure, not a validation
+PASS.
+
+Per Factory doctrine F14 (`bad commit = evidence; corrections are
+new commits`), `e5e49f5` is preserved as immutable historical
+evidence and is NOT amended. The canonical HALT verdict is
+re-issued by the dedicated bookkeeping correction ACT
+[`ACT-POLYC-LLVM-BYTE-MEMORY01-BOOKKEEPING01`](../../../docs/acts/ACT-POLYC-LLVM-BYTE-MEMORY01-BOOKKEEPING01.md)
+via CLOSE trailers including `ACT-Supersedes` and
+`ACT-Corrected-Verdict`. See
+[`evidence/llvm-byte-memory01/closure/e5e49f5-trailer-correctness.txt`](closure/e5e49f5-trailer-correctness.txt)
+for the immutable evidence record.
+
+RESUME01 RED / IMPL is HELD until that bookkeeping correction
+commit exists in the linear history.

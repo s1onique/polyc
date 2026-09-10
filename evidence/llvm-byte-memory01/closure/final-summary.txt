@@ -82,3 +82,20 @@ NEXT ACT
   ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME01
   See docs/acts/ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME01.md for the
   full mission statement.
+
+=== TRAILER-CORRECTNESS NOTE (added by ACT-POLYC-LLVM-BYTE-MEMORY01-BOOKKEEPING01) ===
+
+The HALT commit e5e49f579a0d6ee3dede40abf2fe0b602bf4d4aa carries a
+malformed Factory-v2 trailer block:
+
+  - Two ACT identities interleaved without the canonical ACT: prefix
+  - ACT-Phase: OPEN is not a legal Factory-v2 phase
+  - ACT-Verdict: PENDING is not a legal Factory-v2 verdict
+
+The canonical HALT verdict for ACT-POLYC-LLVM-BYTE-MEMORY01 is
+re-issued by the dedicated bookkeeping correction ACT
+ACT-POLYC-LLVM-BYTE-MEMORY01-BOOKKEEPING01 via CLOSE trailers
+including ACT-Supersedes and ACT-Corrected-Verdict. See
+docs/ROADMAP.md, docs/acts/ACT-POLYC-LLVM-BYTE-MEMORY01-BOOKKEEPING01.md,
+and evidence/llvm-byte-memory01/closure/e5e49f5-trailer-correctness.txt
+for the binding records.

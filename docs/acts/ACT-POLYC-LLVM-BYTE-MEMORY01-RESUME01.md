@@ -24,13 +24,57 @@ as the mandatory B0-shaped GREEN fixture.
   (H1 frozen-set exceeded; H2 B0 multi-block SSA dominance bug).
   See [`ACT-POLYC-LLVM-BYTE-MEMORY01.md`](ACT-POLYC-LLVM-BYTE-MEMORY01.md) §0.5.
 
-**Class:** MACHINE-ENFORCED CAPABILITY CONTRACT — semantic extension +
-IR-builder seam repair
+## 0.5 Trailer-correctness note (predecessor bookkeeping)
 
-**Production semantic changes:** **NONE** (the byte lowering semantics
-are already correct; this ACT formalizes the proven `SEXT`/`TRUNC`
-shapes and repairs the IR builder's reload dominance for conditional
-byte returns).
+The previous HALT commit at SHA `e5e49f5` carries a malformed
+Factory-v2 trailer block. Reviewer P0 observation: the commit message
+contains two ACT identity sections (one for
+`ACT-POLYC-LLVM-BYTE-MEMORY01` and one for
+`ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME01`) interleaved without the
+canonical `ACT: ACT-POLYC-<id>` token, with `ACT-Phase: OPEN` (not
+a legal phase — legal phases are `RED | IMPL | EVIDENCE | CLOSE`)
+and `ACT-Verdict: PENDING` (not a legal verdict — verdict grammar is
+`^(PASS(_[A-Z0-9_]+)*|HALT_[A-Z0-9_]+)$`). When parsed by
+`git interpret-trailers --parse`, the second block overwrites the
+first, leaving only `ACT-Phase: OPEN / ACT-Verdict: PENDING` on
+record.
+
+Per F14 ("bad commit = evidence; corrections are new commits"),
+`e5e49f5` is preserved as immutable historical evidence and is NOT
+amended. The intended closure verdict
+(`ACT-POLYC-LLVM-BYTE-MEMORY01` CLOSE
+`ACT-Verdict: HALT_SCOPE_EXPANSION_REQUIRED`) is issued by the
+dedicated bookkeeping correction ACT
+[`ACT-POLYC-LLVM-BYTE-MEMORY01-BOOKKEEPING01`](ACT-POLYC-LLVM-BYTE-MEMORY01-BOOKKEEPING01.md)
+which carries the canonical trailers, including
+`ACT-Supersedes: ACT-POLYC-LLVM-BYTE-MEMORY01` and
+`ACT-Corrected-Verdict: HALT_SCOPE_EXPANSION_REQUIRED` per
+`docs/factory/GIT-METADATA.md` §2.3.
+
+**RESUME01 RED / IMPL is HELD** until that bookkeeping correction
+commit exists in the linear history and
+`scripts/quality/factory-v2-commit-msg-check.sh` validates both
+its CLOSE trailer and the first RESUME01 RED trailer.
+
+**Class:** MACHINE-ENFORCED CAPABILITY CONTRACT — bounded LLVM codegen
+correctness repair (capability extension + IR-builder seam repair)
+
+**Language semantic changes:** **NONE** (PolyC source semantics are
+unchanged; signedness is already carried by `IR_ZEXT` vs `IR_SEXT`
+in the neutral IR; the byte lowering produces the same observable
+values as the IMPL commit at `2a15769b`).
+
+**Neutral-IR / ABI changes:** **NONE** (no new opcode, no new
+neutral-IR type; both source `I8` and `U8` continue to map to
+`IR_TYPE_I8` via `irConvertType`).
+
+**Production compiler change:** **YES** — bounded LLVM codegen
+correctness repair in `llCollapseStoreValue` (`src/llvm-backend.c`).
+The IMPL produced LLVM IR that fails `opt --passes=verify` on the
+B0-shaped multi-block fragment `pos_b0_compare_digit.HC` (P0 H2
+in the predecessor HALT record). This ACT must convert that
+fragment from `llvm-as`-parseable-but-verifier-invalid IR to
+verifier-valid IR for the B0-shaped byte path.
 
 ---
 
@@ -147,11 +191,24 @@ P0 H2 and is the central RED of this ACT.
 
 ## 3. Source change scope (bounded)
 
-1. `src/llvm-backend.c` — `llCollapseStoreValue` repair: ensure the
-   reload-store sequence dominates every consumer block. The repair
-   is block-aware: when a reload SSA value `%.reload1` is created for
-   a byte local, the corresponding `store` must be emitted in every
-   predecessor block whose branch reaches a consumer.
+1. `src/llvm-backend.c` — repair `llCollapseStoreValue` so every
+   value used by emitted LLVM IR satisfies SSA dominance for every
+   reachable consumer path. The exact mechanism is recon-derived
+   during RED phase (C1) and may be value selection, definition
+   placement / hoisting, PHI construction, or bounded collapse
+   suppression. HALT_SCOPE_EXPANSION_REQUIRED if the smallest
+   invariant-preserving repair requires a neutral-IR redesign,
+   changes outside the authorized `llCollapseStoreValue` seam,
+   or any change to ALREADY_SUPPORTED behaviour. The RED phase
+   (C1) must answer:
+
+   ```text
+   WHY does llCollapseStoreValue choose a non-dominating value?
+   WHAT CFG shapes trigger it?
+   WHAT is the smallest invariant-preserving repair?
+   ```
+
+   before the implementation mechanism is frozen.
 
 2. `src/llvm-backend-cap.c` — note rewrite for `IR_SEXT`, `IR_TRUNC`
    rows to reflect the RESUME01 authorized set; rationale + line refs.

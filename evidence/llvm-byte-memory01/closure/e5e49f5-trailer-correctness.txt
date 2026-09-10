@@ -1,0 +1,78 @@
+=== Immutable evidence: malformed Factory-v2 trailer on e5e49f5 ===
+
+Recorded by: ACT-POLYC-LLVM-BYTE-MEMORY01-BOOKKEEPING01 (governance correction)
+Subject commit (immutable, F14 preserved):
+  e5e49f579a0d6ee3dede40abf2fe0b602bf4d4aa  docs+evidence(byte-memory01): HALT_SCOPE_EXPANSION_REQUIRED + open RESUME01
+
+--- git interpret-trailers --parse output ---
+
+ACT-Phase: OPEN
+ACT-Verdict: PENDING (next-to-run)
+
+--- factory-v2-commit-msg-check.sh output ---
+
+MODE=NON_ACT
+STATUS=PASS
+
+--- Diagnosis ---
+
+1. The subject commit message contains TWO ACT identity blocks
+   interleaved without the canonical 'ACT: ACT-POLYC-<id>' token:
+
+     ACT-POLYC-LLVM-BYTE-MEMORY01
+     ACT-Phase: CLOSE
+     ACT-Verdict: HALT_SCOPE_EXPANSION_REQUIRED  (H1 frozen-set exceeded; H2 B0 multi-block SSA dominance bug)
+
+     ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME01
+     ACT-Phase: OPEN
+     ACT-Verdict: PENDING (next-to-run)
+
+2. Per docs/factory/GIT-METADATA.md section 2.1:
+     legal phases: RED | IMPL | EVIDENCE | CLOSE
+     'OPEN' is not a legal phase.
+
+3. Per docs/factory/GIT-METADATA.md section 2.2:
+     legal verdicts: ^(PASS(_[A-Z0-9_]+)*|HALT_[A-Z0-9_]+)$
+     'PENDING' is not a legal verdict. CLOSE verdict grammar is
+     limited to PASS or HALT_<REASON>.
+
+4. 'git interpret-trailers --parse' collapses the second
+   (ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME01) block over the first
+   (ACT-POLYC-LLVM-BYTE-MEMORY01) block, leaving ONLY
+   'ACT-Phase: OPEN / ACT-Verdict: PENDING' on record. The HALT
+   verdict for BYTE-MEMORY01 is therefore not recorded by the
+   trailer block of e5e49f5.
+
+5. The validator returns MODE=NON_ACT because no 'ACT:' trailer
+   is present after parsing -- the bare 'ACT-POLYC-...' line
+   without the 'ACT:' prefix token is not recognised. This is
+   a coincidence that hides the malformed structure, not a
+   validation PASS.
+
+--- Correct grammar (per docs/factory/GIT-METADATA.md section 2.1, 2.2, 2.3) ---
+
+For the HALT verdict on BYTE-MEMORY01 (issued by the BOOKKEEPING01 correction ACT):
+
+  ACT: ACT-POLYC-LLVM-BYTE-MEMORY01-BOOKKEEPING01
+  ACT-Phase: CLOSE
+  ACT-Verdict: PASS
+  ACT-Supersedes: ACT-POLYC-LLVM-BYTE-MEMORY01
+  ACT-Corrected-Verdict: HALT_SCOPE_EXPANSION_REQUIRED
+
+For the first RESUME01 execution commit:
+
+  ACT: ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME01
+  ACT-Phase: RED
+  (no ACT-Verdict on a RED phase)
+
+--- F14 disposition ---
+
+Per Factory doctrine F14 ('bad commit = evidence; corrections
+are new commits; conflicts are resolved in new commits; the
+appended commit-count grows but historical evidence is never
+rewritten'), e5e49f5 is preserved as immutable historical
+evidence and is NOT amended. The HALT verdict for
+ACT-POLYC-LLVM-BYTE-MEMORY01 is recorded by the BOOKKEEPING01
+correction ACT's CLOSE commit, with ACT-Supersedes and
+ACT-Corrected-Verdict trailers binding the correction to the
+predecessor.

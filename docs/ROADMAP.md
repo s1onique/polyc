@@ -310,6 +310,25 @@ See `evidence/llvm-byte-memory01/HANDOFF.md`,
 `docs/acts/ACT-POLYC-LLVM-BYTE-MEMORY01.md` §0.5 for the binding
 records.
 
+**STATUS (bookkeeping correction required):** the HALT commit at
+SHA `e5e49f579a0d6ee3dede40abf2fe0b602bf4d4aa` carries a malformed
+Factory-v2 trailer block (two ACT identities interleaved without
+the canonical `ACT:` prefix; illegal `ACT-Phase: OPEN`; illegal
+`ACT-Verdict: PENDING`). `git interpret-trailers --parse` collapses
+both blocks, leaving only `ACT-Phase: OPEN / ACT-Verdict: PENDING`
+on record, which silently passes
+`scripts/quality/factory-v2-commit-msg-check.sh` (because no
+`ACT:` trailer is recognised). Per F14 (`bad commit = evidence`)
+the commit is preserved as immutable historical evidence and is
+NOT amended. The dedicated bookkeeping correction ACT
+[`ACT-POLYC-LLVM-BYTE-MEMORY01-BOOKKEEPING01`](acts/ACT-POLYC-LLVM-BYTE-MEMORY01-BOOKKEEPING01.md)
+issues the canonical CLOSE trailers (`ACT-Phase: CLOSE`,
+`ACT-Verdict: PASS`,
+`ACT-Supersedes: ACT-POLYC-LLVM-BYTE-MEMORY01`,
+`ACT-Corrected-Verdict: HALT_SCOPE_EXPANSION_REQUIRED`) on a
+descendant correction commit, and gates
+`ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME01` RED / IMPL behind it.
+
 ### P4 — Self-hosting substrate (NEW CRITICAL PATH)
 
 The next useful program PolyC wants to host is **its own
