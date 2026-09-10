@@ -1258,53 +1258,87 @@ positive/negative placement + I64-only + production
 delta=0) are unchanged. C3 only tightens the
 implementation contract that CORRECTION01 will consume.
 
-## 13. Wording convention (appended at C3 RED evidence tightening)
+## 13. Wording convention (corrected at C3 RED evidence tightening)
 
-Per the post-C2 HOLD verdict: factory v2 phase grammar
-is exactly `RED | IMPL | CLOSE` (the historical
-"GREEN" / "EVIDENCE" labels are NOT phase tokens; they
-appear in commit subjects as descriptive prose but never
-in the `ACT-Phase:` trailer).
+### The actual Factory v2 phase grammar
 
-Therefore, throughout this ACT and its companion files:
+The Factory v2 phase grammar is `RED | IMPL | EVIDENCE |
+CLOSE`. This is the grammar enforced by
+`scripts/quality/factory-v2-commit-msg-check.sh` (the
+authoritative trailer validator) and by the regression
+suite (`scripts/quality/factory-v2-test.sh`):
 
 ```text
-Commit subject / prose     Factory trailer  Phase grammar
-------------------------  ----------------  --------------
-"C1 RED"                  ACT-Phase: RED    RED
-"C1.5 EVIDENCE"           ACT-Phase: RED    RED
-"C2 CLOSE"                ACT-Phase: CLOSE  CLOSE
-"CORRECTION01 IMPL"       ACT-Phase: IMPL   IMPL
+# from scripts/quality/factory-v2-commit-msg-check.sh
+# ACT-Phase: exactly 1, one of
+#            RED | IMPL | EVIDENCE | CLOSE
 ```
 
-The trailer is AUTHORITATIVE for the Factory v2 lifecycle
-and for the range-check machinery. The informal label
-in commit subjects / conversation / prose is NOT a phase
-token.
+```text
+# from scripts/quality/factory-v2-test.sh
+# T13  range RED->IMPL->CLOSE (3 commits)              PASS
+# T14  range RED->IMPL->EVIDENCE->IMPL->CLOSE (5)      PASS
+# T15  first phase not RED                             FAIL
+```
+
+`EVIDENCE` is therefore a real, legal Factory phase. The
+canonical factory doctrine (`docs/factory/GIT-METADATA.md`)
+also states `ACT-Phase: <RED | IMPL | EVIDENCE | CLOSE>`.
+
+The post-C2 HOLD verdict's "phase grammar is exactly
+`RED | IMPL | CLOSE`" wording in the C3 commit message
+(285a9c0) and earlier drafts of this section was
+incorrect and is retracted. The grammar is the 4-phase
+grammar above; the commit subject and §10 of this ACT
+already reflect it. Only the prose in §13 and the C3
+commit message mistakenly narrowed it.
+
+### What this means for the LOCAL-MEM2REG01 lifecycle
+
+The phase label carried by a commit's `ACT-Phase:` trailer
+is the trailer-authoritative classification. The commit
+subject and surrounding prose may use descriptive labels
+("evidence tightening", "GREEN", etc.) but those are
+NOT phase tokens; only `RED | IMPL | EVIDENCE | CLOSE` are.
 
 For this ACT, the authoritative trailers are:
 
 ```text
 d2ffe21  no trailer            (NON_ACT OPEN mirror)
-6059298  ACT-Phase: RED         (C1)
+6059298  ACT-Phase: RED         (C1 RED)
 f45ba38  ACT-Phase: RED         (C1.5 RED evidence tightening)
-57c7ee4  ACT-Phase: CLOSE       (C2, verdict PASS)
+57c7ee4  ACT-Phase: CLOSE       (C2 CLOSE, verdict PASS)
+285a9c0  ACT-Phase: RED         (C3 RED evidence tightening)
+69c886f  ACT-Phase: RED         (CORRECTION01 RED; opens the new ACT id)
 ```
 
-The next commit, C3 (this evidence tightening) carries
-`ACT-Phase: RED` because it is RED evidence work, not a
-new CLOSE; the architectural PASS at `57c7ee4` stands
-unchanged and is reaffirmed by C3's tighter contract.
+### Why f45ba38 and 285a9c0 carry `RED` not `EVIDENCE`
 
-### Why this matters
+Both commits are evidence-tightening commits in
+substance (they refine the principal RED evidence, fix
+the harness, correct the recipe). Either label would
+have been semantically correct, but both chose `RED`.
+This is not a contradiction of the grammar; it is a
+phase-label choice within the grammar. Under a strict
+reading of "EVIDENCE = post-RED, post-IMPL non-binding
+intermediate" both commits would have been `EVIDENCE`;
+under a permissive reading that folds evidence
+tightening back into RED, they are `RED`. Both readings
+are valid; we use the permissive reading here for
+historical continuity with C1's RED trailer.
 
-Without this convention, a reader scanning the prose for
-"phase EVIDENCE" might conclude that f45ba38 introduced a
-new Factory phase, which is incorrect. The historical
-"RED → GREEN → CLOSE" three-stage mental model that some
-v1 ACTs use does not survive in v2: there is only one
-RED phase per ACT, and additional tightening between
-C1 and C2 is still part of RED, not a new phase.
+### The trailer is AUTHORITATIVE
+
+For Factory v2 lifecycle bookkeeping and for the
+range-check machinery, the trailer is the only
+authoritative source of phase. Prose, commit subjects,
+ROADMAP CLASS rows, and Q1-Q6-SUMMARY labels may use
+any descriptive label; only the trailer determines
+the lifecycle position.
+
+This was already stated in §10 ("the trailer is the
+lifecycle authority") and is now confirmed against the
+real 4-phase grammar.
 
 ### Bound evidence references (post-C3)
 
@@ -1343,12 +1377,13 @@ All conditions are met. The architectural PASS at
 and a real C-API prescription; CORRECTION01 has the
 contract it needs.
 
-## 14. Factory v2 range-check residue (appended at C3 RED evidence tightening)
+## 14. Factory v2 range-check residue (corrected at C3 RED evidence tightening)
+
+### Immutable historical fact
 
 After C3 (285a9c0) is committed as a descendant of the
 LOCAL-MEM2REG01 CLOSE (57c7ee4), the Factory v2
-range-check tool (`scripts/quality/factory-v2-range-check.sh`)
-reports a rule-6 violation:
+range-check tool reports a rule-6 violation:
 
 ```text
 $ sh scripts/quality/factory-v2-range-check.sh \
@@ -1359,71 +1394,107 @@ after CLOSE still carries ACT: ACT-POLYC-LLVM-LOCAL-MEM2REG01;
 ACT must not continue past CLOSE
 ```
 
-Rule 6 of the range-check (`No commit after CLOSE may
-carry ACT=<id>`) is a hard mechanical invariant. C3
-carries `ACT: ACT-POLYC-LLVM-LOCAL-MEM2REG01` because
-its content (the v3 C-API harness + Q3.3 correction +
-wording convention) is the RED evidence tightening of
-the original ACT. The reviewer's intent ("a descendant
-record correcting the future IMPL contract") is to use
-the same ACT id for the correction, but Factory v2 does
-not permit descendants to carry the original ACT id
-past its CLOSE.
+Rule 6 (`No commit after CLOSE may carry ACT=<id>`) is
+a hard mechanical invariant. C3 carries
+`ACT: ACT-POLYC-LLVM-LOCAL-MEM2REG01` because its content
+(the v3 C-API harness + Q3.3 correction + the corrected
+wording convention in §13) is the RED evidence tightening
+of the original ACT. The commit is immutable under the
+append-only invariant (F14); the rule-6 violation is
+therefore permanent and cannot be retroactively fixed.
+
+**Nothing about a future CORRECTION01 CLOSE commit will
+change this.** The CORRECTION01 ACT can supersede the
+operative implementation contract, can carry its own
+valid RED→IMPL→...→CLOSE range, and can carry
+`ACT-Supersedes: ACT-POLYC-LLVM-LOCAL-MEM2REG01` with
+`ACT-Corrected-Verdict: PASS`. But it does not
+retroactively revalidate the original LOCAL-MEM2REG01
+range. The original ACT's range at HEAD will continue
+to find 285a9c0 as a same-id descendant of its CLOSE,
+and rule 6 will continue to fail.
+
+This is honest residue, not a regression. The state is:
+
+```text
+LOCAL-MEM2REG01 architectural verdict
+    PASS at 57c7ee4
+    immutable and accepted
+
+LOCAL-MEM2REG01 Factory range at current HEAD
+    FAIL
+    permanently contaminated by 285a9c0 post-CLOSE same-id trailer
+
+CORRECTION01
+    can supersede the operative contract
+    can itself have a valid RED→IMPL→...→CLOSE range
+    CANNOT retroactively make the original rule-6 PASS
+```
 
 ### Why this is not a regression
 
 1. The architectural PASS at `57c7ee4` is unchanged.
    The 9-line close criterion (architectural probe,
-   producer provenance, eligibility discriminator, both
-   C APIs, error handling, placement, I64-only,
+   producer provenance, eligibility discriminator,
+   both C APIs, error handling, placement, I64-only,
    production-delta=0) is still met.
 2. C3 only tightens the implementation contract that
-   CORRECTION01 will consume. It introduces NO new
+   CORRECTION01 will consume. It introduces no new
    RED work; it is purely a corrective close-out.
-3. The range-check failure is mechanical, not
-   semantic. The original ACT range
-   `FIRST..CLOSE = 6059298..57c7ee4` still validates
-   cleanly when checked in isolation; rule 6 is
-   tripped only by the descendant.
-4. The repo's other closed ACTs (RSF01, BYTE-MEMORY01,
-   CORE04) do not exhibit this pattern because their
-   descendant corrections (e.g., CORRECTION01,
-   BOOKKEEPING01, RESUME01) carry DIFFERENT ACT ids
-   (the `-CORRECTION01`, `-BOOKKEEPING01`, `-RESUME01`
-   suffix pattern). The LOCAL-MEM2REG01 family does
-   not yet have its `-CORRECTION01` ACT id opened.
+3. The range-check failure is mechanical and
+   immutable. The original ACT range
+   `FIRST..CLOSE = 6059298..57c7ee4` validates cleanly
+   when checked in isolation; rule 6 is tripped only
+   by the descendant, which is append-only and
+   cannot be removed.
+4. The repo's other closed ACTs (RSF01,
+   BYTE-MEMORY01, CORE04) do not exhibit this pattern
+   because their descendant corrections
+   (BOOKKEEPING01, RESUME01, CORRECTION01) carry
+   DIFFERENT ACT ids from the start. The
+   LOCAL-MEM2REG01 family opened its CORRECTION01
+   ACT id at 69c886f (the commit following C3); that
+   was after the rule-6 contamination was already
+   locked in.
 
-### Mechanical remediation (deferred to CORRECTION01)
+### CORRECTION01 lifecycle
 
-When `ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION01` is
-opened, the canonical structure per the BOOKKEEPING01
-precedent is:
+The CORRECTION01 ACT id
+(`ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION01`) was
+opened at 69c886f in RED phase. Its authorized
+trajectory is:
 
 ```text
-commit 1: ACT=ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION01
-           ACT-Phase: RED
-           (RED evidence for the corrected contract;
-            may reference C3's content by SHA but does
-            NOT carry the original LOCAL-MEM2REG01 id)
+69c886f  ACT-Phase: RED         (CORRECTION01 RED; opens the new ACT id)
+        ACT: ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION01
+        ACT-Phase: RED
 
-commit 2 (future CLOSE):
-           ACT=ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION01
-           ACT-Phase: CLOSE
-           ACT-Verdict: PASS
-           ACT-Supersedes: ACT-POLYC-LLVM-LOCAL-MEM2REG01
-           ACT-Corrected-Verdict: PASS
+future IMPL commit(s) ...  ACT: ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION01
+                           ACT-Phase: IMPL
+
+future CLOSE commit        ACT: ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION01
+                           ACT-Phase: CLOSE
+                           ACT-Verdict: PASS
+                           ACT-Supersedes: ACT-POLYC-LLVM-LOCAL-MEM2REG01
+                           ACT-Corrected-Verdict: PASS
 ```
 
-Under that structure the rule-6 violation becomes a
-legitimate ACT-supersedes lifecycle: CORRECTION01 is a
-distinct ACT id whose CLOSE explicitly supersedes
-LOCAL-MEM2REG01 with a `Corrected-Verdict: PASS` (the
-architectural PASS stands; only the IMPL contract was
-tightened). The range-check then validates each ACT
-range independently.
+The CORRECTION01 CLOSE will document that the
+architectural PASS at 57c7ee4 is preserved (not
+overturned) and that only the implementation contract
+was tightened. The CORRECTION01 range-check at the
+future CLOSE will validate cleanly (its own rule 4 +
+rule 6 + rule 5 are all independent of the original
+LOCAL-MEM2REG01 range).
 
-Until CORRECTION01 is opened, the LOCAL-MEM2REG01
-range-check at HEAD will report rule-6 FAILURE; this
-is accepted as a documented Factory v2 limitation,
-not as evidence against the architectural PASS at
-57c7ee4.
+### Earlier draft's mistaken claim (retracted)
+
+An earlier draft of §14 (in the C4 commit 69c886f)
+suggested that "the rule-6 violation becomes a
+legitimate ACT-supersedes lifecycle" once CORRECTION01
+closes. That framing is retracted. The rule-6
+violation on the original LOCAL-MEM2REG01 range
+remains a permanent, immutable residue; CORRECTION01's
+CLOSE does not erase it. CORRECTION01 is a distinct
+ACT whose own range validates correctly; the original
+ACT's range remains contaminated.

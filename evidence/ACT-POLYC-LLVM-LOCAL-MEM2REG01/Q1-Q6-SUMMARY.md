@@ -3,9 +3,9 @@
 **Subject tree:** `d2ffe21` (ACT OPEN) → `6059298` (C1 RED,
 `ACT-Phase: RED`) → `f45ba38` (C1.5 RED evidence tightening,
 `ACT-Phase: RED`) → `57c7ee4` (C2 CLOSE, `ACT-Phase: CLOSE
-+ ACT-Verdict: PASS`) → C3 RED evidence tightening (this
-update; `ACT-Phase: RED`). NOTE: "EVIDENCE" is descriptive
-prose, NEVER a Factory phase; the trailer is authority.
++ ACT-Verdict: PASS`) → `285a9c0` (C3 RED evidence tightening,
+`ACT-Phase: RED`) → `69c886f` (CORRECTION01 RED, opens new ACT id,
+`ACT: ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION01`).
 **Date:** 2026-09-10
 **Toolchain:** `opt --version` = LLVM 22.1.8 (Nix store)
 **Hypothesis under test:** option D from
@@ -458,3 +458,38 @@ Future IMPL freeze is I64 single-slot scalar only.
 bounded IMPL freeze (LLVMRunPassesOnFunction +
 entry-block alloca + I64 scalar only, with the
 Q1-derived eligibility discriminator).
+
+## Phase grammar correction (appended at CORRECTION01 RED)
+
+The earlier version of this file stated: "NOTE: 'EVIDENCE'
+is descriptive prose, NEVER a Factory phase; the trailer
+is authority." That wording was a paraphrase of the C3
+commit message (285a9c0), which incorrectly narrowed
+the Factory v2 phase grammar to `RED | IMPL | CLOSE`.
+
+The actual Factory v2 phase grammar is
+`RED | IMPL | EVIDENCE | CLOSE`, as enforced by
+`scripts/quality/factory-v2-commit-msg-check.sh` and
+as exercised by the regression suite
+(`scripts/quality/factory-v2-test.sh` T14 explicitly
+tests a `RED→IMPL→EVIDENCE→IMPL→CLOSE` range as PASS).
+The canonical factory doctrine in
+`docs/factory/GIT-METADATA.md` also lists the 4-phase
+grammar.
+
+The corrected framing for the LOCAL-MEM2REG01 family:
+
+* the grammar is `RED | IMPL | EVIDENCE | CLOSE`;
+* C1, C1.5, and C3 all carry `ACT-Phase: RED`;
+* under a strict reading, C1.5 and C3 (both
+  evidence-tightening) would carry `ACT-Phase:
+  EVIDENCE`; under a permissive reading they remain
+  `RED`. Both readings are valid; we use the
+  permissive reading for historical continuity with
+  C1's RED trailer;
+* the trailer is the authoritative phase label;
+  prose labels in commit subjects, ROADMAP rows, and
+  Q1-Q6-SUMMARY may use any descriptive text but
+  must not contradict the trailer.
+
+See ACT §13 for the full corrected wording.

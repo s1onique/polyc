@@ -1186,10 +1186,14 @@ LOCAL-MEM2REG01  ACT-POLYC-LLVM-LOCAL-MEM2REG01
   ENTRY    = 0501569 (post-RSF01-hygiene; pre-CLOSE of LOCAL-MEM2REG01)
   CLASS    = C1 RED / C1.5 RED evidence tightening /
              C2 CLOSE / C3 RED evidence tightening
-             (Factory v2 phase grammar is exactly
-              RED | IMPL | CLOSE; "EVIDENCE" is descriptive
-              prose in commit subjects, NEVER a phase token.
-              C1.5 and C3 both carry ACT-Phase: RED.)
+             (Factory v2 phase grammar is
+              RED | IMPL | EVIDENCE | CLOSE.
+              C1, C1.5, and C3 all carry ACT-Phase: RED;
+              both labels are valid for evidence-tightening
+              commits under the permissive reading. The
+              narrow "RED | IMPL | CLOSE" wording used in
+              C3's commit message was incorrect and is
+              retracted; see ACT §13.)
   STATE    = OPEN; C1 RED committed; C1.5 committed;
              C2 CLOSE committed (verdict PASS, 57c7ee4);
              C3 RED evidence tightening in this branch
