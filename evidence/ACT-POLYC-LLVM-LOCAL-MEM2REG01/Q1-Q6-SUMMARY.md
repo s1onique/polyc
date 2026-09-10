@@ -33,12 +33,18 @@ producing SIGSEGV during cleanup. C3 fixes this with
 one dispose). All 3 fixtures now exit 0 cleanly. The C2
 handoff also prescribed `LLVMSaveInsertPoint` /
 `LLVMRestoreInsertPoint`, which are NOT in
-`llvm-c/Core.h`; C3 replaces this with a dedicated entry-
-block builder (`LLVMCreateBuilderInContext` +
-`LLVMPositionBuilderAtEnd(alloca_builder,
-LLVMGetEntryBasicBlock(fn))` + `LLVMDisposeBuilder`).
+`llvm-c/Core.h`; C3 introduces a dedicated entry-block
+builder, and C6 then NORMALIZES the placement rule.
 The C2 architectural PASS substance at `57c7ee4` stands;
-C3 only tightens the implementation contract.
+C3 / C6 only tighten the implementation contract.
+
+The authoritative recipe lives in the C6-normalized
+Q3.3 below (placement rule: prefer before first non-
+alloca, else append to empty entry block, never after
+a terminator, never in a non-entry block). C8 retires
+the older C3-style bare `LLVMPositionBuilderAtEnd(...)
+at the entry block end` presentation that used to live
+here.
 
 ---
 
@@ -131,32 +137,33 @@ per Q3.3 below.
 LOCAL-MEM2REG01-CORRECTION01 establish so the resulting
 alloca lands in the function entry block?
 
-ANSWER (CORRECTED in C3 RED evidence tightening):
-`LLVMSaveInsertPoint` and `LLVMRestoreInsertPoint` are NOT
-exposed by `llvm-c/Core.h`. The actual C API surface for
-builder positioning is `LLVMPositionBuilder*` +
+ANSWER (CORRECTED in C3, NORMALIZED in C6, POINTER-
+ONLY in C8 — see the authoritative C6-normalized
+recipe in the SECOND Q3.3 below under
+"Insertion-point discipline required by CORRECTION01
+(re-normalized in C6 RED evidence tightening)"):
+`LLVMSaveInsertPoint` and `LLVMRestoreInsertPoint` are
+NOT exposed by `llvm-c/Core.h`. The actual C API
+surface for builder positioning is `LLVMPositionBuilder*` +
 `LLVMGetInsertBlock` + `LLVMClearInsertionPosition` +
 `LLVMDisposeBuilder`. The recommended discipline is
-therefore a DEDICATED ENTRY-BLOCK BUILDER:
+therefore a DEDICATED ENTRY-BLOCK BUILDER. The exact
+placement rule (which positioning primitive fires in
+which branch, and which positions are FORBIDDEN) is
+fully specified in the C6-normalized Q3.3 immediately
+below and in ACT §6 Q3.3; do NOT re-derive the
+formula inline.
 
-```c
-LLVMBuilderRef alloca_builder =
-    LLVMCreateBuilderInContext(lc->ctx);
-LLVMPositionBuilderAtEnd(alloca_builder,
-                         LLVMGetEntryBasicBlock(fn));
-
-LLVMValueRef slot = LLVMBuildAlloca(
-    alloca_builder, LLVMInt64TypeInContext(lc->ctx),
-    "polyc.local.slot");
-LLVMDisposeBuilder(alloca_builder);
-```
-
-The normal lowering builder is left completely untouched.
 The two builders have the invariant:
 
 ```text
 normal builder   -> CFG/instruction lowering
-alloca builder   -> entry-block stack-slot materialisation only
+                   (UNTOUCHED by entry-block alloca
+                    materialisation)
+alloca builder   -> entry-block stack-slot
+                   materialisation only
+                   (CREATED + POSITIONED + USED + DISPOSED
+                    inside the helper)
 ```
 
 If the CORRECTION01 IMPL discovers a defect that the
@@ -164,6 +171,18 @@ dedicated entry-block builder cannot satisfy, that is
 NEW EVIDENCE that triggers a HALT / new recon / new
 ACT id — it is NOT a license to mutate the normal
 lowering builder. There is NO fallback recipe.
+
+> **C8 note (this edit).** The earlier version of this
+> section presented a C3-style bare
+> `LLVMPositionBuilderAtEnd(alloca_builder,
+> LLVMGetEntryBasicBlock(fn))` recipe. That recipe
+> was correct as far as it went, but it was a
+> SUPERSEDED reduction: it did not express the
+> placement rule (prefer before first non-alloca,
+> else append to empty entry block, never after a
+> terminator, never in a non-entry block). C8 retires
+> this duplicated reduction. The authoritative
+> recipe is the C6-normalized Q3.3 immediately below.
 
 **Q3 placement probe evidence (renamed in C1.5)**
 
@@ -204,7 +223,8 @@ single_cond_probe_NOT_IN_ENTRY_ADVERSARIAL.ll
                 predecessor, or after an entry-block
                 terminator, or in a non-entry block) fails
                 the verifier exactly as this probe does.
-                See the placement rule in Q3.3 above.
+                See the placement rule in the C6-normalized
+                Q3.3 immediately below.
 ```
 `single_cond_probe_NOT_IN_ENTRY_ADVERSARIAL.ll`): when the
 alloca is placed in a conditional block (bb3), the verifier
@@ -446,22 +466,24 @@ scalar, direct, non-volatile, non-escaping, non-aggregate).
 
 **Q3 PASS.** Placement requirement is determined: entry-block
 alloca, with a DEDICATED ENTRY-BLOCK BUILDER discipline
-prescribed for CORRECTION01 (see Q3.3 corrected recipe:
-`LLVMCreateBuilderInContext` +
-`LLVMPositionBuilderAtEnd(alloca_builder,
-                         LLVMGetEntryBasicBlock(fn))` +
-`LLVMDisposeBuilder`). The C2 handoff had prescribed a
-save/restore insertion-point discipline using
-`LLVMSaveInsertPoint` / `LLVMRestoreInsertPoint`; that
-discipline references primitives that do NOT exist in
-`llvm-c/Core.h` and was replaced by the dedicated-builder
-recipe in C3 and re-normalized in C6. Positive control
-fixture (single_cond_probe_ENTRY_BLOCK_NAMED_BB1.ll)
-confirms the block-name "entry" is irrelevant. Negative
-witness fixture
-(single_cond_probe_NOT_IN_ENTRY_ADVERSARIAL.ll) confirms
-that a misplaced alloca breaks the verifier with
-"Instruction does not dominate all uses!".
+prescribed for CORRECTION01. The authoritative recipe is
+the C6-normalized Q3.3 in this file (or ACT §6 Q3.3):
+prefer before the first non-alloca instruction via
+`LLVMPositionBuilderBefore`, else append to the empty
+entry block via `LLVMPositionBuilderAtEnd`; never after
+an entry-block terminator; never in a non-entry block.
+The C2 handoff had prescribed a save/restore insertion-
+point discipline using `LLVMSaveInsertPoint` /
+`LLVMRestoreInsertPoint`; that discipline references
+primitives that do NOT exist in `llvm-c/Core.h` and was
+replaced by the dedicated-builder recipe in C3 and
+re-normalized (placement rule + forbidden positions)
+in C6. Positive control fixture
+(single_cond_probe_ENTRY_BLOCK_NAMED_BB1.ll) confirms
+the block-name "entry" is irrelevant. Negative witness
+fixture (single_cond_probe_NOT_IN_ENTRY_ADVERSARIAL.ll)
+confirms that a misplaced alloca breaks the verifier
+with "Instruction does not dominate all uses!".
 
 **Q4 PASS.** Architectural probe succeeds for all three
 fixtures with the project's LLVM 22.1.8: opt -passes=mem2reg

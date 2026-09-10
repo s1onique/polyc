@@ -1294,9 +1294,18 @@ and `cleanup-exit-summary.txt`.
 
 `LLVMSaveInsertPoint` and `LLVMRestoreInsertPoint` are
 NOT in `llvm-c/Core.h`. C3 replaces the save/restore
-discipline with a dedicated entry-block builder:
+discipline with a dedicated entry-block builder. C6
+then NORMALIZES the placement rule.
+
+> **HISTORICAL WRONG RECIPE / SUPERSEDED — preserved
+> only as F14 evidence of what C3 prescribed and C6
+> re-normalized. Do NOT follow this code block for
+> IMPL; follow the authoritative C6-normalized Q3.3
+> in §6 above.**
 
 ```c
+/* C3-era placement (SUPERSEDED in C6). Retained only
+ * as historical evidence; do NOT copy this pattern. */
 LLVMBuilderRef alloca_builder =
     LLVMCreateBuilderInContext(lc->ctx);
 LLVMPositionBuilderAtEnd(alloca_builder,
@@ -1307,8 +1316,23 @@ LLVMValueRef slot = LLVMBuildAlloca(
 LLVMDisposeBuilder(alloca_builder);
 ```
 
+> The C3-era recipe above was correct as far as it went
+> (no save/restore, dedicated builder, untouched normal
+> builder, builder disposed) but it was a SUPERSEDED
+> REDUCTION: it did not express the placement rule
+> (prefer before first non-alloca via
+> `LLVMPositionBuilderBefore`, else append to empty
+> entry block via `LLVMPositionBuilderAtEnd`; never
+> after an entry-block terminator; never in a non-entry
+> block). The C3-era recipe's `LLVMPositionBuilderAtEnd`
+> on a non-empty entry block can put the new alloca
+> after already-emitted instructions. The C6-normalized
+> rule resolves that with the `Before`/`AtEnd` branch
+> walk over `first_non_alloca`.
+
 The normal lowering builder is left untouched. See ACT
-§6 Q3.3 and `Q1-Q6-SUMMARY.md` Q3.3 / Q3.
+§6 Q3.3 (the authoritative C6-normalized recipe) and
+`Q1-Q6-SUMMARY.md` Q3.3 / Q3.
 
 ### Wording convention (RESOLVED)
 

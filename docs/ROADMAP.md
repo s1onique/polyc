@@ -1202,11 +1202,19 @@ LOCAL-MEM2REG01  ACT-POLYC-LLVM-LOCAL-MEM2REG01
 
 LOCAL-MEM2REG01-CORRECTION01  ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION01
   STATE    = RED (IMPL pending; opened 69c886f, textual
-             consistency tightened at 5aeb562)
-  CLASS    = 4 commits in CORRECTION01 ACT id:
+             consistency tightened at 5aeb562 / 0dc947e /
+             6eb4078 / this-branch-C8)
+  CLASS    = 5 commits in CORRECTION01 ACT id:
              C4 RED (69c886f; opens new ACT id)
              C5 RED (5aeb562; grammar + rule-6 + worktree)
-             [C6 RED EVIDENCE — current head; see below]
+             C6 RED (0dc947e; save/restore elimination +
+                     placement rule normalization + ROADMAP)
+             C7 RED (6eb4078; phase-grammar reconciliation +
+                     fallback removal)
+             C8 RED (this branch; retire duplicated
+                     C3-style placement recipes; sole
+                     authoritative recipe is the
+                     C6-normalized Q3.3)
              [future IMPL / EVIDENCE / CLOSE pending]
   OPEN commit (NON_ACT, pre-RED):
              d2ffe21 (no ACT: trailer; mirrors the d89a5cd OPEN
