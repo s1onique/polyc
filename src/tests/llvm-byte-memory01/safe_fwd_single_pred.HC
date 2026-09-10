@@ -59,4 +59,3 @@ I64 FwdSafe(I64 *p) {
     acc = x + 1;
     return acc;
 }
-
