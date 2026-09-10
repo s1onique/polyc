@@ -1,0 +1,30 @@
+
+=== toolchain ===
+PASS  hcc + llvm-as + opt available
+
+=== R: pos_b0_compare_digit ===
+FAIL  pos_b0_compare_digit: hcc did not exit 0
+LLVM backend capability contract: ok (56 rows, ordinal binding)
+LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL: function ReadDigit: unexpected IR_ALLOCA (this spike is SSA-only and does not allocate stack slots). line 37, dst id=3, kind=IR_VAL_TMP
+CAPABILITY_COUNTERS supported=0 rejected=1 shape_dependent=0 defensive=0 unreachable=0
+
+=== R: i64_collapse_probe ===
+FAIL  i64_collapse_probe: hcc did not exit 0
+LLVM backend capability contract: ok (56 rows, ordinal binding)
+LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL: function Probe: unexpected IR_ALLOCA (this spike is SSA-only and does not allocate stack slots). line 1, dst id=5, kind=IR_VAL_TMP
+CAPABILITY_COUNTERS supported=0 rejected=1 shape_dependent=1 defensive=0 unreachable=0
+
+=== R: single_cond_probe ===
+FAIL  single_cond_probe: hcc did not exit 0
+LLVM backend capability contract: ok (56 rows, ordinal binding)
+LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL: function Probe: unexpected IR_ALLOCA (this spike is SSA-only and does not allocate stack slots). line 1, dst id=5, kind=IR_VAL_TMP
+CAPABILITY_COUNTERS supported=0 rejected=1 shape_dependent=1 defensive=0 unreachable=0
+
+=== NC: safe_fwd_single_pred (structural) ===
+PASS  safe_fwd_single_pred: hcc + llvm-as + opt --passes=verify
+PASS  safe_fwd_single_pred: structural (ret %l6 post-opt)
+
+=== summary ===
+IR_RETURN_SLOT_FORWARDING01_PASS=3
+IR_RETURN_SLOT_FORWARDING01_FAIL=3
+STATUS=FAIL
