@@ -1,0 +1,40 @@
+=== RESUME01 C1 RED: dominant exit-block defect in IR builder ===
+
+Recorded by: ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME01 RED phase
+Subject commit (entry): db6404e1a36a66645d66dd5dd14ad5d39c6cdc08
+Toolchain: hcc v0.0.15-beta (./hcc), LLVM LLVM (http://llvm.org/):, opt LLVM (http://llvm.org/):
+
+--- 1. The mandated RED fixture pos_b0_compare_digit.HC ---
+
+Compile:
+  ./hcc --install-dir=/tmp/polyc-install --emit-llvm src/tests/llvm-byte-memory01/pos_b0_compare_digit.HC
+
+Result (verifier-before.txt):
+    LLVM backend capability contract: ok (56 rows, ordinal binding)
+    LLVM_BACKEND_VERIFY_FAILED: Instruction does not dominate all uses!
+      %i8_arith_zext = zext i8 %3 to i64
+      ret i64 %i8_arith_zext
+    Instruction does not dominate all uses!
+      %6 = add i64 %5, %i8_arith_zext
+      ret i64 %6
+    
+    CAPABILITY_COUNTERS supported=16 rejected=0 shape_dependent=14 defensive=0 unreachable=0
+
+EXIT=1 (compile fails before producing .ll file).
+
+The LLVM_BACKEND_VERIFY_FAILED message names two specific
+SSA dominance violations:
+
+    %i8_arith_zext = zext i8 %3 to i64
+      ret i64 %i8_arith_zext
+
+    %6 = add i64 %5, %i8_arith_zext
+      ret i64 %6
+
+These correspond to:
+  - ReadDigit:  ret d  (where d is the byte-local c minus '0')
+  - AccDigit:   ret acc (where acc is acc * 10 + d)
+
+Both fragments share the same shape: the function's return
+value is a local that is conditionally modified inside one
+branch of a conditional (single-conditional or nested-diamond).

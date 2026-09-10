@@ -1,0 +1,57 @@
+=== CFG topology summary (post-irBasicFunctionOptimisations) ===
+
+ReadDigit(U8 *p) -- pos_b0_compare_digit.HC
+
+  bb1 (entry)         -> bb3, bb4
+    defines: %l8 = 0; trunc %l4 = ... ; br
+    references %l4 (read), %l8 (read)
+
+  bb3 (false-arm of c<='9') -> bb5, bb4
+    references %l4 (read)
+
+  bb5 (true-arm of c<='9') -> bb4
+    defines %l8 (via isub); references %l4 (read)
+
+  bb4 (exit_block, predecessors {1,3,5}) -> self-loop in dump
+    ret %l8                           <-- the unsafe rewrite
+                                        (%l8 defined only in bb5)
+
+AccDigit(I64 acc, U8 *p)
+
+  bb7 (entry)        -> bb9, bb10
+    defines %l17 = %p16 (param); store
+
+  bb9 (false-arm of c<='9') -> bb11, bb10
+    references %l21 (read)
+
+  bb11 (true-arm of c<='9') -> bb10
+    redefines %l17 (via iadd); references %l21, %l29 (read)
+
+  bb10 (exit_block, predecessors {7,9,11}) -> self-loop in dump
+    ret %l17                          <-- the unsafe rewrite
+                                        (%l17 defined in bb7 and bb11,
+                                         but not bb9)
+
+=== Trigger condition ===
+
+A function-local L is the function's return value, and:
+  - L is conditionally modified inside one arm of a
+    conditional branch (single conditional or nested diamond),
+  - the exit_block has multiple predecessors,
+  - not every predecessor defines L.
+
+When irForwardReturnSlot rewrites the exit_block's
+`store slot, L; load slot; ret load_result` into
+`ret L`, the rewrite is unsafe because L is not defined on
+every predecessor path.
+
+=== Width classification ===
+
+- I8 (U8) access: the defect reproduces with byte-typed locals
+  (ReadDigit, AccDigit).
+- I64 access: the defect reproduces with I64-typed locals
+  (i64_collapse_probe.HC, single_cond_probe.HC).
+- F64 access: not tested; if the same idiom applies to F64
+  returns, the defect is also present for floats. Out of scope
+  for RESUME01 but worth noting for follow-on ACTs.
+
