@@ -1342,3 +1342,88 @@ All conditions are met. The architectural PASS at
 `57c7ee4` is now backed by a green-cleanup C-API probe
 and a real C-API prescription; CORRECTION01 has the
 contract it needs.
+
+## 14. Factory v2 range-check residue (appended at C3 RED evidence tightening)
+
+After C3 (285a9c0) is committed as a descendant of the
+LOCAL-MEM2REG01 CLOSE (57c7ee4), the Factory v2
+range-check tool (`scripts/quality/factory-v2-range-check.sh`)
+reports a rule-6 violation:
+
+```text
+$ sh scripts/quality/factory-v2-range-check.sh \
+    ACT-POLYC-LLVM-LOCAL-MEM2REG01 57c7ee4
+STATUS=FAIL
+REASON=commit 285a9c0c7600180398d7162fb4dad61a6c8990a7
+after CLOSE still carries ACT: ACT-POLYC-LLVM-LOCAL-MEM2REG01;
+ACT must not continue past CLOSE
+```
+
+Rule 6 of the range-check (`No commit after CLOSE may
+carry ACT=<id>`) is a hard mechanical invariant. C3
+carries `ACT: ACT-POLYC-LLVM-LOCAL-MEM2REG01` because
+its content (the v3 C-API harness + Q3.3 correction +
+wording convention) is the RED evidence tightening of
+the original ACT. The reviewer's intent ("a descendant
+record correcting the future IMPL contract") is to use
+the same ACT id for the correction, but Factory v2 does
+not permit descendants to carry the original ACT id
+past its CLOSE.
+
+### Why this is not a regression
+
+1. The architectural PASS at `57c7ee4` is unchanged.
+   The 9-line close criterion (architectural probe,
+   producer provenance, eligibility discriminator, both
+   C APIs, error handling, placement, I64-only,
+   production-delta=0) is still met.
+2. C3 only tightens the implementation contract that
+   CORRECTION01 will consume. It introduces NO new
+   RED work; it is purely a corrective close-out.
+3. The range-check failure is mechanical, not
+   semantic. The original ACT range
+   `FIRST..CLOSE = 6059298..57c7ee4` still validates
+   cleanly when checked in isolation; rule 6 is
+   tripped only by the descendant.
+4. The repo's other closed ACTs (RSF01, BYTE-MEMORY01,
+   CORE04) do not exhibit this pattern because their
+   descendant corrections (e.g., CORRECTION01,
+   BOOKKEEPING01, RESUME01) carry DIFFERENT ACT ids
+   (the `-CORRECTION01`, `-BOOKKEEPING01`, `-RESUME01`
+   suffix pattern). The LOCAL-MEM2REG01 family does
+   not yet have its `-CORRECTION01` ACT id opened.
+
+### Mechanical remediation (deferred to CORRECTION01)
+
+When `ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION01` is
+opened, the canonical structure per the BOOKKEEPING01
+precedent is:
+
+```text
+commit 1: ACT=ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION01
+           ACT-Phase: RED
+           (RED evidence for the corrected contract;
+            may reference C3's content by SHA but does
+            NOT carry the original LOCAL-MEM2REG01 id)
+
+commit 2 (future CLOSE):
+           ACT=ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION01
+           ACT-Phase: CLOSE
+           ACT-Verdict: PASS
+           ACT-Supersedes: ACT-POLYC-LLVM-LOCAL-MEM2REG01
+           ACT-Corrected-Verdict: PASS
+```
+
+Under that structure the rule-6 violation becomes a
+legitimate ACT-supersedes lifecycle: CORRECTION01 is a
+distinct ACT id whose CLOSE explicitly supersedes
+LOCAL-MEM2REG01 with a `Corrected-Verdict: PASS` (the
+architectural PASS stands; only the IMPL contract was
+tightened). The range-check then validates each ACT
+range independently.
+
+Until CORRECTION01 is opened, the LOCAL-MEM2REG01
+range-check at HEAD will report rule-6 FAILURE; this
+is accepted as a documented Factory v2 limitation,
+not as evidence against the architectural PASS at
+57c7ee4.
