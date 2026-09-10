@@ -1201,21 +1201,48 @@ LOCAL-MEM2REG01  ACT-POLYC-LLVM-LOCAL-MEM2REG01
               retracted; see ACT §13.)
 
 LOCAL-MEM2REG01-CORRECTION01  ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION01
-  STATE    = RED (IMPL pending; opened 69c886f, textual
-             consistency tightened at 5aeb562 / 0dc947e /
-             6eb4078 / this-branch-C8)
-  CLASS    = 5 commits in CORRECTION01 ACT id:
+  STATE    = CLOSED (HALT_DEFECTIVE_IMPL at C10); opened 69c886f,
+             textual consistency tightened at 5aeb562 / 0dc947e /
+             6eb4078 / a96d935; C9 IMPL at 6d8b6ea; C10 halt
+             docs/evidence at this commit.
+  CLASS    = 7 commits in CORRECTION01 ACT id:
              C4 RED (69c886f; opens new ACT id)
              C5 RED (5aeb562; grammar + rule-6 + worktree)
              C6 RED (0dc947e; save/restore elimination +
                      placement rule normalization + ROADMAP)
              C7 RED (6eb4078; phase-grammar reconciliation +
                      fallback removal)
-             C8 RED (this branch; retire duplicated
-                     C3-style placement recipes; sole
-                     authoritative recipe is the
-                     C6-normalized Q3.3)
-             [future IMPL / EVIDENCE / CLOSE pending]
+             C8 RED (a96d935; retire duplicated C3-style
+                     placement recipes; sole authoritative recipe
+                     is the C6-normalized Q3.3)
+             C9 IMPL (6d8b6ea; single-file src/llvm-backend.c
+                     bound P1 local-mem2reg via
+                     LLVMRunPassesOnFunction; 3 RED fixtures
+                     reached verifier-valid IR; SPIKE stayed
+                     18/0; defect later exposed by reviewer P0-1
+                     semantic NC and HALT'd at C10 — the
+                     predecessor-store synthesis is unsound for
+                     IR shapes where a predecessor of the merge-
+                     store block does not redefine the stored
+                     value AND that value's live-in differs by
+                     path)
+             C10 CLOSE HALT_DEFECTIVE_IMPL (this commit)
+  HALT_REASON = predecessor-store synthesis uses the SSA cache
+                value (most recent binding) at each predecessor's
+                terminator; this value may not dominate the merge-
+                store block when the live-in value differs by
+                incoming path. mem2reg rejects with "Instruction
+                does not dominate all uses" for the reviewer's
+                `ProbePath` NC. The 3 RED fixtures pass C9
+                accidentally because their IR shapes have only one
+                definition of the stored value that reaches each
+                predecessor.
+  NEXT_ACT   = ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02:
+                architectural decision between (X) frontend SSA
+                rename, (Y) input-SSA lowering, or (Z) stricter
+                discriminator + IR-side optimisation to widen the
+                narrower admitted form.
+  EVIDENCE   = evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION01/c10/
   OPEN commit (NON_ACT, pre-RED):
              d2ffe21 (no ACT: trailer; mirrors the d89a5cd OPEN
              pattern from RSF01)

@@ -1567,31 +1567,59 @@ CORRECTION01
 
 The CORRECTION01 ACT id
 (`ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION01`) was
-opened at 69c886f in RED phase. Its authorized
-trajectory is:
+opened at 69c886f in RED phase. Its actual trajectory:
 
 ```text
-69c886f  ACT-Phase: RED         (CORRECTION01 RED; opens the new ACT id)
-        ACT: ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION01
-        ACT-Phase: RED
-
-future IMPL commit(s) ...  ACT: ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION01
-                           ACT-Phase: IMPL
-
-future CLOSE commit        ACT: ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION01
-                           ACT-Phase: CLOSE
-                           ACT-Verdict: PASS
-                           ACT-Supersedes: ACT-POLYC-LLVM-LOCAL-MEM2REG01
-                           ACT-Corrected-Verdict: PASS
+69c886f   ACT-Phase: RED          (CORRECTION01 RED; opens the new ACT id)
+5aeb562   ACT-Phase: RED          (C5 RED; grammar + rule-6 + worktree)
+0dc947e   ACT-Phase: RED          (C6 RED; save/restore elimination +
+                                  placement rule normalization + ROADMAP)
+6eb4078   ACT-Phase: RED          (C7 RED; phase-grammar reconciliation +
+                                  fallback removal)
+a96d935   ACT-Phase: RED          (C8 RED; retire duplicated C3-style
+                                  placement recipes)
+6d8b6ea   ACT-Phase: IMPL         (C9 IMPL; bound P1 local-mem2reg via
+                                  LLVMRunPassesOnFunction in
+                                  src/llvm-backend.c; 3 RED fixtures
+                                  PASS; SPIKE stayed 18/0)
+[future]  ACT-Phase: CLOSE        (C10 CLOSE; HALT_DEFECTIVE_IMPL;
+                                  ACT-Verdict: HALT_DEFECTIVE_IMPL)
 ```
 
-The CORRECTION01 CLOSE will document that the
-architectural PASS at 57c7ee4 is preserved (not
-overturned) and that only the implementation contract
-was tightened. The CORRECTION01 range-check at the
-future CLOSE will validate cleanly (its own rule 4 +
-rule 6 + rule 5 are all independent of the original
-LOCAL-MEM2REG01 range).
+C9 IMPL at `6d8b6ea` produced verifier-clean LLVM IR
+for the 3 RED fixtures but exposed a fundamental
+architectural defect in the predecessor-store synthesis
+when validated by the reviewer-requested semantic NC
+(`src/tests/llvm-byte-memory01/nc_p01_predecessor_paths.HC`).
+For IR shapes where a predecessor of the merge-store
+block does not redefine the stored value AND that
+value's live-in differs by path, the synthesised store
+uses a non-dominating value and mem2reg rejects with
+"Instruction does not dominate all uses". The 3 RED
+fixtures pass C9 accidentally because their IR shapes
+have only one definition of the stored value that
+reaches each predecessor.
+
+The full halt matrix, root cause analysis, and
+architectural decision tree (Option X / Y / Z for the
+next ACT) are in
+[`evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION01/c10/HALT-SUMMARY.md`](../../evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION01/c10/HALT-SUMMARY.md).
+
+The next ACT
+(`ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02`) must
+decide between:
+* **Option X** (frontend SSA rename) — recursively
+  walk predecessors of the merge-store block; for each
+  predecessor, if it defines V, emit a store there; if
+  not, recurse into its predecessors.
+* **Option Y** (input SSA) — lower the IR into SSA
+  form (inserting PHIs at every join where V is live)
+  before the mem2reg pipeline.
+* **Option Z** (stricter discriminator) — REJECT any
+  shape where the stored value V has multiple
+  definitions on different paths to the merge-store
+  block. May require IR-side optimisation to widen the
+  narrower admitted form.
 
 ### Earlier draft's mistaken claim (retracted)
 
