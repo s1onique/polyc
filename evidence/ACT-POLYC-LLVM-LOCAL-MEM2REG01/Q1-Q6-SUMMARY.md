@@ -124,8 +124,8 @@ at all -- it only COUNTS IR_ALLOCA reachability as a
 reject-class trigger. So today, the answer to Q3.2 is:
 there is no LLVM-level alloca to inspect, and CORRECTION01
 must introduce one from scratch, into the LLVM module's
-function entry block, with a save/restore insertion-point
-discipline.
+function entry block, using a DEDICATED ENTRY-BLOCK BUILDER
+per Q3.3 below.
 
 **Q3.3** What insertion-point discipline must
 LOCAL-MEM2REG01-CORRECTION01 establish so the resulting
@@ -163,7 +163,8 @@ If CORRECTION01 RED recon shows a second builder would
 interfere with the ordering of existing entry instructions,
 the recipe falls back to `LLVMClearInsertionPosition` +
 `LLVMPositionBuilderAtEnd` on the existing builder; it
-does NOT invent a save/restore API.
+does NOT introduce a save/restore primitive (none exists
+in `llvm-c/Core.h`).
 
 **Q3 placement probe evidence (renamed in C1.5)**
 
@@ -196,10 +197,15 @@ single_cond_probe_NOT_IN_ENTRY_ADVERSARIAL.ll
         "Instruction does not dominate all uses!
           %slot = alloca i64, align 8
           %t10 = load i64, ptr %slot, align 4"
-    CONCLUSION: if CORRECTION01 forgets to save/restore the
-                insertion point to the entry block, the
-                resulting LLVM module fails the verifier
-                exactly as this probe does.
+    CONCLUSION (re-normalized in C6): the placement
+                invariant is "the alloca must sit in the
+                function's entry block". A backend that
+                emits the alloca anywhere other than the
+                entry block (e.g. inside a conditional
+                predecessor, or after an entry-block
+                terminator, or in a non-entry block) fails
+                the verifier exactly as this probe does.
+                See the placement rule in Q3.3 above.
 ```
 `single_cond_probe_NOT_IN_ENTRY_ADVERSARIAL.ll`): when the
 alloca is placed in a conditional block (bb3), the verifier
@@ -209,18 +215,52 @@ unconditional entry block (entry), mem2reg promotes cleanly.
 **CORRECTION01 must place the alloca in the entry block of the
 function.**
 
-**Q3.3** Insertion-point discipline required by CORRECTION01:
+**Q3.3** Insertion-point discipline required by CORRECTION01
+(re-normalized in C6 RED evidence tightening):
+
+The pseudocode shown in C2's handoff (a save/restore pair on
+the existing normal lowering builder) is REMOVED because the
+required save/restore primitives do NOT exist in
+`llvm-c/Core.h` and the pre-existing Q3.3 corrected recipe
+already mandates a DEDICATED ENTRY-BLOCK BUILDER. The
+authoritative pseudocode is therefore the dedicated-builder
+recipe reproduced verbatim from ACT §6 Q3.3:
 
 ```c
-// pseudocode for the future CORRECTION01 IMPL
+LLVMBuilderRef alloca_builder =
+    LLVMCreateBuilderInContext(lc->ctx);
+
 LLVMBasicBlockRef entry = LLVMGetEntryBasicBlock(fn);
-LLVMPositionBuilderAtStart(B, entry);
-LLVMValueRef slot = LLVMBuildAlloca(B, LLVMInt64Type(), "polyc.slot");
-// restore builder to its prior position
+
+/* Placement rule:
+ *   - prefer: before the first non-alloca instruction
+ *     in the entry block (LLVMPositionBuilderBefore)
+ *   - else:  append to end of empty entry block
+ *     (LLVMPositionBuilderAtEnd)
+ *   - never: after an entry-block terminator
+ *   - never: in a non-entry block
+ * No literal "instruction #1" requirement: mem2reg walks
+ * the entry block looking for promotable AllocaInst's. */
+LLVMValueRef first_non_alloca = LLVMGetFirstInstruction(entry);
+while (first_non_alloca &&
+       LLVMIsAAllocaInst(first_non_alloca)) {
+    first_non_alloca = LLVMGetNextInstruction(first_non_alloca);
+}
+if (first_non_alloca) {
+    LLVMPositionBuilderBefore(alloca_builder, first_non_alloca);
+} else {
+    LLVMPositionBuilderAtEnd(alloca_builder, entry);
+}
+
+LLVMValueRef slot = LLVMBuildAlloca(
+    alloca_builder, LLVMInt64TypeInContext(lc->ctx),
+    "polyc.local.slot");
+LLVMDisposeBuilder(alloca_builder);
 ```
 
-This is a save/restore pair around `LLVMBuildAlloca`. The new
-helper will live in `src/llvm-backend.c` (CORRECTION01 scope).
+The new helper will live in `src/llvm-backend.c`
+(CORRECTION01 scope). The normal lowering builder is left
+completely untouched.
 
 ---
 
@@ -411,12 +451,15 @@ prescribed for CORRECTION01 (see Q3.3 corrected recipe:
 `LLVMCreateBuilderInContext` +
 `LLVMPositionBuilderAtEnd(alloca_builder,
                          LLVMGetEntryBasicBlock(fn))` +
-`LLVMDisposeBuilder`). The previously-prescribed
-save/restore discipline using `LLVMSaveInsertPoint` /
-`LLVMRestoreInsertPoint` was an impossible C API and is
-removed in C3. Positive control fixture
-(single_cond_probe_ENTRY_BLOCK_NAMED_BB1.ll) confirms the
-block-name "entry" is irrelevant. Negative witness fixture
+`LLVMDisposeBuilder`). The C2 handoff had prescribed a
+save/restore insertion-point discipline using
+`LLVMSaveInsertPoint` / `LLVMRestoreInsertPoint`; that
+discipline references primitives that do NOT exist in
+`llvm-c/Core.h` and was replaced by the dedicated-builder
+recipe in C3 and re-normalized in C6. Positive control
+fixture (single_cond_probe_ENTRY_BLOCK_NAMED_BB1.ll)
+confirms the block-name "entry" is irrelevant. Negative
+witness fixture
 (single_cond_probe_NOT_IN_ENTRY_ADVERSARIAL.ll) confirms
 that a misplaced alloca breaks the verifier with
 "Instruction does not dominate all uses!".

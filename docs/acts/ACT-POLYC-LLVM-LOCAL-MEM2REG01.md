@@ -360,26 +360,59 @@ Q3.2  If the alloca is emitted literally using the current
       reject-class trigger. So today, the answer to Q3.2 is:
       there is no LLVM-level alloca to inspect, and
       CORRECTION01 must introduce one from scratch, into the
-      LLVM module's function entry block, with a
-      save/restore insertion-point discipline.
+      LLVM module's function entry block, using a
+      DEDICATED ENTRY-BLOCK BUILDER (the recipe is fully
+      specified in Q3.3 below).
 
 Q3.3  What insertion-point discipline must LOCAL-MEM2REG01-
       CORRECTION01 establish so the resulting alloca lands in
       the function entry block?
-      ANSWER (CORRECTED in C3 RED evidence tightening):
-      `LLVMSaveInsertPoint` and `LLVMRestoreInsertPoint` are
-      NOT exposed by `llvm-c/Core.h`. The actual C API
-      surface for builder positioning is
-      `LLVMPositionBuilder*` + `LLVMGetInsertBlock` +
-      `LLVMClearInsertionPosition` + `LLVMDisposeBuilder`.
-      The recommended discipline is therefore a
-      DEDICATED ENTRY-BLOCK BUILDER:
+      ANSWER (CORRECTED in C3 RED evidence tightening,
+              re-normalized in C6 RED evidence tightening):
+      `LLVMSaveInsertPoint` and `LLVMRestoreInsertPoint`
+      do NOT exist in the LLVM C API at all
+      (`llvm-c/Core.h` exposes `LLVMPositionBuilder*`,
+      `LLVMGetInsertBlock`, `LLVMClearInsertionPosition`,
+      `LLVMDisposeBuilder`). There is therefore no
+      save/restore primitive to call. The recommended
+      discipline is therefore a DEDICATED ENTRY-BLOCK
+      BUILDER — the entry-block alloca is built by a
+      separate builder that is created at the top of the
+      helper, positioned once, used once, and disposed:
 
       ```c
       LLVMBuilderRef alloca_builder =
           LLVMCreateBuilderInContext(lc->ctx);
-      LLVMPositionBuilderAtEnd(alloca_builder,
-                               LLVMGetEntryBasicBlock(fn));
+
+      LLVMBasicBlockRef entry = LLVMGetEntryBasicBlock(fn);
+
+      /* Placement rule (normalized in C6):
+       *   - prefer: before the first non-alloca
+       *     instruction in the entry block
+       *     (LLVMPositionBuilderBefore)
+       *   - else:  append to end of empty entry block
+       *     (LLVMPositionBuilderAtEnd)
+       *   - never: after an entry-block terminator
+       *   - never: in a non-entry block
+       * No literal "instruction #1" requirement:
+       * mem2reg walks the entry block looking for
+       * promotable AllocaInst's; relative position
+       * among other allocas / entry-block non-alloca
+       * instructions does not affect promotion. */
+      LLVMValueRef first_non_alloca =
+          LLVMGetFirstInstruction(entry);
+      while (first_non_alloca &&
+             LLVMIsAAllocaInst(first_non_alloca)) {
+          first_non_alloca =
+              LLVMGetNextInstruction(first_non_alloca);
+      }
+      if (first_non_alloca) {
+          LLVMPositionBuilderBefore(alloca_builder,
+                                    first_non_alloca);
+      } else {
+          LLVMPositionBuilderAtEnd(alloca_builder,
+                                   entry);
+      }
 
       LLVMValueRef slot = LLVMBuildAlloca(
           alloca_builder, LLVMInt64TypeInContext(lc->ctx),
@@ -396,13 +429,16 @@ Q3.3  What insertion-point discipline must LOCAL-MEM2REG01-
                           materialisation only
       ```
 
-      This has no save/restore state to corrupt and a much
-      smaller correctness surface. If CORRECTION01 RED
-      recon shows a second builder would interfere with the
-      ordering of existing entry instructions, the recipe
-      falls back to LLVMClearInsertionPosition +
-      LLVMPositionBuilderAtEnd on the existing builder;
-      it does NOT invent a save/restore API.
+      Because the alloca builder is dedicated and
+      short-lived, it carries no shared state and no
+      ordering obligation with the normal builder. If
+      future recon shows a second builder would interfere
+      with the ordering of existing entry instructions,
+      the recipe falls back to
+      `LLVMClearInsertionPosition` +
+      `LLVMPositionBuilderAtEnd` on the existing builder;
+      it does NOT introduce a save/restore primitive
+      (none exists in `llvm-c/Core.h`).
 
       The Q4.1 C-API harness already exercises the LLVM
       side of this discipline on every RED fixture
@@ -441,10 +477,15 @@ single_cond_probe_NOT_IN_ENTRY_ADVERSARIAL.ll
         "Instruction does not dominate all uses!
           %slot = alloca i64, align 8
           %t10 = load i64, ptr %slot, align 4"
-    CONCLUSION: if CORRECTION01 forgets to save/restore the
-                insertion point to the entry block, the
-                resulting LLVM module fails the verifier
-                exactly as this probe does.
+    CONCLUSION (re-normalized in C6): the placement
+                invariant is "the alloca must sit in the
+                function's entry block". A backend that
+                emits the alloca anywhere other than the
+                entry block (e.g. inside a conditional
+                predecessor, or after an entry-block
+                terminator, or in a non-entry block) fails
+                the verifier exactly as this probe does.
+                See the placement rule in Q3.3 above.
 ```
 
 If hoisting is required because the current emission site is NOT
@@ -1079,12 +1120,11 @@ Each line, mechanically verified:
        of bb2 whose entry is bb1). `opt -passes=mem2reg`
        exits 1 with
        `"Instruction does not dominate all uses!"`.
-   CORRECTION01 must use a DEDICATED ENTRY-BLOCK BUILDER
-   (see §6 Q3.3 corrected recipe):
-   `LLVMCreateBuilderInContext` +
-   `LLVMPositionBuilderAtEnd(alloca_builder,
-                            LLVMGetEntryBasicBlock(fn))` +
-   `LLVMDisposeBuilder`. The save/restore discipline
+   CORRECTION01 must use a DEDICATED ENTRY-BLOCK BUILDER.
+   The authoritative recipe (builder creation,
+   positioning, and disposal) is fully specified in
+   §6 Q3.3 corrected/re-normalized; do NOT re-derive the
+   formula inline. The C2-handoff save/restore discipline
    using `LLVMSaveInsertPoint` / `LLVMRestoreInsertPoint`
    was an impossible C API prescription and is removed.
 
@@ -1181,7 +1221,7 @@ P2  The v2 C-API harness SIGSEGVs during cleanup after the
     pattern, not the v2 defect.
 ```
 
-### Next ACT
+### Next ACT (re-normalized in C6 RED evidence tightening)
 
 ```
 ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION01
@@ -1193,7 +1233,12 @@ ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION01
             calls LLVMRunPassesOnFunction with a pass-
             pipeline string equivalent to "mem2reg,verify";
             uses the Q1-derived eligibility discriminator;
-            uses save/restore insertion-point discipline.
+            uses a DEDICATED ENTRY-BLOCK BUILDER per Q3.3
+            (LLVMCreateBuilderInContext + position per the
+            placement rule + LLVMBuildAlloca +
+            LLVMDisposeBuilder); does NOT call any
+            save/restore primitive (none exists in
+            llvm-c/Core.h).
         src/llvm-backend-cap.h: cap-table classification
             for the new bounded class.
     Expected to flip ir-return-slot-forwarding01-test.sh

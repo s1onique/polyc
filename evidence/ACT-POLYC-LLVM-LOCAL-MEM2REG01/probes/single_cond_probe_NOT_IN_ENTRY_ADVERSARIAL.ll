@@ -8,9 +8,10 @@
 ; predecessor), so the alloca does NOT dominate its only use.
 ;
 ; This is the actual placement-negative witness. It exercises
-; what happens when llvm-backend.c forgets to save/restore
-; the insertion point to the entry block before emitting
-; LLVMBuildAlloca.
+; what happens when llvm-backend.c fails to materialise
+; LLVMBuildAlloca in the function's entry block (here, it
+; emits the alloca inside a conditional predecessor bb3
+; rather than at the start of the entry block bb1).
 ;
 ; EXPECTED: opt -passes=mem2reg rejects with
 ; "Instruction does not dominate all uses!" -- exactly what

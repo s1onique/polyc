@@ -1179,11 +1179,16 @@ and [`evidence/llvm-ir-return-slot-forwarding01/c3/EVIDENCE-SUMMARY.md`](../evid
 
 ---
 
-#### ACT-POLYC-LLVM-LOCAL-MEM2REG01 status (C3 RED evidence tightening in progress; C2 CLOSE PASS at 57c7ee4)
+#### ACT-POLYC-LLVM-LOCAL-MEM2REG01 status (CLOSED PASS at 57c7ee4 + permanent rule-6 residue; CORRECTION01 RED)
 
 ```text
 LOCAL-MEM2REG01  ACT-POLYC-LLVM-LOCAL-MEM2REG01
   ENTRY    = 0501569 (post-RSF01-hygiene; pre-CLOSE of LOCAL-MEM2REG01)
+  STATE    = CLOSED (verdict PASS, 57c7ee4);
+             immutable architectural verdict;
+             rule-6 Factory range-check residue at HEAD
+             is permanent (285a9c0 carries same-id past
+             CLOSE); see ACT §14.
   CLASS    = C1 RED / C1.5 RED evidence tightening /
              C2 CLOSE / C3 RED evidence tightening
              (Factory v2 phase grammar is
@@ -1194,12 +1199,15 @@ LOCAL-MEM2REG01  ACT-POLYC-LLVM-LOCAL-MEM2REG01
               narrow "RED | IMPL | CLOSE" wording used in
               C3's commit message was incorrect and is
               retracted; see ACT §13.)
-  STATE    = OPEN; C1 RED committed; C1.5 committed;
-             C2 CLOSE committed (verdict PASS, 57c7ee4);
-             C3 RED evidence tightening in this branch
-             (post-C2 HOLD; corrects C-API ownership +
-             insertion-point prescription + EVIDENCE-phase
-             wording convention)
+
+LOCAL-MEM2REG01-CORRECTION01  ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION01
+  STATE    = RED (IMPL pending; opened 69c886f, textual
+             consistency tightened at 5aeb562)
+  CLASS    = 4 commits in CORRECTION01 ACT id:
+             C4 RED (69c886f; opens new ACT id)
+             C5 RED (5aeb562; grammar + rule-6 + worktree)
+             [C6 RED EVIDENCE — current head; see below]
+             [future IMPL / EVIDENCE / CLOSE pending]
   OPEN commit (NON_ACT, pre-RED):
              d2ffe21 (no ACT: trailer; mirrors the d89a5cd OPEN
              pattern from RSF01)
