@@ -346,3 +346,122 @@ CONSERVATION= ALREADY_SUPPORTED LLVM collapse seam
 Per `docs/factory/GIT-METADATA.md`, this document is
 descriptive only; the verdict authority is the CLOSE
 commit's `ACT-Verdict` trailer.
+
+## 11. C2/C3 outcome: HALT_SECOND_SEAM_REQUIRED
+
+The C2 IMPL applied the single-predecessor guard at
+`src/ir-optimise.c::irForwardReturnSlot`:
+
+```c
+Map *bb_preds = irBlockGetPredecessors(fn, bb);
+if (bb_preds && bb_preds->size > 1) continue;
+```
+
+The post-IMPL matrix at HEAD:
+
+```text
+              RED?         LLVM .ll    llvm-as   opt --passes=verify
+pos_b0        EXIT=1       REJECTED    n/a       n/a
+i64_collapse  EXIT=1       REJECTED    n/a       n/a
+single_cond   EXIT=1       REJECTED    n/a       n/a
+safe_fwd_NC   EXIT=0       produced    PASS      PASS
+```
+
+The dominance-violating rewrite is suppressed on the
+RED fixtures (post-opt IR now shows
+`bb4 -> predecessors {1,3,5}; ret %l8` instead of the
+C1 RED shape `ret %i8_arith_zext`). However, the
+post-suppression IR still carries an
+`IR_ALLOCA + store; load; ret` triple on the multi-
+predecessor exit, and the SSA-only spike rejects it
+with `LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL`. So the
+three REDs still do not reach verifier-valid LLVM IR.
+
+The IMPL alone is provably insufficient. Per F4 (a
+HALT is a successful execution outcome when an ACT
+precondition fails), this ACT halts with
+`HALT_SECOND_SEAM_REQUIRED`.
+
+Three hypothetical fixes exist, ALL outside this
+ACT's authorised scope:
+
+* **A. Widen `llDetectCollapsibleReturn`**
+  (`src/llvm-backend.c:400`) to also recognise the
+  3-instruction `store; load; ret` shape on a multi-
+  predecessor exit. Conflicts with the SSA-only PHI
+  ban.
+* **B. Insert an IR-level collapse-elimination pass**
+  that rewrites the alloca-bearing store;load;ret
+  triple into the per-predecessor direct-return
+  shape BEFORE the LLVM backend sees the IR.
+  Requires IR_PHI or explicit per-edge
+  parameterisation. Conflicts with the neutral-IR
+  grammar (the spike is "SSA-only" and forbids
+  per-edge parameterisation).
+* **C. Widen the SSA-only spike** to accept
+  `IR_ALLOCA` in collapse-eligible functions.
+  Changes the spike's canonical contract.
+
+Per the §4 contract:
+
+```text
+ALLOWED production:
+    src/ir-optimise.c
+        irForwardReturnSlot only
+
+FORBIDDEN:
+    src/llvm-backend.c
+    llCollapseStoreValue
+    llDetectCollapsibleReturn
+    src/llvm-backend-cap.c
+    neutral IR grammar/opcode changes
+    PHI construction
+    generic dominance framework
+```
+
+None of A/B/C is reachable from this ACT.
+
+### Recommended next ACT
+
+A separate ACT must authorise ONE of A/B/C above (or
+a fourth option). Recommended title:
+`ACT-POLYC-LLVM-MULTIPRED-COLLAPSE01` or
+`ACT-POLYC-IR-RETURN-SLOT-FORWARDING01-CORRECTION01`
+(the CORRECTION01 suffix extends this ACT's IMPL
+contract).
+
+### Conservation achieved at HALT
+
+The IMPL still closes one specific defect path
+(the dominance-violating rewrite) and preserves all
+existing behaviour:
+
+```text
+gate-fast                       VERDICT=PASS
+factory-v2-test                 PASS=35 FAIL=0
+factory-append-only-test        PASS=11 FAIL=0
+git diff --check                clean
+refs/replace                    empty
+simple positive fixture
+    (pos_byte_compare_simple.HC)
+                                llvm-as PASS
+                                opt --passes=verify PASS
+```
+
+IMPL scope is surgically bounded to
+`src/ir-optimise.c::irForwardReturnSlot` (+12 lines).
+No changes to `src/llvm-backend.c`,
+`llCollapseStoreValue`, `llDetectCollapsibleReturn`,
+`src/llvm-backend-cap.c`, the neutral IR grammar, or
+the SSA-only spike contract.
+
+### Test fixtures are now permanent regressions
+
+The dedicated GREEN harness
+`scripts/quality/ir-return-slot-forwarding01-test.sh`
+captures the four fixtures as permanent regressions.
+At HEAD it returns STATUS=FAIL (3/3 PASS=FAIL=3),
+which is the expected HALT matrix. When the next ACT
+closes the second seam, this harness should return
+STATUS=PASS with all four fixtures in the GREEN
+state.

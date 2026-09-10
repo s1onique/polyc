@@ -1092,3 +1092,50 @@ Strong skepticism applies to:
 - dependency ecosystems required for trivial programs.
 
 These are design biases, not eternal prohibitions.
+
+#### C2 IMPL outcome (current truth at HEAD)
+
+C2 IMPL was attempted with the single-predecessor
+guard at `src/ir-optimise.c::irForwardReturnSlot`
+(`if (bb_preds && bb_preds->size > 1) continue;`).
+
+Result: the dominance-violating rewrite is suppressed
+on the three RED fixtures (post-opt IR shows
+`bb4 -> predecessors {1,3,5}; ret %l8` instead of the
+C1 RED shape `ret %i8_arith_zext`), but the post-
+suppression IR still carries an
+`IR_ALLOCA + store; load; ret` triple on the multi-
+predecessor exit. The SSA-only spike rejects it with
+`LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL`. The three RED
+fixtures do NOT reach verifier-valid LLVM IR.
+
+Verdict: **HALT_SECOND_SEAM_REQUIRED**. The IR-level
+suppression closes one defect path but the LLVM-side
+collapse-elimination seam does not engage on the post-
+fold shape. A separate ACT must authorise one of:
+
+* A. widen `llDetectCollapsibleReturn` (3-instr shape)
+* B. insert an IR-level collapse-elimination pass
+* C. widen the SSA-only spike to accept IR_ALLOCA in
+  collapse-eligible functions
+
+None of A/B/C is reachable from
+`IR-RETURN-SLOT-FORWARDING01`'s authorised scope (per
+ACT §4).
+
+The dedicated GREEN harness
+`scripts/quality/ir-return-slot-forwarding01-test.sh`
+returns STATUS=FAIL with PASS=3 FAIL=3 at HEAD
+(NC passes; three REDs reject on the second seam).
+When the next ACT closes the second seam, this
+harness should return STATUS=PASS.
+
+Conservation holds at HALT:
+gate-fast VERDICT=PASS,
+factory-v2-test PASS=35 FAIL=0,
+factory-append-only-test PASS=11 FAIL=0,
+git diff --check clean.
+
+Full analysis:
+[`evidence/llvm-ir-return-slot-forwarding01/c2/HALT-SUMMARY.md`](../evidence/llvm-ir-return-slot-forwarding01/c2/HALT-SUMMARY.md)
+and [`evidence/llvm-ir-return-slot-forwarding01/c3/EVIDENCE-SUMMARY.md`](../evidence/llvm-ir-return-slot-forwarding01/c3/EVIDENCE-SUMMARY.md).
