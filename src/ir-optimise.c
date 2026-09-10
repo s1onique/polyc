@@ -261,11 +261,14 @@ static void irForwardReturnSlot(IrFunction *fn) {
          * operand. On a multi-predecessor exit, that value is not
          * guaranteed to dominate every use of the original load
          * result, and the LLVM-side backend emits a verifier failure
-         * ("Instruction does not dominate all uses!"). The rewrite is
-         * SAFE iff the block containing the store; load; ret triple
-         * has <=1 predecessor (0 = folded already, 1 = the sole
-         * predecessor is the store's defining block). On a 2+
-         * predecessor block, refuse the rewrite. */
+         * ("Instruction does not dominate all uses!"). <=1 predecessor
+         * is the CONSERVATIVE SUFFICIENT condition under which this
+         * ACT permits forwarding (0 = folded already, 1 = the sole
+         * predecessor is the store's defining block). It is NOT a
+         * general necessity claim: a multi-predecessor block whose
+         * exit value is defined in a common dominator could safely
+         * forward, but such analysis is outside this ACT's scope.
+         * On a 2+ predecessor block, refuse the rewrite. */
         Map *bb_preds = irBlockGetPredecessors(fn, bb);
         if (bb_preds && bb_preds->size > 1) continue;
         for (List *node = bb->instructions->next;

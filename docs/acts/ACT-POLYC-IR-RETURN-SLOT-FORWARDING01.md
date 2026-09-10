@@ -382,7 +382,7 @@ HALT is a successful execution outcome when an ACT
 precondition fails), this ACT halts with
 `HALT_SECOND_SEAM_REQUIRED`.
 
-Three hypothetical fixes exist, ALL outside this
+Four hypothetical fixes exist, ALL outside this
 ACT's authorised scope:
 
 * **A. Widen `llDetectCollapsibleReturn`**
@@ -401,6 +401,15 @@ ACT's authorised scope:
 * **C. Widen the SSA-only spike** to accept
   `IR_ALLOCA` in collapse-eligible functions.
   Changes the spike's canonical contract.
+* **D. (Reviewer preference.) Stop demanding that
+  the LLVM spike be SSA-only for a tightly bounded
+  class of compiler-generated local allocas**: lower
+  function-local / return-slot allocas faithfully as
+  `alloca; store; load; ret`, then let LLVM's
+  `PromoteMemToReg` (mem2reg) construct SSA/PHIs as
+  appropriate. This is the canonical frontend shape
+  LLVM itself recommends, and avoids building a
+  bespoke mem2reg inside PolyC.
 
 Per the §4 contract:
 
@@ -419,12 +428,63 @@ FORBIDDEN:
     generic dominance framework
 ```
 
-None of A/B/C is reachable from this ACT.
+None of A/B/C/D is reachable from this ACT.
+Additionally, A is structurally harder than it
+looks: a 3-instruction `store; load; ret` exit block
+cannot be safely rewritten to direct registers
+unless the rewrite recovers edge-specific values,
+which requires a dominance-frontier-style analysis
+(the very thing mem2reg already does). Option D
+delegates that analysis to LLVM and is therefore
+preferred as the smallest robust path.
 
 ### Recommended next ACT
 
-A separate ACT must authorise ONE of A/B/C above (or
-a fourth option). Recommended title:
+A separate ACT must authorise ONE of A/B/C/D above.
+Recommended title (reviewer preference):
+`ACT-POLYC-LLVM-LOCAL-MEM2REG01`, with a recon-
+first mission (no production edit until RED is
+bound). The next ACT must:
+
+1. Determine whether the smallest robust LLVM-
+   boundary representation for PolyC function-
+   local / return-slot state is bounded alloca +
+   load + store lowering followed by LLVM SSA
+   promotion, rather than additional ad-hoc
+   collapse recognition.
+2. Bind a RED recon showing:
+   - exactly which operations use the candidate
+     slots (LLVM's `isAllocaPromotable` requires
+     direct, non-volatile loads/stores);
+   - which types are involved (I64 initially; I8
+     only if a BYTE-MEMORY01 fixture proves it
+     needed);
+   - whether the three current HALT fixtures can be
+     lowered literally to LLVM memory form and then
+     promoted by mem2reg.
+3. Authorise a narrow implementation freeze:
+   `IR_ALLOCA` for compiler-generated scalar return/
+   local slots; direct `IR_STORE` / `IR_LOAD`;
+   `llvm.mem2reg` / `PromoteMemToReg` after function
+   construction. Forbidden: user-visible stack
+   allocation, escaping alloca addresses, volatile/
+   atomic memory, arrays/struct allocas, dynamic
+   allocas, arbitrary pointer arithmetic, neutral
+   IR PHI.
+4. Bind strong negative controls proving the new
+   policy has not been silently widened to general
+   stack-memory support: NC1 promotable scalar
+   return slot (PASS, no alloca after mem2reg),
+   NC2 escaping alloca address (REJECT),
+   NC3 non-direct use / GEP from local alloca
+   (REJECT), NC4 dynamic/aggregate alloca
+   (REJECT), NC5 existing single-predecessor
+   optimised path (unchanged).
+5. Verify `opt -passes=verify` and
+   `opt -passes=mem2reg` PASS on every GREEN
+   fixture.
+
+Fallback titles if option D is rejected:
 `ACT-POLYC-LLVM-MULTIPRED-COLLAPSE01` or
 `ACT-POLYC-IR-RETURN-SLOT-FORWARDING01-CORRECTION01`
 (the CORRECTION01 suffix extends this ACT's IMPL

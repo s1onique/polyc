@@ -412,9 +412,9 @@ CORRECTION01  ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME01-CORRECTION01
 
 IR-RETURN-SLOT-FORWARDING01  ACT-POLYC-IR-RETURN-SLOT-FORWARDING01
   ENTRY    = 8871f32 (ROADMAP range-check note)
-  FIRST    = <C1 RED commit, contains the three failing
-              regression fixtures and the structural NC>
-  CLOSE    = pending  (awaiting C2 IMPL after C1 RED review)
+  FIRST    = 8afe587  (C1 RED, contains the three failing
+              regression fixtures and the structural NC)
+  CLOSE    = 69f7d3a  ACT-Verdict=HALT_SECOND_SEAM_REQUIRED
   MISSION  = make irForwardReturnSlot dominance-safe
   REPAIR   = Repair E: single-predecessor guard before
               the rewrite. ~2 lines in src/ir-optimise.c.
@@ -497,7 +497,17 @@ Range-check PASS expected when:
   on 0bfa990).
 ```
 
-#### C2 IMPL authorisation gate (next reviewer action)
+#### C2 IMPL authorisation gate (HISTORICAL; C2 IMPL closed at 09072b5)
+
+The text below is the C2 IMPL authorisation gate that
+was approved before the C2 commit. It is preserved as
+historical evidence (per F14). The C2 IMPL outcome
+itself is summarised in the
+"IR-RETURN-SLOT-FORWARDING01 C2 outcome" subsection
+above; the ACT closed at 69f7d3a with verdict
+HALT_SECOND_SEAM_REQUIRED. The recommended next ACT
+is `ACT-POLYC-LLVM-LOCAL-MEM2REG01` (recon-first;
+see ACT §11 for the full mission).
 
 C1 RED is now authorised. C2 IMPL on
 `IR-RETURN-SLOT-FORWARDING01` requires:
@@ -1118,10 +1128,29 @@ fold shape. A separate ACT must authorise one of:
 * B. insert an IR-level collapse-elimination pass
 * C. widen the SSA-only spike to accept IR_ALLOCA in
   collapse-eligible functions
+* D. (reviewer preference) stop demanding that the
+  LLVM spike be SSA-only for a tightly bounded
+  class of compiler-generated local allocas; lower
+  function-local / return-slot allocas faithfully
+  as `alloca; store; load; ret` and let LLVM's
+  `PromoteMemToReg` (mem2reg) construct SSA/PHIs.
 
-None of A/B/C is reachable from
+None of A/B/C/D is reachable from
 `IR-RETURN-SLOT-FORWARDING01`'s authorised scope (per
-ACT §4).
+ACT §4). A is structurally harder than it looks: a
+3-instruction `store; load; ret` exit block cannot be
+safely rewritten to direct registers without
+recovering edge-specific values (a dominance-frontier
+analysis), which is what mem2reg already does. D
+delegates that analysis to LLVM and is preferred as
+the smallest robust path.
+
+Recommended next ACT:
+`ACT-POLYC-LLVM-LOCAL-MEM2REG01` (recon-first;
+mission in ACT-POLYC-IR-RETURN-SLOT-FORWARDING01 §11).
+Fallback titles if D is rejected:
+`ACT-POLYC-LLVM-MULTIPRED-COLLAPSE01` or
+`ACT-POLYC-IR-RETURN-SLOT-FORWARDING01-CORRECTION01`.
 
 The dedicated GREEN harness
 `scripts/quality/ir-return-slot-forwarding01-test.sh`
