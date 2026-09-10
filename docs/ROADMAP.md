@@ -1179,39 +1179,78 @@ and [`evidence/llvm-ir-return-slot-forwarding01/c3/EVIDENCE-SUMMARY.md`](../evid
 
 ---
 
-#### ACT-POLYC-LLVM-LOCAL-MEM2REG01 status (recon opened)
+#### ACT-POLYC-LLVM-LOCAL-MEM2REG01 status (C1 RED in progress)
 
 ```text
 LOCAL-MEM2REG01  ACT-POLYC-LLVM-LOCAL-MEM2REG01
   ENTRY    = 0501569 (post-RSF01-hygiene; pre-CLOSE of LOCAL-MEM2REG01)
-  CLASS    = RECON (no IMPL authorisation in this ACT)
-  STATE    = OPEN; recon-first
+  CLASS    = C1 RED / C2 CLOSE (Factory v2 phase grammar; RECON is
+             not a phase; architectural hypothesis testing IS RED)
+  STATE    = OPEN; C1 RED commit in this branch
+  OPEN commit (NON_ACT, pre-RED):
+             d2ffe21 (no ACT: trailer; mirrors the d89a5cd OPEN
+             pattern from RSF01)
   MISSION  = determine whether PolyC should lower a tightly
              bounded class of compiler-generated scalar local/
              return slots to LLVM entry-block allocas with
              direct loads/stores, then run LLVM's mem2reg
              pass to construct SSA, instead of extending
              PolyC's bespoke collapse machinery
-  REQUIRED RED (Q4 architectural probe):
+  REQUIRED RED (Q4 architectural probe) — captured in C1:
              - hand-written LLVM IR equivalents of the three
                RSF01 RED fixtures (pos_b0_compare_digit,
                i64_collapse_probe, single_cond_probe)
-             - opt -passes=mem2reg PASS
-             - opt -passes=verify PASS
+             - opt -passes=mem2reg PASS   (all three PASS)
+             - opt -passes=verify PASS    (all three PASS)
              - target alloca eliminated in post-mem2reg IR
+             - target mem ops eliminated in post-mem2reg IR
+             - merge mechanism observed at the natural
+               successor block (phi for all three; observed
+               via post-mem2reg IR capture)
+  Q4.1 C-API PROBE (NEW per reviewer correction) — captured in C1:
+             - LLVMRunPasses("mem2reg,verify") PASS (module API)
+             - LLVMRunPassesOnFunction("mem2reg,verify") PASS
+               (function API)
+             - error path observed: bad pipeline "mem2reggg"
+               returns LLVMErrorRef with "unknown pass name"
+               (CORRECTION01 must consume/report this)
+             - header llvm-c/Transforms/PassBuilder.h present
+               at the project's LLVM 22.1.8 include dir
+  Q3 PLACEMENT PROBE — captured in C1:
+             - entry-block alloca is REQUIRED (adversarial
+               conditional-block placement breaks the verifier:
+               "Instruction does not dominate all uses!")
+             - the current spike at src/llvm-backend.c:1397-1418
+               NEVER calls LLVMBuildAlloca; CORRECTION01 must
+               introduce the alloca from scratch with a
+               save/restore insertion-point discipline at the
+               entry block
   FORBIDDEN:
              - PromoteMemToReg direct call (C++ utility;
                use LLVMRunPasses / LLVMRunPassesOnFunction
                from llvm-c/Transforms/PassBuilder.h)
-             - any production edit (RECON only)
-  NEXT     = if Q4 PASS: ACT-POLYC-LLVM-LOCAL-MEM2REG01-
-             CORRECTION01 (IMPL freeze)
-             if Q4 FAIL: HALT_OPTION_D_FALSIFIED +
-             recommend option A/B/C fallback
+             - any production edit (RED only)
+  NEXT     = if C1 RED evidence convinces reviewer:
+                C2 CLOSE ACT-POLYC-LLVM-LOCAL-MEM2REG01
+                  ACT-Verdict: PASS
+                  then ACT-POLYC-LLVM-LOCAL-MEM2REG01-
+                  CORRECTION01 (IMPL freeze)
+             if C1 RED evidence is insufficient:
+                C2 CLOSE ACT-POLYC-LLVM-LOCAL-MEM2REG01
+                  ACT-Verdict: HALT_OPTION_D_FALSIFIED
+                  then recommend option A/B/C fallback
 ```
 
-The full recon contract is in
+The full RED contract is in
 [`docs/acts/ACT-POLYC-LLVM-LOCAL-MEM2REG01.md`](../acts/ACT-POLYC-LLVM-LOCAL-MEM2REG01.md).
-This ACT's recon deliberately reuses the three RSF01 RED
-fixtures as architectural probes rather than introducing new
-ones (the failing shape is already proven real).
+The C1 RED evidence is bound in
+[`evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01/`](../evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01/):
+
+- `probes/<fixt>.ll` — hand-written LLVM IR equivalent for
+  each of the three RED fixtures.
+- `probes/<fixt>.m2r.ll` — post-mem2reg IR (verifier clean).
+- `capi/capi_probe.c` — minimal C harness linked against the
+  project's `-lLLVM-22` (rebuild instructions in capi/README.md).
+- `capi/<fixt>.capi-stderr.txt` — C-API probe stderr.
+- `Q1-Q6-SUMMARY.md` — RED evidence summary table for all
+  six recon questions.

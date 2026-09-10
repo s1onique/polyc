@@ -1,0 +1,24 @@
+; ModuleID = 'evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01/probes/i64_collapse_probe.ll'
+source_filename = "evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01/probes/i64_collapse_probe.ll"
+
+define i64 @Probe(i64 %p1, ptr %p3) {
+entry:
+  %l6 = load i64, ptr %p3, align 4
+  %t8 = icmp sge i64 %l6, 10
+  br i1 %t8, label %bb3, label %bb4
+
+bb3:                                              ; preds = %entry
+  %t9 = icmp sle i64 %l6, 99
+  br i1 %t9, label %bb5, label %bb4
+
+bb5:                                              ; preds = %bb3
+  %slot.bb5.next = add i64 %p1, %l6
+  br label %bb4
+
+bb4:                                              ; preds = %bb5, %bb3, %entry
+  %slot.0 = phi i64 [ %slot.bb5.next, %bb5 ], [ %p1, %bb3 ], [ %p1, %entry ]
+  br label %bb2
+
+bb2:                                              ; preds = %bb4
+  ret i64 %slot.0
+}

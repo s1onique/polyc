@@ -10,7 +10,7 @@ machinery?
 
 **Branch:** main
 
-**Class:** RECON (architectural-boundary hypothesis test; **no IMPL
+**Class:** C1 RED / C2 CLOSE (Factory v2 phase grammar; **no IMPL
 authorisation in this ACT** — production code is intentionally frozen
 while the hypothesis is probed)
 
@@ -18,13 +18,17 @@ while the hypothesis is probed)
 `69f7d3a` with verdict `HALT_SECOND_SEAM_REQUIRED`; this ACT is the
 recommended next ACT per that document's §11 option D)
 
-**Production semantic changes:** FORBIDDEN (RECON only)
+**Production semantic changes:** FORBIDDEN in C1 RED; C1 binds
+the hypothesis evidence (Q1–Q6 + architectural probes). C2 CLOSE
+records the verdict. IMPL is reserved for a separate CORRECTION01
+ACT that opens only if C2 CLOSE = PASS.
 
-**IR / ABI / LLVM authorization:** NONE in RECON. The architectural
-probe exercises LLVM's pass pipeline outside the PolyC build path.
-IMPL authorisation requires a separate CORRECTION01 ACT that opens
-only if the C1 RED/RECON concludes that the bounded mem2reg pipeline
-is the smallest robust seam.
+**IR / ABI / LLVM authorization:** NONE in this ACT. The architectural
+probe exercises LLVM's pass pipeline outside the PolyC build path
+(via `opt -passes=mem2reg` and `opt -passes=verify` against
+hand-written LLVM IR files). The C-API link surface is reconnoitred
+in C1 to characterise future CORRECTION01 build work, but no
+production build file or C source is touched.
 
 ---
 
@@ -39,7 +43,11 @@ compiler-generated scalar local/return slot
     ↓
 LLVM entry-block alloca (per LLVM Frontend/PerformanceTips guidance)
     ↓
-direct, non-volatile load/store only
+direct load/store only (PolyC's first authorised slice emits
+                       non-volatile, non-atomic accesses; atomic
+                       loads/stores are not part of PolyC's first
+                       IMPL freeze even though LLVM mem2reg would
+                       in principle accept them)
     ↓
 opt -passes=mem2reg                  (LLVM's PromoteMemToReg via
                                       the new pass-manager C API:
@@ -92,7 +100,7 @@ flip them to PASS=6 FAIL=0 while preserving the structural NC.
 
 ## 2. Scope
 
-### allowed (RECON only)
+### allowed (C1 RED only)
 
 - mechanical construction of hand-written LLVM IR equivalents for
   the three RED fixtures;
@@ -114,6 +122,10 @@ flip them to PASS=6 FAIL=0 while preserving the structural NC.
   `LLVMCreatePassBuilderOptions` etc. available in the headers the
   project already includes? If not, what is required to expose
   them?
+- a minimal C-API harness (in `evidence/`, NOT in `src/`) that
+  links against the project's actual LLVM 22.1.8 and exercises the
+  pipeline on the hand-written fixtures. The harness is recon
+  evidence, not production code.
 
 ### forbidden
 
@@ -126,8 +138,8 @@ flip them to PASS=6 FAIL=0 while preserving the structural NC.
   `IrOp` enum, `ir-debug.c::ir_op_str`);
 - any addition to LLVM BUILD or CMAKE configuration;
 - any change to native (`x86_64`, `aarch64`) backend code;
-- IR_PHI construction (forbidden by
-  ACT-POLYC-IR-RETURN-SLOT-FORWARDING01 §4);
+- IR_PHI construction (the neutral IR grammar does not yet define
+  IR_PHI lowering; this ACT delegates SSA merge to LLVM mem2reg);
 - language semantic changes;
 - dependency additions;
 - tag reuse of `ACT-POLYC-IR-RETURN-SLOT-FORWARDING01` on any
@@ -142,14 +154,18 @@ git status --short                # clean (or only authorised pre-existing dirty
 git rev-parse HEAD                # recorded in §11 handoff
 ```
 
-Required state at RECON start:
+Required state at C1 RED start:
 
 - on `main`;
 - worktree clean;
 - HEAD carries `ACT-POLYC-IR-RETURN-SLOT-FORWARDING01` CLOSE
-  (`69f7d3a`) in its ancestor set.
+  (`69f7d3a`) in its ancestor set;
+- the OPEN commit of this ACT (`d2ffe21`) is on the ancestor
+  chain (it authorises the ACT doc; it carries no `ACT:`
+  trailer because it is the pre-RED OPEN under the NON_ACT
+  pattern, mirroring how RSF01 was opened at `d89a5cd`).
 
-## 4. RED / RECON witnesses (six concrete questions)
+## 4. RED witnesses (six concrete questions)
 
 ### Q1. Enumerate the producer surface
 
@@ -176,39 +192,76 @@ addressable local" allocas (which option D does NOT authorise).
 
 ### Q2. Mechanical promotability classification
 
-For each Q1 candidate, mechanically verify the LLVM mem2reg
-requirements:
+For each Q1 candidate, mechanically classify whether LLVM's
+`isAllocaPromotable` (in `PromoteMemoryToRegister.cpp`) would
+accept it. The actual documented rules are:
 
 ```text
-- alloca lives in the function entry block
-- all uses are loads and stores (no call/Invoke/use-of-pointer-as-value)
-- the alloca is not captured (its address is never stored into
-  another memory location and never leaves the function)
-- the alloca is a single-slot scalar OR a small aggregate that
-  LLVM's SROA could split into scalars
-- loads/stores are aligned and not volatile/atomic
+REQUIRED (REJECT if any is violated):
+  - alloca lives in the function entry block
+  - all uses are loads and stores (no call/Invoke, no use of the
+    pointer as a value)
+  - the alloca is not captured (its address is never stored into
+    another memory location and never leaves the function)
+  - the alloca is a SINGLE-SLOT SCALAR (this ACT does NOT try to
+    promote aggregate allocas; if a candidate slot is an
+    aggregate, classify it REJECT_FOR_LOCAL_MEM2REG01 and route
+    to a future SROA ACT instead)
+  - loads/stores are aligned and NOT VOLATILE
+
+DO NOT REJECT merely because:
+  - loads/stores are atomic (LLVM's isAllocaPromotable permits
+    atomic accesses; the alloca is function-local so atomic
+    semantics carry no meaningful inter-thread ordering). PolyC's
+    first authorised IMPL slice will still emit only non-atomic
+    accesses; that is a PRODUCT boundary, not LLVM's rule
 ```
 
 Method: per Q1 candidate, walk the IR list and verify each
 requirement. Record as a markdown table appended to this ACT. The
 classification table is part of the closure evidence; any candidate
-that fails must be marked REJECT and explained.
+that fails must be marked REJECT and explained. REJECTed candidates
+get one of two sub-classifications:
 
-### Q3. Confirm placement
+```text
+REJECT_SCOPE_LOCAL_MEM2REG01   -- eligible for a future
+                                  SROA/mem2reg ACT
+REJECT_PRODUCT_BOUNDARY        -- never eligible; would require
+                                  PolyC language semantic change
+```
+
+### Q3. Determine entry-block placement requirement
 
 LLVM Frontend/PerformanceTips guidance: function-scoped allocas
-should be emitted at the start of the entry block because
-mem2reg/SROA only try to eliminate entry-block allocas. The recon
-must verify that:
+intended for promotion should be emitted at the start of the entry
+block because mem2reg/SROA only try to eliminate entry-block
+allocas. The recon must DETERMINE three concrete facts, not
+assert them in advance:
 
-- the synthetic return slot is already emitted into the entry
-  block (it is — see `lc->collapsed && ins->dst ==
-  lc->collapse_slot` at `src/llvm-backend.c:1397-1418`), OR
-- any non-entry-block allocas must be moved (a SROA-friendly hoist)
-  before mem2reg sees them.
+```text
+Q3.1  Where does the neutral-IR IR_ALLOCA currently occur (in the
+      PolyC IR list at the point it would be lowered)?
 
-If hoisting is required, IMPL authorisation (CORRECTION01) must
-include a small hoist helper; RECON only documents the requirement.
+Q3.2  If the alloca is emitted literally using the current
+      LLVMBuildAlloca builder position, where does it land in
+      the resulting LLVM module? (The current spike at
+      src/llvm-backend.c:1397-1418 only accepts an IR_ALLOCA when
+      `lc->collapsed && ins->dst == lc->collapse_slot`; it does
+      NOT call LLVMBuildAlloca at all. So today, the answer to
+      Q3.2 may be: there is no LLVM-level alloca to inspect, and
+      CORRECTION01 must introduce one from scratch.)
+
+Q3.3  What insertion-point discipline must LOCAL-MEM2REG01-
+      CORRECTION01 establish so the resulting alloca lands in
+      the function entry block? (Likely: save current builder
+      insertion point, move to entry block, emit candidate
+      alloca(s), restore normal insertion point.)
+```
+
+If hoisting is required because the current emission site is NOT
+the entry block, IMPL authorisation (CORRECTION01) must include a
+small hoist helper; this ACT does not implement that hoist, it only
+characterises the obligation.
 
 ### Q4. Architectural probe (mandatory before any IMPL)
 
@@ -222,7 +275,7 @@ PolyC neutral IR (from --dump-ir at HEAD)
     define i64 @<fn>(...) {
       entry:
         %slot = alloca i64
-        ... direct non-volatile store/load only ...
+        ... direct store/load only ...
       bb_<N>: preds = <set>
         %v = load i64, ptr %slot
         ret i64 %v
@@ -232,40 +285,97 @@ opt -passes=mem2reg <fixt.ll> -S -o <fixt.m2r.ll>
 opt -passes=verify  <fixt.m2r.ll> -S -o /dev/null
 ```
 
-Then check:
+The required mechanical checks (falsifiable):
 
 - `opt -passes=mem2reg` exits 0;
 - `opt -passes=verify` exits 0 on the post-mem2reg IR;
 - the post-mem2reg IR no longer references `%slot` (target alloca
   eliminated);
-- for multi-pred fixtures (`single_cond_probe`, the multi-edge
-  rejoin of `pos_b0_compare_digit`), the post-mem2reg function
-  body contains either a `phi` or a `select` that merges per-edge
-  values in the natural successor block.
+- the post-mem2reg IR no longer contains loads/stores of `%slot`
+  (target mem ops eliminated);
+- the resulting function body is valid SSA that semantically
+  represents the original neutral-IR dataflow on the chosen test
+  inputs (path-dependent values are preserved correctly).
 
-If ANY of the three fails, option D is FALSIFIED at C1. The next
-ACT must then either fall back to option A/B/C (per
-IR-RETURN-SLOT-FORWARDING01 §11) or HALT with documented evidence.
-**Do not edit production code to "fix" the probe; the probe is
-what tests the hypothesis.**
+The recon MUST NOT prescribe a specific textual SSA merge form
+(a `phi`, a `select`, etc.). LLVM's `mem2reg` is an SSA-promotion
+pass, not an if-conversion pass; the actual form it produces
+depends on the precise CFG shape and on the pre-mem2reg optimisation
+sequence. The ACT observes what LLVM produces and reports it; if
+no PHI is observed for a fixture that the reviewer would expect to
+need one, the recon explains mechanically what equivalent SSA form
+LLVM chose and why.
+
+If ANY of the three fixture probes fails any of the required
+checks above, option D is FALSIFIED at C1. The next ACT must then
+either fall back to option A/B/C (per IR-RETURN-SLOT-FORWARDING01
+§11) or HALT with documented evidence. **Do not edit production
+code to "fix" the probe; the probe is what tests the hypothesis.**
 
 If all three pass, proceed to Q5.
 
-### Q5. Inspect the resulting SSA
+### Q4.1 Module-API vs Function-API C-API probe
 
-For `single_cond_probe` (the smallest multi-pred probe), capture
-the post-mem2reg IR and verify:
+Two new-pass-manager C-API entry points are candidates for the
+CORRECTION01 IMPL:
 
-- a `phi` is constructed in the natural successor block;
-- the operands of the `phi` are the per-edge stored values;
-- no `alloca`, `load`, or `store` to `%slot` survives in the
-  function body (except the entry-block alloca itself if mem2reg
-  does not always delete it — verify empirically);
-- `opt -passes=verify` PASS.
+```text
+LLVMRunPasses(module, "mem2reg,verify", TM, opts)
+    -- runs the pipeline on a whole module
 
-Preserve the post-mem2reg IR as
-`evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01/single_cond_probe.m2r.ll`
-(or a similar path agreed at CLOSE).
+LLVMRunPassesOnFunction(fn, "mem2reg,verify", TM, opts)
+    -- runs the pipeline on a single function
+```
+
+The recon must determine which one parses `"mem2reg,verify"`
+correctly under the project's actual LLVM 22.1.8 build, by
+constructing a minimal C++ harness that links against the same
+LLVM libraries and runs the pipeline on the same hand-written
+fixture. Both calls return `LLVMErrorRef`; the recon must capture
+whether the error path is reachable, so the CORRECTION01 IMPL
+knows it MUST consume/report errors rather than treating pass
+execution as infallible.
+
+The answer is recorded in the closure handoff as a single line:
+
+```text
+C-API MODULE API:  PASS / FAIL with stderr
+C-API FUNCTION API: PASS / FAIL with stderr
+C-API ERROR PATH OBSERVED: yes / no
+```
+
+### Q5. Inspect the resulting SSA merge form
+
+For the smallest genuine multi-reaching-definition probe
+(`single_cond_probe`, which has two predecessor blocks each
+storing a distinct value to the same slot), capture the
+post-mem2reg IR and report what LLVM actually produced. The recon
+reports OBSERVED facts; it does NOT assert what LLVM should have
+produced.
+
+Required OBSERVED facts:
+
+- target alloca eliminated from the function body (no remaining
+  reference to `%slot`);
+- target mem ops eliminated (no remaining load/store of `%slot`);
+- verifier PASS on the post-mem2reg module;
+- the natural successor block contains the merge mechanism LLVM
+  actually chose (phi, or equivalent SSA form). If a phi is
+  observed, its operands MUST be the two per-edge stored values
+  (preserves path-dependent semantics). If a phi is NOT observed,
+  the recon MUST mechanically explain what equivalent SSA form
+  LLVM chose and why the resulting IR is still semantically
+  correct for this fixture's control flow.
+
+The post-mem2reg IR for every fixture is preserved as evidence
+under `evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01/<fixt>.m2r.ll`.
+
+This is intentionally a thin oracle: it asks whether mem2reg
+correctly preserves the fixture's path-dependent semantics, not
+whether it produces a specific textual construct. If a future
+ACT needs to lock in a textual SSA-form expectation (e.g. as a
+regression test), that lock-in is a separate CORRECTION ACT, not
+part of this recon.
 
 ### Q6. Determine whether I64 alone is sufficient for the first slice
 
@@ -282,12 +392,12 @@ follows) is bound to **I64 local/return slots only**. I8 allocas
 are DEFERRED unless a separate BYTE-MEMORY01-follow-on fixture
 proves they are needed. The recon must explicitly call this out.
 
-## 5. Implementation boundary (NOT authorised in this RECON ACT)
+## 5. Implementation boundary (NOT authorised in this ACT)
 
-This section exists to prevent silent scope creep. If the C1 RECON
-concludes that option D is the right path, a separate CORRECTION01
-ACT must open. That future ACT's IMPL freeze is expected to look
-like:
+This section exists to prevent silent scope creep. If C2 CLOSE
+records `PASS`, a separate `ACT-POLYC-LLVM-LOCAL-MEM2REG01-
+CORRECTION01` ACT must open. That future ACT's IMPL freeze is
+expected to look like:
 
 ```text
 ALLOWED production:
@@ -321,7 +431,7 @@ output.
 ## 6. Acceptance criteria
 
 - **AC01 (entry identity recorded)**. §11 handoff contains the
-  exact entry SHA and `git status --short` output at RECON start.
+  exact entry SHA and `git status --short` output at C1 RED start.
 - **AC02 (Q1 producer surface classified)**. Every `IR_ALLOCA`
   producer and consumer in the current tree is listed in a
   markdown table appended to this ACT, with at minimum: producer
@@ -329,26 +439,31 @@ output.
 - **AC03 (Q2 promotability classified)**. Each Q1 candidate has a
   PASS/REJECT row in the promotability table with the specific
   requirement that fails (if any).
-- **AC04 (Q3 placement verified)**. Entry-block placement is
-  confirmed for each PASS candidate; non-entry candidates are
-  flagged for hoisting (which a future CORRECTION01 may
-  authorise, NOT this RECON).
+- **AC04 (Q3 placement requirement determined)**. The three
+  facts in Q3.1/Q3.2/Q3.3 are each answered concretely from
+  source + architectural probe, not asserted in advance. If
+  hoisting is required, the obligation is documented for a
+  future CORRECTION01 (NOT this ACT).
 - **AC05 (Q4 architectural probe PASS for all three RED
   fixtures)**. `opt -passes=mem2reg` and `opt -passes=verify`
   both exit 0 on the literal LLVM memory-form equivalents of
   `pos_b0_compare_digit`, `i64_collapse_probe`, and
   `single_cond_probe`.
-- **AC06 (Q5 SSA inspection PASS for `single_cond_probe`)**. The
-  post-mem2reg IR contains a `phi` (or equivalent select) in the
-  rejoin block; no survivor `%slot` references remain.
+- **AC06 (Q5 SSA merge form OBSERVED for `single_cond_probe`)**.
+  The post-mem2reg IR contains the merge mechanism LLVM actually
+  chose for the multi-pred rejoin. Required observed facts:
+  target alloca eliminated, target mem ops eliminated, verifier
+  PASS, and the natural successor block carries the merge form
+  (phi or equivalent). If the form is not a phi, the recon MUST
+  mechanically explain the equivalent SSA form and why it is
+  semantically correct.
 - **AC07 (Q6 type scope confirmed as I64-only)**. The recon
   explicitly states that the three RED fixtures are all I64 at
   the slot, so the future IMPL freeze is I64-only.
 - **AC08 (harness state preserved)**.
   `scripts/quality/ir-return-slot-forwarding01-test.sh` still
-  returns PASS=3 FAIL=3 at RECON CLOSE (the recon does not change
-  the harness; the IMPL CORRECTION01 is what flips it to
-  all-green).
+  returns PASS=3 FAIL=3 at C2 CLOSE (this ACT does not change the
+  harness; the IMPL CORRECTION01 is what flips it to all-green).
 - **AC09 (no production edit)**. `git diff <entry>..<close> --
   src/ scripts/` is empty. The only changes permitted are
   additions to `docs/acts/ACT-POLYC-LLVM-LOCAL-MEM2REG01.md` and
@@ -356,7 +471,7 @@ output.
 
 ## 7. Conservation gates
 
-These gates must remain PASS at RECON CLOSE:
+These gates must remain PASS at C2 CLOSE:
 
 - `scripts/quality/gate-fast.sh` → PASS
 - `scripts/quality/factory-v2-test.sh` → PASS=35 FAIL=0
@@ -414,25 +529,50 @@ This ACT may legitimately close with any of:
 
 ## 10. Commit topology
 
-A single NON_ACT (or RECON) commit is the natural shape for this
-ACT:
+Factory v2 phase grammar: `RED | IMPL | EVIDENCE | CLOSE`. There
+is no `RECON` phase. Architectural-hypothesis testing IS `RED`:
+it binds the principal RED evidence (Q1–Q6 + architectural probes)
+before any IMPL exists.
+
+The authorising commit (`d2ffe21`) was the OPEN of this ACT under
+the NON_ACT pattern, mirroring how
+ACT-POLYC-IR-RETURN-SLOT-FORWARDING01 was opened at `d89a5cd`.
+The OPEN commit only authorised the ACT document and ROADMAP row;
+no `ACT:` trailer was carried, so the v2 range-check machinery
+cannot validate it as an ACT. C1 below is the FIRST commit that
+binds this ACT's RED evidence and carries a real `ACT:` trailer.
 
 ```text
-RECON commit 1:
+C1 RED  (this ACT, first trailer-bearing commit)
     docs/acts/ACT-POLYC-LLVM-LOCAL-MEM2REG01.md       (this file)
     evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01/          (probes + .ll)
-    docs/ROADMAP.md                                   (status row added)
+    docs/ROADMAP.md                                   (status row updated)
+    ACT: ACT-POLYC-LLVM-LOCAL-MEM2REG01
+    ACT-Phase: RED
+
+C2 CLOSE  (this ACT, closure commit)
+    docs/acts/ACT-POLYC-LLVM-LOCAL-MEM2REG01.md       (closure handoff
+                                                       appended)
+    ACT: ACT-POLYC-LLVM-LOCAL-MEM2REG01
+    ACT-Phase: CLOSE
+    ACT-Verdict: PASS
+            | HALT_OPTION_D_FALSIFIED
+            | HALT_RED_NOT_REPRODUCED
+            | HALT_SCOPE_EXPANSION_REQUIRED
 ```
 
-Optionally split:
+If the C1 RED evidence convinces the reviewer that the ACT is
+not yet ready to close (e.g. one fixture probe is ambiguous), the
+ACT may produce one or more EVIDENCE commits between C1 and C2 to
+tighten the evidence, before the C2 CLOSE.
 
-```text
-RECON commit 1: ACT doc + ROADMAP row
-RECON commit 2: probes + .ll evidence
-```
-
-No C1 RED commit is needed (the three RED fixtures already exist
-from IR-RETURN-SLOT-FORWARDING01; the recon reuses them).
+The three RSF01 RED fixtures (`pos_b0_compare_digit.HC`,
+`i64_collapse_probe.HC`, `single_cond_probe.HC`) already exist in
+the tree (committed under RSF01); C1 reuses them via the existing
+harness and emits the hand-written LLVM IR equivalents as
+recon-only evidence files. No fixture code is duplicated; the
+hand-written `.ll` files are NEW and live under
+`evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01/`.
 
 No IMPL commit is permitted under this ACT id.
 
@@ -443,8 +583,9 @@ contain:
 
 ```text
 VERDICT
-IDENTITY (entry SHA, final SHA, branch)
+IDENTITY (C1 entry SHA, C2 CLOSE SHA, branch)
 Q1..Q6 results (with the markdown tables and .ll evidence paths)
+Q4.1 C-API probe results (MODULE API + FUNCTION API + error path)
 OPTIONAL: REJECT+justification if Q4 failed
         (HALT_OPTION_D_FALSIFIED)
 GATES (all PASS at CLOSE)
@@ -456,7 +597,7 @@ NEXT ACT (either a CORRECTION01 IMPL freeze if D is confirmed,
 ```
 
 The handoff is appended to this ACT file at CLOSE; no separate
-HANDOFF document is required for this RECON.
+HANDOFF document is required for this ACT.
 
 ---
 
@@ -479,10 +620,10 @@ This ACT's Q4 probe uses `opt -passes=mem2reg` and
 requiring a C++ adapter. Any future CORRECTION01 must use the C
 API call, not a direct `PromoteMemToReg` import.
 
-## Appendix B. Why this is RECON, not IMPL
+## Appendix B. Why this is RED, not IMPL
 
 F3 (RED before production implementation) and F7 (scope is
-conserved) both argue for RECON-first when the hypothesis is
+conserved) both argue for RED-first when the hypothesis is
 structural:
 
 - The hypothesis is that LLVM mem2reg is the smallest robust
@@ -491,30 +632,30 @@ structural:
   does not work, and then chasing ghosts.
 - The IMPL freeze has many degrees of freedom (placement,
   hoist, C API availability, escape analysis, type scope) that
-  are best resolved AFTER recon, not before.
+  are best resolved AFTER RED, not before.
 
-If the reviewer wants to skip recon and authorise IMPL directly,
+If the reviewer wants to skip RED and authorise IMPL directly,
 that should be a separate CORRECTION01 ACT opened with explicit
 scope overrides.
 
-## Appendix C. Preliminary C API recon (snapshot at entry)
+## Appendix C. Preliminary C API recon (snapshot at ACT OPEN)
 
-Recorded at RECON open; the agent doing the recon must verify
-and extend.
+Recorded at ACT OPEN (HEAD = `d2ffe21`); the C1 RED commit
+extends this snapshot with Q4.1.
 
 ```text
 Question: is LLVMRunPasses exposed via a header the project
 already includes?
 
-Verified at entry (HEAD = 0501569):
+Verified at ACT OPEN (HEAD = d2ffe21):
   grep -rn 'LLVMRunPasses' src/ -> 0 matches
   grep -rn 'LLVMCreatePassBuilderOptions' src/ -> 0 matches
   grep -rn 'llvm-c/Transforms/PassBuilder.h' src/ -> 0 matches
 
-Implication: at RECON start, the project does NOT yet include
+Implication: at ACT OPEN, the project does NOT yet include
 the LLVM C PassBuilder headers. A future CORRECTION01 will need
 to (a) verify those headers are available in the build's LLVM
 distribution, (b) include them in src/llvm-backend.c, and (c)
-add any needed link flags. This is recon-only observation; it
+add any needed link flags. This is RED-only observation; it
 is not a permission to touch build files under this ACT id.
 ```

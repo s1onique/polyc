@@ -1,0 +1,26 @@
+; ModuleID = 'evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01/probes/pos_b0_compare_digit.ll'
+source_filename = "evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01/probes/pos_b0_compare_digit.ll"
+
+define i64 @ReadDigit(ptr %p1) {
+entry:
+  %byte.src = load i8, ptr %p1, align 1
+  %l4 = zext i8 %byte.src to i64
+  %t9 = icmp sge i64 %l4, 48
+  br i1 %t9, label %bb3, label %bb4
+
+bb3:                                              ; preds = %entry
+  %t11 = icmp sle i64 %l4, 57
+  br i1 %t11, label %bb5, label %bb4
+
+bb5:                                              ; preds = %bb3
+  %l8.bb5.next = sub i64 0, %l4
+  %l8.bb5.adjusted = add i64 %l8.bb5.next, -48
+  br label %bb4
+
+bb4:                                              ; preds = %bb5, %bb3, %entry
+  %slot.0 = phi i64 [ %l8.bb5.adjusted, %bb5 ], [ 0, %bb3 ], [ 0, %entry ]
+  br label %bb2
+
+bb2:                                              ; preds = %bb4
+  ret i64 %slot.0
+}
