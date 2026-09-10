@@ -1,0 +1,472 @@
+RED-2 (P0-1) — MUTABLE-LOCAL DEF/USE RECON
+
+ACT: ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02
+ACT-Phase: RED
+Commit: C3
+Date: 2026-09-11
+
+================================================================================
+0. Frozen artefact (FROZEN at C3)
+================================================================================
+
+CASE_B_OPCODE_SET = {iadd, isub}
+
+Derivation:
+  $ awk '/    [a-z]+ +%l[0-9]+ i64 local/ {print $1}' \
+        c3/fixture-*/pre-ir.txt | sort -u
+  iadd
+  isub
+  ret        <-- terminator; not a definition opcode
+  store      <-- case (a) already enumerated in §2 rule 3
+
+  'iadd' and 'isub' are the ONLY scalar-arithmetic opcodes
+  whose dst is an i64 local in the current neutral IR of
+  the six fixtures. No other integer-arithmetic opcode
+  (imul, and, or, xor, shl, shr, udiv, sdiv, urem, srem,
+  umulh, smulh, neg, not) appears as a local-dst in any
+  fixture today. This set is the ELIGIBLE-FIXTURE minimum;
+  no speculative widening. A wider set requires a future
+  ACT after evidence exists (per §2 rule 3).
+
+The frozen CASE_B_OPCODE_SET is therefore exactly the
+opcodes required by the eligible fixture definitions
+discovered in this RED.
+
+================================================================================
+1. Neutral IR capture method
+================================================================================
+
+For each fixture, the neutral IR was captured directly
+from the current tree:
+
+  $ ./hcc --install-dir=$(pwd)/build/test-prefix \
+         --dump-ir <fixture>.HC > pre-ir.txt 2>&1
+
+The captured IRs are committed alongside this file as
+fixture-{name}/pre-ir.txt (see c3/fixture-*/).
+
+The header before the "===== After basic optimisations ====="
+divider is the raw IR. The block AFTER the divider is the
+post-basic-optimisation shape that the backend lowers to
+
+================================================================================
+2. Per-fixture tables
+================================================================================
+
+One table per fixture. Each row answers a single §3 / §2
+question. All shapes are read directly from
+c3/fixture-<name>/pre-ir.txt (post-basic-opt block).
+
+
+--------------------------------------------------------------------------------
+FIXTURE 1: ProbePath
+Source: src/tests/llvm-byte-memory01/nc_p01_predecessor_paths.HC
+IR:     c3/fixture-probepath/pre-ir.txt
+Function under analysis: ProbePath(%p1, %p3) returns i64
+Target mutable local: %l6
+--------------------------------------------------------------------------------
+
+target mutable local var.id        %l6
+type                                i64
+
+definition sites:
+  bb.id    exact neutral-IR instr                                opcode   case
+  bb1      "store    %l6 i64 local, 10 i64 const int"            store    (a) IR_STORE-source
+  bb3      "iadd     %l6 i64 local, %l4 i64 local, 1 i64 const"  iadd     (b) scalar-arithmetic-dst
+  bb5      "isub     %l6 i64 local, 0 i64 const int, %l4 i64"    isub     (b) scalar-arithmetic-dst
+
+read sites:
+  bb.id    exact neutral-IR instr                                opcode
+  bb6      "store    %t5 i64 tmp, %l6 i64 local  ; line 44"      store  (compiler-generated return handling)
+  bb3      "iadd     %l6 i64 local, %l4 i64 local, 1 i64 const"  iadd  (use of %l4, NOT a read of %l6)
+            -> NOT a read of %l6; both operands are %l4 and const 1
+  bb5      "isub     %l6 i64 local, 0 i64 const int, %l4 i64"    isub  (use of %l4, NOT a read of %l6)
+            -> NOT a read of %l6; operands are const 0 and %l4
+
+address taken?                      no
+GEP?                                 no
+escape?                              no
+
+definite assignment:
+  for EVERY read, does every executable entry->read path
+  contain a reaching definition?       yes
+  evidence/path justification:
+    The ONLY read of %l6 is bb6's store-to-return-slot
+    `store %t5, %l6`. Paths reaching bb6:
+      entry bb1 -> bb4 -> bb6: bb1 stores %l6=10 (case a)
+      entry bb1 -> bb3 -> bb4 -> bb6: bb3 iadd %l6=... (case b)
+      entry bb1 -> bb4 -> bb5 -> bb6: bb5 isub %l6=... (case b)
+    Every entry->bb6 path contains at least one definition.
+    bb4 itself does not define %l6, but its entry->bb4
+    predecessor sets (bb1 or bb3) each carry a definition.
+
+feeds compiler-generated return handling?  yes
+  bb6's `store %t5 i64 tmp, %l6 i64 local` is the
+  compiler-generated return-slot store for this function.
+
+
+--------------------------------------------------------------------------------
+FIXTURE 2: Diamond
+Source: c3/fixture-diamond/Diamond.HC    (new fixture; see RESIDUE)
+IR:     c3/fixture-diamond/pre-ir.txt
+Function under analysis: Diamond(%p1, %p3) returns i64
+Target mutable local: %l6
+--------------------------------------------------------------------------------
+
+target mutable local var.id        %l6
+type                                i64
+
+definition sites:
+  bb.id    exact neutral-IR instr                                opcode   case
+  bb3      "iadd     %l6 i64 local, %l4 i64 local, 1 i64 const"  iadd     (b) scalar-arithmetic-dst
+  bb4      "isub     %l6 i64 local, %l4 i64 local, 1 i64 const"  isub     (b) scalar-arithmetic-dst
+
+read sites:
+  bb.id    exact neutral-IR instr                                opcode
+  bb5      "store    %t5 i64 tmp, %l6 i64 local  ; line 24"      store  (compiler-generated return handling)
+
+address taken?                      no
+GEP?                                 no
+escape?                              no
+
+definite assignment:
+  for EVERY read, does every executable entry->read path
+  contain a reaching definition?       yes
+  evidence/path justification:
+    The ONLY read of %l6 is bb5's store-to-return-slot
+    `store %t5, %l6`. Paths reaching bb5:
+      entry bb1 -> bb3 -> bb5: bb3 iadd defines %l6
+      entry bb1 -> bb4 -> bb5: bb4 isub defines %l6
+    Both paths contain a definition.
+    No path exists from entry to bb5 that lacks a definition
+    of %l6.
+
+feeds compiler-generated return handling?  yes
+  bb5's `store %t5 i64 tmp, %l6 i64 local` is the
+  compiler-generated return-slot store.
+
+Option-W eligible?                    yes
+  reason: type=i64, not address-taken, every definition is
+  case (b) iadd/isub with local-dst, every read has a
+  reaching definition on every path, V feeds the
+  compiler-generated return handling.
+
+
+Option-W eligible?                    yes
+
+--------------------------------------------------------------------------------
+FIXTURE 3: pos_b0_compare_digit
+Source: src/tests/llvm-byte-memory01/pos_b0_compare_digit.HC
+IR:     c3/fixture-pos_b0_compare_digit/pre-ir.txt
+Two functions, each with a target mutable local.
+--------------------------------------------------------------------------------
+
+SUBSET A — Function: ReadDigit(%p1) returns i64
+target mutable local: %l8
+
+definition sites:
+  bb.id    exact neutral-IR instr                                opcode   case
+  bb1      "store    %l8 i64 local, 0 i64 const int  ; line 39"  store    (a) IR_STORE-source
+  bb5      "isub     %l8 i64 local, %t13 i64 tmp, 48 i8 const"   isub     (b) scalar-arithmetic-dst
+
+read sites:
+  bb.id    exact neutral-IR instr                                opcode
+  bb4      "store    %t3 i64 tmp, %l8 i64 local  ; line 45"      store  (compiler-generated return handling)
+
+address taken?                      no
+GEP?                                 no
+escape?                              no
+
+definite assignment:
+  for EVERY read, does every executable entry->read path
+  contain a reaching definition?       yes
+  evidence/path justification:
+    The ONLY read of %l8 is bb4's store-to-return-slot.
+    Paths reaching bb4:
+      entry bb1 -> bb4: bb1 store %l8=0 (case a)
+      entry bb1 -> bb3 -> bb4: bb1 store %l8=0 (case a)
+      entry bb1 -> bb3 -> bb5 -> bb4: bb5 isub %l8 (case b)
+    Every path contains at least one definition of %l8.
+
+feeds compiler-generated return handling?  yes
+
+Option-W eligible?                    yes
+  reason: type=i64, not address-taken, every definition is
+  case (a) IR_STORE or case (b) isub with local-dst, every
+  read has a reaching definition, V feeds the
+  compiler-generated return handling.
+
+
+SUBSET B — Function: AccDigit(%p16, %p18) returns i64
+target mutable local: %l17
+
+definition sites:
+  bb.id    exact neutral-IR instr                                opcode   case
+  bb7      "store    %l17 i64 local, %p16 i64 param  ; line 48"  store    (a) IR_STORE-source
+  bb11     "iadd     %l17 i64 local, %t32 i64 tmp, %l29 i64"     iadd     (b) scalar-arithmetic-dst
+
+read sites:
+  bb.id    exact neutral-IR instr                                opcode
+  bb11     "imul     %t32 i64 tmp, %l17 i64 local, 10 i64"       imul   (use of %l17; case-(b) RHS source)
+  bb10     "store    %t20 i64 tmp, %l17 i64 local  ; line 56"     store  (compiler-generated return handling)
+
+address taken?                      no
+GEP?                                 no
+escape?                              no
+
+definite assignment:
+  for EVERY read, does every executable entry->read path
+  contain a reaching definition?       yes
+  evidence/path justification:
+    bb11 reads %l17 via the `imul` RHS:
+      entry bb7 -> bb9 -> bb11: bb7 store %l17=%p16 (case a)
+    bb10 reads %l17 via the return-slot store:
+      entry bb7 -> bb10: bb7 store %l17=%p16 (case a)
+      entry bb7 -> bb9 -> bb10: bb7 store %l17=%p16 (case a)
+      entry bb7 -> bb9 -> bb11 -> bb10: bb11 iadd %l17 (case b)
+
+--------------------------------------------------------------------------------
+FIXTURE 4: i64_collapse_probe
+Source: src/tests/llvm-byte-memory01/i64_collapse_probe.HC
+IR:     c3/fixture-i64_collapse_probe/pre-ir.txt
+Function under analysis: Probe(%p1, %p3) returns i64
+Target mutable local: %l2
+--------------------------------------------------------------------------------
+
+target mutable local var.id        %l2
+type                                i64
+
+definition sites:
+  bb.id    exact neutral-IR instr                                opcode   case
+  bb1      "store    %l2 i64 local, %p1 i64 param  ; line 1"     store    (a) IR_STORE-source
+  bb5      "iadd     %l2 i64 local, %l2 i64 local, %l6 i64"      iadd     (b) scalar-arithmetic-dst
+            (self-referential: RHS uses %l2, dst is %l2; case (b)
+             covers this because the dst is a local and the opcode
+             is in the frozen case-(b) set)
+
+read sites:
+  bb.id    exact neutral-IR instr                                opcode
+  bb5      "iadd     %l2 i64 local, %l2 i64 local, %l6 i64"      iadd  (RHS read of %l2; case-(b) RHS source)
+  bb4      "store    %t5 i64 tmp, %l2 i64 local  ; line 8"       store (compiler-generated return handling)
+
+address taken?                      no
+GEP?                                 no
+escape?                              no
+
+definite assignment:
+  for EVERY read, does every executable entry->read path
+  contain a reaching definition?       yes
+  evidence/path justification:
+    bb5's `iadd %l2 = %l2 + %l6` requires %l2 to be defined
+    BEFORE the iadd on every path to bb5.
+    bb5's only predecessor is bb3, and bb3's only
+    predecessor is bb1. bb1 store-defines %l2 = %p1.
+    So every entry->bb5 path passes through bb1 and finds
+    the bb1 store of %l2.
+    bb4's store-to-return-slot: paths are bb1, bb1->bb3,
+    and bb1->bb3->bb5. All carry the bb1 store of %l2,
+    possibly refined by bb5's iadd.
+
+feeds compiler-generated return handling?  yes
+  bb4's `store %t5 i64 tmp, %l2 i64 local` is the
+  compiler-generated return-slot store.
+
+
+--------------------------------------------------------------------------------
+FIXTURE 5: single_cond_probe
+Source: src/tests/llvm-byte-memory01/single_cond_probe.HC
+IR:     c3/fixture-single_cond_probe/pre-ir.txt
+Function under analysis: Probe(%p1, %p3) returns i64
+Target mutable local: %l2
+--------------------------------------------------------------------------------
+
+target mutable local var.id        %l2
+type                                i64
+
+definition sites:
+  bb.id    exact neutral-IR instr                                opcode   case
+  bb1      "store    %l2 i64 local, %p1 i64 param  ; line 1"     store    (a) IR_STORE-source
+  bb3      "iadd     %l2 i64 local, %l2 i64 local, %l6 i64"      iadd     (b) scalar-arithmetic-dst
+
+read sites:
+  bb.id    exact neutral-IR instr                                opcode
+  bb3      "iadd     %l2 i64 local, %l2 i64 local, %l6 i64"      iadd  (RHS read of %l2; case-(b) RHS source)
+  bb4      "store    %t5 i64 tmp, %l2 i64 local  ; line 6"       store (compiler-generated return handling)
+
+address taken?                      no
+GEP?                                 no
+escape?                              no
+
+definite assignment:
+  for EVERY read, does every executable entry->read path
+  contain a reaching definition?       yes
+  evidence/path justification:
+    bb3's `iadd %l2 = %l2 + %l6`: bb3's only predecessor is
+    bb1, which store-defines %l2 = %p1. Every entry->bb3
+    path contains that store.
+    bb4's return-slot store: paths bb1, bb1->bb3 both
+    contain the bb1 store of %l2.
+
+feeds compiler-generated return handling?  yes
+  bb4's `store %t5 i64 tmp, %l2 i64 local` is the
+  compiler-generated return-slot store.
+
+Option-W eligible?                    yes
+  reason: type=i64, not address-taken, every definition is
+  case (a) IR_STORE or case (b) iadd with local-dst, every
+
+--------------------------------------------------------------------------------
+FIXTURE 6: safe_fwd_single_pred
+Source: src/tests/llvm-byte-memory01/safe_fwd_single_pred.HC
+IR:     c3/fixture-safe_fwd_single_pred/pre-ir.txt
+Function under analysis: FwdSafe(%p1) returns i64
+Target mutable local: %l6
+--------------------------------------------------------------------------------
+
+target mutable local var.id        %l6
+type                                i64
+
+definition sites:
+  bb.id    exact neutral-IR instr                                opcode   case
+  bb1      "iadd     %l6 i64 local, %l4 i64 local, 1 i64 const"  iadd     (b) scalar-arithmetic-dst
+
+read sites:
+  bb.id    exact neutral-IR instr                                opcode
+  bb1      "ret      %l6 i64 local  ; line 61"                   ret  (function return; the local is
+                                                                      directly returned, no
+                                                                      compiler-generated return-slot store
+                                                                      because bb1 has a single predecessor
+                                                                      and is its own exit)
+
+address taken?                      no
+GEP?                                 no
+escape?                              no
+
+definite assignment:
+  for EVERY read, does every executable entry->read path
+  contain a reaching definition?       yes
+  evidence/path justification:
+    The ONLY path from entry to the read (the bb1 ret of %l6)
+    contains the bb1 iadd that defines %l6.
+    No other path exists (function body is unconditional;
+    the `acc = x + 1` is in the entry block).
+
+feeds compiler-generated return handling?  no
+  The local is directly returned (ret %l6); there is no
+  separate compiler-generated return-slot store. The
+  contract's §2 rule 5 says:
+    "V is the source local feeding compiler-generated
+     return handling, OR V is another mechanically-proven
+     I64 return-local shape that RED-2 enumerates and
+     freezes in its evidence table."
+  safe_fwd_single_pred's %l6 IS a return-local: it is
+  read by `ret %l6` and that is its only consumer. Its
+  bb1 shape (single basic block; the local is defined in
+  bb1 and used in the same bb1 by the ret) is a
+  mechanically-proven I64 return-local shape.
+
+  The relevant condition is: V's only consumer is a
+  return, and V has a definition in every executable
+  path to that return.
+
+Option-W eligible?                    yes (under the
+                                         return-local
+                                         exception in §2
+
+================================================================================
+3. Summary
+================================================================================
+
+CASE_B_OPCODE_SET (FROZEN): {iadd, isub}
+
+Fixtures analyzed:                6
+Fixtures eligible:                6
+Fixtures ineligible:              0
+Fixtures failing definite-assign: 0
+
+Eligible targets (one V per fixture):
+  ProbePath             -> %l6
+  Diamond               -> %l6
+  pos_b0_compare_digit  -> ReadDigit %l8, AccDigit %l17
+  i64_collapse_probe    -> %l2
+  single_cond_probe     -> %l2
+  safe_fwd_single_pred  -> %l6
+
+RED-2 status: PASS
+
+All six §5 fixtures are Option-W eligible under the frozen
+discriminator. No fixture fails §2 rule 6 (definite
+assignment). No fixture requires CFG-edge synthesis,
+address reconstruction, GEP, escape, aggregate storage, or
+predecessor analysis.
+
+================================================================================
+4. RESIDUE (F11)
+================================================================================
+
+R-P1  Diamond fixture: the contract lists Diamond as a
+     "(new)" target in §5. A minimal Diamond.HC source
+     file was created in c3/fixture-diamond/Diamond.HC
+     for IR generation only. It is NOT promoted into
+     src/tests/llvm-byte-memory01/ by this C3 commit
+     because C3 is a RED-only commit and F7 forbids
+     silent scope expansion. The promotion (if needed
+     for future ACTs that exercise Diamond via the LLVM
+     spike or runtime gates) is recorded as residue for
+     a future ACT.
+
+     The c3/fixture-diamond/Diamond.HC file is evidence,
+     not source. The committed source fixtures for the
+     other five RED-2 targets remain the existing
+     src/tests/llvm-byte-memory01/*.HC files.
+
+ACT: ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02
+ACT-Phase: RED
+
+                                         rule 5)
+  reason: type=i64, not address-taken, every definition is
+  case (b) iadd with local-dst, every read (the ret) has a
+  reaching definition, V is a return-local whose shape
+  is mechanically proven here (single-bb; bb1 is the only
+  block; the local is defined and used in bb1).
+
+
+  read has a reaching definition, V feeds the
+  compiler-generated return handling.
+
+
+Option-W eligible?                    yes
+  reason: type=i64, not address-taken, every definition is
+  case (a) IR_STORE or case (b) iadd with local-dst, every
+  read has a reaching definition (note: the bb5 iadd is
+  self-referential but the RHS %l2 always refers to the
+  bb1 store on every path through bb5), V feeds the
+  compiler-generated return handling.
+
+
+    Every entry->bb11 and entry->bb10 path contains at
+    least one definition.
+
+feeds compiler-generated return handling?  yes
+  bb10's `store %t20 i64 tmp, %l17 i64 local` is the
+  compiler-generated return-slot store.
+
+Option-W eligible?                    yes
+  reason: type=i64, not address-taken, every definition is
+  case (a) IR_STORE or case (b) iadd with local-dst, every
+  read has a reaching definition, V feeds the
+  compiler-generated return handling.
+
+
+  reason: type=i64, not address-taken, every definition is
+  case (a) IR_STORE or case (b) iadd/isub with local-dst,
+  every read has a reaching definition, V feeds the
+  compiler-generated return handling.
+  Passes all six §2 rules.
+
+
+LLVM. C3 reports the POST-BASIC-OPT shape because that is
+the shape the LLVM backend actually consumes.
+
+
+
