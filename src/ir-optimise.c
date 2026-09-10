@@ -256,6 +256,18 @@ static int irSlotHasUses(IrFunction *fn, u32 var_id) {
 static void irForwardReturnSlot(IrFunction *fn) {
     listForEach(fn->blocks) {
         IrBlock *bb = (IrBlock *)it->value;
+        /* ACT-POLYC-IR-RETURN-SLOT-FORWARDING01: the store; load; ret
+         * rewrite substitutes the load's source value into the ret
+         * operand. On a multi-predecessor exit, that value is not
+         * guaranteed to dominate every use of the original load
+         * result, and the LLVM-side backend emits a verifier failure
+         * ("Instruction does not dominate all uses!"). The rewrite is
+         * SAFE iff the block containing the store; load; ret triple
+         * has <=1 predecessor (0 = folded already, 1 = the sole
+         * predecessor is the store's defining block). On a 2+
+         * predecessor block, refuse the rewrite. */
+        Map *bb_preds = irBlockGetPredecessors(fn, bb);
+        if (bb_preds && bb_preds->size > 1) continue;
         for (List *node = bb->instructions->next;
              node != bb->instructions;
              node = node->next)

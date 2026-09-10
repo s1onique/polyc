@@ -1,0 +1,54 @@
+
+--- i64_collapse_probe ---
+i64 Probe(%p1 i64 param, %p3 ptr param) {
+  bb1 -> predecessors:  {}  successors: {3, 4}
+    store    %l2 i64 local, %p1 i64 param  ; line 1
+    store    %l4 ptr local, %p3 ptr param  ; line 1
+    alloca   %t5 i64 tmp, 8 i64 const int  ; line 1
+    load*    %l6 i64 local, %l4 ptr local  ; line 2
+    cmp_ge   %t8 i64 tmp, %l6 i64 local, 10 i64 const int  ; line 3
+    br       %t8 i64 tmp, bb3, bb4  ; line 3
+
+  bb3 -> predecessors: {1}  successors: {5, 6}
+    cmp_le   %t9 i64 tmp, %l6 i64 local, 99 i64 const int  ; line 4
+    br       %t9 i64 tmp, bb5, bb6  ; line 4
+
+  bb5 -> predecessors: {3}  successors: {6}
+    iadd     %l2 i64 local, %l2 i64 local, %l6 i64 local  ; line 5
+    jmp      bb6  ; line 5
+
+  bb6 -> predecessors: {3, 5}  successors: {4}
+    jmp      bb4  ; line 5
+
+  bb4 -> predecessors: {1, 6}  successors: {2}
+    store    %t5 i64 tmp, %l2 i64 local  ; line 8
+    jmp      bb2  ; line 8
+
+  bb2 -> predecessors: {4}  successors:  {}
+    load     %t11 i64 tmp, %t5 i64 tmp  ; line 8
+    ret      %t11 i64 tmp  ; line 8
+}
+
+===== After basic optimisations ===== 
+i64 Probe(%p1 i64 param, %p3 ptr param) {
+  bb1 -> predecessors:  {}  successors: {3, 4}
+    store    %l2 i64 local, %p1 i64 param  ; line 1
+    alloca   %t5 i64 tmp, 8 i64 const int  ; line 1
+    load*    %l6 i64 local, %p3 ptr param  ; line 2
+    cmp_ge   %t8 i64 tmp, %l6 i64 local, 10 i64 const int  ; line 3
+    br       %t8 i64 tmp, bb3, bb4  ; line 3
+
+  bb3 -> predecessors: {1}  successors: {5, 4}
+    cmp_le   %t9 i64 tmp, %l6 i64 local, 99 i64 const int  ; line 4
+    br       %t9 i64 tmp, bb5, bb4  ; line 4
+
+  bb5 -> predecessors: {3}  successors: {4}
+    iadd     %l2 i64 local, %l2 i64 local, %l6 i64 local  ; line 5
+    jmp      bb4  ; line 5
+
+  bb4 -> predecessors: {1, 3, 5}  successors: {4}
+    store    %t5 i64 tmp, %l2 i64 local  ; line 8
+    load     %t11 i64 tmp, %t5 i64 tmp  ; line 8
+    ret      %t11 i64 tmp  ; line 8
+}
+

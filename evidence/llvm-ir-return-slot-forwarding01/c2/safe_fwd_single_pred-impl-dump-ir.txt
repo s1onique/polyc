@@ -1,0 +1,24 @@
+
+--- safe_fwd_single_pred ---
+i64 FwdSafe(%p1 ptr param) {
+  bb1 -> predecessors:  {}  successors: {2}
+    store    %l2 ptr local, %p1 ptr param  ; line 56
+    alloca   %t3 i64 tmp, 8 i64 const int  ; line 56
+    load*    %l4 i64 local, %l2 ptr local  ; line 57
+    iadd     %l6 i64 local, %l4 i64 local, 1 i64 const int  ; line 59
+    store    %t3 i64 tmp, %l6 i64 local  ; line 60
+    jmp      bb2  ; line 60
+
+  bb2 -> predecessors: {1}  successors:  {}
+    load     %t8 i64 tmp, %t3 i64 tmp  ; line 60
+    ret      %t8 i64 tmp  ; line 60
+}
+
+===== After basic optimisations ===== 
+i64 FwdSafe(%p1 ptr param) {
+  bb1 -> predecessors:  {}  successors: {1}
+    load*    %l4 i64 local, %p1 ptr param  ; line 57
+    iadd     %l6 i64 local, %l4 i64 local, 1 i64 const int  ; line 59
+    ret      %l6 i64 local  ; line 60
+}
+

@@ -1,0 +1,130 @@
+
+--- pos_b0_compare_digit ---
+i64 ReadDigit(%p1 ptr param) {
+  bb1 -> predecessors:  {}  successors: {3, 4}
+    store    %l2 ptr local, %p1 ptr param  ; line 37
+    alloca   %t3 i64 tmp, 8 i64 const int  ; line 37
+    load*    %t5 i8 tmp, %l2 ptr local  ; line 38
+    zext     %t6 i64 tmp, %t5 i8 tmp  ; line 38
+    trunc    %l4 i8 local, %t6 i64 tmp  ; line 38
+    store    %l8 i64 local, 0 i64 const int  ; line 39
+    zext     %t9 i64 tmp, %l4 i8 local  ; line 40
+    cmp_ge   %t10 i64 tmp, %t9 i64 tmp, 48 i8 const int  ; line 40
+    br       %t10 i64 tmp, bb3, bb4  ; line 40
+
+  bb3 -> predecessors: {1}  successors: {5, 6}
+    zext     %t11 i64 tmp, %l4 i8 local  ; line 41
+    cmp_le   %t12 i64 tmp, %t11 i64 tmp, 57 i8 const int  ; line 41
+    br       %t12 i64 tmp, bb5, bb6  ; line 41
+
+  bb5 -> predecessors: {3}  successors: {6}
+    zext     %t13 i64 tmp, %l4 i8 local  ; line 42
+    isub     %l8 i64 local, %t13 i64 tmp, 48 i8 const int  ; line 42
+    jmp      bb6  ; line 42
+
+  bb6 -> predecessors: {3, 5}  successors: {4}
+    jmp      bb4  ; line 42
+
+  bb4 -> predecessors: {1, 6}  successors: {2}
+    store    %t3 i64 tmp, %l8 i64 local  ; line 45
+    jmp      bb2  ; line 45
+
+  bb2 -> predecessors: {4}  successors:  {}
+    load     %t15 i64 tmp, %t3 i64 tmp  ; line 45
+    ret      %t15 i64 tmp  ; line 45
+}
+
+===== After basic optimisations ===== 
+i64 ReadDigit(%p1 ptr param) {
+  bb1 -> predecessors:  {}  successors: {3, 4}
+    alloca   %t3 i64 tmp, 8 i64 const int  ; line 37
+    load*    %t5 i8 tmp, %p1 ptr param  ; line 38
+    zext     %t6 i64 tmp, %t5 i8 tmp  ; line 38
+    trunc    %l4 i8 local, %t6 i64 tmp  ; line 38
+    store    %l8 i64 local, 0 i64 const int  ; line 39
+    zext     %t9 i64 tmp, %l4 i8 local  ; line 40
+    cmp_ge   %t10 i64 tmp, %t9 i64 tmp, 48 i8 const int  ; line 40
+    br       %t10 i64 tmp, bb3, bb4  ; line 40
+
+  bb3 -> predecessors: {1}  successors: {5, 4}
+    zext     %t11 i64 tmp, %l4 i8 local  ; line 41
+    cmp_le   %t12 i64 tmp, %t11 i64 tmp, 57 i8 const int  ; line 41
+    br       %t12 i64 tmp, bb5, bb4  ; line 41
+
+  bb5 -> predecessors: {3}  successors: {4}
+    zext     %t13 i64 tmp, %l4 i8 local  ; line 42
+    isub     %l8 i64 local, %t13 i64 tmp, 48 i8 const int  ; line 42
+    jmp      bb4  ; line 42
+
+  bb4 -> predecessors: {1, 3, 5}  successors: {4}
+    store    %t3 i64 tmp, %l8 i64 local  ; line 45
+    load     %t15 i64 tmp, %t3 i64 tmp  ; line 45
+    ret      %t15 i64 tmp  ; line 45
+}
+
+i64 AccDigit(%p16 i64 param, %p18 ptr param) {
+  bb7 -> predecessors:  {}  successors: {9, 10}
+    store    %l17 i64 local, %p16 i64 param  ; line 48
+    store    %l19 ptr local, %p18 ptr param  ; line 48
+    alloca   %t20 i64 tmp, 8 i64 const int  ; line 48
+    load*    %t22 i8 tmp, %l19 ptr local  ; line 49
+    zext     %t23 i64 tmp, %t22 i8 tmp  ; line 49
+    trunc    %l21 i8 local, %t23 i64 tmp  ; line 49
+    zext     %t25 i64 tmp, %l21 i8 local  ; line 50
+    cmp_ge   %t26 i64 tmp, %t25 i64 tmp, 48 i8 const int  ; line 50
+    br       %t26 i64 tmp, bb9, bb10  ; line 50
+
+  bb9 -> predecessors: {7}  successors: {11, 12}
+    zext     %t27 i64 tmp, %l21 i8 local  ; line 51
+    cmp_le   %t28 i64 tmp, %t27 i64 tmp, 57 i8 const int  ; line 51
+    br       %t28 i64 tmp, bb11, bb12  ; line 51
+
+  bb11 -> predecessors: {9}  successors: {12}
+    zext     %t30 i64 tmp, %l21 i8 local  ; line 52
+    isub     %l29 i64 local, %t30 i64 tmp, 48 i8 const int  ; line 52
+    imul     %t32 i64 tmp, %l17 i64 local, 10 i64 const int  ; line 53
+    iadd     %l17 i64 local, %t32 i64 tmp, %l29 i64 local  ; line 53
+    jmp      bb12  ; line 53
+
+  bb12 -> predecessors: {9, 11}  successors: {10}
+    jmp      bb10  ; line 53
+
+  bb10 -> predecessors: {7, 12}  successors: {8}
+    store    %t20 i64 tmp, %l17 i64 local  ; line 56
+    jmp      bb8  ; line 56
+
+  bb8 -> predecessors: {10}  successors:  {}
+    load     %t34 i64 tmp, %t20 i64 tmp  ; line 56
+    ret      %t34 i64 tmp  ; line 56
+}
+
+===== After basic optimisations ===== 
+i64 AccDigit(%p16 i64 param, %p18 ptr param) {
+  bb7 -> predecessors:  {}  successors: {9, 10}
+    store    %l17 i64 local, %p16 i64 param  ; line 48
+    alloca   %t20 i64 tmp, 8 i64 const int  ; line 48
+    load*    %t22 i8 tmp, %p18 ptr param  ; line 49
+    zext     %t23 i64 tmp, %t22 i8 tmp  ; line 49
+    trunc    %l21 i8 local, %t23 i64 tmp  ; line 49
+    zext     %t25 i64 tmp, %l21 i8 local  ; line 50
+    cmp_ge   %t26 i64 tmp, %t25 i64 tmp, 48 i8 const int  ; line 50
+    br       %t26 i64 tmp, bb9, bb10  ; line 50
+
+  bb9 -> predecessors: {7}  successors: {11, 10}
+    zext     %t27 i64 tmp, %l21 i8 local  ; line 51
+    cmp_le   %t28 i64 tmp, %t27 i64 tmp, 57 i8 const int  ; line 51
+    br       %t28 i64 tmp, bb11, bb10  ; line 51
+
+  bb11 -> predecessors: {9}  successors: {10}
+    zext     %t30 i64 tmp, %l21 i8 local  ; line 52
+    isub     %l29 i64 local, %t30 i64 tmp, 48 i8 const int  ; line 52
+    imul     %t32 i64 tmp, %l17 i64 local, 10 i64 const int  ; line 53
+    iadd     %l17 i64 local, %t32 i64 tmp, %l29 i64 local  ; line 53
+    jmp      bb10  ; line 53
+
+  bb10 -> predecessors: {7, 9, 11}  successors: {10}
+    store    %t20 i64 tmp, %l17 i64 local  ; line 56
+    load     %t34 i64 tmp, %t20 i64 tmp  ; line 56
+    ret      %t34 i64 tmp  ; line 56
+}
+
