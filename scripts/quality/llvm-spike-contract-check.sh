@@ -288,7 +288,11 @@ contract_check() {
     echo "=== contract check: $bn ==="
     echo "  expected_class:    $exp_class"
     echo "  observed_class:    $obs_class"
-    echo "  expected_opcodes:  $exp_opcodes"
+    if [ -n "$exp_opcodes" ]; then
+        echo "  expected_opcodes:  $exp_opcodes"
+    else
+        echo "  expected_opcodes:  (none)"
+    fi
     echo "  expected_diagnostic: $exp_diag (canonical)"
     echo "  observed_diagnostic: $obs_diag"
     echo "  diagnostic_in_set: $obs_diag_in_set"

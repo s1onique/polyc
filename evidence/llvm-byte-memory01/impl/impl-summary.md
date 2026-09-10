@@ -1,13 +1,33 @@
 # IMPL summary — ACT-POLYC-LLVM-BYTE-MEMORY01
 
-## Scope
+> **STATUS:** This IMPL is **frozen as historical evidence** under
+> Factory doctrine F14. The IMPL exceeded the recon-frozen authorized
+> set (admitted `IR_SEXT` and `IR_TRUNC` shapes although they were
+> DEFER). The ACT was closed as `HALT_SCOPE_EXPANSION_REQUIRED`; see
+> [`docs/acts/ACT-POLYC-LLVM-BYTE-MEMORY01.md`](../../../docs/acts/ACT-POLYC-LLVM-BYTE-MEMORY01.md)
+> §0.5 H1.
+>
+> The continuation ACT
+> [`ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME01`](../../../docs/acts/ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME01.md)
+> explicitly authorizes the proven `SEXT`/`TRUNC` shapes and binds
+> the cross-block reload SSA-dominance fix as a mandatory IMPL gate.
+>
+> The byte lowering mechanics below are correct; this document is
+> retained as evidence of the proven implementation. The wording
+> about `IR_TYPE_U8` and the DEFERRED `IR_TRUNC` self-contradiction
+> are corrected here.
+
+## Scope (as implemented, retroactively corrected)
 
 Admit the bounded byte-representation / byte-memory / byte-promotion
-path on the LLVM C-API backend:
+path on the LLVM C-API backend. **The neutral IR carries a single
+`IR_TYPE_I8`; source `I8` and source `U8` both map to it.** Signedness
+is carried by the IR opcode (`IR_ZEXT` vs `IR_SEXT`), selected at
+widening sites by `AstType->issigned`.
 
 - `IR_TYPE_I8` admitted as a load access type (`load i8, ptr`)
-- `IR_TYPE_I8` and `IR_TYPE_U8` admitted as parameter / return / local
-  types (signedness discarded; carried by `IR_ZEXT` vs `IR_SEXT`)
+- Source `I8` / `U8` admitted as parameter / return / local types
+  (signedness discarded by `irConvertType`; carried by opcode)
 - `IR_ZEXT I8 → I64` (unsigned byte promotion) — SHAPE_DEPENDENT
 - `IR_SEXT I8 → I64` (signed byte promotion) — SHAPE_DEPENDENT
 - `IR_TRUNC I64 → I8` (byte-local narrowing) — SHAPE_DEPENDENT
@@ -17,12 +37,11 @@ path on the LLVM C-API backend:
 - `IR_RET` truncates widened I64 back to i8 when the function's
   nominal return is i8.
 
-## DEFERRED
+## DEFERRED (corrected; `IR_TRUNC I64 → I8` removed)
 
 - `IR_STORE_DEREF` byte shape (writing bytes through a pointer)
-- `IR_SEXT` byte → byte
-- `IR_TRUNC` I64 → byte (byte-output ports) — the in-memory byte path
-  is read-only; outputs are widened to i64 then truncated on return.
+- `IR_TRUNC I64 → I16` (or other non-I8 narrowing; the byte-only
+  narrowing is admitted)
 
 ## Out-of-scope (per ACT §2 / §31)
 
@@ -43,16 +62,17 @@ path on the LLVM C-API backend:
 
 `src/llvm-backend.c`:
 
-- `llTypeSupported` / `llParamTypeSupported` — admit `IR_TYPE_I8` /
-  `IR_TYPE_U8` for parameter / local / return types
-- `llType` — map `IR_TYPE_I8` → LLVM i8, `IR_TYPE_U8` → LLVM i8
+- `llTypeSupported` / `llParamTypeSupported` — admit `IR_TYPE_I8`
+  for parameter / local / return types (source `I8` and source `U8`
+  both reach `IR_TYPE_I8` via `irConvertType`).
+- `llType` — map `IR_TYPE_I8` → LLVM i8.
 - `llLowerPointerValue` / `IR_LOAD_DEREF` arm — accept
   `dst->type == IR_TYPE_I64 || IR_TYPE_I8`; emit `load i8, ptr`
-  for the byte case
+  for the byte case.
 - `IR_STORE` arm — accept `src->type == IR_TYPE_I8` for local-store
-  (byte var = char literal)
-- `IR_ZEXT` / `IR_SEXT` arm — accept `src == IR_TYPE_I8 && dst == IR_TYPE_I64`
-- `IR_TRUNC` arm — accept `src == IR_TYPE_I64 && dst == IR_TYPE_I8`
+  (byte var = char literal).
+- `IR_ZEXT` / `IR_SEXT` arm — accept `src == IR_TYPE_I8 && dst == IR_TYPE_I64`.
+- `IR_TRUNC` arm — accept `src == IR_TYPE_I64 && dst == IR_TYPE_I8`.
 - `IR_ICMP` / `IR_IADD` / `IR_ISUB` / `IR_IMUL` arm — when one operand
   is an IR_TYPE_I8 char-literal value and the other is an IR_TYPE_I64
   widened from a byte: narrow the I64 to i8, do the op at i8, then
@@ -103,15 +123,20 @@ I1: IR_TRUNC       = SHAPE_DEPENDENT (BYTE-MEMORY01 narrowing)
 
 All opcodes have explicit dispatch arms and capability rows (I2).
 
-## Closure gates
+## Closure gates (with truthful classification)
 
 ```
 byte-memory01-test.sh     PASS=37 FAIL=0
 cap-table-verifier        PASS (all invariants)
 intops01-test             PASS=4  FAIL=0
 spike-test                PASS=18 FAIL=0
-spike-contract-check      PASS (one pre-existing FAIL: neg_pointer.HC
-                                    missing; not introduced by this ACT)
+spike-contract-check      FAIL_PREEXISTING_NONBLOCKING:
+                            one missing fixture (neg_pointer.HC)
+                            in the contract-check expectation list;
+                            the file was deleted in the MEMORY01 era
+                            and the harness was never updated. NOT
+                            introduced by this ACT. RESUME01
+                            classification target.
 memory01-test             PASS=6  FAIL=0
 float01-test              PASS=29 FAIL=0
 memory01-nc5-probe        PASS
@@ -119,3 +144,11 @@ factory-v2-test           PASS=35 FAIL=0
 factory-append-only-test  PASS=11 FAIL=0
 gate-fast                 VERDICT=PASS
 ```
+
+The B0-shaped multi-block fixture
+`src/tests/llvm-byte-memory01/pos_b0_compare_digit.HC` is NOT
+included in the GREEN matrix because it fails
+`opt --passes=verify` with an SSA dominance violation
+(`llCollapseStoreValue` cross-block reload bug). This is
+HALT_SCOPE_EXPANSION_REQUIRED H2 and the central RED of
+`BYTE-MEMORY01-RESUME01`.

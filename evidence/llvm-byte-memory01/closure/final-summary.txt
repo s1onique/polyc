@@ -1,68 +1,84 @@
-=== ACT-POLYC-LLVM-BYTE-MEMORY01 final summary ===
+=== ACT-POLYC-LLVM-BYTE-MEMORY01 final summary (corrected) ===
+
+VERDICT: HALT_SCOPE_EXPANSION_REQUIRED
+  H1  IMPL exceeded the frozen authorized set:
+      IR_SEXT I8 -> I64 and IR_TRUNC I64 -> I8 admitted although DEFER.
+  H2  B0-shaped multi-block fixture pos_b0_compare_digit.HC fails
+      opt --passes=verify with SSA dominance violation.
 
 ENTRY IDENTITY
   branch: main
   entry:  bb6c2b39a0871a4c9081b179567d1425c92df0a5
-  impl:   b5c2e97d4f5ac3384fe83b9e89c94f45f4419662
+  impl:   2a15769bd358c3ea5f5fa8a98da9712623d14bc4 (frozen, scope-violated)
 
 ROOT CAUSE / FINDING
   Neutral IR already carried IR_TYPE_I8 (signedness discarded by
-  irConvertType). Backend admitted only I64 access for
-  IR_LOAD_DEREF / IR_STORE_DEREF; IR_ZEXT / IR_SEXT did not have the
-  I8 -> I64 promotion shape; IR_TRUNC rejected all shapes including
-  I64 -> I8 narrowing for byte-local storage. This ACT admits the
-  bounded minimum byte path.
+  irConvertType; source I8 and U8 both map to IR_TYPE_I8).
+  Backend admitted only I64 access for IR_LOAD_DEREF /
+  IR_STORE_DEREF; IR_ZEXT did not have the I8 -> I64 promotion
+  shape; IR_SEXT and IR_TRUNC were not yet SHAPE_DEPENDENT.
+  This ACT admits the bounded minimum byte path.
 
-RED
-  Five principal RED fixtures now compile to verifiable LLVM IR
-  emitting load i8 / zext i8 -> i64 / sext i8 -> i64 / trunc i64 -> i8
-  as appropriate. Negative control red_i16_trunc_negative.HC is
-  rejected with the named LLVM_BACKEND_UNSUPPORTED_CONVERSION
-  diagnostic. pos_byte_compare_simple.HC passes llvm-as + opt verify.
+RED (binding)
+  - Five RED fixtures compile and verify (load i8, zext i8 -> i64,
+    sext i8 -> i64, trunc i64 -> i8).
+  - red_i16_trunc_negative.HC: I64 -> I16 REJECTED with named
+    LLVM_BACKEND_UNSUPPORTED_CONVERSION diagnostic.
+  - pos_byte_compare_simple.HC: single-block direct byte compare
+    passes llvm-as + opt --passes=verify.
+  - pos_b0_compare_digit.HC: B0-shaped multi-block conditional byte
+    return FAILS opt --passes=verify (SSA dominance violation in
+    llCollapseStoreValue cross-block reload selection).
+    HALT_SCOPE_EXPANSION_REQUIRED H2.
 
-IMPLEMENTATION
+IMPLEMENTATION (frozen as historical evidence per F14)
   src/llvm-backend-cap.c: IR_LOAD_DEREF, IR_ZEXT, IR_SEXT, IR_TRUNC
     rows updated to SHAPE_DEPENDENT with explicit byte-shape notes;
     IR_STORE_DEREF unchanged (I64 only; byte store DEFERRED).
   src/llvm-backend.c: llTypeSupported / llParamTypeSupported / llType
-    admit IR_TYPE_I8 / IR_TYPE_U8; IR_LOAD_DEREF byte shape emits
-    load i8, ptr; IR_STORE local I8; IR_ZEXT / IR_SEXT / IR_TRUNC
-    SHAPE_DEPENDENT; IR_ICMP / IR_IADD / IR_ISUB / IR_IMUL narrow
-    I64 to i8 for byte ops then zext to i64; IR_RET truncates
-    widened I64 back to i8.
+    admit IR_TYPE_I8 (source I8/U8 both reach IR_TYPE_I8); IR_LOAD_DEREF
+    byte shape emits load i8, ptr; IR_STORE local I8; IR_ZEXT /
+    IR_SEXT / IR_TRUNC SHAPE_DEPENDENT; IR_ICMP / IR_IADD / IR_ISUB /
+    IR_IMUL narrow I64 to i8 for byte ops then zext to i64; IR_RET
+    truncates widened I64 back to i8.
 
-GATES
+GATES (truthful classification)
   llvm-intops01-test:                 PASS=4   FAIL=0  STATUS=PASS
   llvm-spike-test:                    PASS=18  FAIL=0  Summary: PASS
+  llvm-spike-contract-check:          FAIL_PREEXISTING_NONBLOCKING
+                                      (missing src/tests/llvm-spike/
+                                      neg_pointer.HC in contract-check
+                                      expectation list; deleted in
+                                      MEMORY01 era; not introduced by
+                                      this ACT. RESUME01 target.)
   llvm-memory01-test:                 PASS=6   FAIL=0
   llvm-float01-test:                  PASS=29  FAIL=0
   llvm-byte-memory01-test:            PASS=37  FAIL=0  STATUS=PASS
-  cap-table-verifier:                 PASS    (56 rows round-trip, 9 invariants)
+  cap-table-verifier:                 PASS    (56 rows round-trip,
+                                               9 invariants)
   factory-v2-test:                    PASS=35  FAIL=0
-  factory-append-only-test:           PASS=11  FAIL=0
+  factory-append-only-test:           PASS=11 FAIL=0
   gate-fast:                          VERDICT=PASS
 
-SCOPE
-  Authorised scope (per ACT §31): byte read through IR_TYPE_PTR
-  parameter into IR_TYPE_I8 / IR_TYPE_U8 local / direct consumer;
-  byte promotion via IR_ZEXT / IR_SEXT to IR_TYPE_I64; byte-local
-  narrowing via IR_TRUNC I64 -> I8; byte arithmetic via narrow-then-
-  zext pattern; byte output via IR_RET truncation. No GEP, no
-  indexing, no ptrtoint/inttoptr, no alloca byte array, no IR-builder
-  seam changes.
+SCOPE (corrected from initial claim)
+  The IMPL exceeded the recon-frozen authorized set by admitting
+  IR_SEXT and IR_TRUNC. The IMPL is preserved as historical
+  evidence (F14); the authorization question is now reopened
+  formally under ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME01.
 
-RESIDUE
-  P1: LLVM IR builder collapse bug for conditional byte returns.
-    pos_b0_compare_digit.HC fails opt --passes=verify with SSA
-    dominance violation (cross-block reload missing). Root cause is
-    in llCollapseStoreValue; repair requires IR-builder changes and
-    is out of scope (F7 / F15). Documented as RESIDUE P1 in HANDOFF.md
-    and evidence/llvm-byte-memory01/impl/b0-digit-path.txt.
-    pos_byte_compare_simple.HC (single-block, direct byte comparison)
-    passes verifier; defect is specific to the multi-block
-    conditional byte pattern.
+RESIDUE (binding)
+  P0 H1: IMPL exceeded frozen authorized set (SEXT/TRUNC admitted
+         although DEFER). RESUME01 must explicitly authorize.
+  P0 H2: pos_b0_compare_digit.HC fails LLVM verifier (cross-block
+         reload SSA dominance bug in llCollapseStoreValue).
+         RESUME01 must repair the IR builder seam.
+  P1    : spike-contract-check pre-existing FAIL on missing
+          neg_pointer.HC. RESUME01 classification target.
+  P1    : impl-summary.md self-contradiction (descendant-corrected
+          at this commit: IR_TYPE_U8 wording removed; IR_TRUNC
+          removed from DEFERRED list; STATUS banner added).
 
 NEXT ACT
-  ACT-POLYC-LLVM-IR-COLLAPSE-FIX01 (recommended) or
-  ACT-POLYC-LLVM-GEP01 (byte-store + array/struct access). See
-  HANDOFF.md RESIDUE P1 for justification.
+  ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME01
+  See docs/acts/ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME01.md for the
+  full mission statement.

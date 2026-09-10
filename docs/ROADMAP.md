@@ -279,6 +279,37 @@ The expected next ACT is `ACT-POLYC-LLVM-BYTE-MEMORY01`, whose
 mission is I8/U8 load/store and the byte-to-index/comparison path
 needed for B0's input-byte handling.
 
+**STATUS (corrected at HALT):** `ACT-POLYC-LLVM-BYTE-MEMORY01` was
+opened and an IMPL was committed at SHA
+`2a15769bd358c3ea5f5fa8a98da9712623d14bc4`. On re-review, the IMPL
+was held under `HALT_SCOPE_EXPANSION_REQUIRED` for two binding
+reasons:
+
+```text
+H1  IMPL exceeded the recon-frozen authorized set:
+    IR_SEXT I8 -> I64 and IR_TRUNC I64 -> I8 admitted although
+    DEFER; the freeze rule "Discovery of any further need after
+    RED: HALT_SCOPE_EXPANSION_REQUIRED" was binding.
+
+H2  The B0-shaped multi-block fixture pos_b0_compare_digit.HC
+    fails opt --passes=verify with an SSA dominance violation
+    in llCollapseStoreValue (cross-block reload missing).
+    The single-block pos_byte_compare_simple.HC does pass; the
+    defect is specific to the multi-block conditional byte return
+    pattern that B0 actually exercises.
+```
+
+The IMPL is preserved as historical evidence (F14); useful code
+that exceeded scope. The continuation ACT is
+`ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME01`, which explicitly
+authorizes the proven `SEXT`/`TRUNC` shapes and binds the
+cross-block reload / dominance fix as a mandatory IMPL gate.
+
+See `evidence/llvm-byte-memory01/HANDOFF.md`,
+`evidence/llvm-byte-memory01/closure/final-summary.txt`, and
+`docs/acts/ACT-POLYC-LLVM-BYTE-MEMORY01.md` §0.5 for the binding
+records.
+
 ### P4 — Self-hosting substrate (NEW CRITICAL PATH)
 
 The next useful program PolyC wants to host is **its own
@@ -312,6 +343,14 @@ B0 needs a different minimal substrate.
                                    -- DONE (HALT_RED_NOT_REPRODUCED,
                                       recon proved none required for B0)
     ACT-POLYC-LLVM-BYTE-MEMORY01   I8/U8 load/store (B0 needs bytes)
+                                   -- HALT_SCOPE_EXPANSION_REQUIRED
+                                      (H1 frozen-set exceeded;
+                                       H2 B0 multi-block SSA bug)
+    ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME01
+                                   Resume: authorize SEXT/TRUNC shapes
+                                   and repair cross-block reload dominance
+                                   so pos_b0_compare_digit is mandatory GREEN
+                                   -- OPEN (next to run)
     ACT-POLYC-LLVM-GEP01           indexed pointer arithmetic
                                    (B0 needs *(src + n) to walk input)
     ACT-POLYC-LLVM-STRUCT01        struct field access
@@ -334,8 +373,8 @@ fixture; treat `recon` as "do not promise it".
 | Bitwise ops                      |      ✅ |       ❌ |       none | INTOPS01 (HALT: not B0-required) |
 | Shifts                           |      ✅ |       ❌ |       none | INTOPS01 (HALT: not B0-required) |
 | Div/rem                          |      ✅ |       ❌ |       none | INTOPS01 (HALT: not B0-required) |
-| I64 width/sign conversion        |      ✅ |       ❌ |       none | BYTE-MEMORY01 (deferred with TRUNC/ZEXT/SEXT) |
-| I8/U8 load/store                 |  recon |       ❌ |         ✅ | BYTE-MEMORY01        |
+| I64 width/sign conversion        |      ✅ |       ✅ |       none | BYTE-MEMORY01 (IMPL shipped; HALT_SCOPE_EXPANSION_REQUIRED for SEXT/TRUNC; see RESUME01) |
+| I8/U8 load/store                 |  recon |  partial |        ✅ | BYTE-MEMORY01 (IMPL shipped for read + ZEXT; HALT for B0 multi-block; see RESUME01) |
 | Indexed pointer arithmetic       |  recon |       ❌ |         ✅ | GEP01                |
 | Struct fields                    |  recon |       ❌ |         ✅ | STRUCT01             |
 | Arrays / indexing                |  recon |       ❌ |         ✅ | ARRAY01              |
