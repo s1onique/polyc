@@ -224,6 +224,54 @@ A new ACT (e.g. CORRECTION02) is required. The architectural
 decision between Option X / Y / Z is the primary RED question
 for that ACT.
 
+## Reviewer architectural review (Option W)
+
+After C10 was committed, the post-closure reviewer board
+validated HALT_DEFECTIVE_IMPL and proposed **Option W**
+(memory-back the selected mutable local: emit store at
+each ORIGINAL definition site, load at each ORIGINAL use
+site, then let LLVM mem2reg own the reaching-def / PHI
+construction).
+
+The reviewer judged X / Y / Z as architecturally incomplete:
+
+  * X recreates mem2reg's predecessor-walk — backwards
+    across the abstraction boundary.
+  * Y requires input SSA — vastly larger than B0 justifies.
+  * Z defeats the reason the chain started (mutable
+    cursor/token state in ordinary lexer code).
+
+Full reviewer notes (W rationale, worked ProbePath example
+under W, suggested Diamond NC, suggested address-taking
+rejection control, conservation gate, recommended ACT
+mission, and the one-line contract
+"Represent mutation as memory where the mutation actually
+occurs; let LLVM turn that memory into SSA.") are in:
+
+  evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION01/c10/REVIEWER-OPTION-W.md
+
+The reviewer's conservation gate (which MUST bind before
+the next ACT's IMPL):
+
+```text
+run every regression/conservation harness
+then: git status --porcelain
+must NOT contain anything under:
+  evidence/llvm-core04-resume01/
+  evidence/llvm-memory01/
+  any other closed ACT evidence tree
+```
+
+Observed at C10: the four historical files under
+`evidence/llvm-core04-resume01/c2/red-multi_def/` and
+`evidence/llvm-memory01/spike/red-6-live-transcripts/`
+were transiently re-dirtied by the regression harness
+with the same counter drift (2→7, 2→4). They have been
+restored to their committed content but the underlying
+side effect (a harness writes outside its own evidence
+namespace) is unfixed and must be addressed by the next
+ACT.
+
 ACT: ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION01
 ACT-Phase: CLOSE
 ACT-Verdict: HALT_DEFECTIVE_IMPL
