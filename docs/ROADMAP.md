@@ -378,8 +378,16 @@ B0 needs a different minimal substrate.
                                    Neutral-IR irForwardReturnSlot
                                    dominance-safe forwarding (Repair E,
                                    ~2 lines in src/ir-optimise.c).
-                                   -- OPEN (next to run; correct
-                                      production seam authorized).
+                                   -- CLOSED (HALT_SECOND_SEAM_REQUIRED
+                                      at 69f7d3a). Forwarding guard
+                                      is the conservative sufficient
+                                      condition for safe forwarding;
+                                      the multi-pred case requires a
+                                      second seam. See ACT §11 for
+                                      the four hypothetical fixes
+                                      (A/B/C/D); D is the recommended
+                                      next ACT (mem2reg via the
+                                      LLVM C-API pass pipeline).
 
 #### RESUME01 + CORRECTION01 + IR-RETURN-SLOT-FORWARDING01 status (current truth)
 
@@ -1168,3 +1176,42 @@ git diff --check clean.
 Full analysis:
 [`evidence/llvm-ir-return-slot-forwarding01/c2/HALT-SUMMARY.md`](../evidence/llvm-ir-return-slot-forwarding01/c2/HALT-SUMMARY.md)
 and [`evidence/llvm-ir-return-slot-forwarding01/c3/EVIDENCE-SUMMARY.md`](../evidence/llvm-ir-return-slot-forwarding01/c3/EVIDENCE-SUMMARY.md).
+
+---
+
+#### ACT-POLYC-LLVM-LOCAL-MEM2REG01 status (recon opened)
+
+```text
+LOCAL-MEM2REG01  ACT-POLYC-LLVM-LOCAL-MEM2REG01
+  ENTRY    = 0501569 (post-RSF01-hygiene; pre-CLOSE of LOCAL-MEM2REG01)
+  CLASS    = RECON (no IMPL authorisation in this ACT)
+  STATE    = OPEN; recon-first
+  MISSION  = determine whether PolyC should lower a tightly
+             bounded class of compiler-generated scalar local/
+             return slots to LLVM entry-block allocas with
+             direct loads/stores, then run LLVM's mem2reg
+             pass to construct SSA, instead of extending
+             PolyC's bespoke collapse machinery
+  REQUIRED RED (Q4 architectural probe):
+             - hand-written LLVM IR equivalents of the three
+               RSF01 RED fixtures (pos_b0_compare_digit,
+               i64_collapse_probe, single_cond_probe)
+             - opt -passes=mem2reg PASS
+             - opt -passes=verify PASS
+             - target alloca eliminated in post-mem2reg IR
+  FORBIDDEN:
+             - PromoteMemToReg direct call (C++ utility;
+               use LLVMRunPasses / LLVMRunPassesOnFunction
+               from llvm-c/Transforms/PassBuilder.h)
+             - any production edit (RECON only)
+  NEXT     = if Q4 PASS: ACT-POLYC-LLVM-LOCAL-MEM2REG01-
+             CORRECTION01 (IMPL freeze)
+             if Q4 FAIL: HALT_OPTION_D_FALSIFIED +
+             recommend option A/B/C fallback
+```
+
+The full recon contract is in
+[`docs/acts/ACT-POLYC-LLVM-LOCAL-MEM2REG01.md`](../acts/ACT-POLYC-LLVM-LOCAL-MEM2REG01.md).
+This ACT's recon deliberately reuses the three RSF01 RED
+fixtures as architectural probes rather than introducing new
+ones (the failing shape is already proven real).
