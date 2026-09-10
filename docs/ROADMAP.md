@@ -369,121 +369,114 @@ B0 needs a different minimal substrate.
                                    Resume: authorize SEXT/TRUNC shapes
                                    and repair cross-block reload dominance
                                    so pos_b0_compare_digit is mandatory GREEN
-                                   -- RED recorded at 0bfa990;
-                                      CORRECTION01 hygiene fix at dc99882
-                                      (substance accepted; range-check
-                                      exception documented below).
-                                      C2 IMPL pending reviewer release.
+                                   -- CLOSE HALT_SCOPE_EXPANSION_REQUIRED
+                                      (C1 proved the smallest repair is
+                                      in src/ir-optimise.c, outside the
+                                      authorized llCollapseStoreValue
+                                      seam; new ACT authorized below).
+    ACT-POLYC-IR-RETURN-SLOT-FORWARDING01
+                                   Neutral-IR irForwardReturnSlot
+                                   dominance-safe forwarding (Repair E,
+                                   ~2 lines in src/ir-optimise.c).
+                                   -- OPEN (next to run; correct
+                                      production seam authorized).
 
-#### RESUME01 + CORRECTION01 status (current truth)
+#### RESUME01 + CORRECTION01 + IR-RETURN-SLOT-FORWARDING01 status (current truth)
 
 ```text
 RESUME01  ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME01
   ENTRY    = db6404e1a36a66645d66dd5dd14ad5d39c6cdc08  (BOOKKEEPING01 CLOSE)
   FIRST    = 0bfa99001a61aecbff9f4b9621a184fe8a981cd1  (C1 RED)
-  CLOSE    = pending  (awaiting C2 IMPL authorization)
+  CLOSE    = HALT_SCOPE_EXPANSION_REQUIRED
+              (C1 proved the smallest repair is in
+              src/ir-optimise.c, outside RESUME01's
+              authorized llCollapseStoreValue seam;
+              the HALT_SCOPE_EXPANSION_REQUIRED clause
+              in RESUME01 §3 binds.)
+  ROOT_CAUSE (C1 confirmed):
+              irForwardReturnSlot (src/ir-optimise.c:256-309)
+              rewrites `store slot, V; load slot; ret load_result`
+              into `ret V` for the exit block without verifying
+              that V dominates the exit block along every
+              predecessor path. Defect is GENERIC (reproduces on
+              I64-only fixtures i64_collapse_probe.HC and
+              single_cond_probe.HC); byte fixture is one of
+              multiple triggers.
 
 CORRECTION01  ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME01-CORRECTION01
   CLOSE    = dc9988244907925e53410eb8bbb89966ee89a65c  (hygiene-only fix)
   ENTRY    = dc99882~  = 0bfa99001a61aecbff9f4b9621a184fe8a981cd1  (RESUME01 RED)
+  EOF residue on CORRECTION01.md (immutable at dc99882 per F14)
+              fixed in descendant commit; the historical commit
+              itself remains immutable evidence.
 
-RESUME01 RED findings (committed at 0bfa990):
-  - The mandated GREEN fixture pos_b0_compare_digit.HC
-    reproducibly FAILS LLVMVerifyModule with two SSA-
-    dominance violations.
-  - The defect is generic (reproduces with I64-only fixtures
-    i64_collapse_probe.HC and single_cond_probe.HC); byte
-    fixture is one of multiple triggers.
-  - The IMPL's H2 hypothesis ("llCollapseStoreValue cross-
-    block reload missing") is DEMOTED to "one of two
-    containment sites"; the actual root cause is the
-    neutral IR optimisation pass irForwardReturnSlot
-    (src/ir-optimise.c:256-309) which rewrites
-    `store slot, V; load slot; ret load_result` into
-    `ret V` for the exit_block without verifying that V
-    dominates the exit_block along every predecessor
-    path.
-  - Recommended repair E: guard the rewrite to skip
-    multi-predecessor exit_blocks (~2 lines). Reviewer
-    recommended E over A/D because E is conservatively
-    safer (no need for predecessor-wise definition
-    reasoning).
-  - Trigger condition: function-local L is the
-    function's return value, L is conditionally modified
-    inside one arm of a conditional branch (single
-    conditional or nested diamond), the exit_block has
-    multiple predecessors, not every predecessor
-    defines L.
-
-CORRECTION01 work (committed at dc99882):
-  - Hygiene fix only: removes 8 whitespace diagnostics
-    from RESUME01 C1 evidence files (trailing whitespace
-    on 4 lines; trailing blank line at EOF on 5 files).
-  - Substantive evidence text preserved verbatim (F14).
-  - Working-tree git diff --check clean; HEAD range
-    git diff --check carries one residual EOF blank
-    line on the CORRECTION01.md doc itself (self-
-    referencing hygiene limitation; documented).
+IR-RETURN-SLOT-FORWARDING01  ACT-POLYC-IR-RETURN-SLOT-FORWARDING01
+  ENTRY    = <HALT-CLOSE commit for RESUME01>
+  FIRST    = <RED commit for this ACT, contains the three
+              failing regression fixtures>
+  CLOSE    = pending  (awaiting C2 IMPL)
+  MISSION  = make irForwardReturnSlot dominance-safe
+  REPAIR   = Repair E: single-predecessor guard before
+              the rewrite. ~2 lines in src/ir-optimise.c.
+              CONSERVATIVE sufficient condition, not a
+              general-necessity claim.
+  CONSERVATION:
+              ALREADY_SUPPORTED LLVM collapse seam preserved
+              verbatim (defence-in-depth EXCLUDED to preserve
+              causal attribution; per reviewer).
+```
 
 CORRECTION01 range-check limitation (acknowledged):
-  scripts/quality/factory-v2-range-check.sh enforces
-  RED-then-CLOSE per Factory v2 lifecycle. CORRECTION01
-  is a single-commit CLOSE because the substantive RED
-  diagnosis is preserved at 0bfa990 and the correction
-  is hygiene-only. The range-check FAIL on CORRECTION01
-  is a known limitation of the script's grammar; it does
-  not indicate a substantive defect. C2 IMPL should not
-  re-architect CORRECTION01; the EOF residue in
-  dc99882 is immutable per F14.
+
+```text
+scripts/quality/factory-v2-range-check.sh enforces
+RED-then-CLOSE per Factory v2 lifecycle. CORRECTION01
+is a single-commit CLOSE because the substantive RED
+diagnosis is preserved at 0bfa990 and the correction
+is hygiene-only. The range-check FAIL on CORRECTION01
+is a known limitation of the script's grammar; it does
+not indicate a substantive defect. RESUME01 itself is
+closed HALT_SCOPE_EXPANSION_REQUIRED, so CORRECTION01's
+single-CLOSE shape is a documented exception rather than
+a re-architectable problem.
 ```
 
 #### C2 IMPL authorisation gate (next reviewer action)
 
-C2 IMPL on RESUME01 requires:
+C2 IMPL on `IR-RETURN-SLOT-FORWARDING01` requires:
 
 ```text
-1. Substance accepted (this is what reviewer released
-   the hold for):
-   - Single-predecessor guard at irForwardReturnSlot
-     (Repair E).
-   - No simultaneous change to llCollapseStoreValue or
-     llDetectCollapsibleReturn (defence-in-depth would
-     destroy causal attribution).
-2. GREEN fixtures:
+1. RED phase: commit i64_collapse_probe.HC and
+   single_cond_probe.HC as regression fixtures in
+   src/tests/llvm-byte-memory01/ (alongside the
+   existing pos_b0_compare_digit.HC). All three must
+   FAIL `opt --passes=verify` at the RED witness.
+2. Substance: single-predecessor guard at
+   irForwardReturnSlot (Repair E, ~2 lines in
+   src/ir-optimise.c). Do NOT change llvm-backend.c,
+   llCollapseStoreValue, llDetectCollapsibleReturn.
+3. GREEN fixtures:
    - pos_b0_compare_digit.HC        PASS
-   - i64_collapse_probe.HC          PASS  (must be
-                                      committed as a
-                                      regression fixture
-                                      first)
-   - single_cond_probe.HC           PASS  (must be
-                                      committed as a
-                                      regression fixture
-                                      first)
-3. Negative control:
+   - i64_collapse_probe.HC          PASS
+   - single_cond_probe.HC           PASS
+4. Negative control:
    - safe single-predecessor case still observes
      forwarding (proves the guard is not over-broad).
-4. Range hygiene:
+5. Range hygiene:
    - git diff --check clean at CLOSE.
-5. factory-v2-range-check PASS at CLOSE.
-6. byte-memory01-test still PASS=37 (or higher).
-```
-
-The recommended C2 primary repair (per reviewer) is:
-
-```c
-// in src/ir-optimise.c irForwardReturnSlot, BEFORE the
-// line 287 rewrite `rt->dst = st->r1;`:
-if (irBlockGetPredecessors(fn, bb)->size != 1)
-    continue;
-```
-
-Then the canonical `load; ret` shape is preserved for
-multi-predecessor exit_blocks, and the existing
-LLVM-side collapse seam (llCollapseStoreValue +
-llDetectCollapsibleReturn) handles the rewrite
-correctly. The verifier is satisfied because every
-predecessor's `store return_slot, V` dominates the
-exit_block's `load return_slot`.
+6. factory-v2-range-check PASS at CLOSE.
+7. Conservation:
+   - byte-memory01-test still PASS=37 (or higher).
+   - spike-test PASS=18 FAIL=0.
+   - memory01-test PASS=6 FAIL=0.
+   - float01-test PASS=29 FAIL=0.
+   - intops01-test PASS=4 FAIL=0.
+   - cap-table-verifier PASS.
+8. The "irForwardReturnSlot-only repair is sufficient"
+   claim is established by GREEN + conservation at CLOSE;
+   NOT pre-stated as already proven (per reviewer's P1
+   consistency observation between C1 conditional and
+   ROADMAP).
     ACT-POLYC-LLVM-GEP01           indexed pointer arithmetic
                                    (B0 needs *(src + n) to walk input)
     ACT-POLYC-LLVM-STRUCT01        struct field access

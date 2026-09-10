@@ -79,4 +79,3 @@ This is a one-commit bounded ACT: a single CLOSE commit with
 the hygiene fix. There is no RED phase because the original
 RED diagnosis is preserved; the defect being corrected is the
 RED report's hygiene claim, not the RED diagnosis.
-
