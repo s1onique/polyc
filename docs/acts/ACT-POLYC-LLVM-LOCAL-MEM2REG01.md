@@ -366,13 +366,48 @@ Q3.2  If the alloca is emitted literally using the current
 Q3.3  What insertion-point discipline must LOCAL-MEM2REG01-
       CORRECTION01 establish so the resulting alloca lands in
       the function entry block?
-      ANSWER (verified): save the current builder insertion
-      point via LLVMSaveInsertPoint, call
-      LLVMPositionBuilderAtEnd(builder, fn_entry_bb), emit
-      LLVMBuildAlloca + LLVMBuildStore, restore via
-      LLVMRestoreInsertPoint(builder, saved_ip). The Q4.1 C-API
-      harness already exercises the LLVM side of this
-      discipline on every RED fixture.
+      ANSWER (CORRECTED in C3 RED evidence tightening):
+      `LLVMSaveInsertPoint` and `LLVMRestoreInsertPoint` are
+      NOT exposed by `llvm-c/Core.h`. The actual C API
+      surface for builder positioning is
+      `LLVMPositionBuilder*` + `LLVMGetInsertBlock` +
+      `LLVMClearInsertionPosition` + `LLVMDisposeBuilder`.
+      The recommended discipline is therefore a
+      DEDICATED ENTRY-BLOCK BUILDER:
+
+      ```c
+      LLVMBuilderRef alloca_builder =
+          LLVMCreateBuilderInContext(lc->ctx);
+      LLVMPositionBuilderAtEnd(alloca_builder,
+                               LLVMGetEntryBasicBlock(fn));
+
+      LLVMValueRef slot = LLVMBuildAlloca(
+          alloca_builder, LLVMInt64TypeInContext(lc->ctx),
+          "polyc.local.slot");
+      LLVMDisposeBuilder(alloca_builder);
+      ```
+
+      The normal lowering builder is left completely
+      untouched. The two builders have the invariant:
+
+      ```text
+      normal builder   -> CFG/instruction lowering
+      alloca builder   -> entry-block stack-slot
+                          materialisation only
+      ```
+
+      This has no save/restore state to corrupt and a much
+      smaller correctness surface. If CORRECTION01 RED
+      recon shows a second builder would interfere with the
+      ordering of existing entry instructions, the recipe
+      falls back to LLVMClearInsertionPosition +
+      LLVMPositionBuilderAtEnd on the existing builder;
+      it does NOT invent a save/restore API.
+
+      The Q4.1 C-API harness already exercises the LLVM
+      side of this discipline on every RED fixture
+      (independent fresh-module + fresh-function parses,
+      both APIs PASS, cleanup exit=0; see Q4.1 below).
 ```
 
 **Q3 placement probe evidence (renamed in C2 evidence commit)**
@@ -751,7 +786,14 @@ C1 RED  (this ACT, first trailer-bearing commit)
     ACT: ACT-POLYC-LLVM-LOCAL-MEM2REG01
     ACT-Phase: RED
 
-C1.5 EVIDENCE  (this ACT, post-reviewer HOLD evidence tightening)
+C1.5 RED evidence tightening  (informal commit-name
+    "C1.5 EVIDENCE"; the Factory trailer carried by this
+    commit is `ACT-Phase: RED` -- per Factory v2 §3.6
+    "RED | IMPL | EVIDENCE | CLOSE" there is no
+    `EVIDENCE` phase, so RED commits that only tighten
+    the bound evidence are still RED phase, not a new
+    phase. See §13 wording convention below for the
+    historical-vs-authority reconciliation.)
     Reviewer HOLD verdict (post-C1) demanded three corrections
     before C2 CLOSE:
         P0-1: function-API probe was vacuous (ran on already-
@@ -804,10 +846,12 @@ C2 CLOSE  (this ACT, closure commit)
 
 If the C1 RED evidence convinces the reviewer that the ACT is
 not yet ready to close (e.g. one fixture probe is ambiguous), the
-ACT may produce one or more EVIDENCE commits between C1 and C2 to
-tighten the evidence, before the C2 CLOSE. C1.5 is exactly such an
-EVIDENCE commit; it does not change the verdict, only the bound
-evidence.
+ACT may produce one or more additional RED evidence-tightening
+commits between C1 and C2 to tighten the evidence, before the
+C2 CLOSE. C1.5 is exactly such an evidence-tightening commit;
+informally labelled "EVIDENCE" in conversation but carrying the
+Factory trailer `ACT-Phase: RED` (no `EVIDENCE` phase exists).
+It does not change the verdict, only the bound evidence.
 
 The three RSF01 RED fixtures (`pos_b0_compare_digit.HC`,
 `i64_collapse_probe.HC`, `single_cond_probe.HC`) already exist in
@@ -1035,10 +1079,14 @@ Each line, mechanically verified:
        of bb2 whose entry is bb1). `opt -passes=mem2reg`
        exits 1 with
        `"Instruction does not dominate all uses!"`.
-   CORRECTION01 must use
-   `LLVMSaveInsertPoint` /
-   `LLVMPositionBuilderAtEnd(fn_entry_bb)` /
-   `LLVMRestoreInsertPoint` discipline.
+   CORRECTION01 must use a DEDICATED ENTRY-BLOCK BUILDER
+   (see §6 Q3.3 corrected recipe):
+   `LLVMCreateBuilderInContext` +
+   `LLVMPositionBuilderAtEnd(alloca_builder,
+                            LLVMGetEntryBasicBlock(fn))` +
+   `LLVMDisposeBuilder`. The save/restore discipline
+   using `LLVMSaveInsertPoint` / `LLVMRestoreInsertPoint`
+   was an impossible C API prescription and is removed.
 
 8. **I64-only first slice: PASS.** All three RED fixtures
    are I64 at the slot:
@@ -1122,6 +1170,15 @@ P2  The v2 C-API harness SIGSEGVs during cleanup after the
     uses the C API from inside src/llvm-backend.c with
     proper LLVMDisposeModule / LLVMDisposePassBuilderOptions
     ordering, so this harness defect does not propagate.
+    -- HISTORICAL: this residue entry described the v2
+    harness defect. The defect has been SUPERSEDED in C3
+    by the v3 harness (LLVMParseIRInContext2; exits 0 on
+    all 3 fixtures; see cleanup-exit.txt and
+    cleanup-exit-summary.txt under
+    evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01/capi/). The
+    residue is kept here only as a pointer to the v2/v3
+    history; CORRECTION01 inherits a GREEN harness
+    pattern, not the v2 defect.
 ```
 
 ### Next ACT
@@ -1146,3 +1203,142 @@ ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION01
 The handoff is now APPENDED; the closure verdict is the
 `ACT-Verdict: PASS` trailer on the C2 commit, not the text
 above.
+
+## 12.5 Subsequent corrections (appended at C3 RED evidence tightening)
+
+The post-C2 HOLD verdict identified two P0 defects in the
+implementation contract frozen at C2 + one wording
+convention note. C3 corrects the contract without
+re-opening the architectural PASS at `57c7ee4`.
+
+### P0-1: C-API probe SIGSEGV was double-free (CORRECTED)
+
+`LLVMParseIRInContext` documents itself as CONSUMING the
+memory buffer; the v2 harness used it and then
+`LLVMDisposeMemoryBuffer` on the success path, producing
+a double-free / use-after-free during cleanup. C3 fixes
+this with `LLVMParseIRInContext2` (caller owns the
+buffer; exactly-one dispose). All 3 RED fixtures now
+exit 0 cleanly; see
+`evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01/capi/cleanup-exit.txt`
+and `cleanup-exit-summary.txt`.
+
+### P0-2: insertion-point prescription referenced nonexistent C API (CORRECTED)
+
+`LLVMSaveInsertPoint` and `LLVMRestoreInsertPoint` are
+NOT in `llvm-c/Core.h`. C3 replaces the save/restore
+discipline with a dedicated entry-block builder:
+
+```c
+LLVMBuilderRef alloca_builder =
+    LLVMCreateBuilderInContext(lc->ctx);
+LLVMPositionBuilderAtEnd(alloca_builder,
+                         LLVMGetEntryBasicBlock(fn));
+LLVMValueRef slot = LLVMBuildAlloca(
+    alloca_builder, LLVMInt64TypeInContext(lc->ctx),
+    "polyc.local.slot");
+LLVMDisposeBuilder(alloca_builder);
+```
+
+The normal lowering builder is left untouched. See ACT
+§6 Q3.3 and `Q1-Q6-SUMMARY.md` Q3.3 / Q3.
+
+### Wording convention (RESOLVED)
+
+"EVIDENCE" is descriptive prose in commit subjects; it
+is NEVER a Factory phase token. The trailer is
+authoritative. See §13 below.
+
+### Architectural PASS at C2 STANDS
+
+The Option D architectural probe, producer provenance,
+bounded eligibility discriminator, and the 9-line close
+criterion (Q4.1 module + function APIs + error path +
+positive/negative placement + I64-only + production
+delta=0) are unchanged. C3 only tightens the
+implementation contract that CORRECTION01 will consume.
+
+## 13. Wording convention (appended at C3 RED evidence tightening)
+
+Per the post-C2 HOLD verdict: factory v2 phase grammar
+is exactly `RED | IMPL | CLOSE` (the historical
+"GREEN" / "EVIDENCE" labels are NOT phase tokens; they
+appear in commit subjects as descriptive prose but never
+in the `ACT-Phase:` trailer).
+
+Therefore, throughout this ACT and its companion files:
+
+```text
+Commit subject / prose     Factory trailer  Phase grammar
+------------------------  ----------------  --------------
+"C1 RED"                  ACT-Phase: RED    RED
+"C1.5 EVIDENCE"           ACT-Phase: RED    RED
+"C2 CLOSE"                ACT-Phase: CLOSE  CLOSE
+"CORRECTION01 IMPL"       ACT-Phase: IMPL   IMPL
+```
+
+The trailer is AUTHORITATIVE for the Factory v2 lifecycle
+and for the range-check machinery. The informal label
+in commit subjects / conversation / prose is NOT a phase
+token.
+
+For this ACT, the authoritative trailers are:
+
+```text
+d2ffe21  no trailer            (NON_ACT OPEN mirror)
+6059298  ACT-Phase: RED         (C1)
+f45ba38  ACT-Phase: RED         (C1.5 RED evidence tightening)
+57c7ee4  ACT-Phase: CLOSE       (C2, verdict PASS)
+```
+
+The next commit, C3 (this evidence tightening) carries
+`ACT-Phase: RED` because it is RED evidence work, not a
+new CLOSE; the architectural PASS at `57c7ee4` stands
+unchanged and is reaffirmed by C3's tighter contract.
+
+### Why this matters
+
+Without this convention, a reader scanning the prose for
+"phase EVIDENCE" might conclude that f45ba38 introduced a
+new Factory phase, which is incorrect. The historical
+"RED → GREEN → CLOSE" three-stage mental model that some
+v1 ACTs use does not survive in v2: there is only one
+RED phase per ACT, and additional tightening between
+C1 and C2 is still part of RED, not a new phase.
+
+### Bound evidence references (post-C3)
+
+* v3 C-API harness with `LLVMParseIRInContext2`:
+  `evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01/capi/capi_probe.c`
+  (lines 39-86 ownership contract, lines 165-184 cleanup).
+* err-path probe:
+  `evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01/capi/errpath_probe.c`.
+* runner script:
+  `evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01/capi/run_capi_probes.sh`.
+* captured exit-code table:
+  `evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01/capi/cleanup-exit.txt`.
+* aggregate `STATUS=PASS`:
+  `evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01/capi/cleanup-exit-summary.txt`.
+* per-fixture verdicts + cleanup:
+  `evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01/capi/<fixt>.capi-stderr.txt`
+  (each ends with `[probe] CLEANUP-EXIT-0 (return 0)`).
+* per-fixture post-pipeline IR (both APIs):
+  `evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01/capi/<fixt>.capi-stdout.txt`.
+* bad-pipeline-string error capture:
+  `evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01/capi/err-path.stderr`.
+
+### Reviewer-required conditions re-verified by C3
+
+| Condition                                                              | Status |
+|------------------------------------------------------------------------|--------|
+| process exit = 0 for all 3 RED fixtures                                | PASS   |
+| both C-API PASS verdicts for each fixture (independent fresh parses)   | PASS   |
+| consumed-error path: both APIs return non-NULL LLVMErrorRef, consumed via `LLVMGetErrorMessage` + `LLVMDisposeErrorMessage` | PASS |
+| consumed-error path also exits 0                                       | PASS   |
+| inserted-point C API prescription uses only symbols that exist in `llvm-c/Core.h` | PASS (dedicated entry-block builder) |
+| trailer authority reconciled with prose ("EVIDENCE" prose label noted, trailer is RED) | PASS |
+
+All conditions are met. The architectural PASS at
+`57c7ee4` is now backed by a green-cleanup C-API probe
+and a real C-API prescription; CORRECTION01 has the
+contract it needs.

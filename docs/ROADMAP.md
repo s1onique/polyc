@@ -1179,17 +1179,23 @@ and [`evidence/llvm-ir-return-slot-forwarding01/c3/EVIDENCE-SUMMARY.md`](../evid
 
 ---
 
-#### ACT-POLYC-LLVM-LOCAL-MEM2REG01 status (C1.5 EVIDENCE in progress)
+#### ACT-POLYC-LLVM-LOCAL-MEM2REG01 status (C3 RED evidence tightening in progress; C2 CLOSE PASS at 57c7ee4)
 
 ```text
 LOCAL-MEM2REG01  ACT-POLYC-LLVM-LOCAL-MEM2REG01
   ENTRY    = 0501569 (post-RSF01-hygiene; pre-CLOSE of LOCAL-MEM2REG01)
-  CLASS    = C1 RED / C1.5 EVIDENCE / C2 CLOSE (Factory v2 phase
-             grammar; RECON is not a phase; architectural hypothesis
-             testing IS RED; an EVIDENCE commit is permitted between
-             RED and CLOSE to tighten reviewer-flagged evidence)
-  STATE    = OPEN; C1 RED committed; C1.5 EVIDENCE commit in
-             this branch (post-reviewer HOLD); C2 CLOSE pending
+  CLASS    = C1 RED / C1.5 RED evidence tightening /
+             C2 CLOSE / C3 RED evidence tightening
+             (Factory v2 phase grammar is exactly
+              RED | IMPL | CLOSE; "EVIDENCE" is descriptive
+              prose in commit subjects, NEVER a phase token.
+              C1.5 and C3 both carry ACT-Phase: RED.)
+  STATE    = OPEN; C1 RED committed; C1.5 committed;
+             C2 CLOSE committed (verdict PASS, 57c7ee4);
+             C3 RED evidence tightening in this branch
+             (post-C2 HOLD; corrects C-API ownership +
+             insertion-point prescription + EVIDENCE-phase
+             wording convention)
   OPEN commit (NON_ACT, pre-RED):
              d2ffe21 (no ACT: trailer; mirrors the d89a5cd OPEN
              pattern from RSF01)
@@ -1198,10 +1204,11 @@ LOCAL-MEM2REG01  ACT-POLYC-LLVM-LOCAL-MEM2REG01
                       ACT-Phase: RED)
              Bound: ACT doc Q1..Q6 + probes + v1 C-API harness +
                     Q1-Q6-SUMMARY.md + ROADMAP row
-  C1.5 EVIDENCE commit (this branch):
-             Post-reviewer HOLD verdict (function-API probe was
+  C1.5 RED evidence tightening:
+             Post-C1 HOLD verdict (function-API probe was
              vacuous; Q1 producer provenance wrong; placement
              probe mislabeled).
+             Trailers: ACT-Phase: RED (NOT a new phase)
              Bound: ACT doc §4 Q1/Q3/Q4.1 sections rewritten;
                     v2 C-API harness parses each fixture twice,
                     runs module API on one copy and function API
@@ -1212,6 +1219,30 @@ LOCAL-MEM2REG01  ACT-POLYC-LLVM-LOCAL-MEM2REG01
                     (positive control); adversarial probe stays
                     as the negative witness; Q1-Q6-SUMMARY.md
                     rewritten with correct provenance.
+  C2 CLOSE commit:
+             57c7ee4 (ACT: ACT-POLYC-LLVM-LOCAL-MEM2REG01 +
+                      ACT-Phase: CLOSE + ACT-Verdict: PASS)
+             Architectural Option D reconfirmed; the close
+             criterion is met in substance.
+  C3 RED evidence tightening (this branch):
+             Post-C2 HOLD verdict: two P0 defects in the
+             frozen implementation prescription
+             (LLVMParseIRInContext consumes the buffer ->
+             double-free SIGSEGV; LLVMSaveInsertPoint /
+             LLVMRestoreInsertPoint are not in llvm-c/Core.h);
+             plus a wording convention note (EVIDENCE is
+             not a Factory phase).
+             Bound: v3 C-API harness uses LLVMParseIRInContext2
+                    (caller owns buffer; exactly-one dispose);
+                    errpath_probe.c companion for bad-pipeline
+                    error capture; run_capi_probes.sh runner
+                    with cleanup-exit.txt and
+                    cleanup-exit-summary.txt; README rewritten;
+                    ACT doc Q3.3 + §12 + §13 + ROADMAP row
+                    rewritten; Q1-Q6-SUMMARY.md Q3.3 + Q3
+                    rewritten.
+             Trailers: ACT-Phase: RED (NOT a new CLOSE; the
+             architectural PASS at 57c7ee4 stands)
   MISSION  = determine whether PolyC should lower a tightly
              bounded class of compiler-generated scalar local/
              return slots to LLVM entry-block allocas with
@@ -1222,7 +1253,7 @@ LOCAL-MEM2REG01  ACT-POLYC-LLVM-LOCAL-MEM2REG01
 
 The full RED contract is in
 [`docs/acts/ACT-POLYC-LLVM-LOCAL-MEM2REG01.md`](../acts/ACT-POLYC-LLVM-LOCAL-MEM2REG01.md).
-The C1 + C1.5 RED evidence is bound in
+The C1 + C1.5 + C3 RED evidence is bound in
 [`evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01/`](../evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01/):
 
 - `probes/<fixt>.ll` — hand-written LLVM IR equivalent for
@@ -1232,10 +1263,24 @@ The C1 + C1.5 RED evidence is bound in
   positive control (renamed from NOT_IN_ENTRY in C1.5).
 - `probes/single_cond_probe_NOT_IN_ENTRY_ADVERSARIAL.ll` —
   negative witness (unchanged in C1.5).
-- `capi/capi_probe.c` — v2 C harness (independent parses;
-  rebuild instructions in capi/README.md).
+- `capi/capi_probe.c` — v3 C harness (`LLVMParseIRInContext2`
+  ownership; exactly-one buffer dispose; exits 0 on all 3
+  RED fixtures; rebuild instructions in capi/README.md).
+- `capi/errpath_probe.c` — companion: deliberately bad
+  pipeline string "mem2reggg,verify"; both APIs return
+  non-NULL `LLVMErrorRef`; cleanup exits 0.
+- `capi/run_capi_probes.sh` — runner script that captures
+  per-fixture stdout/stderr AND the shell exit code, plus
+  `cleanup-exit.txt` and `cleanup-exit-summary.txt`.
 - `capi/<fixt>.capi-stdout.txt` — both post-pipeline IRs
   captured verbatim from LLVMPrintModuleToString.
-- `capi/<fixt>.capi-stderr.txt` — verdict log per fixture.
+- `capi/<fixt>.capi-stderr.txt` — verdict + cleanup log
+  per fixture (each ends with `[probe] CLEANUP-EXIT-0
+  (return 0)`).
+- `capi/err-path.stderr` — both APIs' "unknown pass"
+  error messages + cleanup exit.
+- `capi/cleanup-exit.txt` — fixture-by-fixture shell
+  exit-code table (all 4 lines must be `shell_exit=0`).
+- `capi/cleanup-exit-summary.txt` — aggregate STATUS line.
 - `Q1-Q6-SUMMARY.md` — RED evidence summary table for all
   six recon questions.

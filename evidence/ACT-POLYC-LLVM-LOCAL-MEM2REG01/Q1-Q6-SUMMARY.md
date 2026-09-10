@@ -1,6 +1,11 @@
 # Q1–Q6 RED evidence summary (ACT-POLYC-LLVM-LOCAL-MEM2REG01)
 
-**Subject tree:** `d2ffe21` (ACT OPEN) → `6059298` (C1 RED) → C1.5 EVIDENCE (this commit)
+**Subject tree:** `d2ffe21` (ACT OPEN) → `6059298` (C1 RED,
+`ACT-Phase: RED`) → `f45ba38` (C1.5 RED evidence tightening,
+`ACT-Phase: RED`) → `57c7ee4` (C2 CLOSE, `ACT-Phase: CLOSE
++ ACT-Verdict: PASS`) → C3 RED evidence tightening (this
+update; `ACT-Phase: RED`). NOTE: "EVIDENCE" is descriptive
+prose, NEVER a Factory phase; the trailer is authority.
 **Date:** 2026-09-10
 **Toolchain:** `opt --version` = LLVM 22.1.8 (Nix store)
 **Hypothesis under test:** option D from
@@ -9,14 +14,31 @@ generated scalar local/return slots to LLVM entry-block
 allocas with direct loads/stores, then run LLVM's `mem2reg`
 pass to construct SSA.
 
-**Reviewer HOLD verdict (post-C1) addressed in this C1.5
-commit**: Q1 producer provenance was wrong (it named a
-consumer, `irForwardReturnSlot`, as the producer). C1.5
-derives the actual producers from `src/ir.c` and
-`src/ir-optimise.c` directly. The function-API C-API probe
-was vacuous (ran on an already-promoted module); C1.5 fixes
-it with two fresh parses. The placement probe was mislabeled;
-C1.5 renames it.
+**Reviewer HOLD verdict (post-C1) addressed in C1.5 RED
+evidence tightening**: Q1 producer provenance was wrong
+(it named a consumer, `irForwardReturnSlot`, as the
+producer). C1.5 derives the actual producers from `src/ir.c`
+and `src/ir-optimise.c` directly. The function-API C-API
+probe was vacuous (ran on an already-promoted module); C1.5
+fixes it with two fresh parses. The placement probe was
+mislabeled; C1.5 renames it.
+
+**Reviewer HOLD verdict (post-C2) addressed in C3 RED
+evidence tightening** (this update): the v2 C-API harness
+used `LLVMParseIRInContext`, which consumes the buffer
+(per its doc comment), and then `LLVMDisposeMemoryBuffer`
+on the success path — a double-free / use-after-free
+producing SIGSEGV during cleanup. C3 fixes this with
+`LLVMParseIRInContext2` (caller owns the buffer; exactly-
+one dispose). All 3 fixtures now exit 0 cleanly. The C2
+handoff also prescribed `LLVMSaveInsertPoint` /
+`LLVMRestoreInsertPoint`, which are NOT in
+`llvm-c/Core.h`; C3 replaces this with a dedicated entry-
+block builder (`LLVMCreateBuilderInContext` +
+`LLVMPositionBuilderAtEnd(alloca_builder,
+LLVMGetEntryBasicBlock(fn))` + `LLVMDisposeBuilder`).
+The C2 architectural PASS substance at `57c7ee4` stands;
+C3 only tightens the implementation contract.
 
 ---
 
@@ -109,12 +131,39 @@ discipline.
 LOCAL-MEM2REG01-CORRECTION01 establish so the resulting
 alloca lands in the function entry block?
 
-ANSWER (verified): save the current builder insertion point
-via LLVMSaveInsertPoint, call LLVMPositionBuilderAtEnd(builder,
-fn_entry_bb), emit LLVMBuildAlloca + LLVMBuildStore, restore
-via LLVMRestoreInsertPoint(builder, saved_ip). The Q4.1 C-API
-harness already exercises the LLVM side of this discipline
-on every RED fixture.
+ANSWER (CORRECTED in C3 RED evidence tightening):
+`LLVMSaveInsertPoint` and `LLVMRestoreInsertPoint` are NOT
+exposed by `llvm-c/Core.h`. The actual C API surface for
+builder positioning is `LLVMPositionBuilder*` +
+`LLVMGetInsertBlock` + `LLVMClearInsertionPosition` +
+`LLVMDisposeBuilder`. The recommended discipline is
+therefore a DEDICATED ENTRY-BLOCK BUILDER:
+
+```c
+LLVMBuilderRef alloca_builder =
+    LLVMCreateBuilderInContext(lc->ctx);
+LLVMPositionBuilderAtEnd(alloca_builder,
+                         LLVMGetEntryBasicBlock(fn));
+
+LLVMValueRef slot = LLVMBuildAlloca(
+    alloca_builder, LLVMInt64TypeInContext(lc->ctx),
+    "polyc.local.slot");
+LLVMDisposeBuilder(alloca_builder);
+```
+
+The normal lowering builder is left completely untouched.
+The two builders have the invariant:
+
+```text
+normal builder   -> CFG/instruction lowering
+alloca builder   -> entry-block stack-slot materialisation only
+```
+
+If CORRECTION01 RED recon shows a second builder would
+interfere with the ordering of existing entry instructions,
+the recipe falls back to `LLVMClearInsertionPosition` +
+`LLVMPositionBuilderAtEnd` on the existing builder; it
+does NOT invent a save/restore API.
 
 **Q3 placement probe evidence (renamed in C1.5)**
 
@@ -357,10 +406,15 @@ I64 type + single alloca at top of entry block.
 scalar, direct, non-volatile, non-escaping, non-aggregate).
 
 **Q3 PASS.** Placement requirement is determined: entry-block
-alloca, with a save/restore insertion-point discipline
-prescribed for CORRECTION01 (LLVMSaveInsertPoint →
-LLVMPositionBuilderAtEnd(fn_entry_bb) → LLVMBuildAlloca →
-LLVMRestoreInsertPoint). Positive control fixture
+alloca, with a DEDICATED ENTRY-BLOCK BUILDER discipline
+prescribed for CORRECTION01 (see Q3.3 corrected recipe:
+`LLVMCreateBuilderInContext` +
+`LLVMPositionBuilderAtEnd(alloca_builder,
+                         LLVMGetEntryBasicBlock(fn))` +
+`LLVMDisposeBuilder`). The previously-prescribed
+save/restore discipline using `LLVMSaveInsertPoint` /
+`LLVMRestoreInsertPoint` was an impossible C API and is
+removed in C3. Positive control fixture
 (single_cond_probe_ENTRY_BLOCK_NAMED_BB1.ll) confirms the
 block-name "entry" is irrelevant. Negative witness fixture
 (single_cond_probe_NOT_IN_ENTRY_ADVERSARIAL.ll) confirms

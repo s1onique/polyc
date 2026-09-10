@@ -1,122 +1,142 @@
-# C-API probe (Q4.1)
+# ACT-POLYC-LLVM-LOCAL-MEM2REG01 -- Q4.1 C-API probe
 
-This directory contains the RECON evidence for the
-ACT-POLYC-LLVM-LOCAL-MEM2REG01 Q4.1 question: does the LLVM C
-API expose new-pass-manager entry points that parse and
-execute `"mem2reg,verify"` cleanly on the project's LLVM
-22.1.8 distribution?
+## What this directory contains
 
-## Reviewer correction (post-C1 HOLD)
+| File                          | Purpose |
+|-------------------------------|---------|
+| `capi_probe.c` (v3)           | Q4.1 harness: independent module + function C-API probes. |
+| `errpath_probe.c`             | Companion: deliberately-bad pipeline string ("mem2reggg,verify"). |
+| `run_capi_probes.sh`          | Runner: builds, runs all fixtures + err-path, captures exit codes. |
+| `capi_probe` (binary, not in git) | Built locally by the runner. |
+| `errpath_probe` (binary, not in git) | Built locally by the runner. |
+| `<fixt>.capi-stdout.txt`      | Per-fixture post-pipeline IR for both APIs. |
+| `<fixt>.capi-stderr.txt`      | Per-fixture verdicts + `CLEANUP-EXIT-0` confirmation. |
+| `err-path.stderr`             | Both APIs' "unknown pass" error messages + cleanup exit. |
+| `cleanup-exit.txt`            | Fixture-by-fixture shell exit-code table. |
+| `cleanup-exit-summary.txt`    | One-line `STATUS=PASS\|FAIL` summary. |
 
-The v1 harness ran the module API first and then the function
-API on the SAME (already-promoted) module. That proved only
-that function mem2reg is a no-op on already-promoted IR --
-NOT that function mem2reg actually promotes unpromoted IR.
+## Reviewer corrections across versions
 
-The v2 harness (this version) parses each fixture TWICE
-from disk into independent modules, runs only the module API
-on the first copy, runs only the function API on the second
-copy, and prints both post-pipeline IRs to stdout from
-`LLVMPrintModuleToString`. The function-API evidence is now
-load-bearing for the CORRECTION01 recommendation.
+### v1 → v2 (C1.5 RED evidence tightening)
 
-## Files
+The v1 harness (in C1) ran the module API first and then
+the function API on the SAME (already-promoted) module.
+That proved only that function mem2reg is a no-op on
+already-promoted IR -- NOT that function mem2reg actually
+promotes unpromoted IR. The function-API evidence was
+vacuous.
 
-- `capi_probe.c` — v2 C harness. Links against `-lLLVM-22`.
-  Parses the input file twice, exercises the module and
-  function APIs on independent copies, prints both
-  post-pipeline IRs.
-- `<fixt>.capi-stderr.txt` — verdict log per fixture.
-- `<fixt>.capi-stdout.txt` — two tagged sections per file:
-  `; ===== MODULE-API RESULT (fresh parse, LLVMRunPasses only) =====`
-  followed by the post-pipeline IR captured by
-  `LLVMPrintModuleToString`, then
-  `; ===== FUNCTION-API RESULT (fresh parse, LLVMRunPassesOnFunction only) =====`
-  followed by the second fresh-parse post-pipeline IR.
-- `err-path.stderr` — bad-pipeline error path via the
-  module API: `unknown pass name 'mem2reggg'`.
-- `function-api-err-path.stderr` — bad-pipeline error path
-  via the function API:
-  `unknown function pass 'mem2reggg' in pipeline 'mem2reggg'`.
+v2 fixed this by parsing each fixture TWICE from disk
+into independent MemoryBuffers + independent Modules.
+The module API runs on module A; the function API runs
+on module B. They share no state.
 
-## Verdict
+### v2 → v3 (C3 RED evidence tightening)
 
+The v2 harness used `LLVMParseIRInContext` and then
+`LLVMDisposeMemoryBuffer(MB)` during cleanup. The LLVM
+C API documents `LLVMParseIRInContext` as consuming
+the memory buffer:
+
+```c
+/**
+ * ... The memory buffer is consumed by this function.
+ * This is deprecated. Use LLVMParseIRInContext2 instead.
+ */
+LLVM_C_ABI LLVMBool LLVMParseIRInContext(...);
 ```
-C-API MODULE API (fresh parse):   PASS  (all 3 fixtures)
-C-API FUNCTION API (fresh parse): PASS  (all 3 fixtures)
-C-API ERROR PATH OBSERVED:        yes   (both APIs)
-```
 
-CORRECTION01 MUST consume/report the error path; treating
-pass execution as infallible would silently swallow bad-
-pipeline failures at runtime.
+This produced a double-free / use-after-free during
+cleanup. The probe crashed AFTER the verdict line on
+stderr and AFTER the `fflush(stdout)` of the captured
+IR, so the substantive evidence was durable, but the
+process did not exit cleanly. The reviewer required
+exit=0 across all 3 fixtures as a hard precondition.
 
-## Implementation note on cleanup
+v3 fixes this by using `LLVMParseIRInContext2`, which
+does NOT consume the buffer. The caller OWNS the
+buffer and disposes it exactly once. The captured
+substance is unchanged (the IR was already correct),
+but the process now exits 0 cleanly.
 
-The harness currently SIGSEGVs during cleanup (after both
-verdict lines are printed and both IR sections are flushed
-to stdout). The verdict is therefore captured correctly
-because:
+The v3 ownership contract is documented at the top of
+`capi_probe.c` and is mirrored in `errpath_probe.c`.
 
-- `stderr` is unbuffered by default, so the verdict lines
-  are emitted before the crash.
-- `print_module` calls `fflush(stdout)` after each
-  `LLVMPrintModuleToString` capture, so the IR stdout is
-  flushed to the file before the dispose sequence.
-
-The crash is in MY harness dispose sequence, not in the
-LLVMRunPasses / LLVMRunPassesOnFunction call paths. The
-recommendation to use `LLVMRunPassesOnFunction` in
-CORRECTION01 is therefore still supported by the captured
-verdict and the captured post-pipeline IR.
-
-## Rebuild from source
-
-The compiled binaries are intentionally NOT committed (build
-artifacts, not source). To rebuild against the project's
-LLVM 22.1.8 distribution:
+## How to build + run
 
 ```sh
-LLVM_INC=$(llvm-config --includedir)
-LLVM_LIB=$(llvm-config --libdir)
+cd evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01/capi
 
-clang -I "$LLVM_INC" -Wno-deprecated-declarations \
-      capi_probe.c \
-      -o /tmp/capi_probe \
-      -L "$LLVM_LIB" -lLLVM-22
+# One-time build
+LLVM_INC=/nix/store/b6fykfvclbq81yis03blk6bqsmapmhdm-llvm-22.1.8-dev/include
+LLVM_LIB=/nix/store/a1hnp3fv6y7jjl8j3vkcp3qwclxmknba-llvm-22.1.8-lib/lib
+clang -O0 -g -I"$LLVM_INC" -L"$LLVM_LIB" \
+      -Wl,-rpath,"$LLVM_LIB" capi_probe.c -lLLVM -o capi_probe
+clang -O0 -g -I"$LLVM_INC" -L"$LLVM_LIB" \
+      -Wl,-rpath,"$LLVM_LIB" errpath_probe.c -lLLVM -o errpath_probe
 
-# Then run:
-/tmp/capi_probe ../probes/single_cond_probe.ll \
-    > single_cond_probe.capi-stdout.rebuilt.txt \
-    2> single_cond_probe.capi-stderr.rebuilt.txt
+# Run
+./run_capi_probes.sh
+cat cleanup-exit-summary.txt
+# STATUS=PASS ...
 ```
 
-## Verdict summary (raw)
+## Expected output (current tree)
 
+```text
+fixture=single_cond_probe_ENTRY_BLOCK_NAMED_BB1   shell_exit=0  CLEANUP-EXIT-0=1  module-PASS=1  function-PASS=1
+fixture=i64_collapse_probe                        shell_exit=0  CLEANUP-EXIT-0=1  module-PASS=1  function-PASS=1
+fixture=pos_b0_compare_digit                      shell_exit=0  CLEANUP-EXIT-0=1  module-PASS=1  function-PASS=1
+errpath=single_cond_probe_ENTRY_BLOCK_NAMED_BB1   shell_exit=0  CLEANUP-EXIT-0=1  module-err=1  function-err=1
+
+STATUS=PASS  (all 3 fixtures: shell_exit=0, CLEANUP-EXIT-0=1, module-PASS=1, function-PASS=1;
+              err-path: shell_exit=0, both-error-msgs=1, CLEANUP-EXIT-0=1)
 ```
-=== single_cond_probe ===
-[probe-A] fresh parse -> LLVMRunPasses(M, "mem2reg,verify", NULL, opts)
-[module-api] LLVMRunPasses returned OK
-[module-api] VERDICT: PASS (fresh module, module API)
-[probe-B] fresh parse -> LLVMRunPassesOnFunction(fn, "mem2reg,verify", NULL, opts)
-[function-api] LLVMRunPassesOnFunction returned OK
-[function-api] VERDICT: PASS (fresh module, function API)
 
-=== i64_collapse_probe ===
-[module-api] VERDICT: PASS (fresh module, module API)
-[function-api] VERDICT: PASS (fresh module, function API)
+## What the captured IR proves
 
-=== pos_b0_compare_digit ===
-[module-api] VERDICT: PASS (fresh module, module API)
-[function-api] VERDICT: PASS (fresh module, function API)
+Each `<fixt>.capi-stdout.txt` has TWO tagged sections:
 
-=== error-path probe ===
-[error-path] LLVMRunPasses returned non-NULL error:
-  unknown pass name 'mem2reggg'
-C-API ERROR PATH OBSERVED: yes (module API)
+```text
+; ===== MODULE-API RESULT (fresh parse, LLVMRunPasses only) =====
+    [post-pipeline IR from LLVMPrintModuleToString]
 
-=== function-api error-path ===
-[function-api] ERROR PATH OBSERVED:
-  unknown function pass 'mem2reggg' in pipeline 'mem2reggg'
-C-API ERROR PATH OBSERVED: yes (function API)
+; ===== FUNCTION-API RESULT (fresh parse, LLVMRunPassesOnFunction only) =====
+    [post-pipeline IR from LLVMPrintModuleToString]
 ```
+
+For each section:
+* target `alloca` is gone,
+* target `load`/`store` are gone,
+* a single `phi` at the natural successor block holds
+  per-edge operands matching original PolyC semantics.
+
+The two sections are byte-for-byte identical, proving
+that `LLVMRunPassesOnFunction` is a sufficient standalone
+promotion API for the bounded IMPL (CORRECTION01).
+
+## What `err-path.stderr` proves
+
+```text
+[errpath] MODULE API with bad pipeline 'mem2reggg,verify'
+[errpath] module-api error: unknown pass name 'mem2reggg'
+[errpath] FUNCTION API with bad pipeline 'mem2reggg,verify'
+[errpath] function-api error: unknown function pass 'mem2reggg' in pipeline 'mem2reggg,verify'
+[errpath] CLEANUP-EXIT-0 (return 0)
+```
+
+Both APIs return a non-NULL `LLVMErrorRef` whose message
+the harness consumes via `LLVMGetErrorMessage` +
+`LLVMDisposeErrorMessage`. The consumed-error path
+cleans up correctly (exit=0). CORRECTION01 must wire
+this consumption.
+
+## Out of scope for this ACT id
+
+The probe is RECON-only evidence; it is NOT part of the
+PolyC build. CORRECTION01 is the bounded IMPL freeze
+that introduces production-grade calls into
+`src/llvm-backend.c`. The deferred insertion-point
+contract there uses a dedicated entry-block builder
+(see ACT §12 RESIDUE P2 / CORRECTION01), NOT a
+nonexistent C-API `LLVMSaveInsertPoint`.
