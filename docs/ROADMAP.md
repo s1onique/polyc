@@ -1364,21 +1364,25 @@ LOCAL-MEM2REG01-CORRECTION02  ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02
              mutable-local class (Option W); no frontend SSA
              reconstruction. Replace C9 predecessor-store
              synthesis with original-site store/load lowering.
-  RED-1    = harness evidence isolation (binding choice between
-             EVIDENCE_OUT env var or make evidence-update target).
-             Required before any other RED; HALT_RED1_NOT_REPRODUCED
-             if today the contamination is already fixed.
+  RED-1    = harness evidence isolation (REPRODUCED at C1).
+             Producer fix authorised as TOOLING IMPL (C5).
+             RED-2/RED-3 may proceed in parallel.
   RED-2    = mutable-local def/use recon for six fixtures
              (ProbePath, Diamond, pos_b0_compare_digit,
              i64_collapse_probe, single_cond_probe,
-             safe_fwd_single_pred).
+             safe_fwd_single_pred). Mandatory rows include
+             "every read definitely assigned on every CFG
+             path" (§2 rule 6 / §3 table).
   RED-3    = hand-translated Option-W proof for five eligible
              fixtures via opt -passes=mem2reg + verify. HALT
              verdict HALT_OPTION_W_FALSIFIED if mem2reg cannot
              promote.
-  IMPL_AUTH= bound to RED-1 AND RED-2 AND RED-3 all PASS.
-             Reviewer board explicitly did NOT authorise IMPL
-             until the hand-translated Option-W RED is green.
+  TOOLING_IMPL_AUTH = RED-1 reproduced ✅ (C1)
+  COMPILER_IMPL_AUTH =
+      TOOLING_IMPL_AUTH
+      AND RED-1 producer fix GREEN (C5)
+      AND RED-2 PASS               (C3)
+      AND RED-3 PASS               (C4)
   EVIDENCE = evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02/c1/
 ```
 
