@@ -90,5 +90,13 @@ int llvmEmitProgram(IrProgram *prog,
 #define LLVM_BACKEND_UNSUPPORTED_AGGREGATE      "LLVM_BACKEND_UNSUPPORTED_AGGREGATE"
 #define LLVM_BACKEND_UNSUPPORTED_GLOBAL         "LLVM_BACKEND_UNSUPPORTED_GLOBAL"
 #define LLVM_BACKEND_UNSUPPORTED_EXTERNAL       "LLVM_BACKEND_UNSUPPORTED_EXTERNAL"
+/* ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 C6: a mutable local
+ * meets every §2 discriminator rule except one (e.g. has a
+ * definition opcode outside {IR_STORE, IR_IADD, IR_ISUB}, is
+ * address-taken, or has a read with no reaching definition). The
+ * backend must reject such a local with this named diagnostic
+ * rather than silently widening Option W's scope. */
+#define LLVM_BACKEND_UNSUPPORTED_OPTION_W_INELIGIBLE \
+    "LLVM_BACKEND_UNSUPPORTED_OPTION_W_INELIGIBLE"
 
 #endif

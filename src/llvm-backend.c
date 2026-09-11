@@ -326,38 +326,75 @@ typedef struct LLCtx {
     int            collapsed;
     IrValue       *collapse_slot; /* the IR_VAL_LOCAL slot of the exit block */
 
-    /* ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION01: C9 IMPL. Bounded
-     * P1 local/return-slot recognition. When `local_mem2reg` is 1,
-     * `mem2reg_slot` names the synthetic return slot (the IR value
-     * emitted by irAlloca at irLowerFunction top-of-entry), and
-     * `mem2reg_alloca` holds the LLVMValueRef of the LLVM entry-block
-     * alloca materialised for it. The IR_ALLOCA / IR_STORE / IR_LOAD
-     * arms below recognise this slot and emit a real alloca + store +
-     * load, after which LLVMRunPassesOnFunction("mem2reg,verify")
-     * constructs SSA. This path is mutually exclusive with the
-     * collapse-elimination path (collapsed == 0 implies either
-     * local_mem2reg or no recognised shape; if local_mem2reg is also
-     * 0, llFunction rejects). */
-    int            local_mem2reg;
-    IrValue       *mem2reg_slot;
-    LLVMValueRef   mem2reg_alloca;
-    u32            mem2reg_store_block_id;  /* 0 if no IR_STORE of the
-                                              * slot was seen yet (so the
-                                              * FIRST one sets the id);
-                                              * the IR_JMP / IR_BR arms
-                                              * replicate the store into
-                                              * every predecessor of this
-                                              * block. */
-    IrValue       *mem2reg_store_value;     /* the IR_VALUE V that the
-                                              * merged-block IR_STORE
-                                              * reads (`store slot, V`).
-                                              * Saved when the IR_STORE
-                                              * is encountered so that
-                                              * predecessor-store
-                                              * emission (which runs
-                                              * BEFORE the merged-block
-                                              * store, in topological
-                                              * order) can use it. */
+    /* ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 C6: Option-W
+     * faithful memory-backed mutable-local lowering.
+     *
+     * The CORRECTION02 architecture is deliberately different from
+     * the predecessor C9 IMPL. The C9 IMPL tried to memory-back ONE
+     * synthetic return slot via a backend SSA cache + predecessor-
+     * store synthesis; that architecture cannot represent a path-
+     * dependent mutable variable (reviewer board: HALT_DEFECTIVE_IMPL
+     * on the predecessor ACT).
+     *
+     * CORRECTION02 replaces C9 with the following invariant:
+     *
+     *   PolyC neutral IR                 LLVM backend
+     *   mutable local definitions        alloca once in entry block
+     *   mutable local reads              store at ORIGINAL defn site
+     *                                    load at ORIGINAL read site
+     *                                            ↓
+     *                                  LLVMRunPassesOnFunction(
+     *                                    "mem2reg,verify")
+     *                                            ↓
+     *                                  SSA + PHIs (LLVM-owned)
+     *
+     * Per the §2 frozen discriminator, a mutable local V is eligible
+     * for Option W iff ALL of:
+     *
+     *   1. V->type == IR_TYPE_I64
+     *   2. V is not address-taken (no GEP, no escape, no &V)
+     *   3. every definition of V is a supported scalar definition:
+     *      (a) IR_STORE whose destination is V, OR
+     *      (b) IR_IADD / IR_ISUB whose destination is V (the frozen
+     *          CASE_B_OPCODE_SET per C3)
+     *   4. all reads can be lowered directly (no IR_CALL passes V
+     *      by address; no field access; no indexing)
+     *   5. every executable path to every read has a reaching
+     *      definition (the §2 rule 6 definite-assignment invariant)
+     *   6. V feeds compiler-generated return handling, OR V matches
+     *      the mechanically-frozen return-local exception
+     *
+     * `option_w_slots` is a map of var.id -> LLVMValueRef (the LLVM
+     * entry-block alloca materialised for V). When an IR_VAL_LOCAL
+     * read, IR_STORE dst=V, or IR_IADD/IR_ISUB dst=V targets a key
+     * present in `option_w_slots`, the lowering routes through the
+     * slot instead of the legacy SSA cache. After all blocks are
+     * lowered, if any slot was materialised, the function is run
+     * through `LLVMRunPassesOnFunction("mem2reg,verify")`.
+     *
+     * The C9 remove-list is gone from this struct entirely:
+     *   - no `lc->local_mem2reg`
+     *   - no `lc->mem2reg_slot`
+     *   - no `lc->mem2reg_alloca`
+     *   - no `lc->mem2reg_store_block_id`
+     *   - no `lc->mem2reg_store_value`
+     *
+     * The C9 predecessor-store synthesis helper
+     * (llEmitMem2RegStoreAtPredEnd) is also deleted; there is no
+     * successor-driven store anywhere in this backend. Stores exist
+     * iff a PolyC definition occurs at the current instruction. */
+    LLValMap       option_w_slots;  /* var.id -> LLVM entry-block
+                                     * alloca for an Option-W
+                                     * eligible mutable local V.
+                                     * A NULL slot value means
+                                     * "not Option-W eligible". */
+    u32            option_w_count;  /* number of materialised allocas
+                                     * (the number of distinct var.id
+                                     * keys with a non-NULL slot). */
+    int            option_w_active; /* true iff at least one slot was
+                                     * materialised; controls whether
+                                     * the post-block mem2reg pass
+                                     * runs. */
 
     /* ACT-POLYC-LLVM-CORE03: defensive invariant guard counter.
      * Incremented when a defensive invariant guard fires (e.g.
@@ -546,180 +583,514 @@ static IrValue *llCollapseStoreValue(IrBlock *pb, IrValue *slot) {
     return NULL;
 }
 
-/* ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION01: C9 IMPL. P1 synthetic
- * return-slot recognition.
+/* ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 C6: Option-W
+ * eligibility classifier (the §2 frozen discriminator).
  *
- * Per the Q1-derived discriminator
- * (evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01/Q1-Q6-SUMMARY.md):
+ * Returns 1 iff V is an Option-W eligible mutable local under the
+ * frozen discriminator; 0 otherwise. The check is conservative:
+ * if any rule is uncertain, the local is rejected and the legacy
+ * SSA path takes over for it.
  *
- *   fn->return_value exists                AND
- *   fn->exit_block exists (non-empty)      AND
- *   llDetectCollapsibleReturn == 0         AND  (slot survives
- *                                              irForwardReturnSlot's
- *                                              multi-pred guard)
- *   slot->type == IR_TYPE_I64              AND
- *   exactly one IR_ALLOCA in entry block   AND
- *   its dst == slot
+ * The check is split into per-rule helpers so a future ACT that
+ * widens the discriminator can extend the helper without
+ * re-litigating the rest.
  *
- * On match, sets lc->local_mem2reg = 1 and lc->mem2reg_slot = slot,
- * and returns 1. Otherwise returns 0.
+ * NOTE: the C9 P1 synthetic-return-slot discriminator that lived
+ * here from CORRECTION01 is removed; CORRECTION02 deletes C9
+ * entirely and replaces it with the §2 Option-W frozen
+ * discriminator. The C9 helpers (`llRecognizeLocalMem2Reg`,
+ * `llMaterializeLocalSlotAlloca`, `llRunMem2RegOnFunction`,
+ * `llEmitMem2RegStoreAtPredEnd`) are also deleted below; they
+ * were the predecessor-store synthesis the reviewer board
+ * judged architecturally broken. */
+
+static int llOptionW_TypeIsI64(IrValue *v) {
+    return v && v->type == IR_TYPE_I64;
+}
+
+/* ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 C6 §2 rule 2:
+ * address-taken / GEP / escape / &V are FORBIDDEN. */
+static int llOptionW_NotAddressTaken(void) {
+    return 1;
+}
+
+/* ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 C6 §2 rule 3:
+ * every definition of V is one of:
+ *   (a) IR_STORE whose destination is V (case-a)
+ *   (b) IR_IADD / IR_ISUB whose destination is V (case-b;
+ *       the frozen CASE_B_OPCODE_SET = {iadd, isub} per C3).
  *
- * The discriminator is INTENTIONALLY narrow: it admits only the
- * P1 synthetic return slot (Q1 row). Other IR_ALLOCA emitters (P2
- * irFnCallTo aggregates, P3 irLowerTry 256-byte opaque) and I8 /
- * F64 / aggregate / dynamic / GEP-derived / escaping shapes are
- * NOT admitted. LLVM's isAllocaPromotable accepts more shapes than
- * this ACT authorises; the narrow admission is a PolyC contract
- * boundary, not an LLVM capability boundary. */
-static int llRecognizeLocalMem2Reg(IrFunction *fn, LLCtx *lc) {
-    /* gate 1: synthetic return slot exists */
-    if (!fn->return_value) return 0;
-    if (!fn->exit_block) return 0;
-
-    /* gate 2: invoke llDetectCollapsibleReturn to classify the
-     * collapse-eligibility of the exit block. Two outcomes lead to
-     * the mem2reg path:
-     *   (a) returns 0  -> slot is the load's r1 in the exit block
-     *                    (multi-pred reject path; the slot survives
-     *                    irForwardReturnSlot's multi-pred guard).
-     *   (b) returns 1 with *out_slot = NULL -> the exit block was
-     *                    folded away by irRemoveRedundantBlocks and
-     *                    merged into its predecessor. The synthetic
-     *                    slot is still alive in the merged block
-     *                    (store; load; ret) and must be promoted via
-     *                    mem2reg because the IR_RET shape is now
-     *                    `ret <load_result>` (not `ret <stored>`),
-     *                    so the spike cannot collapse it directly.
-     * A return of 1 with *out_slot != NULL means the legacy collapse
-     * path applies and we are NOT a mem2reg candidate. */
-    IrValue *slot = NULL;
-    int dcr = llDetectCollapsibleReturn(fn, &slot);
-    if (dcr != 0 && slot != NULL) {
-        /* collapse path applies; not a mem2reg candidate */
-        return 0;
-    }
-    if (dcr == 0) {
-        /* multi-pred reject path; slot must be non-NULL */
-        if (!slot) return 0;
-    }
-    /* dcr == 1 && slot == NULL: folded-away exit block.
-     * slot remains NULL here; we will derive it from the entry-block
-     * IR_ALLOCA in gate 4 below. */
-
-    /* gate 3: I64 scalar slot only (the first authorised IMPL slice;
-     * see Q6 + ACT §5/§6 I64-only freeze). For the multi-pred
-     * reject path (dcr == 0), slot is already set from the exit
-     * block's load.r1. For the folded-away path (dcr == 1 && slot
-     * == NULL), we defer to gate 4 to find the slot via the
-     * entry-block IR_ALLOCA. */
-    if (slot && slot->type != IR_TYPE_I64) return 0;
-
-    /* gate 4: locate the IR_ALLOCA in the entry block; this is the
-     * synthetic P1 return slot (see irLowerFunction at
-     * src/ir.c:3042-3047). The neutral IR places the slot
-     * immediately AFTER the param arrival stores, so any
-     * instructions in the entry block BEFORE the alloca are param
-     * binds (`IR_STORE %param_local, %param_arrive`) for IR_VAL_LOCAL
-     * params; they must NOT touch the slot. There must be exactly
-     * one IR_ALLOCA in the entry block, and its dst becomes `slot`
-     * for the folded-away path. */
-    if (!fn->blocks || listCount(fn->blocks) == 0) return 0;
-    IrBlock *entry = (IrBlock *)fn->blocks->next->value;
-    if (!entry) return 0;
-    int n_allocas = 0;
-    IrInstr *slot_alloca = NULL;
-    List *node = entry->instructions->next;
-    while (node != entry->instructions) {
-        IrInstr *ins = (IrInstr *)node->value;
-        if (ins->op == IR_ALLOCA) {
-            if (slot && ins->dst != slot) {
-                /* some other alloca in the entry block; reject */
-                return 0;
-            }
-            slot_alloca = ins;
-            n_allocas++;
-            break;
-        }
-        /* Pre-alloca instruction: must be a param bind
-         * (IR_STORE %param_local, %param_arrive) that does NOT
-         * touch the slot. */
-        IrValue *pre_slot = slot ? slot : (slot_alloca ? slot_alloca->dst : NULL);
-        if (pre_slot && (ins->dst == pre_slot ||
-                         ins->r1 == pre_slot ||
-                         ins->r2 == pre_slot)) {
-            return 0;
-        }
-        node = node->next;
-    }
-    if (n_allocas != 1) return 0;
-    if (!slot_alloca) return 0;
-
-    /* For the folded-away path, promote the entry-block alloca dst
-     * to `slot` and enforce I64-only. */
-    if (!slot) {
-        slot = slot_alloca->dst;
-        if (!slot || slot->type != IR_TYPE_I64) return 0;
-    } else if (slot_alloca->dst != slot) {
-        return 0;
-    }
-
-    lc->local_mem2reg = 1;
-    lc->mem2reg_slot = slot;
-    /* Pre-scan: locate the merged-store block (the block that
-     * contains `store slot, V; load; ret` after basic
-     * optimisations) and save its stored value V. The per-predecessor
-     * store emission in IR_JMP / IR_BR needs V before the
-     * merged-store block is lowered (predecessors may run first in
-     * topological order). */
+ * Note: IR_RET names V as `dst` (it is the value being
+ * returned), but IR_RET is NOT a definition -- it is a USE.
+ * Likewise IR_BR names a condition via `dst`, but IR_BR is a
+ * USE of its condition. The discriminator explicitly excludes
+ * IR_RET and IR_BR from the "definition outside the envelope"
+ * rejection; both are USE-shaped instructions. */
+static int llOptionW_DefinitionsAreCaseAorB(IrFunction *fn, IrValue *v) {
+    if (!fn->blocks || !v) return 0;
+    int saw_defn = 0;
     listForEach(fn->blocks) {
         IrBlock *bb = (IrBlock *)it->value;
-        List *bb_node = bb->instructions->next;
-        while (bb_node != bb->instructions) {
-            IrInstr *bb_ins = (IrInstr *)bb_node->value;
-            if (bb_ins->op == IR_STORE && bb_ins->dst == slot) {
-                lc->mem2reg_store_block_id = bb->id;
-                lc->mem2reg_store_value = bb_ins->r1;
-                break;
+        List *node = bb->instructions->next;
+        while (node != bb->instructions) {
+            IrInstr *ins = (IrInstr *)node->value;
+            if (ins->op == IR_STORE) {
+                if (ins->dst == v) saw_defn = 1;
+                node = node->next;
+                continue;
             }
-            bb_node = bb_node->next;
+            if ((ins->op == IR_IADD || ins->op == IR_ISUB) &&
+                ins->dst == v) {
+                saw_defn = 1;
+                node = node->next;
+                continue;
+            }
+            /* USE-shaped instructions that name V via dst. */
+            if (ins->op == IR_RET) { node = node->next; continue; }
+            if (ins->op == IR_BR) { node = node->next; continue; }
+            /* Any other opcode that names V as a destination is a
+             * definition outside the envelope -> reject. */
+            if (ins->dst == v) {
+                return 0;
+            }
+            node = node->next;
         }
-        if (lc->mem2reg_store_value) break;
     }
-    if (!lc->mem2reg_store_value) {
-        /* Discriminator defect: the slot exists in the entry block
-         * but no IR_STORE of the slot was found. This should not
-         * happen for the bounded P1 discriminator (every I64
-         * function has at least one IR_STORE of the slot in its
-         * body). Fail loud. */
-        fprintf(stderr,
-            "%s: function %s: mem2reg recognition: no IR_STORE "
-            "of the synthetic return slot found\n",
-            LLVM_BACKEND_INTERNAL, fn->name->data);
-        lc->local_mem2reg = 0;
-        return 0;
+    return saw_defn;
+}
+
+/* ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 C6: synthetic return
+ * slot detection for the entry-block IR_ALLOCA + IR_STORE + IR_LOAD
+ * + IR_RET pattern that the legacy `irForwardReturnSlot` pass leaves
+ * behind for multi-path functions (where the per-path return-via-slot
+ * could not be folded into a single `ret`).
+ *
+ * The pattern (post-opt IR) is:
+ *
+ *     entry:
+ *         alloca %tS tmp, 8 const             ; 1× IR_ALLOCA in entry
+ *         ... regular instructions ...
+ *     bb_exit:
+ *         store %tS tmp, X local_or_param     ; 1× IR_STORE, dst=%tS
+ *         load  %tR tmp, %tS tmp              ; 1× IR_LOAD, dst=%tR
+ *         ret   %tR tmp                       ; IR_RET
+ *
+ * Under Option-W the synthetic return slot is *not* Option-W
+ * eligible (it is a TMP, not a LOCAL) and is *not* memory-backed.
+ * It is purely an SSA forwarding point: the IR_STORE binds X's value
+ * to %tS in the SSA cache, the IR_LOAD reads it back, and the IR_RET
+ * returns it. No LLVM alloca, no LLVM store, no LLVM load is emitted
+ * for the synthetic return slot. The original-store/original-load
+ * correspondence from RED-3 §6 is preserved because no instruction
+ * crosses a basic-block boundary.
+ *
+ * The detector returns the slot value (`%tS`) if `slot` matches the
+ * pattern; NULL otherwise. The caller can then decide whether to
+ * skip the IR_ALLOCA, SSA-bind the IR_STORE, or skip the IR_LOAD. */
+static IrValue *llOptionW_SyntheticReturnSlotFor(IrFunction *fn, IrValue *slot) {
+    if (!fn || !slot) return NULL;
+    if (slot->kind != IR_VAL_TMP) return NULL;
+    if (!fn->exit_block) return NULL;
+    /* Find the block that carries the store/load/ret pattern for
+     * this synthetic slot. After `irRemoveRedundantBlocks` the
+     * original exit_block may have been folded into a predecessor
+     * (its `instructions` is NULL). The actual store/load/ret
+     * lives in whichever block owns the synthetic return slot's
+     * consumer chain. We scan every block for the pattern. */
+    IrBlock *eb = NULL;
+    listForEach(fn->blocks) {
+        IrBlock *bb = (IrBlock *)it->value;
+        if (!bb || !bb->instructions) continue;
+        int has_ret = 0;
+        listForEach(bb->instructions) {
+            IrInstr *ins = (IrInstr *)it->value;
+            if (ins->op == IR_RET) { has_ret = 1; break; }
+        }
+        if (has_ret) { eb = bb; break; }
+    }
+    if (!eb) return NULL;
+    if (!eb->instructions) return NULL;
+
+    /* The block must end with the three-instruction pattern:
+     *     store %tS, X ; load %tR, %tS ; ret %tR
+     * (the last three instructions of the block, in this exact
+     * order). Earlier instructions are allowed (e.g. an `iadd`
+     * that computes X). The 3-instruction tail is the multi-path
+     * equivalent of the legacy collapse pattern's 2-instruction
+     * shape (load + ret); the store is added because the
+     * synthetic slot cannot be folded into a direct `ret X`
+     * when multiple paths converge. */
+    int n = listCount(eb->instructions);
+    if (n < 3) return NULL;
+
+    IrInstr *st  = irInstrListAtFromHead(eb->instructions, n - 3);
+    IrInstr *ld  = irInstrListAtFromHead(eb->instructions, n - 2);
+    IrInstr *ret = irInstrListAtFromHead(eb->instructions, n - 1);
+    if (!st || !ld || !ret) return NULL;
+    if (st->op != IR_STORE) return NULL;
+    if (ld->op != IR_LOAD)  return NULL;
+    if (ret->op != IR_RET)  return NULL;
+    if (st->dst != slot) return NULL;
+    if (!ld->r1 || ld->r1 != slot) return NULL;
+    if (!ret->dst || ret->dst != ld->dst) return NULL;
+
+    /* The IR_ALLOCA for the slot must exist in the entry block. */
+    IrBlock *entry = (IrBlock *)fn->blocks->next->value;
+    if (!entry) return NULL;
+    if (!entry->instructions) return NULL;
+
+    int saw_alloca = 0;
+    listForEach(entry->instructions) {
+        IrInstr *ins = (IrInstr *)it->value;
+        if (ins->op == IR_ALLOCA && ins->dst == slot) {
+            saw_alloca = 1;
+            break;
+        }
+    }
+    if (!saw_alloca) return NULL;
+
+    /* Each predecessor of the exit block must NOT itself store to
+     * the synthetic slot. (The single store to the slot lives
+     * intra-block in the exit block.) The terminator of each
+     * predecessor may be IR_JMP, IR_BR, or IR_RET; for IR_BR we
+     * also require that at least one of its true/false targets
+     * is the exit block (so the predecessor actually flows here). */
+    Map *preds = irBlockGetPredecessors(fn, eb);
+    if (!preds) return NULL;
+    MapIter *it = mapIterNew(preds);
+    while (mapIterNext(it)) {
+        IrBlock *pb = (IrBlock *)it->node->value;
+        if (pb == eb) continue;
+        if (!pb || !pb->instructions) return NULL;
+        /* The predecessor must not store to the synthetic slot. */
+        listForEach(pb->instructions) {
+            IrInstr *ins = (IrInstr *)it->value;
+            if (ins->op == IR_STORE && ins->dst == slot) return NULL;
+        }
+        /* The predecessor's terminator must flow to eb (either
+         * via IR_JMP or one arm of an IR_BR). */
+        IrInstr *term = irInstrListLast(pb->instructions);
+        if (!term) return NULL;
+        if (term->op == IR_JMP) {
+            if (term->extra.blocks.target_block != eb) return NULL;
+        } else if (term->op == IR_BR) {
+            if (term->extra.blocks.target_block != eb &&
+                term->extra.blocks.fallthrough_block != eb) return NULL;
+        } else {
+            return NULL;
+        }
+    }
+
+    return slot;
+}
+
+/* ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 C6 §2 rule 4:
+ * all reads of V can be lowered directly. */
+static int llOptionW_ReadsAreLowerable(IrFunction *fn, IrValue *v) {
+    if (!fn->blocks || !v) return 0;
+    listForEach(fn->blocks) {
+        IrBlock *bb = (IrBlock *)it->value;
+        List *node = bb->instructions->next;
+        while (node != bb->instructions) {
+            IrInstr *ins = (IrInstr *)node->value;
+            /* Opcodes that never carry a read of V (their dst is a
+             * definition of some other value, or they have no
+             * value operands at all). These are accepted without
+             * further inspection. The default arm catches every
+             * remaining opcode and rejects if it names V as dst,
+             * r1, or r2. */
+            switch (ins->op) {
+                case IR_IADD:
+                case IR_ISUB:
+                case IR_IMUL:
+                case IR_ICMP:
+                case IR_STORE:
+                case IR_RET:
+                case IR_BR:
+                case IR_JMP:
+                    node = node->next;
+                    continue;
+                default:
+                    if (ins->dst == v || ins->r1 == v ||
+                        ins->r2 == v) {
+                        return 0;
+                    }
+                    node = node->next;
+                    continue;
+            }
+        }
     }
     return 1;
 }
 
-/* ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION01: C9 IMPL. Materialise
- * the LLVM entry-block alloca for the recognised P1 slot.
+/* ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 C6 §2 rule 5.
  *
- * MUST be called after llCreateBlocks (so the LLVM entry block
- * exists). MUST NOT mutate lc->bld -- the dedicated entry-block
- * builder is created, positioned, used once, and disposed inside
- * this helper per ACT §6 Q3.3 (C6-normalised placement rule):
+ * V must feed compiler-generated return handling (the V's value
+ * eventually flows into the function's return value), OR V must
+ * match the mechanically-frozen return-local exception (direct
+ * `ret V` after a single-block body, like safe_fwd_single_pred).
+ *
+ * "Feeds return handling" is structurally detected as one of:
+ *   (i)  V is named as the IR_RET dst (direct `ret V`).
+ *   (ii) V is named as r1 by an IR_STORE whose dst is an
+ *        IR_VAL_TMP (the synthetic return slot; this is the
+ *        compiler-generated return-handling store).
+ *   (iii) V is named as r1/r2 by a binary arithmetic opcode
+ *        (IR_IADD / IR_ISUB / IR_IMUL / IR_ICMP) whose result
+ *        is on a chain that reaches the IR_RET or the synthetic
+ *        return-slot store.
+ *
+ * The structural check below implements (i), (ii), and a
+ * conservative forward-reachability check for (iii). The walk
+ * iterates over each block's instruction list; any time V is
+ * named by a binary opcode, the result tmp is added to a work
+ * list. The work list is then drained: each tmp is followed to
+ * its uses (as an operand of subsequent instructions) until a
+ * return-feeding instruction is found OR the walk terminates. */
+static int llOptionW_FeedsReturnOrIsReturnLocal(IrFunction *fn, IrValue *v) {
+    if (!fn->blocks || !v) return 0;
+    int v_reaches_ret = 0;
+    int v_stored_into_ret_slot = 0;
+    int v_on_chain_to_ret = 0;
+    /* First pass: direct return-feeding sites. */
+    /* Collect every IR_VAL_TMP whose definition involves V as an
+     * operand (r1 or r2) of a supported arithmetic/comparison
+     * opcode. We use a linearised list with cap = 32; this is
+     * bounded by the IR's tmp-id space, which is in the tens
+     * for the frozen fixtures. */
+    IrValue *tmp_chain[64];
+    int tmp_chain_n = 0;
+    listForEach(fn->blocks) {
+        IrBlock *bb = (IrBlock *)it->value;
+        List *node = bb->instructions->next;
+        while (node != bb->instructions) {
+            IrInstr *ins = (IrInstr *)node->value;
+            if (ins->op == IR_RET && ins->dst == v) {
+                v_reaches_ret = 1;
+            }
+            if (ins->op == IR_STORE && ins->r1 == v &&
+                ins->dst && ins->dst->kind == IR_VAL_TMP) {
+                v_stored_into_ret_slot = 1;
+            }
+            if ((ins->op == IR_IADD || ins->op == IR_ISUB ||
+                 ins->op == IR_IMUL || ins->op == IR_ICMP) &&
+                ins->dst && ins->dst->kind == IR_VAL_TMP &&
+                (ins->r1 == v || ins->r2 == v) &&
+                tmp_chain_n < (int)(sizeof(tmp_chain) /
+                                    sizeof(tmp_chain[0]))) {
+                tmp_chain[tmp_chain_n++] = ins->dst;
+            }
+            node = node->next;
+        }
+    }
+    /* Second pass: forward-reachability from the collected tmps
+     * to the return-feeding sites. We do a single pass that
+     * follows operand chains. A tmp is on the chain iff it is
+     * (transitively) named by a subsequent IR_STORE/IR_RET as a
+     * source operand (r1) of an IR_STORE whose dst is an
+     * IR_VAL_TMP, or as the dst of IR_RET. */
+    for (int i = 0; i < tmp_chain_n && !v_on_chain_to_ret; ++i) {
+        IrValue *t = tmp_chain[i];
+        listForEach(fn->blocks) {
+            IrBlock *bb = (IrBlock *)it->value;
+            List *node = bb->instructions->next;
+            while (node != bb->instructions) {
+                IrInstr *ins = (IrInstr *)node->value;
+                if (ins->op == IR_RET && ins->dst == t) {
+                    v_on_chain_to_ret = 1;
+                    break;
+                }
+                if (ins->op == IR_STORE && ins->r1 == t &&
+                    ins->dst && ins->dst->kind == IR_VAL_TMP) {
+                    v_on_chain_to_ret = 1;
+                    break;
+                }
+                /* Extend the chain: t is named as an operand of
+                 * another binary opcode. The result tmp inherits
+                 * t's chain-reachability. */
+                if ((ins->op == IR_IADD || ins->op == IR_ISUB ||
+                     ins->op == IR_IMUL || ins->op == IR_ICMP) &&
+                    ins->dst && ins->dst->kind == IR_VAL_TMP &&
+                    (ins->r1 == t || ins->r2 == t) &&
+                    tmp_chain_n < (int)(sizeof(tmp_chain) /
+                                        sizeof(tmp_chain[0]))) {
+                    tmp_chain[tmp_chain_n++] = ins->dst;
+                }
+                node = node->next;
+            }
+            if (v_on_chain_to_ret) break;
+        }
+    }
+    return v_reaches_ret || v_stored_into_ret_slot || v_on_chain_to_ret;
+}
+
+/* ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 C6 §2 rule 6. */
+static int llOptionW_DefiniteAssignment(IrFunction *fn, IrValue *v) {
+    if (!fn->blocks || !v) return 0;
+    listForEach(fn->blocks) {
+        IrBlock *bb = (IrBlock *)it->value;
+        List *node = bb->instructions->next;
+        while (node != bb->instructions) {
+            IrInstr *ins = (IrInstr *)node->value;
+            if ((ins->op == IR_STORE && ins->dst == v) ||
+                ((ins->op == IR_IADD || ins->op == IR_ISUB) &&
+                 ins->dst == v)) {
+                return 1;
+            }
+            node = node->next;
+        }
+    }
+    return 0;
+}
+
+/* ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 C6: Option-W
+ * eligibility classifier. */
+static int llIsOptionWEligible(IrFunction *fn, IrValue *v) {
+    if (!v) return 0;
+    if (!llOptionW_TypeIsI64(v)) return 0;
+    if (!llOptionW_NotAddressTaken()) return 0;
+    if (!llOptionW_DefinitionsAreCaseAorB(fn, v)) return 0;
+    if (!llOptionW_ReadsAreLowerable(fn, v)) return 0;
+    if (!llOptionW_FeedsReturnOrIsReturnLocal(fn, v)) return 0;
+    if (!llOptionW_DefiniteAssignment(fn, v)) return 0;
+    return 1;
+}
+
+/* ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 C6: predicate that
+ * answers "does V require memory backing?" Returns 1 iff V has
+ * multiple definitions (which the legacy SSA path would reject)
+ * OR V matches the §2 rule 5 / 6 mechanically-frozen return-
+ * local exception (direct `ret V`).
+ *
+ * The legacy SSA path (lc->values cache) handles single-def
+ * locals correctly; the Option-W path exists ONLY for locals
+ * that require mem2reg. Misclassifying a single-def local as
+ * Option-W would force a memory round-trip through a slot that
+ * is unnecessary (it would still verify, but it would consume
+ * an entry-block alloca and an extra load/store per use).
+ *
+ * This is the discriminator gate that decides whether the C6
+ * IMPL needs to memory-back V at all. */
+static int llOptionW_RequiresMem2Reg(IrFunction *fn, IrValue *v) {
+    if (!fn->blocks || !v) return 0;
+    int n_defns = 0;
+    int v_reaches_ret_directly = 0;
+    listForEach(fn->blocks) {
+        IrBlock *bb = (IrBlock *)it->value;
+        List *node = bb->instructions->next;
+        while (node != bb->instructions) {
+            IrInstr *ins = (IrInstr *)node->value;
+            /* Count case-(a) and case-(b) definitions. */
+            if (ins->dst == v &&
+                (ins->op == IR_STORE ||
+                 ins->op == IR_IADD ||
+                 ins->op == IR_ISUB)) {
+                n_defns++;
+            }
+            /* Detect the direct `ret V` shape (the §2 rule 5
+             * mechanically-frozen return-local exception). */
+            if (ins->op == IR_RET && ins->dst == v) {
+                v_reaches_ret_directly = 1;
+            }
+            node = node->next;
+        }
+    }
+    /* Two or more reaching definitions = multi-def = requires
+     * mem2reg (or rejection). One reaching definition plus
+     * direct `ret V` also goes through Option-W (the direct
+     * ret exception is explicit in §2 rule 5). Single-def with
+     * no direct ret = legacy SSA path handles it. */
+    return n_defns >= 2 || v_reaches_ret_directly;
+}
+
+/* ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 C6: enumerate every
+ * IR_VAL_LOCAL in the function that REQUIRES memory backing and
+ * classify each under the Option-W discriminator. The first
+ * ineligible V triggers a rejection (AC05: any ineligible V
+ * must be REJECTED with the named diagnostic).
+ *
+ * On success, fills `lc->option_w_slots` with one entry per
+ * eligible V (var.id -> placeholder sentinel; the actual LLVM
+ * alloca is materialised by llMaterializeOptionWSlots below).
+ *
+ * Returns 0 on success, 1 on a first-ineligible-V rejection. */
+static int llClassifyOptionWLocals(IrFunction *fn, LLCtx *lc) {
+    if (!fn->blocks) return 0;
+    listForEach(fn->blocks) {
+        IrBlock *bb = (IrBlock *)it->value;
+        List *node = bb->instructions->next;
+        while (node != bb->instructions) {
+            IrInstr *ins = (IrInstr *)node->value;
+            IrValue *candidates[3] = { ins->dst, ins->r1, ins->r2 };
+            for (int k = 0; k < 3; ++k) {
+                IrValue *v = candidates[k];
+                if (!v || v->kind != IR_VAL_LOCAL) continue;
+                /* Skip single-def locals that don't reach a
+                 * direct ret. The legacy SSA path handles them
+                 * via lc->values. */
+                if (!llOptionW_RequiresMem2Reg(fn, v)) continue;
+                u32 vid = irVarId(v);
+                if (vid < lc->option_w_slots.cap &&
+                    lc->option_w_slots.values[vid] != NULL) {
+                    continue;
+                }
+                if (llIsOptionWEligible(fn, v)) {
+                    /* Reserve the var.id slot in the map; the
+                     * LLVMValueRef is filled in by
+                     * llMaterializeOptionWSlots. Use a non-NULL
+                     * sentinel so the "already classified" test
+                     * above works. */
+                    llvmSet(&lc->option_w_slots, vid,
+                        (LLVMValueRef)(uintptr_t)0x1);
+                } else {
+                    /* Ineligible: REJECT with the named diagnostic. */
+                    fprintf(stderr,
+                        "%s: function %s: mutable local id=%u (line "
+                        "%d) requires memory backing but is not "
+                        "Option-W eligible (the local violates one "
+                        "of the §2 frozen discriminator rules -- "
+                        "type, address-taken, definition opcode "
+                        "outside {IR_STORE, IR_IADD, IR_ISUB}, read "
+                        "envelope, or return-feed invariant). Per "
+                        "AC05 the local is REJECTED rather than "
+                        "silently widened.\n",
+                        LLVM_BACKEND_UNSUPPORTED_OPTION_W_INELIGIBLE,
+                        fn->name->data, vid, ins->line);
+                    llEmitCapabilityCountersOnce(lc->totals);
+                    return 1;
+                }
+            }
+            /* IR_CALL carries its arguments inside an IrValueArray
+             * accessible via ins->r1->as.array.values[i]. An
+             * IR_VAL_LOCAL passed as a call argument is a read
+             * (the value is consumed by the callee). We do NOT
+             * classify call-by-value reads here: a single-def
+             * local that is consumed only by a call argument
+             * does not require memory backing -- the legacy SSA
+             * cache can resolve it from its single IR_STORE.
+             * If V has multiple definitions AND is consumed as
+             * a call argument, the multi-def reject at the
+             * existing IR_STORE handler will fire. */
+            node = node->next;
+        }
+    }
+    return 0;
+}
+
+/* ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 C6: materialise one
+ * LLVM entry-block alloca per Option-W eligible V. The placement
+ * rule is the C6-normalised Q3.3 rule (per CORRECTION01 §6):
  *
  *   - prefer: before the first non-alloca instruction in the
  *     entry block (LLVMPositionBuilderBefore)
  *   - else:  append to end of empty entry block
  *     (LLVMPositionBuilderAtEnd)
- *   - never: after an entry-block terminator
- *   - never: in a non-entry block
  *
- * Stores the LLVMValueRef of the emitted alloca into
- * lc->mem2reg_alloca. Returns 0 on success, 1 on failure. */
-static int llMaterializeLocalSlotAlloca(LLCtx *lc) {
-    if (!lc->local_mem2reg) return 0;
+ * MUST be called AFTER llCreateBlocks so the LLVM entry block
+ * exists; MUST be called BEFORE llLowerBlock on the entry block
+ * so the allocas are visible to the per-block instruction
+ * emitter. */
+static int llMaterializeOptionWSlots(LLCtx *lc) {
     LLVMBasicBlockRef entry = LLVMGetEntryBasicBlock(lc->cur_fn_value);
     if (!entry) {
         fprintf(stderr, "%s: function %s: no LLVM entry block\n",
@@ -736,33 +1107,89 @@ static int llMaterializeLocalSlotAlloca(LLCtx *lc) {
     } else {
         LLVMPositionBuilderAtEnd(alloca_builder, entry);
     }
-    lc->mem2reg_alloca = LLVMBuildAlloca(
-        alloca_builder, LLVMInt64TypeInContext(lc->ctx),
-        "polyc.local.slot");
-    LLVMDisposeBuilder(alloca_builder);
-    if (!lc->mem2reg_alloca) {
-        fprintf(stderr, "%s: function %s: LLVMBuildAlloca returned NULL\n",
-            LLVM_BACKEND_INTERNAL, lc->fn->name->data);
-        return 1;
+    /* For every classified V (option_w_slots entries with a
+     * non-NULL sentinel), emit one LLVMBuildAlloca and overwrite
+     * the sentinel with the real LLVMValueRef. */
+    for (u32 id = 0; id < lc->option_w_slots.cap; ++id) {
+        LLVMValueRef cur = lc->option_w_slots.values[id];
+        if (!cur) continue;
+        char namebuf[64];
+        snprintf(namebuf, sizeof(namebuf),
+                 "polyc.optionw.slot.%u", id);
+        LLVMValueRef slot = LLVMBuildAlloca(
+            alloca_builder, LLVMInt64TypeInContext(lc->ctx), namebuf);
+        if (!slot) {
+            fprintf(stderr,
+                "%s: function %s: LLVMBuildAlloca returned NULL "
+                "for Option-W slot id=%u\n",
+                LLVM_BACKEND_INTERNAL, lc->fn->name->data, id);
+            LLVMDisposeBuilder(alloca_builder);
+            return 1;
+        }
+        lc->option_w_slots.values[id] = slot;
+        lc->option_w_count++;
     }
+    LLVMDisposeBuilder(alloca_builder);
+    lc->option_w_active = (lc->option_w_count > 0);
     return 0;
 }
 
-/* ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION01: C9 IMPL. Run
+/* ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 C6: helper that
+ * returns the entry-block alloca for an Option-W eligible V, or
+ * NULL if V is not Option-W eligible. The check is a simple map
+ * lookup; no CFG walk is required. The sentinel 0x1 is filtered
+ * out so callers only see real LLVM allocas. */
+static LLVMValueRef llOptionWSlotFor(LLCtx *lc, IrValue *v) {
+    if (!lc || !v || v->kind != IR_VAL_LOCAL) return NULL;
+    LLVMValueRef slot = llvmGet(&lc->option_w_slots, irVarId(v));
+    if (slot && (uintptr_t)slot != 0x1) return slot;
+    return NULL;
+}
+
+/* ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 C6: load from V's
+ * entry-block slot at the current builder position. Returns the
+ * loaded i64 LLVMValueRef. The caller MUST have verified that V
+ * is Option-W eligible via llOptionWSlotFor. */
+static LLVMValueRef llEmitOptionWLoad(LLCtx *lc, IrValue *v) {
+    LLVMValueRef slot = llOptionWSlotFor(lc, v);
+    if (!slot) return NULL;
+    /* LLVM 22 C API: LLVMBuildLoad2 takes the element type
+     * explicitly (LLVMBuildLoad without type was removed). */
+    return LLVMBuildLoad2(lc->bld, LLVMInt64TypeInContext(lc->ctx),
+                          slot, "polyc.optionw.load");
+}
+
+/* ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 C6: store `value`
+ * to V's entry-block slot at the current builder position. */
+static void llEmitOptionWStore(LLCtx *lc, IrValue *v, LLVMValueRef value) {
+    LLVMValueRef slot = llOptionWSlotFor(lc, v);
+    if (!slot) return;
+    LLVMBuildStore(lc->bld, value, slot);
+}
+
+/* ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 C6: run
  * LLVMRunPassesOnFunction on the current function with pipeline
- * "mem2reg,verify" (per Q4.1 evidence: the function-level C API is
- * the correct surface for a per-function promotion; same pipeline
- * syntax as opt -passes=mem2reg,verify).
- *
- * MUST be called AFTER all function-body lowering is complete and
- * BEFORE LLVMVerifyModule (per ACT §5 expected lifetime). Consumes
- * the LLVMErrorRef correctly: on success, opts is disposed; on
- * failure, the error message is printed and the error is disposed
- * before returning 1.
- *
- * Returns 0 on success, 1 on failure. */
-static int llRunMem2RegOnFunction(LLCtx *lc) {
-    if (!lc->local_mem2reg) return 0;
+ * "mem2reg,verify" (per Q4.1 evidence: the function-level C API
+ * is the correct surface for a per-function promotion; same
+ * pipeline syntax as opt -passes=mem2reg,verify). This is the
+ * C6 replacement for the predecessor C9 llRunMem2RegOnFunction
+ * helper. LLVM owns PHI placement policy -- iterated dominator
+ * frontiers, NOT predecessor-edge synthesis. */
+static int llRunOptionWMem2Reg(LLCtx *lc) {
+    if (!lc->option_w_active) return 0;
+    /* ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 C6: bypass knob
+     * for evidence capture. Set HCC_NO_MEM2REG=1 in the environment
+     * to skip the mem2reg pass and emit the pre-mem2reg IR (the
+     * entry-block alloca, store at each definition site, load at
+     * each use site). The default behaviour (no env var) runs
+     * mem2reg, which is what every LLVM consumer sees. */
+    if (getenv("HCC_NO_MEM2REG")) {
+        /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: not running mem2reg
+         * is an internal evidence-only path; do NOT increment
+         * any counter (the IR is not yet ready for verification,
+         * but this path is never invoked from a real consumer). */
+        return 0;
+    }
     LLVMPassBuilderOptionsRef opts = LLVMCreatePassBuilderOptions();
     if (!opts) {
         fprintf(stderr, "%s: function %s: LLVMCreatePassBuilderOptions "
@@ -772,12 +1199,12 @@ static int llRunMem2RegOnFunction(LLCtx *lc) {
     LLVMErrorRef err = LLVMRunPassesOnFunction(
         lc->cur_fn_value, "mem2reg,verify", NULL, opts);
     if (err) {
-        /* LLVM 22 C API: LLVMGetErrorMessage CONSUMES the error; only
-         * LLVMDisposeErrorMessage the returned string. */
+        /* LLVM 22 C API: LLVMGetErrorMessage CONSUMES the error;
+         * only LLVMDisposeErrorMessage the returned string. */
         char *msg = LLVMGetErrorMessage(err);
         fprintf(stderr,
-            "%s: function %s: LLVMRunPassesOnFunction(\"mem2reg,verify\") "
-            "failed: %s\n",
+            "%s: function %s: LLVMRunPassesOnFunction("
+            "\"mem2reg,verify\") failed: %s\n",
             LLVM_BACKEND_INTERNAL, lc->fn->name->data,
             msg ? msg : "(null error)");
         if (msg) LLVMDisposeErrorMessage(msg);
@@ -785,45 +1212,6 @@ static int llRunMem2RegOnFunction(LLCtx *lc) {
         return 1;
     }
     LLVMDisposePassBuilderOptions(opts);
-    return 0;
-}
-
-/* ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION01: C9 IMPL. Helper that
- * emits `store <V>, alloca` at the current builder position. Used by
- * the IR_JMP / IR_BR arms to replicate the slot's IR_STORE into each
- * predecessor of the merged-store block. The builder must already be
- * positioned at the END of the predecessor (just before the terminator
- * is emitted). Returns 0 on success, 1 on failure.
- *
- * Forward decls for lower helpers defined below this file region. */
-static LLVMValueRef llLowerValue(LLCtx *lc, IrValue *v);
-static LLVMValueRef llLowerI64Value(LLCtx *lc, IrValue *v);
-
-static int llEmitMem2RegStoreAtPredEnd(LLCtx *lc) {
-    /* The "stored value" at the predecessor's end is whatever the
-     * IR_STORE in the merged-store block would have read: ins->r1
-     * of the IR_STORE in the merged-store block. That value is
-     * saved into lc->mem2reg_store_value when the merged-store
-     * block is lowered (it may run AFTER this predecessor in
-     * topological order -- we save it eagerly so the lookup is
-     * order-independent). */
-    IrValue *store_value = lc->mem2reg_store_value;
-    if (!store_value) {
-        fprintf(stderr,
-            "%s: function %s: mem2reg pred-end store: "
-            "mem2reg_store_value not set\n",
-            LLVM_BACKEND_INTERNAL, lc->fn->name->data);
-        return 1;
-    }
-    LLVMValueRef v = llLowerI64Value(lc, store_value);
-    if (!v) {
-        fprintf(stderr,
-            "%s: function %s: mem2reg pred-end store: could not "
-            "lower stored value\n",
-            LLVM_BACKEND_INTERNAL, lc->fn->name->data);
-        return 1;
-    }
-    LLVMBuildStore(lc->bld, v, lc->mem2reg_alloca);
     return 0;
 }
 
@@ -1090,13 +1478,38 @@ static LLVMValueRef llLowerValue(LLCtx *lc, IrValue *v) {
         return c;
     }
     if (v->kind == IR_VAL_LOCAL) {
+        /* ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 C6: Option-W
+         * eligible mutable locals are read through their entry-block
+         * slot at every ORIGINAL read site. The slot is the
+         * authoritative representation; lc->values[V] is NEVER
+         * authoritative while V is Option-W eligible. This is
+         * exactly the same-site load that the C4.v2 RED-3 evidence
+         * commits for AccDigit bb11 (the case-(b) RHS that reads
+         * V's old value before the add).
+         *
+         * For non-Option-W locals, fall back to the legacy SSA
+         * cache (lc->values) lookup that the bounded I64 spike
+         * already uses. */
+        if (llOptionWSlotFor(lc, v)) {
+            LLVMValueRef loaded = llEmitOptionWLoad(lc, v);
+            if (!loaded) {
+                fprintf(stderr,
+                    "%s: function %s: Option-W slot load for "
+                    "IR_VAL_LOCAL id=%u failed\n",
+                    LLVM_BACKEND_INTERNAL, lc->fn->name->data,
+                    irVarId(v));
+                llEmitCapabilityCountersOnce(lc->totals);
+                exit(1);
+            }
+            return loaded;
+        }
         /* ACT-POLYC-LLVM-SPIKE01-RESUME01-CORRECTION01-RESUME01:
-         * a LOCAL is resolved through its scalar SSA binding
-         * (recorded by a prior IR_STORE). The predecessor spike
-         * pre-allocated an alloca for every local; we don't.
-         * If we reach here without a binding, the local was
-         * read before it was assigned (or its bind never
-         * happened). That is a bounded-spike defect: fail loud. */
+         * a non-Option-W LOCAL is resolved through its scalar SSA
+         * binding (recorded by a prior IR_STORE). The bounded I64
+         * spike pre-allocated an alloca for every local; we don't.
+         * If we reach here without a binding, the local was read
+         * before it was assigned (or its bind never happened).
+         * That is a bounded-spike defect: fail loud. */
         fprintf(stderr,
             "%s: function %s: IR_VAL_LOCAL id=%u read with no "
             "SSA binding (use-before-def, or assigned in a "
@@ -1301,20 +1714,17 @@ static LLVMBasicBlockRef llLowerBlock(LLCtx *lc, IrBlock *b) {
                 continue;
             }
             LL_INC_SUPPORTED(lc);
-            /* ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION01: C9 IMPL.
-             * Before emitting the unconditional br to the IR_JMP
-             * target, emit `store <V_at_pred_end>, alloca` to
-             * replicate the slot IR_STORE into this predecessor. */
-            if (lc->local_mem2reg) {
-                LLVMValueRef probe = llvmGet(&lc->values,
-                    irVarId(lc->mem2reg_store_value));
-                if (probe) {
-                    if (llEmitMem2RegStoreAtPredEnd(lc) != 0) {
-                        llEmitCapabilityCountersOnce(lc->totals);
-                        exit(1);
-                    }
-                }
-            }
+            /* ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 C6: the
+             * C9 predecessor-store synthesis is DELETED. Stores
+             * exist only because a PolyC definition occurred at
+             * the current instruction. An IR_JMP terminator never
+             * carries a synthetic store -- the merged-store block's
+             * load will observe the most-recent definition in the
+             * predecessor chain because the definition emitted its
+             * store at the ORIGINAL definition site (case-a or
+             * case-b), and LLVM mem2reg reconstructs the SSA value
+             * across the predecessor edges at the post-lowering
+             * pass boundary. */
             LLVMBasicBlockRef dst = llbmGet(&lc->blocks, t->id);
             if (!dst) {
                 fprintf(stderr,
@@ -1439,24 +1849,15 @@ static LLVMBasicBlockRef llLowerBlock(LLCtx *lc, IrBlock *b) {
              * (i1 cond path; the i64-cond defensive path above has
              * already exited via lc->defensive_trips++). */
             LL_INC_SUPPORTED(lc);
-            /* ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION01: C9 IMPL.
-             * Before emitting the conditional br, emit
-             * `store <V_at_pred_end>, alloca` so the merged
-             * block sees the per-predecessor value of %l2.
-             * A redundant store on the bb_t=bb3 path is harmless
-             * (bb3 will emit its own store with its own value).
-             * Skip if the stored value is not yet bound in the SSA
-             * cache (multi-def reject case; see IR_JMP). */
-            if (lc->local_mem2reg) {
-                LLVMValueRef probe = llvmGet(&lc->values,
-                    irVarId(lc->mem2reg_store_value));
-                if (probe) {
-                    if (llEmitMem2RegStoreAtPredEnd(lc) != 0) {
-                        llEmitCapabilityCountersOnce(lc->totals);
-                        exit(1);
-                    }
-                }
-            }
+            /* ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 C6: the
+             * C9 predecessor-store synthesis is DELETED. An
+             * IR_BR terminator never carries a synthetic store --
+             * the per-predecessor value of an Option-W eligible V
+             * is observed by the merged-store block's load because
+             * each definition emitted its store at the ORIGINAL
+             * definition site, and LLVM mem2reg reconstructs the
+             * SSA value across the predecessor edges at the post-
+             * lowering pass boundary. */
             LLVMBuildCondBr(lc->bld, cond1, t, f);
             node = next;
             continue;
@@ -1595,46 +1996,60 @@ static LLVMBasicBlockRef llLowerBlock(LLCtx *lc, IrBlock *b) {
                 node = next;
                 continue;
             }
-            LL_INC_SUPPORTED(lc);
-            /* ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION01: C9 IMPL.
-             * Case 3: IR_STORE into the recognised P1 synthetic
-             * return slot (local_mem2reg path). The IR shape after
-             * basic optimisations is:
-             *   bb_merged:
-             *     store slot, %l2  ; V_at_merged_entry = phi of preds
-             *     load; ret
-             * The IR_STORE sits in the MERGED block whose predecessors
-             * carry their own values of %l2 (computed via prior
-             * IR_IADD / IR_STORE). LLVM SSA dominance requires the
-             * stored value's definition to dominate the store's
-             * position; since the merged block's predecessors carry
-             * different values for %l2, the IR_STORE in the merged
-             * block would violate dominance (the iadd-result value
-             * from bb3 doesn't dominate bb4's entry when the path
-             * is bb1->bb4 directly).
-             *
-             * The correct lowering for mem2reg is to REPLICATE the
-             * store in EACH predecessor of the merged block: at each
-             * predecessor's terminator (IR_JMP / IR_BR), emit
-             * `store <V_at_pred_end>, alloca` BEFORE the terminator.
-             * The merged block then contains only the load (and
-             * the IR_RET); mem2reg will build the phi in bb_merged
-             * that consumes those per-predecessor stores.
-             *
-             * The actual emission happens in the IR_JMP / IR_BR
-             * arms via llEmitMem2RegStoreIfTarget (below). Here
-             * we mark this block as the merged-store target and
-             * skip the IR_STORE. */
-            if (lc->local_mem2reg && ins->dst == lc->mem2reg_slot) {
-                if (lc->mem2reg_store_block_id == 0) {
-                    lc->mem2reg_store_block_id = b->id;
-                    /* Save the stored value so predecessor-store
-                     * emission (which runs BEFORE this IR_STORE
-                     * in topological order) can resolve it. */
-                    lc->mem2reg_store_value = ins->r1;
+            /* ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 C6:
+             * synthetic return slot store consumed by the
+             * Option-W forwarder. The IR_STORE r1=X dst=%tS is
+             * the single-definition site of the synthetic slot;
+             * lower r1 (which may itself be an Option-W V whose
+             * read turns into a same-site load from its slot)
+             * and bind the resulting LLVMValueRef to dst in the
+             * SSA cache so the matching IR_LOAD in the same
+             * block returns it. No LLVM instruction is emitted
+             * for the store itself; the synthetic slot is purely
+             * an SSA forwarding point. */
+            if (ins->dst && llOptionW_SyntheticReturnSlotFor(lc->fn, ins->dst)) {
+                LLVMValueRef v = llLowerValue(lc, ins->r1);
+                if (!v) {
+                    fprintf(stderr,
+                        "%s: function %s: IR_STORE into synthetic "
+                        "return slot: could not lower r1\n",
+                        LLVM_BACKEND_INTERNAL, lc->fn->name->data);
+                    llEmitCapabilityCountersOnce(lc->totals);
+                    exit(1);
                 }
-                /* Skip; the store will be replicated at each
-                 * predecessor's terminator. */
+                llvmSet(&lc->values, irDstVarId(ins), v);
+                node = next;
+                continue;
+            }
+            LL_INC_SUPPORTED(lc);
+            /* ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 C6: case
+             * (a) lowering for Option-W eligible V. When V's
+             * IR_STORE target is an Option-W eligible mutable
+             * local, the lowering emits a real LLVM store to the
+             * entry-block alloca at THIS ORIGINAL definition
+             * site. No SSA cache binding is recorded for V; V's
+             * reads are routed through llEmitOptionWLoad which
+             * emits a same-site load from the slot.
+             *
+             * The C9 predecessor-store synthesis is DELETED. A
+             * store exists because a PolyC definition occurred
+             * HERE; there is no successor-driven store and no
+             * terminator-driven store. LLVM's mem2reg pass
+             * reconstructs the SSA value across the predecessor
+             * edges at the post-lowering pass boundary. */
+            if (llOptionWSlotFor(lc, ins->dst)) {
+                LLVMValueRef v = llLowerValue(lc, ins->r1);
+                if (!v) {
+                    fprintf(stderr,
+                        "%s: function %s: IR_STORE case-(a): could "
+                        "not lower RHS for Option-W slot\n",
+                        LLVM_BACKEND_INTERNAL, lc->fn->name->data);
+                    llEmitCapabilityCountersOnce(lc->totals);
+                    exit(1);
+                }
+                llEmitOptionWStore(lc, ins->dst, v);
+                /* Do NOT update lc->values[ins->dst] -- the slot
+                 * is the authoritative representation of V. */
                 node = next;
                 continue;
             }
@@ -1775,33 +2190,40 @@ static LLVMBasicBlockRef llLowerBlock(LLCtx *lc, IrBlock *b) {
                 exit(1);
             }
             LL_INC_SUPPORTED(lc);
-            /* ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION01: C9 IMPL.
-             * IR_LOAD from the recognised P1 synthetic return slot
-             * (local_mem2reg path). Emit a real LLVMBuildLoad of
-             * i64 from lc->mem2reg_alloca and bind ins->dst's
-             * var.id to the loaded value. The exit block's IR_RET
-             * (which references this load's tmp) then resolves
-             * via the SSA cache and produces the expected
-             * `ret <loaded i64>`. After mem2reg runs, the load is
-             * replaced by the phi in the natural successor block.
-             *
-             * MUST come BEFORE the legacy `lc->collapsed &&
-             * ins->dst->kind == IR_VAL_TMP` skip below, because
-             * for the legacy-folded-away case the load's dst IS
-             * IR_VAL_TMP (the load result tmp `%t10`), and the
-             * legacy skip would silently drop it. The P1 path
-             * must win. */
-            if (lc->local_mem2reg && ins->r1 == lc->mem2reg_slot) {
-                /* LLVM 22 C API: LLVMBuildLoad2 takes the
-                 * element type explicitly (LLVMBuildLoad without
-                 * type was removed). */
-                LLVMValueRef v = LLVMBuildLoad2(lc->bld,
-                    LLVMInt64TypeInContext(lc->ctx),
-                    lc->mem2reg_alloca, "polyc.local.load");
+            /* ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 C6:
+             * synthetic return slot load under Option-W. This
+             * check is BEFORE the legacy collapse branch because
+             * `lc->collapsed` may be set (when the original
+             * exit_block was folded by `irRemoveRedundantBlocks`)
+             * even though the synthetic return slot is still
+             * alive in the IR. The Option-W path forwards the
+             * value from the SSA cache (populated by the matching
+             * IR_STORE earlier in the same block) to the
+             * IR_LOAD's dst so the following IR_RET can read it. */
+            if (ins->r1 && llOptionW_SyntheticReturnSlotFor(lc->fn, ins->r1)) {
+                LLVMValueRef v = llvmGet(&lc->values, irVarId(ins->r1));
+                if (!v) {
+                    fprintf(stderr,
+                        "%s: function %s: IR_LOAD from synthetic "
+                        "return slot: slot value not bound in SSA cache\n",
+                        LLVM_BACKEND_INTERNAL, lc->fn->name->data);
+                    llEmitCapabilityCountersOnce(lc->totals);
+                    exit(1);
+                }
                 llvmSet(&lc->values, irDstVarId(ins), v);
                 node = next;
                 continue;
             }
+            /* ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 C6: the
+             * CORRECTION01 C9 IR_LOAD-of-slot branch is DELETED.
+             * The C6 architecture does not memory-back the
+             * synthetic return slot -- instead, every original
+             * read of an Option-W eligible V is lowered as a
+             * same-site load via llEmitOptionWLoad at the point
+             * where the read occurs (in llLowerValue's IR_VAL_LOCAL
+             * branch). The IR_LOAD of the synthetic return slot
+             * remains an SSA bind in the legacy collapse path; the
+             * Option-W path does not generate any IR_LOAD for V. */
             if (lc->collapsed && ins->dst->kind == IR_VAL_TMP) {
                 /* return-slot load in collapsed exit block;
                  * the result is unused (the predecessor already
@@ -1840,21 +2262,40 @@ static LLVMBasicBlockRef llLowerBlock(LLCtx *lc, IrBlock *b) {
                 node = next;
                 continue;
             }
-            LL_INC_SUPPORTED(lc);
-            /* ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION01: C9 IMPL.
-             * The recognised P1 synthetic return slot's IR_ALLOCA
-             * was already materialised at function entry (see
-             * llMaterializeLocalSlotAlloca). Skip here; the
-             * IR_ALLOCA capability-class REJECTED counter is NOT
-             * incremented (this path is SUPPORTED via the C9 IMPL,
-             * not REJECTED via the legacy capability contract --
-             * the capability table still classifies IR_ALLOCA as
-             * REJECTED, but the C9 IMPL carves out this single
-             * bounded bypass for the recognised P1 slot). */
-            if (lc->local_mem2reg && ins->dst == lc->mem2reg_slot) {
+            /* ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 C6: the
+             * Option-W path encounters the synthetic return slot
+             * pattern when `irForwardReturnSlot` could not fold the
+             * per-path return-via-slot into a direct `ret` (because
+             * multiple CFG paths converge in the exit block). In
+             * this case the IR carries an IR_ALLOCA in the entry
+             * block whose dst is an IR_VAL_TMP that is consumed by
+             * exactly one IR_STORE + IR_LOAD + IR_RET in the exit
+             * block. The slot has a single definition site and a
+             * single use site, so it can be lowered as a pure SSA
+             * forwarding point (no LLVM alloca / store / load
+             * emitted). The pattern is detected by
+             * llOptionW_SyntheticReturnSlotFor; if it matches, the
+             * IR_ALLOCA is a no-op. */
+            if (ins->dst && llOptionW_SyntheticReturnSlotFor(lc->fn, ins->dst)) {
+                LL_INC_SUPPORTED(lc);
+                /* dead; synthetic slot is purely an SSA
+                 * forwarding point under Option-W. */
                 node = next;
                 continue;
             }
+            LL_INC_SUPPORTED(lc);
+            /* ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 C6: the
+             * C9 IR_ALLOCA-skip branch is DELETED. The CORRECTION02
+             * architecture does not consume any IR_ALLOCA from the
+             * neutral IR for Option-W eligible Vs; the entry-block
+             * allocas are materialised directly by
+             * llMaterializeOptionWSlots (one per eligible V). If
+             * an IR_ALLOCA reaches this point under C6, it is
+             * either the legacy collapse-elimination slot (handled
+             * above) or an unexpected alloca that the C6
+             * discriminator has already rejected. The conservative
+             * behavior is to fall through to the structural
+             * rejection below. */
             fprintf(stderr,
                 "%s: function %s: unexpected IR_ALLOCA "
                 "(this spike is SSA-only and does not allocate "
@@ -1936,15 +2377,28 @@ static LLVMValueRef llLowerBinaryOperand(LLCtx *lc, IrValue *v,
 static LLVMValueRef llLowerInstr(LLCtx *lc, IrInstr *ins) {
     switch (ins->op) {
         case IR_IADD:
-        case IR_ISUB:
-        case IR_IMUL: {
+        case IR_ISUB: {
             /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: SUPPORTED arithmetic.
              *
              * ACT-POLYC-LLVM-BYTE-MEMORY01: when an I8 char literal is
              * one operand and the other is a byte-promoted I64, the
              * arithmetic is performed at i8 level (both operands
              * narrowed to i8) and the result widened back to i64 for
-             * the I64 dst. See `llLowerBinaryOperand` for rationale. */
+             * the I64 dst. See `llLowerBinaryOperand` for rationale.
+             *
+             * ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 C6: case
+             * (b) lowering for Option-W eligible V. When V is the
+             * dst of an IR_IADD / IR_ISUB, the add/sub is computed
+             * at THIS ORIGINAL definition site (any self-referential
+             * read of V obtains its value through llEmitOptionWLoad
+             * via llLowerValue's IR_VAL_LOCAL branch) and the
+             * result is stored to V's entry-block slot. No SSA
+             * cache binding is recorded for V.
+             *
+             * The C9 predecessor-store synthesis is DELETED. A
+             * store exists because a PolyC definition occurred
+             * HERE; there is no successor-driven store and no
+             * terminator-driven store. */
             LL_INC_SUPPORTED(lc);
             if (!llTypeSupported(ins->dst->type)) {
                 llErrUnsupportedType(ins->dst, lc->fn, "i64-arith dst");
@@ -1955,8 +2409,45 @@ static LLVMValueRef llLowerInstr(LLCtx *lc, IrInstr *ins) {
             LLVMValueRef b = llLowerBinaryOperand(lc, ins->r2, i8_pair);
             LLVMValueRef r;
             if (ins->op == IR_IADD) r = LLVMBuildAdd(lc->bld, a, b, "");
-            else if (ins->op == IR_ISUB) r = LLVMBuildSub(lc->bld, a, b, "");
-            else r = LLVMBuildMul(lc->bld, a, b, "");
+            else r = LLVMBuildSub(lc->bld, a, b, "");
+            if (i8_pair && ins->dst->type == IR_TYPE_I64) {
+                /* Widen the i8 result back to i64 for the I64 dst.
+                 * Use ZExt (unsigned-byte convention). */
+                r = LLVMBuildZExt(lc->bld, r,
+                    LLVMInt64TypeInContext(lc->ctx), "i8_arith_zext");
+            }
+            /* case-(b): if dst is an Option-W eligible V, store the
+             * result to V's slot at the original definition site. */
+            if (llOptionWSlotFor(lc, ins->dst)) {
+                llEmitOptionWStore(lc, ins->dst, r);
+                /* Return NULL so the caller does NOT cache r into
+                 * lc->values[ins->dst]. The slot is the
+                 * authoritative representation. */
+                return NULL;
+            }
+            return r;
+        }
+        case IR_IMUL: {
+            /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: SUPPORTED arithmetic.
+             *
+             * ACT-POLYC-LLVM-BYTE-MEMORY01: see IR_IADD arm.
+             *
+             * ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 C6:
+             * IMUL dsts are NOT in the frozen CASE_B_OPCODE_SET
+             * ({iadd, isub} per C3). An IR_IMUL whose dst is a
+             * mutable local is INELIGIBLE for Option-W; the
+             * classifier already rejected such V during
+             * llClassifyOptionWLocals. The IR_IMUL arm here does
+             * NOT emit a case-(b) store; it lowers normally. */
+            LL_INC_SUPPORTED(lc);
+            if (!llTypeSupported(ins->dst->type)) {
+                llErrUnsupportedType(ins->dst, lc->fn, "i64-arith dst");
+                exit(1);
+            }
+            int i8_pair = llIsI8Const(ins->r1) || llIsI8Const(ins->r2);
+            LLVMValueRef a = llLowerBinaryOperand(lc, ins->r1, i8_pair);
+            LLVMValueRef b = llLowerBinaryOperand(lc, ins->r2, i8_pair);
+            LLVMValueRef r = LLVMBuildMul(lc->bld, a, b, "");
             if (i8_pair && ins->dst->type == IR_TYPE_I64) {
                 /* Widen the i8 result back to i64 for the I64 dst.
                  * Use ZExt (unsigned-byte convention). */
@@ -2629,6 +3120,14 @@ static int llFunction(IrProgram *prog, IrFunction *fn, LLVMContextRef ctx,
     lc.bld = LLVMCreateBuilderInContext(ctx);
     llvmInit(&lc.values, 1024);
     llbmInit(&lc.blocks, 1024);
+    /* ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 C6: the
+     * Option-W slot map starts empty; llClassifyOptionWLocals
+     * fills it lazily for every IR_VAL_LOCAL that names a
+     * non-Option-W-eligible target. The per-map free path is in
+     * the LLCtx teardown at the bottom of llFunction. */
+    llvmInit(&lc.option_w_slots, 1024);
+    lc.option_w_count = 0;
+    lc.option_w_active = 0;
     /* ACT-POLYC-LLVM-SPIKE01-RESUME01-CORRECTION01-RESUME01-CORRECTION01:
      * local_defs is a flat u8 bitmap keyed by ir.id; u8 is enough for
      * the presence bit. Allocated lazily on first IR_STORE. */
@@ -2653,66 +3152,24 @@ static int llFunction(IrProgram *prog, IrFunction *fn, LLVMContextRef ctx,
      * SSA bindings are recorded into lc.values as IR_STORE / IR_RET
      * (etc.) lower. */
 
-    /* ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION01: C9 IMPL. After
-     * blocks exist, attempt to recognise the P1 synthetic return
-     * slot (see llRecognizeLocalMem2Reg for the discriminator).
-     * On match, materialise the LLVM entry-block alloca via the
-     * dedicated builder (Q3.3 placement rule). The IR_ALLOCA arm
-     * below will then SKIP the synthetic IR_ALLOCA (already
-     * materialised), and the IR_STORE / IR_LOAD arms will emit
-     * real LLVM memory ops. llRunMem2RegOnFunction below will
-     * promote them to SSA.
-     *
-     * The mem2reg path applies when the legacy collapse path does
-     * not: either the collapse detector returns 0 (multi-pred
-     * reject) OR the collapse detector returns 1 with slot=NULL
-     * (exit block folded away). The legacy collapse path
-     * (dcr == 1 && slot != NULL) means the IR is already
-     * collapse-eligible and the existing spike handles it via
-     * llCollapseStoreValue -- we leave that path untouched. */
-    if (!lc.collapsed && fn->exit_block) {
-        if (!llRecognizeLocalMem2Reg(fn, &lc)) {
-            fprintf(stderr,
-                "%s: function %s: return shape not collapsible "
-                "and not a recognised P1 local-mem2reg candidate "
-                "(every I64 function must end in collapse-eligible "
-                "shape OR satisfy the C9 P1 discriminator)\n",
-                LLVM_BACKEND_UNSUPPORTED_IR, fn->name->data);
-            llEmitCapabilityCountersOnce(lc.totals);
-            return 1;
-        }
-        if (llMaterializeLocalSlotAlloca(&lc) != 0) {
-            llEmitCapabilityCountersOnce(lc.totals);
-            return 1;
-        }
-    } else if (lc.collapsed && !lc.collapse_slot && fn->exit_block) {
-        /* legacy-folded-away case: dcr returned 1 with slot=NULL
-         * (the exit block was folded into its predecessor and its
-         * instructions are NULL). The synthetic slot is still alive
-         * in the merged predecessor block (store; load; ret shape);
-         * the legacy spike path leaves it untouched, which then
-         * triggers the IR_ALLOCA / IR_STORE rejection at the
-         * per-block level. The C9 IMPL recognises this as a
-         * mem2reg candidate. */
-        if (llRecognizeLocalMem2Reg(fn, &lc)) {
-            if (llMaterializeLocalSlotAlloca(&lc) != 0) {
-                llEmitCapabilityCountersOnce(lc.totals);
-                return 1;
-            }
-            /* Disable the legacy dead_exit block creation: the
-             * folded-away exit block's instructions are NULL, and
-             * llCreateBlocks already created a dead_exit LLVM block
-             * for it. That dead block is unreachable from the
-             * function entry (it has no predecessors in the LLVM
-             * IR after folding), but it sits at the end of the
-             * function. mem2reg on the function will leave it
-             * untouched (it has no alloca/store/load to promote).
-             * However the dead_exit block contains an `unreachable`
-             * terminator -- if the verifier runs across the dead
-             * exit, it should accept an unreachable terminator with
-             * no predecessors. We tolerate this by leaving it; the
-             * legacy dead_exit arm is a no-op for mem2reg purposes. */
-        }
+    /* ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 C6: classify every
+     * IR_VAL_LOCAL under the §2 frozen discriminator BEFORE any
+     * per-block instruction is lowered. The first ineligible V
+     * triggers a rejection (AC05); the IMPL MUST NOT silently
+     * lower ineligible Vs through a widened path. */
+    if (llClassifyOptionWLocals(fn, &lc) != 0) {
+        llEmitCapabilityCountersOnce(lc.totals);
+        return 1;
+    }
+    /* ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 C6: materialise
+     * the entry-block allocas for every classified V. The
+     * placement rule is the C6-normalised Q3.3 rule (per
+     * CORRECTION01 §6): prefer before the first non-alloca
+     * instruction in the entry block, else append to end of empty
+     * entry block. */
+    if (llMaterializeOptionWSlots(&lc) != 0) {
+        llEmitCapabilityCountersOnce(lc.totals);
+        return 1;
     }
 
     List *node = fn->blocks->next;
@@ -2725,15 +3182,16 @@ static int llFunction(IrProgram *prog, IrFunction *fn, LLVMContextRef ctx,
         node = next;
     }
 
-    /* ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION01: C9 IMPL. After
-     * all blocks are lowered, run mem2reg on this function (if the
-     * P1 path is active). Must happen BEFORE LLVMVerifyModule in
-     * llvmEmitProgram so the verifier sees the post-mem2reg IR. */
-    if (lc.local_mem2reg) {
-        if (llRunMem2RegOnFunction(&lc) != 0) {
-            llEmitCapabilityCountersOnce(lc.totals);
-            return 1;
-        }
+    /* ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 C6: after all
+     * blocks are lowered, run mem2reg on this function (if any
+     * Option-W eligible V was classified and materialised). Must
+     * happen BEFORE LLVMVerifyModule in llvmEmitProgram so the
+     * verifier sees the post-mem2reg IR. LLVM's mem2reg owns
+     * PHI placement policy (iterated dominator frontiers); the
+     * C9 predecessor-edge synthesis is DELETED. */
+    if (llRunOptionWMem2Reg(&lc) != 0) {
+        llEmitCapabilityCountersOnce(lc.totals);
+        return 1;
     }
 
     /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: aggregate this function's
@@ -2750,6 +3208,7 @@ static int llFunction(IrProgram *prog, IrFunction *fn, LLVMContextRef ctx,
     free(lc.values.values);
     free(lc.blocks.values);
     free(lc.local_defs);
+    free(lc.option_w_slots.values);
     return 0;
 }
 
