@@ -1,0 +1,55 @@
+C6.2 boundary interpretation: requiresMem2Reg policy
+====================================================
+
+The c6.1 commit (a640357) reported an incorrect interpretation of
+the requiresMem2Reg boundary. The CORRECT interpretation per the
+real C6 production compiler output is:
+
+  llOptionW_RequiresMem2Reg(local) = (n_defns >= 2) || v_reaches_ret_directly
+
+  if RequiresMem2Reg -> Option-W memory-backed (alloca + stores +
+    loads), promoted away by mem2reg.
+  if !RequiresMem2Reg -> legacy SSA path. For direct-ret shapes,
+    the synthetic return slot (llOptionW_SyntheticReturnSlotFor)
+    forwards the value; for non-direct-ret shapes, raw SSA values
+    flow to the consumer instruction without any alloca.
+
+Three real fixtures prove this boundary empirically:
+
+  (1) safe_fwd_single_pred.HC -> single-def + direct-ret
+      Real pre-mem2reg IR:
+        %polyc.optionw.slot.6 = alloca i64
+        store i64 %1, ptr %polyc.optionw.slot.6
+        %polyc.optionw.load = load i64, ptr %polyc.optionw.slot.6
+        ret i64 %polyc.optionw.load
+      RequiresMem2Reg = TRUE (direct-ret arm).
+      Post-mem2reg IR has no alloca, no slot ops:
+        %ld_deref = load i64, ptr %0
+        %1 = add i64 %ld_deref, 1
+        ret i64 %1
+      The synthetic return slot was forwarded as a pure SSA
+      forwarder; mem2reg promoted the alloca away.
+
+  (2) red_local_multi_def.HC :: y -> multi-def + non-direct-ret
+      Real pre-mem2reg IR shows 2 stores to slot.9 (bb1 case-b
+      default + bb3 case-a) and 1 load (bb4 read).
+      RequiresMem2Reg = TRUE (multi-def arm).
+      Post-mem2reg IR has an iterated-DF PHI at bb4:
+        %polyc.optionw.slot.9.0 = phi i64 [ %0, %bb3 ], [ %1, %bb1 ]
+
+  (3) red_local_multi_def.HC :: x -> single-def + non-direct-ret
+      Real pre-mem2reg IR has NO alloca for x; the add reads %0
+      directly as a raw SSA value:
+        %4 = add i64 %0, %polyc.optionw.load
+      RequiresMem2Reg = FALSE.
+      Post-mem2reg IR keeps %0 as raw SSA throughout:
+        %4 = add i64 %0, %polyc.optionw.slot.9.0
+
+Therefore the actual boundary test is the (x,y) contrast inside
+MultiDef, with safe_fwd_single_pred serving as the positive
+direct-return arm. The c6.1 report's claim that safe_fwd_single_pred
+demonstrates "single-def non-direct-ret legacy SSA" was incorrect.
+
+Boundary interpretation = PASS (verified against committed real IR
+in evidence/.../c6.2/safe_fwd_single_pred.HC.pre-mem2reg.real.ll and
+evidence/.../c6.2/red_local_multi_def.HC.pre-mem2reg.real.ll).

@@ -1,0 +1,50 @@
+C6.2 residue notes
+==================
+
+UNRELATED TO C6.2 / CORRECTION02:
+
+  (1) llvm-spike-contract-check.sh fails on neg_pointer.HC:
+      The fixture file was deleted in commit 6d188c1 (long
+      before C6.1). The contract-check harness still references
+      it. This is pre-existing residue, NOT a CORRECTION02
+      conservation gate.
+
+      CORRECTION02 conservation gates (per ACT contract):
+        - git diff --check            rc=0
+        - make clean && make          rc=0
+        - llvm-spike-test             18/0
+        - factory-closure-status      PASS
+        - factory-append-only-test    PASS
+        - ir-return-slot-forwarding01 6/0
+        - harness-evidence-isolation  PASS (with HCC_INSTALL_DIR)
+        - C9 remove-list absence      no matches in code
+
+      llvm-spike-contract-check.sh is NOT in the conservation
+      gate list, so neg_pointer.HC is unrelated residue.
+
+  (2) harness-evidence-isolation-test.sh fails on
+      `make llvm-spike-test` without HCC_INSTALL_DIR:
+      The Makefile target doesn't pass HCC_INSTALL_DIR. This is
+      pre-existing infrastructure debt, not a CORRECTION02 defect.
+
+C6.1-SPECIFIC RESIDUE (fixed by C6.2):
+
+  (P0-1) capture.sh was a false-GREEN producer with unconditional
+         `exit 0`. Fixed: c6.2/capture.sh uses validate_row()
+         helper and gates exit on [ "$FAIL" -eq 0 ].
+
+  (P0-2) Boundary interpretation was wrong for safe_fwd_single_pred.
+         Fixed: c6.2/boundary-interpretation.real.txt documents
+         the correct shape (single-def+direct-ret+OptionW) and the
+         x/y contrast inside MultiDef.
+
+  (P1)   six-fixture-matrix.real.txt had 7 trailing-whitespace
+         lines (14 diagnostics under `git diff --check`). Fixed:
+         c6.2/six-fixture-matrix.real.txt has no trailing
+         whitespace.
+
+  (P1)   "mem2reg idempotent" was an overclaim. Fixed: c6.2
+         authoritative wording is "second mem2reg pass succeeds
+         and preserves verifier-valid semantics". The idem_eq
+         column records normalized-textual equality as a
+         mechanical measurement, NOT as a fail criterion.
