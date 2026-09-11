@@ -1,0 +1,21 @@
+=== proof 1: all-good geometry ===
+capture.sh rc = 0
+
+TOTAL=7 PASS=7 FAIL=0
+
+=== proof 2: seeded-failure self-test branch ===
+capture.sh (self-test mode) rc = 0
+self-test: validate_row seeded-failure->FAIL and all-good->PASS rc=0
+
+=== proof 3: injected FAIL row (neg-test) ===
+capture.sh (neg-test mode) rc = 1
+
+TOTAL=7 PASS=0 FAIL=7
+neg-test: FAIL>0 -> exit 1 (verdict channel real)
+
+=== proof 4: exit-predicate audit ===
+found: [ "$FAIL" -eq 0 ]
+
+=== verdict channel proof ===
+verdict channel:  real
+false-green possible = NO
