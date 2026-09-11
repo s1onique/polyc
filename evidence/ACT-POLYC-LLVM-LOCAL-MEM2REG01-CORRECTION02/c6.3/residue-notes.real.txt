@@ -1,0 +1,42 @@
+C6.3 residue notes
+==================
+
+Carried from C6.2 residue-notes.real.txt (F14):
+
+P2 — llvm-spike-contract-check fails on neg_pointer.HC
+------------------------------------------------------
+The contract check expects a fixture at
+src/tests/llvm-spike/neg_pointer.HC. That fixture was deleted
+in commit 6d188c1 (long before C6.1/C6.2/C6.3). The contract
+harness was not updated when the fixture was removed.
+
+This is a pre-existing failure, NOT a CORRECTION02 conservation
+gate. The contract check is not run by any of the closures
+above. NOT blocking C6.3 or C7.
+
+P2 — harness-evidence-isolation-test requires HCC_INSTALL_DIR
+-------------------------------------------------------------
+`make llvm-spike-test` does not propagate HCC_INSTALL_DIR into
+the test subprocess. Running the harness without HCC_INSTALL_DIR
+fails because the test library is not found. Running with
+HCC_INSTALL_DIR set passes.
+
+This is a Makefile plumbing issue, NOT a CORRECTION02
+conservation gate. The conservation gate above is the
+harness-evidence-isolation-test RESULT with the env var set,
+which is PASS.
+
+P2 — historical C6.1 trailing-whitespace matrix
+-----------------------------------------------
+The c6.1/six-fixture-matrix.real.txt has 7 trailing-whitespace
+lines (14 diagnostics under `git diff --check a06a6f5 a640357`).
+Per F14, c6.1 is preserved unchanged. The new authoritative
+closure matrix is c6.3/six-fixture-matrix.real.txt, generated
+without trailing whitespace.
+
+P2 — historical c6.2 idem_rc informational metric
+------------------------------------------------
+c6.2 captured idem_rc as informational. c6.3 demotes idem_rc
+to a mandatory fail criterion. c6.2 is preserved unchanged.
+
+C6.3 itself introduces no new residue.

@@ -1,0 +1,79 @@
+C6.3 boundary interpretation
+===========================
+
+The c6.3 boundary interpretation is identical to c6.2 and is
+carried forward unchanged. This document restates it for
+self-containment; c6.2/boundary-interpretation.real.txt remains
+the authoritative source-of-record per F14.
+
+Reference: ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 §2
+discriminator (RequiresMem2Reg) and §3 architectural contract.
+
+What `RequiresMem2Reg` actually means
+-------------------------------------
+
+A node carries Option-W semantics iff its lowering emits
+`%polyc.optionw.slot.N = alloca i64; store i64 V, ptr %slot.N;
+... load i64, ptr %slot.N` for the same logical variable. The
+LLVM backend's C6 IMPL (§2 discriminator) tags every Option-W
+alloca with the `polyc.optionw.slot.N` symbol prefix, so a
+single grep identifies Option-W memory sites.
+
+Real pre-mem2reg IR for safe_fwd_single_pred
+--------------------------------------------
+
+See c6.3/safe_fwd_single_pred.HC.pre-mem2reg.real.ll. The
+fixture is:
+
+  single-def + DIRECT-RETURN + Option-W memory-backed
+
+Verbatim from committed IR:
+
+  %polyc.optionw.slot.6 = alloca i64
+  store i64 %1, ptr %polyc.optionw.slot.6
+  %polyc.optionw.load = load i64, ptr %polyc.optionw.slot.6
+  ret i64 %polyc.optionw.load
+
+This is the canonical case where the entry-block alloca +
+store + ret-load pattern allows mem2reg to promote %0 to a
+PHI-free SSA register that the ret reads directly.
+
+The c6.1 report incorrectly described this fixture as
+"single-def + non-direct-ret + legacy SSA". That description
+is wrong. c6.2 corrected it. c6.3 carries the correction.
+
+Real pre-mem2reg IR for red_local_multi_def
+-------------------------------------------
+
+See c6.3/red_local_multi_def.HC.pre-mem2reg.real.ll. The
+fixture is:
+
+  MultiDef::x:  single-def + non-direct-ret + legacy SSA
+                (NO alloca; add reads %0 directly as raw SSA)
+  MultiDef::y:  multi-def + Option-W memory-backed
+                (1 alloca, 2 stores, 1 load;
+                 mem2reg inserts iterated-DF PHI at bb4)
+
+The x/y contrast exercises the discriminator's boundary
+directly: x carries the legacy SSA form (no slot emission,
+no mem2reg need); y carries Option-W memory form (slot +
+stores + load, mem2reg required).
+
+Shape column in c6.3/six-fixture-matrix.real.txt
+------------------------------------------------
+
+Each row's `shape=` column records the actual boundary shape
+that fixture exercises in the C6 architectural sense:
+
+  safe_fwd_single_pred : single-def+direct-ret+OptionW
+  single_cond_probe    : multi-def+OptionW
+  i64_collapse_probe   : multi-def+OptionW
+  pos_b0_compare_digit : multi-def+OptionW(2V)         (2 vars)
+  nc_p01_predecessor_paths : multi-def+OptionW
+  Diamond              : multi-def+OptionW
+  red_local_multi_def  : mixed:y=multi-def+OptionW;
+                              x=single-def+legacySSA
+
+These match the c6.2 shape classification column, which
+matches the corrected interpretation recorded in
+c6.2/boundary-interpretation.real.txt.

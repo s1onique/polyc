@@ -1,0 +1,85 @@
+C6.3 verdict summary
+====================
+
+ENTRY_HEAD:     d90de7e (C6.2 evidence-integrity)
+C6_3_COMMIT:    <set by commit object; see git log -1 HEAD after C6.3>
+FINAL_HEAD:     <set by commit object>
+
+P0-3 (idem_rc bound to row verdict):
+  c6.2 capture.sh recorded idem_rc but did not fail the row when
+  idem_rc != 0. c6.3 fixes this: validate_row() now takes idem_rc
+  as a mandatory predicate. The mandatory row criteria are now:
+    pre_rc == 0
+    post_rc == 0
+    verify_rc == 0
+    idem_rc == 0     <-- added in c6.3
+    stores_per_alloca != TOO_FEW
+    synth_store_count == 0
+
+P0-3 evidence producer (verdict channel proofs):
+  proof 1: all-good geometry     : capture.sh rc = 0  (PASS=7 FAIL=0)
+  proof 2: seeded pre_rc failure : capture.sh (self-test) rc = 0
+                                   (validate_row(1,0,0,0,OK,0) -> FAIL)
+  proof 3: injected FAIL row     : capture.sh (neg-test) rc = 1
+                                   (FAIL=7, propagates to exit)
+  proof 4: seeded idem failure   : capture.sh (idem-test) rc = 0
+                                   (validate_row(0,0,0,99,OK,0) -> FAIL
+                                    with reason "idem_rc=99")
+  proof 5: exit-predicate audit  : [ "$FAIL" -eq 0 ] found in source
+
+  false-green possible = NO
+
+  All four proofs use the SAME validate_row() function that the
+  production row-criterion uses. Production fixtures are NOT
+  modified.
+
+P0-3 evidence producer (success-case metrics):
+  success case rc        = 0  (all 7 fixtures PASS)
+  seeded idem failure    = FAIL row with reason "idem_rc=99"
+  seeded idem failure rc = 0  (validate_row emits FAIL, capture exits 0)
+  full injected FAIL rc  = 1  (capture exits non-zero)
+
+  No code path produces rc=0 when a row is FAIL.
+
+RequiresMem2Reg (UNCHANGED from c6.2):
+  safe_fwd_single_pred = single-def + direct-ret + OptionW
+  MultiDef::x          = single-def + non-direct-ret + legacy SSA
+  MultiDef::y          = multi-def + OptionW
+  boundary interpretation = PASS
+  (see c6.3/boundary-interpretation.real.txt)
+
+Idempotence claim (UNCHANGED from c6.2):
+  authoritative wording   = "second mem2reg pass succeeds and
+                            preserves verifier-valid semantics"
+  normalized equality     = informational only (NOT a fail criterion)
+  mechanical measurement  = idem_eq=NORM_IDENTICAL for all 7 fixtures
+                            (textual diff modulo ModuleID/source_filename
+                             metadata)
+  mechanical predicate    = idem_rc (the SECOND opt invocation's
+                            exit status) IS a fail criterion
+
+Patch hygiene:
+  historical C6.1 range a06a6f5..a640357 = FAIL (14 trailing-whitespace
+                            diagnostics; F14 preserves historical fact)
+  C6.2 cumulative range a640357..d90de7e = PASS
+  C6.3 range             = <set by commit object>
+
+CORRECTION02 conservation gates:
+  git diff --check                = PASS
+  make clean && make llvm-all     = PASS
+  llvm-spike-test                 = 18/0 PASS
+  llvm-byte-memory01-test         = 37/0 PASS
+  llvm-intops01-test              = 4/0 PASS
+  factory-closure-status          = PASS (PAIR_FAIL=0)
+  factory-append-only-test        = 11/0 PASS
+  ir-return-slot-forwarding01-test = 6/0 PASS
+  harness-evidence-isolation-test = PASS (with HCC_INSTALL_DIR)
+  C9 remove-list absence          = no matches in code
+
+Unrelated residue (NOT blocking C6.3, carried from C6.2):
+  llvm-spike-contract-check fails on neg_pointer.HC (file deleted
+    in 6d188c1, pre-existing)
+  harness-evidence-isolation-test fails on `make llvm-spike-test`
+    without HCC_INSTALL_DIR (Makefile doesn't pass env, pre-existing)
+
+C7_CLOSE_AUTH = <set by C7 CLOSE step, after C6.3 commit>
