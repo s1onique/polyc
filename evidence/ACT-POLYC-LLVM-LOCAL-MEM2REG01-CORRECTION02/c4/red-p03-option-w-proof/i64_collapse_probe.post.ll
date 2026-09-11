@@ -1,4 +1,4 @@
-; ModuleID = '/tmp/c4.bc'
+; ModuleID = 'i64_collapse_probe.pre.ll'
 source_filename = "i64_collapse_probe.pre.ll"
 
 define i64 @Probe(i64 %p1, ptr %p3) {

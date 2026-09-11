@@ -1,4 +1,4 @@
-; ModuleID = '/tmp/c4.bc'
+; ModuleID = 'Diamond.pre.ll'
 source_filename = "Diamond.pre.ll"
 
 define i64 @Diamond(i64 %p1, i64 %p3) {

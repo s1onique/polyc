@@ -1,4 +1,4 @@
-; ModuleID = '/tmp/c4.bc'
+; ModuleID = 'pos_b0_compare_digit.pre.ll'
 source_filename = "pos_b0_compare_digit.pre.ll"
 
 define i64 @ReadDigit(ptr %p) {

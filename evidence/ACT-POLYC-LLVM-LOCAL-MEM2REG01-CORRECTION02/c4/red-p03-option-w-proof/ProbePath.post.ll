@@ -1,4 +1,4 @@
-; ModuleID = '/tmp/c4.bc'
+; ModuleID = 'ProbePath.pre.ll'
 source_filename = "ProbePath.pre.ll"
 
 define i64 @ProbePath(i64 %p1, i64 %p3) {

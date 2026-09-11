@@ -60,9 +60,9 @@ bb_exit:
 ; Target: %l17 (i64)
 ; Original definitions of %l17:
 ;   bb7: store %l17, %p16  (case-a)
-;   bb11: iadd %l17, %t32, %l29  (case-b)
+;   bb11: iadd %l17, %t32, %l29  (case-b; self-referential RHS reads %l17)
 ; Original reads of %l17:
-;   bb11: imul %t32, %l17, 10    (case-b RHS source)
+;   bb11: imul %t32, %l17, 10    (case-b RHS source -- self-referential read)
 ;   bb10: store %t20, %l17       (compiler-generated return handling)
 ; ----------------------------------------------------------------------------
 
@@ -84,10 +84,23 @@ bb9:
 
 bb11:
   ; ORIGINAL definition of %l17 (case-b iadd):
-  ;   The RHS reads %l17 (imul) and a local %l29. The case-(b)
-  ;   form is: rhs = lower(iadd %l17, %l29, ...) which reads
-  ;   %l17 from the slot and uses %l29 (= c_ext - 48) too.
-  %mul_rhs = mul i64 %p16, 10
+  ;   Neutral-IR shape:  imul %t32, %l17, 10
+  ;                     iadd %l17, %t32, %l29
+  ;   The case-(b) iadd dst=%l17 has an RHS that reads %l17
+  ;   (via the imul). Per the §6 invariant:
+  ;     every ORIGINAL read of V <-> load at same CFG site
+  ;   The bb11 read of %l17 must be backed by an actual
+  ;   same-site load from the slot. The earlier translation
+  ;   bypassed the slot using the parameter %p16, which is
+  ;   semantically equivalent for this particular path only
+  ;   because no other definition of %l17 dominates bb11.
+  ;   That equivalence is incidental, not structural, and
+  ;   the lowered IR must not rely on it. Faithful lowering:
+  ;     - lower imul:  %t32 = mul <loaded %l17>, 10
+  ;     - lower iadd:  store %t32 + %l29 -> %slot
+  ;   where %l29 lower = (c_ext - 48).
+  %l17_rhs = load i64, i64* %slot
+  %mul_rhs = mul i64 %l17_rhs, 10
   %sub_rhs = sub i64 %c_ext, 48
   %add_rhs = add i64 %mul_rhs, %sub_rhs
   store i64 %add_rhs, i64* %slot

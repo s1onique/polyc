@@ -1431,10 +1431,13 @@ LOCAL-MEM2REG01-CORRECTION02  ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02
       TOOLING_IMPL_AUTH
       AND RED-1 producer fix GREEN (C5)
       AND RED-2 PASS               (C3)
-      AND RED-3 PASS               (C4)
+      AND RED-3 PASS               (C4 v2)
   EVIDENCE = RED-1  at evidence/.../c1/             (already captured)
              RED-2  at evidence/.../c3/red-p02-def-use-tables.txt
              RED-3  at evidence/.../c4/red-p03-option-w-proof/
+                     (v1 at bf74167; v2 at this commit;
+                      validate.sh now spec-driven and
+                      81/81 PASS)
 ```
 
 The CORRECTION02 contract enforces the reviewer-board
@@ -1462,13 +1465,49 @@ C2.1 RED     reviewer-board P0-1 (case-(b) defn) /
                   P1 (rule-5 wording) corrections      (316144c)
 C2.2 RED     reviewer-board P0 (Factory v2 trailer) /
                   P1 (RED-2/3 evidence paths) corrections
-                                                     (this lineage)
+                                                     (74cb97c)
 C3   RED     RED-2 def/use tables + frozen case-(b) opcode list
+                                                     (29e43a7)
 C4   RED     RED-3 hand-translated Option-W proof under §6 PASS criteria
+                                                     (bf74167)
+C4.v2 RED    RED-3 v2 reviewer-board correction:
+                  P0-1 (AccDigit bb11 same-site %slot load)
+                  P0-2 (per-function spec-driven mechanical validation)
+                  P1 (capture-neutral-ir.sh shebang)
+                                                     (this commit)
 C5   IMPL    descriptive: IMPL-TOOLING; harness-isolation producer fix
+                                                     (96f7825)
 C6   IMPL    descriptive: IMPL-COMPILER; bounded backend change (cases a + b)
 C7   CLOSE   acceptance-criteria evidence + verdict
 ```
+
+`C4.v2` corrects the bf74167 RED-3 evidence:
+
+  - Rewrites `pos_b0_compare_digit.pre.ll` so that
+    AccDigit's bb11 case-(b) iadd performs an actual
+    same-site load from `%slot` before the imul. The v1
+    pre-IR bypassed the slot using the parameter `%p16`,
+    which is semantically equivalent on this particular
+    path but violates the §6 invariant that "every
+    ORIGINAL read of V ↔ load at same CFG site".
+
+  - Adds a sidecar `<bn>.spec` file per fixture
+    enumerating per-function expected definition and read
+    sites. validate.sh parses the .spec and mechanically
+    binds the §6 invariants per function: each DEF_SITES
+    block has exactly one slot store; each READ_SITES
+    block has exactly one slot load; no slot store in
+    any non-def block; no slot load in any non-read block.
+    The validator now catches the v1 AccDigit defect
+    (proven by re-running against the v1 pre-IR).
+
+  - Marks the README with explicit [M] MECHANICALLY_CHECKED
+    and [I] MANUALLY_INSPECTED tags so the proof claims
+    are honest.
+
+  - Switches `c3/capture-neutral-ir.sh` shebang from `#!/bin/sh`
+    to `#!/bin/bash` because the script uses bash arrays
+    (`declare -a`, `${FIXTURES[@]}`).
 
 C5 IMPL-TOOLING is independently released by the
 reviewer board at C2.1 and may run in parallel with

@@ -1,4 +1,4 @@
-; ModuleID = '/tmp/c4.bc'
+; ModuleID = 'single_cond_probe.pre.ll'
 source_filename = "single_cond_probe.pre.ll"
 
 define i64 @Probe(i64 %p1, ptr %p3) {

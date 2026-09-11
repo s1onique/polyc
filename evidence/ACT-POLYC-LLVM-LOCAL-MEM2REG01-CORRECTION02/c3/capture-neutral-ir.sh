@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # scripts/quality/capture-red2-neutral-ir.sh
 #
 # Capture the post-basic-optimisation neutral IR for every
