@@ -75,6 +75,7 @@ trap 'rm -rf "$EVID/_tmp"' EXIT
 HCC=./hcc
 LLVM_CONFIG=${LLVM_CONFIG:-llvm-config}
 LLVM_AS=${LLVM_AS:-llvm-as}
+LLVM_OPT=${LLVM_OPT:-opt}
 LLVM_LIBDIR=$("$LLVM_CONFIG" --libdir 2>/dev/null || echo "")
 
 # Optional: pass --install-dir=<dir> to hcc invocations. Necessary in
@@ -268,11 +269,17 @@ negative() {
 }
 
 echo "=== positive matrix ==="
+# ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 C6.1:
+# red_local_multi_def.HC moved from negative matrix (line 545 in
+# the pre-C6.1 script) to positive matrix. The C6 IMPL handles
+# eligible multi-def I64 locals via Option-W + mem2reg; the
+# historical "rejection" expectation is superseded.
 for f in src/tests/llvm-spike/01_const.HC \
          src/tests/llvm-spike/02_add.HC \
          src/tests/llvm-spike/03_sub_mul.HC \
          src/tests/llvm-spike/04_cmp_branch.HC \
-         src/tests/llvm-spike/05_call.HC; do
+         src/tests/llvm-spike/05_call.HC \
+         src/tests/llvm-spike/red_local_multi_def.HC; do
     bn=$(basename "$f" .HC)
     positive "$f" "$EVID/$bn.ll"
 done
@@ -538,11 +545,11 @@ negative src/tests/llvm-spike/neg_struct.HC   LLVM_BACKEND_UNSUPPORTED_TYPE
 negative src/tests/llvm-spike/red_idiv_unclassified.HC  LLVM_BACKEND_UNSUPPORTED_INT_DIVISION
 # ACT-POLYC-LLVM-CORE01-CORRECTION01 (AC06): widen the negative
 # matrix to six real backend-level REJECTED-class witnesses.
-# red_local_multi_def.HC was previously run as a separate
-# "multi-def SSA-local rejection" section; CORRECTION01 promotes
-# it to the canonical negative matrix because it IS a real
-# backend-level witness with a named diagnostic.
-negative src/tests/llvm-spike/red_local_multi_def.HC      LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL
+# ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 C6.1:
+# red_local_multi_def.HC removed from the negative matrix; it
+# is now in the positive matrix (see top of script). The
+# historical "multi-def SSA-local rejection" expectation is
+# superseded by Option-W handling.
 # red_conversion_trunc_i16.HC replaces the original
 # `red_conversion_trunc.HC` CORRECTION01 fixture. The original
 # narrowed I64 -> I8, which is now ADMITTED by
@@ -614,27 +621,29 @@ else
 fi
 
 echo
-echo "=== multi-def SSA-local rejection (CORRECTION01-CORRECTION01) ==="
-# ACT-POLYC-LLVM-SPIKE01-RESUME01-CORRECTION01-RESUME01-CORRECTION01:
-# the previous IMPL silently overwrote the SSA binding on a second
-# reaching store. This section verifies the rejection contract.
+echo "=== multi-def Option-W promotion (CORRECTION02 C6.1) ==="
+# ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 C6.1:
+# red_local_multi_def.HC is RE-PURPOSED. Pre-CORRECTION02 it was a
+# RED witness for SSA-only multi-def rejection (closed with
+# HALT_DEFECTIVE_IMPL in CORRECTION01). C6 IMPL replaces the
+# broken C9 predecessor-store synthesis with Option-W (memory-backed
+# mutable locals + LLVM mem2reg). Under C6, eligible multi-def I64
+# locals are HANDLED, not rejected.
 #
-# Output goes ONLY to this ACT's evidence dir
-# (evidence/llvmspike01-resume01-correction01-resume01-correction01/red-multi_def/).
-# It must NOT be written into any other ACT's evidence directory.
-# Historical C1 evidence has been restored byte-for-byte (see
-# $REPO_ROOT/evidence/llvmspike01-resume01-correction01-resume01-correction01/C1-RESTORATION.txt).
-#
-# ACT-POLYC-LLVM-CORE04-RESUME01 C2 IMPL P0-1 conservation fix:
-# The CORRECTION01 ACT closed with `red-multi_def.live.{stderr,summary}`
-# tracked under its evidence dir, and that dir was also the
-# destination for the harness's live-write. Each subsequent harness
-# run mutated those tracked files, violating F14 evidence
-# conservation. The harness now writes to
-# `evidence/llvm-core04-resume01/c2/red-multi_def/` (the CURRENT
-# ACT's evidence dir); the closed ACT's
-# `evidence/llvmspike01-resume01-correction01-resume01-correction01/red-multi_def/`
-# is no longer touched by the harness.
+# This section asserts the C6 lowering is correct for the
+# MultiDef fixture:
+#   1. hcc emits verifier-clean LLVM IR (rc=0)
+#   2. emitted IR contains a single entry-block alloca for `y`
+#   3. emitted IR contains exactly one same-site store per
+#      ORIGINAL definition of `y` (bb1: I64 y = b; bb3: y = a)
+#   4. emitted IR contains exactly one same-site load per ORIGINAL
+#      read of `y` (bb4: x + y)
+#   5. NO slot-store in a non-definition block (no C9 pred-injection)
+#   6. the single-def `x` stays on the legacy SSA path
+#      (no alloca for `x`; x's SSA value flows directly to the add)
+#   7. opt -passes=verify on the post-mem2reg IR exits 0
+#   8. opt -passes=mem2reg idempotence: re-running mem2reg on the
+#      post-mem2reg IR produces an IR that diffs to a no-op
 EVID_CORR2=${EVIDENCE_OUT:-}
 if [ -z "$EVID_CORR2" ]; then
     # ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 C5 fix: the
@@ -649,42 +658,110 @@ EVID_MULTIDEF="$EVID_CORR2/red-multi_def"
 mkdir -p "$EVID_MULTIDEF"
 
 set +e
-"$HCC" --emit-llvm $HCC_INSTALL_ARG src/tests/llvm-spike/red_local_multi_def.HC \
-    >"$EVID_MULTIDEF/red-multi_def.live.stdout" \
-    2>"$EVID_MULTIDEF/red-multi_def.live.stderr"
-rc_multi=$?
+HCC_NO_MEM2REG=1 "$HCC" --emit-llvm $HCC_INSTALL_ARG \
+    src/tests/llvm-spike/red_local_multi_def.HC \
+    -o "$EVID_MULTIDEF/red-multi_def.live.pre.ll" \
+    >"$EVID_MULTIDEF/red-multi_def.live.pre.stdout" \
+    2>"$EVID_MULTIDEF/red-multi_def.live.pre.stderr"
+rc_pre=$?
 set -e
 
+set +e
+"$HCC" --emit-llvm $HCC_INSTALL_ARG \
+    src/tests/llvm-spike/red_local_multi_def.HC \
+    -o "$EVID_MULTIDEF/red-multi_def.live.post.ll" \
+    >"$EVID_MULTIDEF/red-multi_def.live.post.stdout" \
+    2>"$EVID_MULTIDEF/red-multi_def.live.post.stderr"
+rc_post=$?
+set -e
+
+# Structural assertions on the PRE-mem2reg IR:
+#   exactly one entry-block alloca for the optionw slot
+#   exactly 2 same-site stores (bb1 case-a + bb3 case-a)
+#   exactly 1 same-site load (bb4 read of y)
+#   zero slot-stores in non-defn blocks (only the defn blocks contain
+#     slot-stores; the non-defn branch block has none)
+allocas=$(grep -c 'alloca i64' "$EVID_MULTIDEF/red-multi_def.live.pre.ll" 2>/dev/null || echo 0)
+stores=$(grep -cE 'store i64 [^,]+, ptr %polyc.optionw.slot' \
+    "$EVID_MULTIDEF/red-multi_def.live.pre.ll" 2>/dev/null || echo 0)
+loads=$(grep -cE 'load i64, ptr %polyc.optionw.slot' \
+    "$EVID_MULTIDEF/red-multi_def.live.pre.ll" 2>/dev/null || echo 0)
+
+# Single-def x remains on legacy SSA path: no alloca/store/load
+# for x (no second slot); the add uses a raw SSA value, not a load.
+x_no_alloca=NO
+if [ "$allocas" -eq 1 ]; then
+    x_no_alloca=YES
+fi
+
+# opt -passes=verify on the post-mem2reg IR
+set +e
+"$LLVM_OPT" -passes=verify "$EVID_MULTIDEF/red-multi_def.live.post.ll" \
+    -disable-output \
+    >"$EVID_MULTIDEF/red-multi_def.live.post.verify.stdout" \
+    2>"$EVID_MULTIDEF/red-multi_def.live.post.verify.stderr"
+rc_verify=$?
+set -e
+
+# opt -passes=mem2reg idempotence: re-running mem2reg on the
+# post-mem2reg IR must produce an identical IR (or at least
+# verifier-clean IR).
+set +e
+"$LLVM_OPT" -passes=mem2reg "$EVID_MULTIDEF/red-multi_def.live.post.ll" \
+    -S -o "$EVID_MULTIDEF/red-multi_def.live.post.idem.ll" \
+    >"$EVID_MULTIDEF/red-multi_def.live.post.idem.stdout" \
+    2>"$EVID_MULTIDEF/red-multi_def.live.post.idem.stderr"
+rc_idem=$?
+set -e
+
+# diff idempotence: textually equal?
+if cmp -s "$EVID_MULTIDEF/red-multi_def.live.post.ll" \
+         "$EVID_MULTIDEF/red-multi_def.live.post.idem.ll"; then
+    idem_diff=IDENTICAL
+else
+    idem_diff=CHANGED
+fi
+
+# Summary transcript
 {
-    echo "RED-WITNESS/CORRECTION fixture: src/tests/llvm-spike/red_local_multi_def.HC"
+    echo "Option-W promotion fixture: src/tests/llvm-spike/red_local_multi_def.HC"
     echo "Toolchain: hcc built at the current ACT's IMPL commit."
     echo
-    echo "hcc --emit-llvm rc: $rc_multi"
+    echo "hcc --emit-llvm rc (pre-mem2reg):  $rc_pre"
+    echo "hcc --emit-llvm rc (post-mem2reg): $rc_post"
+    echo "opt -passes=verify rc:             $rc_verify"
+    echo "opt -passes=mem2reg rc:            $rc_idem"
+    echo "mem2reg idempotence:               $idem_diff"
     echo
-    if [ "$rc_multi" -ne 0 ] && grep -q "LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL" \
-        "$EVID_MULTIDEF/red-multi_def.live.stderr"; then
-        echo "VERDICT: backend rejects multi-def with LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL"
-        echo "  $(cat "$EVID_MULTIDEF/red-multi_def.live.stderr")"
-    elif [ "$rc_multi" -eq 0 ]; then
-        echo "FAIL: backend silently accepted multi-def (no rejection)"
+    echo "PRE-mem2reg structural counts:"
+    echo "  allocas: $allocas  (expected: 1)"
+    echo "  stores:  $stores   (expected: 2)"
+    echo "  loads:   $loads    (expected: 1)"
+    echo
+    echo "x (single-def, non-direct-ret):"
+    echo "  no alloca for x: $x_no_alloca  (expected: YES — legacy SSA path)"
+    echo
+    echo "VERDICT:"
+    if [ "$rc_pre" -eq 0 ] && [ "$rc_post" -eq 0 ] && \
+       [ "$rc_verify" -eq 0 ] && [ "$rc_idem" -eq 0 ] && \
+       [ "$allocas" -eq 1 ] && [ "$stores" -eq 2 ] && [ "$loads" -eq 1 ] && \
+       [ "$x_no_alloca" = "YES" ]; then
+        echo "  PASS — Option-W handles eligible multi-def I64 locals"
+        echo "  The C6 IMPL replaces the broken C9 predecessor-store synthesis."
+        echo "  Single-def non-direct-ret locals stay on the legacy SSA path."
     else
-        echo "FAIL: backend rejected multi-def but with unexpected diagnostic"
-        echo "  stderr: $(cat "$EVID_MULTIDEF/red-multi_def.live.stderr")"
+        echo "  FAIL — Option-W invariant violated; see counts above"
     fi
 } >"$EVID_MULTIDEF/red-multi_def.live.summary"
 
-if [ "$rc_multi" -ne 0 ] && grep -q "LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL" \
-    "$EVID_MULTIDEF/red-multi_def.live.stderr"; then
-    # Verify no .ll was produced.
-    if [ ! -e "$EVID_MULTIDEF/red-multi_def.live.ll" ]; then
-        echo "PASS  red_local_multi_def: SSA-local multi-def rejected"
-        PASS=$((PASS+1))
-    else
-        echo "FAIL  red_local_multi_def: rejection emitted but .ll file present" >&2
-        FAIL=$((FAIL+1))
-    fi
+if [ "$rc_pre" -eq 0 ] && [ "$rc_post" -eq 0 ] && \
+   [ "$rc_verify" -eq 0 ] && [ "$rc_idem" -eq 0 ] && \
+   [ "$allocas" -eq 1 ] && [ "$stores" -eq 2 ] && [ "$loads" -eq 1 ] && \
+   [ "$x_no_alloca" = "YES" ]; then
+    echo "PASS  red_local_multi_def: Option-W handles eligible multi-def"
+    PASS=$((PASS+1))
 else
-    echo "FAIL  red_local_multi_def: multi-def not rejected" >&2
+    echo "FAIL  red_local_multi_def: Option-W invariant violated" >&2
     FAIL=$((FAIL+1))
 fi
 

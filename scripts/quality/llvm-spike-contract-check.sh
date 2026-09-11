@@ -333,7 +333,12 @@ contract_check src/tests/llvm-spike/neg_f64.HC             REJECTED IR_FADD IR_F
 contract_check src/tests/llvm-spike/neg_pointer.HC         REJECTED IR_LOAD_DEREF IR_STORE_DEREF IR_LEA IR_ALLOCA
 contract_check src/tests/llvm-spike/neg_struct.HC          REJECTED IR_LOAD_DEREF IR_LOAD IR_LEA IR_ALLOCA
 contract_check src/tests/llvm-spike/red_idiv_unclassified.HC     REJECTED IR_IDIV IR_UDIV
-contract_check src/tests/llvm-spike/red_local_multi_def.HC       REJECTED IR_STORE
+# ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 C6.1:
+# red_local_multi_def.HC moved from REJECTED to SUPPORTED.
+# The C6 IMPL replaces the broken C9 predecessor-store synthesis
+# with Option-W (memory-backed mutable locals + LLVM mem2reg).
+# Under C6, eligible multi-def I64 locals are HANDLED, not rejected.
+contract_check src/tests/llvm-spike/red_local_multi_def.HC       SUPPORTED
 # ACT-POLYC-LLVM-BYTE-MEMORY01: red_conversion_trunc_i16.HC replaces
 # the original red_conversion_trunc.HC (which narrowed I64 -> I8 and
 # is now ADMITTED). The replacement narrows I64 -> I16 (still
