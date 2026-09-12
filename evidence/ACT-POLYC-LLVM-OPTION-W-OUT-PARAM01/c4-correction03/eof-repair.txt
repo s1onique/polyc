@@ -1,0 +1,41 @@
+CORRECTION02 EOF REPAIR (CORRECTION03 IMPL)
+===========================================
+
+R-RED-1 requires the trailing blank line at the end of the
+CORRECTION02 ACT document to be stripped. The repair lands
+in the CORRECTION03 IMPL commit as a working-tree file edit;
+the historical CORRECTION02 IMPL commit (b6e58b9) and
+CORRECTION02 CLOSE commit (4a7205f) remain F14-immutable.
+
+Repair command:
+  $ perl -i -pe 'chomp if eof' \
+        docs/acts/.../C4-CORRECTION02.md
+
+Before repair (historical CORRECTION02 IMPL snapshot):
+  $ git show b6e58b9:docs/acts/.../C4-CORRECTION02.md \
+        | tail -c 6 | od -c | tail -1
+  0000000   .  \n  \n
+
+After repair (CORRECTION03 working tree):
+  $ tail -c 6 docs/acts/.../C4-CORRECTION02.md | od -c | tail -1
+  0000000   .  \n
+
+The file now ends with a single trailing newline (POSIX
+canonical form), no extra blank line. The CORRECTION03
+range diff-check (4a7205f..HEAD) shows only the corrected
+EOF as a non-content change; the rest of the file content
+is unchanged.
+
+F14 preservation: the CORRECTION02 IMPL commit retains the
+bugged file in its tree. The CORRECTION03 IMPL commit adds
+a new layer that strips the trailing blank line. The
+historical snapshot is preserved; the current tree is
+correct.
+
+CORRECTION02 IMPL snapshot EOF defect is recorded here as
+historical evidence. F14 + the append-only doctrine forbid
+amending b6e58b9; F14 also forbids rewriting 4a7205f's
+PASS verdict. The CORRECTION02 range diff-check continues
+to FAIL_WITH_CLASSIFIED_EOF_DEFECT for the historical
+range (9b44ab4..4a7205f); only the CORRECTION03 range
+diff-check (4a7205f..HEAD) is PASS.

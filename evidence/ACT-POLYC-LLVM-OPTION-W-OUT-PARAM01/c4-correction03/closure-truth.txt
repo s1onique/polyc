@@ -1,0 +1,93 @@
+CORRECTION03 CLOSURE-TRUTH VERDICT
+==================================
+
+Canonical machine-readable form of the closure verdict
+at CORRECTION03 CLOSE. Each line cites the mechanical
+witness that supports it.
+
+```text
+C4_COMPILER_SEMANTICS         = PASS
+    src/llvm-backend.c (C4 IMPL 9120202) is the production
+    PHI geometry. Untouched by CORRECTION01/02/03 ranges.
+    Verified by `git diff --numstat de31f88..HEAD -- src/`
+    returning empty.
+
+C4_REAL_HCC_WITNESSES         = PASS
+    6/6 fixtures pass hcc: c4_phi_only,
+    c4_phi_short_circuit_or, c4_phi_short_circuit_and,
+    c4_phi_multi_pred, c4_p5_safe_fwd_single_pred,
+    c4_p6_multidef_local.
+
+LLVM_AS                       = PASS
+    6/6 fixtures rc=0 under `llvm-as`.
+
+LLVM_OPT_VERIFY               = PASS
+    6/6 fixtures rc=0 under `opt --passes=verify`.
+
+CONSERVATION_COUNTS           = PASS
+    factory-append-only-test             11/0
+    shell-loc-gate                       PASS
+    gate-fast                            PASS
+    llvm-gep01-test                      30/0
+    llvm-byte-memory01-test              37/0
+    llvm-intops01-test                   4/0
+    ir-return-slot-forwarding01-test     6/0
+    factory-v2-range-check (C4,01,02,03) PASS
+    See gates-fresh.txt.
+
+C4_HISTORICAL_DIFF_CHECK      = FAIL_WITH_CLASSIFIED_EVIDENCE_MARKERS
+    2 decorative `=======` heading underlines on
+    c4/c4-impl.txt:172 and c4/opcode-coverage.txt:5.
+    Classification: c4-correction01/diff-check-classification.txt.
+
+CORRECTION01_DIFF_CHECK       = FAIL_WITH_CLASSIFIED_EOF_DEFECT
+    1 blank line at EOF on line 291 of the CORRECTION01
+    ACT doc. F14 preserves the historical ACT document.
+
+CORRECTION02_DIFF_CHECK       = FAIL_WITH_CLASSIFIED_EOF_DEFECT
+    1 blank line at EOF on line 294 of the CORRECTION02
+    ACT doc. Defect propagated to CORRECTION02 from the
+    same author-side mistake. F14 preserves the historical
+    IMPL/CLOSE commits; the file is repaired in the
+    CORRECTION03 working tree (not in the CORRECTION02 IMPL
+    snapshot). See eof-repair.txt.
+
+CORRECTION03_DIFF_CHECK       = PASS
+    `git diff --check 4a7205f HEAD` exits 0. The
+    CORRECTION02 ACT doc has been corrected (single
+    trailing newline) and the CORRECTION03 ACT doc was
+    written without the EOF defect from the start.
+    gate-fast diff-check line PASS for fresh-staged;
+    RANGE diff-check now also PASS for 4a7205f..HEAD.
+
+P0_PRODUCTION                 = none
+    No production source code modified across the
+    CORRECTION03 range (verified by `git diff --numstat
+    4a7205f..HEAD -- src/ tests/ scripts/ .githooks/
+    .clinerules/ Makefile package.json` empty).
+
+CORRECTION02_VERDICT_REVISED  = PASS_WITH_CLASSIFIED_EOF
+    The CORRECTION02 CLOSE commit (4a7205f) declared PASS
+    prematurely. That historical verdict is F14-immutable
+    and preserved as evidence. The CORRECTION03 working
+    tree's corrected EOF + this verdict block establish
+    the corrected CORRECTION02 verdict chain end-to-end.
+
+F14                           = preserved
+    c4/, c4-correction01/, c4-correction02/, and the
+    CORRECTION01 ACT document are all unchanged across
+    CORRECTION03. The CORRECTION02 IMPL commit's snapshot
+    of the CORRECTION02 ACT doc retains the EOF defect
+    (historical). The CORRECTION02 CLOSE commit retains
+    its premature PASS verdict (historical). Both are
+    classified, not repaired.
+
+C5_SCANIDENT_UNLOCK           = YES
+    C5 ScanIdent integrated evidence is now unblocked per
+    the predecessor ACT §10 topology.
+```
+
+This block is the canonical, machine-readable form of the
+closure verdict at CORRECTION03 CLOSE. It supersedes the
+CORRECTION02 closure-truth verdict block on every line
+that is now mechanically verified.

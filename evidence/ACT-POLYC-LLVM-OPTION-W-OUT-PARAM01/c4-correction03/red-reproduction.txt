@@ -1,0 +1,87 @@
+CORRECTION03 RED REPRODUCTION
+==============================
+
+Captured at CORRECTION03 entry (HEAD = 4a7205f). All five
+findings reproduced mechanically.
+
+R-RED-1  CORRECTION02 IMPL introduced the same EOF blank-
+         line defect the act was correcting.
+
+  $ git diff --check 9b44ab4 4a7205f
+  docs/acts/ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01-C4-CORRECTION02.md:294: new blank line at EOF.
+  $ echo $?
+  2
+
+  Reproduction of the EOF defect:
+  $ git show 4a7205f:docs/acts/.../C4-CORRECTION02.md | \
+        tail -c 6 | od -c | tail -1
+  0000000   .  \n  \n
+  (last two bytes: single '.' + '\n\n', giving the blank
+   line at EOF on the historical CORRECTION02 IMPL commit.)
+
+  Consequence: CORRECTION02 AC05 (range diff-check PASS)
+  failed. The CLOSE trailer's PASS verdict was premature.
+  F14 preserves the historical IMPL commit's snapshot;
+  the file is repaired in the CORRECTION03 working tree.
+
+R-RED-2  CORRECTION02 CLOSE commit (4a7205f) declared
+         `ACT-Verdict: PASS` without verifying AC05.
+
+  $ git log -1 --format='%B' 4a7205f | grep -E '^ACT-'
+  ACT: ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01-C4-CORRECTION02
+  ACT-Phase: CLOSE
+  ACT-Phase-Id: C4-CORRECTION02-IMPL
+  ACT-Verdict: PASS
+  ACT-Supersedes: ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01-C4-CORRECTION01
+
+  Verdict PASS was committed without an explicit
+  `git diff --check 9b44ab4 HEAD` step in the IMPL->CLOSE
+  transition. The CLOSE commit is F14-immutable; the
+  corrected verdict is recorded in CORRECTION03's CLOSE
+  trailer and in c4-correction03/closure-truth.txt.
+
+R-RED-3  Process defect: gate-fast `diff-check` line PASS
+         at CORRECTION02 CLOSE only verified staged
+         intent, not the COMMITTED RANGE.
+
+  $ bash scripts/quality/gate-fast.sh 2>&1 | grep '^CHECK=diff-check'
+  CHECK=diff-check STATUS=PASS
+
+  This PASS is on `git diff --check` of the fresh-staged
+  diff, not on `git diff --check <range>`. The CORRECTION02
+  range diff-check (9b44ab4..HEAD) was never executed
+  before CLOSE. CORRECTION03 fixes this by treating the
+  RANGE diff-check as a hard AC.
+
+R-RED-4  C4 PHI production implementation remains GREEN.
+
+  $ for f in c4_phi_only c4_phi_short_circuit_or \
+            c4_phi_short_circuit_and c4_phi_multi_pred \
+            c4_p5_safe_fwd_single_pred c4_p6_multidef_local; do
+        /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/hcc \
+          --emit-llvm --install-dir=/tmp/polyc-c4 \
+          -o /tmp/$f.ll \
+          /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/evidence/ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01/c4/witness-fixtures/$f.HC
+        llvm-as /tmp/$f.ll -o /tmp/$f.bc
+        opt --passes=verify /tmp/$f.bc -S -o /tmp/$f-opt.ll
+        echo "$f: rc chain = $?"
+    done
+  c4_phi_only:                  rc chain = 0
+  c4_phi_short_circuit_or:      rc chain = 0
+  c4_phi_short_circuit_and:     rc chain = 0
+  c4_phi_multi_pred:            rc chain = 0
+  c4_p5_safe_fwd_single_pred:   rc chain = 0
+  c4_p6_multidef_local:         rc chain = 0
+
+  All 6/6 PASS. Production code untouched.
+
+R-RED-5  F14 preservation baseline.
+
+  $ git diff --name-only 4a7205f -- 'evidence/**' \
+        'docs/acts/ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01-C4-CORRECTION01.md'
+  (empty)
+
+  Baseline established. CORRECTION03 must NOT mutate any
+  of these paths. The CORRECTION02 ACT document
+  correction is on top of the historical IMPL commit and
+  does not amend it.

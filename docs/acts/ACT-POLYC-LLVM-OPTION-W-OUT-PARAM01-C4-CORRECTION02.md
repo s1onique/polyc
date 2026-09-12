@@ -291,4 +291,3 @@ sh scripts/quality/factory-v2-range-check.sh \
 After CORRECTION02 closes PASS, C5 ScanIdent integrated
 evidence becomes unlocked per the predecessor ACT §10
 topology.
-
