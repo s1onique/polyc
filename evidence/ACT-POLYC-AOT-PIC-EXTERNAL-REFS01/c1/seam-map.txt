@@ -1,0 +1,125 @@
+F2 recon — seam map for ACT-POLYC-AOT-PIC-EXTERNAL-REFS01
+============================================================
+
+Production seam responsible for emitting the external-function
+reference relocation observed in red-relocations.txt:
+
+  src/aarch64.c
+    static void aarch64GlobalAddr(Cctrl *cc, AoStr *buf,
+                                  const char *sym, const char *reg)
+      lines ~208..218
+        Apple Darwin path emits:
+          adrp    Xd, _sym@PAGE
+          add     Xd, Xd, _sym@PAGEOFF
+        which becomes ARM64_RELOC_PAGE21 + ARM64_RELOC_PAGEOFF12.
+        These relocations target the symbol's page directly and are
+        rejected by `ld` against an external dylib whose __text has
+        nreloc=0 (see "invalid use of ADRP" diagnostic in red-link.txt).
+
+Callers of aarch64GlobalAddr (the externally-affected set):
+
+  src/aarch64.c:524       aarch64LoadToReg (case IR_VAL_CONST_STR)
+                          (string literal address; data, not function)
+  src/aarch64.c:1326      case IR_LOAD_DEREF (IR_VAL_GLOBAL)
+  src/aarch64.c:1388      case IR_STORE_DEREF (IR_VAL_GLOBAL)
+  src/aarch64.c:1505      case IR_LEA (IR_VAL_GLOBAL, IR_VAL_FLAG_FUNC)
+                          ^^^ the broken path used to materialise
+                              function-pointer values from a global
+                              function symbol. This is the seam the
+                              ACT must repair.
+
+  Float-literal codegen at line ~498..500 has its own adrp/ldr pair
+  using `@PAGE`/`@PAGEOFF` but targets a *literal pool section*, not
+  a global symbol; those relocations are intra-section and unaffected
+  by the dylib reference defect (skip in this ACT per §13).
+
+Symbol classification available to the backend:
+
+  src/cctrl.h            cc->global_env    (Map*)
+  src/ast.h              AST_FUNC          (same-image definition)
+                          AST_FUN_PROTO     (forward declaration)
+                          AST_EXTERN_FUNC   (extern "C" / function
+                                             declared with extern linkage
+                                             and not defined in this TU)
+                          AST_ASM_FUNC_BIND (asm-bound; treated like
+                                             a function name in IR via
+                                             AST_ASM_FUNC_BIND)
+  src/ir-types.h         IR_VAL_FLAG_FUNC  (set on IR_VAL_GLOBAL when
+                                             the symbol is a function;
+                                             see src/ir.c:1606)
+
+Direct calls vs. indirect calls:
+
+  case IR_CALL:
+    src/aarch64.c:1752..1893
+      emits `bl <normalised_name>` which is ARM64_RELOC_BRANCH26.
+      This branch relocation is Mach-O-valid for both same-image and
+      external (dylib) function references; the linker resolves it
+      via a stub for dylib targets. The direct-call path is therefore
+      already correct for external functions and the ACT MUST NOT
+      modify it.
+
+    L1 (local function called directly)  -> bl _LocalFn (BRANCH26)
+    E1 (external function called directly) -> bl _ExtFn  (BRANCH26)
+
+Indirect calls / function-pointer materialisation:
+
+  case IR_LEA (IR_VAL_FLAG_FUNC):
+    src/aarch64.c:1497..1512
+      calls aarch64GlobalAddr -> adrp/add (PAGE21/PAGEOFF12).
+      Broken for E2 (external function address materialised then
+      called indirectly) — same shape as the L2 path but the link
+      target lives outside the current image.
+
+The classifier the ACT must introduce (semantic, not heuristic):
+
+  is_external:
+    If the IR_LEA's r1 has IR_VAL_FLAG_FUNC and the underlying AST
+    is AST_EXTERN_FUNC (looked up via cc->global_env at code-gen
+    time), treat the reference as external and emit a Mach-O-valid
+    external-reference sequence (Strategy A: GOTPAGE/GOTPAGEOFF).
+    Otherwise preserve the current local/same-image path.
+
+Mach-O validation:
+
+  The fixup set the assembly must emit for E2 on Apple Darwin:
+    adrp x0, _ExtFn@GOTPAGE
+    ldr  x0, [x0, _ExtFn@GOTPAGEOFF]
+    blr  x0                    (or: subsequent call site)
+  Which produces ARM64_RELOC_GOT_LOAD_PAGE21 +
+  ARM64_RELOC_GOT_LOAD_PAGEOFF12 — the GOT-slot form that Apple's
+  ld64 happily resolves for external symbols (the symbol-table form
+  of relocations that Apple's linker accepts for any preloaded
+  image's defined function symbol).
+
+Linux:
+
+  The PRE-RC of this ACT only authorizes the bounded AArch64 Mach-O
+  external-reference seam. The Linux path (`:lo12:sym`) and the
+  existing aarch64.c Linux emission is NOT exercised by the failing
+  test on this host; the Linux case in aarch64GlobalAddr is left
+  unchanged for this ACT.
+
+Implementation files touched (predicted):
+
+  src/aarch64.c
+    - aarch64GlobalAddr: unchanged signature.
+    - IR_LEA arm at line 1497: branch to new
+      aarch64ExternalFuncAddr when IR_VAL_FLAG_FUNC && AST_EXTERN_FUNC.
+    - New helper aarch64ExternalFuncAddr(Cctrl *, AoStr *, const char *,
+                                         const char *) -> emits
+      adrp/ldr/blr-style GOT materialisation on Apple Darwin only.
+
+No other files are touched. The x86_64 backend is conditionally
+authorized by F2 if a shared abstraction forces it; the live
+inspection of src/x86_64.c (case IR_LEA around line 170) shows it
+already uses RIP-relative `leaq` which is the Mach-O-x86_64
+analogue and is independent of this defect. No x86_64 change
+required (see C2 README + C3 evidence).
+
+Allowed-file summary:
+
+  Primary surface  : src/aarch64.c
+  Conditionally    : none (x86_64.c not touched per F2 recon above)
+  Build wiring     : none
+  Test/evidence    : evidence/ACT-POLYC-AOT-PIC-EXTERNAL-REFS01/**

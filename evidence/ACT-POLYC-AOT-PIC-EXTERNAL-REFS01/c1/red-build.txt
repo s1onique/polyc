@@ -1,0 +1,25 @@
+=== hcc -S ext-consumer.HC -o ext-consumer.s ===
+
+Target: aarch64-apple-darwin (auto-detected on this host)
+Build command: /Volumes/.../hcc -S ext-consumer.HC -o ext-consumer.s
+BUILD_RC=0
+
+Captured assembly (relevant lines only):
+
+  .text
+  .globl _main
+  _main:
+      ...
+      adrp    x0, _PolycExtAdd1@PAGE        <-- IR_LEA -> aarch64GlobalAddr
+      add x0, x0, _PolycExtAdd1@PAGEOFF    <-- (page-relative addressing)
+      stur x0, [x29, #-16]                  <-- store function pointer
+      ldur x0, [x29, #-16]                  <-- load into x0
+      stur x0, [x29, #-40]
+      ldur x16, [x29, #-40]                 <-- load into x16 (indirect-call reg)
+      mov x0, #41                           <-- arg 0
+      blr x16                               <-- indirect call via x16
+      ...
+
+The lea pair is the broken path. After C2 the external-dylib case must
+emit @GOTPAGE/@GOTPAGEOFF (Strategy A) for IR_LEA of an external
+function symbol.

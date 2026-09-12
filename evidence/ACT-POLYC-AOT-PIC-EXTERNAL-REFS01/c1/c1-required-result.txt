@@ -1,0 +1,22 @@
+C1 required result matrix (per ACT §3.3)
+
+  fixture                    compile    link    run
+  -------------------------  ---------  ------  ----
+  same-image/local control   PASS       PASS    PASS
+  external dylib function    PASS       FAIL    N/A
+
+Observed (pre-C2):
+
+  local-control     compile=PASS  link=PASS  run=PASS  (rc=0)
+  ext-consumer      compile=PASS  link=FAIL  run=N/A   (rc=1)
+
+  RED_REFERENCE_SYMBOL      = _PolycExtAdd1
+  RED_INSTRUCTION_SHAPE     = adrp X0,_PolycExtAdd1@PAGE
+                              add  X0,X0,_PolycExtAdd1@PAGEOFF
+  RED_RELOCATION_TYPES      = ARM64_RELOC_PAGE21
+                              ARM64_RELOC_PAGEOFF12
+  RED_LINK_RC               = 1
+  RED_LINK_DIAGNOSTIC       = "ld: invalid use of ADRP in '_main' to
+                              '_PolycExtAdd1'"
+
+Verdict: RED reproduced. AC01 PASS / AC02 PASS / AC03 PASS.
