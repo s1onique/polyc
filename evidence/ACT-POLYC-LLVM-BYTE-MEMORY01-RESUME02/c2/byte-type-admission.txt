@@ -1,0 +1,67 @@
+C2 evidence — byte type admission (per ACT §7.1)
+==================================================
+
+Test method
+-----------
+  For each scalar parameter fixture, run:
+    ./hcc --emit-llvm --install-dir=/tmp/polyc-install \
+          src/tests/llvm-byte-memory01/<fixture>.HC \
+          2>/dev/null > <fixture>.ll
+
+  Then run:
+    llvm-as <fixture>.ll -o <fixture>.bc
+    opt --passes=verify <fixture>.bc -disable-output
+
+------------------------------------------------------------
+red_u8_param.HC  (U8 Id(U8 x) { return x; })
+------------------------------------------------------------
+  hcc rc       = 0
+  LLVM type    = i8 function parameter
+  Conversion   = zext i8 %0 to i64 (unsigned byte -> I64 widening)
+                 then trunc i64 to i8 at return boundary
+  Independent verify:
+    llvm-as     rc = 0
+    opt verify  rc = 0
+  LLVM module (excerpt):
+      define i8 @Id(i8 %0) {
+      bb1:
+        %zext_i8_i64 = zext i8 %0 to i64
+        %ret_trunc_to_i8 = trunc i64 %zext_i8_i64 to i8
+        ret i8 %ret_trunc_to_i8
+      ...
+      }
+  Verdict: PASS  (i8 parameter admitted; frozen ZEXT shape)
+
+------------------------------------------------------------
+red_i8_param.HC  (I8 IdI8(I8 x) { return x; })
+------------------------------------------------------------
+  hcc rc       = 0
+  LLVM type    = i8 function parameter
+  Conversion   = sext i8 %0 to i64 (signed byte -> I64 widening)
+                 then trunc i64 to i8 at return boundary
+  Independent verify:
+    llvm-as     rc = 0
+    opt verify  rc = 0
+  LLVM module (excerpt):
+      define i8 @IdI8(i8 %0) {
+      bb1:
+        %sext_i8_i64 = sext i8 %0 to i64
+        %ret_trunc_to_i8 = trunc i64 %sext_i8_i64 to i8
+        ret i8 %ret_trunc_to_i8
+      ...
+      }
+  Verdict: PASS  (i8 parameter admitted; frozen SEXT shape)
+
+------------------------------------------------------------
+Cross-check: capability table (per ACT §7.3)
+------------------------------------------------------------
+  src/llvm-backend-cap.c row IR_ZEXT:
+    SHAPE_DEPENDENT. Supported when src is IR_TYPE_I8 and dst is
+    IR_TYPE_I64. Other shapes rejected.
+  src/llvm-backend-cap.c row IR_SEXT:
+    SHAPE_DEPENDENT. Supported when src is IR_TYPE_I8 and dst is
+    IR_TYPE_I64. Other shapes rejected.
+
+  Both observed shapes in emitted LLVM match the SHAPE_DEPENDENT
+  contracts (I8 source, I64 destination). No widening outside the
+  frozen set is observed.

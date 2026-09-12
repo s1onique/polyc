@@ -1,0 +1,46 @@
+Conservation gates fresh-run summary (RESUME02 C2)
+==================================================
+
+All gates run from the current tree at 524f00f (C1 RED of RESUME02).
+
+| Gate                                    | rc  | detail                              |
+|-----------------------------------------|-----|-------------------------------------|
+| make clean / make / make llvm-all       |  0  | pre-existing build remains GREEN    |
+| llvm-byte-memory01-test                 |  0  | BYTE_MEMORY01_PASS=37 FAIL=0 PASS   |
+| llvm-spike-test                         |  0  | PASS=18 FAIL=0 PASS                 |
+| llvm-intops01-test                      |  0  | INTOPS01_PASS=4 FAIL=0 PASS         |
+| ir-return-slot-forwarding01-test        |  0  | IR_RETURN_SLOT_FORWARDING01_PASS=6  |
+|                                         |     | FAIL=0 PASS                         |
+| harness-evidence-isolation-test         |  0  | 50 files scanned, no modifications  |
+| llvm-cap-table-verifier                 |  0  | dispatch<->capability<->harness     |
+|                                         |     | bound, PASS                         |
+| factory-v2-commit-msg-check             |  0  | on C1 trailer: STATUS=PASS          |
+| factory-append-only-test                |  0  | PASS=11 FAIL=0 PASS                 |
+| factory-closure-status                  |  0  | PAIR_OK=6 PAIR_FAIL=0 PASS          |
+|                                         |     | VERDICT=PASS                        |
+| gate-fast                               |  0  | STATUS=PASS VERDICT=PASS            |
+| git diff --check HEAD~1 HEAD            |  0  | clean                               |
+
+Independent LLVM validation on closure-critical emitted modules:
+
+  llvm-as < c2/pos-b0-emit-llvm.ll > c2/pos-b0-emit-llvm.bc
+    rc = 0
+  opt --passes=verify c2/pos-b0-emit-llvm.bc -disable-output
+    rc = 0
+  (also captured: c2/pos-b0-llvm-as.txt, c2/pos-b0-verify.txt)
+
+Also: full llvm-byte-memory01-test.sh major sections:
+  toolchain                                       PASS
+  authorized-set echo                             PASS
+  byte type admission                             PASS (3 fixtures)
+  direct byte load                                PASS (2 fixtures)
+  byte promotion (zext / sext)                    PASS (3 fixtures)
+  byte store                                      DEFERRED per ACT §37
+  byte truncation boundary                        PASS
+  LLVM textual structure (no GEP / ptrtoint etc.) PASS (all .ll files)
+  llvm-as / opt --passes=verify                   PASS (all .ll files)
+  capability counters (SHAPE_DEPENDENT)           PASS (5 opcodes)
+  per-fixture counter attribution                 PASS (5 fixtures)
+  GEP purity (zero getelementptr)                 PASS
+  determinism (byte-identical across two runs)    PASS
+  historical-evidence conservation                PASS

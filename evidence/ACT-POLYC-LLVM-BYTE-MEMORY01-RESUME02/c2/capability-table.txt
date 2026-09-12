@@ -1,0 +1,82 @@
+C2 evidence — capability-table conservation (per ACT §13)
+==========================================================
+
+Test method
+-----------
+  Run the canonical capability-table verifier and bind the
+  byte-relevant rows to their expected SHAPE_DEPENDENT / REJECTED
+  status. Confirm no row was promoted globally to SUPPORTED
+  merely as a consequence of RESUME02's evidence work.
+
+------------------------------------------------------------
+Verifier output (current tree)
+------------------------------------------------------------
+  python3 scripts/quality/llvm-cap-table-verifier.py
+
+  First 30 lines (verbatim):
+    === llvm-cap-table-verifier (CORE03-CORRECTION01) ===
+    PASS  parsed 56 IrOp enum entries (IR_NOP=0 .. IR_ASM=55)
+    PASS  loaded 56 capability rows via hcc --print-cap-table
+    PASS  dispatch scan: 52 case arms in llLowerInstr, 12 if-shorts anywhere
+    PASS  M1 round-trip: 56 rows round-trip byte-identical
+    PASS  M2 arm-group scan: 26 case-arm groups, 9 if-arm bodies in dispatch
+    PASS  M2: IR_ALLOCA diagnostic 'LLVM_BACKEND_UNSUPPORTED_POINTER' bound to arm body
+    PASS  M2: IR_RMW_DEREF diagnostic 'LLVM_BACKEND_UNSUPPORTED_POINTER' bound to arm body
+    PASS  M2: IR_LEA diagnostic 'LLVM_BACKEND_UNSUPPORTED_POINTER' bound to arm body
+    PASS  M2: IR_GEP diagnostic 'LLVM_BACKEND_UNSUPPORTED_AGGREGATE' bound to arm body
+    PASS  M2: IR_IDIV diagnostic 'LLVM_BACKEND_UNSUPPORTED_INT_DIVISION' bound to arm body
+    PASS  M2: IR_UDIV diagnostic 'LLVM_BACKEND_UNSUPPORTED_INT_DIVISION' bound to arm body
+    PASS  M2: IR_IREM diagnostic 'LLVM_BACKEND_UNSUPPORTED_INT_REMAINDER' bound to arm body
+    PASS  M2: IR_UREM diagnostic 'LLVM_BACKEND_UNSUPPORTED_INT_REMAINDER' bound to arm body
+    PASS  M2: IR_INEG diagnostic 'LLVM_BACKEND_UNSUPPORTED_INT_NEGATION' bound to arm body
+    PASS  M2: IR_FDIV diagnostic 'LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH' bound to arm body
+    PASS  M2: IR_FNEG diagnostic 'LLVM_BACKEND_UNSUPPORTED_FLOAT_ARITH' bound to arm body
+    PASS  M2: IR_AND diagnostic 'LLVM_BACKEND_UNSUPPORTED_INT_BITWISE' bound to arm body
+    PASS  M2: IR_OR diagnostic 'LLVM_BACKEND_UNSUPPORTED_INT_BITWISE' bound to arm body
+    PASS  M2: IR_XOR diagnostic 'LLVM_BACKEND_UNSUPPORTED_INT_BITWISE' bound to arm body
+    PASS  M2: IR_SHL diagnostic 'LLVM_BACKEND_UNSUPPORTED_INT_SHIFT' bound to arm body
+    PASS  M2: IR_SHR diagnostic 'LLVM_BACKEND_UNSUPPORTED_INT_SHIFT' bound to arm body
+    PASS  M2: IR_SAR diagnostic 'LLVM_BACKEND_UNSUPPORTED_INT_SHIFT' bound to arm body
+    PASS  M2: IR_NOT diagnostic 'LLVM_BACKEND_UNSUPPORTED_INT_BITWISE' bound to arm body
+    PASS  M2: IR_FPTRUNC diagnostic 'LLVM_BACKEND_UNSUPPORTED_CONVERSION' bound to arm body
+    PASS  M2: IR_FPEXT diagnostic 'LLVM_BACKEND_UNSUPPORTED_CONVERSION' bound to arm body
+    PASS  M2: IR_FPTOUI diagnostic 'LLVM_BACKEND_UNSUPPORTED_CONVERSION' bound to arm body
+    PASS  M2: IR_FPTOSI diagnostic 'LLVM_BACKEND_UNSUPPORTED_CONVERSION' bound to arm body
+    PASS  M2: IR_UITOFP diagnostic 'LLVM_BACKEND_UNSUPPORTED_CONVERSION' bound to arm body
+    PASS  M2: IR_SITOFP diagnostic 'LLVM_BACKEND_UNSUPPORTED_CONVERSION' bound to arm body
+    PASS  M2: IR_PTRTOINT diagnostic 'LLVM_BACKEND_UNSUPPORTED_CONVERSION' bound to arm body
+    PASS  M2: IR_INTTOPTR diagnostic 'LLVM_BACKEND_UNSUPPORTED_CONVERSION' bound to arm body
+    PASS  M2: IR_BITCAST diagnostic 'LLVM_BACKEND_UNSUPPORTED_BITCAST' bound to arm body
+
+  Full output: scripts/quality/llvm-cap-table-verifier.py runs to
+  completion without error. Ordinal binding: PASS. Row count:
+  56 (= IR_ASM + 1).
+
+------------------------------------------------------------
+Byte-relevant rows (per ACT §13)
+------------------------------------------------------------
+  IR_LOAD_DEREF     : SHAPE_DEPENDENT (verified by current
+                      llvm-byte-memory01-test.sh section
+                      'capability counters').
+  IR_STORE_DEREF    : SHAPE_DEPENDENT (byte store still deferred;
+                      I64 path only).
+  IR_ZEXT           : SHAPE_DEPENDENT (I8 -> I64 only).
+  IR_SEXT           : SHAPE_DEPENDENT (I8 -> I64 only).
+  IR_TRUNC          : SHAPE_DEPENDENT (I64 -> I8 only;
+                      other widths rejected).
+  IR_GEP            : REJECTED (LLVM_BACKEND_UNSUPPORTED_AGGREGATE)
+  IR_LEA            : REJECTED (LLVM_BACKEND_UNSUPPORTED_POINTER)
+  IR_PTRTOINT       : REJECTED
+  IR_INTTOPTR       : REJECTED
+  IR_BITCAST        : REJECTED
+  IR_ALLOCA         : REJECTED (grouped REJECTED arm)
+
+  No row was promoted globally. SHAPE_DEPENDENT remains bound
+  to the existing per-shape contracts. RESUME02 introduces no
+  new capability row.
+
+------------------------------------------------------------
+Verdict
+------------------------------------------------------------
+  Capability-table conservation: PASS.
+  No global status widening occurred.

@@ -1,0 +1,71 @@
+C2 evidence — frozen conversions (per ACT §7.3)
+================================================
+
+The frozen byte-conversion set (per RESUME01 §3.1, src/llvm-backend-cap.c
+IR_SEXT / IR_TRUNC rows):
+
+  IR_ZEXT: SHAPE_DEPENDENT, src=IR_TYPE_I8, dst=IR_TYPE_I64.
+  IR_SEXT: SHAPE_DEPENDENT, src=IR_TYPE_I8, dst=IR_TYPE_I64.
+  IR_TRUNC: SHAPE_DEPENDENT, src=IR_TYPE_I64, dst=IR_TYPE_I8.
+
+------------------------------------------------------------
+Unsigned path (zext i8 ... to i64)
+------------------------------------------------------------
+  Source fixture: red_u8_param.HC  (U8 Id(U8 x) { return x; })
+
+  Emitted LLVM (relevant lines):
+      define i8 @Id(i8 %0) {
+      bb1:
+        %zext_i8_i64 = zext i8 %0 to i64
+        %ret_trunc_to_i8 = trunc i64 %zext_i8_i64 to i8
+        ret i8 %ret_trunc_to_i8
+      ...
+      }
+
+  Path: U8 -> neutral IR_TYPE_I8 -> IR_ZEXT (I8->I64) -> LLVM zext
+  Required LLVM form per ACT §7.3: 'zext i8 ... to i64'.  MATCH.
+  llvm-as rc = 0; opt verify rc = 0.  Verdict: PASS.
+
+  Cross-fixture: pos_b0_compare_digit.HC also emits
+      %zext_i8_i64 = zext i8 %ld_deref to i64
+  from the byte-loaded value, again matching the required form.
+
+------------------------------------------------------------
+Signed path (sext i8 ... to i64)
+------------------------------------------------------------
+  Source fixture: red_i8_param.HC  (I8 IdI8(I8 x) { return x; })
+
+  Emitted LLVM (relevant lines):
+      define i8 @IdI8(i8 %0) {
+      bb1:
+        %sext_i8_i64 = sext i8 %0 to i64
+        %ret_trunc_to_i8 = trunc i64 %sext_i8_i64 to i8
+        ret i8 %ret_trunc_to_i8
+      ...
+      }
+
+  Path: I8 -> neutral IR_TYPE_I8 -> IR_SEXT (I8->I64) -> LLVM sext
+  Required LLVM form per ACT §7.3: 'sext i8 ... to i64'.  MATCH.
+  llvm-as rc = 0; opt verify rc = 0.  Verdict: PASS.
+
+  Source signedness is carried by the IR_ZEXT vs IR_SEXT opcode,
+  not by LLVM i8 alone. The empirical observation confirms this:
+  red_u8_param emits zext, red_i8_param emits sext, even though
+  both carry an LLVM i8 parameter.
+
+------------------------------------------------------------
+Narrowing path (trunc i64 ... to i8) — preserved positive
+------------------------------------------------------------
+  Source fixtures (red_u8_param, red_i8_param, red_byte_load,
+  red_byte_pointer_param, red_byte_to_i64, pos_b0_compare_digit)
+  all emit a trunc i64 to i8 at the function-return boundary,
+  matching the frozen IR_TRUNC shape (I64->I8).
+
+------------------------------------------------------------
+Verdict
+------------------------------------------------------------
+  All three frozen byte-conversion shapes (ZEXT, SEXT, TRUNC
+  I64->I8) reproduce cleanly. The unsigned / signed / narrowing
+  paths each emit the expected LLVM semantic form.
+
+  ACT §7.3 expectations are SATISFIED.

@@ -1,0 +1,66 @@
+C2 evidence — GEP boundary proof (per ACT §9)
+==============================================
+
+Test method
+-----------
+  Count the getelementptr occurrences across all BYTE-MEMORY01
+  positive / formerly-red fixtures' emitted LLVM and across the
+  capability-table verifier's evidence.
+
+------------------------------------------------------------
+Mechanical count
+------------------------------------------------------------
+  Emit LLVM for every BYTE-MEMORY01 fixture (8 fixtures) and
+  count getelementptr:
+
+    for f in src/tests/llvm-byte-memory01/red_u8_param.HC \
+             src/tests/llvm-byte-memory01/red_i8_param.HC \
+             src/tests/llvm-byte-memory01/red_byte_load.HC \
+             src/tests/llvm-byte-memory01/red_byte_pointer_param.HC \
+             src/tests/llvm-byte-memory01/red_byte_to_i64.HC \
+             src/tests/llvm-byte-memory01/red_i16_trunc_negative.HC \
+             src/tests/llvm-byte-memory01/pos_byte_compare_simple.HC \
+             src/tests/llvm-byte-memory01/pos_b0_compare_digit.HC ; do
+      ./hcc --emit-llvm --install-dir=/tmp/polyc-install "$f" \
+            2>/dev/null > "$f".ll
+      echo -n "$f: "; grep -c getelementptr "$f".ll || echo 0
+    done
+
+  Result (every positive fixture):
+    red_u8_param.HC:                 0
+    red_i8_param.HC:                 0
+    red_byte_load.HC:                0
+    red_byte_pointer_param.HC:       0
+    red_byte_to_i64.HC:              0
+    red_i16_trunc_negative.HC:       n/a (rejected)
+    pos_byte_compare_simple.HC:      0
+    pos_b0_compare_digit.HC:         0
+
+  BYTE_MEMORY_GEP_COUNT = 0.
+
+------------------------------------------------------------
+Neutral-IR audit (per ACT §9)
+------------------------------------------------------------
+  grep -nE '(IR_LEA|IR_GEP)' src/llvm-backend.c
+    111: * IR_LEA  REJECTED  LLVM_BACKEND_UNSUPPORTED_POINTER
+    112: * IR_GEP  REJECTED  LLVM_BACKEND_UNSUPPORTED_AGGREGATE
+    3049: case IR_LEA: { ... }     <- REJECTED arm
+    3073: case IR_GEP: { ... }     <- REJECTED arm
+
+  Both IR_LEA and IR_GEP are dispatched into the REJECTED arm in
+  the LLVM backend; reaching either means the byte fixture would
+  have failed before emission. None of the BYTE-MEMORY fixtures
+  emit IR_GEP / IR_LEA neutral opcodes, so neither reaches the
+  backend dispatch.
+
+  No pointer arithmetic (ptr++, src + n) appears in any of the
+  positive fixtures; the source language does not currently
+  generate IR_GEP / IR_LEA in the BYTE-MEMORY01 path.
+
+------------------------------------------------------------
+Verdict
+------------------------------------------------------------
+  BYTE_MEMORY_GEP_COUNT = 0 for the frozen positive set.
+  No BYTE-MEMORY positive fixture requires GEP.
+  GEP remains owned by ACT-POLYC-LLVM-GEP01 (the explicit next
+  ACT per ACT §24).

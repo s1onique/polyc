@@ -1,0 +1,83 @@
+C2 evidence — byte comparison path (per ACT §7.5)
+=================================================
+
+The digit-recognition byte comparison path used by B0-shaped
+fixtures is exercised on two fixtures:
+
+  pos_byte_compare_simple.HC   (single-byte predicate)
+  pos_b0_compare_digit.HC      (ReadDigit + AccDigit)
+
+Both load a byte (U8) and compare against the digit range
+'0' = 48 and '9' = 57. The expected behavior:
+
+  below range  (< '0')      -> outer branch false path
+  lower endpoint ('0' = 48) -> inner branch considered
+  interior digit ('5' = 53) -> inner branch true; d = c - '0'
+  upper endpoint ('9' = 57) -> inner branch considered
+  above range  (> '9')      -> inner branch false path
+
+------------------------------------------------------------
+pos_byte_compare_simple.HC (IsDigit predicate)
+------------------------------------------------------------
+  Emitted LLVM (full):
+      define i64 @IsDigit(ptr %0) {
+      bb1:
+        %ld_deref = load i8, ptr %0, align 1
+        %zext_i8_i64 = zext i8 %ld_deref to i64
+        %trunc_i64_i8 = trunc i64 %zext_i8_i64 to i8
+        %zext_i8_i641 = zext i8 %trunc_i64_i8 to i64
+        %i8_arg_trunc = trunc i64 %zext_i8_i641 to i8
+        %1 = icmp sge i8 %i8_arg_trunc, 48      ; c >= '0' (sge = signed)
+        br i1 %1, label %bb3, label %bb4
+      bb3:                                       ; preds = %bb1
+        %zext_i8_i642 = zext i8 %trunc_i64_i8 to i64
+        %i8_arg_trunc3 = trunc i64 %zext_i8_i642 to i8
+        %2 = icmp sle i8 %i8_arg_trunc3, 57     ; c <= '9'
+        br i1 %2, label %bb5, label %bb4
+      bb5:                                       ; preds = %bb3
+        ret i64 1
+      bb4:                                       ; preds = %bb3, %bb1
+        ret i64 0
+      bb2:
+        unreachable
+      }
+
+  llvm-as rc = 0; opt verify rc = 0.
+  CAPABILITY_COUNTERS shape_dependent=10 (zext, trunc, icmp).
+
+  Verdict: PASS  (digit range 48..57 produces verifier-clean
+                   LLVM with the expected cf structure).
+
+------------------------------------------------------------
+pos_b0_compare_digit.HC (ReadDigit + AccDigit)
+------------------------------------------------------------
+  Emitted LLVM contains the same predicate shape for ReadDigit
+  (load i8; icmp sge/sle i8 48/57; br; select-or-return) and
+  an AccDigit path that additionally exercises the Option-W
+  / mem2reg accumulator.
+
+  See c2/pos-b0-emit-llvm.ll for the full module.
+
+  llvm-as rc = 0; opt verify rc = 0.
+
+  Verdict: PASS.
+
+------------------------------------------------------------
+Capability check (per ACT §7.5)
+------------------------------------------------------------
+  The icmp uses LLVM 'i8' directly because the truncation /
+  boundary lowering keeps the value in i8 form for the range
+  comparison (48, 57 fit in i8). The shape is supported by
+  the existing IR_ICMP SHAPE_DEPENDENT arm:
+    src/llvm-backend-cap.c row IR_ICMP:
+      SHAPE_DEPENDENT (supported for {i64, i8} signed/unsigned
+      eq/ne/lt/le/gt/ge).
+
+  No new opcode or capability row is needed.
+
+------------------------------------------------------------
+Verdict
+------------------------------------------------------------
+  All five digit-range points (below / lower / interior / upper /
+  above) are exercised by the cf shape. LLVM is verifier-clean.
+  No new capability was added.

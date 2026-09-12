@@ -1,0 +1,73 @@
+C2 evidence — direct byte load (per ACT §7.2)
+===============================================
+
+Test method
+-----------
+  Capture emitted LLVM and verify it contains the expected
+  'load i8, ptr' shape (NOT load i64, NOT ptrtoint, NOT integer
+  address reconstruction).
+
+------------------------------------------------------------
+red_byte_load.HC  (U8 ReadByte(U8 *p) { return *p; })
+------------------------------------------------------------
+  hcc rc = 0
+  Emitted LLVM (excerpt):
+      define i8 @ReadByte(ptr %0) {
+      bb1:
+        %ld_deref = load i8, ptr %0, align 1
+        %zext_i8_i64 = zext i8 %ld_deref to i64
+        %ret_trunc_to_i8 = trunc i64 %zext_i8_i64 to i8
+        ret i8 %ret_trunc_to_i8
+      ...
+      }
+
+  Pattern check:
+    grep -c 'load i8' = 1        (the byte load)
+    grep -c 'load i64' = 0       (no 64-bit load attempted)
+    grep -c 'ptrtoint' = 0       (no pointer-to-int cast)
+    grep -c 'inttoptr' = 0       (no int-to-pointer cast)
+    grep -c 'getelementptr' = 0  (no GEP)
+    grep -c 'alloca' = 0         (no alloca)
+    grep -c 'bitcast' = 0        (no bitcast)
+
+  Independent verify:
+    llvm-as     rc = 0
+    opt verify  rc = 0
+
+  Verdict: PASS  (frozen byte load shape: load i8, ptr %p)
+
+------------------------------------------------------------
+red_byte_pointer_param.HC  (U8 ReadByte(U8 *p) { return *p; })
+------------------------------------------------------------
+  hcc rc = 0
+  Emitted LLVM (excerpt):
+      define i8 @ReadByte(ptr %0) {
+      bb1:
+        %ld_deref = load i8, ptr %0, align 1
+        %zext_i8_i64 = zext i8 %ld_deref to i64
+        %ret_trunc_to_i8 = trunc i64 %zext_i8_i64 to i8
+        ret i8 %ret_trunc_to_i8
+      ...
+      }
+
+  Pattern check:
+    grep -c 'load i8' = 1
+    grep -c 'load i64' = 0
+    grep -c 'ptrtoint' = 0
+    grep -c 'inttoptr' = 0
+    grep -c 'getelementptr' = 0
+    grep -c 'alloca' = 0
+    grep -c 'bitcast' = 0
+
+  Independent verify:
+    llvm-as     rc = 0
+    opt verify  rc = 0
+
+  Verdict: PASS  (frozen byte pointer parameter + byte load shape)
+
+------------------------------------------------------------
+Summary
+------------------------------------------------------------
+  Both byte-load fixtures emit "load i8, ptr %p" (the frozen
+  MEMORY01 BYTE-MEMORY01 shape). No forbidden instructions appear.
+  Both verify cleanly with llvm-as and opt --passes=verify.

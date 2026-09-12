@@ -1,0 +1,41 @@
+C2 evidence — production-delta invariant (per ACT §14)
+======================================================
+
+Method
+------
+  Mechanical check that RESUME02 has introduced no compiler
+  production change. The invariant is:
+    git diff <ENTRY_HEAD>..HEAD -- src/
+    must be empty (or zero intentional lines).
+
+  ENTRY_HEAD for RESUME02 is 246be50a373425541eee2c8e00f900e5ffab505c.
+
+------------------------------------------------------------
+Mechanical result
+------------------------------------------------------------
+  $ git diff 246be50a..HEAD -- src/
+  (empty output)
+  $ git diff 246be50a..HEAD --stat -- 'src/ir*' 'src/llvm-backend*'
+  (empty output)
+
+  Total src/ lines changed in this ACT's range: 0.
+  Total src/ir* lines changed: 0.
+  Total src/llvm-backend* lines changed: 0.
+
+  Allowed changes (per ACT §14):
+    docs/acts/ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME02.md
+    docs/ROADMAP.md             (closed at C3)
+    evidence/ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME02/**
+
+  Actual changed files vs 246be50a:
+    docs/acts/ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME02.md   (C1)
+    evidence/ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME02/c1/   (C1)
+    evidence/ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME02/c2/   (C2)
+
+  Zero production changes.
+
+------------------------------------------------------------
+Verdict
+------------------------------------------------------------
+  Production-delta invariant: PASS.
+  No src/ file was modified. RESUME02 is docs-only + evidence-only.

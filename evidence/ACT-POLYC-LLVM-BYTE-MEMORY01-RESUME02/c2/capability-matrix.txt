@@ -1,0 +1,134 @@
+C2 evidence — frozen byte capability matrix (per ACT §5.2 + §7)
+=================================================================
+
+The authoritative capability matrix is the TSV at
+  ../c1/current-capability-matrix.tsv
+
+That TSV was derived mechanically from:
+  src/llvm-backend-cap.c (capability table rows),
+  the BYTE-MEMORY01 recon freeze at
+    evidence/llvm-byte-memory01/recon/authorized-set.txt,
+  and the existing scripts/quality/llvm-byte-memory01-test.sh.
+
+This C2 file summarises the matrix by row class and binds each
+row to fresh reproduction evidence under c2/.
+
+------------------------------------------------------------
+SOURCE BYTE SCALAR PARAMETER ADMISSION
+------------------------------------------------------------
+  Shape      : I8 / U8 parameter
+  Status     : SUPPORTED
+  Fresh row  : red_u8_param.HC, red_i8_param.HC
+  Evidence   : c2/byte-type-admission.txt
+  Notes      : LLVM i8 function parameter. ZEXT for U8, SEXT
+               for I8 (signedness carried by opcode).
+
+  AC03 (I8/U8 parameter admission) -- SATISFIED.
+
+------------------------------------------------------------
+BYTE POINTER PARAMETER
+------------------------------------------------------------
+  Shape      : U8 *p parameter
+  Status     : SUPPORTED
+  Fresh row  : red_byte_pointer_param.HC
+  Evidence   : c2/byte-load.txt
+  Notes      : LLVM opaque ptr parameter; access width is i8.
+
+  AC03 (byte pointer parameter admission) -- SATISFIED.
+
+------------------------------------------------------------
+DIRECT BYTE LOAD
+------------------------------------------------------------
+  Shape      : IR_LOAD_DEREF I8 access
+  Status     : SUPPORTED
+  Fresh row  : red_byte_load.HC, red_byte_pointer_param.HC
+  Evidence   : c2/byte-load.txt
+  LLVM form  : 'load i8, ptr %p'
+  Negative form check (forbidden):
+               load i64 / ptrtoint / inttoptr / bitcast -- none observed
+
+  AC04 (direct byte load) -- SATISFIED.
+
+------------------------------------------------------------
+UNSIGNED PROMOTION
+------------------------------------------------------------
+  Shape      : IR_ZEXT I8 -> I64
+  Status     : SUPPORTED
+  Fresh row  : red_u8_param.HC, red_byte_to_i64.HC,
+               pos_b0_compare_digit.HC
+  LLVM form  : 'zext i8 ... to i64'
+
+  AC05 (unsigned promotion) -- SATISFIED.
+
+------------------------------------------------------------
+SIGNED PROMOTION
+------------------------------------------------------------
+  Shape      : IR_SEXT I8 -> I64
+  Status     : SUPPORTED
+  Fresh row  : red_i8_param.HC
+  LLVM form  : 'sext i8 ... to i64'
+
+  AC06 (signed promotion) -- SATISFIED.
+
+------------------------------------------------------------
+NARROWING (I64 -> I8)
+------------------------------------------------------------
+  Shape      : IR_TRUNC I64 -> I8
+  Status     : SUPPORTED
+  Fresh rows : all five byte fixtures + pos_b0_compare_digit
+  LLVM form  : 'trunc i64 ... to i8'
+  Negative control (I64 -> I16) -- REJECTED with named diagnostic.
+
+  AC07 (truncation boundary) -- SATISFIED.
+
+------------------------------------------------------------
+BYTE COMPARISON
+------------------------------------------------------------
+  Shape      : IR_ICMP on i8 (after widening)
+  Status     : SUPPORTED
+  Fresh rows : pos_byte_compare_simple.HC, pos_b0_compare_digit.HC
+  LLVM form  : 'icmp sge i8 48' / 'icmp sle i8 57'
+  Coverage   : below range, lower endpoint, interior digit,
+               upper endpoint, above range.
+
+  AC08 (byte comparison) -- SATISFIED.
+
+------------------------------------------------------------
+B0-SHAPED MULTI-BLOCK BYTE FIXTURE
+------------------------------------------------------------
+  Shape      : pos_b0_compare_digit.HC
+  Status     : SUPPORTED
+  Function 1 : ReadDigit (load + range compare + subtract)
+  Function 2 : AccDigit  (Option-W accumulator + mem2reg)
+  Independent verify: llvm-as + opt --passes=verify both rc=0.
+  Runtime   : native backend executes both with correct outputs.
+
+  AC09 (B0-shaped multi-block byte fixture) -- SATISFIED.
+
+------------------------------------------------------------
+BYTE STORE
+------------------------------------------------------------
+  Shape      : IR_STORE_DEREF I8
+  Status     : DEFERRED
+  Disposition: BYTE_STORE_STATUS = DEFERRED_NOT_B0_BLOCKING
+  Evidence   : c2/byte-store-disposition.txt
+
+  AC13 (byte-store disposition) -- SATISFIED (DEFERRED_NOT_B0_BLOCKING).
+
+------------------------------------------------------------
+GEP / INDEXING
+------------------------------------------------------------
+  Shape      : IR_GEP / IR_LEA
+  Status     : REJECTED
+  BYTE_MEMORY_GEP_COUNT = 0 (positive fixtures).
+  Owner      : ACT-POLYC-LLVM-GEP01
+
+  AC12 (GEP boundary) -- SATISFIED (GEP not required for BYTE-MEMORY
+  positive fixtures; explicitly owned by GEP01).
+
+------------------------------------------------------------
+NO NEW CAPABILITY REQUIRED
+------------------------------------------------------------
+  Q1..Q5 from c1-boundary-recon.txt all return NO.
+  No new opcode, no new width, no new conversion.
+  AC11 (no new byte-memory capability required) -- SATISFIED.

@@ -1,0 +1,67 @@
+C2 evidence — historical HALT reconciliation (per ACT §5.3 + §7.6)
+======================================================================
+
+This evidence file re-binds the C1 reconciliation table to
+fresh current-tree mechanical checks. The disposition rows are
+preserved from c1/historical-halt-reconciliation.txt; this file
+adds the C2-fresh corroboration.
+
+------------------------------------------------------------
+H1 - scope expansion (SEXT/TRUNC implemented despite DEFER)
+------------------------------------------------------------
+  RESOLVED_BY_AUTHORIZATION.
+  Fresh corroboration (per ACT §7.3, §7.4):
+    [a] IR_SEXT (SHAPE_DEPENDENT, I8->I64) reproduces:
+        red_i8_param.HC -> emits 'sext i8 %0 to i64'.
+        llvm-as rc = 0; opt verify rc = 0.
+    [b] IR_TRUNC (SHAPE_DEPENDENT, I64->I8) reproduces:
+        Every positive fixture emits 'trunc i64 ... to i8'
+        at the function-return boundary. llvm-as + opt verify clean.
+    [c] IR_TRUNC rejected for unauthorized narrowing:
+        red_i16_trunc_negative.HC -> rc = 1 with
+          LLVM_BACKEND_UNSUPPORTED_CONVERSION: function NarrowToI16:
+            IR_TRUNC is not supported in this shape
+            (src=4, dst=2; BYTE-MEMORY01 only supports
+             I64 -> I8 narrowing for byte locals)
+  Status: GREEN. Confirmed fresh from current tree.
+
+------------------------------------------------------------
+H2 - multi-block SSA dominance (pos_b0_compare_digit invalid)
+------------------------------------------------------------
+  RESOLVED_BY_LOCAL_MEM2REG.
+  Fresh corroboration (per ACT §7.6):
+    [a] pos_b0_compare_digit.HC compiles cleanly:
+          hcc --emit-llvm rc = 0.
+    [b] emitted LLVM module:
+          - contains 'load i8, ptr %p' (byte load),
+          - contains zext i8 / sext i8 conversion,
+          - contains icmp sge/sle i8 48/57 (range compare),
+          - contains an AccDigit path with
+              entry-block alloca (%t3 i64)
+              + store at ORIGINAL definition site (e.g. bb11
+                stores %l17 = ... back to alloca)
+              + load at return boundary (%t34 = load i64, %t20)
+            i.e. the LOCAL-MEM2REG Option-W / mem2reg form.
+    [c] llvm-as rc = 0; opt --passes=verify rc = 0.
+    [d] Native-backend runtime confirms source semantics:
+          ReadDigit(0..9)        = 0..9    (matches)
+          ReadDigit(non-digit)   = 0      (matches)
+          AccDigit(12, '0'..'9') = 120..129 (matches)
+          AccDigit(12, non-digit) = 12     (matches)
+
+  Status: GREEN. The H2 defect class is discharged by the
+  closed LOCAL-MEM2REG01-CORRECTION02 production architecture.
+  No bespoke CFG reconstruction is required.
+
+------------------------------------------------------------
+Combined verdict
+------------------------------------------------------------
+  Both historical HALTs are mechanically resolved by later
+  authorized work. The current tree demonstrably passes both
+  H1's explicit-authorization check (via cap-table rows +
+  RESUME01 §3.1 + fresh reproduction of SEXT/TRUNC shapes)
+  and H2's actual-production-fix check (via LOCAL-MEM2REG C7
+  architecture + independent LLVM verification + native runtime
+  proof on the B0-shaped fixture).
+
+  Combined verdict: PASS.

@@ -1,0 +1,73 @@
+C2 evidence — truncation boundary (per ACT §7.4)
+=================================================
+
+The truncation boundary has two sides:
+
+  Positive  : I64 -> I8 narrowing  (frozen BYTE-MEMORY01 RESUME01 shape)
+  Negative  : I64 -> I16 narrowing (unauthorized; must remain rejected)
+
+------------------------------------------------------------
+Positive: I64 -> I8 narrowing
+------------------------------------------------------------
+  Observation: every byte-shaped fixture that has an I64 value
+  in flight emits a trunc i64 -> i8 at the function-return
+  boundary. Examples (fresh from current tree):
+
+    red_u8_param.ll:
+      %ret_trunc_to_i8 = trunc i64 %zext_i8_i64 to i8
+
+    red_i8_param.ll:
+      %ret_trunc_to_i8 = trunc i64 %sext_i8_i64 to i8
+
+    red_byte_load.ll:
+      %ret_trunc_to_i8 = trunc i64 %zext_i8_i64 to i8
+
+    pos_byte_compare_simple.ll:
+      %trunc_i64_i8 = trunc i64 %zext_i8_i64 to i8
+
+    pos_b0_compare_digit.ll:
+      %trunc_i64_i8 = trunc i64 %zext_i8_i64 to i8
+      %i8_arg_trunc  = trunc i64 %zext_i8_i641 to i8
+
+  All use the LLVMBuildTrunc lowering arm and verify cleanly
+  via opt --passes=verify.
+
+  Capability table (src/llvm-backend-cap.c IR_TRUNC):
+    SHAPE_DEPENDENT, supported only when src=IR_TYPE_I64
+    and dst=IR_TYPE_I8. All other src/dst pairs rejected with
+    LLVM_BACKEND_UNSUPPORTED_CONVERSION.
+
+  Verdict: PASS  (frozen I64->I8 truncation GREEN).
+
+------------------------------------------------------------
+Negative: I64 -> I16 narrowing must remain REJECTED
+------------------------------------------------------------
+  Test:
+    ./hcc --emit-llvm --install-dir=$HCC_INSTALL_DIR \
+          src/tests/llvm-byte-memory01/red_i16_trunc_negative.HC \
+          2>err.txt
+    rc = 1 (non-zero on rejection)
+    err.txt contents (stderr):
+      LLVM backend capability contract: ok (56 rows, ordinal binding)
+      LLVM_BACKEND_UNSUPPORTED_CONVERSION: function NarrowToI16:
+        IR_TRUNC is not supported in this shape
+        (src=4, dst=2; BYTE-MEMORY01 only supports
+         I64 -> I8 narrowing for byte locals)
+      CAPABILITY_COUNTERS supported=0 rejected=1
+                              shape_dependent=1 defensive=0
+                              unreachable=0
+
+  The named diagnostic includes the substring "IR_TRUNC" and
+  "BYTE-MEMORY01 only supports I64 -> I8", exactly matching
+  the negative-control contract from
+  scripts/quality/llvm-byte-memory01-test.sh truncation section.
+
+  Verdict: PASS  (negative control REJECTED with the named
+                   LLVM_BACKEND_UNSUPPORTED_CONVERSION diagnostic).
+
+------------------------------------------------------------
+Combined verdict
+------------------------------------------------------------
+  I64 -> I8 GREEN; I64 -> I16 REJECTED with named diagnostic.
+  No widening of the truncation boundary; the frozen contract
+  is preserved.

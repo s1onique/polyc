@@ -1,0 +1,54 @@
+C2 evidence — byte-store disposition (per ACT §10)
+==================================================
+
+Question
+--------
+  Is IR_STORE_DEREF byte shape required for B0 first milestone?
+  (i.e. byte store = store i8 %v, ptr %p)
+
+------------------------------------------------------------
+Current evidence
+------------------------------------------------------------
+  src/llvm-backend-cap.c row IR_STORE_DEREF:
+    SHAPE_DEPENDENT.
+    Supported when (a) dst (addr) is IR_VAL_PARAM or pointer-typed
+    IR_VAL_LOCAL/IR_VAL_TMP mapped to LLVM opaque ptr, and
+    (b) r1->type is IR_TYPE_I64.
+    All other shapes rejected with LLVM_BACKEND_UNSUPPORTED_POINTER
+    (or LLVM_BACKEND_UNSUPPORTED_TYPE if r1->type is not the
+    proven I64 access type).
+    "BYTE-MEMORY01 defers byte store."
+
+  No positive fixture under src/tests/llvm-byte-memory01/ attempts
+  to store a byte. The eight fixtures are all read / compare /
+  arithmetic paths. The historical `red_*` files include parameter
+  admission and load paths but no byte store.
+
+------------------------------------------------------------
+B0 demand analysis (per c1/b0-byte-demand.txt)
+------------------------------------------------------------
+  B0 first milestone writes its output as an I64 scalar (parsed
+  integer value), not as a byte buffer. Therefore byte stores are
+  not required for the B0 read-only path:
+    BYTE_STORE_DEMAND = NO.
+    I64_TO_BYTE_DEMAND = NO.
+
+  The existing IR_STORE_DEREF I64 path (admitted since MEMORY01)
+  is sufficient for B0's first output scalar.
+
+------------------------------------------------------------
+Q1..Q5 from c1-boundary-recon.txt also confirm this
+------------------------------------------------------------
+  Q2 - IR_STORE_DEREF byte?  -> NO  (zero 'store i8' in emitted
+       LLVM for pos_b0_compare_digit.HC; zero 'store i8' across
+       all BYTE-MEMORY positive fixtures)
+
+------------------------------------------------------------
+Disposition
+------------------------------------------------------------
+  BYTE_STORE_STATUS = DEFERRED_NOT_B0_BLOCKING.
+
+  Per ACT §10, that is a valid PASS state. No byte-store ACT is
+  triggered by RESUME02.
+
+  No new capability row is needed.
