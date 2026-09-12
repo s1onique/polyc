@@ -550,6 +550,73 @@ The C2 IMPL-B (if released by C3) MUST use one-pass because
 the only current producer shape has the pre-ordering invariant;
 two-phase is preserved as a bounded fallback only.
 
+### Strengthened PHI-B shape contract (C2-A.1, before C4 release)
+
+Per LLVM LangRef, a PHI must have exactly one incoming
+`(value, block)` pair for each predecessor of the merge
+block, with PHIs preceding non-PHI instructions in the
+block. The C1.1 SHAPE_DEPENDENT guard was insufficient
+(only checked "block belongs to function"). The
+STRENGTHENED contract for C4 IMPL-B is:
+
+```text
+  IR_PHI accepted iff:
+
+    dst != NULL
+    dst.kind == IR_VAL_TMP
+    dst.type == IR_TYPE_I8
+
+    phi_pairs != NULL
+    pair_count == CFG_predecessor_count(current_block)
+
+    for each pair P:
+      P != NULL
+      P.ir_value != NULL
+      P.ir_block != NULL
+
+      P.ir_block IS an actual predecessor of current_block
+      P.ir_block occurs exactly once in phi_pairs
+      (set semantics, not multiset)
+
+      P.ir_value.type == IR_TYPE_I8
+        OR P.ir_value is an I8-compatible constant
+        (per the existing neutral-IR type contract)
+
+    every predecessor of current_block occurs exactly once
+    in phi_pairs
+
+  AND:
+
+    IR_PHI is the FIRST instruction in the merge block
+    (no non-PHI instruction precedes it in the neutral IR
+    order; the C4 IMPL-B verifies this with the same
+    pre-ordering argument as the C1.1 lowering safety proof,
+    applied to within-block instruction ordering).
+
+  rejected shapes use:
+    LLVM_BACKEND_UNSUPPORTED_PHI_ORTHOGONAL_TO_CORE
+```
+
+This contract is stronger than the C1.1 freeze in three ways:
+
+1. Each incoming block must be an ACTUAL predecessor of
+   the merge block (not merely a block in fn->blocks).
+2. The predecessor set has set semantics: each predecessor
+   appears exactly once. The PHI's `pair_count` must equal
+   the CFG's `predecessor_count(current_block)`.
+3. The IR_PHI must be the first instruction in the merge
+   block; non-PHI instructions may not precede it.
+
+The "exactly once" property is what guarantees LLVM
+semantics: each predecessor edge contributes one and only
+one incoming value.
+
+The "PHI first in block" property is verified mechanically:
+for every current IR_PHI producer, the merge block's first
+instruction is the IR_PHI. The C1.1 pre-ordering argument
+extends to within-block instruction ordering in the C4
+IMPL-B's verification step.
+
 Hard stop: if Fix B's implementation requires additional LLVM
 C-API calls beyond `LLVMBuildPHI` + `LLVMAddIncoming` + the
 existing `llLowerValue` / `llLowerType` / `llGetOrCreateBlock`
@@ -563,30 +630,46 @@ seams, this ACT halts as HALT_SCOPE_EXPANSION_REQUIRED.
 C1 RED        (committed; RED at 982dfa3)
                 ACT + 12 C1 evidence files
 
-C1.1 RED      (this commit)
+C1.1 RED      (committed; RED at adcbca1)
                 ACT corrections (5 contract defects)
                 + 3 C1.1 evidence files:
                   - c1.1-patch-summary.md
                   - negative-control.txt
                   - phi-onepass-safety.txt
 
-C2 IMPL-A     (Fix A only)
-                widen llOptionW_ReadsAreLowerable
-                rebuild hcc
-                verify: G1 PASS, G2 PASS, G3 still FAIL on path 2
-                verify: GN4_neg.HC STILL rejected (AC24)
-                verify: NO IR_PHI diagnostic fires for any test (AC25)
+C2 IMPL-A     (committed; IMPL at c03b2346; HALT_C2A_INCOMPLETE)
+                widened Gate 4 (read envelope); revealed Gate 5 gap
+                + 2 C2 evidence files:
+                  - baseline-pre-c2a.txt
+                  - post-c2a-result.txt
 
-C3 EVIDENCE-A
-                P1 PASS, P2 PASS, P5-P11 PASS (LOCAL-MEM2REG regression)
-                P3 still FAIL on path 2 (PHI)
-                C3 freeze the two-seam result
+C2-A.1 RED    (this commit)
+                ACT correction: Rule 5 = observable sink
+                + 1 C2.1 evidence file:
+                  - rule5-observable-sink.txt
+                NO production change.
 
-C4 IMPL-B     (ONLY IF C3 finds path 2 still blocks)
+C2-A.2 IMPL   (next; same ACT)
+                widen Gate 5: admit Sink C = IR_STORE_DEREF(r1==V)
+                add GN5_out_and_unsupported_use.HC negative control
+                + GN5b positive control
+
+C3 EVIDENCE-A (only after C2-A.2)
+                G1 PASS / G2 PASS / G3 UNSUPPORTED_PHI / GN4 still
+                rejected / GN5 still rejected / GN5b PASS / P5-P11 7/7
+                strengthen PHI-B shape contract per LLVM LangRef
+                decide C4_IMPL_B_AUTH
+
+C4 IMPL-B     (ONLY IF C3 releases it)
                 add case IR_PHI: arm to llLowerInstr (SHAPE_DEPENDENT)
+                + STRENGTHENED shape validation:
+                  - pair_count == CFG predecessor count
+                  - each incoming block is actual predecessor
+                  - each predecessor represented exactly once
+                  - incoming type compatible with I8 PHI
+                  - no non-PHI precedes PHI in merge block
                 add LLVM_BACKEND_UNSUPPORTED_PHI_ORTHOGONAL_TO_CORE
                 update src/llvm-backend-cap.c IR_PHI to SHAPE_DEPENDENT
-                rebuild hcc
 
 C5 EVIDENCE-B
                 ScanIdent compiles + verifies + runs against oracle
@@ -597,10 +680,41 @@ C6 CLOSE      (verdict per outcome)
 ```
 
 Hard stop rule: if C3 finds that path 2 (PHI) is the only remaining
-blocker AND Fix B's contract in §9 above can be implemented
-without scope expansion, proceed to C4. Otherwise, halt after C3
-with verdict `HALT_SECOND_SEAM_REQUIRED` and a smaller IR_PHI-
-only ACT, named mechanically.
+blocker AND Fix B's STRENGTHENED contract (above) can be
+implemented without scope expansion, proceed to C4. Otherwise,
+halt after C3 with verdict `HALT_SECOND_SEAM_REQUIRED` and a
+smaller IR_PHI-only ACT, named mechanically.
+
+## 10.1 Architectural inference refinement (C2-A.1)
+
+The recon's two-seam framing was empirically incomplete.
+C2-A revealed that Gate 4 (read envelope) and Gate 5 (return
+sink) are TWO FACETS of the same Option-W eligibility seam:
+
+```text
+A1 = legal read/use shape        (Gate 4; widened in C2-A)
+A2 = observable sink shape       (Gate 5; widened in C2-A.2)
+B  = IR_PHI backend support      (Gate dispatch; seam B)
+```
+
+This is more truthful than the recon's "A / B" framing.
+
+The C function `llOptionW_FeedsReturnOrIsReturnLocal` keeps
+its historical name (recorded as legacy naming debt). Its
+SEMANTIC contract is now observable-sink (not return-sink):
+
+  Sink A: direct function return (unchanged)
+  Sink B: compiler-generated return slot (unchanged)
+  Sink C: IR_STORE_DEREF(r1==V, dst!=V, r2!=V) [NEW in C2-A.2]
+
+The frozen implementation contract for Sink C is in
+`evidence/c2.1/rule5-observable-sink.txt`.
+
+F14 hygiene residue: the C1 IR captures (g1/g2/g3 .ir.txt)
+were later stripped of whitespace at commit 6512e0f. Future
+ACTs must follow the F14 hygiene-preserving pattern
+(preserve historical artifact; record hygiene defect in new
+evidence rather than modifying old captures).
 
 ---
 
@@ -675,6 +789,33 @@ only ACT, named mechanically.
          (a) "8 evidence files" -> "12 C1 evidence files";
          (b) G1 caption "no CFG merge" -> "no neutral-IR PHI".
 
+### C2-A.1 authorization correction acceptance criteria
+
+29. AC29 C2-A.1 freezes the Rule 5 semantic redefinition from
+         return-sink to observable-sink.
+30. AC30 C2-A.1 freezes Sink C as the ONLY new approved sink:
+         `IR_STORE_DEREF(r1==V, dst!=V, r2!=V)`.
+31. AC31 C2-A.1 freezes the strengthened negative control
+         (GN5_out_and_unsupported_use.HC) with a positive
+         control (GN5b.HC).
+32. AC32 C2-A.1 freezes the historical-naming-debt clause:
+         the C function keeps `llOptionW_FeedsReturnOrIsReturnLocal`
+         but the SEMANTIC contract is observable-sink.
+
+### C2-A.2 implementation acceptance criteria
+
+33. AC33 C2-A.2 widens ONLY `llOptionW_FeedsReturnOrIsReturnLocal`
+         (Sink C arm); no other production source files modified.
+34. AC34 C2-A.2 transition matrix:
+         G1 PASS, G2 PASS, G3 UNSUPPORTED_PHI, GN4 still
+         rejected, GN5 still rejected (imul violates Gate 3),
+         GN5b PASS (positive control), P5-P11 7/7 PASS.
+35. AC35 If the C2-A.2 matrix is NOT achieved, HALT and require
+         a full discriminator gate audit (HALT_GATE_AUDIT_REQUIRED).
+36. AC36 C2-A.2 does not change Gate 3 (definition forms)
+         or Gate 4 (read envelope).
+37. AC37 C2-A.2 adds GN5/GN5b to the regression set as P12/P13.
+
 ---
 
 ## 12. HALT taxonomy
@@ -693,6 +834,15 @@ HALT_NEGATIVE_CONTROL_REGRESSION  (C2-A: GN4_neg.HC becomes
 HALT_PHI_PREORDERING_VIOLATED    (a future IR_PHI producer violates
                                    the pre-ordering invariant and
                                    requires two-phase lowering)
+HALT_C2A_INCOMPLETE             (committed at c03b2346; the
+                                  read-envelope widening alone
+                                  was insufficient because Gate 5
+                                  (FeedsReturn) also rejects
+                                  B0-shaped out-param code)
+HALT_GATE_AUDIT_REQUIRED        (a new gate, not addressed by
+                                  the frozen contract, rejects
+                                  a probe; the discriminator
+                                  itself needs a full audit)
 ```
 
 ---

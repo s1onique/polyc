@@ -1,0 +1,146 @@
+# C2-A.1: Rule 5 -> observable sink (semantic redefinition)
+
+## Discovery (C2-A HALT)
+
+C2-A widened the read envelope (Gate 4) to admit
+`IR_STORE_DEREF(r1 == V)`. The transition matrix then revealed
+that Gate 5 (`llOptionW_FeedsReturnOrIsReturnLocal`) ALSO
+rejects B0-shaped out-param code. The recon under-counted
+gates: there are three independent rejection paths, not two.
+
+Gate 4 and Gate 5 are best understood as TWO FACETS of the
+same Option-W eligibility seam (per the expert review):
+
+  A1 = legal read/use shape     (Gate 4: widened in C2-A)
+  A2 = observable sink shape    (Gate 5: widened in C2-A.2)
+  B  = IR_PHI backend support   (still REJECTED; seam B)
+
+## Semantic redefinition: Rule 5 (observable sink)
+
+Old Rule 5 (return-sink-only):
+  V must ultimately feed the function's return value, either
+  directly (IR_RET dst == V) or via the compiler-generated
+  return slot (IR_STORE V -> IR_VAL_TMP), or via a tmp chain
+  reaching one of those sinks.
+
+New Rule 5 (observable sink):
+  V must ultimately feed at least one approved externally
+  observable sink:
+
+    A. direct function return
+       (IR_RET dst == V; unchanged)
+
+    B. compiler-generated return slot
+       (IR_STORE V -> IR_VAL_TMP; unchanged)
+
+    C. IR_STORE_DEREF where V is the VALUE operand
+       (ins->r1 == V) and the destination pointer is not V
+       (ins->dst != V) and no other operand names V
+       (ins->r2 != V).
+       This is the canonical B0 out-param pattern:
+         *out = V;
+       where the function's externally observable result is
+       delivered through caller-provided memory, not through
+       the function's return value.
+
+    (Existing tmp-chain reachability to A or B is unchanged;
+     chains do NOT extend to C in this ACT, by F8.)
+
+## Why the rename is semantic, not just cosmetic
+
+The old function name `llOptionW_FeedsReturnOrIsReturnLocal`
+embodies a return-sink-only contract. Once Sink C is admitted,
+the name becomes a misleading description of what the function
+actually decides. Recording the rename as historical/legacy
+naming debt (per the expert's recommendation) avoids churn
+in this bounded correction while making the semantic shift
+unambiguous to future readers.
+
+The C function remains `llOptionW_FeedsReturnOrIsReturnLocal`
+in C2-A.2. A future ACT (or a separate bounded commit) may
+rename it to `llOptionW_FeedsObservableResult`. The semantic
+contract frozen in this ACT is observable-sink, regardless
+of the historical C name.
+
+## Frozen implementation contract for Sink C
+
+```c
+/* Inside llOptionW_FeedsReturnOrIsReturnLocal, add: */
+if (ins->op == IR_STORE_DEREF &&
+    ins->r1 == v &&
+    ins->dst != v &&
+    ins->r2  != v) {
+    /* Sink C: *out = V. The function's externally observable
+     * result is delivered through caller-provided memory.
+     * No additional chain reachability is required in this
+     * ACT: the bounded sink check is sufficient because the
+     * read envelope (Gate 4) already admits the store via the
+     * C2-A widening. */
+    v_stored_into_out_param = 1;
+}
+```
+
+Invariants (preserved from C1.1 + C2-A):
+  * definition forms unchanged: {IR_STORE, IR_IADD, IR_ISUB}
+  * IR_STORE_DEREF is NOT a definition form (still rejected
+    by `llOptionW_DefinitionsAreCaseAorB`)
+  * address-taking fence (`llOptionW_NotAddressTaken`) still
+    owns rejection of `*V = x` (GN4_neg.HC continues to be
+    rejected)
+  * no PHI code changed
+
+## Why this remains safe architecturally
+
+Option-W exists to memory-back a mutable local where simple
+single-definition SSA lowering is insufficient.
+
+Once V is represented as:
+  alloca
+  stores at original definitions
+  loads at original uses
+
+LLVM `mem2reg` reconstructs SSA and inserts PHIs via
+iterated-dominance-frontier placement. This is unchanged.
+
+What Sink C adds is a new approved consumer of V's value;
+it does NOT alter SSA reconstruction doctrine.
+
+## Strengthened negative control: GN5_out_and_unsupported_use.HC
+
+A second negative control is required by the expert to prove
+that ONE legal sink does not produce blanket eligibility:
+
+```c
+I64 GN5(I64 *out, I64 x) {
+    I64 v = x;            // case-(a) def
+    v = v + 1;            // case-(b) def
+    *out = v;             // Sink C: legal (newly admitted)
+    v = v - 1;            // case-(b) def (legal)
+    v = v * 1;            // ILLEGAL: IR_IMUL is NOT in
+                          // CASE_B_OPCODE_SET = {IADD, ISUB}
+    return 0;
+}
+```
+
+Pre-opt IR shape (will be captured in c2.2/baseline.txt):
+  - V has 3 case-(b) defs: iadd, isub, imul
+  - One read: store* r1=V (Sink C; legal)
+  - The third def (imul) violates DefinitionsAreCaseAorB.
+
+Expected outcome: REJECTED with OPTION_W_INELIGIBLE.
+This proves Sink C does not bypass Gate 3 (definition forms).
+
+A second variant GN5b: same as GN5 but the IMUL def is
+replaced with another IADD. Then the discriminator should
+ACCEPT (since all gates pass). This is the positive control
+for Sink C.
+
+## F14 / hygiene note
+
+The C1 IR evidence captures (g1/g2/g3 .ir.txt) were later
+stripped of trailing whitespace + EOF newline (commit
+6512e0f). Under F14, future corrections should preserve
+historical artifacts and record hygiene defects in new
+evidence rather than modifying old captures. Recorded as
+P2 process residue for this ACT; future ACTs must follow
+the F14 hygiene-preserving pattern.
