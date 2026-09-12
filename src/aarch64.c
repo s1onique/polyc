@@ -218,7 +218,7 @@ static void aarch64GlobalAddr(Cctrl *cc, AoStr *buf, const char *sym,
 }
 
 /* ACT-POLYC-AOT-PIC-EXTERNAL-REFS01: AArch64 Mach-O-valid
- * materialisation of a function-symbol address whose definition is
+ * materialisation of an external symbol address whose definition is
  * supplied by another image (e.g. libpolyc-extref.dylib, libtos.dylib).
  *
  * Why this exists: aarch64GlobalAddr emits
@@ -229,7 +229,7 @@ static void aarch64GlobalAddr(Cctrl *cc, AoStr *buf, const char *sym,
  * has no per-symbol relocations, with:
  *   ld: invalid use of ADRP in '<caller>' to '_sym'
  *
- * The Mach-O-valid form for an external function pointer is a GOT
+ * The Mach-O-valid form for an external symbol address is a GOT
  * load:
  *   adrp Xd, _sym@GOTPAGE
  *   ldr  Xd, [Xd, _sym@GOTPAGEOFF]
@@ -238,6 +238,14 @@ static void aarch64GlobalAddr(Cctrl *cc, AoStr *buf, const char *sym,
  * GOT slot at runtime via the symbol's normal dynamic-resolution
  * machinery (the same machinery that already drives bl _sym for the
  * direct-call path).
+ *
+ * This helper applies to BOTH function references (the original
+ * ACT mission) and data global references (e.g. `extern HCFs *Fs;`
+ * in libtos) because the same `nreloc=0` linker complaint fires for
+ * any external symbol whose storage lives in a dylib. The ACT's
+ * mission is "external references to a dylib" — the function case
+ * is the headline but the data case shares the same Mach-O-valid
+ * remedy.
  *
  * Linux is unchanged here: this ACT does not authorize the Linux
  * PIC path; the existing :lo12: emission is preserved and the
@@ -248,8 +256,8 @@ static void aarch64GlobalAddr(Cctrl *cc, AoStr *buf, const char *sym,
  * platform for the canonical-install failure (libtos.dylib on
  * aarch64-apple-darwin). The Linux case is not exercised by the
  * RED/GREEN matrix and is intentionally left alone. */
-static void aarch64ExternalFuncAddr(Cctrl *cc, AoStr *buf,
-                                    const char *sym, const char *reg)
+static void aarch64ExternalSymbolAddr(Cctrl *cc, AoStr *buf,
+                                      const char *sym, const char *reg)
 {
     if (cc->target == TARGET_AARCH64_APPLE_DARWIN) {
         aoStrCatFmt(buf, "adrp    %s, %s@GOTPAGE\n\t", reg, sym);
@@ -261,6 +269,95 @@ static void aarch64ExternalFuncAddr(Cctrl *cc, AoStr *buf,
          * for non-Apple targets so we do not regress the Linux build
          * outside the authorized scope. */
         aarch64GlobalAddr(cc, buf, sym, reg);
+    }
+}
+
+/* ACT-POLYC-AOT-PIC-EXTERNAL-REFS01: classify a global symbol name
+ * (the IR_VAL_GLOBAL->as.global.name AoStr) as an external/dylib
+ * reference that requires GOT-loaded materialisation.
+ *
+ * True iff the symbol is registered in cc->global_env or
+ * cc->asm_funcs AND that registration is an extern-declaration AST
+ * (either AST_GVAR with AST_FLAG_EXTERN, AST_EXTERN_FUNC, or
+ * AST_ASM_FUNC_BIND which the parser binds to an external assembly
+ * label by definition - `_extern _ASM_NAME U0 CName(...);` is the
+ * canonical "asm-bound extern" syntax).
+ *
+ * Storage of each external AST kind:
+ *   - `extern Type name;`  -> cc->global_env under the C name (parser.c:2510)
+ *   - `public _extern _ASM_NAME ... CName(...);` -> cc->asm_funcs under
+ *     the C name (parser.c:2442). The IR builder stores
+ *     src->as.global.name = operand->asmfname (the `_ASM_NAME`) so we
+ *     have to bridge by stripping the leading `_` on Apple Darwin.
+ *   - `extern "c" Type name(...);` -> cc->global_env under the C name
+ *     (parseExternFunctionProto) with kind AST_EXTERN_FUNC.
+ *
+ * False for definitions in this TU (AST_FUNC, AST_GVAR without extern
+ * flag), and false for unknown symbols (let the historical
+ * page-relative path emit the existing linker diagnostic - keeps the
+ * same-image control unchanged). */
+static int aarch64IsExternalGlobalSymbol(Cctrl *cc, AoStr *name) {
+    if (!cc || !name || !name->data || name->len <= 0) return 0;
+    const char *key = name->data;
+    int key_len = name->len;
+    /* Try the literal name first (C-name from cc->global_env /
+     * cc->asm_funcs, asm-name from cc->asm_functions); on miss, try
+     * the asm-name -> C-name bridge by stripping the leading `_` that
+     * Apple Darwin asm labels carry. */
+    Ast *decl = (Ast *)mapGetLen(cc->global_env, key, key_len);
+    if (!decl) {
+        decl = (Ast *)mapGetLen(cc->asm_funcs, key, key_len);
+    }
+    if (!decl) {
+        decl = (Ast *)mapGetLen(cc->asm_functions, key, key_len);
+    }
+    if (!decl && key_len > 1 && key[0] == '_') {
+        decl = (Ast *)mapGetLen(cc->global_env, key + 1, key_len - 1);
+    }
+    if (!decl && key_len > 1 && key[0] == '_') {
+        decl = (Ast *)mapGetLen(cc->asm_funcs, key + 1, key_len - 1);
+    }
+    if (!decl && key_len > 1 && key[0] == '_') {
+        decl = (Ast *)mapGetLen(cc->asm_functions, key + 1, key_len - 1);
+    }
+    /* Slow path: the IR may carry the asm-fname for AST_ASM_FUNC_BIND
+     * (`_FREE`), which is only registered in cc->asm_funcs under the
+     * C-name (`Free`). Iterate the asm_funcs map once per lookup and
+     * compare ast->asmfname. This is acceptable because the lookup
+     * is on the AOT cold path (one call per global symbol, not per
+     * IR instruction). */
+    if (!decl && cc->asm_funcs) {
+        MapIter it;
+        mapIterInit(cc->asm_funcs, &it);
+        while (mapIterNext(&it)) {
+            MapNode *n = it.node;
+            Ast *cand = (Ast *)n->value;
+            if (cand && cand->kind == AST_ASM_FUNC_BIND &&
+                cand->asmfname &&
+                cand->asmfname->len == key_len &&
+                memcmp(cand->asmfname->data, key, key_len) == 0) {
+                decl = cand;
+                break;
+            }
+        }
+    }
+    if (!decl) return 0;
+    switch (decl->kind) {
+        case AST_EXTERN_FUNC:
+            return 1;
+        case AST_ASM_FUNC_BIND:
+            /* `public _extern _ASM_NAME U0 CName(...);` - the
+             * asm-bound symbol is provided by another image (the
+             * parser comment in src/parser.c:2400-2406 explicitly
+             * says the body usually lives in libtos and only the
+             * linker can tell a dangling label from an external one).
+             * Emit the GOT-loaded materialisation so the linker can
+             * resolve via the dynamic table. */
+            return 1;
+        case AST_GVAR:
+            return (decl->flags & AST_FLAG_EXTERN) != 0;
+        default:
+            return 0;
     }
 }
 
@@ -1370,7 +1467,19 @@ static void aarch64EmitInstr(IrCgCtx *ctx, IrInstr *instr) {
             if (instr->r1 && instr->r1->kind == IR_VAL_GLOBAL) {
                 const char *sym = asmNormaliseGlobalLabel(ctx->cc,
                         instr->r1->as.global.name)->data;
-                aarch64GlobalAddr(ctx->cc, ctx->buf, sym, "x1");
+                /* ACT-POLYC-AOT-PIC-EXTERNAL-REFS01: data globals
+                 * declared `extern Type name;` (e.g. `extern HCFs *Fs;`)
+                 * live in libtos.dylib's __DATA segment, which has
+                 * nreloc=0 just like __text. The same nreloc=0
+                 * linker complaint fires. Route through the GOT
+                 * materialisation for extern-declared data globals. */
+                if (aarch64IsExternalGlobalSymbol(ctx->cc,
+                        instr->r1->as.global.name)) {
+                    aarch64ExternalSymbolAddr(ctx->cc, ctx->buf,
+                            sym, "x1");
+                } else {
+                    aarch64GlobalAddr(ctx->cc, ctx->buf, sym, "x1");
+                }
                 u32 size = instr->dst ? instr->dst->as.var.size : 8;
                 if (instr->dst && irIsFloat(instr->dst->type)) {
                     aoStrCatFmt(ctx->buf, "ldr %s, [x1]\n\t",
@@ -1432,7 +1541,16 @@ static void aarch64EmitInstr(IrCgCtx *ctx, IrInstr *instr) {
                 const char *sym = asmNormaliseGlobalLabel(ctx->cc,
                         instr->dst->as.global.name)->data;
                 u32 sz = irValueByteSize(instr->r1);
-                aarch64GlobalAddr(ctx->cc, ctx->buf, sym, "x1");
+                /* ACT-POLYC-AOT-PIC-EXTERNAL-REFS01: see IR_LOAD_DEREF
+                 * above — extern-declared data globals also need
+                 * GOT-loaded materialisation. */
+                if (aarch64IsExternalGlobalSymbol(ctx->cc,
+                        instr->dst->as.global.name)) {
+                    aarch64ExternalSymbolAddr(ctx->cc, ctx->buf,
+                            sym, "x1");
+                } else {
+                    aarch64GlobalAddr(ctx->cc, ctx->buf, sym, "x1");
+                }
                 if (instr->r1 && irIsFloat(instr->r1->type)) {
                     aarch64LoadFirstSrcFpr(ctx, instr, instr->r1);
                     aoStrCatFmt(ctx->buf, "str %s, [x1]\n\t",
@@ -1545,32 +1663,22 @@ static void aarch64EmitInstr(IrCgCtx *ctx, IrInstr *instr) {
             if (instr->r1 && instr->r1->kind == IR_VAL_GLOBAL) {
                 const char *name = asmNormaliseGlobalLabel(ctx->cc,
                         instr->r1->as.global.name)->data;
-                /* ACT-POLYC-AOT-PIC-EXTERNAL-REFS01: classify
-                 * function-symbol references. The IR_VAL_FLAG_FUNC
-                 * bit tells us the value is a function; we then look
-                 * up the AST in the compile unit's global_env to
-                 * determine whether the function is defined here
-                 * (AST_FUNC / AST_FUN_PROTO / AST_ASM_FUNC_BIND /
-                 * AST_ASM_FUNCDEF) or merely declared as an external
-                 * reference (AST_EXTERN_FUNC). Only the latter case
-                 * needs the GOT-loaded external-reference sequence
-                 * on Apple Darwin; same-image function references
-                 * keep the historical aarch64GlobalAddr path. This
-                 * is a backend-semantic classifier (it inspects the
-                 * AST kind, not the symbol spelling). */
-                int is_external_func = 0;
+                /* ACT-POLYC-AOT-PIC-EXTERNAL-REFS01: classify the
+                 * global reference via the backend-semantic helper
+                 * aarch64IsExternalGlobalSymbol, which inspects the
+                 * AST kind in cc->global_env. For IR_LEA of a
+                 * function symbol the IR carries the C name (when
+                 * IR_VAL_FLAG_FUNC is set) or the asm name (when it
+                 * isn't, AST_ASM_FUNC_BIND/AST_ASM_FUNCDEF). The
+                 * helper covers both shapes because it inspects the
+                 * AST kind, not the IR flag. */
                 if (instr->r1->flags & IR_VAL_FLAG_FUNC) {
                     name = asmNormaliseFunctionName(ctx->cc,
                             instr->r1->as.global.name);
-                    Ast *decl = (Ast *)mapGetLen(ctx->cc->global_env,
-                            instr->r1->as.global.name->data,
-                            instr->r1->as.global.name->len);
-                    if (decl && decl->kind == AST_EXTERN_FUNC) {
-                        is_external_func = 1;
-                    }
                 }
-                if (is_external_func) {
-                    aarch64ExternalFuncAddr(ctx->cc, ctx->buf,
+                if (aarch64IsExternalGlobalSymbol(ctx->cc,
+                        instr->r1->as.global.name)) {
+                    aarch64ExternalSymbolAddr(ctx->cc, ctx->buf,
                             name, "x0");
                 } else {
                     aarch64GlobalAddr(ctx->cc, ctx->buf, name, "x0");
