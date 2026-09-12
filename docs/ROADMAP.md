@@ -984,9 +984,27 @@ OPTION-W-OUT-PARAM01  ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01
                                 §9.2 corrected algorithm + PI-1/
                                 PI-2/PI-3 invariants;
                                 C4_IMPL_B_AUTH REVOKED 3rd time)
+    C3.3 RED      this commit (PHI dispatch-arm contract mechanics:
+                                §9.3.1 PI-1 lookup-only
+                                       (llbmGet, not
+                                        llGetOrCreateBlock);
+                                §9.3.2 per-PHI counter (once at
+                                       top, not per-edge);
+                                §9.3.3 PI-3 sharpened
+                                       (instruction-valued only);
+                                §9.3.4 pre-C4 contract (P1-P4)
+                                       separate from C4 (R1-R4)
+                                       and C5 (E1);
+                                mechanical witnesses:
+                                  witness-counter: 4 cases -> 3+0
+                                  witness-lookup:   truthful vs lies;
+                                C4_IMPL_B_AUTH = TRUE reaffirmed;
+                                C4 currently READY)
     C4 IMPL-B     (next; strengthened PHI shape contract
-                                + §9.2 placement-corrected zext
-                                + PI-1/PI-2/PI-3 assertions)
+                                + §9.3 placement-corrected zext
+                                + §9.3.1 lookup-only PI-1
+                                + §9.3.2 per-PHI counter
+                                + PI-2/PI-3-narrow assertions)
     C5 EVIDENCE-B (ScanIdent compiles + verifies + runs)
     C6 CLOSE      (final verdict)
 
@@ -1007,7 +1025,15 @@ OPTION-W-OUT-PARAM01  ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01
        sub-issues:
          B1 PHI type binding            CLOSED   (C3.1)
          B2 PHI conversion placement    CLOSED   (C3.2)
-         B3 PHI dispatch arm impl       OPEN     (C4)
+         B3 PHI dispatch arm impl       READY    (C4 contract freeze
+                                                 complete; per-PHI
+                                                 counter + lookup-only
+                                                 PI-1 frozen in C3.3)
+       sub-sub-issues:
+         B3.1 PI-1 lookup-only          CLOSED   (C3.3 §9.3.1)
+         B3.2 per-PHI counter           CLOSED   (C3.3 §9.3.2)
+         B3.3 PI-3 narrowing            CLOSED   (C3.3 §9.3.3)
+         B3.4 mechanics (P/R/E split)   CLOSED   (C3.3 §9.3.4)
 
   C2-A.1 RULE 5 REDEFINITION:
     Old: V feeds return (return-sink only)

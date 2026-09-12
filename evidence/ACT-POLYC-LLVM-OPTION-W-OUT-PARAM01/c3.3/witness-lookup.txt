@@ -1,0 +1,39 @@
+PI-1 LOOKUP-ONLY WITNESS (C3.3 contract freeze)
+
+Pre-allocated block map: ids 0..2 (simulates llCreateBlocks)
+
+Test: id 0  (pre-alloc)
+    [Strategy A: get-or-create] bb = 0x1000  (non-NULL)
+    [Strategy B: lookup-only]   bb = 0x1000  (non-NULL)
+
+Test: id 1  (pre-alloc)
+    [Strategy A: get-or-create] bb = 0x1001  (non-NULL)
+    [Strategy B: lookup-only]   bb = 0x1001  (non-NULL)
+
+Test: id 2  (pre-alloc)
+    [Strategy A: get-or-create] bb = 0x1002  (non-NULL)
+    [Strategy B: lookup-only]   bb = 0x1002  (non-NULL)
+
+Test: id 99 (NOT pre-alloc)
+    [Strategy A] id=99 fabricated bb=0xf063
+    [Strategy A: get-or-create] bb = 0xf063  (non-NULL)
+    [Strategy B: lookup-only]   bb = 0x0  (NULL)
+    PI-1 under Strategy A: LIES (fabricated block; would proceed without halt)
+    PI-1 under Strategy B: TRUTHFUL (returns NULL; caller halts)
+
+=== SUMMARY ===
+Strategy A (get-or-create): PI-1 LIES
+Strategy B (lookup-only):   PI-1 TRUTHFUL
+
+OUTCOME_E_PI1_LOOKUP_CONFIRMED
+
+Interpretation for the C4 IR_PHI dispatch arm:
+  - PI-1 MUST use llbmGet(&lc->blocks, ir_block_id)
+    or an equivalent lookup-only predicate.
+  - PI-1 MUST NOT use llGetOrCreateBlock, which
+    would fabricate an empty LLVM block on demand
+    and make PI-1 unable to detect the missing-
+    materialisation defect.
+  - PI-1 (lookup-only) + PI-2 (terminator present)
+    together correctly prove 'predecessor has been
+    lowered'. Either one alone is insufficient.

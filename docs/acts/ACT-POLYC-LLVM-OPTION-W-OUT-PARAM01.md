@@ -865,8 +865,276 @@ IMPL-B's verification step.
 
 Hard stop: if Fix B's implementation requires additional LLVM
 C-API calls beyond `LLVMBuildPHI` + `LLVMAddIncoming` + the
-existing `llLowerValue` / `llLowerType` / `llGetOrCreateBlock`
-seams, this ACT halts as HALT_SCOPE_EXPANSION_REQUIRED.
+existing `llLowerValue` / `llLowerType` / `llbmGet`
+(lookup-only; see §9.3) seams, this ACT halts as
+HALT_SCOPE_EXPANSION_REQUIRED.
+
+---
+
+## 9.3 C3.3 RED: PHI dispatch-arm contract mechanics
+
+The C3.2 §9.2 corrected algorithm was correct about the SSA
+placement of the zext but had THREE remaining contract defects
+in its mechanics. C3.3 freezes the corrections.
+
+### §9.3.1 PI-1 lookup-only predicate (D1 correction)
+
+C3.2 §9.2 wrote:
+
+```c
+pred_bb := llGetOrCreateBlock(lc, p->ir_block)
+ASSERT PI-1: pred_bb already existed
+```
+
+These two operations contradict each other. A get-or-create
+accessor destroys the information PI-1 is supposed to test:
+if the predecessor LLVM block does not yet exist, the
+get-or-create accessor fabricates an empty `LLVMBasicBlockRef`,
+after which `pred_bb != NULL` says nothing about whether
+preorder materialisation occurred. PI-2 (terminator present)
+would happen to catch the defect, but only by coincidence.
+
+C3.3 freezes the correct predicate:
+
+```c
+pred_bb := llbmGet(&lc->blocks, p->ir_block)
+if pred_bb == NULL:
+    HALT_PHI_EDGE_MATERIALIZATION_REQUIRED
+          "predecessor block id %u was not pre-allocated
+           by llCreateBlocks; preorder materialisation is
+           required before the IR_PHI dispatch arm runs."
+```
+
+`llbmGet` is the existing lookup-only predicate at
+`src/llvm-backend.c:270-273`. It returns `NULL` for any id
+outside the pre-allocated range (set up by `llCreateBlocks`
+at `src/llvm-backend.c:1442-1468`, which appends every
+`IrBlock` of the current function as an LLVM basic block
+BEFORE lowering begins). The C4 implementation MUST use
+`llbmGet` (or an equivalent lookup-only predicate) and MUST
+NOT introduce a get-or-create accessor.
+
+**Mechanical witness**: `evidence/c3.3/witness-lookup.c`
+demonstrates both strategies against a simulated block map
+and proves the lookup-only predicate detects a fabricated
+block that the get-or-create accessor would silently accept.
+Verdict: `OUTCOME_E_PI1_LOOKUP_CONFIRMED`.
+
+### §9.3.2 Per-PHI counter semantic (D2 correction)
+
+C3.2 §9.2 was internally inconsistent. The prose froze:
+
+> `LL_INC_SHAPE_DEPENDENT` ... **per-PHI it counts as one
+> helper action regardless of how many incoming edges are
+> converted**.
+
+But the pseudocode called:
+
+```c
+for each incoming edge:
+    ...
+    if i1 -> i8:
+        ...
+        LL_INC_SHAPE_DEPENDENT(lc);   /* inside the loop! */
+```
+
+A PHI with two `i1` incoming edges would therefore increment
+the counter twice.
+
+C3.3 freezes the corrected semantic, consistent with the
+existing capability accounting convention observed at
+`src/llvm-backend.c:2024, 2229, 2514, 2846, 3029, 3153`
+(all of which increment once per opcode at the top of the
+arm, not per-instruction-inside-a-loop):
+
+```text
+SHAPE_DEPENDENT for IR_PHI = exactly ONE increment per
+successfully accepted IR_PHI shape, AT THE TOP of the arm
+(after shape validation, BEFORE the per-edge loop).
+
+Per-edge zext normalisation does NOT contribute a separate
+counter increment.
+```
+
+**Mechanical witness**: `evidence/c3.3/witness-counter.c`
+drives FOUR synthetic IR_PHI cases through the corrected
+algorithm and prints the counter delta for each:
+
+| case                | n_edges | converted | delta | expected | result |
+|---------------------|---------|-----------|-------|----------|--------|
+| `phi_no_zext`       | 1       | 0         | 1     | 1        | OK     |
+| `phi_one_zext`      | 2       | 1         | 1     | 1        | OK     |
+| `phi_two_zexts`     | 3       | 2         | 1     | 1        | OK     |
+| `phi_rejected_shape`| 1       | 0         | 0     | 0        | OK     |
+
+Final counter value: `3`. Verdict: `OUTCOME_D_COUNTER_
+SEMANTIC_CONFIRMED`.
+
+**Expected counts for the C2-A.2 frozen matrix when C4 lands**:
+
+```text
+G3       : 1 SHAPE_DEPENDENT (one IR_PHI accepted)
+PhiOnly  : 1 SHAPE_DEPENDENT (one IR_PHI accepted)
+Others   : unchanged (no short-circuit PHI in bounded form)
+```
+
+### §9.3.3 PI-3 sharpening (minor)
+
+C3.2 PI-3 said:
+
+> incoming value has already been lowered **into the predecessor
+> block**.
+
+That is correct for the `IR_ICMP` values that need edge
+normalisation, but too broad as a universal PHI rule.
+Constants and arguments do not belong to a predecessor block
+at all; LLVM considers them to dominate everywhere.
+
+C3.3 sharpens PI-3:
+
+```text
+PI-3:
+  the incoming value is already available at the predecessor
+  edge.
+
+  For instruction-valued incoming:
+    its defining instruction dominates that edge; for the
+    current bounded short-circuit geometry, the definition
+    is in pred_bb before pred_term.
+
+  For constants and arguments:
+    no block-local definition requirement applies.
+```
+
+For this ACT, the `i1 -> i8` path is currently `IR_ICMP` only,
+so the implementation check stays narrow:
+
+```text
+if normalization required:
+    producer must be a previously lowered instruction in
+    pred_bb, defined before pred_term.
+```
+
+No need to generalise the compiler.
+
+### §9.3.4 C4 authorization mechanics (D3 correction)
+
+C3.2 wrote C4 re-entry requirements as:
+
+```text
+R1 corrected algorithm is implemented in IR_PHI arm
+R2 runtime assertions are added
+R4 fresh c4/witness.c proves the implemented algorithm
+```
+
+But those are exactly the things C4 IMPL-B is supposed to do,
+making C4 logically impossible to authorise
+("C4 cannot start until C4 implementation exists").
+
+C3.3 separates the obligations into three phases:
+
+```text
+PRE-C4 contract requirements (must be true BEFORE C4 starts):
+  P1 contract frozen                        (CLOSED in C3.3)
+  P2 counter semantics frozen               (CLOSED in C3.3)
+  P3 lookup-only PI-1 mechanism identified  (CLOSED in C3.3)
+      (llbmGet, no new code)
+  P4 implementation scope frozen            (CLOSED in C3.3 §9.2)
+
+C4 implementation obligations (C4's job):
+  R1 implement §9.2 corrected algorithm in IR_PHI arm
+  R2 implement PI-1, PI-2, PI-3 (narrow) runtime guards
+  R3 implement agreed counter policy (per-PHI, once at top)
+  R4 produce fresh c4/witness.c re-confirming the geometry
+
+C5 evidence obligations (C5's job):
+  E1 independently validate C4's R1-R4 against ScanIdent
+```
+
+The previous circular gate is dissolved.
+
+### §9.3.5 Corrected §9.2 algorithm (consolidated)
+
+```c
+case IR_PHI:
+
+    /* shape validation (unchanged from C3.2) */
+    validate bounded short-circuit shape
+    validate exact predecessor set
+
+    /* §9.3.2: counter once per accepted PHI, at the top */
+    LL_INC_SHAPE_DEPENDENT(lc);
+
+    phi = LLVMBuildPhi(lc->bld, LLVMInt8TypeInContext(lc->ctx), "phi")
+
+    for each incoming (v, ir_pred):
+
+        /* §9.3.1: lookup-only predicate, NOT get-or-create */
+        pred_bb = llbmGet(&lc->blocks, ir_pred->id)
+        if pred_bb == NULL:
+            HALT_PHI_EDGE_MATERIALIZATION_REQUIRED
+
+        /* ensure pred_bb is actual CFG predecessor */
+        assert_in_predecessor_set(pred_bb)
+
+        /* v is the previously-lowered incoming value */
+
+        if LLVMTypeOf(v) == LLVMInt8TypeInContext(lc->ctx):
+            use v directly (constant/argument case)
+
+        else if LLVMTypeOf(v) == LLVMInt1TypeInContext(lc->ctx):
+            /* PI-2: predecessor has a terminator */
+            pred_term = LLVMGetBasicBlockTerminator(pred_bb)
+            if pred_term == NULL:
+                HALT_PHI_EDGE_MATERIALIZATION_REQUIRED
+
+            /* §9.3.3 PI-3 narrow: assert v was defined in
+               pred_bb before pred_term. */
+            assert_instruction_in_block_before(v, pred_bb, pred_term)
+
+            /* §9.2 build-position discipline (unchanged from C3.2) */
+            save = LLVMGetInsertBlock(lc->bld)
+            LLVMPositionBuilderBefore(lc->bld, pred_term)
+            v = LLVMBuildZExt(lc->bld, v,
+                  LLVMInt8TypeInContext(lc->ctx),
+                  "phi_icmp_zext")
+            LLVMPositionBuilderAtEnd(lc->bld, save)
+
+        else:
+            HALT_PHI_TYPE_CONTRACT_REQUIRED
+
+        add (v, pred_bb) to PHI incoming list
+
+    cache PHI dst
+```
+
+### §9.3.6 Historical C4_IMPL_B_AUTH table
+
+Per the expert's append-only history discipline, the C4
+authorization state is recorded as a frozen table:
+
+```text
+C3       AUTH=true    SUPERSEDED   (pre-dominance-correction)
+C3.1     AUTH=true    SUPERSEDED   (pre-placement-correction)
+C3.2     AUTH=false   SUPERSEDED   (pre-mechanics-correction)
+C3.3     AUTH=true    CURRENT      (if P1-P4 freeze correctly)
+```
+
+No prior commit is rewritten. The current state is the one
+that gates C4.
+
+### §9.3.7 Scope (NO EXPANSION)
+
+* No new diagnostic macros (`HALT_PHI_EDGE_MATERIALIZATION_
+  REQUIRED` already added in C3.2).
+* No new counter increments (`LL_INC_SHAPE_DEPENDENT`
+  pre-exists).
+* No change to Gate 3 / Gate 4 / Gate 5 logic.
+* No change to `llType`, `llLowerValue`, `llCreateBlocks`.
+* No new code (`llbmGet` is the existing lookup-only predicate
+  at `src/llvm-backend.c:270-273`; C4 reuses it).
+* The §9.2 corrected algorithm lives entirely inside the
+  IR_PHI dispatch arm.
 
 ---
 
@@ -935,7 +1203,30 @@ C3.2 RED (only after C3.1; NO production change)
                 reaffirm or revoke C4_IMPL_B_AUTH
                   - C4_IMPL_B_AUTH = REVOKED (third revocation)
 
-C4 IMPL-B     (ONLY IF C3.2 reaffirms it; currently locked)
+C3.3 RED (only after C3.2; NO production change)
+                mechanical-witness evidence of contract mechanics:
+                  - PI-1 lookup-only predicate:
+                      lookup-only  -> truthful (NULL on miss)
+                      get-or-create -> LIES (fabricates on miss)
+                  - per-PHI counter semantic (4 cases):
+                      no_zext, one_zext, two_zexts -> delta=1
+                      rejected_shape              -> delta=0
+                freeze three corrections to C3.2 §9.2:
+                  §9.3.1 PI-1 lookup-only (llbmGet, not
+                         llGetOrCreateBlock)
+                  §9.3.2 counter once per accepted PHI
+                         (not per edge)
+                  §9.3.3 PI-3 sharpened (instruction-valued
+                         only; constants/arguments exempt)
+                  §9.3.4 mechanics: pre-C4 contract (P1-P4)
+                         separate from C4 implementation (R1-R4)
+                         separate from C5 evidence (E1)
+                reaffirm or revoke C4_IMPL_B_AUTH
+                  - C4_IMPL_B_AUTH = TRUE (reaffirmed;
+                    pre-C4 contract requirements P1-P4
+                    all closed)
+
+C4 IMPL-B     (ONLY IF C3.3 authorises it; currently READY)
                 add case IR_PHI: arm to llLowerInstr (SHAPE_DEPENDENT)
                 + STRENGTHENED shape validation:
                   - pair_count == CFG predecessor count
@@ -943,20 +1234,28 @@ C4 IMPL-B     (ONLY IF C3.2 reaffirms it; currently locked)
                   - each predecessor represented exactly once
                   - incoming type compatible with I8 PHI
                   - no non-PHI precedes PHI in merge block
-                + AMENDED (C3.2) incoming-edge normalisation:
-                  - if incoming LLVM value is i1 AND phi_ty is i8:
-                      pred_bb := llGetOrCreateBlock(lc, p->ir_block)
-                      ASSERT PI-1, PI-2, PI-3 (else HALT_PHI_EDGE_
-                            MATERIALIZATION_REQUIRED)
-                      save := LLVMGetInsertBlock(lc->bld)
+                + AMENDED (C3.3) incoming-edge normalisation:
+                  - LL_INC_SHAPE_DEPENDENT(lc);  /* ONCE, at top */
+                  - for each incoming (v, ir_pred):
+                      pred_bb := llbmGet(&lc->blocks,
+                                          ir_pred->id)
+                      if pred_bb == NULL:
+                          HALT_PHI_EDGE_MATERIALIZATION_REQUIRED
                       term := LLVMGetBasicBlockTerminator(pred_bb)
-                      LLVMPositionBuilderBefore(lc->bld, term)
-                      v    := LLVMBuildZExt(lc->bld, v, i8,
-                                            "phi_icmp_zext")
-                      LLVMPositionBuilderAtEnd(lc->bld, save)
-                      LL_INC_SHAPE_DEPENDENT(lc)
+                      if term == NULL:
+                          HALT_PHI_EDGE_MATERIALIZATION_REQUIRED
+                      /* PI-3 narrow: assert v is in pred_bb
+                         before term (if normalisation needed) */
+                      if LLVMTypeOf(v) == i1 && phi_ty == i8:
+                          save := LLVMGetInsertBlock(lc->bld)
+                          LLVMPositionBuilderBefore(lc->bld, term)
+                          v    := LLVMBuildZExt(lc->bld, v, i8,
+                                                "phi_icmp_zext")
+                          LLVMPositionBuilderAtEnd(lc->bld, save)
+                      add (v, pred_bb) to PHI incoming list
                 + harness-contract alignment on
-                  LL_INC_SHAPE_DEPENDENT counting semantics (P0)
+                  LL_INC_SHAPE_DEPENDENT counting semantics
+                  (per-PHI, not per-edge; AC49)
                 add LLVM_BACKEND_UNSUPPORTED_PHI_ORTHOGONAL_TO_CORE
                 update src/llvm-backend-cap.c IR_PHI to SHAPE_DEPENDENT
 
@@ -1174,6 +1473,50 @@ evidence rather than modifying old captures).
          good geometry (LLVM verifier ACCEPTS). The captured
          artifact is `evidence/c3.2/witness` and its captured
          output `evidence/c3.2/witness.txt`.
+
+### C3.3 contract-mechanics acceptance criteria
+
+48. AC48 C3.3 freezes the PI-1 lookup-only contract:
+         the predecessor LLVM block lookup MUST use a
+         lookup-only predicate (e.g. `llbmGet`) and MUST
+         NOT use a get-or-create accessor. On NULL, the
+         C4 implementation MUST halt with
+         `HALT_PHI_EDGE_MATERIALIZATION_REQUIRED`.
+49. AC49 C3.3 freezes the per-PHI counter semantic:
+         `LL_INC_SHAPE_DEPENDENT` MUST fire exactly once
+         per successfully accepted IR_PHI shape, AT THE
+         TOP of the arm (after shape validation, BEFORE
+         the per-edge loop). Per-edge zext normalisation
+         MUST NOT contribute a separate counter increment.
+         Expected counts for the C2-A.2 frozen matrix
+         when C4 lands:
+         - `G3`      : 1 SHAPE_DEPENDENT (one IR_PHI)
+         - `PhiOnly` : 1 SHAPE_DEPENDENT (one IR_PHI)
+50. AC50 C3.3 freezes the C4 authorization mechanics:
+         pre-C4 contract readiness (P1-P4) is distinct
+         from C4 implementation (R1-R4) and from C5
+         evidence (E1). The previous circular gate is
+         dissolved. C4 is currently READY (P1-P4 all
+         CLOSED in C3.3).
+51. AC51 C3.3 freezes the PI-3 sharpening: for
+         instruction-valued incoming `v`, the definition
+         MUST be in `pred_bb` before `pred_term`. For
+         constants and arguments, no block-local
+         definition requirement applies. The C4
+         implementation narrows PI-3 to the IR_ICMP
+         producer case (current bounded short-circuit
+         geometry).
+52. AC52 C3.3 requires mechanical-witness evidence of:
+         (a) per-PHI counter semantic
+             (`evidence/c3.3/witness-counter.c`),
+             verifying `no_zext`/`one_zext`/`two_zexts`
+             all yield `delta=1` and `rejected_shape`
+             yields `delta=0`; AND
+         (b) PI-1 lookup-only vs get-or-create contrast
+             (`evidence/c3.3/witness-lookup.c`),
+             verifying that lookup-only detects a
+             not-pre-allocated block id while
+             get-or-create silently fabricates one.
 
 ---
 

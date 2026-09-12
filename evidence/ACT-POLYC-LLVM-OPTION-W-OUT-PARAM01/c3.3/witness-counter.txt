@@ -1,0 +1,28 @@
+SANITY: i8 const  -> type width 8 (expect 8)
+SANITY: i64 const -> type width 64 (expect 64)
+SANITY: icmp      -> type width 1 (expect 1)
+
+=== COUNTER WITNESS (C3.3 §9.2 corrected semantic) ===
+
+  case=phi_no_zext             n_edges=1  converted=0  counter_delta=1  expected=1  OK
+  case=phi_one_zext            n_edges=2  converted=1  counter_delta=1  expected=1  OK
+  case=phi_two_zexts           n_edges=3  converted=2  counter_delta=1  expected=1  OK
+  case=phi_rejected_shape      n_edges=1  converted=0  counter_delta=0  expected=0  OK
+
+FINAL counter value after all cases: 3
+EXPECTED final counter value:       3 (1+1+1+0 = 3)
+
+OUTCOME_D_COUNTER_SEMANTIC_CONFIRMED
+
+Interpretation for the C4 IR_PHI dispatch arm:
+  - LL_INC_SHAPE_DEPENDENT fires EXACTLY ONCE per
+    accepted IR_PHI shape, AT THE TOP of the arm
+    (after shape validation, BEFORE the per-edge loop).
+  - The per-edge zext normalisation does NOT contribute
+    a separate counter increment.
+  - A rejected shape contributes 0 to the counter.
+
+  Expected counts for the C2-A.2 frozen matrix
+  when C4 lands:
+    G3       : 1 SHAPE_DEPENDENT (one IR_PHI accepted)
+    PhiOnly  : 1 SHAPE_DEPENDENT (one IR_PHI accepted)
