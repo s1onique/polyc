@@ -797,6 +797,103 @@ The critical-path transition per ACT §24:
 STRUCT01 / ARRAY01 remain deferred. BOOTSTRAP01 (B0
 lexer/tokenizer) follows GEP01's closure.
 
+#### ACT-POLYC-B0-SUBSTRATE-RECON01 status (HALT_SUBSTRATE_GAP at C3)
+
+```text
+B0-SUBSTRATE-RECON01  ACT-POLYC-B0-SUBSTRATE-RECON01
+  ENTRY    = 456b71c0f2535c6175271d2107b67f985b4bc2c8
+             (GEP01 + SHELL-INVENTORY01-CORRECTION01)
+  C1 RED   = 96ea8034fff4c59a0cd0be0f024b631d0988f7d9
+             (ACT + demand freeze + first probes)
+  C2 EVID  = 4e700ad199fb81e0316f62d0a34a2d8239bacae5
+             (probe matrix + RC-A/RC-B root cause)
+  C3 CLOSE = (this commit, trailer ACT-Verdict HALT_SUBSTRATE_GAP)
+  VERDICT  = HALT_SUBSTRATE_GAP
+
+  MISSION = mechanically determine whether the first PolyC-
+            written lexer/tokenizer (B0) can be implemented
+            NOW using only the substrate already proven
+            (BYTE-MEMORY + LOCAL-MEM2REG + GEP01 + INTOPS).
+
+  RESULT   = cannot. Two concrete blockers discovered:
+
+    RC-A  The Option-W discriminator (src/llvm-backend.c
+          llOptionW_ReadsAreLowerable) does not list
+          IR_STORE_DEREF. A multi-def local consumed via
+          *out = local is rejected with
+          LLVM_BACKEND_UNSUPPORTED_OPTION_W_INELIGIBLE.
+
+    RC-B  The CORE backend rejects IR_PHI. Multi-path
+          definitions require PHI nodes that the backend
+          cannot emit.
+
+          A loaded value (ch = *p) that feeds `ret`
+          directly is also rejected via the return-local
+          exception in llOptionW_RequiresMem2Reg +
+          llOptionW_DefinitionsAreCaseAorB (LOAD_DEREF is
+          not case-(a) or case-(b)).
+
+  PROBE MATRIX (12 probes)
+    P1-P4   PASS   GEP01 + BYTE-MEMORY + INTOPS01 ref
+    P5-P7   FAIL   multi-def out-param (RC-A), loop (RC-B)
+    P8      PASS   single-shot recursion compiles
+    P9      FAIL   recursive chain produces IR_PHI (RC-B)
+    P10-P11 FAIL   single-byte peek via out-param (RC-A)
+    P12     FAIL   multi-path lookahead, dominance (RC-B)
+
+  FEATURE DECISIONS
+    ARRAY01              NOT REQUIRED (token-at-a-time + scalar)
+    STRUCT01             NOT REQUIRED (scalar out-params)
+    BYTE_STORE           NOT REQUIRED (source-slice tokens)
+    HEAP_ALLOCATION      NOT REQUIRED (caller-owned buffer)
+    NEW_INTOPS           NOT REQUIRED (existing scalar set)
+    OTHER_GAP            YES  -> ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01
+
+  CONSERVATION GATES
+    llvm-gep01-test                 30/0 PASS
+    llvm-byte-memory01-test         37/0 PASS
+    llvm-intops01-test               4/0 PASS
+    llvm-spike-test                 18/0 PASS (HCC_INSTALL_DIR)
+    ir-return-slot-fwd01-test        6/0 PASS
+    llvm-cap-table-verifier         PASS
+    shell-loc-gate                  PASS
+    factory-v2-commit-msg-check     PASS (C1, C2 trailers)
+    factory-append-only-test        11/0 PASS
+    factory-closure-status          PASS (PAIR_OK=6)
+    gate-fast                       PASS
+
+  RESIDUE
+    P0  none
+    P1  harness-evidence-isolation-test fails on this host
+        because /usr/local/include/tos.HH is not installed.
+        Pre-existing environmental gap (NOT introduced by
+        this ACT). Tracked upstream of Track A.
+    P2  C3 trailer pre-authorised as HALT_SUBSTRATE_GAP;
+        pre-BOOTSTRAP01 substrate-gap ACT will widen the
+        Option-W discriminator and reintroduce PHI emission.
+
+  NEXT ACT = ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01
+```
+
+The critical-path transition per ACT §23 of the recon:
+
+```text
+  ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02  CLOSED PASS
+  ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME02        CLOSED PASS
+  ACT-POLYC-LLVM-GEP01                         CLOSED PASS
+  ACT-POLYC-TOOLING-SHELL-INVENTORY01          CLOSED PASS
+  ACT-POLYC-B0-SUBSTRATE-RECON01               HALT_SUBSTRATE_GAP  (this ACT)
+  (Option-W widening to admit out-param reads)
+  ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01          NEXT
+  (then ACT-POLYC-BOOTSTRAP01 becomes mechanical)
+```
+
+ARRAY01 / STRUCT01 remain deferred. The recon's hypothesis
+that both could remain NOT REQUIRED before BOOTSTRAP01 was
+NOT disproved — both features remain NOT REQUIRED. The
+substrate gap is in mutable-local emission, not in
+aggregate representation.
+
 
 ```
 
