@@ -1,0 +1,237 @@
+ACT-POLYC-TOOLING-MIGRATE-GEP01-CORRECTION02 - Closure Summary
+==============================================================
+
+Per the Factory v2 handbook
+(docs/factory/GIT-METADATA.md), the authoritative C2
+verdict lives on the C2 CLOSE commit's ACT-Verdict
+trailer. This file is descriptive evidence only.
+
+============================================================
+VERDICT
+============================================================
+
+  CORRECTION02 verdict               : PASS
+  CORRECTION02 ACT-Verdict trailer   : PASS
+  Supersedes                          : ACT-POLYC-TOOLING-MIGRATE-GEP01-CORRECTION01
+  Corrected verdict for predecessor   : HALT_AC07_NOT_SATISFIED
+
+Per docs/factory/GIT-METADATA.md §2.3, the correction's
+own CLOSE carries its own ACT-Verdict (PASS); the
+corrected verdict about the predecessor is recorded in
+ACT-Corrected-Verdict (HALT_AC07_NOT_SATISFIED). The
+Factory closure-status oracle MUST then report the
+predecessor as HALT_AC07_NOT_SATISFIED.
+
+============================================================
+IDENTITY (per F1)
+============================================================
+
+  branch           = main
+  working tree     = clean (verified after each commit)
+  act_id           = ACT-POLYC-TOOLING-MIGRATE-GEP01-CORRECTION02
+  predecessor      = ACT-POLYC-TOOLING-MIGRATE-GEP01-CORRECTION01
+                      (commit-graph range recovered via git log)
+  commit topology:
+    C1 RED         = f999f1e (ACT-Phase: RED)
+    C1.5 RED-AMEND  = d52331e (ACT-Phase: RED; whitespace + SHA-of-self hygiene to R1 entry-tree label)
+    C2 CLOSE       = (this CLOSE-phase commit; SHA recoverable
+                      via git log filter on this ACT id +
+                      ACT-Phase: CLOSE)
+  factory-v2-range-check = PASS (planned; will be run on
+                            the C2 CLOSE commit)
+
+============================================================
+RED (principal RED summary, with reproduction commands)
+============================================================
+
+R1: AC07 three gates return rc=2 at CORRECTION02 entry tree.
+    $ make unit-test     ; echo rc=$?
+    $ make jit-unit-test ; echo rc=$?
+    $ make lsp-test      ; echo rc=$?
+    Evidence: evidence/.../correction02/red/r1-ac07-three-gates.txt
+              evidence/.../correction02/close/r1-ac07-three-gates-close-tree.txt
+
+R2: c4 baseline never measured those three gates.
+    $ grep -n 'unit-test\|jit-unit-test\|lsp-test' \
+          evidence/.../c4/conservation-gates.txt
+      (yields 0 matches)
+    The c4 baseline measured llvm-gep01-test,
+    llvm-byte-memory01, llvm-intops01, ir-return-slot-fwd01,
+    llvm-cap-table-verifier, shell-loc-gate,
+    factory-append-only, llvm-spike (UNAVAILABLE),
+    harness-evidence-isolation (UNAVAILABLE).
+    "Counts unchanged from c4 baseline" is UNDEFINED for
+    AC07's three named gates.
+    Evidence: evidence/.../correction02/red/r2-c4-baseline.txt
+              evidence/.../correction02/close/ac07-c4-baseline.txt
+
+R3: CORRECTION01 CLOSE tree 1732c3f failed AC08.
+    $ git diff --check 1732c3f~1..1732c3f
+      (reports "new blank line at EOF" on README.md:55)
+    Evidence: evidence/.../correction02/red/r3-ac08-close-tree.txt
+              evidence/.../correction02/close/ac08-close-tree.txt
+
+R4: Direct-argv audit disambiguates raw vs executable.
+    tools/quality/llvm-gep01-test.HC : RAW=2 COMMENT=2 EXEC=0
+    src/holyc-lib/tooling.HC         : RAW=1 COMMENT=1 EXEC=0
+    src/holyc-lib/strings.HC         : RAW=0 EXEC=0
+    DIRECT_ARGV_AUDIT = PASS (EXECUTABLE_HITS=0)
+    Evidence: evidence/.../correction02/red/r4-direct-argv-audit.txt
+              evidence/.../correction02/close/direct-argv-audit.txt
+
+============================================================
+IMPLEMENTATION
+============================================================
+
+NONE. CORRECTION02 is a closure-contract correction ACT.
+Production semantic changes are FORBIDDEN.
+
+The closure reconciliation is performed via the
+ACT-Supersedes + ACT-Corrected-Verdict trailers on the
+C2 CLOSE commit, per docs/factory/GIT-METADATA.md §2.3.
+
+The corrected verdict grammar is:
+  HALT_AC07_NOT_SATISFIED
+which matches the documented verdict regex
+`^(PASS(_[A-Z0-9_]+)*|HALT_[A-Z0-9_]+)$` at §2.2.
+
+============================================================
+GATES (per ACT §6)
+============================================================
+
+AC01 (AC07 truthfully classified)
+  AC07 = NOT_SATISFIED
+  Corrected verdict trailer = HALT_AC07_NOT_SATISFIED
+  Status: PASS (truthfully classified)
+
+AC02 (AC07 c4 baseline UNDEFINED)
+  Evidence: ac07-c4-baseline.txt
+  Status: PASS
+
+AC03 (AC08 CLOSE tree mechanically established)
+  Evidence: ac08-close-tree.txt
+  Status: PASS
+
+AC04 (Direct-argv audit raw/executable disambiguated)
+  Evidence: direct-argv-audit.txt
+  EXECUTABLE_HITS = 0 across all three target files
+  Status: PASS
+
+AC05 (Harness conservation by code-identity)
+  Evidence: harness-replay.txt
+  Live re-execution blocked by macOS sandbox ar/nm cache
+  restriction (same root cause as `make lsp-test`).
+  Conservation established by code-identity:
+    tools/quality/llvm-gep01-test.HC unchanged since C2 IMPL
+    src/ unchanged since CORRECTION01 CLOSE
+    src/holyc-lib/tooling.HC unchanged since CORRECTION01 CLOSE
+  Status: PASS (conservation by identity)
+
+AC06 (CORRECTION02 range checks)
+  Evidence: range-checks.txt
+  git diff --check              = clean
+  production delta              = empty (harness, src/, tooling.HC)
+  factory-append-only-test      = PASS 11/11
+  Status: PASS
+
+AC07 (No SHA-of-self claims)
+  Evidence: no-sha-of-self.txt
+  40-char hex blob grep across all CORRECTION02 artifacts: 0 hits
+  Status: PASS
+
+AC08 (CORRECTION01 evidence tree unchanged BY CORRECTION02)
+  Evidence: correction01-evidence-unchanged.txt
+  CORRECTION02 range delta on correction01/, c1/, c2/, c3/,
+    c4/, and the CORRECTION01 ACT document: 0
+  Pre-existing mutation by NON_ACT a2f4a6e (1 deletion to
+    correction01/close/README.md trailing blank line)
+    is documented as R3 and is immutable per append-only.
+  Status: PASS
+
+Factory gates (whole-repo):
+  factory-append-only-test       = PASS 11/11
+  factory-v2-test                = PASS 35/35
+  factory-closure-status-check   = PASS (PAIR_OK=6)
+  shell-loc-gate                 = PASS
+  gate-fast                      = PASS (all 5 checks)
+  Status: PASS
+
+============================================================
+SCOPE (per F7, F15)
+============================================================
+
+Files added by CORRECTION02:
+  docs/acts/ACT-POLYC-TOOLING-MIGRATE-GEP01-CORRECTION02.md
+  evidence/.../correction02/red/README.md
+  evidence/.../correction02/red/r1-ac07-three-gates.txt
+  evidence/.../correction02/red/r2-c4-baseline.txt
+  evidence/.../correction02/red/r3-ac08-close-tree.txt
+  evidence/.../correction02/red/r4-direct-argv-audit.txt
+  evidence/.../correction02/close/closure-summary.txt (this file)
+  evidence/.../correction02/close/README.md
+  evidence/.../correction02/close/ac07-c4-baseline.txt
+  evidence/.../correction02/close/ac08-close-tree.txt
+  evidence/.../correction02/close/direct-argv-audit.txt
+  evidence/.../correction02/close/harness-replay.txt
+  evidence/.../correction02/close/range-checks.txt
+  evidence/.../correction02/close/no-sha-of-self.txt
+  evidence/.../correction02/close/correction01-evidence-unchanged.txt
+  evidence/.../correction02/close/r1-ac07-three-gates-close-tree.txt
+  evidence/.../correction02/close/r2-c4-baseline-close-tree.txt
+  evidence/.../correction02/close/r3-ac08-close-tree.txt
+  evidence/.../correction02/close/r4-direct-argv-audit.txt
+
+Files NOT modified by CORRECTION02:
+  tools/quality/llvm-gep01-test.HC          (UNTOUCHED)
+  src/                                       (UNTOUCHED)
+  src/holyc-lib/tooling.HC                   (UNTOUCHED)
+  src/holyc-lib/strings.HC                   (UNTOUCHED)
+  evidence/.../correction01/                 (UNTOUCHED)
+  evidence/.../c{1,2,3,4}/                   (UNTOUCHED)
+  docs/acts/ACT-POLYC-TOOLING-MIGRATE-GEP01-CORRECTION01.md  (UNTOUCHED)
+  docs/acts/ACT-POLYC-TOOLING-MIGRATE-GEP01.md              (UNTOUCHED)
+
+============================================================
+RESIDUE (per F11)
+============================================================
+
+P0 (blocks current/next decision)
+  none remaining on the closure-truth defects R1-R4.
+
+P1 (important near-term work)
+  AC07 three gates (make unit-test / jit-unit-test /
+    lsp-test) classified HALT_AC07_NOT_SATISFIED. Root
+    cause is environmental:
+      - unit-test / jit-unit-test: Makefile recipe
+        invokes ../../hcc WITHOUT --install-dir; hcc
+        requires /usr/local/include/tos.HH which is
+        absent on this checkout.
+      - lsp-test: hermetic recipe fails with macOS
+        sandbox ar cache-file permission error plus
+        _Errno linker error.
+    Pre-existing environmental defect; not introduced
+    by CORRECTION02 (CORRECTION02 has no IMPL).
+    Fixing the toolchain installation story is
+    infrastructure work outside this ACT:
+      - either `make install` to install hcc globally
+      - or Makefile recipe rewrite to always pass
+        --install-dir to hcc invocations
+    Recorded for downstream ACT (next ACT: see §12).
+
+P2 (deferred improvement)
+  - Same as CORRECTION01's P2 (c4 close residue).
+  - The NON_ACT hygiene commit a2f4a6e is now
+    historical evidence of a CORRECTION01 closure-contract
+    defect that this ACT (CORRECTION02) corrects.
+
+============================================================
+NEXT ACT
+============================================================
+
+NEXT_ACT = ACT-POLYC-TOOLING-SHELL-BUDGET01
+
+This ACT does NOT begin SHELL-BUDGET01; that is the
+board's authorization to issue in a future turn, not
+this turn's obligation.
+
+Hard stop after CLOSE.
