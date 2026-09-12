@@ -875,6 +875,15 @@ The critical-path transition per ACT §24:
   ACT-POLYC-TOOLING-RUNTIME01             CLOSED PASS  <-- this ACT
   ACT-POLYC-TOOLING-MIGRATE-GEP01         CLOSED PASS  <-- Track B predecessor
   ACT-POLYC-INTEGRATION-PREBOOTSTRAP-GATES01  HALT_SCOPE_EXPANSION_REQUIRED
+  ACT-POLYC-AOT-PIC-EXTERNAL-REFS01       CLOSED PASS  (Layer 2 ADRP defect resolved;
+                                                     unit-test 90/90, jit-unit-test
+                                                     90/90, lsp-test 43/43, gate-fast
+                                                     PASS. gate-push blocked by
+                                                     pre-existing gep01 cap-verifier
+                                                     infrastructure gap, recorded as
+                                                     P1 residue; identical failure
+                                                     mode was already documented in
+                                                     the predecessor ACT's evidence)
   ACT-POLYC-PARSER-TERNARY-HANG01         NEXT        (Track A / compiler)
 ```
 
@@ -938,6 +947,54 @@ scope; only the gate-push closure is blocked.
 See `evidence/ACT-POLYC-INTEGRATION-PREBOOTSTRAP-GATES01/c3/`
 for the full EVIDENCE packet (README, conflict diagnosis, failure
 modes, captured gate-push-final.log).
+
+#### ACT-POLYC-AOT-PIC-EXTERNAL-REFS01 status (CLOSED PASS at C4)
+
+```text
+AOT-PIC-EXTERNAL-REFS01  ACT-POLYC-AOT-PIC-EXTERNAL-REFS01
+  ENTRY       = ACT-POLYC-INTEGRATION-PREBOOTSTRAP-GATES01-CORRECTION01
+                (predecessor substrate usable; HALT_AOT_PIC_EXTERNAL_REFS_
+                REQUIRED at the predecessor's C4)
+  C1 RED      = 718b3d7 (ACT doc + ext-provider.c + ext-consumer.HC +
+                local-control.HC + seam-map.txt)
+  C2 IMPL     = 83474d6 (aarch64ExternalFuncAddr helper +
+                IR_LEA routing for AST_EXTERN_FUNC shape)
+  C2.1 IMPL   = 2c8a456 (renamed to aarch64ExternalSymbolAddr; new
+                aarch64IsExternalGlobalSymbol classifier; routes
+                AST_ASM_FUNC_BIND + AST_GVAR with AST_FLAG_EXTERN at
+                IR_LEA, IR_LOAD_DEREF, IR_STORE_DEREF)
+  C3 EVID     = 2b1786c (unit-test 90/90; jit-unit-test 90/90;
+                lsp-test 43/43; gate-fast PASS; gate-push FAIL
+                on gep01 cap-verifier; P1 residue)
+  C4 CLOSE    = (this section, trailer ACT-Phase: CLOSE
+                              ACT-Verdict: PASS)
+  VERDICT     = PASS  (with one P1 residue)
+
+  MISSION = repair the AArch64 Mach-O AOT backend so that
+            references to symbols defined in a dylib
+            (e.g. libtos.dylib) use the Mach-O-valid
+            @GOTPAGE / @GOTPAGEOFF (ARM64_RELOC_GOT_LOAD_PAGE21 /
+            ARM64_RELOC_GOT_LOAD_PAGEOFF12) materialisation
+            instead of the page-relative @PAGE / @PAGEOFF
+            (ARM64_RELOC_PAGE21 / ARM64_RELOC_PAGEOFF12)
+            sequence that dylib nreloc=0 __text/__DATA
+            cannot satisfy.
+
+  PRODUCTION CHANGE = src/aarch64.c only (+136/-28 cumulative
+                      from 83474d6 + 2c8a456).
+
+  RESIDUE  = P1: llvm-gep01-test cap-verifier (scripts/quality/
+             llvm-cap-table-verifier.py). Pre-existing gap;
+             identical GEP01_PASS=26 / GEP01_FAIL=4 was already
+             captured in evidence/ACT-POLYC-INTEGRATION-PREBOOTSTRAP-
+             GATES01-CORRECTION01/c3/gate-push-correction01.log.
+             Out of scope for this ACT (the cap-verifier is not
+             touched by src/aarch64.c). Blocks gate-push only.
+```
+
+See `evidence/ACT-POLYC-AOT-PIC-EXTERNAL-REFS01/c4/` for the full
+closure pack (README, acceptance matrix, residue, roadmap
+transition, closure summary).
 
 #### ACT-POLYC-TOOLING-MIGRATE-GEP01 status (CLOSED PASS at C4)
 
