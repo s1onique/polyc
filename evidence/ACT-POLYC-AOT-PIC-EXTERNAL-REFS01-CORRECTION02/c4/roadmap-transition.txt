@@ -1,0 +1,78 @@
+ACT-POLYC-AOT-PIC-EXTERNAL-REFS01-CORRECTION02 — Roadmap transition
+====================================================================
+
+Verdict:
+  ACT-Verdict              : PASS
+  ACT-Supersedes           : ACT-POLYC-AOT-PIC-EXTERNAL-REFS01-CORRECTION01
+  ACT-Corrected-Verdict    : PASS_WITH_GOVERNANCE_HALT_CORRECTION
+                             (this ACT names and corrects the
+                              trailer-bookkeeping defect on the
+                              CORRECTION01 CLOSE commit 505b007)
+
+What this ACT does
+------------------
+
+This ACT documents a v2 §2.3 / §2.4 trailer-bookkeeping
+defect on the CORRECTION01 CLOSE commit `505b007`. The
+defect is:
+
+1. `HALT_CLASS` and `BLOCKS_NEXT` trailers on a PASS
+   verdict (forbidden by §2.4; verifier rejects with
+   `STATUS=FAIL`).
+2. Missing `ACT-Supersedes` (required by §2.3 rule 2
+   whenever `ACT-Corrected-Verdict` is present).
+
+The defect is captured under
+`evidence/ACT-POLYC-AOT-PIC-EXTERNAL-REFS01-CORRECTION02/`
+and the v2-correct trailer set is captured as a plain-text
+artifact at
+`c2/v2-correct-trailer-set.txt`. Per F-GIT-IDENTITY and
+`docs/factory/DOCTRINE.md` §23, the historical commit
+`505b007` is NOT amended.
+
+The CORRECTION01 mechanical claim stands:
+
+  - predecessor production semantic delta = GREEN
+  - gep01 4-failure aggregate NOT attributable
+    (byte-identical pre-/post- C2 proof)
+  - v2 classification = HALT_CLASS=GOVERNANCE / BLOCKS_NEXT=NO
+    (binding: descriptive artifacts)
+
+What this ACT does NOT do
+-------------------------
+
+- Does NOT amend `505b007`.
+- Does NOT re-mutate the predecessor ACT's evidence or the
+  CORRECTION01 ACT's evidence.
+- Does NOT re-open the production-delta question.
+- Does NOT push to origin/main.
+- Does NOT open `ACT-POLYC-BOOTSTRAP01`.
+
+Recommended next ACT
+--------------------
+
+Same as CORRECTION01's recommendation:
+
+(a) ACT-POLYC-INTEGRATION-GEP01-GATE-RECOVERY01
+    Mission: split D1 + D2 (decomposed by CORRECTION01 §6)
+    into separate RED witnesses; fix each by mechanical
+    root-cause analysis. After CLOSE: push current main to
+    origin/main; open ACT-POLYC-BOOTSTRAP01.
+
+(b) ACT-POLYC-BOOTSTRAP01 (successor-need determination
+    decides whether gep01 is a binding predecessor).
+
+Either way, BOOTSTRAP01 opening is a separate human action
+and is NOT performed by this ACT.
+
+BOOTSTRAP01 opening status
+--------------------------
+
+The CORRECTION01 ROADMAP entry already records the
+`BLOCKS_NEXT=NO` board signal that the gep01 gate-push
+failure does not mechanically block BOOTSTRAP01. This ACT
+does not weaken that signal. The trailer-bookkeeping
+defect this ACT corrects is purely a CLOSE-trail format
+issue on CORRECTION01; it does not change the
+HALT_CLASS=GOVERNANCE / BLOCKS_NEXT=NO classification of
+the corrected verdict.

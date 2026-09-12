@@ -1,0 +1,80 @@
+ACT-POLYC-AOT-PIC-EXTERNAL-REFS01-CORRECTION02 — Closure summary
+=================================================================
+
+VERDICT
+  ACT-Verdict              : PASS
+  ACT-Supersedes           : ACT-POLYC-AOT-PIC-EXTERNAL-REFS01-CORRECTION01
+  ACT-Corrected-Verdict    : PASS_WITH_GOVERNANCE_HALT_CORRECTION
+
+  (No HALT_CLASS / BLOCKS_NEXT trailers; per v2 §2.4 those
+   are forbidden on PASS(_...)* CLOSE.)
+
+IDENTITY
+  branch           = main
+  entry HEAD       = 505b007 (C4 CLOSE of CORRECTION01)
+  range            = 505b007..C4-CLOSE (docs-only)
+  Factory-Version  = 2
+
+PRE-CONDITION CLAIM (the CORRECTION01 defect being repaired)
+  defect_class           = TRAILER-BOOKKEEPING
+  defect_evidence        = factory-halt-classification.py
+                            STATUS=FAIL on 505b007 trailers
+  v2-correct_trailer_set = captured at c2/v2-correct-trailer-set.txt
+  v2-correct_verifier    = STATUS=PASS on the captured trailer set
+  historical_505b007     = NOT amended (F-GIT-IDENTITY + §23)
+
+RED (this ACT)
+  R1  505b007 trailers violate §2.4 (HALT_CLASS / BLOCKS_NEXT
+      on PASS CLOSE). Captured at c1/red-trailer-defect.txt.
+  R2  505b007 missing ACT-Supersedes (required by §2.3
+      rule 2). Captured at c1/red-trailer-defect.txt.
+  R3  v2-correct trailer set captured at c2/. Verifier
+      STATUS=PASS.
+
+IMPLEMENTATION (this ACT)
+  + docs/acts/ACT-POLYC-AOT-PIC-EXTERNAL-REFS01-CORRECTION02.md
+  + evidence/ACT-POLYC-AOT-PIC-EXTERNAL-REFS01-CORRECTION02/
+      c1/ red-trailer-defect.txt + README.md
+      c2/ v2-correct-trailer-set.txt + green-invariant-check.txt + README.md
+      c3/ c3-evidence-gate-run.txt + README.md
+      c4/ acceptance-matrix.txt + residue.txt + roadmap-transition.txt
+           + closure-summary.txt + README.md + HANDOFF.md
+  + docs/ROADMAP.md  (trailer-bookkeeping correction note
+                       under CORRECTION01 status block)
+  Total production source change: zero bytes.
+
+GATES
+  AC-02.1  src/ diff vs 505b007 -> empty                         PASS
+  AC-02.2  CORRECTION01 evidence diff -> empty                   PASS
+  AC-02.3  predecessor evidence diff -> empty                    PASS
+  AC-02.4  CORRECTION01 ACT doc diff -> empty                    PASS
+  AC-02.5  ROADMAP correction note present                       PASS
+  AC-02.6  v2-correct trailer set captured                       PASS
+  AC-02.7  gate-fast PASS                                        PASS
+  AC-02.8  factory-append-only-test PASS 11/11                   PASS
+
+SCOPE
+  FILES_CHANGED       = 0 production source files
+                         + 1 new ACT doc + 1 new evidence tree +
+                           ROADMAP.md correction note
+  DIFF_CHECK          = PASS (gate-fast)
+  PRODUCTION_SEMANTICS_CHANGED = NO
+  LLVM_CHANGED        = NO
+  ABI_REPAIR_CHANGED  = NO
+  PREDECESSOR_MUTATED = NO  (F14)
+  HISTORICAL_505b007  = NOT amended  (F-GIT-IDENTITY + §23)
+
+RESIDUE
+  P0  = none
+  P1  = none
+  P2  = one item: 505b007 historical trailer block carries
+       the §2.4 violation + missing ACT-Supersedes. This
+       is preserved as historical evidence (F14) and the
+       v2-correct binding is captured in descriptive
+       artifacts. Non-blocking.
+
+NEXT_ACT (informational, not opened here)
+  Either:
+    (a) ACT-POLYC-INTEGRATION-GEP01-GATE-RECOVERY01
+    (b) ACT-POLYC-BOOTSTRAP01
+  Neither is opened by this ACT.

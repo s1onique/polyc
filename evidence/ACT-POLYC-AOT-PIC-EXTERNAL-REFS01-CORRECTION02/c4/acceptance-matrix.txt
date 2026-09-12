@@ -1,0 +1,62 @@
+ACT-POLYC-AOT-PIC-EXTERNAL-REFS01-CORRECTION02 — Acceptance Matrix
+====================================================================
+
+Identity (F1)
+  branch           = main
+  entry HEAD       = 505b007 (C4 CLOSE of CORRECTION01;
+                    trailer-bookkeeping defect)
+  worktree status  = clean tracked; this ACT adds
+                     docs/acts/ACT-POLYC-AOT-PIC-EXTERNAL-REFS01-CORRECTION02.md
+                     + evidence/ACT-POLYC-AOT-PIC-EXTERNAL-REFS01-CORRECTION02/
+                     + ROADMAP.md correction note
+
+Production-delta integrity
+  AC-02.1  src/ diff vs 505b007 -> empty                          PASS
+
+Predecessor evidence integrity (F14)
+  AC-02.2  evidence/ACT-POLYC-AOT-PIC-EXTERNAL-REFS01-CORRECTION01/
+           diff vs 505b007 -> empty                               PASS
+  AC-02.3  evidence/ACT-POLYC-AOT-PIC-EXTERNAL-REFS01/
+           diff vs 505b007 -> empty                               PASS
+  AC-02.4  docs/acts/ACT-POLYC-AOT-PIC-EXTERNAL-REFS01-CORRECTION01.md
+           diff vs 505b007 -> empty                               PASS
+
+Mechanical-evidence reproduction (C1 RED)
+  red-trailer-defect.txt captures 505b007 trailers,
+  factory-halt-classification.py verdict (STATUS=FAIL),
+  v2-correct trailer set, v2 section 2.3+2.4 rule quotes,
+  factory-append-only-test PASS                          PASS
+
+v2-correct trailer binding (C2 IMPL)
+  v2-correct-trailer-set.txt captures the SHOULD-have-been
+  trailer set; verifier verdict STATUS=PASS              PASS
+
+ROADMAP correction note (AC-02.5)
+  ROADMAP.md gains a trailer-bookkeeping correction block
+  under the CORRECTION01 status entry, naming:
+    - the trailer-bookkeeping defect on 505b007
+    - the v2-correct trailer set
+    - the descriptive HALT classification binding        PASS
+
+Conservation gates
+  gate-fast                       PASS                    PASS
+  factory-append-only-test        PASS  11/11             PASS
+  factory-closure-status          PASS  (PAIR_OK=6)       PASS
+
+Closure verdict (v2 doctrine)
+  ACT-Verdict              : PASS
+  ACT-Supersedes           : ACT-POLYC-AOT-PIC-EXTERNAL-REFS01-CORRECTION01
+  ACT-Corrected-Verdict    : PASS_WITH_GOVERNANCE_HALT_CORRECTION
+
+  (No HALT_CLASS / BLOCKS_NEXT trailers; per section 2.4
+   those are forbidden on PASS(_...)* CLOSE.)
+
+Strong-closure criterion (this ACT)
+  defect_documented        = PASS
+  v2_correct_set_captured  = PASS
+  verifier_passes          = PASS
+  production_not_remutated = PASS
+  predecessor_not_remutated = PASS
+  append_only_preserved    = PASS
+  ROADMAP_corrected        = PASS
+  GO                       = YES
