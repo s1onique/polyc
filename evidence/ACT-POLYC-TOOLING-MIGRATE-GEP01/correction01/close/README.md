@@ -52,4 +52,3 @@ Per the correction ACT §12: NEXT_ACT on PASS is
 `ACT-POLYC-TOOLING-SHELL-BUDGET01`. This ACT does NOT
 begin SHELL-BUDGET01; the board will authorize that in a
 future turn.
-
