@@ -1,0 +1,42 @@
+Grandfathered shell debt (>50 LOC, frozen at this ACT)
+======================================================
+
+These files exceed the 50 LOC ratchet but are GRANDFATHERED:
+they predate the ratchet and the ratchet only applies to NEW
+files and to GROWTH of existing files. Migration is downstream.
+
+  LOC  ROLE      PATH
+  ---- --------- ------------------------------------------
+  830  TEST      scripts/quality/llvm-spike-test.sh
+  480  GATE      scripts/quality/gate-push.sh
+  465  FACTORY   scripts/quality/factory-v2-test.sh
+  438  TEST      scripts/quality/native-x86-float-cmp-parity01-test.sh
+  382  TEST      scripts/quality/llvm-memory01-test.sh
+  373  FACTORY   scripts/quality/factory-append-only-test.sh
+  371  TEST      scripts/quality/llvm-float01-test.sh
+  362  FACTORY   scripts/quality/llvm-spike-contract-check.sh
+  352  FACTORY   scripts/quality/factory-closure-status-check.sh
+  250  GATE      scripts/quality/gate-fast.sh
+  249  FACTORY   scripts/quality/factory-v2-range-check.sh
+  235  TEST      scripts/quality/llvm-byte-memory01-test.sh
+  232  TEST      scripts/quality/llvm-gep01-test.sh
+  230  TEST      scripts/quality/llvm-intops01-test.sh
+  218  FACTORY   scripts/quality/factory-v2-commit-msg-check.sh
+  194  TEST      scripts/quality/llvm-memory01-red-test.sh
+  171  TEST      scripts/quality/ir-return-slot-forwarding01-test.sh
+  155  TEST      scripts/quality/llvm-memory01-nc5-probe.sh
+  123  TEST      scripts/quality/harness-evidence-isolation-test.sh
+
+  Total grandfathered LOC: 5710
+  Total grandfathered files: 19
+  Median LOC: 250
+
+Migration priority (highest first):
+  P1  llvm-gep01-test.sh        (the new ACT's own harness)
+                                  FIRST MIGRATION CANDIDATE.
+                                  Tests subprocess + exit + tmp
+                                  files + text matching + summary.
+  P1  llvm-byte-memory01-test.sh (closure-critical regression)
+  P1  llvm-intops01-test.sh      (closure-critical regression)
+  P1  ir-return-slot-fwd01-test.sh (closure-critical regression)
+  P2  the rest

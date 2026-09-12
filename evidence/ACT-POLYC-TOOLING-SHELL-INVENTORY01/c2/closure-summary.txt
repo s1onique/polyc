@@ -1,0 +1,72 @@
+C2 IMPL closure summary (per ACT §36)
+======================================
+
+VERDICT = PASS
+
+IDENTITY
+  entry  = d0e7f4f041e05fa58a74c029a8f6dd55a178b323
+           (ACT-POLYC-LLVM-GEP01-CORRECTION01)
+  final  = (this commit)
+  branch = main
+  tree   = clean
+
+RED
+  Mechanical: scripts/quality/shell-loc-gate.sh did not
+  exist before this ACT. The <=50 LOC ratchet was not
+  enforced. RED satisfied.
+
+IMPLEMENTATION
+  Two new files, both <=50 LOC themselves:
+    scripts/quality/inventory.sh         19 LOC
+    scripts/quality/shell-loc-gate.sh    26 LOC
+  Three new evidence files:
+    c1/baseline.txt        20 rows of pre-ACT shell LOC
+    c1/inventory.txt       produced by inventory.sh
+    c1/role-taxonomy.txt   role-tag definitions
+    c2/gate-output.txt     fresh-run output of the gate
+    c2/grandfathered-debt.txt  19 over-50-LOC files listed
+  No edits to existing shell scripts. No edits to src/.
+  No edits to historical ACT documents.
+
+FRESH GATE RUN
+  PASS  shell-loc-gate (no NEW >50 LOC, no GROWTH)
+
+  Validated manually:
+  - new file >50 LOC: FAIL with rc=1 (gate correctly rejects)
+  - growing existing file: FAIL with rc=1 (gate correctly rejects)
+
+GATES (conservation)
+  gate-fast                       PASS
+  factory-append-only-test        11/0 PASS
+  factory-closure-status          PASS (PAIR_OK=6)
+  llvm-gep01-test                 30/0 PASS
+  llvm-byte-memory01-test         37/0 PASS
+  llvm-cap-table-verifier         PASS
+  llvm-spike-test (with HCC_INSTALL_DIR) 18/0 PASS
+
+SCOPE
+  Within ACT scope: ACT document + 2 new shell files +
+  6 new evidence files + ROADMAP note.
+  No scope drift detected.
+
+RESIDUE (F11)
+  P0 none
+  P1 the 5,710 grandfathered shell LOC across 19 files
+     is the migration debt. llvm-gep01-test.sh is the
+     first migration candidate.
+  P2 the factory-v2-*.sh scripts are evidence-collection
+     machinery for the Factory process itself; migration
+     is much later (after TOOLING-RUNTIME01).
+
+NEXT ACT = ACT-POLYC-TOOLING-SHELL-BUDGET01
+
+  SHELL-BUDGET01 will:
+  - freeze a per-file LOC target for each grandfathered
+    file (or a global "all grandfathered files halve by
+    X" target);
+  - designate llvm-gep01-test.sh as the first migration
+    candidate;
+  - run on top of TOOLING-RUNTIME01 (which must add the
+    minimum runtime primitives PolyC needs to write a
+    test harness: subprocess, exit-status, file I/O,
+    text matching, summary aggregation).
