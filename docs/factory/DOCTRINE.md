@@ -535,7 +535,7 @@ cardinality explicitly rather than silently taking `-1`:
 matches=$(git log --all-match \
                   --grep='^ACT: ACT-POLYC-FOO01-CORRECTION03$' \
                   --grep='^ACT-Phase: CLOSE$' \
-                  --pretty=format:'%H' | wc -l)
+                  --oneline | wc -l)
 test "$matches" -eq 1 || {
     echo "EXPECTED 1 CLOSE COMMIT FOR ACT-POLYC-FOO01-CORRECTION03," \
          "GOT $matches" >&2
@@ -545,6 +545,30 @@ test "$matches" -eq 1 || {
 
 A cardinality != 1 is itself an invariant violation worth
 diagnosing, not silently truncating.
+
+**Important: use `--oneline`, not `--pretty=format:'%H'`.**
+The `--pretty=format:'%H'` form emits SHAs WITHOUT trailing
+newlines, so `wc -l` returns 0 even for a 1-match query —
+the cardinality check would falsely report the happy path
+as a violation. The `--oneline` flag guarantees one-line-
+per-commit with newlines, which makes `wc -l` correct.
+
+If you also need the full SHA (not just cardinality), use:
+
+```sh
+git log --all-match -1 \
+        --grep='^ACT: ACT-POLYC-FOO01-CORRECTION03$' \
+        --grep='^ACT-Phase: CLOSE$' \
+        --pretty=format:'%H%n' | head -1
+```
+
+The trailing `%n` is critical; without it, `head -1` may
+not terminate correctly depending on the consumer.
+
+The revision history of this recipe (v0 with the naive
+OR-semantics grep; v1 with the missing-trailing-newline
+cardinality bug; v2 with `--oneline`) is preserved in
+`evidence/ACT-POLYC-FACTORY-NO-SHA-OF-SELF01/correction03/recipe-revision-history.txt`.
 
 ### Strict F14 reading for corrections
 
