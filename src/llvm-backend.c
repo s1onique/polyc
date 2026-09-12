@@ -2355,6 +2355,44 @@ static int llIsI8Const(IrValue *v) {
     return v && v->kind == IR_VAL_CONST_INT && v->type == IR_TYPE_I8;
 }
 
+/* ACT-POLYC-LLVM-GEP01: shape predicate for the B0 byte
+ * indexing GEP subset of IR_IADD.
+ *
+ * The frozen operand layout is:
+ *   ins->op    == IR_IADD
+ *   ins->dst   != NULL && ins->dst->type  == IR_TYPE_PTR
+ *   ins->r1    != NULL && ins->r1->type   == IR_TYPE_PTR
+ *   ins->r2    != NULL && ins->r2->type   == IR_TYPE_I64
+ *   ins->disp  == 0
+ *   ins->idx   == NULL
+ *   ins->scale == 0
+ *
+ * The canonical IR_LOWER for `U8 *p; I64 i; p[i]` emits
+ * exactly this shape (see src/ir.c:626-649). For byte
+ * indexing the element-size stride is 1, so no IR_IMUL
+ * is emitted and the address-mode fusion pass does not
+ * fold the IR_IADD into the LOAD_DEREF.
+ *
+ * Non-byte element indexing is rejected by the existing
+ * IR_LOAD_DEREF / IR_STORE_DEREF disp/idx/scale guards
+ * (src/llvm-backend.c:2930-2941, 3011-3022); the IMPL
+ * never sees an IR_IADD with the GEP shape for non-byte
+ * elements because the IR's pre-fusion IR_IMUL causes
+ * the address-mode fusion to land scale != 1 directly
+ * on the LOAD_DEREF (which is forbidden).
+ */
+static int llGepShapeSupported(IrInstr *ins) {
+    if (!ins || ins->op != IR_IADD) return 0;
+    if (!ins->dst || !ins->r1 || !ins->r2) return 0;
+    if (ins->dst->type != IR_TYPE_PTR) return 0;
+    if (ins->r1->type  != IR_TYPE_PTR) return 0;
+    if (ins->r2->type  != IR_TYPE_I64) return 0;
+    if (ins->disp != 0) return 0;
+    if (ins->idx != NULL) return 0;
+    if (ins->scale != 0) return 0;
+    return 1;
+}
+
 /* Lower a binary op's operand. If the other operand is an I8 const
  * AND this operand is an SSA value, narrow the SSA value to I8
  * (the bit pattern is preserved). For the I8 const operand, lower
@@ -2398,7 +2436,32 @@ static LLVMValueRef llLowerInstr(LLCtx *lc, IrInstr *ins) {
              * The C9 predecessor-store synthesis is DELETED. A
              * store exists because a PolyC definition occurred
              * HERE; there is no successor-driven store and no
-             * terminator-driven store. */
+             * terminator-driven store.
+             *
+             * ACT-POLYC-LLVM-GEP01: pre-dispatch short-circuit for
+             * the frozen B0 byte-indexing GEP subset (IR_IADD with
+             * dst=PTR, r1=PTR, r2=I64, disp=0, idx=NULL, scale=0).
+             * The predicate is mechanical; the existing integer-add
+             * path remains intact for all non-matching shapes.
+             *
+             * The IR_IADD opcode stays SUPPORTED (its overall
+             * classification). The GEP-shaped subset is attributed
+             * as SHAPE_DEPENDENT at the dispatch seam, so the
+             * capability counter / harness can count GEP-shaped
+             * emissions distinct from integer adds. */
+            if (llGepShapeSupported(ins)) {
+                LL_INC_SUPPORTED(lc);
+                LL_INC_SHAPE_DEPENDENT(lc);
+                LLVMValueRef base = llLowerPointerValue(lc, ins->r1);
+                LLVMValueRef idx  = llLowerI64Value(lc, ins->r2);
+                LLVMValueRef indices[1] = { idx };
+                LLVMValueRef addr = LLVMBuildGEP2(
+                    lc->bld,
+                    LLVMInt8TypeInContext(lc->ctx),
+                    base, indices, 1, "gep_i8");
+                llvmSet(&lc->values, irVarId(ins->dst), addr);
+                return addr;
+            }
             LL_INC_SUPPORTED(lc);
             if (!llTypeSupported(ins->dst->type)) {
                 llErrUnsupportedType(ins->dst, lc->fn, "i64-arith dst");
@@ -2928,16 +2991,39 @@ static LLVMValueRef llLowerInstr(LLCtx *lc, IrInstr *ins) {
                 exit(1);
             }
             if (ins->disp != 0 || ins->idx != NULL || ins->scale != 0) {
-                fprintf(stderr,
-                    "%s: function %s: IR_LOAD_DEREF with non-zero "
-                    "disp or scaled-index addressing is rejected "
-                    "(MEMORY01 forbids GEP / pointer arithmetic); "
-                    "disp=%d idx=%p scale=%d\n",
-                    LLVM_BACKEND_UNSUPPORTED_POINTER,
-                    lc->fn->name->data, ins->disp,
-                    (void*)ins->idx, ins->scale);
-                llEmitCapabilityCountersOnce(lc->totals);
-                exit(1);
+                /* ACT-POLYC-LLVM-GEP01: byte access type (dst->type ==
+                 * IR_TYPE_I8) admits a constant disp offset. The IR's
+                 * address-mode fusion pass folds `p + k` (k a const
+                 * I64) into LOAD_DEREF::disp=k before the IR_IADD arm
+                 * sees it. For byte access the GEP-shaped subset has
+                 * been folded by the optimiser, so we accept the
+                 * `disp != 0 && scale == 0 && idx == NULL` shape here
+                 * and emit LLVMBuildGEP2 with the constant index.
+                 *
+                 * All other impure shapes (scaled index, runtime idx
+                 * with non-byte access type) are still rejected per
+                 * MEMORY01. Non-byte element indexing is pre-folded
+                 * into LOAD_DEREF::scale != 0 by the address-mode
+                 * fusion (imul index 8 + iadd base,index -> LOAD
+                 * idx+scale=8), which the strict guard below catches.
+                 */
+                if (ins->dst->type == IR_TYPE_I8 &&
+                    ins->scale == 0 && ins->idx == NULL &&
+                    ins->disp != 0)
+                {
+                    /* fall through; GEP+LOAD emitted below */
+                } else {
+                    fprintf(stderr,
+                        "%s: function %s: IR_LOAD_DEREF with non-zero "
+                        "disp or scaled-index addressing is rejected "
+                        "(MEMORY01 forbids GEP / pointer arithmetic); "
+                        "disp=%d idx=%p scale=%d\n",
+                        LLVM_BACKEND_UNSUPPORTED_POINTER,
+                        lc->fn->name->data, ins->disp,
+                        (void*)ins->idx, ins->scale);
+                    llEmitCapabilityCountersOnce(lc->totals);
+                    exit(1);
+                }
             }
             if (!ins->r1) {
                 fprintf(stderr,
@@ -2959,6 +3045,20 @@ static LLVMValueRef llLowerInstr(LLCtx *lc, IrInstr *ins) {
             }
             LLVMValueRef addr = llLowerPointerValue(lc, ins->r1);
             LLVMTypeRef access_ty = llType(lc, ins->dst->type);
+            /* ACT-POLYC-LLVM-GEP01: when the LOAD_DEREF carries a
+             * constant byte offset (disp != 0) — admitted by the
+             * relaxed byte-shaped guard above — emit LLVMBuildGEP2
+             * first and then load through it. For disp == 0 the
+             * bare-addr load is unchanged. */
+            if (ins->disp != 0) {
+                LLVMValueRef const_idx =
+                    LLVMConstInt(LLVMInt64TypeInContext(lc->ctx),
+                                 (u64)(u32)ins->disp, 0);
+                LLVMValueRef indices[1] = { const_idx };
+                addr = LLVMBuildGEP2(lc->bld,
+                    LLVMInt8TypeInContext(lc->ctx),
+                    addr, indices, 1, "gep_i8");
+            }
             /* ACT-POLYC-LLVM-BYTE-MEMORY01: access type is supplied
              * to LLVMBuildLoad2 explicitly. For dst->type == IR_TYPE_I8,
              * LLVM emits `load i8, ptr %p`; for IR_TYPE_I64, the existing

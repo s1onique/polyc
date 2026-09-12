@@ -88,6 +88,14 @@ int llvmEmitProgram(IrProgram *prog,
 #define LLVM_BACKEND_UNSUPPORTED_MEMORY         "LLVM_BACKEND_UNSUPPORTED_MEMORY"
 #define LLVM_BACKEND_UNSUPPORTED_POINTER        "LLVM_BACKEND_UNSUPPORTED_POINTER"
 #define LLVM_BACKEND_UNSUPPORTED_AGGREGATE      "LLVM_BACKEND_UNSUPPORTED_AGGREGATE"
+/* ACT-POLYC-LLVM-GEP01: named diagnostic for an
+ * IR_IADD whose operand shape does not match the
+ * frozen B0 byte-indexing GEP subset. Fires only as a
+ * safety net — the canonical IR for byte indexing always
+ * lands on the recognised shape, and non-byte element
+ * indexing is rejected by the existing IR_LOAD_DEREF /
+ * IR_STORE_DEREF disp/idx/scale guards. */
+#define LLVM_BACKEND_UNSUPPORTED_GEP_SHAPE      "LLVM_BACKEND_UNSUPPORTED_GEP_SHAPE"
 #define LLVM_BACKEND_UNSUPPORTED_GLOBAL         "LLVM_BACKEND_UNSUPPORTED_GLOBAL"
 #define LLVM_BACKEND_UNSUPPORTED_EXTERNAL       "LLVM_BACKEND_UNSUPPORTED_EXTERNAL"
 /* ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 C6: a mutable local
