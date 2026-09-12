@@ -25,23 +25,64 @@ even higher-priority rule.
 
 ```text
 1. system / platform constraints
-2. explicit current user instruction
+2. explicit current user SCOPE / authorization
 3. ACT contract (the active authorized task)
-4. AGENTS.md workflow defaults (F1..F15, F-CONVERGENCE)
-5. inferred process preferences (the agent's own priors)
+4. explicit current user EXECUTION DIRECTIVE within already-authorized scope
+5. AGENTS.md workflow defaults (F1..F15, F-CONVERGENCE)
+6. inferred process preferences (the agent's own priors)
 ```
+
+There are two distinct kinds of "explicit current user instruction",
+and they sit on opposite sides of the ACT:
+
+- **User scope / authorization** sits *above* the ACT. A user can
+  expand, narrow, or revoke the ACT's authorized scope. This is
+  done by opening a new ACT, a CORRECTIONnn ACT, or by issuing a
+  scope change that is itself recorded as an authorized artifact
+  before any production mutation follows it.
+- **User execution directive within authorized scope** sits
+  *below* the ACT. The user may say "start now", "continue", or
+  "stop and write the handoff" and that accelerates or decelerates
+  execution of the *already-authorized* phases. It does NOT
+  silently rewrite the ACT's forbidden / allowed / scope list.
+
+This separation matters because the original convergence correction
+(ACT-POLYC-FACTORY-AGENT-CONVERGENCE-NO-ARTIFICIAL-PHASE-HALTS01)
+initially conflated the two kinds of user instruction and would
+have allowed:
+
+```text
+user: "while you're there, also change ARRAY semantics"
+        ↓
+overrides
+ACT: ARRAY changes FORBIDDEN
+```
+
+That is broader than the defect being fixed and would bypass F15
+("never self-authorize scope expansion"). It is corrected here so
+that the doctrine remains useful without legitimizing silent scope
+expansion.
 
 Concretely:
 
-- An explicit user instruction ("START IMPL-B IMMEDIATELY") outranks
-  any `AGENTS.md` workflow default that would otherwise imply a stop.
-- An ACT's authorized scope outranks a generic workflow default that
-  would otherwise block a permitted action.
+- An explicit user *execution directive* ("START IMPL-B IMMEDIATELY")
+  outranks any `AGENTS.md` workflow default that would otherwise
+  imply a stop, **provided the directive targets a phase that is
+  already authorized by the active ACT**.
+- An explicit user *scope change* requires either opening a new
+  ACT, opening a CORRECTIONnn ACT, or amending the active ACT's
+  scope section before any production mutation follows. A user
+  scope change is not itself a sufficient ground for the agent to
+  edit production code; the change must be authorized by the
+  repository's ACT / correction mechanism first.
+- An ACT's authorized scope outranks a generic workflow default
+  that would otherwise block a permitted action.
 - `AGENTS.md` workflow rules MUST NOT be used to manufacture an
   artificial halt that the ACT and the user have not asked for.
 
-The remainder of this file therefore operates inside precedence level
-4. It is binding only where it does not conflict with a higher level.
+The remainder of this file therefore operates inside precedence
+level 5. It is binding only where it does not conflict with a
+higher level.
 
 ## Convergence principle
 
