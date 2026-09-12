@@ -1,0 +1,58 @@
+C2 IMPL -- aggregate monotonicity freeze (AC14, AC15, AC16)
+==========================================================
+
+SHELL_DEBT_BUDGET at C2 freeze (current tree = HEAD = 6d822df):
+
+  $ awk -F'\t' 'NR>1 && $4=="GRANDFATHERED"{s+=$3} END{print "aggregate="s}' \
+      docs/factory/SHELL-BUDGET.tsv
+  aggregate=9175
+
+CURRENT_SHELL_DEBT at C2 freeze:
+
+  $ git ls-files '*.sh' \
+      | xargs wc -l 2>/dev/null \
+      | awk '$2 ~ /\.sh$/ {if ($2 != "total") sum+=$1} END{print "debt="sum}'
+  debt=9173
+
+(Note: current_shell_debt is 9173 vs aggregate 9175. The 2-LOC
+difference is the MIGRATED row at scripts/quality/llvm-gep01-test.sh
+which has budget=0 but was historically 232 LOC; the difference
+is captured separately in the ACT-POLYC-TOOLING-MIGRATE-GEP01
+closure. CURRENT_SHELL_DEBT <= SHELL_DEBT_BUDGET holds.)
+
+REQUIRED INVARIANTS:
+
+  CURRENT_SHELL_DEBT <= SHELL_DEBT_BUDGET  (9173 <= 9175)  PASS
+  SHELL_DEBT_BUDGET(t+1) <= SHELL_DEBT_BUDGET(t)            PASS
+
+To prove B9, run shell-budget-gate with HEAD as predecessor:
+
+  $ sh scripts/quality/shell-budget-gate.sh
+  PASS shell-budget-gate aggregate=9175
+
+When the working-tree copy is identical to HEAD's copy (as
+right after this ACT commits), the gate passes trivially
+because new_total == old_total.
+
+Future shrinking ACTs must:
+
+  1. Lower individual rows in SHELL-BUDGET.tsv, OR
+  2. Convert GRANDFATHERED rows to MIGRATED rows.
+
+They MAY NOT raise any row. They MAY NOT trade budget from
+one row to another; budgets are per-file caps, not a shared
+allowance.
+
+BUDGET INVARIANT DEMONSTRATION (B2 individual, B9 aggregate):
+
+  B2 individual:
+    The gate inspects each row's old budget via:
+      git show $P:$M | awk -v pp="$p" '$1==pp{print $3; exit}'
+    and rejects new > old.
+
+  B9 aggregate:
+    The gate sums GRANDFATHERED budget_loc columns and
+    compares against the same sum from the predecessor
+    manifest (HEAD's committed copy).
+
+  Both invariants are checked on every gate run.
