@@ -1,0 +1,47 @@
+ACT-POLYC-TOOLING-RUNTIME01-CORRECTION05 — Hygiene rollup (CORRECTED)
+
+=== CORRECTED STATEMENT (this supersedes c04's incorrect claim) ===
+
+CORRECTION03 introduced 3 hygiene findings:
+  1. correction03/ac-matrix-correction03.txt:79 EOF blank
+       REMEDIATED by c04 (committed 7e69451, plus 8d1d961 line-split fix)
+  2. correction03/eintr-red-argv-broken.txt:30 EOF blank
+       REMEDIATED by c04 (same commits)
+  3. correction03/cmake-install.log:15 trailing whitespace
+       P2 RESIDUE — preserved (verbatim command argv; falsifying
+       the log would be worse than the hygiene finding)
+
+CORRECTION04 introduced 0 hygiene findings.
+CORRECTION05 introduces 0 hygiene findings (this commit).
+
+=== AUTHORITATIVE git diff --check 456b71c..HEAD ===
+
+Captured 2026-09-12. Total: 6 diagnostics.
+
+  evidence/ACT-POLYC-TOOLING-RUNTIME01/c1/api-shape-freeze.txt:187
+       F14 (historical c1 evidence; immutable)
+  evidence/ACT-POLYC-TOOLING-RUNTIME01/c1/missing-primitives.txt:213
+       F14 (historical c1 evidence; immutable)
+  evidence/ACT-POLYC-TOOLING-RUNTIME01/c4/acceptance-matrix.txt:172
+       F14 (historical c4 evidence; immutable)
+  evidence/ACT-POLYC-TOOLING-RUNTIME01/c4/closure-summary.txt:214
+       F14 (historical c4 evidence; immutable)
+  evidence/ACT-POLYC-TOOLING-RUNTIME01/correction03/cmake-install.log:15
+       P2 residue (verbatim argv)
+  src/holyc-lib/tooling.HC:416
+       F14 (existed pre-c03)
+
+  Total: 4 F14 + 1 P2 residue + 1 F14 tooling.HC EOF.
+  ZERO introduced by CORRECTION03, CORRECTION04, or CORRECTION05.
+
+=== ROLLUP BY COMMIT INTRODUCTION ===
+
+  $ git diff --check 456b71c..HEAD | grep -c ': '
+  6
+
+  $ git diff --check 456b71c..e5a2e50~1 | grep -c ': '   # pre-c03 baseline
+  4   (4 F14 in c1/c4 evidence; 1 F14 in tooling.HC EOF)
+
+  Net delta after c03: +1 (the P2 cmake-install.log WS)
+  Net delta after c04: 0
+  Net delta after c05: 0

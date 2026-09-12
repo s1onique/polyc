@@ -253,6 +253,26 @@ install(FILES ${CMAKE_SOURCE_DIR}/holyc-lib/tos.HH DESTINATION ${CMAKE_INSTALL_P
 if (APPLE)
     set(LIBTOS_BUILD_DIR "${CMAKE_BINARY_DIR}/libtos-build")
     file(MAKE_DIRECTORY "${LIBTOS_BUILD_DIR}")
+    # CORRECTION05: Fresh-output invariant.
+    # The producer (hcc -lib) is allowed to exit non-zero (its own dylib
+    # link attempt fails on _Errno pre-shim); the install step then
+    # *re-runs* cc -dynamiclib with errno_shim.o included.
+    # If we did not clean LIBTOS_BUILD_DIR before the install step, a
+    # stale all.o from a previous install could survive a failed hcc
+    # invocation. The downstream `if(NOT EXISTS all.o)` guard would
+    # see the stale file and the install would proceed using yesterday's
+    # object — a false GREEN.
+    # We force the producer to start from an empty output state by
+    # removing any candidate outputs at install time. After this,
+    # `if(NOT EXISTS all.o)` is meaningful (it really tests that *this*
+    # hcc invocation produced all.o, not that some prior run did).
+    install(CODE "
+        file(REMOVE
+            \"${LIBTOS_BUILD_DIR}/all.o\"
+            \"${LIBTOS_BUILD_DIR}/errno_shim.o\"
+            \"${LIBTOS_BUILD_DIR}/libtos.a\"
+            \"${LIBTOS_BUILD_DIR}/libtos.0.0.1.dylib\")
+    ")
     if (DEFINED HCC_LINK_SQLITE3)
         install(CODE "execute_process(COMMAND \"${HCC_PATH}\" --install-dir=${CMAKE_INSTALL_PREFIX} -D__APPLE__ -DHCC_LINK_SQLITE3 -lib tos ${CMAKE_SOURCE_DIR}/holyc-lib/all.HC WORKING_DIRECTORY \"${LIBTOS_BUILD_DIR}\" RESULT_VARIABLE hcc_lib_result)")
     else()

@@ -1,0 +1,71 @@
+ACT-POLYC-TOOLING-RUNTIME01-CORRECTION05 — Per-step install RCs
+
+Captured 2026-09-12 from main @ pre-c05 (e5a2e50..b13a580).
+
+=== STEP LIST (with c05 file(REMOVE) addition) ===
+
+  step  description                                        RC  notes
+  ----  --------------------------------------------------  --  -----
+  1     file(REMOVE all.o errno_shim.o libtos.a ...)        0  NEW (c05)
+  2     hcc -lib tos                                        1  TOLERATED
+  3     if(NOT hcc_lib_result EQUAL 0) warning              -  CMake-side
+  4     if(NOT EXISTS all.o) FATAL_ERROR                    -  guard
+  5     cc -O0 -c errno_shim.c -o errno_shim.o              0
+  6     ar r libtos.a errno_shim.o                          0
+  7     ranlib libtos.a                                     0
+  8     cc -dynamiclib ... libtos.0.0.1.dylib               0
+  9     install(FILES libtos.a)                             0
+  10    install(FILES libtos.0.0.1.dylib)                   0
+  11    ln -sf libtos.0.0.1.dylib libtos.dylib              0
+  ----  --------------------------------------------------  --  -----
+        cmake --install (whole)                             0
+
+=== MANUAL REPRODUCTION OF EACH STEP ===
+
+  cd /tmp/c05-conserv/libtos-build      # after step 1 (REMOVE)
+
+  step 2 (hcc):
+    $ "$HCC" --install-dir=/tmp/c05-conserv-install -D__APPLE__ -DHCC_LINK_SQLITE3 \
+        -lib tos "$SRC/holyc-lib/all.HC" > /tmp/c05-step2.log 2>&1
+    RC=1  (TOLERATED: hcc's own dylib-link attempt fails on _Errno pre-shim)
+
+  step 4 verification:
+    $ test -f all.o && echo YES || echo NO
+    YES  (hcc produced all.o BEFORE failing on its own dylib-link)
+
+  step 5 (cc errno_shim.c):
+    $ cc -O0 -c errno_shim.c -o errno_shim.o > /tmp/c05-step5.log 2>&1
+    RC=0
+
+  step 6 (ar):
+    $ ar r libtos.a errno_shim.o > /tmp/c05-step6.log 2>&1
+    RC=0  (xcrun cache warnings on stderr are benign)
+
+  step 7 (ranlib):
+    $ ranlib libtos.a > /tmp/c05-step7.log 2>&1
+    RC=0
+
+  step 8 (cc -dynamiclib):
+    $ cc -dynamiclib -Wl,-install_name,/tmp/c05-conserv-install/lib/libtos.0.0.1.dylib \
+        all.o errno_shim.o -o libtos.0.0.1.dylib \
+        -lpthread -lc -lm > /tmp/c05-step8.log 2>&1
+    RC=0  (_Errno now resolvable from errno_shim.o)
+
+  step 9-10 (install(FILES)):
+    RC=0
+
+  step 11 (ln -sf):
+    $ ln -sf libtos.0.0.1.dylib /tmp/c05-conserv-install/lib/libtos.dylib
+    RC=0
+
+  full: cmake --install RC=0
+
+=== NEGATIVE TEST (sabotaged hcc) ===
+
+  step 1 (file(REMOVE)): removes seeded stale all.o            RC=0
+  step 2 (sabotage hcc exits 1, writes no all.o):              RC=1
+  step 4 (if NOT EXISTS all.o) FATAL_ERROR                     fires
+  whole:                                                       RC=1
+  /tmp/c05-red-install/lib/                                    EMPTY
+
+This is exactly the behavior the reviewer demanded.

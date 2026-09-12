@@ -1,0 +1,111 @@
+ACT-POLYC-TOOLING-RUNTIME01-CORRECTION05 — Stale-producer negative test
+
+Captured 2026-09-12 from main @ pre-c05 (e5a2e50..b13a580).
+
+=== BUG REPRODUCTION (without CORRECTION05 fix) ===
+
+Setup:
+  rm -rf /tmp/c05-red /tmp/c05-red-install
+  mkdir -p /tmp/c05-red /tmp/c05-red-install
+  cp ./all.o /tmp/c05-red/all.o      # seed a valid Mach-O stale all.o
+  cmake -S src -B /tmp/c05-red \
+    -DCMAKE_INSTALL_PREFIX=/tmp/c05-red-install
+  # Inject hcc sabotage AFTER hcc is installed:
+  python3 -c "...write sabotage into cmake_install.cmake..."
+
+Without the CORRECTION05 fix:
+
+  $ cmake --install /tmp/c05-red
+  -- Install configuration: "Release"
+  -- Installing: /tmp/c05-red-install/bin/hcc
+  -- Installing: /tmp/c05-red-install/include/tos.HH
+  ...ar/ranlib/cc -dynamiclib noise...
+  -- Installing: /tmp/c05-red-install/lib/libtos.a
+  -- Installing: /tmp/c05-red-install/lib/libtos.0.0.1.dylib
+  (rc=0)
+
+  $ ls /tmp/c05-red-install/lib/
+  libtos.0.0.1.dylib  libtos.a  libtos.dylib -> libtos.0.0.1.dylib
+
+  # libtos.a was installed using YESTERDAY's all.o — false GREEN.
+
+=== FIX VERIFICATION (with CORRECTION05 file(REMOVE ...) step) ===
+
+Same setup. With the fix:
+
+  $ cmake --install /tmp/c05-red
+  -- Install configuration: "Release"
+  -- Installing: /tmp/c05-red-install/bin/hcc
+  -- Installing: /tmp/c05-red-install/include/tos.HH
+  CMake Warning at /tmp/c05-red/cmake_install.cmake:94 (message):
+    hcc -lib exited with code 1; this is expected when all.o references
+    _Errno.  Continuing.
+
+  CMake Error at /tmp/c05-red/cmake_install.cmake:97 (message):
+    hcc -lib did not produce all.o in /tmp/c05-red/libtos-build;
+    cannot continue.
+  (rc=1)
+
+  $ ls /tmp/c05-red-install/lib/
+  (empty)
+
+  # The fresh-output invariant forced the producer to start from
+  # empty state. Sabotaged hcc exited 1 without producing a new
+  # all.o. The downstream FATAL_ERROR guard fired correctly.
+  # Install prefix is empty. NO stale install succeeded.
+
+=== CONSERVATION (with CORRECTION05 fix, real hcc, fresh dir) ===
+
+  rm -rf /tmp/c05-conserv /tmp/c05-conserv-install
+  mkdir -p /tmp/c05-conserv /tmp/c05-conserv-install
+  cmake -S src -B /tmp/c05-conserv \
+    -DCMAKE_INSTALL_PREFIX=/tmp/c05-conserv-install \
+    -DHCC_PATH=$(pwd)/hcc -DHCC_LINK_SQLITE3=ON
+  cmake --install /tmp/c05-conserv
+  # rc=0
+
+  $ ls /tmp/c05-conserv-install/lib/
+  libtos.0.0.1.dylib  libtos.a  libtos.dylib -> libtos.0.0.1.dylib
+
+  $ nm /tmp/c05-conserv-install/lib/libtos.a | grep ' T ' \
+      | grep -E '_(Errno|PollIntr|SpawnAndCapture)\b'
+  _PollIntr
+  _SpawnAndCapture
+  _Errno
+
+  # Real install still works end-to-end.
+
+  # runtime01-selftest built against installed prefix:
+  $ ./hcc --install-dir=/tmp/c05-conserv-install \
+      tools/quality/runtime01-selftest.HC -o /tmp/c05-rt01
+  (rc=0)
+  $ /tmp/c05-rt01 --child=/tmp/rt01-child \
+      --hcc=$(pwd)/hcc --llvm-install-dir=/tmp/c05-conserv-install
+  RT01_PASS=18 RT01_FAIL=0 STATUS=PASS
+
+  # EINTR retry against installed libtos.a:
+  $ /tmp/c05-sig-injector /tmp/c05-sig-child stderr-flood-4194304
+  rc=0 out=0 err=4194304   (4 MiB exact under SIGALRM-spam)
+
+  # GEP dogfood:
+  $ bash scripts/quality/llvm-gep01-test.sh
+  GEP01_PASS=30 GEP01_FAIL=0 STATUS=PASS
+
+=== ROOT CAUSE ===
+
+The CORRECTION03 install step had:
+  file(MAKE_DIRECTORY ${LIBTOS_BUILD_DIR})  # create-once at configure
+  install(CODE "execute_process(...hcc -lib...)")  # produce
+  install(CODE "if(NOT EXISTS all.o) FATAL_ERROR")  # guard
+
+`file(MAKE_DIRECTORY)` is idempotent and runs at configure
+time, not at install time. So on a re-install, the build dir
+(including any prior all.o) persists. The hcc invocation
+fails (in this test, sabotage; in production, possibly broken
+toolchain or transient I/O). The `if(NOT EXISTS all.o)`
+guard sees the stale file from the prior run and install
+proceeds using yesterday's object.
+
+The right invariant is: **before each install run, the
+producer's output area must be empty.** Achieved via
+`file(REMOVE ...)` as the first install(CODE) step.
