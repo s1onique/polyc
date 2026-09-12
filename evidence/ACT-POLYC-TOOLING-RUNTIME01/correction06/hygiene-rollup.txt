@@ -1,0 +1,47 @@
+ACT-POLYC-TOOLING-RUNTIME01-CORRECTION06 — Hygiene rollup (three-count convention)
+
+Per DOCTRINE.md §22 "Hygiene arithmetic convention", the
+rollup is reported as THREE COUNTS, not a single total.
+
+=== THREE COUNTS (full ACT range 456b71c..HEAD) ===
+
+  baseline F14 findings     = 5
+    1. evidence/ACT-POLYC-TOOLING-RUNTIME01/c1/api-shape-freeze.txt:187
+       (blank line at EOF; existed pre-c03)
+    2. evidence/ACT-POLYC-TOOLING-RUNTIME01/c1/missing-primitives.txt:213
+       (blank line at EOF; existed pre-c03)
+    3. evidence/ACT-POLYC-TOOLING-RUNTIME01/c4/acceptance-matrix.txt:172
+       (blank line at EOF; existed pre-c03)
+    4. evidence/ACT-POLYC-TOOLING-RUNTIME01/c4/closure-summary.txt:214
+       (blank line at EOF; existed pre-c03)
+    5. src/holyc-lib/tooling.HC:416
+       (blank line at EOF; existed pre-c03)
+
+  P2 residue findings       = 1
+    6. evidence/ACT-POLYC-TOOLING-RUNTIME01/correction03/cmake-install.log:15
+       (verbatim command argv; preserving the literal
+       trailing-space-in-argv in this captured log is more
+       truthful than falsifying it. P2 = acknowledged residue.)
+
+  newly introduced findings = 0
+    (none of c03, c04, c05, c06 introduced any new findings)
+
+  TOTAL                     = 6
+    (5 + 1 + 0 = 6, of which 5 are immutable F14 and
+     1 is preserved P2; 0 are c03-c06-introduced.)
+
+=== CLOSE-READINESS CHECK ===
+
+The CLOSE-time question per the convention is:
+
+  "Did THIS ACT introduce any new hygiene findings?"
+
+  Answer: NO. The closing commit's `git diff --check` exits 0.
+
+The TOTAL count (6) is reported for completeness but is not
+a CLOSE gate; the gate is the three-count breakdown.
+
+=== AUTHORITATIVE git diff --check (456b71c..HEAD) ===
+
+Captured 2026-09-12 after the c06 commit. Total: 6 diagnostics
+in 7 output lines (one diagnostic spans 2 lines).

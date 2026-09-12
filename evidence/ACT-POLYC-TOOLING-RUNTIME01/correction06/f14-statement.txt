@@ -1,0 +1,34 @@
+ACT-POLYC-TOOLING-RUNTIME01-CORRECTION06 — F14 doctrine statement
+
+This ACT explicitly honors the strict F14 reading per
+DOCTRINE.md §22 "Strict F14 reading for corrections":
+
+  historical erroneous evidence = immutable
+  new correction packet         = authoritative successor
+
+Concretely:
+
+1. `evidence/ACT-POLYC-TOOLING-RUNTIME01/correction05/closure-summary.txt`
+   contains a SHA-of-self violation (line 4:
+   `IDENTITY: branch=main HEAD=31ad4615d12d (...)` where
+   `31ad4615d12d` is the SHA of one of the commits that
+   wrote this file).
+
+   This CORRECTION06 ACT does NOT modify that file. It is
+   immutable historical evidence. The replacement closure
+   summary lives in
+   `correction06/closure-summary-replacement.md`.
+
+2. CORRECTION04 had mutated three `correction03/*` evidence
+   files (patch-hygiene.txt, ac-matrix-correction03.txt,
+   eintr-red-argv-broken.txt). Those mutations are now
+   also immutable historical evidence. They are NOT
+   reverted; the strict-F14 reading means we do not
+   silently mutate earlier correction directories.
+
+3. CORRECTION06 itself does NOT modify any file outside the
+   new `correction06/` directory. Only new files are added.
+
+This is the correct pattern for all future corrections:
+historical evidence is immutable; corrections live in new
+`<original-id>-CORRECTION<N+1>/` directories.

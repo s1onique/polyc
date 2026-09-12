@@ -1,0 +1,57 @@
+ACT-POLYC-TOOLING-RUNTIME01-CORRECTION06 — What was replaced and why
+
+=== VIOLATION ===
+
+File:    evidence/ACT-POLYC-TOOLING-RUNTIME01/correction05/closure-summary.txt
+Line:    4
+Content: `IDENTITY:       branch=main HEAD=31ad4615d12d (this commit; the real HEAD on disk at c05 close)`
+
+Analysis:
+  - 31ad4615d12d is the SHA of the commit
+    "ACT-POLYC-TOOLING-RUNTIME01-CORRECTION05: fresh-output invariant + ..."
+    which is one of the two commits that wrote this file.
+  - The line claims the SHA of a commit that contains the
+    claim. This is a SHA-of-self violation per DOCTRINE.md §22
+    (F-GIT-IDENTITY).
+
+=== WHY IT HAPPENED ===
+
+I (the closing agent for CORRECTION05) reasoned:
+
+  "The reviewer noted that the prior closure summary
+  identified HEAD as 8d1d961 but the real HEAD was 8d1d961's
+  descendant. To fix the identity binding, I should write
+  the real HEAD into the closure summary."
+
+This is precisely the trap DOCTRINE.md §22 warns against.
+The right answer is: do not write any SHA into a closure
+summary. Use the stable, mechanically inspectable identity
+pattern (ACT id, phase, verdict, predecessor link,
+repository state, ancestry checks, measured outputs) and
+let downstream consumers query Git for the SHA.
+
+=== REPAIR ===
+
+Authoritative successor created at:
+  evidence/ACT-POLYC-TOOLING-RUNTIME01/correction06/
+    closure-summary-replacement.md
+
+The replacement uses the Git-queryable identity pattern:
+
+  branch           = main
+  working tree     = clean (verified after each commit)
+  predecessor      = ACT-POLYC-TOOLING-RUNTIME01-CORRECTION05
+                     (PASS_WITH_HYGIENE_RESIDUE)
+                   = ACT-POLYC-FACTORY-NO-SHA-OF-SELF01
+                     (PASS — codifies F-GIT-IDENTITY)
+  ACT id           = ACT-POLYC-TOOLING-RUNTIME01-CORRECTION06
+  phase            = CLOSE
+  verdict          = PASS_WITH_HYGIENE_RESIDUE
+
+And tells downstream consumers how to query the SHA:
+
+  git log --grep='^ACT: ACT-POLYC-TOOLING-RUNTIME01-CORRECTION06$' \
+          --grep='^ACT-Phase: CLOSE$' --pretty=format:'%H'
+
+The CORRECTION05 closure-summary file itself is F14-protected
+historical evidence. It is NOT rewritten.
