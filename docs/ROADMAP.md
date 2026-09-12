@@ -1221,8 +1221,8 @@ The critical-path transition per ACT §24:
   ACT-POLYC-TOOLING-RUNTIME01             CLOSED PASS
   ACT-POLYC-TOOLING-MIGRATE-GEP01         CLOSED PASS  <-- Track B first migration
   ACT-POLYC-PARSER-TERNARY-HANG01         NEXT        (Track A / compiler)
-  ACT-POLYC-TOOLING-SHELL-BUDGET01        CLOSED PASS  <-- Track B budget ratchet
-  ACT-POLYC-TOOLING-MIGRATE-FACTORY-HALT-CLASSIFICATION01  NEXT  (Track B migration, mechanically selected)
+  ACT-POLYC-TOOLING-SHELL-BUDGET01        HALT PRODUCT (Track B budget ratchet; see CORRECTION01)
+  ACT-POLYC-INTEGRATION-PREBOOTSTRAP-GATES01  NEXT  (Track B integration gate; owns R1/R2/R3)
 ```
 
 STRUCT01 / ARRAY01 remain deferred. BOOTSTRAP01 (B0
@@ -1689,77 +1689,92 @@ evidence/.../c5/frozen-binding-classification.txt and
 evidence/.../c6/residue.txt for the classification.
 
 
-#### ACT-POLYC-TOOLING-SHELL-BUDGET01 status (CLOSED PASS)
+#### ACT-POLYC-TOOLING-SHELL-BUDGET01 status (HALT PRODUCT at CORRECTION01)
 
 SHELL-BUD01 ACT-POLYC-TOOLING-SHELL-BUDGET01
 
-  MISSION = freeze the per-file shell-debt budget manifest
-            (docs/factory/SHELL-BUDGET.tsv) and a deterministic
-            verifier (scripts/quality/shell-budget-gate.sh) that
-            enforces monotonic per-file and aggregate debt
-            shrinkage, zero-budget for migrated paths, and an
-            unbudgeted-path rejector.
+  ORIGINAL CLOSURE = 424ed55 (CLOSED PASS) -- reclassified as HALT
+                     in ACT-POLYC-TOOLING-SHELL-BUDGET01-CORRECTION01.
+                     424ed55 remains immutable per F14 as evidence
+                     of the false PASS; this ROADMAP entry is the
+                     current truth.
 
-  BUDGET (C3 freeze)
-    TRACKED_SHELL_FILES       = 43   (42 tracked + 1 MIGRATED row)
-    TOTAL_SHELL_LOC           = 9337
-    GRANDFATHERED_FILES       = 36
-    GRANDFATHERED_LOC         = 9173
-    CURRENT_SHELL_DEBT        = 9173
-    SHELL_DEBT_BUDGET         = 9175
-    TINY_FILES                = 7
-    MIGRATED_ROWS             = 1    (scripts/quality/llvm-gep01-test.sh)
+  IMPLEMENTATION (preserved, useful)
+    docs/factory/SHELL-BUDGET.tsv               (44 rows)
+    scripts/quality/shell-budget-gate.sh        (38 LOC, B1..B9)
+    scripts/quality/shell-budget-gate-test.sh   (42 LOC, 9/9 PASS)
+    Repository-wide inventory via git ls-files (architectural
+    improvement over scripts/quality/-only baseline)
 
-  GATES (post-cutover)
-    shell-budget-gate         PASS  aggregate=9175
-    shell-budget-gate-test    PASS  N1..N10 (9 implemented; N7 is
-                                        shell-loc-gate's domain)
-    factory-v2-test           PASS  35/0
-    factory-append-only-test  PASS  11/0
-    factory-closure-status    PASS  6/0
-    factory-halt-class-test   PASS  12/0
-    gate-fast                 PASS
+  HALT REASONS (mechanically reproduced against 424ed55)
+    AC24  zero READY_NOW candidates in
+          evidence/ACT-POLYC-TOOLING-SHELL-BUDGET01/c2/migration-queue.tsv
+          -> HALT_NO_MIGRATION_CANDIDATE
+    AC28  shell-loc-gate FAILs on
+            scripts/quality/factory-halt-classification-test.sh  cur=182 > 50
+            scripts/quality/factory-halt-classification-check.sh cur=187 > 50
+          -> HALT_GATE_FALSE_GREEN
+    AC30  gate-fast does NOT invoke shell-budget-gate
+          -> HALT_GATE_FALSE_GREEN
+    AC31  GEP PolyC harness NOT_EXECUTED_IN_ENV (no hcc in build)
+          -> AC31's PASS claim was false; the
+             available classification is UNAVAILABLE.
 
-  MIGRATED-PATH RATCHET (B3)
-    Reintroducing scripts/quality/llvm-gep01-test.sh:
-      FAIL  shell-budget-gate
-      B3  MIGRATED path exists: scripts/quality/llvm-gep01-test.sh
-    Resurrected path is mechanically rejected.
+  OWNERSHIP OF FIXES (forwarded)
+    P0  AC30 (gate-fast wiring)        -> ACT-POLYC-INTEGRATION-
+                                            PREBOOTSTRAP-GATES01
+                                            (general "bind every gate"
+                                            property; same geometric
+                                            defect as D1 GEP binding)
+    P0  AC28 (shell-loc FAIL)          -> ACT-POLYC-INTEGRATION-
+                                            PREBOOTSTRAP-GATES01 R3
+                                            (shrink/migrate
+                                            factory-halt-classification-*)
+    P0  evidence capture rc-mismatch   -> ACT-POLYC-INTEGRATION-
+                                            PREBOOTSTRAP-GATES01 (residue)
+    P1  AC31 (harness unrunnable)      -> ACT-POLYC-INTEGRATION-
+                                            PREBOOTSTRAP-GATES01 R1
+                                            (bind harness against
+                                            build/test-prefix/bin/)
+    P2  duplicate header row in        -> cosmetic; addressed by the
+        migration-queue.tsv               verifier-test packet script
+                                            itself if/when an ACT
+                                            revisits it
 
-  MIGRATION QUEUE (top row)
-    rank=1  scripts/quality/factory-halt-classification-test.sh
-            182 LOC  score=17  category=NEEDS_FACTORY_REDESIGN
-
-  NEXT ACT = ACT-POLYC-TOOLING-MIGRATE-FACTORY-HALT-CLASSIFICATION01
-    Mechanical selection (top of the C2 scoring matrix).
-    Subject migrates both the checker and its test runner
-    together so the closure-status truth-machine is whole.
-
-  RESIDUE
-    P0  shell-loc-gate FAILing on a pre-existing stale
-        baseline.txt (introduced by MECHANICAL-BLOCKING01
-        adding factory-halt-classification-* without
-        updating baseline.txt).  Not regressed by this
-        ACT; documented at evidence/.../c1/existing-gate-capabilities.txt.
-    P1  llvm-gep01 PolyC harness test (AC31) is
-        ENVIRONMENTALLY_UNAVAILABLE in this build (no
-        `hcc`).  Equivalent to the GEP01 closure residue
-        classification; not regressed.
-    P2  Migration queue category classifications are
-        conservative (NEEDS_FACTORY_REDESIGN dominates);
-        the next migration ACT may itself reclassify.
+  NO NEXT_ACT FROM THIS CLOSURE
+    AC24 was unmet, so the original ACT's mechanical
+    "NEXT_MIGRATION_CANDIDATE" rule did not fire. The
+    spuriously-promoted
+    ACT-POLYC-TOOLING-MIGRATE-FACTORY-HALT-CLASSIFICATION01
+    line was removed from this ROADMAP. The candidate
+    it would have selected is owned by
+    PREBOOTSTRAP-GATES01 R3.
 
   EVIDENCE ROOT = evidence/ACT-POLYC-TOOLING-SHELL-BUDGET01/
-    c1/  shell-inventory.tsv, current-loc-summary.txt,
-         grandfathered-files.txt, tiny-files.txt,
-         migrated-files.txt, existing-gate-capabilities.txt,
-         red-reproduction.txt, r4-probe.txt,
-         migration-score-inputs.tsv, README.md
-    c2/  budget-before.tsv, budget-after.tsv,
-         verifier-tests.txt, migrated-path-test.txt,
-         aggregate-monotonicity.txt, migration-queue.tsv,
-         score.py, gate-results.txt, README.md
-    c3/  conservation-gates.txt, README.md
+                   (implementation + C1/C2 preserved)
+    EVIDENCE ROOT (correction) =
+                   evidence/ACT-POLYC-TOOLING-SHELL-BUDGET01-CORRECTION01/
+                   (fresh-tree-failures.txt, halt-classification.txt)
+
+  HALT_CLASS = PRODUCT
+  BLOCKS_NEXT = YES  (Track A merge into integrated main)
+```
+
+#### ACT-POLYC-INTEGRATION-PREBOOTSTRAP-GATES01 (already open on Track A)
+
+PBCG01     ACT-POLYC-INTEGRATION-PREBOOTSTRAP-GATES01
+
+  MISSION = clean the three integration defects at the
+            Track A + Track B(e544a48) join point before
+            Track B merges:
+              R1  bind GEP PolyC harness (D1)
+              R2  repair canonical install (D2)
+              R3  migrate/shrink factory-halt-classification-*
+                  so shell-loc-gate PASSes again (D3, also
+                  unblocks SHELL-BUDGET01 AC28)
+            Side-effect: enables SHELL-BUDGET01 to be
+            re-closed with AC30 (gate-fast wiring) and
+            AC28 (shell-loc PASS) both true.
 ```
 
 #### C2 IMPL authorisation gate (HISTORICAL; C2 IMPL closed at 09072b5)
