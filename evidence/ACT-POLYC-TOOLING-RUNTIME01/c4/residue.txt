@@ -1,0 +1,45 @@
+ACT-POLYC-TOOLING-RUNTIME01
+C4 CLOSE — residue
+
+P0 - blocks the current/next decision
+
+  none this ACT.
+
+P1 - important near-term work
+
+  ACT-POLYC-PARSER-TERNARY-HANG01
+    HolyC parser robustness defect: a non-trivial
+    program containing an unsupported `?:` ternary
+    expression hangs at compile time rather than
+    emitting a clean diagnostic.
+
+    Bisected to a one-line reproducer:
+      U8 *x = cond ? a : b;
+
+    Tracked in:
+      evidence/ACT-POLYC-TOOLING-RUNTIME01/c3/
+      compiler-hang-bisection.txt
+
+    Discovered because TOOLING-RUNTIME01's first
+    realistic PolyC consumer (the C3 selftest) used
+    the (unsupported) ternary. The selftest was
+    rewritten with explicit if/return; the underlying
+    compiler defect remains.
+
+    Owner:   Track A / compiler critical path.
+    Action:  open a new ACT to either parse `?:` or
+             fail-fast on it. NOT in scope for
+             TOOLING-RUNTIME01 (F20 forbids compiler
+             semantic widening).
+
+P2 - deferred improvement
+
+  Windows tooling-runtime backend
+    Per ACT §5: Windows native process creation is
+    OUT OF SCOPE. macOS and Linux via POSIX 2008+
+    are the supported platforms. Recorded for future
+    ACT if/when Windows becomes an in-scope host.
+
+------------------------------------------------------------
+End of file
+------------------------------------------------------------

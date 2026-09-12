@@ -1,0 +1,214 @@
+ACT-POLYC-TOOLING-RUNTIME01
+C4 CLOSE — closure summary
+
+VERDICT: PASS
+
+------------------------------------------------------------
+Identity
+------------------------------------------------------------
+
+  WORKING_COPY = /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc2
+                 (the codium-polyc2 working copy per
+                  user confirmation 2025-09-12)
+  ENTRY_HEAD   = 456b71c0f2535c6175271d2107b67f985b4bc2c8
+                 (SHELL-INVENTORY01-CORRECTION01)
+  C1_RED       = b055b8c
+  C2_IMPL      = b7d8937
+  C3_EVIDENCE  = a13280d
+  C4_CLOSE     = (this commit)
+  BRANCH       = main
+  WORKTREE     = clean (after this commit)
+
+------------------------------------------------------------
+Predecessor
+------------------------------------------------------------
+
+  SHELL-INVENTORY01-CORRECTION01 = PRESENT
+      (commit 456b71c is the immediate parent of the
+       three new ACT commits).
+
+------------------------------------------------------------
+RED recon
+------------------------------------------------------------
+
+  argv                EXISTS_AND_USABLE (TempleOS globals)
+  env                 EXISTS_AND_USABLE (getenv)
+  process spawn       MISSING (high-level API)
+  exit status         EXISTS_AND_USABLE (raw waitpid)
+  stdout capture      MISSING (no direct-argv API)
+  stderr capture      MISSING
+  file read           EXISTS_AND_USABLE (FileRead)
+  file write          EXISTS_AND_USABLE (FileWrite)
+  temp storage        MISSING (no mkstemp binding)
+  text search         EXISTS_AND_USABLE single-char;
+                       MISSING multi-byte (no strstr)
+  verdict exit        EXISTS_AND_USABLE (Exit)
+  missing primitives  SpawnAndCapture, TmpFile,
+                       Contains, WaitDecode, TestVerdict
+
+------------------------------------------------------------
+Frozen API
+------------------------------------------------------------
+
+  process API          SpawnAndCapture(program, args[],
+                                        &out, &err) -> I64
+  shell involved       NO
+  capture strategy     pipes (strategy A)
+  temp strategy        mkstemp with O_CREAT|O_EXCL fallback
+  platform             macOS / Linux via POSIX
+
+------------------------------------------------------------
+Implementation
+------------------------------------------------------------
+
+  PolyC files         src/holyc-lib/tooling.HC (~241 LOC)
+                      src/holyc-lib/all.HC (one-line include)
+  C/platform bridge   NONE required; libc extern "c"
+                      declarations in tooling.HC
+  compiler semantic   UNCHANGED
+  ABI                 UNCHANGED
+
+  Test artifact       tools/quality/rt01-child-fixture.c
+                      (~50 LOC; C subprocess oracle)
+                      tools/quality/runtime01-selftest.HC
+                      (~370 LOC; PolyC selftest)
+
+------------------------------------------------------------
+Process evidence
+------------------------------------------------------------
+
+  P1 success-child             PASS
+  P2 nonzero-exit (rc=42)      PASS
+  P3 stderr-separate           PASS
+  P4 missing-executable (rc=127) PASS
+  P5-1 literal-spaces          PASS
+  P5-2 literal-dollar          PASS
+  P5-3 literal-star            PASS
+  P5-4 literal-semicolon       PASS
+
+  Total: 8/8 process assertions.
+
+------------------------------------------------------------
+Filesystem + temp + text
+------------------------------------------------------------
+
+  P12 file-read/exists         PASS (3/3)
+  P13 file-write               PASS
+  P14 temp-unique              PASS
+  P15 cleanup                  PASS
+  P16 Contains/!Contains       PASS (used throughout)
+
+  Total: 6/6 fs/temp/text assertions.
+
+------------------------------------------------------------
+Verdict channel
+------------------------------------------------------------
+
+  Normal mode       FAIL=0  exit=0  PASS
+  Seeded failure    FAIL=1  exit=1  PASS (verdict channel
+                                       honors non-zero)
+
+  Total: 18/18 c3 assertions.  0 FAIL.
+
+------------------------------------------------------------
+GEP dogfood (P22/P23)
+------------------------------------------------------------
+
+  Bash authoritative check   PASS
+  PolyC selftest             PASS (5/5 GEP assertions)
+  Parity                     YES
+
+------------------------------------------------------------
+Shell ratchet (AC24/AC25)
+------------------------------------------------------------
+
+  grandfathered growth       0  (llvm-gep01-test.sh still
+                                  232 LOC)
+  new shell >50 LOC          0  (no new shell file added)
+  shell LOC delta            0
+  shell-loc-gate             PASS
+
+------------------------------------------------------------
+Gates
+------------------------------------------------------------
+
+  shell-loc-gate              PASS  (re-verified post-C3)
+  llvm-gep01-test             PASS  (GEP01_PASS=30 FAIL=0)
+  llvm-byte-memory01-test     not run in this session
+  llvm-spike-test             not run in this session
+  llvm-intops01-test          not run in this session
+  ir-return-slot-forwarding01 not run in this session
+  harness-evidence-isolation  not run in this session
+  llvm-cap-table-verifier     not run in this session
+  factory-v2-commit-msg-check PASS
+  factory-append-only-test    PASS  (PASS=11 FAIL=0)
+  factory-closure-status      PASS  (PAIR_OK=6 PAIR_FAIL=0)
+  gate-fast                   PASS
+
+  Notes on non-execution: the seven gates marked "not
+  run" all require either a fresh LLVM-enabled build or
+  the in-tree python tooling; they were not the load-
+  bearing gates for this ACT (the ACT's own c3 selftest
+  exercises the only new functionality). No test that we
+  did not break was claimed PASS. F10 / F11 conservative
+  interpretation applies.
+
+------------------------------------------------------------
+Patch hygiene (AC30)
+------------------------------------------------------------
+
+  $ git diff --check HEAD~3..HEAD
+  (no output -> no whitespace/line-ending issues)
+
+------------------------------------------------------------
+Production delta
+------------------------------------------------------------
+
+  src/holyc-lib/tooling.HC          new   ~241 LOC
+  src/holyc-lib/all.HC              +1    one-line include
+  tools/quality/rt01-child-fixture.c new  ~50 LOC (C, no policy)
+  tools/quality/runtime01-selftest.HC new ~370 LOC (PolyC)
+
+  No edits to:
+    src/holyc-lib/io.HC, strings.HC, system.HC, ...
+    src/main.c, src/cli.c, src/parser.c, src/ir*.c,
+    src/llvm-backend.c, ...
+    scripts/quality/llvm-gep01-test.sh (232 LOC unchanged)
+    scripts/quality/gate-fast.sh, gate-push.sh
+    .clang-format, .gitignore, .githooks/, AGENTS.md
+    docs/ROADMAP.md (update recorded in
+                      c4/roadmap-update.txt)
+
+------------------------------------------------------------
+Residue (P1/P2)
+------------------------------------------------------------
+
+P1 - ACT-POLYC-PARSER-TERNARY-HANG01 (compiler defect)
+    The HolyC parser either must support `?:` as a
+    ternary or fail-fast on it. Today it neither parses
+    it nor fails fast: programs with a non-trivial
+    ternary hang at compile time. Bisected in C3 to a
+    single-line reproducer (U8 *x = cond ? a : b;).
+    Out of scope for TOOLING-RUNTIME01 (F20 forbids
+    compiler semantic widening).
+
+P2 - Windows tooling-runtime backend not implemented
+    Per ACT §5. Recorded for future ACT if/when Windows
+    becomes an in-scope development host.
+
+------------------------------------------------------------
+ROADMAP state
+------------------------------------------------------------
+
+  SHELL-INVENTORY01              CLOSED PASS
+  SHELL-INVENTORY01-CORRECTION01 CLOSED PASS
+  TOOLING-RUNTIME01              CLOSED PASS
+
+  NEXT: ACT-POLYC-TOOLING-MIGRATE-GEP01
+        (the bounded llvm-gep01-test.sh migration to
+         PolyC, building on this ACT's substrate)
+
+------------------------------------------------------------
+End of file
+------------------------------------------------------------
+

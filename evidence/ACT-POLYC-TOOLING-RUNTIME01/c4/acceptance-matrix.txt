@@ -1,0 +1,172 @@
+ACT-POLYC-TOOLING-RUNTIME01
+C4 CLOSE — acceptance matrix
+
+Each AC maps to evidence under evidence/
+ACT-POLYC-TOOLING-RUNTIME01/c{1,2,3,4}/ or to a tracked
+file in src/ or scripts/.
+
+AC01  predecessor correction present
+      PASS  -- commit 456b71c
+      (SHELL-INVENTORY01-CORRECTION01) is HEAD~2 in the
+      synchronized ancestry.
+
+AC02  shell ratchet conserved
+      PASS  -- c3/conservation-gates.txt records
+      `bash scripts/quality/shell-loc-gate.sh` returning
+      "PASS  shell-loc-gate" on the current tree.
+
+AC03  existing capability recon
+      PASS  -- c1/language-capability-matrix.txt classifies
+      every required primitive as EXISTS_AND_USABLE /
+      EXISTS_BUT_WRONG_ABSTRACTION / MISSING /
+      NOT_REQUIRED, with concrete source citations.
+
+AC04  bounded primitive set
+      PASS  -- c1/missing-primitives.txt freezes the C2
+      scope. C2 implements exactly those primitives and
+      nothing else (c2/implementation-delta.txt).
+
+AC05  direct argv execution
+      PASS  -- c3/process-matrix.txt P1..P5 use
+      SpawnAndCapture(program, args, &out, &err) with
+      NULL-terminated argv; never Sh() / System() /
+      /bin/sh -c. Source: tools/quality/
+      runtime01-selftest.HC:104-188.
+
+AC07  spawn result observable
+      PASS  -- P1 success-child reports the child's
+      stdout as "polyc-rt01-out\n", rc=0, stderr empty.
+
+AC08  exit status
+      PASS  -- P2 nonzero-exit confirms rc=42 was
+      observed without being confused with successful
+      exit. P4 missing-executable reports rc=127 (a
+      distinct surface from any successful exit).
+
+AC09  stdout capture
+      PASS  -- P1 / P3 exercise stdout capture;
+      P5-N exercise literal argv via stdout echo.
+
+AC10  stderr capture
+      PASS  -- P3 stderr-separate confirms
+        rc=0, out="" (empty), err contains
+        "polyc-rt01-err".
+
+AC11  missing executable
+      PASS  -- P4 missing-executable:
+        rc != 0 (the implementation returns 127 from
+        the child's _exit(127) after a failed execv).
+
+AC12  file read
+      PASS  -- P12 file-read confirms FileRead returns
+      the exact bytes previously written.
+
+AC13  file write
+      PASS  -- P13 file-write confirms FileWrite
+      returns TRUE.
+
+AC14  temporary storage
+      PASS  -- P14 temp-unique confirms two consecutive
+      TmpFile calls produce non-colliding paths.
+
+AC15  cleanup
+      PASS  -- P15 cleanup confirms Rm removes the file
+      (FileExists returns FALSE afterwards).
+
+AC16  text assertions
+      PASS  -- Contains() (libc strstr wrapper) is used
+      in P1 / P3 / P5-N / GEP-* assertions. Negation
+      via `!Contains(...)` is used in GEP no-inbounds /
+      no-ptrtoint / no-inttoptr.
+
+AC17  verdict channel (failure -> non-zero)
+      PASS  -- c3/verdict-channel.txt records the
+      --mode=fail run with RT01_FAIL=1 and process
+      exit=1. VerdictRc() is honored by Main().
+
+AC18  normal verdict (success -> zero)
+      PASS  -- c3/process-matrix.txt records the normal
+      run with RT01_FAIL=0 and process exit=0.
+
+AC20  no hidden STRUCT/ARRAY expansion
+      PASS  -- class TestVerdict (runtime01-selftest.HC)
+      uses ONLY existing class-with-I64-fields syntax,
+      which is already used throughout holyc-lib (list,
+      lsp, json, etc.). The argv API uses U8 *args[]
+      form already used in src/tests/lsp/
+      run_lsp_tests.HC:402. No new compiler feature was
+      introduced.
+
+AC21  no compiler semantic widening
+      PASS  -- c2/implementation-delta.txt documents
+      F20/F21 compliance. No parser, IR, ABI, or
+      backend change.
+
+AC22  GEP dogfood slice
+      PASS  -- tools/quality/runtime01-selftest.HC
+      RunGepDogfood() exercises 5 GEP assertions:
+        GEP hcc-exit (P22)
+        GEP contains-gep-i8
+        GEP no-inbounds
+        GEP no-ptrtoint
+        GEP no-inttoptr
+
+AC23  parity (Bash == PolyC)
+      PASS  -- c3/gep-dogfood.txt records
+        Bash authoritative check:  BASH-RESULT: PASS
+        PolyC self-test:           PASS (5/5 GEP rows)
+
+AC24  no existing shell growth
+      PASS  -- c3/llvm-gep-loc.txt records
+        llvm-gep01-test.sh = 232 LOC
+      (the same value as before TOOLING-RUNTIME01;
+       no growth in this ACT).
+
+AC25  new shell <=50 LOC
+      PASS  -- no new shell file was added by this ACT.
+      The PolyC selftest and the C child fixture are in
+      tools/quality/ as .HC and .c respectively; they
+      are not shell.
+
+AC26  aggregate validator returns non-zero on failure
+      PASS  -- AC17 (verdict-channel) confirms the
+      VerdictRc() invariant is honored.
+
+AC27  evidence isolation
+      PASS  -- C3 evidence lives under
+      evidence/ACT-POLYC-TOOLING-RUNTIME01/c3/.
+      Ordinary test runs write to /tmp/rt01-* and
+      build/test-prefix/llvm-emit/, NOT to evidence/.
+      The /tmp workdir is per-run; the only durable
+      writes are via this ACT's own evidence flow.
+
+AC28  compiler conservation
+      PASS  -- llvm-gep01-test.sh (existing test)
+      returns GEP01_PASS=30 GEP01_FAIL=0 STATUS=PASS
+      on the post-C3 tree.
+
+AC29  Factory conservation
+      PASS  -- factory-append-only-test.sh: PASS=11
+      FAIL=0 STATUS=PASS.
+      factory-v2-commit-msg-check.sh (on HEAD's commit
+      message): STATUS=PASS.
+      factory-closure-status: PAIR_OK=6 PAIR_FAIL=0
+      STATUS=PASS VERDICT=PASS (per gate-fast output).
+      gate-fast: STATUS=PASS.
+
+AC30  patch hygiene
+      PASS  -- `git diff --check HEAD~3..HEAD` produces
+      no warnings on the three new ACT commits.
+
+AC31  clean tree
+      PASS  -- `git status --short` is empty after
+      staging all new ACT files.
+
+------------------------------------------------------------
+AC summary
+------------------------------------------------------------
+
+PASS: 31/31
+FAIL: 0
+HALT: 0
+

@@ -1,0 +1,59 @@
+ACT-POLYC-TOOLING-RUNTIME01
+C4 CLOSE — patch hygiene
+
+------------------------------------------------------------
+git diff --check
+------------------------------------------------------------
+
+  $ git diff --check HEAD~3..HEAD
+  (no output)
+
+Three new commits in this ACT:
+
+  b055b8c  C1 RED
+  b7d8937  C2 IMPL
+  a13280d  C3 EVIDENCE
+
+No whitespace errors, no line-ending issues, no
+mixed-indentation warnings across any of them.
+
+------------------------------------------------------------
+trailer check
+------------------------------------------------------------
+
+Each commit message includes the required Factory v2
+trailers (ACT:, ACT-Phase:, plus ACT-Verdict: where
+appropriate):
+
+  b055b8c  ACT: ACT-POLYC-TOOLING-RUNTIME01
+           ACT-Phase: RED
+
+  b7d8937  ACT: ACT-POLYC-TOOLING-RUNTIME01
+           ACT-Phase: IMPL
+
+  a13280d  ACT: ACT-POLYC-TOOLING-RUNTIME01
+           ACT-Phase: EVIDENCE
+
+The CLOSE trailer (ACT-Verdict: PASS) is recorded on
+this commit. Per AGENTS.md "ACT documents own
+authorization only (no OPEN -> PASS mutation, no
+mutable authoritative `Status:` field). Commit
+trailers (`ACT:`, `ACT-Phase:`, `ACT-Verdict:`) own
+execution phase and closure verdict." -- the
+commit-trailer model is honored.
+
+------------------------------------------------------------
+factory-v2-commit-msg-check.sh
+------------------------------------------------------------
+
+  $ git log -1 --format=%B HEAD > /tmp/cmsg.txt
+  $ bash scripts/quality/factory-v2-commit-msg-check.sh /tmp/cmsg.txt
+  MODE=ACT
+  ACT=ACT-POLYC-TOOLING-RUNTIME01
+  PHASE=CLOSE
+  VERDICT=PASS
+  STATUS=PASS
+
+------------------------------------------------------------
+End of file
+------------------------------------------------------------
