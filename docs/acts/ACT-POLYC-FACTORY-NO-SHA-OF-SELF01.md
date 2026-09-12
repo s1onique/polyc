@@ -155,4 +155,3 @@ git log --grep='^ACT: ACT-POLYC-FACTORY-NO-SHA-OF-SELF01$' \
 ```
 
 This is exactly the doctrine this ACT codifies.
-
