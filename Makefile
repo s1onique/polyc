@@ -59,11 +59,22 @@ install:
 release-unit-test:
 	$(MAKE) -C ./build unit-test
 
-unit-test:
-	cd ./src/tests && ../../hcc ./run.HC -o test-runner && ./test-runner && cd ../../
+# ACT-POLYC-INTEGRATION-PREBOOTSTRAP-GATES01 D2 (follow-up): unit-test
+# and jit-unit-test now consume the same hermetic test prefix as
+# lsp-test. The pre-existing recipes used the hcc compile-time
+# INSTALL_PREFIX (/usr/local by default) to find tos.HH and
+# libtos.{a,dylib}; on hosts without a writable /usr/local, that
+# INSTALL_PREFIX mismatch causes both hcc to fail with
+# "Failed to open file: /usr/local/include/tos.HH" AND the downstream
+# cc -ltos link to fail with "Undefined symbols for architecture
+# arm64: _FREE" or "invalid use of ADRP". Routing these targets
+# through test-prefix-install + --install-dir=$(TEST_PREFIX) makes
+# the gate-push hermetic on any host.
+unit-test: test-prefix-install
+	cd ./src/tests && ../../hcc --install-dir=$(TEST_PREFIX) ./run.HC -o test-runner && ./test-runner && cd ../../
 
-jit-unit-test:
-	cd ./src/tests && ../../hcc ./run_jit.HC -o test-runner-jit && ./test-runner-jit && cd ../../
+jit-unit-test: test-prefix-install
+	cd ./src/tests && ../../hcc --install-dir=$(TEST_PREFIX) ./run_jit.HC -o test-runner-jit && ./test-runner-jit && cd ../../
 
 # Hermetic: builds libtos from the tree into a local prefix and
 # compiles the (HolyC) harness against it, so the suite tests in-tree
@@ -93,6 +104,21 @@ lsp-test: test-prefix-install
 # such as gate-push.sh override it with INSTALL_PREFIX=$gate_prefix
 # via `make test-prefix-install INSTALL_PREFIX=...` so the test
 # prefix lands inside the gate's hermetic worktree.
+#
+# FOLLOW-UP: the canonical install creates an unversioned
+# `libtos.dylib -> libtos.0.0.1.dylib` symlink (CORRECTION03 in
+# src/CMakeLists.txt) so that downstream `-ltos` linkage in user
+# code pulls in the dylib. For the gate-push hermetic prefix this
+# is harmful: on arm64 the AOT codegen emits `adrp`/`add` pairs
+# against `_FREE` and similar function symbols that the dylib's
+# relocation metadata cannot satisfy, producing
+# `ld: invalid use of ADRP in '_CmpFileNames' to '_FREE'`. The
+# archive (`libtos.a`) ships the same symbols with archive-style
+# relocations that link cleanly. We therefore remove the
+# unversioned symlink after the canonical install so that
+# downstream `-ltos` resolves to the archive inside the gate's
+# hermetic prefix. This is a hermetic-prefix-local measure; the
+# production install at `make install` is untouched.
 TEST_PREFIX ?= $(CURDIR)/build/test-prefix
 test-prefix-install:
 	@if [ ! -x ./hcc ]; then \
@@ -112,9 +138,13 @@ test-prefix-install:
 		-DHCC_ENABLE_JIT=on \
 		-DHCC_ENABLE_LLVM=$(HCC_ENABLE_LLVM)
 	$(MAKE) -C ./build/test-prefix-install-build install
+	@# Hermetic-prefix-local: drop the unversioned libtos.dylib
+	@# symlink so `-ltos` resolves to the static archive (see comment
+	@# above). Idempotent; no-op if the symlink does not exist.
+	@rm -f $(TEST_PREFIX)/lib/libtos.dylib
 	@if [ ! -f $(TEST_PREFIX)/lib/libtos.a ] || \
-	    [ ! -f $(TEST_PREFIX)/lib/libtos.dylib ]; then \
-		echo "test-prefix-install: canonical install did not produce libtos.{a,dylib}" >&2; \
+	    [ ! -f $(TEST_PREFIX)/lib/libtos.0.0.1.dylib ]; then \
+		echo "test-prefix-install: canonical install did not produce libtos.{a,0.0.1.dylib}" >&2; \
 		exit 1; \
 	fi
 
