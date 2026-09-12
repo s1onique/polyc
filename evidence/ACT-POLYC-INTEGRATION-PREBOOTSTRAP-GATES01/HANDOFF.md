@@ -76,9 +76,10 @@ DOC CLARIFY:   6f885bf (FAILURE MODE A transcript provenance)
 HANDOFF v2:    b326bb8 (reviewer-revised: two-layer model; Option B
                 REJECTED; Option C promoted; commit count
                 corrected; RED + GREEN contract added)
-FINAL_HEAD:    b326bb8
+COUNT FIX:     e893b16 (correct commit count after v2 lands)
+FINAL_HEAD:    e893b16
 WORKTREE:      clean
-COMMITS:       8 new commits on main since 8f398be (append-only).
+COMMITS:       9 new commits on main since 8f398be (append-only).
 ```
 
 ## ROOT CAUSE / FINDING
