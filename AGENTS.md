@@ -445,3 +445,24 @@ The durable binding detail is at [`docs/factory/DOCTRINE.md`](docs/factory/DOCTR
 binding to `remote_ref` (not `local_ref`) and to `local_sha ==
 ZERO` (not `remote_sha == ZERO`) is governed by
 `ACT-POLYC-FACTORY-APPEND-ONLY-GUARD01-CORRECTION01`.
+
+## No SHA-of-self claims
+
+Per [`docs/factory/DOCTRINE.md`](docs/factory/DOCTRINE.md) §22
+(F-GIT-IDENTITY), no ACT, HANDOFF, closure report, evidence
+file, or any other Markdown artifact committed to a Git
+commit may claim the SHA of the commit that contains it.
+Git's content-addressed object model makes such self-references
+structurally impossible (the SHA depends on the tree, which
+depends on the file content, which would depend on the SHA).
+
+Closure artifacts bind to stable, mechanically inspectable
+facts (ACT id, phase, verdict, predecessor link, repository
+state, ancestry checks, measured outputs). If a human or
+downstream tool needs the SHA of a closure commit, they query
+Git history; they do not read it from the commit itself.
+
+F14 forbids mutating any closed ACT's evidence directory,
+including appending "ADDENDUM" blocks to existing files.
+Corrections live in new `<original-id>-CORRECTION<N+1>/`
+directories.

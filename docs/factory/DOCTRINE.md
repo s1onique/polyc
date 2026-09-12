@@ -446,6 +446,144 @@ self-pinning, no duplicate verdict authority).
 The canonical binding detail is at
 [`docs/factory/GIT-METADATA.md`](GIT-METADATA.md).
 
+---
+
+## 22. No SHA-of-self claims (F-GIT-IDENTITY)
+
+**Rule.** No ACT, HANDOFF, closure report, evidence file, or
+any other Markdown artifact that is committed to a Git commit
+may claim the SHA of the commit that contains it.
+
+This rule is structurally necessary: Git's object model
+content-addresses commits from their tree. Embedding the SHA
+of the containing commit inside that commit would mutate the
+tree, mutate the SHA, and create a self-referential paradox.
+Humans and tools can query the SHA from Git history after the
+fact; the SHA has no business being predicted inside the
+commit it identifies.
+
+### Forbidden patterns
+
+```text
+HEAD=<literal SHA of containing commit>
+FINAL_HEAD=<self>
+C<N>_COMMIT=<self>
+ENTRY_HEAD=<self>
+RED_HEAD=<self>
+IMPLEMENTATION_HEAD=<self>
+DOCS_HEAD=<self>
+CLOSURE_HEAD=<self>
+```
+
+Any line of the form `<LABEL>=<40-hex>` where the label is
+self-referential and the SHA happens to be the containing
+commit is a violation.
+
+### What closure artifacts bind to
+
+Closure artifacts (ACT, HANDOFF, evidence, closure-summary)
+bind to the following STABLE, MECHANICALLY INSPECTABLE facts:
+
+```text
+- ACT id            (e.g. ACT-POLYC-FOO01-CORRECTION03)
+- phase             (RED / IMPL / EVIDENCE / CLOSE / HALT)
+- verdict           (PASS / HALT_<REASON> / WITHDRAWN)
+- predecessor link  (which ACT this supersedes, if any)
+- repository state  (branch name, working-tree cleanliness)
+- ancestry checks   (does the predecessor ACT's CLOSE commit
+                     exist? are the required trailers valid?
+                     are the append-only graph checks PASS?)
+- measured outputs  (commands run, RCs, captured files)
+```
+
+The SHAs of commits already in history MAY be cited as
+**observations about immutable subjects** (e.g. "the previous
+CLOSE commit `abc1234` introduced defect X"). They MUST NOT
+be cited as predictions about the commit that contains the
+citation.
+
+If a human or downstream tool needs the SHA of the closure
+commit, they query Git:
+
+```sh
+git log --grep='^ACT: ACT-POLYC-FOO01-CORRECTION03$' \
+        --grep='^ACT-Phase: CLOSE$' --pretty=format:'%H'
+```
+
+### Strict F14 reading for corrections
+
+The historical-evidence rule (F14) forbids mutating any
+artifact in a closed ACT's evidence directory. This includes
+**appending "ADDENDUM" blocks to existing files**.
+
+The proper correction geometry is always:
+
+```text
+historical erroneous evidence = immutable
+new correction packet         = authoritative successor
+```
+
+Concretely: when a future ACT discovers a defect in
+ACT-N's evidence directory, it MUST create a new
+`ACT-M-correctionK/` directory with the corrected content
+and link to it from a master registry. It MUST NOT modify
+any file under `ACT-N/`.
+
+The "ADDENDUM append" pattern is a mutation of historical
+evidence and is forbidden by F14. The middle-ground
+rationalization ("it's only adding a new section, not
+rewriting content") does not change the fact that the file
+SHA changed.
+
+### Hygiene arithmetic convention
+
+Hygiene findings (`git diff --check`) rollups MUST distinguish:
+
+```text
+baseline F14 findings (existed before the current ACT range)
+P2 residue findings (verbatim captured artifacts; cannot
+  be remediated without falsifying evidence)
+newly introduced findings (must equal zero for CLOSE)
+```
+
+The rollup is reported as three counts, not as a single
+"total" number. Conflating baseline and new findings to
+claim a clean rollup is evidence-truth violation.
+
+### Why this is F-GIT-IDENTITY, not F-GIT-IMMUTABILITY
+
+F-GIT-IMMUTABILITY (§23, §24) governs how commits advance
+(no amend, no rebase, no force push, etc.). F-GIT-IDENTITY
+(this section) governs what commits may claim about
+themselves. The two are independent:
+
+- An immutable commit MAY still contain a SHA-of-self claim.
+- Removing that claim is a content correction, not a history
+  rewrite; it must be done via a new commit, never via amend.
+
+### Violation discovery and repair
+
+If a SHA-of-self claim is discovered in a committed file:
+
+1. Open a new bounded correction ACT
+   (`<original-id>-CORRECTION<N+1>`).
+2. Replace the self-referential line with the
+   Git-queryable identity pattern.
+3. Do NOT amend; do NOT rebase.
+4. The CORRECTION commit carries `ACT-Supersedes:` pointing
+   at the original ACT and `ACT-Corrected-Verdict:` matching
+   its verdict.
+
+### Scope
+
+This section binds all Factory work going forward.
+Pre-existing SHA-of-self claims in committed artifacts are
+historical evidence under F14 (immutable); they MAY be
+addressed via a bounded correction ACT, but they are not
+retroactively illegal. Future commits MUST conform.
+
+---
+
 ## 23. Append-only history (F-GIT-IMMUTABILITY)
 
 PolyC authoritative Git history is append-only from the declared
