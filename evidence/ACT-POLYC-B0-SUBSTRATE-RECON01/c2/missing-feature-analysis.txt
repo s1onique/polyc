@@ -1,0 +1,214 @@
+ACT-POLYC-B0-SUBSTRATE-RECON01 — C2 — missing-feature analysis
+==============================================================
+
+Working copy: codium-polyc
+Entry HEAD:    456b71c0f2535c6175271d2107b67f985b4bc2c8
+C1 HEAD:       96ea8034fff4c59a0cd0be0f024b631d0988f7d9
+
+OUTCOME: HALT_SUBSTRATE_GAP
+
+The recon has mechanically proven that the current substrate
+cannot implement B0. The minimal viable B0 lexer (token-at-a-time,
+caller-provided U8* + explicit length, scalar out-params) cannot be
+expressed in current PolyC because of a substrate gap discovered
+during real-program probing.
+
+--------------------------------------------------------------------
+DISCOVERY PROCESS
+--------------------------------------------------------------------
+
+The recon followed F2 (Recon before redesign) and F3 (RED before
+production implementation). It began by reading the current C
+lexer's surface (see c1/lexer-source-inventory.txt), then
+attempted to express the candidate aggregate-free B0 API
+(c1/candidate-b0-api.txt) as a series of progressively simpler
+PolyC programs.
+
+The probes were small, real .HC files compiled by ./hcc with the
+LLVM backend. Each probe was deliberately a single function
+exercising one substrate feature:
+
+  P1  I64 ReadAt(U8 *p, I64 i) { return p[i]; }       PASS
+  P2  U8 *src; I64 len; ... cursor walking with if/else  PASS
+  P3  LexOneToken(... ) (intops01 reference pattern)     PASS
+  P4  ScanIdent single-block (no loops, no out-param)    PASS
+  P5  ScanIdent single-block with *out_len = alen        REJECT
+  P6  ScanIdent multi-block via if/else for byte classes REJECT
+  P7  ScanIdent with while/for loop                      REJECT
+  P8  ScanTail (recursive)                                 PASS (compiles)
+  P9  ScanTail (recursive, with chain)                    REJECT (PHI)
+  P10 PeekOne single conditional                          REJECT
+  P11 PeekOne no conditional, returns loaded value       REJECT
+  P12 PeekNext (lookahead src[c+1] and src[c+2])          REJECT (verify)
+
+P1-P4 confirm the substrate supports:
+  * U8* + I64 indexed byte load via getelementptr i8
+  * byte comparisons (icmp + trunc)
+  * byte->I64 ZEXT promotion
+  * if/else single-block control flow
+  * one-shot function calls with scalar out-params (per intops01)
+
+P5-P12 expose the substrate gap.
+
+--------------------------------------------------------------------
+THE GAP:  Multi-def locals + STORE_DEREF reads = REJECT
+--------------------------------------------------------------------
+
+The discriminator in src/llvm-backend.c (`llOptionW_*` predicate
+chain) requires every mutable local V classified as Option-W to
+satisfy:
+
+    llOptionW_TypeIsI64(v)                       OK
+    llOptionW_NotAddressTaken()                  stub, returns 1
+    llOptionW_DefinitionsAreCaseAorB(fn, v)      STORE/IADD/ISUB only
+    llOptionW_ReadsAreLowerable(fn, v)           IADD/ISUB/IMUL/ICMP/
+                                                  STORE/RET/BR/JMP only
+    llOptionW_FeedsReturnOrIsReturnLocal(fn, v)  must reach ret (direct,
+                                                  or via return-slot,
+                                                  or via tmp chain)
+    llOptionW_DefiniteAssignment(fn, v)          at least one case-(a)/(b)
+
+A PolyC scanner must:
+  (a) read multiple bytes (e.g. src[cursor], src[cursor+1])
+  (b) accumulate a length counter across multiple byte reads
+  (c) write the length to an out-param (*out_len = alen)
+
+(a) and (c) fail because:
+
+  * Multi-def locals (alen) whose definitions occur on different
+    code paths produce IR_PHI at the merge block. PHI is
+    explicitly rejected by the CORE backend:
+        LLVM_BACKEND_UNSUPPORTED_PHI
+
+  * Even with a single-def chain (each `alen = alen + 1` lowers
+    to IR_IADD), the out-param write is IR_STORE_DEREF (denoted
+    `store*` in the dump-ir). STORE_DEREF is NOT in the
+    accepted-opcode list of llOptionW_ReadsAreLowerable. The
+    discriminator returns 0:
+        LLVM_BACKEND_UNSUPPORTED_OPTION_W_INELIGIBLE
+        ("the local violates ... read envelope ...")
+
+  * Even with NO multi-def (single byte peek), the
+    "feed through out-param" pattern is rejected because the
+    discriminator expects loads (IR_LOAD_DEREF) as definitions,
+    and IR_LOAD_DEREF is not case-(a) or case-(b):
+        LLVM_BACKEND_UNSUPPORTED_OPTION_W_INELIGIBLE
+        ("the local violates ... definition opcode outside
+         {IR_STORE, IR_IADD, IR_ISUB} ...")
+
+--------------------------------------------------------------------
+WHY THE INHERITED LEXER COMPILES BUT B0 DOESN'T
+--------------------------------------------------------------------
+
+The inherited C lexer (src/lexer.c) is C code, not PolyC. It
+is not subject to the LLVM backend's Option-W discriminator.
+The C compiler handles mutable state via its own register
+allocator, not via LLVM's mem2reg pipeline.
+
+The C compiler's LLVM SPIKE path emits IR for the C-frontend's
+own IR, not for PolyC-source IR. The Option-W discriminator
+applies specifically to PolyC-source -> neutral IR -> LLVM
+emission. The C source path bypasses it.
+
+The PolyC test fixtures that compile (e.g. read0.HC, readat.HC,
+twodigits.HC, intops01/b0_lexer_shape_probe.HC) all conform to
+the discriminator by NOT having multi-def locals whose reads
+flow through out-param pointers.
+
+--------------------------------------------------------------------
+EVIDENCE: REAL PROBE FAILURES
+--------------------------------------------------------------------
+
+The C2 evidence directory contains captured hcc --emit-llvm
+attempts (in c2/_tmp/) showing each rejection with the named
+diagnostic. Summary:
+
+  P5 chain2.HC: LLVM_BACKEND_UNSUPPORTED_OPTION_W_INELIGIBLE
+                local id=26 line 78 (alen)
+  P7 while.HC : LLVM_BACKEND_UNSUPPORTED_OPTION_W_INELIGIBLE
+                local id=13 line 14 (loop counter)
+  P8/P9 rec.HC: compiles; PHI rejection at multi-byte chain
+  P10 peek1.HC: LLVM_BACKEND_UNSUPPORTED_OPTION_W_INELIGIBLE
+                local id=12 line 25 (multi-def result)
+  P11 peek2.HC: LLVM_BACKEND_UNSUPPORTED_OPTION_W_INELIGIBLE
+                local id=4 line 3 (single-def load feeds ret)
+  P12 peekN.HC: LLVM_BACKEND_VERIFY_FAILED (dominance)
+
+--------------------------------------------------------------------
+WHICH NEXT ACT IS MECHANICALLY NAMED?
+--------------------------------------------------------------------
+
+The gap has two distinct root causes:
+
+  RC-A  llOptionW_ReadsAreLowerable does not list IR_STORE_DEREF.
+        Adding STORE_DEREF would let a multi-def local write
+        through an out-param pointer without triggering the
+        discriminator.
+
+  RC-B  IR_PHI is rejected by the CORE backend. The mem2reg
+        pass owns the SSA reconstruction; without PHI in the
+        emission path, multi-path definitions cannot be lowered.
+
+Both are necessary for the minimal B0 lexer. RC-A is the
+narrower first causal blocker; RC-B subsumes it.
+
+The recon names the next ACT:
+
+    ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01
+
+  Mission: extend the Option-W discriminator to admit IR_STORE_DEREF
+  as a lowerable read of the source local, and verify that the
+  resulting emission produces verifier-clean LLVM.
+
+  Closure: a real PolyC B0 lexer (per c1/candidate-b0-api.txt)
+  compiles, verifies, runs against the bootstrap corpus, and
+  matches the per-token oracle.
+
+  Out of scope for that ACT:
+    - PHI support (RC-B). Address only if Option-W widening is
+      insufficient.
+    - struct/array support (not needed at B0).
+    - byte-store support (not needed at B0).
+    - recursive PolyC functions (not needed; the intops01-style
+      single-call pattern suffices for token recognition).
+
+--------------------------------------------------------------------
+FEATURE DECISIONS (per ACT §32-34)
+--------------------------------------------------------------------
+
+  ARRAY01 needed before BOOTSTRAP01?  NO
+    Token-at-a-time + scalar out-params + scalar digest is
+    sufficient. No aggregate needed.
+
+  STRUCT01 needed before BOOTSTRAP01? NO
+    Same reasoning. Token = (kind, start, len, aux) all scalars.
+
+  HEAP_ALLOCATION needed before B0?  NO
+    Tokens reference source slices via offsets; no copy required.
+
+  BYTE_STORE needed before B0?       NO
+    No mutable byte buffer is constructed; only out-param
+    pointers receive scalar metadata.
+
+  NEW_INTOPS needed before B0?       NO
+    All integer operations used by B0 (add, sub, mul, icmp)
+    are already SUPPORTED.
+
+  OTHER_GAP                          YES
+    ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01
+    (Option-W discriminator widening to admit IR_STORE_DEREF
+    reads and the resulting multi-path mem2reg emission).
+
+--------------------------------------------------------------------
+WHY THIS IS NOT HALT_B0_CONTRACT_AMBIGUOUS
+--------------------------------------------------------------------
+
+The B0 contract is mechanically frozen in c1/candidate-b0-api.txt
+and in the ProbeOne / ScanIdent / intops01 reference patterns.
+The candidate API has been adapted to actual PolyC syntax. The
+discriminator-rejected patterns are exactly the patterns a real
+B0 lexer must use.
+
+The recon does NOT halt because the contract was unclear.
+It halts because the language cannot express a documented
+operation in the contract.

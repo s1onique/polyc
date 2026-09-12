@@ -1,0 +1,78 @@
+ACT-POLYC-B0-SUBSTRATE-RECON01 — C2 — LLVM verification
+========================================================
+
+Working copy: codium-polyc
+Backend:       ./hcc --emit-llvm (LLVM 22.1.8 C-API)
+
+For each PASS probe, llvm-as and opt --passes=verify were attempted.
+
+--------------------------------------------------------------------
+P1 readat.HC      llvm-as  PASS
+                  opt -passes=verify  PASS
+                  IR shape: getelementptr i8, ptr %p, i64 %i
+                            load i8, ptr %gep
+P2 read0.HC       llvm-as  PASS
+                  IR shape: load i8, ptr %p   (const 0 folded)
+P3 twodigits.HC   llvm-as  PASS
+                  opt -passes=verify  PASS
+                  IR shape: 2x (load i8, ptr) + add i64, mul i64
+P4 intops01 probe llvm-as  PASS
+                  opt -passes=verify  PASS
+                  IR shape: load i64 via getelementptr pattern
+                            iadd, isub, store*, ret (one-shot pattern)
+
+--------------------------------------------------------------------
+FAIL PROBES — never reached llvm-as because hcc --emit-llvm
+rejected at the LLVM backend Option-W discriminator. The capture
+is in missing-feature-analysis.txt and per-probe files in _tmp/.
+
+--------------------------------------------------------------------
+EMITTED LLVM SNIPPETS (P1 readat)
+--------------------------------------------------------------------
+
+  define i64 @ReadAt(ptr %0, i64 %1) {
+  bb1:
+    %gep_i8 = getelementptr i8, ptr %0, i64 %1
+    %ld_deref = load i8, ptr %gep_i8, align 1
+    %zext_i8_i64 = zext i8 %ld_deref to i64
+    ret i64 %zext_i8_i64
+  dead_exit:
+    unreachable
+  }
+
+  Verifier: clean (byte-indexed load via getelementptr i8).
+  This confirms GEP01 substrate works for B0 byte walking.
+
+--------------------------------------------------------------------
+EMITTED LLVM SNIPPETS (P4 intops01 b0_lexer_shape_probe)
+--------------------------------------------------------------------
+
+  define i64 @LexOneToken(ptr %0, i64 %1, ptr %2, ptr %3, ptr %4) {
+  bb1:
+    %ld_deref = load i64, ptr %2, align 4
+    %5 = icmp sge i64 %ld_deref, 48
+    br i1 %5, label %bb3, label %bb4
+  bb3:
+    %6 = icmp sle i64 %ld_deref, 57
+    br i1 %6, label %bb5, label %bb4
+  bb5:
+    store i64 2, ptr %3, align 4
+    %7 = sub i64 %ld_deref, 48
+    store i64 %7, ptr %4, align 4
+    %ld_deref1 = load i64, ptr %0, align 4
+    %8 = add i64 %ld_deref1, 1
+    store i64 %8, ptr %0, align 4
+    ret i64 1
+  bb4:
+    store i64 3, ptr %3, align 4
+    store i64 0, ptr %4, align 4
+    ret i64 0
+  dead_exit:
+    unreachable
+  }
+
+  Verifier: clean.
+  This is the CANONICAL B0-shape pattern that DOES work: a
+  single-shot helper, no loops, single-def locals, no
+  out-param writes of loaded values. It is the upper bound on
+  what current substrate can express.

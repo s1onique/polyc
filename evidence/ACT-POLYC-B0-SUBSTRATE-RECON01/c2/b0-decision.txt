@@ -1,0 +1,101 @@
+ACT-POLYC-B0-SUBSTRATE-RECON01 — C2 — B0 decision
+==================================================
+
+Working copy: codium-polyc
+Entry HEAD:    456b71c0f2535c6175271d2107b67f985b4bc2c8
+C1 HEAD:       96ea8034fff4c59a0cd0be0f024b631d0988f7d9
+
+VERDICT: HALT_SUBSTRATE_GAP
+
+The B0 lexer/tokenizer cannot be implemented in PolyC with the
+current substrate. The substrate supports the foundational byte
+operations (GEP01, BYTE-MEMORY) and scalar arithmetic
+(CORE04-RESUME01), but the Option-W discriminator that gates
+mutable-local emission rejects the canonical scanner patterns.
+
+--------------------------------------------------------------------
+FROZEN B0 CONTRACT (c1/candidate-b0-api.txt)
+--------------------------------------------------------------------
+
+  input:       U8 *src + I64 src_len + I64 *cursor
+  output:      I64 kind + I64 *tok_start + I64 *tok_len + I64 *tok_aux
+  delivery:    one token per call (token-at-a-time)
+  text model:  SOURCE_SLICE(start, length) into the caller buffer
+  metadata:    scalar out-params
+
+--------------------------------------------------------------------
+WHAT CURRENT SUBSTRATE SUPPORTS (PASS)
+--------------------------------------------------------------------
+
+  byte load                     GEP01 + BYTE-MEMORY    PASS
+  byte comparison               BYTE-MEMORY            PASS
+  src[cursor] indexed load      GEP01                  PASS
+  src[cursor+1] static lookup   GEP01 + IR_IADD        PASS (single-block)
+  scalar arithmetic             CORE04-RESUME01        PASS
+  if/else single-block          CORE04-RESUME01        PASS
+  single-shot helper call       (intops01 reference)   PASS
+  byte->i64 ZEXT                BYTE-MEMORY            PASS
+
+--------------------------------------------------------------------
+WHAT CURRENT SUBSTRATE REJECTS (FAIL)
+--------------------------------------------------------------------
+
+  while/for loop with mutable counter
+                                discriminator rejects (RC-B root)
+  multi-def local consumed via out-param write (*out = local)
+                                discriminator rejects (RC-A root)
+  multi-def local with definitions on different code paths
+                                IR_PHI required, rejected (RC-B)
+  loaded value feeds `ret`
+                                discriminator rejects (RC-A)
+  multi-byte lookahead with conditional control flow
+                                verifier rejects (dominance)
+
+--------------------------------------------------------------------
+FEATURE DECISIONS
+--------------------------------------------------------------------
+
+  ARRAY01 needed before BOOTSTRAP01?  NO
+  STRUCT01 needed before BOOTSTRAP01? NO
+  HEAP_ALLOCATION needed before B0?   NO
+  BYTE_STORE needed before B0?        NO
+  NEW_INTOPS needed before B0?        NO
+  OTHER_GAP (RC-A): YES
+      ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01
+      (Option-W discriminator widening to admit IR_STORE_DEREF
+       reads and the resulting multi-path mem2reg emission)
+
+--------------------------------------------------------------------
+WHAT BOOTSTRAP01 WILL THEN REQUIRE
+--------------------------------------------------------------------
+
+If ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 closes PASS, BOOTSTRAP01
+becomes mechanical:
+
+  - PolyC functions that read a byte at a cursor, advance the
+    cursor via IADD, accumulate length via IADD chain, and
+    write scalar metadata via STORE_DEREF.
+
+  - C host drives the loop (or single PolyC call returns one
+    token at a time).
+
+  - The aggregate-free B0 API in c1/candidate-b0-api.txt is
+    the exact contract.
+
+  - The bootstrap corpus in c1/bootstrap-corpus.txt is the
+    validation surface.
+
+If BOOTSTRAP01 then discovers an additional substrate gap that
+this recon should have found, it HALTs rather than expanding
+itself (per ACT §45).
+
+--------------------------------------------------------------------
+NEXT ACT
+--------------------------------------------------------------------
+
+  ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01
+  Mission: widen the Option-W discriminator to admit
+           IR_STORE_DEREF reads and the resulting multi-path
+           mem2reg emission. Produce verifier-clean LLVM for
+           a real PolyC B0-shaped lexer.
+  Predecessor: ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02.

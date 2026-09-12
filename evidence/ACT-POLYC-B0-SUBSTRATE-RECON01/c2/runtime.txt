@@ -1,0 +1,40 @@
+ACT-POLYC-B0-SUBSTRATE-RECON01 — C2 — runtime evidence
+======================================================
+
+Working copy: codium-polyc
+Entry HEAD:    456b71c0f2535c6175271d2107b67f985b4bc2c8
+
+Because every B0-shaped probe was rejected by the LLVM backend
+(LLVM_BACKEND_UNSUPPORTED_OPTION_W_INELIGIBLE or
+LLVM_BACKEND_UNSUPPORTED_PHI or LLVM_BACKEND_VERIFY_FAILED),
+no probe advanced to runtime execution.
+
+The closure-critical FAIL probes were:
+
+  P5 chain2.HC       RC-A: out-param write of multi-def local
+  P6 chain3.HC       RC-A: same shape, different layout
+  P7 while.HC        RC-B: while loop with mutable counter
+  P9 recursive chain RC-B: IR_PHI required for multi-path defs
+  P10 PeekOne cond   RC-A: loaded value feeds ret through
+                      conditional multi-def path
+  P11 PeekOne ret    RC-A: loaded value feeds ret directly
+  P12 PeekNext       RC-B: multi-path lookahead dominates fails
+
+The PASS probes that DID reach runtime (compiled via LLVM and
+matched oracle-equivalent semantics):
+
+  P1 readat.HC       GEP01 dynamic byte index
+  P2 read0.HC        GEP01 constant-zero byte index
+  P3 twodigits.HC    B0-shaped multi-read
+  P4 intops01 probe  ACT-POLYC-LLVM-INTOPS01 reference pattern
+
+For P1-P3, llvm-as and opt --passes=verify BOTH PASS, confirming
+the GEP01 substrate is sufficient for byte-indexed reads.
+For P4, llvm-as and opt --passes=verify BOTH PASS on the canonical
+B0-shape probe, confirming that the current substrate's UPPER BOUND
+on B0 expressibility is the single-shot helper pattern.
+
+The PASS probes demonstrate that the substrate works AT THE LEAF
+of a B0 lexer (one-shot reads, byte comparisons, scalar out-params
+of constant values). The FAIL probes demonstrate that the substrate
+cannot compose these leaves into a working scanner loop.

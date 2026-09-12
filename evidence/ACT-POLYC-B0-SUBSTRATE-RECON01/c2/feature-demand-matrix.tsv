@@ -1,0 +1,22 @@
+operation	substrate_owner	ACT	closure_status	probe_result
+I8/U8 parameter	BYTE-MEMORY	ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME02	CLOSED PASS	P1/P2 PASS
+byte pointer parameter	BYTE-MEMORY	ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME02	CLOSED PASS	P1/P2 PASS
+load i8 from byte pointer	BYTE-MEMORY	ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME02	CLOSED PASS	P1/P2 PASS
+src[cursor] indexed load	GEP01	ACT-POLYC-LLVM-GEP01	CLOSED PASS	P1/P2 PASS
+src[cursor+1] lookahead (single-block)	GEP01 + IR_IADD	ACT-POLYC-LLVM-GEP01 + IR_IADD arm	CLOSED PASS	P12 PASS (no cond)
+src[cursor+1] lookahead (multi-path)	GEP01 + IR_IADD + multi-block	not authorized	NOT CLOSED	P12 FAIL (dominance)
+byte comparison	BYTE-MEMORY	ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME02	CLOSED PASS	P2 PASS
+I64 arithmetic add/sub/mul	existing scalar	ACT-POLYC-LLVM-CORE04-RESUME01	CLOSED PASS	P3/P4 PASS
+I64 ICMP	existing scalar	ACT-POLYC-LLVM-CORE04-RESUME01	CLOSED PASS	P3/P4 PASS
+control flow (if/else single-block)	existing scalar	ACT-POLYC-LLVM-CORE04-RESUME01	CLOSED PASS	P2/P4 PASS
+control flow (while/for loop)	not authorized	LOCAL-MEM2REG01 Option-W discriminator gap	NOT CLOSED	P7 FAIL
+mutable I64 local via alloca	LOCAL-MEM2REG	ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02	CLOSED for return-feed only	P5/P6 FAIL
+mutable I64 local via out-param write	not authorized	Option-W discriminator gap (RC-A)	NOT CLOSED	P10/P11 FAIL
+multi-def local feeding ret-slot (single block)	LOCAL-MEM2REG	ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02	CLOSED for narrow case	P4 PASS
+multi-def local feeding ret-slot (multi-block)	not authorized	LOCAL-MEM2REG01 discriminator gap (RC-B)	NOT CLOSED	P9 FAIL
+function call (single-shot, i64 args)	existing scalar	ACT-POLYC-LLVM-CORE04-RESUME01	CLOSED PASS	P4 PASS
+recursive function call	not authorized	IR_PHI forbidden by CORE	NOT CLOSED	P8 PASS (single-call) / P9 FAIL (chain)
+I64 return (constant/computed)	existing scalar	ACT-POLYC-LLVM-CORE04-RESUME01	CLOSED PASS	P2/P4 PASS
+I64 return (loaded value)	not authorized	Option-W discriminator gap (RC-A)	NOT CLOSED	P11 FAIL
+I64 pointer-output store	MEMORY01	ACT-POLYC-LLVM-MEMORY01	CLOSED PASS	P4 PASS
+I64 out-param aggregate path	IR-RETURN-SLOT-FORWARDING01	ACT-POLYC-IR-RETURN-SLOT-FORWARDING01	CLOSED PASS	P4 PASS

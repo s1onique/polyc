@@ -1,0 +1,37 @@
+ACT-POLYC-B0-SUBSTRATE-RECON01 — C2 — probe matrix
+====================================================
+
+Working copy: codium-polyc
+Entry HEAD:    456b71c0f2535c6175271d2107b67f985b4bc2c8
+C1 HEAD:       96ea8034fff4c59a0cd0be0f024b631d0988f7d9
+Backend:       ./hcc --emit-llvm (LLVM 22.1.8 C-API)
+
+Each probe was compiled via:
+    hcc --emit-llvm --install-dir=$PWD/build/test-prefix <probe> -o <out>.ll
+
+Probes are organised from smallest to most B0-shaped. The matrix
+records PASS/FAIL with the named LLVM diagnostic.
+
+--------------------------------------------------------------------
+PROBE RESULTS
+--------------------------------------------------------------------
+
+ID  name                              result   diagnostic
+--  ----                              ------   ----------
+P1  readat (GEP01 reference)          PASS     n/a
+P2  read0  (GEP01 constant-zero)      PASS     n/a
+P3  twodigits (B0 multi-read)         PASS     n/a
+P4  intops01 b0_lexer_shape_probe      PASS     n/a
+P5  chain2 (multi-def alen, out-param) FAIL     LLVM_BACKEND_UNSUPPORTED_OPTION_W_INELIGIBLE
+                                                    local id=26 line 78 (alen)
+P6  chain3 (no mutable cursor)        FAIL     LLVM_BACKEND_UNSUPPORTED_OPTION_W_INELIGIBLE
+                                                    local id=15 line 33 (alen)
+P7  while (cursor walk loop)          FAIL     LLVM_BACKEND_UNSUPPORTED_OPTION_W_INELIGIBLE
+                                                    local id=13 line 14 (loop counter)
+P8  recursive single-step             PASS     compiles to IR_PHI-free emission
+P9  recursive chain                   FAIL     LLVM_BACKEND_UNSUPPORTED_PHI
+P10 PeekOne single conditional        FAIL     LLVM_BACKEND_UNSUPPORTED_OPTION_W_INELIGIBLE
+                                                    local id=12 line 25
+P11 PeekOne no conditional            FAIL     LLVM_BACKEND_UNSUPPORTED_OPTION_W_INELIGIBLE
+                                                    local id=4 line 3 (ch feeds ret)
+P12 PeekNext (lookahead 1+2)          FAIL     LLVM_BACKEND_VERIFY_FAILED (dominance)
