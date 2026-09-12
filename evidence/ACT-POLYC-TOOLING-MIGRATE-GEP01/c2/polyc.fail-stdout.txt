@@ -1,0 +1,43 @@
+=== ACT-POLYC-TOOLING-MIGRATE-GEP01 PolyC harness ===
+hcc           = ./hcc
+install_dir   = ./build/test-prefix
+llvm_as       = /run/current-system/sw/bin/llvm-as
+llvm_opt      = /run/current-system/sw/bin/opt
+python        = /run/current-system/sw/bin/python3
+scratch       = build/quality/gep01
+seed-failure = YES
+
+PASS  toolchain: hcc + llvm-as + opt available
+PASS  read0.HC: load i8, ptr
+PASS  read2.HC: getelementptr i8 + load i8
+FAIL  readat.HC: getelementptr i8 with runtime index + load i8: seed_failure forced (--mode=fail)
+PASS  readat.HC: SHAPE_DEPENDENT counter = 3 (>= 1)
+PASS  twodigits.HC: 2 load i8 + 1 getelementptr i8 (>=2 distinct reads, >=1 GEP for non-zero index)
+PASS  ReadAt emitted getelementptr i8, ptr %base, i64 %index
+PASS  GEP result used as load address (load i8, ptr %gep_i8)
+PASS  read0.ll: llvm-as accepted
+PASS  read2.ll: llvm-as accepted
+PASS  read-at.ll: llvm-as accepted
+PASS  b0-multiread.ll: llvm-as accepted
+PASS  read0.bc: opt --passes=verify accepted
+PASS  read2.bc: opt --passes=verify accepted
+PASS  read-at.bc: opt --passes=verify accepted
+PASS  b0-multiread.bc: opt --passes=verify accepted
+PASS  read0.ll: zero ptrtoint/inttoptr
+PASS  read0.ll: zero getelementptr inbounds
+PASS  read2.ll: zero ptrtoint/inttoptr
+PASS  read2.ll: zero getelementptr inbounds
+PASS  read-at.ll: zero ptrtoint/inttoptr
+PASS  read-at.ll: zero getelementptr inbounds
+PASS  b0-multiread.ll: zero ptrtoint/inttoptr
+PASS  b0-multiread.ll: zero getelementptr inbounds
+PASS  i64idx.HC: rejected with LLVM_BACKEND_UNSUPPORTED_POINTER (scale=8)
+PASS  IR_GEP = REJECTED (sibling opcode still rejected)
+PASS  IR_LEA = REJECTED (sibling opcode still rejected)
+PASS  IR_IADD = SUPPORTED (preserved, GEP01 is per-shape subset)
+PASS  readat: byte-identical across two runs
+PASS  twodigits: byte-identical across two runs
+----
+GEP01_PASS=29
+GEP01_FAIL=1
+STATUS=FAIL

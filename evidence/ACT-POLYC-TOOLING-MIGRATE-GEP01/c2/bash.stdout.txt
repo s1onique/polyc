@@ -1,0 +1,61 @@
+
+=== toolchain ===
+PASS  toolchain: hcc + llvm-as + opt available
+
+=== positive constant-zero fixture (Read0) ===
+PASS  read0.HC: load i8, ptr
+
+=== positive constant-nonzero fixture (Read2) ===
+PASS  read2.HC: getelementptr i8 + load i8
+
+=== positive dynamic-index fixture (ReadAt -- closure-critical) ===
+PASS  readat.HC: getelementptr i8 with runtime index + load i8
+PASS  readat.HC: SHAPE_DEPENDENT counter = 3 (>= 1)
+
+=== B0 multi-read fixture (TwoDigits) ===
+PASS  twodigits.HC: 2 load i8 + 1 getelementptr i8 (>=2 distinct reads, >=1 GEP for non-zero index)
+
+=== LLVM textual GEP structure (dynamic ReadAt) ===
+PASS  ReadAt emitted getelementptr i8, ptr %base, i64 %index
+PASS  GEP result used as load address (load i8, ptr %gep_i8)
+
+=== independent llvm-as ===
+PASS  read0.ll: llvm-as accepted
+PASS  read2.ll: llvm-as accepted
+PASS  read-at.ll: llvm-as accepted
+PASS  b0-multiread.ll: llvm-as accepted
+
+=== independent opt --passes=verify ===
+PASS  read0.bc: opt --passes=verify accepted
+PASS  read2.bc: opt --passes=verify accepted
+PASS  read-at.bc: opt --passes=verify accepted
+PASS  b0-multiread.bc: opt --passes=verify accepted
+
+=== no ptrtoint/inttoptr address arithmetic ===
+PASS  read0.ll: zero ptrtoint/inttoptr
+PASS  read2.ll: zero ptrtoint/inttoptr
+PASS  read-at.ll: zero ptrtoint/inttoptr
+PASS  b0-multiread.ll: zero ptrtoint/inttoptr
+
+=== no unauthorized inbounds ===
+PASS  read0.ll: zero getelementptr inbounds
+PASS  read2.ll: zero getelementptr inbounds
+PASS  read-at.ll: zero getelementptr inbounds
+PASS  b0-multiread.ll: zero getelementptr inbounds
+
+=== negative non-I8 boundary (ReadI64) ===
+PASS  i64idx.HC: rejected with LLVM_BACKEND_UNSUPPORTED_POINTER (scale=8)
+
+=== capability status ===
+PASS  IR_GEP = REJECTED (sibling opcode still rejected)
+PASS  IR_LEA = REJECTED (sibling opcode still rejected)
+PASS  IR_IADD = SUPPORTED (preserved, GEP01 is per-shape subset)
+
+=== determinism ===
+PASS  readat: byte-identical across two runs
+PASS  twodigits: byte-identical across two runs
+
+=== summary ===
+GEP01_PASS=30
+GEP01_FAIL=0
+STATUS=PASS
