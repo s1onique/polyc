@@ -5,18 +5,71 @@ Lifecycle: AUTHORIZATION_ARTIFACT
 
 ACT: ACT-POLYC-FACTORY-MECHANICAL-BLOCKING01
 ACT-Phase: RED
-ACT-Phase-Notes: C1 RED phase. Doctrine addition +
-  new bounded verifier only. C2 IMPL will not begin in
-  this turn. Per the precedent set by
-  ACT-POLYC-FACTORY-AGENT-GATES01 / FACTORY-STATUS-RECONCILIATION
-  and others, Factory-doctrine amendments MUST be authored,
+ACT-Phase-Notes: C1.5 RED-AMEND. Incorporates three
+  reviewer refinements folded into the C1 RED phase
+  before C2 IMPL begins. The literal ACT-Phase trailer
+  remains RED because the Factory v2 commit-msg
+  grammar (§2.1 of docs/factory/GIT-METADATA.md and
+  scripts/quality/factory-v2-commit-msg-check.sh)
+  accepts only {RED, IMPL, EVIDENCE, CLOSE}; the
+  colloquial "RED-AMEND" label is recorded only in
+  this ACT-Phase-Notes body and in the commit
+  message, not in the trailer itself.
+
+    R1. SCOPE TIGHTENING. The title and acceptance
+        criteria are changed from "roadmap-affecting
+        HALT_*" to "every new HALT_* CLOSE verdict".
+        This removes an avoidable conditional
+        ("who decides whether it affects roadmap
+        progression before the metadata exists?").
+        The trailer-pair requirement is now a
+        unconditional property of every new HALT_*
+        CLOSE commit and forbidden on every PASS
+        commit.
+
+    R2. GRANDFATHERING BOUNDARY. F-MECHANICAL-BLOCKING
+        applies to CLOSE commits created AFTER this
+        ACT's closing commit. Historical CLOSE commits
+        remain valid evidence under F14; their lack of
+        HALT_CLASS / BLOCKS_NEXT trailers is NOT a
+        defect. Without this boundary the new
+        doctrine would itself become a global
+        artificial blocker (F15 violation by
+        inversion).
+
+    R3. NO GOVERNANCE RECURSION. The previously
+        recommended "TRACK-B-ADVANCE01" authorization
+        ACT is REMOVED from §12 (NEXT_ACT). Once
+        F-MECHANICAL-BLOCKING is in force, a halt
+        with HALT_CLASS=GOVERNANCE / BLOCKS_NEXT=NO
+        IS the documented board signal that no
+        additional authorization ACT is required
+        for a successor in the same scope to open.
+        A second authorization ACT would be
+        governance recursion and would partially
+        defeat the doctrine being introduced.
+
+  Production / parser / typechecker / neutral-IR /
+  LLVM / ABI changes remain FORBIDDEN. Historical
+  evidence rewriting remains FORBIDDEN. No new
+  Track-B ACT will be opened in this turn.
+
+  Per the precedent set by
+  ACT-POLYC-FACTORY-AGENT-GATES01 /
+  FACTORY-STATUS-RECONCILIATION and others,
+  Factory-doctrine amendments MUST be authored,
   reviewed, and closed as their own ACT before any
-  downstream ACT may rely on them. This ACT is that ACT.
+  downstream ACT may rely on them. This ACT is
+  that ACT.
 
 **Title:** Codify `F-MECHANICAL-BLOCKING` and add a
-bounded Factory verifier ensuring any roadmap-affecting
-`HALT_*` closure carries `HALT_CLASS` and `BLOCKS_NEXT`,
-so prose alone cannot block mechanically-green work.
+bounded Factory verifier ensuring every new
+`HALT_*` CLOSE verdict carries `HALT_CLASS` and
+`BLOCKS_NEXT`, so prose alone cannot block
+mechanically-green work. The new rule applies
+prospectively from this ACT's CLOSE commit
+forward; historical CLOSE commits are
+grandfathered under F14.
 
 **Repository:** https://github.com/s1onique/polyc
 
@@ -39,7 +92,12 @@ so prose alone cannot block mechanically-green work.
   SHELL-BUDGET01; that is the board's authorization to
   issue in a future turn, not this turn's obligation.")
 **Authorizing `TRACK_B_ADVANCE` from this turn:** FORBIDDEN
-  (a separate authorization ACT is required; see §12.)
+  (per the C1.5 RED-AMEND: the doctrine this ACT
+  codifies makes any such authorization ACT a
+  governance recursion. The successor ACT opens in a
+  future turn by citing F-MECHANICAL-BLOCKING and the
+  existing halt's HALT_CLASS / BLOCKS_NEXT pair, not
+  by waiting for another authorization ACT.)
 
 ---
 
@@ -64,12 +122,61 @@ Factory operating law:
 F-MECHANICAL-BLOCKING — PROSE ALONE NEVER BLOCKS PROGRESS
 ```
 
-and adds a small deterministic verifier that ensures
-any roadmap-affecting `HALT_*` closure carries both a
-`HALT_CLASS` enum value and an explicit `BLOCKS_NEXT`
-boolean. The verifier MUST NOT infer blocking from the
-literal word `HALT`; blocking can only be derived from
-a `BLOCKS_NEXT` field paired with an explicit class.
+and adds a small deterministic verifier that enforces
+the following trailer contract on every CLOSE commit
+created AFTER this ACT's CLOSE commit:
+
+```
+PASS verdict (effective PASS(_...)*)
+    HALT_CLASS  : forbidden
+    BLOCKS_NEXT : forbidden
+
+HALT_* verdict (effective HALT_<TOKEN>)
+    HALT_CLASS  : required, exactly 1, value in
+                  { GOVERNANCE, PRODUCTION, SAFETY,
+                    AUTHORIZATION, DEPENDENCY }
+    BLOCKS_NEXT : required, exactly 1, value in { YES, NO }
+    class / boolean combination valid
+```
+
+Two distinct planes of truth are preserved:
+
+```
+ACT truth    : did this ACT satisfy its own contract?
+Roadmap truth: does that outcome prevent the next
+               authorized action?
+```
+
+A halt verdict may therefore legitimately read:
+
+```
+ACT-Verdict: HALT_<TOKEN>
+ACT-Corrected-Verdict: HALT_<TOKEN>
+HALT_CLASS: GOVERNANCE
+BLOCKS_NEXT: NO
+```
+
+which means "this ACT did not satisfy its own contract"
+WITHOUT meaning "the successor ACT is mechanically
+blocked". Without `HALT_CLASS` + `BLOCKS_NEXT`, the
+roadmap state cannot be derived; with them, it is
+syntactically derivable and verifiable.
+
+### 0.1 Prospective application (grandfathering)
+
+`F-MECHANICAL-BLOCKING` and its verifier apply to CLOSE
+commits whose commit timestamp is at or after the
+timestamp of this ACT's CLOSE commit. CLOSE commits
+created before this ACT's CLOSE commit are valid
+historical evidence under F14 and are NOT re-validated
+for the absence of `HALT_CLASS` / `BLOCKS_NEXT`.
+
+This boundary is non-negotiable. Without it, the
+doctrine this ACT introduces would itself become a
+global artificial blocker on every historical halt in
+the repository, inverting F15 ("never self-authorize
+scope expansion") into a permanent block rather than a
+guard against one.
 
 # 1. Why
 
@@ -210,15 +317,23 @@ Every HALT that affects roadmap progression MUST carry:
                DEPENDENCY | GOVERNANCE
   BLOCKS_NEXT = YES | NO
 
+The HALT CLASS / BLOCKS_NEXT pair is required on every
+new HALT_* CLOSE commit and forbidden on every new
+PASS CLOSE commit. Historical CLOSE commits are
+grandfathered (see §0.1 of the ACT itself).
+
 Defaults:
 
-  GOVERNANCE     -> BLOCKS_NEXT = NO
+  GOVERNANCE     -> BLOCKS_NEXT = NO (governance halt
+                    is, by default, non-blocking)
   PRODUCTION     -> BLOCKS_NEXT = YES
   SAFETY         -> BLOCKS_NEXT = YES
   AUTHORIZATION  -> BLOCKS_NEXT = YES for the
                     unauthorized mutation
   DEPENDENCY     -> determined mechanically from
-                    successor needs
+                    successor needs; either value
+                    allowed (the verifier does not
+                    infer successor needs in v1)
 
 Environmental or unavailable failures that are proven
 unrelated to the production delta are:
@@ -360,9 +475,9 @@ C2 IMPL will add:
 2. A one-paragraph pointer in `AGENTS.md` under the
    existing F1-F15 block.
 3. Two new trailers in `GIT-METADATA.md`:
-   `HALT_CLASS` (enum, optional on CLOSE only when
+   `HALT_CLASS` (enum, OPTIONAL on CLOSE only when
    `ACT-Verdict` starts with `HALT_`) and `BLOCKS_NEXT`
-   (`YES|NO`, optional on CLOSE only when `ACT-Verdict`
+   (`YES|NO`, OPTIONAL on CLOSE only when `ACT-Verdict`
    starts with `HALT_`). Both trailers are ADDITIVE on
    the CLOSE commit; the existing `ACT-Verdict` and
    supersession trailers are unchanged.
@@ -390,10 +505,27 @@ C2 IMPL will add:
      simpler than R6/R7 if necessary: require the fields
      and validate the enum/boolean; don't build an
      ontology engine in v1.").
-5. `scripts/quality/factory-halt-classification-test.sh`
-   -- R1..R7 matrix as fixtures; all assertions are
-   deterministic trailer-text inspections against
-   synthetic commit messages.
+
+### 5.1 Activation boundary (grandfathering)
+
+The verifier MUST take a `--since <commit>` argument.
+When invoked from `gate-fast.sh` / `gate-push.sh` /
+`factory-halt-classification-test.sh`, the boundary is
+the commit that adds this verifier to the repository
+tree (i.e. the C2 IMPL commit of this ACT). Historical
+CLOSE commits at or before that boundary MUST NOT be
+checked by the verifier.
+
+Without `--since`, the verifier MUST default to
+"current commit only" mode and inspect only the
+trailers on its `HEAD` argument. This makes the
+default safe for ad-hoc invocation.
+
+The test suite (`factory-halt-classification-test.sh`)
+exercises ONLY synthetic commit messages and the
+specific commit message of this ACT's CLOSE commit.
+It MUST NOT walk the full repository history and
+re-flag historical CLOSE commits.
 
 # 6. Acceptance criteria
 
@@ -442,6 +574,21 @@ C2 CLOSE commit.
 AC10 -- no `git replace -l` entries (append-only
 invariant holds).
 
+AC11 -- the new verifier has a `--since <commit>`
+boundary and its default invocation (no `--since`)
+inspects only `HEAD`. Verified by `factory-halt-classification-test.sh`
+R8 fixture (synthetic historical PASS commit lacking
+the new trailers MUST NOT cause FAIL when invoked
+without `--since`).
+
+AC12 -- the new test suite does NOT walk full
+repository history; it inspects only the synthetic
+fixtures and the literal commit message of this
+ACT's CLOSE commit. Verified by `grep -c
+'git log' scripts/quality/factory-halt-classification-check.sh
+scripts/quality/factory-halt-classification-test.sh`
+returning 0 matches in those scripts.
+
 
 # 7. Conservation gates
 
@@ -484,19 +631,21 @@ PolyC language gates.
 
 # 9. Commit topology
 
-1. C1 RED     -- this ACT document + RED evidence tree
-                  (committed in this turn).
-2. C2 IMPL    -- deferred. Adds DOCTRINE.md section,
-                  AGENTS.md pointer, GIT-METADATA.md
-                  trailer grammar, two new verifier
-                  scripts.
-3. C2.5 RED   -- IMPL is expected to bring two test
-                  fixtures RED then GREEN. If C2 IMPL
-                  needs amendment, an extra RED-AMEND
-                  commit in the IMPL phase is allowed
-                  (not in this turn).
-4. C3 CLOSE   -- deferred. Conservation gates
-                  re-verified; verdict trailer added.
+1. C1 RED     -- ACT document + RED evidence tree
+                  (committed previously).
+2. C1.5 RED-AMEND -- this commit. Folds in the three
+                  reviewer refinements (scope
+                  tightening, grandfathering boundary,
+                  removal of the proposed
+                  TRACK-B-ADVANCE01 ceremony). Only
+                  the ACT document is modified; no
+                  production files change in this
+                  commit.
+3. C2 IMPL    -- adds DOCTRINE.md §25, AGENTS.md
+                  pointer, GIT-METADATA.md trailer
+                  grammar, two new verifier scripts.
+4. C3 CLOSE   -- conservation gates re-verified;
+                  verdict trailer added.
 
 Cardinality-1 CLOSE: exactly ONE commit for this ACT
 may carry `ACT-Phase: CLOSE` and `ACT-Verdict`.
@@ -514,13 +663,16 @@ Recorded as `NON_BLOCKING_GOVERNANCE_RESIDUE` per the
 new doctrine this ACT codifies.
 
 P1 -- Track B advancement (`ACT-POLYC-TOOLING-SHELL-BUDGET01`):
-this ACT's section 12 explicitly does NOT authorize the
-board to advance Track B. The board may open a separate
-authorization ACT that cites the new doctrine and the
-HALT classification of CORRECTION01 as
-`HALT_CLASS=GOVERNANCE / BLOCKS_NEXT=NO`. That
-authorization ACT is NOT in this turn and NOT in
-this ACT's scope.
+NOT in this ACT's scope. The doctrine this ACT codifies
+means the board can open SHELL-BUDGET01 in a future turn
+directly, citing F-MECHANICAL-BLOCKING and the halt
+classification of CORRECTION01 as
+`HALT_CLASS=GOVERNANCE / BLOCKS_NEXT=NO`. No intermediate
+"TRACK-B-ADVANCE01" authorization ACT is required or
+recommended. Any future reclassification of CORRECTION01's
+halt classification must be additive (a new trailer or
+correction ACT) and MUST NOT mutate the existing CLOSE
+commit (F14).
 
 P2 -- none anticipated.
 
@@ -544,45 +696,69 @@ Will contain the standard structured fields per
 # 12. Next ACT on PASS
 
 `ACT-POLYC-TOOLING-SHELL-BUDGET01` is NOT in this ACT's
-scope. Per the user's own framing and per
-CORRECTION02 section 12, a separate authorization ACT
-is required.
+scope (per CORRECTION02 §12). The doctrine this ACT
+codifies removes the requirement for an intermediate
+"authorization to authorize" ACT.
 
 The recommended NEXT_ACT chain on PASS of this ACT:
 
 1. `ACT-POLYC-FACTORY-MECHANICAL-BLOCKING01-CORRECTION01`
    if any RED-AMEND / CORRECTION is needed to keep the
    verifier honest.
-2. A new bounded authorization ACT
-   (`ACT-POLYC-TOOLING-TRACK-B-ADVANCE01` or
-   equivalent) that:
-     (a) re-classifies CORRECTION01's halt as
-         `HALT_CLASS=GOVERNANCE / BLOCKS_NEXT=NO` using
-         the new trailer grammar (additive -- does not
-         mutate the existing CLOSE commit; uses a new
-         trailer that records the reclassification);
-     (b) cites F-MECHANICAL-BLOCKING;
-     (c) authorizes `ACT-POLYC-TOOLING-SHELL-BUDGET01`
-         to open.
-3. `ACT-POLYC-TOOLING-SHELL-BUDGET01` itself.
+2. Optional: a bounded correction ACT
+   `ACT-POLYC-TOOLING-MIGRATE-GEP01-CORRECTION03` (or
+   equivalent) that additively records the halt
+   classification of CORRECTION01's halt as
+   `HALT_CLASS=GOVERNANCE / BLOCKS_NEXT=NO` using the
+   new trailer grammar. F14 still binds: this correction
+   MUST NOT mutate the existing CLOSE commit. It can
+   only record the classification in a NEW commit.
+3. `ACT-POLYC-TOOLING-SHELL-BUDGET01` itself, which can
+   open in a future turn by citing F-MECHANICAL-BLOCKING
+   and the recorded halt classification.
+
+Step 2 is OPTIONAL because the halt classification is
+already mechanically derivable from the production tree:
+the halt's `ACT-Verdict` is `HALT_AC07_NOT_SATISFIED`
+(see CORRECTION02) on an environmental gate failure
+unrelated to the SHELL-BUDGET01 subject. F-MECHANICAL-
+BLOCKING explicitly classifies this as
+`HALT_CLASS=GOVERNANCE / BLOCKS_NEXT=NO` without
+requiring a reclassification commit.
 
 # 13. Commit trailer contract
 
-C1 (this RED commit):
+C1 RED (previous commit):
 
 ```
 ACT: ACT-POLYC-FACTORY-MECHANICAL-BLOCKING01
 ACT-Phase: RED
 ```
 
-C2 (IMPL, deferred):
+C1.5 RED-AMEND (this commit):
+
+```
+ACT: ACT-POLYC-FACTORY-MECHANICAL-BLOCKING01
+ACT-Phase: RED
+```
+
+The "RED-AMEND" label is descriptive only; the literal
+ACT-Phase trailer remains RED. RED-AMEND commits are a
+Factory v2 pattern (see CORRECTION02 closure evidence
+and the closure-summary narratives for prior
+RED-AMENDs); they occur when the RED phase is being
+amended in place without advancing to IMPL, and they
+do not introduce a new phase value into the trailer
+grammar.
+
+C2 IMPL:
 
 ```
 ACT: ACT-POLYC-FACTORY-MECHANICAL-BLOCKING01
 ACT-Phase: IMPL
 ```
 
-C3 (CLOSE, deferred):
+C3 CLOSE PASS:
 
 ```
 ACT: ACT-POLYC-FACTORY-MECHANICAL-BLOCKING01
@@ -590,7 +766,29 @@ ACT-Phase: CLOSE
 ACT-Verdict: PASS
 ```
 
+The C3 CLOSE PASS MUST NOT carry `HALT_CLASS` or
+`BLOCKS_NEXT` because the verdict is PASS (those
+trailers are forbidden on every PASS CLOSE per
+§0 of the ACT itself). This documents the
+convention.
+
+If at any point during this ACT's lifecycle the
+board determines the verifier, doctrine, or scope
+is materially wrong, the CLOSE verdict will instead
+be one of the HALT_* tokens; the trailers will then
+be present and the HALT_CLASS / BLOCKS_NEXT pair will
+record what is and is not blocked. The literal
+example for that hypothetical close would be:
+
+```
+ACT: ACT-POLYC-FACTORY-MECHANICAL-BLOCKING01
+ACT-Phase: CLOSE
+ACT-Verdict: HALT_<TOKEN>
+HALT_CLASS: GOVERNANCE
+BLOCKS_NEXT: NO
+```
+
+The actual C3 trailer is the PASS form.
+
 No SHA-of-self fields. The closing commit's SHA is
 queried from Git, not embedded in this document.
-
-Hard stop after C1 RED.
