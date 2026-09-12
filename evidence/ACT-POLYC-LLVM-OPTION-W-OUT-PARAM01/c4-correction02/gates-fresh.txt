@@ -1,0 +1,63 @@
+CORRECTION02 FRESH CONSERVATION GATES
+====================================
+
+Captured fresh at CORRECTION02 CLOSE. All seven gates PASS.
+
+```text
+factory-append-only-test             PASS=11 FAIL=0    STATUS=PASS
+shell-loc-gate                       PASS              STATUS=PASS
+gate-fast                            PASS              STATUS=PASS
+    diff-check                       PASS
+    shell-syntax                     PASS
+    doc-invariants                   PASS
+    large-file-guard                 PASS
+    factory-closure-status           PASS
+llvm-gep01-test                      PASS=30 FAIL=0    STATUS=PASS
+llvm-byte-memory01-test              PASS=37 FAIL=0    STATUS=PASS
+llvm-intops01-test                   PASS=4  FAIL=0    STATUS=PASS
+ir-return-slot-forwarding01-test     PASS=6  FAIL=0    STATUS=PASS
+factory-v2-range-check
+    ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01-C4              PASS
+    ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01-C4-CORRECTION01 PASS
+    ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01-C4-CORRECTION02 PASS
+```
+
+Mechanically reproduced via:
+
+  $ bash scripts/quality/factory-append-only-test.sh 2>&1 | tail -1
+  STATUS=PASS
+
+  $ bash scripts/quality/shell-loc-gate.sh 2>&1 | tail -1
+  PASS  shell-loc-gate
+
+  $ bash scripts/quality/gate-fast.sh 2>&1 | grep -E '^CHECK|VERDICT'
+  CHECK=diff-check STATUS=PASS
+  CHECK=shell-syntax STATUS=PASS
+  CHECK=doc-invariants STATUS=PASS
+  CHECK=large-file-guard STATUS=PASS
+  VERDICT=PASS
+  CHECK=factory-closure-status STATUS=PASS
+  VERDICT=PASS
+
+  $ bash scripts/quality/llvm-gep01-test.sh 2>&1 | grep '^STATUS'
+  STATUS=PASS
+
+  $ bash scripts/quality/llvm-byte-memory01-test.sh 2>&1 | grep '^STATUS'
+  STATUS=PASS
+
+  $ bash scripts/quality/llvm-intops01-test.sh 2>&1 | grep '^STATUS'
+  STATUS=PASS
+
+  $ bash scripts/quality/ir-return-slot-forwarding01-test.sh 2>&1 | grep '^STATUS'
+  STATUS=PASS
+
+  $ bash scripts/quality/factory-v2-range-check.sh \
+      ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01-C4-CORRECTION02 HEAD \
+      2>&1 | tail -4
+  COMMITS=3
+  VERDICT=PASS
+  STATUS=PASS
+```
+
+No regression. C4 production implementation remains GREEN.
+CORRECTION02 introduced no source-code mutation.

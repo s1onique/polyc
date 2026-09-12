@@ -1,0 +1,90 @@
+CORRECTION02 CLOSURE-TRUTH VERDICT
+==================================
+
+Canonical machine-readable form of the closure verdict
+at CORRECTION02 CLOSE. Each line cites the mechanical
+witness that supports it.
+
+```text
+C4_COMPILER_SEMANTICS        = PASS
+    src/llvm-backend.c (C4 IMPL 9120202) is the production
+    PHI geometry. Untouched by both CORRECTION01 and
+    CORRECTION02 ranges. Verified by `git diff --numstat
+    de31f88..HEAD -- src/` returning empty.
+
+C4_REAL_HCC_WITNESSES        = PASS
+    6/6 fixtures pass hcc: c4_phi_only,
+    c4_phi_short_circuit_or, c4_phi_short_circuit_and,
+    c4_phi_multi_pred, c4_p5_safe_fwd_single_pred,
+    c4_p6_multidef_local.
+
+LLVM_AS                      = PASS
+    6/6 fixtures rc=0 under `llvm-as`.
+
+LLVM_OPT_VERIFY              = PASS
+    6/6 fixtures rc=0 under `opt --passes=verify`.
+
+CONSERVATION_COUNTS          = PASS
+    factory-append-only-test             11/0
+    shell-loc-gate                       PASS
+    gate-fast                            PASS
+        diff-check                       PASS
+    llvm-gep01-test                      30/0
+    llvm-byte-memory01-test              37/0
+    llvm-intops01-test                   4/0
+    ir-return-slot-forwarding01-test     6/0
+    factory-v2-range-check (C4)          PASS
+    factory-v2-range-check (CORRECTION01) PASS
+    factory-v2-range-check (CORRECTION02) PASS
+    See gates-fresh.txt for full output.
+
+C4_HISTORICAL_DIFF_CHECK     = FAIL_WITH_CLASSIFIED_EVIDENCE_MARKERS
+    `git diff --check 004d4e9..de31f88` exits 2 with two
+    diagnostics on c4/c4-impl.txt:172 and
+    c4/opcode-coverage.txt:5. Both are decorative `=======`
+    heading underlines (PURPOSE, RESIDUE), NOT real
+    unresolved merges. Classification in
+    c4-correction01/diff-check-classification.txt.
+
+CORRECTION01_DIFF_CHECK      = FAIL_WITH_CLASSIFIED_EOF_DEFECT
+    `git diff --check de31f88 9b44ab4` exits 2 with one
+    diagnostic on line 291 of the CORRECTION01 ACT document
+    (`new blank line at EOF.`). F14 preserves the
+    historical ACT document; this defect is recorded, NOT
+    repaired. See red-reproduction.txt.
+
+CORRECTION02_DIFF_CHECK      = PASS
+    `git diff --check 9b44ab4 HEAD` exits 0. CORRECTION02's
+    own IMPL commit and ACT document introduce no
+    whitespace errors or conflict markers.
+
+P0_PRODUCTION                = none
+    No production source code modified across the
+    CORRECTION02 range (verified by `git diff --numstat
+    9b44ab4..HEAD -- src/ tests/ scripts/ .githooks/
+    .clinerules/ Makefile package.json` empty).
+
+CORRECTION01_PACKET          = 6 files (1 ACT doc + 5 evidence)
+    Corrected cardinality: docs/acts/.../C4-CORRECTION01.md
+    + closure-truth.txt + conservation-counts.txt +
+    diff-check-classification.txt + fixture-fact.txt +
+    gates-fresh.txt. Supersedes CORRECTION01 AC07's
+    "1 ACT + 4 evidence" wording. See correct-invariants.txt.
+
+F14                          = preserved
+    c4/, c4-correction01/, and the CORRECTION01 ACT
+    document are all unchanged across CORRECTION02.
+    Verified by `git diff --name-only 9b44ab4..HEAD`
+    excluding c4-correction02/ and the CORRECTION02 ACT
+    doc itself: empty.
+
+C5_SCANIDENT_UNLOCK          = YES
+    C5 ScanIdent integrated evidence is now unblocked per
+    the predecessor ACT §10 topology.
+```
+
+This block supersedes the CORRECTION01 closure-truth block
+on every line that is now mechanically verifiable. The
+CORRECTION01 block remains in c4-correction01/closure-
+truth.txt as F14 historical evidence; corrections live in
+this file.

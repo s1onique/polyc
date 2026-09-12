@@ -1,0 +1,95 @@
+CORRECTION02 RED REPRODUCTION
+==============================
+
+Captured at CORRECTION02 entry (HEAD = 9b44ab4). All five
+findings reproduced mechanically.
+
+R-RED-1  CORRECTION01 EOF defect.
+
+  $ git diff --check de31f88 9b44ab4
+  docs/acts/ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01-C4-CORRECTION01.md:291: new blank line at EOF.
+  $ echo $?
+  2
+
+  Reproduction of the EOF defect:
+  $ tail -c 30 docs/acts/.../C4-CORRECTION01.md | od -c | tail -2
+  0000020   c   h   a   n   g   e   d   )  \n   `   `   `  \n  \n
+  0000036
+  (last two bytes are a single trailing '\n', giving the
+   blank line at EOF.)
+
+  Consequence: the CORRECTION01 closure-truth verdict line
+    NEW_CORRECTION_DIFF_CHECK = PASS
+  is FALSE for the actual CORRECTION01 range. F14 forbids
+  repairing the historical ACT document, so this defect is
+  preserved as historical evidence.
+
+R-RED-2  CORRECTION01 AC05 wrong-range invariant.
+
+  $ git diff --numstat 6ef6e11..9b44ab4 -- src/ tests/ \
+        scripts/ .githooks/ .clinerules/ Makefile package.json
+  12	1	src/llvm-backend-cap.c
+  670	17	src/llvm-backend.c
+  21	0	src/llvm-backend.h
+
+  Expected: empty.
+  Actual:   non-empty (3 files, C4 production implementation).
+  Conclusion: AC05's mechanical command is impossible.
+  The correct invariant is documented in AC03 below.
+
+R-RED-3  CORRECTION01 packet cardinality.
+
+  $ git diff --name-only de31f88..9b44ab4 | wc -l
+  6
+  $ git diff --name-only de31f88..9b44ab4
+  docs/acts/ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01-C4-CORRECTION01.md
+  evidence/ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01/c4-correction01/closure-truth.txt
+  evidence/ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01/c4-correction01/conservation-counts.txt
+  evidence/ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01/c4-correction01/diff-check-classification.txt
+  evidence/ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01/c4-correction01/fixture-fact.txt
+  evidence/ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01/c4-correction01/gates-fresh.txt
+
+  Expected by CORRECTION01 AC07: 5 (1 ACT + 4 evidence).
+  Actual: 6 (1 ACT + 5 evidence).
+  Conclusion: AC07's declared cardinality is off by one.
+
+R-RED-4  C4 PHI production implementation remains GREEN.
+
+  $ for f in c4_phi_only c4_phi_short_circuit_or \
+            c4_phi_short_circuit_and c4_phi_multi_pred \
+            c4_p5_safe_fwd_single_pred c4_p6_multidef_local; do
+        /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/hcc \
+          --emit-llvm --install-dir=/tmp/polyc-c4 \
+          -o /tmp/$f.ll \
+          /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/evidence/ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01/c4/witness-fixtures/$f.HC
+        llvm-as /tmp/$f.ll -o /tmp/$f.bc
+        opt --passes=verify /tmp/$f.bc -S -o /tmp/$f-opt.ll
+        echo "$f: rc chain = $?"
+    done
+  c4_phi_only:                  rc chain = 0
+  c4_phi_short_circuit_or:      rc chain = 0
+  c4_phi_short_circuit_and:     rc chain = 0
+  c4_phi_multi_pred:            rc chain = 0
+  c4_p5_safe_fwd_single_pred:   rc chain = 0
+  c4_p6_multidef_local:         rc chain = 0
+
+  All 6/6 PASS. Production code untouched by CORRECTION02.
+
+R-RED-5  F14 preservation baseline.
+
+  $ git diff --name-only 9b44ab4 -- 'evidence/**' \
+        'docs/acts/ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01-C4-CORRECTION01.md'
+  (empty)
+
+  $ ls evidence/ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01/c4-correction01/
+  closure-truth.txt
+  conservation-counts.txt
+  diff-check-classification.txt
+  fixture-fact.txt
+  gates-fresh.txt
+
+  $ ls evidence/ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01/c4/
+  (C4 historical evidence; immutable.)
+
+  Baseline established. CORRECTION02 must NOT mutate any
+  of these paths.

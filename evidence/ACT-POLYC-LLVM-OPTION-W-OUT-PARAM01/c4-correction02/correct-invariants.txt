@@ -1,0 +1,45 @@
+CORRECTION01 CORRECT INVARIANTS
+==============================
+
+R-RED-2 + R-RED-3 each demand a corrected invariant. Both
+are reproduced here at CORRECTION02 entry.
+
+Invariant A. CORRECTION01 introduced zero production source
+delta (correct range base).
+
+  Command: git diff --numstat de31f88..9b44ab4 -- \
+             src/ tests/ scripts/ .githooks/ .clinerules/ \
+             Makefile package.json
+  $ git diff --numstat de31f88..9b44ab4 -- \
+        src/ tests/ scripts/ .githooks/ .clinerules/ \
+        Makefile package.json
+  (empty output)
+
+  Empty, as expected. CORRECTION01's predecessor CLOSE was
+  de31f88 (C4 CLOSE). The CORRECTION01 range
+  (de31f88..9b44ab4) is exactly the three
+  CORRECTION01 commits and contains NO production-code
+  changes.
+
+Invariant B. CORRECTION01 packet cardinality is six files.
+
+  Command: git diff --name-only de31f88..9b44ab4
+  1. docs/acts/ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01-C4-CORRECTION01.md
+  2. evidence/.../c4-correction01/closure-truth.txt
+  3. evidence/.../c4-correction01/conservation-counts.txt
+  4. evidence/.../c4-correction01/diff-check-classification.txt
+  5. evidence/.../c4-correction01/fixture-fact.txt
+  6. evidence/.../c4-correction01/gates-fresh.txt
+
+  Total: 6 (1 ACT document + 5 evidence files).
+  CORRECTION01 AC07's "1 ACT + 4 evidence" wording is off
+  by one; the canonical truth is 6.
+
+  closure-truth.txt is non-incidental: AC09 in CORRECTION01
+  declares it the canonical artifact carrying the
+  closure-truth verdict block.
+
+These two invariants supersede CORRECTION01's AC05 and
+AC07 wording. The CORRECTION01 ACT document is F14-
+immutable, so the corrected wording lives here in
+CORRECTION02's evidence packet.
