@@ -972,7 +972,12 @@ OPTION-W-OUT-PARAM01  ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01
                                         transition matrix ACHIEVED)
     C3 EVIDENCE-A this commit (matrix frozen;
                                C4_IMPL_B_AUTH = TRUE)
-    C4 IMPL-B     (next; strengthened PHI shape contract)
+    C3.1 RED      this commit (PHI incoming-edge type binding;
+                                Outcome B observed: i1 -> i8 zext;
+                                contract AMENDED;
+                                C4_IMPL_B_AUTH = TRUE reaffirmed)
+    C4 IMPL-B     (next; strengthened PHI shape contract
+                                + amended i1 -> i8 zext)
     C5 EVIDENCE-B (ScanIdent compiles + verifies + runs)
     C6 CLOSE      (final verdict)
 

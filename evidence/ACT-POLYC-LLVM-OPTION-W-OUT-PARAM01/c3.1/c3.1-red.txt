@@ -1,0 +1,198 @@
+ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 C3.1 RED: PHI incoming-edge type binding
+==========================================================================
+
+QUESTION (per expert review):
+  For every current short-circuit-compare PHI incoming edge in the
+  bounded IR subset (G3 ScanIdent + PhiOnly):
+
+    neutral value type  (what the IR says)
+    LLVM cached type    (what llLowerValue returns)
+    PHI neutral type    (what LLVMBuildPHI would be declared with)
+    conversion required?  YES / NO
+
+  If YES, the conversion must be present in C4 authorization.
+
+PRODUCTION SOURCES OF EVIDENCE (no inference from neutral dumps):
+  - src/llvm-backend.c:1316-1338   llType (IR type -> LLVM type map)
+  - src/llvm-backend.c:1498-1511   llLowerValue (cache lookup; constant)
+  - src/llvm-backend.c:2582-2598   IR_ICMP arm (always emits LLVMBuildICmp)
+  - src/llvm-backend.c:2750-2793   IR_FCMP arm (always emits LLVMBuildFCmp)
+  - src/llvm-backend.c:1815-1872   IR_BR dispatch runtime witness:
+                                    LLVMTypeOf(cond) == LLVMInt1TypeInContext
+                                    for IR_ICMP dsts (since CORRECTION01).
+
+CROSS-REFERENCED FIXTURES:
+  evidence/ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01/c1/g3.ir.txt
+    line 31: phi %t21 i8 tmp, [ 1 i8 const int, bb4 ]
+                                  [ %t23 i64 tmp, bb8 ]
+    line 41: phi %t24 i8 tmp, [ 1 i8 const int, bb9 ]
+                                  [ %t27 i64 tmp, bb6 ]
+  evidence/ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01/c1/g2.ir.txt
+    line 23-25: G2 has NO PHI after the optimisation pass.
+    (CONFIRMS G2's pre-C4 PASS result; no PHI incoming-edge conversion
+     needed for G2.)
+  /tmp/phi_only.HC dump-ir (see witness capture):
+    bb4: phi %t7 i8 tmp, [ 1 i8 const int, bb1 ]
+                           [ %t8 i64 tmp, bb3 ]
+
+INCOMING-EDGE TYPE TABLE (mechanical derivation):
+
+  FIXTURE  EDGE  INCOMING                 NEUTRAL   LLVM_TYPE_OF     CONV
+          BLOCK  VALUE                    IR TYPE   (LLVMTYPEOF)     NEEDED
+  ------- -----  -----------------------  --------  ----------------  -----
+  G3      bb4    1 i8 const int           I8        i8 (LLVMInt8)    NO
+  G3      bb8    %t23 cmp_eq I64          I64       i1 (LLVMInt1)    YES (zext)
+  G3      bb9    1 i8 const int           I8        i8 (LLVMInt8)    NO
+  G3      bb6    %t27 cmp_eq I64          I64       i1 (LLVMInt1)    YES (zext)
+  PhiOnly bb1    1 i8 const int           I8        i8 (LLVMInt8)    NO
+  PhiOnly bb3    %t8 cmp_gt I64           I64       i1 (LLVMInt1)    YES (zext)
+
+  %t23 / %t27 / %t8 producer trace (G3 bb8 example):
+    cmp_eq %t23 i64 tmp, %t22 i64 tmp, 9 i8 const int
+    In llLowerInstr IR_ICMP arm (line 2582-2598):
+      i8_pair = llIsI8Const(r1) || llIsI8Const(r2)
+              = false || true
+              = true
+      a = llLowerBinaryOperand(%t22 i64 tmp, true)
+        = LLVMBuildTrunc(llLowerValue(%t22), i8, ...)
+      b = llLowerBinaryOperand(9 i8 const int, true)
+        = llLowerValue(9 i8 const int)              [no narrowing]
+        = LLVMConstInt(LLVMInt8Type, 9, 1) = i8
+      return LLVMBuildICmp(... i8 a ..., i8 b ...)  = i1
+
+  MECHANICAL RUNTIME WITNESS (LLVM 22 C API; standalone):
+
+  evidence/c3.1/witness.c  (155 lines; links libLLVM)
+  evidence/c3.1/witness    (compiled binary)
+  evidence/c3.1/witness.txt  (captured output)
+
+  The witness independently invokes LLVMConstInt(LLVMInt8Type, 1, 1)
+  and LLVMBuildICmp(LLVMIntSGT, i64, i64) in a fresh LLVMContext and
+  prints LLVMTypeOf for each. It prints the printable type name and
+  integer width.
+
+  EXACT OUTPUT (captured at this commit):
+
+    Value                                    LLVMTypeOf  width  name
+    ---------------------------------------  ----------  -----  ----
+    (1) constant '1' (IR_TYPE_I8)            i8          8      i8
+    (2) LLVMBuildICmp result (IR_ICMP dst)   i1          1      i1
+    (3) constant '1' (IR_TYPE_I64) [control] i64         64     i64
+
+  CONCLUSION FROM WITNESS:
+    LLVMConstInt(LLVMInt8Type, 1, 1)   -> i8   width 8
+    LLVMBuildICmp(LLVMIntSGT, i64,i64) -> i1   width 1
+    LLVMConstInt(LLVMInt64Type, 1, 1)  -> i64  width 64
+
+  This is the SAME LLVM 22 C API the production hcc binary links
+  against (verified: llvm-config --version = 22.1.8; the
+  production build also reports "HCC_ENABLE_LLVM = ON").
+
+OUTCOME: B (per the expert's trichotomy):
+
+  - Outcome A (LLVM value already i8): NO -- the IR_ICMP incoming
+    edge is i1, not i8.
+  - Outcome B (LLVM value i1): YES -- the IR_ICMP incoming edge
+    lowers to LLVM i1. C4 must insert an explicit i1 -> i8
+    conversion before LLVMAddIncoming for that edge.
+  - Outcome C (LLVM value i64): NO -- no i64 incoming edges exist
+    in the current fixture set (G3/PhiOnly).
+  - Outcome D (neutral IR inconsistent): NO -- the neutral IR is
+    consistent: const ints lower to their IR type (i8 -> i8);
+    IR_ICMP results are i1 regardless of dst->type.
+
+C4 IMPL-B REQUIRED-AUTHORIZATION UPDATE:
+
+  The C3-decided authorization (LLVMBuildPHI + LLVMAddIncoming +
+  existing llLowerValue + existing llLowerType + existing
+  llGetOrCreateBlock) is INSUFFICIENT.
+
+  Required addition: a single, narrowly-scoped boolean
+  normalisation for IR_ICMP-produced incoming edges:
+
+    For each incoming edge (value, block) of an IR_PHI:
+      if (cached_value type == LLVMInt1TypeInContext(lc->ctx) &&
+          phi type == LLVMInt8TypeInContext(lc->ctx)):
+        LLVMValueRef norm = LLVMBuildZExt(
+            lc->bld, cached_value,
+            LLVMInt8TypeInContext(lc->ctx),
+            "phi_icmp_zext");
+        use norm as the incoming value to LLVMAddIncoming.
+      else:
+        use cached_value as-is.
+
+  This conversion is correct because:
+    (a) IR_ICMP always returns {0, 1} per its semantic contract
+        (the IR_BR dispatch at src/llvm-backend.c:1815-1872 has
+        been the runtime witness for i1 == {0, 1} since
+        ACT-POLYC-LLVM-CORE01-CORRECTION01).
+    (b) zext of {0, 1} -> i8 is the identity bit-pattern.
+    (c) The result participates in the i8 PHI exactly as the
+        neutral IR intended: a 0/1 boolean widened to byte width.
+
+  NO scope expansion:
+    - No new diagnostic macros.
+    - No new counter increments.
+    - No change to Gate 3 / Gate 4 / Gate 5 logic.
+    - No change to llType or llLowerValue.
+    - The conversion lives entirely inside the proposed IR_PHI
+      dispatch arm's incoming-edge iteration loop.
+
+  The conversion IS technically a general i1 -> i8 widening,
+  but it is bound to the IR_PHI dispatch arm's incoming-edge
+  handling, not a general integer-conversion widening. Per the
+  expert's guidance, the contract is named "short-circuit PHI
+  incoming normalization only" (the i8 PHI is exclusively the
+  short-circuit-compare result; a non-i8 PHI would need
+  different / additional contracts which are out of scope).
+
+UPDATED VERDICT:
+
+  C3's prior decision (C4_IMPL_B_AUTH = TRUE) is PARTIALLY
+  REVOKED. The C4 IR_PHI dispatch arm contract now includes:
+
+    IR_PHI arm pseudocode (revised):
+      pair_count := length(IR_PHI.incoming)
+      predecessors := CFG_predecessors(current_block)
+      assert pair_count == |predecessors|
+      assert for each pair: pair.block in predecessors (set eq)
+      assert each predecessor appears exactly once (set semantics)
+      assert LLVMTypeOf(IR_PHI.dst) compatible with I8 PHI
+              (the ONLY neutral-IR PHI dst type in scope)
+      assert IR_PHI is FIRST instruction in current_block
+      phi := LLVMBuildPHI(LLVMInt8TypeInContext(lc->ctx), "")
+      for each incoming (value, block):
+        v := llLowerValue(lc, value)
+        if LLVMTypeOf(v) == LLVMInt1TypeInContext(lc->ctx):
+          v := LLVMBuildZExt(lc->bld, v,
+                 LLVMInt8TypeInContext(lc->ctx),
+                 "phi_icmp_zext")
+        LLVMAddIncoming(phi, [v], [block_LLVM], 1)
+
+  This contract is mechanically verifiable, narrow in scope,
+  and matches the existing i1 contract (CORRECTION01) at
+  src/llvm-backend.c:1815-1872.
+
+NEXT ACT:
+
+  Re-authorize C4 with the revised pseudocode above.
+
+  C4 IMPL-B may proceed. The expert's prior hard-stop rule
+  ("freeze the conversion contract first") is now satisfied.
+
+RESIDUE:
+  P1  short-circuit PHI incoming normalization -- if a future
+      ACT adds a non-i8 PHI (e.g. i64 SSA phi from a fused
+      IR_SEL-like construct), the normalization must be
+      generalised. Documented in this evidence file so the
+      future ACT can find it.
+  P2  The original "G3 PHI is I8 but its non-constant incoming
+      value is I64" framing in the expert review was off by one
+      type: the neutral dst type of the producing IR_ICMP is
+      IR_TYPE_I64 (per the neutral dump) but the LLVM-cached
+      type of the produced LLVMValueRef is i1, not i64. The
+      C3 frozen contract should therefore say "incoming
+      LLVM type compatible with I8 PHI" -- where "compatible"
+      means: equal, or narrower-than-i8 with zext to i8.
+      This refinement is now captured in the updated contract.
+

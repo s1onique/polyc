@@ -508,6 +508,71 @@ case IR_PHI: {
 }
 ```
 
+## 9.1 C3.1 RED: PHI incoming-edge type binding (Outcome B)
+
+The C1.1 contract above was incomplete: it assumed `llLowerValue`
+of any incoming edge would produce an LLVM value whose type
+matches the PHI's neutral-IR type (i8). The mechanical witness
+at `evidence/c3.1/witness.c` proves this is FALSE for IR_ICMP
+producers:
+
+```text
+Value                                    LLVMTypeOf  width  name
+(1) constant '1' (IR_TYPE_I8)            i8          8      i8
+(2) LLVMBuildICmp result (IR_ICMP dst)   i1          1      i1   <- mismatch
+(3) constant '1' (IR_TYPE_I64) [control] i64         64     i64
+```
+
+Per the C1.1 expert review's trichotomy, this is **Outcome B**
+(incoming LLVM value is `i1`). The C4 contract is therefore
+AMENDED to insert an explicit `i1 -> i8` normalisation before
+`LLVMAddIncoming` for IR_ICMP-produced incoming edges.
+
+```c
+for (unsigned i = 0; i < n; ++i) {
+    IrPair *p = (IrPair *)vecGet(ins->extra.phi_pairs, i);
+    if (!p || !p->ir_value || !p->ir_block) { ... REJECT ... }
+    LLVMValueRef v = llLowerValue(lc, p->ir_value);
+    /* ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 C3.1 RED (Outcome B):
+     * IR_ICMP producers lower to LLVM i1 (via LLVMBuildICmp at
+     * src/llvm-backend.c:2598). When the PHI dst type is i8,
+     * the incoming i1 must be zero-extended to i8 before
+     * LLVMAddIncoming, or the LLVM verifier will reject the
+     * module with a type-mismatch diagnostic. The zext is the
+     * identity bit-pattern on {0, 1} (the IR_ICMP result
+     * contract; runtime-witnessed at src/llvm-backend.c:1815-1872
+     * since CORRECTION01). */
+    if (LLVMTypeOf(v) == LLVMInt1TypeInContext(lc->ctx) &&
+        phi_ty == LLVMInt8TypeInContext(lc->ctx)) {
+        v = LLVMBuildZExt(lc->bld, v,
+              LLVMInt8TypeInContext(lc->ctx),
+              "phi_icmp_zext");
+        LL_INC_SHAPE_DEPENDENT(lc); /* named account: phi_icmp_zext */
+    }
+    incoming_values[i] = v;
+    incoming_blocks[i] = llGetOrCreateBlock(lc, p->ir_block);
+}
+```
+
+This normalisation is **short-circuit-compare PHI incoming
+normalisation ONLY**. A non-i8 PHI (e.g. an i64 SSA phi from a
+fused IR_SEL-like construct) is out of scope and would require
+a separate contract amendment (P1 residue; see c3.1-red.txt).
+
+`C4_IMPL_B_AUTH = TRUE` is **REAFFIRMED** with this amended
+contract. The hard-stop rule is satisfied: the conversion is
+narrow, mechanically verifiable, and bound to the IR_PHI
+dispatch arm's incoming-edge iteration.
+
+No new diagnostic macros. No new counter increments
+(LL_INC_SHAPE_DEPENDENT already exists). No change to Gate 3,
+Gate 4, or Gate 5 logic. No change to `llType` or `llLowerValue`.
+
+New HALT taxonomy entry:
+
+* `HALT_PHI_TYPE_CONTRACT_REQUIRED` — Outcome D; neutral IR
+  inconsistency; not observed (Outcome B observed instead).
+
 Invariants:
 * `LLVMBuildPHI` is positioned at the builder cursor; PHI nodes
   must be at the start of a basic block. The dispatcher
@@ -660,7 +725,18 @@ C3 EVIDENCE-A (only after C2-A.2)
                 strengthen PHI-B shape contract per LLVM LangRef
                 decide C4_IMPL_B_AUTH
 
-C4 IMPL-B     (ONLY IF C3 releases it)
+C3.1 RED (only after C3; NO production change)
+                mechanical-witness evidence for every PHI incoming edge
+                freeze PHI incoming-edge type binding:
+                  - constants: llType(IR_TYPE_I8) = LLVMInt8Type
+                  - IR_ICMP:   always LLVMInt1Type (via LLVMBuildICmp)
+                decide contract amendment (Outcome A/B/C/D)
+                  - Outcome B observed: i1 -> i8 zext required
+                  - contract AMENDED to add bounded zext
+                reaffirm or revoke C4_IMPL_B_AUTH
+                  - C4_IMPL_B_AUTH = TRUE (reaffirmed with amendment)
+
+C4 IMPL-B     (ONLY IF C3.1 reaffirms it)
                 add case IR_PHI: arm to llLowerInstr (SHAPE_DEPENDENT)
                 + STRENGTHENED shape validation:
                   - pair_count == CFG predecessor count
@@ -668,6 +744,10 @@ C4 IMPL-B     (ONLY IF C3 releases it)
                   - each predecessor represented exactly once
                   - incoming type compatible with I8 PHI
                   - no non-PHI precedes PHI in merge block
+                + AMENDED (C3.1) incoming-edge normalisation:
+                  - if incoming LLVM value is i1 AND phi_ty is i8,
+                    emit LLVMBuildZExt("phi_icmp_zext") before
+                    LLVMAddIncoming (LL_INC_SHAPE_DEPENDENT)
                 add LLVM_BACKEND_UNSUPPORTED_PHI_ORTHOGONAL_TO_CORE
                 update src/llvm-backend-cap.c IR_PHI to SHAPE_DEPENDENT
 
@@ -816,6 +896,36 @@ evidence rather than modifying old captures).
          or Gate 4 (read envelope).
 37. AC37 C2-A.2 adds GN5/GN5b to the regression set as P12/P13.
 
+### C3.1 contract-amendment acceptance criteria
+
+38. AC38 C3.1 freezes the PHI incoming-edge type-binding
+         contract amendment: an IR_ICMP-produced incoming edge
+         whose cached LLVM value is `i1` MUST be zero-extended
+         to `i8` before `LLVMAddIncoming` when the PHI's
+         neutral type is `IR_TYPE_I8`.
+39. AC39 C3.1 freezes the mechanical-witness requirement:
+         the type binding MUST be captured by exercising the
+         LLVM 22 C API on the actual lowering primitives
+         (`LLVMConstInt` for constants, `LLVMBuildICmp` for
+         IR_ICMP); the captured `LLVMTypeOf` output is the
+         authoritative type binding, not the neutral-IR type.
+40. AC40 C3.1 freezes the trichotomy outcomes:
+         - Outcome A: incoming LLVM value already i8 (no
+           conversion); not observed.
+         - Outcome B: incoming LLVM value i1 (zext to i8);
+           OBSERVED.
+         - Outcome C: incoming LLVM value i64 (trunc or zext
+           to i8); not observed.
+         - Outcome D: neutral IR inconsistent (HALT); not
+           observed.
+41. AC41 C3.1 reaffirms C4_IMPL_B_AUTH = TRUE with the
+         amended contract. The hard-stop rule is satisfied
+         because the conversion is narrow (short-circuit PHI
+         incoming normalisation only), mechanically
+         verifiable (LLVM 22 C API), and bound to the IR_PHI
+         dispatch arm's incoming-edge iteration (no general
+         integer-conversion widening).
+
 ---
 
 ## 12. HALT taxonomy
@@ -843,6 +953,15 @@ HALT_GATE_AUDIT_REQUIRED        (a new gate, not addressed by
                                   the frozen contract, rejects
                                   a probe; the discriminator
                                   itself needs a full audit)
+HALT_PHI_TYPE_CONTRACT_REQUIRED (the PHI incoming-edge type
+                                  binding cannot be satisfied
+                                  without scope expansion or
+                                  neutral-IR change; Outcome D
+                                  of the C3.1 trichotomy. Not
+                                  observed: Outcome B was
+                                  observed instead, and the
+                                  contract was amended to add
+                                  a bounded i1 -> i8 zext.)
 ```
 
 ---

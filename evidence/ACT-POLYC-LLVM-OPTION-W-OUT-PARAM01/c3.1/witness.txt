@@ -1,0 +1,40 @@
+PHI_INCOMING_TYPE_WITNESS (LLVM 22 C API; c31.1 RED)
+
+Value                                    LLVMTypeOf  width  name
+---------------------------------------  ----------  -----  ----
+(1) constant '1' (IR_TYPE_I8)            i8          8      i8
+(2) LLVMBuildICmp result (IR_ICMP dst)   i1          1      i1
+(3) constant '1' (IR_TYPE_I64) [control] i64         64     i64
+
+EXPECTED_PHI_TYPE_FROM_NEUTRAL = i8 (per ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 C3 frozen matrix)
+
+VERDICT:
+  OUTCOME_B_CONFIRMED
+  - incoming constant '1' (IR_TYPE_I8) lowers to LLVM i8 (width 8)
+  - incoming IR_ICMP dst lowers to LLVM i1 (width 1)  <-- MISMATCH
+  - incoming constant '1' (IR_TYPE_I64) lowers to LLVM i64 (width 64)
+
+  Consequence for C4 IR_PHI dispatch arm:
+    - LLVMBuildPHI(LLVMInt8TypeInContext(ctx), "")  -> i8 PHI
+    - LLVMAddIncoming for the constant edge          -> OK (i8 == i8)
+    - LLVMAddIncoming for the IR_ICMP edge           -> REJECTED
+      by the LLVM verifier (incoming value i1 does
+      not match PHI type i8).
+
+  Required bounded conversion contract (Outcome B):
+    For incoming edges whose producer opcode is
+    IR_ICMP, insert:
+        LLVMValueRef z = LLVMBuildZExt(
+            lc->bld, incoming, LLVMInt8TypeInContext(lc->ctx),
+            "phi_icmp_zext");
+    then pass z to LLVMAddIncoming. This conversion
+    is correct because the IR_ICMP result is already
+    canonically 0 or 1 (per IR_BR dispatch contract,
+    src/llvm-backend.c:1815-1853, which has been the
+    runtime witness for i1 correctness since CORRECTION01).
+
+  Scope impact: ZERO new diagnostic macros, ZERO new
+  counters, ONE additional builder call inside the new
+  IR_PHI dispatch arm. The conversion is bound to the
+  IR_PHI dispatch arm's incoming-edge iteration, not a
+  general integer conversion widening.
