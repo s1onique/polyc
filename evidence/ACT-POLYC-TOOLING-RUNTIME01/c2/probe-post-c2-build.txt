@@ -1,0 +1,72 @@
+ACT-POLYC-TOOLING-RUNTIME01
+C2 IMPL — tooling-probe build output (post-C2)
+
+Toolchain (unchanged from C1):
+  Apple clang 15.0.0.15000040, aarch64-apple-darwin
+  ./hcc commit-hash 456b71c0f2535c6175271d2107b67f985b4bc2c8
+  llvm-as / opt 22.1.8 on PATH
+  ./build/test-prefix/ hermetic install dir
+  libtos.a rebuilt with tooling.HC included
+
+------------------------------------------------------------
+Command
+------------------------------------------------------------
+
+  $ rm -f /tmp/probe
+  $ ./hcc --install-dir=$(pwd)/build/test-prefix \
+          evidence/ACT-POLYC-TOOLING-RUNTIME01/c1/tooling-probe.HC \
+          -o /tmp/probe
+
+------------------------------------------------------------
+Build output (verbatim)
+------------------------------------------------------------
+
+  (no output; build_exit=0)
+
+The PolyC compiler now produces no diagnostics for
+SpawnAndCapture() because the symbol is defined in
+the new tooling.HC, which the probe includes via:
+
+    #include "../../../src/holyc-lib/tooling.HC"
+
+------------------------------------------------------------
+Run output (verbatim)
+------------------------------------------------------------
+
+  $ /tmp/probe
+  tooling-probe: C1 RED layer reached successfully
+  $ echo $?
+  0
+
+Both P1 (deterministic successful child: /usr/bin/printf
+"hello" -> stdout=="hello", stderr empty, exit 0) and
+P2 (missing executable returns non-zero) complete
+without any assertion failing.
+
+The probe was preserved across C1 -> C2 so the same
+source file documents both states. The C1 RED build
+output remains in:
+
+    evidence/ACT-POLYC-TOOLING-RUNTIME01/c1/tooling-probe-build.txt
+
+------------------------------------------------------------
+Failure layer (per ACT §11) — RESOLVED
+------------------------------------------------------------
+
+  BEFORE C2: PARSER / TYPE CHECKER
+    error: Variable or function `SpawnAndCapture` has
+           not been defined
+
+  AFTER C2:  no failure; SpawnAndCapture is defined in
+             src/holyc-lib/tooling.HC and the probe
+             exercises it successfully.
+
+------------------------------------------------------------
+Adjacent process-evidence (P3 stderr, P5 argv boundaries,
+P-TMP) were exercised inline during C2 development and
+reproduced above. Each test returned rc=0 with the
+expected stdout/stderr/path contents.
+
+------------------------------------------------------------
+End of file
+------------------------------------------------------------
