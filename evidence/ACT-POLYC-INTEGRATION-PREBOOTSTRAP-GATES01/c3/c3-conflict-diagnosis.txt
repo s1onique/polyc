@@ -1,0 +1,129 @@
+ACT-POLYC-INTEGRATION-PREBOOTSTRAP-GATES01 — C3 conflict diagnosis
+====================================================================
+
+PROBLEM
+-------
+
+gate-push cannot complete because GPUSH-3 (make unit-test) and
+GPUSH-GEP01 (make llvm-gep01-test) require mutually exclusive
+configurations of the canonical install in the gate's hermetic prefix.
+
+KEY OBSERVATION
+---------------
+
+- GPUSH-1 build:           PASS (hcc compiled with
+                            HCC_ENABLE_LLVM=ON,
+                            INSTALL_PREFIX=$gate_prefix)
+- GPUSH-2 install:         PASS (make test-prefix-install lands
+                            libtos.a + libtos.0.0.1.dylib +
+                            libtos.dylib symlink in
+                            $gate_prefix/lib/)
+- GPUSH-GEP01 gep01:       PASS iff libtos.dylib symlink is present
+                            (otherwise: 26 duplicate symbols)
+- GPUSH-3 aot/unit-test:   PASS iff libtos.dylib symlink is REMOVED
+                            (otherwise: ld: invalid use of ADRP in
+                            '_CmpFileNames' to '_FREE')
+
+FAILURE MODE A: libtos.dylib symlink PRESENT (canonical install default)
+=========================================================================
+
+GPUSH-3 aot failure transcript:
+-------------------------------
+cd ./src/tests && ../../hcc ./run.HC -o test-runner && ./test-runner
+ld: invalid use of ADRP in '_CmpFileNames' to '_FREE'
+clang: error: linker command failed with exit code 1
+ERROR: Failed to execute command: 'cc -L$gate_prefix/lib /tmp/holyc-asm.s -ltos -lpthread -lc -lm -o test-runner'
+
+Root cause:
+- AOT-emitted assembly uses 'adrp x0, _FREE@PAGE' + 'add x0, x0, _FREE@PAGEOFF'
+  to compute the address of _FREE. This is a 64-bit PC-relative page+offset
+  load sequence.
+- libtos.dylib ships _FREE at a fixed offset (e.g. 0x2a3c on the
+  host) with nreloc=0 in __text (no link-time relocations in the
+  text section). The linker cannot synthesize the page+offset
+  resolution against a fixed-offset symbol in a dylib.
+- libtos.a ships _FREE with nreloc=560 in __text; archive-style
+  relocations ARE resolvable.
+- This is a pre-existing AOT codegen limitation. It is OUT OF SCOPE
+  for this ACT.
+
+FAILURE MODE B: libtos.dylib symlink ABSENT (test-prefix-install --remove-symlink)
+===================================================================================
+
+GPUSH-GEP01 gep01 failure transcript:
+-------------------------------------
+./hcc --install-dir=$gate_prefix tools/quality/llvm-gep01-test.HC -o ./build/llvm-gep01-test
+duplicate symbol '_MEMCPY' in:
+    $tmp/holyc-asm-XXXXX.o
+    $gate_prefix/lib/libtos.a[2](all.o)
+duplicate symbol '_DirHumanNew' in:
+    $tmp/holyc-asm-XXXXX.o
+    $gate_prefix/lib/libtos.a[2](all.o)
+duplicate symbol '_MSIZE' in:
+    $tmp/holyc-asm-XXXXX.o
+    $gate_prefix/lib/libtos.a[2](all.o)
+duplicate symbol '_WaitPidIntr' in:
+    $tmp/holyc-asm-XXXXX.o
+    $gate_prefix/lib/libtos.a[2](all.o)
+duplicate symbol '_Stat' in:
+    $tmp/holyc-asm-XXXXX.o
+    $gate_prefix/lib/libtos.a[2](all.o)
+...
+ld: 26 duplicate symbols
+clang: error: linker command failed with exit code 1
+
+Root cause:
+- tools/quality/llvm-gep01-test.HC includes
+  '../../src/holyc-lib/tooling.HC' (line 49) which transitively
+  includes memory.HC.
+- memory.HC has 14 function definitions (MAlloc, Free, MemCpy, ...),
+  some via inline asm (_FREE:: with PUSHQ on x86 / STP on arm64).
+- The harness's compiled translation unit therefore contains
+  definitions of _FREE, _MEMCPY, _MSIZE, _Stat, _WaitPidIntr, etc.
+- libtos.a (archive of all.o) ALSO contains those definitions.
+- When -ltos resolves to the archive, the linker refuses to
+  choose between two definitions.
+- The dylib (NOUNDEFS) somehow does NOT trigger this, because it
+  ships the symbols with relocation metadata that the dylib linker
+  binds directly without an executable-side re-export. With the
+  dylib, -ltos picks symbols from the dylib; the executable's
+  translation unit is the same, but the dylib's NOUNDEFS layout
+  marks the symbols as satisfied at the dylib level.
+
+WHY BOTH CONSUMERS REQUIRE THE SAME PREFIX
+-------------------------------------------
+
+gate-push.sh runs all GPUSH-* steps inside one $gate_prefix. Both
+GPUSH-3 and GPUSH-GEP01 consume that prefix. There is no
+per-step install configuration; the prefix is set once at GPUSH-1
+build time and inherited by all subsequent steps. So the conflict
+is unresolvable in the current gate-push design without one of:
+- AOT codegen fix (src/aarch64.c, src/x86_64.c) — out of scope
+- libtos dylib build flag change (src/CMakeLists.txt) — out of scope
+- GEP01 harness refactor (tools/quality/llvm-gep01-test.HC) — out of
+  scope
+
+PREVIOUSLY WORKING CONFIGURATION
+--------------------------------
+
+Commit a5818c6 (the last successful gate-push):
+- gate-push.sh did NOT include llvm-gep01-test
+- The install step was `make install INSTALL_PREFIX=$gate_prefix`
+  which invoked hcc's -lib tos flow (no CORRECTION03 symlink)
+- libtos.{a,0.0.1.dylib} only — no unversioned libtos.dylib symlink
+- -ltos resolved to libtos.a (archive), AOT adrp/add pair satisfied
+  via archive-style relocations
+- unit-test PASSED
+
+This ACT introduces llvm-gep01-test as a NEW gate step (D1). The
+harness includes libtos source via tooling.HC → memory.HC. With
+the dylib present (CORRECTION03), the harness's libtos-source
+duplicates are masked by the dylib's NOUNDEFS layout. With the
+symlink removed (revert to a5818c6 style), the duplicates surface
+because -ltos resolves to libtos.a (archive).
+
+In other words: the previous gate-push worked because it didn't
+include llvm-gep01-test. Adding llvm-gep01-test to the gate-push
+forces a choice between AOT codegen compatibility (need archive)
+and libtos-source deduplication (need dylib). The current tree
+cannot satisfy both.

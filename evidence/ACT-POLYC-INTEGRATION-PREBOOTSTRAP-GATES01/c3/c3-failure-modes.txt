@@ -1,0 +1,90 @@
+ACT-POLYC-INTEGRATION-PREBOOTSTRAP-GATES01 — two-failure-mode evidence
+======================================================================
+
+Both failures captured against the same C2 IMPL + 655b7bd follow-up tree
+on commit HEAD (655b7bd). The only variable is whether
+test-prefix-install removes the libtos.dylib symlink (FAILURE MODE B
+removes it; FAILURE MODE A keeps it). Both modes are reachable from
+the committed tree by toggling a single Makefile line.
+
+FAILURE MODE A: libtos.dylib symlink PRESENT (canonical install)
+=================================================================
+
+Test invocation:
+  bash scripts/quality/gate-push.sh HEAD
+
+Result: gate-push exits VERDICT=FAIL at CHECK=aot.
+
+Gate-push transcript (final 12 lines):
+  ----
+  GEP01_PASS=30
+  GEP01_FAIL=0
+  STATUS=PASS
+  CHECK=gep01 STATUS=PASS
+  cd ./src/tests && ../../hcc ./run.HC -o test-runner && ./test-runner && cd ../../
+  ld: invalid use of ADRP in '_CmpFileNames' to '_FREE'
+  clang: error: linker command failed with exit code 1 (use -v to see invocation)
+  ERROR: Failed to execute command: 'cc -L$gate_prefix/lib /tmp/holyc-asm.s     -ltos -lpthread -lc -lm -o test-runner'
+  make: *** [unit-test] Error 1
+  CHECK=aot STATUS=FAIL
+  REASON=aot exited with status 2
+  VERDICT=FAIL
+
+GPUSH-3 fails: ld rejects 'adrp'/'add' sequence against _FREE in
+libtos.dylib. llvm-gep01-test would have passed in this state (no
+duplicate symbols because the dylib dedups).
+
+FAILURE MODE B: libtos.dylib symlink ABSENT (test-prefix-install --remove-symlink)
+==================================================================================
+
+Test invocation:
+  bash scripts/quality/gate-push.sh HEAD
+
+Result: gate-push exits VERDICT=FAIL at CHECK=gep01.
+
+Gate-push transcript (final 12 lines):
+  ----
+  ./hcc --install-dir=$gate_prefix tools/quality/llvm-gep01-test.HC -o ./build/llvm-gep01-test
+  duplicate symbol '_MEMCPY' in:
+      $tmp/holyc-asm-XXXXX.o
+      $gate_prefix/lib/libtos.a[2](all.o)
+  duplicate symbol '_DirHumanNew' in:
+      $tmp/holyc-asm-XXXXX.o
+      $gate_prefix/lib/libtos.a[2](all.o)
+  duplicate symbol '_MSIZE' in:
+      $tmp/holyc-asm-XXXXX.o
+      $gate_prefix/lib/libtos.a[2](all.o)
+  duplicate symbol '_WaitPidIntr' in:
+      $tmp/holyc-asm-XXXXX.o
+      $gate_prefix/lib/libtos.a[2](all.o)
+  duplicate symbol '_Stat' in:
+      $tmp/holyc-asm-XXXXX.o
+      $gate_prefix/lib/libtos.a[2](all.o)
+  ld: 26 duplicate symbols
+  clang: error: linker command failed with exit code 1 (use -v to see invocation)
+  ERROR: Failed to execute command: 'cc -L$gate_prefix/lib /tmp/holyc-asm.s -ltos -lpthread -lc -lm -o ./build/llvm-gep01-test'
+  make: *** [llvm-gep01-test] Error 1
+  CHECK=gep01 STATUS=FAIL
+  REASON=gep01 exited with status 2
+  VERDICT=FAIL
+
+GPUSH-GEP01 fails: ld rejects 26 duplicate symbols between the
+harness's tooling.HC transitively included memory.HC and libtos.a.
+
+VERDICT
+-------
+
+The committed tree (HEAD = 655b7bd, with my follow-up Makefile fix
+REMOVING the symlink) fails at GPUSH-GEP01. Without the follow-up
+Makefile fix, it would fail at GPUSH-3 instead. Both failures
+require fixes OUTSIDE this ACT's scope:
+
+  - AOT codegen fix (src/aarch64.c, src/x86_64.c) to make
+    'adrp'/'add' against _FREE work against a dylib.
+
+  - OR libtos dylib build flag change (src/CMakeLists.txt) such
+    as -Wl,-Bsymbolic to suppress executable-side symbol
+    duplication.
+
+  - OR GEP01 harness refactor (tools/quality/llvm-gep01-test.HC)
+    to not transitively include memory.HC.
