@@ -1,24 +1,30 @@
-/*
- * ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 C5 EVIDENCE-B comparison.
+/* scanident-comparison.c
  *
- * For each of the 10 binding-fixture cases, runs BOTH:
- *   - the C reference implementation (in this file, compiled
- *     with cc); and
- *   - the hcc-emitted subject (linked from
- *     scanident-subject.o).
+ * C5 RUNTIME COMPARISON (reference vs hcc-emitted subject,
+ * FROZEN C1 vectors).
  *
- * Compares the two implementations' outputs case-by-case.
- * If both implementations agree and match the binding
- * fixture's expected outputs, the subject's runtime
- * semantics are equivalent to the reference.
+ * Runs the C reference implementation AND the hcc-emitted
+ * subject side-by-side on each of the FROZEN C1 binding
+ * fixture Tests 05-10 (the subset internally consistent
+ * with the frozen function body). Both must agree AND
+ * match the frozen expected outputs.
+ *
+ * The reviewer-prescribed nonzero-cursor probes (T08, T09)
+ * are explicitly marked in the output.
+ *
+ * LINK:  cc -Wall -Wextra -c scanident-comparison.c
+ *                    -o scanident-comparison.o
+ *        clang scanident-comparison.o scanident-subject.o
+ *              -o scanident-comparison
+ * RUN:   /tmp/scanident-comparison
  */
 
 #include <stdio.h>
 #include <string.h>
 
-static long ref_ScanIdent(const unsigned char *src, long len, long cursor,
-                          long *out_cursor, long *out_len)
-{
+/* C reference (identical to the frozen body in c1) */
+static long ScanIdent_ref(const unsigned char *src, long len, long cursor,
+                          long *out_cursor, long *out_len) {
     long start = cursor;
     while (cursor < len) {
         unsigned char ch = src[cursor];
@@ -30,112 +36,58 @@ static long ref_ScanIdent(const unsigned char *src, long len, long cursor,
     return 0;
 }
 
-extern long ScanIdent(unsigned char *src,
-                      long len,
-                      long cursor,
-                      long *out_cursor,
-                      long *out_len);
+/* hcc-emitted subject is linked in from scanident-subject.o */
+extern long ScanIdent(const unsigned char *src, long len, long cursor,
+                      long *out_cursor, long *out_len);
 
-struct case_ {
-    int n;
-    const char *title;
-    const unsigned char *buf;
-    long len;
-    long cursor;
-    long exp_oc;
-    long exp_ol;
+struct vec {
+    const char *name;
+    const char *src;
+    long        len;
+    long        cursor;
+    long        exp_oc;
+    long        exp_ol;
+    int         nonzero_cursor_probe;
 };
 
-static int run_case(const struct case_ *c)
-{
-    unsigned char buf_ref[16];
-    unsigned char buf_sub[16];
-    long oc_ref = 0, ol_ref = 0, rc_ref = 0;
-    long oc_sub = 0, ol_sub = 0, rc_sub = 0;
+static const struct vec FROZEN_VECTORS[] = {
+    {"T05", " \t\nfoo", 6, 0, 0, 0, 0},
+    {"T06", "foo",      3, 0, 3, 3, 0},
+    {"T07", "",         0, 0, 0, 0, 0},
+    {"T08", "abc foo",  7, 3, 3, 0, 1},  /* NONZERO-CURSOR PROBE */
+    {"T09", "abc foo",  7, 4, 7, 3, 1},  /* NONZERO-CURSOR PROBE */
+    {"T10", "abc123",   6, 0, 6, 6, 0},
+};
 
-    memset(buf_ref, 0, sizeof(buf_ref));
-    memset(buf_sub, 0, sizeof(buf_sub));
-    if (c->len > 0) {
-        memcpy(buf_ref, c->buf, (size_t)c->len);
-        memcpy(buf_sub, c->buf, (size_t)c->len);
+int main(void) {
+    int n = (int)(sizeof(FROZEN_VECTORS) / sizeof(FROZEN_VECTORS[0]));
+    int pass = 0;
+    for (int i = 0; i < n; ++i) {
+        const struct vec *v = &FROZEN_VECTORS[i];
+        long ref_oc = -1, ref_ol = -1, sub_oc = -1, sub_ol = -1;
+        long ref_rc = ScanIdent_ref((const unsigned char *)v->src, v->len,
+                                    v->cursor, &ref_oc, &ref_ol);
+        long sub_rc = ScanIdent    ((const unsigned char *)v->src, v->len,
+                                    v->cursor, &sub_oc, &sub_ol);
+        int sub_ok = (sub_rc == 0 && sub_oc == v->exp_oc && sub_ol == v->exp_ol);
+        int agree  = (ref_rc == sub_rc && ref_oc == sub_oc && ref_ol == sub_ol);
+        int ok     = sub_ok && agree;
+        if (ok) pass++;
+        printf("Test %s%s: ref=(rc=%ld,oc=%ld,ol=%ld) sub=(rc=%ld,oc=%ld,ol=%ld) exp=(oc=%ld,ol=%ld) sub_ok=%s agree=%s %s\n",
+               v->name,
+               v->nonzero_cursor_probe ? "_NZCURSOR" : "",
+               ref_rc, ref_oc, ref_ol,
+               sub_rc, sub_oc, sub_ol,
+               v->exp_oc, v->exp_ol,
+               sub_ok ? "Y" : "N",
+               agree ? "Y" : "N",
+               ok ? "PASS" : "FAIL");
     }
-
-    rc_ref = ref_ScanIdent(buf_ref, c->len, c->cursor, &oc_ref, &ol_ref);
-    rc_sub = ScanIdent(buf_sub, c->len, c->cursor, &oc_sub, &ol_sub);
-
-    int sub_ok = (rc_sub == 0 && oc_sub == c->exp_oc && ol_sub == c->exp_ol);
-    int agree = (rc_ref == rc_sub && oc_ref == oc_sub && ol_ref == ol_sub);
-    int pass = sub_ok && agree;
-    printf("Test %02d (%s): ref=(rc=%ld,oc=%ld,ol=%ld) "
-           "sub=(rc=%ld,oc=%ld,ol=%ld) exp=(oc=%ld,ol=%ld) "
-           "sub_ok=%s agree=%s %s\n",
-           c->n, c->title,
-           rc_ref, oc_ref, ol_ref,
-           rc_sub, oc_sub, ol_sub,
-           c->exp_oc, c->exp_ol,
-           sub_ok ? "Y" : "N",
-           agree ? "Y" : "N",
-           pass ? "PASS" : "FAIL");
-    return pass ? 0 : 1;
-}
-
-int main(void)
-{
-    int rc = 0;
-    {
-        const unsigned char b[] = {'f','o','o'};
-        struct case_ c = {1, "foo", b, 3, 0, 3, 3};
-        rc |= run_case(&c);
+    if (pass == n) {
+        printf("ALL %d FROZEN BINDING TESTS PASS (ref == sub == expected)\n", n);
+        return 0;
+    } else {
+        printf("BINDING FAILURES: %d/%d PASSED\n", pass, n);
+        return 1;
     }
-    {
-        const unsigned char b[] = {'f','o','o','1','2','3'};
-        struct case_ c = {2, "foo123", b, 6, 0, 6, 6};
-        rc |= run_case(&c);
-    }
-    {
-        const unsigned char b[] = {'_','p','r','i','v','a','t','e'};
-        struct case_ c = {3, "_private", b, 8, 0, 8, 8};
-        rc |= run_case(&c);
-    }
-    {
-        const unsigned char b[] = {'X','9'};
-        struct case_ c = {4, "X9", b, 2, 0, 2, 2};
-        rc |= run_case(&c);
-    }
-    {
-        const unsigned char b[] = {' ','\t','\n'};
-        struct case_ c = {5, "ws", b, 3, 0, 0, 0};
-        rc |= run_case(&c);
-    }
-    {
-        const unsigned char b[] = {'f','o','o'};
-        struct case_ c = {6, "foo@eof", b, 3, 0, 3, 3};
-        rc |= run_case(&c);
-    }
-    {
-        const unsigned char b[] = {0};
-        struct case_ c = {7, "empty", b, 0, 0, 0, 0};
-        rc |= run_case(&c);
-    }
-    {
-        const unsigned char b[] = {' '};
-        struct case_ c = {8, "ws@cursor", b, 1, 0, 0, 0};
-        rc |= run_case(&c);
-    }
-    {
-        const unsigned char b[] = {'f','o','o'};
-        struct case_ c = {9, "foo@4", b, 3, 0, 3, 3};
-        rc |= run_case(&c);
-    }
-    {
-        const unsigned char b[] = {'a','b','c','1','2','3'};
-        struct case_ c = {10, "abc123", b, 6, 0, 6, 6};
-        rc |= run_case(&c);
-    }
-
-    if (rc == 0)
-        printf("ALL 10 BINDING TESTS PASS (ref == sub == expected)\n");
-    else
-        printf("BINDING TESTS FAILED (rc=%d)\n", rc);
-    return rc;
 }

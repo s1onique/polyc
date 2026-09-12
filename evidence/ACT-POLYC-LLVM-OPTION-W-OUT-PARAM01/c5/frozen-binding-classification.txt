@@ -1,0 +1,150 @@
+C5 FROZEN-BINDING CLASSIFICATION (per reviewer diagnosis)
+=========================================================
+
+The frozen C1 binding fixture in
+../c1/scanident-binding-fixture.txt defines 10 tests for the
+frozen ScanIdent body:
+
+  line 1: I64 start = cursor;
+  line 2: while (cursor < len) {
+  line 3:   U8 ch = src[cursor];
+  line 4:   if (ch == ' ' || ch == '\t' || ch == '\n') break;
+  line 5:   cursor = cursor + 1;
+  line 6: }
+  line 7: *out_cursor = cursor;
+  line 8: *out_len = cursor - start;
+  line 9: return 0;
+
+The frozen body ONLY stops at whitespace (' ', '\t', '\n').
+It does NOT recognize alphabetic/digit/underscore transitions.
+
+The frozen fixture's Tests 01-04 describe "identifier"
+behavior (alpha/underscore followed by alphanumeric that ends
+at first non-identifier-character), but the body never had
+such recognition. Therefore Tests 01-04 are internally
+inconsistent with the frozen body.
+
+Tests 05-10 are internally consistent with the frozen body
+(whitespace-only stop, optional nonzero initial cursor).
+
+CLASSIFICATION
+==============
+
+  Test 01: foo
+    frozen in:  src = "fooABC", len = 6, cursor = 0
+    frozen out: (3, 3)
+    body yields: (6, 6)        <-- scans "fooABC" past "foo"
+                                    because body stops only on ws
+    CLASS: INCONSISTENT_WITH_FROZEN_BODY
+
+  Test 02: foo123
+    frozen in:  src = "foo123XY", len = 8, cursor = 0
+    frozen out: (6, 6)
+    body yields: (8, 8)        <-- scans past "foo123XY"
+    CLASS: INCONSISTENT_WITH_FROZEN_BODY
+
+  Test 03: _private
+    frozen in:  src = "_private ", len = 9, cursor = 0
+    frozen out: (8, 8)
+    body yields: (8, 8)        <-- coincidentally agrees
+                                    (trailing space makes it work)
+    CLASS: INTERNALLY_CONSISTENT_BUT_CAUSES_FALSE_PASS_IN_ORACLE
+           (the expected output matches body output by coincidence;
+           the input still relies on trailing whitespace which is
+           a different shape than "_private" the title suggests)
+
+  Test 04: X9
+    frozen in:  src = "X9!", len = 3, cursor = 0
+    frozen out: (2, 2)
+    body yields: (3, 3)        <-- scans past "X9!"
+    CLASS: INCONSISTENT_WITH_FROZEN_BODY
+
+  Test 05: immediate whitespace
+    frozen in:  src = " \t\nfoo", len = 6, cursor = 0
+    frozen out: (0, 0)
+    body yields: (0, 0)
+    CLASS: INTERNALLY_CONSISTENT
+
+  Test 06: end-of-input
+    frozen in:  src = "foo", len = 3, cursor = 0
+    frozen out: (3, 3)
+    body yields: (3, 3)
+    CLASS: INTERNALLY_CONSISTENT
+
+  Test 07: empty
+    frozen in:  src = "", len = 0, cursor = 0
+    frozen out: (0, 0)
+    body yields: (0, 0)
+    CLASS: INTERNALLY_CONSISTENT
+
+  Test 08: cursor offset
+    frozen in:  src = "abc foo", len = 7, cursor = 3
+    frozen out: (3, 0)         <-- whitespace at cursor
+    body yields: (3, 0)
+    CLASS: INTERNALLY_CONSISTENT (NONZERO-CURSOR PROBE)
+
+  Test 09: cursor offset 2
+    frozen in:  src = "abc foo", len = 7, cursor = 4
+    frozen out: (7, 3)         <-- foo after cursor
+    body yields: (7, 3)
+    CLASS: INTERNALLY_CONSISTENT (NONZERO-CURSOR PROBE)
+
+  Test 10: digit suffix
+    frozen in:  src = "abc123", len = 6, cursor = 0
+    frozen out: (6, 6)
+    body yields: (6, 6)
+    CLASS: INTERNALLY_CONSISTENT
+
+VERDICT TABLE
+=============
+
+  FROZEN_ORACLE_01_04         = INCONSISTENT_WITH_FROZEN_BODY
+  FROZEN_ORACLE_01_04_CLASS   = GOVERNANCE_RESIDUE
+  PRODUCTION_IMPACT           = NONE
+  BLOCKS_C6                   = NO
+
+  FROZEN_ORACLE_05_07         = CONSISTENT (PASS)
+  FROZEN_ORACLE_08_09         = CONSISTENT + NONZERO-CURSOR COVERAGE (PASS)
+  FROZEN_ORACLE_10            = CONSISTENT (PASS)
+
+The hcc-emitted subject, the C reference, and the binding
+fixture's expected outputs all agree on Tests 05-10. Tests
+08 and 09 specifically exercise the Option-W slot's PHI
+initialization from a non-zero incoming cursor, loop
+evolution from that initial value, `cursor - start`
+(IR_ISUB), and immediate-whitespace behavior at a non-zero
+cursor.
+
+GOVERNANCE RESIDUE
+==================
+
+Tests 01-04's frozen inputs and expected outputs are
+contradictory with the frozen function body. They describe
+identifier-character recognition that does NOT exist in
+this body. Per the new doctrine ("don't mutate green
+production code to make contradictory historical prose
+true"), this is classified as governance/oracle residue:
+
+  - the compiler is correctly emitting a body that stops
+    only at whitespace;
+  - the frozen prose tests 01-04 are wrong about what the
+    body does;
+  - fixing this would require a historical ACT (NOT in
+    this C5 scope) and either (a) rewriting the frozen
+    Tests 01-04 to use inputs that match the body or
+    (b) documenting the contradiction and proposing a
+    future ACT to decide whether to (a) update oracle
+    or (b) extend the body with identifier-character
+    recognition (much larger scope).
+
+This residue is non-blocking for C6 CLOSE because:
+  1. The frozen Tests 05-10 (which are consistent with
+     the frozen body) all PASS on the hcc-emitted
+     subject, on the C reference, and agree with the
+     frozen expected outputs.
+  2. Tests 08 and 09 specifically provide the strongest
+     runtime coverage of the Option-W slot machinery
+     (nonzero initial cursor).
+  3. No production mutation is indicated by this
+     residue; the contradiction is in the historical
+     prose, not in the code.

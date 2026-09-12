@@ -1,9 +1,10 @@
 ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 C5 EVIDENCE-B CLOSURE
-========================================================
+-------
 
 VERDICT: PASS
 
 IDENTITY
+-------
     branch               = main
     working tree         = clean
     entry predecessor    = c2ee39b (CORRECTION03 CLOSE)
@@ -12,20 +13,20 @@ IDENTITY
     toolchain            = LLVM 22 (llvm-as, opt) + cc (Apple clang 17)
 
 ROOT CAUSE / FINDING
-====================
+-------
 C4 IMPL-B added the production IR_PHI admission path (C4
 implementation obligations R1-R4 from §9.3). C5's job is
 to prove that this path actually works on the B0 binding
 fixture (ScanIdent, c1/scanident-binding-fixture.txt)
 end-to-end: hcc compiles, llvm-as accepts, opt --passes=
-verify passes, and the runtime oracle matches the
-binding fixture's expected outputs.
+verify passes, and the hcc-emitted binary produces the
+expected runtime outputs.
 
 C5 EVIDENCE-B does NOT introduce any new compiler code,
 any new IR_PHI variants, any Option-W gate widening, or
 any frontend SSA work. It only compiles + verifies +
-runtime-oracle-tests the EXISTING C4 production code
-against the binding fixture.
+runtime-tests the EXISTING C4 production code against
+the binding fixture.
 
 RED
 ===
@@ -43,7 +44,7 @@ not compile via hcc --emit-llvm because:
 C4 IMPL-B is the principal IMPL. C5 verifies it.
 
 IMPLEMENTATION
-==============
+-------
 The C5 evidence packet at evidence/.../c5/:
 
   scanident-fixture.HC          The ScanIdent binding
@@ -70,21 +71,55 @@ The C5 evidence packet at evidence/.../c5/:
   scanident-fixture.err         hcc stderr with
                                 CAPABILITY_COUNTERS line.
 
-  scanident-oracle.c            C reference implementation
-                                compiled with `cc`. Identical
-                                body to scanident-fixture.HC.
-                                Used as the runtime oracle
-                                because hcc's runtime path
-                                requires -jit / -run and a
-                                runtime fingerprint driver
-                                (out of scope for the B0
-                                substrate gate; the
-                                reference suffices to prove
-                                the binding-fixture oracle
-                                contract).
+  scanident-runtime-driver.c    Driver declaring external
+                                ScanIdent. Implementation
+                                is linked in from the
+                                hcc-emitted object file.
+                                Runs the FROZEN C1 binding
+                                fixture Tests 05-10
+                                (internally consistent
+                                subset; see frozen-binding-
+                                classification.txt).
 
-  scanident-oracle.stdout       10/10 binding tests PASS
-                                (live capture).
+  scanident-runtime.stdout      6/6 FROZEN binding tests
+                                PASS on the hcc-emitted
+                                subject binary (live capture).
+                                Includes the reviewer-
+                                prescribed nonzero-cursor
+                                probes T08 (cursor=3) and
+                                T09 (cursor=4).
+
+  scanident-comparison.c        Runs the C reference AND
+                                the hcc-emitted subject
+                                side-by-side on the same
+                                6 frozen vectors. Both must
+                                agree and match the frozen
+                                expected outputs.
+
+  scanident-comparison.stdout   6/6 FROZEN binding tests
+                                PASS (ref == sub == expected).
+                                T08/T09 explicitly marked
+                                _NZCURSOR (live capture).
+
+  scanident-oracle.c            Standalone C reference
+                                implementing the exact
+                                frozen body and running
+                                the same 6 frozen vectors.
+
+  scanident-oracle.stdout       6/6 FROZEN binding tests
+                                PASS (C reference only;
+                                live capture).
+
+  frozen-binding-classification.txt
+                                Per-test classification of
+                                frozen Tests 01-04 as
+                                INCONSISTENT_WITH_FROZEN_BODY
+                                with full reasoning, and
+                                Tests 05-10 as
+                                INTERNALLY_CONSISTENT
+                                (including the reviewer-
+                                prescribed nonzero-cursor
+                                coverage T08/T09).
 
   build.txt                     Reproduction procedure.
 
@@ -93,72 +128,36 @@ The C5 evidence packet at evidence/.../c5/:
 
   closure-truth.txt             This file.
 
-GATES
-=====
-  factory-append-only-test          STATUS=PASS  11/0
-  shell-loc-gate                    STATUS=PASS
-  gate-fast                         STATUS=PASS
-      diff-check                    STATUS=PASS
-      shell-syntax                  STATUS=PASS
-      doc-invariants                STATUS=PASS
-      large-file-guard              STATUS=PASS
-      factory-closure-status        STATUS=PASS
-  llvm-gep01-test                   STATUS=PASS  30/0
-  llvm-byte-memory01-test           STATUS=PASS  37/0
-  llvm-intops01-test                STATUS=PASS   4/0
-  ir-return-slot-forwarding01-test  STATUS=PASS   6/0
 SUBJECT CHAIN
-=============
-  hcc compile                  exit=0
-  llvm-as                      exit=0
-  opt --passes=verify          exit=0
-  clang -c subject IR          exit=0
-  cc -c runtime driver         exit=0
-  clang link driver + subject  exit=0
-  /tmp/scanident-runtime       exit=0 (10/10 PASS on hcc subject)
-  /tmp/scanident-comparison    exit=0 (10/10 PASS, ref == sub == exp)
-  C reference standalone      exit=0 (10/10 PASS)
-  PHI geometry observed        3 phi instructions:
-    - polyc.optionw.slot.6.0 (i64, 2 inputs) Option-W slot
-    - phi (i8, 2 inputs) inner || short-circuit
-    - phi7 (i8, 2 inputs) outer || short-circuit
-  SHAPE_DEPENDENT attribution observed: shape_dependent=19
-  C4 six-witness conservation (c4 witness fixtures): PASS
-    (verified separately in this build session via the
-    c4/witness-fixtures/*.HC compile chain; all 6/6
-    hcc=0, llvm-as=0, opt=0)
+-------
+  hcc compile                       exit=0
+  llvm-as                           exit=0
+  opt --passes=verify               exit=0
+  clang -c subject IR (aarch64)     exit=0
+  cc -c runtime driver              exit=0
+  clang link driver + subject       exit=0
+  /tmp/scanident-runtime            exit=0
+                                    6/6 FROZEN PASS on subject
+                                    (incl. T08, T09 nonzero-cursor)
+  /tmp/scanident-comparison         exit=0
+                                    6/6 FROZEN PASS (ref == sub)
+                                    (incl. T08, T09 _NZCURSOR)
+  /tmp/scanident-oracle             exit=0
+                                    6/6 FROZEN PASS (C ref only)
 
-VERDICT TABLE (the reviewer's prescribed separation)
-====================================================
-  SOURCE_HC_COMPILES         = PASS  (hcc=0)
-  LLVM_AS                    = PASS  (rc=0)
-  LLVM_VERIFY                = PASS  (opt --passes=verify rc=0)
-  REFERENCE_ORACLE           = PASS  (C reference, 10/10)
-  HCC_GENERATED_RUNTIME      = PASS  (hcc-emitted subject, 10/10)
-  REFERENCE_VS_SUBJECT       = PASS  (10/10 cases agree)
-  C4_WITNESS_CONSERVATION    = PASS  (6/6 C4 fixtures)
-  COMPILER_GATES             = PASS  (7/7 conservation gates)
+PHI geometry observed: 3 phi instructions:
+  - polyc.optionw.slot.6.0 (i64, 2 inputs) Option-W slot
+  - phi  (i8, 2 inputs) inner || short-circuit
+  - phi7 (i8, 2 inputs) outer || short-circuit
 
-
-
-SUBJECT CHAIN
-=============
-  hcc compile           exit=0
-  llvm-as               exit=0
-  opt --passes=verify   exit=0
-  runtime oracle (C)    exit=0 (10/10 PASS)
-  PHI geometry observed 3 phi instructions:
-    - polyc.optionw.slot.6.0 (i64, 2 inputs) Option-W slot
-    - phi (i8, 2 inputs) inner || short-circuit
-    - phi7 (i8, 2 inputs) outer || short-circuit
-  SHAPE_DEPENDENT attribution observed: shape_dependent=19
-  C4 six-witness conservation (c4 witness fixtures): PASS
-    (verified separately in this build session via the
-    c4/witness-fixtures/*.HC compile chain; all 6/6
-    hcc=0, llvm-as=0, opt=0)
+SHAPE_DEPENDENT attribution observed: shape_dependent=19
+C4 six-witness conservation (c4 witness fixtures): PASS
+  (verified separately in this build session via the
+  c4/witness-fixtures/*.HC compile chain; all 6/6
+  hcc=0, llvm-as=0, opt=0)
 
 SUBSTRATE FEATURE EXERCISE
-==========================
+-------
 The c1 binding fixture enumerates the required substrate
 features. Each is observed in the emitted IR:
 
@@ -177,7 +176,53 @@ features. Each is observed in the emitted IR:
                               (line 53)
   return 0                 -> ret i64 0 (final block)
 
-ALL features present in emitted IR.
+The Option-W slot's PHI initialization from a non-zero
+incoming cursor is exercised at runtime by the
+reviewer-prescribed witnesses T08 (cursor=3) and T09
+(cursor=4). Both PASS.
+
+ALL features present in emitted IR AND exercised at runtime.
+
+GATES
+=====
+  factory-append-only-test          STATUS=PASS  11/0
+  shell-loc-gate                    STATUS=PASS
+  gate-fast                         STATUS=PASS
+      diff-check                    STATUS=PASS
+      shell-syntax                  STATUS=PASS
+      doc-invariants                STATUS=PASS
+      large-file-guard              STATUS=PASS
+      factory-closure-status        STATUS=PASS
+  llvm-gep01-test                   STATUS=PASS  30/0
+  llvm-byte-memory01-test           STATUS=PASS  37/0
+  llvm-intops01-test                STATUS=PASS   4/0
+  ir-return-slot-forwarding01-test  STATUS=PASS   6/0
+
+VERDICT TABLE (per reviewer's prescribed separation)
+-------
+  SOURCE_HC_COMPILES         = PASS  (hcc=0)
+  LLVM_AS                    = PASS  (rc=0)
+  LLVM_VERIFY                = PASS  (opt --passes=verify rc=0)
+  REFERENCE_ORACLE           = PASS  (C reference, 6/6 frozen)
+  HCC_GENERATED_RUNTIME      = PASS  (hcc-emitted subject, 6/6)
+  REFERENCE_VS_SUBJECT       = PASS  (6/6 cases agree)
+  NONZERO_CURSOR_BINDING     = PASS  (T08, T09 frozen values)
+  C4_WITNESS_CONSERVATION    = PASS  (6/6 C4 fixtures)
+  COMPILER_GATES             = PASS  (7/7 conservation gates)
+
+FROZEN ORACLE CLASSIFICATION (per reviewer)
+-------
+  FROZEN_ORACLE_05_07         = CONSISTENT (PASS)
+  FROZEN_ORACLE_08_09         = CONSISTENT + NONZERO-CURSOR
+                                COVERAGE (PASS)
+  FROZEN_ORACLE_10            = CONSISTENT (PASS)
+  FROZEN_ORACLE_01_04         = INCONSISTENT_WITH_FROZEN_BODY
+  FROZEN_ORACLE_01_04_CLASS   = GOVERNANCE_RESIDUE
+  PRODUCTION_IMPACT           = NONE
+  BLOCKS_C6                   = NO
+
+(See frozen-binding-classification.txt for the full
+classification of each test with reasoning.)
 
 SCOPE
 =====
@@ -187,28 +232,38 @@ SCOPE
   NO frontend SSA work
   NO historical correction cleanup
   NO Factory-doctrine repair
+  NO mutation to satisfy contradictory historical prose
+  (the frozen Tests 01-04 contradiction is classified as
+   governance residue; not fixed in C5)
 
 RESIDUE
 -------
 P2  A future ACT could add a runtime-fingerprint driver
     that compiles via hcc --emit-llvm by using only
     Option-W-eligible arithmetic in Main(). The current
-    C5 evidence uses a C reference oracle because the
-    fingerprint pattern triggered Option-W rejection of
-    mutable locals not in {IR_STORE, IR_IADD, IR_ISUB}.
-    The substrate semantics are identical; only the
-    driver construction differs.
+    C5 evidence uses a driver linking the hcc-emitted
+    subject with a C harness that declares ScanIdent
+    externally, which is the correct separation of
+    concerns for the substrate semantics under test.
+    The fingerprint pattern triggered Option-W rejection
+    of mutable locals not in {IR_STORE, IR_IADD, IR_ISUB}.
 
 P2  The c1 binding fixture's Tests 01-04 input-vs-expected
     pairs (e.g. "fooABC -> 3,3") are not internally
-    consistent with the documented body (which scans
-    identifiers but stops only on whitespace). The C5
-    oracle uses self-contained inputs of the expected
-    identifier length (e.g. "foo" -> 3,3). The binding
-    fixture's body is unchanged and remains the binding
-    contract for downstream BOOTSTRAP01.
+    consistent with the documented body (which stops
+    only on whitespace, not on alpha transitions). The
+    C5 oracle uses the FROZEN Tests 05-10 inputs which
+    ARE consistent with the frozen body. This contradiction
+    in the historical prose is non-blocking governance
+    residue: a future ACT could either (a) rewrite the
+    frozen Tests 01-04 inputs to match the body or
+    (b) extend the body with identifier-character
+    recognition (much larger scope, requires separate
+    authorization). The C5 packet now classifies the
+    contradiction explicitly rather than silently
+    substituting inputs.
 
 NEXT ACT
-========
+-------
   C6 CLOSE (verdict per outcome)
   BOOTSTRAP01 (mechanical translation of B0 mission freeze)
