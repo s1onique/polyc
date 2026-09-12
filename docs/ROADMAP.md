@@ -894,6 +894,99 @@ NOT disproved — both features remain NOT REQUIRED. The
 substrate gap is in mutable-local emission, not in
 aggregate representation.
 
+#### ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 status (RED at C1)
+
+```text
+OPTION-W-OUT-PARAM01  ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01
+  ENTRY   = 55389444f96b99d297b44962cacbbc5fce657adf
+            (B0-SUBSTRATE-RECON01 C3 CLOSE)
+  C1 RED  = 982dfa3c6dbd26aa0899a047aabfb33324c2fa55
+            (this commit)
+  NEXT    = C2 IMPL-A (seam A: widen read envelope)
+
+  CORRECTED ARCHITECTURAL INFERENCE
+    The B0 recon's RC-A/RC-B framing collapsed TWO seams:
+
+    Seam A  llOptionW_ReadsAreLowerable rejects
+            IR_STORE_DEREF as a read envelope opcode.
+            Blocks every multi-def local consumed via
+            *out = local.
+
+    Seam B  llLowerInstr lacks a `case IR_PHI:` arm.
+            PHIs in the neutral IR are produced ONLY by
+            the frontend's logical-operator short-circuit
+            lowering (src/ir.c:535/566/592). They carry
+            IR_VAL_TMP (I8), never IR_VAL_LOCAL.
+
+    The recon's "while-loop produces IR_PHI" attribution
+    was false. Empirical G2_minimal.HC shows a while loop
+    with multi-def local feeding ret ALREADY PASSES with
+    mem2reg-placed LLVM PHI; the neutral IR has no PHI.
+
+  PHI OWNERSHIP (corrected doctrine)
+    FRONTEND_SSA_RECONSTRUCTION = NO   (unchanged)
+    PHI_OWNER_LVAR              = LLVM mem2reg  (unchanged)
+    PHI_OWNER_SHORT_CIRCUIT     = LLVM backend LLVMBuildPHI
+                                            (NEW seam B arm)
+
+  C1 EVIDENCE FREEZE
+    three-geometries.txt           G1, G2, G3 with IR/llvm dumps
+    store-deref-operand-freeze.txt ins->dst=ptr, ins->r1=value
+    phi-provenance-freeze.txt      IR_PHI creators, IR_VAL_TMP only
+    option-w-widening-contract.txt C2-A pre-authorised diff
+    probe-matrix.txt               12 records (P1-P12)
+    scanident-binding-fixture.txt  10-test runtime oracle
+    + g1/g2/g3 .ir.txt and .llvm.stderr.txt captures
+
+  CONSERVATION GATES (post-C1; all GREEN)
+    llvm-gep01-test                 30/0 PASS
+    llvm-byte-memory01-test         37/0 PASS
+    llvm-intops01-test               4/0 PASS
+    llvm-spike-test                 18/0 PASS (HCC_INSTALL_DIR)
+    ir-return-slot-fwd01-test        6/0 PASS
+    llvm-cap-table-verifier         PASS
+    shell-loc-gate                  PASS
+    factory-v2-commit-msg-check     PASS (C1 trailer)
+    factory-append-only-test        11/0 PASS
+    factory-closure-status          PASS (PAIR_OK=6)
+    gate-fast                       PASS
+
+  ENVIRONMENTAL (per expert review)
+    harness-evidence-isolation-test = ENVIRONMENTALLY UNAVAILABLE
+                                      (pre-existing host gap:
+                                       /usr/local/include/tos.HH
+                                       not installed)
+
+    Per the recon's expert review: "final state green across
+    the board" is REPLACED by
+      functional compiler gates = GREEN
+      harness-evidence-isolation = ENVIRONMENTALLY UNAVAILABLE
+
+  COMMIT TOPOLOGY
+    C1 RED        (this commit)
+    C2 IMPL-A     (seam A only)
+    C3 EVIDENCE-A (verify seam A; report seam B status)
+    HARD STOP     (if seam B remains the only blocker)
+    C4 IMPL-B     (seam B dispatch arm; ONLY IF frozen contract
+                   covers it without scope expansion)
+    C5 EVIDENCE-B (ScanIdent compiles + verifies + runs)
+    C6 CLOSE      (verdict per outcome: PASS / HALT_SECOND_SEAM
+                   / HALT_SUBSTRATE_GAP_NAMED)
+```
+
+The recon's ROADMAP transition above is REFINED to:
+
+```text
+  ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02  CLOSED PASS
+  ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME02        CLOSED PASS
+  ACT-POLYC-LLVM-GEP01                         CLOSED PASS
+  ACT-POLYC-TOOLING-SHELL-INVENTORY01          CLOSED PASS
+  ACT-POLYC-B0-SUBSTRATE-RECON01               CLOSED HALT_SUBSTRATE_GAP
+  ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01          IN PROGRESS (RED)  (this ACT)
+  (seam A: read envelope; seam B: short-circuit PHI dispatch)
+  ACT-POLYC-BOOTSTRAP01                        waits for OUT-PARAM01 PASS
+```
+
 
 ```
 
