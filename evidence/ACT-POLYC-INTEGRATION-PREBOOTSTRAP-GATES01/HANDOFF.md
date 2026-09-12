@@ -77,9 +77,17 @@ HANDOFF v2:    b326bb8 (reviewer-revised: two-layer model; Option B
                 REJECTED; Option C promoted; commit count
                 corrected; RED + GREEN contract added)
 COUNT FIX:     e893b16 (correct commit count after v2 lands)
-FINAL_HEAD:    e893b16
+FINAL_HEAD:    (this commit)
 WORKTREE:      clean
-COMMITS:       9 new commits on main since 8f398be (append-only).
+COMMITS:       N new commits on main since 8f398be (append-only).
+NOTE:          N is mechanically `git log --oneline 8f398be..HEAD |
+               wc -l` at the time the closure handoff is read. Do
+               NOT record N in this file as a fixed integer; any
+               fixed N goes stale the moment this HANDOFF itself
+               becomes a commit. The reviewer (Mach-O/arm64
+               linker engineer) flagged this as governance residue
+               and explicitly rejected opening a correction ACT
+               for it.
 ```
 
 ## ROOT CAUSE / FINDING
