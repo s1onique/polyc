@@ -1,0 +1,20 @@
+C4 CLOSE patch hygiene (per ACT §24)
+=====================================
+
+git diff --check on the GEP01 commit range:
+
+  git diff --check 8d04aae..HEAD -- src/ scripts/
+  rc=0
+
+No trailing-whitespace issues.
+No whitespace-only damage.
+
+Commit topology:
+
+  8d04aae  ACT-POLYC-LLVM-GEP01 C1 RED -- byte-indexing opcode frozen as IR_IADD
+  7345cc9  ACT-POLYC-LLVM-GEP01 C2 IMPL: B0 byte-indexing GEP01 lowered
+  853e6f8  ACT-POLYC-LLVM-GEP01 C3 EVIDENCE: B0 byte-indexing GEP01 proven
+
+Each commit carries the matching ACT/ACT-Phase trailers
+on the last line. No empty commit / merge / fixup commits.
+

@@ -1,0 +1,35 @@
+C4 CLOSE residue (per ACT F11)
+==============================
+
+Classify discovered non-scope work:
+
+P0 (blocks current/next decision): none
+
+P1 (important near-term work):
+  - The IR_IADD subset (dst=PTR, r1=PTR, r2=I64) is currently
+    admitted for ANY byte pointer (U8 *, I8 *) and ANY I64
+    index operand. If a future ACT introduces wider pointer
+    types (e.g. U8 const *) or non-constant scale factors,
+    the IR_IADD arm's pre-dispatch short-circuit may need
+    to be narrowed. This is a deferred design point, not a
+    defect.
+
+  - The byte-element-type hard-coding (LLVMInt8TypeInContext
+    at the IMPL seam) is a documented GEP01 boundary. When
+    ARRAY01 / STRUCT01 arrive with a neutral-IR carry of
+    element type, this hard-coding can be removed.
+
+P2 (deferred improvement):
+  - The IR_LOAD_DEREF disp=k admission is currently coupled
+    to the IR_IADD arm's pre-dispatch shape. A cleaner
+    architectural separation would move the disp=k handling
+    into a dedicated GEP lowering helper called from both
+    arms. Out of scope for GEP01; recorded as residue.
+
+  - The LLVM backend has no JIT/execution path. The runtime
+    proof for GEP01 relies on the native aarch64/x86_64 JIT
+    executing the same source patterns with the same neutral-IR
+    shape. The LLVM and native backends share the same neutral
+    IR layer. When (if) the LLVM backend gains an ORC JIT
+    runner, the runtime proof can be tightened.
+

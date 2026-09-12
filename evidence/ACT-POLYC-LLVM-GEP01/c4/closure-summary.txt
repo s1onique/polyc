@@ -1,0 +1,53 @@
+C4 CLOSE closure summary (per ACT §36)
+=======================================
+
+VERDICT = PASS
+
+ROOT CAUSE
+  B0 could read a byte only at an already-computed pointer.
+  It lacked typed indexed address computation for walking an
+  input byte buffer.
+
+FIX
+  The frozen byte-index neutral opcode (IR_IADD with
+  dst=PTR, r1=PTR, r2=I64) is lowered through LLVM plain
+  getelementptr with:
+    element type = i8
+    base = pointer
+    index = I64
+    index count = 1
+  The result remains a pointer. Existing IR_LOAD_DEREF
+  performs the subsequent byte load.
+
+  The implementation is bounded to src/llvm-backend.c and
+  src/llvm-backend.h:
+    - new llGepShapeSupported predicate (the frozen shape).
+    - IR_IADD arm pre-dispatch short-circuit emits
+      LLVMBuildGEP2(I8, base, [idx]).
+    - IR_LOAD_DEREF arm admits disp=k for byte access type
+      (the IR's pre-fusion fold) and emits
+      LLVMBuildGEP2(I8, base, [const]) + LLVMBuildLoad2.
+    - new LLVM_BACKEND_UNSUPPORTED_GEP_SHAPE diagnostic
+      macro (safety-net only; not expected to fire).
+    - NO edits to src/llvm-backend-cap.c.
+    - NO edits to parser / typechecker / IR optimizer.
+    - NO new neutral-IR opcode.
+
+SUPPORTED_GEP_SHAPE
+  byte pointer + one I64 index only.
+
+INBOUNDS
+  NOT asserted.
+
+INTEGERIZED POINTER ARITHMETIC
+  NONE.
+
+ARRAY / STRUCT SUPPORT
+  NONE.
+
+BYTE STORE
+  remains DEFERRED_NOT_B0_BLOCKING.
+
+VERDICT = PASS
+
+NEXT = fresh B0 substrate recon

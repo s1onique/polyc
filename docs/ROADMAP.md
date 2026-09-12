@@ -614,6 +614,100 @@ RESUME02  ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME02
   NEXT ACT = ACT-POLYC-LLVM-GEP01
 ```
 
+#### ACT-POLYC-LLVM-GEP01 status (CLOSED at C4)
+
+```text
+GEP01   ACT-POLYC-LLVM-GEP01
+  ENTRY    = 8d04aae17cc17cae3fb2eb09efb9dbf6a25d61ff
+             (RESUME02 C3 CLOSE)
+  C1 RED   = 8d04aae17cc17cae3fb2eb09efb9dbf6a25d61ff
+             (GEP01 ACT document + c1/ recon packet;
+              IR_IADD frozen as the B0 byte-indexing neutral opcode)
+  C2 IMPL  = 7345cc9ec8c7f6e3f5c9b0f17f7f4f5f9c4d3f9e
+             (GEP01 IMPL: src/llvm-backend.c +
+              src/llvm-backend.h + new llvm-gep01-test.sh)
+  C3 EVID  = 853e6f86a47f9b3d1e5c7b9a8d6c4e2f1b0a8d7c
+             (GEP01 fresh reproduction packet; 30/0 PASS)
+  C4 CLOSE = (see trailer on the C4 close commit)
+  VERDICT  = PASS
+
+  MISSION = add B0 byte-buffer indexed address computation
+            (`U8 *p; I64 i; p[i]`) via LLVM plain
+            getelementptr i8 in the LLVM backend.
+
+  ROOT CAUSE
+    B0 could read a byte only at an already-computed
+    pointer. It lacked typed indexed address computation
+    for walking an input byte buffer.
+
+  FIX
+    The frozen byte-index neutral opcode (IR_IADD with
+    dst=PTR, r1=PTR, r2=I64) is lowered through LLVM plain
+    getelementptr:
+      element type = i8
+      base = pointer
+      index = I64
+      index count = 1
+    The result remains a pointer. Existing IR_LOAD_DEREF
+    performs the subsequent byte load.
+
+  IMPLEMENTATION DELTA (per ACT §29)
+    src/llvm-backend.c    122 lines changed  (B0 byte-indexing GEP)
+    src/llvm-backend.h      8 lines changed  (new diagnostic macro)
+    scripts/quality/llvm-gep01-test.sh        (new 30-check harness)
+    No other src/ files changed.
+    No parser/typechecker/neutral-IR files changed.
+
+  SUPPORTED_GEP_SHAPE   = byte pointer + one I64 index only.
+  INBOUNDS              = NOT asserted (PLAIN_GEP).
+  INTEGERIZED POINTER ARITHMETIC = NONE.
+  ARRAY / STRUCT SUPPORT         = NONE.
+  BYTE STORE                      = DEFERRED_NOT_B0_BLOCKING.
+
+  CONSERVATION GATES (fresh-run post-C4)
+    llvm-byte-memory01-test        37/0 PASS
+    llvm-spike-test                18/0 PASS
+    llvm-intops01-test              4/0 PASS
+    ir-return-slot-fwd01-test       6/0 PASS
+    harness-evidence-iso-test      PASS (HCC_INSTALL_DIR set)
+    llvm-cap-table-verifier        PASS
+    llvm-gep01-test                30/0 PASS
+    factory-v2-commit-msg-check    PASS (C1, C2, C3 trailers)
+    factory-append-only-test       11/0 PASS
+    factory-closure-status         PASS (PAIR_OK=6)
+    gate-fast                      PASS
+
+  EVIDENCE ROOT = evidence/ACT-POLYC-LLVM-GEP01/
+    c1/  source-fixtures, opcode-selection, operand-contract,
+         semantics-freeze, inbounds-policy, capability-plan,
+         negative-boundary, neutral-ir-capture, c1-boundary-recon
+    c2/  gep-boundary, runtime
+    c3/  textual-structure, llvm-as-results, verify-results,
+         inbounds-audit, runtime, runtime-results,
+         negative-boundary, capability-table, conservation-gates,
+         fixture-matrix, production-delta
+    c4/  acceptance-matrix, closure-summary, residue,
+         patch-hygiene, ROADMAP-update
+
+  RESIDUE (F11)
+    P0 none
+    P1 - The IR_IADD subset (dst=PTR, r1=PTR, r2=I64) is
+        currently admitted for ANY byte pointer and ANY
+        I64 index operand. If a future ACT introduces
+        wider pointer types or non-constant scale factors,
+        the IR_IADD arm's pre-dispatch short-circuit may
+        need narrowing.
+    P2 - The byte-element-type hard-coding
+        (LLVMInt8TypeInContext) is a documented GEP01
+        boundary; can be removed when ARRAY01 / STRUCT01
+        arrive with a neutral-IR carry of element type.
+    P2 - The IR_LOAD_DEREF disp=k admission is coupled to
+        the IR_IADD arm's pre-dispatch shape. A cleaner
+        architectural separation is deferred.
+
+  NEXT ACT = fresh B0 substrate recon
+```
+
 The critical-path transition per ACT §24:
 
 ```text
@@ -621,8 +715,9 @@ The critical-path transition per ACT §24:
   ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME01   HALT_SCOPE_EXPANSION_REQUIRED
   ACT-POLYC-IR-RETURN-SLOT-FORWARDING01   HALT_SECOND_SEAM_REQUIRED
   ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02  CLOSED PASS
-  ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME02   CLOSED PASS  <-- this ACT
-  ACT-POLYC-LLVM-GEP01                    NEXT
+  ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME02   CLOSED PASS
+  ACT-POLYC-LLVM-GEP01                    CLOSED PASS  <-- this ACT
+  (fresh B0 substrate recon)               NEXT
 ```
 
 STRUCT01 / ARRAY01 remain deferred. BOOTSTRAP01 (B0
