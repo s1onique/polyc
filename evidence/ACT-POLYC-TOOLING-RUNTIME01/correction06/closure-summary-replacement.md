@@ -26,7 +26,8 @@ verdict          = PASS_WITH_HYGIENE_RESIDUE
 To obtain the closing commit's SHA:
 
 ```sh
-git log --grep='^ACT: ACT-POLYC-TOOLING-RUNTIME01-CORRECTION06$' \
+git log --all-match \
+        --grep='^ACT: ACT-POLYC-TOOLING-RUNTIME01-CORRECTION06$' \
         --grep='^ACT-Phase: CLOSE$' --pretty=format:'%H'
 ```
 
@@ -34,7 +35,8 @@ To obtain the CORRECTION05 closing commit's SHA (which the
 F-GIT-IDENTITY doctrine forbids embedding here):
 
 ```sh
-git log --grep='^ACT: ACT-POLYC-TOOLING-RUNTIME01-CORRECTION05$' \
+git log --all-match \
+        --grep='^ACT: ACT-POLYC-TOOLING-RUNTIME01-CORRECTION05$' \
         --grep='^ACT-Phase: CLOSE$' --pretty=format:'%H'
 ```
 

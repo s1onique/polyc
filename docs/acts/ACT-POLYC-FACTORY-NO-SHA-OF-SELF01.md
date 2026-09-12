@@ -150,7 +150,8 @@ The closing commit's SHA is NOT pinned inside this ACT
 document. Query it with:
 
 ```sh
-git log --grep='^ACT: ACT-POLYC-FACTORY-NO-SHA-OF-SELF01$' \
+git log --all-match \
+        --grep='^ACT: ACT-POLYC-FACTORY-NO-SHA-OF-SELF01$' \
         --grep='^ACT-Phase: CLOSE$' --pretty=format:'%H'
 ```
 

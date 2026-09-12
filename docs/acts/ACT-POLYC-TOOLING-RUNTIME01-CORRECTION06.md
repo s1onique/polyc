@@ -150,7 +150,8 @@ The closing commit's SHA is NOT pinned inside this document.
 Query it with:
 
 ```sh
-git log --grep='^ACT: ACT-POLYC-TOOLING-RUNTIME01-CORRECTION06$' \
+git log --all-match \
+        --grep='^ACT: ACT-POLYC-TOOLING-RUNTIME01-CORRECTION06$' \
         --grep='^ACT-Phase: CLOSE$' --pretty=format:'%H'
 ```
 

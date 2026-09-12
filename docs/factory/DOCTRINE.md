@@ -455,12 +455,16 @@ any other Markdown artifact that is committed to a Git commit
 may claim the SHA of the commit that contains it.
 
 This rule is structurally necessary: Git's object model
-content-addresses commits from their tree. Embedding the SHA
-of the containing commit inside that commit would mutate the
-tree, mutate the SHA, and create a self-referential paradox.
-Humans and tools can query the SHA from Git history after the
-fact; the SHA has no business being predicted inside the
-commit it identifies.
+derives a commit's object ID from the complete commit
+object — the tree it points to, plus parent references,
+author/committer identities, timestamps, and the commit
+message. If a tracked file tried to embed the future commit
+ID of the commit containing that file, the file would change
+the tree, which would change the commit object, which would
+change the commit ID — a self-referential paradox. Humans
+and tools can query the SHA from Git history after the fact;
+the SHA has no business being predicted inside the commit
+it identifies.
 
 ### Forbidden patterns
 
@@ -506,9 +510,41 @@ If a human or downstream tool needs the SHA of the closure
 commit, they query Git:
 
 ```sh
-git log --grep='^ACT: ACT-POLYC-FOO01-CORRECTION03$' \
-        --grep='^ACT-Phase: CLOSE$' --pretty=format:'%H'
+git log --all-match \
+        --grep='^ACT: ACT-POLYC-FOO01-CORRECTION03$' \
+        --grep='^ACT-Phase: CLOSE$' \
+        --pretty=format:'%H'
 ```
+
+**Important: Git `--grep` is OR by default.** With multiple
+`--grep` flags, Git selects commits matching **any** of the
+patterns (OR), not all (AND). The flag that switches to AND
+is `--all-match`. Without it, the recipe above would return
+every commit carrying `ACT-Phase: CLOSE` in the entire
+history, regardless of ACT id. For a non-existent ACT id,
+the naive recipe still returns N matches (the entire CLOSE
+history) — which defeats the whole "Git-queryable identity"
+idea.
+
+**Cardinality check.** Where the Factory contract expects
+exactly one CLOSE per ACT (the canonical Cardinality-1
+invariant for closure identity), consumers SHOULD verify
+cardinality explicitly rather than silently taking `-1`:
+
+```sh
+matches=$(git log --all-match \
+                  --grep='^ACT: ACT-POLYC-FOO01-CORRECTION03$' \
+                  --grep='^ACT-Phase: CLOSE$' \
+                  --pretty=format:'%H' | wc -l)
+test "$matches" -eq 1 || {
+    echo "EXPECTED 1 CLOSE COMMIT FOR ACT-POLYC-FOO01-CORRECTION03," \
+         "GOT $matches" >&2
+    exit 1
+}
+```
+
+A cardinality != 1 is itself an invariant violation worth
+diagnosing, not silently truncating.
 
 ### Strict F14 reading for corrections
 
