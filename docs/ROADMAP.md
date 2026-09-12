@@ -1022,13 +1022,36 @@ OPTION-W-OUT-PARAM01  ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01
                                 C4_IMPL_B_AUTH = TRUE reaffirmed;
                                 C4 currently READY (P1-P6 all
                                 closed))
+    C3.5 RED      this commit (evidence-predicate + identity:
+                                §9.5.1 leak-predicate correction
+                                       (P0-1): leak = curr &&
+                                       !producer_authorized;
+                                       LEAK_ROWS=2 (FCMP+PARAM);
+                                §9.5.2 identity preservation (P0-2):
+                                       ir_in vs llvm_in boundary;
+                                       def_map indexed by ir_in;
+                                       producer->dst == ir_in;
+                                §9.5.3 unique-definition (P1):
+                                       lldmSet halts on duplicate;
+                                mechanical witness:
+                                  witness-leak (corrected):
+                                    LEAK_ROWS=2 + matrix OK;
+                                C3.4 witness-leak SUPERSEDED
+                                  (inverted predicate);
+                                P2 hygiene: NO witness binaries;
+                                C4_IMPL_B_AUTH = TRUE reaffirmed;
+                                C4 currently READY (P1-P7 all
+                                closed))
     C4 IMPL-B     (next; strengthened PHI shape contract
-                                + §9.4 placement-corrected zext
+                                + §9.5 placement-corrected zext
                                 + §9.3.1 lookup-only PI-1
                                 + §9.3.2 per-PHI counter
                                 + §9.4.1 producer-binding seam
+                                + §9.5.2 ir_in/llvm_in identity
+                                + §9.5.3 unique-definition check
                                 + PI-2/PI-3-narrow assertions
-                                + producer-opcode check)
+                                + producer-opcode check
+                                + corrected leak-predicate harness)
     C5 EVIDENCE-B (ScanIdent compiles + verifies + runs)
     C6 CLOSE      (final verdict)
 
@@ -1061,6 +1084,10 @@ OPTION-W-OUT-PARAM01  ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01
          B3.4 mechanics (P/R/E split)   CLOSED   (C3.3 §9.3.4)
          B3.5 producer-opcode binding   CLOSED   (C3.4 §9.4.1-§9.4.2)
          B3.6 counter vs halting        CLOSED   (C3.4 §9.4.3)
+         B3.7 leak-predicate + identity CLOSED   (C3.5 §9.5.1-§9.5.3)
+              (corrected predicate +
+               ir_in/llvm_in boundary +
+               unique-definition contract)
 
   C2-A.1 RULE 5 REDEFINITION:
     Old: V feeds return (return-sink only)

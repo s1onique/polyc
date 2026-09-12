@@ -1,0 +1,33 @@
+C3.5 PRODUCER-LEAK WITNESS (CORRECTED PREDICATE)
+
+Discriminator definitions:
+  current (C3.3 leaky):  proceeds iff LLVMTypeOf(v) == i1
+  producer_authorized:   has_producer && producer_op == IR_ICMP
+  corrected (C3.4):      proceeds iff producer_authorized
+  leak:                  curr_accepts && !producer_authorized
+
+=== OBSERVED MATRIX ===
+
+case                   width   prod    expected  observed  corrected leak?
+---------------------- ------- ------- --------- --------- --------- -------
+phi_icmp_producer      1       IR_ICMP ACCEPT    ACCEPT    ACCEPT    no
+phi_fcmp_producer      1       IR_FCMP ACCEPT    ACCEPT    reject    YES
+phi_param_i1           1       (none)  ACCEPT    ACCEPT    reject    YES
+phi_no_zext_i8         8       (none)  reject    reject    reject    no
+
+=== VERDICT ===
+Leak rows (curr accepts AND !producer_authorized): 2
+Required leak rows:                                2
+Matrix matches required shape:                     YES
+
+OUTCOME_F_PRODUCER_LEAK_CONFIRMED
+
+Interpretation for the C4 IR_PHI dispatch arm:
+  - The CURRENT discriminator (LLVMTypeOf == i1)
+    leaks EXACTLY 2 cases: IR_FCMP-produced i1
+    and function-parameter i1.
+  - The CORRECTED discriminator (producer == IR_ICMP)
+    rejects both leaks.
+  - The predicate `leak = curr_accepts &&
+    !producer_authorized` is the correct semantic,
+    NOT 'witness matches its own expectations'.

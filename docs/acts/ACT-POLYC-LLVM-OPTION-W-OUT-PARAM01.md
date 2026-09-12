@@ -1304,6 +1304,222 @@ C3.4     AUTH=true    CURRENT      (P1-P6 all closed)
 
 ---
 
+## 9.5 C3.5 RED: producer-binding evidence + identity preservation
+
+The C3.4 contract correction was architecturally correct but
+had TWO P0 defects that should be fixed before production code
+is written.
+
+### §9.5.1 Leak predicate correction (P0-1)
+
+C3.4's `witness-leak` had an inverted `leak` predicate. Its
+`leak` measured "witness matches its own hard-coded expected
+table" rather than "current discriminator leaks an unauthorized
+producer":
+
+```c
+/* C3.4 (WRONG): tautological */
+leak = (curr_accepts != expected_current) ||
+       (corr_accepts != expected_corrected);
+```
+
+A witness that always returns its expected values is a
+tautology, not a leak. C3.4's captured output even shows the
+contradiction:
+
+```text
+phi_fcmp_producer   ... curr=ACCEPT corr=reject leak? no
+phi_param_i1        ... curr=ACCEPT corr=reject leak? no
+Leak rows: 0
+OUTCOME_F_PRODUCER_LEAK_CONFIRMED
+```
+
+"OUTCOME_F_PRODUCER_LEAK_CONFIRMED" with "Leak rows: 0" is
+internally contradictory. The witness was confirming the
+absence of a leak, not the leak itself.
+
+C3.5 freezes the CORRECTED predicate:
+
+```c
+/* C3.5 (CORRECT): direct semantic check */
+int producer_authorized =
+    has_producer && producer_op == IR_ICMP;
+int leak = curr_accepts && !producer_authorized;
+```
+
+This is independent of the witness's own expectations. The
+leak exists iff the current discriminator accepts a value
+whose producer is NOT authorized by the §9.4 contract.
+
+Required matrix (4 cases):
+
+| case                  | curr     | producer_authorized | leak? |
+|-----------------------|----------|---------------------|-------|
+| `phi_icmp_producer`   | ACCEPT   | YES                 | NO    |
+| `phi_fcmp_producer`   | ACCEPT   | NO                  | YES   |
+| `phi_param_i1`        | ACCEPT   | NO                  | YES   |
+| `phi_no_zext_i8`      | direct   | (not normalised)    | NO    |
+
+`LEAK_ROWS` must equal 2. The process exits 0 ONLY if the
+observed matrix is EXACTLY as above.
+
+### §9.5.2 Identity preservation (P0-2)
+
+C3.4's pseudocode used a single `v` variable whose domain was
+ambiguous between `IrValue *` (neutral IR) and `LLVMValueRef`
+(LLVM IR). The prose said "v is the previously-lowered
+incoming value" (an `LLVMValueRef`), but then called
+`irVarId(v)` to index the def_map (which expects an `IrValue *`).
+
+C3.5 freezes the identity boundary:
+
+```c
+for each incoming pair (ir_in, ir_pred):
+    /* TWO identities, always kept distinct */
+    IrValue     *ir_in   = pair->ir_value;       /* NEUTRAL */
+    LLVMValueRef llvm_in = llLowerValue(lc, ir_in); /* LLVM */
+
+    /* §9.3.1: lookup-only predicate, NOT get-or-create */
+    LLVMBasicBlockRef pred_bb = llbmGet(&lc->blocks,
+                                        ir_pred->id);
+    if (!pred_bb)
+        HALT_PHI_EDGE_MATERIALIZATION_REQUIRED;
+
+    /* discriminator (TYPE check on LLVM, PRODUCER
+       check on NEUTRAL) */
+    if (LLVMTypeOf(llvm_in) ==
+        LLVMInt8TypeInContext(lc->ctx)) {
+        v = llvm_in;
+    }
+    else if (LLVMTypeOf(llvm_in) ==
+             LLVMInt1TypeInContext(lc->ctx)) {
+        /* i1 incoming: producer MUST be IR_ICMP */
+        IrInstr *producer =
+            lldmGet(&lc->def_map, irVarId(ir_in));
+        if (!producer ||
+            producer->op != IR_ICMP ||
+            producer->dst != ir_in) {       /* ir_in, not llvm_in */
+            HALT_PHI_TYPE_CONTRACT_REQUIRED;
+        }
+        /* PI-2 / PI-3 / build-position discipline
+           (unchanged from C3.4) */
+        ...
+        v = LLVMBuildZExt(lc->bld, llvm_in,
+              LLVMInt8TypeInContext(lc->ctx),
+              "phi_icmp_zext");
+        ...
+    }
+    else {
+        HALT_PHI_TYPE_CONTRACT_REQUIRED;
+    }
+
+    add (v, pred_bb) to PHI incoming list
+```
+
+Two identities are now explicit:
+
+* `ir_in`   : `IrValue *`    (neutral IR; used for def_map
+                              lookup, producer->dst
+                              comparison, source of truth)
+* `llvm_in` : `LLVMValueRef` (LLVM IR; used for type check,
+                              zext emission, PHI incoming
+                              value)
+
+The def_map MUST be indexed by `irVarId(ir_in)`, NEVER by any
+derived property of `llvm_in`. The `producer->dst` comparison
+uses `ir_in` (the `IrValue` pointer), never a re-extracted id
+from the `LLVMValueRef`.
+
+### §9.5.3 Unique-definition contract (P1)
+
+C3.4 §9.4.1 silently overwrote a prior def_map entry if the
+same `IrValue` id was defined twice:
+
+```c
+/* C3.4 (WRONG): silent overwrite */
+if (ins->dst) {
+    lldmSet(&lc->def_map, irVarId(ins->dst), ins);
+}
+```
+
+For `IR_VAL_TMP` (the bounded short-circuit geometry), the
+neutral IR has SSA-uniqueness: each tmp is defined exactly
+once. Silently overwriting a def_map entry defeats the
+producer provenance check.
+
+C3.5 freezes the unique-definition contract:
+
+```c
+static void lldmSet(LLCtx *lc, u32 id, IrInstr *ins) {
+    IrInstr *old = lldmGet(&lc->def_map, id);
+    if (old && old != ins) {
+        HALT_PHI_TYPE_CONTRACT_REQUIRED
+              "duplicate definition for IrValue id %u: "
+              "old=%p, new=%p. IR_VAL_TMP must have a "
+              "unique defining instruction.",
+              id, (void *)old, (void *)ins);
+    }
+    lldmGrow(&lc->def_map, id + 1);
+    lc->def_map.values[id] = ins;
+}
+```
+
+The map's meaning is sharpened from "the last instruction
+encountered with that destination id" to "the UNIQUE defining
+instruction for that IrValue id". This makes producer
+provenance security-boundary-like compiler evidence: any
+violation is detected at def_map construction time.
+
+### §9.5.4 Mechanical witness
+
+* `evidence/c3.5/witness-leak.c` — 183 lines; no LLVM linkage.
+  Uses the corrected predicate. CAPTURED OUTPUT:
+  `LEAK_ROWS = 2`, `Matrix matches required shape: YES`,
+  verdict: `OUTCOME_F_PRODUCER_LEAK_CONFIRMED`. Process exit
+  code 0 only if the matrix is observed exactly.
+
+  Compare to C3.4's contradictory output:
+
+  ```text
+  Leak rows: 0
+  OUTCOME_F_PRODUCER_LEAK_CONFIRMED
+  ```
+
+  C3.5 fixes the predicate; C3.5's witness-leak is the
+  authoritative leak test.
+
+* C3.4's `witness-producer.c` was already sound (its
+  `expected_delta` is the contract's required delta, not a
+  witness-internal expectation). C3.5 does NOT re-emit it.
+
+* `evidence/c3.5/BUILD.txt` — build commands + toolchain
+  identity; no binaries committed (P2 hygiene).
+
+### §9.5.5 Historical C4_IMPL_B_AUTH table
+
+```text
+C3       AUTH=true    SUPERSEDED   (pre-dominance)
+C3.1     AUTH=true    SUPERSEDED   (pre-placement)
+C3.2     AUTH=false   SUPERSEDED   (pre-mechanics)
+C3.3     AUTH=true    SUPERSEDED   (pre-producer-binding)
+C3.4     AUTH=true    SUPERSEDED   (pre-evidence+identity)
+C3.5     AUTH=true    CURRENT      (P1-P7 all closed)
+```
+
+### §9.5.6 Scope (NO EXPANSION)
+
+* No new diagnostic macros (`HALT_PHI_TYPE_CONTRACT_REQUIRED`
+  pre-exists).
+* No change to Gate 3 / Gate 4 / Gate 5 logic.
+* No change to `llType`, `llLowerValue`, `llCreateBlocks`.
+* One bounded helper variant (`lldmSet` with uniqueness check);
+  the existing `lldmSet` is REPLACED, not augmented.
+* The witness-leak predicate is corrected in-place; no new
+  witness required.
+* No committed witness binaries (P2 hygiene per expert).
+
+---
+
 ## 10. Commit topology
 
 ```text
@@ -1422,7 +1638,32 @@ C3.4 RED (only after C3.3; NO production change)
                 P2 hygiene: NO witness binaries committed; sources +
                   captured outputs + BUILD.txt only
 
-C4 IMPL-B     (ONLY IF C3.4 authorises it; currently READY)
+C3.5 RED (only after C3.4; NO production change)
+                mechanical-witness evidence of corrected predicate:
+                  - witness-leak (corrected):
+                      leak = curr_accepts AND !producer_authorized
+                      producer_authorized = has_producer AND
+                                            producer_op == IR_ICMP
+                      LEAK_ROWS = 2 (FCMP + PARAM)
+                      process exit 0 ONLY if matrix matches exactly
+                freeze two contract corrections:
+                  §9.5.1 leak-predicate correction (P0-1)
+                         (corrected semantic, not tautology)
+                  §9.5.2 identity preservation (P0-2):
+                         IrValue *ir_in vs LLVMValueRef llvm_in;
+                         def_map lookup uses irVarId(ir_in);
+                         producer->dst compared with ir_in
+                  §9.5.3 unique-definition contract (P1):
+                         lldmSet halts on duplicate definition
+                         for an already-bound id (instead of
+                         silent overwrite)
+                reaffirm or revoke C4_IMPL_B_AUTH
+                  - C4_IMPL_B_AUTH = TRUE (reaffirmed;
+                    pre-C4 contract requirements P1-P7
+                    all closed)
+                P2 hygiene: NO witness binaries committed
+
+C4 IMPL-B     (ONLY IF C3.5 authorises it; currently READY)
                 add case IR_PHI: arm to llLowerInstr (SHAPE_DEPENDENT)
                 + STRENGTHENED shape validation:
                   - pair_count == CFG predecessor count
@@ -1430,10 +1671,13 @@ C4 IMPL-B     (ONLY IF C3.4 authorises it; currently READY)
                   - each predecessor represented exactly once
                   - incoming type compatible with I8 PHI
                   - no non-PHI precedes PHI in merge block
-                + AMENDED (C3.4) incoming-edge normalisation:
+                + AMENDED (C3.5) incoming-edge normalisation:
                   - LL_INC_SHAPE_DEPENDENT(lc);  /* ONCE, at top,
                      Option A: static shape admitted */
-                  - for each incoming (v, ir_pred):
+                  - for each incoming pair (ir_in, ir_pred):
+                      /* TWO identities, kept distinct */
+                      IrValue     *ir_in   = pair->ir_value;
+                      LLVMValueRef llvm_in = llLowerValue(lc, ir_in);
                       pred_bb := llbmGet(&lc->blocks,
                                           ir_pred->id)
                       if pred_bb == NULL:
@@ -1441,30 +1685,38 @@ C4 IMPL-B     (ONLY IF C3.4 authorises it; currently READY)
                       term := LLVMGetBasicBlockTerminator(pred_bb)
                       if term == NULL:
                           HALT_PHI_EDGE_MATERIALIZATION_REQUIRED
-                      if LLVMTypeOf(v) == i8:
-                          use v directly
-                      else if LLVMTypeOf(v) == i1:
+                      if LLVMTypeOf(llvm_in) == i8:
+                          v = llvm_in
+                      else if LLVMTypeOf(llvm_in) == i1:
                           producer := lldmGet(&lc->def_map,
-                                              irVarId(v))
+                                              irVarId(ir_in))
                           if !producer ||
                              producer->op != IR_ICMP ||
-                             producer->dst != v:
+                             producer->dst != ir_in:
                               HALT_PHI_TYPE_CONTRACT_REQUIRED
                           save := LLVMGetInsertBlock(lc->bld)
                           LLVMPositionBuilderBefore(lc->bld, term)
-                          v    := LLVMBuildZExt(lc->bld, v, i8,
+                          v    := LLVMBuildZExt(lc->bld, llvm_in,
+                                                i8,
                                                 "phi_icmp_zext")
                           LLVMPositionBuilderAtEnd(lc->bld, save)
+                      else:
+                          HALT_PHI_TYPE_CONTRACT_REQUIRED
                       add (v, pred_bb) to PHI incoming list
                 + new bounded producer-binding seam:
                   - LLDefMap struct + lldmInit/lldmSet/lldmGet
                     helpers (structural twins of LLBlockMap
                     at src/llvm-backend.c:250-273)
+                  - lldmSet REPLACES the trivial set: detects
+                    duplicate definitions for the same
+                    IrValue id and halts with
+                    HALT_PHI_TYPE_CONTRACT_REQUIRED
                   - llBuildDefMap(lc, fn) called once per function,
                     alongside llCreateBlocks
                 + harness-contract alignment on
                   LL_INC_SHAPE_DEPENDENT counting semantics
                   (Option A: static shape admitted; AC55)
+                + corrected leak-predicate harness (AC57-AC58)
                 add LLVM_BACKEND_UNSUPPORTED_PHI_ORTHOGONAL_TO_CORE
                 update src/llvm-backend-cap.c IR_PHI to SHAPE_DEPENDENT
 
@@ -1769,6 +2021,50 @@ evidence rather than modifying old captures).
          (c) no committed witness binaries (P2 hygiene per
              expert). The C3.4 evidence is committed as
              sources + captured outputs + `BUILD.txt` only.
+
+### C3.5 evidence-predicate + identity preservation acceptance criteria
+
+57. AC57 C3.5 freezes the corrected leak predicate:
+         leak(curr, producer) =
+             curr_accepts AND NOT producer_authorized
+         where
+             producer_authorized =
+                 has_producer AND producer_op == IR_ICMP
+         The C4 verification harness MUST use this predicate
+         (or an equivalent direct semantic check), not a
+         self-consistency check against hard-coded
+         expectations. The C3.4 witness-leak's inverted
+         predicate is SUPERSEDED.
+58. AC58 C3.5 freezes the required leak matrix:
+         ICMP    leak=NO
+         FCMP    leak=YES
+         PARAM   leak=YES
+         I8      leak=NO
+         LEAK_ROWS must equal 2. The harness exits 0 ONLY
+         if the matrix is observed exactly. Captured output
+         for `evidence/c3.5/witness-leak.c`:
+         `LEAK_ROWS = 2`,
+         `Matrix matches required shape: YES`,
+         `OUTCOME_F_PRODUCER_LEAK_CONFIRMED`.
+59. AC59 C3.5 freezes the identity-preservation contract for
+         the i1 -> i8 normalization path:
+             IrValue     *ir_in   = pair->ir_value;
+             LLVMValueRef llvm_in = llLowerValue(lc, ir_in);
+         The def_map lookup MUST use `irVarId(ir_in)`. The
+         `producer->dst` comparison MUST use `ir_in` (the
+         `IrValue` pointer), not any derived id from
+         `llvm_in`. The discriminator must distinguish:
+             TYPE check on LLVM (LLVMTypeOf(llvm_in))
+             PRODUCER check on NEUTRAL
+                 (lldmGet(&lc->def_map, irVarId(ir_in)))
+60. AC60 C3.5 freezes the unique-definition contract for the
+         def_map construction pass: a duplicate definition
+         for an already-bound `IrValue` id MUST halt with
+         `HALT_PHI_TYPE_CONTRACT_REQUIRED`. The map's meaning
+         is sharpened to "the UNIQUE defining instruction
+         for that IrValue id". The existing `lldmSet` is
+         REPLACED with a uniqueness-checking variant; silent
+         overwrite is forbidden.
 
 ---
 
