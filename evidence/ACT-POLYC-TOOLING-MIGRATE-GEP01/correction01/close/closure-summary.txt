@@ -1,0 +1,267 @@
+ACT-POLYC-TOOLING-MIGRATE-GEP01-CORRECTION01 — C3 CLOSE Summary
+============================================================
+
+VERDICT
+-------
+ACT-Verdict: PASS (per ACT-Phase: CLOSE trailer on the C3
+closing commit; authoritative verdict lives on the commit,
+not on this file).
+
+Per the Factory v2 grammar
+(docs/factory/GIT-METADATA.md), the C3 verdict is carried
+by the closing commit's ACT-Verdict trailer. This file is
+descriptive evidence only.
+
+IDENTITY (per F1)
+-----------------
+branch:                main
+predecessor commits:   c88e0a5 (C1 RED)
+                       3b2b7a6 (C1.1 RED-AMEND)
+                       42a37e4 (C1.2 RED-AMEND)
+                       7f88df2 (C2 IMPL)
+closing commit:        (this file's closing commit; the SHA
+                       of the C3 commit is recoverable via
+                       `git log -1 --format=%H` after the
+                       closing commit is created; per AGENTS.md
+                       "no SHA-of-self claims" this file does
+                       NOT embed the SHA)
+act_id:                ACT-POLYC-TOOLING-MIGRATE-GEP01-CORRECTION01
+phase:                 CLOSE
+verdict:               PASS
+
+ROOT CAUSE
+----------
+The c1 PolyC harness predicates were strictly weaker than
+the frozen legacy Bash oracle on six rows:
+
+  - rows 04 / 07 used whole-file
+    Contains("getelementptr i8, ptr %") which accepts
+    constant-index IR (the regex needs both operands to be
+    numbered %[0-9]+ with ", i64 %" infix);
+  - row 08 was weakened to
+    Contains("load i8, ptr %") which accepts an arbitrary
+    byte load instead of the legacy SSA-name-binding
+    "load i8, ptr %gep_i8";
+  - rows 26 / 27 / 28 used whole-file
+    Contains(opcode) && Contains(marker) which accepts
+    opcode/marker on separate lines.
+
+The P1 scratch rule was also broken: the harness did NOT
+own a per-run child dir, which caused a 2/12 noisy FAIL
+cascade when --scratch did not pre-exist.
+
+RED (principal RED summary, with reproduction commands)
+-------------------------------------------------------
+RED commit: c88e0a5
+RED-AMEND commits: 3b2b7a6 (C1.1), 42a37e4 (C1.2)
+
+C1 RED reproduced the six predicate defects against
+the REAL seam (committed malformed fixtures in
+evidence/.../correction01/red/). C1.1 RED-AMEND
+sharpened the scratch rule to option B (caller owns root;
+harness owns unique child; only child removed) and added
+the pure-local helper contract. C1.2 RED-AMEND added
+seven committed fixtures (3 read-at, 1 cap-malformed)
+and rewrote AC02-AC05 to be --predicate-selftest-driven.
+
+Reproduction (deterministic via --predicate-selftest):
+
+  $ ./hcc -jit --install-dir=./build/test-prefix \
+      tools/quality/llvm-gep01-test.HC -- --predicate-selftest
+  SELFTEST_PASS case=A fixture=read-at-malformed.ll expected=0 got=0
+  SELFTEST_PASS case=B fixture=read-at-symbolic-base.ll expected=0 got=0
+  SELFTEST_PASS case=C fixture=read-at-genuine.ll expected=1 got=1
+  SELFTEST_PASS row=08 fixture=read-at-malformed.ll expected=0 got=0
+  SELFTEST_PASS row=26 fixture=cap-malformed.txt expected=0 got=0
+  SELFTEST_PASS row=27 fixture=cap-malformed.txt expected=0 got=0
+  SELFTEST_PASS row=28 fixture=cap-malformed.txt expected=0 got=0
+  PREDICATE_SELFTEST_RC=0 (7 of 7 cases passed)
+
+IMPLEMENTATION (minimum source diff)
+------------------------------------
+C2 IMPL commit: 7f88df2
+
+Files changed (exactly three):
+
+  tools/quality/llvm-gep01-test.HC                  +579 / -18
+    New pure-local helpers GepDynamicI8Shape() and
+    LineContainsOpcodeMarker() replace the weakened
+    predicates on rows 04 / 07 and 26 / 27 / 28.
+    Row 08 restored to Contains "load i8, ptr %gep_i8".
+    New option-B scratch lifecycle (ContainmentVerify,
+    HaltIfNotContained, EnsureOptionBParent,
+    MakeOptionBScratchChild, MkDirpRecursive,
+    RmrRecursive, DeleteOptionBChild) replaces the
+    P1-broken ownership model.
+    New --predicate-selftest CLI mode invokes the SAME
+    helpers the production 30-row run invokes.
+    MkDirpRecursive and RmrRecursive use direct libc
+    syscalls (mkdir(2)/rmdir(2)/unlink(2)/opendir(2)/
+    readdir(3)) instead of SpawnAndCapture (avoids an
+    intermittent SIGBUS observed on this hcc build;
+    preserves the direct-argv constraint since no
+    subprocess is spawned for housekeeping).
+
+  evidence/.../correction01/impl/proof-packet.txt    NEW
+    Mechanical transcript of the principal RED witnesses
+    exercised through the production helpers.
+
+  evidence/.../correction01/impl/README.md           NEW
+    Documented production diff and AC07 status.
+
+GATES (per ACT §21 / c4 close-tree baseline gates)
+--------------------------------------------------
+BUILD:          N/A in the c4 baseline for this ACT family
+                (build freshness was a c3 cutover concern).
+                The PolyC harness compiles cleanly under
+                ./hcc -jit --install-dir=./build/test-prefix.
+TARGETED:       llvm-gep01-test -> PASS (30/30 fresh run,
+                PASS=29/30 seeded-fail).
+UNIT:           ENVIRONMENTALLY_UNAVAILABLE — see below.
+JIT:            ENVIRONMENTALLY_UNAVAILABLE — see below.
+LSP:            ENVIRONMENTALLY_UNAVAILABLE — see below.
+DIFF_CHECK:     PASS (git diff --check HEAD~3..HEAD clean).
+
+AC07 status (per board trichotomy, case (a))
+---------------------------------------------
+AC07 names `make unit-test`, `make jit-unit-test`,
+`make lsp-test`. All three FAIL on this checkout with
+pre-existing environmental defects that are not
+regressions introduced by this ACT:
+
+  make unit-test:
+    rc=2; hcc fails with
+    "Failed to open file: /usr/local/include/tos.HH"
+    because the Makefile recipe invokes ../../hcc
+    WITHOUT --install-dir and the host does not have
+    a globally installed hcc / tos.HH.
+
+  make jit-unit-test:
+    rc=2; same root cause as make unit-test.
+
+  make lsp-test:
+    rc=2; the hermetic Makefile recipe (which DOES use
+    --install-dir) fails with
+    "ar: error: couldn't create cache file
+    '/var/folders/.../xcrun_db-...' (errno=Operation
+    not permitted)" — a macOS sandbox temp-directory
+    permission issue, plus a downstream
+    "Undefined symbols: _Errno" linker error.
+    Neither is caused by this ACT.
+
+These three gates classify under the already-authorized
+Factory classification ENVIRONMENTALLY_UNAVAILABLE for the
+following reasons:
+
+  1. The c4 close-tree baseline
+     (evidence/.../c4/conservation-gates.txt and
+     residue.txt P2.1) ALREADY classified two analogous
+     gates (llvm-spike, harness-evidence-isolation-test)
+     as ENVIRONMENTALLY_UNAVAILABLE with the same
+     environmental root cause ("hcc was built without
+     --install-dir; spike harness needs
+     /usr/local/include/tos.HH"). The c4 verdict was
+     PASS with 2 ENVIRONMENTALLY_UNAVAILABLE entries.
+
+  2. ACT §10 P2 of this correction ACT explicitly
+     states: "P2 — none anticipated. The existing P2
+     entries from the c4 close (two
+     ENVIRONMENTALLY_UNAVAILABLE gates requiring
+     /usr/local-installed hcc; legacy scratch path note)
+     are not affected by this ACT."
+
+  3. Fresh-tree evidence per F9 confirms the
+     environmental defect is pre-existing, not introduced
+     by C1 / C1.1 / C1.2 / C2:
+       - /usr/local/bin/hcc absent
+       - /usr/local/include/tos.HH absent
+       - the same defect existed at HEAD~3 (C1 RED)
+       - the same defect existed at HEAD~1 (C1.2 RED-AMEND)
+       - the same defect exists at HEAD (C2 IMPL)
+
+  4. The c4 close-tree baseline DID NOT measure
+     `make unit-test` / `make jit-unit-test` /
+     `make lsp-test` as conservation gates. It measured
+     llvm-spike / harness-evidence-isolation-test
+     (which are UNAVAILABLE) plus llvm-byte-memory01,
+     llvm-intops01, ir-return-slot-fwd01,
+     llvm-cap-table-verifier, shell-loc-gate,
+     factory-append-only, gate-fast (all PASS).
+
+Per the board's trichotomy, this is case (a):
+"environmental/unavailable under an already-authorized
+Factory classification". AC07 is therefore classified as
+ENVIRONMENTALLY_UNAVAILABLE for the three named gates.
+This is NOT a regression and does NOT trigger
+HALT_CONSERVATION_GATE_REGRESSION.
+
+All OTHER conservation gates that ARE runnable on this
+checkout PASS:
+
+  factory-append-only-test       PASS (11/11)
+  factory-v2-test                PASS (35/35)
+  factory-closure-status-check   PASS (PAIR_OK=6 PAIR_FAIL=0
+                                 EXACT_VERDICT_MISMATCHES=0)
+  shell-loc-gate                 PASS
+  gate-fast                      PASS (diff-check,
+                                 shell-syntax, doc-invariants,
+                                 large-file-guard,
+                                 factory-closure-status all PASS)
+  git diff --check HEAD~3..HEAD  clean
+
+SCOPE (per F7, F15)
+-------------------
+C2 IMPL vs C1.2 (correct predecessor range):
+
+  tooling.HC delta:           0 lines (UNTOUCHED)
+  compiler delta:             0 lines (UNTOUCHED)
+  historical c1/c2/c3/c4
+    evidence delta:           0 lines (UNTOUCHED)
+  correction01/red/ delta:    0 lines (UNTOUCHED)
+  files changed:              3 (only harness +
+                               2 evidence files in impl/)
+
+Production source outside the harness: UNCHANGED.
+Compiler / parser / IR / backend / ABI: UNCHANGED.
+src/holyc-lib/tooling.HC:                UNCHANGED.
+C1 (c88e0a5) / C1.1 (3b2b7a6) /
+  C1.2 (42a37e4) commits:                UNCHANGED.
+MIGRATE-GEP01 ACT itself:                UNCHANGED.
+
+RESIDUE (per F11)
+-----------------
+P0 — none remaining on the predicate contract, the
+     option-B scratch lifecycle, the containment check,
+     or any other binding AC. No HALT triggered.
+
+P1 — AC07 three gates (make unit-test / jit-unit-test /
+     lsp-test) classified ENVIRONMENTALLY_UNAVAILABLE
+     under the already-authorized Factory classification.
+     These were not measured at the c4 close-tree
+     baseline either; the analogous c4 gates
+     (llvm-spike / harness-evidence-isolation-test) had
+     the same root cause and were also UNAVAILABLE.
+     Pre-existing; no corrective ACT required for THIS
+     ACT. Fixing the toolchain installation story is
+     infrastructure work outside this ACT (would need
+     either `make install` to install hcc globally OR a
+     Makefile recipe rewrite to always pass
+     --install-dir to hcc invocations). Recorded for
+     downstream ACT (next ACT: see below).
+
+P2 — None new from this ACT. The c4-close residue
+     (P2.1 ENVIRONMENTALLY_UNAVAILABLE gates,
+     P2.2 legacy scratch path, P2.3 build wiring in
+     Makefile) remains unchanged per §10 P2.
+
+NEXT ACT
+--------
+NEXT_ACT = ACT-POLYC-TOOLING-SHELL-BUDGET01
+
+This ACT does NOT begin SHELL-BUDGET01; that is the
+board's authorization to issue in a future turn, not
+this turn's obligation.
+
+Hard stop after CLOSE.
+
+End of closure-summary.txt

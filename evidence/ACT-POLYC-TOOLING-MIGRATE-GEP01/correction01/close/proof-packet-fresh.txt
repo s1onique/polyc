@@ -1,0 +1,45 @@
+=== 1. PREDICATE_SELFTEST (--predicate-selftest mode) ===
+SELFTEST_PASS case=A fixture=read-at-malformed.ll expected=0 got=0
+SELFTEST_PASS case=B fixture=read-at-symbolic-base.ll expected=0 got=0
+SELFTEST_PASS case=C fixture=read-at-genuine.ll expected=1 got=1
+SELFTEST_PASS row=08 fixture=read-at-malformed.ll expected=0 got=0
+SELFTEST_PASS row=26 fixture=cap-malformed.txt expected=0 got=0
+SELFTEST_PASS row=27 fixture=cap-malformed.txt expected=0 got=0
+SELFTEST_PASS row=28 fixture=cap-malformed.txt expected=0 got=0
+PREDICATE_SELFTEST_RC=0 (7 of 7 cases passed)
+
+=== 2. REAL_HARNESS_RC (fresh scratch root) ===
+----
+GEP01_PASS=30
+GEP01_FAIL=0
+STATUS=PASS
+SCRATCH_ROOT_PREEXISTED=NO
+SCRATCH_ROOT_CREATED=YES (mkdir -p)
+SCRATCH_ROOT_SURVIVED=YES
+RUN_CHILD_REMOVED=YES
+
+=== 3. CONTAINMENT NEGATIVES ===
+CONTAINMENT_NEGATIVE_ROOT_EQ_CHILD=REJECT
+CONTAINMENT_NEGATIVE_EMPTY_SUFFIX=REJECT
+POS_VALID=ACCEPT
+NEG_BAD_PREFIX=REJECT
+
+=== 4. SEEDED_FAIL (--mode=fail) ===
+----
+GEP01_PASS=29
+GEP01_FAIL=1
+STATUS=FAIL
+SEEDED_FAIL_RC=1 (NOTE: pre-existing I64→I32 truncation; STATUS=FAIL surface-level; rc-truncation residue for future bounded correction)
+SCRATCH_ROOT_SURVIVED_AFTER_SEED=YES
+
+=== 5. SCOPE INVARIANTS ===
+TOOLING_HC_DELTA=0
+0
+COMPILER_DELTA=0
+0
+HISTORICAL_EVIDENCE_DELTA=0
+0
+FIXTURE_DELTA=0
+0
+DIRECT_ARGV_FORBIDDEN_COUNT=1
+DIFF_CHECK=PASS
