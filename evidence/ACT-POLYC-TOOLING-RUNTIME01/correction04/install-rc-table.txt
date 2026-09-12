@@ -1,0 +1,71 @@
+ACT-POLYC-TOOLING-RUNTIME01-CORRECTION04 — Per-step install RCs
+
+This file replaces the previous unverified "clean" claim in
+correction03/patch-hygiene.txt (which was an empty file).
+
+Reproduction (bash, captured 2025-09-12 from main @ e5a2e50):
+
+  bash <<'BASH_EOF'
+  LIBTOS_BUILD=/tmp/c04-libtos-build
+  HCC=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc2/hcc
+  SRC=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc2/src
+  PREFIX=/tmp/c04-install
+  cd "$LIBTOS_BUILD"
+  "$HCC" --install-dir="$PREFIX" -D__APPLE__ -DHCC_LINK_SQLITE3 -lib tos "$SRC/holyc-lib/all.HC" > /tmp/c04-hcc.log 2>&1 ; echo HCC_LIB_RC=$?
+  cc -c "$SRC/holyc-lib/errno_shim.c" -o "$LIBTOS_BUILD/errno_shim.o" > /tmp/c04-cc-shim.log 2>&1 ; echo ERRNO_SHIM_RC=$?
+  ar r "$LIBTOS_BUILD/libtos.a" "$LIBTOS_BUILD/all.o" "$LIBTOS_BUILD/errno_shim.o" > /tmp/c04-ar.log 2>&1 ; echo AR_RC=$?
+  ranlib "$LIBTOS_BUILD/libtos.a" > /tmp/c04-ranlib.log 2>&1 ; echo RANLIB_RC=$?
+  cc -dynamiclib -Wl,-install_name,$PREFIX/lib/libtos.0.0.1.dylib \
+     "$LIBTOS_BUILD/all.o" "$LIBTOS_BUILD/errno_shim.o" \
+     -o "$LIBTOS_BUILD/libtos.0.0.1.dylib" \
+     -lpthread -lc -lm > /tmp/c04-dylib.log 2>&1 ; echo DYLIB_RC=$?
+  cp "$LIBTOS_BUILD/libtos.a" "$LIBTOS_BUILD/libtos.0.0.1.dylib" "$PREFIX/lib/" ; echo CP_RC=$?
+  ln -sf libtos.0.0.1.dylib "$PREFIX/lib/libtos.dylib" ; echo LN_RC=$?
+  BASH_EOF
+
+=== CAPTURED OUTPUT ===
+
+  HCC_LIB_RC=1     # TOLERATED: hcc tries to link libtos.dylib itself,
+                   # _Errno unresolved because errno_shim.o doesn't exist yet.
+                   # After this step CMake's `if(NOT hcc_lib_result EQUAL 0)`
+                   # branch re-runs the dylib link with errno_shim.o included.
+                   # /tmp/c04-hcc.log shows the expected
+                   #   ld: Undefined symbols: _Errno, referenced from: _MALLOC in all.o
+                   #   clang: error: linker command failed
+                   # but compile-only output (all.o) is produced.
+  ERRNO_SHIM_RC=0  # clean
+  AR_RC=0          # clean; "xcrun cache file" message is benign — ar writes the
+                   # archive successfully and returns 0.
+  RANLIB_RC=0      # clean; same xcrun cache warning, same rc=0.
+  DYLIB_RC=0       # clean; second pass resolves _Errno from errno_shim.o.
+  CP_RC=0          # clean
+  LN_RC=0          # clean
+
+  # Whole-tree:
+  cmake --install /tmp/c04-build  -> CMAKE_INSTALL_RC=0
+
+=== TRIPLE WITNESS (libtos install prefix) ===
+
+  test -f /tmp/c04-install/lib/libtos.a            -> YES
+  test -f /tmp/c04-install/lib/libtos.0.0.1.dylib  -> YES
+  test -L /tmp/c04-install/lib/libtos.dylib        -> YES
+  readlink /tmp/c04-install/lib/libtos.dylib       -> libtos.0.0.1.dylib
+
+=== RECONCILIATION WITH CORRECTION03 cmake-install.log ===
+
+The CORRECTION03 install log captured earlier shows the same six
+ar/ranlib/xcrun-cache warnings but cmake --install still exited 0.
+This is because:
+  - hcc_lib_result is intentionally NOT fatal (RESULT_VARIABLE check)
+  - ar r, ranlib, cc -dynamiclib, ln -sf all returned 0
+  - the xcrun "couldn't create cache file" messages are stderr noise
+    that does NOT affect the actual archive content or return code
+  - the entire install step is a single execute_process() per
+    sub-command, each guarded by COMMAND_ERROR_IS_FATAL ANY
+
+The CORRECTION02 install step had `&&` literal-argv (which would
+have produced ar: &&: No such file or directory as an actual
+non-zero exit, which CORRECTION03's COMMAND_ERROR_IS_FATAL ANY
+would now catch).  CORRECTION03 does NOT have that defect, and
+the install step is now both mechanically correct and observably
+green against a fresh prefix.

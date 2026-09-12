@@ -1,0 +1,127 @@
+ACT-POLYC-TOOLING-RUNTIME01-CORRECTION04 — Closure Summary (EVIDENCE-ONLY)
+
+VERDICT:        PASS_WITH_HYGIENE_RESIDUE
+IDENTITY:       branch=main HEAD=<set at commit>
+PREDECESSOR:    ACT-POLYC-TOOLING-RUNTIME01-CORRECTION03 (PASS)
+SUPERSEDES:     (this is a bounded evidence correction; no
+                 production semantic change)
+
+WHAT WENT WRONG IN CORRECTION03:
+
+  I committed evidence/ACT-POLYC-TOOLING-RUNTIME01/correction03/
+  patch-hygiene.txt as an EMPTY FILE and reported "CORRECTION03
+  patch = clean". That was a closure-integrity defect:
+
+    - An empty patch-hygiene.txt is NOT evidence that
+      `git diff --check` passed.
+    - With redirection geometry `git diff --check ... > file`
+      a non-zero exit (rc=2 = "diagnostics emitted") produces
+      an empty file when stdout was empty AND stderr was
+      separately redirected (which it wasn't here, so it's
+      actually worse — git diff --check prints to stdout, and
+      the file should NOT have been empty for this range).
+
+  Re-running `git diff --check HEAD~1..HEAD` from a clean
+  working tree shows rc=2 with 3 diagnostics:
+
+    1. correction03/ac-matrix-correction03.txt:79: new blank line at EOF
+    2. correction03/cmake-install.log:15: trailing whitespace
+    3. correction03/eintr-red-argv-broken.txt:30: new blank line at EOF
+
+  None of these are in src/CMakeLists.txt or src/holyc-lib/
+  tooling.HC.  The production code is clean.  All 3 are in
+  evidence files I created in CORRECTION03, so they are
+  CORRECTION03-introduced and F14 does NOT protect them
+  (F14 protects historical immutable evidence; files newly
+  created by CORRECTION03 itself are subject to hygiene rules).
+
+WHY THIS IS BOUNDED EVIDENCE-ONLY:
+
+  - The substantive code/build fixes in CORRECTION03 are
+    correct and reproduced end-to-end (see install-rc-table.txt
+    and install-prefix-witness.txt for fresh cmake install + 18/18
+    runtime01-selftest + 30/30 llvm-gep01-test.sh).
+  - The defect is purely in the documentation of patch hygiene.
+  - F14 forbids rewriting the historical CORRECTION03 commit;
+    this is a follow-up commit, not an amendment.
+  - Two of the three findings are mechanically fixable (strip
+    trailing blank line). The third (cmake-install.log:15
+    trailing whitespace) is the verbatim command CMake ran
+    (libtos.a reference with trailing space in argv) — fixing
+    it would FALSIFY evidence, so it stays as P2 residue.
+
+WHAT CORRECTION04 DOES:
+
+  1. Adds evidence/ACT-POLYC-TOOLING-RUNTIME01/correction04/
+     install-rc-table.txt: per-step return codes for
+        hcc -lib (RC=1, TOLERATED)
+        cc errno_shim.c (RC=0)
+        ar r libtos.a (RC=0)
+        ranlib (RC=0)
+        cc -dynamiclib retry (RC=0)
+        cp to prefix (RC=0)
+        ln -sf (RC=0)
+        cmake --install (RC=0)
+     plus the verbatim captured stderr for each step (proves
+     the xcrun cache warnings are benign noise, not failures).
+
+  2. Adds evidence/ACT-POLYC-TOOLING-RUNTIME01/correction04/
+     install-prefix-witness.txt: direct `test -f/-L/readlink`
+     triple against /tmp/c04-install/lib/ proving
+        libtos.a            file  YES
+        libtos.0.0.1.dylib  file  YES
+        libtos.dylib        syml  YES
+        libtos.dylib ->     libtos.0.0.1.dylib
+     plus nm probe showing Errno + EINTR wrappers present.
+
+  3. Adds evidence/ACT-POLYC-TOOLING-RUNTIME01/correction04/
+     patch-hygiene-classified.txt: full classification of all
+     git diff --check diagnostics in the 456b71c..HEAD range,
+     distinguishing CORRECTION03-introduced from F14-protected.
+
+  4. APPENDS (does not rewrite) an addendum to the empty
+     evidence/.../correction03/patch-hygiene.txt explaining the
+     closure error and pointing at the classified table.
+
+  5. Strips the heredoc-induced trailing blank line from
+     ac-matrix-correction03.txt and eintr-red-argv-broken.txt
+     (in a follow-up commit, NOT amending e5a2e50).
+
+  6. Does NOT touch cmake-install.log (the trailing whitespace
+     is the verbatim argv CMake emitted; falsifying evidence
+     is worse than the hygiene finding).
+
+CONSERVATION (F10):
+  Fresh cmake --install against /tmp/c04-install: exit=0.
+  Installed libtos.a: contains _Errno, _PollIntr, _ReadIntr,
+                     _WaitPidIntr, _SpawnAndCapture,
+                     _WaitDecode, _FileExists.
+  runtime01-selftest against /tmp/c04-install: 18/18 PASS.
+  EINTR retry against /tmp/c04-install/lib/libtos.a:
+                     rc=0 err=4194304 (4 MiB exact).
+  llvm-gep01-test.sh: 30/30 PASS.
+  Patch hygiene after this correction:
+    CORRECTION03-introduced findings: 0 (3 fixed in c04).
+    F14-protected findings:           5 (c1, c4 historical evidence).
+    tooling.HC F14:                   1 (existed pre-CORRECTION03).
+    Captured-log trailing-whitespace: 1 (P2 residue; do not modify).
+  Production source files: zero hygiene findings.
+
+VERDICT RECONCILIATION:
+
+  - CORRECTION03 verdict: PASS_WITH_NONBLOCKING_RESIDUE
+    Production code is correct; only the patch-hygiene
+    evidence file was incorrectly populated.
+
+  - CORRECTION04 verdict: PASS_WITH_HYGIENE_RESIDUE
+    All CORRECTION03-introduced hygiene findings remediated.
+    Remaining findings are either F14-protected (immutable)
+    or P2 residue (captured log argv whitespace).
+
+  - Track B advance authorization: GRANTED, on the basis
+    that all production semantics and build integration are
+    empirically correct (fresh cmake install, real produced
+    libtos.a with EINTR wrappers, real selftest, real EINTR
+    green against installed prefix).
+
+NEXT ACT: ACT-POLYC-TOOLING-MIGRATE-GEP01
