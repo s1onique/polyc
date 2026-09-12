@@ -11,8 +11,18 @@ ACT-Phase-Notes: C1 RED committed (see §8). A C1.1
   to option B, adds §3.1 pure-local predicate helper
   contract + §3.2 `--predicate-selftest` mode + §3.3
   purity guardrails, and rewrites AC02–AC05 / AC06 to
-  reference the selftest. ACT remains in RED; C2 IMPL
-  has NOT opened. See §8 for the commit topology.
+  reference the selftest. A C1.2 RED-AMEND follow-up
+  commit (still within the RED phase; trailer
+  `ACT-Phase: RED`) tightens §3.1 by replacing
+  `GeShPrefixNumberedI64` with `GepDynamicI8Shape`
+  (which checks BOTH numbered SSA operands), adds two
+  new committed fixtures (constant-index, symbolic-base,
+  plus genuine positive control), adds §3.5 child-path
+  containment check, and adds
+  `HALT_P1_CONTAINMENT_UNVERIFIED` and
+  `HALT_GEP_HELPER_WEAKER_THAN_LEGACY`. ACT remains in
+  RED; C2 IMPL has NOT opened. See §8 for the commit
+  topology.
 
 **Title:** Restore Bash-equivalent oracle strength in the
 PolyC GEP01 harness — repair predicate weakening that
@@ -68,8 +78,8 @@ following rows of the c1/oracle-matrix.tsv freeze:
 
 | Row | assertion_id              | Defect |
 |-----|---------------------------|--------|
-| 04  | readat_dynamic_gep_and_load_i8 | dynamic-index GEP shape `%[0-9]+, i64 %[0-9]+` collapsed to whole-file `Contains("getelementptr i8, ptr %")` |
-| 07  | readat_gep_shape          | same as row 04 |
+| 04  | readat_dynamic_gep_and_load_i8 | dynamic-index GEP shape `%[0-9]+, i64 %[0-9]+` collapsed to whole-file `Contains("getelementptr i8, ptr %")`; C1.2 restores via `GepDynamicI8Shape` (both operands numbered on the same line) |
+| 07  | readat_gep_shape          | same as row 04; C1.2 restores via `GepDynamicI8Shape` |
 | 08  | gep_used_as_load_address  | `%gep_i8` SSA-value binding collapsed to whole-file `Contains("load i8, ptr %")` |
 | 26  | ir_gep_rejected           | opcode-line binding `IR_GEP.*\(REJECTED\)` split into two independent whole-file `StrStr` calls |
 | 27  | ir_lea_rejected           | same as row 26 for IR_LEA |
@@ -205,6 +215,35 @@ minimum required restorations are:
      `mkdir` / `rm -rf <child>` (no `MkDir` / `FileMkDir`
      runtime primitive is introduced; tooling.HC MUST
      NOT be widened).
+   - **Child-path containment check (binding):** before
+     the harness issues any direct-argv `rm -rf <child>`
+     for the per-run child, it MUST mechanically assert
+     that the child path is strictly underneath the
+     caller-supplied root and is not equal to it. The
+     local containment helper MUST check all of the
+     following and return TRUE only if all hold:
+       1. `child` is non-NULL and non-empty;
+       2. `root` is non-NULL and non-empty;
+       3. `child` starts with the byte sequence
+          `root` followed by `/` (i.e. the path
+          separator — `StrOcc(root, '/') == -1`
+          implies `child == root` and is rejected;
+          a `root` that does not end with `/` is
+          implicitly extended with one for the
+          prefix check);
+       4. `child != root` (the equality check is
+          implied by (3) but is stated explicitly so
+          the HALT reason is unambiguous);
+       5. the suffix after the `<root>/` prefix is
+          non-empty (no trailing-slash-as-child
+          accepted).
+     If ANY check fails, the harness MUST HALT with
+     `HALT_P1_CONTAINMENT_UNVERIFIED` (see §7) and
+     MUST NOT invoke `rm -rf`. This makes
+     `HALT_P1_RECURSIVE_DELETE_CALLER_ROOT` executable
+     rather than merely doctrinal: a containment
+     failure is a hard precondition, not a
+     post-mortem.
 
    `HALT_P1_RECURSIVE_DELETE_CALLER_ROOT` — if any
    implementation recursive-deletes the caller-supplied
@@ -235,8 +274,35 @@ they MUST NOT require new runtime primitives.
 
 | Helper                                       | Legacy semantics it MUST emulate |
 |----------------------------------------------|----------------------------------|
-| `Bool GeShPrefixNumberedI64(text, prefix)`   | returns TRUE iff some line of `text` contains the literal `prefix` followed immediately by a non-empty decimal digit run (the `%[0-9]+` quantifier in the legacy regex). |
+| `Bool GepDynamicI8Shape(U8 *text)`           | returns TRUE iff some line of `text` contains, in order and on the SAME line: the literal `"getelementptr i8, ptr %"`, followed immediately by a non-empty decimal digit run, followed by the literal `", i64 %"`, followed immediately by a non-empty decimal digit run. This emulates the legacy Bash regex `getelementptr i8, ptr %[0-9]+, i64 %[0-9]+`. |
 | `Bool LineContainsOpcodeMarker(text, opcode, marker)` | returns TRUE iff some line of `text` contains both the literal opcode token and the literal marker token (`(REJECTED)` or `(SUPPORTED)`) on the SAME line, in the order opcode-then-marker (legacy `IR_<X>.*\(MARKER\)` semantics). |
+
+#### Why `GepDynamicI8Shape` and not `GeShPrefixNumberedI64`
+
+The C1.1 RED-AMEND frozen `GeShPrefixNumberedI64` helper
+only checked ONE half of the legacy regex (`prefix +
+digits`); it proved `getelementptr i8, ptr %123` but said
+nothing about the second operand being `i64 %<digits>`.
+This was a direct false-green path: the principal
+malformed fixture
+
+```text
+getelementptr i8, ptr %0, i64 2
+```
+
+(constant index, numbered base) would have been falsely
+accepted. C1.2 RED-AMEND tightens the contract to
+`GepDynamicI8Shape`, which requires BOTH operands
+numbered on the same line. This is the smallest helper
+that preserves the full legacy regex semantics.
+
+`HALT_GEP_HELPER_WEAKER_THAN_LEGACY` — if the C2 IMPL
+introduces any helper whose acceptance set is a strict
+superset of the legacy regex's acceptance set (i.e. the
+helper accepts some text the legacy regex would reject),
+halt and re-classify.
+
+#### Helper purity contract (binding)
 
 Both helpers MUST be implemented using only the existing
 HolyC primitives already imported by the harness
@@ -255,8 +321,11 @@ is at least as strong as the legacy Bash regex contract.
 Specifically:
 
 - Rows 04 and 07 MUST require
-  `GeShPrefixNumberedI64(emitted, "getelementptr i8, ptr %")`
-  (the `%[0-9]+` token in the legacy regex).
+  `GepDynamicI8Shape(emitted)`. The legacy contract
+  enforces both `%[0-9]+` operands on the same line; the
+  restored predicate MUST enforce the same constraint.
+  No weakening (e.g. by collapsing to a single operand
+  or to whole-file `Contains`) is permitted.
 - Row 08 MUST require
   `Contains(emitted, "load i8, ptr %gep_i8")` (the
   `%gep_i8` SSA-value binding is mandatory; this is
@@ -293,18 +362,36 @@ harness:
    not a synthetic mock, per F3).
 3. Asserts the expected verdict for each fixture:
 
-   | Fixture                | Helper call(s)                                                  | Expected |
-   |------------------------|-----------------------------------------------------------------|----------|
-   | `read-at-malformed.ll` | `GeShPrefixNumberedI64(t, "getelementptr i8, ptr %")` (rows 04 / 07) | FALSE (rejected) |
-   | `read-at-malformed.ll` | `Contains(t, "load i8, ptr %gep_i8")` (row 08)                  | FALSE (rejected) |
-   | `cap-malformed.txt`    | `LineContainsOpcodeMarker(t, "IR_GEP", "(REJECTED)")` (row 26)  | FALSE (rejected) |
-   | `cap-malformed.txt`    | `LineContainsOpcodeMarker(t, "IR_LEA", "(REJECTED)")` (row 27)  | FALSE (rejected) |
-   | `cap-malformed.txt`    | `LineContainsOpcodeMarker(t, "IR_IADD", "(SUPPORTED)")` (row 28) | FALSE (rejected) |
+   | Fixture                       | Helper call(s)                                          | Expected          | Role |
+   |-------------------------------|---------------------------------------------------------|-------------------|------|
+   | `read-at-malformed.ll`        | `GepDynamicI8Shape(t)` (rows 04 / 07)                   | FALSE (rejected)  | A — constant-index negative |
+   | `read-at-symbolic-base.ll`    | `GepDynamicI8Shape(t)` (rows 04 / 07)                   | FALSE (rejected)  | B — symbolic-base negative  |
+   | `read-at-genuine.ll`          | `GepDynamicI8Shape(t)` (rows 04 / 07)                   | TRUE (accepted)   | C — positive control        |
+   | `read-at-malformed.ll`        | `Contains(t, "load i8, ptr %gep_i8")` (row 08)          | FALSE (rejected)  | row 08 negative             |
+   | `cap-malformed.txt`           | `LineContainsOpcodeMarker(t, "IR_GEP", "(REJECTED)")` (row 26) | FALSE (rejected) | row 26 negative |
+   | `cap-malformed.txt`           | `LineContainsOpcodeMarker(t, "IR_LEA", "(REJECTED)")` (row 27) | FALSE (rejected) | row 27 negative |
+   | `cap-malformed.txt`           | `LineContainsOpcodeMarker(t, "IR_IADD", "(SUPPORTED)")` (row 28) | FALSE (rejected) | row 28 negative |
+
+   Cases A and B together cover both halves of the legacy
+   regex: A exercises the second operand (constant index
+   vs `%[0-9]+`), B exercises the first operand (symbolic
+   base vs `%[0-9]+`). A helper implementing only the
+   first half (the C1.1 `GeShPrefixNumberedI64` bug)
+   would pass case B and FAIL case A; a helper
+   implementing only the second half would pass case A
+   and FAIL case B. Both halves together force the full
+   legacy semantics.
+
+   Case C (positive control) prevents a tautological
+   selftest that proves only FALSE: a regression that
+   collapsed the predicate to always-FALSE would still
+   pass cases A, B, and the row-08 / row-26-28 cases; the
+   positive control catches that.
 
 4. Exits 0 if and only if every assertion in the table
    matches its expected verdict; otherwise prints
-   `SELFTEST_FAIL row=<n> expected=FALSE got=TRUE` (or
-   the symmetric message) and exits non-zero.
+   `SELFTEST_FAIL row=<n> fixture=<name> expected=<BOOL> got=<BOOL>`
+   and exits non-zero.
 
 The selftest exercises the helpers WITHOUT requiring the
 live hcc / llvm-as / opt toolchain, WITHOUT requiring the
@@ -426,40 +513,51 @@ AC01. The current harness reports
        and rc=0. Note that the harness now owns the
        scratch dir, so `rm -rf` beforehand is fine.
 
-AC02. Row 04 predicate rejects
-       `correction01/red/read-at-malformed.ll`.
+AC02. Row 04 predicate rejects the C1.2 RED-AMEND
+       fixtures `correction01/red/read-at-malformed.ll`
+       (constant index) AND
+       `correction01/red/read-at-symbolic-base.ll`
+       (symbolic base), and ACCEPTS the positive control
+       `correction01/red/read-at-genuine.ll`.
        Reproduction: run the harness in
-       `--predicate-selftest` mode (per §3.2) on the
-       committed fixture. The selftest invokes the
-       SAME local `GeShPrefixNumberedI64` helper the
-       normal 30-row run uses.
+       `--predicate-selftest` mode (per §3.2). The
+       selftest invokes the SAME local `GepDynamicI8Shape`
+       helper the normal 30-row run uses.
        ```
        ./hcc --install-dir=$(pwd)/build/test-prefix \
              -o /tmp/llvm-gep01-test \
              tools/quality/llvm-gep01-test.HC
        /tmp/llvm-gep01-test --predicate-selftest
        ```
-       Expected: rc=0, output includes
-       `SELFTEST_PASS row=04` (and rows 07, 08, 26, 27,
-       28 below). The selftest's per-fixture verdict
-       for `read-at-malformed.ll` row 04 is FALSE
-       (rejected), i.e. the predicate gap is closed.
+       Expected: rc=0. Output includes
+       `SELFTEST_PASS row=04 fixture=read-at-malformed.ll`
+       (case A),
+       `SELFTEST_PASS row=04 fixture=read-at-symbolic-base.ll`
+       (case B), and
+       `SELFTEST_PASS row=04 fixture=read-at-genuine.ll`
+       (case C, positive control). The C1.2 helper
+       `GepDynamicI8Shape` rejects both adversaries
+       (constant index, symbolic base) and accepts the
+       genuine dynamic shape.
 
-AC03. Row 07 predicate rejects the same malformed
-       `read-at.ll`. Reproduction: same
-       `--predicate-selftest` invocation as AC02; the
-       fixture-driven selftest table (§3.2 item 3) covers
-       row 07 via
-       `GeShPrefixNumberedI64(t, "getelementptr i8, ptr %")`.
-       Expected: rc=0, `SELFTEST_PASS row=07`.
+AC03. Row 07 predicate exercises the same three
+       fixtures and the SAME `GepDynamicI8Shape` helper
+       as AC02 (rows 04 and 07 share the legacy regex).
+       Reproduction: same `--predicate-selftest`
+       invocation as AC02.
+       Expected: rc=0,
+       `SELFTEST_PASS row=07 fixture=read-at-malformed.ll`,
+       `SELFTEST_PASS row=07 fixture=read-at-symbolic-base.ll`,
+       `SELFTEST_PASS row=07 fixture=read-at-genuine.ll`.
 
 AC04. Row 08 predicate rejects the same malformed
        `read-at.ll` (asserts `%gep_i8` SSA binding).
        Reproduction: same `--predicate-selftest`
        invocation as AC02; row 08 is covered via
-       `Contains(t, "load i8, ptr %gep_i8")` on the
-       same fixture.
-       Expected: rc=0, `SELFTEST_PASS row=08`.
+       `Contains(t, "load i8, ptr %gep_i8")` on
+       `read-at-malformed.ll`.
+       Expected: rc=0,
+       `SELFTEST_PASS row=08 fixture=read-at-malformed.ll`.
 
 AC05. Rows 26 / 27 / 28 predicates reject a malformed
        cap-verifier output where opcode and marker are
@@ -549,6 +647,15 @@ AC12. F1–F15 still intact; F-GIT-IDENTITY honored (no
 - `HALT_P1_RECURSIVE_DELETE_CALLER_ROOT` — if any
   implementation recursive-deletes the caller-supplied
   scratch root (option B, §3 item 5, forbids this).
+- `HALT_P1_CONTAINMENT_UNVERIFIED` — if the harness
+  reaches a `rm -rf <child>` site without the
+  containment check (§3 item 5, child-path
+  containment check) having returned TRUE for the
+  proposed child path.
+- `HALT_GEP_HELPER_WEAKER_THAN_LEGACY` — if the C2
+  IMPL introduces a rows-04/07 helper whose acceptance
+  set is a strict superset of the legacy Bash regex
+  `getelementptr i8, ptr %[0-9]+, i64 %[0-9]+` (§3.1).
 - `HALT_EVIDENCE_MUTATION` — if any change to the
   c1/c2/c3/c4 evidence tree appears necessary; halt
   instead and classify as residue.
@@ -569,20 +676,22 @@ verifies the conservation gates and reports verdict.
 
 Per the Factory v2 grammar (`docs/factory/GIT-METADATA.md`),
 `ACT-Phase` may only be one of `RED | IMPL | EVIDENCE |
-CLOSE`. The C1.1 follow-up is therefore still RED-phase
-work; its distinction from C1 is carried by the commit
-message body ("C1.1 RED-AMEND") and by §8 / §9 of this
-ACT, NOT by the `ACT-Phase` trailer.
+CLOSE`. The C1.1 and C1.2 follow-ups are therefore still
+RED-phase work; their distinction from C1 is carried by
+the commit message body and by §8 / §9 of this ACT, NOT
+by the `ACT-Phase` trailer.
 
 C1 RED       (committed)   — ACT document +
                                 correction01/red/ principal
                                 RED witnesses.
-C1.1 RED-AMEND (this commit, trailer `ACT-Phase: RED`)
+C1.1 RED-AMEND (committed, trailer `ACT-Phase: RED`)
                               — narrow amendment per
                                 reviewer's C1.1
                                 recommendation. Adds:
                                 §3.1 pure-local predicate
-                                helper contract;
+                                helper contract
+                                (`GeShPrefixNumberedI64` +
+                                `LineContainsOpcodeMarker`);
                                 §3.2 `--predicate-selftest`
                                 mode;
                                 §3.3 purity / scope
@@ -610,6 +719,65 @@ C1.1 RED-AMEND (this commit, trailer `ACT-Phase: RED`)
                                 commit is a follow-up
                                 RED-phase amendment, NOT
                                 a git amend.
+C1.2 RED-AMEND (this commit, trailer `ACT-Phase: RED`)
+                              — narrow amendment per
+                                reviewer's C1.2
+                                recommendation after
+                                C1.1 was published. The
+                                C1.1 helper
+                                `GeShPrefixNumberedI64`
+                                only checked the first
+                                half of the legacy regex
+                                (base `%[0-9]+`) and
+                                would falsely accept
+                                `getelementptr i8, ptr
+                                %0, i64 2`. C1.2 fixes
+                                the helper contract:
+                                - replaces
+                                  `GeShPrefixNumberedI64`
+                                  with
+                                  `GepDynamicI8Shape`
+                                  (§3.1) which checks
+                                  BOTH numbered SSA
+                                  operands on the same
+                                  line;
+                                - adds two committed
+                                  fixtures to
+                                  `correction01/red/`:
+                                  `read-at-symbolic-base.ll`
+                                  (negative B: symbolic
+                                  base) and
+                                  `read-at-genuine.ll`
+                                  (positive C: genuine
+                                  dynamic shape);
+                                - extends §3.2 selftest
+                                  table with cases A
+                                  (constant index),
+                                  B (symbolic base), and
+                                  C (genuine positive
+                                  control), and explains
+                                  why each is necessary
+                                  (force both halves +
+                                  prevent tautological
+                                  always-FALSE selftest);
+                                - adds §3.5 child-path
+                                  containment check
+                                  (binding precondition
+                                  before `rm -rf <child>`)
+                                  plus
+                                  `HALT_P1_CONTAINMENT_UNVERIFIED`;
+                                - adds
+                                  `HALT_GEP_HELPER_WEAKER_THAN_LEGACY`
+                                  to §7;
+                                - rewrites AC02 and
+                                  AC03 to reference the
+                                  new helper and all
+                                  three fixtures.
+                                No production source
+                                change. C1 and C1.1
+                                remain in force per F14
+                                and the append-only
+                                invariant.
 C2 IMPL      (deferred)     — restore rows 04/07/08 to
                                 legacy regex-bound form
                                 via the helpers from §3.1;
@@ -637,7 +805,12 @@ C1 (initial RED — preserved per append-only invariant):
     ACT: ACT-POLYC-TOOLING-MIGRATE-GEP01-CORRECTION01
     ACT-Phase: RED
 
-C1.1 (this commit — RED-AMEND label, RED-phase trailer):
+C1.1 (RED-AMEND label, RED-phase trailer):
+
+    ACT: ACT-POLYC-TOOLING-MIGRATE-GEP01-CORRECTION01
+    ACT-Phase: RED
+
+C1.2 (this commit — RED-AMEND label, RED-phase trailer):
 
     ACT: ACT-POLYC-TOOLING-MIGRATE-GEP01-CORRECTION01
     ACT-Phase: RED
