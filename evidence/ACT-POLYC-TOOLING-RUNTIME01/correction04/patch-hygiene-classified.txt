@@ -71,3 +71,28 @@ For the captured-log trailing-whitespace finding:
 
 Post-CORRECTION04 expected: 7 diagnostics (5 inherited-F14 + 1 tooling.HC F14
 + 1 captured-log trailing-whitespace as P2 residue). 0 CORRECTION03-introduced.
+
+=== POST-COMMIT UPDATE (after 8d1d961) ===
+
+Full ACT range hygiene status, final:
+
+  $ git diff --check 456b71c..HEAD
+  evidence/ACT-POLYC-TOOLING-RUNTIME01/c1/api-shape-freeze.txt:187
+  evidence/ACT-POLYC-TOOLING-RUNTIME01/c1/missing-primitives.txt:213
+  evidence/ACT-POLYC-TOOLING-RUNTIME01/c4/acceptance-matrix.txt:172
+  evidence/ACT-POLYC-TOOLING-RUNTIME01/c4/closure-summary.txt:214
+  evidence/ACT-POLYC-TOOLING-RUNTIME01/correction03/cmake-install.log:15
+  src/holyc-lib/tooling.HC:416
+
+  Total: 6 findings, classified:
+    4 historical F14 (immutable)
+    1 F14 tooling.HC (existed pre-c03)
+    1 P2 residue (verbatim argv)
+    0 CORRECTION03-introduced
+    0 CORRECTION04-introduced
+
+CORRECTION04 is hygiene-CLEAN for its own commits:
+  $ git diff --check HEAD~2..HEAD   # both c04 commits
+  rc=0
+  $ git diff --check HEAD~1..HEAD   # newest c04 commit only
+  rc=0
