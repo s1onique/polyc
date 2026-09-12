@@ -28,7 +28,7 @@ while read -r line; do
     [ "$new" -le "${old:-$new}" ] || note "B2 budget increase path=$p old=${old:-N/A} new=$new"
     case "$st" in
         MIGRATED) [ ! -f "$p" ] || note "B3 MIGRATED path exists: $p" ;;
-        TINY|EXEMPT_WRAPPER) cur=$(wc -l <"$p" 2>/dev/null || echo 0); [ "$cur" -le 50 ] || note "B7 $st over 50 path=$p cur=$cur" ;;
+        TINY|EXEMPT_WRAPPER) cur=$(wc -l <"$p" 2>/dev/null || echo 0); [ "$cur" -le 50 ] || note "B7 $st over 50 path=$p cur=$cur"; [ "$cur" -le "$new" ] || note "B-TINY $st over per-file budget path=$p cur=$cur budget=$new" ;;
         GRANDFATHERED)
             [ -f "$p" ] || note "B8 GRANDFATHERED absent path=$p (mark MIGRATED)"
             cur=$(wc -l <"$p" 2>/dev/null || echo 0); [ "$cur" -le "$new" ] || note "B1 GRANDFATHERED over budget path=$p cur=$cur budget=$new" ;;
