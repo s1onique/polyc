@@ -1,0 +1,112 @@
+# Negative control for IR_STORE_DEREF operand widening (P0-3 of expert review)
+
+The widening of `llOptionW_ReadsAreLowerable` to admit
+`IR_STORE_DEREF` MUST continue to reject V in the pointer role.
+A source-level mechanical witness is required to prove that the
+read-envelope widening does not accidentally widen V-in-pointer
+position.
+
+## Mechanical witness: GN4_neg.HC
+
+```c
+I64 GN4(I64 **p, I64 x) {
+    I64 *v = *p;       // v = IR_VAL_LOCAL, ptr, case-(b) def via load*
+    *v = x;             // IR_STORE_DEREF(dst=v_ptr, r1=x)
+    v = *p;             // case-(b) def #2
+    *v = x;             // IR_STORE_DEREF(dst=v_ptr, r1=x) again
+    return 0;
+}
+```
+
+Pre-opt IR (`hcc --dump-ir`):
+
+```text
+i64 GN4(%p1 ptr param, %p3 i64 param) {
+  bb1 -> predecessors:  {}  successors: {2}
+    store    %l2 ptr local, %p1 ptr param  ; line 1
+    store    %l4 i64 local, %p3 i64 param  ; line 1
+    alloca   %t5 i64 tmp, 8 i64 const int  ; line 1
+    store    %l6 ptr local, %l2 ptr local  ; line 2
+    store*   %l6 ptr local, %l4 i64 local  ; line 3   <-- dst==v
+    store    %l6 ptr local, %l2 ptr local  ; line 4
+    store*   %l6 ptr local, %l4 i64 local  ; line 5   <-- dst==v
+    store    %t5 i64 tmp, 0 i64 const int  ; line 6
+    jmp      bb2  ; line 6
+  ...
+}
+```
+
+Here `v = %l6 ptr local` appears as the dst of `store*`. The
+shape is exactly the one the widening MUST reject:
+
+  IR_STORE_DEREF(ins->dst = %l6, ins->r1 = %l4)
+
+## Current behaviour (pre-C2)
+
+```
+LLVM_BACKEND_UNSUPPORTED_OPTION_W_INELIGIBLE: function GN4:
+  mutable local id=6 (line 2) requires memory backing but is not
+  Option-W eligible (the local violates one of the §2 frozen
+  discriminator rules -- type, address-taken, definition opcode
+  outside {IR_STORE, IR_IADD, IR_ISUB}, read envelope, or
+  return-feed invariant).
+CAPABILITY_COUNTERS supported=0 rejected=0 shape_dependent=0
+                    defensive=0 unreachable=0
+```
+
+The address-taken fence in `llOptionW_NotAddressTaken`
+(src/llvm-backend.c:~790) rejects V when it appears as the
+address operand of any store (or any other address-producing
+instruction). This rejection is upstream of the read envelope
+and is unchanged by C2.
+
+## What C2-A must verify
+
+After the C2-A widening of `llOptionW_ReadsAreLowerable` to
+admit `IR_STORE_DEREF(ins->r1 == v)`:
+
+  1. GN4_neg.HC must STILL be rejected.
+  2. The rejection diagnostic must be
+     LLVM_BACKEND_UNSUPPORTED_OPTION_W_INELIGIBLE (not a
+     compilation crash and not an unrelated diagnostic).
+  3. The CAPABILITY_COUNTERS line must remain consistent
+     (the SHAPE_DEPENDENT counter on IR_STORE_DEREF fires once
+     per dispatched store; the SHAPE_DEPENDENT counter is
+     orthogonal to the Option-W rejection, which is an
+     upstream discriminator-side rejection).
+
+## Frozen contract for the read-envelope widening
+
+  src/llvm-backend.c, function llOptionW_ReadsAreLowerable:
+
+    case IR_STORE_DEREF:
+        // C1.1 frozen widening: admit ONLY when V is the VALUE
+        // operand (ins->r1 == v). Defensive guard:
+        // if V appears in pointer position (ins->dst == v)
+        // or in any other position (ins->r2 == v),
+        // the read envelope rejects V here as belt-and-braces.
+        // (The primary fence is llOptionW_NotAddressTaken, which
+        // runs BEFORE the read envelope.)
+        if (ins->r1 == v) {
+            node = node->next;
+            continue;
+        }
+        return 0;
+
+This contract guarantees:
+
+  - For a *ptr = local; pattern, the address-taken fence
+    fires first, so the read envelope is never reached with
+    dst == V. The defensive guard is for the case where the
+    fence's scope is ever narrowed (e.g., by a future ACT).
+  - For a *out = local; pattern (the Option-W use case), V is
+    in r1 only, so the widening admits it.
+
+## Why this is not a frontend-crash-as-evidence oracle
+
+The expert review's P1 objection: a frontend crash is not a
+valid negative control. GN4_neg.HC reaches the backend with
+a well-formed pre-opt IR. The discriminator rejects it with
+a named diagnostic (`OPTION_W_INELIGIBLE`), not a crash.
+The witness is reproducible end-to-end via
+`hcc --install-dir --dump-ir` / `hcc --install-dir --emit-llvm`.

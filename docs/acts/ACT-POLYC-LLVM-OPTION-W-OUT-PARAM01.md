@@ -35,13 +35,49 @@ C3 CLOSE of `ACT-POLYC-B0-SUBSTRATE-RECON01` (HALT_SUBSTRATE_GAP).
 > arm for short-circuit logical PHIs, allow a real PolyC B0-shaped
 > scanner to compile, verify, and run?
 
-**Production semantic changes:** FORBIDDEN.
+**C1.1 RED correction (this revision):**
 
-**New compiler feature:** FORBIDDEN.
+> An expert review identified five contract defects in the
+> initial C1 RED. C1.1 freezes corrections for each:
+>
+> * P0-1: production-change authorization was contradictory
+>   ("FORBIDDEN" + explicit authorization). Now bounded to the
+>   C1-frozen seams A and B.
+> * P0-2: Fix B was over-authorized as general IR_PHI support.
+>   Now `IR_PHI = LLVMBC_SHAPE_DEPENDENT` with a strict
+>   shape-validation contract in the dispatch arm itself.
+> * P0-3: one-pass PHI lowering safety was not proven. Now
+>   mechanically proven by the pre-ordering invariant
+>   (frontend always adds predecessors before the merge block;
+>   backend iterates blocks in linked-list order); two-phase
+>   fallback documented for future producers.
+> * P1: negative control was a frontend-crash-as-evidence.
+>   Now a mechanical witness `GN4_neg.HC` reaches the backend
+>   with well-formed IR and is rejected with a named diagnostic
+>   (`OPTION_W_INELIGIBLE`).
+> * P2: book-keeping corrections (12 evidence files not 8;
+>   G1 caption "no neutral-IR PHI" not "no CFG merge").
 
-**New LLVM capability:** FORBIDDEN (the widening is local to one
-discriminator function plus one dispatch arm; no new LLVM IR
-builder calls outside what the LLVM C API already exposes).
+**Production semantic changes:**
+* BOUNDED TO C1-FROZEN SEAMS A/B (no other deltas).
+
+**New language syntax / neutral IR producer:**
+* FORBIDDEN.
+
+**New LLVM backend behavior:**
+* AUTHORIZED ONLY FOR:
+  * A. IR_STORE_DEREF value-read admission (seam A;
+    `src/llvm-backend.c` `llOptionW_ReadsAreLowerable`
+    discriminator function only).
+  * B. Existing short-circuit IR_PHI lowering (seam B;
+    `src/llvm-backend.c` `llLowerInstr` `case IR_PHI:` arm;
+    `src/llvm-backend-cap.c` capability-class transition
+    `REJECTED` -> `SHAPE_DEPENDENT`; ONLY IF released by C3).
+
+**New LLVM C-API calls outside the existing per-block walk:**
+* FORBIDDEN (the widening is local to one discriminator function
+  plus one dispatch arm; no new LLVM IR builder calls outside
+  what the LLVM C API already exposes).
 
 **New Bash logic:** FORBIDDEN (no new `*.sh` files).
 
@@ -199,7 +235,7 @@ substrate can implement ScanIdent (the binding fixture).
 
 ## 5. Three minimal geometries (frozen at C1)
 
-### G1 - out-param consumer, no CFG merge
+### G1 - out-param consumer with no neutral-IR PHI
 
 ```c
 I64 G1(I64 x, I64 *out) {
@@ -389,22 +425,58 @@ adds:
 
 ```c
 case IR_PHI: {
-    // ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01: lower short-circuit
-    // logical-result PHIs to LLVMBuildPHI. Provenance (C1) shows
-    // that ALL IR_PHI in the neutral IR are produced by
-    // src/ir.c:535/566/592 (logical short-circuit); operands are
-    // therefore IR_VAL_TMP carrying I8 values.
+    // ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 (C1.1): lower
+    // short-circuit logical-result PHIs to LLVMBuildPHI.
+    // Provenance (C1) shows that ALL IR_PHI in the current
+    // neutral IR are produced by src/ir.c:535/566/592
+    // (logical short-circuit); operands are therefore
+    // IR_VAL_TMP carrying I8 values.
     //
-    // The destination is placed at the start of the current block
-    // (LLVMBuildPHI returns a PHI node positioned at builder).
-    if (!ins->dst || !ins->extra.phi_pairs) {
-        // malformed PHI; defensive reject
+    // SHAPE_DEPENDENT validation: the dispatch arm enforces
+    // the C1-frozen shape contract before lowering. A future
+    // PHI producer that violates any invariant below is
+    // rejected with a NEW diagnostic (NOT the legacy
+    // LLVMBC_REJECTED path).
+    if (!ins->dst) {
+        // malformed PHI: missing dst
+        LL_INC_REJECTED(lc);
         fprintf(stderr,
-            "%s: function %s: malformed IR_PHI "
-            "(missing dst or phi_pairs)\n",
-            LLVM_BACKEND_INTERNAL, fn->name->data);
-        return 1;
+            "%s: function %s: IR_PHI missing dst\n",
+            LLVM_BACKEND_UNSUPPORTED_PHI_ORTHOGONAL_TO_CORE,
+            lc->fn->name->data);
+        llEmitCapabilityCountersOnce(lc->totals);
+        exit(1);
     }
+    if (ins->dst->kind != IR_VAL_TMP ||
+        ins->dst->type != IR_TYPE_I8) {
+        // SHAPE_DEPENDENT mismatch
+        LL_INC_REJECTED(lc);
+        fprintf(stderr,
+            "%s: function %s: IR_PHI shape mismatch "
+            "(dst.kind=%s dst.type=%d; only IR_VAL_TMP+I8 "
+            "from short-circuit logical operators is "
+            "supported)\n",
+            LLVM_BACKEND_UNSUPPORTED_PHI_ORTHOGONAL_TO_CORE,
+            lc->fn->name->data,
+            irValueKindToString(ins->dst->kind),
+            (int)ins->dst->type);
+        llEmitCapabilityCountersOnce(lc->totals);
+        exit(1);
+    }
+    if (!ins->extra.phi_pairs ||
+        vecSize(ins->extra.phi_pairs) < 1) {
+        LL_INC_REJECTED(lc);
+        fprintf(stderr,
+            "%s: function %s: IR_PHI missing phi_pairs\n",
+            LLVM_BACKEND_UNSUPPORTED_PHI_ORTHOGONAL_TO_CORE,
+            lc->fn->name->data);
+        llEmitCapabilityCountersOnce(lc->totals);
+        exit(1);
+    }
+    // Pre-ordering invariant (see c1.1/phi-onepass-safety.txt):
+    // every incoming ir_block must precede the merge block in
+    // fn->blocks, so by the time we reach this arm, every
+    // incoming value is already bound to lc->values.
     LLVMTypeRef phi_ty = llLowerType(lc, ins->dst->type);
     LLVMValueRef phi_node = LLVMBuildPhi(builder, phi_ty, "");
     unsigned n = (unsigned)vecSize(ins->extra.phi_pairs);
@@ -414,6 +486,16 @@ case IR_PHI: {
         (LLVMBasicBlockRef *)malloc(sizeof(LLVMBasicBlockRef) * n);
     for (unsigned i = 0; i < n; ++i) {
         IrPair *p = (IrPair *)vecGet(ins->extra.phi_pairs, i);
+        if (!p || !p->ir_value || !p->ir_block) {
+            LL_INC_REJECTED(lc);
+            fprintf(stderr,
+                "%s: function %s: IR_PHI incoming pair %u "
+                "missing ir_value or ir_block\n",
+                LLVM_BACKEND_UNSUPPORTED_PHI_ORTHOGONAL_TO_CORE,
+                lc->fn->name->data, i);
+            llEmitCapabilityCountersOnce(lc->totals);
+            exit(1);
+        }
         incoming_values[i] = llLowerValue(lc, p->ir_value);
         incoming_blocks[i] = llGetOrCreateBlock(lc, p->ir_block);
     }
@@ -421,7 +503,8 @@ case IR_PHI: {
     free(incoming_values);
     free(incoming_blocks);
     llCacheValue(lc, ins->dst, phi_node);
-    return 0;
+    LL_INC_SUPPORTED(lc);
+    return LLVMValueRef-as-return-value;
 }
 ```
 
@@ -429,12 +512,43 @@ Invariants:
 * `LLVMBuildPHI` is positioned at the builder cursor; PHI nodes
   must be at the start of a basic block. The dispatcher
   enforces this by placing PHI lowering first in the block walk.
-* `IR_VAL_TMP` operands only (per C1 provenance).
+* `IR_VAL_TMP` operands only (per C1 provenance); the SHAPE_DEPENDENT
+  guard rejects every other shape with the new diagnostic.
 * No case-(a)/(b) implications: the result of a PHI is a fresh
   SSA value, not a memory-backed local.
-* The existing C6 IR opcode table
-  (`src/llvm-backend-cap.c`) updates:
-  `IR_PHI` from `LLVMBC_REJECTED` to `LLVMBC_SUPPORTED`.
+* Pre-ordering invariant (proven in c1.1/phi-onepass-safety.txt):
+  every incoming `ir_block` precedes the merge block in
+  `fn->blocks`, so `llLowerValue(lc, p->ir_value)` resolves
+  to a cached SSA value before the merge block is visited.
+* The existing C6 IR opcode table (`src/llvm-backend-cap.c`)
+  updates: `IR_PHI` from `LLVMBC_REJECTED` to
+  `LLVMBC_SHAPE_DEPENDENT` (NOT `LLVMBC_SUPPORTED`). The
+  diagnostic field for `IR_PHI` is `NULL` (per
+  `llvm-backend-cap.h` SHAPE_DEPENDENT contract: the SHAPE
+  matrix lives in the dispatch comment; runtime enforcement
+  is per-shape inside the dispatch itself).
+* A new diagnostic macro `LLVM_BACKEND_UNSUPPORTED_PHI_ORTHOGONAL_TO_CORE`
+  is added to `src/llvm-backend.h`. It is reserved for the
+  C1.1 dispatch-arm's SHAPE_DEPENDENT rejection paths.
+  The legacy `LLVM_BACKEND_UNSUPPORTED_PHI` is REMOVED from
+  the dispatch (its only remaining use was the REJECTED-class
+  default arm, which is now superseded by the SHAPE_DEPENDENT
+  arm).
+
+Two-phase fallback: if a future PHI producer violates the
+pre-ordering invariant (e.g., a loop-carried short-circuit),
+the bounded fallback is to split the dispatch arm into a
+two-phase lowering:
+
+  * Phase 1 (during block walk): create the PHI node, cache
+    (merge_block, dst, phi_node) and (ir_block, ir_value,
+    phi_node) into a deferred list.
+  * Phase 2 (after all blocks lowered): resolve incoming
+    values via `llLowerValue` and call `LLVMAddIncoming`.
+
+The C2 IMPL-B (if released by C3) MUST use one-pass because
+the only current producer shape has the pre-ordering invariant;
+two-phase is preserved as a bounded fallback only.
 
 Hard stop: if Fix B's implementation requires additional LLVM
 C-API calls beyond `LLVMBuildPHI` + `LLVMAddIncoming` + the
@@ -446,13 +560,22 @@ seams, this ACT halts as HALT_SCOPE_EXPANSION_REQUIRED.
 ## 10. Commit topology
 
 ```text
-C1 RED        (this commit)
-                ACT + 6 C1 evidence files
+C1 RED        (committed; RED at 982dfa3)
+                ACT + 12 C1 evidence files
+
+C1.1 RED      (this commit)
+                ACT corrections (5 contract defects)
+                + 3 C1.1 evidence files:
+                  - c1.1-patch-summary.md
+                  - negative-control.txt
+                  - phi-onepass-safety.txt
 
 C2 IMPL-A     (Fix A only)
                 widen llOptionW_ReadsAreLowerable
                 rebuild hcc
                 verify: G1 PASS, G2 PASS, G3 still FAIL on path 2
+                verify: GN4_neg.HC STILL rejected (AC24)
+                verify: NO IR_PHI diagnostic fires for any test (AC25)
 
 C3 EVIDENCE-A
                 P1 PASS, P2 PASS, P5-P11 PASS (LOCAL-MEM2REG regression)
@@ -460,8 +583,9 @@ C3 EVIDENCE-A
                 C3 freeze the two-seam result
 
 C4 IMPL-B     (ONLY IF C3 finds path 2 still blocks)
-                add case IR_PHI: arm to llLowerInstr
-                update src/llvm-backend-cap.c IR_PHI to SUPPORTED
+                add case IR_PHI: arm to llLowerInstr (SHAPE_DEPENDENT)
+                add LLVM_BACKEND_UNSUPPORTED_PHI_ORTHOGONAL_TO_CORE
+                update src/llvm-backend-cap.c IR_PHI to SHAPE_DEPENDENT
                 rebuild hcc
 
 C5 EVIDENCE-B
@@ -500,7 +624,10 @@ only ACT, named mechanically.
 11. AC11 LOCAL-MEM2REG predecessor (`LL_INC_SHAPE_DEPENDENT` /
          `LLVM_BACKEND_UNSUPPORTED_OPTION_W_INELIGIBLE` /
          capability counter semantics) UNCHANGED.
-12. AC12 No production semantic change.
+12. AC12 No production semantic change OUTSIDE the frozen
+         C2-A/C4-B seams (seam A: IR_STORE_DEREF value-read
+         admission; seam B: existing short-circuit IR_PHI
+         lowering).
 13. AC13 No new `.sh` files added.
 14. AC14 Functional compiler gates GREEN (GEP01/BYTE-MEMORY/
          INT-OPS/IR-RETURN-SLOT-FWD/SPIKE/CAP-TABLE/SHELL-LOC).
@@ -515,6 +642,39 @@ only ACT, named mechanically.
 19. AC19 Verdict is one of: `PASS`, `HALT_SECOND_SEAM_REQUIRED`,
          `HALT_SUBSTRATE_GAP_NAMED`, `HALT_SCOPE_EXPANSION_REQUIRED`.
 
+### C1.1 contract-correction acceptance criteria
+
+20. AC20 C1.1 freezes `IR_PHI` capability class as
+         `LLVMBC_SHAPE_DEPENDENT` (NOT `LLVMBC_SUPPORTED`).
+21. AC21 C1.1 freezes the SHAPE_DEPENDENT validation contract
+         (dst.kind == IR_VAL_TMP, dst.type == IR_TYPE_I8,
+         phi_pairs != NULL, every incoming pair has ir_value
+         and ir_block).
+22. AC22 C1.1 freezes the pre-ordering invariant for one-pass
+         PHI lowering (every incoming ir_block precedes the
+         merge block in fn->blocks) and the two-phase fallback
+         for future producers that violate the invariant.
+23. AC23 C1.1 freezes a mechanical negative-control witness
+         (GN4_neg.HC) for the read-envelope widening, with a
+         named diagnostic (`OPTION_W_INELIGIBLE`) - NOT a
+         frontend crash.
+24. AC24 C2-A must verify that GN4_neg.HC is STILL rejected
+         after the widening, with the SAME diagnostic and
+         CAPABILITY_COUNTERS state as pre-C2.
+25. AC25 C2-A must verify that no IR_PHI-related diagnostic
+         fires for any G1, G2, G3, or LOCAL-MEM2REG regression
+         test (the seam-A widening is bounded to the read
+         envelope; it does not touch any IR_PHI code path).
+26. AC26 C4 IMPL-B (if released) must use the SHAPE_DEPENDENT
+         guard from §9 and reject every other shape with
+         `LLVM_BACKEND_UNSUPPORTED_PHI_ORTHOGONAL_TO_CORE`.
+27. AC27 C4 IMPL-B (if released) must transition `IR_PHI` in
+         `src/llvm-backend-cap.c` from `LLVMBC_REJECTED` to
+         `LLVMBC_SHAPE_DEPENDENT` (diagnostic = NULL).
+28. AC28 C1.1 freezes the book-keeping corrections:
+         (a) "8 evidence files" -> "12 C1 evidence files";
+         (b) G1 caption "no CFG merge" -> "no neutral-IR PHI".
+
 ---
 
 ## 12. HALT taxonomy
@@ -528,6 +688,11 @@ HALT_SCOPE_EXPANSION_REQUIRED  (Fix B needs more than the
 HALT_CONSERVATION_REGRESSION   (any required gate regressed)
 HALT_LLVM_VERIFY               (llvm-as or opt --passes=verify fails)
 HALT_RUNTIME_MISMATCH          (ScanIdent oracle mismatch)
+HALT_NEGATIVE_CONTROL_REGRESSION  (C2-A: GN4_neg.HC becomes
+                                   accepted after widening)
+HALT_PHI_PREORDERING_VIOLATED    (a future IR_PHI producer violates
+                                   the pre-ordering invariant and
+                                   requires two-phase lowering)
 ```
 
 ---
@@ -546,24 +711,34 @@ a preprocessor
 a macro engine
 PHI for memory-backed LVars   (still owned by LLVM mem2reg)
 general IR_PHI lowering       (only short-circuit logical PHIs)
-the LLVM_BACKEND_UNSUPPORTED_PHI diagnostic removal
-                                (kept as the rejection path for
-                                 malformed or out-of-contract PHIs)
-Track B (codium-polyc2)       (independent)
+                                with SHAPE_DEPENDENT guard per C1.1
+the legacy LLVM_BACKEND_UNSUPPORTED_PHI diagnostic removal
+                                (replaced by
+                                 LLVM_BACKEND_UNSUPPORTED_PHI_ORTHOGONAL_TO_CORE;
+                                 the old macro's only call site
+                                 was the REJECTED default arm,
+                                 which is now superseded by the
+                                 SHAPE_DEPENDENT arm)
+general SELECT / SWITCH lowering
+                                (still REJECTED)
 a Bash migration
+Track B (codium-polyc2)       (independent)
 ```
 
 ---
 
 ## 14. Required final report
 
-VERDICT, IDENTITY (ENTRY_HEAD / C1_RED / C2_IMPL-A / C3_EVIDENCE-A /
-C4_IMPL-B [if run] / C5_EVIDENCE-B [if run] / C6_CLOSE / FINAL_HEAD /
-WORKTREE), ARCHITECTURAL INFERENCE (the two-seam split; the
-corrected statement of PHI ownership), GEOMETRY PROBES (G1, G2, G3),
-OPTION-W WIDENING (frozen contract; implemented diff line range;
-test P1 PASS), IR_PHI DISPATCH ARM (only if C4 ran; frozen contract;
-implemented diff line range; test P3 PASS), SCANIDENT ORACLE (10
-tests, runtime output), PRODUCTION DELTA (src/ tests/ shell/ doc/),
-GATES (functional compiler, factory, environmental), RESIDUE,
-ROADMAP STATE, NEXT ACT.
+VERDICT, IDENTITY (ENTRY_HEAD / C1_RED / C1.1_RED / C2_IMPL-A /
+C3_EVIDENCE-A / C4_IMPL-B [if run] / C5_EVIDENCE-B [if run] /
+C6_CLOSE / FINAL_HEAD / WORKTREE), ARCHITECTURAL INFERENCE
+(two-seam split; corrected PHI ownership; C1.1 contract
+corrections), GEOMETRY PROBES (G1, G2, G3), NEGATIVE CONTROL
+(GN4_neg.HC rejection status; C2-A AC24), OPTION-W WIDENING
+(frozen contract; implemented diff line range; test P1 PASS;
+AC25: no IR_PHI diagnostic fires), IR_PHI DISPATCH ARM (only
+if C4 ran; SHAPE_DEPENDENT class; frozen contract;
+implemented diff line range; test P3 PASS), SCANIDENT ORACLE
+(10 tests, runtime output), PRODUCTION DELTA (src/ tests/
+shell/ doc/), GATES (functional compiler, factory, environmental),
+RESIDUE, ROADMAP STATE, NEXT ACT.

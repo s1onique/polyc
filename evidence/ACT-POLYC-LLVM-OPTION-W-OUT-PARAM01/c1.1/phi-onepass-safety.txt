@@ -1,0 +1,142 @@
+# One-pass PHI lowering safety (P0-3 of expert review)
+
+The C1 contract's IR_PHI dispatch-arm pseudocode (§9 of
+ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01.md) calls `llLowerValue`
+inside the same pass that creates the LLVMBuildPHI node. This
+is mechanically safe ONLY when every incoming value has
+already been bound to the SSA cache (`lc->values`) before the
+PHI's merge block is lowered.
+
+The current frontend PHI provenance is narrow:
+
+```text
+IR_PHI producers (src/ir.c):
+  line 535-538   AST_BIN_OP_LOG_AND  short-circuit merge
+  line 566-569   AST_BIN_OP_LOG_AND  short-circuit merge
+  line 592-595   AST_BIN_OP_LOG_OR   short-circuit merge
+
+PHI layout (src/ir-types.c:876):
+  ins->op           = IR_PHI
+  ins->dst          = IR_VAL_TMP, IR_TYPE_I8
+  ins->r1           = NULL
+  ins->r2           = NULL
+  ins->extra.phi_pairs = Vec<IrPair *>, exactly 2 entries
+
+IrPair (src/ir-types.c:423):
+  ir_block     = IrBlock *
+  ir_value     = IrValue *
+```
+
+## Mechanically proven pre-ordering
+
+For each short-circuit merge, the frontend builds three
+blocks in this exact order:
+
+```text
+src/ir.c:531-538  AST_BIN_OP_LOG_AND:
+  1. ir_block        (the "left evaluated here" block)
+  2. ir_right_block  (the "right evaluated here" block)
+  3. ir_end_block    (the merge block; IR_PHI lives here)
+```
+
+Both predecessors are added to the function's block list
+BEFORE the merge block:
+
+```text
+src/ir.c:531   irFnAddBlock(ir_end_block)   <- not yet, but the
+                                              irBranch call before
+                                              this adds the edge
+src/ir.c:560-562  AST_BIN_OP_LOG_AND second site:
+  irFnAddBlock(ir_right_block)
+src/ir.c:564   irFnAddBlock(ir_end_block)
+```
+
+The empirical G3.ir.txt (ScanIdent) confirms:
+
+```text
+bb1, bb3, bb4, bb8, bb9, bb6, bb7, bb10, bb11, bb5, bb2
+
+bb9's PHI predecessors: bb4 (constant 1), bb8 (value t23)
+  -> both bb4 and bb8 are at lower list-indices than bb9.
+bb7's PHI predecessors: bb9 (constant 1), bb6 (value t27)
+  -> both bb9 and bb6 are at lower list-indices than bb7.
+```
+
+The IR_PHI dispatch's one-pass lowering walks the block list
+in linked-list order (src/llvm-backend.c:3273-3281). For
+every IR_PHI in the current IR, the pre-ordering invariant
+holds:
+
+```text
+  for each incoming (ir_block, ir_value) pair P:
+    index(ir_block) < index(merge_block) in fn->blocks
+```
+
+Therefore `llLowerValue(lc, P.ir_value)` resolves P.ir_value
+from `lc->values` (or from `llLowerConstInt` for constants)
+before the merge block is visited.
+
+## Future PHI producers: the SHAPE_DEPENDENT guard
+
+The expert's P0-2 concern applies: if a future ACT introduces
+a new IR_PHI producer (e.g., for SELECT), it might violate the
+pre-ordering invariant. The C1.1 frozen contract requires:
+
+```text
+  IR_PHI capability class  = LLVMBC_SHAPE_DEPENDENT
+                             (NOT LLVMBC_SUPPORTED)
+
+  Accepted iff (in the dispatch arm itself, not in the table):
+    ins->dst != NULL
+    ins->dst->kind == IR_VAL_TMP
+    ins->dst->type == IR_TYPE_I8
+    ins->extra.phi_pairs != NULL
+    vecSize(ins->extra.phi_pairs) >= 1
+    for each IrPair P:
+      P.ir_value != NULL
+      P.ir_block != NULL
+      P.ir_block is in fn->blocks
+      (pre-ordering or deferred resolution required)
+
+  Rejected (in dispatch arm) iff any of the above fails:
+    LLVM_BACKEND_UNSUPPORTED_PHI_ORTHOGONAL_TO_CORE
+    (a new diagnostic name; not LLVM_BACKEND_UNSUPPORTED_PHI
+     which is reserved for the legacy "no PHI at all" stance)
+```
+
+## Two-phase lowering as a contingency
+
+If the pre-ordering invariant ever fails for a future IR_PHI
+producer (e.g., a loop-carried logical short-circuit), the
+two-phase alternative is mechanically available:
+
+```text
+  Phase 1: walk all blocks; for each IR_PHI:
+    - validate the SHAPE_DEPENDENT shape
+    - LLVMBuildPhi to create the PHI node
+    - cache (merge_block, dst, phi_node) into a deferred list
+    - cache (ir_block, ir_value, phi_node) into a deferred list
+    - DO NOT call llLowerValue or LLVMAddIncoming yet.
+
+  Phase 2: after all blocks are lowered:
+    for each pending (ir_block, ir_value, phi_node):
+      LLVMValueRef incoming = llLowerValue(lc, ir_value)
+      LLVMAddIncoming(phi_node, &incoming, &ir_block, 1)
+```
+
+This two-phase pattern matches LLVM's own PromoteMemoryToReg
+order (create-then-resolve). It is recorded in §9 of the ACT
+as the alternative strategy if one-pass safety is ever
+violated by a future producer.
+
+The C2 IMPL-B (if released by C3) MUST use one-pass because:
+  - the only current producer shape has the pre-ordering
+    invariant,
+  - one-pass is simpler and matches the existing per-block
+    walk,
+  - two-phase is preserved as a bounded fallback.
+
+If C2 IMPL-B's verification fails because of a pre-ordering
+violation (e.g., a regression test that compiles a future
+producer shape), halt as HALT_PHI_PREORDERING_VIOLATED and
+open a separate ACT to use two-phase.

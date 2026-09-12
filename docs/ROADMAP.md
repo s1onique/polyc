@@ -963,7 +963,8 @@ OPTION-W-OUT-PARAM01  ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01
       harness-evidence-isolation = ENVIRONMENTALLY UNAVAILABLE
 
   COMMIT TOPOLOGY
-    C1 RED        (this commit)
+    C1 RED        committed at 982dfa3
+    C1.1 RED      this commit (5 contract corrections)
     C2 IMPL-A     (seam A only)
     C3 EVIDENCE-A (verify seam A; report seam B status)
     HARD STOP     (if seam B remains the only blocker)
@@ -972,6 +973,50 @@ OPTION-W-OUT-PARAM01  ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01
     C5 EVIDENCE-B (ScanIdent compiles + verifies + runs)
     C6 CLOSE      (verdict per outcome: PASS / HALT_SECOND_SEAM
                    / HALT_SUBSTRATE_GAP_NAMED)
+
+  C1.1 CONTRACT CORRECTIONS
+    Per expert review (LLVM backend engineer + Factory
+    contract reviewer), five contract defects in C1 were
+    fixed before C2:
+
+    P0-1  Production-change authorization was contradictory
+          (FORBIDDEN + explicit authorization).
+          NOW bounded to C1-frozen seams A/B.
+
+    P0-2  Fix B was over-authorized as general IR_PHI support.
+          NOW IR_PHI = LLVMBC_SHAPE_DEPENDENT with a strict
+          shape-validation contract in the dispatch arm
+          itself; legacy LLVM_BACKEND_UNSUPPORTED_PHI
+          replaced by
+          LLVM_BACKEND_UNSUPPORTED_PHI_ORTHOGONAL_TO_CORE.
+
+    P0-3  One-pass PHI lowering safety was not proven.
+          NOW mechanically proven by the pre-ordering
+          invariant (frontend always adds predecessors
+          before the merge block; backend iterates blocks
+          in linked-list order). Two-phase fallback
+          documented for future producers that violate
+          the invariant.
+
+    P1    Negative control was a frontend-crash-as-evidence.
+          NOW a mechanical witness GN4_neg.HC reaches the
+          backend with well-formed IR and is rejected with
+          a named diagnostic (OPTION_W_INELIGIBLE).
+
+    P2    Book-keeping corrections:
+          "8 evidence files" -> "12 C1 evidence files";
+          G1 caption "no CFG merge" -> "no neutral-IR PHI".
+
+  NEW C1.1 EVIDENCE
+    c1.1/c1.1-patch-summary.md   patch summary
+    c1.1/negative-control.txt   GN4_neg.HC mechanical witness
+    c1.1/phi-onepass-safety.txt pre-ordering proof + 2-phase fallback
+
+  NEW C2-A ACCEPTANCE CRITERIA (from C1.1)
+    AC24  GN4_neg.HC STILL rejected after widening
+    AC25  NO IR_PHI diagnostic fires for any C2-A test
+    AC26  C4 dispatch arm uses SHAPE_DEPENDENT guard
+    AC27  C4 transitions IR_PHI to SHAPE_DEPENDENT (diagnostic=NULL)
 ```
 
 The recon's ROADMAP transition above is REFINED to:
