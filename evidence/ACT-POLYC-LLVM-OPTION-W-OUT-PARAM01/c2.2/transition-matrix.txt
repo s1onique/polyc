@@ -1,0 +1,93 @@
+C2-A.2 IMPL: post-implementation transition matrix
+=================================================
+
+Captured at HEAD = e6298f3..HEAD (post-C2-A.2 widening).
+
+Production delta:
+  src/llvm-backend.c, function llOptionW_FeedsReturnOrIsReturnLocal:
+    - new local: int v_stored_into_out_param = 0;
+    - new Sink C arm (IR_STORE_DEREF r1==V && dst!=V && r2!=V)
+    - OR'd into the return expression
+
+TRANSITION MATRIX (POST-C2-A.2):
+
+  G1.HC (out-param consumer, no neutral-IR PHI)
+    exit=0
+    diag=(none; PASS)
+    cap=supported=9 rejected=0 shape_dependent=5 defensive=0
+        unreachable=0
+    STATUS: PASS
+
+  G2.HC (mutable loop/local, no out-param)
+    exit=0
+    diag=(none; PASS)
+    cap=supported=8 rejected=0 shape_dependent=2 defensive=0
+        unreachable=0
+    STATUS: PASS (conservation oracle preserved)
+
+  G3.HC (ScanIdent; binding fixture)
+    exit=1
+    diag=LLVM_BACKEND_UNSUPPORTED_PHI: function ScanIdent
+    cap=supported=15 rejected=1 shape_dependent=12 defensive=0
+        unreachable=0
+    STATUS: UNSUPPORTED_PHI  (SEAM A2 FIXED; SEAM B ISOLATED)
+
+  GN4_neg.HC (V used as pointer)
+    exit=1
+    diag=LLVM_BACKEND_UNSUPPORTED_OPTION_W_INELIGIBLE: function GN4
+    cap=supported=0 rejected=0 shape_dependent=0 defensive=0
+        unreachable=0
+    STATUS: REJECTED (fence holds)
+
+  GN5.HC (Sink C legal + imul = illegal def; negative control)
+    exit=1
+    diag=LLVM_BACKEND_UNSUPPORTED_OPTION_W_INELIGIBLE: function GN5
+    cap=supported=0 rejected=0 shape_dependent=0 defensive=0
+        unreachable=0
+    STATUS: REJECTED at Gate 3 (imul outside CASE_B_OPCODE_SET)
+
+  GN5b.HC (Sink C legal + all iadd; positive control)
+    exit=0
+    diag=(none; PASS)
+    cap=supported=6 rejected=0 shape_dependent=3 defensive=0
+        unreachable=0
+    STATUS: PASS
+
+  PhiOnly.HC (probe for P4 phi_only; regression)
+    exit=1
+    diag=LLVM_BACKEND_UNSUPPORTED_PHI: function PhiOnly
+    cap=supported=5 rejected=1 shape_dependent=1 defensive=0
+        unreachable=0
+    STATUS: UNCHANGED at PHI path
+
+LOCAL-MEM2REG regression (P5-P11; 7 fixtures):
+  safe_fwd_single_pred.HC    PASS
+  single_cond_probe.HC       PASS
+  Diamond.HC                 PASS
+  red_local_multi_def.HC     PASS
+  nc_p01_predecessor_paths.HC PASS
+  i64_collapse_probe.HC      PASS
+  pos_b0_compare_digit.HC    PASS
+
+EXPERT'S REQUIRED TRANSITION MATRIX (ALL ACHIEVED):
+  G1        PASS                  PASS
+  G2        PASS                  PASS
+  G3        UNSUPPORTED_PHI       UNSUPPORTED_PHI
+  GN4       OPTION_W_INELIGIBLE   OPTION_W_INELIGIBLE
+  PhiOnly   UNSUPPORTED_PHI       UNSUPPORTED_PHI
+  P5-P11    7/7 PASS              7/7 PASS
+
+  ADDITIONAL (new negative + positive controls):
+  GN5       OPTION_W_INELIGIBLE   OPTION_W_INELIGIBLE
+  GN5b      PASS                  PASS
+
+CONCLUSION:
+
+  SEAM_A2_FIXED = YES  (Gate 5 now admits Sink C)
+  SEAM_B_ISOLATED = YES  (Gate dispatch still rejects IR_PHI;
+                          the next seam is independent)
+  CONSERVATION_PRESERVED = YES  (all 7 P5-P11 fixtures PASS)
+
+VERDICT: C2-A.2 PASSES the required transition matrix.
+
+NEXT: C3 EVIDENCE-A (freeze result; decide C4_IMPL_B_AUTH).

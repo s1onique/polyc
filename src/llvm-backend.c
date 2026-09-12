@@ -882,6 +882,7 @@ static int llOptionW_FeedsReturnOrIsReturnLocal(IrFunction *fn, IrValue *v) {
     if (!fn->blocks || !v) return 0;
     int v_reaches_ret = 0;
     int v_stored_into_ret_slot = 0;
+    int v_stored_into_out_param = 0;
     int v_on_chain_to_ret = 0;
     /* First pass: direct return-feeding sites. */
     /* Collect every IR_VAL_TMP whose definition involves V as an
@@ -902,6 +903,34 @@ static int llOptionW_FeedsReturnOrIsReturnLocal(IrFunction *fn, IrValue *v) {
             if (ins->op == IR_STORE && ins->r1 == v &&
                 ins->dst && ins->dst->kind == IR_VAL_TMP) {
                 v_stored_into_ret_slot = 1;
+            }
+            /* ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 C2-A.2 IMPL:
+             * Sink C -- IR_STORE_DEREF where V is the VALUE
+             * operand (ins->r1 == v) and V does NOT appear in
+             * the destination pointer (ins->dst != v) or in the
+             * r2 slot (ins->r2 != v). This is the canonical B0
+             * out-param pattern:
+             *   *out = V;
+             * where the function's externally observable result
+             * is delivered through caller-provided memory rather
+             * than the function's return value.
+             *
+             * Frozen contract: ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01
+             * §10.1 (Rule 5 = observable sink); evidence/c2.1/
+             * rule5-observable-sink.txt. The C function name
+             * llOptionW_FeedsReturnOrIsReturnLocal is preserved
+             * as historical/legacy naming debt; the SEMANTIC
+             * contract is observable-sink.
+             *
+             * Defensive guard: the address-taken fence
+             * llOptionW_NotAddressTaken already rejects V in the
+             * pointer position. This check mirrors that fence
+             * belt-and-braces. */
+            if (ins->op == IR_STORE_DEREF &&
+                ins->r1 == v &&
+                ins->dst != v &&
+                ins->r2  != v) {
+                v_stored_into_out_param = 1;
             }
             if ((ins->op == IR_IADD || ins->op == IR_ISUB ||
                  ins->op == IR_IMUL || ins->op == IR_ICMP) &&
@@ -952,7 +981,7 @@ static int llOptionW_FeedsReturnOrIsReturnLocal(IrFunction *fn, IrValue *v) {
             if (v_on_chain_to_ret) break;
         }
     }
-    return v_reaches_ret || v_stored_into_ret_slot || v_on_chain_to_ret;
+    return v_reaches_ret || v_stored_into_ret_slot || v_stored_into_out_param || v_on_chain_to_ret;
 }
 
 /* ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 C6 §2 rule 6. */
