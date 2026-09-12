@@ -1,0 +1,93 @@
+ACT-POLYC-TOOLING-MIGRATE-GEP01
+C1 RED — frozen environment / input contract
+
+This file freezes the inputs that the legacy Bash harness
+honored. The PolyC harness in C2/C3 MUST honor equivalent
+inputs, exposed as explicit CLI args (no shell expansion).
+
+------------------------------------------------------------
+Environment knobs (legacy usage -> PolyC mapping)
+------------------------------------------------------------
+
+  Legacy variable    Default          PolyC arg
+  -----------------  ---------------  ---------------------
+  HCC                ./hcc            --hcc
+  HCC_INSTALL_DIR    build/test-prefix --hcc-install-dir
+  LLVM_AS            llvm-as          --llvm-as
+  LLVM_OPT           opt              --llvm-opt
+
+All four are environment variables in legacy. The PolyC
+harness MUST accept both:
+
+  1. explicit CLI flag (preferred, takes precedence)
+  2. matching environment variable fallback
+
+so existing callers do not have to be re-instructed.
+
+------------------------------------------------------------
+Toolchain required
+------------------------------------------------------------
+
+  hcc      -- PolyC compiler, capable of --emit-llvm,
+              --install-dir=<dir>; built with LLVM 22 C-API
+              backend support.
+  llvm-as  -- LLVM 22.x assembler (PATH-resolved).
+  opt      -- LLVM 22.x bitcode verifier (PATH-resolved).
+  python3  -- Required only for the capability-status
+              subcheck (llvm-cap-table-verifier.py).
+              The PolyC harness invokes python3 as an
+              additional direct-argv process; this is
+              consistent with TOOLING-RUNTIME01 because
+              python3 is a documented host tool, not a
+              shell or command-string shell-out.
+
+------------------------------------------------------------
+Build-time prerequisites
+------------------------------------------------------------
+
+  ./hcc                built binary (top-level)
+  ./build/test-prefix  hermetic install dir containing
+                       include/tos.HH and lib/libtos.{a,
+                       dylib, 0.0.1.dylib}
+                       (created by `make lib-tos` and
+                        maintained by `make lsp-test`)
+
+  The PolyC harness binary must be rebuilt whenever its
+  sources change. A staleness test (per ACT §20) compares
+  the source mtime against the binary mtime and rebuilds
+  when the source is newer.
+
+------------------------------------------------------------
+Exit-code contract
+------------------------------------------------------------
+
+  Toolchain missing / not executable      -> rc 2 (legacy)
+  rc 2 MUST be preserved; do not silently
+  fold setup failure into GEP01_FAIL=1.
+
+  Normal:  all assertions PASS            -> rc 0
+  Any assertion FAIL                      -> rc 1
+  --mode=fail seeded failure              -> rc 1
+
+------------------------------------------------------------
+Output contract (preserved verbatim)
+------------------------------------------------------------
+
+  Final stdout lines:
+    GEP01_PASS=<n>
+    GEP01_FAIL=<n>
+    STATUS=PASS   (when GEP01_FAIL=0)
+    STATUS=FAIL   (when GEP01_FAIL>0)
+
+  Section headers (=== ... ===) preserved as a courtesy
+  to existing log readers.
+
+  Per-assertion lines:
+    PASS  <assertion label>
+    FAIL  <assertion label>   (with diagnostic text)
+
+  are produced by the harness but are NOT parsed by
+  gate-fast.sh or other upstream machinery — only the
+  GEP01_PASS / GEP01_FAIL / STATUS / rc values matter.
+
+End of file.
