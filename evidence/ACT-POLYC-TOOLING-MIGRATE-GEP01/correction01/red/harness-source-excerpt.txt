@@ -1,0 +1,172 @@
+========================================================================
+Current weakened PolyC harness predicate text (verbatim)
+========================================================================
+
+--- Row 04 (readat_dynamic_gep_and_load_i8): harness lines 388-395 ---
+    } else if (emitted != NULL
+        && Contains(emitted, "getelementptr i8, ptr %")
+        && Contains(emitted, "load i8, ptr %")) {
+      VerdictPass(v, "readat.HC: getelementptr i8 with runtime index + load i8");
+    } else {
+      VerdictFail(v, "readat.HC: getelementptr i8 with runtime index + load i8",
+                  "missing GEP/load i8 in emitted IR");
+    }
+
+--- Row 07 (readat_gep_shape): harness lines 463-467 ---
+    if (Contains(emitted, "getelementptr i8, ptr %"))
+      VerdictPass(v, "ReadAt emitted getelementptr i8, ptr %base, i64 %index");
+    else
+      VerdictFail(v, "ReadAt emitted getelementptr i8, ptr %base, i64 %index",
+                  "missing expected GEP shape");
+
+--- Row 08 (gep_used_as_load_address): harness lines 468-472 ---
+    if (Contains(emitted, "load i8, ptr %"))
+      VerdictPass(v, "GEP result used as load address (load i8, ptr %gep_i8)");
+    else
+      VerdictFail(v, "GEP result used as load address (load i8, ptr %gep_i8)",
+                  "missing GEP->load pattern");
+
+--- Rows 26/27/28 (capability status): RunCapability ---
+U0 RunCapability(TestVerdict *v, U8 *python, U8 *scratch)
+{
+  U8 *out = NULL, *err = NULL;
+  U8 *cap_path = StrPrint(NULL, "%s/cap-verifier.txt", scratch);
+  U8 *args[3];
+  args[0] = python;
+  args[1] = StrPrint(NULL, "scripts/quality/llvm-cap-table-verifier.py");
+  args[2] = NULL;
+  I64 rc = SpawnAndCapture(python, args, &out, &err);
+  if (out) FileWrite(cap_path, out, StrLen(out));
+  BytewiseFree(out); BytewiseFree(err);
+  Free(args[1]);
+
+  if (rc != 0 && !FileExists(cap_path)) {
+    VerdictFail(v, "IR_GEP = REJECTED (sibling opcode still rejected)",
+                "cap-table verifier invocation failed");
+    VerdictFail(v, "IR_LEA = REJECTED (sibling opcode still rejected)",
+                "cap-table verifier invocation failed");
+    VerdictFail(v, "IR_IADD = SUPPORTED (preserved, GEP01 is per-shape subset)",
+                "cap-table verifier invocation failed");
+    Free(cap_path);
+    return;
+  }
+
+  I64 sz = 0;
+  U8 *cap_txt = SlurpFile(cap_path, &sz);
+  if (!cap_txt) {
+    VerdictFail(v, "IR_GEP = REJECTED (sibling opcode still rejected)",
+                "could not read cap verifier output");
+    VerdictFail(v, "IR_LEA = REJECTED (sibling opcode still rejected)",
+                "could not read cap verifier output");
+    VerdictFail(v, "IR_IADD = SUPPORTED (preserved, GEP01 is per-shape subset)",
+                "could not read cap verifier output");
+    Free(cap_path);
+    return;
+  }
+
+  if (Contains(cap_txt, "IR_GEP")
+      && Contains(cap_txt, "(REJECTED)")) {
+    VerdictPass(v, "IR_GEP = REJECTED (sibling opcode still rejected)");
+  } else {
+    VerdictFail(v, "IR_GEP = REJECTED (sibling opcode still rejected)",
+                "IR_GEP not REJECTED");
+  }
+  if (Contains(cap_txt, "IR_LEA")
+      && Contains(cap_txt, "(REJECTED)")) {
+    VerdictPass(v, "IR_LEA = REJECTED (sibling opcode still rejected)");
+  } else {
+    VerdictFail(v, "IR_LEA = REJECTED (sibling opcode still rejected)",
+                "IR_LEA not REJECTED");
+  }
+  if (Contains(cap_txt, "IR_IADD")
+      && Contains(cap_txt, "(SUPPORTED)")) {
+    VerdictPass(v, "IR_IADD = SUPPORTED (preserved, GEP01 is per-shape subset)");
+  } else {
+    VerdictFail(v, "IR_IADD = SUPPORTED (preserved, GEP01 is per-shape subset)",
+                "IR_IADD not SUPPORTED");
+  }
+  BytewiseFree(cap_txt);
+  Free(cap_path);
+}
+
+
+// ------------------------------------------------------------
+// Section: determinism (rows 29, 30)
+// ------------------------------------------------------------
+
+U0 RunDeterminism(TestVerdict *v, U8 *hcc_path, U8 *install_dir,
+
+========================================================================
+Legacy Bash predicate text (verbatim from c1/legacy-source.txt)
+========================================================================
+
+--- Row 04 (Bash: combined assertion) ---
+else
+    if grep -qE 'getelementptr i8, ptr %[0-9]+, i64 %[0-9]+' "$EVID/c3/_tmp/read-at.ll" && \
+       grep -qE 'load i8, ptr %' "$EVID/c3/_tmp/read-at.ll"; then
+        echo "PASS  readat.HC: getelementptr i8 with runtime index + load i8"
+        PASS=$((PASS+1))
+    else
+        echo "FAIL  readat.HC: missing GEP/load i8 in emitted IR"; cat "$EVID/c3/_tmp/read-at.ll"; FAIL=$((FAIL+1))
+
+--- Row 07 (Bash: ReadAt gep shape) ---
+section "LLVM textual GEP structure (dynamic ReadAt)"
+if grep -qE 'getelementptr i8, ptr %[0-9]+, i64 %[0-9]+' "$EVID/c3/_tmp/read-at.ll"; then
+    echo "PASS  ReadAt emitted getelementptr i8, ptr %base, i64 %index"
+    PASS=$((PASS+1))
+else
+    echo "FAIL  ReadAt: missing expected GEP shape"; cat "$EVID/c3/_tmp/read-at.ll"; FAIL=$((FAIL+1))
+
+--- Row 08 (Bash: load i8, ptr %gep_i8) ---
+fi
+if grep -qE 'load i8, ptr %gep_i8' "$EVID/c3/_tmp/read-at.ll"; then
+    echo "PASS  GEP result used as load address (load i8, ptr %gep_i8)"
+    PASS=$((PASS+1))
+else
+    echo "FAIL  GEP result not used as load address"; FAIL=$((FAIL+1))
+
+--- Rows 26/27/28 (Bash: capability status with opcode-line binding) ---
+python3 scripts/quality/llvm-cap-table-verifier.py >"$EVID/c3/_tmp/cap-verifier.txt" 2>&1
+for opcode in IR_GEP IR_LEA ; do
+    if grep -qE "$opcode.*\(REJECTED\)" "$EVID/c3/_tmp/cap-verifier.txt"; then
+        echo "PASS  $opcode = REJECTED (sibling opcode still rejected)"
+        PASS=$((PASS+1))
+    else
+        echo "FAIL  $opcode not REJECTED"; FAIL=$((FAIL+1))
+    fi
+done
+if grep -qE "IR_IADD.*\(SUPPORTED\)" "$EVID/c3/_tmp/cap-verifier.txt"; then
+    echo "PASS  IR_IADD = SUPPORTED (preserved, GEP01 is per-shape subset)"
+    PASS=$((PASS+1))
+else
+    echo "FAIL  IR_IADD not SUPPORTED"; FAIL=$((FAIL+1))
+fi
+
+
+========================================================================
+Predicate text side-by-side summary
+========================================================================
+
+row-04 LEGACY: grep -qE "getelementptr i8, ptr %[0-9]+, i64 %[0-9]+" AND grep -qE "load i8, ptr %"
+row-04 POLYC:  Contains(emitted, "getelementptr i8, ptr %") && Contains(emitted, "load i8, ptr %")
+  -> regex dropped: precision %[0-9]+ and dynamic-index binding %[0-9]+ gone
+
+row-07 LEGACY: grep -qE "getelementptr i8, ptr %[0-9]+, i64 %[0-9]+" (on read-at.ll)
+row-07 POLYC:  Contains(emitted, "getelementptr i8, ptr %")
+  -> regex dropped: precision %[0-9]+ and dynamic-index binding gone
+
+row-08 LEGACY: grep -qE "load i8, ptr %gep_i8" (SSA-value binding to %gep_i8)
+row-08 POLYC:  Contains(emitted, "load i8, ptr %")
+  -> SSA-value binding to %gep_i8 collapsed to bare load
+
+row-26 LEGACY: grep -qE "IR_GEP.*\(REJECTED\)"  (opcode-line binding)
+row-26 POLYC:  Contains(cap, "IR_GEP") && Contains(cap, "(REJECTED)")
+  -> opcode and marker on independent substrings; no line binding
+
+row-27 LEGACY: grep -qE "IR_LEA.*\(REJECTED\)"  (opcode-line binding)
+row-27 POLYC:  Contains(cap, "IR_LEA") && Contains(cap, "(REJECTED)")
+  -> opcode and marker on independent substrings; no line binding
+
+row-28 LEGACY: grep -qE "IR_IADD.*\(SUPPORTED\)" (opcode-line binding)
+row-28 POLYC:  Contains(cap, "IR_IADD") && Contains(cap, "(SUPPORTED)")
+  -> opcode and marker on independent substrings; no line binding

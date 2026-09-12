@@ -1,0 +1,107 @@
+========================================================================
+P0 row-04/07/08: dynamic-index GEP shape and %gep_i8 SSA binding
+========================================================================
+
+--- Real hcc-emitted read-at.ll (the canonical, correct IR) ---
+; ModuleID = 'polyc_module'
+source_filename = "polyc_module"
+
+define i64 @ReadAt(ptr %0, i64 %1) {
+bb1:
+  %gep_i8 = getelementptr i8, ptr %0, i64 %1
+  %ld_deref = load i8, ptr %gep_i8, align 1
+  %zext_i8_i64 = zext i8 %ld_deref to i64
+  ret i64 %zext_i8_i64
+
+dead_exit:                                        ; No predecessors!
+  unreachable
+}
+
+--- Legacy regex (binding contract from c1/legacy-source.txt) ---
+row-04 legacy: getelementptr i8, ptr %[0-9]+, i64 %[0-9]+ AND load i8, ptr %
+row-07 legacy: getelementptr i8, ptr %[0-9]+, i64 %[0-9]+
+row-08 legacy: load i8, ptr %gep_i8
+
+--- Weakened PolyC predicate (current) ---
+row-04 weakened: Contains(emitted, "getelementptr i8, ptr %") && Contains(emitted, "load i8, ptr %")
+row-07 weakened: Contains(emitted, "getelementptr i8, ptr %")
+row-08 weakened: Contains(emitted, "load i8, ptr %")
+
+--- Real IR vs legacy (should PASS) ---
+  row-04/07 legacy PASS
+  row-08 legacy PASS
+
+--- Synthetic malformed read-at-malformed.ll ---
+; Synthetic malformed read-at IR for ACT-POLYC-TOOLING-MIGRATE-GEP01-CORRECTION01 RED.
+; Defects vs legacy contract:
+;   row 04/07: dynamic-index GEP shape replaced by constant-index.
+;   row 08:    SSA value renamed; load no longer uses the named GEP result.
+
+; ModuleID = 'malformed_red'
+source_filename = "malformed_red"
+
+define i64 @ReadAt(ptr %0, i64 %1) {
+bb1:
+  %tmp_x = getelementptr i8, ptr %0, i64 2
+  %ld_deref = load i8, ptr %tmp_x, align 1
+  %zext_i8_i64 = zext i8 %ld_deref to i64
+  ret i64 %zext_i8_i64
+}
+
+--- Malformed IR vs legacy (should FAIL — defect visible) ---
+  row-04/07 legacy FAIL (expected: index is constant 2 not %n)
+  row-08 legacy FAIL (expected: %tmp_x != %gep_i8)
+
+--- Malformed IR vs weakened (should PASS — defect masked) ---
+  row-04/07 weakened PASS (defect masked)
+  row-04/08 weakened PASS (defect masked)
+
+========================================================================
+P0 row-26/27/28: opcode-line binding (REJECTED)/(SUPPORTED)
+========================================================================
+
+--- Real cap-verifier.txt (excerpt: opcode lines) ---
+PASS  M2: IR_LEA diagnostic 'LLVM_BACKEND_UNSUPPORTED_POINTER' bound to arm body
+PASS  M2: IR_GEP diagnostic 'LLVM_BACKEND_UNSUPPORTED_AGGREGATE' bound to arm body
+PASS  I1: IR_IADD = SUPPORTED, dispatch has explicit arm
+PASS  I2: IR_LEA has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_GEP has explicit dispatch arm and capability row (REJECTED)
+PASS  I2: IR_IADD has explicit dispatch arm and capability row (SUPPORTED)
+PASS  scope-tight self-test (RESUME01 AC13): permanent adversarial fixture rejected by unified scope; unified model is internally consistent; no rogue `if`-arms outside discovered scope; strong NC1 (already-supported IR_IADD in non-dispatch helper) is correctly detected by the location-aware check.
+
+--- Legacy regex (binding contract from c1/legacy-source.txt) ---
+row-26 legacy: IR_GEP.*\(REJECTED\)
+row-27 legacy: IR_LEA.*\(REJECTED\)
+row-28 legacy: IR_IADD.*\(SUPPORTED\)
+
+--- Weakened PolyC predicate (current) ---
+row-26 weakened: StrStr(cap, "IR_GEP") && StrStr(cap, "(REJECTED)")
+row-27 weakened: StrStr(cap, "IR_LEA") && StrStr(cap, "(REJECTED)")
+row-28 weakened: StrStr(cap, "IR_IADD") && StrStr(cap, "(SUPPORTED)")
+
+--- Real cap-verifier vs legacy (should PASS) ---
+  row-26 legacy PASS
+  row-27 legacy PASS
+  row-28 legacy PASS
+
+--- Synthetic malformed cap-malformed.txt ---
+=== llvm-cap-table-verifier (malformed for RED witness) ===
+PASS  parsed 56 IrOp enum entries
+PASS  loaded 56 capability rows
+PASS  I2: IR_GEP has explicit dispatch arm
+PASS  I2: IR_LEA has explicit dispatch arm
+PASS  I2: IR_IADD has explicit dispatch arm
+PASS  I1: IR_GEP capability row status marker:
+PASS  I1: IR_LEA capability row status marker:
+PASS  I1: IR_IADD capability row status marker:
+PASS  LPAREN_MARKER: (REJECTED)
+PASS  LPAREN_MARKER: (SUPPORTED)
+--- Malformed cap-verifier vs legacy (should FAIL — defect visible) ---
+  row-26 legacy FAIL (expected: opcode and marker on separate lines)
+  row-27 legacy FAIL (expected)
+  row-28 legacy FAIL (expected)
+
+--- Malformed cap-verifier vs weakened (should PASS — defect masked) ---
+  row-26 weakened PASS (defect masked)
+  row-27 weakened PASS (defect masked)
+  row-28 weakened PASS (defect masked)
