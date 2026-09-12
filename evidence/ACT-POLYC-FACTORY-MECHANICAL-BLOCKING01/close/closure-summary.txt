@@ -1,0 +1,103 @@
+=== ACT-POLYC-FACTORY-MECHANICAL-BLOCKING01 CLOSURE ===
+
+VERDICT
+  PASS
+
+IDENTITY
+  branch           = main
+  ACT id           = ACT-POLYC-FACTORY-MECHANICAL-BLOCKING01
+  phase            = CLOSE
+  verdict          = PASS
+  Factory-Version  = 2
+  entry HEAD       = bf52316 (CORRECTION02 C2 CLOSE PASS)
+  exit HEAD        = (queried from git; not embedded here)
+  range            = (FIRST=ca33eed, ENTRY=ca33eed^, CLOSE=HEAD)
+  commits in range = 3 (ca33eed, 001669d, d4ad74f, plus this CLOSE = 4)
+
+RED
+  R1  F-MECHANICAL-BLOCKING absent from DOCTRINE.md and AGENTS.md
+      before C2 IMPL. Verified at ca33eed via:
+        grep -c F-MECHANICAL-BLOCKING docs/factory/DOCTRINE.md AGENTS.md
+      Result pre-IMPL: 0 / 0.
+  R2  HALT_CLASS / BLOCKS_NEXT absent from every Factory
+      verifier under scripts/quality/. Verified at ca33eed:
+        grep -c HALT_CLASS scripts/quality/*.sh
+        grep -c BLOCKS_NEXT scripts/quality/*.sh
+      Result pre-IMPL: 0 / 0.
+  R3  The most recent halt verdict
+      (HALT_AC07_NOT_SATISFIED on the CORRECTION02 predecessor)
+      carried no HALT_CLASS / BLOCKS_NEXT, so a verifier
+      requiring them would correctly FAIL on the prior tree.
+  R4  The proposed R1..R12 matrix in
+      evidence/.../red/r4-matrix-preview.md defined the
+      verifier's test surface.
+
+IMPLEMENTATION (minimum production diff)
+  + docs/factory/DOCTRINE.md
+      §25 F-MECHANICAL-BLOCKING (verbatim, ~157 lines)
+  + AGENTS.md
+      F-MECHANICAL-BLOCKING pointer paragraph (~19 lines)
+  + docs/factory/GIT-METADATA.md
+      §2.4 HALT classification trailers (additive, ~67 lines)
+      §2.5 Parsing note (~19 lines)
+  + docs/acts/ACT-POLYC-FACTORY-MECHANICAL-BLOCKING01.md
+      C1 RED phase (existing)
+      C1.5 RED-AMEND phase (added: scope tightening,
+                              grandfathering, no TRACK-B-ADVANCE01)
+      §5.1 activation-boundary clarification
+      §5.2 parsing-discipline section
+  + scripts/quality/factory-halt-classification-check.sh
+      187 LOC (bound: <= 250)
+  + scripts/quality/factory-halt-classification-test.sh
+      182 LOC (bound: <= 350)
+  = 6 files changed, 634 insertions(+), 0 deletions(-)
+  = production source: 0 bytes changed
+
+GATES (post-IMPL, pre-CLOSE)
+  factory-v2-test.sh           : PASS=35 FAIL=0 STATUS=PASS
+  factory-closure-status-check : PAIR_OK=6 PAIR_FAIL=0 STATUS=PASS
+  factory-append-only-test.sh  : PASS=11 FAIL=0 STATUS=PASS
+  factory-halt-classification  : PASS=12 FAIL=0 STATUS=PASS
+  gate-fast.sh                 : STATUS=PASS (all checks)
+  git diff --check             : clean
+  git replace -l               : empty
+
+SCOPE
+  FILES_CHANGED = 6 (5 production + 1 ACT)
+  PRODUCTION_CHANGED                = NO
+  PARSER_CHANGED                    = NO
+  TYPECHECKER_CHANGED               = NO
+  NEUTRAL_IR_CHANGED                = NO
+  LLVM_BACKEND_CHANGED              = NO
+  ABI_CHANGED                       = NO
+  HISTORICAL_EVIDENCE_REWRITTEN     = NO
+  CLOSED_ACT_VERDICT_MUTATED        = NO
+  NEW_TRACK_B_ACT_OPENED            = NO
+  TRACK_B_ADVANCE_AUTHORIZED        = NO
+
+RESIDUE
+  P0 = none
+  P1 = environmental failure of AC07's three gates
+       (make unit-test / jit-unit-test / lsp-test) recorded in
+       ACT-POLYC-TOOLING-MIGRATE-GEP01-CORRECTION02 §10.
+       Recorded as NON_BLOCKING_GOVERNANCE_RESIDUE per the new
+       doctrine this ACT codifies (see DOCTRINE.md §25).
+  P1 = Track-B advancement (ACT-POLYC-TOOLING-SHELL-BUDGET01).
+       NOT in this ACT's scope. The doctrine this ACT codifies
+       removes the requirement for an intermediate
+       "authorization to authorize" ACT. SHELL-BUDGET01 may
+       open in a future turn by citing F-MECHANICAL-BLOCKING
+       and the HALT_CLASS=GOVERNANCE / BLOCKS_NEXT=NO
+       classification of the existing halt, which is
+       derivable from CORRECTION02's CLOSE message verbatim.
+  P2 = none anticipated.
+
+NEXT ACT
+  1. (optional) ACT-POLYC-FACTORY-MECHANICAL-BLOCKING01-
+     CORRECTION01 if any RED-AMEND / CORRECTION is needed
+     to keep the verifier honest.
+  2. ACT-POLYC-TOOLING-SHELL-BUDGET01 itself, openable
+     in a future turn by citing F-MECHANICAL-BLOCKING
+     directly. No intermediate authorization ACT required.
+
+=== END ===
