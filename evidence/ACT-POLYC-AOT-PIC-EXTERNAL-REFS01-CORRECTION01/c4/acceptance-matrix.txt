@@ -1,0 +1,64 @@
+ACT-POLYC-AOT-PIC-EXTERNAL-REFS01-CORRECTION01 — Acceptance Matrix
+====================================================================
+
+Identity (F1)
+  branch           = main
+  entry HEAD       = b76f0d8 (HANDOFF for predecessor ACT)
+  worktree status  = clean tracked; this ACT adds
+                     docs/acts/ACT-POLYC-AOT-PIC-EXTERNAL-REFS01-CORRECTION01.md
+                     + evidence/ACT-POLYC-AOT-PIC-EXTERNAL-REFS01-CORRECTION01/**
+
+Production-delta integrity
+  AC-C2.1  src/aarch64.c diff vs b76f0d8 -> empty                PASS
+  AC-C2.2  src/x86_64.c diff vs b76f0d8 -> empty                 PASS
+
+Predecessor-evidence integrity (F14)
+  AC-C3.1  c1/ diff vs b76f0d8 -> empty                          PASS
+  AC-C3.2  c2/ diff vs b76f0d8 -> empty                          PASS
+  AC-C3.3  c3/ diff vs b76f0d8 -> empty                          PASS
+  AC-C3.4  c4/ diff vs b76f0d8 -> empty                          PASS
+  AC-C3.5  HANDOFF.md diff vs b76f0d8 -> empty                   PASS
+
+Mechanical-evidence reproduction
+  AC-C1.1  GEP01_PASS=26 / GEP01_FAIL=4 in both logs             PASS
+  AC-C1.2  SHAPE_DEPENDENT row text byte-identical (diff exit 0) PASS
+  AC-C1.3  cap verifier 3 rows text byte-identical (diff exit 0) PASS
+
+ROADMAP reconciliation (AC-C4.1)
+  ROADMAP entry for ACT-POLYC-AOT-PIC-EXTERNAL-REFS01 gains:    PASS
+    ACT-Corrected-Verdict: HALT_GATE_PUSH_FAILED
+    HALT_CLASS:            GOVERNANCE
+    BLOCKS_NEXT:           NO
+  with one-line note linking this correction ACT.
+
+Hygiene residue (AC-C5.1 / AC-C5.2)
+  (a) [dbg] stale log lines captured                            PASS
+  (b) 7 fresh aarch64.c warnings captured                       PASS
+  (c) gep01 D1+D2 four-failure aggregate captured               PASS
+  All three items explicitly NOT taken into ownership          PASS
+
+BOOTSTRAP01 re-authorization (AC-C6.1 / AC-C6.2)
+  roadmap-transition.txt records BLOCKS_NEXT=NO signal          PASS
+  This ACT does NOT open BOOTSTRAP01                             PASS
+  This ACT does NOT push to origin/main                          PASS
+
+Conservation gates
+  unit-test      90/90 PASS                                     PASS
+  jit-unit-test  90/90 PASS                                     PASS
+  lsp-test       43/43 PASS                                     PASS
+  gate-fast      PASS                                           PASS
+  gate-push      FAIL on gep01 (not attributable, see §5/§7)     n/a (governance)
+
+Closure verdict (v2 doctrine)
+  ACT-Verdict              : PASS
+  ACT-Corrected-Verdict    : HALT_GATE_PUSH_FAILED
+  HALT_CLASS               : GOVERNANCE
+  BLOCKS_NEXT              : NO
+
+Strong-closure criterion (this ACT)
+  byte_identical_proof       = PASS
+  production_not_remutated   = PASS
+  predecessor_not_remutated  = PASS
+  hygiene_residue_listed     = PASS
+  bootstrap01_signal         = PASS
+  GO                        = YES

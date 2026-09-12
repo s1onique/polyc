@@ -1,0 +1,92 @@
+ACT-POLYC-AOT-PIC-EXTERNAL-REFS01-CORRECTION01 — Closure summary
+=================================================================
+
+VERDICT
+  ACT-Verdict              : PASS
+  ACT-Corrected-Verdict    : HALT_GATE_PUSH_FAILED
+  HALT_CLASS               : GOVERNANCE
+  BLOCKS_NEXT              : NO
+
+  Under v2 doctrine, `HALT_CLASS=GOVERNANCE / BLOCKS_NEXT=NO`
+  is the documented board signal that the roadmap may
+  proceed; no additional authorization artifact is required
+  for a same-scope successor ACT to open.
+
+IDENTITY
+  branch           = main
+  entry HEAD       = b76f0d8 (HANDOFF for predecessor ACT;
+                    docs-only commit)
+  closure HEAD     = (recorded by C4 CLOSE commit; not
+                    embedded here per no-SHA-of-self)
+  range            = b76f0d8..C4-CLOSE (docs-only)
+  Factory-Version  = 2
+
+PRE-CONDITION CLAIM (the predecessor ACT under correction)
+  production_semantic_delta = GREEN
+  gate_push_failure         = FAIL (gep01 only)
+  gate_push_failure_attributable_to_production_delta = FALSE
+  v2 classification         = GOVERNANCE / BLOCKS_NEXT=NO
+
+RED (this ACT)
+  R1  gep01 4-failure aggregate is byte-identical pre/post C2.
+      Captured at c1/red-grep-summary.txt.
+      Both `diff` runs exit 0 (= same text). Captured under
+      ACT §5.
+  R2  gep01 4-failure aggregate decomposes into two distinct
+      witnesses (D1 + D2). Captured at c1/red-hygiene-
+      witnesses.txt (item c) and ACT §6.
+  R3  three hygiene residues captured (a) [dbg] stale log,
+      (b) 7 fresh aarch64.c warnings, (c) gep01 D1+D2.
+
+IMPLEMENTATION (this ACT)
+  + docs/acts/ACT-POLYC-AOT-PIC-EXTERNAL-REFS01-CORRECTION01.md
+  + evidence/ACT-POLYC-AOT-PIC-EXTERNAL-REFS01-CORRECTION01/
+      c1/ red-grep-summary.txt + red-hygiene-witnesses.txt + README.md
+      c2/ green-invariant-check.txt + README.md
+      c3/ c3-evidence-gate-run.txt + README.md
+      c4/ acceptance-matrix.txt + residue.txt + roadmap-transition.txt
+           + closure-summary.txt + README.md + HANDOFF.md
+  + docs/ROADMAP.md  (status reconciliation only)
+  Total production source change: zero bytes.
+
+GATES
+  AC-C1.1..C1.3   byte-identical proof    PASS (c1/red-grep-summary.txt)
+  AC-C2.1, C2.2    production not re-mutated  PASS (c2/green-invariant-check.txt)
+  AC-C3.1..C3.5    predecessor evidence not re-mutated
+                                          PASS (c2/green-invariant-check.txt)
+  AC-C4.1          ROADMAP reconciliation   PASS (c4/closure-summary.txt)
+  AC-C5.1, C5.2    hygiene residue listed   PASS (c4/residue.txt)
+  AC-C6.1, C6.2    BOOTSTRAP01 signal       PASS (c4/roadmap-transition.txt)
+  unit-test        90/90                    PASS (predecessor c3)
+  jit-unit-test    90/90                    PASS (predecessor c3)
+  lsp-test         43/43                    PASS (predecessor c3)
+  gate-fast        PASS                     PASS (live c3 re-run)
+  gate-push        FAIL on gep01            GOVERNANCE (NOT attributable;
+                                              BLOCKS_NEXT=NO)
+
+SCOPE
+  FILES_CHANGED       = 0 production source files
+                         + 1 new ACT doc + 1 new evidence tree +
+                           ROADMAP.md reconciliation
+  DIFF_CHECK          = PASS (gate-fast)
+  PRODUCTION_SEMANTICS_CHANGED = NO
+  LLVM_CHANGED        = NO
+  ABI_REPAIR_CHANGED  = NO
+  PREDECESSOR_EVIDENCE_MUTATED = NO  (F14)
+
+RESIDUE
+  P0  = none
+  P1  = three hygiene items captured under c4/residue.txt:
+        (a) [dbg] stale log lines
+        (b) 7 fresh src/aarch64.c warnings
+        (c) gep01 D1+D2 four-failure aggregate
+  P2  = three deferred items (NC1 byte-exact diff, Linux
+        PIC, x86_64 abstraction) preserved from predecessor.
+
+NEXT_ACT (informational, not opened here)
+  Either:
+    (a) ACT-POLYC-INTEGRATION-GEP01-GATE-RECOVERY01 (fix D1+D2,
+        then push b76f0d8 to origin/main, then open BOOTSTRAP01)
+    (b) ACT-POLYC-BOOTSTRAP01 (successor-need determination
+        decides whether gep01 is a binding predecessor)
+  This ACT does not open either.

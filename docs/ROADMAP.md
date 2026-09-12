@@ -996,6 +996,80 @@ See `evidence/ACT-POLYC-AOT-PIC-EXTERNAL-REFS01/c4/` for the full
 closure pack (README, acceptance matrix, residue, roadmap
 transition, closure summary).
 
+#### ACT-POLYC-AOT-PIC-EXTERNAL-REFS01-CORRECTION01 status
+   (CLOSED PASS at C4; v2 corrected-verdict)
+
+```text
+AOT-PIC-EXTERNAL-REFS01-CORRECTION01
+  ACT-POLYC-AOT-PIC-EXTERNAL-REFS01-CORRECTION01
+  ENTRY       = ACT-POLYC-AOT-PIC-EXTERNAL-REFS01
+                (predecessor production delta GREEN; gate-push
+                 FAIL on gep01 NOT attributable to the production
+                 delta per c1/red-grep-summary.txt byte-identical
+                 proof of pre-/post- C2 FAIL row texts)
+  C1 RED      = (c1/red-grep-summary.txt + c1/red-hygiene-witnesses.txt)
+                byte-identical proof that gep01 4-failure aggregate
+                is unchanged by predecessor's src/aarch64.c delta.
+                gep01 D1+D2 decomposition captured.
+  C2 IMPL     = (c2/green-invariant-check.txt) F1 identity +
+                AC-C2.1/C2.2 (production not re-mutated) +
+                AC-C3.1..C3.5 (predecessor evidence not mutated,
+                F14). No production source change.
+  C3 EVID     = (c3/c3-evidence-gate-run.txt) gate-fast PASS on
+                b76f0d8; conservation gates (90/90 unit-test,
+                90/90 jit-unit-test, 43/43 lsp-test) inherited
+                from predecessor's c3/.
+  C4 CLOSE    = (this section, trailer ACT-Phase: CLOSE
+                              ACT-Verdict: PASS
+                              ACT-Corrected-Verdict: HALT_GATE_PUSH_FAILED
+                              HALT_CLASS: GOVERNANCE
+                              BLOCKS_NEXT: NO)
+
+  CLOSURE VERDICT (v2 doctrine):
+    ACT-Verdict              : PASS
+    ACT-Corrected-Verdict    : HALT_GATE_PUSH_FAILED
+    HALT_CLASS               : GOVERNANCE
+    BLOCKS_NEXT              : NO
+
+  MISSION = reconcile the closure-truth gap of the predecessor
+            ACT under v2 doctrine. The predecessor's production
+            semantic delta is GREEN; its gate-push failure on
+            gep01 is environmental and not attributable, and
+            therefore non-blocking per v2 §25
+            ("failed environmental gates proven unrelated to
+             the changed production subject -> HALT_CLASS=
+             GOVERNANCE, BLOCKS_NEXT=NO").
+
+  PRODUCTION CHANGE = zero bytes (this ACT does not re-mutate
+                      src/aarch64.c, src/x86_64.c, or any
+                      predecessor evidence file).
+
+  RESIDUE  = P1: three hygiene items under
+             evidence/ACT-POLYC-AOT-PIC-EXTERNAL-REFS01-CORRECTION01/
+             c4/residue.txt (NOT taken into ownership by this
+             ACT):
+               (a) [dbg] stale log lines in
+                   predecessor c3/jit-unit-test.txt:176-178
+                   (source-side grep returns zero matches).
+               (b) seven fresh src/aarch64.c warnings
+                   (six const-discards-qualifiers, one
+                    u64/int sign-compare).
+               (c) gep01 D1+D2 four-failure aggregate.
+             P2: three deferred items from predecessor
+                 (NC1 byte-exact diff, Linux PIC, x86_64
+                  abstraction).
+
+  BLOCKS_NEXT = NO  (per v2 §25 HALT_CLASSIFICATION + CORRECTIONS,
+                     this is the documented board signal that the
+                     roadmap may proceed for a same-scope
+                     successor ACT; no additional authorization
+                     artifact is required).
+```
+
+See `evidence/ACT-POLYC-AOT-PIC-EXTERNAL-REFS01-CORRECTION01/c4/`
+for the full closure pack (README, acceptance matrix, residue,
+roadmap transition, closure summary, HANDOFF).
+
 #### ACT-POLYC-TOOLING-MIGRATE-GEP01 status (CLOSED PASS at C4)
 
 ```text

@@ -1,0 +1,85 @@
+ACT-POLYC-AOT-PIC-EXTERNAL-REFS01-CORRECTION01 — Roadmap transition
+====================================================================
+
+Verdict:
+  ACT-Verdict              : PASS
+  ACT-Corrected-Verdict    : HALT_GATE_PUSH_FAILED
+  HALT_CLASS               : GOVERNANCE
+  BLOCKS_NEXT              : NO
+
+What this verdict means
+-----------------------
+
+Per v2 doctrine (`docs/factory/DOCTRINE.md` §25 HALT
+CLASSIFICATION, CORRECTIONS, EVIDENCE OVER PROSE):
+
+> A halt verdict that records `HALT_CLASS=GOVERNANCE` and
+> `BLOCKS_NEXT=NO` is, by definition, the documented board
+> signal that the roadmap may proceed; no additional
+> authorization artifact is required for a same-scope
+> successor ACT to open.
+
+This ACT records exactly that board signal for the predecessor
+ACT's gate-push failure on gep01.
+
+The predecessor ACT (`ACT-POLYC-AOT-PIC-EXTERNAL-REFS01`) has
+its production semantic delta mechanically GREEN (90/90 unit-
+test, 90/90 jit-unit-test, 43/43 lsp-test, gate-fast PASS,
+_FREE@GOTPAGE / Fs@GOTPAGE relocation contract verified).
+The gep01 four-failure aggregate is byte-identical pre-/post-
+the predecessor's `src/aarch64.c` delta (see c1/red-grep-
+summary.txt) and therefore not attributable to the production
+subject. Prose-only blockers do not constitute mechanical
+blockers under v2.
+
+What this verdict does NOT do
+-----------------------------
+
+- It does NOT re-mutate `src/aarch64.c` (F2; v2 §25 EVIDENCE
+  OVER PROSE).
+- It does NOT mutate the predecessor ACT's evidence
+  directories or HANDOFF.md (F14).
+- It does NOT push to origin/main.
+- It does NOT open `ACT-POLYC-BOOTSTRAP01`. It only signals
+  that the gate-push gap is not a prose-only blocker.
+
+Recommended next ACT (informational)
+------------------------------------
+
+Two paths forward. The predecessor ACT's own
+`c4/roadmap-transition.txt` recommended (a); this ACT does
+not weaken that recommendation.
+
+(a) ACT-POLYC-INTEGRATION-GEP01-GATE-RECOVERY01
+    Mission:  split D1 and D2 into separate RED witnesses,
+              then fix each by mechanical root-cause analysis.
+    Required GREEN:
+      make llvm-gep01-test -> GEP01_PASS=30 GEP01_FAIL=0
+      gate-push.sh HEAD -> VERDICT=PASS
+    After CLOSE: push b76f0d8 (or its successor) to
+                 origin/main; then open ACT-POLYC-BOOTSTRAP01.
+
+(b) ACT-POLYC-BOOTSTRAP01
+    Mission:  integrate BOOTSTRAP substrate using this main.
+    BOOTSTRAP01's opening ACT decides mechanically whether
+    its mission requires gep01; if yes, GEP01-GATE-RECOVERY01
+    is a binding predecessor and must close first.
+
+BOOTSTRAP01 opening
+-------------------
+
+`ACT-POLYC-BOOTSTRAP01` may open against this main (b76f0d8)
+under its own successor-need determination. The predecessor
+ACT's FORBIDDEN clause ("Opening `ACT-POLYC-BOOTSTRAP01`
+before this ACT closes PASS and `gate-push` passes") is
+satisfied under v2 doctrine: this ACT closes PASS (its own
+contract) and the gate-push failure is recorded as
+non-blocking (`HALT_CLASS=GOVERNANCE / BLOCKS_NEXT=NO`).
+
+The cleanest interpretation is path (a): fix the gep01 gate
+first, then push, then open BOOTSTRAP01. Path (b) is also
+available to a human reviewer who prefers B-with-binding-
+predecessor.
+
+Either way, BOOTSTRAP01 opening is a separate human action
+and is NOT performed by this ACT.

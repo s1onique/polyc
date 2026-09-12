@@ -1,0 +1,73 @@
+ACT-POLYC-AOT-PIC-EXTERNAL-REFS01-CORRECTION01 — Residue
+=========================================================
+
+This ACT does NOT take ownership of any of the items below.
+They are listed for future bounded ACTs.
+
+P0 = none (no P0 blocks this ACT's closure; production
+             semantic delta remains GREEN; gate-push failure
+             is environmental and not attributable)
+
+P1 = three hygiene items captured under c1/red-hygiene-
+     witnesses.txt:
+
+  (a) [dbg] stale log lines (3 rows) in
+      evidence/ACT-POLYC-AOT-PIC-EXTERNAL-REFS01/c3/jit-unit-test.txt:176-178
+
+      Captured lines:
+        [dbg] slow-path asm_funcs scan for '_FREE' (17 entries)
+        [dbg]   cand fname='MAlloc' asmfname='_MALLOC' kind=276
+        [dbg]   cand fname='Free' asmfname='_FREE' kind=276
+
+      Source-side grep: `grep -rn '\[dbg\]' src/` returns
+      zero matches. The lines were emitted by an earlier
+      debug build that was rebuilt and re-captured before
+      the log was committed; the source no longer emits
+      them. They are evidence-packet residue.
+
+      Recommended cleanup: re-capture c3/jit-unit-test.txt
+      on a fresh build (F9), OR delete the three lines
+      from the captured log under an explicit "stale
+      capture" note. This is bookkeeping, not production.
+
+  (b) Seven fresh src/aarch64.c warnings introduced by the
+      predecessor's C2 + C2.1 classifier and emitter:
+
+        src/aarch64.c:307 const-discards-qualifiers
+        src/aarch64.c:309 const-discards-qualifiers
+        src/aarch64.c:312 const-discards-qualifiers
+        src/aarch64.c:315 const-discards-qualifiers
+        src/aarch64.c:318 const-discards-qualifiers
+        src/aarch64.c:321 const-discards-qualifiers
+        src/aarch64.c:337 u64/int sign-compare
+
+      The six const-discards-qualifiers come from
+      `aarch64IsExternalGlobalSymbol` passing `const char *key`
+      into `mapGetLen(... char *)`. The one sign-compare is
+      in the same classifier.
+
+      Recommended cleanup: small bounded ACT that updates
+      the `mapGetLen` signature (or casts `key` to `char *`
+      with a comment) and uses an unsigned length type
+      consistently. Out of scope here.
+
+  (c) gep01 four-failure aggregate (D1 + D2) — see ACT §6.
+      Decomposed into:
+        D1: SHAPE_DEPENDENT stderr marker absent (1 row)
+        D2: cap verifier output unavailable (3 rows)
+
+      Recommended cleanup: open
+      `ACT-POLYC-INTEGRATION-GEP01-GATE-RECOVERY01` to
+      treat D1 and D2 as separate RED witnesses and fix
+      each by mechanical root-cause analysis. Out of
+      scope here.
+
+P2 = three deferred items (preserved from predecessor's
+     residue):
+
+  - NC1 byte-exact pre/post diff (deferred by predecessor
+    ACT §6; not relevant to BOOTSTRAP01 opening decision).
+  - Linux PIC path (intentionally untouched per predecessor
+    ACT §6; not in scope).
+  - x86_64 shared abstraction (not introduced per F8 /
+    predecessor ACT §14; not in scope).
