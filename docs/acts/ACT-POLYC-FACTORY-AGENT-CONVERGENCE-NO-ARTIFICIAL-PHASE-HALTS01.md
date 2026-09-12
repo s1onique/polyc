@@ -217,10 +217,15 @@ AC09  AGENTS.md contains a "Closed halt list" with the seven named
 AC10  AGENTS.md contains a "Non-halt list" with the eight named
       non-halt phrases including "next phase is a different phase",
       "next phase deserves its own commit", "fresh conversation would
-      be cleaner", and "AGENTS.md says commits should be truthful".
+      be cleaner", and "`AGENTS.md` says commits should be truthful".
       Command: grep -q 'Non-halt list' AGENTS.md && \
                grep -q '"the next phase is a different phase"' AGENTS.md && \
-               grep -q '"a fresh conversation would be cleaner"' AGENTS.md
+               grep -q '"a fresh conversation would be cleaner"' AGENTS.md && \
+               grep -qF '`AGENTS.md` says commits should be truthful' AGENTS.md
+      Note: the filename in the literal phrase is wrapped in Markdown
+      backticks in the implementation; the un-backticked form is not
+      the intent of this witness. The corrected form above is the
+      canonical AC10 grep and is the source of truth.
 
 AC11  AGENTS.md contains the exact string "GO = EXECUTE_NOW".
       Command: grep -q 'GO = EXECUTE_NOW' AGENTS.md
