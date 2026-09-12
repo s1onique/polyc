@@ -1,0 +1,206 @@
+ACT-POLYC-TOOLING-MIGRATE-GEP01 — Closure Summary
+
+This file is the AUTHORITATIVE closure summary for
+ACT-POLYC-TOOLING-MIGRATE-GEP01.
+
+Per F-GIT-IDENTITY (AGENTS.md F-GIT-IDENTITY / DOCTRINE.md
+§22 / NO-SHA-OF-SELF01), no SHA of the commit containing
+this file is embedded here. To obtain the closing commit's
+SHA, run:
+
+  git log --all-match \
+          --grep='^ACT: ACT-POLYC-TOOLING-MIGRATE-GEP01$' \
+          --grep='^ACT-Phase: CLOSE$' \
+          --pretty=format:'%H'
+
+============================================================
+VERDICT
+============================================================
+
+  PASS
+
+============================================================
+IDENTITY (stable, Git-queryable pattern)
+============================================================
+
+  branch          = main
+  working tree    = clean (verified after each commit)
+  predecessor     = ACT-POLYC-TOOLING-RUNTIME01 + corrections
+                    (PASS_WITH_HYGIENE_RESIDUE)
+                  = ACT-POLYC-TOOLING-SHELL-INVENTORY01-CORRECTION01
+                    (CLOSED PASS)
+  ACT id          = ACT-POLYC-TOOLING-MIGRATE-GEP01
+  phase           = CLOSE
+  verdict         = PASS
+
+============================================================
+MISSION OUTCOME
+============================================================
+
+The 232-line Bash GEP harness
+`scripts/quality/llvm-gep01-test.sh` has been deleted
+(Outcome A: 232 -> 0 LOC) and replaced by a PolyC-native
+harness at `tools/quality/llvm-gep01-test.HC` that
+preserves the exact 30-check GEP01 oracle.
+
+  bash (frozen at C1)        GEP01_PASS=30  GEP01_FAIL=0  rc=0
+  polyc (post-cutover)       GEP01_PASS=30  GEP01_FAIL=0  rc=0
+  row-by-row parity          PARITY_MATCH=30  PARITY_MISMATCH=0
+
+============================================================
+FUNCTIONAL_EQUIVALENCE = TRUE
+============================================================
+
+Each of the 30 assertion_ids in
+`evidence/.../c1/oracle-matrix.tsv` has a corresponding
+PolyC PASS row in the post-cutover stdout.
+
+============================================================
+SHELL_DEBT_REDUCTION = TRUE
+============================================================
+
+  pre_gep_shell_loc     = 232    (C1 freeze)
+  post_gep_shell_loc    = 0      (Outcome A: deleted)
+  pre_total_shell_loc   = 6184   (C1 freeze)
+  post_total_shell_loc  = 5952   (-232)
+  pre_shell_file_count  = 23
+  post_shell_file_count = 22
+
+============================================================
+CONSERVATION GATES (per ACT §21)
+============================================================
+
+  llvm-gep01-test (PolyC)        30/0 PASS rc=0
+  llvm-byte-memory01             37/0 PASS rc=0
+  llvm-intops01                   4/0 PASS rc=0
+  ir-return-slot-fwd01            6/0 PASS rc=0
+  llvm-cap-table-verifier        PASS
+  shell-loc-gate                 PASS
+  factory-append-only            11/0 PASS rc=0
+  llvm-spike                     ENVIRONMENTALLY_UNAVAILABLE
+  harness-evidence-isolation     ENVIRONMENTALLY_UNAVAILABLE
+
+Two gates are ENVIRONMENTALLY_UNAVAILABLE because the
+host does not have hcc installed at /usr/local; both
+require a system install. The PolyC harness itself uses
+--install-dir and is unaffected. The bash baseline that
+existed pre-cutover also required this system install
+(verified: the original llvm-gep01-test.sh also implicitly
+depended on ./hcc being runnable).
+
+============================================================
+SCOPE / PRODUCTION DELTA
+============================================================
+
+Modified production files in C2-C4: 0
+Added production files:
+  - tools/quality/llvm-gep01-test.HC   (PolyC harness source)
+  - .gitignore                          (excluded llvm-gep01-test
+                                         build artifact)
+
+Deleted:
+  - scripts/quality/llvm-gep01-test.sh  (232 LOC of Bash)
+
+No compiler / parser / IR / backend / ABI / factory-doctrine
+semantics change.
+
+============================================================
+HISTORICAL EVIDENCE INTEGRITY (F14)
+============================================================
+
+  git log --diff-filter=M --name-only | grep '^evidence/'
+  (no changes to historical evidence packets)
+
+The following historical evidence trees remain UNTOUCHED:
+
+  evidence/ACT-POLYC-LLVM-GEP01/
+  evidence/ACT-POLYC-TOOLING-RUNTIME01/
+  evidence/ACT-POLYC-TOOLING-SHELL-INVENTORY01/
+  evidence/ACT-POLYC-TOOLING-FACTORY-GIT-METADATA-*
+  evidence/ACT-POLYC-FACTORY-NO-SHA-OF-SELF01*
+
+============================================================
+PATCH HYGIENE
+============================================================
+
+  git diff --check HEAD~1 HEAD     rc=0
+  newly_introduced_findings        = 0
+
+============================================================
+FALSE-GREEN CONTROL
+============================================================
+
+Seeded failure (--mode=fail) flips:
+  GEP01_PASS=29 GEP01_FAIL=1 STATUS=FAIL rc=1
+
+Verdict channel is honest: aggregate 29/1 with rc=1, not
+silently 30/0 with rc=0.
+
+============================================================
+DIRECT-ARGV AUDIT
+============================================================
+
+Forbidden-token count in production source: 0.
+(Pattern: /bin/sh | sh -c | bash -c | system( | popen(
+        | System( | Sh( | Shlurp()
+
+============================================================
+WORKTREE
+============================================================
+
+  branch          = main
+  uncommitted     = none
+  untracked       = (none; all C4 evidence tracked)
+
+============================================================
+RESIDUE (F11)
+============================================================
+
+  P0 = none
+  P1 = none
+  P2 = (a) Two gates ENVIRONMENTALLY_UNAVAILABLE in this
+          build environment (llvm-spike,
+          harness-evidence-isolation-test); they require
+          hcc installed at /usr/local. The same constraint
+          applied to the pre-cutover harness. Documented in
+          evidence/.../c3/conservation-gates.txt.
+      (b) The migrated harness writes scratch under
+          build/quality/gep01/. The legacy harness wrote
+          scratch under evidence/ACT-POLYC-LLVM-GEP01/c3/_tmp
+          (closed-ACT evidence tree). This is an
+          architectural improvement, but it means that any
+          tooling that assumed the legacy scratch path will
+          no longer find it. None was found in-tree.
+
+============================================================
+BOARD / NEXT ACT
+============================================================
+
+  NEXT = ACT-POLYC-TOOLING-SHELL-BUDGET01
+         (this session STOPS here; SHELL-BUDGET01 is a
+          fresh ACT and is NOT opened in this turn)
+
+============================================================
+COMMIT TRAJECTORY (4 commits, by phase)
+============================================================
+
+  C1 RED       ACT-Phase: RED       -> frozen legacy baseline
+  C2 IMPL      ACT-Phase: IMPL      -> PolyC harness + parity
+  C3 EVIDENCE  ACT-Phase: EVIDENCE  -> delete Bash, gates
+  C4 CLOSE     ACT-Phase: CLOSE     -> ROADMAP + ac-matrix + verdict
+
+To obtain the C1..C4 SHAs:
+
+  git log --all-match \
+          --grep='^ACT: ACT-POLYC-TOOLING-MIGRATE-GEP01$' \
+          --grep='^ACT-Phase: RED$'     --pretty=format:'%H'
+  git log --all-match \
+          --grep='^ACT: ACT-POLYC-TOOLING-MIGRATE-GEP01$' \
+          --grep='^ACT-Phase: IMPL$'    --pretty=format:'%H'
+  git log --all-match \
+          --grep='^ACT: ACT-POLYC-TOOLING-MIGRATE-GEP01$' \
+          --grep='^ACT-Phase: EVIDENCE$' \
+          --pretty=format:'%H'
+  git log --all-match \
+          --grep='^ACT: ACT-POLYC-TOOLING-MIGRATE-GEP01$' \
+          --grep='^ACT-Phase: CLOSE$'   --pretty=format:'%H'

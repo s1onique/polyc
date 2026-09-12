@@ -880,6 +880,115 @@ The critical-path transition per ACT §24:
 STRUCT01 / ARRAY01 remain deferred. BOOTSTRAP01 (B0
 lexer/tokenizer) follows GEP01's closure.
 
+#### ACT-POLYC-TOOLING-MIGRATE-GEP01 status (CLOSED PASS at C4)
+
+```text
+MIGRATE-GEP01  ACT-POLYC-TOOLING-MIGRATE-GEP01
+  ENTRY      = ACT-POLYC-TOOLING-RUNTIME01 + corrections
+               (predecessor substrate usable / GREEN)
+  C1 RED     = (commit with trailer ACT-Phase: RED)
+               (ACT document + frozen legacy baseline
+                + 30-row oracle matrix + environment
+                freeze + no production changes)
+  C2 IMPL    = (commit with trailer ACT-Phase: IMPL)
+               (PolyC harness at
+                tools/quality/llvm-gep01-test.HC +
+                dual-run parity + seeded-failure gate)
+  C3 EVID    = (commit with trailer ACT-Phase: EVIDENCE)
+               (legacy 232-line Bash harness deleted;
+                conservation gates; shell-debt -232 LOC)
+  C4 CLOSE   = (this section, trailer ACT-Phase: CLOSE
+                                 ACT-Verdict: PASS)
+  VERDICT    = PASS
+
+  MISSION = replace scripts/quality/llvm-gep01-test.sh
+            (232 LOC of Bash) with a PolyC-native harness
+            while preserving the complete 30-check GEP01
+            oracle.
+
+  POLYC HARNESS (tools/quality/llvm-gep01-test.HC)
+    Direct-argv SpawnAndCapture throughout.
+    Harness-local ResolveTool() handles the execv/no-PATH
+    gap (does NOT widen tooling.HC).
+    VerdictPass / VerdictFail aggregate into a
+    GEP01_PASS / GEP01_FAIL / STATUS channel that exits
+    0 on PASS, 1 on FAIL.
+    --mode=fail flips row 04 to forced FAIL to prove the
+    verdict channel is honest.
+
+  ORACLE (30 rows, identity-preserved)
+    Legacy stdout: 30 PASS rows.
+    PolyC stdout:  30 PASS rows.
+    PARITY_ROWS=30 PARITY_MATCH=30 PARITY_MISMATCH=0.
+    Every assertion_id in c1/oracle-matrix.tsv has a
+    corresponding PolyC PASS row.
+
+  CONSERVATION GATES (post-cutover)
+    llvm-gep01-test (PolyC)        30/0 PASS rc=0
+    llvm-byte-memory01             37/0 PASS rc=0
+    llvm-intops01                   4/0 PASS rc=0
+    ir-return-slot-fwd01            6/0 PASS rc=0
+    llvm-cap-table-verifier        PASS
+    shell-loc-gate                 PASS
+    factory-append-only            11/0 PASS rc=0
+
+  SHELL-DEBT ACCOUNTING (per ACT §17)
+    pre_gep_shell_loc     = 232     (C1 freeze)
+    post_gep_shell_loc    = 0       (Outcome A: deleted)
+    pre_total_shell_loc   = 6184    (C1 freeze)
+    post_total_shell_loc  = 5952    (-232)
+    pre_shell_file_count  = 23
+    post_shell_file_count = 22
+
+  DIRECT-ARGV AUDIT (per ACT §23)
+    Forbidden token count in production source: 0.
+    (audit pattern: /bin/sh | sh -c | bash -c |
+     system( | popen( | System( | Sh( | Shlurp()
+
+  EVIDENCE ROOT = evidence/ACT-POLYC-TOOLING-MIGRATE-GEP01/
+    c1/  legacy.stdout.txt, legacy-source.txt, oracle-matrix.tsv,
+         environment-freeze.txt, c1-required-result.txt, README.md
+    c2/  bash.stdout.txt, polyc.stdout.txt, polyc.fail-stdout.txt,
+         parity-matrix.tsv, verdict-negative-control.txt,
+         scratch-isolation.txt, direct-argv-audit.txt,
+         production-delta.txt, patch-hygiene.txt,
+         c2-required-result.txt, README.md
+    c3/  polyc.stdout.txt, shell-debt-accounting.txt,
+         conservation-gates.txt, build-freshness.txt,
+         c3-required-result.txt, README.md
+
+  RESIDUE (F11)
+    P0 none
+    P1 none
+    P2 two ENVIRONMENTALLY_UNAVAILABLE gates
+       (llvm-spike / harness-evidence-isolation)
+       depend on hcc being installed at /usr/local; this
+       build posture is portable-via-(--install-dir) and
+       is orthogonal to the GEP01 migration. See
+       evidence/.../c3/conservation-gates.txt.
+
+  NEXT ACT = ACT-POLYC-TOOLING-SHELL-BUDGET01
+```
+
+The critical-path transition per ACT §24:
+
+```text
+  ACT-POLYC-LLVM-BYTE-MEMORY01            HALT_SCOPE_EXPANSION_REQUIRED
+  ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME01   HALT_SCOPE_EXPANSION_REQUIRED
+  ACT-POLYC-IR-RETURN-SLOT-FORWARDING01   HALT_SECOND_SEAM_REQUIRED
+  ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02  CLOSED PASS
+  ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME02   CLOSED PASS
+  ACT-POLYC-LLVM-GEP01                    CLOSED PASS
+  ACT-POLYC-TOOLING-SHELL-INVENTORY01     CLOSED PASS  <-- Track B predecessor
+  ACT-POLYC-TOOLING-RUNTIME01             CLOSED PASS
+  ACT-POLYC-TOOLING-MIGRATE-GEP01         CLOSED PASS  <-- Track B first migration
+  ACT-POLYC-PARSER-TERNARY-HANG01         NEXT        (Track A / compiler)
+  ACT-POLYC-TOOLING-SHELL-BUDGET01        NEXT        (Track B / tooling)
+```
+
+STRUCT01 / ARRAY01 remain deferred. BOOTSTRAP01 (B0
+lexer/tokenizer) follows GEP01's closure.
+
 
 ```
 

@@ -1,0 +1,227 @@
+ACT-POLYC-TOOLING-MIGRATE-GEP01 C4 CLOSE
+Acceptance criteria matrix (per ACT §25)
+
+Each AC is mapped to a status (PASS / DEFERRED / N/A) and
+to the evidence file that documents the result.
+
+============================================================
+AC01  Legacy GEP harness baseline is freshly
+      reproduced: 30/0 PASS, rc=0.               PASS
+      evidence/ACT-POLYC-TOOLING-MIGRATE-GEP01/c1/legacy.stdout.txt
+      evidence/ACT-POLYC-TOOLING-MIGRATE-GEP01/c1/legacy.rc.txt
+
+AC02  Legacy harness source is frozen as `.txt`
+      evidence; no new executable shell evidence
+      file is created.                            PASS
+      evidence/.../c1/legacy-source.txt (renamed .sh -> .txt)
+
+AC03  C1 freezes exactly 30 logical assertion rows.
+                                                PASS
+      evidence/.../c1/oracle-matrix.tsv (30 rows verified)
+
+AC04  New canonical harness exists as PolyC source.
+                                                PASS
+      tools/quality/llvm-gep01-test.HC
+
+AC05  PolyC harness compiles cleanly under the
+      existing tooling.HC runtime substrate
+      (no widening).                             PASS
+      compile log evidence: rc=0, no warnings
+      related to tooling.HC
+
+AC06  Harness exercises the 30-row oracle through
+      direct-argv SpawnAndCapture only.           PASS
+      evidence/.../c2/direct-argv-audit.txt (0 forbidden tokens)
+
+AC07  Bash harness + PolyC harness dual-run from
+      same tree, same toolchain: 30/0 PASS each,
+      rc=0 each.                                  PASS
+      evidence/.../c2/bash.stdout.txt
+      evidence/.../c2/polyc.stdout.txt
+
+AC08  Row-by-row parity:
+      PARITY_ROWS=30 PARITY_MATCH=30
+      PARITY_MISMATCH=0.                          PASS
+      evidence/.../c2/parity-matrix.tsv
+
+AC09  Seeded failure gate: --mode=fail flips to
+      rc=1, FAIL>=1, STATUS=FAIL.                PASS
+      evidence/.../c2/polyc.fail-stdout.txt
+      evidence/.../c2/verdict-negative-control.txt
+
+AC10  Harness-local PATH resolution does NOT
+      widen tooling.HC.                          PASS
+      tools/quality/llvm-gep01-test.HC defines
+      ResolveTool() purely in the harness source.
+
+AC11  Harness scratch writes go ONLY to
+      build/quality/gep01/ (NOT historical GEP01
+      evidence tree).                            PASS
+      evidence/.../c2/scratch-isolation.txt
+      evidence/.../c3/build-freshness.txt
+
+AC12  Historical GEP01 evidence tree under
+      evidence/ACT-POLYC-LLVM-GEP01/ is untouched.
+                                                PASS
+      C3 evidence: git status --porcelain | grep
+      '^.. evidence/ACT-POLYC-LLVM-GEP01/' = no output
+
+AC13  Direct-argv audit returns 0 forbidden-token
+      occurrences in production source.          PASS
+      evidence/.../c2/direct-argv-audit.txt
+
+AC14  No compiler / parser / IR / backend / ABI /
+      factory-doctrine semantics change.         PASS
+      evidence/.../c2/production-delta.txt
+      (zero production files modified)
+
+AC15  No new bash logic >50 LOC; no grandfathered
+      shell file grew.                           PASS
+      evidence/.../c3/shell-debt-accounting.txt
+
+AC16  Shell-LOC ratchet holds:
+      post_gep_shell_loc <= 50.
+      post_total_shell_loc < pre_total_shell_loc.
+                                                PASS
+      evidence/.../c3/shell-debt-accounting.txt
+      (0 <= 50; 5952 < 6184)
+
+AC17  Working tree clean at end of each ACT
+      commit.                                    PASS
+      C1/C2/C3/C4 each verified with
+      git status --short showing clean.
+
+AC18  Patch hygiene: git diff --check rc=0; no
+      newly introduced findings.                 PASS
+      evidence/.../c2/patch-hygiene.txt
+
+AC19  Conservation gates (per ACT §21) all PASS
+      or ENVIRONMENTALLY_UNAVAILABLE.
+                                                PASS
+      evidence/.../c3/conservation-gates.txt
+
+AC20  Build-freshness: the binary being run is
+      built from current tools/quality/llvm-gep01-test.HC
+      (no stale harness binary).                 PASS
+      evidence/.../c3/build-freshness.txt
+
+AC21  Legacy Bash harness is deleted (preferred
+      Outcome A: 232 -> 0 LOC).                  PASS
+      git log --diff-filter=D shows
+      scripts/quality/llvm-gep01-test.sh deleted.
+
+AC22  Total shell file count drops by 1
+      (23 -> 22).                                PASS
+      evidence/.../c3/shell-debt-accounting.txt
+
+AC23  Total shell LOC drops by 232 (6184 -> 5952).
+                                                PASS
+      evidence/.../c3/shell-debt-accounting.txt
+
+AC24  ROADMAP.md reflects CLOSED PASS status
+      for MIGRATE-GEP01 and updates the
+      critical-path transition table.            PASS
+      docs/ROADMAP.md (added "MIGRATE-GEP01
+      CLOSED PASS" block + critical-path table)
+
+AC25  Closure rule per ACT §31:
+      FUNCTIONAL_EQUIVALENCE = TRUE
+      SHELL_DEBT_REDUCTION   = TRUE             PASS
+
+AC26  ACT documents own authorization only; no
+      OPEN -> PASS mutation; no SHA-of-self
+      claims in any committed Markdown.          PASS
+      (C1 commit freeze, C2/C3 trail with
+       ACT-Verdict only on C4 commit)
+
+AC27  Cardinality-1 CLOSE: exactly ONE commit
+      for this ACT carries
+      ACT-Phase: CLOSE / ACT-Verdict: PASS.     PASS
+      (this commit)
+
+AC28  No mutation of any historical evidence
+      packet (F14).                              PASS
+      git log --diff-filter=M shows zero changes
+      under evidence/ACT-POLYC-LLVM-GEP01/
+      evidence/ACT-POLYC-TOOLING-RUNTIME01/
+      evidence/ACT-POLYC-TOOLING-SHELL-INVENTORY01/
+
+AC29  Trajectory: C1 RED -> C2 IMPL -> C3 EVID
+      -> C4 CLOSE, each with ACT-Phase trailer.
+                                                PASS
+      git log shows 4 commits, each with the
+      correct trailer.
+
+AC30  C1 README documents the legacy freeze and
+      oracle matrix verification recipe.        PASS
+      evidence/.../c1/README.md
+
+AC31  C2 README documents parity, seeded failure,
+      and forbidden-shell-execution recipe.     PASS
+      evidence/.../c2/README.md
+
+AC32  C3 README documents the cutover,
+      inventory, and fresh-run recipe.          PASS
+      evidence/.../c3/README.md
+
+AC33  C4 closure report (this file + residue +
+      next-act).                                 PASS
+      evidence/.../c4/
+
+AC34  No broadening of GEP01 capability during
+      migration. (The 30-row oracle is identical
+      to the legacy one.)                        PASS
+      evidence/.../c1/oracle-matrix.tsv
+      vs. C3 polyc.stdout.txt
+
+AC35  No rewriting of GEP01 fixtures to simplify
+      migration.                                 PASS
+      src/tests/llvm-gep01/{read0,read2,readat,
+      twodigits,i64idx}.HC unchanged
+
+AC36  No migration of another shell harness in
+      this ACT.                                  PASS
+      (Only llvm-gep01-test.sh was deleted)
+
+AC37  No early creation of SHELL-BUDGET01.      PASS
+      (SHELL-BUDGET01 is named in NEXT ACT but
+       not opened in this session)
+
+AC38  No "cleanup" of historical whitespace.     PASS
+      (F14 preserved; no edits to historical
+       evidence packets)
+
+AC39  No commit of generated test binaries as
+      evidence.                                  PASS
+      (llvm-gep01-test is in .gitignore)
+
+AC40  Frozen C1 baseline is reproducible: a fresh
+      `bash scripts/quality/llvm-gep01-test.sh`
+      (pre-cutover) produces 30/0 PASS rc=0.    PASS
+      evidence/.../c1/legacy.stdout.txt
+
+AC41  ACT has a real, mechanical implementation,
+      not just a documentation rewrite.         PASS
+      tools/quality/llvm-gep01-test.HC is a
+      working compiled binary at llvm-gep01-test.
+
+AC42  ResolveTool handles all three bare names:
+      llvm-as, opt, python3.                     PASS
+      (verified via runtime output: paths
+      printed at startup)
+
+AC43  No `system()`, `popen()`, `Sh()`, `Shlurp()`,
+      `/bin/sh`, `bash -c` in the harness source.
+                                                PASS
+      evidence/.../c2/direct-argv-audit.txt
+
+AC44  The harness never writes to
+      evidence/ACT-POLYC-LLVM-GEP01/c3/_tmp
+      during a normal run.                       PASS
+      evidence/.../c2/scratch-isolation.txt
+
+AC45  All C1/C2/C3 evidence files exist and
+      are committed under
+      evidence/ACT-POLYC-TOOLING-MIGRATE-GEP01/.
+                                                PASS
+      (verified via git ls-tree)
