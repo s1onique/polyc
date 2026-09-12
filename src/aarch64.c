@@ -217,6 +217,53 @@ static void aarch64GlobalAddr(Cctrl *cc, AoStr *buf, const char *sym,
     }
 }
 
+/* ACT-POLYC-AOT-PIC-EXTERNAL-REFS01: AArch64 Mach-O-valid
+ * materialisation of a function-symbol address whose definition is
+ * supplied by another image (e.g. libpolyc-extref.dylib, libtos.dylib).
+ *
+ * Why this exists: aarch64GlobalAddr emits
+ *   adrp Xd, _sym@PAGE; add Xd, Xd, _sym@PAGEOFF
+ * which lowers to ARM64_RELOC_PAGE21 + ARM64_RELOC_PAGEOFF12. Those
+ * relocations target the symbol's own page directly. Darwin's ld64
+ * refuses them when the symbol is defined in a dylib whose __text
+ * has no per-symbol relocations, with:
+ *   ld: invalid use of ADRP in '<caller>' to '_sym'
+ *
+ * The Mach-O-valid form for an external function pointer is a GOT
+ * load:
+ *   adrp Xd, _sym@GOTPAGE
+ *   ldr  Xd, [Xd, _sym@GOTPAGEOFF]
+ * which lowers to ARM64_RELOC_GOT_LOAD_PAGE21 +
+ * ARM64_RELOC_GOT_LOAD_PAGEOFF12. The linker / dyld then writes the
+ * GOT slot at runtime via the symbol's normal dynamic-resolution
+ * machinery (the same machinery that already drives bl _sym for the
+ * direct-call path).
+ *
+ * Linux is unchanged here: this ACT does not authorize the Linux
+ * PIC path; the existing :lo12: emission is preserved and the
+ * corresponding Linux-against-shared-library equivalent (PLT / GOT)
+ * is out of scope for this ACT.
+ *
+ * Only Apple Darwin is targeted because that is the failing
+ * platform for the canonical-install failure (libtos.dylib on
+ * aarch64-apple-darwin). The Linux case is not exercised by the
+ * RED/GREEN matrix and is intentionally left alone. */
+static void aarch64ExternalFuncAddr(Cctrl *cc, AoStr *buf,
+                                    const char *sym, const char *reg)
+{
+    if (cc->target == TARGET_AARCH64_APPLE_DARWIN) {
+        aoStrCatFmt(buf, "adrp    %s, %s@GOTPAGE\n\t", reg, sym);
+        aoStrCatFmt(buf, "ldr %s, [%s, %s@GOTPAGEOFF]\n\t",
+                    reg, reg, sym);
+    } else {
+        /* Linux: this ACT is silent on the Linux PIC materialisation
+         * path. Preserve the historical aarch64GlobalAddr behaviour
+         * for non-Apple targets so we do not regress the Linux build
+         * outside the authorized scope. */
+        aarch64GlobalAddr(cc, buf, sym, reg);
+    }
+}
+
 /* Pick the addressing form for a frame access. AArch64 ldr/str
  * scaled-imm wants non-negative offsets in size-multiples; ldur/stur
  * supports signed -256..255; anything else needs the offset
@@ -1498,11 +1545,36 @@ static void aarch64EmitInstr(IrCgCtx *ctx, IrInstr *instr) {
             if (instr->r1 && instr->r1->kind == IR_VAL_GLOBAL) {
                 const char *name = asmNormaliseGlobalLabel(ctx->cc,
                         instr->r1->as.global.name)->data;
+                /* ACT-POLYC-AOT-PIC-EXTERNAL-REFS01: classify
+                 * function-symbol references. The IR_VAL_FLAG_FUNC
+                 * bit tells us the value is a function; we then look
+                 * up the AST in the compile unit's global_env to
+                 * determine whether the function is defined here
+                 * (AST_FUNC / AST_FUN_PROTO / AST_ASM_FUNC_BIND /
+                 * AST_ASM_FUNCDEF) or merely declared as an external
+                 * reference (AST_EXTERN_FUNC). Only the latter case
+                 * needs the GOT-loaded external-reference sequence
+                 * on Apple Darwin; same-image function references
+                 * keep the historical aarch64GlobalAddr path. This
+                 * is a backend-semantic classifier (it inspects the
+                 * AST kind, not the symbol spelling). */
+                int is_external_func = 0;
                 if (instr->r1->flags & IR_VAL_FLAG_FUNC) {
                     name = asmNormaliseFunctionName(ctx->cc,
                             instr->r1->as.global.name);
+                    Ast *decl = (Ast *)mapGetLen(ctx->cc->global_env,
+                            instr->r1->as.global.name->data,
+                            instr->r1->as.global.name->len);
+                    if (decl && decl->kind == AST_EXTERN_FUNC) {
+                        is_external_func = 1;
+                    }
                 }
-                aarch64GlobalAddr(ctx->cc, ctx->buf, name, "x0");
+                if (is_external_func) {
+                    aarch64ExternalFuncAddr(ctx->cc, ctx->buf,
+                            name, "x0");
+                } else {
+                    aarch64GlobalAddr(ctx->cc, ctx->buf, name, "x0");
+                }
             } else if (instr->r1) {
                 int loff = irCgGetLoff(&ctx->fn->ra, instr->r1);
                 aarch64EmitFrameAddr(ctx->buf, "x0", loff);

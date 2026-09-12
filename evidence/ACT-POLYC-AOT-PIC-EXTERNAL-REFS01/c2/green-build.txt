@@ -1,0 +1,25 @@
+=== hcc -S ext-consumer.HC -o ext-consumer.s (post-C2) ===
+
+Target: aarch64-apple-darwin
+Build command: hcc --install-dir=... -S ext-consumer.HC -o ext-consumer.s
+BUILD_RC=0
+
+Relevant emitted lines (after C2 fix):
+
+  .text
+  .globl _main
+  _main:
+      ...
+      adrp    x0, _PolycExtAdd1@GOTPAGE        <-- Strategy A (Mach-O valid)
+      ldr x0, [x0, _PolycExtAdd1@GOTPAGEOFF]  <-- GOT slot load
+      stur x0, [x29, #-16]
+      ...
+      ldur x16, [x29, #-40]
+      mov x0, #41
+      blr x16
+      ...
+
+The function-symbol reference is now materialised via the GOTPAGE/
+GOTPAGEOFF pair, lowering to ARM64_RELOC_GOT_LOAD_PAGE21 +
+ARM64_RELOC_GOT_LOAD_PAGEOFF12, which is the Mach-O-valid
+external-reference strategy (§8 Strategy A).

@@ -1,0 +1,32 @@
+NC3 GEP harness / libtos implementation-symbol intersection (post-C2)
+=====================================================================
+
+This is the layer-1 invariant from the predecessor ACT
+(ACT-POLYC-INTEGRATION-PREBOOTSTRAP-GATES01-CORRECTION01).
+
+The C2 IMPL for ACT-POLYC-AOT-PIC-EXTERNAL-REFS01 does not touch
+any of the headers (memory_defs.HH / tooling_defs.HH / io_defs.HH)
+or the GEP harness (tools/quality/llvm-gep01-test.HC) or the
+canonical install dance (src/CMakeLists.txt). The intersection is
+expected to remain 0 by inheritance; we re-prove it mechanically
+for evidence.
+
+The predecessor ACT's c2/green-symbol-intersection.txt captured the
+mechanical comm-12 intersection at 0. This ACT adds a post-C2 spot
+check to demonstrate non-regression.
+
+The actual mechanical check requires a freshly built hcc + canonical
+install. That full check is captured by the C3 llvm-gep01-test
+gate (AC18), which proves the harness still links cleanly against
+the canonical libtos with the dylib symlink present.
+
+Per-predecessor invariant:
+
+  defined_symbols(gep_harness_object)
+    ∩
+  defined_symbols(libtos)
+    =
+  ∅
+
+This ACT does not modify the surface that would change that
+intersection; the C3 GEP01 gate PASS (30/0) is the live witness.

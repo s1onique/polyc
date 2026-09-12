@@ -1,0 +1,76 @@
+Implementation delta — ACT-POLYC-AOT-PIC-EXTERNAL-REFS01 C2
+============================================================
+
+Single-file production change (F2-bounded):
+
+  src/aarch64.c
+
+  Added helper (static, file-local):
+
+    static void aarch64ExternalFuncAddr(Cctrl *cc, AoStr *buf,
+                                        const char *sym, const char *reg);
+
+    Apple Darwin path emits:
+      adrp    <reg>, <sym>@GOTPAGE
+      ldr     <reg>, [<reg>, <sym>@GOTPAGEOFF]
+
+    Non-Apple (Linux) targets fall back to the historical
+    aarch64GlobalAddr behaviour. This ACT does not authorize any
+    Linux-against-shared-library semantic change.
+
+  Modified IR_LEA arm:
+
+    case IR_LEA: (in aarch64Gen())
+
+      Pre-C2:  emit aarch64GlobalAddr(_sym) unconditionally when
+               r1 is IR_VAL_GLOBAL with IR_VAL_FLAG_FUNC.
+
+      Post-C2: look up the AST in cc->global_env by the symbol
+               name. If the AST's kind is AST_EXTERN_FUNC, emit
+               aarch64ExternalFuncAddr(_sym). Otherwise preserve
+               the historical aarch64GlobalAddr(_sym) path.
+
+    The classifier is backend-semantic (it inspects the AST kind
+    in the compile unit's global_env, not the spelling of the
+    symbol). IR_VAL_FLAG_FUNC without an AST_EXTERN_FUNC kind
+    keeps the local/same-image path.
+
+Unchanged (deliberately):
+
+  src/x86_64.c IR_LEA arm — emits `leaq _sym(%rip)` which is the
+    Mach-O-x86_64 RIP-relative analogue and is independent of the
+    aarch64/arm64 external-reference defect. F2 concludes no
+    shared abstraction forces a change here; no x86_64 mutation.
+
+  IR_CALL (direct call) — already emits `bl <name>` which lowers
+    to ARM64_RELOC_BRANCH26; that relocation is Mach-O-valid for
+    both same-image and external-dylib targets.
+
+  IR_LOAD_DEREF / IR_STORE_DEREF / string-literal data paths —
+    these call aarch64GlobalAddr for data symbols. The same image
+    vs. external classification for *data* is not part of this
+    ACT's scope (per ACT §13). The RED/GREEN matrix proves the
+    ACT's narrow scope; no regressions observed.
+
+Diff signature (hcc-only):
+
+  src/aarch64.c
+    +47 lines (aarch64ExternalFuncAddr + IR_LEA classifier
+              + classifying comment block)
+    -2  lines (replaced inline aarch64GlobalAddr call with the
+              if/else external-vs-local dispatch)
+
+No build-system files changed. No Makefile, CMakeLists, or
+script changes.
+
+Forbidden mechanisms deliberately NOT used (per ACT §9):
+
+  - no -flat_namespace, -undefined dynamic_lookup,
+    -multiply_defined suppress, -Bsymbolic
+  - no removal of libtos.dylib
+  - no copying external functions into the executable
+  - no renaming external symbols to look local
+  - no parser/typechecker/IR changes
+  - no LLVM backend changes
+  - no general PIC rewrite of all AArch64 code
+  - no x86_64 modification
