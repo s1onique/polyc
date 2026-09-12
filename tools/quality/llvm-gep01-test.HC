@@ -36,7 +36,8 @@
 //     --llvm-opt=opt                             \
 //     --python=python3                           \
 //     [--mode=fail]                              \
-//     [--scratch=<dir>]
+//     [--scratch=<dir>]                          \
+//     [--predicate-selftest]
 //
 // Exits 0 iff every assertion in the 30-row oracle
 // passes; non-zero with STATUS=FAIL otherwise.
@@ -246,6 +247,158 @@ U8 *ExtractShapeDependent(U8 *text)
 }
 
 // ------------------------------------------------------------
+// Predicate helpers (C1.2 contract).
+//
+// Both helpers below are pure-local: they take a text
+// buffer, return a Bool, perform no filesystem / process
+// / state / dispatching operation, and depend only on
+// the HolyC primitives already imported by the harness
+// (StrNCmp, MemCpy, MAlloc, Free, Contains). They do NOT
+// widen tooling.HC. tooling.HC delta = 0.
+//
+// Both helpers are also invoked by both:
+//   - the normal 30-row run (rows 04/07/08/26/27/28)
+//   - the --predicate-selftest mode (seven-case table)
+//
+// so a regression in one helper is caught by the
+// selftest that the ACT-POLYC-TOOLING-MIGRATE-GEP01-
+// CORRECTION01 §3.2 contract freezes.
+//
+// HALT_GEP_HELPER_WEAKER_THAN_LEGACY:
+//   Any future helper whose acceptance set is a strict
+//   superset of the legacy Bash regex
+//   `getelementptr i8, ptr %[0-9]+, i64 %[0-9]+`
+//   violates the frozen oracle and MUST halt. The three
+//   negative cases (A constant-index, B symbolic-base) +
+//   one positive case (C genuine) in --predicate-selftest
+//   mechanically enforce this.
+// ------------------------------------------------------------
+
+// GepDynamicI8Shape(text) -> Bool
+//
+// Returns TRUE iff text contains, on the SAME line,
+// exactly:
+//
+//     getelementptr i8, ptr %<base-digits>, i64 %<idx-digits>
+//
+// where:
+//   - <base-digits> is one or more decimal digits (0x30..0x39);
+//   - <idx-digits>  is one or more decimal digits;
+//   - the literal "getelementptr i8, ptr %" prefix and the
+//     literal ", i64 %" infix are required, on the same
+//     line, with NO allowed characters between them.
+//
+// This is the smallest pure-local helper whose acceptance
+// set equals the frozen legacy Bash ERE
+// `getelementptr i8, ptr %[0-9]+, i64 %[0-9]+`:
+//   - A constant-index fixture (e.g. `ptr %0, i64 2`)
+//     is rejected because the ", i64 %" infix is absent.
+//   - A symbolic-base fixture (e.g. `ptr %base, i64 %1`)
+//     is rejected because the digits-after-% requirement
+//     is not met on the base operand.
+//   - A genuine dynamic-shape fixture (e.g.
+//     `ptr %0, i64 %1`) is accepted.
+
+Bool GepDynamicI8Shape(U8 *text)
+{
+  U8 *needle = "getelementptr i8, ptr %";
+  I64 needle_len;
+  I64 text_len;
+  I64 i;
+
+  if (text == NULL) return FALSE;
+
+  needle_len = StrLen(needle);
+  text_len   = StrLen(text);
+
+  for (i = 0; i + needle_len <= text_len; ++i) {
+    // Anchor the literal prefix on this line. The prefix
+    // cannot span a newline.
+    if (StrNCmp(text + i, needle, needle_len) != 0) continue;
+
+    // After the prefix, on the SAME line, require at
+    // least one decimal digit, then the literal
+    // ", i64 %", then at least one decimal digit.
+    I64 j = i + needle_len;
+
+    // digits: base
+    I64 base_start = j;
+    while (j < text_len && text[j] >= 0x30 && text[j] <= 0x39) j++;
+    if (j == base_start) continue;   // no base digits
+    if (j >= text_len) return FALSE;
+
+    // literal infix
+    U8 *infix = ", i64 %";
+    I64 infix_len = StrLen(infix);
+    if (j + infix_len > text_len) return FALSE;
+    if (StrNCmp(text + j, infix, infix_len) != 0) continue;
+    j += infix_len;
+
+    // digits: index
+    I64 idx_start = j;
+    while (j < text_len && text[j] >= 0x30 && text[j] <= 0x39) j++;
+    if (j == idx_start) continue;    // no idx digits
+
+    // Must not have any further non-newline character
+    // before terminating the line -- the legacy regex
+    // allows trailing text, but the actual emitted IR
+    // stops at end-of-statement / newline. We do not
+    // require end-of-line here; the helper is purely a
+    // sub-line substring predicate.
+    return TRUE;
+  }
+  return FALSE;
+}
+
+// LineContainsOpcodeMarker(text, opcode, marker) -> Bool
+//
+// Returns TRUE iff text contains, on the SAME line,
+// the literal opcode (e.g. "IR_GEP") followed, anywhere
+// later on that same line, by the literal marker
+// (e.g. "(REJECTED)" or "(SUPPORTED)"). opcode MUST
+// occur before marker; newlines between them reject.
+//
+// This binds the legacy Bash semantics that the
+// (REJECTED)/(SUPPORTED) marker stays on the same line
+// as the opcode name in the cap-verifier output. A
+// malformed fixture where the marker is on a different
+// line from the opcode is rejected.
+
+Bool LineContainsOpcodeMarker(U8 *text, U8 *opcode, U8 *marker)
+{
+  I64 text_len, op_len, mk_len;
+  I64 i;
+
+  if (text == NULL || opcode == NULL || marker == NULL) return FALSE;
+
+  text_len = StrLen(text);
+  op_len   = StrLen(opcode);
+  mk_len   = StrLen(marker);
+
+  for (i = 0; i + op_len <= text_len; ++i) {
+    if (StrNCmp(text + i, opcode, op_len) != 0) continue;
+    // Found the opcode at position i. The marker must
+    // occur AFTER i on the same line.
+    I64 k = i + op_len;
+    while (k + mk_len <= text_len) {
+      // Bail out if we cross a newline before finding the marker.
+      // A newline is any of 0x0A ('\n') or 0x0D ('\r').
+      Bool crossed_newline = FALSE;
+      for (I64 s = i + op_len; s < k; ++s) {
+        if (text[s] == 0x0A || text[s] == 0x0D) {
+          crossed_newline = TRUE;
+          break;
+        }
+      }
+      if (crossed_newline) break;
+      if (StrNCmp(text + k, marker, mk_len) == 0) return TRUE;
+      k++;
+    }
+  }
+  return FALSE;
+}
+
+// ------------------------------------------------------------
 // Hcc-emit helper: invoke
 //   hcc --emit-llvm --install-dir=IDIR -o OUT SRC
 // returns SpawnAndCapture rc, writes stdout to *out,
@@ -386,8 +539,13 @@ U0 RunPositives(TestVerdict *v, U8 *hcc_path, U8 *install_dir,
       VerdictFail(v, "readat.HC: getelementptr i8 with runtime index + load i8",
                   "seed_failure forced (--mode=fail)");
     } else if (emitted != NULL
-        && Contains(emitted, "getelementptr i8, ptr %")
+        && GepDynamicI8Shape(emitted)
         && Contains(emitted, "load i8, ptr %")) {
+      // Row 04: uses the same GepDynamicI8Shape() helper as
+      // --predicate-selftest case C. A constant-index fixture
+      // (e.g. "ptr %0, i64 2") is now correctly rejected
+      // because GepDynamicI8Shape requires the literal
+      // ", i64 %" infix followed by digits.
       VerdictPass(v, "readat.HC: getelementptr i8 with runtime index + load i8");
     } else {
       VerdictFail(v, "readat.HC: getelementptr i8 with runtime index + load i8",
@@ -460,12 +618,23 @@ U0 RunPositives(TestVerdict *v, U8 *hcc_path, U8 *install_dir,
     VerdictFail(v, "GEP result used as load address (load i8, ptr %gep_i8)",
                 "could not re-read emitted IR");
   } else {
-    if (Contains(emitted, "getelementptr i8, ptr %"))
+    // Row 07: legacy regex was
+    //   grep -qE 'getelementptr i8, ptr %[0-9]+, i64 %[0-9]+'
+    // which is exactly the same acceptance set as
+    // GepDynamicI8Shape(). Same helper used here and in
+    // --predicate-selftest case C.
+    if (GepDynamicI8Shape(emitted))
       VerdictPass(v, "ReadAt emitted getelementptr i8, ptr %base, i64 %index");
     else
       VerdictFail(v, "ReadAt emitted getelementptr i8, ptr %base, i64 %index",
                   "missing expected GEP shape");
-    if (Contains(emitted, "load i8, ptr %"))
+    // Row 08: legacy regex was
+    //   grep -qE 'load i8, ptr %gep_i8'
+    // which requires the specific SSA-value name "%gep_i8"
+    // (not just any SSA value). A helper that collapsed
+    // this to "load i8, ptr %" would falsely accept
+    // unrelated load patterns.
+    if (Contains(emitted, "load i8, ptr %gep_i8"))
       VerdictPass(v, "GEP result used as load address (load i8, ptr %gep_i8)");
     else
       VerdictFail(v, "GEP result used as load address (load i8, ptr %gep_i8)",
@@ -637,22 +806,30 @@ U0 RunCapability(TestVerdict *v, U8 *python, U8 *scratch)
     return;
   }
 
-  if (Contains(cap_txt, "IR_GEP")
-      && Contains(cap_txt, "(REJECTED)")) {
+  // Rows 26 / 27 / 28: the legacy Bash semantics required
+  // the (REJECTED) / (SUPPORTED) marker to be on the SAME
+  // line as the opcode name in the cap-verifier output.
+  // The whole-file Contains() pair used by the C1 harness
+  // collapsed this binding and accepted fixtures where
+  // the marker was on a different line.
+  //
+  // LineContainsOpcodeMarker() is the pure-local helper
+  // that binds the legacy regex semantically: the marker
+  // must occur after the opcode, on the same line, with
+  // no intervening newline.
+  if (LineContainsOpcodeMarker(cap_txt, "IR_GEP", "(REJECTED)")) {
     VerdictPass(v, "IR_GEP = REJECTED (sibling opcode still rejected)");
   } else {
     VerdictFail(v, "IR_GEP = REJECTED (sibling opcode still rejected)",
                 "IR_GEP not REJECTED");
   }
-  if (Contains(cap_txt, "IR_LEA")
-      && Contains(cap_txt, "(REJECTED)")) {
+  if (LineContainsOpcodeMarker(cap_txt, "IR_LEA", "(REJECTED)")) {
     VerdictPass(v, "IR_LEA = REJECTED (sibling opcode still rejected)");
   } else {
     VerdictFail(v, "IR_LEA = REJECTED (sibling opcode still rejected)",
                 "IR_LEA not REJECTED");
   }
-  if (Contains(cap_txt, "IR_IADD")
-      && Contains(cap_txt, "(SUPPORTED)")) {
+  if (LineContainsOpcodeMarker(cap_txt, "IR_IADD", "(SUPPORTED)")) {
     VerdictPass(v, "IR_IADD = SUPPORTED (preserved, GEP01 is per-shape subset)");
   } else {
     VerdictFail(v, "IR_IADD = SUPPORTED (preserved, GEP01 is per-shape subset)",
@@ -714,6 +891,352 @@ U0 RunDeterminism(TestVerdict *v, U8 *hcc_path, U8 *install_dir,
 }
 
 // ------------------------------------------------------------
+// Option-B scratch lifecycle (C1.2 contract).
+//
+// Ownership model:
+//   - The CALLER owns --scratch=<root>.
+//   - The harness owns a unique per-run child directory
+//     beneath <root>.
+//   - The harness redirects every transient artifact
+//     into <root>/<child>.
+//   - The harness verifies, BEFORE any rm -rf, that the
+//     child path satisfies the containment precondition
+//     (see ContainmentVerify below). If the precondition
+//     fails the harness halts with
+//     HALT_P1_CONTAINMENT_UNVERIFIED and does NOT issue
+//     rm -rf.
+//   - The harness deletes <root>/<child> ONLY. The
+//     caller's <root> survives.
+// ------------------------------------------------------------
+
+Bool ContainmentVerify(U8 *root, U8 *child)
+{
+  I64 rl, cl;
+  if (root == NULL || child == NULL) {
+    "HALT_P1_CONTAINMENT_UNVERIFIED: root or child is NULL\n";
+    return FALSE;
+  }
+  rl = StrLen(root);
+  cl = StrLen(child);
+  if (rl == 0) {
+    "HALT_P1_CONTAINMENT_UNVERIFIED: empty root\n";
+    return FALSE;
+  }
+  if (cl == 0) {
+    "HALT_P1_CONTAINMENT_UNVERIFIED: empty child\n";
+    return FALSE;
+  }
+  if (cl <= rl) {
+    "HALT_P1_CONTAINMENT_UNVERIFIED: child len <= root len (root=%s child=%s)\n",
+      root, child;
+    return FALSE;
+  }
+  if (StrNCmp(child, root, rl) != 0) {
+    "HALT_P1_CONTAINMENT_UNVERIFIED: child does not start with root (root=%s child=%s)\n",
+      root, child;
+    return FALSE;
+  }
+  if (child[rl] != '/') {
+    "HALT_P1_CONTAINMENT_UNVERIFIED: missing '/' boundary (root=%s child=%s)\n",
+      root, child;
+    return FALSE;
+  }
+  if (child[rl + 1] == 0) {
+    "HALT_P1_CONTAINMENT_UNVERIFIED: empty suffix (root=%s child=%s)\n",
+      root, child;
+    return FALSE;
+  }
+  return TRUE;
+}
+
+Bool HaltIfNotContained(U8 *root, U8 *child)
+{
+  if (!ContainmentVerify(root, child)) {
+    "HALT_P1_CONTAINMENT_UNVERIFIED: refusing destructive op on %s (root=%s)\n",
+      child, root;
+    return FALSE;
+  }
+  return TRUE;
+}
+
+U8 *MakeOptionBScratchChild(U8 *root)
+{
+  I64 pid = getpid();
+  I64 tick = 0;
+  for (I64 i = 0; i < pid; ++i) tick = (tick * 1103515245 + 12345) & 0x7FFFFFFF;
+  U8 *child = StrPrint(NULL, "%s/run-%d-%d", root, pid, tick & 0xFFFFFF);
+  return child;
+}
+
+// MkDirpRecursive(path) -> Bool
+//
+// Implements `mkdir -p <path>` using direct libc mkdir(2)
+// syscall only. Walks path byte by byte, creating each
+// intermediate directory. If the final directory already
+// exists this returns TRUE (idempotent). Returns FALSE on
+// any underlying syscall failure.
+//
+// No subprocess is spawned. This avoids the (intermittent)
+// SIGBUS observed under repeated SpawnAndCapture invocations
+// on this hcc build, while keeping the harness on the
+// direct-syscall / direct-argv path that the harness
+// architecture already documents.
+
+Bool MkDirpRecursive(U8 *path)
+{
+  I64 n, i;
+  I8 *tmp;
+  I32 rc;
+
+  if (path == NULL) return FALSE;
+  n = StrLen(path);
+  if (n == 0) return FALSE;
+  tmp = MAlloc(n + 1);
+  for (i = 0; i < n; ++i) {
+    tmp[i] = path[i];
+    if (path[i] == '/' && i > 0) {
+      tmp[i] = 0;
+      mkdir(tmp, 0x1FF);
+      tmp[i] = '/';
+    }
+  }
+  tmp[n] = 0;
+  rc = mkdir(tmp, 0x1FF);
+  Free(tmp);
+  // EEXIST is success for mkdir -p semantics.
+  if (rc == 0) return TRUE;
+  if (*Errno() == 17 /* EEXIST */) return TRUE;
+  return FALSE;
+}
+
+// RmrRecursive(path) -> Bool
+//
+// Implements `rm -rf <path>` using direct libc opendir /
+// readdir / unlink / rmdir syscalls. Walks the tree depth
+// first; unlinks files, removes directories after their
+// contents are gone. Returns FALSE only on a hard syscall
+// failure; ENOENT (path does not exist) returns TRUE.
+//
+// No subprocess is spawned. See MkDirpRecursive for
+// rationale.
+
+Bool RmrRecursive(U8 *path)
+{
+  cDIR *d;
+  Dirent *ent;
+  U8 *child;
+  I64 cl;
+
+  if (path == NULL) return FALSE;
+  d = opendir(path);
+  if (d == NULL) {
+    if (*Errno() == 2 /* ENOENT */) return TRUE;
+    return FALSE;
+  }
+  while ((ent = readdir(d)) != NULL) {
+    U8 *nm = ent->name;
+    if (nm[0] == '.' && nm[1] == 0) continue;
+    if (nm[0] == '.' && nm[1] == '.' && nm[2] == 0) continue;
+    cl = StrLen(path) + 1 + StrLen(nm);
+    child = MAlloc(cl + 1);
+    StrPrint(child, "%s/%s", path, nm);
+    Fstat st;
+    if (Stat(&st, child) == 0) {
+      if ((st.st_mode & 0xF000) == 0x4000) {
+        if (!RmrRecursive(child)) {
+          Free(child);
+          closedir(d);
+          return FALSE;
+        }
+      } else {
+        if (unlink(child) != 0) {
+          Free(child);
+          closedir(d);
+          return FALSE;
+        }
+      }
+    }
+    Free(child);
+  }
+  closedir(d);
+  if (rmdir(path) != 0) {
+    if (*Errno() == 2 /* ENOENT */) return TRUE;
+    return FALSE;
+  }
+  return TRUE;
+}
+
+Bool DeleteOptionBChild(U8 *root, U8 *child)
+{
+  if (!HaltIfNotContained(root, child)) return FALSE;
+
+  // Use direct libc unlink/rmdir in a recursive walk
+  // instead of SpawnAndCapture("/bin/rm", ...). The
+  // spawn path is exercised heavily by the rest of the
+  // harness; keeping housekeeping (mkdir/rm) on direct
+  // syscalls also avoids the (intermittent) SIGBUS
+  // observed under repeated SpawnAndCapture invocations
+  // on this hcc build. The direct-argv constraint is
+  // unaffected because no subprocess is spawned here.
+  if (!RmrRecursive(child)) {
+    "HALT_P1_CONTAINMENT_UNVERIFIED: recursive delete of %s failed\n",
+      child;
+    return FALSE;
+  }
+  return TRUE;
+}
+
+Bool EnsureOptionBParent(U8 *root)
+{
+  if (FileExists(root)) return TRUE;
+  // Use direct libc mkdir(2) via MkDirpRecursive
+  // instead of SpawnAndCapture("/bin/mkdir", ...). See
+  // the rationale on DeleteOptionBChild above.
+  if (!MkDirpRecursive(root)) {
+    "HALT_P1_CONTAINMENT_UNVERIFIED: mkdir -p %s failed\n",
+      root;
+    return FALSE;
+  }
+  return TRUE;
+}
+
+// ------------------------------------------------------------
+// --predicate-selftest mode (C1.2 contract).
+//
+// Walks the seven committed RED fixtures through the SAME
+// helpers used by the production 30-row run, and asserts
+// the expected per-fixture verdict. Exits 0 if every
+// case matches its expected verdict; non-zero with
+// SELFTEST_FAIL line otherwise.
+// ------------------------------------------------------------
+
+I32 RunPredicateSelfTest(U8 *evidence_dir)
+{
+  I32 fails = 0;
+  U8 *fixed_dir = StrPrint(NULL,
+    "%s/ACT-POLYC-TOOLING-MIGRATE-GEP01/correction01/red",
+    evidence_dir);
+
+  // Case A: GepDynamicI8Shape rejects constant-index.
+  U8 *pathA = StrPrint(NULL, "%s/read-at-malformed.ll", fixed_dir);
+  I64 szA = 0;
+  U8 *txtA = SlurpFile(pathA, &szA);
+  Bool expA = FALSE;
+  Bool gotA = GepDynamicI8Shape(txtA);
+  if (gotA != expA) {
+    "SELFTEST_FAIL case=A fixture=read-at-malformed.ll expected=%d got=%d\n",
+      expA, gotA;
+    fails++;
+  } else {
+    "SELFTEST_PASS case=A fixture=read-at-malformed.ll expected=%d got=%d\n",
+      expA, gotA;
+  }
+  BytewiseFree(txtA); Free(pathA);
+
+  // Case B: GepDynamicI8Shape rejects symbolic-base.
+  U8 *pathB = StrPrint(NULL, "%s/read-at-symbolic-base.ll", fixed_dir);
+  I64 szB = 0;
+  U8 *txtB = SlurpFile(pathB, &szB);
+  Bool expB = FALSE;
+  Bool gotB = GepDynamicI8Shape(txtB);
+  if (gotB != expB) {
+    "SELFTEST_FAIL case=B fixture=read-at-symbolic-base.ll expected=%d got=%d\n",
+      expB, gotB;
+    fails++;
+  } else {
+    "SELFTEST_PASS case=B fixture=read-at-symbolic-base.ll expected=%d got=%d\n",
+      expB, gotB;
+  }
+  BytewiseFree(txtB); Free(pathB);
+
+  // Case C: GepDynamicI8Shape accepts genuine.
+  U8 *pathC = StrPrint(NULL, "%s/read-at-genuine.ll", fixed_dir);
+  I64 szC = 0;
+  U8 *txtC = SlurpFile(pathC, &szC);
+  Bool expC = TRUE;
+  Bool gotC = GepDynamicI8Shape(txtC);
+  if (gotC != expC) {
+    "SELFTEST_FAIL case=C fixture=read-at-genuine.ll expected=%d got=%d\n",
+      expC, gotC;
+    fails++;
+  } else {
+    "SELFTEST_PASS case=C fixture=read-at-genuine.ll expected=%d got=%d\n",
+      expC, gotC;
+  }
+  BytewiseFree(txtC); Free(pathC);
+
+  // Row 08 case: read-at-malformed.ll is the SAME malformed
+  // fixture. The row-08 production predicate is
+  //   Contains(t, "load i8, ptr %gep_i8")
+  // and read-at-malformed.ll does NOT contain "%gep_i8"
+  // (its load uses a different SSA name), so the
+  // predicate MUST reject it. This case proves that the
+  // row-08 helper is not collapsed to "load i8, ptr %".
+  U8 *txtA2 = SlurpFile(StrPrint(NULL, "%s/read-at-malformed.ll", fixed_dir),
+                        &szA);
+  Bool expR08 = FALSE;
+  Bool gotR08 = (txtA2 != NULL
+                 && Contains(txtA2, "load i8, ptr %gep_i8"));
+  if (gotR08 != expR08) {
+    "SELFTEST_FAIL row=08 fixture=read-at-malformed.ll expected=%d got=%d\n",
+      expR08, gotR08;
+    fails++;
+  } else {
+    "SELFTEST_PASS row=08 fixture=read-at-malformed.ll expected=%d got=%d\n",
+      expR08, gotR08;
+  }
+  BytewiseFree(txtA2);
+
+  // Rows 26/27/28: cap-malformed.txt has opcode and
+  // (REJECTED)/(SUPPORTED) markers on SEPARATE lines.
+  // LineContainsOpcodeMarker MUST reject all three.
+  U8 *pathCap = StrPrint(NULL, "%s/cap-malformed.txt", fixed_dir);
+  I64 szCap = 0;
+  U8 *txtCap = SlurpFile(pathCap, &szCap);
+  Bool expR26 = FALSE;
+  Bool gotR26 = LineContainsOpcodeMarker(txtCap, "IR_GEP", "(REJECTED)");
+  if (gotR26 != expR26) {
+    "SELFTEST_FAIL row=26 fixture=cap-malformed.txt expected=%d got=%d\n",
+      expR26, gotR26;
+    fails++;
+  } else {
+    "SELFTEST_PASS row=26 fixture=cap-malformed.txt expected=%d got=%d\n",
+      expR26, gotR26;
+  }
+  Bool expR27 = FALSE;
+  Bool gotR27 = LineContainsOpcodeMarker(txtCap, "IR_LEA", "(REJECTED)");
+  if (gotR27 != expR27) {
+    "SELFTEST_FAIL row=27 fixture=cap-malformed.txt expected=%d got=%d\n",
+      expR27, gotR27;
+    fails++;
+  } else {
+    "SELFTEST_PASS row=27 fixture=cap-malformed.txt expected=%d got=%d\n",
+      expR27, gotR27;
+  }
+  Bool expR28 = FALSE;
+  Bool gotR28 = LineContainsOpcodeMarker(txtCap, "IR_IADD", "(SUPPORTED)");
+  if (gotR28 != expR28) {
+    "SELFTEST_FAIL row=28 fixture=cap-malformed.txt expected=%d got=%d\n",
+      expR28, gotR28;
+    fails++;
+  } else {
+    "SELFTEST_PASS row=28 fixture=cap-malformed.txt expected=%d got=%d\n",
+      expR28, gotR28;
+  }
+  BytewiseFree(txtCap); Free(pathCap);
+
+  Free(fixed_dir);
+
+  if (fails == 0) {
+    "PREDICATE_SELFTEST_RC=0 (7 of 7 cases passed)\n";
+    return 0;
+  } else {
+    "PREDICATE_SELFTEST_RC=%d (fails=%d)\n", 1, fails;
+    return 1;
+  }
+}
+
+// ------------------------------------------------------------
 // Main
 // ------------------------------------------------------------
 
@@ -725,15 +1248,41 @@ public I32 Main(I32 argc, U8 **argv)
   U8 *llvm_as_name = ArgValue(argc, argv, "--llvm-as",       "llvm-as");
   U8 *llvm_opt_name= ArgValue(argc, argv, "--llvm-opt",      "opt");
   U8 *python_name  = ArgValue(argc, argv, "--python",        "python3");
-  U8 *scratch_in   = ArgValue(argc, argv, "--scratch",
+  U8 *scratch_root = ArgValue(argc, argv, "--scratch",
                               "build/quality/gep01");
+  U8 *evidence_dir = ArgValue(argc, argv, "--evidence-dir",
+                              "evidence");
   Bool seed        = ArgFlag(argc, argv, "--mode=fail");
+  Bool selftest    = ArgFlag(argc, argv, "--predicate-selftest");
+
+  // --predicate-selftest: run the seven-case selftest against
+  // committed RED fixtures via the SAME helpers used by the
+  // production 30-row run, and exit. No toolchain, no scratch,
+  // no live run. Per ACT-POLYC-TOOLING-MIGRATE-GEP01-
+  // CORRECTION01 §3.2 contract.
+  if (selftest) {
+    "=== predicate-selftest mode ===\n";
+    return RunPredicateSelfTest(evidence_dir);
+  }
 
   // Resolve bare tool names against $PATH. If a flag already
   // contains a "/" the resolver returns the path verbatim.
   U8 *llvm_as  = ResolveTool(llvm_as_name);
   U8 *llvm_opt = ResolveTool(llvm_opt_name);
   U8 *python   = ResolveTool(python_name);
+
+  // Option-B scratch lifecycle: caller owns --scratch root;
+  // harness owns a unique per-run child beneath it; only
+  // the child is deleted at the end.
+  if (!EnsureOptionBParent(scratch_root)) {
+    "HALT_P1_CONTAINMENT_UNVERIFIED: cannot prepare scratch root %s\n",
+      scratch_root;
+    return 2;
+  }
+  U8 *scratch_child = MakeOptionBScratchChild(scratch_root);
+  if (!FileExists(scratch_child)) {
+    MkDirpRecursive(scratch_child);
+  }
 
   TestVerdict *v = VerdictNew();
 
@@ -743,7 +1292,8 @@ public I32 Main(I32 argc, U8 **argv)
   "llvm_as       = %s\n", llvm_as;
   "llvm_opt      = %s\n", llvm_opt;
   "python        = %s\n", python;
-  "scratch       = %s\n", scratch_in;
+  "scratch_root  = %s\n", scratch_root;
+  "scratch_child = %s\n", scratch_child;
   if (seed) "seed-failure = YES\n";
   else      "seed-failure = no\n";
   "\n";
@@ -751,17 +1301,28 @@ public I32 Main(I32 argc, U8 **argv)
   RunToolchain(v, hcc_path, llvm_as, llvm_opt, python);
 
   if (v->fail == 0) {
-    RunPositives(v, hcc_path, install_dir, scratch_in, seed);
-    RunLlvmAsOpt(v, llvm_as, llvm_opt, scratch_in);
-    RunFences(v, scratch_in);
-    RunNegative(v, hcc_path, install_dir, scratch_in);
-    RunCapability(v, python, scratch_in);
-    RunDeterminism(v, hcc_path, install_dir, scratch_in);
+    RunPositives(v, hcc_path, install_dir, scratch_child, seed);
+    RunLlvmAsOpt(v, llvm_as, llvm_opt, scratch_child);
+    RunFences(v, scratch_child);
+    RunNegative(v, hcc_path, install_dir, scratch_child);
+    RunCapability(v, python, scratch_child);
+    RunDeterminism(v, hcc_path, install_dir, scratch_child);
   }
 
   VerdictSummary(v);
   I64 rc = VerdictRc(v);
+
+  // Option-B teardown: delete the harness-owned child only.
+  // Caller's scratch_root survives. ContainmentVerify is
+  // enforced by DeleteOptionBChild before /bin/rm is invoked.
+  if (!DeleteOptionBChild(scratch_root, scratch_child)) {
+    "HALT_P1_CONTAINMENT_UNVERIFIED: cannot clean child %s\n",
+      scratch_child;
+    if (rc == 0) rc = 3;
+  }
+
   Free(v);
   Free(llvm_as); Free(llvm_opt); Free(python);
+  Free(scratch_child);
   return rc;
 }

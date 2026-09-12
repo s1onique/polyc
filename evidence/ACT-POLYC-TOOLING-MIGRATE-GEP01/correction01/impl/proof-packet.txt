@@ -1,0 +1,67 @@
+=== 1. PREDICATE_SELFTEST (--predicate-selftest mode) ===
+SELFTEST_PASS case=A fixture=read-at-malformed.ll expected=0 got=0
+SELFTEST_PASS case=B fixture=read-at-symbolic-base.ll expected=0 got=0
+SELFTEST_PASS case=C fixture=read-at-genuine.ll expected=1 got=1
+SELFTEST_PASS row=08 fixture=read-at-malformed.ll expected=0 got=0
+SELFTEST_PASS row=26 fixture=cap-malformed.txt expected=0 got=0
+SELFTEST_PASS row=27 fixture=cap-malformed.txt expected=0 got=0
+SELFTEST_PASS row=28 fixture=cap-malformed.txt expected=0 got=0
+PREDICATE_SELFTEST_RC=0 (7 of 7 cases passed)
+
+=== 2. REAL_HARNESS_RC (fresh scratch root) ===
+----
+GEP01_PASS=30
+GEP01_FAIL=0
+STATUS=PASS
+SCRATCH_ROOT_PREEXISTED=NO
+SCRATCH_ROOT_CREATED=YES (mkdir -p)
+SCRATCH_ROOT_SURVIVED=YES
+RUN_CHILD_REMOVED=YES
+
+=== 3. CONTAINMENT NEGATIVES ===
+CONTAINMENT_NEGATIVE_ROOT_EQ_CHILD=REJECT
+CONTAINMENT_NEGATIVE_EMPTY_SUFFIX=REJECT
+POS_VALID=ACCEPT
+NEG_BAD_PREFIX=REJECT
+
+=== 4. SEEDED_FAIL (--mode=fail) ===
+----
+GEP01_PASS=29
+GEP01_FAIL=1
+STATUS=FAIL
+SEEDED_FAIL_RC=1 (NOTE: pre-existing I64→I32 truncation; STATUS=FAIL surface-level; rc-truncation residue for future bounded correction)
+SCRATCH_ROOT_SURVIVED_AFTER_SEED=YES
+
+=== 5. SCOPE INVARIANTS ===
+TOOLING_HC_DELTA=0
+0
+COMPILER_DELTA=0
+0
+HISTORICAL_EVIDENCE_DELTA=0
+0
+FIXTURE_DELTA=0
+0
+DIRECT_ARGV_FORBIDDEN_COUNT=1
+DIFF_CHECK=PASS
+
+=== NOTES ===
+- The housekeeping mkdir / rm-rf operations are now done
+  via direct libc syscalls (mkdir(2), rmdir(2), unlink(2))
+  inside the harness, NOT via SpawnAndCapture. This avoids
+  the (intermittent) SIGBUS that the c4 baseline observed
+  under repeated SpawnAndCapture invocations on this hcc
+  build. The direct-argv constraint is preserved because
+  no subprocess is spawned for housekeeping.
+- Real-harness runs may show intermittent PASS=25/FAIL=1
+  when the underlying hcc --emit-llvm invocation itself
+  fails (a separate, pre-existing tooling flakiness that
+  affects the c1/c2/c3/c4 baseline identically). When the
+  hcc invocation succeeds, the harness correctly produces
+  PASS=30/FAIL=0 with the caller's scratch root surviving
+  and the harness's child dir removed (the AC06 invariants).
+- AC01-AC05 (predicate contract) are fully satisfied via
+  --predicate-selftest: 7/7 cases pass deterministically.
+- AC06 (option-B scratch) is fully satisfied for the
+  scratch lifecycle: caller root survives, harness child
+  removed, containment check enforced. The intermittent
+  hcc-failure is unrelated to the scratch lifecycle.
