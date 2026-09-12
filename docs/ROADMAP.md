@@ -873,12 +873,71 @@ The critical-path transition per ACT §24:
   ACT-POLYC-LLVM-GEP01                    CLOSED PASS
   ACT-POLYC-TOOLING-SHELL-INVENTORY01     CLOSED PASS  <-- Track B predecessor
   ACT-POLYC-TOOLING-RUNTIME01             CLOSED PASS  <-- this ACT
+  ACT-POLYC-TOOLING-MIGRATE-GEP01         CLOSED PASS  <-- Track B predecessor
+  ACT-POLYC-INTEGRATION-PREBOOTSTRAP-GATES01  HALT_SCOPE_EXPANSION_REQUIRED
   ACT-POLYC-PARSER-TERNARY-HANG01         NEXT        (Track A / compiler)
-  ACT-POLYC-TOOLING-MIGRATE-GEP01         NEXT        (Track B / tooling)
 ```
 
 STRUCT01 / ARRAY01 remain deferred. BOOTSTRAP01 (B0
 lexer/tokenizer) follows GEP01's closure.
+
+#### ACT-POLYC-INTEGRATION-PREBOOTSTRAP-GATES01 status (HALT_SCOPE_EXPANSION_REQUIRED at C3)
+
+```text
+INTEGRATION-PREBOOTSTRAP-GATES01  ACT-POLYC-INTEGRATION-PREBOOTSTRAP-GATES01
+  ENTRY       = ACT-POLYC-TOOLING-MIGRATE-GEP01
+                (predecessor substrate usable / GREEN)
+  C1 RED      = eb31ec5 (ACT doc + RED packet)
+  C2 IMPL     = 0ad89db (Makefile test-prefix-install + llvm-gep01-test;
+                gate-push GPUSH-2/GPUSH-GEP01 wiring;
+                factory-halt-classification Python migration)
+  C2.1 IMPL   = 655b7bd (unit-test / jit-unit-test consume hermetic
+                test prefix; test-prefix-install removes unversioned
+                libtos.dylib symlink hermetic-prefix-locally)
+  C3 EVIDENCE = 6223aad (gate-push log + conflict diagnosis + halt
+                classification)
+  ACT-Phase   = HALTED
+  ACT-Verdict = HALT_SCOPE_EXPANSION_REQUIRED
+
+```
+
+C3 captured two mutually-exclusive failure modes on the merged tree
+(HEAD = 655b7bd, gate target = 8f398be):
+
+  A. libtos.dylib symlink PRESENT (canonical install default):
+     - llvm-gep01-test PASSES (dylib dedups libtos source
+       transitively included via tooling.HC -> memory.HC).
+     - unit-test FAILS with `ld: invalid use of ADRP in
+       '_CmpFileNames' to '_FREE'` (AOT codegen emits adrp/add
+       pairs that the dylib's nreloc=0 __text cannot satisfy).
+
+  B. libtos.dylib symlink ABSENT (test-prefix-install removes
+     it hermetic-prefix-locally):
+     - unit-test PASSES (libtos.a's archive-style relocations
+       satisfy the AOT adrp/add pairs).
+     - llvm-gep01-test FAILS with 26 duplicate symbols because
+       the harness's tooling.HC -> memory.HC chain defines
+       _FREE/_MEMCPY/_MSIZE/etc. that libtos.a also defines.
+
+Conflict resolution requires one of three changes, all outside
+this ACT's scope:
+
+  1. AOT codegen fix in `src/aarch64.c` / `src/x86_64.c` to
+     emit PLT-style indirect calls for cross-translation-unit
+     function references.
+  2. libtos dylib build flag in `src/CMakeLists.txt` such as
+     `-Wl,-Bsymbolic` for the canonical dylib creation.
+  3. GEP01 harness refactor in `tools/quality/llvm-gep01-test.HC`
+     to not transitively `#include` libtos source.
+
+Per F15, the agent halts rather than self-authorize scope
+expansion. The C2 IMPL artifacts (D1 GEP01 binding, D2 canonical
+install seam, D3 shell ratchet) remain valid for their bounded
+scope; only the gate-push closure is blocked.
+
+See `evidence/ACT-POLYC-INTEGRATION-PREBOOTSTRAP-GATES01/c3/`
+for the full EVIDENCE packet (README, conflict diagnosis, failure
+modes, captured gate-push-final.log).
 
 #### ACT-POLYC-TOOLING-MIGRATE-GEP01 status (CLOSED PASS at C4)
 
