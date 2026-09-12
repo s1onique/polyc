@@ -155,4 +155,3 @@ git log --grep='^ACT: ACT-POLYC-TOOLING-RUNTIME01-CORRECTION06$' \
 ```
 
 This is exactly the doctrine this ACT enforces.
-
