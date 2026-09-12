@@ -1,0 +1,64 @@
+FIXTURE FACT CORRECTION: c4_phi_multi_pred.HC
+============================================
+
+Claim in c4/witness-fixtures/c4_phi_multi_pred.HC (line 1-2):
+
+      // Fixture: three-way OR producing an IR_PHI with 3 incoming edges.
+      // One constant edge (bb1) + two icmp edges (bb3, bb5).
+
+Reality in the emitted witness /tmp/c4_phi_multi_pred.ll:
+
+      %phi  = phi i8 [ 1, %bb1 ], [ %phi_icmp_zext,  %bb5 ]
+      %phi1 = phi i8 [ 1, %bb6 ], [ %phi_icmp_zext2, %bb3 ]
+
+The three-term OR `a > 0 || b > 0 || c > 0` lowers to TWO
+IR_PHI instructions, each with two incoming edges. The
+chain:
+
+      bb1: ret 1
+      bb3: cmp c > 0; zext; br bb6
+      bb5: cmp b > 0; zext; br merge
+      bb6: phi1 i8 [ 1, %bb3 ] [ %phi_icmp_zext2, %bb6 ]
+              ; constant 1 on bb3 path, icmp zext on bb6 path
+      merge: phi i8 [ 1, %bb1 ] [ %phi_icmp_zext, %bb5 ]
+
+is the natural shape: the front-end emits one PHI per merge
+block, so a 3-way OR produces two merge blocks (one for the
+right sub-OR, one for the overall result).
+
+Both PHIs lower cleanly:
+  * hcc             rc=0
+  * llvm-as         rc=0
+  * opt --passes=verify  rc=0
+
+So the fixture exercises something strictly stronger than
+the (incorrect) comment claims: a CHAINED 2-PHI geometry,
+not a single 3-input PHI. The fixture still belongs in the
+witness set; it is a valid (and slightly harder) case.
+
+Why the comment is wrong
+------------------------
+
+The fixture comment was written during the C3.x freeze
+phase, when the exact lowering shape was not yet pinned.
+The C4 IMPL evidence packet (c4/witness.txt, regenerated
+post-IMPL) records the actual emitted IR. The discrepancy
+between the comment and the emitted IR is a documentation
+defect in the fixture file, NOT a production defect.
+
+Why the fix is a new file, not an edit
+--------------------------------------
+
+Per F14 ("historical document = historical evidence;
+corrections are new commits") and per the reviewer
+prescription ("Do not mutate c4/ if strict F14 applies. Put
+corrected truth in a new successor packet"), the c4/
+witness-fixtures/ files are immutable. The fresh fact lives
+here in c4-correction01/fixture-fact.txt and is referenced
+by the C5 acceptance work going forward.
+
+Production semantic impact
+--------------------------
+
+NONE. The fixture lowers correctly under the C4 PHI arm.
+The fix is a documentation correction only.

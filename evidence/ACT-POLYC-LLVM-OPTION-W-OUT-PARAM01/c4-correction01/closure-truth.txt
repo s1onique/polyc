@@ -1,0 +1,86 @@
+CLOSURE-TRUTH VERDICT
+====================
+
+Reproduced at CORRECTION01 closure. Each line cites the
+mechanical witness that supports it.
+
+```text
+C4_COMPILER_SEMANTICS       = PASS
+    src/llvm-backend.c (C4 IMPL 9120202) replaced the C3.0
+    REJECTED arm with the two-phase SHAPE_DEPENDENT lowering
+    frozen across C3.2..C3.6. No source mutation in this
+    CORRECTION01 range (verified by `git diff --numstat
+    6ef6e11..HEAD -- src/` empty under CORRECTION01 commits).
+
+C4_REAL_HCC_WITNESSES       = PASS
+    6/6 fixtures:
+      c4_phi_only
+      c4_phi_short_circuit_or
+      c4_phi_short_circuit_and
+      c4_phi_multi_pred
+      c4_p5_safe_fwd_single_pred
+      c4_p6_multidef_local
+    Each hcc invocation returns rc=0; full output captured
+    in c4/witness.txt (sibling c4/ packet) and reproduced
+    fresh in this turn.
+
+LLVM_AS                     = PASS
+    6/6 fixtures rc=0 under `llvm-as`. Reproduced fresh at
+    CORRECTION01 closure.
+
+LLVM_OPT_VERIFY             = PASS
+    6/6 fixtures rc=0 under `opt --passes=verify`. Reproduced
+    fresh at CORRECTION01 closure.
+
+CONSERVATION_COUNTS         = PASS
+    factory-append-only-test             PASS=11 FAIL=0
+    shell-loc-gate                       PASS
+    gate-fast                            PASS
+        diff-check                       PASS (fresh-staged)
+        shell-syntax                     PASS
+        doc-invariants                   PASS
+        large-file-guard                 PASS
+        factory-closure-status           PASS
+    llvm-gep01-test                      PASS=30 FAIL=0
+    llvm-byte-memory01-test              PASS=37 FAIL=0
+    llvm-intops01-test                   PASS=4  FAIL=0
+    ir-return-slot-forwarding01-test     PASS=6  FAIL=0
+    factory-v2-range-check (C4 chain)    PASS
+    Full output in gates-fresh.txt.
+
+C4_HISTORICAL_DIFF_CHECK    = FAIL_WITH_CLASSIFIED_EVIDENCE_MARKERS
+    `git diff --check 004d4e9..de31f88` exits 2 with:
+      evidence/.../c4/c4-impl.txt:172
+      evidence/.../c4/opcode-coverage.txt:5
+    Both diagnostics are decorative `=======` heading
+    underlines (PURPOSE, RESIDUE), NOT unresolved merges.
+    Verified by `grep -rE '^(<<<<<<<|>>>>>>>)' evidence/.../c4/`
+    returning empty.
+    Classification: c4-correction01/diff-check-classification.txt.
+
+NEW_CORRECTION_DIFF_CHECK   = PASS
+    `bash scripts/quality/gate-fast.sh` line
+    `CHECK=diff-check STATUS=PASS` confirms the c4-correction01
+    IMPL commit's diff-check is clean (no decorative
+    `=======` heading underlines used; single-`-` underlines
+    or no underlines).
+
+P0_PRODUCTION               = none
+    No production source code modified across the
+    CORRECTION01 range. Verified by `git diff --numstat
+    <CORRECTION01-ENTRY>..HEAD -- src/` empty.
+
+F14                         = preserved
+    c4/ and c3/ files are unchanged across CORRECTION01.
+    Verified by `git diff --name-only <predecessor-CLOSE>..HEAD
+    | grep '^evidence/.*/\(c3\.\|c4/\)'` returning empty.
+
+C5 UNLOCK                   = YES
+    C5 ScanIdent integrated evidence is now unblocked per
+    the predecessor ACT §10 topology.
+```
+
+This block is the canonical, machine-readable form of the
+closure verdict and replaces the contradictory wording in
+the C4 IMPL packet (c4/c4-impl.txt stale conservation
+counts and un-explained diff-check diagnostics).

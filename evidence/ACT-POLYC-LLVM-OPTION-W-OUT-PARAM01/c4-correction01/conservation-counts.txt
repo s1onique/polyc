@@ -1,0 +1,50 @@
+CONSERVATION_COUNTS (fresh authoritative)
+========================================
+
+All gates run from the current C4-CLOSE tree at HEAD =
+de31f88 (post the C4 commit chain 004d4e9..de31f88) with a
+fresh `make llvm-all` build of hcc. Each gate is reproduced
+in gates-fresh.txt (sibling file).
+
+  factory-append-only-test              PASS=11 FAIL=0   STATUS=PASS
+  shell-loc-gate                        PASS
+  gate-fast                             PASS
+      CHECK=diff-check STATUS=PASS     (fresh-staged diff; not the C4 range)
+      CHECK=shell-syntax STATUS=PASS
+      CHECK=doc-invariants STATUS=PASS
+      CHECK=large-file-guard STATUS=PASS
+      CHECK=factory-closure-status STATUS=PASS
+  llvm-gep01-test                       GEP01_PASS=30 FAIL=0   STATUS=PASS
+  llvm-byte-memory01-test               BYTE_MEMORY01_PASS=37 FAIL=0   STATUS=PASS
+  llvm-intops01-test                    INTOPS01_PASS=4 FAIL=0   STATUS=PASS
+  ir-return-slot-forwarding01-test      IR_RETURN_SLOT_FORWARDING01_PASS=6
+                                        FAIL=0   STATUS=PASS
+  factory-v2-range-check (C4 chain)     ENTRY=6ef6e11 FIRST=004d4e9
+                                        CLOSE=de31f88 COMMITS=3
+                                        VERDICT=PASS STATUS=PASS
+
+These counts are the fresh authoritative values for the
+C4 IMPL-B closure packet.
+
+Stale evidence noted
+--------------------
+
+evidence/ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01/c4/c4-impl.txt
+contains a conservation-counts table with older values
+captured at an intermediate development snapshot:
+
+  llvm-gep01-test                      PASS (32/0)   <-- STALE
+  llvm-byte-memory01-test              PASS (41/0)   <-- STALE
+  ir-return-slot-forwarding01-test     PASS (8/0)    <-- STALE
+
+These older numbers do not reflect the final C4 IMPL state.
+Per F14 the c4/ packet is immutable; the fresh values above
+are the authoritative post-IMPL truth. The stale numbers in
+c4-impl.txt are recorded as historical evidence of an
+earlier C4 development snapshot, NOT as current truth.
+
+The C4 CLOSE trailer (de31f88) embedded the fresh values
+(30 / 37 / 6) directly in the commit message and is itself
+the auditable source of the C4-IMPL gate results. This
+file merely makes the authoritative counts machine-readable
+in the evidence layer.

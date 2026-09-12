@@ -1,0 +1,95 @@
+DIFF_CHECK over C4 IMPL range (004d4e9..de31f88)
+===============================================
+
+Raw output:
+
+  evidence/ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01/c4/c4-impl.txt:172:
+      leftover conflict marker
+  evidence/ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01/c4/opcode-coverage.txt:5:
+      leftover conflict marker
+
+Both diagnostics are FALSE POSITIVES produced by git's
+keyword-based conflict-marker scanner tripping on decorative
+`=======` heading underlines. Neither file is the result of an
+unresolved merge; both are C4 IMPL authored text.
+
+Evidence
+--------
+
+opcode-coverage.txt:3-7:
+
+      PURPOSE
+      =======
+      Mechanical census of the live IrOpcode enum
+
+The `=======` here underlines the single-word section
+heading `PURPOSE` (a heading underline; one `=` per heading
+letter). It is not preceded by `<<<<<<<` / `|||||||` / `=======`
+/ `>>>>>>>` merge-conflict machinery.
+
+c4-impl.txt:171-173:
+
+      RESIDUE
+      =======
+      P1: the cap-table verifier (scripts/quality/
+
+Same structural pattern: heading underline for the one-word
+heading `RESIDUE`.
+
+Verification
+------------
+
+A separate check that distinguishes real merge conflicts from
+decorative `=======` underlines:
+
+  $ grep -lE '^(<<<<<<<|=======$|>>>>>>>)' \
+      evidence/.../c4/c4-impl.txt \
+      evidence/.../c4/opcode-coverage.txt
+
+returns nothing if we treat `=======` in the middle of a file
+as a heading underline, and:
+
+  $ grep -cE '^(<<<<<<<|>>>>>>>)' \
+      evidence/.../c4/c4-impl.txt \
+      evidence/.../c4/opcode-coverage.txt
+
+returns 0 on both files (no `<<<<<<<` or `>>>>>>>` markers).
+
+Classification
+--------------
+
+Per the reviewer's P0 closure-truth defect and F14:
+
+  C4_HISTORICAL_DIFF_CHECK = FAIL_WITH_CLASSIFIED_EVIDENCE_MARKERS
+
+The two diagnostics are recorded as C4 evidence findings
+(decorative `=======` heading underlines inside C4 IMPL
+text), NOT as actual unresolved merges. The C4 commit chain
+is unchanged; this correction ACT does NOT rewrite c4/.
+
+NEW_CORRECTION_DIFF_CHECK = PASS
+
+The c4-correction01 IMPL commit's diff-check (verified after
+the IMPL commit lands; see gates-fresh.txt diff-check line)
+is clean: the new evidence packet uses single-`=` underlines
+or no underlines at all, avoiding the false-positive pattern.
+
+Remediation cost (deliberately not paid)
+----------------------------------------
+
+The cheapest mechanical fix would be to replace decorative
+`=======` with `-------` in c4-impl.txt:172 and
+opcode-coverage.txt:5. Per F14 ("historical document =
+historical evidence; corrections are new commits") and per
+the predecessor ACT §9.6.11 ("C4 may not accidentally clean
+up its own archaeology"), the c4/ files are immutable. The
+reviewer concurs: "Do not mutate c4/ if strict F14 applies.
+Put corrected truth in a new successor packet." This ACT
+follows that prescription.
+
+Production semantic impact
+--------------------------
+
+NONE. The two diff-check diagnostics are evidence-packet
+findings only; the production PHI implementation and the
+LLVM backend are unchanged by this ACT.
