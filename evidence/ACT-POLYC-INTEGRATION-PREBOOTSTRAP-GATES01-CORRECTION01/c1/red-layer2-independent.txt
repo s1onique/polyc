@@ -1,0 +1,36 @@
+RED evidence: Layer 2 (AOT ADRP defect) is independent
+of Layer 1 (boundary ownership defect).
+
+WITHOUT touching any source files, just restoring the
+libtos.dylib symlink in the canonical install prefix and
+running `make unit-test` against it:
+
+$ ln -sf libtos.0.0.1.dylib build/test-prefix/lib/libtos.dylib
+$ cd src/tests && ../../hcc --install-dir=.../build/test-prefix \
+        ./run.HC -o test-runner
+ld: invalid use of ADRP in '_CmpFileNames' to '_FREE'
+clang: error: linker command failed with exit code 1
+ERROR: Failed to execute command: 'cc -L.../lib /tmp/holyc-asm.s -ltos -lpthread -lc -lm -o test-runner'
+
+Diagnosis:
+
+  - The harness in src/tests/run.HC does NOT include
+    tooling.HC or memory.HC (it's a standalone HolyC
+    translation unit).
+  - The harness object therefore does NOT define libtos
+    implementation symbols.
+  - The ADRP failure is in cc's link of /tmp/holyc-asm.s
+    against -ltos resolving to libtos.dylib.
+  - This proves the failure is in the AOT-emitted assembly
+    for src/tests/run.HC's cross-TU references (e.g.
+    _CmpFileNames -> _FREE), not in any duplicate-symbol
+    collision.
+
+CONCLUSION:
+
+Layer 1 (boundary ownership) and Layer 2 (AOT ADRP) are
+independent defects. The boundary repair alone CANNOT
+fix Layer 2. If after CORRECTION01 the canonical install
+with libtos.dylib symlink PRESENT still fails unit-test
+with this ADRP defect, that is the documented
+HALT_AOT_PIC_EXTERNAL_REFS_REQUIRED branch.
