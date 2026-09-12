@@ -1,0 +1,93 @@
+== Baseline gates at C1 RED ==
+
+factory-v2-test.sh:
+VERDICT=PASS
+STATUS=PASS
+  PASS  T14  ACT=ACT-POLYC-RANGE-T14
+ENTRY=bb868ea91064d0d94fa49769275f102a53deff3a
+FIRST=8ac7bfa5bffa263a7fadf00e238b73ba1e89863a
+CLOSE=789e09ef4c1789a80f8a77931372b7c7d44d39c9
+COMMITS=5
+VERDICT=PASS_WITH_NONBLOCKING_RESIDUE
+STATUS=PASS
+  PASS  T15  (rejected as expected)
+  PASS  T16  (rejected as expected)
+  PASS  T17  (rejected as expected)
+  PASS  T18  (rejected as expected)
+  PASS  T33  (rejected as expected)
+  PASS  T34  (rejected as expected)
+
+--- summary ---
+PASS=35
+FAIL=0
+STATUS=PASS
+
+factory-append-only-test.sh:
+  PASS  NC3  rc=1
+  PASS  NC4  rc=0
+  PASS  NC5  rc=1
+Deleted replace ref '570aac9eff6945dc8452417461820c56130a094f'
+  PASS  NC6  rc=0
+  PASS  NC7  rc=0
+  PASS  NC8  rc=1
+  PASS  NC9  rc=1
+  PASS  NC10  rc=1
+  PASS  NC11  rc=0
+
+--- summary ---
+PASS=11
+FAIL=0
+STATUS=PASS
+
+factory-closure-status-check.sh:
+MALFORMED_HANDOFF_VERDICT=0
+UNMAPPED_MANAGED_ACTS=0
+UNMAPPED_MANAGED_HANDOFFS=0
+EXTRA_MANIFEST_ACTS=0
+EXTRA_MANIFEST_HANDOFFS=0
+EXACT_VERDICT_MISMATCHES=0
+PAIR_OK=6
+PAIR_FAIL=0
+STATUS=PASS
+VERDICT=PASS
+
+factory-halt-classification-test.sh:
+  PASS  R1 governance halt, NO block  (rc=0 status=PASS)
+  PASS  R2 production halt, YES block  (rc=0 status=PASS)
+  PASS  R3 halt missing HALT_CLASS  (rc=1 status=FAIL)
+  PASS  R4 halt missing BLOCKS_NEXT  (rc=1 status=FAIL)
+  PASS  R5 PASS verdict with BLOCKS_NEXT  (rc=1 status=FAIL)
+  PASS  R6 GOVERNANCE/YES rejected  (rc=1 status=FAIL)
+  PASS  R7 PRODUCTION/NO rejected  (rc=1 status=FAIL)
+  PASS  R8 historical-style PASS, no trailers  (rc=0 status=PASS)
+  PASS  R9 DEPENDENCY/YES allowed  (rc=0 status=PASS)
+  PASS  R10 DEPENDENCY/NO allowed  (rc=0 status=PASS)
+  PASS  R11 non-ACT commit  (rc=0 status=PASS)
+  PASS  R12 RED phase, halt verdict, no trailers  (rc=0 status=PASS)
+--- summary ---
+PASS=12
+FAIL=0
+STATUS=PASS
+
+shell-loc-gate.sh:
+FAIL  NEW   scripts/quality/factory-halt-classification-test.sh  cur=182 > 50
+FAIL  NEW   scripts/quality/factory-halt-classification-check.sh  cur=187 > 50
+  exit=1
+
+gate-fast.sh (sanity check, no build):
+CHECK=doc-invariants STATUS=PASS
+CHECK=large-file-guard STATUS=PASS
+BUILD_RUN=NO
+POLYC_GATE=factory-closure-status
+MANIFEST_ROWS=6
+MISSING_HANDOFF_FILES=0
+MALFORMED_ACT_STATUS=0
+MALFORMED_HANDOFF_VERDICT=0
+EXACT_VERDICT_MISMATCHES=0
+PAIR_OK=6
+PAIR_FAIL=0
+STATUS=PASS
+VERDICT=PASS
+CHECK=factory-closure-status STATUS=PASS
+VERDICT=PASS
+  exit=0

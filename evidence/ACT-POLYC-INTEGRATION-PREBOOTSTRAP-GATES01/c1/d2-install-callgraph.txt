@@ -1,0 +1,29 @@
+== D2 install callgraph ==
+-- Makefile lsp-test target --
+lsp-test:
+
+-- gate-push.sh install step --
+# --- GPUSH-2: install hcc + tos.HH into the hermetic prefix -----------------
+
+# `make install` puts hcc at $gate_prefix/bin/ and tos.HH at
+# $gate_prefix/include/. libtos.a / libtos.dylib still need to be
+# built into $gate_prefix/lib/. We do that by invoking hcc's `-lib tos`
+# with --install-dir pointing at the hermetic prefix, identical to how
+# Makefile's `lsp-test` recipe populates build/test-prefix/.
+#
+# See ACT-POLYC-FACTORY-PUSH-HERMETIC01.
+if ! run_check install sh -c "make install INSTALL_PREFIX='$gate_prefix' && \
+    mkdir -p '$gate_prefix/lib' && \
+    cd ./src/holyc-lib && ../../hcc -fPIC -lib tos --install-dir='$gate_prefix' ./all.HC"; then
+    gate_failed=1
+    echo "VERDICT=FAIL"
+    exit 1
+fi
+
+# --- GPUSH-3: AOT suite -----------------------------------------------------
+
+-- direct hcc -lib tos callers in shell scripts --
+scripts/quality//gate-push.sh:277:# built into $gate_prefix/lib/. We do that by invoking hcc's `-lib tos`
+scripts/quality//gate-push.sh:284:    cd ./src/holyc-lib && ../../hcc -fPIC -lib tos --install-dir='$gate_prefix' ./all.HC"; then
+Makefile:74:	cd ./src/holyc-lib && ../../hcc -lib tos --install-dir=$(CURDIR)/build/test-prefix ./all.HC
+Makefile:79:		&& ../../hcc -lib tos ./all.HC \

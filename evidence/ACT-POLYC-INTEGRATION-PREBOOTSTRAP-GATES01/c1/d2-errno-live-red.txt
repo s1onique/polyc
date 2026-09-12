@@ -1,0 +1,23 @@
+== D2 RED (LIVE): undefined _Errno in stale libtos.a ==
+
+Captured at PRE-IMPL HEAD 8f398be. The existing
+src/holyc-lib/libtos.a was built by direct `hcc -lib tos`
+(the exact pattern in Makefile lsp-test and gate-push GPUSH-2)
+
+Command: nm src/holyc-lib/libtos.a | grep -i errno
+Output:
+                 U _Errno
+
+U _Errno (undefined) -> downstream -ltos will fail
+with: "Undefined symbols for architecture x86_64:"
+  "_Errno", referenced from:
+      _HashFind in libtos.a(all.o)
+  ld: symbol(s) not found for architecture x86_64
+
+== Comparative: canonical CMake install produces _Errno defined ==
+Per src/CMakeLists.txt install dance step 3:
+  ar r libtos.a errno_shim.o
+and errno_shim.c provides:
+  int *Errno(void) { return __error(); }
+after linking, the symbol resolves to __error, hidden by
+Errno() indirection. Direct hcc -lib skips this entirely.
