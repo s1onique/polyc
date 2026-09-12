@@ -5,6 +5,14 @@ Lifecycle: AUTHORIZATION_ARTIFACT
 
 ACT: ACT-POLYC-TOOLING-MIGRATE-GEP01-CORRECTION01
 ACT-Phase: RED
+ACT-Phase-Notes: C1 RED committed (see §8). A C1.1
+  RED-AMEND follow-up commit (still within the RED
+  phase; trailer `ACT-Phase: RED`) tightens §3.5 (P1)
+  to option B, adds §3.1 pure-local predicate helper
+  contract + §3.2 `--predicate-selftest` mode + §3.3
+  purity guardrails, and rewrites AC02–AC05 / AC06 to
+  reference the selftest. ACT remains in RED; C2 IMPL
+  has NOT opened. See §8 for the commit topology.
 
 **Title:** Restore Bash-equivalent oracle strength in the
 PolyC GEP01 harness — repair predicate weakening that
@@ -69,7 +77,7 @@ following rows of the c1/oracle-matrix.tsv freeze:
 
 And one architectural regression (P1):
 
-| P1  | scratch lifecycle         | caller must pre-create `--scratch` dir; legacy Bash harness owned it via `mkdir -p` + `trap rm -rf` |
+| P1  | scratch lifecycle         | caller must pre-create `--scratch` root; legacy Bash harness owned its own child via `mkdir -p` + `trap rm -rf`. Bound by option B in §3 item 5: caller owns root, harness owns unique run child, never recursive-delete caller root. |
 
 Success criterion:
 
@@ -168,14 +176,40 @@ minimum required restorations are:
    the marker appear on different lines. The PolyC
    restoration must enforce the same line-binding.
 
-5. **P1 (scratch lifecycle):** The harness MUST create its
-   scratch directory if absent and MUST clean it on exit
-   (or document explicit ownership otherwise). The legacy
-   Bash used `mkdir -p` + `trap 'rm -rf "$EVID/c3/_tmp"' EXIT`.
-   The PolyC restoration may use `mkdir -p` (via PolyC's
-   `MkDir` or `FileMkDir` primitive) + `atexit`-style
-   cleanup, but MUST NOT require the caller to pre-create
-   the scratch dir.
+5. **P1 (scratch lifecycle) — option B (binding):**
+   The harness MUST treat scratch ownership as follows:
+
+   - The caller supplies the scratch ROOT (e.g.
+     `--scratch=/tmp/correction01-ac06-scratch`). The
+     caller retains ownership of that root. The harness
+     MUST NOT recursively delete that root on exit.
+   - The harness MUST create the root via a local
+     `mkdir -p`-equivalent helper if it does not exist
+     (so the legacy "no pre-mkdir required" property is
+     preserved).
+   - The harness MUST own a unique per-run CHILD directory
+     beneath the caller-supplied root (e.g.
+     `<root>/run-<pid>-<monotonic>`). The harness creates
+     the child at startup and removes ONLY that child
+     (single-level, non-recursive) on exit / in a finally
+     equivalent. The child is the only thing the harness
+     owns the lifetime of.
+   - The legacy Bash used `mkdir -p` + `trap 'rm -rf
+     "$EVID/c3/_tmp"' EXIT`. Option B is the bounded
+     PolyC-native equivalent: caller root survives, the
+     unique run child is the harness's responsibility.
+   - The PolyC restoration may implement the
+     `mkdir -p`-equivalent and the child-creation /
+     child-cleanup using the local line-oriented helpers
+     below plus PolyC's existing `SpawnAndCapture` of
+     `mkdir` / `rm -rf <child>` (no `MkDir` / `FileMkDir`
+     runtime primitive is introduced; tooling.HC MUST
+     NOT be widened).
+
+   `HALT_P1_RECURSIVE_DELETE_CALLER_ROOT` — if any
+   implementation recursive-deletes the caller-supplied
+   scratch root, halt immediately and re-classify the
+   scratch helper.
 
 The restoration MAY introduce a small local helper (e.g.
 `RegExContains` or line-scanning utility) inside
@@ -187,6 +221,124 @@ All other harness source text (CLI parsing, Toolchain check,
 ll-as / opt pipeline, no-ptrtoint / no-inbounds fences,
 negative i64idx check, determinism, verdict channel,
 seed-failure mode) is OUT OF SCOPE for this ACT.
+
+---
+
+### 3.1 Predicate helper contract (pure local helpers)
+
+The C2 IMPL of this ACT MUST introduce the following PURE
+LOCAL predicate helpers inside
+`tools/quality/llvm-gep01-test.HC`. They are local to the
+harness source file; they MUST NOT be exported to
+`tooling.HC`, `strings.HC`, or any other shared library;
+they MUST NOT require new runtime primitives.
+
+| Helper                                       | Legacy semantics it MUST emulate |
+|----------------------------------------------|----------------------------------|
+| `Bool GeShPrefixNumberedI64(text, prefix)`   | returns TRUE iff some line of `text` contains the literal `prefix` followed immediately by a non-empty decimal digit run (the `%[0-9]+` quantifier in the legacy regex). |
+| `Bool LineContainsOpcodeMarker(text, opcode, marker)` | returns TRUE iff some line of `text` contains both the literal opcode token and the literal marker token (`(REJECTED)` or `(SUPPORTED)`) on the SAME line, in the order opcode-then-marker (legacy `IR_<X>.*\(MARKER\)` semantics). |
+
+Both helpers MUST be implemented using only the existing
+HolyC primitives already imported by the harness
+(`StrStr`, `StrLen`, `StrOcc`, manual byte iteration, and
+the same `FileRead` wrapper the harness already uses).
+No regex engine, no PCRE, no system(3), no shell. The
+helpers MUST be PURE: they take `(text, ...)` and return
+`Bool`; they MUST NOT perform I/O, allocation visible
+to the caller (a small internal scratch buffer for line
+iteration is acceptable), or process forking.
+
+The C2 IMPL MUST replace every weakened predicate
+identified in §0 / §5 with a call to one of these helpers
+(or a small composition of them) such that the predicate
+is at least as strong as the legacy Bash regex contract.
+Specifically:
+
+- Rows 04 and 07 MUST require
+  `GeShPrefixNumberedI64(emitted, "getelementptr i8, ptr %")`
+  (the `%[0-9]+` token in the legacy regex).
+- Row 08 MUST require
+  `Contains(emitted, "load i8, ptr %gep_i8")` (the
+  `%gep_i8` SSA-value binding is mandatory; this is
+  literal-substring semantics, not a regex, but it is
+  the line-restricted substring the legacy contract
+  enforces by `grep -E`).
+- Rows 26 / 27 / 28 MUST require
+  `LineContainsOpcodeMarker(cap_text, "IR_GEP", "(REJECTED)")`,
+  `LineContainsOpcodeMarker(cap_text, "IR_LEA", "(REJECTED)")`,
+  and
+  `LineContainsOpcodeMarker(cap_text, "IR_IADD", "(SUPPORTED)")`
+  respectively (opcode names per the frozen c1 oracle).
+  The opcode and marker MUST be on the SAME line; the
+  helper's whole-file-stride scan MUST reject the
+  malformed fixtures in `correction01/red/`.
+
+---
+
+### 3.2 `--predicate-selftest` mode
+
+The C2 IMPL MUST add a `--predicate-selftest` mode to
+`tools/quality/llvm-gep01-test.HC`. In this mode the
+harness:
+
+1. Loads each committed principal-RED malformed fixture
+   from
+   `evidence/ACT-POLYC-TOOLING-MIGRATE-GEP01/correction01/red/`
+   via the same local `FileRead` wrapper the harness
+   already uses. The fixtures are read-only inputs; the
+   selftest MUST NOT mutate them.
+2. Calls the same predicate helpers a normal 30-row run
+   would call on that text (i.e. it is the SAME helper
+   path the production predicate restoration will use;
+   not a synthetic mock, per F3).
+3. Asserts the expected verdict for each fixture:
+
+   | Fixture                | Helper call(s)                                                  | Expected |
+   |------------------------|-----------------------------------------------------------------|----------|
+   | `read-at-malformed.ll` | `GeShPrefixNumberedI64(t, "getelementptr i8, ptr %")` (rows 04 / 07) | FALSE (rejected) |
+   | `read-at-malformed.ll` | `Contains(t, "load i8, ptr %gep_i8")` (row 08)                  | FALSE (rejected) |
+   | `cap-malformed.txt`    | `LineContainsOpcodeMarker(t, "IR_GEP", "(REJECTED)")` (row 26)  | FALSE (rejected) |
+   | `cap-malformed.txt`    | `LineContainsOpcodeMarker(t, "IR_LEA", "(REJECTED)")` (row 27)  | FALSE (rejected) |
+   | `cap-malformed.txt`    | `LineContainsOpcodeMarker(t, "IR_IADD", "(SUPPORTED)")` (row 28) | FALSE (rejected) |
+
+4. Exits 0 if and only if every assertion in the table
+   matches its expected verdict; otherwise prints
+   `SELFTEST_FAIL row=<n> expected=FALSE got=TRUE` (or
+   the symmetric message) and exits non-zero.
+
+The selftest exercises the helpers WITHOUT requiring the
+live hcc / llvm-as / opt toolchain, WITHOUT requiring the
+real `read-at.ll` from the harness's own scratch dir, and
+WITHOUT requiring the `cap-table-verifier.py` Python run.
+This closes the AC02–AC05 mechanical-execution gap noted
+by the C1 reviewer: the ACs become checkable through pure
+local predicate helpers against committed fixtures, not
+through full toolchain substitution.
+
+The selftest MUST be reached via a single CLI flag
+(`--predicate-selftest`) and MUST exit before the normal
+30-row run begins. The selftest MUST NOT alter the
+verdict counters of the 30-row run when run in normal
+mode.
+
+---
+
+### 3.3 Purity and scope guardrails
+
+- `HALT_HELPER_NOT_PURE` — if the predicate helpers
+  perform I/O, mutate shared state, fork processes, or
+  call `tooling.HC` primitives that were not already
+  imported by the C2 IMPL commit of MIGRATE-GEP01, halt
+  and re-classify.
+- `HALT_TOOLING_HC_WIDENED` — if the C2 IMPL introduces
+  a new exported function in `src/holyc-lib/tooling.HC`,
+  `src/holyc-lib/strings.HC`, or any other shared library
+  solely to support these helpers, halt. The helpers
+  belong to the harness.
+- `HALT_SELFTEST_MOCK` — if the selftest path diverges
+  from the predicate path the normal 30-row run uses
+  (i.e. the selftest does NOT exercise the production
+  helper), halt. The selftest MUST call the SAME helper.
 
 ---
 
@@ -275,37 +427,78 @@ AC01. The current harness reports
        scratch dir, so `rm -rf` beforehand is fine.
 
 AC02. Row 04 predicate rejects
-       `correction01/red/read-at-malformed.ll` when that
-       file is substituted for the hcc-emitted
-       `read-at.ll`. Reproduction: AC01 with a final
-       `cp correction01/red/read-at-malformed.ll \
-          /tmp/correction01-ac01-scratch/read-at.ll`
-       step inserted BEFORE the harness runs the
-       llvm-textual-structure block.
-       Expected: row-04 fails (predicate gap closed).
+       `correction01/red/read-at-malformed.ll`.
+       Reproduction: run the harness in
+       `--predicate-selftest` mode (per §3.2) on the
+       committed fixture. The selftest invokes the
+       SAME local `GeShPrefixNumberedI64` helper the
+       normal 30-row run uses.
+       ```
+       ./hcc --install-dir=$(pwd)/build/test-prefix \
+             -o /tmp/llvm-gep01-test \
+             tools/quality/llvm-gep01-test.HC
+       /tmp/llvm-gep01-test --predicate-selftest
+       ```
+       Expected: rc=0, output includes
+       `SELFTEST_PASS row=04` (and rows 07, 08, 26, 27,
+       28 below). The selftest's per-fixture verdict
+       for `read-at-malformed.ll` row 04 is FALSE
+       (rejected), i.e. the predicate gap is closed.
 
 AC03. Row 07 predicate rejects the same malformed
-       `read-at.ll`.
-       Reproduction: as AC02 but for row 07.
+       `read-at.ll`. Reproduction: same
+       `--predicate-selftest` invocation as AC02; the
+       fixture-driven selftest table (§3.2 item 3) covers
+       row 07 via
+       `GeShPrefixNumberedI64(t, "getelementptr i8, ptr %")`.
+       Expected: rc=0, `SELFTEST_PASS row=07`.
 
 AC04. Row 08 predicate rejects the same malformed
        `read-at.ll` (asserts `%gep_i8` SSA binding).
-       Reproduction: as AC02 but for row 08.
+       Reproduction: same `--predicate-selftest`
+       invocation as AC02; row 08 is covered via
+       `Contains(t, "load i8, ptr %gep_i8")` on the
+       same fixture.
+       Expected: rc=0, `SELFTEST_PASS row=08`.
 
 AC05. Rows 26 / 27 / 28 predicates reject a malformed
        cap-verifier output where opcode and marker are
        on separate lines.
-       Reproduction: substitute
-       `correction01/red/cap-malformed.txt` for
-       `cap-verifier.txt` in the harness scratch dir
-       before running.
+       Reproduction: same `--predicate-selftest`
+       invocation as AC02; rows 26 / 27 / 28 are covered
+       via three `LineContainsOpcodeMarker` calls on
+       `cap-malformed.txt`.
+       Expected: rc=0,
+       `SELFTEST_PASS row=26`,
+       `SELFTEST_PASS row=27`,
+       `SELFTEST_PASS row=28`.
 
 AC06. P1 regression closed: harness succeeds when its
-       `--scratch` directory does NOT pre-exist.
-       Reproduction: `rm -rf /tmp/correction01-ac06-scratch`
-       (no `mkdir -p`) followed by harness invocation.
-       Expected: GEP01_PASS=30 (not the prior 2/12
-       cascade).
+       `--scratch` ROOT does NOT pre-exist, and the
+       harness does NOT recursively delete the
+       caller-supplied root on exit (option B, §3
+       item 5).
+       Reproduction:
+       ```
+       rm -rf /tmp/correction01-ac06-scratch
+       /tmp/llvm-gep01-test \
+           --hcc=./hcc \
+           --llvm-install-dir=$(pwd)/build/test-prefix \
+           --scratch=/tmp/correction01-ac06-scratch
+       test -d /tmp/correction01-ac06-scratch && \
+           echo ROOT_SURVIVED
+       ```
+       Expected:
+       - GEP01_PASS=30 (not the prior 2/12 cascade);
+       - `/tmp/correction01-ac06-scratch` still exists
+         after the harness exits
+         (`ROOT_SURVIVED` is printed);
+       - the harness's per-run unique child directory
+         (e.g. `/tmp/correction01-ac06-scratch/run-<pid>-<n>`)
+         was created at startup and was the only thing
+         removed at exit;
+       - `HALT_P1_RECURSIVE_DELETE_CALLER_ROOT` did NOT
+         trigger.
 
 AC07. Conservation: `make unit-test`, `make jit-unit-test`,
        `make lsp-test` (where applicable) all PASS with
@@ -340,6 +533,22 @@ AC12. F1–F15 still intact; F-GIT-IDENTITY honored (no
   predicate strictly requires a new primitive in
   `tooling.HC` (it must NOT — PolyC's `StrStr` plus
   line iteration suffice).
+- `HALT_HELPER_NOT_PURE` — if the predicate helpers
+  defined in §3.1 perform I/O, mutate shared state,
+  fork processes, or call `tooling.HC` primitives that
+  were not already imported by the C2 IMPL commit of
+  MIGRATE-GEP01.
+- `HALT_TOOLING_HC_WIDENED` — if the C2 IMPL introduces
+  a new exported function in `src/holyc-lib/tooling.HC`,
+  `src/holyc-lib/strings.HC`, or any other shared
+  library solely to support these helpers.
+- `HALT_SELFTEST_MOCK` — if the `--predicate-selftest`
+  path diverges from the predicate path the normal
+  30-row run uses (the selftest MUST call the SAME
+  helpers the production predicate restoration calls).
+- `HALT_P1_RECURSIVE_DELETE_CALLER_ROOT` — if any
+  implementation recursive-deletes the caller-supplied
+  scratch root (option B, §3 item 5, forbids this).
 - `HALT_EVIDENCE_MUTATION` — if any change to the
   c1/c2/c3/c4 evidence tree appears necessary; halt
   instead and classify as residue.
@@ -358,15 +567,61 @@ principal RED; the IMPL commit restores each predicate
 to its legacy contract strength; the CLOSE commit
 verifies the conservation gates and reports verdict.
 
-C1 RED       (this commit)  — ACT document +
+Per the Factory v2 grammar (`docs/factory/GIT-METADATA.md`),
+`ACT-Phase` may only be one of `RED | IMPL | EVIDENCE |
+CLOSE`. The C1.1 follow-up is therefore still RED-phase
+work; its distinction from C1 is carried by the commit
+message body ("C1.1 RED-AMEND") and by §8 / §9 of this
+ACT, NOT by the `ACT-Phase` trailer.
+
+C1 RED       (committed)   — ACT document +
                                 correction01/red/ principal
                                 RED witnesses.
+C1.1 RED-AMEND (this commit, trailer `ACT-Phase: RED`)
+                              — narrow amendment per
+                                reviewer's C1.1
+                                recommendation. Adds:
+                                §3.1 pure-local predicate
+                                helper contract;
+                                §3.2 `--predicate-selftest`
+                                mode;
+                                §3.3 purity / scope
+                                guardrails (HALT triggers);
+                                tightens §3.5 (P1) to
+                                option B (caller-owned
+                                root, harness-owned unique
+                                run child, never
+                                recursive-delete caller
+                                root);
+                                rewrites AC02–AC05 to
+                                delegate verification to
+                                `--predicate-selftest`;
+                                rewrites AC06 to verify
+                                option-B survival of the
+                                caller root;
+                                updates the §0 P1 row and
+                                §7 HALT list.
+                                No production source
+                                change. C1 RED itself
+                                remains in force (per F14
+                                and the append-only
+                                invariant at
+                                `baf5dbd77c…`); this
+                                commit is a follow-up
+                                RED-phase amendment, NOT
+                                a git amend.
 C2 IMPL      (deferred)     — restore rows 04/07/08 to
-                                legacy regex-bound form;
+                                legacy regex-bound form
+                                via the helpers from §3.1;
                                 restore rows 26/27/28 to
-                                opcode-line-bound form;
+                                opcode-line-bound form
+                                via the helpers from §3.1;
                                 restore P1 scratch
-                                lifecycle to harness-owned.
+                                lifecycle to option B
+                                (caller root + harness-
+                                owned unique run child);
+                                wire `--predicate-selftest`
+                                into the CLI per §3.2.
 C3 CLOSE     (deferred)     — conservation gates
                                 re-verified; verdict.
 
@@ -377,7 +632,12 @@ may carry `ACT-Phase: CLOSE` (and `ACT-Verdict: PASS`).
 
 # 9. Commit trailer contract
 
-C1 (this commit):
+C1 (initial RED — preserved per append-only invariant):
+
+    ACT: ACT-POLYC-TOOLING-MIGRATE-GEP01-CORRECTION01
+    ACT-Phase: RED
+
+C1.1 (this commit — RED-AMEND label, RED-phase trailer):
 
     ACT: ACT-POLYC-TOOLING-MIGRATE-GEP01-CORRECTION01
     ACT-Phase: RED
