@@ -1,0 +1,116 @@
+Frozen Option-W widening contract (C2-A pre-authorised)
+
+Source file under change:
+  src/llvm-backend.c
+Function under change:
+  llOptionW_ReadsAreLowerable(IrFunction *fn, IrValue *v)
+  (currently at src/llvm-backend.c:789)
+
+Diff shape (conceptual; C2-A is the implementation ACT):
+
+  static int llOptionW_ReadsAreLowerable(IrFunction *fn, IrValue *v) {
+      ...
+      switch (ins->op) {
+          case IR_IADD:
+          case IR_ISUB:
+          case IR_IMUL:
+          case IR_ICMP:
+          case IR_STORE:
+          case IR_RET:
+          case IR_BR:
+          case IR_JMP:
+              node = node->next;
+              continue;
+          case IR_STORE_DEREF:
+              // B0-shaped widening (ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01):
+              // accept IR_STORE_DEREF ONLY when V is the VALUE
+              // operand (ins->r1 == V). V as the POINTER operand
+              // (ins->dst == V) would be an address-taken capture
+              // and is rejected earlier by llOptionW_NotAddressTaken.
+              // V used anywhere else (r2) is impossible per the
+              // IR layout (r2 == NULL for IR_STORE_DEREF).
+              if (ins->r1 == v) {
+                  node = node->next;
+                  continue;
+              }
+              // V named as the dst: this IS the address-taken fence
+              // and is impossible because llOptionW_NotAddressTaken
+              // returns 0 earlier; this is defensive.
+              if (ins->dst == v) {
+                  return 0;
+              }
+              // V named as r2: impossible per IR layout; defensive.
+              if (ins->r2 == v) {
+                  return 0;
+              }
+              // V not named at all: the store* simply reads/writes
+              // something else; permit (this is the no-op branch).
+              node = node->next;
+              continue;
+          default:
+              if (ins->dst == v || ins->r1 == v ||
+                  ins->r2 == v) {
+                  return 0;
+              }
+              node = node->next;
+              continue;
+      }
+  }
+
+INVARIANTS preserved (F5):
+  - CASE_B_OPCODE_SET       = {IR_STORE, IR_IADD, IR_ISUB}
+                              (UNCHANGED)
+  - llOptionW_DefinitionsAreCaseAorB   unchanged
+  - llOptionW_TypeIsI64                unchanged
+  - llOptionW_NotAddressTaken          unchanged
+  - llOptionW_FeedsReturnOrIsReturnLocal  unchanged
+  - llOptionW_DefiniteAssignment       unchanged
+
+NEGATIVE CONTROL (mandatory):
+
+  IR_STORE_DEREF where V is the POINTER operand (ins->dst == V):
+    must NOT become Option-W eligible merely because IR_STORE_DEREF
+    is admitted as a readable class. The address-taken fence
+    (llOptionW_NotAddressTaken) MUST continue to reject such V.
+
+  This is already enforced: llOptionW_NotAddressTaken() runs first
+  in llIsOptionWEligible and rejects the V before we ever reach
+  llOptionW_ReadsAreLowerable.
+
+  The widening's defensive `if (ins->dst == v) return 0;` arm
+  is belt-and-braces. It documents the invariant at the read-
+  envelope layer so a future refactor cannot silently violate it.
+
+POSITIVE CONTROL:
+
+  IR_STORE_DEREF where V is the VALUE operand (ins->r1 == V):
+    admitted by the widening. The discriminator will accept V iff
+    every other frozen rule still passes.
+
+  The C2-A test set is:
+    - G1_minimal.HC       (one def, one branch, *out = v)
+    - G3_minimal.HC       (multi-def loop + *out_cursor = cursor)
+    - safe_fwd_single_pred probe (canonical Option-W reference)
+    - MultiDef probe (canonical Option-W reference)
+    - ProbePath / Diamond / AccDigit / i64_collapse_probe /
+      single_cond_probe (LOCAL-MEM2REG regression set)
+
+  All five LOCAL-MEM2REG regression probes MUST remain GREEN after
+  Fix A; their read envelopes do not contain IR_STORE_DEREF.
+
+NOT widened (forbidden):
+
+  - IR_LOAD_DEREF:        not admitted. A loaded value as the
+                          dst of any other instruction is not
+                          addressed by this ACT. The G3 read at
+                          `U8 ch = src[cursor]` produces
+                          IR_LOAD_DEREF whose result is a TMP,
+                          not a V; it does not even enter the
+                          discriminator's per-V read envelope.
+  - IR_RMW_DEREF:         still REJECTED (separate seam).
+  - IR_LEA:               still REJECTED (separate seam).
+  - IR_CALL arguments:    unchanged. The C6 doctrine on
+                          call-by-value reads is preserved.
+  - arbitrary IR_STORE_DEREF where V is neither r1 nor dst:
+                          impossible per IR layout; defensive
+                          handling continues to no-op.

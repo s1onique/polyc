@@ -1,0 +1,176 @@
+Three minimal geometries (frozen at C1 RED)
+
+G1 - out-param consumer, no CFG merge
+======================================
+
+PolyC source (verbatim, /tmp/g1_minimal.HC):
+
+    I64 G1(I64 x, I64 *out) {
+        I64 v = x;
+        if (x > 0) {
+            v = v + 1;
+        }
+        *out = v;
+        return 0;
+    }
+
+Definitions of v (pre-opt IR, evidence/g1.ir.txt):
+
+  bb1  store  %l6 i64 local, %l2 i64 local  ; line 2  (init: v = x)
+  bb3  iadd   %l6 i64 local, %l6 i64 local, 1  ; line 4 (then-branch: v=v+1)
+
+  -> multi-def: 2 case-(b) definitions
+  -> RequiresMem2Reg = 1 (multi-def)
+
+Reads of v (pre-opt IR):
+
+  bb4  store*  %l4 ptr local, %l6 i64 local  ; line 6  (*out = v)
+
+  -> one IR_STORE_DEREF read with v as the VALUE operand (ins->r1).
+
+Predicted current failure:
+  llOptionW_ReadsAreLowerable returns 0 because IR_STORE_DEREF is
+  in the default arm. Discriminator rejects.
+Diagnostic: LLVM_BACKEND_UNSUPPORTED_OPTION_W_INELIGIBLE.
+
+Empirical confirmation (evidence/g1.llvm.stderr.txt):
+  function G1: mutable local id=6 (line 2) requires memory backing
+  but is not Option-W eligible (the local violates one of the §2
+  frozen discriminator rules -- ... read envelope ...).
+  exit=1.
+
+LLVM emission AFTER the fix (expected):
+  G1's local v becomes one entry-block alloca i64, original-site
+  stores preserved, load at the *out = v site, store through %l4.
+  After opt --passes=mem2reg, the alloca is promoted to an SSA
+  value with one phi at the merge of the if-then-else:
+    bb4: %v = phi i64 [ %init, %bb1 ], [ %next, %bb3 ]
+  Verifier PASS. Runtime: *out == x + (x > 0 ? 1 : 0).
+
+
+G2 - mutable loop/local, no out-param
+=====================================
+
+PolyC source (verbatim, /tmp/g2_minimal.HC):
+
+    I64 G2(I64 n) {
+        I64 i = 0;
+        while (i < n) {
+            i = i + 1;
+        }
+        return i;
+    }
+
+Definitions of i (pre-opt IR, evidence/g2.ir.txt):
+
+  bb1  store  %l4 i64 local, 0 i64 const int   ; line 2  (init)
+  bb4  iadd   %l4 i64 local, %l4 i64 local, 1  ; line 4  (loop body)
+
+  -> multi-def: 2 case-(b) definitions
+  -> RequiresMem2Reg = 1 (multi-def)
+
+Reads of i (pre-opt IR):
+
+  bb3  cmp_lt  %t5 i64 tmp, %l4 i64 local, %l2 i64 local  ; line 3
+  bb5  store   %t3 i64 tmp, %l4 i64 local                ; line 6
+
+  -> both reads are in the ALREADY-WHITELISTED read envelope
+     (IR_ICMP and IR_STORE returning into a synthetic return tmp).
+
+Current behaviour (no fix needed):
+  PASSES as-is. hcc --emit-llvm produces verified-clean LLVM
+  (evidence/g2.llvm.stderr.txt, exit=0; emitted LLIR shows
+   %polyc.optionw.slot.4.0 = phi i64 [0, %bb1], [%2, %bb4]).
+
+Observed (this is the CRITICAL empirical finding for this ACT):
+
+  G2 PASSES WITHOUT ANY CHANGE. The while-loop multi-def local that
+  feeds `ret` is the canonical Option-W use case and is ALREADY
+  supported by LOCAL-MEM2REG01-CORRECTION02.
+
+  G2's LLVM output contains a PHI, but it is LLVM's own mem2reg-
+  placed PHI on the synthesised slot alloca. PolyC's neutral IR
+  for G2 contains NO IR_PHI.
+
+  Therefore: the Option-W canonical pattern works for loops when
+  the local feeds `ret`. The probe-matrix P7 'while loop' FAIL
+  in the prior recon was actually a false attribution - the real
+  failure was the store* read envelope on the OPTIONAL out-param
+  pattern (G1/G3), not the loop.
+
+Consequence for this ACT:
+  G2 stays GREEN. It is the conservation oracle for G1/G3 fixes.
+  No Fix B is required for G2; the loop is already proven.
+
+
+G3 - actual B0 combination
+==========================
+
+PolyC source (verbatim, /tmp/g3_minimal.HC):
+
+    I64 ScanIdent(U8 *src, I64 len, I64 cursor,
+                  I64 *out_cursor, I64 *out_len) {
+        I64 start = cursor;
+        while (cursor < len) {
+            U8 ch = src[cursor];
+            if (ch == ' ' || ch == '\t' || ch == '\n') break;
+            cursor = cursor + 1;
+        }
+        *out_cursor = cursor;
+        *out_len = cursor - start;
+        return 0;
+    }
+
+Definitions of cursor (pre-opt IR, evidence/g3.ir.txt):
+
+  bb1   store  %l6 i64 local, %p5 i64 param       ; line 1 (param copy)
+  bb11  iadd   %l6 i64 local, %l6 i64 local, 1    ; line 6 (loop body)
+
+  -> multi-def: 2 case-(b) definitions
+  -> RequiresMem2Reg = 1 (multi-def)
+
+Reads of cursor (pre-opt IR):
+
+  bb3   cmp_lt  %t13 i64 tmp, %l6 i64 local, %l4 i64 local  ; line 3
+  bb4   iadd    %t15 ptr tmp,  %l2 ptr local, %l6 i64 local  ; line 4 (GEP)
+  bb5   store*  %l8  ptr local, %l6 i64 local                ; line 8 (out)
+  bb5   isub    %t30 i64 tmp,  %l6 i64 local, %l12 i64 local ; line 9
+
+  -> ONE read is via IR_STORE_DEREF (line 8, *out_cursor = cursor).
+     The others are IR_ICMP / IR_IADD-as-GEP / IR_ISUB.
+
+Predicted current failure (path 1, fires first):
+  llOptionW_ReadsAreLowerable rejects IR_STORE_DEREF at line 8.
+Diagnostic: LLVM_BACKEND_UNSUPPORTED_OPTION_W_INELIGIBLE
+  function ScanIdent: mutable local id=6 (line 1)
+
+After Fix A:
+  G3 still fails on Path 2: IR_PHI (lines 5 and 5 of g3.ir.txt).
+  The `||` short-circuits produce IR_PHI for `%t21` and `%t24`.
+
+Predicted current failure (path 2):
+  Diagnostic: LLVM_BACKEND_UNSUPPORTED_PHI
+  function ScanIdent: PHI is not supported by the CORE backend.
+
+Empirical confirmation (evidence/g3.llvm.stderr.txt):
+  Path 1 fires first because the discriminator walks definitions
+  before the dispatcher walks instructions. The PHI error would
+  fire only after the option-W rejection is resolved.
+
+  When path 1 is fixed (Fix A), G3 still fails on path 2.
+  Both fixes are required for G3 to PASS.
+
+G3 acceptance after Fix A + Fix B (expected):
+  Entry-block alloca i64 for cursor; original-site store at line 1
+  preserved; original-site iadd at line 6 preserved; load at the
+  *out_cursor = cursor site; store through %l8; mem2reg promotion
+  yields:
+    bb3: %cursor = phi i64 [%p5, %bb1], [%inc, %bb11]
+  Logical-operator PHIs (%t21, %t24) lowered via LLVMBuildPHI
+  in the new IR_PHI dispatch arm.
+  Verifier PASS. Runtime oracle:
+    foo       -> out_cursor=3,  out_len=3
+    foo123    -> out_cursor=6,  out_len=6
+    _private  -> out_cursor=8,  out_len=8
+    X9        -> out_cursor=2,  out_len=2
+    ' \t'     -> out_cursor=0,  out_len=0  (immediate break)

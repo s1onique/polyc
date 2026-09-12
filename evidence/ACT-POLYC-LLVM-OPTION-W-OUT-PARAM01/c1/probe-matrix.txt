@@ -1,0 +1,64 @@
+C1 probe matrix (12 records, three geometries + invariants)
+
+ID  fixture                     substrate feature        current   expected C2-A
+--  --------                    ----------------         -------   --------------
+P1  G1_minimal.HC               out-param store, 1 def    FAIL      PASS
+P2  G2_minimal.HC               while-loop multi-def      PASS      PASS
+P3  G3_minimal.HC (ScanIdent)   loop + store* + ||        FAIL      PASS (post A+B)
+P4  phi_only.HC                 IR_PHI from ||            FAIL      FAIL (Fix B)
+P5  safe_fwd_single_pred.HC     canonical Option-W ref    PASS      PASS
+P6  MultiDef.HC                 canonical Option-W ref    PASS      PASS
+P7  ProbePath.HC                LOCAL-MEM2REG ref         PASS      PASS
+P8  Diamond.HC                  LOCAL-MEM2REG ref         PASS      PASS
+P9  AccDigit.HC                 LOCAL-MEM2REG ref         PASS      PASS
+P10 i64_collapse_probe.HC       LOCAL-MEM2REG ref         PASS      PASS
+P11 single_cond_probe.HC        LOCAL-MEM2REG ref         PASS      PASS
+P12 g1_negative_control.HC      address-taken fvar        CRASH*    CRASH*
+
+* The negative control (P12) crashes the compiler at the dereference
+  step (`*v = 0` where v is a stack lvar). This is a pre-existing
+  language-level restriction, not a discriminator regression. The
+  address-taken fence is therefore protected by the language
+  surface itself; the IR-level widening cannot accidentally widen
+  into "V as pointer" territory.
+
+Result interpretation:
+
+  C1 establishes two minimal RED witnesses (P1, P3) that
+  reproduce the recon's RC-A and the combined failure.
+
+  C1 establishes that G2 (P2) ALREADY PASSES, refuting the
+  recon's "while-loop produces IR_PHI" hypothesis. The loop is
+  fine; the recon's FAIL attribution was imprecise.
+
+  C1 establishes that IR_PHI exists in the IR (P4) and is
+  independently rejected, even when Option-W is satisfied.
+
+  C1 establishes that the existing LOCAL-MEM2REG conservation
+  set (P5-P11) is unaffected by the planned widening because
+  none of those fixtures read V via IR_STORE_DEREF.
+
+Conservation harness (must remain GREEN at every ACT phase):
+  llvm-gep01-test                  30/0
+  llvm-byte-memory01-test          37/0
+  llvm-spike-test                  18/0  (with HCC_INSTALL_DIR)
+  llvm-intops01-test                4/0
+  ir-return-slot-forwarding01-test   6/0
+  llvm-cap-table-verifier          PASS
+  shell-loc-gate                   PASS
+  factory-v2-commit-msg-check      PASS
+  factory-append-only-test         11/0
+  factory-closure-status           PASS (PAIR_OK=6)
+  gate-fast                        PASS
+
+  ENVIRONMENT:
+  harness-evidence-isolation-test  ENVIRONMENTALLY UNAVAILABLE
+                                   (pre-existing: /usr/local/include/
+                                    tos.HH not installed on this host;
+                                    llvm-spike-test handles the same
+                                    case via HCC_INSTALL_DIR override)
+
+  The "final state green across the board" wording from the
+  recon is REPLACED by:
+    functional compiler gates = GREEN
+    harness-evidence-isolation = ENVIRONMENTALLY UNAVAILABLE

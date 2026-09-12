@@ -1,0 +1,72 @@
+Critical B0 fixture - ScanIdent (frozen binding for this ACT)
+
+Function signature:
+  I64 ScanIdent(U8 *src, I64 len, I64 cursor,
+                I64 *out_cursor, I64 *out_len);
+
+Body (line-by-line):
+  line 1: I64 start = cursor;
+  line 2: while (cursor < len) {
+  line 3:   U8 ch = src[cursor];
+  line 4:   if (ch == ' ' || ch == '\t' || ch == '\n') break;
+  line 5:   cursor = cursor + 1;
+  line 6: }
+  line 7: *out_cursor = cursor;
+  line 8: *out_len = cursor - start;
+  line 9: return 0;
+
+Required runtime behaviour (oracle, post-Fix-A-and-Fix-B):
+
+  Test 01: foo
+    in:  src = "fooABC", len = 6, cursor = 0
+    out: out_cursor = 3, out_len = 3
+  Test 02: foo123
+    in:  src = "foo123XY", len = 8, cursor = 0
+    out: out_cursor = 6, out_len = 6
+  Test 03: _private
+    in:  src = "_private ", len = 9, cursor = 0
+    out: out_cursor = 8, out_len = 8
+  Test 04: X9
+    in:  src = "X9!", len = 3, cursor = 0
+    out: out_cursor = 2, out_len = 2
+  Test 05: immediate whitespace
+    in:  src = " \t\nfoo", len = 6, cursor = 0
+    out: out_cursor = 0, out_len = 0
+  Test 06: end-of-input
+    in:  src = "foo", len = 3, cursor = 0
+    out: out_cursor = 3, out_len = 3
+  Test 07: empty
+    in:  src = "", len = 0, cursor = 0
+    out: out_cursor = 0, out_len = 0
+  Test 08: cursor offset
+    in:  src = "abc foo", len = 7, cursor = 3
+    out: out_cursor = 3, out_len = 0  (whitespace at cursor)
+  Test 09: cursor offset 2
+    in:  src = "abc foo", len = 7, cursor = 4
+    out: out_cursor = 7, out_len = 3  (foo)
+  Test 10: digit suffix
+    in:  src = "abc123", len = 6, cursor = 0
+    out: out_cursor = 6, out_len = 6  (digits allowed)
+
+Substrate features exercised (required PASSes):
+  - U8 *src                  pointer parameter (BYTE-MEMORY)
+  - src[cursor]              byte load via GEP (GEP01)
+  - ch == ' '                IR_ICMP on widened byte vs constant
+  - ch == ' ' || ch == '\t'  IR_PHI from logical short-circuit
+  - cursor = cursor + 1      IR_IADD (case-b definition)
+  - *out_cursor = cursor     IR_STORE_DEREF as Option-W value read
+  - *out_len = ...           IR_STORE_DEREF as Option-W value read
+  - cursor - start           IR_ISUB
+  - return 0                 IR_RET
+
+This fixture is the binding contract between this ACT and the
+forthcoming BOOTSTRAP01. If ScanIdent compiles, verifies, and
+matches the runtime oracle, the B0 substrate gap is closed and
+BOOTSTRAP01's mechanical translation of the B0 mission freeze
+(per ACT-POLYC-B0-SUBSTRATE-RECON01 §2) becomes executable.
+
+NOTE: this fixture is NOT compiled or run in C1 RED. C1 only
+freezes the source, the oracle, and the substrate-feature checklist.
+C2-A's GREEN verification runs ScanIdent via hcc --emit-llvm +
+llvm-as + opt --passes=mem2reg + opt --passes=verify, then runs
+the JIT-compiled main() against the oracle (tests 01-10).

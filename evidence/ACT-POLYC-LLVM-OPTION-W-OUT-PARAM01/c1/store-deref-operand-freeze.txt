@@ -1,0 +1,48 @@
+C1 question A — IR_STORE_DEREF operand freeze
+
+Empirical source: src/ir.c:1187
+  IrOp store_op = tgt.indirect ? IR_STORE_DEREF : IR_STORE;
+  irBlockAddInstr(ctx, irInstrNew(store_op, tgt.target, new_val, NULL));
+
+Therefore:
+  ins->op   = IR_STORE_DEREF
+  ins->dst  = tgt.target   (the pointer being stored THROUGH)
+  ins->r1   = new_val      (the value being stored)
+  ins->r2   = NULL
+
+Source statement forms lowering to this layout:
+  *out = V            -> ins->dst = out (ptr param),
+                          ins->r1  = V
+  (*p).field = V      -> same layout through GEP+offset
+  V = *out            -> does NOT lower to IR_STORE_DEREF on dst
+                          (that path lowers to IR_STORE on V's loff)
+
+QUESTION: Is IR_STORE_DEREF purely a READ of V when ins->r1 == V?
+
+ANSWER (from empirical IR dump, evidence/g1.ir.txt):
+
+  bb4 -> predecessors: {1, 3}  successors: {2}
+    store*   %l4 ptr local, %l6 i64 local  ; line 6
+
+  Here %l6 i64 local is the value operand (r1) of IR_STORE_DEREF.
+  It does not become a definition site of %l6. The case-(a)/(b)
+  rule set (IR_STORE, IR_IADD, IR_ISUB) inspects ins->dst for V;
+  store* never writes V's loff (it writes through %l4), so V has
+  no extra reaching definition introduced.
+
+CONCLUSION:
+  IR_STORE_DEREF(ins->dst=ptr, ins->r1=V) reads V.
+  IR_STORE_DEREF(ins->dst=V, ins->r1=...) would write V — that is
+  NOT this widening; it would lower to IR_STORE on V's loff instead.
+
+FROZEN widening (C2-A pre-authorised, ACT §14):
+  In llOptionW_ReadsAreLowerable, accept IR_STORE_DEREF only when
+  ins->r1 == V (V is the VALUE operand).
+  Reject IR_STORE_DEREF when ins->dst == V (V is the POINTER operand)
+  — that case is the address-taken fence and is already rejected
+  earlier by llOptionW_NotAddressTaken.
+
+FROZEN non-changes:
+  - CASE_B_OPCODE_SET unchanged: {IR_STORE, IR_IADD, IR_ISUB}
+  - No new case-(b) definition opcode
+  - Read envelope adds IR_STORE_DEREF as value-read only

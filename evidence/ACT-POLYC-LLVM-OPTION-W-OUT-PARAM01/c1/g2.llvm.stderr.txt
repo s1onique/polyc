@@ -1,0 +1,23 @@
+; ModuleID = 'polyc_module'
+source_filename = "polyc_module"
+
+define i64 @G2(i64 %0) {
+bb1:
+  br label %bb3
+
+bb3:                                              ; preds = %bb4, %bb1
+  %polyc.optionw.slot.4.0 = phi i64 [ 0, %bb1 ], [ %2, %bb4 ]
+  %1 = icmp slt i64 %polyc.optionw.slot.4.0, %0
+  br i1 %1, label %bb4, label %bb5
+
+bb4:                                              ; preds = %bb3
+  %2 = add i64 %polyc.optionw.slot.4.0, 1
+  br label %bb3
+
+bb5:                                              ; preds = %bb3
+  ret i64 %polyc.optionw.slot.4.0
+
+dead_exit:                                        ; No predecessors!
+  unreachable
+}
+exit=0

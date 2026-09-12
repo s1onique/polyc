@@ -1,0 +1,141 @@
+C1 question B - IR_PHI provenance and phase
+
+Producers of IR_PHI in src/ir.c (the only frontend emitter):
+
+  src/ir.c:535-538   AST_BIN_OP_LOG_AND  short-circuit
+  src/ir.c:566-569   AST_BIN_OP_LOG_AND  short-circuit
+  src/ir.c:592-595   AST_BIN_OP_LOG_OR   short-circuit
+
+Every IR_PHI is constructed via irPhi(ir_result) where ir_result is
+an IR_VAL_TMP, not an IR_VAL_LOCAL. The IR_PHI represents the
+boolean result of a short-circuited logical operator; it has type
+I8 (per the irTmp(IR_TYPE_I8, 1) call above each construction).
+
+The IR_PHI's predecessor blocks carry the two operand values:
+  - the "short-circuit constant" from the unevaluated side
+  - the eagerly-evaluated operand from the evaluated side
+
+Empirical IR dumps (evidence/g3.ir.txt, line 5):
+
+  bb9 -> predecessors: {4, 8}  successors: {7, 6}
+    phi      %t21 i8 tmp, [ 1 i8 const int, bb4 ] [ %t23 i64 tmp, bb8 ]  ; line 5
+
+This is the result of `ch == ' ' || ch == '\t'`. The phi value
+`t21 i8 tmp` is consumed only by the immediate `cmp_ne` that drives
+the next branch. It is NOT a mutable local.
+
+Producers of IR_PHI in src/ir-optimise.c (mid-end):
+
+  src/ir-optimise.c:37      rewrites IR_PHI operands during a fold
+  src/ir-optimise.c:94      uses IR_PHI as a leader for a merge block
+  src/ir-optimise.c:162     preserves IR_PHI ordering
+  src/ir-optimise.c:409     IR_PHI handling in a constant-propagation walk
+  src/ir-optimise.c:493     is-block-side-effecting test (IR_PHI is)
+  src/ir-optimise.c:614     IR_PHI operand rewrite during const-prop
+  src/ir-optimise.c:654     IR_PHI operand rewrite during const-prop
+  src/ir-optimise.c:705     skip-over for code-motion
+  src/ir-optimise.c:1077    IR_PHI operand rewrite during const-prop
+
+These all CONSUME existing IR_PHI; they do not CREATE new ones.
+(Verified: none of the lines contain irPhi().)
+
+PROVENANCE CONCLUSION:
+
+  IR_PHI in the neutral IR comes from ONE place: logical-operator
+  short-circuit lowering in the frontend (src/ir.c:535/566/592).
+  It represents a TMP that carries a Boolean result across
+  short-circuit blocks. It NEVER carries an IR_VAL_LOCAL.
+
+LLVM backend disposition (src/llvm-backend-cap.c):
+  IR_PHI          = LLVMBC_REJECTED
+  diagnostic      = LLVM_BACKEND_UNSUPPORTED_PHI
+  body text       = "PHI is not supported by the CORE backend; the
+                     supported subset uses direct-branch return and
+                     single-definition locals instead"
+
+Empirical rejection (evidence/g3.llvm.stderr.txt; this ACT C1):
+  function ScanIdent:
+    LLVM_BACKEND_UNSUPPORTED_OPTION_W_INELIGIBLE  <-- fires FIRST
+    (option-W rejection for cursor local's store* read envelope)
+  function PhiOnly (phi-only probe, this ACT C1):
+    LLVM_BACKEND_UNSUPPORTED_PHI
+    "PHI is not supported by the CORE backend; the supported subset
+     uses direct-branch return and single-definition locals instead"
+
+These are TWO independent rejection paths:
+
+  Path 1  (option-W read envelope)
+    Trigger: a multi-def local V is read via IR_STORE_DEREF.
+    Where:   llOptionW_ReadsAreLowerable, src/llvm-backend.c:789.
+    Subject: an IR_VAL_LOCAL.
+
+  Path 2  (PHI)
+    Trigger: logical-operator short-circuit produces an IR_PHI.
+    Where:   llLowerInstr dispatch, src/llvm-backend.c (default arm
+             falls through to LLVMBC_REJECTED).
+    Subject: an IR_VAL_TMP.
+
+ARCHITECTURAL INFERENCE (corrected per expert review):
+
+  The recon ACT-POLYC-B0-SUBSTRATE-RECON01 §C2 collapsed these two
+  paths into one "PHI rejection" observation. That was imprecise.
+
+  The Option-W path and the PHI path are distinct seams:
+
+    Option-W path:  a memoisation/cache discriminator that decides
+                    whether a local V can live on the legacy SSA path
+                    or must be memory-backed. The widening is local
+                    to a single discriminator function.
+
+    PHI path:       the LLVM-backend IR dispatcher itself lacks a
+                    `case IR_PHI:` arm. PHIs are not in the supported
+                    IR opcode subset.
+
+  PHI PROVENANCE CONFIRMS the expert's Case B1/B2:
+
+    Case B1  PHI belongs to a TMP that the backend can lower
+             IF a case IR_PHI arm is added that emits
+             LLVMBuildPHI. This is the smaller delta.
+
+    Case B2  PHI belongs to an LVar - NOT TRUE here. PHIs in the
+             neutral IR are exclusively TMPs from short-circuit
+             logical operators. There is no LVar-anchored PHI in
+             the current IR emitter.
+
+  Therefore the substrate gap has TWO independent fixes:
+
+    Fix A  widen llOptionW_ReadsAreLowerable to admit IR_STORE_DEREF
+           as a value-only read. This is the C2-A pre-authorised
+           change. Conservative, narrow, has a sharp negative
+           control (ins->dst == V must still be rejected - already
+           is, by llOptionW_NotAddressTaken).
+
+    Fix B  add a `case IR_PHI:` arm to the LLVM-backend IR
+           dispatcher that emits LLVMBuildPHI + LLVMAddIncoming.
+           Each incoming (value, block) pair maps to the existing
+           IrPair list on the IR_PHI instruction. PHIs are produced
+           ONLY by the frontend's logical-operator short-circuit
+           lowering, so the operands are guaranteed IR_VAL_TMP
+           (case-(a)/(b) does not apply).
+
+PHI OWNERSHIP INVARIANT (frozen):
+
+  LLVM mem2reg places PHIs for memory-backed allocas. The neutral
+  IR's IR_PHI is a different animal - it is the SSA rename of a
+  short-circuit logical result BEFORE any alloca is materialised.
+  These PHIs must be lowered by the backend directly via
+  LLVMBuildPHI; LLVM's mem2reg has no opportunity to introduce them
+  because there is no alloca to promote.
+
+  This ACT DOES NOT contradict the LOCAL-MEM2REG01-CORRECTION02
+  PHI_OWNER doctrine: that doctrine says "PolyC never manufactures
+  PHIs for memory-backed allocas". The PHIs in scope here are NOT
+  memory-backed; they are frontend-issued SSA merges for logical
+  short-circuits. The two layers do not overlap.
+
+  Corrected statement:
+    FRONTEND_SSA_RECONSTRUCTION = NO  (for memory-backed allocas;
+                                        unchanged from C6 doctrine)
+    PHI_OWNER_LVAR             = LLVM mem2reg  (unchanged)
+    PHI_OWNER_SHORT_CIRCUIT    = LLVM backend LLVMBuildPHI  (NEW
+                                        arm added by Fix B)
