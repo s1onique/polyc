@@ -1,0 +1,70 @@
+=== factory-v2-test.sh (run on closing tree) ===
+PASS=35
+FAIL=0
+STATUS=PASS
+
+=== factory-closure-status-check.sh ===
+EXACT_VERDICT_MISMATCHES=0
+PAIR_OK=6
+PAIR_FAIL=0
+STATUS=PASS
+VERDICT=PASS
+
+=== factory-append-only-test.sh ===
+PASS=11
+FAIL=0
+STATUS=PASS
+
+=== factory-halt-classification-test.sh (NEW) ===
+PASS=12
+FAIL=0
+STATUS=PASS
+
+=== factory-v2-range-check.sh ===
+ACT=ACT-POLYC-FACTORY-MECHANICAL-BLOCKING01
+ENTRY=bf52316ba4ab91da00a5c25747079254fd105044
+FIRST=ca33eedc5e551c817d9e23513b9078f547886356
+CLOSE=703420fb8f4708dd34c88d82933dfe719b66dd97
+COMMITS=4
+VERDICT=PASS
+STATUS=PASS
+
+=== gate-fast.sh ===
+POLYC_GATE=fast
+CHECK=diff-check STATUS=PASS
+CHECK=shell-syntax STATUS=PASS
+CHECK=doc-invariants STATUS=PASS
+CHECK=large-file-guard STATUS=PASS
+CHECK=factory-closure-status STATUS=PASS
+
+=== git diff --check HEAD~1 HEAD ===
+clean (rc=0)
+
+=== git replace -l ===
+(empty, append-only invariant holds)
+
+=== ACT-POLYC-FACTORY-MECHANICAL-BLOCKING01 AC matrix ===
+AC01  F-MECHANICAL-BLOCKING present in DOCTRINE.md §25
+      grep -c F-MECHANICAL-BLOCKING docs/factory/DOCTRINE.md -> 2
+AC02  AGENTS.md carries the pointer paragraph
+      grep -c F-MECHANICAL-BLOCKING AGENTS.md -> 2
+AC03  GIT-METADATA.md documents HALT_CLASS / BLOCKS_NEXT
+      grep -c 'HALT_CLASS\|BLOCKS_NEXT' docs/factory/GIT-METADATA.md -> 12+
+AC04  factory-halt-classification-check.sh exists + is +x
+      test -x -> pass; LOC = 187 (<= 250 bound)
+AC05  factory-halt-classification-test.sh exits 0
+      12/12 fixtures PASS
+AC06  factory-v2-test.sh remains PASS
+      35/35 fixtures PASS
+AC07  factory-closure-status-check.sh remains PASS
+      6/6 PAIR_OK, 0 PAIR_FAIL
+AC08  factory-append-only-test.sh remains PASS
+      11/11 fixtures PASS
+AC09  git diff --check HEAD~1..HEAD exit 0
+      clean (rc=0)
+AC10  git replace -l empty
+      empty (append-only invariant holds)
+AC11  Default invocation inspects only HEAD
+      R8 fixture (historical PASS commit) PASSes under default
+AC12  No 'git log' in the new scripts
+      grep -c git log factory-halt-classification-{check,test}.sh -> 0/0
