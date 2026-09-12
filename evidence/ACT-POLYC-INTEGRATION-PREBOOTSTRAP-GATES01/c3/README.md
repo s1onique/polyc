@@ -39,7 +39,12 @@ See `c3-conflict-diagnosis.txt` for the full root-cause analysis and
 `c3-failure-modes.txt` for transcript excerpts of both failure modes.
 `gate-push-final.log` is the captured log from the most recent
 gate-push invocation (FAILURE MODE B: 26 duplicate symbols at
-GPUSH-GEP01).
+GPUSH-GEP01, after my 655b7bd follow-up removed the symlink). The
+FAILURE MODE A transcript excerpt in `c3-failure-modes.txt` is
+reconstructed from earlier interactive runs (the prior log file was
+overwritten by the FAILURE MODE B run); the mode is fully
+reproducible by toggling the `@rm -f` line in
+`test-prefix-install` back out.
 
 ## Root cause: conflict between unit-test and llvm-gep01-test
 
