@@ -1,0 +1,51 @@
+B0 byte demand (reconciliation at RESUME02)
+============================================
+
+B0 mission (per docs/ROADMAP.md P4):
+  PolyC-written lexer/tokenizer.
+  Reads input bytes one at a time, recognizes characters, classifies
+  digits, accumulates integer values.
+
+The byte-level fragment that B0 actually requires (excluding indexing):
+
+  c = *src;              // direct byte load (no index)
+  if (c == ' ') ...      // byte == constant comparison
+  if (c >= '0') ...      // byte range comparison
+  digit = c - '0';       // byte promotion + subtract
+  v = v * 10 + digit;    // existing scalar arithmetic (INTOPS01 done)
+
+Mapped to current capabilities:
+
+  | B0 expression        | required capability                       | in scope?                  |
+  |----------------------|-------------------------------------------|----------------------------|
+  | *src  (U8 *p)        | IR_LOAD_DEREF dst=IR_TYPE_I8              | YES (BYTE-MEMORY01 line)   |
+  | c == ' '             | IR_ICMP on widened byte vs constant       | OK after IR_ZEXT/IR_SEXT   |
+  | c >= '0'             | IR_ICMP on widened byte vs constant       | OK after IR_ZEXT/IR_SEXT   |
+  | c - '0'              | IR_ISUB on widened byte                   | OK after IR_ZEXT/IR_SEXT   |
+  | v = v * 10 + digit   | existing scalar integer arithmetic        | OK (existing)              |
+
+Byte store demand:
+  B0's first milestone writes its output as an I64 scalar (parsed
+  integer value), NOT as a byte buffer. Therefore byte stores are
+  not required for the B0 first-milestone read-only path.
+  BYTE_STORE_DEMAND = NO.
+  I64_TO_BYTE_DEMAND = NO.
+
+GEP demand:
+  B0 needs to walk through the input byte buffer (src + n). This
+  is purely indexed address computation, NOT byte access itself.
+  GEP_REQUIRED_FOR_B0_AT_CURRENT_ADDRESS = NO.
+  GEP_REQUIRED_FOR_B0_WALKING = YES (out of scope for RESUME02;
+  owned by ACT-POLYC-LLVM-GEP01).
+
+BYTE-MEMORY01-RESUME02 responsibility boundary:
+  byte access at the current pointer (load i8, ptr %p) only.
+  walking to the next pointer (src + 1) is GEP01's job.
+  storing a byte is BYTE-STORE01's job (currently DEFERRED and not
+  required for B0 first milestone).
+
+Conclusion:
+  B0_BYTE_DEMAND = OK.
+  The fresh RESUME02 closure packet must mechanically establish
+  that all current byte-load / promotion / comparison / truncation
+  shapes for the B0-shaped path are GREEN, with BYTE_MEMORY_GEP_COUNT = 0.

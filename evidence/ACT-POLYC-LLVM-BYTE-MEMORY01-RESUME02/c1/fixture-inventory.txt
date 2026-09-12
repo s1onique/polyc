@@ -1,0 +1,64 @@
+BYTE-MEMORY01-RESUME02 fixture inventory
+=========================================
+
+Source: src/tests/llvm-byte-memory01/
+
+Eight BYTE-MEMORY01 fixtures (per ACT §5.1):
+
+  1. red_u8_param.HC
+       PolyC: U8 Id(U8 x) { return x; }
+       Historical label RED-BYTE-1 (parameter admission seam).
+       Currently COMPILES (LLVM i8 function parameter).
+       RUN: ./hcc --emit-llvm src/tests/llvm-byte-memory01/red_u8_param.HC
+
+  2. red_i8_param.HC
+       PolyC: I8 IdI8(I8 x) { return x; }
+       Historical label RED-BYTE-2.
+       Currently COMPILES.
+       RUN: ./hcc --emit-llvm src/tests/llvm-byte-memory01/red_i8_param.HC
+
+  3. red_byte_load.HC
+       PolyC: U8 ReadByte(U8 *p) { return *p; }
+       Historical label RED-BYTE-4.
+       Currently COMPILES and emits 'load i8, ptr %p'.
+
+  4. red_byte_pointer_param.HC
+       PolyC: U8 ReadByte(U8 *p) { return *p; }
+       Historical label RED-BYTE-3.
+       Currently COMPILES and emits 'load i8, ptr %p'.
+
+  5. red_byte_to_i64.HC
+       PolyC: U8 Id(U8 x) { return x; }
+       Historical label RED-BYTE-5.
+       Currently COMPILES; widening is implicit in function-return
+       boundary (LLVM IR uses zext i8 to i64 per current lowering).
+
+  6. red_i16_trunc_negative.HC
+       PolyC: I64 NarrowToI16(I64 x) { I16 y = x; return y; }
+       Historical label: unauthorized narrowing negative control.
+       Currently REJECTED with
+         LLVM_BACKEND_UNSUPPORTED_CONVERSION (IR_TRUNC source=I64 destination=I16).
+       Negative control; must remain rejected.
+
+  7. pos_byte_compare_simple.HC
+       PolyC: I64 IsDigit(U8 *p) { ... range check returns 1 or 0 ... }
+       Currently COMPILES with byte load + zext + icmp + verifier-clean.
+
+  8. pos_b0_compare_digit.HC
+       PolyC: I64 ReadDigit(U8 *p) { ... }
+             I64 AccDigit(I64 acc, U8 *p) { ... }
+       B0-shaped multi-block byte + comparison + digit + accumulator fixture.
+       Currently COMPILES and passes llvm-as + opt --passes=verify
+       for both ReadDigit and AccDigit. AccDigit exercises the
+       Option-W / mem2reg production path (multi-block I64 mutable
+       result state with conditional store/load).
+
+Local-mem2reg regression fixtures (per ACT §5.1):
+  i64_collapse_probe.HC
+  single_cond_probe.HC
+  safe_fwd_single_pred.HC
+  Diamond.HC
+
+These four are LOCAL-MEM2REG regressions permanently bound by
+scripts/quality/ir-return-slot-forwarding01-test.sh; their
+preservation is part of conservation evidence.

@@ -1,0 +1,89 @@
+Historical HALT reconciliation (per ACT §5.3)
+==============================================
+
+H1 - scope expansion (SEXT/TRUNC implemented despite DEFER)
+------------------------------------------------------------
+  Old problem (BYTE-MEMORY01 §0.5):
+    IMPL commit 2a15769b admitted IR_SEXT I8->I64 and IR_TRUNC
+    I64->I8 even though recon at evidence/llvm-byte-memory01/recon/
+    authorized-set.txt froze both as DEFER.
+
+  Current disposition (mechanical checks):
+
+    [1] explicitly authorized by successor contract?
+        YES. RESUME01 §3.1 explicitly authorizes the proven
+        IR_SEXT and IR_TRUNC shapes, removing them from DEFERRED.
+        Source: docs/acts/ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME01.md §3.1.
+        Source-of-truth: src/llvm-backend-cap.c rows for IR_SEXT and
+        IR_TRUNC both read SHAPE_DEPENDENT.
+
+    [2] implementation present in production?
+        YES. IR_SEXT (SHAPE_DEPENDENT, src=IR_TYPE_I8 dst=IR_TYPE_I64
+        only) and IR_TRUNC (SHAPE_DEPENDENT, src=IR_TYPE_I64
+        dst=IR_TYPE_I8 only) both have lowering arms in
+        src/llvm-backend.c.
+
+    [3] regression bound?
+        YES. scripts/quality/llvm-byte-memory01-test.sh section
+        "byte truncation" exercises red_i16_trunc_negative.HC and
+        asserts that I64 -> I16 narrowing is rejected with the
+        named LLVM_BACKEND_UNSUPPORTED_CONVERSION diagnostic.
+        The byte-promotion section asserts the positive byte
+        widening path emits (zext|sext) i8 to i64.
+
+  Resolution: RESOLVED_BY_AUTHORIZATION.
+  Status: GREEN.
+
+H2 - multi-block SSA dominance (pos_b0_compare_digit invalid/rejected)
+-----------------------------------------------------------------------
+  Old problem (BYTE-MEMORY01 §0.5):
+    pos_b0_compare_digit.HC produced invalid LLVM in a multi-block
+    conditional-return shape due to SSA/dominance handling. The
+    defect persisted across RESUME01 and IR-RETURN-SLOT-FORWARDING01
+    because the root cause was generic mutable-local representation,
+    not byte lowering.
+
+  Current disposition (mechanical checks):
+
+    [1] current compiler emits valid LLVM for pos_b0_compare_digit?
+        YES. RESUME02 C1 preflight (see evidence/.../c2/byte-load.txt
+        and pos-b0-* artifacts) shows:
+            hcc --emit-llvm src/tests/llvm-byte-memory01/
+                              pos_b0_compare_digit.HC
+            -> EXIT=0, LLVM module emitted to stdout, contains
+               load i8, ptr %p, sext i8 to i64, icmp sgt/ule i64,
+               alloca + store/load for AccDigit accumulator.
+
+    [2] Option-W real production path used?
+        YES. The LOCAL-MEM2REG01-CORRECTION02 C7 acceptance packet
+        (evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02/c7/
+        acceptance-matrix.txt) classifies pos_b0_compare_digit.HC
+        as AC01..AC20 PASS for both ReadDigit and AccDigit. The
+        C7 frozen production architecture is:
+            entry-block alloca
+            store at ORIGINAL definition sites
+            load at ORIGINAL read sites
+            LLVM mem2reg owns SSA / PHI construction.
+        The C7 commit 246be50a is the parent of RESUME02's
+        ENTRY_HEAD; the production code path is therefore exactly
+        the C7 architecture.
+
+    [3] independent verify succeeds?
+        YES. llvm-as + opt --passes=verify on the emitted LLVM
+        passes (captured in RESUME02 C2 evidence: c2/pos-b0-llvm-as.txt
+        and c2/pos-b0-verify.txt).
+
+  Resolution: RESOLVED_BY_LOCAL_MEM2REG.
+  Status: GREEN.
+
+Combined verdict
+----------------
+  Both historical HALTs are mechanically resolved by later
+  authorized work. The current tree demonstrably passes both H1's
+  explicit-authorization check (via cap-table rows + RESUME01 §3.1)
+  and H2's actual-production-fix check (via LOCAL-MEM2REG C7
+  architecture + independent LLVM verification on the B0-shaped
+  fixture). No new implementation is required.
+
+  -> C1 verdict: NOT_BLOCKED.
+     Continue to C2 EVIDENCE.

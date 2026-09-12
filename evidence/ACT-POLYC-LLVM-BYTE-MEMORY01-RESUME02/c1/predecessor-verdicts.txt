@@ -1,0 +1,121 @@
+BYTE-MEMORY01-RESUME02 — predecessor verdict truth (F14 preserved)
+================================================================
+
+Closure line items recorded mechanically from git log + per-commit
+factory-v2-commit-msg-check evidence. No historical verdict is
+rewritten.
+
+------------------------------------------------------------
+1. ACT-POLYC-LLVM-BYTE-MEMORY01
+------------------------------------------------------------
+  Historical CLOSE verdict: HALT_SCOPE_EXPANSION_REQUIRED
+  Source-of-truth: ACT-POLYC-LLVM-BYTE-MEMORY01.md §0.5.
+  Canonical trailers issued by the dedicated bookkeeping correction
+  ACT-POLYC-LLVM-BYTE-MEMORY01-BOOKKEEPING01 at db6404e1a36a:
+      ACT: ACT-POLYC-LLVM-BYTE-MEMORY01-BOOKKEEPING01
+      ACT-Phase: CLOSE
+      ACT-Verdict: PASS
+      ACT-Supersedes: ACT-POLYC-LLVM-BYTE-MEMORY01
+      ACT-Corrected-Verdict: HALT_SCOPE_EXPANSION_REQUIRED
+
+  Original HALT commit e5e49f5 carries a malformed trailer block
+  (preserved as F14 evidence; not amended).
+
+  Two recorded reasons:
+    H1 - frozen authorized set was exceeded (IR_SEXT/IR_TRUNC
+         admitted despite DEFER in recon).
+    H2 - pos_b0_compare_digit produced invalid LLVM in a
+         multi-block conditional-return shape due to SSA/dominance.
+
+------------------------------------------------------------
+2. ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME01
+------------------------------------------------------------
+  Historical CLOSE verdict: HALT_SCOPE_EXPANSION_REQUIRED
+  Source-of-truth: ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME01.md +
+                   CLOSE commit a48e40f.
+  Canonical CLOSE trailer at a48e40f:
+      ACT: ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME01
+      ACT-Phase: CLOSE
+      ACT-Verdict: HALT_SCOPE_EXPANSION_REQUIRED
+
+  Recorded reason: C1 RED (0bfa990) proved the smallest
+  invariant-preserving repair is in src/ir-optimise.c
+  (irForwardReturnSlot single-predecessor guard), which is outside
+  RESUME01's authorized src/llvm-backend.c::llCollapseStoreValue
+  seam. The authorized-seam constraint forced HALT.
+
+  CORRECTION01 (dc99882) is a sibling ACT hygiene fix only;
+  RESUME01's own verdict remains HALT_SCOPE_EXPANSION_REQUIRED.
+
+------------------------------------------------------------
+3. ACT-POLYC-IR-RETURN-SLOT-FORWARDING01
+------------------------------------------------------------
+  Historical CLOSE verdict: HALT_SECOND_SEAM_REQUIRED
+  Source-of-truth: ACT-POLYC-IR-RETURN-SLOT-FORWARDING01.md +
+                   CLOSE commit 69f7d3a.
+  Canonical CLOSE trailer at 69f7d3a:
+      ACT: ACT-POLYC-IR-RETURN-SLOT-FORWARDING01
+      ACT-Phase: CLOSE
+      ACT-Verdict: HALT_SECOND_SEAM_REQUIRED
+
+  Recorded reason: the single-predecessor guard at
+  src/ir-optimise.c::irForwardReturnSlot (~2 lines, the conservative
+  sufficient condition for safe forwarding) closed the specific
+  dominance-violating rewrite defect, but the post-suppression IR
+  still carries an IR_ALLOCA + store; load; ret triple on
+  multi-predecessor exits, which the SSA-only spike rejects with
+  LLVM_BACKEND_UNSUPPORTED_SSA_LOCAL. A second seam is required
+  but is OUT OF SCOPE for that ACT.
+
+  Recommended next ACT: ACT-POLYC-LLVM-LOCAL-MEM2REG01
+  (mem2reg via the LLVM C-API pass pipeline, "Option D" from
+  ACT §11). Authorized via the dedicated P4 transition described
+  in docs/ROADMAP.md.
+
+------------------------------------------------------------
+4. ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02
+------------------------------------------------------------
+  Current CLOSE verdict: PASS
+  Source-of-truth: docs/acts/ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02.md
+                   (unchanged F14) + ROADMAP CLOSED status block +
+                   C7 commit trailer at 246be50a373425541eee2c8e00f900e5ffab505c.
+  Canonical CLOSE trailer at 246be50a:
+      ACT: ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02
+      ACT-Phase: CLOSE
+      ACT-Verdict: PASS
+
+  Frozen contracts at C7:
+      FROZEN_SUPPORTED_DEF_FORMS = IR_STORE, IR_IADD, IR_ISUB
+      CASE_B_OPCODE_SET_WIDENED  = NO
+      PHI_POLICY                 = LLVM-owned
+      FRONTEND_SSA_RECONSTRUCTION = NO
+      NEUTRAL_IR_CHANGED          = NO
+      ABI_CHANGED                 = NO
+
+  Production architecture:
+      eligible mutable I64 local
+        entry-block alloca
+        store at ORIGINAL definition sites
+        load at ORIGINAL read sites
+        LLVM mem2reg
+        SSA + PHIs owned by LLVM
+
+  Production match of C9 predecessor-store synthesis symbols
+  (verified at C7): ZERO matches.
+
+------------------------------------------------------------
+RESUME02 recon note
+------------------------------------------------------------
+All four predecessor verdicts are preserved exactly as written.
+RESUME02 does not rewrite history. The four predecessors, taken
+together, demonstrate that:
+
+  H1 (SEXT/TRUNC scope): explicitly authorized by RESUME01 §3.1,
+                          implemented, regression-bound in
+                          llvm-byte-memory01-test.sh truncation
+                          boundary section.
+
+  H2 (multi-block SSA):  discharged by LOCAL-MEM2REG Option-W
+                          architecture at 246be50a. pos_b0_compare_digit
+                          is now a permanent positive fixture bound
+                          to verifier-clean LLVM output.

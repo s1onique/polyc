@@ -1,0 +1,89 @@
+C1 boundary recon — pos_b0_compare_digit.HC (per ACT §6)
+==========================================================
+
+Compilation:
+  ./hcc --emit-llvm --install-dir=/tmp/polyc-install \
+        src/tests/llvm-byte-memory01/pos_b0_compare_digit.HC \
+        2>/dev/null > /tmp/resume02-c1/pos-b0-emit-llvm.ll
+  rc = 0
+  Lines of emitted LLVM = 68 (incl. module header)
+
+LLVM textual evidence (independent tools):
+  llvm-as  /tmp/resume02-c1/pos-b0-emit-llvm.ll -o /tmp/resume02-c1/pos-b0-emit-llvm.bc
+    rc = 0
+  opt --passes=verify /tmp/resume02-c1/pos-b0-emit-llvm.bc -disable-output
+    rc = 0
+
+Capability counters (captured at compile time on stderr):
+  CAPABILITY_COUNTERS supported=22 rejected=0 shape_dependent=18 defensive=0 unreachable=0
+
+------------------------------------------------------------
+Q1 - Does the fixture require any byte-memory opcode
+    not in the current frozen supported set?
+------------------------------------------------------------
+  Distinct byte / conversion ops in emitted LLVM:
+    load i8
+    zext i8
+    trunc i64 ... to i8
+    icmp sge i8
+    icmp sle i8
+  All are in the frozen supported set per ACT §2.
+  Plus generic I64 icmp/icmp i64 and I64 alloca (Option-W).
+  Answer: NO.
+
+------------------------------------------------------------
+Q2 - Does it require IR_STORE_DEREF byte semantics?
+------------------------------------------------------------
+  grep -c 'store i8' /tmp/resume02-c1/pos-b0-emit-llvm.ll = 0
+  (only I64 stores appear, for the Option-W accumulator)
+  Answer: NO.
+
+------------------------------------------------------------
+Q3 - Does it require GEP?
+------------------------------------------------------------
+  grep -c 'getelementptr' /tmp/resume02-c1/pos-b0-emit-llvm.ll = 0
+  Answer: NO.
+
+------------------------------------------------------------
+Q4 - Does it require an I8 Option-W alloca?
+------------------------------------------------------------
+  grep 'alloca i8' /tmp/resume02-c1/pos-b0-emit-llvm.ll = (none)
+  Only I64 alloca appears for the Option-W mutable accumulator.
+  Answer: NO.
+
+------------------------------------------------------------
+Q5 - Does it require a new conversion width?
+------------------------------------------------------------
+  Distinct src/dst widths observed:
+    i8 -> i64   (zext)            <-- frozen
+    i64 -> i8   (trunc)           <-- frozen
+    i8 -> i1    (icmp cond)       <-- LLVM internal, not a conversion
+    i64 -> i1   (icmp cond)       <-- LLVM internal, not a conversion
+  No (zext|sext|trunc) ... i16, i32, f32, f64 etc. appears.
+  Answer: NO.
+
+------------------------------------------------------------
+Q6 - Does current emitted LLVM verify independently?
+------------------------------------------------------------
+  opt --passes=verify /tmp/resume02-c1/pos-b0-emit-llvm.bc -disable-output
+    rc = 0
+  Answer: YES.
+
+------------------------------------------------------------
+Verdict
+------------------------------------------------------------
+All six expected answers match:
+  Q1 NO
+  Q2 NO
+  Q3 NO
+  Q4 NO
+  Q5 NO
+  Q6 YES
+
+Therefore:
+  C1 verdict = NOT_BLOCKED.
+  No new byte-memory capability is required for B0 byte-at-current-
+  address path. RESUME02 may proceed to C2 EVIDENCE.
+
+The remaining capability not covered here (GEP / walking the buffer)
+is explicitly the next ACT's responsibility (GEP01), per ACT §3.
