@@ -1,0 +1,33 @@
+=== C3 EVIDENCE: gate-fast on b76f0d8 (untracked correction ACT docs not yet committed) ===
+Captured live:
+./scripts/quality/gate-fast.sh
+POLYC_GATE=fast
+CHECK=diff-check STATUS=PASS
+CHECK=shell-syntax STATUS=PASS
+CHECK=doc-invariants STATUS=PASS
+CHECK=large-file-guard STATUS=PASS
+BUILD_RUN=NO
+POLYC_GATE=factory-closure-status
+MANIFEST_ROWS=6
+MISSING_HANDOFF_FILES=0
+MALFORMED_ACT_STATUS=0
+MALFORMED_HANDOFF_VERDICT=0
+EXACT_VERDICT_MISMATCHES=0
+PAIR_OK=6
+PAIR_FAIL=0
+STATUS=PASS
+VERDICT=PASS
+CHECK=factory-closure-status STATUS=PASS
+VERDICT=PASS
+
+=== Conservation gates from predecessor ACT (already in c3/ of predecessor) ===
+unit-test      : 90/90 PASS (predecessor c3/unit-test.txt)
+jit-unit-test  : 90/90 PASS (predecessor c3/jit-unit-test.txt)
+lsp-test       : 43/43 PASS (predecessor c3/lsp-test.txt)
+gate-fast      : PASS      (re-run today, see above)
+gate-push      : FAIL on gep01 (NOT attributable; see c1/red-grep-summary.txt)
+
+=== Conservation invariant under this ACT ===
+git diff --stat b76f0d8..HEAD -- src/aarch64.c src/x86_64.c -> empty
+git diff --stat b76f0d8..HEAD -- predecessor evidence dirs  -> empty
+All four byte-identical diffs -> exit 0
