@@ -1,0 +1,55 @@
+C1 RED R4 -- verbatim probe transcripts
+========================================
+
+R4 PROBE v1 (resurrect at 30 LOC)
+----------------------------------
+
+$ sh /tmp/probe.sh
+--- resurrected stub LOC ---
+30 scripts/quality/llvm-gep01-test.sh
+--- shell-loc-gate.sh output ---
+FAIL  NEW   scripts/quality/factory-halt-classification-test.sh  cur=182 > 50
+FAIL  NEW   scripts/quality/factory-halt-classification-check.sh  cur=187 > 50
+--- exit code = 1 ---
+
+Conclusion: resurrected 30-LOC stub is undetected by shell-loc-gate.sh.
+The "FAIL" lines are for unrelated stale-baseline defects.
+The migrated zero-budget invariant is unenforced.
+
+R4 PROBE v2 (resurrect at 232 LOC, matching stale baseline row)
+---------------------------------------------------------------
+
+$ sh /tmp/probe2.sh
+--- resurrected stub LOC ---
+232 scripts/quality/llvm-gep01-test.sh
+--- shell-loc-gate.sh output ---
+FAIL  NEW   scripts/quality/factory-halt-classification-test.sh  cur=182 > 50
+FAIL  NEW   scripts/quality/factory-halt-classification-check.sh  cur=187 > 50
+--- exit code = 1 ---
+
+Conclusion: even at the exact stale-baseline size, the resurrected
+file is not flagged. shell-loc-gate.sh treats it as no-growth (232<=232).
+
+R4 PROBE v3 (resurrect at 232 LOC, separate run)
+------------------------------------------------
+
+$ sh /tmp/probe3.sh
+--- resurrected stub LOC = 232 (matches stale baseline) ---
+232 scripts/quality/llvm-gep01-test.sh
+--- shell-loc-gate.sh output ---
+FAIL  NEW   scripts/quality/factory-halt-classification-test.sh  cur=182 > 50
+FAIL  NEW   scripts/quality/factory-halt-classification-check.sh  cur=187 > 50
+--- exit code = 1 ---
+
+Conclusion: identical to v2. The migrated-path invariant is unenforced.
+
+Note (residue class P0): the existing
+evidence/ACT-POLYC-TOOLING-SHELL-INVENTORY01/c1/baseline.txt
+is itself stale -- it omits
+  scripts/quality/factory-halt-classification-test.sh
+  scripts/quality/factory-halt-classification-check.sh
+and references the deleted
+  scripts/quality/llvm-gep01-test.sh 232
+This stale-baseline residue is NOT repaired in this ACT; the new
+SHELL-BUDGET.tsv is the canonical replacement and the new gate
+ignores baseline.txt.
