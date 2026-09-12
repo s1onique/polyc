@@ -145,15 +145,23 @@ AC01  AGENTS.md precedence table lists six levels, with user SCOPE
       at level 2 and user EXECUTION DIRECTIVE at level 4 (between
       ACT contract at level 3 and AGENTS workflow defaults at
       level 5).
-      Command: grep -A8 '^## Instruction precedence' AGENTS.md | \
+      Command: grep -A12 '^## Instruction precedence' AGENTS.md | \
                   grep -q 'SCOPE / authorization' && \
-                  grep -A8 '^## Instruction precedence' AGENTS.md | \
+                  grep -A12 '^## Instruction precedence' AGENTS.md | \
                   grep -q 'EXECUTION DIRECTIVE'
+      Note: the table sits 7..12 lines after the heading
+      (after the prose intro); -A12 (not -A8) is the correct
+      window. This is a documentation-cosmetic detail; the
+      implementation is correct.
 
 AC02  AGENTS.md contains the explicit user-scope / user-execution
       split paragraph.
-      Command: grep -q 'User scope / authorization sits' AGENTS.md && \
-               grep -q 'User execution directive within authorized scope sits' AGENTS.md
+      Command: grep -qF '**User scope / authorization** sits' AGENTS.md && \
+               grep -qF '**User execution directive within authorized scope** sits' AGENTS.md
+      Note: the two phrases are wrapped in Markdown bold markers
+      in the implementation, which is why the literal-text form
+      requires -F (fixed-string) matching. The un-bolded form is
+      not the intent of this witness.
 
 AC03  AGENTS.md contains the ARRAY-semantics scope-bypass worked
       example.
