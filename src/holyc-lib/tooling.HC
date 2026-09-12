@@ -40,6 +40,77 @@ extern "c" U8 *strstr(U8 *haystack, U8 *needle);
 extern "c" I32 getpid();
 extern "c" I32 poll(U0 *fds, U64 nfds, I32 timeout);
 
+// CORRECTION02: errno accessor via a tiny C shim (see errno_shim.c).
+// The native macOS symbol __error() cannot be named directly in
+// HolyC source (hcc reserves leading-double-underscore identifiers),
+// so we expose it as Errno() through a one-line C wrapper compiled
+// into libtos. The shim is currently macOS-only; glibc support is
+// ACT-POLYC-TOOLING-LINUX-PORT01 (P1 residue).
+#if defined(__APPLE__)
+extern "c" I32 *Errno();
+#endif
+
+// ------------------------------------------------------------
+// EINTR-safe wrappers (CORRECTION02)
+//
+// POSIX allows poll(2), read(2), and waitpid(2) to return -1
+// with errno=EINTR when a signal is delivered before the call
+// could complete or transfer data. A caller that treats any
+// negative return as a hard error will spuriously abort on
+// benign signal delivery (SIGCHLD, SIGALRM from timers, etc.).
+//
+// The libtos symbol used here is Errno(): a tiny C shim
+// (src/holyc-lib/errno_shim.c) that exposes the libc errno
+// accessor under a HolyC-friendly name. On macOS the POSIX
+// accessor is __error(); on glibc it is __errno_location().
+// We use the macOS accessor because the Tooling runtime's
+// host environment is macOS in this build. Linux portability
+// is a separate ACT.
+//
+// Wrappers (defined below):
+//   PollIntr(pfds, n, timeout)   -> poll with EINTR retry
+//   ReadIntr(fd, buf, n)         -> read with EINTR retry
+//   WaitPidIntr(pid, &st, opts)  -> waitpid with EINTR retry
+//
+// Returns:
+//   PollIntr:      # revents (>=0), or -1 on real failure
+//   ReadIntr:      bytes transferred (>=0), or -1 on real failure
+//   WaitPidIntr:   0 on reap, -1 on real failure
+// ------------------------------------------------------------
+
+public I32 PollIntr(U0 *fds, U64 nfds, I32 timeout)
+{
+  I32 result = -1;
+  for (;;) {
+    I32 r = poll(fds, nfds, timeout);
+    if (r >= 0) { result = r; break; }
+    if (*Errno() != 4) { result = -1; break; }
+  }
+  return result;
+}
+
+public I32 ReadIntr(I32 fd, U0 *buf, U64 n)
+{
+  I32 result = -1;
+  for (;;) {
+    I64 r = read(fd, buf, n);
+    if (r >= 0) { result = r; break; }
+    if (*Errno() != 4) { result = -1; break; }
+  }
+  return result;
+}
+
+public I32 WaitPidIntr(I32 pid, I32 *status, I32 options)
+{
+  I32 result = -1;
+  for (;;) {
+    I32 r = waitpid(pid, status, options);
+    if (r >= 0) { result = r; break; }
+    if (*Errno() != 4) { result = -1; break; }
+  }
+  return result;
+}
+
 // Constants for waitpid decoding (POSIX).
 #define WIFEXITED_FLAG   0x00   // status low byte is exit code
 #define W_EXITCODE_MASK  0xFF00 // bits 8..15 hold exit code
@@ -187,11 +258,18 @@ public I64 SpawnAndCapture(U8 *program, U8 **args,
     return -1;
   }
 
-  pid = fork();
-  if (pid < 0) {
-    close(out_fd[0]); close(out_fd[1]);
-    close(err_fd[0]); close(err_fd[1]);
-    return -1;
+  // CORRECTION02: retry fork on EINTR. A signal arriving before
+  // the kernel completes the copy-on-write can spuriously fail
+  // the call; the safe policy is to retry, not bail. The loop
+  // either returns (real failure) or sets pid >= 0 (success).
+  for (;;) {
+    pid = fork();
+    if (pid >= 0) break;
+    if (*Errno() != 4 /* EINTR */) {
+      close(out_fd[0]); close(out_fd[1]);
+      close(err_fd[0]); close(err_fd[1]);
+      return -1;
+    }
   }
 
   if (pid == 0) {
@@ -230,21 +308,27 @@ public I64 SpawnAndCapture(U8 *program, U8 **args,
   Bool out_open = TRUE, err_open = TRUE;
 
   while (out_open || err_open) {
-    I32 nfd = poll(pfds, 2, -1);
+    I32 nfd = PollIntr(pfds, 2, -1);
     if (nfd < 0) break;
 
     // stdout
     if (out_open) {
       I16 r = pfds[0].revents;
       if (r & (POLL_POLLIN | POLL_POLLHUP | POLL_POLLERR)) {
-        n = read(out_fd[0], chunk, POLL_CHUNK);
+        // CORRECTION02: use EINTR-safe read; only treat n==0 as EOF
+        // and n<0 (after retries exhausted) as a hard error.
+        n = ReadIntr(out_fd[0], chunk, POLL_CHUNK);
         if (n > 0) {
           out_buf = ReAlloc(out_buf, out_len + n + 1);
           MemCpy(out_buf + out_len, chunk, n);
           out_len += n;
+        } else if (n == 0) {
+          // true EOF — writer closed
+          out_open = FALSE;
+          close(out_fd[0]);
+          pfds[0].fd = -1;
         } else {
-          // n == 0 (EOF) or n < 0 (error); in both cases
-          // the writer is gone — close this fd.
+          // hard read error after EINTR retries exhausted
           out_open = FALSE;
           close(out_fd[0]);
           pfds[0].fd = -1;
@@ -255,11 +339,15 @@ public I64 SpawnAndCapture(U8 *program, U8 **args,
     if (err_open) {
       I16 r = pfds[1].revents;
       if (r & (POLL_POLLIN | POLL_POLLHUP | POLL_POLLERR)) {
-        n = read(err_fd[0], chunk, POLL_CHUNK);
+        n = ReadIntr(err_fd[0], chunk, POLL_CHUNK);
         if (n > 0) {
           err_buf = ReAlloc(err_buf, err_len + n + 1);
           MemCpy(err_buf + err_len, chunk, n);
           err_len += n;
+        } else if (n == 0) {
+          err_open = FALSE;
+          close(err_fd[0]);
+          pfds[1].fd = -1;
         } else {
           err_open = FALSE;
           close(err_fd[0]);
@@ -278,7 +366,13 @@ public I64 SpawnAndCapture(U8 *program, U8 **args,
   else { err_buf = MAlloc(1); err_buf[0] = 0; }
 
   // Wait for child.
-  if (waitpid(pid, &status, 0) < 0) {
+  // CORRECTION02: EINTR-safe reap. A signal during waitpid
+  // (SIGCHLD-aliases, timer interrupts, or any user-installed
+  // handler that doesn't restart syscalls) used to surface
+  // here as a hard failure returning -1 to the caller, even
+  // when the child completed normally. We now retry until the
+  // child is actually reaped or some other real error occurs.
+  if (WaitPidIntr(pid, &status, 0) < 0) {
     if (out) *out = out_buf;
     if (err) *err = err_buf;
     return -1;

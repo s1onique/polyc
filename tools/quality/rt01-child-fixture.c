@@ -1,6 +1,7 @@
 // tools/quality/rt01-child-fixture.c
 //
 // ACT-POLYC-TOOLING-RUNTIME01 C3 EVIDENCE — bounded
+// ACT-POLYC-TOOLING-RUNTIME01-CORRECTION02 — relocated binary
 // child fixture used as a deterministic test oracle.
 //
 // Behavior (driven by argv[1]):
@@ -15,6 +16,23 @@
 //
 // This file contains NO test policy. It is a deterministic
 // process-execution oracle only.
+//
+// Build / install instructions (CORRECTION02):
+//
+//   The compiled binary must NOT live in the source tree, because
+//   it would show up as untracked in `git status --porcelain` and
+//   violate the deterministic-artifact discipline. Build it into
+//   /tmp/ instead:
+//
+//     gcc -O0 -o /tmp/rt01-child-fixture tools/quality/rt01-child-fixture.c
+//
+//   The selftest invocation is unchanged:
+//
+//     /tmp/runtime01-selftest --child=/tmp/rt01-child-fixture ...
+//
+//   When the binary is needed by a tool that runs in-tree, the
+//   caller (e.g. runtime01-selftest.HC driver) builds it under
+//   /tmp/ as part of the same command line.
 
 #include <stdio.h>
 #include <stdlib.h>

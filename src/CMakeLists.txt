@@ -208,9 +208,23 @@ install(TARGETS hcc DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 # Install the header file
 install(FILES ${CMAKE_SOURCE_DIR}/holyc-lib/tos.HH DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
 
-# Custom installation step to run `hcc` during install
+# Custom installation step to run `hcc` during install.
+#
+# ACT-POLYC-TOOLING-RUNTIME01-CORRECTION02 adds errno_shim.c, a tiny
+# C file that must be linked into libtos.a and libtos.dylib so the
+# Tooling runtime's EINTR-retry paths can read errno. The hcc -lib
+# step compiles all.HC into libtos.a; the post-build `cc` step
+# adds errno_shim.o to libtos.a via `ar r` (which appends without
+# replacing other members) and rebuilds the dylib with errno_shim.o
+# included. macOS-only for now; glibc support lives in
+# ACT-POLYC-TOOLING-LINUX-PORT01.
 if (DEFINED HCC_LINK_SQLITE3)
-    install(CODE "execute_process(COMMAND \"${HCC_PATH}\" -DHCC_LINK_SQLITE3 -lib tos ${CMAKE_SOURCE_DIR}/holyc-lib/all.HC WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/holyc-lib)")
+    install(CODE "execute_process(COMMAND \"${HCC_PATH}\" -D__APPLE__ -DHCC_LINK_SQLITE3 -lib tos ${CMAKE_SOURCE_DIR}/holyc-lib/all.HC WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/holyc-lib)")
 else()
-  install(CODE "execute_process(COMMAND \"${HCC_PATH}\" -fPIC -lib tos ${CMAKE_SOURCE_DIR}/holyc-lib/all.HC WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/holyc-lib)")
+  install(CODE "execute_process(COMMAND \"${HCC_PATH}\" -D__APPLE__ -fPIC -lib tos ${CMAKE_SOURCE_DIR}/holyc-lib/all.HC WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/holyc-lib)")
+endif()
+if (APPLE)
+    install(CODE "execute_process(COMMAND cc -O0 -c errno_shim.c -o errno_shim.o WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/holyc-lib)")
+    install(CODE "execute_process(COMMAND ar r libtos.a errno_shim.o && ranlib libtos.a WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/holyc-lib)")
+    install(CODE "execute_process(COMMAND cc -dynamiclib -Wl,-install_name,${CMAKE_INSTALL_PREFIX}/lib/libtos.0.0.1.dylib all.o errno_shim.o -o libtos.dylib -lpthread -lc -lm WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/holyc-lib)")
 endif()

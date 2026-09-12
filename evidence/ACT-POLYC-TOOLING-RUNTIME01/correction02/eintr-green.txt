@@ -1,0 +1,35 @@
+=== ACT-POLYC-TOOLING-RUNTIME01-CORRECTION02 — EINTR GREEN witness ===
+
+Subject: SpawnAndCapture on CORRECTION02 libtos (EINTR-retry enabled)
+Date:    Sat Sep 12 10:53:35 MSK 2026
+
+RED observed under CORRECTION01:
+  Subject: SIGALRM-spam every 1ms while child floods 4 MiB to stderr
+  Observed: rc=-1, out=0, err=0  (capture aborted)
+
+GREEN observed under CORRECTION02:
+
+Subject: same scenario, EINTR-safe wrappers active
+  Mode: stderr-flood-4194304
+  Observed: rc=0 out=0 err=4194304
+
+  Mode: stdout-flood-4194304
+  Observed: rc=0 out=4194304 err=0
+
+  Mode: both-flood 4 MiB
+  Observed: rc=0 out=4194304 err=4194304
+
+All three modes: rc=0 (success), exact byte count, no truncation.
+
+=== AC13: signal-killed child via SIGABRT ===
+  Observed: rc=134 out=0 err=0
+  Expected: rc=134 (= 128 + SIGABRT[6])
+  Verdict: PASS — WaitDecode correctly identifies signal-killed child.
+
+=== AC22: missing executable ===
+  Observed: rc=127 out=0 err=0
+  Documented contract: missing executable -> execv fails -> child _exit(127)
+  -> parent waitpid observes exit code 127. RC=127, not RC=-1.
+  Note: rc=127 AMBIGUITY (could be legitimate child _exit(127)).
+        Resolving requires an explicit spawn vs. exec-disambiguation.
+        This is P2 residue.

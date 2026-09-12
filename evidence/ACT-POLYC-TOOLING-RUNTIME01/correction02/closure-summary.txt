@@ -1,0 +1,87 @@
+ACT-POLYC-TOOLING-RUNTIME01-CORRECTION02 — Closure Summary
+
+VERDICT:        PASS_WITH_NONBLOCKING_RESIDUE
+IDENTITY:       branch=main HEAD=<set at commit>
+PREDECESSOR:    ACT-POLYC-TOOLING-RUNTIME01-CORRECTION01 (PASS)
+                — corrected verdict remains PASS_WITH_NONBLOCKING_RESIDUE
+SUPERSEDES:     ACT-POLYC-TOOLING-RUNTIME01-CORRECTION01
+
+DEFECTS FIXED IN CORRECTION02:
+
+  P1 RUNTIME ROBUSTNESS
+    - poll(2), read(2), waitpid(2) now retry on EINTR.
+    - Added ErrnoGet shim (src/holyc-lib/errno_shim.c) that wraps
+      macOS __error(); glibc __errno_location() reserved for
+      ACT-POLYC-TOOLING-LINUX-PORT01.
+    - fork() also retried on EINTR.
+    - RED: SIGALRM-spam during 4 MiB stderr flood → CORRECTION01
+      returns rc=-1, capture aborted.
+    - GREEN: same scenario under CORRECTION02 → rc=0, all 4194304
+      bytes captured, exact accounting.
+
+  P0 EVIDENCE TRUTH
+    - AC13 (signal-killed child) was contradictory
+      ("PASS / not exercised"). Now exercised via SIGABRT child
+      fixture (sig_child_abrt.c → rc=134 = 128 + SIGABRT).
+    - AC22 (missing executable) was mis-stated (claimed rc=-1,
+      actually rc=127). Matrix corrected; rc=127 ambiguity
+      documented as P2 residue.
+    - GEP slice count corrected: 5/5 (hcc-exit, contains-gep-i8,
+      no-inbounds, no-ptrtoint, no-inttoptr).
+
+  P0 WORKTREE HYGIENE
+    - tools/quality/rt01-child-fixture (untracked binary) deleted.
+    - Build instructions in rt01-child-fixture.c updated to
+      target /tmp/ instead of source tree.
+    - `git status --porcelain` is clean modulo the ACT's own
+      modifications.
+
+CONSERVATION:
+  runtime01-selftest       18/18 PASS  (regression-matrix.txt)
+  llvm-gep01-test.sh       30/30 PASS  (gep-dogfood-rerun.txt)
+  CORRECTION02 patch       clean       (patch-hygiene.txt)
+  Full ACT range 456b71c..HEAD: 5 historical trailing-blank-EOF
+    findings (F14-protected, documented in patch-hygiene.txt)
+
+NEW SOURCE FILES (1):
+  src/holyc-lib/errno_shim.c  (+21 lines, C, single function)
+
+MODIFIED SOURCE FILES (1):
+  src/holyc-lib/tooling.HC    (+98 lines)
+    - EINTR-retry wrappers PollIntr/ReadIntr/WaitPidIntr
+    - fork() EINTR-retry in SpawnAndCapture
+    - poll/read in drain loop now use EINTR-safe variants
+    - waitpid at end of SpawnAndCapture now uses WaitPidIntr
+    - Errno() extern declaration
+    - platform #ifdef (macOS now, glibc reserved)
+
+MODIFIED EVIDENCE FILES (1):
+  evidence/ACT-POLYC-TOOLING-RUNTIME01/correction01/deadlock_probe.HC
+    - SUPERSEDED notice appended (args[] overrun documented)
+
+NEW EVIDENCE FILES (15 under correction02/):
+  README.md, eintr-red.txt, eintr-red-raw.txt, eintr-green.txt,
+  eintr-green-stderr.log, eintr-green-stdout.log, eintr-green-both.log,
+  ac13-green.log, ac22-green.log, regression-matrix.txt,
+  gep-dogfood-rerun.txt, residue-correction02.txt,
+  patch-hygiene.txt, ac-matrix-correction02.txt, closure-summary.txt,
+  signal-injector.c, sig_child.c, sig_child_both.c,
+  sig_child_abrt.c, ac13_simple.c
+
+TRAILERS (per docs/factory/GIT-METADATA.md v2):
+  ACT:                          ACT-POLYC-TOOLING-RUNTIME01-CORRECTION02
+  ACT-Phase:                    CLOSE
+  ACT-Verdict:                  PASS
+  ACT-Supersedes:               ACT-POLYC-TOOLING-RUNTIME01-CORRECTION01
+  ACT-Corrected-Verdict:        PASS_WITH_NONBLOCKING_RESIDUE
+
+RESIDUE (8 items, none blocking):
+  P1: PARSER-TERNARY-HANG01, LINUX-PORT01, args[] overrun in
+       superseded fixture (now SUPERSEDED-noted), rc=127 ambiguity
+  P2: trailing-blank-EOF hygiene, binary location policy,
+       external SIGTERM witness (sandbox-blocked), child-pgroup
+       detection
+
+NEXT ACT: ACT-POLYC-TOOLING-MIGRATE-GEP01
+  - Port llvm-gep01-test.sh from shell to direct-argv PolyC runtime.
+  - First concrete shell-LOC-reduction outcome in Track B.

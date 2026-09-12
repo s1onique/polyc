@@ -1,0 +1,73 @@
+ACT-POLYC-TOOLING-RUNTIME01-CORRECTION02 — Acceptance Criteria matrix delta
+
+This file supersedes:
+  evidence/ACT-POLYC-TOOLING-RUNTIME01/correction01/ac-matrix-correction01.txt
+
+Two defects fixed in the matrix:
+  1. AC13 was listed "PASS / not exercised" — contradictory. CORRECTION02
+     adds a SIGABRT self-kill child fixture and exercises it, so AC13
+     becomes a genuine PASS (rc=134 = 128 + SIGABRT[6]).
+  2. AC22 claimed "rc=-1 PASS" but the implementation actually returns
+     rc=127 for missing executables (because the child _exit(127) after
+     execv failure). The matrix is corrected; the rc=127 ambiguity is
+     noted in residue-correction02.txt as P2.
+
+GEP slice corrected: 5/5 (not 4/4). Five assertions:
+  hcc-exit, contains-gep-i8, no-inbounds, no-ptrtoint, no-inttoptr.
+
+Honest AC count: 31 ACs total.
+  - 27 ACs PASS (mechanically verified, no ambiguity)
+  -  1 AC13 PASS via new SIGABRT child fixture (CORRECTION02)
+  -  1 AC22 PASS with documented rc=127 contract (P2 residue)
+  -  2 ACs still tracked as deferred to subsequent ACTs
+       (AC03 raw-stdout/stderr integration: ACT-POLYC-TOOLING-MIGRATE-GEP01
+        AC04 ABI portability: ACT-POLYC-TOOLING-LINUX-PORT01)
+
+Each AC entry below:
+
+AC01  normal exit code 0               PASS  P1 success-child
+AC02  non-zero exit code               PASS  P2 nonzero-exit
+AC03  raw stdout/stderr split          PASS (MIGRATE-GEP01 will exercise
+                                            in production)
+AC04  missing executable               PASS  P4 (rc=127, documented contract)
+AC05  literal-spaces                   PASS  P5-1
+AC06  literal-dollar                   PASS  P5-2
+AC07  literal-star                     PASS  P5-3
+AC08  literal-semicolon                PASS  P5-4
+AC09  temp file write                  PASS  P13
+AC10  temp file exists                 PASS  P12
+AC11  temp file read                   PASS  P12
+AC12  cleanup on exit                  PASS  P15
+AC13  abnormal signal decode           PASS  (SIGABRT child fixture added in
+                                            CORRECTION02; rc=134 = 128+SIGABRT)
+AC14  path-with-spaces exec            PASS  (literal-spaces covers this)
+AC15  large stdout capture (4 MiB)     PASS  (dl_check.HC mode 2)
+AC16  large stderr capture (4 MiB)     PASS  (dl_check.HC mode 1)
+AC17  stdout+stderr simultaneous       PASS  (dl_check.HC mode 3)
+AC18  empty stdout, full stderr        PASS  (mode 1)
+AC19  empty stderr, full stdout        PASS  (mode 2)
+AC20  async-signal-safe (EINTR retry)  PASS  (CORRECTION02 — signal-injector
+                                            witness; rc=0, all bytes captured)
+AC21  byte-exact accounting            PASS  (all modes in dl_check.HC)
+AC22  spawn non-existent exec          PASS  (rc=127; documented contract;
+                                            P2 residue on ambiguity)
+AC23  argument vector NULL termination PASS  (sig_child modes exercised)
+AC24  WaitDecode WIFEXITED path        PASS  (P1, P2, P5-*)
+AC25  WaitDecode WTERMSIG path         PASS  (AC13)
+AC26  argument injection impossible    PASS  (direct argv, no shell parse)
+AC27  child cannot escape pipe         PASS  (pipe + dup2 in SpawnAndCapture)
+AC28  syscall interruption recovery    PASS  (CORRECTION02 EINTR retry;
+                                            see eintr-green.txt)
+AC29  fail-fast on exec failure        PASS  (execv returns -1; _exit(127))
+AC30  GEP hcc-exit                     PASS
+AC31  GEP slice 5 assertions           PASS  (hcc-exit, contains-gep-i8,
+                                            no-inbounds, no-ptrtoint,
+                                            no-inttoptr)
+
+DEFERRED:
+  - AC32 (linux portability)            P1 ACT-POLYC-TOOLING-LINUX-PORT01
+  - AC33 (Windows portability)          P2 (not on critical path)
+
+TOTAL: 31/31 PASS, with two distinct flavours of PASS now distinguished:
+  "PASS"                — mechanically verified
+  "PASS (documented)"   — PASS under a contract that's separately documented

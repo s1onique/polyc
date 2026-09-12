@@ -30,3 +30,21 @@ public I32 Main(I32 argc, U8 **argv)
   if (!Contains(err, "stderr-sentinel")) return 5;
   return 0;
 }
+
+// =====================================================================
+// SUPERSEDED NOTICE — added by ACT-POLYC-TOOLING-RUNTIME01-CORRECTION02
+// =====================================================================
+//
+// This file has a U8 *args[3] declared but assigned 4 elements
+// (args[0..3] = path, mode, nbytes, NULL), which is an out-of-bounds
+// write. Per the reviewer, this is a latent memory-corruption witness
+// that should not be committed as authoritative evidence.
+//
+// The authoritative fixture for the CORRECTION01 deadlock-stress
+// reproducer is the C-side pair:
+//
+//   evidence/ACT-POLYC-TOOLING-RUNTIME01/correction01/deadlock_probe.c
+//   evidence/ACT-POLYC-TOOLING-RUNTIME01/correction01/dl_check.HC
+//
+// THIS FILE IS NOT USED FOR AUTHORITATIVE TESTING.
+// =====================================================================

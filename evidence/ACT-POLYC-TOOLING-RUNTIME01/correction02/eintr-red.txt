@@ -1,0 +1,20 @@
+=== ACT-POLYC-TOOLING-RUNTIME01-CORRECTION02 — EINTR RED witness ===
+
+Subject: SpawnAndCapture on CORRECTION01 libtos (no EINTR retry)
+Date:    Sat Sep 12 10:45:43 MSK 2026
+
+Mechanism:
+  - Parent installs no-op SIGALRM handler.
+  - Spam thread sends SIGALRM to parent every 1ms (10us interval
+    in earlier tests; 1ms here is conservative).
+  - Child floods 4 MiB to stderr.
+  - Without EINTR retry, parent returns rc=-1 from SpawnAndCapture
+    and the captured bytes are not delivered to the caller.
+
+RED 1: stderr-flood-4194304 + SIGALRM-spam (1ms)
+---
+rc=-1 out=0 err=0
+
+Expected under CORRECTION02: rc=0, out=0, err=4194304
+Observed under CORRECTION01: rc=-1, out=0, err=0 (capture aborted,
+  waitpid interrupted by SIGALRM)
