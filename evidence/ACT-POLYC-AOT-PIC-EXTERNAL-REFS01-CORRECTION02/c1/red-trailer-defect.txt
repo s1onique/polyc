@@ -1,0 +1,100 @@
+=== Trailer-bookkeeping defect on 505b007 (CORRECTION01 CLOSE) ===
+
+-- Trailers present on 505b007 --
+ACT: ACT-POLYC-AOT-PIC-EXTERNAL-REFS01-CORRECTION01
+
+-- factory-halt-classification.py verdict --
+MODE=ACT
+STATUS=FAIL
+REASON=PASS verdict forbids HALT_CLASS (count=1)
+ACT=ACT-POLYC-AOT-PIC-EXTERNAL-REFS01-CORRECTION01
+PHASE=CLOSE
+VERDICT=PASS
+HALT_CLASS=GOVERNANCE
+BLOCKS_NEXT=NO
+
+-- v2-correct trailer set SHOULD have been --
+ACT: ACT-POLYC-AOT-PIC-EXTERNAL-REFS01-CORRECTION01
+ACT-Phase: CLOSE
+ACT-Verdict: PASS
+ACT-Supersedes: ACT-POLYC-AOT-PIC-EXTERNAL-REFS01
+ACT-Corrected-Verdict: HALT_GATE_PUSH_FAILED
+
+-- v2 section 2.4 forbids HALT_CLASS/BLOCKS_NEXT on PASS CLOSE --
+### 2.4 HALT classification trailers (additive)
+
+Per `ACT-POLYC-FACTORY-MECHANICAL-BLOCKING01` (and
+`docs/factory/DOCTRINE.md` §25), two ADDITIVE trailers
+classify every HALT_* CLOSE commit. They are required
+on every new `HALT_*` CLOSE commit and forbidden on
+every new `PASS(_...)*` CLOSE commit. Historical CLOSE
+commits are grandfathered (see §0.1 of the ACT).
+
+```
+HALT_CLASS:  GOVERNANCE | PRODUCTION | SAFETY |
+             AUTHORIZATION | DEPENDENCY
+
+BLOCKS_NEXT: YES | NO
+```
+
+Cardinality rules:
+
+* `HALT_CLASS` -- exactly 0 on a `PASS(_...)*` CLOSE;
+  exactly 1 on a `HALT_*` CLOSE.
+* `BLOCKS_NEXT` -- exactly 0 on a `PASS(_...)*` CLOSE;
+  exactly 1 on a `HALT_*` CLOSE.
+
+Combination rules:
+
+| HALT_CLASS      | BLOCKS_NEXT     |
+|-----------------|-----------------|
+| `GOVERNANCE`    | `NO`            |
+| `PRODUCTION`    | `YES`           |
+| `SAFETY`        | `YES`           |
+| `AUTHORIZATION` | `YES`           |
+| `DEPENDENCY`    | `YES` or `NO`   |
+
+Example:
+
+```
+ACT: ACT-POLYC-FACTORY-MECHANICAL-BLOCKING01
+ACT-Phase: CLOSE
+ACT-Verdict: HALT_GOVERNANCE_HALT
+HALT_CLASS: GOVERNANCE
+BLOCKS_NEXT: NO
+```
+
+-- v2 section 2.3 rule 2: ACT-Corrected-Verdict requires ACT-Supersedes --
+### 2.3 Supersession trailers (CLOSE only)
+
+For correction ACTs that supersede a predecessor:
+
+```
+ACT-Supersedes: ACT-POLYC-<predecessor-id>
+ACT-Corrected-Verdict: <token>
+```
+
+Rules:
+
+1. `ACT-Supersedes` is OPTIONAL. If present, it appears
+   ONLY on the CLOSE commit.
+2. `ACT-Corrected-Verdict` is OPTIONAL. If present, it
+   appears ONLY on the CLOSE commit AND
+   `ACT-Supersedes` MUST also be present.
+3. `ACT-Corrected-Verdict` value MUST itself match the
+   verdict grammar (it is a verdict about the predecessor).
+4. The correction's own CLOSE carries its own `ACT-Verdict`
+   (typically `PASS`); the corrected verdict is recorded in
+   `ACT-Corrected-Verdict`.
+
+Example:
+
+-- factory-append-only-test on current tree --
+  PASS  NC9  rc=1
+  PASS  NC10  rc=1
+  PASS  NC11  rc=0
+
+--- summary ---
+PASS=11
+FAIL=0
+STATUS=PASS
