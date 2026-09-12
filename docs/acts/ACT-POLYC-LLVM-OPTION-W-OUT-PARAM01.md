@@ -1138,6 +1138,172 @@ that gates C4.
 
 ---
 
+## 9.4 C3.4 RED: producer-opcode binding for PHI i1 normalisation
+
+The C3.3 §9.3.5 discriminator decided solely from
+`LLVMTypeOf(v) == LLVMInt1TypeInContext`, accepting ANY cached
+i1 — including those from `IR_FCMP`, function parameters typed
+as bool, or arbitrary `IR_ZEXT` / `IR_SEXT` into i1. But the
+frozen prose repeatedly narrowed the i1 -> i8 normalisation
+path to "IR_ICMP only". That is a contract leak: the
+discriminator permits more sources than the contract
+authorises.
+
+### §9.4.1 Producer-binding seam (new bounded map)
+
+The C4 implementation MUST add a bounded producer-identity
+seam: a map `IrValue id -> defining IrInstr *`, populated by
+walking every `IrBlock`'s instructions once during
+`llCreateBlocks` (or right after) and recording
+`instr->dst -> instr`. This is a structural twin of the
+existing `llbmInit / llbmGet / llbmSet` block map
+(`src/llvm-backend.c:250-273`).
+
+```c
+// new bounded map (declared in llvm-backend.c, analogous to LLBlockMap)
+typedef struct LLDefMap {
+    IrInstr **values;
+    u32 cap;
+} LLDefMap;
+
+static void lldmInit(LLDefMap *m, u32 cap) { ... }
+static void lldmGrow(LLDefMap *m, u32 needed) { ... }
+static void lldmSet(LLDefMap *m, u32 id, IrInstr *v) { ... }
+static IrInstr *lldmGet(LLDefMap *m, u32 id) {
+    if (!m || !m->values || id >= m->cap) return NULL;
+    return m->values[id];
+}
+
+// build pass (called once per function, alongside llCreateBlocks)
+static void llBuildDefMap(LLCtx *lc, IrFunction *fn) {
+    lldmInit(&lc->def_map, fn->next_value_id);
+    listForEach(fn->blocks) {
+        IrBlock *b = (IrBlock *)it->value;
+        listForEach(b->instructions) {
+            IrInstr *ins = (IrInstr *)it->value;
+            if (ins->dst) {
+                lldmSet(&lc->def_map, irVarId(ins->dst), ins);
+            }
+        }
+    }
+}
+```
+
+### §9.4.2 Corrected discriminator (§9.4 algorithm)
+
+The C3.3 §9.3.5 algorithm is sharpened: the i1 branch now
+gates on the producer opcode BEFORE attempting any
+normalisation.
+
+```c
+else if LLVMTypeOf(v) == LLVMInt1TypeInContext(lc->ctx) {
+    /* §9.4 producer check: MUST be IR_ICMP */
+    IrInstr *producer = lldmGet(&lc->def_map, irVarId(v));
+    if (!producer ||
+        producer->op != IR_ICMP ||
+        producer->dst != v) {
+        HALT_PHI_TYPE_CONTRACT_REQUIRED
+              "i1 PHI incoming must be produced by IR_ICMP;
+               got producer=%s or NULL. This is the §9.4
+               producer binding contract.";
+    }
+    /* PI-2 / PI-3 unchanged from C3.3 */
+    pred_term = LLVMGetBasicBlockTerminator(pred_bb);
+    if (!pred_term) HALT_PHI_EDGE_MATERIALIZATION_REQUIRED;
+    assert_instruction_in_block_before(
+        producer, pred_bb, pred_term);
+    /* build-position discipline unchanged */
+    save = LLVMGetInsertBlock(lc->bld);
+    LLVMPositionBuilderBefore(lc->bld, pred_term);
+    v = LLVMBuildZExt(lc->bld, v,
+          LLVMInt8TypeInContext(lc->ctx),
+          "phi_icmp_zext");
+    LLVMPositionBuilderAtEnd(lc->bld, save);
+}
+```
+
+Three predicates defend against the producer-leak:
+
+* **producer != NULL** — catches function-parameter i1s (no
+  defining IrInstr) and constants.
+* **producer->op == IR_ICMP** — catches `IR_FCMP`, `IR_TRUNC`
+  of a bool parameter, `IR_ZEXT`/`IR_SEXT` into i1, etc.
+* **producer->dst == v** — defends against def_map corruption
+  (id aliasing safety; the map is keyed by `IrValue id` so
+  this should always be true, but the explicit check makes
+  the contract self-evident).
+
+Constants and arguments bypass the producer check (they have
+no defining IrInstr → `producer == NULL`) but they are also
+LLVM i8 by construction. The discriminator naturally falls
+through to the "use directly" branch without ever entering
+the i1 branch.
+
+### §9.4.3 Counter vs halting semantic (Option A)
+
+C3.3 §9.3.2 said "exactly one increment per successfully
+accepted IR_PHI shape". The wording "successfully accepted"
+is ambiguous: does it fire before or after the PI guards?
+
+C3.4 freezes Option A: **counter increments at the top of the
+arm, BEFORE the PI guards, iff the SHAPE has been admitted by
+the dispatch contract**. The PI guards then either succeed
+(lowering completes) or HALT (lowering aborts). Either way,
+the counter has fired exactly once.
+
+Rationale (per expert): matches the existing capability
+accounting convention at `src/llvm-backend.c:2024, 2229, 2514,
+2846, 3029, 3153` (all increment once per opcode at the top
+of the arm, never per-instruction-inside-a-loop). Avoids
+needing transactional counter rollback.
+
+Wording sharpened: "successfully accepted" →
+"static shape admitted by dispatch contract". This is what
+the algorithm actually does.
+
+### §9.4.4 Mechanical witnesses
+
+* `evidence/c3.4/witness-leak.c` — 168 lines; no LLVM linkage.
+  Drives FOUR synthetic cases through both the current
+  (type-only) and corrected (producer-checked) discriminators
+  and demonstrates the leak. Verdict:
+  `OUTCOME_F_PRODUCER_LEAK_CONFIRMED`.
+* `evidence/c3.4/witness-producer.c` — 177 lines; no LLVM
+  linkage. Drives FOUR synthetic cases through the C3.4
+  corrected algorithm and prints counter deltas. Verdict:
+  `OUTCOME_G_PRODUCER_AND_COUNTER_CONFIRMED`.
+* `evidence/c3.4/BUILD.txt` — build commands + toolchain
+  identity; no binaries committed (P2 hygiene per expert).
+
+### §9.4.5 Historical C4_IMPL_B_AUTH table
+
+```text
+C3       AUTH=true    SUPERSEDED   (pre-dominance)
+C3.1     AUTH=true    SUPERSEDED   (pre-placement)
+C3.2     AUTH=false   SUPERSEDED   (pre-mechanics)
+C3.3     AUTH=true    SUPERSEDED   (pre-producer-binding)
+C3.4     AUTH=true    CURRENT      (P1-P6 all closed)
+```
+
+### §9.4.6 Scope (NO EXPANSION)
+
+* No new diagnostic macros (`HALT_PHI_TYPE_CONTRACT_REQUIRED`
+  added in C3.1; `HALT_PHI_EDGE_MATERIALIZATION_REQUIRED`
+  added in C3.2).
+* No new counter increments (`LL_INC_SHAPE_DEPENDENT`
+  pre-exists; C3.4 freeze is a SEMANTIC sharpening, not a new
+  increment).
+* No change to Gate 3 / Gate 4 / Gate 5 logic.
+* No change to `llType`, `llLowerValue`, `llCreateBlocks`.
+* One new bounded helper struct (`LLDefMap`) + three bounded
+  helpers (`lldmInit`, `lldmGet`, `lldmSet`), structural twins
+  of `llbmInit / llbmGet / llbmSet` (`src/llvm-backend.c:250-
+  273`). The producer check lives entirely inside the IR_PHI
+  dispatch arm.
+* No committed witness binaries (P2 hygiene per expert).
+
+---
+
 ## 10. Commit topology
 
 ```text
@@ -1226,7 +1392,37 @@ C3.3 RED (only after C3.2; NO production change)
                     pre-C4 contract requirements P1-P4
                     all closed)
 
-C4 IMPL-B     (ONLY IF C3.3 authorises it; currently READY)
+C3.4 RED (only after C3.3; NO production change)
+                mechanical-witness evidence of producer binding:
+                  - witness-leak: current (type-only) vs corrected
+                    (producer-checked) discriminator over 4 cases;
+                    current ACCEPTS IR_FCMP/param i1; corrected
+                    REJECTS them
+                  - witness-producer: producer-checked + per-PHI
+                    counter (Option A) over 4 cases:
+                      icmp_producer     -> delta=1 converted=1
+                      fcmp_producer     -> delta=0 converted=0
+                      param_i1          -> delta=0 converted=0
+                      rejected_i64      -> delta=0 converted=0
+                freeze contract correction:
+                  §9.4.1 producer-binding seam (LLDefMap, structural
+                         twin of LLBlockMap; built once per function
+                         by walking every IrBlock's instructions)
+                  §9.4.2 corrected discriminator: i1 branch gates on
+                         producer->op == IR_ICMP BEFORE attempting
+                         normalisation; on failure, halt with
+                         HALT_PHI_TYPE_CONTRACT_REQUIRED
+                  §9.4.3 counter semantic sharpened from "successfully
+                         accepted" to "static shape admitted by
+                         dispatch contract" (Option A)
+                reaffirm or revoke C4_IMPL_B_AUTH
+                  - C4_IMPL_B_AUTH = TRUE (reaffirmed;
+                    pre-C4 contract requirements P1-P6
+                    all closed)
+                P2 hygiene: NO witness binaries committed; sources +
+                  captured outputs + BUILD.txt only
+
+C4 IMPL-B     (ONLY IF C3.4 authorises it; currently READY)
                 add case IR_PHI: arm to llLowerInstr (SHAPE_DEPENDENT)
                 + STRENGTHENED shape validation:
                   - pair_count == CFG predecessor count
@@ -1234,8 +1430,9 @@ C4 IMPL-B     (ONLY IF C3.3 authorises it; currently READY)
                   - each predecessor represented exactly once
                   - incoming type compatible with I8 PHI
                   - no non-PHI precedes PHI in merge block
-                + AMENDED (C3.3) incoming-edge normalisation:
-                  - LL_INC_SHAPE_DEPENDENT(lc);  /* ONCE, at top */
+                + AMENDED (C3.4) incoming-edge normalisation:
+                  - LL_INC_SHAPE_DEPENDENT(lc);  /* ONCE, at top,
+                     Option A: static shape admitted */
                   - for each incoming (v, ir_pred):
                       pred_bb := llbmGet(&lc->blocks,
                                           ir_pred->id)
@@ -1244,18 +1441,30 @@ C4 IMPL-B     (ONLY IF C3.3 authorises it; currently READY)
                       term := LLVMGetBasicBlockTerminator(pred_bb)
                       if term == NULL:
                           HALT_PHI_EDGE_MATERIALIZATION_REQUIRED
-                      /* PI-3 narrow: assert v is in pred_bb
-                         before term (if normalisation needed) */
-                      if LLVMTypeOf(v) == i1 && phi_ty == i8:
+                      if LLVMTypeOf(v) == i8:
+                          use v directly
+                      else if LLVMTypeOf(v) == i1:
+                          producer := lldmGet(&lc->def_map,
+                                              irVarId(v))
+                          if !producer ||
+                             producer->op != IR_ICMP ||
+                             producer->dst != v:
+                              HALT_PHI_TYPE_CONTRACT_REQUIRED
                           save := LLVMGetInsertBlock(lc->bld)
                           LLVMPositionBuilderBefore(lc->bld, term)
                           v    := LLVMBuildZExt(lc->bld, v, i8,
                                                 "phi_icmp_zext")
                           LLVMPositionBuilderAtEnd(lc->bld, save)
                       add (v, pred_bb) to PHI incoming list
+                + new bounded producer-binding seam:
+                  - LLDefMap struct + lldmInit/lldmSet/lldmGet
+                    helpers (structural twins of LLBlockMap
+                    at src/llvm-backend.c:250-273)
+                  - llBuildDefMap(lc, fn) called once per function,
+                    alongside llCreateBlocks
                 + harness-contract alignment on
                   LL_INC_SHAPE_DEPENDENT counting semantics
-                  (per-PHI, not per-edge; AC49)
+                  (Option A: static shape admitted; AC55)
                 add LLVM_BACKEND_UNSUPPORTED_PHI_ORTHOGONAL_TO_CORE
                 update src/llvm-backend-cap.c IR_PHI to SHAPE_DEPENDENT
 
@@ -1517,6 +1726,49 @@ evidence rather than modifying old captures).
              verifying that lookup-only detects a
              not-pre-allocated block id while
              get-or-create silently fabricates one.
+
+### C3.4 producer-binding acceptance criteria
+
+53. AC53 C3.4 freezes the producer-opcode binding for the
+         i1 -> i8 normalization path. The discriminator
+         MUST verify, on the i1 branch:
+             producer = lldmGet(&lc->def_map, irVarId(v))
+             producer != NULL
+             producer->op == IR_ICMP
+             producer->dst == v
+         On any failure: HALT_PHI_TYPE_CONTRACT_REQUIRED.
+         Constants and arguments bypass the producer check
+         (they have no defining IrInstr) and are handled via
+         the i8 "use directly" branch.
+54. AC54 C3.4 freezes the producer-binding seam as a new
+         bounded map `def_map : IrValue id -> defining
+         IrInstr *` built during `llCreateBlocks` (or right
+         after). The map is a structural twin of the existing
+         block map (`LLBlockMap` at `src/llvm-backend.c:221-
+         273`); the implementation pattern is mirrored.
+55. AC55 C3.4 sharpens the counter semantic from
+         "successfully accepted" to "static shape admitted
+         by dispatch contract" (Option A). Counter increments
+         ONCE at the top of the arm, BEFORE PI guards,
+         regardless of subsequent halting. This matches the
+         existing capability accounting convention at
+         `src/llvm-backend.c:2024, 2229, 2514, 2846, 3029,
+         3153`.
+56. AC56 C3.4 requires mechanical-witness evidence of:
+         (a) producer leak (`evidence/c3.4/witness-leak.c`),
+             verifying that the current type-only discriminator
+             accepts IR_FCMP/function-parameter i1s while the
+             corrected producer-checked discriminator rejects
+             both; AND
+         (b) producer-checked + counter algorithm
+             (`evidence/c3.4/witness-producer.c`), verifying
+             that under the corrected discriminator + Option A
+             counter, only `phi_icmp_producer` contributes
+             `delta=1`, all three rejected cases contribute
+             `delta=0`, total counter = 1; AND
+         (c) no committed witness binaries (P2 hygiene per
+             expert). The C3.4 evidence is committed as
+             sources + captured outputs + `BUILD.txt` only.
 
 ---
 

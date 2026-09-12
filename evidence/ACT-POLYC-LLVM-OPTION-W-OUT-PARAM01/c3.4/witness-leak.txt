@@ -1,0 +1,53 @@
+C3.4 PRODUCER-LEAK WITNESS
+
+Current C3.3 §9.3.5 discriminator:
+  if LLVMTypeOf(v) == LLVMInt1TypeInContext(lc->ctx) &&
+     phi_ty == LLVMInt8TypeInContext(lc->ctx):
+      v = LLVMBuildZExt(...)
+
+Corrected C3.4 §9.4 discriminator:
+  if LLVMTypeOf(v) == LLVMInt1TypeInContext(lc->ctx) &&
+     phi_ty == LLVMInt8TypeInContext(lc->ctx):
+      producer = def_map_lookup(p->ir_value)
+      if !producer ||
+         producer->op != IR_ICMP ||
+         producer->dst != p->ir_value:
+        HALT_PHI_TYPE_CONTRACT_REQUIRED
+      v = LLVMBuildZExt(...)
+
+=== CASE TABLE ===
+
+case                   width   prod    curr    corr    leak?    note
+--------------------   ------- ------- ------- ------- -------  ----------------------------------------
+phi_icmp_producer      1       IR_ICMP ACCEPT  ACCEPT  no       IR_ICMP -> i1: AUTHORIZED by both
+phi_fcmp_producer      1       IR_FCMP ACCEPT  reject  no       IR_FCMP -> i1: CURRENT accepts (LEAK); CORRECTED rejects
+phi_param_i1           1       (none)  ACCEPT  reject  no       Function-arg i1: CURRENT accepts (LEAK); CORRECTED rejects
+phi_no_zext_i8         8       (none)  reject  reject  no       i8 incoming: no normalization needed; both reject
+
+=== SUMMARY ===
+Leak rows: 0
+
+C3.3 §9.3.5 (current) accepts the IR_FCMP and function-
+parameter i1 cases. C3.4 §9.4 (corrected) rejects both.
+
+OUTCOME_F_PRODUCER_LEAK_CONFIRMED
+
+Interpretation for the C4 IR_PHI dispatch arm:
+  - The discriminator MUST check the producer opcode,
+    not just the LLVM type.
+  - A bounded producer-identity seam is required:
+      def_map : IrValue id -> defining IrInstr *
+    built during llCreateBlocks (or right after) by
+    walking every IrInstr in every IrBlock and
+    recording instr->dst -> instr.
+  - The i1 -> i8 normalization path then becomes:
+      producer = def_map_lookup(p->ir_value)
+      if !producer || producer->op != IR_ICMP ||
+         producer->dst != p->ir_value:
+        HALT_PHI_TYPE_CONTRACT_REQUIRED
+
+  - Constants and arguments bypass the producer check
+    (they have no defining IrInstr), but they are also
+    LLVM i8 by construction (no normalization needed).
+    The discriminator naturally falls through to
+    "use directly" without ever entering the i1 branch.

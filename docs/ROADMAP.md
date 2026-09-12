@@ -1000,11 +1000,35 @@ OPTION-W-OUT-PARAM01  ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01
                                   witness-lookup:   truthful vs lies;
                                 C4_IMPL_B_AUTH = TRUE reaffirmed;
                                 C4 currently READY)
+    C3.4 RED      this commit (PHI producer-opcode binding:
+                                §9.4.1 producer-binding seam
+                                       (LLDefMap; structural twin
+                                        of LLBlockMap);
+                                §9.4.2 corrected discriminator:
+                                       i1 branch gates on
+                                       producer->op == IR_ICMP;
+                                §9.4.3 counter semantic sharpened
+                                       to "static shape admitted"
+                                       (Option A);
+                                mechanical witnesses:
+                                  witness-leak:    current vs
+                                                   corrected over
+                                                   4 cases;
+                                  witness-producer: corrected over
+                                                   4 cases -> 1;
+                                P2 hygiene: NO witness binaries
+                                  committed (sources + .txt +
+                                  BUILD.txt only);
+                                C4_IMPL_B_AUTH = TRUE reaffirmed;
+                                C4 currently READY (P1-P6 all
+                                closed))
     C4 IMPL-B     (next; strengthened PHI shape contract
-                                + §9.3 placement-corrected zext
+                                + §9.4 placement-corrected zext
                                 + §9.3.1 lookup-only PI-1
                                 + §9.3.2 per-PHI counter
-                                + PI-2/PI-3-narrow assertions)
+                                + §9.4.1 producer-binding seam
+                                + PI-2/PI-3-narrow assertions
+                                + producer-opcode check)
     C5 EVIDENCE-B (ScanIdent compiles + verifies + runs)
     C6 CLOSE      (final verdict)
 
@@ -1028,12 +1052,15 @@ OPTION-W-OUT-PARAM01  ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01
          B3 PHI dispatch arm impl       READY    (C4 contract freeze
                                                  complete; per-PHI
                                                  counter + lookup-only
-                                                 PI-1 frozen in C3.3)
+                                                 PI-1 + producer
+                                                 binding frozen)
        sub-sub-issues:
          B3.1 PI-1 lookup-only          CLOSED   (C3.3 §9.3.1)
          B3.2 per-PHI counter           CLOSED   (C3.3 §9.3.2)
          B3.3 PI-3 narrowing            CLOSED   (C3.3 §9.3.3)
          B3.4 mechanics (P/R/E split)   CLOSED   (C3.3 §9.3.4)
+         B3.5 producer-opcode binding   CLOSED   (C3.4 §9.4.1-§9.4.2)
+         B3.6 counter vs halting        CLOSED   (C3.4 §9.4.3)
 
   C2-A.1 RULE 5 REDEFINITION:
     Old: V feeds return (return-sink only)

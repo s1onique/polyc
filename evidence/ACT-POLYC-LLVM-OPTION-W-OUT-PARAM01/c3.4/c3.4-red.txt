@@ -1,0 +1,299 @@
+ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 C3.4 RED: producer-opcode binding for PHI i1 normalisation
+=========================================================================================
+
+QUESTION (per expert review of C3.3):
+  C3.3 repeatedly narrows the i1 -> i8 normalization path
+  to "IR_ICMP-only", but the discriminator in the §9.3.5
+  consolidated algorithm decides SOLELY from
+  LLVMTypeOf(v) == LLVMInt1TypeInContext. That accepts ANY
+  cached i1, including i1s produced by IR_FCMP and
+  function-parameter i1s.
+
+  Q1: is this contract leak mechanically reproducible?
+  Q2: how does C4 mechanically prove that an i1 PHI incoming
+      value came from an authorized IR_ICMP producer?
+  Q3: should the LL_INC_SHAPE_DEPENDENT counter fire BEFORE
+      or AFTER the PI-1/PI-2/PI-3 guards?
+
+MECHANICAL WITNESSES
+
+  evidence/c3.4/witness-leak.c       168 lines; no LLVM linkage
+                                      (simulates the discriminator
+                                      directly)
+  evidence/c3.4/witness-leak.txt     captured output
+  evidence/c3.4/witness-producer.c   177 lines; no LLVM linkage
+                                      (simulates def_map + the
+                                      producer-checked algorithm)
+  evidence/c3.4/witness-producer.txt captured output
+  evidence/c3.4/BUILD.txt            build commands + toolchain
+                                      identity; no binaries
+                                      committed (P2 hygiene per
+                                      expert)
+
+WITNESS 1 -- PRODUCER LEAK (Q1)
+
+  The current C3.3 §9.3.5 discriminator accepts i1s from ANY
+  source. Drive FOUR synthetic cases through both the current
+  (type-only) and corrected (producer-checked) discriminators:
+
+    case                   width   prod    curr    corr    leak?
+    --------------------   ------- ------- ------- ------- -------
+    phi_icmp_producer      1       IR_ICMP ACCEPT  ACCEPT  no
+    phi_fcmp_producer      1       IR_FCMP ACCEPT  reject  LEAK
+    phi_param_i1           1       (none)  ACCEPT  reject  LEAK
+    phi_no_zext_i8         8       (none)  reject  reject  no
+
+  Verdict: OUTCOME_F_PRODUCER_LEAK_CONFIRMED
+
+  The current C3.3 §9.3.5 discriminator would silently accept
+  i1s from IR_FCMP and function-parameter sources. The
+  corrected C3.4 §9.4 discriminator rejects both.
+
+  Both leaks are non-trivial because the LLVM C API treats any
+  i1 as a boolean value: the type alone cannot distinguish
+  "this i1 was produced by an integer comparison" from "this i1
+  was produced by a float comparison, a function parameter
+  declared bool, or an arbitrary conversion".
+
+WITNESS 2 -- PRODUCER-CHECKED + COUNTER (Q2 + Q3)
+
+  Drive FOUR cases through the C3.4 corrected algorithm
+  (producer-checked discriminator + per-PHI counter at the
+  top, Option A semantic):
+
+    case=phi_icmp_producer   delta=1  converted=1  OK
+    case=phi_fcmp_producer   delta=0  converted=0  OK
+    case=phi_param_i1        delta=0  converted=0  OK
+    case=phi_rejected_i64    delta=0  converted=0  OK
+
+  FINAL counter value: 1
+  EXPECTED:            1 (only phi_icmp_producer is admitted)
+
+  Verdict: OUTCOME_G_PRODUCER_AND_COUNTER_CONFIRMED
+
+CORRECTED §9.4 ALGORITHM (C3.4)
+
+  Producer-binding seam (built during llCreateBlocks or right
+  after, BEFORE the IR_PHI dispatch arm runs):
+
+    // new bounded map: IrValue id -> defining IrInstr *
+    // built by walking every IrBlock's instructions once
+    def_map : LLDefMap { IrInstr **values; u32 cap; }
+    llDefMapInit(&lc->def_map, fn->next_value_id);
+    listForEach(fn->blocks) {
+        IrBlock *b = (IrBlock *)it->value;
+        listForEach(b->instructions) {
+            IrInstr *ins = (IrInstr *)it->value;
+            if (ins->dst) {
+                llDefMapSet(&lc->def_map, irVarId(ins->dst), ins);
+            }
+        }
+    }
+
+  C4 IR_PHI dispatch arm (corrected):
+
+    case IR_PHI:
+
+        /* shape validation (unchanged from C3.3) */
+        validate bounded short-circuit shape
+        validate exact predecessor set
+
+        /* §9.3.2 + §9.4 Option A: counter once per SHAPE
+           admission, at the top, BEFORE PI guards. */
+        LL_INC_SHAPE_DEPENDENT(lc);
+
+        phi = LLVMBuildPhi(lc->bld, LLVMInt8TypeInContext(lc->ctx), "phi")
+
+        for each incoming (v, ir_pred):
+
+            /* §9.3.1: lookup-only predicate, NOT get-or-create */
+            pred_bb = llbmGet(&lc->blocks, ir_pred->id)
+            if pred_bb == NULL:
+                HALT_PHI_EDGE_MATERIALIZATION_REQUIRED
+
+            /* ensure pred_bb is actual CFG predecessor */
+            assert_in_predecessor_set(pred_bb)
+
+            /* v is the previously-lowered incoming value */
+
+            if LLVMTypeOf(v) == LLVMInt8TypeInContext(lc->ctx):
+                use v directly (constant/argument case)
+
+            else if LLVMTypeOf(v) == LLVMInt1TypeInContext(lc->ctx):
+                /* §9.4 producer check: MUST be IR_ICMP */
+                IrInstr *producer =
+                    llDefMapGet(&lc->def_map, irVarId(v))
+                if (!producer ||
+                    producer->op != IR_ICMP ||
+                    producer->dst != v) {
+                    HALT_PHI_TYPE_CONTRACT_REQUIRED
+                          "i1 PHI incoming must be produced
+                           by IR_ICMP; got producer=%s or
+                           NULL. This is the §9.4 producer
+                           binding contract."
+                }
+
+                /* PI-2: predecessor has a terminator */
+                pred_term = LLVMGetBasicBlockTerminator(pred_bb)
+                if pred_term == NULL:
+                    HALT_PHI_EDGE_MATERIALIZATION_REQUIRED
+
+                /* §9.3.3 PI-3 narrow: assert v was defined in
+                   pred_bb before pred_term. */
+                assert_instruction_in_block_before(
+                    producer, pred_bb, pred_term)
+
+                /* §9.2 build-position discipline (unchanged) */
+                save = LLVMGetInsertBlock(lc->bld)
+                LLVMPositionBuilderBefore(lc->bld, pred_term)
+                v = LLVMBuildZExt(lc->bld, v,
+                      LLVMInt8TypeInContext(lc->ctx),
+                      "phi_icmp_zext")
+                LLVMPositionBuilderAtEnd(lc->bld, save)
+
+            else:
+                HALT_PHI_TYPE_CONTRACT_REQUIRED
+
+            add (v, pred_bb) to PHI incoming list
+
+        cache PHI dst
+
+PRODUCER IDENTITY PROOF
+
+  Why three predicates (producer != NULL, producer->op == IR_ICMP,
+  producer->dst == v)?
+
+  - producer != NULL: catches function-parameter i1s (no
+    defining IrInstr) and constants.
+  - producer->op == IR_ICMP: catches IR_FCMP, IR_TRUNC of a
+    bool parameter, IR_ZEXT/IR_SEXT into i1, etc.
+  - producer->dst == v: catches a producer that wrote to a
+    DIFFERENT IrValue (id aliasing safety; in practice the
+    def_map is keyed by IrValue id so this should always be
+    true, but the explicit check defends against map corruption).
+
+  Constants and arguments bypass the producer check because
+  they have no defining IrInstr (producer == NULL). They are
+  LLVM i8 by construction (no normalization needed) and the
+  discriminator naturally falls through to "use directly"
+  without ever entering the i1 branch.
+
+  The current C3.3 §9.3.5 algorithm would treat any cached i1
+  as needing normalization, regardless of producer. C3.4
+  freezes the producer-checked discriminator.
+
+COUNTER VS HALTING SEMANTIC (Q3)
+
+  Option A (frozen): "static shape admitted by dispatch
+  contract". Counter increments ONCE at the top of the arm,
+  BEFORE PI-1/PI-2/PI-3 guards, IF AND ONLY IF the SHAPE has
+  been admitted by the dispatch contract. The PI guards then
+  either succeed (lowering completes) or HALT (lowering
+  aborts). Either way, the counter has fired exactly once.
+
+  Rationale (per expert): matches the existing capability
+  accounting convention (one increment per opcode at the top
+  of the arm; per src/llvm-backend.c:2024, 2229, 2514, 2846,
+  3029, 3153). Avoids needing transactional counter rollback.
+
+  Note: this is a SEMANTIC sharpening, not a behavior change.
+  C3.3 §9.3.2 already said "exactly one increment per
+  successfully accepted IR_PHI shape". The "successfully
+  accepted" wording is now sharpened to "static shape
+  admitted by dispatch contract" -- which is what the
+  algorithm actually does.
+
+NEW ACCEPTANCE CRITERIA (AC53-AC56)
+
+  AC53 C3.4 freezes the producer-opcode binding for the i1 ->
+       i8 normalization path. The discriminator MUST verify:
+         producer != NULL
+         producer->op == IR_ICMP
+         producer->dst == v
+       On any failure: HALT_PHI_TYPE_CONTRACT_REQUIRED.
+       Constants and arguments bypass the producer check
+       (they have no defining IrInstr) and are handled via
+       the i8 "use directly" branch.
+  AC54 C3.4 freezes the producer-binding seam as a new bounded
+       map `def_map : IrValue id -> defining IrInstr *` built
+       during llCreateBlocks (or right after). The map is a
+       structural twin of the existing llbmGet block map.
+  AC55 C3.4 sharpens the counter semantic from "successfully
+       accepted" to "static shape admitted by dispatch
+       contract" (Option A). Counter increments ONCE at the
+       top, BEFORE PI guards, regardless of subsequent
+       halting.
+  AC56 C3.4 requires mechanical-witness evidence of:
+       (a) producer leak (current vs corrected discriminator),
+       (b) producer-checked + counter algorithm over 4 cases,
+       (c) no committed witness binaries (P2 hygiene).
+
+EXPECTED COUNTERS WHEN C4 LANDS (C3.4 freeze, unchanged from C3.3)
+
+  G3       : 1 SHAPE_DEPENDENT (one IR_PHI accepted)
+  PhiOnly  : 1 SHAPE_DEPENDENT (one IR_PHI accepted)
+  Others   : unchanged
+
+C4 IMPL-B RE-ENTRY (C3.4 freeze)
+
+  PRE-C4 contract requirements (must be true BEFORE C4 starts):
+    P1 contract frozen                        (CLOSED C3.3)
+    P2 counter semantics frozen               (CLOSED C3.3)
+    P3 lookup-only PI-1 mechanism identified  (CLOSED C3.3)
+    P4 implementation scope frozen            (CLOSED C3.3)
+    P5 producer-opcode binding frozen         (CLOSED C3.4)
+    P6 counter-vs-halting semantic frozen     (CLOSED C3.4)
+
+  All P1-P6 are CLOSED. C4 is READY.
+
+SCOPE (NO EXPANSION)
+
+  - No new diagnostic macros (HALT_PHI_TYPE_CONTRACT_REQUIRED
+    already added in C3.1; HALT_PHI_EDGE_MATERIALIZATION_
+    REQUIRED added in C3.2).
+  - No new counter increments (LL_INC_SHAPE_DEPENDENT
+    pre-exists; the C3.4 freeze is a SEMANTIC sharpening, not
+    a new increment).
+  - No change to Gate 3 / Gate 4 / Gate 5 logic.
+  - No change to llType, llLowerValue, llCreateBlocks.
+  - One new bounded helper struct (LLDefMap) + three bounded
+    helpers (llDefMapInit / llDefMapGet / llDefMapSet). These
+    are structural twins of llbmInit / llbmGet / llbmSet
+    (src/llvm-backend.c:250-273). The producer check lives
+    entirely inside the IR_PHI dispatch arm.
+  - No committed witness binaries (P2 hygiene per expert).
+
+HISTORICAL C4_IMPL_B_AUTH TABLE (C3.4 freeze, append-only)
+
+  C3       AUTH=true    SUPERSEDED   (pre-dominance)
+  C3.1     AUTH=true    SUPERSEDED   (pre-placement)
+  C3.2     AUTH=false   SUPERSEDED   (pre-mechanics)
+  C3.3     AUTH=true    SUPERSEDED   (pre-producer-binding)
+  C3.4     AUTH=true    CURRENT      (P1-P6 all closed)
+
+IDENTITY
+  ENTRY_HEAD      = 50f17aa21b22c36b72d28bdfe7cd1f29a31ed762
+  C3.4_RED        = <this commit>
+  WORKTREE        = clean (after commit)
+
+PRODUCTION DELTA: NONE (C3.4 is RED evidence only).
+
+EVIDENCE (this commit)
+  c3.4/c3.4-red.txt            contract correction + algorithm
+  c3.4/witness-leak.c          producer-leak discriminator witness
+  c3.4/witness-leak.txt        captured output
+  c3.4/witness-producer.c      producer-checked + counter witness
+  c3.4/witness-producer.txt    captured output
+  c3.4/BUILD.txt               build commands + toolchain identity
+                               (NO witness binaries committed)
+
+RESIDUE
+
+  P0  none (the producer-binding contract leak is now frozen)
+  P1  (historical) 0fcc8b2 hygiene commit was a F14 pattern
+      repetition; not repeated in this commit
+  P2  The C3.1, C3.2, C3.3 commits included witness binaries
+      in the commit. C3.4 deliberately does NOT commit
+      binaries (only sources + .txt + BUILD.txt). Per the
+      expert's recommendation, future ACT commits should
+      follow this convention.

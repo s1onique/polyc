@@ -1,0 +1,34 @@
+ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 C3.4 RED: witness build instructions
+
+This ACT deliberately does NOT commit the compiled witness
+binaries (per the expert's P2 hygiene note: "committed:
+witness.c, witness.txt, build command, toolchain identity /
+not committed: witness executable").
+
+To reproduce the captured outputs:
+
+  cd evidence/ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01/c3.4
+
+  # Witness 1 -- producer leak (no LLVM linkage)
+  cc -o witness-leak witness-leak.c
+  ./witness-leak > witness-leak.txt.observed
+  diff witness-leak.txt witness-leak.txt.observed && echo OK
+
+  # Witness 2 -- producer-checked + counter (no LLVM linkage)
+  cc -o witness-producer witness-producer.c
+  ./witness-producer > witness-producer.txt.observed
+  diff witness-producer.txt witness-producer.txt.observed && echo OK
+
+Toolchain identity (captured at C3.1 commit; unchanged for C3.4):
+
+  $ cc --version
+  Apple clang version 17.0.0 (clang-1700.6.3.5)
+
+  $ llvm-config --version (for context; c3.4 witnesses do NOT
+                           require LLVM linkage)
+  22.1.8
+
+The witness binaries are reproducible from the committed sources
+on any POSIX cc. The captured .txt outputs in this directory
+are the canonical evidence; the build command above is the
+canonical reproduction procedure.
