@@ -1,0 +1,135 @@
+deadlock-green.txt
+==================
+
+ACT-POLYC-TOOLING-RUNTIME01-CORRECTION01
+GREEN evidence: corrected SpawnAndCapture drains both pipes
+concurrently via poll(2) and survives the same 4 MiB stderr-flood
+workload that hung the original implementation.
+
+When:    2026-09-12 10:25 MSK
+Where:   /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc2
+Subject: src/holyc-lib/tooling.HC (corrected in CORRECTION01)
+Fix:     replaced sequential drain with single poll(2) loop over
+         both read-ends. On any revents (POLLIN | POLLHUP | POLLERR)
+         attempt read; only close when read returns 0 (true EOF).
+         This eliminates the block-then-read dependency.
+
+------------------------------------------------------------
+Architecture (corrected)
+------------------------------------------------------------
+
+  while (out_open || err_open) {
+    poll(pfds[2], -1);          // wait for either side
+    if (out_open && pfds[0].revents & ANY) {
+      n = read(out_fd[0], ...);
+      if (n > 0) drain; else close;
+    }
+    if (err_open && pfds[1].revents & ANY) {
+      n = read(err_fd[0], ...);
+      if (n > 0) drain; else close;
+    }
+  }
+
+  // Why this is correct:
+  // * poll(2) atomically waits on both fds — no block-then-read.
+  // * Closing on read==0 (EOF) means the kernel has confirmed
+  //   the writer is gone AND the buffer is drained.
+  // * POLLHUP no longer triggers an immediate close — we always
+  //   try to read first, which is the only way to capture any
+  //   bytes the kernel still has buffered after the writer
+  //   closed.
+
+------------------------------------------------------------
+Build (GREEN dl_check against corrected tooling.HC)
+------------------------------------------------------------
+
+  $ cp /tmp/tooling-corrected.HC src/holyc-lib/tooling.HC   # restore fix
+  $ diff src/holyc-lib/tooling.HC /tmp/tooling-corrected.HC && echo RESTORED
+  RESTORED
+  $ ./hcc --install-dir=$(pwd)/build/test-prefix dl_check.HC -o dl_check
+  build=0
+
+------------------------------------------------------------
+Run (GREEN observed — all three stress modes complete)
+------------------------------------------------------------
+
+  $ /tmp/hcc-watchdog 30 ./dl_check
+  mode=stderr-flood rc=0 out=16 err=4194320
+    OUT_SENT
+    ERR_SENT
+  mode=stdout-flood rc=0 out=4194320 err=16
+    OUT_SENT
+    ERR_SENT
+  mode=interleave rc=0 out=2466 err=2466
+    OUT_SENT
+    ERR_SENT
+  exit=0
+
+  # Wall time: < 1 second (well under the 30s watchdog).
+  # Raw transcript: stress-green-raw.txt
+
+------------------------------------------------------------
+Byte accounting (definitive)
+------------------------------------------------------------
+
+  mode stderr-flood 4 MiB:
+    expected err_len = 4*1024*1024 + 16 = 4 194 320
+    actual   err_len = 4 194 320           ✓
+    stderr sentinel present                  ✓
+    stdout sentinel present                  ✓ (16 bytes)
+    child exit code rc=0                     ✓
+
+  mode stdout-flood 4 MiB:
+    expected out_len = 4*1024*1024 + 16 = 4 194 320
+    actual   out_len = 4 194 320           ✓
+    stdout sentinel present                  ✓
+    stderr sentinel present                  ✓ (16 bytes)
+    child exit code rc=0                     ✓
+
+  mode interleave 4 MiB / 8 KiB chunks:
+    expected out_len = err_len = 512 * avg("S123\n") ≈ 2466
+    actual   out_len = err_len = 2 466     ✓ (per side)
+    both sentinels present                   ✓
+    child exit code rc=0                     ✓
+
+------------------------------------------------------------
+Why POLLHUP-before-EOF matters (sub-bug found in CORRECTION01)
+------------------------------------------------------------
+
+  The first correction01 attempt (sequential event check
+  followed by immediate close on POLLHUP) DID break the deadlock
+  but lost the last ~57 KiB of stderr bytes in the 4 MiB flood.
+  Root cause: when child exits, kernel signals POLLHUP on
+  stderr's read-end while the pipe buffer still contains
+  un-flushed bytes. Closing immediately discards them.
+
+  Final fix: the inner branch is now
+    if (revents & (POLLIN | POLLHUP | POLLERR)) {
+      n = read(...);
+      if (n > 0) drain else close;
+    }
+  This way POLLHUP triggers ONE more read attempt, which returns
+  whatever is left in the kernel buffer (often the last write
+  before exit + the sentinel), then returns 0 on the next poll,
+  at which point we close.
+
+  Without this sub-fix, the corrected runtime would have lost
+  7 chunks + sentinel (57 360 bytes) in the stderr-flood mode,
+  producing "sentinel missing" instead of "sentinel found".
+
+------------------------------------------------------------
+Classification
+------------------------------------------------------------
+
+  Severity:  resolves the original P0 deadlock.
+  Sub-severity (POLLHUP-before-EOF): would have been P1 — the
+             fixture returned rc=0 with truncated output,
+             silently wrong rather than visibly hung. Caught
+             only because the fixture asserts sentinel presence.
+  Conservation (F10): all original SpawnAndCapture behavior
+             (P1..P5 selftest, verdict channel, GEP dogfood)
+             unchanged. Re-verified by full C3 selftest rerun
+             — see regression-matrix.txt — 18/18 PASS.
+
+------------------------------------------------------------
+End of GREEN evidence.

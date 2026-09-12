@@ -780,6 +780,88 @@ SHELL-INV01  ACT-POLYC-TOOLING-SHELL-INVENTORY01
   NEXT ACT = ACT-POLYC-TOOLING-SHELL-BUDGET01
 ```
 
+#### ACT-POLYC-TOOLING-RUNTIME01 status (CLOSED PASS at C5 CORRECTION01)
+
+```text
+TOOLING-RT01 ACT-POLYC-TOOLING-RUNTIME01
+  ENTRY      = 456b71c
+               (ACT-POLYC-TOOLING-SHELL-INVENTORY01-CORRECTION01)
+  C1 RED     = b055b8c
+  C2 IMPL    = b7d8937
+  C3 EVID    = a13280d
+  C4 CLOSE   = 5767740
+  C5 CORR01  = (this commit, trailer ACT-Verdict PASS)
+  VERDICT    = PASS
+
+  MISSION = prove the minimum PolyC tooling runtime:
+            direct-argv subprocess (no shell), exit code
+            decode, race-safe temp file, byte-exact substring
+            search, file existence check. No language change;
+            additive substrate only.
+
+  SUBSTRATE (src/holyc-lib/tooling.HC, ~265 LOC)
+    SpawnAndCapture(path, argv, &out, &err) -> I64 rc
+    WaitDecode(status) -> I64 rc
+    TmpFile(dir, prefix, &path) -> I32 fd
+    Contains(haystack, needle) -> Bool
+    FileExists(path) -> Bool
+    + POSIX extern "c": fork/pipe/dup2/close/execv/
+      waitpid/mkstemp/strstr/getpid/poll
+
+  CONCURRENT DRAIN (CORRECTION01)
+    Originally a sequential "drain stdout then stderr" loop;
+    this DEADLOCKED when the child wrote >64 KiB to one
+    stream while the other stayed open (pipe back-pressure
+    + open-fd dependency). Fixed with a single poll(2)
+    loop over both read-ends; on any revents (POLLIN |
+    POLLHUP | POLLERR) attempt read; close only on read==0
+    (true EOF). A sub-bug (POLLHUP-before-EOF byte loss)
+    was caught and fixed in the same commit.
+
+  GATES (post-C5)
+    runtime01-selftest                 18/0 PASS
+    llvm-gep01-test                    30/0 PASS (conservation)
+    4 MiB stderr-flood + open stdout   < 1s, all bytes captured
+    4 MiB stdout-flood + open stderr   < 1s, all bytes captured
+    interleave 4 MiB (512 chunks)      < 1s, sentinels on both sides
+    deadlocked (pre-fix) workload      HANG (10s watchdog kill)
+
+  EVIDENCE ROOT = evidence/ACT-POLYC-TOOLING-RUNTIME01/
+    c1/  capability matrix, runtime symbol search,
+         frozen API, RED probe, missing primitives, platform
+         policy (8 files)
+    c2/  implementation delta, probe build/run (3 files)
+    c3/  process matrix, verdict channel, conservation gates,
+         GEP dogfood, compiler-hang bisection (6 files)
+    c4/  closure summary, residue, patch hygiene,
+         acceptance matrix, roadmap update (5 files)
+    correction01/
+         deadlock-red.txt, deadlock-green.txt,
+         stress-red-raw.txt, stress-green-raw.txt,
+         regression-matrix.txt, gep-dogfood-rerun.txt,
+         ac-matrix-correction01.txt, patch-hygiene.txt,
+         residue-correction01.txt, roadmap-correction01.txt
+         (plus deadlock_probe.{c,HC}, dl_check.HC).
+
+  RESIDUE (F11)
+    P0 none
+    P1 ACT-POLYC-PARSER-TERNARY-HANG01 — discovered via
+       the C3 selftest (Bisected to one-line reproducer;
+       selftest rewritten with explicit if/return).
+       Track A / compiler critical path.
+    P2 Windows tooling-runtime backend (out of §5 scope).
+    P2 rc=127 ambiguity (execv-failed vs child-exited-127)
+       honestly documented; future ACT if a caller needs
+       the distinction.
+    P2 project-wide trailing-blank-EOF hygiene
+       (5 historical findings; F14 keeps them in place).
+
+  NEXT ACT = ACT-POLYC-TOOLING-MIGRATE-GEP01
+             (port llvm-gep01-test.sh to the new runtime
+              as the first concrete Track-B outcome;
+              SHELL-BUDGET01 remains a parallel option.)
+```
+
 The critical-path transition per ACT §24:
 
 ```text
@@ -789,9 +871,10 @@ The critical-path transition per ACT §24:
   ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02  CLOSED PASS
   ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME02   CLOSED PASS
   ACT-POLYC-LLVM-GEP01                    CLOSED PASS
-  ACT-POLYC-TOOLING-SHELL-INVENTORY01     CLOSED PASS  <-- this ACT (parallel)
-  (fresh B0 substrate recon)               NEXT  (compiler critical path)
-  (TOOLING-RUNTIME01 + SHELL-BUDGET01)     NEXT  (tooling self-host path)
+  ACT-POLYC-TOOLING-SHELL-INVENTORY01     CLOSED PASS  <-- Track B predecessor
+  ACT-POLYC-TOOLING-RUNTIME01             CLOSED PASS  <-- this ACT
+  ACT-POLYC-PARSER-TERNARY-HANG01         NEXT        (Track A / compiler)
+  ACT-POLYC-TOOLING-MIGRATE-GEP01         NEXT        (Track B / tooling)
 ```
 
 STRUCT01 / ARRAY01 remain deferred. BOOTSTRAP01 (B0

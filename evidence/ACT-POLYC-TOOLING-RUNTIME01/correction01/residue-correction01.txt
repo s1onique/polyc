@@ -1,0 +1,96 @@
+residue-correction01.txt
+========================
+
+ACT-POLYC-TOOLING-RUNTIME01-CORRECTION01
+Residue delta vs c4/residue.txt.
+
+When: 2026-09-12 MSK
+
+------------------------------------------------------------
+P0 — blocks the current/next decision
+------------------------------------------------------------
+
+  none this ACT.
+
+  (The SpawnAndCapture deadlock that triggered CORRECTION01
+  was a P0 inside ACT-POLYC-TOOLING-RUNTIME01 itself and is
+  now RESOLVED — see deadlock-red.txt / deadlock-green.txt.)
+
+------------------------------------------------------------
+P1 — important near-term work
+------------------------------------------------------------
+
+  ACT-POLYC-PARSER-TERNARY-HANG01
+    Carried forward from c4/residue.txt unchanged. The
+    parser hang discovered via C3 selftest bisection is
+    still pending. Not in scope for CORRECTION01 (F20:
+    compiler semantic widening forbidden).
+
+  POLLHUP-before-EOF race policy (sub-P1, NEW)
+    The corrected SpawnAndCapture now survives the kernel's
+    POLLHUP-while-buffer-non-empty edge. This is captured
+    in deadlock-green.txt §"Why POLLHUP-before-EOF matters".
+    Future maintainers who change the drain loop MUST
+    preserve the "always try to read on any revents" rule;
+    reverting to "close on POLLHUP without drain" silently
+    loses bytes (this was the actual bug found and fixed
+    in CORRECTION01 after the initial poll-loop rewrite).
+
+    Owner:    Track B / tooling-runtime.
+    Action:   no new ACT needed — the rule is now
+              documented inline in tooling.HC and in
+              deadlock-green.txt. Add a regression test
+              to runtime01-selftest if/when a "stderr-flood
+              4 MiB with stdout open" workload is needed
+              in the standard matrix; not required for
+              C5/CORRECTION01 closure.
+
+------------------------------------------------------------
+P2 — deferred improvement
+------------------------------------------------------------
+
+  Windows tooling-runtime backend
+    Carried forward from c4/residue.txt unchanged.
+
+  rc=127 ambiguity in SpawnAndCapture (NEW, honestly documented)
+    The current SpawnAndCapture treats both "execv failed
+    in the child" and "child exited with code 127" as
+    indistinguishable from the parent's perspective. Both
+    collapse to rc=127 via WaitDecode. This was already true
+    in the original C2 IMPL; CORRECTION01 did not change
+    it. Per F13 (evidence over prose), we acknowledge the
+    ambiguity here rather than claim non-existent precision.
+
+    Possible design (NOT implemented in CORRECTION01):
+      - Have child write a 1-byte status (0 = execv_ok,
+        1 = execv_failed, then errno) to a small third pipe
+        BEFORE the execv call.
+      - Parent reads status pipe first; if execv_failed,
+        return rc=-1 with errno propagated via an out-param.
+      - If execv_ok, proceed with current logic.
+    This would make the SpawnAndCapture API:
+        I64 rc = SpawnAndCapture(...);  // current
+        // vs
+        I64 rc = SpawnAndCaptureEx(..., I32 *execv_errno);
+    Cost: ~30 LOC + a third pipe + careful wait ordering.
+    Benefit: unambiguous "couldn't start" vs "started and
+             exited 127".
+    Owner: Track B / tooling-runtime.
+    Action: future ACT only if a caller actually needs
+            this distinction (e.g. a lint runner that
+            distinguishes "tool not installed" from
+            "tool found a 127-error in its data").
+
+  Project-wide trailing-blank-EOF hygiene (NEW)
+    Five files in c1/*, c4/*, and src/holyc-lib/tooling.HC
+    have trailing blank lines at EOF (see patch-hygiene.txt).
+    Per F14 these are immutable historical evidence. A
+    separate hygiene ACT could either (a) adopt a project-
+    wide "no trailing blank at EOF" policy and fix them
+    in a new commit (treating that commit as a deliberate
+    exception to F14 for cosmetic reasons), or (b) leave
+    them and document the policy in CONTRIBUTING.md.
+    Not in scope for CORRECTION01 (F7).
+
+------------------------------------------------------------
+End of residue delta.

@@ -1,0 +1,77 @@
+roadmap-correction01.txt
+========================
+
+ACT-POLYC-TOOLING-RUNTIME01-CORRECTION01
+Roadmap handoff delta vs the C4 roadmap-update proposal.
+
+When: 2026-09-12 MSK
+
+------------------------------------------------------------
+Background
+------------------------------------------------------------
+
+  C4/roadmap-update.txt proposed inserting a C4 closure
+  paragraph into docs/ROADMAP.md but did NOT actually edit
+  the file. This handoff delta gives the EXACT paragraph
+  that should now be inserted (the C4 closure + the
+  CORRECTION01 closure + the Track B transition to
+  NEXT=MIGRATE-GEP01).
+
+  This file is descriptive only. The authoritative ROADMAP
+  update is in the CORRECTION01 commit that adds a separate
+  diff hunk against docs/ROADMAP.md (see that commit's diff).
+
+------------------------------------------------------------
+Proposed paragraph (verbatim, for ROADMAP.md Track B section)
+------------------------------------------------------------
+
+  Track B — Tooling runtime substrate
+
+    SHELL-INVENTORY01 (84203a7)        PASS  shell-call
+                                          baseline + <=50 LOC ratchet
+    SHELL-INVENTORY01-CORRECTION01     PASS  arithmetic + inventory
+       (456b71c)                          fixes
+    TOOLING-RUNTIME01 (b055b8c,        PASS  direct-argv runtime,
+       b7d8937, a13280d, 5767740)         poll-based concurrent drain
+                                          survives 4 MiB stderr-flood
+                                          with stdout open; 18/18 selftest;
+                                          30/30 GEP01 dogfood.
+    TOOLING-RUNTIME01-CORRECTION01     PASS  fixes P0 deadlock
+                                          (SpawnAndCapture sequential
+                                          drain) and sub-bug (POLLHUP-
+                                          before-EOF byte-loss); all
+                                          previous ACs and GEP01
+                                          conservation re-asserted.
+
+  NEXT: MIGRATE-GEP01 — port one existing shell-based test
+        (e.g. a small llvm-spike) to the new direct-argv
+        runtime and demonstrate a measurable shell-LOC
+        reduction as the first concrete Track-B outcome.
+
+  Cross-track carryover:
+    ACT-POLYC-PARSER-TERNARY-HANG01 (Track A / compiler
+    critical path) — discovered via TOOLING-RUNTIME01's C3
+    selftest. See c4/residue.txt and c3/compiler-hang-
+    bisection.txt.
+
+------------------------------------------------------------
+Files in this directory
+------------------------------------------------------------
+
+  deadlock-red.txt        P0 architecture defect reproducer
+  deadlock-green.txt      corrected runtime, full byte accounting
+  deadlock_probe.c        stress fixture (C subprocess)
+  deadlock_probe.HC       alternate PolyC reproducer (not used)
+  dl_check.HC             PolyC host for the stress fixture
+  stress-red-raw.txt      raw RED transcript (10s watchdog kill)
+  stress-green-raw.txt    raw GREEN transcript (3 stress modes)
+  regression-matrix.txt   full C3 selftest rerun on corrected runtime
+  gep-dogfood-rerun.txt   llvm-gep01-test.sh conservation rerun
+  ac-matrix-correction01.txt  AC matrix delta (adds AC06, AC19)
+  patch-hygiene.txt       git diff --check on 456b71c..HEAD
+  residue-correction01.txt    residue delta vs c4/residue.txt
+  roadmap-correction01.txt    this file
+  README.md               directory index
+
+------------------------------------------------------------
+End of roadmap handoff.

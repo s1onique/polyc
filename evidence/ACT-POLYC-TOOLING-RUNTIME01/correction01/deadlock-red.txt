@@ -1,0 +1,129 @@
+deadlock-red.txt
+================
+
+ACT-POLYC-TOOLING-RUNTIME01-CORRECTION01
+RED evidence: P0 architecture defect in original SpawnAndCapture
+that deadlocks when child writes >64 KiB to one stream while the
+other stream stays open.
+
+When:    2026-09-12 10:24 MSK
+Where:   /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc2
+Subject: src/holyc-lib/tooling.HC @ b7d8937 (C2 IMPL closure)
+Bug:     sequential drain — `while (read out) {}; while (read err) {}`
+         in src/holyc-lib/tooling.HC @ b7d8937:SpawnAndCapture.
+Why:     If child writes >64 KiB to stderr (saturates pipe buffer)
+         while stdout is still open, parent blocks in read(out)
+         forever because stderr pipe is full → child blocked in
+         write(2) → nothing alive to close its write fd.
+Witness: 10s wall-clock watchdog kill of dl_check running on
+         /tmp/deadlock_probe stderr-flood 4194304.
+
+------------------------------------------------------------
+Pre-fix tooling.HC (excerpted from b7d8937)
+------------------------------------------------------------
+
+  // Sequential drain — the bug.
+  while (1) {
+    n = read(out_fd[0], chunk, POLL_CHUNK);
+    if (n > 0) { ... drain ...; continue; }
+    if (n == 0) break;
+    if (errno == EAGAIN || errno == EWOULDBLOCK) {
+      // wait for more data
+      ...
+    } else {
+      break;
+    }
+  }
+  while (1) {
+    n = read(err_fd[0], chunk, POLL_CHUNK);
+    ...
+  }
+
+------------------------------------------------------------
+Stress fixture (deadlock_probe.c)
+------------------------------------------------------------
+
+  mode "stderr-flood" <N>:
+    - fprintf(stdout, "stdout-sentinel\n");
+    - fflush(stdout);
+    - emit <N> bytes of 'X' to stderr (default 4 MiB)
+    - fprintf(stderr, "stderr-sentinel\n");
+    - fflush(stderr);
+    - return 0;
+
+------------------------------------------------------------
+Build (RED dl_check against pre-fix tooling.HC)
+------------------------------------------------------------
+
+  $ cp src/holyc-lib/tooling.HC /tmp/tooling-corrected.HC     # save fix
+  $ cp /tmp/tooling-orig.HC src/holyc-lib/tooling.HC          # load bug
+  $ ./hcc --install-dir=$(pwd)/build/test-prefix dl_check.HC -o dl_check
+  build=0
+
+  # dl_check.HC iterates stderr-flood / stdout-flood / interleave
+
+------------------------------------------------------------
+Run (RED observed — 10s watchdog kill)
+------------------------------------------------------------
+
+  $ /tmp/hcc-watchdog 10 ./dl_check
+  VERDICT=HANG (killed after 10s)
+  exit=124     # SIGTERM from watchdog
+
+  # Raw transcript: stress-red-raw.txt
+  # Expected output (from corrected run) for comparison:
+  #   mode=stderr-flood rc=0 out=16 err=4194320
+  #     OUT_SENT ERR_SENT
+  #   mode=stdout-flood rc=0 out=4194320 err=16
+  #     OUT_SENT ERR_SENT
+  #   mode=interleave rc=0 out=2466 err=2466
+  #     OUT_SENT ERR_SENT
+  # NONE of these lines appeared before the kill.
+
+------------------------------------------------------------
+Stack state at hang (verified by ps/lldb on a separate run)
+------------------------------------------------------------
+
+  parent hcc-runtime:
+    read(out_fd[0], ...)        # waiting for stdout EOF
+  child /tmp/deadlock_probe:
+    write(2, ..., 8192)         # blocked; stderr pipe full
+  parent never reaches stderr drain → never reads from err_fd[0]
+  child never finishes write(2) → never exits → never closes err_fd[1]
+  → permanent deadlock.
+
+------------------------------------------------------------
+Why "stderr-flood + open-stdout" specifically
+------------------------------------------------------------
+
+  * stdout-flood (4 MiB on stdout, stderr quiet) — does NOT
+    hang under the original sequential drain, because the
+    stderr pipe drains quickly (only the sentinel ≈ 16 bytes),
+    then the parent exits the err-drain loop immediately.
+  * stderr-flood with stdout open — DOES hang. The open
+    stdout fd in the child prevents EOF on out_fd[0] from
+    the parent's perspective until the child exits. Child
+    cannot exit because it's blocked writing to stderr.
+    This is the classic pipe-backpressure + open-fd deadlock.
+  * interleave — does NOT hang under the original sequential
+    drain, because both pipes fill/drain in lockstep.
+
+------------------------------------------------------------
+Classification
+------------------------------------------------------------
+
+  Severity:  P0 (runtime deadlock on a documented C3 fixture
+             workload; the runtime cannot claim to be "proven"
+             if it cannot drain 4 MiB without timing out)
+  Scope:     single function (SpawnAndCapture) — no API change
+  Visible to caller: yes — caller process hangs indefinitely
+             without timeout protection at the SpawnAndCapture
+             layer.
+  Conservative: confirmed via two independent reproductions:
+    (a) live child stdout open + 4 MiB stderr flood + watch
+        kill at 10s, and
+    (b) static read of the sequential-drain loop showing the
+        block-then-read ordering that creates the dependency.
+
+------------------------------------------------------------
+End of RED evidence.

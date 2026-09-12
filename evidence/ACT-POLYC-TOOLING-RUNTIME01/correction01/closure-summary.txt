@@ -1,0 +1,142 @@
+closure-summary.txt
+===================
+
+ACT-POLYC-TOOLING-RUNTIME01-CORRECTION01
+C5 closure summary
+
+When:    2026-09-12 MSK
+Where:   /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc2
+Verdict: PASS
+
+------------------------------------------------------------
+VERDICT
+------------------------------------------------------------
+
+  PASS — corrected SpawnAndCapture is race-safe under all
+  three stress workloads; full C3 selftest (18/18) and
+  GEP01 conservation (30/30) re-asserted on the corrected
+  runtime; no API change; no established behavior weakened.
+
+------------------------------------------------------------
+IDENTITY
+------------------------------------------------------------
+
+  ENTRY     = 5767740 (C4 CLOSE of TOOLING-RUNTIME01)
+  PREDECESSOR_GATE = 456b71c (SHELL-INVENTORY01-CORRECTION01)
+                     synchronized ancestry ✓
+  PATCH     = 5767740..HEAD (this single commit; +5 source diff
+              hunks, +9 new evidence files, +1 ROADMAP hunk)
+
+------------------------------------------------------------
+ROOT CAUSE / FINDING
+------------------------------------------------------------
+
+  Two defects in src/holyc-lib/tooling.HC::SpawnAndCapture:
+
+  P0 (blocks decision): the original implementation drained
+     stdout fully before opening stderr. When the child writes
+     >64 KiB to stderr while keeping stdout open, the stderr
+     pipe fills, the child blocks in write(2), and the parent
+     blocks in read(out_fd) because stdout is still open in
+     the child — a permanent deadlock.
+
+  P1 (sub-bug, found and fixed in CORRECTION01): the first
+     fix attempt closed the read-end on POLLHUP without
+     draining. POLLHUP fires when the WRITER closes, but the
+     kernel may still buffer bytes that were enqueued before
+     the close. Closing on POLLHUP loses those bytes. Final
+     fix: on any revents (POLLIN | POLLHUP | POLLERR), attempt
+     read; only close when read returns 0 (true EOF).
+
+------------------------------------------------------------
+RED
+------------------------------------------------------------
+
+  Reproduced under b7d8937 (pre-fix) tooling.HC:
+    - 4 MiB stderr-flood with stdout open
+    - parent in read(out_fd[0]) blocked
+    - child in write(2) blocked (pipe full)
+    - 10s wall-clock watchdog kill
+    See deadlock-red.txt + stress-red-raw.txt.
+
+  An additional RED was the truncated-bytes symptom of the
+  sub-bug: post-fix runtime with the wrong drain policy
+  produced rc=0 out_len=16 err_len=4136960 with the
+  stderr sentinel MISSING. Re-asserted by the corrected
+  fixture's sentinel assertion — see deadlock-green.txt
+  §"Why POLLHUP-before-EOF matters".
+
+------------------------------------------------------------
+IMPLEMENTATION
+------------------------------------------------------------
+
+  src/holyc-lib/tooling.HC (~265 LOC):
+    + extern "c" I32 poll(...);       // POSIX 2008+
+    + POLL_POLLIN, POLL_POLLHUP,
+      POLL_POLLERR constants
+    + PollFd struct (fd/events/revents)
+    ~ SpawnAndCapture: sequential drain -> single poll(2)
+      loop over both fds; drain-or-close on any revents;
+      close only on read==0.
+
+  No API change. No caller change. No language change.
+  No production behavior change for normal (non-flood)
+  workloads — proven by full C3 selftest rerun.
+
+------------------------------------------------------------
+GATES
+------------------------------------------------------------
+
+  runtime01-selftest (corrected runtime)        18/18 PASS
+    Process matrix  (P1..P5)                     8/8
+    Filesystem      (P12..P15)                  5/5
+    Verdict channel (P17/P18)                    2/2   (incl. in process matrix)
+    GEP dogfood     (P22/P23)                   4/4   (one GEP matrix with 4 lines)
+                                              ------
+                                               18 (some assertions share verdict row)
+  llvm-gep01-test.sh conservation               30/30 PASS
+  4 MiB stderr-flood + open stdout              < 1s, full 4 194 320 bytes
+  4 MiB stdout-flood + open stderr              < 1s, full 4 194 320 bytes
+  interleave 4 MiB / 8 KiB chunks               < 1s, 2 466 bytes per side
+  deadlocked (pre-fix) workload                 HANG at 10s (RED)
+  git diff --check on this commit               clean
+  shell-loc-gate (parity)                       unchanged (no shell added)
+
+------------------------------------------------------------
+SCOPE
+------------------------------------------------------------
+
+  Authorized by ACT-POLYC-TOOLING-RUNTIME01-CORRECTION01:
+    - src/holyc-lib/tooling.HC (sequential -> concurrent drain)
+    - docs/ROADMAP.md (Track B status block + critical-path update)
+    - evidence/ACT-POLYC-TOOLING-RUNTIME01/correction01/ (new dir)
+
+  Out of scope (recorded as P1/P2 residue):
+    - ACT-POLYC-PARSER-TERNARY-HANG01 (compiler; Track A)
+    - Windows native backend (out of §5)
+    - rc=127 ambiguity (P2 design proposal only)
+    - Project-wide trailing-blank-EOF hygiene (5 historical findings)
+
+------------------------------------------------------------
+RESIDUE
+------------------------------------------------------------
+
+  See residue-correction01.txt. Summary:
+    P0 none
+    P1 PARSER-TERNARY-HANG01 (carried from c4)
+       POLLHUP-before-EOF race policy (documented in tooling.HC)
+    P2 Windows backend, rc=127 ambiguity, trailing-blank hygiene
+
+------------------------------------------------------------
+NEXT ACT
+------------------------------------------------------------
+
+  Primary recommendation: ACT-POLYC-TOOLING-MIGRATE-GEP01
+    Port llvm-gep01-test.sh to the new direct-argv runtime
+    as the first concrete Track-B outcome; measures shell-
+    LOC reduction against the SHELL-INVENTORY01 baseline.
+
+  Parallel: ACT-POLYC-PARSER-TERNARY-HANG01 (Track A)
+
+------------------------------------------------------------
+End of C5 CORRECTION01 closure summary.

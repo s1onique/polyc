@@ -38,6 +38,7 @@ extern "c" U0 _exit(I32 status);
 extern "c" U8 *strstr(U8 *haystack, U8 *needle);
 
 extern "c" I32 getpid();
+extern "c" I32 poll(U0 *fds, U64 nfds, I32 timeout);
 
 // Constants for waitpid decoding (POSIX).
 #define WIFEXITED_FLAG   0x00   // status low byte is exit code
@@ -132,12 +133,36 @@ public I32 TmpFile(U8 *dir, U8 *prefix, U8 **out_path)
 // Returns:
 //   - exit code (0..255) on normal exit
 //   - 127 on missing/exec-failed child
+//     (Note: an executed child that legitimately
+//      exits 127 cannot be distinguished from an
+//      execv failure under the current contract.
+//      See c4/residue.txt for the P2 follow-up.)
 //   - 128 + signum on abnormal termination
 //   - -1 on parent-side fork failure
 //
 // On success, *out and *err point to malloc'd,
 // NUL-terminated buffers (caller must Free).
 // Either or both may be NULL on spawn failure.
+//
+// IMPORTANT: stdout and stderr are drained CONCURRENTLY
+// via poll(). The original implementation drained stdout
+// fully before draining stderr, which deadlocks whenever
+// stderr fills the pipe buffer while stdout remains
+// open (POSIX pipe capacity is bounded; pipe(7) warns
+// that applications must not rely on it). CORRECTION01.
+
+class PollFd
+{ /* struct pollfd */
+  I32 fd;
+  I16 events;
+  I16 revents;
+};
+
+#define POLL_POLLIN  0x0001
+#define POLL_POLLHUP 0x0010
+#define POLL_POLLERR 0x0008
+#define POLL_POLLNVAL 0x0020
+#define POLL_CHUNK   4096
 
 public I64 SpawnAndCapture(U8 *program, U8 **args,
                            U8 **out, U8 **err)
@@ -149,7 +174,7 @@ public I64 SpawnAndCapture(U8 *program, U8 **args,
   U8 *out_buf = NULL;
   U8 *err_buf = NULL;
   I64 out_len = 0, err_len = 0;
-  U8 chunk[4096];
+  U8 chunk[POLL_CHUNK];
   I64 n;
 
   if (out) *out = NULL;
@@ -164,7 +189,6 @@ public I64 SpawnAndCapture(U8 *program, U8 **args,
 
   pid = fork();
   if (pid < 0) {
-    // fork failed
     close(out_fd[0]); close(out_fd[1]);
     close(err_fd[0]); close(err_fd[1]);
     return -1;
@@ -184,37 +208,74 @@ public I64 SpawnAndCapture(U8 *program, U8 **args,
   }
 
   // ----- parent -----
+  // Close the write ends; we only read.
   close(out_fd[1]);
   close(err_fd[1]);
 
-  // Drain stdout.
-  while ((n = read(out_fd[0], chunk, sizeof(chunk))) > 0) {
-    out_buf = ReAlloc(out_buf, out_len + n + 1);
-    MemCpy(out_buf + out_len, chunk, n);
-    out_len += n;
-  }
-  close(out_fd[0]);
-  if (out_buf) out_buf[out_len] = 0;
-  if (out_len == 0 && !out_buf) {
-    // Allocate a tiny empty buffer so callers always
-    // get a non-NULL freeable pointer (or NULL by their
-    // own convention).
-    out_buf = MAlloc(1);
-    out_buf[0] = 0;
-  }
+  // Concurrent drain via poll(2).
+  //
+  // POLLHUP may fire WHILE the kernel still has buffered
+  // bytes in the pipe (writer closed, but we have not
+  // consumed the buffer yet). Closing on POLLHUP without
+  // draining loses those bytes. Correct policy: on any
+  // event (POLLIN / POLLHUP / POLLERR), attempt a read;
+  // only close when read returns 0 (true EOF).
+  PollFd pfds[2];
+  pfds[0].fd = out_fd[0];
+  pfds[0].events = POLL_POLLIN;
+  pfds[0].revents = 0;
+  pfds[1].fd = err_fd[0];
+  pfds[1].events = POLL_POLLIN;
+  pfds[1].revents = 0;
+  Bool out_open = TRUE, err_open = TRUE;
 
-  // Drain stderr.
-  while ((n = read(err_fd[0], chunk, sizeof(chunk))) > 0) {
-    err_buf = ReAlloc(err_buf, err_len + n + 1);
-    MemCpy(err_buf + err_len, chunk, n);
-    err_len += n;
+  while (out_open || err_open) {
+    I32 nfd = poll(pfds, 2, -1);
+    if (nfd < 0) break;
+
+    // stdout
+    if (out_open) {
+      I16 r = pfds[0].revents;
+      if (r & (POLL_POLLIN | POLL_POLLHUP | POLL_POLLERR)) {
+        n = read(out_fd[0], chunk, POLL_CHUNK);
+        if (n > 0) {
+          out_buf = ReAlloc(out_buf, out_len + n + 1);
+          MemCpy(out_buf + out_len, chunk, n);
+          out_len += n;
+        } else {
+          // n == 0 (EOF) or n < 0 (error); in both cases
+          // the writer is gone — close this fd.
+          out_open = FALSE;
+          close(out_fd[0]);
+          pfds[0].fd = -1;
+        }
+      }
+    }
+    // stderr
+    if (err_open) {
+      I16 r = pfds[1].revents;
+      if (r & (POLL_POLLIN | POLL_POLLHUP | POLL_POLLERR)) {
+        n = read(err_fd[0], chunk, POLL_CHUNK);
+        if (n > 0) {
+          err_buf = ReAlloc(err_buf, err_len + n + 1);
+          MemCpy(err_buf + err_len, chunk, n);
+          err_len += n;
+        } else {
+          err_open = FALSE;
+          close(err_fd[0]);
+          pfds[1].fd = -1;
+        }
+      }
+    }
   }
-  close(err_fd[0]);
+  // Defensive close (in case we exited via nfd<0).
+  if (out_open) close(out_fd[0]);
+  if (err_open) close(err_fd[0]);
+
+  if (out_buf) out_buf[out_len] = 0;
+  else { out_buf = MAlloc(1); out_buf[0] = 0; }
   if (err_buf) err_buf[err_len] = 0;
-  if (err_len == 0 && !err_buf) {
-    err_buf = MAlloc(1);
-    err_buf[0] = 0;
-  }
+  else { err_buf = MAlloc(1); err_buf[0] = 0; }
 
   // Wait for child.
   if (waitpid(pid, &status, 0) < 0) {
