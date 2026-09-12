@@ -1221,7 +1221,8 @@ The critical-path transition per ACT §24:
   ACT-POLYC-TOOLING-RUNTIME01             CLOSED PASS
   ACT-POLYC-TOOLING-MIGRATE-GEP01         CLOSED PASS  <-- Track B first migration
   ACT-POLYC-PARSER-TERNARY-HANG01         NEXT        (Track A / compiler)
-  ACT-POLYC-TOOLING-SHELL-BUDGET01        NEXT        (Track B / tooling)
+  ACT-POLYC-TOOLING-SHELL-BUDGET01        CLOSED PASS  <-- Track B budget ratchet
+  ACT-POLYC-TOOLING-MIGRATE-FACTORY-HALT-CLASSIFICATION01  NEXT  (Track B migration, mechanically selected)
 ```
 
 STRUCT01 / ARRAY01 remain deferred. BOOTSTRAP01 (B0
@@ -1688,6 +1689,77 @@ evidence/.../c5/frozen-binding-classification.txt and
 evidence/.../c6/residue.txt for the classification.
 
 
+#### ACT-POLYC-TOOLING-SHELL-BUDGET01 status (CLOSED PASS)
+
+SHELL-BUD01 ACT-POLYC-TOOLING-SHELL-BUDGET01
+
+  MISSION = freeze the per-file shell-debt budget manifest
+            (docs/factory/SHELL-BUDGET.tsv) and a deterministic
+            verifier (scripts/quality/shell-budget-gate.sh) that
+            enforces monotonic per-file and aggregate debt
+            shrinkage, zero-budget for migrated paths, and an
+            unbudgeted-path rejector.
+
+  BUDGET (C3 freeze)
+    TRACKED_SHELL_FILES       = 43   (42 tracked + 1 MIGRATED row)
+    TOTAL_SHELL_LOC           = 9337
+    GRANDFATHERED_FILES       = 36
+    GRANDFATHERED_LOC         = 9173
+    CURRENT_SHELL_DEBT        = 9173
+    SHELL_DEBT_BUDGET         = 9175
+    TINY_FILES                = 7
+    MIGRATED_ROWS             = 1    (scripts/quality/llvm-gep01-test.sh)
+
+  GATES (post-cutover)
+    shell-budget-gate         PASS  aggregate=9175
+    shell-budget-gate-test    PASS  N1..N10 (9 implemented; N7 is
+                                        shell-loc-gate's domain)
+    factory-v2-test           PASS  35/0
+    factory-append-only-test  PASS  11/0
+    factory-closure-status    PASS  6/0
+    factory-halt-class-test   PASS  12/0
+    gate-fast                 PASS
+
+  MIGRATED-PATH RATCHET (B3)
+    Reintroducing scripts/quality/llvm-gep01-test.sh:
+      FAIL  shell-budget-gate
+      B3  MIGRATED path exists: scripts/quality/llvm-gep01-test.sh
+    Resurrected path is mechanically rejected.
+
+  MIGRATION QUEUE (top row)
+    rank=1  scripts/quality/factory-halt-classification-test.sh
+            182 LOC  score=17  category=NEEDS_FACTORY_REDESIGN
+
+  NEXT ACT = ACT-POLYC-TOOLING-MIGRATE-FACTORY-HALT-CLASSIFICATION01
+    Mechanical selection (top of the C2 scoring matrix).
+    Subject migrates both the checker and its test runner
+    together so the closure-status truth-machine is whole.
+
+  RESIDUE
+    P0  shell-loc-gate FAILing on a pre-existing stale
+        baseline.txt (introduced by MECHANICAL-BLOCKING01
+        adding factory-halt-classification-* without
+        updating baseline.txt).  Not regressed by this
+        ACT; documented at evidence/.../c1/existing-gate-capabilities.txt.
+    P1  llvm-gep01 PolyC harness test (AC31) is
+        ENVIRONMENTALLY_UNAVAILABLE in this build (no
+        `hcc`).  Equivalent to the GEP01 closure residue
+        classification; not regressed.
+    P2  Migration queue category classifications are
+        conservative (NEEDS_FACTORY_REDESIGN dominates);
+        the next migration ACT may itself reclassify.
+
+  EVIDENCE ROOT = evidence/ACT-POLYC-TOOLING-SHELL-BUDGET01/
+    c1/  shell-inventory.tsv, current-loc-summary.txt,
+         grandfathered-files.txt, tiny-files.txt,
+         migrated-files.txt, existing-gate-capabilities.txt,
+         red-reproduction.txt, r4-probe.txt,
+         migration-score-inputs.tsv, README.md
+    c2/  budget-before.tsv, budget-after.tsv,
+         verifier-tests.txt, migrated-path-test.txt,
+         aggregate-monotonicity.txt, migration-queue.tsv,
+         score.py, gate-results.txt, README.md
+    c3/  conservation-gates.txt, README.md
 ```
 
 #### C2 IMPL authorisation gate (HISTORICAL; C2 IMPL closed at 09072b5)
