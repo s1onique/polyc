@@ -1,0 +1,37 @@
+=== AC-C1.1: GEP01_PASS/FAIL rows in both logs ===
+PRE-C2 log:
+428:GEP01_PASS=26
+429:GEP01_FAIL=4
+
+POST-C2 log:
+220:GEP01_PASS=26
+221:GEP01_FAIL=4
+
+=== AC-C1.2: SHAPE_DEPENDENT rows in both logs ===
+PRE-C2:
+401:FAIL  readat.HC: SHAPE_DEPENDENT counter = ? (expected >= 1): shape_dependent marker not found in stderr
+POST-C2:
+193:FAIL  readat.HC: SHAPE_DEPENDENT counter = ? (expected >= 1): shape_dependent marker not found in stderr
+
+=== AC-C1.3: cap verifier output rows in both logs ===
+PRE-C2:
+422:FAIL  IR_GEP = REJECTED (sibling opcode still rejected): could not read cap verifier output
+423:FAIL  IR_LEA = REJECTED (sibling opcode still rejected): could not read cap verifier output
+424:FAIL  IR_IADD = SUPPORTED (preserved, GEP01 is per-shape subset): could not read cap verifier output
+POST-C2:
+214:FAIL  IR_GEP = REJECTED (sibling opcode still rejected): could not read cap verifier output
+215:FAIL  IR_LEA = REJECTED (sibling opcode still rejected): could not read cap verifier output
+216:FAIL  IR_IADD = SUPPORTED (preserved, GEP01 is per-shape subset): could not read cap verifier output
+
+=== Byte-identical text comparison ===
+-- SHAPE_DEPENDENT row text --
+(diff exit 0 = same/empty)
+
+-- cap verifier rows text --
+(diff exit 0 = same/empty)
+
+=== Conclusion ===
+All 4 FAIL row TEXTS are byte-identical pre-/post- C2.
+The mechanical failure mode is unchanged by the production delta.
+production_subject_attribute = NONE.
+Under v2 §25: HALT_CLASS=GOVERNANCE, BLOCKS_NEXT=NO.

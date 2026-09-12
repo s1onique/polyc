@@ -1,0 +1,25 @@
+=== Hygiene witness (a): [dbg] stale log lines ===
+Captured from evidence/ACT-POLYC-AOT-PIC-EXTERNAL-REFS01/c3/jit-unit-test.txt:176-178
+
+-- Lines present in captured log --
+176:[dbg] slow-path asm_funcs scan for '_FREE' (17 entries)
+177:[dbg]   cand fname='MAlloc' asmfname='_MALLOC' kind=276
+178:[dbg]   cand fname='Free' asmfname='_FREE' kind=276
+
+-- grep for [dbg] across all src/ source files --
+(empty -> source does NOT emit these lines today; they are stale capture residue)
+
+=== Hygiene witness (b): seven fresh aarch64.c warnings ===
+Captured via: make clean && make llvm-all | grep aarch64.c warning
+
+/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/src/aarch64.c:307:50: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/src/aarch64.c:309:48: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/src/aarch64.c:312:52: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/src/aarch64.c:315:49: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/src/aarch64.c:318:48: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/src/aarch64.c:321:52: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/src/aarch64.c:337:37: warning: comparison of integers of different signs: 'u64' (aka 'unsigned long') and 'int' [-Wsign-compare]
+
+=== Hygiene witness (c): gep01 four-failure aggregate ===
+See c1/red-grep-summary.txt for byte-identical proof of non-attribution.
+Decomposed in ACT §6 into D1 (1 row) + D2 (3 rows).
