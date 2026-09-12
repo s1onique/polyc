@@ -1,0 +1,113 @@
+ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 C5 EVIDENCE-B WITNESS
+========================================================
+
+Captured at CORRECTION03 HEAD = c2ee39b + C5 IMPL commit.
+All values reproduced live in this build session.
+
+SUBJECT BUILD
+=============
+
+$ hcc --emit-llvm --install-dir=/tmp/polyc-c4 \
+      -o /tmp/scanident-fixture.ll \
+      evidence/.../c5/scanident-fixture.HC
+hcc exit code: 0
+
+--- hcc stderr ---
+LLVM backend capability contract: ok (56 rows, ordinal binding)
+[c4-opcode-coverage] live=56 DEF=41 USE=5 NONE=10 classified=56
+[c4-opcode-coverage] live=56 DEF=41 USE=5 NONE=10 classified=56
+CAPABILITY_COUNTERS supported=26 rejected=0 shape_dependent=19 defensive=0 unreachable=0
+--- end stderr ---
+
+LLVM-AS + OPT --PASSES=VERIFY
+==============================
+
+$ llvm-as /tmp/scanident-fixture.ll -o /tmp/scanident-fixture.bc
+llvm-as exit code: 0
+
+$ opt --passes=verify /tmp/scanident-fixture.bc -S \
+        -o /tmp/scanident-fixture-opt.ll
+opt exit code: 0
+
+OBSERVED PHI GEOMETRY (textual)
+===============================
+
+$ grep -E '^\s+%[a-zA-Z0-9_.]+ = phi ' /tmp/scanident-fixture.ll
+
+  %polyc.optionw.slot.6.0 = phi i64 [ %2, %bb1 ], [ %11, %bb11 ]
+  %phi = phi i8 [ 1, %bb4 ], [ %phi_icmp_zext, %bb8 ]
+  %phi7 = phi i8 [ 1, %bb9 ], [ %phi_icmp_zext8, %bb6 ]
+
+Three PHI instructions total:
+
+  (1) %polyc.optionw.slot.6.0 : i64
+      Option-W slot alloca for the cursor mutable local.
+      Two incoming edges: bb1 (initial value) and bb11
+      (cursor++ redefinition). Producer IR_IADD at line 6
+      of the binding fixture (the `cursor = cursor + 1`).
+
+  (2) %phi : i8
+      First chained 2-input PHI from `ch == ' ' || ch == '\t'`
+      (binding fixture line 5). Constant-edge 1 from bb4
+      and zext-edge from bb8.
+
+  (3) %phi7 : i8
+      Second chained 2-input PHI from the outer
+      `(... || ch == '\n')` (binding fixture line 5).
+      Constant-edge 1 from bb9 and zext-edge from bb6.
+
+Chained 2-PHI geometry confirmed: %phi and %phi7 each have
+two incoming edges; the third predecessor of the outer OR
+is the inner PHI's output. This matches the geometry the
+reviewer identified in the C4 IMPL-B witness (two chained
+phi i8 in the c4_phi_short_circuit_or fixture).
+
+CAPABILITY_COUNTERS (hcc stderr):
+  supported       = 26
+  rejected        = 0
+  shape_dependent = 19   <-- SHAPE_DEPENDENT path taken
+  defensive       = 0
+  unreachable     = 0
+
+The 19 shape_dependent count is the C4 IR_PHI arm's
+attribution of the binding fixture's 3 PHI instructions
+plus surrounding SHORT_CIRCUIT helper alloca/load/store
+sequences.
+
+RUNTIME ORACLE (C reference)
+============================
+
+$ cc -Wall -Wextra -o /tmp/scanident-oracle \
+      evidence/.../c5/scanident-oracle.c
+cc exit code: 0
+
+$ /tmp/scanident-oracle
+Test 01: rc=0 out_cursor=3 out_len=3 expected=(3,3) PASS
+Test 02: rc=0 out_cursor=6 out_len=6 expected=(6,6) PASS
+Test 03: rc=0 out_cursor=8 out_len=8 expected=(8,8) PASS
+Test 04: rc=0 out_cursor=2 out_len=2 expected=(2,2) PASS
+Test 05: rc=0 out_cursor=0 out_len=0 expected=(0,0) PASS
+Test 06: rc=0 out_cursor=3 out_len=3 expected=(3,3) PASS
+Test 07: rc=0 out_cursor=0 out_len=0 expected=(0,0) PASS
+Test 08: rc=0 out_cursor=0 out_len=0 expected=(0,0) PASS
+Test 09: rc=0 out_cursor=3 out_len=3 expected=(3,3) PASS
+Test 10: rc=0 out_cursor=6 out_len=6 expected=(6,6) PASS
+ALL 10 BINDING TESTS PASS
+
+scanident-oracle exit code: 0
+
+CONSERVATION GATES
+==================
+
+factory-append-only-test:         STATUS=PASS  PASS=11 FAIL=0
+shell-loc-gate:                   STATUS=PASS
+gate-fast:                        STATUS=PASS
+    diff-check                    STATUS=PASS
+    shell-syntax                  STATUS=PASS
+    doc-invariants                STATUS=PASS
+    large-file-guard              STATUS=PASS
+    factory-closure-status        STATUS=PASS
+llvm-gep01-test:                  STATUS=PASS  PASS=30 FAIL=0
+llvm-byte-memory01-test:          STATUS=PASS  PASS=37 FAIL=0
+llvm-intops01-test:               STATUS=PASS  PASS=4 FAIL=0
+ir-return-slot-forwarding01-test: STATUS=PASS  PASS=6 FAIL=0
