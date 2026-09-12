@@ -721,6 +721,65 @@ GEP01   ACT-POLYC-LLVM-GEP01
   NEXT ACT = fresh B0 substrate recon
 ```
 
+#### ACT-POLYC-TOOLING-SHELL-INVENTORY01 status (CLOSED PASS at C2)
+
+```text
+SHELL-INV01  ACT-POLYC-TOOLING-SHELL-INVENTORY01
+  ENTRY    = d0e7f4f041e05fa58a74c029a8f6dd55a178b323
+             (ACT-POLYC-LLVM-GEP01-CORRECTION01)
+  C1+C2    = 84203a76cc2e0e1cd5f6b3f3a6c9e8d7c4b1a09
+             (combined RED+IMPL: ACT doc, baseline.txt,
+              inventory.sh, shell-loc-gate.sh, role-taxonomy,
+              inventory, gate-output, grandfathered-debt,
+              closure-summary)
+  C3 CLOSE = (this commit, trailer ACT-Verdict PASS)
+  VERDICT  = PASS
+
+  MISSION = freeze the <=50 LOC shell-file ratchet and
+            record the migration debt baseline.
+
+  BASELINE (at ACT entry, scripts/quality/*.sh)
+    Total shell files:        22
+    Total shell LOC:        6,131
+    Files over 50 LOC:        19  (grandfathered)
+    Median LOC:               ~250
+
+  RATCHET (effective from this ACT forward)
+    NEW shell files: <=50 LOC enforced by
+                     scripts/quality/shell-loc-gate.sh
+    EXISTING shell files: cannot grow past frozen baseline.
+
+  GATES (post-C2)
+    gate-fast                       PASS
+    factory-append-only-test        11/0 PASS
+    factory-closure-status          PASS (PAIR_OK=6)
+    llvm-gep01-test                 30/0 PASS
+    llvm-byte-memory01-test         37/0 PASS
+    llvm-cap-table-verifier         PASS
+
+  NOTE: gate-fast does not yet invoke shell-loc-gate; that
+        wiring is downstream work in SHELL-BUDGET01 so that
+        this ACT does not modify the existing 250-LOC
+        gate-fast script (F7 scope conservation).
+
+  EVIDENCE ROOT = evidence/ACT-POLYC-TOOLING-SHELL-INVENTORY01/
+    c1/  baseline.txt (20 rows; pre-ACT shell LOC),
+         inventory.txt (inventory.sh output),
+         role-taxonomy.txt
+    c2/  gate-output.txt, grandfathered-debt.txt,
+         closure-summary.txt
+
+  RESIDUE (F11)
+    P0 none
+    P1 5,710 grandfathered shell LOC across 19 files.
+       First migration candidate: llvm-gep01-test.sh.
+    P2 factory-v2-*.sh migration deferred until after
+       TOOLING-RUNTIME01 adds PolyC subprocess + text-match
+       primitives.
+
+  NEXT ACT = ACT-POLYC-TOOLING-SHELL-BUDGET01
+```
+
 The critical-path transition per ACT §24:
 
 ```text
@@ -729,8 +788,10 @@ The critical-path transition per ACT §24:
   ACT-POLYC-IR-RETURN-SLOT-FORWARDING01   HALT_SECOND_SEAM_REQUIRED
   ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02  CLOSED PASS
   ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME02   CLOSED PASS
-  ACT-POLYC-LLVM-GEP01                    CLOSED PASS  <-- this ACT
-  (fresh B0 substrate recon)               NEXT
+  ACT-POLYC-LLVM-GEP01                    CLOSED PASS
+  ACT-POLYC-TOOLING-SHELL-INVENTORY01     CLOSED PASS  <-- this ACT (parallel)
+  (fresh B0 substrate recon)               NEXT  (compiler critical path)
+  (TOOLING-RUNTIME01 + SHELL-BUDGET01)     NEXT  (tooling self-host path)
 ```
 
 STRUCT01 / ARRAY01 remain deferred. BOOTSTRAP01 (B0
