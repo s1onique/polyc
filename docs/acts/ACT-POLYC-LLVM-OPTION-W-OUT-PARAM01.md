@@ -1791,6 +1791,163 @@ correctly written with trailing-newline hygiene from the start
 and did NOT modify any historical evidence file. Do not
 propagate the misframed sentence into C4/C5.
 
+### 9.6.8 Two-phase IR_PHI arm structure (counter-disciplined)
+
+C3.4's authoritative witness records that an unauthorized
+`i1` producer such as `IR_FCMP` contributes `delta=0`
+(converted=0), while the prose also says
+`LL_INC_SHAPE_DEPENDENT` fires "at the top" after
+static-shape admission. Those two statements are compatible
+**only if producer authorization is part of static-shape
+admission**, not something discovered after the counter has
+already fired.
+
+Therefore the C4 IR_PHI arm MUST be structured as two phases
+with no overlap:
+
+```text
+Phase A — PURE STATIC ADMISSION
+    * NO LLVM mutation.
+    * NO counter increment yet.
+    * Validate PHI destination shape.
+    * Validate PHI is first non-PHI-free in merge block.
+    * Validate exact CFG-predecessor set
+      (incoming count == predecessor count,
+       each incoming block is actual predecessor,
+       each predecessor represented exactly once).
+    * For each incoming pair (ir_in, ir_pred):
+        - Classify the incoming neutral producer.
+        - If incoming will lower as i1:
+              producer = lldmGet(... irVarId(ir_in));
+              require producer != NULL;
+              require producer->op == IR_ICMP;
+              require producer->dst == ir_in;
+        - Reject every unauthorized static shape HERE,
+          BEFORE the counter fires.
+    * Only after every incoming pair has cleared
+      static admission: LL_INC_SHAPE_DEPENDENT(lc);
+      exactly once per admitted IR_PHI.
+
+Phase B — MATERIALIZATION
+    * phi = LLVMBuildPhi(...);
+    * For each incoming pair (ir_in, ir_pred):
+        - LLVMValueRef llvm_in = llLowerValue(lc, ir_in);
+        - pred_bb  = llbmGet(...);   /* lookup only */
+        - require  pred_bb != NULL;  /* PI-1 */
+        - pred_term = LLVMGetBasicBlockTerminator(pred_bb);
+        - require  pred_term != NULL; /* PI-2 */
+        - If LLVMTypeOf(llvm_in) == i1:
+              /* producer already statically authorized in
+                 Phase A; PI-3 here is dynamic evidence that
+                 the existing LLVM ICMP actually lives in
+                 pred_bb before pred_term. */
+              require llvm instruction belongs to pred_bb
+                      and precedes pred_term;
+              saved = LLVMGetInsertBlock(lc->bld);
+              LLVMPositionBuilderBefore(lc->bld, pred_term);
+              llvm_in = LLVMBuildZExt(
+                  lc->bld, llvm_in, i8, "phi_icmp_zext");
+              LLVMPositionBuilderAtEnd(lc->bld, saved);
+        - LLVMAddIncoming(phi, &llvm_in, &pred_bb, 1);
+    * Cache the PHI destination mapping.
+    * break;
+```
+
+This separation cleanly realizes C3.4's "Option A"
+semantics:
+
+```text
+IR_FCMP i1 / parameter i1
+    -> rejected in Phase A
+    -> SHAPE_DEPENDENT delta = 0
+       (counter never fires)
+
+valid IR_ICMP PHI
+    -> Phase A passes; counter fires delta = 1 exactly once
+    -> Phase B materializes the PHI
+
+valid static PHI but broken PI-1 / PI-2 / PI-3
+    -> counter has already fired (delta = 1)
+    -> HALT during dynamic/materialization invariant
+    -> counter increment is NOT undone
+```
+
+This guarantees:
+
+```text
+counter delta == number of statically admitted IR_PHI
+PI halt     == broken implementation/materialization invariant
+```
+
+The two failure categories are NOT conflated.
+
+### 9.6.9 C4 proof packet matrix (mechanical acceptance)
+
+The C4 commit must prove these fences as one bounded
+semantic step, with the real hcc implementation:
+
+```text
+Fence                                     Required observation
+─────────────────────────────────────     ──────────────────────
+valid G3 (formerly UNSUPPORTED_PHI)       compiler success
+                                          LLVM verify PASS
+                                          (llvm-as + opt -passes=verify)
+PhiOnly                                   success
+                                          counter delta exactly 1
+duplicate TMP definition                  HALT_PHI_TYPE_CONTRACT_REQUIRED
+                                          counter delta 0
+IR_FCMP -> i1                             HALT_PHI_TYPE_CONTRACT_REQUIRED
+                                          counter delta 0
+i1 without producer                       HALT_PHI_TYPE_CONTRACT_REQUIRED
+                                          counter delta 0
+missing mapped predecessor                HALT_PHI_EDGE_MATERIALIZATION_REQUIRED
+                                          counter delta 1
+                                          (Phase A admitted;
+                                           Phase B halted on PI-1)
+predecessor without terminator            HALT_PHI_EDGE_MATERIALIZATION_REQUIRED
+                                          counter delta 1
+                                          (Phase B halted on PI-2)
+mutable multi-def LOCAL                   NO LLDefMap halt
+                                          existing Option-W behaviour preserved
+zext placement                            emitted in predecessor
+                                          before terminator
+                                          NEVER in merge block after PHI
+G3 / PhiOnly generated LLVM               llvm-as PASS
+                                          opt -passes=verify PASS
+Option-W regression                       P5-P11 all remain PASS
+                                          (LOCAL-MEM2REG fixtures stay green)
+case-B set                                {IR_IADD, IR_ISUB} unchanged
+PHI accounting                            one increment per admitted PHI
+                                          never per incoming edge
+                                          never per emitted zext
+```
+
+The real-hcc witness must capture both pre- and
+post-lowering evidence proving the `zext` is physically
+in the predecessor block before its terminator. Verifier
+success alone is not sufficient evidence of placement,
+because the placement rule is itself an acceptance
+criterion.
+
+### 9.6.10 C4 scope lock (negative architecture list)
+
+C4 may change the bounded LLVM backend and capability
+classification needed for the frozen seam. It MUST NOT:
+
+```text
+* generalize PHIs beyond the frozen short-circuit i8 shape
+* admit IR_FCMP or arbitrary i1
+* change the frontend PHI producer
+* introduce frontend SSA reconstruction
+* widen Option-W Gate 3 / Gate 4 / Gate 5
+* alter the {iadd, isub} case-B set
+* touch ARRAY / STRUCT / GEP semantics
+* run the integrated ScanIdent acceptance as C5 evidence
+* repair historical C3.1-C3.3 binaries, EOF findings,
+  "<this commit>" identity fields, or other historical
+  evidence (per F14 these are immutable residue)
+```
+
 ---
 
 ## 10. Commit topology
