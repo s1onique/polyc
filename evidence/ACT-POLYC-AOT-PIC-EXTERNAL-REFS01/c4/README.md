@@ -7,15 +7,17 @@ failures are out of scope for this ACT; see residue.txt).
 ## IDENTITY
   branch = main
   entry commit = 718b3d7  C1 RED ACT-POLYC-AOT-PIC-EXTERNAL-REFS01
-  final commit = 2c8a456   C2.1 IMPL ACT-POLYC-AOT-PIC-EXTERNAL-REFS01
-  git rev-parse HEAD       = 2c8a4560179398bc4a7b2aee005454df50fed1b4
-  ACT pre-C2 commit       = 83474d6 (first-cut C2 IMPL, superseded
-                              by 2c8a456 which extends the classifier
-                              and routes IR_LOAD_DEREF / IR_STORE_DEREF
-                              through the new helper)
-  predecessor              = ACT-POLYC-INTEGRATION-PREBOOTSTRAP-GATES01-
-                              CORRECTION01  (CLOSED with HALT_AOT_PIC_
-                              EXTERNAL_REFS_REQUIRED)
+  final commit = 377175c  evidence: refresh c3/unit-test.txt
+  C2 IMPL      = 83474d6  first-cut (IR_LEA + AST_EXTERN_FUNC only)
+  C2.1 IMPL    = 2c8a456  classifier + asm-fname bridge + data
+                          globals + IR_LOAD_DEREF / IR_STORE_DEREF
+  C3+C4 commit = 2b1786c  evidence packet + closure pack
+  ROADMAP commit = 9c90c15 ROADMAP status section
+  Evidence refresh = 377175c (re-ran unit-test against final tree,
+                              per F9 fresh-tree evidence)
+  predecessor    = ACT-POLYC-INTEGRATION-PREBOOTSTRAP-GATES01-
+                    CORRECTION01  (CLOSED with HALT_AOT_PIC_
+                    EXTERNAL_REFS_REQUIRED)
 
 ## ROOT CAUSE / FINDING
 
