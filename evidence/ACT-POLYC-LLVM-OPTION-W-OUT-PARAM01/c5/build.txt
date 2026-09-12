@@ -1,7 +1,7 @@
 ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 C5 EVIDENCE-B BUILD
 ======================================================
 
-Date prepared: 2026-12-09
+Date prepared: 2026-09-12
 Predecessor: c2ee39b (CORRECTION03 CLOSE)
 
 This file describes the exact reproduction procedure for
@@ -87,6 +87,59 @@ cursor - start, return 0). The tests use self-contained
 inputs that match the binding fixture's title-driven
 expected outputs.
 
+RUNTIME BINDING (hcc-emitted subject -> native executable)
+=========================================================
+This is the end-to-end runtime evidence. The hcc-emitted
+LLVM IR is compiled to a native aarch64 object, linked
+with a driver that declares ScanIdent externally (the
+driver does NOT define ScanIdent itself), and the 10
+binding-fixture cases are run against the hcc-generated
+binary.
+
+$ clang -c /tmp/scanident-fixture.ll -o /tmp/scanident-subject.o
+$ cc -Wall -Wextra -c scanident-runtime-driver.c \
+        -o /tmp/scanident-runtime-driver.o
+$ clang /tmp/scanident-runtime-driver.o /tmp/scanident-subject.o \
+          -o /tmp/scanident-runtime
+$ /tmp/scanident-runtime
+
+Expected:
+* clang -c exit code: 0 (warning: overriding module target triple)
+* cc -c exit code: 0
+* clang link exit code: 0
+* runtime exit code: 0
+* "ALL 10 BINDING TESTS PASS (hcc-emitted subject)" on stdout
+
+This proves that the hcc-emitted LLVM IR for ScanIdent
+computes the correct runtime outputs for every binding
+case when executed as a native binary.
+
+RUNTIME COMPARISON (reference vs hcc-emitted subject)
+=====================================================
+A stronger arrangement: the C reference (in
+scanident-comparison.c, compiled with cc) and the
+hcc-emitted subject (linked from scanident-subject.o) are
+run side-by-side on each of the 10 binding cases. Both
+implementations must agree AND match the binding
+fixture's expected outputs.
+
+$ cc -Wall -Wextra -c scanident-comparison.c \
+        -o /tmp/scanident-comparison.o
+$ clang /tmp/scanident-comparison.o /tmp/scanident-subject.o \
+          -o /tmp/scanident-comparison
+$ /tmp/scanident-comparison
+
+Expected:
+* exit code 0
+* "ALL 10 BINDING TESTS PASS (ref == sub == expected)"
+* 10 lines of "Test NN: ... sub_ok=Y agree=Y PASS"
+
+This proves that the hcc-emitted LLVM IR is
+behaviorally equivalent to the C reference for every
+binding-fixture case.
+
+CONSERVATION GATES
+==================
 CONSERVATION GATES
 ==================
 $ bash scripts/quality/factory-append-only-test.sh
@@ -101,9 +154,16 @@ All 7 must report STATUS=PASS.
 
 WITNESS OUTPUTS
 ===============
-  /tmp/scanident-fixture.ll       hcc-emitted IR
-  /tmp/scanident-fixture.bc       llvm-as bitcode
-  /tmp/scanident-fixture-opt.ll   opt --passes=verify output
-  /tmp/scanident-fixture.err      hcc stderr
-  /tmp/scanident-oracle           C reference binary
-  /tmp/scanident-oracle stdout    10/10 binding tests
+  /tmp/scanident-fixture.ll             hcc-emitted IR
+  /tmp/scanident-fixture.bc             llvm-as bitcode
+  /tmp/scanident-fixture-opt.ll         opt --passes=verify output
+  /tmp/scanident-fixture.err            hcc stderr
+  /tmp/scanident-subject.o              clang -c compiled IR (aarch64)
+  /tmp/scanident-runtime-driver.o       cc -c compiled driver
+  /tmp/scanident-runtime                linked executable (subject)
+  /tmp/scanident-runtime.stdout         10/10 PASS on subject
+  /tmp/scanident-comparison.o           cc -c compiled comparison
+  /tmp/scanident-comparison             linked executable (ref+sub)
+  /tmp/scanident-comparison.stdout      10/10 PASS (ref == sub == exp)
+  /tmp/scanident-oracle                 standalone C reference
+  /tmp/scanident-oracle.stdout          10/10 PASS (C ref only)

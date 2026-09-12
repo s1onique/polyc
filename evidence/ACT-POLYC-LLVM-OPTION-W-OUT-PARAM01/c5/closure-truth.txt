@@ -107,6 +107,39 @@ GATES
   llvm-byte-memory01-test           STATUS=PASS  37/0
   llvm-intops01-test                STATUS=PASS   4/0
   ir-return-slot-forwarding01-test  STATUS=PASS   6/0
+SUBJECT CHAIN
+=============
+  hcc compile                  exit=0
+  llvm-as                      exit=0
+  opt --passes=verify          exit=0
+  clang -c subject IR          exit=0
+  cc -c runtime driver         exit=0
+  clang link driver + subject  exit=0
+  /tmp/scanident-runtime       exit=0 (10/10 PASS on hcc subject)
+  /tmp/scanident-comparison    exit=0 (10/10 PASS, ref == sub == exp)
+  C reference standalone      exit=0 (10/10 PASS)
+  PHI geometry observed        3 phi instructions:
+    - polyc.optionw.slot.6.0 (i64, 2 inputs) Option-W slot
+    - phi (i8, 2 inputs) inner || short-circuit
+    - phi7 (i8, 2 inputs) outer || short-circuit
+  SHAPE_DEPENDENT attribution observed: shape_dependent=19
+  C4 six-witness conservation (c4 witness fixtures): PASS
+    (verified separately in this build session via the
+    c4/witness-fixtures/*.HC compile chain; all 6/6
+    hcc=0, llvm-as=0, opt=0)
+
+VERDICT TABLE (the reviewer's prescribed separation)
+====================================================
+  SOURCE_HC_COMPILES         = PASS  (hcc=0)
+  LLVM_AS                    = PASS  (rc=0)
+  LLVM_VERIFY                = PASS  (opt --passes=verify rc=0)
+  REFERENCE_ORACLE           = PASS  (C reference, 10/10)
+  HCC_GENERATED_RUNTIME      = PASS  (hcc-emitted subject, 10/10)
+  REFERENCE_VS_SUBJECT       = PASS  (10/10 cases agree)
+  C4_WITNESS_CONSERVATION    = PASS  (6/6 C4 fixtures)
+  COMPILER_GATES             = PASS  (7/7 conservation gates)
+
+
 
 SUBJECT CHAIN
 =============

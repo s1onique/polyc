@@ -72,6 +72,87 @@ CAPABILITY_COUNTERS (hcc stderr):
 The 19 shape_dependent count is the C4 IR_PHI arm's
 attribution of the binding fixture's 3 PHI instructions
 plus surrounding SHORT_CIRCUIT helper alloca/load/store
+RUNTIME BINDING (hcc-emitted subject)
+=====================================
+
+The hcc-emitted IR is compiled to a native object and
+linked with a driver that declares ScanIdent externally
+(driver does NOT define ScanIdent). The 10 binding cases
+run against the hcc-generated binary.
+
+$ clang -c /tmp/scanident-fixture.ll -o /tmp/scanident-subject.o
+clang -c exit code: 0 (1 warning: overriding module target triple)
+
+$ cc -Wall -Wextra -c scanident-runtime-driver.c \
+        -o /tmp/scanident-runtime-driver.o
+cc -c exit code: 0
+
+$ clang /tmp/scanident-runtime-driver.o /tmp/scanident-subject.o \
+          -o /tmp/scanident-runtime
+link exit code: 0
+
+$ /tmp/scanident-runtime
+Test 01 (foo): rc=0 out_cursor=3 out_len=3 expected=(3,3) PASS
+Test 02 (foo123): rc=0 out_cursor=6 out_len=6 expected=(6,6) PASS
+Test 03 (_private): rc=0 out_cursor=8 out_len=8 expected=(8,8) PASS
+Test 04 (X9): rc=0 out_cursor=2 out_len=2 expected=(2,2) PASS
+Test 05 (ws): rc=0 out_cursor=0 out_len=0 expected=(0,0) PASS
+Test 06 (foo@eof): rc=0 out_cursor=3 out_len=3 expected=(3,3) PASS
+Test 07 (empty): rc=0 out_cursor=0 out_len=0 expected=(0,0) PASS
+Test 08 (ws@cursor): rc=0 out_cursor=0 out_len=0 expected=(0,0) PASS
+Test 09 (foo@4): rc=0 out_cursor=3 out_len=3 expected=(3,3) PASS
+Test 10 (abc123): rc=0 out_cursor=6 out_len=6 expected=(6,6) PASS
+ALL 10 BINDING TESTS PASS (hcc-emitted subject)
+
+runtime exit code: 0
+
+This is the end-to-end proof that hcc emitted semantically
+correct code: the runtime values match the binding fixture
+oracle for every case.
+
+RUNTIME COMPARISON (reference vs subject)
+=========================================
+
+The C reference and the hcc-emitted subject are run
+side-by-side on each of the 10 binding cases. Both must
+agree AND match expected outputs.
+
+$ cc -Wall -Wextra -c scanident-comparison.c \
+        -o /tmp/scanident-comparison.o
+$ clang /tmp/scanident-comparison.o /tmp/scanident-subject.o \
+          -o /tmp/scanident-comparison
+$ /tmp/scanident-comparison
+Test 01 (foo): ref=(rc=0,oc=3,ol=3) sub=(rc=0,oc=3,ol=3) exp=(oc=3,ol=3) sub_ok=Y agree=Y PASS
+Test 02 (foo123): ref=(rc=0,oc=6,ol=6) sub=(rc=0,oc=6,ol=6) exp=(oc=6,ol=6) sub_ok=Y agree=Y PASS
+Test 03 (_private): ref=(rc=0,oc=8,ol=8) sub=(rc=0,oc=8,ol=8) exp=(oc=8,ol=8) sub_ok=Y agree=Y PASS
+Test 04 (X9): ref=(rc=0,oc=2,ol=2) sub=(rc=0,oc=2,ol=2) exp=(oc=2,ol=2) sub_ok=Y agree=Y PASS
+Test 05 (ws): ref=(rc=0,oc=0,ol=0) sub=(rc=0,oc=0,ol=0) exp=(oc=0,ol=0) sub_ok=Y agree=Y PASS
+Test 06 (foo@eof): ref=(rc=0,oc=3,ol=3) sub=(rc=0,oc=3,ol=3) exp=(oc=3,ol=3) sub_ok=Y agree=Y PASS
+Test 07 (empty): ref=(rc=0,oc=0,ol=0) sub=(rc=0,oc=0,ol=0) exp=(oc=0,ol=0) sub_ok=Y agree=Y PASS
+Test 08 (ws@cursor): ref=(rc=0,oc=0,ol=0) sub=(rc=0,oc=0,ol=0) exp=(oc=0,ol=0) sub_ok=Y agree=Y PASS
+Test 09 (foo@4): ref=(rc=0,oc=3,ol=3) sub=(rc=0,oc=3,ol=3) exp=(oc=3,ol=3) sub_ok=Y agree=Y PASS
+Test 10 (abc123): ref=(rc=0,oc=6,ol=6) sub=(rc=0,oc=6,ol=6) exp=(oc=6,ol=6) sub_ok=Y agree=Y PASS
+ALL 10 BINDING TESTS PASS (ref == sub == expected)
+
+comparison exit code: 0
+
+This proves the hcc-emitted LLVM IR is BEHAVIORALLY
+EQUIVALENT to the C reference for every binding case.
+
+RUNTIME ORACLE (C reference, standalone)
+========================================
+
+The standalone C reference at scanident-oracle.c also
+runs the 10 binding tests. Output identical to the runtime
+binding above. See scanident-oracle.stdout.
+
+$ cc -Wall -Wextra -o /tmp/scanident-oracle \
+      evidence/.../c5/scanident-oracle.c
+$ /tmp/scanident-oracle
+
+scanident-oracle exit code: 0
+
+
 sequences.
 
 RUNTIME ORACLE (C reference)
