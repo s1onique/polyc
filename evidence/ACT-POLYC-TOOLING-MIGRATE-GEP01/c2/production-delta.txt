@@ -1,0 +1,57 @@
+ACT-POLYC-TOOLING-MIGRATE-GEP01 C2 IMPL
+Production delta vs C1 baseline
+
+This file documents that C2 introduces only the new
+PolyC harness source. No compiler / parser / IR /
+backend / ABI / factory-doctrine semantics change is
+authorized by this ACT.
+
+============================================================
+1. Files added in C2
+============================================================
+
+  tools/quality/llvm-gep01-test.HC     new PolyC harness source
+
+============================================================
+2. Files NOT modified in C2
+============================================================
+
+  src/holyc-lib/tooling.HC              (unchanged; runtime stays
+                                        frozen from
+                                        TOOLING-RUNTIME01 + corrections)
+  src/holyc-lib/errno_shim.c            (unchanged)
+  src/CMakeLists.txt                    (unchanged)
+  Makefile                              (unchanged)
+  src/holyc-lib/all.HC                  (unchanged)
+  src/holyc-lib/io.HC                   (unchanged)
+  docs/ROADMAP.md                       (unchanged in C2; updated
+                                        in C4 CLOSE)
+  scripts/quality/llvm-gep01-test.sh    (unchanged; remains
+                                        authoritative until C3
+                                        cutover; deleted or shrunk
+                                        in C3)
+  any file under evidence/              (untouched per F14)
+
+============================================================
+3. Build wiring
+============================================================
+
+The harness compiles against the existing
+build/test-prefix/libtos.a and build/test-prefix/include/
+tos.HH (already produced by `make lsp-test`). No new build
+target is required at C2 time; the ordinary compile command
+is:
+
+  ./hcc --install-dir=$(pwd)/build/test-prefix \
+        -o llvm-gep01-test \
+        tools/quality/llvm-gep01-test.HC
+
+============================================================
+4. Verdict
+============================================================
+
+PRODUCTION_DELTA_SCOPE = COMPLIANT
+NEW_BASH_LOGIC = 0 LOC
+MODIFIED_PRODUCTION_FILES = 0
+NEW_POLYC_SOURCE_FILES = 1 (tools/quality/llvm-gep01-test.HC)
+HISTORICAL_EVIDENCE_MUTATED = NO

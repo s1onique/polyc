@@ -1,0 +1,24 @@
+=== R3 - CORRECTION01 CLOSE tree (commit 1732c3f) failed AC08 ===
+AC08 contract: "git diff --check on the closing commit is clean"
+
+--- git diff --check 1732c3f~1..1732c3f (single-commit check) ---
+evidence/ACT-POLYC-TOOLING-MIGRATE-GEP01/correction01/close/README.md:55: new blank line at EOF.
+git diff --check rc=2
+
+--- git diff --check HEAD~1..HEAD (current POST-CLOSE tree) ---
+For contrast only; this is the NON_ACT followup tree.
+git diff --check rc=0
+
+=== CONCLUSION ===
+AC08_STATUS=CLOSE_TREE_FAILED
+git diff --check on the closing commit 1732c3f reported:
+  "evidence/.../close/README.md:55: new blank line at EOF."
+This is a recognized whitespace error per git-diff(1).
+Therefore AC08 was NOT satisfied at the CLOSE tree.
+
+The NON_ACT commit a2f4a6e removed the trailing blank line.
+The POST-CLOSE tree is clean, but a follow-up commit
+cannot retroactively make the CLOSE tree clean.
+Per F-GIT-IDENTITY and the reviewer's temporal-evidence
+analysis, state after closure is not evidence about state
+at closure.

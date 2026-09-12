@@ -1,0 +1,53 @@
+ACT-POLYC-FACTORY-NO-SHA-OF-SELF01-CORRECTION02 — Authoritative recipe
+
+The CANONICAL Git query recipe for closure identity (this
+supersedes any earlier version that may appear elsewhere
+in committed files):
+
+```sh
+# Step 1: query (returns 0, 1, or many matching commits)
+git log --all-match \
+        --grep='^ACT: ACT-POLYC-FOO01-CORRECTION03$' \
+        --grep='^ACT-Phase: CLOSE$' \
+        --pretty=format:'%H'
+
+# Step 2: cardinality check (the Factory contract requires
+# exactly one CLOSE per ACT for closure identity)
+matches=$(git log --all-match \
+                  --grep='^ACT: ACT-POLYC-FOO01-CORRECTION03$' \
+                  --grep='^ACT-Phase: CLOSE$' \
+                  --pretty=format:'%H' | wc -l)
+test "$matches" -eq 1 || {
+    echo "EXPECTED 1 CLOSE COMMIT FOR ACT-POLYC-FOO01-CORRECTION03," \
+         "GOT $matches" >&2
+    exit 1
+}
+
+# Step 3: extract the SHA (now safe to do -1)
+git log --all-match -1 \
+        --grep='^ACT: ACT-POLYC-FOO01-CORRECTION03$' \
+        --grep='^ACT-Phase: CLOSE$' \
+        --pretty=format:'%H'
+```
+
+KEY POINTS:
+
+  - `--all-match` is REQUIRED. Without it, Git uses OR
+    semantics across `--grep` flags and the recipe returns
+    every CLOSE commit in history regardless of ACT id.
+    For a non-existent ACT, the naive recipe returns N
+    matches (the entire CLOSE history); the --all-match
+    recipe correctly returns 0.
+
+  - Cardinality check FIRST. Do not silently take `-1`
+    before verifying uniqueness. Duplicate CLOSE commits
+    are themselves an invariant violation; silently
+    truncating to one hides the violation.
+
+  - Then take `-1`. Once cardinality is verified, `-1`
+    gives you the most recent CLOSE commit (the canonical
+    "the" CLOSE for that ACT).
+
+This recipe is now codified in DOCTRINE.md §22. Any earlier
+recipe (naive form, or any successor packet that re-uses
+the naive form) is superseded.

@@ -1,0 +1,81 @@
+ACT-POLYC-FACTORY-NO-SHA-OF-SELF01-CORRECTION03 — Recipe revision history
+
+This is the authoritative revision history for the canonical
+"git log ACT id + phase" recipe, from initial doctrine to
+current.
+
+=== v0 (DOCTRINE.md §22 initial codification, ACT-POLYC-FACTORY-NO-SHA-OF-SELF01, commit 96ecd83) ===
+
+```sh
+git log --grep='^ACT: ACT-POLYC-FOO01-CORRECTION03$' \
+        --grep='^ACT-Phase: CLOSE$' \
+        --pretty=format:'%H'
+```
+
+Bug 1: multiple --grep uses OR semantics; should use --all-match.
+Bug 2: no cardinality check; -1 silently takes any duplicates.
+
+=== v1 (DOCTRINE.md §22 after CORRECTION01, commit 3d9b275) ===
+
+```sh
+git log --all-match \
+        --grep='^ACT: ACT-POLYC-FOO01-CORRECTION03$' \
+        --grep='^ACT-Phase: CLOSE$' \
+        --pretty=format:'%H'
+
+# cardinality:
+matches=$(git log --all-match \
+                  --grep='^ACT: ACT-POLYC-FOO01-CORRECTION03$' \
+                  --grep='^ACT-Phase: CLOSE$' \
+                  --pretty=format:'%H' | wc -l)
+test "$matches" -eq 1 || { echo ...; exit 1; }
+```
+
+Bug 3: wc -l + --pretty=format:'%H' returns 0 for 1-match queries
+       (no trailing newline in the output). Cardinality check
+       fires FALSE_HALT on the happy path.
+
+Geometry bug: this commit also modified correction06/ evidence
+files (F14 violation). Documented in correction02/f14-violation-
+record.txt; F14 immutable so we don't re-mutate.
+
+=== v2 (DOCTRINE.md §22 after CORRECTION03, this commit) ===
+
+```sh
+# Cardinality (use --oneline so wc -l is correct):
+matches=$(git log --all-match \
+                  --grep='^ACT: ACT-POLYC-FOO01-CORRECTION03$' \
+                  --grep='^ACT-Phase: CLOSE$' \
+                  --oneline | wc -l)
+test "$matches" -eq 1 || { echo ...; exit 1; }
+
+# SHA extraction (after cardinality check passes):
+git log --all-match -1 \
+        --grep='^ACT: ACT-POLYC-FOO01-CORRECTION03$' \
+        --grep='^ACT-Phase: CLOSE$' \
+        --pretty=format:'%H%n' | head -1
+```
+
+Bug 1, 2, 3 all fixed.
+
+=== SUPERSESSION CHAIN ===
+
+  v0 (in 96ecd83, NO-SHA-OF-SELF01) — superseded by v1
+  v1 (in 3d9b275, CORRECTION01) — superseded by v2
+  v2 (in this commit, CORRECTION03) — current
+
+Each version is preserved in Git history (F-GIT-IMMUTABILITY)
+and the v0/v1 references in committed evidence files are
+not re-mutated (F14 strict reading).
+
+=== WHERE TO FIND EACH VERSION ===
+
+  v0: DOCTRINE.md §22 as committed in 96ecd83 (visible via
+      `git show 96ecd83:docs/factory/DOCTRINE.md`)
+  v1: DOCTRINE.md §22 as committed in 3d9b275 (visible via
+      `git show 3d9b275:docs/factory/DOCTRINE.md`)
+      AND evidence/.../correction02/authoritative-recipe.txt
+      (immutable v1 copy)
+  v2: DOCTRINE.md §22 as committed in this commit (current)
+      AND evidence/.../correction03/authoritative-recipe-v2.txt
+      (the v2 reference)

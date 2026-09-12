@@ -1,0 +1,270 @@
+ACT-POLYC-TOOLING-RUNTIME01
+C1 RED — language capability matrix
+
+Repository:   s1onique/polyc
+Working copy: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc2
+Branch:       main
+Entry HEAD:   456b71c0f2535c6175271d2107b67f985b4bc2c8
+HCC binary:   ./hcc  (built 2025-09-12 from this tree; commit-hash 456b71c)
+Toolchain:    Apple clang 15.0.0.15000040, aarch64-apple-darwin,
+              LLVM 22.1.8 on PATH (llvm-as, opt)
+Recon date:   2025-09-12
+
+------------------------------------------------------------
+Matrix
+------------------------------------------------------------
+
+PROCESS
+  argc / argv (program args)         EXISTS_AND_USABLE
+      TempleOS globals, used by
+      Sh(), Shlurp(), and ordinary
+      Main() signatures.
+
+  getenv(name)                       EXISTS_AND_USABLE
+      Declared in io.HC; declared in
+      tos.HH; bound to libc.
+
+  chdir / Pwd                        EXISTS_AND_USABLE
+      io.HC / tos.HH. (Cd() wraps
+      chdir with tilde expansion.)
+
+  process spawn / exec               MISSING (as a high-level
+                                     bounded API)
+      The lsp test program
+      (src/tests/lsp/run_lsp_tests.HC
+      line 312-407) already performs
+      fork + pipe + dup2 + execv +
+      waitpid directly. That works,
+      but there is no named PolyC
+      primitive that hides the
+      descriptor plumbing behind a
+      deterministic
+        Spawn(argv)->{exit,out,err}
+      contract. ACT §4 forbids the
+      existing Sh() / System() path
+      because it routes through
+      /bin/sh -c. The ACT requires a
+      direct-argv API.
+
+  posix_spawn / posix_spawnp         MISSING
+      No PolyC binding anywhere. The
+      ACT §13/§14 named these as the
+      preferred host primitive. C2
+      may add them via a small POSIX
+      bridge.
+
+  waitpid(status, 0)                 EXISTS_AND_USABLE (raw)
+      Declared in tos.HH (via
+      "extern c" in lsp test).
+      No high-level wait helper.
+      A bounded Wait() helper that
+      returns I64 exit code and
+      distinguishes abnormal
+      termination is MISSING.
+
+  WIFEXITED / WEXITSTATUS /          MISSING
+  WIFSIGNALED / WTERMSIG
+      Macro decoding of wait status.
+      C2 must add via bridge.
+
+FILESYSTEM
+  read complete text file            EXISTS_AND_USABLE
+      FileRead(path, &size) in
+      io.HC. Allocates a buffer
+      with the file size and NUL-
+      terminates. Returns NULL on
+      error.
+
+  write complete text file           EXISTS_AND_USABLE
+      FileWrite(name, buf, size,
+      flags) in io.HC. flags
+      defaults to O_CREAT|O_RDWR.
+      Returns Bool.
+
+  file exists / stat                 EXISTS_AND_USABLE
+      Stat(fst, path) in io.HC.
+      Returns 0 on success.
+
+  mkdir                              NOT_REQUIRED
+      First harness needs only the
+      user-supplied build/test-
+      prefix dir created by the
+      bootstrap wrapper.
+
+  unlink / remove                    EXISTS_AND_USABLE
+      Declared in tos.HH (Rm()).
+      Used by tests and lsp tests.
+
+  temporary-file creation            MISSING
+      No mkstemp binding. No
+      tmpfile binding. Shlurp()
+      uses a hard-coded
+      "/tmp/__hcc_shell_out.txt"
+      which is race-unsafe (ACT §14
+      forbids). C2 must add
+      mkstemp via bridge, OR
+      generate unique paths inside
+      a caller-provided scratch
+      directory using getpid() and
+      nanosecond clock.
+
+  directory listing                  NOT_REQUIRED
+      First harness uses explicit
+      fixture paths. Dir() exists
+      but is not needed.
+
+TEXT
+  byte/string equality               EXISTS_AND_USABLE
+      StrCmp(s1, s2) returns 0 on
+      equality, like strcmp.
+
+  substring search (single char)     EXISTS_AND_USABLE
+      StrFirstOcc(src, marker)
+      returns pointer to first char
+      in src that appears in marker,
+      or NULL. Suitable for
+      contains(haystack, " ") and
+      similar single-char checks.
+
+  count occurrences                  EXISTS_AND_USABLE
+      StrOcc(src, ch) counts
+      occurrences of one char.
+
+  multi-byte substring search        MISSING
+      No strstr() binding. The
+      first harness needs
+      contains(output, "getelementptr i8")
+      and similar. C2 must add a
+      PolyC "contains(haystack,
+      needle)" helper built on top
+      of libc strstr() bound via
+      extern "c".
+
+INTEGER / STRING CONVERSION
+  integer parsing                    EXISTS_AND_USABLE
+      StrOcc + manual loop, or
+      existing StrToI64-style
+      usage in tests.
+
+  integer -> string                  EXISTS_AND_USABLE
+      StrPrint / I64ToStr /
+      U64ToStr in strings.HC.
+
+MEMORY / ALLOCATION
+  MAlloc / Free                      EXISTS_AND_USABLE
+      memory.HC.
+
+PRINT
+  stdout printing                    EXISTS_AND_USABLE
+      "format", args; route via
+      OutStr / Print().
+
+  stderr printing                    EXISTS_AND_USABLE
+      Same as stdout, with fd
+      argument.
+
+PROCESS VERDICT
+  exit() / Exit(I64)                 EXISTS_AND_USABLE
+      system.HC / tos.HH.
+
+------------------------------------------------------------
+Hidden dependency check (ACT §10)
+------------------------------------------------------------
+
+The ACT forbids making STRUCT01 / ARRAY01 hidden
+prerequisites. The proposed ProcessResult API
+(exit, stdout, stderr) does NOT require a new struct:
+
+  - exit_code : I64 (scalar)
+  - stdout    : U8 *   (already a U8 pointer in existing
+                          FileRead / Shlurp)
+  - stderr    : U8 *   (same)
+
+The argv API uses U8 *args[] which is already used in
+src/tests/lsp/run_lsp_tests.HC:402-405:
+
+    U8 *args[3];
+    args[0] = g_hcc;
+    args[1] = "-lsp";
+    args[2] = NULL;
+    execv(g_hcc, args);
+
+This is an existing language form, not a new compiler
+feature. The NULL terminator at args[2] is conventional
+execv usage; it is the literal NULL token, not a new
+language feature.
+
+Conclusion: NO hidden STRUCT01 or ARRAY01 dependency.
+
+------------------------------------------------------------
+First-harness minimum primitive set (per ACT §9)
+------------------------------------------------------------
+
+Derived from llvm-gep01-test.sh semantics:
+
+  Process:
+    - SpawnAndCapture(argv, &out, &err) -> I64 exit
+       (no shell; direct exec; pipes for capture)
+    - Wait(pid) -> I64 exit code, distinguishes abnormal
+       termination
+  File:
+    - ReadAll(path) -> U8* (already FileRead)
+    - WriteAll(path, buf, len) -> Bool (already FileWrite)
+    - FileExists(path) -> Bool (Stat wrapper)
+    - Remove(path) (already Rm)
+    - TmpFile(template) -> I32 fd + U8 *path (mkstemp)
+  Text:
+    - Contains(haystack, needle) -> Bool (new, thin
+       wrapper over libc strstr)
+  Verdict:
+    - VerdictNew() / VerdictPass(verdict, name) /
+       VerdictFail(verdict, name, msg) /
+       VerdictRc(verdict) -> I64
+       Aggregate with global counters is also acceptable
+       (the ACT does not require an OO API).
+
+  Existing HolyC facilities sufficient:
+    - StrCmp, StrLen, StrPrint, StrOcc
+    - MAlloc, Free
+    - Exit
+    - FileRead, FileWrite
+    - Rm, Cd, Pwd
+    - System, Sh (EXISTS_BUT_WRONG_ABSTRACTION:
+       routed via /bin/sh -c; must NOT be used by the
+       new tooling runtime)
+
+------------------------------------------------------------
+Failure layer (ACT §11)
+------------------------------------------------------------
+
+The first RED probe attempts:
+
+    SpawnAndCapture("/bin/printf", "hello", &out, &err)
+
+Expected behaviour AFTER C2:
+
+    out == "hello"
+    err == ""
+    exit == 0
+
+In the current tree (C1), the attempt fails because
+SpawnAndCapture is not defined. The actual observed
+failure is at PARSER layer: unknown identifier
+"SpawnAndCapture".
+
+Per ACT §11: this is an acceptable RED — the failure
+layer is parser/missing-symbol, not a fixture defect
+and not silent-success.
+
+------------------------------------------------------------
+File-level summary
+------------------------------------------------------------
+
+This matrix is the authoritative inventory for C2 scope.
+Every MISSING row above maps to C2 implementation work.
+Every EXISTS_AND_USABLE row is reused.
+Every EXISTS_BUT_WRONG_ABSTRACTION row is explicitly
+forbidden in the new code path.
+Every NOT_REQUIRED row is not in scope.
+
+End of matrix.

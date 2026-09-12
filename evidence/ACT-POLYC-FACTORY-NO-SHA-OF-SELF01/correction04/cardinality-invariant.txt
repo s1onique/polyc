@@ -1,0 +1,68 @@
+ACT-POLYC-FACTORY-NO-SHA-OF-SELF01-CORRECTION04 — Cardinality-1-CLOSE invariant
+
+=== STATEMENT ===
+
+For any ACT id present in the repository's Git history, the
+set of commits carrying both:
+
+  ACT: <ACT-id>
+  ACT-Phase: CLOSE
+
+MUST have cardinality exactly 1.
+
+This is the Cardinality-1 CLOSE invariant. It holds for all
+ACTs going forward.
+
+=== WHY ===
+
+The Cardinality-1 invariant gives `git log --all-match -1`
+a well-defined meaning: there is exactly ONE CLOSE commit,
+and `-1` selects it without ambiguity. The SHA obtained is
+"the SHA of the closure of ACT-X" — a stable, mechanically
+queryable identity.
+
+If Cardinality != 1:
+  - 0: the ACT has no closure commit; downstream tools that
+    query for the closure SHA fail
+  - >=2: the ACT has multiple CLOSE commits; `-1` silently
+    picks one, hiding the invariant violation from view
+
+=== ENFORCEMENT ===
+
+The Factory Cardinality-Check (post-FACTORY-CLOSE-CARDINALITY01,
+not in this session) SHOULD verify this invariant by
+enumerating all ACT ids and counting their CLOSE commits:
+
+```sh
+for act_id in $(git log --pretty=format:'%H %(trailers:key=ACT,valueonly)' \
+                       | grep -oE 'ACT: ACT-POLYC-[A-Z0-9-]+' \
+                       | sort -u); do
+    count=$(git log --all-match \
+                    --grep="^${act_id}\$" \
+                    --grep='^ACT-Phase: CLOSE$' \
+                    --oneline | wc -l)
+    if [ "$count" -ne 1 ]; then
+        echo "VIOLATION: $act_id has $count CLOSE commits (expected 1)"
+    fi
+done
+```
+
+(This snippet is illustrative; the real check would handle
+trailer format variations.)
+
+=== GOING FORWARD ===
+
+For future ACTs opened after this ACT closes:
+
+  Hygiene follow-ups MUST carry `ACT-Phase: EVIDENCE` (or
+  a non-CLOSE phase), NOT `ACT-Phase: CLOSE`. They are
+  follow-ups to the same ACT, not separate closures.
+
+  Material changes that warrant a new bounded correction
+  ACT should be opened as `ACT-N-CORRECTIONK` with its own
+  CLOSE trailer.
+
+  Pre-existing violations (listed in
+  `historical-cardinality-exceptions.txt`) are F14
+  historical residue; they are documented but not "fixed"
+  by re-mutation.

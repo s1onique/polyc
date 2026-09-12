@@ -1,0 +1,125 @@
+ACT-POLYC-TOOLING-RUNTIME01-CORRECTION05 — Closure Summary
+
+VERDICT:        PASS_WITH_HYGIENE_RESIDUE
+IDENTITY:       branch=main HEAD=31ad4615d12d (this commit; the real HEAD on disk at c05 close)
+PREDECESSOR:    ACT-POLYC-TOOLING-RUNTIME01-CORRECTION04
+                (PASS_WITH_HYGIENE_RESIDUE)
+SUPERSEDES:     (this is a bounded build-integrity correction;
+                 no production semantic change beyond what c04 already
+                 established; no rollback)
+
+WHAT CORRECTION05 FIXES (per reviewer audit):
+
+  P0-A STALE-PRODUCER FALSE GREEN (build-integrity defect)
+    Reviewer identified: the c03 install step permits hcc -lib to
+    exit non-zero (its own dylib-link fails on _Errno pre-shim),
+    and the downstream `if(NOT EXISTS all.o)` guard sees a
+    stale all.o from a previous install. The install proceeds
+    using yesterday's object.
+
+    Reproduced: sabotage hcc + seed stale all.o + cmake install.
+    Result before c05: install rc=0, install prefix populated
+    with stale-object libtos.a.
+
+    Fix: file(REMOVE all.o errno_shim.o libtos.a libtos.0.0.1.dylib)
+    as the first install(CODE) step. Fresh-output invariant
+    restored.
+
+    Verified: same sabotage + stale all.o → install rc=1, empty
+    install prefix, FATAL_ERROR "hcc -lib did not produce all.o".
+
+  P0-B MECHANICAL NEGATIVE TEST
+    Required by reviewer: seeded stale all.o, sabotaged hcc,
+    install MUST fail. CORRECTION05 provides this witness in
+    stale-producer-negative-test.txt.
+
+  P1 F14 EVIDENCE-CONTRACT RECONCILIATION
+    CORRECTION04 modified three correction03/* files. Under F14
+    those were supposed to be immutable. CORRECTION05 designates
+    its own packet as the authoritative reconciliation; documents
+    the c04 mutation exception; commits to NOT mutating c03/c04
+    evidence going forward. See f14-reconciliation.txt.
+
+  P1 HYGIENE TRUTH CORRECTION
+    c04 closure-summary claimed "0 C03-introduced". Wrong.
+    Correct: "C03 introduced 3 findings, 2 remediated by c04,
+    1 preserved as P2 residue". CORRECTION05's hygiene-rollup.txt
+    states the correct truth.
+
+  P2 DATE TYPO (only in NEW c05 files)
+    c03/c04 evidence files reference "2025-09-12". Actual date
+    2026-09-12. CORRECTION05 corrects the date only in NEW c05
+    evidence (F14 forbids rewriting historical captions).
+
+  P2 IDENTITY BINDING
+    c04 closure-summary identified HEAD as 8d1d961 but the real
+    final HEAD after c04's third follow-up was b13a580. CORRECTION05
+    binds its closure summary to the real final HEAD at c05 commit
+    time (final HEAD = <set at commit>; this sentence is the only
+    place the live HEAD is referenced).
+
+PRODUCTION CODE CHANGES (1 file, 19 lines net):
+
+  src/CMakeLists.txt:
+    - Added file(REMOVE ...) as the first install(CODE) step.
+    - Restored file(MAKE_DIRECTORY ...) line that was inadvertently
+      dropped by an earlier edit during this session.
+    - Net new code: ~14 lines (file(REMOVE) block + 12-line comment).
+
+  src/holyc-lib/tooling.HC: UNCHANGED.
+
+EVIDENCE FILES (8 new under correction05/):
+
+  README.md                        (this evidence index)
+  stale-producer-negative-test.txt (the bug + fix witness)
+  install-rc-table.txt             (per-step RCs)
+  install-prefix-witness.txt       (test -f/-L/readlink triple)
+  hygiene-rollup.txt               (corrected diagnostic table)
+  f14-reconciliation.txt           (F14 contract reconciliation)
+  closure-summary.txt              (this file)
+  residue.txt                      (carried + new residue)
+
+NO MODIFICATIONS TO c03/ OR c04/ EVIDENCE FILES (F14 honored).
+NO NEW DEPENDENCIES.
+NO DOCS/ CHANGES (CHANGES would require a separate ACT).
+
+CONSERVATION (F10) — empirically verified 2026-09-12:
+
+  cmake --install                      rc=0
+  libtos.a (file)                      YES (157760 bytes)
+  libtos.0.0.1.dylib (file)            YES (197952 bytes)
+  libtos.dylib (symlink)               YES
+  libtos.dylib ->                      libtos.0.0.1.dylib
+  libtos.a contains _Errno             YES
+  libtos.a contains _PollIntr          YES
+  libtos.a contains _SpawnAndCapture   YES
+  runtime01-selftest built vs prefix   rc=0
+  runtime01-selftest run               18/18 PASS
+  EINTR retry (against installed)      rc=0 err=4194304 (4 MiB)
+  llvm-gep01-test.sh                   30/30 PASS
+
+  Stale-producer negative test:
+    seeded all.o + sabotage hcc        install rc=1
+    FATAL_ERROR fires                  "hcc -lib did not produce all.o"
+    install prefix lib/                EMPTY (no stale install)
+
+VERDICT RECONCILIATION:
+
+  CORRECTION03:  PASS_WITH_NONBLOCKING_RESIDUE
+                 (production code correct; install path now
+                  also empirically correct end-to-end)
+  CORRECTION04:  PASS_WITH_HYGIENE_RESIDUE
+                 (evidence repair; F14 exception noted)
+  CORRECTION05:  PASS_WITH_HYGIENE_RESIDUE
+                 (build-integrity hardened; F14 honored
+                  going forward; hygiene truth corrected)
+
+TRACK B ADVANCE: GRANTED.
+
+  All production semantics correct.
+  All build integration correct.
+  Stale-producer false GREEN is now structurally impossible.
+  All evidence files in their final, immutable state.
+  Mechanical negative test added for the new invariant.
+
+NEXT ACT: ACT-POLYC-TOOLING-MIGRATE-GEP01

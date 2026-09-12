@@ -1,6 +1,7 @@
 #include "./defs.HH"
 #include "./memory.HC"
 #include "./system.HC"
+#include "./tooling.HC"
 #include "./except.HC"
 #include "./math.HC"
 #include "./date.HC"
@@ -17,6 +18,6 @@
 #include "./fzf.HC"
 #include "./json.HC"
 #include "./net.HC"
-#ifdef __HCC_LINK_SQLITE3__ 
+#ifdef __HCC_LINK_SQLITE3__
   #include "./sqllite.HC"
 #endif

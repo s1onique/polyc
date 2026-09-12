@@ -1,0 +1,70 @@
+ACT-POLYC-TOOLING-MIGRATE-GEP01 C2 IMPL
+Direct-argv source audit (per ACT §23)
+
+This file documents the mechanical audit of the migrated
+PolyC harness at tools/quality/llvm-gep01-test.HC for
+forbidden shell-execution constructs.
+
+============================================================
+1. Forbidden-token list (binding)
+============================================================
+
+Per ACT-POLYC-TOOLING-MIGRATE-GEP01 §23, the following
+constructs MUST appear zero times in the production code
+(excluding comments that explicitly discuss the prohibition):
+
+  /bin/sh
+  sh -c
+  bash -c
+  system(
+  popen(
+  System(
+  Sh(
+  Shlurp(
+
+============================================================
+2. Mechanical audit command
+============================================================
+
+  $ grep -nE '/bin/sh|sh -c|bash -c|system\(|popen\(|System\(|Sh\(|Shlurp\(' \
+      tools/quality/llvm-gep01-test.HC | \
+      grep -v '^.*//' | grep -v '^.*\*'
+
+  (no output)
+
+============================================================
+3. Verdict
+============================================================
+
+DIRECT_ARGV_AUDIT = PASS
+FORBIDDEN_TOKEN_COUNT = 0
+
+============================================================
+4. Architectural justification
+============================================================
+
+The PolyC harness uses only the following substrate:
+
+  SpawnAndCapture(...)  -> execv() of the resolved argv
+  FileRead(path)        -> reads file into a buffer
+  FileWrite(path, ...)  -> writes buffer to file
+  FileExists(path)      -> stat() presence check
+  Contains(haystack, needle)
+                         -> libc strstr wrapper
+  VerdictPass / VerdictFail
+                         -> aggregate verdict object
+  StrPrint(NULL, fmt, ...)
+                         -> format into a fresh buffer
+  Free / BytewiseFree   -> release buffers
+  FileRead(path, &sz)   -> file slurp
+
+The bare tool names (llvm-as, opt, python3) are resolved
+by a HARNESS-LOCAL helper ResolveTool() that walks
+getenv("PATH") and FileExists() each candidate. This is
+necessary because SpawnAndCapture uses execv() which does
+NOT perform PATH lookup (POSIX contract).
+
+The local ResolveTool helper does NOT widen
+src/holyc-lib/tooling.HC. It is purely harness-local.
+
+End of file.

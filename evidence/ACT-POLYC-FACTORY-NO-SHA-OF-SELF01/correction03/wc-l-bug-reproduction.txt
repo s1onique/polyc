@@ -1,0 +1,106 @@
+ACT-POLYC-FACTORY-NO-SHA-OF-SELF01-CORRECTION03 — wc -l bug reproduction
+
+Captured 2026-09-12 from main @ pre-c03 (HEAD = e83ae45).
+
+=== THE BUG ===
+
+DOCTRINE.md §22 (as of CORRECTION02) recommends:
+
+  matches=$(git log --all-match \
+                    --grep='^ACT: ACT-POLYC-FOO01-CORRECTION03$' \
+                    --grep='^ACT-Phase: CLOSE$' \
+                    --pretty=format:'%H' | wc -l)
+  test "$matches" -eq 1 || { echo WRONG; exit 1; }
+
+The `--all-match` + `--grep` parts are correct.
+The `--pretty=format:'%H'` part is the bug.
+
+=== EMPIRICAL REPRODUCTION ===
+
+Query for an ACT that exists with exactly 1 CLOSE commit:
+
+  $ git log --all-match \
+            --grep='^ACT: ACT-POLYC-FACTORY-NO-SHA-OF-SELF01-CORRECTION02$' \
+            --grep='^ACT-Phase: CLOSE$' \
+            --pretty=format:'%H'
+  e83ae45207232907f36744372725927a50050a8c
+
+  (one SHA on stdout)
+
+  $ ... | xxd | head -3
+  00000000: 6538 3361 6534 3532 3037 3233 3239 3037  e83ae45207232907
+  00000010: 6633 3637 3434 3337 3237 3235 3932 3761  f36744372725927a
+  00000020: 3530 3035 3061 3863                      50050a8c
+
+  (note: no 0x0a = no trailing newline)
+
+  $ ... | wc -l
+  0
+
+The query returned 1 commit but `wc -l` reports 0 because
+there is no newline character in the output.
+
+=== CONSEQUENCE ===
+
+The cardinality check in DOCTRINE.md §22 (as of CORRECTION02)
+falsely reports 0 matches for any single-commit query. Any
+downstream script using this recipe would erroneously:
+  - exit 1 with "EXPECTED 1 ... GOT 0"
+  - or silently take -1 from a query that returned many matches
+    (no — wait, that case is fine because many matches = many
+    newlines)
+
+So the bug specifically hits the 1-match case, which is
+exactly the happy path. The recipe fails closed (exits 1)
+in the case that should pass.
+
+=== THREE FIX OPTIONS ===
+
+Option A: add %n to the format
+
+  matches=$(git log --all-match \
+                    --grep='^ACT: ...' \
+                    --grep='^ACT-Phase: CLOSE$' \
+                    --pretty=format:'%H%n' | grep -c .)
+
+  Pros: explicit, %H%n is the documented "use this for line
+        output" pattern in Git's pretty-formats docs.
+  Cons: requires `grep -c .` instead of `wc -l` because some
+        SHAs could theoretically contain NUL or weird bytes
+        (they don't in practice; SHAs are hex).
+
+Option B: use --oneline
+
+  matches=$(git log --all-match \
+                    --grep='^ACT: ...' \
+                    --grep='^ACT-Phase: CLOSE$' \
+                    --oneline | wc -l)
+
+  Pros: simplest, most idiomatic, --oneline is built-in.
+  Cons: --oneline truncates the SHA prefix; if the caller
+        later needs the full SHA, they need a separate query.
+
+Option C: use --pretty=tformat
+
+  matches=$(git log --all-match \
+                    --grep='^ACT: ...' \
+                    --grep='^ACT-Phase: CLOSE$' \
+                    --pretty=tformat:'%H' | grep -c .)
+
+  Pros: --pretty=tformat adds newlines automatically.
+  Cons: less well-known than --pretty=format.
+
+=== RECOMMENDATION ===
+
+Option B for cardinality checks (no SHA extraction needed):
+  matches=$(git log --all-match ... --oneline | wc -l)
+  test "$matches" -eq 1 && ...
+
+Option A for full-SHA extraction:
+  git log --all-match -1 \
+          --grep='^ACT: ...' \
+          --grep='^ACT-Phase: CLOSE$' \
+          --pretty=format:'%H%n'
+
+Use --pretty=format:'%H%n' followed by `head -1` or similar
+to extract the SHA if -1 doesn't suffice.

@@ -569,6 +569,27 @@ Current volatile state (test counts, toolchain availability) belongs in
 
 ---
 
+## F-MECHANICAL-BLOCKING pointer
+
+The operating law `F-MECHANICAL-BLOCKING` ("prose alone
+never blocks progress") is binding for all Factory
+work whose ACT closure commits were created at or
+after the closing commit of
+`ACT-POLYC-FACTORY-MECHANICAL-BLOCKING01`. Its full
+text, blocking-predicate enumeration
+(B1–B5), HALT classification grammar
+(`HALT_CLASS` / `BLOCKS_NEXT`), and activation
+boundary live at
+[`docs/factory/DOCTRINE.md`](docs/factory/DOCTRINE.md) §25.
+A halt verdict that records
+`HALT_CLASS=GOVERNANCE` and `BLOCKS_NEXT=NO` is, by
+definition, the documented board signal that the
+roadmap may proceed; no additional authorization
+artifact is required for a same-scope successor ACT
+to open.
+
+---
+
 ## Factory version pointer
 
 The operating laws in this file (F1–F15) remain binding for
@@ -666,3 +687,24 @@ The durable binding detail is at [`docs/factory/DOCTRINE.md`](docs/factory/DOCTR
 binding to `remote_ref` (not `local_ref`) and to `local_sha ==
 ZERO` (not `remote_sha == ZERO`) is governed by
 `ACT-POLYC-FACTORY-APPEND-ONLY-GUARD01-CORRECTION01`.
+
+## No SHA-of-self claims
+
+Per [`docs/factory/DOCTRINE.md`](docs/factory/DOCTRINE.md) §22
+(F-GIT-IDENTITY), no ACT, HANDOFF, closure report, evidence
+file, or any other Markdown artifact committed to a Git
+commit may claim the SHA of the commit that contains it.
+Git's content-addressed object model makes such self-references
+structurally impossible (the SHA depends on the tree, which
+depends on the file content, which would depend on the SHA).
+
+Closure artifacts bind to stable, mechanically inspectable
+facts (ACT id, phase, verdict, predecessor link, repository
+state, ancestry checks, measured outputs). If a human or
+downstream tool needs the SHA of a closure commit, they query
+Git history; they do not read it from the commit itself.
+
+F14 forbids mutating any closed ACT's evidence directory,
+including appending "ADDENDUM" blocks to existing files.
+Corrections live in new `<original-id>-CORRECTION<N+1>/`
+directories.

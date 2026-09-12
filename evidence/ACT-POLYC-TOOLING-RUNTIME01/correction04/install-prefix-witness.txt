@@ -1,0 +1,28 @@
+=== ACT-POLYC-TOOLING-RUNTIME01-CORRECTION04 === Direct libtos.* witness in install prefix
+
+Captured: 2025-09-12, fresh cmake configure + cmake --install
+          from main @ e5a2e50, against /tmp/c04-install.
+
+$ test -f /tmp/c04-install/lib/libtos.a            && echo YES
+YES
+
+$ test -f /tmp/c04-install/lib/libtos.0.0.1.dylib  && echo YES
+YES
+
+$ test -L /tmp/c04-install/lib/libtos.dylib        && echo YES
+YES
+
+$ readlink /tmp/c04-install/lib/libtos.dylib
+libtos.0.0.1.dylib
+
+$ ls -la /tmp/c04-install/lib/
+-rw-r--r-- 1 chistyakov wheel 197952 Sep 12 11:29 libtos.0.0.1.dylib
+-rw-r--r-- 1 chistyakov wheel 157760 Sep 12 11:29 libtos.a
+lrwxr-xr-x 1 chistyakov wheel     18 Sep 12 11:29 libtos.dylib -> libtos.0.0.1.dylib
+
+$ nm /tmp/c04-install/lib/libtos.a | grep ' T ' | grep -E '_(Errno|PollIntr|ReadIntr|WaitPidIntr|SpawnAndCapture|WaitDecode)\b'
+0000000000000424 T _PollIntr
+00000000000004d0 T _ReadIntr
+0000000000000934 T _SpawnAndCapture
+000000000000056c T _WaitPidIntr
+0000000000000000 T _Errno

@@ -1,0 +1,25 @@
+-- Install configuration: "Release"
+-- Installing: /tmp/c03-install/bin/hcc
+-- Installing: /tmp/c03-install/include/tos.HH
+clang: warning: argument unused during compilation: '-shared' [-Wunused-command-line-argument]
+cc -shared -fPIC -c /tmp/holyc-asm.s -o ./all.o
+ar: error: couldn't create cache file '/var/folders/0g/mpt_55f524ndzxymkp20wjfc0000gn/T/xcrun_db-KyYq0imU' (errno=Operation not permitted)
+ar rcs libtos.a all.o
+ld: Undefined symbols:
+  _Errno, referenced from:
+      _MALLOC in all.o
+      _MALLOC in all.o
+      _MALLOC in all.o
+      _MALLOC in all.o
+clang: error: linker command failed with exit code 1 (use -v to see invocation)
+cc -dynamiclib -Wl,-install_name,/tmp/c03-install/lib/libtos.0.0.1.dylib all.o -o libtos.dylib -lpthread -lc -lm 
+[0;31mERROR: [0mFailed to execute command: 'cc -dynamiclib -Wl,-install_name,/tmp/c03-install/lib/libtos.0.0.1.dylib all.o -o libtos.dylib -lpthread -lc -lm '
+CMake Warning at /tmp/c03-build/cmake_install.cmake:81 (message):
+  hcc -lib exited with code 1; this is expected when all.o references _Errno.
+  Continuing.
+
+
+ar: error: couldn't create cache file '/var/folders/0g/mpt_55f524ndzxymkp20wjfc0000gn/T/xcrun_db-pNhwlJdc' (errno=Operation not permitted)
+ranlib: error: couldn't create cache file '/var/folders/0g/mpt_55f524ndzxymkp20wjfc0000gn/T/xcrun_db-xSuXPdDh' (errno=Operation not permitted)
+-- Installing: /tmp/c03-install/lib/libtos.a
+-- Installing: /tmp/c03-install/lib/libtos.0.0.1.dylib

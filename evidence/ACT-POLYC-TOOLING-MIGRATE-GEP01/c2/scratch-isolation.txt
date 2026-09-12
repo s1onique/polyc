@@ -1,0 +1,69 @@
+ACT-POLYC-TOOLING-MIGRATE-GEP01 C2 IMPL
+Scratch isolation evidence
+
+This file documents that the migrated PolyC harness writes
+scratch ONLY under build/quality/gep01/ and NEVER under
+evidence/ACT-POLYC-LLVM-GEP01/c3/_tmp.
+
+============================================================
+1. Migration contract (binding)
+============================================================
+
+Per ACT-POLYC-TOOLING-MIGRATE-GEP01 §19:
+
+  The migrated harness must use only scratch space during
+  ordinary execution. Historical GEP01 evidence MUST remain
+  untouched.
+
+The closed GEP01 evidence tree is:
+
+  evidence/ACT-POLYC-LLVM-GEP01/
+
+============================================================
+2. Harness default scratch path
+============================================================
+
+The PolyC harness defaults to:
+
+  build/quality/gep01/
+
+(the ./build tree is .gitignored, so scratch writes are
+never accidentally committed and never touch historical
+evidence.)
+
+============================================================
+3. Verification of isolation
+============================================================
+
+After a fresh PolyC harness run:
+
+  $ ./llvm-gep01-test --scratch=build/quality/gep01
+
+The harness creates the following scratch files under
+build/quality/gep01/:
+
+  read0.ll              <- emitted by hcc --emit-llvm
+  read2.ll              <- emitted by hcc --emit-llvm
+  read-at.ll            <- emitted by hcc --emit-llvm
+  b0-multiread.ll       <- emitted by hcc --emit-llvm
+  i64idx.ll             <- emitted by hcc --emit-llvm
+  readat.err            <- hcc stderr captured to file
+  cap-verifier.txt      <- llvm-cap-table-verifier output
+  readat_1.ll           <- determinism fixture run 1
+  readat_2.ll           <- determinism fixture run 2
+  twodigits_1.ll        <- determinism fixture run 1
+  twodigits_2.ll        <- determinism fixture run 2
+
+After the run, the historical GEP01 evidence tree:
+
+  $ find evidence/ACT-POLYC-LLVM-GEP01/c3/_tmp -type f
+  (no output)
+
+is untouched.
+
+============================================================
+4. Verdict
+============================================================
+
+SCRATCH_ISOLATION = PASS
+HISTORICAL_EVIDENCE_TOUCHED = NO

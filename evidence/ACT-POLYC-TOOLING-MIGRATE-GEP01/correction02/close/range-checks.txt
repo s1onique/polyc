@@ -1,0 +1,33 @@
+=== AC06 - CORRECTION02 range checks ===
+
+CORRECTION02 range (per docs/factory/GIT-METADATA.md §3):
+  CLOSE  = (this commit, hash recoverable via git log filter)
+  FIRST  = (C1 RED commit f999f1e...)
+  ENTRY  = FIRST^
+  RANGE  = ENTRY..CLOSE
+
+--- git diff --check on staged content ---
+rc=0
+
+--- production delta (must be empty) ---
+  tools/quality/llvm-gep01-test.HC delta:
+  src/ delta:
+  src/holyc-lib/tooling.HC delta:
+
+--- factory-append-only-test ---
+  PASS  NC11  rc=0
+
+--- summary ---
+PASS=11
+FAIL=0
+STATUS=PASS
+
+--- factory-v2-range-check (this ACT) ---
+Range-check will be run on the C2 CLOSE commit once created.
+Pre-check:
+RED=f999f1e (C1 RED)
+
+=== SUMMARY ===
+diff-check           = clean (rc=0)
+production delta     = empty (harness, src/, tooling.HC unchanged)
+append-only-test     = PASS 11/11

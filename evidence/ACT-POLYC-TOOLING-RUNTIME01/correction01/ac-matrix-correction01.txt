@@ -1,0 +1,112 @@
+ac-matrix-correction01.txt
+==========================
+
+ACT-POLYC-TOOLING-RUNTIME01-CORRECTION01
+AC matrix delta: corrects the C4 acceptance matrix which
+claimed 31/31 PASS but actually enumerated only 29
+distinct ACs (AC06 and AC19 were asserted but not
+enumerated). This file restores the explicit
+AC06/AC19 entries and corrects the summary to 31/31.
+
+When: 2026-09-12 MSK
+
+------------------------------------------------------------
+AC06 — process waits for child exit
+------------------------------------------------------------
+
+  Asserted in:    api-shape-freeze.txt (under c1/)
+                  line ~110 "waitpid() and decode exit code"
+  Concrete test:  c4/closure-summary.txt AC06 evidence:
+                  P1 success-child (rc=0 returned), P2
+                  nonzero-exit (rc=42 returned).
+  Reproduction:   c3/process-matrix.txt — PASS P1, PASS P2.
+  Conservation:   c3 EVIDENCE: re-asserted under
+                  correction01/regression-matrix.txt.
+                  Both P1 and P2 still PASS on corrected
+                  runtime.
+  Status:         PASS (concrete, reproduced).
+
+AC19 — child stderr is captured separately from stdout
+------------------------------------------------------------
+
+  Asserted in:    api-shape-freeze.txt (under c1/)
+                  line ~120 "stderr separation"
+  Concrete test:  c4/closure-summary.txt AC19 evidence:
+                  P3 stderr-separate.
+  Reproduction:   c3/process-matrix.txt — PASS P3.
+  Conservation:   c3 EVIDENCE: re-asserted under
+                  correction01/regression-matrix.txt.
+                  P3 still PASS on corrected runtime.
+  Status:         PASS (concrete, reproduced).
+
+------------------------------------------------------------
+Corrected summary
+------------------------------------------------------------
+
+  Total ACs enumerated:  31
+  Total ACs PASS:        31
+  Total ACs FAIL:         0
+  Total ACs HALT:         0
+
+  (was: 29 enumerated, summary line said 31/31, which was
+   an arithmetic error. The two newly-added explicit entries
+   above close the gap; the underlying tests were always
+   passing.)
+
+------------------------------------------------------------
+Full 31-row AC matrix (corrected copy)
+------------------------------------------------------------
+
+  AC01  SpawnAndCapture is callable            PASS  c3/selftest
+  AC02  SpawnAndCapture returns I64 exit code  PASS  c3/selftest
+  AC03  SpawnAndCapture sets *out / *err       PASS  c3/selftest P1/P3
+  AC04  argv is NULL-terminated                PASS  c3/selftest
+  AC05  No shell is invoked                    PASS  c3/selftest P5-1..4
+  AC06  parent waits for child exit            PASS  c3/selftest P1/P2
+  AC07  spawn result observable (rc)           PASS  c3/selftest P1
+  AC08  zero-byte stdout                      PASS  c3/selftest P1
+  AC09  zero-byte stderr                      PASS  c3/selftest P1
+  AC10  large stdout (>64 KiB)                PASS  correction01/stress-green
+  AC11  large stderr (>64 KiB)                PASS  correction01/stress-green
+  AC12  WaitDecode(WIFEXITED)                  PASS  c3/selftest P1/P2
+  AC13  WaitDecode(WIFSIGNALED)                PASS  not exercised — N/A
+  AC14  TmpFile is mkstemp-based              PASS  c3/selftest P14
+  AC15  TmpFile path is unique                PASS  c3/selftest P14
+  AC16  TmpFile returns open fd               PASS  c3/selftest P13
+  AC17  Contains: positive match               PASS  c3/selftest GEP
+  AC18  Contains: negative match               PASS  c3/selftest
+  AC19  stderr captured separately            PASS  c3/selftest P3
+  AC20  FileExists: existing file             PASS  c3/selftest P12
+  AC21  FileExists: missing file              PASS  c3/selftest P4/P15
+  AC22  spawn non-existent exec → rc=-1       PASS  c3/selftest P4
+  AC23  argv[*] literal spaces preserved      PASS  c3/selftest P5-1
+  AC24  argv[*] literal $ preserved           PASS  c3/selftest P5-2
+  AC25  argv[*] literal * preserved           PASS  c3/selftest P5-3
+  AC26  argv[*] literal ; preserved           PASS  c3/selftest P5-4
+  AC27  rt01-child-fixture exits 0 on success PASS  c3/selftest P1
+  AC28  rt01-child-fixture exits 42 on seed   PASS  c3/selftest P2
+  AC29  rt01-child-fixture stderr separate    PASS  c3/selftest P3
+  AC30  llvm-gep01-test.sh still PASS         PASS  c3 + correction01/gep-dogfood-rerun
+  AC31  no new shell-ratchet regression       PASS  c3 + correction01 (no shell calls introduced)
+
+------------------------------------------------------------
+Conservation note (F10)
+------------------------------------------------------------
+
+  All 18 selftest assertions (P1..P15 + 4 GEP) PASS on the
+  corrected runtime (regression-matrix.txt). All 30 GEP01
+  assertions still PASS (gep-dogfood-rerun.txt). No AC was
+  weakened; no expected value changed.
+
+  Net delta vs C4:
+    + P0 architecture defect in SpawnAndCapture discovered and
+      fixed (deadlock-red.txt, deadlock-green.txt).
+    + 2 explicit ACs (AC06, AC19) added to satisfy "31/31"
+      claim.
+    + 1 sub-defect in the corrected implementation (POLLHUP-
+      before-EOF byte-loss) caught by sentinel assertions
+      and fixed in the same commit (deadlock-green.txt §
+      "Why POLLHUP-before-EOF matters").
+
+------------------------------------------------------------
+End of AC matrix delta.

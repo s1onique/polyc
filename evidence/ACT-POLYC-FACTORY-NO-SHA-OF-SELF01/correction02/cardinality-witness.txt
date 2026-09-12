@@ -1,0 +1,86 @@
+ACT-POLYC-FACTORY-NO-SHA-OF-SELF01-CORRECTION02 — Cardinality witness
+
+Empirical proof of the semantic difference between naive
+and --all-match recipes, captured 2026-09-12.
+
+=== TEST 1: query for a NON-EXISTENT ACT id ===
+
+Naive recipe (OR semantics):
+
+  $ git log --grep='^ACT: ACT-POLYC-DOES-NOT-EXIST$' \
+            --grep='^ACT-Phase: CLOSE$' \
+            --pretty=format:'%H' | wc -l
+  50
+
+  The naive recipe returns 50 commits — the entire CLOSE
+  history of the repo. This is the bug.
+
+Corrected recipe (--all-match):
+
+  $ git log --all-match \
+            --grep='^ACT: ACT-POLYC-DOES-NOT-EXIST$' \
+            --grep='^ACT-Phase: CLOSE$' \
+            --pretty=format:'%H' | wc -l
+  0
+
+  The corrected recipe correctly returns 0 — the ACT
+  doesn't exist.
+
+=== TEST 2: query for a real ACT ===
+
+Naive:
+
+  $ git log --grep='^ACT: ACT-POLYC-TOOLING-RUNTIME01-CORRECTION06$' \
+            --grep='^ACT-Phase: CLOSE$' \
+            --pretty=format:'%H' | wc -l
+  50
+
+Corrected:
+
+  $ git log --all-match \
+            --grep='^ACT: ACT-POLYC-TOOLING-RUNTIME01-CORRECTION06$' \
+            --grep='^ACT-Phase: CLOSE$' \
+            --pretty=format:'%H' | wc -l
+  2
+
+  Two CLOSE commits for CORRECTION06:
+    - f031bc7 (the main commit)
+    - 23bc92a (the hygiene follow-up)
+
+  Cardinality = 2, NOT 1. This is itself an interesting
+  observation about the current state of CORRECTION06
+  (it has a main + hygiene follow-up pair, both carrying
+  ACT-Phase: CLOSE).
+
+  Under the Factory contract, cardinality should be 1.
+  Future corrections should consider whether the
+  hygiene-follow-up pattern is itself correct, or whether
+  hygiene fixes should carry ACT-Phase: EVIDENCE (not CLOSE).
+
+  That is a separate question, addressed by a separate ACT,
+  not in scope here.
+
+=== TEST 3: cardinality-1 happy path ===
+
+  $ git log --all-match -1 \
+            --grep='^ACT: ACT-POLYC-FACTORY-NO-SHA-OF-SELF01$' \
+            --grep='^ACT-Phase: CLOSE$' \
+            --pretty=format:'%H'
+  da7d19743f0479b95a57dab90d15d4805e4e150a
+
+  $ matches=$(git log --all-match \
+                    --grep='^ACT: ACT-POLYC-FACTORY-NO-SHA-OF-SELF01$' \
+                    --grep='^ACT-Phase: CLOSE$' \
+                    --pretty=format:'%H' | wc -l | tr -d ' ')
+  $ echo "$matches"
+  1
+
+  Cardinality 1, exactly one CLOSE commit returned, recipe
+  produces a stable SHA.
+
+=== CONCLUSION ===
+
+The naive recipe is worse than useless for non-existent
+ACTs (returns false positives) and unhelpfully noisy for
+real ACTs (returns the entire CLOSE history). The
+--all-match recipe is the only correct primitive.

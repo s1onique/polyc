@@ -1,0 +1,74 @@
+patch-hygiene.txt
+=================
+
+ACT-POLYC-TOOLING-RUNTIME01-CORRECTION01
+Patch hygiene audit: `git diff --check` on the CORRECTION01
+patch set against the appropriate base. Closes the C4 patch-
+hygiene defect: the C4 audit used `HEAD~3..HEAD` instead of
+`HEAD~4..HEAD` and missed the C2 IMPL trailing-blank-EOF.
+
+When:    2026-09-12 MSK
+Where:   /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc2
+Base:    456b71c (the C1/C2/C3/C4 ACT series lives at b055b8c,
+         b7d8937, a13280d, 5767740 on top of 456b71c).
+Patch:   456b71c..HEAD (5 commits: C1 RED + C2 IMPL +
+         C3 EVIDENCE + C4 CLOSE + CORRECTION01).
+
+------------------------------------------------------------
+C4 audit (the buggy one — for reference)
+------------------------------------------------------------
+
+  $ git diff --check HEAD~3..HEAD
+  (returns 0 — clean)
+
+  This command skips the C2 IMPL commit (b7d8937) entirely
+  because it inspects only the last 3 commits. The actual
+  trailing-blank-EOF was introduced by b7d8937 in
+  src/holyc-lib/tooling.HC.
+
+------------------------------------------------------------
+CORRECTION01 audit (correct base)
+------------------------------------------------------------
+
+  $ git diff --check HEAD~5..HEAD
+  evidence/ACT-POLYC-TOOLING-RUNTIME01/c1/api-shape-freeze.txt:187: new blank line at EOF.
+  evidence/ACT-POLYC-TOOLING-RUNTIME01/c1/missing-primitives.txt:213: new blank line at EOF.
+  evidence/ACT-POLYC-TOOLING-RUNTIME01/c4/acceptance-matrix.txt:172: new blank line at EOF.
+  evidence/ACT-POLYC-TOOLING-RUNTIME01/c4/closure-summary.txt:214: new blank line at EOF.
+  src/holyc-lib/tooling.HC:241: new blank line at EOF.
+
+  Five trailing-blank-EOF findings. All five were introduced
+  by commits b055b8c (C1) and b7d8937 (C2), NOT by this
+  CORRECTION01 commit.
+
+------------------------------------------------------------
+CORRECTION01's own delta
+------------------------------------------------------------
+
+  $ git diff --check HEAD       # what CORRECTION01 introduces
+  (empty)
+
+  No new trailing-blank-EOF findings. No whitespace-only
+  changes. No new files with leading/trailing whitespace
+  issues.
+
+------------------------------------------------------------
+Decision (per F14)
+------------------------------------------------------------
+
+  Historical ACT documents (c1/*, c4/*) and the original
+  tooling.HC contain pre-existing trailing-blank-EOF lines.
+  Per F14 ("Current truth may invalidate history" + "Historical
+  ACT documents SHALL NOT be rewritten merely because later
+  evidence supersedes them"), these are valid historical
+  evidence and MUST NOT be modified in-place.
+
+  A separate hygiene commit MAY be opened in a future ACT
+  if the factory adopts a project-wide trailing-blank policy,
+  but that is out of scope for CORRECTION01 (F7: scope is
+  conserved).
+
+  This is recorded as P2 residue in residue-correction01.txt.
+
+------------------------------------------------------------
+End of patch hygiene audit.

@@ -1,0 +1,66 @@
+ACT-POLYC-TOOLING-MIGRATE-GEP01-CORRECTION01 — C3 CLOSE
+Factory gates (fresh-tree evidence at HEAD)
+=============================================
+
+--- factory-append-only-test ---
+  PASS  NC9  rc=1
+  PASS  NC10  rc=1
+  PASS  NC11  rc=0
+
+--- summary ---
+PASS=11
+FAIL=0
+STATUS=PASS
+
+--- factory-v2-test ---
+  PASS  T18  (rejected as expected)
+  PASS  T33  (rejected as expected)
+  PASS  T34  (rejected as expected)
+
+--- summary ---
+PASS=35
+FAIL=0
+STATUS=PASS
+
+--- factory-closure-status-check ---
+DUPLICATE_ACT_PATHS=0
+DUPLICATE_HANDOFF_PATHS=0
+MISSING_ACT_FILES=0
+MISSING_HANDOFF_FILES=0
+MALFORMED_ACT_STATUS=0
+MALFORMED_HANDOFF_VERDICT=0
+UNMAPPED_MANAGED_ACTS=0
+UNMAPPED_MANAGED_HANDOFFS=0
+EXTRA_MANIFEST_ACTS=0
+EXTRA_MANIFEST_HANDOFFS=0
+EXACT_VERDICT_MISMATCHES=0
+PAIR_OK=6
+PAIR_FAIL=0
+STATUS=PASS
+VERDICT=PASS
+
+--- shell-loc-gate ---
+PASS  shell-loc-gate
+
+--- gate-fast ---
+POLYC_GATE=fast
+CHECK=diff-check STATUS=PASS
+CHECK=shell-syntax STATUS=PASS
+CHECK=doc-invariants STATUS=PASS
+CHECK=large-file-guard STATUS=PASS
+BUILD_RUN=NO
+POLYC_GATE=factory-closure-status
+MANIFEST_ROWS=6
+MISSING_HANDOFF_FILES=0
+MALFORMED_ACT_STATUS=0
+MALFORMED_HANDOFF_VERDICT=0
+EXACT_VERDICT_MISMATCHES=0
+PAIR_OK=6
+PAIR_FAIL=0
+STATUS=PASS
+VERDICT=PASS
+CHECK=factory-closure-status STATUS=PASS
+VERDICT=PASS
+
+--- git diff --check HEAD~3..HEAD (full CORRECTION01 range) ---
+(clean if empty above this line)

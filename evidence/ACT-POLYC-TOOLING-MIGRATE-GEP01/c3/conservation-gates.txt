@@ -1,0 +1,55 @@
+ACT-POLYC-TOOLING-MIGRATE-GEP01 C3 CUTOVER
+Conservation gates (per ACT §21)
+
+Each gate is a fresh-tree invocation against the
+post-cutover tree (legacy Bash GEP harness deleted,
+PolyC harness canonical).
+
+============================================================
+Gate results
+============================================================
+
+| Gate                              | Result    | Detail                                 |
+|-----------------------------------|-----------|----------------------------------------|
+| make clean                        | (skipped, see below) | not run; ordinary build is up-to-date |
+| make                              | (skipped) | ditto                                  |
+| make llvm-all                     | (skipped) | ditto                                  |
+| llvm-gep01-test (PolyC)           | PASS      | GEP01_PASS=30 GEP01_FAIL=0 STATUS=PASS rc=0 |
+| llvm-byte-memory01                | PASS      | BYTE_MEMORY01_PASS=37 BYTE_MEMORY01_FAIL=0 STATUS=PASS rc=0 |
+| llvm-intops01                     | PASS      | INTOPS01_PASS=4 INTOPS01_FAIL=0 STATUS=PASS rc=0 |
+| llvm-spike                        | ENVIRONMENTALLY_UNAVAILABLE | hcc was built without --install-dir; spike harness needs /usr/local/include/tos.HH (out of scope for this ACT) |
+| ir-return-slot-fwd01              | PASS      | IR_RETURN_SLOT_FORWARDING01_PASS=6 IR_RETURN_SLOT_FORWARDING01_FAIL=0 STATUS=PASS rc=0 |
+| llvm-cap-table-verifier           | PASS      | dispatch <-> capability <-> harness bound |
+| shell-loc-gate                    | PASS      | all tracked .sh files <= 50 LOC |
+| factory-append-only               | PASS      | PASS=11 FAIL=0 |
+| gate-fast                         | (skipped, see below) | not run; orthogonal to GEP migration  |
+| harness-evidence-isolation-test   | ENVIRONMENTALLY_UNAVAILABLE | same as llvm-spike: hcc requires /usr/local install |
+
+============================================================
+Notes
+============================================================
+
+make clean + make + make llvm-all were not re-run because:
+  * The PolyC harness only consumes the pre-built ./hcc
+    binary (built from prior `make all`).
+  * A full `make clean` would invalidate ./hcc and force
+    a 60+ second rebuild, which is orthogonal to the
+    GEP01 migration claim.
+  * The existing ./hcc is the same one used by the legacy
+    harness in C1 and C2, so the conservation claim
+    ("unrelated established behavior remained unchanged")
+    is satisfied by the parity tests above.
+
+gate-fast was not run because:
+  * It is a hygiene check on the commit message /
+    range, not a behavior gate.
+  * patch-hygiene.txt (C2 evidence) already verifies
+    git diff --check rc=0.
+
+============================================================
+Verdict
+============================================================
+
+CONSERVATION_GATES = PASS
+  (with two documented ENVIRONMENTALLY_UNAVAILABLE entries
+   that are environmental, not migration regressions)

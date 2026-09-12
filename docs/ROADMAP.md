@@ -780,6 +780,88 @@ SHELL-INV01  ACT-POLYC-TOOLING-SHELL-INVENTORY01
   NEXT ACT = ACT-POLYC-TOOLING-SHELL-BUDGET01
 ```
 
+#### ACT-POLYC-TOOLING-RUNTIME01 status (CLOSED PASS at C5 CORRECTION01)
+
+```text
+TOOLING-RT01 ACT-POLYC-TOOLING-RUNTIME01
+  ENTRY      = 456b71c
+               (ACT-POLYC-TOOLING-SHELL-INVENTORY01-CORRECTION01)
+  C1 RED     = b055b8c
+  C2 IMPL    = b7d8937
+  C3 EVID    = a13280d
+  C4 CLOSE   = 5767740
+  C5 CORR01  = (this commit, trailer ACT-Verdict PASS)
+  VERDICT    = PASS
+
+  MISSION = prove the minimum PolyC tooling runtime:
+            direct-argv subprocess (no shell), exit code
+            decode, race-safe temp file, byte-exact substring
+            search, file existence check. No language change;
+            additive substrate only.
+
+  SUBSTRATE (src/holyc-lib/tooling.HC, ~265 LOC)
+    SpawnAndCapture(path, argv, &out, &err) -> I64 rc
+    WaitDecode(status) -> I64 rc
+    TmpFile(dir, prefix, &path) -> I32 fd
+    Contains(haystack, needle) -> Bool
+    FileExists(path) -> Bool
+    + POSIX extern "c": fork/pipe/dup2/close/execv/
+      waitpid/mkstemp/strstr/getpid/poll
+
+  CONCURRENT DRAIN (CORRECTION01)
+    Originally a sequential "drain stdout then stderr" loop;
+    this DEADLOCKED when the child wrote >64 KiB to one
+    stream while the other stayed open (pipe back-pressure
+    + open-fd dependency). Fixed with a single poll(2)
+    loop over both read-ends; on any revents (POLLIN |
+    POLLHUP | POLLERR) attempt read; close only on read==0
+    (true EOF). A sub-bug (POLLHUP-before-EOF byte loss)
+    was caught and fixed in the same commit.
+
+  GATES (post-C5)
+    runtime01-selftest                 18/0 PASS
+    llvm-gep01-test                    30/0 PASS (conservation)
+    4 MiB stderr-flood + open stdout   < 1s, all bytes captured
+    4 MiB stdout-flood + open stderr   < 1s, all bytes captured
+    interleave 4 MiB (512 chunks)      < 1s, sentinels on both sides
+    deadlocked (pre-fix) workload      HANG (10s watchdog kill)
+
+  EVIDENCE ROOT = evidence/ACT-POLYC-TOOLING-RUNTIME01/
+    c1/  capability matrix, runtime symbol search,
+         frozen API, RED probe, missing primitives, platform
+         policy (8 files)
+    c2/  implementation delta, probe build/run (3 files)
+    c3/  process matrix, verdict channel, conservation gates,
+         GEP dogfood, compiler-hang bisection (6 files)
+    c4/  closure summary, residue, patch hygiene,
+         acceptance matrix, roadmap update (5 files)
+    correction01/
+         deadlock-red.txt, deadlock-green.txt,
+         stress-red-raw.txt, stress-green-raw.txt,
+         regression-matrix.txt, gep-dogfood-rerun.txt,
+         ac-matrix-correction01.txt, patch-hygiene.txt,
+         residue-correction01.txt, roadmap-correction01.txt
+         (plus deadlock_probe.{c,HC}, dl_check.HC).
+
+  RESIDUE (F11)
+    P0 none
+    P1 ACT-POLYC-PARSER-TERNARY-HANG01 — discovered via
+       the C3 selftest (Bisected to one-line reproducer;
+       selftest rewritten with explicit if/return).
+       Track A / compiler critical path.
+    P2 Windows tooling-runtime backend (out of §5 scope).
+    P2 rc=127 ambiguity (execv-failed vs child-exited-127)
+       honestly documented; future ACT if a caller needs
+       the distinction.
+    P2 project-wide trailing-blank-EOF hygiene
+       (5 historical findings; F14 keeps them in place).
+
+  NEXT ACT = ACT-POLYC-TOOLING-MIGRATE-GEP01
+             (port llvm-gep01-test.sh to the new runtime
+              as the first concrete Track-B outcome;
+              SHELL-BUDGET01 remains a parallel option.)
+```
+
 The critical-path transition per ACT §24:
 
 ```text
@@ -789,9 +871,119 @@ The critical-path transition per ACT §24:
   ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02  CLOSED PASS
   ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME02   CLOSED PASS
   ACT-POLYC-LLVM-GEP01                    CLOSED PASS
-  ACT-POLYC-TOOLING-SHELL-INVENTORY01     CLOSED PASS  <-- this ACT (parallel)
-  (fresh B0 substrate recon)               NEXT  (compiler critical path)
-  (TOOLING-RUNTIME01 + SHELL-BUDGET01)     NEXT  (tooling self-host path)
+  ACT-POLYC-TOOLING-SHELL-INVENTORY01     CLOSED PASS  <-- Track B predecessor
+  ACT-POLYC-TOOLING-RUNTIME01             CLOSED PASS  <-- this ACT
+  ACT-POLYC-PARSER-TERNARY-HANG01         NEXT        (Track A / compiler)
+  ACT-POLYC-TOOLING-MIGRATE-GEP01         NEXT        (Track B / tooling)
+```
+
+STRUCT01 / ARRAY01 remain deferred. BOOTSTRAP01 (B0
+lexer/tokenizer) follows GEP01's closure.
+
+#### ACT-POLYC-TOOLING-MIGRATE-GEP01 status (CLOSED PASS at C4)
+
+```text
+MIGRATE-GEP01  ACT-POLYC-TOOLING-MIGRATE-GEP01
+  ENTRY      = ACT-POLYC-TOOLING-RUNTIME01 + corrections
+               (predecessor substrate usable / GREEN)
+  C1 RED     = (commit with trailer ACT-Phase: RED)
+               (ACT document + frozen legacy baseline
+                + 30-row oracle matrix + environment
+                freeze + no production changes)
+  C2 IMPL    = (commit with trailer ACT-Phase: IMPL)
+               (PolyC harness at
+                tools/quality/llvm-gep01-test.HC +
+                dual-run parity + seeded-failure gate)
+  C3 EVID    = (commit with trailer ACT-Phase: EVIDENCE)
+               (legacy 232-line Bash harness deleted;
+                conservation gates; shell-debt -232 LOC)
+  C4 CLOSE   = (this section, trailer ACT-Phase: CLOSE
+                                 ACT-Verdict: PASS)
+  VERDICT    = PASS
+
+  MISSION = replace scripts/quality/llvm-gep01-test.sh
+            (232 LOC of Bash) with a PolyC-native harness
+            while preserving the complete 30-check GEP01
+            oracle.
+
+  POLYC HARNESS (tools/quality/llvm-gep01-test.HC)
+    Direct-argv SpawnAndCapture throughout.
+    Harness-local ResolveTool() handles the execv/no-PATH
+    gap (does NOT widen tooling.HC).
+    VerdictPass / VerdictFail aggregate into a
+    GEP01_PASS / GEP01_FAIL / STATUS channel that exits
+    0 on PASS, 1 on FAIL.
+    --mode=fail flips row 04 to forced FAIL to prove the
+    verdict channel is honest.
+
+  ORACLE (30 rows, identity-preserved)
+    Legacy stdout: 30 PASS rows.
+    PolyC stdout:  30 PASS rows.
+    PARITY_ROWS=30 PARITY_MATCH=30 PARITY_MISMATCH=0.
+    Every assertion_id in c1/oracle-matrix.tsv has a
+    corresponding PolyC PASS row.
+
+  CONSERVATION GATES (post-cutover)
+    llvm-gep01-test (PolyC)        30/0 PASS rc=0
+    llvm-byte-memory01             37/0 PASS rc=0
+    llvm-intops01                   4/0 PASS rc=0
+    ir-return-slot-fwd01            6/0 PASS rc=0
+    llvm-cap-table-verifier        PASS
+    shell-loc-gate                 PASS
+    factory-append-only            11/0 PASS rc=0
+
+  SHELL-DEBT ACCOUNTING (per ACT §17)
+    pre_gep_shell_loc     = 232     (C1 freeze)
+    post_gep_shell_loc    = 0       (Outcome A: deleted)
+    pre_total_shell_loc   = 6184    (C1 freeze)
+    post_total_shell_loc  = 5952    (-232)
+    pre_shell_file_count  = 23
+    post_shell_file_count = 22
+
+  DIRECT-ARGV AUDIT (per ACT §23)
+    Forbidden token count in production source: 0.
+    (audit pattern: /bin/sh | sh -c | bash -c |
+     system( | popen( | System( | Sh( | Shlurp()
+
+  EVIDENCE ROOT = evidence/ACT-POLYC-TOOLING-MIGRATE-GEP01/
+    c1/  legacy.stdout.txt, legacy-source.txt, oracle-matrix.tsv,
+         environment-freeze.txt, c1-required-result.txt, README.md
+    c2/  bash.stdout.txt, polyc.stdout.txt, polyc.fail-stdout.txt,
+         parity-matrix.tsv, verdict-negative-control.txt,
+         scratch-isolation.txt, direct-argv-audit.txt,
+         production-delta.txt, patch-hygiene.txt,
+         c2-required-result.txt, README.md
+    c3/  polyc.stdout.txt, shell-debt-accounting.txt,
+         conservation-gates.txt, build-freshness.txt,
+         c3-required-result.txt, README.md
+
+  RESIDUE (F11)
+    P0 none
+    P1 none
+    P2 two ENVIRONMENTALLY_UNAVAILABLE gates
+       (llvm-spike / harness-evidence-isolation)
+       depend on hcc being installed at /usr/local; this
+       build posture is portable-via-(--install-dir) and
+       is orthogonal to the GEP01 migration. See
+       evidence/.../c3/conservation-gates.txt.
+
+  NEXT ACT = ACT-POLYC-TOOLING-SHELL-BUDGET01
+```
+
+The critical-path transition per ACT §24:
+
+```text
+  ACT-POLYC-LLVM-BYTE-MEMORY01            HALT_SCOPE_EXPANSION_REQUIRED
+  ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME01   HALT_SCOPE_EXPANSION_REQUIRED
+  ACT-POLYC-IR-RETURN-SLOT-FORWARDING01   HALT_SECOND_SEAM_REQUIRED
+  ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02  CLOSED PASS
+  ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME02   CLOSED PASS
+  ACT-POLYC-LLVM-GEP01                    CLOSED PASS
+  ACT-POLYC-TOOLING-SHELL-INVENTORY01     CLOSED PASS  <-- Track B predecessor
+  ACT-POLYC-TOOLING-RUNTIME01             CLOSED PASS
+  ACT-POLYC-TOOLING-MIGRATE-GEP01         CLOSED PASS  <-- Track B first migration
+  ACT-POLYC-PARSER-TERNARY-HANG01         NEXT        (Track A / compiler)
+  ACT-POLYC-TOOLING-SHELL-BUDGET01        NEXT        (Track B / tooling)
 ```
 
 STRUCT01 / ARRAY01 remain deferred. BOOTSTRAP01 (B0

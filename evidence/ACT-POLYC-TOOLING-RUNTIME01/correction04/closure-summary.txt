@@ -1,0 +1,129 @@
+ACT-POLYC-TOOLING-RUNTIME01-CORRECTION04 — Closure Summary (EVIDENCE-ONLY)
+
+VERDICT:        PASS_WITH_HYGIENE_RESIDUE
+IDENTITY:       branch=main HEAD=8d1d961e7e5402577100aae08b16901e82c0b750
+PREDECESSOR:    ACT-POLYC-TOOLING-RUNTIME01-CORRECTION03 (PASS)
+SUPERSEDES:     (this is a bounded evidence correction; no
+                 production semantic change)
+
+WHAT WENT WRONG IN CORRECTION03:
+
+  I committed evidence/ACT-POLYC-TOOLING-RUNTIME01/correction03/
+  patch-hygiene.txt as an EMPTY FILE and reported "CORRECTION03
+  patch = clean". That was a closure-integrity defect:
+
+    - An empty patch-hygiene.txt is NOT evidence that
+      `git diff --check` passed.
+    - Re-running `git diff --check HEAD~1..HEAD` from a clean
+      working tree shows rc=2 with 3 diagnostics, all in
+      CORRECTION03-introduced evidence files (NOT in src/).
+
+  The substantive code/build fixes in CORRECTION03 were correct
+  and empirically verifiable — only the documentation of patch
+  hygiene was broken.
+
+WHY THIS IS BOUNDED EVIDENCE-ONLY:
+
+  - All production semantics and build integration in CORRECTION03
+    are correct (verified end-to-end against a fresh install).
+  - F14 forbids rewriting historical content; this is a
+    follow-up commit, not an amendment.
+  - The defect was purely in the documentation of hygiene.
+
+WHAT CORRECTION04 DOES (across 2 follow-up commits):
+
+  Commit 7e69451 (CORRECTION04 #1):
+    1. install-rc-table.txt — per-step RCs:
+         hcc -lib tos          RC=1 (TOLERATED: hcc tries to
+                                     link dylib itself; _Errno
+                                     unresolved pre-shim; we
+                                     re-link after the shim)
+         cc errno_shim.c       RC=0
+         ar r libtos.a         RC=0 (xcrun cache warnings
+                                     are benign stderr noise)
+         ranlib                RC=0
+         cc -dynamiclib retry  RC=0 (_Errno now resolvable)
+         cp to install prefix  RC=0
+         ln -sf libtos.dylib   RC=0
+         cmake --install       RC=0
+    2. install-prefix-witness.txt — direct test -f/-L/readlink
+       triple proving libtos.dylib -> libtos.0.0.1.dylib.
+    3. patch-hygiene-classified.txt — full classification of
+       all git diff --check diagnostics in 456b71c..HEAD range.
+    4. patch-hygiene.txt — APPENDED addendum (F14-safe) to the
+       empty correction03 file explaining the closure error.
+    5. Stripped heredoc EOF blanks from c03 ac-matrix and
+       eintr-red-argv-broken.txt.
+
+  Commit 8d1d961 (CORRECTION04 #2):
+    - The first c04 commit's capture of `git diff --check`
+      output had a shell-pipeline artifact: the diagnostic line
+      ending in `cc ... -lm ` (with trailing space in argv)
+      was concatenated with the next diagnostic on the same
+      line. This commit:
+        * Inserts a real newline between `-lm` and the next
+          diagnostic in both patch-hygiene.txt and
+          patch-hygiene-classified.txt.
+        * Strips the EOF blank from install-prefix-witness.txt.
+    - No semantic content change.
+
+WHAT IS NOT CHANGED (and why):
+
+  - src/CMakeLists.txt: F14-protected (correct as-is in c03).
+  - src/holyc-lib/tooling.HC: F14-protected for EOF (existing
+    finding; introduced before CORRECTION03).
+  - evidence/.../correction03/cmake-install.log:15 trailing WS:
+    This is the verbatim argv that CMake actually ran:
+      `cc -dynamiclib ... -lpthread -lc -lm ` (trailing space).
+    Fixing it would FALSIFY evidence. Classified as P2 residue.
+
+CONSERVATION (F10) — empirically verified on 2025-09-12
+against a fresh /tmp/c04-final-install:
+
+  cmake --install                     exit=0
+  libtos.a (file)                     YES
+  libtos.0.0.1.dylib (file)           YES
+  libtos.dylib (symlink)              YES
+  libtos.dylib ->                     libtos.0.0.1.dylib
+  runtime01-selftest build            exit=0
+  runtime01-selftest run              18/18 PASS
+  llvm-gep01-test.sh                  30/30 PASS
+  otool -L rt01-final                 libtos.0.0.1.dylib
+                                      (linked to installed prefix)
+  Production source files             zero hygiene findings
+
+VERDICT RECONCILIATION:
+
+  CORRECTION03 verdict: PASS_WITH_NONBLOCKING_RESIDUE
+    Production code correct; only the patch-hygiene evidence
+    file was miscaptured.
+
+  CORRECTION04 verdict: PASS_WITH_HYGIENE_RESIDUE
+    All CORRECTION03-introduced hygiene findings remediated.
+    Remaining 6 diagnostics in 456b71c..HEAD range are:
+      4 F14-protected historical evidence (c1, c4)
+      1 P2 residue (cmake-install.log verbatim argv)
+      1 F14-protected tooling.HC EOF (existed pre-c03)
+    Zero CORRECTION03- or CORRECTION04-introduced findings.
+
+  Track B advance authorization: GRANTED.
+  All production semantics and build integration are
+  empirically correct against the actual install path.
+
+RESIDUE (carried from c03 + 2 new in c04):
+
+  From c03 (8 items):
+    R1 PARSER-TERNARY-HANG01          P1
+    R2 LINUX-PORT01                   P1
+    R3 rc=127 spawn/exec ambiguity    P2
+    R4 trailing-blank-EOF hygiene     P2
+    R5 fixture binary location        P2
+    R6 external SIGTERM witness       P2
+    R7 child-pgroup detection         P2
+    R8 c02 selftest was partial       P1 (fixed by c04 evidence)
+
+  New in c04 (2 items):
+    R9  cmake-install.log:15 trailing WS        P2 (verbatim argv)
+    R10 historical F14 findings (5)             F14 (immutable)
+
+NEXT ACT: ACT-POLYC-TOOLING-MIGRATE-GEP01

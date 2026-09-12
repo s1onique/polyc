@@ -1,0 +1,98 @@
+=== ACT-POLYC-TOOLING-RUNTIME01-CORRECTION04 patch-hygiene (EVIDENCE-ONLY correction) ===
+
+This file SUPERSEDES the empty evidence/ACT-POLYC-TOOLING-RUNTIME01/correction03/patch-hygiene.txt.
+
+CORRECTION03 CLOSURE ERROR:
+  The committed patch-hygiene.txt is empty; that was interpreted as
+  "git diff --check passed" but is actually an artifact of miscapturing
+  diff-check output (with rc=2, see below).
+
+=== AUTHORITATIVE git diff --check over CORRECTION03 range (HEAD~1..HEAD = ab1f28d..e5a2e50) ===
+command: git diff --check HEAD~1..HEAD
+
+evidence/ACT-POLYC-TOOLING-RUNTIME01/correction03/ac-matrix-correction03.txt:79: new blank line at EOF.
+evidence/ACT-POLYC-TOOLING-RUNTIME01/correction03/cmake-install.log:15: trailing whitespace.
++cc -dynamiclib -Wl,-install_name,/tmp/c03-install/lib/libtos.0.0.1.dylib all.o -o libtos.dylib -lpthread -lc -lm
+evidence/ACT-POLYC-TOOLING-RUNTIME01/correction03/eintr-red-argv-broken.txt:30: new blank line at EOF.
+rc=2
+
+=== CLASSIFICATION (F14) ===
+
+Diagnostics in the CORRECTION03-introduced range (3 in evidence, 0 in src):
+  1. correction03/ac-matrix-correction03.txt:79: new blank line at EOF
+     CORRECTION03-introduced. Evidence file. F14 does NOT protect it
+     (F14 protects historical immutable evidence; new evidence files
+     in correction03/ are themselves created by CORRECTION03, so they
+     are subject to hygiene rules).
+     ROOT CAUSE: my heredoc EOF emitted an extra blank line.
+
+  2. correction03/cmake-install.log:15: trailing whitespace
+     CORRECTION03-introduced. Captured log file.
+     ROOT CAUSE: the actual cc command CMake ran had a trailing space
+     in its argv (libtos.a reference). The captured log is faithful
+     evidence of what CMake ran; the trailing whitespace is NOT a code
+     defect and NOT user-fixable (it's the verbatim command argv).
+     DECISION: classify as P2 RESIDUE, do NOT modify the log (would
+     falsify evidence).
+
+  3. correction03/eintr-red-argv-broken.txt:30: new blank line at EOF
+     CORRECTION03-introduced. Evidence file. Same heredoc EOF cause.
+
+=== SOURCE FILES (zero hygiene findings) ===
+
+src/CMakeLists.txt and src/holyc-lib/tooling.HC — the actual production
+code changed by CORRECTION03 — are 100% clean by git diff --check.
+
+=== FULL ACT RANGE (456b71c..HEAD) for context ===
+
+Total diagnostics: 9 (3 CORRECTION03-introduced + 5 inherited-F14 + 1 tooling.HC EOF)
+
+Inherited F14 (5 — protected immutable evidence per F14):
+  evidence/ACT-POLYC-TOOLING-RUNTIME01/c1/api-shape-freeze.txt:187
+  evidence/ACT-POLYC-TOOLING-RUNTIME01/c1/missing-primitives.txt:213
+  evidence/ACT-POLYC-TOOLING-RUNTIME01/c4/acceptance-matrix.txt:172
+  evidence/ACT-POLYC-TOOLING-RUNTIME01/c4/closure-summary.txt:214
+  src/holyc-lib/tooling.HC:416 (existed before CORRECTION03 — F14)
+
+CORRECTION03-introduced (3 — must be addressed):
+  evidence/ACT-POLYC-TOOLING-RUNTIME01/correction03/ac-matrix-correction03.txt:79
+  evidence/ACT-POLYC-TOOLING-RUNTIME01/correction03/cmake-install.log:15
+  evidence/ACT-POLYC-TOOLING-RUNTIME01/correction03/eintr-red-argv-broken.txt:30
+
+=== CORRECTION04 REMEDIATION ===
+
+For the 2 heredoc-induced trailing-blank-EOF findings:
+  - strip the trailing blank line from ac-matrix-correction03.txt
+  - strip the trailing blank line from eintr-red-argv-broken.txt
+
+For the captured-log trailing-whitespace finding:
+  - DO NOT modify cmake-install.log (would falsify evidence)
+  - Document as P2 RESIDUE; this is the verbatim command argv
+
+Post-CORRECTION04 expected: 7 diagnostics (5 inherited-F14 + 1 tooling.HC F14
++ 1 captured-log trailing-whitespace as P2 residue). 0 CORRECTION03-introduced.
+
+=== POST-COMMIT UPDATE (after 8d1d961) ===
+
+Full ACT range hygiene status, final:
+
+  $ git diff --check 456b71c..HEAD
+  evidence/ACT-POLYC-TOOLING-RUNTIME01/c1/api-shape-freeze.txt:187
+  evidence/ACT-POLYC-TOOLING-RUNTIME01/c1/missing-primitives.txt:213
+  evidence/ACT-POLYC-TOOLING-RUNTIME01/c4/acceptance-matrix.txt:172
+  evidence/ACT-POLYC-TOOLING-RUNTIME01/c4/closure-summary.txt:214
+  evidence/ACT-POLYC-TOOLING-RUNTIME01/correction03/cmake-install.log:15
+  src/holyc-lib/tooling.HC:416
+
+  Total: 6 findings, classified:
+    4 historical F14 (immutable)
+    1 F14 tooling.HC (existed pre-c03)
+    1 P2 residue (verbatim argv)
+    0 CORRECTION03-introduced
+    0 CORRECTION04-introduced
+
+CORRECTION04 is hygiene-CLEAN for its own commits:
+  $ git diff --check HEAD~2..HEAD   # both c04 commits
+  rc=0
+  $ git diff --check HEAD~1..HEAD   # newest c04 commit only
+  rc=0

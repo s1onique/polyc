@@ -1,0 +1,74 @@
+
+=== toolchain ===
+PASS  toolchain: hcc + llvm-as + opt available
+
+=== authorized-set echo ===
+PASS  authorized-set.txt present (frozen at recon close)
+
+=== byte type admission ===
+PASS  src/tests/llvm-byte-memory01/red_u8_param.HC: U8/I8 parameter admission
+PASS  src/tests/llvm-byte-memory01/red_i8_param.HC: U8/I8 parameter admission
+
+=== direct byte load ===
+PASS  src/tests/llvm-byte-memory01/red_byte_load.HC: load i8, ptr
+PASS  src/tests/llvm-byte-memory01/red_byte_pointer_param.HC: load i8, ptr
+
+=== byte promotion (zext / sext) ===
+PASS  src/tests/llvm-byte-memory01/red_byte_to_i64.HC: byte promotion
+PASS  src/tests/llvm-byte-memory01/red_u8_param.HC: byte promotion
+PASS  src/tests/llvm-byte-memory01/red_i8_param.HC: byte promotion
+
+=== byte store (DEFERRED per ACT §37) ===
+INFO  byte store (IR_STORE_DEREF byte shape) is DEFERRED per ACT §37
+INFO  No positive fixtures; no test executed
+
+=== byte truncation (I64 -> I8 admitted; I64 -> I16 REJECTED) ===
+PASS  red_i16_trunc_negative.HC: I64 -> I16 narrowing rejected with named diagnostic
+
+=== LLVM textual structure ===
+PASS  red_byte_load: structural purity
+PASS  red_byte_pointer_param: structural purity
+PASS  red_byte_to_i64: structural purity
+PASS  red_i8_param: structural purity
+PASS  red_u8_param: structural purity
+PASS  pos_byte_compare_simple: structural purity
+
+=== llvm-as / opt --passes=verify ===
+PASS  red_byte_load: llvm-as + opt --passes=verify
+PASS  red_byte_pointer_param: llvm-as + opt --passes=verify
+PASS  red_byte_to_i64: llvm-as + opt --passes=verify
+PASS  red_i8_param: llvm-as + opt --passes=verify
+PASS  red_u8_param: llvm-as + opt --passes=verify
+PASS  pos_byte_compare_simple: llvm-as + opt --passes=verify
+
+=== capability counters ===
+PASS  IR_LOAD_DEREF = SHAPE_DEPENDENT
+PASS  IR_STORE_DEREF = SHAPE_DEPENDENT
+PASS  IR_ZEXT = SHAPE_DEPENDENT
+PASS  IR_SEXT = SHAPE_DEPENDENT
+PASS  IR_TRUNC = SHAPE_DEPENDENT
+
+=== per-fixture counter attribution (CORE04 §30 binding) ===
+PASS  src/tests/llvm-byte-memory01/red_byte_load.HC: SHAPE_DEPENDENT counter = 2
+PASS  src/tests/llvm-byte-memory01/red_u8_param.HC: SHAPE_DEPENDENT counter = 2
+PASS  src/tests/llvm-byte-memory01/red_i8_param.HC: SHAPE_DEPENDENT counter = 2
+PASS  src/tests/llvm-byte-memory01/red_byte_to_i64.HC: SHAPE_DEPENDENT counter = 2
+PASS  src/tests/llvm-byte-memory01/pos_byte_compare_simple.HC: SHAPE_DEPENDENT counter = 5
+
+=== GEP purity ===
+PASS  zero getelementptr in BYTE-MEMORY01 positive .ll files
+
+=== determinism ===
+PASS  red_byte_load: byte-identical across two runs
+PASS  pos_byte_compare_simple: byte-identical across two runs
+
+=== historical-evidence conservation ===
+PASS  evidence/llvmspike01 present
+PASS  evidence/llvm-memory01 present
+PASS  evidence/llvm-float01 present
+PASS  evidence/llvm-intops01 present
+
+=== summary ===
+BYTE_MEMORY01_PASS=37
+BYTE_MEMORY01_FAIL=0
+STATUS=PASS

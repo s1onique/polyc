@@ -1,0 +1,34 @@
+=== R2 - c4 baseline did not measure AC07 gates ===
+Searching for unit-test, jit-unit-test, lsp-test in c4 evidence.
+
+--- grep c4/conservation-gates.txt ---
+(c4/conservation-gates.txt does not exist; using c4/closure-summary.txt)
+
+--- c4 gates actually measured (per c4 closure-summary.txt) ---
+CONSERVATION GATES (per ACT §21)
+============================================================
+
+  llvm-gep01-test (PolyC)        30/0 PASS rc=0
+  llvm-byte-memory01             37/0 PASS rc=0
+  llvm-intops01                   4/0 PASS rc=0
+  ir-return-slot-fwd01            6/0 PASS rc=0
+  llvm-cap-table-verifier        PASS
+  shell-loc-gate                 PASS
+  factory-append-only            11/0 PASS rc=0
+  llvm-spike                     ENVIRONMENTALLY_UNAVAILABLE
+  harness-evidence-isolation     ENVIRONMENTALLY_UNAVAILABLE
+
+
+=== CONCLUSION ===
+The c4 baseline measured 7 gates:
+  llvm-gep01-test, llvm-byte-memory01, llvm-intops01,
+  ir-return-slot-fwd01, llvm-cap-table-verifier,
+  shell-loc-gate, factory-append-only
+plus 2 ENVIRONMENTALLY_UNAVAILABLE:
+  llvm-spike, harness-evidence-isolation-test
+
+None of these 9 entries is `make unit-test`,
+`make jit-unit-test`, or `make lsp-test`.
+
+Therefore "counts unchanged from c4 baseline" is
+UNDEFINED for AC07's three named gates.

@@ -1,0 +1,74 @@
+ACT-POLYC-TOOLING-MIGRATE-GEP01 — Residue (F11)
+
+============================================================
+P0 (blocks current/next decision)
+============================================================
+
+  none
+
+============================================================
+P1 (important near-term work)
+============================================================
+
+  none
+
+============================================================
+P2 (deferred improvement)
+============================================================
+
+P2.1 (Environmentally unavailable gates)
+  llvm-spike / harness-evidence-isolation-test
+  require hcc installed at /usr/local. The same
+  constraint applied to the pre-cutover harness; this
+  is NOT a regression. Documented in
+  evidence/.../c3/conservation-gates.txt.
+  Fix: install hcc system-wide via `make install`
+  (P1-equivalent infrastructure work, out of scope
+   for this ACT).
+
+P2.2 (Scratch path migration)
+  The migrated PolyC harness writes scratch under
+  build/quality/gep01/. The legacy Bash harness wrote
+  scratch under evidence/ACT-POLYC-LLVM-GEP01/c3/_tmp
+  (a closed-ACT evidence tree). The new path is
+  architecturally cleaner but any external tooling that
+  assumed the legacy path will need to be updated.
+  None was found in-tree; verified by grep.
+
+P2.3 (Build wiring in Makefile)
+  The PolyC harness is currently built ad-hoc via the
+  documented `./hcc --install-dir=... -o llvm-gep01-test
+  tools/quality/llvm-gep01-test.HC` incantation. A
+  `make llvm-gep01-test` target would tighten the
+  freshness invariant. Out of scope for this ACT
+  (F7: don't refactor adjacent code).
+
+============================================================
+C1 residue (carried forward)
+============================================================
+
+  C1 closed with zero residue. See
+  evidence/ACT-POLYC-TOOLING-MIGRATE-GEP01/c1/README.md
+  and c1-required-result.txt.
+
+============================================================
+C2 residue (carried forward)
+============================================================
+
+  C2 closed with zero residue. The PolyC harness was
+  developed, tested, and the dual-run parity proven
+  row-by-row. See
+  evidence/ACT-POLYC-TOOLING-MIGRATE-GEP01/c2/README.md
+  and c2-required-result.txt.
+
+============================================================
+C3 residue (carried forward)
+============================================================
+
+  C3 closed with zero residue. The Bash harness was
+  deleted; conservation gates pass; build freshness
+  verified. See
+  evidence/ACT-POLYC-TOOLING-MIGRATE-GEP01/c3/README.md
+  and c3-required-result.txt.
+
+End of file.

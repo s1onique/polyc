@@ -1,0 +1,59 @@
+ACT-POLYC-FACTORY-NO-SHA-OF-SELF01-CORRECTION03 — Authoritative recipe (v2)
+
+This v2 supersedes the v1 in
+evidence/ACT-POLYC-FACTORY-NO-SHA-OF-SELF01/correction02/
+authoritative-recipe.txt (F14 immutable; v1 had the
+wc -l + --pretty=format:'%H' bug).
+
+=== CARDINALITY CHECK (the only one you need) ===
+
+```sh
+# Returns 0, 1, or N — the count of CLOSE commits matching
+# both grep patterns. Uses --oneline so wc -l is correct.
+matches=$(git log --all-match \
+                  --grep='^ACT: ACT-POLYC-FOO01-CORRECTION03$' \
+                  --grep='^ACT-Phase: CLOSE$' \
+                  --oneline | wc -l)
+test "$matches" -eq 1 || {
+    echo "EXPECTED 1 CLOSE COMMIT FOR ACT-POLYC-FOO01-CORRECTION03," \
+         "GOT $matches" >&2
+    exit 1
+}
+```
+
+=== EXTRACT THE SHA (after cardinality check passes) ===
+
+```sh
+git log --all-match -1 \
+        --grep='^ACT: ACT-POLYC-FOO01-CORRECTION03$' \
+        --grep='^ACT-Phase: CLOSE$' \
+        --pretty=format:'%H%n' | head -1
+```
+
+The `%H%n` is critical here: --pretty=format emits NO
+trailing newline by default, so `head -1` would fail to
+strip it correctly. Adding `%n` makes the output one-line-
+per-commit, which is what `head -1` expects.
+
+=== WHY NOT --pretty=format:'%H' WITHOUT %n? ===
+
+Because the next consumer of the SHA may want to do string
+operations (concatenation, file operations, etc.) and a
+SHA without a trailing newline behaves correctly in pipes
+but may cause subtle bugs in:
+
+  - $(command substitution) — trailing-newline-stripping
+    rule removes it anyway, so no issue
+  - file writes — `echo $sha > file` works either way
+  - printf/format operations — may want newline
+
+The safest convention is "always end output with %n". This
+is the recipe used in authoritative-recipe-v2.txt and in
+the updated DOCTRINE.md §22.
+
+=== SUPERSESSION ===
+
+This v2 SUPERSEDES v1 (in correction02/). v1 had the
+wc -l + --pretty=format:'%H' bug. v1 is preserved as
+historical evidence of an earlier (now-known-incorrect)
+recipe.

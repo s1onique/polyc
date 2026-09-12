@@ -1,0 +1,41 @@
+=== AC05 - harness conservation replay at CORRECTION02 close tree ===
+Verifies F10 conservation: required behavior remains
+the same as CORRECTION01 CLOSE.
+
+ENVIRONMENTAL CONSTRAINT:
+This checkout's macOS sandbox blocks creation of
+ar/nm cache files at /var/folders/.../T/, which
+prevents hcc from loading its runtime symbols.
+The hcc toolchain itself is therefore unable to
+compile/link HolyC source on this checkout.
+
+This is the same environmental defect that
+`make lsp-test` exhibits (see R1 close-tree
+evidence); the predicate-selftest, real harness,
+and seeded-fail modes all require the hcc runtime
+to be loadable. They cannot be exercised here.
+
+=== ATTEMPTED: predicate-selftest ===
+selftest rc=1
+JIT: unresolved symbol '_Errno'
+
+=== ATTEMPTED: real harness (compile to binary) ===
+compile rc=1
+    /private/var/folders/0g/mpt_55f524ndzxymkp20wjfc0000gn/T/clinemm-sandbox-temp-JvHxTF/holyc-asm-d62630.o
+    /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc2/build/test-prefix/lib/libtos.a[2](all.o)
+ld: 26 duplicate symbols
+clang: error: linker command failed with exit code 1 (use -v to see invocation)
+ERROR: Failed to execute command: 'cc -L/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc2/build/test-prefix/lib /tmp/holyc-asm.s     -ltos -lpthread -lc -lm -o /tmp/llvm-gep01-test-c2'
+ls: cannot access '/tmp/llvm-gep01-test-c2': No such file or directory
+
+=== CONSERVATION STATUS ===
+predicate-selftest rc = 1 (env-blocked)
+build harness rc      = 1 (env-blocked)
+
+Per F10, conservation requires the harness's intended
+behavior to remain unchanged. The source code under
+tools/quality/llvm-gep01-test.HC is unchanged since
+CORRECTION01 C2 IMPL commit 7f88df2 (verified via
+git diff --stat 7f88df2..HEAD: 0 lines changed in
+that file), so conservation is established by code
+identity rather than by re-execution on this checkout.

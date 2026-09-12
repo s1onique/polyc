@@ -1,0 +1,40 @@
+ACT-POLYC-TOOLING-MIGRATE-GEP01 C3 CUTOVER
+Build-freshness evidence (per ACT §20)
+
+============================================================
+1. Claim
+============================================================
+
+The ordinary GEP target runs the harness binary that
+corresponds to the current:
+  - tools/quality/llvm-gep01-test.HC
+  - src/holyc-lib/tooling.HC
+  - linked libtos (build/test-prefix/lib/libtos.{a,dylib})
+
+Not a stale harness binary.
+
+============================================================
+2. Procedure
+============================================================
+
+  $ rm -f llvm-gep01-test
+  $ ./hcc --install-dir=$(pwd)/build/test-prefix \
+          -o llvm-gep01-test \
+          tools/quality/llvm-gep01-test.HC
+  rc=0, binary emitted at llvm-gep01-test
+
+  $ ls -la tools/quality/llvm-gep01-test.HC llvm-gep01-test
+  -rwxr-xr-x ... llvm-gep01-test        (newly built)
+  -rw-r--r-- ... tools/quality/llvm-gep01-test.HC
+
+  $ rm -rf build/quality/gep01
+  $ mkdir -p build/quality/gep01
+  $ ./llvm-gep01-test --scratch=build/quality/gep01
+  GEP01_PASS=30 GEP01_FAIL=0 STATUS=PASS rc=0
+
+============================================================
+3. Verdict
+============================================================
+
+BUILD_FRESHNESS = PASS
+NO_STALE_BINARY = TRUE

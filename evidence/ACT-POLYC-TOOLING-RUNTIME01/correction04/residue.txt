@@ -1,0 +1,35 @@
+ACT-POLYC-TOOLING-RUNTIME01-CORRECTION04 — Residue
+
+P0: (none blocking Track B progress)
+
+P1: (none new)
+
+P2: tracked, deferred:
+
+  R9. cmake-install.log trailing whitespace
+      File: evidence/ACT-POLYC-TOOLING-RUNTIME01/correction03/
+            cmake-install.log:15
+      Severity: cosmetic; not a code defect.
+      Cause: The cc command CMake ran had a trailing space in
+             its argv (the `-o libtos.dylib` token chain).
+      Why we do NOT fix: modifying the captured log would
+             falsify evidence of what CMake actually ran.
+      Resolution: leave as P2 residue; if a future `make fmt`
+             sweep rewrites evidence logs, capture them with
+             `--no-pager`-equivalent hygiene from the start.
+
+R10. Historical F14 findings (5)
+      Pre-existing in 456b71c..HEAD range:
+        - evidence/ACT-POLYC-TOOLING-RUNTIME01/c1/api-shape-freeze.txt:187
+        - evidence/ACT-POLYC-TOOLING-RUNTIME01/c1/missing-primitives.txt:213
+        - evidence/ACT-POLYC-TOOLING-RUNTIME01/c4/acceptance-matrix.txt:172
+        - evidence/ACT-POLYC-TOOLING-RUNTIME01/c4/closure-summary.txt:214
+        - src/holyc-lib/tooling.HC:416
+      Per F14, immutable historical evidence. A separate
+      hygiene ACT may address them.
+
+R11. closure-summary residue carried from CORRECTION03:
+      PARSER-TERNARY-HANG01, LINUX-PORT01, R8 (CORRECTION02
+      selftest was partial), rc=127 spawn ambiguity, fixture
+      binary location policy, external SIGTERM witness,
+      child-pgroup detection.

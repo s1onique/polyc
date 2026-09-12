@@ -1,0 +1,116 @@
+ACT-POLYC-TOOLING-RUNTIME01
+C2 IMPL — implementation delta
+
+------------------------------------------------------------
+Production files changed
+------------------------------------------------------------
+
+  src/holyc-lib/tooling.HC   (new)  ~240 lines
+  src/holyc-lib/all.HC       (modified)  one-line include
+
+------------------------------------------------------------
+src/holyc-lib/tooling.HC structure
+------------------------------------------------------------
+
+  Section 1: POSIX mechanism (libc) extern "c"
+    - fork, pipe, dup2, close, execv, waitpid,
+      mkstemp, _exit, strstr, getpid.
+    - Constants for waitpid status decoding
+      (WIFEXITED implicit via (status & 0x7f) == 0,
+       exit code in bits 8..15, signal in bits 0..6).
+
+  Section 2: P-CONTAINS
+    - Bool Contains(U8 *haystack, U8 *needle)
+      Thin wrapper over libc strstr.
+
+  Section 3: P-WAITDEC
+    - I64 WaitDecode(I32 status)
+      Returns exit code (0..255) on normal exit,
+      128 + signum on signal, -1 otherwise.
+
+  Section 4: P-TMP
+    - I32 TmpFile(U8 *dir, U8 *prefix, U8 **out_path)
+      Prefers mkstemp("dir/prefixXXXXXX"). Falls back
+      to pid+counter O_CREAT|O_EXCL on mkstemp failure.
+
+  Section 5: P-SPAWN
+    - I64 SpawnAndCapture(U8 *program, U8 **args,
+                          U8 **out, U8 **err)
+      fork + pipe(out) + pipe(err) + dup2 + execv +
+      parent-side read-loop + waitpid + WaitDecode.
+
+  Section 6: FileExists
+    - Bool FileExists(U8 *path)
+      Thin Stat() wrapper.
+
+------------------------------------------------------------
+src/holyc-lib/all.HC delta
+------------------------------------------------------------
+
+  +#include "./tooling.HC"   (placed after system.HC,
+                              before except.HC)
+
+This makes tooling.HC part of the bundled libtos.
+
+------------------------------------------------------------
+What was NOT changed (F7 / F21 / F20 compliance)
+------------------------------------------------------------
+
+  - Parser grammar:           UNCHANGED.
+  - Compiler IR/ABI:          UNCHANGED.
+  - LLVM backend:             UNCHANGED.
+  - Native arithmetic:        UNCHANGED.
+  - llvm-gep01-test.sh:       UNCHANGED (still 232 LOC).
+  - System / Sh / Shlurp:     UNCHANGED (legacy callers
+                               preserved; new code path
+                               does not use them).
+  - io.HC / strings.HC / etc: UNCHANGED.
+  - src/tests/:               UNCHANGED.
+  - scripts/quality/:         UNCHANGED.
+
+------------------------------------------------------------
+Mechanism split (F8 / ACT §3)
+------------------------------------------------------------
+
+  PolyC-facing logic:      100% in tooling.HC
+  POSIX mechanism bridge:  fork + pipe + dup2 + close +
+                           execv + waitpid + mkstemp
+                           (all libc; no new C file in
+                            this ACT)
+  Shell:                   ABSENT
+
+The current implementation routes all mechanism calls
+through libc via `extern "c"` declarations in the new
+tooling.HC. No separate `tooling.c` C bridge file is
+required for the bounded substrate. A future ACT may
+introduce a `tooling.c` if PolyC cannot directly
+express a new POSIX primitive; that is not in scope.
+
+------------------------------------------------------------
+Compiler-language semantic widening
+------------------------------------------------------------
+
+  NONE. tooling.HC uses only existing PolyC features:
+    - extern "c" declarations (used throughout holyc-lib)
+    - U8 *args[] arrays (existing form, used by lsp test)
+    - I32 / I64 scalars (existing)
+    - for-loops, if-statements, function definitions
+    - StrPrint (existing), StrCmp (existing)
+    - ReAlloc (existing), MAlloc (existing), Free
+    - MemCpy (existing), close (existing), read (existing)
+
+  No STRUCT01 / ARRAY01 / BOOTSTRAP01 introduced.
+
+------------------------------------------------------------
+FileRead / FileWrite / Rm / Stat: REUSED (NOT replaced)
+------------------------------------------------------------
+
+The new tooling runtime delegates persistent file I/O
+to the existing FileRead/FileWrite/Rm/Stat in io.HC.
+This satisfies ACT §8: "Do not implement a duplicate
+runtime API when an appropriate current API already
+exists."
+
+------------------------------------------------------------
+End of file
+------------------------------------------------------------

@@ -1,0 +1,57 @@
+ACT-POLYC-TOOLING-RUNTIME01-CORRECTION05 — F14 evidence-contract reconciliation
+
+=== THE PROBLEM ===
+
+CORRECTION04 (commits 7e69451, 8d1d961, b13a580) modified three
+files that were created by CORRECTION03 (e5a2e50) and which
+should have been F14-protected as historical immutable evidence:
+
+  evidence/ACT-POLYC-TOOLING-RUNTIME01/correction03/
+    patch-hygiene.txt           (appended addendum)
+    ac-matrix-correction03.txt  (stripped trailing EOF blank)
+    eintr-red-argv-broken.txt   (stripped trailing EOF blank)
+
+Under the strict reading of F14, those mutations are violations.
+
+Under the practical reading, the alternative was a revert + reopen
+which would have left the empty patch-hygiene.txt claim (the
+real defect c04 was opened to fix) in place indefinitely. The
+c04 mutations were minimal (single-line addendum, single-line
+deletion) and well-documented.
+
+=== DESIGNATION ===
+
+CORRECTION05 designates:
+  - The historical CORRECTION03 evidence files as immutable
+    in spirit but acknowledges c04's bounded mutations.
+  - The CORRECTION05 packet (this directory) as the AUTHORITATIVE
+    reconciliation going forward.
+  - Going forward, all correction packets add new files only;
+    they do not mutate older correction directories.
+
+=== THE PROPER PATTERN (going forward) ===
+
+When a future correction discovers an evidence defect in an
+earlier packet:
+
+  1. Append a clearly-marked "ADDENDUM" block to the older
+     file (as c04 did for patch-hygiene.txt) — this is the
+     minimum-impact option.
+  2. OR: create a new correction directory with the corrected
+     version and link it from a master registry.
+  3. NEVER silently rewrite.
+
+CORRECTION05 follows rule (1) only for its OWN new evidence
+files; it does not touch any c03 or c04 file.
+
+=== TRUTH TABLE (this ACT only) ===
+
+  file modified                                         by   F14-OK?
+  --------------------------------------------------    ---  -------
+  src/CMakeLists.txt                                    c05   n/a (source)
+  evidence/ACT-POLYC-TOOLING-RUNTIME01/correction05/*   c05   n/a (new dir)
+
+  Files NOT modified by c05:
+    src/holyc-lib/tooling.HC                            (unchanged from c03)
+    evidence/.../correction03/*                         (immutable)
+    evidence/.../correction04/*                         (immutable)

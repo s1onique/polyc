@@ -1,0 +1,46 @@
+=== R1 - AC07 three gates at CORRECTION02 entry tree ===
+Entry HEAD = a2f4a6e (NON_ACT hygiene)
+(post-CORRECTION01-CLOSE; the production source has
+not changed since 1732c3f per F7)
+
+--- make unit-test ---
+make rc=2
+exit message:
+cd ./src/tests && ../../hcc ./run.HC -o test-runner && ./test-runner && cd ../../
+ERROR: Failed to open file: /usr/local/include/tos.HH
+make: *** [unit-test] Error 1
+
+--- make jit-unit-test ---
+make rc=2
+exit message:
+cd ./src/tests && ../../hcc ./run_jit.HC -o test-runner-jit && ./test-runner-jit && cd ../../
+ERROR: Failed to open file: /usr/local/include/tos.HH
+make: *** [jit-unit-test] Error 1
+
+--- make lsp-test ---
+make rc=2
+exit message:
+cc -dynamiclib -Wl,-install_name,/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc2/build/test-prefix/lib/libtos.0.0.1.dylib all.o -o libtos.dylib -lpthread -lc -lm
+ERROR: Failed to execute command: 'cc -dynamiclib -Wl,-install_name,/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc2/build/test-prefix/lib/libtos.0.0.1.dylib all.o -o libtos.dylib -lpthread -lc -lm '
+make: *** [lsp-test] Error 1
+
+=== SUMMARY ===
+make unit-test     rc=2
+make jit-unit-test rc=2
+make lsp-test      rc=2
+
+AC07_STATUS=NOT_SATISFIED
+All three gates returned rc=2 (the standard 'make error'
+exit code) at the CORRECTION02 entry tree.
+
+ROOT CAUSE:
+- unit-test / jit-unit-test: Makefile recipe invokes
+  ../../hcc WITHOUT --install-dir; hcc requires
+  /usr/local/include/tos.HH which is absent on this checkout.
+  Pre-existing environmental defect; identical at the
+  c4 close-tree baseline (which also lacked hcc at
+  /usr/local).
+- lsp-test: The hermetic recipe (which DOES use
+  --install-dir) fails with a macOS sandbox ar cache-file
+  permission error plus a downstream _Errno linker error.
+  Pre-existing environmental defect; unrelated to this ACT.

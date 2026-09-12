@@ -1,0 +1,214 @@
+ACT-POLYC-TOOLING-RUNTIME01
+C1 RED — missing primitives
+
+After the language-capability-matrix recon, the
+following primitives must be implemented in C2:
+
+------------------------------------------------------------
+P-SPAWN: SpawnAndCapture
+------------------------------------------------------------
+
+  Signature (proposed):
+
+      public I64 SpawnAndCapture(
+          U8  *program,
+          U8  *args[],         // NULL-terminated argv
+          U8 **out,            // out: malloc'd stdout, or NULL
+          U8 **err);           // out: malloc'd stderr, or NULL
+
+  Returns:
+      - exit code (0..255)        on normal exit
+      - 127                       on missing executable
+      - 128 + signum              on abnormal termination
+                                  (e.g. 134 for SIGABRT)
+      - any negative value        reserved for "spawn failed"
+        (see ACT §12 distinction)
+
+  Mechanism:
+      fork()                  -> parent waits
+      pipe(out_fd[2])         -> for stdout capture
+      pipe(err_fd[2])         -> for stderr capture
+      child:
+          dup2(out_fd[1], 1)  -> redirect stdout
+          dup2(err_fd[1], 2)  -> redirect stderr
+          close(out_fd[0])
+          close(out_fd[1])
+          close(err_fd[0])
+          close(err_fd[1])
+          execv(program, args)
+          _exit(127)
+      parent:
+          close(out_fd[1])
+          close(err_fd[1])
+          read until EOF from out_fd[0] into heap buffer
+          read until EOF from err_fd[0] into heap buffer
+          waitpid(pid, &status, 0)
+          if (WIFEXITED(status))    rc = WEXITSTATUS(status)
+          else if (WIFSIGNALED)     rc = 128 + WTERMSIG(status)
+          else                      rc = -1
+          return rc
+
+  Notes:
+      - execv() (not execvp / popen) because we want
+        deterministic semantics: the caller passes the
+        full path, not a PATH search.
+      - The first consumer is the GEP dogfood slice
+        which passes the absolute path "./hcc", so a
+        PATH search is not required in C2.
+      - Argument boundaries test (P5) will pass spaces
+        and metacharacters as literal argv values.
+
+  Alternative (ACT §13):
+      posix_spawnp() + file actions is acceptable but
+      requires a slightly larger bridge and is not
+      strictly necessary for the first harness. fork()
+      is already used by the lsp test (proven to work
+      on both macOS and Linux), so we adopt that.
+
+------------------------------------------------------------
+P-TMP: TmpFile
+------------------------------------------------------------
+
+  Signature (proposed):
+
+      // Bounded alternative to mkstemp() that does not
+      // require a 6-X template suffix and returns both
+      // fd and path. Falls back to a directory-based
+      // unique-name strategy if mkstemp() is unavailable.
+      public I32 TmpFile(
+          U8  *dir,            // e.g. "/tmp" or build/
+          U8  *prefix,         // e.g. "polyc-tool-"
+          U8 **out_path);      // out: malloc'd full path
+
+  Returns: open fd, or -1 on failure.
+
+  Mechanism:
+      Prefer mkstemp(template) when available
+      (POSIX 2008 / all current targets).
+      On platforms without mkstemp(): build a name from
+      getpid() + clock_gettime(CLOCK_MONOTONIC) + counter
+      in the supplied dir, O_CREAT|O_EXCL open it, and
+      fail if the name already exists.
+
+  Notes:
+      - Per ACT §14, predictable names like
+        "/tmp/polyc-tool-$PID.out" with a separate open
+        are forbidden.
+      - The first consumer does not strictly need a
+        per-file temp because pipe capture is sufficient
+        for stdout/stderr. But P-TMP is part of the
+        frozen substrate in case the next migration
+        needs scratch files (e.g. compiler IR caches).
+
+------------------------------------------------------------
+P-CONTAINS: Contains(haystack, needle)
+------------------------------------------------------------
+
+  Signature (proposed):
+
+      public Bool Contains(U8 *haystack, U8 *needle)
+
+  Mechanism:
+      Thin wrapper over libc strstr(). Bound via
+      extern "c" in the new tooling.HC.
+
+  Notes:
+      - Required for the GEP dogfood slice (P27).
+      - The first harness needs contains(output,
+        "getelementptr i8") and not-contains(output,
+        "inbounds") semantics.
+
+------------------------------------------------------------
+P-WAITDEC: WaitDecode
+------------------------------------------------------------
+
+  Signature (proposed):
+
+      // Decode the raw I32 status returned by waitpid()
+      // into a PolyC-friendly I64 exit code.
+      public I64 WaitDecode(I32 status)
+
+  Mechanism:
+      if (WIFEXITED(status))    return WEXITSTATUS(status);
+      if (WIFSIGNALED(status))  return 128 + WTERMSIG(status);
+      return -1;
+
+  Notes:
+      - This decodes the raw status; SpawnAndCapture
+        already calls this internally.
+      - Exposed for callers that need the lower-level
+        fork + wait pattern (e.g. the lsp test could
+        adopt it later, but that is out of scope).
+
+------------------------------------------------------------
+P-VERDICT: Verdict aggregator
+------------------------------------------------------------
+
+  Signature (proposed):
+
+      class TestVerdict {
+        I64 pass;
+        I64 fail;
+      };
+
+      public TestVerdict *VerdictNew();
+      public U0  VerdictPass(TestVerdict *v, U8 *name);
+      public U0  VerdictFail(TestVerdict *v, U8 *name, U8 *msg);
+      public I64 VerdictRc(TestVerdict *v);   // 0 if fail==0, else 1
+
+  Notes:
+      - The ACT permits a class here because PolyC
+        already supports class with I64 fields (used
+        heavily in lsp.HC, list.HC, etc.). This is
+        NOT a new STRUCT01 dependency; it is reuse of
+        an existing language feature.
+      - An alternative implementation as two global
+        I64 counters (PASS, FAIL) is acceptable if
+        class syntax proves awkward; ACT §18 only
+        requires the verdict-channel contract, not
+        a specific aggregation form.
+
+------------------------------------------------------------
+P-ASSERT: assertion helpers
+------------------------------------------------------------
+
+  Signatures (proposed):
+
+      public U0 AssertEqStr(U8 *got, U8 *want, TestVerdict *v, U8 *name);
+      public U0 AssertContains(U8 *haystack, U8 *needle, TestVerdict *v, U8 *name);
+      public U0 AssertNotContains(U8 *haystack, U8 *needle, TestVerdict *v, U8 *name);
+      public U0 AssertEqI64(I64 got, I64 want, TestVerdict *v, U8 *name);
+
+  Each one increments PASS or FAIL on the verdict and
+  prints a diagnostic. They are NOT in the abstract
+  runtime substrate; they are part of the dogfood
+  test-harness and live in tools/quality/runtime01-
+  selftest.HC (not in the runtime library).
+
+------------------------------------------------------------
+Summary
+------------------------------------------------------------
+
+C2 implements exactly these primitives and nothing else:
+
+  1. SpawnAndCapture   (PROCESS)
+  2. TmpFile           (FILESYSTEM)
+  3. Contains          (TEXT)
+  4. WaitDecode        (PROCESS)
+  5. TestVerdict + counters + VerdictRc  (VERDICT)
+  6. Assert helpers    (in the dogfood selftest, NOT
+                         in the runtime library)
+
+Reused, NOT reimplemented:
+
+  FileRead, FileWrite, Rm, FileExists (via Stat),
+  StrCmp, StrLen, StrPrint, StrOcc, MAlloc, Free,
+  Exit, getenv, chdir, Pwd.
+
+Explicitly FORBIDDEN in the new code path:
+
+  System, Sh, Shlurp  (shell-via-system semantics).
+
+End of file.
+
+

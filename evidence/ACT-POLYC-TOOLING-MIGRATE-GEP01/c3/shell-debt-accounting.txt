@@ -1,0 +1,49 @@
+ACT-POLYC-TOOLING-MIGRATE-GEP01 C3 CUTOVER
+Shell-debt accounting (per ACT §17)
+
+============================================================
+1. Pre-C3 baseline (C1 freeze)
+============================================================
+
+  pre_shell_file_count = 23
+  pre_total_shell_loc  = 6184   (sum of all .sh LOC)
+  pre_gep_shell_loc    = 232   (llvm-gep01-test.sh)
+
+============================================================
+2. Post-C3 measurement (fresh inventory)
+============================================================
+
+After deleting scripts/quality/llvm-gep01-test.sh:
+
+  $ bash scripts/quality/inventory.sh | wc -l
+  22
+
+  $ bash scripts/quality/inventory.sh | tail -3
+  scripts/quality/llvm-memory01-red-test.sh           194 X TEST
+  scripts/quality/llvm-intops01-test.sh               230 X TEST
+  scripts/install-git-hooks.sh                         47 X TOOL
+
+  post_shell_file_count = 22
+  post_total_shell_loc  = 5952   (6184 - 232)
+  post_gep_shell_loc    = 0      (file deleted)
+
+============================================================
+3. Required reductions (per ACT §17)
+============================================================
+
+Required:
+  post_gep_shell_loc <= 50
+  post_total_shell_loc < pre_total_shell_loc
+
+Observed:
+  post_gep_shell_loc = 0          (PASS: <= 50)
+  post_total_shell_loc = 5952     (PASS: < 6184)
+  delta = -232 LOC                (-3.75%)
+
+============================================================
+4. Verdict
+============================================================
+
+SHELL_DEBT_REDUCTION = PASS
+GEP_SHELL_LOC_REDUCTION = 232 -> 0 (preferred Outcome A)
+SHELL_FILE_COUNT_REDUCTION = 23 -> 22

@@ -1,0 +1,42 @@
+=== AC08 - CORRECTION01 evidence tree state at CORRECTION02 close tree ===
+
+Per F14, historical evidence must NOT be mutated BY THIS ACT
+(CORRECTION02). The CORRECTION02 range is f999f1e..HEAD.
+
+Note: a NON_ACT hygiene commit a2f4a6e modified
+correction01/close/README.md (removed a trailing blank
+line) BEFORE this ACT opened. That modification is
+immutable historical state per append-only; it is NOT
+reverted by this ACT. Its presence is itself one of the
+three closure-contract defects this ACT documents (see
+R3 in the C1 RED evidence).
+
+--- git diff for correction01/ subtree ACROSS CORRECTION02 (f999f1e..HEAD) ---
+(empty above = CORRECTION02 does NOT mutate correction01/)
+
+--- git diff for historical c1/c2/c3/c4 evidence across CORRECTION02 ---
+(empty above = CORRECTION02 does NOT mutate historical evidence)
+
+--- git diff for the CORRECTION01 ACT document across CORRECTION02 ---
+(empty above = CORRECTION02 does NOT mutate the CORRECTION01 ACT)
+
+--- pre-existing correction01/ mutation (NOT by this ACT) ---
+ evidence/ACT-POLYC-TOOLING-MIGRATE-GEP01/correction01/close/README.md | 1 -
+ 1 file changed, 1 deletion(-)
+(1 deletion = NON_ACT hygiene a2f4a6e removed the trailing
+blank line in correction01/close/README.md that the C3 CLOSE
+commit 1732c3f had introduced. This is the R3 defect; it
+predates CORRECTION02 and is preserved as immutable history
+per append-only.)
+
+=== CONCLUSION ===
+HISTORICAL_EVIDENCE_UNCHANGED_BY_CORRECTION02=PASS
+  CORRECTION02 does not modify any file under
+  correction01/, c1/, c2/, c3/, c4/, or the
+  CORRECTION01 ACT document.
+
+PRE_EXISTING_HISTORICAL_MUTATION=DETECTED
+  Commit a2f4a6e (NON_ACT hygiene, pre-CORRECTION02)
+  modified correction01/close/README.md (1 deletion).
+  This is documented in R3 as the AC08 defect.
+  NOT reverted by CORRECTION02 per append-only.

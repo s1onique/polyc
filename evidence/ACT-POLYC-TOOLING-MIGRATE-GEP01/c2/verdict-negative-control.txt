@@ -1,0 +1,51 @@
+ACT-POLYC-TOOLING-MIGRATE-GEP01 C2 IMPL
+Seeded failure (verdict-channel negative control)
+
+============================================================
+1. Goal
+============================================================
+
+Prove that the PolyC harness exit-channel flips to non-zero
+when a deliberate failure is seeded via --mode=fail. This
+prevents a "false green" where the harness silently passes
+even when something is wrong.
+
+============================================================
+2. Mechanism
+============================================================
+
+The --mode=fail flag flips the readat dynamic-index
+GEP+load assertion (row 04) to a forced FAIL:
+
+  if (seed_failure) {
+    VerdictFail(v, "readat.HC: getelementptr i8 with runtime index + load i8",
+                "seed_failure forced (--mode=fail)");
+  } else if (emitted != NULL
+      && Contains(emitted, "getelementptr i8, ptr %")
+      && Contains(emitted, "load i8, ptr %")) {
+    VerdictPass(v, "readat.HC: getelementptr i8 with runtime index + load i8");
+  }
+
+The seeded FAIL propagates through VerdictRc() which returns
+1, and Main returns that as the process exit code.
+
+============================================================
+3. Observed result (fresh run)
+============================================================
+
+  $ rm -rf build/quality/gep01
+  $ mkdir -p build/quality/gep01
+  $ ./llvm-gep01-test --scratch=build/quality/gep01 --mode=fail
+
+  GEP01_PASS=29
+  GEP01_FAIL=1
+  STATUS=FAIL
+  rc=1
+
+============================================================
+4. Verdict
+============================================================
+
+SEEDED_FAILURE_GATE = PASS
+Verdict channel is honest: aggregate 29/1 with rc=1, not
+silently 30/0 with rc=0.

@@ -1,0 +1,149 @@
+ACT-POLYC-TOOLING-RUNTIME01
+C3 EVIDENCE — compiler-hang bisection
+
+------------------------------------------------------------
+Symptom observed during C3 development
+------------------------------------------------------------
+
+The full tools/quality/runtime01-selftest.HC (374 lines,
+including process / filesystem / temp / verdict / GEP
+dogfood slices) triggered an hcc compile-time hang:
+
+  $ ./hcc ... runtime01-selftest.HC -o /tmp/runtime01-selftest
+  (no output, no exit, runs forever)
+
+A controlled 5-second watchdog (compiled from
+/tmp/hcc-watchdog.c) confirmed:
+
+  $ /tmp/hcc-watchdog 5 ./hcc ... runtime01-selftest.HC ...
+  VERDICT=HANG (killed after 5s)
+  exit=137   (SIGKILL)
+
+The 1,141-line src/tests/lsp/run_lsp_tests.HC, used as a
+control fixture, compiles cleanly in ~0.4s:
+
+  $ /tmp/hcc-watchdog 5 ./hcc ... run_lsp_tests.HC ...
+  VERDICT=OK rc=0
+
+So this is a Pathological-compile triggered by a specific
+PolyC construct in the new selftest, NOT a generic
+scalability problem.
+
+------------------------------------------------------------
+Bisection method
+------------------------------------------------------------
+
+A series of incremental variants was built from the
+selftest, each adding one syntactic unit, and tested
+against the 5s watchdog:
+
+  min00  include + empty Main                         PASS
+  min01  + TestVerdict class                          PASS
+  min02  + VerdictNew/Pass/Fail/Rc/Summary            PASS
+  min03  + ArgValue, ArgFlag                          PASS
+  min04  + RunProcessMatrix (P1 only)                 PASS
+  min05  + RunProcessMatrix (P1..P5, seed-failure)    PASS
+  min06  + RunFilesystemMatrix, RunTempMatrix         PASS
+  min07  + RunGepDogfood                              FAIL
+
+min07 surfaced a precise compiler diagnostic:
+
+  error: Invalid identifier `err` while parsing
+         function call
+  ... StrPrint(NULL, "hcc rc=%d stderr=%s",
+                 rc, err ? err : "")
+
+That is, **ternary `?:` is not a supported PolyC syntax**;
+the parser interprets `?` as something else and emits a
+malformed parse tree.
+
+Subsequent review of the full file showed THREE ternary
+expressions:
+
+  VerdictRc():
+    return v->fail == 0 ? 0 : 1;        (line 58)
+
+  RunGepDogfood():
+    rc, err ? err : "")                  (line ~301)
+
+  Main():
+    "seed-failure = %s\n", seed ? "YES" : "no";
+                                          (line ~363)
+
+All three were replaced with explicit if/return
+statements. After the fix:
+
+  $ /tmp/hcc-watchdog 5 ./hcc ... runtime01-selftest.HC ...
+  VERDICT=OK rc=0
+
+------------------------------------------------------------
+Minimal reproducer
+------------------------------------------------------------
+
+The smallest construct that reproduces the bug is:
+
+  U8 *errmsg;
+  ...
+  U8 *errmsg = err ? err : "";     // ternary
+
+This is identical to LLVM's policy of reduced test cases
+(HowToSubmitABug recommends a reduced reproducer before
+filing).
+
+------------------------------------------------------------
+Two distinct defects
+------------------------------------------------------------
+
+DEFECT A (compiler robustness):
+  An unsupported/malformed ternary expression does not
+  emit a deterministic diagnostic; instead it produces a
+  parser state that triggers a compile-time hang on
+  non-trivial programs.
+
+  Severity: P1 (correctness: parser should fail-fast).
+  Owner:  ACT-POLYC-PARSER-TERNARY-HANG01 (separate ACT,
+          recorded in residue; not in scope here).
+
+DEFECT B (test author):
+  The selftest used `?:` syntax which is not supported
+  by current HolyC. This is a usage defect.
+
+  Severity: P0 (immediate fix; no new language feature
+            needed).
+  Resolution: rewrote all ternaries as explicit
+              if/return.
+
+------------------------------------------------------------
+Post-fix verification
+------------------------------------------------------------
+
+After replacing the three ternary sites with explicit
+conditionals, the selftest compiles in well under 5s and
+runs to completion:
+
+  RT01_PASS=18
+  RT01_FAIL=0
+  STATUS=PASS
+  selftest exit=0
+
+With --mode=fail (seeded assertion failure):
+
+  RT01_PASS=18
+  RT01_FAIL=1
+  STATUS=FAIL
+  selftest exit=1
+
+The verdict channel is correct.
+
+------------------------------------------------------------
+Residue
+------------------------------------------------------------
+
+P1 - ACT-POLYC-PARSER-TERNARY-HANG01
+    The parser must either support `?:` or fail-fast on
+    it; current behavior is compile-time hang on any
+    non-trivial program containing a ternary.
+    Out of scope for TOOLING-RUNTIME01 (which forbids
+    compiler semantic widening per ACT §20).
+
+End of file.

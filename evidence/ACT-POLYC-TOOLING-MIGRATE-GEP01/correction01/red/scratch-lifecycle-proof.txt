@@ -1,0 +1,61 @@
+========================================================================
+P1 scratch-lifecycle: harness does not own its scratch dir
+========================================================================
+
+--- Legacy Bash contract (c1/legacy-source.txt) ---
+EVID="$REPO_ROOT/evidence/ACT-POLYC-LLVM-GEP01"
+mkdir -p "$EVID/c3/_tmp"
+trap "rm -rf \"$EVID/c3/_tmp\"" EXIT
+
+--- Current PolyC harness (relevant lines) ---
+39://     [--scratch=<dir>]
+309:                U8 *scratch, Bool seed_failure)
+317:  read0_ll = StrPrint(NULL, "%s/read0.ll", scratch);
+337:  read2_ll = StrPrint(NULL, "%s/read2.ll", scratch);
+359:  readat_ll = StrPrint(NULL, "%s/read-at.ll", scratch);
+360:  readat_err = StrPrint(NULL, "%s/readat.err", scratch);
+422:  twodigits_ll = StrPrint(NULL, "%s/b0-multiread.ll", scratch);
+454:  U8 *readat_ll_path = StrPrint(NULL, "%s/read-at.ll", scratch);
+482:                U8 *scratch)
+493:    U8 *ll_path = StrPrint(NULL, "%s/%s.ll", scratch, base[i]);
+494:    U8 *bc_path = StrPrint(NULL, "%s/%s.bc", scratch, base[i]);
+512:    U8 *bc_path = StrPrint(NULL, "%s/%s.bc", scratch, base[i]);
+535:U0 RunFences(TestVerdict *v, U8 *scratch)
+541:    U8 *ll_path = StrPrint(NULL, "%s/%s.ll", scratch, base[i]);
+575:               U8 *scratch)
+578:  U8 *ll_path = StrPrint(NULL, "%s/i64idx.ll", scratch);
+603:U0 RunCapability(TestVerdict *v, U8 *python, U8 *scratch)
+606:  U8 *cap_path = StrPrint(NULL, "%s/cap-verifier.txt", scratch);
+671:                  U8 *scratch)
+687:    U8 *ll1 = StrPrint(NULL, "%s/%s_1.ll", scratch, bn);
+
+Note: no MkDir / mkdir call exists in the harness source.
+Note: no trap / atexit call exists in the harness source.
+
+--- Current harness behavior when scratch dir is absent ---
+rm -rf /tmp/red-p1-scratch
+/tmp/llvm-gep01-test --scratch=/tmp/red-p1-scratch ...
+
+FAIL  read2.HC: getelementptr i8 + load i8: hcc --emit-llvm failed
+FAIL  readat.HC: getelementptr i8 with runtime index + load i8: hcc --emit-llvm failed
+FAIL  readat.HC: SHAPE_DEPENDENT counter = ? (>= 1): hcc --emit-llvm failed
+FAIL  twodigits.HC: 2 load i8 + 1 getelementptr i8 (>=2 distinct reads, >=1 GEP for non-zero index): hcc --emit-llvm failed
+FAIL  ReadAt emitted getelementptr i8, ptr %base, i64 %index: could not re-read emitted IR
+FAIL  GEP result used as load address (load i8, ptr %gep_i8): could not re-read emitted IR
+PASS  i64idx.HC: rejected with LLVM_BACKEND_UNSUPPORTED_POINTER (scale=8)
+FAIL  IR_GEP = REJECTED (sibling opcode still rejected): could not read cap verifier output
+FAIL  IR_LEA = REJECTED (sibling opcode still rejected): could not read cap verifier output
+FAIL  IR_IADD = SUPPORTED (preserved, GEP01 is per-shape subset): could not read cap verifier output
+FAIL  readat: byte-identical across two runs: not byte-identical
+FAIL  twodigits: byte-identical across two runs: not byte-identical
+----
+GEP01_PASS=2
+GEP01_FAIL=12
+STATUS=FAIL
+
+--- After harness exits ---
+ls: cannot access '/tmp/red-p1-scratch': No such file or directory
+
+--- Legacy would have produced ---
+   GEP01_PASS=30 GEP01_FAIL=0 STATUS=PASS rc=0 (caller did not mkdir)
+   (harness created $EVID/c3/_tmp via mkdir -p)

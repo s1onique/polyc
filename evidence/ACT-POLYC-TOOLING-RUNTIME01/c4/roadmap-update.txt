@@ -1,0 +1,73 @@
+ACT-POLYC-TOOLING-RUNTIME01
+C4 CLOSE — ROADMAP update (proposed diff handoff)
+
+The canonical ROADMAP update lives in
+docs/ROADMAP.md. The handoff below is what the next
+ROADMAP-maintaining ACT should apply.
+
+------------------------------------------------------------
+Proposed insertion (Track B section)
+------------------------------------------------------------
+
+In the Track B (tooling self-host path) section, the
+current text reads:
+
+  Track B (tooling self-host path):
+    ACT-POLYC-TOOLING-RUNTIME01      minimum PolyC runtime
+                                     primitives (subprocess,
+                                     exit, tmp, text-match,
+                                     summary)
+    ACT-POLYC-TOOLING-SHELL-BUDGET01 per-file LOC targets,
+                                     after RUNTIME01 reveals
+                                     what PolyC can actually do
+
+After this ACT closes, the section becomes:
+
+  Track B (tooling self-host path):
+    ACT-POLYC-TOOLING-RUNTIME01      CLOSED PASS
+                                     direct-argv
+                                     SpawnAndCapture +
+                                     race-safe TmpFile +
+                                     Contains + verdict
+                                     aggregator + GEP
+                                     dogfood slice parity
+                                     proven. NO shell
+                                     in the PolyC process
+                                     path. SH-loc-gate
+                                     still PASS.
+                                     Resolved compiler
+                                     defect residue:
+                                     parser-ternary-hang
+                                     (Track A).
+    ACT-POLYC-TOOLING-MIGRATE-GEP01  NEXT: bounded
+                                     llvm-gep01-test.sh
+                                     migration to PolyC,
+                                     building on the
+                                     RUNTIME01 substrate.
+                                     After this, repeat
+                                     for byte-memory,
+                                     intops, return-slot.
+    ACT-POLYC-TOOLING-SHELL-BUDGET01 per-file LOC targets
+                                     AFTER at least one
+                                     migration produces
+                                     realistic shrink
+                                     numbers.
+
+------------------------------------------------------------
+Track A insertion (parser defect residue)
+------------------------------------------------------------
+
+A new line is recommended under the compiler critical
+path:
+
+  ACT-POLYC-PARSER-TERNARY-HANG01   open: parser must
+                                     support `?:` or fail
+                                     fast on it. Discovered
+                                     during C3 of
+                                     TOOLING-RUNTIME01.
+                                     Bisected to a single-
+                                     line reproducer.
+
+------------------------------------------------------------
+End of file
+------------------------------------------------------------

@@ -1,0 +1,36 @@
+=== R4 - Direct-argv audit (raw vs executable) ===
+Forbidden-token pattern:
+  /bin/sh | sh -c | bash -c | system( | popen( |
+  System( | Sh( | Shlurp()
+
+--- tools/quality/llvm-gep01-test.HC ---
+RAW HITS (grep -nE on whole file):
+11://   * Direct-argv process execution only. No /bin/sh, no
+12://     bash -c, no system(), no Sh(), no Shlurp(). All
+RAW_HITS=2
+
+COMMENT_ONLY_HITS (lines starting with //):
+11://   * Direct-argv process execution only. No /bin/sh, no
+12://     bash -c, no system(), no Sh(), no Shlurp(). All
+COMMENT_ONLY_HITS=2
+EXECUTABLE_HITS=0
+
+--- src/holyc-lib/tooling.HC ---
+13:// NO shell parsing. NO /bin/sh -c. NO system().
+RAW_HITS=1
+COMMENT_ONLY_HITS=1
+EXECUTABLE_HITS=0
+
+--- src/holyc-lib/strings.HC ---
+RAW_HITS=0
+COMMENT_ONLY_HITS=0
+EXECUTABLE_HITS=0
+
+=== CONCLUSION ===
+TOTAL_RAW_HITS=3
+TOTAL_COMMENT_ONLY_HITS=3
+TOTAL_EXECUTABLE_HITS=0
+
+DIRECT_ARGV_AUDIT=PASS
+EXECUTABLE_HITS=0 across tools/quality/llvm-gep01-test.HC,
+src/holyc-lib/tooling.HC, src/holyc-lib/strings.HC.

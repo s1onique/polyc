@@ -1,0 +1,187 @@
+ACT-POLYC-TOOLING-RUNTIME01
+C1 RED — frozen API shape for C2
+
+This file freezes the precise PolyC-facing contract
+that C2 must implement. ACT §12 requires a frozen
+contract before implementation.
+
+------------------------------------------------------------
+Symbol table
+------------------------------------------------------------
+
+operation                PolyC symbol           host mechanism
+------------------------------------------------------------
+run process with argv    SpawnAndCapture        fork + pipe
+                                                (stdout, stderr)
+                                                + dup2 + execv
+                                                + read (parent)
+                                                + waitpid
+exit-code decode         WaitDecode             WIFEXITED,
+                                                WEXITSTATUS,
+                                                WIFSIGNALED,
+                                                WTERMSIG
+stdout text              out parameter of       pipe + read loop
+                         SpawnAndCapture        into MAlloc'd buf
+stderr text              err parameter of       pipe + read loop
+                         SpawnAndCapture        into MAlloc'd buf
+read file                FileRead               open + lseek +
+                                                read + close
+write file               FileWrite              open + write +
+                                                close
+file exists              FileExists             stat wrapper
+remove file              Rm                     unlink
+temp file/workspace      TmpFile                mkstemp on POSIX
+                                                2008; fallback
+                                                O_CREAT|O_EXCL with
+                                                pid+clock unique
+                                                name
+contains(haystack,       Contains               libc strstr
+   needle)
+exit program             Exit                   _exit / exit
+
+------------------------------------------------------------
+No duplicate APIs
+------------------------------------------------------------
+
+The matrix above is the COMPLETE API surface for the
+tooling runtime. C2 must NOT introduce:
+
+  - a "Run(...)" command-string variant
+  - a "system()" wrapper
+  - a "/bin/sh -c" helper
+  - a "Process" class with both command-string and
+    argv variants
+
+If a future consumer needs a different shape, that
+goes in a new ACT.
+
+------------------------------------------------------------
+Shell involvement
+------------------------------------------------------------
+
+NONE in the PolyC-facing API. The hot path is:
+
+  PolyC test logic
+       |
+       v
+  PolyC tooling library
+       |
+       v
+  small POSIX mechanism bridge (fork/pipe/dup2/execv/
+                                  waitpid/mkstemp)
+       |
+       v
+  child process
+
+There is NO /bin/sh between PolyC and the child.
+
+------------------------------------------------------------
+Capture strategy
+------------------------------------------------------------
+
+Pipes (strategy A from ACT §14).
+
+  Two pipes are created before fork():
+    - to capture child stdout
+    - to capture child stderr
+  The child redirects fds 1 and 2 to the write end of
+  each pipe via dup2().
+  The parent closes the write ends immediately and
+  drains the read ends into MAlloc'd buffers.
+
+Temporary-file capture (strategy B) is NOT used. Pipes
+are sufficient for the bounded stdout/stderr volumes
+the GEP dogfood slice produces.
+
+------------------------------------------------------------
+Temp-file strategy
+------------------------------------------------------------
+
+mkstemp() when available (POSIX 2008+ is on all targets
+the project supports: macOS, Linux). The PolyC-facing
+wrapper TmpFile() takes a directory and a prefix and
+returns an open fd plus the resolved path.
+
+If mkstemp() is ever unavailable on a target, the
+fallback uses getpid() + clock_gettime() + a process-
+local counter, O_CREAT|O_EXCL, and unlinks on close.
+This branch is exercised only by a dedicated FAIL test
+in C3.
+
+------------------------------------------------------------
+Process semantics contract (ACT §12 verbatim)
+------------------------------------------------------------
+
+NO SHELL PARSING
+program:    executable name/path
+arguments:  explicit ordered arguments
+environment: inherited by default
+cwd:        current directory by default
+stdout:     captured separately
+stderr:     captured separately
+spawn failure: distinguishable from child exit failure
+normal exit:  exit code available
+abnormal termination: represented honestly where host
+                     API exposes it
+
+------------------------------------------------------------
+Distinction between spawn failure and child exit (ACT §12)
+------------------------------------------------------------
+
+The host platform permits (but does not guarantee)
+distinguishing these:
+
+  A. spawn/exec failed in the parent before the child
+     started (e.g. ENOENT for missing program,
+     EACCES for permission denied).
+     In our implementation this is signalled by the
+     child calling _exit(127) after a failed execv().
+     The exit code 127 is therefore reserved for
+     "could not start child".
+
+  B. child started and returned a non-zero exit code
+     (e.g. test assertion failure).
+     Reported as the actual exit code (typically 1).
+
+  C. child terminated abnormally (signal).
+     Reported as 128 + signum.
+
+  D. parent could not even fork.
+     Reported as a negative return from
+     SpawnAndCapture.
+
+Per POSIX, posix_spawn() failures that occur in the
+child before exec() can also surface as status 127.
+Our fork+execv() implementation has the same
+characteristic: the child attempts execv() and, on
+failure, calls _exit(127). This is the closest
+analogue POSIX guarantees on this platform family.
+
+------------------------------------------------------------
+Verdict semantics (ACT §18 verbatim)
+------------------------------------------------------------
+
+pass_count, fail_count
+Each failed assertion must:
+  - increment FAIL
+  - emit useful diagnostic
+Final invariant:
+  FAIL == 0 -> process exit 0
+  FAIL >  0 -> process exit non-zero
+
+This is a hard acceptance condition for the C3 self-
+test. The VerdictRc() helper enforces this on the
+verdict object; the dogfood selftest calls Exit() with
+VerdictRc() at the end.
+
+------------------------------------------------------------
+Platform (ACT §5)
+------------------------------------------------------------
+
+macOS and Linux via POSIX. Windows is OUT OF SCOPE for
+this ACT and is recorded as P2 residue.
+
+------------------------------------------------------------
+End of file
+------------------------------------------------------------
+

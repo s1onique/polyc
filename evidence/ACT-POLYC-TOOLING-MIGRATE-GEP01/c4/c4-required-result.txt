@@ -1,0 +1,66 @@
+ACT-POLYC-TOOLING-MIGRATE-GEP01 C4 CLOSE — Required result
+
+============================================================
+Frozen C4 result (mechanically verified)
+============================================================
+
+VERDICT = PASS
+FUNCTIONAL_EQUIVALENCE = TRUE
+SHELL_DEBT_REDUCTION   = TRUE
+
+PRE_GEP_SHELL_LOC = 232
+POST_GEP_SHELL_LOC = 0
+
+PRE_TOTAL_SHELL_LOC = 6184
+POST_TOTAL_SHELL_LOC = 5952
+
+PRE_SHELL_FILE_COUNT = 23
+POST_SHELL_FILE_COUNT = 22
+
+POLYC_FINAL_RC = 0
+POLYC_FINAL_GEP01_PASS = 30
+POLYC_FINAL_GEP01_FAIL = 0
+POLYC_FINAL_STATUS = PASS
+
+CONSERVATION_GATES = PASS (2 ENVIRONMENTALLY_UNAVAILABLE
+                            documented)
+
+BUILD_FRESHNESS = PASS
+NO_STALE_BINARY = TRUE
+
+DIRECT_ARGV_AUDIT = PASS
+FORBIDDEN_TOKEN_COUNT = 0
+
+PATCH_HYGIENE = PASS
+NEWLY_INTRODUCED_FINDINGS = 0
+
+FALSE_GREEN_CONTROL = PASS
+SEEDED_FAIL_RC = 1
+SEEDED_FAIL_STATUS = FAIL
+
+HISTORICAL_EVIDENCE_INTEGRITY = PRESERVED
+(F14: no historical evidence packet mutated)
+
+WORKTREE = clean
+
+============================================================
+Final fresh gate run (just executed)
+============================================================
+
+PolyC harness (rebuilt from current source):
+
+  ./hcc --install-dir=./build/test-prefix \
+        -o llvm-gep01-test \
+        tools/quality/llvm-gep01-test.HC
+  rc=0
+  llvm-gep01-test emitted (current-tree binary)
+
+  ./llvm-gep01-test --scratch=build/quality/gep01
+  rc=0
+  GEP01_PASS=30 GEP01_FAIL=0 STATUS=PASS
+
+Other gates:
+
+  llvm-byte-memory01-test.sh       37/0 PASS rc=0
+  shell-loc-gate.sh                PASS rc=0
+  factory-append-only-test.sh      11/0 PASS rc=0

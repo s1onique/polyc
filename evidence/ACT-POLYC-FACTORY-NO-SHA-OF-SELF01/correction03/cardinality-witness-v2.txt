@@ -1,0 +1,84 @@
+ACT-POLYC-FACTORY-NO-SHA-OF-SELF01-CORRECTION03 — Cardinality witness (v2)
+
+Captured 2026-09-12. Empirical proof of the newline-safe
+cardinality check.
+
+=== TEST 1: query for an ACT that EXISTS ===
+
+Buggy recipe (v1):
+
+  $ matches=$(git log --all-match \
+                    --grep='^ACT: ACT-POLYC-FACTORY-NO-SHA-OF-SELF01-CORRECTION02$' \
+                    --grep='^ACT-Phase: CLOSE$' \
+                    --pretty=format:'%H' | wc -l)
+  $ echo "$matches"
+  0   <- WRONG: should be 1
+
+Fixed recipe (v2, --oneline):
+
+  $ matches=$(git log --all-match \
+                    --grep='^ACT: ACT-POLYC-FACTORY-NO-SHA-OF-SELF01-CORRECTION02$' \
+                    --grep='^ACT-Phase: CLOSE$' \
+                    --oneline | wc -l)
+  $ echo "$matches"
+  1   <- CORRECT
+
+Fixed recipe (v2, %H%n + grep -c):
+
+  $ matches=$(git log --all-match \
+                    --grep='^ACT: ACT-POLYC-FACTORY-NO-SHA-OF-SELF01-CORRECTION02$' \
+                    --grep='^ACT-Phase: CLOSE$' \
+                    --pretty=format:'%H%n' | grep -c .)
+  $ echo "$matches"
+  1   <- CORRECT
+
+=== TEST 2: query for an ACT that DOES NOT EXIST ===
+
+Buggy recipe (v1):
+
+  $ matches=$(git log --all-match \
+                    --grep='^ACT: ACT-POLYC-NONEXISTENT$' \
+                    --grep='^ACT-Phase: CLOSE$' \
+                    --pretty=format:'%H' | wc -l)
+  $ echo "$matches"
+  0   <- technically correct here (vacuously true), but
+         misleading because the recipe also returns 0 for
+         the bug case in TEST 1
+
+Fixed recipe (v2, --oneline):
+
+  $ matches=$(git log --all-match \
+                    --grep='^ACT: ACT-POLYC-NONEXISTENT$' \
+                    --grep='^ACT-Phase: CLOSE$' \
+                    --oneline | wc -l)
+  $ echo "$matches"
+  0   <- CORRECT
+
+=== TEST 3: SHA extraction (after cardinality check) ===
+
+After confirming cardinality = 1, extract the SHA:
+
+  $ git log --all-match -1 \
+            --grep='^ACT: ACT-POLYC-FACTORY-NO-SHA-OF-SELF01-CORRECTION02$' \
+            --grep='^ACT-Phase: CLOSE$' \
+            --pretty=format:'%H%n' | head -1
+  e83ae45207232907f36744372725927a50050a8c
+
+  $ echo "SHA: $(... | head -1)"
+  SHA: e83ae45207232907f36744372725927a50050a8c
+
+  $ test -n "$(... | head -1)" && echo OK
+  OK
+
+=== CONCLUSION ===
+
+The v1 recipe's cardinality check is broken (returns 0 for
+the 1-match case). The v2 recipes are correct:
+
+  - Use --oneline when you only need cardinality:
+      matches=$(... --oneline | wc -l)
+
+  - Use --pretty=format:'%H%n' when you also need the SHA:
+      sha=$(... --pretty=format:'%H%n' | head -1)
+
+Both forms are newline-safe.
