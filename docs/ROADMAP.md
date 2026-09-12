@@ -1221,8 +1221,8 @@ The critical-path transition per ACT §24:
   ACT-POLYC-TOOLING-RUNTIME01             CLOSED PASS
   ACT-POLYC-TOOLING-MIGRATE-GEP01         CLOSED PASS  <-- Track B first migration
   ACT-POLYC-PARSER-TERNARY-HANG01         NEXT        (Track A / compiler)
-  ACT-POLYC-TOOLING-SHELL-BUDGET01        HALT PRODUCT (Track B budget ratchet; see CORRECTION01)
-  ACT-POLYC-INTEGRATION-PREBOOTSTRAP-GATES01  NEXT  (Track B integration gate; owns R1/R2/R3)
+  ACT-POLYC-TOOLING-SHELL-BUDGET01        HALT PRODUCTION (Track B budget ratchet; see CORRECTION01)
+  ACT-POLYC-INTEGRATION-PREBOOTSTRAP-GATES01  NEXT  (Track B integration gate; owns R1/R2/R3/R4)
 ```
 
 STRUCT01 / ARRAY01 remain deferred. BOOTSTRAP01 (B0
@@ -1689,7 +1689,7 @@ evidence/.../c5/frozen-binding-classification.txt and
 evidence/.../c6/residue.txt for the classification.
 
 
-#### ACT-POLYC-TOOLING-SHELL-BUDGET01 status (HALT PRODUCT at CORRECTION01)
+#### ACT-POLYC-TOOLING-SHELL-BUDGET01 status (HALT PRODUCTION at CORRECTION01)
 
 SHELL-BUD01 ACT-POLYC-TOOLING-SHELL-BUDGET01
 
@@ -1721,25 +1721,41 @@ SHELL-BUD01 ACT-POLYC-TOOLING-SHELL-BUDGET01
              available classification is UNAVAILABLE.
 
   OWNERSHIP OF FIXES (forwarded)
-    P0  AC30 (gate-fast wiring)        -> ACT-POLYC-INTEGRATION-
-                                            PREBOOTSTRAP-GATES01
-                                            (general "bind every gate"
-                                            property; same geometric
-                                            defect as D1 GEP binding)
-    P0  AC28 (shell-loc FAIL)          -> ACT-POLYC-INTEGRATION-
-                                            PREBOOTSTRAP-GATES01 R3
-                                            (shrink/migrate
-                                            factory-halt-classification-*)
-    P0  evidence capture rc-mismatch   -> ACT-POLYC-INTEGRATION-
-                                            PREBOOTSTRAP-GATES01 (residue)
-    P1  AC31 (harness unrunnable)      -> ACT-POLYC-INTEGRATION-
-                                            PREBOOTSTRAP-GATES01 R1
-                                            (bind harness against
-                                            build/test-prefix/bin/)
-    P2  duplicate header row in        -> cosmetic; addressed by the
-        migration-queue.tsv               verifier-test packet script
-                                            itself if/when an ACT
-                                            revisits it
+    The two integration gaps that block Track-A merge
+    are P0 / PRODUCTION. Everything else is governance
+    residue that, under F-MECHANICAL-BLOCKING, must not
+    stop engineering.
+
+    P0 (PRODUCTION / BLOCKS_NEXT=YES)
+      D2 shell-loc FAILs on factory-halt-classification-
+         {test=182, check=187}.sh  -> PREBOOTSTRAP R3
+      D4 shell-budget-gate exists but is not bound into
+         the canonical gate graph (gate-fast / gate-push
+         do not invoke it)         -> PREBOOTSTRAP R4
+
+    AC24 (zero READY_NOW candidates) is a *consequence*
+    of D2: once R3 shrinks / migrates the two scripts,
+    the migration queue can be recomputed and READY_NOW
+    rows may appear. Not an independent blocker.
+
+    P1 (environment / integration)
+      GEP PolyC harness unrunnable in this checkout
+      (no hcc) -- stronger issue is canonical binding.
+      -> PREBOOTSTRAP R1
+
+    P2 (GOVERNANCE / BLOCKS_NEXT=NO) -- documented but
+    not blocking; do not open additional ACTs for these
+    unless/until they cause executable regression:
+      * c3/conservation-gates.txt rc-mismatch (stale
+        evidence; do not mutate under F14)
+      * c2/migration-queue.tsv duplicate header row
+      * c2/budget-after.tsv +2 slack explanation prose
+      * AC31 closure-truth block asserted PASS when the
+        available classification is UNAVAILABLE (stale
+        evidence; superseded by this correction)
+      * Manifest grandfathered 182-LOC and 187-LOC
+        files -- reconcile against the integrated tree
+        once PREBOOTSTRAP R3 closes.
 
   NO NEXT_ACT FROM THIS CLOSURE
     AC24 was unmet, so the original ACT's mechanical
@@ -1756,7 +1772,7 @@ SHELL-BUD01 ACT-POLYC-TOOLING-SHELL-BUDGET01
                    evidence/ACT-POLYC-TOOLING-SHELL-BUDGET01-CORRECTION01/
                    (fresh-tree-failures.txt, halt-classification.txt)
 
-  HALT_CLASS = PRODUCT
+  HALT_CLASS = PRODUCTION
   BLOCKS_NEXT = YES  (Track A merge into integrated main)
 ```
 
@@ -1764,17 +1780,24 @@ SHELL-BUD01 ACT-POLYC-TOOLING-SHELL-BUDGET01
 
 PBCG01     ACT-POLYC-INTEGRATION-PREBOOTSTRAP-GATES01
 
-  MISSION = clean the three integration defects at the
+  MISSION = close all four integration gaps at the
             Track A + Track B(e544a48) join point before
-            Track B merges:
-              R1  bind GEP PolyC harness (D1)
-              R2  repair canonical install (D2)
-              R3  migrate/shrink factory-halt-classification-*
-                  so shell-loc-gate PASSes again (D3, also
-                  unblocks SHELL-BUDGET01 AC28)
+            Track B merges, so the canonical execution
+            graph runs every authoritative gate:
+              R1  bind GEP PolyC harness        (D1)
+              R2  repair canonical install     (D2)
+              R3  eliminate illegal >50-LOC new
+                  Factory shell so shell-loc-gate
+                  PASSes again                 (D2/PREBOOTSTRAP,
+                                                unblocks SHELL-BUDGET01 AC28)
+              R4  bind shell-budget-gate into the
+                  canonical gate graph (gate-fast /
+                  gate-push invoke it)          (D4, unblocks SHELL-BUDGET01 AC30)
             Side-effect: enables SHELL-BUDGET01 to be
-            re-closed with AC30 (gate-fast wiring) and
-            AC28 (shell-loc PASS) both true.
+            re-closed truthfully (AC28 + AC30 + AC24).
+            Underlying principle: a gate that is
+            supposed to be authoritative is not complete
+            until the canonical execution graph runs it.
 ```
 
 #### C2 IMPL authorisation gate (HISTORICAL; C2 IMPL closed at 09072b5)

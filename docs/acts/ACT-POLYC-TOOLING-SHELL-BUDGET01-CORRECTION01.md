@@ -50,12 +50,19 @@ This correction only:
    added `MIGRATE-FACTORY-HALT-CLASSIFICATION01`
    NEXT entry);
 3. documents residue per F11 (P0/P1/P2);
-4. defers all product fixes to
-   `ACT-POLYC-INTEGRATION-PREBOOTSTRAP-GATES01`
-   (R1 binds GEP harness; R3 migrates/shrinks
-   `factory-halt-classification-{test,check}.sh`)
-   and to a future Track-B ACT that owns the
-   gate-fast wiring.
+4. defers all four product fixes to
+   `ACT-POLYC-INTEGRATION-PREBOOTSTRAP-GATES01`,
+   so that the canonical execution graph runs every
+   authoritative gate, in one bounded turn:
+     R1  bind GEP PolyC harness (D1)
+     R2  repair canonical install / libtos
+     R3  eliminate illegal >50-LOC new Factory shell
+         so shell-loc-gate PASSes again (D2)
+     R4  bind shell-budget-gate into the canonical
+         gate graph (D4)
+   The underlying principle is that a gate which is
+   supposed to be authoritative is not complete until
+   the canonical execution graph runs it.
 
 This correction does NOT:
 
@@ -74,12 +81,12 @@ the closure verdict was wrong.
 ## 3. Halt classification
 
 ```text
-HALT_CLASS   = PRODUCT
+HALT_CLASS   = PRODUCTION
 BLOCKS_NEXT  = YES  (for Track A merge into integrated main)
 ```
 
 Per AGENTS.md F15 and DOCTRINE §25: this halt is
-**product** (mechanically unmet ACs in the binding
+**PRODUCTION** (mechanically unmet ACs in the binding
 layer of Track B itself), not prose. It blocks the
 Track A integrated merge, but does not block
 `PREBOOTSTRAP-GATES01` from opening on the existing
@@ -175,20 +182,42 @@ simultaneously.
 
 ## 5. Residue classification (F11)
 
-| Priority | Item                                                                                                                                |
-|----------|-------------------------------------------------------------------------------------------------------------------------------------|
-| P0       | `scripts/quality/gate-fast.sh` does NOT invoke `scripts/quality/shell-budget-gate.sh`. Same B5 geometry as the GEP harness gap.     |
-| P0       | `shell-loc-gate` FAILs on `factory-halt-classification-{test,check}.sh` (pre-existing; introduced by MECHANICAL-BLOCKING01 d4ad74f). |
-| P0       | `c3/conservation-gates.txt` capture runner reported `rc=0` for the FAILing `shell-loc-gate` invocation -- evidence capture defect.   |
-| P0       | `c2/migration-queue.tsv` has duplicate header row (cosmetic, but evidence of script defect that should be filed).                   |
-| P1       | GEP PolyC harness is `ENVIRONMENTALLY_UNAVAILABLE` in this env (no `hcc`).                                                          |
-| P1       | `AC31` closure-truth block asserted PASS (30/0) when the actual classification is UNAVAILABLE.                                       |
-| P2       | `c2/budget-after.tsv` budget arithmetic explanation was wrong about the +2 slack source. Inequality holds; prose was misleading.    |
-| P2       | The manifest grandfathered 182-LOC and 187-LOC files (factory-halt-classification-{test,check}). First-layer hard cap and second-layer budget snapshot disagree; the second-layer is wrong. |
+The two integration gaps that block Track-A merge are
+P0 / PRODUCTION. Everything else is governance residue
+that, under the F-MECHANICAL-BLOCKING doctrine, must
+not stop engineering.
 
-Items marked P0 are owned by
-`ACT-POLYC-INTEGRATION-PREBOOTSTRAP-GATES01`. Items
-marked P1/P2 are documented but not blocking.
+### P0 (PRODUCTION / BLOCKS_NEXT=YES)
+
+| D   | Item                                                                                                                          | Owner                                              |
+|-----|-------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------|
+| D2  | `shell-loc-gate` FAILs on `factory-halt-classification-{test=182, check=187}.sh` (> 50 LOC). Pre-existing, introduced by ACT-POLYC-FACTORY-MECHANICAL-BLOCKING01 (d4ad74f). | ACT-POLYC-INTEGRATION-PREBOOTSTRAP-GATES01 R3      |
+| D4  | `scripts/quality/shell-budget-gate.sh` exists but is not bound into the canonical gate graph (gate-fast / gate-push do not invoke it). Same geometric defect as D1 (GEP harness). | ACT-POLYC-INTEGRATION-PREBOOTSTRAP-GATES01 R4      |
+
+AC24 (zero READY_NOW candidates) is a *consequence* of
+D2, not an independent blocker: once R3 shrinks /
+migrates the two scripts, the migration queue can be
+recomputed and `READY_NOW` rows may appear.
+
+### P1 (environment / integration)
+
+| Item                                                                                                                          | Owner                                              |
+|-------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------|
+| GEP PolyC harness cannot execute in Track-B checkout because `hcc` is unavailable; stronger issue is canonical binding.     | ACT-POLYC-INTEGRATION-PREBOOTSTRAP-GATES01 R1      |
+
+### P2 (GOVERNANCE / BLOCKS_NEXT=NO)
+
+These are evidence-quality issues. They do not change
+executable repository behavior and must not block
+engineering under F-MECHANICAL-BLOCKING.
+
+| Item                                                                                                                          | Owner                                              |
+|-------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------|
+| Original `c3/conservation-gates.txt` capture runner reported `rc=0` for the FAILing `shell-loc-gate` invocation (display ok, exit-code binding wrong). | cosmetic in stale evidence; do not mutate (F14)    |
+| `c2/migration-queue.tsv` has a duplicate header row (cosmetic; script-side deduplication defect).                            | follow-up test-packet patch in a future ACT       |
+| `c2/budget-after.tsv` budget arithmetic explanation was wrong about the +2 slack source. Inequality holds; prose was misleading. | follow-up documentation patch in a future ACT    |
+| Original ACT §16 closure-truth block asserted `GEP_POLYC_HARNESS = PASS (30/0)` when the actual classification is UNAVAILABLE. | superseded by this correction; do not mutate (F14) |
+| The manifest grandfathered 182-LOC and 187-LOC files. First-layer hard cap and second-layer budget snapshot disagree.       | re-run the manifest against the integrated tree once PREBOOTSTRAP R3 closes |
 
 ## 6. What is NOT changed by this correction
 
@@ -213,10 +242,14 @@ for tracked index entries, not the worktree).
 ## 7. ROADMAP update (Track B after this correction)
 
 ```text
-SHELL-BUDGET01        HALT (PRODUCT) -- implementation useful,
-                                    closure false; see
-                                    CORRECTION01 for residue.
-PREBOOTSTRAP-GATES01  NEXT (Track B integration gate)
+SHELL-BUDGET01        HALT (PRODUCTION) -- implementation useful,
+                                         closure false; see
+                                         CORRECTION01 for residue.
+PREBOOTSTRAP-GATES01  NEXT (Track B integration gate; owns
+                            R1 GEP binding, R2 install,
+                            R3 halt-class shrink/migrate,
+                            R4 budget-gate binding -- so all
+                            canonical gates run before push)
 ```
 
 The spuriously-added `MIGRATE-FACTORY-HALT-CLASSIFICATION01`
@@ -275,7 +308,7 @@ and document residue.
 
 ```text
 ACT_VERDICT                 = HALT
-HALT_CLASS                  = PRODUCT
+HALT_CLASS                  = PRODUCTION
 BLOCKS_NEXT                 = YES (Track A merge into integrated main)
 ROADMAP_STATE               = HALT (was incorrectly CLOSED PASS)
 ORIGINAL_CLOSURE_COMMIT     = 424ed55 (immutable per F14)
