@@ -1070,6 +1070,54 @@ See `evidence/ACT-POLYC-AOT-PIC-EXTERNAL-REFS01-CORRECTION01/c4/`
 for the full closure pack (README, acceptance matrix, residue,
 roadmap transition, closure summary, HANDOFF).
 
+#### ACT-POLYC-AOT-PIC-EXTERNAL-REFS01-CORRECTION01 trailer-bookkeeping
+   correction (v2 §2.3 / §2.4 binding surfaced by CORRECTION02)
+
+The C4 CLOSE commit of CORRECTION01 (commit `505b007`)
+carried a trailer block that violates
+`docs/factory/GIT-METADATA.md` §2.4:
+
+```
+ACT-Verdict              : PASS
+ACT-Corrected-Verdict    : HALT_GATE_PUSH_FAILED
+HALT_CLASS               : GOVERNANCE      <- FORBIDDEN on PASS CLOSE
+BLOCKS_NEXT              : NO              <- FORBIDDEN on PASS CLOSE
+(missing ACT-Supersedes                     <- required by §2.3 rule 2)
+```
+
+`scripts/quality/factory-halt-classification.py` correctly
+rejects the combination with `STATUS=FAIL` /
+`REASON="PASS verdict forbids HALT_CLASS (count=1)"`.
+
+The v2-correct trailer set SHOULD have been:
+
+```
+ACT: ACT-POLYC-AOT-PIC-EXTERNAL-REFS01-CORRECTION01
+ACT-Phase: CLOSE
+ACT-Verdict: PASS
+ACT-Supersedes: ACT-POLYC-AOT-PIC-EXTERNAL-REFS01
+ACT-Corrected-Verdict: HALT_GATE_PUSH_FAILED
+```
+
+(no HALT_CLASS / BLOCKS_NEXT). Per F-GIT-IDENTITY and
+`docs/factory/DOCTRINE.md` §23, the historical commit `505b007`
+is NOT amended. The v2-correct trailer set is captured as a
+plain-text artifact at
+`evidence/ACT-POLYC-AOT-PIC-EXTERNAL-REFS01-CORRECTION02/c2/
+v2-correct-trailer-set.txt` and the trailer passes the
+verifier with `STATUS=PASS`.
+
+The corrected-verdict HALT classification
+(`HALT_CLASS=GOVERNANCE / BLOCKS_NEXT=NO`) lives in the
+descriptive artifacts (this ROADMAP entry; the CORRECTION01
+`c4/closure-summary.txt` PRE-CONDITION CLAIM block; the
+CORRECTION01 `c4/roadmap-transition.txt` entire document).
+
+See `evidence/ACT-POLYC-AOT-PIC-EXTERNAL-REFS01-CORRECTION02/`
+for the full CORRECTION02 closure pack (the bounded
+correction ACT that documented the trailer-bookkeeping
+defect and surfaced the v2-correct binding).
+
 #### ACT-POLYC-TOOLING-MIGRATE-GEP01 status (CLOSED PASS at C4)
 
 ```text
