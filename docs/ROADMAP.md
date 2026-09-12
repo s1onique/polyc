@@ -1042,13 +1042,50 @@ OPTION-W-OUT-PARAM01  ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01
                                 C4_IMPL_B_AUTH = TRUE reaffirmed;
                                 C4 currently READY (P1-P7 all
                                 closed))
+    C3.6 RED      this commit (LLDefMap domain restriction:
+                                §9.5.7 LLDefMap domain (P0):
+                                       ins->dst->kind == IR_VAL_TMP
+                                         -> participate;
+                                            duplicate TMP def
+                                            -> HALT
+                                       every other kind
+                                         -> ignored; duplicate
+                                            non-TMP defs silently
+                                            skipped, NOT halted
+                                §9.5.3 REVISED: domain filter
+                                       folded into lldmSet;
+                                       signature changes from
+                                       lldmSet(m, id, v) to
+                                       lldmSet(lc, ins)
+                                mechanical witness:
+                                  witness-domain (new; C3.6):
+                                    A multi_def_local: PASS
+                                      (LOCAL out of domain;
+                                       not halted)
+                                    B single_tmp_icmp: PASS
+                                      (TMP in domain;
+                                       producer retrievable)
+                                    C duplicate_tmp:    PASS
+                                      (HALT with
+                                       HALT_PHI_TYPE_CONTRACT_
+                                       REQUIRED)
+                                    ALL THREE CASES MATCH
+                                      REQUIRED SHAPE: YES
+                                C3.5 witness-leak remains
+                                  authoritative for AC57-AC58;
+                                P2 hygiene: NO witness binaries;
+                                C4_IMPL_B_AUTH = TRUE reaffirmed;
+                                C4 currently READY (P1-P8 all
+                                closed))
     C4 IMPL-B     (next; strengthened PHI shape contract
                                 + §9.5 placement-corrected zext
                                 + §9.3.1 lookup-only PI-1
                                 + §9.3.2 per-PHI counter
                                 + §9.4.1 producer-binding seam
                                 + §9.5.2 ir_in/llvm_in identity
-                                + §9.5.3 unique-definition check
+                                + §9.5.3 domain-filtered
+                                  unique-definition check (TMP only)
+                                + §9.5.7 LLDefMap domain harness
                                 + PI-2/PI-3-narrow assertions
                                 + producer-opcode check
                                 + corrected leak-predicate harness)
@@ -1088,6 +1125,10 @@ OPTION-W-OUT-PARAM01  ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01
               (corrected predicate +
                ir_in/llvm_in boundary +
                unique-definition contract)
+         B3.8 LLDefMap domain (TMP only) CLOSED (C3.6 §9.5.7)
+              (domain filter folded into lldmSet;
+               mutable locals outside the domain;
+               duplicate non-TMP defs silently skipped)
 
   C2-A.1 RULE 5 REDEFINITION:
     Old: V feeds return (return-sink only)

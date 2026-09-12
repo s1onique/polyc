@@ -1,0 +1,23 @@
+=== Fixture A: multi_def_local (IR_VAL_LOCAL id=0) ===
+  halt observed                : 0 (want 0)
+  def_map[LOCAL V] populated   : 0 (want 0)
+  result                       : PASS (LOCAL out of domain; not halted)
+
+=== Fixture B: single_tmp_icmp (IR_VAL_TMP id=0 from IR_ICMP) ===
+  halt observed              : 0 (want 0)
+  def_map[t0] populated      : 1 (want 1)
+  producer->op               : IR_ICMP (want IR_ICMP)
+  producer->dst == t0        : 1 (want 1)
+  result                     : PASS (TMP in map; producer retrievable)
+
+=== Fixture C: duplicate_tmp (IR_VAL_TMP id=0 defined twice) ===
+  halt observed              : 1 (want 1)
+  halt reason                : HALT_PHI_TYPE_CONTRACT_REQUIRED: duplicate TMP definition for IrValue id 0. IR_VAL_TMP must have a unique defining instruction (old=0x<ins1>, new=0x<ins2>).
+  result                     : PASS (duplicate TMP halted with HALT_PHI_TYPE_CONTRACT_REQUIRED)
+
+========================================
+A (multi_def_local allowed) : PASS
+B (single_tmp_icmp allowed) : PASS
+C (duplicate_tmp halted)    : PASS
+========================================
+ALL THREE CASES MATCH REQUIRED SHAPE: YES

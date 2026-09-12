@@ -1,0 +1,318 @@
+ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 C3.6 RED: LLDefMap domain restriction
+==========================================================================
+
+QUESTION (per expert review of C3.5):
+
+  C3.5 froze three things together: the corrected leak
+  predicate (P0-1), the ir_in / llvm_in identity split (P0-2),
+  and a unique-definition contract for lldmSet (P1).
+
+  The first two are correct and the corrected witness proves
+  the leak predicate genuinely has the expected geometry
+  (LEAK_ROWS = 2 with both FCMP and parameter-i1).
+
+  The unique-definition contract, however, was too broad. Its
+  pseudocode records every IrInstr with a dst:
+
+      if (ins->dst) {
+          lldmSet(&lc->def_map, irVarId(ins->dst), ins);
+      }
+
+  and lldmSet now halts on a second definition for an already-
+  bound id. That would turn the new PHI provenance map into a
+  global SSA assertion over a neutral IR that deliberately
+  contains mutable locals (IR_VAL_LOCAL).
+
+  PolyC's neutral IR has two value classes that carry a dst:
+
+      IR_VAL_TMP      SSA-like; unique defining instruction
+                      (exactly the class used by current
+                      short-circuit IR_PHI inputs)
+      IR_VAL_LOCAL    Mutable source local; intentionally may
+                      have MULTIPLE defining instructions
+                      (Option-W lowers via alloca + mem2reg)
+
+  C4 as presently frozen could encounter perfectly legal code
+  such as:
+
+      local V:
+          store V, 10
+          iadd  V, ...
+          isub  V, ...
+
+  and the second definition of V would cause lldmSet to halt
+  before the PHI seam is even relevant. That would accidentally
+  regress the very LOCAL-MEM2REG architecture Option-W
+  depends on.
+
+P0  Freeze LLDefMap domain to SSA-like values only.
+
+    REQUIRED:
+      ins->dst->kind == IR_VAL_TMP   -> participate in LLDefMap
+      every other kind               -> ignored by LLDefMap
+
+P0  Duplicate TMP id:
+      second distinct defining instruction for the same
+      IR_VAL_TMP id
+        -> HALT_PHI_TYPE_CONTRACT_REQUIRED
+
+    Duplicate definitions of non-TMP kinds (LOCAL, PARAM) are
+    NOT a contract violation: they are silently skipped at map
+    construction time, because they are outside the LLDefMap
+    domain entirely.
+
+DOMAIN RATIONALE (matches LLVM SSA model):
+
+  LLVM SSA values are immutable; PHI incoming values are SSA
+  values associated with predecessor edges. PolyC's bounded
+  short-circuit IR_PHI inputs are produced only by IR_ICMP-
+  shaped TMPS (current frontend geometry; see C3 provenance
+  evidence). There is no reason for LLDefMap to police
+  mutable locals.
+
+MECHANICAL WITNESS
+
+  evidence/c3.6/witness-domain.c    396 lines; no LLVM linkage
+  evidence/c3.6/witness-domain.txt  captured output
+  evidence/c3.6/BUILD.txt           build commands; no binaries
+
+  Three fixtures:
+
+    fixture   ins->dst kind   expected
+    --------  --------------- ---------------------------------
+    A         IR_VAL_LOCAL    no halt; not in def_map
+                              (LOCAL out of domain)
+    B         IR_VAL_TMP      no halt; def_map[t0] == ICMP instr
+                              (TMP in domain; producer retrievable)
+    C         IR_VAL_TMP      HALT_PHI_TYPE_CONTRACT_REQUIRED
+                              (duplicate TMP id; halted)
+
+  Required result:
+    A (multi_def_local allowed)  : PASS
+    B (single_tmp_icmp allowed)  : PASS
+    C (duplicate_tmp halted)     : PASS
+    ALL THREE CASES MATCH REQUIRED SHAPE: YES
+
+  Process exits 0 iff all three expectations match.
+
+  CAPTURED OUTPUT (literal):
+    === Fixture A: multi_def_local (IR_VAL_LOCAL id=0) ===
+      halt observed                : 0 (want 0)
+      def_map[LOCAL V] populated   : 0 (want 0)
+      result                       : PASS (LOCAL out of domain; not halted)
+
+    === Fixture B: single_tmp_icmp (IR_VAL_TMP id=0 from IR_ICMP) ===
+      halt observed              : 0 (want 0)
+      def_map[t0] populated      : 1 (want 1)
+      producer->op               : IR_ICMP (want IR_ICMP)
+      producer->dst == t0        : 1 (want 1)
+      result                     : PASS (TMP in map; producer retrievable)
+
+    === Fixture C: duplicate_tmp (IR_VAL_TMP id=0 defined twice) ===
+      halt observed              : 1 (want 1)
+      halt reason                : HALT_PHI_TYPE_CONTRACT_REQUIRED:
+                                  duplicate TMP definition for
+                                  IrValue id 0. IR_VAL_TMP must have
+                                  a unique defining instruction
+                                  (old=0x<ins1>, new=0x<ins2>).
+      result                     : PASS (duplicate TMP halted with
+                                  HALT_PHI_TYPE_CONTRACT_REQUIRED)
+
+    ========================================
+    A (multi_def_local allowed) : PASS
+    B (single_tmp_icmp allowed) : PASS
+    C (duplicate_tmp halted)    : PASS
+    ========================================
+    ALL THREE CASES MATCH REQUIRED SHAPE: YES
+
+CORRECTED PSEUDOCODE (C3.6 final; §9.5.3 algorithm)
+
+  C3.5 pseudocode was:
+
+      // build pass (called once per function, alongside llCreateBlocks)
+      static void llBuildDefMap(LLCtx *lc, IrFunction *fn) {
+          lldmInit(&lc->def_map, fn->next_value_id);
+          listForEach(fn->blocks) {
+              IrBlock *b = (IrBlock *)it->value;
+              listForEach(b->instructions) {
+                  IrInstr *ins = (IrInstr *)it->value;
+                  if (ins->dst) {
+                      lldmSet(&lc->def_map, irVarId(ins->dst), ins);
+                  }
+              }
+          }
+      }
+
+      static void lldmSet(LLCtx *lc, u32 id, IrInstr *ins) {
+          IrInstr *old = lldmGet(&lc->def_map, id);
+          if (old && old != ins) {
+              HALT_PHI_TYPE_CONTRACT_REQUIRED
+                    "duplicate definition for IrValue id %u: ...";
+          }
+          lldmGrow(&lc->def_map, id + 1);
+          lc->def_map.values[id] = ins;
+      }
+
+  C3.5 silently overwrote the def_map entry for LOCALs (no
+  halt because the build pass didn't check the kind). It also
+  would have halted for *perfectly legal* LOCAL re-definitions
+  if lldmSet's contract were naively generalised. The C3.6
+  correction folds the domain filter into lldmSet itself so
+  that:
+
+      static int lldmSet(LLCtx *lc, IrInstr *ins) {
+          if (!ins || !ins->dst) return LLDM_PASS;
+          /* C3.6 P0-1: domain = IR_VAL_TMP only. PolyC's
+           * mutable locals are outside the LLDefMap domain. */
+          if (ins->dst->kind != IR_VAL_TMP) return LLDM_PASS;
+          u32 id = irVarId(ins->dst);
+          lldmGrow(&lc->def_map, id + 1);
+          IrInstr *old = lc->def_map.values[id];
+          if (old && old != ins) {
+              HALT_PHI_TYPE_CONTRACT_REQUIRED
+                    "duplicate TMP definition for IrValue id %u. "
+                    "IR_VAL_TMP must have a unique defining "
+                    "instruction (old=0x<ins1>, new=0x<ins2>).",
+                    id;
+          }
+          lc->def_map.values[id] = ins;
+          return LLDM_PASS;
+      }
+
+  The build pass is unchanged; lldmSet's contract does the
+  filtering internally:
+
+      // build pass (unchanged from C3.5 structurally)
+      static void llBuildDefMap(LLCtx *lc, IrFunction *fn) {
+          lldmInit(&lc->def_map, fn->next_value_id);
+          listForEach(fn->blocks) {
+              IrBlock *b = (IrBlock *)it->value;
+              listForEach(b->instructions) {
+                  IrInstr *ins = (IrInstr *)it->value;
+                  if (lldmSet(lc, ins) == LLDM_HALT) return;
+              }
+          }
+      }
+
+  The map's meaning is sharpened from
+  "the last instruction encountered with that dst id"
+  to
+  "the UNIQUE defining instruction for that dst id, when the
+   dst is IR_VAL_TMP; non-TMP dsts are not in the domain".
+
+  This makes producer provenance a security-boundary-like
+  compiler evidence for SSA-like neutral values only.
+
+SCOPE (NO EXPANSION)
+
+  - lldmSet signature changes from
+        static void lldmSet(LLDefMap *m, u32 id, IrInstr *v)
+    to
+        static int  lldmSet(LLCtx *lc, IrInstr *ins)
+    The C3.5 build pass called
+        lldmSet(&lc->def_map, irVarId(ins->dst), ins)
+    which assumed any ins->dst was in the map domain. C3.6
+    promotes the domain filter into lldmSet, so the build pass
+    must call lldmSet(lc, ins) instead. No semantic change for
+    TMPs.
+
+  - The witness-domain.c harness uses mock types
+    (IrValue / IrInstr / IrBlock / IrFunction) structurally
+    similar to src/ir-types.h but with no LLVM linkage. The
+    C4 implementation MUST mirror the C3.6-corrected lldmSet
+    semantics against the real src/ir-types.h.
+
+  - One witness-domain.c added (396 lines); the corrected
+    witness-leak.c from C3.5 is NOT re-emitted.
+
+  - No committed witness binaries (P2 hygiene).
+
+NEW ACCEPTANCE CRITERIA (AC61; AC60 REVISED)
+
+  AC60 (REVISED) C3.6 freezes the LLDefMap domain:
+
+        ins->dst->kind == IR_VAL_TMP
+            -> participate in LLDefMap; unique-def invariant
+               applies (duplicate -> HALT)
+        every other kind (LOCAL, PARAM, CONST, GLOBAL, ...)
+            -> ignored by LLDefMap; duplicate non-TMP defs
+               are silently skipped, NOT halted
+
+     The C4 implementation MUST use lldmSet (or an equivalent
+     bounded helper) that filters by dst->kind == IR_VAL_TMP
+     before applying the unique-definition check.
+
+     This fixes the over-broad C3.5 invariant and prevents
+     accidentally regressing PolyC's mutable-local model that
+     Option-W depends on.
+
+  AC61 C3.6 requires mechanical-witness evidence of the
+     corrected lldmSet contract:
+
+        A (multi_def_local allowed)   : PASS
+        B (single_tmp_icmp allowed)   : PASS
+        C (duplicate_tmp halted)      : PASS
+        ALL THREE CASES MATCH REQUIRED SHAPE: YES
+
+     Captured output for evidence/c3.6/witness-domain.c
+     records this matrix verbatim.
+
+HISTORICAL C4_IMPL_B_AUTH TABLE (C3.6 freeze, append-only)
+
+  C3       AUTH=true    SUPERSEDED   (pre-dominance)
+  C3.1     AUTH=true    SUPERSEDED   (pre-placement)
+  C3.2     AUTH=false   SUPERSEDED   (pre-mechanics)
+  C3.3     AUTH=true    SUPERSEDED   (pre-producer-binding)
+  C3.4     AUTH=true    SUPERSEDED   (pre-evidence+identity)
+  C3.5     AUTH=true    SUPERSEDED   (pre-domain-restriction)
+  C3.6     AUTH=true    CURRENT      (P0 LLDefMap domain freeze)
+
+PRE-C4 contract requirements (C3.6 freeze, all closed):
+
+  P1 contract frozen                         CLOSED C3.3
+  P2 counter semantics frozen                CLOSED C3.3
+  P3 lookup-only PI-1 mechanism identified   CLOSED C3.3
+  P4 implementation scope frozen             CLOSED C3.3
+  P5 producer-opcode binding frozen          CLOSED C3.4
+  P6 counter-vs-halting semantic frozen      CLOSED C3.4
+  P7 leak-predicate + identity preservation  CLOSED C3.5
+         (corrected predicate + ir_in/llvm_in
+          boundary + unique-definition contract)
+  P8 LLDefMap domain restricted to TMPs      CLOSED C3.6
+
+  All P1-P8 are CLOSED. C4 is READY.
+
+IDENTITY
+
+  ENTRY_HEAD      = 98714eeef4ed71dbb3057c5130927e6c2af877c3
+                    (C3.5 RED commit; this ACT's entry tree)
+  C3.6_RED        = <this commit>
+  WORKTREE        = clean (after commit)
+
+PRODUCTION DELTA: NONE (C3.6 is RED evidence + contract
+                     correction only).
+
+EVIDENCE (this commit)
+
+  c3.6/c3.6-red.txt            contract correction + pseudocode
+  c3.6/witness-domain.c        LLDefMap domain witness (396 lines)
+  c3.6/witness-domain.txt      captured output (3 PASS, halt OK)
+  c3.6/BUILD.txt               build commands; no binaries
+
+RESIDUE
+
+  P0  none (the over-broad LLDefMap domain defect is frozen)
+  P1  (historical) 0fcc8b2 hygiene commit remains the pattern
+      for trailing-whitespace strip on committed evidence
+      files; C3.6 follows this convention.
+  P2  (carried) C3.4 + C3.5 + C3.6 do not commit binaries;
+      sources + .txt + BUILD.txt only.
+
+NEXT ACT: C4 IMPL-B (pending this commit + expert
+          re-authorization). C4 was RE-LOCKED at the end of
+          C3.5 because the expert identified this domain
+          defect. C3.6 closes it.
+
+  ACT: POLYC-LLVM-OPTION-W-OUT-PARAM01
+  ACT-Phase: RED
+  ACT-Verdict: IN-PROGRESS

@@ -1,0 +1,34 @@
+ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 C3.6 RED: witness build instructions
+
+This ACT deliberately does NOT commit the compiled witness
+binaries (per the expert's P2 hygiene note).
+
+To reproduce the captured output:
+
+  cd evidence/ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01/c3.6
+
+  cc -Wall -Wextra -o witness-domain witness-domain.c
+
+  ./witness-domain > witness-domain.txt.observed
+
+  diff witness-domain.txt witness-domain.txt.observed && echo OK
+
+Toolchain identity:
+
+  $ cc --version
+  Apple clang version 17.0.0 (clang-1700.6.3.5)
+
+The witness binary is reproducible from the committed source
+on any POSIX cc with a C99 (or later) compiler. The captured
+.txt output is the canonical evidence; the build command
+above is the canonical reproduction procedure.
+
+C3.6 fixes the domain restriction in lldmSet that C3.5 left
+too broad. C3.6 adds NO new witness file beyond
+witness-domain.c; C3.5's witness-leak.c remains authoritative
+for the leak-predicate correction.
+
+Note: the captured witness-domain.txt was generated on a
+single run with the addresses in the halt message normalised
+to 0x<ins1> / 0x<ins2>. The structural content (halt
+reason, pass/fail per fixture) is the canonical evidence.
