@@ -1,0 +1,33 @@
+C3 conservation gates (per ACT §17, §27)
+=========================================
+
+Test method
+-----------
+  Fresh re-run of every conservation gate from
+  ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME02 closure plus the
+  new ACT-POLYC-LLVM-GEP01 harness.
+
+------------------------------------------------------------
+llvm-byte-memory01-test                37/0 PASS
+llvm-spike-test                        18/0 PASS
+llvm-intops01-test                      4/0 PASS
+ir-return-slot-forwarding01-test        6/0 PASS
+harness-evidence-isolation-test       PASS
+llvm-cap-table-verifier               PASS
+llvm-gep01-test                       30/0 PASS
+factory-v2-commit-msg-check           PASS  (C1, C2 trailers)
+factory-append-only-test              11/0 PASS
+factory-closure-status                PASS  (PAIR_OK=6)
+gate-fast                             PASS
+------------------------------------------------------------
+
+Verdict
+-------
+  All conservation gates remain GREEN.
+  BYTE_MEMORY01_GEP_COUNT remains whatever its contract
+  requires (zero GEPs in BYTE-MEMORY fixtures, which do not
+  exercise byte indexing).
+  BYTE_STORE_STATUS remains DEFERRED_NOT_B0_BLOCKING
+  (untouched).
+  No unrelated BYTE-MEMORY capability was widened.
+

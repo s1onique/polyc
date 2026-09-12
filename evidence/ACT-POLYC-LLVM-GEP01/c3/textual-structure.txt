@@ -1,0 +1,138 @@
+C3 textual LLVM proof (per ACT §20)
+====================================
+
+For each positive fixture, the emitted LLVM is captured in
+evidence/ACT-POLYC-LLVM-GEP01/c3/<fixture>.ll. Below is
+the structural check for the closure-critical dynamic ReadAt
+fixture and the B0 walking TwoDigits fixture.
+
+------------------------------------------------------------
+ReadAt (closure-critical) — src/tests/llvm-gep01/readat.HC
+------------------------------------------------------------
+  Source:
+    I64 ReadAt(U8 *p, I64 i) { return p[i]; }
+
+  Emitted LLVM (full):
+    ; ModuleID = 'polyc_module'
+    source_filename = "polyc_module"
+
+    define i64 @ReadAt(ptr %0, i64 %1) {
+    bb1:
+      %gep_i8 = getelementptr i8, ptr %0, i64 %1
+      %ld_deref = load i8, ptr %gep_i8, align 1
+      %zext_i8_i64 = zext i8 %ld_deref to i64
+      ret i64 %zext_i8_i64
+
+    dead_exit:                                        ; No predecessors!
+      unreachable
+    }
+
+  Structural checks (per ACT §20):
+    PASS  exactly one appropriate getelementptr for p[i]
+    PASS  source element type = i8       (LLVM i8 in GEP)
+    PASS  base operand = pointer derived from source base (%0)
+    PASS  index operand = I64 source index  (%1)
+    PASS  GEP result type = ptr          (used as load addr)
+    PASS  load i8 uses GEP result        (load i8, ptr %gep_i8)
+    PASS  no ptrtoint
+    PASS  no inttoptr
+    PASS  no bitcast for address arithmetic
+    PASS  no `inbounds` keyword
+
+------------------------------------------------------------
+Read2 (constant index) — src/tests/llvm-gep01/read2.HC
+------------------------------------------------------------
+  Source:
+    I64 Read2(U8 *p) { return p[2]; }
+
+  Emitted LLVM (full):
+    define i64 @Read2(ptr %0) {
+    bb1:
+      %gep_i8 = getelementptr i8, ptr %0, i64 2
+      %ld_deref = load i8, ptr %gep_i8, align 1
+      %zext_i8_i64 = zext i8 %ld_deref to i64
+      ret i64 %zext_i8_i64
+
+    dead_exit:                                        ; No predecessors!
+      unreachable
+    }
+
+  Note: the constant-2 index is folded into the GEP's
+  index operand (not into LOAD_DEREF::disp), because the
+  LOAD_DEREF arm's relaxed guard for byte access type now
+  admits disp=k and emits LLVMBuildGEP2 with the constant
+  index.
+
+------------------------------------------------------------
+Read0 (constant zero) — src/tests/llvm-gep01/read0.HC
+------------------------------------------------------------
+  Source:
+    I64 Read0(U8 *p) { return p[0]; }
+
+  Emitted LLVM (full):
+    define i64 @Read0(ptr %0) {
+    bb1:
+      %ld_deref = load i8, ptr %0, align 1
+      %zext_i8_i64 = zext i8 %ld_deref to i64
+      ret i64 %zext_i8_i64
+
+    dead_exit:                                        ; No predecessors!
+      unreachable
+    }
+
+  Note: constant-0 index folds to disp=0 on LOAD_DEREF,
+  which produces the bare `load i8, ptr %0` (no GEP needed).
+  The IR's address-mode fusion has no constant offset to
+  materialise.
+
+------------------------------------------------------------
+TwoDigits (B0 walking consumer) — src/tests/llvm-gep01/twodigits.HC
+------------------------------------------------------------
+  Source:
+    I64 TwoDigits(U8 *p) {
+        I64 a = p[0] - '0';
+        I64 b = p[1] - '0';
+        return a * 10 + b;
+    }
+
+  Emitted LLVM (full):
+    define i64 @TwoDigits(ptr %0) {
+    bb1:
+      %ld_deref = load i8, ptr %0, align 1          ; p[0]
+      %zext_i8_i64 = zext i8 %ld_deref to i64
+      %i8_arg_trunc = trunc i64 %zext_i8_i64 to i8
+      %1 = sub i8 %i8_arg_trunc, 48                  ; a = p[0] - '0'
+      %i8_arith_zext = zext i8 %1 to i64
+      %gep_i8 = getelementptr i8, ptr %0, i64 1      ; p[1] GEP
+      %ld_deref1 = load i8, ptr %gep_i8, align 1     ; load p[1]
+      %zext_i8_i642 = zext i8 %ld_deref1 to i64
+      %i8_arg_trunc3 = trunc i64 %zext_i8_i642 to i8
+      %2 = sub i8 %i8_arg_trunc3, 48                 ; b = p[1] - '0'
+      %i8_arith_zext4 = zext i8 %2 to i64
+      %3 = mul i64 %i8_arith_zext, 10
+      %4 = add i64 %3, %i8_arith_zext4
+      ret i64 %4
+    dead_exit:                                        ; No predecessors!
+      unreachable
+    }
+
+  Distinct indices: 0 (folded into bare load) and 1
+  (constant non-zero, lowered via GEP). Two distinct byte
+  reads from the same base pointer — B0 walking consumer
+  ACT §23 satisfied.
+
+------------------------------------------------------------
+ReadI64 (non-I8 element negative) — src/tests/llvm-gep01/i64idx.HC
+------------------------------------------------------------
+  Source:
+    I64 ReadI64(I64 *p, I64 i) { return p[i]; }
+
+  Backend diagnostic (expected rejection):
+    LLVM_BACKEND_UNSUPPORTED_POINTER: function ReadI64:
+    IR_LOAD_DEREF with non-zero disp or scaled-index
+    addressing is rejected (MEMORY01 forbids GEP /
+    pointer arithmetic); disp=0 idx=0x... scale=8
+
+  Verdict: non-I8 element indexing remains rejected by the
+  existing MEMORY01 disp/idx/scale guard. No .ll is emitted
+  for this fixture.

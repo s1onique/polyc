@@ -1,0 +1,15 @@
+C3 inbounds audit (per ACT §25)
+================================
+
+INBOUNDS_POLICY = PLAIN_GEP
+
+For each positive fixture:
+  grep -c 'getelementptr inbounds' <fixture>.ll
+
+read0.ll         0
+read2.ll         0
+read-at.ll       0
+b0-multiread.ll  0
+
+No `inbounds` keyword emitted by any GEP01 fixture.
+PLAIN_GEP policy preserved per ACT §10 / §25.

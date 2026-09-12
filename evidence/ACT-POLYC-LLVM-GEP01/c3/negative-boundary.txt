@@ -1,0 +1,86 @@
+C3 negative boundary evidence (per ACT §11, §24)
+==================================================
+
+Per ACT §11: the most important negative control is the
+non-I8 element GEP shape. Per ACT §24: prove the frozen
+boundary remains enforced; the selected sibling opcode
+remains rejected.
+
+------------------------------------------------------------
+N1. non-I8 element indexing (ReadI64)
+------------------------------------------------------------
+  Source: src/tests/llvm-gep01/i64idx.HC
+    I64 ReadI64(I64 *p, I64 i) { return p[i]; }
+
+  IR shape (post-optimisation):
+    imul     %t7 i64 tmp, %l4 i64 local, 8 i64 const int
+    iadd     %t6 ptr tmp, %l2 ptr local, %t7 i64 tmp
+    load*    %t8 i64 tmp, %t6 ptr tmp
+
+  The IR's address-mode fusion pre-folds the imul+iadd pair
+  into LOAD_DEREF::idx+scale=8 before the IR_IADD arm sees
+  it. The IR_IADD is NOP'd by the fusion pass.
+
+  Backend diagnostic (current, post-C2):
+    LLVM_BACKEND_UNSUPPORTED_POINTER: function ReadI64:
+    IR_LOAD_DEREF with non-zero disp or scaled-index
+    addressing is rejected (MEMORY01 forbids GEP /
+    pointer arithmetic); disp=0 idx=0x... scale=8
+
+  Verdict: REJECTED. The existing MEMORY01 guard rejects
+  the LOAD_DEREF::scale=8 shape. No .ll is emitted. The
+  GEP01 IMPL does not silently admit non-byte element
+  indexing.
+
+------------------------------------------------------------
+N2. sibling opcode IR_GEP rejection (untouched)
+------------------------------------------------------------
+  The IR_GEP dispatch arm at src/llvm-backend.c:3073-3083
+  remains REJECTED. No B0 byte fixture emits IR_GEP.
+
+  Backend diagnostic (hand-crafted IR_GEP injection, not
+  produced by any fixture):
+    LLVM_BACKEND_UNSUPPORTED_AGGREGATE: function <...>:
+    getelementptr is not supported (opcode IR_GEP); no
+    aggregate / pointer in CORE
+
+  Capability-table verifier confirms:
+    PASS  M2: IR_GEP diagnostic 'LLVM_BACKEND_UNSUPPORTED_AGGREGATE' bound to arm body
+    PASS  I1: IR_GEP = REJECTED
+
+------------------------------------------------------------
+N3. sibling opcode IR_LEA rejection (untouched)
+------------------------------------------------------------
+  The IR_LEA dispatch arm at src/llvm-backend.c:3049-3071
+  remains REJECTED. No B0 byte fixture emits IR_LEA.
+
+  Capability-table verifier confirms:
+    PASS  M2: IR_LEA diagnostic 'LLVM_BACKEND_UNSUPPORTED_POINTER' bound to arm body
+    PASS  I1: IR_LEA = REJECTED
+
+------------------------------------------------------------
+N4. byte pointer + non-I64 index (frontend coercion)
+------------------------------------------------------------
+  Source expressions `p[U8 i]` or `p[I32 i]` would have
+  index type narrower than I64. The existing parser /
+  typechecker coerces these to I64 before IR emission
+  (see src/ir.c:706-707). No narrow-index IR_IADD shape
+  is produced by the canonical lowerer.
+
+  Verdict: NOT APPLICABLE (frontend coerces to I64).
+  The IR_IADD subset always sees r2->type == IR_TYPE_I64.
+
+------------------------------------------------------------
+Summary
+-------
+  GEP01's negative-boundary contract is preserved:
+    - Non-I8 element indexing: REJECTED (existing
+      LOAD_DEREF disp/idx/scale guard).
+    - Sibling opcode IR_GEP: REJECTED (untouched).
+    - Sibling opcode IR_LEA: REJECTED (untouched).
+    - Byte pointer + non-I64 index: NOT APPLICABLE
+      (frontend coercion to I64).
+    - Multi-index / nested: rejected at the inner
+      LOAD_DEREF (existing I8-only narrowing).
+    - Negative indices: not in GEP01 scope (inherits
+      existing I64 expression semantics).

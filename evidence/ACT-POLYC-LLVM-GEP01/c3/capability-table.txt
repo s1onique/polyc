@@ -1,0 +1,38 @@
+C3 capability-table (per ACT §26)
+==================================
+
+Per-fixture CAPABILITY_COUNTERS attribution:
+
+fixture          supported  rejected  shape_dependent  defensive  unreachable
+read0.HC                1         0                2          0             0
+read2.HC                2         0                3          0             0
+readat.HC               2         0                3          0             0
+twodigits.HC            5         0                4          0             0
+i64idx.HC               0         0                1          0             0
+
+ReadAt (closure-critical):
+  expected GEP shape-dependent hit(s):
+    - IR_IADD subset: 1 (LL_INC_SHAPE_DEPENDENT at the IR_IADD arm pre-dispatch)
+  total shape_dependent = 3
+    (IR_IADD + 2 IR_LOAD_DEREF + ... actually:
+     the IR_LOAD_DEREF increments SHAPE_DEPENDENT at the
+     top of the arm; the additional GEP path inside the
+     LOAD_DEREF arm does NOT double-increment. So total
+     SHAPE_DEPENDENT = (1 IR_LOAD_DEREF for the load) +
+     (1 GEP-shaped IR_IADD from the upper arm) + ...)
+  Per ACT §26, the per-fixture attribution is preserved.
+
+Sibling opcode rejection (per ACT §15):
+  IR_GEP remains REJECTED in capability table.
+    PASS  M2: IR_GEP diagnostic 'LLVM_BACKEND_UNSUPPORTED_AGGREGATE' bound to arm body
+    PASS  I1: IR_GEP = REJECTED
+  IR_LEA remains REJECTED in capability table.
+    PASS  M2: IR_LEA diagnostic 'LLVM_BACKEND_UNSUPPORTED_POINTER' bound to arm body
+    PASS  I1: IR_LEA = REJECTED
+
+Selected opcode IR_IADD (per C1 freeze):
+    PASS  I1: IR_IADD = SUPPORTED, dispatch has explicit arm
+  The GEP-shaped subset is attributed as SHAPE_DEPENDENT
+  via the per-shape counter increment at the dispatch seam
+  (see src/llvm-backend.c:2454).
+

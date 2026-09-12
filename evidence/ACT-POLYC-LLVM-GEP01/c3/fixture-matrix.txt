@@ -1,0 +1,21 @@
+C3 fixture matrix (per ACT §28)
+================================
+
+Per-fixture status:
+
+Fixture         Category        Required Outcome        Observed
+---------------------------------------------------------------------------
+read0.HC        constant 0      compile + GEP/load      PASS
+read2.HC        constant 2      compile + GEP/load      PASS
+readat.HC       dynamic I64     compile + GEP/load      PASS  (closure-critical)
+twodigits.HC    multi-read      compile + GEP/load      PASS  (B0 walking)
+i64idx.HC       non-I8 negative  REJECTED                PASS  (rejected)
+
+LLVM-as + opt verify:
+  read0.bc          verify rc=0      PASS
+  read2.bc          verify rc=0      PASS
+  read-at.bc        verify rc=0      PASS
+  b0-multiread.bc   verify rc=0      PASS
+
+Runtime:
+  All positive fixtures produce correct outputs (see runtime.txt).

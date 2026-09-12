@@ -1,0 +1,35 @@
+C3 production-delta review (per ACT §29)
+========================================
+
+git diff 8d04aae..7345cc9 -- src/ scope
+  src/llvm-backend.c    122 lines changed  (B0 byte-indexing GEP)
+  src/llvm-backend.h      8 lines changed  (new diagnostic macro)
+
+  No other src/ files changed.
+  No parser/typechecker/neutral-IR files changed.
+  No tests/evidence outside the dedicated harness.
+
+Backend lowering seam changes (bounded to C1 freeze):
+  src/llvm-backend.c:
+    - llGepShapeSupported() predicate          (the frozen shape)
+    - IR_IADD arm pre-dispatch short-circuit    (LLVMBuildGEP2 emit)
+    - IR_LOAD_DEREF arm disp guard             (admit disp=k for byte)
+    - IR_LOAD_DEREF arm load emit              (GEP+LOAD for disp!=0)
+
+Diagnostic changes:
+  src/llvm-backend.h:
+    - LLVM_BACKEND_UNSUPPORTED_GEP_SHAPE macro added.
+    (Not expected to fire in practice; safety-net only.)
+
+Capability-table changes:
+  No edits to src/llvm-backend-cap.c.
+  IR_IADD remains SUPPORTED (existing integer-add contract).
+  IR_GEP remains REJECTED.
+  IR_LEA remains REJECTED.
+
+HALT_SCOPE_DRIFT check:
+  No frontend/IR optimizer touched.
+  No ABI changes.
+  No neutral-IR widening.
+  No BYTE-MEMORY capability widening.
+
