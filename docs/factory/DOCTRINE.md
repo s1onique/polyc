@@ -571,6 +571,45 @@ rationalization ("it's only adding a new section, not
 rewriting content") does not change the fact that the file
 SHA changed.
 
+### Common mistake to avoid
+
+When a correction discovers a defect in another (older)
+correction's evidence, the temptation is to "fix" the older
+evidence by mutating it. Examples of this mistake (all
+forbidden):
+
+  - "The recipe in the older evidence is wrong; let me
+    update it in place."
+  - "The wording in the older evidence is imprecise; let
+    me tighten it."
+  - "The older evidence needs a link to the newer
+    correction; let me append a pointer."
+
+Each of these is a violation of the strict F14 rule. The
+correct response is always:
+
+  1. Open a new bounded correction ACT.
+  2. Create a new evidence directory under the new ACT's
+     namespace (e.g. `ACT-N-correctionK/`).
+  3. Place the corrected content, the cross-reference, or
+     the supersession notice in the new directory.
+  4. From the new directory's `README.md`, point readers at
+     the older evidence as historical/superseded.
+
+The closure summary of the new correction may then observe
+that the older evidence is "now superseded" without
+modifying the older evidence file itself.
+
+This mistake was made in practice during
+ACT-POLYC-FACTORY-NO-SHA-OF-SELF01-CORRECTION01: it
+modified two files in
+`evidence/ACT-POLYC-TOOLING-RUNTIME01/correction06/`
+to update a recipe that the same correction had updated in
+DOCTRINE.md §22. The Git-semantics fix was correct; the
+correction geometry violated strict F14. The
+classification lives in
+`evidence/ACT-POLYC-FACTORY-NO-SHA-OF-SELF01/correction02/f14-violation-record.txt`.
+
 ### Hygiene arithmetic convention
 
 Hygiene findings (`git diff --check`) rollups MUST distinguish:

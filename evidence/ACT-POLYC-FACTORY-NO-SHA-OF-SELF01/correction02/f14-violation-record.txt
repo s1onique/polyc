@@ -1,0 +1,88 @@
+ACT-POLYC-FACTORY-NO-SHA-OF-SELF01-CORRECTION02 — F14 violation record
+
+=== WHAT HAPPENED ===
+
+The just-closed CORRECTION01 (3d9b275) modified two files
+in the CORRECTION06 evidence directory by updating the
+naive `git log --grep=...` recipe to the correct
+`--all-match` form:
+
+  $ git diff --stat 23bc92a..HEAD -- \
+      evidence/ACT-POLYC-TOOLING-RUNTIME01/correction06/
+   .../correction06/closure-summary-replacement.md   | 6 ++++--
+   .../correction06/no-sha-of-self-repair-record.txt | 3 ++-
+   2 files changed, 6 insertions(+), 3 deletions(-)
+
+The CORRECTION06 evidence directory was created by the
+CORRECTION06 commits (f031bc7 + 23bc92a). Under the
+strict F14 rule that the same CORRECTION01 codified in
+DOCTRINE.md §22, those files are immutable historical
+evidence:
+
+  > The proper correction geometry is always:
+  >   historical erroneous evidence = immutable
+  >   new correction packet         = authoritative successor
+  >
+  > Concretely: when a future ACT discovers a defect in
+  > ACT-N's evidence directory, it MUST create a new
+  > ACT-M-correctionK/ directory with the corrected content
+  > and link to it from a master registry. It MUST NOT modify
+  > any file under ACT-N/.
+
+So CORRECTION01 violated its own doctrine.
+
+=== WHY THIS HAPPENED (root cause) ===
+
+My reasoning at the time of CORRECTION01 was:
+
+  "I just discovered a bug in the recipe. The recipe
+  appears in DOCTRINE.md §22 (newly written) AND in the
+  CORRECTION06 evidence (also newly written). To fix the
+  bug, I need to update both."
+
+The error was failing to recognize that:
+
+  - DOCTRINE.md §22 is in `docs/factory/` and is a
+    canonical-contract file; updating it is fine.
+  - The CORRECTION06 evidence is in `evidence/.../correction06/`
+    and is immutable under F14; updating it is a violation.
+
+I should have updated DOCTRINE.md §22 AND created a new
+correction02 evidence packet with the corrected recipe,
+leaving the CORRECTION06 file untouched.
+
+=== WHY WE DO NOT UNDO IT ===
+
+Three options considered, all with downsides:
+
+1. Revert CORRECTION01 entirely.
+   - Downside: F-GIT-IMMUTABILITY forbids history rewrite.
+   - Downside: would also revert the correct fix in
+     DOCTRINE.md §22 and the corrected recipes in the
+     earlier ACT docs.
+
+2. Re-mutate CORRECTION06 files to restore the naive recipe.
+   - Downside: compounds the F14 violation with another one.
+   - Downside: leaves demonstrably-wrong content in committed
+     evidence, which is misleading.
+
+3. Acknowledge the violation, document it, stop repeating it,
+   and use a successor-packet pattern from here on.
+   - Downside: the CORRECTION06 evidence files now contain
+     the corrected recipe (because of CORRECTION01) rather
+     than the naive recipe they originally had. This is
+     their final committed state; we don't change it.
+   - Accepted trade-off.
+
+=== GOVERNING PRINCIPLE (codified for future) ===
+
+When a future correction discovers a defect in an earlier
+correction's evidence, the answer is always:
+
+  1. Create a new successor packet with the corrected content.
+  2. Point readers at the successor packet from any
+     documentation that referenced the now-superseded
+     original.
+  3. NEVER re-mutate the older evidence files.
+
+This is the pattern CORRECTION02 follows.
