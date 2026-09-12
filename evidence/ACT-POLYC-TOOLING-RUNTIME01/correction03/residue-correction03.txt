@@ -1,0 +1,78 @@
+ACT-POLYC-TOOLING-RUNTIME01-CORRECTION03 — Residue
+
+P0: (none blocking Track-B progress)
+
+P1: tracked, not blocking:
+
+  R1. ACT-POLYC-PARSER-TERNARY-HANG01
+      The HolyC parser hangs (does not fail-fast) on unsupported
+      `?:` ternary expressions in non-trivial programs. Bisected
+      to `U8 *x = cond ? a : b;` inside a function body. Was a
+      side-finding during CORRECTION01 stress testing; not
+      exercised by the tooling runtime.
+
+  R2. ACT-POLYC-TOOLING-LINUX-PORT01
+      The Tooling runtime's EINTR helpers and C shim are
+      macOS-only. Linux glibc uses __errno_location instead of
+      __error; the C shim already has the #elif branch but the
+      HolyC extern is unconditional (no `#if defined(__APPLE__)`
+      guard because hcc's preprocessor doesn't short-circuit
+      body text under `defined()`). The honest contract is:
+        SUPPORTED HOST = macOS only
+        Linux          = NOT YET SUPPORTED (separate ACT)
+      The CMake build `message(FATAL_ERROR)`s on non-APPLE so
+      we never silently produce a forged-Apple libtos.
+
+P2: deferred improvements:
+
+  R3. RC=127 SPAWN/EXEC AMBIGUITY
+      Missing executable produces rc=127 (execv fails; child
+      `_exit(127)`). Legitimate child `_exit(127)` produces
+      rc=127 too. AC22 now reads as documented contract, with
+      P2 followup: introduce an explicit spawn-failed indicator
+      (separate return channel, or rc=-2) so callers can
+      disambiguate.
+
+  R4. TRAILING-BLANK-EOF HYGIENE
+      Per ACT-POLYC-FACTORY-HISTORY-RECONCILE01 §19, historical
+      trailing-blank-EOF findings in c1/*, c4/*, and tooling.HC
+      remain in place (F14 — immutable evidence). A separate
+      hygiene ACT may add a `.editorconfig` and a CI check.
+
+  R5. TOOLING RT TEST FIXTURE BINARY LOCATION
+      The C test fixture (`tools/quality/rt01-child-fixture.c`)
+      compiles to `/tmp/rt01-child-fixture` per the CORRECTION02
+      build instructions. This ACT additionally verifies that
+      downstream programs linking against the INSTALLED libtos
+      work end-to-end.
+
+  R6. EXTERNAL SIGTERM WITNESS DEFERRED
+      AC13 is exercised via SIGABRT (self-raise). An external-
+      SIGTERM witness was attempted in CORRECTION02 but blocked
+      by macOS sandbox constraints (shell kill against hcc-
+      spawned children returns EPERM). The SIGABRT path exercises
+      the identical WaitDecode WTERMSIG code path; external-
+      SIGTERM is covered by code review.
+
+  R7. CHILD-PROCESS-GROUP DETECTION
+      The watchdog-via-fork pattern in CORRECTION02's ac13_host.c
+      used `ps -o ppid` to find the sig_child. On systems without
+      /proc (some BSDs) this won't work. For Linux porting, a
+      `setpgid()`-then-`kill(0, ...)` approach is cleaner.
+
+  R8. CORRECTION03 REVEAL: CORRECTION02 SELFTEST RUN WAS PARTIAL
+      The CORRECTION02 selftest build was performed WITHOUT
+      `-D__APPLE__`, which means the EINTR-retry wrappers
+      (PollIntr/ReadIntr/WaitPidIntr) and the *Errno() call sites
+      were NOT emitted into the .s. The 18/18 PASS verified the
+      SpawnAndCapture contract, but did NOT exercise the EINTR
+      path against a libtos that actually had the wrappers.
+      CORRECTION03 explicitly verifies that the EINTR path works
+      when linked against the cmake-installed libtos.a (which
+      DOES contain the wrappers). See eintr-green-c03-install.log.
+      CORRECTION01's runtime correctness is unaffected (the
+      wrappers were never used in CORRECTION01 either).
+
+CLOSURE STATUS: PASS_WITH_NONBLOCKING_RESIDUE
+
+NEXT: ACT-POLYC-TOOLING-MIGRATE-GEP01

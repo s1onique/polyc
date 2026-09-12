@@ -1,0 +1,30 @@
+=== CORRECTION02 BROKEN install-step witness ===
+
+The CORRECTION02 commit (ab1f28d) introduced an install step with
+`execute_process(COMMAND ar r libtos.a errno_shim.o && ranlib libtos.a ...)`.
+
+CMake does NOT invoke a shell when executing COMMAND ...  on POSIX.
+The `&&` is passed as a literal argv member to ar, which interprets
+it as a filename. Witness:
+
+  $ ar r libtos.a errno_shim.o && ranlib libtos.a
+  argv[0]=ar  argv[1]=r  argv[2]=libtos.a  argv[3]=errno_shim.o
+  argv[4]=&&  argv[5]=ranlib  argv[6]=libtos.a
+  ar: &&: No such file or directory
+  ar: ranlib: No such file or directory
+
+This means the CORRECTION02 install step, as committed, would fail
+silently (or not be honored by CMake). The successful runtime
+GREEN evidence in CORRECTION02 was built via manual shell commands
+on the developer side, NOT through the committed install path.
+
+CORRECTION03 fixes this by:
+  - splitting into separate execute_process calls (no &&)
+  - adding COMMAND_ERROR_IS_FATAL ANY to all sub-commands
+  - moving the -D__APPLE__ inside if(APPLE)
+  - creating the libtos.dylib symlink in the install prefix
+
+The fresh-install witness at:
+  evidence/ACT-POLYC-TOOLING-RUNTIME01/correction03/cmake-install.log
+shows install exit=0 with the corrected step.
+

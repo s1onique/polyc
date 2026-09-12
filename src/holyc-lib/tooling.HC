@@ -40,15 +40,27 @@ extern "c" U8 *strstr(U8 *haystack, U8 *needle);
 extern "c" I32 getpid();
 extern "c" I32 poll(U0 *fds, U64 nfds, I32 timeout);
 
-// CORRECTION02: errno accessor via a tiny C shim (see errno_shim.c).
-// The native macOS symbol __error() cannot be named directly in
-// HolyC source (hcc reserves leading-double-underscore identifiers),
-// so we expose it as Errno() through a one-line C wrapper compiled
-// into libtos. The shim is currently macOS-only; glibc support is
-// ACT-POLYC-TOOLING-LINUX-PORT01 (P1 residue).
-#if defined(__APPLE__)
+// CORRECTION02/CORRECTION03: errno accessor via a tiny C shim
+// (see errno_shim.c). The native macOS symbol __error() cannot be
+// named directly in HolyC source (hcc reserves leading-double-
+// underscore identifiers), so we expose it as Errno() through a
+// one-line C wrapper compiled into libtos.
+//
+// The shim is currently macOS-only; glibc support is
+// ACT-POLYC-TOOLING-LINUX-PORT01 (P1 residue). We do NOT guard
+// this declaration with `#if defined(__APPLE__)` because hcc's
+// preprocessor does not currently short-circuit body text under
+// a `defined()` predicate whose macro is unset; it parses the
+// body and complains about Errno being undefined. The platform
+// contract is enforced one level up: src/CMakeLists.txt passes
+// -D__APPLE__ to hcc AND compiles errno_shim.c only on APPLE,
+// and message(FATAL_ERROR)s otherwise.
+//
+// CORRECTION03: the platform contract is now HONEST — Linux is
+// not silently forged as Apple. The CORRECTION02 install step
+// passed -D__APPLE__ unconditionally, which would have built a
+// non-functional libtos on Linux (where __error doesn't exist).
 extern "c" I32 *Errno();
-#endif
 
 // ------------------------------------------------------------
 // EINTR-safe wrappers (CORRECTION02)
@@ -75,7 +87,10 @@ extern "c" I32 *Errno();
 // Returns:
 //   PollIntr:      # revents (>=0), or -1 on real failure
 //   ReadIntr:      bytes transferred (>=0), or -1 on real failure
-//   WaitPidIntr:   0 on reap, -1 on real failure
+//   WaitPidIntr:   the waitpid(2) return value (>=0 on success
+//                  including the reaped child pid, 0 where
+//                  WNOHANG was set and no state change was
+//                  available, -1 on real failure)
 // ------------------------------------------------------------
 
 public I32 PollIntr(U0 *fds, U64 nfds, I32 timeout)
@@ -258,9 +273,14 @@ public I64 SpawnAndCapture(U8 *program, U8 **args,
     return -1;
   }
 
-  // CORRECTION02: retry fork on EINTR. A signal arriving before
-  // the kernel completes the copy-on-write can spuriously fail
-  // the call; the safe policy is to retry, not bail. The loop
+  // CORRECTION02/CORRECTION03: defensive fork retry.
+  //
+  // POSIX lists only EAGAIN (and optionally ENOMEM) as fork()
+  // error returns; EINTR is not a documented POSIX failure
+  // mode for fork(). This loop is therefore DEFENSIVE: it
+  // costs nothing on POSIX-conformant platforms (the loop body
+  // runs exactly once) and would survive a hypothetical kernel
+  // or extension that surfaces EINTR from fork. The block
   // either returns (real failure) or sets pid >= 0 (success).
   for (;;) {
     pid = fork();

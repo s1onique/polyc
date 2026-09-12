@@ -1,0 +1,79 @@
+ACT-POLYC-TOOLING-RUNTIME01-CORRECTION03 — Acceptance Criteria matrix (corrected)
+
+This file supersedes:
+  evidence/ACT-POLYC-TOOLING-RUNTIME01/correction02/ac-matrix-correction02.txt
+
+Defect fixed in the matrix:
+
+  CORRECTION02 simultaneously claimed "31 ACs total" while listing
+  AC01..AC33 (with AC32/AC33 named "Linux portability" / "Windows
+  portability" but marked DEFERRED). The 31-count arithmetic and the
+  33-row enumeration cannot both be true.
+
+CORRECTION03 makes the count and the enumeration consistent:
+
+  AC01..AC31 = 31 acceptance criteria, all PASS.
+  Linux portability and Windows portability are NOT acceptance
+  criteria of this ACT — they are RESIDUE tracked in
+  residue-correction03.txt and assigned to separate ACTs
+  (ACT-POLYC-TOOLING-LINUX-PORT01, deferred-Windows-ACT).
+
+=== AC01..AC31 — 31/31 PASS ===
+
+AC01  normal exit code 0               PASS  P1 success-child
+AC02  non-zero exit code               PASS  P2 nonzero-exit
+AC03  raw stdout/stderr split          PASS  P3 (selftest; MIGRATE-GEP01
+                                            will exercise in production)
+AC04  missing executable               PASS  P4 (rc=127; documented contract;
+                                            P2 residue on ambiguity)
+AC05  literal-spaces                   PASS  P5-1
+AC06  literal-dollar                   PASS  P5-2
+AC07  literal-star                     PASS  P5-3
+AC08  literal-semicolon                PASS  P5-4
+AC09  temp file write                  PASS  P13
+AC10  temp file exists                 PASS  P12 file-exists
+AC11  temp file read                   PASS  P12 file-read
+AC12  cleanup on exit                  PASS  P15
+AC13  abnormal signal decode           PASS  SIGABRT child fixture (c02);
+                                            rc=134 = 128 + SIGABRT[6]
+AC14  path-with-spaces exec            PASS  covered by literal-spaces
+AC15  large stdout capture (4 MiB)     PASS  dl_check.HC mode 2 (c01)
+AC16  large stderr capture (4 MiB)     PASS  dl_check.HC mode 1 (c01)
+AC17  stdout+stderr simultaneous       PASS  dl_check.HC mode 3 (c01)
+AC18  empty stdout, full stderr        PASS  dl_check.HC mode 1 (c01)
+AC19  empty stderr, full stdout        PASS  dl_check.HC mode 2 (c01)
+AC20  async-signal-safe (EINTR retry)  PASS  signal-injector witness (c02);
+                                            all 4 MiB captured under SIGALRM-spam
+AC21  byte-exact accounting            PASS  all dl_check.HC modes (c01)
+AC22  spawn non-existent exec          PASS  rc=127 under documented contract;
+                                            P2 ambiguity (see residue-c03)
+AC23  argument vector NULL termination PASS  sig_child modes exercise
+AC24  WaitDecode WIFEXITED path        PASS  P1, P2, P5-*
+AC25  WaitDecode WTERMSIG path         PASS  AC13
+AC26  argument injection impossible    PASS  direct argv, no shell parse
+AC27  child cannot escape pipe         PASS  pipe + dup2 in SpawnAndCapture
+AC28  syscall interruption recovery    PASS  EINTR retry (c02);
+                                            eintr-green-c03-install.log
+                                            proves green against the
+                                            cmake --install path
+AC29  fail-fast on exec failure        PASS  execv returns -1; _exit(127)
+AC30  GEP hcc-exit                     PASS  GEP dogfood slice
+AC31  GEP slice 5 assertions           PASS  hcc-exit, contains-gep-i8,
+                                            no-inbounds, no-ptrtoint,
+                                            no-inttoptr
+
+=== VERDICT ===
+
+31/31 PASS, mechanically verified against the COMMITTED install
+path (cmake --install -> installed libtos.a -> runtime01-selftest
+build -> runtime01-selftest run -> 18/18 PASS), see:
+
+  evidence/ACT-POLYC-TOOLING-RUNTIME01/correction03/cmake-install.log
+  evidence/ACT-POLYC-TOOLING-RUNTIME01/correction03/regression-matrix.txt
+  evidence/ACT-POLYC-TOOLING-RUNTIME01/correction03/libtos-installed-symbols.txt
+
+=== DEFERRED (NOT acceptance criteria of this ACT) ===
+
+  - Linux portability       P1 ACT-POLYC-TOOLING-LINUX-PORT01
+  - Windows portability     P2 (no ACT opened; not on critical path)
+

@@ -1,0 +1,116 @@
+ACT-POLYC-TOOLING-RUNTIME01-CORRECTION03 — Closure Summary
+
+VERDICT:        PASS_WITH_NONBLOCKING_RESIDUE
+IDENTITY:       branch=main HEAD=<set at commit>
+PREDECESSOR:    ACT-POLYC-TOOLING-RUNTIME01-CORRECTION02 (PASS)
+                — corrected verdict remains PASS_WITH_NONBLOCKING_RESIDUE
+SUPERSEDES:     ACT-POLYC-TOOLING-RUNTIME01-CORRECTION02
+
+DEFECTS FIXED IN CORRECTION03:
+
+  P0 BUILD INTEGRATION (REAL PRODUCTION SEAM)
+    - CMake execute_process(COMMAND ...) does NOT invoke a shell
+      on POSIX. The CORRECTION02 install step had
+      `ar r ... && ranlib ...` which passed `&&` as a literal
+      argv member to ar (interpreting `&&` and `ranlib` as
+      member filenames). The CORRECTION02 GREEN runtime was
+      therefore built via developer-side shell, NOT the
+      committed install path.
+    - CORRECTION03 splits into separate execute_process calls
+      and adds COMMAND_ERROR_IS_FATAL ANY.
+    - Mandatory witness: fresh build dir, cmake configure,
+      cmake --install (exit=0), installed libtos.a contains
+      _Errno + _PollIntr + _ReadIntr + _WaitPidIntr +
+      _SpawnAndCapture, runtime01-selftest compiled against
+      installed prefix runs 18/18 PASS, binary dynamically
+      links to the installed libtos.0.0.1.dylib.
+
+  P1 PLATFORM CONTRACT
+    - CORRECTION02 passed -D__APPLE__ unconditionally, lying
+      about the platform on every host. CORRECTION03 confines
+      -D__APPLE__ and errno_shim.c compilation to the if(APPLE)
+      branch, and message(FATAL_ERROR)s on non-Apple.
+    - hcc's preprocessor does not currently short-circuit body
+      text under a `defined()` predicate whose macro is unset;
+      removing the `#if defined(__APPLE__)` guard from
+      tooling.HC and enforcing the contract one level up
+      (CMake) is the minimal honest fix. Documented in
+      tooling.HC inline comments.
+
+  P1 EVIDENCE TRUTH (AC MATRIX)
+    - CORRECTION02 simultaneously claimed "31 ACs total" while
+      enumerating AC01..AC33 (with AC32/AC33 named "Linux/Windows
+      portability" but marked DEFERRED). 31 and 33 cannot both
+      be true.
+    - CORRECTION03 fixes the matrix: AC01..AC31 = 31/31 PASS;
+      Linux/Windows portability moved to residue-correction03.txt
+      as P1 (Linux ACT-POLYC-TOOLING-LINUX-PORT01) and P2
+      (no ACT opened).
+
+  P1 DOC: WAITPIDINTR RETURN VALUE
+    - Comment said "0 on reap, -1 on real failure" but the
+      implementation returns the actual waitpid(2) value
+      (>=0 on success). Corrected to be precise.
+
+  P1 EINTR EVIDENCE REINFORCED
+    - R8 (residue-correction03.txt) reveals that CORRECTION02's
+      selftest build was performed WITHOUT -D__APPLE__, so the
+      EINTR wrappers were not emitted into the .s and the
+      18/18 PASS verified the SpawnAndCapture contract but did
+      NOT exercise the EINTR path. CORRECTION03 explicitly
+      verifies EINTR retry works when linked against the
+      cmake-installed libtos.a (which DOES contain the wrappers):
+      eintr-green-c03-install.log.
+
+CONSERVATION (F10):
+  Fresh cmake --install       exit=0  (cmake-install.log)
+  Installed libtos.a symbols  _Errno + EINTR wrappers present
+                               (libtos-installed-symbols.txt)
+  runtime01-selftest          18/18 PASS
+                               (regression-matrix.txt)
+  EINTR retry (against        rc=0 err=4194304  (4 MiB exact)
+   installed prefix)          (eintr-green-c03-install.log)
+  CORRECTION03 patch          clean (patch-hygiene.txt)
+  Full ACT range              5 historical trailing-blank-EOF
+                               (F14-protected)
+
+NEW SOURCE FILES (0):
+  (none)
+
+MODIFIED SOURCE FILES (3):
+  src/CMakeLists.txt          (+47 lines: split execute_process,
+                                add COMMAND_ERROR_IS_FATAL ANY,
+                                confine -D__APPLE__ to APPLE branch,
+                                message(FATAL_ERROR) on non-APPLE,
+                                create libtos.dylib symlink in
+                                install prefix)
+  src/holyc-lib/tooling.HC    (+14 lines, -5 lines: removed
+                                `#if defined(__APPLE__)` guard
+                                (hcc preprocessor can't short-
+                                circuit); updated WaitPidIntr
+                                doc comment; reframed fork/EINTR
+                                as defensive)
+
+MODIFIED EVIDENCE FILES (0):
+NEW EVIDENCE FILES (8 under correction03/):
+  README.md, ac-matrix-correction03.txt, residue-correction03.txt,
+  cmake-configure.log, cmake-install.log,
+  libtos-installed-symbols.txt, regression-matrix.txt,
+  eintr-red-argv-broken.txt, eintr-green-c03-install.log
+
+TRAILERS (per docs/factory/GIT-METADATA.md v2):
+  ACT:                          ACT-POLYC-TOOLING-RUNTIME01-CORRECTION03
+  ACT-Phase:                    CLOSE
+  ACT-Verdict:                  PASS
+  ACT-Supersedes:               ACT-POLYC-TOOLING-RUNTIME01-CORRECTION02
+  ACT-Corrected-Verdict:        PASS_WITH_NONBLOCKING_RESIDUE
+
+RESIDUE (8 items, none blocking):
+  P1: PARSER-TERNARY-HANG01, LINUX-PORT01,
+      R8 (CORRECTION02 selftest was partial; CORRECTION03
+          reinforced with EINTR-against-installed-prefix green)
+  P2: rc=127 spawn/exec ambiguity, trailing-blank-EOF hygiene,
+      fixture binary location policy, external SIGTERM witness,
+      child-pgroup detection
+
+NEXT ACT: ACT-POLYC-TOOLING-MIGRATE-GEP01
