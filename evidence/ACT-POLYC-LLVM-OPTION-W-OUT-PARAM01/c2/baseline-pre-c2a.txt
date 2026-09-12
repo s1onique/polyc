@@ -1,0 +1,81 @@
+C2 IMPL-A: pre-implementation baseline snapshot
+==============================================
+
+Captured at HEAD = adcbca101d3c8f43533cfe9272bb10d537f03171
+(C1.1 RED; no production source delta yet).
+
+Tests run with:
+  ./hcc --install-dir=$PWD/build/test-prefix --emit-llvm <FILE>
+  exit=$? ; first diagnostic line ; CAPABILITY_COUNTERS line
+
+The transition matrix this baseline must reproduce after C2-A
+is the "Before A" column. (See c2/transition-matrix.txt.)
+
+G1.HC (out-param consumer, no neutral-IR PHI)
+  exit=1
+  diag=LLVM_BACKEND_UNSUPPORTED_OPTION_W_INELIGIBLE: function G1:
+        mutable local id=6 (line 2) requires memory backing but
+        is not Option-W eligible (the local violates one of the
+        §2 frozen discriminator rules -- type, address-taken,
+        definition opcode outside {IR_STORE, IR_IADD, IR_ISUB},
+        read envelope, or return-feed invariant). Per AC05 the
+        local is REJECTED rather than silently widened.
+  cap=supported=0 rejected=0 shape_dependent=0 defensive=0
+      unreachable=0
+
+G2.HC (mutable loop/local, no out-param)
+  exit=0
+  diag=(no diagnostic; clean PASS)
+  cap=supported=8 rejected=0 shape_dependent=2 defensive=0
+      unreachable=0
+
+G3.HC (ScanIdent; binding fixture)
+  exit=1
+  diag=LLVM_BACKEND_UNSUPPORTED_OPTION_W_INELIGIBLE: function
+        ScanIdent: mutable local id=6 (line 1) requires memory
+        backing but is not Option-W eligible (same as G1).
+  cap=supported=0 rejected=0 shape_dependent=0 defensive=0
+      unreachable=0
+
+GN4_neg.HC (negative control: V used as pointer)
+  exit=1
+  diag=LLVM_BACKEND_UNSUPPORTED_OPTION_W_INELIGIBLE: function
+        GN4: mutable local id=6 (line 2) requires memory
+        backing but is not Option-W eligible (same diagnostic
+        as G1; address-taken fence).
+  cap=supported=0 rejected=0 shape_dependent=0 defensive=0
+      unreachable=0
+
+PhiOnly.HC (probe for P4 phi_only; regression)
+  exit=1
+  diag=LLVM_BACKEND_UNSUPPORTED_PHI: function PhiOnly: PHI is
+        not supported by the CORE backend; the supported subset
+        uses direct-branch return and single-definition locals
+        instead
+  cap=supported=5 rejected=1 shape_dependent=1 defensive=0
+      unreachable=0
+
+LOCAL-MEM2REG regression fixtures (P5-P11; PASS pre-C2-A):
+  safe_fwd_single_pred.HC  exit=0 cap=supported=2  shape_dep=1
+  single_cond_probe.HC     exit=0 cap=supported=8  shape_dep=4
+  Diamond.HC               exit=0 cap=supported=10 shape_dep=3
+  red_local_multi_def.HC   exit=0 cap=supported=11 shape_dep=6
+  nc_p01_predecessor_paths exit=0 cap=supported=14 shape_dep=5
+  i64_collapse_probe.HC    exit=0 cap=supported=10 shape_dep=4
+  pos_b0_compare_digit.HC  exit=0 cap=supported=22 shape_dep=18
+
+Pre-C2-A matrix summary:
+  G1        OPTION_W_INELIGIBLE   REJECTED
+  G2        PASS                  OK
+  G3        OPTION_W_INELIGIBLE   REJECTED
+  GN4_neg   OPTION_W_INELIGIBLE   REJECTED
+  phi_only  UNSUPPORTED_PHI       REJECTED
+  P5-P11    PASS                  OK (7 fixtures)
+
+The expert's expected post-C2-A matrix:
+  G1        PASS
+  G2        PASS
+  G3        UNSUPPORTED_PHI     <- SEAM A FIXED; SEAM B VISIBLE
+  GN4_neg   OPTION_W_INELIGIBLE <- still rejected (fence holds)
+  phi_only  UNSUPPORTED_PHI     <- unchanged
+  P5-P11    PASS

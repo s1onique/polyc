@@ -1,0 +1,93 @@
+C2 IMPL-A: post-implementation result with read-envelope widening ONLY
+======================================================================
+
+C2-A applied:
+  src/llvm-backend.c, function llOptionW_ReadsAreLowerable:
+    new case IR_STORE_DEREF arm admits ins->r1 == v as a read
+    and rejects ins->dst == v or ins->r2 == v defensively.
+  No other source files modified.
+
+Per-rule diagnostic instrumentation (TEMPORARY; reverted):
+  G1.HC v=%l6: only "FeedsReturnOrIsReturnLocal=0" prints.
+  ReadsAreLowerable returns 1 (PASS) after the widening.
+  FeedsReturn gate is the next gate; it rejects because the
+  only store of V is IR_STORE_DEREF (out-param), not IR_STORE
+  to IR_VAL_TMP (return slot).
+
+Re-run of the transition matrix:
+
+  G1.HC (out-param consumer, no neutral-IR PHI)
+    exit=1
+    diag=LLVM_BACKEND_UNSUPPORTED_OPTION_W_INELIGIBLE: function G1
+    cap=supported=0 rejected=0 shape_dependent=0 defensive=0
+        unreachable=0
+    STATUS: STILL REJECTED at OPTION_W path
+           (NOT PASS as the expert's expected matrix predicted)
+
+  G2.HC (mutable loop/local, no out-param)
+    exit=0
+    STATUS: PASS (conservation oracle preserved)
+
+  G3.HC (ScanIdent; binding fixture)
+    exit=1
+    diag=LLVM_BACKEND_UNSUPPORTED_OPTION_W_INELIGIBLE: function
+          ScanIdent: mutable local id=6
+    STATUS: STILL REJECTED at OPTION_W path
+           (NOT UNSUPPORTED_PHI as expected)
+
+  GN4_neg.HC (negative control: V used as pointer)
+    exit=1
+    diag=LLVM_BACKEND_UNSUPPORTED_OPTION_W_INELIGIBLE: function GN4
+    STATUS: STILL REJECTED at OPTION_W path (fence holds)
+
+  PhiOnly.HC
+    exit=1
+    diag=LLVM_BACKEND_UNSUPPORTED_PHI: function PhiOnly
+    STATUS: UNCHANGED at PHI path
+
+LOCAL-MEM2REG regression (P5-P11; 7 fixtures):
+  safe_fwd_single_pred.HC  PASS
+  single_cond_probe.HC     PASS
+  Diamond.HC               PASS
+  red_local_multi_def.HC   PASS
+  nc_p01_predecessor_paths PASS
+  i64_collapse_probe.HC    PASS
+  pos_b0_compare_digit.HC  PASS
+
+EXPERT'S EXPECTED POST-C2-A MATRIX (NOT ACHIEVED):
+  G1        PASS                              (FAILED; still rejected)
+  G2        PASS                              (PASS)
+  G3        UNSUPPORTED_PHI                   (FAILED; still rejected)
+  GN4_neg   OPTION_W_INELIGIBLE               (PASS)
+  phi_only  UNSUPPORTED_PHI                   (PASS)
+  P5-P11    PASS                              (PASS)
+
+ROOT CAUSE OF INCOMPLETE C2-A:
+  llIsOptionWEligible has SIX gates:
+    1. llOptionW_TypeIsI64(v)
+    2. llOptionW_NotAddressTaken()
+    3. llOptionW_DefinitionsAreCaseAorB(fn, v)
+    4. llOptionW_ReadsAreLowerable(fn, v)     <-- widened in C2-A
+    5. llOptionW_FeedsReturnOrIsReturnLocal   <-- STILL REJECTS
+    6. llOptionW_DefiniteAssignment(fn, v)
+
+  The recon (and C1.1 freeze) named TWO seams:
+    Seam A = read envelope (gate 4)
+    Seam B = IR_PHI dispatch arm
+  But the read envelope widening alone is insufficient to PASS G1
+  or G3. Gate 5 (FeedsReturnOrIsReturnLocal) ALSO rejects B0-shaped
+  out-param code because it only recognises:
+    (i)  V as IR_RET dst (direct `ret V`)
+    (ii) V as r1 of IR_STORE whose dst is IR_VAL_TMP (return slot)
+    (iii)V on a tmp chain reaching (i) or (ii)
+  None of these covers `*out = v` (the canonical B0 pattern).
+
+RECOMMENDATION:
+  HALT_C2A_INCOMPLETE. The seam count was under-counted by the recon.
+  There is a THIRD gate to widen: FeedsReturnOrIsReturnLocal must
+  also accept `IR_STORE_DEREF(r1 == v)` as a return-feeding pattern.
+  Open C2-A.1 (bump-minor in the same ACT) to widen FeedsReturn
+  symmetrically: same opcode (IR_STORE_DEREF), same operand role
+  (r1 == V), same defensive guard (dst == V or r2 == V rejects).
+  Architectural invariant preserved: V's value escapes the function
+  via the out-param = V feeds the function's observable behavior.

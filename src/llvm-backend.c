@@ -810,6 +810,37 @@ static int llOptionW_ReadsAreLowerable(IrFunction *fn, IrValue *v) {
                 case IR_JMP:
                     node = node->next;
                     continue;
+                case IR_STORE_DEREF:
+                    /* ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 C2 IMPL-A:
+                     * widen the read envelope to admit IR_STORE_DEREF
+                     * ONLY when V is the VALUE operand (ins->r1 == v).
+                     * This is the canonical B0 out-param pattern:
+                     *   *out = local;
+                     * The widening is defensive at the read envelope:
+                     * if V appears in the pointer position
+                     * (ins->dst == v) or in the r2 slot, the read
+                     * envelope rejects V here as belt-and-braces.
+                     *
+                     * The PRIMARY address-taken fence is
+                     * llOptionW_NotAddressTaken, which runs BEFORE
+                     * this read envelope and rejects V-as-pointer
+                     * via the address-taken check. This defensive
+                     * arm documents the invariant at the read
+                     * envelope layer for the case where the fence
+                     * is ever narrowed by a future ACT.
+                     *
+                     * Frozen contract: ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01
+                     * C1.1 §8; evidence/c1/option-w-widening-contract.txt;
+                     * evidence/c1.1/negative-control.txt (GN4_neg.HC). */
+                    if (ins->r1 == v) {
+                        node = node->next;
+                        continue;
+                    }
+                    if (ins->dst == v || ins->r2 == v) {
+                        return 0;
+                    }
+                    node = node->next;
+                    continue;
                 default:
                     if (ins->dst == v || ins->r1 == v ||
                         ins->r2 == v) {
