@@ -264,24 +264,24 @@ mkdir -p "$gate_prefix"
 
 # --- GPUSH-1: clean build ---------------------------------------------------
 
-if ! run_check build sh -c "make clean && make INSTALL_PREFIX='$gate_prefix'"; then
+# ACT-POLYC-INTEGRATION-PREBOOTSTRAP-GATES01 D1: gate-push exercises
+# the LLVM 22 backend via `make llvm-gep01-test`, so host hcc MUST
+# be LLVM-enabled. Pass HCC_ENABLE_LLVM=ON into `make all`.
+if ! run_check build sh -c "make clean && HCC_ENABLE_LLVM=ON make INSTALL_PREFIX='$gate_prefix'"; then
     gate_failed=1
     echo "VERDICT=FAIL"
     exit 1
 fi
 
-# --- GPUSH-2: install hcc + tos.HH into the hermetic prefix -----------------
+# --- GPUSH-2: install hcc + libtos into the hermetic prefix -----------------
 
-# `make install` puts hcc at $gate_prefix/bin/ and tos.HH at
-# $gate_prefix/include/. libtos.a / libtos.dylib still need to be
-# built into $gate_prefix/lib/. We do that by invoking hcc's `-lib tos`
-# with --install-dir pointing at the hermetic prefix, identical to how
-# Makefile's `lsp-test` recipe populates build/test-prefix/.
-#
-# See ACT-POLYC-FACTORY-PUSH-HERMETIC01.
-if ! run_check install sh -c "make install INSTALL_PREFIX='$gate_prefix' && \
-    mkdir -p '$gate_prefix/lib' && \
-    cd ./src/holyc-lib && ../../hcc -fPIC -lib tos --install-dir='$gate_prefix' ./all.HC"; then
+# ACT-POLYC-INTEGRATION-PREBOOTSTRAP-GATES01 D2 + D1: canonical install
+# (test-prefix-install) is the single source of truth for the
+# seven-step install dance that incorporates errno_shim.c. D1 binds
+# the GEP01 oracle via the canonical Make target (GEP01_PASS=30).
+# Override TEST_PREFIX so the install lands inside the gate prefix.
+if ! run_check install sh -c "HCC_ENABLE_LLVM=ON make test-prefix-install INSTALL_PREFIX='$gate_prefix' TEST_PREFIX='$gate_prefix'" \
+|| ! run_check gep01 sh -c "HCC_ENABLE_LLVM=ON make llvm-gep01-test TEST_PREFIX='$gate_prefix'"; then
     gate_failed=1
     echo "VERDICT=FAIL"
     exit 1

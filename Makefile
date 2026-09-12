@@ -12,7 +12,7 @@ HCC_ENABLE_LLVM ?= OFF
 
 default: all
 
-.PHONY: all gate-fast gate-push install-hooks llvm-all llvm-spike-test
+.PHONY: all gate-fast gate-push install-hooks llvm-all llvm-spike-test test-prefix-install llvm-gep01-test
 
 # To add sqlite3 support add -DHCC_LINK_SQLITE3=1 to the below like so:
 #```
@@ -68,11 +68,78 @@ jit-unit-test:
 # Hermetic: builds libtos from the tree into a local prefix and
 # compiles the (HolyC) harness against it, so the suite tests in-tree
 # sources - never whatever happens to be installed in /usr/local.
-lsp-test:
-	mkdir -p ./build/test-prefix/include ./build/test-prefix/lib
-	cp ./src/holyc-lib/tos.HH ./build/test-prefix/include/tos.HH
-	cd ./src/holyc-lib && ../../hcc -lib tos --install-dir=$(CURDIR)/build/test-prefix ./all.HC
-	cd ./src/tests/lsp && ../../../hcc --install-dir=$(CURDIR)/build/test-prefix ./run_lsp_tests.HC -o lsp-test-runner && ./lsp-test-runner
+#
+# ACT-POLYC-INTEGRATION-PREBOOTSTRAP-GATES01 D2: this recipe now
+# delegates the canonical install dance (which links errno_shim.o
+# into libtos.a + libtos.dylib) to `make test-prefix-install`. The
+# direct `hcc -lib tos` invocation below the prior version produced
+# a libtos.a with `_Errno` undefined, which then failed downstream
+# `-ltos` linkage with "Undefined symbols".
+lsp-test: test-prefix-install
+	cd ./src/tests/lsp && ../../../hcc --install-dir=$(TEST_PREFIX) ./run_lsp_tests.HC -o lsp-test-runner && ./lsp-test-runner
+
+# ACT-POLYC-INTEGRATION-PREBOOTSTRAP-GATES01 D2: canonical local
+# install seam. Every quality caller needing an installed PolyC
+# runtime (lsp-test, gate-push GPUSH-2, llvm-gep01-test,
+# runtime01-selftest) MUST consume this target instead of running
+# its own `hcc -lib tos`. The CMake install dance in src/CMakeLists.txt
+# (install(CODE ...) block) is the single source of truth for
+# producing libtos.a + libtos.dylib with errno_shim.o incorporated.
+#
+# The build below reuses an already-built hcc from `./build/`. If hcc
+# is not present, the recipe runs `make all` first; this is the same
+# pattern lsp-test relied on before. The install prefix is taken from
+# the TEST_PREFIX Make variable (default: build/test-prefix); callers
+# such as gate-push.sh override it with INSTALL_PREFIX=$gate_prefix
+# via `make test-prefix-install INSTALL_PREFIX=...` so the test
+# prefix lands inside the gate's hermetic worktree.
+TEST_PREFIX ?= $(CURDIR)/build/test-prefix
+test-prefix-install:
+	@if [ ! -x ./hcc ]; then \
+		echo "test-prefix-install: ./hcc not found; running 'make all' first" >&2; \
+		$(MAKE) all; \
+	fi
+	@mkdir -p $(TEST_PREFIX)
+	@rm -rf $(CURDIR)/build/test-prefix-install-build
+	@mkdir -p $(CURDIR)/build/test-prefix-install-build
+	cmake -S ./src \
+		-B ./build/test-prefix-install-build \
+		-G 'Unix Makefiles' \
+		-DCMAKE_C_COMPILER=$(C_COMPILER) \
+		-DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
+		-DCMAKE_INSTALL_PREFIX=$(TEST_PREFIX) \
+		-DCMAKE_C_FLAGS=$(CFLAGS) \
+		-DHCC_ENABLE_JIT=on \
+		-DHCC_ENABLE_LLVM=$(HCC_ENABLE_LLVM)
+	$(MAKE) -C ./build/test-prefix-install-build install
+	@if [ ! -f $(TEST_PREFIX)/lib/libtos.a ] || \
+	    [ ! -f $(TEST_PREFIX)/lib/libtos.dylib ]; then \
+		echo "test-prefix-install: canonical install did not produce libtos.{a,dylib}" >&2; \
+		exit 1; \
+	fi
+
+# ACT-POLYC-INTEGRATION-PREBOOTSTRAP-GATES01 D1: canonical GEP01
+# regression target. Builds the PolyC harness from
+# tools/quality/llvm-gep01-test.HC against a fresh, canonical local
+# install prefix and runs it. The resulting binary is consumed in
+# place; no committed binary, no warm-tree dependence.
+#
+# This target is reachable from gate-push as a mandatory gate step
+# (gate-push GPUSH-GEP01). It is intentionally NOT wired into
+# gate-fast because gate-fast is a latency contract that must not
+# silently become a compiler-build lane.
+llvm-gep01-test: test-prefix-install
+	./hcc --install-dir=$(TEST_PREFIX) \
+		tools/quality/llvm-gep01-test.HC \
+		-o ./build/llvm-gep01-test
+	@if [ ! -x ./build/llvm-gep01-test ]; then \
+		echo "llvm-gep01-test: ./build/llvm-gep01-test not produced" >&2; \
+		exit 1; \
+	fi
+	./build/llvm-gep01-test --hcc=./hcc --llvm-install-dir=$(TEST_PREFIX)
+	@rc=$$?; \
+	rm -f ./build/llvm-gep01-test; \
+	exit $$rc
 
 lib-tos:
 	cd ./src/holyc-lib \
