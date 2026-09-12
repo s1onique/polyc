@@ -1,0 +1,126 @@
+ACT-POLYC-B0-SUBSTRATE-RECON01 — C1 — C2 probe plan
+====================================================
+
+Working copy: codium-polyc
+Entry HEAD:    456b71c0f2535c6175271d2107b67f985b4bc2c8
+
+The probes below are real PolyC programs living under
+src/tests/b0-substrate-recon01/. C2 compiles each via
+`hcc --emit-llvm`, verifies with `llvm-as` and `opt -passes=verify`,
+runs the produced binary, and compares its scalar digest output
+against a hand-frozen expected value.
+
+Each probe is small (<= 60 LOC), uses ONLY closed substrate
+operations, and prints a deterministic I64 to stdout.
+
+--------------------------------------------------------------------
+PROBE LIST
+--------------------------------------------------------------------
+
+probe_identifier.HC
+    PURPOSE: identifier-start + continuation boundary cases.
+    CASES:
+        foo         -> TK_IDENT start=0 len=3 new_cursor=3
+        foo123      -> TK_IDENT start=0 len=6 new_cursor=6
+        _private    -> TK_IDENT start=0 len=7 new_cursor=7
+        X9          -> TK_IDENT start=0 len=2 new_cursor=2
+        9foo        -> first byte '9' starts integer path
+                       -> negative boundary: NOT an identifier
+    INPUT:  byte buffer baked into the .HC (small fixture)
+    OUTPUT: I64 digest = kind + start*8 + length*64 + new_cursor*512
+            (deterministic; oracle compares)
+
+probe_decimal_int.HC
+    PURPOSE: bounded integer scanning (no overflow concern).
+    CASES:
+        "0"          -> value=0,  consumed=1
+        "7"          -> value=7,  consumed=1
+        "42"         -> value=42, consumed=2
+        "12345;"     -> value=12345, consumed=5, stop before ';'
+    OUTPUT: digest of all four cases combined.
+
+probe_whitespace.HC
+    PURPOSE: skip space/tab/newline/CR.
+    CASES:
+        "   \t\nfoo" -> cursor lands on 'f' at offset 5
+        "\r\nfoo"    -> cursor lands on 'f' at offset 2
+        "foo"        -> cursor unchanged (no leading ws)
+        ""           -> cursor=0, TOK_EOF
+    OUTPUT: digest of all four cases combined.
+
+probe_lookahead.HC
+    PURPOSE: bounded one- and two-byte lookahead.
+    CASES:
+        src[0]='a', src[1]='b', src[2]='\0'   -> first='a', second='b'
+        cursor at end (cursor==len-1)         -> second=NONE (guard)
+        cursor at len                         -> first=NONE (EOF guard)
+    OUTPUT: digest of all cases combined.
+
+probe_line_comment.HC
+    PURPOSE: consume '// ... \n' or until src_len.
+    CASES:
+        "// hello\nfoo" -> consumes "// hello\n", cursor at 'f'
+        "// no terminator" (len=15) -> consumes all, cursor=15, EOF
+        "abc//xyz"      -> no comment; cursor unchanged
+    OUTPUT: digest.
+
+probe_block_comment.HC
+    PURPOSE: consume '/* ... */' (no nesting at B0).
+    CASES:
+        "/* hi */foo"   -> consumes 8 bytes, cursor at 'f'
+        "/* unterminated" (len=14) -> consumes 14, EOF
+        "abc/*x*/def"   -> consumes 7 bytes, cursor at 'd'
+    OUTPUT: digest.
+
+probe_punct_multi.HC
+    PURPOSE: multi-character operator recognition.
+    SUBSET chosen: ==, !=, <=, >=, ++, --, &&, ||
+    CASES: each of the eight operators as the leading byte pair
+           in a 3-byte input "OPx" with cursor=0.
+           Also a '<' followed by 'x' (not <=) -> TK_PUNCT '<' len=1.
+           Also '<' at cursor==len (EOF) -> TK_PUNCT '<' len=1.
+    OUTPUT: digest.
+
+probe_token_at_a_time.HC
+    PURPOSE: integrated driver using LexNext repeatedly over
+             the frozen bootstrap corpus, producing a scalar
+             digest (no token array).
+    INPUT: bytes of Corpus A (synthetic), then Corpus B (GEP01
+           readat.HC), then Corpus C (byte-memory red_byte_to_i64.HC).
+    OUTPUT:
+        line 1: digest over the entire token stream
+        line 2: BYTES_CONSUMED=<final cursor>
+        line 3: TOKENS=<count of non-EOF tokens>
+
+--------------------------------------------------------------------
+ORACLE
+--------------------------------------------------------------------
+
+Per-token expected matrices for the corpora are recorded in
+evidence/ACT-POLYC-B0-SUBSTRATE-RECON01/c2/token-oracle.txt after
+C2 builds the integrated probe. They are hand-computed from the
+source bytes (not from running any other scanner).
+
+--------------------------------------------------------------------
+LLVM EVIDENCE
+--------------------------------------------------------------------
+
+For each probe:
+    hcc --emit-llvm  -> produces probe.ll
+    llvm-as probe.ll -o probe.bc
+    opt --passes=verify probe.ll -disable-output -> exit 0
+    grep -E 'getelementptr i8, ptr' probe.ll -> must show for
+        any function that calls src[c] or src[c+1]
+
+--------------------------------------------------------------------
+RUNTIME EVIDENCE
+--------------------------------------------------------------------
+
+After successful LLVM verify, build a native executable and run:
+    hcc probe_identifier.HC -o probe_identifier && \
+        ./probe_identifier > expected-vs-actual.txt
+
+The C2 evidence file <probe>.txt captures:
+    EXPECTED_DIGEST=<frozen value>
+    ACTUAL_DIGEST=<from probe stdout>
+    MATCH=yes|no

@@ -1,0 +1,18 @@
+operation	substrate_owner	ACT	closure_status	GEP01_red_idiom
+U8 parameter	BYTE-MEMORY	ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME02	CLOSED PASS	function param
+byte pointer parameter	BYTE-MEMORY	ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME02	CLOSED PASS	function param
+load i8 from byte pointer	BYTE-MEMORY	ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME02	CLOSED PASS	*p (one-shot)
+src[cursor] indexed byte load	GEP01	ACT-POLYC-LLVM-GEP01	CLOSED PASS	p[i]
+src[cursor+1] lookahead	GEP01+IR_IADD	ACT-POLYC-LLVM-GEP01 + IR_IADD arm	CLOSED PASS	p[i+1]
+I8/U8 -> I64 ZEXT promotion	BYTE-MEMORY	ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME02	CLOSED PASS	implicit via load i8
+I8 -> I64 SEXT promotion	BYTE-MEMORY	ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME02	CLOSED PASS	not used at B0
+bounded I64 -> I8 truncation	BYTE-MEMORY	ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME02	CLOSED PASS	not used at B0
+byte comparison	BYTE-MEMORY	ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME02	CLOSED PASS	==,!=,<,>
+I64 arithmetic add/sub/mul	existing scalar	ACT-POLYC-LLVM-CORE04-RESUME01	CLOSED PASS	a+b; a-b; a*b
+I64 ICMP	existing scalar	ACT-POLYC-LLVM-CORE04-RESUME01	CLOSED PASS	if(a<b)
+control flow (if/while)	existing scalar	ACT-POLYC-LLVM-CORE04-RESUME01	CLOSED PASS	if(...) while(...)
+mutable I64 local via alloca	LOCAL-MEM2REG	ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02	CLOSED PASS	*cur = *cur + 1
+function call (I64 args)	existing scalar	ACT-POLYC-LLVM-CORE04-RESUME01	CLOSED PASS	return F(a,b)
+I64 return	existing scalar	ACT-POLYC-LLVM-CORE04-RESUME01	CLOSED PASS	return v;
+I64 pointer-output store	MEMORY01	ACT-POLYC-LLVM-MEMORY01	CLOSED PASS	*out = v;
+I64 out-param aggregate path	IR-RETURN-SLOT-FORWARDING01	ACT-POLYC-IR-RETURN-SLOT-FORWARDING01	CLOSED PASS	multi-I64 return

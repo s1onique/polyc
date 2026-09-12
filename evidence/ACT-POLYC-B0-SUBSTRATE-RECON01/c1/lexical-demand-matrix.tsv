@@ -1,0 +1,16 @@
+class	example	in_corpus	B0_disposition	reason	substrate_ops
+whitespace	` `,`\t`	yes	MUST_B0	compiler-relevant; required to find next token start	byte compare; cursor advance
+newline	`\n`,`\r`	yes	MUST_B0	compiler-relevant; used by line-anchored diagnostics (optional at B0)	byte compare; cursor advance
+identifier	foo,_x9,A,B	yes	MUST_B0	compiler-relevant; identifier recognition is core to language	byte compare; cursor advance; no copy required
+keyword	I64,return,if	yes	MUST_B0	compiler-relevant; recognized at B0 as TOK_IDENT with length-aware discrimination (no Map needed for B0 subset)	byte compare; cursor advance
+decimal_integer	0,42,12345	yes	MUST_B0	compiler-relevant; primary literal class	for B0	byte->i64; arithmetic; cursor advance
+single_char_punct	+,-,;,{,}	yes	MUST_B0	compiler-relevant; structural tokens	byte compare
+multi_char_punct	==,!=,<=,>=,++,--,&&,||	yes	MUST_B0	compiler-relevant; core relational/logical operators	src[c]; src[c+1] (lookahead)
+line_comment	`// ...`	yes	MUST_B0	compiler-relevant; every C-style compiler source has them	cursor advance until `\n` or EOF
+block_comment	`/* ... */`	yes	MUST_B0	compiler-relevant; widely used	src[c]; src[c+1]; bounded lookahead
+hex_integer	0xFF	yes	DEFER_B1	decimal-only is sufficient for first self-hosted lexer	n/a
+float_literal	3.14	no	NOT_IN_CORPUS	not in chosen bootstrap corpus	n/a
+string_literal	"hello"	yes	DEFER_B1	boundary recognition only; no decode; source-slice representation requires no byte store	src[c]; char compare
+char_literal	'a','0','\n'	yes	DEFER_B1	boundary recognition only; record scalar byte; no escape decode required for B0	src[c]; src[c+1] lookahead
+preprocessor	#include	no	NOT_IN_CORPUS	B0 is single-buffer, no macro expansion	n/a
+nested_comment	n/a	n/a	DEFER_B1	inherited lexer does not support; not required by corpus	n/a

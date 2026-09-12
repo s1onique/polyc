@@ -1,0 +1,213 @@
+ACT-POLYC-B0-SUBSTRATE-RECON01 — C1 — current compiler lexer inventory
+=======================================================================
+
+Source of truth:
+    src/lexer.h    280 LOC  (public types and TK_*/KW_* enumerations)
+    src/lexer.c   2163 LOC  (lexer implementation; lexCore + helpers)
+
+Working copy: codium-polyc
+Entry HEAD:    456b71c0f2535c6175271d2107b67f985b4bc2c8
+
+The polyC/HolyC compiler lexes source text via lexCore (line 1129),
+which reads one byte at a time from l->ptr, with helpers
+lexNextChar / lexRewindChar / lexPeek / lexPeekMatch managing the
+single-byte lookahead window.
+
+--------------------------------------------------------------------
+A. Lexer state structure
+--------------------------------------------------------------------
+
+  Lexer struct (src/lexer.h:211-244):
+
+    int    tk_type;            current token kind
+    char  *ptr;                current source cursor
+    char  *start;              start of current token
+    char  *line_start_ptr;     start of current line
+    int    tok_start_line;     line of current token's first byte
+    int    tok_start_col;      column of current token's first byte
+    char   cur_ch;             cached current char
+    char  *cur_str;            cached current string ptr
+    s64    cur_strlen;         cached current string length
+    s64    cur_i64;            cached current integer value
+    double cur_f64;            cached current float value
+    int    lineno;             current line number
+    int    flags;              CCF_* mode flags
+    int    ishex;
+    int    collecting;
+    int    skip_else;
+    char  *builtin_root;
+    List  *files;              LexFile stack (pushfile/include)
+    List  *all_source;
+    Set   *seen_files;
+    Map   *symbol_table;       keyword map
+    LexFile *cur_file;
+    Cctrl *cc;                 diagnostic back-pointer
+
+  Lexeme (src/lexer.h:166-187):
+
+    char *start;               ptr into source (NOT heap-owned)
+    int   len;
+    int   line;
+    int   col;
+    int   ishex;
+    union { s64 i64; double f64; };
+
+  No token-array in the lexer interface. Each lex() call returns
+  one Lexeme via out-param; the Lexeme.start pointer aliases into
+  the borrowed source buffer (AoStr src in LexFile). Token text is
+  already a source slice, not a copy.
+
+--------------------------------------------------------------------
+B. Token kinds recognized (src/lexer.h:14-63)
+--------------------------------------------------------------------
+
+  Numeric/identifier:
+
+    TK_EOF          0
+    TK_IDENT        0x300   identifier
+    TK_STR          0x301   string literal
+    TK_I64          0x302   decimal/hex integer
+    TK_CHAR_CONST   0x303   character constant
+    TK_F64          0x304   floating literal
+    TK_KEYWORD      0x332   identifier that resolved via symbol_table
+
+  Compound operators (each is a distinct TK_* value):
+
+    TK_PLUS_PLUS    TK_MINUS_MINUS
+    TK_DEREFERENCE  TK_DBL_COLON
+    TK_SHL          TK_SHR
+    TK_EQU_EQU      TK_NOT_EQU
+    TK_LESS_EQU     TK_GREATER_EQU
+    TK_AND_AND      TK_OR_OR
+    TK_XOR_XOR
+    TK_SHL_EQU      TK_SHR_EQU
+    TK_MUL_EQU      TK_DIV_EQU
+    TK_AND_EQU      TK_OR_EQU    TK_XOR_EQU
+    TK_ADD_EQU      TK_SUB_EQU
+    TK_MOD_EQU
+    TK_DOT_DOT      TK_ELLIPSIS
+    TK_ARROW
+    TK_PUNCT        (generic single-char ASCII operator)
+    TK_PRE_PLUS_PLUS  TK_PRE_MINUS_MINUS
+    TK_COMMENT
+
+  Preprocessor-directive identifiers (TK_KEYWORD with KW_* kind):
+
+    TK_IF           TK_IFDEF    TK_IFNDEF
+    TK_IFAOT        TK_IFJIT
+    TK_ENDIF        TK_ELSE
+
+--------------------------------------------------------------------
+C. Lexer dispatch (src/lexer.c:1129-1482)
+--------------------------------------------------------------------
+
+  lexCore() reads one byte and dispatches:
+
+    case '\r': '\n'                   -> increment lineno, optionally
+                                          emit TK_PUNCT for newline
+                                          when CCF_ACCEPT_NEWLINES
+    case '\t': ' '                    -> skip whitespace, optionally
+                                          emit TK_PUNCT when
+                                          CCF_ACCEPT_WHITESPACE
+    case '\0'                         -> return 0 (TK_EOF)
+    case '0'..'9'                     -> lexNumeric()
+    case '"'                          -> lexString() (allocates buffer)
+    case '\''                         -> lexCharConst()
+    case '/'                          -> lexSkipCodeComment() if next
+                                          byte is '/' or '*',
+                                          else '/' or '/=' punct
+    case '=': '<': '>': '+': '-': '!':
+    case '&': '|': '*': '%': '^':     -> multi-char punct with
+                                          bounded one-byte lookahead
+    case '$': '@'                     -> TK_PUNCT iff CCF_ASM_BLOCK
+    case '.'                          -> numeric if next is digit;
+                                          '..' '.' '...' puncutator;
+                                          '..' lone is error
+    case '\\'                         -> TK_PUNCT '\\'
+    case '#'                          -> preprocessor directive
+                                          (lexPreProcDirective)
+    case ':'                          -> '::' (CCF_MULTI_COLON) or ':'
+    case '~' '(' ')' ',' ';' '[' ']' '{' '}'
+                                      -> TK_PUNCT single char
+    default:
+      if isalpha(ch) || ch == '_'    -> lexIdentifier() then
+                                          symbol_table keyword lookup
+
+  lexIdentifier (line 873-885):
+
+    while ch && (isalnum(ch) || ch == '_' || ch == '$') consume.
+    first char is set by caller: isalpha() || '_'.
+
+  lexSkipCodeComment (line 762-792):
+
+    '/'  -> consume until '\n' or '\0'
+    '*'  -> consume until '*' followed by '/' (no nesting).
+           EOF in unterminated block comment is tolerated.
+
+  lexString (line 890-993):
+
+    Reads "..." with full C-style escape decoding into a
+    lexer-arena-allocated buffer. Tracks embedded '\n' as lineno++.
+
+  lexCharConst (line 997-...):
+
+    Reads 'x' / '\n' / '\xHH' / multi-byte sequences up to 8 bytes,
+    produces a U64 scalar value.
+
+  lexNumeric (line 1076-...):
+
+    Reads [0-9]+ with optional hex (0x/0X), optional 'f32'/'f64'
+    suffix, '.', 'e'/'E' exponent. Produces TK_I64 or TK_F64.
+
+--------------------------------------------------------------------
+D. B0-relevant subset (this recon's interest)
+--------------------------------------------------------------------
+
+  The lexer uses these primitive operations at runtime:
+
+    - Read byte at cursor                  (lexNextChar; *l->ptr)
+    - One-byte peek/conditional advance    (lexPeekMatch; src[c])
+    - Two-byte lookahead (comment "*/", "==" prefix)
+    - Mutate cursor as bytes are consumed  (l->ptr++ in helpers)
+    - Compare byte to ASCII literal
+    - Classify first char (isalpha, isalnum, isdigit, isxdigit)
+    - Allocate strings via lexerArena
+    - Track lineno, line_start_ptr
+    - Look up identifier text in a keyword Map (lexCore:1469)
+
+  No token-array aggregation. No heap-allocated Token objects.
+  Each Lexeme is a value with start/len aliasing into the source.
+
+--------------------------------------------------------------------
+E. Differences from a PolyC-written B0 lexer
+--------------------------------------------------------------------
+
+  Differences the PolyC lexer must overcome (or accept as deferred):
+
+    - String literal decode (escape processing) — DEFER_B1 per §9
+    - Char literal escape decode — DEFER_B1 per §9
+    - Hex/float numeric parsing — DEFER_B1 per §9
+    - Nested comments — DEFER_B1 per §9
+    - Keyword Map lookup — B0 may keep identifiers as TOK_IDENT
+      and resolve keywords at the parser/AST layer
+    - Multi-file / #include stack — DEFER_B1 (B0 owns a single
+      caller-provided buffer)
+    - Macro / preprocessor — DEFER_B1
+    - Keyword string interning — not required for B0 source slices
+
+--------------------------------------------------------------------
+F. Files relevant to lexer surface
+--------------------------------------------------------------------
+
+  src/lexer.c:762-792      lexSkipCodeComment
+  src/lexer.c:873-885      lexIdentifier
+  src/lexer.c:890-993      lexString  (with escape decoder)
+  src/lexer.c:997-...      lexCharConst
+  src/lexer.c:1076-...     lexNumeric
+  src/lexer.c:1129-1482    lexCore  (top-level dispatch)
+  src/lexer.c:1484-...     lex (wrapper, caches column etc.)
+  src/lexer.h:14-63        TK_* enumerations
+  src/lexer.h:65-...       KW_* keyword kinds
+  src/lexer.h:166-187      Lexeme struct
+  src/lexer.h:197-209      LexFile struct
+  src/lexer.h:211-244      Lexer struct

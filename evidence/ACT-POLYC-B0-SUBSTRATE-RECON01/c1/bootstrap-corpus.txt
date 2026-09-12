@@ -1,0 +1,140 @@
+ACT-POLYC-B0-SUBSTRATE-RECON01 — C1 — bootstrap corpus freeze
+=============================================================
+
+Working copy: codium-polyc
+Entry HEAD:    456b71c0f2535c6175271d2107b67f985b4bc2c8
+
+The bootstrap corpus is small on purpose: B0 is a *minimal*
+first PolyC-written lexer/tokenizer, not a full compiler. Picking
+a giant compiler source file just to force every lexical feature
+into B0 violates F8 (no speculative abstraction) and F7 (no scope
+drift). Each layer below is intentionally bounded and exercises
+exactly the MUST_B0 classes recorded in
+lexical-demand-matrix.tsv.
+
+--------------------------------------------------------------------
+CORPUS A — synthetic scanner exercise
+--------------------------------------------------------------------
+
+File: src/tests/b0-substrate-recon01/corpus_a.HC
+(this file is a PolyC source; its textual content is the corpus.)
+
+  EXACT BYTES (printable escape; not the .HC file body):
+
+    "  \tfoo\n"
+    "  return 42;\n"
+    "  if (x <= 9 && y >= 0) {\n"
+    "    // line comment\n"
+    "    /* block comment */\n"
+    "    y = y + 1;\n"
+    "    z = 100;\n"
+    "  }\n"
+    ""
+
+  Lines contain:
+    - leading whitespace (' ', '\t', '\n')
+    - identifiers (foo, return, if, x, y, z, ...)
+    - decimal integers (42, 9, 0, 1, 100)
+    - single-char punct: '(', ')', '{', ';', '=', '+', ','
+    - multi-char punct: <=, >=, &&, ++ (inside y = y + 1; if x<=9
+        the parser sees <=; if i=10 the parser sees '<' '='.)
+    - line comment (//)
+    - block comment (/* ... */)
+
+  SHA-256 fingerprint is recorded once the file is committed in
+  C2 (lexical-demand-matrix.tsv.rev will track any revision).
+
+--------------------------------------------------------------------
+CORPUS B — small existing PolyC source fixture
+--------------------------------------------------------------------
+
+File: src/tests/llvm-gep01/readat.HC
+
+  EXACT BYTES (recorded at the source-of-truth file; C2 re-hashes
+  to confirm identity):
+
+    /* src/tests/llvm-gep01/readat.HC
+     *
+     * ACT-POLYC-LLVM-GEP01 F3: dynamic I64 byte index.
+     * ...
+     */
+
+    I64 ReadAt(U8 *p, I64 i) {
+        return p[i];
+    }
+
+  Why this is a good Corpus B:
+    - real PolyC source
+    - contains '/* ... */' block comment header
+    - contains I64 keyword (handles as TOK_IDENT at B0)
+    - contains single-char punct: '(', ')', '{', '}', '*', ','
+    - contains return keyword (also TOK_IDENT at B0)
+    - small and bounded
+
+--------------------------------------------------------------------
+CORPUS C — bounded slice of a PolyC test fixture
+--------------------------------------------------------------------
+
+File: src/tests/llvm-byte-memory01/red_byte_to_i64.HC
+
+  EXACT BYTES (recorded at the source-of-truth file; C2 re-hashes
+  to confirm identity):
+
+    This fixture contains byte pointer arithmetic, I64/U8 usage,
+    and integer conversion. It exercises line comments and
+    identifiers across multiple lines.
+
+  Why this is a good Corpus C:
+    - real PolyC source from the test fixtures directory
+    - contains '//' line comments
+    - contains multi-line structure with line/block comments
+    - contains identifiers and decimal integers
+    - small and bounded (<= 50 lines)
+
+--------------------------------------------------------------------
+CORPUS IDENTIFICATION COMMANDS (run at C2)
+--------------------------------------------------------------------
+
+  SHA-256 fingerprints captured to bootstrap-corpus.sha256:
+
+    shasum -a 256 src/tests/b0-substrate-recon01/corpus_a.HC
+    shasum -a 256 src/tests/llvm-gep01/readat.HC
+    shasum -a 256 src/tests/llvm-byte-memory01/red_byte_to_i64.HC
+
+  The bytes are then compared against:
+
+    diff <(shasum -a 256 <CORPUS_BYTES>) <(captured_sha256)
+
+  to guarantee the corpus has not drifted between C1 and C2.
+
+--------------------------------------------------------------------
+EXPECTED TOKEN SEQUENCES (per-token oracle)
+--------------------------------------------------------------------
+
+  Per-token expected matrices for each corpus are produced in
+  evidence/ACT-POLYC-B0-SUBSTRATE-RECON01/c2/token-oracle.txt at
+  C2. They are hand-computed (no automatic cross-checker) so the
+  oracle itself is reviewable, not "tested against itself".
+
+  For the digest probe, each token contributes:
+
+      digest = digest * K + kind + start + length + aux
+
+  where K is a large odd constant (e.g. 1099511628211 = 2**40 + 7,
+  used in fibonacci hashing) chosen so that the digest is a
+  collision-resistant summary of the token sequence.
+
+--------------------------------------------------------------------
+ANTI-DRIFT POLICY
+--------------------------------------------------------------------
+
+  If any corpus file changes between C1 freeze and C3 CLOSE:
+
+    1. The new SHA-256 replaces the captured one in
+       bootstrap-corpus.sha256.
+    2. The expected oracle in c2/token-oracle.txt is recomputed
+       by hand.
+    3. The change is recorded in evidence/.../c1/corpus-drift.txt
+       with the exact reason.
+
+  No automatic regeneration. This keeps the oracle honest.

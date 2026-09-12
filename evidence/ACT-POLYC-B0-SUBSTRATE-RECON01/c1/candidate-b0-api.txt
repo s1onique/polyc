@@ -1,0 +1,129 @@
+ACT-POLYC-B0-SUBSTRATE-RECON01 — C1 — aggregate-free B0 ABI candidate
+=====================================================================
+
+Working copy: codium-polyc
+Entry HEAD:    456b71c0f2535c6175271d2107b67f985b4bc2c8
+
+This file proposes the minimal token-at-a-time interface that
+ACT-POLYC-B0-SUBSTRATE-RECON01 §3 marks as illustrative. The exact
+PolyC syntax for the function is NOT pre-authorized here; the
+interface is specified semantically and the C2 evidence will adapt
+it to actual PolyC syntax (taking into account existing pointer /
+function-call semantics).
+
+--------------------------------------------------------------------
+ILLUSTRATIVE INTERFACE (illustrative only — not pre-authorized)
+--------------------------------------------------------------------
+
+    I64 LexNext(
+        U8  *src,        // caller-owned source byte buffer
+        I64  src_len,    // exact source byte length (no NUL sentinel)
+        I64 *cursor,     // in/out: first unconsumed byte
+        I64 *tok_start,  // out: start offset of recognized token
+        I64 *tok_len,    // out: token length in source bytes
+        I64 *tok_aux     // out: TK_INT value, char byte, or 0
+    );
+
+Return value: token kind (I64 scalar constant).
+
+--------------------------------------------------------------------
+TOKEN KIND CONSTANTS (frozen for B0 — illustrative)
+--------------------------------------------------------------------
+
+    TOK_EOF         = 0       // also returned when cursor >= src_len
+    TOK_IDENT       = 1       // identifier (incl. keywords at B0)
+    TOK_INT         = 2       // decimal integer literal
+    TOK_PUNCT       = 3       // single- or multi-char punct
+                              //   tok_aux = first byte of punct
+    TOK_STRING      = 4       // string literal (boundary only)
+                              //   tok_aux = first byte of content
+                              //   NO escape decoding at B0
+    TOK_CHAR        = 5       // char literal (boundary only)
+                              //   tok_aux = first interior byte
+                              //   NO escape decoding at B0
+    TOK_COMMENT     = 6       // recognized comment, skipped
+                              //   (B0 may simply consume and
+                              //   continue without returning it;
+                              //   the constant exists for oracle
+                              //   comparison only)
+    TOK_ERROR       = -1      // lexical error (consumed 1 byte)
+
+  All constants are ordinary integer literals in PolyC source —
+  no enum feature required.
+
+--------------------------------------------------------------------
+METADATA CONTRACT
+--------------------------------------------------------------------
+
+  After LexNext returns:
+    *cursor     has advanced past the token (or past EOF byte).
+    *tok_start  equals the source offset of the first byte of the
+                recognized token (or 0 for TOK_EOF).
+    *tok_len    equals the number of source bytes the token spans
+                (0 for TOK_EOF).
+    *tok_aux    is set to:
+                  TK_INT   -> the integer value
+                  TK_PUNCT -> the first ASCII byte of the punct
+                  TK_STRING/TK_CHAR -> the first interior byte
+                  otherwise -> 0
+
+  No heap allocation.
+  No byte-store.
+  No struct.
+  No token array.
+
+--------------------------------------------------------------------
+DESIGN NOTES
+--------------------------------------------------------------------
+
+  - The interface mirrors the inherited lexer's per-call model
+    (one Lexeme out per call, lexeme.start/len aliasing into the
+    source). See evidence/.../c1/lexer-source-inventory.txt §A.
+
+  - cursor is I64 out-param, NOT a pointer to a struct field.
+    This keeps the IR simple: cursor mutation is a single I64
+    store through a pointer to a stack local, already proven by
+    LOCAL-MEM2REG (Option W).
+
+  - tok_start and tok_len together implement the SOURCE_SLICE
+    text model without copying. Identifiers and string tokens
+    refer to bytes inside the caller-owned buffer.
+
+  - The interface deliberately does not return a token-kind-set
+    bitfield. The kind is a single I64 scalar.
+
+  - TOK_ERROR is recoverable: caller can continue with a known
+    cursor advance (1 byte consumed) and re-call.
+
+--------------------------------------------------------------------
+REQUIREMENTS THIS ABI MAKES VISIBLE
+--------------------------------------------------------------------
+
+  To compile this interface in current PolyC we must demonstrate
+  that the following are SUPPORTED:
+
+    1. U8 *src parameter                      — BYTE-MEMORY
+    2. I64 src_len parameter                  — existing scalar
+    3. I64 *cursor parameter / store          — MEMORY01 / LOCAL-MEM2REG
+    4. src[cursor] indexed byte load          — GEP01
+    5. src[cursor+1] lookahead                — GEP01 + IR_IADD
+    6. byte-to-I64 promotion                  — BYTE-MEMORY ZEXT
+    7. byte comparison                        — BYTE-MEMORY
+    8. I64 arithmetic                         — existing scalar
+    9. control flow (if/while)                — existing scalar
+    10. function call + return I64            — existing scalar
+    11. multiple I64 out-parameter writes     — existing IR_RETURN_SLOT
+
+  Items 1-10 are explicit MUST-pass C2 probes.
+  Item 11 is a small extension beyond GEP01's published surface
+  but is fully covered by MEMORY01 and IR-RETURN-SLOT-FORWARDING01.
+
+--------------------------------------------------------------------
+IF THIS ABI IS INFEASIBLE
+--------------------------------------------------------------------
+
+  The recon will HALT with HALT_AGGREGATE_REQUIRED only if the
+  current PolyC language cannot express even this scalar-only
+  interface. This is the minimal test; if it fails, B0 truly
+  cannot be implemented without STRUCT01 or ARRAY01, and the
+  HALT path names the missing piece precisely.
