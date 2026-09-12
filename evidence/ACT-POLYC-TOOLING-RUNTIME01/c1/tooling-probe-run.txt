@@ -1,0 +1,36 @@
+ACT-POLYC-TOOLING-RUNTIME01
+C1 RED — tooling-probe run output
+
+The C1 RED probe does not produce a runnable
+executable. The build step (tooling-probe-build.txt)
+fails at the parser/typechecker layer with two
+"Variable or function `SpawnAndCapture` has not been
+defined" errors.
+
+Therefore the "run" step is NOT applicable in C1.
+
+The expected post-C2 behaviour (recorded for the
+test harness in C3):
+
+  $ /tmp/probe
+  tooling-probe: C1 RED layer reached successfully
+  $ echo $?
+  0
+
+  (If /bin/printf succeeds with "hello" and the
+   missing-executable probe returns 127, the verdict
+   aggregator considers P1+P2 to have completed
+   cleanly.)
+
+If C2 introduces a regression where the verdict
+aggregator fails, the run must:
+
+  $ /tmp/probe
+  ...
+  $ echo $?
+  non-zero
+
+The C3 evidence ledger will capture both the
+"normal" run (above) and a seeded-failure run.
+
+End of file.

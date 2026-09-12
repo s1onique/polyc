@@ -1,0 +1,62 @@
+ACT-POLYC-TOOLING-RUNTIME01
+C1 RED — tooling-probe build output
+
+Toolchain:
+  Apple clang 15.0.0.15000040, aarch64-apple-darwin
+  ./hcc commit-hash 456b71c0f2535c6175271d2107b67f985b4bc2c8
+  llvm-as / opt 22.1.8 on PATH
+  ./build/test-prefix/ hermetic install dir
+
+------------------------------------------------------------
+Command
+------------------------------------------------------------
+
+  $ ./hcc --install-dir=$(pwd)/build/test-prefix \
+          evidence/ACT-POLYC-TOOLING-RUNTIME01/c1/tooling-probe.HC \
+          -o /tmp/probe
+
+------------------------------------------------------------
+Output (verbatim)
+------------------------------------------------------------
+
+error: Variable or function `SpawnAndCapture` has not been defined
+ --> evidence/ACT-POLYC-TOOLING-RUNTIME01/c1/tooling-probe.HC:32:8
+     |
+  32 |      rc = SpawnAndCapture("/bin/printf", "hello", &out, &err);
+     |           ^^^^^^^^^^^^^^^ Try defining function `SpawnAndCapture()`?
+error: Variable or function `SpawnAndCapture` has not been defined
+ --> evidence/ACT-POLYC-TOOLING-RUNTIME01/c1/tooling-probe.HC:47:8
+     |
+  47 |      rc = SpawnAndCapture("/does/not/exist/polyc-probe",
+     |           ^^^^^^^^^^^^^^^ Try defining function `SpawnAndCapture()`?
+
+------------------------------------------------------------
+Failure layer (per ACT §11)
+------------------------------------------------------------
+
+  PARSER / TYPE CHECKER
+
+The PolyC compiler produced a precise "undefined
+identifier" diagnostic at the call site. This is
+exactly the failure mode ACT §11 accepts for a RED.
+
+It is NOT:
+  - a fixture defect (the syntax is valid HolyC)
+  - a silent success (the build produced a non-zero
+    exit status and no executable)
+  - a runtime crash (we never reached runtime)
+
+------------------------------------------------------------
+Required C2 fix
+------------------------------------------------------------
+
+Define SpawnAndCapture in src/holyc-lib/tooling.HC (or
+similar new file) with the signature frozen in
+api-shape-freeze.txt and missing-primitives.txt.
+
+After C2 the same command must:
+
+  - compile cleanly with no errors
+  - emit /tmp/probe
+  - when run, return 0 (P1 success), then non-zero
+    on P2 missing-executable

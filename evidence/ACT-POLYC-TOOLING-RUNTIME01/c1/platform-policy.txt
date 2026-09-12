@@ -1,0 +1,86 @@
+ACT-POLYC-TOOLING-RUNTIME01
+C1 RED — platform policy
+
+ACT §5 limits the first tooling-runtime substrate to
+the currently relevant development hosts:
+
+  macOS   (tested on Darwin 23.6.0 arm64)
+  Linux   (POSIX 2008+ assumed)
+
+Windows native process creation is OUT OF SCOPE.
+
+------------------------------------------------------------
+Per-platform notes
+------------------------------------------------------------
+
+macOS:
+  - fork() works but is COW-heavy on darwin. For the
+    bounded workload of the first harness (a handful of
+    small subprocesses per test), this is acceptable.
+  - mkstemp() available (POSIX 2008 since macOS 10.6).
+  - execv() / waitpid() / pipe() / dup2() all available.
+  - The lsp test
+    (src/tests/lsp/run_lsp_tests.HC:312-440)
+    already proves this combo works.
+
+Linux:
+  - Same surface; fork() is the conventional choice.
+  - mkstemp() available.
+  - clock_gettime(CLOCK_MONOTONIC) available for the
+    fallback temp-name strategy (only used if mkstemp
+    is somehow unavailable, which we do not expect).
+
+------------------------------------------------------------
+Sanity build (this recon session)
+------------------------------------------------------------
+
+Host: aarch64-apple-darwin
+Compiler: Apple clang 15.0.0.15000040
+Configuration used:
+
+  cmake -S ./src -B ./build -G 'Unix Makefiles' \
+        -DCMAKE_C_COMPILER=clang \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DHCC_ENABLE_JIT=on \
+        -DHCC_ENABLE_LLVM=OFF \
+        && make -C ./build -j4
+
+  -> ./hcc binary produced.
+  -> ./hcc --version reports commit-hash 456b71c.
+
+Note: HCC_ENABLE_JIT must be ON for the link to succeed.
+This is the configuration the Makefile uses for the
+default `make all` target (see Makefile line 36).
+Disabling JIT triggers a different code path that does
+not link the asm library; we use the default.
+
+A hermetic test-prefix was built:
+
+  ./hcc --install-dir=$(pwd)/build/test-prefix \
+        -lib tos ./src/holyc-lib/all.HC
+
+  -> build/test-prefix/include/tos.HH
+  -> build/test-prefix/lib/libtos.a
+  -> build/test-prefix/lib/libtos.0.0.1.dylib
+
+A trivial "hello" program was compiled and run with the
+local prefix:
+
+  $ ./hcc --install-dir=$(pwd)/build/test-prefix \
+          /tmp/hello.HC -o /tmp/hello
+  $ /tmp/hello
+  hello
+
+This proves the entire build pipeline works end-to-end
+on this host before C2 introduces the new runtime
+primitives.
+
+------------------------------------------------------------
+Residue (ACT §5)
+------------------------------------------------------------
+
+P2 - Windows tooling-runtime backend not implemented.
+Recorded for future ACT if/when Windows becomes an
+in-scope development host.
+
+End of file.

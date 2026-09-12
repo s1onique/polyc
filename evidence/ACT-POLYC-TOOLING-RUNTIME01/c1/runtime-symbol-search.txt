@@ -1,0 +1,194 @@
+ACT-POLYC-TOOLING-RUNTIME01
+C1 RED — runtime symbol search
+
+Repository:   s1onique/polyc
+Working copy: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc2
+Branch:       main
+Entry HEAD:   456b71c0f2535c6175271d2107b67f985b4bc2c8
+
+------------------------------------------------------------
+Method
+------------------------------------------------------------
+
+  1. Static grep over the PolyC standard library
+     (src/holyc-lib/*.HC, src/holyc-lib/tos.HH) for each
+     required primitive name.
+  2. Static grep over the compiler C source for the same
+     primitives (proof that they are real, not stubs).
+  3. Where the symbol lives in libc only, confirm that
+     an extern "c" binding exists so a PolyC program can
+     actually call it.
+
+Tooling used:
+
+  ripgrep (rg) / grep -n across src/
+
+------------------------------------------------------------
+PROCESS
+------------------------------------------------------------
+
+argv / argc
+  rg "argv" src/holyc-lib/strings.HC
+    -> StrPrintJoin uses argv as I64 *.
+  Pattern: TempleOS-style global. Confirmed usable in
+  src/tests/lsp/run_lsp_tests.HC:402.
+
+fork
+  rg "fork" src/holyc-lib/tos.HH
+    -> "public extern \"c\" I32 fork();"
+  Used at src/tests/lsp/run_lsp_tests.HC.
+
+execv / execvp / execvpe / posix_spawn
+  rg "execv|posix_spawn" src/holyc-lib/ src/*.c
+    -> "extern \"c\" I32 execv(U8 *path, U8 **argv);"
+       at src/tests/lsp/run_lsp_tests.HC:53
+    -> No posix_spawn binding anywhere.
+  Result: execv usable; posix_spawn MISSING.
+
+pipe
+  rg "pipe\(" src/holyc-lib/ src/*.c
+    -> No PolyC binding in holyc-lib.
+    -> Used directly in lsp test:
+       src/tests/lsp/run_lsp_tests.HC:391
+       ("I32 to_child[2]; pipe(to_child);")
+  Note: I32[2] pipe fds are usable via libc; the lsp
+  test proves it.
+
+dup2
+  rg "dup2" src/*.c
+    -> Used at src/lsp.c:323.
+    -> No PolyC binding in holyc-lib.
+  Existing PolyC programs reach dup2 via raw
+  libc (run_lsp_tests.HC line 395).
+
+waitpid
+  rg "waitpid" src/*.c
+    -> Used at src/lsp.c:332 and
+       src/tests/lsp/run_lsp_tests.HC:439.
+    -> No standalone PolyC binding in holyc-lib, but
+       the lsp test proves it is callable.
+
+system
+  rg "system\(" src/holyc-lib/
+    -> system.HC line 7 declares
+       "public extern \"c\" I32 system(U8 *command);"
+       and exposes System() / Sh() / Shlurp() that
+       route through libc system().
+  Classification: EXISTS_BUT_WRONG_ABSTRACTION
+    Forbidden by ACT §4.
+
+Exit
+  rg "Exit\(" src/holyc-lib/
+    -> system.HC:28 "public _extern _EXIT U0 Exit(I64
+       exit_code=EXIT_FAIL);"
+  Classification: EXISTS_AND_USABLE.
+
+------------------------------------------------------------
+FILESYSTEM
+------------------------------------------------------------
+
+open
+  io.HC line 71: "extern \"c\" I32 open(U8 *, I32, ...);"
+
+read
+  io.HC line 75: "extern \"c\" I64 read(I32, U0 *, U64);"
+
+write
+  io.HC line 76: "extern \"c\" I64 write(I32, U0 *, U64);"
+  Also used in system.HC for raw fd write.
+
+close
+  io.HC line 74: "extern \"c\" I32 close(I32);"
+
+lseek
+  io.HC line 77: "extern \"c\" I64 lseek(I32, I64, I32);"
+
+stat
+  io.HC line 93+: Stat(fst, pathname) wraps statx on
+  Linux, stat() on macOS.
+
+chdir / getcwd
+  io.HC lines 78-79.
+
+FileRead
+  io.HC line 167:
+    "public U8 *FileRead(U8 *path, I64 *_size=NULL)"
+  Reads whole file into NUL-terminated heap buffer.
+
+FileWrite
+  io.HC line 211:
+    "public Bool FileWrite(U8 *filename, U8 *buf, I64 size,
+       I64 flags=O_CREAT|O_RDWR)"
+
+mkstemp / tmpfile
+  No matches in src/. MISSING.
+
+unlink / Rm
+  tos.HH declares Rm(). Used in many tests.
+
+------------------------------------------------------------
+TEXT
+------------------------------------------------------------
+
+StrCmp
+  strings.HC line 415: StrCmp(U8 *s1, U8 *s2) -> I64
+  Bound to libc strcmp via _STRCMP in transpiler.c:228.
+
+StrNCmp / StrNICmp
+  strings.HC lines 413-414.
+
+StrLen
+  strings.HC line 412.
+
+StrOcc (count occurrences of one char)
+  strings.HC line 539.
+
+StrFirstOcc (first occurrence of any char from a set)
+  strings.HC line 549. Returns NULL if none.
+
+StrLastOcc
+  strings.HC line 576.
+
+strstr (substring search)
+  No PolyC binding. MISSING. (Will be needed for
+  contains(haystack, needle).)
+
+------------------------------------------------------------
+PRINT
+------------------------------------------------------------
+
+"format", args
+  HolyC default Print via aostr.c / strings.HC.
+
+Write to arbitrary fd
+  system.HC line 8: "public extern \"c\" I64 write(I32 fd,
+  U0 *buf, U64 nbyte);"
+  Wraps SYS_CALL_WRITE on x86_64, libc write() on aarch64.
+
+------------------------------------------------------------
+MEMORY
+------------------------------------------------------------
+
+MAlloc / Free
+  memory.HC.
+
+StrNew / StrPrint
+  strings.HC.
+
+------------------------------------------------------------
+Summary
+------------------------------------------------------------
+
+Of the required primitives, the following are
+presently MISSING and must be implemented in C2:
+
+  1. A high-level direct-argv spawn that captures
+     stdout/stderr separately and reports exit code
+     without shell parsing.
+  2. Race-safe temporary-file creation (mkstemp
+     binding or equivalent).
+  3. A multi-byte substring-search helper (strstr
+     wrapper) for text assertions.
+
+Everything else either exists already or can be
+built from existing primitives.
