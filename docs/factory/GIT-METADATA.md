@@ -116,6 +116,74 @@ Interpretation:
   `HALT_RED_NOT_REPRODUCED`;
 * no HANDOFF rewrite is needed.
 
+### 2.4 HALT classification trailers (additive)
+
+Per `ACT-POLYC-FACTORY-MECHANICAL-BLOCKING01` (and
+`docs/factory/DOCTRINE.md` §25), two ADDITIVE trailers
+classify every HALT_* CLOSE commit. They are required
+on every new `HALT_*` CLOSE commit and forbidden on
+every new `PASS(_...)*` CLOSE commit. Historical CLOSE
+commits are grandfathered (see §0.1 of the ACT).
+
+```
+HALT_CLASS:  GOVERNANCE | PRODUCTION | SAFETY |
+             AUTHORIZATION | DEPENDENCY
+
+BLOCKS_NEXT: YES | NO
+```
+
+Cardinality rules:
+
+* `HALT_CLASS` -- exactly 0 on a `PASS(_...)*` CLOSE;
+  exactly 1 on a `HALT_*` CLOSE.
+* `BLOCKS_NEXT` -- exactly 0 on a `PASS(_...)*` CLOSE;
+  exactly 1 on a `HALT_*` CLOSE.
+
+Combination rules:
+
+| HALT_CLASS      | BLOCKS_NEXT     |
+|-----------------|-----------------|
+| `GOVERNANCE`    | `NO`            |
+| `PRODUCTION`    | `YES`           |
+| `SAFETY`        | `YES`           |
+| `AUTHORIZATION` | `YES`           |
+| `DEPENDENCY`    | `YES` or `NO`   |
+
+Example:
+
+```
+ACT: ACT-POLYC-FACTORY-MECHANICAL-BLOCKING01
+ACT-Phase: CLOSE
+ACT-Verdict: HALT_GOVERNANCE_HALT
+HALT_CLASS: GOVERNANCE
+BLOCKS_NEXT: NO
+```
+
+Interpretation: this ACT closed with a HALT verdict;
+the halt is classified as governance (procedural,
+narrative, or bookkeeping) and DOES NOT block the
+next same-scope ACT from opening.
+
+### 2.5 Parsing note
+
+The `HALT_CLASS` and `BLOCKS_NEXT` keys contain
+underscores. `git interpret-trailers --parse` (as of
+git 2.54.0) does NOT accept underscores in trailer
+keys and silently drops such trailers. The bounded
+verifier at
+`scripts/quality/factory-halt-classification-check.sh`
+therefore parses trailers directly with `grep -E`
+against the documented `<KEY>:[[:space:]]+<VALUE>`
+shape, instead of delegating to
+`git interpret-trailers --parse`.
+
+This implementation choice is a v1 simplification. If
+a future git version accepts underscores in trailer
+keys, the verifier MAY delegate to
+`git interpret-trailers --parse` and the parsing note
+MUST be updated to record the new behavior. The
+trailer semantics are unchanged.
+
 ---
 
 ## 3. ACT range derivation

@@ -843,3 +843,161 @@ This section is the durable, normative binding for
 ACT-POLYC-FACTORY-APPEND-ONLY-GUARD01 §Mission and its
 descendant correction
 ACT-POLYC-FACTORY-APPEND-ONLY-GUARD01-CORRECTION01 §Mission.
+
+## 25. F-MECHANICAL-BLOCKING — PROSE ALONE NEVER BLOCKS PROGRESS
+
+Golden rule:
+
+  Prose may AUTHORIZE scope and may CONSTRAIN what an
+  ACT is permitted to change.
+
+  Prose alone MUST NOT establish that an implementation
+  is defective, that a predecessor is unsafe, or that
+  the roadmap must stop.
+
+  A board transition may be BLOCKED only by a
+  mechanically demonstrable blocking predicate.
+
+BLOCKING predicates are limited to:
+
+  B1. A required executable gate actually fails on the
+      relevant subject and the failure is attributable
+      to that subject.
+
+  B2. A reproducible semantic/runtime/compiler defect
+      exists in the production subject.
+
+  B3. A mechanically demonstrated safety, integrity,
+      corruption, security, or destructive-operation
+      invariant is violated.
+
+  B4. The requested implementation requires production
+      changes outside the currently authorized scope.
+      This is an AUTHORIZATION blocker, not evidence
+      that existing production behavior is defective.
+
+  B5. A mechanically required predecessor capability
+      is absent and the successor ACT actually depends
+      on that capability.
+
+Everything else is NON-BLOCKING by default, including:
+
+  - prose contradictions;
+  - stale wording;
+  - stale counts in narrative evidence;
+  - inaccurate captions;
+  - an acceptance criterion whose baseline was never
+    measured;
+  - historical evidence hygiene defects;
+  - SHA / identity wording defects;
+  - documentation arithmetic errors;
+  - superseded interpretations;
+  - closure-packet defects;
+  - failed environmental gates proven unrelated to the
+    changed production subject;
+  - impossible or internally inconsistent acceptance
+    wording;
+  - metadata / bookkeeping residue;
+  - a historical HALT whose underlying production
+    dependency is mechanically GREEN.
+
+Such findings MUST be recorded honestly, but MUST be
+classified:
+
+  NON_BLOCKING_GOVERNANCE_RESIDUE
+
+unless one of B1-B5 is mechanically demonstrated.
+
+PROSE CANNOT PROMOTE ITSELF TO A BLOCKER.
+
+A prose assertion such as:
+
+  "AC07 requires X"
+  "this HALT blocks Y"
+  "the predecessor must be PASS"
+
+does not establish a blocking dependency by itself. The
+blocking dependency must be represented by a checkable
+predicate and evidence showing that the successor ACT
+actually relies on it.
+
+### HALT CLASSIFICATION
+
+Every HALT that affects roadmap progression MUST carry:
+
+  HALT_CLASS = PRODUCTION | SAFETY | AUTHORIZATION |
+               DEPENDENCY | GOVERNANCE
+  BLOCKS_NEXT = YES | NO
+
+The HALT CLASS / BLOCKS_NEXT pair is required on every
+new HALT_* CLOSE commit and forbidden on every new
+PASS CLOSE commit. Historical CLOSE commits are
+grandfathered (see ACT-POLYC-FACTORY-MECHANICAL-BLOCKING01
+§0.1).
+
+Defaults:
+
+  GOVERNANCE     -> BLOCKS_NEXT = NO (governance halt
+                    is, by default, non-blocking)
+  PRODUCTION     -> BLOCKS_NEXT = YES
+  SAFETY         -> BLOCKS_NEXT = YES
+  AUTHORIZATION  -> BLOCKS_NEXT = YES for the
+                    unauthorized mutation
+  DEPENDENCY     -> determined mechanically from
+                    successor needs; either value
+                    allowed (the verifier does not
+                    infer successor needs in v1)
+
+Environmental or unavailable failures that are proven
+unrelated to the production delta are:
+
+  HALT_CLASS = GOVERNANCE
+  BLOCKS_NEXT = NO
+
+unless the successor ACT mechanically depends on the
+unavailable facility.
+
+### CORRECTIONS
+
+A correction ACT MAY revise a historical verdict truth
+while leaving roadmap progression unblocked:
+
+  ACT-Corrected-Verdict: HALT_<...>
+  HALT_CLASS:            GOVERNANCE
+  BLOCKS_NEXT:           NO
+
+This is not contradictory. The corrected HALT says "the
+historical ACT did not satisfy its written contract".
+BLOCKS_NEXT = NO says "that contract defect does not
+invalidate the mechanically-proven production dependency
+required by the successor".
+
+### EVIDENCE OVER PROSE
+
+When mechanical evidence and descriptive prose disagree:
+
+  mechanical evidence determines production truth;
+  prose is corrected or classified as residue.
+
+Never mutate production merely to make prose become true.
+Never halt a mechanically-green successor ACT merely to
+repair historical narrative consistency.
+
+### Activation boundary
+
+F-MECHANICAL-BLOCKING and its verifier apply to CLOSE
+commits whose commit timestamp is at or after the
+timestamp of the closing commit of
+ACT-POLYC-FACTORY-MECHANICAL-BLOCKING01. CLOSE commits
+created before that ACT's CLOSE commit are valid
+historical evidence and are NOT re-validated.
+
+The verifier
+(`scripts/quality/factory-halt-classification-check.sh`)
+inspects only the commit message explicitly named on its
+command line; it does NOT walk repository history.
+
+### Scope
+
+This section is the durable, normative binding for
+ACT-POLYC-FACTORY-MECHANICAL-BLOCKING01 §0 and §5.

@@ -348,6 +348,27 @@ Current volatile state (test counts, toolchain availability) belongs in
 
 ---
 
+## F-MECHANICAL-BLOCKING pointer
+
+The operating law `F-MECHANICAL-BLOCKING` ("prose alone
+never blocks progress") is binding for all Factory
+work whose ACT closure commits were created at or
+after the closing commit of
+`ACT-POLYC-FACTORY-MECHANICAL-BLOCKING01`. Its full
+text, blocking-predicate enumeration
+(B1–B5), HALT classification grammar
+(`HALT_CLASS` / `BLOCKS_NEXT`), and activation
+boundary live at
+[`docs/factory/DOCTRINE.md`](docs/factory/DOCTRINE.md) §25.
+A halt verdict that records
+`HALT_CLASS=GOVERNANCE` and `BLOCKS_NEXT=NO` is, by
+definition, the documented board signal that the
+roadmap may proceed; no additional authorization
+artifact is required for a same-scope successor ACT
+to open.
+
+---
+
 ## Factory version pointer
 
 The operating laws in this file (F1–F15) remain binding for

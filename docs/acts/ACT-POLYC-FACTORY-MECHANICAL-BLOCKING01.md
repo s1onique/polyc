@@ -527,6 +527,24 @@ specific commit message of this ACT's CLOSE commit.
 It MUST NOT walk the full repository history and
 re-flag historical CLOSE commits.
 
+### 5.2 Parsing discipline
+
+The verifier MUST NOT delegate to
+`git interpret-trailers --parse` because Git's
+built-in trailer parser (as of 2.54.0) does NOT
+accept underscores in trailer keys; `HALT_CLASS`
+and `BLOCKS_NEXT` are silently dropped by that
+parser. The verifier MUST parse trailers directly
+with `grep -E` against the documented
+`<KEY>:[[:space:]]+<VALUE>` shape.
+
+This implementation choice is a v1 simplification
+of the R1.5 RED-AMEND revision. The constraint
+preserves all trailer semantics; only the parser
+choice changes. Future Factory-v2 versions MAY
+revisit this if Git's trailer parser gains
+underscore support.
+
 # 6. Acceptance criteria
 
 AC01 -- `F-MECHANICAL-BLOCKING` section present in
