@@ -16,6 +16,62 @@ Before modifying the repository, read:
 `docs/DESIGN-NOTES.md` contains hypotheses and candidate directions, not
 approved language semantics.
 
+## Instruction precedence
+
+When instructions conflict, the following order binds. A lower-priority
+instruction MUST NOT be used to negate a higher-priority instruction
+unless obeying the higher-priority instruction would itself violate an
+even higher-priority rule.
+
+```text
+1. system / platform constraints
+2. explicit current user instruction
+3. ACT contract (the active authorized task)
+4. AGENTS.md workflow defaults (F1..F15, F-CONVERGENCE)
+5. inferred process preferences (the agent's own priors)
+```
+
+Concretely:
+
+- An explicit user instruction ("START IMPL-B IMMEDIATELY") outranks
+  any `AGENTS.md` workflow default that would otherwise imply a stop.
+- An ACT's authorized scope outranks a generic workflow default that
+  would otherwise block a permitted action.
+- `AGENTS.md` workflow rules MUST NOT be used to manufacture an
+  artificial halt that the ACT and the user have not asked for.
+
+The remainder of this file therefore operates inside precedence level
+4. It is binding only where it does not conflict with a higher level.
+
+## Convergence principle
+
+> **Evidence must remain separable; execution must not.**
+
+`AGENTS.md` is a discipline for separating proof steps (RED, IMPL,
+EVIDENCE, CLOSE) and keeping commits truthful. It is not a discipline
+for serializing the agent's work across arbitrary conversational
+boundaries.
+
+Phase boundaries, commit boundaries, and conversation boundaries are
+three different things:
+
+```text
+phase boundary   =  evidence boundary inside one ACT
+commit boundary  =  Git-history boundary
+turn boundary    =  conversational boundary the user may not have asked for
+```
+
+A phase boundary is NOT a mandatory STOP.
+A commit boundary is NOT a mandatory STOP.
+A truthful commit is not "one proof step per user turn".
+
+When an authorized ACT's next phase is fully specified, has satisfied
+its entry gates, and the user has authorized execution, the agent
+continues into that phase in the same execution session unless a
+defined halt condition is reached (see F-CONVERGENCE).
+
+
+
 ## Source-of-truth hierarchy
 
 Authority for claims about PolyC, in descending order:
@@ -148,6 +204,21 @@ Do not:
 
 Record unrelated findings as residue.
 
+F7 constrains **WHAT** may change, not **HOW MANY** authorized
+phases may execute in one execution session.
+
+If Phase N closes and Phase N+1:
+
+- is already specified,
+- is inside the same authorized ACT,
+- has satisfied its entry gates,
+- and the user has authorized execution,
+
+the agent continues immediately (see F-CONVERGENCE).
+
+A phase boundary is NOT a mandatory STOP.
+A commit boundary is NOT a mandatory STOP.
+
 ### F8 — No speculative abstraction
 
 One implementation does not justify a framework.
@@ -203,6 +274,22 @@ Do not manufacture commits merely to satisfy a count.
 
 Do not combine unrelated cleanup with semantic work.
 
+F12 MUST NOT be interpreted as:
+
+- "one commit per conversation";
+- "one phase per conversation";
+- "stop after every evidence commit";
+- "request user authorization again for an already-authorized next phase".
+
+Multiple sequential proof-step commits MAY and SHOULD be produced in
+one execution session when that accelerates convergence without mixing
+their evidence. The truthfulness discipline is about the **content**
+of each commit, not about the **count per turn**.
+
+When a commit boundary falls inside an active execution session
+between two ready phases, the agent commits and continues; it does
+not pause for re-authorization (see F-CONVERGENCE).
+
 ### F13 — Evidence over persuasive prose
 
 Do not claim:
@@ -247,6 +334,99 @@ or close with residue.
 An agent may recommend the next ACT.
 
 It may not silently enlarge the current one.
+
+### F-CONVERGENCE — Continue until a real halt
+
+Given an authorized ACT whose next phase has satisfied its entry
+gates, the agent MUST continue executing successive ready phases
+until one of the **closed halt list** conditions below is reached.
+
+This rule exists because F7 and F12 have been observed to be misread
+as "stop at every phase / commit boundary". That reading is wrong:
+
+- F7 constrains what may change, not how many phases may execute
+  per session.
+- F12 constrains commit content, not commit count per turn.
+
+Neither rule implies that a phase or commit boundary is a turn
+boundary.
+
+#### Closed halt list (these ARE halt reasons)
+
+The agent MUST halt only when one of the following holds:
+
+1. An acceptance or entry gate has demonstrably failed (e.g.
+   `HALT_RED_NOT_REPRODUCED`, predecessor-gate mismatch).
+2. Required information is genuinely missing and cannot be
+   recovered from the current tree or active ACT.
+3. An irreversible or separately approval-gated action would be
+   required next (e.g. force-push, dependency addition, public API
+   change) and the active ACT does not authorize it.
+4. Continuing would expand scope beyond the authorized ACT
+   (`HALT_SCOPE_EXPANSION_REQUIRED`).
+5. A required external dependency (toolchain, fixture, network,
+   evidence harness) is genuinely unavailable, and F6 forbids
+   silent fallback.
+6. The user explicitly asks the agent to stop.
+7. The ACT reaches its requested terminal boundary (HANDOFF /
+   CLOSE).
+
+The halt is then declared with the appropriate `HALT_*` token and
+the closure handoff records the evidence.
+
+#### Non-halt list (these are NOT halt reasons)
+
+The following are explicitly NOT halt reasons and MUST NOT be used
+to justify stopping execution of an already-authorized ACT:
+
+- "the next phase is a different phase";
+- "the next phase deserves its own commit";
+- "this turn began as EVIDENCE / RED / IMPL";
+- "implementation is a fundamentally different type of work";
+- "a fresh conversation would be cleaner";
+- "`AGENTS.md` says commits should be truthful";
+- "the user might want to review before I continue";
+- "I produced a clean diff and want to pause for confirmation".
+
+If any of the above is the agent's reason for stopping, the stop is
+an unauthorized scope contraction. The agent MUST continue unless a
+real halt from the closed halt list applies.
+
+#### GO / READY / UNBLOCKED semantics
+
+When an ACT, reviewer verdict, envelope, or human instruction uses
+the words `GO`, `READY`, `UNBLOCKED`, `EXECUTE`, "go ahead", or any
+synonymous execution-clearance token, the semantic is:
+
+```text
+GO = EXECUTE_NOW
+```
+
+It does NOT mean "tell the user somebody may execute later" and it
+does NOT mean "the agent may now wait for re-authorization".
+
+The agent proceeds immediately into the authorized next phase unless
+the same verdict names an unresolved halt condition. If the verdict
+names one, the agent halts with the named condition; otherwise it
+executes.
+
+#### Boundary between convergence and safety
+
+F-CONVERGENCE does NOT override:
+
+- F1 (identity before mutation is still recorded);
+- F2 (real seam recon is still required);
+- F3 (RED before production implementation);
+- F4 (HALT as a successful outcome is preserved);
+- F5 (no test weakening);
+- F6 (no silent fallback);
+- F15 (no scope expansion).
+
+Convergence operates on the *temporal ordering* of authorized work,
+not on the *content* of that work. A session that converges through
+READY phases without doing real RED, real recon, or real conservation
+is still violating F2 / F3 / F10 — those failures are not cured by
+speed.
 
 ## Quality gates
 
