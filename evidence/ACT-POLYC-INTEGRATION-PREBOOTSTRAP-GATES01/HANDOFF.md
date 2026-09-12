@@ -60,22 +60,25 @@ expansion.
 
 ```
 branch:  main
-ENTRY_HEAD:   8f398be (merge: integrate Track B before BOOTSTRAP01)
-C1 RED:       eb31ec5 (ACT doc + RED packet)
-C2 IMPL:      0ad89db (Makefile test-prefix-install + llvm-gep01-test;
-               gate-push GPUSH-2/GPUSH-GEP01 wiring;
-               factory-halt-classification Python migration)
-C2.1 IMPL:    655b7bd (unit-test / jit-unit-test consume hermetic test
-               prefix; test-prefix-install removes unversioned
-               libtos.dylib symlink hermetic-prefix-locally)
-C3 HALT:      6223aad (gate-push log + conflict diagnosis + halt
-               classification)
-ROADMAP:      a7664f8 (record HALT_SCOPE_EXPANSION_REQUIRED)
-HANDOFF:      d5288c4 (structured closure handoff)
-DOC CLARIFY:  6f885bf (FAILURE MODE A transcript provenance)
-FINAL_HEAD:   6f885bf
-WORKTREE:     clean
-COMMITS:      7 new commits on main since 8f398be (append-only).
+ENTRY_HEAD:    8f398be (merge: integrate Track B before BOOTSTRAP01)
+C1 RED:        eb31ec5 (ACT doc + RED packet)
+C2 IMPL:       0ad89db (Makefile test-prefix-install + llvm-gep01-test;
+                gate-push GPUSH-2/GPUSH-GEP01 wiring;
+                factory-halt-classification Python migration)
+C2.1 IMPL:     655b7bd (unit-test / jit-unit-test consume hermetic
+                test prefix; test-prefix-install removes unversioned
+                libtos.dylib symlink hermetic-prefix-locally)
+C3 HALT:       6223aad (gate-push log + conflict diagnosis + halt
+                classification)
+ROADMAP:       a7664f8 (record HALT_SCOPE_EXPANSION_REQUIRED)
+HANDOFF v1:    d5288c4 (structured closure handoff)
+DOC CLARIFY:   6f885bf (FAILURE MODE A transcript provenance)
+HANDOFF v2:    b326bb8 (reviewer-revised: two-layer model; Option B
+                REJECTED; Option C promoted; commit count
+                corrected; RED + GREEN contract added)
+FINAL_HEAD:    b326bb8
+WORKTREE:      clean
+COMMITS:       8 new commits on main since 8f398be (append-only).
 ```
 
 ## ROOT CAUSE / FINDING
