@@ -1227,10 +1227,35 @@ The recon's ROADMAP transition above is REFINED to:
   ACT-POLYC-LLVM-GEP01                         CLOSED PASS
   ACT-POLYC-TOOLING-SHELL-INVENTORY01          CLOSED PASS
   ACT-POLYC-B0-SUBSTRATE-RECON01               CLOSED HALT_SUBSTRATE_GAP
-  ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01          IN PROGRESS (RED)  (this ACT)
-  (seam A: read envelope; seam B: short-circuit PHI dispatch)
-  ACT-POLYC-BOOTSTRAP01                        waits for OUT-PARAM01 PASS
+  ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01          CLOSED PASS  (seam A: read envelope;
+                                                            seam B: short-circuit
+                                                            PHI dispatch;
+                                                            C5 runtime proof + C6
+                                                            final conservation)
+  ACT-POLYC-BOOTSTRAP01                        NEXT (unlocked by this CLOSE)
 ```
+
+#### B0 critical substrate (status at OUT-PARAM01 C6 CLOSE)
+
+```text
+  byte load           GREEN   (BYTE-MEMORY01-RESUME02)
+  byte GEP            GREEN   (GEP01)
+  comparisons         GREEN   (BYTE-MEMORY01-RESUME02 + GEP01)
+  mutable cursor      GREEN   (this ACT, seam A + mem2reg PHI)
+  out parameters      GREEN   (this ACT, seam A Sink C)
+  control flow        GREEN   (this ACT, short-circuit dispatch)
+  short-circuit PHI   GREEN   (this ACT, seam B)
+
+  ARRAY01             NOT REQUIRED FOR B0
+  STRUCT01            NOT REQUIRED FOR B0
+```
+
+The frozen C1 binding-fixture Tests 01-04 are
+INCONSISTENT_WITH_FROZEN_BODY and are classified as
+NON_BLOCKING_GOVERNANCE_RESIDUE with PRODUCTION_IMPACT=NONE
+and BLOCKS_BOOTSTRAP01=NO. See
+evidence/.../c5/frozen-binding-classification.txt and
+evidence/.../c6/residue.txt for the classification.
 
 
 ```

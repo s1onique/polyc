@@ -1,0 +1,128 @@
+ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 C6 FINAL LLVM VERIFICATION
+-------
+
+Captured at C6 candidate tree (HEAD = 20f7118, clean).
+Subject: scanident-fixture.HC from c5/ (the C5 evidence
+binding fixture, unchanged across the C6 range).
+
+ID chain
+-------
+  branch               = main
+  working tree         = clean
+  entry predecessor    = 20f7118 (C5 FROZEN BINDING + GOVERNANCE
+                                    RESIDUE)
+  hcc binary           = repository-root/hcc
+                         (Mach-O 64-bit arm64, dated 2026-09-12)
+  install dir          = /tmp/polyc-c4 (carry-over from C4 IMPL-B)
+  toolchain            = LLVM 22 (llvm-as, opt) + clang/cc
+                         (Apple clang 17)
+
+CHAIN 5.1 hcc -> LLVM IR
+------------------------
+$ ./hcc --emit-llvm --install-dir=/tmp/polyc-c4 \
+        -o /tmp/scanident-fixture-c6.ll \
+        evidence/ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01/c5/scanident-fixture.HC
+HCC_RC=0
+
+--- hcc stderr ---
+LLVM backend capability contract: ok (56 rows, ordinal binding)
+[c4-opcode-coverage] live=56 DEF=41 USE=5 NONE=10 classified=56
+CAPABILITY_COUNTERS supported=26 rejected=0 shape_dependent=19 defensive=0 unreachable=0
+--- end stderr ---
+
+CHAIN 5.2 llvm-as
+-----------------
+$ llvm-as /tmp/scanident-fixture-c6.ll -o /tmp/scanident-fixture-c6.bc
+LLVM_AS_RC=0
+
+CHAIN 5.3 opt --passes=verify
+-----------------------------
+$ opt --passes=verify /tmp/scanident-fixture-c6.bc -S \
+        -o /tmp/scanident-fixture-c6-opt.ll
+LLVM_VERIFY_RC=0
+
+CHAIN 5.4 clang -c subject to native object
+-------------------------------------------
+$ clang -c /tmp/scanident-fixture-c6.ll -o /tmp/scanident-subject-c6.o
+SUBJECT_OBJECT_RC=0
+warning: overriding the module target triple with arm64-apple-macosx14.0.0
+
+CHAIN 5.5 driver + link
+-----------------------
+$ cc -Wall -Wextra -c evidence/.../c5/scanident-runtime-driver.c \
+        -o /tmp/scanident-runtime-driver-c6.o
+DRIVER_COMPILE_RC=0
+
+$ clang /tmp/scanident-runtime-driver-c6.o /tmp/scanident-subject-c6.o \
+        -o /tmp/scanident-runtime-c6
+LINK_RC=0
+
+PHI GEOMETRY (textual inspection of /tmp/scanident-fixture-c6.ll)
+-----------------------------------------------------------------
+$ grep -E '^\s+%[a-zA-Z0-9_.]+ = phi ' /tmp/scanident-fixture-c6.ll
+
+  %polyc.optionw.slot.6.0 = phi i64 [ %2, %bb1 ], [ %11, %bb11 ]
+  %phi = phi i8 [ 1, %bb4 ], [ %phi_icmp_zext, %bb8 ]
+  %phi7 = phi i8 [ 1, %bb9 ], [ %phi_icmp_zext8, %bb6 ]
+
+Three PHI instructions in total:
+
+  (1) %polyc.optionw.slot.6.0 : i64
+      Option-W slot alloca for the cursor mutable local.
+      Two incoming edges: bb1 (initial) and bb11 (backedge).
+      Initial incoming value = %2 (the cursor parameter).
+      Backedge incoming value = %11, where
+          %11 = add i64 %polyc.optionw.slot.6.0, 1
+      i.e. the incremented cursor (IR_IADD).
+
+  (2) %phi : i8
+      First chained 2-input PHI from `ch == ' ' || ch == '\t'`.
+      Constant-edge 1 from bb4; zext-edge from bb8.
+
+  (3) %phi7 : i8
+      Second chained 2-input PHI from the outer
+      `(... || ch == '\n')`.
+      Constant-edge 1 from bb9; zext-edge from bb6.
+
+STRUCTURAL ASSERTIONS (computed mechanically)
+---------------------------------------------
+  OPTION_W_I64_PHI_COUNT        = 1   (required >= 1)     PASS
+  SHORT_CIRCUIT_I8_PHI_COUNT    = 2   (required = 2)      PASS
+  GEP_I8_PRESENT                = YES (count=1)          PASS
+  BYTE_LOAD_PRESENT             = YES (load i8 count=1)  PASS
+  OUT_CURSOR_STORE_PRESENT      = YES (count=1)          PASS
+  OUT_LEN_STORE_PRESENT         = YES (count=1)          PASS
+  CURSOR_ISUB_PRESENT           = YES (sub i64 count=1)  PASS
+
+Loop-carried cursor PHI structural contract:
+  initial incoming value    = %2 (original cursor parameter)
+  backedge incoming value   = %11 (add i64 %slot, 1)
+  exactly two incoming edges
+  CONFIRMED
+
+Short-circuit PHI #1 (inner `ch == ' ' || ch == '\t'`):
+  exactly two incoming edges ([%bb4], [%bb8])
+  CONFIRMED
+
+Short-circuit PHI #2 (outer `(... || ch == '\n')`):
+  exactly two incoming edges ([%bb9], [%bb6])
+  CONFIRMED
+
+CAPABILITY_COUNTERS (hcc stderr) at C6
+--------------------------------------
+  supported       = 26
+  rejected        = 0
+  shape_dependent = 19   <-- SHAPE_DEPENDENT path taken
+  defensive       = 0
+  unreachable     = 0
+
+C5 == C6 PHI GEOMETRY (sanity: re-derivation consistent)
+--------------------------------------------------------
+The C5 emitted IR (in c5/scanident-fixture.ll) carries the
+SAME three PHIs at the SAME structure. The textual SSA
+names happen to match too:
+  polyc.optionw.slot.6.0, phi, phi7
+This is informational only; C6 binds to structure, not to
+specific SSA names (per ACT §7).
+
+No structural drift between C5 and C6.

@@ -1,0 +1,65 @@
+ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 C6 ACCEPTANCE MATRIX
+-------
+
+Production/mechanical criteria:
+
+AC01  Option-W A1 read-envelope seam remains GREEN.       PASS
+AC02  Option-W A2 observable-sink seam remains GREEN.     PASS
+AC03  Frozen definition set remains IR_STORE/IR_IADD/IR_ISUB.   PASS
+AC04  CASE_B_OPCODE_SET remains {iadd,isub}.              PASS
+AC05  IR_PHI capability remains SHAPE_DEPENDENT.          PASS
+AC06  Frontend SSA reconstruction remains absent.         PASS
+AC07  hcc compiles ScanIdent.                             PASS  (HCC_RC=0)
+AC08  llvm-as accepts ScanIdent.                          PASS  (LLVM_AS_RC=0)
+AC09  opt --passes=verify accepts ScanIdent.              PASS  (LLVM_VERIFY_RC=0)
+AC10  Actual hcc-generated subject object builds.         PASS  (SUBJECT_OBJECT_RC=0)
+AC11  Independent runtime driver links against generated subject.   PASS
+                                                          (DRIVER_COMPILE_RC=0,
+                                                           LINK_RC=0)
+AC12  Frozen T05 passes.                                  PASS
+AC13  Frozen T06 passes.                                  PASS
+AC14  Frozen T07 passes.                                  PASS
+AC15  Frozen T08 nonzero-cursor probe passes.             PASS
+AC16  Frozen T09 nonzero-cursor probe passes.             PASS
+AC17  Frozen T10 passes.                                  PASS
+AC18  HCC_GENERATED_RUNTIME = 6/6.                        PASS
+AC19  Reference-vs-subject = 6/6.                         PASS
+AC20  Loop-carried Option-W i64 PHI exists.               PASS  (count=1)
+AC21  Two short-circuit i8 PHIs exist.                    PASS  (count=2)
+AC22  Byte GEP/load geometry exists.                      PASS  (GEP_I8=1, load i8=1)
+AC23  Both out-param stores exist.                        PASS  (store i64 -> %3,
+                                                                 store i64 -> %4)
+AC24  cursor-start subtraction exists.                    PASS  (sub i64 count=1)
+AC25  C4 witness regression = 6/6.                        PASS
+AC26  llvm-gep01 = 30/0.                                  PASS
+AC27  llvm-byte-memory01 = 37/0.                          PASS
+AC28  llvm-intops01 = 4/0.                                PASS
+AC29  ir-return-slot-forwarding01 = 6/0.                  PASS
+AC30  factory append-only = 11/0.                         PASS
+AC31  shell-loc gate PASS.                                PASS
+AC32  gate-fast PASS.                                     PASS
+AC33  C6 range diff-check PASS.                           PASS  (no production
+                                                                 delta; see
+                                                                 roadmap-transition.txt)
+AC34  C6 production delta empty.                          PASS
+AC35  Historical evidence c1-c5 untouched.                PASS  (no mutation
+                                                                 outside c6/;
+                                                                 F14 preserved)
+AC36  Frozen C1 oracle 01-04 contradiction classified
+      governance-only.                                    PASS  (residue.txt)
+AC37  PRODUCTION_IMPACT of that contradiction = NONE.     PASS
+AC38  BLOCKS_BOOTSTRAP01 = NO.                            PASS
+AC39  ROADMAP records this parent ACT CLOSED PASS.        PASS  (see
+                                                                 roadmap-transition.txt)
+AC40  NEXT_ACT = ACT-POLYC-BOOTSTRAP01.                   PASS  (next ACT is
+                                                                 recorded in
+                                                                 ROADMAP and in
+                                                                 roadmap-transition.txt;
+                                                                 BOOTSTRAP01
+                                                                 itself is NOT
+                                                                 opened or
+                                                                 executed in C6)
+
+All production/mechanical criteria PASS.
+No criterion in §11 converts governance residue into a
+fake semantic criterion (F4 / F5 / F7).

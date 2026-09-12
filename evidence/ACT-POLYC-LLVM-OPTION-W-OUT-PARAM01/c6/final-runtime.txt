@@ -1,0 +1,87 @@
+ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 C6 FINAL RUNTIME PROOF
+-------
+
+Captured at C6 candidate tree (HEAD = 20f7118, clean).
+
+Subject runtime (hcc-generated ScanIdent) — FROZEN C1 vectors
+-------------------------------------------------------------
+The hcc-emitted LLVM IR is compiled to a native aarch64
+object, linked with the C5 driver that DECLARES ScanIdent
+externally (the driver does NOT define ScanIdent), and the
+6 FROZEN C1 binding-fixture Tests 05-10 are executed.
+
+$ /tmp/scanident-runtime-c6
+SUBJECT_RUNTIME_RC=0
+
+Test T05: rc=0 out_cursor=0 out_len=0 expected=(0,0) PASS
+Test T06: rc=0 out_cursor=3 out_len=3 expected=(3,3) PASS
+Test T07: rc=0 out_cursor=0 out_len=0 expected=(0,0) PASS
+Test T08: rc=0 out_cursor=3 out_len=0 expected=(3,0) PASS
+Test T09: rc=0 out_cursor=7 out_len=3 expected=(7,3) PASS
+Test T10: rc=0 out_cursor=6 out_len=6 expected=(6,6) PASS
+ALL 6 FROZEN BINDING TESTS PASS (hcc-emitted subject)
+
+  SUBJECT_RUNTIME_PASS = 6
+  SUBJECT_RUNTIME_FAIL = 0
+  SUBJECT_RUNTIME_RC   = 0
+
+Reference-vs-subject (C reference vs hcc-emitted subject)
+---------------------------------------------------------
+The C reference and the hcc-emitted subject are run
+side-by-side on each of the 6 frozen vectors. Both must
+agree AND match the frozen expected outputs. T08 and T09
+are explicitly marked _NZCURSOR in the output.
+
+$ /tmp/scanident-comparison-c6
+COMPARISON_RC=0
+
+Test T05: ref=(rc=0,oc=0,ol=0) sub=(rc=0,oc=0,ol=0) exp=(oc=0,ol=0) sub_ok=Y agree=Y PASS
+Test T06: ref=(rc=0,oc=3,ol=3) sub=(rc=0,oc=3,ol=3) exp=(oc=3,ol=3) sub_ok=Y agree=Y PASS
+Test T07: ref=(rc=0,oc=0,ol=0) sub=(rc=0,oc=0,ol=0) exp=(oc=0,ol=0) sub_ok=Y agree=Y PASS
+Test T08_NZCURSOR: ref=(rc=0,oc=3,ol=0) sub=(rc=0,oc=3,ol=0) exp=(oc=3,ol=0) sub_ok=Y agree=Y PASS
+Test T09_NZCURSOR: ref=(rc=0,oc=7,ol=3) sub=(rc=0,oc=7,ol=3) exp=(oc=7,ol=3) sub_ok=Y agree=Y PASS
+Test T10: ref=(rc=0,oc=6,ol=6) sub=(rc=0,oc=6,ol=6) exp=(oc=6,ol=6) sub_ok=Y agree=Y PASS
+ALL 6 FROZEN BINDING TESTS PASS (ref == sub == expected)
+
+  REFERENCE_PASS             = 6
+  SUBJECT_PASS               = 6
+  REFERENCE_VS_SUBJECT_MATCH = 6
+  REFERENCE_VS_SUBJECT_MISMATCH = 0
+  COMPARISON_RC              = 0
+
+Reference oracle (standalone C reference)
+-----------------------------------------
+$ /tmp/scanident-oracle-c6
+ORACLE_RC=0
+
+Test 05 (ws): rc=0 out_cursor=0 out_len=0 expected=(0,0) PASS
+Test 06 (foo@eof): rc=0 out_cursor=3 out_len=3 expected=(3,3) PASS
+Test 07 (empty): rc=0 out_cursor=0 out_len=0 expected=(0,0) PASS
+Test 08 (ws@cursor): rc=0 out_cursor=3 out_len=0 expected=(3,0) PASS
+Test 09 (foo@4): rc=0 out_cursor=7 out_len=3 expected=(7,3) PASS
+Test 10 (abc123): rc=0 out_cursor=6 out_len=6 expected=(6,6) PASS
+ALL 6 FROZEN BINDING TESTS PASS (C reference)
+
+  ORACLE_PASS = 6
+  ORACLE_FAIL = 0
+  ORACLE_RC   = 0
+
+NONZERO-CURSOR BINDING
+----------------------
+T08 src="abc foo" len=7 cursor=3 -> (3,0)   PASS
+T09 src="abc foo" len=7 cursor=4 -> (7,3)   PASS
+
+These probe:
+  - Option-W slot PHI initialization from a non-zero
+    incoming cursor
+  - Loop evolution from non-zero cursor
+  - cursor-start IR_ISUB at non-zero start
+  - Immediate-whitespace handling at non-zero cursor
+All four observed semantically correctly.
+
+C6 SUMMARY
+----------
+HCC_GENERATED_RUNTIME      = 6/6 PASS
+REFERENCE_ORACLE           = 6/6 PASS
+REFERENCE_VS_SUBJECT       = 6/6 PASS
+NONZERO_CURSOR_BINDING     = T08,T09 PASS

@@ -1,0 +1,76 @@
+ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 C6 ROADMAP TRANSITION
+-------
+
+The Track-A board is updated to reflect this ACT's
+CLOSE PASS verdict. The new state:
+
+  ACT-POLYC-B0-SUBSTRATE-RECON01
+    CLOSED / HALT_SUBSTRATE_GAP
+    -> identified Option-W/PHI substrate
+
+  ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01
+    CLOSED / PASS
+
+    A1 Option-W read envelope        PASS
+    A2 observable sink               PASS
+    B  IR_PHI backend                PASS
+    C5 ScanIdent structural proof    PASS
+    C5 ScanIdent runtime proof       PASS
+    C6 final conservation            PASS
+
+  B0 critical substrate:
+    byte load                        GREEN
+    byte GEP                         GREEN
+    comparisons                      GREEN
+    mutable cursor                   GREEN
+    out parameters                   GREEN
+    control flow                     GREEN
+    short-circuit PHI                GREEN
+
+  ARRAY01:
+    NOT REQUIRED FOR B0
+
+  STRUCT01:
+    NOT REQUIRED FOR B0
+
+  NEXT:
+    ACT-POLYC-BOOTSTRAP01
+
+The exact docs/ROADMAP.md edit is recorded in the C6
+commit body (the ROADMAP Track-A section is updated in
+the same C6 evidence/CLOSE commit that this transition
+file describes).
+
+POST-C6 BOARD
+-------------
+  BYTE-MEMORY01-RESUME02             CLOSED PASS
+  GEP01                              CLOSED PASS
+  B0-SUBSTRATE-RECON01               HALT (useful)
+  OPTION-W A1/A2                     PASS
+  IR_PHI C4                          PASS
+  ScanIdent C5                       runtime proven
+  OPTION-W-OUT-PARAM01 C6            CLOSED PASS
+  --------------------------------------------------
+  ACT-POLYC-BOOTSTRAP01              NEXT (unlocked)
+  ARRAY01                            deferred
+  STRUCT01                           deferred
+
+Diff hygiene
+------------
+git diff --numstat <C6-entry>..<C6-candidate> -- \
+  src/ tests/ scripts/ .githooks/ .clinerules/ \
+  Makefile package.json
+  expected: empty
+  observed: empty (no production source, scripts, hooks,
+  or build files changed; only docs/ROADMAP.md and the
+  c6/ evidence packet)
+
+git diff --numstat <C6-entry>..<C6-candidate> -- \
+  evidence/.../c1/ evidence/.../c2*/ evidence/.../c3*/ \
+  evidence/.../c4/ evidence/.../c4-correction*/
+  expected: empty (F14 preservation)
+  observed: empty
+
+git diff --check <C6-entry>..<C6-candidate>
+  expected: rc=0
+  observed: rc=0 (after running gate-fast diff-check)

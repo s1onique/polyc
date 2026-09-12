@@ -1,0 +1,105 @@
+ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 C6 FINAL CONSERVATION GATES
+-------
+
+Captured at C6 candidate tree (HEAD = 20f7118, clean).
+
+Each required gate is invoked once against the
+candidate tree. Raw outputs preserved in
+/tmp/c6-gates-collected.txt (transient). Summary below.
+
+factory-append-only-test          11/0 PASS  (NC1..NC11)
+shell-loc-gate                    PASS
+gate-fast                         PASS
+    diff-check                    PASS
+    shell-syntax                  PASS
+    doc-invariants                PASS
+    large-file-guard              PASS
+    factory-closure-status        PASS
+llvm-gep01-test                   30/0 PASS
+llvm-byte-memory01-test           37/0 PASS
+llvm-intops01-test                4/0 PASS
+ir-return-slot-forwarding01-test  6/0 PASS
+
+RAW OUTPUT (verbatim, last lines per gate)
+------------------------------------------
+$ bash scripts/quality/factory-append-only-test.sh
+  PASS  NC1  rc=0
+  PASS  NC2  rc=1
+  PASS  NC3  rc=1
+  PASS  NC4  rc=0
+  PASS  NC5  rc=1
+  PASS  NC6  rc=0
+  PASS  NC7  rc=0
+  PASS  NC8  rc=1
+  PASS  NC9  rc=1
+  PASS  NC10  rc=1
+  PASS  NC11  rc=0
+
+--- summary ---
+PASS=11
+FAIL=0
+STATUS=PASS
+
+$ bash scripts/quality/shell-loc-gate.sh
+PASS  shell-loc-gate
+
+$ bash scripts/quality/llvm-gep01-test.sh
+GEP01_PASS=30
+GEP01_FAIL=0
+STATUS=PASS
+
+$ bash scripts/quality/llvm-byte-memory01-test.sh
+BYTE_MEMORY01_PASS=37
+BYTE_MEMORY01_FAIL=0
+STATUS=PASS
+
+$ bash scripts/quality/llvm-intops01-test.sh
+INTOPS01 PASS=4 FAIL=0
+STATUS=PASS
+INTOPS01_PASS=4
+INTOPS01_FAIL=0
+
+$ bash scripts/quality/ir-return-slot-forwarding01-test.sh
+IR_RETURN_SLOT_FORWARDING01_PASS=6
+IR_RETURN_SLOT_FORWARDING01_FAIL=0
+STATUS=PASS
+
+$ bash scripts/quality/gate-fast.sh
+POLYC_GATE=fast
+CHECK=diff-check STATUS=PASS
+CHECK=shell-syntax STATUS=PASS
+CHECK=doc-invariants STATUS=PASS
+CHECK=large-file-guard STATUS=PASS
+BUILD_RUN=NO
+POLYC_GATE=factory-closure-status
+MANIFEST_ROWS=6
+MISSING_HANDOFF_FILES=0
+MALFORMED_ACT_STATUS=0
+MALFORMED_HANDOFF_VERDICT=0
+EXACT_VERDICT_MISMATCHES=0
+PAIR_OK=6
+PAIR_FAIL=0
+STATUS=PASS
+VERDICT=PASS
+CHECK=factory-closure-status STATUS=PASS
+VERDICT=PASS
+
+FACTORY V2 PARENT-ACT RANGE CHECK
+---------------------------------
+The parent ACT ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 is NOT
+in the bounded managed universe of
+scripts/quality/factory-closure-status-check.sh (which is
+hard-coded to 6 Factory-status-related pairs). The
+parent-ACT range check is therefore performed by hand
+against the rule in docs/factory/GIT-METADATA.md §3.
+
+C6 candidate range is the C6 commit(s) only; the C6
+range contains:
+  - one CLOSE commit with ACT=<parent>, ACT-Phase=CLOSE,
+    ACT-Verdict=PASS;
+  - optional preceding EVIDENCE commit(s) carrying ACT=
+    <parent>, ACT-Phase=EVIDENCE;
+  - every commit in C6 range has ACT=<parent>.
+
+Predecessor FIRST of the parent ACT remains the C1 RED
+(982dfa3). C6 does not break that contiguity.

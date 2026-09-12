@@ -1,0 +1,64 @@
+ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 C6 RESIDUE
+-------
+
+P2  GOVERNANCE
+    Frozen C1 Tests 01-04 are not a coherent oracle for the
+    frozen ScanIdent body.
+
+    CLASS:
+      NON_BLOCKING_GOVERNANCE_RESIDUE
+
+    DETAIL:
+      The frozen body (c1/scanident-binding-fixture.txt)
+      stops only on whitespace; Tests 01-04 of the frozen
+      oracle describe identifier-character recognition
+      that does not exist in the frozen body. T03 happens
+      to coincide by trailing-space luck; T01, T02, T04
+      body outputs strictly exceed frozen expectations.
+      See c5/frozen-binding-classification.txt for the
+      per-test classification.
+
+    PRODUCTION_IMPACT:
+      NONE
+
+    BLOCKS_BOOTSTRAP01:
+      NO
+
+    REPAIR POLICY:
+      A future ACT could (a) rewrite the frozen Tests 01-04
+      inputs to match the body or (b) extend the body with
+      identifier-character recognition (much larger scope,
+      requires separate authorization). C6 does not repair
+      this.
+
+P2  GOVERNANCE (carried, NOT newly introduced)
+    Historical C4 / CORRECTION01 / CORRECTION02 / CORRECTION03
+    evidence hygiene residue (EOF blank lines, duplicate
+    tables, stale `c4-impl.txt` count labels, etc.) is
+    classified in those ACTs' closure truths and is NOT
+    reopened by C6.
+
+P2  TOOLING (carried from C5, NOT a C6 defect)
+    A future ACT could add a runtime-fingerprint driver
+    that compiles via hcc --emit-llvm by using only
+    Option-W-eligible arithmetic in Main(). The current
+    C5 / C6 evidence uses a driver linking the hcc-emitted
+    subject with a C harness that declares ScanIdent
+    externally, which is the correct separation of
+    concerns for the substrate semantics under test.
+
+NOT RESIDUE (intentionally not listed here)
+-------------------------------------------
+  - The C1 Tests 01-04 contradiction (above): P2 governance.
+  - Historical `c4-impl.txt` count labels: historical
+    evidence per F14; not in scope.
+  - CORRECTION02 EOF blank line: corrected at CORRECTION03;
+    preserved as historical evidence per F14.
+  - C5 commit-msg phase token 'C5' (non-Factory-v2):
+    historical; F14 preserves the C5 commits as evidence
+    of the C5 phase. Future commits use EVIDENCE/CLOSE.
+    This is metadata hygiene, not a production defect.
+
+Mechanically blocking residue: NONE.
+
+C6 is not halted.
