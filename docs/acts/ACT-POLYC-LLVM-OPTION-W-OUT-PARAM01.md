@@ -573,6 +573,187 @@ New HALT taxonomy entry:
 * `HALT_PHI_TYPE_CONTRACT_REQUIRED` — Outcome D; neutral IR
   inconsistency; not observed (Outcome B observed instead).
 
+## 9.2 C3.2 RED: PHI incoming-edge normalisation placement
+
+The §9.1 amendment was correct about the **type binding** (i1
+must be zero-extended to i8) but WRONG about the **placement**
+of the zero-extension. It emitted the zext inside the merge
+block, after the PHI:
+
+```c
+/* C3.1 (WRONG) placement -- emits zext in merge block */
+LLVMPositionBuilderAtEnd(bld, merge_block);
+LLVMValueRef phi = LLVMBuildPhi(bld, i8, "phi");
+LLVMValueRef z   = LLVMBuildZExt(bld, cmp_i1, i8, "zext_in_merge");
+LLVMAddIncoming(phi, &z, &pred_block, 1);
+```
+
+This produces the IR
+
+```llvm
+merge:
+  %phi = phi i8 [ %z, %pred ]
+  %z = zext i1 %cmp to i8
+  ret void
+```
+
+which the LLVM verifier **rejects** with
+
+```text
+Instruction does not dominate all uses!
+  %z = zext i1 %cmp to i8
+  %phi = phi i8 [ %z, %pred ]
+```
+
+because the PHI's incoming-value use conceptually occurs on the
+predecessor edge (`pred -> merge`), but the zext is defined
+*after* entering the merge block, so it does not dominate that
+use. PHIs are also required by the LangRef to be the first
+instructions of their basic block, so reordering the zext above
+the PHI is not a valid alternative.
+
+The mechanical witness at `evidence/c3.2/witness.c` proves both
+geometries against the LLVM 22 C API (linked into the standalone
+binary, same `llvm-config --version = 22.1.8` as production
+`hcc`):
+
+| variant                  | verify return | message                                       |
+|--------------------------|---------------|-----------------------------------------------|
+| `c32_bad` (zext in merge)| `1` (invalid) | "Instruction does not dominate all uses! %z = zext i1 %cmp to i8  %phi = phi i8 [ %z, %pred ]" |
+| `c32_good` (zext in pred)| `0` (valid)   | (none)                                        |
+
+**Outcome C (placement bug)** is OBSERVED. The C3.1 §9.1
+amendment is therefore INCOMPLETE.
+
+### Corrected §9.2 algorithm
+
+The zext MUST be materialised in the **incoming predecessor
+block, immediately before its terminator**:
+
+```c
+for (unsigned i = 0; i < n; ++i) {
+    IrPair *p = (IrPair *)vecGet(ins->extra.phi_pairs, i);
+    if (!p || !p->ir_value || !p->ir_block) { ... REJECT ... }
+    LLVMValueRef v = llLowerValue(lc, p->ir_value);
+    if (LLVMTypeOf(v) == LLVMInt1TypeInContext(lc->ctx) &&
+        phi_ty == LLVMInt8TypeInContext(lc->ctx)) {
+        /* Predecessor-edge materialisation: */
+        LLVMBasicBlockRef pred_bb =
+            llGetOrCreateBlock(lc, p->ir_block);
+        /* PI-1: pred_bb exists.
+           PI-2: pred_bb has a terminator (otherwise the
+                 predecessor hasn't been finalised yet --
+                 HALT_PHI_EDGE_MATERIALIZATION_REQUIRED).
+           PI-3: the incoming value v has already been lowered
+                 into pred_bb (verified by the runtime witness
+                 since CORRECTION01 at src/llvm-backend.c:
+                 1815-1872 -- the IR_ICMP and IR_BR producer
+                 always emit cmp on the predecessor before
+                 its terminator). */
+        LLVMValueRef pred_term =
+            LLVMGetBasicBlockTerminator(pred_bb);
+        if (!pred_term) {
+            /* PI-2 violated. */
+            LC_HALT(lc, LLVM_BACKEND_UNSUPPORTED_PHI,
+                    "HALT_PHI_EDGE_MATERIALIZATION_REQUIRED: "
+                    "predecessor has no terminator");
+        }
+        LLVMBasicBlockRef save = LLVMGetInsertBlock(lc->bld);
+        LLVMPositionBuilderBefore(lc->bld, pred_term);
+        v = LLVMBuildZExt(lc->bld, v,
+              LLVMInt8TypeInContext(lc->ctx),
+              "phi_icmp_zext");
+        LLVMPositionBuilderAtEnd(lc->bld, save);
+        LL_INC_SHAPE_DEPENDENT(lc);
+    }
+    incoming_values[i] = v;
+    incoming_blocks[i] = pred_bb;
+}
+```
+
+This produces the IR
+
+```llvm
+pred:
+  %cmp = icmp sgt i64 %x, %y
+  %phi_icmp_zext = zext i1 %cmp to i8
+  br label %merge
+merge:
+  %phi = phi i8 [ %phi_icmp_zext, %pred ]
+  ret void
+```
+
+which the LLVM verifier accepts (`verify return = 0` per the
+witness). The zext now dominates the PHI's incoming-edge use
+on the `pred -> merge` edge.
+
+### Predecessor-materialisation invariants
+
+The C4 implementation MUST runtime-assert these before calling
+`LLVMGetBasicBlockTerminator`:
+
+* **PI-1** the incoming predecessor LLVM block already exists
+  (the predecessor has been materialised in the same lowering
+  pass).
+* **PI-2** the incoming predecessor LLVM block already has a
+  terminator (preorder traversal has reached it).
+* **PI-3** the incoming value has already been lowered into the
+  predecessor block.
+
+PI-1/PI-2/PI-3 hold by the preorder proof already recorded in
+the ACT for current short-circuit producers (incoming
+predecessor block < merge block in backend traversal order; see
+`HALT_PHI_PREORDERING_VIOLATED`). If any of PI-1, PI-2, or PI-3
+fails at PHI-lowering time, the C4 implementation MUST halt
+with `HALT_PHI_EDGE_MATERIALIZATION_REQUIRED` and surface the
+offending predecessor + incoming edge.
+
+### Build-position discipline
+
+The save/restore pattern is bounded by the incoming-edge loop
+body and never escapes it. Equivalent to using a dedicated edge
+builder (which is also acceptable per the expert's
+recommendation), but a careful `LLVMGetInsertBlock` /
+`LLVMPositionBuilderAtEnd` restore suffices for correctness.
+
+### Counter semantics (P0 residue)
+
+`LL_INC_SHAPE_DEPENDENT` currently denotes "shape-dependent
+helper action"; per-PHI it counts as one helper action
+regardless of how many incoming edges are converted. This must
+be agreed with the harness contract before C4 (AC47-adjacent).
+
+### C4_IMPL_B_AUTH
+
+REVOKED (third revocation). C4 IMPL-B is locked until:
+
+* R1 the §9.2 corrected algorithm is implemented;
+* R2 the PI-1/PI-2/PI-3 runtime assertions are added;
+* R3 the `LL_INC_SHAPE_DEPENDENT` counting semantics are agreed
+  with the harness contract;
+* R4 a fresh `c4/witness.c` re-confirms the geometry.
+
+### Scope (NO EXPANSION)
+
+* No new diagnostic macros.
+* No new counter increments (`LL_INC_SHAPE_DEPENDENT`
+  pre-exists).
+* No change to Gate 3 / Gate 4 / Gate 5 logic.
+* No change to `llType` or `llLowerValue`.
+* The placement lives entirely inside the IR_PHI dispatch arm's
+  incoming-edge iteration loop.
+
+### New HALT taxonomy entry
+
+* `HALT_PHI_EDGE_MATERIALIZATION_REQUIRED` — an incoming
+  predecessor fails PI-1, PI-2, or PI-3 at PHI-lowering time;
+  triggered only if the C3.2 §9.2 corrected algorithm
+  encounters a shape that the preorder proof does not cover.
+  The C4 implementation MUST halt with this verdict and surface
+  the offending predecessor + incoming edge; it MUST NOT
+  improvise a two-phase fallback without an explicit bounded
+  amendment.
+
 Invariants:
 * `LLVMBuildPHI` is positioned at the builder cursor; PHI nodes
   must be at the start of a basic block. The dispatcher
@@ -736,7 +917,25 @@ C3.1 RED (only after C3; NO production change)
                 reaffirm or revoke C4_IMPL_B_AUTH
                   - C4_IMPL_B_AUTH = TRUE (reaffirmed with amendment)
 
-C4 IMPL-B     (ONLY IF C3.1 reaffirms it)
+C3.2 RED (only after C3.1; NO production change)
+                mechanical-witness evidence of placement correctness:
+                  - variant_bad:  zext in merge after PHI
+                                  -> LLVM verifier REJECTS
+                                     (Instruction does not dominate
+                                      all uses)
+                  - variant_good: zext in predecessor before terminator
+                                  -> LLVM verifier ACCEPTS
+                freeze C3.1 §9.1 amendment as INCOMPLETE
+                freeze corrected §9.1 algorithm (build-position
+                  save/restore across LLVMPositionBuilderBefore)
+                freeze predecessor-materialisation invariants
+                  PI-1 incoming pred block exists
+                  PI-2 incoming pred block has terminator
+                  PI-3 incoming value already lowered into pred
+                reaffirm or revoke C4_IMPL_B_AUTH
+                  - C4_IMPL_B_AUTH = REVOKED (third revocation)
+
+C4 IMPL-B     (ONLY IF C3.2 reaffirms it; currently locked)
                 add case IR_PHI: arm to llLowerInstr (SHAPE_DEPENDENT)
                 + STRENGTHENED shape validation:
                   - pair_count == CFG predecessor count
@@ -744,10 +943,20 @@ C4 IMPL-B     (ONLY IF C3.1 reaffirms it)
                   - each predecessor represented exactly once
                   - incoming type compatible with I8 PHI
                   - no non-PHI precedes PHI in merge block
-                + AMENDED (C3.1) incoming-edge normalisation:
-                  - if incoming LLVM value is i1 AND phi_ty is i8,
-                    emit LLVMBuildZExt("phi_icmp_zext") before
-                    LLVMAddIncoming (LL_INC_SHAPE_DEPENDENT)
+                + AMENDED (C3.2) incoming-edge normalisation:
+                  - if incoming LLVM value is i1 AND phi_ty is i8:
+                      pred_bb := llGetOrCreateBlock(lc, p->ir_block)
+                      ASSERT PI-1, PI-2, PI-3 (else HALT_PHI_EDGE_
+                            MATERIALIZATION_REQUIRED)
+                      save := LLVMGetInsertBlock(lc->bld)
+                      term := LLVMGetBasicBlockTerminator(pred_bb)
+                      LLVMPositionBuilderBefore(lc->bld, term)
+                      v    := LLVMBuildZExt(lc->bld, v, i8,
+                                            "phi_icmp_zext")
+                      LLVMPositionBuilderAtEnd(lc->bld, save)
+                      LL_INC_SHAPE_DEPENDENT(lc)
+                + harness-contract alignment on
+                  LL_INC_SHAPE_DEPENDENT counting semantics (P0)
                 add LLVM_BACKEND_UNSUPPORTED_PHI_ORTHOGONAL_TO_CORE
                 update src/llvm-backend-cap.c IR_PHI to SHAPE_DEPENDENT
 
@@ -926,6 +1135,46 @@ evidence rather than modifying old captures).
          dispatch arm's incoming-edge iteration (no general
          integer-conversion widening).
 
+### C3.2 placement-contract acceptance criteria
+
+42. AC42 C3.2 freezes the placement-correctness contract:
+         the `LLVMBuildZExt` that normalises an `i1` incoming
+         edge to `i8` MUST be emitted on the predecessor edge,
+         NOT in the merge block after the PHI. This is the
+         SSA dominance rule for PHI operands.
+43. AC43 C3.2 freezes the predecessor-materialisation
+         invariants that the C4 implementation MUST runtime-
+         assert before calling `LLVMGetBasicBlockTerminator`:
+         PI-1 the incoming predecessor LLVM block already
+              exists (predecessor has been materialised in the
+              same lowering pass)
+         PI-2 the incoming predecessor block already has a
+              terminator (preorder traversal has reached it)
+         PI-3 the incoming value has already been lowered
+              into the predecessor block
+44. AC44 C3.2 freezes the build-position discipline:
+         before `LLVMPositionBuilderBefore(bld, pred_term)`,
+         save the current insert block; after `LLVMBuildZExt`,
+         restore via `LLVMPositionBuilderAtEnd(bld, save)`.
+         (Equivalent to using a dedicated edge builder; the
+         save/restore pattern is bounded by the incoming-edge
+         loop body and never escapes it.)
+45. AC45 C3.2 freezes the HALT_PHI_EDGE_MATERIALIZATION_REQUIRED
+         halt taxonomy entry (triggered when PI-1, PI-2, or
+         PI-3 fails at PHI-lowering time).
+46. AC46 C3.2 REVOKES C4_IMPL_B_AUTH for the third time
+         because the §9.1 (C3.1) amendment is INCOMPLETE:
+         the type binding is correct but the placement is
+         wrong. C4 may be reopened only after C3.2 §9.1
+         corrected algorithm is implemented and re-confirmed
+         by a fresh mechanical witness.
+47. AC47 C3.2 requires mechanical-witness evidence of both
+         the bad geometry (LLVM verifier REJECTS with
+         "Instruction does not dominate all uses") and the
+         good geometry (LLVM verifier ACCEPTS). The captured
+         artifact is `evidence/c3.2/witness` and its captured
+         output `evidence/c3.2/witness.txt`.
+
 ---
 
 ## 12. HALT taxonomy
@@ -962,6 +1211,26 @@ HALT_PHI_TYPE_CONTRACT_REQUIRED (the PHI incoming-edge type
                                   observed instead, and the
                                   contract was amended to add
                                   a bounded i1 -> i8 zext.)
+HALT_PHI_EDGE_MATERIALIZATION_REQUIRED
+                                 (an incoming predecessor
+                                  fails PI-1, PI-2, or PI-3
+                                  at PHI-lowering time: the
+                                  predecessor block does not
+                                  exist, has no terminator, or
+                                  the incoming value has not
+                                  yet been lowered into it.
+                                  Triggered only if the C3.2
+                                  §9.1 corrected algorithm
+                                  encounters a shape that the
+                                  preorder proof does not
+                                  cover. The C4 implementation
+                                  MUST halt with this verdict
+                                  and surface the offending
+                                  predecessor + incoming
+                                  edge; it MUST NOT improvise
+                                  a two-phase fallback without
+                                  an explicit bounded
+                                  amendment.)
 ```
 
 ---

@@ -1,0 +1,67 @@
+
+=== VARIANT_BAD: zext in merge after PHI ===
+verify return=1 (0=valid, 1=invalid)
+verifier message:
+Instruction does not dominate all uses!
+  %z = zext i1 %cmp to i8
+  %phi = phi i8 [ %z, %pred ]
+IR:
+; ModuleID = 'c32_bad'
+source_filename = "c32_bad"
+
+@g = global i8 0
+
+define void @f(i64 %x, i64 %y) {
+pred:
+  %cmp = icmp sgt i64 %x, %y
+  br label %merge
+
+merge:                                            ; preds = %pred
+  %phi = phi i8 [ %z, %pred ]
+  %z = zext i1 %cmp to i8
+  store i8 %z, ptr @g, align 1
+  ret void
+}
+
+
+=== VARIANT_GOOD: zext in pred before terminator ===
+verify return=0 (0=valid, 1=invalid)
+verifier message:
+IR:
+; ModuleID = 'c32_good'
+source_filename = "c32_good"
+
+@g = global i8 0
+
+define void @f(i64 %x, i64 %y) {
+pred:
+  %cmp = icmp sgt i64 %x, %y
+  %phi_icmp_zext = zext i1 %cmp to i8
+  br label %merge
+
+merge:                                            ; preds = %pred
+  %phi = phi i8 [ %phi_icmp_zext, %pred ]
+  store i8 %phi, ptr @g, align 1
+  ret void
+}
+
+
+=== SUMMARY ===
+bad_return =1  (LLVMVerifyModule result for variant_bad)
+good_return=0  (LLVMVerifyModule result for variant_good)
+EXPECTED: bad=1 (rejected by dominance), good=0 (accepted)
+
+OUTCOME_C_PLACEMENT_CONFIRMED
+
+Interpretation for the C4 IR_PHI dispatch arm:
+  - emit_zext_in_merge_block_after_phi       -> REJECTED
+    (Instruction does not dominate all uses)
+  - emit_zext_in_predecessor_before_term     -> ACCEPTED
+    (dominance holds; zext defined on the edge)
+
+  Therefore the § 9.1 amendment (C3.1) is incomplete.
+  The correct placement is in the predecessor block,
+  immediately before its terminator, using
+  LLVMPositionBuilderBefore(builder, pred_term).
+  The builder cursor must be restored to the merge
+  block before LLVMBuildPhi / LLVMAddIncoming.

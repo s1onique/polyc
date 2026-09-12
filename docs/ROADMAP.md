@@ -976,8 +976,17 @@ OPTION-W-OUT-PARAM01  ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01
                                 Outcome B observed: i1 -> i8 zext;
                                 contract AMENDED;
                                 C4_IMPL_B_AUTH = TRUE reaffirmed)
+    C3.2 RED      this commit (PHI incoming-edge placement;
+                                Outcome C observed: zext in merge
+                                after PHI is dominance-bad;
+                                zext in pred before terminator
+                                is good;
+                                §9.2 corrected algorithm + PI-1/
+                                PI-2/PI-3 invariants;
+                                C4_IMPL_B_AUTH REVOKED 3rd time)
     C4 IMPL-B     (next; strengthened PHI shape contract
-                                + amended i1 -> i8 zext)
+                                + §9.2 placement-corrected zext
+                                + PI-1/PI-2/PI-3 assertions)
     C5 EVIDENCE-B (ScanIdent compiles + verifies + runs)
     C6 CLOSE      (final verdict)
 
@@ -995,6 +1004,10 @@ OPTION-W-OUT-PARAM01  ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01
     A1 (read envelope, Gate 4)        CLOSED   (C2-A)
     A2 (observable sink, Gate 5)      CLOSED   (C2-A.2)
     B  (IR_PHI backend dispatch)      OPEN     (next seam)
+       sub-issues:
+         B1 PHI type binding            CLOSED   (C3.1)
+         B2 PHI conversion placement    CLOSED   (C3.2)
+         B3 PHI dispatch arm impl       OPEN     (C4)
 
   C2-A.1 RULE 5 REDEFINITION:
     Old: V feeds return (return-sink only)
