@@ -1,0 +1,173 @@
+C1 boundary recon — minimum B0 byte-indexing recon
+====================================================
+
+Entry point:  b0c6ff6881e3dae1b8c4c7f6166680b3f7c5e6e1
+Predecessor:  ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME02  (PASS / CLOSED)
+
+Test method
+-----------
+  For each fixture in src/tests/llvm-gep01/:
+    ./hcc --install-dir build/test-prefix --dump-ir   <f>.HC
+    ./hcc --install-dir build/test-prefix --emit-llvm -o /tmp/o.ll <f>.HC
+
+  Raw captures: evidence/ACT-POLYC-LLVM-GEP01/c1/_dump/
+
+Q1 - What neutral IR does current PolyC frontend emit for
+     `U8 *p; I64 i; p[i]` ?
+  Source: src/tests/llvm-gep01/readat.HC
+    I64 ReadAt(U8 *p, I64 i) { return p[i]; }
+  Pre-optimisation neutral IR (paraphrased):
+    i64 ReadAt(%p1 ptr param, %p3 i64 param) {
+      bb1:
+        store    %l2 ptr local, %p1 ptr param
+        store    %l4 i64 local, %p3 i64 param
+        alloca   %t5 i64 tmp, 8
+        iadd     %t6 ptr tmp, %l2 ptr local, %l4 i64 local   <-- ADDR
+        load*    %t7 i8 tmp, %t6 ptr tmp                     <-- LOAD
+        zext     %t8 i64 tmp, %t7 i8 tmp
+        store    %t5 i64 tmp, %t8 i64 tmp
+        jmp bb2
+      bb2:
+        load     %t9 i64 tmp, %t5 i64 tmp
+        ret      %t9 i64 tmp
+    }
+  Answer: IR_IADD  (followed by IR_LOAD_DEREF).
+          NOT IR_GEP.  NOT IR_LEA.
+
+Q2 - Does the parser/typechecker already admit that source form?
+  parseSubscriptExpr in src/prslib.c:1209-1221 parses
+  `p[i]` as `*(p + i)`:
+      cctrlTokenExpect(cc, ']');
+      Ast *binop = parseCreateBinaryOp(cc, AST_BIN_OP_ADD, ast, subscript);
+      return astUnaryOperator(binop->type->ptr, AST_UN_OP_DEREF, binop);
+
+  Both `p[i]` and `*(p + i)` reach the AST lowerer.
+  The lowerer (irLowerBinOp at src/ir.c:626-649) detects
+  the pointer-arithmetic shape and emits IR_IADD with
+  dst=IR_TYPE_PTR, r1=IR_TYPE_PTR, r2=IR_TYPE_I64.
+
+  Answer: YES.
+
+Q3 - Does it emit IR_GEP / IR_LEA / something else / or fail ?
+  Per Q1's dump-ir: the emitted opcode is IR_IADD.
+  No IR_GEP is emitted for byte indexing. The IR_GEP
+  opcode (src/ir-types.h:86) is reserved for struct/array
+  field addressing, emitted by irLowerAssignTarget
+  (src/ir.c:1059, 1231, 1285, 1299, 1520) -- not for
+  pointer arithmetic.
+  No IR_LEA is emitted. IR_LEA is reserved for the
+  address-of a stack-allocated local (src/ir-types.h:85),
+  emitted at src/ir.c:1634 for `&lvar`.
+
+  Answer: IR_IADD (something else).
+
+Q4 - What are the operand roles and types ?
+  IR_IADD(dst=PTR tmp, r1=PTR base, r2=I64 index)
+
+  No scale is computed (sizeof(U8) = 1; src/ir.c:629-645).
+  The address-mode fusion pass (irFuseIaddIntoMemAddressing
+  in src/ir-optimise.c:768) MAY fold this IADD into the
+  consuming LOAD_DEREF as disp=k or idx+scale=N. For U8
+  the scale is 1; the fusion heuristic does not fold a
+  1x scaled index (no SIB win on x86), so IR_IADD remains
+  as a distinct instruction.
+
+Q5 - Is one existing opcode already intended to mean typed
+     element-address computation ?
+  NO.  IR_IADD with ptr+ptr+i64 -> ptr is integer addition
+  that happens to be applied to pointer operands. The
+  neutral-IR contract does NOT designate it as
+  "typed element-address computation". The IR_GEP opcode
+  IS the neutral-IR opcode whose semantic name is
+  "get element pointer (array/struct indexing)"
+  (src/ir-types.h:86), but the canonical lowerer
+  (src/ir.c) does NOT emit it for pointer arithmetic.
+
+  IR_LEA is reserved for "dst = &r1 (address of a stack
+  slot, as a pointer)" (src/ir-types.h:85). It is the
+  address-of a stack-allocated local, not an indexed
+  address.
+
+  Answer: NO.  No existing neutral-IR opcode is designated
+  as "typed element-address computation" for byte indexing.
+
+Q6 - Would choosing the other opcode duplicate or contradict
+     its existing semantic intent ?
+  N/A.  Neither IR_GEP nor IR_LEA is currently emitted by
+  the canonical lowerer for `p[i]` of bytes.
+
+Q7 - Is the existing IR_IADD shape sufficient for a GEP
+     lowering without neutral-IR widening ?
+  YES.  The IR_IADD shape `dst=PTR, r1=PTR, r2=I64` carries:
+    - base pointer (r1, IR_TYPE_PTR)
+    - scalar I64 index (r2, IR_TYPE_I64)
+    - pointer result (dst, IR_TYPE_PTR)
+    - exactly one index operand (r2 only)
+  which matches the ACT §3 frozen target shape (BASE +
+  one I64 INDEX -> PTR). The LLVM backend can recognise
+  this exact IR_IADD subset at the dispatch seam and emit
+  LLVMBuildGEP2(i8, base, [idx]) instead of LLVMBuildAdd.
+
+  No neutral-IR widening is required: the existing
+  IR_IADD opcode and its operand layout are exactly
+  what the B0 byte-indexing shape needs.
+
+  Answer: YES.  Per ACT §4 hard rule "Implement one
+  existing neutral opcode", IR_IADD is the single
+  consumed opcode.
+
+Frozen opcode-selection decision
+------------------------------------------------------------
+  FROZEN_GEP_NEUTRAL_OPCODE = IR_IADD
+  FROZEN_OPERAND_LAYOUT     = dst=PTR, r1=PTR, r2=I64
+  FROZEN_ELEMENT_TYPE       = I8    (hard-coded in IMPL)
+  FROZEN_INDEX_TYPE         = I64
+  FROZEN_INDEX_COUNT        = 1
+  FROZEN_RESULT_TYPE        = IR_TYPE_PTR
+  FROZEN_SEMANTICS          = TYPED_ELEMENT_INDEX
+  GEP_INBOUNDS_POLICY       = PLAIN_GEP
+  CAPABILITY_TRANSITION     = (no row reclassification; per-shape
+                              SHAPE_DEPENDENT counter attribution at
+                              dispatch seam)
+
+Capability-table plan
+------------------------------------------------------------
+  IR_IADD row remains SUPPORTED (existing integer-add
+  contract preserved). The GEP01 frozen subset is enforced
+  at the IR_IADD dispatch seam via a pre-dispatch
+  short-circuit. Counter attribution increments
+  SHAPE_DEPENDENT for the GEP-shaped instance and SUPPORTED
+  for the integer-add instance. No edits to
+  src/llvm-backend-cap.c are required.
+
+  IR_GEP and IR_LEA rows remain REJECTED (untouched).
+
+Negative boundary preservation
+------------------------------------------------------------
+  Non-I8 element indexing is rejected at IR_LOAD_DEREF by
+  the existing MEMORY01 disp/idx/scale guards. The I64
+  element case is pre-folded into LOAD_DEREF::scale=8 by
+  the address-mode fusion pass; the IMPL never sees an
+  IR_IADD with ptr+ptr+i64 shape for I64-element indexing.
+
+  For byte indexing specifically, the IR_IADD subset is
+  byte-type-consistent by construction: the scale is
+  always 1 (no IR_IMUL emitted), so no folded
+  scale!=1 reach the LOAD_DEREF arm, and the consumer is
+  a byte-shaped IR_LOAD_DEREF.
+
+Verdict
+------------------------------------------------------------
+  C1 verdict = PASS.
+  No HALT.
+
+  4 positive fixtures (Read0, Read2, ReadAt, TwoDigits)
+  and 1 negative fixture (ReadI64) freeze the GEP01
+  contract. The frozen neutral opcode is IR_IADD
+  (the canonical lowerer's emission for pointer
+  arithmetic). The IMPL adds a pre-dispatch short-circuit
+  to the existing IR_IADD arm in src/llvm-backend.c
+  that recognises the frozen operand shape and emits
+  LLVMBuildGEP2(i8, base, [idx]).
+
+  Proceed to C2 IMPL.

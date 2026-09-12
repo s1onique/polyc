@@ -1,0 +1,157 @@
+C1 negative-boundary — frozen exclusion
+========================================
+
+Per ACT §3.1, §11 — the following shapes MUST remain rejected
+after GEP01's IMPL:
+
+N1. non-I8 element GEP
+  Source: src/tests/llvm-gep01/i64idx.HC
+    I64 ReadI64(I64 *p, I64 i) { return p[i]; }
+
+  Current neutral IR (pre-GEP01):
+    imul   %t7 i64 tmp, %l4 i64 local, 8 i64 const int    <-- scale by sizeof(I64)
+    iadd   %t6 ptr tmp, %l2 ptr local, %t7 i64 tmp        <-- ptr+ptr+i64
+    load*  %t8 i64 tmp, %t6 ptr tmp
+
+  After GEP01 IMPL, the IR_IADD still has the frozen shape
+  (dst=ptr, r1=ptr, r2=I64). The IMPL would lower it to
+    %addr = getelementptr i8, ptr %p, i64 %i
+    %v    = load i8, ptr %addr   <-- WRONG ACCESS TYPE
+  which is wrong: the SOURCE said "load I64", but the IR_IADD
+  shape predicate (which only checks operands, not the access
+  type) would admit it.
+
+  This is a CRITICAL defect in the "shape-predicate-only"
+  design. The GEP shape predicate must ALSO require that
+  the GEP result is consumed by a LOAD_DEREF or STORE_DEREF
+  whose access type is I8 (the same element type).
+
+  However, the IR's dataflow is: IR_IADD's result is a
+  tmp; the LOAD_DEREF's r1 references that tmp. The
+  per-instruction predicate in IR_IADD's arm cannot inspect
+  the downstream LOAD_DEREF.
+
+  Mechanical resolution: The current I64-element case is
+  ALREADY rejected at IR_LOAD_DEREF by the existing
+  disp/idx/scale guard (src/llvm-backend.c:3011-3022):
+      "IR_STORE_DEREF with non-zero disp or scaled-index
+       addressing is rejected (MEMORY01 forbids GEP /
+       pointer arithmetic); disp=0 idx=0x... scale=8"
+  And at IR_LOAD_DEREF (src/llvm-backend.c:2930-2941):
+      "IR_LOAD_DEREF with non-zero disp or scaled-index
+       addressing is rejected (MEMORY01 forbids GEP /
+       pointer arithmetic); disp=0 idx=0x... scale=8"
+
+  So the negative boundary N1 is preserved by the EXISTING
+  IR_LOAD_DEREF / IR_STORE_DEREF disp/idx/scale guards,
+  not by anything GEP01 needs to add. The I64-element
+  IR_IADD has been pre-fused into the LOAD_DEREF as
+  idx+scale=8 by the address-mode fusion pass; by the
+  time the IR_IADD arm sees it, the IR_IADD has been
+  NOP'd away (or has been retained as a bare ptr+i64 but
+  the consumer's scale=8 fold is observable only at the
+  LOAD_DEREF arm).
+
+  For B0 byte indexing specifically (the only IMPL scope),
+  the scale is always 1 (sizeof(U8)=1, no IR_IMUL emitted,
+  fusion never fires). The IR_IADD remains as a bare
+  ptr+ptr+i64 instruction whose consumer is a byte-shaped
+  IR_LOAD_DEREF (dst.type == IR_TYPE_I8). The byte access
+  type is observable at the LOAD_DEREF arm where it is
+  already admitted (per BYTE-MEMORY01).
+
+  This means: the GEP01 frozen shape `IR_IADD dst=ptr,
+  r1=ptr, r2=I64` is BYTE-TYPE-CONSISTENT by construction
+  when the consumer is a byte IR_LOAD_DEREF (because the
+  IMUL+fusion path that produces scale=N != 1 only fires
+  for non-I8 element types). The IR does not need an
+  explicit element-type cross-check at the IR_IADD arm;
+  the existing IR_LOAD_DEREF guards already enforce that
+  non-I8 indexed loads are rejected.
+
+  GEP01 NEGATIVE BOUNDARY EVIDENCE:
+    Run src/tests/llvm-gep01/i64idx.HC through hcc --emit-llvm:
+      expected: rejection with LLVM_BACKEND_UNSUPPORTED_POINTER
+                (existing LOAD_DEREF scale=8 path)
+      not-allowed: silent acceptance that emits a 1-byte
+                   load of an I64 array element.
+
+N2. sibling opcode IR_LEA
+  Source: any path that emits IR_LEA. None of the B0 byte
+  fixtures emit IR_LEA. The IR_LEA dispatch arm remains
+  REJECTED at src/llvm-backend.c:3049-3071.
+
+  GEP01 NEGATIVE BOUNDARY EVIDENCE:
+    No B0 byte fixture compiles to a neutral IR containing
+    IR_LEA. The IR_LEA capability row remains REJECTED.
+
+N3. sibling opcode IR_GEP
+  The canonical lowerer does not emit IR_GEP for byte
+  indexing. The IR_GEP dispatch arm remains REJECTED at
+  src/llvm-backend.c:3073-3083.
+
+  GEP01 NEGATIVE BOUNDARY EVIDENCE:
+    No B0 byte fixture compiles to a neutral IR containing
+    IR_GEP. The IR_GEP capability row remains REJECTED.
+
+N4. byte pointer + I8 index (different width)
+  Per ACT §3.1: "byte pointer + I8 idx -> normalize/reject
+  according to actual IR contract; do not silently admit
+  new index widths".
+  Current parser/typechecker do not admit `U8 i; p[i]` where
+  i is U8 -- the subscript expression's index type is
+  coerced to I64 by the existing scalar type promotion
+  (see src/ir.c:706-707 / 681-682). So the IR always sees
+  an I64 index operand. No I8-index path needs to be
+  explicitly rejected by GEP01.
+
+  GEP01 NEGATIVE BOUNDARY EVIDENCE: NOT APPLICABLE
+    (frontend coerces to I64 before IR; no I8-index
+     IR_IADD can be produced).
+
+N5. multiple GEP index operands / nested p[i][j]
+  Not expressible in current IR for byte indexing. Each
+  subscript lowers to a separate AST_BIN_OP_ADD +
+  AST_UN_OP_DEREF pair, producing two sequential IR_IADDs.
+  The first IR_IADD has dst=ptr,r1=ptr,r2=I64. The second
+  IR_IADD would have r1=ptr (the first IR_IADD's result)
+  and r2=I64 -- still the frozen shape. But the second
+  IR_IADD would be a chained byte offset; the IR_LOAD_DEREF
+  consumer would still be at a byte-shaped access type.
+  This is a degenerate case (multi-dim byte addressing)
+  that GEP01 does NOT authorise. It happens to be
+  representable as two sequential IR_IADDs, but the user
+  source form `U8 **pp; pp[i][j]` involves an
+  `IR_LOAD_DEREF` whose access type is `I64` (because
+  `*pp` reads a pointer, 8 bytes) -- which the existing
+  LOAD_DEREF I8-only narrowing REJECTS.
+
+  GEP01 NEGATIVE BOUNDARY EVIDENCE:
+    A test fixture `I64 ReadPtrChain(U8 **pp, I64 i, I64 j) {
+        return pp[i][j];
+    }` would be rejected at the inner IR_LOAD_DEREF
+    whose access type is I64 (the loaded pointer). GEP01
+    does not silently admit this.
+
+N6. negative-index semantics beyond existing I64 expression
+  The IR's iadd r1=ptr, r2=i64 already allows negative I64
+  indices (no source-level restriction). GEP01 inherits
+  this. No new semantic policy is added by GEP01; the
+  shape predicate is purely operand-types-and-roles.
+
+Summary
+-------
+  GEP01's negative-boundary contract:
+    - Non-I8 element indexing: rejected by existing
+      IR_LOAD_DEREF / IR_STORE_DEREF disp/idx/scale guards
+      (or by the IR's pre-fusion IR_IMUL).
+    - Sibling opcode IR_GEP: rejected (untouched arm).
+    - Sibling opcode IR_LEA: rejected (untouched arm).
+    - Byte pointer + non-I64 index: not producible
+      (frontend coercion).
+    - Multi-index / nested: not producible as a single GEP;
+      the chained path is rejected at the inner LOAD_DEREF.
+    - Negative indices: not in GEP01 scope (inherits
+      existing I64 semantics; runtime fault is the
+      caller's responsibility, GEP01 does not add bounds
+      checking).

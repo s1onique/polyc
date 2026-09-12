@@ -1,0 +1,68 @@
+C1 semantics-freeze — typed-element-index vs byte-offset-only
+================================================================
+
+Question (per ACT §9)
+---------------------
+  For the B0 first shape with element type I8:
+    element index == byte offset  (numerically)
+  But the implementation contract must still state whether the
+  neutral operation means:
+    TYPED_ELEMENT_INDEX
+  or
+    BYTE_OFFSET_ONLY.
+
+Empirical evidence
+------------------
+  The IR_IADD emitted by the canonical lowerer for `U8 *p; p[i]`:
+      iadd   dst=ptr, r1=ptr, r2=i64
+  carries no scale factor (sizeof(U8) = 1, src/ir.c:629-645:
+      AstType *elem = ast->type->ptr;
+      int scale = elem ? elem->size : 1;
+      if (scale < 1) scale = 1;
+      ...
+      if (scale != 1) { /* emit IR_IMUL scaled; idx = scaled; */ }
+      /* else idx used directly without scaling */
+  ). The lowerer computes a SCALED index when sizeof(element) > 1
+  but for U8 element, the scale is 1 and no IR_IMUL is emitted.
+
+  The IR does NOT separately carry "element type" or "scale".
+  Both are recoverable from r2's value (no scaling => byte
+  offset) but NOT separately from the IR_IADD opcode alone.
+
+Decision
+--------
+  FROZEN_SEMANTICS = TYPED_ELEMENT_INDEX
+
+  Rationale:
+  - The IR_IADD dst=ptr,r1=ptr,r2=i64 carries a POINTER BASE and
+    a SCALAR I64 INDEX. This is exactly LLVM's GEP convention
+    when the element type is i8: each unit step in the index
+    advances by sizeof(i8) = 1 byte, so the numerical value of
+    "element index" and "byte offset" coincide.
+  - The implementation contract (per ACT §15.3) will emit
+    LLVMBuildGEP2(I8, base, [idx]) with NO scale constant: the
+    LLVM GEP semantics assume the element type's natural
+    stride, which for i8 is 1.
+  - Calling this "BYTE_OFFSET_ONLY" would create the wrong
+    mental model for ARRAY01 / STRUCT01 successors (where the
+    index is an element index of an element type whose stride
+    may be 1/2/4/8/...). The same IR_IADD shape may one day
+    appear with a different element type's stride; the
+    semantics is therefore "element-index of i8", not "raw
+    byte offset".
+  - Choosing TYPED_ELEMENT_INDEX does NOT introduce any new
+    IR encoding for the element type — for the I8 case, the
+    IR_IADD's integer operand already IS the element index
+    (because the lowerer pre-scales by sizeof(element) when
+    necessary). The IMPL hard-codes the element type to I8 at
+    LLVM emission time (LLVMBuildGEP2 with LLVMInt8TypeInContext).
+
+Future-design residue
+---------------------
+  - For ARRAY01 / STRUCT01 GEP, the neutral IR should
+    eventually carry an explicit element type / stride so the
+    implementation does not need to hard-code I8. This is
+    NOT in GEP01's scope (per ACT §3.1, §33).
+  - Until ARRAY01 / STRUCT01 arrive, the I8 hard-coding is
+    acceptable because the B0 substrate has no other element
+    type for pointer arithmetic.

@@ -1,0 +1,154 @@
+C1 neutral-IR-capture — pre-optimisation + post-optimisation
+============================================================
+
+Test method
+-----------
+  For each fixture in src/tests/llvm-gep01/:
+    ./hcc --install-dir build/test-prefix --dump-ir <f>.HC > /tmp/dump.txt 2>&1
+
+  Raw captures: evidence/ACT-POLYC-LLVM-GEP01/c1/_dump/
+
+------------------------------------------------------------
+F1 Read0 — src/tests/llvm-gep01/read0.HC
+------------------------------------------------------------
+  Pre-optimisation:
+    iadd     %t4 ptr tmp, %l2 ptr local, 0 i64 const int   <-- ADDR
+    load*    %t5 i8 tmp, %t4 ptr tmp                       <-- LOAD
+    zext     %t6 i64 tmp, %t5 i8 tmp
+
+  Post-optimisation (after constant folding):
+    load*    %t5 i8 tmp, %p1 ptr param     <-- constant-0 folded
+
+  Backend diagnostic: PASS (constant-0 IADD folded to
+  LOAD_DEREF::disp=0 which is admitted).
+
+------------------------------------------------------------
+F2 Read2 — src/tests/llvm-gep01/read2.HC
+------------------------------------------------------------
+  Pre-optimisation:
+    iadd     %t4 ptr tmp, %l2 ptr local, 2 i64 const int   <-- ADDR
+    load*    %t5 i8 tmp, %t4 ptr tmp
+
+  Post-optimisation (disp folded into LOAD_DEREF):
+    iadd NOP'd
+    load*    %t5 i8 tmp, %p1 ptr param  <-- disp=2 carries it
+
+  Backend diagnostic (current, pre-IMPL):
+    LLVM_BACKEND_UNSUPPORTED_POINTER: function Read2:
+    IR_LOAD_DEREF with non-zero disp or scaled-index
+    addressing is rejected (MEMORY01 forbids GEP /
+    pointer arithmetic); disp=2 idx=0x0 scale=0
+
+  Note: post-IMPL, the IR_IADD with ptr+ptr+i64 shape (when
+  present, e.g. for dynamic indices) emits
+  LLVMBuildGEP2(i8, base, [idx]). For F2 the constant-2
+  index MAY be folded into a disp-offset on LOAD_DEREF, OR
+  the IR_IADD may be retained and emit GEP. Either
+  outcome is correct for F2 (the dynamic F3 is the
+  authoritative GEP-emission proof).
+
+------------------------------------------------------------
+F3 ReadAt — src/tests/llvm-gep01/readat.HC (closure-critical)
+------------------------------------------------------------
+  Pre-optimisation:
+    iadd     %t6 ptr tmp, %p1 ptr param, %p3 i64 param     <-- ADDR
+    load*    %t7 i8 tmp, %t6 ptr tmp
+
+  Post-optimisation: identical to pre-optimisation
+  (no constant to fold; the address-mode fusion does not
+  fold a non-constant index with scale=1 into LOAD_DEREF).
+
+  Backend diagnostic (current, pre-IMPL):
+    LLVM_BACKEND_UNSUPPORTED_TYPE: function ReadAt:
+    type i64-arith dst is not supported by the LLVM backend
+    IR value id: 6, kind IR_VAL_TMP
+
+  This is the RED: IR_IADD's existing dispatch arm rejects
+  IR_TYPE_PTR dst (the IR_IADD is "shape-dependent" on
+  the dst type -- only I64/F64/I8 dsts are admitted).
+
+  Post-IMPL, the IR_IADD with dst=ptr,r1=ptr,r2=i64 shape
+  MUST emit LLVMBuildGEP2(I8, base, [idx]) instead of
+  LLVMBuildAdd.
+
+------------------------------------------------------------
+F4 TwoDigits — src/tests/llvm-gep01/twodigits.HC
+------------------------------------------------------------
+  Pre-optimisation:
+    iadd     %t5  ptr tmp, %l2 ptr local, 0 i64 const int   <-- ADDR [0]
+    load*    %t6  i8 tmp, %t5 ptr tmp
+    zext     %t7  i64 tmp, %t6 i8 tmp
+    isub     %l4  i64 local, %t7 i64 tmp, 48 i8 const int
+    iadd     %t10 ptr tmp, %l2 ptr local, 1 i64 const int   <-- ADDR [1]
+    load*    %t11 i8 tmp, %t10 ptr tmp
+    zext     %t12 i64 tmp, %t11 i8 tmp
+    isub     %l9  i64 local, %t12 i64 tmp, 48 i8 const int
+    imul     %t14 i64 tmp, %l4 i64 local, 10 i64 const int
+    iadd     %t15 i64 tmp, %t14 i64 tmp, %l9 i64 local
+
+  Backend diagnostic (current, pre-IMPL):
+    LLVM_BACKEND_UNSUPPORTED_POINTER: function TwoDigits:
+    IR_LOAD_DEREF with non-zero disp or scaled-index
+    addressing is rejected (MEMORY01 forbids GEP /
+    pointer arithmetic); disp=1 idx=0x0 scale=0
+
+  Post-IMPL: the two IR_IADDs (one for each index 0 and 1)
+  emit GEP, and the loads become
+    %gep0 = getelementptr i8, ptr %p, i64 0
+    %ld0  = load i8, ptr %gep0
+    %gep1 = getelementptr i8, ptr %p, i64 1
+    %ld1  = load i8, ptr %gep1
+
+  Per ACT §22, runtime: TwoDigits("42") -> 42, etc.
+
+------------------------------------------------------------
+F5 ReadI64 — src/tests/llvm-gep01/i64idx.HC (negative)
+------------------------------------------------------------
+  Pre-optimisation:
+    imul     %t7 i64 tmp, %l4 i64 local, 8 i64 const int
+    iadd     %t6 ptr tmp, %l2 ptr local, %t7 i64 tmp       <-- ADDR
+    load*    %t8 i64 tmp, %t6 ptr tmp
+
+  The IR's address-mode fusion (irFuseIaddIntoMemAddressing)
+  folds the IMUL+IADD into the LOAD_DEREF as idx+scale=8.
+
+  Backend diagnostic (current):
+    LLVM_BACKEND_UNSUPPORTED_POINTER: function ReadI64:
+    IR_LOAD_DEREF with non-zero disp or scaled-index
+    addressing is rejected (MEMORY01 forbids GEP /
+    pointer arithmetic); disp=0 idx=0x... scale=8
+
+  GEP01 MUST preserve this rejection. The I64-element
+  IR_IADD has the FROZEN_OPERAND_LAYOUT (dst=ptr, r1=ptr,
+  r2=i64), so without an additional guard, the GEP arm
+  would erroneously admit it as
+    %gep = getelementptr i8, ptr %p, i64 %i
+    %ld  = load i8, ptr %gep
+  which would silently miscompile (1-byte load of an
+  I64 array).
+
+  Resolution: the existing IR_LOAD_DEREF disp/idx/scale
+  guard rejects the I64-element case at the LOAD_DEREF
+  arm. The IR_IADD with ptr+ptr+i64 shape is not reached
+  because the fusion pass pre-folds it into LOAD_DEREF
+  (and the IR_IMUL IR_IADD is NOP'd). For the rare case
+  where the fusion does not fire (scale=1 always folds
+  but never into a multi-stride SIB), the IR_IADD arm
+  sees IR_IADD with dst=ptr,r1=ptr,r2=i64 and emits GEP
+  i8, which is CORRECT for byte indexing.
+
+  This means: GEP01's IR_IADD subset is byte-type-consistent
+  by construction, because:
+  (a) non-byte element IR_IADDs are pre-folded with
+      IR_IMUL before reaching the IR_IADD arm, and the
+      fusion lands the scale into LOAD_DEREF::scale (which
+      MEMORY01 forbids);
+  (b) byte-element IR_IADDs (the GEP01 subset) arrive at
+      the IR_IADD arm with no scale-1 fusion into
+      LOAD_DEREF, and the consumer is a byte-shaped
+      IR_LOAD_DEREF.
+
+  The byte-type-consistency is OBSERVABLE at the
+  IR_LOAD_DEREF arm (which is already guarded by MEMORY01),
+  not at the IR_IADD arm. The IR_IADD arm does not need
+  to cross-check the consumer's access type.

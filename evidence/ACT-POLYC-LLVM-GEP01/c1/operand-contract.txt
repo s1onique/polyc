@@ -1,0 +1,70 @@
+C1 operand-contract — frozen shape
+===================================
+
+Frozen target shape (per ACT §3, §13)
+-------------------------------------
+
+  FROZEN_OPERAND_LAYOUT = IR_IADD dst=PTR, r1=PTR, r2=I64
+
+  FROZEN_ELEMENT_TYPE   = I8        (sizeof 1; element-typed, not scaled)
+
+  FROZEN_INDEX_TYPE     = I64       (one scalar I64 index)
+
+  FROZEN_INDEX_COUNT    = 1
+
+  FROZEN_RESULT_TYPE    = IR_TYPE_PTR   (opaque ptr in LLVM)
+
+  FROZEN_NEUTRAL_OPCODE = IR_IADD
+
+Per-shard predicate (proposed IMPL arm)
+---------------------------------------
+  llGepShapeSupported(IrInstr *ins):
+    ins->op   == IR_IADD
+    ins->dst  != NULL
+    ins->r1   != NULL
+    ins->r2   != NULL
+    ins->dst->type == IR_TYPE_PTR
+    ins->r1->type  == IR_TYPE_PTR
+    ins->r2->type  == IR_TYPE_I64
+    ins->disp == 0
+    ins->idx  == NULL
+    ins->scale == 0
+
+  On TRUE  -> LLVMBuildGEP2(ctx, I8, base, [idx], 1)
+  On FALSE -> reject with LLVM_BACKEND_UNSUPPORTED_GEP_SHAPE
+              (existing LLVM_BACKEND_UNSUPPORTED_TYPE /
+               LLVM_BACKEND_UNSUPPORTED_POINTER remain as
+               pre-predicate safety nets for type/class and
+               address-mode impurities.)
+
+Why the additional disp/idx/scale == 0 guards
+----------------------------------------------
+  The IR's address-mode fusion pass may have folded an IADD into
+  the consuming LOAD_DEREF as disp=k or idx+scale=N. The shape
+  predicate for GEP01 must only accept the "bare" IR_IADD form,
+  not the fused form. If the IR optimisations have run first,
+  the GEP shape is exposed as the consumer of a (possibly
+  forwarded) pointer local. The fusion rules:
+    - IADD with const operand + zero disp on the LOAD_DEREF  -> folded to disp
+    - IADD with scaled (IMUL) index + zero scale on LOAD_DEREF -> folded to idx+scale
+  The byte case has scale=1, so the scaled fold never fires.
+  For I64-element indexing the scale=8 fold fires, and the IR_IADD
+  is NOP'd away (so the IMPL never sees an IR_IADD with
+  ptr+ptr+i64 shape for I64-element; instead it sees a
+  LOAD_DEREF with idx+scale=8 which is already rejected by
+  the existing MEMORY01 guards).
+
+Why the dst-type check is `PTR` (not `I64`, `I8`, ...)
+-------------------------------------------------------
+  - The IR_IADD currently emits with dst=IR_TYPE_PTR for all
+    pointer-arithmetic operands (src/ir.c:646-648:
+        IrOp pop = astIsBinOpKind(ast, AST_BIN_OP_ADD) ? IR_IADD : IR_ISUB;
+        irBlockAddInstr(ctx, irInstrNew(pop, ir_result, base, idx));
+        return ir_result;
+    where `ir_result` was allocated as `IR_TYPE_PTR` at
+    src/ir.c:602 because ast->type is a pointer/array type).
+  - A `dst->type == IR_TYPE_I64` IR_IADD is the existing
+    integer-add path (irTmp at line 602 allocates IR_TYPE_I64
+    when ast->type is an int). This is unaffected.
+  - The shape predicate is therefore "strict subset" of the
+    IR_IADD opcodes the lowerer emits.

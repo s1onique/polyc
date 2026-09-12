@@ -1,0 +1,108 @@
+C1 capability-plan — REJECTED → SHAPE_DEPENDENT transition
+===========================================================
+
+Current state (per BYTE-MEMORY01-RESUME02 §2 and IR_GEP / IR_LEA
+  rows in src/llvm-backend-cap.c):
+    IR_GEP = REJECTED  (LLVM_BACKEND_UNSUPPORTED_AGGREGATE)
+    IR_LEA = REJECTED  (LLVM_BACKEND_UNSUPPORTED_POINTER)
+    IR_IADD = SUPPORTED  (only for dst.type ∈ {I64, F64, I8})
+
+  The B0 byte-indexing emission lands on IR_IADD with
+  dst.type == IR_TYPE_PTR, which is NOT in the SUPPORTED
+  set's type allow-list. The dispatch at
+  src/llvm-backend.c:2402-2406 rejects it with
+  LLVM_BACKEND_UNSUPPORTED_TYPE.
+
+Proposed capability transition
+------------------------------
+  Per ACT §12 hard-rule: do NOT mark IR_IADD = SUPPORTED
+  globally. Mark IR_IADD = SHAPE_DEPENDENT only for the
+  GEP01 frozen operand layout.
+
+  But wait — IR_IADD is currently SUPPORTED with a per-arm
+  type allow-list (llTypeSupported), not SHAPE_DEPENDENT.
+  Reclassifying IR_IADD entirely would invalidate the
+  existing integer-add path's SUPPORTED contract.
+
+  The mechanical alternative is to keep IR_IADD =
+  SUPPORTED (so the existing integer-add path's counter
+  attribution is preserved) and add the GEP01 subset as a
+  PRE-DISPATCH short-circuit (per the LLVM-cap-table-verifier
+  pattern of `if (ins->op == IR_X)` short-circuits that are
+  allowed at the dispatch seam):
+
+    switch (ins->op) {
+        case IR_IADD:
+        case IR_ISUB: {
+            LL_INC_SUPPORTED(lc);    // IR_IADD / IR_ISUB still SUPPORTED
+            if (llGepShapeSupported(ins)) {
+                // GEP01 frozen subset: re-classify counter as
+                // SHAPE_DEPENDENT for THIS instance.
+                LL_INC_SHAPE_DEPENDENT(lc);
+                LLVMValueRef base = llLowerPointerValue(lc, ins->r1);
+                LLVMValueRef idx  = llLowerI64Value(lc, ins->r2);
+                LLVMValueRef indices[1] = { idx };
+                LLVMValueRef addr = LLVMBuildGEP2(
+                    lc->bld,
+                    LLVMInt8TypeInContext(lc->ctx),
+                    base, indices, 1, "gep_i8");
+                llvmSet(&lc->values, irVarId(ins->dst), addr);
+                return addr;
+            }
+            /* existing integer-add path */
+            ...
+        }
+    }
+
+  Counter attribution rationale:
+    - IR_IADD as an opcode is still SUPPORTED (per the
+      existing contract — the integer-add arm does emit
+      LLVMBuildAdd for the allowed types).
+    - The GEP01 frozen subset is one specific operand-shape
+      of IR_IADD. We attribute it as SHAPE_DEPENDENT so the
+      harness can count GEP-shaped emissions distinct from
+      integer adds.
+    - Per ACT §26, "per-fixture attribution should establish:
+      ReadAt: exactly the expected GEP shape-dependent hit(s)
+      without widening unrelated operations."
+    - The dynamic ReadAt fixture contributes:
+        supported += (N integer-add IR_IADDs) + (M ICMPs) + ...
+        shape_dependent += 1   (the GEP-shaped IR_IADD)
+      The harness asserts shape_dependent >= 1 for ReadAt
+      and shape_dependent == 0 for non-I8 pointer arithmetic
+      paths that are still rejected by the broader shape check.
+
+Sibling opcode rejection
+------------------------
+  IR_GEP remains REJECTED (the canonical lowerer never emits
+  it for pointer arithmetic; the rejection at the dispatch
+  arm is a safety net for IR_GEP emitted by other tooling
+  paths).
+
+  IR_LEA remains REJECTED.
+
+Capability-table edits
+----------------------
+  No edits to src/llvm-backend-cap.c are required for GEP01.
+  The IR_IADD row stays SUPPORTED; the GEP-shaped subset is
+  enforced at the dispatch seam via the pre-dispatch
+  short-circuit, and the capability-table verifier's I1
+  invariant ("SUPPORTED -> exactly one explicit case arm")
+  is preserved (the IR_IADD arm already exists).
+
+Capability verifier binding
+---------------------------
+  The dedicated harness scripts/quality/llvm-gep01-test.sh
+  asserts:
+    - hcc --emit-llvm succeeds for all four positive fixtures
+    - The emitted .ll contains exactly one getelementptr
+      instruction per positive fixture (with constant-index
+      fixtures potentially optimising the GEP+load into a
+      pure load with const offset; the dynamic ReadAt fixture
+      MUST contain one getelementptr).
+    - llvm-as + opt --passes=verify succeed.
+    - CAPABILITY_COUNTERS line shows shape_dependent >= 1
+      for the dynamic ReadAt fixture.
+    - The IR_GEP dispatch arm remains REJECTED (its
+      capability-row binding is preserved).
+    - The IR_LEA dispatch arm remains REJECTED.

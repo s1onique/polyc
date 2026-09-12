@@ -1,0 +1,131 @@
+C1 source-fixtures — minimum B0 byte indexing
+==============================================
+
+Test method
+-----------
+  For each candidate source form:
+    ./hcc --install-dir build/test-prefix --dump-ir <fixture>
+    ./hcc --install-dir build/test-prefix --emit-llvm -o <fixture>.ll <fixture>
+
+Fixtures (4 positive + 1 negative):
+
+F1. Read0 — constant-zero index
+  Source: src/tests/llvm-gep01/read0.HC
+    I64 Read0(U8 *p) { return p[0]; }
+
+  Pre-optimisation neutral IR (paraphrased):
+    i64 Read0(%p1 ptr param) {
+      bb1:
+        store    %l2 ptr local, %p1 ptr param
+        alloca   %t3 i64 tmp, 8
+        iadd     %t4 ptr tmp, %l2 ptr local, 0 i64 const int   <-- ADDR
+        load*    %t5 i8 tmp, %t4 ptr tmp                       <-- LOAD
+        zext     %t6 i64 tmp, %t5 i8 tmp
+        store    %t3 i64 tmp, %t6 i64 tmp
+        jmp bb2
+      bb2:
+        load     %t7 i64 tmp, %t3 i64 tmp
+        ret      %t7 i64 tmp
+    }
+
+  Post-optimisation neutral IR:
+    i64 Read0(%p1 ptr param) {
+      bb1:
+        load*    %t5 i8 tmp, %p1 ptr param     <-- constant-0 folded into load addr
+        zext     %t6 i64 tmp, %t5 i8 tmp
+        ret      %t6 i64 tmp
+    }
+
+  Backend diagnostic (current, pre-IMPL):
+    LLVM_BACKEND_UNSUPPORTED_TYPE: function Read0: type i64-arith dst
+    is not supported by the LLVM backend
+    IR value id: 4, kind IR_VAL_TMP
+  (Because the IR_IADD arm requires llTypeSupported(dst->type),
+   and IR_TYPE_PTR is not in the supported set.)
+
+F2. Read2 — constant positive index
+  Source: src/tests/llvm-gep01/read2.HC
+    I64 Read2(U8 *p) { return p[2]; }
+
+  Pre-optimisation neutral IR:
+    iadd     %t4 ptr tmp, %l2 ptr local, 2 i64 const int   <-- ADDR
+    load*    %t5 i8 tmp, %t4 ptr tmp
+
+  Post-optimisation: constant-folded to load* with addr=%p1.
+
+  Backend diagnostic: REJECTED (same as F1).
+
+F3. ReadAt — dynamic I64 index (closure-critical)
+  Source: src/tests/llvm-gep01/readat.HC
+    I64 ReadAt(U8 *p, I64 i) { return p[i]; }
+
+  Pre-optimisation neutral IR:
+    iadd     %t6 ptr tmp, %p1 ptr param, %p3 i64 param     <-- ADDR
+    load*    %t7 i8 tmp, %t6 ptr tmp
+
+  Post-optimisation neutral IR (preserved for closure proof):
+    iadd     %t6 ptr tmp, %p1 ptr param, %p3 i64 param     <-- ADDR
+    load*    %t7 i8 tmp, %t6 ptr tmp
+
+  Backend diagnostic: REJECTED (i64-arith dst).
+
+F4. TwoDigits — B0 walking consumer (multiple distinct indices)
+  Source: src/tests/llvm-gep01/twodigits.HC
+    I64 TwoDigits(U8 *p) {
+        I64 a = p[0] - '0';
+        I64 b = p[1] - '0';
+        return a * 10 + b;
+    }
+
+  Pre-optimisation neutral IR (truncated):
+    iadd     %t5  ptr tmp, %l2 ptr local, 0 i64 const int   <-- ADDR [0]
+    load*    %t6  i8 tmp, %t5 ptr tmp                       <-- LOAD [0]
+    zext     %t7  i64 tmp, %t6 i8 tmp
+    isub     %l4  i64 local, %t7 i64 tmp, 48 i8 const int
+    iadd     %t10 ptr tmp, %l2 ptr local, 1 i64 const int   <-- ADDR [1]
+    load*    %t11 i8 tmp, %t10 ptr tmp                      <-- LOAD [1]
+    zext     %t12 i64 tmp, %t11 i8 tmp
+    isub     %l9  i64 local, %t12 i64 tmp, 48 i8 const int
+    imul     %t14 i64 tmp, %l4 i64 local, 10 i64 const int
+    iadd     %t15 i64 tmp, %t14 i64 tmp, %l9 i64 local
+
+  Backend diagnostic: REJECTED (i64-arith dst).
+
+F5. ReadI64 — NON-I8 element negative boundary
+  Source: src/tests/llvm-gep01/i64idx.HC
+    I64 ReadI64(I64 *p, I64 i) { return p[i]; }
+
+  Pre-optimisation neutral IR:
+    imul     %t7 i64 tmp, %l4 i64 local, 8 i64 const int   <-- scale by 8
+    iadd     %t6 ptr tmp, %l2 ptr local, %t7 i64 tmp       <-- ADDR
+    load*    %t8 i64 tmp, %t6 ptr tmp
+
+  Backend diagnostic (current):
+    LLVM_BACKEND_UNSUPPORTED_POINTER: function ReadI64:
+    IR_LOAD_DEREF with non-zero disp or scaled-index addressing is
+    rejected (MEMORY01 forbids GEP / pointer arithmetic);
+    disp=0 idx=0x... scale=8
+
+  Notes:
+    The IR_LOWER for p+i where p is I64* scales the index by
+    sizeof(I64)=8 (an explicit IR_IMUL preceeds the IR_IADD).
+    The address-mode fusion pass (irFuseIaddIntoMemAddressing)
+    folds the imul+iadd pair into LOAD_DEREF::idx+scale=8.
+    The byte case has scale=1, so the fusion never fires, and
+    IR_IADD remains as the address calculation.
+
+Verdict
+-------
+  All four positive source forms compile to neutral IR. The
+  emitted opcode is IR_IADD (NOT IR_GEP, NOT IR_LEA).
+  IR_IADD with dst=IR_TYPE_PTR is currently rejected at the
+  LLVM backend's IR_IADD arm because the IR_TYPE_PTR result
+  type is not in llTypeSupported()'s {I64, F64, I8} allow-list.
+  The I64-element case is additionally rejected at IR_LOAD_DEREF
+  because the scale=8 address-mode fold is forbidden by MEMORY01.
+
+  GEP_REQUIRED_FOR_B0_WALKING = YES (per BYTE-MEMORY01-RESUME02 §1).
+  RED reproduced at the IR_IADD arm: existing SUPPORTED IR_IADD
+  rejects IR_TYPE_PTR dst; a frozen subset of IR_IADD
+  (ptr+ptr+i64 → ptr) is the natural operand contract for B0
+  byte indexing.

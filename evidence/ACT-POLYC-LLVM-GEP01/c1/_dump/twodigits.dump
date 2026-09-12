@@ -1,0 +1,37 @@
+=== twodigits.dump ===
+i64 TwoDigits(%p1 ptr param) {
+  bb1 -> predecessors:  {}  successors: {2}
+    store    %l2 ptr local, %p1 ptr param  ; line 19
+    alloca   %t3 i64 tmp, 8 i64 const int  ; line 19
+    iadd     %t5 ptr tmp, %l2 ptr local, 0 i64 const int  ; line 20
+    load*    %t6 i8 tmp, %t5 ptr tmp  ; line 20
+    zext     %t7 i64 tmp, %t6 i8 tmp  ; line 20
+    isub     %l4 i64 local, %t7 i64 tmp, 48 i8 const int  ; line 20
+    iadd     %t10 ptr tmp, %l2 ptr local, 1 i64 const int  ; line 21
+    load*    %t11 i8 tmp, %t10 ptr tmp  ; line 21
+    zext     %t12 i64 tmp, %t11 i8 tmp  ; line 21
+    isub     %l9 i64 local, %t12 i64 tmp, 48 i8 const int  ; line 21
+    imul     %t14 i64 tmp, %l4 i64 local, 10 i64 const int  ; line 22
+    iadd     %t15 i64 tmp, %t14 i64 tmp, %l9 i64 local  ; line 22
+    store    %t3 i64 tmp, %t15 i64 tmp  ; line 22
+    jmp      bb2  ; line 22
+
+  bb2 -> predecessors: {1}  successors:  {}
+    load     %t16 i64 tmp, %t3 i64 tmp  ; line 22
+    ret      %t16 i64 tmp  ; line 22
+}
+
+===== After basic optimisations ===== 
+i64 TwoDigits(%p1 ptr param) {
+  bb1 -> predecessors:  {}  successors: {1}
+    load*    %t6 i8 tmp, %p1 ptr param  ; line 20
+    zext     %t7 i64 tmp, %t6 i8 tmp  ; line 20
+    isub     %l4 i64 local, %t7 i64 tmp, 48 i8 const int  ; line 20
+    load*    %t11 i8 tmp, %p1 ptr param  ; line 21
+    zext     %t12 i64 tmp, %t11 i8 tmp  ; line 21
+    isub     %l9 i64 local, %t12 i64 tmp, 48 i8 const int  ; line 21
+    imul     %t14 i64 tmp, %l4 i64 local, 10 i64 const int  ; line 22
+    iadd     %t15 i64 tmp, %t14 i64 tmp, %l9 i64 local  ; line 22
+    ret      %t15 i64 tmp  ; line 22
+}
+

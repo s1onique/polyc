@@ -1,0 +1,24 @@
+=== read0.dump ===
+i64 Read0(%p1 ptr param) {
+  bb1 -> predecessors:  {}  successors: {2}
+    store    %l2 ptr local, %p1 ptr param  ; line 18
+    alloca   %t3 i64 tmp, 8 i64 const int  ; line 18
+    iadd     %t4 ptr tmp, %l2 ptr local, 0 i64 const int  ; line 19
+    load*    %t5 i8 tmp, %t4 ptr tmp  ; line 19
+    zext     %t6 i64 tmp, %t5 i8 tmp  ; line 19
+    store    %t3 i64 tmp, %t6 i64 tmp  ; line 19
+    jmp      bb2  ; line 19
+
+  bb2 -> predecessors: {1}  successors:  {}
+    load     %t7 i64 tmp, %t3 i64 tmp  ; line 19
+    ret      %t7 i64 tmp  ; line 19
+}
+
+===== After basic optimisations ===== 
+i64 Read0(%p1 ptr param) {
+  bb1 -> predecessors:  {}  successors: {1}
+    load*    %t5 i8 tmp, %p1 ptr param  ; line 19
+    zext     %t6 i64 tmp, %t5 i8 tmp  ; line 19
+    ret      %t6 i64 tmp  ; line 19
+}
+

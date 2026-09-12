@@ -1,0 +1,58 @@
+C1 inbounds-policy — plain GEP
+================================
+
+Question (per ACT §10)
+----------------------
+  Does the PolyC source contract guarantee the stronger
+  `inbounds` preconditions for every emitted IR_IADD instance
+  that would lower to GEP01 ?
+
+  Preconditions for LLVMBuildInBoundsGEP2 (per LLVM ref):
+    - The base pointer must point into (or one-past-the-end of)
+      an allocated object.
+    - All indices must be within bounds.
+    - The result must be within or one-past-the-end of the same
+      allocated object.
+
+Empirical evidence
+------------------
+  - The IR_IADD at src/ir.c:646-648 is emitted from the
+    AST lowerer's `Pointer arithmetic` block for source
+    expressions like `p + i`, `p - i`, `p[i]`, etc. The lowerer
+    has no object-length knowledge — the pointer may point to:
+      a) the start of a stack-local array (length known to
+         neither the lowerer nor the IR; the lowerer has only
+         the AstType which may carry a static length for
+         `I64 arr[10]` but not for `U8 *p`),
+      b) the start of a heap allocation (length unknown),
+      c) any byte position in an input buffer (length known
+         to the CALLER, not to the IR).
+  - For the B0 substrate, the byte parameter `U8 *p` arrives
+    with no associated length. There is no language-level
+    representation of "the input buffer has length N". The
+    IR type system carries IR_TYPE_PTR with no length
+    metadata.
+  - The index `i` is an arbitrary I64 scalar with no source-
+    level bound proof. `p[-1]` and `p[LARGE]` are both
+    syntactically valid source expressions and both lower to
+    IR_IADD with the same shape as `p[0]` and `p[5]`.
+
+Conclusion
+----------
+  GEP_INBOUNDS_POLICY = PLAIN_GEP
+
+  Implementation will use LLVMBuildGEP2, NOT
+  LLVMBuildInBoundsGEP2. No `inbounds` keyword, no no-wrap
+  flags.
+
+  Fixture-level known bounds (e.g. "we only call ReadAt with
+  i in [0..9]") are insufficient justification for emitting
+  `inbounds` globally. The IR layer does not encode the
+  fixture-level bound; emitting `inbounds` for a fixture
+  whose caller might later pass an out-of-bound index would
+  be a semantic violation.
+
+  If a future PolyC substrate proves object-length at the IR
+  layer (e.g. via a fat-pointer type, slice descriptors, or
+  separate "GEP_IN_BOUNDS" IR opcodes), a successor ACT can
+  revisit this decision.
