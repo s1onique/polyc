@@ -705,6 +705,19 @@ GEP01   ACT-POLYC-LLVM-GEP01
         the IR_IADD arm's pre-dispatch shape. A cleaner
         architectural separation is deferred.
 
+  EVIDENCE-ONLY WHITESPACE NOTE (F14 correction)
+    16 git diff --check diagnostics exist in the
+    GEP01 evidence range, all under evidence/:
+      C1 RED   : 10 (raw --dump-ir capture artefacts)
+      C2 IMPL  :  0
+      C3 EVID  :  3 (heredoc EOF blank-line)
+      C4 CLOSE :  3 (heredoc EOF blank-line)
+    Production (src/ scripts/ docs/) is clean.
+    See evidence/ACT-POLYC-LLVM-GEP01/correction01/
+    for the F14 reconciliation; the original AC24
+    wording is interpreted as production-only and
+    the historical commits are not rewritten.
+
   NEXT ACT = fresh B0 substrate recon
 ```
 

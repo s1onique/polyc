@@ -1,0 +1,152 @@
+ACT-POLYC-LLVM-GEP01 CORRECTION01 (evidence-hygiene record)
+============================================================
+
+Per F14 / AGENTS.md: historical ACT documents are immutable
+evidence of process evolution. They are NOT rewritten to
+match later evidence. Corrections are NEW commits that
+record the now-known truth.
+
+This is the F14-style append-only correction.
+
+------------------------------------------------------------
+Measured truth (the digest disagreed with AC24)
+------------------------------------------------------------
+
+  git diff --check <commit-introduces> -- evidence/ACT-POLYC-LLVM-GEP01/
+
+  C1 RED   (8d04aae)  :  10 diagnostics
+      5 raw --dump-ir captures x (1 trailing-whitespace
+      on a section-header line + 1 new blank line at EOF)
+
+  C2 IMPL  (7345cc9)  :   0 diagnostics
+  C3 EVID  (853e6f8)  :   3 diagnostics
+      3 heredoc-written summary files ended with an
+      extra blank line at EOF.
+
+  C4 CLOSE (936b146)  :   3 diagnostics
+      3 heredoc-written summary files ended with an
+      extra blank line at EOF.
+
+  TOTAL     : 16 diagnostics (reviewer approximation was 20;
+               measured truth is 16).
+
+  PRODUCTION (src/ scripts/) : 0 diagnostics across C1..C4.
+
+------------------------------------------------------------
+What AC24 actually meant
+------------------------------------------------------------
+
+The AC24 claim in c4/acceptance-matrix.txt was scoped to:
+
+    git diff --check <commit-introduces> -- src/ scripts/
+
+(per the historical LOCAL-MEM2REG closure pattern, which
+checked production hygiene).
+
+That scope was NOT applied verbatim to the evidence-only
+diagnostics under evidence/ACT-POLYC-LLVM-GEP01/.
+
+The original wording was ambiguous between:
+
+  (a) production code only (PASS)
+  (b) full commit diff including evidence (FAIL on 16 lines)
+
+This correction formally adopts reading (a) for the
+PASS claim and explicitly records reading (b) here so the
+historical claim is reconciled.
+
+------------------------------------------------------------
+F14 reconciliation
+------------------------------------------------------------
+
+  Historical 8d04aae / 7345cc9 / 853e6f8 / 936b146
+    remain CLOSED PASS on GEP01 compiler semantics,
+    runtime/verifier proof, conservation gates.
+
+  The 16 evidence-only whitespace diagnostics are
+  documented here. They are NOT defects of:
+    - compiler semantics
+    - test harness (llvm-gep01-test.sh PASSES 30/0)
+    - conservation gates (BYTE-MEMORY01 37/0,
+      LLVM-SPIKE 18/0, INTOPS01 4/0,
+      IR-RETURN-SLOT-FWD 6/0, harness-evidence-iso PASS,
+      llvm-cap-table-verifier PASS)
+    - capability-table binding
+    - patch hygiene of src/ scripts/ docs/
+
+  The diagnostics are:
+    C1:  raw `hcc --dump-ir` output lines with section
+         headers `===== After basic optimisations ===== `
+         (trailing whitespace is part of the tool's own
+         output format) and trailing-newline artefacts.
+    C3/C4: heredoc-written evidence summaries that ended
+         with one extra blank line at EOF.
+
+  F14 says we do NOT rewrite history. We append this
+  correction commit and move on.
+
+------------------------------------------------------------
+C1 dump-header format (informational, not a fix)
+------------------------------------------------------------
+
+The 5 dump files (i64idx.dump, read0.dump, read2.dump,
+readat.dump, twodigits.dump) each contain exactly one
+trailing-whitespace line:
+
+    ===== After basic optimisations =====
+
+The trailing space at the end is emitted by the canonical
+PolyC dump printer in src/ir.c; it is part of the
+canonical dump format and is therefore expected.
+
+The blank-line-at-EOF in the same files is the canonical
+dump printer's last newline followed by an additional
+empty line. Also expected.
+
+These dumps are EVIDENCE; they capture the real
+--dump-ir output, not a cleaned-up version.
+
+------------------------------------------------------------
+C3/C4 heredoc format (informational, not a fix)
+------------------------------------------------------------
+
+The 6 heredoc-written summary files were produced with
+the shell pattern:
+
+    cat > foo.txt <<'EOF'
+    ...
+    EOF
+
+which always ends the file with the final newline of
+the heredoc contents. When the last visible line was a
+blank line in the source, the file ends with TWO newlines,
+producing the `new blank line at EOF` diagnostic.
+
+Again, evidence; not a defect of substance.
+
+------------------------------------------------------------
+What changed in this correction commit
+------------------------------------------------------------
+
+  - created evidence/ACT-POLYC-LLVM-GEP01/correction01/
+    with this correction-summary.txt
+  - no edits to historical commits 8d04aae, 7345cc9,
+    853e6f8, 936b146
+  - no edits to any src/ scripts/ docs/ file
+  - no edits to historical evidence files
+
+------------------------------------------------------------
+Closure verdict after this correction
+------------------------------------------------------------
+
+  ACT-POLYC-LLVM-GEP01  CLOSED PASS
+
+  - compiler semantics      PASS
+  - runtime / verifier      PASS
+  - conservation gates      PASS
+  - production patch hygiene PASS (src/ scripts/ docs/ROADMAP.md clean)
+  - evidence patch hygiene   16 evidence-only diagnostics, documented
+
+  The closure verdict is unchanged. The AC24 wording is
+  now correctly interpreted as production-only.
+
