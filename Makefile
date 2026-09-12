@@ -138,13 +138,10 @@ test-prefix-install:
 		-DHCC_ENABLE_JIT=on \
 		-DHCC_ENABLE_LLVM=$(HCC_ENABLE_LLVM)
 	$(MAKE) -C ./build/test-prefix-install-build install
-	@# Hermetic-prefix-local: drop the unversioned libtos.dylib
-	@# symlink so `-ltos` resolves to the static archive (see comment
-	@# above). Idempotent; no-op if the symlink does not exist.
-	@rm -f $(TEST_PREFIX)/lib/libtos.dylib
 	@if [ ! -f $(TEST_PREFIX)/lib/libtos.a ] || \
-	    [ ! -f $(TEST_PREFIX)/lib/libtos.0.0.1.dylib ]; then \
-		echo "test-prefix-install: canonical install did not produce libtos.{a,0.0.1.dylib}" >&2; \
+	    [ ! -f $(TEST_PREFIX)/lib/libtos.0.0.1.dylib ] || \
+	    [ ! -L $(TEST_PREFIX)/lib/libtos.dylib ]; then \
+		echo "test-prefix-install: canonical install did not produce libtos.{a,0.0.1.dylib,libtos.dylib-symlink}" >&2; \
 		exit 1; \
 	fi
 

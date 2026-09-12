@@ -27,6 +27,18 @@
 //   * No compiler / parser / IR / backend / ABI / factory
 //     semantics changes are authorized by this ACT.
 //
+// ACT-POLYC-INTEGRATION-PREBOOTSTRAP-GATES01-CORRECTION01:
+//   The harness uses DECLARATION-ONLY headers
+//   (memory_defs.HH, tooling_defs.HH, io_defs.HH) so that
+//   the harness's compiled translation unit does NOT define
+//   any libtos implementation symbols. This restores the
+//   library-ownership boundary (Layer 1) so that GPUSH-GEP01
+//   can link against the canonical libtos.a without
+//   duplicate-symbol errors. The previous include of
+//   tooling.HC / io.HC transitively dragged in memory.HC
+//   bodies, producing 26 duplicate symbols at -ltos link
+//   time.
+//
 // CLI:
 //
 //   llvm-gep01-test                              \
@@ -46,8 +58,9 @@
 // forced to fail so the harness exit-channel can be
 // inspected for the seeded-failure gate (C3 §22).
 
-#include "../../src/holyc-lib/tooling.HC"
-#include "../../src/holyc-lib/io.HC"
+#include "../../src/holyc-lib/memory_defs.HH"
+#include "../../src/holyc-lib/tooling_defs.HH"
+#include "../../src/holyc-lib/io_defs.HH"
 
 // ------------------------------------------------------------
 // TestVerdict aggregator
