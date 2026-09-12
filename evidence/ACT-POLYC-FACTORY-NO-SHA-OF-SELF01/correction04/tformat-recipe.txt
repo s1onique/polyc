@@ -1,0 +1,70 @@
+ACT-POLYC-FACTORY-NO-SHA-OF-SELF01-CORRECTION04 — Recommended SHA-extraction recipe
+
+=== FORM B (preferred) ===
+
+```sh
+git log --all-match -1 \
+        --grep='^ACT: ACT-POLYC-FOO01-CORRECTION03$' \
+        --grep='^ACT-Phase: CLOSE$' \
+        --pretty=tformat:'%H'
+```
+
+`--pretty=tformat:` is documented to append a terminator to
+every record, including the last. So even if the output is
+captured in command substitution `$()`, the trailing
+terminator is stripped consistently (just like with `echo`).
+
+=== WHY tformat: (not format:) ===
+
+`--pretty=format:` does NOT guarantee a trailing terminator
+on the last record. This is by design (Git's docs say so):
+the format string is a separator, not a terminator.
+
+`--pretty=tformat:` adds a terminator to every record. This
+is what you want for record-oriented machine output.
+
+=== FOR COMPOSABILITY ===
+
+If the next consumer is line-counting (`wc -l`),
+prefer `--oneline` (which uses `tformat:` internally):
+
+```sh
+git log --all-match \
+        --grep='^ACT: ACT-POLYC-FOO01-CORRECTION03$' \
+        --grep='^ACT-Phase: CLOSE$' \
+        --oneline | wc -l
+```
+
+If the next consumer needs the raw SHA value (for embedding
+in a URL or another command), use `--pretty=tformat:'%H'`
+(no `head -1` needed; the record terminator is included but
+typically consumed by command substitution):
+
+```sh
+sha=$(git log --all-match -1 \
+              --grep='^ACT: ACT-POLYC-FOO01-CORRECTION03$' \
+              --grep='^ACT-Phase: CLOSE$' \
+              --pretty=tformat:'%H')
+echo "The closure SHA is: $sha"
+```
+
+=== EQUIVALENT FORM (also valid) ===
+
+```sh
+# Old form (still works; uses %H%n to add terminator manually):
+git log --all-match -1 \
+        --grep='^ACT: ACT-POLYC-FOO01-CORRECTION03$' \
+        --grep='^ACT-Phase: CLOSE$' \
+        --pretty=format:'%H%n' | head -1
+```
+
+The two forms are functionally equivalent. `tformat:` is
+preferred for semantic clarity; `%H%n` is acceptable.
+
+=== RECORD TERMINATION ≠ head CORRECTNESS ===
+
+Note: `head -1` does NOT require a trailing newline to
+terminate; EOF terminates the record just fine. The reason
+to prefer terminated records is COMPOSABILITY (so that the
+output can be piped, counted, or substituted without subtle
+bugs), NOT `head` correctness.

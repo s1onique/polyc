@@ -559,16 +559,65 @@ If you also need the full SHA (not just cardinality), use:
 git log --all-match -1 \
         --grep='^ACT: ACT-POLYC-FOO01-CORRECTION03$' \
         --grep='^ACT-Phase: CLOSE$' \
-        --pretty=format:'%H%n' | head -1
+        --pretty=tformat:'%H'
 ```
 
-The trailing `%n` is critical; without it, `head -1` may
-not terminate correctly depending on the consumer.
+Git's `--pretty=tformat:` is documented to append a
+terminator to every record, including the last. The
+equivalent `--pretty=format:'%H%n'` form is also valid but
+spells the terminator manually. Both produce the same SHA;
+`tformat:` is preferred for semantic clarity.
+
+**Note on record termination:** `head -1` does NOT require a
+trailing newline to terminate; EOF terminates the record just
+fine. The reason to prefer terminated records is
+**composability** (so the output can be piped, counted, or
+substituted without subtle bugs), NOT `head` correctness.
 
 The revision history of this recipe (v0 with the naive
 OR-semantics grep; v1 with the missing-trailing-newline
-cardinality bug; v2 with `--oneline`) is preserved in
+cardinality bug; v2 with `--oneline`; v3 with
+`--pretty=tformat:`) is preserved in
 `evidence/ACT-POLYC-FACTORY-NO-SHA-OF-SELF01/correction03/recipe-revision-history.txt`.
+
+### Cardinality-1 CLOSE invariant (forward rule)
+
+For any ACT id, the set of commits carrying both
+`ACT: <id>` AND `ACT-Phase: CLOSE` MUST have cardinality
+exactly 1.
+
+This invariant guarantees that `git log --all-match -1`
+selects a well-defined unique CLOSE commit per ACT. The
+SHA obtained is "the SHA of the closure of ACT-X" — a
+stable, mechanically queryable identity.
+
+Violations:
+  - count = 0: ACT has no closure commit; downstream tools
+    that query for the closure SHA fail.
+  - count >= 2: ACT has multiple CLOSE commits; `-1`
+    silently picks one, hiding the invariant violation.
+
+**Going forward**, hygiene follow-ups to a CLOSE commit
+MUST carry `ACT-Phase: EVIDENCE` (or another non-CLOSE
+phase), NOT `ACT-Phase: CLOSE`. They are follow-ups to
+the same ACT identity, not separate closures. Material
+changes that warrant a new bounded correction should be
+opened as `ACT-N-CORRECTIONK` with their own CLOSE.
+
+**Historical exceptions** (F14 residue; not fixed by
+re-mutation; enumerated in
+`evidence/ACT-POLYC-FACTORY-NO-SHA-OF-SELF01/correction04/historical-cardinality-exceptions.txt`):
+
+  - ACT-POLYC-TOOLING-RUNTIME01-CORRECTION06 (2 CLOSE)
+  - ACT-POLYC-TOOLING-RUNTIME01-CORRECTION05 (2 CLOSE)
+  - ACT-POLYC-FACTORY-NO-SHA-OF-SELF01 (5 CLOSE; the first
+    2 are hygiene-follow-up-should-be-EVIDENCE; the last 3
+    are deliberate separate correction ACT closures and
+    ARE NOT violations)
+
+A future ACT-POLYC-FACTORY-CLOSE-CARDINALITY01 (non-
+blocking) could enforce this invariant mechanically and
+classify the historical exceptions.
 
 ### Strict F14 reading for corrections
 
