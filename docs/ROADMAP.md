@@ -964,15 +964,37 @@ OPTION-W-OUT-PARAM01  ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01
 
   COMMIT TOPOLOGY
     C1 RED        committed at 982dfa3
-    C1.1 RED      this commit (5 contract corrections)
-    C2 IMPL-A     (seam A only)
-    C3 EVIDENCE-A (verify seam A; report seam B status)
-    HARD STOP     (if seam B remains the only blocker)
-    C4 IMPL-B     (seam B dispatch arm; ONLY IF frozen contract
-                   covers it without scope expansion)
+    C1.1 RED      committed at adcbca1 (5 contract corrections)
+    C2 IMPL-A     committed at c03b2346 (HALT_C2A_INCOMPLETE;
+                                       revealed Gate 5 gap)
+    C2-A.1 RED    committed at e6298f3 (Rule 5 = observable sink)
+    C2-A.2 IMPL   committed at 00ffa44 (Sink C widening;
+                                        transition matrix ACHIEVED)
+    C3 EVIDENCE-A this commit (matrix frozen;
+                               C4_IMPL_B_AUTH = TRUE)
+    C4 IMPL-B     (next; strengthened PHI shape contract)
     C5 EVIDENCE-B (ScanIdent compiles + verifies + runs)
-    C6 CLOSE      (verdict per outcome: PASS / HALT_SECOND_SEAM
-                   / HALT_SUBSTRATE_GAP_NAMED)
+    C6 CLOSE      (final verdict)
+
+  POST-C2-A.2 TRANSITION MATRIX (FROZEN):
+    G1        PASS                    (was: OPTION_W_INELIGIBLE)
+    G2        PASS
+    G3        UNSUPPORTED_PHI         (was: OPTION_W_INELIGIBLE)
+    GN4_neg   OPTION_W_INELIGIBLE     (fence holds)
+    GN5       OPTION_W_INELIGIBLE     (Gate 3 imul)
+    GN5b      PASS                    (positive control)
+    PhiOnly   UNSUPPORTED_PHI
+    P5-P11    7/7 PASS
+
+  SEAM STATUS:
+    A1 (read envelope, Gate 4)        CLOSED   (C2-A)
+    A2 (observable sink, Gate 5)      CLOSED   (C2-A.2)
+    B  (IR_PHI backend dispatch)      OPEN     (next seam)
+
+  C2-A.1 RULE 5 REDEFINITION:
+    Old: V feeds return (return-sink only)
+    New: V feeds observable sink (Sinks A, B, C)
+    Sink C: IR_STORE_DEREF(r1==V, dst!=V, r2!=V)
 
   C1.1 CONTRACT CORRECTIONS
     Per expert review (LLVM backend engineer + Factory

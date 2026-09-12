@@ -1,0 +1,70 @@
+C3 EVIDENCE-A: C2-A.2 transition matrix frozen; C4_IMPL_B_AUTH = TRUE
+====================================================================
+
+Frozen result of C2-A.2 (per evidence/c2.2/transition-matrix.txt):
+
+  Probe       Before C2-A.2          After C2-A.2
+  ---------   --------------------   ---------------------
+  G1          OPTION_W_INELIGIBLE    PASS
+  G2          PASS                   PASS
+  G3          OPTION_W_INELIGIBLE    UNSUPPORTED_PHI
+  GN4_neg     OPTION_W_INELIGIBLE    OPTION_W_INELIGIBLE (fence holds)
+  GN5         OPTION_W_INELIGIBLE    OPTION_W_INELIGIBLE (Gate 3 imul)
+  GN5b        OPTION_W_INELIGIBLE    PASS (positive control)
+  PhiOnly     UNSUPPORTED_PHI        UNSUPPORTED_PHI
+  P5-P11      7/7 PASS               7/7 PASS
+
+SEAM_STATUS (post-C2-A.2):
+  A1 (read envelope, Gate 4):          CLOSED   (C2-A)
+  A2 (observable sink, Gate 5):        CLOSED   (C2-A.2)
+  B  (IR_PHI backend dispatch):        OPEN     (next seam)
+
+CONCLUSION (per expert governance):
+  OPTION_W_OUT_PARAM_SEAM = CLOSED
+  PHI_SEAM = ISOLATED (the next seam is independent of A1+A2)
+
+C4_IMPL_B_AUTH DECISION:
+
+  The expert strengthened the PHI-B shape contract to require:
+    - pair_count == CFG_predecessor_count(current_block)
+    - each incoming block IS an actual predecessor
+    - each predecessor represented exactly once (set semantics)
+    - incoming value type compatible with I8 PHI
+    - IR_PHI is the FIRST instruction in the merge block
+
+  This contract is now frozen in ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01
+  §9 (Strengthened PHI-B shape contract; appended at C2-A.1).
+
+  DECISION: C4_IMPL_B_AUTH = TRUE.
+
+  Rationale:
+    - The strengthened contract is mechanically verifiable.
+    - The one-pass lowering strategy's pre-ordering argument
+      (C1.1 evidence/c1.1/phi-onepass-safety.txt) extends to
+      within-block instruction ordering (PHI first in block).
+    - All required transition-matrix results are achieved; the
+      hard-stop rule (per ACT §10) is satisfied:
+        "C3 finds that path 2 (PHI) is the only remaining blocker
+         AND Fix B's contract in §9 above can be implemented
+         without scope expansion."
+
+CONSERVATION GATES (post-C3 freeze):
+  functional compiler gates = GREEN
+  factory gates = GREEN
+  manual regression = GREEN (P5-P11 7/7 + GN5/GN5b)
+  environmental: harness-evidence-isolation ENVIRONMENTALLY UNAVAILABLE
+
+NEXT ACT: C4 IMPL-B (PHI dispatch arm, strengthened shape contract)
+  Then C5 EVIDENCE-B (ScanIdent proof) -> C6 CLOSE.
+
+RESIDUE (P2 process):
+  - F14 hygiene residue: C1 IR captures were stripped of whitespace
+    at commit 6512e0f. Future ACTs must follow the F14 hygiene-
+    preserving pattern (preserve historical artifact; record hygiene
+    defect in new evidence rather than modifying old captures).
+
+RESIDUE (P0 architectural):
+  - The recon under-counted the discriminator gates (3, not 2).
+    A1 + A2 are two facets of the same Option-W eligibility seam;
+    B is the IR_PHI backend support seam. This terminology is now
+    authoritative.
