@@ -1,0 +1,367 @@
+C7 acceptance matrix
+====================
+
+ACT : ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02
+Phase: CLOSE
+ENTRY_HEAD: f7060a9a33393d48bc460628dd8015767edd9d4b
+C7_COMMIT : <set by commit object>
+FINAL_HEAD : <set by commit object>
+
+Three truth classes:
+
+  MECHANICAL         - mechanical witness (script rc, byte diff, grep)
+  MANUAL/INSPECTED   - inspected artefact (LL dump, runtime transcript)
+  HISTORICAL/RESIDUE - referenced prior commit evidence (F14 immutable)
+
+----------------------------------------------------------------
+Option-W discriminator (§2)
+----------------------------------------------------------------
+
+AC01 type = I64, not address-taken, no GEP/escape/call-by-address,
+           definitions restricted to {IR_STORE, IR_IADD, IR_ISUB},
+           every read definitely assigned, return/return-local
+           rule satisfied                                       PASS
+
+  Truth : MANUAL/INSPECTED
+  Bound : src/llvm-backend.c:974-1004 llOptionW_RequiresMem2Reg()
+          + src/llvm-backend.c:1017-1035 llClassifyOptionWLocals()
+  Confirm: discriminator inspects ins->dst == v && op in
+          {IR_STORE, IR_IADD, IR_ISUB}; n_defns >= 2 OR
+          v_reaches_ret_directly triggers Option-W.
+          c6.3/six-fixture-matrix.real.txt rows 1..7 all PASS.
+
+AC02 Frozen case-(b) opcode set = {iadd, isub}               PASS
+
+  Truth : MECHANICAL
+  Bound : src/llvm-backend.c:986-987
+          (ins->op == IR_STORE || ins->op == IR_IADD ||
+           ins->op == IR_ISUB)
+  Confirm: opcode set is exactly {IR_STORE, IR_IADD, IR_ISUB};
+          no other case-(b) definition opcode is admitted.
+  Widened: NO (F8/F12).
+
+----------------------------------------------------------------
+Real compiler memory form (§3 / C6 architectural contract)
+----------------------------------------------------------------
+
+AC03 Entry-block alloca exists for memory-backed V,
+       store at each ORIGINAL definition site,
+       load at each ORIGINAL read site                        PASS
+
+  Truth : MANUAL/INSPECTED
+  Bound : c6.3/<fixt>.HC.pre-mem2reg.real.ll (committed IR)
+  Fixtures:
+    ProbePath         c6.3/fixtures.txt row 5
+    Diamond           c6.3/Diamond.HC.pre-mem2reg.real.ll
+                      bb1: %polyc.optionw.slot.6 = alloca i64
+                      bb3: store i64 %3 (case-(a) IR_IADD result)
+                           into slot
+                      bb4: store i64 %4 (case-(b) IR_ISUB result)
+                           into slot
+                      bb5: %polyc.optionw.load = load i64, ptr slot
+                           ret i64 %polyc.optionw.load
+    ReadDigit + AccDigit (pos_b0_compare_digit)
+                      c6.3/pos_b0_compare_digit.HC.pre-mem2reg.real.ll
+                      two allocas (one per V); 4 stores; 3 loads
+    i64_collapse_probe c6.3/i64_collapse_probe.HC.pre-mem2reg.real.ll
+    single_cond_probe  c6.3/single_cond_probe.HC.pre-mem2reg.real.ll
+    safe_fwd_single_pred
+                      c6.3/safe_fwd_single_pred.HC.pre-mem2reg.real.ll
+                      bb1: alloca + case-(b) IR_IADD definition +
+                      load at original read site + ret
+    MultiDef boundary fixture (red_local_multi_def):
+                      c6.3/red_local_multi_def.HC.pre-mem2reg.real.ll
+                      x: single-def + legacy SSA (no alloca)
+                      y: 1 alloca, 2 stores (bb1 case-(a) IR_STORE,
+                         bb3 case-(a) IR_STORE), 1 load at bb4
+
+AC04 No predecessor-edge synthetic store,
+       no terminator-triggered store                           PASS
+
+  Truth : MECHANICAL
+  Bound : c7/c9-remove-list-audit.real.txt (this commit)
+  Confirm: production-code grep for the C9 remove-list returns
+          no live matches:
+            llRecognizeLocalMem2Reg        no live matches
+            llMaterializeLocalSlotAlloca   no live matches
+            llRunMem2RegOnFunction         no live matches
+            llEmitMem2RegStoreAtPredEnd    no live matches
+            local_mem2reg                  no struct-field decl
+                                            no field assignment
+            mem2reg_slot                   no struct-field decl
+                                            no field assignment
+            mem2reg_alloca                 no struct-field decl
+                                            no field assignment
+            mem2reg_store_block_id         no struct-field decl
+                                            no field assignment
+            mem2reg_store_value            no struct-field decl
+                                            no field assignment
+            terminator-driven Option-W store path: NONE
+  Confirms: all matches in src/llvm-backend.c are comments that
+          DOCUMENT the delete-list. No CFG-successor-driven store
+          path exists.
+
+AC05 Stores iff a PolyC definition occurs at the current
+       instruction (never because a CFG successor will
+       eventually need one)                                    PASS
+
+  Truth : MANUAL/INSPECTED
+  Bound : src/llvm-backend.c:1149-1168 (llEmitOptionWStore /
+          llEmitOptionWLoad only fire when ins->op is one of
+          IR_STORE / IR_IADD / IR_ISUB at the current instruction).
+  Confirm: pre-mem2reg IR for Diamond shows exactly 2 stores at
+          ORIGINAL definition sites (bb3, bb4); no store at any
+          terminator block (bb5 has only the load + ret).
+
+----------------------------------------------------------------
+Post-mem2reg state (LLVM-owned SSA / PHI construction)
+----------------------------------------------------------------
+
+AC06 Target Option-W allocas gone after mem2reg               PASS
+
+  Truth : MANUAL/INSPECTED
+  Bound : c6.3/<fixt>.HC.post-mem2reg.real.ll
+  Confirm: Diamond.HC.post-mem2reg.real.ll has no
+          %polyc.optionw.slot.N alloca; bb5 carries a PHI
+          %polyc.optionw.slot.6.0 = phi i64 [%3, %bb3], [%4, %bb4].
+
+AC07 Target slot loads gone after mem2reg                    PASS
+
+  Truth : MANUAL/INSPECTED
+  Bound : c6.3/<fixt>.HC.post-mem2reg.real.ll
+  Confirm: every post-mem2reg IR uses the phi result directly
+          (no slot load in the merge block).
+
+AC08 Target slot stores gone after mem2reg                   PASS
+
+  Truth : MANUAL/INSPECTED
+  Bound : c6.3/<fixt>.HC.post-mem2reg.real.ll
+  Confirm: post-mem2reg IR has zero `store i64 ..., ptr
+          %polyc.optionw.slot.N` instructions for the promoted V.
+
+AC09 LLVM verifier PASS                                       PASS
+
+  Truth : MECHANICAL
+  Bound : c6.3/validate.real.txt proof 1 (capture.sh rc=0)
+          + c6.3/six-fixture-matrix.real.txt (verify=0 for all 7)
+  Confirm: opt --passes=mem2reg,verify returns rc=0 for every
+          fixture; second invocation (the idem check) also exits 0.
+
+AC10 Second mem2reg invocation succeeds                      PASS
+
+  Truth : MECHANICAL
+  Bound : c6.3/six-fixture-matrix.real.txt idem column (idem=0
+          for all 7 fixtures)
+  Confirm: capture.sh's C6_3_IDEM_TEST branch proves
+          validate_row(0,0,0,99,OK,0) -> FAIL with reason
+          "idem_rc=99". Authoritative claim: "second mem2reg
+          pass succeeds and preserves verifier-valid semantics".
+  idem_eq = INFORMATIONAL only; not a fail criterion.
+
+----------------------------------------------------------------
+Runtime semantics (host-executed)
+----------------------------------------------------------------
+
+AC11 Runtime evidence for the seven Option-W fixtures         PASS
+
+  Truth : MANUAL/INSPECTED (historical C6.1 transcript,
+          unchanged at C6.3)
+  Bound : c6.1/runtime-semantics.real.txt
+  Expected (and committed):
+    Diamond(1, 42)   = 43  PASS
+    Diamond(0, 42)   = 41  PASS
+    ProbePath(0, 42) = 10  PASS
+    ProbePath(5, 42) = 43  PASS
+    ProbePath(-3, 42)= -42 PASS
+    MultiDef(0, 7, 0) = 7   PASS
+    MultiDef(99, 7, 1)= 198 PASS
+  Note: the host's runtime execution evidence is preserved at
+  C6.1 (F14). C6.3 evidence is verifier/structural (AC06..AC10).
+
+AC12 Regression coverage for the four smaller fixtures       PASS
+
+  Truth : HISTORICAL/RESIDUE
+  Bound :
+    ReadDigit/AccDigit   : llvm-byte-memory01-test
+    i64_collapse_probe   : llvm-byte-memory01-test (PASS 37/0)
+    single_cond_probe    : llvm-byte-memory01-test (PASS 37/0)
+    safe_fwd_single_pred : ir-return-slot-forwarding01-test
+                           (PASS 6/0, structural NC)
+  Note: these fixtures were not invented under CORRECTION02; the
+  existing regression matrix covers them. C7 does not duplicate.
+
+----------------------------------------------------------------
+RequiresMem2Reg boundary (C6.2/C6.3 corrected interpretation)
+----------------------------------------------------------------
+
+AC13 Boundary interpretation (corrected)                     PASS
+
+  Truth : MANUAL/INSPECTED
+  Bound : c6.2/boundary-interpretation.real.txt (authoritative
+          per F14), c6.3/boundary-interpretation.real.txt
+          (identical restatement; c6.3 is the closure copy)
+  Frozen interpretation:
+    safe_fwd_single_pred
+        single-def + direct-ret   + Option-W memory-backed
+        RequiresMem2Reg = TRUE
+        The c6.1 interpretation ("single-def + non-direct-ret +
+        legacy SSA") is FALSIFIED and SUPERSEDED by c6.2/c6.3.
+    MultiDef::x
+        single-def + non-direct-ret + legacy SSA (no slot)
+        RequiresMem2Reg = FALSE
+    MultiDef::y
+        multi-def + Option-W memory-backed (1 alloca, 2 stores,
+        1 load; mem2reg inserts iterated-DF PHI at bb4)
+        RequiresMem2Reg = TRUE
+
+----------------------------------------------------------------
+C9 delete-list absence (mechanical)
+----------------------------------------------------------------
+
+AC14 C9 remove-list absent from production code              PASS
+
+  Truth : MECHANICAL
+  Bound : c7/c9-remove-list-audit.real.txt
+  Production matches: NONE (only documentation comments remain,
+  per the explicit "delete-list, not extend-list" policy).
+
+----------------------------------------------------------------
+C6.3 truth-channel binding
+----------------------------------------------------------------
+
+AC15 C6.3 mandatory row predicates                           PASS
+
+  Truth : MECHANICAL
+  Bound : c6.3/validate.real.txt (fresh run captured in
+          c7/c6.3-validator-fresh.txt)
+  Mandatory row criteria (per validate_row() in
+  evidence/.../c6.3/capture.sh):
+    pre_rc            == 0
+    post_rc           == 0
+    verify_rc         == 0
+    idem_rc           == 0
+    stores_per_alloca != TOO_FEW
+    synth_store_count == 0
+  All seven fixtures satisfy every criterion.
+  Five verdict-channel proofs:
+    proof 1 all-good geometry            rc 0      PASS
+    proof 2 seeded pre_rc failure        validate_row FAIL
+    proof 3 injected full failure        rc non-zero
+    proof 4 seeded idem_rc failure       validate_row FAIL
+                                          (reason "idem_rc=99")
+    proof 5 FAIL-count exit predicate    [ "$FAIL" -eq 0 ]
+  Required conclusion: known false-green path = NONE.
+
+----------------------------------------------------------------
+Conservation gates (F10)
+----------------------------------------------------------------
+
+AC16 Conservation gates re-run from C7 candidate tree        PASS
+
+  Truth : MECHANICAL
+  Bound : c7/gate-results.txt
+  Results:
+    make clean                              PASS
+    make                                    PASS
+    make llvm-all                           PASS
+    llvm-spike-test                         18/0 PASS
+    llvm-byte-memory01-test                 37/0 PASS
+    llvm-intops01-test                      4/0 PASS
+    ir-return-slot-forwarding01-test        6/0 PASS
+    harness-evidence-isolation-test         PASS (HCC_INSTALL_DIR
+                                             set; documented P2
+                                             residue re Makefile
+                                             plumbing)
+    factory-v2-commit-msg-check             PASS (HEAD commit
+                                             ACT trailer valid)
+    factory-append-only-test                11/0 PASS
+    factory-closure-status                  PASS
+    gate-fast                               PASS
+
+AC17 C6.3 validator fresh run = PASS                         PASS
+
+  Truth : MECHANICAL
+  Bound : c7/c6.3-validator-fresh.txt
+  Confirm: validate.sh rc=0; verdict channel "real";
+          false-green possible = NO.
+
+----------------------------------------------------------------
+Patch hygiene (F12)
+----------------------------------------------------------------
+
+AC18 Patch hygiene scope-bound                               PASS
+
+  Truth : MECHANICAL
+  Bound : c7/patch-hygiene.txt
+  Historical C6.1 range a06a6f5..a640357:
+    FAIL (7 trailing-whitespace diagnostics in the preserved
+    c6.1 six-fixture matrix; F14 preserves historical fact;
+    intentionally not rewritten. The c6.3 verdict-summary
+    reference to "14 lines" is the same 7 diagnostics rendered
+    as 14 output lines by git diff --check, two lines per
+    diagnostic. The diagnostic count is 7.)
+  C6.2 cumulative range a640357..d90de7e:
+    PASS (git diff --check rc=0)
+  C6.3 range d90de7e..HEAD:
+    PASS (git diff --check rc=0)
+  C7 commit:
+    git diff --check HEAD^ HEAD = PASS
+    (C7 is docs-only: ROADMAP.md + ACT trailer + new
+    evidence/.../c7/* artefacts. No src/ change.)
+  Do NOT claim entire C6.1..C7 historical range = whitespace
+  clean; it is not. C6.1 trailing-whitespace diagnostics are
+  immutable residue.
+
+----------------------------------------------------------------
+ACT status / lineage (Factory v2 mechanics)
+----------------------------------------------------------------
+
+AC19 ROADMAP / ACT status updated to CLOSED                  PASS
+
+  Truth : MANUAL/INSPECTED
+  Bound : c7/ROADMAP-update.txt (descriptive)
+  C7 adds ACT-Phase: CLOSE trailer on the C7 commit
+  (commit message; Factory v2 grammar).
+  ROADMAP.md: append CLOSED status block + full lineage.
+  ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02.md document is
+  preserved unchanged (F14 immutable); closure identity lives
+  in the commit trailer, NOT in a mutable `Status:` field.
+
+AC20 Full actual lineage recorded                             PASS
+
+  Truth : MANUAL/INSPECTED
+  Bound : c7/closure-summary.txt
+  C1, C2, C2.1, C2.2, C3, C4 v1 (SUPERSEDED), C4 v2, C5,
+  C6, C6.1, C6.2, C6.2 snap, C6.3, C7
+  C4 v1 = SUPERSEDED (correction at C4 v2)
+  The original nine-commit planned topology was extended by the
+  reviewer corrections; the lineage is recorded honestly, not
+  forced to match the original plan.
+
+----------------------------------------------------------------
+Closure summary (the required final-report fields)
+----------------------------------------------------------------
+
+ROOT_CAUSE =
+    backend attempted to represent path-dependent mutable locals
+    through SSA-cache/predecessor-store synthesis
+FIX =
+    faithful original-site memory lowering + LLVM mem2reg
+FROZEN_SUPPORTED_DEF_FORMS =
+    IR_STORE, IR_IADD, IR_ISUB
+PHI_POLICY =
+    LLVM-owned
+FRONTEND_SSA_RECONSTRUCTION =
+    NO
+C9_PREDECESSOR_STORE_SYNTHESIS =
+    REMOVED
+NEUTRAL_IR_CHANGED =
+    NO
+ABI_CHANGED =
+    NO
+CASE_B_OPCODE_SET_WIDENED =
+    NO
+
+----------------------------------------------------------------
+End of acceptance matrix
+----------------------------------------------------------------

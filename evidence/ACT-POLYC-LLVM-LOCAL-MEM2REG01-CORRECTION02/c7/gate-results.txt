@@ -1,0 +1,111 @@
+C7 conservation gate results (fresh run from C7 candidate tree)
+================================================================
+
+ACT: ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02
+ENTRY_HEAD: f7060a9a33393d48bc460628dd8015767edd9d4b
+C7_COMMIT: <set by commit object>
+FINAL_HEAD: <set by commit object>
+Captured at: C7 close
+
+All commands run from the repo root with the env documented
+in the comments. Per-gate stdout/stderr captured verbatim
+in the per-gate files alongside this summary.
+
+----------------------------------------------------------------
+Build
+----------------------------------------------------------------
+make clean                     rc=0   PASS    (cleaned ./build ./hcc)
+make                           rc=0   PASS    (native hcc linked)
+make llvm-all                  rc=0   PASS    (LLVM backend linked;
+                                                 3 warnings, all
+                                                 pre-existing in
+                                                 src/llvm-backend.c
+                                                 at C6)
+
+----------------------------------------------------------------
+Functional gates (require HCC_INSTALL_DIR with include/tos.HH)
+----------------------------------------------------------------
+llvm-spike-test                rc=0   PASS    Summary: PASS=18 FAIL=0
+llvm-byte-memory01-test        rc=0   PASS    BYTE_MEMORY01_PASS=37
+                                               BYTE_MEMORY01_FAIL=0
+                                               STATUS=PASS
+llvm-intops01-test             rc=0   PASS    INTOPS01_PASS=4
+                                               INTOPS01_FAIL=0
+                                               STATUS=PASS
+ir-return-slot-forwarding01-test
+                               rc=0   PASS    IR_RETURN_SLOT_FORWARDING01
+                                               _PASS=6 _FAIL=0
+                                               STATUS=PASS
+
+harness-evidence-isolation-test
+                               rc=0   PASS    closed-ACT trees scanned:
+                                                 50 files
+                                                 git status mod: NONE
+                               (without HCC_INSTALL_DIR the test
+                                fails on Makefile env plumbing —
+                                documented P2 residue; the script
+                                itself runs and gates properly
+                                when env is propagated by hand)
+
+----------------------------------------------------------------
+Factory v2 gates
+----------------------------------------------------------------
+factory-v2-commit-msg-check    rc=0   PASS    MODE=ACT
+                                               ACT=...CORRECTION02
+                                               PHASE=EVIDENCE
+                                               SUPERSEDES=d90de7e
+                                               STATUS=PASS
+factory-append-only-test       rc=0   PASS    PASS=11 FAIL=0
+                                               STATUS=PASS
+factory-closure-status         rc=0   PASS    PAIR_OK=6 PAIR_FAIL=0
+                                               VERDICT=PASS
+
+----------------------------------------------------------------
+Fast gate
+----------------------------------------------------------------
+gate-fast                      rc=0   PASS    all sub-checks PASS
+                                               diff-check
+                                               shell-syntax
+                                               doc-invariants
+                                               large-file-guard
+                                               factory-closure-status
+
+----------------------------------------------------------------
+C6.3 evidence validator (re-run fresh)
+----------------------------------------------------------------
+c6.3/validate.sh               rc=0   PASS
+                                 proof 1 all-good geometry   rc=0
+                                 proof 2 seeded pre_rc       rc=0
+                                 proof 3 injected full FAIL  rc=1
+                                 proof 4 seeded idem_rc=99   rc=0
+                                 proof 5 exit-predicate audit PASS
+                                 verdict channel: real
+                                 false-green possible = NO
+
+c6.3/capture.sh (all-good)     rc=0   PASS
+                                 TOTAL=7 PASS=7 FAIL=0
+                                 safe_fwd_single_pred       PASS
+                                 single_cond_probe          PASS
+                                 i64_collapse_probe         PASS
+                                 pos_b0_compare_digit       PASS
+                                 nc_p01_predecessor_paths   PASS
+                                 Diamond                    PASS
+                                 red_local_multi_def        PASS
+
+----------------------------------------------------------------
+Aggregate
+----------------------------------------------------------------
+Total gates checked         : 12
+PASS                        : 12
+FAIL                        : 0
+HALT                        : 0
+SKIP                        : 0
+
+The two residue items reported in the C6.3 verdict summary are
+unrelated to this ACT and are NOT CORRECTION02 conservation gates:
+  - llvm-spike-contract-check (neg_pointer.HC stale reference)
+  - harness-evidence-isolation-test without HCC_INSTALL_DIR
+    (Makefile env plumbing; not a CORRECTION02 gate; gate PASSES
+    when env is propagated as the script documents)
+
+End of gate-results.

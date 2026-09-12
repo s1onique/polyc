@@ -1,0 +1,152 @@
+C7 closure summary
+==================
+
+ACT : ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02
+Phase: CLOSE
+ENTRY_HEAD: f7060a9a33393d48bc460628dd8015767edd9d4b
+C7_COMMIT: <set by commit object>
+FINAL_HEAD: <set by commit object>
+Verdict: PASS
+
+----------------------------------------------------------------
+Architectural result (the only thing C7 closes)
+----------------------------------------------------------------
+
+Eligible mutable I64 locals are represented faithfully as:
+
+  entry-block alloca
+  + store at each ORIGINAL definition site
+  + load at each ORIGINAL read site
+
+LLVM mem2reg owns SSA / PHI construction.
+
+The superseded C9 predecessor-store synthesis is deleted and
+must not return.
+
+DO NOT phrase the result as "PolyC now performs SSA reconstruction".
+
+PolyC preserves mutable-local semantics in memory form and
+delegates SSA construction to LLVM.
+
+----------------------------------------------------------------
+Final production architecture (recorded, not planned)
+----------------------------------------------------------------
+
+Backend change:
+
+  src/llvm-backend.c
+    - llOptionW_RequiresMem2Reg(fn, v)              discriminator
+    - llClassifyOptionWLocals(fn, lc)               classifier
+    - llMaterializeOptionWSlots(lc)                 entry alloca
+    - llEmitOptionWStore(lc, v, value)              store helper
+    - llEmitOptionWLoad(lc, v)                      load helper
+    - llRunOptionWMem2Reg(lc)                       post-block mem2reg
+                                                   (replaces deleted
+                                                    llRunMem2RegOnFunction)
+  src/llvm-backend.c struct LLCtx
+    + LLValMap option_w_slots       (var.id -> LLVM alloca)
+    + u32     option_w_count
+    + int     option_w_active
+    - lc->local_mem2reg             (deleted)
+    - lc->mem2reg_slot              (deleted)
+    - lc->mem2reg_alloca            (deleted)
+    - lc->mem2reg_store_block_id    (deleted)
+    - lc->mem2reg_store_value       (deleted)
+
+No new opcode, no neutral-IR change, no ABI change.
+
+----------------------------------------------------------------
+Frozen contracts
+----------------------------------------------------------------
+
+FROZEN_SUPPORTED_DEF_FORMS = IR_STORE, IR_IADD, IR_ISUB
+PHI_POLICY                  = LLVM-owned
+FRONTEND_SSA_RECONSTRUCTION = NO
+C9_PREDECESSOR_STORE_SYNTHESIS = REMOVED
+NEUTRAL_IR_CHANGED          = NO
+ABI_CHANGED                 = NO
+CASE_B_OPCODE_SET_WIDENED   = NO
+
+----------------------------------------------------------------
+Full lineage (actual; recorded honestly, not the planned shape)
+----------------------------------------------------------------
+
+The original nine-commit planned topology was extended by the
+reviewer corrections (C4 v2 superseded C4 v1; C6.1 reclassified
+red_local_multi_def; C6.2 added evidence-integrity; C6.3 bound
+idem_rc to row verdict). The reviewer corrections are legitimate
+append-only descendants.
+
+C1         RED       contract open + RED-1 reproduced         (659bbd1)
+C2         RED       reviewer-board P0-1/P0-2/P0-3/P1          (7a991a9)
+C2.1       RED       reviewer-board case-(b) / PHI / rule-5   (316144c)
+C2.2       RED       reviewer-board trailer / evidence-paths  (74cb97c)
+C3         RED       RED-2 def/use + frozen case-(b) opcode   (29e43a7)
+C4 v1      RED       RED-3 hand-translated Option-W proof     (bf74167)
+                                              === SUPERSEDED ===
+C4 v2      RED       reviewer-board AccDigit fix + spec-driven(c69842e)
+                     per-function mechanical validation
+C5         IMPL      descriptive: IMPL-TOOLING; producer fix  (96f7825)
+C6         IMPL      descriptive: IMPL-COMPILER; bounded      (a06a6f5)
+                     backend change (cases a + b)
+C6.1       IMPL-evid convergence: reclassify red_local_multi_def
+                                                + promote Diamond
+                                                + real-compiler evidence
+                                                           (a640357)
+C6.2       IMPL-evid evidence-integrity: validate.sh captured output
+                                                snapshot
+                                                           (24eaad9)
+                     + C6.2-evidence-integrity correction: verdict channel
+                       + boundary + patch hygiene
+                                                           (d90de7e)
+C6.3       IMPL-evid evidence-predicate correction: bind idem_rc to row
+                                                verdict
+                                                           (f7060a9)
+C7         CLOSE     acceptance-criteria evidence + verdict
+                                                           (<set>)
+
+C4 v1 = SUPERSEDED by C4 v2.
+The final production architecture is the cumulative C6 IMPL
+state at C6.3 (frozen at f7060a9); C7 only adds evidence + ROADMAP
+trailer; C7 does NOT change src/llvm-backend.c.
+
+----------------------------------------------------------------
+Patch hygiene (F12)
+----------------------------------------------------------------
+
+Historical C6.1 range a06a6f5..a640357: FAIL
+  7 trailing-whitespace diagnostics in
+  evidence/.../c6.1/six-fixture-matrix.real.txt
+  (each diagnostic = 2 lines from git diff --check, 7 x 2 = 14
+   lines of output; the diagnostic count is 7, not 14)
+  Per F14, c6.1 is preserved unchanged. The new authoritative
+  closure matrix is c6.3/six-fixture-matrix.real.txt,
+  generated without trailing whitespace.
+
+C6.2 cumulative range a640357..d90de7e: PASS
+C6.3 range d90de7e..HEAD: PASS
+C7 commit (after creation): git diff --check HEAD^ HEAD = PASS
+                            (C7 is docs-only)
+
+DO NOT claim entire C6.1..C7 historical range = whitespace
+clean; it is not. C6.1 trailing-whitespace is append-only
+residue.
+
+----------------------------------------------------------------
+Closure verdict
+----------------------------------------------------------------
+
+VERDICT = PASS
+ROOT_CAUSE = backend attempted to represent path-dependent
+             mutable locals through SSA-cache/predecessor-store
+             synthesis
+FIX = faithful original-site memory lowering + LLVM mem2reg
+FROZEN_SUPPORTED_DEF_FORMS = IR_STORE, IR_IADD, IR_ISUB
+PHI_POLICY = LLVM-owned
+FRONTEND_SSA_RECONSTRUCTION = NO
+C9_PREDECESSOR_STORE_SYNTHESIS = REMOVED
+NEUTRAL_IR_CHANGED = NO
+ABI_CHANGED = NO
+CASE_B_OPCODE_SET_WIDENED = NO
+
+End of closure summary.

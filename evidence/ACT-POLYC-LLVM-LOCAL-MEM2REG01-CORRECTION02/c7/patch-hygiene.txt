@@ -1,0 +1,43 @@
+C7 patch hygiene audit (mechanical)
+
+=== 1. Historical C6.1 range a06a6f5..a640357 ===
+Command: git diff --check a06a6f5 a640357
+(7 trailing-whitespace diagnostics; verbatim output
+ had its trailing whitespace stripped so the file
+ itself does not trigger a hygiene FAIL)
+
+evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02/c6.1/six-fixture-matrix.real.txt:1: [TW-MARKER] trailing whitespace (verbatim output; trailing whitespace stripped for hygiene).
++safe_fwd_single_pred           safe_fwd_single_pred   pre=0 post=0 verify=0 idem=0 allocas=1 stores=1 loads=1 synth=0 stores_per_alloca=OK  PASS
+evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02/c6.1/six-fixture-matrix.real.txt:2: [TW-MARKER] trailing whitespace (verbatim output; trailing whitespace stripped for hygiene).
++single_cond_probe              Probe-Diamond-class    pre=0 post=0 verify=0 idem=0 allocas=1 stores=2 loads=2 synth=0 stores_per_alloca=OK  PASS
+evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02/c6.1/six-fixture-matrix.real.txt:3: [TW-MARKER] trailing whitespace (verbatim output; trailing whitespace stripped for hygiene).
++i64_collapse_probe             i64_collapse_probe     pre=0 post=0 verify=0 idem=0 allocas=1 stores=2 loads=2 synth=0 stores_per_alloca=OK  PASS
+evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02/c6.1/six-fixture-matrix.real.txt:4: [TW-MARKER] trailing whitespace (verbatim output; trailing whitespace stripped for hygiene).
++pos_b0_compare_digit           ReadDigit-AccDigit     pre=0 post=0 verify=0 idem=0 allocas=2 stores=4 loads=3 synth=0 stores_per_alloca=OK  PASS
+evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02/c6.1/six-fixture-matrix.real.txt:5: [TW-MARKER] trailing whitespace (verbatim output; trailing whitespace stripped for hygiene).
++nc_p01_predecessor_paths       ProbePath              pre=0 post=0 verify=0 idem=0 allocas=1 stores=3 loads=1 synth=0 stores_per_alloca=OK  PASS
+evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02/c6.1/six-fixture-matrix.real.txt:6: [TW-MARKER] trailing whitespace (verbatim output; trailing whitespace stripped for hygiene).
++Diamond                        Diamond                pre=0 post=0 verify=0 idem=0 allocas=1 stores=2 loads=1 synth=0 stores_per_alloca=OK  PASS
+evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02/c6.1/six-fixture-matrix.real.txt:7: [TW-MARKER] trailing whitespace (verbatim output; trailing whitespace stripped for hygiene).
++red_local_multi_def            MultiDef-reclassified  pre=0 post=0 verify=0 idem=0 allocas=1 stores=2 loads=1 synth=0 stores_per_alloca=OK  PASS
+
+=== summary count ===
+Trailing-whitespace diagnostics in c6.1 range:
+7
+(each diagnostic = 2 output lines from git diff --check;
+ the c6.3 verdict-summary.real.txt reference to 14
+ was the 14 output lines, not the diagnostic count.)
+
+=== 2. C6.2 cumulative range a640357..d90de7e ===
+Command: git diff --check a640357 d90de7e
+
+
+=== 3. C6.3 range d90de7e..HEAD ===
+Command: git diff --check d90de7e HEAD
+
+
+=== summary ===
+Historical C6.1 range: FAIL (7 trailing-whitespace diagnostics in preserved c6.1 six-fixture matrix; F14 preserves historical fact; intentionally not rewritten)
+C6.2 cumulative range: PASS
+C6.3 range: PASS
+C7 commit (post-creation): git diff --check HEAD^ HEAD = PASS (docs-only)

@@ -1513,3 +1513,169 @@ C5 IMPL-TOOLING is independently released by the
 reviewer board at C2.1 and may run in parallel with
 C3 and C4. C6 IMPL-COMPILER is gated on
 COMPILER_IMPL_AUTH = C5 GREEN ∧ C3 PASS ∧ C4 PASS.
+
+#### ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 status (CLOSED at C7)
+
+```text
+LOCAL-MEM2REG01-CORRECTION02  ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02
+  ENTRY    = e286f59 (parent commit of contract opening)
+  STATE    = CLOSED at C7 (Factory v2 grammar: ACT-Phase: CLOSE +
+             ACT-Verdict: PASS on the C7 commit trailer)
+             No mutable Markdown `Status:` field is updated;
+             verdict identity lives in the C7 commit trailer.
+  PREDECESSOR = CORRECTION01 closed at 8072b9a
+                (HALT_DEFECTIVE_IMPL) with post-CLOSE
+                reviewer board Option-W evidence at e286f59
+                (no ACT: trailer; recorded as residue).
+  MISSION  = faithful memory-backed lowering of the smallest
+             mutable-local class (Option W); no frontend SSA
+             reconstruction. Replace C9 predecessor-store
+             synthesis with original-site store/load lowering
+             + LLVM mem2reg.
+
+  ACTUAL LINEAGE (the reviewer corrections are legitimate
+  append-only descendants; the original nine-commit planned
+  topology was extended; C4 v1 was SUPERSEDED by C4 v2):
+
+    C1     RED       contract open + RED-1 reproduced         (659bbd1)
+    C2     RED       reviewer-board P0-1/P0-2/P0-3/P1          (7a991a9)
+    C2.1   RED       reviewer-board case-(b) / PHI / rule-5   (316144c)
+    C2.2   RED       reviewer-board trailer / evidence-paths  (74cb97c)
+    C3     RED       RED-2 def/use + frozen case-(b) opcode   (29e43a7)
+    C4 v1  RED       RED-3 hand-translated Option-W proof     (bf74167)
+                                                          === SUPERSEDED ===
+    C4 v2  RED       reviewer-board AccDigit fix + spec-driven
+                                                            (c69842e)
+                       per-function mechanical validation
+    C5     IMPL      IMPL-TOOLING; harness-isolation producer (96f7825)
+    C6     IMPL      IMPL-COMPILER; bounded backend change   (a06a6f5)
+                       (cases a + b)
+    C6.1   IMPL-evid convergence: reclassify red_local_multi_def
+                       + promote Diamond + real-compiler evidence
+                                                            (a640357)
+    C6.2   IMPL-evid evidence-integrity: validate.sh snapshot(24eaad9)
+    C6.2'  IMPL-evid verdict channel + boundary + patch hygiene
+                                                            (d90de7e)
+    C6.3   IMPL-evid idem_rc bound to row verdict            (f7060a9)
+    C7     CLOSE     acceptance-criteria evidence + verdict  (C7_COMMIT)
+
+  FINAL PRODUCTION ARCHITECTURE (the cumulative C6 state at
+  C6.3 is FROZEN; C7 does NOT change src/llvm-backend.c):
+
+    Option-W representation:
+      entry-block alloca
+      + store at each ORIGINAL definition site
+      + load at each ORIGINAL read site
+      + LLVM mem2reg owns SSA / PHI construction
+
+    Deleted C9 surface (production matches = NONE):
+      llRecognizeLocalMem2Reg         (deleted)
+      llMaterializeLocalSlotAlloca    (deleted)
+      llRunMem2RegOnFunction          (deleted)
+      llEmitMem2RegStoreAtPredEnd     (deleted)
+      lc->local_mem2reg               (deleted)
+      lc->mem2reg_slot                (deleted)
+      lc->mem2reg_alloca              (deleted)
+      lc->mem2reg_store_block_id      (deleted)
+      lc->mem2reg_store_value         (deleted)
+      IR_JMP / IR_BR synthetic store  (deleted)
+
+    Frozen contracts:
+      FROZEN_SUPPORTED_DEF_FORMS = IR_STORE, IR_IADD, IR_ISUB
+      CASE_B_OPCODE_SET_WIDENED  = NO
+      PHI_POLICY                 = LLVM-owned
+      FRONTEND_SSA_RECONSTRUCTION = NO
+      NEUTRAL_IR_CHANGED          = NO
+      ABI_CHANGED                 = NO
+
+  CLOSURE SUMMARY:
+    ROOT_CAUSE = backend attempted to represent path-dependent
+                 mutable locals through SSA-cache/predecessor-
+                 store synthesis
+    FIX        = faithful original-site memory lowering +
+                 LLVM mem2reg
+    VERDICT    = PASS (C7 commit trailer)
+
+  C6.3 TRUTH CHANNEL = PASS
+    Mandatory row predicates:
+      pre_rc == 0
+      post_rc == 0
+      verify_rc == 0
+      idem_rc == 0      <-- bound in C6.3
+      stores_per_alloca != TOO_FEW
+      synth_store_count == 0
+    Five verdict-channel proofs PASS:
+      all-good geometry -> capture rc 0
+      seeded pre failure -> row FAIL
+      injected full failure -> capture rc non-zero
+      seeded idem_rc failure -> row FAIL with idem_rc reason
+      FAIL-count exit predicate present
+    known false-green path = NONE
+
+  REQUIRESMEM2REG BOUNDARY (corrected at C6.2/C6.3;
+    c6.1 interpretation of safe_fwd_single_pred is
+    SUPERSEDED):
+    safe_fwd_single_pred  single-def + direct-ret  + Option-W
+                         RequiresMem2Reg = TRUE
+    MultiDef::x           single-def + non-direct-ret + legacy SSA
+                         RequiresMem2Reg = FALSE
+    MultiDef::y           multi-def + Option-W memory-backed
+                         RequiresMem2Reg = TRUE
+
+  CONSERVATION GATES (re-run from C7 candidate tree, fresh):
+    make clean                                 PASS
+    make                                       PASS
+    make llvm-all                              PASS
+    llvm-spike-test                            18/0 PASS
+    llvm-byte-memory01-test                    37/0 PASS
+    llvm-intops01-test                         4/0 PASS
+    ir-return-slot-forwarding01-test           6/0 PASS
+    harness-evidence-isolation-test            PASS (HCC_INSTALL_DIR
+                                               set; documented P2
+                                               Makefile plumbing
+                                               residue)
+    factory-v2-commit-msg-check                PASS
+    factory-append-only-test                   11/0 PASS
+    factory-closure-status                     PASS
+    gate-fast                                  PASS
+
+  PATCH HYGIENE (F12):
+    Historical C6.1 range a06a6f5..a640357   FAIL
+      (7 trailing-whitespace diagnostics in
+       preserved c6.1 six-fixture matrix;
+       each diagnostic = 2 lines of git diff --check output,
+       so the raw output is 14 lines; the diagnostic count
+       is 7. F14 preserves historical fact.)
+    C6.2 cumulative range a640357..d90de7e  PASS
+    C6.3 range d90de7e..HEAD                PASS
+    C7 commit                               git diff --check
+                                            HEAD^ HEAD = PASS
+                                            (C7 is docs-only)
+
+  EVIDENCE DIRECTORY = evidence/.../c7/
+    acceptance-matrix.txt        AC01..AC20 with truth classes
+    closure-summary.txt          ARCHITECTURE + lineage + verdict
+    residue.txt                  P2 residue carried honestly
+    gate-results.txt             fresh conservation-gate output
+    patch-hygiene.txt            range hygiene
+    c6.3-validator-fresh.txt     fresh C6.3 validate.sh run
+    c6.3-allgood-fresh.txt       fresh C6.3 capture.sh output
+    c9-remove-list-audit.real.txt mechanical C9 absence proof
+    gate-*.txt                   per-gate transcripts
+    ROADMAP-update.txt           descriptive pointer
+
+  RESIDUE (F11):
+    P0  none (defect class eliminated by C6 architecture)
+    P1  none introduced by C7 (docs-only closure commit)
+    P2  llvm-spike-contract-check neg_pointer.HC stale ref
+        (pre-existing; not a CORRECTION02 gate)
+    P2  harness-evidence-isolation-test requires HCC_INSTALL_DIR
+        (Makefile plumbing; gate PASSES when env set)
+    P2  historical C6.1 trailing-whitespace matrix
+        (F14 immutable; not rewritten)
+    P2  e286f59 NON_ACT post-CLOSE evidence
+        (F14 immutable; recorded in ACT §1.1)
+
+  NEXT ACT = NONE for this defect class unless a new
+             counterexample appears.
+```

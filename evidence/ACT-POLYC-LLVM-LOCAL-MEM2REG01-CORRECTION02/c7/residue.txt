@@ -1,0 +1,94 @@
+C7 residue (carried forward honestly)
+====================================
+
+This ACT closes PASS. The following items are residue,
+explicitly classified per F11. NONE blocks C7 CLOSE.
+
+----------------------------------------------------------------
+P0 — none
+----------------------------------------------------------------
+No P0 residue. The defect class (path-dependent mutable locals
+represented through SSA-cache/predecessor-store synthesis) is
+eliminated by the C6 architecture (entry-block alloca + store
+at original definition sites + load at original read sites +
+LLVM mem2reg).
+
+----------------------------------------------------------------
+P1 — none introduced by C7
+----------------------------------------------------------------
+C7 is docs-only (ROADMAP.md + ACT trailer +
+evidence/.../c7/* artefacts). No src/ change. No new
+production semantic. No new test surface. No new
+authorisation.
+
+----------------------------------------------------------------
+P2 — unrelated residue carried from C6.x
+----------------------------------------------------------------
+
+P2-1: llvm-spike-contract-check — neg_pointer.HC reference is
+       stale.
+  - The contract check expects a fixture at
+    src/tests/llvm-spike/neg_pointer.HC. That fixture was
+    deleted in commit 6d188c1 (long before C6.1/C6.2/C6.3).
+  - The contract harness was not updated when the fixture was
+    removed.
+  - This is a pre-existing failure, NOT a CORRECTION02
+    conservation gate. The contract check is not run by any of
+    the closures above.
+  - Not blocking C7.
+  - Status: P2, carried from c6.2/residue-notes.real.txt.
+
+P2-2: harness-evidence-isolation-test requires HCC_INSTALL_DIR.
+  - `make llvm-spike-test` does not propagate HCC_INSTALL_DIR
+    into the test subprocess by default.
+  - Running the harness without HCC_INSTALL_DIR fails because
+    the test library is not found.
+  - Running with HCC_INSTALL_DIR set passes (verified; see
+    c7/gate-harness-iso.txt).
+  - This is a Makefile plumbing issue, NOT a CORRECTION02
+    conservation gate.
+  - The conservation gate above is the harness-evidence-
+    isolation-test RESULT with the env var set, which is PASS.
+  - Status: P2, carried from c6.2/residue-notes.real.txt.
+
+P2-3: historical C6.1 trailing-whitespace matrix.
+  - c6.1/six-fixture-matrix.real.txt has 7 trailing-whitespace
+    lines (14 diagnostics under
+    `git diff --check a06a6f5 a640357`).
+  - Per F14, c6.1 is preserved unchanged. The new authoritative
+    closure matrix is c6.3/six-fixture-matrix.real.txt,
+    generated without trailing whitespace.
+  - Status: P2 (immutable append-only residue). C7 does NOT
+    silently rewrite historical c6.1 evidence.
+
+----------------------------------------------------------------
+P2 — historical immutable residue (not blocking)
+----------------------------------------------------------------
+
+P2-4: e286f59 — NON_ACT post-CLOSE evidence.
+  - Commit e286f59 carries NO ACT: trailer.
+  - Under Factory v2 grammar, it has no ACT identity binding.
+    Verified mechanically:
+      $ git show -s --format='%B' e286f59 \
+          | git interpret-trailers --parse
+      # (empty)
+  - Append-only doctrine means we cannot fix the commit.
+  - This is residue, not a defect: a docs-only NON_ACT commit
+    is not inherently malformed under the Factory model. The
+    bad outcome would have been a closed CORRECTION01 id after
+    its CLOSE, recreating rule-6 contamination. The append at
+    e286f59 is neither.
+  - Status: P2, historical / immutable. C7 records this in
+    ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 §1.1.
+
+----------------------------------------------------------------
+No new residue introduced by C7
+----------------------------------------------------------------
+
+C7 does not introduce new production code, new tests, new
+fixtures, new capability rows, or new acceptance criteria.
+C7 is purely a documentation closure commit. The C7 evidence
+artefacts under evidence/.../c7/ are descriptive; they do
+not modify the canonical C6.3 evidence at evidence/.../c6.3/.
+
+End of residue.
