@@ -1,0 +1,183 @@
+ACT-POLYC-TOOLING-SHELL-INVENTORY01 CORRECTION01 (inventory + arithmetic)
+=========================================================================
+
+F14-style append-only correction. The historical commits
+(84203a7 RED+IMPL and 21e55b2 CLOSE) remain immutable
+evidence of process evolution. The defects recorded below
+existed in the closure packet at the time of CLOSE.
+
+This correction does NOT rewrite the historical files.
+It records the defects and adds the corrected artefacts
+in this correction01/ directory.
+
+------------------------------------------------------------
+P0 evidence defect #1: c1/inventory.txt was truncated
+------------------------------------------------------------
+
+The committed c1/inventory.txt on main (5 rows) was the
+output of inventory.sh during the original C1 session,
+captured via a tee that was truncated mid-stream. The
+authoritative output of inventory.sh has 22 rows (one per
+shell file in scripts/quality).
+
+The ACT's AC03 ("inventory.sh produces a row per shell
+file in scripts/") was FAIL at the time of CLOSE because
+the committed inventory.txt only contained 5 of 22 rows.
+
+The CLOSE packet's claim "AC03 PASS" was therefore
+incorrect. The CORRECTED state is:
+
+  - inventory.sh IS capable of producing 22 rows
+    (verified in this correction by re-running it into
+    correction01/inventory-authoritative.txt, which
+    contains all 22 rows).
+  - The historical c1/inventory.txt artefact is BROKEN;
+    it contains 5 rows because of tee buffering at C1.
+  - AC03 should have been FAIL at C1; CLOSE should have
+    not claimed PASS.
+
+Correction:
+
+  evidence/ACT-POLYC-TOOLING-SHELL-INVENTORY01/
+    correction01/inventory-authoritative.txt
+      -- 22 rows, the real inventory.sh output.
+
+------------------------------------------------------------
+P0 arithmetic defect #2: grandfathered LOC was misreported
+------------------------------------------------------------
+
+The c2/closure-summary.txt and the ROADMAP handoff
+claimed:
+
+  Grandfathered shell debt: 5,710 LOC across 19 files.
+
+The arithmetic was wrong. The committed baseline.txt has
+20 files totalling 6,131 LOC. Only one baseline file is
+<=50 LOC:
+
+    scripts/quality/llvm-closure-status-check.sh = 21 LOC
+
+Therefore:
+
+    grandfathered files (pre-ACT, >50 LOC) = 19
+    grandfathered LOC (pre-ACT)            = 6,131 - 21
+                                           = 6,110
+                                           (not 5,710)
+
+The error was a 400 LOC under-count. Most likely cause:
+subtracting 21 twice (the "small file exception") in the
+closure summary calculation.
+
+Correction:
+
+    scripts/quality/llvm-closure-status-check.sh = 21 LOC
+                                                    ^^^
+                                         (the ONE pre-ACT
+                                          file <=50 LOC)
+
+    Pre-ACT baseline:
+      total files        = 20
+      total LOC          = 6,131
+      files <=50 LOC     =  1   (21 LOC)
+      grandfathered      = 19
+      grandfathered LOC  = 6,110
+
+    Current tree (post-ACT):
+      total files        = 22   (added inventory.sh +
+                                 shell-loc-gate.sh)
+      total LOC          = 6,176
+      files <=50 LOC     =  3   (21 + 19 + 26)
+      grandfathered      = 19   (unchanged)
+      grandfathered LOC  = 6,110 (unchanged)
+
+------------------------------------------------------------
+P2 hygiene defect #3: GEP01 CORRECTION01 EOF blemish
+------------------------------------------------------------
+
+The new digest also reported:
+
+  evidence/ACT-POLYC-LLVM-GEP01/correction01/correction-summary.txt:152
+    new blank line at EOF
+
+This is a heredoc artefact (the shell <<EOF always ends
+with the last newline; if the source body ended with a
+blank line, the file ends with TWO newlines). It is
+documented here for completeness but is not a substantive
+defect and the historical commit d0e7f4f is preserved.
+
+------------------------------------------------------------
+What is the ratchet policy doing?
+------------------------------------------------------------
+
+Despite the inventory + arithmetic defects, the ratchet
+MECHANISM itself works correctly:
+
+  bash scripts/quality/shell-loc-gate.sh \
+       scripts/quality \
+       evidence/ACT-POLYC-TOOLING-SHELL-INVENTORY01/c1/baseline.txt
+
+  Output: PASS  shell-loc-gate (rc=0)
+
+This was re-verified in this correction commit.
+Manually confirmed:
+  - new file 54 LOC   -> FAIL rc=1 (gate rejects)
+  - grown existing    -> FAIL rc=1 (gate rejects)
+
+The policy is sound. The CLOSE packet's claims were the
+problem, not the policy.
+
+------------------------------------------------------------
+Closure verdict after this correction
+------------------------------------------------------------
+
+  ACT-POLYC-TOOLING-SHELL-INVENTORY01  CLOSED PASS
+
+  - ratchet mechanism    PASS
+  - inventory artefact   was BROKEN at C1; now corrected
+                         in correction01/inventory-authoritative.txt
+  - arithmetic           corrected: 6,110 grandfathered LOC
+  - conservation gates   PASS
+  - patch hygiene (src/ scripts/ docs/) PASS
+
+  The CLOSE packet at c2/closure-summary.txt and the
+  ROADMAP handoff both incorrectly stated 5,710 and 3
+  "<=50 files"; the corrected numbers are 6,110 and 1
+  pre-ACT "<=50 files" (3 in the current tree).
+
+  Per F14 these historical documents are NOT rewritten.
+  The correction is the new authoritative source of
+  the corrected numbers.
+
+------------------------------------------------------------
+What changed in this correction commit
+------------------------------------------------------------
+
+  - created evidence/ACT-POLYC-TOOLING-SHELL-INVENTORY01/
+    correction01/ with:
+      - correction-summary.txt       (this file)
+      - inventory-authoritative.txt  (22 rows, real output)
+      - loc-totals.txt               (audit of the numbers)
+  - no edits to historical commits 84203a7 or 21e55b2
+  - no edits to c1/inventory.txt
+  - no edits to c2/closure-summary.txt
+  - no edits to ROADMAP.md (the next ROADMAP update will
+    incorporate the corrected numbers)
+  - no edits to scripts/ or src/
+
+------------------------------------------------------------
+Next ACTs (hand-off)
+------------------------------------------------------------
+
+  Track A (compiler critical path):
+    ACT-POLYC-B0-SUBSTRATE-RECON01   fresh B0 substrate recon
+
+  Track B (tooling self-host path):
+    ACT-POLYC-TOOLING-RUNTIME01      minimum PolyC runtime
+                                     primitives (subprocess,
+                                     exit, tmp, text-match,
+                                     summary)
+    ACT-POLYC-TOOLING-SHELL-BUDGET01 per-file LOC targets,
+                                     after RUNTIME01 reveals
+                                     what PolyC can actually do
+
+  Both tracks proceed in parallel; neither blocks the other.

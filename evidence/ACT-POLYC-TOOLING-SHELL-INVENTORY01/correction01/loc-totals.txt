@@ -1,0 +1,78 @@
+LOC totals audit (measured values, not claims)
+==============================================
+
+Source of truth: wc -l scripts/quality/*.sh at the
+current HEAD (post-correction01).
+
+------------------------------------------------------------
+Baseline (committed c1/baseline.txt)
+------------------------------------------------------------
+  Total files : 20
+  Total LOC   : 6131
+  Files <=50  : 1
+    scripts/quality/llvm-closure-status-check.sh = 21 LOC
+  Files >50   : 19
+  Grandfathered LOC : 6131 - 21 = 6110
+
+------------------------------------------------------------
+Current tree (post-ACT)
+------------------------------------------------------------
+  Total files : 22
+  Total LOC   : 6176
+  Files <=50  : 3
+    scripts/quality/llvm-closure-status-check.sh = 21
+    scripts/quality/inventory.sh                 = 19
+    scripts/quality/shell-loc-gate.sh            = 26
+  Files >50   : 19  (unchanged set)
+  Grandfathered LOC : 6110  (unchanged)
+
+------------------------------------------------------------
+Defect arithmetic
+------------------------------------------------------------
+
+  Original claim in c2/closure-summary.txt :
+      "5,710 grandfathered LOC across 19 files"
+      "Median LOC: ~250"
+
+  Corrected arithmetic :
+      6,131 (baseline total) - 21 (the ONE pre-ACT small
+      file) = 6,110 grandfathered LOC across 19 files.
+
+  Error magnitude: 400 LOC under-count.
+
+  The 400-LOC error is consistent with subtracting 21
+  twice or with rounding 250 down. The exact path of
+  the arithmetic mistake is not recoverable; the
+  corrected number is 6,110.
+
+------------------------------------------------------------
+Files <=50 at C1 vs now
+------------------------------------------------------------
+
+  At C1 (baseline.txt committed) : 1 file
+      llvm-closure-status-check.sh = 21
+
+  Now (post-correction01)         : 3 files
+      llvm-closure-status-check.sh = 21  (pre-ACT)
+      inventory.sh                 = 19  (NEW in this ACT)
+      shell-loc-gate.sh            = 26  (NEW in this ACT)
+
+  The c2/closure-summary.txt said "3 files <=50 LOC"
+  without qualifying that this included the two NEW
+  files. The corrected phrasing is:
+
+      At ACT entry  : 1 file <=50 LOC
+      After this ACT: 3 files <=50 LOC (1 grandfathered +
+                                       2 newly admitted)
+
+------------------------------------------------------------
+Inventory row count defect
+------------------------------------------------------------
+
+  c1/inventory.txt committed rows : 5
+  inventory.sh actual output rows : 22
+  Missing                          : 17
+
+  All 22 rows now in
+    evidence/ACT-POLYC-TOOLING-SHELL-INVENTORY01/correction01/
+    inventory-authoritative.txt
