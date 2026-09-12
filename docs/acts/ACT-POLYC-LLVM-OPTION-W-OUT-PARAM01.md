@@ -1623,6 +1623,176 @@ mutable locals.
 
 ---
 
+## 9.6 C4 IMPL-B authorization envelope (frozen)
+
+After the C3.6 RED freeze (LLDefMap domain = TMP only,
+§9.5.7), the expert review (LLVM SSA/backend engineer +
+compiler-contract reviewer) issued the C4 IMPL-B
+authorization: **No architectural or contract blocker
+remains. Implement C4.**
+
+The two SSA mechanisms are now non-overlapping:
+
+```text
+IR_VAL_TMP
+   unique neutral producer
+        ↓
+LLDefMap (TMP-only domain)
+        ↓
+IR_PHI
+        ↓
+direct LLVM backend PHI lowering
+
+IR_VAL_LOCAL
+   multiple source definitions
+        ↓
+(not in LLDefMap domain)
+        ↓
+Option-W
+        ↓
+entry alloca + stores + loads
+        ↓
+LLVM mem2reg
+        ↓
+LLVM owns resulting PHIs
+```
+
+### 9.6.1 Required implementation pieces
+
+```text
+R1  real IR_PHI dispatch implementation
+R2  real LLDefMap TMP-only implementation
+R3  real PI-1 / PI-2 / PI-3 guards
+R4  real predecessor-edge i1->i8 normalisation
+R5  capability row:
+        IR_PHI REJECTED -> SHAPE_DEPENDENT
+R6  expected counters:
+        G3       = exactly 1 PHI shape-dependent hit
+        PhiOnly  = exactly 1
+        no unexpected changes elsewhere
+R7  actual generated LLVM:
+        llvm-as PASS
+        opt -passes=verify PASS
+R8  Option-W conservation:
+        all LOCAL-MEM2REG fixtures stay green
+        mutable locals do NOT trigger LLDefMap halt
+```
+
+### 9.6.2 Required negative controls
+
+```text
+duplicate TMP definition
+    -> HALT_PHI_TYPE_CONTRACT_REQUIRED
+
+i1 from IR_FCMP
+    -> HALT_PHI_TYPE_CONTRACT_REQUIRED
+
+i1 with no neutral producer
+    -> HALT_PHI_TYPE_CONTRACT_REQUIRED
+
+missing mapped predecessor
+    -> HALT_PHI_EDGE_MATERIALIZATION_REQUIRED
+
+predecessor without terminator
+    -> HALT_PHI_EDGE_MATERIALIZATION_REQUIRED
+
+mutable multi-def LOCAL
+    -> DOES NOT trigger LLDefMap duplicate halt
+        (conserves C3.6 raison d'être)
+```
+
+### 9.6.3 Witness requirement
+
+The fresh C4 witness must exercise the **real hcc
+implementation**, not another standalone simulation. The
+prior C3.x witnesses are contract simulators; the C4 witness
+must be an integration test against the actual compiler.
+
+### 9.6.4 Predecessor-edge normalisation discipline
+
+LLVM's PHI model places incoming uses on predecessor edges,
+and PHIs must precede non-PHI instructions in their block.
+Therefore the i1 -> i8 normalisation must be emitted in the
+predecessor, not in the merge block:
+
+```text
+pred:
+    %cmp       = icmp ...
+    %normalized = zext i1 %cmp to i8
+    br merge
+
+merge:
+    %phi = phi i8 [..., %normalized, pred]
+```
+
+NOT:
+
+```text
+merge:
+    %phi = ...
+    %normalized = zext ...
+```
+
+The frozen LLVM C API cursor operations
+(`LLVMGetInsertBlock`, `LLVMPositionBuilderBefore`,
+`LLVMPositionBuilderAtEnd`) are the authoritative machinery
+for this discipline.
+
+### 9.6.5 Identity discipline
+
+The C4 code must visibly keep two identities separate:
+
+```c
+IrValue       *ir_in;    /* NEUTRAL */
+LLVMValueRef   llvm_in;  /* LLVM */
+```
+
+Never overload one variable across both domains. Always:
+
+```c
+llvm_in = llLowerValue(lc, ir_in);
+```
+
+And producer provenance is queried with:
+
+```c
+irVarId(ir_in)
+```
+
+— never derived from `llvm_in`.
+
+### 9.6.6 Counter discipline
+
+```text
+LL_INC_SHAPE_DEPENDENT = once per statically admitted IR_PHI
+```
+
+NOT per incoming edge. NOT per emitted `zext`. The old
+historical witness already demonstrates this:
+
+```text
+0 conversions -> delta 1
+1 conversion  -> delta 1
+2 conversions -> delta 1
+rejected PHI  -> delta 0
+```
+
+### 9.6.7 Residue (F14 historical residue; NOT in scope)
+
+The c3.6-red.txt contains a sentence describing `0fcc8b2` as
+"the pattern for trailing-whitespace strip on committed
+evidence files". Per F14, historical evidence is immutable,
+so this sentence stays as written in the historical document.
+The intended doctrine is the opposite: `0fcc8b2` is a
+historical anti-pattern / residue; future corrections go in
+new correction packets, never by re-cleaning already-committed
+historical evidence. C3.6's actual evidence files were
+correctly written with trailing-newline hygiene from the start
+and did NOT modify any historical evidence file. Do not
+propagate the misframed sentence into C4/C5.
+
+---
+
 ## 10. Commit topology
 
 ```text
@@ -1793,7 +1963,10 @@ C3.6 RED (only after C3.5; NO production change)
                     all closed)
                 P2 hygiene: NO witness binaries committed
 
-C4 IMPL-B     (ONLY IF C3.6 authorises it; currently READY)
+C4 IMPL-B     (AUTHORIZED after C3.6; C3.6 DID authorise it;
+                 implementation envelope frozen at §9.6;
+                 R1-R8 pieces; required negative controls;
+                 real-hcc integration witness required)
                 add case IR_PHI: arm to llLowerInstr (SHAPE_DEPENDENT)
                 + STRENGTHENED shape validation:
                   - pair_count == CFG predecessor count

@@ -1077,18 +1077,54 @@ OPTION-W-OUT-PARAM01  ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01
                                 C4_IMPL_B_AUTH = TRUE reaffirmed;
                                 C4 currently READY (P1-P8 all
                                 closed))
-    C4 IMPL-B     (next; strengthened PHI shape contract
-                                + §9.5 placement-corrected zext
-                                + §9.3.1 lookup-only PI-1
-                                + §9.3.2 per-PHI counter
-                                + §9.4.1 producer-binding seam
-                                + §9.5.2 ir_in/llvm_in identity
-                                + §9.5.3 domain-filtered
-                                  unique-definition check (TMP only)
-                                + §9.5.7 LLDefMap domain harness
-                                + PI-2/PI-3-narrow assertions
-                                + producer-opcode check
-                                + corrected leak-predicate harness)
+    C4 IMPL-B     AUTHORIZED (LLVM SSA/backend engineer +
+                                compiler-contract reviewer, after
+                                C3.6 RED freeze; no architectural
+                                blocker remains; P1-P8 closed;
+                                contract precise enough to make
+                                the real compiler obey it)
+                                implementation envelope:
+                                  R1 real IR_PHI dispatch impl
+                                  R2 real LLDefMap TMP-only impl
+                                  R3 real PI-1/PI-2/PI-3 guards
+                                  R4 real pred-edge i1->i8 norm
+                                  R5 capability row:
+                                       IR_PHI REJECTED
+                                         -> SHAPE_DEPENDENT
+                                  R6 expected counters:
+                                       G3 = exactly 1 PHI shape-
+                                           dependent hit
+                                       PhiOnly = exactly 1
+                                  R7 generated LLVM:
+                                       llvm-as PASS
+                                       opt -passes=verify PASS
+                                  R8 Option-W conservation:
+                                       all LOCAL-MEM2REG fixtures
+                                       stay green; mutable locals
+                                       do NOT trigger LLDefMap
+                                       duplicate halt
+                                required negative controls:
+                                  duplicate TMP def
+                                    -> HALT_PHI_TYPE_CONTRACT_
+                                       REQUIRED
+                                  i1 from IR_FCMP
+                                    -> HALT_PHI_TYPE_CONTRACT_
+                                       REQUIRED
+                                  i1 with no neutral producer
+                                    -> HALT_PHI_TYPE_CONTRACT_
+                                       REQUIRED
+                                  missing mapped predecessor
+                                    -> HALT_PHI_EDGE_
+                                       MATERIALIZATION_REQUIRED
+                                  predecessor without terminator
+                                    -> HALT_PHI_EDGE_
+                                       MATERIALIZATION_REQUIRED
+                                  mutable multi-def LOCAL
+                                    -> DOES NOT trigger LLDefMap
+                                       halt (conserves C3.6)
+                                fresh witness required: real hcc
+                                  implementation, not standalone
+                                  simulation
     C5 EVIDENCE-B (ScanIdent compiles + verifies + runs)
     C6 CLOSE      (final verdict)
 
@@ -1105,15 +1141,18 @@ OPTION-W-OUT-PARAM01  ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01
   SEAM STATUS:
     A1 (read envelope, Gate 4)        CLOSED   (C2-A)
     A2 (observable sink, Gate 5)      CLOSED   (C2-A.2)
-    B  (IR_PHI backend dispatch)      OPEN     (next seam)
+    B  (IR_PHI backend dispatch)      AUTHORIZED (C4 IMPL-B)
        sub-issues:
          B1 PHI type binding            CLOSED   (C3.1)
          B2 PHI conversion placement    CLOSED   (C3.2)
-         B3 PHI dispatch arm impl       READY    (C4 contract freeze
-                                                 complete; per-PHI
-                                                 counter + lookup-only
-                                                 PI-1 + producer
-                                                 binding frozen)
+         B3 PHI dispatch arm impl       AUTHORIZED (C4 IMPL-B)
+                                                  (contract freeze
+                                                  complete; per-PHI
+                                                  counter + lookup-only
+                                                  PI-1 + producer
+                                                  binding + LLDefMap
+                                                  TMP-only domain
+                                                  all frozen)
        sub-sub-issues:
          B3.1 PI-1 lookup-only          CLOSED   (C3.3 §9.3.1)
          B3.2 per-PHI counter           CLOSED   (C3.3 §9.3.2)
