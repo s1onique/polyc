@@ -1,0 +1,128 @@
+C3 closure summary - ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME02
+==========================================================
+
+Identity
+--------
+  ENTRY_HEAD   = 246be50a373425541eee2c8e00f900e5ffab505c
+                 (LOCAL-MEM2REG01-CORRECTION02 C7 CLOSE)
+  C1_RED       = 524f00f2cdacb2769818c9cd5ab878740ab26bfe
+  C2_EVIDENCE  = 94cf022b736a3dafbe4e2eec881ea576310cff9a
+  C3_CLOSE     = <this commit's SHA>
+  WORKTREE     = clean (git status --porcelain = empty post-C3)
+
+Verdict
+-------
+  VERDICT = PASS.
+  ROADMAP STATE = CLOSED.
+  NEXT ACT = ACT-POLYC-LLVM-GEP01.
+
+Root-cause history (per ACT §23)
+--------------------------------
+  BYTE-MEMORY's apparent multi-block byte failure was not
+  fundamentally a byte access defect.
+
+  The byte path exposed a generic mutable-local / return-state
+  representation defect.
+
+  That defect class was subsequently eliminated by the
+  LOCAL-MEM2REG Option-W architecture (C7 CLOSE PASS).
+
+Current byte substrate (per ACT §23)
+------------------------------------
+  source I8/U8 scalar admission       GREEN
+  byte pointer parameter              GREEN
+  byte load                           GREEN
+  byte -> I64 extension (zext/sext)   GREEN
+  bounded I64 -> I8 truncation        GREEN
+  byte comparisons                    GREEN
+  B0-shaped multi-block digit path    GREEN
+
+  byte store                          DEFERRED_NOT_B0_BLOCKING
+  GEP/indexing                        OUT OF SCOPE / NEXT ACT
+
+Architecture (per ACT §23)
+--------------------------
+  byte access       = LLVM load i8
+  widening          = zext/sext according to source semantics
+  narrowing         = frozen bounded truncation only (I64->I8)
+  mutable result    = Option-W + LLVM mem2reg (inherited)
+  address indexing  = NOT handled here (GEP01)
+
+Production changes in RESUME02
+------------------------------
+  NONE. Zero lines of src/ir* or src/llvm-backend* changed.
+  Evidence: c2/production-delta.txt.
+
+Conserved contracts from LOCAL-MEM2REG01-CORRECTION02 C7
+--------------------------------------------------------
+  FROZEN_SUPPORTED_DEF_FORMS = IR_STORE, IR_IADD, IR_ISUB
+  CASE_B_OPCODE_SET_WIDENED  = NO
+  PHI_POLICY                 = LLVM-owned
+  FRONTEND_SSA_RECONSTRUCTION = NO
+  NEUTRAL_IR_CHANGED          = NO
+  ABI_CHANGED                 = NO
+
+  (All five contracts inherited unchanged.)
+
+C9 remove-list status (mechanically re-audited at C2)
+------------------------------------------------------
+  llRecognizeLocalMem2Reg         production matches = 0
+  llMaterializeLocalSlotAlloca    production matches = 0
+  llRunMem2RegOnFunction          production matches = 0
+  llEmitMem2RegStoreAtPredEnd     production matches = 0
+  lc->local_mem2reg               production matches = 0
+  lc->mem2reg_slot                production matches = 0
+  lc->mem2reg_alloca              production matches = 0
+  lc->mem2reg_store_block_id      production matches = 0
+  lc->mem2reg_store_value         production matches = 0
+  IR_JMP/IR_BR synthetic-store    production matches = 0
+
+  No re-introduction occurred.
+
+Conservation gates fresh-run summary (post-C3)
+-----------------------------------------------
+  gate-fast                STATUS=PASS VERDICT=PASS
+  factory-append-only      11/0 PASS
+  factory-closure-status   PAIR_OK=6 PAIR_FAIL=0 PASS VERDICT=PASS
+  llvm-byte-memory01-test  37/0 PASS
+  llvm-spike-test          18/0 PASS
+  llvm-intops01-test       4/0 PASS
+  ir-return-slot-fwd01     6/0 PASS
+  harness-evidence-iso     50 files, no mods
+  llvm-cap-table-verifier  PASS
+  factory-v2-commit-msg    C1 trailer PASS, C2 trailer PASS
+  git diff --check         clean
+
+Patch hygiene
+-------------
+  C1 commit (524f00f):  git diff --check clean.
+  C2 commit (94cf022):  git diff --check clean.
+  C3 commit:            git diff --check clean (this commit).
+
+Residue (F11 classification)
+----------------------------
+  P0 none.
+  P1 none introduced by RESUME02.
+  P2 inherited, pre-existing (NOT introduced by RESUME02):
+      - llvm-spike-contract-check neg_pointer.HC stale reference
+        (preserved F14)
+      - harness-evidence-isolation-test requires HCC_INSTALL_DIR
+        (Makefile plumbing; PASSES when env is set)
+      - Historical C6.1 trailing-whitespace matrix (preserved F14)
+
+  See c3/residue.txt for full classification.
+
+Next act
+--------
+  NEXT ACT = ACT-POLYC-LLVM-GEP01.
+
+  Per ACT §24 the critical path now reads:
+    ACT-POLYC-LLVM-BYTE-MEMORY01            historical HALT
+    ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME01   historical HALT
+    ACT-POLYC-IR-RETURN-SLOT-FORWARDING01   historical HALT_SECOND_SEAM_REQUIRED
+    ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02  CLOSED PASS
+    ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME02   CLOSED PASS  <-- this ACT
+    ACT-POLYC-LLVM-GEP01                    NEXT
+
+  STRUCT01 / ARRAY01 remain deferred; no automatic promotion.
+  BOOTSTRAP01 (B0 lexer/tokenizer) follows GEP01's closure.

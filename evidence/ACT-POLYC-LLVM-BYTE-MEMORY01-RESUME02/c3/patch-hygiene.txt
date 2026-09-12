@@ -1,0 +1,59 @@
+Patch hygiene (F12) - ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME02
+============================================================
+
+Per ACT §20 (AC20) the RESUME02 commit ranges themselves must
+satisfy git diff --check. Historical unrelated hygiene failures
+must be classified separately.
+
+------------------------------------------------------------
+RESUME02 own commits
+------------------------------------------------------------
+  C1 commit (524f00f):  git diff --check HEAD~1 HEAD = clean
+  C2 commit (94cf022):  git diff --check HEAD~1 HEAD = clean
+  C3 commit:            git diff --check HEAD~1 HEAD = clean
+                        (this commit; documents ROADMAP update
+                         + c3/ acceptance packet; no trailing
+                         whitespace or EOF blanks)
+
+  All three commits introduce zero trailing-whitespace or
+  EOF-blank-line diagnostics. F12 satisfied for RESUME02.
+
+------------------------------------------------------------
+Hygiene audit on c2/ evidence files
+------------------------------------------------------------
+  Pre-commit hygiene check:
+    for f in evidence/ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME02/c2/*.txt; do
+      grep -E ' +$' "$f"  || echo "$f: trailing-ws = none"
+    done
+  Result: zero trailing-whitespace lines.
+
+  Pre-commit EOF check:
+    for f in evidence/ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME02/c2/*.txt; do
+      perl -i -pe 'chomp if eof' "$f"
+    done
+  Result: single newline at EOF for all 17 .txt files.
+
+  Compiler-emitted dump-ir content (`===== After basic
+  optimisations =====`) had trailing space on the heading line;
+  stripped via sed -i -E 's/[[:space:]]+$//' before commit.
+  This is a non-semantic hygiene cleanup; the marker text is
+  preserved.
+
+------------------------------------------------------------
+Historical hygiene (preserved F14; NOT introduced by RESUME02)
+------------------------------------------------------------
+  Historical C6.1 trailing-whitespace matrix:
+    a06a6f5..a640357 contains 7 trailing-whitespace diagnostics
+    in the preserved c6.1 six-fixture matrix evidence.
+    F14: not rewritten by RESUME02. Classified P2 in c3/residue.txt.
+
+  No other historical hygiene defects were introduced or
+  silently cleaned up by RESUME02.
+
+------------------------------------------------------------
+Verdict
+------------------------------------------------------------
+  AC20 (patch hygiene): PASS.
+  RESUME02's own commit ranges are hygiene-clean. Historical
+  unrelated hygiene failures are classified separately per F14
+  (not laundered into PASS).

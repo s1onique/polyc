@@ -503,6 +503,132 @@ Range-check PASS expected when:
   the canonical RED (via the per-commit
   factory-v2-commit-msg-check.sh run, which DOES pass
   on 0bfa990).
+
+#### BYTE-MEMORY01-RESUME02 status (CLOSED at C3)
+
+```text
+RESUME02  ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME02
+  ENTRY    = 246be50a373425541eee2c8e00f900e5ffab505c
+             (LOCAL-MEM2REG01-CORRECTION02 C7 CLOSE)
+  C1 RED   = 524f00f2cdacb2769818c9cd5ab878740ab26bfe
+             (RESUME02 ACT document + c1/ recon packet)
+  C2 EVID  = 94cf022b736a3dafbe4e2eec881ea576310cff9a
+             (RESUME02 fresh reproduction packet)
+  C3 CLOSE = (see trailer on the C3 commit)
+  VERDICT  = PASS
+
+  MISSION   = evidence-only closure: prove that the B0
+              byte-at-current-address substrate is GREEN
+              after LOCAL-MEM2REG, with NO new compiler
+              semantics, NO new opcode, NO widened Option W,
+              NO byte store, NO GEP.
+
+  ROOT_CAUSE HISTORY
+    BYTE-MEMORY01's apparent multi-block byte failure was
+    not fundamentally a byte access defect; the byte path
+    exposed a generic mutable-local / return-state
+    representation defect. That defect class was subsequently
+    eliminated by the LOCAL-MEM2REG Option-W architecture
+    (CLOSED PASS at 246be50a).
+
+  H1 SEXT/TRUNC scope  = RESOLVED_BY_AUTHORIZATION
+    RESUME01 §3.1 authorized the proven SEXT/TRUNC shapes;
+    cap-table rows IR_SEXT/IR_TRUNC are SHAPE_DEPENDENT with
+    narrow src/dst contracts. Regression bound in
+    llvm-byte-memory01-test.sh truncation boundary section.
+
+  H2 multi-block SSA   = RESOLVED_BY_LOCAL_MEM2REG
+    pos_b0_compare_digit.HC compiles cleanly to verifier-
+    clean LLVM (llvm-as rc=0; opt --passes=verify rc=0);
+    both ReadDigit and AccDigit emit the byte-load + icmp +
+    digit-arithmetic pattern; AccDigit uses the Option-W
+    entry-alloca + original-site stores + original-site
+    loads + LLVM mem2reg production path. Native backend
+    runtime confirms source semantics (ReadDigit and
+    AccDigit values match expected).
+
+  CURRENT BYTE SUBSTRATE
+    source I8/U8 scalar admission     GREEN
+    byte pointer parameter            GREEN
+    byte load                         GREEN
+    byte -> I64 extension             GREEN
+    bounded I64 -> I8 truncation      GREEN
+    byte comparisons                  GREEN
+    B0-shaped multi-block digit path  GREEN
+
+    byte store                        DEFERRED_NOT_B0_BLOCKING
+    GEP/indexing                      OUT OF SCOPE / NEXT ACT
+
+  C9 remove-list (mechanically re-audited at C2)
+    llRecognizeLocalMem2Reg        production matches = 0
+    llMaterializeLocalSlotAlloca   production matches = 0
+    llRunMem2RegOnFunction         production matches = 0
+    llEmitMem2RegStoreAtPredEnd    production matches = 0
+    lc->local_mem2reg              production matches = 0
+    lc->mem2reg_slot               production matches = 0
+    lc->mem2reg_alloca             production matches = 0
+    lc->mem2reg_store_block_id     production matches = 0
+    lc->mem2reg_store_value        production matches = 0
+    IR_JMP/IR_BR synthetic-store   production matches = 0
+
+  CONSERVATION GATES (fresh-run post-C3)
+    llvm-byte-memory01-test        37/0 PASS
+    llvm-spike-test                18/0 PASS
+    llvm-intops01-test              4/0 PASS
+    ir-return-slot-fwd01-test       6/0 PASS
+    harness-evidence-iso-test      PASS (HCC_INSTALL_DIR set)
+    llvm-cap-table-verifier        PASS
+    factory-v2-commit-msg-check    PASS (C1, C2, C3 trailers)
+    factory-append-only-test       11/0 PASS
+    factory-closure-status         PASS (PAIR_OK=6)
+    gate-fast                      PASS
+
+  PRODUCTION DELTA (per ACT §14)
+    git diff 246be50a..<C3> -- src/   :  0 lines
+    RESUME02 is docs-only + evidence-only.
+
+  EVIDENCE ROOT = evidence/ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME02/
+    c1/  current-capability-matrix.tsv, fixture-inventory.txt,
+         predecessor-verdicts.txt, b0-byte-demand.txt,
+         historical-halt-reconciliation.txt, c1-boundary-recon.txt
+    c2/  capability-matrix.txt, historical-halt-reconciliation.txt,
+         byte-type-admission.txt, byte-load.txt, conversions.txt,
+         truncation-boundary.txt, byte-compare.txt,
+         pos-b0-dump-ir.txt, pos-b0-emit-llvm.ll,
+         pos-b0-emit-llvm.bc, pos-b0-llvm-as.txt,
+         pos-b0-verify.txt, runtime.txt, gep-boundary.txt,
+         byte-store-disposition.txt, capability-table.txt,
+         conservation-gates.txt, production-delta.txt
+    c3/  acceptance-matrix.txt, closure-summary.txt,
+         residue.txt, ROADMAP-update.txt
+
+  RESIDUE (F11)
+    P0  none
+    P1  none introduced by RESUME02
+    P2  inherited, pre-existing (NOT introduced by RESUME02):
+        - llvm-spike-contract-check neg_pointer.HC stale ref
+        - harness-evidence-iso-test requires HCC_INSTALL_DIR
+        - Historical C6.1 trailing-whitespace matrix (F14)
+        - e286f59 NON_ACT post-CLOSE evidence (F14)
+
+  NEXT ACT = ACT-POLYC-LLVM-GEP01
+```
+
+The critical-path transition per ACT §24:
+
+```text
+  ACT-POLYC-LLVM-BYTE-MEMORY01            HALT_SCOPE_EXPANSION_REQUIRED
+  ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME01   HALT_SCOPE_EXPANSION_REQUIRED
+  ACT-POLYC-IR-RETURN-SLOT-FORWARDING01   HALT_SECOND_SEAM_REQUIRED
+  ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02  CLOSED PASS
+  ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME02   CLOSED PASS  <-- this ACT
+  ACT-POLYC-LLVM-GEP01                    NEXT
+```
+
+STRUCT01 / ARRAY01 remain deferred. BOOTSTRAP01 (B0
+lexer/tokenizer) follows GEP01's closure.
+
+
 ```
 
 #### C2 IMPL authorisation gate (HISTORICAL; C2 IMPL closed at 09072b5)
@@ -591,8 +717,8 @@ fixture; treat `recon` as "do not promise it".
 | Shifts                           |      ✅ |       ❌ |       none | INTOPS01 (HALT: not B0-required) |
 | Div/rem                          |      ✅ |       ❌ |       none | INTOPS01 (HALT: not B0-required) |
 | I64 width/sign conversion        |      ✅ |       ✅ |       none | BYTE-MEMORY01 (IMPL shipped; HALT_SCOPE_EXPANSION_REQUIRED for SEXT/TRUNC; see RESUME01) |
-| I8/U8 load/store                 |  recon |  partial |        ✅ | BYTE-MEMORY01 (IMPL shipped for read + ZEXT; HALT for B0 multi-block; see RESUME01) |
-| Indexed pointer arithmetic       |  recon |       ❌ |         ✅ | GEP01                |
+| I8/U8 load/store                 |  recon |  partial |        ✅ | BYTE-MEMORY01 (IMPL shipped for read + ZEXT; HALT for B0 multi-block; see RESUME01); RESUME02 closed PASS at C3 for byte-at-current-address (load + zext/sext + bounded trunc + byte compare; byte store DEFERRED_NOT_B0_BLOCKING) |
+| Indexed pointer arithmetic       |  recon |       ❌ |         ✅ | GEP01 (RESUME02 successor; the next ACT after this CLOSE)                |
 | Struct fields                    |  recon |       ❌ |         ✅ | STRUCT01             |
 | Arrays / indexing                |  recon |       ❌ |         ✅ | ARRAY01              |
 | Allocation                       |  recon |    recon |    likely | **decide before B0** |

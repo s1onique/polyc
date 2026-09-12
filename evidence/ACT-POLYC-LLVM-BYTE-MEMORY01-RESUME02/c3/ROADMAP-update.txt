@@ -1,0 +1,80 @@
+ROADMAP update narrative - ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME02
+================================================================
+
+CLOSED status block
+-------------------
+
+The existing ROADMAP at docs/ROADMAP.md already records
+BYTE-MEMORY01 (HALT), RESUME01 (HALT), IR-RETURN-SLOT-FORWARDING01
+(HALT_SECOND_SEAM_REQUIRED), and LOCAL-MEM2REG01-CORRECTION02
+(CLOSED PASS).
+
+RESUME02 closes the BYTE-MEMORY B0 byte-at-current-address
+substrate. Its closure block is appended to the existing
+P4 critical-path section in ROADMAP.md (under the same heading
+group as the prior BYTE-MEMORY01 / RESUME01 / IR-RETURN-SLOT-
+FORWARDING01 status blocks).
+
+Critical-path transition (per ACT §24)
+--------------------------------------
+
+  Before RESUME02:
+    ACT-POLYC-LLVM-BYTE-MEMORY01            HALT_SCOPE_EXPANSION_REQUIRED
+    ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME01   HALT_SCOPE_EXPANSION_REQUIRED
+    ACT-POLYC-IR-RETURN-SLOT-FORWARDING01   HALT_SECOND_SEAM_REQUIRED
+    ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02  CLOSED PASS
+    (gap: BYTE-MEMORY B0 substrate not yet closed)
+
+  After RESUME02 (this ACT):
+    ACT-POLYC-LLVM-BYTE-MEMORY01            HALT_SCOPE_EXPANSION_REQUIRED
+    ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME01   HALT_SCOPE_EXPANSION_REQUIRED
+    ACT-POLYC-IR-RETURN-SLOT-FORWARDING01   HALT_SECOND_SEAM_REQUIRED
+    ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02  CLOSED PASS
+    ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME02   CLOSED PASS  <-- this ACT
+    ACT-POLYC-LLVM-GEP01                    NEXT
+
+  After GEP01 (forward-looking, NOT this ACT):
+    ... continue with STRUCT01 / ARRAY01 (only if B0 recon
+        proves them required) -> BOOTSTRAP01.
+
+What changes in ROADMAP
+-----------------------
+
+  1. Append a new status block to docs/ROADMAP.md under the
+     existing BYTE-MEMORY01 / RESUME01 / IR-RETURN-SLOT-FWD01
+     critical-path narrative, recording:
+       - ENTRY_HEAD, C1, C2, C3 SHAs,
+       - frozen contracts inherited from LOCAL-MEM2REG C7,
+       - capability matrix excerpt (with PASS / DEFERRED
+         statuses),
+       - 22-criterion acceptance summary (all PASS),
+       - C9 remove-list mechanical absence,
+       - conservation gates fresh-run results,
+       - production-delta = NONE,
+       - NEXT ACT = ACT-POLYC-LLVM-GEP01,
+       - RESIDUE (P0/P1/P2 classification).
+
+  2. Update the existing P4 critical-path summary table to
+     include the new ACT row and to mark GEP01 as the explicit
+     NEXT ACT.
+
+  3. No change to:
+       - the LOCAL-MEM2REG01-CORRECTION02 closure block,
+       - the historical BYTE-MEMORY01 / RESUME01 /
+         IR-RETURN-SLOT-FORWARDING01 status (F14 preserved),
+       - any source/test/capability contract.
+
+Factory v2 grammar compliance
+-----------------------------
+
+  ROADMAP.md is updated at C3. The CLOSE commit (this ACT's
+  C3) carries the authoritative trailer:
+      ACT: ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME02
+      ACT-Phase: CLOSE
+      ACT-Verdict: PASS
+
+  Per docs/factory/GIT-METADATA.md §1, Git owns execution
+  identity, ACT document owns authorization, commit trailers
+  own execution phase + closure verdict, and HANDOFF documents
+  (this file's sibling c3/closure-summary.txt is descriptive
+  only) do not carry authoritative verdicts.

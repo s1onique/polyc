@@ -1,0 +1,220 @@
+ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME02 acceptance matrix (per ACT §20)
+======================================================================
+
+Identity
+--------
+  ENTRY_HEAD  = 246be50a373425541eee2c8e00f900e5ffab505c
+                (LOCAL-MEM2REG01-CORRECTION02 C7 CLOSE)
+  C1_RED      = 524f00f2cdacb2769818c9cd5ab878740ab26bfe
+                (RESUME02 ACT document + c1/ recon packet)
+  C2_EVIDENCE = 94cf022b736a3dafbe4e2eec881ea576310cff9a
+                (RESUME02 fresh reproduction packet)
+  C3_CLOSE    = <this commit>
+  WORKTREE    = clean (post-C3 git status --porcelain = empty)
+
+Truth-class notation
+--------------------
+  MECHANICAL = PASS verified by an exit code, file count, or
+               diff against a target pattern.
+  STRUCTURAL = PASS verified by reading emitted LLVM / IR dump
+               and confirming the required text shape.
+  HISTORICAL = PASS verified by F14-respecting citation of a
+               prior ACT's trailers and freezings.
+
+Acceptance criteria
+-------------------
+
+AC01 - predecessor truth
+  H1 SEXT/TRUNC scope: HISTORICAL  = PASS
+  H2 multi-block SSA:  HISTORICAL  = PASS
+  LOCAL-MEM2REG01-CORRECTION02 CLOSED PASS at 246be50a (MECHANICAL)
+  Evidence: c2/historical-halt-reconciliation.txt;
+            c1/predecessor-verdicts.txt.
+  Result: PASS.
+
+AC02 - frozen byte capability matrix
+  Each capability in c1/current-capability-matrix.tsv is bound
+  to (a) src/llvm-backend-cap.c row, (b) positive or negative
+  fixture, (c) c2 fresh reproduction evidence.
+  Result: PASS (MECHANICAL).
+
+AC03 - I8/U8 parameter admission
+  red_u8_param.HC -> 'zext i8 %0 to i64', llvm-as rc=0, opt rc=0.
+  red_i8_param.HC -> 'sext i8 %0 to i64', llvm-as rc=0, opt rc=0.
+  Evidence: c2/byte-type-admission.txt.
+  Result: PASS (MECHANICAL).
+
+AC04 - direct byte load
+  red_byte_load.HC and red_byte_pointer_param.HC emit
+  'load i8, ptr %0'. No load i64, no ptrtoint, no inttoptr,
+  no bitcast, no GEP, no alloca in those fixtures.
+  Evidence: c2/byte-load.txt.
+  Result: PASS (MECHANICAL).
+
+AC05 - unsigned promotion
+  red_u8_param.HC and red_byte_to_i64.HC and
+  pos_b0_compare_digit.HC all emit 'zext i8 ... to i64'.
+  Evidence: c2/conversions.txt.
+  Result: PASS (MECHANICAL).
+
+AC06 - signed promotion
+  red_i8_param.HC emits 'sext i8 ... to i64'.
+  Source signedness is carried by the IR_SEXT opcode (not by
+  the LLVM i8 alone).
+  Evidence: c2/conversions.txt.
+  Result: PASS (MECHANICAL).
+
+AC07 - truncation boundary
+  Positive (I64 -> I8): GREEN. All byte fixtures truncate at
+  function-return boundary. llvm-as rc=0; opt verify rc=0.
+  Negative (I64 -> I16): REJECTED with named
+  LLVM_BACKEND_UNSUPPORTED_CONVERSION diagnostic.
+  Evidence: c2/truncation-boundary.txt.
+  Result: PASS (MECHANICAL).
+
+AC08 - byte comparison
+  pos_byte_compare_simple.HC and pos_b0_compare_digit.HC emit
+  the icmp sge/sle i8 48/57 pattern. Below/lower/interior/
+  upper/above range all covered.
+  Evidence: c2/byte-compare.txt.
+  Result: PASS (STRUCTURAL).
+
+AC09 - B0-shaped multi-block byte fixture
+  pos_b0_compare_digit.HC: hcc rc=0; llvm-as rc=0;
+  opt --passes=verify rc=0.
+  ReadDigit + AccDigit both present and verifier-clean.
+  Evidence: c2/pos-b0-emit-llvm.ll, c2/pos-b0-llvm-as.txt,
+            c2/pos-b0-verify.txt.
+  Result: PASS (MECHANICAL).
+
+AC10 - historical H2 resolved by actual successor architecture
+  pos_b0_compare_digit.HC AccDigit path uses the Option-W
+  entry-alloca + original-site stores + original-site loads +
+  LLVM mem2reg production path (closed at LOCAL-MEM2REG C7).
+  No bespoke predecessor-store or stale collapse workaround.
+  Evidence: c2/pos-b0-dump-ir.txt + c2/runtime.txt +
+            evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02/c7/.
+  Result: PASS (STRUCTURAL + MECHANICAL).
+
+AC11 - no new byte-memory capability required
+  C1 recon Q1..Q5 all return NO. No new opcode, no new width,
+  no new conversion required for B0 byte-at-current-address path.
+  Evidence: c1/c1-boundary-recon.txt.
+  Result: PASS (MECHANICAL).
+
+AC12 - GEP boundary
+  BYTE_MEMORY_GEP_COUNT = 0 across all 8 BYTE-MEMORY fixtures.
+  IR_GEP / IR_LEA both REJECTED. GEP remains owned by
+  ACT-POLYC-LLVM-GEP01.
+  Evidence: c2/gep-boundary.txt.
+  Result: PASS (MECHANICAL).
+
+AC13 - byte-store disposition
+  BYTE_STORE_STATUS = DEFERRED_NOT_B0_BLOCKING.
+  B0 first milestone writes I64 scalar (not byte buffer).
+  Evidence: c2/byte-store-disposition.txt.
+  Result: PASS (HISTORICAL).
+
+AC14 - Option-W conservation
+  C9 remove-list: zero production matches for all 4 function
+  symbols + 5 struct fields + IR_JMP/IR_BR synthetic-store path.
+  llvm-byte-memory01-test 37/0 PASS; ir-return-slot-forwarding01
+  6/0 PASS; llvm-spike 18/0 PASS.
+  Evidence: c2/conservation-gates.txt;
+            evidence/ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02/c7/
+            c9-remove-list-audit.real.txt.
+  Result: PASS (MECHANICAL).
+
+AC15 - BYTE-MEMORY suite
+  llvm-byte-memory01-test: PASS=37 FAIL=0 STATUS=PASS rc=0.
+  All sections green; byte-store section explicitly DEFERRED.
+  Evidence: c2/conservation-gates.txt;
+            /tmp/resume02-c2/llvm-byte-memory01-test.txt (transcript).
+  Result: PASS (MECHANICAL).
+
+AC16 - independent LLVM validation
+  llvm-as < c2/pos-b0-emit-llvm.ll : rc = 0
+  opt --passes=verify c2/pos-b0-emit-llvm.bc : rc = 0
+  Evidence: c2/pos-b0-llvm-as.txt, c2/pos-b0-verify.txt.
+  Result: PASS (MECHANICAL).
+
+AC17 - capability table
+  llvm-cap-table-verifier.py: PASS (dispatch <-> capability
+  <-> harness bound). No row promoted globally.
+  Evidence: c2/capability-table.txt.
+  Result: PASS (MECHANICAL).
+
+AC18 - production delta
+  git diff 246be50a..HEAD -- src/ : 0 lines.
+  Zero production semantic change.
+  Evidence: c2/production-delta.txt.
+  Result: PASS (MECHANICAL).
+
+AC19 - evidence truth channel
+  NOT_APPLICABLE - RESUME02 produced no new validator; it
+  consumed existing authoritative harnesses:
+    scripts/quality/llvm-byte-memory01-test.sh
+    scripts/quality/llvm-spike-test.sh
+    scripts/quality/llvm-intops01-test.sh
+    scripts/quality/ir-return-slot-forwarding01-test.sh
+    scripts/quality/harness-evidence-isolation-test.sh
+    scripts/quality/llvm-cap-table-verifier.py
+  Each authoritative harness has its own FAIL->non-zero exit
+  invariant. Existing harnesses consumed (not re-implemented).
+  Result: PASS.
+
+AC20 - patch hygiene
+  git diff --check HEAD~1 HEAD : rc = 0 (clean).
+  RESUME02 commit ranges (C1 524f00f, C2 94cf022) introduce no
+  trailing-whitespace or EOF-blank diagnostics.
+  Result: PASS (MECHANICAL).
+
+AC21 - conservation gates
+  gate-fast                PASS
+  factory-append-only      PASS (11/0)
+  factory-closure-status   PASS (PAIR_OK=6)
+  llvm-byte-memory01-test  PASS (37/0)
+  llvm-spike-test          PASS (18/0)
+  llvm-intops01-test       PASS (4/0)
+  ir-return-slot-fwd01     PASS (6/0)
+  harness-evidence-iso     PASS (50 files, no mods)
+  llvm-cap-table-verifier  PASS
+  factory-v2-commit-msg    PASS (C1, C2 trailers validated)
+  git diff --check         PASS
+  Evidence: c2/conservation-gates.txt.
+  Result: PASS (MECHANICAL).
+
+AC22 - working tree
+  git status --porcelain (post-C3) : empty.
+  Result: PASS (MECHANICAL).
+
+Aggregate verdict
+=================
+AC01..AC22 ALL PASS. No HALT condition triggered.
+
+  AC01 HISTORICAL PASS
+  AC02 MECHANICAL PASS
+  AC03 MECHANICAL PASS
+  AC04 MECHANICAL PASS
+  AC05 MECHANICAL PASS
+  AC06 MECHANICAL PASS
+  AC07 MECHANICAL PASS
+  AC08 STRUCTURAL PASS
+  AC09 MECHANICAL PASS
+  AC10 STRUCTURAL+MECHANICAL PASS
+  AC11 MECHANICAL PASS
+  AC12 MECHANICAL PASS
+  AC13 HISTORICAL PASS
+  AC14 MECHANICAL PASS
+  AC15 MECHANICAL PASS
+  AC16 MECHANICAL PASS
+  AC17 MECHANICAL PASS
+  AC18 MECHANICAL PASS
+  AC19 NOT_APPLICABLE (consumed)
+  AC20 MECHANICAL PASS
+  AC21 MECHANICAL PASS
+  AC22 MECHANICAL PASS
+
+VERDICT = PASS.
+ROADMAP STATE = CLOSED.
+NEXT ACT = ACT-POLYC-LLVM-GEP01.

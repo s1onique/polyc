@@ -1,0 +1,78 @@
+Residue classification (F11) - ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME02
+======================================================================
+
+RESUME02 is a docs-only evidence closure ACT. It introduced zero
+production changes. All residue is therefore inherited from the
+prior substrate (LOCAL-MEM2REG01-CORRECTION02 C7 + earlier
+BYE-MEMORY01 / RESUME01 / IR-RETURN-SLOT-FORWARDING01 lineage)
+and is classified P2 (deferred / inherited).
+
+------------------------------------------------------------
+P0 - blocks the current / next decision
+------------------------------------------------------------
+  None. RESUME02 closure is complete; the next decision is
+  ACT-POLYC-LLVM-GEP01 (per ACT §24) and RESUME02 itself is
+  not blocked by any P0 item.
+
+------------------------------------------------------------
+P1 - important near-term work
+------------------------------------------------------------
+  None introduced by RESUME02.
+
+  P1-relevant inherited items (NOT introduced by RESUME02):
+    - The recommended fresh B0 substrate recon after GEP01
+      closes (per ACT §24). This is a forward-looking P1 that
+      RESUME02 explicitly does NOT preempt.
+
+------------------------------------------------------------
+P2 - deferred improvement (inherited, NOT introduced)
+------------------------------------------------------------
+  P2.1  llvm-spike-contract-check neg_pointer.HC stale reference
+        (pre-existing; fixture deleted in MEMORY01 era; harness
+        was never updated).
+        Classification: pre-existing, unrelated to BYTE-MEMORY
+        or LOCAL-MEM2REG; preserved per F14; not addressed
+        by RESUME02.
+
+  P2.2  harness-evidence-isolation-test requires HCC_INSTALL_DIR
+        (Makefile plumbing; gate PASSES when env is set).
+        Classification: environment plumbing, not a code defect;
+        RESUME02 ran with HCC_INSTALL_DIR=/tmp/polyc-install.
+
+  P2.3  Historical C6.1 trailing-whitespace matrix
+        (preserved F14; not rewritten).
+        Classification: historical evidence hygiene; out of
+        scope for RESUME02's C1..C3 range. RESUME02's own
+        commits are patch-hygiene clean.
+
+  P2.4  Historical BYTE-MEMORY01 HALT at e5e49f5
+        (malformed trailer block; corrected to
+         HALT_SCOPE_EXPANSION_REQUIRED by BOOKKEEPING01
+         at db6404e).
+        Classification: F14 immutable; not rewritten.
+
+  P2.5  BYTE-MEMORY01-RESUME01 HALT at a48e40f
+        (defect class proved to live outside the
+         authorized llCollapseStoreValue seam).
+        Classification: F14 immutable; not rewritten.
+
+  P2.6  IR-RETURN-SLOT-FORWARDING01 HALT_SECOND_SEAM_REQUIRED
+        at 69f7d3a.
+        Classification: F14 immutable; not rewritten.
+
+------------------------------------------------------------
+Implicit residue from RESUME02 itself
+------------------------------------------------------------
+  None. RESUME02 introduces no new residue; it consumes and
+  reconciles prior ACTs and proves the current tree satisfies
+  all 22 acceptance criteria.
+
+------------------------------------------------------------
+Forward-looking note (NOT residue)
+------------------------------------------------------------
+  GEP01 (the explicit next ACT) will own:
+    - indexed address computation (GEP),
+    - byte buffer walk,
+    - byte load at computed address.
+
+  These are out of RESUME02's scope per ACT §3.
