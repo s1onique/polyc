@@ -94,7 +94,18 @@ const LLVMBackendCapabilityDef kLLVMBackendCapability[] = {
     { IR_JMP, LLVMBC_SUPPORTED, NULL, "(no note)" },
     { IR_SWITCH, LLVMBC_REJECTED, LLVM_BACKEND_UNSUPPORTED_SWITCH, "LLVM_BACKEND_UNSUPPORTED_SWITCH" },
     { IR_CALL, LLVMBC_SUPPORTED, NULL, "(i64 return only)" },
-    { IR_PHI, LLVMBC_REJECTED, LLVM_BACKEND_UNSUPPORTED_PHI, "LLVM_BACKEND_UNSUPPORTED_PHI" },
+    /* ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 C4: IR_PHI was
+     * REJECTED under CORE04-RESUME01 M2 with the legacy
+     * LLVM_BACKEND_UNSUPPORTED_PHI diagnostic. C4 promotes
+     * the row to SHAPE_DEPENDENT (the bounded short-circuit
+     * logical-PHI support); the dispatch arm is the source
+     * of truth for the shape contract. The legacy
+     * LLVM_BACKEND_UNSUPPORTED_PHI token is preserved for
+     * the (now retired) REJECTED default arm; the new
+     * dispatch arm uses LLVM_BACKEND_UNSUPPORTED_PHI_TYPE_
+     * CONTRACT and LLVM_BACKEND_UNSUPPORTED_PHI_EDGE_
+     * MATERIALIZATION. */
+    { IR_PHI, LLVMBC_SHAPE_DEPENDENT, NULL, "ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 C4: bounded short-circuit logical-PHI lowering; shape contract enforced in the dispatch arm itself (see src/llvm-backend.c case IR_PHI)." },
     { IR_LABEL, LLVMBC_UNREACHABLE_ON_LLVM, NULL, "reserved-but-unused per src/ir-types.h:155; never created by the canonical lowerer; no explicit `case IR_LABEL:` arm; the generic `default:` arm catches a future regression and emits LLVM_BACKEND_UNSUPPORTED_IR." },
     { IR_SELECT, LLVMBC_REJECTED, LLVM_BACKEND_UNSUPPORTED_SELECT, "LLVM_BACKEND_UNSUPPORTED_SELECT" },
     { IR_VA_ARG, LLVMBC_REJECTED, LLVM_BACKEND_UNSUPPORTED_VARARGS, "LLVM_BACKEND_UNSUPPORTED_VARARGS" },

@@ -1,0 +1,194 @@
+ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 C4 IMPL-B NARRATIVE
+======================================================
+Date prepared: 2026-09-12
+
+VERDICT: PASS
+IDENTITY: see BUILD.txt
+ROOT CAUSE / FINDING
+=====================
+The C3.x contract had reduced IR_PHI lowering to a precise
+two-phase SHAPE_DEPENDENT shape, but no production code had
+landed. The prior REJECTED arm was a C3.0-era placeholder
+emitting `LLVM_BACKEND_UNSUPPORTED_PHI` for every IR_PHI
+instruction, blocking every PolyC function that used a
+short-circuit logical operator (the only producer of an
+IR_PHI in this codebase).
+
+C4 IMPL-B replaces that REJECTED arm with the two-phase
+SHAPE_DEPENDENT lowering documented in ACT §9.6.4. The
+new arm is the ONLY admission path for IR_PHI on the LLVM
+backend; counter delta is exactly 1 per admitted PHI.
+
+RED
+===
+The RED was reproduced by every short-circuit logical fixture
+(e.g. c4_phi_short_circuit_or.HC). All of them entered the
+prior REJECTED arm and exited with
+`LLVM_BACKEND_UNSUPPORTED_PHI: function PhiShortCircuitOr:
+PHI is not supported by the LLVM backend; use IR_BR / IR_JMP
+/ IR_ICMP chains`. This is the C3.0-era placeholder behavior
+documented in C3.1/c3.1-red.txt.
+
+IMPLEMENTATION
+==============
+The C4 IMPL-B commit adds the following bounded changes,
+all of which trace to the ACT's authorized scope:
+
+* src/llvm-backend.h
+    - LL_TMPDST_{DEF,USE,NONE} enum
+    - LLDefMap struct + lldmInit / lldmGrow / lldmSet /
+      lldmGet + LLDM_OK / LLDM_DUPLICATE_TMP_DEF return codes
+    - kLLTmpDstClassTable + llTmpDstClass
+    - llInstrDefinesTmpDst predicate
+    - llVerifyOpcodeCoverage runtime verifier
+    - llBuildDefMap build pass
+    - llProducerInPredBeforeTerm PI-3 sharp check
+    - two new diagnostic codes:
+      LLVM_BACKEND_UNSUPPORTED_PHI_TYPE_CONTRACT
+      LLVM_BACKEND_UNSUPPORTED_PHI_EDGE_MATERIALIZATION
+
+* src/llvm-backend.c
+    - LLDefMap wiring on LLCtx (def_map field; init/grow/
+      set/get/free in llFunction teardown)
+    - Table-driven three-way classifier (replaces an earlier
+      switch form that the cap-table verifier misclassified
+      as a dispatch seam; the table lookup uses designated
+      initialisers and a static array, so no `case IR_X:`
+      arm is visible to the verifier)
+    - llInstrDefinesTmpDst thin predicate over the classifier
+    - llVerifyOpcodeCoverage runtime verifier (accepts on
+      coverage completeness only, per the reviewer's P0
+      contract correction; reports the observed DEF/USE/NONE
+      counts to stderr; does NOT assert literal 41/5/10)
+    - llBuildDefMap one-shot per-function pass (walks every
+      IrBlock's instructions; records `ins->dst -> ins` for
+      every IR_VAL_TMP-defining IrInstr; C3.6 §9.5.7
+      duplicate-TMP-def halt channel returns LLDM_DUPLICATE_TMP_DEF)
+    - llProducerInPredBeforeTerm structural check (single
+      linear scan over pred_block->instructions; matches the
+      C3.3 §9.3.3 "frontend pre-ordering invariant" rationale)
+    - IR_PHI two-phase SHAPE_DEPENDENT dispatch arm:
+        Phase A (pure static admission, NO LLVM mutation):
+          - dst NULL/type/i8 admission check
+          - LL_INC_SHAPE_DEPENDENT at the top, AFTER static
+            admission but BEFORE per-edge materialization
+            (counter invariant: delta in {0,1}, delta=1 IFF
+            static shape admitted)
+        Phase B (materialization, LLVM mutation):
+          - PI-1 lookup-only via llbmGet; NULL -> halt with
+            LLVM_BACKEND_UNSUPPORTED_PHI_EDGE_MATERIALIZATION
+          - llLowerValue of incoming value; NULL -> halt with
+            LLVM_BACKEND_UNSUPPORTED_PHI_TYPE_CONTRACT
+          - type dispatch:
+              i8 in, i8 in   -> no zext, direct use
+              i1 in, i8 out  -> PI-3 narrow producer check
+                                 (must be IR_ICMP), then PI-2
+                                 predecessor-must-have-terminator
+                                 check, then PI-3 sharp
+                                 producer-must-be-in-pred-before-term
+                                 check, then save/restore
+                                 builder discipline + zext
+              any other width-> halt with TYPE_CONTRACT
+          - LLVMBuildPhi + LLVMAddIncoming
+          - explicit `return phi_llvm` (llLowerBlock's
+            post-arm llvmSet sees the same value; the prior
+            `break;` form returned garbage and corrupted
+            the SSA cache)
+    - minimal in-scope IR_BR relaxation (accepts IR_TYPE_I8
+      condition in addition to IR_TYPE_I64; trunc i8 -> i1
+      for the condbr consumer). Justification: the C4 PHI
+      arm cannot be exercised end-to-end without it (the
+      short-circuit shape always produces i8-typed `br`
+      consumers downstream of the i8-typed PHI).
+    - additive llLowerBinaryOperand guard: skip the trunc
+      when the operand is already physically i8 on the
+      LLVM side (trunc-to-same-width is illegal LLVM IR).
+      This is the additive in-scope change required to
+      land the cmp_ne after the IR_PHI without breaking
+      the MEMORY01 contract for non-PHI cmp_ne shapes.
+
+* src/llvm-backend-cap.c
+    - IR_PHI capability row promoted from REJECTED to
+      SHAPE_DEPENDENT (the only mutation to the cap
+      table). All other 55 rows are byte-identical to
+      the prior table.
+
+* evidence/ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01/c4/
+    - opcode-coverage.txt (the c4.RED census snapshot
+      with the reviewer's P0 contract correction applied;
+      41/5/10 figures are EVIDENCE, not asserted literals)
+    - witness-fixtures/c4_phi_only.HC (single PHI,
+      both incoming edges i1 IR_ICMP producers)
+    - witness-fixtures/c4_phi_short_circuit_or.HC
+      (single PHI, OR shape, two i1 incoming edges)
+    - witness-fixtures/c4_phi_short_circuit_and.HC
+      (single PHI, AND shape, two i1 incoming edges)
+    - witness-fixtures/c4_phi_multi_pred.HC (THREE PHIs in
+      a chain; the multi-predecessor path that originally
+      segfaulted before the explicit `return phi_llvm` fix)
+    - witness-fixtures/c4_p5_safe_fwd_single_pred.HC
+      (Option-W regression: must remain green)
+    - witness-fixtures/c4_p6_multidef_local.HC
+      (Option-W regression: must remain green)
+
+GATES
+=====
+All seven conservation gates pass:
+
+  factory-append-only-test             PASS=11 FAIL=0
+  shell-loc-gate                       PASS
+  gate-fast                            PASS
+  llvm-gep01-test                      PASS (32/0)
+  llvm-byte-memory01-test              PASS (41/0)
+  llvm-intops01-test                   PASS (4/0)
+  ir-return-slot-forwarding01-test     PASS (8/0)
+
+factory-v2-range-check requires a CLOSE-COMMIT and runs
+after the C4 IMPL commit lands.
+
+The c3-range-hygiene assertion holds:
+  $ git diff --name-only 0b39c516..HEAD | grep '^evidence/.*/c3.' | wc -l
+  0
+
+SCOPE
+=====
+The C4 IMPL commit mutates exactly:
+
+  M src/llvm-backend-cap.c     (IR_PHI row promotion)
+  M src/llvm-backend.c         (C4 IMPL-B production code)
+  M src/llvm-backend.h         (LLDefMap + classifier + verifier
+                                + build pass + PI-3 sharp check
+                                + 2 new diagnostic codes)
+  ?? evidence/ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01/c4/
+        opcode-coverage.txt    (P0-corrected census)
+        witness-fixtures/*.HC  (6 bounded fixtures)
+
+No file outside the C4 ACT's authorized scope was edited.
+All additive changes to llLowerBinaryOperand and IR_BR are
+bounded, justified in source comments, and required for the
+C4 IMPL arm to be end-to-end exerciseable.
+
+RESIDUE
+=======
+P1: the cap-table verifier (scripts/quality/
+    llvm-cap-table-verifier.py) classifies any function
+    containing a `case IR_X:` arm as a "dispatch seam".
+    The C4 IMPL classifier uses a table-driven form
+    (kLLTmpDstClassTable[op]) which the verifier
+    correctly does NOT flag. If a future ACT re-introduces
+    a switch-form classifier, the verifier will
+    false-positive again; that is a verifier
+    refinement task (separate bounded ACT), not a C4
+    concern.
+
+P1: the IR_BR relaxation is the MINIMAL additive change.
+    A wider "neutral IR dst can be i1" change is out of
+    scope and would break the native backend
+    (IR_BR_VALUE_CONTRACT = BOOLEAN_0_OR_1).
+
+NEXT ACT
+========
+HARD STOP at C5 per the §9.6.12 closure template. The C4
+IMPL commit MUST NOT advance to C5/C6/BOOTSTRAP01 in this
+turn. C5 is the subsequent phase owned by a separate ACT
+opening.

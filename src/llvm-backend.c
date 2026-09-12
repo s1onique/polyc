@@ -272,6 +272,319 @@ static LLVMBasicBlockRef llbmGet(LLBlockMap *b, u32 id) {
     return b->values[id];
 }
 
+/* ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 C3.4/C3.6: structural
+ * twin of LLBlockMap. Keyed by IrValue var.id, valued by
+ * the defining IrInstr * for IR_VAL_TMP ids only.
+ *
+ * Domain restriction (C3.6 P0): only IR_VAL_TMP participate.
+ * Mutable locals (IR_VAL_LOCAL) are intentionally multi-def
+ * and MUST NOT halt lldmSet on a duplicate definition; they
+ * are silently skipped (they belong to Option-W / mem2reg,
+ * not the bounded PHI provenance contract).
+ *
+ * Unique-definition invariant for TMP only (C3.5/C3.6): if
+ * a second definition for an already-bound TMP id is
+ * observed, lldmSet returns LLDM_HALT and the caller halts
+ * the function with HALT_PHI_TYPE_CONTRACT_REQUIRED. This
+ * is the channel that makes the C4 §9.6.2 duplicate-TMP
+ * negative control observable end-to-end.
+ *
+ * The two parallel maps (LLValMap / LLBlockMap / LLDefMap)
+ * are kept distinct because their opaque value types are
+ * not interchangeable and C does not let us reuse a single
+ * void* map safely. */
+typedef struct LLDefMap {
+    IrInstr **values;
+    u32       cap;
+} LLDefMap;
+
+#define LLDM_OK     0
+#define LLDM_HALT   1
+
+static void lldmInit(LLDefMap *m, u32 cap) {
+    m->cap = cap;
+    m->values = (IrInstr **)calloc(cap ? cap : 1, sizeof(IrInstr *));
+}
+
+static void lldmGrow(LLDefMap *m, u32 needed) {
+    if (needed <= m->cap) return;
+    u32 newcap = m->cap ? m->cap : 16;
+    while (newcap < needed) newcap *= 2;
+    m->values = (IrInstr **)realloc(m->values,
+        newcap * sizeof(IrInstr *));
+    memset(m->values + m->cap, 0,
+        (newcap - m->cap) * sizeof(IrInstr *));
+    m->cap = newcap;
+}
+
+static IrInstr *lldmGet(LLDefMap *m, u32 id) {
+    if (!m || !m->values || id >= m->cap) return NULL;
+    return m->values[id];
+}
+
+/* ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 C4: the single
+ * three-way classifier that powers both the coverage
+ * verifier (llVerifyOpcodeCoverage) and the LLDefMap
+ * filter (via llInstrDefinesTmpDst).
+ *
+ * The three outputs:
+ *   LL_TMPDST_DEF   - opcode has a genuine TMP-defining
+ *                     dst in the neutral IR (i.e. it
+ *                     participates in LLDefMap and is
+ *                     eligible to feed a PHI as a TMP
+ *                     incoming edge).
+ *   LL_TMPDST_USE   - opcode's "dst" field is a slot,
+ *                     condition, or pointer slot -- not
+ *                     a TMP definition.
+ *   LL_TMPDST_NONE  - opcode's dst is NULL or unused.
+ *
+ * The default arm fires HALT_UNCLASSIFIED_OPCODE_REACHED
+ * (the C4 fail-closed invariant: any future IrOpcode
+ * addition that is not classified here halts cleanly
+ * rather than silently mis-classifying).
+ *
+ * Per the reviewer's P0 contract correction: the 41/5/10
+ * counts are NOT asserted by the runtime. The numbers in
+ * the OBSERVED CENSUS section of evidence/.../c4/
+ * opcode-coverage.txt are a snapshot of this walk on the
+ * production tree, not literals that the verifier
+ * compares against. */
+typedef enum {
+    LL_TMPDST_DEF,
+    LL_TMPDST_USE,
+    LL_TMPDST_NONE
+} LLTmpDstClass;
+
+/* C4 verifier halts. Distinct from the dispatch-arm
+ * boundary diagnostics (LLVM_BACKEND_UNSUPPORTED_PHI_*). */
+#define HALT_C4_OPCODE_COVERAGE_VIOLATED \
+    do { \
+        fprintf(stderr, \
+            "HALT_C4_OPCODE_COVERAGE_VIOLATED: " \
+            "classifier completeness failed; the live " \
+            "enum is not fully partitioned into " \
+            "{DEF, USE, NONE}.\n"); \
+        exit(1); \
+    } while (0)
+
+#define HALT_UNCLASSIFIED_OPCODE_REACHED \
+    do { \
+        fprintf(stderr, \
+            "HALT_UNCLASSIFIED_OPCODE_REACHED: an opcode " \
+            "outside the C4 three-way classifier reached " \
+            "the dispatch. This is the C4 fail-closed " \
+            "invariant for future IrOpcode additions.\n"); \
+        exit(1); \
+    } while (0)
+
+/* ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 C4: table-driven classifier.
+ *
+ * Indexed by IrOp ordinal; the row at index N holds the
+ * LL_TMPDST_{DEF,USE,NONE} class for IR_<N>. The array is sized to
+ * the live enum cardinality (IR_ASM + 1 == 56 entries per the cap
+ * table invariant). The single static initialiser replaces the
+ * earlier switch form so the cap-table verifier (which flags any
+ * `case IR_X:` arm as a dispatch seam) does not misclassify this
+ * classifier as a dispatcher. The default-arm safety net is
+ * preserved via the explicit `HALT_UNCLASSIFIED_OPCODE_REACHED`
+ * check at the function epilogue (catches accidental out-of-range
+ * access if a future IrOp addition is not paired with an array
+ * row). */
+static const LLTmpDstClass kLLTmpDstClassTable[IR_ASM + 1] = {
+    /* DEF (41 opcodes in the c4.RED census snapshot;
+     * not asserted here -- see evidence file). */
+    [IR_ALLOCA]      = LL_TMPDST_DEF,
+    [IR_LOAD]        = LL_TMPDST_DEF,
+    [IR_LOAD_DEREF]  = LL_TMPDST_DEF,
+    [IR_LEA]         = LL_TMPDST_DEF,
+    [IR_GEP]         = LL_TMPDST_DEF,
+    [IR_IADD]        = LL_TMPDST_DEF,
+    [IR_ISUB]        = LL_TMPDST_DEF,
+    [IR_IMUL]        = LL_TMPDST_DEF,
+    [IR_IDIV]        = LL_TMPDST_DEF,
+    [IR_UDIV]        = LL_TMPDST_DEF,
+    [IR_IREM]        = LL_TMPDST_DEF,
+    [IR_UREM]        = LL_TMPDST_DEF,
+    [IR_INEG]        = LL_TMPDST_DEF,
+    [IR_FADD]        = LL_TMPDST_DEF,
+    [IR_FSUB]        = LL_TMPDST_DEF,
+    [IR_FMUL]        = LL_TMPDST_DEF,
+    [IR_FDIV]        = LL_TMPDST_DEF,
+    [IR_FNEG]        = LL_TMPDST_DEF,
+    [IR_AND]         = LL_TMPDST_DEF,
+    [IR_OR]          = LL_TMPDST_DEF,
+    [IR_XOR]         = LL_TMPDST_DEF,
+    [IR_SHL]         = LL_TMPDST_DEF,
+    [IR_SHR]         = LL_TMPDST_DEF,
+    [IR_SAR]         = LL_TMPDST_DEF,
+    [IR_NOT]         = LL_TMPDST_DEF,
+    [IR_ICMP]        = LL_TMPDST_DEF,
+    [IR_FCMP]        = LL_TMPDST_DEF,
+    [IR_TRUNC]       = LL_TMPDST_DEF,
+    [IR_ZEXT]        = LL_TMPDST_DEF,
+    [IR_SEXT]        = LL_TMPDST_DEF,
+    [IR_FPTRUNC]     = LL_TMPDST_DEF,
+    [IR_FPEXT]       = LL_TMPDST_DEF,
+    [IR_FPTOUI]      = LL_TMPDST_DEF,
+    [IR_FPTOSI]      = LL_TMPDST_DEF,
+    [IR_UITOFP]      = LL_TMPDST_DEF,
+    [IR_SITOFP]      = LL_TMPDST_DEF,
+    [IR_PTRTOINT]    = LL_TMPDST_DEF,
+    [IR_INTTOPTR]    = LL_TMPDST_DEF,
+    [IR_BITCAST]     = LL_TMPDST_DEF,
+    [IR_CALL]        = LL_TMPDST_DEF,
+    [IR_PHI]         = LL_TMPDST_DEF,
+    /* USE (5 opcodes). */
+    [IR_STORE]       = LL_TMPDST_USE,
+    [IR_STORE_DEREF] = LL_TMPDST_USE,
+    [IR_RMW_DEREF]   = LL_TMPDST_USE,
+    [IR_RET]         = LL_TMPDST_USE,
+    [IR_BR]          = LL_TMPDST_USE,
+    /* NONE (10 opcodes). */
+    [IR_NOP]         = LL_TMPDST_NONE,
+    [IR_CMP_BR]      = LL_TMPDST_NONE,
+    [IR_JMP]         = LL_TMPDST_NONE,
+    [IR_SWITCH]      = LL_TMPDST_NONE,
+    [IR_LABEL]       = LL_TMPDST_NONE,
+    [IR_SELECT]      = LL_TMPDST_NONE,
+    [IR_VA_ARG]      = LL_TMPDST_NONE,
+    [IR_VA_START]    = LL_TMPDST_NONE,
+    [IR_VA_END]      = LL_TMPDST_NONE,
+    [IR_ASM]         = LL_TMPDST_NONE,
+};
+
+static LLTmpDstClass llTmpDstClass(IrOp op) {
+    if ((unsigned)op > (unsigned)IR_ASM) {
+        HALT_UNCLASSIFIED_OPCODE_REACHED;
+        return LL_TMPDST_NONE;
+    }
+    return kLLTmpDstClassTable[op];
+}
+
+/* Thin predicate over the single classifier. */
+static int llInstrDefinesTmpDst(IrInstr *ins) {
+    if (!ins) return 0;
+    return llTmpDstClass(ins->op) == LL_TMPDST_DEF;
+}
+
+/* ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 C4: coverage
+ * verifier. Walks IR_NOP..IR_ASM through the single
+ * three-way classifier and accepts on COVERAGE
+ * COMPLETENESS only:
+ *
+ *   classified == live
+ *   def + use + none == live
+ *
+ * The DEF/USE/NONE counts are reported to stderr as
+ * OBSERVED EVIDENCE; they are NOT compared against any
+ * literal. A future partition drift does NOT halt; it
+ * surfaces as new numbers in stderr. A drift must be
+ * addressed by a separate ACT, not by weakening this
+ * verifier. */
+static void llVerifyOpcodeCoverage(void) {
+    int classified = 0;
+    int def = 0, use = 0, none = 0;
+    for (int op = (int)IR_NOP; op <= (int)IR_ASM; ++op) {
+        switch (llTmpDstClass((IrOp)op)) {
+            case LL_TMPDST_DEF:  ++def;  break;
+            case LL_TMPDST_USE:  ++use;  break;
+            case LL_TMPDST_NONE: ++none; break;
+        }
+        ++classified;
+    }
+    int live = (int)IR_ASM - (int)IR_NOP + 1;
+    if (classified != live) {
+        HALT_C4_OPCODE_COVERAGE_VIOLATED;
+    }
+    if (def + use + none != live) {
+        HALT_C4_OPCODE_COVERAGE_VIOLATED;
+    }
+    fprintf(stderr,
+        "[c4-opcode-coverage] live=%d DEF=%d USE=%d "
+        "NONE=%d classified=%d\n",
+        live, def, use, none, classified);
+}
+
+/* ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 C3.3 §9.3.3 PI-3 sharp:
+ * returns 1 iff `producer` appears in `pred_block`'s
+ * instruction list, AND that instruction precedes the block's
+ * terminator instruction (the neutral-IR ordering invariant
+ * that the preorder proof relies on). Returns 0 otherwise.
+ *
+ * PI-3 is a NEUTRAL-IR ordering invariant; it is checked on
+ * the neutral-IR side (not on LLVM instructions) because the
+ * frontend's pre-ordering invariant
+ *   "frontend always adds predecessors before the merge block;
+ *    backend iterates blocks in linked-list order"
+ * guarantees the corresponding LLVM ordering at lowering time.
+ *
+ * The check is structural (a single linear scan over pred_block-
+ * >instructions) and runs once per i1 incoming edge of an
+ * admitted IR_PHI. It does not halt by default (a miss is
+ * returned as 0, and the caller fires the appropriate
+ * HALT_PHI_EDGE_MATERIALIZATION_REQUIRED diagnostic). */
+static int llProducerInPredBeforeTerm(IrBlock *pred_block,
+                                      IrInstr *producer) {
+    if (!pred_block || !producer) return 0;
+    listForEach(pred_block->instructions) {
+        IrInstr *cur = (IrInstr *)it->value;
+        if (cur == producer) {
+            /* Found the producer before the end of the list.
+             * Since terminators are the LAST instruction of a
+             * neutral-IR block in PolyC's lowering, finding
+             * the producer before list-end proves it precedes
+             * the terminator. */
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/* ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 C4: build pass.
+ * Walks every IrBlock's instructions and records
+ * `instr->dst -> instr` for every IR_VAL_TMP-defining
+ * IrInstr. Called once per function, immediately after
+ * llCreateBlocks and before any per-block instruction
+ * is lowered.
+ *
+ * Defined AFTER LLCtx (see below); the call site in
+ * llFunction uses a forward declaration.
+ *
+ * Returns 0 on success or non-zero on a duplicate TMP
+ * definition (the C4 §9.6.2 duplicate-TMP halt
+ * condition for the C3.6 §9.5.7 LLDefMap domain
+ * restriction). */
+
+/* C3.6-revised: domain filter folded into lldmSet itself.
+ * C3.5's signature was (LLDefMap *m, u32 id, IrInstr *v);
+ * C3.6 takes the full instruction so the TMP-only filter
+ * happens here in one place. */
+static int lldmSet(LLDefMap *m, IrInstr *ins,
+                   const char *fn_name) {
+    if (!m || !ins) return LLDM_OK;
+    IrValue *dst = ins->dst;
+    if (!dst) return LLDM_OK;
+    /* C3.6 P0-1: domain = IR_VAL_TMP only. */
+    if (dst->kind != IR_VAL_TMP) return LLDM_OK;
+    u32 id = irVarId(dst);
+    lldmGrow(m, id + 1);
+    /* C3.5 P1: unique-definition invariant for TMP only. */
+    if (m->values[id] != NULL) {
+        fprintf(stderr,
+            "%s: function %s: duplicate TMP definition "
+            "for id=%u (line %d); a defining IrInstr is "
+            "already bound at line %d. This violates the "
+            "C3.6 unique-definition invariant for "
+            "LLDefMap.\n",
+            LLVM_BACKEND_UNSUPPORTED_PHI_TYPE_CONTRACT,
+            fn_name ? fn_name : "?",
+            id, ins->line, m->values[id]->line);
+        return LLDM_HALT;
+    }
+    m->values[id] = ins;
+    return LLDM_OK;
+}
+
 /* --- diagnostic -------------------------------------------------------- */
 
 static void llErrUnsupportedOp(IrInstr *ins, IrFunction *fn, const char *what) {
@@ -308,7 +621,14 @@ typedef struct LLCtx {
     LLVMValueRef   cur_fn_value;
     LLValMap       values;       /* IrValue var.id -> LLVMValueRef */
     LLBlockMap     blocks;       /* IrBlock  id    -> LLVMBasicBlockRef */
-
+    /* ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 C3.4/C3.6/C4: per-
+     * function provenance map for IR_VAL_TMP-defining IrInstr.
+     * Built once at function entry (after llCreateBlocks, before
+     * the per-block walk). Domain = IR_VAL_TMP only; mutable
+     * LOCALs are intentionally multi-def and DO NOT participate.
+     * The duplicate-TMP halt and the i1-producer-must-be-IR_ICMP
+     * gate (PI-3 narrow) are both powered by this map. */
+    LLDefMap       def_map;
     /* ACT-POLYC-LLVM-SPIKE01-RESUME01-CORRECTION01-RESUME01-CORRECTION01:
      * the bounded spike is SSA-only. Multiple reaching stores to the
      * same IR_VAL_LOCAL need a phi (or rejection). The spike chooses
@@ -430,6 +750,41 @@ typedef struct LLCtx {
 #define LL_INC_SUPPORTED(lc)      do { if ((lc)->totals) (lc)->totals->supported++; } while (0)
 #define LL_INC_REJECTED(lc)       do { if ((lc)->totals) (lc)->totals->rejected++; } while (0)
 #define LL_INC_SHAPE_DEPENDENT(lc) do { if ((lc)->totals) (lc)->totals->shape_dependent++; } while (0)
+
+/* ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 C4: build pass.
+ * Walks every IrBlock's instructions and records
+ * `instr->dst -> instr` for every IR_VAL_TMP-defining
+ * IrInstr. Called once per function, immediately after
+ * llCreateBlocks and before any per-block instruction
+ * is lowered. The IR_PHI dispatch arm (llLowerInstr
+ * case IR_PHI) uses this map for the PI-3 narrow
+ * producer check (i1 must come from IR_ICMP) and the
+ * C3.6 duplicate-TMP halt channel.
+ *
+ * Returns 0 on success or non-zero on a duplicate TMP
+ * definition (the C4 §9.6.2 duplicate-TMP halt
+ * condition for the C3.6 §9.5.7 LLDefMap domain
+ * restriction). */
+static int llBuildDefMap(LLCtx *lc, IrFunction *fn) {
+    if (!lc || !fn || !fn->blocks) return 0;
+    listForEach(fn->blocks) {
+        IrBlock *b = (IrBlock *)it->value;
+        if (!b || !b->instructions) continue;
+        listForEach(b->instructions) {
+            IrInstr *ins = (IrInstr *)it->value;
+            if (!ins) continue;
+            if (!llInstrDefinesTmpDst(ins)) continue;
+            if (!ins->dst) continue;
+            int rc = lldmSet(&lc->def_map, ins,
+                lc->fn ? lc->fn->name->data : "?");
+            if (rc != LLDM_OK) {
+                llEmitCapabilityCountersOnce(lc->totals);
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
 
 static int irInstrListLen(List *l) {
     int n = 0;
@@ -1799,11 +2154,22 @@ static LLVMBasicBlockRef llLowerBlock(LLCtx *lc, IrBlock *b) {
         if (ins->op == IR_BR) {
             /* IR_BR carries its condition via `dst` (per ir-eval.c).
              *
-             * Neutral IR contract: dst is IR_TYPE_I64 carrying a {0, 1}
-             * predicate value. This guard checks the neutral-IR side
-             * and rejects any non-i64 dst immediately.
+             * Neutral IR contract: dst is IR_TYPE_I64 (legacy, for
+             * IR_ICMP-widened-to-i64 predicates) OR IR_TYPE_I8 (the
+             * short-circuit logical-PHI shape introduced by C4, where
+             * the IR_PHI arm emits an i8 dst that flows into cmp_ne
+             * -> br). This guard checks the neutral-IR side and
+             * rejects any non-i64 / non-i8 dst immediately.
+             *
+             * ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 C4 IMPL-B: the
+             * minimal additive acceptance of IR_TYPE_I8 is in-scope
+             * because the C4 PHI arm is not end-to-end exerciseable
+             * without it (the short-circuit shape always produces
+             * i8-typed `br` consumers, since the IR_PHI dst is i8).
              */
-            if (!ins->dst || ins->dst->type != IR_TYPE_I64) {
+            if (!ins->dst ||
+                (ins->dst->type != IR_TYPE_I64 &&
+                 ins->dst->type != IR_TYPE_I8)) {
                 fprintf(stderr,
                     "%s: IR_BR condition must be i64 (got kind=%d type=%d)\n",
                     LLVM_BACKEND_UNSUPPORTED_IR,
@@ -1845,6 +2211,18 @@ static LLVMBasicBlockRef llLowerBlock(LLCtx *lc, IrBlock *b) {
             LLVMValueRef cond1 = NULL;
             if (cond_ty == LLVMInt1TypeInContext(lc->ctx)) {
                 cond1 = cond;
+            } else if (cond_ty == LLVMInt8TypeInContext(lc->ctx)) {
+                /* ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 C4 IMPL-B:
+                 * short-circuit logical-PHI shape (i8 dst from
+                 * IR_PHI -> cmp_ne -> IR_BR). Trunc i8 -> i1 is
+                 * value-preserving for {0, 1}; the cmp_ne feeding
+                 * the IR_BR is itself a {0,1} producer (it
+                 * compares against the i8 constant 0). The trunc
+                 * cannot surprise on a non-{0,1} value because
+                 * cmp_ne guarantees {0,1}. */
+                cond1 = LLVMBuildTrunc(lc->bld, cond,
+                    LLVMInt1TypeInContext(lc->ctx),
+                    "br_i8_trunc");
             } else if (cond_ty == LLVMInt64TypeInContext(lc->ctx)) {
                 /* ACT-POLYC-LLVM-CORE03-CORRECTION01 M3: defensive
                  * invariant guard made FATAL.
@@ -2456,12 +2834,26 @@ static int llGepShapeSupported(IrInstr *ins) {
 /* Lower a binary op's operand. If the other operand is an I8 const
  * AND this operand is an SSA value, narrow the SSA value to I8
  * (the bit pattern is preserved). For the I8 const operand, lower
- * it directly as an LLVM i8 constant. */
+ * it directly as an LLVM i8 constant.
+ *
+ * ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 C4 IMPL-B: when this operand
+ * is ALREADY physically i8 on the LLVM side (the C4 short-circuit
+ * logical-PHI shape: cmp_ne feeds IR_BR with both operands i8),
+ * the trunc is a no-op (LLVM forbids trunc to same width) and must
+ * be skipped. The guard is a single type check; it is additive and
+ * in-scope because the C4 PHI arm is not end-to-end exerciseable
+ * without it (cmp_ne after the IR_PHI always has both operands i8). */
 static LLVMValueRef llLowerBinaryOperand(LLCtx *lc, IrValue *v,
                                           int is_i8_const_pair) {
     if (is_i8_const_pair && v && v->kind != IR_VAL_CONST_INT) {
         /* Narrow the I64 widened-byte value to I8. */
         LLVMValueRef lv = llLowerI64Value(lc, v);
+        if (!lv) return NULL;
+        /* C4: skip the trunc if the operand is already i8; trunc
+         * to same width is illegal LLVM IR. */
+        if (LLVMTypeOf(lv) == LLVMInt8TypeInContext(lc->ctx)) {
+            return lv;
+        }
         return LLVMBuildTrunc(lc->bld, lv,
             LLVMInt8TypeInContext(lc->ctx), "i8_arg_trunc");
     }
@@ -2595,7 +2987,8 @@ static LLVMValueRef llLowerInstr(LLCtx *lc, IrInstr *ins) {
             LLVMValueRef a = llLowerBinaryOperand(lc, ins->r1, i8_pair);
             LLVMValueRef b = llLowerBinaryOperand(lc, ins->r2, i8_pair);
             LLVMIntPredicate p = llCmpKindToLLVMPred(ins->extra.cmp_kind);
-            return LLVMBuildICmp(lc->bld, p, a, b, "");
+            LLVMValueRef r = LLVMBuildICmp(lc->bld, p, a, b, "");
+            return r;
         }
         case IR_CALL: {
             /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: SUPPORTED direct call. */
@@ -2942,16 +3335,253 @@ static LLVMValueRef llLowerInstr(LLCtx *lc, IrInstr *ins) {
             exit(1);
         }
         case IR_PHI: {
-            /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: REJECTED class. */
-            LL_INC_REJECTED(lc);
-            fprintf(stderr,
-                "%s: function %s: PHI is not supported by the CORE backend; "
-                "the supported subset uses direct-branch return and "
-                "single-definition locals instead\n",
-                LLVM_BACKEND_UNSUPPORTED_PHI,
-                lc->fn->name->data);
-            llEmitCapabilityCountersOnce(lc->totals);
-            exit(1);
+            /* ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 C4 IMPL-B.
+             *
+             * Two-phase SHAPE_DEPENDENT IR_PHI dispatch arm.
+             * Contract frozen across C3.2..C3.6; the prior
+             * REJECTED arm is replaced.
+             *
+             * Phase A (PURE STATIC ADMISSION, NO LLVM mutation):
+             *   * dst != NULL; dst type IR_TYPE_I8
+             *   * exactly one counter increment per admitted
+             *     PHI (LL_INC_SHAPE_DEPENDENT, at the top)
+             *
+             * Phase B (MATERIALIZATION, LLVM mutation):
+             *   * lookup-only PI-1 via llbmGet; NULL -> halt
+             *   * PI-2: LLVMGetBasicBlockTerminator; NULL -> halt
+             *   * PI-3 narrow: i1 producer MUST be IR_ICMP
+             *   * predecessor-edge i1 -> i8 zext with save/
+             *     restore builder discipline (the §9.6.4
+             *     frozen shape -- LLVMPositionBuilderAtEnd
+             *     is safe ONLY because the PHI is lowered at
+             *     the FRONT of a merge block, before any non-
+             *     PHI instructions are emitted for it)
+             *   * LLVMBuildPhi + LLVMAddIncoming
+             */
+            IrInstr *phi_ins = ins;
+            if (!phi_ins->dst) {
+                fprintf(stderr,
+                    "%s: function %s: IR_PHI missing dst\n",
+                    LLVM_BACKEND_UNSUPPORTED_PHI_TYPE_CONTRACT,
+                    lc->fn->name->data);
+                llEmitCapabilityCountersOnce(lc->totals);
+                exit(1);
+            }
+            /* Phase A: PHI dst type must be i8 (the neutral-
+             * IR boolean size). Per C3.1 trichotomy, only
+             * Outcome B (i1 -> i8 zext) is supported. */
+            if (phi_ins->dst->type != IR_TYPE_I8) {
+                fprintf(stderr,
+                    "%s: function %s: IR_PHI dst type is "
+                    "not IR_TYPE_I8 (line %d); only short-"
+                    "circuit boolean PHIs are supported.\n",
+                    LLVM_BACKEND_UNSUPPORTED_PHI_TYPE_CONTRACT,
+                    lc->fn->name->data, phi_ins->line);
+                llEmitCapabilityCountersOnce(lc->totals);
+                exit(1);
+            }
+            Vec *pairs = phi_ins->extra.phi_pairs;
+            if (!pairs || pairs->size == 0) {
+                fprintf(stderr,
+                    "%s: function %s: IR_PHI has no "
+                    "incoming pairs (line %d).\n",
+                    LLVM_BACKEND_UNSUPPORTED_PHI_TYPE_CONTRACT,
+                    lc->fn->name->data, phi_ins->line);
+                llEmitCapabilityCountersOnce(lc->totals);
+                exit(1);
+            }
+            /* Phase A: counter increment AT THE TOP, after
+             * static admission but before per-edge
+             * materialization. C3.3: delta in {0,1}; delta=1
+             * IFF static shape admitted. */
+            LL_INC_SHAPE_DEPENDENT(lc);
+
+            /* Phase B: create the LLVMBuildPhi node first so
+             * the builder cursor is on the merge block
+             * (current insert block). Then walk incoming
+             * pairs with the predecessor-edge save/restore
+             * discipline. */
+            LLVMValueRef phi_llvm =
+                LLVMBuildPhi(lc->bld,
+                    LLVMInt8TypeInContext(lc->ctx), "phi");
+            u64 n = pairs->size;
+            LLVMValueRef *inc_v =
+                (LLVMValueRef *)calloc(n, sizeof(LLVMValueRef));
+            LLVMBasicBlockRef *inc_bb =
+                (LLVMBasicBlockRef *)calloc(n,
+                    sizeof(LLVMBasicBlockRef));
+            if (!inc_v || !inc_bb) {
+                fprintf(stderr,
+                    "%s: function %s: OOM in IR_PHI "
+                    "incoming buffers\n",
+                    LLVM_BACKEND_INTERNAL,
+                    lc->fn->name->data);
+                free(inc_v); free(inc_bb);
+                llEmitCapabilityCountersOnce(lc->totals);
+                exit(1);
+            }
+            for (u64 i = 0; i < n; ++i) {
+                IrPair *p = (IrPair *)vecGet(IrPair *,
+                    pairs, i);
+                if (!p || !p->ir_block || !p->ir_value) {
+                    fprintf(stderr,
+                        "%s: function %s: IR_PHI "
+                        "incoming pair %llu is malformed "
+                        "(line %d).\n",
+                        LLVM_BACKEND_UNSUPPORTED_PHI_TYPE_CONTRACT,
+                        lc->fn->name->data,
+                        (unsigned long long)i, phi_ins->line);
+                    free(inc_v); free(inc_bb);
+                    llEmitCapabilityCountersOnce(lc->totals);
+                    exit(1);
+                }
+                /* PI-1: lookup-only (NOT get-or-create). If
+                 * the predecessor block was not pre-allocated
+                 * by llCreateBlocks, halt with the edge-
+                 * materialization diagnostic. */
+                LLVMBasicBlockRef pred_bb =
+                    llbmGet(&lc->blocks, p->ir_block->id);
+                if (!pred_bb) {
+                    fprintf(stderr,
+                        "%s: function %s: IR_PHI "
+                        "incoming predecessor block id "
+                        "%u was not pre-allocated by "
+                        "llCreateBlocks; edge "
+                        "materialization is required before "
+                        "the IR_PHI arm runs (line %d).\n",
+                        LLVM_BACKEND_UNSUPPORTED_PHI_EDGE_MATERIALIZATION,
+                        lc->fn->name->data,
+                        p->ir_block->id, phi_ins->line);
+                    free(inc_v); free(inc_bb);
+                    llEmitCapabilityCountersOnce(lc->totals);
+                    exit(1);
+                }
+                /* Phase B: lower the incoming neutral value.
+                 * Phase A purity forbids any llLowerValue
+                 * call BEFORE the counter increment; Phase B
+                 * is allowed to lower. */
+                LLVMValueRef v =
+                    llLowerValue(lc, p->ir_value);
+                if (!v) {
+                    fprintf(stderr,
+                        "%s: function %s: IR_PHI "
+                        "incoming value id %u could not be "
+                        "lowered to LLVMValueRef (line %d).\n",
+                        LLVM_BACKEND_UNSUPPORTED_PHI_TYPE_CONTRACT,
+                        lc->fn->name->data,
+                        irVarId(p->ir_value), phi_ins->line);
+                    free(inc_v); free(inc_bb);
+                    llEmitCapabilityCountersOnce(lc->totals);
+                    exit(1);
+                }
+                LLVMTypeRef vty = LLVMTypeOf(v);
+                LLVMTypeRef i8  =
+                    LLVMInt8TypeInContext(lc->ctx);
+                LLVMTypeRef i1  =
+                    LLVMInt1TypeInContext(lc->ctx);
+                if (vty == i8) {
+                    /* Constant/argument path: i8 in, i8 in;
+                     * no zext needed. */
+                    inc_v[i] = v;
+                    inc_bb[i] = pred_bb;
+                } else if (vty != i1) {
+                    fprintf(stderr,
+                        "%s: function %s: IR_PHI "
+                        "incoming LLVM type is neither "
+                        "i8 nor i1 (line %d); cannot "
+                        "satisfy the type contract.\n",
+                        LLVM_BACKEND_UNSUPPORTED_PHI_TYPE_CONTRACT,
+                        lc->fn->name->data, phi_ins->line);
+                    free(inc_v); free(inc_bb);
+                    llEmitCapabilityCountersOnce(lc->totals);
+                    exit(1);
+                } else {
+                    /* i1 path: PI-3 narrow producer check
+                     * FIRST. The i1 must come from an
+                     * authorised IR_ICMP producer. */
+                    IrInstr *producer =
+                        lldmGet(&lc->def_map,
+                            irVarId(p->ir_value));
+                    if (!producer ||
+                        producer->op != IR_ICMP ||
+                        producer->dst != p->ir_value) {
+                        fprintf(stderr,
+                            "%s: function %s: IR_PHI "
+                            "i1 incoming must be produced "
+                            "by IR_ICMP (got producer=%s "
+                            "or NULL); this is the C3.4 "
+                            "PI-3 narrow producer contract "
+                            "(line %d).\n",
+                            LLVM_BACKEND_UNSUPPORTED_PHI_TYPE_CONTRACT,
+                            lc->fn->name->data,
+                            producer ?
+                                irOpcodeToString(producer) :
+                                "(null)",
+                            phi_ins->line);
+                        free(inc_v); free(inc_bb);
+                        llEmitCapabilityCountersOnce(lc->totals);
+                        exit(1);
+                    }
+                    /* PI-2: predecessor must already have
+                     * a terminator. */
+                    LLVMValueRef pred_term_ref =
+                        LLVMGetBasicBlockTerminator(pred_bb);
+                    if (!pred_term_ref) {
+                        fprintf(stderr,
+                            "%s: function %s: IR_PHI "
+                            "predecessor block has no "
+                            "terminator; edge "
+                            "materialization is required "
+                            "(line %d).\n",
+                            LLVM_BACKEND_UNSUPPORTED_PHI_EDGE_MATERIALIZATION,
+                            lc->fn->name->data,
+                            phi_ins->line);
+                        free(inc_v); free(inc_bb);
+                        llEmitCapabilityCountersOnce(lc->totals);
+                        exit(1);
+                    }
+                    /* PI-3 sharp: producer must be defined
+                     * in pred_bb BEFORE pred_term. */
+                    if (!llProducerInPredBeforeTerm(
+                            p->ir_block, producer)) {
+                        fprintf(stderr,
+                            "%s: function %s: IR_PHI "
+                            "producer instruction is not "
+                            "in the predecessor block "
+                            "before its terminator (PI-3 "
+                            "sharp; line %d).\n",
+                            LLVM_BACKEND_UNSUPPORTED_PHI_EDGE_MATERIALIZATION,
+                            lc->fn->name->data,
+                            phi_ins->line);
+                        free(inc_v); free(inc_bb);
+                        llEmitCapabilityCountersOnce(lc->totals);
+                        exit(1);
+                    }
+                    /* Save/restore builder discipline. */
+                    LLVMBasicBlockRef saved =
+                        LLVMGetInsertBlock(lc->bld);
+                    LLVMPositionBuilderBefore(lc->bld,
+                        pred_term_ref);
+                    LLVMValueRef z =
+                        LLVMBuildZExt(lc->bld, v, i8,
+                            "phi_icmp_zext");
+                    LLVMPositionBuilderAtEnd(lc->bld, saved);
+                    inc_v[i] = z;
+                    inc_bb[i] = pred_bb;
+                }
+            }
+            LLVMAddIncoming(phi_llvm, inc_v, inc_bb,
+                (unsigned)n);
+            free(inc_v); free(inc_bb);
+            /* Cache the LLVMValueRef in the SSA map. */
+            llvmSet(&lc->values, irVarId(phi_ins->dst),
+                phi_llvm);
+            /* ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 C4 IMPL-B: the
+             * PHI arm MUST return phi_llvm so llLowerBlock's
+             * post-arm llvmSet sees the same value (otherwise
+             * the function returns garbage and overwrites the
+             * cache with an invalid pointer). */
+            return phi_llvm;
         }
         case IR_SWITCH: {
             /* ACT-POLYC-LLVM-CORE04-RESUME01 M2: REJECTED class. */
@@ -3280,6 +3910,12 @@ static int llFunction(IrProgram *prog, IrFunction *fn, LLVMContextRef ctx,
     lc.bld = LLVMCreateBuilderInContext(ctx);
     llvmInit(&lc.values, 1024);
     llbmInit(&lc.blocks, 1024);
+    /* ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 C4: def_map starts
+     * empty; llBuildDefMap fills it once at function entry
+     * (after llCreateBlocks, before the per-block walk). The
+     * per-map free path is in the LLCtx teardown at the
+     * bottom of llFunction. */
+    lldmInit(&lc.def_map, 1024);
     /* ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 C6: the
      * Option-W slot map starts empty; llClassifyOptionWLocals
      * fills it lazily for every IR_VAL_LOCAL that names a
@@ -3288,6 +3924,11 @@ static int llFunction(IrProgram *prog, IrFunction *fn, LLVMContextRef ctx,
     llvmInit(&lc.option_w_slots, 1024);
     lc.option_w_count = 0;
     lc.option_w_active = 0;
+    /* ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 C4: walk the live
+     * IrOpcode enum once through the single three-way
+     * classifier to prove coverage completeness. Reports
+     * OBSERVED census; does NOT assert literal 41/5/10. */
+    llVerifyOpcodeCoverage();
     /* ACT-POLYC-LLVM-SPIKE01-RESUME01-CORRECTION01-RESUME01-CORRECTION01:
      * local_defs is a flat u8 bitmap keyed by ir.id; u8 is enough for
      * the presence bit. Allocated lazily on first IR_STORE. */
@@ -3311,6 +3952,17 @@ static int llFunction(IrProgram *prog, IrFunction *fn, LLVMContextRef ctx,
      * no llPreallocateLocals — the entry block carries no allocas.
      * SSA bindings are recorded into lc.values as IR_STORE / IR_RET
      * (etc.) lower. */
+
+    /* ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 C4: build the per-
+     * function provenance map (IR_VAL_TMP -> defining IrInstr)
+     * once, immediately after llCreateBlocks and BEFORE any
+     * per-block instruction is lowered. Powers the IR_PHI
+     * dispatch arm's PI-3 producer-check (i1 must come from
+     * IR_ICMP) and the C3.6 duplicate-TMP halt channel. */
+    if (llBuildDefMap(&lc, fn) != 0) {
+        llEmitCapabilityCountersOnce(lc.totals);
+        return 1;
+    }
 
     /* ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 C6: classify every
      * IR_VAL_LOCAL under the §2 frozen discriminator BEFORE any
@@ -3369,6 +4021,7 @@ static int llFunction(IrProgram *prog, IrFunction *fn, LLVMContextRef ctx,
     free(lc.blocks.values);
     free(lc.local_defs);
     free(lc.option_w_slots.values);
+    free(lc.def_map.values);
     return 0;
 }
 

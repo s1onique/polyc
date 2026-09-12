@@ -81,6 +81,27 @@ int llvmEmitProgram(IrProgram *prog,
 #define LLVM_BACKEND_UNSUPPORTED_CONVERSION     "LLVM_BACKEND_UNSUPPORTED_CONVERSION"
 #define LLVM_BACKEND_UNSUPPORTED_BITCAST        "LLVM_BACKEND_UNSUPPORTED_BITCAST"
 #define LLVM_BACKEND_UNSUPPORTED_PHI            "LLVM_BACKEND_UNSUPPORTED_PHI"
+/* ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 C4: when the bounded
+ * IR_PHI dispatch arm rejects a shape whose incoming-edge
+ * type binding is not satisfiable (i.e. the incoming
+ * LLVMValueRef is neither i8 (constant/argument case) nor
+ * i1 with an authorised IR_ICMP producer, nor is the
+ * producer record present). Distinct from
+ * LLVM_BACKEND_UNSUPPORTED_PHI, which is reserved for the
+ * legacy "PHI unsupported at all" stance and is not used
+ * by the SHAPE_DEPENDENT arm. */
+#define LLVM_BACKEND_UNSUPPORTED_PHI_TYPE_CONTRACT \
+    "LLVM_BACKEND_UNSUPPORTED_PHI_TYPE_CONTRACT"
+/* ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 C4: when the bounded
+ * IR_PHI dispatch arm detects that the static shape is
+ * authorised but the runtime materialisation preconditions
+ * (PI-1: predecessor block exists; PI-2: predecessor block
+ * has a terminator; PI-3: incoming value already lowered
+ * into predecessor) are not satisfied. Distinct from
+ * LLVM_BACKEND_UNSUPPORTED_PHI_TYPE_CONTRACT, which fires
+ * in Phase A static admission. */
+#define LLVM_BACKEND_UNSUPPORTED_PHI_EDGE_MATERIALIZATION \
+    "LLVM_BACKEND_UNSUPPORTED_PHI_EDGE_MATERIALIZATION"
 #define LLVM_BACKEND_UNSUPPORTED_SWITCH         "LLVM_BACKEND_UNSUPPORTED_SWITCH"
 #define LLVM_BACKEND_UNSUPPORTED_SELECT         "LLVM_BACKEND_UNSUPPORTED_SELECT"
 #define LLVM_BACKEND_UNSUPPORTED_VARARGS        "LLVM_BACKEND_UNSUPPORTED_VARARGS"

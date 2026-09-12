@@ -1,0 +1,454 @@
+ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 C4 IMPL-B WITNESS OUTPUTS
+==============================================================
+Date prepared: 2026-09-12
+
+This file captures the hcc + llvm-as + opt --passes=verify
+output for each of the six bounded witness fixtures. All
+fixtures pass the full chain (hcc=0, llvm-as=0, opt=0).
+
+
+###### c4_phi_only ######
+
+--- witness-fixtures/c4_phi_only.HC ---
+// ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 C4 IMPL-B
+// Fixture: single IR_PHI-producing function (the canonical PhiOnly).
+// Exercises the short-circuit OR shape with a single IR_PHI where
+// both incoming edges are i1 IR_ICMP producers (the canonical
+// Outcome B from C3.1: i1 -> i8 zext on both edges).
+I64 PhiOnly(I64 a, I64 b)
+{
+    if (a > 0 || b > 0)
+        return 1;
+    return 0;
+}
+--- /tmp/c4-witness/c4_phi_only.ll ---
+; ModuleID = 'polyc_module'
+source_filename = "polyc_module"
+
+define i64 @PhiOnly(i64 %0, i64 %1) {
+bb1:
+  %2 = icmp sgt i64 %0, 0
+  br i1 %2, label %bb4, label %bb3
+
+bb3:                                              ; preds = %bb1
+  %3 = icmp sgt i64 %1, 0
+  %phi_icmp_zext = zext i1 %3 to i8
+  br label %bb4
+
+bb4:                                              ; preds = %bb3, %bb1
+  %phi = phi i8 [ 1, %bb1 ], [ %phi_icmp_zext, %bb3 ]
+  %4 = icmp ne i8 %phi, 0
+  br i1 %4, label %bb5, label %bb6
+
+bb5:                                              ; preds = %bb4
+  ret i64 1
+
+bb6:                                              ; preds = %bb4
+  ret i64 0
+
+bb2:                                              ; No predecessors!
+  unreachable
+}
+--- /tmp/c4-witness/c4_phi_only.bc ---
+file: /tmp/c4-witness/c4_phi_only.bc: LLVM IR bitcode
+size: 1636 bytes
+--- /tmp/c4-witness/c4_phi_only-opt.ll ---
+; ModuleID = '/tmp/c4_phi_only.bc'
+source_filename = "polyc_module"
+
+define i64 @PhiOnly(i64 %0, i64 %1) {
+bb1:
+  %2 = icmp sgt i64 %0, 0
+  br i1 %2, label %bb4, label %bb3
+
+bb3:                                              ; preds = %bb1
+  %3 = icmp sgt i64 %1, 0
+  %phi_icmp_zext = zext i1 %3 to i8
+  br label %bb4
+
+bb4:                                              ; preds = %bb3, %bb1
+  %phi = phi i8 [ 1, %bb1 ], [ %phi_icmp_zext, %bb3 ]
+  %4 = icmp ne i8 %phi, 0
+  br i1 %4, label %bb5, label %bb6
+
+bb5:                                              ; preds = %bb4
+  ret i64 1
+
+bb6:                                              ; preds = %bb4
+  ret i64 0
+
+bb2:                                              ; No predecessors!
+  unreachable
+}
+--- hcc stderr ---
+LLVM backend capability contract: ok (56 rows, ordinal binding)
+[c4-opcode-coverage] live=56 DEF=41 USE=5 NONE=10 classified=56
+CAPABILITY_COUNTERS supported=7 rejected=0 shape_dependent=2 defensive=0 unreachable=0
+--- llvm-as exit code: 0 ---
+--- opt --passes=verify exit code: 0 ---
+
+###### c4_phi_short_circuit_or ######
+
+--- witness-fixtures/c4_phi_short_circuit_or.HC ---
+// ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 C4 IMPL-B
+// Fixture: short-circuit logical OR.
+// Covers fence: valid PhiOnly (counter delta exactly 1).
+I64 PhiShortCircuitOr(I64 a, I64 b)
+{
+    if (a > 0 || b > 0)
+        return 1;
+    return 0;
+}
+--- /tmp/c4-witness/c4_phi_short_circuit_or.ll ---
+; ModuleID = 'polyc_module'
+source_filename = "polyc_module"
+
+define i64 @PhiShortCircuitOr(i64 %0, i64 %1) {
+bb1:
+  %2 = icmp sgt i64 %0, 0
+  br i1 %2, label %bb4, label %bb3
+
+bb3:                                              ; preds = %bb1
+  %3 = icmp sgt i64 %1, 0
+  %phi_icmp_zext = zext i1 %3 to i8
+  br label %bb4
+
+bb4:                                              ; preds = %bb3, %bb1
+  %phi = phi i8 [ 1, %bb1 ], [ %phi_icmp_zext, %bb3 ]
+  %4 = icmp ne i8 %phi, 0
+  br i1 %4, label %bb5, label %bb6
+
+bb5:                                              ; preds = %bb4
+  ret i64 1
+
+bb6:                                              ; preds = %bb4
+  ret i64 0
+
+bb2:                                              ; No predecessors!
+  unreachable
+}
+--- /tmp/c4-witness/c4_phi_short_circuit_or.bc ---
+file: /tmp/c4-witness/c4_phi_short_circuit_or.bc: LLVM IR bitcode
+size: 1648 bytes
+--- /tmp/c4-witness/c4_phi_short_circuit_or-opt.ll ---
+; ModuleID = '/tmp/c4_phi_short_circuit_or.bc'
+source_filename = "polyc_module"
+
+define i64 @PhiShortCircuitOr(i64 %0, i64 %1) {
+bb1:
+  %2 = icmp sgt i64 %0, 0
+  br i1 %2, label %bb4, label %bb3
+
+bb3:                                              ; preds = %bb1
+  %3 = icmp sgt i64 %1, 0
+  %phi_icmp_zext = zext i1 %3 to i8
+  br label %bb4
+
+bb4:                                              ; preds = %bb3, %bb1
+  %phi = phi i8 [ 1, %bb1 ], [ %phi_icmp_zext, %bb3 ]
+  %4 = icmp ne i8 %phi, 0
+  br i1 %4, label %bb5, label %bb6
+
+bb5:                                              ; preds = %bb4
+  ret i64 1
+
+bb6:                                              ; preds = %bb4
+  ret i64 0
+
+bb2:                                              ; No predecessors!
+  unreachable
+}
+--- hcc stderr ---
+LLVM backend capability contract: ok (56 rows, ordinal binding)
+[c4-opcode-coverage] live=56 DEF=41 USE=5 NONE=10 classified=56
+CAPABILITY_COUNTERS supported=7 rejected=0 shape_dependent=2 defensive=0 unreachable=0
+--- llvm-as exit code: 0 ---
+--- opt --passes=verify exit code: 0 ---
+
+###### c4_phi_short_circuit_and ######
+
+--- witness-fixtures/c4_phi_short_circuit_and.HC ---
+// ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 C4 IMPL-B
+// Fixture: short-circuit logical AND.
+I64 PhiShortCircuitAnd(I64 a, I64 b)
+{
+    if (a > 0 && b > 0)
+        return 1;
+    return 0;
+}
+--- /tmp/c4-witness/c4_phi_short_circuit_and.ll ---
+; ModuleID = 'polyc_module'
+source_filename = "polyc_module"
+
+define i64 @PhiShortCircuitAnd(i64 %0, i64 %1) {
+bb1:
+  %2 = icmp sgt i64 %0, 0
+  br i1 %2, label %bb3, label %bb4
+
+bb3:                                              ; preds = %bb1
+  %3 = icmp sgt i64 %1, 0
+  %phi_icmp_zext = zext i1 %3 to i8
+  br label %bb4
+
+bb4:                                              ; preds = %bb3, %bb1
+  %phi = phi i8 [ 0, %bb1 ], [ %phi_icmp_zext, %bb3 ]
+  %4 = icmp ne i8 %phi, 0
+  br i1 %4, label %bb5, label %bb6
+
+bb5:                                              ; preds = %bb4
+  ret i64 1
+
+bb6:                                              ; preds = %bb4
+  ret i64 0
+
+bb2:                                              ; No predecessors!
+  unreachable
+}
+--- /tmp/c4-witness/c4_phi_short_circuit_and.bc ---
+file: /tmp/c4-witness/c4_phi_short_circuit_and.bc: LLVM IR bitcode
+size: 1648 bytes
+--- /tmp/c4-witness/c4_phi_short_circuit_and-opt.ll ---
+; ModuleID = '/tmp/c4_phi_short_circuit_and.bc'
+source_filename = "polyc_module"
+
+define i64 @PhiShortCircuitAnd(i64 %0, i64 %1) {
+bb1:
+  %2 = icmp sgt i64 %0, 0
+  br i1 %2, label %bb3, label %bb4
+
+bb3:                                              ; preds = %bb1
+  %3 = icmp sgt i64 %1, 0
+  %phi_icmp_zext = zext i1 %3 to i8
+  br label %bb4
+
+bb4:                                              ; preds = %bb3, %bb1
+  %phi = phi i8 [ 0, %bb1 ], [ %phi_icmp_zext, %bb3 ]
+  %4 = icmp ne i8 %phi, 0
+  br i1 %4, label %bb5, label %bb6
+
+bb5:                                              ; preds = %bb4
+  ret i64 1
+
+bb6:                                              ; preds = %bb4
+  ret i64 0
+
+bb2:                                              ; No predecessors!
+  unreachable
+}
+--- hcc stderr ---
+LLVM backend capability contract: ok (56 rows, ordinal binding)
+[c4-opcode-coverage] live=56 DEF=41 USE=5 NONE=10 classified=56
+CAPABILITY_COUNTERS supported=7 rejected=0 shape_dependent=2 defensive=0 unreachable=0
+--- llvm-as exit code: 0 ---
+--- opt --passes=verify exit code: 0 ---
+
+###### c4_phi_multi_pred ######
+
+--- witness-fixtures/c4_phi_multi_pred.HC ---
+// ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 C4 IMPL-B
+// Fixture: three-way OR producing an IR_PHI with 3 incoming edges.
+// One constant edge (bb1) + two icmp edges (bb3, bb5).
+I64 PhiMultiPred(I64 a, I64 b, I64 c)
+{
+    if (a > 0 || b > 0 || c > 0)
+        return 1;
+    return 0;
+}
+--- /tmp/c4-witness/c4_phi_multi_pred.ll ---
+; ModuleID = 'polyc_module'
+source_filename = "polyc_module"
+
+define i64 @PhiMultiPred(i64 %0, i64 %1, i64 %2) {
+bb1:
+  %3 = icmp sgt i64 %0, 0
+  br i1 %3, label %bb6, label %bb5
+
+bb5:                                              ; preds = %bb1
+  %4 = icmp sgt i64 %1, 0
+  %phi_icmp_zext = zext i1 %4 to i8
+  br label %bb6
+
+bb6:                                              ; preds = %bb5, %bb1
+  %phi = phi i8 [ 1, %bb1 ], [ %phi_icmp_zext, %bb5 ]
+  %5 = icmp ne i8 %phi, 0
+  br i1 %5, label %bb4, label %bb3
+
+bb3:                                              ; preds = %bb6
+  %6 = icmp sgt i64 %2, 0
+  %phi_icmp_zext2 = zext i1 %6 to i8
+  br label %bb4
+
+bb4:                                              ; preds = %bb3, %bb6
+  %phi1 = phi i8 [ 1, %bb6 ], [ %phi_icmp_zext2, %bb3 ]
+  %7 = icmp ne i8 %phi1, 0
+  br i1 %7, label %bb7, label %bb8
+
+bb7:                                              ; preds = %bb4
+  ret i64 1
+
+bb8:                                              ; preds = %bb4
+  ret i64 0
+
+bb2:                                              ; No predecessors!
+  unreachable
+}
+--- /tmp/c4-witness/c4_phi_multi_pred.bc ---
+file: /tmp/c4-witness/c4_phi_multi_pred.bc: LLVM IR bitcode
+size: 1688 bytes
+--- /tmp/c4-witness/c4_phi_multi_pred-opt.ll ---
+; ModuleID = '/tmp/c4_phi_multi_pred.bc'
+source_filename = "polyc_module"
+
+define i64 @PhiMultiPred(i64 %0, i64 %1, i64 %2) {
+bb1:
+  %3 = icmp sgt i64 %0, 0
+  br i1 %3, label %bb6, label %bb5
+
+bb5:                                              ; preds = %bb1
+  %4 = icmp sgt i64 %1, 0
+  %phi_icmp_zext = zext i1 %4 to i8
+  br label %bb6
+
+bb6:                                              ; preds = %bb5, %bb1
+  %phi = phi i8 [ 1, %bb1 ], [ %phi_icmp_zext, %bb5 ]
+  %5 = icmp ne i8 %phi, 0
+  br i1 %5, label %bb4, label %bb3
+
+bb3:                                              ; preds = %bb6
+  %6 = icmp sgt i64 %2, 0
+  %phi_icmp_zext2 = zext i1 %6 to i8
+  br label %bb4
+
+bb4:                                              ; preds = %bb3, %bb6
+  %phi1 = phi i8 [ 1, %bb6 ], [ %phi_icmp_zext2, %bb3 ]
+  %7 = icmp ne i8 %phi1, 0
+  br i1 %7, label %bb7, label %bb8
+
+bb7:                                              ; preds = %bb4
+  ret i64 1
+
+bb8:                                              ; preds = %bb4
+  ret i64 0
+
+bb2:                                              ; No predecessors!
+  unreachable
+}
+--- hcc stderr ---
+LLVM backend capability contract: ok (56 rows, ordinal binding)
+[c4-opcode-coverage] live=56 DEF=41 USE=5 NONE=10 classified=56
+CAPABILITY_COUNTERS supported=12 rejected=0 shape_dependent=4 defensive=0 unreachable=0
+--- llvm-as exit code: 0 ---
+--- opt --passes=verify exit code: 0 ---
+
+###### c4_p5_safe_fwd_single_pred ######
+
+--- witness-fixtures/c4_p5_safe_fwd_single_pred.HC ---
+// ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 C4 IMPL-B
+// Fixture: P5 Option-W regression -- canonical safe-forward single-
+// predecessor. Must remain green (no LLDefMap halt).
+I64 P5SafeFwd(I64 a)
+{
+    I64 v = a;
+    return v;
+}
+--- /tmp/c4-witness/c4_p5_safe_fwd_single_pred.ll ---
+; ModuleID = 'polyc_module'
+source_filename = "polyc_module"
+
+define i64 @P5SafeFwd(i64 %0) {
+bb1:
+  ret i64 %0
+
+dead_exit:                                        ; No predecessors!
+  unreachable
+}
+--- /tmp/c4-witness/c4_p5_safe_fwd_single_pred.bc ---
+file: /tmp/c4-witness/c4_p5_safe_fwd_single_pred.bc: LLVM IR bitcode
+size: 1552 bytes
+--- /tmp/c4-witness/c4_p5_safe_fwd_single_pred-opt.ll ---
+; ModuleID = '/tmp/c4_p5_safe_fwd_single_pred.bc'
+source_filename = "polyc_module"
+
+define i64 @P5SafeFwd(i64 %0) {
+bb1:
+  ret i64 %0
+
+dead_exit:                                        ; No predecessors!
+  unreachable
+}
+--- hcc stderr ---
+LLVM backend capability contract: ok (56 rows, ordinal binding)
+[c4-opcode-coverage] live=56 DEF=41 USE=5 NONE=10 classified=56
+CAPABILITY_COUNTERS supported=1 rejected=0 shape_dependent=0 defensive=0 unreachable=0
+--- llvm-as exit code: 0 ---
+--- opt --passes=verify exit code: 0 ---
+
+###### c4_p6_multidef_local ######
+
+--- witness-fixtures/c4_p6_multidef_local.HC ---
+// ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 C4 IMPL-B
+// Fixture: P6 Option-W regression -- multi-def LOCAL. The LLDefMap
+// domain filter (IR_VAL_TMP only) MUST NOT halt on this; Option-W
+// handles the multi-def LOCAL via mem2reg.
+I64 P6MultiDefLocal(I64 a, I64 b)
+{
+    I64 v;
+    if (a > 0)
+        v = a;
+    else
+        v = b;
+    return v;
+}
+--- /tmp/c4-witness/c4_p6_multidef_local.ll ---
+; ModuleID = 'polyc_module'
+source_filename = "polyc_module"
+
+define i64 @P6MultiDefLocal(i64 %0, i64 %1) {
+bb1:
+  %2 = icmp sgt i64 %0, 0
+  br i1 %2, label %bb3, label %bb4
+
+bb3:                                              ; preds = %bb1
+  br label %bb5
+
+bb4:                                              ; preds = %bb1
+  br label %bb5
+
+bb5:                                              ; preds = %bb4, %bb3
+  %polyc.optionw.slot.6.0 = phi i64 [ %0, %bb3 ], [ %1, %bb4 ]
+  ret i64 %polyc.optionw.slot.6.0
+
+dead_exit:                                        ; No predecessors!
+  unreachable
+}
+--- /tmp/c4-witness/c4_p6_multidef_local.bc ---
+file: /tmp/c4-witness/c4_p6_multidef_local.bc: LLVM IR bitcode
+size: 1632 bytes
+--- /tmp/c4-witness/c4_p6_multidef_local-opt.ll ---
+; ModuleID = '/tmp/c4_p6_multidef_local.bc'
+source_filename = "polyc_module"
+
+define i64 @P6MultiDefLocal(i64 %0, i64 %1) {
+bb1:
+  %2 = icmp sgt i64 %0, 0
+  br i1 %2, label %bb3, label %bb4
+
+bb3:                                              ; preds = %bb1
+  br label %bb5
+
+bb4:                                              ; preds = %bb1
+  br label %bb5
+
+bb5:                                              ; preds = %bb4, %bb3
+  %polyc.optionw.slot.6.0 = phi i64 [ %0, %bb3 ], [ %1, %bb4 ]
+  ret i64 %polyc.optionw.slot.6.0
+
+dead_exit:                                        ; No predecessors!
+  unreachable
+}
+--- hcc stderr ---
+LLVM backend capability contract: ok (56 rows, ordinal binding)
+[c4-opcode-coverage] live=56 DEF=41 USE=5 NONE=10 classified=56
+CAPABILITY_COUNTERS supported=11 rejected=0 shape_dependent=6 defensive=0 unreachable=0
+--- llvm-as exit code: 0 ---
+--- opt --passes=verify exit code: 0 ---

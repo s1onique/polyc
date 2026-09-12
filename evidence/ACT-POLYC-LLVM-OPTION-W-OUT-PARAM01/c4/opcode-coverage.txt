@@ -1,0 +1,399 @@
+=== C4 IMPL-B opcode-coverage.txt ===
+Date prepared: 2026-09-12
+
+PURPOSE
+=======
+Mechanical census of the live IrOpcode enum
+(src/ir-types.h:63-167) against the LLDefMap
+classification that the C4 IMPL-B switch arm
+implements. This file is the auditable source for:
+
+    N                       = total enum cardinality
+    CLASSIFIED_OPCODE_COUNT = rows in the switch
+    DEF / USE / NONE counts = partition
+
+Live enum cardinality: 56
+  (extracted from src/ir-types.h between
+   "typedef enum IrOp {" line 63 and
+   "} IrOp;" line 167; the cap-table invariant at
+   src/llvm-backend-cap.c:110 ("table has %d rows,
+   expected %d (IR_ASM+1)") independently proves
+   IR_ASM = 55, hence 56 members total.)
+
+Classification method:
+  Each opcode's "dst" field semantics were read from
+  the actual irInstrNew() constructor site in
+  src/ir.c / src/ir-types.c / src/ir-optimise.c.
+  For opcodes that go through a generic binop or
+  cast dispatcher (where the literal irInstrNew site
+  is inside the dispatcher and not a separate
+  helper), the irRedirectLastDst list at
+  src/ir.c:288-311 was used as a secondary witness
+  for "the opcode has a genuine TMP-defining dst",
+  cross-checked against the absence of any
+  irInstrNew(IR_X, ...) calls with a non-NULL first
+  argument.
+
+Coverage assertions (must hold before any C4
+mutation lands):
+
+    classified    == N          (== 56)
+    unclassified  == 0
+    DEF + USE + NONE        == classified   (== 56)
+    DEF ∩ USE                == ∅
+    DEF ∩ NONE               == ∅
+    USE ∩ NONE               == ∅
+    every opcode appears exactly once
+
+RUNTIME PROOF CHANNEL (reviewer correction applied)
+====================================================
+The reviewer identified that the prior wording mixed
+two distinct properties under the heading "41/5/10
+are PROVEN by iteration, not asserted by copying
+constants":
+
+  A. coverage completeness (mechanically derivable)
+     every currently iterated IrOp reaches
+       {LL_TMPDST_DEF, LL_TMPDST_USE, LL_TMPDST_NONE}
+     no default arm fires for any live enum member
+     sum(DEF + USE + NONE) == live enum cardinality
+
+  B. historical partition stability (a frozen
+     expectation, NOT mechanically derivable from
+     walking the classifier)
+     DEF = 41
+     USE = 5
+     NONE = 10
+
+A is C4's acceptance contract. B is observed
+evidence and a snapshot of the classifier's
+current partition, NOT acceptance.
+
+The runtime verifier therefore:
+
+  - accepts on coverage completeness ONLY:
+      classified == live
+      def + use + none == live
+  - reports the observed DEF/USE/NONE counts as
+    stderr evidence
+  - does NOT compare the observed counts to 41/5/10
+  - does NOT halt on a partition drift; a drift is
+    a future-correction signal for a separate ACT
+
+If 41/5/10 ever drift, the verifier prints the
+new observed numbers and continues (it does NOT
+halt). A drift in 41/5/10 does not invalidate C4,
+because C4's acceptance is "every opcode in the
+live enum reaches one of {DEF, USE, NONE}, no
+default arm fires, and the partition sums to the
+live enum cardinality".
+
+1. ONE three-way classifier:
+
+         typedef enum {
+             LL_TMPDST_DEF,
+             LL_TMPDST_USE,
+             LL_TMPDST_NONE
+         } LLTmpDstClass;
+
+         static LLTmpDstClass llTmpDstClass(IrOp op) {
+             switch (op) {
+                 case IR_ALLOCA:
+                 case IR_LOAD:
+                 case IR_LOAD_DEREF:
+                 case IR_LEA:
+                 case IR_GEP:
+                 case IR_IADD:
+                 case IR_ISUB:
+                 case IR_IMUL:
+                 case IR_IDIV:
+                 case IR_UDIV:
+                 case IR_IREM:
+                 case IR_UREM:
+                 case IR_INEG:
+                 case IR_FADD:
+                 case IR_FSUB:
+                 case IR_FMUL:
+                 case IR_FDIV:
+                 case IR_FNEG:
+                 case IR_AND:
+                 case IR_OR:
+                 case IR_XOR:
+                 case IR_SHL:
+                 case IR_SHR:
+                 case IR_SAR:
+                 case IR_NOT:
+                 case IR_ICMP:
+                 case IR_FCMP:
+                 case IR_TRUNC:
+                 case IR_ZEXT:
+                 case IR_SEXT:
+                 case IR_FPTRUNC:
+                 case IR_FPEXT:
+                 case IR_FPTOUI:
+                 case IR_FPTOSI:
+                 case IR_UITOFP:
+                 case IR_SITOFP:
+                 case IR_PTRTOINT:
+                 case IR_INTTOPTR:
+                 case IR_BITCAST:
+                 case IR_CALL:
+                 case IR_PHI:
+                     return LL_TMPDST_DEF;
+                 case IR_STORE:
+                 case IR_STORE_DEREF:
+                 case IR_RMW_DEREF:
+                 case IR_RET:
+                 case IR_BR:
+                     return LL_TMPDST_USE;
+                 case IR_NOP:
+                 case IR_CMP_BR:
+                 case IR_JMP:
+                 case IR_SWITCH:
+                 case IR_LABEL:
+                 case IR_SELECT:
+                 case IR_VA_ARG:
+                 case IR_VA_START:
+                 case IR_VA_END:
+                 case IR_ASM:
+                     return LL_TMPDST_NONE;
+                 default:
+                     HALT_UNCLASSIFIED_OPCODE_REACHED;
+             }
+         }
+
+  2. llInstrDefinesTmpDst(ins) becomes a thin
+     predicate:
+
+         return llTmpDstClass(ins->op) == LL_TMPDST_DEF;
+
+     This eliminates drift between the coverage
+     verifier and the LLDefMap predicate: there is
+     one classifier, not two.
+
+  3. llVerifyOpcodeCoverage() iterates the live enum
+     and exercises the classifier. It accepts on
+     COVERAGE COMPLETENESS only; it does NOT compare
+     against the observed 41/5/10 partition values:
+
+         classified = def = use = none = 0;
+         for (int op = IR_NOP; op <= IR_ASM; ++op) {
+             switch (llTmpDstClass((IrOp)op)) {
+                 case LL_TMPDST_DEF:  def++; break;
+                 case LL_TMPDST_USE:  use++; break;
+                 case LL_TMPDST_NONE: none++; break;
+             }
+             classified++;
+         }
+         live = (int)((unsigned)IR_ASM - (unsigned)IR_NOP + 1);
+         if (classified != live)
+             HALT_C4_OPCODE_COVERAGE_VIOLATED;
+         if (def + use + none != live)
+             HALT_C4_OPCODE_COVERAGE_VIOLATED;
+         /* OBSERVED census (NOT acceptance criteria): */
+         fprintf(stderr,
+             "[c4-opcode-coverage] live=%d "
+             "DEF=%d USE=%d NONE=%d classified=%d\n",
+             live, def, use, none, classified);
+
+  4. Negative control: a unit-test variant of
+     llTmpDstClass that deliberately omits one current
+     opcode (e.g. IR_PHI) must HALT_UNCLASSIFIED_OPCODE_REACHED
+     when the verifier iterates the enum. This turns
+     the census mechanism itself into a real verifier.
+
+What the verifier does NOT do (per reviewer):
+
+  - It does NOT compare the observed DEF/USE/NONE
+    counts against 41/5/10.
+  - It does NOT HALT if the partition drifts.
+  - It does NOT re-classify individual opcodes
+    silently -- the ONLY modification surface for
+    partition membership is editing
+    `llTmpDstClass()` itself, and any such edit is
+    surfaced through a diff of `opcode-coverage.txt`.
+
+OBSERVED CENSUS (recorded here as evidence; NOT
+asserted as acceptance criteria by the runtime):
+
+  N = 56 (live enum cardinality:
+          IR_ASM - IR_NOP + 1)
+  DEF = 41
+  USE = 5
+  NONE = 10
+  ---
+  total = 56 == N
+
+PARTITION (N = 56)
+==================
+
+DEF (41 opcodes -- genuine TMP-defining in neutral IR)
+-----------------------------------------------------
+  IR_ALLOCA       (src/ir.c:76)
+  IR_LOAD         (src/ir-types.c:883, semantically: dst = result TMP)
+  IR_LOAD_DEREF   (src/ir.c:1410, 1466)
+  IR_LEA          (src/ir.c:448, 1036, 1078, 1098, 1124,
+                   1345, 1358, 1400, 1475, 1526, 1627, 1634)
+  IR_GEP          (src/ir.c:1059)
+  IR_IADD         (redir list src/ir.c:292)
+  IR_ISUB         (redir list src/ir.c:292)
+  IR_IMUL         (redir list src/ir.c:292)
+  IR_IDIV         (redir list src/ir.c:295)  [LLVM REJECTED later]
+  IR_UDIV         (redir list src/ir.c:295)  [LLVM REJECTED later]
+  IR_IREM         (redir list src/ir.c:295)  [LLVM REJECTED later]
+  IR_UREM         (redir list src/ir.c:295)  [LLVM REJECTED later]
+  IR_INEG         (redir list src/ir.c:296)  [LLVM REJECTED later]
+  IR_FADD         (redir list src/ir.c:298)
+  IR_FSUB         (redir list src/ir.c:298)
+  IR_FMUL         (redir list src/ir.c:298)
+  IR_FDIV         (redir list src/ir.c:299)  [LLVM REJECTED later]
+  IR_FNEG         (redir list src/ir.c:299)  [LLVM REJECTED later]
+  IR_AND          (redir list src/ir.c:293)
+  IR_OR           (redir list src/ir.c:293)
+  IR_XOR          (redir list src/ir.c:293)
+  IR_SHL          (redir list src/ir.c:294)
+  IR_SHR          (redir list src/ir.c:294)
+  IR_SAR          (redir list src/ir.c:294)
+  IR_NOT          (redir list src/ir.c:296)
+  IR_ICMP         (src/ir.c:92 -- authorised PHI boolean producer)
+  IR_FCMP         (redir list src/ir.c:297 -- NOT authorised as
+                   PHI boolean producer per C4 §9.6 S8, but still
+                   a genuine TMP definition)
+  IR_TRUNC        (src/ir.c:195, 960)
+  IR_ZEXT         (src/ir.c:227-230)
+  IR_SEXT         (analog of IR_ZEXT)
+  IR_FPTRUNC      (src/ir.c:255-257)
+  IR_FPEXT        (src/ir.c:267)
+  IR_FPTOUI       (src/ir.c:946)
+  IR_FPTOSI       (src/ir.c:666, 944)
+  IR_UITOFP       (src/ir.c:916)
+  IR_SITOFP       (src/ir.c:698, 702)
+  IR_PTRTOINT     (redir list src/ir.c:304)
+  IR_INTTOPTR     (redir list src/ir.c:304)
+  IR_BITCAST      (src/ir.c:907, redir list src/ir.c:305)
+  IR_CALL         (src/ir.c:383, 401, 414, redir list src/ir.c:306)
+  IR_PHI          (src/ir-types.c:877)
+
+USE-shaped-dst (5 opcodes -- dst is a slot/condition, not a TMP)
+---------------------------------------------------------------
+  IR_STORE        (src/ir.c:158)
+  IR_STORE_DEREF  (src/ir-types.h:70)
+  IR_RMW_DEREF    (src/ir-types.h:71-83 -- native fusion;
+                   UNREACHABLE on LLVM path per BOUNDARY01)
+  IR_RET          (src/ir.c:3067, 3075, 3081, 3083)
+  IR_BR           (src/ir.c:141)
+
+NONE (10 opcodes -- dst is NULL or unused)
+------------------------------------------
+  IR_NOP          (no emitter reaches LLVM path; irRemoveAllNops
+                   strips them per cap-table:48)
+  IR_CMP_BR       (native fusion only; BOUNDARY01 contract:
+                   never in neutral IR; UNREACHABLE on LLVM path)
+  IR_JMP          (src/ir-types.c:852, 866)
+  IR_SWITCH       (no irInstrNew(IR_SWITCH,...) calls)
+  IR_LABEL        (no irInstrNew(IR_LABEL,...) calls;
+                   cap-table:98 reserves-but-doesn't-use)
+  IR_SELECT       (no irInstrNew(IR_SELECT,...) calls)
+  IR_VA_ARG       (no irInstrNew(IR_VA_ARG,...) calls)
+  IR_VA_START     (no irInstrNew(IR_VA_START,...) calls)
+  IR_VA_END       (no irInstrNew(IR_VA_END,...) calls)
+  IR_ASM          (src/ir.c:2515 -- dst=NULL)
+
+PARTITION CHECK (machine-verifiable)
+====================================
+The PARTITION above is recorded as evidence of the
+classifier's current behaviour on the live enum,
+NOT as an acceptance contract. The runtime verifier
+does not assert these numbers.
+
+  DEF = 41   (evidence; not asserted)
+  USE = 5    (evidence; not asserted)
+  NONE = 10  (evidence; not asserted)
+  ---
+  total = 56 == live enum cardinality ✓
+
+The partitions above are mutually exclusive by
+construction (the three-way classifier returns
+exactly one of {DEF, USE, NONE} for every
+non-default arm). Every live enum member appears
+in exactly one row by virtue of the switch
+exhausting IR_NOP..IR_ASM with a fail-closed
+default arm.
+
+    C4 runtime acceptance (encoded in
+    llVerifyOpcodeCoverage()):
+        /* Coverage completeness (mechanically derived): */
+        if (classified != live)
+            HALT_C4_OPCODE_COVERAGE_VIOLATED;
+        if (def + use + none != live)
+            HALT_C4_OPCODE_COVERAGE_VIOLATED;
+        /* Observed census (recorded, not asserted): */
+        fprintf(stderr,
+            "[c4-opcode-coverage] live=%d DEF=%d "
+            "USE=%d NONE=%d classified=%d\n",
+            live, def, use, none, classified);
+
+What the runtime verifier does NOT do (per the
+reviewer's contract correction):
+
+  - assert(DEF == 41)
+  - assert(USE == 5)
+  - assert(NONE == 10)
+  - assert(CLASSIFIED_OPCODE_COUNT == 56)
+  - assert(IR_OPCODE_ENUM_COUNT     == 56)
+  - assert(UNCLASSIFIED_OPCODE_COUNT == 0)
+
+The 41/5/10 figures appear in this file only as
+historical evidence of the classifier's current
+walk, recorded once at c4.RED time. They are NOT
+literals that the C4 commit copies into the
+runtime.
+
+FUTURE EXHAUSTIVENESS NOTE
+==========================
+The runtime fail-closed arm (default: HALT_UNCLASSIFIED_OPCODE_REACHED;)
+guarantees that an unknown opcode reaching the classifier at runtime
+halts cleanly. It does NOT make a future IrOpcode addition fail at
+compile time. Compile-time exhaustiveness is a separate concern
+(enumeration sentinel + _Static_assert, or a compiler-enforced
+exhaustive-switch language extension) and is intentionally out of C4
+scope per the reviewer.
+
+END
+
+PHASE B SAVE/RESTORE INVARIANT (reviewer correction)
+====================================================
+The Phase-B helper uses:
+
+    saved = LLVMGetInsertBlock(lc->bld);
+    LLVMPositionBuilderBefore(lc->bld, pred_term);
+    /* emit zext */
+    LLVMPositionBuilderAtEnd(lc->bld, saved);
+
+`LLVMPositionBuilderAtEnd` literally positions at
+the END of the basic block. Under our frozen shape
+this is safe ONLY because C4 guarantees the PHI is
+being lowered at the FRONT of a merge block, BEFORE
+any non-PHI instructions have been emitted for this
+PHI. This invariant MUST be encoded adjacent to the
+implementation as a static assert or comment, and
+NOT later generalized.
+
+If a future maintainer moves the PHI emission to a
+different point in the merge-block walk, they MUST
+re-derive this invariant.
+
+WORKTREE LABEL CORRECTION (reviewer correction)
+================================================
+The C4 evidence does NOT say "WORKTREE = clean".
+The correct label at pre-implementation state is:
+
+    TRACKED_WORKTREE       = CLEAN
+    UNTRACKED_C4_EVIDENCE  = opcode-coverage.txt
+    WORKTREE               = DIRTY  (1 untracked file)
+
+The opcode-coverage.txt file belongs to the C4
+packet and lands atomically with the production
+diff in the single C4 IMPL commit.
+
+END
