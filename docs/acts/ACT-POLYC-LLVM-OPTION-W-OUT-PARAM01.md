@@ -1881,6 +1881,46 @@ PI halt     == broken implementation/materialization invariant
 
 The two failure categories are NOT conflated.
 
+### 9.6.8.1 Phase A purity (IR-only, no llLowerValue)
+
+"Pure static admission" has one additional concrete
+meaning: **Phase A must not call `llLowerValue()`**. The
+only LLVM-domain operation Phase A is permitted to perform
+is reading the static type of an `IrValue` (e.g.
+`IR_TYPE_I8` / `IR_TYPE_I1`) and consulting the
+neutral-IR provenance map (`LLDefMap`) for producer
+identity. Any other call into `llLowerValue` would cross
+the materialization boundary and may cache / mutate LLVM
+state, defeating the purity of Phase A.
+
+```text
+Phase A allowed calls
+    * lldmGet(&lc->def_map, irVarId(ir_in))
+    * irVarId(ir_in)
+    * ir_in->type                  /* IR_TYPE_I8 / IR_TYPE_I1 */
+    * producer->op, producer->dst  /* neutral-IR fields */
+    * pair count vs CFG predecessor count
+    * CFG predecessor identity comparison
+
+Phase A forbidden calls
+    * llLowerValue(lc, ir_in)
+    * LLVMBuild* (any)
+    * LLVMGetInsertBlock / LLVMPositionBuilderBefore /
+      LLVMPositionBuilderAtEnd (any)
+    * any other materialization-side effect
+```
+
+The conceptual model is:
+
+```text
+Phase A answers: "Is this IR shape authorized?"
+Phase B answers: "Does reality satisfy the assumptions
+                  required to emit the authorized shape?"
+```
+
+Both questions are necessary; conflating them is exactly
+what the two-phase split forbids.
+
 ### 9.6.9 C4 proof packet matrix (mechanical acceptance)
 
 The C4 commit must prove these fences as one bounded
@@ -1947,6 +1987,108 @@ classification needed for the frozen seam. It MUST NOT:
   "<this commit>" identity fields, or other historical
   evidence (per F14 these are immutable residue)
 ```
+
+### 9.6.11 C4 historical-evidence range hygiene
+
+C4 may not accidentally clean up its own archaeology.
+The historical `c3.1` evidence, C3.2/C3.3 witness
+binaries, and obsolete identity fields (`ENTRY_HEAD`,
+`<this commit>`, etc.) are immutable per F14. C4's patch
+geometry must not touch any of them.
+
+To enforce this mechanically, the C4 commit (and any C4
+follow-up commits) MUST satisfy this range assertion at
+its closure gate:
+
+```sh
+# Prevent the C4 commit range from modifying historical
+# c3.* evidence under this ACT.
+git diff --name-only <C4-parent>..HEAD |
+    grep '^evidence/ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01/c3\.' &&
+        { echo "FAIL: C4 must not modify historical c3.* evidence"; exit 1; }
+        || true
+```
+
+A passing exit status from this assertion is a hard
+precondition for C4 to land. A failing exit is an
+unrecoverable scope-creep indicator and the C4 commit
+must be revised before re-submission.
+
+### 9.6.12 C4 closure summary template
+
+When C4 lands, its commit body and the report back to
+the expert MUST contain exactly this minimal information
+(no more, no less), so the success criteria are
+unambiguous:
+
+```text
+ACT: POLYC-LLVM-OPTION-W-OUT-PARAM01
+ACT-Phase: IMPL
+
+IDENTITY
+    branch               = main
+    working tree         = clean
+    predecessor auth     = YES (964a1d3 + 0b39c51 + 0b39c51 envelope)
+    parent commit        = 0b39c51
+    this commit SHA      = <assigned by git, NOT embedded in body>
+
+ENVELOPE COVERAGE
+    two-phase IR_PHI arm       = YES
+    Phase A purity (no llLower)= YES
+    PI-1/PI-2/PI-3 guards      = YES
+    predecessor-edge zext norm = YES
+    LLDefMap TMP-only domain   = YES
+    Option-W conservation      = YES
+
+PROVEN FENCES (per 9.6.9)
+    valid G3          = PASS
+    valid PhiOnly     = PASS
+    duplicate TMP     = HALT (delta 0)
+    IR_FCMP -> i1     = HALT (delta 0)
+    i1 no producer    = HALT (delta 0)
+    missing pred      = HALT (delta 1, Phase B)
+    pred no term      = HALT (delta 1, Phase B)
+    mutable LOCAL     = unaffected (no LLDefMap halt)
+    zext placement    = pred / before terminator (verified)
+    G3/PhiOnly LLVM   = llvm-as PASS + opt verify PASS
+    Option-W regress  = P5-P11 PASS
+    case-B set        = {IR_IADD, IR_ISUB} unchanged
+    PHI accounting    = 1 per admitted PHI (not per edge)
+
+GATES
+    factory-append-only-test = PASS
+    factory-v2-range-check   = PASS
+    shell-loc-gate           = PASS
+    gate-fast                = PASS
+    llvm-gep01-test          = PASS
+    llvm-byte-memory01-test  = PASS
+    llvm-intops01-test       = PASS
+    ir-return-slot-forwarding01-test = PASS
+    c3-range-hygiene         = PASS
+
+SCOPE
+    NO touch to c3.* evidence
+    NO generalize PHIs
+    NO admit IR_FCMP
+    NO change frontend producer
+    NO introduce SSA reconstruction
+    NO widen Option-W gates
+    NO alter {iadd, isub} set
+    NO touch ARRAY / STRUCT / GEP
+    NO C5 ScanIdent evidence (hard stop after C4)
+
+RESIDUE
+    (any non-scope findings recorded here)
+
+NEXT ACT
+    C5 ScanIdent integrated evidence (separate turn)
+    C6 CLOSE
+    BOOTSTRAP01
+```
+
+Embedding the SHA-of-self into the C4 commit body is
+forbidden per the no-SHA-of-self doctrine; navigation is
+provided externally via `git log`.
 
 ---
 
