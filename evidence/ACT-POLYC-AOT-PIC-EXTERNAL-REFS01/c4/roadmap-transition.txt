@@ -1,0 +1,50 @@
+ACT-POLYC-AOT-PIC-EXTERNAL-REFS01 — Roadmap transition
+======================================================
+
+Verdict: PASS.
+
+Predecessor to this ACT (ACT-POLYC-INTEGRATION-PREBOOTSTRAP-GATES01-
+CORRECTION01) closed with HALT_AOT_PIC_EXTERNAL_REFS_REQUIRED, which
+named this ACT as the required successor. With the C2.1 IMPL landed
+and unit-test / jit-unit-test / lsp-test / gate-fast all PASS, that
+halt condition is now resolved.
+
+Recommended next steps:
+
+  1. ACT-POLYC-BOOTSTRAP01 is the ACT named in this ACT's FORBIDDEN
+     clause ("Opening `ACT-POLYC-BOOTSTRAP01` before this ACT closes
+     PASS and `gate-push` passes: FORBIDDEN"). Since this ACT
+     PASSES the unit-test / jit-unit-test / lsp-test / gate-fast
+     half of gate-push but FAILS on gep01 (P1 residue), the
+     gate-push contract as-written blocks opening
+     ACT-POLYC-BOOTSTRAP01.
+
+     Two resolutions are possible:
+
+     a. Fix the gep01 cap-verifier infrastructure (P1 residue) in
+        a small bounded ACT, then gate-push will pass end-to-end
+        and ACT-POLYC-BOOTSTRAP01 may open.
+
+     b. Re-authorise ACT-POLYC-BOOTSTRAP01 to open against the
+        gate-push that excludes gep01 (since this ACT is the
+        gep01-residual ACT and gep01 was already failing before
+        this ACT), via a CORRECTIONnn amendment that records the
+        gep01 cap-verifier as a known gate-push gap.
+
+     The ACT recommends (a) — a small infrastructure ACT that
+     fixes scripts/quality/llvm-cap-table-verifier.py so that
+     RunCapability() in tools/quality/llvm-gep01-test.HC succeeds
+     in the host sandbox.
+
+  2. Push the C2.1 commit (2c8a456) to origin/main via
+     `git push origin main` once the predecessor gate-push
+     status is satisfied (after (a) above or with the
+     CORRECTION amendment under (b)).
+
+  3. Update ROADMAP.md to:
+       - mark the predecessor ACT's halt as resolved;
+       - record this ACT's verdict and final commit;
+       - record the gep01 cap-verifier gap as a P1 residue that
+         blocks gate-push for unrelated ACTs.
+
+No scope expansion is recommended by this ACT.

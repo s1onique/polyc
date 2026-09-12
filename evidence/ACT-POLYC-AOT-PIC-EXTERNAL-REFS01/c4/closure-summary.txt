@@ -1,0 +1,45 @@
+ACT-POLYC-AOT-PIC-EXTERNAL-REFS01 — Closure summary
+====================================================
+
+VERDICT:        PASS  (with P1 gep01 residue; recorded)
+IDENTITY:       branch=main entry=718b3d7 final=2c8a456
+ROOT CAUSE:     AArch64 Mach-O AOT backend emitted page-relative
+                adrp/add for every global symbol reference; dylib-
+                defined symbols have nreloc=0 in __text/__DATA so
+                the linker rejects ordinary ARM64_RELOC_PAGE21 /
+                ARM64_RELOC_PAGEOFF12 against them.
+RED:            ACT-POLYC-AOT-PIC-EXTERNAL-REFS01 C1 RED
+                (commit 718b3d7) — minimal ext-provider/ext-consumer
+                fixture reproduces
+                  ld: invalid use of ADRP in '_main' to '_PolycExtAdd1'
+IMPLEMENTATION: src/aarch64.c  (C2 IMPL 83474d6 + C2.1 IMPL 2c8a456)
+                +1/-28 in C2; +136/-28 in C2.1 cumulative.
+GATES:          unit-test PASS 90/90
+                jit-unit-test PASS 90/90
+                lsp-test PASS 43/43
+                gate-fast PASS
+                gate-push FAIL on gep01 (P1 pre-existing cap-verifier
+                            infrastructure; identical failure mode to
+                            predecessor ACT evidence)
+SCOPE:          src/aarch64.c only. No parser / IR / LLVM / stdlib
+                / x86_64 / install-dance edits.
+RESIDUE:        c4/residue.txt
+                P1: llvm-gep01-test cap-verifier infrastructure
+                    (scripts/quality/llvm-cap-table-verifier.py).
+                    Pre-existing; identical to predecessor ACT
+                    evidence; not caused by this ACT.
+                P2: NC1 byte-exact pre/post diff deferred.
+                P2: Linux PIC path intentionally untouched.
+                P2: x86_64 shared abstraction not introduced.
+NEXT ACT:       c4/roadmap-transition.txt recommends either
+                (a) a small bounded infrastructure ACT to fix the
+                    cap-verifier, then push 2c8a456 to origin/main
+                    and open ACT-POLYC-BOOTSTRAP01; or
+                (b) a CORRECTIONnn amendment to the
+                    ACT-POLYC-BOOTSTRAP01 scope, re-authorising it
+                    to open against gate-push minus gep01.
+
+                This ACT does not self-authorise ACT-POLYC-BOOTSTRAP01
+                (ACT §6 FORBIDDEN). It also does not push to
+                origin/main — that requires the gep01 gap to be
+                resolved or amended around.

@@ -74,3 +74,68 @@ Forbidden mechanisms deliberately NOT used (per ACT §9):
   - no LLVM backend changes
   - no general PIC rewrite of all AArch64 code
   - no x86_64 modification
+
+----------------------------------------------------------------------
+C2.1 extension (commit 2c8a4560179398bc4a7b2aee005454df50fed1b4)
+----------------------------------------------------------------------
+
+Scope widened after the C2 first cut was observed to handle only
+the AST_EXTERN_FUNC + IR_LEA case (the minimal ext-provider /
+ext-consumer fixture). The full unit-test suite exercises the
+broader extern surface, including:
+
+  * AST_ASM_FUNC_BIND (`public _extern _FREE U0 Free(...)`) — the
+    HolyC stdlib-binding pattern used by tos.HH for every memory
+    allocator function.
+  * AST_GVAR with AST_FLAG_EXTERN (`extern HCFs *Fs;`) — data
+    globals whose storage lives in libtos.dylib's __DATA segment.
+
+These are routed through the same `aarch64ExternalSymbolAddr` GOT
+materialisation, but require a more capable classifier than the
+first-cut IR_VAL_FLAG_FUNC + cc->global_env lookup:
+
+  * Renamed helper: aarch64ExternalFuncAddr -> aarch64ExternalSymbolAddr.
+  * New classifier: aarch64IsExternalGlobalSymbol(cc, AoStr *name).
+    - Looks up the literal name in cc->global_env, then
+      cc->asm_funcs, then cc->asm_functions.
+    - On miss, strips the leading `_` (Apple Darwin asm-label
+      convention) and retries.
+    - On miss, slow-path-iterates cc->asm_funcs and matches
+      ast->asmfname (which is how `_FREE` is bridged to the AST
+      registered as `Free`).
+    - Classifies AST_EXTERN_FUNC / AST_ASM_FUNC_BIND / AST_GVAR
+      with AST_FLAG_EXTERN as external. Returns 0 for AST_FUNC
+      (same-image), AST_GVAR without AST_FLAG_EXTERN, and any
+      unknown symbol (let the existing linker diagnostic fire -
+      preserves the same-image control).
+
+Routing applied at three IR opcodes that emit a global-symbol
+materialisation:
+
+  IR_LOAD_DEREF: data global reads (case line ~1467 in src/aarch64.c)
+  IR_STORE_DEREF: data global writes (case line ~1541 in src/aarch64.c)
+  IR_LEA: function-pointer materialisation (case line ~1663)
+
+  IR_CALL (`bl _sym`) is NOT routed through the new path - it
+  already produces a Mach-O-valid BRANCH26 for both local and
+  dylib targets. The ACT does not authorise touching it.
+
+Behaviour:
+
+  Same-image control (NC1): unchanged. local-control.HC builds,
+    links, and runs with the historical aarch64GlobalAddr for all
+    global references because no global is AST_FLAG_EXTERN or
+    AST_ASM_FUNC_BIND / AST_EXTERN_FUNC.
+
+  External-data global (`Fs`): emits @GOTPAGE/@GOTPAGEOFF in
+    `adrp/ldr` so the linker can satisfy it via the GOT slot.
+
+  External-asm-bound function (`Free` via `_FREE`): emits
+    @GOTPAGE/@GOTPAGEOFF in `adrp/ldr` so the function-pointer
+    materialisation used by `_PtrVecRelease(&vec, Free)` works
+    on arm64-apple-darwin + libtos.dylib.
+
+  Missing extern (`_NONEXISTENT`): linker still complains with
+    `Undefined symbols` (NC2). The new GOT materialisation only
+    changes HOW an external symbol is addressed, not whether it
+    exists.

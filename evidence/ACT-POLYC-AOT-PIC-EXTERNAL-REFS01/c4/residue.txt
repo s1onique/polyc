@@ -1,0 +1,51 @@
+ACT-POLYC-AOT-PIC-EXTERNAL-REFS01 — Residue
+============================================
+
+P1 — llvm-gep01-test cap-verifier infrastructure failures
+---------------------------------------------------------
+  Pre-existing. Identical GEP01_PASS=26 GEP01_FAIL=4 result and
+  identical "could not read cap verifier output" diagnostic for
+  IR_GEP / IR_LEA / IR_IADD was already captured in
+  evidence/ACT-POLYC-INTEGRATION-PREBOOTSTRAP-GATES01-CORRECTION01/
+  c3/gate-push-correction01.log (which also closed with
+  CHECK=gep01 STATUS=FAIL VERDICT=FAIL for the same reason).
+
+  Not caused by this ACT. The cap-verifier is in
+  scripts/quality/llvm-cap-table-verifier.py and is exercised by
+  tools/quality/llvm-gep01-test.HC via RunCapability(); the failure
+  is in the python side, not in any AOT or LLVM codegen path.
+
+  This ACT does not authorise touching either the cap-verifier or
+  the gep01 test driver (LLVM backend + tooling changes are
+  FORBIDDEN). The defect is recorded as P1 because gate-push's
+  current contract treats gep01 PASS as a required check; a future
+  ACT must either fix the cap-verifier or relax the gep01
+  requirement to a known-stable subset.
+
+P2 — Same-image control (NC1) relocation shape verification
+------------------------------------------------------------
+  C3 evidence includes same-image control preservation but not a
+  bytecode-level "before/after" diff of the local-control.HC
+  assembly. The control's emitted assembly was inspected during
+  C3 and confirmed to use the historical aarch64GlobalAddr path
+  (no GOTPAGE prefix); the byte-exact equivalence was not captured
+  because the predecessor C2 commit did not preserve the pre-C2
+  assembly output for diff comparison. Deferred — F11 P2.
+
+P2 — Linux PIC path
+-------------------
+  Per ACT §6, Linux is intentionally untouched. The classifier
+  returns 0 for unknown symbols on non-Apple targets, so the
+  historical aarch64GlobalAddr path is preserved (F2: the ACT
+  does not authorize a Linux PIC rewrite). The aarch64-Linux
+  build remains green via make all.
+
+P2 — `x86_64.c` shared abstraction
+-----------------------------------
+  F2 concluded x86_64.c's RIP-relative `leaq` materialisation is
+  independent of the arm64 defect; no shared abstraction needs to
+  change. If a future backend ever needs a single PIC-vs-same-image
+  classifier, the AST-kind inspection pattern from
+  aarch64IsExternalGlobalSymbol is the obvious template, but
+  introducing that abstraction today would violate F8 (no
+  speculative abstraction).
