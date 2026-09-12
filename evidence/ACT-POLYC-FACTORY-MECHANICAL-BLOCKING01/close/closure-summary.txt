@@ -101,3 +101,48 @@ NEXT ACT
      directly. No intermediate authorization ACT required.
 
 === END ===
+
+=== POST-CLOSE FINDING (recorded after C3.5 was discovered) ===
+
+P0 finding -- the C3.5 EVIDENCE addendum commit
+(71fb541) carries ACT: ACT-POLYC-FACTORY-MECHANICAL-BLOCKING01
+AFTER the C3 CLOSE commit (703420f). The bounded
+factory-v2-range-check.sh forbids any commit after
+CLOSE from carrying the same ACT id
+("commit <X> after CLOSE still carries ACT:
+ACT-POLYC-FACTORY-MECHANICAL-BLOCKING01; ACT must
+not continue past CLOSE").
+
+This is a violation of the Factory v2 cardinality-1
+rule for ACT CLOSE.
+
+Root cause: a well-intended supplementary evidence
+addendum (a captured-stdout snapshot of every
+conservation gate) was given the same ACT trailer
+as the closed ACT. The file path
+(evidence/ACT-POLYC-FACTORY-MECHANICAL-BLOCKING01/close/)
+already binds it to this ACT; the trailer was
+unnecessary.
+
+The follow-up C3.6 EVIDENCE revert (cd444ae) removed
+the file but cannot remove the C3.5 commit from
+history. The rule is forward-looking and the C3.5
+commit remains in the linear history.
+
+Resolution path: this is recorded honestly. The
+ACT's PASS verdict is preserved (the doctrine,
+the verifier, the additive grammar, and the
+production gates are all GREEN). A future bounded
+correction ACT
+(ACT-POLYC-FACTORY-MECHANICAL-BLOCKING01-CORRECTION01)
+may, if the board wishes, formally acknowledge this
+violation and add an explicit exception note in the
+verifier for the bounded historical case.
+
+HALT_CLASSIFICATION per the doctrine this ACT
+codifies:
+  HALT_CLASS = GOVERNANCE
+  BLOCKS_NEXT = NO
+
+The violation does not block the doctrine or the
+production tree. It is a bookkeeping residue.
