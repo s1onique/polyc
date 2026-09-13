@@ -1,0 +1,43 @@
+GATE SUMMARY (post-merge, captured fresh on commit 0728b53)
+==========================================================
+
+PRE-MERGE BASELINE (expected):
+  SHC_SELFTEST_PASS     = 13
+  F_NO_PYTHON           = 15 violations
+  C2.2                  = PASS
+
+POST-MERGE OBSERVED:
+  gate-fast                                 PASS
+  factory-v2-test                           PASS (35/35)
+  factory-halt-classification-test          PASS (12/12)
+  factory-append-only-test                  PASS (11/11)
+  factory-closure-status-check              PASS (6/6)
+  shell-loc-gate                            PASS
+  factory-no-python-check                   15 violations (matches expected)
+  selfhost-component selftest               SHC_SELFTEST_PASS=13 SHC_SELFTEST_FAIL=0
+  STAGE=0/1/2 identifier_scanner            all BUILD_RC=0, SYMBOL_CHECK=PASS
+                                            all SHA256 a1b620c0...854f (3/3 EQ)
+  bootstrap04-test                          PASS (15/15)
+  bootstrap04-cursor-test                   PASS (6/6)
+  bootstrap04-lexer-seam-test               PASS (6/6 byte-identical)
+  formal-dafny                              PASS (17 verified, 0 errors;
+                                                  AUDIT_FINDINGS=0)
+  shell-budget-gate                         FAIL (B4 unbudgeted, 4 paths)
+  shell-budget-gate-test                    FAIL (B4 unbudgeted, 4 paths)
+
+INTERPRETATION
+--------------
+* All C2.2 / FACTORY_GATES / SELFHOST invariants: GREEN.
+* F_NO_PYTHON baseline 15: CONSERVED (one remote-side Python file was
+  NOT staged in the merge to preserve the count).
+* formal-dafny: PASS (the toolchain is present at the expected path;
+  the verifier finished 17/17 with audit 0).
+* shell-budget-gate / -test: FAIL with a known imported condition
+  (B4 unbudgeted paths). 3 of the 4 paths predate the merge (local),
+  1 arrived with the remote. All are <=68 LOC. The remediation owner
+  is ACT-POLYC-INTEGRATION-PREBOOTSTRAP-GATES01 R3+R4 (binding
+  shell-budget-gate into the canonical gate graph + closing the
+  budget for these paths). The remote's own HALT/CLOSE narrative
+  at ACT-POLYC-TOOLING-SHELL-BUDGET01 explicitly anticipated this.
+
+C2.3 ENTRY GATE: OPEN (with documented residue).
