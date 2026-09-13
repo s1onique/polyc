@@ -732,9 +732,20 @@ closing commit of
   `docs/factory/LEGACY-NON-POLYC-TOOLS.tsv`.
   Authoritative text at `docs/factory/DOCTRINE.md` §27.
   Authoritative enforcement at
-  `tools/factory/factory-polyc-tools-check.HC`.
+  `tools/factory/factory-polyc-tools-check.HC` (NOT YET
+  LANDED — see C2.9 of the bound correction ACT).
 
-Both checkers are wired into `gate-fast` and emit
-non-zero exit codes on any violation. Neither checker
-may be removed, weakened, or bypassed except by an
-explicit bounded correction ACT.
+Before activation of these invariants at ACT CLOSE:
+  both authoritative checkers MUST exist
+  both MUST be bound into the canonical gate graph.
+Until then, the AGENTS.md pointer records the
+contract; the gates have not yet enforced it.
+
+The factory-no-python-check checker exists and runs
+(via `scripts/quality/factory-no-python-check.sh` or
+directly via `./build/factory-no-python-check`); it is
+NOT yet wired into `gate-fast` and emits its verdict
+only when invoked explicitly. Wiring is C2.9 residue.
+
+Neither checker may be removed, weakened, or bypassed
+except by an explicit bounded correction ACT.

@@ -1,9 +1,12 @@
 #!/bin/sh
 # scripts/quality/factory-no-python-check.sh
 #
-# ACT-POLYC-SELFHOST-SURFACE01-CORRECTION01 C2.1 IMPL.
+# ACT-POLYC-SELFHOST-SURFACE01-CORRECTION01 C2.1.1 IMPL.
 # Thin launcher for tools/factory/factory-no-python-check.HC.
-# No policy logic in this shell wrapper.
+#
+# -z is used because git filenames MAY contain newline
+# characters; NUL is the only unambiguous delimiter.
+# The PolyC parser walks NUL records directly.
 
 set -eu
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
@@ -17,7 +20,7 @@ fi
 
 LIST=$(mktemp -t factory-no-python.XXXXXXXXXX)
 trap 'rm -f "$LIST"' EXIT
-git ls-files > "$LIST"
+git ls-files -z > "$LIST"
 
 if [ ! -x ./build/factory-no-python-check ]; then
     echo "factory-no-python-check: build artifact missing" >&2

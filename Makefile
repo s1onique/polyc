@@ -971,21 +971,54 @@ bootstrap04-lexer-seam-test: bootstrap04-stage3
 #   build/selfhost/stage<STAGE>/<component_id>.o
 #
 # Registry fields are DATA, never shell-evaluated.
-# COMPONENT and STAGE are exported as environment variables
-# so the receiving program can validate them and reject
-# shell-metacharacter input. DO NOT interpolate $(COMPONENT)
-# or $(STAGE) into recipe command text; Make expands such
-# references BEFORE the shell sees the command, which would
-# allow argument injection.
-selfhost-component-build:
-	@test -n "$(COMPONENT)" || (echo "selfhost-component-build: COMPONENT=<id> required (e.g. make selfhost-component-build COMPONENT=identifier_scanner STAGE=0)" >&2; exit 1)
-	@test -n "$(STAGE)" || (echo "selfhost-component-build: STAGE=<0|1|2> required (e.g. make selfhost-component-build COMPONENT=identifier_scanner STAGE=0)" >&2; exit 1)
-	COMPONENT='$(COMPONENT)' STAGE='$(STAGE)' ./tools/selfhost/selfhost-component.sh build
+#
+# IMPORTANT: COMPONENT and STAGE MUST NOT appear anywhere
+# in recipe command text, even inside the presence-check
+# lines. Make expands $(COMPONENT) BEFORE the shell sees
+# the command, so a recipe line like
+#
+#     test -n "$(COMPONENT)"
+#
+# is rewritten by Make to
+#
+#     test -n "x`touch /tmp/sentinel`"
+#
+# and the shell evaluates the backticks BEFORE invoking
+# `test`, creating the sentinel.
+#
+# We therefore split the recipe into two targets per
+# intent: a guard target that uses Make's own conditional
+# evaluation (which does NOT go through the shell), and
+# the actual work target that exports COMPONENT/STAGE as
+# environment variables and references them nowhere in
+# the recipe body.
+selfhost-component-build-guard:
+ifndef COMPONENT
+	$(error selfhost-component-build: COMPONENT=<id> required (e.g. make selfhost-component-build COMPONENT=identifier_scanner STAGE=0))
+endif
+ifndef STAGE
+	$(error selfhost-component-build: STAGE=<0|1|2> required (e.g. make selfhost-component-build COMPONENT=identifier_scanner STAGE=0))
+endif
 
+selfhost-component-build: selfhost-component-build-guard
+selfhost-component-build: export COMPONENT := $(COMPONENT)
+selfhost-component-build: export STAGE := $(STAGE)
+selfhost-component-build:
+	./tools/selfhost/selfhost-component.sh build
+
+selfhost-component-test-guard:
+ifndef COMPONENT
+	$(error selfhost-component-test: COMPONENT=<id> required)
+endif
+ifndef STAGE
+	$(error selfhost-component-test: STAGE=<0|1|2> required)
+endif
+
+selfhost-component-test: selfhost-component-test-guard
+selfhost-component-test: export COMPONENT := $(COMPONENT)
+selfhost-component-test: export STAGE := $(STAGE)
 selfhost-component-test:
-	@test -n "$(COMPONENT)" || (echo "selfhost-component-test: COMPONENT=<id> required" >&2; exit 1)
-	@test -n "$(STAGE)" || (echo "selfhost-component-test: STAGE=<0|1|2> required" >&2; exit 1)
-	COMPONENT='$(COMPONENT)' STAGE='$(STAGE)' ./tools/selfhost/selfhost-component.sh test
+	./tools/selfhost/selfhost-component.sh test
 
 selfhost-registry-validate:
 	@scripts/quality/selfhost-component-registry.sh

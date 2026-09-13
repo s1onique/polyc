@@ -1,0 +1,115 @@
+ACT-POLYC-SELFHOST-SURFACE01-CORRECTION01 — C2.1.1
+make-injection-controls-v2.txt
+============================================
+
+OBJECTIVE
+=========
+
+Extend the C2.1 negative-control matrix to cover all
+shell-metacharacter classes (semicolon, single quote,
+double quote, backtick, dollar-paren, newline,
+backslash, whitespace, tab). The C2.1 matrix covered
+only semicolon. The reviewer correctly noted that
+single-quote injection bypasses the single-quoted Make
+assignment because Make expands $(COMPONENT) BEFORE the
+shell sees the command.
+
+SECOND DEFECT DISCOVERED DURING C2.1.1
+======================================
+
+Even with `make -n` (dry-run), the backtick case
+created a sentinel BEFORE the recipe body executed.
+Investigation showed this came from the presence-check
+line `test -n "$(COMPONENT)"`, which Make expands to
+`test -n "x`touch /tmp/sentinel_BT`"`. The shell then
+evaluates the backticks BEFORE invoking `test`,
+creating the sentinel.
+
+Fix: replace the `test -n` recipe-line presence checks
+with Make's own `ifndef`/`$(error ...)` conditional
+directives, which Make evaluates internally and do NOT
+go through any shell. The recipe body of the actual
+work target then contains zero references to the user
+value.
+
+C2.1.1 FIX
+==========
+
+  Old recipe (C2.1):
+    COMPONENT='$(COMPONENT)' STAGE='$(STAGE)' \
+        ./tools/selfhost/selfhost-component.sh build
+    [plus @test -n "$(COMPONENT)" presence checks]
+
+  New recipe (C2.1.1):
+    selfhost-component-build-guard:
+    ifndef COMPONENT
+            $(error selfhost-component-build: COMPONENT=<id> required ...)
+    endif
+    ifndef STAGE
+            $(error selfhost-component-build: STAGE=<0|1|2> required ...)
+    endif
+
+    selfhost-component-build: selfhost-component-build-guard
+    selfhost-component-build: export COMPONENT := $(COMPONENT)
+    selfhost-component-build: export STAGE := $(STAGE)
+    selfhost-component-build:
+            ./tools/selfhost/selfhost-component.sh build
+
+The recipe body now contains NO reference to the user
+value, not even in the presence-check lines.
+
+POSITIVE CONTROL
+================
+
+  $ make selfhost-component-build COMPONENT=identifier_scanner STAGE=0
+  ...
+  SELFHOST_COMPONENT_BUILD_RC=0
+  rc=0
+
+NEGATIVE CONTROL (missing COMPONENT)
+====================================
+
+  $ make selfhost-component-build STAGE=0
+  Makefile:997: *** selfhost-component-build: COMPONENT=<id> required (e.g. make selfhost-component-build COMPONENT=identifier_scanner STAGE=0).  Stop.
+
+==================================================================
+NEGATIVE-CONTROL MATRIX (9 classes, via `make`)
+==================================================================
+
+For each PAYLOAD, the test command was:
+
+  rm -f /tmp/sentinel_*
+  make selfhost-component-build "COMPONENT=<payload>" STAGE=0
+  ls /tmp/sentinel_* 2>/dev/null | wc -l
+
+Observed (all must show rc=2 and sentinels=0):
+
+  semicolon      rc=2 sentinels=0  PASS
+  singlequote    rc=2 sentinels=0  PASS
+  doublequote    rc=2 sentinels=0  PASS
+  backtick       rc=2 sentinels=0  PASS
+  dollarparen    rc=2 sentinels=0  PASS
+  newline        rc=2 sentinels=0  PASS
+  whitespace     rc=2 sentinels=0  PASS
+  backslash      rc=2 sentinels=0  PASS
+  tab            rc=2 sentinels=0  PASS
+
+The `make -n` (dry-run) view of the backtick case
+(formerly a sentinel source) now shows ONLY:
+
+  $ make -n selfhost-component-build 'COMPONENT=x`touch /tmp/sentinel_BT`' STAGE=0
+  ./tools/selfhost/selfhost-component.sh build
+
+i.e. the user value NEVER reaches shell command text.
+
+==================================================================
+BINDING NEGATIVE CONTROL RESULT
+==================================================================
+
+  MAKE_ARGUMENT_INJECTION         = CLOSED
+  INJECTION_MATRIX                = 9/9
+  ALL_SENTINELS_ABSENT            = YES
+  DRYRUN_LEAK                     = CLOSED
+  INVALID_COMPONENT_RC            = 2 (nonzero)
+  MISSING_COMPONENT_DIAGNOSTIC    = Make's own $(error ...)
+  LEGITIMATE_COMPONENT_RC         = 0

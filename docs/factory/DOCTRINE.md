@@ -1116,8 +1116,12 @@ Mechanical prohibitions:
 ### Enforcement
 
 The authoritative enforcement checker for this rule is
-`tools/factory/factory-no-python-check.HC`, invoked from
-`gate-fast` and/or `gate-push`. The checker inspects:
+`tools/factory/factory-no-python-check.HC` (landed at
+C2.1.1; binding gate wiring is C2.9 residue — until then
+the checker must be invoked explicitly via
+`scripts/quality/factory-no-python-check.sh` or directly
+via `./build/factory-no-python-check`). Once wired into
+`gate-fast` and/or `gate-push`, the checker inspects:
 
 * `git ls-files -z` output (canonical tracked-file stream).
 * The shebang of every tracked file.
@@ -1238,8 +1242,10 @@ classification, or multi-step orchestration.
 ### Enforcement
 
 The authoritative enforcement checker for this rule is
-`tools/factory/factory-polyc-tools-check.HC`, invoked
-from `gate-fast` and/or `gate-push`. The checker inspects:
+`tools/factory/factory-polyc-tools-check.HC` (NOT YET
+LANDED — C2.9 residue of the bound correction ACT).
+Once landed and wired into `gate-fast` and/or
+`gate-push`, the checker inspects:
 
 * `git ls-files -z` output (canonical tracked-file stream).
 * The implementation language of every new path under
