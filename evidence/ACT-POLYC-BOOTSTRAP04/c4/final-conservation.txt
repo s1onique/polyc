@@ -1,0 +1,106 @@
+ACT-POLYC-BOOTSTRAP04 — C4 — final conservation (re-run)
+======================================================
+
+Re-verified at C4 capture time on the C4 candidate tree.
+
+------------------------------------------------------------
+B0 (bootstrap01-test)
+------------------------------------------------------------
+
+```text
+$ make bootstrap01-test
+BOOTSTRAP01_CASES=15
+BOOTSTRAP01_PASS=15
+BOOTSTRAP01_FAIL=0
+STATUS=PASS
+```
+
+15/15.
+
+------------------------------------------------------------
+B1 component (bootstrap02-test)
+------------------------------------------------------------
+
+```text
+$ make bootstrap02-test
+BOOTSTRAP02_DIFFERENTIAL=PASS 15/15
+```
+
+15/15.
+
+------------------------------------------------------------
+B1 cursor (bootstrap02-cursor-test)
+------------------------------------------------------------
+
+```text
+$ make bootstrap02-cursor-test
+BOOTSTRAP02_CURSOR_DIFFERENTIAL=PASS 6/6
+```
+
+6/6.
+
+------------------------------------------------------------
+B1 production Lexer seam (bootstrap02-lexer-seam-test)
+------------------------------------------------------------
+
+```text
+$ make bootstrap02-lexer-seam-test
+BOOTSTRAP02_LEXER_SEAM_DOWNSTREAM=PASS (6/6 cases byte-identical)
+BOOTSTRAP02_LEXER_SEAM_RESIDUE=NONE
+```
+
+6/6.
+
+------------------------------------------------------------
+B2 component (bootstrap03-test)
+------------------------------------------------------------
+
+```text
+$ make bootstrap03-test
+BOOTSTRAP03_DIFFERENTIAL=PASS 15/15
+```
+
+15/15.
+
+------------------------------------------------------------
+B2 production Lexer seam (bootstrap03-lexer-seam-test)
+------------------------------------------------------------
+
+```text
+$ make bootstrap03-lexer-seam-test
+BOOTSTRAP03_LEXER_SEAM_DOWNSTREAM=PASS (6/6 cases byte-identical)
+BOOTSTRAP03_LEXER_SEAM_RESIDUE=NONE
+```
+
+6/6.
+
+------------------------------------------------------------
+LSP
+------------------------------------------------------------
+
+```text
+$ make lsp-test
+lsp: 43/43 passed
+```
+
+43/43.
+
+------------------------------------------------------------
+Summary
+------------------------------------------------------------
+
+```text
+B0_COMPILER_SHAPED        = PASS  (15/15)
+B1_PARTIAL_SELF_HOST      = PASS  (15/15 + 6/6 + 6/6)
+B2_FIRST_SELF_HOST        = PASS  (15/15 + 6/6)
+                            (175/175 corpus + 4/4 errors + reproducibility
+                             remain F14-frozen in B2 evidence)
+B3_BOOTSTRAP_STABILITY    = PASS  (15/15 + 6/6 + 6/6
+                                    + 175/175 corpus + 4/4 errors
+                                    + reproducibility
+                                    + fixed-point
+                                    + provenance)
+LSP                        = PASS  (43/43)
+```
+
+All gates green. No regression.

@@ -1880,7 +1880,8 @@ B1 — PARTIAL SELF-HOST    GREEN
                               ACT-POLYC-BOOTSTRAP02 CLOSED PASS
 B2 — FIRST SELF-HOST      GREEN
                               ACT-POLYC-BOOTSTRAP03 CLOSED PASS
-B3 — BOOTSTRAP STABILITY  UNLOCKED / NEXT
+B3 — BOOTSTRAP STABILITY  GREEN
+                              ACT-POLYC-BOOTSTRAP04 CLOSED PASS
 ```
 
 B1 outcome (ACT-POLYC-BOOTSTRAP02):
@@ -1947,19 +1948,87 @@ and `HANDOFF.md`. Cardinality-1 invariant: see
 `acceptance-matrix.txt` and the single C4 commit on
 `ACT-Phase: CLOSE`.
 
+B3 outcome (ACT-POLYC-BOOTSTRAP04):
+
+```text
+B3_BOOTSTRAP_STABILITY           = GREEN
+STABILITY_DOMAIN                 = CURRENT_SELF_HOSTED_COMPILER_COMPONENT
+
+STAGE2_COMPILER                  = PASS
+STAGE2_COMPILES_B1_COMPONENT     = YES
+STAGE2_B1_ARTIFACT               = PASS
+STAGE2_B1_PROVENANCE             = PASS
+STAGE2_B1_OUTPUT_SHA             = a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f
+
+STAGE3_COMPILER                  = PASS
+STAGE3_LINKS_STAGE2_B1_ARTIFACT  = YES
+STAGE3_USES_B1_COMPONENT         = YES
+
+STAGE2_STAGE3_DIRECT_EQ          = PASS  (15/15 component + 6/6 cursor
+                                           + 6/6 production Lexer seam)
+STAGE2_STAGE3_BROAD_CORPUS_EQ    = PASS  (175/175 successful sources
+                                           byte-equal; 6/6 baseline
+                                           failures equivalent;
+                                           0 divergence)
+STAGE2_STAGE3_ERROR_EQ           = PASS  (4/4 error corpus fixtures
+                                           equivalent; 0 divergence)
+STAGE3_COMPILES_B1_SOURCE        = PASS  (self-source property holds)
+STAGE2_STAGE3_B1_OBJECT_EQ       = PASS  (stage2(B1 source) ==
+                                           stage3(B1 source) byte-equal
+                                           = a1b620c0...)
+
+REPRODUCIBILITY                  = PASS  (Build A == Build B;
+                                           181/181 corpus matrix
+                                           identical; 175/175 stage2 +
+                                           175/175 stage3 artifacts
+                                           byte-identical)
+
+FIRST_SELF_HOST                  = YES
+FULL_SELF_HOST                   = NO   (host-C still dominates)
+HOST_C_DEPENDENCY                = PRESENT
+STAGE4_CREATED                   = NO
+
+B0_CONSERVATION                  = PASS  15/15
+B1_CONSERVATION                  = PASS  15/15 + 6/6 + 6/6
+B2_CONSERVATION                  = PASS  15/15 + 6/6 + 175/175 + 4/4
+LSP_CONSERVATION                 = PASS  43/43
+FACTORY_CONSERVATION             = PASS  (35+11+12+6 + shell-loc)
+GATE_FAST                        = PASS
+
+P0_BLOCKERS                      = NONE
+P1_RESIDUE                       = NONE  (within B3 scope)
+P2_RESIDUE                       = CARRIED (unit/jit runner,
+                                            GEP01/push,
+                                            historical whitespace,
+                                            token-dump absence)
+
+B3_SCOPE_AUTHORIZED              = build-graph extension only
+B3_COMPILER_SEMANTIC_DELTA       = ZERO
+B3_B1_SOURCE_DELTA               = ZERO
+B3_PARSER_AST_IR_BACKEND_DELTA   = ZERO
+```
+
+B3 ACT-POLYC-BOOTSTRAP04 closure evidence at
+`evidence/ACT-POLYC-BOOTSTRAP04/c4/closure-summary.txt`
+and `HANDOFF.md`. Cardinality-1 invariant: see
+`acceptance-matrix.txt` and the single C4 commit on
+`ACT-Phase: CLOSE`.
+
 The SH1–SH6 progression below remains the long-horizon
 vocabulary, but it is **no longer the active critical path**.
 SH1–SH6 vocabulary will be re-stated in B0–B3 terms when
 each milestone ACT opens.
 
-Recommended next ACT (post-B2):
+Recommended next ACT (post-B3):
 
-`ACT-POLYC-BOOTSTRAP04` (or equivalent bounded B3 ACT):
-construct stage3 by repeating the stage1→stage2 artifact
-flow, then prove stage2 ≈ stage3 over the binding
-comparison domain (component, direct, corpus, error,
-self-source). This is the GCC-style "later-stage
-comparison" closing the bootstrap-stability milestone.
+B3 closed the bootstrap-stability milestone. The next
+board operation is **board design** — the post-B3
+roadmap is not yet authored; opening B4 or a different
+milestone requires a fresh ACT with its own scope and
+acceptance criteria.
+
+Do **not** immediately invent B4 or extend the bootstrap
+chain further. The B3 ACT §52 hard stop applies.
 
 ### P5 — LLVM feature depth (PARALLEL BACKLOG, NON-BLOCKING)
 
