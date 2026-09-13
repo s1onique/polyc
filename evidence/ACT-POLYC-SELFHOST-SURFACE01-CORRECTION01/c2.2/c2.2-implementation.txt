@@ -1,0 +1,162 @@
+c2.2-implementation.txt
+=======================
+
+ACT-POLYC-SELFHOST-SURFACE01-CORRECTION01 C2.2 IMPL.
+
+C2.2.a IMPL: PolyC-native self-host component control plane.
+
+NEW FILE
+--------
+
+  tools/selfhost/selfhost-component.HC       (~1390 LOC)
+  -- single PolyC executable implementing:
+       validate <registry>
+       build    <registry>           (needs env COMPONENT STAGE)
+       test     <registry>           (needs env COMPONENT STAGE)
+       selftest                       (13/13 negative controls)
+
+The PolyC binary is built with the existing stage0 ./hcc
+compiler and links against build/test-prefix/lib/libtos.a.
+
+Compile invocation (canonical):
+  ./hcc --install-dir=./build/test-prefix -c \
+      tools/selfhost/selfhost-component.HC \
+      -o build/selfhost-component.o
+  cc build/selfhost-component.o \
+      -L./build/test-prefix/lib -ltos \
+      -o build/selfhost-component
+
+Build artifact:
+  build/selfhost-component               Mach-O 64-bit executable arm64
+
+PRODUCTION PARSER = SELFTEST PARSER.
+  Same SHCParseRegistry function is invoked by every op.
+  No test-only clone of registry semantics.
+
+OPERATIONS
+----------
+
+validate <registry>:
+  - header validation (10 fixed columns)
+  - field count per row (exactly 10)
+  - empty required fields reject
+  - source must be repo-relative, no `..`, must exist on disk
+  - language must be POLYC
+  - state must be STABLE|MIGRATING|DISABLED
+  - symbol regex ^[A-Za-z_][A-Za-z0-9_$]*$
+  - component_id regex ^[A-Za-z0-9_]+$ (no duplicate)
+  - output-aliases-source gate (when source ends in .o)
+  - Makefile target existence check for each non-DISABLED row
+
+build <registry> COMPONENT=<id> STAGE=<n>:
+  - validates COMPONENT (regex) and STAGE (exact 0|1|2)
+  - resolves component exactly once
+  - resolves producer (stage0=./hcc, stage1=./build/hcc-bootstrap02,
+                       stage2=./build/hcc-bootstrap03)
+  - requires producer exists and is executable
+  - requires source exists
+  - rejects DISABLED state
+  - rejects source/output alias
+  - clears stale output
+  - invokes producer via SpawnAndCapture (direct argv, no shell)
+  - propagates nonzero rc
+  - requires output exists
+  - verifies expected symbol via nm with platform link prefix
+    (Darwin: leading underscore; Linux: no prefix)
+  - emits provenance: producer SHA, output SHA, expected symbol,
+    symbol_check, build_rc
+
+test <registry> COMPONENT=<id> STAGE=<n>:
+  - calls build first
+  - then invokes registered Makefile gates in sequence:
+      make <oracle>
+      make <cursor_gate>
+      make <production_seam_gate>
+  - all three gates MUST pass
+
+selftest:
+  - 13/13 frozen negative controls (N1..N12b).
+  - Runs N1..N12b by writing synthetic TSV files into
+    build/shc-selftest and spawning the binary for each.
+
+PROCESS EXECUTION
+-----------------
+
+Producer invocation:
+  SpawnAndCapture(producer_abs, argv, &out, &err)
+  argv = [producer_abs, "--install-dir=...", "-c", source, "-o", generic_out, NULL]
+  No shell. No system(). No "/bin/sh -c <concatenated>".
+
+Make invocation (test):
+  SpawnAndCapture("/usr/bin/make", argv, &out, &err)
+  argv = ["/usr/bin/make", "-C", repo_root, target, NULL]
+  Direct argv. No shell expansion.
+
+Auxiliary tools (nm, uname, shasum, mkdir, rm, cp):
+  Direct argv with absolute paths (/usr/bin/nm, /bin/mkdir,
+  /bin/rm, /bin/cp). No string-concatenated shell programs.
+
+Selftest sub-spawns that need controlled env (N2, N12b):
+  /usr/bin/env KEY=value KEY=value <binary> build <registry>
+  env(1) is the portable, non-shell way to inject env into a child
+  when the SpawnAndCapture primitive has no envp parameter.
+
+COMPONENT VALIDATION
+--------------------
+
+  ^[A-Za-z0-9_]+$    -- bounded grammar (predecessor parity)
+  Empty/whitespace, /, \\, ;, ', `, $, (, ), newline, tab
+  all rejected.
+
+STAGE VALIDATION
+----------------
+
+  Exactly 0|1|2 (exact-set check).
+  00, +1, 2foo, 3, -1 all rejected.
+
+SYMBOL VALIDATION
+-----------------
+
+  expected = <link_prefix><symbol>
+  Required: at least one defined global symbol matches.
+  Verification: nm output line ends with " <TBDRS> <expected>$".
+  Missing symbol -> rc=1 even if compilation succeeded.
+
+PROVENANCE CONTRACT
+-------------------
+
+  Output format (binding):
+    SELFHOST_COMPONENT_BUILD=PASS
+    SELFHOST_COMPONENT_ID=<id>
+    SELFHOST_COMPONENT_SOURCE=<repo-relative path>
+    SELFHOST_COMPONENT_PRODUCER_STAGE=<n>
+    SELFHOST_COMPONENT_PRODUCER_BINARY=<producer>
+    SELFHOST_COMPONENT_PRODUCER_BINARY_SHA256=<64 hex>
+    SELFHOST_COMPONENT_OUTPUT=<generic_out>
+    SELFHOST_COMPONENT_OUTPUT_SHA256=<64 hex>
+    SELFHOST_COMPONENT_EXPECTED_SYMBOL=<expected>
+    SELFHOST_COMPONENT_SYMBOL_CHECK=PASS
+    SELFHOST_COMPONENT_BUILD_RC=0
+    SELFHOST_COMPONENT_LINK_SYMBOL_PREFIX=<_ or "">
+    SELFHOST_COMPONENT_REGISTRY=<registry path>
+
+  Same fields and structure as the predecessor.
+
+SCOPE
+-----
+
+COMPILER_SEMANTIC_DELTA = ZERO
+  src/lexer.c, src/lexer_bridge.h, src/holyc-lib/* untouched.
+  tools/bootstrap/bootstrap02-ident.HC untouched.
+
+REGISTRY_SCHEMA_DELTA = ZERO
+  docs/factory/SELF-HOST-COMPONENTS.tsv unchanged.
+
+NEW SELF-HOST COMPONENT = ZERO
+  identifier_scanner is still the only registered component.
+
+NEW BOOTSTRAP GENERATION = ZERO
+  No new ./hcc-bootstrapNN.
+
+FACTORY_NO_PYTHON CHECKER DELTA = ZERO
+  tools/factory/factory-no-python-check.HC unchanged.
