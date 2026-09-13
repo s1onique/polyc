@@ -1,0 +1,59 @@
+ACT-POLYC-BOOTSTRAP02 — C2 — stage0-component-build
+====================================================
+
+Real-seam witness: stage0 hcc compiles the B1 PolyC
+component to a Mach-O object, exporting _BootstrapScanIdent
+as a text-section global.
+
+Command transcript (verbatim)
+------------------------------
+
+Working directory: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc
+
+  $ make bootstrap02-component-build
+  ./hcc --install-dir=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/test-prefix \
+          -c tools/bootstrap/bootstrap02-ident.HC \
+          -o ./build/bootstrap02-ident.o
+  clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+  clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+  clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+  (the warnings are harmless; they are emitted by the
+   underlying cc command because hcc always appends
+   -lpthread -lc -lm even for -c mode; the object is
+   produced correctly.)
+
+  $ ls -la ./build/bootstrap02-ident.o
+  -rw-r--r--  1 chistyakov  staff  2704 Sep 13 15:43 ./build/bootstrap02-ident.o
+
+  $ nm ./build/bootstrap02-ident.o | grep -i BootstrapScanIdent
+  00000000000002e0 T _BootstrapScanIdent
+
+Verdict
+-------
+
+  POLYC_COMPILE_B1_SUBJECT     = PASS
+                                (hcc -c bootstrap02-ident.HC -> bootstrap02-ident.o)
+  B1_SYMBOL_EXPORTED           = PASS
+                                (T _BootstrapScanIdent at offset 0x2e0)
+  B1_OBJECT_SIZE               = 2704 bytes
+  B1_CTYPE_DEPENDENCY          = NONE
+                                (no <ctype.h> in tools/bootstrap/bootstrap02-ident.HC;
+                                 see grep below)
+  B1_NON_ASCII_EQUIVALENCE     = NOT_CLAIMED
+                                (the component uses only ASCII byte range
+                                 comparisons; bytes >= 0x80 are never
+                                 classified as identifier bytes)
+
+  $ grep -c ctype tools/bootstrap/bootstrap02-ident.HC
+  0
+
+Source immutability (F3 / F10)
+-------------------------------
+
+The source buffer src passed to BootstrapScanIdent is
+caller-owned and read-only. The component writes to *out_end
+only; *src is never mutated. Verified by inspecting the
+component body: there is exactly one write through src
+(in `first = src[start]` which is a read) and one write
+through *out_end. There is no MAlloc, no Free, no static
+mutable state, no global writes.

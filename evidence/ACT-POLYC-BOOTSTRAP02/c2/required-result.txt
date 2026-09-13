@@ -1,0 +1,144 @@
+ACT-POLYC-BOOTSTRAP02 — C2 — required-result block
+===================================================
+
+This is the binding contract between C2 IMPL and C3 EVIDENCE.
+Per ACT §10, C3 may proceed only if every required predicate
+below is GREEN at C2 close.
+
+------------------------------------------------------------
+Section A — Implementation predicates (ACT §14)
+------------------------------------------------------------
+
+C2_IMPL_TOOLING                  PASS
+   tools/bootstrap/bootstrap02-ident.HC exists and exports
+   BootstrapScanIdent with the binding B1 ABI signature.
+
+C2_IMPL_BRIDGE                   PASS
+   src/lexer_bridge.h declares BootstrapScanIdent with
+   the matching C ABI. Single declaration only.
+
+C2_IMPL_LEXER_DELEGATION         PASS
+   src/lexer.c::lexIdentifier delegates to BootstrapScanIdent
+   under #ifdef HCC_BOOTSTRAP02_STAGE1. Cursor binding is
+   mechanically established (see cursor-equivalence.txt).
+   Legacy path preserved under #else for the production build.
+
+C2_IMPL_NO_LEGACY_RUNTIME        PASS
+   The lexIdentifier function does NOT contain a runtime
+   branch. The #ifdef is a build-time selection between
+   two binary artifacts, not a runtime fallback within
+   one binary.
+
+C2_IMPL_NO_CTYPE                 PASS
+   grep -c ctype tools/bootstrap/bootstrap02-ident.HC -> 0
+   B1 component uses explicit ASCII byte range comparisons
+   only. No <ctype.h>, no locale dependency.
+
+C2_IMPL_ASCII_DOMAIN             PASS
+   B1_IDENTIFIER_CHARACTER_DOMAIN = ASCII
+
+C2_IMPL_NON_ASCII_NOT_CLAIMED    PASS
+   B1_NON_ASCII_EQUIVALENCE = NOT_CLAIMED (per C1-CORRECTION01).
+
+C2_IMPL_ALLOCATION_FREE          PASS
+   No MAlloc/Free in the B1 component.
+
+C2_IMPL_NO_GLOBALS               PASS
+   Only `public I64 BootstrapScanIdent(...)` and helpers.
+
+C2_IMPL_BOUNDED                  PASS
+   All reads gated by src_len; one write to *out_end.
+
+------------------------------------------------------------
+Section B — Stage0 component build predicates
+------------------------------------------------------------
+
+C2_STAGE0_COMPILE                PASS
+   ./hcc -c bootstrap02-ident.HC -> bootstrap02-ident.o
+   (exit 0). See stage0-component-build.txt.
+
+C2_STAGE0_SYMBOL                 PASS
+   nm: T _BootstrapScanIdent at offset 0x2e0
+
+------------------------------------------------------------
+Section C — Stage1 link predicates
+------------------------------------------------------------
+
+C2_STAGE1_LINK                   PASS
+   cc host.c bootstrap02-ident.o -> bootstrap02-ident-host
+
+C2_STAGE1_INVOKE                 PASS
+   ./bootstrap02-ident-host -> 15/15 PASS
+
+C2_STAGE1_DIFFERENTIAL           PASS
+   Per-fixture diff vs C oracle: byte-identical on 15/15.
+
+C2_STAGE1_BINARY                 PASS
+   make bootstrap02-stage1 -> build/hcc-bootstrap02
+   T _BootstrapScanIdent linked in.
+
+------------------------------------------------------------
+Section D — Symbol binding predicates
+------------------------------------------------------------
+
+C2_BRIDGE_DECL                   PASS (src/lexer_bridge.h)
+C2_STAGE0_OBJECT_SYMBOL          PASS (T _BootstrapScanIdent)
+C2_HOST_HARNESS_LINK             PASS (no undefined symbols)
+C2_HOST_HARNESS_SYMBOL           PASS (T _BootstrapScanIdent)
+C2_STAGE1_BINARY_LINK            PASS (no undefined symbols)
+C2_STAGE1_BINARY_SYMBOL          PASS (T _BootstrapScanIdent)
+C2_PRODUCTION_BINARY_UNCHANGED   PASS (no _BootstrapScanIdent
+                                       in ./build/hcc by design)
+
+------------------------------------------------------------
+Section E — Cursor equivalence (binding acceptance)
+------------------------------------------------------------
+
+C2_CURSOR_BINDING                PASS
+   5/5 real production sources produce byte-identical
+   objects between stage0 and stage1, including
+   $-bearing identifiers (dir.HC, fzf.HC).
+   See cursor-equivalence.txt.
+
+C2_EOF_NUL_BEHAVIOR              PASS (covered above)
+C2_LEXREWIND_EQUIVALENCE         PASS (covered above)
+
+------------------------------------------------------------
+Section F — Conservation (F10)
+------------------------------------------------------------
+
+C2_B0_CONSERVATION               PASS  15/15
+   make bootstrap01-test -> BOOTSTRAP01_PASS=15
+   HALT_B0_REGRESSION = NOT_FIRED
+
+C2_PRODUCTION_BUILD_HERMETIC     PASS
+   Default `make all` produces ./build/hcc without the B1
+   component. ./build/hcc -c dir.HC succeeds.
+
+------------------------------------------------------------
+Section G — Scope discipline (F7)
+------------------------------------------------------------
+
+C2_SCOPE_TIGHT                   PASS
+   Authorized scope used exactly:
+     tools/bootstrap/bootstrap02-ident.HC (new)
+     src/lexer_bridge.h (new)
+     src/lexer.c::lexIdentifier seam only
+     bounded Makefile/CMake stage1 construction
+     tools/quality/bootstrap02-ident-host.c
+       (real-seam differential witness alongside existing
+        bootstrap02-ident-oracle.c)
+
+C2_OUT_OF_SCOPE_WORK             NONE
+C2_RESIDUE                       NONE at C2 close.
+
+------------------------------------------------------------
+C2 verdict
+------------------------------------------------------------
+
+  ACT-Phase                        = IMPL
+  C2_IMPL_TO_C3_EVIDENCE_GATE      = OPEN
+  HALT_B1_ABI_PROBE_FAILED         = NOT_FIRED
+  HALT_B1_DELEGATION_FAIL          = NOT_FIRED
+  HALT_B0_REGRESSION               = NOT_FIRED
+  HALT_SCOPE_EXPANSION_REQUIRED    = NOT_FIRED

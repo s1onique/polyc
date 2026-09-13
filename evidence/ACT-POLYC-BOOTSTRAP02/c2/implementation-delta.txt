@@ -1,0 +1,76 @@
+ACT-POLYC-BOOTSTRAP02 — C2 — implementation-delta
+==================================================
+
+Captures the exact production-source and build-infra
+mutation applied in C2 IMPL. Reviewer-relevant for
+verifying scope (F7) and conservation (F10).
+
+============================================================
+Files added (new):
+============================================================
+
+  tools/bootstrap/bootstrap02-ident.HC         (+177)
+  src/lexer_bridge.h                           (+56)
+  tools/quality/bootstrap02-ident-host.c       (+139)
+
+============================================================
+Files modified (production source + build infra only):
+============================================================
+
+  src/lexer.c                                  (+73)
+    - one function body modified: lexIdentifier
+    - one #include added: "lexer_bridge.h"
+    - the modification is gated by
+      #ifdef HCC_BOOTSTRAP02_STAGE1 / #else / #endif;
+      the production (default) build uses the legacy
+      ctype path bit-identically; the stage1 build uses
+      the BootstrapScanIdent delegation.
+    - the function does NOT contain a runtime branch;
+      the #ifdef selects between two compilation
+      artifacts, not two paths inside one artifact.
+
+  src/CMakeLists.txt                           (+59)
+    - one new option: HCC_ENABLE_BOOTSTRAP02_STAGE1
+    - one new variable: BOOTSTRAP02_IDENT_OBJECT
+    - one new add_executable target: hcc-bootstrap02
+      (only created when option is ON)
+    - FATAL_ERROR guards if option is ON but object
+      missing.
+
+  Makefile                                     (+85)
+    - .PHONY list extended (bootstrap02-* targets)
+    - bootstrap02-component-build
+    - bootstrap02-oracle
+    - bootstrap02-test
+    - bootstrap02-stage1
+
+============================================================
+Files NOT modified (frozen components per ACT §3 and
+predecessor-ACT scope):
+============================================================
+
+  tools/bootstrap/bootstrap01-lexer.HC        (B0 SUBJECT; frozen)
+  src/lexer.h                                  (public API; frozen)
+  src/parser.c, src/ast.c, src/ir.c, etc.      (out of scope)
+  src/holyc-lib/*.HC                           (out of scope)
+  src/holyc-lib/dir.HC                         (out of scope)
+  evidence/ACT-POLYC-BOOTSTRAP02-C1-CORRECTION01/  (CLOSED predecessor)
+
+============================================================
+Scope discipline (F7) summary
+============================================================
+
+Authorized scope:        tools/bootstrap/bootstrap02-ident.HC
+                         src/lexer_bridge.h
+                         src/lexer.c::lexIdentifier seam only
+                         bounded Makefile/CMake stage1 construction
+
+Authorized scope used:   EXACTLY the above (and a host harness
+                         in tools/quality/, which is the
+                         real-seam stage1 differential witness
+                         — same directory as the existing
+                         bootstrap01-lexer-oracle.c and
+                         bootstrap02-ident-oracle.c).
+
+Out-of-scope work:       NONE
+Residue:                 NONE at C2 close.

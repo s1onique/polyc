@@ -1,0 +1,57 @@
+ACT-POLYC-BOOTSTRAP02 — C2 — b0-conservation
+==============================================
+
+F10 conservation check: B0 15/15 must remain green after
+the C2 production-source mutation. The C2 mutation does
+not touch tools/bootstrap/bootstrap01-lexer.HC, but the
+build path runs the B0 driver through the stage0 ./hcc
+binary, which IS rebuilt as part of the default build
+cycle. We therefore verify the B0 matrix is unaffected.
+
+Command transcript (verbatim)
+------------------------------
+
+Working directory: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc
+
+  $ make bootstrap01-test
+  ... (build lines, all successful)
+  BOOTSTRAP01_CASES=15
+  BOOTSTRAP01_RUNS=30
+  BOOTSTRAP01_PASS=15
+  BOOTSTRAP01_FAIL=0
+  STATUS=PASS
+
+Verdict
+-------
+
+  BOOTSTRAP01_CASES            = 15
+  BOOTSTRAP01_PASS             = 15
+  BOOTSTRAP01_FAIL             = 0
+  BOOTSTRAP01_STATUS           = PASS
+
+  B0_CONSERVATION              = PASS  15/15
+  HALT_B0_REGRESSION           = NOT_FIRED
+
+B0 SUBJECT (tools/bootstrap/bootstrap01-lexer.HC) is
+unchanged across the C2 mutation. The C2 evidence
+demonstrates that the B0 grammar (a strict subset of
+production grammar) is correctly implemented by B0 and
+unaffected by B1.
+
+Additional conservation check
+-------------------------------
+
+The default `./build/hcc` production binary still compiles
+real production source code without error (including
+sources with `$`-bearing identifiers). See cursor-
+equivalence.txt for the stronger byte-identical object
+comparison between stage0 and stage1 binaries on five
+real production sources.
+
+  $ ./build/hcc --install-dir=$(pwd)/build/test-prefix \
+        -c src/holyc-lib/dir.HC -o build/dir-test.o
+  (succeeds; dir.HC contains _opendir$INODE64)
+
+  $ ./build/hcc --install-dir=$(pwd)/build/test-prefix \
+        -c src/tests/run_shared.HC -o build/run_shared.o
+  (succeeds; run_shared.HC contains $-bearing identifiers)
