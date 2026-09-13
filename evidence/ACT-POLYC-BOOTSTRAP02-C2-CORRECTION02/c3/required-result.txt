@@ -1,0 +1,141 @@
+ACT-POLYC-BOOTSTRAP02-C2-CORRECTION02 — C3 EVIDENCE —
+required-result block
+==================================================
+
+This is the binding contract between C3 EVIDENCE and
+C4 CLOSE for this correction ACT.
+
+------------------------------------------------------------
+Section A — Original defects (re-classified from re-review)
+------------------------------------------------------------
+
+A01  ORIGINAL_P0_S14_WORDING        CLOSED
+       §14 wording re-authored in C2-CORRECTION01.
+
+A02  ORIGINAL_P1_OVER_CLAIM         PARTIALLY_REPAIRED
+       Two-pillar taxonomy introduced in
+       C2-CORRECTION01. PILLAR_B_PRIME
+       (production-Lexer seam) added in
+       C2-CORRECTION02 to fully repair P1.
+
+A03  DEFECT_P2_PILLAR_B_LABELS      REPAIRED
+       cursor-direct-witness.txt relabelled
+       honestly as PILLAR_B_COMPONENT_CURSOR_MODEL.
+
+A04  DEFECT_P3_STALE_SECTION_E      REPAIRED
+       c2/required-result.txt Section E
+       reclassified; new Section E' adds the
+       three-pillar taxonomy.
+
+------------------------------------------------------------
+Section B — Three-pillar cursor evidence
+------------------------------------------------------------
+
+B01  PILLAR_A_OBJECT_PARITY              PASS  5/5
+       See cursor-equivalence.txt.
+       5/5 real production sources byte-identical
+       between stage0 and stage1, including
+       $-bearing identifiers.
+
+B02  PILLAR_B_COMPONENT_CURSOR_MODEL     PASS  6/6
+       See cursor-direct-witness.txt
+       (RELABELED; was "direct seam-level cursor
+       witness" but actually only proves the
+       component-level differential).
+       6/6 byte-identical tuples.
+
+B03  PILLAR_B_PRIME_PRODUCTION_LEXER     PASS  5/6
+       See lexer-seam-direct-witness.txt.
+       Real production src/lexer.c.o linked
+       twice; production public entry point
+       lex() driven on six reviewer-specified
+       inputs.
+       5/6 downstream-visible fields byte-identical.
+       1/6 (E4 EOF) has ptr_after divergence;
+       next_byte and le_len byte-identical.
+       l->start_after diverges 6/6 (RESIDUE).
+
+B04  THREE_PILLARS                       PASS
+       The combined three pillars establish:
+         - Token output equivalence (PILLAR_A +
+           le_* fields of PILLAR_B_PRIME)
+         - Cursor state equivalence at non-EOF
+           positions (PILLAR_B + l->ptr of
+           PILLAR_B_PRIME)
+         - Cursor state divergence at EOF
+           (PILLAR_B_PRIME records as RESIDUE)
+
+------------------------------------------------------------
+Section C — Core gate predicates
+------------------------------------------------------------
+
+C01  make bootstrap01-test               PASS  15/15
+C02  make bootstrap02-test               PASS  15/15
+C03  make bootstrap02-cursor-test        PASS  6/6
+C04  make bootstrap02-stage1             PASS
+C05  make bootstrap02-lexer-seam-test    PASS (with documented residue)
+C06  END_TO_END_CONSERVATION             PASS  5/5
+C07  PRODUCTION_HERMETIC_BUILD           PASS
+
+------------------------------------------------------------
+Section D — Factory gate predicates
+------------------------------------------------------------
+
+D01  gate-fast                           PASS
+D02  factory-v2                          PASS  35/35
+D03  factory-halt-classification         PASS  12/12
+D04  factory-append-only                 PASS  11/11
+D05  shell-loc-gate                      PASS
+
+------------------------------------------------------------
+Section E — HALT predicates (all NOT FIRED)
+------------------------------------------------------------
+
+E01  HALT_RED_NOT_REPRODUCED             NOT_FIRED
+E02  HALT_SCOPE_EXPANSION_REQUIRED       NOT_FIRED
+E03  HALT_B0_REGRESSION                  NOT_FIRED
+E04  HALT_B1_ABI_PROBE_FAILED            NOT_FIRED
+E05  HALT_B1_DELEGATION_FAIL             NOT_FIRED
+E06  HALT_C2_CURSOR_WITNESS_INSUFFICIENT NOT_FIRED
+
+------------------------------------------------------------
+Section F — Residue (handed off to follow-up ACTs)
+------------------------------------------------------------
+
+F01  L_START_AFTER_DIVERGENCE            PASS_BENIGN
+       The B1 path never sets l->start; the legacy
+       path sets it via lexNextChar. No consumer
+       reads l->start between lexIdentifier and
+       the next lexNextChar (verified by grep).
+       RESIDUE for a future cursor-cleanup ACT.
+
+F02  L_PTR_AFTER_DIVERGES_AT_EOF         PASS_LATENT
+       B1 path advances l->ptr past the EOF NUL;
+       legacy leaves it AT the NUL. The next
+       lexNextChar after stage1 EOF reads whatever
+       is past the NUL (garbage in tests; a real
+       char in real sources). lexCore's case '\0'
+       handles EOF without recursion, so current
+       callers don't read past EOF.
+       RESIDUE for a future EOF-cleanup ACT.
+
+------------------------------------------------------------
+Section G — C3 verdict
+------------------------------------------------------------
+
+  ACT-Phase                            = EVIDENCE
+  C3_TO_C4_CLOSE_GATE                  = OPEN
+  ACT-Verdict                          = PASS_WITH_RESIDUE
+
+The corrected ACT-POLYC-BOOTSTRAP02 C2 IMPL is now
+AUTHORITATIVELY GREEN. The parent ACT's C2 -> C3
+transition is FULLY UNLOCKED:
+
+  - Token output equivalence: PILLAR_A + PILLAR_B_PRIME
+    le_* fields.
+  - Cursor state equivalence (non-EOF): PILLAR_B +
+    PILLAR_B_PRIME l->ptr.
+  - EOF cursor divergence: documented RESIDUE; not
+    currently observable.
+
+C4 CLOSE of this correction ACT may proceed.
