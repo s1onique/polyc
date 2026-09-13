@@ -11,9 +11,17 @@ Per the proposed ACT §12 (Binding C1 result):
   SUBSTANTIVE_SELFHOST_SHELL          = PRESENT  (197 LOC > 50)
   F_NO_PYTHON                         = NOT_ENFORCED
   F_POLYC_TOOLS                       = NOT_ENFORCED
-  C1_TO_C2_GATE                       = OPEN  (subject to scope
-                                                 decomposition
-                                                 below)
+  INLINE_PYTHON_COUNT                 = 2  (llvm-memory01-red-test.sh:69,
+                                            llvm-spike-test.sh:396,
+                                            identical text-normalise helper)
+  OPTION_C_AUTHORIZED                 = YES (user board decision,
+                                              explicit scope expansion;
+                                              F7/F15 satisfied per Factory
+                                              v2 doctrine §1)
+  C1_TO_C2_GATE                       = OPEN  (subject to C1.1 RED-AMEND
+                                                 patch hygiene + freeze
+                                                 completion, both done in
+                                                 this C1.1 commit)
 
 ADDITIONAL C1 FINDINGS NOT IN §12
 =================================
@@ -37,13 +45,12 @@ Finding C1.X3 — Python runtime dependency from PolyC tool
 
 Finding C1.X4 — F-NO-PYTHON / F-POLYC-TOOLS doctrine
 decomposition question.
-  Per F7 and F15, the F-NO-PYTHON and F-POLYC-TOOLS
-  doctrine changes, plus the migration of every tracked
-  Python tool, plus the shell-budget consolidation, plus
-  the Make injection hardening, plus the B3 re-proof, plus
-  the C4 supersede-and-correct machinery, are six
-  logically distinct bounded concerns.
-
-  This C1 packet records the scope as the user proposed
-  it; the C2 IMPL strategy is recorded in
-  scope-decomposition-note.txt.
+  At C1 RED the agent recorded three execution
+  options (A / B / C). The user's board decision
+  explicitly authorizes Option C — full scope, one
+  ACT. See scope-decomposition-note.txt for the
+  recorded board decision and the corrected framing
+  (F7 / F15 SATISFIED because the scope expansion is
+  EXPLICIT, not silent). The boundedness will come
+  from small C2.x IMPL commits and frozen per-tool
+  contracts, not from decomposing into multiple ACTs.
