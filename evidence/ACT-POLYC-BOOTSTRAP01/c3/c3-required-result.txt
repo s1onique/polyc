@@ -1,0 +1,54 @@
+ACT-POLYC-BOOTSTRAP01 — C3 — required-result block
+==================================================
+
+B0_POLYC_LEXER                 = PASS
+B0_SOURCE_LANGUAGE             = POLYC
+B0_INPUT                       = CALLER_OWNED_BYTES
+B0_OUTPUT                      = CALLER_OWNED_TOKEN_ARRAY
+B0_ALLOCATION                  = NONE
+
+B0_HCC_COMPILE                 = PASS
+B0_LLVM_AS                     = N/A (path-dependent; MEMORY01 STORE_DEREF fence)
+B0_LLVM_VERIFY                 = N/A (path-dependent)
+B0_NATIVE_LINK                 = PASS
+B0_NATIVE_RUN                  = PASS
+
+B0_REFERENCE_ORACLE            = PRESENT (independent C99 lexer)
+B0_TOKEN_EQUIVALENCE           = PASS  (15/15 fixtures)
+B0_DETERMINISM                 = PASS  (run1 == run2 every fixture)
+B0_SOURCE_IMMUTABILITY         = PASS  (src bytewise equal before/after)
+B0_OUTPUT_BOUNDARY             = PASS  (T12 + NC8 negative controls)
+
+PARSER                         = NOT_IMPLEMENTED
+AST                            = NOT_IMPLEMENTED
+CODEGEN                        = NOT_IMPLEMENTED
+PRODUCTION_LEXER_REPLACED      = NO
+
+COMPILER_SEMANTIC_WIDENING     = NO
+LLVM_BACKEND_WIDENING          = NO
+NATIVE_BACKEND_WIDENING        = NO
+AOT_RELOCATION_CHANGE          = NO
+ALLOCATION_RUNTIME_WIDENING    = NO
+GEP01_GATE_REPAIR              = NO
+
+GEP_FEATURE_DEPENDENCY         = YES
+GEP01_HARNESS_DEPENDENCY       = NO
+GATE_PUSH_DEPENDENCY           = NO
+
+FACTORY_CONSERVATION           = PASS
+BOOTSTRAP_B0                   = GREEN
+FIRST_SELF_HOST                = NOT_YET
+BOOTSTRAP_STABILITY            = NOT_YET
+
+ENVIRONMENTAL_RESIDUE          = make unit-test / jit-unit-test
+                                 cannot be re-run fresh in this
+                                 sandbox because /usr/local/include/
+                                 tos.HH does not exist (pre-existing
+                                 test-runner spawn path, identical
+                                 at pre-B0 commit). NON_BLOCKING_
+                                 GOVERNANCE_RESIDUE per ACT §22.
+
+BOOTSTRAP01_CASES              = 15
+BOOTSTRAP01_RUNS               = 30
+BOOTSTRAP01_PASS               = 15
+BOOTSTRAP01_FAIL               = 0

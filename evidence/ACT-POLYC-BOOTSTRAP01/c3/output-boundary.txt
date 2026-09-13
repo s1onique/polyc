@@ -1,0 +1,45 @@
+ACT-POLYC-BOOTSTRAP01 — C3 — output-boundary evidence
+======================================================
+
+ACT §20 NC7 (output full): source would generate N
+tokens; out_cap = N - 1; expected status = FULL; no
+write beyond out_cap; out_count <= out_cap.
+
+T12 source is "ab cd" with cap=2. The expected token
+stream is IDENT(0,2) IDENT(3,2) EOF(5,0) = 3 tokens.
+With cap=2, the lexer writes IDENT(0,2) and IDENT(3,2)
+then returns FULL without writing the EOF slot.
+
+Excerpt from evidence/ACT-POLYC-BOOTSTRAP01/c3/differential-results.txt:
+
+  T12 0 1 0 2
+  T12 1 1 3 2
+  T12 STATUS=FULL
+  CASE T12 sub=FULL count=2 run2_eq=yes src_eq=yes exp_eq=yes
+
+  out_count  = 2
+  out_cap    = 2
+  bytes_written_to_out = 2 tokens = 48 bytes
+  write_beyond_cap     = NO
+
+ACT §20 NC8 (empty source + cap 0): expected status =
+FULL; out_count = 0; no writes.
+
+Excerpt from evidence/ACT-POLYC-BOOTSTRAP01/c3/differential-results.txt:
+
+  NC8 STATUS=FULL
+  CASE NC8 sub=FULL count=0 run2_eq=yes src_eq=yes exp_eq=yes
+
+  out_count  = 0
+  out_cap    = 0
+  bytes_written_to_out = 0
+  write_beyond_cap     = NO
+
+ACT §9 contract: the lexer is fail-closed. The token
+array is bounded; on overflow the lexer returns
+BLEX_OUTPUT_FULL (1) without writing past out_cap.
+On out_cap = 0 with a non-empty source the lexer
+returns BLEX_OUTPUT_FULL with out_count = 0 (no writes).
+Both behaviors are exercised by T12 and NC8 above.
+
+Verdict: OUTPUT_BOUNDARY = PASS

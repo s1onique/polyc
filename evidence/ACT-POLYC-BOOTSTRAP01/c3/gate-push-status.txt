@@ -1,0 +1,49 @@
+ACT-POLYC-BOOTSTRAP01 — C3 — gate-push status
+=============================================
+
+ACT §23: gate-push status is captured, but it is not
+automatically a B0 closure predicate.
+
+C1 (successor-dependency.txt) established:
+
+  B0_REQUIRES_GATE_PUSH = NO
+
+Per ACT §34, B0 closure and push permission are separate
+decisions. Even on PASS, this ACT does NOT push.
+
+The pre-existing GEP01 D1/D2 residue (cap-verifier 26/4)
+is the only known cause for gate-push failure at the
+predecessor tree, classified as NON_BLOCKING_GOVERNANCE_RESIDUE
+by ACT-POLYC-AOT-PIC-EXTERNAL-REFS01-CORRECTION02. That
+classification is inherited.
+
+gate-push was not run end-to-end during this ACT for two
+reasons:
+
+  1. The pre-existing cap-verifier gap (26 PASS / 4 FAIL
+     on the GEP01 30-row matrix) is unchanged by B0
+     and unchanged by the B0 ACT's Makefile additions.
+
+  2. The local pre-push hook enforces the append-only
+     invariant on `refs/heads/main` and rejects force-
+     pushes. B0 does not bypass it (`--no-verify` is
+     forbidden by the ACT and by F6).
+
+If gate-push is run by the human reviewer, the expected
+result is:
+
+  - GPUSH-1 (pre-push hook): PASS (B0 commits are
+    append-only fast-forwards; the C1/C2 commits do not
+    amend or rebase any ancestor at or after the
+    append-only boundary baf5dbd).
+  - GPUSH-2 (gate-fast, factory-v2, factory-append-only,
+    factory-closure-status, factory-halt-classification,
+    shell-loc-gate, llvm-spike-test if LLVM build
+    available): PASS.
+  - GPUSH-GEP01 (llvm-gep01-test cap-verifier): FAIL with
+    the same 26/4 split, attributable to the cap-verifier
+    and NOT to B0. This is NON_BLOCKING_GOVERNANCE_RESIDUE.
+
+Verdict: B0 ACT may close PASS while gate-push remains
+classified as PUSH = NOT_PERFORMED / PUSH_RESIDUE =
+GEP01_D1_D2.

@@ -1,0 +1,29 @@
+ACT-POLYC-BOOTSTRAP01 — C3 — source-immutability evidence
+=========================================================
+
+ACT §19: hash/copy source before, run BootstrapLex,
+compare source after. SOURCE_MUTATED must be NO.
+
+Mechanism: tools/quality/bootstrap01-lexer-test.HC
+copies the source buffer into `src_before` immediately
+before the lex run, copies it again into `src_after`
+immediately after, and runs a bytewise equality check.
+
+Excerpt from evidence/ACT-POLYC-BOOTSTRAP01/c3/differential-results.txt:
+
+  CASE T01 sub=OK    count=2 run2_eq=yes src_eq=yes exp_eq=yes
+  CASE T02 sub=OK    count=2 run2_eq=yes src_eq=yes exp_eq=yes
+  ... (all 15 fixtures)
+  CASE NC8 sub=FULL  count=0 run2_eq=yes src_eq=yes exp_eq=yes
+
+Summary:
+
+  fixtures_with_src_eq=yes = 15 / 15
+  fixtures_with_src_eq=no  =  0 / 15
+
+The BootstrapLex source is read-only over `*src`. It
+never assigns through `src[i]` and never advances the
+caller-provided pointer past the input range. The only
+state mutation is on the caller-owned `out` and `out_count`.
+
+Verdict: SOURCE_IMMUTABILITY = PASS

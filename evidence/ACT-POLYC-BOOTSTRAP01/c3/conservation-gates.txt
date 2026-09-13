@@ -1,0 +1,78 @@
+ACT-POLYC-BOOTSTRAP01 — C3 — conservation gates
+=================================================
+
+ACT §24 AC30..AC38 require the B0 closure to NOT regress
+the canonical predecessor conservation gates. The B0 ACT
+adds new tools/ and Makefile entries; it does NOT touch
+src/ or any compiler/backend file. Conservation is
+therefore expected to hold.
+
+Gates actually run in this environment:
+
+  GATE                          RESULT   NOTES
+  ----                          ------   -----
+  factory-v2-test               PASS     PASS=35 FAIL=0 STATUS=PASS
+  factory-append-only-test      PASS     PASS=11 FAIL=0 STATUS=PASS
+  factory-closure-status-check  PASS     PAIR_OK=6 PAIR_FAIL=0
+  factory-halt-classification    PASS     PASS=12 FAIL=0
+  shell-loc-gate                PASS
+  gate-fast                     PASS
+
+Gates NOT mechanically re-runnable in this sandbox but
+previously PASS at the predecessor ACT-POLYC-AOT-PIC-
+EXTERNAL-REFS01 c3 (record b76f0d8):
+
+  make unit-test                INHERITED 90/90 PASS per
+                                evidence/ACT-POLYC-AOT-PIC-
+                                EXTERNAL-REFS01/c3/unit-test.txt
+  make jit-unit-test            INHERITED 90/90 PASS per
+                                evidence/ACT-POLYC-AOT-PIC-
+                                EXTERNAL-REFS01/c3/jit-unit-test.txt
+  make lsp-test                 INHERITED 43/43 PASS per
+                                evidence/ACT-POLYC-AOT-PIC-
+                                EXTERNAL-REFS01/c3/lsp-test.txt
+
+Why `make unit-test` cannot be re-run fresh in this
+particular sandbox:
+
+  The inherited `src/tests/run.HC` invokes its child
+  compiles via `System("../../hcc %s", filename)`,
+  where the top-level `./hcc` was built with the
+  default `INSTALL_PREFIX=/usr/local`. In this sandbox
+  `/usr/local/include/tos.HH` does not exist, so the
+  inner compiles fail with "Failed to open file:
+  /usr/local/include/tos.HH".
+
+  This is a pre-existing environmental residue, NOT
+  caused by B0:
+    - At the pre-B0 commit (72f61e3) the SAME 67
+      "Failed to compile" pattern occurs.
+    - The predecessor ACT-POLYC-AOT-PIC-EXTERNAL-REFS01
+      c3 ran the SAME gate on the SAME hcc (b76f0d8)
+      and recorded `unit-test 90/90 PASS` in
+      evidence/ACT-POLYC-AOT-PIC-EXTERNAL-REFS01/c3/
+      unit-test.txt.
+    - The /usr/local path mismatch is a host-level
+      configuration gap, not a B0-caused regression.
+
+  F6 (no silent fallback) is honoured: B0 does not
+  pretend `make unit-test` passes here. B0 records the
+  inherited PASS at the predecessor tree.
+
+Conservation verdict:
+
+  FACTORY_CONSERVATION   = PASS
+  GATES_RUN_FRESH        = factory-v2, factory-append-only,
+                           factory-closure-status, factory-
+                           halt-classification, shell-loc-gate,
+                           gate-fast  -- 6/6 PASS
+  GATES_INHERITED        = unit-test 90/90, jit-unit-test
+                           90/90, lsp-test 43/43 per
+                           predecessor ACT-POLYC-AOT-PIC-
+                           EXTERNAL-REFS01 c3 evidence
+  ENVIRONMENTAL_RESIDUE  = unit-test/jit-unit-test cannot be
+                           run via `make` in this sandbox
+                           because /usr/local/include/tos.HH
+                           does not exist; classified as
+                           NON_BLOCKING_GOVERNANCE_RESIDUE
+                           per ACT §22 and F6.

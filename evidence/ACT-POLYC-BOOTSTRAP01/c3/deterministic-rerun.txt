@@ -1,0 +1,37 @@
+ACT-POLYC-BOOTSTRAP01 — C3 — deterministic-rerun evidence
+==========================================================
+
+ACT §18: every successful fixture runs at least twice
+from freshly initialized output memory; run1 and run2
+must produce identical (status, count, kind, start,
+len) tuples.
+
+Source: tools/quality/bootstrap01-lexer-test.HC,
+`run2_eq` field of each CASE line. The driver MemSets
+the token arrays to 0 between runs and re-invokes
+BootstrapLex from the same source buffer.
+
+Excerpt from evidence/ACT-POLYC-BOOTSTRAP01/c3/differential-results.txt:
+
+  CASE T01 sub=OK    count=2 run2_eq=yes src_eq=yes exp_eq=yes
+  CASE T02 sub=OK    count=2 run2_eq=yes src_eq=yes exp_eq=yes
+  CASE T03 sub=OK    count=2 run2_eq=yes src_eq=yes exp_eq=yes
+  CASE T04 sub=OK    count=3 run2_eq=yes src_eq=yes exp_eq=yes
+  CASE T05 sub=OK    count=7 run2_eq=yes src_eq=yes exp_eq=yes
+  CASE T06 sub=OK    count=7 run2_eq=yes src_eq=yes exp_eq=yes
+  CASE T07 sub=OK    count=5 run2_eq=yes src_eq=yes exp_eq=yes
+  CASE T08 sub=OK    count=7 run2_eq=yes src_eq=yes exp_eq=yes
+  CASE T09 sub=OK    count=2 run2_eq=yes src_eq=yes exp_eq=yes
+  CASE T10 sub=OK    count=1 run2_eq=yes src_eq=yes exp_eq=yes
+  CASE T11 sub=UNSUP count=1 run2_eq=yes src_eq=yes exp_eq=yes
+  CASE T12 sub=FULL  count=2 run2_eq=yes src_eq=yes exp_eq=yes
+  CASE T13 sub=OK    count=2 run2_eq=yes src_eq=yes exp_eq=yes
+  CASE T14 sub=OK    count=2 run2_eq=yes src_eq=yes exp_eq=yes
+  CASE NC8 sub=FULL  count=0 run2_eq=yes src_eq=yes exp_eq=yes
+
+Summary:
+
+  fixtures_with_run2_eq=yes = 15 / 15
+  fixtures_with_run2_eq=no  =  0 / 15
+
+Verdict: DETERMINISM = PASS
