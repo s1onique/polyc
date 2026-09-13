@@ -1,0 +1,173 @@
+ACT-POLYC-BOOTSTRAP02 — C3 — forward-fix disposition
+====================================================
+
+This note records the disposition of the two
+reviewer-asserted findings against the C3 EVIDENCE
+commit (predecessor on `main`: `de6b30c`). Both
+findings are addressed forward in the same EVIDENCE
+phase under the active parent ACT; neither required
+opening a correction ACT.
+
+------------------------------------------------------------
+Finding A (asserted P0): "C3 committed generated
+binaries despite the C3 contract forbidding them"
+------------------------------------------------------------
+
+Reviewer-asserted contract clause:
+    "No binaries. No object files. No generated
+     compiler committed."
+
+The active ACT-POLYC-BOOTSTRAP02 and its predecessor
+corrections (C1-CORRECTION01, C2-CORRECTION01..03)
+contain NO such clause. A repository-wide grep across
+`docs/`, `evidence/ACT-POLYC-BOOTSTRAP02/`, and
+`docs/factory/` finds zero textual source for this
+exact wording.
+
+The closest documented precedent is
+ACT-POLYC-LLVM-SPIKE01-RESUME01-CORRECTION01 §4
+("No binary artefacts committed under
+evidence/llvmspike01-resume01-correction01/"),
+which is scoped to that specific ACT and is not
+binding here.
+
+Mechanical disposition:
+
+  - The substantive engineering concern is valid:
+    committing ~2.9 MB of Mach-O executables that add
+    no information beyond the textual SHA-256 records
+    already in `reproducibility.txt` is wasteful
+    payload and a poor evidence-shape choice.
+  - The cost of deletion is negligible; the cleanliness
+    benefit is real. The four committed files are
+    forward-deleted in this commit:
+      evidence/ACT-POLYC-BOOTSTRAP02/c3/rebuild-A/hcc
+      evidence/ACT-POLYC-BOOTSTRAP02/c3/rebuild-A/hcc-bootstrap02
+      evidence/ACT-POLYC-BOOTSTRAP02/c3/rebuild-B/hcc
+      evidence/ACT-POLYC-BOOTSTRAP02/c3/rebuild-B/hcc-bootstrap02
+  - The empty `rebuild-A/` and `rebuild-B/`
+    directories are removed.
+  - The textual SHA-256 records in `reproducibility.txt`
+    are unchanged. The build commands (Section A and
+    Section B) remain canonical.
+
+Classification (binding):
+  CLASS                = GOVERNANCE / REPOSITORY-HYGIENE
+  PRODUCTION_IMPACT    = NONE
+  C3_SUBSTANTIVE_DELTA = NONE
+  REPAIRED_BY          = THIS COMMIT (forward-fix)
+  CORRECTION_ACT_NEEDED = NO
+  BLOCKS_C4            = NO (already applied)
+
+------------------------------------------------------------
+Finding B (asserted P1): "unit-test / jit-unit-test
+wording is too strong"
+------------------------------------------------------------
+
+The C3 EVIDENCE binding result on `de6b30c` contained:
+
+    "unit-test/jit-unit-test INHERITED 90/90"
+
+This wording can be misread as a current PASS. The
+mechanically truthful status is:
+
+    UNIT_TEST_CURRENT_EXECUTION =
+      ENVIRONMENTALLY_UNAVAILABLE / RUNNER_FALSE_GREEN
+    UNIT_TEST_LAST_KNOWN_GOOD    = 90/90
+    JIT_UNIT_TEST_CURRENT_EXECUTION =
+      ENVIRONMENTALLY_UNAVAILABLE / RUNNER_FALSE_GREEN
+    JIT_UNIT_TEST_LAST_KNOWN_GOOD    = 90/90
+    C3_ATTRIBUTABLE_REGRESSION    = NONE_OBSERVED
+
+Two distinct facts are kept separate:
+
+  1. the environment/install-path problem is inherited
+     from the C1 entry baseline
+     (/usr/local/include/tos.HH absent);
+  2. the current `make unit-test` / `make jit-unit-test`
+     recipe uses `&&` and does not propagate child
+     compilation failures to make's rc. This is a
+     Makefile-level test-infrastructure defect
+     (RUNNER_FALSE_GREEN), NOT a B1 compiler defect.
+
+This wording fix is applied to:
+  - evidence/ACT-POLYC-BOOTSTRAP02/c3/compiler-conservation.txt
+      (Section C and Section D)
+  - evidence/ACT-POLYC-BOOTSTRAP02/c3/c3-required-result.txt
+      (Section F)
+
+Classification (binding):
+  CLASS                = GOVERNANCE / TEST-INFRASTRUCTURE
+  PRODUCTION_IMPACT    = NONE
+  C3_SUBSTANTIVE_DELTA = NONE
+  REPAIRED_BY          = THIS COMMIT (wording fix)
+  CORRECTION_ACT_NEEDED = NO
+  BLOCKS_C4            = NO
+  FUTURE_WORK          = A bounded correction ACT for
+                         the Makefile `&&` propagation
+                         defect (P2 governance residue;
+                         NOT a C3 or C4 concern)
+
+------------------------------------------------------------
+Why this is a single EVIDENCE commit, not a CORRECTION
+------------------------------------------------------------
+
+  - The substantive B1 evidence on `de6b30c` is
+    unchanged. The binary deletion removes no
+    information; the wording fix corrects only the
+    claim-shape of an already-truthful observation.
+  - Per ACT-POLYC-BOOTSTRAP02 §18 (commit topology):
+    "C3 EVIDENCE — 1+ commit(s), all gates." Multiple
+    EVIDENCE commits are explicitly allowed.
+  - Per F-MECHANICAL-BLOCKING (DOCTRINE §25): a halt
+    verdict with `BLOCKS_NEXT=NO` is by definition a
+    documented board signal that the roadmap may
+    proceed; no additional authorization artifact is
+    required for a same-scope successor commit to land.
+  - Per F-CONVERGENCE: the agent continues into the
+    authorized next phase in the same execution
+    session unless a defined halt condition is
+    reached. No halt applies here.
+
+------------------------------------------------------------
+Scope of this commit
+------------------------------------------------------------
+
+  - Deletions only:
+      evidence/ACT-POLYC-BOOTSTRAP02/c3/rebuild-A/hcc
+      evidence/ACT-POLYC-BOOTSTRAP02/c3/rebuild-A/hcc-bootstrap02
+      evidence/ACT-POLYC-BOOTSTRAP02/c3/rebuild-B/hcc
+      evidence/ACT-POLYC-BOOTSTRAP02/c3/rebuild-B/hcc-bootstrap02
+  - Wording updates (text-only):
+      evidence/ACT-POLYC-BOOTSTRAP02/c3/README.md
+      evidence/ACT-POLYC-BOOTSTRAP02/c3/patch-hygiene.txt
+      evidence/ACT-POLYC-BOOTSTRAP02/c3/reproducibility.txt
+      evidence/ACT-POLYC-BOOTSTRAP02/c3/compiler-conservation.txt
+      evidence/ACT-POLYC-BOOTSTRAP02/c3/c3-required-result.txt
+  - New text-only note (this file):
+      evidence/ACT-POLYC-BOOTSTRAP02/c3/c3-forward-fix.txt
+  - NO production source mutation.
+  - NO src/, tools/bootstrap/, Makefile, *.c, *.HC, *.h.
+  - NO rebuild.
+  - NO new ACT opened; NO ROADMAP bump.
+  - NO ACT-Verdict trailer (this is still EVIDENCE
+    phase; verdict and CLOSE belong to a separate
+    C4 phase).
+
+------------------------------------------------------------
+Post-fix verification
+------------------------------------------------------------
+
+  $ git ls-files evidence/ACT-POLYC-BOOTSTRAP02/c3/ \
+                   | grep -E '\.(o|dylib|a|so)$|hcc$|hcc-bootstrap02$'
+  (empty)
+
+  $ file evidence/ACT-POLYC-BOOTSTRAP02/c3/* \
+           evidence/ACT-POLYC-BOOTSTRAP02/c3/error-corpus/* \
+    | awk -F: '{print $2}' | awk '{print $2}' | sort -u
+  ASCII
+  text
+
+  $ make gate-fast
+  (PASS — text-only evidence tree is unchanged
+   for gate purposes)

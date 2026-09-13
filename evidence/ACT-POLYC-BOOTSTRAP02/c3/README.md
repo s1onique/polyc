@@ -43,7 +43,10 @@ commit on `main`).
 | stage1-normal-source.txt      | Stage1 compiles ordinary (§16)   |
 | stage1-self-source.txt        | Stage1 compiles B1 source (§17)  |
 | reproducibility.txt           | Two-clean-builds (§19)           |
-| rebuild-A/, rebuild-B/        | Build-A/B reproducibility (§19) |
+| reproducibility.txt (only)   | Two-clean-builds; rebuild-A/-B/ |
+|                               | binaries are NOT committed; SHA- |
+|                               | 256 hashes are recorded as text |
+|                               | (§19)                          |
 | compiler-conservation.txt     | Compiler gates (§20)             |
 | factory-gates.txt             | Factory gates (§22)              |
 | patch-hygiene.txt             | git diff --check (§23)           |

@@ -102,29 +102,53 @@ by C3.
 
 These gates are therefore classified
 NON_BLOCKING_GOVERNANCE_RESIDUE per BOOTSTRAP01
-HANDOFF.md and the C1 entry baseline. The C3
-conservation verdict compares against the inherited
-C1 numbers, not against the sandbox-broken
-invocation.
+HANDOFF.md and the C1 entry baseline.
+
+Mechanically truthful status (current invocation):
+
+  UNIT_TEST_CURRENT_EXECUTION =
+    ENVIRONMENTALLY_UNAVAILABLE / RUNNER_FALSE_GREEN
+  UNIT_TEST_LAST_KNOWN_GOOD    = 90/90
+  JIT_UNIT_TEST_CURRENT_EXECUTION =
+    ENVIRONMENTALLY_UNAVAILABLE / RUNNER_FALSE_GREEN
+  JIT_UNIT_TEST_LAST_KNOWN_GOOD    = 90/90
+  C3_ATTRIBUTABLE_REGRESSION    = NONE_OBSERVED
+
+Two distinct facts are kept separate:
+
+  1. the environment/install-path problem is inherited
+     (same as the C1 entry baseline);
+  2. the Makefile recipe can falsely report success
+     because `&&` does not propagate child compilation
+     failures to make's rc. This is a real test-
+     infrastructure defect (Makefile-level), not a B1
+     compiler defect.
+
+The C3 conservation verdict compares against the
+inherited C1 numbers (90/90 LAST_KNOWN_GOOD), not
+against the sandbox-broken current invocation.
 
 ------------------------------------------------------------
 Section D — Conservation verdict
 ------------------------------------------------------------
 
-B0 (BOOTSTRAP01) : PASS 15/15
-B1 differential   : PASS 15/15
-B1 cursor model   : PASS 6/6
-B1 lexer seam     : PASS 6/6 NO RESIDUE
-Stage1 binary     : PRESENT
-unit-test         : INHERITED 90/90 (sandbox limitation)
-jit-unit-test     : INHERITED 90/90 (sandbox limitation)
-lsp-test          : PASS 43/43 (re-runnable)
-gate-fast         : PASS
-Factory v2        : PASS=35 FAIL=0
-Factory append    : PASS=11 FAIL=0
-Factory halt-cls  : PASS=12 FAIL=0
-Factory closure   : PASS=6/0
-shell-loc-gate    : PASS
+B0 (BOOTSTRAP01)            : PASS 15/15
+B1 differential             : PASS 15/15
+B1 cursor model             : PASS 6/6
+B1 lexer seam               : PASS 6/6 NO RESIDUE
+Stage1 binary               : PRESENT
+unit-test (CURRENT)         : ENVIRONMENTALLY_UNAVAILABLE
+unit-test (LAST_KNOWN_GOOD) : 90/90
+jit-unit-test (CURRENT)     : ENVIRONMENTALLY_UNAVAILABLE
+jit-unit-test (LAST_KNOWN_GOOD) : 90/90
+C3 attributable regression  : NONE_OBSERVED
+lsp-test                    : PASS 43/43 (re-runnable)
+gate-fast                   : PASS
+Factory v2                  : PASS=35 FAIL=0
+Factory append              : PASS=11 FAIL=0
+Factory halt-cls            : PASS=12 FAIL=0
+Factory closure             : PASS=6/0
+shell-loc-gate              : PASS
 
 NO REGRESSION RELATIVE TO ENTRY BASELINE.
 
@@ -143,11 +167,19 @@ captured C3 entry baseline IS:
   - lsp: 43/43 (re-measured)
   - gate-fast: PASS (re-measured)
   - Factory v2/append/halt-cls/closure: same numbers
-  - unit-test/jit-unit-test: inherited 90/90 (NOT
-    re-runnable; same sandbox limitation as C1)
+  - unit-test / jit-unit-test: 90/90
+    LAST_KNOWN_GOOD (C1 entry baseline); CURRENT
+    invocation is ENVIRONMENTALLY_UNAVAILABLE because
+    of the inherited /usr/local/include/tos.HH
+    sandbox limitation. The Makefile recipe does not
+    propagate child failures (test-infrastructure
+    defect), so `make` returns rc=0 even though the
+    child compile fails.
 
 The unit-test/jit-unit-test sandbox limitation is
 EXPLICITLY recorded in the C1 entry baseline. C3 does
-not regress them.
+not regress them. C3 does not assert current
+PASS-90/90; it asserts LAST_KNOWN_GOOD=90/90 with
+no attributable regression.
 
 COMPILER_CONSERVATION = PASS

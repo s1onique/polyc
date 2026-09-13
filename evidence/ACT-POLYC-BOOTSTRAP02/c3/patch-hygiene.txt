@@ -48,21 +48,32 @@ production sources, build systems, or compiler
 internals.
 
 ------------------------------------------------------------
-Section C — Raw captured evidence (binding)
+Section C — Raw captured evidence (text only, post-fix)
 ------------------------------------------------------------
 
-Captured raw binaries under
-evidence/ACT-POLYC-BOOTSTRAP02/c3/rebuild-A/
-evidence/ACT-POLYC-BOOTSTRAP02/c3/rebuild-B/
+The C3 EVIDENCE commit on `de6b30c` initially committed
+four generated Mach-O executables under
+`evidence/ACT-POLYC-BOOTSTRAP02/c3/rebuild-A/` and
+`rebuild-B/` (totalling ~2.9 MB). A bounded
+forward-fix EVIDENCE commit deleted them; the
+SHA-256 records are preserved as text in
+`reproducibility.txt`:
 
-These are .o files and Mach-O binaries (hcc, hcc-bootstrap02)
-copied as reproducibility evidence. They are NOT committed
-to the authoritative source tree under build/ — they live
-under the ACT evidence directory.
+  Build A hcc              = 98a687f7...8c461
+  Build A bootstrap02-ident.o = a1b620c0...854f
+  Build A hcc-bootstrap02  = 24d1408f...8a95d
+  Build B hcc              = 98a687f7...8c461
+  Build B bootstrap02-ident.o = a1b620c0...854f
+  Build B hcc-bootstrap02  = 24d1408f...8a95d
 
-`git diff --check` does not parse binary content, so
-binary content under rebuild-A/rebuild-B does not
-contribute hygiene warnings.
+No information is lost: hash equality is textually
+provable from SHA-256 strings alone. The deletion
+is a hygiene/bounded-payload improvement, not a
+correction of the substantive proof.
+
+C3 (post-fix) introduces ZERO binary artefacts under
+the evidence tree. All evidence is text (ASCII or
+UTF-8).
 
 ------------------------------------------------------------
 Section D — Verdict
@@ -72,3 +83,8 @@ AC-C3-40 new executable/source patch hygiene clean : PASS
 
 No C3-introduced finding is BLOCKING.
 No C3-introduced finding is GOVERNANCE.
+The C3 forward-fix commit (next commit on `main`
+after `de6b30c`, with trailers
+`ACT: ACT-POLYC-BOOTSTRAP02` and
+`ACT-Phase: EVIDENCE`) removes all four committed
+generated binaries.

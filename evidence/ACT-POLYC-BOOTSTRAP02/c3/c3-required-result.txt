@@ -125,10 +125,19 @@ COMPILER_CONSERVATION             = PASS
    - B1 15/15/6/6 NO RESIDUE (re-measured)
    - lsp 43/43 (re-measured)
    - gate-fast PASS (re-measured)
-   - unit-test/jit-unit-test INHERITED 90/90
-     (NOT re-runnable in this sandbox because
-     /usr/local/include/tos.HH is absent; same
-     condition as the C1 entry baseline)
+   - unit-test CURRENT
+       = ENVIRONMENTALLY_UNAVAILABLE / RUNNER_FALSE_GREEN
+   - unit-test LAST_KNOWN_GOOD    = 90/90
+   - jit-unit-test CURRENT
+       = ENVIRONMENTALLY_UNAVAILABLE / RUNNER_FALSE_GREEN
+   - jit-unit-test LAST_KNOWN_GOOD = 90/90
+   - C3 attributable regression   = NONE_OBSERVED
+   The /usr/local/include/tos.HH absence is inherited
+   from C1 entry baseline. The Makefile recipe's
+   non-propagation of child compile failures is a
+   test-infrastructure defect, not a B1 compiler
+   defect; it is recorded for a future bounded
+   correction ACT (NOT a C3 or C4 blocker).
 FACTORY_CONSERVATION              = PASS
    - factory-v2: PASS=35 FAIL=0
    - factory-append-only: PASS=11 FAIL=0
