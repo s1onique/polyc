@@ -1,0 +1,98 @@
+ACT-POLYC-BOOTSTRAP02-C2-CORRECTION01 — C3 EVIDENCE —
+required-result block
+==================================================
+
+This is the binding contract between C3 EVIDENCE and
+C4 CLOSE for this correction ACT. Per §9 of the ACT, C4
+may proceed only if every required predicate below is
+GREEN at C3 close.
+
+------------------------------------------------------------
+Section A — Corrected §14 contract compliance
+------------------------------------------------------------
+
+A01  C2_STAGE1_NO_RUNTIME_FALLBACK       PASS
+       The hcc-bootstrap02 binary's preprocessed
+       lexIdentifier body contains ONLY the
+       BootstrapScanIdent delegation.
+
+A02  C2_STAGE1_BUILD_TIME_SELECTOR_OK    PASS
+       The build-time #ifdef is permitted solely to
+       produce stage separation between ./hcc and
+       build/hcc-bootstrap02.
+
+A03  ACT_§14_CORRECTED_NO_RUNTIME_FALLBACK = PASS
+A04  ACT_§14_CORRECTED_BUILD_TIME_OK       = PASS
+A05  C2_SCOPE_CONTRACT                     = COMPLIANT
+
+------------------------------------------------------------
+Section B — Two-pillar cursor evidence
+------------------------------------------------------------
+
+B01  PILLAR_A_END_TO_END_CONSERVATION   PASS  5/5
+       Byte-identical objects between stage0 and
+       stage1 on 5 real production sources including
+       dir.HC::_opendir$INODE64.
+
+B02  PILLAR_B_DIRECT_CURSOR_WITNESS     PASS  6/6
+       Byte-identical (start, end, cur_strlen,
+       next_byte) tuples between B1 PolyC component
+       and C reference oracle on the reviewer-specified
+       6-input matrix.
+
+B03  BOTH_PILLARS                       PASS
+       The combined pillar A + pillar B establishes
+       cursor-binding equivalence at C2 (post-correction).
+
+------------------------------------------------------------
+Section C — Core gate predicates
+------------------------------------------------------------
+
+C01  make bootstrap01-test               PASS  15/15
+C02  make bootstrap02-test               PASS  15/15
+C03  make bootstrap02-cursor-test        PASS  6/6
+C04  make bootstrap02-stage1             PASS
+C05  END_TO_END_CONSERVATION             PASS  5/5
+C06  PRODUCTION_HERMETIC_BUILD           PASS
+
+------------------------------------------------------------
+Section D — Factory gate predicates
+------------------------------------------------------------
+
+D01  gate-fast                           PASS
+D02  factory-v2                          PASS  35/35
+D03  factory-halt-classification         PASS  12/12
+D04  factory-append-only                 PASS  11/11
+D05  shell-loc-gate                      PASS
+D06  factory-closure-status              PASS  6/6
+
+------------------------------------------------------------
+Section E — HALT predicates (all NOT FIRED)
+------------------------------------------------------------
+
+E01  HALT_RED_NOT_REPRODUCED             NOT_FIRED
+E02  HALT_SCOPE_EXPANSION_REQUIRED       NOT_FIRED
+E03  HALT_B0_REGRESSION                  NOT_FIRED
+E04  HALT_B1_ABI_PROBE_FAILED            NOT_FIRED
+E05  HALT_B1_DELEGATION_FAIL             NOT_FIRED
+E06  HALT_C2_CURSOR_WITNESS_INSUFFICIENT NOT_FIRED
+
+------------------------------------------------------------
+Section F — C3 verdict
+------------------------------------------------------------
+
+  ACT-Phase                            = EVIDENCE
+  C3_TO_C4_CLOSE_GATE                  = OPEN
+  ACT-Verdict                          = PASS_WITH_CORRECTION_RESIDUE
+  C2_IMPL_TO_C3_EVIDENCE_GATE          = (CLOSED at C3 entry)
+  C3_TO_C4_CLOSE_GATE                  = OPEN
+
+The corrected ACT-POLYC-BOOTSTRAP02 C2 IMPL is now
+AUTHORITATIVELY GREEN. C3 EVIDENCE may pass the baton
+to C4 CLOSE.
+
+After C4 CLOSE of this correction ACT, the original
+ACT-POLYC-BOOTSTRAP02 may proceed to its own C3 EVIDENCE
+phase (broader corpus, identical-token-dump comparison,
+stage0/stage1 corpus extension), which has been UNLOCKED
+by the corrected two-pillar cursor evidence.

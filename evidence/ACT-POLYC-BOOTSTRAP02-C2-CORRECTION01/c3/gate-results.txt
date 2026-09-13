@@ -1,0 +1,107 @@
+ACT-POLYC-BOOTSTRAP02-C2-CORRECTION01 — C3 EVIDENCE —
+gate results
+==================================================
+
+All gates re-run after the C2 IMPL trail (commits
+`76afe9b`, `e8840c8`, `94d5b01`).
+
+Working directory: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc
+Branch: main
+HEAD: 94d5b01 (post-C2-IMPL; C3 entry)
+
+============================================================
+Core B0 + B1 + stage1 gates (per ACT §10)
+============================================================
+
+make bootstrap01-test                PASS  15/15
+  BOOTSTRAP01_CASES=15
+  BOOTSTRAP01_PASS=15
+  BOOTSTRAP01_FAIL=0
+  STATUS=PASS
+
+make bootstrap02-test                PASS  15/15 byte-identical
+  Differential (PolyC B1 vs C reference oracle):
+  all 15 fixture lines byte-identical.
+  BOOTSTRAP02_DIFFERENTIAL=PASS 15/15
+
+make bootstrap02-cursor-test         PASS  6/6 byte-identical
+  Pillar B direct seam-level cursor witness.
+  All 6 reviewer-specified inputs produce identical
+  (start, end, cur_strlen, next_byte) tuples.
+  BOOTSTRAP02_CURSOR_DIFFERENTIAL=PASS 6/6
+
+make bootstrap02-stage1              PASS
+  build/hcc-bootstrap02 produced
+  Mach-O 64-bit executable arm64
+  T _BootstrapScanIdent linked in
+  BOOTSTRAP02_STAGE1_BINARY=./build/hcc-bootstrap02
+
+============================================================
+Stage0 / stage1 byte-equivalence on real production sources
+============================================================
+
+  30_fzf.HC                          BYTE-IDENTICAL
+  43_compress_templeos.HC            BYTE-IDENTICAL
+  run_shared.HC                      BYTE-IDENTICAL
+  fzf.HC                             BYTE-IDENTICAL
+  dir.HC                             BYTE-IDENTICAL
+
+  END_TO_END_CONSERVATION            PASS 5/5
+
+============================================================
+Production hermetic build (F10)
+============================================================
+
+make -C ./build/default-check hcc    PASS
+  Default ./hcc builds cleanly without the B1 component.
+  File: build/hcc (Mach-O 64-bit executable arm64)
+  Symbol _BootstrapScanIdent: absent (as expected; the
+  production build uses the legacy ctype path).
+
+============================================================
+Factory gates
+============================================================
+
+./scripts/quality/gate-fast.sh       PASS
+  CHECK=diff-check                  PASS
+  CHECK=shell-syntax                PASS
+  CHECK=doc-invariants              PASS
+  CHECK=large-file-guard            PASS
+  factory-closure-status            PASS 6/6
+
+./scripts/quality/factory-v2-test.sh PASS 35/35
+
+./scripts/quality/factory-halt-
+  classification-test.sh            PASS 12/12
+
+./scripts/quality/factory-append-
+  only-test.sh                      PASS 11/11
+
+./scripts/quality/shell-loc-gate.sh PASS
+
+============================================================
+C3 verdict
+============================================================
+
+  BOOTSTRAP01_CASES                  15
+  BOOTSTRAP01_PASS                   15
+  BOOTSTRAP01_FAIL                   0
+  BOOTSTRAP02_DIFFERENTIAL           PASS 15/15
+  BOOTSTRAP02_CURSOR_DIFFERENTIAL    PASS 6/6
+  BOOTSTRAP02_STAGE1_BINARY          PRESENT
+  END_TO_END_CONSERVATION            PASS 5/5
+  PRODUCTION_HERMETIC                PASS
+  GATE_FAST                          PASS
+  FACTORY_V2                         PASS 35/35
+  FACTORY_HALT_CLASS                 PASS 12/12
+  FACTORY_APPEND_ONLY                PASS 11/11
+  SHELL_LOC_GATE                     PASS
+
+  HALT_B0_REGRESSION                 NOT_FIRED
+  HALT_B1_ABI_PROBE_FAILED           NOT_FIRED
+  HALT_B1_DELEGATION_FAIL            NOT_FIRED
+  HALT_C2_CURSOR_WITNESS_INSUFFICIENT NOT_FIRED
+  HALT_SCOPE_EXPANSION_REQUIRED      NOT_FIRED
+
+  ACT-Verdict                        PASS_WITH_CORRECTION_RESIDUE
+  C3_TO_C4_CLOSE_GATE                OPEN
