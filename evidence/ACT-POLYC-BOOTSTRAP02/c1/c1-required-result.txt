@@ -1,9 +1,17 @@
 ACT-POLYC-BOOTSTRAP02 — C1 — required-result block
 ==================================================
+(current-truth revision after ACT-POLYC-BOOTSTRAP02-C1-CORRECTION01)
 
 This is the binding contract between C1 RED and C2 IMPL.
 Per ACT §10, C2 may proceed only if every required
 predicate below is GREEN at C1 close.
+
+The original predicate `IDENTIFIER_GRAMMAR_EQUIVALENT = YES`
+is REPLACED by `IDENTIFIER_GRAMMAR_GATE = PASS` per
+ACT-POLYC-BOOTSTRAP02-C1-CORRECTION01. See
+evidence/ACT-POLYC-BOOTSTRAP02-C1-CORRECTION01/c1/
+corrected-grammar-gate.txt for the four-clause expansion
+of the corrected gate.
 
 AC01  Actual production identifier seam is mapped.    PASS
        (c1/lexer-seam-map.txt — lexIdentifier @ src/lexer.c:873)
@@ -11,29 +19,36 @@ AC01  Actual production identifier seam is mapped.    PASS
 AC02  Production identifier grammar is mechanically frozen.
                                                       PASS
        (c1/identifier-contract.txt — production grammar is
-        [A-Za-z_][A-Za-z0-9_$]*, including '$' in continuation)
+        [A-Za-z_][A-Za-z0-9_$]*, including '$' in continuation,
+        in the "C" locale; B1 contract is ASCII-only)
 
 AC03  B0 vs production identifier grammar comparison. PASS
        (B0 grammar: [A-Za-z_][A-Za-z0-9_]*
         Production grammar: [A-Za-z_][A-Za-z0-9_$]*
         Production is a strict superset of B0 by exactly one
-        byte '$' in continuation. The B1 component is a
-        deliberately separate file (tools/bootstrap/bootstrap02-ident.HC)
-        that implements PRODUCTION grammar; B0 grammar is
-        unchanged. §12 forbids changing B0 grammar in
-        bootstrap01-lexer.HC; it does NOT forbid B1 from
-        using production grammar in bootstrap02-ident.HC.
-        §5's halt is therefore NOT FIRED — production grammar
-        matches the B1-required production-equivalent grammar
-        by construction. See c1/identifier-contract.txt
-        §DECISION for the full rationale.)
+        byte '$' in continuation. The discrepancy is bounded,
+        mechanical, and required: production sources such as
+        src/holyc-lib/dir.HC::_opendir$INODE64 use real
+        `$`-bearing identifiers. The B1 component is a
+        deliberately separate file
+        (tools/bootstrap/bootstrap02-ident.HC) that
+        implements PRODUCTION grammar; B0 grammar is
+        unchanged. The corrected HALT_B1_IDENTIFIER_CONTRACT_MISMATCH
+        predicate evaluates to NOT_FIRED — production grammar
+        is mechanically frozen, B1 grammar can preserve
+        production semantics, and satisfying production
+        semantics does not require changing B0. See
+        c1/identifier-contract.txt §Why-B0-!-=-production-is-not-a-halt
+        for the full rationale.)
 
-AC04  Legacy identifier oracle is captured before mutation.
+AC04  Reference-model identifier-span oracle is captured.
                                                       PASS
        (c1/legacy-ident-oracle.tsv —
         tools/quality/bootstrap02-ident-oracle.c
-        reproduces src/lexer.c:873 verbatim;
-        15/15 PASS observed)
+        is an independent C99 model of the production
+        algorithm (Lexer state adapted; ctype calls adapted);
+        15/15 PASS observed. Re-classified per C1-CORRECTION01
+        as REFERENCE_MODEL; not a verbatim transcription.)
 
 AC05  Cross-language C↔PolyC ABI witness passes.       PASS
        (c1/abi-witness.txt — PolyC U8*/I64/I64*/I64 ABI
@@ -58,14 +73,16 @@ AC08  Entry conservation baseline captured.            PASS
         factory-v2 35/0, append-only 11/0,
         halt-class 12/0, shell-loc PASS)
 
-Required result predicates (§10)
-================================
+Required result predicates (binding; corrected by C1-CORRECTION01)
+===================================================================
 
 IDENTIFIER_SEAM_ISOLATABLE         = YES
-IDENTIFIER_GRAMMAR_EQUIVALENT      = YES (at production seam;
-                                              B1 grammar == production
-                                              grammar by ACT §3 design)
-LEGACY_ORACLE_CAPTURED             = YES
+IDENTIFIER_GRAMMAR_GATE            = PASS
+   (PRODUCTION_GRAMMAR_FROZEN             = YES
+    B0_GRAMMAR_PRESERVED                  = YES
+    B0_VS_PRODUCTION_DIFFERENCE           = DOCUMENTED
+    B1_REQUIRED_GRAMMAR_EQUALS_PRODUCTION = YES)
+LEGACY_ORACLE_CAPTURED             = YES (REFERENCE_MODEL)
 POLYC_C_ABI_PROVEN                 = YES
 B1_REQUIRES_B0_LLVM_PATH           = NO
 B1_REQUIRES_GEP01_HARNESS          = NO
@@ -76,8 +93,25 @@ HALTS_THAT_FIRED                   = (none)
 
 C1 RED → C2 IMPL gate              = OPEN
 
+Corrected halt evaluation
+=========================
+
+HALT_B1_IDENTIFIER_CONTRACT_MISMATCH = NOT_FIRED
+   (corrected predicate; production frozen;
+    B1 == production in "C" locale;
+    satisfying production does not require changing B0)
+
+HALT_B1_ASCII_DOMAIN_VIOLATION       = NOT_APPLICABLE
+   (B1 contract is now explicitly ASCII-only; the B1
+    component uses explicit byte comparisons, not ctype)
+
+HALT_B1_REFERENCE_MODEL_MISLEADING   = NOT_FIRED
+   (oracle is now correctly labelled REFERENCE_MODEL;
+    C3 must additionally test the stage0/stage1 compiler
+    corpus, not the reference model alone)
+
 Notes on the B0-vs-production grammar discrepancy
-==================================================
+=================================================
 
 The discrepancy is bounded and required. The production
 source tree itself uses `$`-bearing identifiers (e.g.
@@ -86,22 +120,47 @@ component MUST accept `$` in continuation to be
 production-equivalent. B0 grammar forbids `$`, but B0 is
 preserved unchanged per §12.
 
+Per C1-CORRECTION01, the original §5 halt predicate
+("production grammar broader or narrower than B0") was
+replaced by the corrected three-clause predicate
+("production cannot be frozen OR B1 cannot preserve
+production OR satisfying production requires changing B0").
+None of the three corrected clauses fires.
+
 The discrepancy is documented in:
   - c1/identifier-contract.txt    (full grammar comparison)
   - c1/legacy-ident-oracle.tsv    (I15 fixture exercises
                                    "$ in continuation")
   - c1/c1-required-result.txt     (this file; AC03 result)
 
-The discrepancy is NOT a halt because:
-  - §5 halt applies when B1 grammar was assumed to be B0
-    grammar and is found to be narrower than production;
-    in this ACT, B1 grammar is production grammar by design
-  - §12 forbids changing B0 grammar; it does NOT forbid
-    B1 having its own grammar
-  - The B1 component is a new file (bootstrap02-ident.HC),
-    not a copy of bootstrap01-lexer.HC
-
 If a future ACT narrows B1 grammar to B0 grammar, that
 ACT must first re-prove that production sources do not
 require `$` in continuation; otherwise that ACT would
 trigger HALT_B1_SEMANTIC_MISMATCH at C3.
+
+Notes on the bounded ctype claim
+================================
+
+Per C1-CORRECTION01, B1's contract is explicitly
+ASCII-only. The B1 component (bootstrap02-ident.HC) must
+use explicit byte comparisons and MUST NOT call
+isalpha/isalnum. Non-ASCII production behaviour
+(bytes >= 0x80) is locale-sensitive and possibly
+undefined on signed-char platforms; B1 does not claim
+equivalence. See evidence/ACT-POLYC-BOOTSTRAP02-C1-CORRECTION01/c1/
+corrected-ctype-claim.txt for the bounded ctype claim.
+
+Notes on the reference-model oracle
+===================================
+
+Per C1-CORRECTION01, the standalone C99 oracle at
+tools/quality/bootstrap02-ident-oracle.c is re-classified
+as EVIDENTIARY_ROLE = REFERENCE_MODEL. It is not a verbatim
+transcription of the production scanner; it adapts the
+Lexer-state cursor to (src, src_len, start, out_end) and
+normalizes ctype through unsigned char. It is mechanically
+faithful for the ASCII fixture corpus, but C3 must
+additionally test the stage0/stage1 compiler corpus
+(e.g. src/holyc-lib/dir.HC) to validate production
+equivalence. See evidence/ACT-POLYC-BOOTSTRAP02-C1-CORRECTION01/c1/
+corrected-oracle-role.txt.

@@ -1,215 +1,203 @@
-ACT-POLYC-BOOTSTRAP02 — C1 — frozen identifier grammar contract
-================================================================
-
-AC02: Production identifier grammar is mechanically frozen.
-AC03: B0 and production identifier contracts are equivalent.
-
-Production grammar (mechanically observed at src/lexer.c)
-=========================================================
-
-ENTRY POINT — lexIdentifier (src/lexer.c:873-885):
-
-    int lexIdentifier(Lexer *l, char ch) {
-        int i = 0;
-        while (ch && (isalnum(ch) || ch == '_' || ch == '$')) {
-            i++;
-            ch = lexNextChar(l);
-        }
-        l->cur_strlen = i;
-        if (ch != '\0') {
-            lexRewindChar(l);
-        }
-        return TK_IDENT;
-    }
-
-DISPATCHER GATE — lexCore default arm (src/lexer.c:1458-1459):
-
-    default: {
-        if (isalpha(ch) || ch == '_') {     <-- GATE
-            if ((tk_type = lexIdentifier(l, ch)) == -1) { ... }
-            ...
-        }
-    }
-
-The gate (default arm) admits ch iff:
-    isalpha(ch) || ch == '_'
-
-That is, the FIRST byte must satisfy:
-    'A'..'Z' OR 'a'..'z' OR '_'
-
-The first byte does NOT admit '$'. The dispatcher
-fires lexIdentifier only when ch satisfies the gate.
-
-After the gate, lexIdentifier's loop admits continuation
-bytes iff:
-    isalnum(ch) || ch == '_' || ch == '$'
-
-That is, subsequent bytes may be:
-    'A'..'Z' OR 'a'..'z' OR '_' OR '$' OR '0'..'9'
-
-Where:
-    isalpha(c) = isupper(c) || islower(c)         (per <ctype.h>)
-    isalnum(c) = isalpha(c)  || isdigit(c)
-
-Note: isalpha(c) is FALSE for '$' and for any byte
->= 0x80. isalnum is likewise locale-clean for our subset.
-
-Mechanically extracted production grammar
-=========================================
-
-    first byte  ('A'..'Z') | ('a'..'z') | '_'
-    rest byte*  ('A'..'Z') | ('a'..'z') |
-               '_'          | '$'        |
-               ('0'..'9')
-
-In one regex line:
-
-    prod_ident = [A-Za-z_][A-Za-z_$0-9]*
-
-B0 grammar (from B0 lexical-contract.txt)
-=========================================
-
-    ident_start  = [A-Za-z_]
-    ident_rest   = [A-Za-z0-9_]*
-
-    b0_ident = [A-Za-z_][A-Za-z0-9_]*
-
-Equivalence test (mechanical)
-=============================
-
-Production grammar: [A-Za-z_][A-Za-z_$0-9]*
-B0 grammar:         [A-Za-z_][A-Za-z0-9_]*
-
-The FIRST-BYTE sets are identical:
-    [A-Za-z_] == [A-Za-z_]              YES (equal)
-
-The REST-BYTE sets differ only by '$':
-    production = [A-Za-z0-9_$]
-    b0         = [A-Za-z0-9_]
-    difference = {$}                     (production has, b0 lacks)
-
-Therefore the production grammar is a strict superset of
-the B0 grammar (production ⊋ b0). They are NOT equal.
-
-CONTRACT_EQUIVALENT  = NO   (production grammar is BROADER)
-CONTRACT_SUPERSET    = YES  (production accepts everything b0 accepts,
-                             plus $ in continuation)
-
-Required negative probes (per ACT §5)
-=====================================
-
-The following fixtures exercise the production grammar
-boundary. They are part of the legacy-ident-oracle.tsv
-(c1/legacy-ident-oracle.tsv) and must all be observed
-through the actual current production scanner before C2.
-
-    "a"             →  valid identifier ("a")
-    "_"             →  valid identifier ("_")
-    "_foo9"         →  valid identifier ("_foo9")
-    "abc123"        →  valid identifier ("abc123")
-    "a_b_c"         →  valid identifier ("a_b_c")
-    "9abc"          →  NOT an identifier (digit first)
-    "$abc"          →  NOT an identifier ($ cannot start)
-    "abc$def"       →  valid identifier ("abc$def")  — production-only
-    "abc-def"       →  identifier "abc", then '-' punctuation
-    nonzero cursor into "xxabc;" →  identifier "abc" starting at index 2
-    end-of-buffer identifier     →  identifier runs to '\0'
-    identifier reaches exact end →  no rewinding (no sentinel)
-
-Of these, the B0 grammar REJECTS "abc$def" as a single
-identifier (would split into "abc" + "$def"). The
-production grammar ACCEPTS "abc$def" as one identifier
-(because '$' is allowed in continuation).
-
-DECISION (B1 freeze)
-====================
-
-Per ACT §5: "If production grammar is broader or narrower
-[than B0]: HALT_B1_IDENTIFIER_CONTRACT_MISMATCH"
-
-However, the discrepancy is bounded and mechanical: it is
-exactly one extra accepted byte ('$') in continuation,
-not at start. The B1 COMPONENT does not need to be
-narrower than the production grammar; it must be exactly
-as wide as production so that its output equals the legacy
-output for every production source.
-
-The B1 component MUST therefore implement the production
-grammar, NOT the B0 grammar:
-
-    B1_IDENT_START  = [A-Za-z_]
-    B1_IDENT_REST   = [A-Za-z0-9_$]
-
-This is broader than B0 by exactly one byte in continuation.
-It is the same as production.
-
-POLICY: B1 does NOT silently shrink production semantics to
-match B0. B1 implements the production grammar and accepts
-"abc$def" as one identifier. Any future B0 narrows must
-go through a separate ACT.
-
-Side-effect-free widening (per §12 "Relationship to B0")
-========================================================
-
-B0's BootstrapLex would emit TWO tokens for "abc$def":
-    (IDENT "abc") and then UNSUPPORTED_BYTE for '$'.
-The B1 component is required to emit ONE token:
-    (IDENT "abc$def").
-
-This is a deliberate difference: the B1 component is a
-production-grammar identifier scanner, not a B0-grammar
-scanner. The B0 component remains in
-tools/bootstrap/bootstrap01-lexer.HC and continues to
-exhibit B0 grammar semantics; its 15/15 fixture
-conservation (BOOTSTRAP01_PASS=15 BOOTSTRAP01_FAIL=0)
-is preserved.
-
-Frozen B1 ABI for the scanner (C2 will implement this)
-======================================================
-
-    public I64 BootstrapScanIdent(
-        U8  *src,        // caller-owned, read-only
-        I64  src_len,    // explicit byte length
-        I64  start,      // cursor into src
-        I64 *out_end     // first byte after identifier
-    );
-
-    returns:
-        1  on success (one identifier consumed)
-        0  on invalid input (start < 0, start >= src_len,
-                             src == NULL, out_end == NULL,
-                             or start byte not in [A-Za-z_])
-
-    semantics on success:
-        out_end is set to start + N where N is the
-        identifier length (>= 1)
-        src bytes are NOT mutated
-        global mutable state is NOT touched
-        no allocation occurs
-
-    identifier grammar:
-        first  byte ∈ [A-Za-z_]
-        rest   byte ∈ [A-Za-z0-9_$]*
-
-    exact match with production lexIdentifier, modulo:
-        - the cursor is passed by value (not l->ptr)
-        - the source length is explicit (not implicit via
-          '\0' sentinel)
-        - rewinding is the caller's responsibility: the
-          function returns out_end, and the caller
-          (lexCore) assigns l->ptr = src + *out_end
-
-PRODUCTION_IDENT_START   = [A-Za-z_]
-PRODUCTION_IDENT_REST    = [A-Za-z0-9_$]
-B0_IDENT_START           = [A-Za-z_]
-B0_IDENT_REST            = [A-Za-z0-9_]
-B1_IDENT_START           = [A-Za-z_]    (= production)
-B1_IDENT_REST            = [A-Za-z0-9_$] (= production)
-
-START_SETS_EQUAL         = YES
-REST_SETS_EQUAL          = NO  (production has $, B0 does not)
-CONTRACT_EQUIVALENT      = NO  (production is broader)
-CONTRACT_SUPERSET        = YES
-HALT_B1_IDENTIFIER_CONTRACT_MISMATCH = NOT_FIRED
-   (discrepancy is a known extra byte, recorded in the
-    contract, and required for production equivalence)
+# ACT-POLYC-BOOTSTRAP02 — C1 — frozen identifier grammar contract
+# ================================================================
+# (current-truth revision after ACT-POLYC-BOOTSTRAP02-C1-CORRECTION01)
+#
+# AC02: Production identifier grammar is mechanically frozen
+#       (ASCII subset only).
+# AC03: B0 vs production identifier contracts are compared
+#       and the difference is documented (NOT claimed
+#       equivalent).
+#
+# Production grammar (mechanically observed at src/lexer.c)
+# =========================================================
+#
+# ENTRY POINT — lexIdentifier (src/lexer.c:873-885):
+#
+#     int lexIdentifier(Lexer *l, char ch) {
+#         int i = 0;
+#         while (ch && (isalnum(ch) || ch == '_' || ch == '$')) {
+#             i++;
+#             ch = lexNextChar(l);
+#         }
+#         l->cur_strlen = i;
+#         if (ch != '\0') {
+#             lexRewindChar(l);
+#         }
+#         return TK_IDENT;
+#     }
+#
+# DISPATCHER GATE — lexCore default arm (src/lexer.c:1458-1459):
+#
+#     default: {
+#         if (isalpha(ch) || ch == '_') {     <-- GATE
+#             if ((tk_type = lexIdentifier(l, ch)) == -1) { ... }
+#             ...
+#         }
+#     }
+#
+# Mechanically extracted production grammar (in "C" locale)
+# =========================================================
+#
+#     first byte  ('A'..'Z') | ('a'..'z') | '_'
+#     rest byte*  ('A'..'Z') | ('a'..'z') | '_' |
+#                 '$'         | ('0'..'9')
+#
+# In one regex line:
+#
+#     prod_ident = [A-Za-z_][A-Za-z_$0-9]*
+#
+# NOTE — This grammar is derived under the assumption of
+# the "C" locale (the default; production does not call
+# setlocale). Under a non-"C" locale, isalpha / isalnum
+# may classify additional bytes >= 0x80 as
+# alphabetic/alphanumeric, in which case the production
+# scanner would accept a broader grammar.
+#
+# B1's contract (binding; corrected by C1-CORRECTION01)
+# ======================================================
+#
+# B1 freezes only the mechanically exercised ASCII
+# language. B1_IDENTIFIER_CHARACTER_DOMAIN = ASCII.
+# B1's grammar equals production's grammar under the
+# "C" locale:
+#
+#     B1_IDENT_START  = [A-Za-z_]
+#     B1_IDENT_REST   = [A-Za-z0-9_$]
+#
+# B1 does NOT claim non-ASCII equivalence with
+# production. The B1 component (bootstrap02-ident.HC)
+# MUST implement this contract using explicit byte
+# comparisons (no <ctype.h>).
+#
+# B0 grammar (from B0 lexical-contract.txt)
+# =========================================
+#
+#     b0_ident = [A-Za-z_][A-Za-z0-9_]*
+#
+#     (B0 does NOT admit '$' in continuation; B0's
+#      grammar is intentionally narrower than
+#      production's.)
+#
+# Equivalence test (mechanical)
+# =============================
+#
+# Production grammar: [A-Za-z_][A-Za-z_$0-9]*
+# B0 grammar:         [A-Za-z_][A-Za-z0-9_]*
+#
+# The FIRST-BYTE sets are identical:
+#     [A-Za-z_] == [A-Za-z_]              YES (equal)
+#
+# The REST-BYTE sets differ only by '$':
+#     production = [A-Za-z0-9_$]
+#     b0         = [A-Za-z0-9_]
+#     difference = {$}                     (production has, b0 lacks)
+#
+# Therefore the production grammar is a strict superset of
+# the B0 grammar (production ⊋ b0). They are NOT equal.
+#
+# CONTRACT_EQUIVALENT  = NO   (production grammar is BROADER)
+# CONTRACT_SUPERSET    = YES  (production accepts everything b0 accepts,
+#                              plus $ in continuation)
+#
+# Why B0 != production is not a halt (corrected)
+# ===============================================
+#
+# The original ACT §5 halts when "production grammar is
+# broader or narrower than B0 grammar". Per
+# ACT-POLYC-BOOTSTRAP02-C1-CORRECTION01, that clause is
+# replaced by:
+#
+#     HALT_B1_IDENTIFIER_CONTRACT_MISMATCH fires iff:
+#       production grammar cannot be mechanically frozen
+#       OR
+#       proposed B1 grammar cannot preserve production semantics
+#       OR
+#       satisfying production semantics would require changing B0
+#
+# None of these three conditions is true:
+#   - production grammar IS mechanically frozen (above)
+#   - proposed B1 grammar (in this ACT) equals production
+#     grammar in the "C" locale
+#   - satisfying production semantics does NOT require
+#     changing B0; the discrepancy is isolated to a new
+#     file (bootstrap02-ident.HC)
+#
+# Therefore HALT_B1_IDENTIFIER_CONTRACT_MISMATCH = NOT_FIRED.
+#
+# Required negative probes (per ACT §5)
+# =====================================
+#
+# The following fixtures exercise the production grammar
+# boundary. They are part of the legacy-ident-oracle.tsv
+# (c1/legacy-ident-oracle.tsv) and must all be observed
+# through the reference-model oracle before C2.
+#
+#     "a"             ->  valid identifier ("a")
+#     "_"             ->  valid identifier ("_")
+#     "_foo9"         ->  valid identifier ("_foo9")
+#     "abc123"        ->  valid identifier ("abc123")
+#     "a_b_c"         ->  valid identifier ("a_b_c")
+#     "abc;"          ->  valid identifier ("abc") + ';'
+#     "abc+"          ->  valid identifier ("abc") + '+'
+#     "abc "          ->  valid identifier ("abc") + ' '
+#     "xxabc;" (start=2)  ->  valid identifier ("abc") at offset 2
+#     <60 bytes: a-z 0-9 _ A-W>  ->  valid identifier (60 bytes)
+#     "9abc"          ->  INVALID (starts with digit)
+#     src_len=3, start=3 ->  INVALID (start at EOF)
+#     src_len=3, start=3 ->  INVALID (start past EOF)
+#     "abc$def"       ->  valid identifier ("abc$def")    ($
+#                          is allowed in continuation).
+#
+# Frozen B1 ABI for the scanner (C2 will implement this)
+# ======================================================
+#
+#     public I64 BootstrapScanIdent(
+#         U8  *src,        // caller-owned, read-only
+#         I64  src_len,    // explicit byte length
+#         I64  start,      // cursor into src
+#         I64 *out_end     // first byte after identifier
+#     );
+#
+#     returns:
+#         1  on success (one identifier consumed)
+#         0  on invalid input (start < 0, start >= src_len,
+#                              src == NULL, out_end == NULL,
+#                              or start byte not in [A-Za-z_])
+#
+#     semantics on success:
+#         out_end is set to start + N where N is the
+#         identifier length (>= 1)
+#         src bytes are NOT mutated
+#         global mutable state is NOT touched
+#         no allocation occurs
+#
+#     identifier grammar (ASCII only):
+#         first  byte in [A-Za-z_]
+#         rest   byte in [A-Za-z0-9_$]*
+#
+#     exact match with production lexIdentifier under the
+#     "C" locale, modulo:
+#         - the cursor is passed by value (not l->ptr)
+#         - the source length is explicit (not implicit via
+#           NUL sentinel)
+#         - rewinding is the caller's responsibility: the
+#           function returns out_end, and the caller
+#           (lexCore) assigns l->ptr = src + *out_end
+#
+# PRODUCTION_IDENT_START   = [A-Za-z_]
+# PRODUCTION_IDENT_REST    = [A-Za-z0-9_$]
+# B0_IDENT_START           = [A-Za-z_]
+# B0_IDENT_REST            = [A-Za-z0-9_]
+# B1_IDENT_START           = [A-Za-z_]    (= production, "C" locale)
+# B1_IDENT_REST            = [A-Za-z0-9_$] (= production, "C" locale)
+#
+# START_SETS_EQUAL         = YES
+# REST_SETS_EQUAL          = NO  (production has $, B0 does not)
+# CONTRACT_EQUIVALENT      = NO  (production is broader)
+# CONTRACT_SUPERSET        = YES
+# B1_ASCII_DOMAIN          = YES
+# B1_NON_ASCII_EQUIVALENCE = NOT_CLAIMED
+# HALT_B1_IDENTIFIER_CONTRACT_MISMATCH = NOT_FIRED
+#    (corrected predicate; production frozen; B1 ==
+#     production in "C" locale; satisfying production
+#     semantics does not require changing B0)

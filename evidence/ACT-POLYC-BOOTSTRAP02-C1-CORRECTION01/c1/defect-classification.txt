@@ -1,0 +1,140 @@
+ACT-POLYC-BOOTSTRAP02-C1-CORRECTION01 — defect classification
+==============================================================
+
+DEFECT-P0 (P0): malformed C1 grammar prerequisite
+==================================================
+
+Predecessor statement (c1/c1-required-result.txt):
+
+  IDENTIFIER_GRAMMAR_EQUIVALENT = YES (at production seam;
+                                       B1 grammar == production
+                                       grammar by ACT §3 design)
+
+Original ACT contract (ACT-POLYC-BOOTSTRAP02 §5):
+
+  If production grammar is broader or narrower:
+    HALT_B1_IDENTIFIER_CONTRACT_MISMATCH
+    HALT_CLASS: DEPENDENCY
+    BLOCKS_NEXT: YES
+
+Mechanical evidence:
+
+  Production = [A-Za-z_][A-Za-z0-9_$]*
+  B0         = [A-Za-z_][A-Za-z0-9_]*
+  CONTRACT_EQUIVALENT = NO  (production is a strict superset)
+
+Diagnosis:
+
+  The original §5 halts when B0 != production. The
+  predecessor C1 evidence correctly proves B0 !=
+  production. The required-result block then
+  retroactively redefined `IDENTIFIER_GRAMMAR_EQUIVALENT`
+  from `B0 == production` to `B1 == production`. That
+  redefinition is not what the original ACT wrote.
+
+Resolution:
+
+  - Replace `IDENTIFIER_GRAMMAR_EQUIVALENT` with the
+    corrected gate `IDENTIFIER_GRAMMAR_GATE` (4 clauses,
+    none false).
+  - Replace §5's halt clause with the 3-clause corrected
+    version (production frozen ∨ B1 cannot preserve prod
+    ∨ satisfying prod requires changing B0).
+  - Recorded in c1/corrected-grammar-gate.txt.
+
+DEFECT-P1 (P1): `ctype` non-ASCII equivalence over-claim
+=========================================================
+
+Predecessor statement (c1/identifier-contract.txt):
+
+  isalpha(c) is FALSE for '$' and for any byte >= 0x80.
+  isalnum is likewise locale-clean for our subset.
+
+Mechanical observation:
+
+  - <ctype.h> isalpha/isalnum are LOCALE-SENSITIVE.
+  - In the "C" locale, isalpha(c) is FALSE for c >= 0x80.
+  - The production scanner (src/lexer.c:873) calls
+    isalnum / isalpha on plain `char` (signed on most
+    platforms). Passing a negative `char` to a <ctype.h>
+    function is UNDEFINED BEHAVIOUR unless first
+    converted to `unsigned char`.
+  - The standalone oracle (bootstrap02-ident-oracle.c)
+    normalizes through `unsigned char` deliberately.
+  - Therefore production and oracle are NOT byte-equivalent
+    for bytes >= 0x80 if char is signed.
+
+Diagnosis:
+
+  For the current ASCII fixture corpus this changes
+  nothing, but the wording "verbatim", "byte-exact",
+  "exact production semantics" over-claims equivalence.
+
+Resolution:
+
+  - Declare B1_IDENTIFIER_CHARACTER_DOMAIN = ASCII.
+  - Declare NON_ASCII_PRODUCTION_CTYPE_BEHAVIOR =
+    NOT_CLAIMED_EQUIVALENT.
+  - C2 must implement bootstrap02-ident.HC using
+    EXPLICIT BYTE COMPARISONS (no <ctype.h>).
+  - Recorded in c1/corrected-ctype-claim.txt.
+
+DEFECT-P2 (P2): oracle terminology over-claim
+=============================================
+
+Predecessor statement (c1/legacy-ident-oracle.tsv):
+
+  verbatim C99 transcription of src/lexer.c:873-885
+  algorithm reproduction is byte-exact
+
+Mechanical observation:
+
+  The oracle adapts the production algorithm from:
+
+    Lexer state + NUL sentinel + lexNextChar() / lexRewindChar()
+
+  to:
+
+    src + src_len + start + out_end
+
+  The adaptation is mechanically faithful but does not
+  exercise:
+    - Lexer cursor / file-state semantics
+    - multi-line lexing
+    - EOF behaviour distinct from NUL sentinel
+    - lexRewindChar interactions with prior tokens
+
+Diagnosis:
+
+  The oracle is a REFERENCE_MODEL, not a direct
+  production execution. C3 cannot rely on it alone;
+  the stage0/stage1 compiler corpus is the primary
+  production-equivalence witness.
+
+Resolution:
+
+  - Re-classify the oracle as EVIDENTIARY_ROLE =
+    REFERENCE_MODEL.
+  - State BYTE_EQUIVALENCE_PRODUCTION = NO.
+  - State MECHANICAL_FAITHFULNESS = YES (for ASCII
+    fixture corpus).
+  - C3 must add a stage0/stage1 differential on a real
+    production source (e.g. src/holyc-lib/dir.HC).
+  - Recorded in c1/corrected-oracle-role.txt.
+
+Classification summary
+======================
+
+  P0 (governance/contract)    — corrected in this ACT
+  P1 (semantic over-claim)    — bounded in this ACT
+  P2 (terminology over-claim) — reframed in this ACT
+
+  None of the three defects requires production source
+  mutation. All three are bounded to governance and
+  evidence rewrites.
+
+  Per F14 (Current truth may invalidate history), the
+  predecessor C1 RED commits (aa29e16, db038e9) remain
+  immutable evidence of the original (over-claimed)
+  state. This correction ACT's rewrites produce a
+  corrected second view; both are preserved in history.

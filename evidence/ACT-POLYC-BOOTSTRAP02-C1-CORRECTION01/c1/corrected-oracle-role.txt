@@ -1,0 +1,91 @@
+ACT-POLYC-BOOTSTRAP02-C1-CORRECTION01 — oracle evidentiary role
+===============================================================
+
+Subject: tools/quality/bootstrap02-ident-oracle.c
+
+Predecessor classification (over-claimed):
+
+  EVIDENTIARY_ROLE       = verbatim C99 transcription
+  BYTE_EQUIVALENCE       = YES
+  DIRECT_PRODUCTION_EXEC = YES
+
+Corrected classification (binding):
+===================================
+
+  EVIDENTIARY_ROLE             = REFERENCE_MODEL
+  EVIDENCE_TYPE                = independent C99 model
+                                 of the selected production
+                                 algorithm
+  DIRECT_PRODUCTION_EXECUTION  = NO
+  BYTE_EQUIVALENCE_PRODUCTION  = NO  (Lexer state adapted;
+                                      ctype calls adapted)
+  MECHANICAL_FAITHFULNESS      = YES (algorithm reproduction
+                                     is faithful for the
+                                     ASCII fixture corpus)
+  HOST_TOOLCHAIN               = cc -std=c99 (host C)
+
+What the oracle faithfully reproduces
+======================================
+
+  - The shape of the production loop body: while ch in
+    {start-class} OR {rest-class} { advance; consume };
+    on exit, set length and rewind if not at sentinel.
+  - The start-class: isalpha(ch) || ch == '_'.
+  - The rest-class: isalnum(ch) || ch == '_' || ch == '$'.
+  - The rewind rule: if sentinel not at boundary, rewind
+    one byte (here: caller sets `start + N`; rewind
+    corresponds to `end` rather than `l->ptr -= 1`).
+  - The NUL-sentinel / length-based termination.
+
+What the oracle does NOT reproduce
+==================================
+
+  - Lexer cursor / file-state semantics. The oracle
+    works on a self-contained buffer; production works
+    on a Lexer with file streams, pushback, and prior
+    token state.
+  - Multi-line lexing interactions (line counting,
+    column counting, file-read failures).
+  - EOF behaviour distinct from NUL sentinel. The oracle
+    uses src_len as the upper bound; production relies
+    on LexNextChar returning `\0` at EOF.
+  - lexRewindChar interactions with prior tokens
+    (pushback stack, peek-ahead).
+  - Non-ASCII behaviour differences (see
+    corrected-ctype-claim.txt).
+  - Performance characteristics of the production
+    algorithm (the oracle is a faithful model, not a
+    performance oracle).
+
+C3 implications
+===============
+
+  The oracle validates the B1 component's *algorithm*
+  against a faithful C99 model. It does NOT substitute
+  for the stage0/stage1 compiler corpus, which exercises
+  real production Lexer state.
+
+  C3 must therefore add a direct differential against
+  the stage1 binary on a real production source corpus,
+  e.g.:
+
+    src/holyc-lib/dir.HC          (uses _opendir$INODE64)
+
+  Stage0 (./hcc) and stage1 (build/hcc-bootstrap02)
+  must produce identical lex-token streams on this
+  corpus. The corpus output is byte-compared against the
+  stage0 reference output.
+
+Residue
+-------
+
+  BYTE_EQUIVALENCE_PRODUCTION_AMBIGUITY = P3_INFORMATIONAL
+
+    Future ACTs that wish to claim byte-equivalence
+    between B1 and production for non-ASCII bytes
+    must either (a) tighten production to ASCII
+    explicitly, or (b) extend B1's contract. Neither
+    is in B1 scope; B1 freezes the ASCII contract.
+
+    Documented here so that B2/B3 ACTs do not silently
+    inherit an over-claim.

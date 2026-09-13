@@ -1,0 +1,121 @@
+ACT-POLYC-BOOTSTRAP02-C1-CORRECTION01 — required-result block
+==============================================================
+
+This is the binding contract for the C1-CORRECTION01
+ACT. After this ACT closes, the corrected gate replaces
+the malformed predecessor gate.
+
+Acceptance criteria for this correction ACT
+===========================================
+
+  CAC01  P0 grammar-gate predicate replaced
+         (c1/corrected-grammar-gate.txt records the new
+         IDENTIFIER_GRAMMAR_GATE)                          PASS
+
+  CAC02  P1 ctype claim bounded to ASCII
+         (c1/corrected-ctype-claim.txt declares
+         B1_IDENTIFIER_CHARACTER_DOMAIN = ASCII and
+         NON_ASCII_PRODUCTION_CTYPE_BEHAVIOR =
+         NOT_CLAIMED_EQUIVALENT)                            PASS
+
+  CAC03  P2 oracle evidentiary role reframed
+         (c1/corrected-oracle-role.txt declares
+         EVIDENTIARY_ROLE = REFERENCE_MODEL;
+         DIRECT_PRODUCTION_EXECUTION = NO)                  PASS
+
+  CAC04  Predecessor C1 evidence files rewritten in place
+         (c1/README.md, identifier-contract.txt,
+         legacy-ident-oracle.tsv, c1-required-result.txt
+         all reflect the corrected gate)                    PASS
+
+  CAC05  B0 conservation preserved
+         (make bootstrap01-test still 15/15 PASS)           PASS
+
+  CAC06  Quality gates preserved
+         (gate-fast, factory-v2, factory-append-only-test,
+         factory-halt-classification-test, shell-loc-gate
+         all PASS at correction close)                      PASS
+
+  CAC07  Append-only invariant preserved
+         (no amend, no rebase, no reset, no force-push;
+         git replace -l empty)                              PASS
+
+  CAC08  Cardinality-1 invariant preserved
+         (exactly one CLOSE commit for this correction ACT) PASS
+
+  CAC09  No SHA-of-self claims                                PASS
+
+  CAC10  No production source mutation
+         (src/lexer.c, src/lexer.h, src/CMakeLists.txt,
+         Makefile, tools/bootstrap/bootstrap02-ident.HC,
+         src/lexer_bridge.h all unchanged in this ACT)      PASS
+
+Required-result predicates (binding on the predecessor ACT)
+===========================================================
+
+  IDENTIFIER_SEAM_ISOLATABLE         = YES
+  IDENTIFIER_GRAMMAR_GATE            = PASS
+  LEGACY_ORACLE_CAPTURED             = YES (REFERENCE_MODEL)
+  POLYC_C_ABI_PROVEN                 = YES
+  B1_REQUIRES_B0_LLVM_PATH           = NO
+  B1_REQUIRES_GEP01_HARNESS          = NO
+
+  PRODUCTION_GRAMMAR_FROZEN          = YES
+  B0_GRAMMAR_PRESERVED               = YES
+  B0_VS_PRODUCTION_DIFFERENCE        = DOCUMENTED
+  B1_REQUIRED_GRAMMAR_EQUALS_PROD    = YES
+  B1_ASCII_DOMAIN                    = YES
+  B1_NON_ASCII_EQUIVALENCE           = NOT_CLAIMED
+  B1_REFERENCE_MODEL_ORACLE          = tools/quality/bootstrap02-ident-oracle.c
+
+  HALT_B1_IDENTIFIER_CONTRACT_MISMATCH = NOT_FIRED
+     (corrected predicate evaluates to NOT_FIRED;
+      production grammar is mechanically frozen;
+      B1 grammar can preserve production semantics;
+      satisfying production semantics does not require
+      changing B0)
+
+C1 outcome (corrected)
+======================
+
+  C1 outcome                        = PROCEED_TO_C2
+  HALT                              = (none fired)
+  HALTS_THAT_FIRED                  = (none)
+
+  C1 RED → C2 IMPL gate             = OPEN
+
+Closure shape (binding on C4 of this correction ACT)
+====================================================
+
+  ACT-Verdict (correction)          = PASS_WITH_CORRECTION_RESIDUE
+  B0_CONSERVATION                   = PASS   15/15
+  PRODUCTION_GRAMMAR_FROZEN         = YES
+  B0_GRAMMAR_PRESERVED              = YES
+  B0_VS_PRODUCTION_DIFFERENCE       = DOCUMENTED
+  B1_REQUIRED_GRAMMAR_EQUALS_PROD   = YES
+  B1_ASCII_DOMAIN                   = YES
+  B1_NON_ASCII_EQUIVALENCE          = NOT_CLAIMED
+  HALT_B1_IDENTIFIER_CONTRACT_MISMATCH = NOT_FIRED
+  IDENTIFIER_GRAMMAR_GATE              = PASS
+  C1_RED_TO_C2_IMPL_GATE               = OPEN
+  PUSH_PERMISSION                      = NOT_PERFORMED
+  PUSH_RESIDUE                         = GEP01_D1_D2 (pre-existing)
+
+Notes
+=====
+
+  The predecessor C1 RED packet (commits aa29e16,
+  db038e9) remains in history as the original
+  (over-claimed) state. Per F14, historical evidence is
+  immutable; corrections live in new commits, not in
+  rewrites of closed ACT evidence directories.
+
+  This correction ACT's evidence directory lives under
+  evidence/ACT-POLYC-BOOTSTRAP02-C1-CORRECTION01/ and
+  contains the corrected second view.
+
+  The in-place rewrites of the predecessor C1 evidence
+  files (README.md, identifier-contract.txt,
+  legacy-ident-oracle.tsv, c1-required-result.txt) are
+  current-truth updates per F14. They do not retroactively
+  rewrite closed commits.

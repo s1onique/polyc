@@ -1,39 +1,61 @@
-ACT-POLYC-BOOTSTRAP02 — C1 — legacy identifier-span oracle (TSV)
-=================================================================
-
-AC04: Legacy identifier oracle is captured before mutation.
-
-This is the binding oracle that C2 must reproduce byte-for-byte
-through the B1 PolyC component (AC18).
-
-Source of truth
----------------
-
-The production scanner is at src/lexer.c:873-885 (lexIdentifier).
-The oracle in tools/quality/bootstrap02-ident-oracle.c is a
-verbatim C99 transcription of that algorithm with the production
-lexer-state cursor (l->ptr, lexNextChar, lexRewindChar) replaced
-by an explicit (src, src_len, start, out_end) ABI.
-
-The algorithm reproduction is byte-exact. The oracle's source
-file is included in this ACT's authorized file scope (§25).
-
-Tab-separated format
---------------------
-
-Columns:
-  ID         identifier of the fixture (I01..I15)
-  INPUT      hex-encoded bytes (NUL omitted)
-  SRC_LEN    decimal length of the input
-  START      decimal start cursor
-  EXP_OK     1 if expected to succeed, 0 otherwise
-  EXP_END    expected value of *out_end (only meaningful if EXP_OK=1)
-  EXP_TEXT   expected identifier text (only meaningful if EXP_OK=1)
-  ACTUAL_OK  observed ok status from the production-oracle run
-  ACTUAL_END observed out_end from the production-oracle run
-  PASS       PASS / FAIL
-
-The fixture matrix matches ACT §6 I01..I15.
+# ACT-POLYC-BOOTSTRAP02 — C1 — legacy identifier-span oracle (TSV)
+# =================================================================
+# (current-truth revision after ACT-POLYC-BOOTSTRAP02-C1-CORRECTION01)
+#
+# AC04: Reference-model identifier-span oracle is captured.
+#
+# Per C1-CORRECTION01, the oracle's evidentiary role is
+# re-classified from "verbatim C99 transcription" to
+# REFERENCE_MODEL (see c1/corrected-oracle-role.txt in the
+# correction ACT). The oracle validates the B1 component's
+# algorithm against a faithful C99 model; it does NOT
+# substitute for the stage0/stage1 compiler corpus in C3.
+#
+# EVIDENTIARY_ROLE              = REFERENCE_MODEL
+# EVIDENCE_TYPE                 = independent C99 model of the
+#                                 selected production algorithm
+# DIRECT_PRODUCTION_EXECUTION   = NO
+# BYTE_EQUIVALENCE_PRODUCTION   = NO  (Lexer state adapted;
+#                                      ctype calls adapted)
+# MECHANICAL_FAITHFULNESS       = YES (algorithm reproduction
+#                                    is faithful for the
+#                                    ASCII fixture corpus)
+#
+# Source of truth
+# ---------------
+#
+# The production scanner is at src/lexer.c:873-885 (lexIdentifier).
+# The oracle in tools/quality/bootstrap02-ident-oracle.c is an
+# independent C99 model of that algorithm with the production
+# lexer-state cursor (l->ptr, lexNextChar, lexRewindChar) replaced
+# by an explicit (src, src_len, start, out_end) ABI and with
+# ctype calls normalized through unsigned char (avoiding the
+# signed-char UB in production).
+#
+# The algorithm reproduction is mechanically faithful for the
+# ASCII fixture corpus. It does NOT exercise:
+#   - Lexer cursor / file-state semantics
+#   - multi-line lexing
+#   - EOF behaviour distinct from NUL sentinel
+#   - lexRewindChar interactions with prior tokens
+#   - non-ASCII behaviour differences
+#
+# Tab-separated format
+# --------------------
+#
+# Columns:
+#   ID         identifier of the fixture (I01..I15)
+#   INPUT      hex-encoded bytes (NUL omitted)
+#   SRC_LEN    decimal length of the input
+#   START      decimal start cursor
+#   EXP_OK     1 if expected to succeed, 0 otherwise
+#   EXP_END    expected value of *out_end (only meaningful if EXP_OK=1)
+#   EXP_TEXT   expected identifier text (only meaningful if EXP_OK=1)
+#   ACTUAL_OK  observed ok status from the reference-model run
+#   ACTUAL_END observed out_end from the reference-model run
+#   PASS       PASS / FAIL
+#
+# The fixture matrix matches ACT §6 I01..I15.
 
 ID	INPUT	SRC_LEN	START	EXP_OK	EXP_END	EXP_TEXT	ACTUAL_OK	ACTUAL_END	PASS
 I01	61	1	0	1	1	a	1	1	PASS
@@ -52,9 +74,9 @@ I13	616263	3	3	0	-	-	0	-	PASS
 I14	616263	3	3	0	-	-	0	-	PASS
 I15	61626324646566	7	0	1	7	abc$def	1	7	PASS
 
-I10 hex decomposition: 78 78 61 62 63 3b  → "xxabc;"
-I11 hex decomposition: 61..7a 30..39 5f 41..57
-                     (a-z 0-9 _ A-W), 26 + 10 + 1 + 23 = 60 bytes
+# I10 hex decomposition: 78 78 61 62 63 3b  -> "xxabc;"
+# I11 hex decomposition: 61..7a 30..39 5f 41..57
+#                      (a-z 0-9 _ A-W), 26 + 10 + 1 + 23 = 60 bytes
 
 Total fixtures: 15
 Expected OK:    12 (I01..I11, I15)
@@ -62,61 +84,72 @@ Expected NOK:   3  (I12, I13, I14)
 Observed OK:    12
 Observed NOK:   3
 
-Producer summary
-----------------
+# Producer summary
+# ----------------
+#
+# $ /tmp/bootstrap02-ident-oracle
+# I01 OK a 1
+# I02 OK _ 1
+# I03 OK abc 3
+# I04 OK _foo9 5
+# I05 OK abc123 6
+# I06 OK a_b_c 5
+# I07 OK abc 3
+# I08 OK abc 3
+# I09 OK abc 3
+# I10 OK abc 5
+# I11 OK abcdefghijklmnopqrstuvwxyz0123456789_ABCDEFGHIJKLMNOPQRSTUVW 60
+# I12 NOK 0
+# I13 NOK 3
+# I14 NOK 3
+# I15 OK abc$def 7
+# BOOTSTRAP02_IDENT_CASES=15
+# BOOTSTRAP02_IDENT_PASS=15
+# BOOTSTRAP02_IDENT_FAIL=0
+# STATUS=PASS
+#
+# Full capture: see c1/legacy-ident-oracle.capture.txt.
 
-$ /tmp/bootstrap02-ident-oracle
-I01 OK a 1
-I02 OK _ 1
-I03 OK abc 3
-I04 OK _foo9 5
-I05 OK abc123 6
-I06 OK a_b_c 5
-I07 OK abc 3
-I08 OK abc 3
-I09 OK abc 3
-I10 OK abc 5
-I11 OK abcdefghijklmnopqrstuvwxyz0123456789_ABCDEFGHIJKLMNOPQRSTUVW 60
-I12 NOK 0
-I13 NOK 3
-I14 NOK 3
-I15 OK abc$def 7
-BOOTSTRAP02_IDENT_CASES=15
-BOOTSTRAP02_IDENT_PASS=15
-BOOTSTRAP02_IDENT_FAIL=0
-STATUS=PASS
+# Source-immutability witness
+# ---------------------------
+#
+# The reference-model run NEVER mutates src. The oracle
+# holds src as `const unsigned char *`. This satisfies
+# AC22 (source immutability) for the oracle itself; the B1
+# component's source-immutability is verified separately
+# in c3/source-immutability.txt.
 
-Full capture: see c1/legacy-ident-oracle.capture.txt.
+# Compilation witness
+# -------------------
+#
+# $ cc -std=c99 -O2 -Wall -Wextra -o /tmp/bootstrap02-ident-oracle \
+#       tools/quality/bootstrap02-ident-oracle.c
+# (exit code 0, no warnings)
+#
+# The oracle was built with the host C compiler (cc on this
+# host) and runs as a standalone executable. It is NOT linked
+# into hcc and does NOT modify any hcc source.
 
-Source-immutability witness
----------------------------
+# C3 follow-up requirement (binding)
+# ----------------------------------
+#
+# C3 must add a direct differential against the stage1 binary
+# on a real production source corpus, e.g.
+#   src/holyc-lib/dir.HC   (uses _opendir$INODE64)
+# Stage0 (./hcc) and stage1 (build/hcc-bootstrap02) must
+# produce identical lex-token streams on this corpus.
 
-The production-oracle run NEVER mutates src. The oracle
-holds src as `const unsigned char *`. This satisfies
-AC22 (source immutability) for the oracle itself; the B1
-component's source-immutability is verified separately
-in c3/source-immutability.txt.
+# Decision
+# --------
+#
+# LEGACY_ORACLE_CAPTURED        = YES
+# LEGACY_ORACLE_BUILD_OK        = YES
+# LEGACY_ORACLE_RUN_OK          = YES
+# LEGACY_ORACLE_RESULT          = PASS (15/15)
+# LEGACY_ORACLE_TOOLCHAIN       = cc -std=c99 (host C)
+# LEGACY_ORACLE_LINKS_HCC       = NO  (oracle is standalone)
+# LEGACY_ORACLE_EVIDENTIARY_ROLE = REFERENCE_MODEL
 
-Compilation witness
--------------------
-
-$ cc -std=c99 -O2 -Wall -Wextra -o /tmp/bootstrap02-ident-oracle \
-      tools/quality/bootstrap02-ident-oracle.c
-(exit code 0, no warnings)
-
-The oracle was built with the host C compiler (cc on this
-host) and runs as a standalone executable. It is NOT linked
-into hcc and does NOT modify any hcc source.
-
-Decision
---------
-
-LEGACY_ORACLE_CAPTURED        = YES
-LEGACY_ORACLE_BUILD_OK        = YES
-LEGACY_ORACLE_RUN_OK          = YES
-LEGACY_ORACLE_RESULT          = PASS (15/15)
-LEGACY_ORACLE_TOOLCHAIN       = cc -std=c99 (host C)
-LEGACY_ORACLE_LINKS_HCC       = NO  (oracle is standalone)
-
-C2 may proceed. The B1 component must reproduce these exact
-results byte-for-byte.
+# C2 may proceed. The B1 component must reproduce these exact
+# results on the ASCII fixture corpus, and C3 must additionally
+# verify the stage0/stage1 compiler-corpus differential.

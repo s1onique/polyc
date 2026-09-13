@@ -1,0 +1,125 @@
+ACT-POLYC-BOOTSTRAP02-C1-CORRECTION01 — bounded ctype claim
+=============================================================
+
+Production scanner code (verbatim)
+==================================
+
+    int lexIdentifier(Lexer *l, char ch) {
+        int i = 0;
+        while (ch && (isalnum(ch) || ch == '_' || ch == '$')) {
+            i++;
+            ch = lexNextChar(l);
+        }
+        l->cur_strlen = i;
+        if (ch != '\0') {
+            lexRewindChar(l);
+        }
+        return TK_IDENT;
+    }
+
+What is true
+============
+
+  In the `"C"` locale (the default; production does not
+  call `setlocale`), the predicates evaluate to:
+
+    isalpha(c)  = 1  iff c is in 'A'..'Z' or 'a'..'z'
+    isdigit(c)  = 1  iff c is in '0'..'9'
+    isalnum(c)  = 1  iff c is in 'A'..'Z' or 'a'..'z' or '0'..'9'
+    isalpha(c)  = 0  for c in '$', '_', and any byte >= 0x80
+
+  In the `"C"` locale, then, the production scanner
+  accepts exactly:
+
+    first byte  : 'A'..'Z' | 'a'..'z' | '_'
+    rest byte   : 'A'..'Z' | 'a'..'z' | '0'..'9' | '_' | '$'
+
+  i.e. production identifier grammar (in "C" locale) is
+  exactly [A-Za-z_][A-Za-z0-9_$]*.
+
+What is NOT true
+================
+
+  - <ctype.h> isalpha/isalnum are LOCALE-SENSITIVE.
+    In a non-`"C"` locale, isalpha(c) may be true for
+    bytes >= 0x80. Production does not setlocale, but
+    a downstream tool that calls setlocale before hcc
+    would change production behaviour silently.
+
+  - Passing a negative plain `char` value to a
+    <ctype.h> function is UNDEFINED BEHAVIOUR per ISO C
+    unless first converted to `unsigned char`. On
+    platforms where `char` is signed (most, including
+    the typical macOS arm64/x86_64 layout), the
+    production scanner's `isalnum(ch)` call may invoke
+    undefined behaviour on bytes >= 0x80.
+
+  - The standalone oracle at
+    tools/quality/bootstrap02-ident-oracle.c
+    normalizes through `unsigned char`, so its
+    <ctype.h> calls do NOT have this UB. The oracle is
+    therefore NOT byte-equivalent to the production
+    scanner for bytes >= 0x80 if `char` is signed.
+
+B1 contract (binding)
+=====================
+
+  B1_IDENTIFIER_CHARACTER_DOMAIN = ASCII
+
+  B1_IDENT_START =
+    A-Z | a-z | _
+
+  B1_IDENT_REST =
+    A-Z | a-z | 0-9 | _ | $
+
+  NON_ASCII_PRODUCTION_CTYPE_BEHAVIOR =
+    NOT_CLAIMED_EQUIVALENT
+
+  RATIONALE =
+    current production uses locale-sensitive ctype on
+    plain char; B1 freezes only the mechanically
+    exercised ASCII language; C3 must use explicit
+    comparisons in bootstrap02-ident.HC rather than
+    reproducing host ctype() semantics
+
+  Forward-bound implementation requirement (binding on C2):
+
+    bootstrap02-ident.HC MUST implement the B1 identifier
+    contract using explicit byte comparisons:
+
+      I64 IsIdentStart(U8 c) {
+          return (c >= 'A' && c <= 'Z') ||
+                 (c >= 'a' && c <= 'z') ||
+                 (c == '_');
+      }
+
+      I64 IsIdentRest(U8 c) {
+          return (c >= 'A' && c <= 'Z') ||
+                 (c >= 'a' && c <= 'z') ||
+                 (c >= '0' && c <= '9') ||
+                 (c == '_') ||
+                 (c == '$');
+      }
+
+    ctype.h is FORBIDDEN in bootstrap02-ident.HC.
+
+Residue classification
+======================
+
+  NON_ASCII_PRODUCTION_BEHAVIOR = P2_DEFERRED
+
+    Production's non-ASCII identifier behaviour
+    (bytes >= 0x80) is locale-sensitive and possibly
+    UB on signed-char platforms. B1 does not claim
+    equivalence. A future ACT may either:
+      (a) tighten production to ASCII explicitly, or
+      (b) extend B1 to handle non-ASCII per a
+          documented locale policy.
+    Neither is in B1 scope.
+
+  CTYPE_NORMALIZATION_IN_ORACLE = P3_INFORMATIONAL
+
+    The standalone oracle's <ctype.h> calls go through
+    `unsigned char`. This is the right thing for an
+    ASCII-only oracle. No correction needed; the
+    oracle's role is bounded to REFERENCE_MODEL.

@@ -1,0 +1,113 @@
+ACT-POLYC-BOOTSTRAP02-C1-CORRECTION01 — corrected grammar gate
+==============================================================
+
+Original C1 → C2 gate (removed)
+================================
+
+  IDENTIFIER_SEAM_ISOLATABLE    = YES
+  IDENTIFIER_GRAMMAR_EQUIVALENT = YES      <-- removed
+  LEGACY_ORACLE_CAPTURED        = YES
+  POLYC_C_ABI_PROVEN            = YES
+  B1_REQUIRES_B0_LLVM_PATH      = NO
+  B1_REQUIRES_GEP01_HARNESS     = NO
+
+Corrected C1 → C2 gate (binding)
+================================
+
+  IDENTIFIER_SEAM_ISOLATABLE         = YES
+  IDENTIFIER_GRAMMAR_GATE            = PASS
+  LEGACY_ORACLE_CAPTURED             = YES
+  POLYC_C_ABI_PROVEN                 = YES
+  B1_REQUIRES_B0_LLVM_PATH           = NO
+  B1_REQUIRES_GEP01_HARNESS          = NO
+
+IDENTIFIER_GRAMMAR_GATE expansion
+=================================
+
+  IDENTIFIER_GRAMMAR_GATE = PASS iff:
+    PRODUCTION_GRAMMAR_FROZEN             = YES
+    B0_GRAMMAR_PRESERVED                  = YES
+    B0_VS_PRODUCTION_DIFFERENCE           = DOCUMENTED
+    B1_REQUIRED_GRAMMAR_EQUALS_PRODUCTION = YES
+
+Mechanical evaluation
+=====================
+
+  PRODUCTION_GRAMMAR_FROZEN             = YES
+     evidence: c1/identifier-contract.txt (corrected)
+     production grammar is [A-Za-z_][A-Za-z0-9_$]*
+
+  B0_GRAMMAR_PRESERVED                  = YES
+     evidence: tools/bootstrap/bootstrap01-lexer.HC
+     unchanged across C1 commits aa29e16, db038e9
+     BOOTSTRAP01_PASS=15 BOOTSTRAP01_FAIL=0
+     §12 of original ACT forbids changing B0
+
+  B0_VS_PRODUCTION_DIFFERENCE           = DOCUMENTED
+     evidence: c1/identifier-contract.txt §DECISION
+     one extra byte '$' in continuation;
+     production sources such as
+       src/holyc-lib/dir.HC::_opendir$INODE64
+     use real `$`-bearing identifiers
+
+  B1_REQUIRED_GRAMMAR_EQUALS_PRODUCTION = YES
+     evidence: B1 component is tools/bootstrap/
+     bootstrap02-ident.HC (deliberately separate file);
+     ACT §3 design specifies B1 == production grammar;
+     B1 grammar: [A-Za-z_][A-Za-z0-9_$]*
+
+Therefore:
+
+  IDENTIFIER_GRAMMAR_GATE                = PASS
+  HALT_B1_IDENTIFIER_CONTRACT_MISMATCH   = NOT_FIRED
+    (production grammar is mechanically frozen;
+     B1 grammar can preserve production semantics;
+     satisfying production semantics does not require
+     changing B0)
+
+Corrected HALT_B1_IDENTIFIER_CONTRACT_MISMATCH predicate
+========================================================
+
+  Original §5 clause (removed):
+
+    HALT_B1_IDENTIFIER_CONTRACT_MISMATCH fires iff:
+      production grammar is broader or narrower than B0 grammar
+
+  Corrected clause (binding):
+
+    HALT_B1_IDENTIFIER_CONTRACT_MISMATCH fires iff:
+      production grammar cannot be mechanically frozen
+      OR
+      proposed B1 grammar cannot preserve production semantics
+      OR
+      satisfying production semantics would require changing B0
+
+  None of the three corrected clauses fires here.
+
+Forward-bound B1 grammar freeze (binding on C2)
+===============================================
+
+  B1_IDENT_START  = [A-Za-z_]
+  B1_IDENT_REST   = [A-Za-z0-9_$]
+
+  Implemented as explicit byte comparisons in
+  bootstrap02-ident.HC:
+
+    if ((c >= 'A' && c <= 'Z') ||
+        (c >= 'a' && c <= 'z') ||
+         c == '_') { return 1; }       /* ident_start */
+
+    if ((c >= 'A' && c <= 'Z') ||
+        (c >= 'a' && c <= 'z') ||
+        (c >= '0' && c <= '9') ||
+         c == '_' ||
+         c == '$') { return 1; }       /* ident_rest  */
+
+  ctype.h is FORBIDDEN in bootstrap02-ident.HC.
+
+C1 → C2 gate verdict (this correction ACT)
+==========================================
+
+  C1_RED_TO_C2_IMPL_GATE  = OPEN
+  HALT                     = (none fired)
+  HALTS_THAT_FIRED         = (none)
