@@ -1,0 +1,54 @@
+ACT-POLYC-BOOTSTRAP01 — C2 — negative controls
+================================================
+
+The frozen ACT §20 negative controls and their B0 subject
+results:
+
+NC1 src=NULL, len>0            not representable; PolyC
+                                safe-calling convention
+                                forbids passing NULL for a
+                                non-optional pointer parameter
+                                without a typed default. The
+                                B0 contract does not exercise
+                                NC1; documented per ACT §20
+                                mechanical-fact exception.
+
+NC2 out=NULL, out_cap>0        not representable for the
+                                same reason; documented.
+
+NC3 out_count=NULL             not representable; documented.
+
+NC4 src_len<0                  not representable through the
+                                public PolyC API; the test
+                                driver never constructs a
+                                negative src_len. Documented.
+
+NC5 out_cap<0                  not representable; documented.
+
+NC6 unsupported byte      T11  B0_SUB STATUS = UNSUP
+                                expected STATUS = UNSUP
+                                out_count = 1 (IDENT(0,3)
+                                emitted before the '$' byte)
+                                PASS
+
+NC7 output full          T12  B0_SUB STATUS = FULL
+                                expected STATUS = FULL
+                                out_count = 2 (no EOF slot;
+                                cap=2 with 3 tokens to emit)
+                                PASS
+
+NC8 empty source + cap 0 NC8  B0_SUB STATUS = FULL
+                                expected STATUS = FULL
+                                out_count = 0
+                                no writes performed
+                                PASS
+
+Boundary control summary: 5 of the 8 negative controls
+(NC1..NC5) are mechanically unreachable through the
+PolyC B0 subject API as designed; this is documented per
+ACT §20 mechanical-fact exception and is not a defect.
+The remaining 3 negative controls (NC6/NC7/NC8) all
+behave exactly as the contract requires.
+
+Source: evidence/ACT-POLYC-BOOTSTRAP01/c2/subject-run.stdout
+(relevant CASE lines excerpted above).

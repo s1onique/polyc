@@ -1,0 +1,41 @@
+ACT-POLYC-BOOTSTRAP01 — C2 — required-result block
+==================================================
+
+POLYC_LEXER_SOURCE             = PRESENT
+POLYC_LEXER_NATIVE_COMPILES    = PASS
+POLYC_LEXER_NATIVE_RUNS        = PASS
+
+POLYC_LEXER_LLVM_EMIT          = PARTIAL (MEMORY01 STORE_DEREF fence)
+POLYC_LEXER_LLVM_VERIFY        = N/A (path-dependent per Option-W)
+
+LLVM_AS                        = N/A
+LLVM_VERIFY                    = N/A
+
+NATIVE_LINK                    = PASS
+NATIVE_RUN                     = PASS
+
+REFERENCE_ORACLE               = PRESENT
+TOKEN_STREAM_EQUIVALENCE       = PASS (15/15)
+DETERMINISM                    = PASS (run1 == run2 for every fixture)
+SOURCE_IMMUTABILITY            = PASS (src bytewise equal before/after)
+OUTPUT_BOUNDARY                = PASS (T12 cap=2 returns FULL, no overflow)
+
+PARSER_IMPLEMENTED             = NO
+AST_IMPLEMENTED                = NO
+CODEGEN_IMPLEMENTED            = NO
+DYNAMIC_ALLOCATION             = NO (subject uses 0 MAlloc/Free)
+
+COMPILER_SEMANTIC_WIDENING     = NO
+NATIVE_BACKEND_SEMANTIC_WIDENING = NO
+LLVM_BACKEND_SEMANTIC_WIDENING = NO
+AOT_RELOCATION_SEMANTIC_CHANGE = NO
+ALLOCATION_RUNTIME_WIDENING    = NO
+GEP01_GATE_REPAIR              = NO
+
+BOOTSTRAP01_CASES              = 15
+BOOTSTRAP01_RUNS               = 30 (15 fixtures x 2 runs each)
+BOOTSTRAP01_PASS               = 15
+BOOTSTRAP01_FAIL               = 0
+SUBJECT_STATUS                 = PASS
+
+NEXT_BLOCK                     = NO

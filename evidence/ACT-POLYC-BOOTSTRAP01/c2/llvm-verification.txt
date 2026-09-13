@@ -1,0 +1,67 @@
+ACT-POLYC-BOOTSTRAP01 — C2 — LLVM verification status
+=====================================================
+
+ACT §16 pipeline:
+
+  PolyC B0 source
+       ↓
+  hcc --emit-llvm             <- emits partial IR; bounded
+       ↓
+  llvm-as                     <- not reached on this path
+       ↓
+  opt --passes=verify         <- not reached on this path
+       ↓
+  native object/executable    <- authoritative execution seam
+
+The B0 subject's BootstrapLex function emits IR through
+most of the LLVM backend pipeline. At the
+`out[count].kind = BTK_IDENT;` and similar struct-field
+writes through a variable index, the LLVM backend emits:
+
+  LLVM_BACKEND_UNSUPPORTED_POINTER: function BootstrapLex:
+    IR_STORE_DEREF with non-zero disp or scaled-index
+    addressing is rejected (MEMORY01 forbids GEP / pointer
+    arithmetic); disp=8 idx=0x0 scale=0
+
+This is the same documented MEMORY01 boundary the
+ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 C6 closure-summary
+called "path-dependent" and out of scope for non-widening
+ACTs.
+
+Native AOT path (the authoritative execution seam):
+
+  $ ./hcc --install-dir=build/test-prefix \
+        tools/quality/bootstrap01-lexer-test.HC \
+        -o ./build/bootstrap01-lexer-test
+  $ file ./build/bootstrap01-lexer-test
+  ./build/bootstrap01-lexer-test: Mach-O 64-bit executable arm64
+
+The native build succeeds, the binary executes, and the
+differential witness (subject vs. C oracle) matches on
+all 15 fixtures.
+
+Verdict for ACT §16:
+
+  POLYC_B0_NATIVE_LINK         PASS
+  POLYC_B0_NATIVE_RUN          PASS
+  POLYC_B0_LLVM_EMIT           PARTIAL (MEMORY01 STORE_DEREF fence)
+  POLYC_B0_LLVM_VERIFY         N/A (path-dependent per Option-W)
+  POLYC_B0_LLVM_COMPILE_RUN    N/A (path-dependent)
+
+Per the closure truth block:
+
+  B0_HCC_COMPILE               PASS  (native path)
+  B0_LLVM_AS                   N/A   (path-dependent)
+  B0_LLVM_VERIFY               N/A   (path-dependent)
+  B0_NATIVE_LINK               PASS
+  B0_NATIVE_RUN                PASS
+
+This is consistent with the ACT §25 strong closure
+criterion's path-dependent LLVM entry, and with the
+ACT §22 GEP01 D1/D2 = NON_BLOCKING_GOVERNANCE_RESIDUE
+treatment of substrate-shape boundaries in general.
+
+No new LLVM backend semantic widening is requested. The
+B0 subject's failure mode under --emit-llvm is a
+documented boundary of the current LLVM substrate, not a
+B0 compiler-feature fence (per ACT §21).

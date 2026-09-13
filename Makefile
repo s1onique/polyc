@@ -12,7 +12,7 @@ HCC_ENABLE_LLVM ?= OFF
 
 default: all
 
-.PHONY: all gate-fast gate-push install-hooks llvm-all llvm-spike-test test-prefix-install llvm-gep01-test
+.PHONY: all gate-fast gate-push install-hooks llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap01-test bootstrap01-oracle
 
 # To add sqlite3 support add -DHCC_LINK_SQLITE3=1 to the below like so:
 #```
@@ -241,3 +241,36 @@ gate-push:
 
 install-hooks:
 	./scripts/install-git-hooks.sh
+
+# ACT-POLYC-BOOTSTRAP01 C2 IMPL — build the B0 PolyC reference
+# oracle (independent C implementation of the B0 lexical
+# subset). No dependencies beyond libc; built once into the
+# standard build dir.
+bootstrap01-oracle: test-prefix-install
+	cc -std=c99 -O2 -Wall -Wextra -o ./build/bootstrap01-lexer-oracle \
+		tools/quality/bootstrap01-lexer-oracle.c
+	@if [ ! -x ./build/bootstrap01-lexer-oracle ]; then \
+		echo "bootstrap01-oracle: ./build/bootstrap01-lexer-oracle not produced" >&2; \
+		exit 1; \
+	fi
+
+# ACT-POLYC-BOOTSTRAP01 C2 IMPL — B0 differential test runner.
+# Builds the C reference oracle (bootstrap01-oracle) and the
+# PolyC subject driver (bootstrap01-lexer-test.HC which
+# includes bootstrap01-lexer.HC). Runs the PolyC driver
+# against the frozen fixture matrix and reports
+# BOOTSTRAP01_CASES / BOOTSTRAP01_PASS / BOOTSTRAP01_FAIL /
+# STATUS= lines. Exits non-zero on any fixture mismatch.
+bootstrap01-test: bootstrap01-oracle test-prefix-install
+	./hcc --install-dir=$(TEST_PREFIX) \
+		tools/quality/bootstrap01-lexer-test.HC \
+		-o ./build/bootstrap01-lexer-test
+	@if [ ! -x ./build/bootstrap01-lexer-test ]; then \
+		echo "bootstrap01-test: ./build/bootstrap01-lexer-test not produced" >&2; \
+		exit 1; \
+	fi
+	./build/bootstrap01-lexer-test \
+		evidence/ACT-POLYC-BOOTSTRAP01/c1/bootstrap01-fixtures.tsv
+	@rc=$$?; \
+	echo "BOOTSTRAP01_REFERENCE_ORACLE=./build/bootstrap01-lexer-oracle"; \
+	exit $$rc

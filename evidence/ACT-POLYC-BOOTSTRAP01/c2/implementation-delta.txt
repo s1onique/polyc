@@ -1,0 +1,55 @@
+ACT-POLYC-BOOTSTRAP01 — C2 — implementation delta
+==================================================
+
+Production source additions (frozen):
+
+  tools/bootstrap/bootstrap01-lexer.HC
+    The B0 SUBJECT. Allocation-free lexer/tokenizer written
+    in PolyC. Public API:
+
+        public I64 BootstrapLex(
+            U8 *src,
+            I64 src_len,
+            BootstrapToken *out,
+            I64 out_cap,
+            I64 *out_count
+        )
+
+    Token type (public class):
+
+        public class BootstrapToken { I64 kind; I64 start; I64 len; };
+
+    Frozen BTK_* token kinds, frozen BLEX_* status codes,
+    and frozen byte-classification helpers all live in this
+    one file. The state machine is a single forward scan.
+
+  tools/quality/bootstrap01-lexer-test.HC
+    PolyC differential driver. Loads the frozen fixture
+    matrix, runs BootstrapLex on each fixture (twice for
+    the determinism gate, with a source-buffer copy before
+    and after for the immutability gate), and prints SUB
+    output in the canonical reference format.
+
+Test/oracle additions:
+
+  tools/quality/bootstrap01-lexer-oracle.c
+    Independent reference lexer in pure C99. No external
+    dependencies. Compiled to ./build/bootstrap01-lexer-oracle.
+
+Build seam (Makefile):
+
+  Makefile
+    Two new phony targets:
+      bootstrap01-oracle   build the C reference oracle.
+      bootstrap01-test     build + run the PolyC subject
+                           driver and report
+                           BOOTSTRAP01_CASES / PASS / FAIL /
+                           STATUS.
+
+No compiler / parser / AST / codegen / LLVM / AOT / IR /
+backend / ABI / runtime source was modified. Per ACT §29,
+only the B0 subject and the minimum test/build seam are
+within scope. The current production lexer is unchanged
+(ACT §31).
+
+No SRC_FILE edits outside tools/ and Makefile.
