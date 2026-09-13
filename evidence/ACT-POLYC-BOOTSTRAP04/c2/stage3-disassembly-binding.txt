@@ -1,0 +1,45 @@
+ACT-POLYC-BOOTSTRAP04 — C2 — stage3 disassembly binding
+=======================================================
+
+Per ACT §22: stage3 must demonstrably *use* the B1
+component in the production lexer dispatch, not merely
+contain it as a dead symbol.
+
+------------------------------------------------------------
+Disassembly (lexIdentifier delegate site)
+------------------------------------------------------------
+
+```text
+$ otool -tv build/hcc-bootstrap04 | grep -B1 -A1 'BootstrapScanIdent'
+00000001000303f0   mov x2, #0x0
+00000001000303f4   bl  _BootstrapScanIdent       <-- lexIdentifier entry
+00000001000303f8   cbz w0, 0x100030414
+...
+000000010003145c   mov x2, #0x0
+0000000100031460   bl  _BootstrapScanIdent       <-- second call site
+0000000100031464   cbz w0, 0x100031bb0
+```
+
+Two `bl _BootstrapScanIdent` call sites, identical to
+stage2's call sites (verified in evidence/ACT-POLYC-BOOTSTRAP04/c1/stage-identity.txt).
+
+------------------------------------------------------------
+Definition site
+------------------------------------------------------------
+
+```text
+000000010007c314   ret
+_BootstrapScanIdent:
+000000010007c318   stp x29, x30, [sp, #-0x10]!
+```
+
+The B1 component body begins at 0x10007c318 (T).
+
+------------------------------------------------------------
+Required output
+------------------------------------------------------------
+
+```text
+STAGE3_USES_B1_COMPONENT = YES  (2 bl sites, identical addresses to stage2)
+STAGE3_COMPONENT_USED    = YES
+```

@@ -1,0 +1,40 @@
+ACT-POLYC-BOOTSTRAP04 — C2 — stage3 symbol binding
+=================================================
+
+Per ACT §22: `build/hcc-bootstrap04` MUST contain
+`_BootstrapScanIdent` as an external symbol from the
+linked S2 B1 object.
+
+------------------------------------------------------------
+nm output
+------------------------------------------------------------
+
+```text
+$ nm build/hcc-bootstrap04 | grep BootstrapScanIdent
+000000010007c318 T _BootstrapScanIdent
+```
+
+Stage3 has exactly one definition of `_BootstrapScanIdent`.
+
+------------------------------------------------------------
+Comparison with stage2
+------------------------------------------------------------
+
+```text
+$ nm build/hcc-bootstrap03 | grep BootstrapScanIdent
+000000010007c318 T _BootstrapScanIdent
+```
+
+Stage2 and stage3 share the same `_BootstrapScanIdent`
+address (000000010007c318). This is the expected outcome
+of deterministic link order: the B1 component is identical
+across stages and is placed in the same `.text` slot.
+
+------------------------------------------------------------
+Required output
+------------------------------------------------------------
+
+```text
+STAGE3_CONTAINS_B1_SYMBOL = YES  (_BootstrapScanIdent T 000000010007c318)
+STAGE3_COMPONENT_LINKED   = YES  (verified above)
+```

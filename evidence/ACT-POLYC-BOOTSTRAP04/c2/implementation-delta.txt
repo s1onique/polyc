@@ -1,0 +1,75 @@
+ACT-POLYC-BOOTSTRAP04 — C2 — implementation delta
+==================================================
+
+Per ACT §8, §17, §18: B3 is a build-graph extension only.
+Production semantic files (src/lexer.c, src/lexer_bridge.h,
+src/parser/*, src/ast/*, src/ir/*, src/aarch64.c, src/x86_64.c,
+tools/bootstrap/bootstrap02-ident.HC) are NOT modified.
+
+------------------------------------------------------------
+Files added / modified in C2
+------------------------------------------------------------
+
+### Modified (build-graph extension only)
+
+- `Makefile`
+  - `.PHONY:` line now also lists `bootstrap04-component-build`,
+    `bootstrap04-stage3`, `bootstrap04-test`,
+    `bootstrap04-cursor-test`, `bootstrap04-lexer-seam-test`
+  - `bootstrap04-component-build:` target added at end
+    (uses `./build/hcc-bootstrap03` stage2 to produce
+    `build/bootstrap04-ident.stage2.o`)
+  - `bootstrap04-stage3:` target added
+    (builds `build/hcc-bootstrap04` linked against S2 B1 object)
+  - `bootstrap04-test:` target added
+    (15/15 differential against B1 oracle)
+  - `bootstrap04-cursor-test:` target added
+    (6/6 cursor against B1 cursor oracle)
+  - `bootstrap04-lexer-seam-test:` target added
+    (6/6 production Lexer seam stage2↔stage3)
+  - `HCC_STAGE3_OBJDIR` and `HCC_STAGE3_OBJECTS` variables added
+
+- `src/CMakeLists.txt`
+  - After the existing
+    `HCC_ENABLE_BOOTSTRAP03_STAGE2` block, added:
+    `option(HCC_ENABLE_BOOTSTRAP04_STAGE3 ...)` block that
+    requires `HCC_ENABLE_BOOTSTRAP03_STAGE2=ON` and
+    `BOOTSTRAP04_IDENT_OBJECT` path, builds a SEPARATE
+    `hcc-bootstrap04` executable that links the S2 B1 object,
+    and inherits the existing `HCC_BOOTSTRAP02_STAGE1` lexer
+    delegation macro (no new lexer branch).
+
+### NOT modified
+
+- `src/lexer.c`                — FROZEN (B1+B2+B3 share the
+                                 same `HCC_BOOTSTRAP02_STAGE1`
+                                 dispatch)
+- `src/lexer_bridge.h`         — FROZEN
+- `tools/bootstrap/bootstrap02-ident.HC`  — FROZEN
+- All parser/AST/IR code       — FROZEN
+- All backend code (aarch64, x86_64, llvm-backend) — FROZEN
+- B0 / B1 / B2 test code       — FROZEN
+
+------------------------------------------------------------
+Diff summary
+------------------------------------------------------------
+
+```text
+$ git diff --stat HEAD~1..HEAD
+ Makefile                                           | 237 ++++++++++++++++++++-
+ src/CMakeLists.txt                                 |  75 +++++++
+ 11 files changed, 906 insertions(+), 1 deletion(-)
+```
+
+------------------------------------------------------------
+Scope audit
+------------------------------------------------------------
+
+Every changed line traces to ACT-POLYC-BOOTSTRAP04
+build-graph extension.
+
+No compiler semantic files touched.
+No unrelated cleanup.
+No anticipated future hooks.
+No B4/scope creep.
+No src/lexer.c, src/lexer_bridge.h, or B1 component source.

@@ -1,0 +1,59 @@
+ACT-POLYC-BOOTSTRAP04 — C2 — stage2 component build
+===================================================
+
+Per ACT §5, §6, §17: stage2 produces the B1 object that
+stage3 will link.
+
+------------------------------------------------------------
+Command (from bootstrap04-component-build recipe)
+------------------------------------------------------------
+
+```bash
+./build/hcc-bootstrap03 --install-dir=$(TEST_PREFIX) \
+    -c tools/bootstrap/bootstrap02-ident.HC \
+    -o ./build/bootstrap04-ident.stage2.o
+```
+
+Where `TEST_PREFIX=$(CURDIR)/build/test-prefix` (set by
+`make test-prefix-install`) and `build/hcc-bootstrap03` is
+the B2 stage2 binary.
+
+------------------------------------------------------------
+Output artifact
+------------------------------------------------------------
+
+```text
+$ ls -la build/bootstrap04-ident.stage2.o
+-rw-r--r--  1 chistyakov  staff  2704  Sep 13 19:09  build/bootstrap04-ident.stage2.o
+
+$ nm build/bootstrap04-ident.stage2.o | grep BootstrapScanIdent
+00000000000002e0 T _BootstrapScanIdent
+```
+
+Symbol exported.
+
+------------------------------------------------------------
+Hash (producer output)
+------------------------------------------------------------
+
+```text
+$ shasum -a 256 build/bootstrap04-ident.stage2.o
+a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f  build/bootstrap04-ident.stage2.o
+```
+
+------------------------------------------------------------
+Verification
+------------------------------------------------------------
+
+The build recipe also enforces:
+
+```text
+@if [ ! -f ./build/bootstrap04-ident.stage2.o ]; then \
+    echo "bootstrap04-component-build: ./build/bootstrap04-ident.stage2.o not produced" >&2; \
+    exit 1; \
+fi
+@nm ./build/bootstrap04-ident.stage2.o | grep -q '_BootstrapScanIdent' \
+    || { echo "bootstrap04-component-build: symbol _BootstrapScanIdent not found in object" >&2; exit 1; }
+```
+
+Both gates passed silently during the make execution.

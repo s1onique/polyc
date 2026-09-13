@@ -1,0 +1,74 @@
+ACT-POLYC-BOOTSTRAP04 — C2 — stage3 link
+========================================
+
+Per ACT §6, §17, §22: stage3 binary built with stage2's
+B1 object as the explicit link input.
+
+------------------------------------------------------------
+CMake invocation (from bootstrap04-stage3 recipe)
+------------------------------------------------------------
+
+```bash
+cmake -S ./src -B ./build/hcc-bootstrap04-build -G 'Unix Makefiles' \
+    -DCMAKE_C_COMPILER=$(C_COMPILER) \
+    -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
+    -DCMAKE_C_FLAGS=$(CFLAGS) \
+    -DHCC_ENABLE_JIT=on \
+    -DHCC_ENABLE_LLVM=OFF \
+    -DHCC_ENABLE_BOOTSTRAP02_STAGE1=ON \
+    -DBOOTSTRAP02_IDENT_OBJECT=$(CURDIR)/build/bootstrap02-ident.o \
+    -DHCC_ENABLE_BOOTSTRAP03_STAGE2=ON \
+    -DBOOTSTRAP03_IDENT_OBJECT=$(CURDIR)/build/bootstrap03-ident.stage1.o \
+    -DHCC_ENABLE_BOOTSTRAP04_STAGE3=ON \
+    -DBOOTSTRAP04_IDENT_OBJECT=$(CURDIR)/build/bootstrap04-ident.stage2.o
+$(MAKE) -C ./build/hcc-bootstrap04-build hcc-bootstrap04 -j2
+```
+
+------------------------------------------------------------
+Output
+------------------------------------------------------------
+
+```text
+$ ls -la build/hcc-bootstrap04
+-rwxr-xr-x  1 chistyakov  staff  742160  Sep 13 19:11  build/hcc-bootstrap04
+
+$ file build/hcc-bootstrap04
+build/hcc-bootstrap04: Mach-O 64-bit executable arm64
+```
+
+------------------------------------------------------------
+Link input path (the critical provenance assertion)
+------------------------------------------------------------
+
+```text
+-DBOOTSTRAP04_IDENT_OBJECT=$(CURDIR)/build/bootstrap04-ident.stage2.o
+```
+
+The CMake variable is set to the EXACT canonical B3 path
+and the path matches the producer output recorded in
+`stage2-component-build.txt`.
+
+The build graph cannot accidentally substitute another
+artifact: the only path the CMake script knows about is
+`build/bootstrap04-ident.stage2.o`, and the producer
+(stage2) writes to that path explicitly.
+
+------------------------------------------------------------
+Build verified
+------------------------------------------------------------
+
+```text
+[100%] Built target hcc-bootstrap04
+BOOTSTRAP04_STAGE3_BINARY=./build/hcc-bootstrap04
+```
+
+Both gates passed:
+
+```text
+@if [ ! -x ./build/hcc-bootstrap04 ]; then \
+    echo "bootstrap04-stage3: ./build/hcc-bootstrap04 not produced" >&2; \
+    exit 1; \
+fi
+@nm ./build/hcc-bootstrap04 | grep -q '_BootstrapScanIdent' \
+    || { echo "bootstrap04-stage3: symbol _BootstrapScanIdent not found in linked binary" >&2; exit 1; }
+```

@@ -1,0 +1,100 @@
+ACT-POLYC-BOOTSTRAP04 — C2 — artifact provenance
+================================================
+
+Per ACT §6, §21: capture producer/consumer identity,
+path, and hash for the stage2→stage3 B1 artifact.
+
+------------------------------------------------------------
+PROVENANCE_PRIMARY (per ACT §21)
+------------------------------------------------------------
+
+```text
+producer binary        = build/hcc-bootstrap03  (stage2, B2 PASS)
+producer command       = ./build/hcc-bootstrap03 --install-dir=$(TEST_PREFIX) \
+                           -c tools/bootstrap/bootstrap02-ident.HC \
+                           -o ./build/bootstrap04-ident.stage2.o
+producer input         = tools/bootstrap/bootstrap02-ident.HC
+producer output path   = build/bootstrap04-ident.stage2.o
+
+consumer configure     = cmake -S ./src -B ./build/hcc-bootstrap04-build \
+                           -DHCC_ENABLE_BOOTSTRAP04_STAGE3=ON \
+                           -DBOOTSTRAP04_IDENT_OBJECT=$(CURDIR)/build/bootstrap04-ident.stage2.o
+consumer link input    = build/bootstrap04-ident.stage2.o
+consumer link output   = build/hcc-bootstrap04
+```
+
+------------------------------------------------------------
+PATH_EQ = YES
+------------------------------------------------------------
+
+```text
+producer output path    = build/bootstrap04-ident.stage2.o
+consumer link input     = build/bootstrap04-ident.stage2.o
+```
+
+Same canonical path; no aliasing.
+
+------------------------------------------------------------
+CONTENT_IDENTITY (per ACT §21, SHA256)
+------------------------------------------------------------
+
+```text
+producer output SHA256  = a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f
+                          build/bootstrap04-ident.stage2.o
+
+consumer link input SHA = a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f
+                          build/bootstrap04-ident.stage2.o
+```
+
+HASH_EQ = YES.
+
+------------------------------------------------------------
+Three-generation comparison (additional evidence)
+------------------------------------------------------------
+
+```text
+$ shasum -a 256 build/bootstrap02-ident.o       \
+                build/bootstrap03-ident.stage1.o \
+                build/bootstrap04-ident.stage2.o
+a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f  build/bootstrap02-ident.o
+a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f  build/bootstrap03-ident.stage1.o
+a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f  build/bootstrap04-ident.stage2.o
+```
+
+All three S0/S1/S2 B1 objects are byte-identical. The B1
+component is at a fixed point across three successive
+compiler generations.
+
+------------------------------------------------------------
+Compiler binary hashes (informational; not B3 invariant)
+------------------------------------------------------------
+
+```text
+$ shasum -a 256 build/hcc-bootstrap02 build/hcc-bootstrap03 build/hcc-bootstrap04
+6cae5fcd40c7fa3c83efaa0add5c8b3a800e54cef1de66efd861c0448d0f78d5  build/hcc-bootstrap02
+2e505bb974b06bd7a79e4a0c498368f9227d1c465d519b6cb0fdc036ad6b8802  build/hcc-bootstrap03
+9d1c62f17f6ff8115913dff394fe90d4885257a7575fcb0d0445acd78ad0d7ad  build/hcc-bootstrap04
+```
+
+Stage3 ≠ stage2 ≠ stage1 at the executable byte level. Per
+ACT §33 this is EXPECTED: compilers may embed paths,
+link-ordering artifacts, or load-command details. The
+stability invariant is on compiler **output behaviour**,
+not on compiler binary identity.
+
+------------------------------------------------------------
+Interpretation (per ACT §21)
+------------------------------------------------------------
+
+```text
+PROVENANCE_PRIMARY  =
+  PRODUCER_COMMAND_PLUS_DISTINCT_BUILD_PATH_PLUS_CONSUMER_GRAPH
+  = established
+
+CONTENT_IDENTITY_SECONDARY =
+  SHA256_MATCH
+  = established
+
+INODE_IDENTITY =
+  NOT_CLAIMED (no inode capture in this ACT)
+```

@@ -1,0 +1,63 @@
+ACT-POLYC-BOOTSTRAP04 — C2 — required result
+============================================
+
+C2 end block (per ACT §38):
+
+```text
+STAGE2_B1_ARTIFACT_CREATED       = YES
+
+STAGE3_CREATED                   = YES
+STAGE3_LINKS_STAGE2_B1_ARTIFACT  = YES
+STAGE3_USES_B1_COMPONENT         = YES
+
+STAGE3_B1_ARTIFACT_PROVENANCE    = STAGE2
+
+C2_TO_C3_GATE                    = OPEN
+```
+
+------------------------------------------------------------
+C2 acceptance criteria status
+------------------------------------------------------------
+
+```text
+build-graph extension only        YES
+HCC_ENABLE_BOOTSTRAP04_STAGE3     added in src/CMakeLists.txt
+hcc-bootstrap04 target            added in src/CMakeLists.txt
+BOOTSTRAP04_IDENT_OBJECT path     build/bootstrap04-ident.stage2.o
+bootstrap04-component-build       uses stage2 (hcc-bootstrap03)
+bootstrap04-stage3                uses stage2's S2 B1 object as link input
+bootstrap04-test                  15/15 differential PASS
+bootstrap04-cursor-test           6/6 PASS
+bootstrap04-lexer-seam-test       6/6 stage2↔stage3 PASS
+
+B0 conservation                   PASS (15/15)
+B1 conservation                   PASS (15/15 + 6/6 + 6/6)
+B2 conservation                   PASS (15/15 + 6/6)
+
+STAGE3_CONTAINS_B1_SYMBOL         YES  (nm)
+STAGE3_USES_B1_COMPONENT          YES  (2 bl _BootstrapScanIdent sites)
+
+PATH_EQ                           YES  (producer path == consumer path)
+HASH_EQ                           YES  (producer SHA == consumer SHA)
+PROVENANCE_PRIMARY                established
+```
+
+------------------------------------------------------------
+Binding result
+------------------------------------------------------------
+
+```text
+ACT_PHASE = IMPL
+
+STAGE2_B1_ARTIFACT_CREATED       = YES
+
+STAGE3_CREATED                   = YES
+STAGE3_LINKS_STAGE2_B1_ARTIFACT  = YES
+STAGE3_USES_B1_COMPONENT         = YES
+
+STAGE3_B1_ARTIFACT_PROVENANCE    = STAGE2
+
+C2_TO_C3_GATE                    = OPEN
+```
+
+C2 IMPL complete. Proceed to C3 EVIDENCE.

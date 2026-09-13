@@ -312,6 +312,81 @@ if (HCC_ENABLE_BOOTSTRAP03_STAGE2)
     install(TARGETS hcc-bootstrap03 DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 endif()
 
+# ACT-POLYC-BOOTSTRAP04 C2 IMPL — opt-in stage3 build that
+# links the B1 PolyC component (BootstrapScanIdent), this
+# time as compiled BY STAGE2 (not by stage0 or stage1), into
+# a SEPARATE stage3 binary (hcc-bootstrap04). Mirrors the B2
+# stage2 pattern but with one additional opt-in flag so the
+# provenance invariant for the stage2->stage3 edge is
+# explicit in the build graph.
+#
+# Provenance invariant (ACT §6): the object linked here MUST
+# be the stage2-produced one. Because stage3's lexIdentifier
+# still uses the same _BootstrapScanIdent symbol under the
+# same HCC_BOOTSTRAP02_STAGE1 dispatch (frozen in src/lexer.c),
+# stage3's compile-time definition set is
+#   HCC_BOOTSTRAP02_STAGE1   <-- lexer delegation gate
+#   HCC_BOOTSTRAP04_STAGE3   <-- build-graph distinctness only
+# The new STAGE3 macro mirrors B2's STAGE2 macro: it exists
+# purely so the build graph can distinguish stage3 from
+# stage2, not because the lexer requires a new branch.
+#
+# To build the stage3 binary:
+#
+#   ./build/hcc-bootstrap03 --install-dir=<prefix> -c \
+#       ../tools/bootstrap/bootstrap02-ident.HC \
+#       -o build/bootstrap04-ident.stage2.o
+#
+#   cmake -S ./src -B ./build/hcc-bootstrap04-build \
+#       -DHCC_ENABLE_BOOTSTRAP02_STAGE1=ON \
+#       -DBOOTSTRAP02_IDENT_OBJECT=<abs>/build/bootstrap02-ident.o \
+#       -DHCC_ENABLE_BOOTSTRAP03_STAGE2=ON \
+#       -DBOOTSTRAP03_IDENT_OBJECT=<abs>/build/bootstrap03-ident.stage1.o \
+#       -DHCC_ENABLE_BOOTSTRAP04_STAGE3=ON \
+#       -DBOOTSTRAP04_IDENT_OBJECT=<abs>/build/bootstrap04-ident.stage2.o \
+#       ...
+#   make -C ./build/hcc-bootstrap04-build hcc-bootstrap04
+#
+# Defaults: OFF (the production binary tree stays unchanged).
+option(HCC_ENABLE_BOOTSTRAP04_STAGE3
+       "Link the B1 PolyC component (BootstrapScanIdent) compiled by stage2 into a separate stage3 binary (hcc-bootstrap04). ACT-POLYC-BOOTSTRAP04."
+       OFF)
+
+if (HCC_ENABLE_BOOTSTRAP04_STAGE3)
+    if (NOT HCC_ENABLE_BOOTSTRAP03_STAGE2)
+        message(FATAL_ERROR
+            "HCC_ENABLE_BOOTSTRAP04_STAGE3=ON requires HCC_ENABLE_BOOTSTRAP03_STAGE2=ON. "
+            "Stage3 must carry the B1 component symbol; the only delegation path is the B1 stage1 dispatch.")
+    endif()
+    if (NOT BOOTSTRAP04_IDENT_OBJECT)
+        message(FATAL_ERROR
+            "HCC_ENABLE_BOOTSTRAP04_STAGE3=ON but BOOTSTRAP04_IDENT_OBJECT is not set. "
+            "Pass -DBOOTSTRAP04_IDENT_OBJECT=<abs-path>/build/bootstrap04-ident.stage2.o "
+            "produced by: ./build/hcc-bootstrap03 -c tools/bootstrap/bootstrap02-ident.HC -o <path>")
+    endif()
+    if (NOT EXISTS "${BOOTSTRAP04_IDENT_OBJECT}")
+        message(FATAL_ERROR
+            "HCC_ENABLE_BOOTSTRAP04_STAGE3=ON but BOOTSTRAP04_IDENT_OBJECT=${BOOTSTRAP04_IDENT_OBJECT} "
+            "does not exist. Build it first with stage2 hcc-bootstrap03.")
+    endif()
+    # Stage3 is consumed as the ONLY B1 source for its link.
+    # The build graph ensures stage2's object is the link input;
+    # the distinct BOOTSTRAP04_IDENT_OBJECT path makes that
+    # provenance checkable.
+    #
+    # We build a SEPARATE stage3 executable; do NOT overwrite
+    # hcc, hcc-bootstrap02, or hcc-bootstrap03.
+    add_executable(hcc-bootstrap04 ${SOURCES} ${HEADERS})
+    target_compile_definitions(hcc-bootstrap04 PRIVATE
+        HCC_BOOTSTRAP02_STAGE1
+        HCC_BOOTSTRAP04_STAGE3)
+    if (HCC_ENABLE_JIT)
+        target_link_libraries(hcc-bootstrap04 tasm ${CMAKE_DL_LIBS})
+    endif()
+    target_link_libraries(hcc-bootstrap04 ${BOOTSTRAP04_IDENT_OBJECT} m)
+    install(TARGETS hcc-bootstrap04 DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+endif()
+
 if (HCC_ENABLE_JIT)
     target_compile_definitions(hcc PRIVATE HCC_ENABLE_JIT)
     target_link_libraries(hcc tasm ${CMAKE_DL_LIBS})

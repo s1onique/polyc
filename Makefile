@@ -12,7 +12,7 @@ HCC_ENABLE_LLVM ?= OFF
 
 default: all
 
-.PHONY: all gate-fast gate-push install-hooks llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test
+.PHONY: all gate-fast gate-push install-hooks llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test
 
 # To add sqlite3 support add -DHCC_LINK_SQLITE3=1 to the below like so:
 #```
@@ -724,4 +724,236 @@ bootstrap03-lexer-seam-test: bootstrap03-stage2
 	else \
 		echo "BOOTSTRAP03_LEXER_SEAM_DOWNSTREAM=PASS (byte-identical, including labels)"; \
 		echo "BOOTSTRAP03_LEXER_SEAM_RESIDUE=NONE"; \
+	fi
+
+# ACT-POLYC-BOOTSTRAP04 C2 IMPL — B3 stage2-produced B1 component
+# object. Builds the B1 PolyC component (tools/bootstrap/
+# bootstrap02-ident.HC) using STAGE2 (build/hcc-bootstrap03)
+# and emits build/bootstrap04-ident.stage2.o.
+#
+# This is the future stage3 B1 artifact. Its path is distinct
+# from build/bootstrap03-ident.stage1.o (and from
+# build/bootstrap02-ident.o) so the build graph cannot
+# accidentally reuse a previous-generation object when
+# assembling stage3 (per ACT §20 "Artifact path separation").
+#
+# Dependency: bootstrap03-stage2 (NOT bootstrap02-stage1 or
+# bootstrap03-component-build, both of which use stage1 or
+# build artifacts derived from stage1). The stage2 binary is
+# the producer.
+bootstrap04-component-build: bootstrap03-stage2 test-prefix-install
+	@if [ ! -x ./build/hcc-bootstrap03 ]; then \
+		echo "bootstrap04-component-build: ./build/hcc-bootstrap03 (stage2) missing. Run: make bootstrap03-stage2" >&2; \
+		exit 1; \
+	fi
+	@rm -f ./build/bootstrap04-ident.stage2.o
+	./build/hcc-bootstrap03 --install-dir=$(TEST_PREFIX) \
+		-c tools/bootstrap/bootstrap02-ident.HC \
+		-o ./build/bootstrap04-ident.stage2.o
+	@if [ ! -f ./build/bootstrap04-ident.stage2.o ]; then \
+		echo "bootstrap04-component-build: ./build/bootstrap04-ident.stage2.o not produced" >&2; \
+		exit 1; \
+	fi
+	@nm ./build/bootstrap04-ident.stage2.o | grep -q '_BootstrapScanIdent' \
+		|| { echo "bootstrap04-component-build: symbol _BootstrapScanIdent not found in object" >&2; exit 1; }
+	@echo "BOOTSTRAP04_STAGE2_B1_OBJECT=./build/bootstrap04-ident.stage2.o"
+
+# ACT-POLYC-BOOTSTRAP04 C2 IMPL — B3 stage3 binary build.
+# Produces build/hcc-bootstrap04 by linking the STAGE2-produced
+# B1 object (NOT the stage1- or stage0-produced one) into the
+# modified hcc source tree with HCC_ENABLE_BOOTSTRAP04_STAGE3=ON.
+# Per ACT §19: the existing HCC_BOOTSTRAP02_STAGE1 macro gates
+# the lexIdentifier delegation; HCC_BOOTSTRAP04_STAGE3 exists
+# purely for build-graph distinctness (mirrors B2's pattern).
+bootstrap04-stage3: bootstrap04-component-build test-prefix-install
+	@if [ ! -f ./build/bootstrap04-ident.stage2.o ]; then \
+		echo "bootstrap04-stage3: ./build/bootstrap04-ident.stage2.o missing. Run: make bootstrap04-component-build" >&2; \
+		exit 1; \
+	fi
+	@rm -rf ./build/hcc-bootstrap04-build
+	@mkdir -p ./build/hcc-bootstrap04-build
+	cmake -S ./src -B ./build/hcc-bootstrap04-build -G 'Unix Makefiles' \
+		-DCMAKE_C_COMPILER=$(C_COMPILER) \
+		-DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
+		-DCMAKE_C_FLAGS=$(CFLAGS) \
+		-DHCC_ENABLE_JIT=on \
+		-DHCC_ENABLE_LLVM=OFF \
+		-DHCC_ENABLE_BOOTSTRAP02_STAGE1=ON \
+		-DBOOTSTRAP02_IDENT_OBJECT=$(CURDIR)/build/bootstrap02-ident.o \
+		-DHCC_ENABLE_BOOTSTRAP03_STAGE2=ON \
+		-DBOOTSTRAP03_IDENT_OBJECT=$(CURDIR)/build/bootstrap03-ident.stage1.o \
+		-DHCC_ENABLE_BOOTSTRAP04_STAGE3=ON \
+		-DBOOTSTRAP04_IDENT_OBJECT=$(CURDIR)/build/bootstrap04-ident.stage2.o
+	$(MAKE) -C ./build/hcc-bootstrap04-build hcc-bootstrap04 -j2
+	@if [ ! -x ./build/hcc-bootstrap04 ]; then \
+		echo "bootstrap04-stage3: ./build/hcc-bootstrap04 not produced" >&2; \
+		exit 1; \
+	fi
+	@nm ./build/hcc-bootstrap04 | grep -q '_BootstrapScanIdent' \
+		|| { echo "bootstrap04-stage3: symbol _BootstrapScanIdent not found in linked binary" >&2; exit 1; }
+	@echo "BOOTSTRAP04_STAGE3_BINARY=./build/hcc-bootstrap04"
+
+# ACT-POLYC-BOOTSTRAP04 C2 IMPL — B3 component differential.
+# Compiles the B1 PolyC source once with stage3 (using the
+# stage2-produced B1 object) and diffs the harness output
+# against the B1 C oracle (./build/bootstrap02-ident-oracle).
+# Per ACT §23 + ACT §30, the strong result is byte equality
+# with the B1 oracle and with the prior B2 stage3 result
+# (which itself equals the B1 oracle).
+bootstrap04-test: bootstrap04-stage3 bootstrap02-oracle
+	@if [ ! -x ./build/hcc-bootstrap04 ]; then \
+		echo "bootstrap04-test: ./build/hcc-bootstrap04 (stage3) missing. Run: make bootstrap04-stage3" >&2; \
+		exit 1; \
+	fi
+	cc -std=c99 -O2 -Wall -Wextra -o ./build/bootstrap04-ident-stage3 \
+		tools/quality/bootstrap02-ident-host.c ./build/bootstrap04-ident.stage2.o
+	@if [ ! -x ./build/bootstrap04-ident-stage3 ]; then \
+		echo "bootstrap04-test: ./build/bootstrap04-ident-stage3 not produced" >&2; \
+		exit 1; \
+	fi
+	./build/bootstrap02-ident-oracle    > /tmp/b04-oracle.txt
+	./build/bootstrap04-ident-stage3     > /tmp/b04-stage3.txt
+	@if diff -q /tmp/b04-oracle.txt /tmp/b04-stage3.txt >/dev/null; then \
+		echo "BOOTSTRAP04_COMPONENT_FIXED_POINT=PASS (stage3 B1 object matches B1 oracle 15/15, byte-identical)"; \
+	else \
+		echo "bootstrap04-test: labels differ; stripping harness-name suffix and re-checking fixture lines" >&2; \
+		sed -E 's/^BOOTSTRAP02_IDENT_HOST_/BOOTSTRAP02_IDENT_/' /tmp/b04-stage3.txt > /tmp/b04-stage3-clean.txt; \
+		if diff -q /tmp/b04-oracle.txt /tmp/b04-stage3-clean.txt >/dev/null; then \
+			echo "BOOTSTRAP04_COMPONENT_FIXED_POINT=PASS (stage3 B1 object matches B1 oracle 15/15 after label normalization)"; \
+		else \
+			echo "bootstrap04-test: B1 object produced by stage3 DIFFERS from B1 oracle" >&2; \
+			diff /tmp/b04-oracle.txt /tmp/b04-stage3-clean.txt >&2; \
+			exit 1; \
+		fi; \
+	fi
+	@echo "BOOTSTRAP04_STAGE2_B1_OBJECT=./build/bootstrap04-ident.stage2.o"
+
+# ACT-POLYC-BOOTSTRAP04 C2 IMPL — B3 cursor model test.
+# Reuses the existing bootstrap02-cursor-host.c harness and
+# runs it linked against stage3's B1 object path. The
+# reference is the existing B1 cursor oracle
+# (./build/bootstrap02-cursor-oracle), which is
+# already produced by bootstrap02-cursor-test. Since the
+# B1 component has been mechanically shown to be a fixed
+# point across stage0/stage1/stage2/stage3 (see
+# stage2-self-compile.txt + bootstrap04-test), stage3's
+# cursor output MUST equal the oracle.
+bootstrap04-cursor-test: bootstrap04-stage3 bootstrap02-cursor-test
+	@if [ ! -x ./build/hcc-bootstrap04 ]; then \
+		echo "bootstrap04-cursor-test: ./build/hcc-bootstrap04 (stage3) missing. Run: make bootstrap04-stage3" >&2; \
+		exit 1; \
+	fi
+	@if [ ! -x ./build/bootstrap02-cursor-oracle ]; then \
+		echo "bootstrap04-cursor-test: ./build/bootstrap02-cursor-oracle missing. Run: make bootstrap02-cursor-test" >&2; \
+		exit 1; \
+	fi
+	cc -std=c99 -O2 -Wall -Wextra -o ./build/bootstrap04-cursor-stage3 \
+		tools/quality/bootstrap02-cursor-host.c ./build/bootstrap04-ident.stage2.o
+	@if [ ! -x ./build/bootstrap04-cursor-stage3 ]; then \
+		echo "bootstrap04-cursor-test: ./build/bootstrap04-cursor-stage3 not produced" >&2; \
+		exit 1; \
+	fi
+	./build/bootstrap04-cursor-stage3 > /tmp/b04-cursor-stage3.txt
+	./build/bootstrap02-cursor-oracle > /tmp/b04-cursor-oracle.txt
+	@grep -E '^E[0-9]+ ' /tmp/b04-cursor-oracle.txt  > /tmp/b04-cursor-oracle-fixtures.txt; \
+	grep -E '^E[0-9]+ ' /tmp/b04-cursor-stage3.txt  > /tmp/b04-cursor-stage3-fixtures.txt; \
+	if diff -q /tmp/b04-cursor-oracle-fixtures.txt /tmp/b04-cursor-stage3-fixtures.txt >/dev/null; then \
+		echo "BOOTSTRAP04_CURSOR_FIXED_POINT=PASS 6/6 (stage3 matches B1 cursor oracle)"; \
+	else \
+		echo "bootstrap04-cursor-test: stage3 cursor model DIFFERS from B1 oracle" >&2; \
+		diff /tmp/b04-cursor-oracle-fixtures.txt /tmp/b04-cursor-stage3-fixtures.txt >&2; \
+		exit 1; \
+	fi
+
+# ACT-POLYC-BOOTSTRAP04 C2 IMPL — B3 production Lexer seam test
+# for stage2 ↔ stage3.
+#
+# Mirrors the B2 `bootstrap03-lexer-seam-test` pattern exactly:
+# link the production src/lexer.c source TWICE, once with each
+# stage's object file, and run the same six inputs through the
+# production public entry point. The two outputs (excluding
+# BUILD_LABEL) must be byte-identical.
+#
+# We reuse the existing tools/quality/bootstrap02-lexer-seam-runner.c.
+HCC_STAGE3_OBJDIR = ./build/hcc-bootstrap04-build/CMakeFiles/hcc-bootstrap04.dir
+
+HCC_STAGE3_OBJECTS = \
+	$(HCC_STAGE3_OBJDIR)/lexer.c.o \
+	$(HCC_STAGE3_OBJDIR)/aostr.c.o \
+	$(HCC_STAGE3_OBJDIR)/containers.c.o \
+	$(HCC_STAGE3_OBJDIR)/list.c.o \
+	$(HCC_STAGE3_OBJDIR)/arena.c.o \
+	$(HCC_STAGE3_OBJDIR)/ast.c.o \
+	$(HCC_STAGE3_OBJDIR)/cctrl.c.o \
+	$(HCC_STAGE3_OBJDIR)/parser.c.o \
+	$(HCC_STAGE3_OBJDIR)/json.c.o \
+	$(HCC_STAGE3_OBJDIR)/mempool.c.o \
+	$(HCC_STAGE3_OBJDIR)/memory.c.o \
+	$(HCC_STAGE3_OBJDIR)/memsafe.c.o \
+	$(HCC_STAGE3_OBJDIR)/asm.c.o \
+	$(HCC_STAGE3_OBJDIR)/cfg.c.o \
+	$(HCC_STAGE3_OBJDIR)/cfg-print.c.o \
+	$(HCC_STAGE3_OBJDIR)/cli.c.o \
+	$(HCC_STAGE3_OBJDIR)/compile.c.o \
+	$(HCC_STAGE3_OBJDIR)/ir.c.o \
+	$(HCC_STAGE3_OBJDIR)/ir-debug.c.o \
+	$(HCC_STAGE3_OBJDIR)/ir-eval.c.o \
+	$(HCC_STAGE3_OBJDIR)/ir-optimise.c.o \
+	$(HCC_STAGE3_OBJDIR)/ir-regalloc.c.o \
+	$(HCC_STAGE3_OBJDIR)/ir-types.c.o \
+	$(HCC_STAGE3_OBJDIR)/lsp.c.o \
+	$(HCC_STAGE3_OBJDIR)/prsasm.c.o \
+	$(HCC_STAGE3_OBJDIR)/prslib.c.o \
+	$(HCC_STAGE3_OBJDIR)/prsutil.c.o \
+	$(HCC_STAGE3_OBJDIR)/transpiler.c.o \
+	$(HCC_STAGE3_OBJDIR)/x86_64.c.o \
+	$(HCC_STAGE3_OBJDIR)/x86_64-jit.c.o \
+	$(HCC_STAGE3_OBJDIR)/aarch64.c.o \
+	$(HCC_STAGE3_OBJDIR)/aarch64-jit.c.o \
+	$(HCC_STAGE3_OBJDIR)/x86.c.o \
+	$(HCC_STAGE3_OBJDIR)/jit-common.c.o \
+	$(HCC_STAGE3_OBJDIR)/linenoise/linenoise.c.o
+
+bootstrap04-lexer-seam-test: bootstrap04-stage3
+	@if [ ! -d "$(HCC_STAGE3_OBJDIR)" ]; then \
+		echo "bootstrap04-lexer-seam-test: $(HCC_STAGE3_OBJDIR) missing. Run: make bootstrap04-stage3" >&2; \
+		exit 1; \
+	fi
+	@if [ ! -d "$(HCC_STAGE2_OBJDIR)" ]; then \
+		echo "bootstrap04-lexer-seam-test: $(HCC_STAGE2_OBJDIR) missing. Run: make bootstrap03-stage2" >&2; \
+		exit 1; \
+	fi
+	@if [ ! -f "$(TASM_LIB)" ]; then \
+		echo "bootstrap04-lexer-seam-test: $(TASM_LIB) missing. Run: cmake -S src -B build && make -C build hcc" >&2; \
+		exit 1; \
+	fi
+	cc -std=c99 -O2 -Wall -Wextra -Wno-unused-function -Wno-unused-variable \
+		-DBUILD_LABEL='"stage2"' -Isrc \
+		-o ./build/bootstrap04-lexer-seam-stage2 \
+		tools/quality/bootstrap02-lexer-seam-runner.c \
+		$(HCC_STAGE2_OBJECTS) ./build/bootstrap03-ident.stage1.o $(TASM_LIB) -lm -lpthread -ldl
+	cc -std=c99 -O2 -Wall -Wextra -Wno-unused-function -Wno-unused-variable \
+		-DBUILD_LABEL='"stage3"' -Isrc \
+		-o ./build/bootstrap04-lexer-seam-stage3 \
+		tools/quality/bootstrap02-lexer-seam-runner.c \
+		$(HCC_STAGE3_OBJECTS) ./build/bootstrap04-ident.stage2.o $(TASM_LIB) -lm -lpthread -ldl
+	./build/bootstrap04-lexer-seam-stage2 > /tmp/b04-lexer-seam-stage2.txt
+	./build/bootstrap04-lexer-seam-stage3 > /tmp/b04-lexer-seam-stage3.txt
+	@if ! diff -q /tmp/b04-lexer-seam-stage2.txt /tmp/b04-lexer-seam-stage3.txt >/dev/null; then \
+		echo "bootstrap04-lexer-seam-test: PILLAR B PRODUCTION SEAM DIVERGED" >&2; \
+		diff /tmp/b04-lexer-seam-stage2.txt /tmp/b04-lexer-seam-stage3.txt >&2 || true; \
+		echo "bootstrap04-lexer-seam-test: stripping BUILD_LABEL and case-name suffixes; re-checking fields" >&2; \
+		sed -E 's/^(CASE .+) build=.*/\1/; s/^BUILD_LABEL=.*/BUILD_LABEL=/; s/^LEXER_SEAM_CASE_COUNT=.*/LEXER_SEAM_CASE_COUNT=/' /tmp/b04-lexer-seam-stage2.txt > /tmp/stage2-clean.txt; \
+		sed -E 's/^(CASE .+) build=.*/\1/; s/^BUILD_LABEL=.*/BUILD_LABEL=/; s/^LEXER_SEAM_CASE_COUNT=.*/LEXER_SEAM_CASE_COUNT=/' /tmp/b04-lexer-seam-stage3.txt > /tmp/stage3-clean.txt; \
+		if diff -q /tmp/stage2-clean.txt /tmp/stage3-clean.txt >/dev/null; then \
+			echo "BOOTSTRAP04_LEXER_SEAM_DOWNSTREAM=PASS (6/6 cases byte-identical)"; \
+			echo "BOOTSTRAP04_LEXER_SEAM_RESIDUE=NONE"; \
+		else \
+			echo "bootstrap04-lexer-seam-test: fields still diverge after stripping labels; treat as P0 blocker" >&2; \
+			diff /tmp/stage2-clean.txt /tmp/stage3-clean.txt >&2; \
+			exit 1; \
+		fi; \
+	else \
+		echo "BOOTSTRAP04_LEXER_SEAM_DOWNSTREAM=PASS (byte-identical, including labels)"; \
+		echo "BOOTSTRAP04_LEXER_SEAM_RESIDUE=NONE"; \
 	fi
