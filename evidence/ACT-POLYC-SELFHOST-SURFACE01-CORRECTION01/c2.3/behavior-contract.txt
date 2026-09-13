@@ -1,0 +1,108 @@
+Behavior contract — factory-halt-classification (frozen from Python)
+====================================================================
+
+Mechanical observations taken from scripts/quality/factory-halt-classification.py
+(sha256 159df06a96...) at HEAD = 0712b297d812ed4b58349c9326055bd02a124f52.
+
+1. CLI surface
+   argv[1] = <path>            -> classify commit message at <path>; rc 0/1/2
+   argv[1] = "--matrix"        -> run 12-fixture matrix in-process;    rc 0/1
+   argv[1] = anything else     -> "STATUS=ERROR\nREASON=usage: ..."     rc 2
+
+   stdin is NEVER read.
+   stderr is NEVER written by the classifier (only stdout + rc).
+
+2. Trailer parser
+   Regex: ^([A-Za-z][A-Za-z0-9_-]*):[ \t]+(.*)$
+   Applied to EVERY line of the message after splitlines().
+   (No Git trailer-region filter; no blank-line "block" filter.)
+   The key must start at column 0 (no leading whitespace).
+
+3. Field extraction
+   For each known trailer key (ACT, ACT-Phase, ACT-Verdict, HALT_CLASS,
+   BLOCKS_NEXT), the implementation collects:
+     - the list of values across all matches (`count`)
+     - the FIRST value (`first`)
+   All other field values default to "" (empty).
+
+4. Verdict grammar
+   ACT-Verdict matches ^HALT_[A-Z0-9_]+$          -> HALT branch
+   ACT-Verdict matches ^PASS(_[A-Z0-9_]+)*$       -> PASS branch
+   ACT-Verdict anything else (or empty)           -> STATUS=PASS (unverified)
+   ACT-Phase != "CLOSE"                           -> STATUS=PASS (unverified)
+   ACT trailer absent anywhere                    -> MODE=NON_ACT, STATUS=PASS
+
+5. HALT cross-field rules (CLOSE phase only)
+   HALT_CLASS count   must equal 1
+   HALT_CLASS value   must be one of:
+                        GOVERNANCE, PRODUCTION, SAFETY,
+                        AUTHORIZATION, DEPENDENCY
+   BLOCKS_NEXT count  must equal 1
+   BLOCKS_NEXT value  must be one of: YES, NO
+   Class -> BLOCKS_NEXT (mandatory except DEPENDENCY):
+     GOVERNANCE     -> NO
+     PRODUCTION     -> YES
+     SAFETY         -> YES
+     AUTHORIZATION  -> YES
+     DEPENDENCY     -> either
+
+6. PASS cross-field rules (CLOSE phase only)
+   HALT_CLASS  count must be 0
+   BLOCKS_NEXT count must be 0
+
+7. Output (line-oriented, stdout, exact order, '\n' separated)
+   MODE=...
+   STATUS=PASS | STATUS=FAIL | STATUS=ERROR
+   REASON=<text>           (only if non-empty)
+   ACT=<value>
+   PHASE=<value>
+   VERDICT=<value>
+   HALT_CLASS=<value>
+   BLOCKS_NEXT=<value>
+
+   Non-ACT outputs always include the empty field lines (ACT=, PHASE=, ...).
+   The REASON= line is emitted only when status==FAIL (or ERROR).
+
+   REASON format strings:
+     "HALT_CLASS count=%d, expected 1 for HALT verdict"
+     "BLOCKS_NEXT count=%d, expected 1 for HALT verdict"
+     "HALT_CLASS '%s' not in enum"
+     "BLOCKS_NEXT '%s' not in {YES, NO}"
+     "%s requires BLOCKS_NEXT=%s"
+     "PASS verdict forbids HALT_CLASS (count=%d)"
+     "PASS verdict forbids BLOCKS_NEXT (count=%d)"
+     "usage: factory-halt-classification.py <commit-message>"
+     "commit message file not found: %s (%s)"
+
+8. Exit codes
+   0 = STATUS=PASS
+   1 = STATUS=FAIL  (classification rejected)
+   2 = STATUS=ERROR (usage error or unreadable input)
+
+9. Matrix mode
+   Prints one line per fixture:
+     "  PASS  <name>  (rc=<n> status=<STATUS>)\n"
+     "  FAIL  <name>  want rc=<n> got rc=<m> status=<STATUS>\n  <full-output>\n"
+   Then a footer:
+     "--- summary ---\n"
+     "PASS=<n>\n"
+     "FAIL=<n>\n"
+     "STATUS=PASS\n" | "STATUS=FAIL\n"
+   Exit 0 if all 12 PASS, else 1.
+
+10. Existing-12 fixture contract (unchanged)
+    R1  governance halt, NO block         -> rc 0
+    R2  production halt, YES block        -> rc 0
+    R3  halt missing HALT_CLASS           -> rc 1
+    R4  halt missing BLOCKS_NEXT          -> rc 1
+    R5  PASS verdict with BLOCKS_NEXT     -> rc 1
+    R6  GOVERNANCE/YES rejected           -> rc 1
+    R7  PRODUCTION/NO rejected            -> rc 1
+    R8  historical-style PASS, no trailers-> rc 0
+    R9  DEPENDENCY/YES allowed            -> rc 0
+    R10 DEPENDENCY/NO allowed             -> rc 0
+    R11 non-ACT commit                    -> rc 0
+    R12 RED phase, halt verdict, no trailers -> rc 0
+
+The PolyC implementation must match ALL of the above byte-for-byte on stdout
+and stderr, and exit-code-equivalent on rc.

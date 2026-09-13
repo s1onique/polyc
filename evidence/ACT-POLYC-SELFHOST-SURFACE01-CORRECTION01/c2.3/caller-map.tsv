@@ -1,0 +1,44 @@
+# caller-map.tsv
+# Mechanically discovered at C2.3 RED.
+#
+# Caller                        | Callee                                | argv shape                            | stdin | stdout consumer              | stderr consumer              | expected exit code
+# ------------------------------|---------------------------------------|---------------------------------------|-------|------------------------------|------------------------------|--------------------
+# scripts/quality/              | scripts/quality/                      | <commit-message-file>                 | none  | caller scripts (parses       | unredirected (terminal)      | 0 PASS / 1 FAIL /
+#   factory-halt-               |   factory-halt-classification.py      |                                       |       | STATUS= and REASON= lines)   |                              |   2 usage error
+#   classification-check.sh     |                                       |                                       |       |                              |                              |
+# scripts/quality/              | scripts/quality/                      | --matrix (single arg)                 | none  | caller scripts (parses       | unredirected                 | 0 if all 12 PASS /
+#   factory-halt-               |   factory-halt-classification.py      |                                       |       | R1..R12 PASS lines, then     |                              |   1 if any FAIL
+#   classification-test.sh      |                                       |                                       |       | PASS=N / FAIL=N / STATUS=)   |                              |
+#
+# Notes:
+# - Both callers are thin `<= 50 LOC` shell launchers that
+#   `exec python3 "$SCRIPT_DIR/factory-halt-classification.py" "$@"`.
+# - The Python module itself has zero recursive call edges:
+#   - factory-halt-classification.py:0 references to itself in argv
+#     (the docstring lines mention the filename but are not argv).
+# - No third caller exists. `git grep` over
+#   factory-halt-classification{,.py} shows only the 3 source files.
+# - The remaining hits above (factory-halt-classification.py:2/35/55/58/229/250)
+#   are docstring/comment lines that mention the filename but do not
+#   invoke python3. After migration the .py file is deleted and those
+#   references vanish from the source tree.
+#
+# External invocation context (post-migration):
+# - Factory scripts and humans run the checker wrapper, NOT python3
+#   directly, so the only python3 invocation edges to remove are
+#   the two launcher lines (check.sh:18, test.sh:15). That matches
+#   the ACT-predicted `-3` F-NO-PYTHON delta (-1 .py file,
+#   -2 python3 exec edges).
+
+scripts/quality/factory-halt-classification-check.sh:2:# scripts/quality/factory-halt-classification-check.sh
+scripts/quality/factory-halt-classification-check.sh:7:# Thin launcher that delegates to factory-halt-classification.py.
+scripts/quality/factory-halt-classification-check.sh:18:exec python3 "$SCRIPT_DIR/factory-halt-classification.py" "$@"
+scripts/quality/factory-halt-classification-test.sh:2:# scripts/quality/factory-halt-classification-test.sh
+scripts/quality/factory-halt-classification-test.sh:8:# (R1..R12) implemented in factory-halt-classification.py.
+scripts/quality/factory-halt-classification-test.sh:15:exec python3 "$SCRIPT_DIR/factory-halt-classification.py" --matrix
+scripts/quality/factory-halt-classification.py:2:"""scripts/quality/factory-halt-classification.py
+scripts/quality/factory-halt-classification.py:35:  factory-halt-classification.py <commit-message-file>
+scripts/quality/factory-halt-classification.py:55:  factory-halt-classification-check.sh (187 LOC) into this Python
+scripts/quality/factory-halt-classification.py:58:  factory-halt-classification-test.sh is also a thin launcher.
+scripts/quality/factory-halt-classification.py:229:            "REASON=usage: factory-halt-classification.py "
+scripts/quality/factory-halt-classification.py:250:# scripts/quality/factory-halt-classification-test.sh so the shell

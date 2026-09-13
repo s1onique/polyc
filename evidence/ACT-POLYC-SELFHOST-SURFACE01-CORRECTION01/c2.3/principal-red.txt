@@ -1,0 +1,42 @@
+PRINCIPAL RED — C2.3 factory-halt-classification migration
+============================================================
+
+Binding RED (per ACT §6):
+
+  FACTORY_HALT_CLASSIFICATION_LANGUAGE = PYTHON
+  F_NO_PYTHON_VIOLATION                = PRESENT
+  POLYC_EQUIVALENT                      = ABSENT
+
+The RED is NOT that the Python classifier is broken.
+The RED is:
+
+  the authoritative behavior is implemented in a forbidden language
+  (see AGENTS.md §26 F-NO-PYTHON; tracked Python source +
+  python3 invocation edges = 15 at entry, of which this tool
+  contributes 3 — 1 .py file + 2 launcher exec lines).
+
+Mechanically observed entry state:
+  scripts/quality/factory-halt-classification.py             PRESENT (sha256 159df06a96...)
+  scripts/quality/factory-halt-classification-check.sh      PRESENT (sha256 081f1a46... ; uses python3 exec)
+  scripts/quality/factory-halt-classification-test.sh       PRESENT (sha256 944f7ef5... ; uses python3 exec)
+  tools/factory/factory-halt-classification.HC              ABSENT
+
+Existing-12-fixture contract preserved (Python oracle baseline):
+  R1..R12 (mod._FIXTURES)      = 12 / 12 rc match expected
+  existing-fixtures-python.tsv = PASS (sha256 of each stdout + stderr captured in raw/)
+
+Adversarial matrix frozen (ACT §15 D01..D24):
+  adversarial-python.tsv       = 24 / 24 captured
+
+Special modes frozen (USAGE / MISSING_FILE / MATRIX):
+  special-modes-python.tsv     = 3 / 3 captured
+
+Witness files:
+  entry-identity.txt
+  python-source-hash.txt
+  caller-map.tsv
+  existing-fixtures-python.tsv
+  adversarial-python.tsv
+  special-modes-python.tsv
+  raw/{R1..R12,D01..D24,USAGE,MISSING_FILE,MATRIX}.{stdout,stderr,rc}
+  freeze-oracle.py  (Python helper used to capture raw/ — retained as evidence)
