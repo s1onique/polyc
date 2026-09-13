@@ -1,0 +1,94 @@
+ACT-POLYC-BOOTSTRAP02-C1-CORRECTION01 — residue classification
+=============================================================
+
+P0 — REPAIRED IN THIS ACT
+=========================
+
+  Defect:        C1 grammar prerequisite was malformed
+                 (over-constrained predicate required
+                 B0 == production; C1 evidence correctly
+                 proved B0 != production).
+  Disposition:   Corrected gate
+                 (IDENTIFIER_GRAMMAR_GATE) introduced.
+                 Corrected halt predicate
+                 (HALT_B1_IDENTIFIER_CONTRACT_MISMATCH)
+                 introduced. Both recorded in
+                 evidence/ACT-POLYC-BOOTSTRAP02-C1-CORRECTION01/c1/
+                 corrected-grammar-gate.txt.
+  Status:        REPAIRED. No residue.
+
+P1 — BOUNDED IN THIS ACT
+========================
+
+  Defect:        ctype non-ASCII equivalence was over-claimed
+                 (production uses locale-sensitive ctype on
+                 plain char; oracle normalizes through
+                 unsigned char; the two are not
+                 byte-equivalent for bytes >= 0x80 if
+                 char is signed).
+  Disposition:   B1 contract bounded to ASCII; B1 component
+                 must use explicit byte comparisons (no ctype).
+  Status:        BOUNDED. The over-claim is removed; the
+                 non-ASCII behavior is now classified as
+                 P2_DEFERRED residue below.
+
+P2 — DEFERRED RESIDUE (NON-BLOCKING)
+====================================
+
+  NON_ASCII_PRODUCTION_BEHAVIOR = P2_DEFERRED
+
+    Production's non-ASCII identifier behavior
+    (bytes >= 0x80) is locale-sensitive and possibly
+    undefined on signed-char platforms. B1 does not
+    claim equivalence.
+
+    Future ACTs may either:
+      (a) tighten production to ASCII explicitly, or
+      (b) extend B1 to handle non-ASCII per a
+          documented locale policy.
+    Neither is in B1 scope.
+
+P3 — INFORMATIONAL (NO ACTION)
+==============================
+
+  CTYPE_NORMALIZATION_IN_ORACLE = P3_INFORMATIONAL
+
+    The standalone oracle's ctype calls go through
+    unsigned char. This is the right thing for an
+    ASCII-only oracle. No correction needed; the
+    oracle's role is bounded to REFERENCE_MODEL.
+
+  BYTE_EQUIVALENCE_PRODUCTION_AMBIGUITY = P3_INFORMATIONAL
+
+    Documented in evidence/ACT-POLYC-BOOTSTRAP02-C1-CORRECTION01/c1/
+    corrected-oracle-role.txt so that B2/B3 ACTs do
+    not silently inherit an over-claim.
+
+  PUSH_RESIDUE = GEP01_D1_D2 (pre-existing; not changed)
+
+Pre-existing residue (unchanged)
+================================
+
+  PUSH_RESIDUE = GEP01_D1_D2 (carried from
+                 ACT-POLYC-FACTORY-HISTORICAL-EXCEPTIONS-REGISTRY01
+                 and earlier)
+
+Forward-bound obligations on the corrected C1 -> C2 gate
+=========================================================
+
+  - C2 IMPL must implement bootstrap02-ident.HC using
+    explicit byte comparisons (no ctype.h).
+  - C2 IMPL must add src/lexer_bridge.h declaring
+    BootstrapScanIdent.
+  - C2 IMPL must modify src/lexer.c::lexIdentifier to
+    delegate to BootstrapScanIdent. No fallback.
+  - C3 EVIDENCE must include a stage0/stage1 differential
+    on a real production source corpus
+    (e.g. src/holyc-lib/dir.HC) in addition to the
+    15-fixture reference-model differential.
+  - C4 CLOSE of ACT-POLYC-BOOTSTRAP02 must record
+    B1_ASCII_DOMAIN = YES,
+    B1_NON_ASCII_EQUIVALENCE = NOT_CLAIMED, and
+    B1_REFERENCE_MODEL_ORACLE = tools/quality/bootstrap02-ident-oracle.c.
+
+No SHA-of-self claims (DOCTRINE.md §22).

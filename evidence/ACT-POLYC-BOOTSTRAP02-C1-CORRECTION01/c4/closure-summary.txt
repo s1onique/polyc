@@ -1,0 +1,122 @@
+ACT-POLYC-BOOTSTRAP02-C1-CORRECTION01 — closure summary
+=======================================================
+
+ACT-Verdict                       = PASS_WITH_CORRECTION_RESIDUE
+B0_CONSERVATION                   = PASS   15/15
+PRODUCTION_GRAMMAR_FROZEN         = YES
+B0_GRAMMAR_PRESERVED              = YES
+B0_VS_PRODUCTION_DIFFERENCE       = DOCUMENTED  (one byte '$' in continuation)
+B1_REQUIRED_GRAMMAR_EQUALS_PROD   = YES
+B1_ASCII_DOMAIN                   = YES
+B1_NON_ASCII_EQUIVALENCE          = NOT_CLAIMED
+B1_REFERENCE_MODEL_ORACLE         = tools/quality/bootstrap02-ident-oracle.c
+B1_REFERENCE_MODEL_BYTE_EQUIV     = NO  (Lexer state adapted; ctype adapted)
+HALT_B1_IDENTIFIER_CONTRACT_MISMATCH = NOT_FIRED
+IDENTIFIER_GRAMMAR_GATE              = PASS
+C1_RED_TO_C2_IMPL_GATE               = OPEN
+PUSH_PERMISSION                      = NOT_PERFORMED
+PUSH_RESIDUE                         = GEP01_D1_D2 (pre-existing)
+
+Defects repaired
+================
+
+  P0  C1 grammar prerequisite was malformed (over-constrained
+      predicate required B0 == production). Replaced with
+      corrected four-clause gate.
+  P1  ctype non-ASCII equivalence was over-claimed. Bounded
+      to ASCII; B1 must use explicit byte comparisons.
+  P2  oracle evidentiary role over-claimed ("verbatim
+      transcription"). Re-classified as REFERENCE_MODEL.
+
+Predecessor state preserved
+===========================
+
+  aa29e16 ACT-POLYC-BOOTSTRAP02 — C1 RED packet
+  db038e9 ACT-POLYC-BOOTSTRAP02 — C1 hygiene: trim trailing blank line
+
+  These commits remain immutable evidence per F14. The
+  correction is recorded in:
+    145e812 ACT-POLYC-BOOTSTRAP02-C1-CORRECTION01 — IMPL
+    <this-ACT-CLOSE-commit> ACT-POLYC-BOOTSTRAP02-C1-CORRECTION01 — CLOSE
+
+  plus the in-place rewrites of predecessor C1 evidence
+  files (current-truth updates per F14).
+
+Quality gates at correction close
+=================================
+
+  BOOTSTRAP01_CASES        = 15
+  BOOTSTRAP01_PASS         = 15
+  BOOTSTRAP01_FAIL         = 0
+  BOOTSTRAP01_STATUS       = PASS
+
+  gate-fast_verdict        = PASS
+  factory-v2               = PASS=35 FAIL=0
+  factory-append-only      = PASS=11 FAIL=0
+  factory-halt-class       = PASS=12 FAIL=0
+  shell-loc-gate           = PASS
+  factory-closure-status   = PASS   (6/0)
+  git replace -l           = empty
+  git diff --check         = clean
+
+Scope discipline
+================
+
+  Authorized production source mutation: NONE.
+  src/lexer.c, src/lexer.h, src/CMakeLists.txt, Makefile,
+  tools/bootstrap/bootstrap02-ident.HC, src/lexer_bridge.h
+  are all UNCHANGED across this correction ACT.
+
+  Files added:
+    docs/acts/ACT-POLYC-BOOTSTRAP02.md
+    docs/acts/ACT-POLYC-BOOTSTRAP02-C1-CORRECTION01.md
+    evidence/ACT-POLYC-BOOTSTRAP02-C1-CORRECTION01/c1/README.md
+    evidence/ACT-POLYC-BOOTSTRAP02-C1-CORRECTION01/c1/defect-classification.txt
+    evidence/ACT-POLYC-BOOTSTRAP02-C1-CORRECTION01/c1/corrected-grammar-gate.txt
+    evidence/ACT-POLYC-BOOTSTRAP02-C1-CORRECTION01/c1/corrected-ctype-claim.txt
+    evidence/ACT-POLYC-BOOTSTRAP02-C1-CORRECTION01/c1/corrected-oracle-role.txt
+    evidence/ACT-POLYC-BOOTSTRAP02-C1-CORRECTION01/c1/required-result.txt
+
+  Files modified (in-place current-truth updates per F14):
+    evidence/ACT-POLYC-BOOTSTRAP02/c1/README.md
+    evidence/ACT-POLYC-BOOTSTRAP02/c1/identifier-contract.txt
+    evidence/ACT-POLYC-BOOTSTRAP02/c1/legacy-ident-oracle.tsv
+    evidence/ACT-POLYC-BOOTSTRAP02/c1/c1-required-result.txt
+
+HALT evaluation
+===============
+
+  HALT_RED_NOT_REPRODUCED                  — n/a (governance)
+  HALT_SCOPE_EXPANSION_REQUIRED            — NOT_FIRED
+                                              (bounded; no
+                                               production
+                                               source change)
+  HALT_MEMORY01_WIDENING_REQUIRED          — NOT AUTHORIZED
+  HALT_LLVM_VERIFY_REQUIRED                — NOT AUTHORIZED
+  HALT_B1_IDENTIFIER_CONTRACT_MISMATCH     — NOT_FIRED (corrected
+                                              predicate)
+  HALT_B1_ABI_PROBE_FAILED                 — n/a (no ABI change)
+  HALT_B1_MEMORY01_DEPENDENCY              — n/a (no dep change)
+  HALT_B1_GEP01_DEPENDENCY                 — n/a (no dep change)
+  HALT_B0_REGRESSION                       — NOT_FIRED (15/15)
+  HALT_B1_DELEGATION_FAIL                  — n/a (no delegation
+                                              yet)
+
+Next ACT
+========
+
+  After this correction closes, ACT-POLYC-BOOTSTRAP02
+  C2 IMPL is authorized:
+    - tools/bootstrap/bootstrap02-ident.HC (PolyC B1
+      component using explicit byte comparisons, no ctype)
+    - src/lexer_bridge.h (declaration-only bridge header)
+    - src/lexer.c delegation in lexIdentifier (no fallback)
+    - Makefile / CMake stage1 build target
+    - build/hcc-bootstrap02 (separate stage1 binary)
+
+  C3 must additionally include a stage0/stage1 differential
+  on a real production source corpus
+  (e.g. src/holyc-lib/dir.HC::_opendir$INODE64), per the
+  corrected oracle evidentiary role.
+
+No SHA-of-self claims (DOCTRINE.md §22).
