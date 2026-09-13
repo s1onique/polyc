@@ -12,7 +12,7 @@ HCC_ENABLE_LLVM ?= OFF
 
 default: all
 
-.PHONY: all formal-dafny gate-fast gate-push install-hooks llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test selfhost-component-binary selfhost-component-build selfhost-component-test selfhost-component-selftest selfhost-registry-validate
+.PHONY: all formal-dafny gate-fast gate-push install-hooks llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test selfhost-component-binary selfhost-component-build selfhost-component-test selfhost-component-selftest selfhost-registry-validate factory-halt-classification-binary factory-halt-classification-selftest
 
 # To add sqlite3 support add -DHCC_LINK_SQLITE3=1 to the below like so:
 #```
@@ -1031,6 +1031,24 @@ selfhost-component-selftest: selfhost-component-binary
 
 # Make selfhost-component-* depend on the binary so a fresh
 # tree builds it automatically.
+# ACT-POLYC-SELFHOST-SURFACE01-CORRECTION01 C2.3.c IMPL — build the
+# PolyC authoritative factory-halt-classification binary using the
+# same stage0 hcc + libtos pipeline as the other Factory tools.
+factory-halt-classification-binary: test-prefix-install
+	./hcc --install-dir=./build/test-prefix -c \
+		tools/factory/factory-halt-classification.HC \
+		-o build/factory-halt-classification.o
+	cc build/factory-halt-classification.o \
+		-L./build/test-prefix/lib -ltos \
+		-o build/factory-halt-classification
+	@if [ ! -x ./build/factory-halt-classification ]; then \
+		echo "factory-halt-classification-binary: build failed" >&2; \
+		exit 1; \
+	fi
+
+factory-halt-classification-selftest: factory-halt-classification-binary
+	./build/factory-halt-classification --selftest
+
 selfhost-component-build: selfhost-component-binary
 selfhost-component-test:  selfhost-component-binary
 selfhost-registry-validate: selfhost-component-binary
