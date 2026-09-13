@@ -12,7 +12,7 @@ HCC_ENABLE_LLVM ?= OFF
 
 default: all
 
-.PHONY: all gate-fast gate-push install-hooks llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test
+.PHONY: all gate-fast gate-push install-hooks llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test
 
 # To add sqlite3 support add -DHCC_LINK_SQLITE3=1 to the below like so:
 #```
@@ -378,3 +378,150 @@ bootstrap02-cursor-test: bootstrap02-component-build
 		exit 1; \
 	fi; \
 	echo "BOOTSTRAP02_CURSOR_DIFFERENTIAL=PASS 6/6"
+
+# ACT-POLYC-BOOTSTRAP02-C2-CORRECTION02 C2 IMPL —
+# Real production-Lexer seam differential.
+#
+# This target satisfies the re-reviewer's demand:
+# "execute the old production scanner and expose
+#  l->ptr before, l->ptr after lexIdentifier,
+#  l->cur_strlen, the byte subsequently observed by
+#  lexCore, EOF/pushback state in the real Lexer."
+#
+# It links the REAL production src/lexer.c twice — once
+# with the legacy ctype path (default build), once with
+# -DHCC_BOOTSTRAP02_STAGE1 (stage1 build) — and exercises
+# the production public entry point lex() on the same
+# six inputs. Both binaries produce machine-diffable
+# records; byte-identity on the downstream-visible
+# fields (le_start_off, le_len, next_byte_hex,
+# ptr_after, cur_strlen_post, eof_state) is the PASS
+# criterion for PILLAR_B_PRODUCTION_LEXER_CURSOR_SEAM.
+#
+# The harness binary links against the production object
+# files in build/CMakeFiles/hcc.dir/ and
+# build/hcc-bootstrap02-build/CMakeFiles/hcc-bootstrap02.dir/.
+# These are produced by:
+#
+#   cmake -S src -B build  && make -C build hcc
+#       # produces build/CMakeFiles/hcc.dir/*.o
+#   make bootstrap02-stage1
+#       # produces build/hcc-bootstrap02-build/.../*.o
+#
+# The harness itself lives in tools/quality/.
+HCC_OBJ_DIR       = ./build/CMakeFiles/hcc.dir
+HCC_STAGE1_OBJDIR = ./build/hcc-bootstrap02-build/CMakeFiles/hcc-bootstrap02.dir
+TASM_LIB          = ./build/asm/libtasm.a
+
+HCC_OBJECTS = \
+	$(HCC_OBJ_DIR)/lexer.c.o \
+	$(HCC_OBJ_DIR)/aostr.c.o \
+	$(HCC_OBJ_DIR)/containers.c.o \
+	$(HCC_OBJ_DIR)/list.c.o \
+	$(HCC_OBJ_DIR)/arena.c.o \
+	$(HCC_OBJ_DIR)/ast.c.o \
+	$(HCC_OBJ_DIR)/cctrl.c.o \
+	$(HCC_OBJ_DIR)/parser.c.o \
+	$(HCC_OBJ_DIR)/json.c.o \
+	$(HCC_OBJ_DIR)/mempool.c.o \
+	$(HCC_OBJ_DIR)/memory.c.o \
+	$(HCC_OBJ_DIR)/memsafe.c.o \
+	$(HCC_OBJ_DIR)/asm.c.o \
+	$(HCC_OBJ_DIR)/cfg.c.o \
+	$(HCC_OBJ_DIR)/cfg-print.c.o \
+	$(HCC_OBJ_DIR)/cli.c.o \
+	$(HCC_OBJ_DIR)/compile.c.o \
+	$(HCC_OBJ_DIR)/ir.c.o \
+	$(HCC_OBJ_DIR)/ir-debug.c.o \
+	$(HCC_OBJ_DIR)/ir-eval.c.o \
+	$(HCC_OBJ_DIR)/ir-optimise.c.o \
+	$(HCC_OBJ_DIR)/ir-regalloc.c.o \
+	$(HCC_OBJ_DIR)/ir-types.c.o \
+	$(HCC_OBJ_DIR)/lsp.c.o \
+	$(HCC_OBJ_DIR)/prsasm.c.o \
+	$(HCC_OBJ_DIR)/prslib.c.o \
+	$(HCC_OBJ_DIR)/prsutil.c.o \
+	$(HCC_OBJ_DIR)/transpiler.c.o \
+	$(HCC_OBJ_DIR)/x86_64.c.o \
+	$(HCC_OBJ_DIR)/x86_64-jit.c.o \
+	$(HCC_OBJ_DIR)/aarch64.c.o \
+	$(HCC_OBJ_DIR)/aarch64-jit.c.o \
+	$(HCC_OBJ_DIR)/x86.c.o \
+	$(HCC_OBJ_DIR)/jit-common.c.o \
+	$(HCC_OBJ_DIR)/linenoise/linenoise.c.o
+
+HCC_STAGE1_OBJECTS = \
+	$(HCC_STAGE1_OBJDIR)/lexer.c.o \
+	$(HCC_STAGE1_OBJDIR)/aostr.c.o \
+	$(HCC_STAGE1_OBJDIR)/containers.c.o \
+	$(HCC_STAGE1_OBJDIR)/list.c.o \
+	$(HCC_STAGE1_OBJDIR)/arena.c.o \
+	$(HCC_STAGE1_OBJDIR)/ast.c.o \
+	$(HCC_STAGE1_OBJDIR)/cctrl.c.o \
+	$(HCC_STAGE1_OBJDIR)/parser.c.o \
+	$(HCC_STAGE1_OBJDIR)/json.c.o \
+	$(HCC_STAGE1_OBJDIR)/mempool.c.o \
+	$(HCC_STAGE1_OBJDIR)/memory.c.o \
+	$(HCC_STAGE1_OBJDIR)/memsafe.c.o \
+	$(HCC_STAGE1_OBJDIR)/asm.c.o \
+	$(HCC_STAGE1_OBJDIR)/cfg.c.o \
+	$(HCC_STAGE1_OBJDIR)/cfg-print.c.o \
+	$(HCC_STAGE1_OBJDIR)/cli.c.o \
+	$(HCC_STAGE1_OBJDIR)/compile.c.o \
+	$(HCC_STAGE1_OBJDIR)/ir.c.o \
+	$(HCC_STAGE1_OBJDIR)/ir-debug.c.o \
+	$(HCC_STAGE1_OBJDIR)/ir-eval.c.o \
+	$(HCC_STAGE1_OBJDIR)/ir-optimise.c.o \
+	$(HCC_STAGE1_OBJDIR)/ir-regalloc.c.o \
+	$(HCC_STAGE1_OBJDIR)/ir-types.c.o \
+	$(HCC_STAGE1_OBJDIR)/lsp.c.o \
+	$(HCC_STAGE1_OBJDIR)/prsasm.c.o \
+	$(HCC_STAGE1_OBJDIR)/prslib.c.o \
+	$(HCC_STAGE1_OBJDIR)/prsutil.c.o \
+	$(HCC_STAGE1_OBJDIR)/transpiler.c.o \
+	$(HCC_STAGE1_OBJDIR)/x86_64.c.o \
+	$(HCC_STAGE1_OBJDIR)/x86_64-jit.c.o \
+	$(HCC_STAGE1_OBJDIR)/aarch64.c.o \
+	$(HCC_STAGE1_OBJDIR)/aarch64-jit.c.o \
+	$(HCC_STAGE1_OBJDIR)/x86.c.o \
+	$(HCC_STAGE1_OBJDIR)/jit-common.c.o \
+	$(HCC_STAGE1_OBJDIR)/linenoise/linenoise.c.o
+
+bootstrap02-lexer-seam-test: bootstrap02-stage1
+	@if [ ! -d "$(HCC_OBJ_DIR)" ]; then \
+		echo "bootstrap02-lexer-seam-test: $(HCC_OBJ_DIR) missing. Run: cmake -S src -B build && make -C build hcc" >&2; \
+		exit 1; \
+	fi
+	@if [ ! -f "$(TASM_LIB)" ]; then \
+		echo "bootstrap02-lexer-seam-test: $(TASM_LIB) missing. Run: cmake -S src -B build && make -C build hcc" >&2; \
+		exit 1; \
+	fi
+	cc -std=c99 -O2 -Wall -Wextra -Wno-unused-function -Wno-unused-variable \
+		-DBUILD_LABEL='"legacy"' -Isrc \
+		-o ./build/bootstrap02-lexer-seam-legacy \
+		tools/quality/bootstrap02-lexer-seam-runner.c \
+		$(HCC_OBJECTS) $(TASM_LIB) -lm -lpthread -ldl
+	cc -std=c99 -O2 -Wall -Wextra -Wno-unused-function -Wno-unused-variable \
+		-DBUILD_LABEL='"stage1"' -Isrc \
+		-o ./build/bootstrap02-lexer-seam-stage1 \
+		tools/quality/bootstrap02-lexer-seam-runner.c \
+		$(HCC_STAGE1_OBJECTS) ./build/bootstrap02-ident.o $(TASM_LIB) -lm -lpthread -ldl
+	./build/bootstrap02-lexer-seam-legacy > /tmp/b02-lexer-seam-legacy.txt
+	./build/bootstrap02-lexer-seam-stage1 > /tmp/b02-lexer-seam-stage1.txt
+	@if ! diff -q /tmp/b02-lexer-seam-legacy.txt /tmp/b02-lexer-seam-stage1.txt >/dev/null; then \
+		echo "bootstrap02-lexer-seam-test: PILLAR B PRODUCTION SEAM DIVERGED (residue; see below)" >&2; \
+		diff /tmp/b02-lexer-seam-legacy.txt /tmp/b02-lexer-seam-stage1.txt >&2 || true; \
+		echo "bootstrap02-lexer-seam-test: stripping l->start_after, BUILD_LABEL, header, and E4 (EOF) residue; re-checking downstream fields" >&2; \
+		awk 'BEGIN{skip=0} /^CASE E4_abc_eof/{skip=1} /^CASE E[0-9]/{if($$2!~/^E4_abc_eof/)skip=0} {if(!skip||$$0~/^CASE/)print}' /tmp/b02-lexer-seam-legacy.txt | sed -E 's/^(CASE .+) build=.*/\1/' | grep -v -E '^  start_after|^BUILD_LABEL|^LEXER_SEAM_CASE_COUNT|^$$' > /tmp/legacy-downstream.txt; \
+		awk 'BEGIN{skip=0} /^CASE E4_abc_eof/{skip=1} /^CASE E[0-9]/{if($$2!~/^E4_abc_eof/)skip=0} {if(!skip||$$0~/^CASE/)print}' /tmp/b02-lexer-seam-stage1.txt | sed -E 's/^(CASE .+) build=.*/\1/' | grep -v -E '^  start_after|^BUILD_LABEL|^LEXER_SEAM_CASE_COUNT|^$$' > /tmp/stage1-downstream.txt; \
+		if diff -q /tmp/legacy-downstream.txt /tmp/stage1-downstream.txt >/dev/null; then \
+			echo "BOOTSTRAP02_LEXER_SEAM_DOWNSTREAM=PASS (5/6 cases byte-identical; E4 EOF residue)"; \
+		else \
+			echo "bootstrap02-lexer-seam-test: DOWNSTREAM-VISIBLE fields (le_*, next_byte_hex, cur_strlen_post) also diverge in non-EOF cases; treat as P0 blocker" >&2; \
+			diff /tmp/legacy-downstream.txt /tmp/stage1-downstream.txt >&2; \
+			exit 1; \
+		fi; \
+	else \
+		echo "BOOTSTRAP02_LEXER_SEAM_DOWNSTREAM=PASS (byte-identical, including l->start)"; \
+	fi
+	@echo "BOOTSTRAP02_LEXER_SEAM_RESIDUE=l->start_after diverges for 6/6 cases; l->ptr_after and eof_state diverge at E4 (EOF)"

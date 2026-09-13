@@ -1,23 +1,43 @@
-ACT-POLYC-BOOTSTRAP02-C2-CORRECTION01 — pillar-B
-direct seam-level cursor witness
+ACT-POLYC-BOOTSTRAP02-C2-CORRECTION02 — pillar-B
+COMPONENT-LEVEL cursor differential
+(honest relabel after re-review)
 ================================================
 
 ACT-POLYC-BOOTSTRAP02-C2-CORRECTION01 corrected the
-cursor-evidence taxonomy to TWO pillars:
+cursor-evidence taxonomy to TWO pillars. ACT-POLYC-
+BOOTSTRAP02-C2-CORRECTION02 RELABELS this pillar-B
+witness honestly after a re-review revealed that it
+proves a COMPONENT-LEVEL differential, NOT a
+production-Lexer seam differential.
+
+The corrected three-pillar taxonomy:
 
   A. End-to-end conservation (object-emission parity).
      See cursor-equivalence.txt — covers 5 real
-     production sources; reframed to NOT claim cursor
-     equivalence directly.
+     production sources.
 
-  B. Direct seam-level cursor witness. THIS FILE.
+  B. Component-level cursor differential. THIS FILE.
+     BootstrapScanIdent (B1 PolyC component) vs
+     standalone C reference oracle, both invoked
+     directly on (src, src_len, start, end_off).
+     NEITHER side invokes the production src/lexer.c.
 
-Pillar B provides line-level evidence that the B1 PolyC
-component BootstrapScanIdent, invoked on the exact
-6-input matrix the reviewer specified, produces a
-(start, end, cur_strlen, next_byte) tuple that is
-byte-for-byte identical to the same matrix computed by
-the independent C reference oracle.
+  B'. Real production-Lexer seam differential.
+     See lexer-seam-direct-witness.txt — links the
+     production src/lexer.c.o twice (legacy vs
+     -DHCC_BOOTSTRAP02_STAGE1) and exercises the
+     production public entry point lex() on the same
+     six inputs.
+
+This file's harness (tools/quality/bootstrap02-cursor-
+{host,oracle}.c) invokes BootstrapScanIdent directly
+and does NOT link the production Lexer. It is therefore
+a component-level differential, not a production-seam
+differential.
+
+The 6/6 byte-identical tuples (start, end, cur_strlen,
+next_byte) remain valid evidence. What changes is the
+claim this evidence supports.
 
 ============================================================
 Reviewer-specified 6-input matrix (binding)
