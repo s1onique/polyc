@@ -1,0 +1,49 @@
+ACT-POLYC-BOOTSTRAP01 — C4 — residue
+=====================================
+
+P0 (blocks the current/next decision): NONE.
+
+P1 (important near-term work):
+
+  R-P1-1   GEP01 cap-verifier (llvm-gep01-test) cap-table
+           pre-existing 26/4 failure split. Unchanged by
+           B0; classified as NON_BLOCKING_GOVERNANCE_RESIDUE
+           for B0. Recommended next bounded ACT:
+           ACT-POLYC-INTEGRATION-GEP01-GATE-RECOVERY01.
+
+  R-P1-2   LLVM-backend IR_STORE_DEREF for variable-indexed
+           struct field writes (MEMORY01 fence). The B0
+           subject uses this form naturally and natively
+           compiles. A future ACT may widen the LLVM backend
+           to accept this IR shape (per the Option-W C6
+           path-dependent note). Out of scope for B0.
+
+  R-P1-3   Inherited src/tests/run.HC spawn path (no
+           --install-dir flag). Causes `make unit-test`
+           to fail in this sandbox under /usr/local/include/
+           tos.HH absence. Identical at the pre-B0 commit;
+           classified as NON_BLOCKING_GOVERNANCE_RESIDUE.
+           A future ACT may teach run.HC to consult
+           $POLYC_TEST_PREFIX or pass --install-dir when
+           the top-level hcc is test-prefix-built. Out of
+           scope for B0.
+
+P2 (deferred improvement):
+
+  R-P2-1   Native B0 lexer is the only AOT-backed B0
+           deliverable. A future LLVM-capable variant
+           would make the LLVM substrate path-dependent
+           guarantee stronger. Deferred until the LLVM
+           backend widens the MEMORY01 STORE_DEREF
+           boundary.
+
+  R-P2-2   The C oracle's argv-driven single-fixture
+           invocation is convenient for the differential
+           witness but requires shell-orchestrated
+           invocation to drive the full 15-fixture matrix.
+           A future ACT could add a `make
+           bootstrap01-oracle-all` target that loops
+           the oracle over the TSV. Out of scope for B0
+           (B0 proves the contract, not the tooling).
+
+End of residue classification.

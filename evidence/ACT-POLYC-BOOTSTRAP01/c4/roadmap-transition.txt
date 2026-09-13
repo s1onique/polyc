@@ -1,0 +1,70 @@
+ACT-POLYC-BOOTSTRAP01 — C4 — roadmap transition
+=================================================
+
+ROADMAP update (executed as a separate docs commit after
+this ACT's CLOSE commit; the docs commit is part of the
+ACT's commit chain):
+
+```diff
+### P4 — Self-hosting substrate
+
+- Status: B0 GREEN
+- ACT-POLYC-BOOTSTRAP01 CLOSED PASS.
+- B0_POLYC_LEXER: PASS
+- B0_HCC_NATIVE_COMPILE: PASS
+- B0_NATIVE_LINK: PASS
+- B0_NATIVE_RUN: PASS
+- B0_TOKEN_EQUIVALENCE: 15/15 fixtures match C oracle
+- B0_DETERMINISM: PASS
+- B0_SOURCE_IMMUTABILITY: PASS
+- B0_OUTPUT_BOUNDARY: PASS
+- B0_LLVM_EMIT: PARTIAL (MEMORY01 STORE_DEREF fence)
+- GEP_FEATURE_DEPENDENCY: YES (byte substrate)
+- GEP01_HARNESS_DEPENDENCY: NO (B0 does not need it)
+- GATE_PUSH_DEPENDENCY: NO
+- BOOTSTRAP_B0: GREEN
+- FIRST_SELF_HOST: NOT_YET
+- BOOTSTRAP_STABILITY: NOT_YET
+- PUSH_RESIDUE: GEP01_D1_D2 (pre-existing)
+- LLVM_COMPILE_VERIFY_RUN: PARTIAL (path-dependent)
+
+#### B0 — compiler-shaped
+- Production / polyclike BootStrapLex in
+  tools/bootstrap/bootstrap01-lexer.HC is the B0 subject.
+- tools/quality/bootstrap01-lexer-oracle.c is the
+  independent C reference oracle.
+- tools/quality/bootstrap01-lexer-test.HC is the
+  differential driver.
+- Makefile targets:
+  - bootstrap01-oracle: build the C reference oracle
+  - bootstrap01-test:    build + run the B0 driver
+                          against the frozen fixture matrix
+- Frozen fixture matrix:
+  evidence/ACT-POLYC-BOOTSTRAP01/c1/bootstrap01-fixtures.tsv
+
+#### P4 bootstrap milestones
+- B0 — COMPILER-SHAPED      GREEN
+- B1 — PARTIAL SELF-HOST    OPEN next
+- B2 — FIRST SELF-HOST      LOCKED
+- B3 — BOOTSTRAP STABILITY  LOCKED
+
+#### Recommended next ACT
+ACT-POLYC-BOOTSTRAP02 (or equivalent bounded B1 ACT):
+the bounded subsystem self-host. Candidate scope:
+replace one bounded production lexer path with the proven
+B0 lexer and pass differential tests against the
+current compiler. Do NOT open until the B0 evidence is
+audited and the LLVM-path question (R-P1-2) is
+addressed if the B1 target needs the LLVM path.
+```
+
+The exact `docs/ROADMAP.md` diff is recorded as the
+final commit in this ACT's chain. F14 requires the
+historical-traceability rule; the diff is append-only.
+
+Reviewer command:
+
+```sh
+sh scripts/quality/factory-v2-range-check.sh \
+    ACT-POLYC-BOOTSTRAP01 HEAD
+```

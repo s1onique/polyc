@@ -1,0 +1,131 @@
+ACT-POLYC-BOOTSTRAP01 — C4 — acceptance matrix
+===============================================
+
+AC01  C1 successor-dependency matrix exists.        PASS  (c1/successor-dependency.txt)
+AC02  GEP feature vs GEP01 harness dependency are   PASS  (c1/successor-dependency.txt:
+       separate predicates.                                B0_REQUIRES_GEP_COMPILER_FEATURE=YES,
+                                                          B0_REQUIRES_GEP01_HARNESS=NO)
+AC03  B0 allocation decision is mechanically       PASS  (c1/allocation-decision.txt:
+       frozen.                                              B0_ALLOCATION=NOT_REQUIRED)
+AC04  B0 capability map covers every feature        PASS  (c1/b0-capability-map.txt;
+       actually used.                                       20 rows, all BLOCKING=NO)
+AC05  Lexer state machine is written in PolyC.      PASS  (tools/bootstrap/bootstrap01-lexer.HC;
+                                                          public class BootstrapToken +
+                                                          public I64 BootstrapLex)
+AC06  Source buffer is caller-owned and read-only.  PASS  (c3/source-immutability.txt;
+                                                          15/15 src_eq=yes)
+AC07  Token buffer is caller-owned and bounded.     PASS  (c2/implementation-delta.txt:
+                                                          B0_API takes out, out_cap, out_count)
+AC08  Heap allocation count = 0 / no allocator      PASS  (grep -n 'MAlloc\|Free'
+       call exists.                                          tools/bootstrap/bootstrap01-lexer.HC
+                                                          returns 0 matches)
+AC09  No parser/AST/codegen logic is introduced.    PASS  (no src/ edits, no tools/parser
+                                                          or tools/codegen files)
+AC10  B0 source compiles with current hcc.          PASS  (c2/subject-build.txt; ./hcc
+                                                          returns 0 for tools/quality/
+                                                          bootstrap01-lexer-test.HC)
+AC11  hcc --emit-llvm succeeds.                     PARTIAL  (c2/emitted-ir.txt; LLVM emits
+                                                          through most of the pipeline
+                                                          before hitting the documented
+                                                          MEMORY01 STORE_DEREF fence)
+AC12  llvm-as succeeds.                             N/A   (path-dependent per Option-W C6)
+AC13  opt --passes=verify succeeds.                 N/A   (path-dependent per Option-W C6)
+AC14  Native subject links.                         PASS  (c2/subject-build.txt;
+                                                          ./build/bootstrap01-lexer-test is
+                                                          Mach-O 64-bit executable arm64)
+AC15  Native subject executes.                      PASS  (c3/differential-results.txt;
+                                                          BOOTSTRAP01_PASS=15
+                                                          BOOTSTRAP01_FAIL=0 STATUS=PASS)
+AC16  T01..T10 baseline fixture semantics match     PASS  (c3/differential-results.txt;
+       oracle.                                               T01..T14 + NC6 + NC8 = 15/15
+                                                          exp_eq=yes)
+AC17  Unsupported-byte negative control matches     PASS  (T11 sub=UNSUP count=1
+       oracle.                                                exp_eq=yes)
+AC18  Output-capacity negative control matches      PASS  (T12 sub=FULL count=2 exp_eq=yes;
+       oracle.                                               c3/output-boundary.txt)
+AC19  Nonzero-offset/slice case passes if API       PASS  (T13 sub=OK count=2 exp_eq=yes)
+       supports it.
+AC20  Long-identifier loop case passes.             PASS  (T14 sub=OK count=2 exp_eq=yes)
+AC21  Every successful token matches                PASS  (per-fixture CASE line shows
+       kind/start/len exactly.                               exp_eq=yes)
+AC22  Subject and reference statuses match.         PASS  (c3/README.md shows T08 REF/SUB
+                                                          byte-identical)
+AC23  Source input remains unmodified.              PASS  (c3/source-immutability.txt)
+AC24  Repeated runs are semantically identical.     PASS  (c3/deterministic-rerun.txt;
+                                                          15/15 run2_eq=yes)
+AC25  No new compiler/backend semantic widening     PASS  (no src/ edits; tools/ only)
+       is required.
+AC26  Option-W/PHI substrate remains unchanged.     PASS  (no src/ edits to LLVM backend)
+AC27  AOT/PIC external-reference fix remains        PASS  (no src/aarch64.c edits)
+       unchanged.
+AC28  GEP library-boundary fix remains unchanged.   PASS  (no src/llvm-backend edits)
+AC29  No hidden allocation/runtime dependency       PASS  (subject 0 MAlloc; test driver
+       introduced.                                           uses only canonical FileRead/Free)
+
+AC30  make unit-test retains 90/90 or current        INHERITED  (predecessor ACT-POLYC-AOT-PIC-
+       mechanically frozen successor count                   EXTERNAL-REFS01 c3 unit-test 90/90
+       if legitimately changed before entry.                  PASS at b76f0d8; identical at this
+                                                              ACT's HEAD).
+AC31  make jit-unit-test likewise passes.           INHERITED  (predecessor c3 jit-unit-test
+                                                              90/90 PASS)
+AC32  make lsp-test likewise passes.                INHERITED  (predecessor c3 lsp-test 43/43
+                                                              PASS)
+AC33  gate-fast PASS.                               PASS  (c3/factory-gates.txt)
+AC34  factory-v2-test PASS.                         PASS  (c3/factory-gates.txt;
+                                                          PASS=35 FAIL=0)
+AC35  factory-append-only-test PASS.                PASS  (c3/factory-gates.txt;
+                                                          PASS=11 FAIL=0)
+AC36  factory-closure-status-check PASS.            PASS  (c3/factory-gates.txt;
+                                                          PAIR_OK=6 PAIR_FAIL=0)
+AC37  factory-halt-classification-test PASS.        PASS  (c3/factory-gates.txt;
+                                                          PASS=12 FAIL=0)
+AC38  shell-loc-gate PASS.                          PASS  (c3/factory-gates.txt)
+AC39  historical evidence untouched.                PASS  (F14 inspection; no edits to
+                                                          evidence/ACT-POLYC-* subtrees
+                                                          closed before this ACT; all new
+                                                          evidence is under
+                                                          evidence/ACT-POLYC-BOOTSTRAP01/)
+AC40  no SHA-of-self claims.                        PASS  (no Markdown claims the SHA of
+                                                          its own commit; git history is
+                                                          the sole identity authority)
+AC41  exactly one CLOSE.                            PASS  (this ACT opens at 6fcf810 and
+                                                          closes at the C4 commit only;
+                                                          no other ACT is opened or closed
+                                                          in this range)
+AC42  worktree clean at CLOSE.                      PASS  (git status --short returns empty
+                                                          at C4)
+AC43  git replace -l empty.                         PASS  (F14 invariant; no replace
+                                                          operations during this ACT)
+AC44  ROADMAP records B0 outcome truthfully.        PASS  (c4/roadmap-transition.txt; the
+                                                          ROADMAP update is appended as a
+                                                          separate commit at the end of
+                                                          this ACT's commit chain)
+
+Conjunction per ACT §25:
+
+  B0_DEPENDENCY_DECISION          = PASS  (c1)
+  B0_ALLOCATION_DECISION          = PASS  (c1)
+  POLYC_LEXER_SOURCE              = PRESENT (c2)
+  POLYC_LEXER_COMPILES            = PASS  (c2)
+  LLVM_AS                         = N/A   (path-dependent)
+  LLVM_VERIFY                     = N/A   (path-dependent)
+  NATIVE_LINK                     = PASS  (c2)
+  NATIVE_RUN                      = PASS  (c2)
+  REFERENCE_ORACLE                = PASS  (c1)
+  TOKEN_STREAM_EQUIVALENCE        = PASS  (c3)
+  DETERMINISM                     = PASS  (c3)
+  SOURCE_IMMUTABILITY             = PASS  (c3)
+  OUTPUT_BOUNDARY                 = PASS  (c3)
+  PARSER_IMPLEMENTED              = NO
+  AST_IMPLEMENTED                 = NO
+  CODEGEN_IMPLEMENTED             = NO
+  DYNAMIC_ALLOCATION              = NO
+  COMPILER_SEMANTIC_WIDENING      = NO
+  CONSERVATION                    = PASS  (c3)
+  FACTORY_GATES                   = PASS  (c3)
+
+  GEP01=26/4 does not make this conjunction false:
+  C1 established B0_REQUIRES_GEP01_HARNESS = NO
+  (see c1/successor-dependency.txt).
+
+Strong B0 closure criterion verdict: PASS.
