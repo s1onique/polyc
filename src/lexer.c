@@ -13,6 +13,7 @@
 #include "cctrl.h"
 #include "containers.h"
 #include "lexer.h"
+#include "lexer_bridge.h"
 #include "list.h"
 #include "prslib.h"
 #include "prsutil.h"
@@ -871,6 +872,77 @@ static int countNumberLen(Lexer *l, char *ptr, int *isfloat, int *ishex,
 }
 
 int lexIdentifier(Lexer *l, char ch) {
+#ifdef HCC_BOOTSTRAP02_STAGE1
+    /*
+     * ACT-POLYC-BOOTSTRAP02 C2 IMPL — stage1 delegation to
+     * the B1 PolyC component BootstrapScanIdent. Compiled in
+     * ONLY when -DHCC_BOOTSTRAP02_STAGE1 is passed (the
+     * opt-in stage1 build). The production ./hcc binary uses
+     * the legacy ctype-based path below; there is no
+     * runtime fallback, only a build-time selection.
+     *
+     * Cursor binding at entry (mechanically established):
+     *
+     *   l->start           = pointer to the FIRST identifier byte
+     *                       (set by lexNextChar in the dispatcher)
+     *   ch                 = *l->start          (the same byte)
+     *   l->ptr             = l->start + 1       (already advanced past
+     *                                            the first byte)
+     *
+     * Cursor binding at exit (must match the old path byte-for-byte):
+     *
+     *   l->cur_strlen      = number of identifier bytes (>= 1)
+     *   l->ptr             = if the byte at l->start + cur_strlen is NUL
+     *                         (or l->start + cur_strlen == end of source
+     *                          buffer) the old path did NOT rewind, so
+     *                         l->ptr sits one PAST that NUL position;
+     *                       otherwise the old path rewound, so l->ptr
+     *                         sits AT the first non-identifier byte.
+     *
+     *   byte_at_end = (l->start + cur_strlen < eob) ? *(l->start+cur_strlen) : '\0'
+     *   if (byte_at_end == '\0')  l->ptr = l->start + cur_strlen + 1;
+     *   else                       l->ptr = l->start + cur_strlen;
+     *
+     * BootstrapScanIdent is called with start=0 because we pass
+     * l->start AS src, so the offset inside the buffer is zero.
+     * src_len = strlen(l->start) because the production source is
+     * NUL-terminated (AoStr always terminates).
+     */
+    (void)ch;
+
+    unsigned char *src = (unsigned char *)l->start;
+    long long src_len = (long long)strlen(l->start);
+    long long start_off = 0;
+    long long end_off = 0;
+    int rc = (int)BootstrapScanIdent(src, src_len, start_off, &end_off);
+    if (rc == 0) {
+        /* Should be unreachable: the dispatcher gate at lexCore
+         * (src/lexer.c:1458) only calls us when isalpha(ch) || ch == '_',
+         * which satisfies B02IsIdentStart. If the B1 component ever
+         * disagrees, rewind the single byte the dispatcher had already
+         * consumed (matching the old behavior on -1 return) and report
+         * malformed identifier. */
+        lexRewindChar(l);
+        return -1;
+    }
+
+    l->cur_strlen = (s64)(end_off - start_off);
+
+    unsigned char *final_ptr = src + end_off;
+    if (end_off >= src_len || *final_ptr == '\0') {
+        /* Old path did NOT rewind: l->ptr sits one past the NUL. */
+        l->ptr = (char *)(final_ptr + 1);
+    } else {
+        /* Old path DID rewind: l->ptr sits AT the non-identifier byte. */
+        l->ptr = (char *)final_ptr;
+    }
+    return TK_IDENT;
+#else
+    /* Legacy production path. Preserved bit-identically so the
+     * default `./hcc` build continues to work without requiring
+     * the B1 PolyC component to be present. See
+     * ACT-POLYC-BOOTSTRAP02 §3 (frozen components) and
+     * ACT-POLYC-BOOTSTRAP02-C1-CORRECTION01 (B0 conservation). */
     int i = 0;
     while (ch && (isalnum(ch) || ch == '_' ||  ch == '$')) {
         i++;
@@ -882,6 +954,7 @@ int lexIdentifier(Lexer *l, char ch) {
         lexRewindChar(l);
     }
     return TK_IDENT;
+#endif
 }
 
 /* As this function escapes strings we pass in `_real_len` to be able 
