@@ -25,4 +25,3 @@ if [ $fail -eq 0 ]; then
   echo "CMP_RESULT=ALL_BYTE_EQ"
 fi
 exit $fail
-
