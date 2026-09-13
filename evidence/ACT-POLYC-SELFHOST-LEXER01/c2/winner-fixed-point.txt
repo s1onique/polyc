@@ -1,0 +1,42 @@
+ACT-POLYC-SELFHOST-LEXER01 — C2 — operator fixed-point proof
+============================================================
+
+The new PolyC component BootstrapClassifyOperator
+(tools/bootstrap/selfhost-lexer-operator-classify.HC) is
+compiled by stage0, stage1, stage2, and stage3; the four
+resulting objects are byte-equal. This is the equivalent
+of the B1 fixed-point proof, this time for the B2
+operator / punctuation slice.
+
+```text
+$ shasum -a 256 build/bootstrap06-operator-classify.o \
+                     build/bootstrap06-operator-classify.stage1.o \
+                     build/bootstrap06-operator-classify.stage2.o \
+                     build/bootstrap06-operator-classify.stage3.o
+c9fec4f255a88fcdbb34237beb789db1f74a72fd3f3f62b98b9f08fe2055329c  build/bootstrap06-operator-classify.o
+c9fec4f255a88fcdbb34237beb789db1f74a72fd3f3f62b98b9f08fe2055329c  build/bootstrap06-operator-classify.stage1.o
+c9fec4f255a88fcdbb34237beb789db1f74a72fd3f3f62b98b9f08fe2055329c  build/bootstrap06-operator-classify.stage2.o
+c9fec4f255a88fcdbb34237beb789db1f74a72fd3f3f62b98b9f08fe2055329c  build/bootstrap06-operator-classify.stage3.o
+```
+
+```text
+WINNER_FIXED_POINT = PASS N0==N1==N2==N3
+```
+
+The 4 byte-equal objects establish that:
+- stage0 produces an operator-classify object;
+- stage1 (which uses stage0's object) produces a
+  byte-equal operator-classify object;
+- stage2 (which uses stage1's object) produces a
+  byte-equal operator-classify object;
+- stage3 (which uses stage2's object) produces a
+  byte-equal operator-classify object.
+
+This is a strong self-hosting fixed point: the operator
+classifier has converged under self-compilation.
+
+Provenance:
+- bootstrap06-operator-classify.o        produced by ./hcc                  (stage0)
+- bootstrap06-operator-classify.stage1.o produced by build/hcc-bootstrap02 (stage1)
+- bootstrap06-operator-classify.stage2.o produced by build/hcc-bootstrap03 (stage2)
+- bootstrap06-operator-classify.stage3.o produced by build/hcc-bootstrap04 (stage3)

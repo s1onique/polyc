@@ -1,0 +1,43 @@
+ACT-POLYC-SELFHOST-LEXER01 — C2 — corpus stage0 ↔ stage1 ↔ stage2
+==============================================================
+
+Re-ran the 181-source corpus through stage0 (./hcc), stage1
+(./build/hcc-bootstrap02), and stage2 (./build/hcc-bootstrap03).
+
+```text
+$ find src/holyc-lib src/tests -name '*.HC' -type f | sort \
+    > evidence/ACT-POLYC-SELFHOST-LEXER01/c2/corpus-inventory.txt
+$ wc -l evidence/ACT-POLYC-SELFHOST-LEXER01/c2/corpus-inventory.txt
+181
+```
+
+```text
+$ /tmp/c2-corpus.sh \
+    evidence/ACT-POLYC-SELFHOST-LEXER01/c2/corpus-inventory.txt \
+    $(pwd)/hcc $(pwd)/build/hcc-bootstrap02 $(pwd)/build/hcc-bootstrap03 \
+    $(pwd)/build/test-prefix \
+    evidence/ACT-POLYC-SELFHOST-LEXER01/c2/corpus-build \
+    evidence/ACT-POLYC-SELFHOST-LEXER01/c2/corpus.tsv
+Done: 181 files
+
+$ awk -F'\t' 'NR>1 {print $7}' evidence/ACT-POLYC-SELFHOST-LEXER01/c2/corpus.tsv | sort | uniq -c
+      6 BOTH_FAIL
+    175 BYTE_IDENTICAL
+```
+
+```text
+S0_PASS_S1_PASS_S2_PASS_BYTE_IDENTICAL = 175
+S0_FAIL_S1_FAIL_S2_FAIL                = 6   (intentional parser-error fixtures)
+S0_PASS_S1_PASS_S2_PASS_DIVERG         = 0
+S0_PASS_S1_FAIL                        = 0
+S1_PASS_S0_FAIL                        = 0
+TOTAL                                  = 181
+```
+
+The 175/175 byte-identical count matches the predecessor
+ACT-POLYC-SELFHOST-SURFACE01 B3 baseline exactly. The 6
+intentional-fail fixtures are the same set as B3.
+
+```text
+C2_CORPUS_CONSERVATION = PASS
+```
