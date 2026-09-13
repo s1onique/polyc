@@ -1,0 +1,55 @@
+ACT-POLYC-BOOTSTRAP04 — C3 — error corpus summary
+================================================
+
+Per ACT §28: reuse the four-case B2 error corpus.
+
+------------------------------------------------------------
+Command
+------------------------------------------------------------
+
+```text
+$ python3 tools/quality/bootstrap04-error-corpus.py \
+    evidence/ACT-POLYC-BOOTSTRAP02/c3/error-corpus \
+    build/hcc-bootstrap03 build/hcc-bootstrap04 \
+    $(pwd)/build/test-prefix \
+    evidence/ACT-POLYC-BOOTSTRAP04/c3/error-corpus.tsv
+```
+
+------------------------------------------------------------
+Result
+------------------------------------------------------------
+
+```text
+error-corpus-rows=4
+error-corpus-mismatch=0
+```
+
+All 4 fixtures equivalent between stage2 and stage3.
+
+------------------------------------------------------------
+Per-fixture detail
+------------------------------------------------------------
+
+(See evidence/ACT-POLYC-BOOTSTRAP04/c3/error-corpus.tsv
+for the full TSV.)
+
+```text
+ERR01_unterminated_string.HC       rc=1/1  class=FAIL/FAIL  equivalent=YES
+ERR02_invalid_declaration.HC       rc=1/1  class=FAIL/FAIL  equivalent=YES
+ERR03_identifier_start_digit.HC    rc=1/1  class=FAIL/FAIL  equivalent=YES
+ERR04_intentional_parser_error.HC  rc=1/1  class=FAIL/FAIL  equivalent=YES
+```
+
+Diagnostic position strings are byte-identical between
+stage2 and stage3 on every fixture (same path:line:col).
+
+------------------------------------------------------------
+Summary
+------------------------------------------------------------
+
+```text
+ERROR_CORPUS_ROWS                  = 4
+ERROR_CORPUS_STAGE2_STAGE3_MISMATCH = 0
+AC-C3-29 error corpus 4/4 equivalent = PASS
+AC-C3-30 error divergence          = 0
+```

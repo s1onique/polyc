@@ -1,0 +1,91 @@
+ACT-POLYC-BOOTSTRAP04 — C3 — artifact provenance
+================================================
+
+Per ACT §6, §21: full S0/S1/S2 provenance witness.
+
+------------------------------------------------------------
+STAGE2 → STAGE3 (B3 critical edge)
+------------------------------------------------------------
+
+```text
+producer binary        = build/hcc-bootstrap03   (sha256: 2e505bb9...)
+producer input         = tools/bootstrap/bootstrap02-ident.HC
+producer command       = ./build/hcc-bootstrap03 --install-dir=$(TEST_PREFIX) \
+                           -c tools/bootstrap/bootstrap02-ident.HC \
+                           -o ./build/bootstrap04-ident.stage2.o
+producer output path   = ./build/bootstrap04-ident.stage2.o
+producer output sha    = a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f
+
+consumer configure     = cmake -S ./src -B ./build/hcc-bootstrap04-build \
+                           -DHCC_ENABLE_BOOTSTRAP04_STAGE3=ON \
+                           -DBOOTSTRAP04_IDENT_OBJECT=$(CURDIR)/build/bootstrap04-ident.stage2.o
+consumer link input    = ./build/bootstrap04-ident.stage2.o
+consumer link input sha= a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f
+consumer link output   = ./build/hcc-bootstrap04
+
+PATH_EQ                = YES
+HASH_EQ                = YES
+PROVENANCE_PRIMARY     = established (producer + path + consumer graph)
+```
+
+------------------------------------------------------------
+STAGE1 → STAGE2 (B2 edge; F14-frozen)
+------------------------------------------------------------
+
+```text
+producer binary        = build/hcc-bootstrap02   (sha256: 6cae5fcd...)
+producer output path   = ./build/bootstrap03-ident.stage1.o
+producer output sha    = a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f
+
+consumer link input    = ./build/bootstrap03-ident.stage1.o
+consumer link input sha= a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f
+
+PATH_EQ                = YES
+HASH_EQ                = YES
+```
+
+------------------------------------------------------------
+STAGE0 → STAGE1 (B1 edge; F14-frozen)
+------------------------------------------------------------
+
+```text
+producer binary        = ./hcc                  (sha256: a35e3681...)
+producer output path   = ./build/bootstrap02-ident.o
+producer output sha    = a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f
+
+consumer link input    = ./build/bootstrap02-ident.o
+consumer link input sha= a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f
+
+PATH_EQ                = YES
+HASH_EQ                = YES
+```
+
+------------------------------------------------------------
+Three-generation B1 artifact hash identity
+------------------------------------------------------------
+
+```text
+$ shasum -a 256 build/bootstrap02-ident.o       \
+                build/bootstrap03-ident.stage1.o \
+                build/bootstrap04-ident.stage2.o
+a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f  build/bootstrap02-ident.o
+a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f  build/bootstrap03-ident.stage1.o
+a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f  build/bootstrap04-ident.stage2.o
+```
+
+S0 == S1 == S2 byte-for-byte. The B1 component is at a
+fixed point across all three compiler generations.
+
+------------------------------------------------------------
+Interpretation
+------------------------------------------------------------
+
+```text
+PROVENANCE_PRIMARY        = established for all three edges
+CONTENT_IDENTITY_SECONDARY = SHA256_MATCH for all three edges
+INODE_IDENTITY            = NOT_CLAIMED (no inode capture)
+
+STAGE2_PRODUCER_FOR_STAGE3 = ./build/hcc-bootstrap03 (verified)
+STAGE3_CONSUMES_S2_PATH    = ./build/bootstrap04-ident.stage2.o (verified)
+STAGE3_INPUT_HASH_EQ_S2    = YES (a1b620c0...)
+```

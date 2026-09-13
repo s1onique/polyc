@@ -1,0 +1,44 @@
+ACT-POLYC-BOOTSTRAP04 — C3 — generation chain
+=============================================
+
+Per ACT §31: the canonical proof chain.
+
+```text
+SOURCE:
+  bootstrap02-ident.HC
+  language = PolyC
+
+GENERATION 1:
+  stage0 (./hcc)        ──compile──►  S0_B1_OBJ (build/bootstrap02-ident.o)
+       │
+       └──link────────────►  stage1 (build/hcc-bootstrap02)
+
+GENERATION 2:
+  stage1 (build/hcc-bootstrap02) ──compile──► S1_B1_OBJ (build/bootstrap03-ident.stage1.o)
+       │
+       └──link────────────►  stage2 (build/hcc-bootstrap03)
+
+GENERATION 3:
+  stage2 (build/hcc-bootstrap03) ──compile──► S2_B1_OBJ (build/bootstrap04-ident.stage2.o)
+       │
+       └──link────────────►  stage3 (build/hcc-bootstrap04)
+
+STAGE3:
+  consumes exact stage2-produced component (S2_B1_OBJ)
+  uses component in production lexIdentifier
+
+STABILITY (this evidence packet):
+  stage2 and stage3 agree on:
+    component output                  (15/15 byte-equal)
+    cursor semantics                  (6/6 byte-equal)
+    production lexer semantics        (6/6 byte-equal)
+    broad successful corpus           (175/175 byte-equal)
+    baseline failure corpus           (6/6 same class)
+    explicit error corpus             (4/4 equivalent)
+    self-source output                (byte-identical)
+  Build A == Build B                  (PASS)
+
+THEREFORE:
+  BOOTSTRAP_STABILITY = PASS
+  within CURRENT_SELF_HOSTED_COMPILER_COMPONENT domain
+```

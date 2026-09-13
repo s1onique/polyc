@@ -1,0 +1,106 @@
+ACT-POLYC-BOOTSTRAP04 — C3 — scope audit
+========================================
+
+Per ACT §7 + §10 + §41 AC-C3-51..AC-C3-56: every changed
+line in the B3 ACT range traces to authorized scope.
+
+------------------------------------------------------------
+Files modified by the B3 ACT
+------------------------------------------------------------
+
+```text
+$ git diff --name-only 245da70..HEAD | sort
+Makefile
+docs/acts/ACT-POLYC-BOOTSTRAP04.md
+evidence/ACT-POLYC-BOOTSTRAP04/c1/*.md
+evidence/ACT-POLYC-BOOTSTRAP04/c1/*.txt
+evidence/ACT-POLYC-BOOTSTRAP04/c2/*.md
+evidence/ACT-POLYC-BOOTSTRAP04/c2/*.txt
+evidence/ACT-POLYC-BOOTSTRAP04/c3/*.md
+evidence/ACT-POLYC-BOOTSTRAP04/c3/*.tsv
+evidence/ACT-POLYC-BOOTSTRAP04/c3/*.txt
+src/CMakeLists.txt
+tools/quality/bootstrap04-corpus-runner.py
+tools/quality/bootstrap04-error-corpus.py
+```
+
+------------------------------------------------------------
+Semantic-delta audit
+------------------------------------------------------------
+
+```text
+src/lexer.c                       NOT MODIFIED   (B3 ACT §9 frozen)
+src/lexer_bridge.h                NOT MODIFIED   (B3 ACT §9 frozen)
+tools/bootstrap/bootstrap02-ident.HC   NOT MODIFIED   (B3 ACT §9 frozen)
+src/aarch64.c                     NOT MODIFIED   (B3 ACT §9 frozen)
+src/x86_64.c                      NOT MODIFIED   (B3 ACT §9 frozen)
+parser / AST / IR / LLVM         NOT MODIFIED   (B3 ACT §9 frozen)
+```
+
+Confirmed via:
+
+```text
+$ git diff --name-only 245da70..HEAD -- src/lexer.c \
+    src/lexer_bridge.h tools/bootstrap/bootstrap02-ident.HC \
+    src/aarch64.c src/x86_64.c src/parser.c src/ast.c src/ir.c \
+    src/llvm-backend.c src/llvm-backend-cap.c
+(empty)
+```
+
+Compiler semantic delta: ZERO (AC-C3-51).
+
+B1 source delta: ZERO (AC-C3-52).
+
+Lexer semantic delta: ZERO (AC-C3-53).
+
+Parser/AST/IR/backend delta: ZERO (AC-C3-54).
+
+------------------------------------------------------------
+Historical-evidence mutation audit
+------------------------------------------------------------
+
+```text
+$ git diff --name-only 245da70..HEAD -- evidence/ACT-POLYC-BOOTSTRAP01 \
+    evidence/ACT-POLYC-BOOTSTRAP02 evidence/ACT-POLYC-BOOTSTRAP03
+(empty)
+```
+
+Prior evidence unchanged. F14 honored (AC-C3-55).
+
+------------------------------------------------------------
+Committed-binary audit
+------------------------------------------------------------
+
+```text
+$ git diff --name-only 245da70..HEAD | grep -E '\.(o|a|so|dylib)$|hcc$|hcc-bootstrap0[234]$'
+(empty)
+```
+
+No committed binary evidence under B3 (AC-C3-56).
+
+------------------------------------------------------------
+Diff-check audit
+------------------------------------------------------------
+
+```text
+$ git diff --check 245da70..HEAD 2>&1 | wc -l
+0
+```
+
+Clean (AC-C3-57).
+
+------------------------------------------------------------
+Verdict
+------------------------------------------------------------
+
+```text
+COMPILER_SEMANTIC_DELTA   = ZERO
+B1_SOURCE_DELTA           = ZERO
+LEXER_SEMANTIC_DELTA      = ZERO
+PARSER_AST_IR_DELTA       = ZERO
+PRIOR_EVIDENCE_DELTA      = ZERO
+COMMITTED_BINARY_EVIDENCE = ZERO
+CURRENT_ACT_RANGE_HYGIENE = CLEAN
+
+SCOPE_AUDIT               = PASS
+```

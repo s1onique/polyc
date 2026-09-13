@@ -1,0 +1,49 @@
+ACT-POLYC-BOOTSTRAP04 — C3 — fixed-point summary
+==============================================
+
+Per ACT §30 + §41 AC-C3-33: the compact fixed-point
+witness.
+
+```text
+stage2(B1 source) == stage3(B1 source)
+```
+
+------------------------------------------------------------
+Compact witness
+------------------------------------------------------------
+
+```text
+$ shasum -a 256 build/bootstrap04-ident.stage2.o \
+                build/bootstrap04-ident.stage3.o
+a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f  build/bootstrap04-ident.stage2.o
+a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f  build/bootstrap04-ident.stage3.o
+```
+
+Equal. The fixed point holds.
+
+------------------------------------------------------------
+Extended witness (S0..S3 chain)
+------------------------------------------------------------
+
+```text
+$ shasum -a 256 build/bootstrap02-ident.o       \
+                build/bootstrap03-ident.stage1.o \
+                build/bootstrap04-ident.stage2.o \
+                build/bootstrap04-ident.stage3.o
+a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f  build/bootstrap02-ident.o
+a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f  build/bootstrap03-ident.stage1.o
+a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f  build/bootstrap04-ident.stage2.o
+a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f  build/bootstrap04-ident.stage3.o
+```
+
+S0 == S1 == S2 == S3. Four successive compilations
+produce byte-identical B1 objects.
+
+------------------------------------------------------------
+Verdict
+------------------------------------------------------------
+
+```text
+STAGE2_STAGE3_B1_OBJECT_EQ = PASS
+STAGE2_STAGE3_COMPONENT_FIXED_POINT = PASS
+```

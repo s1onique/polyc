@@ -1,0 +1,73 @@
+ACT-POLYC-BOOTSTRAP04 — C3 — stage3 delegation witness
+======================================================
+
+Per ACT §41 AC-C3-10: stage3 lexer calls _BootstrapScanIdent.
+
+------------------------------------------------------------
+Disassembly (lexIdentifier delegate sites)
+------------------------------------------------------------
+
+```text
+$ otool -tv build/hcc-bootstrap04 | grep -B1 -A1 'BootstrapScanIdent'
+00000001000303f0   mov x2, #0x0
+00000001000303f4   bl  _BootstrapScanIdent       <-- lexIdentifier entry
+00000001000303f8   cbz w0, 0x100030414
+...
+000000010003145c   mov x2, #0x0
+0000000100031460   bl  _BootstrapScanIdent       <-- second call site
+0000000100031464   cbz w0, 0x100031bb0
+000000010007c314   ret
+_BootstrapScanIdent:
+000000010007c318   stp x29, x30, [sp, #-0x10]!
+```
+
+Two `bl _BootstrapScanIdent` call sites — exactly the
+same as stage2 (see evidence/ACT-POLYC-BOOTSTRAP04/c1/stage-identity.txt).
+
+------------------------------------------------------------
+Compare across all generations
+------------------------------------------------------------
+
+```text
+$ for bin in build/hcc-bootstrap02 build/hcc-bootstrap03 build/hcc-bootstrap04; do
+    echo "=== $bin ===";
+    otool -tv "$bin" 2>/dev/null | grep 'bl.*BootstrapScanIdent' | head -5;
+  done
+
+=== build/hcc-bootstrap02 ===
+00000001000303f4   bl  _BootstrapScanIdent
+0000000100031460   bl  _BootstrapScanIdent
+=== build/hcc-bootstrap03 ===
+00000001000303f4   bl  _BootstrapScanIdent
+0000000100031460   bl  _BootstrapScanIdent
+=== build/hcc-bootstrap04 ===
+00000001000303f4   bl  _BootstrapScanIdent
+0000000100031460   bl  _BootstrapScanIdent
+```
+
+All three stages call _BootstrapScanIdent at the same
+two sites in the lexer dispatch. Same call sites, same
+target address.
+
+------------------------------------------------------------
+Dynamic $-identifier compile smoke test (AC-C3-11)
+------------------------------------------------------------
+
+```text
+$ echo 'I64 Main() { I64 $foo = 1; return $foo; }' > dollar-smoke.HC
+$ ./build/hcc-bootstrap04 --install-dir=$(pwd)/build/test-prefix \
+    -c dollar-smoke.HC -o dollar-smoke.o
+clang: warning: -lpthread: 'linker' input unused
+clang: warning: -lc: 'linker' input unused
+clang: warning: -lm: 'linker' input unused
+$ echo rc=$?
+rc=0
+$ ls -la dollar-smoke.o
+-rw-r--r--  1 chistyakov  staff  544  Sep 13 19:24  dollar-smoke.o
+```
+
+Stage3 successfully compiles a `$`-identifier source via
+the B1 component. The dynamic smoke test is green.
+
+(Cleanup: dollar-smoke.HC and dollar-smoke.o removed
+immediately after the test.)

@@ -1,0 +1,78 @@
+ACT-POLYC-BOOTSTRAP04 — C3 — stage identities
+==============================================
+
+Per ACT §41 AC-C3-01..AC-C3-08: stage0..stage3 binaries,
+hashes, and provenance.
+
+------------------------------------------------------------
+Stage0 (./hcc)
+------------------------------------------------------------
+
+```text
+$ shasum -a 256 build/hcc
+a35e3681a305fca6b3dfa67ad4821a5ddbc97dae99a517d8e79b430cd7bcd1b6  build/hcc
+
+$ nm build/hcc | grep -c BootstrapScanIdent
+0
+```
+
+Stage0 is the ordinary host-built ./hcc. No B1 symbol.
+
+------------------------------------------------------------
+Stage1 (./build/hcc-bootstrap02)
+------------------------------------------------------------
+
+```text
+$ shasum -a 256 build/hcc-bootstrap02
+6cae5fcd40c7fa3c83efaa0add5c8b3a800e54cef1de66efd861c0448d0f78d5  build/hcc-bootstrap02
+
+$ nm build/hcc-bootstrap02 | grep BootstrapScanIdent
+000000010007c318 T _BootstrapScanIdent
+```
+
+Stage1 produced the B1 component from S0 and links it.
+
+------------------------------------------------------------
+Stage2 (./build/hcc-bootstrap03)
+------------------------------------------------------------
+
+```text
+$ shasum -a 256 build/hcc-bootstrap03
+2e505bb974b06bd7a79e4a0c498368f9227d1c465d519b6cb0fdc036ad6b8802  build/hcc-bootstrap03
+
+$ nm build/hcc-bootstrap03 | grep BootstrapScanIdent
+000000010007c318 T _BootstrapScanIdent
+```
+
+Stage2 produced the B1 component from S1 and links it.
+
+------------------------------------------------------------
+Stage3 (./build/hcc-bootstrap04)
+------------------------------------------------------------
+
+```text
+$ shasum -a 256 build/hcc-bootstrap04
+9d1c62f17f6ff8115913dff394fe90d4885257a7575fcb0d0445acd78ad0d7ad  build/hcc-bootstrap04
+
+$ nm build/hcc-bootstrap04 | grep BootstrapScanIdent
+000000010007c318 T _BootstrapScanIdent
+```
+
+Stage3 produced the B1 component from S2 and links it.
+
+------------------------------------------------------------
+B1 artifact lineage
+------------------------------------------------------------
+
+```text
+$ shasum -a 256 build/bootstrap02-ident.o       \
+                build/bootstrap03-ident.stage1.o \
+                build/bootstrap04-ident.stage2.o
+a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f  build/bootstrap02-ident.o
+a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f  build/bootstrap03-ident.stage1.o
+a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f  build/bootstrap04-ident.stage2.o
+```
+
+All three B1 objects byte-identical. The B1 component is
+at a fixed point across three successive compiler
+generations.

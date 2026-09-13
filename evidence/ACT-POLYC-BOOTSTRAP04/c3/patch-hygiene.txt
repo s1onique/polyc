@@ -1,0 +1,59 @@
+ACT-POLYC-BOOTSTRAP04 — C3 — patch hygiene
+==========================================
+
+Per ACT §36 + §41 AC-C3-57: `git diff --check` clean for
+the B3 ACT range.
+
+------------------------------------------------------------
+B3 ACT range hygiene (245da70..HEAD)
+------------------------------------------------------------
+
+```text
+$ git diff --check 245da70..HEAD 2>&1
+(empty)
+
+$ git diff --check 245da70..HEAD 2>&1 | wc -l
+0
+```
+
+Clean.
+
+------------------------------------------------------------
+Staged diff hygiene
+------------------------------------------------------------
+
+```text
+$ git diff --check HEAD
+(empty)
+```
+
+Clean.
+
+------------------------------------------------------------
+Whole-tree hygiene
+------------------------------------------------------------
+
+```text
+$ git diff --check $(git rev-list --max-parents=0 HEAD)..HEAD 2>&1
+src/x86.c:1645: trailing whitespace.
+src/x86.c:1747: trailing whitespace.
+src/x86.c:1787: trailing whitespace.
+src/x86.c:2265: trailing whitespace.
+src/x86_64.c:5: trailing whitespace.
+```
+
+Pre-existing whitespace in `src/x86.c` and `src/x86_64.c`.
+This is **historical captured-evidence whitespace** per
+ACT §44 — non-blocking governance residue. These files
+are part of the bootstrap chain's pre-B2 history and
+are not modified by the B3 ACT.
+
+------------------------------------------------------------
+Verdict
+------------------------------------------------------------
+
+```text
+B3_RANGE_DIFF_CHECK_CLEAN       = YES  (0 issues)
+STAGED_DIFF_CHECK_CLEAN         = YES  (0 issues)
+HISTORICAL_WHITESPACE_RESIDUE   = YES  (non-blocking, F14-frozen pre-B3)
+```

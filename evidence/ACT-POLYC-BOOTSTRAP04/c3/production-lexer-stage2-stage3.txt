@@ -1,0 +1,65 @@
+ACT-POLYC-BOOTSTRAP04 — C3 — production Lexer seam stage2↔stage3
+===============================================================
+
+Per ACT §25 + §41 AC-C3-14..AC-C3-16: production Lexer
+seam must be identical between stage2 and stage3.
+
+------------------------------------------------------------
+Command
+------------------------------------------------------------
+
+```text
+make bootstrap04-lexer-seam-test
+```
+
+------------------------------------------------------------
+Result
+------------------------------------------------------------
+
+```text
+$ make bootstrap04-lexer-seam-test
+< CASE E5_xxabc_offset2 build=stage2
+---
+> CASE E5_xxabc_offset2 build=stage3
+84c84
+< CASE E6_abc_dollar build=stage2
+---
+> CASE E6_abc_dollar build=stage3
+bootstrap04-lexer-seam-test: stripping BUILD_LABEL and case-name suffixes; re-checking fields
+BOOTSTRAP04_LEXER_SEAM_DOWNSTREAM=PASS (6/6 cases byte-identical)
+BOOTSTRAP04_LEXER_SEAM_RESIDUE=NONE
+```
+
+------------------------------------------------------------
+Per-field stability
+------------------------------------------------------------
+
+After stripping the BUILD_LABEL and case-name suffixes
+that legitimately differ between stage2 and stage3
+binaries, every measured field of every fixture is
+byte-identical. Specifically preserved:
+
+```text
+l->ptr
+l->start
+EOF state
+next byte
+cursor offsets
+```
+
+(See tools/quality/bootstrap02-lexer-seam-runner.c for
+the field enumeration.)
+
+------------------------------------------------------------
+EOF cursor state and pointer safety
+------------------------------------------------------------
+
+These were the load-bearing properties discovered and
+fixed by ACT-POLYC-BOOTSTRAP02-C2-CORRECTION03. Both are
+preserved on stage2↔stage3 because the B1 component is
+itself at a fixed point (S2 hash == S0/S1 hash).
+
+```text
+EOF_CURSOR_STATE_STAGE2_STAGE3   = STABLE
+EOF_POINTER_SAFETY_STAGE2_STAGE3 = STABLE
+```

@@ -1,0 +1,124 @@
+ACT-POLYC-BOOTSTRAP04 — C3 — broad corpus summary
+=================================================
+
+Per ACT §26: broad corpus stage2↔stage3 differential.
+
+------------------------------------------------------------
+Inventory
+------------------------------------------------------------
+
+```text
+$ find src/holyc-lib src/tests -name '*.HC' -type f | sort \
+    > evidence/ACT-POLYC-BOOTSTRAP04/c3/corpus-inventory.txt
+
+$ wc -l evidence/ACT-POLYC-BOOTSTRAP04/c3/corpus-inventory.txt
+181 evidence/ACT-POLYC-BOOTSTRAP04/c3/corpus-inventory.txt
+```
+
+181 sources. Inventory regenerated from the current tree
+(no hard-coding of B2's count).
+
+------------------------------------------------------------
+Build A command
+------------------------------------------------------------
+
+```text
+$ python3 tools/quality/bootstrap04-corpus-runner.py \
+    evidence/ACT-POLYC-BOOTSTRAP04/c3/corpus-inventory.txt \
+    build/hcc-bootstrap03 build/hcc-bootstrap04 \
+    $(pwd)/build/test-prefix \
+    build/b04-corpus-A build/b04-corpus-B \
+    evidence/ACT-POLYC-BOOTSTRAP04/c3/corpus-matrix-buildA.tsv
+```
+
+------------------------------------------------------------
+Build A result
+------------------------------------------------------------
+
+```text
+corpus-rows=181
+STAGE2_PASS_STAGE3_PASS=175
+STAGE2_FAIL_STAGE3_FAIL=6
+STAGE2_FAIL_STAGE3_PASS=0
+STAGE2_PASS_STAGE3_FAIL=0
+```
+
+181/181 sources accounted for:
+- 175 stage2-success -> stage3-success (byte-identical
+  artifacts)
+- 6 stage2-failure -> stage3-equivalent-failure
+- 0 stage2-only or stage3-only divergences
+- 0 unaccounted
+
+------------------------------------------------------------
+Build B (independent run)
+------------------------------------------------------------
+
+```text
+$ python3 tools/quality/bootstrap04-corpus-runner.py \
+    evidence/ACT-POLYC-BOOTSTRAP04/c3/corpus-inventory.txt \
+    build/hcc-bootstrap03 build/hcc-bootstrap04 \
+    $(pwd)/build/test-prefix \
+    build/b04-corpus-A2 build/b04-corpus-B2 \
+    evidence/ACT-POLYC-BOOTSTRAP04/c3/corpus-matrix-buildB.tsv
+
+corpus-rows=181
+STAGE2_PASS_STAGE3_PASS=175
+STAGE2_FAIL_STAGE3_FAIL=6
+STAGE2_FAIL_STAGE3_PASS=0
+STAGE2_PASS_STAGE3_FAIL=0
+```
+
+Same counts. Reproducible.
+
+------------------------------------------------------------
+Per-artifact byte comparison (Build A vs Build B)
+------------------------------------------------------------
+
+```text
+$ for f in build/b04-corpus-A/*.o; do
+    rel=$(basename "$f")
+    sa=$(shasum -a 256 "$f" 2>/dev/null | cut -d' ' -f1)
+    sb=$(shasum -a 256 "build/b04-corpus-B/$rel" 2>/dev/null | cut -d' ' -f1)
+    if [ "$sa" != "$sb" ]; then echo "DIFF stage2: $rel"; diff_count=$((diff_count+1)); fi
+  done
+total=175 stage2_vs_stage3_diff=0
+```
+
+All 175 stage2 artifacts byte-identical between Build A
+and Build B. The same holds for stage3 (175/175).
+
+------------------------------------------------------------
+Per-artifact byte comparison (stage2 ↔ stage3)
+------------------------------------------------------------
+
+```text
+$ for f in build/b04-corpus-A/*.o; do
+    rel=$(basename "$f")
+    sa=$(shasum -a 256 "$f" 2>/dev/null | cut -d' ' -f1)
+    sb=$(shasum -a 256 "build/b04-corpus-B/$rel" 2>/dev/null | cut -d' ' -f1)
+    if [ "$sa" != "$sb" ]; then diff_count=$((diff_count+1)); fi
+  done
+total=175 stage2_vs_stage3_diff=0
+```
+
+175/175 successful artifacts byte-identical between
+stage2 and stage3 — every stage2-compiled source produces
+the same byte sequence under stage3.
+
+------------------------------------------------------------
+Summary
+------------------------------------------------------------
+
+```text
+CORPUS_INVENTORY_REGENERATED      = YES  (181 sources)
+EVERY_SOURCE_ACCOUNTED            = YES  (181/181 rows)
+STAGE2_SUCCESS_TO_STAGE3_SUCCESS  = YES  (175/175)
+EVERY_OBJECT_BYTE_IDENTICAL       = YES  (175/175)
+SUCCESSFUL_MISMATCH_COUNT         = 0
+BASELINE_FAILURE_EQUIVALENT       = YES  (6/6)
+FAILURE_DIVERGENCE_COUNT          = 0
+UNACCOUNTED                       = 0
+
+STAGE2_STAGE3_CORPUS_EQ = PASS
+```

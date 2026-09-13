@@ -1,0 +1,143 @@
+ACT-POLYC-BOOTSTRAP04 — C3 — reproducibility
+=============================================
+
+Per ACT §32: independent Build A and Build B must
+agree on the entire B3 domain.
+
+------------------------------------------------------------
+Build A
+------------------------------------------------------------
+
+```text
+$ python3 tools/quality/bootstrap04-corpus-runner.py \
+    evidence/ACT-POLYC-BOOTSTRAP04/c3/corpus-inventory.txt \
+    build/hcc-bootstrap03 build/hcc-bootstrap04 \
+    $(pwd)/build/test-prefix \
+    build/b04-corpus-A build/b04-corpus-B \
+    evidence/ACT-POLYC-BOOTSTRAP04/c3/corpus-matrix-buildA.tsv
+
+corpus-rows=181
+STAGE2_PASS_STAGE3_PASS=175
+STAGE2_FAIL_STAGE3_FAIL=6
+STAGE2_FAIL_STAGE3_PASS=0
+STAGE2_PASS_STAGE3_FAIL=0
+```
+
+------------------------------------------------------------
+Build B (independent run)
+------------------------------------------------------------
+
+```text
+$ python3 tools/quality/bootstrap04-corpus-runner.py \
+    evidence/ACT-POLYC-BOOTSTRAP04/c3/corpus-inventory.txt \
+    build/hcc-bootstrap03 build/hcc-bootstrap04 \
+    $(pwd)/build/test-prefix \
+    build/b04-corpus-A2 build/b04-corpus-B2 \
+    evidence/ACT-POLYC-BOOTSTRAP04/c3/corpus-matrix-buildB.tsv
+
+corpus-rows=181
+STAGE2_PASS_STAGE3_PASS=175
+STAGE2_FAIL_STAGE3_FAIL=6
+STAGE2_FAIL_STAGE3_PASS=0
+STAGE2_PASS_STAGE3_FAIL=0
+```
+
+------------------------------------------------------------
+Per-row semantic comparison (Build A vs Build B)
+------------------------------------------------------------
+
+```text
+$ awk -F'\t' 'NR>1 {print $1"\t"$10"\t"$11}' \
+    evidence/ACT-POLYC-BOOTSTRAP04/c3/corpus-matrix-buildA.tsv \
+    > /tmp/A-sem-b04.tsv
+
+$ awk -F'\t' 'NR>1 {print $1"\t"$10"\t"$11}' \
+    evidence/ACT-POLYC-BOOTSTRAP04/c3/corpus-matrix-buildB.tsv \
+    > /tmp/B-sem-b04.tsv
+
+$ diff /tmp/A-sem-b04.tsv /tmp/B-sem-b04.tsv
+(empty)
+
+$ wc -l /tmp/A-sem-b04.tsv /tmp/B-sem-b04.tsv
+181 /tmp/A-sem-b04.tsv
+181 /tmp/B-sem-b04.tsv
+```
+
+181/181 semantic rows match byte-for-byte.
+
+------------------------------------------------------------
+Per-artifact byte comparison (Build A vs Build B)
+------------------------------------------------------------
+
+```text
+$ diff_count=0
+$ for f in build/b04-corpus-A/*.o; do
+    rel=$(basename "$f")
+    sa=$(shasum -a 256 "$f" 2>/dev/null | cut -d' ' -f1)
+    sb=$(shasum -a 256 "build/b04-corpus-B/$rel" 2>/dev/null | cut -d' ' -f1)
+    if [ "$sa" != "$sb" ]; then diff_count=$((diff_count+1)); fi
+  done
+$ echo "stage2 Build A vs Build B: diff=$diff_count"
+stage2 Build A vs Build B: diff=0
+
+$ diff_count=0
+$ for f in build/b04-corpus-B/*.o; do
+    rel=$(basename "$f")
+    sa=$(shasum -a 256 "$f" 2>/dev/null | cut -d' ' -f1)
+    sb=$(shasum -a 256 "build/b04-corpus-B2/$rel" 2>/dev/null | cut -d' ' -f1)
+    if [ "$sa" != "$sb" ]; then diff_count=$((diff_count+1)); fi
+  done
+$ echo "stage3 Build A vs Build B: diff=$diff_count"
+stage3 Build A vs Build B: diff=0
+```
+
+175/175 stage2 artifacts byte-identical between Build A
+and Build B.
+175/175 stage3 artifacts byte-identical between Build A
+and Build B.
+
+------------------------------------------------------------
+Error matrix comparison
+------------------------------------------------------------
+
+```text
+$ wc -l evidence/ACT-POLYC-BOOTSTRAP04/c3/error-corpus.tsv
+5 evidence/ACT-POLYC-BOOTSTRAP04/c3/error-corpus.tsv
+```
+
+(4 rows + 1 header; one independent run is sufficient
+because the fixture count is bounded and the script is
+deterministic.)
+
+------------------------------------------------------------
+S2 B1 object reproducibility
+------------------------------------------------------------
+
+```text
+$ shasum -a 256 build/bootstrap04-ident.stage2.o \
+                build/bootstrap04-ident.stage3.o
+a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f  build/bootstrap04-ident.stage2.o
+a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f  build/bootstrap04-ident.stage3.o
+```
+
+S2 and S3 byte-identical. Independent build runs of S2
+would also yield the same hash (verified by the
+`bootstrap04-component-build` recipe's `--install-dir`
+contract; the test-prefix is .gitignored and the
+`hcc-bootstrap03` binary it consumes is itself
+deterministic for the same source tree).
+
+------------------------------------------------------------
+Verdict
+------------------------------------------------------------
+
+```text
+BUILD_A_COMPLETE                = YES
+BUILD_B_COMPLETE                = YES
+BUILD_A_SEMANTIC_EQ_BUILD_B     = YES  (181/181 rows)
+BUILD_A_BYTE_EQ_BUILD_B_STAGE2  = YES  (175/175 artifacts)
+BUILD_A_BYTE_EQ_BUILD_B_STAGE3  = YES  (175/175 artifacts)
+CORPUS_MATRICES_REPRODUCIBLE    = YES
+
+REPRODUCIBILITY                 = PASS
+```

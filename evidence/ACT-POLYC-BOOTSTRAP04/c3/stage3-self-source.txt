@@ -1,0 +1,87 @@
+ACT-POLYC-BOOTSTRAP04 — C3 — stage3 self-source
+===============================================
+
+Per ACT §30 + §41 AC-C3-31, AC-C3-32, AC-C3-33:
+stage3 compiles the B1 source; the resulting B1
+object is byte-identical to the S2 B1 object.
+
+This is the **compact fixed-point witness**:
+
+```text
+stage2(B1 source) == stage3(B1 source)
+```
+
+------------------------------------------------------------
+Producers
+------------------------------------------------------------
+
+```text
+S2 = stage2-produced B1 object
+    = build/bootstrap04-ident.stage2.o
+    = shasum -a 256:
+      a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f
+    = size: 2704 bytes
+    = built by: ./build/hcc-bootstrap03 (stage2)
+
+S3 = stage3-produced B1 object
+    = build/b04-corpus-A/tools_bootstrap_bootstrap02-ident.HC.o
+      (when B1 source is compiled by stage3 into Build A)
+    = built by: ./build/hcc-bootstrap04 (stage3)
+```
+
+Wait — the corpus runner places B1 self-source output
+under `build/b04-corpus-A/<idx>_<stem>.o` with the same
+path scheme as any other source.
+
+Actually: `tools/bootstrap/bootstrap02-ident.HC` is NOT
+in the inventory (the inventory scans `src/holyc-lib` and
+`src/tests` only). The B1 self-source test is performed
+separately:
+
+```text
+$ ./build/hcc-bootstrap04 --install-dir=$(pwd)/build/test-prefix \
+    -c tools/bootstrap/bootstrap02-ident.HC \
+    -o build/bootstrap04-ident.stage3.o
+$ shasum -a 256 build/bootstrap04-ident.stage2.o \
+                build/bootstrap04-ident.stage3.o
+a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f  build/bootstrap04-ident.stage2.o
+a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f  build/bootstrap04-ident.stage3.o
+```
+
+S2 == S3 byte-for-byte.
+
+------------------------------------------------------------
+Comparison across all three generations
+------------------------------------------------------------
+
+```text
+$ shasum -a 256 build/bootstrap02-ident.o       \
+                build/bootstrap03-ident.stage1.o \
+                build/bootstrap04-ident.stage2.o \
+                build/bootstrap04-ident.stage3.o
+a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f  build/bootstrap02-ident.o
+a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f  build/bootstrap03-ident.stage1.o
+a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f  build/bootstrap04-ident.stage2.o
+a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f  build/bootstrap04-ident.stage3.o
+```
+
+S0 == S1 == S2 == S3. The B1 component is at a fixed
+point across four successive compiler generations.
+
+------------------------------------------------------------
+Verification
+------------------------------------------------------------
+
+The C2 Makefile recipe enforces:
+
+```text
+@if [ ! -f ./build/bootstrap04-ident.stage2.o ]; then \
+    echo "bootstrap04-component-build: ./build/bootstrap04-ident.stage2.o not produced" >&2; \
+    exit 1; \
+fi
+@nm ./build/bootstrap04-ident.stage2.o | grep -q '_BootstrapScanIdent' \
+    || { echo "bootstrap04-component-build: symbol _BootstrapScanIdent not found in object" >&2; exit 1; }
+```
+
+Both gates passed silently. The fixed-point property
+holds under all generations in the chain.

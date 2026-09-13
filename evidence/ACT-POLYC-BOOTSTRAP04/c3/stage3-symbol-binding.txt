@@ -1,0 +1,40 @@
+ACT-POLYC-BOOTSTRAP04 — C3 — stage3 symbol binding
+=================================================
+
+Per ACT §41 AC-C3-09: stage3 contains the B1 symbol.
+
+------------------------------------------------------------
+nm output
+------------------------------------------------------------
+
+```text
+$ nm build/hcc-bootstrap04 | grep BootstrapScanIdent
+000000010007c318 T _BootstrapScanIdent
+```
+
+Same address as stage2's `_BootstrapScanIdent` (which is
+the same as stage1's), because deterministic link order
+places the B1 component in the same `.text` slot across
+all generations.
+
+------------------------------------------------------------
+Comparison across all generations
+------------------------------------------------------------
+
+```text
+$ for bin in build/hcc-bootstrap02 build/hcc-bootstrap03 build/hcc-bootstrap04; do
+    echo "=== $bin ===";
+    nm "$bin" | grep BootstrapScanIdent;
+  done
+
+=== build/hcc-bootstrap02 ===
+000000010007c318 T _BootstrapScanIdent
+=== build/hcc-bootstrap03 ===
+000000010007c318 T _BootstrapScanIdent
+=== build/hcc-bootstrap04 ===
+000000010007c318 T _BootstrapScanIdent
+```
+
+All three generations have the B1 component at the same
+`.text` slot, with the same `T` (defined-in-text-section)
+binding.

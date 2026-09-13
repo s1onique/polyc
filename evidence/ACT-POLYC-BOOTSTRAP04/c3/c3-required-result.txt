@@ -1,0 +1,189 @@
+ACT-POLYC-BOOTSTRAP04 — C3 — required result
+============================================
+
+C3 end block (per ACT §42):
+
+```text
+ACT_PHASE = EVIDENCE
+
+B0_COMPILER_SHAPED   = PASS
+B1_PARTIAL_SELF_HOST = PASS
+B2_FIRST_SELF_HOST   = PASS
+
+STAGE2_COMPILER = PASS
+STAGE3_COMPILER = PASS
+
+B1_COMPONENT_LANGUAGE = POLYC
+
+STAGE2_COMPILES_B1_COMPONENT = PASS
+STAGE2_B1_ARTIFACT_PROVENANCE = PASS
+
+STAGE3_LINKS_STAGE2_B1_ARTIFACT = PASS
+STAGE3_USES_B1_COMPONENT         = PASS
+
+STAGE3_DIRECT_B1_EQ = PASS
+
+STAGE2_STAGE3_LEXER_EQ  = PASS
+STAGE2_STAGE3_CORPUS_EQ = PASS
+STAGE2_STAGE3_ERROR_EQ  = PASS
+
+STAGE3_COMPILES_B1_SOURCE = PASS
+
+STAGE2_STAGE3_B1_OBJECT_EQ = PASS
+
+REPRODUCIBILITY = PASS
+
+B0_CONSERVATION = PASS
+B1_CONSERVATION = PASS
+B2_CONSERVATION = PASS
+
+BOOTSTRAP_STABILITY = PASS
+BOOTSTRAP_STABILITY_DOMAIN =
+  CURRENT_SELF_HOSTED_COMPILER_COMPONENT
+
+FIRST_SELF_HOST = YES
+FULL_SELF_HOST  = NO
+HOST_C_DEPENDENCY = PRESENT
+
+STAGE4_CREATED = NO
+
+C3_TO_C4_CLOSE_GATE = OPEN
+```
+
+------------------------------------------------------------
+C3 acceptance matrix status
+------------------------------------------------------------
+
+### Provenance
+
+```text
+AC-C3-01 stage0 fresh                                       PASS
+AC-C3-02 stage1 fresh                                       PASS
+AC-C3-03 stage2 fresh                                       PASS
+AC-C3-04 stage2 compiles B1 source                          PASS
+AC-C3-05 S2 artifact provenance captured                    PASS
+AC-C3-06 stage3 fresh                                       PASS
+AC-C3-07 stage3 consumes exact S2 path                      PASS
+AC-C3-08 stage3 input hash = S2 output hash                 PASS
+```
+
+### Binding
+
+```text
+AC-C3-09 stage3 contains _BootstrapScanIdent               PASS
+AC-C3-10 stage3 lexer calls _BootstrapScanIdent            PASS
+AC-C3-11 dynamic $-identifier compile succeeds              PASS
+```
+
+### Direct stability
+
+```text
+AC-C3-12 stage3 component differential = 15/15             PASS
+AC-C3-13 stage3 cursor = 6/6                                PASS
+AC-C3-14 stage2↔stage3 production Lexer = 6/6               PASS
+AC-C3-15 EOF cursor state stable                            PASS
+AC-C3-16 EOF pointer safety stable                          PASS
+```
+
+### Broad corpus
+
+```text
+AC-C3-17 corpus regenerated mechanically                    PASS  (181 sources)
+AC-C3-18 every source accounted                             PASS  (181/181)
+AC-C3-19 every stage2 success succeeds on stage3            PASS  (175/175)
+AC-C3-20 every successful object byte-identical             PASS  (175/175)
+AC-C3-21 successful mismatch count = 0                      PASS
+AC-C3-22 every stage2 baseline failure remains equivalent   PASS  (6/6)
+AC-C3-23 failure divergence count = 0                       PASS
+AC-C3-24 unaccounted = 0                                    PASS
+```
+
+### Mandatory slices
+
+```text
+AC-C3-25 dir.HC $ identifier = PASS                        PASS
+AC-C3-26 ordinary library source = PASS                    PASS
+AC-C3-27 test source = PASS                                 PASS
+AC-C3-28 B1 source = PASS                                   PASS
+```
+
+### Error corpus
+
+```text
+AC-C3-29 error corpus 4/4 equivalent                       PASS
+AC-C3-30 error divergence = 0                               PASS
+```
+
+### Fixed point
+
+```text
+AC-C3-31 stage3 compiles B1 source                          PASS
+AC-C3-32 S2 B1 object == S3 B1 object                       PASS  (sha256 equal)
+AC-C3-33 STAGE2_STAGE3_COMPONENT_FIXED_POINT = PASS         PASS
+```
+
+### Reproducibility
+
+```text
+AC-C3-34 clean Build A complete                            PASS
+AC-C3-35 clean Build B complete                            PASS
+AC-C3-36 S2 artifact reproducible                           PASS
+AC-C3-37 S3 behavior reproducible                           PASS
+AC-C3-38 corpus matrices A/B identical                      PASS  (181/181)
+AC-C3-39 error matrices A/B identical                       PASS
+```
+
+### Conservation
+
+```text
+AC-C3-40 B0 15/15                                           PASS
+AC-C3-41 B1 component 15/15                                 PASS
+AC-C3-42 B1 cursor 6/6                                      PASS
+AC-C3-43 B1 Lexer 6/6                                       PASS
+AC-C3-44 B2 component 15/15                                 PASS
+AC-C3-45 B2 cursor 6/6                                      PASS
+AC-C3-46 B2 Lexer 6/6                                       PASS
+AC-C3-47 LSP 43/43                                          PASS
+AC-C3-48 gate-fast PASS                                     PASS
+AC-C3-49 Factory gates PASS                                 PASS
+AC-C3-50 shell-loc PASS                                     PASS
+```
+
+### Scope/hygiene
+
+```text
+AC-C3-51 compiler semantic delta ZERO                      PASS
+AC-C3-52 B1 source delta ZERO                               PASS
+AC-C3-53 lexer semantic delta ZERO                          PASS
+AC-C3-54 parser/AST/IR/backend delta ZERO                   PASS
+AC-C3-55 prior evidence mutation ZERO                       PASS
+AC-C3-56 committed binary evidence ZERO                     PASS
+AC-C3-57 current ACT range diff-check clean                 PASS
+```
+
+### Truth boundary
+
+```text
+AC-C3-58 B2_FIRST_SELF_HOST = PASS                          PASS
+AC-C3-59 B3_BOOTSTRAP_STABILITY = PASS                      PASS
+AC-C3-60 B3_STABILITY_DOMAIN = CURRENT_SELF_HOSTED_COMPILER_COMPONENT  PASS
+AC-C3-61 FULL_SELF_HOST = NO                                PASS
+AC-C3-62 HOST_C_DEPENDENCY = PRESENT                        PASS
+AC-C3-63 stage4 absent                                      PASS
+```
+
+------------------------------------------------------------
+Binding result
+------------------------------------------------------------
+
+```text
+ACT_PHASE = EVIDENCE
+
+BOOTSTRAP_STABILITY = PASS
+BOOTSTRAP_STABILITY_DOMAIN =
+  CURRENT_SELF_HOSTED_COMPILER_COMPONENT
+
+C3_TO_C4_CLOSE_GATE = OPEN
+```
+
+All 63 C3 acceptance criteria pass.

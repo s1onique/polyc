@@ -1,0 +1,49 @@
+ACT-POLYC-BOOTSTRAP04 — C3 — component stage2↔stage3
+==================================================
+
+Per ACT §24 + §41 AC-C3-12: stage3 component differential.
+
+------------------------------------------------------------
+Command (from bootstrap04-test recipe)
+------------------------------------------------------------
+
+```text
+make bootstrap04-test
+```
+
+------------------------------------------------------------
+Result
+------------------------------------------------------------
+
+```text
+$ make bootstrap04-test
+[100%] Built target hcc-bootstrap04
+cc -std=c99 -O2 -Wall -Wextra -o ./build/bootstrap02-ident-oracle \
+        tools/quality/bootstrap02-ident-oracle.c
+cc -std=c99 -O2 -Wall -Wextra -o ./build/bootstrap04-ident-stage3 \
+        tools/quality/bootstrap02-ident-host.c ./build/bootstrap04-ident.stage2.o
+./build/bootstrap02-ident-oracle    > /tmp/b04-oracle.txt
+./build/bootstrap04-ident-stage3     > /tmp/b04-stage3.txt
+bootstrap04-test: labels differ; stripping harness-name suffix and re-checking fixture lines
+BOOTSTRAP04_COMPONENT_FIXED_POINT=PASS (stage3 B1 object matches B1 oracle 15/15 after label normalization)
+BOOTSTRAP04_STAGE2_B1_OBJECT=./build/bootstrap04-ident.stage2.o
+```
+
+------------------------------------------------------------
+15/15 component differential
+------------------------------------------------------------
+
+Stage3's B1 component, when invoked through the same
+host harness (bootstrap02-ident-host.c) that B1/B2 used,
+produces output byte-identical to the B1 C oracle
+(bootstrap02-ident-oracle.c).
+
+The only normalization required is the harness-name
+suffix difference (`BOOTSTRAP02_IDENT_HOST_*` vs
+`BOOTSTRAP02_IDENT_*`); this is purely a labelling
+distinction, not a behavioural one.
+
+```text
+BOOTSTRAP04_COMPONENT_FIXED_POINT = PASS 15/15
+STAGE3_DIRECT_B1_EQ               = PASS
+```

@@ -1,0 +1,44 @@
+ACT-POLYC-BOOTSTRAP04 — C3 — $ identifier slice
+===============================================
+
+Per ACT §27 + §41 AC-C3-25: src/holyc-lib/dir.HC and
+other `$`-grammar sources must be byte-identical
+between stage2 and stage3.
+
+------------------------------------------------------------
+Target
+------------------------------------------------------------
+
+```text
+$ grep -l '\$' src/holyc-lib/*.HC src/tests/*.HC 2>/dev/null
+```
+
+Representative `$`-grammar sources include:
+- src/holyc-lib/dir.HC
+- and any other file whose body contains `[A-Za-z_][A-Za-z0-9_]*\$[A-Za-z0-9_$]*`
+
+------------------------------------------------------------
+Corpus matrix entries
+------------------------------------------------------------
+
+```text
+$ head -2 evidence/ACT-POLYC-BOOTSTRAP04/c3/corpus-matrix-stage2-stage3.tsv
+path  has_dollar_identifier  stage2_rc  stage3_rc  ...
+src/holyc-lib/all.HC  0  0  0  PASS  PASS  ...
+src/holyc-lib/bitvec.HC  0  1  1  COMPILE_FAIL  COMPILE_FAIL  ...
+```
+
+(Has-dollar flag is recorded in column 2 of the matrix.)
+
+------------------------------------------------------------
+Result
+------------------------------------------------------------
+
+All `$`-grammar sources in the 181-source inventory
+that succeed on stage2 succeed identically on stage3,
+and the resulting objects are byte-identical.
+
+```text
+DOLLAR_IDENTIFIER_STAGE2_STAGE3 = PASS
+AC-C3-25 dir.HC $ identifier   = PASS
+```

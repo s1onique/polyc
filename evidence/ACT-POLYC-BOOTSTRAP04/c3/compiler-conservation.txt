@@ -1,0 +1,141 @@
+ACT-POLYC-BOOTSTRAP04 — C3 — compiler conservation
+==================================================
+
+Per ACT §34 + §41 AC-C3-40..AC-C3-46: every predecessor
+bootstrap gate re-run on the C3 candidate tree.
+
+------------------------------------------------------------
+B0 (bootstrap01-test)
+------------------------------------------------------------
+
+```text
+$ make bootstrap01-test
+BOOTSTRAP01_CASES=15
+BOOTSTRAP01_PASS=15
+BOOTSTRAP01_FAIL=0
+STATUS=PASS
+```
+
+15/15 PASS.
+
+------------------------------------------------------------
+B1 component (bootstrap02-test)
+------------------------------------------------------------
+
+```text
+$ make bootstrap02-test
+BOOTSTRAP02_DIFFERENTIAL=PASS 15/15
+```
+
+15/15 PASS.
+
+------------------------------------------------------------
+B1 cursor (bootstrap02-cursor-test)
+------------------------------------------------------------
+
+```text
+$ make bootstrap02-cursor-test
+BOOTSTRAP02_CURSOR_DIFFERENTIAL=PASS 6/6
+```
+
+6/6 PASS.
+
+------------------------------------------------------------
+B1 production Lexer seam (bootstrap02-lexer-seam-test)
+------------------------------------------------------------
+
+```text
+$ make bootstrap02-lexer-seam-test
+BOOTSTRAP02_LEXER_SEAM_DOWNSTREAM=PASS (6/6 cases byte-identical)
+BOOTSTRAP02_LEXER_SEAM_RESIDUE=NONE
+```
+
+6/6 PASS.
+
+------------------------------------------------------------
+B2 component (bootstrap03-test)
+------------------------------------------------------------
+
+```text
+$ make bootstrap03-test
+BOOTSTRAP03_DIFFERENTIAL=PASS 15/15
+```
+
+15/15 PASS.
+
+------------------------------------------------------------
+B2 production Lexer seam (bootstrap03-lexer-seam-test)
+------------------------------------------------------------
+
+```text
+$ make bootstrap03-lexer-seam-test
+BOOTSTRAP03_LEXER_SEAM_DOWNSTREAM=PASS (6/6 cases byte-identical)
+BOOTSTRAP03_LEXER_SEAM_RESIDUE=NONE
+```
+
+6/6 PASS.
+
+------------------------------------------------------------
+B3 component (bootstrap04-test)
+------------------------------------------------------------
+
+```text
+$ make bootstrap04-test
+BOOTSTRAP04_COMPONENT_FIXED_POINT=PASS (stage3 B1 object matches B1 oracle 15/15 after label normalization)
+```
+
+15/15 PASS.
+
+------------------------------------------------------------
+B3 cursor (bootstrap04-cursor-test)
+------------------------------------------------------------
+
+```text
+$ make bootstrap04-cursor-test
+BOOTSTRAP04_CURSOR_FIXED_POINT=PASS 6/6 (stage3 matches B1 cursor oracle)
+```
+
+6/6 PASS.
+
+------------------------------------------------------------
+B3 production Lexer seam (bootstrap04-lexer-seam-test)
+------------------------------------------------------------
+
+```text
+$ make bootstrap04-lexer-seam-test
+BOOTSTRAP04_LEXER_SEAM_DOWNSTREAM=PASS (6/6 cases byte-identical)
+BOOTSTRAP04_LEXER_SEAM_RESIDUE=NONE
+```
+
+6/6 PASS.
+
+------------------------------------------------------------
+LSP
+------------------------------------------------------------
+
+```text
+$ make lsp-test
+lsp: 43/43 passed
+```
+
+43/43 PASS.
+
+------------------------------------------------------------
+Summary
+------------------------------------------------------------
+
+```text
+B0_COMPILER_SHAPED        = PASS  (15/15)
+B1_PARTIAL_SELF_HOST      = PASS  (15/15 + 6/6 + 6/6)
+B2_FIRST_SELF_HOST        = PASS  (15/15 + 6/6)
+                            (175/175 corpus + 4/4 errors + reproducibility
+                             remain F14-frozen in B2 evidence)
+B3_BOOTSTRAP_STABILITY    = PASS  (15/15 + 6/6 + 6/6
+                                    + 175/175 corpus + 4/4 errors
+                                    + reproducibility
+                                    + fixed-point
+                                    + provenance)
+LSP                        = PASS  (43/43)
+```
+
+No regression. All gates green.

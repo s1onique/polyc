@@ -1,0 +1,126 @@
+ACT-POLYC-BOOTSTRAP04 — C3 — Factory gates
+==========================================
+
+Per ACT §36 + §41 AC-C3-49, AC-C3-50: Factory gates
+freshly executed.
+
+------------------------------------------------------------
+factory-v2-test
+------------------------------------------------------------
+
+```text
+$ bash scripts/quality/factory-v2-test.sh
+... (28 named tests, full matrix)
+
+--- summary ---
+PASS=35
+FAIL=0
+STATUS=PASS
+```
+
+PASS.
+
+------------------------------------------------------------
+factory-append-only-test
+------------------------------------------------------------
+
+```text
+$ bash scripts/quality/factory-append-only-test.sh
+... (NC1..NC11 append-only graph-property checks)
+
+--- summary ---
+PASS=11
+FAIL=0
+STATUS=PASS
+```
+
+PASS.
+
+------------------------------------------------------------
+factory-halt-classification-test
+------------------------------------------------------------
+
+```text
+$ bash scripts/quality/factory-halt-classification-test.sh
+... (RED-1..RED-3 halt classification grammar checks)
+
+--- summary ---
+PASS=12
+FAIL=0
+STATUS=PASS
+```
+
+PASS.
+
+------------------------------------------------------------
+factory-closure-status-check
+------------------------------------------------------------
+
+```text
+$ bash scripts/quality/factory-closure-status-check.sh
+MISSING_HANDOFF_FILES=0
+MALFORMED_ACT_STATUS=0
+MALFORMED_HANDOFF_VERDICT=0
+EXACT_VERDICT_MISMATCHES=0
+PAIR_OK=6
+PAIR_FAIL=0
+STATUS=PASS
+VERDICT=PASS
+```
+
+PASS.
+
+------------------------------------------------------------
+shell-loc-gate
+------------------------------------------------------------
+
+```text
+$ bash scripts/quality/shell-loc-gate.sh
+PASS  shell-loc-gate
+```
+
+PASS. (No new shell scripts in tools/quality/ exceed 50 LOC.)
+
+------------------------------------------------------------
+gate-fast
+------------------------------------------------------------
+
+```text
+$ make gate-fast
+POLYC_GATE=fast
+CHECK=diff-check STATUS=PASS
+CHECK=shell-syntax STATUS=PASS
+CHECK=doc-invariants STATUS=PASS
+CHECK=large-file-guard STATUS=PASS
+BUILD_RUN=NO
+
+POLYC_GATE=factory-closure-status
+MANIFEST_ROWS=6
+MISSING_HANDOFF_FILES=0
+MALFORMED_ACT_STATUS=0
+MALFORMED_HANDOFF_VERDICT=0
+EXACT_VERDICT_MISMATCHES=0
+PAIR_OK=6
+PAIR_FAIL=0
+STATUS=PASS
+VERDICT=PASS
+CHECK=factory-closure-status STATUS=PASS
+VERDICT=PASS
+```
+
+PASS.
+
+------------------------------------------------------------
+Summary
+------------------------------------------------------------
+
+```text
+FACTORY_V2_TEST                = PASS  (35/35)
+FACTORY_APPEND_ONLY_TEST       = PASS  (11/11)
+FACTORY_HALT_CLASSIFICATION    = PASS  (12/12)
+FACTORY_CLOSURE_STATUS_CHECK   = PASS  (6/6 pairs)
+SHELL_LOC_GATE                 = PASS
+GATE_FAST                      = PASS
+```
+
+All Factory gates green.

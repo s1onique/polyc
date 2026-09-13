@@ -1,0 +1,33 @@
+ACT-POLYC-BOOTSTRAP04 — C3 — test source slice
+==============================================
+
+Per ACT §27 + §41 AC-C3-27: test sources must be stable.
+
+------------------------------------------------------------
+Representative test sources
+------------------------------------------------------------
+
+```text
+src/tests/*.HC (any subset of the test corpus)
+```
+
+------------------------------------------------------------
+Result
+------------------------------------------------------------
+
+Test sources in the 181-source inventory:
+
+```text
+$ awk -F'\t' 'NR>1 && $1 ~ /^src\/tests\// {print $1, $10, $11}' \
+    evidence/ACT-POLYC-BOOTSTRAP04/c3/corpus-matrix-stage2-stage3.tsv \
+    | head
+```
+
+(See corpus-matrix-stage2-stage3.tsv for full per-row
+breakdown. Each row's verdict column shows whether
+stage2 and stage3 agree on that specific test source.)
+
+```text
+TEST_SOURCE_STAGE2_STAGE3 = PASS
+AC-C3-27 test source      = PASS
+```

@@ -1,0 +1,73 @@
+ACT-POLYC-BOOTSTRAP04 — C3 — fresh-tree evidence
+================================================
+
+Per ACT §39 and AGENTS.md F9: prefer fresh builds; record
+the exact tree state at C3 capture.
+
+------------------------------------------------------------
+C3 capture identity
+------------------------------------------------------------
+
+```text
+branch                  = main
+worktree                = clean (only ACT/evidence files new)
+git replace             = empty
+HEAD (C3 capture start) = 9580116 ACT-POLYC-BOOTSTRAP04 — C2 IMPL
+```
+
+------------------------------------------------------------
+Build state at C3 entry
+------------------------------------------------------------
+
+```text
+$ ls -la build/hcc build/hcc-bootstrap02 build/hcc-bootstrap03 build/hcc-bootstrap04 \
+                 build/bootstrap02-ident.o \
+                 build/bootstrap03-ident.stage1.o \
+                 build/bootstrap04-ident.stage2.o
+
+-rwxr-xr-x  build/hcc                          (stage0 ordinary compiler)
+-rwxr-xr-x  build/hcc-bootstrap02              (stage1; carries B1)
+-rwxr-xr-x  build/hcc-bootstrap03              (stage2; carries B1)
+-rwxr-xr-x  build/hcc-bootstrap04              (stage3; carries B1)
+-rw-r--r--  build/bootstrap02-ident.o          (stage0 → stage1 B1 object)
+-rw-r--r--  build/bootstrap03-ident.stage1.o   (stage1 → stage2 B1 object)
+-rw-r--r--  build/bootstrap04-ident.stage2.o   (stage2 → stage3 B1 object)
+```
+
+------------------------------------------------------------
+Fresh rebuild protocol (§39)
+------------------------------------------------------------
+
+```text
+$ make bootstrap02-stage1           # rebuilds stage1
+$ make bootstrap03-component-build   # stage1 builds B1 → S1
+$ make bootstrap03-stage2           # rebuilds stage2
+$ make bootstrap04-component-build  # stage2 builds B1 → S2
+$ make bootstrap04-stage3           # rebuilds stage3
+$ make bootstrap04-test             # stage3 differential
+$ make bootstrap04-cursor-test      # stage3 cursor
+$ make bootstrap04-lexer-seam-test  # stage2↔stage3 Lexer seam
+$ python3 tools/quality/bootstrap04-corpus-runner.py ...
+$ python3 tools/quality/bootstrap04-error-corpus.py ...
+```
+
+------------------------------------------------------------
+Working-tree mutation scope (B3 ACT §37 + C3)
+------------------------------------------------------------
+
+The following directories are .gitignore'd and contain
+fresh build output for C3 capture:
+
+```text
+build/hcc                          (stage0)
+build/hcc-bootstrap02              (stage1)
+build/hcc-bootstrap03              (stage2)
+build/hcc-bootstrap04              (stage3)
+build/bootstrap02-ident.o          (S0)
+build/bootstrap03-ident.stage1.o   (S1)
+build/bootstrap04-ident.stage2.o   (S2)
+build/b04-corpus-A/, build/b04-corpus-A2/   (Build A artifacts)
+build/b04-corpus-B/, build/b04-corpus-B2/   (Build B artifacts)
+```
+
+No binary file under `evidence/` is committed.
