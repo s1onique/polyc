@@ -1,0 +1,50 @@
+ACT-POLYC-BOOTSTRAP01 — C1 — frozen fixture matrix
+====================================================
+
+All fixtures are byte-exact. Whitespace is `' '` (0x20)
+unless otherwise noted. T09 is the only multi-whitespace
+fixture.
+
+ID   | Input              | Bytes (hex)                                                | Required semantic point
+-----+--------------------+------------------------------------------------------------+---------------------------------------------
+T01  | foo                | 66 6f 6f                                                   | single identifier
+T02  | _foo9              | 5f 66 6f 6f 39                                             | identifier grammar (leading underscore + digits)
+T03  | 12345              | 31 32 33 34 35                                             | integer literal
+T04  | foo 123            | 66 6f 6f 20 31 32 33                                       | whitespace transition between tokens
+T05  | a+b*c;             | 61 2b 62 2a 63 3b                                          | punctuation sequence
+T06  | f(x,y)             | 66 28 78 2c 79 29                                          | parens / comma
+T07  | a[12]              | 61 5b 31 32 5d                                             | indexed punctuation
+T08  | {a=1;}             | 7b 61 3d 31 3b 7d                                          | braces / assignment
+T09  | " \t\nfoo\r"       | 20 09 0a 66 6f 6f 0d                                       | all frozen whitespace kinds
+T10  | "" (empty)         | (empty)                                                    | EOF only
+T11  | abc$def            | 61 62 63 24 64 65 66                                       | unsupported-byte error
+T12  | ab cd              | 61 62 20 63 64                                             | bounded overflow path (out_cap too small)
+T13  | see T13 slice      | (driver passes &src[3], src_len-3)                         | pointer/offset correctness
+T14  | long_id_..._end    | 60 ASCII identifier chars: 'a' + identifier grammar       | loop/backedge behaviour
+
+NC6  | abc$def            | 61 62 63 24 64 65 66                                       | T11-shaped; tests unsupported-byte status
+NC7  | ab cd              | 61 62 20 63 64                                             | T12-shaped; out_cap = token_count - 1
+NC8  | "" (empty)         | (empty)                                                    | T10-shaped; tests empty-source path
+
+T13 detail
+----------
+
+The driver passes `&src[3]` and `src_len - 3` to
+`BootstrapLex`. The lexer is expected to use offsets
+relative to the slice's start. For input `"xx foo"`,
+the slice is `"foo"` and tokens should report
+`(IDENT, 0, 3)` against the slice, with the EOF at
+`(start=3, len=0)`.
+
+T14 detail
+----------
+
+T14 is a 60-character identifier: `abcdefghijklmnopqrstu
+vwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ012345` (exactly 60 ASCII
+bytes). It exercises the inner identifier loop's
+back-edge without overflowing any internal buffer.
+
+Per-fixture expected outputs are recorded in
+`sibling-file oracle-baseline.txt`. The C oracle at
+`tools/quality/bootstrap01-lexer-oracle.c` MUST emit
+exactly those outputs for these inputs.

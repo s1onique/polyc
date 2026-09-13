@@ -1,0 +1,159 @@
+ACT-POLYC-BOOTSTRAP01 — C1 — oracle baseline (per-fixture expected output)
+==========================================================================
+
+This file freezes the per-fixture expected outputs that
+the C reference oracle and the PolyC subject MUST both
+produce.
+
+Token kind names used below (numeric form is canonical):
+
+    EOF=0  IDENT=1  INT=2  LPAREN=3  RPAREN=4
+    LBRACE=5  RBRACE=6  LBRACKET=7  RBRACKET=8
+    COMMA=9  SEMI=10  PLUS=11  MINUS=12
+    STAR=13  SLASH=14  ASSIGN=15
+
+Status codes: OK=0 (LEX_OK), FULL=1 (LEX_OUTPUT_FULL),
+UNSUP=2 (LEX_UNSUPPORTED_BYTE), BAD=3 (LEX_INVALID_INPUT).
+
+Format: `<ordinal> <KIND> <start> <len>` per token, one
+per line, then a final `STATUS=<...>` line.
+
+----------------------------------------------------------------
+T01  src = "foo"     (hex 66 6f 6f)
+     0 IDENT 0 3
+     1 EOF   3 0
+     STATUS=OK
+----------------------------------------------------------------
+T02  src = "_foo9"   (hex 5f 66 6f 6f 39)
+     0 IDENT 0 5
+     1 EOF   5 0
+     STATUS=OK
+----------------------------------------------------------------
+T03  src = "12345"   (hex 31 32 33 34 35)
+     0 INT  0 5
+     1 EOF  5 0
+     STATUS=OK
+----------------------------------------------------------------
+T04  src = "foo 123" (hex 66 6f 6f 20 31 32 33)
+     0 IDENT 0 3
+     1 INT   4 3
+     2 EOF   7 0
+     STATUS=OK
+----------------------------------------------------------------
+T05  src = "a+b*c;"  (hex 61 2b 62 2a 63 3b)
+     0 IDENT 0 1
+     1 PLUS  1 1
+     2 IDENT 2 1
+     3 STAR  3 1
+     4 IDENT 4 1
+     5 SEMI  5 1
+     6 EOF   6 0
+     STATUS=OK
+----------------------------------------------------------------
+T06  src = "f(x,y)"  (hex 66 28 78 2c 79 29)
+     0 IDENT  0 1
+     1 LPAREN 1 1
+     2 IDENT  2 1
+     3 COMMA  3 1
+     4 IDENT  4 1
+     5 RPAREN 5 1
+     6 EOF    6 0
+     STATUS=OK
+----------------------------------------------------------------
+T07  src = "a[12]"   (hex 61 5b 31 32 5d)
+     0 IDENT    0 1
+     1 LBRACKET 1 1
+     2 INT      2 2
+     3 RBRACKET 4 1
+     4 EOF      5 0
+     STATUS=OK
+----------------------------------------------------------------
+T08  src = "{a=1;}"  (hex 7b 61 3d 31 3b 7d)
+     0 LBRACE 0 1
+     1 IDENT  1 1
+     2 ASSIGN 2 1
+     3 INT    3 1
+     4 SEMI   4 1
+     5 RBRACE 5 1
+     6 EOF    6 0
+     STATUS=OK
+----------------------------------------------------------------
+T09  src = " \t\nfoo\r" (hex 20 09 0a 66 6f 6f 0d)
+     0 IDENT 3 3
+     1 EOF   7 0
+     STATUS=OK
+----------------------------------------------------------------
+T10  src = "" (empty)
+     0 EOF  0 0
+     STATUS=OK
+----------------------------------------------------------------
+T11  src = "abc$def" (hex 61 62 63 24 64 65 66)
+     0 IDENT 0 3
+     STATUS=UNSUP
+     [partial stream only; EOF token NOT emitted because
+      status is not OK]
+----------------------------------------------------------------
+T12  src = "ab cd"   (hex 61 62 20 63 64)
+            out_cap = (3 tokens would be produced; cap = 2
+            is the NC7 driver-supplied cap for the bounded
+            overflow path)
+     [OK stream: IDENT(0,2) IDENT(3,2) EOF(5,0) = 3 tokens]
+     [NC7 case: cap=2 forces the lexer to write IDENT(0,2),
+      IDENT(3,2), then return FULL on the EOF slot]
+     NC7 STATUS=FULL
+     T12 STATUS=OK  (when cap >= 3)
+----------------------------------------------------------------
+T13  src = "xx foo"  (hex 78 78 20 66 6f 6f)
+            driver passes &src[3], src_len - 3 = "foo"
+     0 IDENT 0 3
+     1 EOF   3 0
+     STATUS=OK
+----------------------------------------------------------------
+T14  src = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdef"
+            (60 ASCII bytes; leading '_' deliberately omitted
+            to exercise the inner ident_rest loop)
+     0 IDENT 0 60
+     1 EOF   60 0
+     STATUS=OK
+----------------------------------------------------------------
+NC6  src = "abc$def"  same as T11
+     STATUS=UNSUP
+     out_count = 1 (the IDENT already emitted)
+     out[0] = { kind=IDENT, start=0, len=3 }
+----------------------------------------------------------------
+NC7  src = "ab cd"    same as T12
+            driver passes out_cap = 2
+     [lexer emits IDENT(0,2), IDENT(3,2); on attempting the
+      EOF write it returns FULL with out_count = 2]
+     STATUS=FULL
+     out_count = 2
+----------------------------------------------------------------
+NC8  src = "" (empty)
+            driver passes out_cap = 0
+     STATUS=FULL  (cannot write even the EOF token)
+     out_count = 0
+     no writes performed
+----------------------------------------------------------------
+T14 source bytes (60-byte identifier)
+-------------------------------------
+
+ASCII printable: the concatenation of the lowercase
+English alphabet (26), uppercase English alphabet (26),
+and the 8 digits '0'..'9' (8), for a total of 60 bytes
+and one extra 'a' to reach 60.
+
+The actual byte sequence, in hex, is:
+
+    61 62 63 64 65 66 67 68 69 6a
+    6b 6c 6d 6e 6f 70 71 72 73 74
+    75 76 77 78 79 7a 41 42 43 44
+    45 46 47 48 49 4a 4b 4c 4d 4e
+    4f 50 51 52 53 54 55 56 57 58
+    59 5a 30 31 32 33 34 35 36 37
+
+(Note: the printable concatenation is exactly 60 bytes
+when 60 % 36 == 24, so the first 24 of the digits cycle
+appears. The driver passes this exact byte sequence;
+see `bootstrap01-fixtures.json` -> T14 -> src_hex.)
+
+End of oracle baseline.

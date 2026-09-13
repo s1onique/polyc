@@ -1,0 +1,65 @@
+ACT-POLYC-BOOTSTRAP01 — C1 — B0 capability map (F2 recon)
+==========================================================
+
+This file freezes the F2 capability recon required by
+ACT §11. Each row maps a B0 source construct to the
+mechanically proven substrate ACT that supplies it.
+
+Format:
+
+    construct | USED_BY_B0 | PROVEN_SUBSTRATE | CURRENT_PROBE | BLOCKING
+
+Probes were executed against the current tree
+(`make test-prefix-install` then compile of
+`tools/bootstrap/bootstrap01-lexer.HC` from C2 IMPL).
+The C2 IMPL evidence pack (`c2/subject-build.txt`) holds
+the literal command transcript.
+
+----------------------------------------------------------------
+construct                              USED_BY_B0  PROVEN_SUBSTRATE                                        CURRENT_PROBE  BLOCKING
+----------------------------------------------------------------
+U8 *src parameter                      YES         ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME02                  PASS           NO
+I64 src_len parameter                  YES         ACT-POLYC-LLVM-CORE04-RESUME01                         PASS           NO
+I64 *out_count out-param store         YES         ACT-POLYC-LLVM-MEMORY01 + OPTION-W-OUT-PARAM01         PASS           NO
+BootstrapToken *out param              YES         ACT-POLYC-IR-RETURN-SLOT-FORWARDING01 (struct layout)  PASS           NO
+src[i] indexed byte load               YES         ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME02                  PASS           NO
+byte compare ==, !=, <, >              YES         ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME02                  PASS           NO
+byte literal `'a'`, `'0'`, ...         YES         ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME02                  PASS           NO
+I64 arithmetic add / sub / mul         YES         ACT-POLYC-LLVM-CORE04-RESUME01                         PASS           NO
+if / else / while control flow         YES         ACT-POLYC-LLVM-CORE04-RESUME01                         PASS           NO
+multi-def local via alloca             YES         ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02 + OPTION-W PASS           NO
+*out_count = N; write through pointer  YES         ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01 (C6 closure)       PASS           NO
+out[i].kind = kind; struct field store YES         ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01                    PASS           NO
+function return I64                    YES         ACT-POLYC-LLVM-CORE04-RESUME01                         PASS           NO
+Main() with I32 return                 YES         inherited native convention                             PASS           NO
+strlen / Strlen                        NO          (not used)                                              NOT_USED       NO
+MAlloc / Free                          NO          (B0 is allocation-free)                                NOT_USED       NO
+F64 / float literals                   NO          (not used)                                              NOT_USED       NO
+array indexing into MAlloc'd array     NO          (not used)                                              NOT_USED       NO
+string object / StrNew                 NO          (not used)                                              NOT_USED       NO
+ternary `?:`                           NO          (not used; if/else suffices)                            NOT_USED       NO
+switch                                 NO          (not used)                                              NOT_USED       NO
+goto                                   NO          (not used)                                              NOT_USED       NO
+file I/O from inside the lexer         NO          (caller-owned buffer; no I/O)                           NOT_USED       NO
+
+Aggregate layout for BootstrapToken
+-----------------------------------
+
+B0 needs to write three I64 fields per token: kind, start,
+len. The substrate chain proves struct field store via
+`ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01`. The C2 IMPL uses
+the equivalent of:
+
+    typedef struct { I64 kind; I64 start; I64 len; } BootstrapToken;
+
+in a `class` declaration under PolyC source. This is
+struct construction by literal field assignment, which is
+the same shape Option-W exercised.
+
+Note on native backend ABI for structs containing only
+I64s: AArch64 / x86-64 pass them by value in registers or
+on stack with alignment 8. The B0 fixture exercises only
+single-struct reads/writes; no aggregate-by-value return
+or sret path is needed.
+
+No new ABI change is required.

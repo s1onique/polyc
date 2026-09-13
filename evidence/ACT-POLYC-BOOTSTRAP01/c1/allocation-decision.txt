@@ -1,0 +1,53 @@
+ACT-POLYC-BOOTSTRAP01 — C1 — allocation decision
+==================================================
+
+DECISION
+--------
+
+B0_ALLOCATION = NOT_REQUIRED
+
+Mechanical reasoning
+--------------------
+
+1. The B0 lexer reads bytes from a caller-owned buffer
+   (`U8 *src`, `I64 src_len`). It does not allocate.
+
+2. The B0 lexer writes tokens into a caller-owned array
+   (`BootstrapToken *out`, `I64 out_cap`). It does not
+   resize; on overflow it returns `LEX_OUTPUT_FULL`.
+
+3. No lexeme strings are copied; tokens reference bytes
+   inside the caller source buffer via `(start, len)`
+   pairs. Source bytes are immutable from the lexer's
+   perspective.
+
+4. No dynamic data structure is required. The lexer's
+   only mutable state is the cursor position, which is
+   local I64 arithmetic — already proven by
+   `ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02` and
+   `ACT-POLYC-LLVM-OPTION-W-OUT-PARAM01`.
+
+5. No string / StrNew / MAlloc / Free call appears in
+   the B0 source. The `b0-capability-map.txt` rows
+   `MAlloc / Free` and `string object / StrNew` are both
+   `USED_BY_B0 = NO`.
+
+Implications
+------------
+
+- B0 produces a heap-allocation count of 0 (verified by
+  `nm`/`otool` symbol absence and `git grep -n MAlloc
+  tools/bootstrap/`).
+
+- B0 does NOT require libtos at link time for its own
+  allocation needs. It MAY still need libtos for the
+  test driver (which prints output via inherited
+  `Print`/`%d`), but that is the *driver*, not the B0
+  subject.
+
+- D2 (canonical install seam: libtos.a vs libtos.dylib)
+  is not a B0 dependency for the B0 subject proper; it
+  is only a test-driver concern, addressed by reusing
+  the existing test-prefix-install seam.
+
+Allocation substrate ACT required: NONE.

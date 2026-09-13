@@ -1,0 +1,140 @@
+ACT-POLYC-BOOTSTRAP01 — C1 — successor-dependency determination
+=================================================================
+
+This file freezes the dependency-decision matrix required
+by ACT §5 ("C1 RED — successor dependency determination")
+before any production mutation lands.
+
+Mechanical dependency decision
+------------------------------
+
+B0_USES_INDEXED_BYTE_ACCESS       = YES
+B0_REQUIRES_GEP_COMPILER_FEATURE  = YES
+B0_REQUIRES_GEP01_HARNESS         = NO
+B0_REQUIRES_GATE_PUSH             = NO
+
+GEP01_D1_BLOCKS_B0                = NO
+GEP01_D2_BLOCKS_B0                = NO
+
+Outcomes per ACT §6
+-------------------
+
+- Outcome A (expected useful path) applies:
+  B0_REQUIRES_GEP_COMPILER_FEATURE = YES,
+  B0_REQUIRES_GEP01_HARNESS = NO,
+  GEP01_D1_BLOCKS_B0 = NO,
+  GEP01_D2_BLOCKS_B0 = NO.
+- Outcome B (real predecessor dependency): NOT triggered.
+- Outcome C (no GEP dependency): NOT triggered.
+
+Mechanical evidence for `B0_USES_INDEXED_BYTE_ACCESS = YES`
+----------------------------------------------------------
+
+A forward-scan lexer that walks `src[cursor]` over caller
+bytes necessarily uses indexed byte access. The intended
+implementation walks the buffer in order and reads each
+byte through `src[cursor]` indexing. The inheritance is
+axiomatic; the question is whether the *compiler
+substrate* supports that access form. It does, per
+`ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME02` (proven for byte
+loads through indexed byte pointer). The C1
+capability-map (sibling file `b0-capability-map.txt`)
+lists each B0 capability and the substrate ACT that proves
+it.
+
+Mechanical evidence for `B0_REQUIRES_GEP_COMPILER_FEATURE = YES`
+----------------------------------------------------------------
+
+This is the **production compiler substrate feature**
+(LLVM IR shape: `getelementptr` + `load i8`). It is proven
+GREEN by `ACT-POLYC-LLVM-GEP01` (closed PASS) and accepted
+into the B0 substrate chain by the ACT-POLYC-B0-SUBSTRATE-
+RECON01 c2/b0-decision.txt. The B0 lexer source compiles
+through the existing native backend today; the same byte
+access pattern is the form whose LLVM IR shape was proven
+verifier-clean by GEP01. It is therefore a *production
+feature dependency*, not a *test-harness dependency*.
+
+Mechanical evidence for `B0_REQUIRES_GEP01_HARNESS = NO`
+--------------------------------------------------------
+
+`tools/quality/llvm-gep01-test.HC` is a test harness whose
+sole purpose is to validate the LLVM C-API's GEP/byte
+emission across a 30-row matrix. It is invoked from
+`scripts/quality/llvm-gep01-test.sh` (or its PolyC-native
+replacement at `tools/quality/llvm-gep01-test.HC`) and is
+wired into `gate-push` as `GPUSH-GEP01`. It is NOT a
+runtime dependency of any PolyC program; no PolyC source
+links against it; no PolyC program requires its output
+artifact.
+
+B0's authoritative build runs through:
+
+```text
+hcc                  tools/bootstrap/bootstrap01-lexer.HC
+hcc --emit-llvm      tools/bootstrap/bootstrap01-lexer.HC
+llvm-as              .ll -> .bc
+opt --passes=verify  .bc
+a.out                ./build/bootstrap01-test
+```
+
+None of these steps invokes `llvm-gep01-test.HC` or
+`llvm-gep01-test.sh`. The harness therefore is NOT a
+build dependency of B0. It is also not a verification
+dependency of B0: B0's own fixture matrix (T01..T14) is
+the verification surface for B0; GEP01's 30-row matrix
+verifies a different thing (LLVM C-API emission) and the
+two are mechanically independent.
+
+The D1/D2 failures captured in the predecessor's
+closure-truth corrections are env-residue: identical
+GEP01_PASS=26 / GEP01_FAIL=4 was already captured in
+`evidence/ACT-POLYC-INTEGRATION-PREBOOTSTRAP-GATES01-
+CORRECTION01/c3/gate-push-correction01.log` and confirmed
+not attributable to the production delta. The
+`ACT-POLYC-AOT-PIC-EXTERNAL-REFS01-CORRECTION02` closure
+records this as P1 residue, not P0. Under
+F-MECHANICAL-BLOCKING, prose-only tradition is not
+sufficient to establish B0 → GEP01 dependency, and no
+mechanical evidence exists to elevate the dependency.
+
+Mechanical evidence for `B0_REQUIRES_GATE_PUSH = NO`
+----------------------------------------------------
+
+`scripts/quality/gate-push.sh` validates the entire
+repository's push-readiness, including the 26/4 GEP01
+residue. B0's semantic closure does not require the
+repository to be in a push-ready state; the ACT §34
+explicitly separates ACT closure from push authorization.
+B0 may close PASS while gate-push fails on already-
+classified governance residue; that does not block the
+B0 ACT verdict per the ACT §25 strong-closure criterion
+(`GEP01=26/4` does not make the conjunction false unless
+`B0_REQUIRES_GEP01_HARNESS = YES`, which we have just
+established is NO).
+
+Mechanical evidence for `GEP01_D1_BLOCKS_B0 = NO` and `GEP01_D2_BLOCKS_B0 = NO`
+------------------------------------------------------------------------------
+
+D1 = llvm-gep01-test cap-verifier (scripts/quality/
+llvm-cap-table-verifier.py). It validates a single
+30-row predicate set. It does not interact with any
+PolyC source compilation. B0 can compile, link, execute,
+and verify all T01..T14 fixtures without D1 firing.
+
+D2 = canonical install seam (libtos.a vs libtos.dylib
+symlink). This is a *linker-time* flag in the test
+prefix. B0 has no linker-time dependency on libtos
+because B0 is allocation-free (no `MAlloc`, no
+`Free`, no libtos headers). See `allocation-decision.txt`
+in this C1 packet.
+
+Therefore both D1 and D2 are NON_BLOCKING_GOVERNANCE_RESIDUE
+for B0 throughout C2/C3/C4 per ACT §22.
+
+Conclusion
+----------
+
+C1 closes with **Outcome A**: B0 can be implemented
+against the existing proven substrate without invoking
+the broken GEP01 infrastructure. C2 IMPL is authorised.

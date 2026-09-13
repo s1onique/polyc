@@ -1,0 +1,44 @@
+# ACT-POLYC-BOOTSTRAP01	C1	FROZEN LEXICAL FIXTURE MATRIX (T01..T14 + NC6..NC8)
+#
+# Format: tab-separated, one fixture per line.
+# Columns: ID, SRC_HEX, SLICE_OFF, CAP, STATUS, TK1, TK2, ...
+# SLICE_OFF and CAP are decimal integers, or 'X' for "not applicable / unbounded".
+# STATUS is OK / FULL / UNSUP / BAD.
+# Each TK has the form KIND:START:LEN (all decimal).
+#
+# The columns match the C oracle's argv contract:
+#   bootstrap01-lexer-oracle ID SRC_HEX SLICE_OFF CAP STATUS [TK ...]
+#
+# These fixtures are loaded by tools/quality/bootstrap01-lexer-test.HC
+# (the PolyC test driver) and by the Makefile target make bootstrap01-test.
+#
+# T01 single identifier
+T01	666f6f	X	X	OK	1:0:3	0:3:0
+# T02 identifier with leading underscore and digits
+T02	5f666f6f39	X	X	OK	1:0:5	0:5:0
+# T03 integer
+T03	3132333435	X	X	OK	2:0:5	0:5:0
+# T04 whitespace transition
+T04	666f6f20313233	X	X	OK	1:0:3	2:4:3	0:7:0
+# T05 punctuation sequence
+T05	612b622a633b	X	X	OK	1:0:1	11:1:1	1:2:1	13:3:1	1:4:1	10:5:1	0:6:0
+# T06 parens / comma
+T06	6628782c7929	X	X	OK	1:0:1	3:1:1	1:2:1	9:3:1	1:4:1	4:5:1	0:6:0
+# T07 indexed punctuation
+T07	615b31325d	X	X	OK	1:0:1	7:1:1	2:2:2	8:4:1	0:5:0
+# T08 braces / assignment
+T08	7b613d313b7d	X	X	OK	5:0:1	1:1:1	15:2:1	2:3:1	10:4:1	6:5:1	0:6:0
+# T09 all frozen whitespace kinds
+T09	20090a666f6f0d	X	X	OK	1:3:3	0:7:0
+# T10 empty source
+T10		X	X	OK	0:0:0
+# T11 / NC6 unsupported byte
+T11	61626324646566	X	X	UNSUP	1:0:3
+# T12 NC7 output full - capacity too small for EOF slot
+T12	6162206364	X	2	FULL	1:0:2	1:3:2
+# T13 slice offset
+T13	787820666f6f	3	X	OK	1:0:3	0:3:0
+# T14 long identifier (60 chars)
+T14	6162636465666768696a6b6c6d6e6f707172737475767778797a4142434445464748494a4b4c4d4e4f505152535455565758595a3031323334353637	X	X	OK	1:0:60	0:60:0
+# NC8 empty source + cap 0
+NC8		X	0	FULL
