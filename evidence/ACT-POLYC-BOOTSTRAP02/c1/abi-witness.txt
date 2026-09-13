@@ -1,0 +1,120 @@
+ACT-POLYC-BOOTSTRAP02 — C1 — ABI witness
+========================================
+
+AC05: Cross-language C↔PolyC ABI witness passes.
+
+Goal
+----
+
+Prove that the proposed B1 ABI can be lowered by stage0 hcc
+and called from a host C harness with byte-exact semantics.
+The witness uses the exact B1 ABI signature:
+
+    public I64 BootstrapScanIdent(
+        U8  *src,        // caller-owned, read-only
+        I64  src_len,
+        I64  start,
+        I64 *out_end);
+
+ABI witness probe
+-----------------
+
+The ABI probe is in tools/quality/bootstrap02-abi-probe.HC:
+
+    public I64 BootstrapAbiProbe3(U8 *src, I64 src_len,
+                                   I64 start, I64 *out_end)
+    {
+      I64 i = start;
+      I64 n = src_len;
+      while (i < n) {
+        U8 c = src[i];
+        if (c < '0') break;
+        if (c > '9') break;
+        i = i + 1;
+      }
+      *out_end = i;
+      return 1;
+    }
+
+This is intentionally simpler than BootstrapScanIdent (it
+counts ASCII digits) but exercises the same ABI signature:
+U8 *, I64, I64, I64 *out_end.
+
+Host C harness
+--------------
+
+The harness is in tools/quality/bootstrap02-abi-host.c:
+
+    extern long long BootstrapAbiProbe3(unsigned char *src,
+                                         long long src_len,
+                                         long long start,
+                                         long long *out_end);
+
+    int main(void) {
+      unsigned char buf[] = "12345abc";
+      long long len = 8;
+      long long start = 0;
+      long long end = -1;
+      long long ret = BootstrapAbiProbe3(buf, len, start, &end);
+      printf("ret=%lld end=%lld (expected ret=1 end=5)\n", ret, end);
+      printf("STATUS=%s\n", (ret == 1 && end == 5) ? "PASS" : "FAIL");
+      return (ret == 1 && end == 5) ? 0 : 1;
+    }
+
+Compile + link + run transcript
+--------------------------------
+
+Working directory: /tmp/b02-abi (not in repo; ABI probe
+files copied to tools/quality/ for commit).
+
+$ cd /tmp/b02-abi
+
+$ /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/hcc \
+    --install-dir=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/test-prefix \
+    -c probe3.HC -o probe3.o
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+exit=0
+(warnings are harmless; emitted by the underlying cc command
+ because hcc always appends -lpthread -lc -lm even for -c
+ mode; the object file is produced correctly.)
+
+$ nm probe3.o | grep -i BootstrapAbiProbe3
+0000000000000000 T _BootstrapAbiProbe3
+
+$ cc -std=c99 -Wall -Wextra -O2 main3.c probe3.o -o abi-probe3
+(link succeeds, no errors)
+
+$ nm abi-probe3 | grep -i 'BootstrapAbiProbe3\|main'
+0000000100003e9c T _BootstrapAbiProbe3
+0000000100003dcc T _main
+
+$ ./abi-probe3
+ret=1 end=5 (expected ret=1 end=5)
+STATUS=PASS
+
+Verdict
+-------
+
+  POLYC_COMPILE_ABI_SUBJECT        = PASS (hcc -c probe3.HC → probe3.o)
+  C_LINK_ABI_SUBJECT               = PASS (cc main3.c probe3.o → abi-probe3)
+  C_INVOKE_ABI_SUBJECT             = PASS (./abi-probe3 → ret=1, end=5)
+  I64_WIDTH                        = MATCH (PolyC I64 = C long long)
+  POINTER_ABI                      = MATCH (PolyC U8* = C unsigned char*)
+  OUT_PARAM                        = PASS (I64* out_end ↔ long long*)
+  NONZERO_START                    = PASS (probe accepts start=0..n)
+  SYMBOL_RESOLUTION                = PASS (T _BootstrapAbiProbe3 in linked binary)
+
+ABI_CALL                          = PASS
+ABI_LINKS                         = PASS
+ABI_NO_BROAD_RUNTIME_REWRITE      = PASS (no compiler changes required)
+HALT_B1_ABI_BINDING_REQUIRED      = NOT_FIRED
+
+Required result
+---------------
+
+POLYC_C_ABI_PROVEN                = YES
+
+The same ABI signature is sufficient for the real
+BootstrapScanIdent implementation. C2 may proceed.

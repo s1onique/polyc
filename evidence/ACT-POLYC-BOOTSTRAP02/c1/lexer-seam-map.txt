@@ -1,0 +1,211 @@
+ACT-POLYC-BOOTSTRAP02 — C1 — production identifier seam map
+===========================================================
+
+AC01: Actual production identifier seam is mapped.
+
+All file paths are relative to repo root.
+
+Source bytes (caller-owned, read-only)
+======================================
+
+The production compiler's lexer reads source bytes via a
+single forward cursor `l->ptr` of type `char *` against a
+caller-owned `AoStr *src` (see LexFile in src/lexer.h).
+The buffer is NUL-terminated (`buf[len] = '\0'` is set by
+`lexReadfile` in src/lexer.c line 684).
+
+The cursor is read by:
+
+    src/lexer.c:619   static char lexNextChar(Lexer *l)
+                      - reads *l->ptr
+                      - advances l->ptr++
+                      - sets l->start = l->ptr (post-advance)
+                      - sets l->cur_ch = ch
+                      - handles file-stack pop on '\0' boundary
+
+    src/lexer.c:648   static void lexRewindChar(Lexer *l)
+                      - l->ptr--   (single byte backstep)
+
+Current-token dispatch
+======================
+
+Entry: lexCore() at src/lexer.c line 1129.
+Outer while(1) loop reads one byte via lexNextChar, captures
+the line/column of the token start in l->tok_start_line /
+l->tok_start_col, then switches on the byte.
+
+The identifier branch is the `default:` arm at
+src/lexer.c lines 1458-1477:
+
+    default: {
+        if (isalpha(ch) || ch == '_') {
+            if ((tk_type = lexIdentifier(l, ch)) == -1) {
+                lexRaise(l, "malformed identifier");
+            }
+            le->start = start;
+            le->len = l->cur_strlen;
+            le->tk_type = tk_type;
+            le->line = l->lineno;
+            ...
+            return 1;
+        }
+        break;
+    }
+
+Identifier branch (the candidate replacement seam)
+==================================================
+
+Function: lexIdentifier(Lexer *l, char ch) at
+src/lexer.c lines 873-885:
+
+    int lexIdentifier(Lexer *l, char ch) {
+        int i = 0;
+        while (ch && (isalnum(ch) || ch == '_' || ch == '$')) {
+            i++;
+            ch = lexNextChar(l);
+        }
+        l->cur_strlen = i;
+        if (ch != '\0') {
+            lexRewindChar(l);
+        }
+        return TK_IDENT;
+    }
+
+Mechanics:
+
+    input  : ch = first byte (already known to satisfy
+             isalpha(ch) || ch == '_' by the dispatcher's
+             gating condition)
+    output :
+        l->cur_strlen = i = number of bytes consumed
+                        (1..N where N is the identifier
+                        length, since the first byte is
+                        already known to satisfy the
+                        start predicate)
+        l->ptr points at the first byte AFTER the
+        identifier (because lexNextChar advanced it; if
+        the loop terminated on '\0' no rewinding happens)
+        l->start = start  (recorded by caller before the
+                           call)
+    return : TK_IDENT
+
+After return, the caller (lexCore) assigns:
+
+    le->start = start;                  /* l->start snapshot */
+    le->len   = l->cur_strlen;
+    le->tk_type = TK_IDENT;             /* or TK_KEYWORD if
+                                          mapped via symbol_table */
+
+Token construction (caller-owned, NOT in seam)
+=============================================
+
+Out of the B1 seam:
+
+    le->start  / le->len  assignment
+    le->tk_type assignment (TK_IDENT or TK_KEYWORD)
+    symbol_table lookup (TK_KEYWORD promotion)
+    line/column attribution
+    lexeme container registration (handled higher up)
+
+The seam is therefore ONLY the byte-span discovery
+("how many bytes from `start` belong to this identifier?").
+No token struct crosses the B1 ABI boundary.
+
+Data flow diagram (the exact requested seam map)
+================================================
+
+    source bytes (caller-owned AoStr)
+        |
+        | l->ptr (single forward cursor)
+        v
+    lexCore(src/lexer.c:1129)
+        |
+        | dispatch on byte
+        v
+    default arm (src/lexer.c:1458)
+        |
+        | if isalpha(ch) || ch == '_'
+        v
+    lexIdentifier(src/lexer.c:873)         <-- B1 CANDIDATE SEAM
+        |
+        | uses l->ptr, lexNextChar, lexRewindChar
+        | sets l->cur_strlen
+        v
+    return to lexCore
+        |
+        | le->start = start (captured before lexIdentifier)
+        | le->len   = l->cur_strlen
+        | le->tk_type = TK_IDENT (or TK_KEYWORD after lookup)
+        v
+    token object construction (OUTSIDE B1 SEAM)
+        |
+        v
+    parser / consumer
+
+Adjacent code paths that must NOT change in B1
+==============================================
+
+The following are explicitly out of the B1 scope and
+remain in host C:
+
+  - lexCore dispatch and gating conditions (line 1459)
+  - lexer state cursor management (lexNextChar, lexRewindChar,
+    lexPeek, lexPeekMatch)
+  - line/column attribution (l->tok_start_line/_col, l->lineno)
+  - symbol_table / keyword promotion (TK_KEYWORD mapping)
+  - lexeme container registration / LexFile stack handling
+  - diagnostic emission (lexRaise / cctrlRaiseException)
+  - string / numeric / char-const / float lexing
+  - preprocessor directive handling
+  - token kind assignment (TK_* enum)
+  - Lexeme / Lexer struct layout
+
+The B1 component receives:
+  - src       (caller-owned; must NOT be mutated)
+  - src_len   (explicit byte length; this is implicit today
+               via l->ptr walking — B1 seam may receive an
+               explicit src_len parameter)
+  - start     (cursor position; equivalent to "start" in
+               lexCore, which is l->start captured before
+               the identifier branch fires)
+
+The B1 component returns:
+  - the cursor position one past the last identifier byte
+    (equivalently, the new value of l->ptr, or an integer
+     length to add to start)
+
+Source lifetime / ownership
+===========================
+
+src is owned by the caller of lex / lexCore. The lexer
+holds a pointer (l->ptr) but does not free it.
+l->cur_file->ptr / l->ptr snapshots must be consistent
+across file boundaries; this is the responsibility of the
+existing lexCore / lexPushFile code, not the B1 seam.
+
+The B1 component receives the read-only source slice and
+MUST NOT mutate any byte (F22 source immutability).
+
+PRODUCTION_LEXER_FILE             = src/lexer.c
+PRODUCTION_LEXER_HEADER           = src/lexer.h
+PRODUCTION_IDENTIFIER_ENTRY       = lexIdentifier @ src/lexer.c:873
+PRODUCTION_IDENTIFIER_EXIT        = return TK_IDENT; @ src/lexer.c:884
+PRODUCTION_IDENTIFIER_DISPATCH    = default arm @ src/lexer.c:1458
+PRODUCTION_IDENTIFIER_KIND        = TK_IDENT = 0x300
+                                     (0x300 from src/lexer.h:18;
+                                      distinct from B0 BTK_IDENT = 1)
+PRODUCTION_CURSOR                 = l->ptr  (char *)
+                                     advanced by lexNextChar
+                                     rewound by lexRewindChar
+
+B1_CANDIDATE_SEAM_ISOLATABLE      = YES
+B1_SEAM_KIND                      = byte-span discovery only
+B1_NEEDS_TOKEN_STRUCT_CROSSING    = NO
+B1_NEEDS_PARSER_CHANGE            = NO
+B1_NEEDS_AST_CHANGE               = NO
+B1_NEEDS_IR_CHANGE                = NO
+B1_NEEDS_BACKEND_CHANGE           = NO
+B1_NEEDS_KEYWORD_PROMOTION        = NO  (caller's responsibility)
+B1_NEEDS_LEXEME_REGISTRATION      = NO  (caller's responsibility)
+B1_NEEDS_LINE_COLUMN_TRACKING     = NO  (caller's responsibility)
+

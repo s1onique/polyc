@@ -1,0 +1,126 @@
+ACT-POLYC-BOOTSTRAP02 — C1 — dependency decision matrix
+========================================================
+
+AC06: B1 does not require the B0 LLVM path.
+AC07: B1 does not require GEP01 harness infrastructure.
+
+MEMORY01 dependency check (ACT §8)
+==================================
+
+Question: does the B1 component (BootstrapScanIdent) need
+to be compiled via the LLVM backend path, or is the
+already-proven native hcc path sufficient?
+
+Mechanism
+---------
+
+The B1 component is a tiny pure-function scanner:
+
+    I64 BootstrapScanIdent(U8 *src, I64 src_len,
+                           I64 start, I64 *out_end)
+
+It uses ONLY:
+  - byte load from pointer (src[i])
+  - integer comparison (<, ==, isalpha, isalnum, '_', '$')
+  - integer add / subtract
+  - conditional branch
+  - out-parameter store
+
+These are all on the proven scalar + I64 memory subset:
+  - byte load via MEMORY01 IR_LOAD_DEREF (ptr-typed param,
+    I64 access type)
+  - integer ops via native hcc path (LLVM is opt-in)
+
+The proven native hcc path (./hcc with HCC_ENABLE_LLVM=OFF,
+which is the default) lowers these to native x86_64 / aarch64
+machine code. The current ./hcc was built with
+HCC_ENABLE_LLVM=OFF.
+
+Mechanical observation
+----------------------
+
+$ ls -la ./hcc
+-rwxr-xr-x  1 chistyakov staff 778848 Sep 13 00:48 ./hcc
+
+$ nm ./hcc 2>/dev/null | grep -c '_LLVMAddFunction'
+0
+(nm returns empty because the binary was built without
+LLVM support; the symbol _LLVMAddFunction does not exist,
+which proves the LLVM C-API is not linked in)
+
+$ /run/current-system/sw/bin/llvm-config --version
+22.1.8
+(LLVM 22 toolchain IS available on the host, but is not
+required for the B1 component because the current hcc was
+built native-only)
+
+B1_REQUIRES_B0_LLVM_PATH            = NO
+B0_LLVM_PATH_STATUS                 = BLOCKED_BY_EXISTING_MEMORY01_FENCE
+                                       (per ACT-POLYC-LLVM-BYTE-MEMORY01
+                                        and MEMORY01 fences — not the
+                                        concern of this ACT)
+B1_USES_NATIVE_HCC_PATH             = YES
+B1_NATIVE_HCC_PATH_PROVEN           = YES (B0 substrate and
+                                       B0 BootstrapLex both
+                                       pass through this path)
+HALT_MEMORY01_DEPENDENCY_REQUIRED   = NOT_FIRED
+
+GEP01 dependency check (ACT §9)
+===============================
+
+Question: does the B1 component or its verification need
+the broken GEP01 verification harness (LLVM IR emission,
+verifier, gate-push)?
+
+B1 component shape
+------------------
+
+The B1 component is a pure C-callable scanner. It is
+compiled by stage0 hcc through the proven native backend.
+No LLVM IR is emitted for the B1 component itself.
+
+B1 verification shape
+---------------------
+
+Direct verification (AC18..AC23): the B1 component's
+output is compared byte-for-byte against the legacy
+C oracle over the 15-fixture matrix. No LLVM IR, no
+verifier, no GEP01 harness.
+
+Real-compiler verification (AC24..AC30): stage1 hcc
+compiles PolyC/HolyC sources through the proven native
+backend. No LLVM emission, no GEP01 harness.
+
+Mechanical observation
+----------------------
+
+The GEP01 harness exercises:
+  - llvm-as (LLVM IR parser)
+  - opt --passes=verify (LLVM IR verifier)
+  - gate-push LLVM paths
+
+None of these are required to build, link, run, or
+verify BootstrapScanIdent.
+
+B1_REQUIRES_GEP_COMPILER_FEATURE    = NO  (byte indexing only;
+                                              no GEP; matches B0)
+B1_REQUIRES_GEP01_HARNESS           = NO
+B1_REQUIRES_GATE_PUSH               = NO
+GEP01_D1_BLOCKS_B1                  = NO  (still NON_BLOCKING_
+                                              GOVERNANCE_RESIDUE
+                                              per BOOTSTRAP01 §6
+                                              outcome A)
+GEP01_D2_BLOCKS_B1                  = NO  (still NON_BLOCKING_
+                                              GOVERNANCE_RESIDUE
+                                              per BOOTSTRAP01 §6
+                                              outcome A)
+HALT_GEP01_DEPENDENCY_REQUIRED      = NOT_FIRED
+
+Note
+----
+
+The B1 ABI witness (c1/abi-witness.txt) already proves
+this dependency classification by mechanical observation:
+the B1 ABI signature compiles via native hcc and links
+into a host C binary WITHOUT requiring LLVM, GEP01
+harness, or gate-push.

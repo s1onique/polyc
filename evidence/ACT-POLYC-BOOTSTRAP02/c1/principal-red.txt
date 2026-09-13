@@ -1,0 +1,143 @@
+ACT-POLYC-BOOTSTRAP02 — C1 — principal RED
+==========================================
+
+§32: The principal RED is not "B1 source does not exist."
+It is:
+
+    "current production compiler identifier span
+    is implemented by host-language compiler source,
+    not by code compiled from PolyC."
+
+This file mechanically demonstrates that predicate and
+proves that no stage1 artifact currently exists.
+
+Predicate under test
+====================
+
+    STAGE0_IDENTIFIER_SELF_HOSTED = NO
+
+i.e., the production compiler's identifier-span scanning
+loop is implemented in host-language C source (src/lexer.c)
+and is NOT executed by a PolyC-compiled object.
+
+Mechanical demonstration
+========================
+
+1. The production identifier scanner lives at:
+
+       src/lexer.c:873  lexIdentifier(Lexer *l, char ch)
+
+   This is host-language C code. Not PolyC.
+
+2. No PolyC component implementing identifier-span
+   scanning is currently linked into the production
+   compiler:
+
+       $ grep -rn 'BootstrapScanIdent' src/ tools/ 2>/dev/null
+       (no matches)
+
+   (Confirmed: 0 hits for BootstrapScanIdent in any
+   production source.)
+
+3. The only PolyC component currently in the tree is
+   the B0 lexer (BootstrapLex) in
+   tools/bootstrap/bootstrap01-lexer.HC. It is built as
+   a standalone test executable, not linked into the
+   production compiler:
+
+       $ grep -rn 'BootstrapLex\|bootstrap01-lexer' \
+              src/CMakeLists.txt src/compile.c src/cli.c \
+              2>/dev/null
+       (no matches)
+
+   The B0 component is invoked only by
+   tools/quality/bootstrap01-lexer-test.HC and is
+   compiled by ./hcc into build/bootstrap01-lexer-test.
+
+4. The ordinary ./hcc binary was built from the production
+   sources only:
+
+       $ nm ./hcc 2>/dev/null | grep 'Bootstrap\|bootstrap'
+       0000000100035f20 t _lspBootstrap
+
+   The only `Bootstrap*` symbol is `_lspBootstrap`, an
+   unrelated LSP-internal helper in src/lsp.c:211. There
+   is NO B0 or B1 bootstrap symbol linked into ./hcc.
+
+5. The ordinary ./hcc binary resolves the production
+   lexer symbol, not any PolyC one:
+
+       $ nm ./hcc 2>/dev/null | grep ' _lexIdentifier$'
+       0000000100022e88 T _lexIdentifier
+       (one hit, in src/lexer.c)
+
+   This is the host-C lexIdentifier. There is NO
+   PolyC-compiled counterpart linked in.
+
+6. There is no `build/hcc-bootstrap02` stage1 artifact:
+
+       $ ls -la build/ | grep -i 'hcc-bootstrap02\|stage1'
+       (no matches)
+
+Predicate verdict
+=================
+
+STAGE0_IDENTIFIER_SELF_HOSTED       = NO
+STAGE0_LEXER_IS_HOST_C              = YES
+STAGE0_HAS_POLYC_LINKED_OBJECT      = NO   (no PolyC object linked
+                                              into ./hcc)
+STAGE0_HAS_STAGE1_ARTIFACT          = NO   (no build/hcc-bootstrap02)
+B0_DIFFERENTIAL_PASSES              = YES  (bootstrap01-test 15/15)
+B1_DELEGATIONS                      = 0    (no PolyC delegations
+                                              because no PolyC
+                                              component is linked)
+
+Production-side RED (the binding principal RED for C2)
+======================================================
+
+The C2 IMPL must turn exactly this predicate GREEN by:
+
+    1.  writing tools/bootstrap/bootstrap02-ident.HC
+        (the B1 PolyC component) with the ABI proven in
+        c1/abi-witness.txt;
+    2.  adding a stage1 build target that uses stage0
+        hcc to compile bootstrap02-ident.HC into
+        build/bootstrap02-ident.o;
+    3.  adding bootstrap02-ident.o to the link line of
+        build/hcc-bootstrap02 (a SEPARATE binary, not
+        the ordinary ./hcc);
+    4.  declaring `extern long long BootstrapScanIdent(...)`
+        in src/lexer.c (or in a bridge header) and routing
+        the production identifier branch through it;
+    5.  capturing a C3 delegation witness that proves
+        build/hcc-bootstrap02 actually invokes
+        BootstrapScanIdent at least once on the frozen
+        identifier corpus (B1_IDENT_DELEGATIONS > 0).
+
+Until all five are done, the principal RED is genuine and
+this ACT may not close PASS.
+
+Anti-fallback flags
+===================
+
+The following are explicitly forbidden in C2:
+
+  - C wrapper that calls the legacy lexIdentifier
+    (would be `HALT_B1_COMPONENT_NOT_USED`)
+  - linked but never-used PolyC object
+    (would be `HALT_B1_COMPONENT_NOT_USED`)
+  - shadow comparison where production output still
+    always comes from the legacy scanner
+    (would NOT satisfy C3 AC25)
+  - try PolyC, on result mismatch use legacy silently
+    (would be `HALT_B1_COMPONENT_NOT_USED` /
+     `HALT_B1_SEMANTIC_MISMATCH`)
+  - build PolyC object but never reference it
+    (would be `HALT_B1_COMPONENT_NOT_USED`)
+
+When C2 closes and C3 has the delegation witness,
+the predicate STAGE0_IDENTIFIER_SELF_HOSTED will be
+REWRITTEN to STAGE1_IDENTIFIER_SELF_HOSTED = YES.
+
+The C4 closure will record the canonical B1 verdict
+in HANDOFF.md.

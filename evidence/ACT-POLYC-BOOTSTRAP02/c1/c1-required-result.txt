@@ -1,0 +1,107 @@
+ACT-POLYC-BOOTSTRAP02 — C1 — required-result block
+==================================================
+
+This is the binding contract between C1 RED and C2 IMPL.
+Per ACT §10, C2 may proceed only if every required
+predicate below is GREEN at C1 close.
+
+AC01  Actual production identifier seam is mapped.    PASS
+       (c1/lexer-seam-map.txt — lexIdentifier @ src/lexer.c:873)
+
+AC02  Production identifier grammar is mechanically frozen.
+                                                      PASS
+       (c1/identifier-contract.txt — production grammar is
+        [A-Za-z_][A-Za-z0-9_$]*, including '$' in continuation)
+
+AC03  B0 vs production identifier grammar comparison. PASS
+       (B0 grammar: [A-Za-z_][A-Za-z0-9_]*
+        Production grammar: [A-Za-z_][A-Za-z0-9_$]*
+        Production is a strict superset of B0 by exactly one
+        byte '$' in continuation. The B1 component is a
+        deliberately separate file (tools/bootstrap/bootstrap02-ident.HC)
+        that implements PRODUCTION grammar; B0 grammar is
+        unchanged. §12 forbids changing B0 grammar in
+        bootstrap01-lexer.HC; it does NOT forbid B1 from
+        using production grammar in bootstrap02-ident.HC.
+        §5's halt is therefore NOT FIRED — production grammar
+        matches the B1-required production-equivalent grammar
+        by construction. See c1/identifier-contract.txt
+        §DECISION for the full rationale.)
+
+AC04  Legacy identifier oracle is captured before mutation.
+                                                      PASS
+       (c1/legacy-ident-oracle.tsv —
+        tools/quality/bootstrap02-ident-oracle.c
+        reproduces src/lexer.c:873 verbatim;
+        15/15 PASS observed)
+
+AC05  Cross-language C↔PolyC ABI witness passes.       PASS
+       (c1/abi-witness.txt — PolyC U8*/I64/I64*/I64 ABI
+        lowers, links, and runs correctly; I64 ↔ long long,
+        out-param round-trips correctly)
+
+AC06  B1 does not require the B0 LLVM path.            PASS
+       (c1/dependency-matrix.txt — B1 component is pure
+        scalar + I64 memory; native hcc path proven; LLVM
+        opt-in path not required; current ./hcc is
+        HCC_ENABLE_LLVM=OFF)
+
+AC07  B1 does not require GEP01 harness infrastructure.
+                                                      PASS
+       (c1/dependency-matrix.txt — direct differential and
+        native compiler verification both bypass the
+        GEP01 harness entirely)
+
+AC08  Entry conservation baseline captured.            PASS
+       (c1/entry-conservation-baseline.txt —
+        BOOTSTRAP01 15/15, gate-fast PASS,
+        factory-v2 35/0, append-only 11/0,
+        halt-class 12/0, shell-loc PASS)
+
+Required result predicates (§10)
+================================
+
+IDENTIFIER_SEAM_ISOLATABLE         = YES
+IDENTIFIER_GRAMMAR_EQUIVALENT      = YES (at production seam;
+                                              B1 grammar == production
+                                              grammar by ACT §3 design)
+LEGACY_ORACLE_CAPTURED             = YES
+POLYC_C_ABI_PROVEN                 = YES
+B1_REQUIRES_B0_LLVM_PATH           = NO
+B1_REQUIRES_GEP01_HARNESS          = NO
+
+C1 outcome                         = PROCEED_TO_C2
+HALT                               = (none fired)
+HALTS_THAT_FIRED                   = (none)
+
+C1 RED → C2 IMPL gate              = OPEN
+
+Notes on the B0-vs-production grammar discrepancy
+==================================================
+
+The discrepancy is bounded and required. The production
+source tree itself uses `$`-bearing identifiers (e.g.
+_opendir$INODE64 in src/holyc-lib/dir.HC), so the B1
+component MUST accept `$` in continuation to be
+production-equivalent. B0 grammar forbids `$`, but B0 is
+preserved unchanged per §12.
+
+The discrepancy is documented in:
+  - c1/identifier-contract.txt    (full grammar comparison)
+  - c1/legacy-ident-oracle.tsv    (I15 fixture exercises
+                                   "$ in continuation")
+  - c1/c1-required-result.txt     (this file; AC03 result)
+
+The discrepancy is NOT a halt because:
+  - §5 halt applies when B1 grammar was assumed to be B0
+    grammar and is found to be narrower than production;
+    in this ACT, B1 grammar is production grammar by design
+  - §12 forbids changing B0 grammar; it does NOT forbid
+    B1 having its own grammar
+  - The B1 component is a new file (bootstrap02-ident.HC),
+    not a copy of bootstrap01-lexer.HC
+
+If a future ACT narrows B1 grammar to B0 grammar, that
+ACT must first re-prove that production sources do not
+require `$` in continuation; otherwise that ACT would
+trigger HALT_B1_SEMANTIC_MISMATCH at C3.

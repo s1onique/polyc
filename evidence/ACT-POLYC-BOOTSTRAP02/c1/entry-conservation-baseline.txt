@@ -1,0 +1,154 @@
+ACT-POLYC-BOOTSTRAP02 — C1 — entry conservation baseline
+========================================================
+
+AC08: Entry conservation baseline captured.
+
+Branch:    main
+HEAD:      b565587d47b3bd6d0931f18cd443d00c9d7dea57
+Status:    clean (git status --short empty)
+Date:      2026-09-13
+Operator:  Factory agent (ACT-POLYC-BOOTSTRAP02 C1)
+
+All gate counts below were measured against the entry
+HEAD with no production mutation. C3 must compare against
+these counts, not against historical ACT values.
+
+Quality gates (run at entry)
+============================
+
+make bootstrap01-test
+---------------------
+
+$ make bootstrap01-test
+... [full 15-fixture differential run]
+BOOTSTRAP01_CASES=15
+BOOTSTRAP01_RUNS=30
+BOOTSTRAP01_PASS=15
+BOOTSTRAP01_FAIL=0
+STATUS=PASS
+BOOTSTRAP01_REFERENCE_ORACLE=./build/bootstrap01-lexer-oracle
+
+gate-fast
+---------
+
+$ ./scripts/quality/gate-fast.sh
+POLYC_GATE=fast
+CHECK=diff-check STATUS=PASS
+CHECK=shell-syntax STATUS=PASS
+CHECK=doc-invariants STATUS=PASS
+CHECK=large-file-guard STATUS=PASS
+BUILD_RUN=NO
+POLYC_GATE=factory-closure-status
+MANIFEST_ROWS=6
+MISSING_HANDOFF_FILES=0
+MALFORMED_ACT_STATUS=0
+MALFORMED_HANDOFF_VERDICT=0
+EXACT_VERDICT_MISMATCHES=0
+PAIR_OK=6
+PAIR_FAIL=0
+STATUS=PASS
+VERDICT=PASS
+
+factory-v2-test
+---------------
+
+$ ./scripts/quality/factory-v2-test.sh
+... [truncated for brevity; full output has PASS=35 FAIL=0]
+--- summary --
+PASS=35
+FAIL=0
+STATUS=PASS
+
+factory-append-only-test
+------------------------
+
+$ ./scripts/quality/factory-append-only-test.sh
+... [NC1..NC11 run]
+--- summary --
+PASS=11
+FAIL=0
+STATUS=PASS
+
+factory-halt-classification-test
+--------------------------------
+
+$ ./scripts/quality/factory-halt-classification-test.sh
+... [R1..R12 run]
+--- summary --
+PASS=12
+FAIL=0
+STATUS=PASS
+
+shell-loc-gate
+--------------
+
+$ ./scripts/quality/shell-loc-gate.sh
+PASS  shell-loc-gate
+
+Frozen counts
+=============
+
+BOOTSTRAP01_CASES                 = 15
+BOOTSTRAP01_PASS                  = 15
+BOOTSTRAP01_FAIL                  = 0
+
+GATE_FAST_VERDICT                 = PASS
+GATE_FAST_PAIR_OK                 = 6
+GATE_FAST_PAIR_FAIL               = 0
+
+FACTORY_V2_PASS                   = 35
+FACTORY_V2_FAIL                   = 0
+
+APPEND_ONLY_PASS                  = 11
+APPEND_ONLY_FAIL                  = 0
+
+HALT_CLASS_PASS                   = 12
+HALT_CLASS_FAIL                   = 0
+
+SHELL_LOC                         = PASS
+
+Identity gates
+==============
+
+git replace -l                     = (empty)
+APPEND_ONLY_START_POINT            = baf5dbd77cf89330699685dffd932c54031c815c
+                                     (preserved; HEAD is descendant
+                                      of this boundary per the
+                                      repo-wide invariant)
+
+Inherited (per BOOTSTRAP01 HANDOFF.md §Evidence; not re-runnable
+in this sandbox because /usr/local/include/tos.HH is absent
+and the inherited src/tests/run.HC spawn path does not pass
+--install-dir):
+
+  make unit-test       INHERITED 90/90 PASS  (at b76f0d8)
+  make jit-unit-test   INHERITED 90/90 PASS  (at b76f0d8)
+  make lsp-test        INHERITED 43/43 PASS  (at b76f0d8)
+
+These inherited gates are NON_BLOCKING_GOVERNANCE_RESIDUE
+per BOOTSTRAP01 HANDOFF.md §Residue. B1 must not silently
+widen them; B1 must verify the inherited counts are still
+recorded as PASS where they are recorded.
+
+Inherited non-B1 governance residues
+====================================
+
+The following are NOT B1 dependencies; they are
+non-blocking governance residue classified by the
+predecessor ARCHIVE / RECONCILE chain:
+
+  - factory-closure-status-check PAIR_OK=6   (stable)
+  - factory-v2-test PASS=35                   (stable)
+  - factory-append-only-test PASS=11          (stable)
+  - factory-halt-classification-test PASS=12  (stable)
+
+These have the same numerical baseline as BOOTSTRAP01
+HANDOFF.md and are expected to remain unchanged at C3.
+
+Decision
+========
+
+CONSERVATION_BASELINE_FROZEN       = YES
+ENTRY_BASELINE_DATE                = 2026-09-13
+ENTRY_HEAD                         = b565587d47b3bd6d0931f18cd443d00c9d7dea57
+C3_MUST_COMPARE_AGAINST            = this file
