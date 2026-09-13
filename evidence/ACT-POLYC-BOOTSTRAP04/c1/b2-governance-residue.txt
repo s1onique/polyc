@@ -1,0 +1,62 @@
+ACT-POLYC-BOOTSTRAP04 — C1 — B2 governance residue
+====================================================
+
+Per ACT §4: carry exactly these two B2 review findings
+without reopening B2.
+
+------------------------------------------------------------
+B2_HANDOFF_C2_POINTER_TYPO
+------------------------------------------------------------
+
+```text
+B2_HANDOFF_C2_POINTER_TYPO =
+  evidence/ACT-POLYC-BOOTSTRAP02/c2/
+  SHOULD_HAVE_BEEN
+  evidence/ACT-POLYC-BOOTSTRAP03/c2/
+
+CLASS             = GOVERNANCE / DOCUMENTATION
+PRODUCTION_IMPACT = NONE
+BLOCKS_B3         = NO
+```
+
+This is a pointer typo in the B2 HANDOFF prose. The actual
+B2 c2 evidence directory exists at the correct path
+`evidence/ACT-POLYC-BOOTSTRAP03/c2/`.
+
+------------------------------------------------------------
+B2_PROVENANCE_WORDING
+------------------------------------------------------------
+
+```text
+B2_PROVENANCE_WORDING =
+  "same file by inode" was stronger than the captured evidence
+
+CORRECT_INTERPRETATION =
+  producer command
+  + unique output path
+  + consumer build-graph path
+  + matching content hash
+  establish causal provenance
+
+CLASS             = GOVERNANCE / EVIDENCE_WORDING
+PRODUCTION_IMPACT = NONE
+BLOCKS_B3         = NO
+```
+
+The B2 c3 evidence captured the producer command, output
+path, consumer build-graph path, and content hash. It did
+NOT capture inode numbers. Therefore B3 will use the same
+PROVENANCE_PRIMARY = "producer command + distinct build path
++ consumer graph" framing, with CONTENT_IDENTITY_SECONDARY
+= "sha256 match". Inode identity will not be claimed unless
+inode numbers are actually captured.
+
+------------------------------------------------------------
+Decision (AC20)
+------------------------------------------------------------
+
+Neither item creates a `BOOTSTRAP03-CORRECTION01`.
+Both remain non-blocking governance residue.
+
+Prose-only deficiencies do not block engineering when
+executable truth is intact.

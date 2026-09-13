@@ -1,0 +1,85 @@
+ACT-POLYC-BOOTSTRAP04 — C1 — principal RED
+=========================================
+
+Per ACT §11: the principal RED is not "stage3 absent" by
+itself (a binary file may or may not exist) and not
+"stage2 cannot compile B1" (B2 already proved that).
+
+The principal RED is:
+
+> The first self-host edge exists (B2 PASS), but there is
+> no next-generation compiler consuming stage2's output and
+> therefore no later-stage stability comparison.
+
+------------------------------------------------------------
+RED state (current tree)
+------------------------------------------------------------
+
+```text
+STAGE2_EXISTS = YES
+
+STAGE2_CAN_COMPILE_B1_SOURCE = YES
+  (see stage2-self-compile.txt; transient S2 object produced,
+   _BootstrapScanIdent exported, rc=0)
+
+STAGE2_PRODUCED_B1_OBJECT_EXISTS = YES
+  (transient: build/c1-experiment/bootstrap04-ident.stage2.o;
+   NOT yet linked into any compiler)
+
+CANONICAL_STAGE3_EXISTS = NO
+  (no build/hcc-bootstrap04; see stage3-absence.txt)
+
+STAGE3_LINKS_STAGE2_B1_OBJECT = NO
+  (no canonical link line; no BOOTSTRAP04_IDENT_OBJECT path)
+
+STAGE3_USES_STAGE2_B1_OBJECT = NO
+
+STAGE2_STAGE3_COMPARISON_EXISTS = NO
+  (no harness, no matrix, no diff)
+
+BOOTSTRAP_STABILITY = NOT_YET
+FIRST_SELF_HOST     = YES  (carried from B2)
+BOOTSTRAP_STABILITY_PROVEN = NO
+```
+
+Binding C1 result:
+
+```text
+BOOTSTRAP_STABILITY_PROVEN = NO
+```
+
+------------------------------------------------------------
+What C1 does NOT establish
+------------------------------------------------------------
+
+- It does not establish that stage2 output is *correct*.
+  (B2's differential established component correctness
+  against the C reference oracle at stage0/stage1/stage2;
+  the C1 S2 hash happens to equal S0/S1 because the B1
+  component is itself deterministic and tiny.)
+
+- It does not establish B3 success.
+  Only a stage3 build that *consumes* S2 would do that.
+
+- It does not authorize any production mutation.
+
+------------------------------------------------------------
+Next action
+------------------------------------------------------------
+
+Open C2 to add:
+
+1. `HCC_ENABLE_BOOTSTRAP04_STAGE3` opt-in option in
+   `src/CMakeLists.txt`, plus `hcc-bootstrap04` executable
+   target that links `BOOTSTRAP04_IDENT_OBJECT`.
+2. `bootstrap04-component-build` Makefile target that uses
+   `./build/hcc-bootstrap03` (stage2) to produce
+   `build/bootstrap04-ident.stage2.o`.
+3. `bootstrap04-stage3` Makefile target that builds
+   `build/hcc-bootstrap04`.
+4. `bootstrap04-test`, `bootstrap04-cursor-test`,
+   `bootstrap04-lexer-seam-test` runners as parameterised
+   analogues of the B2 runners.
+
+The C2 implementation will be a **build-graph extension**;
+no compiler semantic files will be modified.

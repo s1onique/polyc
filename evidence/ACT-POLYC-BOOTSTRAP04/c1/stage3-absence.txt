@@ -1,0 +1,73 @@
+ACT-POLYC-BOOTSTRAP04 — C1 — stage3 absence
+============================================
+
+Per ACT §11, AC16-AC18: prove that no canonical stage3
+exists, no stage3 link consumes stage2 output, and no
+stage2↔stage3 comparison exists.
+
+------------------------------------------------------------
+Canonical stage3 binary absent (AC16)
+------------------------------------------------------------
+
+```text
+$ ls build/hcc-bootstrap04
+ls: build/hcc-bootstrap04: No such file or directory
+```
+
+No `build/hcc-bootstrap04`. Canonical stage3 does not
+exist on the current tree.
+
+------------------------------------------------------------
+No B3 build-graph plumbing (AC16, AC17)
+------------------------------------------------------------
+
+```text
+$ grep -r 'bootstrap04' src/CMakeLists.txt
+(no output)
+
+$ grep -r 'bootstrap04' Makefile
+(no output)
+```
+
+No `HCC_ENABLE_BOOTSTRAP04_STAGE3`, no `BOOTSTRAP04_*` target,
+no `bootstrap04-*` runner, no CMake `hcc-bootstrap04`
+executable.
+
+------------------------------------------------------------
+No S2 production object path (AC17)
+------------------------------------------------------------
+
+```text
+$ ls build/bootstrap04-ident.stage2.o
+ls: build/bootstrap04-ident.stage2.o: No such file or directory
+```
+
+The canonical B3 artifact path `build/bootstrap04-ident.stage2.o`
+does NOT exist. Only the transient experiment object
+`build/c1-experiment/bootstrap04-ident.stage2.o` exists
+(see stage2-self-compile.txt).
+
+------------------------------------------------------------
+No stage2↔stage3 comparison harness (AC18)
+------------------------------------------------------------
+
+```text
+$ ls tools/quality/bootstrap04-* 2>/dev/null
+ls: tools/quality/bootstrap04-*: No such file or directory
+```
+
+No `bootstrap04-*` driver script. No B3 corpus matrix.
+No B3 error corpus. No B3 lexer-seam runner. No B3
+reproducibility harness.
+
+------------------------------------------------------------
+Summary (AC16, AC17, AC18)
+------------------------------------------------------------
+
+```text
+AC16  CANONICAL_STAGE3_EXISTS      = NO
+AC17  STAGE3_LINKS_STAGE2_OBJECT   = NO  (no build graph, no artifact path)
+AC18  STAGE2_STAGE3_COMPARISON     = NO  (no harness, no matrix)
+```
+
+This is the principal RED for B3.

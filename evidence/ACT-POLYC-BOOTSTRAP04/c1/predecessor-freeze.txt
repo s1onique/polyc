@@ -1,0 +1,122 @@
+ACT-POLYC-BOOTSTRAP04 — C1 — predecessor freeze
+=================================================
+
+Per ACT §3: mechanically re-establish B2 closure truth
+from the current tree rather than trusting prose.
+
+------------------------------------------------------------
+Identity (entry)
+------------------------------------------------------------
+
+```text
+branch                  = main
+worktree                = clean (only docs/acts/ACT-POLYC-BOOTSTRAP04.md untracked)
+git replace             = empty
+HEAD (C1 entry)         = 245da702f628d4d15ff339b79b9c531a154e4ae2
+```
+
+------------------------------------------------------------
+B2 authoritative CLOSE cardinality (§3 + AC04)
+------------------------------------------------------------
+
+```text
+$ git log --all-match --oneline \
+    --grep='^ACT: ACT-POLYC-BOOTSTRAP03$' \
+    --grep='^ACT-Phase: CLOSE$'
+
+245da70 ACT-POLYC-BOOTSTRAP03 — CLOSE: B2 first self-host PASS
+```
+
+Count: 1. Authoritative CLOSE: 245da70.
+
+------------------------------------------------------------
+B2_FIRST_SELF_HOST = PASS (AC05)
+------------------------------------------------------------
+
+Direct re-execution of every currently-runnable, authoritative
+B2 closure gate on the current tree.
+
+### B0 subject (15/15)
+
+```text
+$ make bootstrap01-test
+...
+BOOTSTRAP01_CASES=15
+BOOTSTRAP01_PASS=15
+BOOTSTRAP01_FAIL=0
+STATUS=PASS
+```
+
+### B1 component differential (15/15)
+
+```text
+$ make bootstrap02-test
+... (B1 differential vs C reference oracle)
+```
+
+15/15 PASS verified.
+
+### B1 cursor model (6/6)
+
+```text
+$ make bootstrap02-cursor-test
+... (cursor model 6 fixtures)
+```
+
+6/6 PASS verified.
+
+### B1 production Lexer seam (6/6)
+
+```text
+$ make bootstrap02-lexer-seam-test
+...
+BOOTSTRAP02_LEXER_SEAM_DOWNSTREAM=PASS (6/6 cases byte-identical)
+BOOTSTRAP02_LEXER_SEAM_RESIDUE=NONE
+```
+
+### B2 component differential (15/15)
+
+```text
+$ make bootstrap03-test
+... (stage1↔stage2 component differential)
+```
+
+15/15 PASS verified.
+
+### B2 production Lexer seam (6/6)
+
+```text
+$ make bootstrap03-lexer-seam-test
+...
+BOOTSTRAP03_LEXER_SEAM_DOWNSTREAM=PASS (6/6 cases byte-identical)
+BOOTSTRAP03_LEXER_SEAM_RESIDUE=NONE
+```
+
+### B2 broad corpus (AC06)
+
+The 175/175 successful artifact byte-equal + 6/6 baseline
+failure equivalence established by B2 evidence remains
+F14-frozen in `evidence/ACT-POLYC-BOOTSTRAP03/c3/`.
+
+### B2 error corpus (AC07)
+
+The 4/4 error corpus equivalence established by B2 evidence
+remains F14-frozen in `evidence/ACT-POLYC-BOOTSTRAP03/c3/`.
+
+### B2 reproducibility (AC08)
+
+The Build A / Build B reproducibility established by B2
+remains F14-frozen in `evidence/ACT-POLYC-BOOTSTRAP03/c3/`.
+
+------------------------------------------------------------
+Summary (AC21, AC22, AC23)
+------------------------------------------------------------
+
+```text
+B0_COMPILER_SHAPED        = PASS  (15/15)
+B1_PARTIAL_SELF_HOST      = PASS  (15/15 + 6/6 + 6/6)
+B2_FIRST_SELF_HOST        = PASS  (175/175 corpus + 4/4 errors
+                                    + reproducibility + 6/6 Lexer seam)
+```
+
+Predecessor freeze is GREEN.

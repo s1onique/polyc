@@ -1,0 +1,151 @@
+ACT-POLYC-BOOTSTRAP04 — C1 — build seam map
+============================================
+
+Per ACT §13, AC19: mechanically map the B2 build seam
+and identify the smallest B3 extension.
+
+------------------------------------------------------------
+Existing B2 build graph (frozen; not modified in C1)
+------------------------------------------------------------
+
+### B2 component build (stage1 → S1_B1_OBJ)
+
+```text
+Makefile:543-558
+  bootstrap03-component-build: bootstrap02-stage1 test-prefix-install
+      [guard ./build/hcc-bootstrap02 exists]
+      @rm -f ./build/bootstrap03-ident.stage1.o
+      ./build/hcc-bootstrap02 --install-dir=$(TEST_PREFIX) \
+          -c tools/bootstrap/bootstrap02-ident.HC \
+          -o ./build/bootstrap03-ident.stage1.o
+      @nm ./build/bootstrap03-ident.stage1.o | grep -q '_BootstrapScanIdent'
+      @echo "BOOTSTRAP03_STAGE1_B1_OBJECT=./build/bootstrap03-ident.stage1.o"
+```
+
+Producer: `./build/hcc-bootstrap02` (stage1).
+Output:   `./build/bootstrap03-ident.stage1.o`.
+
+### B2 stage2 binary build (S1_B1_OBJ → hcc-bootstrap03)
+
+```text
+Makefile:573-597
+  bootstrap03-stage2: bootstrap03-component-build test-prefix-install
+      @rm -rf ./build/hcc-bootstrap03-build
+      @mkdir -p ./build/hcc-bootstrap03-build
+      cmake -S ./src -B ./build/hcc-bootstrap03-build -G 'Unix Makefiles' \
+          -DCMAKE_C_COMPILER=$(C_COMPILER) \
+          -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
+          -DCMAKE_C_FLAGS=$(CFLAGS) \
+          -DHCC_ENABLE_JIT=on \
+          -DHCC_ENABLE_LLVM=OFF \
+          -DHCC_ENABLE_BOOTSTRAP02_STAGE1=ON \
+          -DBOOTSTRAP02_IDENT_OBJECT=$(CURDIR)/build/bootstrap02-ident.o \
+          -DHCC_ENABLE_BOOTSTRAP03_STAGE2=ON \
+          -DBOOTSTRAP03_IDENT_OBJECT=$(CURDIR)/build/bootstrap03-ident.stage1.o
+      $(MAKE) -C ./build/hcc-bootstrap03-build hcc-bootstrap03 -j2
+      @nm ./build/hcc-bootstrap03 | grep -q '_BootstrapScanIdent'
+```
+
+Parameter: `-DBOOTSTRAP03_IDENT_OBJECT=$(CURDIR)/build/bootstrap03-ident.stage1.o`.
+
+### B2 → src/lexer.c dispatch (production)
+
+```text
+src/CMakeLists.txt:269-313
+  option(HCC_ENABLE_BOOTSTRAP03_STAGE2
+         "Link the B1 PolyC component (BootstrapScanIdent)
+          compiled by stage1 into a separate stage2 binary
+          (hcc-bootstrap03). ACT-POLYC-BOOTSTRAP03."
+         OFF)
+  if (HCC_ENABLE_BOOTSTRAP03_STAGE2)
+      require HCC_ENABLE_BOOTSTRAP02_STAGE1=ON
+      require BOOTSTRAP03_IDENT_OBJECT path
+      add_executable(hcc-bootstrap03 ${SOURCES} ${HEADERS})
+      target_compile_definitions(hcc-bootstrap03 PRIVATE
+                                 HCC_BOOTSTRAP02_STAGE1
+                                 HCC_BOOTSTRAP03_STAGE2)
+      target_link_libraries(hcc-bootstrap03 ${BOOTSTRAP03_IDENT_OBJECT} m)
+```
+
+Note: B2 added a second compile definition
+`HCC_BOOTSTRAP03_STAGE2` but the existing B1 delegation in
+`src/lexer.c::lexIdentifier` is gated by the existing
+`HCC_BOOTSTRAP02_STAGE1` only. The second macro exists
+for build-graph distinctness / future use; the actual
+lexer dispatch does not need to change for stage3.
+
+------------------------------------------------------------
+Smallest B3 extension (AC19)
+------------------------------------------------------------
+
+Mirror the B2 pattern with one additional generation:
+
+```text
+bootstrap04-component-build:
+    ./build/hcc-bootstrap03 (stage2)
+        -c tools/bootstrap/bootstrap02-ident.HC
+        -o ./build/bootstrap04-ident.stage2.o
+
+bootstrap04-stage3:
+    cmake -S ./src -B ./build/hcc-bootstrap04-build \
+        -DHCC_ENABLE_BOOTSTRAP02_STAGE1=ON \
+        -DBOOTSTRAP02_IDENT_OBJECT=<abs>/build/bootstrap02-ident.o \
+        -DHCC_ENABLE_BOOTSTRAP03_STAGE2=ON \
+        -DBOOTSTRAP03_IDENT_OBJECT=<abs>/build/bootstrap03-ident.stage1.o \
+        -DHCC_ENABLE_BOOTSTRAP04_STAGE3=ON \
+        -DBOOTSTRAP04_IDENT_OBJECT=<abs>/build/bootstrap04-ident.stage2.o
+    make -C ./build/hcc-bootstrap04-build hcc-bootstrap04
+```
+
+CMake (src/CMakeLists.txt) addition:
+
+```text
+option(HCC_ENABLE_BOOTSTRAP04_STAGE3
+       "Link the B1 PolyC component (BootstrapScanIdent) compiled by
+        stage2 into a separate stage3 binary (hcc-bootstrap04).
+        ACT-POLYC-BOOTSTRAP04."
+       OFF)
+if (HCC_ENABLE_BOOTSTRAP04_STAGE3)
+    require HCC_ENABLE_BOOTSTRAP03_STAGE2=ON
+    require BOOTSTRAP04_IDENT_OBJECT path
+    add_executable(hcc-bootstrap04 ${SOURCES} ${HEADERS})
+    target_compile_definitions(hcc-bootstrap04 PRIVATE
+        HCC_BOOTSTRAP02_STAGE1
+        HCC_BOOTSTRAP04_STAGE3)
+    target_link_libraries(hcc-bootstrap04 ${BOOTSTRAP04_IDENT_OBJECT} m)
+endif()
+```
+
+Note on lexer dispatch: no `src/lexer.c` change required.
+`HCC_BOOTSTRAP02_STAGE1` already gates the
+`BootstrapScanIdent` delegation; stage3 retains the same
+dispatch. `HCC_BOOTSTRAP04_STAGE3` exists purely for
+build-graph distinctness (matches the B2 macro pattern).
+
+### Path separation
+
+```text
+S0 = build/bootstrap02-ident.o              (stage0-built, links stage1)
+S1 = build/bootstrap03-ident.stage1.o       (stage1-built, links stage2)
+S2 = build/bootstrap04-ident.stage2.o       (stage2-built, links stage3)
+```
+
+Three distinct, non-overlapping paths. The build graph
+rejects accidental reuse because each stage's link command
+specifies its own object path explicitly.
+
+------------------------------------------------------------
+No implementation during C1 (AC24)
+------------------------------------------------------------
+
+This C1 evidence packet performs **zero** modifications to:
+
+- `Makefile`
+- `src/CMakeLists.txt`
+- `src/lexer.c`
+- `src/lexer_bridge.h`
+- `tools/bootstrap/bootstrap02-ident.HC`
+- `tools/quality/bootstrap04-*` (none created in C1)
+
+The ACT document `docs/acts/ACT-POLYC-BOOTSTRAP04.md`
+is the only modification (untracked; not in a commit).

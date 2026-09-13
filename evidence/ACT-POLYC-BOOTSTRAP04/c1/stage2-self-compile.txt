@@ -1,0 +1,77 @@
+ACT-POLYC-BOOTSTRAP04 — C1 — stage2 self-compile experiment
+============================================================
+
+Per ACT §12: prove stage2 capability by compiling the B1
+source into a transient path BEFORE any production mutation.
+
+------------------------------------------------------------
+Command (AC14)
+------------------------------------------------------------
+
+```bash
+mkdir -p build/c1-experiment
+rm -f build/c1-experiment/bootstrap04-ident.stage2.o
+./build/hcc-bootstrap03 --install-dir=$(pwd)/build/test-prefix \
+    -c tools/bootstrap/bootstrap02-ident.HC \
+    -o build/c1-experiment/bootstrap04-ident.stage2.o
+```
+
+Output (warnings about unused linker inputs are unrelated;
+hcc emits them in -c compile mode):
+
+```text
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+```
+
+Exit code: 0.
+
+------------------------------------------------------------
+Transient object (AC15)
+------------------------------------------------------------
+
+```text
+$ ls -la build/c1-experiment/bootstrap04-ident.stage2.o
+-rw-r--r--  1 chistyakov  staff  2704  Sep 13 19:09  build/c1-experiment/bootstrap04-ident.stage2.o
+
+$ nm build/c1-experiment/bootstrap04-ident.stage2.o | grep BootstrapScanIdent
+00000000000002e0 T _BootstrapScanIdent
+```
+
+Symbol exported as expected.
+
+------------------------------------------------------------
+Hash and equivalence (cross-check vs S0, S1)
+------------------------------------------------------------
+
+```text
+$ shasum -a 256 build/c1-experiment/bootstrap04-ident.stage2.o \
+                build/bootstrap03-ident.stage1.o \
+                build/bootstrap02-ident.o
+a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f  build/c1-experiment/bootstrap04-ident.stage2.o
+a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f  build/bootstrap03-ident.stage1.o
+a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f  build/bootstrap02-ident.o
+```
+
+All three S0 / S1 / transient S2 objects are byte-identical.
+This means the B1 component is at a fixed point across
+stage0, stage1, and stage2 compilation — exactly the
+behavior the B3 ACT's STAGE2_STAGE3_STABILITY invariant
+will require once stage3 exists.
+
+This is a *consequence* of the same B1 source under three
+different compilers, not yet *proof* of B3 stability
+(no stage3 has yet consumed any of these objects).
+
+------------------------------------------------------------
+Summary (AC14, AC15)
+------------------------------------------------------------
+
+```text
+AC14  STAGE2_CAN_COMPILE_B1_SOURCE = YES  (rc=0)
+AC15  STAGE2_OUTPUT_EXPORTS_B1     = YES  (_BootstrapScanIdent T 00000000000002e0)
+```
+
+The C1 transient experiment proves stage2 *can* build S2.
+It does **not** prove B3, because no stage3 yet consumes S2.

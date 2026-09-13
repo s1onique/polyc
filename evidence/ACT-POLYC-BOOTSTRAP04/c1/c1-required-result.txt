@@ -1,0 +1,77 @@
+ACT-POLYC-BOOTSTRAP04 — C1 — required result
+=============================================
+
+C1 end block (per ACT §14):
+
+```text
+B2_PREDECESSOR_GREEN       = YES
+FIRST_SELF_HOST            = PASS
+
+STAGE2_SELF_SOURCE_COMPILE = PASS
+STAGE3_EXISTS              = NO
+
+BOOTSTRAP_STABILITY        = NOT_YET
+C1_TO_C2_GATE              = OPEN
+```
+
+------------------------------------------------------------
+C1 acceptance criteria status
+------------------------------------------------------------
+
+```text
+AC01  branch = main                       PASS
+AC02  worktree clean (only ACT MD new)    PASS
+AC03  git replace empty                   PASS
+
+AC04  B2 authoritative CLOSE count = 1    PASS  (245da70)
+AC05  B2_FIRST_SELF_HOST = PASS           PASS
+AC06  B2 broad corpus = PASS              PASS  (frozen in B2 evidence)
+AC07  B2 error corpus = PASS              PASS  (frozen in B2 evidence)
+AC08  B2 reproducibility = PASS           PASS  (frozen in B2 evidence)
+
+AC09  stage0 captured                     PASS
+AC10  stage1 captured                     PASS
+AC11  stage2 captured                     PASS
+
+AC12  stage2 contains _BootstrapScanIdent PASS
+AC13  stage2 calls _BootstrapScanIdent    PASS  (2 call sites)
+
+AC14  stage2 freshly compiles B1 source   PASS  (rc=0)
+AC15  stage2 output exports _BootstrapScanIdent PASS
+
+AC16  canonical stage3 absent             PASS  (no build/hcc-bootstrap04)
+AC17  no stage3 link consumes stage2 output PASS  (no build graph)
+AC18  no stage2↔stage3 comparison exists  PASS  (no harness)
+
+AC19  build seam mapped                   PASS  (see build-seam-map.txt)
+AC20  B2 governance residue recorded      PASS  (non-blocking)
+
+AC21  B0 conservation PASS                PASS  (15/15)
+AC22  B1 conservation PASS                PASS  (15/15 + 6/6 + 6/6)
+AC23  B2 conservation PASS                PASS  (15/15 + 6/6 + 4/4 errors
+                                                + reproducibility)
+
+AC24  no production mutation in C1        PASS
+
+AC25  BOOTSTRAP_STABILITY = NOT_YET       PASS
+AC26  C1_TO_C2_GATE = OPEN                PASS
+```
+
+------------------------------------------------------------
+Binding result
+------------------------------------------------------------
+
+```text
+ACT_PHASE = RED
+
+B2_PREDECESSOR_GREEN       = YES
+FIRST_SELF_HOST            = PASS
+
+STAGE2_SELF_SOURCE_COMPILE = PASS
+STAGE3_EXISTS              = NO
+
+BOOTSTRAP_STABILITY        = NOT_YET
+C1_TO_C2_GATE              = OPEN
+```
+
+C1 RED complete. Proceed to C2 IMPL.

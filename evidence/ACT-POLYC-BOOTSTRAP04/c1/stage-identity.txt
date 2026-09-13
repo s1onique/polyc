@@ -1,0 +1,113 @@
+ACT-POLYC-BOOTSTRAP04 — C1 — stage identity
+============================================
+
+Per ACT §5, §11, AC09-AC13: capture stage0/1/2 binary
+identities and confirm stage2 contains and calls
+_BootstrapScanIdent.
+
+------------------------------------------------------------
+Stage0 (./hcc)
+------------------------------------------------------------
+
+```text
+$ file build/hcc
+build/hcc: Mach-O 64-bit executable arm64
+
+$ shasum -a 256 build/hcc
+a35e3681a305fca6b3dfa67ad4821a5ddbc97dae99a517d8e79b430cd7bcd1b6  build/hcc
+
+$ nm build/hcc | grep BootstrapScanIdent | wc -l
+0
+```
+
+Stage0 is the ordinary host-built `./hcc`. It does NOT
+contain the B1 component symbol (production `./hcc` uses
+the legacy ctype-based path; only the opt-in stage1/stage2
+binaries link the B1 component).
+
+------------------------------------------------------------
+Stage1 (build/hcc-bootstrap02)
+------------------------------------------------------------
+
+```text
+$ file build/hcc-bootstrap02
+build/hcc-bootstrap02: Mach-O 64-bit executable arm64
+
+$ shasum -a 256 build/hcc-bootstrap02
+9f05c60b5ea268d4ab7adc446119dbb4bc8a29aa314044cb3a276b152897d961  build/hcc-bootstrap02
+
+$ nm build/hcc-bootstrap02 | grep BootstrapScanIdent
+000000010007c318 T _BootstrapScanIdent
+```
+
+Stage1 is the B2 ACT's stage1 binary. It contains exactly
+one definition of `_BootstrapScanIdent` (the B1 component).
+
+------------------------------------------------------------
+Stage2 (build/hcc-bootstrap03)
+------------------------------------------------------------
+
+```text
+$ file build/hcc-bootstrap03
+build/hcc-bootstrap03: Mach-O 64-bit executable arm64
+
+$ shasum -a 256 build/hcc-bootstrap03
+2bfc173ceefeaff9e2eee0b225f33e5416575b8e33fd0c35c96339dd387d9384  build/hcc-bootstrap03
+
+$ nm build/hcc-bootstrap03 | grep BootstrapScanIdent
+000000010007c318 T _BootstrapScanIdent
+```
+
+Stage2 contains exactly one definition of `_BootstrapScanIdent`.
+
+### Stage2 calls _BootstrapScanIdent (AC13)
+
+```text
+$ otool -tv build/hcc-bootstrap03 | grep -B1 -A1 'BootstrapScanIdent'
+00000001000303f0   mov x2, #0x0
+00000001000303f4   bl  _BootstrapScanIdent       <-- lexIdentifier entry
+00000001000303f8   cbz w0, 0x100030414
+...
+000000010003145c   mov x2, #0x0
+0000000100031460   bl  _BootstrapScanIdent       <-- second call site
+0000000100031464   cbz w0, 0x100031bb0
+```
+
+Two `bl _BootstrapScanIdent` call sites in the production
+lexer dispatch path. The first is the standard
+`lexIdentifier` call; the second is a second hot-path call.
+
+### Stage2 binary size
+
+```text
+$ ls -la build/hcc-bootstrap03
+-rwxr-xr-x  1 chistyakov  staff  742160  Sep 13 18:52  build/hcc-bootstrap03
+```
+
+### Stage2 vs stage1
+
+Stage2 differs from stage1 in B1 artifact input:
+
+```text
+$ shasum -a 256 build/hcc-bootstrap02 build/hcc-bootstrap03
+9f05c60b5ea268d4ab7adc446119dbb4bc8a29aa314044cb3a276b152897d961  build/hcc-bootstrap02
+2bfc173ceefeaff9e2eee0b225f33e5416575b8e33fd0c35c96339dd387d9384  build/hcc-bootstrap03
+```
+
+Distinct SHA. The B2 design (distinct compile definitions
+HCC_BOOTSTRAP02_STAGE1 + HCC_BOOTSTRAP03_STAGE2) produces
+materially different binaries because stage2 also carries
+the B2 provenance macro.
+
+------------------------------------------------------------
+Summary (AC09-AC13)
+------------------------------------------------------------
+
+```text
+AC09  STAGE0_PRESENT              = YES (./hcc)
+AC10  STAGE1_PRESENT              = YES (build/hcc-bootstrap02)
+AC11  STAGE2_PRESENT              = YES (build/hcc-bootstrap03)
+
+AC12  STAGE2_CONTAINS_B1_SYMBOL   = YES (000000010007c318 T _BootstrapScanIdent)
+AC13  STAGE2_CALLS_B1_SYMBOL      = YES (2 bl _BootstrapScanIdent sites)
+```
