@@ -486,6 +486,10 @@ I64 SHCValidateStage(U8 *s)
   if (!StrCmp(s, "2")) return 2;
   "FAIL: STAGE='%s' is required (expected 0|1|2)\n", s;
   Exit(2);
+  // Unreachable: Exit() does not return, but this defensive
+  // return silences the "control may reach end of non-void
+  // function" warning and makes the contract explicit.
+  return -1;
 }
 
 // ============================================================
@@ -1458,4 +1462,8 @@ I32 main(I32 argc, U8 **argv)
 
   "FAIL: unknown op '%s'\n", op;
   Exit(2);
+  // Unreachable: Exit() does not return, but this defensive
+  // return silences the "control may reach end of non-void
+  // function" warning and makes the CLI contract explicit.
+  return 2;
 }
