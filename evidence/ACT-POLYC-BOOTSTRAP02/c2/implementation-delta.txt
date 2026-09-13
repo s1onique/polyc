@@ -74,3 +74,65 @@ Authorized scope used:   EXACTLY the above (and a host harness
 
 Out-of-scope work:       NONE
 Residue:                 NONE at C2 close.
+
+============================================================
+Build-time stage separation
+(per ACT-POLYC-BOOTSTRAP02-C2-CORRECTION01 §2)
+============================================================
+
+The src/lexer.c modification uses a build-time selector
+(#ifdef HCC_BOOTSTRAP02_STAGE1 / #else / #endif) to
+produce two physically distinct binary artifacts from the
+same source file:
+
+  stage0 ./hcc              (no -DHCC_BOOTSTRAP02_STAGE1)
+      lexIdentifier body uses the legacy host-C identifier
+      scanning loop (ctype-based, "C" locale byte
+      semantics).
+
+  stage1 build/hcc-bootstrap02  (-DHCC_BOOTSTRAP02_STAGE1)
+      lexIdentifier body delegates to BootstrapScanIdent.
+      The legacy ctype code is absent from the preprocessed
+      stage1 translation unit.
+
+Within each binary there is NO runtime branch in
+lexIdentifier and NO runtime fallback. The
+hcc-bootstrap02 binary is a true self-hosted compiler
+whose identifier-span seam is the PolyC B1 component.
+
+This is the corrected §14 wording per
+ACT-POLYC-BOOTSTRAP02-C2-CORRECTION01:
+
+  OLD: "No runtime toggle. No `#ifdef`. No legacy fallback."
+  NEW: "No runtime fallback in hcc-bootstrap02."
+
+The new rule is what the C2 IMPL satisfies; the old rule
+was over-narrow because it listed the literal `#ifdef`
+token without distinguishing between runtime branches
+(forbidden) and build-time artifact selection (permitted).
+
+============================================================
+Two-pillar cursor evidence taxonomy
+(per ACT-POLYC-BOOTSTRAP02-C2-CORRECTION01 §3)
+============================================================
+
+The C2 cursor evidence is split into two pillars:
+
+  Pillar A — End-to-end conservation (object-emission
+  parity). 5/5 real production sources produce byte-
+  identical objects between stage0 and stage1. The
+  strongest cheap observable available. Does NOT
+  directly imply cursor equivalence.
+  See cursor-equivalence.txt.
+
+  Pillar B — Direct seam-level cursor witness.
+  The B1 PolyC component BootstrapScanIdent, on the
+  exact 6-input reviewer matrix, produces a
+  (start, end, cur_strlen, next_byte) tuple byte-for-byte
+  identical to the independent C reference oracle.
+  See cursor-direct-witness.txt.
+
+Both pillars are required to claim cursor-binding
+equivalence at C2. The original cursor-equivalence.txt
+over-claimed by attributing cursor equivalence to object
+parity; this is corrected by adding pillar B.

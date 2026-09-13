@@ -1,19 +1,32 @@
 ACT-POLYC-BOOTSTRAP02 — C2 — cursor-equivalence
+(pillar A: end-to-end conservation)
 ================================================
 
-The reviewer's binding C2 acceptance condition:
+ACT-POLYC-BOOTSTRAP02-C2-CORRECTION01 reclassified this
+file as PILLAR A only (end-to-end conservation). The
+direct seam-level cursor witness is in cursor-direct-
+witness.txt as PILLAR B.
 
-  start points at the first identifier byte
-  end points one byte past the final identifier byte
-  l->cur_strlen == end - start
-  next lexCore read observes exactly the byte the old
-    lexRewindChar path would have exposed
-  EOF/NUL case preserves the old no-rewind behavior
+This pillar covers the OBJECT-EMISSION PARITY between
+stage0 and stage1 on real production sources. It is the
+strongest cheap observable available; it supports
+conservation of compile result. It does NOT directly
+support cursor equivalence (see cursor-direct-witness.txt
+for the direct seam-level evidence).
 
-is verified by the strongest available differential:
-byte-identical object emission between stage0 and stage1
-on real production sources (those the new code path will
-actually encounter at compile time).
+The reviewer's binding C2 acceptance condition is split
+across the two pillars:
+
+  start points at the first identifier byte        (B)
+  end points one byte past the final identifier    (B)
+  l->cur_strlen == end - start                     (B)
+  next lexCore read observes exactly the byte
+    the old lexRewindChar path would have exposed   (B)
+  EOF/NUL case preserves the old no-rewind behavior (B)
+  full compile pipeline produces identical objects  (A)
+
+Pillar A below establishes the last row. The other four
+rows are established by pillar B.
 
 Command transcript (verbatim)
 ------------------------------
@@ -59,27 +72,31 @@ The five sources below exercise:
   BYTE-IDENTICAL
 
 Mechanically: when both compilers produce byte-identical
-object code on a source that contains `$`-bearing
-identifiers, the lexer must have observed the same byte
-sequence and built the same token stream — otherwise the
-downstream parser/AST/codegen would emit different objects.
+object code on a source, the linked compiler binary's
+output is identical. Object parity is end-to-end
+conservation evidence of the highest cheap observable.
+It does NOT logically imply that the intermediate
+lex/paser/AST states are identical; different intermediate
+states can, in principle, converge to identical machine
+code. This pillar therefore claims ONLY object-emission
+parity. Direct cursor-binding equivalence is established
+by pillar B (see cursor-direct-witness.txt).
 
-Verdict
--------
+Verdict (pillar A only)
+-----------------------
 
-  CURSOR_BINDING_CONTRACT        = PASS
-  PRODUCTION_EOF_NUL_BEHAVIOR    = PASS (byte-identical objects)
-  PRODUCTION_REWIND_BEHAVIOR     = PASS (byte-identical objects)
-  PRODUCTION_NONZERO_CURSOR      = PASS (run_shared.HC has identifiers
-                                         at non-zero column offsets)
-  PRODUCTION_DOLLAR_CONTINUATION = PASS (dir.HC has _opendir$INODE64,
-                                         fzf.HC has $-bearing identifiers)
-  PRODUCTION_LONG_IDENTIFIERS    = PASS (60-char identifiers in I11 also
-                                         covered by real sources)
+  END_TO_END_CONSERVATION        = PASS  5/5 byte-identical
   STAGE0_STAGE1_OBJECT_PARITY    = 5/5 byte-identical on real sources
+  COVERAGE_DOLLAR_CONTINUATION   = YES  (dir.HC has _opendir$INODE64,
+                                         fzf.HC has $-bearing identifiers)
+  COVERAGE_NONZERO_CURSOR        = YES  (run_shared.HC has identifiers
+                                         at non-zero column offsets)
+  COVERAGE_LONG_IDENTIFIERS      = YES  (real sources have 10-60 char idents)
+  COVERAGE_EOF_ADJACENT          = YES  (last identifier in source)
 
-The C3 EVIDENCE phase can further extend this matrix
-(additionally compare identical token dumps if available,
-or expand the production-source corpus), but the C2-level
-acceptance is met: the cursor binding is byte-equivalent
-to the legacy path on every observable production scenario.
+  CURSOR_BINDING_CONTRACT        = NOT_CLAIMED_HERE  (see pillar B)
+  PRODUCTION_EOF_NUL_BEHAVIOR    = NOT_CLAIMED_HERE  (see pillar B)
+  PRODUCTION_REWIND_BEHAVIOR     = NOT_CLAIMED_HERE  (see pillar B)
+
+The combined pillar A + pillar B evidence unlocks C3
+EVIDENCE per ACT-POLYC-BOOTSTRAP02-C2-CORRECTION01.

@@ -23,11 +23,26 @@ C2_IMPL_LEXER_DELEGATION         PASS
    mechanically established (see cursor-equivalence.txt).
    Legacy path preserved under #else for the production build.
 
-C2_IMPL_NO_LEGACY_RUNTIME        PASS
-   The lexIdentifier function does NOT contain a runtime
-   branch. The #ifdef is a build-time selection between
-   two binary artifacts, not a runtime fallback within
-   one binary.
+C2_IMPL_NO_LEGACY_RUNTIME        PASS   (legacy predicate; superseded)
+C2_STAGE1_NO_RUNTIME_FALLBACK    PASS   (corrected predicate;
+                                          per ACT-POLYC-BOOTSTRAP02-
+                                          C2-CORRECTION01 §2)
+   The hcc-bootstrap02 binary's preprocessed
+   lexIdentifier body contains ONLY the BootstrapScanIdent
+   delegation. No runtime branch, no fallback path.
+   Within the stage1 translation unit, the legacy
+   ctype code is absent.
+
+C2_STAGE1_BUILD_TIME_SELECTOR_OK PASS   (corrected predicate)
+   A build-time `#ifdef HCC_BOOTSTRAP02_STAGE1` is
+   permitted solely to produce stage separation
+   between ./hcc (stage0) and build/hcc-bootstrap02
+   (stage1). Both artifacts are physically distinct
+   programs; the #ifdef is not a runtime branch.
+
+ACT_§14_CORRECTED_NO_RUNTIME_FALLBACK = PASS
+ACT_§14_CORRECTED_BUILD_TIME_OK       = PASS
+C2_SCOPE_CONTRACT                     = COMPLIANT
 
 C2_IMPL_NO_CTYPE                 PASS
    grep -c ctype tools/bootstrap/bootstrap02-ident.HC -> 0
@@ -133,7 +148,7 @@ C2_OUT_OF_SCOPE_WORK             NONE
 C2_RESIDUE                       NONE at C2 close.
 
 ------------------------------------------------------------
-C2 verdict
+C2 verdict (superseded by Section J — corrected verdict)
 ------------------------------------------------------------
 
   ACT-Phase                        = IMPL
@@ -142,3 +157,51 @@ C2 verdict
   HALT_B1_DELEGATION_FAIL          = NOT_FIRED
   HALT_B0_REGRESSION               = NOT_FIRED
   HALT_SCOPE_EXPANSION_REQUIRED    = NOT_FIRED
+
+------------------------------------------------------------
+Section H — Pillar-B direct cursor witness
+(per ACT-POLYC-BOOTSTRAP02-C2-CORRECTION01 §3, §5)
+------------------------------------------------------------
+
+C2_PILLAR_B_CURSOR_WITNESS       PASS
+   Two independent programs run the exact 6-input matrix
+   the reviewer specified and emit per-input
+   (start, end, cur_strlen, next_byte) tuples.
+   See cursor-direct-witness.txt.
+
+C2_PILLAR_B_FIXTURES             6
+C2_PILLAR_B_PASS                 6
+C2_PILLAR_B_FAIL                 0
+
+C2_PILLAR_B_EOF_NUL_BEHAVIOR     PASS   (E4: src=abc, end=3, next=NUL)
+C2_PILLAR_B_REWIND_EQUIVALENCE   PASS   (E1-E3, E5, E6: rewound to non-id byte)
+C2_PILLAR_B_NONZERO_CURSOR       PASS   (E5: start=2, end=5)
+C2_PILLAR_B_DOLLAR_CONTINUATION  PASS   (E6: abc$def -> end=7)
+
+------------------------------------------------------------
+Section I — Combined two-pillar cursor verdict
+------------------------------------------------------------
+
+END_TO_END_CONSERVATION          PASS   (5/5 real sources; pillar A)
+DIRECT_CURSOR_WITNESS            PASS   (6/6 reviewer matrix; pillar B)
+BOTH_PILLARS                     PASS   (C3 unlocked)
+
+------------------------------------------------------------
+Section J — C2 verdict (post-correction)
+------------------------------------------------------------
+
+  ACT-Phase                        = IMPL
+  C2_IMPL_TO_C3_EVIDENCE_GATE      = OPEN
+  HALT_B1_ABI_PROBE_FAILED         = NOT_FIRED
+  HALT_B1_DELEGATION_FAIL          = NOT_FIRED
+  HALT_B0_REGRESSION               = NOT_FIRED
+  HALT_SCOPE_EXPANSION_REQUIRED    = NOT_FIRED
+  HALT_C2_CURSOR_WITNESS_INSUFFICIENT = NOT_FIRED
+
+  Authoritative corrected C2 verdict (binding):
+    ACT-Verdict                     = PASS_WITH_CORRECTION_RESIDUE
+    C2_SCOPE_CONTRACT               = COMPLIANT (post-correction)
+    B1_COMPONENT_IMPLEMENTED        = YES
+    STAGE1_BINARY_EXISTS            = YES
+    STAGE1_DELEGATES_TO_POLYC       = YES
+    STAGE0_PRODUCTION_PATH_PRESERVED = YES
