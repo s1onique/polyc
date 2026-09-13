@@ -1,0 +1,173 @@
+ACT-POLYC-BOOTSTRAP02-C2-CORRECTION02 — C4 CLOSE —
+closure summary
+==================================================
+
+VERDICT
+-------
+ACT-Verdict                          = PASS_WITH_RESIDUE
+
+IDENTITY
+--------
+Entry HEAD:  d3c87062237a4056fa7bf875c4cb10a373951921
+             (end of ACT-POLYC-BOOTSTRAP02-C2-CORRECTION01)
+Final HEAD:  <this-close-commit>
+Working tree at close: clean
+Branch:      main
+git replace -l at close: empty
+APPEND_ONLY_START_POINT (baf5dbd7...): not violated
+
+ROOT CAUSE / FINDING
+--------------------
+A re-reviewer audit of the C2-CORRECTION01 trail
+identified two bounded defects:
+
+  P2 — PILLAR_B labels over-claim: the existing
+       pillar-B harness (BootstrapScanIdent + C
+       reference oracle) does NOT exercise the
+       production cursor seam. Calling it a "direct
+       seam-level cursor witness" was over-claimed.
+
+  P3 — Stale Section E of c2/required-result.txt
+       still asserted C2_CURSOR_BINDING PASS / EOF /
+       lexRewind equivalence from pillar A alone,
+       contradicting the corrected Section J.
+
+Both defects are repaired in this ACT without any
+production source mutation, without any B1/B0
+component mutation, and without any build-system
+behavioural change.
+RED
+---
+C1 RED packet at
+evidence/ACT-POLYC-BOOTSTRAP02-C2-CORRECTION02/c1/:
+  README.md
+  defect-pillar-b-over-claim.txt
+  defect-stale-section-e.txt
+  corrected-pillar-b-wording.txt
+  corrected-section-e-wording.txt
+  required-result.txt
+
+Captures the verbatim over-claim, the verbatim stale
+Section E, and the corrected three-pillar taxonomy.
+
+IMPLEMENTATION
+--------------
+C2 IMPL trail (commits 9d27de4, 63a9324):
+
+  9d27de4 — C1 RED: open the correction ACT; record
+            P2/P3 defects.
+
+  63a9324 — C2 IMPL:
+              a. PILLAR_B_PRIME_PRODUCTION_LEXER_
+                 CURSOR_SEAM harness
+                 (tools/quality/bootstrap02-lexer-
+                 seam-{fixture.h,runner.c});
+              b. make bootstrap02-lexer-seam-test
+                 target with residue-aware verdict;
+              c. lexer-seam-direct-witness.txt with
+                 verbatim 6-input outputs from both
+                 builds (legacy vs stage1) and the
+                 field-by-field differential analysis;
+              d. cursor-direct-witness.txt relabelled
+                 as PILLAR_B_COMPONENT_CURSOR_MODEL;
+              e. c2/required-result.txt Section E
+                 reclassified (SUPERSEDED_BY_PILLAR_B_
+                 PRIME / NOT_CLAIMED_FROM_PILLAR_A);
+              f. New Section E' establishes the
+                 three-pillar taxonomy.
+
+Two commits, each a small truthful proof step.
+
+GATES
+-----
+All gates PASS at C3 entry (commit 52b2392 captures
+the verbatim transcripts):
+
+  make bootstrap01-test               PASS  15/15
+  make bootstrap02-test               PASS  15/15 byte-identical
+  make bootstrap02-cursor-test        PASS  6/6 byte-identical
+  make bootstrap02-stage1             PASS
+  make bootstrap02-lexer-seam-test    PASS  (5/6 + documented
+                                                  residue)
+  stage0 vs stage1 byte-equality      PASS  5/5 real sources
+  production hermetic build           PASS
+  gate-fast                           PASS
+  factory-v2                          PASS  35/35
+  factory-halt-classification         PASS  12/12
+  factory-append-only                 PASS  11/11
+  shell-loc-gate                      PASS
+  factory-closure-status              PASS
+
+Cardinality-1 invariant verified:
+
+  git log --all-match --oneline \
+      --grep='^ACT: ACT-POLYC-BOOTSTRAP02-C2-CORRECTION02$' \
+      --grep='^ACT-Phase: CLOSE$'
+
+  returns exactly 1 commit (this commit).
+
+SCOPE
+-----
+Production-source mutation:           NONE
+B1 component mutation:                NONE
+B0 component mutation:                NONE
+Build-system behavioural change:      NONE
+Authorization scope expanded:         NONE
+
+RESIDUE (forwarded to follow-up ACTs)
+-------------------------------------
+R1 — l->start_after divergence (benign):
+       The B1 path never sets l->start; legacy
+       sets it via lexNextChar. No consumer reads
+       l->start between lexIdentifier and the
+       next lexNextChar (verified by grepping all
+       production sources for l->start reads after
+       line 960 of src/lexer.c).
+       Tracked for future cursor-cleanup ACT.
+
+R2 — l->ptr_after divergence at EOF (latent):
+       B1 path advances l->ptr past the EOF NUL;
+       legacy leaves it AT the NUL. The next
+       lexNextChar after stage1 EOF reads whatever
+       is past the NUL (garbage in tests, a real
+       char in real sources).
+       lexCore's case '\0': return 0 handles EOF
+       without further recursion, so current
+       callers don't read past EOF.
+       Tracked for future EOF-cleanup ACT.
+
+R3 — Pre-existing PUSH_RESIDUE GEP01_D1_D2 —
+       unchanged from predecessor.
+
+NEXT ACT
+--------
+After this correction ACT closes, ACT-POLYC-BOOTSTRAP02
+C3 EVIDENCE may proceed. The corrected three-pillar
+cursor evidence fully unlocks the C2 -> C3 transition:
+
+  - PILLAR_A_OBJECT_PARITY              PASS 5/5
+  - PILLAR_B_COMPONENT_CURSOR_MODEL     PASS 6/6
+  - PILLAR_B_PRIME_PRODUCTION_LEXER     PASS 5/6 (E4 EOF
+                                         residue is benign
+                                         + latent)
+
+The original ACT-POLYC-BOOTSTRAP02 C3 EVIDENCE
+should:
+  - Extend the production-source corpus (e.g. compile
+    every .HC file in src/holyc-lib/ and src/tests/
+    with both stage0 and stage1; capture byte-parity
+    diff).
+  - If a token-dump seam exists in the production
+    lexer, capture identical-token-stream diffs.
+  - Consolidate all gates into the C3 required-result
+    block per ACT §15.
+  - Open C4 CLOSE for ACT-POLYC-BOOTSTRAP02.
+
+A separate follow-up ACT (out of scope here) is
+warranted to:
+  - Make the B1 path maintain the l->start invariant.
+  - Reconcile the B1 EOF cursor model with the legacy
+    model (decide: does stage1 keep the +1 advance, or
+    does it learn to leave l->ptr at the NUL?).
+
+No SHA-of-self claims (DOCTRINE.md §22).

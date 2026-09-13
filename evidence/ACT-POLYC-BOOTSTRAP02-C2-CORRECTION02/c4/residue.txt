@@ -1,0 +1,64 @@
+ACT-POLYC-BOOTSTRAP02-C2-CORRECTION02 — C4 CLOSE —
+residue
+==================================================
+
+This ACT closes with the following residue:
+
+R1 — l->start_after divergence (P1, BENIGN)
+   For all 6 reviewer inputs, the production B1
+   path (src/lexer.c:911-939) leaves l->start at
+   the value set by lexCore's first lexNextChar,
+   whereas the legacy path sets l->start to the
+   next non-identifier byte via its loop's
+   lexNextChar.
+
+   Verified observation: no consumer reads
+   l->start between lexIdentifier returning and
+   the next lexNextChar call (verified by grepping
+   src/lexer.c lines 960-1557, src/parser.c,
+   src/cctrl.c). So the divergence is invisible to
+   all current production code paths.
+
+   Tracked for a future cursor-cleanup ACT.
+   NOT a blocker for the parent ACT-POLYC-BOOTSTRAP02
+   C2 -> C3 transition.
+
+R2 — l->ptr_after divergence at EOF (P1, LATENT)
+   For input "abc" (E4), the legacy path leaves
+   l->ptr at offset 3 (the EOF NUL), while the B1
+   path advances to offset 4 (one past the NUL).
+   This is the documented behavior of the B1 path:
+   src/lexer.c:932-934 says "if (end_off >= src_len
+   || *final_ptr == '\0') l->ptr = final_ptr + 1".
+
+   The next lexNextChar after stage1 EOF would
+   read src[4]. For the HARNESS's zero-padded
+   buffer this is NUL (returns 0 = EOF correctly).
+   For real production AoStr buffers, src[4] is
+   whatever follows the EOF marker.
+
+   lexCore's case '\0': return 0 handles EOF
+   without further recursion (line 1243). All
+   current callers (lexInclude, cctrl, parseExpr)
+   handle rc=0 from lex() without invoking another
+   lex(). So the latent bug does not currently bite.
+
+   Tracked for a future EOF-cleanup ACT.
+   NOT a blocker for the parent ACT-POLYC-BOOTSTRAP02
+   C2 -> C3 transition.
+
+R3 — Pre-existing PUSH_RESIDUE GEP01_D1_D2
+   Unchanged from predecessor ACTs. Documented in
+   the ACT-POLYC-FACTORY-HISTORICAL-EXCEPTIONS-
+   REGISTRY01. Not in scope of this correction.
+
+R4 — INFORMATIONAL
+   The factory-v2 test reports VERDICT=PASS_WITH_
+   NONBLOCKING_RESIDUE. This reflects pre-existing
+   residue carried by the C1-CORRECTION01
+   predecessor and is not introduced by this
+   correction.
+
+No further governance correction is warranted
+before ACT-POLYC-BOOTSTRAP02 C3 EVIDENCE may
+proceed.
