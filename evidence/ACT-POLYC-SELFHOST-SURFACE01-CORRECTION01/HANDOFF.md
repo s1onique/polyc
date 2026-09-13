@@ -242,3 +242,71 @@ directive without another authorization halt, stopping
 only if a declared halt condition fires.
 
 NEXT ACT (post-CLOSE of this ACT): ACT-POLYC-SELFHOST-LEXER01
+
+==========================================================
+C2.1 IMPL (commit c6ff985)
+==========================================================
+
+VERDICT (C2.1): IMPL SUBSTANTIAL; REMAINING C2.x/C3/C4 RESIDUE.
+
+Landed in C2.1:
+
+  * F-NO-PYTHON doctrine (DOCTRINE.md §26)
+  * F-POLYC-TOOLS doctrine (DOCTRINE.md §27)
+  * AGENTS.md pointer
+  * PolyC authoritative checker
+    tools/factory/factory-no-python-check.HC (240 LOC)
+    + 27-LOC shell wrapper
+    scripts/quality/factory-no-python-check.sh
+  * Legacy baseline docs/factory/LEGACY-NON-POLYC-TOOLS.tsv
+    (40 rows)
+  * Makefile recipe injection hardening
+    (F2 SAFETY defect from predecessor C2 IMPL)
+  * Argument validation in selfhost-component.sh
+
+Mechanically demonstrated:
+
+  * PolyC checker builds and runs on this tree.
+  * PolyC checker fails CLOSED on 123 current Python
+    violations.
+  * COMPONENT/STAGE shell-metachar injection is rejected
+    with rc=2 and no sentinel created.
+
+Remaining residue (bounded follow-on subcommits in this
+same ACT; per the user's directive "do not halt again
+after every migration subcommit"):
+
+  C2.2  selfhost-component-registry.py + .sh + .test.sh
+        -> PolyC
+  C2.3  factory-halt-classification.py -> PolyC
+  C2.4  llvm-cap-table-verifier.py -> PolyC
+  C2.5  bootstrap02/03/04-corpus-runner.py
+        -> consolidated bootstrap-corpus-runner.HC
+  C2.6  bootstrap02/03/04-error-corpus.py
+        -> consolidated bootstrap-error-corpus.HC
+  C2.7  inline python3 -c blocks (2x identical) ->
+        shell helper or PolyC primitive
+  C2.8  full caller rewiring + Python deletion
+  C2.9  shell-loc-gate baseline.txt update + Makefile
+        wiring of factory-no-python-check + policy
+        checker wiring of factory-polyc-tools-check
+  C3    EVIDENCE: fresh-tree Python-less re-proof
+  C4    CLOSE: single commit with corrected-verdict
+        trailers (ACT-Corrected-Verdict:
+        HALT_SHELL_BUDGET_NOT_SATISFIED;
+        HALT_CLASS: PRODUCTION; BLOCKS_NEXT: YES)
+
+IDENTITY (C2.1)
+================
+
+  Branch:        main
+  C1 RED:        47ea352
+  C1.1:          c5e2e89
+  C2.1:          c6ff985
+  HANDOFF:       this file (committed at C1.1; C2.1
+                appended here for narrative continuity)
+  HEAD:          c6ff985
+
+NO PRODUCTION SEMANTIC MUTATION.
+NO NEW BOOTSTRAP STAGE.
+NO COMPILER LEXER/PARSER/AST/IR/BACKEND CHANGE.
