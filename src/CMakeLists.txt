@@ -176,6 +176,65 @@ endif()
 
 add_executable(hcc ${SOURCES} ${HEADERS})
 
+# ACT-POLYC-BOOTSTRAP02 C2 IMPL — opt-in stage1 build that
+# links the B1 PolyC component (BootstrapScanIdent) into a
+# SEPARATE binary (hcc-bootstrap02) which uses the modified
+# src/lexer.c::lexIdentifier delegation. The default `./hcc`
+# build is UNCHANGED: src/lexer.c references
+# BootstrapScanIdent unconditionally, but the production
+# default build does not provide it; the opt-in flag is the
+# explicit way to build the stage1 binary.
+#
+# Why an opt-in option (not a default):
+#   - the production `./hcc` build must continue to build
+#     without requiring tools/bootstrap/bootstrap02-ident.HC
+#     to have been pre-compiled by stage0 hcc;
+#   - this keeps the standard `make all` flow hermetic;
+#   - the B1 component requires a SEPARATE stage0 hcc
+#     compile pass (because BootstrapScanIdent is the very
+#     component we are trying to validate).
+#
+# To build the stage1 binary:
+#
+#   ./hcc --install-dir=<prefix> -c \
+#       ../tools/bootstrap/bootstrap02-ident.HC \
+#       -o build/bootstrap02-ident.o
+#
+#   cmake -S ./src -B ./build-stage1 \
+#       -DHCC_ENABLE_BOOTSTRAP02_STAGE1=ON \
+#       -DBOOTSTRAP02_IDENT_OBJECT=<abs-path>/build/bootstrap02-ident.o \
+#       ...
+#   make -C ./build-stage1 hcc-bootstrap02
+#
+# Defaults: OFF (production binary builds as before).
+option(HCC_ENABLE_BOOTSTRAP02_STAGE1
+       "Link the B1 PolyC component (BootstrapScanIdent) into a separate stage1 binary (hcc-bootstrap02). ACT-POLYC-BOOTSTRAP02."
+       OFF)
+
+if (HCC_ENABLE_BOOTSTRAP02_STAGE1)
+    if (NOT BOOTSTRAP02_IDENT_OBJECT)
+        message(FATAL_ERROR
+            "HCC_ENABLE_BOOTSTRAP02_STAGE1=ON but BOOTSTRAP02_IDENT_OBJECT is not set. "
+            "Pass -DBOOTSTRAP02_IDENT_OBJECT=<abs-path>/build/bootstrap02-ident.o "
+            "produced by: ./hcc -c tools/bootstrap/bootstrap02-ident.HC -o build/bootstrap02-ident.o")
+    endif()
+    if (NOT EXISTS "${BOOTSTRAP02_IDENT_OBJECT}")
+        message(FATAL_ERROR
+            "HCC_ENABLE_BOOTSTRAP02_STAGE1=ON but BOOTSTRAP02_IDENT_OBJECT=${BOOTSTRAP02_IDENT_OBJECT} "
+            "does not exist. Build it first with stage0 hcc.")
+    endif()
+    # The B1 object is consumed at link time only; we build a
+    # SEPARATE executable so the production `./hcc` binary
+    # tree remains a stage0 reference (no mutation).
+    add_executable(hcc-bootstrap02 ${SOURCES} ${HEADERS})
+    target_compile_definitions(hcc-bootstrap02 PRIVATE HCC_BOOTSTRAP02_STAGE1)
+    if (HCC_ENABLE_JIT)
+        target_link_libraries(hcc-bootstrap02 tasm ${CMAKE_DL_LIBS})
+    endif()
+    target_link_libraries(hcc-bootstrap02 ${BOOTSTRAP02_IDENT_OBJECT} m)
+    install(TARGETS hcc-bootstrap02 DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+endif()
+
 if (HCC_ENABLE_JIT)
     target_compile_definitions(hcc PRIVATE HCC_ENABLE_JIT)
     target_link_libraries(hcc tasm ${CMAKE_DL_LIBS})

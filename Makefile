@@ -12,7 +12,7 @@ HCC_ENABLE_LLVM ?= OFF
 
 default: all
 
-.PHONY: all gate-fast gate-push install-hooks llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap01-test bootstrap01-oracle
+.PHONY: all gate-fast gate-push install-hooks llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1
 
 # To add sqlite3 support add -DHCC_LINK_SQLITE3=1 to the below like so:
 #```
@@ -274,3 +274,86 @@ bootstrap01-test: bootstrap01-oracle test-prefix-install
 	@rc=$$?; \
 	echo "BOOTSTRAP01_REFERENCE_ORACLE=./build/bootstrap01-lexer-oracle"; \
 	exit $$rc
+
+# ACT-POLYC-BOOTSTRAP02 C2 IMPL — B1 stage0 component build.
+# Compiles the B1 PolyC component (tools/bootstrap/bootstrap02-ident.HC)
+# to build/bootstrap02-ident.o using the existing stage0 ./hcc.
+# This is the REAL production seam witness for the B1 component.
+bootstrap02-component-build: test-prefix-install
+	./hcc --install-dir=$(TEST_PREFIX) \
+		-c tools/bootstrap/bootstrap02-ident.HC \
+		-o ./build/bootstrap02-ident.o
+	@if [ ! -f ./build/bootstrap02-ident.o ]; then \
+		echo "bootstrap02-component-build: ./build/bootstrap02-ident.o not produced" >&2; \
+		exit 1; \
+	fi
+	@nm ./build/bootstrap02-ident.o | grep -q '_BootstrapScanIdent' \
+		|| { echo "bootstrap02-component-build: symbol _BootstrapScanIdent not found in object" >&2; exit 1; }
+
+# ACT-POLYC-BOOTSTRAP02 C2 IMPL — B1 reference oracle.
+# Independent C99 implementation of the same identifier-span
+# algorithm. Used as the reference oracle for the differential.
+bootstrap02-oracle:
+	cc -std=c99 -O2 -Wall -Wextra -o ./build/bootstrap02-ident-oracle \
+		tools/quality/bootstrap02-ident-oracle.c
+	@if [ ! -x ./build/bootstrap02-ident-oracle ]; then \
+		echo "bootstrap02-oracle: ./build/bootstrap02-ident-oracle not produced" >&2; \
+		exit 1; \
+	fi
+
+# ACT-POLYC-BOOTSTRAP02 C2 IMPL — B1 differential driver.
+# Builds the stage0 B1 component, the C oracle, and the host
+# harness, then runs both and diffs their outputs (modulo
+# the summary label lines). 15/15 differential PASS required.
+bootstrap02-test: bootstrap02-component-build bootstrap02-oracle
+	cc -std=c99 -O2 -Wall -Wextra -o ./build/bootstrap02-ident-host \
+		tools/quality/bootstrap02-ident-host.c ./build/bootstrap02-ident.o
+	@if [ ! -x ./build/bootstrap02-ident-host ]; then \
+		echo "bootstrap02-test: ./build/bootstrap02-ident-host not produced" >&2; \
+		exit 1; \
+	fi
+	./build/bootstrap02-ident-oracle > /tmp/b02-oracle.txt
+	./build/bootstrap02-ident-host   > /tmp/b02-host.txt
+	@diff /tmp/b02-oracle.txt /tmp/b02-host.txt > /tmp/b02-diff.txt; \
+		rc=$$?; \
+		if [ $$rc -ne 0 ] && [ $$rc -ne 1 ]; then \
+			echo "bootstrap02-test: diff failed unexpectedly (rc=$$rc)" >&2; \
+			cat /tmp/b02-diff.txt >&2; \
+			exit 1; \
+		fi; \
+		# Filter only the per-fixture lines; the summary labels are intentionally different \
+		grep -E '^I[0-9]+ ' /tmp/b02-oracle.txt > /tmp/b02-oracle-fixtures.txt; \
+		grep -E '^I[0-9]+ ' /tmp/b02-host.txt   > /tmp/b02-host-fixtures.txt; \
+		if ! diff -q /tmp/b02-oracle-fixtures.txt /tmp/b02-host-fixtures.txt >/dev/null; then \
+			echo "bootstrap02-test: differential FAILED (fixture lines differ)" >&2; \
+			diff /tmp/b02-oracle-fixtures.txt /tmp/b02-host-fixtures.txt >&2; \
+			exit 1; \
+		fi; \
+		echo "BOOTSTRAP02_REFERENCE_ORACLE=./build/bootstrap02-ident-oracle"; \
+		echo "BOOTSTRAP02_POLYC_OBJECT=./build/bootstrap02-ident.o"; \
+		echo "BOOTSTRAP02_DIFFERENTIAL=PASS 15/15"
+
+# ACT-POLYC-BOOTSTRAP02 C2 IMPL — Stage1 binary build.
+# Produces build/hcc-bootstrap02 by linking the B1 object
+# into the modified hcc source tree (with HCC_ENABLE_BOOTSTRAP02_STAGE1=ON).
+# The production ./hcc binary is NOT touched; this is a
+# separate stage1 artifact.
+bootstrap02-stage1: bootstrap02-component-build test-prefix-install
+	@rm -rf ./build/hcc-bootstrap02-build
+	@mkdir -p ./build/hcc-bootstrap02-build
+	cmake -S ./src -B ./build/hcc-bootstrap02-build -G 'Unix Makefiles' \
+		-DCMAKE_C_COMPILER=$(C_COMPILER) \
+		-DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
+		-DCMAKE_C_FLAGS=$(CFLAGS) \
+		-DHCC_ENABLE_JIT=on \
+		-DHCC_ENABLE_LLVM=OFF \
+		-DHCC_ENABLE_BOOTSTRAP02_STAGE1=ON \
+		-DBOOTSTRAP02_IDENT_OBJECT=$(CURDIR)/build/bootstrap02-ident.o
+	$(MAKE) -C ./build/hcc-bootstrap02-build hcc-bootstrap02 -j2
+	@if [ ! -x ./build/hcc-bootstrap02 ]; then \
+		echo "bootstrap02-stage1: ./build/hcc-bootstrap02 not produced" >&2; \
+		exit 1; \
+	fi
+	@nm ./build/hcc-bootstrap02 | grep -q '_BootstrapScanIdent' \
+		|| { echo "bootstrap02-stage1: symbol _BootstrapScanIdent not found in linked binary" >&2; exit 1; }
+	@echo "BOOTSTRAP02_STAGE1_BINARY=./build/hcc-bootstrap02"
