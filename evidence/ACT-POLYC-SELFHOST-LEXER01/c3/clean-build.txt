@@ -1,0 +1,33 @@
+ACT-POLYC-SELFHOST-LEXER01 — C3 — clean-build proof
+===================================================
+
+Fresh-tree build of stage1 (hcc-bootstrap02) from a clean
+build directory; verify that the new operator classifier
+component lands and produces byte-identical output for
+src/holyc-lib/all.HC vs the B3 corpus baseline.
+
+```text
+$ cd build/hcc-bootstrap02-clean2 && make clean
+$ make hcc-bootstrap02 -j4
+[ 97%] Building C object CMakeFiles/hcc-bootstrap02.dir/linenoise/linenoise.c.o
+[100%] Linking C executable /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/hcc-bootstrap02
+[100%] Built target hcc-bootstrap02
+```
+
+```text
+$ build/hcc-bootstrap02 --install-dir=$(pwd)/build/test-prefix \
+    -c src/holyc-lib/all.HC -o build/all-clean-build.o
+(clean-tree stage1 binary)
+
+$ shasum -a 256 build/all-clean-build.o build/b04-corpus-A/0_all.o
+2dda65210bd70f48c9087bf171811e54018a131edf738a072432a4ac35993d63  build/all-clean-build.o
+2dda65210bd70f48c9087bf171811e54018a131edf738a072432a4ac35993d63  build/b04-corpus-A/0_all.o
+```
+
+```text
+CLEAN_BUILD_ALL_BYTE_IDENTICAL = PASS
+```
+
+The fresh-tree build is byte-identical to the B3 baseline.
+This satisfies F9 (fresh-tree evidence outranks warm-tree
+evidence).

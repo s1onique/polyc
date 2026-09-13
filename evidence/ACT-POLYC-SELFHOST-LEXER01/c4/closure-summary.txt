@@ -1,0 +1,72 @@
+ACT-POLYC-SELFHOST-LEXER01 — C4 — closure summary
+==================================================
+
+VERDICT:        PASS
+IDENTITY:       git rev-parse HEAD at commit time (see commit trailer)
+ROOT CAUSE:     The lexCore operator cases (=,<,>,+,-,!,&,|,*,%,^,\$,@,.,:,
+                ~,comma,brackets,braces,parens,semi,backslash,# in asm)
+                were pure classification logic with no host-specific
+                side effects. They were the highest-scoring eligible
+                slice in the C1 ownership map and presented a clean
+                single-byte cursor with bounded peek lookahead, suitable
+                for self-host migration under F7/F8/F15.
+RED:            C1 RED/RECON (47-fixture C oracle + 47-fixture C-vs-PolyC
+                differential + 33-fixture production seam + corpus).
+                All RED witnesses captured in evidence/ACT-POLYC-SELFHOST-
+                LEXER01/c1/.
+IMPLEMENTATION: tools/bootstrap/selfhost-lexer-operator-classify.HC (new
+                PolyC component, ~340 LOC, alloc-free, ASCII-only,
+                32 distinct token kinds, no global mutable state).
+                src/lexer.c: lexCore operator cases refactored to call
+                a thin wrapper lexClassifyOperator() that delegates
+                to BootstrapClassifyOperator in stage1+ and runs the
+                legacy C switch in stage0. Build-time selection only,
+                no runtime fallback. The legacy macro HCC_BOOTSTRAP02_
+                STAGE1 is normalized to HCC_USE_SELFHOST_COMPONENTS at
+                the source level so the macro does not require
+                translation by every caller.
+GATES:          175/175 byte-identical across stage0/stage1/stage2.
+                33/33 OP_SEAM_PASS.
+                47/47 C-oracle PASS.
+                47/47 C-vs-PolyC differential PASS.
+                WINNER fixed point: N0==N1==N2==N3.
+                IDENTIFIER fixed point: N0==N1==N2 (preserved).
+                POLYC_TOOLS_TRACKED_PYTHON = 12 (unchanged from C1
+                baseline; no-Python campaign remains paused at C2.3
+                GREEN per ACT-POLYC-FACTORY-NO-PYTHON).
+                Formal Dafny: 17/17 verified (unchanged).
+SCOPE:          src/lexer.c (lexCore operator cases + new helper);
+                src/lexer_bridge.h (new BootstrapClassifyOperator
+                extern); src/CMakeLists.txt (stage1/2/3 link paths);
+                tools/bootstrap/selfhost-lexer-operator-classify.HC
+                (new PolyC subject, ~340 LOC);
+                tools/quality/bootstrap06-operator-classify-oracle.c
+                (47-fixture C oracle);
+                tools/quality/bootstrap06-direct-differential.c
+                (C-vs-PolyC differential, 47 fixtures);
+                tools/quality/bootstrap06-lexer-seam-runner.c
+                (33-fixture production seam runner);
+                Makefile (new bootstrap06-* targets + component
+                paths into stage1/2/3);
+                docs/factory/SELF-HOST-COMPONENTS.tsv (row 2 added
+                for the new component).
+                tools/selfhost/selfhost-component.HC (extended for
+                STAGE=3 support).
+RESIDUE:        P1: No-Python campaign remains paused at C2.3 GREEN
+                (12 grandfathered Python files); not in ACT scope.
+                P2: The lexClassifyOperator wrapper's `l->ptr = start
+                + length` advance is functionally equivalent to the
+                legacy lexNextChar sequence but is a synthetic advance
+                rather than a step-by-step one. A future ACT could
+                unify the two by having lexNextChar record its
+                pre-/post-state in a small struct; this is not in
+                scope here.
+                P2: The wrapper's `strlen(start)` for src_len is
+                adequate for the lexCore call sites (where start is
+                a pointer into the source buffer) but could be
+                tightened to use the lexer's known buffer bound.
+NEXT ACT:       ACT-POLYC-SELFHOST-LEXER01-CLOSED.
+                The next slice (countNumberLen, lexCharConst, lexNumeric,
+                or lexSkipCodeComment) should be opened in a successor
+                ACT (proposed id: ACT-POLYC-SELFHOST-LEXER02) after
+                this ACT's closure commit is recorded.
