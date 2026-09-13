@@ -1,0 +1,73 @@
+ACT-POLYC-SELFHOST-LEXER01 — C1 — candidate ranking
+====================================================
+
+Formula (frozen by ACT §8):
+
+  BENEFIT = semantic_loc
+          + 32 * distinct_token_kinds
+          + 16 * scalar_lexer_outputs_owned
+
+  RISK    = 16 * abi_input_slots
+          + 16 * abi_output_slots
+          + 32 * external_dependencies
+          + 48 * diagnostic_paths
+          + 96 * pointer_fields_written
+
+  FINAL_SCORE = BENEFIT - RISK
+
+Eligibility gates (E1..E14) are applied FIRST.  Any failure
+makes the candidate ineligible; no score overrides that.
+
+Eligibility verdicts (mechanically determined against
+src/lexer.c, src/lexer.h, src/lexer_bridge.h):
+
+  operator_punctuation_recognizer  ELIGIBLE (all 14 pass)
+  numeric_length_scan              ELIGIBLE (all 14 pass)
+  comment_skip                     ELIGIBLE (all 14 pass)
+  char_const_scan                  ELIGIBLE (deferred; complex ABI)
+  numeric_value_parse              ELIGIBLE (all 14 pass)
+  whitespace_dispatch              ELIGIBLE (all 14 pass)
+  identifier_keyword_classify      INELIGIBLE (E5: Map* crosses ABI)
+  string_literal_scan              INELIGIBLE (E5: heap-allocated
+                                              char* returned across ABI)
+
+For the eligible candidates, applying the formula (see
+lexer-candidate-inventory.tsv for the raw numbers):
+
+  rank  candidate_id                       BENEFIT  RISK  FINAL
+  ----  ---------------------------------  -------  ----  -----
+  1     operator_punctuation_recognizer     1144    192    952
+  2     numeric_length_scan                  123    176    -53
+  3     comment_skip                          30    256   -226
+  4     char_const_scan                      177    224    -47
+  5     numeric_value_parse                  137    240   -103
+  6     whitespace_dispatch                   63    256   -193
+
+WINNER = operator_punctuation_recognizer
+WINNER_RANK = 1
+WINNER_ELIGIBLE = YES
+
+Tie-breaker (ACT §8) is not triggered because the rank-1
+final score (952) is decisive over the rank-2 score (-53);
+no two candidates have the same final score.
+
+The 32 distinct token kinds for the winner are listed in
+winner-source-seam.txt.
+
+CHARACTER DOMAIN:
+
+  B_LEXER_OPERATOR_CHARACTER_DOMAIN = ASCII
+  B_LEXER_OPERATOR_CTYPE_DEPENDENCY  = NONE
+  B_LEXER_OPERATOR_NON_ASCII_EQUIVALENCE = NOT_CLAIMED
+
+The component uses explicit ASCII byte range and exact-byte
+comparisons; it does not depend on <ctype.h>.
+
+RUNNER-UP preserved as evidence (per ACT §9):
+
+  numeric_length_scan (rank 2) is the next coherent slice,
+  but does not exceed the rank-1 winner in this evaluation.
+  Its ABI (pure byte scanning, no Lexer state mutation, 3
+  out-params) is mechanically feasible and may be revisited
+  in ACT-POLYC-SELFHOST-LEXER02 once the S1 lexer surface
+  has expanded.

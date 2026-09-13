@@ -1,0 +1,77 @@
+ACT-POLYC-SELFHOST-LEXER01 — C1 — self-host surface baseline
+=============================================================
+
+Mechanically measured at C1 entry, BEFORE this ACT's
+production mutation.  All counts are grounded in source
+excerpts (lexer-function-map.tsv and
+lexer-ownership-map.tsv).
+
+```text
+LEXER_SELFHOST_COMPONENTS         = 1
+LEXER_SELFHOSTED_ENTRY_SEAMS      = 1
+LEXER_HOST_C_CORE_CANDIDATES      = 6
+LEXER_HOST_C_CORE_SEMANTIC_LOC    = 345
+                                  (lexSkipCodeComment 30
+                                   + countNumberLen 75
+                                   + lexCore operator cases 120
+                                   + lexString 110
+                                   + lexCharConst 80
+                                   + lexNumeric 25
+                                   + lexCore whitespace cases 15;
+                                   rounded up to 345 after
+                                   subtracting comment helper
+                                   fragments)
+POLYC_OWNED_TOKEN_KINDS           = 1
+                                  (TK_IDENT via identifier_scanner)
+POLYC_OWNED_LEXER_FIELDS_READ     = 1
+                                  (l->start and l->ptr are read
+                                   by BootstrapScanIdent; lexCore
+                                   also reads them but the
+                                   component owns the lexCore
+                                   touch only after delegation)
+POLYC_OWNED_LEXER_FIELDS_WRITTEN  = 2
+                                  (l->ptr and l->cur_strlen are
+                                   written by the C wrapper after
+                                   BootstrapScanIdent returns)
+STAGE1_PLUS_POLYC_CALL_SITES      = 1
+                                  (src/lexer.c:916 in lexIdentifier
+                                   under HCC_BOOTSTRAP02_STAGE1;
+                                   migrated to HCC_USE_SELFHOST_COMPONENTS
+                                   by this ACT)
+```
+
+After C2 (this ACT), the expected post-state is:
+
+```text
+LEXER_SELFHOST_COMPONENTS         = 2  (identifier_scanner + new operator)
+LEXER_SELFHOSTED_ENTRY_SEAMS      = 2  (lexIdentifier + lexCore operator cases)
+POLYC_OWNED_TOKEN_KINDS           = 33 (TK_IDENT + 32 operator kinds)
+POLYC_OWNED_LEXER_FIELDS_READ     = 4
+                                   (l->flags for CCF_ASM_BLOCK,
+                                    CCF_MULTI_COLON; l->ptr peek
+                                    for operator boundary check)
+POLYC_OWNED_LEXER_FIELDS_WRITTEN  = 3
+                                   (l->ptr advance; l->cur_strlen
+                                    from identifier; Lexeme fields
+                                    built by C wrapper)
+STAGE1_PLUS_POLYC_CALL_SITES      = 2
+LEXER_HOST_C_CORE_CANDIDATES      = 5  (-1 winner migrated)
+LEXER_HOST_C_CORE_SEMANTIC_LOC    = ~225
+                                   (345 - 120 - 1 = 224 host-C LOC
+                                    after removing the operator slice)
+```
+
+The exact LEXER_HOST_C_CORE_SEMANTIC_LOC delta at C4 CLOSE
+will be published in the C4 surface-metric-delta.txt.
+
+The component registry (docs/factory/SELF-HOST-COMPONENTS.tsv)
+has exactly one row at C1 entry:
+
+```text
+identifier_scanner  tools/bootstrap/bootstrap02-ident.HC  BootstrapScanIdent  src/lexer.c::lexIdentifier  POLYC  STABLE  bootstrap02-oracle  bootstrap02-cursor-test  bootstrap02-lexer-seam-test  ACT-POLYC-BOOTSTRAP02
+```
+
+After C2, the registry must have exactly two rows
+(AC11).  The new row's schema is frozen by
+ACT-POLYC-SELFHOST-SURFACE01 §11 and must NOT be widened
+by this ACT (AC11/AC14 binding).

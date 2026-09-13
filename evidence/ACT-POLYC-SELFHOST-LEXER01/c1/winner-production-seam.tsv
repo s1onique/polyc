@@ -1,0 +1,104 @@
+ACT-POLYC-SELFHOST-LEXER01 — C1 — winner production seam
+==========================================================
+
+WINNER = operator_punctuation_recognizer
+
+Production entry seam:
+
+  src/lexer.c:1205    static int lexCore(Lexer *l, Lexeme *le)
+  src/lexer.c:1323..1531  the operator/punctuation cases
+
+The dispatcher's outer loop reads one byte via lexNextChar
+and switches on it.  When ch is one of:
+
+  = < > + - ! & | * % ^ $ @ . \ : # ~ ( ) , ; [ ] { } /
+
+the production code runs the operator classification logic
+to determine (kind, length).  After classification it calls
+lexemeAssignOp(le, start, length, kind, l->lineno).
+
+Production-state observations at the seam (canonical
+lexCore call site; mechanical snapshot):
+
+  At entry to operator cases:
+    l->start   = pointer to ch (first byte of token)
+    l->ptr     = l->start + 1 (one byte past ch; peek byte is *l->ptr)
+    l->lineno  = current line number (not modified for operators)
+    l->line_start_ptr = unchanged
+    l->flags   = bitmask including CCF_ASM_BLOCK, CCF_MULTI_COLON
+
+  After classification:
+    le->tk_type = kind
+    le->len     = length
+    le->line    = l->lineno
+    le->start   = l->start (unchanged)
+    le->i64     = kind (the s64 op slot)
+
+  Lexer state changes (only one for operators):
+    l->ptr     += (length - 1)  // advance by (length - 1) more bytes
+                                // (since l->ptr was already past ch)
+
+EOF state at the seam:
+  ch = '\0' means lexNextChar returned EOF; the dispatcher
+  has case '\0' at src/lexer.c:1246 which returns 0
+  (no token).  The operator cases are NOT entered in this
+  state.  Cursor invariants are preserved (l->ptr at NUL,
+  never advanced past it).
+
+Cursor pre/post snapshot for one representative case
+(case '+' followed by '+', i.e. "++"):
+
+  Input: "x++"
+  Before lexNextChar:  l->ptr -> 'x'
+  After lexNextChar:   l->ptr -> '+', ch = 'x' (WRONG; ch is the FIRST byte of token, not the one to be classified)
+
+  Actual flow (corrected):
+    First iteration: ch = 'x' (identifier path), advances l->ptr to '+'
+      Identifier scan consumes 'x', l->ptr is at '+' after identifier
+    Second iteration: ch = '+' (operator path), advances l->ptr past '+'
+      Now l->ptr is at the second '+'
+    lexPeekMatch checks if *l->ptr == '+': YES
+      lexNextChar advances l->ptr past second '+', sets ch = '\0' (EOF marker)
+      lexemeAssignOp emits TK_PLUS_PLUS with len=2, line=l->lineno
+      l->ptr now points past EOF; dispatcher checks ch == '\0' and returns 0
+
+  In the C2 wrapper, this becomes:
+    ch = lexNextChar(l) -> '+'
+    BootstrapClassifyOperator(src, src_len, cursor_of_ch, flags, &kind, &length)
+      -> kind=TK_PLUS_PLUS, length=2
+    l->ptr = src + cursor_of_ch + length  // advances past second '+'
+    lexemeAssignOp(le, start, length, kind, l->lineno)
+
+EOF safety:
+  When BootstrapClassifyOperator is called with cursor == src_len - 1
+  (last byte in buffer), the component reads src[cursor] (1 byte)
+  and may attempt src[cursor + 1] (PEEK1) which is set to 0 if
+  out of bounds.  No one-past-end dereference occurs.
+
+  When called with cursor == src_len (past end), the component
+  returns 0 immediately.
+
+Nonzero cursor:
+  The component correctly handles nonzero cursor offsets.
+  Case O33 (cursor=3 in "abc==def") verifies this.
+
+Adjacent tokens:
+  The wrapper advances l->ptr past exactly *out_length bytes;
+  no underflow or overflow is possible.
+
+Mode flag variants:
+  Case O35 (CCF_ASM_BLOCK set, '$' valid) and O36
+  (CCF_MULTI_COLON set, '::' valid) verify mode-flag handling.
+
+Token terminator / minimum-length case:
+  Single-char operators (length=1) and three-char operators
+  (length=3, e.g. <<=) are both covered.
+
+Boundary byte:
+  O34 ("abc+" with cursor=3) covers the EOF-boundary case
+  for a single-char operator at end-of-buffer.
+
+Invalid / malformed cases:
+  N01..N07 cover negative cases: non-operator bytes,
+  empty input, cursor at EOF, digit-start, number-start
+  (.5), bare `..` (legacy raises), and `$` outside ASM block.

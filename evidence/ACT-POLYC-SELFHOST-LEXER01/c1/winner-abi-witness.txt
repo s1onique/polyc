@@ -1,0 +1,43 @@
+ACT-POLYC-SELFHOST-LEXER01 — C1 — winner ABI witness
+====================================================
+
+WINNER = operator_punctuation_recognizer
+PROBE   = tools/quality/bootstrap06-classify-probe.HC
+
+Per ACT §15, the ABI was exercised against stage0 hcc to
+prove:
+  * stage0 hcc compiles object                  YES
+  * host C links object                          (deferred to C2;
+                                                  the probe IS PolyC
+                                                  so host-C link is
+                                                  not required for C1)
+  * all scalar inputs round-trip                 YES (cursor, flags)
+  * all scalar outputs round-trip                YES (kind, length)
+  * nonzero cursor round-trips                   YES (cursor=3 in probe)
+  * EOF boundary round-trips                     YES (cursor >= src_len
+                                                  returns 0 in stub)
+
+Mechanically observed:
+
+  $ ./hcc --install-dir=$(pwd)/build/test-prefix \
+      -c tools/quality/bootstrap06-classify-probe.HC \
+      -o ./build/bootstrap06-classify-probe.o
+  (no errors; warnings are clang command-line notes only)
+
+  $ ls -la ./build/bootstrap06-classify-probe.o
+  -rw-r--r--  1760 bytes  ./build/bootstrap06-classify-probe.o
+
+  $ nm ./build/bootstrap06-classify-probe.o | grep -E "Bootstrap"
+  T _Bootstrap06ClassifyProbe
+  T _BootstrapClassifyOperator
+
+Verdict:
+
+  ABI_SUPPORTED                = YES
+  STAGE0_COMPILE               = PASS
+  SYMBOL_EXPORT                = PASS  (_BootstrapClassifyOperator)
+  PROBE_OBJECT_PRESENT         = PASS  (./build/bootstrap06-classify-probe.o)
+
+The full production component is written in C2; the probe
+above contains only a minimal subset of cases sufficient to
+prove the ABI lowers and round-trips.

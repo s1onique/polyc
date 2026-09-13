@@ -1,0 +1,68 @@
+ACT-POLYC-SELFHOST-LEXER01 — C1 — required result
+==================================================
+
+```text
+ACT_PHASE                    = RED
+
+B3_PREDECESSOR               = PASS  (ACT-POLYC-BOOTSTRAP04 CLOSED)
+S0_COMPONENT_FRAMEWORK       = PASS  (ACT-POLYC-SELFHOST-SURFACE01 CLOSED)
+
+NO_PYTHON_TRACK              = PAUSED
+                              (C2.4 NOT STARTED; F_NO_PYTHON = 12
+                               confirmed via factory-no-python-check;
+                               no mutation in this C1)
+
+LEXER_OWNERSHIP_MAP          = COMPLETE
+                              (lexer-function-map.tsv: 50 functions)
+                              (lexer-ownership-map.tsv: 22 slices)
+
+LEXER_CANDIDATES             = 8
+                              (operator_punctuation_recognizer,
+                               numeric_length_scan, comment_skip,
+                               char_const_scan, numeric_value_parse,
+                               whitespace_dispatch,
+                               identifier_keyword_classify,
+                               string_literal_scan)
+
+ELIGIBLE_CANDIDATES          = 6
+                              (identifier_keyword_classify ineligible
+                               due to E5 Map* crossing ABI;
+                               string_literal_scan ineligible due
+                               to E5 heap-allocated char* crossing ABI)
+
+WINNER                       = operator_punctuation_recognizer
+WINNER_ELIGIBLE              = YES
+WINNER_RANK                  = 1
+WINNER_FINAL_SCORE           = 952
+                              (BENEFIT = 1144, RISK = 192)
+WINNER_DIRECT_ORACLE         = PASS  (47/47 fixture cases)
+WINNER_PRODUCTION_SEAM       = FROZEN  (winner-production-seam.tsv)
+WINNER_ABI                   = PROVEN  (winner-abi-witness.txt)
+
+GENERATION_BASELINE          = PASS  (175/175 successful artifacts
+                                       byte-equal across stages 0..3;
+                                       see generation-corpus-baseline.tsv)
+ERROR_BASELINE               = PASS  (4/4 error fixtures fail-equivalent
+                                       across stages 0..3;
+                                       see error-corpus-baseline.tsv)
+
+F_NO_PYTHON_BASELINE         = 12  (mechanically observed)
+
+FORMAL_DAFNY_BASELINE        = PASS  (17 verified, 0 errors, 0 findings)
+
+PRODUCTION_MUTATION          = ZERO  (no source/config mutation in C1)
+
+C1_TO_C2_GATE                = OPEN
+```
+
+C1 RED phase is complete. No HALT conditions triggered.
+
+Runners-up (preserved as evidence per ACT §9):
+
+  rank 2  numeric_length_scan       (FINAL = -53)
+  rank 3  comment_skip              (FINAL = -226)
+  rank 4  char_const_scan           (FINAL = -47, deferred)
+  rank 5  numeric_value_parse       (FINAL = -103)
+  rank 6  whitespace_dispatch       (FINAL = -193)
+
+ACT may proceed to C2 IMPL.

@@ -1,0 +1,150 @@
+ACT-POLYC-SELFHOST-LEXER01 — C1 — winner ABI contract
+======================================================
+
+WINNER = operator_punctuation_recognizer
+
+ABI (frozen by ACT §14):
+
+  I64 BootstrapClassifyOperator(
+      U8  *src,        // caller-owned, read-only
+      I64  src_len,    // explicit byte length
+      I64  cursor,     // offset of the first byte to classify
+      I64  flags,      // CCF_* flag bits (CCF_ASM_BLOCK, CCF_MULTI_COLON)
+      I64 *out_kind,   // one of the TK_* / ASCII kinds (see below)
+      I64 *out_length  // 1, 2, or 3
+  );
+
+  Returns 1 if the byte at src[cursor] is an operator
+  or punctuation char that the winner classifies; on
+  success *out_kind and *out_length are populated.
+
+  Returns 0 if src[cursor] is NOT an operator trigger
+  byte; *out_kind and *out_length are unchanged.  In this
+  case the caller falls through to the next dispatcher
+  arm (number, identifier, preprocessor, etc.).
+
+Inputs (binding):
+
+  src        : caller-owned, read-only; component does not
+               write through this pointer
+  src_len    : explicit byte length; bounds all reads
+  cursor     : 0 <= cursor < src_len on entry (caller's
+               responsibility; if cursor >= src_len the
+               component returns 0 without reading src)
+  flags      : opaque mode-flag bitmask; only CCF_ASM_BLOCK
+               and CCF_MULTI_COLON are inspected.  Other
+               bits are passed through and ignored.
+
+Outputs (binding):
+
+  *out_kind  : populated only on success (rc == 1).
+               One of:
+                 - ASCII byte value for single-char punct
+                   and single-char operators (e.g. '(' = 0x28,
+                   '+' = 0x2b)
+                 - TK_* constant for multi-char operators:
+                     0x30B TK_EQU_EQU    0x305 TK_PLUS_PLUS
+                     0x30C TK_NOT_EQU    0x306 TK_MINUS_MINUS
+                     0x30D TK_LESS_EQU   0x308 TK_DBL_COLON
+                     0x30E TK_GREATER_EQU 0x309 TK_SHL
+                     0x30F TK_AND_AND    0x30A TK_SHR
+                     0x310 TK_OR_OR      0x312 TK_SHL_EQU
+                     0x313 TK_SHR_EQU    0x314 TK_MUL_EQU
+                     0x315 TK_DIV_EQU    0x316 TK_AND_EQU
+                     0x317 TK_OR_EQU     0x318 TK_XOR_EQU
+                     0x319 TK_ADD_EQU    0x31A TK_SUB_EQU
+                     0x322 TK_MOD_EQU    0x324 TK_ELLIPSIS
+                     0x328 TK_ARROW
+  *out_length : 1, 2, or 3; the number of source bytes
+               consumed by the operator/punctuation.
+
+ABI rules (binding, ACT §14):
+
+  * source memory owned by caller
+  * component does not free caller memory
+  * cursor represented as offset, not arbitrary owned pointer
+  * no Map* / List* / Set* / Arena* / AST* / Cctrl* / Lexeme*
+    ownership crossing
+  * no heap object returned across ABI
+  * no varargs
+  * no callback
+
+ABI input slots: 4 (src, src_len, cursor, flags)
+ABI output slots: 2 (out_kind, out_length)
+
+Cursor semantics (ACT §30):
+
+  After component return (rc == 1):
+    new_cursor = cursor + *out_length
+  Caller invariant:
+    0 <= new_cursor <= src_len
+  At EOF (cursor == src_len):
+    rc == 0; no advance occurs.
+  No one-past-end dereference path:
+    The component never dereferences src[cursor + k]
+    without first verifying cursor + k < src_len.
+
+Error semantics (ACT §31):
+
+  The component has no internal error paths.
+  Negative cases (legacy lexRaise, fall-through) are NOT
+  part of the winner slice and remain in the C wrapper.
+
+  Two non-operator "negative" results the wrapper must
+  handle:
+
+    1. `..` not followed by another `.`
+       -> legacy raises "`..` is an invalid token sequence"
+       -> wrapper receives rc == 0 from
+          BootstrapClassifyOperator and falls through to
+          its own raise path.
+
+    2. `$` / `@` / `#` outside CCF_ASM_BLOCK
+       -> legacy breaks out of switch, falls through to
+          default arm (which calls lexIdentifier)
+       -> wrapper receives rc == 0 and falls through to
+          the identifier dispatcher.
+
+  Error location (line, column) and diagnostic text are
+  produced by the C wrapper using l->lineno and
+  l->tok_start_col which the wrapper captures BEFORE
+  calling BootstrapClassifyOperator.  The diagnostic
+  engine (lexRaise) remains in C; no PolyC component
+  owns diagnostic production.
+
+  Required invariant (ACT §31):
+    error location stage0 == stage1 == stage2 == stage3
+    error classification equal
+    diagnostic text equal where historically stable
+
+C-side wrapper contract (binding, ACT §29):
+
+  The C wrapper (in src/lexer.c, gated by
+  HCC_USE_SELFHOST_COMPONENTS) does:
+
+    1. lexNextChar(l) -> ch (existing)
+    2. if ch is one of the operator trigger bytes:
+         I64 kind = 0, length = 0;
+         int rc = BootstrapClassifyOperator(
+             (U8 *)l->start,
+             (I64)strlen(l->start),    /* AoStr always NUL-terminates */
+             (I64)0,                   /* cursor inside this buffer */
+             l->flags,
+             &kind,
+             &length);
+         if (rc == 1) {
+             l->ptr = l->start + length;   /* cursor advance */
+             lexemeAssignOp(le, l->start, length, kind, l->lineno);
+             return 1;
+         }
+       /* else fall through */
+    3. otherwise (or rc == 0) continue with legacy C
+       operator classification.
+
+  The wrapper does NOT reimplement the classification
+  logic (binding, ACT §29).  It only does ABI adaptation,
+  cursor advance, and lexeme construction.
+
+  The wrapper does NOT call legacy C classification when
+  the PolyC component returns 1.  No runtime fallback
+  (binding, ACT §28).

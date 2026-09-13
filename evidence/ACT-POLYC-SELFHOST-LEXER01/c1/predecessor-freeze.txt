@@ -1,0 +1,59 @@
+ACT-POLYC-SELFHOST-LEXER01 — C1 — predecessor freeze
+======================================================
+
+Per ACT §Predecessors, mechanically observed state at C1 entry:
+
+```text
+ACT-POLYC-BOOTSTRAP04 (CLOSE: PASS, no residue)
+  Builds on ACT-POLYC-BOOTSTRAP03 (PASS).
+  Establishes stage0↔stage1↔stage2↔stage3 fixed point for the
+  B1 identifier component (tools/bootstrap/bootstrap02-ident.HC).
+  Lexer seam 6/6, corpus 175/175, error corpus 4/4, B3 BOOTSTRAP_STABILITY = PASS.
+
+ACT-POLYC-SELFHOST-SURFACE01 (CLOSE: PASS)
+  Adds the SELF-HOST-COMPONENTS.tsv registry
+  (docs/factory/SELF-HOST-COMPONENTS.tsv) with exactly one
+  STABLE row: identifier_scanner → BootstrapScanIdent.
+  Adds tools/selfhost/selfhost-component.HC (PolyC registry
+  validator + component build driver), bound into the Makefile.
+  Generic stage0/1/2 component build/test pipeline in place.
+  Stage3 generic support NOT YET present (this ACT adds it).
+
+ACT-POLYC-SELFHOST-SURFACE01-CORRECTION01 (PAUSED at C2.3)
+  C2.1 GREEN: replaces the legacy Python validator with a
+             PolyC harness (tools/factory/factory-no-python-check.HC).
+  C2.2 GREEN: ports the registry validator + build/test driver
+             to tools/selfhost/selfhost-component.HC.
+  C2.3 GREEN: removes the last PolyC→Python execution edges in
+             the self-host component tooling track (13/13 negative
+             controls; corpus 181/181 byte-equal).
+  C2.4 NOT STARTED: llvm-cap-table-verifier migration, bootstrap
+             Python-runner migration, inline-python migration.
+```
+
+Component registry state at C1 entry:
+
+```text
+$ cat docs/factory/SELF-HOST-COMPONENTS.tsv
+component_id   source                                symbol             consumer_seam           language  state    oracle                       cursor_gate                  production_seam_gate         introduced_by
+identifier_scanner  tools/bootstrap/bootstrap02-ident.HC  BootstrapScanIdent  src/lexer.c::lexIdentifier  POLYC  STABLE  bootstrap02-oracle  bootstrap02-cursor-test  bootstrap02-lexer-seam-test  ACT-POLYC-BOOTSTRAP02
+```
+
+Stable compiler generations at C1 entry:
+
+```text
+./hcc                          stage0
+build/hcc-bootstrap02          stage1
+build/hcc-bootstrap03          stage2
+build/hcc-bootstrap04          stage3
+```
+
+B3 equivalence at C1 entry (per ACT-POLYC-BOOTSTRAP04 c4):
+
+```text
+stage0↔stage1↔stage2↔stage3 for identifier_scanner = PASS
+broad corpus divergence = 0
+error corpus divergence = 0
+```
+
+No production mutation allowed in this ACT's C1 (per §4).

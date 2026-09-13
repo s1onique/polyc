@@ -1,0 +1,80 @@
+ACT-POLYC-SELFHOST-LEXER01 — C1 — winner state contract
+========================================================
+
+WINNER = operator_punctuation_recognizer
+
+The PolyC component for the winner is a pure classification
+function.  It does NOT mutate Lexer state.  The C wrapper
+in src/lexer.c performs the only lexer-state mutation:
+l->ptr advance by *out_length.
+
+Component-only observable (returned through out-parameters):
+
+  I64 kind       // one of the TK_* / ASCII kinds above;
+                 // matches the byte that lexemeAssignOp
+                 // would have been called with in the legacy path.
+  I64 length     // 1, 2, or 3; the number of source bytes
+                 // consumed by the operator/punctuation.
+
+Wrapper-applied Lexer state changes (after component returns):
+
+  l->ptr         += length;        // cursor advance
+  l->start       unchanged (set by lexNextChar in dispatcher)
+  l->lineno      unchanged
+  l->line_start_ptr unchanged
+
+Wrapper-applied Lexeme state changes (after component returns):
+
+  le->tk_type    = kind;           // via lexemeAssignOp
+  le->len        = length;
+  le->line       = l->lineno;
+  le->start      = start (caller-supplied)
+  le->i64        = kind (already used as the s64 op slot)
+
+Cursor semantics (ACT §30):
+
+  The component receives (src, src_len, cursor).  After
+  return, the wrapper MUST satisfy:
+
+    0 <= cursor + length <= src_len
+
+  At EOF (cursor == src_len), the component returns 0
+  (not an operator), so no advance occurs.
+
+  No one-past-end dereference path.  The component never
+  dereferences src[cursor + 2] without first verifying
+  cursor + 2 < src_len.
+
+Error semantics (ACT §31):
+
+  The component has no internal error paths.  If ch is not
+  an operator trigger byte (one of
+  = < > + - ! & | * % ^ $ @ . \ : # ~ ( ) , ; [ ] { } /),
+  it returns 0 and the wrapper falls through to the next
+  dispatcher arm (number, identifier, preprocessor, etc.).
+
+  Two error paths EXIST in the legacy code that are NOT
+  part of the winner:
+
+    a) `..` (double-dot, not followed by another `.`)
+       -> lexRaise(l, "`..` is an invalid token sequence")
+    b) `$` / `@` / `#` outside CCF_ASM_BLOCK
+       -> break out of switch, fall through to default
+
+  Both paths are deliberately OUTSIDE the winner slice
+  because they:
+    a) require a diagnostic raise (E11 cannot construct a
+       direct C oracle without exception machinery)
+    b) require fall-through to the default arm that calls
+       lexIdentifier (which is itself SELFHOSTED).
+
+  These two paths remain in the C wrapper and are NOT
+  delegated to BootstrapClassifyOperator.
+
+EOF safety:
+
+  When cursor >= src_len, the component returns 0
+  (caller's responsibility to ensure cursor < src_len;
+  the dispatcher at lexCore only calls lex after
+  lexNextChar returned a valid byte, so cursor is always
+  in [0, src_len-1] at entry).

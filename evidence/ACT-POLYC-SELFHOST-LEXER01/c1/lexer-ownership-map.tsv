@@ -1,0 +1,25 @@
+slice	host_functions	classification	rationale
+identifier_scanner	lexIdentifier	SELFHOSTED	migrated via ACT-POLYC-BOOTSTRAP02; B1 PolyC component
+operator_punctuation_recognizer	lexCore (operator cases)	HOST_C_CORE_LEXER	~120 LOC inside the lexCore switch; ~37 distinct token kinds; pure classification logic
+comment_skip	lexSkipCodeComment	HOST_C_CORE_LEXER	~30 LOC; mutates l->ptr, l->lineno, l->line_start_ptr
+numeric_length_scan	countNumberLen	HOST_C_CORE_LEXER	~75 LOC; pure computation; no Lexer state mutation; 3 out-params (isfloat, ishex, err)
+numeric_value_parse	lexNumeric	HOST_C_CORE_LEXER	strtoll/strtoull/strtold wrapper; mutates l->cur_*, l->ptr, l->ishex
+string_literal_scan	lexString	HOST_C_CORE_LEXER	allocates buffer; mutates l->cur_str, l->lineno, l->line_start_ptr, l->ptr; lexer-allocator coupling
+char_const_scan	lexCharConst	HOST_C_CORE_LEXER	mutates l->cur_i64, l->cur_strlen, l->ptr
+whitespace_dispatch	newline_tab_space_cases_in_lexCore	HOST_C_CORE_LEXER	coupled with token emission; flag-gated
+cursor_advance	lexNextChar	HOST_C_CORE_LEXER	used by all slices; itself not a slice
+cursor_peek	lexPeek, lexPeekMatch	HOST_C_CORE_LEXER	helper, not a slice
+cursor_rewind	lexRewindChar	HOST_C_CORE_LEXER	helper, not a slice
+keyword_classify	mapGetLen-of-symbol_table_in_lexIdentifier	HOST_C_MACRO/E5	requires Map* ownership crossing ABI
+preprocessor_directives	lexPreProcDirective, lexInclude, lexDefine, lexUndef, lexPreProcIf, lexPreProcBoolean	HOST_C_PREPROCESSOR	mutates Map*, List*, AoStr* (macro symbol table; file-stack)
+file_stack	lexPushFile, lexPushString, lexReadfile, lexReleaseLexFile, lexReleaseAllFiles, lexSetBuiltinRoot	HOST_C_FILE_STACK	mutates LexFile*; file IO
+lexeme_lifecycle	lexemeNew, lexemeSentinal, lexemeAssignOp, lexemeTokNew, lexemeCopy, lexemeNewOp, lexemeFree, lexemeMemoryInit, lexemeMemoryRelease, lexemeMemoryStats	HOST_C_SUPPORT	lexeme allocation; container/allocator ownership
+diagnostics	lexRaise, lexerReportLine	HOST_C_DIAGNOSTIC	exception raise; line renderer
+lexeme_matcher	tokenPunctIs, tokenIdentIs, lexemeEq	HOST_C_SUPPORT	query helpers
+debug_print	lexemeTypeToString, lexemePunctToString, lexemePunctToStringWithFlags, lexemePunctToEncodedString, lexemeToAoStr, lexemeToString, lexemePrint	HOST_C_SUPPORT	debug
+parse_time_driver	lexToken	HOST_C_CORE_LEXER	parse-time driver with macro substitution
+public_lex_entry	lexInit, lex, lexerRelease	HOST_C_CORE_LEXER	lex init/release + lex() public entry
+token_storage	vecLexemeToString, vecLexemeRelease	HOST_C_SUPPORT	lexeme Vec helpers
+asm_flags	lexSetAsmFlags, lexUnSetAsmFlags	HOST_C_SUPPORT	set/clear asm-block flag bits
+list_helpers	listContainsAoStr	HOST_C_SUPPORT	preprocessor helper
+include_link	lexLink	HOST_C_PREPROCESSOR	#include tracking

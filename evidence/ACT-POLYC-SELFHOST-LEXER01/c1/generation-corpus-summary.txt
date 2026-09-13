@@ -1,0 +1,55 @@
+ACT-POLYC-SELFHOST-LEXER01 — C1 — generation corpus summary
+============================================================
+
+Mechanically observed at C1 entry using the existing
+build artifacts from B3 (ACT-POLYC-BOOTSTRAP04).
+
+```text
+CORPUS_INVENTORY              = 175 sources (per directory listing)
+                                (full inventory of 181 sources includes
+                                 preprocessor-only / asm-only files
+                                 that are excluded from .o compilation;
+                                 the .o corpus subset is 175)
+
+STAGE0_SUCCESS                = 175 (all sources compile via ./hcc)
+STAGE1_SUCCESS                = 175 (build/b02-corpus-A/*.o)
+STAGE2_SUCCESS                = 175 (build/b03-corpus-A/*.o)
+STAGE3_SUCCESS                = 175 (build/b04-corpus-A/*.o)
+
+STAGE0_FAIL                   = 0 (within the .o-producing subset)
+STAGE1_FAIL                   = 0
+STAGE2_FAIL                   = 0
+STAGE3_FAIL                   = 0
+
+successful byte mismatch (stage1 vs stage2) = 0
+successful byte mismatch (stage1 vs stage3) = 0
+successful byte mismatch (stage2 vs stage3) = 0
+
+success/failure divergence across stages = 0
+diagnostic divergence                   = 0
+```
+
+Mechanically observed:
+
+```text
+$ diff -rq build/b02-corpus-A build/b02-corpus-B | wc -l
+0
+$ diff -rq build/b03-corpus-A build/b03-corpus-B | wc -l
+0
+$ diff -rq build/b04-corpus-A build/b04-corpus-B | wc -l
+0
+$ diff -rq build/b02-corpus-A build/b03-corpus-A | wc -l
+0
+$ diff -rq build/b03-corpus-A build/b04-corpus-A | wc -l
+0
+```
+
+(Each "B*corpusA/B" pair is a parallel build run; the empty
+diff confirms byte-equality across all 175 successful
+artifacts.)
+
+Per-source artifact hash table: see
+generation-corpus-baseline.tsv (525 rows: 175 sources x 3
+stages, plus header).
+
+STAGE0_STAGE1_STAGE2_STAGE3_CORPUS_EQ = PASS

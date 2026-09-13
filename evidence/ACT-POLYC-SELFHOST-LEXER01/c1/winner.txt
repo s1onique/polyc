@@ -1,0 +1,97 @@
+ACT-POLYC-SELFHOST-LEXER01 — C1 — winner
+========================================
+
+WINNER = operator_punctuation_recognizer
+
+WINNER_RANK = 1
+
+WINNER_ELIGIBLE = YES
+
+SELECTION_METHOD = MECHANICAL_RANKING
+  (frozen ACT §8 formula; no post-hoc tuning)
+
+WINNER_HOST_FUNCTIONS =
+
+  src/lexer.c:1205   static int lexCore(Lexer *l, Lexeme *le)
+    -- inside the lexCore switch:
+       case '=':       lexemeAssignOp(le,start,1,ch,l->lineno);  // plus ==
+                       lexemeAssignOp(le,start,2,TK_EQU_EQU,l->lineno);
+       case '<':       ... < <= << <<=
+       case '>':       ... > >= >> >>=
+       case '+':       ... + ++ +=
+       case '-':       ... - -- -= ->
+       case '!':       ... ! !=
+       case '&':       ... & && &=
+       case '|':       ... | || |=
+       case '*':       ... * *=
+       case '%':       ... % %=
+       case '^':       ... ^ ^=
+       case '$':       ASM_BLOCK only
+       case '@':       ASM_BLOCK only
+       case '.':       TK_DOT, TK_ELLIPSIS
+       case '\\':      backslash
+       case ':':       :, ::
+       case '#':       ASM_BLOCK only
+       case '~':       tilde
+       case '(':       (
+       case ')':       )
+       case ',':       ,
+       case ';':       ;
+       case '[':       [
+       case ']':       ]
+       case '{':       {
+       case '}':       }
+       case '/':       /, /=  (when *l->ptr is not '/' or '*')
+
+The winner slice spans approximately lines 1205..1531 of
+src/lexer.c (the lexCore switch; the dispatcher's outer
+loop, identifier branch, and preprocessor branch remain
+in C).
+
+WINNER_SEMANTIC_LOC         = 120    (operator case bodies only)
+WINNER_DISTINCT_TOKEN_KINDS = 32     (see winner-source-seam.txt)
+WINNER_ABI_INPUT_SLOTS      = 4      (src, src_len, cursor, flags)
+WINNER_ABI_OUTPUT_SLOTS     = 2      (kind, length)
+WINNER_EXTERNAL_DEPENDENCIES = 0     (only *ptr byte comparisons)
+WINNER_DIAGNOSTIC_PATHS     = 0      (no raise paths)
+WINNER_POINTER_FIELDS_WRITTEN = 1    (l->ptr, advanced by wrapper)
+WINNER_SCALAR_LEXER_OUTPUTS  = 0     (no Lexer scalar field, only Lexeme scalar)
+
+BENEFIT = 120 + 32*32 + 16*0 = 1144
+RISK    = 16*4 + 16*2 + 32*0 + 48*0 + 96*1 = 64 + 32 + 96 = 192
+FINAL_SCORE = 1144 - 192 = 952
+
+The winner C/PolyC ABI (binding):
+
+  I64 BootstrapClassifyOperator(
+      U8  *src,
+      I64  src_len,
+      I64  cursor,
+      I64  flags,
+      I64 *out_kind,
+      I64 *out_length
+  );
+
+Returns 1 on success (kind/length populated), 0 if the byte
+at cursor is NOT an operator/punctuation character (caller
+falls through to other dispatch arms).
+
+The C wrapper in src/lexer.c (CCF_USE_SELFHOST_COMPONENTS)
+calls the component when ch is one of the operator trigger
+bytes (see wrapper contract in winner-abi-contract.txt).
+
+PRODUCTION ENTRY SEAM:
+
+  src/lexer.c:1205  static int lexCore(Lexer *l, Lexeme *le)
+    switch (ch) {
+      case '=': case '<': case '>': case '+': case '-':
+      case '!': case '&': case '|': case '*': case '%':
+      case '^': case '$': case '@': case '.': case '\\':
+      case ':': case '#': case '~': case '(': case ')':
+      case ',': case ';': case '[': case ']': case '{':
+      case '}': case '/':
+        ... operator classification logic ...
+
+Under CCF_USE_SELFHOST_COMPONENTS, the case bodies delegate
+to BootstrapClassifyOperator; otherwise the legacy C path
+runs (stage0 default).

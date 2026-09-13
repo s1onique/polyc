@@ -1,0 +1,98 @@
+ACT-POLYC-SELFHOST-LEXER01 — C1 — winner source seam
+======================================================
+
+WINNER = operator_punctuation_recognizer
+
+The winner slice is a coherent sub-switch of lexCore in
+src/lexer.c. The lexCore function begins at src/lexer.c:1205
+and ends at src/lexer.c:1555.  The operator/punctuation
+cases within that switch occupy approximately lines
+1323..1531.  The identifier branch (default case, lines
+1534..1553) and the numeric/string/char branches (lines
+1249..1296) remain in C; they are NOT part of this ACT.
+
+Distinct operator/punctuation token kinds (32 total):
+
+  ASCII punctuation (single-char, ASCII byte == kind):
+
+    (   -> '(' (mapped via lexemeAssignOp using ch)
+    )   -> ')'
+    [   -> '['
+    ]   -> ']'
+    {   -> '{'
+    }   -> '}'
+    ,   -> ','
+    ;   -> ';'
+    ~   -> '~'
+
+  ASCII operator (single-char, kind == ch under lexemePunct):
+
+    =   -> '='
+    <   -> '<'
+    >   -> '>'
+    +   -> '+'
+    -   -> '-'
+    !   -> '!'
+    &   -> '&'
+    |   -> '|'
+    *   -> '*'
+    %   -> '%'
+    ^   -> '^'
+    .   -> '.' (only when not followed by digit or '.')
+    \   -> '\\'
+    :   -> ':' (only when !CCF_MULTI_COLON or peek is not ':')
+
+  Multi-char operators (length 2 or 3):
+
+    ==  -> TK_EQU_EQU
+    <=  -> TK_LESS_EQU
+    <<  -> TK_SHL
+    <<= -> TK_SHL_EQU
+    >=  -> TK_GREATER_EQU
+    >>  -> TK_SHR
+    >>= -> TK_SHR_EQU
+    ++  -> TK_PLUS_PLUS
+    +=  -> TK_ADD_EQU
+    --  -> TK_MINUS_MINUS
+    ->  -> TK_ARROW
+    -=  -> TK_SUB_EQU
+    !=  -> TK_NOT_EQU
+    &&  -> TK_AND_AND
+    &=  -> TK_AND_EQU
+    ||  -> TK_OR_OR
+    |=  -> TK_OR_EQU
+    *=  -> TK_MUL_EQU
+    %=  -> TK_MOD_EQU
+    ^=  -> TK_XOR_EQU
+    /=  -> TK_DIV_EQU
+    ::  -> TK_DBL_COLON (only when CCF_MULTI_COLON)
+    ... -> TK_ELLIPSIS (when peek+peek2 == "..")
+
+  ASM-block punctuation (only when CCF_ASM_BLOCK is set):
+
+    $   -> '$'   (kind == ch, lexemeAssignOp)
+    @   -> '@'
+    #   -> '#'   (otherwise routed to lexPreProcDirective)
+
+That is 9 + 14 + 23 + 3 = 49 char/multi-char/ASM punctuation
+productions; the distinct TK_* kinds are 32 because several
+ASCII single-char operators map to lexemeAssignOp with the
+literal `ch` byte as the kind (i.e., the kind is the byte
+value itself, not a unique TK_* constant).
+
+After C2 the wrapper calls BootstrapClassifyOperator and
+uses the returned (kind, length) tuple to drive
+lexemeAssignOp.  No new TK_* values are introduced; the
+existing mapping is preserved bit-for-bit.
+
+Production entry seam (the dispatcher site):
+
+  src/lexer.c:1205  static int lexCore(Lexer *l, Lexeme *le)
+  src/lexer.c:1323..1531  the operator/punctuation cases
+
+The C wrapper is constructed in C2 to delegate the
+classification logic to BootstrapClassifyOperator, while
+preserving the existing cursor-advance side effects via
+l->ptr, l->start, and l->lineno (only l->ptr is actually
+advanced for operators; l->lineno and l->line_start_ptr are
+NOT touched in the operator branch).

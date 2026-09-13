@@ -1,0 +1,44 @@
+ACT-POLYC-SELFHOST-LEXER01 — C1 — error corpus summary
+=======================================================
+
+Mechanically observed at C1 entry (B3 conservation; the
+error corpus is the same 4 fixtures used by ACT-POLYC-BOOTSTRAP02
+and ACT-POLYC-BOOTSTRAP04):
+
+```text
+ERROR_CORPUS_INVENTORY        = 4 fixtures
+                                (ERR01_unterminated_string.HC
+                                 ERR02_invalid_declaration.HC
+                                 ERR03_identifier_start_digit.HC
+                                 ERR04_intentional_parser_error.HC)
+
+STAGE0_FAIL                   = 4 (all 4 fixtures fail)
+STAGE1_FAIL                   = 4 (all 4 fixtures fail)
+STAGE2_FAIL                   = 4 (all 4 fixtures fail)
+STAGE3_FAIL                   = 4 (all 4 fixtures fail)
+
+exit-status divergence        = 0
+diagnostic path divergence    = 0
+diagnostic line/col divergence = 0
+stable textual message divergence = 0
+```
+
+Per-fixture error table: see error-corpus-baseline.tsv.
+
+STAGE0_STAGE1_STAGE2_STAGE3_ERROR_CORPUS_EQ = PASS
+
+Implication for this ACT:
+
+  The selected winner (operator_punctuation_recognizer)
+  does NOT own any of the error paths exercised by these
+  fixtures:
+    ERR01  unterminated string     -> lexString (host C)
+    ERR02  invalid declaration     -> parser (host C)
+    ERR03  identifier starting w/ digit
+                                    -> lexIdentifier dispatcher (host C);
+                                       fails before reaching BootstrapScanIdent
+    ERR04  intentional parser error -> parser (host C)
+
+  Migration of the operator/punctuation slice cannot
+  introduce or remove any of these failures.  C2 and C3
+  must re-run this baseline and confirm zero divergence.
