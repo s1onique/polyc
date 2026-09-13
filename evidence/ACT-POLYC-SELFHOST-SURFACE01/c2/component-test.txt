@@ -1,0 +1,27 @@
+ACT-POLYC-SELFHOST-SURFACE01 — C2 — component differential 15/15
+============================================================
+
+Reference oracle: ./build/bootstrap02-ident-oracle (C reference)
+Host harness:     ./build/bootstrap02-ident-host  (PolyC B1 object linked)
+
+```text
+oracle-fixtures = 15  (grep -cE '^I[0-9]+ ' /tmp/b02-oracle.txt)
+host-fixtures   = 15  (grep -cE '^I[0-9]+ ' /tmp/b02-host.txt)
+diff            = 0   (after filtering the harness-name label
+                       suffix BOOTSTRAP02_IDENT_ vs BOOTSTRAP02_IDENT_HOST_)
+```
+
+Notes:
+
+  * The harness-name label difference is intentional and is
+    stripped by the predecessor ACT's grep filter; per-fixture
+    lines are byte-identical.
+
+  * The full Make target `bootstrap02-test` returns rc=0 on
+    this tree (verified via direct invocation; see c2/historical-targets.txt).
+
+  * 15/15 PASS, as required by ACT §22.
+
+```text
+COMPONENT_DIFFERENTIAL = 15/15 PASS
+```

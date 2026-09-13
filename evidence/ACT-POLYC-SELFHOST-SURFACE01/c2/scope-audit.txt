@@ -1,0 +1,63 @@
+ACT-POLYC-SELFHOST-SURFACE01 — C2 — scope audit
+================================================
+
+This file proves the C2 implementation did not touch
+out-of-scope files (per ACT §7 forbidden list).
+
+```text
+git diff <C1.1>..<C2_HEAD> -- src/lexer.c src/lexer_bridge.h tools/bootstrap/bootstrap02-ident.HC
+  = EMPTY
+```
+
+```text
+git diff <C1.1>..<C2_HEAD> -- src/CMakeLists.txt
+  = EMPTY
+```
+
+```text
+git diff <C1.1>..<C2_HEAD> -- src/parser.c src/parser.h
+  = EMPTY (no parser/AST files modified)
+```
+
+```text
+git diff <C1.1>..<C2_HEAD> --name-only
+  Makefile
+  docs/factory/SELF-HOST-COMPONENTS.tsv
+  scripts/quality/selfhost-component-registry.py
+  scripts/quality/selfhost-component-registry-test.sh
+  tools/selfhost/selfhost-component.sh
+  + C2 evidence packet
+```
+
+FORBIDDEN CHECKLIST:
+
+```text
+src/lexer.c                           UNCHANGED
+src/lexer_bridge.h                    UNCHANGED
+tools/bootstrap/bootstrap02-ident.HC  UNCHANGED
+src/parser.c                          UNCHANGED (out of scope)
+src/ast.c                             UNCHANGED (out of scope)
+src/ir.c                              UNCHANGED (out of scope)
+src/aarch64.c                         UNCHANGED (out of scope)
+src/x86_64.c                          UNCHANGED (out of scope)
+src/llvm/*                            UNCHANGED (out of scope)
+runtime/*                             UNCHANGED (out of scope)
+HCC_BOOTSTRAP02_STAGE1 macro          INTACT
+HCC_BOOTSTRAP03_STAGE2 macro          INTACT
+HCC_BOOTSTRAP04_STAGE3 macro          INTACT
+HCC_SELFHOST_COMPONENTS macro         NOT INTRODUCED
+build/hcc-bootstrap05                 NOT INTRODUCED
+HCC_ENABLE_BOOTSTRAP05_STAGE4         NOT INTRODUCED
+```
+
+NO BESPOKE FALLBACK CHECKLIST (per ACT §20):
+
+```text
+fallback to bootstrap02-component-build on generic failure?  NO
+fallback to bootstrap03-ident.stage1.o on stage2 miss?       NO
+shell eval of registry fields?                               NO
+hidden defaults in the validator?                            NO
+"best effort" parsing of malformed registry?                 NO
+```
+
+The driver fails-closed on every unmet precondition.

@@ -1,0 +1,74 @@
+ACT-POLYC-SELFHOST-SURFACE01 — C2 — implementation delta
+========================================================
+
+This file records the EXACT set of changes made by C2.
+Every entry below corresponds to a real file diff.
+
+NEW FILES (5):
+
+  docs/factory/SELF-HOST-COMPONENTS.tsv
+    10-column TSV registry. Header + 1 data row.
+    2 lines total (header + 1 data row).
+
+  scripts/quality/selfhost-component-registry.py
+    Python validator. Header + fields + state + language +
+    source existence + source escapes + symbol format +
+    output-aliases-source + Makefile gate-target existence.
+    253 lines.
+
+  scripts/quality/selfhost-component-registry-test.sh
+    Negative-control matrix (N1..N12). 198 lines.
+
+  tools/selfhost/selfhost-component.sh
+    Generic build/test driver. Stage→producer mapping,
+    producer exists/executable check, source existence,
+    output aliasing check, registry validation, build
+    invocation, symbol verification, sha256 provenance,
+    registry fields used as DATA only (no shell eval).
+    229 lines.
+
+MODIFIED FILES (1):
+
+  Makefile (+28 lines)
+    - .PHONY: extended with three new generic targets
+    - New targets at end of file:
+        selfhost-component-build  COMPONENT=<id> STAGE=<n>
+        selfhost-component-test   COMPONENT=<id> STAGE=<n>
+        selfhost-registry-validate
+
+UNTOUCHED FILES (binding):
+
+  src/lexer.c                                UNCHANGED
+  src/lexer_bridge.h                         UNCHANGED
+  tools/bootstrap/bootstrap02-ident.HC       UNCHANGED
+  src/CMakeLists.txt                         UNCHANGED
+
+NEW COMPILER SEMANTIC CHANGE:   NONE
+NEW BOOTSTRAP STAGE:            NONE
+NEW COMPILER COMPONENT MIGRATED: NONE
+NEW PREPROCESSOR MACRO:         NONE
+NEW DEPENDENCY:                 NONE
+COMMITTED BINARY ARTIFACT:      NONE
+
+DIFF STATS:
+  5 files changed, 709 insertions(+), 1 deletion(-)
+  (the +1 deletion is the trailing-comma in the original
+   .PHONY: line that needed a comma after adding the new
+   generic targets)
+
+REGISTRY CONTENT:
+
+```text
+component_id          = identifier_scanner
+source                = tools/bootstrap/bootstrap02-ident.HC
+symbol                = BootstrapScanIdent
+consumer_seam         = src/lexer.c::lexIdentifier
+language              = POLYC
+state                 = STABLE
+oracle                = bootstrap02-oracle
+cursor_gate           = bootstrap02-cursor-test
+production_seam_gate  = bootstrap02-lexer-seam-test
+introduced_by         = ACT-POLYC-BOOTSTRAP02
+```
+
+No second component registered in C2.
