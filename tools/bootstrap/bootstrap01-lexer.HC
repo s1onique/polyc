@@ -221,4 +221,3 @@ public I64 BootstrapLex(U8 *src, I64 src_len,
   *out_count = count;
   return BLEX_OK;
 }
-

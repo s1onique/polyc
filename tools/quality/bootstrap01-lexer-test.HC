@@ -334,4 +334,3 @@ U0 B0PrintStream(U8 *id, BootstrapToken *toks, I64 n, I64 status)
   }
   "%s STATUS=%s\n", id, B0StatusName(status);
 }
-

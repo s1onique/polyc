@@ -330,4 +330,3 @@ int main(int argc, char **argv) {
                      ref, ref_n, ref_status);
     return ok ? 0 : 1;
 }
-
