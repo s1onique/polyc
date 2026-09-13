@@ -1,0 +1,156 @@
+ACT-POLYC-BOOTSTRAP02-C2-CORRECTION03 — C3 EVIDENCE —
+required-result block
+==================================================
+
+This is the binding contract between C3 EVIDENCE and
+C4 CLOSE for this correction ACT.
+
+------------------------------------------------------------
+Section A — Original defects (re-classified from re-review)
+------------------------------------------------------------
+
+A01  DEFECT_P0_EOF_CURSOR_UB        REPAIRED
+       src/lexer.c:932-934 advanced l->ptr past
+       the EOF NUL. Per C memory model, the
+       one-past-end pointer is not dereferenceable.
+       See defect-p0-eof-cursor-ub.txt.
+       FIX: l->ptr = (char *)final_ptr; in
+       src/lexer.c stage1 branch of lexIdentifier.
+
+A02  DEFECT_P2_L_START_AFTER        REPAIRED
+       Stage1 branch never set l->start; legacy
+       set it via lexNextChar.
+       See defect-r1-start-after.txt.
+       FIX: l->start = (char *)final_ptr; in the
+       same stage1 branch.
+
+A03  PRIOR_R2_BLOCKS_PARENT_CLOSE   RESOLVED
+       Re-reviewer: C4 CLOSE of parent ACT was
+       BLOCKED until R2 fixed. R2 is now fixed.
+
+------------------------------------------------------------
+Section B — Three-pillar cursor evidence (post-fix)
+------------------------------------------------------------
+
+B01  PILLAR_A_OBJECT_PARITY              PASS  5/5
+       See cursor-equivalence.txt.
+       5/5 real production sources byte-identical
+       between stage0 and stage1 AFTER the fix.
+
+B02  PILLAR_B_COMPONENT_CURSOR_MODEL     PASS  6/6
+       See cursor-direct-witness.txt.
+
+B03  PILLAR_B_PRIME_PRODUCTION_LEXER     PASS  6/6
+       See lexer-seam-direct-witness.txt and
+       lexer-seam-postfix-witness.txt.
+       6/6 inputs byte-identical on EVERY
+       measured field. NO RESIDUE.
+
+B04  EOF_CURSOR_STATE_EQUIVALENCE        PASS
+       E4: legacy ptr_after = 3, stage1 ptr_after = 3.
+       E4: legacy eof_state = 1, stage1 eof_state = 1.
+
+B05  EOF_POINTER_SAFETY                  PASS
+       E4: stage1 l->ptr = src + 3 (not src + 4).
+       C memory model: l->ptr at NUL is dereferenceable.
+
+B06  NON_EOF_PRODUCTION_CURSOR_EQ        PASS  6/6
+       E1, E2, E3, E5, E6: l->ptr and l->start
+       byte-identical between legacy and stage1.
+
+B07  THREE_PILLARS                       PASS
+       Token output equivalence (PILLAR_A + le_*
+       fields of PILLAR_B_PRIME).
+       Cursor state equivalence at ALL positions
+       (PILLAR_B + PILLAR_B_PRIME l->ptr/l->start).
+       EOF pointer safety established.
+------------------------------------------------------------
+Section C — Core gate predicates
+------------------------------------------------------------
+
+C01  make bootstrap01-test               PASS  15/15
+C02  make bootstrap02-test               PASS  15/15
+C03  make bootstrap02-cursor-test        PASS  6/6
+C04  make bootstrap02-stage1             PASS
+C05  make bootstrap02-lexer-seam-test    PASS  6/6 (no residue)
+C06  END_TO_END_CONSERVATION             PASS  5/5
+C07  PRODUCTION_HERMETIC_BUILD           PASS
+
+------------------------------------------------------------
+Section D — Factory gate predicates
+------------------------------------------------------------
+
+D01  gate-fast                           PASS
+D02  factory-v2                          PASS  35/35
+D03  factory-halt-classification         PASS  12/12
+D04  factory-append-only                 PASS  11/11
+D05  shell-loc-gate                      PASS
+D06  factory-closure-status              PASS  6/6
+
+------------------------------------------------------------
+Section E — HALT predicates (all NOT FIRED)
+------------------------------------------------------------
+
+E01  HALT_RED_NOT_REPRODUCED             NOT_FIRED
+E02  HALT_SCOPE_EXPANSION_REQUIRED       NOT_FIRED
+E03  HALT_B0_REGRESSION                  NOT_FIRED
+E04  HALT_B1_ABI_PROBE_FAILED            NOT_FIRED
+E05  HALT_B1_DELEGATION_FAIL             NOT_FIRED
+E06  HALT_PRODUCTION_UB_UNFIXED          NOT_FIRED
+E07  HALT_LEXER_SEAM_DIVERGENCE         NOT_FIRED
+E08  HALT_EOF_POINTER_UNSAFE            NOT_FIRED
+
+------------------------------------------------------------
+Section F — Residue (forwarded to follow-up ACTs)
+------------------------------------------------------------
+
+F01  R1_L_START_AFTER_DIVERGENCE         REPAIRED
+       No longer diverges. The fix sets l->start
+       to (char *)final_ptr in the stage1 branch,
+       matching the legacy lexNextChar's final
+       l->start assignment.
+
+F02  R2_L_PTR_AFTER_AT_EOF_UB            REPAIRED
+       No longer advances past the EOF NUL. The
+       fix sets l->ptr to (char *)final_ptr in
+       all cases, matching the legacy behavior of
+       leaving l->ptr at the NUL on EOF.
+
+F03  Pre-existing PUSH_RESIDUE GEP01_D1_D2 unchanged.
+
+------------------------------------------------------------
+Section G — Mechanical hygiene (reviewer-noted, BLOCKS_NEXT=NO)
+------------------------------------------------------------
+
+G01  TRAILING_WHITESPACE                 DOCUMENTED_NOT_BLOCKING
+       evidence/ACT-POLYC-BOOTSTRAP02/c2/
+       lexer-seam-direct-witness.txt line 172
+       has a trailing space ("abc " input has
+       one). Per reviewer verdict:
+       GOVERNANCE / BLOCKS_NEXT=NO.
+
+G02  EXTRA_BLANK_LINE_AT_EOF             DOCUMENTED_NOT_BLOCKING
+       Same file has an extra blank line at EOF.
+       Per reviewer verdict:
+       GOVERNANCE / BLOCKS_NEXT=NO.
+
+G03  WORDING_BUILD_SYSTEM_BEHAVIOUR      REWORDED
+       "zero build-system change" replaced with
+       "ZERO_PRODUCTION_BUILD_SEMANTIC_CHANGE"
+       in CORRECTION02 evidence (the test-only
+       Makefile target IS a build-system addition,
+       but it has no effect on `make all`).
+       Per reviewer: no engineering action.
+
+------------------------------------------------------------
+Section H — C3 verdict
+------------------------------------------------------------
+
+  ACT-Phase                            = EVIDENCE
+  C3_TO_C4_CLOSE_GATE                  = OPEN
+  ACT-Verdict                          = PASS (no residue)
+
+The EOF cursor UB is REPAIRED. The parent ACT
+ACT-POLYC-BOOTSTRAP02 C4 CLOSE is no longer blocked.
+
+C4 CLOSE of this correction ACT may proceed.
