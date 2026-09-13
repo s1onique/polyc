@@ -1,0 +1,43 @@
+ACT-POLYC-BOOTSTRAP01-CORRECTION01 — C4 — B1 unlock criteria
+==============================================================
+
+This correction ACT unlocks B1 (partial self-host)
+subject to:
+
+  U-1  ACT-POLYC-BOOTSTRAP01-CORRECTION01 CLOSE
+       (this ACT).                              required
+
+  U-2  Authoritative CLOSE for ACT-POLYC-
+       BOOTSTRAP01: 4b42e06.                    confirmed
+
+  U-3  B0 frozen fixture matrix preserved.      confirmed
+
+  U-4  B0 frozen BTK_*/BLEX_* ABI preserved.    confirmed
+
+  U-5  B0 frozen C oracle preserved.            confirmed
+
+  U-6  B0 fresh-tree test gate green:
+       BOOTSTRAP01_CASES=15 PASS=15 FAIL=0
+       STATUS=PASS.                             confirmed
+
+  U-7  B0 native engineering result:
+       GREEN_WITH_CLOSURE_CORRECTION.           confirmed
+
+B1 entry gate (separate, must be satisfied by
+ACT-POLYC-BOOTSTRAP02 when it opens):
+
+  E-1  Scope of B1 is bounded to one production
+       lexer path (e.g., one specific token
+       category or one specific source region).
+  E-2  B1 differential driver compares against
+       the current production compiler's output
+       for the same input.
+  E-3  B1 introduces no semantic widening to
+       any production source file outside the
+       chosen lexer path.
+  E-4  B1 does not require MEMORY01 widening;
+       if it does, the LLVM-path blocker
+       (R-P1-4) must be resolved first by a
+       separate bounded ACT.
+
+End of B1 unlock criteria.

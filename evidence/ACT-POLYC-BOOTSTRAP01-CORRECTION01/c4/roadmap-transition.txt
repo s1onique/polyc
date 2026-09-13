@@ -1,0 +1,82 @@
+ACT-POLYC-BOOTSTRAP01-CORRECTION01 — C4 — roadmap transition
+==============================================================
+
+ROADMAP update (committed as a separate docs commit
+at the end of this ACT's commit chain, after the
+C4 CLOSE commit):
+
+```diff
+#### B0 outcome (ACT-POLYC-BOOTSTRAP01, CLOSED PASS_WITH_CARDINALITY_AND_HYGIENE_DEFECTS)
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                                       (corrected by ACT-POLYC-BOOTSTRAP01-CORRECTION01)
+```
+
+Replacement text:
+
+```text
+#### B0 outcome (ACT-POLYC-BOOTSTRAP01, CORRECTED PASS)
+
+ACT-POLYC-BOOTSTRAP01-CORRECTION01 CLOSED
+ACT-Verdict = PASS_WITH_HYGIENE_RESIDUE
+
+Authoritative CLOSE for ACT-POLYC-BOOTSTRAP01: 4b42e06
+  (147069f is recorded as historical cardinality
+  exception 4 in
+   evidence/ACT-POLYC-FACTORY-NO-SHA-OF-SELF01/
+   correction04/historical-cardinality-exceptions.txt;
+  it should have carried ACT-Phase: EVIDENCE.)
+
+B0_NATIVE_SEMANTICS             PASS
+B0_DIFFERENTIAL_ORACLE          PASS  15/15
+B0_DETERMINISM                  PASS
+B0_SOURCE_IMMUTABILITY          PASS
+B0_OUTPUT_BOUNDARY              PASS
+B0_ALLOCATION_FREE              PASS
+B0_HCC_NATIVE_COMPILE           PASS
+B0_NATIVE_LINK                  PASS
+B0_NATIVE_RUN                   PASS
+B0_LLVM_PATH                    BLOCKED_BY_EXISTING_MEMORY01_FENCE
+                                  (Option-W C6; not widened by B0
+                                  or its correction; future ACT
+                                  may decide whether to widen
+                                  MEMORY01)
+
+BOOTSTRAP01_CASES               15
+BOOTSTRAP01_PASS                15
+BOOTSTRAP01_FAIL                0
+
+PUSH_RESIDUE                    GEP01_D1_D2 (pre-existing)
+LLVM_COMPILE_VERIFY_RUN         BLOCKED_BY_EXISTING_MEMORY01_FENCE
+
+B0 OVERALL ENGINEERING RESULT   GREEN_WITH_CLOSURE_CORRECTION
+B1 AUTH                         READY_FOR_AUTH_AFTER_CORRECTION_CLOSES
+
+Residue:
+  P0: NONE
+  P1: ACT-POLYC-BOOTSTRAP01 historical cardinality exception 4;
+      B0_LLVM verdict wording clarity in predecessor c4/;
+      GEP01 cap-verifier 26/4; LLVM IR_STORE_DEREF fence;
+      captured-evidence trailing whitespace at
+      evidence/ACT-POLYC-BOOTSTRAP01/c3/fresh-build.txt:144
+  P2: EOF-hygiene pre-commit hook; Markdown section-order
+      linter
+```
+
+#### P4 bootstrap milestones (current status)
+
+```text
+B0 — COMPILER-SHAPED      GREEN
+                              ACT-POLYC-BOOTSTRAP01 CLOSED PASS
+                              ACT-POLYC-BOOTSTRAP01-CORRECTION01
+                                CLOSED PASS_WITH_HYGIENE_RESIDUE
+B1 — PARTIAL SELF-HOST    READY_FOR_AUTH_AFTER_CORRECTION_CLOSES
+B2 — FIRST SELF-HOST      LOCKED
+B3 — BOOTSTRAP STABILITY  LOCKED
+```
+
+Recommended next ACT:
+`ACT-POLYC-BOOTSTRAP02` (or equivalent bounded B1 ACT):
+replace one bounded production lexer path with the proven
+B0 lexer and pass differential tests against the current
+compiler. The B1 ACT may proceed now that
+ACT-POLYC-BOOTSTRAP01-CORRECTION01 has closed.

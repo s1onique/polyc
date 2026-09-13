@@ -1,0 +1,45 @@
+ACT-POLYC-BOOTSTRAP01-CORRECTION01 — C4 — acceptance matrix
+==========================================================
+
+AC01  DEFECT-1 (cardinality) recorded as EXCEPTION 4
+       in historical-cardinality-exceptions.txt.
+                                                PASS
+AC02  DEFECT-2 (3 source EOF blanks) stripped;
+       git diff --check no longer reports them.
+                                                PASS
+AC03  DEFECT-3 (captured-evidence trailing
+       whitespace) classified GOVERNANCE_RESIDUE;
+       not blocking.                          PASS
+AC04  DEFECT-4 (B0_LLVM verdict wording) re-
+       authored as BLOCKED_BY_EXISTING_MEMORY01_
+       FENCE in closure-summary.txt.          PASS
+AC05  DEFECT-5 (ACT § ordering) repaired via
+       corrected authoring copy with byte-
+       identical section bodies in numerical
+       order.                                 PASS
+AC06  B0 fresh-tree make bootstrap01-test:
+       15/15 PASS, 0 FAIL.                    PASS
+AC07  B0_NATIVE_SEMANTICS, B0_DIFFERENTIAL_ORACLE,
+       B0_DETERMINISM, B0_SOURCE_IMMUTABILITY,
+       B0_OUTPUT_BOUNDARY, B0_ALLOCATION_FREE
+       all PASS.                              PASS
+AC08  B0_LLVM_PATH = BLOCKED_BY_EXISTING_
+       MEMORY01_FENCE (not N/A). No MEMORY01
+       widening attempted.                    PASS
+AC09  Cardinality-1 invariant for this ACT
+       verified at CLOSE (exactly 1 CLOSE
+       commit).                               PASS
+
+Forward dependencies satisfied:
+
+  - ACT-POLYC-BOOTSTRAP01 closure observed in git
+    history (immutable).                      PASS
+  - Historical evidence at evidence/ACT-POLYC-
+    BOOTSTRAP01/ untouched (F14).             PASS
+  - docs/acts/ACT-POLYC-BOOTSTRAP01.md untouched
+    (F14).                                    PASS
+
+Strong closure criterion: PASS_WITH_HYGIENE_RESIDUE
+(the only "residue" is the captured-evidence trailing
+whitespace at the predecessor's fresh-build.txt:144,
+classified GOVERNANCE_RESIDUE per F-MECHANICAL-BLOCKING).
