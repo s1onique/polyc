@@ -4,49 +4,77 @@
 /*
  * src/lexer_bridge.h
  *
- * ACT-POLYC-BOOTSTRAP02 C2 IMPL — declaration-only bridge
- * between the production C lexer (src/lexer.c) and the B1
- * PolyC component (tools/bootstrap/bootstrap02-ident.HC).
+ * Declaration-only bridge between the production C lexer
+ * (src/lexer.c) and the PolyC self-host components.
  *
  * SCOPE: declaration only. No definition, no inline body,
- * no static data. The single declaration below is the
- * ONLY symbol this header exposes.
+ * no static data. The declarations below are the ONLY
+ * symbols this header exposes.
  *
- * The B1 component is compiled by stage0 hcc to a separate
- * object (build/bootstrap02-ident.o) and linked into the
- * stage1 binary (build/hcc-bootstrap02). The production
- * ./hcc binary is NOT modified by the link; it remains the
- * stage0 self-host reference.
+ * Two PolyC components are linked into the stage1+ binaries
+ * (build/hcc-bootstrap02/03/04):
  *
- * ABI (binding, frozen; see
+ *   1. identifier_scanner — ACT-POLYC-BOOTSTRAP02
+ *      (tools/bootstrap/bootstrap02-ident.HC)
+ *
+ *   2. operator_punctuation_recognizer — ACT-POLYC-SELFHOST-LEXER01
+ *      (tools/bootstrap/selfhost-lexer-operator-classify.HC)
+ *
+ * The stage0 ./hcc binary does NOT link either component; it
+ * uses the legacy C implementation in src/lexer.c.
+ *
+ * ABI 1 — identifier_scanner (frozen; see
  * evidence/ACT-POLYC-BOOTSTRAP02/c1/abi-witness.txt):
  *
  *   I64 BootstrapScanIdent(
- *       U8  *src,        // caller-owned, read-only
- *       I64  src_len,    // explicit byte length
- *       I64  start,      // cursor into src
- *       I64 *out_end     // first byte after identifier
+ *       U8  *src,
+ *       I64  src_len,
+ *       I64  start,
+ *       I64 *out_end
  *   );
  *
  *   Returns 1 on success, 0 on invalid input.
  *   On success: *out_end = start + N (N >= 1).
  *   No source mutation, no globals, no allocation.
  *
- * CHARACTER DOMAIN (binding):
+ *   CHARACTER DOMAIN:
+ *     B1_IDENTIFIER_CHARACTER_DOMAIN   = ASCII
+ *     B1_CTYPE_DEPENDENCY              = NONE
+ *     B1_NON_ASCII_EQUIVALENCE         = NOT_CLAIMED
  *
- *   B1_IDENTIFIER_CHARACTER_DOMAIN = ASCII
- *   B1_CTYPE_DEPENDENCY            = NONE
- *   B1_NON_ASCII_EQUIVALENCE       = NOT_CLAIMED
+ * ABI 2 — operator_punctuation_recognizer (frozen; see
+ * evidence/ACT-POLYC-SELFHOST-LEXER01/c1/winner-abi-contract.txt):
  *
- *   The component uses explicit ASCII byte range comparisons
- *   and does NOT depend on <ctype.h>. See
- *   ACT-POLYC-BOOTSTRAP02-C1-CORRECTION01 §1.P1.
+ *   I64 BootstrapClassifyOperator(
+ *       U8  *src,
+ *       I64  src_len,
+ *       I64  cursor,
+ *       I64  flags,
+ *       I64 *out_kind,
+ *       I64 *out_length
+ *   );
  *
- * The matching C declaration uses `long long` (== PolyC I64)
- * and `unsigned char *` (== PolyC U8 *). The out-parameter
- * ABI has been mechanically proven via
- * tools/quality/bootstrap02-abi-probe.HC (15-fixture ABI
- * witness at c1/abi-witness.txt).
+ *   Returns 1 if src[cursor] is an operator/punctuation byte;
+ *   on success *out_kind and *out_length are populated.
+ *   Returns 0 if src[cursor] is NOT an operator/punctuation
+ *   byte; the C wrapper falls through to the next dispatcher
+ *   arm.
+ *
+ *   CHARACTER DOMAIN:
+ *     B_LEXER_OPERATOR_CHARACTER_DOMAIN     = ASCII
+ *     B_LEXER_OPERATOR_CTYPE_DEPENDENCY      = NONE
+ *     B_LEXER_OPERATOR_NON_ASCII_EQUIVALENCE = NOT_CLAIMED
+ *
+ * Generic stage1+ selector (binding):
+ *
+ *   The production lexer (src/lexer.c) routes through the
+ *   PolyC components when compiled with
+ *   -DHCC_USE_SELFHOST_COMPONENTS. The legacy macro
+ *   -DHCC_BOOTSTRAP02_STAGE1 is preserved as a compatibility
+ *   alias and is normalized to HCC_USE_SELFHOST_COMPONENTS
+ *   at the source level (see src/lexer.c lexIdentifier).
+ *
+ *   No runtime legacy fallback. No shadow execution.
  */
 
 #include <stdint.h>
@@ -55,5 +83,12 @@ extern long long BootstrapScanIdent(unsigned char *src,
                                     long long src_len,
                                     long long start,
                                     long long *out_end);
+
+extern long long BootstrapClassifyOperator(unsigned char *src,
+                                           long long src_len,
+                                           long long cursor,
+                                           long long flags,
+                                           long long *out_kind,
+                                           long long *out_length);
 
 #endif /* LEXER_BRIDGE_H */

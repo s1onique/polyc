@@ -873,13 +873,25 @@ static int countNumberLen(Lexer *l, char *ptr, int *isfloat, int *ishex,
 
 int lexIdentifier(Lexer *l, char ch) {
 #ifdef HCC_BOOTSTRAP02_STAGE1
+/*
+ * Generic stage1+ selector (binding, ACT-POLYC-SELFHOST-LEXER01 §26):
+ *   The legacy macro HCC_BOOTSTRAP02_STAGE1 is preserved as a
+ *   compatibility alias and is normalized to
+ *   HCC_USE_SELFHOST_COMPONENTS here so the legacy macro does
+ *   not require translation by every caller.  Production builds
+ *   should pass -DHCC_USE_SELFHOST_COMPONENTS directly.
+ */
+#define HCC_USE_SELFHOST_COMPONENTS 1
+#endif
+#ifdef HCC_USE_SELFHOST_COMPONENTS
     /*
      * ACT-POLYC-BOOTSTRAP02 C2 IMPL — stage1 delegation to
      * the B1 PolyC component BootstrapScanIdent. Compiled in
-     * ONLY when -DHCC_BOOTSTRAP02_STAGE1 is passed (the
-     * opt-in stage1 build). The production ./hcc binary uses
-     * the legacy ctype-based path below; there is no
-     * runtime fallback, only a build-time selection.
+     * ONLY when -DHCC_USE_SELFHOST_COMPONENTS (or its
+     * predecessor alias HCC_BOOTSTRAP02_STAGE1) is passed.
+     * The production ./hcc binary uses the legacy ctype-based
+     * path below; there is no runtime fallback, only a
+     * build-time selection.
      *
      * Cursor binding at entry (mechanically established):
      *
@@ -1201,6 +1213,229 @@ LexerType *lexPreProcDirective(Lexer *l) {
     }
     return type;
 }
+/*
+ * ACT-POLYC-SELFHOST-LEXER01 C2 IMPL — operator / punctuation
+ * classification helper.
+ *
+ * Returns 1 if the byte at l->ptr is an operator/punctuation
+ * trigger and *out_kind / *out_length are populated, plus
+ * l->ptr is advanced by *out_length bytes.
+ *
+ * Returns 0 if the byte is not an operator/punctuation
+ * trigger; the caller must fall through to other dispatcher
+ * arms (number, identifier, preprocessor, etc.).
+ *
+ * The implementation has two forms (build-time selection,
+ * no runtime fallback):
+ *
+ *   HCC_USE_SELFHOST_COMPONENTS:
+ *     Thin wrapper around the PolyC component
+ *     BootstrapClassifyOperator. The component is the
+ *     single source of truth for classification; this
+ *     wrapper does ABI adaptation only.
+ *
+ *   legacy (no macro):
+ *     The original C switch. Preserved bit-identically so
+ *     the default ./hcc build continues to work without
+ *     requiring the PolyC component to be present.
+ */
+static int lexClassifyOperator(Lexer *l,
+                               char *start,
+                               char ch,
+                               s64 *out_kind,
+                               int *out_length)
+{
+#ifdef HCC_USE_SELFHOST_COMPONENTS
+    /* Delegate to the PolyC component (single source of
+     * truth for stage1+).  Cursor is l->start (the byte to
+     * be classified); component looks at peek bytes itself
+     * via the explicit src_len bound.
+     */
+    unsigned char *src = (unsigned char *)start;
+    long long src_len = (long long)strlen(start);
+    long long cursor = 0;
+    long long kind = 0;
+    long long length = 0;
+    int rc = (int)BootstrapClassifyOperator(src, src_len, cursor,
+                                            (long long)l->flags,
+                                            &kind, &length);
+    if (rc != 1) return 0;
+    *out_kind   = kind;
+    *out_length = (int)length;
+    /* Advance l->ptr by `length` bytes (it currently points
+     * at start; we need to be past the last operator byte). */
+    l->ptr = start + length;
+    return 1;
+#else
+    /* Legacy production path. Preserved bit-identically. */
+    *out_kind = (s64)ch;
+    switch (ch) {
+        case '=':
+            if (lexPeekMatch(l,'=')) {
+                lexNextChar(l);
+                *out_kind = (s64)TK_EQU_EQU;
+                *out_length = 2;
+            } else {
+                *out_length = 1;
+            }
+            return 1;
+        case '<':
+            if (lexPeekMatch(l,'=')) {
+                lexNextChar(l);
+                *out_kind = (s64)TK_LESS_EQU;
+                *out_length = 2;
+            } else if (lexPeekMatch(l, '<')) {
+                lexNextChar(l);
+                if (lexPeekMatch(l, '=')) {
+                    lexNextChar(l);
+                    *out_kind = (s64)TK_SHL_EQU;
+                    *out_length = 3;
+                } else {
+                    *out_kind = (s64)TK_SHL;
+                    *out_length = 2;
+                }
+            } else {
+                *out_length = 1;
+            }
+            return 1;
+        case '>':
+            if (lexPeekMatch(l,'=')) {
+                lexNextChar(l);
+                *out_kind = (s64)TK_GREATER_EQU;
+                *out_length = 2;
+            } else if (lexPeekMatch(l, '>')) {
+                lexNextChar(l);
+                if (lexPeekMatch(l, '=')) {
+                    lexNextChar(l);
+                    *out_kind = (s64)TK_SHR_EQU;
+                    *out_length = 3;
+                } else {
+                    *out_kind = (s64)TK_SHR;
+                    *out_length = 2;
+                }
+            } else {
+                *out_length = 1;
+            }
+            return 1;
+        case '+':
+            if (lexPeekMatch(l,'+')) {
+                lexNextChar(l);
+                *out_kind = (s64)TK_PLUS_PLUS;
+                *out_length = 2;
+            } else if (lexPeekMatch(l, '=')) {
+                lexNextChar(l);
+                *out_kind = (s64)TK_ADD_EQU;
+                *out_length = 2;
+            } else {
+                *out_length = 1;
+            }
+            return 1;
+        case '-':
+            if (lexPeekMatch(l,'-')) {
+                lexNextChar(l);
+                *out_kind = (s64)TK_MINUS_MINUS;
+                *out_length = 2;
+            } else if (lexPeekMatch(l, '>')) {
+                lexNextChar(l);
+                *out_kind = (s64)TK_ARROW;
+                *out_length = 2;
+            } else if (lexPeekMatch(l, '=')) {
+                lexNextChar(l);
+                *out_kind = (s64)TK_SUB_EQU;
+                *out_length = 2;
+            } else {
+                *out_length = 1;
+            }
+            return 1;
+        case '!':
+            if (lexPeekMatch(l,'=')) {
+                lexNextChar(l);
+                *out_kind = (s64)TK_NOT_EQU;
+                *out_length = 2;
+            } else {
+                *out_length = 1;
+            }
+            return 1;
+        case '&':
+            if (lexPeekMatch(l,'&')) {
+                lexNextChar(l);
+                *out_kind = (s64)TK_AND_AND;
+                *out_length = 2;
+            } else if (lexPeekMatch(l, '=')) {
+                lexNextChar(l);
+                *out_kind = (s64)TK_AND_EQU;
+                *out_length = 2;
+            } else {
+                *out_length = 1;
+            }
+            return 1;
+        case '|':
+            if (lexPeekMatch(l,'|')) {
+                lexNextChar(l);
+                *out_kind = (s64)TK_OR_OR;
+                *out_length = 2;
+            } else if (lexPeekMatch(l, '=')) {
+                lexNextChar(l);
+                *out_kind = (s64)TK_OR_EQU;
+                *out_length = 2;
+            } else {
+                *out_length = 1;
+            }
+            return 1;
+        case '*':
+            if (lexPeekMatch(l,'=')) {
+                lexNextChar(l);
+                *out_kind = (s64)TK_MUL_EQU;
+                *out_length = 2;
+            } else {
+                *out_length = 1;
+            }
+            return 1;
+        case '%':
+            if (lexPeekMatch(l,'=')) {
+                lexNextChar(l);
+                *out_kind = (s64)TK_MOD_EQU;
+                *out_length = 2;
+            } else {
+                *out_length = 1;
+            }
+            return 1;
+        case '^':
+            if (lexPeekMatch(l,'=')) {
+                lexNextChar(l);
+                *out_kind = (s64)TK_XOR_EQU;
+                *out_length = 2;
+            } else {
+                *out_length = 1;
+            }
+            return 1;
+        case ':':
+            if (l->flags & CCF_MULTI_COLON && lexPeekMatch(l,':')) {
+                lexNextChar(l);
+                *out_kind = (s64)TK_DBL_COLON;
+                *out_length = 2;
+            } else {
+                *out_length = 1;
+            }
+            return 1;
+        case '~':
+        case '(':
+        case ')':
+        case ',':
+        case ';':
+        case '[':
+        case ']':
+        case '{':
+        case '}':
+        case '\\':
+            *out_length = 1;
+            return 1;
+        default:
+            return 0;
+    }
+#endif
+}
+
 
 static int lexCore(Lexer *l, Lexeme *le) {
     char ch, *start;
@@ -1321,141 +1556,53 @@ static int lexCore(Lexer *l, Lexeme *le) {
                 break;
 
             case '=':
-                /* Check for equality */
-                if (lexPeekMatch(l,'=')) {
-                    lexNextChar(l);
-                    lexemeAssignOp(le,start,2,TK_EQU_EQU,l->lineno);
-                } else {
-                    lexemeAssignOp(le,start,1,ch,l->lineno);
-                }
-                return 1;
-            
             case '<':
-                if (lexPeekMatch(l,'=')) {
-                    lexNextChar(l);
-                    lexemeAssignOp(le,start,2,TK_LESS_EQU,l->lineno);
-                } else if (lexPeekMatch(l, '<')) {
-                    lexNextChar(l);
-                    if (lexPeekMatch(l, '=')) {
-                        lexNextChar(l);
-                        lexemeAssignOp(le,start,3,TK_SHL_EQU,l->lineno);
-                    } else {
-                        lexemeAssignOp(le,start,2,TK_SHL,l->lineno);
-                    }
-                } else {
-                    lexemeAssignOp(le,start,1,ch,l->lineno);
-                }
-                return 1;
-            
             case '>':
-                if (lexPeekMatch(l,'=')) {
-                    lexNextChar(l);
-                    lexemeAssignOp(le,start,2,TK_GREATER_EQU,l->lineno);
-                } else if (lexPeekMatch(l, '>')) {
-                    lexNextChar(l);
-                    if (lexPeekMatch(l, '=')) {
-                        lexNextChar(l);
-                        lexemeAssignOp(le,start,3,TK_SHR_EQU,l->lineno);
-                    } else {
-                        lexemeAssignOp(le,start,2,TK_SHR,l->lineno);
-                    }
-                } else {
-                    lexemeAssignOp(le,start,1,ch,l->lineno);
-                }
-                return 1;
-
             case '+':
-                if (lexPeekMatch(l,'+')) {
-                    lexNextChar(l);
-                    lexemeAssignOp(le,start,2,TK_PLUS_PLUS,l->lineno);
-                } else if (lexPeekMatch(l, '=')) {
-                    lexNextChar(l);
-                    lexemeAssignOp(le,start,2,TK_ADD_EQU,l->lineno);
-                } else {
-                    lexemeAssignOp(le,start,1,ch,l->lineno);
-                }
-                return 1;
-
             case '-':
-                if (lexPeekMatch(l,'-')) {
-                    lexNextChar(l);
-                    lexemeAssignOp(le,start,2,TK_MINUS_MINUS,l->lineno);
-                } else if (lexPeekMatch(l, '>')) {
-                    lexNextChar(l);
-                    lexemeAssignOp(le,start,2,TK_ARROW,l->lineno);
-                } else if (lexPeekMatch(l, '=')) {
-                    lexNextChar(l);
-                    lexemeAssignOp(le,start,2,TK_SUB_EQU,l->lineno);
-                } else {
-                    lexemeAssignOp(le,start,1,ch,l->lineno);
-                }
-                return 1;
-            
             case '!':
-                if (lexPeekMatch(l,'=')) {
-                    lexNextChar(l);
-                    lexemeAssignOp(le,start,2,TK_NOT_EQU,l->lineno);
-                } else {
-                    lexemeAssignOp(le,start,1,ch,l->lineno);
-                }
-                return 1;
-
             case '&':
-                if (lexPeekMatch(l,'&')) {
-                    lexNextChar(l);
-                    lexemeAssignOp(le,start,2,TK_AND_AND,l->lineno);
-                } else if (lexPeekMatch(l, '=')) {
-                    lexNextChar(l);
-                    lexemeAssignOp(le,start,2,TK_AND_EQU,l->lineno);
-                } else {
-                    lexemeAssignOp(le,start,1,ch,l->lineno);
-                }
-                return 1;
-
             case '|':
-                if (lexPeekMatch(l,'|')) {
-                    lexNextChar(l);
-                    lexemeAssignOp(le,start,2,TK_OR_OR,l->lineno);
-                } else if (lexPeekMatch(l, '=')) {
-                    lexNextChar(l);
-                    lexemeAssignOp(le,start,2,TK_OR_EQU,l->lineno);
-                } else {
-                    lexemeAssignOp(le,start,1,ch,l->lineno);
-                }
-                return 1;
-
             case '*':
-                if (lexPeekMatch(l, '=')) {
-                    lexNextChar(l);
-                    lexemeAssignOp(le,start,2,TK_MUL_EQU,l->lineno);
-                } else {
-                    lexemeAssignOp(le,start,1,ch,l->lineno);
-                }
-                return 1;
-
             case '%':
-                if (lexPeekMatch(l, '=')) {
-                    lexNextChar(l);
-                    lexemeAssignOp(le,start,2,TK_MOD_EQU,l->lineno);
-                } else {
-                    lexemeAssignOp(le,start,1,ch,l->lineno);
-                }
-                return 1;
-            
             case '^':
-                if (lexPeekMatch(l, '=')) {
-                    lexNextChar(l);
-                    lexemeAssignOp(le,start,2,TK_XOR_EQU,l->lineno);
-                } else {
-                    lexemeAssignOp(le,start,1,ch,l->lineno);
+            case '~':
+            case '(':
+            case ')':
+            case ',':
+            case ';':
+            case '[':
+            case ']':
+            case '{':
+            case '}':
+            case ':':
+            case '\\': {
+                /* ACT-POLYC-SELFHOST-LEXER01 C2 IMPL — operator
+                 * classification delegated to lexClassifyOperator.
+                 * The helper is a thin wrapper around the PolyC
+                 * component in stage1+ builds, and the legacy
+                 * C switch in stage0 builds. */
+                s64 op_kind = 0;
+                int op_len = 0;
+                if (lexClassifyOperator(l, start, ch,
+                                        &op_kind, &op_len)) {
+                    lexemeAssignOp(le, start, op_len, op_kind,
+                                   l->lineno);
+                    return 1;
                 }
-                return 1;
-
+                break;
+            }
             case '$':
             case '@':
                 if (l->flags & CCF_ASM_BLOCK) {
-                    lexemeAssignOp(le,start,1,ch,l->lineno);
-                    return 1;
+                    s64 op_kind = 0;
+                    int op_len = 0;
+                    if (lexClassifyOperator(l, start, ch,
+                                            &op_kind, &op_len)) {
+                        lexemeAssignOp(le, start, op_len, op_kind,
+                                       l->lineno);
+                        return 1;
+                    }
                 }
                 break;
             case '.':
@@ -1483,12 +1630,18 @@ static int lexCore(Lexer *l, Lexeme *le) {
                     }
                     lexRaise(l, "`..` is an invalid token sequence");
                 }
-                
+                /* single '.' */
+                {
+                    s64 op_kind = 0;
+                    int op_len = 0;
+                    if (lexClassifyOperator(l, start, ch,
+                                            &op_kind, &op_len)) {
+                        lexemeAssignOp(le, start, op_len, op_kind,
+                                       l->lineno);
+                        return 1;
+                    }
+                }
                 lexemeAssignOp(le,start,1,ch,l->lineno);
-                return 1;
-
-            case '\\':
-                lexemeAssignOp(le,start,1,'\\',l->lineno);
                 return 1;
 
             case '#': {
@@ -1496,8 +1649,14 @@ static int lexCore(Lexer *l, Lexeme *le) {
                  * marker preprocessor directives can't appear there anyway,
                  * so surface it as a plain punctuation token. */
                 if (l->flags & CCF_ASM_BLOCK) {
-                    lexemeAssignOp(le,start,1,ch,l->lineno);
-                    return 1;
+                    s64 op_kind = 0;
+                    int op_len = 0;
+                    if (lexClassifyOperator(l, start, ch,
+                                            &op_kind, &op_len)) {
+                        lexemeAssignOp(le, start, op_len, op_kind,
+                                       l->lineno);
+                        return 1;
+                    }
                 }
                 type = lexPreProcDirective(l);
                 if (type == NULL) {
@@ -1510,27 +1669,6 @@ static int lexCore(Lexer *l, Lexeme *le) {
                 return 1;
             }
 
-            case ':': {
-                if (l->flags & CCF_MULTI_COLON && lexPeekMatch(l,':')) {
-                    lexNextChar(l);
-                    lexemeAssignOp(le,start,2,TK_DBL_COLON,l->lineno);
-                    return 1;
-                }
-                lexemeAssignOp(le,start,1,ch,l->lineno);
-                return 1;
-            }
-            case '~':
-            case '(':
-            case ')':
-            case ',':
-            case ';':
-            case '[':
-            case ']':
-            case '{':
-            case '}':
-                lexemeAssignOp(le,start,1,ch,l->lineno);
-                return 1;
-            
             default: {
                 if (isalpha(ch) || ch == '_') {
                     if ((tk_type = lexIdentifier(l, ch)) == -1) {

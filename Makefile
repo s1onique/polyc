@@ -12,7 +12,7 @@ HCC_ENABLE_LLVM ?= OFF
 
 default: all
 
-.PHONY: all formal-dafny gate-fast gate-push install-hooks llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test selfhost-component-binary selfhost-component-build selfhost-component-test selfhost-component-selftest selfhost-registry-validate factory-halt-classification-binary factory-halt-classification-selftest
+.PHONY: all formal-dafny gate-fast gate-push install-hooks llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test selfhost-component-binary selfhost-component-build selfhost-component-test selfhost-component-selftest selfhost-registry-validate factory-halt-classification-binary factory-halt-classification-selftest bootstrap06-component-build bootstrap06-operator-classify-oracle bootstrap06-direct-differential bootstrap06-component-stage1 bootstrap06-component-stage2 bootstrap06-component-stage3 bootstrap06-lexer-seam-stage1
 
 # To add sqlite3 support add -DHCC_LINK_SQLITE3=1 to the below like so:
 #```
@@ -356,7 +356,8 @@ bootstrap02-stage1: bootstrap02-component-build test-prefix-install
 		-DHCC_ENABLE_JIT=on \
 		-DHCC_ENABLE_LLVM=OFF \
 		-DHCC_ENABLE_BOOTSTRAP02_STAGE1=ON \
-		-DBOOTSTRAP02_IDENT_OBJECT=$(CURDIR)/build/bootstrap02-ident.o
+		-DBOOTSTRAP02_IDENT_OBJECT=$(CURDIR)/build/bootstrap02-ident.o \
+		-DBOOTSTRAP06_OPERATOR_OBJECT=$(CURDIR)/build/bootstrap06-operator-classify.o
 	$(MAKE) -C ./build/hcc-bootstrap02-build hcc-bootstrap02 -j2
 	@if [ ! -x ./build/hcc-bootstrap02 ]; then \
 		echo "bootstrap02-stage1: ./build/hcc-bootstrap02 not produced" >&2; \
@@ -364,6 +365,8 @@ bootstrap02-stage1: bootstrap02-component-build test-prefix-install
 	fi
 	@nm ./build/hcc-bootstrap02 | grep -q '_BootstrapScanIdent' \
 		|| { echo "bootstrap02-stage1: symbol _BootstrapScanIdent not found in linked binary" >&2; exit 1; }
+	@nm ./build/hcc-bootstrap02 | grep -q '_BootstrapClassifyOperator' \
+		|| { echo "bootstrap02-stage1: symbol _BootstrapClassifyOperator not found in linked binary" >&2; exit 1; }
 	@echo "BOOTSTRAP02_STAGE1_BINARY=./build/hcc-bootstrap02"
 
 # ACT-POLYC-BOOTSTRAP02-C2-CORRECTION01 C2 IMPL — pillar-B
@@ -594,7 +597,9 @@ bootstrap03-stage2: bootstrap03-component-build test-prefix-install
 		-DHCC_ENABLE_BOOTSTRAP02_STAGE1=ON \
 		-DBOOTSTRAP02_IDENT_OBJECT=$(CURDIR)/build/bootstrap02-ident.o \
 		-DHCC_ENABLE_BOOTSTRAP03_STAGE2=ON \
-		-DBOOTSTRAP03_IDENT_OBJECT=$(CURDIR)/build/bootstrap03-ident.stage1.o
+		-DBOOTSTRAP03_IDENT_OBJECT=$(CURDIR)/build/bootstrap03-ident.stage1.o \
+		-DBOOTSTRAP06_OPERATOR_OBJECT=$(CURDIR)/build/bootstrap06-operator-classify.o \
+		-DBOOTSTRAP06_OPERATOR_OBJECT_STAGE1=$(CURDIR)/build/bootstrap06-operator-classify.stage1.o
 	$(MAKE) -C ./build/hcc-bootstrap03-build hcc-bootstrap03 -j2
 	@if [ ! -x ./build/hcc-bootstrap03 ]; then \
 		echo "bootstrap03-stage2: ./build/hcc-bootstrap03 not produced" >&2; \
@@ -602,6 +607,8 @@ bootstrap03-stage2: bootstrap03-component-build test-prefix-install
 	fi
 	@nm ./build/hcc-bootstrap03 | grep -q '_BootstrapScanIdent' \
 		|| { echo "bootstrap03-stage2: symbol _BootstrapScanIdent not found in linked binary" >&2; exit 1; }
+	@nm ./build/hcc-bootstrap03 | grep -q '_BootstrapClassifyOperator' \
+		|| { echo "bootstrap03-stage2: symbol _BootstrapClassifyOperator not found in linked binary" >&2; exit 1; }
 	@echo "BOOTSTRAP03_STAGE2_BINARY=./build/hcc-bootstrap03"
 
 # ACT-POLYC-BOOTSTRAP03 C2 IMPL — B2 stage2 differential
@@ -791,7 +798,10 @@ bootstrap04-stage3: bootstrap04-component-build test-prefix-install
 		-DHCC_ENABLE_BOOTSTRAP03_STAGE2=ON \
 		-DBOOTSTRAP03_IDENT_OBJECT=$(CURDIR)/build/bootstrap03-ident.stage1.o \
 		-DHCC_ENABLE_BOOTSTRAP04_STAGE3=ON \
-		-DBOOTSTRAP04_IDENT_OBJECT=$(CURDIR)/build/bootstrap04-ident.stage2.o
+		-DBOOTSTRAP04_IDENT_OBJECT=$(CURDIR)/build/bootstrap04-ident.stage2.o \
+		-DBOOTSTRAP06_OPERATOR_OBJECT=$(CURDIR)/build/bootstrap06-operator-classify.o \
+		-DBOOTSTRAP06_OPERATOR_OBJECT_STAGE1=$(CURDIR)/build/bootstrap06-operator-classify.stage1.o \
+		-DBOOTSTRAP06_OPERATOR_OBJECT_STAGE2=$(CURDIR)/build/bootstrap06-operator-classify.stage2.o
 	$(MAKE) -C ./build/hcc-bootstrap04-build hcc-bootstrap04 -j2
 	@if [ ! -x ./build/hcc-bootstrap04 ]; then \
 		echo "bootstrap04-stage3: ./build/hcc-bootstrap04 not produced" >&2; \
@@ -799,6 +809,8 @@ bootstrap04-stage3: bootstrap04-component-build test-prefix-install
 	fi
 	@nm ./build/hcc-bootstrap04 | grep -q '_BootstrapScanIdent' \
 		|| { echo "bootstrap04-stage3: symbol _BootstrapScanIdent not found in linked binary" >&2; exit 1; }
+	@nm ./build/hcc-bootstrap04 | grep -q '_BootstrapClassifyOperator' \
+		|| { echo "bootstrap04-stage3: symbol _BootstrapClassifyOperator not found in linked binary" >&2; exit 1; }
 	@echo "BOOTSTRAP04_STAGE3_BINARY=./build/hcc-bootstrap04"
 
 # ACT-POLYC-BOOTSTRAP04 C2 IMPL — B3 component differential.
@@ -966,6 +978,78 @@ bootstrap04-lexer-seam-test: bootstrap04-stage3
 		echo "BOOTSTRAP04_LEXER_SEAM_RESIDUE=NONE"; \
 	fi
 
+# ACT-POLYC-SELFHOST-LEXER01 C2 IMPL — operator/punctuation
+# classification component targets.  See
+# evidence/ACT-POLYC-SELFHOST-LEXER01/c2/.
+
+bootstrap06-component-build:
+	./hcc --install-dir=$(TEST_PREFIX) \
+		-c tools/bootstrap/selfhost-lexer-operator-classify.HC \
+		-o ./build/bootstrap06-operator-classify.o
+	@if [ ! -f ./build/bootstrap06-operator-classify.o ]; then \
+		echo "bootstrap06-component-build: object not produced" >&2; \
+		exit 1; \
+	fi
+	@nm ./build/bootstrap06-operator-classify.o | grep -q '_BootstrapClassifyOperator' \
+		|| { echo "bootstrap06-component-build: symbol missing" >&2; exit 1; }
+	@echo "BOOTSTRAP06_STAGE0_OPERATOR_OBJECT=./build/bootstrap06-operator-classify.o"
+
+bootstrap06-operator-classify-oracle:
+	cc -std=c99 -O2 -Wall -Wextra -o ./build/bootstrap06-operator-classify-oracle \
+		tools/quality/bootstrap06-operator-classify-oracle.c
+	@if [ ! -x ./build/bootstrap06-operator-classify-oracle ]; then \
+		echo "bootstrap06-operator-classify-oracle: oracle not produced" >&2; \
+		exit 1; \
+	fi
+
+bootstrap06-direct-differential: bootstrap06-operator-classify-oracle bootstrap06-component-build
+	cc -std=c99 -O2 -Wall -Wextra -o ./build/bootstrap06-direct-differential \
+		tools/quality/bootstrap06-direct-differential.c \
+		./build/bootstrap06-operator-classify.o
+	./build/bootstrap06-direct-differential
+	@echo "BOOTSTRAP06_DIRECT_DIFFERENTIAL=PASS"
+
+bootstrap06-component-stage1: bootstrap02-stage1
+	@if [ ! -x ./build/hcc-bootstrap02 ]; then \
+		echo "bootstrap06-component-stage1: stage1 compiler missing" >&2; \
+		exit 1; \
+	fi
+	./build/hcc-bootstrap02 --install-dir=$(TEST_PREFIX) \
+		-c tools/bootstrap/selfhost-lexer-operator-classify.HC \
+		-o ./build/bootstrap06-operator-classify.stage1.o
+	@nm ./build/bootstrap06-operator-classify.stage1.o | grep -q '_BootstrapClassifyOperator' \
+		|| { echo "bootstrap06-component-stage1: symbol missing in stage1 object" >&2; exit 1; }
+
+bootstrap06-component-stage2: bootstrap03-stage2 bootstrap06-component-stage1
+	./build/hcc-bootstrap03 --install-dir=$(TEST_PREFIX) \
+		-c tools/bootstrap/selfhost-lexer-operator-classify.HC \
+		-o ./build/bootstrap06-operator-classify.stage2.o
+	@nm ./build/bootstrap06-operator-classify.stage2.o | grep -q '_BootstrapClassifyOperator' \
+		|| { echo "bootstrap06-component-stage2: symbol missing in stage2 object" >&2; exit 1; }
+
+bootstrap06-component-stage3: bootstrap04-stage3 bootstrap06-component-stage2
+	./build/hcc-bootstrap04 --install-dir=$(TEST_PREFIX) \
+		-c tools/bootstrap/selfhost-lexer-operator-classify.HC \
+		-o ./build/bootstrap06-operator-classify.stage3.o
+	@nm ./build/bootstrap06-operator-classify.stage3.o | grep -q '_BootstrapClassifyOperator' \
+		|| { echo "bootstrap06-component-stage3: symbol missing in stage3 object" >&2; exit 1; }
+
+# Production-seam test for the operator slice (stage0 vs stage1
+# lexCore operator-classification output; the existing
+# bootstrap02-lexer-seam-runner covers identifier; we use a
+# dedicated runner for operators).
+bootstrap06-lexer-seam-stage1: bootstrap06-component-build bootstrap02-stage1
+	@if [ ! -d "$(HCC_STAGE1_OBJDIR)" ]; then \
+		echo "bootstrap06-lexer-seam-stage1: $(HCC_STAGE1_OBJDIR) missing" >&2; \
+		exit 1; \
+	fi
+	cc -std=c99 -O2 -Wall -Wextra -Wno-unused-function -Wno-unused-variable \
+		-DBUILD_LABEL='"stage1"' -Isrc \
+		-o ./build/bootstrap06-lexer-seam-stage1 \
+		tools/quality/bootstrap06-lexer-seam-runner.c \
+		$(HCC_STAGE1_OBJECTS) ./build/bootstrap06-operator-classify.o $(TASM_LIB) -lm -lpthread -ldl
+	./build/bootstrap06-lexer-seam-stage1
+
 # ACT-POLYC-SELFHOST-SURFACE01 C2 IMPL — generic self-host
 # component surface. Driven by docs/factory/SELF-HOST-COMPONENTS.tsv
 # via tools/selfhost/selfhost-component.sh.
@@ -974,6 +1058,11 @@ bootstrap04-lexer-seam-test: bootstrap04-stage3
 #   STAGE=0  -> ./hcc
 #   STAGE=1  -> ./build/hcc-bootstrap02
 #   STAGE=2  -> ./build/hcc-bootstrap03
+#   STAGE=3  -> ./build/hcc-bootstrap04
+#             (ACT-POLYC-SELFHOST-LEXER01 §23: extended the
+#              generic component framework to support stage3
+#              so any registered component can be compiled by
+#              the existing stage3 compiler.)
 #
 # Generic output paths (binding):
 #   build/selfhost/stage<STAGE>/<component_id>.o

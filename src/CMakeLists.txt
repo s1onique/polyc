@@ -227,11 +227,31 @@ if (HCC_ENABLE_BOOTSTRAP02_STAGE1)
     # SEPARATE executable so the production `./hcc` binary
     # tree remains a stage0 reference (no mutation).
     add_executable(hcc-bootstrap02 ${SOURCES} ${HEADERS})
-    target_compile_definitions(hcc-bootstrap02 PRIVATE HCC_BOOTSTRAP02_STAGE1)
+    # ACT-POLYC-SELFHOST-LEXER01 §26: the generic stage1+ selector
+    # is HCC_USE_SELFHOST_COMPONENTS. The legacy macro
+    # HCC_BOOTSTRAP02_STAGE1 is normalized at the source level in
+    # src/lexer.c::lexIdentifier; we still pass both for clarity.
+    target_compile_definitions(hcc-bootstrap02 PRIVATE
+        HCC_USE_SELFHOST_COMPONENTS
+        HCC_BOOTSTRAP02_STAGE1)
     if (HCC_ENABLE_JIT)
         target_link_libraries(hcc-bootstrap02 tasm ${CMAKE_DL_LIBS})
     endif()
-    target_link_libraries(hcc-bootstrap02 ${BOOTSTRAP02_IDENT_OBJECT} m)
+    # ACT-POLYC-SELFHOST-LEXER01 C2 IMPL: link the operator /
+    # punctuation classifier (tools/bootstrap/selfhost-lexer-
+    # operator-classify.HC, compiled by stage0) into the stage1
+    # binary. Optional via BOOTSTRAP06_OPERATOR_OBJECT; default
+    # path is ./build/bootstrap06-operator-classify.o.
+    if (NOT BOOTSTRAP06_OPERATOR_OBJECT)
+        set(BOOTSTRAP06_OPERATOR_OBJECT "${CMAKE_SOURCE_DIR}/../build/bootstrap06-operator-classify.o")
+    endif()
+    if (EXISTS "${BOOTSTRAP06_OPERATOR_OBJECT}")
+        target_link_libraries(hcc-bootstrap02 ${BOOTSTRAP02_IDENT_OBJECT} ${BOOTSTRAP06_OPERATOR_OBJECT} m)
+        message(STATUS "ACT-POLYC-SELFHOST-LEXER01: linking stage0 operator component ${BOOTSTRAP06_OPERATOR_OBJECT}")
+    else()
+        target_link_libraries(hcc-bootstrap02 ${BOOTSTRAP02_IDENT_OBJECT} m)
+        message(STATUS "ACT-POLYC-SELFHOST-LEXER01: operator component not yet built; linking only B1")
+    endif()
     install(TARGETS hcc-bootstrap02 DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 endif()
 
@@ -302,13 +322,24 @@ if (HCC_ENABLE_BOOTSTRAP03_STAGE2)
     # We therefore build a SEPARATE stage2 executable; do NOT
     # overwrite hcc or hcc-bootstrap02.
     add_executable(hcc-bootstrap03 ${SOURCES} ${HEADERS})
+    # ACT-POLYC-SELFHOST-LEXER01 §26: use generic selector.
     target_compile_definitions(hcc-bootstrap03 PRIVATE
+        HCC_USE_SELFHOST_COMPONENTS
         HCC_BOOTSTRAP02_STAGE1
         HCC_BOOTSTRAP03_STAGE2)
     if (HCC_ENABLE_JIT)
         target_link_libraries(hcc-bootstrap03 tasm ${CMAKE_DL_LIBS})
     endif()
-    target_link_libraries(hcc-bootstrap03 ${BOOTSTRAP03_IDENT_OBJECT} m)
+    # ACT-POLYC-SELFHOST-LEXER01 C2 IMPL: also link the operator
+    # component (this time as produced by stage1).
+    if (NOT BOOTSTRAP06_OPERATOR_OBJECT_STAGE1)
+        set(BOOTSTRAP06_OPERATOR_OBJECT_STAGE1 "${CMAKE_SOURCE_DIR}/../build/bootstrap06-operator-classify.stage1.o")
+    endif()
+    if (EXISTS "${BOOTSTRAP06_OPERATOR_OBJECT_STAGE1}")
+        target_link_libraries(hcc-bootstrap03 ${BOOTSTRAP03_IDENT_OBJECT} ${BOOTSTRAP06_OPERATOR_OBJECT_STAGE1} m)
+    else()
+        target_link_libraries(hcc-bootstrap03 ${BOOTSTRAP03_IDENT_OBJECT} m)
+    endif()
     install(TARGETS hcc-bootstrap03 DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 endif()
 
@@ -377,13 +408,24 @@ if (HCC_ENABLE_BOOTSTRAP04_STAGE3)
     # We build a SEPARATE stage3 executable; do NOT overwrite
     # hcc, hcc-bootstrap02, or hcc-bootstrap03.
     add_executable(hcc-bootstrap04 ${SOURCES} ${HEADERS})
+    # ACT-POLYC-SELFHOST-LEXER01 §26: use generic selector.
     target_compile_definitions(hcc-bootstrap04 PRIVATE
+        HCC_USE_SELFHOST_COMPONENTS
         HCC_BOOTSTRAP02_STAGE1
         HCC_BOOTSTRAP04_STAGE3)
     if (HCC_ENABLE_JIT)
         target_link_libraries(hcc-bootstrap04 tasm ${CMAKE_DL_LIBS})
     endif()
-    target_link_libraries(hcc-bootstrap04 ${BOOTSTRAP04_IDENT_OBJECT} m)
+    # ACT-POLYC-SELFHOST-LEXER01 C2 IMPL: also link the operator
+    # component as produced by stage2.
+    if (NOT BOOTSTRAP06_OPERATOR_OBJECT_STAGE2)
+        set(BOOTSTRAP06_OPERATOR_OBJECT_STAGE2 "${CMAKE_SOURCE_DIR}/../build/bootstrap06-operator-classify.stage2.o")
+    endif()
+    if (EXISTS "${BOOTSTRAP06_OPERATOR_OBJECT_STAGE2}")
+        target_link_libraries(hcc-bootstrap04 ${BOOTSTRAP04_IDENT_OBJECT} ${BOOTSTRAP06_OPERATOR_OBJECT_STAGE2} m)
+    else()
+        target_link_libraries(hcc-bootstrap04 ${BOOTSTRAP04_IDENT_OBJECT} m)
+    endif()
     install(TARGETS hcc-bootstrap04 DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 endif()
 

@@ -19,7 +19,7 @@
 //   SHC_REPO_ROOT  default "."    (overrides repo-root resolution)
 //   SHC_REGISTRY   default docs/factory/SELF-HOST-COMPONENTS.tsv
 //   COMPONENT      required for build/test
-//   STAGE          required for build/test (accepted: 0|1|2)
+//   STAGE          required for build/test (accepted: 0|1|2|3)
 //
 // Process execution: NEVER constructs a shell. Producer is invoked
 // via SpawnAndCapture with a fixed argv vector. Injection hardening
@@ -90,10 +90,11 @@ U8 *SHC_VALID_STATES[] = {
 // stage2 -> ./build/hcc-bootstrap03
 // ============================================================
 
-U8 *SHC_STAGE_PRODUCERS[3] = {
+U8 *SHC_STAGE_PRODUCERS[4] = {
   "./hcc",
   "./build/hcc-bootstrap02",
   "./build/hcc-bootstrap03",
+  "./build/hcc-bootstrap04",
 };
 
 U8 *SHC_GENERIC_OUT_TEMPLATE = "build/selfhost/stage%d/%s.o";
@@ -478,13 +479,14 @@ U8 *SHCValidateComponent(U8 *c)
 I64 SHCValidateStage(U8 *s)
 {
   if (!s || StrLen(s) == 0) {
-    "FAIL: STAGE=<0|1|2> is required\n";
+    "FAIL: STAGE=<0|1|2|3> is required\n";
     Exit(2);
   }
   if (!StrCmp(s, "0")) return 0;
   if (!StrCmp(s, "1")) return 1;
   if (!StrCmp(s, "2")) return 2;
-  "FAIL: STAGE='%s' is required (expected 0|1|2)\n", s;
+  if (!StrCmp(s, "3")) return 3;
+  "FAIL: STAGE='%s' is required (expected 0|1|2|3)\n", s;
   Exit(2);
   // Unreachable: Exit() does not return, but this defensive
   // return silences the "control may reach end of non-void
@@ -498,8 +500,8 @@ I64 SHCValidateStage(U8 *s)
 
 U8 *SHCProducerForStage(I64 stage)
 {
-  if (stage < 0 || stage > 2) {
-    "FAIL: unknown producer stage: %d (expected 0|1|2)\n", stage;
+  if (stage < 0 || stage > 3) {
+    "FAIL: unknown producer stage: %d (expected 0|1|2|3)\n", stage;
     Exit(1);
   }
   return SHC_STAGE_PRODUCERS[stage];
