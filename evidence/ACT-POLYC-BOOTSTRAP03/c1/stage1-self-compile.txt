@@ -1,0 +1,79 @@
+ACT-POLYC-BOOTSTRAP03 — C1 — stage1 self-compile experiment
+============================================================
+
+Per ACT §9 (C1 provenance experiment) and AC11/AC12:
+freshly prove that stage1 (hcc-bootstrap02) can compile
+the B1 PolyC source and produce an object exporting
+_BootstrapScanIdent.
+
+------------------------------------------------------------
+Command
+------------------------------------------------------------
+
+```bash
+mkdir -p build/c1-experiment
+./build/hcc-bootstrap02 \
+    --install-dir=$(pwd)/build/test-prefix \
+    -c tools/bootstrap/bootstrap02-ident.HC \
+    -o build/c1-experiment/bootstrap03-ident.stage1.o
+```
+
+------------------------------------------------------------
+Observed
+------------------------------------------------------------
+
+```text
+$ ./build/hcc-bootstrap02 \
+    --install-dir=$(pwd)/build/test-prefix \
+    -c tools/bootstrap/bootstrap02-ident.HC \
+    -o build/c1-experiment/bootstrap03-ident.stage1.o
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+(warnings are host-clang noise from hcc; exit 0)
+
+$ ls -la build/c1-experiment/bootstrap03-ident.stage1.o
+-rw-r--r--  1 chistyakov  staff  2704 Sep 13 18:34 bootstrap03-ident.stage1.o
+
+$ nm build/c1-experiment/bootstrap03-ident.stage1.o | grep _BootstrapScanIdent
+00000000000002e0 T _BootstrapScanIdent
+
+$ sha256sum build/c1-experiment/bootstrap03-ident.stage1.o
+a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f
+```
+
+------------------------------------------------------------
+Capture record
+------------------------------------------------------------
+
+```text
+producer = build/hcc-bootstrap02 (stage1)
+input    = tools/bootstrap/bootstrap02-ident.HC
+output   = build/c1-experiment/bootstrap03-ident.stage1.o
+symbol   = T _BootstrapScanIdent
+sha256   = a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f
+```
+
+------------------------------------------------------------
+Verdict
+------------------------------------------------------------
+
+```text
+STAGE1_CAN_COMPILE_B1_SOURCE            = YES
+STAGE1_PRODUCES_B1_OBJECT               = YES
+STAGE1_B1_OBJECT_EXPORTS_B1_SYMBOL      = YES
+STAGE1_B1_OBJECT_HASH                   = a1b620c0...78cd854f
+STAGE1_B1_OBJECT_BYTE_SIZE              = 2704
+
+HALT_STAGE1_CANNOT_COMPILE_B1_SOURCE    = NOT_FIRED
+```
+
+The C1 RED premise (stage1 cannot produce the B1 object)
+is therefore REFUTED by direct experiment. This is the
+expected B1 success property re-validated at the B2 entry
+boundary.
+
+The C1 ACT §8 principal RED is **not** about whether
+stage1 can produce the B1 object — that is already PASS.
+The principal RED is that the artifact **has not been
+consumed** to construct a successor compiler stage.

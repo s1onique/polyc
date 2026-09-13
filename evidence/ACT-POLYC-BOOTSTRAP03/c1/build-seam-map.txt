@@ -1,0 +1,134 @@
+ACT-POLYC-BOOTSTRAP03 — C1 — build seam map
+=============================================
+
+Per ACT §9 + AC16: mechanically map the existing B1
+build seam and identify what must change to wire a
+stage2 build.
+
+------------------------------------------------------------
+Existing B1 build graph (frozen; not modified in C1)
+------------------------------------------------------------
+
+### Component build (stage0 → B1 object)
+
+```text
+Makefile:282-291
+  bootstrap02-component-build: test-prefix-install
+      ./hcc --install-dir=$(TEST_PREFIX) \
+          -c tools/bootstrap/bootstrap02-ident.HC \
+          -o ./build/bootstrap02-ident.o
+      @nm ./build/bootstrap02-ident.o | grep -q '_BootstrapScanIdent' ...
+```
+
+Producer: `./hcc` (stage0).
+Output:   `./build/bootstrap02-ident.o`.
+
+### Stage1 binary build (stage0 object → hcc-bootstrap02)
+
+```text
+Makefile:341-359
+  bootstrap02-stage1: bootstrap02-component-build test-prefix-install
+      cmake -S ./src -B ./build/hcc-bootstrap02-build -G 'Unix Makefiles' \
+          -DCMAKE_C_COMPILER=$(C_COMPILER) \
+          -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
+          -DCMAKE_C_FLAGS=$(CFLAGS) \
+          -DHCC_ENABLE_JIT=on \
+          -DHCC_ENABLE_LLVM=OFF \
+          -DHCC_ENABLE_BOOTSTRAP02_STAGE1=ON \
+          -DBOOTSTRAP02_IDENT_OBJECT=$(CURDIR)/build/bootstrap02-ident.o
+      $(MAKE) -C ./build/hcc-bootstrap02-build hcc-bootstrap02 -j2
+      @nm ./build/hcc-bootstrap02 | grep -q '_BootstrapScanIdent' ...
+```
+
+Parameter: `-DBOOTSTRAP02_IDENT_OBJECT=$(CURDIR)/build/bootstrap02-ident.o`.
+
+### Stage1 → src/lexer.c dispatch (production)
+
+```text
+src/CMakeLists.txt:210-236
+  option(HCC_ENABLE_BOOTSTRAP02_STAGE1
+         "Link the B1 PolyC component (BootstrapScanIdent)
+          into a separate stage1 binary (hcc-bootstrap02). ..."
+         OFF)
+  if (HCC_ENABLE_BOOTSTRAP02_STAGE1)
+      ... require BOOTSTRAP02_IDENT_OBJECT ...
+      add_executable(hcc-bootstrap02 ${SOURCES} ${HEADERS})
+      target_compile_definitions(hcc-bootstrap02 PRIVATE
+                                 HCC_BOOTSTRAP02_STAGE1)
+      ...
+      target_link_libraries(hcc-bootstrap02
+                            ${BOOTSTRAP02_IDENT_OBJECT} m)
+  endif()
+```
+
+src/lexer.c gates the delegation:
+
+```text
+src/lexer.c:874-916
+  int lexIdentifier(Lexer *l, char ch) {
+  #ifdef HCC_BOOTSTRAP02_STAGE1
+      ...
+      int rc = (int)BootstrapScanIdent(src, src_len, start_off, &end_off);
+      ...
+  #else
+      /* legacy ctype path */
+      ...
+  #endif
+  }
+```
+
+------------------------------------------------------------
+Parameterizable seam (for stage2)
+------------------------------------------------------------
+
+The B1 build graph is parameterized by exactly two
+CMake flags:
+
+```text
+HCC_ENABLE_BOOTSTRAP02_STAGE1 = ON | OFF
+BOOTSTRAP02_IDENT_OBJECT       = /abs/path/to/B1.o
+```
+
+To produce stage2, B2 must add an analogous pair:
+
+```text
+HCC_ENABLE_BOOTSTRAP03_STAGE2 = ON | OFF   (new)
+BOOTSTRAP03_IDENT_OBJECT       = /abs/path/to/stage1-produced/B1.o
+```
+
+with the additional invariant that the stage1-produced
+object is consumed — not the stage0-produced object —
+to satisfy §5's provenance witness.
+
+------------------------------------------------------------
+Stage1 → stage2 wiring answer (AC16)
+------------------------------------------------------------
+
+```text
+Which build target creates stage1?
+  bootstrap02-stage1 (Makefile:341)
+
+Where is the B1 object added?
+  -DBOOTSTRAP02_IDENT_OBJECT=$(CURDIR)/build/bootstrap02-ident.o
+  passed to CMake, then target_link_libraries(hcc-bootstrap02 ...).
+
+What variable/path names it?
+  BOOTSTRAP02_IDENT_OBJECT (CMake cache var)
+  resolved absolute path at link time.
+
+Can that input be parameterized cleanly for stage2?
+  YES — by mirroring the same pattern under new option
+  HCC_ENABLE_BOOTSTRAP03_STAGE2 and new object var
+  BOOTSTRAP03_IDENT_OBJECT, with the input object being
+  build/bootstrap03-ident.stage1.o (built by stage1).
+```
+
+The Makefile seam must additionally ensure that:
+
+1. The stage2 component build target depends on the
+   stage1 binary (not stage0).
+2. The stage1-produced object path is distinct from
+   the stage0-produced object path (no silent overwrite).
+3. The stage2 build target consumes the **stage1**
+   object, not the stage0 object — guarded by the
+   distinct path.

@@ -1,0 +1,94 @@
+ACT-POLYC-BOOTSTRAP03 — C1 — stage identity
+============================================
+
+Per ACT §11 AC07..AC10: capture the identity of stage0,
+stage1, and the stage1-produced B1 object.
+
+------------------------------------------------------------
+stage0: ordinary ./hcc
+------------------------------------------------------------
+
+```text
+path          = ./hcc
+size          = 740752 bytes
+sha256        = 98a687f7429bedb1009055be31832af8f1cad474e56d4ac3e306eafb8be8c461
+
+$ nm ./hcc | grep _BootstrapScanIdent
+(no output)
+
+STAGE0_CONTAINS_B1_SYMBOL = NO
+```
+
+------------------------------------------------------------
+stage1: build/hcc-bootstrap02
+------------------------------------------------------------
+
+```text
+path          = build/hcc-bootstrap02
+size          = 742160 bytes
+sha256        = 44ec5d7ee46d57ca274fc17ff2ef3174f4d99578f2827b005086968e5f6154c8
+
+$ nm build/hcc-bootstrap02 | grep _BootstrapScanIdent
+000000010007c318 T _BootstrapScanIdent
+
+STAGE1_CONTAINS_B1_SYMBOL = YES
+```
+
+------------------------------------------------------------
+stage0-produced B1 object (linked into stage1)
+------------------------------------------------------------
+
+```text
+path          = build/bootstrap02-ident.o
+size          = 2704 bytes
+sha256        = a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f
+producer      = ./hcc (stage0)
+source        = tools/bootstrap/bootstrap02-ident.HC
+nm            = T _BootstrapScanIdent
+```
+
+------------------------------------------------------------
+stage1-produced B1 object (transient; C1 RED experiment)
+------------------------------------------------------------
+
+```text
+path          = build/c1-experiment/bootstrap03-ident.stage1.o
+size          = 2704 bytes
+sha256        = a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f
+producer      = ./build/hcc-bootstrap02 (stage1)
+source        = tools/bootstrap/bootstrap02-ident.HC
+nm            = T _BootstrapScanIdent
+```
+
+------------------------------------------------------------
+Provenance note (binding per §5)
+------------------------------------------------------------
+
+stage0 and stage1 produce the **same SHA** for the B1
+component object. This is the C1 ACT §5 expected caveat:
+
+> A matching SHA between stage0 and stage1 B1 objects is
+> desirable but not sufficient to prove provenance.
+> You need causal binding, not merely equal bytes.
+
+Hash equality here is incidental — both stages use the
+same host-clang backend and the B1 source is identical,
+so the resulting Mach-O is deterministic. The B2
+provenance witness must therefore record the **producer
+command + output path + stage2 link input**, not just
+hashes.
+
+------------------------------------------------------------
+Identity verdict
+------------------------------------------------------------
+
+```text
+STAGE0_PRESENT                = YES
+STAGE1_PRESENT                = YES
+STAGE2_PRESENT                = NO
+STAGE0_B1_SYMBOL              = ABSENT
+STAGE1_B1_SYMBOL              = DEFINED
+STAGE1_PRODUCES_B1_OBJECT     = YES  (C1 experiment)
+STAGE1_B1_OBJECT_HASH         = a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f
+STAGE0_B1_OBJECT_HASH         = a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f
+```

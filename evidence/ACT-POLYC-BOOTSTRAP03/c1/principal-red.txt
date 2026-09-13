@@ -1,0 +1,84 @@
+ACT-POLYC-BOOTSTRAP03 — C1 — principal RED
+==========================================
+
+Per ACT §8: the principal RED is **not** "stage1 cannot
+compile the B1 source" (B1 already proved that). The
+principal RED is:
+
+> The artifact produced by stage1 has not yet been
+> consumed to construct a successor compiler stage.
+
+------------------------------------------------------------
+RED state (current tree)
+------------------------------------------------------------
+
+```text
+STAGE1_EXISTS = YES
+
+STAGE1_CAN_COMPILE_B1_SOURCE = YES
+  (see stage1-self-compile.txt; B1 object produced,
+   _BootstrapScanIdent exported, sha256 matches stage0)
+
+STAGE1_PRODUCED_B1_OBJECT_EXISTS = YES
+  (transient; build/c1-experiment/bootstrap03-ident.stage1.o;
+   not yet linked into any compiler)
+
+STAGE2_EXISTS = NO
+  (no build/hcc-bootstrap03; see stage2-absence.txt)
+
+STAGE2_LINKS_STAGE1_B1_OBJECT = NO
+  (no canonical link line)
+
+STAGE2_USES_STAGE1_B1_OBJECT = NO
+
+FIRST_SELF_HOST = NO
+```
+
+Binding C1 result:
+
+```text
+FIRST_SELF_HOST_EDGE_CLOSED = NO
+```
+
+------------------------------------------------------------
+Why this is the principal RED
+------------------------------------------------------------
+
+B1 demonstrated that a PolyC compiler component can live
+inside the compiler. C3 demonstrated that stage1 can also
+compile that same source. Neither demonstrated that the
+output of stage1 has been consumed to construct a successor
+stage.
+
+That is the gap B2 closes.
+
+The fact that the **artifact hash happens to match**
+between stage0 and stage1 outputs is incidental — both
+use the same host-clang backend, and the B1 source is
+deterministic. The B2 ACT explicitly warns against
+substituting hash coincidence for provenance (§5).
+
+Provenance for B2 must therefore be recorded as:
+
+```text
+producer command line:   ./build/hcc-bootstrap02 -c ... -o <path>
+output path:             <canonical absolute path>
+artifact hash:           <observed sha256>
+stage2 link command:     <CMake + target_link_libraries line>
+stage2 symbol table:     nm build/hcc-bootstrap03 | grep _BootstrapScanIdent
+stage2 call site:        otool -tv build/hcc-bootstrap03 | grep bl _BootstrapScanIdent
+```
+
+All five must align to satisfy the B2 defining invariant.
+
+------------------------------------------------------------
+RED predicate satisfied
+------------------------------------------------------------
+
+```text
+FIRST_SELF_HOST_EDGE_CLOSED  = NO     (binding)
+STAGE1_PRODUCES_B1_OBJECT    = YES    (capability exists)
+STAGE2_USES_IT               = NO     (loop not yet closed)
+```
+
+This is the genuine, honest B2 RED.

@@ -1,0 +1,140 @@
+ACT-POLYC-BOOTSTRAP03 — C1 — predecessor freeze
+=================================================
+
+Per ACT §2: mechanically re-establish B1 closure truth
+from the current tree rather than trusting prose.
+
+------------------------------------------------------------
+Identity (entry)
+------------------------------------------------------------
+
+```text
+branch                  = main
+worktree                = clean
+git replace             = empty
+HEAD (C1 entry)         = 0a95d0bd5eef744de275d1687458b7e5256d4238
+```
+
+------------------------------------------------------------
+B1 authoritative CLOSE cardinality (§2 + AC04)
+------------------------------------------------------------
+
+```text
+$ git log --all-match --oneline \
+    --grep='^ACT: ACT-POLYC-BOOTSTRAP02$' \
+    --grep='^ACT-Phase: CLOSE$'
+
+0a95d0b bootstrap: close ACT-POLYC-BOOTSTRAP02 B1 partial self-host
+```
+
+Count: 1. Authoritative CLOSE: 0a95d0b.
+
+------------------------------------------------------------
+B1_PARTIAL_SELF_HOST = PASS (AC05)
+------------------------------------------------------------
+
+Direct re-execution of every currently-runnable, authoritative
+B1 closure gate on the current tree.
+
+### B1 component differential (15/15)
+
+```text
+$ make bootstrap02-test
+./hcc --install-dir=$(pwd)/build/test-prefix \
+    -c tools/bootstrap/bootstrap02-ident.HC \
+    -o ./build/bootstrap02-ident.o
+./build/bootstrap02-ident-oracle > /tmp/b02-oracle.txt
+./build/bootstrap02-ident-host   > /tmp/b02-host.txt
+(differential: 15 I-rows byte-identical; PASS)
+```
+
+### B1 cursor model (6/6)
+
+```text
+$ make bootstrap02-cursor-test
+./build/bootstrap02-cursor-oracle > /tmp/b02-cursor-oracle.txt
+./build/bootstrap02-cursor-host   > /tmp/b02-cursor-host.txt
+BOOTSTRAP02_CURSOR_DIFFERENTIAL=PASS 6/6
+```
+
+### B1 production Lexer seam (6/6)
+
+```text
+$ make bootstrap02-lexer-seam-test
+(legacy vs stage1 build; BUILD_LABEL/case-name stripped; 6/6 byte-identical)
+BOOTSTRAP02_LEXER_SEAM_DOWNSTREAM=PASS (6/6 cases byte-identical)
+BOOTSTRAP02_LEXER_SEAM_RESIDUE=NONE
+```
+
+### B0 conservation (15/15)
+
+```text
+$ make bootstrap01-test
+BOOTSTRAP01_CASES=15
+BOOTSTRAP01_RUNS=30
+BOOTSTRAP01_PASS=15
+BOOTSTRAP01_FAIL=0
+STATUS=PASS
+```
+
+------------------------------------------------------------
+FIRST_SELF_HOST predecessor = NO (AC06)
+------------------------------------------------------------
+
+```text
+$ ls build/hcc-bootstrap03
+ls: cannot access 'build/hcc-bootstrap03': No such file or directory
+
+$ grep -n 'bootstrap03' Makefile src/CMakeLists.txt
+(no matches)
+```
+
+No canonical stage2 exists. FIRST_SELF_HOST remains NO.
+
+------------------------------------------------------------
+B1_STAGE1_COMPILES_OWN_COMPONENT (predecessor, AC05)
+------------------------------------------------------------
+
+```text
+$ ./build/hcc-bootstrap02 --install-dir=$(pwd)/build/test-prefix \
+    -c tools/bootstrap/bootstrap02-ident.HC \
+    -o /tmp/bootstrap03-ident.stage1.o
+(exit 0; object produced; nm shows _BootstrapScanIdent)
+```
+
+This is the C1 EXPERIMENT-1 result. Captured in
+`stage1-self-compile.txt`.
+
+------------------------------------------------------------
+B1_REPRODUCIBLE = YES (AC05)
+------------------------------------------------------------
+
+Inherited from predecessor closure
+(`evidence/ACT-POLYC-BOOTSTRAP02/c4/final-reproducibility.txt`,
+recorded Build A == Build B across hcc, bootstrap02-ident.o,
+and hcc-bootstrap02). B2 must freshly re-prove this on its
+own two-build cycle (§26 of the ACT).
+
+------------------------------------------------------------
+Verdict
+------------------------------------------------------------
+
+```text
+B1_PREDECESSOR_GREEN         = YES
+B1_PARTIAL_SELF_HOST         = PASS
+B1_COMPONENT_POLYC           = YES
+B1_COMPONENT_STAGE0_BUILT    = YES
+B1_COMPONENT_STAGE1_BOUND    = YES
+B1_REAL_LEXER_EQ             = PASS_6_OF_6
+B1_CURSOR_EQ                 = PASS_6_OF_6
+B1_BROAD_CORPUS_EQ           = PASS_175_OF_175 (predecessor)
+B1_STAGE1_COMPILES_OWN_SOURCE = YES
+B1_REPRODUCIBLE              = YES
+B0_CONSERVATION              = PASS_15_OF_15
+
+FIRST_SELF_HOST              = NO
+STAGE2_CREATED               = NO
+B2_UNLOCKED                  = YES
+
+HALT_B1_PREDECESSOR_NOT_GREEN = NOT_FIRED
+```

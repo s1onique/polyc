@@ -1,0 +1,60 @@
+ACT-POLYC-BOOTSTRAP03 — C1 — stage2 absence proof
+==================================================
+
+Per ACT AC14/AC15: prove no canonical stage2 exists and
+no stage2 consumes the stage1-produced B1 object.
+
+------------------------------------------------------------
+No hcc-bootstrap03 binary
+------------------------------------------------------------
+
+```text
+$ ls build/hcc-bootstrap03
+ls: cannot access 'build/hcc-bootstrap03': No such file or directory
+
+$ ls build/ | grep -E 'hcc|bootstrap'
+bootstrap02-cursor-host
+bootstrap02-cursor-oracle
+bootstrap02-ident-host
+bootstrap02-ident-oracle
+bootstrap02-ident.o
+bootstrap02-lexer-seam-legacy
+bootstrap02-lexer-seam-stage1
+hcc
+hcc-bootstrap02
+```
+
+Only stage0 (./hcc, build/hcc) and stage1 (build/hcc-bootstrap02)
+are present. No build/hcc-bootstrap03, no build/hcc-bootstrap03-build.
+
+------------------------------------------------------------
+No bootstrap03 reference in the build graph (AC15)
+------------------------------------------------------------
+
+```text
+$ grep -n 'bootstrap03' Makefile
+(no matches)
+
+$ grep -n 'bootstrap03' src/CMakeLists.txt
+(no matches)
+```
+
+No Makefile target, no CMake option, no source path
+named *bootstrap03* exists. There is no canonical or
+shadow stage2 build path.
+
+------------------------------------------------------------
+Conclusion
+------------------------------------------------------------
+
+```text
+STAGE2_EXISTS                  = NO
+STAGE2_LINKS_STAGE1_B1_OBJECT  = NO  (no link line exists)
+STAGE2_USES_B1_COMPONENT       = NO  (no binary, no option)
+
+HALT_STAGE2_ALREADY_CANONICAL  = NOT_FIRED
+```
+
+This is the expected C1 RED state. The RED is therefore
+genuine, not false: stage2 has not been created, the
+self-host loop is OPEN, and B2 has work to do.
