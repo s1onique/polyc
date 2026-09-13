@@ -1,0 +1,41 @@
+ACT-POLYC-SELFHOST-SURFACE01 — C3 — compiler conservation
+==========================================================
+
+This file proves the C2 generic component surface
+introduced NO compiler-source mutations.
+
+```text
+git diff <C1.1>..<C3_HEAD> -- src/lexer.c src/lexer_bridge.h
+  = EMPTY
+
+git diff <C1.1>..<C3_HEAD> -- tools/bootstrap/bootstrap02-ident.HC
+  = EMPTY
+
+git diff <C1.1>..<C3_HEAD> -- src/CMakeLists.txt
+  = EMPTY
+```
+
+Compiler-source delta:
+
+```text
+COMPILER_SEMANTIC_DELTA    = ZERO
+B1_SOURCE_DELTA            = ZERO
+LEXER_SOURCE_DELTA         = ZERO
+PARSER_SOURCE_DELTA        = ZERO
+PARSER/AST/IR/BACKEND_DELTA= ZERO
+LLVM_BACKEND_DELTA         = ZERO
+```
+
+Conservation results:
+
+```text
+B0  15/15                     (B0 untouched; predecessor binding)
+B1  15/15 + 6/6 + 6/6         (component + cursor + production seam)
+B2  15/15 + 6/6               (component + cursor)
+B3  15/15 + 6/6 + 6/6         (component + cursor + production seam)
+LSP 43/43                     (untouched)
+```
+
+```text
+COMPILER_CONSERVATION = PASS
+```

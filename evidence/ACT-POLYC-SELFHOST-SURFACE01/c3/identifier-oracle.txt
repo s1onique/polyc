@@ -1,0 +1,35 @@
+ACT-POLYC-SELFHOST-SURFACE01 — C3 — identifier differential 15/15
+================================================================
+
+Hand-verified the B1 component differential against
+the freshly-rebuilt stage2 B1 object.
+
+```text
+$ ./build/bootstrap02-ident-oracle > /tmp/b02-oracle.txt
+$ ./build/bootstrap04-ident-stage3   > /tmp/b02-host.txt
+$ grep -cE '^I[0-9]+ ' /tmp/b02-oracle.txt
+15
+$ grep -cE '^I[0-9]+ ' /tmp/b02-host.txt
+15
+$ diff /tmp/b02-oracle.txt /tmp/b02-host.txt | head -6
+16,18c16,18
+< BOOTSTRAP02_IDENT_CASES=15
+< BOOTSTRAP02_IDENT_PASS=15
+< BOOTSTRAP02_IDENT_FAIL=0
+---
+> BOOTSTRAP02_IDENT_HOST_CASES=15
+> BOOTSTRAP02_IDENT_HOST_PASS=15
+> BOOTSTRAP02_IDENT_HOST_FAIL=0
+```
+
+The label suffix differs (intentional harness-name
+normalization); fixture lines are byte-equal. The
+`make bootstrap04-test` invocation emits the binding:
+
+```text
+BOOTSTRAP04_COMPONENT_FIXED_POINT=PASS (stage3 B1 object matches B1 oracle 15/15 after label normalization)
+```
+
+```text
+IDENTIFIER_DIFFERENTIAL = 15/15 PASS
+```

@@ -1,0 +1,46 @@
+ACT-POLYC-SELFHOST-SURFACE01 — C3 — broad corpus stage2 ↔ stage3
+==============================================================
+
+Re-ran the B3 broad corpus against the current tree
+using the existing predecessor tools
+(tools/quality/bootstrap04-corpus-runner.py).
+
+```text
+$ find src/holyc-lib src/tests -name '*.HC' -type f | sort \
+    > evidence/ACT-POLYC-SELFHOST-SURFACE01/c3/corpus-inventory.txt
+
+$ wc -l evidence/ACT-POLYC-SELFHOST-SURFACE01/c3/corpus-inventory.txt
+181
+```
+
+```text
+$ python3 tools/quality/bootstrap04-corpus-runner.py \
+    evidence/ACT-POLYC-SELFHOST-SURFACE01/c3/corpus-inventory.txt \
+    build/hcc-bootstrap03 build/hcc-bootstrap04 \
+    $(pwd)/build/test-prefix \
+    build/c3-corpus-A build/c3-corpus-B \
+    evidence/ACT-POLYC-SELFHOST-SURFACE01/c3/b3-corpus-matrix.tsv
+
+corpus-rows=181
+STAGE2_PASS_STAGE3_PASS=175
+STAGE2_FAIL_STAGE3_FAIL=6
+STAGE2_FAIL_STAGE3_PASS=0
+STAGE2_PASS_STAGE3_FAIL=0
+```
+
+```text
+B3_SUCCESS_CORPUS_CONSERVATION = PASS 175/175 byte-equal
+B3_FAILURE_CORPUS_CONSERVATION = PASS 6/6 equivalent
+B3_CORPUS_DIVERGENCE          = 0
+B3_UNACCOUNTED                = 0
+B3_TOTAL                      = 181
+```
+
+The 181 total matches the predecessor's count exactly.
+The 175/175 byte-equal PASS/PASS matches the predecessor.
+The 6/6 FAIL/FAIL matches the predecessor.
+No divergences, no unaccounted rows.
+
+```text
+B3_CORPUS_CONSERVATION = PASS
+```
