@@ -1,0 +1,380 @@
+ACT-POLYC-SELFHOST-SURFACE01 — C1.1 — RED truth-model amendment
+==============================================================
+
+This file is the **forward C1 truth-model amendment** for
+ACT-POLYC-SELFHOST-SURFACE01. It does NOT rewrite the
+original C1 commit (3289b36). It is a new evidence file in
+the same C1 evidence directory.
+
+The amendment is required because the original C1 evidence
+contained an architectural description that conflated two
+distinct surfaces:
+
+  A. compiler SOURCE-semantic composition
+     (which self-host component does the production C
+      source actually delegate to at the function-call
+      level)
+
+  B. compiler BUILD-graph composition
+     (how the build system stitches components, link
+      inputs, and stage producers together)
+
+The C1 description under-claimed about surface A and
+over-claimed about surface B in a way that would mislead
+C2 implementation.
+
+------------------------------------------------------------
+What the original C1 said (binding block)
+------------------------------------------------------------
+
+```text
+SEMANTIC_LEAK_FROM_GENERATION    = NO
+ARCHITECTURAL_DEFECT             = YES
+  (the SHAPE of the build graph forces every future
+   migration to invent a new stage-N recipe)
+```
+
+This treated surface B (build-graph shape) as the only
+architectural defect. It under-claimed about surface A.
+
+------------------------------------------------------------
+What surface A actually is today (mechanically observed)
+------------------------------------------------------------
+
+`src/lexer.c::lexIdentifier` is the production source
+function for identifier lexing. Its current implementation
+contains a build-time `#ifdef` selector:
+
+```c
+int lexIdentifier(Lexer *l, char ch) {
+#ifdef HCC_BOOTSTRAP02_STAGE1
+    /* delegate to BootstrapScanIdent */
+    ...
+    int rc = (int)BootstrapScanIdent(src, src_len, start_off, &end_off);
+    ...
+#else
+    /* legacy host-C ctype-based implementation */
+    ...
+#endif
+}
+```
+
+That `#ifdef HCC_BOOTSTRAP02_STAGE1` is the existing
+SOURCE-semantic composition selector. It is set as a
+CMake `-D` flag from `src/CMakeLists.txt:230`:
+
+```cmake
+target_compile_definitions(hcc-bootstrap02 PRIVATE HCC_BOOTSTRAP02_STAGE1)
+```
+
+The macro name is `HCC_BOOTSTRAP02_STAGE1` (stage1, not
+stage0; the production `hcc-bootstrap02` binary is the
+stage1 self-host compiler). It is referenced from one
+production C source file (`src/lexer.c`) and one production
+header (`src/lexer_bridge.h` declares the symbol that the
+PolyC component exports).
+
+Therefore the correct, mechanically honest description
+is:
+
+```text
+GENERATION_SPECIFIC_BUILD_WIRING        = PRESENT
+GENERATION_SPECIFIC_SOURCE_SELECTOR     = PRESENT
+
+SOURCE_SELECTOR                         = HCC_BOOTSTRAP02_STAGE1
+SOURCE_SELECTOR_CONSUMER                = src/lexer.c::lexIdentifier
+
+SEMANTIC_LEAK_FROM_STAGE_IDENTITY       = YES
+SEMANTIC_BEHAVIOR_DIFFERENCE             = INTENTIONAL_B1_COMPOSITION
+
+C1_1_PRODUCTION_DEFECT                  = NO
+C2_AUTHORIZED_TO_CHANGE_SOURCE_SELECTOR = NO
+```
+
+------------------------------------------------------------
+Why this is not a production defect
+------------------------------------------------------------
+
+The selector exists for a deliberate, bounded reason:
+ACT-POLYC-BOOTSTRAP02 introduced B1 self-host by compiling
+`tools/bootstrap/bootstrap02-ident.HC` with stage0
+(`./hcc`) and linking its `BootstrapScanIdent` symbol into
+a separate stage1 binary (`build/hcc-bootstrap02`). The
+production `./hcc` binary does NOT have the symbol
+available; if `lexIdentifier` always called
+`BootstrapScanIdent`, `./hcc` would fail to link.
+
+The `#ifdef HCC_BOOTSTRAP02_STAGE1` selector is the
+mechanism by which `./hcc` keeps its legacy ctype-based
+identifier implementation while `hcc-bootstrap02` runs
+the PolyC implementation. Both produce identical outputs
+on the existing test corpus (proven by B3).
+
+This is a **correct, intentional, frozen** composition
+mechanism. It is NOT a production defect. It is a
+predecessor artifact.
+
+C2 must NOT touch it.
+
+------------------------------------------------------------
+Why the original C1 description under-claimed
+------------------------------------------------------------
+
+The original C1 said "SEMANTIC_LEAK_FROM_GENERATION = NO"
+on the basis that no individual cmake option name appeared
+inside the production C source. That is technically true
+for `HCC_ENABLE_BOOTSTRAP02_STAGE1` (the cmake option) but
+the question was about the equivalent **preprocessor**
+macro `HCC_BOOTSTRAP02_STAGE1`, which DOES appear in
+production source. The C1 evidence failed to distinguish:
+
+```text
+cmake option   HCC_ENABLE_BOOTSTRAP02_STAGE1   (build-graph)
+preproc macro  HCC_BOOTSTRAP02_STAGE1           (source-selector)
+```
+
+These are different variables with different lifecycles,
+even though they share the suffix.
+
+The amended description is precise:
+
+```text
+SOURCE_SELECTOR                      = HCC_BOOTSTRAP02_STAGE1
+SOURCE_SELECTOR_CONSUMER             = src/lexer.c::lexIdentifier
+
+BUILD_GRAPH_STAGE_COUPLING           = TO_BE_GENERICIZED
+SOURCE_SELECTOR_STAGE_COUPLING       = PRESERVED_AS_FROZEN_PREDECESSOR_BEHAVIOR
+
+FUTURE_COMPONENT_SELECTOR_GENERALIZATION = DEFERRED_UNTIL_MULTI_COMPONENT_MIGRATION
+```
+
+------------------------------------------------------------
+Why C2 does NOT genericize the source selector
+------------------------------------------------------------
+
+Per the user board execution contract:
+
+  "Do not introduce HCC_SELFHOST_COMPONENTS in this ACT."
+
+If C2 were to introduce a generic source-level component
+selector now, it would have to either:
+
+```text
+(a) replace `#ifdef HCC_BOOTSTRAP02_STAGE1` with
+    `#ifdef HCC_SELFHOST_COMPONENTS` and gate the same
+    single component identifier_scanner behind the new
+    name, OR
+(b) introduce a more elaborate selector like
+    `#if defined(HCC_SELFHOST_COMPONENTS) &&
+       ...contains('identifier_scanner')...`
+```
+
+Neither is justified at this point because:
+
+  - Exactly one component exists today.
+  - The selector name is referenced from exactly one
+    source file (`src/lexer.c::lexIdentifier`).
+  - Replacing a single-occurrence macro with a generic
+    selector whose only consumer is the single component
+    it covers would be pure rename churn, not architecture.
+  - A real generalized selector would only be required
+    once a second self-host component is added — at which
+    point the second component's migration ACT can pick
+    the appropriate mechanism.
+
+So this ACT deliberately freezes the source selector and
+genericizes only the build-graph side.
+
+------------------------------------------------------------
+Corrected 149/149 framing
+------------------------------------------------------------
+
+The original C1 evidence claimed:
+
+```text
+"149 / 149 semantically identical"
+```
+
+This was over-broad. The 149 entries in the
+`bespoke-wiring-inventory.tsv` mix comments, configure
+flags, link inputs, guards, output paths, provenance
+prints, and recipes. They are not "semantically
+identical"; they are *structurally* repetitive with
+different *roles*.
+
+The amended classification:
+
+```text
+BESPOKE_REFERENCES_TOTAL                  = 149
+REFERENCES_ASSOCIATED_WITH_IDENTIFIER_SCANNER = 149
+
+STRUCTURALLY_REPETITIVE                   = YES
+STRUCTURALLY_GENERALIZABLE                = YES
+
+SEMANTICALLY_IDENTICAL                    = NOT_A_MEANINGFUL_CLASSIFICATION
+  (comments, link inputs, output paths, configure
+   flags, guards, provenance prints do not have
+   the same semantics; they share only their
+   association with the same identifier_scanner
+   component)
+```
+
+Role distribution (binding, from c1/bespoke-wiring-inventory.tsv):
+
+```text
+PRODUCER       = 45
+CONSUMER       =  3
+STAGE_IDENTITY = 44
+TEST           =  9
+ORACLE         =  2
+PROVENANCE     = 46
+```
+
+C2 genericizes the PRODUCER, STAGE_IDENTITY, TEST, ORACLE,
+and PROVENANCE surfaces using the registry. The 3
+CONSUMER entries (link inputs) are reduced by replacing
+the bespoke `BOOTSTRAP0N_IDENT_OBJECT` per-stage wiring
+with the generic `selfhost-component-build` outputs
+feeding the existing `hcc-bootstrap0N` targets through
+their existing cmake variables. The PROVENANCE comments
+remain as documentation but lose their execution role.
+
+------------------------------------------------------------
+Negative control correction
+------------------------------------------------------------
+
+The original C1 listed as a binding negative control:
+
+```text
+"component source changed but metadata stale -> FAIL"
+```
+
+This was claimed in the absence of a registry
+source-digest field. The proposed registry has no
+`source_sha256` field by design (per the user board
+contract, git already versions source + registry
+atomically; a mandatory source digest would create a
+false synchronization invariant).
+
+The amended negative controls (binding):
+
+```text
+unknown component_id             -> FAIL
+duplicate component_id           -> FAIL
+missing source                   -> FAIL
+source path does not exist       -> FAIL
+missing symbol                   -> FAIL
+invalid language                 -> FAIL
+invalid state                    -> FAIL
+unknown producer stage           -> FAIL
+output path aliases source       -> FAIL
+malformed TSV                    -> FAIL
+```
+
+No `source_sha256` is introduced.
+
+------------------------------------------------------------
+What the amended C1 still proves
+------------------------------------------------------------
+
+```text
+PRINCIPAL_RED_PROVEN                   = YES
+  (self-host component model is absent)
+BESPOKE_WIRING_PROVEN                  = YES
+  (149 entries classified by role)
+PRODUCER_COUNT                         = 45
+CONSUMER_COUNT                         =  3
+STAGE_IDENTITY_COUNT                   = 44
+TEST_COUNT                             =  9
+ORACLE_COUNT                           =  2
+PROVENANCE_COUNT                       = 46
+
+B3_PREDECESSOR_FREEZE                  = GREEN
+  (ACT-POLYC-BOOTSTRAP04 CLOSED PASS at 7d7b983)
+
+GENERATION_SPECIFIC_BUILD_WIRING       = PRESENT
+GENERATION_SPECIFIC_SOURCE_SELECTOR    = PRESENT
+
+C2_AUTHORIZED_TO_GENERICIZE_BUILD_GRAPH = YES
+C2_AUTHORIZED_TO_CHANGE_SOURCE_SELECTOR = NO
+
+COMPILER_SEMANTIC_DELTA_ALLOWED        = ZERO
+
+C1_1_TRUTH_MODEL_CORRECTED             = YES
+C1_TO_C2_GATE                          = OPEN
+```
+
+------------------------------------------------------------
+What this amendment does NOT introduce
+------------------------------------------------------------
+
+```text
+NEW_SELFHOST_COMPONENT              = NO
+NEW_BOOTSTRAP_STAGE                 = NO
+NEW_COMPILER_SEMANTIC               = NO
+NEW_GENERIC_SOURCE_SELECTOR         = NO
+HCC_SELFHOST_COMPONENTS_MACRO       = NO
+SOURCE_SHA256_FIELD                 = NO
+HCC_ENABLE_BOOTSTRAP05_STAGE4       = NO
+build/hcc-bootstrap05               = NO
+```
+
+------------------------------------------------------------
+Acceptance criteria (binding)
+------------------------------------------------------------
+
+```text
+AC-R1   existing C1 commit unchanged
+AC-R2   semantic-selector truth corrected
+AC-R3   HCC_BOOTSTRAP02_STAGE1 identified as existing selector
+AC-R4   src/lexer.c selector explicitly frozen
+AC-R5   149/149 semantic-equivalence claim removed
+AC-R6   stale-source-hash negative control removed
+AC-R7   no source_sha256 field introduced
+AC-R8   principal architectural RED still valid
+AC-R9   no production files changed
+AC-R10  git diff --check clean
+AC-R11  Factory non-close gates PASS
+AC-R12  C1_TO_C2_GATE = OPEN
+```
+
+------------------------------------------------------------
+C1 → C2 gate
+------------------------------------------------------------
+
+```text
+C1_1_TRUTH_MODEL_CORRECTED   = YES
+GENERATION_SPECIFIC_BUILD_WIRING     = PRESENT
+GENERATION_SPECIFIC_SOURCE_SELECTOR  = PRESENT
+C2_BUILD_GRAPH_GENERICIZATION        = AUTHORIZED
+C2_SOURCE_SELECTOR_CHANGE            = FORBIDDEN
+COMPILER_SEMANTIC_DELTA_ALLOWED      = ZERO
+C1_TO_C2_GATE                        = OPEN
+```
+
+------------------------------------------------------------
+Closing position
+------------------------------------------------------------
+
+This amendment is the **only** forward correction needed
+in C1. It does not rewrite the existing C1 commit, does
+not modify any production source file, and does not
+weaken any of the original RED's mechanical claims.
+
+The truth model is now consistent with the source code:
+
+```text
+* The build graph carries generation-specific plumbing
+  that the registry can replace.
+
+* The compiler source carries an intentional
+  predecessor selector (`HCC_BOOTSTRAP02_STAGE1`) that
+  this ACT deliberately freezes.
+```
+
+C2 may now proceed within the bounds described in the
+ACT body §7 / §10 / §22.
+
+ACT: ACT-POLYC-SELFHOST-SURFACE01
+ACT-Phase: RED
+
