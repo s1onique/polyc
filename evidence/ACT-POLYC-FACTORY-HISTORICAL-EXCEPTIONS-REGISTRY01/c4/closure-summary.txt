@@ -1,0 +1,60 @@
+CLOSURE SUMMARY — ACT-POLYC-FACTORY-HISTORICAL-EXCEPTIONS-REGISTRY01
+
+VERDICT:          PASS_WITH_HYGIENE_RESIDUE
+IDENTITY:         ACT-POLYC-FACTORY-HISTORICAL-EXCEPTIONS-REGISTRY01
+                  ENTRY: 14519ecf41ab70ef1efca9ebe07d64ace7d08a4b
+                  C1 RED: 14519ecf
+                  C2 IMPL: 0429937b
+                  C3 EVID: c2a0b818
+                  C4 CLOSE: <this commit>
+
+ROOT CAUSE:  Two related defects in the prior Cardinality-1
+             exception handling:
+             (a) the exceptions registry lived inside a
+                 closed correction ACT's evidence tree,
+                 forcing any new exception to violate
+                 strict F14;
+             (b) the BOOTSTRAP-CORRECTION01 EXCEPTION 5
+                 wording claimed 'reclassified' via git
+                 notes, which is mechanically false.
+
+RED:          c1/red-trace.txt + c1/README.md documented the
+              current legacy file SHA (d0d73132) vs the
+              pre-BOOTSTRAP SHA (1f6e5ded), with mechanical
+              git log --follow confirmation.
+
+IMPLEMENTATION:
+              c2/ — created docs/factory/HISTORICAL-CARDINALITY-
+              EXCEPTIONS.tsv with EXCEPTION_1..5; bit-identically
+              restored the legacy file to its 4a78bdf^ state
+              (SHA 1f6e5ded matches pre-BOOTSTRAP); strengthened
+              DOCTRINE.md §24 with §24.1, §24.2, §24.3.
+
+GATES:        c3/gate-output.txt + c3/gate-matrix.txt confirm
+              AG1..AG10 all PASS.
+
+SCOPE:        5 files changed:
+                docs/acts/ACT-POLYC-FACTORY-HISTORICAL-EXCEPTIONS-REGISTRY01.md (new)
+                docs/factory/HISTORICAL-CARDINALITY-EXCEPTIONS.tsv (new)
+                docs/factory/DOCTRINE.md (+§24.1, +§24.2, +§24.3)
+                evidence/ACT-POLYC-FACTORY-NO-SHA-OF-SELF01/correction04/
+                  historical-cardinality-exceptions.txt (restored bit-identically)
+                evidence/ACT-POLYC-FACTORY-HISTORICAL-EXCEPTIONS-REGISTRY01/
+                  c{1,2,3,4}/ (new)
+              No production source touched. No historical commit
+              amended.
+
+RESIDUE:      P0: NONE
+              P1: (forecasted) tool that mechanically reads the
+                  TSV registry and cross-checks against
+                  git log --all-match --grep would close the
+                  loop on AG6.
+              P2: (forecasted) any future ACT that needs to
+                  append a 6th exception should append to the
+                  TSV, not to a closed correction's evidence
+                  tree.
+
+NEXT ACT:     ACT-POLYC-BOOTSTRAP02 (B1 partial self-host).
+              The B0 substrate is GREEN_WITH_CLOSURE_CORRECTION;
+              no further BOOTSTRAP corrections are required.
+              See ROADMAP.md B0 outcome block.

@@ -2931,3 +2931,34 @@ LOCAL-MEM2REG01-CORRECTION02  ACT-POLYC-LLVM-LOCAL-MEM2REG01-CORRECTION02
   NEXT ACT = NONE for this defect class unless a new
              counterexample appears.
 ```
+
+### FT3 — Historical Cardinality-1 Exceptions Registry (CLOSED PASS_WITH_HYGIENE_RESIDUE)
+
+Status: ACT-POLYC-FACTORY-HISTORICAL-EXCEPTIONS-REGISTRY01 CLOSED.
+
+Authoritative location for Cardinality-1 CLOSE-commits-count
+violations is now:
+
+```text
+docs/factory/HISTORICAL-CARDINALITY-EXCEPTIONS.tsv
+```
+
+This file lives outside any `evidence/ACT-*/` tree, so future
+exception appends do NOT violate strict F14 (DOCTRINE.md §24).
+
+EXCEPTIONs 1..5 have been migrated from the legacy file
+`evidence/ACT-POLYC-FACTORY-NO-SHA-OF-SELF01/correction04/historical-cardinality-exceptions.txt`,
+which has been bit-identically restored to its pre-BOOTSTRAP
+state (SHA 1f6e5dedf828a6f28e4fb0abdaed350d2344c005).
+
+DOCTRINE.md §24 was strengthened with three additive sub-sections:
+  §24.1 Truth hierarchy (codified)
+  §24.2 Exception registry location (canonical)
+  §24.3 Git notes do NOT reclassify commits
+
+Forward convention: any future Cardinality-1 violation MUST
+append a row to the canonical TSV; must NOT mutate any closed
+ACT's evidence tree.
+
+B0 substrate status unchanged: GREEN_WITH_CLOSURE_CORRECTION.
+BOOTSTRAP02 (B1 partial self-host) remains the next compiler ACT.
