@@ -889,19 +889,18 @@ int lexIdentifier(Lexer *l, char ch) {
      *   l->ptr             = l->start + 1       (already advanced past
      *                                            the first byte)
      *
-     * Cursor binding at exit (must match the old path byte-for-byte):
+     * Cursor binding at exit (must match the legacy path
+     * byte-for-byte; see ACT-POLYC-BOOTSTRAP02-C2-CORRECTION03):
      *
      *   l->cur_strlen      = number of identifier bytes (>= 1)
-     *   l->ptr             = if the byte at l->start + cur_strlen is NUL
-     *                         (or l->start + cur_strlen == end of source
-     *                          buffer) the old path did NOT rewind, so
-     *                         l->ptr sits one PAST that NUL position;
-     *                       otherwise the old path rewound, so l->ptr
-     *                         sits AT the first non-identifier byte.
-     *
-     *   byte_at_end = (l->start + cur_strlen < eob) ? *(l->start+cur_strlen) : '\0'
-     *   if (byte_at_end == '\0')  l->ptr = l->start + cur_strlen + 1;
-     *   else                       l->ptr = l->start + cur_strlen;
+     *   l->ptr             = address of the first non-identifier
+     *                         byte (or the terminating NUL at EOF).
+     *                         Never advanced past the NUL; a
+     *                         one-past-end pointer must not be
+     *                         dereferenced per the C memory model.
+     *   l->start           = l->ptr (set by the legacy path's
+     *                         last lexNextChar; reproduced here
+     *                         so l->start and l->ptr match).
      *
      * BootstrapScanIdent is called with start=0 because we pass
      * l->start AS src, so the offset inside the buffer is zero.
@@ -917,25 +916,29 @@ int lexIdentifier(Lexer *l, char ch) {
     int rc = (int)BootstrapScanIdent(src, src_len, start_off, &end_off);
     if (rc == 0) {
         /* Should be unreachable: the dispatcher gate at lexCore
-         * (src/lexer.c:1458) only calls us when isalpha(ch) || ch == '_',
-         * which satisfies B02IsIdentStart. If the B1 component ever
-         * disagrees, rewind the single byte the dispatcher had already
-         * consumed (matching the old behavior on -1 return) and report
-         * malformed identifier. */
+         * only calls us when isalpha(ch) || ch == '_', which
+         * satisfies B02IsIdentStart. If the B1 component ever
+         * disagrees, rewind the single byte the dispatcher had
+         * already consumed (matching the old behavior on -1
+         * return) and report malformed identifier. */
         lexRewindChar(l);
         return -1;
     }
 
     l->cur_strlen = (s64)(end_off - start_off);
 
+    /* final_ptr is the address of the first non-identifier byte
+     * (or the terminating NUL at EOF). It is identical to where
+     * the legacy lexNextChar loop would leave l->ptr after its
+     * final iteration. Match the legacy postcondition exactly:
+     *   l->ptr = l->start = first non-identifier byte (or NUL).
+     * Do NOT advance past the NUL; doing so would form a
+     * one-past-end pointer that the next lexNextChar would
+     * dereference (undefined behaviour per the C memory model).
+     */
     unsigned char *final_ptr = src + end_off;
-    if (end_off >= src_len || *final_ptr == '\0') {
-        /* Old path did NOT rewind: l->ptr sits one past the NUL. */
-        l->ptr = (char *)(final_ptr + 1);
-    } else {
-        /* Old path DID rewind: l->ptr sits AT the non-identifier byte. */
-        l->ptr = (char *)final_ptr;
-    }
+    l->ptr = (char *)final_ptr;
+    l->start = (char *)final_ptr;
     return TK_IDENT;
 #else
     /* Legacy production path. Preserved bit-identically so the

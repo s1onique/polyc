@@ -511,17 +511,18 @@ bootstrap02-lexer-seam-test: bootstrap02-stage1
 	@if ! diff -q /tmp/b02-lexer-seam-legacy.txt /tmp/b02-lexer-seam-stage1.txt >/dev/null; then \
 		echo "bootstrap02-lexer-seam-test: PILLAR B PRODUCTION SEAM DIVERGED (residue; see below)" >&2; \
 		diff /tmp/b02-lexer-seam-legacy.txt /tmp/b02-lexer-seam-stage1.txt >&2 || true; \
-		echo "bootstrap02-lexer-seam-test: stripping l->start_after, BUILD_LABEL, header, and E4 (EOF) residue; re-checking downstream fields" >&2; \
-		awk 'BEGIN{skip=0} /^CASE E4_abc_eof/{skip=1} /^CASE E[0-9]/{if($$2!~/^E4_abc_eof/)skip=0} {if(!skip||$$0~/^CASE/)print}' /tmp/b02-lexer-seam-legacy.txt | sed -E 's/^(CASE .+) build=.*/\1/' | grep -v -E '^  start_after|^BUILD_LABEL|^LEXER_SEAM_CASE_COUNT|^$$' > /tmp/legacy-downstream.txt; \
-		awk 'BEGIN{skip=0} /^CASE E4_abc_eof/{skip=1} /^CASE E[0-9]/{if($$2!~/^E4_abc_eof/)skip=0} {if(!skip||$$0~/^CASE/)print}' /tmp/b02-lexer-seam-stage1.txt | sed -E 's/^(CASE .+) build=.*/\1/' | grep -v -E '^  start_after|^BUILD_LABEL|^LEXER_SEAM_CASE_COUNT|^$$' > /tmp/stage1-downstream.txt; \
-		if diff -q /tmp/legacy-downstream.txt /tmp/stage1-downstream.txt >/dev/null; then \
-			echo "BOOTSTRAP02_LEXER_SEAM_DOWNSTREAM=PASS (5/6 cases byte-identical; E4 EOF residue)"; \
+		echo "bootstrap02-lexer-seam-test: stripping BUILD_LABEL and case-name suffixes; re-checking fields" >&2; \
+		sed -E 's/^(CASE .+) build=.*/\1/; s/^BUILD_LABEL=.*/BUILD_LABEL=/; s/^LEXER_SEAM_CASE_COUNT=.*/LEXER_SEAM_CASE_COUNT=/' /tmp/b02-lexer-seam-legacy.txt > /tmp/legacy-clean.txt; \
+		sed -E 's/^(CASE .+) build=.*/\1/; s/^BUILD_LABEL=.*/BUILD_LABEL=/; s/^LEXER_SEAM_CASE_COUNT=.*/LEXER_SEAM_CASE_COUNT=/' /tmp/b02-lexer-seam-stage1.txt > /tmp/stage1-clean.txt; \
+		if diff -q /tmp/legacy-clean.txt /tmp/stage1-clean.txt >/dev/null; then \
+			echo "BOOTSTRAP02_LEXER_SEAM_DOWNSTREAM=PASS (6/6 cases byte-identical)"; \
+			echo "BOOTSTRAP02_LEXER_SEAM_RESIDUE=NONE"; \
 		else \
-			echo "bootstrap02-lexer-seam-test: DOWNSTREAM-VISIBLE fields (le_*, next_byte_hex, cur_strlen_post) also diverge in non-EOF cases; treat as P0 blocker" >&2; \
-			diff /tmp/legacy-downstream.txt /tmp/stage1-downstream.txt >&2; \
+			echo "bootstrap02-lexer-seam-test: fields still diverge after stripping labels; treat as P0 blocker" >&2; \
+			diff /tmp/legacy-clean.txt /tmp/stage1-clean.txt >&2; \
 			exit 1; \
 		fi; \
 	else \
-		echo "BOOTSTRAP02_LEXER_SEAM_DOWNSTREAM=PASS (byte-identical, including l->start)"; \
+		echo "BOOTSTRAP02_LEXER_SEAM_DOWNSTREAM=PASS (byte-identical, including labels)"; \
+		echo "BOOTSTRAP02_LEXER_SEAM_RESIDUE=NONE"; \
 	fi
-	@echo "BOOTSTRAP02_LEXER_SEAM_RESIDUE=l->start_after diverges for 6/6 cases; l->ptr_after and eof_state diverge at E4 (EOF)"

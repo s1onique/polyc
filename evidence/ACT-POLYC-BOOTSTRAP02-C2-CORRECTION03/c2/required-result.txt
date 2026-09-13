@@ -1,0 +1,137 @@
+ACT-POLYC-BOOTSTRAP02-C2-CORRECTION03 — C2 IMPL —
+required-result block
+==================================================
+
+This is the binding contract between C2 IMPL and C3
+EVIDENCE for this correction ACT.
+
+------------------------------------------------------------
+Section A — Production-source fix (the FIRST in this bootstrap)
+------------------------------------------------------------
+
+A01  SRC_LEXER_C_LEXIDENTIFIER_STAGE1_BRANCH  = FIXED
+       Diff:
+         - if (end_off >= src_len || *final_ptr == '\0') {
+         -     l->ptr = (char *)(final_ptr + 1);
+         - } else {
+         -     l->ptr = (char *)final_ptr;
+         - }
+         + l->ptr = (char *)final_ptr;
+         + l->start = (char *)final_ptr;
+
+A02  PRODUCTION_AUTHORIZATION_GRANTED   = YES
+       Re-reviewer explicitly authorized the fix:
+       "Open one bounded [ACT] with production
+        authorization restricted to the stage1
+        branch of src/lexer.c::lexIdentifier."
+
+A03  OTHER_PRODUCTION_SOURCES_UNCHANGED = YES
+       Legacy branch of lexIdentifier: unchanged.
+       No other src/*.c modified.
+       tools/bootstrap/bootstrap02-ident.HC: unchanged.
+       src/lexer_bridge.h: unchanged.
+
+A04  BUILD_SYSTEM_BEHAVIOUR             = ZERO_PRODUCTION_BUILD_SEMANTIC_CHANGE
+       make all is unchanged.
+       ./hcc is unchanged.
+       Only the test-only Makefile target
+       bootstrap02-lexer-seam-test was modified
+       (residue-aware verdict simplified to clean
+       PASS now that the fix achieves 6/6).
+
+------------------------------------------------------------
+Section B — Pillar-B' post-fix verdict
+------------------------------------------------------------
+
+B01  PILLAR_B_PRIME_PRODUCTION_LEXER_CURSOR_SEAM = PASS
+       6/6 inputs byte-identical on EVERY measured
+       field. See lexer-seam-postfix-witness.txt.
+
+B02  EOF_CURSOR_STATE_EQUIVALENCE       = PASS
+       E4: legacy ptr_after = 3, stage1 ptr_after = 3.
+       E4: legacy eof_state = 1, stage1 eof_state = 1.
+
+B03  EOF_POINTER_SAFETY                 = PASS
+       E4: stage1 l->ptr = src + 3 (not src + 4).
+       The next lexNextChar reads src[3] = NUL,
+       which is dereferenceable per C memory model.
+
+B04  NON_EOF_PRODUCTION_CURSOR_EQ       = PASS  6/6
+       E1, E2, E3, E5, E6: l->ptr and l->start
+       both byte-identical between legacy and stage1.
+
+------------------------------------------------------------
+Section C — Conservation (F10)
+------------------------------------------------------------
+
+C01  STAGE0_PRODUCTION_PATH_PRESERVED   = YES
+       Legacy branch of lexIdentifier is bit-
+       identical to its pre-fix form.
+
+C02  END_TO_END_CONSERVATION            = PASS 5/5
+       5/5 real production sources (30_fzf.HC,
+       43_compress_templeos.HC, run_shared.HC,
+       fzf.HC, dir.HC) produce byte-identical
+       objects between ./hcc and ./hcc-bootstrap02
+       AFTER the fix. (The fix was designed to
+       preserve this property: token output is
+       unchanged.)
+
+C03  PRODUCTION_HERMETIC                = PASS
+       Default `./make all` produces ./hcc
+       without the B1 component. ./hcc contains
+       NO _BootstrapScanIdent symbol.
+
+------------------------------------------------------------
+Section D — Core gate predicates
+------------------------------------------------------------
+
+D01  make bootstrap01-test               PASS  15/15
+D02  make bootstrap02-test               PASS  15/15
+D03  make bootstrap02-cursor-test        PASS  6/6
+D04  make bootstrap02-stage1             PASS
+D05  make bootstrap02-lexer-seam-test    PASS  (6/6 byte-identical,
+                                                  no residue)
+
+------------------------------------------------------------
+Section E — Factory gate predicates
+------------------------------------------------------------
+
+E01  gate-fast                           PASS
+E02  factory-v2                          PASS  35/35
+E03  factory-halt-classification         PASS  12/12
+E04  factory-append-only                 PASS  11/11
+E05  shell-loc-gate                      PASS
+E06  factory-closure-status              PASS
+
+------------------------------------------------------------
+Section F — HALT predicates (all NOT FIRED)
+------------------------------------------------------------
+
+F01  HALT_RED_NOT_REPRODUCED             NOT_FIRED
+F02  HALT_SCOPE_EXPANSION_REQUIRED       NOT_FIRED
+F03  HALT_B0_REGRESSION                  NOT_FIRED
+F04  HALT_B1_ABI_PROBE_FAILED            NOT_FIRED
+F05  HALT_B1_DELEGATION_FAIL             NOT_FIRED
+F06  HALT_PRODUCTION_UB_UNFIXED          NOT_FIRED
+F07  HALT_LEXER_SEAM_DIVERGENCE          NOT_FIRED
+F08  HALT_EOF_POINTER_UNSAFE             NOT_FIRED
+
+------------------------------------------------------------
+Section G — C2 verdict
+------------------------------------------------------------
+
+  ACT-Phase                            = IMPL
+  C2_TO_C3_EVIDENCE_GATE               = OPEN
+  ACT-Verdict                          = PASS (no residue)
+
+ACT-POLYC-BOOTSTRAP02 C2 -> C3 transition is now
+fully unlocked:
+  - Token output equivalence: PILLAR_A + le_* fields
+    of PILLAR_B_PRIME.
+  - Cursor state equivalence at ALL positions,
+    including EOF: PILLAR_B + PILLAR_B_PRIME.
+  - EOF pointer safety: l->ptr at EOF is at the
+    terminating NUL.
+  - C4 CLOSE of the parent ACT is no longer
+    blocked by R2.

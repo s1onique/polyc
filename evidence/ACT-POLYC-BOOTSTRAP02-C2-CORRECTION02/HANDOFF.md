@@ -30,7 +30,9 @@
 #
 # This ACT repairs both, without any production source
 # mutation, without any B1/B0 component mutation, and
-# without any build-system behavioural change.
+# without any production-build-system semantic change
+# (a test-only Makefile target was added; `make all`
+#  is unchanged and `./hcc` builds unchanged).
 
 # Identity
 # --------

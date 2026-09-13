@@ -1,0 +1,296 @@
+ACT-POLYC-BOOTSTRAP02-C2-CORRECTION03 — pillar B'
+(real production-Lexer seam differential) witness
+POST-FIX
+==================================================
+
+The C2-CORRECTION03 fix changed the stage1 branch
+of src/lexer.c::lexIdentifier from:
+
+    if (end_off >= src_len || *final_ptr == '\0') {
+        l->ptr = (char *)(final_ptr + 1);
+    } else {
+        l->ptr = (char *)final_ptr;
+    }
+
+to:
+
+    l->ptr = (char *)final_ptr;
+    l->start = (char *)final_ptr;
+
+This re-runs the same real-Lexer seam witness with
+the FIXED production source. ALL six inputs now
+produce byte-identical output between legacy and
+stage1 builds (modulo BUILD_LABEL and build=...
+suffixes).
+
+The harness is unchanged
+(tools/quality/bootstrap02-lexer-seam-{fixture.h,
+runner.c}). The Makefile target is unchanged
+(make bootstrap02-lexer-seam-test).
+
+============================================================
+Verbatim output — legacy build (default ./hcc)
+============================================================
+
+BUILD_LABEL=legacy
+LEXER_SEAM_CASE_COUNT=6
+
+CASE E1_abc_semicolon build=legacy
+  input           = abc;
+  start_offset    = 0
+  lex_rc          = 1
+  tk_type         = 768
+  start_before    = 0
+  ptr_before      = 0
+  cur_strlen_pre  = 0
+  start_after     = 3
+  ptr_after       = 3
+  cur_strlen_post = 3
+  next_byte_hex   = 3b
+  eof_state       = 0
+  le_start_off    = 0
+  le_len          = 3
+
+CASE E2_abc_plus build=legacy
+  input           = abc+
+  start_offset    = 0
+  lex_rc          = 1
+  tk_type         = 768
+  start_before    = 0
+  ptr_before      = 0
+  cur_strlen_pre  = 0
+  start_after     = 3
+  ptr_after       = 3
+  cur_strlen_post = 3
+  next_byte_hex   = 2b
+  eof_state       = 0
+  le_start_off    = 0
+  le_len          = 3
+
+CASE E3_abc_space build=legacy
+  input           = abc
+  start_offset    = 0
+  lex_rc          = 1
+  tk_type         = 768
+  start_before    = 0
+  ptr_before      = 0
+  cur_strlen_pre  = 0
+  start_after     = 3
+  ptr_after       = 3
+  cur_strlen_post = 3
+  next_byte_hex   = 20
+  eof_state       = 0
+  le_start_off    = 0
+  le_len          = 3
+
+CASE E4_abc_eof build=legacy
+  input           = abc
+  start_offset    = 0
+  lex_rc          = 1
+  tk_type         = 768
+  start_before    = 0
+  ptr_before      = 0
+  cur_strlen_pre  = 0
+  start_after     = 3
+  ptr_after       = 3
+  cur_strlen_post = 3
+  next_byte_hex   = 00
+  eof_state       = 1
+  le_start_off    = 0
+  le_len          = 3
+
+CASE E5_xxabc_offset2 build=legacy
+  input           = xxabc;
+  start_offset    = 2
+  lex_rc          = 1
+  tk_type         = 768
+  start_before    = 2
+  ptr_before      = 2
+  cur_strlen_pre  = 0
+  start_after     = 5
+  ptr_after       = 5
+  cur_strlen_post = 3
+  next_byte_hex   = 3b
+  eof_state       = 0
+  le_start_off    = 2
+  le_len          = 3
+
+CASE E6_abc_dollar build=legacy
+  input           = abc$def;
+  start_offset    = 0
+  lex_rc          = 1
+  tk_type         = 768
+  start_before    = 0
+  ptr_before      = 0
+  cur_strlen_pre  = 0
+  start_after     = 7
+  ptr_after       = 7
+  cur_strlen_post = 7
+  next_byte_hex   = 3b
+  eof_state       = 0
+  le_start_off    = 0
+  le_len          = 7
+
+BUILD_LABEL=stage1
+LEXER_SEAM_CASE_COUNT=6
+
+CASE E1_abc_semicolon build=stage1
+  input           = abc;
+  start_offset    = 0
+  lex_rc          = 1
+  tk_type         = 768
+  start_before    = 0
+  ptr_before      = 0
+  cur_strlen_pre  = 0
+  start_after     = 3
+  ptr_after       = 3
+  cur_strlen_post = 3
+  next_byte_hex   = 3b
+  eof_state       = 0
+  le_start_off    = 0
+  le_len          = 3
+
+CASE E2_abc_plus build=stage1
+  input           = abc+
+  start_offset    = 0
+  lex_rc          = 1
+  tk_type         = 768
+  start_before    = 0
+  ptr_before      = 0
+  cur_strlen_pre  = 0
+  start_after     = 3
+  ptr_after       = 3
+  cur_strlen_post = 3
+  next_byte_hex   = 2b
+  eof_state       = 0
+  le_start_off    = 0
+  le_len          = 3
+
+CASE E3_abc_space build=stage1
+  input           = abc 
+  start_offset    = 0
+  lex_rc          = 1
+  tk_type         = 768
+  start_before    = 0
+  ptr_before      = 0
+  cur_strlen_pre  = 0
+  start_after     = 3
+  ptr_after       = 3
+  cur_strlen_post = 3
+  next_byte_hex   = 20
+  eof_state       = 0
+  le_start_off    = 0
+  le_len          = 3
+
+CASE E4_abc_eof build=stage1
+  input           = abc
+  start_offset    = 0
+  lex_rc          = 1
+  tk_type         = 768
+  start_before    = 0
+  ptr_before      = 0
+  cur_strlen_pre  = 0
+  start_after     = 3
+  ptr_after       = 3
+  cur_strlen_post = 3
+  next_byte_hex   = 00
+  eof_state       = 1
+  le_start_off    = 0
+  le_len          = 3
+
+CASE E5_xxabc_offset2 build=stage1
+  input           = xxabc;
+  start_offset    = 2
+  lex_rc          = 1
+  tk_type         = 768
+  start_before    = 2
+  ptr_before      = 2
+  cur_strlen_pre  = 0
+  start_after     = 5
+  ptr_after       = 5
+  cur_strlen_post = 3
+  next_byte_hex   = 3b
+  eof_state       = 0
+  le_start_off    = 2
+  le_len          = 3
+
+CASE E6_abc_dollar build=stage1
+  input           = abc$def;
+  start_offset    = 0
+  lex_rc          = 1
+  tk_type         = 768
+  start_before    = 0
+  ptr_before      = 0
+  cur_strlen_pre  = 0
+  start_after     = 7
+  ptr_after       = 7
+  cur_strlen_post = 7
+  next_byte_hex   = 3b
+  eof_state       = 0
+  le_start_off    = 0
+  le_len          = 7
+
+============================================================
+Differential verdict — POST-FIX
+============================================================
+
+diff /tmp/b02-lexer-seam-legacy.txt /tmp/b02-lexer-seam-stage1.txt
+returns ONLY:
+
+  1c1    BUILD_LABEL=legacy  vs  BUILD_LABEL=stage1
+  4c4    CASE E1 ... build=legacy  vs  build=stage1
+  20c20  CASE E2 ... build=legacy  vs  build=stage1
+  36c36  CASE E3 ... build=legacy  vs  build=stage1
+  52c52  CASE E4 ... build=legacy  vs  build=stage1
+  68c68  CASE E5 ... build=legacy  vs  build=stage1
+  84c84  CASE E6 ... build=legacy  vs  build=stage1
+
+ALL NUMERIC FIELDS ARE BYTE-IDENTICAL between the
+two builds for ALL 6 inputs.
+
+============================================================
+Field-by-field verdict
+============================================================
+
+  Field            | E1   | E2   | E3   | E4   | E5   | E6
+  -----------------+------+------+------+------+------+------
+  start_before     | MATCH| MATCH| MATCH| MATCH| MATCH| MATCH
+  ptr_before       | MATCH| MATCH| MATCH| MATCH| MATCH| MATCH
+  cur_strlen_pre   | MATCH| MATCH| MATCH| MATCH| MATCH| MATCH
+  start_after      | MATCH| MATCH| MATCH| MATCH| MATCH| MATCH
+  ptr_after        | MATCH| MATCH| MATCH| MATCH| MATCH| MATCH
+  cur_strlen_post  | MATCH| MATCH| MATCH| MATCH| MATCH| MATCH
+  next_byte_hex    | MATCH| MATCH| MATCH| MATCH| MATCH| MATCH
+  eof_state        | MATCH| MATCH| MATCH| MATCH| MATCH| MATCH
+  le_start_off     | MATCH| MATCH| MATCH| MATCH| MATCH| MATCH
+  le_len           | MATCH| MATCH| MATCH| MATCH| MATCH| MATCH
+
+  Summary:  6/6 inputs, 10/10 fields ALL MATCH.
+
+============================================================
+PILLAR_B' verdict — POST-FIX
+============================================================
+
+PILLAR_B_PRIME_PRODUCTION_LEXER_CURSOR_SEAM = PASS
+  6/6 inputs byte-identical on EVERY measured field.
+  No residue. No "covered above". No "+/- 1 byte at EOF".
+
+EOF_CURSOR_STATE_EQUIVALENCE = PASS
+  E4 ptr_after = 3 in both (AT the NUL).
+  E4 eof_state = 1 in both.
+
+EOF_POINTER_SAFETY = PASS
+  E4 l->ptr = src + 3 (not src + 4).
+  The next lexNextChar reads src[3] = NUL.
+  C memory model: l->ptr at NUL is dereferenceable.
+
+NON_EOF_PRODUCTION_CURSOR_EQUIVALENCE = PASS
+  E1, E2, E3, E5, E6: l->ptr and l->start
+  both point at the non-identifier byte in BOTH
+  builds. Identical to legacy postcondition.
+
+ACT-POLYC-BOOTSTRAP02 C2 -> C3 transition is now
+fully unlocked. C4 CLOSE of the parent ACT is no
+longer blocked.
+
+

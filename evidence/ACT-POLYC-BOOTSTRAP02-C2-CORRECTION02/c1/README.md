@@ -27,7 +27,9 @@ The correction ACT is bounded to:
    proves.
 
 No production source mutation. No B1/B0 component
-mutation. No build-system behavioural change.
+mutation. No production-build-system semantic change
+(test-only target added; non-production executables
+do not affect `make all`).
 
 ACT-POLYC-BOOTSTRAP02 C3 EVIDENCE remains locked until
 this correction ACT closes.

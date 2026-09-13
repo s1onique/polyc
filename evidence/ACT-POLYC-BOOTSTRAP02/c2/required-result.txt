@@ -106,34 +106,33 @@ C2_PRODUCTION_BINARY_UNCHANGED   PASS (no _BootstrapScanIdent
                                        in ./build/hcc by design)
 
 ------------------------------------------------------------
-Section E — Cursor equivalence (RECLASSIFIED in C2-CORRECTION02)
+Section E — Cursor equivalence (PASS_BY_PILLAR_B_PRIME after C2-CORRECTION03)
 ------------------------------------------------------------
 
-C2_CURSOR_BINDING                SUPERSEDED_BY_PILLAR_B_PRIME
-   Object-emission parity alone does NOT establish
-   cursor-binding equivalence; see the
-   three-pillar taxonomy below.
+C2_CURSOR_BINDING                PASS_BY_PILLAR_B_PRIME
+   Established by direct seam-level observation of
+   the production Lexer. After the C2-CORRECTION03
+   fix to src/lexer.c::lexIdentifier, all six
+   reviewer-specified inputs produce byte-identical
+   (l->ptr, l->start, l->cur_strlen, Lexeme) tuples
+   between legacy and stage1.
+   See lexer-seam-direct-witness.txt.
 
-C2_EOF_NUL_BEHAVIOR              NOT_CLAIMED_FROM_PILLAR_A
-   EOF/NUL behavior requires direct seam-level
-   observation; see PILLAR_B_PRIME (production-Lexer
-   seam differential) in lexer-seam-direct-witness.txt.
-   stage1 path DELIBERATELY advances l->ptr past the
-   NUL at end-of-identifier, while legacy leaves it AT
-   the NUL. The two models diverge by exactly 1 byte
-   at EOF (see lexer-seam-direct-witness.txt case E4).
-   This divergence is LATENT in current callers
-   (no caller reads past EOF), recorded as RESIDUE.
+C2_EOF_NUL_BEHAVIOR              PASS_BY_PILLAR_B_PRIME
+   EOF/NUL behavior now established by direct
+   seam-level observation. After the fix, stage1
+   leaves l->ptr AT the terminating NUL (= legacy),
+   not one-past-end. See PILLAR_B_PRIME case E4.
+   See lexer-seam-direct-witness.txt.
 
-C2_LEXREWIND_EQUIVALENCE         NOT_CLAIMED_FROM_PILLAR_A
-   lexRewindChar equivalence requires direct
-   seam-level observation. The B1 path does NOT call
-   lexRewindChar at all (it sets l->ptr directly via
-   +1 or +0 adjustment on end_off). Functional
-   equivalence of the two approaches is established
-   at the LEXEME level (le_start, le_len) but not at
-   the l->start level; see lexer-seam-direct-witness.txt
-   for the field-by-field diff.
+C2_LEXREWIND_EQUIVALENCE         PASS_BY_PILLAR_B_PRIME
+   lexRewindChar equivalence now established by
+   direct seam-level observation. The B1 path does
+   not call lexRewindChar; instead it sets
+   l->ptr = final_ptr (matching the legacy post-
+   condition mechanically). After the fix,
+   l->start = l->ptr for all six cases.
+   See lexer-seam-direct-witness.txt.
 
 ------------------------------------------------------------
 Section E' — Three-pillar cursor evidence taxonomy
@@ -159,18 +158,18 @@ PILLAR_B_PRIME_PRODUCTION_LEXER_CURSOR_SEAM
    Production src/lexer.c.o linked twice (legacy vs
    -DHCC_BOOTSTRAP02_STAGE1); production public
    entry point lex() driven on the same six inputs.
-   5/6 downstream-visible fields byte-identical.
-   1/6 (E4 EOF) has ptr_after divergence; next_byte
-   and le_len are byte-identical there.
+   6/6 inputs byte-identical (full state, no residue)
+   after C2-CORRECTION03 fix.
    See lexer-seam-direct-witness.txt.
 
 The three pillars together establish:
   - Token output equivalence (PILLAR_A + le_* fields
     of PILLAR_B_PRIME).
-  - Cursor state equivalence at non-EOF positions
-    (PILLAR_B + l->ptr of PILLAR_B_PRIME).
-  - Cursor state divergence at EOF (PILLAR_B_PRIME
-    records it as RESIDUE).
+  - Cursor state equivalence at ALL positions,
+    including EOF (PILLAR_B + PILLAR_B_PRIME l->ptr
+    and l->start).
+  - EOF pointer safety: l->ptr at EOF is at the
+    terminating NUL (one-past-end UB removed).
 
 ------------------------------------------------------------
 Section F — Conservation (F10)
@@ -254,8 +253,13 @@ Section J — C2 verdict (post-correction)
 
   Authoritative corrected C2 verdict (binding):
     ACT-Verdict                     = PASS_WITH_CORRECTION_RESIDUE
+                                  (post-C2-CORRECTION02)
+    ACT-Verdict-post-CORRECTION03   = PASS (no residue)
     C2_SCOPE_CONTRACT               = COMPLIANT (post-correction)
     B1_COMPONENT_IMPLEMENTED        = YES
     STAGE1_BINARY_EXISTS            = YES
     STAGE1_DELEGATES_TO_POLYC       = YES
     STAGE0_PRODUCTION_PATH_PRESERVED = YES
+    EOF_CURSOR_STATE_EQUIVALENCE    = PASS (post-CORRECTION03)
+    EOF_POINTER_SAFETY              = PASS (post-CORRECTION03)
+    NON_EOF_PRODUCTION_CURSOR_EQ    = PASS (6/6, post-CORRECTION03)
