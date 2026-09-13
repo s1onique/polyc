@@ -1,0 +1,100 @@
+CORRECTION01 acceptance-item reclassification
+=============================================
+
+Parent ACT item A2 (worktree was clean before history mutation):
+
+  Original claim:
+    "git status --short was empty before any history mutation"
+
+  Captured artifact (../pre-ACT-status.txt):
+    ?? evidence/ACT-POLYC2-CODIUM-HARNESS-UPSTREAM-RESYNC01/
+
+  Mechanically demonstrable:
+    - The captured artifact is NOT empty at the time of capture.
+    - However, the parent's first shell command in the same parent
+      ACT, run BEFORE mkdir evidence/.../, returned an empty
+      git status --short.
+    - The capture-to-file step happened AFTER mkdir.
+
+  Classification under CORRECTION01 C4 + C5:
+    - The empty-status observation is RETROSPECTIVELY REASONABLE but
+      not proven by the retained pre-ACT-status.txt artifact alone.
+    - It is not contradicted by the retained artifact either, because
+      the only untracked path it contains is the parent ACT's own
+      evidence directory (created later in the same ACT).
+    - It is NOT fabricated: the parent did not write a fake empty
+      status file.
+
+  D1 truth classification:
+    F3_OPERATIONAL_CLAIM = PLAUSIBLE_BUT_NOT_PROVEN_BY_RETAINED_PRE_ACT_STATUS
+    F3_EVIDENCE_DEFECT   = EVIDENCE_CAPTURE_ORDERING
+
+  A2_RECLASSIFICATION = PASS_WITH_EVIDENCE_QUALIFICATION
+    (The parent-ACT operational action was safe; the evidence
+    wording is qualified.)
+
+
+Parent ACT item A12 (existing applicable PolyC validation passes;
+baseline failures truthfully classified):
+
+  Original claim:
+    "Both runs produce the same result: GEP01_PASS=26 GEP01_FAIL=4
+     STATUS=FAIL"
+    "All four reproduce on upstream `main` byte-for-byte"
+
+  Mechanically demonstrable:
+    - Raw logs are NOT byte-for-byte equal:
+        cmp -s ../gate-push-harness.txt ../gate-push-main.txt
+        -> exit 1 (DIFFERENT)
+        SHA-256 harness = b8e05bfa...
+        SHA-256 main    = 7cee64fe...
+    - The deterministic GEP01 failure SIGNATURES (extracted by
+      extract-signature.sh) ARE byte-for-byte equal:
+        cmp -s gate-push-harness.signature.txt
+                gate-push-main.signature.txt
+        -> exit 0 (EQUAL)
+    - Both signatures contain:
+        GEP01_PASS=26
+        GEP01_FAIL=4
+        STATUS=FAIL
+        CHECK=gep01 STATUS=FAIL
+        REASON=gep01 exited with status 2
+        VERDICT=FAIL
+    - Distinct FAIL classification strings (in both signatures):
+        FAIL  readat.HC: SHAPE_DEPENDENT counter = ? (expected >= 1): shape_dependent marker not found in stderr
+        FAIL  IR_GEP = REJECTED (sibling opcode still rejected): could not read cap verifier output
+        FAIL  IR_LEA = REJECTED (sibling opcode still rejected): could not read cap verifier output
+        FAIL  IR_IADD = SUPPORTED (preserved, GEP01 is per-shape subset): could not read cap verifier output
+
+  D2 truth classification:
+    RAW_GATE_LOGS_EQUAL            = false
+    FAILURE_SIGNATURES_EQUAL       = true
+    GEP01_PASS_HARNESS             = 26
+    GEP01_FAIL_HARNESS             = 4
+    GEP01_PASS_MAIN                = 26
+    GEP01_FAIL_MAIN                = 4
+
+  A12_RECLASSIFICATION = PASS_WITH_EVIDENCE_QUALIFICATION
+    (Same logical conclusion as parent; the supporting claim is
+    now stated at the strongest level it can be mechanically
+    demonstrated: failure-signature equality, not raw-log
+    byte-equality.)
+
+
+Other parent items that were re-examined under CORRECTION01:
+  A1  pre-ACT OLD_HEAD recorded                -> PASS_MECHANICALLY_PROVEN (OLD_HEAD.txt unchanged)
+  A3  explicit git fetch origin main performed -> PASS_MECHANICALLY_PROVEN (pre-ACT-remotes.txt + current-ref-verification.txt)
+  A4  backup branch == OLD_HEAD                -> PASS_MECHANICALLY_PROVEN (current-ref-verification.txt)
+  A5  DIVERGED classification                  -> PASS_MECHANICALLY_PROVEN (pre-ACT-left-right.txt)
+  A6  local-only work preserved on harness     -> PASS_MECHANICALLY_PROVEN (current-ref-verification.txt: 9 commits still present)
+  A7  main == origin/main                      -> PASS_MECHANICALLY_PROVEN (current-ref-verification.txt)
+  A8  no reconciliation merge commit           -> PASS_MECHANICALLY_PROVEN (final-graph.txt + current-ref-verification.txt: linear graph, no merge nodes)
+  A9  harness rebased cleanly (9/9)            -> PASS_MECHANICALLY_PROVEN (rebase-output.txt)
+  A10 origin/main ancestor of harness          -> PASS_MECHANICALLY_PROVEN (current-ref-verification.txt)
+  A11 range-diff accounts for every change     -> PASS_MECHANICALLY_PROVEN (range-diff.txt + current-ref-verification.txt range-diff)
+  A13 no remote refs modified                  -> PASS_MECHANICALLY_PROVEN (remote URLs unchanged; no git push invoked during correction01)
+  A14 pull.ff=only configured locally          -> PASS_MECHANICALLY_PROVEN (current-ref-verification.txt)
+  A15 final checkout is HARNESS_BRANCH         -> PASS_MECHANICALLY_PROVEN (current-ref-verification.txt)
+  A16 backup branch remains present            -> PASS_MECHANICALLY_PROVEN (git branch -vv shows it; current-ref-verification.txt)
+
+

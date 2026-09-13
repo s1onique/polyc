@@ -1,0 +1,42 @@
+C1 RED -- current-tree shell inventory summary
+==============================================
+
+ENTRY_IDENTITY
+  branch:                main
+  commit:                e544a48f192606256af9f348befec0c852b6387b
+  worktree_clean:        true
+
+DISCOVERY COMMAND
+  git ls-files '*.sh'
+
+No `.sh` files exist under `.githooks/` (only `commit-msg`,
+`pre-commit`, `pre-push`). Hence the tracked-shell domain
+is precisely the 42 paths in `shell-inventory.tsv`.
+
+AGGREGATE MEASUREMENTS (C1 freeze)
+  TRACKED_SHELL_FILES     = 42
+  TOTAL_SHELL_LOC         = 9337
+  TINY_FILES (<=50 LOC)   = 6
+  TINY_LOC                = 164
+  GRANDFATHERED_FILES     = 36
+  GRANDFATHERED_LOC       = 9173
+  MAX_FILE_LOC            = 830   (scripts/quality/llvm-spike-test.sh)
+  MIN_GRANDFATHERED_LOC   = 64    (evidence/factory-status-reconciliation-correction02/closure-run.sh)
+  MEDIAN_GRANDFATHERED_LOC = 188  (interpolated, between 187 and 194)
+  AVG_FILE_LOC            = 222
+  MIGRATED_FILES          = 1     (llvm-gep01-test.sh, budget=0, NOT in tracked set)
+
+RECONCILIATION NOTE
+  Earlier ROADMAP figures (~6,131 / ~6,184 / 5,952 / 6,176) refer
+  to the `scripts/`-only domain at earlier points in history.
+  C1 current-tree measurement is authoritative for SHELL-BUDGET01.
+  This ACT scopes the budget to ALL tracked `.sh` paths, including
+  `evidence/.../*.sh` and `packaging/install.sh`, because they are
+  the actual policy domain: a budget that excludes evidence-shell
+  or install-shell would not catch growth there.
+
+DOMAIN BREAKDOWN
+  scripts/                = 24 files
+  evidence/               = 16 files
+  packaging/              =  1 file
+  src/asm/                =  1 file

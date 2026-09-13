@@ -1,0 +1,62 @@
+=== C3 CLOSE -- conservation gates ===
+--- factory-v2-test ---
+PASS=35
+FAIL=0
+STATUS=PASS
+rc=0
+
+--- factory-append-only-test ---
+PASS=11
+FAIL=0
+STATUS=PASS
+rc=0
+
+--- factory-closure-status-check ---
+PAIR_FAIL=0
+STATUS=PASS
+VERDICT=PASS
+rc=0
+
+--- factory-halt-classification-test ---
+PASS=12
+FAIL=0
+STATUS=PASS
+rc=0
+
+--- shell-budget-gate (NEW) ---
+PASS shell-budget-gate aggregate=9175
+rc=0
+
+--- shell-budget-gate-test (N1..N10) ---
+Preparing worktree (new branch '__budget_probe_1199')
+HEAD is now at 908d085 C2 IMPL part 4: shell-budget-gate-test.sh + migration queue + evidence
+PASS  N1
+PASS  N2
+PASS  N3
+PASS  N4
+PASS  N5
+PASS  N6
+PASS  N8
+PASS  N9
+PASS  N10
+---
+PASS=9 FAIL=0
+rc=0
+
+--- gate-fast ---
+PAIR_FAIL=0
+STATUS=PASS
+VERDICT=PASS
+CHECK=factory-closure-status STATUS=PASS
+VERDICT=PASS
+rc=0
+
+--- shell-loc-gate (legacy; pre-existing stale baseline residue) ---
+FAIL  NEW   scripts/quality/factory-halt-classification-test.sh  cur=182 > 50
+FAIL  NEW   scripts/quality/factory-halt-classification-check.sh  cur=187 > 50
+rc=0
+
+--- llvm-gep01 PolyC harness ---
+tools/quality/llvm-gep01-test.HC exists:
+-rw-r--r-- 1 chistyakov staff 44607 Sep 12 17:53 tools/quality/llvm-gep01-test.HC
+ENVIRONMENTALLY_UNAVAILABLE: hcc not installed in this env.

@@ -1,0 +1,43 @@
+C2 IMPL -- migrated-path ratchet test (AC20, AC21)
+=====================================================
+
+The B3 invariant: a path declared state=MIGRATED budget_loc=0
+cannot be re-introduced as a substantive shell script.
+
+Test: recreate scripts/quality/llvm-gep01-test.sh (the path
+migrated to PolyC by ACT-POLYC-TOOLING-MIGRATE-GEP01) at 2
+LOC, add to the worktree's git index, and run shell-budget-gate.
+
+Verbatim transcript:
+
+  $ git worktree add -b __mig $WT HEAD
+  HEAD is now at 6d822df C2 IMPL part 3: TINY/EXEMPT_WRAPPER per-file budget check
+
+  $ echo '#!/bin/sh' > scripts/quality/llvm-gep01-test.sh
+  $ echo ': resurrected' >> scripts/quality/llvm-gep01-test.sh
+  $ git add -A scripts/quality/llvm-gep01-test.sh
+
+  $ sh scripts/quality/shell-budget-gate.sh docs/factory/SHELL-BUDGET.tsv HEAD
+  FAIL shell-budget-gate
+  B3 MIGRATED path exists: scripts/quality/llvm-gep01-test.sh
+  $ echo $?
+  1
+
+Verdict: B3 fires.  shell-budget-gate rc=1.
+A resurrected migrated path is mechanically rejected.
+
+This is the semantic that R4 named as missing in C1.
+After C2 IMPL, R4 is closed.
+
+NOTES:
+
+- The shell-loc-gate baseline.txt (legacy, from
+  ACT-POLYC-TOOLING-SHELL-INVENTORY01) still references
+  scripts/quality/llvm-gep01-test.sh at 232 LOC and is
+  STALE relative to the current tree. shell-loc-gate is
+  grandfathered; SHELL-BUDGET.tsv is the new authoritative
+  manifest. The new gate does not read baseline.txt.
+
+- The MIGRATED row's `notes` column explicitly identifies
+  the migration origin so future agents can audit the
+  zero-budget invariant.

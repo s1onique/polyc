@@ -12,7 +12,7 @@ HCC_ENABLE_LLVM ?= OFF
 
 default: all
 
-.PHONY: all gate-fast gate-push install-hooks llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test selfhost-component-binary selfhost-component-build selfhost-component-test selfhost-component-selftest selfhost-registry-validate
+.PHONY: all formal-dafny gate-fast gate-push install-hooks llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test selfhost-component-binary selfhost-component-build selfhost-component-test selfhost-component-selftest selfhost-registry-validate
 
 # To add sqlite3 support add -DHCC_LINK_SQLITE3=1 to the below like so:
 #```
@@ -232,6 +232,14 @@ clean:
 
 # Convenience surfaces only. Gate logic lives in the scripts.
 # See scripts/quality/gate-fast.sh and scripts/quality/gate-push.sh.
+
+# ACT-POLYC2-DAFNY-PROOF-MVP01: opt-in Dafny formal gate.
+# Runs scripts/quality/formal-dafny.sh which invokes the
+# pinned Dafny 4.11.0 verifier against the identifier-
+# scanner model in formal/dafny/identifier-scan.dfy.
+# Not wired into gate-fast (per ACT §14).
+formal-dafny:
+	./scripts/quality/formal-dafny.sh
 
 gate-fast:
 	./scripts/quality/gate-fast.sh

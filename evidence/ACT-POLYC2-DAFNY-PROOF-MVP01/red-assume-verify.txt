@@ -1,0 +1,26 @@
+=== RED-B verify path (CORRECTION01) ===
+
+Mutation: `assume false;` injected into LemmaMaximal body.
+
+Gate invocation:
+  $ ./scripts/quality/formal-dafny.sh
+
+Captured output (last 12 lines):
+198 |   assume false;
+    |   ^^^^^^
+
+formal/dafny/identifier-scan.dfy(198,9): Warning: unnecessary (or partly unnecessary) assume statement
+    |
+198 |   assume false;
+    |          ^^^^^
+
+
+Dafny program verifier finished with 17 verified, 0 errors
+Compilation failed because warnings were found and --allow-warnings is false
+FATAL: verify non-zero
+
+FORMAL_DAFNY_RC=1
+
+The Dafny 4.11.0 default behaviour elevates
+--warn-redundant-assumptions warnings to hard errors,
+so the verify path itself catches the assume.

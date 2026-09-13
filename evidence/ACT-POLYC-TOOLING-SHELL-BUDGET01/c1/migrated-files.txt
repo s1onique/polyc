@@ -1,0 +1,48 @@
+C1 RED -- migrated shell files
+================================
+
+The migration already proven by ACT-POLYC-TOOLING-MIGRATE-GEP01
+recorded the deletion of `scripts/quality/llvm-gep01-test.sh`
+(232 LOC of Bash) and replacement with a PolyC-native harness
+(`tools/quality/llvm-gep01-test.HC`).
+
+C1 verification:
+
+  $ git ls-files | grep llvm-gep01-test.sh
+  (no output)
+
+  $ git log --diff-filter=D --name-only --oneline \
+        | grep llvm-gep01-test.sh | head -3
+  ... llvm-gep01-test.sh
+  ... llvm-gep01-test.sh
+  ... llvm-gep01-test.sh
+
+  $ git log --diff-filter=A --name-only --oneline \
+        | grep llvm-gep01-test.HC | head -3
+  ... llvm-gep01-test.HC
+
+The Bash harness is absent from the tracked tree.
+
+RED R3 / R4 surface exactly here:
+
+  R3  Existing shell-loc-gate does not encode migrated-path=0
+      because the gate has no concept of a deleted path; it
+      only watches `*.sh` paths currently present.
+
+  R4  Existing gate cannot mechanically reject reintroduction
+      of `scripts/quality/llvm-gep01-test.sh`.  If someone
+      commits the file again, shell-loc-gate simply adds it
+      to its discovery walk and compares against
+      baseline.txt (which has no entry for the migrated path
+      because the file does not exist), causing it to be
+      classified NEW and either accept (if <=50 LOC) or fail
+      (if >50 LOC).  Neither outcome prevents a 232-LOC
+      resurrection in disguised form, and neither produces
+      a migration-zero-budget invariant.
+
+The new budget manifest MUST include this row:
+
+  scripts/quality/llvm-gep01-test.sh<TAB>232<TAB>0<TAB>MIGRATED<TAB>TEST<...>
+
+so the budget gate can mechanically FAIL any future reappearance
+of the file.

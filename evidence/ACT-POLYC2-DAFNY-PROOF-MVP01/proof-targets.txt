@@ -1,0 +1,32 @@
+PROOF_TARGETS
+=============
+The Dafny model formal/dafny/identifier-scan.dfy MUST be
+verified by the pinned Dafny 4.11.0 toolchain with the
+following six lemmas / theorems present and successfully
+verified:
+
+  1. LemmaBounds       (P1 — Bounds)
+  2. LemmaProgress     (P2 — Progress)
+  3. LemmaConsumed     (P3 — Consumed-region validity)
+  4. LemmaMaximal      (P4 — Maximality)
+  5. LemmaNoEarlyStop  (P5 — No early stop)
+  6. LemmaDeterministic (P6 — Determinism)
+
+Each lemma MUST have:
+  - the lemma body accepted by the Dafny parser,
+  - all requires and ensures clauses honoured,
+  - zero verification errors,
+  - zero accepted warnings (redundant / contradictory
+    assumptions are gated to error per
+    formal/dafny/dfyconfig.toml).
+
+Auxiliary definitions (predicates / function) that the
+lemmas rely on:
+  - newtype byte = x: int | 0 <= x < 256 witness 0
+  - predicate IsAsciiUpper / IsAsciiLower / IsAsciiAlpha / IsAsciiDigit
+  - predicate IsIdentStart / IsIdentContinue
+  - function ScanIdentEnd
+  - predicate IsValidScanResult
+
+EXPECTED_VERIFY_EXIT=0
+EXPECTED_WARNINGS=0

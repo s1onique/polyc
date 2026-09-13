@@ -1,0 +1,26 @@
+=== RED-A: theorem falsification (CORRECTION01) ===
+
+Mutation: LemmaMaximal's postcondition changed to
+`ensures false;` (impossible postcondition).
+
+Direct dafny verify output:
+    | ^
+
+formal/dafny/identifier-scan.dfy(195,10): Related location: this is the postcondition that could not be proved
+    |
+195 |   ensures false
+    |           ^^^^^
+
+
+Dafny program verifier finished with 16 verified, 1 error
+FATAL: verify non-zero
+
+FORMAL_DAFNY_RC=1 (gate caught it via I4 verify path)
+
+Verifies that the verifier is checking a meaningful
+property: when the postcondition is made impossible,
+the verifier refuses to certify it, and the gate
+translates that into a non-zero exit code.
+
+Restoration: SHA-256 of restored file matches the
+canonical pre-mutation hash 82a4fb60...4674711.

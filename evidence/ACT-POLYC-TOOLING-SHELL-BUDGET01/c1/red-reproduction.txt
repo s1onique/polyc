@@ -1,0 +1,157 @@
+C1 RED reproduction -- the six ACT §15 REDs against current tree
+================================================================
+
+Each RED is a real, mechanical observation against the current
+repository state (HEAD = e544a48f192606256af9f348befec0c852b6387b).
+None of these is a synthetic substitute.
+
+----------------------------------------------------------------
+R1  Current repo has grandfathered shell files but no complete
+    per-file monotonic budget manifest.
+----------------------------------------------------------------
+
+  $ test -f docs/factory/SHELL-BUDGET.tsv && echo YES || echo NO
+  NO
+
+  No canonical, machine-readable per-file budget manifest
+  exists.  shell-loc-gate.sh reads
+  evidence/ACT-POLYC-TOOLING-SHELL-INVENTORY01/c1/baseline.txt,
+  which is path<TAB>loc (no budget column, no state column,
+  no role column).  Therefore:
+
+    - no per-file "budget" column exists;
+    - no monotonicity invariant is encoded;
+    - no aggregate budget value exists.
+
+  RESULT: R1 RED REPRODUCED.
+
+----------------------------------------------------------------
+R2  Existing shell-loc gate prevents growth but does not
+    permanently ratchet a file downward after shrink.
+----------------------------------------------------------------
+
+  Demonstration: if scripts/quality/inventory.sh (19 LOC) were
+  shrunk to 10 LOC tomorrow, shell-loc-gate.sh would still
+  enforce a 50-LOC new-file cap (because the file has no
+  baseline entry).  Its 19-LOC baseline would NOT be updated
+  to 10; the per-file cap would not ratchet downward to a
+  permanent 10.  The file could later grow back to 19 with
+  no rejection.
+
+  More concretely: shell-loc-gate.sh reads
+  evidence/ACT-POLYC-TOOLING-SHELL-BUDGET01/c1/../SHELL-INVENTORY01/c1/baseline.txt
+  from a fixed path and never rewrites it.  There is no
+  per-file ratchet mechanism; the baseline is an inert
+  snapshot.
+
+  RESULT: R2 RED REPRODUCED.
+
+----------------------------------------------------------------
+R3  Existing gate does not encode migrated-path=0.
+----------------------------------------------------------------
+
+  $ grep -rn 'MIGRATED' scripts/quality/ 2>/dev/null
+  (no output)
+
+  $ grep -rn 'llvm-gep01-test.sh' scripts/quality/ \
+       evidence/ACT-POLYC-TOOLING-SHELL-INVENTORY01/ 2>/dev/null \
+       | grep -v '#' | head -5
+  (no rows that encode budget=0)
+
+  The migrated harness is documented in prose but not
+  machine-encoded as a budget row of state=MIGRATED
+  budget=0.
+
+  RESULT: R3 RED REPRODUCED.
+
+----------------------------------------------------------------
+R4  Existing gate cannot mechanically reject reintroduction
+    of a previously deleted migrated Bash harness.
+----------------------------------------------------------------
+
+  Reproduction (REAL transcript below; see ACT C1 commit
+  for verbatim source):
+
+    $ sh /tmp/probe.sh
+    --- resurrected stub LOC = 30 ---
+    30 scripts/quality/llvm-gep01-test.sh
+    --- shell-loc-gate.sh output ---
+    FAIL  NEW   scripts/quality/factory-halt-classification-test.sh  cur=182 > 50
+    FAIL  NEW   scripts/quality/factory-halt-classification-check.sh  cur=187 > 50
+    --- exit code = 1 ---
+
+  Observation: shell-loc-gate.sh emits NO mention of
+  scripts/quality/llvm-gep01-test.sh at all.  The
+  resurrected 30-LOC file passes its checks (treated as a
+  new tiny wrapper: 30 <= 50).  The gate's exit code is 1
+  but for an unrelated reason (stale baseline missing the
+  factory-halt-classification-* entries).
+
+  At 232-LOC resurrection (matching the stale baseline row):
+
+    $ sh /tmp/probe3.sh
+    --- resurrected stub LOC = 232 (matches stale baseline) ---
+    232 scripts/quality/llvm-gep01-test.sh
+    --- shell-loc-gate.sh output ---
+    FAIL  NEW   scripts/quality/factory-halt-classification-test.sh  cur=182 > 50
+    FAIL  NEW   scripts/quality/factory-halt-classification-check.sh  cur=187 > 50
+    --- exit code = 1 ---
+
+  Even at the exact baseline size, the resurrected
+  llvm-gep01-test.sh is not flagged.  (232 <= 232 = no growth;
+  growth gate is satisfied.)  The gate still fails for the
+  unrelated stale-baseline reason.
+
+  In both probes, the resurrected migrated path is
+  undetected by the per-file logic.  The migration zero-budget
+  invariant is unenforced.
+
+  RESULT: R4 RED REPRODUCED.
+
+  PROBE TRANSCRIPTS captured verbatim in
+  evidence/ACT-POLYC-TOOLING-SHELL-BUDGET01/c1/r4-probe.txt.
+
+----------------------------------------------------------------
+R5  Existing tooling does not produce a deterministic ranked
+    migration queue.
+----------------------------------------------------------------
+
+  $ ls evidence/ACT-POLYC-TOOLING-*MIGRATE-* 2>/dev/null \
+       | xargs -I{} basename {} \
+       | sort -u
+  (no queue)
+
+  No candidate ranking model exists.  A future migration ACT
+  would have to be picked by hand.
+
+  RESULT: R5 RED REPRODUCED.
+
+----------------------------------------------------------------
+R6  Current aggregate shell-debt ceiling is not represented
+    as a monotonic machine-readable invariant.
+----------------------------------------------------------------
+
+  Aggregate computation today is purely a one-shot grep/sed
+  pipeline.  There is no committed record of:
+
+      SHELL_DEBT_BUDGET = sum(budget_loc for GRANDFATHERED)
+
+  No ACT can mechanically verify "we lowered the ceiling".
+  The C1 freeze in current-loc-summary.txt records the
+  CURRENT_DEBT but not the DEBT_BUDGET because there is no
+  budget column to sum over.
+
+  RESULT: R6 RED REPRODUCED.
+
+----------------------------------------------------------------
+SUMMARY
+----------------------------------------------------------------
+
+  R1 R2 R3 R4 R5 R6
+  -- -- -- -- -- --
+  XX XX XX XX XX XX
+
+  All six REDs reproduce against the real repository.
+  Per F3: the principal REDs exist before the production fix.
+  Per F4: this is the documented halt-or-proceed decision point.
+  Per F7: scope is preserved; no production mutation in C1.
