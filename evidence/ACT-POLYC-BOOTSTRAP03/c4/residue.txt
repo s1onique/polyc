@@ -1,0 +1,120 @@
+ACT-POLYC-BOOTSTRAP03 — C4 — residue
+=====================================
+
+Classification of carry-forward residue at B2 closure.
+
+------------------------------------------------------------
+P0 — blocks current or next decision
+------------------------------------------------------------
+
+```text
+P0_BLOCKERS = NONE
+```
+
+------------------------------------------------------------
+P1 — important near-term work
+------------------------------------------------------------
+
+```text
+P1_RESIDUE = NONE
+```
+
+The B2 stage chain leaves no P1 residue for the next
+ACT. B3 will need a new build graph for stage3; that
+work is properly in B3's scope, not B2's.
+
+------------------------------------------------------------
+P2 — deferred improvement
+------------------------------------------------------------
+
+```text
+P2_RESIDUE = (carried forward from prior ACTs)
+```
+
+```text
+unit-test / jit-unit-test runner false-green residue
+  (TEST_INFRASTRUCTURE; CLASS=GOVERNANCE; BLOCKS=NO)
+
+historical evidence whitespace residue
+  (CARRIED; CLASS=GOVERNANCE; BLOCKS=NO)
+
+GEP01/push residue
+  (CARRIED; CLASS=GOVERNANCE; BLOCKS=NO)
+
+unit/jit classification:
+  UNIT_TEST_CURRENT         = ENVIRONMENTALLY_UNAVAILABLE_RUNNER_FALSE_GREEN
+  UNIT_TEST_LAST_KNOWN_GOOD = PASS_90_OF_90
+  JIT_UNIT_TEST_CURRENT         = ENVIRONMENTALLY_UNAVAILABLE_RUNNER_FALSE_GREEN
+  JIT_UNIT_TEST_LAST_KNOWN_GOOD = PASS_90_OF_90
+```
+
+These are carried from prior ACTs and remain
+non-blocking (BLOCKS_NEXT=NO per F-MECHANICAL-BLOCKING).
+
+------------------------------------------------------------
+B1 closure-prose omission (carried; non-blocking)
+------------------------------------------------------------
+
+```text
+B1_ASCII_DOMAIN          = YES
+B1_NON_ASCII_EQUIVALENCE = NOT_CLAIMED
+B1_REFERENCE_MODEL_ORACLE = tools/quality/bootstrap02-ident-oracle.c
+```
+
+These are descriptive fields from
+ACT-POLYC-BOOTSTRAP02-C1-CORRECTION01 §13 that were
+omitted from the B1 closure summary. Recorded in B2 C1
+(`b1-governance-residue.txt`) and carried through.
+Classification: GOVERNANCE / CLOSURE_COMPLETENESS;
+BLOCKS_B2 = NO.
+
+------------------------------------------------------------
+B1 byte-equality vs token-stream parity residue (carried)
+------------------------------------------------------------
+
+```text
+B1_REFERENCE_MODEL_BYTE_EQUIVALENT = NO
+  (Lexer state adapted; ctype calls adapted)
+
+TOKEN_STREAM_DIFFERENTIAL          = NOT_AVAILABLE_NONBLOCKING
+```
+
+This is the C2-CORRECTION01 residue carried forward.
+Stage2 inherits the same property (the B1 component
+adapted to standalone form is identical between
+stage1 and stage2). Non-blocking.
+
+------------------------------------------------------------
+B2-built component shape residue (new, non-blocking)
+------------------------------------------------------------
+
+```text
+B2 stage2 binary SHA differs from stage1 binary SHA.
+  Cause: stage2 was built at a slightly later instant
+  with intermediate CMake state differing. The B1
+  component object inside stage2 is byte-identical to
+  the B1 component object inside stage1; the
+  surrounding non-B1 compiler object code differs only
+  in timestamps and build-sequence numbering.
+  This is incidental to the B2 invariant
+  (STAGE2_B1_ARTIFACT_PROVENANCE = STAGE1), which is
+  bound by path + SHA of the B1 OBJECT, not the
+  compiler binary.
+
+  Classification: NON_BLOCKING (informational).
+```
+
+------------------------------------------------------------
+Verdict
+------------------------------------------------------------
+
+```text
+P0_BLOCKERS                = NONE
+P1_RESIDUE                 = NONE  (within B2 scope)
+P2_RESIDUE                 = CARRIED FROM PRIOR ACTs (non-blocking)
+B2_NEW_RESIDUE             = NONE (binary SHA difference is informational)
+
+PUSH_RESIDUE               = GEP01_D1_D2 (pre-existing, non-blocking)
+
+B2 closes cleanly. B3 is unlocked.
+```

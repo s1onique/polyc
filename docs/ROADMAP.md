@@ -1878,8 +1878,9 @@ B0 — COMPILER-SHAPED      GREEN
                                 CLOSED PASS_WITH_HYGIENE_RESIDUE
 B1 — PARTIAL SELF-HOST    GREEN
                               ACT-POLYC-BOOTSTRAP02 CLOSED PASS
-B2 — FIRST SELF-HOST      UNLOCKED / NEXT
-B3 — BOOTSTRAP STABILITY  LOCKED
+B2 — FIRST SELF-HOST      GREEN
+                              ACT-POLYC-BOOTSTRAP03 CLOSED PASS
+B3 — BOOTSTRAP STABILITY  UNLOCKED / NEXT
 ```
 
 B1 outcome (ACT-POLYC-BOOTSTRAP02):
@@ -1898,17 +1899,67 @@ BOOTSTRAP_STABILITY               = NOT_YET
 NEXT                              = B2
 ```
 
-Recommended next ACT:
-`ACT-POLYC-BOOTSTRAP02` (or equivalent bounded B1 ACT):
-replace one bounded production lexer path with the proven
-B0 lexer and pass differential tests against the current
-compiler. The B1 ACT may proceed now that
-ACT-POLYC-BOOTSTRAP01-CORRECTION01 has closed.
+B2 outcome (ACT-POLYC-BOOTSTRAP03):
+
+```text
+B2_FIRST_SELF_HOST                 = GREEN
+B1_COMPONENT_LANGUAGE              = POLYC
+
+STAGE1_COMPILER                     = PASS
+STAGE1_COMPILES_B1_COMPONENT        = YES
+STAGE1_B1_ARTIFACT_PROVENANCE       = PASS
+
+STAGE2_COMPILER                     = PASS
+STAGE2_LINKS_STAGE1_B1_ARTIFACT     = YES
+STAGE2_USES_B1_COMPONENT            = YES
+
+STAGE1_STAGE2_DIRECT_EQ             = PASS  (15/15 + 6/6 + 6/6)
+STAGE1_STAGE2_BROAD_CORPUS_EQ       = PASS  (175/175 sources byte-equal)
+STAGE1_STAGE2_ERROR_EQ              = PASS  (4/4 fixtures equiv)
+STAGE2_COMPILES_B1_COMPONENT        = PASS  (self-source property)
+STAGE1_STAGE2_B1_OBJECT_EQ          = PASS  (sha256 match)
+REPRODUCIBILITY                     = PASS  (Build A == Build B)
+
+FULL_SELF_HOST                      = NO   (host-C still dominates)
+HOST_C_DEPENDENCY                   = PRESENT
+BOOTSTRAP_STABILITY                 = NOT_YET  (B3 next)
+STAGE3_CREATED                      = NO
+
+B0_CONSERVATION                     = PASS  15/15
+B1_CONSERVATION                     = PASS  15/15 + 6/6 + 6/6
+LSP_CONSERVATION                    = PASS  43/43
+FACTORY_CONSERVATION                = PASS  (35+11+12+6)
+
+P0_BLOCKERS                         = NONE
+P1_RESIDUE                          = NONE  (within B2 scope)
+P2_RESIDUE                          = CARRIED (unit/jit runner,
+                                            GEP01/push,
+                                            historical whitespace)
+PUSH_RESIDUE                        = GEP01_D1_D2 (pre-existing,
+                                                   non-blocking)
+
+NEXT                                = B3 — bootstrap stability
+```
+
+B2 ACT-POLYC-BOOTSTRAP03 closure evidence at
+`evidence/ACT-POLYC-BOOTSTRAP03/c4/closure-summary.txt`
+and `HANDOFF.md`. Cardinality-1 invariant: see
+`acceptance-matrix.txt` and the single C4 commit on
+`ACT-Phase: CLOSE`.
 
 The SH1–SH6 progression below remains the long-horizon
 vocabulary, but it is **no longer the active critical path**.
 SH1–SH6 vocabulary will be re-stated in B0–B3 terms when
 each milestone ACT opens.
+
+Recommended next ACT (post-B2):
+
+`ACT-POLYC-BOOTSTRAP04` (or equivalent bounded B3 ACT):
+construct stage3 by repeating the stage1→stage2 artifact
+flow, then prove stage2 ≈ stage3 over the binding
+comparison domain (component, direct, corpus, error,
+self-source). This is the GCC-style "later-stage
+comparison" closing the bootstrap-stability milestone.
 
 ### P5 — LLVM feature depth (PARALLEL BACKLOG, NON-BLOCKING)
 

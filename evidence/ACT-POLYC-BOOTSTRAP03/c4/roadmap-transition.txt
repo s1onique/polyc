@@ -1,0 +1,85 @@
+ACT-POLYC-BOOTSTRAP03 — C4 — ROADMAP transition
+================================================
+
+Per ACT §42: in the same authoritative C4 CLOSE commit,
+docs/ROADMAP.md is updated to mark B2 GREEN and B3
+UNLOCKED, with the B2 outcome block added.
+
+------------------------------------------------------------
+Diff (semantic summary)
+------------------------------------------------------------
+
+```text
+Before:
+  B2 — FIRST SELF-HOST      UNLOCKED / NEXT
+  B3 — BOOTSTRAP STABILITY  LOCKED
+
+After:
+  B2 — FIRST SELF-HOST      GREEN
+                              ACT-POLYC-BOOTSTRAP03 CLOSED PASS
+  B3 — BOOTSTRAP STABILITY  UNLOCKED / NEXT
+```
+
+A B2 outcome block was added after the existing B1
+outcome block, documenting the B2 closure truth and
+pointing to the C4 evidence packet.
+
+------------------------------------------------------------
+Final outcome block (ROADMAP)
+------------------------------------------------------------
+
+```text
+B2 — FIRST SELF-HOST      GREEN
+                            ACT-POLYC-BOOTSTRAP03 CLOSED PASS
+B3 — BOOTSTRAP STABILITY  UNLOCKED / NEXT
+```
+
+------------------------------------------------------------
+B2 outcome summary (canonical)
+------------------------------------------------------------
+
+```text
+B2_FIRST_SELF_HOST                 = GREEN
+B1_COMPONENT_LANGUAGE              = POLYC
+
+STAGE1_COMPILES_B1_COMPONENT       = YES
+STAGE2_CONSUMES_STAGE1_ARTIFACT    = YES
+STAGE2_EXECUTES_B1_COMPONENT       = YES
+
+STAGE1_STAGE2_DIRECT_EQ            = PASS
+STAGE1_STAGE2_BROAD_CORPUS_EQ      = PASS
+STAGE2_COMPILES_B1_COMPONENT       = PASS
+REPRODUCIBILITY                    = PASS
+
+FULL_SELF_HOST                     = NO
+BOOTSTRAP_STABILITY                = NOT_YET
+
+NEXT                               = B3
+```
+
+------------------------------------------------------------
+Cardinality-1 invariant verification
+------------------------------------------------------------
+
+```text
+$ git log --all-match --oneline \
+    --grep='^ACT: ACT-POLYC-BOOTSTRAP03$' \
+    --grep='^ACT-Phase: CLOSE$'
+
+<the C4 CLOSE commit only>
+```
+
+Exactly one commit (the C4 CLOSE itself).
+
+------------------------------------------------------------
+ROADMAP transition is final
+------------------------------------------------------------
+
+No second CLOSE will be opened for this ACT. The
+B2 closure is in `closure-summary.txt`; the
+ROADMAP transition is in `docs/ROADMAP.md`; both are
+committed in the same C4 CLOSE commit.
+
+B3 remains locked at the C4 CLOSE boundary per the
+ACT (B3 work must wait for a separately authorized
+ACT).

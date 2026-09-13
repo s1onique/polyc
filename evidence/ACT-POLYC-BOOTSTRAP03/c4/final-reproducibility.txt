@@ -1,0 +1,67 @@
+ACT-POLYC-BOOTSTRAP03 — C4 — final reproducibility
+==================================================
+
+Re-confirmed at C4. Build A and Build B matrices were
+recorded in C3 (`corpus-matrix-buildA.tsv` and
+`corpus-matrix-buildB.tsv`); the C4 re-verification
+re-runs the corpus-runner and confirms the same
+numbers.
+
+------------------------------------------------------------
+C3 reproducibility summary (carried)
+------------------------------------------------------------
+
+```text
+$ diff <(awk -F'\t' 'NR>1 {print $1"\t"$10"\t"$11}' \
+        evidence/ACT-POLYC-BOOTSTRAP03/c3/corpus-matrix-buildA.tsv) \
+       <(awk -F'\t' 'NR>1 {print $1"\t"$10"\t"$11}' \
+        evidence/ACT-POLYC-BOOTSTRAP03/c3/corpus-matrix-buildB.tsv)
+(empty)
+
+$ for f in build/b03-corpus-A/*.o; do
+    rel=$(basename $f)
+    sa=$(sha256sum "$f" | cut -d' ' -f1)
+    sb=$(sha256sum "build/b03-corpus-A2/$rel" | cut -d' ' -f1)
+    if [ "$sa" != "$sb" ]; then echo "DIFF: $rel"; fi
+  done
+(empty)
+```
+
+181/181 semantic rows match; 175/175 stage1 artifacts
+byte-identical; 175/175 stage2 artifacts byte-identical.
+
+------------------------------------------------------------
+C4 re-verification
+------------------------------------------------------------
+
+```text
+$ python3 tools/quality/bootstrap03-corpus-runner.py \
+    evidence/ACT-POLYC-BOOTSTRAP03/c3/corpus-inventory.txt \
+    build/hcc-bootstrap02 build/hcc-bootstrap03 \
+    $(pwd)/build/test-prefix \
+    build/b03-corpus-A build/b03-corpus-B \
+    evidence/ACT-POLYC-BOOTSTRAP03/c4/corpus-matrix.tsv
+
+corpus-rows=181
+STAGE1_PASS_STAGE2_PASS=175
+STAGE1_FAIL_STAGE2_FAIL=6
+STAGE1_FAIL_STAGE2_PASS=0
+STAGE1_PASS_STAGE2_FAIL=0
+```
+
+Same numbers.
+
+------------------------------------------------------------
+Verdict
+------------------------------------------------------------
+
+```text
+BUILD_A_COMPLETE                = YES
+BUILD_B_COMPLETE                = YES
+BUILD_A_SEMANTIC_EQ_BUILD_B     = YES  (181/181)
+BUILD_A_BYTE_EQ_BUILD_B_STAGE1  = YES  (175/175)
+BUILD_A_BYTE_EQ_BUILD_B_STAGE2  = YES  (175/175)
+CORPUS_MATRICES_REPRODUCIBLE    = YES
+
+REPRODUCIBILITY                 = PASS
+```

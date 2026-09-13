@@ -1,0 +1,73 @@
+ACT-POLYC-BOOTSTRAP03 — C4 — final self-host chain
+==================================================
+
+The decisive proof chain, recorded verbatim per ACT §25.
+
+```text
+SOURCE:
+  bootstrap02-ident.HC
+  language = PolyC
+
+GENERATION 1:
+  stage0 -> B1 object -> stage1
+
+GENERATION 2:
+  stage1 -> B1 object -> stage2
+
+STAGE2:
+  links the object emitted by stage1
+  executes it as part of production lexIdentifier
+
+THEREFORE:
+  a compiler containing PolyC-authored compiler logic
+  has compiled that PolyC compiler logic for the next
+  compiler generation.
+
+FIRST_SELF_HOST = PASS
+```
+
+This is the semantic heart of B2. It is satisfied on the
+current tree at C4 capture time.
+
+------------------------------------------------------------
+Concrete mapping
+------------------------------------------------------------
+
+```text
+SOURCE:
+  tools/bootstrap/bootstrap02-ident.HC
+  (language: PolyC; implements BootstrapScanIdent)
+
+GENERATION 1 (B1 predecessor, ACT-POLYC-BOOTSTRAP02):
+  producer       = ./hcc (stage0)
+  producer type  = host-C compiler (ordinary ./hcc)
+  output         = ./build/bootstrap02-ident.o
+  output sha256  = a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f
+  output byte size = 2704
+  linked into    = ./build/hcc-bootstrap02
+  carries B1 symbol = T _BootstrapScanIdent at 0x10007c318
+
+GENERATION 2 (B2, this ACT):
+  producer       = ./build/hcc-bootstrap02 (stage1)
+  producer type  = stage1 compiler (carries B1 component
+                   compiled by stage0; performs B1
+                   delegation in lexIdentifier)
+  output         = ./build/bootstrap03-ident.stage1.o
+  output sha256  = a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f
+  output byte size = 2704
+  linked into    = ./build/hcc-bootstrap03
+  carries B1 symbol = T _BootstrapScanIdent at 0x10007c318
+
+STAGE2:
+  links the object emitted by stage1 (path + sha match)
+  executes it as part of production lexIdentifier
+  (verified by disassembly: 2 bl _BootstrapScanIdent sites)
+```
+
+------------------------------------------------------------
+Verdict
+------------------------------------------------------------
+
+```text
+FIRST_SELF_HOST = PASS
+```

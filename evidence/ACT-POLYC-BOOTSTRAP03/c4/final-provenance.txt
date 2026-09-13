@@ -1,0 +1,61 @@
+ACT-POLYC-BOOTSTRAP03 — C4 — final provenance
+===============================================
+
+Re-proven at C4 capture time.
+
+------------------------------------------------------------
+Stage binaries
+------------------------------------------------------------
+
+```text
+build/hcc                  (stage0; ordinary ./hcc)
+build/hcc-bootstrap02      (stage1; contains _BootstrapScanIdent)
+build/hcc-bootstrap03      (stage2; contains _BootstrapScanIdent)
+```
+
+All three present, none overwriting the other.
+
+------------------------------------------------------------
+Artifact chain
+------------------------------------------------------------
+
+```text
+SOURCE:
+  tools/bootstrap/bootstrap02-ident.HC   (PolyC)
+
+GENERATION 1 (B1):
+  stage0 ./hcc
+    -> build/bootstrap02-ident.o
+       (sha256 = a1b620c0...78cd854f)
+    -> linked into build/hcc-bootstrap02
+
+GENERATION 2 (B2, this ACT):
+  stage1 ./build/hcc-bootstrap02
+    -> build/bootstrap03-ident.stage1.o
+       (sha256 = a1b620c0...78cd854f)
+    -> linked into build/hcc-bootstrap03
+       (with -DBOOTSTRAP03_IDENT_OBJECT pointing at the
+        stage1-produced object)
+```
+
+------------------------------------------------------------
+Provenance equalities
+------------------------------------------------------------
+
+```text
+STAGE1_B1_OUTPUT_PATH     == STAGE2_B1_LINK_INPUT_PATH     YES
+STAGE1_B1_OUTPUT_SHA      == STAGE2_B1_LINK_INPUT_SHA      YES
+STAGE2_B1_ARTIFACT_PROVENANCE                              = STAGE1
+```
+
+------------------------------------------------------------
+Verdict
+------------------------------------------------------------
+
+```text
+STAGE2_B1_ARTIFACT_PROVENANCE       = STAGE1
+STAGE2_LINKS_STAGE1_B1_ARTIFACT     = YES
+STAGE2_USES_B1_COMPONENT            = YES
+```
+
+Provenance is binding. The first self-host edge is closed.

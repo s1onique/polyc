@@ -1,0 +1,56 @@
+ACT-POLYC-BOOTSTRAP03 — C4 — final self-source
+==============================================
+
+Re-proven at C4 capture time.
+
+------------------------------------------------------------
+Stage2 self-compile of B1 source
+------------------------------------------------------------
+
+```text
+$ ./build/hcc-bootstrap03 --install-dir=$TEST_PREFIX \
+    -c tools/bootstrap/bootstrap02-ident.HC \
+    -o build/c4-self-source.o
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+(exit 0)
+
+$ sha256sum build/c4-self-source.o
+a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f
+```
+
+------------------------------------------------------------
+Stage1 vs stage2 self-source comparison
+------------------------------------------------------------
+
+```text
+$ sha256sum build/bootstrap03-ident.stage1.o build/c4-self-source.o
+a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f  build/bootstrap03-ident.stage1.o
+a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f  build/c4-self-source.o
+```
+
+Byte-identical.
+
+------------------------------------------------------------
+Three-stage B1 object comparison
+------------------------------------------------------------
+
+```text
+$ sha256sum build/c3-experiment/s?-bootstrap02-ident.o
+a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f  s0 (stage0)
+a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f  s1 (stage1)
+a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f  s2 (stage2)
+```
+
+All three stages produce byte-identical B1 objects.
+
+------------------------------------------------------------
+Verdict
+------------------------------------------------------------
+
+```text
+STAGE2_COMPILES_B1_SOURCE     = YES
+STAGE1_STAGE2_B1_OBJECT_EQ    = PASS  (sha256 match)
+STAGE0_STAGE1_STAGE2_EQ       = PASS  (all three byte-identical)
+```

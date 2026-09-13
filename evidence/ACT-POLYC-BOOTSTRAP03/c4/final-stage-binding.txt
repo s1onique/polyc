@@ -1,0 +1,47 @@
+ACT-POLYC-BOOTSTRAP03 — C4 — final stage binding
+================================================
+
+Re-proven at C4 capture time.
+
+------------------------------------------------------------
+Stage2 symbol presence
+------------------------------------------------------------
+
+```text
+$ nm build/hcc-bootstrap03 | grep _BootstrapScanIdent
+000000010007c318 T _BootstrapScanIdent
+```
+
+------------------------------------------------------------
+Stage2 call site (disassembly)
+------------------------------------------------------------
+
+```text
+$ otool -tv build/hcc-bootstrap03 | grep -B1 'BootstrapScanIdent'
+00000001000303f0	mov	x2, #0x0
+00000001000303f4	bl	_BootstrapScanIdent
+--
+000000010003145c	mov	x2, #0x0
+0000000100031460	bl	_BootstrapScanIdent
+--
+000000010007c314	ret
+_BootstrapScanIdent:
+000000010007c318	stp	x29, x30, [sp, #-0x10]!
+```
+
+Two `bl _BootstrapScanIdent` instruction sites. The B1
+component is linked AND called by the production
+lexIdentifier in stage2.
+
+------------------------------------------------------------
+Verdict
+------------------------------------------------------------
+
+```text
+STAGE2_COMPONENT_LINKED = YES
+STAGE2_COMPONENT_USED   = YES
+STAGE2_BL_SITES         = 2
+STAGE2_B1_SYMBOL_ADDR   = 0x10007c318
+
+STAGE2_BINDING_VERIFIED = PASS
+```

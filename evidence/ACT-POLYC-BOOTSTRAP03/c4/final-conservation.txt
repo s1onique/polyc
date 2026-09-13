@@ -1,0 +1,107 @@
+ACT-POLYC-BOOTSTRAP03 — C4 — final conservation
+================================================
+
+Re-proven at C4 capture time.
+
+------------------------------------------------------------
+B0 (15/15)
+------------------------------------------------------------
+
+```text
+$ make bootstrap01-test
+BOOTSTRAP01_CASES=15
+BOOTSTRAP01_RUNS=30
+BOOTSTRAP01_PASS=15
+BOOTSTRAP01_FAIL=0
+STATUS=PASS
+```
+
+------------------------------------------------------------
+B1 component differential (15/15)
+------------------------------------------------------------
+
+```text
+$ make bootstrap02-test
+(15 I-rows byte-identical; PASS)
+```
+
+------------------------------------------------------------
+B1 cursor (6/6)
+------------------------------------------------------------
+
+```text
+$ make bootstrap02-cursor-test
+BOOTSTRAP02_CURSOR_DIFFERENTIAL=PASS 6/6
+```
+
+------------------------------------------------------------
+B1 production Lexer seam (6/6)
+------------------------------------------------------------
+
+```text
+$ make bootstrap02-lexer-seam-test
+BOOTSTRAP02_LEXER_SEAM_DOWNSTREAM=PASS (6/6 cases byte-identical)
+BOOTSTRAP02_LEXER_SEAM_RESIDUE=NONE
+```
+
+------------------------------------------------------------
+B2 stage2 differential (15/15)
+------------------------------------------------------------
+
+```text
+$ make bootstrap03-test
+BOOTSTRAP03_DIFFERENTIAL=PASS 15/15
+```
+
+------------------------------------------------------------
+B2 production Lexer seam stage1 ↔ stage2 (6/6)
+------------------------------------------------------------
+
+```text
+$ make bootstrap03-lexer-seam-test
+BOOTSTRAP03_LEXER_SEAM_DOWNSTREAM=PASS (6/6 cases byte-identical)
+BOOTSTRAP03_LEXER_SEAM_RESIDUE=NONE
+```
+
+------------------------------------------------------------
+LSP baseline (43/43)
+------------------------------------------------------------
+
+```text
+$ make lsp-test
+lsp: 43/43 passed
+```
+
+------------------------------------------------------------
+gate-fast
+------------------------------------------------------------
+
+```text
+$ make gate-fast
+(...)
+CHECK=doc-invariants STATUS=PASS
+CHECK=large-file-guard STATUS=PASS
+CHECK=factory-closure-status STATUS=PASS
+VERDICT=PASS
+```
+
+------------------------------------------------------------
+Verdict
+------------------------------------------------------------
+
+```text
+B0_CONSERVATION                = PASS  15/15
+B1_COMPONENT_DIFFERENTIAL      = PASS  15/15
+B1_CURSOR                      = PASS  6/6
+B1_LEXER_SEAM                  = PASS  6/6
+B2_COMPONENT_DIFFERENTIAL      = PASS  15/15
+B2_CURSOR                      = PASS  6/6
+B2_LEXER_SEAM                  = PASS  6/6
+LSP_BASELINE                   = PASS  43/43
+gate-fast                      = PASS
+
+B0_CONSERVATION                = PASS
+B1_CONSERVATION                = PASS
+
+HALT_CONSERVATION_GATE_REGRESSION = NOT_FIRED
+```

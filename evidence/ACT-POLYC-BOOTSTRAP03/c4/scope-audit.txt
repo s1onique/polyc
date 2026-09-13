@@ -1,0 +1,90 @@
+ACT-POLYC-BOOTSTRAP03 — C4 — scope audit (re-confirmed)
+=======================================================
+
+Per ACT §7, §34 (AC-C3-46..AC-C3-50).
+
+------------------------------------------------------------
+Files modified by B2
+------------------------------------------------------------
+
+```text
+$ git diff --name-only 0a95d0b HEAD
+docs/acts/ACT-POLYC-BOOTSTRAP03.md
+Makefile
+src/CMakeLists.txt
+tools/quality/bootstrap03-corpus-runner.py
+tools/quality/bootstrap03-error-corpus.py
+evidence/ACT-POLYC-BOOTSTRAP03/
+```
+
+No `src/*.c`, `src/*.h`, `tools/bootstrap/*` (other than
+none — `bootstrap02-ident.HC` is frozen and unmodified).
+
+------------------------------------------------------------
+B1 semantics unchanged
+------------------------------------------------------------
+
+```text
+$ git diff --name-only 0a95d0b HEAD -- \
+    tools/bootstrap/bootstrap02-ident.HC \
+    src/lexer.c \
+    src/lexer_bridge.h
+(no matches)
+```
+
+------------------------------------------------------------
+No parser/AST/IR/backend widening
+------------------------------------------------------------
+
+```text
+$ git diff --name-only 0a95d0b HEAD -- 'src/*.c' 'src/*.h'
+(no matches)
+```
+
+------------------------------------------------------------
+No stage3
+------------------------------------------------------------
+
+```text
+$ grep -rn 'bootstrap04\|stage3\|hcc-bootstrap04' \
+    Makefile src/CMakeLists.txt docs/acts/ACT-POLYC-BOOTSTRAP03.md \
+    evidence/ACT-POLYC-BOOTSTRAP03/
+(no matches)
+```
+
+------------------------------------------------------------
+Prior evidence mutation
+------------------------------------------------------------
+
+```text
+$ git diff --name-only 0a95d0b HEAD -- \
+    evidence/ACT-POLYC-BOOTSTRAP02/ \
+    evidence/ACT-POLYC-BOOTSTRAP02-C1-CORRECTION01/ \
+    evidence/ACT-POLYC-BOOTSTRAP02-C2-CORRECTION01/ \
+    evidence/ACT-POLYC-BOOTSTRAP02-C2-CORRECTION02/ \
+    evidence/ACT-POLYC-BOOTSTRAP02-C2-CORRECTION03/
+(no matches)
+```
+
+------------------------------------------------------------
+Committed binary evidence
+------------------------------------------------------------
+
+```text
+$ git diff --name-only 0a95d0b HEAD | grep -E '\.(o|a|dylib|so)$|hcc$|hcc-'
+(no matches)
+```
+
+------------------------------------------------------------
+Verdict
+------------------------------------------------------------
+
+```text
+B1_SEMANTICS_UNCHANGED              = YES
+NO_PARSER_AST_IR_BACKEND_WIDENING   = YES
+STAGE3_ABSENT                       = YES
+PRIOR_EVIDENCE_MUTATION             = ZERO
+COMMITTED_BINARY_EVIDENCE           = ZERO
+
+SCOPE_AUDIT                         = PASS
+```

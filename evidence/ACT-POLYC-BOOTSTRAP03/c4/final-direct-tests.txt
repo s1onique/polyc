@@ -1,0 +1,101 @@
+ACT-POLYC-BOOTSTRAP03 — C4 — final direct tests
+================================================
+
+Re-proven at C4 capture time.
+
+------------------------------------------------------------
+B1 component differential (15/15)
+------------------------------------------------------------
+
+```text
+$ make bootstrap02-test
+(15 I-rows byte-identical; PASS)
+```
+
+------------------------------------------------------------
+B1 cursor model (6/6)
+------------------------------------------------------------
+
+```text
+$ make bootstrap02-cursor-test
+BOOTSTRAP02_CURSOR_DIFFERENTIAL=PASS 6/6
+```
+
+------------------------------------------------------------
+B1 production Lexer seam (6/6)
+------------------------------------------------------------
+
+```text
+$ make bootstrap02-lexer-seam-test
+BOOTSTRAP02_LEXER_SEAM_DOWNSTREAM=PASS (6/6 cases byte-identical)
+BOOTSTRAP02_LEXER_SEAM_RESIDUE=NONE
+```
+
+------------------------------------------------------------
+B2 component differential stage2 (15/15)
+------------------------------------------------------------
+
+```text
+$ make bootstrap03-test
+BOOTSTRAP03_DIFFERENTIAL=PASS 15/15
+```
+
+------------------------------------------------------------
+B2 cursor model stage2 (6/6)
+------------------------------------------------------------
+
+```text
+$ cc ... -o ./build/bootstrap03-cursor-oracle \
+    tools/quality/bootstrap02-cursor-oracle.c
+$ cc ... -o ./build/bootstrap03-cursor-host \
+    tools/quality/bootstrap02-cursor-host.c \
+    ./build/bootstrap03-ident.stage1.o
+$ ./build/bootstrap03-cursor-oracle > /tmp/b03-cursor-oracle.txt
+$ ./build/bootstrap03-cursor-host   > /tmp/b03-cursor-host.txt
+$ diff -q <(grep '^E[0-9]+ ' /tmp/b03-cursor-oracle.txt) \
+          <(grep '^E[0-9]+ ' /tmp/b03-cursor-host.txt)
+(empty)
+```
+
+6/6 PASS.
+
+------------------------------------------------------------
+B2 production Lexer seam stage1 ↔ stage2 (6/6)
+------------------------------------------------------------
+
+```text
+$ make bootstrap03-lexer-seam-test
+BOOTSTRAP03_LEXER_SEAM_DOWNSTREAM=PASS (6/6 cases byte-identical)
+BOOTSTRAP03_LEXER_SEAM_RESIDUE=NONE
+```
+
+------------------------------------------------------------
+EOF cursor state + EOF pointer safety (carried from B1)
+------------------------------------------------------------
+
+These are properties of the B1 component itself, not of
+the producing compiler. Stage2 links the stage1-produced
+B1 component (byte-identical to stage0's), so the
+properties transfer identically.
+
+```text
+EOF_CURSOR_STATE       = PASS
+EOF_POINTER_SAFETY     = PASS
+```
+
+------------------------------------------------------------
+Aggregate
+------------------------------------------------------------
+
+```text
+B2_COMPONENT_DIFFERENTIAL   = PASS  15/15
+B2_CURSOR                   = PASS  6/6
+B2_LEXER_SEAM               = PASS  6/6
+B1_COMPONENT_DIFFERENTIAL   = PASS  15/15 (carried)
+B1_CURSOR                   = PASS  6/6  (carried)
+B1_LEXER_SEAM               = PASS  6/6  (carried)
+EOF_CURSOR_STATE            = PASS
+EOF_POINTER_SAFETY          = PASS
+
+STAGE2_B1_DIRECT_EQ         = PASS
+```

@@ -1,0 +1,98 @@
+ACT-POLYC-BOOTSTRAP03 — C4 — final corpus
+=========================================
+
+Re-proven at C4 capture time.
+
+------------------------------------------------------------
+Inventory
+------------------------------------------------------------
+
+```text
+$ find src/holyc-lib src/tests -type f -name '*.HC' \
+    -print | LC_ALL=C sort \
+    | wc -l
+181
+```
+
+181 sources.
+
+------------------------------------------------------------
+Differential (Build A; Build B equivalent)
+------------------------------------------------------------
+
+```text
+$ python3 tools/quality/bootstrap03-corpus-runner.py \
+    evidence/ACT-POLYC-BOOTSTRAP03/c3/corpus-inventory.txt \
+    build/hcc-bootstrap02 build/hcc-bootstrap03 \
+    $(pwd)/build/test-prefix \
+    build/b03-corpus-A build/b03-corpus-B \
+    evidence/ACT-POLYC-BOOTSTRAP03/c4/corpus-matrix.tsv
+
+corpus-rows=181
+STAGE1_PASS_STAGE2_PASS=175
+STAGE1_FAIL_STAGE2_FAIL=6
+STAGE1_FAIL_STAGE2_PASS=0
+STAGE1_PASS_STAGE2_FAIL=0
+```
+
+------------------------------------------------------------
+Per-row verification
+------------------------------------------------------------
+
+```text
+$ awk -F'\t' 'NR>1 && $10!="STAGE1_PASS_STAGE2_PASS" && $10!="STAGE1_FAIL_STAGE2_FAIL"' \
+    evidence/ACT-POLYC-BOOTSTRAP03/c4/corpus-matrix.tsv \
+    | wc -l
+0
+
+$ awk -F'\t' 'NR>1 && $10=="STAGE1_PASS_STAGE2_PASS" && $9!="YES"' \
+    evidence/ACT-POLYC-BOOTSTRAP03/c4/corpus-matrix.tsv \
+    | wc -l
+0
+```
+
+Zero divergences. Zero unaccounted.
+
+------------------------------------------------------------
+Binding slices (re-confirmed)
+------------------------------------------------------------
+
+```text
+DOLLAR_IDENTIFIER_STAGE1_STAGE2 = PASS (3/3 sources)
+NORMAL_SOURCE_STAGE1_STAGE2     = PASS (5/5 sources)
+TEST_SOURCE_STAGE1_STAGE2       = PASS (9/9 sources)
+SELF_SOURCE_STAGE1_STAGE2       = PASS
+```
+
+------------------------------------------------------------
+Error corpus (re-confirmed)
+------------------------------------------------------------
+
+```text
+$ python3 tools/quality/bootstrap03-error-corpus.py \
+    evidence/ACT-POLYC-BOOTSTRAP02/c3/error-corpus \
+    build/hcc-bootstrap02 build/hcc-bootstrap03 \
+    $(pwd)/build/test-prefix \
+    evidence/ACT-POLYC-BOOTSTRAP03/c4/error-corpus.tsv
+
+error-corpus-rows=4
+error-corpus-mismatch=0
+```
+
+------------------------------------------------------------
+Verdict
+------------------------------------------------------------
+
+```text
+CORPUS_TOTAL                    = 181
+CORPUS_PASS_PASS                = 175
+CORPUS_FAIL_FAIL                = 6
+CORPUS_DIVERGENCES              = 0
+CORPUS_BYTE_IDENTICAL           = 175/175
+CORPUS_FAILURE_PARITY           = 6/6
+ERROR_CORPUS_DIVERGENCE         = 0
+BINDING_SLICES                  = ALL PASS
+
+STAGE1_STAGE2_CORPUS_EQ         = PASS
+STAGE1_STAGE2_ERROR_EQ          = PASS
+```

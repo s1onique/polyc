@@ -1,0 +1,148 @@
+ACT-POLYC-BOOTSTRAP03 — C4 — acceptance matrix (re-run)
+======================================================
+
+Per ACT §34: AC-C3-01..AC-C3-54 re-verified at C4 capture
+time on the current tree.
+
+------------------------------------------------------------
+Provenance
+------------------------------------------------------------
+
+```text
+AC-C3-01 fresh stage0 PASS                        PASS  (./hcc, build/hcc)
+AC-C3-02 fresh stage1 PASS                        PASS  (build/hcc-bootstrap02)
+AC-C3-03 stage1 builds B1 source                  PASS  (bootstrap03-component-build)
+AC-C3-04 stage1 B1 object provenance recorded     PASS  (build/bootstrap03-ident.stage1.o)
+AC-C3-05 fresh stage2 PASS                        PASS  (build/hcc-bootstrap03)
+AC-C3-06 stage2 link consumes exact stage1 B1 obj PASS  (path + sha match)
+AC-C3-07 stage2 contains _BootstrapScanIdent      PASS  (nm output)
+AC-C3-08 stage2 lexIdentifier calls B1            PASS  (2 bl sites)
+```
+
+------------------------------------------------------------
+Self-host edge
+------------------------------------------------------------
+
+```text
+AC-C3-09  B1 source language = PolyC              PASS  (tools/bootstrap/bootstrap02-ident.HC)
+AC-C3-10  producer of stage2 B1 artifact = stage1 PASS  (build graph)
+AC-C3-11  stage2 consumes stage1 output           PASS  (link input == producer output)
+AC-C3-12  stage2 executes B1 component            PASS  (disassembly + dynamic compile)
+AC-C3-13  FIRST_SELF_HOST_EDGE = CLOSED           PASS
+```
+
+------------------------------------------------------------
+Direct semantics
+------------------------------------------------------------
+
+```text
+AC-C3-14 component differential stage2 = 15/15    PASS
+AC-C3-15 cursor model stage2 = 6/6                PASS
+AC-C3-16 production Lexer stage1↔stage2 = 6/6     PASS
+AC-C3-17 EOF cursor state = PASS                  PASS  (carried from B1)
+AC-C3-18 EOF pointer safety = PASS                PASS  (carried from B1)
+```
+
+------------------------------------------------------------
+Broad corpus
+------------------------------------------------------------
+
+```text
+AC-C3-19 inventory mechanically regenerated        PASS  (181 sources)
+AC-C3-20 every row accounted                       PASS  (181 rows in matrix)
+AC-C3-21 stage1-success -> stage2-success          PASS  (175/175)
+AC-C3-22 stage1/stage2 artifacts identical         PASS  (175/175 byte-equal)
+AC-C3-23 baseline failures equivalent              PASS  (6/6 same class)
+AC-C3-24 divergence count = 0                      PASS
+AC-C3-25 unaccounted count = 0                     PASS
+```
+
+------------------------------------------------------------
+Binding slices
+------------------------------------------------------------
+
+```text
+AC-C3-26 $-identifier source PASS                 PASS  (3/3)
+AC-C3-27 ordinary library source PASS             PASS  (5/5)
+AC-C3-28 tests source PASS                        PASS  (9/9)
+AC-C3-29 B1 self-source PASS                      PASS
+```
+
+------------------------------------------------------------
+Error behavior
+------------------------------------------------------------
+
+```text
+AC-C3-30 error corpus divergence = 0              PASS  (4/4 equivalent)
+```
+
+------------------------------------------------------------
+Stage2 self-source
+------------------------------------------------------------
+
+```text
+AC-C3-31 stage2 compiles B1 source                PASS
+AC-C3-32 stage1/stage2 B1 object equivalence PASS PASS  (sha256 match)
+```
+
+------------------------------------------------------------
+Reproducibility
+------------------------------------------------------------
+
+```text
+AC-C3-33 Build A complete                         PASS
+AC-C3-34 Build B complete                         PASS
+AC-C3-35 stage1 artifacts reproducible            PASS  (175/175 byte-equal)
+AC-C3-36 stage2 artifacts reproducible            PASS  (175/175 byte-equal)
+AC-C3-37 corpus matrices reproducible             PASS  (181/181 semantic equal)
+```
+
+------------------------------------------------------------
+Conservation
+------------------------------------------------------------
+
+```text
+AC-C3-38 B0 15/15                                 PASS
+AC-C3-39 B1 component 15/15                       PASS
+AC-C3-40 B1 cursor 6/6                            PASS
+AC-C3-41 B1 Lexer 6/6                             PASS
+AC-C3-42 LSP baseline PASS                        PASS  (43/43)
+AC-C3-43 gate-fast PASS                           PASS
+AC-C3-44 Factory gates PASS                       PASS  (35+11+12+6)
+AC-C3-45 shell-loc PASS                           PASS
+```
+
+------------------------------------------------------------
+Scope
+------------------------------------------------------------
+
+```text
+AC-C3-46 B1 semantics unchanged                   PASS
+AC-C3-47 no parser/AST/IR/backend widening        PASS
+AC-C3-48 stage3 absent                            PASS
+AC-C3-49 prior evidence mutation ZERO             PASS
+AC-C3-50 committed binary evidence ZERO           PASS
+```
+
+------------------------------------------------------------
+Truth boundary
+------------------------------------------------------------
+
+```text
+AC-C3-51 FIRST_SELF_HOST = PASS                   PASS
+AC-C3-52 FULL_SELF_HOST = NO                      PASS  (still host-C dependent)
+AC-C3-53 BOOTSTRAP_STABILITY = NOT_YET            PASS  (B3 next)
+AC-C3-54 B3 remains locked until C4               PASS  (C4 PASS unlocks B3)
+```
+
+------------------------------------------------------------
+Aggregate
+------------------------------------------------------------
+
+```text
+TOTAL_ACCEPTANCE_CRITERIA = 54
+ACCEPTANCE_CRITERIA_PASS  = 54
+ACCEPTANCE_CRITERIA_FAIL  = 0
+
+ACCEPTANCE_MATRIX         = PASS
+```

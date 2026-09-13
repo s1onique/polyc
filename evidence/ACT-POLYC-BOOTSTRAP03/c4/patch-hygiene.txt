@@ -1,0 +1,57 @@
+ACT-POLYC-BOOTSTRAP03 — C4 — patch hygiene
+==========================================
+
+Per ACT §50 (AC-C3-50): no committed binary evidence;
+patch hygiene clean.
+
+------------------------------------------------------------
+git diff --check on C4 delta
+------------------------------------------------------------
+
+```text
+$ git diff --check
+(empty)
+
+$ git diff --check 2359a85 HEAD
+(empty)
+
+$ git diff --check 9e67a75 HEAD
+(empty)
+```
+
+No whitespace defects, no trailing whitespace, no
+mixed-indent defects anywhere in the B2 tree.
+
+------------------------------------------------------------
+No binary evidence under B2 tree
+------------------------------------------------------------
+
+```text
+$ find evidence/ACT-POLYC-BOOTSTRAP03 -type f \
+    \( -name '*.o' -o -name '*.a' -o -name '*.dylib' \
+       -o -name '*.so' -o -name 'hcc*' \)
+(no output)
+```
+
+Only textual evidence committed.
+
+------------------------------------------------------------
+C4 production-source delta
+------------------------------------------------------------
+
+```text
+$ git diff --name-only 2359a85 HEAD -- src/lexer.c src/lexer_bridge.h tools/bootstrap/bootstrap02-ident.HC
+(no matches)
+```
+
+No production source modified by C4.
+
+------------------------------------------------------------
+Verdict
+------------------------------------------------------------
+
+```text
+PATCH_HYGIENE                = PASS
+BINARY_EVIDENCE_COMMITTED    = NONE
+PRIOR_EVIDENCE_MUTATION      = ZERO
+```
