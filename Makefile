@@ -12,7 +12,7 @@ HCC_ENABLE_LLVM ?= OFF
 
 default: all
 
-.PHONY: all gate-fast gate-push install-hooks llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test
+.PHONY: all gate-fast gate-push install-hooks llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test
 
 # To add sqlite3 support add -DHCC_LINK_SQLITE3=1 to the below like so:
 #```
@@ -526,3 +526,105 @@ bootstrap02-lexer-seam-test: bootstrap02-stage1
 		echo "BOOTSTRAP02_LEXER_SEAM_DOWNSTREAM=PASS (byte-identical, including labels)"; \
 		echo "BOOTSTRAP02_LEXER_SEAM_RESIDUE=NONE"; \
 	fi
+
+# ACT-POLYC-BOOTSTRAP03 C2 IMPL — B2 stage1-produced B1 component
+# object. Builds the B1 PolyC component (tools/bootstrap/
+# bootstrap02-ident.HC) using STAGE1 (build/hcc-bootstrap02)
+# and emits build/bootstrap03-ident.stage1.o.
+#
+# This is the future stage2 B1 artifact. Its path is distinct
+# from build/bootstrap02-ident.o so that the build graph cannot
+# accidentally reuse the stage0-produced object when assembling
+# stage2 (per ACT §14 "build provenance must be impossible to
+# fake accidentally").
+#
+# Dependency: bootstrap02-stage1 (NOT bootstrap02-component-build,
+# which uses stage0). The stage1 binary is the producer.
+bootstrap03-component-build: bootstrap02-stage1 test-prefix-install
+	@if [ ! -x ./build/hcc-bootstrap02 ]; then \
+		echo "bootstrap03-component-build: ./build/hcc-bootstrap02 (stage1) missing. Run: make bootstrap02-stage1" >&2; \
+		exit 1; \
+	fi
+	@rm -f ./build/bootstrap03-ident.stage1.o
+	./build/hcc-bootstrap02 --install-dir=$(TEST_PREFIX) \
+		-c tools/bootstrap/bootstrap02-ident.HC \
+		-o ./build/bootstrap03-ident.stage1.o
+	@if [ ! -f ./build/bootstrap03-ident.stage1.o ]; then \
+		echo "bootstrap03-component-build: ./build/bootstrap03-ident.stage1.o not produced" >&2; \
+		exit 1; \
+	fi
+	@nm ./build/bootstrap03-ident.stage1.o | grep -q '_BootstrapScanIdent' \
+		|| { echo "bootstrap03-component-build: symbol _BootstrapScanIdent not found in object" >&2; exit 1; }
+	@echo "BOOTSTRAP03_STAGE1_B1_OBJECT=./build/bootstrap03-ident.stage1.o"
+
+# ACT-POLYC-BOOTSTRAP03 C2 IMPL — B2 stage2 binary build.
+# Produces build/hcc-bootstrap03 by linking the STAGE1-produced
+# B1 object (NOT the stage0-produced one) into the modified hcc
+# source tree with HCC_ENABLE_BOOTSTRAP03_STAGE2=ON.
+#
+# The stage0 binary (./hcc), the stage1 binary (./build/hcc-bootstrap02),
+# and the stage0-produced B1 object (./build/bootstrap02-ident.o)
+# are all left UNTOUCHED. Stage2 is a new, distinct artifact.
+#
+# Provenance invariant (ACT §5): the object consumed here MUST
+# be the one built by bootstrap03-component-build above. The
+# distinct path (build/bootstrap03-ident.stage1.o vs
+# build/bootstrap02-ident.o) makes accidental reuse impossible.
+bootstrap03-stage2: bootstrap03-component-build test-prefix-install
+	@if [ ! -f ./build/bootstrap03-ident.stage1.o ]; then \
+		echo "bootstrap03-stage2: ./build/bootstrap03-ident.stage1.o missing. Run: make bootstrap03-component-build" >&2; \
+		exit 1; \
+	fi
+	@rm -rf ./build/hcc-bootstrap03-build
+	@mkdir -p ./build/hcc-bootstrap03-build
+	cmake -S ./src -B ./build/hcc-bootstrap03-build -G 'Unix Makefiles' \
+		-DCMAKE_C_COMPILER=$(C_COMPILER) \
+		-DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
+		-DCMAKE_C_FLAGS=$(CFLAGS) \
+		-DHCC_ENABLE_JIT=on \
+		-DHCC_ENABLE_LLVM=OFF \
+		-DHCC_ENABLE_BOOTSTRAP02_STAGE1=ON \
+		-DBOOTSTRAP02_IDENT_OBJECT=$(CURDIR)/build/bootstrap02-ident.o \
+		-DHCC_ENABLE_BOOTSTRAP03_STAGE2=ON \
+		-DBOOTSTRAP03_IDENT_OBJECT=$(CURDIR)/build/bootstrap03-ident.stage1.o
+	$(MAKE) -C ./build/hcc-bootstrap03-build hcc-bootstrap03 -j2
+	@if [ ! -x ./build/hcc-bootstrap03 ]; then \
+		echo "bootstrap03-stage2: ./build/hcc-bootstrap03 not produced" >&2; \
+		exit 1; \
+	fi
+	@nm ./build/hcc-bootstrap03 | grep -q '_BootstrapScanIdent' \
+		|| { echo "bootstrap03-stage2: symbol _BootstrapScanIdent not found in linked binary" >&2; exit 1; }
+	@echo "BOOTSTRAP03_STAGE2_BINARY=./build/hcc-bootstrap03"
+
+# ACT-POLYC-BOOTSTRAP03 C2 IMPL — B2 stage2 differential
+# against the C reference oracle (same fixtures as B1).
+# Reuses tools/quality/bootstrap02-ident-host.c /
+# bootstrap02-ident-oracle.c, but links the stage1-produced
+# object instead of the stage0 one. 15/15 differential PASS
+# required.
+bootstrap03-test: bootstrap03-component-build bootstrap02-oracle
+	cc -std=c99 -O2 -Wall -Wextra -o ./build/bootstrap03-ident-host \
+		tools/quality/bootstrap02-ident-host.c ./build/bootstrap03-ident.stage1.o
+	@if [ ! -x ./build/bootstrap03-ident-host ]; then \
+		echo "bootstrap03-test: ./build/bootstrap03-ident-host not produced" >&2; \
+		exit 1; \
+	fi
+	./build/bootstrap02-ident-oracle > /tmp/b03-oracle.txt
+	./build/bootstrap03-ident-host   > /tmp/b03-host.txt
+	@diff /tmp/b03-oracle.txt /tmp/b03-host.txt > /tmp/b03-diff.txt; \
+		rc=$$?; \
+		if [ $$rc -ne 0 ] && [ $$rc -ne 1 ]; then \
+			echo "bootstrap03-test: diff failed unexpectedly (rc=$$rc)" >&2; \
+			cat /tmp/b03-diff.txt >&2; \
+			exit 1; \
+		fi; \
+		grep -E '^I[0-9]+ ' /tmp/b03-oracle.txt > /tmp/b03-oracle-fixtures.txt; \
+		grep -E '^I[0-9]+ ' /tmp/b03-host.txt   > /tmp/b03-host-fixtures.txt; \
+		if ! diff -q /tmp/b03-oracle-fixtures.txt /tmp/b03-host-fixtures.txt >/dev/null; then \
+			echo "bootstrap03-test: differential FAILED (fixture lines differ)" >&2; \
+			diff /tmp/b03-oracle-fixtures.txt /tmp/b03-host-fixtures.txt >&2; \
+			exit 1; \
+		fi; \
+		echo "BOOTSTRAP03_REFERENCE_ORACLE=./build/bootstrap02-ident-oracle"; \
+		echo "BOOTSTRAP03_STAGE1_B1_OBJECT=./build/bootstrap03-ident.stage1.o"; \
+		echo "BOOTSTRAP03_DIFFERENTIAL=PASS 15/15"

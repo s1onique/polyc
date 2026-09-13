@@ -1,0 +1,73 @@
+ACT-POLYC-BOOTSTRAP03 — C2 — implementation delta
+=================================================
+
+## Files modified
+
+### Makefile
+
+Diff summary:
+- `.PHONY` line extended by 3 new targets.
+- 3 new target blocks appended after the last existing
+  bootstrap02-lexer-seam-test target.
+
+Targets added:
+
+```text
+bootstrap03-component-build
+  Produces build/bootstrap03-ident.stage1.o using
+  STAGE1 (build/hcc-bootstrap02).
+  Depends on bootstrap02-stage1 (NOT
+  bootstrap02-component-build, to avoid stage0 aliasing).
+
+bootstrap03-stage2
+  Produces build/hcc-bootstrap03 via CMake, linking
+  build/bootstrap03-ident.stage1.o (the stage1-produced
+  B1 object) via -DBOOTSTRAP03_IDENT_OBJECT=...
+  Does NOT overwrite ./hcc, build/hcc, or
+  build/hcc-bootstrap02.
+
+bootstrap03-test
+  Builds build/bootstrap03-ident-host by linking the
+  host harness against the stage1-produced B1 object,
+  then runs the 15-fixture differential against the
+  existing build/bootstrap02-ident-oracle. PASS 15/15
+  required.
+```
+
+### src/CMakeLists.txt
+
+Diff summary:
+- Added new option `HCC_ENABLE_BOOTSTRAP03_STAGE2`
+  (default OFF) mirroring the B1 `HCC_ENABLE_BOOTSTRAP02_STAGE1`
+  pattern.
+- When ON, adds a SEPARATE executable target
+  `hcc-bootstrap03` linked against `BOOTSTRAP03_IDENT_OBJECT`.
+- When ON, also requires `HCC_ENABLE_BOOTSTRAP02_STAGE1=ON`
+  (stage2 must carry the B1 delegation path; the existing
+  `lexIdentifier` #ifdef dispatch in src/lexer.c is the
+  only delegation site).
+- Defines `HCC_BOOTSTRAP03_STAGE2` alongside
+  `HCC_BOOTSTRAP02_STAGE1` for stage2's compile units.
+
+No `add_executable(hcc ...)` was changed.
+No source file under `src/` was changed.
+
+## Files NOT modified (verified)
+
+```text
+tools/bootstrap/bootstrap02-ident.HC  (frozen by predecessor ACT)
+src/lexer.c                            (frozen by predecessor ACT)
+src/lexer_bridge.h                     (frozen by predecessor ACT)
+src/CMakeLists.txt (B1 option block)   (frozen)
+Makefile (existing B1/B0 targets)      (frozen)
+```
+
+Verified via:
+
+```text
+$ git diff --name-only <C1-entry>..HEAD
+Makefile
+src/CMakeLists.txt
+```
+
+Only those two files. Production source delta is ZERO.

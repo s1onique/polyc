@@ -1,0 +1,101 @@
+ACT-POLYC-BOOTSTRAP03 — C2 — artifact provenance
+=================================================
+
+Strong provenance witness per ACT §17.
+
+------------------------------------------------------------
+Producer / artifact identity
+------------------------------------------------------------
+
+```text
+Stage1 B1 object:
+  producer    = ./build/hcc-bootstrap02
+  compiler    = STAGE1 (stage1 compiler; contains _BootstrapScanIdent)
+  input       = tools/bootstrap/bootstrap02-ident.HC
+  output      = ./build/bootstrap03-ident.stage1.o
+  bytes       = 2704
+  sha256      = a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f
+  symbols     = T _BootstrapScanIdent
+```
+
+```text
+Stage2 binary:
+  builder     = cmake + make
+  binary      = ./build/hcc-bootstrap03
+  bytes       = 742160
+  sha256      = f885d61200689c9e6f218798ce3f265f9133e057d2c9cd27c1046997400ec1ac
+  symbols     = T _BootstrapScanIdent
+  link input  = /Volumes/.../build/bootstrap03-ident.stage1.o
+                 (resolved via -DBOOTSTRAP03_IDENT_OBJECT=...
+                  → target_link_libraries(hcc-bootstrap03
+                                           ${BOOTSTRAP03_IDENT_OBJECT} m))
+```
+
+------------------------------------------------------------
+Path and hash binding (ACT §17)
+------------------------------------------------------------
+
+```text
+STAGE1_B1_OUTPUT_PATH     = /Volumes/.../build/bootstrap03-ident.stage1.o
+STAGE2_B1_LINK_INPUT_PATH = /Volumes/.../build/bootstrap03-ident.stage1.o
+
+STAGE1_B1_OUTPUT_PATH     == STAGE2_B1_LINK_INPUT_PATH     YES
+
+STAGE1_B1_OUTPUT_SHA      = a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f
+STAGE2_B1_LINK_INPUT_SHA  = a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f
+
+STAGE1_B1_OUTPUT_SHA      == STAGE2_B1_LINK_INPUT_SHA      YES
+```
+
+------------------------------------------------------------
+Provenance interpretation
+------------------------------------------------------------
+
+Both equalities hold. The **path equality** is the
+strongest proof because:
+
+1. CMake captured the path at configure time and
+   embedded it in the link line.
+2. The make recipe places the linker's resolved output
+   path directly, so the path on disk equals the path
+   embedded in the build graph.
+3. No symbolic indirection, no renaming, no symlinking
+   is involved in the seam.
+
+The hash equality is expected (same backend, same
+source) but is **not** the primary witness.
+
+------------------------------------------------------------
+Stage1 → stage0 B1 object (for comparison)
+------------------------------------------------------------
+
+```text
+Stage0 B1 object:
+  producer    = ./hcc (stage0)
+  output      = ./build/bootstrap02-ident.o
+  bytes       = 2704
+  sha256      = a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f
+```
+
+Stage0 and stage1 produce the same byte-identical B1
+object (deterministic backend). The build graph still
+distinguishes them: stage0 emits
+`build/bootstrap02-ident.o`; stage1 emits
+`build/bootstrap03-ident.stage1.o`. Stage1's link into
+stage2 uses ONLY `BOOTSTRAP03_IDENT_OBJECT`, never
+`BOOTSTRAP02_IDENT_OBJECT` (see src/CMakeLists.txt
+stage2 block). The distinct path is the structural
+guarantee that the stage2 binary is constructed from the
+stage1-produced object, not the stage0-produced one.
+
+------------------------------------------------------------
+Verdict
+------------------------------------------------------------
+
+```text
+STAGE2_B1_ARTIFACT_PROVENANCE       = STAGE1
+STAGE2_LINKS_STAGE1_B1_ARTIFACT     = YES
+PROVENANCE_PATH_EQ                  = YES
+PROVENANCE_HASH_EQ                  = YES
+PROVENANCE_BY_BUILD_GRAPH           = YES
+```

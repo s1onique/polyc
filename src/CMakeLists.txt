@@ -235,6 +235,83 @@ if (HCC_ENABLE_BOOTSTRAP02_STAGE1)
     install(TARGETS hcc-bootstrap02 DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 endif()
 
+# ACT-POLYC-BOOTSTRAP03 C2 IMPL — opt-in stage2 build that
+# links the B1 PolyC component (BootstrapScanIdent), this
+# time as compiled BY STAGE1 (not by stage0), into a SEPARATE
+# stage2 binary (hcc-bootstrap03). Mirrors the B1 stage1
+# pattern but with an additional opt-in flag so the
+# provenance invariant is explicit in the build graph.
+#
+# Provenance invariant (ACT §5): the object linked here MUST
+# be the stage1-produced one. Because stage2's lexIdentifier
+# still uses the same _BootstrapScanIdent symbol, we route
+# through the existing #ifdef HCC_BOOTSTRAP02_STAGE1 dispatch
+# in src/lexer.c. We add a SECOND define
+# (HCC_BOOTSTRAP03_STAGE2) so the build graph can distinguish
+# which stage's B1 object the binary carries, and so a future
+# auditor can see the chain at compile-time.
+#
+# To build the stage2 binary:
+#
+#   ./build/hcc-bootstrap02 --install-dir=<prefix> -c \
+#       ../tools/bootstrap/bootstrap02-ident.HC \
+#       -o build/bootstrap03-ident.stage1.o
+#
+#   cmake -S ./src -B ./build/hcc-bootstrap03-build \
+#       -DHCC_ENABLE_BOOTSTRAP02_STAGE1=ON \
+#       -DBOOTSTRAP02_IDENT_OBJECT=<abs>/build/bootstrap02-ident.o \
+#       -DHCC_ENABLE_BOOTSTRAP03_STAGE2=ON \
+#       -DBOOTSTRAP03_IDENT_OBJECT=<abs>/build/bootstrap03-ident.stage1.o \
+#       ...
+#   make -C ./build/hcc-bootstrap03-build hcc-bootstrap03
+#
+# Defaults: OFF (the production binary tree stays unchanged).
+option(HCC_ENABLE_BOOTSTRAP03_STAGE2
+       "Link the B1 PolyC component (BootstrapScanIdent) compiled by stage1 into a separate stage2 binary (hcc-bootstrap03). ACT-POLYC-BOOTSTRAP03."
+       OFF)
+
+if (HCC_ENABLE_BOOTSTRAP03_STAGE2)
+    if (NOT HCC_ENABLE_BOOTSTRAP02_STAGE1)
+        message(FATAL_ERROR
+            "HCC_ENABLE_BOOTSTRAP03_STAGE2=ON requires HCC_ENABLE_BOOTSTRAP02_STAGE1=ON. "
+            "Stage2 must carry the B1 component symbol; the only delegation path is the B1 stage1 dispatch.")
+    endif()
+    if (NOT BOOTSTRAP03_IDENT_OBJECT)
+        message(FATAL_ERROR
+            "HCC_ENABLE_BOOTSTRAP03_STAGE2=ON but BOOTSTRAP03_IDENT_OBJECT is not set. "
+            "Pass -DBOOTSTRAP03_IDENT_OBJECT=<abs-path>/build/bootstrap03-ident.stage1.o "
+            "produced by: ./build/hcc-bootstrap02 -c tools/bootstrap/bootstrap02-ident.HC -o <path>")
+    endif()
+    if (NOT EXISTS "${BOOTSTRAP03_IDENT_OBJECT}")
+        message(FATAL_ERROR
+            "HCC_ENABLE_BOOTSTRAP03_STAGE2=ON but BOOTSTRAP03_IDENT_OBJECT=${BOOTSTRAP03_IDENT_OBJECT} "
+            "does not exist. Build it first with stage1 hcc-bootstrap02.")
+    endif()
+    # Stage2 is consumed as the ONLY B1 source for its link.
+    # The build graph ensures stage1's object is the link input;
+    # the distinct BOOTSTRAP03_IDENT_OBJECT path makes that
+    # provenance checkable. Stage2 also depends on the stage0
+    # B1 object path being present only for the cmake-time
+    # HCC_BOOTSTRAP02_STAGE1 dispatch (which gates the symbol
+    # lookup), but the actual link for stage2 uses BOOTSTRAP03.
+    #
+    # IMPORTANT: in a future ACT where multiple stage objects
+    # need to coexist (B3), the BOOTSTRAP02_IDENT_OBJECT input
+    # here is only needed at compile-time because src/lexer.c's
+    # dispatch was already compiled into stage2's source units.
+    # We therefore build a SEPARATE stage2 executable; do NOT
+    # overwrite hcc or hcc-bootstrap02.
+    add_executable(hcc-bootstrap03 ${SOURCES} ${HEADERS})
+    target_compile_definitions(hcc-bootstrap03 PRIVATE
+        HCC_BOOTSTRAP02_STAGE1
+        HCC_BOOTSTRAP03_STAGE2)
+    if (HCC_ENABLE_JIT)
+        target_link_libraries(hcc-bootstrap03 tasm ${CMAKE_DL_LIBS})
+    endif()
+    target_link_libraries(hcc-bootstrap03 ${BOOTSTRAP03_IDENT_OBJECT} m)
+    install(TARGETS hcc-bootstrap03 DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+endif()
+
 if (HCC_ENABLE_JIT)
     target_compile_definitions(hcc PRIVATE HCC_ENABLE_JIT)
     target_link_libraries(hcc tasm ${CMAKE_DL_LIBS})

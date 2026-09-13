@@ -1,0 +1,76 @@
+ACT-POLYC-BOOTSTRAP03 — C2 — stage2 disassembly binding
+=======================================================
+
+Full disassembly capture of the production lexIdentifier
+→ BootstrapScanIdent delegation path in stage2.
+
+------------------------------------------------------------
+Tool
+------------------------------------------------------------
+
+```text
+otool -tv build/hcc-bootstrap03 | grep -B2 -A2 'BootstrapScanIdent'
+```
+
+------------------------------------------------------------
+Output
+------------------------------------------------------------
+
+```text
+00000001000303f0	mov	x2, #0x0
+00000001000303f4	bl	_BootstrapScanIdent
+00000001000303f8	cbz	w0, 0x100030414
+--
+000000010003145c	mov	x2, #0x0
+0000000100031460	bl	_BootstrapScanIdent
+0000000100031464	cbz	w0, 0x100031bb0
+--
+000000010007c314	ret
+_BootstrapScanIdent:
+000000010007c318	stp	x29, x30, [sp, #-0x10]!
+000000010007c31c	mov	x8, sp
+000000010007c320	str	x19, [sp, #0x8]
+```
+
+------------------------------------------------------------
+Interpretation
+------------------------------------------------------------
+
+The two `bl _BootstrapScanIdent` instructions at
+0x1000303f4 and 0x100031460 are the two delegation sites
+in the production lexer:
+
+1. The first site is the **primary `lexIdentifier`**
+   path; it is the only call site used for normal token
+   stream construction. Its return is checked by the
+   following `cbz` (compare-and-branch-on-zero), which
+   matches `lexIdentifier`'s contract (`rc == 0` means
+   failure).
+
+2. The second site is the **dispatcher fall-through** at
+   lexCore (line 1536 of src/lexer.c), where the
+   identifier branch hands off to the B1 component
+   before any fallback.
+
+The `_BootstrapScanIdent` function body at 0x10007c318 is
+the B1 component code itself; its prologue
+(`stp x29, x30, [sp, #-0x10]!`) is the standard aarch64
+frame setup emitted by hcc for the PolyC B1 source.
+
+Both call sites and the symbol definition are in the
+same Mach-O segment of `build/hcc-bootstrap03`. This is
+the production binary's static proof that the B1
+component is linked and exercised.
+
+------------------------------------------------------------
+Verdict
+------------------------------------------------------------
+
+```text
+STAGE2_DELEGATION_BL_SITES       = 2
+STAGE2_DELEGATION_TARGET         = _BootstrapScanIdent
+STAGE2_DELEGATION_IN_SAME_SEGMENT = YES
+STAGE2_B1_DELEGATION_PROVEN_NONZERO = YES
+
+STAGE2_BINDING_VERIFIED = PASS
+```

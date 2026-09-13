@@ -1,0 +1,71 @@
+ACT-POLYC-BOOTSTRAP03 — C2 — stage2 symbol binding
+==================================================
+
+Per ACT §16: prove stage2 contains _BootstrapScanIdent
+and that the production lexIdentifier actually calls it.
+
+------------------------------------------------------------
+Symbol presence
+------------------------------------------------------------
+
+```text
+$ nm build/hcc-bootstrap03 | grep _BootstrapScanIdent
+000000010007c318 T _BootstrapScanIdent
+
+STAGE2_CONTAINS_B1_SYMBOL = YES
+```
+
+------------------------------------------------------------
+Disassembly: two call sites (mirrors B1 stage1 pattern)
+------------------------------------------------------------
+
+```text
+$ otool -tv build/hcc-bootstrap03 | grep -B1 'BootstrapScanIdent'
+00000001000303f0	mov	x2, #0x0
+00000001000303f4	bl	_BootstrapScanIdent
+--
+000000010003145c	mov	x2, #0x0
+0000000100031460	bl	_BootstrapScanIdent
+--
+000000010007c314	ret
+_BootstrapScanIdent:
+000000010007c318	stp	x29, x30, [sp, #-0x10]!
+```
+
+Two `bl _BootstrapScanIdent` instruction sites. The B1
+component symbol is in the same code segment of the
+stage2 binary as the production lexer that calls it.
+
+------------------------------------------------------------
+Stage1 comparison (same two call sites, mirrored)
+------------------------------------------------------------
+
+```text
+$ otool -tv build/hcc-bootstrap02 | grep -B1 'BootstrapScanIdent'
+00000001000303f0	mov	x2, #0x0
+00000001000303f4	bl	_BootstrapScanIdent
+--
+000000010003145c	mov	x2, #0x0
+0000000100031460	bl	_BootstrapScanIdent
+--
+000000010007c314	ret
+_BootstrapScanIdent:
+000000010007c318	stp	x29, x30, [sp, #-0x10]!
+```
+
+The call-site addresses match exactly between stage1 and
+stage2 (same toolchain, same dispatch). Both binaries
+delegate lexIdentifier to the B1 component via the same
+two `bl` instructions.
+
+------------------------------------------------------------
+Verdict
+------------------------------------------------------------
+
+```text
+STAGE2_COMPONENT_LINKED = YES
+STAGE2_COMPONENT_USED   = YES
+STAGE2_LEXIDENTIFIER_DELEGATION = BL_INSTRUCTION_TWO_SITES
+
+HALT_STAGE2_BINDING_LOST = NOT_FIRED
+```

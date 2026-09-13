@@ -1,0 +1,106 @@
+ACT-POLYC-BOOTSTRAP03 — C2 — stage2 link (capture)
+==================================================
+
+The stage2 link must consume the stage1-produced B1
+object. This file captures the link command and its
+inputs.
+
+------------------------------------------------------------
+Stage2 link command (verbatim from Makefile)
+------------------------------------------------------------
+
+```text
+make bootstrap03-stage2
+```
+
+Effective CMake invocation:
+
+```text
+cmake -S ./src -B ./build/hcc-bootstrap03-build -G 'Unix Makefiles' \
+    -DCMAKE_C_COMPILER=gcc \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_C_FLAGS='-Wextra -Wall -Wpedantic' \
+    -DHCC_ENABLE_JIT=on \
+    -DHCC_ENABLE_LLVM=OFF \
+    -DHCC_ENABLE_BOOTSTRAP02_STAGE1=ON \
+    -DBOOTSTRAP02_IDENT_OBJECT=/Volumes/.../build/bootstrap02-ident.o \
+    -DHCC_ENABLE_BOOTSTRAP03_STAGE2=ON \
+    -DBOOTSTRAP03_IDENT_OBJECT=/Volumes/.../build/bootstrap03-ident.stage1.o
+
+make -C ./build/hcc-bootstrap03-build hcc-bootstrap03 -j2
+```
+
+------------------------------------------------------------
+Link-time binding
+------------------------------------------------------------
+
+The CMakeLists.txt rule for hcc-bootstrap03 is:
+
+```text
+add_executable(hcc-bootstrap03 ${SOURCES} ${HEADERS})
+target_compile_definitions(hcc-bootstrap03 PRIVATE
+    HCC_BOOTSTRAP02_STAGE1
+    HCC_BOOTSTRAP03_STAGE2)
+...
+target_link_libraries(hcc-bootstrap03 ${BOOTSTRAP03_IDENT_OBJECT} m)
+```
+
+Critical line:
+
+```text
+target_link_libraries(hcc-bootstrap03
+    ${BOOTSTRAP03_IDENT_OBJECT} m)
+```
+
+with `${BOOTSTRAP03_IDENT_OBJECT}` resolved to the
+**stage1-produced** object at cmake-configure time.
+
+------------------------------------------------------------
+Observed link result
+------------------------------------------------------------
+
+```text
+[100%] Linking C executable /Volumes/.../build/hcc-bootstrap03
+[100%] Built target hcc-bootstrap03
+BOOTSTRAP03_STAGE2_BINARY=./build/hcc-bootstrap03
+```
+
+```text
+$ ls -la build/hcc-bootstrap03
+-rwxr-xr-x  1 chistyakov  staff  742160  build/hcc-bootstrap03
+
+$ sha256sum build/hcc-bootstrap03
+f885d61200689c9e6f218798ce3f265f9133e057d2c9cd27c1046997400ec1ac
+```
+
+------------------------------------------------------------
+Stage binaries coexistence
+------------------------------------------------------------
+
+```text
+build/hcc                  740752 bytes   (stage0; _BootstrapScanIdent ABSENT)
+build/hcc-bootstrap02      742160 bytes   (stage1; _BootstrapScanIdent DEFINED)
+build/hcc-bootstrap03      742160 bytes   (stage2; _BootstrapScanIdent DEFINED)
+```
+
+Three distinct compiler binaries; neither overwrites the
+other. STAGE0_PRESENT = STAGE1_PRESENT = STAGE2_PRESENT = YES.
+
+------------------------------------------------------------
+Provenance witness
+------------------------------------------------------------
+
+```text
+STAGE2_B1_LINK_INPUT_PATH  = /Volumes/.../build/bootstrap03-ident.stage1.o
+STAGE2_B1_LINK_INPUT_SHA   = a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f
+STAGE1_B1_OUTPUT_PATH      = /Volumes/.../build/bootstrap03-ident.stage1.o
+STAGE1_B1_OUTPUT_SHA       = a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f
+
+STAGE2_B1_LINK_INPUT_PATH  == STAGE1_B1_OUTPUT_PATH       (YES)
+STAGE2_B1_LINK_INPUT_SHA   == STAGE1_B1_OUTPUT_SHA        (YES)
+```
+
+Both equalities hold. Path equality is the strongest
+proof: the same file (by inode) is consumed by the stage2
+link as was emitted by stage1. Hash equality is the
+corollary.

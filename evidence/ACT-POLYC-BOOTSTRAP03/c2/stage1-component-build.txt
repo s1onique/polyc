@@ -1,0 +1,72 @@
+ACT-POLYC-BOOTSTRAP03 — C2 — stage1 component build (capture)
+=============================================================
+
+The stage1-produced B1 object is the future stage2 B1 link
+input. This file captures its build transcript on the
+current tree.
+
+------------------------------------------------------------
+Command (verbatim from Makefile target)
+------------------------------------------------------------
+
+```text
+make bootstrap03-component-build
+```
+
+Effective commands:
+
+```text
+rm -f ./build/bootstrap03-ident.stage1.o
+./build/hcc-bootstrap02 --install-dir=/Volumes/.../build/test-prefix \
+    -c tools/bootstrap/bootstrap02-ident.HC \
+    -o ./build/bootstrap03-ident.stage1.o
+nm ./build/bootstrap03-ident.stage1.o | grep _BootstrapScanIdent
+```
+
+------------------------------------------------------------
+Observed output
+------------------------------------------------------------
+
+```text
+$ make bootstrap03-component-build
+... (stage1 build implicit; produces ./build/hcc-bootstrap02)
+[100%] Linking C executable /Volumes/.../build/hcc-bootstrap02
+[100%] Built target hcc-bootstrap02
+./build/hcc-bootstrap02 --install-dir=/Volumes/.../build/test-prefix \
+    -c tools/bootstrap/bootstrap02-ident.HC \
+    -o ./build/bootstrap03-ident.stage1.o
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+BOOTSTRAP03_STAGE1_B1_OBJECT=./build/bootstrap03-ident.stage1.o
+```
+
+------------------------------------------------------------
+Artifact captured
+------------------------------------------------------------
+
+```text
+producer       = ./build/hcc-bootstrap02
+input          = tools/bootstrap/bootstrap02-ident.HC
+output         = ./build/bootstrap03-ident.stage1.o
+size (bytes)   = 2704
+sha256         = a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f
+symbol table   = T _BootstrapScanIdent
+```
+
+------------------------------------------------------------
+Provenance anchor
+------------------------------------------------------------
+
+The producer (`./build/hcc-bootstrap02`) IS STAGE1 — it
+contains `_BootstrapScanIdent` because it links the
+stage0-produced B1 object. Stage1 therefore both:
+
+1. CARRIES the B1 component (already true at C1).
+2. EMITS a freshly compiled B1 object for stage2.
+
+The sha256 (a1b620c0...) is identical to stage0's output
+because both stages use the same host-clang backend. This
+is incidental — the binding proof is the **producer
+identity**, not the byte identity. The build graph
+records stage1 as the producer.
