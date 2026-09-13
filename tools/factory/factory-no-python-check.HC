@@ -98,11 +98,26 @@ Bool IsForbiddenMetadataBasename(U8 *path)
   if (!StrCmp(base, "requirements.txt")) return TRUE;
   if (!StrCmp(base, ".python-version")) return TRUE;
   if (!StrCmp(base, "pyproject.toml")) return TRUE;
+  // requirements*.txt wildcard contract: any base that
+  // begins with "requirements" followed by at least one
+  // non-empty dash/underscore/dot/alphanumeric prefix
+  // and ends in ".txt" is forbidden.
   I64 blen = StrLen(base);
-  if (blen > 16 && !StrNCmp(base, "requirements", 12)) {
+  if (blen > 12 && !StrNCmp(base, "requirements", 12)) {
     U8 *tail = base + 12;
-    while (*tail >= '0' && *tail <= '9') tail++;
-    if (!StrCmp(tail, ".txt")) return TRUE;
+    if (*tail == '-' || *tail == '_' || *tail == '.') {
+      tail++;
+      while ((*tail >= 'a' && *tail <= 'z') ||
+             (*tail >= 'A' && *tail <= 'Z') ||
+             (*tail >= '0' && *tail <= '9') ||
+             *tail == '-' || *tail == '_') tail++;
+      if (!StrCmp(tail, ".txt")) return TRUE;
+    }
+    // Numeric-suffix form: requirements1.txt,
+    // requirements2.txt, ... (legacy pip convention).
+    U8 *num = base + 12;
+    while (*num >= '0' && *num <= '9') num++;
+    if (num > base + 12 && !StrCmp(num, ".txt")) return TRUE;
   }
   return FALSE;
 }
@@ -114,16 +129,30 @@ Bool ContainsDirSegment(U8 *path, U8 *segment)
   while (*p) {
     if (!StrNCmp(p, segment, seg_len)) {
       U8 after = p[seg_len];
+      // Allow /, end-of-string, or any non-/ char (the
+      // first char of a file inside the dir).
       if (after == '/' || after == 0) return TRUE;
+      // Also accept if the segment itself ends with / —
+      // i.e. we're asking "is this path under dir X?".
     }
     p++;
   }
+  // Also accept the path that BEGINS with the segment
+  // (e.g. ".github/workflows/test.yml" begins with
+  // ".github/workflows/").
+  I64 plen = StrLen(path);
+  if (plen >= seg_len && !StrNCmp(path, segment, seg_len)) return TRUE;
   return FALSE;
 }
 
 // Command surface classifier: returns TRUE iff a path
 // represents an executable command surface where Python
 // invocations would actually run.
+//
+// IMPORTANT ordering: CI workflow YAML must win over the
+// generic .yml/.yaml exclusion. A path under
+// .github/workflows/ is a CI step description; the YAML
+// "run:" block executes shell commands on the runner.
 Bool IsCommandSurface(U8 *path)
 {
   // Pure data surfaces — never command surfaces.
@@ -133,8 +162,6 @@ Bool IsCommandSurface(U8 *path)
   if (HasSuffix(path, ".txt")) return FALSE;
   if (HasSuffix(path, ".tsv")) return FALSE;
   if (HasSuffix(path, ".json")) return FALSE;
-  if (HasSuffix(path, ".yaml")) return FALSE;
-  if (HasSuffix(path, ".yml")) return FALSE;
   // Shell.
   if (HasSuffix(path, ".sh")) return TRUE;
   if (HasSuffix(path, ".bash")) return TRUE;
@@ -148,7 +175,9 @@ Bool IsCommandSurface(U8 *path)
   // CMake.
   if (!StrCmp(Basename(path), "CMakeLists.txt")) return TRUE;
   if (HasSuffix(path, ".cmake")) return TRUE;
-  // Git hooks / CI.
+  // Git hooks / CI — CHECK BEFORE generic YAML exclusion
+  // so .github/workflows/*.yml and .gitlab-ci.yml remain
+  // command surfaces.
   if (ContainsDirSegment(path, ".githooks/")) return TRUE;
   if (ContainsDirSegment(path, ".git/hooks/")) return TRUE;
   if (ContainsDirSegment(path, ".husky/")) return TRUE;
@@ -159,6 +188,9 @@ Bool IsCommandSurface(U8 *path)
   if (HasSuffix(path, ".HC")) return TRUE;
   // Python spec files.
   if (HasSuffix(path, ".spec")) return TRUE;
+  // Generic YAML exclusion AFTER CI classification above.
+  if (HasSuffix(path, ".yaml")) return FALSE;
+  if (HasSuffix(path, ".yml")) return FALSE;
   return FALSE;
 }
 
@@ -236,25 +268,213 @@ U0 InspectShebang(U8 *path, U8 *contents, I64 *violations)
   }
   if (slash) interp = slash + 1;
   // Now interp is the interpreter name.
+  // Per doctrine §26, any interpreter whose basename
+  // begins with "python" (python, python3, python3.11,
+  // pypy3, etc.) OR with "pip"/"pip3" is forbidden.
+  // After the prefix, the next char (if any) MUST be a
+  // digit (e.g. python3) OR a dot (e.g. python3.11) OR
+  // end-of-string. Any other suffix means a different
+  // interpreter (e.g. pythonista) and is allowed.
   if (!StrNCmp(interp, "python", 6)) {
-    Fail(path, "forbidden Python shebang", violations);
-    return;
+    U8 next = interp[6];
+    if (next == 0 || next == '.' ||
+        (next >= '0' && next <= '9')) {
+      Fail(path, "forbidden Python shebang", violations);
+      return;
+    }
   }
-  if (!StrNCmp(interp, "pip", 3) && (interp[3] == 0 || interp[3] == '3')) {
-    Fail(path, "forbidden Python shebang (pip)", violations);
-    return;
+  if (!StrNCmp(interp, "pip", 3)) {
+    U8 next = interp[3];
+    if (next == 0 || next == '.' ||
+        (next >= '0' && next <= '9')) {
+      Fail(path, "forbidden Python shebang (pip)", violations);
+      return;
+    }
   }
 }
 
 // Surface-aware invocation inspection.
 // Only scans command surfaces and respects line-level
 // shell comments. Word-boundary aware.
+// Known PolyC -> Python execution edges (bounded
+// inventory derived from
+// evidence/ACT-POLYC-SELFHOST-SURFACE01-CORRECTION01/c1/
+// python-callgraph.tsv, kind=polyc_harness_to_python).
+// This is the finite current-tree execution-edge contract.
+// When C2.4 removes llvm-gep01-test.HC's dynamic Python
+// edge, this entry is deleted.
+//
+// Entries are PolyC source paths that contain a known
+// Python execution edge that the literal-string scanner
+// cannot detect (variable-resolved first argument).
+U8 *KnownPolyCPythonEdges[] = {
+  "tools/quality/llvm-gep01-test.HC",
+  NULL
+};
+
+U0 InspectKnownPolyCEdge(U8 *path, I64 *violations)
+{
+  I64 i = 0;
+  while (KnownPolyCPythonEdges[i]) {
+    if (!StrCmp(path, KnownPolyCPythonEdges[i])) {
+      Fail(path, "known PolyC -> Python execution edge (callgraph inventory)",
+           violations);
+      return;
+    }
+    i++;
+  }
+}
+
+// CI workflow YAML scanner. Detects:
+//   - `run: <shell command>` blocks (GitHub Actions)
+//   - `script: <shell command>` blocks (GitLab CI)
+//   - `shell: python*` defaults (executes Python)
+//   - top-level `image: <py*>` containers
+// Returns TRUE if a violation was found (early-exit
+// signal for the caller).
+// Helper: does the value (post-key) contain a Python
+// invocation, with word boundaries?
+U0 ScanValueForPython(U8 *path, U8 *v, U8 *eol, I64 *violations)
+{
+  if (v >= eol) return;
+  U8 *m;
+  m = SubStr(v, "python3");
+  if (m && m + 7 <= eol &&
+      !((m > v) && (*(m-1) >= 'a' && *(m-1) <= 'z'))) {
+    U8 after;
+    if (m + 7 < eol) after = m[7];
+    else             after = 0;
+    if (!(after >= 'a' && after <= 'z') &&
+        !(after >= '0' && after <= '9') &&
+        after != '_' && after != '-' && after != '.') {
+      Fail(path, "forbidden Python invocation (CI workflow)",
+           violations);
+      return;
+    }
+  }
+  m = SubStr(v, "python");
+  if (m && m + 6 <= eol &&
+      !((m > v) && (*(m-1) >= 'a' && *(m-1) <= 'z')) &&
+      !(m + 6 <= eol && (m[6] >= '0' && m[6] <= '9'))) {
+    U8 after;
+    if (m + 6 < eol) after = m[6];
+    else             after = 0;
+    if (!(after >= 'a' && after <= 'z') &&
+        !(after >= '0' && after <= '9') &&
+        after != '_' && after != '-' && after != '.') {
+      Fail(path, "forbidden Python invocation (CI workflow)",
+           violations);
+      return;
+    }
+  }
+  m = SubStr(v, "pip");
+  if (m && m + 3 <= eol &&
+      !((m > v) && (*(m-1) >= 'a' && *(m-1) <= 'z'))) {
+    U8 after;
+    if (m + 3 < eol) after = m[3];
+    else             after = 0;
+    if (!(after >= 'a' && after <= 'z') &&
+        !(after >= '0' && after <= '9') &&
+        after != '_' && after != '-' && after != '.') {
+      Fail(path, "forbidden Python invocation (CI workflow)",
+           violations);
+      return;
+    }
+  }
+}
+
+U0 InspectCIWorkflow(U8 *path, U8 *contents, I64 *violations)
+{
+  if (!contents) return;
+  Bool is_gh = ContainsDirSegment(path, ".github/workflows/");
+  Bool is_gl = !StrCmp(Basename(path), ".gitlab-ci.yml");
+  if (!is_gh && !is_gl) return;
+  // Track whether we are inside a multi-line `script:`
+  // block (GitLab CI list form). A block starts on a
+  // `script:` line whose value side is empty (or starts
+  // with `-`), and continues while the next line is more
+  // indented than the `script:` keyword column.
+  I64 script_indent = -1;  // -1 = not in script block
+  U8 *line = contents;
+  while (*line) {
+    U8 *eol = line;
+    while (*eol && *eol != '\n') eol++;
+    I64 llen = eol - line;
+    // Compute leading-indent.
+    I64 ind = 0;
+    while (ind < llen && (line[ind] == ' ' || line[ind] == '\t')) ind++;
+    Bool is_comment = (ind < llen && line[ind] == '#');
+    Bool is_blank = (llen == 0);
+    if (!is_comment && !is_blank) {
+      U8 *run_key = SubStr(line, "run:");
+      U8 *script_key = SubStr(line, "script:");
+      U8 *shell_key = SubStr(line, "shell:");
+      U8 *image_key = SubStr(line, "image:");
+      // Single-line run: / script: with inline command.
+      if (run_key || script_key) {
+        U8 *key_end;
+        if (run_key) key_end = run_key + 4;
+        else         key_end = script_key + 7;
+        U8 *v = key_end;
+        while (v < eol && (*v == ' ' || *v == '\t')) v++;
+                  run_key != NULL, script_key != NULL, ind, v;
+        // If the value is empty or starts with '-' this is
+        // a multi-line block opener — record the indent
+        // and scan subsequent indented lines.
+        if (v >= eol || *v == '-') {
+          if (script_key) script_indent = ind;
+        } else {
+          ScanValueForPython(path, v, eol, violations);
+          if (*violations > 0) return;
+        }
+      }
+      // shell: python*   -> explicitly execute Python.
+      if (shell_key) {
+        U8 *v = shell_key + 6;
+        while (v < eol && (*v == ' ' || *v == '\t')) v++;
+        if (SubStr(v, "python")) {
+          Fail(path, "forbidden Python shell (CI workflow)",
+               violations);
+          return;
+        }
+      }
+      // image: python* or python:3.*   -> Python container.
+      if (image_key) {
+        U8 *v = image_key + 6;
+        while (v < eol && (*v == ' ' || *v == '\t')) v++;
+        if (SubStr(v, "python")) {
+          Fail(path, "forbidden Python image (CI workflow)",
+               violations);
+          return;
+        }
+      }
+      // Multi-line script: list items.
+      if (script_indent >= 0 && ind > script_indent) {
+                  ind, script_indent, line;
+        // Strip leading "- " if present.
+        U8 *v = line + ind;
+        if (*v == '-') v++;
+        if (*v == ' ' || *v == '\t') v++;
+                ScanValueForPython(path, v, eol, violations);
+        if (*violations > 0) return;
+      } else if (script_indent >= 0 && ind < script_indent) {
+        // Out of the script block (less indented or equal).
+                script_indent = -1;
+      }
+    } else if (is_blank) {
+      // Blank line ends the block (YAML convention).
+      script_indent = -1;
+    }
+    line = eol;
+    if (*line == '\n') line++;
+  }
+}
+
 U0 InspectInvocations(U8 *path, U8 *contents, I64 *violations)
 {
   if (!contents) return;
   if (!IsCommandSurface(path)) return;
   Bool is_hc = HasSuffix(path, ".HC");
-  Bool is_yaml = HasSuffix(path, ".yml") || HasSuffix(path, ".yaml");
   U8 *needles[6];
   I64 nlen[6];
   needles[0] = "python";  nlen[0] = 6;
@@ -457,6 +677,79 @@ I64 RunSelfTests()
   v = 0;
   InspectInvocations("script.sh", fake_dash, &v);
   if (v != 0) { "FAIL  selftest: word boundary dash\n"; fails++; }
+  // Shebang python3.11 (numeric.dot suffix) MUST flag.
+  U8 *fake_py311 = "#!/usr/bin/env python3.11\n";
+  v = 0;
+  InspectShebang("a.sh", fake_py311, &v);
+    if (v != 1) { "FAIL  selftest: shebang python3.11\n"; fails++; }
+  // Shebang pythonista (alpha suffix) MUST NOT flag.
+  U8 *fake_pyista = "#!/usr/bin/env pythonista\n";
+  v = 0;
+  InspectShebang("a.sh", fake_pyista, &v);
+  if (v != 0) { "FAIL  selftest: shebang pythonista false positive\n"; fails++; }
+  // requirements*.txt wildcard — requirements-dev.txt
+  // MUST flag; requirement.txt MUST NOT.
+  if (!IsForbiddenMetadataBasename("requirements-dev.txt")) {
+    "FAIL  selftest: requirements-dev.txt\n"; fails++;
+  }
+  if (!IsForbiddenMetadataBasename("requirements_test.txt")) {
+    "FAIL  selftest: requirements_test.txt\n"; fails++;
+  }
+  if (IsForbiddenMetadataBasename("requirement.txt")) {
+    "FAIL  selftest: requirement.txt false positive\n"; fails++;
+  }
+  if (!IsForbiddenMetadataBasename("requirements1.txt")) {
+    "FAIL  selftest: requirements1.txt\n"; fails++;
+  }
+  if (IsForbiddenMetadataBasename("requirements.in")) {
+    // requirements.in has .in suffix not .txt, so wildcard
+    // does NOT apply. Document this.
+    "FAIL  selftest: requirements.in false positive\n"; fails++;
+  }
+  // CI workflow YAML classification: .github/workflows/*
+  // MUST be a command surface; generic docs/example.yml
+  // MUST NOT.
+  if (!IsCommandSurface(".github/workflows/test.yml")) {
+    "FAIL  selftest: CI workflow classification\n"; fails++;
+  }
+  if (!IsCommandSurface(".gitlab-ci.yml")) {
+    "FAIL  selftest: GitLab CI classification\n"; fails++;
+  }
+  if (IsCommandSurface("docs/example.yml")) {
+    "FAIL  selftest: generic YAML false positive\n"; fails++;
+  }
+  // CI workflow scanner.
+  U8 *gh_run = "      - run: python3 forbidden.py\n";
+  v = 0;
+  InspectCIWorkflow(".github/workflows/test.yml", gh_run, &v);
+    if (v != 1) { "FAIL  selftest: CI run python3\n"; fails++; }
+  U8 *gh_shell = "    shell: python\n";
+  v = 0;
+  InspectCIWorkflow(".github/workflows/test.yml", gh_shell, &v);
+  if (v != 1) { "FAIL  selftest: CI shell python\n"; fails++; }
+  U8 *gh_image = "    image: python:3.11\n";
+  v = 0;
+  InspectCIWorkflow(".github/workflows/test.yml", gh_image, &v);
+  if (v != 1) { "FAIL  selftest: CI image python\n"; fails++; }
+  U8 *gl_script = "script:\n  - python3 foo.py\n";
+  v = 0;
+  InspectCIWorkflow(".gitlab-ci.yml", gl_script, &v);
+    if (v != 1) { "FAIL  selftest: GitLab script python3\n"; fails++; }
+  U8 *gh_clean = "      - run: ./polyc-build\n";
+  v = 0;
+  InspectCIWorkflow(".github/workflows/test.yml", gh_clean, &v);
+  if (v != 0) { "FAIL  selftest: CI clean run false positive\n"; fails++; }
+  U8 *gh_yaml_comment = "      # python3 in a comment\n";
+  v = 0;
+  InspectCIWorkflow(".github/workflows/test.yml", gh_yaml_comment, &v);
+  if (v != 0) { "FAIL  selftest: CI yaml comment skip\n"; fails++; }
+  // Known PolyC edge inventory.
+  v = 0;
+  InspectKnownPolyCEdge("tools/quality/llvm-gep01-test.HC", &v);
+  if (v != 1) { "FAIL  selftest: known PolyC edge\n"; fails++; }
+  v = 0;
+  InspectKnownPolyCEdge("tools/quality/unrelated.HC", &v);
+  if (v != 0) { "FAIL  selftest: known PolyC edge negative\n"; fails++; }
   if (fails == 0) "SELFTEST=PASS\n";
   else            "SELFTEST=FAIL (%d failures)\n", fails;
   return fails;
@@ -492,11 +785,29 @@ I32 Main(I32 argc, U8 **argv)
   while (offset < total) {
     U8 line[MAX_PATH];
     I64 i = 0;
-    while (offset < total && list_buf[offset] != 0 && i < MAX_PATH - 1) {
+    // Walk the NUL record up to MAX_PATH-1; if we hit
+    // MAX_PATH-1 before the NUL terminator, the record
+    // is overlong — FAIL CLOSED with PATH_TOO_LONG.
+    Bool overflow = FALSE;
+    while (offset < total && list_buf[offset] != 0) {
+      if (i >= MAX_PATH - 1) {
+        overflow = TRUE;
+        // consume the rest of the record so we advance
+        // past it on the next loop iteration.
+        while (offset < total && list_buf[offset] != 0) offset++;
+        break;
+      }
       line[i++] = list_buf[offset++];
     }
     line[i] = 0;
     if (offset < total && list_buf[offset] == 0) offset++;
+    if (overflow) {
+      "ERROR:  %s  path record exceeds MAX_PATH=%d (FAIL CLOSED)\n",
+        line, MAX_PATH;
+      violations++;
+      inspected++;
+      continue;
+    }
     if (i == 0) continue;
     inspected++;
     InspectTrackedPath(line, &violations, &passes);
@@ -510,8 +821,15 @@ I32 Main(I32 argc, U8 **argv)
     U8 *body = FileRead(line);
     if (body) {
       InspectShebang(line, body, &violations);
+      InspectCIWorkflow(line, body, &violations);
       InspectInvocations(line, body, &violations);
       Free(body);
+    }
+    // Known PolyC -> Python edges: checked even if body
+    // read failed (the failure itself is not a python
+    // issue, but the callgraph inventory applies).
+    if (HasSuffix(line, ".HC")) {
+      InspectKnownPolyCEdge(line, &violations);
     }
   }
   Free(list_buf);
