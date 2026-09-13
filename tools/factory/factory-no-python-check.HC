@@ -236,6 +236,65 @@ U0 InspectTrackedPath(U8 *path, I64 *violations, I64 *passes)
   Pass(path, passes);
 }
 
+// Single-source-of-truth predicate: does this token
+// name a forbidden Python-family executable?
+// Covers doctrine §26 enumeration:
+//   python / versioned python (python3, python3.11, pypy3, ...)
+//   pip / versioned pip (pip, pip3, pip3.10, ...)
+//   pytest
+//   tox
+//   poetry
+// Word boundary and suffix semantics: next char after
+// the prefix MUST be a digit, dot, or end-of-string for
+// python/pip/pypy. The standalone names (pytest, tox,
+// poetry) match only when followed by non-alphanumeric
+// /underscore boundary chars.
+// Returns TRUE if the token names a forbidden executable.
+Bool IsForbiddenPythonExecutable(U8 *name)
+{
+  if (!name) return FALSE;
+  if (!*name) return FALSE;
+  // Standalone tool names (must match whole token).
+  if (!StrNCmp(name, "pytest", 6)) {
+    U8 a = name[6];
+    if (!(a >= 'a' && a <= 'z') &&
+        !(a >= 'A' && a <= 'Z') &&
+        !(a >= '0' && a <= '9') &&
+        a != '_') return TRUE;
+  }
+  if (!StrNCmp(name, "tox", 3)) {
+    U8 a = name[3];
+    if (!(a >= 'a' && a <= 'z') &&
+        !(a >= 'A' && a <= 'Z') &&
+        !(a >= '0' && a <= '9') &&
+        a != '_') return TRUE;
+  }
+  if (!StrNCmp(name, "poetry", 6)) {
+    U8 a = name[6];
+    if (!(a >= 'a' && a <= 'z') &&
+        !(a >= 'A' && a <= 'Z') &&
+        !(a >= '0' && a <= '9') &&
+        a != '_') return TRUE;
+  }
+  // Prefix families.
+  if (!StrNCmp(name, "python", 6)) {
+    U8 a = name[6];
+    if (a == 0 || a == '.' ||
+        (a >= '0' && a <= '9')) return TRUE;
+  }
+  if (!StrNCmp(name, "pip", 3)) {
+    U8 a = name[3];
+    if (a == 0 || a == '.' ||
+        (a >= '0' && a <= '9')) return TRUE;
+  }
+  if (!StrNCmp(name, "pypy", 4)) {
+    U8 a = name[4];
+    if (a == 0 || a == '.' ||
+        (a >= '0' && a <= '9')) return TRUE;
+  }
+  return FALSE;
+}
+
 // Shebang inspection: classify by interpreter basename.
 U0 InspectShebang(U8 *path, U8 *contents, I64 *violations)
 {
@@ -267,29 +326,13 @@ U0 InspectShebang(U8 *path, U8 *contents, I64 *violations)
     q++;
   }
   if (slash) interp = slash + 1;
-  // Now interp is the interpreter name.
-  // Per doctrine §26, any interpreter whose basename
-  // begins with "python" (python, python3, python3.11,
-  // pypy3, etc.) OR with "pip"/"pip3" is forbidden.
-  // After the prefix, the next char (if any) MUST be a
-  // digit (e.g. python3) OR a dot (e.g. python3.11) OR
-  // end-of-string. Any other suffix means a different
-  // interpreter (e.g. pythonista) and is allowed.
-  if (!StrNCmp(interp, "python", 6)) {
-    U8 next = interp[6];
-    if (next == 0 || next == '.' ||
-        (next >= '0' && next <= '9')) {
-      Fail(path, "forbidden Python shebang", violations);
-      return;
-    }
-  }
-  if (!StrNCmp(interp, "pip", 3)) {
-    U8 next = interp[3];
-    if (next == 0 || next == '.' ||
-        (next >= '0' && next <= '9')) {
-      Fail(path, "forbidden Python shebang (pip)", violations);
-      return;
-    }
+  // Now interp is the interpreter name. Use the single
+  // source of truth IsForbiddenPythonExecutable.
+  // The shebang value is a single executable token (no
+  // args on this side), so direct classification is fine.
+  if (IsForbiddenPythonExecutable(interp)) {
+    Fail(path, "forbidden Python shebang", violations);
+    return;
   }
 }
 
@@ -410,18 +453,31 @@ U0 InspectCIWorkflow(U8 *path, U8 *contents, I64 *violations)
       U8 *script_key = SubStr(line, "script:");
       U8 *shell_key = SubStr(line, "shell:");
       U8 *image_key = SubStr(line, "image:");
-      // Single-line run: / script: with inline command.
+      // Single-line run: / script: with inline command,
+      // OR a block-scalar opener (`|`, `|-`, `>`, `>-`).
       if (run_key || script_key) {
         U8 *key_end;
         if (run_key) key_end = run_key + 4;
         else         key_end = script_key + 7;
         U8 *v = key_end;
         while (v < eol && (*v == ' ' || *v == '\t')) v++;
-                  run_key != NULL, script_key != NULL, ind, v;
-        // If the value is empty or starts with '-' this is
-        // a multi-line block opener — record the indent
-        // and scan subsequent indented lines.
-        if (v >= eol || *v == '-') {
+        // C2.1.3 — Block-scalar opener detection. Read-only.
+        //   run: |  | |-  | >  | >-
+        //   script: |  | >
+        Bool block_opener = FALSE;
+        if (v < eol && (*v == '|' || *v == '>')) {
+          block_opener = TRUE;
+          v++;
+          if (v < eol && (*v == '-' || *v == '+')) v++;
+          while (v < eol && (*v >= '0' && *v <= '9')) v++;
+          while (v < eol && (*v == ' ' || *v == '\t')) v++;
+          if (v < eol) block_opener = FALSE;
+        }
+        if (block_opener) {
+          // Enter block-state at this indent.
+          script_indent = ind;
+        } else if (v >= eol || *v == '-') {
+          // GL list-item form: `script:\n  - <cmd>`.
           if (script_key) script_indent = ind;
         } else {
           ScanValueForPython(path, v, eol, violations);
@@ -432,7 +488,15 @@ U0 InspectCIWorkflow(U8 *path, U8 *contents, I64 *violations)
       if (shell_key) {
         U8 *v = shell_key + 6;
         while (v < eol && (*v == ' ' || *v == '\t')) v++;
-        if (SubStr(v, "python")) {
+        // Copy value to a writable stack buffer so we can
+        // NUL-terminate without mutating the input (which
+        // may be .rodata for selftest literals).
+        I64 slen = eol - v;
+        if (slen > 255) slen = 255;
+        U8 sbuf[256];
+        MemCpy(sbuf, v, slen);
+        sbuf[slen] = 0;
+        if (IsForbiddenPythonExecutable(sbuf)) {
           Fail(path, "forbidden Python shell (CI workflow)",
                violations);
           return;
@@ -442,7 +506,26 @@ U0 InspectCIWorkflow(U8 *path, U8 *contents, I64 *violations)
       if (image_key) {
         U8 *v = image_key + 6;
         while (v < eol && (*v == ' ' || *v == '\t')) v++;
-        if (SubStr(v, "python")) {
+        // Strip registry prefix.
+        U8 *slash = NULL;
+        U8 *q = v;
+        while (q < eol && *q != ' ' && *q != '\t') {
+          if (*q == '/') slash = q;
+          q++;
+        }
+        if (slash) v = slash + 1;
+        // Copy value up to first whitespace or colon (the
+        // ':' is the tag separator) into a writable stack
+        // buffer, so IFPE sees only the bare image basename.
+        I64 ilen = 0;
+        while (v + ilen < eol &&
+               v[ilen] != ' ' && v[ilen] != '\t' &&
+               v[ilen] != ':' && v[ilen] != '\n' &&
+               ilen < 255) ilen++;
+        U8 ibuf[256];
+        MemCpy(ibuf, v, ilen);
+        ibuf[ilen] = 0;
+        if (IsForbiddenPythonExecutable(ibuf)) {
           Fail(path, "forbidden Python image (CI workflow)",
                violations);
           return;
@@ -470,19 +553,13 @@ U0 InspectCIWorkflow(U8 *path, U8 *contents, I64 *violations)
   }
 }
 
+
+
 U0 InspectInvocations(U8 *path, U8 *contents, I64 *violations)
 {
   if (!contents) return;
   if (!IsCommandSurface(path)) return;
   Bool is_hc = HasSuffix(path, ".HC");
-  U8 *needles[6];
-  I64 nlen[6];
-  needles[0] = "python";  nlen[0] = 6;
-  needles[1] = "python3"; nlen[1] = 7;
-  needles[2] = "pip";     nlen[2] = 3;
-  needles[3] = "pip3";    nlen[3] = 4;
-  needles[4] = "pytest";  nlen[4] = 6;
-  needles[5] = "poetry";  nlen[5] = 6;
   U8 *line = contents;
   while (*line) {
     U8 *eol = line;
@@ -499,12 +576,12 @@ U0 InspectInvocations(U8 *path, U8 *contents, I64 *violations)
         is_comment = TRUE;
     }
     if (!is_comment && llen > 0) {
-      // For PolyC source, ONLY check SpawnAndCapture/Exec
-      // edges where the FIRST string argument is a Python
-      // interpreter invocation. A bare mention of "python"
-      // in a SubStr() call, a comment, or a string literal
-      // is NOT an invocation.
       if (is_hc) {
+        // For PolyC source, ONLY check SpawnAndCapture/Exec
+        // edges where the FIRST string argument is a Python
+        // interpreter invocation. A bare mention of "python"
+        // in a SubStr() call, a comment, or a string literal
+        // is NOT an invocation.
         U8 *pat = "SpawnAndCapture(\"";
         U8 *m1 = SubStr(line, pat);
         U8 *pat2 = "Exec(\"";
@@ -530,10 +607,9 @@ U0 InspectInvocations(U8 *path, U8 *contents, I64 *violations)
             MemCpy(argbuf, start, alen);
             argbuf[alen] = 0;
             // The first argument to SpawnAndCapture/Exec
-            // IS the executable. If it starts with python|pip
-            // (case-insensitive comparison via SubStr), that's
-            // a Python invocation edge.
-            if (SubStr(argbuf, "python") || SubStr(argbuf, "pip")) {
+            // IS the executable. Use IsForbiddenPythonExecutable
+            // to classify — single source of truth.
+            if (IsForbiddenPythonExecutable(argbuf)) {
               Fail(path, "forbidden Python invocation (PolyC edge)",
                    violations);
               return;
@@ -541,37 +617,37 @@ U0 InspectInvocations(U8 *path, U8 *contents, I64 *violations)
           }
         }
       } else {
-        // Shell-style command surfaces: word-boundary scan
-        // for python|python3|pip|pip3|pytest|poetry.
-        I64 kk;
-        for (kk = 0; kk < 6; kk++) {
-          U8 *m = SubStr(line, needles[kk]);
-          while (m && (m - line) + nlen[kk] <= llen) {
-            I64 pos = m - line;
-            U8 after;
-            if (pos + nlen[kk] < llen) after = line[pos + nlen[kk]];
-            else                     after = 0;
-            Bool word_cont =
-              (after >= 'a' && after <= 'z') ||
-              (after >= 'A' && after <= 'Z') ||
-              (after >= '0' && after <= '9') ||
-              after == '_' || after == '-' || after == '.' ||
-              after == '/';
-            Bool prev_alpha = FALSE;
-            if (pos > 0) {
-              U8 prev = line[pos - 1];
-              prev_alpha =
-                (prev >= 'a' && prev <= 'z') ||
-                (prev >= 'A' && prev <= 'Z') ||
-                (prev >= '0' && prev <= '9') ||
-                prev == '_' || prev == '-' || prev == '.' ||
-                prev == '/';
-            }
-            if (!word_cont && !prev_alpha) {
-              Fail(path, "forbidden Python invocation", violations);
-              return;
-            }
-            m = SubStr(m + 1, needles[kk]);
+        // Shell-style command surfaces: tokenize the line
+        // (whitespace-separated) and check each token with
+        // IsForbiddenPythonExecutable — single source of truth.
+        U8 *p = line;
+        while (p < eol) {
+          // Skip leading whitespace.
+          while (p < eol && (*p == ' ' || *p == '\t' ||
+                             *p == '\r')) p++;
+          if (p >= eol) break;
+          U8 *tok = p;
+          while (p < eol && *p != ' ' && *p != '\t' &&
+                 *p != '\r') p++;
+          I64 tlen = p - tok;
+          if (tlen == 0) continue;
+          // Copy token into a NUL-terminated buffer.
+          U8 tokbuf[256];
+          if (tlen > 255) tlen = 255;
+          MemCpy(tokbuf, tok, tlen);
+          tokbuf[tlen] = 0;
+          // Strip leading path component for tokens like
+          // /usr/bin/python3 — only the basename matters.
+          U8 *bslash = NULL;
+          I64 qi;
+          for (qi = 0; qi < tlen; qi++) {
+            if (tokbuf[qi] == '/') bslash = &tokbuf[qi];
+          }
+          U8 *name = tokbuf;
+          if (bslash) name = bslash + 1;
+          if (IsForbiddenPythonExecutable(name)) {
+            Fail(path, "forbidden Python invocation", violations);
+            return;
           }
         }
       }
@@ -743,6 +819,63 @@ I64 RunSelfTests()
   v = 0;
   InspectCIWorkflow(".github/workflows/test.yml", gh_yaml_comment, &v);
   if (v != 0) { "FAIL  selftest: CI yaml comment skip\n"; fails++; }
+  // C2.1.3 — CI multiline block run: |
+  v = 0;
+  InspectCIWorkflow(".github/workflows/test.yml",
+    "      - name: test\n"
+    "        run: |\n"
+    "          python3 forbidden.py\n"
+    "          echo done\n",
+    &v);
+  if (v != 1) { "FAIL  selftest: GH block run pipe python3\n"; fails++; }
+  // C2.1.3 — CI multiline block run: > folded
+  v = 0;
+  InspectCIWorkflow(".github/workflows/test.yml",
+    "      - name: test\n"
+    "        run: >-\n"
+    "          python3 forbidden.py\n",
+    &v);
+  if (v != 1) { "FAIL  selftest: GH block run fold python3\n"; fails++; }
+  // C2.1.3 — GH block clean: shell comment inside block
+  v = 0;
+  InspectCIWorkflow(".github/workflows/test.yml",
+    "      - run: |\n"
+    "          # python3 in a comment, must not fire\n"
+    "          echo done\n",
+    &v);
+  if (v != 0) { "FAIL  selftest: GH block run clean comment\n"; fails++; }
+  // C2.1.3 — GL multiline block script: |
+  v = 0;
+  InspectCIWorkflow(".gitlab-ci.yml",
+    "script:\n"
+    "  - |\n"
+    "    - python3 foo.py\n"
+    "    - echo done\n",
+    &v);
+  if (v != 1) { "FAIL  selftest: GL block script pipe python3\n"; fails++; }
+  // C2.1.3 — tox standalone line in shell scanner.
+  v = 0;
+  InspectInvocations("tox.sh",
+    "#!/bin/sh\n"
+    "tox\n",
+    &v);
+  if (v != 1) { "FAIL  selftest: shell tox\n"; fails++; }
+  // C2.1.3 — PolyC literal pytest / tox / poetry.
+  v = 0;
+  InspectInvocations("a.HC",
+    "  res = SpawnAndCapture(\"pytest\", \"foo\");\n",
+    &v);
+  if (v != 1) { "FAIL  selftest: PolyC literal pytest\n"; fails++; }
+  v = 0;
+  InspectInvocations("a.HC",
+    "  res = SpawnAndCapture(\"tox\", \"-e\");\n",
+    &v);
+  if (v != 1) { "FAIL  selftest: PolyC literal tox\n"; fails++; }
+  v = 0;
+  InspectInvocations("a.HC",
+    "  res = SpawnAndCapture(\"poetry\", \"run\");\n",
+    &v);
+  if (v != 1) { "FAIL  selftest: PolyC literal poetry\n"; fails++; }
   // Known PolyC edge inventory.
   v = 0;
   InspectKnownPolyCEdge("tools/quality/llvm-gep01-test.HC", &v);
@@ -750,6 +883,21 @@ I64 RunSelfTests()
   v = 0;
   InspectKnownPolyCEdge("tools/quality/unrelated.HC", &v);
   if (v != 0) { "FAIL  selftest: known PolyC edge negative\n"; fails++; }
+  // C2.1.3 — IFPE matrix.
+  if (!IsForbiddenPythonExecutable("python"))      { "FAIL  selftest: IFPE python\n"; fails++; }
+  if (!IsForbiddenPythonExecutable("python3"))     { "FAIL  selftest: IFPE python3\n"; fails++; }
+  if (!IsForbiddenPythonExecutable("python3.11"))  { "FAIL  selftest: IFPE python3.11\n"; fails++; }
+  if (!IsForbiddenPythonExecutable("pip"))         { "FAIL  selftest: IFPE pip\n"; fails++; }
+  if (!IsForbiddenPythonExecutable("pip3"))        { "FAIL  selftest: IFPE pip3\n"; fails++; }
+  if (!IsForbiddenPythonExecutable("pytest"))      { "FAIL  selftest: IFPE pytest\n"; fails++; }
+  if (!IsForbiddenPythonExecutable("tox"))         { "FAIL  selftest: IFPE tox\n"; fails++; }
+  if (!IsForbiddenPythonExecutable("poetry"))      { "FAIL  selftest: IFPE poetry\n"; fails++; }
+  if (!IsForbiddenPythonExecutable("pypy"))        { "FAIL  selftest: IFPE pypy\n"; fails++; }
+  if (!IsForbiddenPythonExecutable("pypy3"))       { "FAIL  selftest: IFPE pypy3\n"; fails++; }
+  if (IsForbiddenPythonExecutable("pythonista"))   { "FAIL  selftest: IFPE pythonista\n"; fails++; }
+  if (IsForbiddenPythonExecutable("pippin"))       { "FAIL  selftest: IFPE pippin\n"; fails++; }
+  if (IsForbiddenPythonExecutable("toxicity"))     { "FAIL  selftest: IFPE toxicity\n"; fails++; }
+  if (IsForbiddenPythonExecutable("poetry2"))      { "FAIL  selftest: IFPE poetry2\n"; fails++; }
   if (fails == 0) "SELFTEST=PASS\n";
   else            "SELFTEST=FAIL (%d failures)\n", fails;
   return fails;
