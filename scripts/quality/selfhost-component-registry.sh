@@ -1,16 +1,27 @@
 #!/bin/sh
 # scripts/quality/selfhost-component-registry.sh
 #
-# ACT-POLYC-SELFHOST-SURFACE01-CORRECTION01 C2.1 IMPL.
-# Thin launcher for the (currently Python) selfhost
-# component registry validator. The substantive logic
-# is in scripts/quality/selfhost-component-registry.py
-# (subject to C2.2 PolyC rewrite).
+# ACT-POLYC-SELFHOST-SURFACE01-CORRECTION01 C2.2 IMPL.
 #
-# This shell wrapper exists so the Makefile selfhost-
-# registry-validate target no longer invokes python3
-# directly; this is the F-NO-PYTHON transitional seam.
+# Thin dispatch wrapper for the PolyC-native selfhost
+# component registry validator. The substantive logic is
+# in tools/selfhost/selfhost-component.HC (compiled to
+# build/selfhost-component by ./hcc).
+#
+# Public Make contract (preserved):
+#   make selfhost-registry-validate
+#
+# No registry parsing. No validation logic.
 
 set -eu
+
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
-exec python3 "$SCRIPT_DIR/selfhost-component-registry.py" "$@"
+REPO_ROOT=$(cd "$SCRIPT_DIR/../.." && pwd)
+BIN="${REPO_ROOT}/build/selfhost-component"
+
+if [ ! -x "$BIN" ]; then
+    echo "selfhost-component-registry.sh: PolyC binary missing: $BIN" >&2
+    exit 3
+fi
+
+exec "$BIN" validate "$@"

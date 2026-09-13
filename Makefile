@@ -12,7 +12,7 @@ HCC_ENABLE_LLVM ?= OFF
 
 default: all
 
-.PHONY: all gate-fast gate-push install-hooks llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test selfhost-component-build selfhost-component-test selfhost-registry-validate
+.PHONY: all gate-fast gate-push install-hooks llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test selfhost-component-binary selfhost-component-build selfhost-component-test selfhost-component-selftest selfhost-registry-validate
 
 # To add sqlite3 support add -DHCC_LINK_SQLITE3=1 to the below like so:
 #```
@@ -992,6 +992,41 @@ bootstrap04-lexer-seam-test: bootstrap04-stage3
 # the actual work target that exports COMPONENT/STAGE as
 # environment variables and references them nowhere in
 # the recipe body.
+# ACT-POLYC-SELFHOST-SURFACE01-CORRECTION01 C2.2 IMPL —
+# PolyC-native self-host control plane. The dispatcher scripts
+# (tools/selfhost/selfhost-component.sh and
+# scripts/quality/selfhost-component-registry.sh) exec this
+# binary. Build it with the existing stage0 compiler.
+#
+# Canonical invocation:
+#   make selfhost-component-binary
+#
+# Note: ./hcc is the stage0 PolyC compiler; libtos.a in
+# build/test-prefix/lib provides SpawnAndCapture + friends.
+selfhost-component-binary: test-prefix-install
+	./hcc --install-dir=./build/test-prefix -c \
+		tools/selfhost/selfhost-component.HC \
+		-o build/selfhost-component.o
+	cc build/selfhost-component.o \
+		-L./build/test-prefix/lib -ltos \
+		-o build/selfhost-component
+	@if [ ! -x ./build/selfhost-component ]; then \
+		echo "selfhost-component-binary: build failed" >&2; \
+		exit 1; \
+	fi
+
+# Convenience target: build the binary and run its selftest.
+selfhost-component-selftest: selfhost-component-binary
+	SHC_BIN=./build/selfhost-component \
+	SHC_REPO_ROOT=. \
+	./build/selfhost-component selftest
+
+# Make selfhost-component-* depend on the binary so a fresh
+# tree builds it automatically.
+selfhost-component-build: selfhost-component-binary
+selfhost-component-test:  selfhost-component-binary
+selfhost-registry-validate: selfhost-component-binary
+
 selfhost-component-build-guard:
 ifndef COMPONENT
 	$(error selfhost-component-build: COMPONENT=<id> required (e.g. make selfhost-component-build COMPONENT=identifier_scanner STAGE=0))
