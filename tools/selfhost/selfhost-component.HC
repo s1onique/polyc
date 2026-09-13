@@ -1352,6 +1352,15 @@ U0 SHCSelfTest(U8 *binary, U8 *repo_root)
         restore_argv[3] = NULL;
         I64 rrc = SpawnAndCapture("/bin/cp", restore_argv, &out, &err);
         Free(out); Free(err);
+        // Clean up the backup file (we don't want to leave a .bak
+        // residue in the repository tree).
+        U8 *rm_argv[3];
+        rm_argv[0] = "/bin/rm";
+        rm_argv[1] = backup;
+        rm_argv[2] = NULL;
+        U8 *out2 = NULL, *err2 = NULL;
+        SpawnAndCapture("/bin/rm", rm_argv, &out2, &err2);
+        Free(out2); Free(err2);
         if (rc == 1 && rrc == 0) {
           SHCVerdictPass(&v, "N2_unknown_component_lookup_FAIL");
         } else {
