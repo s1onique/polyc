@@ -1,0 +1,24 @@
+# PolyC Factory — Canonical Historical Cardinality-1 Exception Registry
+#
+# Location: docs/factory/HISTORICAL-CARDINALITY-EXCEPTIONS.tsv
+#
+# This file is the single forward-compatible location for
+# Cardinality-1 CLOSE-commits count violations. It is
+# APPEND-ONLY: existing rows SHALL NOT be rewritten or
+# deleted. New rows are appended at the bottom.
+#
+# Schema (tab-separated):
+#   exception_id  act_id                              close_count  classification_kind           additional_closes_sha_list  authoritative_close_sha  discovered_by_act                             notes
+#
+# classification_kind ∈ {HYGIENE_FOLLOWUP_SHOULD_BE_EVIDENCE, DELIBERATE_SEPARATE_ACT_CLOSURES, HYBRID}
+#
+# This file is NOT inside any `evidence/ACT-*/` tree, so
+# appending here does NOT violate strict F14.
+#
+# Migrated from evidence/ACT-POLYC-FACTORY-NO-SHA-OF-SELF01/correction04/historical-cardinality-exceptions.txt
+# by ACT-POLYC-FACTORY-HISTORICAL-EXCEPTIONS-REGISTRY01 (PASS_WITH_HYGIENE_RESIDUE).
+EXCEPTION_1	ACT-POLYC-TOOLING-RUNTIME01-CORRECTION06	2	HYGIENE_FOLLOWUP_SHOULD_BE_EVIDENCE	f031bc7+23bc92a	f031bc7	ACT-POLYC-FACTORY-NO-SHA-OF-SELF01-CORRECTION04	hygiene follow-up carried CLOSE trailer in error; should have carried EVIDENCE. F14 residue; not fixed.
+EXCEPTION_2	ACT-POLYC-TOOLING-RUNTIME01-CORRECTION05	2	HYGIENE_FOLLOWUP_SHOULD_BE_EVIDENCE	31ad461+62a7be1	31ad461	ACT-POLYC-FACTORY-NO-SHA-OF-SELF01-CORRECTION04	follow-up commit correcting the main's SHA-of-self violation. Should have carried EVIDENCE (or been opened as a separate CORRECTION06 ACT). F14 residue; not fixed.
+EXCEPTION_3	ACT-POLYC-FACTORY-NO-SHA-OF-SELF01	5	HYBRID	96ecd83+da7d197+3d9b275+e83ae45+5e92143	5e92143	ACT-POLYC-FACTORY-NO-SHA-OF-SELF01-CORRECTION04	hybrid: original pair (96ecd83+da7d197) is hygiene-follow-up-should-be-EVIDENCE; the 3 corrections are deliberate separate ACT closures, NOT violations of Cardinality-1.
+EXCEPTION_4	ACT-POLYC-BOOTSTRAP01	2	HYGIENE_FOLLOWUP_SHOULD_BE_EVIDENCE	4b42e06+147069f	4b42e06	ACT-POLYC-BOOTSTRAP01-CORRECTION01	ROADMAP follow-up commit (147069f) carried CLOSE trailer in error; should have carried EVIDENCE. F14 residue; not fixed by re-mutation. Original closure-truth pack (4b42e06) remains authoritative.
+EXCEPTION_5	ACT-POLYC-BOOTSTRAP01-CORRECTION01	2	HYGIENE_FOLLOWUP_SHOULD_BE_EVIDENCE	ecf4ad9+ace0e05	ecf4ad9	ACT-POLYC-FACTORY-HISTORICAL-EXCEPTIONS-REGISTRY01	ROADMAP follow-up commit (ace0e05) carried CLOSE trailer in error; should have carried EVIDENCE. F14 residue; not fixed by re-mutation. The card-carrying CLOSE trailer on ace0e05 is mechanical truth; git notes cannot reclassify it. A `git notes` annotation has been added to ace0e05 marking the intended phase as EVIDENCE for documentation purposes; the commit body itself is immutable per F14. Authoritative CLOSE: ecf4ad9.

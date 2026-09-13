@@ -619,6 +619,63 @@ A future ACT-POLYC-FACTORY-CLOSE-CARDINALITY01 (non-
 blocking) could enforce this invariant mechanically and
 classify the historical exceptions.
 
+### §24.1 — Truth hierarchy (codified by ACT-POLYC-FACTORY-HISTORICAL-EXCEPTIONS-REGISTRY01)
+
+The Factory recognizes three separate channels for commit/ACT
+metadata, each with distinct authority and distinct mutability
+semantics:
+
+```text
+COMMIT TRAILERS       = mechanical truth (immutable; F-GIT-IMMUTABILITY)
+GIT NOTES             = annotation only (do not modify commit object)
+EXCEPTION REGISTRY    = governance disposition (append-only)
+```
+
+A verifier that queries commit trailers reads **mechanical truth**.
+A verifier that reads git notes reads **annotation**, never truth.
+A verifier that consults the exception registry reads **governance
+disposition**, which may downgrade a mechanical-truth violation to
+non-blocking but cannot repair the underlying commit body.
+
+### §24.2 — Exception registry location (canonical)
+
+The canonical forward-compatible location for Cardinality-1
+CLOSE-commits-count exceptions is:
+
+```text
+docs/factory/HISTORICAL-CARDINALITY-EXCEPTIONS.tsv
+```
+
+This file lives outside any `evidence/ACT-*/` tree, so appending
+to it does NOT violate strict F14. The file is **append-only**;
+existing rows SHALL NOT be rewritten or deleted.
+
+A previous architecture kept the registry inside
+`evidence/ACT-POLYC-FACTORY-NO-SHA-OF-SELF01/correction04/historical-cardinality-exceptions.txt`,
+which forced any new exception to mutate a closed correction ACT's
+evidence tree. That architecture was corrected by
+ACT-POLYC-FACTORY-HISTORICAL-EXCEPTIONS-REGISTRY01; the legacy
+file is F14-immutable as of its pre-BOOTSTRAP content (SHAs
+tracked by the registry).
+
+### §24.3 — Git notes do NOT reclassify commits
+
+`git notes add` stores supplemental metadata in a separate ref
+(normally `refs/notes/commits`) and does **not** modify the
+commit object itself. Therefore:
+
+```text
+"commit X is reclassified as EVIDENCE via git notes" = MECHANICALLY FALSE
+"commit X has a documentation note annotation:
+    INTENDED_PHASE=EVIDENCE,
+    HISTORICAL_TRAILER=CLOSE,
+    DISPOSITION=EXCEPTION_N" = ACCURATE
+```
+
+Going forward, exception records and commit annotations MUST use
+the second form (annotation only). The first form is forbidden as
+it implies a commit-body change that did not occur.
+
 ### Strict F14 reading for corrections
 
 The historical-evidence rule (F14) forbids mutating any
