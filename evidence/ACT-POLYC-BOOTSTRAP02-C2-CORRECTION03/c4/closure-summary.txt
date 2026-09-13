@@ -1,0 +1,164 @@
+ACT-POLYC-BOOTSTRAP02-C2-CORRECTION03 — C4 CLOSE —
+closure summary
+==================================================
+
+VERDICT
+-------
+ACT-Verdict                          = PASS (no residue)
+
+IDENTITY
+--------
+Entry HEAD:  ddd24de9d2cacba2174aa2c08f80858bb863b3ab
+             (end of ACT-POLYC-BOOTSTRAP02-C2-CORRECTION02)
+Final HEAD:  <this-close-commit>
+Working tree at close: clean
+Branch:      main
+git replace -l at close: empty
+APPEND_ONLY_START_POINT (baf5dbd7...): not violated
+
+ROOT CAUSE / FINDING
+--------------------
+A re-reviewer audit of the CORRECTION02 trail
+re-classified two previously-documented residues:
+
+  R1 l->start_after divergence:
+       P2 cleanup. BLOCKS_NEXT=NO. The grep audit
+       is complete.
+
+  R2 l->ptr_after divergence at EOF:
+       RE-CLASSIFIED from P1 (latent) to P0
+       (production semantic defect). The +1 advance
+       at EOF is undefined behaviour per the C memory
+       model: src + 4 is a one-past-end pointer that
+       the next lexNextChar would dereference.
+       C4 CLOSE of the parent ACT was BLOCKED until
+       this was fixed.
+
+This ACT was bounded to ONE production-source fix
+(the FIRST production mutation in this entire
+bootstrap work), authorized by the re-reviewer:
+
+  src/lexer.c::lexIdentifier stage1 branch:
+    l->ptr   = (char *)final_ptr;
+    l->start = (char *)final_ptr;
+
+Two lines. The +1 branch (which was UB at EOF) is
+removed; the AT-the-byte branch becomes
+unconditional.
+RED
+---
+C1 RED packet at
+evidence/ACT-POLYC-BOOTSTRAP02-C2-CORRECTION03/c1/:
+  README.md
+  defect-p0-eof-cursor-ub.txt
+  defect-r1-start-after.txt
+  corrected-stage1-branch.txt
+  desired-postcondition.txt
+  required-result.txt
+
+IMPLEMENTATION
+--------------
+C2 IMPL (commit f301384 — the FIRST production
+mutation in this bootstrap):
+
+  src/lexer.c::lexIdentifier stage1 branch:
+    -      if (end_off >= src_len || *final_ptr == '\0') {
+    -          l->ptr = (char *)(final_ptr + 1);
+    -      } else {
+    -          l->ptr = (char *)final_ptr;
+    -      }
+    +    l->ptr = (char *)final_ptr;
+    +    l->start = (char *)final_ptr;
+
+  Makefile: simplified the bootstrap02-lexer-seam-test
+  verdict logic now that the fix achieves 6/6
+  (no more residue stripping).
+
+  Evidence:
+    evidence/ACT-POLYC-BOOTSTRAP02-C2-CORRECTION03/c2/
+      lexer-seam-postfix-witness.txt
+      required-result.txt
+
+  Word fix in CORRECTION02 evidence:
+    "zero build-system change" ->
+    "ZERO_PRODUCTION_BUILD_SEMANTIC_CHANGE"
+
+GATES
+-----
+All gates PASS at C3 entry (commit 65c6369 captures
+the verbatim transcripts):
+
+  make bootstrap01-test               PASS  15/15
+  make bootstrap02-test               PASS  15/15 byte-identical
+  make bootstrap02-cursor-test        PASS  6/6 byte-identical
+  make bootstrap02-stage1             PASS
+  make bootstrap02-lexer-seam-test    PASS  6/6 (no residue)
+  stage0 vs stage1 byte-equality      PASS  5/5 real sources
+  production hermetic build           PASS
+  gate-fast                           PASS
+  factory-v2                          PASS  35/35
+  factory-halt-classification         PASS  12/12
+  factory-append-only                 PASS  11/11
+  shell-loc-gate                      PASS
+  factory-closure-status              PASS  6/6
+
+Cardinality-1 invariant verified:
+
+  git log --all-match --oneline \
+      --grep='^ACT: ACT-POLYC-BOOTSTRAP02-C2-CORRECTION03$' \
+      --grep='^ACT-Phase: CLOSE$'
+
+  returns exactly 1 commit (this commit).
+
+SCOPE
+-----
+Production-source mutation:           YES (2 lines,
+                                       bounded to
+                                       lexIdentifier
+                                       stage1 branch)
+B1 component mutation:                NONE
+B0 component mutation:                NONE
+Other production source files:        NONE
+Build-system behaviour:               ZERO_PRODUCTION_BUILD_SEMANTIC_CHANGE
+                                       (only test-only
+                                       target modified)
+Authorization scope:                  lexIdentifier
+                                       stage1 branch ONLY
+
+RESIDUE
+-------
+R1 — REPAIRED (l->start_after divergence).
+R2 — REPAIRED (EOF cursor UB).
+PUSH_RESIDUE GEP01_D1_D2 — unchanged from predecessor.
+Mechanical hygiene items (trailing whitespace,
+extra blank line at EOF in lexer-seam-direct-
+witness.txt; "build-system change" wording) —
+all classified GOVERNANCE / BLOCKS_NEXT=NO per
+the re-reviewer; not engineering action items.
+
+NEXT ACT
+--------
+After this correction ACT closes, the corrected
+ACT-POLYC-BOOTSTRAP02 C2 implementation is now
+AUTHORITATIVELY GREEN with NO residue:
+
+  - PILLAR_A_OBJECT_PARITY              PASS 5/5
+  - PILLAR_B_COMPONENT_CURSOR_MODEL     PASS 6/6
+  - PILLAR_B_PRIME_PRODUCTION_LEXER     PASS 6/6 (NO RESIDUE)
+  - EOF_CURSOR_STATE_EQUIVALENCE        PASS
+  - EOF_POINTER_SAFETY                  PASS
+  - NON_EOF_PRODUCTION_CURSOR_EQ        PASS 6/6
+
+The parent ACT-POLYC-BOOTSTRAP02 C4 CLOSE is no
+longer blocked. The parent ACT may now proceed
+to its own C3 EVIDENCE phase (which may be opened
+in parallel during this correction's tail; the
+re-reviewer explicitly said "broad corpus while
+the bug is known is useful").
+
+A separate (out-of-scope) cleanup ACT may now be
+considered to fold the new EOF-correct stage1
+behaviour into a regression test on more diverse
+input shapes. The reviewer did not require this.
+
+No SHA-of-self claims (DOCTRINE.md §22).

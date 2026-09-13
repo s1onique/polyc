@@ -1,0 +1,53 @@
+ACT-POLYC-BOOTSTRAP02-C2-CORRECTION03 — C4 CLOSE —
+residue
+==================================================
+
+This ACT closes with the following residue:
+
+R1 — REPAIRED (l->start_after divergence)
+   The stage1 branch of lexIdentifier now sets
+   l->start = (char *)final_ptr, matching the
+   legacy lexNextChar's final l->start
+   assignment. No consumer reads l->start
+   between lexIdentifier and the next
+   lexNextChar (verified by grep).
+
+R2 — REPAIRED (EOF cursor UB)
+   The stage1 branch no longer advances l->ptr
+   past the EOF NUL. l->ptr now stays at
+   (char *)final_ptr (= src + strlen(src) at
+   EOF), which is dereferenceable per the C
+   memory model. The next lexNextChar reads
+   src[strlen(src)] = '\0' and correctly returns
+   EOF.
+
+R3 — Pre-existing PUSH_RESIDUE GEP01_D1_D2
+   Unchanged from predecessor ACTs.
+
+R4 — INFORMATIONAL
+   The factory-v2 test reports VERDICT=PASS_WITH_
+   NONBLOCKING_RESIDUE. This reflects pre-existing
+   residue carried by the C1-CORRECTION01
+   predecessor and is not introduced by this
+   correction.
+
+R5 — Mechanical hygiene (reviewer-noted,
+   BLOCKS_NEXT=NO per re-reviewer verdict)
+   - Trailing whitespace at line 172 of
+     evidence/ACT-POLYC-BOOTSTRAP02/c2/
+     lexer-seam-direct-witness.txt (the line
+     "  input           = abc " has a trailing
+     space because the test input is "abc ").
+   - Extra blank line at EOF of the same file.
+   - Wording "zero build-system change" used in
+     CORRECTION02 evidence; reworded to
+     "ZERO_PRODUCTION_BUILD_SEMANTIC_CHANGE"
+     in this ACT (the test-only Makefile target
+     IS a build-system addition, but it has no
+     effect on `make all`).
+
+No further engineering action is warranted on R5.
+R5 is governance/prose, not engineering.
+
+No further correction ACTs are required before
+ACT-POLYC-BOOTSTRAP02 C3 EVIDENCE may proceed.
