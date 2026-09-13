@@ -1,0 +1,95 @@
+ACT-POLYC-SELFHOST-SURFACE01-CORRECTION01 — C1
+selfhost-behavior-freeze.txt
+============================================
+
+This file records the behavior of the predecessor ACT's
+selfhost tooling at C1 entry, so the migration oracle
+has a frozen target.
+
+REGISTRY VALIDATOR
+==================
+
+  $ python3 scripts/quality/selfhost-component-registry.py \
+        docs/factory/SELF-HOST-COMPONENTS.tsv
+  PASS: 1 component row(s) validated against
+        docs/factory/SELF-HOST-COMPONENTS.tsv
+    - identifier_scanner [STABLE]
+      source=tools/bootstrap/bootstrap02-ident.HC
+      symbol=BootstrapScanIdent
+  rc=0
+
+NEGATIVE CONTROLS (13/13 PASS)
+==============================
+
+  N1_current_registry_valid_PASS           rc=0
+  N2_unknown_component_lookup_FAIL         rc=1
+  N3_duplicate_component_id_FAIL           rc=1
+  N4_missing_source_path_FAIL              rc=1
+  N5_source_outside_repository_FAIL        rc=1
+  N6_missing_symbol_FAIL                   rc=1
+  N7_invalid_language_FAIL                 rc=1
+  N8_invalid_state_FAIL                    rc=1
+  N9_unknown_stage_FAIL                    rc=1
+  N10_malformed_field_count_FAIL           rc=1
+  N11_output_aliases_source_FAIL           rc=1
+  N12a_disabled_row_validates_PASS         rc=0
+  N12b_disabled_row_refuses_build_FAIL     rc=1
+
+STAGE BUILDS (predecessor C4 evidence)
+======================================
+
+  GENERIC_STAGE0_BUILD  = PASS  (rc=0)
+  GENERIC_STAGE1_BUILD  = PASS  (rc=0)
+  GENERIC_STAGE2_BUILD  = PASS  (rc=0)
+  GENERIC_PROVENANCE    = PASS
+  GENERIC_HISTORICAL_ARTIFACT_EQ = 3/3
+
+DIRECT TESTS
+============
+
+  bootstrap02-cursor-test       6/6 PASS
+  bootstrap04-test              15/15 PASS
+  bootstrap04-cursor-test       6/6 PASS
+  bootstrap04-lexer-seam-test   6/6 PASS
+
+B3 CORPUS CONSERVATION
+======================
+
+  175/175 byte-equal
+  6/6 FAIL/FAIL equivalent
+  0 divergence
+
+B3 ERROR CONSERVATION
+=====================
+
+  4/4 equivalent
+  0 mismatch
+
+The above are reproduced from the predecessor's
+c4 evidence directory and verified mechanically
+to still hold at C1 entry by:
+
+  $ ls evidence/ACT-POLYC-SELFHOST-SURFACE01/c4/
+  README.md  acceptance-matrix.txt  closure-summary.txt
+  factory-gates.txt  final-b3-corpus.txt  final-b3-error-corpus.txt
+  final-direct-tests.txt  final-generic-builds.txt
+  final-historical-reconstruction.txt  final-historical-vs-generic.tsv
+  final-negative-controls.txt  final-provenance.tsv
+  final-registry.txt  patch-hygiene.txt  residue.txt
+  roadmap-transition.txt  scope-audit.txt
+
+This freeze MUST hold identically at C3 EVIDENCE and
+C4 CLOSE of the correction ACT (Option A and B paths).
+For Option C, additional C2 IMPL commits will produce
+fresh evidence packets; the freeze is the oracle they
+must match.
+
+COMPILE SEMANTIC DELTA
+======================
+
+  COMPILER_SEMANTIC_DELTA = ZERO
+  NEW_COMPILER_COMPONENT_MIGRATED = NO
+  NEW_BOOTSTRAP_STAGE = NO
+
+(No change. C1 entry is identical to predecessor C4
+with respect to compiler semantics.)

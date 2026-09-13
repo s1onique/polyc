@@ -1,0 +1,119 @@
+ACT-POLYC-SELFHOST-SURFACE01-CORRECTION01 — C1
+scope-decomposition-note.txt
+============================================
+
+CONTEXT
+=======
+
+The proposed ACT (§0 mission) merges six bounded concerns
+into one 66-section document. The Factory's documented
+discipline (F7, F15, F-CONVERGENCE) and its execution
+precedent (MIGRATE-GEP01, MIGRATE-GEP01-CORRECTION01,
+MIGRATE-GEP01-CORRECTION02; MECHANICAL-BLOCKING01;
+GIT-METADATA-SIMPLIFY01; APPEND-ONLY-GUARD01) treat
+governance and migration as separate bounded ACTs.
+
+SIX LOGICALLY DISTINCT BOUNDED CONCERNS
+=======================================
+
+  C-1. Repair the false-green SELFHOST-SURFACE01 closure.
+       Boundary: predecessor ACT's own added surface
+       (Makefile:977/982/985; the new shell files
+       selfhost-component-registry-test.sh and
+       tools/selfhost/selfhost-component.sh).
+       Mechanical evidence: B1 (shell-loc-gate) + B3
+       (Make injection). See predecessor-false-green.txt.
+
+  C-2. Establish F-NO-PYTHON doctrine + PolyC checker.
+       Boundary: governance invariant; one new .HC file
+       (factory-no-python-check.HC or similar) +
+       AGENTS.md/DOCTRINE.md pointer.
+       Out of scope: existing Python tool MIGRATION
+       (that's C-4).
+
+  C-3. Establish F-POLYC-TOOLS doctrine + PolyC checker.
+       Boundary: governance invariant; one new .HC file
+       (factory-polyc-tools-check.HC) + AGENTS.md/DOCTRINE.md
+       pointer + LEGACY-NON-POLYC-TOOLS.tsv (frozen
+       baseline).
+       Out of scope: existing Python tool MIGRATION
+       (that's C-4).
+
+  C-4. Migrate ~9 tracked Python tools to PolyC.
+       Boundary: each Python file is one tool. Precedent
+       (MIGRATE-GEP01) is one bounded ACT per migration.
+       9 separate ACTs (or 3-4 ACTs if multiple files
+       are bundled with mechanical justification).
+
+  C-5. Rewire callers, harden Make injection boundary,
+       update shell budget to include new tools.
+       Boundary: call-graph and build-system surface.
+       Includes: LEGACY-NON-POLYC-TOOLS.tsv baseline
+       update; shell-loc-gate baseline update for any
+       tiny wrapper that survives C-4.
+
+  C-6. Re-prove S0/B3, write C4 supersede-correct
+       machinery, transition ROADMAP.
+       Boundary: verification and ROADMAP mutation.
+       Belongs in the SAME correction ACT only after
+       C-4 is complete, OR in a separate ROADMAP
+       transition ACT once C-4 lands.
+
+DECISION OPTIONS
+================
+
+The proposed ACT merges all six into one ACT. The
+Factory precedent says: don't.
+
+  Option A. Execute C-1, C-2, C-3, and the
+            Make-injection portion of C-5 in this
+            bounded CORRECTION01, then HALT with
+            residue entries for C-4 (one bounded ACT
+            per Python migration) and C-6 (CLOSE
+            machinery in a separate bounded ACT after
+            C-4 lands).
+
+  Option B. Open a separate CORRECTION01 that repairs
+            ONLY the predecessor's false-green closure
+            (C-1 + Make injection hardening from C-5),
+            record F-NO-PYTHON / F-POLYC-TOOLS as P1
+            residue to be opened as a separate bounded
+            doctrine ACT, and migrate Python tools one
+            ACT at a time following MIGRATE-GEP01
+            precedent.
+
+  Option C. Execute the full 66-section ACT as
+            proposed, accepting the F7/F15/CONVERGENCE
+            violations.
+
+RECOMMENDATION
+==============
+
+Recommend Option B.
+
+Reasoning:
+
+1. The F1 / F2 defects are bounded and reproducible.
+   They are exactly what a CORRECTION01 is for.
+
+2. F-NO-PYTHON and F-POLYC-TOOLS are governance
+   invariants, not corrections. The Factory precedent
+   (MECHANICAL-BLOCKING01, GIT-METADATA-SIMPLIFY01,
+   APPEND-ONLY-GUARD01) treats governance as its own
+   bounded ACT class.
+
+3. Python tool migration is bounded work that the
+   precedent (MIGRATE-GEP01, MIGRATE-GEP01-CORRECTION01,
+   MIGRATE-GEP01-CORRECTION02) handles one tool at a
+   time, with each migration as a self-contained ACT.
+
+4. The user's broader goal (PolyC as the mandatory
+   tooling language) is correctly captured as
+   P1 residue with a roadmap-aligned execution plan,
+   not as a single mega-ACT.
+
+This recommendation is recorded as F11 residue, NOT
+as a self-authorized scope contraction. The user may
+still choose Option A or Option C.
+
+NO PRODUCTION MUTATION HAS OCCURRED AT C1.

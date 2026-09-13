@@ -1,0 +1,49 @@
+ACT-POLYC-SELFHOST-SURFACE01-CORRECTION01 — C1
+c1-required-result.txt
+============================================
+
+Per the proposed ACT §12 (Binding C1 result):
+
+  PREDECESSOR_SELFHOST_MODEL          = ENGINEERING_PASS
+  PREDECESSOR_CLOSURE                 = FALSE_GREEN
+  PYTHON_PRESENT                      = YES  (9 tracked .py files)
+  PYTHON_INVENTORY_COMPLETE           = YES
+  SUBSTANTIVE_SELFHOST_SHELL          = PRESENT  (197 LOC > 50)
+  F_NO_PYTHON                         = NOT_ENFORCED
+  F_POLYC_TOOLS                       = NOT_ENFORCED
+  C1_TO_C2_GATE                       = OPEN  (subject to scope
+                                                 decomposition
+                                                 below)
+
+ADDITIONAL C1 FINDINGS NOT IN §12
+=================================
+
+Finding C1.X1 — Make recipe injection (B1+B3)
+  Severity: SAFETY, BLOCKS_NEXT=YES
+  Surface: Makefile:977/982/985
+  See: make-argument-red.txt
+  Attributable to: predecessor ACT C2 IMPL.
+
+Finding C1.X2 — gate-fast does not invoke shell-loc-gate
+  Severity: GOVERNANCE, BLOCKS_NEXT=NO
+  See: predecessor-false-green.txt §Finding F3.
+
+Finding C1.X3 — Python runtime dependency from PolyC tool
+  Surface: tools/quality/llvm-gep01-test.HC:445..1338
+           shells out to scripts/quality/llvm-cap-table-verifier.py
+  Severity: PRODUCTION (if F-NO-PYTHON is enforced without
+            an exception; otherwise GOVERNANCE).
+  See: python-callgraph.tsv last row.
+
+Finding C1.X4 — F-NO-PYTHON / F-POLYC-TOOLS doctrine
+decomposition question.
+  Per F7 and F15, the F-NO-PYTHON and F-POLYC-TOOLS
+  doctrine changes, plus the migration of every tracked
+  Python tool, plus the shell-budget consolidation, plus
+  the Make injection hardening, plus the B3 re-proof, plus
+  the C4 supersede-and-correct machinery, are six
+  logically distinct bounded concerns.
+
+  This C1 packet records the scope as the user proposed
+  it; the C2 IMPL strategy is recorded in
+  scope-decomposition-note.txt.

@@ -1,0 +1,161 @@
+ACT-POLYC-SELFHOST-SURFACE01-CORRECTION01 — C1
+predecessor-false-green.txt
+============================================
+
+PREDECESSOR = ACT-POLYC-SELFHOST-SURFACE01 (CLOSED PASS
+at commit defee14f1365a19a83e396a6814e15879d134503).
+
+TWO MECHANICALLY-DEMONSTRABLE FALSE-GREEN FINDINGS
+===================================================
+
+Finding F1: substantive new shell file added without
+baseline.txt update.
+----------------------------------------------------
+
+ACT-POLYC-SELFHOST-SURFACE01 C2 IMPL commit 22ba1d1 added:
+
+  scripts/quality/selfhost-component-registry-test.sh (197 LOC)
+  tools/selfhost/selfhost-component.sh              (228 LOC)
+
+Neither file was recorded in the existing
+scripts/quality/shell-loc-gate.sh baseline at
+evidence/ACT-POLYC-TOOLING-SHELL-INVENTORY01/c1/baseline.txt.
+
+The SHELL-INVENTORY01 ACT (CLOSED PASS) explicitly
+froze the ratchet:
+
+    "NEW shell files: <=50 LOC enforced by
+                    scripts/quality/shell-loc-gate.sh
+     EXISTING shell files: cannot grow past frozen baseline."
+
+Mechanically:
+
+  $ bash scripts/quality/shell-loc-gate.sh \
+        scripts/quality \
+        evidence/ACT-POLYC-TOOLING-SHELL-INVENTORY01/c1/baseline.txt
+  FAIL  NEW   scripts/quality/selfhost-component-registry-test.sh
+       cur=197 > 50
+
+(B1: required executable gate actually fails on the
+relevant subject and the failure is attributable to
+that subject, per DOCTRINE.md §25.)
+
+tools/selfhost/selfhost-component.sh is not flagged
+because tools/ is not under the shell-loc-gate root
+(by default scripts/quality). Its 228-LOC count
+violates the prospective ratchet intent but the
+mechanically-enforced surface only covers
+scripts/quality/*.sh.
+
+Finding F2: Make recipe injection via COMPONENT / STAGE.
+----------------------------------------------------
+
+The Makefile lines 977 and 982 in the predecessor ACT
+read:
+
+  selfhost-component-build:
+        @test -n "$(COMPONENT)" || ...
+        @test -n "$(STAGE)"    || ...
+        ./tools/selfhost/selfhost-component.sh \
+            build COMPONENT=$(COMPONENT) STAGE=$(STAGE)
+
+GNU Make expands variable references in recipes before
+sending the command to the shell. With:
+
+  COMPONENT='foo;touch /tmp/sentinel_C'
+  STAGE='0;touch /tmp/sentinel_S'
+
+a sentry run produced:
+
+  $ ls -la /tmp/sentinel_*
+  -rw-r--r--  ...  /tmp/sentinel_C
+  -rw-r--r--  ...  /tmp/sentinel_S
+
+Sentinels were created. Both COMPONENT and STAGE
+injection vectors execute arbitrary commands. The
+shell script's own arg-validation runs AFTER the
+injected `;touch` already executed.
+
+(B1 + B3: a mechanically demonstrated safety
+invariant is violated. A bug-bounty or CI injection
+can hijack the build host.)
+
+The selfhost-registry-validate recipe (line 985)
+also invokes python3 unconditionally, which is a
+parallel Python-runtime dependency defect.
+
+Finding F3 (governance, non-blocking): gate-fast does
+NOT invoke shell-loc-gate.
+----------------------------------------------------
+
+scripts/quality/gate-fast.sh (250 LOC) does not invoke
+scripts/quality/shell-loc-gate.sh. ROADMAP.md line 760
+records this as a known wiring gap ("gate-fast does
+not yet invoke shell-loc-gate; that wiring is
+downstream work in SHELL-BUDGET01"). Per F14 this is
+historical evidence, not a defect attributable to
+SELFHOST-SURFACE01 alone; classify as
+GOVERNANCE / BLOCKS_NEXT = NO.
+
+WHAT IS NOT MECHANICALLY-DEMONSTRABLE FROM THIS ACT
+===================================================
+
+- The predecessor's negative-control matrix (13/13 PASS
+  for the registry validator) is reproducible and
+  truthful. It does NOT itself constitute a defect.
+- The 175/175 corpus byte-equality and 4/4 error
+  equivalence claims are mechanically reproducible.
+  See evidence/ACT-POLYC-SELFHOST-SURFACE01/c4/.
+- The "GENERIC_HISTORICAL_ARTIFACT_EQ = 3/3" claim is
+  mechanically supported by the c4 evidence packet.
+
+WHAT THE FALSE-GREEN CORRECTION IS NOT CLAIMING
+===============================================
+
+The correction is NOT claiming:
+
+  * the predecessor's S0 component framework is
+    functionally broken;
+  * the predecessor's B3 corpus conservation is wrong;
+  * the predecessor's negative-control matrix is
+    fraudulent;
+  * the predecessor's compiler semantic delta is
+    non-zero;
+  * the predecessor's "GENERIC_HISTORICAL_ARTIFACT_EQ
+    = 3/3" claim is false.
+
+The correction IS claiming:
+
+  * the predecessor's CLOSE failed to invoke
+    shell-loc-gate against its own C2 IMPL additions,
+    which violates the ratchet declared by the
+    predecessor's own predecessor (SHELL-INVENTORY01);
+  * the predecessor's CLOSE failed to detect an
+    unsanitised shell-expansion in its new Makefile
+    targets, leaving the build host open to argument
+    injection;
+  * both defects are B1-attributable to the
+    predecessor ACT's own added surface.
+
+CLASSIFICATION
+==============
+
+F1 (shell-loc-gate):
+  HALT_CLASS  = PRODUCTION
+  BLOCKS_NEXT = YES
+  ATTRIBUTABLE_TO = ACT-POLYC-SELFHOST-SURFACE01 C2 IMPL
+                    (commit 22ba1d1)
+
+F2 (Make injection):
+  HALT_CLASS  = SAFETY
+  BLOCKS_NEXT = YES
+  ATTRIBUTABLE_TO = ACT-POLYC-SELFHOST-SURFACE01 C2 IMPL
+                    (commit 22ba1d1, Makefile lines
+                    977/982/985)
+
+F3 (gate-fast wiring):
+  HALT_CLASS  = GOVERNANCE
+  BLOCKS_NEXT = NO
+  ATTRIBUTABLE_TO = ACT-POLYC-TOOLING-SHELL-INVENTORY01
+                    (carry-forward; not a SELFHOST-
+                    SURFACE01-introduced defect)

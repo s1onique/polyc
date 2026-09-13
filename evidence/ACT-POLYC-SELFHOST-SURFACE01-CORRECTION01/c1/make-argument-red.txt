@@ -1,0 +1,93 @@
+ACT-POLYC-SELFHOST-SURFACE01-CORRECTION01 — C1
+make-argument-red.txt
+============================================
+
+OBJECTIVE
+=========
+
+Mechanically reproduce the B1/B3 defect described in
+predecessor-false-green.txt §Finding F2: unsanitised
+shell-expansion of COMPONENT and STAGE inside
+Makefile recipes added by the predecessor ACT C2 IMPL.
+
+REPRODUCTION
+============
+
+  $ set +e
+  $ COMPONENT='foo;touch /tmp/polyc_inj_C' \
+    STAGE='0;touch /tmp/polyc_inj_S' \
+    make selfhost-component-build
+  ./tools/selfhost/selfhost-component.sh build \
+      COMPONENT=foo;touch /tmp/polyc_inj_C \
+      STAGE=0;touch /tmp/polyc_inj_S
+  selfhost-component: STAGE=<n> is required
+  $ echo rc=$?
+  rc=0
+
+  $ ls -la /tmp/polyc_inj_*
+  -rw-r--r--  ...  /tmp/polyc_inj_C
+  -rw-r--r--  ...  /tmp/polyc_inj_S
+
+Sentinels CREATED. The `make` recipe line
+("./tools/selfhost/selfhost-component.sh build
+COMPONENT=$(COMPONENT) STAGE=$(STAGE)") expands the
+user-supplied variables BEFORE the shell evaluates the
+command, so the injected `;touch /tmp/...` is executed
+by the shell that is interpreting the recipe.
+
+CLEANUP
+=======
+
+After reproduction:
+
+  $ rm -f /tmp/polyc_inj_*
+
+ATTRIBUTION
+===========
+
+The vulnerable recipes are at:
+
+  Makefile:977  selfhost-component-build
+  Makefile:982  selfhost-component-test
+  Makefile:985  selfhost-registry-validate (also
+                invokes python3 unconditionally)
+
+These were added in commit 22ba1d1 (C2 IMPL) and
+survived through defee14 (C4 CLOSE).
+
+WHAT THIS REPRODUCTION ESTABLISHES
+==================================
+
+It establishes the canonical B1+B3 closure predicate
+that the C2 IMPL of the correction ACT must satisfy:
+
+  (a) The COMPONENT and STAGE variables must NOT be
+      expanded into recipe command text by Make.
+
+  (b) They must be passed via exported environment or
+      argv, validated by the receiving program, and
+      rejected on any shell-metacharacter input.
+
+  (c) The negative-control test must run with:
+
+      COMPONENT='x;touch sentinel_C'
+      STAGE='0;touch sentinel_S'
+
+      and observe:
+
+      sentinel_C ABSENT
+      sentinel_S ABSENT
+      rc != 0 (or rc = 0 if the program defensively
+      ignored the input)
+
+OUT-OF-SCOPE FOR THIS REPRODUCTION
+==================================
+
+This file does NOT attempt a comprehensive Makefile
+audit for every $(VAR) inside recipe text. It only
+reproduces the specific defect attributable to the
+predecessor ACT's own C2 IMPL.
+
+Other $(VAR) interpolations in the Makefile exist;
+they were inherited from prior ACTs and are out of
+scope for this correction ACT.
