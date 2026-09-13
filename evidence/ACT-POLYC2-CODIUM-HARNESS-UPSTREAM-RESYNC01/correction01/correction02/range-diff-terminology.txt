@@ -1,0 +1,66 @@
+CORRECTION02: range-diff terminology fix
+========================================
+
+Reviewer finding (R3):
+  current-ref-verification.txt contained the line:
+      where merge-base = 7d7b983686fac2239a47288fe4b8e5dbbb617d55
+  used to describe the range-diff input. That SHA is the
+  post-fetch tip of origin/main (= UPSTREAM_HEAD), not the
+  historical merge base. The historical merge base was
+  e544a48f192606256af9f348befec0c852b6387b (recorded by the
+  parent ACT as MERGE_BASE).
+
+Why the range-diff is still semantically valid:
+  Git's `A..B` revision range is the commit-set difference
+  `reachable(B) \ reachable(A)`. It does NOT require A to be
+  the merge base of B; any reachable-exclusion endpoint works.
+
+  In the post-rebase graph:
+      origin/main  = 7d7b983  (= UPSTREAM_HEAD)
+      backup       = 1f8250b  (= OLD_HEAD)
+      harness HEAD = 12e4e7a  (= rebased 1f8250b)
+
+  `git range-diff 7d7b983..backup origin/main..harness` selects:
+      LEFT  = commits reachable from backup but NOT from origin/main
+            = the 9 pre-ACT local-only commits that were rebased
+      RIGHT = commits reachable from harness but NOT from origin/main
+            = the 9 rebased commits (new SHAs)
+
+  This selects exactly the pre-ACT vs post-ACT local delta, which
+  is what we want to compare. The reachability-exclusion endpoint
+  is the post-fetch upstream tip, not the merge base, but it is a
+  correct endpoint because every commit on the local-side of the
+  original divergence is reachable from backup but NOT from
+  post-fetch origin/main (the 132 upstream-only commits are not
+  ancestors of backup).
+
+Corrected terminology (forward-only):
+  ORIGINAL_MERGE_BASE    = e544a48f192606256af9f348befec0c852b6387b
+  CURRENT_UPSTREAM_BASE  = 7d7b983686fac2239a47288fe4b8e5dbbb617d55
+                           (= UPSTREAM_HEAD; the reachability-exclusion
+                            endpoint actually used in the range-diff
+                            inputs)
+  RANGE_DIFF_OLD_RANGE   = CURRENT_UPSTREAM_BASE..BACKUP_BRANCH
+                           (reachability-exclusion: upstream tip .. backup)
+  RANGE_DIFF_NEW_RANGE   = origin/main..harness/codium-polyc2
+
+  NOTE: CURRENT_UPSTREAM_BASE is intentionally used as the left
+  reachability-exclusion endpoint; it is NOT the historical
+  merge base. The reachability-subtraction semantics of `A..B`
+  make this endpoint correct for the intended purpose.
+
+Mechanical evidence the range-diff selects the right commits:
+  $ git rev-list --count 7d7b983..backup/ACT-POLYC2-CODIUM-HARNESS-UPSTREAM-RESYNC01-1f8250b
+  9
+  $ git rev-list --count origin/main..harness/codium-polyc2
+  9
+  Both sides yield exactly the 9 pre/post local commits; the
+  range-diff accounting is therefore complete (one rebased commit
+  per pre-ACT local commit, modulo the `=` vs `!` patch-difference
+  markers, which are inspected and explained in the parent
+  range-diff.txt).
+
+Effect on prior conclusions:
+  R3 is purely a terminology / evidence-description defect.
+  The range-diff selection is correct and the prior
+  preservation conclusion stands.

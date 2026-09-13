@@ -1,0 +1,120 @@
+CORRECTION01 GEP01 signature extraction procedure
+================================================
+
+Inputs (parent ACT evidence, immutable):
+  ../gate-push-harness.txt   (SHA-256 b8e05bfa88cf94aa95154f349a1b40ca7f20f62e2b9bdcf8a17d95832d195b64)
+  ../gate-push-main.txt      (SHA-256 7cee64fed6e2e05cdfe648b9f1d7020d80af14f8791d7daf3c6816bdef9d36ad)
+
+Procedure:
+  1. sh extract-signature.sh ../gate-push-harness.txt gate-push-harness.signature.txt
+  2. sh extract-signature.sh ../gate-push-main.txt    gate-push-main.signature.txt
+  3. cmp -s gate-push-harness.signature.txt gate-push-main.signature.txt
+     exit code recorded in signature-cmp.txt
+
+extract-signature.sh (canonical text in this directory) does:
+
+  a. sed pass 1 -- path normalization:
+       /private/var/folders/.../*                    -> <SANDBOX_TMPDIR>
+       /var/folders/...*xcrun_db-XXX                 -> /var/folders/<CACHE>
+       build/quality/gep01/run-PID-PID               -> build/quality/gep01/run-<PID>
+       /run/current-system/sw/bin/llvm-as            -> <LLVM_TOOL>
+       /run/current-system/sw/bin/opt                -> <LLVM_TOOL>
+       /run/current-system/sw/bin/python3            -> <PYTHON>
+
+  b. sed pass 2 -- drop run-specific / non-semantic lines:
+       SUBJECT=...                       (different per run)
+       install_dir   = ...               (sandbox path)
+       -- Configuring done ...           (timing)
+       -- Build files have been written to: ...
+       -- Install configuration: ...
+       -- Up-to-date: ...
+       -- Installing: ...
+       [ N%] ...                        (build progress)
+       ar: error: couldn't create cache file ... errno=Operation not permitted
+                                         (sandbox-env artifact, present in both runs)
+       ranlib: error: ... errno=Operation not permitted
+       clang: warning: argument unused during compilation: '-shared'
+       cc -shared -fPIC -c /tmp/holyc-asm.s ...
+       ar rcs libtos.a all.o
+       ld: Undefined symbols:
+             _Errno, referenced from:
+             _MALLOC in all.o
+       clang: error: linker command failed with exit code 1 (use -v to see invocation)
+       cc -dynamiclib -Wl,-install_name,...
+       CMake Warning at cmake_install.cmake:91 ...
+         hcc -lib exited with code 1; this is expected when all.o references _Errno.
+         Continuing.
+       ERROR: Failed to execute command: 'cc -dynamiclib ...'
+       Building C object CMakeFiles/hcc.dir/...
+       Building C object asm/CMakeFiles/tasm.dir/...
+       Linking C executable ...
+       Built target hcc
+       Install the project...
+       make: *** [llvm-gep01-test] Error 1   (printed as part of stderr interleaving)
+       *.c:L:C: warning: ...   (compiler source warnings -- the source path
+                                under the SANDBOX_TMPDIR was already normalized,
+                                but the per-source-line text is identical between
+                                the two runs because they share the same source
+                                tree; these lines are kept as build-state evidence
+                                and were also preserved by the normalization
+                                layer; see the kept tail of the signature for
+                                the deterministic warning set)
+       *.h:L:C: note: ...
+       *.c:L:C: note: ...
+       N warning generated
+       *.o$                                (object file paths)
+       === ACT-POLYC-TOOLING-MIGRATE-GEP01 PolyC harness ===
+                                           (banner only, contents below are kept)
+
+  c. awk -- collapse runs of blank lines to a single blank.
+
+Determinism guarantees:
+  * The signature includes:
+      - GEP01 harness preamble (tool names, paths, seed-failure value)
+      - All PASS/FAIL test classification lines (deterministic order,
+        written by the GEP01 harness)
+      - The terminal summary block:
+          ----
+          GEP01_PASS=...
+          GEP01_FAIL=...
+          STATUS=...
+          CHECK=gep01 STATUS=...
+          REASON=gep01 exited with status N
+          VERDICT=FAIL
+  * The signature excludes run-specific tokens:
+      - Subject SHA, sandbox tmpdir, PIDs, xcrun cache file names,
+        build progress percentages, compile timings.
+
+  Same input source -> same signature (sed + line-grep is deterministic).
+  Any two logs whose PASS/FAIL classifications and summary block are
+  equal -> identical signature files (proven by cmp_exit=0 below).
+
+Raw-log non-equality (D2 foundation):
+  cmp -s ../gate-push-harness.txt ../gate-push-main.txt  -> exit 1
+  (cmp_exit=1)
+  Reason: SUBJECT SHA, sandbox tmpdirs, PIDs, and build timing all differ.
+  See ../correction01-original-log-hashes.txt for SHA-256.
+
+Signature equality (D2 corrected claim):
+  cmp -s gate-push-harness.signature.txt gate-push-main.signature.txt
+  -> exit 0
+  (cmp_exit=0)
+  See ../correction01-signature-cmp.txt.
+
+Both signatures contain exactly:
+  GEP01_PASS=26
+  GEP01_FAIL=4
+  STATUS=FAIL
+  CHECK=gep01 STATUS=FAIL
+  REASON=gep01 exited with status 2
+  VERDICT=FAIL
+  PASS count from '^PASS  ' lines  : 26
+  FAIL count from '^FAIL  ' lines  : 4
+  Distinct FAIL classification strings:
+    FAIL  readat.HC: SHAPE_DEPENDENT counter = ? (expected >= 1): shape_dependent marker not found in stderr
+    FAIL  IR_GEP = REJECTED (sibling opcode still rejected): could not read cap verifier output
+    FAIL  IR_LEA = REJECTED (sibling opcode still rejected): could not read cap verifier output
+    FAIL  IR_IADD = SUPPORTED (preserved, GEP01 is per-shape subset): could not read cap verifier output
+
+All four logical failure classes are present in BOTH signatures; the
+extractor makes no per-log decisions.

@@ -1,0 +1,335 @@
+POLYC_GATE=push
+rm -rf ./build ./hcc
+cmake -S ./src \
+		-B ./build \
+		-G 'Unix Makefiles' \
+		-DCMAKE_C_COMPILER=gcc \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_INSTALL_PREFIX=<SANDBOX_TMPDIR> \
+		-DCMAKE_C_FLAGS='-Wextra -Wall -Wpedantic' \
+		-DCMAKE_EXPORT_COMPILE_COMMANDS=on \
+		-DHCC_ENABLE_JIT=on \
+		-DHCC_ENABLE_LLVM=ON \
+		&& /Library/Developer/CommandLineTools/usr/bin/make -C ./build -j2
+-- The C compiler identification is AppleClang 15.0.0.15000040
+-- The CXX compiler identification is AppleClang 15.0.0.15000040
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/gcc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE
+-- LLVM 22 C-API: /run/current-system/sw/bin/llvm-config (22.1.8)
+-- Generating done (0.0s)
+<SANDBOX_TMPDIR> warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+    Ast *decl = (Ast *)mapGetLen(cc->global_env, key, key_len);
+                                                 ^~~
+<SANDBOX_TMPDIR> note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+<SANDBOX_TMPDIR> warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_funcs, key, key_len);
+                                               ^~~
+<SANDBOX_TMPDIR> note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+<SANDBOX_TMPDIR> warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_functions, key, key_len);
+                                                   ^~~
+<SANDBOX_TMPDIR> note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+<SANDBOX_TMPDIR> warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->global_env, key + 1, key_len - 1);
+                                                ^~~~~~~
+<SANDBOX_TMPDIR> note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+<SANDBOX_TMPDIR> warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_funcs, key + 1, key_len - 1);
+                                               ^~~~~~~
+<SANDBOX_TMPDIR> note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+<SANDBOX_TMPDIR> warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_functions, key + 1, key_len - 1);
+                                                   ^~~~~~~
+<SANDBOX_TMPDIR> note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+<SANDBOX_TMPDIR> warning: comparison of integers of different signs: 'u64' (aka 'unsigned long') and 'int' [-Wsign-compare]
+                cand->asmfname->len == key_len &&
+                ~~~~~~~~~~~~~~~~~~~ ^  ~~~~~~~
+<SANDBOX_TMPDIR> warning: incompatible integer to pointer conversion passing 'int' to parameter of type 'VecType *' (aka 'struct VecType *') [-Wint-conversion]
+    Vec *v = vecNew(n);
+                    ^
+<SANDBOX_TMPDIR> note: passing argument to parameter 'type' here
+Vec *vecNew(VecType *type);
+                     ^
+7 warnings generated.
+1 warning generated.
+<SANDBOX_TMPDIR> warning: use of out-of-scope declaration of 'llValidateCapabilityContract' [-Wout-of-scope-function]
+        llValidateCapabilityContract();
+        ^
+<SANDBOX_TMPDIR> note: previous declaration is here
+void llValidateCapabilityContract(void);
+     ^
+1 warning generated.
+<SANDBOX_TMPDIR> warning: unused variable 'i64' [-Wunused-variable]
+    LLVMTypeRef i64 = llType(lc, IR_TYPE_I64);
+                ^
+<SANDBOX_TMPDIR> warning: variable 'bidx' set but not used [-Wunused-but-set-variable]
+    int bidx = 0;
+        ^
+<SANDBOX_TMPDIR> warning: unused function 'irInstrListLen' [-Wunused-function]
+static int irInstrListLen(List *l) {
+           ^
+3 warnings generated.
+CHECK=build STATUS=PASS
+cmake -S ./src \
+		-B ./build/test-prefix-install-build \
+		-G 'Unix Makefiles' \
+		-DCMAKE_C_COMPILER=gcc \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_INSTALL_PREFIX=<SANDBOX_TMPDIR> \
+		-DCMAKE_C_FLAGS='-Wextra -Wall -Wpedantic' \
+		-DHCC_ENABLE_JIT=on \
+		-DHCC_ENABLE_LLVM=ON
+-- The C compiler identification is AppleClang 15.0.0.15000040
+-- The CXX compiler identification is AppleClang 15.0.0.15000040
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/gcc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE
+-- LLVM 22 C-API: /run/current-system/sw/bin/llvm-config (22.1.8)
+-- Generating done (0.0s)
+/Library/Developer/CommandLineTools/usr/bin/make -C ./build/test-prefix-install-build install
+<SANDBOX_TMPDIR> warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+    Ast *decl = (Ast *)mapGetLen(cc->global_env, key, key_len);
+                                                 ^~~
+<SANDBOX_TMPDIR> note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+<SANDBOX_TMPDIR> warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_funcs, key, key_len);
+                                               ^~~
+<SANDBOX_TMPDIR> note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+<SANDBOX_TMPDIR> warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_functions, key, key_len);
+                                                   ^~~
+<SANDBOX_TMPDIR> note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+<SANDBOX_TMPDIR> warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->global_env, key + 1, key_len - 1);
+                                                ^~~~~~~
+<SANDBOX_TMPDIR> note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+<SANDBOX_TMPDIR> warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_funcs, key + 1, key_len - 1);
+                                               ^~~~~~~
+<SANDBOX_TMPDIR> note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+<SANDBOX_TMPDIR> warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_functions, key + 1, key_len - 1);
+                                                   ^~~~~~~
+<SANDBOX_TMPDIR> note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+<SANDBOX_TMPDIR> warning: comparison of integers of different signs: 'u64' (aka 'unsigned long') and 'int' [-Wsign-compare]
+                cand->asmfname->len == key_len &&
+                ~~~~~~~~~~~~~~~~~~~ ^  ~~~~~~~
+7 warnings generated.
+<SANDBOX_TMPDIR> warning: incompatible integer to pointer conversion passing 'int' to parameter of type 'VecType *' (aka 'struct VecType *') [-Wint-conversion]
+    Vec *v = vecNew(n);
+                    ^
+<SANDBOX_TMPDIR> note: passing argument to parameter 'type' here
+Vec *vecNew(VecType *type);
+                     ^
+1 warning generated.
+<SANDBOX_TMPDIR> warning: use of out-of-scope declaration of 'llValidateCapabilityContract' [-Wout-of-scope-function]
+        llValidateCapabilityContract();
+        ^
+<SANDBOX_TMPDIR> note: previous declaration is here
+void llValidateCapabilityContract(void);
+     ^
+1 warning generated.
+<SANDBOX_TMPDIR> warning: unused variable 'i64' [-Wunused-variable]
+    LLVMTypeRef i64 = llType(lc, IR_TYPE_I64);
+                ^
+<SANDBOX_TMPDIR> warning: variable 'bidx' set but not used [-Wunused-but-set-variable]
+    int bidx = 0;
+        ^
+<SANDBOX_TMPDIR> warning: unused function 'irInstrListLen' [-Wunused-function]
+static int irInstrListLen(List *l) {
+           ^
+3 warnings generated.
+  _Errno, referenced from:
+cc -dynamiclib -Wl,-install_name,<SANDBOX_TMPDIR> all.o -o libtos.dylib -lpthread -lc -lm 
+[0;31mERROR: [0mFailed to execute command: 'cc -dynamiclib -Wl,-install_name,<SANDBOX_TMPDIR> all.o -o libtos.dylib -lpthread -lc -lm '
+
+CHECK=install STATUS=PASS
+cmake -S ./src \
+		-B ./build/test-prefix-install-build \
+		-G 'Unix Makefiles' \
+		-DCMAKE_C_COMPILER=gcc \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_INSTALL_PREFIX=<SANDBOX_TMPDIR> \
+		-DCMAKE_C_FLAGS='-Wextra -Wall -Wpedantic' \
+		-DHCC_ENABLE_JIT=on \
+		-DHCC_ENABLE_LLVM=ON
+-- The C compiler identification is AppleClang 15.0.0.15000040
+-- The CXX compiler identification is AppleClang 15.0.0.15000040
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/gcc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE
+-- LLVM 22 C-API: /run/current-system/sw/bin/llvm-config (22.1.8)
+-- Generating done (0.0s)
+/Library/Developer/CommandLineTools/usr/bin/make -C ./build/test-prefix-install-build install
+<SANDBOX_TMPDIR> warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+    Ast *decl = (Ast *)mapGetLen(cc->global_env, key, key_len);
+                                                 ^~~
+<SANDBOX_TMPDIR> note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+<SANDBOX_TMPDIR> warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_funcs, key, key_len);
+                                               ^~~
+<SANDBOX_TMPDIR> note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+<SANDBOX_TMPDIR> warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_functions, key, key_len);
+                                                   ^~~
+<SANDBOX_TMPDIR> note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+<SANDBOX_TMPDIR> warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->global_env, key + 1, key_len - 1);
+                                                ^~~~~~~
+<SANDBOX_TMPDIR> note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+<SANDBOX_TMPDIR> warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_funcs, key + 1, key_len - 1);
+                                               ^~~~~~~
+<SANDBOX_TMPDIR> note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+<SANDBOX_TMPDIR> warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_functions, key + 1, key_len - 1);
+                                                   ^~~~~~~
+<SANDBOX_TMPDIR> note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+<SANDBOX_TMPDIR> warning: comparison of integers of different signs: 'u64' (aka 'unsigned long') and 'int' [-Wsign-compare]
+                cand->asmfname->len == key_len &&
+                ~~~~~~~~~~~~~~~~~~~ ^  ~~~~~~~
+7 warnings generated.
+<SANDBOX_TMPDIR> warning: incompatible integer to pointer conversion passing 'int' to parameter of type 'VecType *' (aka 'struct VecType *') [-Wint-conversion]
+    Vec *v = vecNew(n);
+                    ^
+<SANDBOX_TMPDIR> note: passing argument to parameter 'type' here
+Vec *vecNew(VecType *type);
+                     ^
+1 warning generated.
+<SANDBOX_TMPDIR> warning: use of out-of-scope declaration of 'llValidateCapabilityContract' [-Wout-of-scope-function]
+        llValidateCapabilityContract();
+        ^
+<SANDBOX_TMPDIR> note: previous declaration is here
+void llValidateCapabilityContract(void);
+     ^
+1 warning generated.
+<SANDBOX_TMPDIR> warning: unused variable 'i64' [-Wunused-variable]
+    LLVMTypeRef i64 = llType(lc, IR_TYPE_I64);
+                ^
+<SANDBOX_TMPDIR> warning: variable 'bidx' set but not used [-Wunused-but-set-variable]
+    int bidx = 0;
+        ^
+<SANDBOX_TMPDIR> warning: unused function 'irInstrListLen' [-Wunused-function]
+static int irInstrListLen(List *l) {
+           ^
+3 warnings generated.
+  _Errno, referenced from:
+cc -dynamiclib -Wl,-install_name,<SANDBOX_TMPDIR> all.o -o libtos.dylib -lpthread -lc -lm 
+[0;31mERROR: [0mFailed to execute command: 'cc -dynamiclib -Wl,-install_name,<SANDBOX_TMPDIR> all.o -o libtos.dylib -lpthread -lc -lm '
+
+./hcc --install-dir=<SANDBOX_TMPDIR> \
+		tools/quality/llvm-gep01-test.HC \
+		-o ./build/llvm-gep01-test
+./build/llvm-gep01-test --hcc=./hcc --llvm-install-dir=<SANDBOX_TMPDIR>
+hcc           = ./hcc
+llvm_as       = <LLVM_TOOL>
+llvm_opt      = <LLVM_TOOL>
+python        = <PYTHON>
+scratch_root  = build/quality/gep01
+scratch_child = build/quality/gep01/run-<PID>
+seed-failure = no
+
+PASS  toolchain: hcc + llvm-as + opt available
+PASS  read0.HC: load i8, ptr
+PASS  read2.HC: getelementptr i8 + load i8
+PASS  readat.HC: getelementptr i8 with runtime index + load i8
+FAIL  readat.HC: SHAPE_DEPENDENT counter = ? (expected >= 1): shape_dependent marker not found in stderr
+PASS  twodigits.HC: 2 load i8 + 1 getelementptr i8 (>=2 distinct reads, >=1 GEP for non-zero index)
+PASS  ReadAt emitted getelementptr i8, ptr %base, i64 %index
+PASS  GEP result used as load address (load i8, ptr %gep_i8)
+PASS  read0.ll: llvm-as accepted
+PASS  read2.ll: llvm-as accepted
+PASS  read-at.ll: llvm-as accepted
+PASS  b0-multiread.ll: llvm-as accepted
+PASS  read0.bc: opt --passes=verify accepted
+PASS  read2.bc: opt --passes=verify accepted
+PASS  read-at.bc: opt --passes=verify accepted
+PASS  b0-multiread.bc: opt --passes=verify accepted
+PASS  read0.ll: zero ptrtoint/inttoptr
+PASS  read0.ll: zero getelementptr inbounds
+PASS  read2.ll: zero ptrtoint/inttoptr
+PASS  read2.ll: zero getelementptr inbounds
+PASS  read-at.ll: zero ptrtoint/inttoptr
+PASS  read-at.ll: zero getelementptr inbounds
+PASS  b0-multiread.ll: zero ptrtoint/inttoptr
+PASS  b0-multiread.ll: zero getelementptr inbounds
+PASS  i64idx.HC: rejected with LLVM_BACKEND_UNSUPPORTED_POINTER (scale=8)
+FAIL  IR_GEP = REJECTED (sibling opcode still rejected): could not read cap verifier output
+FAIL  IR_LEA = REJECTED (sibling opcode still rejected): could not read cap verifier output
+FAIL  IR_IADD = SUPPORTED (preserved, GEP01 is per-shape subset): could not read cap verifier output
+PASS  readat: byte-identical across two runs
+PASS  twodigits: byte-identical across two runs
+----
+GEP01_PASS=26
+GEP01_FAIL=4
+STATUS=FAIL
+CHECK=gep01 STATUS=FAIL
+REASON=gep01 exited with status 2
+VERDICT=FAIL

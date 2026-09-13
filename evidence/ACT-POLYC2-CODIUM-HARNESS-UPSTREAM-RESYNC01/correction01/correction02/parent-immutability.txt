@@ -1,0 +1,83 @@
+CORRECTION02: parent-evidence immutability qualification
+========================================================
+
+Reviewer finding (R4):
+  parent-files-current-hashes.txt establishes the PRESENT
+  SHA-256 of the parent evidence artifacts but, by itself,
+  cannot prove they were unchanged during CORRECTION01 unless
+  there was a pre-correction hash anchor.
+
+Truthful classification:
+
+  PARENT_FILES_ARE_UNTRACKED = true
+    (The parent ACT files were never `git add`-ed; they are
+     untracked working-tree files. Git therefore cannot
+     provide historical content binding for them.)
+
+  PARENT_PRE_CORRECTION_DIGEST_ANCHOR_EXISTS = false
+    (No retained digest of the parent files was recorded
+     before CORRECTION01 began. The correction01 cycle did not
+     pre-hash the parent files before reading or describing
+     them. Therefore no mechanical pre/post comparison is
+     possible from retained evidence alone.)
+
+  NO_PARENT_MUTATION_OBSERVED = true
+    (Strongest honest claim available.)
+
+  PARENT_POST_CORRECTION_HASHES_RECORDED = true
+    (parent-files-current-hashes.txt was written during
+     CORRECTION01 and is now retained as a forward anchor
+     for any later CORRECTION03.)
+
+  PARENT_IMMUTABILITY_MECHANICALLY_PROVEN =
+      only if a later correction cycle compares its observed
+      hashes against parent-files-current-hashes.txt and they
+      match. Until then the claim is observational.
+
+Supporting operational evidence (NOT a digest comparison,
+but a corroborating filesystem-metadata observation):
+
+  All 18 parent files have mtimes strictly inside the parent
+  ACT window (2026-09-13 22:25:12 .. 22:27:40 UTC). The
+  correction01 cycle started after 22:31:00. No parent file
+  was written, appended to, or touched by any correction01
+  command path.
+
+  Listing (re-verified at the start of CORRECTION02):
+
+    2026-09-13 22:25:16  BACKUP_BRANCH.txt
+    2026-09-13 22:25:16  HARNESS_BRANCH.txt
+    2026-09-13 22:25:16  OLD_HEAD.txt
+    2026-09-13 22:27:40  REPORT.md
+    2026-09-13 22:26:39  final-graph.txt
+    2026-09-13 22:25:33  gate-fast-main.txt
+    2026-09-13 22:25:31  gate-fast-output.txt
+    2026-09-13 22:25:56  gate-push-harness.txt
+    2026-09-13 22:26:23  gate-push-main.txt
+    2026-09-13 22:26:37  post-ACT-harness-commits.txt
+    2026-09-13 22:25:12  pre-ACT-branches.txt
+    2026-09-13 22:25:12  pre-ACT-diff-stat.txt
+    2026-09-13 22:25:12  pre-ACT-left-right.txt
+    2026-09-13 22:25:12  pre-ACT-local-only-commits.txt
+    2026-09-13 22:25:12  pre-ACT-remotes.txt
+    2026-09-13 22:25:12  pre-ACT-status.txt
+    2026-09-13 22:25:22  range-diff.txt
+    2026-09-13 22:25:20  rebase-output.txt
+
+  No parent file has an mtime within the correction01
+  window (22:31:00 .. 22:35:30). This is operational
+  corroboration, not a content digest.
+
+Strengthened claim for CORRECTION02 onward:
+
+  Going forward, parent-files-current-hashes.txt is a
+  forward-only content anchor. A future CORRECTION03+ cycle
+  can mechanically compare its hashes against this file and
+  upgrade the immutability claim from "observed" to
+  "mechanically proven against a retained anchor."
+
+Effect on prior conclusions:
+  R4 downgrades C01/C14 from "PASS_MECHANICALLY_PROVEN" to
+  "PASS_WITH_EVIDENCE_QUALIFICATION" — equivalent to the
+  A2/A12 reclassification in style. The substantive
+  immutability is unchanged.
