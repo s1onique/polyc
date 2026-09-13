@@ -1,0 +1,51 @@
+ACT-POLYC-BOOTSTRAP01-CORRECTION01 C2 — EOF strip delta
+=======================================================
+
+Before C2 IMPL, `git diff --check <entry>..HEAD` reported:
+
+  tools/bootstrap/bootstrap01-lexer.HC:224:
+      new blank line at EOF.
+  tools/quality/bootstrap01-lexer-oracle.c:333:
+      new blank line at EOF.
+  tools/quality/bootstrap01-lexer-test.HC:337:
+      new blank line at EOF.
+
+EOF bytes before strip (xxd -p of last 5 bytes):
+
+  tools/bootstrap/bootstrap01-lexer.HC        3b 0a 7d 0a 0a
+  tools/quality/bootstrap01-lexer-oracle.c    3b 0a 7d 0a 0a
+  tools/quality/bootstrap01-lexer-test.HC     3b 0a 7d 0a 0a
+
+  (`;.\n}.\n\n` — closing brace, newline, then a second
+  trailing newline = blank line at EOF)
+
+EOF bytes after strip:
+
+  tools/bootstrap/bootstrap01-lexer.HC        3b 0a 7d 0a
+  tools/quality/bootstrap01-lexer-oracle.c    3b 0a 7d 0a
+  tools/quality/bootstrap01-lexer-test.HC     3b 0a 7d 0a
+
+  (`;.\n}.\n` — closing brace followed by exactly one
+  newline = standard POSIX text file)
+
+Total: 3 lines removed, no semantic change.
+
+After this commit:
+
+  $ git diff --check 72f61e3..HEAD
+  evidence/ACT-POLYC-BOOTSTRAP01/c3/fresh-build.txt:144:
+      trailing whitespace.
+
+  (only the captured-evidence residue remains; DEFECT-3)
+
+B0 differential verification at this point:
+
+  $ rm -f ./build/bootstrap01-*
+  $ make bootstrap01-test
+  BOOTSTRAP01_CASES=15
+  BOOTSTRAP01_RUNS=30
+  BOOTSTRAP01_PASS=15
+  BOOTSTRAP01_FAIL=0
+  STATUS=PASS
+
+No semantic regression from EOF strip.

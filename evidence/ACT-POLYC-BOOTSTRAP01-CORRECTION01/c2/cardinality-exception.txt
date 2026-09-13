@@ -1,0 +1,43 @@
+ACT-POLYC-BOOTSTRAP01-CORRECTION01 C2 — cardinality exception
+==============================================================
+
+Predecessor ACT:
+
+  ACT-POLYC-BOOTSTRAP01
+
+CLOSE-commits count (per `git log --all-match --oneline
+--grep='^ACT: ACT-POLYC-BOOTSTRAP01$' --grep='^ACT-Phase:
+CLOSE$'`):
+
+  2 commits
+    - 4b42e06 (main, closure-truth pack)
+    - 147069f (ROADMAP B0 outcome block)
+
+Disposition (per DOCTRINE.md §24):
+
+  Authoritative CLOSE: 4b42e06
+  147069f is re-classified as a docs-only follow-up that
+  *should* have carried `ACT-Phase: EVIDENCE` per the
+  forward Cardinality-1-CLOSE rule.
+
+Recording:
+
+  evidence/ACT-POLYC-FACTORY-NO-SHA-OF-SELF01/correction04/
+    historical-cardinality-exceptions.txt
+  has been appended with EXCEPTION 4 enumerating this
+  violation.
+
+The correction ACT itself (`ACT-POLYC-BOOTSTRAP01-
+CORRECTION01`) is a separate ACT id; its own CLOSE
+commit will carry `ACT: ACT-POLYC-BOOTSTRAP01-CORRECTION01`
+and not contribute to the predecessor ACT's CLOSE
+cardinality.
+
+Reviewer command at C4:
+
+  test "$(git log --all-match --oneline \
+    --grep='^ACT: ACT-POLYC-BOOTSTRAP01-CORRECTION01$' \
+    --grep='^ACT-Phase: CLOSE$' | wc -l)" = 1
+
+The correction ACT's own Cardinality-1 invariant must
+remain satisfied at CLOSE.

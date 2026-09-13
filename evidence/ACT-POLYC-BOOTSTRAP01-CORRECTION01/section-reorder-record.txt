@@ -1,0 +1,75 @@
+ACT-POLYC-BOOTSTRAP01-CORRECTION01
+DEFECT-5 — ACT document section ordering repair
+================================================
+
+ORIGINAL FILE:  docs/acts/ACT-POLYC-BOOTSTRAP01.md
+CORRECTED COPY: evidence/ACT-POLYC-BOOTSTRAP01-CORRECTION01/
+                  ACT-POLYC-BOOTSTRAP01-CORRECTED.md
+
+Original (broken) section ordering (from `grep -n '^## '`):
+
+  §0  Mission              L  52
+  §2  Golden B0 ...        L  66
+  §3  Token repr           L 101
+  §4  Frozen lex sub       L 122
+  §5  C1 RED succ-dep      L 157
+  §7  C1 RED oracle        L 187
+  §8  C1 fixtures          L 210
+  §9  Out-cap contract     L 233
+  §10 No hidden C impl     L 251
+  §11 F2 recon             L 270
+  §12 Alloc decision       L 276
+  §13 C2 implementation    L 285
+  §14 Token kind stab      L 316
+  §15 C2 runner            L 323
+  §16 Required pipeline    L 329
+  §17 Differential oracle  L 350
+  §18 Determinism gate     L 368
+  §19 Src immutability     L 373
+  §20 Boundary controls    L 378
+  §21 B0 feature fence     L 397
+  §22 GEP01 D1/D2          L 410
+  §23 gate-push            L 421
+  §26 Fresh-tree evidence  L 429
+  §27 C3 runtime witness   L 437
+  §28 Required packet      L 443
+  §29 Production scope     L 449
+  §30 Build target         L 466
+  §31 No replacement       L 484
+  §32 HALT taxonomy        L 495
+  §33 Commit topology      L 517
+  §34 Push policy          L 526
+  §35 B0 PASS roadmap      L 534
+  §36 B1 handoff question  L 553
+  §37 Closure truth block  L 563
+  -- post (unnumbered H2) --
+  Execution metadata       L 570
+  Closure handoff          L 591
+  -- OUT OF PLACE --
+  §24 Canonical accept     L 608   <-- after Closure handoff
+  §25 Strong B0 closure    L 613   <-- after Closure handoff
+  §6  C1 dependency matrix L 630   <-- after §25
+  §1  Frozen B0 arch       L 695   <-- last
+
+Corrected ordering (corrected copy):
+
+  §0..§37 in numerical order, then
+  "Execution metadata" then "Closure handoff".
+
+Semantic content of each numbered section: byte-identical
+to the original (verified by Python section_map diff:
+total section differences = 0).
+
+This is a structural authoring defect only. It does not
+affect the B0 engineering result, the closure verdict,
+or any executable acceptance semantics. The original
+ACT document remains in place as F14 historical
+evidence.
+
+Reviewer command:
+
+  grep -n '^## ' \
+    evidence/ACT-POLYC-BOOTSTRAP01-CORRECTION01/\
+    ACT-POLYC-BOOTSTRAP01-CORRECTED.md
+
+The corrected copy is the structurally-correct reading.

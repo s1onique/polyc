@@ -1,0 +1,51 @@
+ACT-POLYC-BOOTSTRAP01-CORRECTION01 C2 — required result
+=======================================================
+
+End-of-C2 mechanical state:
+
+EOF hygiene:
+
+  $ git diff --check 72f61e3..HEAD
+  evidence/ACT-POLYC-BOOTSTRAP01/c3/fresh-build.txt:144:
+      trailing whitespace.
+  $ echo $?
+  2
+
+  The 3 source EOF defects are gone. Only DEFECT-3
+  captured-evidence trailing whitespace remains.
+
+B0 differential (fresh tree):
+
+  $ rm -f ./build/bootstrap01-*
+  $ make bootstrap01-test
+  BOOTSTRAP01_CASES=15
+  BOOTSTRAP01_RUNS=30
+  BOOTSTRAP01_PASS=15
+  BOOTSTRAP01_FAIL=0
+  STATUS=PASS
+  $ echo $?
+  0
+
+Cardinality-1 exception:
+
+  evidence/ACT-POLYC-FACTORY-NO-SHA-OF-SELF01/correction04/
+    historical-cardinality-exceptions.txt
+  contains EXCEPTION 4 with the correct SHA pair
+  (4b42e06, 147069f) and the F14 disposition.
+
+Section ordering:
+
+  evidence/ACT-POLYC-BOOTSTRAP01-CORRECTION01/
+    ACT-POLYC-BOOTSTRAP01-CORRECTED.md
+  has §0..§37 in numerical order; section bodies are
+  byte-identical to the original (0 diffs).
+
+All four DEFECTs are mechanically advanced:
+
+  DEFECT-1 (cardinality):       F14-recorded in EXCEPTION 4
+  DEFECT-2 (EOF blank lines):   stripped, hygiene verified
+  DEFECT-3 (captured evidence): classified GOVERNANCE_RESIDUE
+  DEFECT-4 (B0_LLVM wording):   re-authored in C4 truth block
+  DEFECT-5 (ACT § order):       corrected copy deposited
+
+C2 is GREEN.
