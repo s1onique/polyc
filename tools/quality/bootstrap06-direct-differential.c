@@ -23,8 +23,11 @@ extern long long BootstrapClassifyOperator(
  * tools/quality/bootstrap06-operator-classify-oracle.c) so we
  * don't need a separate C object. */
 
-#define CCF_ASM_BLOCK     (1 << 16)
-#define CCF_MULTI_COLON   (1 << 17)
+// Flag bits (matching src/lexer.h CCF_* definitions; the
+// PolyC component uses these same bit positions so the
+// fixture flags match what l->flags will be at runtime).
+#define CCF_ASM_BLOCK     (1 << 4)
+#define CCF_MULTI_COLON   (1 << 3)
 typedef long long I64;
 
 static int is_op_trigger(unsigned char c)
