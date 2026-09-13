@@ -1,0 +1,147 @@
+ACT-POLYC-BOOTSTRAP02-C2-CORRECTION01 — pillar-B
+direct seam-level cursor witness
+================================================
+
+ACT-POLYC-BOOTSTRAP02-C2-CORRECTION01 corrected the
+cursor-evidence taxonomy to TWO pillars:
+
+  A. End-to-end conservation (object-emission parity).
+     See cursor-equivalence.txt — covers 5 real
+     production sources; reframed to NOT claim cursor
+     equivalence directly.
+
+  B. Direct seam-level cursor witness. THIS FILE.
+
+Pillar B provides line-level evidence that the B1 PolyC
+component BootstrapScanIdent, invoked on the exact
+6-input matrix the reviewer specified, produces a
+(start, end, cur_strlen, next_byte) tuple that is
+byte-for-byte identical to the same matrix computed by
+the independent C reference oracle.
+
+============================================================
+Reviewer-specified 6-input matrix (binding)
+============================================================
+
+  E1  "abc;"        start=0  expected end=3  next=';'
+  E2  "abc+"        start=0  expected end=3  next='+'
+  E3  "abc "        start=0  expected end=3  next=' '
+  E4  "abc" EOF     start=0  expected end=3  next=EOF/NUL
+  E5  "xxabc;" @2   start=2  expected end=5  next=';'
+  E6  "abc$def;"    start=0  expected end=7  next=';'
+
+Every code branch in src/lexer.c::lexIdentifier is
+exercised by at least one input:
+
+  - E1, E2, E3 cover the three different non-id
+    terminators (';', '+', ' ') on the same ident body.
+  - E4 covers the EOF/NUL case (the old no-rewind path).
+  - E5 covers a nonzero cursor start.
+  - E6 covers a $ in continuation (production-grammar-
+    only; B0 would split here).
+
+============================================================
+Harness and oracle (real-seam; two independent programs)
+============================================================
+
+  tools/quality/bootstrap02-cursor-oracle.c
+    Compiled standalone with cc (no PolyC). Implements the
+    same production ctype-based algorithm used by the
+    legacy lexIdentifier body. Runs the 6-input matrix,
+    emits per-line tuple.
+
+  tools/quality/bootstrap02-cursor-host.c
+    Compiled with cc, links in
+    build/bootstrap02-ident.o (the B1 PolyC object
+    produced by stage0 ./hcc -c). Calls BootstrapScanIdent
+    on the same 6-input matrix, emits per-line tuple.
+
+The two are physically distinct programs that share only
+the B1 algorithm's documented contract. The diff between
+their outputs is a real differential.
+
+============================================================
+Output format (canonical, used by both programs)
+============================================================
+
+  E1  src=6162633b  start=0  end=3  cur_strlen=3  next_byte=3b
+  E2  src=6162632b  start=0  end=3  cur_strlen=3  next_byte=2b
+  E3  src=61626320  start=0  end=3  cur_strlen=3  next_byte=20
+  E4  src=616263  start=0  end=3  cur_strlen=3  next_byte=NUL
+  E5  src=78786162633b  start=2  end=5  cur_strlen=3  next_byte=3b
+  E6  src=616263246465663b  start=0  end=7  cur_strlen=7  next_byte=3b
+
+next_byte is printed as a 2-digit lowercase hex value,
+or the literal "NUL" for 0x00.
+
+============================================================
+Command transcript (verbatim)
+============================================================
+
+Working directory: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc
+
+  $ make bootstrap02-cursor-test
+  cc -std=c99 -O2 -Wall -Wextra -o ./build/bootstrap02-cursor-oracle \
+          tools/quality/bootstrap02-cursor-oracle.c
+  cc -std=c99 -O2 -Wall -Wextra -o ./build/bootstrap02-cursor-host \
+          tools/quality/bootstrap02-cursor-host.c ./build/bootstrap02-ident.o
+  ./build/bootstrap02-cursor-oracle > /tmp/b02-cursor-oracle.txt
+  ./build/bootstrap02-cursor-host   > /tmp/b02-cursor-host.txt
+  BOOTSTRAP02_CURSOR_DIFFERENTIAL=PASS 6/6
+
+  $ cat /tmp/b02-cursor-oracle.txt
+  E1  src=6162633b  start=0  end=3  cur_strlen=3  next_byte=3b
+  E2  src=6162632b  start=0  end=3  cur_strlen=3  next_byte=2b
+  E3  src=61626320  start=0  end=3  cur_strlen=3  next_byte=20
+  E4  src=616263  start=0  end=3  cur_strlen=3  next_byte=NUL
+  E5  src=78786162633b  start=2  end=5  cur_strlen=3  next_byte=3b
+  E6  src=616263246465663b  start=0  end=7  cur_strlen=7  next_byte=3b
+  BOOTSTRAP02_CURSOR_ORACLE_CASES=6
+  BOOTSTRAP02_CURSOR_ORACLE_PASS=6
+  BOOTSTRAP02_CURSOR_ORACLE_FAIL=0
+  STATUS=PASS
+
+  $ cat /tmp/b02-cursor-host.txt
+  E1  src=6162633b  start=0  end=3  cur_strlen=3  next_byte=3b
+  E2  src=6162632b  start=0  end=3  cur_strlen=3  next_byte=2b
+  E3  src=61626320  start=0  end=3  cur_strlen=3  next_byte=20
+  E4  src=616263  start=0  end=3  cur_strlen=3  next_byte=NUL
+  E5  src=78786162633b  start=2  end=5  cur_strlen=3  next_byte=3b
+  E6  src=616263246465663b  start=0  end=7  cur_strlen=7  next_byte=3b
+  BOOTSTRAP02_CURSOR_HOST_CASES=6
+  BOOTSTRAP02_CURSOR_HOST_PASS=6
+  BOOTSTRAP02_CURSOR_HOST_FAIL=0
+  STATUS=PASS
+
+  $ diff <(grep -E '^E[0-9]+ ' /tmp/b02-cursor-oracle.txt) \
+         <(grep -E '^E[0-9]+ ' /tmp/b02-cursor-host.txt)
+  (no output -> byte-identical on all 6 inputs)
+
+============================================================
+Verdict
+============================================================
+
+  PILLAR_B_DIRECT_CURSOR_WITNESS   = PASS  (6/6 byte-identical)
+  PILLAR_B_FIXTURE_COUNT           = 6
+  PILLAR_B_PASS_COUNT              = 6
+  PILLAR_B_FAIL_COUNT              = 0
+  HALT_C2_CURSOR_WITNESS_INSUFFICIENT = NOT_FIRED
+
+What pillar B establishes:
+
+  - For every input in the reviewer-specified matrix,
+    BootstrapScanIdent and the C reference oracle
+    produce identical (start, end, cur_strlen, next_byte)
+    tuples.
+  - This directly supports cursor-binding equivalence
+    (the intermediate lex state, not just the final
+    object code).
+  - The EOF/NUL branch (E4) is correctly handled — both
+    implementations report next_byte=NUL.
+  - The nonzero cursor case (E5) is correctly handled.
+  - The $ continuation case (E6) is correctly handled
+    (B0 would split here; B1 does not).
+
+Combined with pillar A (object parity on 5/5 real
+production sources), the corrected two-pillar taxonomy
+unlocks C3 EVIDENCE.

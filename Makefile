@@ -12,7 +12,7 @@ HCC_ENABLE_LLVM ?= OFF
 
 default: all
 
-.PHONY: all gate-fast gate-push install-hooks llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1
+.PHONY: all gate-fast gate-push install-hooks llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test
 
 # To add sqlite3 support add -DHCC_LINK_SQLITE3=1 to the below like so:
 #```
@@ -357,3 +357,24 @@ bootstrap02-stage1: bootstrap02-component-build test-prefix-install
 	@nm ./build/hcc-bootstrap02 | grep -q '_BootstrapScanIdent' \
 		|| { echo "bootstrap02-stage1: symbol _BootstrapScanIdent not found in linked binary" >&2; exit 1; }
 	@echo "BOOTSTRAP02_STAGE1_BINARY=./build/hcc-bootstrap02"
+
+# ACT-POLYC-BOOTSTRAP02-C2-CORRECTION01 C2 IMPL — pillar-B
+# direct seam-level cursor witness. Builds the C oracle for
+# the reviewer-specified 6-input matrix and the host harness
+# that exercises the B1 PolyC component on the same matrix.
+# Diffs the per-input lines; byte-identical = PASS.
+bootstrap02-cursor-test: bootstrap02-component-build
+	cc -std=c99 -O2 -Wall -Wextra -o ./build/bootstrap02-cursor-oracle \
+		tools/quality/bootstrap02-cursor-oracle.c
+	cc -std=c99 -O2 -Wall -Wextra -o ./build/bootstrap02-cursor-host \
+		tools/quality/bootstrap02-cursor-host.c ./build/bootstrap02-ident.o
+	./build/bootstrap02-cursor-oracle > /tmp/b02-cursor-oracle.txt
+	./build/bootstrap02-cursor-host   > /tmp/b02-cursor-host.txt
+	@grep -E '^E[0-9]+ ' /tmp/b02-cursor-oracle.txt > /tmp/b02-cursor-oracle-fixtures.txt; \
+	grep -E '^E[0-9]+ ' /tmp/b02-cursor-host.txt   > /tmp/b02-cursor-host-fixtures.txt; \
+	if ! diff -q /tmp/b02-cursor-oracle-fixtures.txt /tmp/b02-cursor-host-fixtures.txt >/dev/null; then \
+		echo "bootstrap02-cursor-test: PILLAR B FAILED (cursor tuples differ)" >&2; \
+		diff /tmp/b02-cursor-oracle-fixtures.txt /tmp/b02-cursor-host-fixtures.txt >&2; \
+		exit 1; \
+	fi; \
+	echo "BOOTSTRAP02_CURSOR_DIFFERENTIAL=PASS 6/6"
