@@ -1,0 +1,14 @@
+# Symbol validation: `nm -gU <obj>` must contain `BootstrapScanIdent`
+# at the expected position (prefix is `_` on Darwin, none on Linux).
+# Performed inside SHCOpBuild (post-link) via SpawnAndCapture.
+# All three stages emit the symbol at the same offset (0x2e0), confirming
+# the producer chain is stable across ./hcc, ./build/hcc-bootstrap02,
+# and ./build/hcc-bootstrap03.
+STAGE0:
+00000000000002e0 T _BootstrapScanIdent
+STAGE1:
+00000000000002e0 T _BootstrapScanIdent
+STAGE2:
+00000000000002e0 T _BootstrapScanIdent
+---
+VERDICT: PASS (3/3 stages emit expected symbol)

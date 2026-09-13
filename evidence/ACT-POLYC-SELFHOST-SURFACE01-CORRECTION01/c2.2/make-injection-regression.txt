@@ -1,0 +1,17 @@
+# 9-class shell injection matrix against `make selfhost-component-build`
+# INVARIANT: no shell sentinel may be created, regardless of make's rc.
+# Each class contains a shell metacharacter in COMPONENT; if the recipe
+# ever invoked `sh -c "$COMPONENT..."` or used `system()`/`popen()`,
+# the matching /tmp/shell_test_<X> file would be created.
+# Observed result below: every class rc=2 (rejected), zero sentinels created.
+class=touch /tmp/shell_test_A                      rc=2  sentinels_created=0
+class=touch /tmp/shell_test_B && true              rc=2  sentinels_created=0
+class=echo HI > /tmp/shell_test_C                  rc=2  sentinels_created=0
+class=$(touch /tmp/shell_test_D)                   rc=2  sentinels_created=0
+class=; touch /tmp/shell_test_E ;                  rc=2  sentinels_created=0
+class=`touch /tmp/shell_test_F`                    rc=2  sentinels_created=0
+class=| touch /tmp/shell_test_G                    rc=2  sentinels_created=0
+class=|| touch /tmp/shell_test_H                   rc=2  sentinels_created=0
+class=& touch /tmp/shell_test_I                    rc=2  sentinels_created=0
+---
+VERDICT: PASS (9/9 classes refused; 0/9 sentinels created)

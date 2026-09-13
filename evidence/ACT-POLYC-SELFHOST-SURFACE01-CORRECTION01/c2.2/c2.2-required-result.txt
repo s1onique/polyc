@@ -1,0 +1,23 @@
+# C2.2 IMPL Required Result Block (from ACT-POLYC-SELFHOST-SURFACE01-CORRECTION01 §41)
+#
+# (a) selfhost-component selftest: 13/13 PASS, 0 FAIL
+# (b) stage0/1/2 outputs all SHA256=a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f,
+#     identical to bootstrap02-ident.o (the frozen reference)
+# (c) selfhost-component-build invocation produces the PolyC tool itself:
+#     ./build/selfhost-component, fully self-contained, no make fallback
+# (d) Python source files in selfhost family = 0 (down from 2)
+#     Python-invoking shell wrappers in selfhost family = 0 (down from 3)
+# (e) F-NO-PYTHON checker count: 19 -> 15 (delta -4, all 4 from selfhost family)
+# (f) Substantive selfhost shell LOC: 0 (down from 245)
+# (g) All retained selfhost shell wrappers <= 50 LOC (40 + 27)
+# (h) scripts/quality/factory-no-python-check.HC unchanged (no new checker RED)
+# (i) docs/factory/SELF-HOST-COMPONENTS.tsv unchanged
+# (j) tools/bootstrap/bootstrap02-ident.HC unchanged
+# (k) 9-class shell injection matrix: 9/9 refused (rc=2), 0/9 sentinels created
+# (l) Symbol validation: BootstrapScanIdent emitted at offset 0x2e0 in all 3 stages
+# (m) Generic producer chain: stage0=./hcc, stage1=./build/hcc-bootstrap02,
+#     stage2=./build/hcc-bootstrap03 -- direct invocation, no bespoke bridge
+# (n) Differential test: oracle 15/15 + host 15/15, all fixture lines byte-identical
+# (o) Cursor test: 6/6 PASS
+# (p) Lexer-seam test: 6/6 PASS
+VERDICT: PASS (all required-result clauses satisfied)

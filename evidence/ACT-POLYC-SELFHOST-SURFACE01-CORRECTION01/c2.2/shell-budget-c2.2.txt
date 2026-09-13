@@ -1,0 +1,19 @@
+# Shell LOC budget across C2.2 IMPL
+# Contract: substantive selfhost shell = 0 LOC; retained wrappers <= 50 LOC, dispatch-only.
+#
+# OLD inventory (pre-C2.2):
+#   scripts/quality/selfhost-component-registry.py        252 LOC (deleted)
+#   scripts/quality/selfhost-component-registry-test.sh   197 LOC (deleted)
+#   scripts/quality/selfhost-component-registry.sh         16 LOC (Python launcher -> deleted; replaced with 27-LOC dispatcher)
+#   tools/selfhost/selfhost-component.sh                  245 LOC (substantive shell -> deleted; replaced with 40-LOC dispatcher)
+#
+# NEW inventory (post-C2.2):
+#   scripts/quality/selfhost-component-registry.sh         27 LOC (dispatch-only: validates args then exec PolyC binary)
+#   tools/selfhost/selfhost-component.sh                   40 LOC (dispatch-only: validates args then exec PolyC binary)
+  27 scripts/quality/selfhost-component-registry.sh
+  40 tools/selfhost/selfhost-component.sh
+  67 total
+---
+Substantive selfhost shell LOC after C2.2: 0
+Largest retained wrapper: 40 LOC (under 50-LOC ratchet)
+STATUS=PASS

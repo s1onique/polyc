@@ -1,162 +1,142 @@
-c2.2-implementation.txt
-=======================
+# C2.2 IMPL summary
 
-ACT-POLYC-SELFHOST-SURFACE01-CORRECTION01 C2.2 IMPL.
+## Goal
+Replace the Python registry/control plane for self-host components with a
+PolyC implementation that preserves the frozen registry, build, provenance,
+testing, safety, and artifact-equivalence contracts. Delete the Python source
+files and the substantive shell wrappers in the selfhost family.
 
-C2.2.a IMPL: PolyC-native self-host component control plane.
+## Implementation
 
-NEW FILE
---------
+### tools/selfhost/selfhost-component.HC (NEW, ~1390 LOC PolyC)
+Pure PolyC control plane. Composed of:
+- SHCParseRegistry / SHCRegistryFind  - TSV row parser + lookup
+- SHCValidateComponent / SHCStage     - row validator (source-existence, alias,
+                                        symbol-name, language, state, seam)
+- SHCGenericOutPath                   - path of generic producer output, derived
+                                        purely from the registry row
+- SHCOpValidate                       - validate subcommand (cold registry check)
+- SHCOpBuild                          - build subcommand (uses SpawnAndCapture
+                                        to invoke the right producer directly,
+                                        then nm-symbol-validation)
+- SHCOpTest                           - test subcommand (delegates to the
+                                        frozen Makefile via SpawnAndCapture)
+- SHCSelfTest                         - 13-class frozen negative-control suite
+                                        (N1..N12b, mirrors the Python oracle)
 
-  tools/selfhost/selfhost-component.HC       (~1390 LOC)
-  -- single PolyC executable implementing:
-       validate <registry>
-       build    <registry>           (needs env COMPONENT STAGE)
-       test     <registry>           (needs env COMPONENT STAGE)
-       selftest                       (13/13 negative controls)
+Key constraints honored:
+- No system(), no popen(), no shell-concat. Every process exec is direct argv
+  via SpawnAndCapture with absolute paths.
+- Source-existence + alias checks run inside SHCOpValidate (predecessor parity:
+  N4/N11 expected to FAIL on validate, PASS on validate-disable, FAIL on build).
+- Production parser == selftest parser (no clone).
+- /usr/bin/env is used only as a portable env-injector for N2/N12b sub-spawns;
+  no eval, no sh -c.
 
-The PolyC binary is built with the existing stage0 ./hcc
-compiler and links against build/test-prefix/lib/libtos.a.
+### tools/selfhost/selfhost-component.sh (REWRITTEN, 40 LOC dispatch glue)
+Validates args, rejects shell metacharacters in COMPONENT, then exec's the
+PolyC binary. No registry or build logic.
 
-Compile invocation (canonical):
-  ./hcc --install-dir=./build/test-prefix -c \
-      tools/selfhost/selfhost-component.HC \
-      -o build/selfhost-component.o
-  cc build/selfhost-component.o \
-      -L./build/test-prefix/lib -ltos \
-      -o build/selfhost-component
+### scripts/quality/selfhost-component-registry.sh (REWRITTEN, 27 LOC)
+Validates args, then exec's `./build/selfhost-component validate`. No registry
+or build logic.
 
-Build artifact:
-  build/selfhost-component               Mach-O 64-bit executable arm64
+### scripts/quality/selfhost-component-registry.py (DELETED, 252 LOC)
+### scripts/quality/selfhost-component-registry-test.sh (DELETED, 197 LOC)
 
-PRODUCTION PARSER = SELFTEST PARSER.
-  Same SHCParseRegistry function is invoked by every op.
-  No test-only clone of registry semantics.
+### Makefile
+- Added `selfhost-component-binary` target that compiles the PolyC tool via
+  `./hcc --install-dir=./build/test-prefix` and links it with the test-prefix
+  `libtos` (mirrors how `build/factory-no-python-check` is built; no new
+  toolchain dependency).
+- Added `selfhost-component-selftest` target that runs the 13-class negative
+  control suite.
+- Made `selfhost-component-{build,test}` and `selfhost-registry-validate`
+  depend on the binary target.
+- Updated `.PHONY` to declare both new targets.
 
-OPERATIONS
-----------
+### docs/factory/LEGACY-NON-POLYC-TOOLS.tsv
+Marked both retained shell wrappers as disposition=WRAPPER with origin
+ACT-POLYC-SELFHOST-SURFACE01-CORRECTION01-C2.2.
 
-validate <registry>:
-  - header validation (10 fixed columns)
-  - field count per row (exactly 10)
-  - empty required fields reject
-  - source must be repo-relative, no `..`, must exist on disk
-  - language must be POLYC
-  - state must be STABLE|MIGRATING|DISABLED
-  - symbol regex ^[A-Za-z_][A-Za-z0-9_$]*$
-  - component_id regex ^[A-Za-z0-9_]+$ (no duplicate)
-  - output-aliases-source gate (when source ends in .o)
-  - Makefile target existence check for each non-DISABLED row
+### Frozen (NOT modified)
+- tools/factory/factory-no-python-check.HC  (per ACT §28 no new checker RED)
+- docs/factory/SELF-HOST-COMPONENTS.tsv     (per ACT §7 registry is frozen)
+- tools/bootstrap/bootstrap02-ident.HC      (the reference producer source)
 
-build <registry> COMPONENT=<id> STAGE=<n>:
-  - validates COMPONENT (regex) and STAGE (exact 0|1|2)
-  - resolves component exactly once
-  - resolves producer (stage0=./hcc, stage1=./build/hcc-bootstrap02,
-                       stage2=./build/hcc-bootstrap03)
-  - requires producer exists and is executable
-  - requires source exists
-  - rejects DISABLED state
-  - rejects source/output alias
-  - clears stale output
-  - invokes producer via SpawnAndCapture (direct argv, no shell)
-  - propagates nonzero rc
-  - requires output exists
-  - verifies expected symbol via nm with platform link prefix
-    (Darwin: leading underscore; Linux: no prefix)
-  - emits provenance: producer SHA, output SHA, expected symbol,
-    symbol_check, build_rc
+## Gates
 
-test <registry> COMPONENT=<id> STAGE=<n>:
-  - calls build first
-  - then invokes registered Makefile gates in sequence:
-      make <oracle>
-      make <cursor_gate>
-      make <production_seam_gate>
-  - all three gates MUST pass
+### F-NO-PYTHON
+predecessor=19
+removed=-4 (selfhost-component-registry.py source + 3 Python invocations)
+expected=15
+observed=15
+PASS
 
-selftest:
-  - 13/13 frozen negative controls (N1..N12b).
-  - Runs N1..N12b by writing synthetic TSV files into
-    build/shc-selftest and spawning the binary for each.
+### Shell LOC ratchet
+largest retained wrapper=40 (under 50-LOC cap)
+substantive selfhost shell=0
+PASS
 
-PROCESS EXECUTION
------------------
+### Selftest (13/13 frozen negative controls)
+PASS  N1_current_registry_valid_PASS
+PASS  N3_duplicate_component_id_FAIL
+PASS  N4_missing_source_path_FAIL
+PASS  N5_source_outside_repository_FAIL
+PASS  N6_missing_symbol_FAIL
+PASS  N7_invalid_language_FAIL
+PASS  N8_invalid_state_FAIL
+PASS  N10_malformed_field_count_FAIL
+PASS  N11_output_aliases_source_FAIL
+PASS  N12a_disabled_row_validates_PASS
+PASS  N12b_disabled_row_refuses_build_FAIL
+PASS  N2_unknown_component_lookup_FAIL
+PASS  N9_unknown_stage_FAIL
+SHC_SELFTEST_PASS=13
+SHC_SELFTEST_FAIL=0
+STATUS=PASS
 
-Producer invocation:
-  SpawnAndCapture(producer_abs, argv, &out, &err)
-  argv = [producer_abs, "--install-dir=...", "-c", source, "-o", generic_out, NULL]
-  No shell. No system(). No "/bin/sh -c <concatenated>".
+### Stage 0/1/2 builds
+stage0/identifier_scanner.o sha256=a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f
+stage1/identifier_scanner.o sha256=a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f
+stage2/identifier_scanner.o sha256=a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f
+bootstrap02-ident.o       sha256=a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f
+All 4 byte-identical.
 
-Make invocation (test):
-  SpawnAndCapture("/usr/bin/make", argv, &out, &err)
-  argv = ["/usr/bin/make", "-C", repo_root, target, NULL]
-  Direct argv. No shell expansion.
+### Symbol validation
+nm -gU build/selfhost/stage{0,1,2}/identifier_scanner.o emits
+  00000000000002e0 T _BootstrapScanIdent
+in all 3 stages (offset is content-deterministic; identical across stages).
 
-Auxiliary tools (nm, uname, shasum, mkdir, rm, cp):
-  Direct argv with absolute paths (/usr/bin/nm, /bin/mkdir,
-  /bin/rm, /bin/cp). No string-concatenated shell programs.
+### Generic producer chain
+stage0 producer = ./hcc
+stage1 producer = ./build/hcc-bootstrap02
+stage2 producer = ./build/hcc-bootstrap03
+(no make-bridge, no bootstrap01 dependency)
 
-Selftest sub-spawns that need controlled env (N2, N12b):
-  /usr/bin/env KEY=value KEY=value <binary> build <registry>
-  env(1) is the portable, non-shell way to inject env into a child
-  when the SpawnAndCapture primitive has no envp parameter.
+### Shell injection matrix
+9/9 classes refused (rc=2), 0/9 sentinels created.
 
-COMPONENT VALIDATION
---------------------
+### Differential / cursor / lexer-seam
+oracle=15/15, host=15/15, fixture-lines byte-identical
+cursor=6/6 PASS
+lexer-seam=6/6 PASS
 
-  ^[A-Za-z0-9_]+$    -- bounded grammar (predecessor parity)
-  Empty/whitespace, /, \\, ;, ', `, $, (, ), newline, tab
-  all rejected.
+## Scope audit
+Modified paths (all authorized):
+- tools/selfhost/selfhost-component.HC        (new, 1390 LOC PolyC)
+- tools/selfhost/selfhost-component.sh        (rewritten, 40 LOC dispatch)
+- scripts/quality/selfhost-component-registry.sh  (rewritten, 27 LOC dispatch)
+- Makefile                                    (added 2 targets, updated .PHONY)
+- docs/factory/LEGACY-NON-POLYC-TOOLS.tsv     (updated disposition for 2 rows)
 
-STAGE VALIDATION
-----------------
+Deleted paths (authorized):
+- scripts/quality/selfhost-component-registry.py
+- scripts/quality/selfhost-component-registry-test.sh
 
-  Exactly 0|1|2 (exact-set check).
-  00, +1, 2foo, 3, -1 all rejected.
-
-SYMBOL VALIDATION
------------------
-
-  expected = <link_prefix><symbol>
-  Required: at least one defined global symbol matches.
-  Verification: nm output line ends with " <TBDRS> <expected>$".
-  Missing symbol -> rc=1 even if compilation succeeded.
-
-PROVENANCE CONTRACT
--------------------
-
-  Output format (binding):
-    SELFHOST_COMPONENT_BUILD=PASS
-    SELFHOST_COMPONENT_ID=<id>
-    SELFHOST_COMPONENT_SOURCE=<repo-relative path>
-    SELFHOST_COMPONENT_PRODUCER_STAGE=<n>
-    SELFHOST_COMPONENT_PRODUCER_BINARY=<producer>
-    SELFHOST_COMPONENT_PRODUCER_BINARY_SHA256=<64 hex>
-    SELFHOST_COMPONENT_OUTPUT=<generic_out>
-    SELFHOST_COMPONENT_OUTPUT_SHA256=<64 hex>
-    SELFHOST_COMPONENT_EXPECTED_SYMBOL=<expected>
-    SELFHOST_COMPONENT_SYMBOL_CHECK=PASS
-    SELFHOST_COMPONENT_BUILD_RC=0
-    SELFHOST_COMPONENT_LINK_SYMBOL_PREFIX=<_ or "">
-    SELFHOST_COMPONENT_REGISTRY=<registry path>
-
-  Same fields and structure as the predecessor.
-
-SCOPE
------
-
-COMPILER_SEMANTIC_DELTA = ZERO
-  src/lexer.c, src/lexer_bridge.h, src/holyc-lib/* untouched.
-  tools/bootstrap/bootstrap02-ident.HC untouched.
-
-REGISTRY_SCHEMA_DELTA = ZERO
-  docs/factory/SELF-HOST-COMPONENTS.tsv unchanged.
-
-NEW SELF-HOST COMPONENT = ZERO
-  identifier_scanner is still the only registered component.
-
-NEW BOOTSTRAP GENERATION = ZERO
-  No new ./hcc-bootstrapNN.
-
-FACTORY_NO_PYTHON CHECKER DELTA = ZERO
-  tools/factory/factory-no-python-check.HC unchanged.
+Untouched paths (frozen):
+- tools/factory/factory-no-python-check.HC
+- docs/factory/SELF-HOST-COMPONENTS.tsv
+- tools/bootstrap/bootstrap02-ident.HC
+STATUS=PASS
+C2.2 IMPL complete.
