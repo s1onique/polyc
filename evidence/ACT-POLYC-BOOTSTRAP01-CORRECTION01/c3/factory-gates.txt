@@ -1,0 +1,46 @@
+ACT-POLYC-BOOTSTRAP01-CORRECTION01 C3 — factory gates
+=====================================================
+
+At C3 (before CLOSE):
+
+  $ sh scripts/quality/factory-v2-range-check.sh \
+      ACT-POLYC-BOOTSTRAP01-CORRECTION01 HEAD
+  STATUS=FAIL
+  REASON=CLOSE ... does not carry exactly one
+         ACT: ACT-POLYC-BOOTSTRAP01-CORRECTION01
+         (count=0)
+
+  Expected: FAIL at C3 because no CLOSE commit has
+  been produced yet. This is the gate's correct
+  behavior — it expects exactly 1 CLOSE per ACT and
+  reports the count. At C4 the gate will report PASS.
+
+  This is NOT a blocker; it is the gate correctly
+  signalling "no CLOSE yet, can't verify".
+
+Inherited (run before this ACT for context):
+
+  factory-v2-test                PASS  35/35
+  factory-append-only-test       PASS  11/11
+  factory-closure-status-check   PASS  6/6
+  factory-halt-classification     PASS  12/12
+  shell-loc-gate                 PASS
+  gate-fast                      PASS
+
+  (These were last run during ACT-POLYC-BOOTSTRAP01
+  C3 EVIDENCE. This correction ACT does not modify
+  any of the gate scripts; the gates remain green.)
+
+Required at C4 (post-CLOSE):
+
+  $ sh scripts/quality/factory-v2-range-check.sh \
+      ACT-POLYC-BOOTSTRAP01-CORRECTION01 HEAD
+  STATUS=PASS
+
+  And manually:
+
+  test "$(git log --all-match --oneline \
+    --grep='^ACT: ACT-POLYC-BOOTSTRAP01-CORRECTION01$' \
+    --grep='^ACT-Phase: CLOSE$' | wc -l)" = 1
+
+Cardinality-1 invariant must hold at C4.

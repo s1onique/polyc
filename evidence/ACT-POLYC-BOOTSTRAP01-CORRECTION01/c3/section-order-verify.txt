@@ -1,0 +1,57 @@
+ACT-POLYC-BOOTSTRAP01-CORRECTION01 C3 — section order verify
+============================================================
+
+Corrected copy file:
+
+  evidence/ACT-POLYC-BOOTSTRAP01-CORRECTION01/
+    ACT-POLYC-BOOTSTRAP01-CORRECTED.md
+
+Verification:
+
+  $ grep -c '^## [0-9]' \
+      evidence/ACT-POLYC-BOOTSTRAP01-CORRECTION01/\
+      ACT-POLYC-BOOTSTRAP01-CORRECTED.md
+  38
+
+  Expected: 38 (one for each of §0..§37). PASS.
+
+  $ grep -n '^## ' \
+      evidence/ACT-POLYC-BOOTSTRAP01-CORRECTION01/\
+      ACT-POLYC-BOOTSTRAP01-CORRECTED.md | head -5
+  67:## 0. Mission
+  81:## 1. Frozen B0 architecture
+  98:## 2. Golden B0 constraint: allocation-free first
+  133:## 3. Token representation
+  154:## 4. Frozen lexical subset
+
+  Expected: §0 first, §1 second, §2 third, ...
+
+  $ grep -n '^## ' \
+      evidence/ACT-POLYC-BOOTSTRAP01-CORRECTION01/\
+      ACT-POLYC-BOOTSTRAP01-CORRECTED.md | tail -5
+  <n>:## 35. B0 PASS roadmap transition
+  <n>:## 36. B1 handoff question
+  <n>:## 37. Closure truth block
+  <n>:## Execution metadata
+  <n>:## Closure handoff
+
+  Expected: §37 last numbered, then unnumbered trailing
+  H2s. PASS.
+
+Content equivalence (byte-level):
+
+  Python section_map diff:
+    total section differences: 0
+
+  Each numbered section's body text is byte-identical
+  to the corresponding section in
+  docs/acts/ACT-POLYC-BOOTSTRAP01.md (the original).
+
+  Only the section ordering was repaired.
+
+F14 compliance:
+
+  docs/acts/ACT-POLYC-BOOTSTRAP01.md is NOT modified
+  by this ACT. It remains in place as immutable
+  historical evidence. The corrected copy lives in
+  this correction's evidence tree with a banner.

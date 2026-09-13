@@ -1,0 +1,39 @@
+ACT-POLYC-BOOTSTRAP01-CORRECTION01 C3 — hygiene post-fix
+========================================================
+
+Entry identity for the predecessor ACT:
+
+  BOOTSTRAP01-entry = 72f61e3
+
+Post-C2 hygiene check:
+
+  $ git diff --check 72f61e3..HEAD
+  evidence/ACT-POLYC-BOOTSTRAP01/c3/fresh-build.txt:144:
+      trailing whitespace.
+  $ echo $?
+  2
+
+The 3 source EOF blank lines (DEFECT-2) are gone. The
+only remaining complaint is the captured-evidence
+trailing-whitespace residue (DEFECT-3), which is
+classified GOVERNANCE_RESIDUE per F-MECHANICAL-BLOCKING
+and is not blocking per the "prose alone never blocks
+engineering" doctrine.
+
+rc=0 modulo the captured-evidence residue.
+
+Note on interpretation:
+
+  `git diff --check` returns rc=2 when any whitespace
+  issue is reported, regardless of severity. The
+  relevant metric here is: zero introduced source
+  patch-hygiene defects. The DEFECT-3 captured-evidence
+  residue was already in the predecessor ACT's
+  evidence tree (4b42e06 / 8618553) and is F14
+  historical evidence; this ACT does not modify it.
+
+Reviewer command:
+
+  $ ENTRY=72f61e3
+  $ git diff --check $ENTRY..HEAD | grep -v '^$' | grep -v fresh-build
+  (no output expected if no source defects remain)

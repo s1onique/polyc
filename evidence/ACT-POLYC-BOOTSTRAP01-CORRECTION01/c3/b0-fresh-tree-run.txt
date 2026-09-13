@@ -1,0 +1,37 @@
+ACT-POLYC-BOOTSTRAP01-CORRECTION01 C3 — fresh-tree B0 run
+========================================================
+
+Fresh-tree protocol:
+
+  $ rm -f ./build/bootstrap01-*
+  $ make bootstrap01-test
+  ...
+  BOOTSTRAP01_CASES=15
+  BOOTSTRAP01_RUNS=30
+  BOOTSTRAP01_PASS=15
+  BOOTSTRAP01_FAIL=0
+  STATUS=PASS
+  BOOTSTRAP01_REFERENCE_ORACLE=./build/bootstrap01-lexer-oracle
+  $ echo $?
+  0
+
+The B0 subject (PolyC BootstrapLex), the C oracle, and
+the PolyC differential driver all rebuild from scratch
+and produce 15/15 PASS, 0 FAIL.
+
+No semantic regression from:
+  - the EOF strip (3 lines removed in C2 IMPL)
+  - the EXCEPTION 4 cardinality record
+  - the corrected authoring copy
+  - any other correction
+
+Verdict: B0_NATIVE_SEMANTICS = PASS
+       B0_DIFFERENTIAL_ORACLE = PASS 15/15
+       B0_DETERMINISM = PASS
+       B0_SOURCE_IMMUTABILITY = PASS
+       B0_OUTPUT_BOUNDARY = PASS
+       B0_ALLOCATION_FREE = PASS
+
+B0_LLVM_PATH remains BLOCKED_BY_EXISTING_MEMORY01_FENCE
+(no LLVM work attempted by this correction; the
+predecessor ACT's MEMORY01 fence is preserved).

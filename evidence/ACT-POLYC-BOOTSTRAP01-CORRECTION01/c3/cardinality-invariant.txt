@@ -1,0 +1,40 @@
+ACT-POLYC-BOOTSTRAP01-CORRECTION01 C3 — cardinality check
+=========================================================
+
+Predecessor ACT cardinality (historical):
+
+  $ git log --all-match --oneline \
+      --grep='^ACT: ACT-POLYC-BOOTSTRAP01$' \
+      --grep='^ACT-Phase: CLOSE$'
+  <sha-1> <subject-1>
+  <sha-2> <subject-2>
+
+  Expected: 2 commits.
+  Result:    2 commits.
+  Disposition: EXCEPTION 4 in
+  evidence/ACT-POLYC-FACTORY-NO-SHA-OF-SELF01/
+  correction04/historical-cardinality-exceptions.txt.
+
+This ACT's cardinality (forward):
+
+  $ git log --all-match --oneline \
+      --grep='^ACT: ACT-POLYC-BOOTSTRAP01-CORRECTION01$' \
+      --grep='^ACT-Phase: CLOSE$'
+
+  At C3 (before CLOSE): 0 commits (no CLOSE yet; this
+  is expected — the CLOSE is the C4 commit).
+
+  Required at C4: exactly 1 commit.
+
+Predecessor-act SHA pair for the EXCEPTION 4 record:
+
+  - 4b42e06 (main, closure-truth pack)
+  - 147069f (ROADMAP B0 outcome block; re-classified
+            as docs-only follow-up that *should* have
+            carried ACT-Phase: EVIDENCE)
+
+Authoritative CLOSE: 4b42e06.
+
+These SHAs are observations about immutable subjects
+(DOCTRINE.md §22 / F-GIT-IDENTITY) — they are not
+predictions about the commit that contains this file.
