@@ -1,0 +1,102 @@
+ACT-POLYC-BOOTSTRAP02-C2-CORRECTION02 — C1 RED —
+corrected pillar-B wording
+==================================================
+
+The current pillar-B harness
+(tools/quality/bootstrap02-cursor-{host,oracle}.c)
+proves what it actually proves. We add a third
+harness that proves what the reviewer asked for.
+
+A.  Relabel existing pillar-B harness (component-
+    level cursor model). This is honest labeling,
+    not a weakening (F5). The harness still passes
+    6/6 — the byte-identical outputs stand. Only
+    the wording is reclassified.
+
+    OLD label:
+      PILLAR_B_DIRECT_CURSOR_WITNESS
+      "direct seam-level cursor witness"
+      "establishes cursor-binding equivalence"
+
+    NEW label:
+      PILLAR_B_COMPONENT_CURSOR_MODEL
+      "component-level cursor differential"
+      "B1 PolyC component vs standalone C reference
+       model — both over (src, src_len, start, end_off)"
+      "Does NOT exercise the production Lexer state
+       machine."
+
+    The 6/6 byte-identical tuples (start, end,
+    cur_strlen, next_byte) remain valid evidence.
+    What changes is the claim this evidence
+    supports.
+
+B.  Add a new pillar-B harness (real production
+    Lexer seam differential). This harness links
+    the production src/lexer.c twice — once with
+    the legacy ctype path, once with -D
+    HCC_BOOTSTRAP02_STAGE1 — and drives the public
+    entry point lex(Lexer*, Lexeme*) on the same
+    six inputs.
+
+    NEW label:
+      PILLAR_B_PRODUCTION_LEXER_CURSOR_SEAM
+      "real-Lexer seam cursor equivalence"
+      "production lexIdentifier on production Lexer
+       struct, both legacy and B1 paths"
+
+    Snapshot per input:
+
+      input              (NUL-terminated)
+      start_offset       (offset to first identifier)
+      l->start_before    (l->start pre-call)
+      l->ptr_before      (l->ptr  pre-call)
+      l->cur_strlen_pre  (0 in both; the dispatcher
+                          path clears it)
+      tk_type            (TK_IDENT in both)
+      l->start_after     (l->start post-call)
+      l->ptr_after       (l->ptr  post-call)
+      l->cur_strlen_post (must match byte-for-byte)
+      next_byte          (*(l->ptr) post-call, or NUL
+                          at end of source)
+      eof_state          (l->ptr >= source-end + 1 ?)
+
+    All six reviewer-specified inputs must produce
+    byte-identical (l->start_after, l->ptr_after,
+    l->cur_strlen_post, next_byte) tuples between
+    the legacy and B1 builds.
+
+C.  The new pillar-B' label only becomes PASS once
+    the new harness runs 6/6 byte-identical. Until
+    then it remains PILLAR_B_PRODUCTION_LEXER_CURSOR_SEAM
+    = PENDING.
+
+D.  ACT-POLYC-BOOTSTRAP02 C3 EVIDENCE remains
+    LOCKED until PILLAR_B_PRODUCTION_LEXER_CURSOR_SEAM
+    transitions PENDING → PASS at C3 of this
+    correction ACT.
+
+E.  The reviewer explicitly said "do not change the
+    implementation. The implementation still looks
+    healthy. Finish the last proof at the actual
+    Lexer seam." This ACT follows that guidance:
+    no production mutation; only test-only
+    addition + evidence reclassification.
+
+The corrected three-pillar taxonomy:
+
+    PILLAR_A_OBJECT_PARITY
+      end-to-end compiler conservation (5/5 real
+      sources byte-identical between stage0 and
+      stage1).
+    PILLAR_B_COMPONENT_CURSOR_MODEL
+      B1 PolyC component vs standalone C reference
+      model, both over (src, src_len, start, end_off).
+      Does NOT exercise the production Lexer state
+      machine. 6/6 byte-identical tuples.
+    PILLAR_B_PRODUCTION_LEXER_CURSOR_SEAM
+      Real production Lexer (src/lexer.c + src/lexer.h)
+      driven through public entry point lex(). Same
+      six inputs. Byte-identical (l->start_after,
+      l->ptr_after, l->cur_strlen_post, next_byte)
+      tuples between legacy and B1 builds.

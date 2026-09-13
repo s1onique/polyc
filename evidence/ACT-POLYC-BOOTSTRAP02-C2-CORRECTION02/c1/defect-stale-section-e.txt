@@ -1,0 +1,50 @@
+ACT-POLYC-BOOTSTRAP02-C2-CORRECTION02 — C1 RED —
+defect P3 (was: stale evidence): Section E of
+c2/required-result.txt still over-claims cursor
+equivalence from pillar A alone
+==================================================
+
+Reviewer verdict (re-review of C2-CORRECTION01):
+
+  Section E of c2/required-result.txt still asserts:
+
+    C2_CURSOR_BINDING          PASS
+      5/5 byte-identical objects …
+    C2_EOF_NUL_BEHAVIOR        PASS (covered above)
+    C2_LEXREWIND_EQUIVALENCE   PASS (covered above)
+
+  But "covered above" is the pillar-A object parity
+  proof, which is the very claim the two-pillar
+  taxonomy was supposed to refute. The later Section J
+  (corrected verdict) contradicts Section E, but
+  mechanical truth should not depend on "read to the
+  bottom and ignore earlier PASS assertions".
+
+Reproduced verbatim from
+evidence/ACT-POLYC-BOOTSTRAP02/c2/required-result.txt:
+
+------------------------------------------------------------
+Section E — Cursor-binding equivalence (covered above)
+------------------------------------------------------------
+
+E01  C2_CURSOR_BINDING          PASS
+       5/5 byte-identical objects …
+
+E02  C2_EOF_NUL_BEHAVIOR        PASS (covered above)
+E03  C2_LEXREWIND_EQUIVALENCE   PASS (covered above)
+------------------------------------------------------------
+
+Severity: P1 (medium). The two-pillar taxonomy was
+introduced in C2-CORRECTION01 to repair this exact
+class of claim, but Section E was not reclassified
+during that correction. The corrected Section J lives
+hundreds of lines further down; this leaves a single
+evidence file containing mutually contradictory
+assertions about cursor equivalence.
+
+Proposed correction: rewrite Section E to mark these
+predicates SUPERSEDED_BY_PILLAR_B / NOT_CLAIMED_FROM_
+PILLAR_A. Pillar-B evidence (when produced) upgrades
+E01..E03 to PASS-with-source.
+
+See corrected-section-e-wording.txt.

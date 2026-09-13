@@ -1,0 +1,86 @@
+ACT-POLYC-BOOTSTRAP02-C2-CORRECTION02 — C1 RED —
+required-result block
+==================================================
+
+This is the binding contract between C1 RED and C2
+IMPL for this correction ACT. Per §9 of the ACT
+template, C2 may proceed only if every required
+predicate below is GREEN at C1 close.
+
+------------------------------------------------------------
+Section A — Defect classification
+------------------------------------------------------------
+
+A01  DEFECT_P2_PILLAR_B_OVERCLAIM  = DOCUMENTED
+       See c1/defect-pillar-b-over-claim.txt.
+A02  DEFECT_P3_STALE_SECTION_E     = DOCUMENTED
+       See c1/defect-stale-section-e.txt.
+A03  ORIGINAL_P0_ALREADY_CLOSED    = TRUE
+       §14 wording re-authored in C2-CORRECTION01.
+A04  ORIGINAL_P1_FIRST_ORDER       = PARTIALLY_REPAIRED
+       Two-pillar taxonomy introduced but pillar B
+       still labels over-claim.
+
+------------------------------------------------------------
+Section B — Required deliverables
+------------------------------------------------------------
+
+B01  corrected-pillar-b-wording.txt EXISTS        PASS
+B02  corrected-section-e-wording.txt EXISTS       PASS
+B03  defect-pillar-b-over-claim.txt EXISTS        PASS
+B04  defect-stale-section-e.txt EXISTS            PASS
+
+------------------------------------------------------------
+Section C — C2 IMPL scope (forward-only)
+------------------------------------------------------------
+
+C01  tools/quality/bootstrap02-lexer-seam-{legacy,stage1}.c
+       = TO_BE_ADDED  (test-only entry point)
+C02  Makefile: bootstrap02-lexer-seam-test target
+       = TO_BE_ADDED
+C03  evidence/ACT-POLYC-BOOTSTRAP02/c2/lexer-seam-direct-witness.txt
+       = TO_BE_ADDED
+C04  evidence/ACT-POLYC-BOOTSTRAP02/c2/cursor-direct-witness.txt
+       = TO_BE_RELABELED
+       (header reclassified as PILLAR_B_COMPONENT_
+        CURSOR_MODEL)
+C05  evidence/ACT-POLYC-BOOTSTRAP02/c2/required-result.txt
+       Section E
+       = TO_BE_RECLASSIFIED
+C06  evidence/ACT-POLYC-BOOTSTRAP02/c2/cursor-equivalence.txt
+       header
+       = TO_BE_RELABELED  (to clearly distinguish
+        pillar A from pillar B in the file)
+
+------------------------------------------------------------
+Section D — Scope discipline (F7)
+------------------------------------------------------------
+
+D01  production source mutation     = NONE
+D02  B1 component mutation          = NONE
+D03  B0 component mutation          = NONE
+D04  build-system behavioural       = NONE
+D05  authorization scope expansion  = NONE
+D06  test-only entry points         = ALLOWED (and
+                                          required)
+
+------------------------------------------------------------
+Section E — HALT predicates (NOT FIRED at C1 close)
+------------------------------------------------------------
+
+E01  HALT_RED_NOT_REPRODUCED             NOT_FIRED
+E02  HALT_SCOPE_EXPANSION_REQUIRED       NOT_FIRED
+E03  HALT_IMPL_ALREADY_DONE              NOT_FIRED
+
+------------------------------------------------------------
+Section F — C1 verdict
+------------------------------------------------------------
+
+  ACT-Phase                            = RED
+  C1_TO_C2_IMPL_GATE                   = OPEN
+  Defect P2 (pillar-B over-claim)      = DOCUMENTED
+  Defect P3 (stale Section E)           = DOCUMENTED
+  Original P0                           = ALREADY_CLOSED
+  Original P1 (first order)             = PARTIALLY_REPAIRED
+
+C1 RED may pass the baton to C2 IMPL.

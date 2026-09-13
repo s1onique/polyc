@@ -1,0 +1,64 @@
+ACT-POLYC-BOOTSTRAP02-C2-CORRECTION02 — C1 RED —
+defect P2 (was: P1 second-order): pillar-B labels
+over-claim (component model vs production seam)
+==================================================
+
+Reviewer verdict (re-review of C2-CORRECTION01):
+
+  P0 — closed.
+  P1 — improved, but PILLAR B still does not exercise
+       the production cursor seam.
+
+Original (over-claimed) labels in C2-CORRECTION01
+evidence:
+
+  cursor-direct-witness.txt header:
+
+    "direct seam-level cursor witness … six reviewer
+     matrix inputs … (start, end, cur_strlen, next_byte)
+     byte-identical"
+
+  required-result.txt (C2 IMPL) Section H:
+
+    "C2_PILLAR_B_DIRECT_CURSOR_WITNESS … establishes
+     cursor-binding equivalence"
+
+  HANDOFF.md:
+
+    "PILLAR_B = direct seam-level cursor witness"
+
+What the original pillar-B harness ACTUALLY proved:
+
+  bootstrap02-cursor-host.c invokes the B1 PolyC
+  component BootstrapScanIdent directly, in
+  isolation. It does NOT call into src/lexer.c.
+  bootstrap02-cursor-oracle.c is a separate standalone
+  ctype-based reference model. It does NOT call into
+  src/lexer.c.
+
+  Neither side executes the production lexer state
+  machine (Lexer struct, l->ptr, l->cur_strlen,
+  lexNextChar, lexRewindChar, EOF / pushback state).
+
+What the production cursor seam actually requires
+witnessing:
+
+  - dispatcher's pre-advance via lexNextChar
+  - lexIdentifier's two paths (legacy ctype vs
+    BootstrapScanIdent) selected by
+    -DHCC_BOOTSTRAP02_STAGE1
+  - the resulting l->ptr, l->cur_strlen
+  - the next byte observed by the next dispatch cycle
+  - EOF / pushback state (what happens when the
+    identifier ends at a NUL or at end-of-source)
+
+The reviewer is correct: a much stronger component-
+level differential is not the same as a production-
+seam differential.
+
+Severity: P1 (medium). Re-review verdict was:
+"do not change the implementation. Finish the last
+proof at the actual Lexer seam."
+
+Proposed correction: add a real-Lexer-seam harness.
+See corrected-pillar-b-wording.txt.

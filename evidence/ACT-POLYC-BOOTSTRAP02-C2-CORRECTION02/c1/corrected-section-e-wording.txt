@@ -1,0 +1,58 @@
+ACT-POLYC-BOOTSTRAP02-C2-CORRECTION02 — C1 RED —
+corrected Section E wording (c2/required-result.txt)
+==================================================
+
+OLD Section E (over-claims cursor equivalence from
+pillar A alone):
+
+------------------------------------------------------------
+Section E — Cursor-binding equivalence (covered above)
+------------------------------------------------------------
+
+E01  C2_CURSOR_BINDING          PASS
+       5/5 byte-identical objects …
+E02  C2_EOF_NUL_BEHAVIOR        PASS (covered above)
+E03  C2_LEXREWIND_EQUIVALENCE   PASS (covered above)
+------------------------------------------------------------
+
+NEW Section E (honest classification; pillar-A-only
+object parity does NOT prove cursor equivalence):
+
+------------------------------------------------------------
+Section E — Cursor-binding equivalence (RECLASSIFIED)
+------------------------------------------------------------
+
+E01  C2_CURSOR_BINDING
+       SUPERSEDED_BY_PILLAR_B
+       Object emission parity alone does not
+       establish cursor-binding equivalence;
+       see PILLAR_B_PRODUCTION_LEXER_CURSOR_SEAM.
+
+E02  C2_EOF_NUL_BEHAVIOR
+       NOT_CLAIMED_FROM_PILLAR_A
+       EOF / NUL behavior requires direct seam-level
+       observation; see PILLAR_B_PRODUCTION_LEXER_
+       CURSOR_SEAM (will be filled in by this
+       correction ACT's harness).
+
+E03  C2_LEXREWIND_EQUIVALENCE
+       NOT_CLAIMED_FROM_PILLAR_A
+       lexRewindChar equivalence requires direct
+       seam-level observation; see PILLAR_B_
+       PRODUCTION_LEXER_CURSOR_SEAM (will be filled
+       in by this correction ACT's harness).
+------------------------------------------------------------
+
+After this correction ACT closes (C4), the new
+PILLAR_B_PRODUCTION_LEXER_CURSOR_SEAM harness will
+have produced byte-identical outputs for all 6
+inputs. At that point E01..E03 transition to:
+
+    E01  C2_CURSOR_BINDING          PASS_BY_PILLAR_B
+    E02  C2_EOF_NUL_BEHAVIOR        PASS_BY_PILLAR_B
+    E03  C2_LEXREWIND_EQUIVALENCE   PASS_BY_PILLAR_B
+
+But this transition is forward-only — Section E as
+it stands in the C2 IMPL evidence trail must NOT
+claim PASS for any of these three until the new
+harness has actually run.
