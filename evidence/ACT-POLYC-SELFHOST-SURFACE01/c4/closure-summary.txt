@@ -1,0 +1,88 @@
+ACT-POLYC-SELFHOST-SURFACE01 — C4 — closure summary
+====================================================
+
+VERDICT: PASS
+
+ENTRY_HEAD: 3289b36 (C1 RED predecessor)
+
+C1_RED:        3289b36
+C1.1_RED_AMEND: 00dbfd4
+C2_IMPL:       22ba1d1
+C2_EVIDENCE:   3a101db
+C3_EVIDENCE:   f2ca6ee
+C4_CLOSE:      (this commit)
+
+IDENTITY (post-C4):
+
+  branch:        main
+  HEAD:          (this commit's tree)
+  C1 entry:      3289b36
+  C4 commit:     authoritative CLOSE commit (no SHA-of-self)
+
+ROOT CAUSE (RED):
+  No generic self-host component model existed.
+
+FINDING (C1.1 amendment):
+  The original C1 under-claimed the existence of the
+  HCC_BOOTSTRAP02_STAGE1 source-selector in
+  src/lexer.c::lexIdentifier. C1.1 corrected the
+  architectural description to acknowledge that
+  generation-specific BUILD wiring and a frozen
+  SOURCE selector coexist. The selector is
+  preserved exactly.
+
+IMPLEMENTATION (C2):
+
+  5 new files / 1 modified:
+    docs/factory/SELF-HOST-COMPONENTS.tsv
+    scripts/quality/selfhost-component-registry.py
+    scripts/quality/selfhost-component-registry-test.sh
+    tools/selfhost/selfhost-component.sh
+    Makefile (3 new target lines)
+
+GATES:
+
+  factory-v2-test             PASS 35/35
+  factory-append-only-test    PASS 11/11
+  factory-halt-classification PASS 12/12
+  factory-closure-status      PASS 6/6 pairs
+
+  registry validator          PASS 1/1 component
+  registry negative-controls  PASS 13/13
+  generic stage0 build        PASS
+  generic stage1 build        PASS
+  generic stage2 build        PASS
+  generic provenance          PASS 3/3
+  symbol verification         PASS 3/3 (_BootstrapScanIdent)
+
+  bootstrap02-cursor-test     PASS 6/6
+  bootstrap04-test            PASS 15/15 (B3 fixed point)
+  bootstrap04-cursor-test     PASS 6/6
+  bootstrap04-lexer-seam-test PASS 6/6
+
+  historical reconstruction   PASS 10/10
+  generic ↔ historical        PASS 3/3 byte-equal
+
+  B3 broad corpus             PASS 175/175 + 6/6
+  B3 error corpus             PASS 4/4
+
+SCOPE:
+
+  Compiler semantic delta  = ZERO
+  B1 source delta          = ZERO
+  Lexer semantic delta     = ZERO
+  Parser/AST/IR delta      = ZERO
+  LLVM delta               = ZERO
+  New component migrated   = NO
+  New bootstrap stage      = NO
+  New preprocessor macro   = NO
+  HCC_SELFHOST_COMPONENTS  = NOT INTRODUCED
+  build/hcc-bootstrap05    = NOT INTRODUCED
+
+RESIDUE:
+
+  P0 blockers       = NONE
+  P1 immediate      = NONE
+  P2 deferred       = 5 inherited GOVERNANCE items
+
+NEXT ACT: ACT-POLYC-SELFHOST-LEXER01
