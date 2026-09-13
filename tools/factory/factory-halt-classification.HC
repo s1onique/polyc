@@ -723,7 +723,7 @@ I32 RunSelfTests()
 I32 UsageErr()
 {
   FdPrint(1, "STATUS=ERROR\n");
-  FdPrint(1, "REASON=usage: factory-halt-classification <commit-message>\n");
+  FdPrint(1, "REASON=usage: factory-halt-classification.py <commit-message>\n");
   return 2;
 }
 
