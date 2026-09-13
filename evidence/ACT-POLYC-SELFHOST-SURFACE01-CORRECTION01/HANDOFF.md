@@ -186,3 +186,59 @@ HALT TOKEN
 ----------
 
 None. C2 entry gate OPEN, awaiting user authorization.
+
+==========================================================
+C1.1 RED-AMEND APPENDED (commit c5e2e89)
+==========================================================
+
+VERDICT (C1.1): RED PATCH HYGIENE GREEN; READY FOR C2.
+
+C1.1 repairs the four items the user's board response
+named:
+
+1. Two decorative `=======` underlines replaced with
+   `-------` so `git diff --check bb99732..HEAD` returns
+   rc=0.
+
+2. Predecessor post-CLOSE evidence mutation recorded as
+   governance residue in predecessor-false-green.txt
+   (CLASS=GOVERNANCE, BLOCKS_C2=NO). The closed
+   predecessor evidence is NOT touched again.
+
+3. Option C is now recorded as the user-authorized
+   decision (F7 / F15 / CONVERGENCE all SATISFIED for
+   explicit scope expansion). The agent's earlier
+   framing of Option C as "accepting F7/F15/CONVERGENCE
+   violations" was incorrect and is superseded.
+
+4. Tool behavior freeze expanded from 9 placeholder
+   rows to a complete mechanically-observed contract
+   matrix for all 7 tool families:
+
+     a. factory-halt-classification (single + --matrix)
+     b. llvm-cap-table-verifier
+     c. selfhost-component-registry
+     d. bootstrap-corpus-runner (b02/b03/b04 unified)
+     e. bootstrap-error-corpus (b02/b03/b04 unified)
+     f. inline-normalize (2x identical python3 -c)
+     g. (selfhost-component.sh tooling; recorded in
+        selfhost-behavior-freeze.txt)
+
+   The freeze establishes that the 6 bootstrap scripts
+   and 2 inline `python3 -c` blocks are candidates for
+   consolidation in C2, not 9 unrelated systems.
+
+5. Inline `python3 -c` execution edges counted: 2 (in
+   llvm-memory01-red-test.sh and llvm-spike-test.sh).
+
+C2 ENTRY GATE
+=============
+
+  C2_TO_C3_GATE = OPEN
+  C1_TO_C2_GATE = OPEN
+
+The agent MAY proceed to C2.x IMPL per the user's
+directive without another authorization halt, stopping
+only if a declared halt condition fires.
+
+NEXT ACT (post-CLOSE of this ACT): ACT-POLYC-SELFHOST-LEXER01
