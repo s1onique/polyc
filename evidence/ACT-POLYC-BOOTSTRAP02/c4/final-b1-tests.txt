@@ -1,0 +1,74 @@
+ACT-POLYC-BOOTSTRAP02 — C4 — final B1 tests
+============================================
+
+§4 + §9 fresh execution of every currently runnable,
+authoritative B0/B1 closure gate.
+
+------------------------------------------------------------
+Fresh executions at C4 capture time
+------------------------------------------------------------
+
+```text
+$ make bootstrap02-stage1
+... Built target hcc-bootstrap02
+
+$ make bootstrap02-test
+./build/bootstrap02-ident-oracle > /tmp/b02-oracle.txt
+./build/bootstrap02-ident-host   > /tmp/b02-host.txt
+(diff: 0 lines; both 15 I-rows)
+
+$ make bootstrap02-cursor-test
+./build/bootstrap02-cursor-oracle > /tmp/b02-cursor-oracle.txt
+./build/bootstrap02-cursor-host   > /tmp/b02-cursor-host.txt
+BOOTSTRAP02_CURSOR_DIFFERENTIAL=PASS 6/6
+
+$ make bootstrap02-lexer-seam-test
+bootstrap02-lexer-seam-test: stripping BUILD_LABEL and
+  case-name suffixes; re-checking fields
+BOOTSTRAP02_LEXER_SEAM_DOWNSTREAM=PASS (6/6 cases byte-identical)
+BOOTSTRAP02_LEXER_SEAM_RESIDUE=NONE
+
+$ make bootstrap01-test
+BOOTSTRAP01_FAIL=0
+STATUS=PASS
+BOOTSTRAP01_REFERENCE_ORACLE=./build/bootstrap01-lexer-oracle
+
+$ make lsp-test
+lsp: 43/43 passed
+```
+
+------------------------------------------------------------
+Per-gate verdict
+------------------------------------------------------------
+
+| Gate                                | Observed              | Required     | Verdict |
+|-------------------------------------|-----------------------|--------------|---------|
+| BOOTSTRAP01 (B0 conservation)       | 15/15 PASS            | 15/15 PASS   | PASS    |
+| BOOTSTRAP02 component differential  | 15/15 PASS            | 15/15 PASS   | PASS    |
+| BOOTSTRAP02 cursor differential     | 6/6 PASS              | 6/6 PASS     | PASS    |
+| BOOTSTRAP02 production lexer seam   | 6/6 byte-identical    | 6/6 PASS     | PASS    |
+| lsp-test                            | 43/43 PASS            | 43/43 PASS   | PASS    |
+| gate-fast                           | PASS                  | PASS         | PASS    |
+
+------------------------------------------------------------
+Verdict block
+------------------------------------------------------------
+
+```text
+BOOTSTRAP01                    = PASS_15_OF_15
+BOOTSTRAP02_DIFFERENTIAL       = PASS_15_OF_15
+BOOTSTRAP02_CURSOR             = PASS_6_OF_6
+BOOTSTRAP02_PRODUCTION_LEXER   = PASS_6_OF_6
+LSP                            = PASS_43_OF_43
+GATE_FAST                      = PASS
+```
+
+------------------------------------------------------------
+Re-validation timing
+------------------------------------------------------------
+
+All four B0/B1 differential tests were executed at C4
+capture time on the freshly built tree, NOT inferred
+from the C3 evidence packet on `de6b30c`. The C3
+numbers are mechanically re-validated; no stale build
+directories were consumed.

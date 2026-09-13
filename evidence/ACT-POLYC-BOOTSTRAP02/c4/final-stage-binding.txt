@@ -1,0 +1,82 @@
+ACT-POLYC-BOOTSTRAP02 — C4 — final stage binding
+=================================================
+
+§5 binding verification on the freshly rebuilt tree.
+
+------------------------------------------------------------
+Binding predicate
+------------------------------------------------------------
+
+```text
+stage0 ordinary compiler:
+  _BootstrapScanIdent ABSENT
+
+B1 component object:
+  _BootstrapScanIdent DEFINED
+
+stage1 compiler:
+  _BootstrapScanIdent DEFINED
+```
+
+------------------------------------------------------------
+Observed evidence
+------------------------------------------------------------
+
+```text
+$ nm build/hcc | grep _BootstrapScanIdent
+(empty)
+
+$ nm build/bootstrap02-ident.o | grep _BootstrapScanIdent
+00000000000002e0 T _BootstrapScanIdent
+
+$ nm build/hcc-bootstrap02 | grep _BootstrapScanIdent
+000000010007c318 T _BootstrapScanIdent
+```
+
+------------------------------------------------------------
+Delegation binding (lexIdentifier -> BootstrapScanIdent)
+------------------------------------------------------------
+
+Per C3 delegation-witness, stage1's lexIdentifier static
+delegation routes to BootstrapScanIdent via two `bl`
+instructions. Confirmed on the freshly rebuilt stage1:
+
+```text
+$ otool -tv build/hcc-bootstrap02 | grep -B1 'BootstrapScanIdent'
+00000001000303f0	mov	x2, #0x0
+00000001000303f4	bl	_BootstrapScanIdent
+--
+000000010003145c	mov	x2, #0x0
+0000000100031460	bl	_BootstrapScanIdent
+--
+000000010007c314	ret
+_BootstrapScanIdent:
+```
+
+Two `bl _BootstrapScanIdent` instruction sites. Both
+land inside stage1's linked image at addresses in the
+production code segment, not the B1 component object
+(loaded separately at link time and resolved by the
+static linker).
+
+------------------------------------------------------------
+Verdict
+------------------------------------------------------------
+
+```text
+STAGE1_BINARY                     = PRESENT
+STAGE0_ORDINARY_B1_SYMBOL         = ABSENT
+B1_COMPONENT_B1_SYMBOL            = DEFINED
+STAGE1_B1_SYMBOL                  = DEFINED
+STAGE1_LEXIDENTIFIER_DELEGATION   = BL_INSTRUCTION_TWO_SITES
+STAGE1_COMPONENT_BINDING          = PASS
+```
+
+------------------------------------------------------------
+Tools used
+------------------------------------------------------------
+
+```text
+nm           - Mach-O symbol table inspector (BSD)
+otool -tv    - Mach-O disassembly with source-symbol resolution
+```

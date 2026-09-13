@@ -1,0 +1,144 @@
+ACT-POLYC-BOOTSTRAP02 — C4 — residue classification
+=====================================================
+
+§18 residue inventory, classified per the three-class
+severity taxonomy. P0 blocks CLOSE; P1 is engineering
+follow-up; P2 is governance/infrastructure.
+
+------------------------------------------------------------
+P0 — mechanically blocking
+------------------------------------------------------------
+
+```text
+NONE
+```
+
+No genuine P0 residue exists. The B1 closure is
+mechanically clean.
+
+------------------------------------------------------------
+P1 — engineering follow-up
+------------------------------------------------------------
+
+```text
+NONE attributable to B1
+```
+
+C4 does not invent P1 work merely because B2 remains
+unfinished. The B2 design itself is the next ACT.
+
+------------------------------------------------------------
+P2 — governance / infrastructure
+------------------------------------------------------------
+
+P2.1  unit-test current execution unavailable
+----------------------------------------------
+
+```text
+CLASS             = TEST_INFRASTRUCTURE / GOVERNANCE
+PRODUCTION_IMPACT = NONE
+BLOCKS_B1_CLOSE   = NO
+BLOCKS_B2_OPEN    = NO
+```
+
+Current execution of `make unit-test` fails because
+`/usr/local/include/tos.HH` is absent from the host.
+Inherited from the C1 entry baseline; not introduced
+by B1 work.
+
+P2.2  jit-unit-test current execution unavailable
+--------------------------------------------------
+
+```text
+CLASS             = TEST_INFRASTRUCTURE / GOVERNANCE
+PRODUCTION_IMPACT = NONE
+BLOCKS_B1_CLOSE   = NO
+BLOCKS_B2_OPEN    = NO
+```
+
+Same root cause as P2.1; this is a single
+runner-environment issue affecting both unit and jit
+unit harnesses.
+
+P2.3  Makefile runner can false-green child compilation
+-------------------------------------------------------
+
+```text
+CLASS             = TEST_INFRASTRUCTURE / GOVERNANCE
+PRODUCTION_IMPACT = NONE
+BLOCKS_B1_CLOSE   = NO
+BLOCKS_B2_OPEN    = NO
+```
+
+The `unit-test` / `jit-unit-test` recipes chain
+compilation subcommands with `&&`, which does NOT
+propagate child compilation failures back to make's
+return code. Therefore a runner that appears to make
+EXIT 0 may still have produced no executable. This is
+classified as test-infrastructure defect, NOT a B1
+compiler defect. Recorded for a future bounded
+correction ACT (out of B1 scope).
+
+P2.4  historical raw-evidence whitespace
+----------------------------------------
+
+```text
+CLASS             = GOVERNANCE
+PRODUCTION_IMPACT = NONE
+BLOCKS_B1_CLOSE   = NO
+BLOCKS_B2_OPEN    = NO
+```
+
+`git diff --check` over the post-append-only range
+returns 125 lines of trailing-whitespace / EOF-newline
+findings. All are in historical ACT evidence/log files
+of ACTs not mutated by C4. None are conflict markers.
+C4 does NOT touch these files (F14 / scope conservation).
+
+P2.5  inherited GEP01 / push residue
+------------------------------------
+
+```text
+CLASS             = GOVERNANCE
+PRODUCTION_IMPACT = NONE
+BLOCKS_B1_CLOSE   = NO
+BLOCKS_B2_OPEN    = NO
+```
+
+The C3 packet (`compiler-conservation.txt` Section D)
+records that the inherited Makefile-target gates
+(llvm-gep01-test, gate-push) still hold the
+INTEGRATION-PREBOOTSTRAP-GATES01 halt residue. This is
+NOT a B1-attributable regression. It is unchanged
+inherited state; C4 does not consume or repair it.
+
+------------------------------------------------------------
+Verdict block
+------------------------------------------------------------
+
+```text
+P0_TOTAL            = 0
+P1_TOTAL            = 0   (none attributable to B1)
+P2_TOTAL            = 5   (all governance, none blocking)
+BLOCKS_B1_CLOSE      = NO
+BLOCKS_B2_OPEN       = NO
+RESIDUE_REPAIR_ACT   = NOT_OPENED  (deferred to next board cycle)
+```
+
+------------------------------------------------------------
+Why C4 does NOT repair residue
+------------------------------------------------------------
+
+Per ACT §26 ("hard stop after CLOSE") and F15 ("never
+self-authorize scope expansion"):
+
+- The unit/jit runner defect (P2.3) requires Makefile
+  semantic changes outside C4's authorized scope.
+- The historical whitespace (P2.4) is in unrelated ACT
+  evidence that C4 must not mutate (F14).
+- The inherited GEP01 residue (P2.5) requires either
+  CMake / AOT / harness changes, all outside C4's
+  authorized scope.
+
+C4 records them honestly. The next board-design ACT
+can decide whether to open a bounded correction.

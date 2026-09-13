@@ -1,0 +1,74 @@
+ACT-POLYC-BOOTSTRAP02 — C4 — scope audit
+========================================
+
+§13 F14 audit (prior evidence mutation) +
+§14 production-freeze audit +
+§15 binary-evidence audit.
+
+------------------------------------------------------------
+§13 F14 audit — prior evidence mutation
+------------------------------------------------------------
+
+```text
+$ git diff --name-only 15c611f..HEAD -- \
+    evidence/ACT-POLYC-BOOTSTRAP02/c1 \
+    evidence/ACT-POLYC-BOOTSTRAP02/c2 \
+    evidence/ACT-POLYC-BOOTSTRAP02/c3 \
+    evidence/ACT-POLYC-BOOTSTRAP02-C1-CORRECTION01 \
+    evidence/ACT-POLYC-BOOTSTRAP02-C2-CORRECTION01 \
+    evidence/ACT-POLYC-BOOTSTRAP02-C2-CORRECTION02 \
+    evidence/ACT-POLYC-BOOTSTRAP02-C2-CORRECTION03
+(empty)
+```
+
+```text
+PRIOR_EVIDENCE_MUTATION = ZERO
+```
+
+------------------------------------------------------------
+§14 production-freeze audit
+------------------------------------------------------------
+
+```text
+$ git diff --name-only 15c611f..HEAD -- \
+    src tools/bootstrap tools/quality scripts Makefile
+(empty)
+```
+
+```text
+C4_PRODUCTION_DELTA = ZERO
+```
+
+------------------------------------------------------------
+§15 binary-evidence audit (current tree)
+------------------------------------------------------------
+
+```text
+$ git ls-files evidence/ACT-POLYC-BOOTSTRAP02/c4/ \
+    | grep -E '\.(o|dylib|a|so)$|hcc$|hcc-bootstrap02$'
+(no output)
+
+$ file evidence/ACT-POLYC-BOOTSTRAP02/c4/*
+(all: ASCII text / Unicode text / directory)
+```
+
+```text
+C4_BINARY_EVIDENCE_FILES = 0
+```
+
+The C3 forward-fix on `15c611f` (this ACT's C4 entry
+HEAD) already brought the C3 evidence tree to zero
+committed binaries. C4 evidence files are textual only.
+
+------------------------------------------------------------
+Verdict block
+------------------------------------------------------------
+
+```text
+PRIOR_EVIDENCE_MUTATION  = ZERO
+C4_PRODUCTION_DELTA      = ZERO
+C4_BINARY_EVIDENCE_FILES = 0
+F14_AUDIT                = PASS
+PRODUCTION_FREEZE_AUDIT  = PASS
+BINARY_EVIDENCE_AUDIT    = PASS
+```

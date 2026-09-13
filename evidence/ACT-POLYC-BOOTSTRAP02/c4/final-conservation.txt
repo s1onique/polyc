@@ -1,0 +1,80 @@
+ACT-POLYC-BOOTSTRAP02 — C4 — final conservation
+=================================================
+
+§9 + §10 + §11 compiler / factory / unit-jit conservation.
+
+------------------------------------------------------------
+Currently runnable closure gates (fresh execution)
+------------------------------------------------------------
+
+```text
+make bootstrap01-test            BOOTSTRAP01  15/15 PASS
+make bootstrap02-test            BOOTSTRAP02  15/15 PASS
+make bootstrap02-cursor-test     BOOTSTRAP02_CURSOR  6/6 PASS
+make bootstrap02-lexer-seam-test BOOTSTRAP02_LEXER_SEAM  6/6 PASS
+make lsp-test                    LSP          43/43 PASS
+make gate-fast                   GATE_FAST    PASS
+```
+
+------------------------------------------------------------
+§10 unit / jit-unit-test classification (NOT executed)
+------------------------------------------------------------
+
+Per the C3 forward-fix on `15c611f`, current execution
+of `make unit-test` and `make jit-unit-test` is blocked
+by an inherited environment limitation
+(`/usr/local/include/tos.HH` absent) compounded by a
+Makefile runner defect (recipe uses `&&` which does NOT
+propagate child compilation failures to make's rc).
+
+C4 preserves the truthful classification:
+
+```text
+UNIT_TEST_CURRENT_EXECUTION =
+  ENVIRONMENTALLY_UNAVAILABLE / RUNNER_FALSE_GREEN
+UNIT_TEST_LAST_KNOWN_GOOD    = 90/90
+JIT_UNIT_TEST_CURRENT_EXECUTION =
+  ENVIRONMENTALLY_UNAVAILABLE / RUNNER_FALSE_GREEN
+JIT_UNIT_TEST_LAST_KNOWN_GOOD    = 90/90
+C4_ATTRIBUTABLE_REGRESSION       = NONE_OBSERVED
+```
+
+C4 does NOT claim "UNIT_TEST = PASS 90/90" because no
+fresh execution demonstrates it. Classification:
+
+```text
+CLASS             = TEST_INFRASTRUCTURE / GOVERNANCE
+PRODUCTION_IMPACT = NONE
+BLOCKS_B1_CLOSE   = NO
+```
+
+------------------------------------------------------------
+§11 Factory conservation
+------------------------------------------------------------
+
+```text
+./scripts/quality/factory-v2-test.sh                PASS=35 FAIL=0
+./scripts/quality/factory-append-only-test.sh       PASS=11 FAIL=0
+./scripts/quality/factory-halt-classification-test.sh PASS=12 FAIL=0
+./scripts/quality/factory-closure-status-check.sh   PAIR_OK=6 PAIR_FAIL=0
+./scripts/quality/shell-loc-gate.sh                 PASS
+```
+
+------------------------------------------------------------
+Verdict block
+------------------------------------------------------------
+
+```text
+BOOTSTRAP01                     = PASS_15_OF_15
+BOOTSTRAP02_DIFFERENTIAL        = PASS_15_OF_15
+BOOTSTRAP02_CURSOR              = PASS_6_OF_6
+BOOTSTRAP02_LEXER_SEAM          = PASS_6_OF_6
+LSP                             = PASS_43_OF_43
+GATE_FAST                       = PASS
+FACTORY_V2                      = PASS
+FACTORY_APPEND_ONLY             = PASS
+FACTORY_HALT_CLASSIFICATION     = PASS
+FACTORY_CLOSURE_STATUS          = PASS
+SHELL_LOC                       = PASS
+B1_ATTRIBUTABLE_REGRESSION      = NONE_OBSERVED
+```

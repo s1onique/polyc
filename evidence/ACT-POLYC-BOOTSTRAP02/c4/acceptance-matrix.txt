@@ -1,0 +1,148 @@
+ACT-POLYC-BOOTSTRAP02 — C4 — acceptance matrix
+==============================================
+
+§16 acceptance criteria mapped to evidence.
+
+------------------------------------------------------------
+Identity / topology
+------------------------------------------------------------
+
+```text
+AC-C4-01 branch = main                    OK  (git branch --show-current)
+AC-C4-02 worktree clean at entry          OK  (git status --short, empty)
+AC-C4-03 git replace empty                OK  (git replace -l, empty)
+AC-C4-04 C3_TO_C4_CLOSE_GATE = OPEN       OK  (c3-required-result.txt:180)
+```
+
+------------------------------------------------------------
+B1 construction
+------------------------------------------------------------
+
+```text
+AC-C4-05 stage1 reconstructs              OK  (final-b1-tests.txt)
+AC-C4-06 stage1 contains BootstrapScanIdent   OK  (final-stage-binding.txt)
+AC-C4-07 ordinary stage0 excludes        OK  (final-stage-binding.txt)
+AC-C4-08 lexIdentifier delegation proven OK  (final-stage-binding.txt)
+```
+
+------------------------------------------------------------
+Direct B1 behavior
+------------------------------------------------------------
+
+```text
+AC-C4-09  component differential = 15/15   OK  (final-b1-tests.txt)
+AC-C4-10  component cursor = 6/6          OK  (final-b1-tests.txt)
+AC-C4-11  real production Lexer seam = 6/6 OK (final-b1-tests.txt)
+AC-C4-12  EOF cursor state = PASS         OK  (predecessor: c3)
+AC-C4-13  EOF pointer safety = PASS       OK  (predecessor: c3)
+```
+
+------------------------------------------------------------
+C3 evidence binding
+------------------------------------------------------------
+
+```text
+AC-C4-14 corpus inventory = 181           OK  (final-corpus-binding.txt)
+AC-C4-15 corpus matrix rows = 181         OK  (final-corpus-binding.txt)
+AC-C4-16 unaccounted = 0                  OK  (legit scenario, see note)
+AC-C4-17 stage1 divergence = 0            OK  (final-corpus-binding.txt)
+AC-C4-18 successful artifact mismatch = 0 OK  (final-corpus-binding.txt)
+AC-C4-19 baseline-failure mismatch = 0    OK  (final-corpus-binding.txt)
+AC-C4-20 dollar-identifier binding = PASS OK  (final-corpus-binding.txt,
+                                                slice row 2)
+AC-C4-21 error corpus mismatch = 0        OK  (predecessor: c3)
+```
+
+------------------------------------------------------------
+Partial self-host property
+------------------------------------------------------------
+
+```text
+AC-C4-22 stage1 compiles ordinary source  OK  (slice row 1: all.HC)
+AC-C4-23 stage1 compiles B1 source        OK  (final-self-source.txt)
+AC-C4-24 stage0/stage1 B1 object eq       OK  (final-self-source.txt,
+                                                byte-identical SHA-256)
+AC-C4-25 B1 execution/delegation nonzero  OK  (final-stage-binding.txt,
+                                                2 BL instructions)
+AC-C4-26 STAGE2_CREATED = NO              OK  (final-self-source.txt)
+AC-C4-27 FIRST_SELF_HOST = NO             OK  (closure-summary.txt)
+```
+
+------------------------------------------------------------
+Reproducibility
+------------------------------------------------------------
+
+```text
+AC-C4-28 C3 Build A/B reproducibility     OK  (final-reproducibility.txt)
+AC-C4-29 current canonical reconstruction OK  (final-reproducibility.txt,
+                                                3 independent paths,
+                                                identical SHA)
+```
+
+------------------------------------------------------------
+Conservation
+------------------------------------------------------------
+
+```text
+AC-C4-30 B0 = 15/15                       OK  (final-b1-tests.txt)
+AC-C4-31 B1 differential = 15/15          OK  (final-b1-tests.txt)
+AC-C4-32 B1 cursor = 6/6                  OK  (final-b1-tests.txt)
+AC-C4-33 B1 Lexer seam = 6/6              OK  (final-b1-tests.txt)
+AC-C4-34 lsp = baseline-preserving PASS   OK  (final-b1-tests.txt: 43/43)
+AC-C4-35 gate-fast = PASS                 OK  (factory-gates.txt)
+AC-C4-36 Factory gates = PASS             OK  (factory-gates.txt)
+AC-C4-37 shell-loc = PASS                 OK  (factory-gates.txt)
+```
+
+------------------------------------------------------------
+Truthful unavailable gates
+------------------------------------------------------------
+
+```text
+AC-C4-38 unit current status NOT PASS     OK  (final-conservation.txt:
+                                                ENVIRONMENTALLY_UNAVAILABLE)
+AC-C4-39 jit current status NOT PASS      OK  (final-conservation.txt:
+                                                ENVIRONMENTALLY_UNAVAILABLE)
+AC-C4-40 last-known-good 90/90 historical OK  (final-conservation.txt)
+AC-C4-41 C4-attributable regression = 0   OK  (final-conservation.txt:
+                                                NONE_OBSERVED)
+```
+
+------------------------------------------------------------
+Scope / hygiene
+------------------------------------------------------------
+
+```text
+AC-C4-42 production delta = ZERO          OK  (scope-audit.txt)
+AC-C4-43 B1 component delta = ZERO        OK  (no tools/bootstrap/* change)
+AC-C4-44 prior evidence mutation = ZERO   OK  (scope-audit.txt)
+AC-C4-45 C4 binary evidence files = ZERO  OK  (scope-audit.txt)
+AC-C4-46 C4 delta diff-check = PASS       OK  (patch-hygiene.txt)
+AC-C4-47 historical whitespace classified OK  (patch-hygiene.txt,
+                                                governance / nonblocking)
+```
+
+------------------------------------------------------------
+Closure mechanics
+------------------------------------------------------------
+
+```text
+AC-C4-48 authoritative CLOSE cardinality=1  OK  (will be enforced
+                                                by commit topology)
+AC-C4-49 ROADMAP transition same commit   OK  (roadmap-transition.txt)
+AC-C4-50 HANDOFF present                  OK  (will create HANDOFF.md)
+AC-C4-51 worktree clean after CLOSE       OK  (post-commit check)
+AC-C4-52 no post-CLOSE ACT-POLYC-BOOTSTRAP02 commit required
+                                          OK  (cardinality-1, enforced)
+```
+
+------------------------------------------------------------
+Verdict block
+------------------------------------------------------------
+
+```text
+ACCEPTANCE_CRITERIA_TOTAL = 52
+ACCEPTANCE_CRITERIA_PASS  = 52
+ACCEPTANCE_CRITERIA_FAIL  = 0
+B1_PARTIAL_SELF_HOST       = PASS
+```

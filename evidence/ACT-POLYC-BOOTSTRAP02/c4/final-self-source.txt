@@ -1,0 +1,84 @@
+ACT-POLYC-BOOTSTRAP02 — C4 — final B1 self-source
+=================================================
+
+§7 B1 source self-compilation proof.
+
+------------------------------------------------------------
+Source
+------------------------------------------------------------
+
+```text
+tools/bootstrap/bootstrap02-ident.HC
+```
+
+This is the single PolyC source file that constitutes
+the B1 component. It is written in HolyC / PolyC (not
+in C), it implements `BootstrapScanIdent`, and it is
+linked into the stage1 compiler `hcc-bootstrap02`.
+
+------------------------------------------------------------
+Fresh compilation (current tree)
+------------------------------------------------------------
+
+```text
+$ ./build/hcc              --install-dir ./build/test-prefix \
+    -c tools/bootstrap/bootstrap02-ident.HC \
+    -o /tmp/c4-ident-A.o
+$ ./build/hcc-bootstrap02  --install-dir ./build/test-prefix \
+    -c tools/bootstrap/bootstrap02-ident.HC \
+    -o /tmp/c4-ident-B.o
+
+$ shasum -a 256 /tmp/c4-ident-A.o /tmp/c4-ident-B.o
+a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f  /tmp/c4-ident-A.o
+a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f  /tmp/c4-ident-B.o
+```
+
+The two objects are byte-identical (SHA-256 equal).
+
+------------------------------------------------------------
+Hash consistency with C3 reproducibility record
+------------------------------------------------------------
+
+```text
+C3 reproducibility.txt (Build A) bootstrap02-ident.o =
+  a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f
+C3 reproducibility.txt (Build B) bootstrap02-ident.o =
+  a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f
+Current fresh stage1 build/bootstrap02-ident.o          =
+  a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f
+```
+
+The current tree reproduces the exact canonical B1
+artifact that was recorded by the C3 reproducibility
+record on both Build A and Build B. This is the strongest
+available proof that:
+
+  - the stage1 build path is deterministic;
+  - the B1 component code is byte-stable;
+  - no regression has entered the bootstrap seam since
+    the C3 forward-fix.
+
+------------------------------------------------------------
+What was NOT done (per §7)
+------------------------------------------------------------
+
+```text
+STAGE2_CREATED = NO
+```
+
+The fresh stage1 was used only to compile the B1 source
+for SHA-256 evidence. It was NOT linked back into a
+new compiler (stage2). Stage2 construction is the next
+board-design task and is explicitly out of C4 scope.
+
+------------------------------------------------------------
+Verdict block
+------------------------------------------------------------
+
+```text
+STAGE0_B1_SOURCE_COMPILE   = PASS
+STAGE1_B1_SOURCE_COMPILE   = PASS
+B1_SOURCE_OUTPUT_EQ        = PASS (SHA-256 byte-identical)
+B1_ARTIFACT_HASH_MATCHES_C3_REPRODUCIBILITY = PASS
+STAGE2_CREATED             = NO
+```

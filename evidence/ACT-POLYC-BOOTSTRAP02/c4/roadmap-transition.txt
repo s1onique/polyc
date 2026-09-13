@@ -1,0 +1,97 @@
+ACT-POLYC-BOOTSTRAP02 — C4 — roadmap transition
+==============================================
+
+§20 ROADMAP transition diff.
+
+------------------------------------------------------------
+Before (lines 1874-1882 of docs/ROADMAP.md, pre-C4)
+------------------------------------------------------------
+
+```text
+#### P4 bootstrap milestones (current status)
+
+B0 — COMPILER-SHAPED      GREEN
+                              ACT-POLYC-BOOTSTRAP01 CLOSED PASS
+                              ACT-POLYC-BOOTSTRAP01-CORRECTION01
+                                CLOSED PASS_WITH_HYGIENE_RESIDUE
+B1 — PARTIAL SELF-HOST    READY_FOR_AUTH_AFTER_CORRECTION_CLOSES
+B2 — FIRST SELF-HOST      LOCKED
+B3 — BOOTSTRAP STABILITY  LOCKED
+```
+
+------------------------------------------------------------
+After (lines 1874-1882 of docs/ROADMAP.md, post-C4)
+------------------------------------------------------------
+
+```text
+#### P4 bootstrap milestones (current status)
+
+B0 — COMPILER-SHAPED      GREEN
+                              ACT-POLYC-BOOTSTRAP01 CLOSED PASS
+                              ACT-POLYC-BOOTSTRAP01-CORRECTION01
+                                CLOSED PASS_WITH_HYGIENE_RESIDUE
+B1 — PARTIAL SELF-HOST    GREEN
+                              ACT-POLYC-BOOTSTRAP02 CLOSED PASS
+B2 — FIRST SELF-HOST      UNLOCKED / NEXT
+B3 — BOOTSTRAP STABILITY  LOCKED
+```
+
+------------------------------------------------------------
+Diff rationale
+------------------------------------------------------------
+
+1. `B1 — PARTIAL SELF-HOST` status line changes from
+   `READY_FOR_AUTH_AFTER_CORRECTION_CLOSES` to `GREEN`.
+2. New CLOSE attestation line added under B1:
+   `ACT-POLYC-BOOTSTRAP02 CLOSED PASS`.
+3. `B2 — FIRST SELF-HOST` status changes from `LOCKED`
+   to `UNLOCKED / NEXT`.
+4. B0 and B3 lines unchanged.
+
+------------------------------------------------------------
+Recommended outcome block (new, post-B1)
+------------------------------------------------------------
+
+```text
+B1_PARTIAL_SELF_HOST              = GREEN
+B1_COMPONENT_POLYC                = YES
+B1_COMPONENT_STAGE0_BUILT         = YES
+B1_COMPONENT_STAGE1_BOUND         = YES
+B1_REAL_LEXER_EQ                  = 6/6
+B1_BROAD_CORPUS_EQ                = 175/175
+B1_STAGE1_COMPILES_OWN_COMPONENT  = YES
+B1_REPRODUCIBLE                   = YES
+FIRST_SELF_HOST                   = NO
+BOOTSTRAP_STABILITY               = NOT_YET
+NEXT                              = B2
+```
+
+------------------------------------------------------------
+Why C4 does NOT name B2's precise implementation ACT
+------------------------------------------------------------
+
+Per ACT §20:
+
+> "Do not name B2's precise implementation ACT unless
+>  its scope has actually been designed."
+
+B2's design (which B0/B1 layer to grow next, whether
+to expand the lexer/tokenizer self-host further, or to
+target a different bounded subsystem) is itself a
+board-design decision. C4 unlocks the milestone but
+does not pre-authorize a specific B2 implementation.
+
+------------------------------------------------------------
+Inclusion in same CLOSE commit
+------------------------------------------------------------
+
+Per ACT §20:
+
+> "Update `docs/ROADMAP.md` inside the same C4 CLOSE
+>  commit. This avoids another cardinality-1 failure
+>  and avoids post-CLOSE continuation of the same ACT."
+
+The ROADMAP.md edit lands in the SAME commit as
+`evidence/ACT-POLYC-BOOTSTRAP02/c4/**` and
+`evidence/ACT-POLYC-BOOTSTRAP02/HANDOFF.md`. No
+post-CLOSE commit is required.

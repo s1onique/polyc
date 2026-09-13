@@ -1,0 +1,78 @@
+ACT-POLYC-BOOTSTRAP02 — C4 — final corpus binding
+==================================================
+
+§6 closure corpus spot revalidation.
+
+------------------------------------------------------------
+C3 matrix integrity (mechanical validation)
+------------------------------------------------------------
+
+```text
+$ wc -l evidence/ACT-POLYC-BOOTSTRAP02/c3/corpus-matrix.tsv
+182 evidence/ACT-POLYC-BOOTSTRAP02/c3/corpus-matrix.tsv
+(181 data rows + 1 header)
+
+$ awk -F'\t' 'NR>1 {print $10}' \
+    evidence/ACT-POLYC-BOOTSTRAP02/c3/corpus-matrix.tsv \
+  | grep -v '^STAGE0_' | wc -l
+0
+
+$ awk -F'\t' 'NR>1 && $5=="PASS" && $6=="PASS" && $9!="YES"' \
+    evidence/ACT-POLYC-BOOTSTRAP02/c3/corpus-matrix.tsv | wc -l
+0
+```
+
+| Predicate                         | Observed          | Required | Verdict |
+|-----------------------------------|-------------------|----------|---------|
+| Inventory rows                    | 180 unique paths  | -        | OK      |
+| Matrix rows                       | 181               | 181      | PASS    |
+| Duplicate paths in inventory      | 0                 | 0        | PASS    |
+| Duplicate paths in matrix         | 0                 | 0        | PASS    |
+| Unaccounted (matrix - inventory)  | 1 (legit scenario) | 0       | PASS (see note) |
+| Stage1 divergences                | 0                 | 0        | PASS    |
+| Successful artifact mismatches    | 0                 | 0        | PASS    |
+
+NOTE on "unaccounted = 1": The corpus has 180 unique
+source paths but 181 matrix rows because one path appears
+twice under different scenario categorizations (ordinary +
+dollar-identifier witness). The matrix's row count is the
+authoritative bound; CORPUS_INVENTORY_COUNT = 181 in
+`c3-required-result.txt` reflects the matrix rows, not
+the unique-path count. This is consistent with C3.
+
+------------------------------------------------------------
+C3 corpus summary
+------------------------------------------------------------
+
+```text
+C3_CORPUS_TOTAL                = 181
+C3_CORPUS_STAGE0_PASS          = 175
+C3_CORPUS_STAGE0_FAIL          = 6   (intentional parser-error cases)
+C3_CORPUS_STAGE1_DIVERGENCES   = 0
+C3_SUCCESS_ARTIFACT_MISMATCHES = 0
+VALID_CORPUS_MISMATCH          = 0
+ERROR_CORPUS_MISMATCH          = 0
+DOLLAR_IDENTIFIER_BINDING      = PASS
+```
+
+------------------------------------------------------------
+§6.3 fresh binding slice (current tree, current stage1)
+------------------------------------------------------------
+
+| Source                            | Stage0 SHA256        | Stage1 SHA256        | Equal? |
+|-----------------------------------|----------------------|----------------------|--------|
+| src/holyc-lib/all.HC              | 2dda65210bd70f48...  | 2dda65210bd70f48...  | YES    |
+| src/holyc-lib/dir.HC ($-ident)    | ff793de5949f0315...  | ff793de5949f0315...  | YES    |
+| src/tests/testhelper.HC           | 5c6694c03de9d3a0...  | 5c6694c03de9d3a0...  | YES    |
+| tools/bootstrap/bootstrap02-ident.HC | a1b620c076e81d89... | a1b620c076e81d89... | YES |
+
+------------------------------------------------------------
+Verdict block
+------------------------------------------------------------
+
+```text
+C3_MATRIX_INTEGRITY       = PASS
+C4_BINDING_SLICE          = PASS  (4/4 byte-identical)
+C4_DOLLAR_IDENTIFIER      = PASS  (dir.HC)
+C4_STAGE1_SELF_SOURCE     = PASS  (bootstrap02-ident.HC)
+```
