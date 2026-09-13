@@ -1,0 +1,105 @@
+ACT-POLYC-BOOTSTRAP02 — C3 — Factory gates
+===========================================
+
+Per ACT §22: required executable gates
+  factory-v2-test
+  factory-append-only-test
+  factory-halt-classification-test
+  factory-closure-status-check
+  shell-loc-gate
+  gate-fast
+
+All run against canonical repository paths.
+Expected: all PASS.
+
+------------------------------------------------------------
+Section A — factory-v2-test
+------------------------------------------------------------
+
+  $ ./scripts/quality/factory-v2-test.sh 2>&1 | tail -5
+  --- summary ---
+  PASS=35
+  FAIL=0
+  STATUS=PASS
+
+factory-v2: PASS=35 FAIL=0
+
+------------------------------------------------------------
+Section B — factory-append-only-test
+------------------------------------------------------------
+
+  $ ./scripts/quality/factory-append-only-test.sh 2>&1 | tail -5
+  --- summary ---
+  PASS=11
+  FAIL=0
+  STATUS=PASS
+
+factory-append-only: PASS=11 FAIL=0
+
+------------------------------------------------------------
+Section C — factory-halt-classification-test
+------------------------------------------------------------
+
+  $ ./scripts/quality/factory-halt-classification-test.sh 2>&1 | tail -5
+  --- summary ---
+  PASS=12
+  FAIL=0
+  STATUS=PASS
+
+factory-halt-classification: PASS=12 FAIL=0
+
+------------------------------------------------------------
+Section D — factory-closure-status-check
+------------------------------------------------------------
+
+  $ ./scripts/quality/factory-closure-status-check.sh 2>&1 | tail -10
+  MANIFEST_ROWS=6
+  MISSING_HANDOFF_FILES=0
+  MALFORMED_ACT_STATUS=0
+  MALFORMED_HANDOFF_VERDICT=0
+  EXACT_VERDICT_MISMATCHES=0
+  PAIR_OK=6
+  PAIR_FAIL=0
+  STATUS=PASS
+  VERDICT=PASS
+
+factory-closure-status: PASS=6/0
+
+------------------------------------------------------------
+Section E — shell-loc-gate
+------------------------------------------------------------
+
+  $ ./scripts/quality/shell-loc-gate.sh
+  PASS  shell-loc-gate
+
+shell-loc-gate: PASS
+
+------------------------------------------------------------
+Section F — gate-fast
+------------------------------------------------------------
+
+  $ make gate-fast 2>&1 | tail -20
+  POLYC_GATE=fast
+  CHECK=diff-check STATUS=PASS
+  CHECK=shell-syntax STATUS=PASS
+  CHECK=doc-invariants STATUS=PASS
+  CHECK=large-file-guard STATUS=PASS
+  BUILD_RUN=NO
+  POLYC_GATE=factory-closure-status
+  MANIFEST_ROWS=6
+  ...
+  STATUS=PASS
+  VERDICT=PASS
+  CHECK=factory-closure-status STATUS=PASS
+  VERDICT=PASS
+
+gate-fast: PASS
+
+------------------------------------------------------------
+Section G — Verdict
+------------------------------------------------------------
+
+FACTORY_CONSERVATION = PASS
+
+All six executable Factory gates PASS at C3 entry.
+No PASS was inferred from previous logs.

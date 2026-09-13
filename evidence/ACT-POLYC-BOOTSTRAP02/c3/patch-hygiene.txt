@@ -1,0 +1,74 @@
+ACT-POLYC-BOOTSTRAP02 — C3 — patch hygiene
+============================================
+
+Per ACT §23: `git diff --check <C3-entry>..HEAD`
+classifies findings.
+
+------------------------------------------------------------
+Section A — Diff hygiene on C3 entry vs HEAD
+------------------------------------------------------------
+
+  $ git status --short
+  ?? evidence/ACT-POLYC-BOOTSTRAP02/c3/
+  ?? tools/quality/bootstrap02-corpus-runner.py
+  ?? tools/quality/bootstrap02-error-corpus.py
+
+  $ git add -N evidence/ACT-POLYC-BOOTSTRAP02/c3/ \
+              tools/quality/bootstrap02-corpus-runner.py \
+              tools/quality/bootstrap02-error-corpus.py
+
+  $ git diff --check 6144361e HEAD
+  (empty output)
+  $ echo $?
+  0
+
+  $ git diff --check
+  (empty output)
+  $ echo $?
+  0
+
+No whitespace errors at EOF, no trailing whitespace,
+no tab/space mixing in any of the C3-introduced files.
+
+------------------------------------------------------------
+Section B — Source/executable/config finding
+------------------------------------------------------------
+
+Source/executable/config finding introduced by C3:
+NONE.
+
+C3 introduced:
+  - evidence/ACT-POLYC-BOOTSTRAP02/c3/*  (text evidence)
+  - tools/quality/bootstrap02-corpus-runner.py
+  - tools/quality/bootstrap02-error-corpus.py
+
+The tools/quality/*.py files are TEST-ONLY drivers
+that invoke ./hcc as a subprocess. They do not modify
+production sources, build systems, or compiler
+internals.
+
+------------------------------------------------------------
+Section C — Raw captured evidence (binding)
+------------------------------------------------------------
+
+Captured raw binaries under
+evidence/ACT-POLYC-BOOTSTRAP02/c3/rebuild-A/
+evidence/ACT-POLYC-BOOTSTRAP02/c3/rebuild-B/
+
+These are .o files and Mach-O binaries (hcc, hcc-bootstrap02)
+copied as reproducibility evidence. They are NOT committed
+to the authoritative source tree under build/ — they live
+under the ACT evidence directory.
+
+`git diff --check` does not parse binary content, so
+binary content under rebuild-A/rebuild-B does not
+contribute hygiene warnings.
+
+------------------------------------------------------------
+Section D — Verdict
+------------------------------------------------------------
+
+AC-C3-40 new executable/source patch hygiene clean : PASS
+
+No C3-introduced finding is BLOCKING.
+No C3-introduced finding is GOVERNANCE.

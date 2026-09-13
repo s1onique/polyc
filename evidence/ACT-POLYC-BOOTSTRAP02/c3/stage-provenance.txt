@@ -1,0 +1,87 @@
+ACT-POLYC-BOOTSTRAP02 — C3 — stage provenance
+=============================================
+
+Per ACT §4: prove the B1 PolyC component was built by
+stage0 and linked into stage1, and that stage0 does NOT
+contain it.
+
+------------------------------------------------------------
+Section A — Roles and resolved paths
+------------------------------------------------------------
+
+STAGE0_COMPILER = $(pwd)/hcc
+B1_SOURCE       = $(pwd)/tools/bootstrap/bootstrap02-ident.HC
+B1_OBJECT       = $(pwd)/build/bootstrap02-ident.o
+STAGE1_COMPILER = $(pwd)/build/hcc-bootstrap02
+LEGACY_BUILD    = $(pwd)/build/hcc
+
+------------------------------------------------------------
+Section B — Symbol evidence
+------------------------------------------------------------
+
+Command:
+
+  nm hcc                      | grep -i BootstrapScanIdent
+  nm build/hcc                | grep -i BootstrapScanIdent
+  nm build/hcc-bootstrap02    | grep -i BootstrapScanIdent
+  nm build/bootstrap02-ident.o | grep -i BootstrapScanIdent
+
+Output:
+
+  hcc  : <no output>
+  build/hcc  : <no output>
+  build/hcc-bootstrap02  : 000000010007c318 T _BootstrapScanIdent
+  build/bootstrap02-ident.o : 00000000000002e0 T _BootstrapScanIdent
+
+Interpretation:
+
+  - stage0 (./hcc and ./build/hcc) contains NO
+    _BootstrapScanIdent symbol. The production path
+    uses the legacy ctype-based lexIdentifier body.
+  - The B1 object contains _BootstrapScanIdent at
+    offset 0x2e0.
+  - stage1 (./build/hcc-bootstrap02) contains
+    _BootstrapScanIdent at 0x10007c318. It is linked
+    from build/bootstrap02-ident.o.
+
+------------------------------------------------------------
+Section C — Component producer (binding)
+------------------------------------------------------------
+
+B1_COMPONENT_PRODUCER = STAGE0
+
+Verified by:
+
+  $ ./hcc --install-dir=$(TEST_PREFIX) \
+          -c tools/bootstrap/bootstrap02-ident.HC \
+          -o build/bootstrap02-ident.o
+  $ nm build/bootstrap02-ident.o | grep -i BootstrapScanIdent
+  00000000000002e0 T _BootstrapScanIdent
+
+The B1 PolyC component was produced by stage0
+(hcc). No other compiler touched it.
+
+------------------------------------------------------------
+Section D — Stage1 link (binding)
+------------------------------------------------------------
+
+STAGE1_COMPONENT_BINDING = YES
+
+Verified by:
+
+  $ nm build/hcc-bootstrap02 | grep -i BootstrapScanIdent
+  000000010007c318 T _BootstrapScanIdent
+
+The symbol _BootstrapScanIdent is present in the
+linked stage1 binary. CMake's target_compile_definitions
+set BOOTSTRAP02_IDENT_OBJECT, which feeds into the
+link step; the B1 object is linked.
+
+------------------------------------------------------------
+Section E — Production-path provenance summary
+------------------------------------------------------------
+
+B1_COMPONENT_PRODUCER        = STAGE0
+B1_COMPONENT_LINKED_STAGE1   = YES
+STAGE1_CONTAINS_COMPONENT    = YES
+STAGE0_CONTAINS_COMPONENT    = NO

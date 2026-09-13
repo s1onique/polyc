@@ -1,0 +1,180 @@
+ACT-POLYC-BOOTSTRAP02 — C3 EVIDENCE — required result
+======================================================
+
+This is the binding result block per ACT §30.
+C3 does NOT carry an ACT-Verdict trailer; the parent
+ACT's verdict belongs to C4 CLOSE.
+
+------------------------------------------------------------
+Section A — Fresh provenance (AC-C3-01..07)
+------------------------------------------------------------
+
+FRESH_STAGE0                      = PASS
+   make all rebuilt ./hcc from clean
+   (./hcc, build/hcc at SHA-256 98a687f7...8c461)
+
+FRESH_B1_COMPONENT                = PASS
+   ./hcc -c tools/bootstrap/bootstrap02-ident.HC
+       -o build/bootstrap02-ident.o
+   SHA-256 a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f
+
+FRESH_STAGE1                      = PASS
+   make bootstrap02-stage1 produced build/hcc-bootstrap02
+   SHA-256 24d1408f7437f559d0127ee792adc340c93b582030483d9376e282de1c58a95d
+
+B1_COMPONENT_PRODUCER             = STAGE0
+STAGE1_COMPONENT_BINDING          = PASS
+   nm build/hcc-bootstrap02:
+     000000010007c318 T _BootstrapScanIdent
+   nm build/hcc:
+     (no _BootstrapScanIdent)
+
+B1_IDENT_DELEGATIONS_PROVEN_NONZERO = YES
+   Static: direct bl _BootstrapScanIdent in _lexIdentifier
+   Dynamic: src/holyc-lib/dir.HC (with _opendir$INODE64)
+            compiled by stage1 with byte-identical output
+            to stage0 (dir.HC.A == dir.HC.B = ff793de5...634da)
+
+B1_STATIC_DELEGATION_BINDING      = PASS
+
+------------------------------------------------------------
+Section B — Existing B1 proofs (AC-C3-08..12)
+------------------------------------------------------------
+
+B1_COMPONENT_DIFFERENTIAL         = PASS_15_OF_15
+B1_COMPONENT_CURSOR_MODEL         = PASS_6_OF_6
+B1_PRODUCTION_LEXER_SEAM          = PASS_6_OF_6 (NO RESIDUE)
+EOF_CURSOR_STATE_EQUIVALENCE      = PASS
+EOF_POINTER_SAFETY                = PASS
+NON_EOF_PRODUCTION_CURSOR_EQ      = PASS 6/6
+
+------------------------------------------------------------
+Section C — Broad corpus (AC-C3-13..19)
+------------------------------------------------------------
+
+CORPUS_INVENTORY_COUNT            = 181
+CORPUS_STAGE0_PASS                = 175
+CORPUS_STAGE0_FAIL                = 6
+CORPUS_STAGE1_DIVERGENCES         = 0
+CORPUS_UNACCOUNTED                = 0
+VALID_CORPUS_STAGE0_PASS          = 175
+VALID_CORPUS_STAGE1_PASS          = 175
+VALID_CORPUS_MISMATCH             = 0
+
+Every source accounted for exactly once.
+All 175 successful artifacts are byte-identical
+(SHA-256 stage0 == stage1).
+All 6 failing rows are STAGE0_FAIL_STAGE1_FAIL with
+matching failure class (real include errors,
+redefinition errors, missing SqlCtx, and 2 asm
+fixture negatives).
+
+DOLLAR_IDENTIFIER_BINDING         = PASS
+   3/3 $-identifier sources (dir.HC, 30_fzf.HC,
+   run_shared.HC) PASS under both compilers with
+   byte-identical artifacts.
+   Mandatory _opendir$INODE64 in src/holyc-lib/dir.HC
+   (line 45) is the binding witness.
+
+------------------------------------------------------------
+Section D — Compiler behaviour (AC-C3-20..24)
+------------------------------------------------------------
+
+ERROR_CORPUS_MISMATCH             = 0
+   4 fixtures, all FAIL with identical path:line:col
+   diagnostics under stage0 and stage1.
+
+STAGE1_COMPILES_NORMAL_SOURCE     = PASS
+   src/tests/03_malloc_array.HC and 14_maths.HC both
+   compile under build/hcc-bootstrap02 with rc=0.
+
+STAGE1_COMPILES_B1_SOURCE         = PASS
+   build/hcc-bootstrap02 -c tools/bootstrap/bootstrap02-ident.HC
+     -> build/b02-extra/b1-from-stage1.o
+     _BootstrapScanIdent exported at 0x2e0.
+
+STAGE0_STAGE1_B1_SOURCE_EQUIVALENCE = PASS
+   SHA-256(stage0 ident.o) == SHA-256(stage1 ident.o)
+   == a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f
+
+------------------------------------------------------------
+Section E — Reproducibility (AC-C3-25..27)
+------------------------------------------------------------
+
+REPRODUCIBILITY_A                 = PASS
+REPRODUCIBILITY_B                 = PASS
+REPRODUCIBILITY_BEHAVIOR_EQ       = PASS
+
+  Build A hcc                = 98a687f7...8c461
+  Build B hcc                = 98a687f7...8c461
+  Build A bootstrap02-ident.o= a1b620c0...854f
+  Build B bootstrap02-ident.o= a1b620c0...854f
+  Build A hcc-bootstrap02    = 24d1408f...8a95d
+  Build B hcc-bootstrap02    = 24d1408f...8a95d
+
+Corpus-matrix-buildA.tsv byte-identical to
+corpus-matrix-buildB.tsv.
+
+------------------------------------------------------------
+Section F — Conservation (AC-C3-28..34)
+------------------------------------------------------------
+
+BOOTSTRAP01_CONSERVATION          = PASS_15_OF_15
+COMPILER_CONSERVATION             = PASS
+   - B0 15/15 (re-measured)
+   - B1 15/15/6/6 NO RESIDUE (re-measured)
+   - lsp 43/43 (re-measured)
+   - gate-fast PASS (re-measured)
+   - unit-test/jit-unit-test INHERITED 90/90
+     (NOT re-runnable in this sandbox because
+     /usr/local/include/tos.HH is absent; same
+     condition as the C1 entry baseline)
+FACTORY_CONSERVATION              = PASS
+   - factory-v2: PASS=35 FAIL=0
+   - factory-append-only: PASS=11 FAIL=0
+   - factory-halt-classification: PASS=12 FAIL=0
+   - factory-closure-status: PASS=6/0
+   - shell-loc-gate: PASS
+
+------------------------------------------------------------
+Section G — Scope/governance (AC-C3-35..41)
+------------------------------------------------------------
+
+PRODUCTION_SEMANTIC_DELTA         = ZERO
+B1_COMPONENT_DELTA                = ZERO
+PRIOR_EVIDENCE_MUTATION           = ZERO
+STAGE2_CREATED                    = NO
+FIRST_SELF_HOST                   = NO
+git replace -l                    = (empty)
+worktree (excluding c3 evidence)  = clean (no new tracked changes)
+
+------------------------------------------------------------
+Section H — Optional strong evidence (AC-C3-42)
+------------------------------------------------------------
+
+TOKEN_STREAM_DIFFERENTIAL         = NOT_AVAILABLE_NONBLOCKING
+   Substituted by PILLAR_B_PRIME 6/6 + broad corpus
+   byte-identity (175/175). See token-stream.txt
+   for rationale.
+
+------------------------------------------------------------
+Section I — Conclusion
+------------------------------------------------------------
+
+ACT_PHASE                         = EVIDENCE
+
+PARTIAL_SELF_HOST_EVIDENCE        = PASS
+FIRST_SELF_HOST                   = NO
+BOOTSTRAP_STABILITY               = NOT_YET (B1 milestone;
+                                     B2/B3 deferred)
+
+C3_TO_C4_CLOSE_GATE               = OPEN
+
+All 41 mandatory acceptance criteria (AC-C3-01..41)
+are simultaneously PASS. The strong-pass criterion
+(ACT §33) is met.
+
+This is the C3 EVIDENCE binding result. The parent
+ACT's ACT-Verdict and the C4 CLOSE commit belong to
+a separate (deferred) phase and are NOT produced in
+this turn.

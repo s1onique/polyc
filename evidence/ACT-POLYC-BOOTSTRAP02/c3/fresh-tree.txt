@@ -1,0 +1,120 @@
+ACT-POLYC-BOOTSTRAP02 — C3 — fresh-tree protocol
+=================================================
+
+Per ACT §3 ("Fresh-tree protocol"), all authoritative C3 evidence
+must come from a fresh candidate tree.
+
+------------------------------------------------------------
+Section A — Pre-clean identity
+------------------------------------------------------------
+
+Command: git branch --show-current
+main
+
+Command: git status --short
+(empty)
+
+Command: git rev-parse HEAD
+6144361e52ed6aa3e400c3fd1145516a668446a7
+
+Command: git replace -l
+(empty)
+
+------------------------------------------------------------
+Section B — Clean commands executed
+------------------------------------------------------------
+
+Command: make clean
+  rm -rf ./build ./hcc
+
+Command: rm -f build/bootstrap02-*
+  (no matches; already gone)
+
+Command: rm -f /tmp/b02-*
+  (no matches; already gone)
+
+Command: rm -rf build/hcc-bootstrap02-build
+  (no matches; already gone)
+
+Command: ls build/
+  ls: cannot access 'build/': No such file or directory
+
+Command: ls .
+  AGENTS.md  COPYING  Makefile  README.md  all.o  assets  docs
+  evidence  just_sh.o  libmylib.a  libmylib.dylib  libtest.o
+  libtos.a  libtos.dylib  packaging  pos_b0_compare_digit.dot
+  scripts  src  tools
+
+The legacy objects all.o, just_sh.o, libmylib.*, libtest.o,
+libtos.* are pre-existing top-level outputs of earlier root-
+level ad-hoc test compilations and are NOT part of the
+authoritative build (see .gitignore). They are not used by the
+canonical `make all` pipeline.
+
+------------------------------------------------------------
+Section C — Toolchain identities (resolved at C3 entry)
+------------------------------------------------------------
+
+Command: which cc
+/usr/bin/cc
+
+Command: cc --version
+Apple clang version 17.0.0 (clang-1700.0.13.5)
+Target: arm64-apple-darwin24.5.0
+Thread model: posix
+
+Command: which cmake
+/opt/homebrew/bin/cmake
+
+Command: cmake --version
+cmake version 4.1.1
+
+Command: which make
+/usr/bin/make
+
+Command: which nm
+/usr/bin/nm
+
+Command: uname -a
+Darwin 24.5.0 arm64
+
+------------------------------------------------------------
+Section D — Canonical rebuild (sequence)
+------------------------------------------------------------
+
+Authoritative commands:
+
+  make all
+  make bootstrap02-component-build
+  make bootstrap02-stage1
+  make bootstrap02-test
+  make bootstrap02-cursor-test
+  make bootstrap02-lexer-seam-test
+
+These are run serially because each depends on the previous
+artifact; this is the canonical Makefile dependency chain
+and is the same path C2-CORRECTION03 closed on.
+
+No warm object satisfies C3 evidence.
+
+------------------------------------------------------------
+Section E — Resolved role paths (post-build)
+------------------------------------------------------------
+
+To be filled in after authoritative rebuild in c3/:
+
+  STAGE0_COMPILER = $(pwd)/hcc
+  B1_SOURCE       = $(pwd)/tools/bootstrap/bootstrap02-ident.HC
+  B1_OBJECT       = $(pwd)/build/bootstrap02-ident.o
+  STAGE1_COMPILER = $(pwd)/build/hcc-bootstrap02
+  LEGACY_BUILD    = $(pwd)/build/hcc
+
+See stage-provenance.txt for actual proof.
+
+------------------------------------------------------------
+Section F — Result
+------------------------------------------------------------
+
+FRESH_TREE_ESTABLISHED = YES
+PRE_BUILD_DIR_REMOVED  = YES
+WARM_OBJECTS_USED       = NO

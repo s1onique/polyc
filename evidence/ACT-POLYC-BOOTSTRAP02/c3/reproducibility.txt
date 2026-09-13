@@ -1,0 +1,106 @@
+ACT-POLYC-BOOTSTRAP02 — C3 — reproducibility
+============================================
+
+Per ACT §19: two independent fresh B1 reconstructions
+must be behaviorally equivalent. Binary-hash equality
+is desirable but not mandatory; behavioral equivalence
+IS mandatory.
+
+------------------------------------------------------------
+Section A — Build A (fresh)
+------------------------------------------------------------
+
+Pre-build state:
+  make clean
+  rm -rf build
+
+Build commands:
+  make all
+  make bootstrap02-component-build
+  make bootstrap02-stage1
+
+Resulting artifacts (saved under
+evidence/ACT-POLYC-BOOTSTRAP02/c3/rebuild-A/):
+
+  hcc:                  98a687f7429bedb1009055be31832af8f1cad474e56d4ac3e306eafb8be8c461
+  bootstrap02-ident.o:  a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f
+  hcc-bootstrap02:      24d1408f7437f559d0127ee792adc340c93b582030483d9376e282de1c58a95d
+
+------------------------------------------------------------
+Section B — Build B (fresh, fully independent)
+------------------------------------------------------------
+
+Pre-build state:
+  make clean
+  rm -rf build
+
+Build commands:
+  make all
+  make bootstrap02-component-build
+  make bootstrap02-stage1
+
+Resulting artifacts (saved under
+evidence/ACT-POLYC-BOOTSTRAP02/c3/rebuild-B/):
+
+  hcc:                  98a687f7429bedb1009055be31832af8f1cad474e56d4ac3e306eafb8be8c461
+  bootstrap02-ident.o:  a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f
+  hcc-bootstrap02:      24d1408f7437f559d0127ee792adc340c93b582030483d9376e282de1c58a95d
+
+------------------------------------------------------------
+Section C — Hash equality (all three binaries)
+------------------------------------------------------------
+
+  Build A hcc          = Build B hcc          = 98a687f7...8c461
+  Build A ident.o      = Build B ident.o      = a1b620c0...854f
+  Build A hcc-bootstrap02 = Build B hcc-bootstrap02 = 24d1408f...8a95d
+
+All three artifacts are byte-identical across the two
+independent fresh reconstructions. The build is
+deterministic for the relevant artefacts.
+
+------------------------------------------------------------
+Section D — Behavioral equivalence (binding)
+------------------------------------------------------------
+
+Both Build A and Build B produced the same corpus
+result counts:
+
+  STAGE0_PASS_STAGE1_PASS = 175
+  STAGE0_FAIL_STAGE1_FAIL =   6
+  STAGE0_FAIL_STAGE1_PASS =   0
+  STAGE0_PASS_STAGE1_FAIL =   0
+
+The full corpus matrix TSV for Build A is at
+corpus-matrix-buildA.tsv; for Build B at
+corpus-matrix-buildB.tsv. The two matrices are
+byte-identical:
+
+  $ diff -q corpus-matrix-buildA.tsv corpus-matrix-buildB.tsv
+  $ echo $?
+  0
+
+Additionally, on Build B:
+  - make bootstrap02-test        -> BOOTSTRAP02_DIFFERENTIAL=PASS 15/15
+  - make bootstrap02-cursor-test -> BOOTSTRAP02_CURSOR_DIFFERENTIAL=PASS 6/6
+  - make bootstrap02-lexer-seam-test
+        -> BOOTSTRAP02_LEXER_SEAM_DOWNSTREAM=PASS (6/6 cases byte-identical)
+        -> BOOTSTRAP02_LEXER_SEAM_RESIDUE=NONE
+
+(Because Build A's binaries are byte-identical to
+Build B's, and Build B's tests pass, Build A's tests
+also pass — equivalent by transitivity of byte
+equality through input equivalence.)
+
+------------------------------------------------------------
+Section E — Verdict
+------------------------------------------------------------
+
+REPRODUCIBILITY_A            = PASS
+REPRODUCIBILITY_B            = PASS
+REPRODUCIBILITY_BEHAVIOR_EQ  = PASS
+
+CORPUS_RESULT_EQ             = YES (byte-identical TSVs)
+
+Behavioural equivalence is established; binary-hash
+equality is also established (a strict superset of
+the §19 requirement).

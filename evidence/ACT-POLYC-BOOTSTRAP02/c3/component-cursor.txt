@@ -1,0 +1,44 @@
+ACT-POLYC-BOOTSTRAP02 — C3 — B1 component cursor model
+======================================================
+
+Per ACT §12: re-run `make bootstrap02-cursor-test`.
+
+This is **component-level** evidence (the host runner
+links the B1 PolyC component directly), distinct from
+the production Lexer seam evidence.
+
+------------------------------------------------------------
+Section A — Command
+------------------------------------------------------------
+
+  $ make bootstrap02-cursor-test
+  cc -std=c99 -O2 -Wall -Wextra -o ./build/bootstrap02-cursor-oracle \
+        tools/quality/bootstrap02-cursor-oracle.c
+  cc -std=c99 -O2 -Wall -Wextra -o ./build/bootstrap02-cursor-host \
+        tools/quality/bootstrap02-cursor-host.c ./build/bootstrap02-ident.o
+  ./build/bootstrap02-cursor-oracle > /tmp/b02-cursor-oracle.txt
+  ./build/bootstrap02-cursor-host   > /tmp/b02-cursor-host.txt
+  BOOTSTRAP02_CURSOR_DIFFERENTIAL=PASS 6/6
+
+------------------------------------------------------------
+Section B — Verdict counts (binding)
+------------------------------------------------------------
+
+BOOTSTRAP02_CURSOR_CASES = 6
+BOOTSTRAP02_CURSOR_PASS  = 6
+BOOTSTRAP02_CURSOR_FAIL  = 0
+
+  $ diff -q /tmp/b02-cursor-oracle.txt /tmp/b02-cursor-host.txt
+  $ echo $?
+  0
+
+Byte-identical output across all 6 reviewer-specified
+input cases (E1..E6). Each case emits a per-input
+(start, end, cur_strlen, next_byte) tuple that
+matches the stage0 reference oracle exactly.
+
+------------------------------------------------------------
+Section C — Conclusion
+------------------------------------------------------------
+
+BOOTSTRAP02_CURSOR_DIFFERENTIAL = PASS 6/6

@@ -1,0 +1,56 @@
+ACT-POLYC-BOOTSTRAP02 — C3 — stage1 compiles B1 source
+=======================================================
+
+Per ACT §17: STAGE1_COMPILES_B1_SOURCE = PASS, with
+STAGE0_B1_OBJECT == STAGE1_B1_OBJECT (preferred).
+
+------------------------------------------------------------
+Section A — Stage1 compiles B1 source
+------------------------------------------------------------
+
+  $ ./build/hcc-bootstrap02 --install-dir=./build/test-prefix \
+        -c tools/bootstrap/bootstrap02-ident.HC \
+        -o build/b02-extra/b1-from-stage1.o
+  $ echo $?
+  0
+  $ nm build/b02-extra/b1-from-stage1.o | grep -i BootstrapScanIdent
+  00000000000002e0 T _BootstrapScanIdent
+
+Stage1 compiles its own B1 source. The
+_BootstrapScanIdent symbol is exported at offset
+0x2e0 — exactly the same offset as the stage0-built
+object.
+
+------------------------------------------------------------
+Section B — Byte-equality of stage0 vs stage1 B1 object
+------------------------------------------------------------
+
+  $ shasum -a 256 build/bootstrap02-ident.o \
+                build/b02-extra/b1-from-stage1.o
+  a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f  build/bootstrap02-ident.o
+  a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f  build/b02-extra/b1-from-stage1.o
+
+  $ diff -q build/bootstrap02-ident.o \
+              build/b02-extra/b1-from-stage1.o
+  $ echo $?
+  0
+
+STAGE0_B1_OBJECT == STAGE1_B1_OBJECT: YES (byte-identical).
+
+------------------------------------------------------------
+Section C — Verdict
+------------------------------------------------------------
+
+STAGE1_COMPILES_B1_SOURCE         = PASS
+STAGE0_STAGE1_B1_SOURCE_EQUIVALENCE = PASS (byte-identical)
+
+------------------------------------------------------------
+Section D — Note: NOT linked into a stage2 compiler
+------------------------------------------------------------
+
+The stage1-produced B1 object build/b02-extra/b1-from-stage1.o
+exists only as a comparison artefact. Per ACT §18 it
+was NOT linked into any new compiler (no stage2
+constructed). This is the proof that the B1 component
+can be reproduced by stage1, but NOT the start of a
+self-hosting construction.

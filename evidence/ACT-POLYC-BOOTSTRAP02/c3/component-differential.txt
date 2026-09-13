@@ -1,0 +1,71 @@
+ACT-POLYC-BOOTSTRAP02 — C3 — B1 component differential
+=======================================================
+
+Per ACT §11: re-run `make bootstrap02-test` from a fresh
+candidate tree.
+
+------------------------------------------------------------
+Section A — Command
+------------------------------------------------------------
+
+  $ make bootstrap02-test
+  cc -std=c99 -O2 -Wall -Wextra -o ./build/bootstrap02-ident-oracle \
+        tools/quality/bootstrap02-ident-oracle.c
+  cc -std=c99 -O2 -Wall -Wextra -o ./build/bootstrap02-ident-host \
+        tools/quality/bootstrap02-ident-host.c ./build/bootstrap02-ident.o
+  ./build/bootstrap02-ident-oracle > /tmp/b02-oracle.txt
+  ./build/bootstrap02-ident-host   > /tmp/b02-host.txt
+
+------------------------------------------------------------
+Section B — Per-fixture lines (binding)
+------------------------------------------------------------
+
+Both runs produced identical 15-fixture outputs (the
+summary label lines BOOTSTRAP02_IDENT_* vs
+BOOTSTRAP02_IDENT_HOST_* are intentionally distinct
+and are filtered by the Makefile recipe):
+
+  I01 OK a 1
+  I02 OK _ 1
+  I03 OK abc 3
+  I04 OK _foo9 5
+  I05 OK abc123 6
+  I06 OK a_b_c 5
+  I07 OK abc 3
+  I08 OK abc 3
+  I09 OK abc 3
+  I10 OK abc 5
+  I11 OK abcdef...W 60
+  I12 NOK 0
+  I13 NOK 3
+  I14 NOK 3
+  I15 OK abc$def 7
+
+------------------------------------------------------------
+Section C — Verdict counts (binding)
+------------------------------------------------------------
+
+BOOTSTRAP02_CASES = 15
+BOOTSTRAP02_PASS  = 15
+BOOTSTRAP02_FAIL  = 0
+
+Status line emitted by oracle: STATUS=PASS
+
+Per-fixture diff:
+
+  $ grep -E '^I[0-9]+ ' /tmp/b02-oracle.txt > /tmp/a.txt
+  $ grep -E '^I[0-9]+ ' /tmp/b02-host.txt   > /tmp/b.txt
+  $ diff -q /tmp/a.txt /tmp/b.txt
+  $ echo $?
+  0
+
+Stage0 reference oracle and stage0-compiled PolyC
+subject produced byte-identical per-fixture lines on
+all 15 fixtures. The I15 fixture exercises the
+$-continuation grammar (abc$def -> 7).
+
+------------------------------------------------------------
+Section D — Conclusion
+------------------------------------------------------------
+
+BOOTSTRAP02_DIFFERENTIAL = PASS 15/15

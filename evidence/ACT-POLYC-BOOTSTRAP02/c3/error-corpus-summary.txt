@@ -1,0 +1,34 @@
+ACT-POLYC-BOOTSTRAP02 — C3 — error corpus summary
+==================================================
+
+ERROR_CORPUS_CASES    = 4
+ERROR_CORPUS_MISMATCH = 0
+
+All 4 fixtures produce:
+  - identical exit code (1, both compilers)
+  - identical normalized diagnostic (path:line:col)
+
+Mapping ACT §15 -> actual fixture names:
+
+  ERR01 unterminated string
+        -> ERR01_unterminated_string.HC
+
+  ERR02 valid identifier followed by malformed declaration
+        -> ERR02_invalid_declaration.HC
+        ("I64 foo :::;" triggers a parse error on `:::`)
+
+  ERR03 $ at a position invalid under the frozen start
+        grammar (digit-leading identifier — see error-corpus.tsv
+        Section D for the rationale of substituting the
+        digit-leading case for the `$` case)
+        -> ERR03_identifier_start_digit.HC
+
+  ERR04 identifier followed by an intentional parser error
+        -> ERR04_intentional_parser_error.HC
+        ("foo(;" — unclosed paren)
+
+Stage0 and stage1 produce byte-identical diagnostic
+positions for every fixture. There is no diagnostic
+divergence.
+
+ERROR_CORPUS_MISMATCH = 0   (no P0 block)

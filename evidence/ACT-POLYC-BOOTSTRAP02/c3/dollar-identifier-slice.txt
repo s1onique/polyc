@@ -1,0 +1,94 @@
+ACT-POLYC-BOOTSTRAP02 — C3 — $ -identifier binding slice
+=========================================================
+
+Per ACT §10: mechanically enumerate sources containing
+`$` in plausible identifiers and verify stage0/stage1
+produce equivalent output.
+
+------------------------------------------------------------
+Section A — Enumeration command
+------------------------------------------------------------
+
+  grep -R -l -E '[A-Za-z_][A-Za-z0-9_]*\$[A-Za-z0-9_$]*' \
+       --include='*.HC' \
+       src/holyc-lib src/tests | LC_ALL=C sort
+
+This finds identifiers (matching [A-Za-z_][A-Za-z0-9_]*)
+followed by `$` and a continuation suffix
+([A-Za-z0-9_$]*). The `$` is the byte discovered during
+the C1 review of the identifier grammar.
+
+------------------------------------------------------------
+Section B — Files containing $-identifiers (binding)
+------------------------------------------------------------
+
+DOLLAR_IDENTIFIER_FILES = 3
+
+  src/holyc-lib/dir.HC
+  src/tests/30_fzf.HC
+  src/tests/run_shared.HC
+
+------------------------------------------------------------
+Section C — Required witness (binding per ACT §10)
+------------------------------------------------------------
+
+Mandatory:
+
+  src/holyc-lib/dir.HC must contain _opendir$INODE64
+
+Verified by:
+
+  $ grep -n '_opendir\$INODE64\|_readdir\$INODE64' \
+        src/holyc-lib/dir.HC
+  45:public _extern _opendir$INODE64 cDIR *opendir(U8 *dirname);
+  46:public _extern _readdir$INODE64 Dirent *readdir(cDIR *dir);
+
+Both _opendir$INODE64 and _readdir$INODE64 are present
+on lines 45-46 of src/holyc-lib/dir.HC. The witness is
+intact in the current tree.
+
+------------------------------------------------------------
+Section D — Differential for the $-slice
+------------------------------------------------------------
+
+Verdict counts in the full corpus matrix restricted to
+has_dollar_identifier=1:
+
+  STAGE0_PASS_STAGE1_PASS = 3
+  STAGE0_FAIL_STAGE1_FAIL = 0
+  STAGE0_FAIL_STAGE1_PASS = 0
+  STAGE0_PASS_STAGE1_FAIL = 0
+
+All 3 $-identifier-bearing sources compile under both
+stage0 and stage1, producing byte-identical artifacts
+(byte_equal=YES for all 3 rows).
+
+------------------------------------------------------------
+Section E — Byte-identity hashes (binding)
+------------------------------------------------------------
+
+  dir.HC
+    A: ff793de5949f0315390d6fb401311263c851d9c5df9f99e29788a9ed815634da
+    B: ff793de5949f0315390d6fb401311263c851d9c5df9f99e29788a9ed815634da
+    byte_equal: YES
+
+  30_fzf.HC
+    A: 512712fe19ff7fea81e9a2226194226a17f67a37a50c2799f41f6a70fb8b91a7
+    B: 512712fe19ff7fea81e9a2226194226a17f67a37a50c2799f41f6a70fb8b91a7
+    byte_equal: YES
+
+  run_shared.HC
+    A: <see corpus-matrix.tsv>
+    B: <see corpus-matrix.tsv>
+    byte_equal: YES
+
+------------------------------------------------------------
+Section F — Verdict
+------------------------------------------------------------
+
+DOLLAR_IDENTIFIER_BINDING = PASS
+
+The one-byte grammar difference discovered in C1 is
+mechanically verified to be handled identically by
+stage0 and stage1 across all $-identifier-bearing
+production sources in the corpus.

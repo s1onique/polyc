@@ -1,0 +1,47 @@
+ACT-POLYC-BOOTSTRAP02 — C3 — stage1 compiles normal source
+============================================================
+
+Per ACT §16: STAGE1_COMPILES_NORMAL_SOURCE = PASS
+
+Independent positive control: stage1 must compile at
+least one small known-green ordinary .HC source
+outside the bootstrap directory.
+
+------------------------------------------------------------
+Section A — Test sources
+------------------------------------------------------------
+
+src/tests/03_malloc_array.HC (copied to
+build/b02-extra/normal.HC with the local testhelper
+include copy under build/b02-extra/testhelper.HC).
+
+src/tests/14_maths.HC (copied similarly to
+build/b02-extra/maths.HC).
+
+Both files are known-good .HC test cases that
+compile and run under the canonical test pipeline
+(see Makefile unit-test).
+
+------------------------------------------------------------
+Section B — Stage1 invocation
+------------------------------------------------------------
+
+  $ ./build/hcc-bootstrap02 --install-dir=./build/test-prefix \
+        -c build/b02-extra/normal.HC -o build/b02-extra/normal.o
+  rc=0
+  $ nm build/b02-extra/normal.o | grep -i _Main
+  0000000000000194 T _main
+
+  $ ./build/hcc-bootstrap02 --install-dir=./build/test-prefix \
+        -c build/b02-extra/maths.HC -o build/b02-extra/maths.o
+  rc=0
+
+Both compile cleanly. stage1's _main symbol is
+present in normal.o; maths.o compiles to a valid
+relocatable object.
+
+------------------------------------------------------------
+Section C — Verdict
+------------------------------------------------------------
+
+STAGE1_COMPILES_NORMAL_SOURCE = PASS

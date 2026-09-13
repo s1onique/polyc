@@ -1,0 +1,81 @@
+ACT-POLYC-BOOTSTRAP02 — C3 — production Lexer seam
+====================================================
+
+Per ACT §13: re-run `make bootstrap02-lexer-seam-test`
+(post-CORRECTION03 mandatory; no residue allowed).
+
+------------------------------------------------------------
+Section A — Command
+------------------------------------------------------------
+
+  $ make bootstrap02-lexer-seam-test
+  cc ... -o ./build/bootstrap02-lexer-seam-legacy \
+      tools/quality/bootstrap02-lexer-seam-runner.c \
+      $(HCC_OBJECTS) $(TASM_LIB) -lm -lpthread -ldl
+  cc ... -o ./build/bootstrap02-lexer-seam-stage1 \
+      tools/quality/bootstrap02-lexer-seam-runner.c \
+      $(HCC_STAGE1_OBJECTS) ./build/bootstrap02-ident.o \
+      $(TASM_LIB) -lm -lpthread -ldl
+  ./build/bootstrap02-lexer-seam-legacy > /tmp/b02-lexer-seam-legacy.txt
+  ./build/bootstrap02-lexer-seam-stage1 > /tmp/b02-lexer-seam-stage1.txt
+  diff -u /tmp/b02-lexer-seam-legacy.txt \
+          /tmp/b02-lexer-seam-stage1.txt
+
+Output diff (binding): only BUILD_LABEL=legacy vs
+BUILD_LABEL=stage1 and the case-line build=legacy vs
+build=stage1 suffixes differ. All semantic fields
+(input, start_offset, lex_rc, le_off, le_start_off,
+le_len, etc.) are byte-identical.
+
+------------------------------------------------------------
+Section B — Verdict (binding)
+------------------------------------------------------------
+
+After stripping the BUILD_LABEL= and build= suffixes:
+
+  $ sed -E 's/^(CASE .+) build=.*/\1/; \
+            s/^BUILD_LABEL=.*/BUILD_LABEL=/; \
+            s/^LEXER_SEAM_CASE_COUNT=.*/LEXER_SEAM_CASE_COUNT=/' \
+      /tmp/b02-lexer-seam-legacy.txt > /tmp/legacy-clean.txt
+  $ sed -E ... /tmp/b02-lexer-seam-stage1.txt > /tmp/stage1-clean.txt
+  $ diff -q /tmp/legacy-clean.txt /tmp/stage1-clean.txt
+  $ echo $?
+  0
+
+Makefile's verdict:
+
+  BOOTSTRAP02_LEXER_SEAM_DOWNSTREAM=PASS (6/6 cases byte-identical)
+  BOOTSTRAP02_LEXER_SEAM_RESIDUE=NONE
+
+------------------------------------------------------------
+Section C — Three-pillar cursor evidence
+------------------------------------------------------------
+
+PILLAR_B_PRIME_PRODUCTION_LEXER = PASS 6/6 NO RESIDUE
+
+  Cases exercised:
+    E1_abc_semicolon       : input = "abc;"
+    E2_abc_plus            : input = "abc+"
+    E3_abc_space           : input = "abc "
+    E4_abc_eof             : input = "abc"  (NUL terminator)
+    E5_xxabc_offset2       : input = "xxabc;"
+                             start_offset = 2
+    E6_abc_dollar          : input = "abc$def;"
+
+EOF_CURSOR_STATE_EQUIVALENCE = PASS
+EOF_POINTER_SAFETY           = PASS   (post-CORRECTION03)
+NON_EOF_PRODUCTION_CURSOR_EQ = PASS 6/6
+
+The E4 fixture exercises the EOF cursor state; E5
+exercises a non-zero start offset; E6 exercises the
+one-byte $-continuation grammar. All three pass with
+byte-identical stage0/stage1 output.
+
+------------------------------------------------------------
+Section D — Conclusion
+------------------------------------------------------------
+
+PILLAR_B_PRIME_PRODUCTION_LEXER = PASS 6/6 NO RESIDUE
+EOF_CURSOR_STATE_EQUIVALENCE     = PASS
+EOF_POINTER_SAFETY               = PASS
+NON_EOF_PRODUCTION_CURSOR_EQ     = PASS 6/6

@@ -1,0 +1,118 @@
+ACT-POLYC-BOOTSTRAP02 — C3 — symbol binding
+============================================
+
+Per ACT §4 (static delegation binding) and §5 (runtime
+delegation proof).
+
+------------------------------------------------------------
+Section A — Stage1 static call binding (binding)
+------------------------------------------------------------
+
+Source: otool -tv build/hcc-bootstrap02
+
+The disassembly of stage1's _lexIdentifier body
+contains a direct branch-link to _BootstrapScanIdent:
+
+  _lexIdentifier:
+    00000001000303c0  sub  sp, sp, #0x30
+    00000001000303c4  stp  x20, x19, [sp, #0x10]
+    00000001000303c8  stp  x29, x30, [sp, #0x20]
+    00000001000303cc  add  x29, sp, #0x20
+    00000001000303d0  mov  x19, x0
+    00000001000303d4  ldr  x20, [x0, #0x10]
+    00000001000303d8  mov  x0, x20
+    00000001000303dc  bl   0x10007c888  ; strlen
+    00000001000303e0  mov  x1, x0
+    00000001000303e4  str  xzr, [sp, #0x8]
+    00000001000303e8  add  x3, sp, #0x8
+    00000001000303ec  mov  x0, x20
+    00000001000303f0  mov  x2, #0x0
+    00000001000303f4  bl   _BootstrapScanIdent  <<<< DIRECT CALL
+    00000001000303f8  cbz  w0, 0x100030414
+    ...
+
+This is a direct call to _BootstrapScanIdent at
+0x10003c3f4. There is no in-between wrapper; the
+production lexer calls the B1 component directly.
+
+STAGE1_STATIC_DELEGATION_BINDING = PASS
+
+------------------------------------------------------------
+Section B — Stage0 legacy path (sanity)
+------------------------------------------------------------
+
+Source: otool -tv build/hcc
+
+Stage0's _lexIdentifier does NOT call
+_BootstrapScanIdent. It uses __DefaultRuneLocale (the
+ctype path) and does NOT link the B1 object. The symbol
+is absent from stage0.
+
+  _lexIdentifier:
+    00000001000306bc  stp  x24, x23, [sp, #-0x40]!
+    ...
+    00000001000306e0  ldr  x21, [x21]
+                       ; literal pool symbol address: __DefaultRuneLocale
+    00000001000306e4  mov  w22, #0x500
+
+Stage0 is the production-default compiler with the
+legacy ctype implementation; stage1 is the same
+compiler with the B1 delegation substituted via the
+HCC_BOOTSTRAP02_STAGE1 #ifdef.
+
+------------------------------------------------------------
+Section C — Runtime delegation proof (binding)
+------------------------------------------------------------
+
+Per ACT §5: combined static + dynamic proof required.
+
+  STATIC: PASS
+    (see Section A — direct bl to _BootstrapScanIdent)
+
+  DYNAMIC: PASS
+    The stage1 binary successfully compiled the
+    mandatory $-identifier source
+    src/holyc-lib/dir.HC (which contains
+    _opendir$INODE64) and produced a byte-identical
+    object to stage0 (see dollar-identifier-slice.txt
+    + corpus-summary.txt). Compiling dir.HC necessarily
+    requires entering identifier scanning; the
+    identifier _opendir$INODE64 starts with `_`, an
+    identifier-start byte, so lexIdentifier is reached.
+
+  Plus stage1 compiled 174 other sources with
+  byte-identical stage0 artifacts (see
+  corpus-matrix.tsv), every one of which contains
+  at least one identifier.
+
+B1_IDENT_DELEGATIONS_PROVEN_NONZERO = YES
+
+  (No production instrumentation added; static call
+   binding + dynamic execution through mandatory
+   identifier-bearing sources is the §5 sufficiency
+   criterion.)
+
+------------------------------------------------------------
+Section D — Component-level differential
+------------------------------------------------------------
+
+Direct mechanical test of the B1 component itself
+(15/15 differential vs reference oracle):
+
+  $ make bootstrap02-test
+  BOOTSTRAP02_DIFFERENTIAL=PASS 15/15
+
+Component cursor model (6/6 differential):
+
+  $ make bootstrap02-cursor-test
+  BOOTSTRAP02_CURSOR_DIFFERENTIAL=PASS 6/6
+
+Production Lexer seam (6/6 no residue):
+
+  $ make bootstrap02-lexer-seam-test
+  BOOTSTRAP02_LEXER_SEAM_DOWNSTREAM=PASS (6/6 byte-identical)
+  BOOTSTRAP02_LEXER_SEAM_RESIDUE=NONE
+
+EOF_CURSOR_STATE_EQUIVALENCE  = PASS
+EOF_POINTER_SAFETY            = PASS
+NON_EOF_PRODUCTION_CURSOR_EQ  = PASS 6/6

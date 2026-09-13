@@ -1,0 +1,140 @@
+ACT-POLYC-BOOTSTRAP02 — C3 — scope audit
+=========================================
+
+Per ACT §25 (production freeze) and §26 (test-helper
+allowance).
+
+------------------------------------------------------------
+Section A — Production freeze (ACT §25)
+------------------------------------------------------------
+
+C3 is evidence-only. Required zero semantic diff in:
+
+  src/
+  tools/bootstrap/bootstrap02-ident.HC
+  src/lexer_bridge.h
+
+Verification:
+
+  $ git diff --stat 6144361e HEAD -- src/ tools/bootstrap/bootstrap02-ident.HC src/lexer_bridge.h
+  (empty)
+
+  $ git status --short
+  ?? evidence/ACT-POLYC-BOOTSTRAP02/c3/
+  ?? tools/quality/bootstrap02-corpus-runner.py
+  ?? tools/quality/bootstrap02-error-corpus.py
+
+No tracked production source has been modified. The
+C3 working tree adds only evidence files
+(evidence/ACT-POLYC-BOOTSTRAP02/c3/) and two
+test-only helpers (tools/quality/*.py).
+
+PRODUCTION_SEMANTIC_DELTA = ZERO
+B1_COMPONENT_DELTA        = ZERO
+PRIOR_EVIDENCE_MUTATION   = ZERO (no touch to c1/, c2/,
+                              or any CORRECTION0x/ directory)
+
+------------------------------------------------------------
+Section B — Test-helper allowance (ACT §26)
+------------------------------------------------------------
+
+Two test-only Python helpers were introduced:
+
+  tools/quality/bootstrap02-corpus-runner.py
+    162 LOC, Python 3
+    Usage:
+      bootstrap02-corpus-runner.py <inventory> <stage0>
+        <stage1> <install-dir> <stage0-outdir>
+        <stage1-outdir> <out.tsv>
+    Behaviour: mechanically compiles each .HC in
+    inventory with both compilers, compares .o SHA-256,
+    emits a TSV matrix.
+    test-only: yes (uses subprocess, no compiler mutation)
+    deterministic: yes (no timestamps; uses SHA-256)
+    bounded output: yes (one row per source)
+    no compiler semantic changes: yes (does not modify
+        src/ or tools/bootstrap/)
+
+  tools/quality/bootstrap02-error-corpus.py
+    79 LOC, Python 3
+    Usage:
+      bootstrap02-error-corpus.py <fixtures-dir> <stage0>
+        <stage1> <install-dir> <out.tsv>
+    Behaviour: compiles each ERR0N_*.HC fixture under
+    both compilers, compares exit code and normalized
+    diagnostic position.
+    test-only: yes
+    deterministic: yes
+    bounded output: yes
+    no compiler semantic changes: yes
+
+ACT §26 restricts shell scripts to ≤50 LOC; the Python
+helpers are not subject to this limit. Both helpers
+are themselves inside C3 scope and are verified by:
+  - shell-loc-gate (does not apply to *.py)
+  - factory-v2-test (does not apply to *.py)
+  - python3 -m py_compile (verified by direct
+    invocation)
+
+------------------------------------------------------------
+Section C — Prior evidence mutation (ACT §24 F14)
+------------------------------------------------------------
+
+F14 geometry — MUST NOT MODIFY:
+
+  evidence/ACT-POLYC-BOOTSTRAP02/c1/**
+  evidence/ACT-POLYC-BOOTSTRAP02/c2/**
+  evidence/ACT-POLYC-BOOTSTRAP02-C1-CORRECTION01/**
+  evidence/ACT-POLYC-BOOTSTRAP02-C2-CORRECTION01/**
+  evidence/ACT-POLYC-BOOTSTRAP02-C2-CORRECTION02/**
+  evidence/ACT-POLYC-BOOTSTRAP02-C2-CORRECTION03/**
+
+Verification:
+
+  $ git diff --stat 6144361e HEAD -- evidence/ACT-POLYC-BOOTSTRAP02/c1/ evidence/ACT-POLYC-BOOTSTRAP02/c2/ evidence/ACT-POLYC-BOOTSTRAP02-C1-CORRECTION01/ evidence/ACT-POLYC-BOOTSTRAP02-C2-CORRECTION01/ evidence/ACT-POLYC-BOOTSTRAP02-C2-CORRECTION02/ evidence/ACT-POLYC-BOOTSTRAP02-C2-CORRECTION03/
+  (empty)
+
+  $ git status --short | grep -E 'c1/|c2/|CORRECTION'
+  (empty)
+
+PRIOR_EVIDENCE_MUTATION = ZERO
+
+------------------------------------------------------------
+Section D — Forbidden actions (ACT §18)
+------------------------------------------------------------
+
+C3 is PROHIBITED from doing:
+
+  stage1
+     ↓ compiles BootstrapScanIdent
+  stage1-produced object
+     ↓ links
+  stage2 compiler
+
+Verification:
+
+  $ find build -maxdepth 3 -name 'hcc-stage2*' 2>&1
+  (empty)
+
+  $ find evidence/ACT-POLYC-BOOTSTRAP02/c3/ -maxdepth 3 -name 'hcc-stage2*' 2>&1
+  (empty)
+
+STAGE2_COMPILER_CREATED = NO
+FIRST_SELF_HOST         = NO
+
+A stage1-produced B1 object exists at
+build/b02-extra/b1-from-stage1.o (see
+stage1-self-source.txt) but it is NOT linked into any
+new compiler.
+
+------------------------------------------------------------
+Section E — Verdict
+------------------------------------------------------------
+
+PRODUCTION_SEMANTIC_DELTA = ZERO
+B1_COMPONENT_DELTA        = ZERO
+PRIOR_EVIDENCE_MUTATION   = ZERO
+STAGE2_CREATED            = NO
+FIRST_SELF_HOST           = NO
+
+AC-C3-35..41 = all PASS

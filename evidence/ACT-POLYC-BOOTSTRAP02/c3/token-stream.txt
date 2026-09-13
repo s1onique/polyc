@@ -1,0 +1,76 @@
+ACT-POLYC-BOOTSTRAP02 — C3 — token-stream differential
+=======================================================
+
+Per ACT §14: determine whether the existing lexer/test
+seams allow a complete token sequence to be emitted
+without production semantic changes.
+
+------------------------------------------------------------
+Section A — Investigation
+------------------------------------------------------------
+
+Method: grep across src/ for token-dump APIs.
+
+Findings:
+
+  - src/lexer.c exports lexemeToAoStr() (single lexeme
+    to AoStr). No public token-stream dump API.
+  - src/lexer.c exports lexemePrint() (single lexeme
+    print). No public token-stream dump API.
+  - tools/quality/ contains no token-dump seam helper.
+  - No file invokes lexemePrint on a sequence of
+    lexemes to emit a full token stream from a
+    production Lexer.
+
+ACT §14 forbids adding a production token-dump API
+inside C3 ("Do not add a production token-dump API
+in C3"). Therefore we cannot add one in this phase.
+
+------------------------------------------------------------
+Section B — Verdict
+------------------------------------------------------------
+
+TOKEN_STREAM_SEAM           = ABSENT
+TOKEN_STREAM_DIFFERENTIAL   = NOT_AVAILABLE
+BLOCKS_C4                   = NO
+
+Per ACT §14, absence of a token-dump seam is not a
+C4 blocker because the real production lex()
+seam is already directly observed at 6/6 byte-
+identical equivalence in
+production-lexer-seam.txt.
+
+------------------------------------------------------------
+Section C — Substitute evidence (binding)
+------------------------------------------------------------
+
+SUBSTITUTE_EVIDENCE =
+
+  PILLAR_B_PRIME_PRODUCTION_LEXER 6/6 full Lexer state
+  (see production-lexer-seam.txt)
+  +
+  broad compiler object parity 175/175 byte-identical
+  (see corpus-summary.txt)
+
+Both substitute evidence classes are stronger than a
+single-input token-dump comparison would be:
+
+  - The PILLAR_B_PRIME production-Lexer seam exercises
+    the real production lexIdentifier path through the
+    real production Lexer allocation and compares
+    cursor state across 6 distinct identifier-bearing
+    inputs.
+  - The broad corpus exercises the entire compiler
+    pipeline (lex + parse + IR + ASM + emit) and
+    verifies byte-identity of the resulting .o
+    artifacts on 175 production sources.
+
+------------------------------------------------------------
+Section D — Future ACT (residue)
+------------------------------------------------------------
+
+A dedicated token-stream-dump helper for production
+sources would unblock finer-grained future ACTs (e.g.,
+for asserting specific token kinds in regression
+tests). This is recorded as residue to be addressed
+in a future ACT, NOT in C3.

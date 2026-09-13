@@ -1,0 +1,79 @@
+ACT-POLYC-BOOTSTRAP02 — C3 — delegation witness
+================================================
+
+Per ACT §5: combined static + dynamic proof that
+the linked B1 component is reachable through the
+production identifier path, and that delegation is
+non-zero at runtime.
+
+------------------------------------------------------------
+Section A — Static binding (reviewer-supplied criterion)
+------------------------------------------------------------
+
+Method: otool -tv on stage1's _lexIdentifier body.
+
+Finding: A direct `bl _BootstrapScanIdent` instruction
+is present at address 0x10003c3f4 inside the stage1
+_lexIdentifier function body. The call is
+unconditional (no branch test guards it).
+
+Conclusion: the stage1 binary's lexIdentifier symbol
+references BootstrapScanIdent as a normal text-symbol
+call target.
+
+------------------------------------------------------------
+Section B — Dynamic execution (mandatory)
+------------------------------------------------------------
+
+Per ACT §5, the dynamic corpus must include at least
+one source whose lexer necessarily enters identifier
+scanning. The binding witness is:
+
+  src/holyc-lib/dir.HC
+    contains _opendir$INODE64 (line 45)
+    contains _readdir$INODE64 (line 46)
+
+These identifiers START with `_`, which is a B1
+identifier-start byte (per the legacy lexer's gate
+`isalpha(ch) || ch == '_'`). Compiling dir.HC under
+stage1 therefore requires lexIdentifier to be called,
+which (in stage1) means BootstrapScanIdent is called.
+
+The corpus matrix records:
+
+  src/holyc-lib/dir.HC
+    stage0_rc=0  stage1_rc=0
+    byte_equal=YES
+    verdict=STAGE0_PASS_STAGE1_PASS
+
+Both compilers produced a successful .o with
+identical SHA-256. Compilation necessarily involves
+identifier scanning; therefore stage1's
+BootstrapScanIdent ran on dir.HC at least once
+(specifically, on _opendir, _readdir, and on every
+other identifier in dir.HC).
+
+B1_IDENT_DELEGATIONS_PROVEN_NONZERO = YES
+
+------------------------------------------------------------
+Section C — No production instrumentation
+------------------------------------------------------------
+
+ACT §5 forbids adding production instrumentation
+merely to obtain a hit count. We did not. Static
+binding (Section A) + dynamic execution through a
+mandatory identifier-bearing source (Section B) is
+sufficient under the §5 sufficiency criterion.
+
+------------------------------------------------------------
+Section D — Verdict
+------------------------------------------------------------
+
+B1_IDENT_DELEGATIONS_PROVEN_NONZERO = YES
+STAGE1_STATIC_DELEGATION_BINDING    = PASS
+
+The stage1 compiler's production lexer call path is
+mechanically bound to the B1 PolyC component, and the
+component is provably exercised during ordinary
+compilation of dir.HC (the mandatory $-identifier
+witness).
