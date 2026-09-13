@@ -1821,58 +1821,62 @@ is a deliberately narrow substrate: bytes in, deterministic
 token stream out, no parser, no AST, no codegen, no allocation
 unless the recon proves otherwise.
 
-#### B0 outcome (ACT-POLYC-BOOTSTRAP01, CLOSED PASS)
+#### B0 outcome (ACT-POLYC-BOOTSTRAP01, CORRECTED PASS)
 
-```text
-ACT                   ACT-POLYC-BOOTSTRAP01
-ACT-Verdict           PASS
-BOOTSTRAP_B0          GREEN
-BOOTSTRAP_STABILITY   NOT_YET
-FIRST_SELF_HOST       NOT_YET
+ACT-POLYC-BOOTSTRAP01-CORRECTION01 CLOSED
+ACT-Verdict = PASS_WITH_HYGIENE_RESIDUE
 
-B0_POLYC_LEXER                PASS  (tools/bootstrap/bootstrap01-lexer.HC,
-                                       allocation-free, single-pass,
-                                       public BootstrapToken +
-                                       public I64 BootstrapLex)
-B0_HCC_NATIVE_COMPILE         PASS
-B0_LLVM_EMIT                  PARTIAL (MEMORY01 STORE_DEREF fence;
-                                          path-dependent per Option-W C6)
-B0_NATIVE_LINK                PASS
-B0_NATIVE_RUN                 PASS  (15/15 fixtures)
-B0_TOKEN_EQUIVALENCE          PASS  (15/15 vs independent C oracle)
-B0_DETERMINISM                PASS  (run1 == run2)
-B0_SOURCE_IMMUTABILITY        PASS  (src bytewise equal)
-B0_OUTPUT_BOUNDARY            PASS  (T12 + NC8 negative controls)
+Authoritative CLOSE for ACT-POLYC-BOOTSTRAP01: 4b42e06
+  (147069f is recorded as historical cardinality
+  exception 4 in
+   evidence/ACT-POLYC-FACTORY-NO-SHA-OF-SELF01/
+   correction04/historical-cardinality-exceptions.txt;
+  it should have carried ACT-Phase: EVIDENCE.)
 
-GEP_FEATURE_DEPENDENCY        YES   (byte substrate)
-GEP01_HARNESS_DEPENDENCY      NO    (Outcome A)
-GATE_PUSH_DEPENDENCY          NO
+B0_NATIVE_SEMANTICS             PASS
+B0_DIFFERENTIAL_ORACLE          PASS  15/15
+B0_DETERMINISM                  PASS
+B0_SOURCE_IMMUTABILITY          PASS
+B0_OUTPUT_BOUNDARY              PASS
+B0_ALLOCATION_FREE              PASS
+B0_HCC_NATIVE_COMPILE           PASS
+B0_NATIVE_LINK                  PASS
+B0_NATIVE_RUN                   PASS
+B0_LLVM_PATH                    BLOCKED_BY_EXISTING_MEMORY01_FENCE
+                                  (Option-W C6; not widened by B0
+                                  or its correction; future ACT
+                                  may decide whether to widen
+                                  MEMORY01)
 
-PARSER_IMPLEMENTED             NO
-AST_IMPLEMENTED                NO
-CODEGEN_IMPLEMENTED            NO
-PRODUCTION_LEXER_REPLACED      NO
-COMPILER_SEMANTIC_WIDENING     NO
+BOOTSTRAP01_CASES               15
+BOOTSTRAP01_PASS                15
+BOOTSTRAP01_FAIL                0
 
-BOOTSTRAP01_CASES              15
-BOOTSTRAP01_PASS               15
-BOOTSTRAP01_FAIL               0
+PUSH_RESIDUE                    GEP01_D1_D2 (pre-existing)
+LLVM_COMPILE_VERIFY_RUN         BLOCKED_BY_EXISTING_MEMORY01_FENCE
 
-PUSH_RESIDUE                   GEP01_D1_D2 (pre-existing)
-LLVM_COMPILE_VERIFY_RUN        PARTIAL (path-dependent)
+B0 OVERALL ENGINEERING RESULT   GREEN_WITH_CLOSURE_CORRECTION
+B1 AUTH                         READY_FOR_AUTH_AFTER_CORRECTION_CLOSES
 
 Residue:
   P0: NONE
-  P1: GEP01 cap-verifier 26/4; LLVM IR_STORE_DEREF fence;
-      inherited src/tests/run.HC spawn path
-  P2: LLVM-capable B0 variant; make bootstrap01-oracle-all
+  P1: ACT-POLYC-BOOTSTRAP01 historical cardinality exception 4;
+      B0_LLVM verdict wording clarity in predecessor c4/;
+      GEP01 cap-verifier 26/4; LLVM IR_STORE_DEREF fence;
+      captured-evidence trailing whitespace at
+      evidence/ACT-POLYC-BOOTSTRAP01/c3/fresh-build.txt:144
+  P2: EOF-hygiene pre-commit hook; Markdown section-order
+      linter
 ```
 
 #### P4 bootstrap milestones (current status)
 
 ```text
-B0 — COMPILER-SHAPED      GREEN     ACT-POLYC-BOOTSTRAP01 CLOSED PASS
-B1 — PARTIAL SELF-HOST    OPEN next recommended
+B0 — COMPILER-SHAPED      GREEN
+                              ACT-POLYC-BOOTSTRAP01 CLOSED PASS
+                              ACT-POLYC-BOOTSTRAP01-CORRECTION01
+                                CLOSED PASS_WITH_HYGIENE_RESIDUE
+B1 — PARTIAL SELF-HOST    READY_FOR_AUTH_AFTER_CORRECTION_CLOSES
 B2 — FIRST SELF-HOST      LOCKED
 B3 — BOOTSTRAP STABILITY  LOCKED
 ```
@@ -1881,9 +1885,8 @@ Recommended next ACT:
 `ACT-POLYC-BOOTSTRAP02` (or equivalent bounded B1 ACT):
 replace one bounded production lexer path with the proven
 B0 lexer and pass differential tests against the current
-compiler. Do NOT open until the B0 evidence is audited and
-the LLVM-path question (R-P1-2) is decided if the B1 target
-needs the LLVM path.
+compiler. The B1 ACT may proceed now that
+ACT-POLYC-BOOTSTRAP01-CORRECTION01 has closed.
 
 The SH1–SH6 progression below remains the long-horizon
 vocabulary, but it is **no longer the active critical path**.
