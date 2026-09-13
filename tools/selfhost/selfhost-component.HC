@@ -1173,16 +1173,19 @@ U0 SHCSelfTestN10toN12(U8 *binary, U8 *repo_root, U8 *scratch, SHCVerdict *v)
     Free(p);
   }
 
-  // N11 — output path aliases source. Create a temp ".o" file
-  // and use it as the source path.
+  // N11 — output path aliases source. Construct a temp ".o" file
+  // and use the EXACT generic-output path as the source (this is
+  // the actual alias scenario the gate is meant to catch).
   {
     U8 *o_path = StrPrint(NULL, "%s/N11_aliased.o", scratch);
     SHCWriteText(o_path, StrPrint(NULL, ""));
+    // Generic output for stage 0, cid=alias_source:
+    U8 *gen_path = SHCGenericOutPath(0, "alias_source");
     U8 *p = StrPrint(NULL, "%s/N11_aliases.tsv", scratch);
     U8 *body = StrPrint(NULL,
       "%s\n"
       "alias_source\t%s\tAliasSym\tsrc/lexer.c::lexIdentifier\tPOLYC\tSTABLE\tbootstrap02-oracle\tbootstrap02-cursor-test\tbootstrap02-lexer-seam-test\tACT-POLYC-BOOTSTRAP02\n",
-      SHC_GOOD_HEADER, o_path);
+      SHC_GOOD_HEADER, gen_path);
     SHCWriteText(p, body);
     Free(body);
     I64 rc = SHCRunValidateOn(binary, p);
@@ -1191,6 +1194,7 @@ U0 SHCSelfTestN10toN12(U8 *binary, U8 *repo_root, U8 *scratch, SHCVerdict *v)
                                   ".o source did not fail");
     Free(p);
     Free(o_path);
+    Free(gen_path);
   }
 
   // N12a — DISABLED row validates (rc=0).
