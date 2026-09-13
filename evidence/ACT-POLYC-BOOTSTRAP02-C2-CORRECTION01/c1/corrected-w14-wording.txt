@@ -1,0 +1,83 @@
+ACT-POLYC-BOOTSTRAP02-C2-CORRECTION01 — C1 RED —
+corrected-w14-wording
+====================================================
+
+The corrected §14 wording for ACT-POLYC-BOOTSTRAP02,
+replacing the original "No runtime toggle. No `#ifdef`.
+No legacy fallback." with the correctly-scoped rule
+"no runtime fallback in hcc-bootstrap02".
+
+============================================================
+Original §14 wording
+============================================================
+
+  No runtime toggle. No `#ifdef`. No legacy fallback.
+
+============================================================
+Corrected §14 wording
+============================================================
+
+  C2 modifies src/lexer.c only at the lexIdentifier body.
+
+  The two compilation artifacts produced from this source
+  are physically distinct programs:
+
+    stage0 ./hcc
+        built WITHOUT -DHCC_BOOTSTRAP02_STAGE1
+        lexIdentifier body uses the legacy host-C identifier
+        scanning loop (ctype-based, byte semantics per the
+        "C" locale).
+
+    stage1 build/hcc-bootstrap02
+        built WITH -DHCC_BOOTSTRAP02_STAGE1
+        lexIdentifier body delegates to BootstrapScanIdent.
+
+  A build-time selector (#ifdef HCC_BOOTSTRAP02_STAGE1) is
+  PERMITTED solely to produce this stage separation. Within
+  each compilation artifact there is NO runtime branch in
+  lexIdentifier and NO runtime fallback. The hcc-bootstrap02
+  binary has BootstrapScanIdent as its mandatory identifier
+  seam; the legacy lexIdentifier logic is absent from the
+  preprocessed stage1 translation unit.
+
+============================================================
+Why the new wording is correct
+============================================================
+
+The corrected wording separates two distinct concerns:
+
+  1. STAGE SEPARATION (allowed): a build-time selector
+     that compiles the same source file into two
+     physically distinct programs. This is a deliberate
+     architectural choice that keeps the stage0 reference
+     build hermetic and the stage1 build self-hosted.
+
+  2. RUNTIME FALLBACK (forbidden): a runtime branch
+     inside one binary that could fail back to the legacy
+     implementation. This is forbidden because it would
+     mean the stage1 binary could silently use the
+     non-PolyC path, defeating the whole point of the
+     bootstrap experiment.
+
+The hcc-bootstrap02 binary satisfies concern 2: its
+preprocessed lexIdentifier body contains ONLY the
+BootstrapScanIdent delegation; the legacy ctype path is
+absent from the preprocessed translation unit.
+
+============================================================
+Predicate form (used in the corrected
+required-result.txt)
+============================================================
+
+  C2_STAGE1_NO_RUNTIME_FALLBACK    = PASS
+    The hcc-bootstrap02 binary's preprocessed lexIdentifier
+    body contains ONLY the BootstrapScanIdent delegation.
+    No runtime branch, no fallback path.
+
+  C2_STAGE1_BUILD_TIME_SELECTOR_OK = PASS
+    A build-time `#ifdef HCC_BOOTSTRAP02_STAGE1` is
+    permitted solely to produce stage separation between
+    ./hcc (stage0) and build/hcc-bootstrap02 (stage1).
+
+  C2_SCOPE_CONTRACT                = COMPLIANT
+    Both predicates PASS; the corrected §14 is satisfied.

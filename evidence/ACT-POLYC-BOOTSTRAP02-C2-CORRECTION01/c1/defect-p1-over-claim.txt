@@ -1,0 +1,104 @@
+ACT-POLYC-BOOTSTRAP02-C2-CORRECTION01 — C1 RED —
+defect-p1-over-claim
+====================================================
+
+DEFECT: `cursor-equivalence.txt` over-claims that
+byte-identical objects imply identical token streams.
+
+============================================================
+Original wording (binding) from
+evidence/ACT-POLYC-BOOTSTRAP02/c2/cursor-equivalence.txt
+============================================================
+
+  Mechanically: when both compilers produce byte-identical
+  object code on a source that contains `$`-bearing
+  identifiers, the lexer must have observed the same byte
+  sequence and built the same token stream — otherwise the
+  downstream parser/AST/codegen would emit different
+  objects.
+
+  CURSOR_BINDING_CONTRACT        = PASS
+  PRODUCTION_EOF_NUL_BEHAVIOR    = PASS (byte-identical objects)
+  PRODUCTION_REWIND_BEHAVIOR     = PASS (byte-identical objects)
+  PRODUCTION_NONZERO_CURSOR      = PASS (run_shared.HC has identifiers
+                                         at non-zero column offsets)
+  PRODUCTION_DOLLAR_CONTINUATION = PASS (dir.HC has _opendir$INODE64,
+                                         fzf.HC has $-bearing identifiers)
+  PRODUCTION_LONG_IDENTIFIERS    = PASS (60-char identifiers in I11 also
+                                         covered by real sources)
+  STAGE0_STAGE1_OBJECT_PARITY    = 5/5 byte-identical on real sources
+
+The header section asserts:
+
+  The C2 IMPL evidence demonstrates that the B0 grammar
+  (a strict subset of production grammar) is correctly
+  implemented by B0 and unaffected by B1.
+
+  is verified by the strongest available differential:
+  byte-identical object emission between stage0 and stage1
+  on real production sources
+
+The "strongest available differential" is the strongest
+CHEAP observable — but it does NOT directly support the
+"cursor binding is byte-equivalent to the legacy path"
+claim in the next paragraph.
+
+============================================================
+Why the inference is too strong
+============================================================
+
+Byte-identical final objects are produced by the LINKED
+compiler binary. The linked binary encodes a chain of
+phases: lex → parse → AST → IR → codegen → assembly →
+object. Different intermediate states (e.g. a different
+token stream + a different AST that happens to fold to
+the same IR + the same assembly) can produce identical
+final objects in principle.
+
+For an LLVM-style compiler with peephole and CSE passes,
+this is a real concern. For the small native backend
+(ARM64/x86_64) the optimization surface is narrower, but
+the logical objection stands: object parity does not
+logically imply cursor equivalence.
+
+============================================================
+Corrected two-pillar taxonomy
+============================================================
+
+The corrected C2 evidence has TWO independent pillars:
+
+  Pillar A — End-to-end conservation (object-emission
+  parity):
+    The stage0 and stage1 binaries, given the same source
+    files as input, produce byte-identical object code.
+    This is the strongest cheap observable available and
+    supports conservation of compile result. It does NOT
+    directly support cursor equivalence.
+
+  Pillar B — Direct seam-level cursor witness:
+    A test-only host harness invokes BootstrapScanIdent
+    on a curated matrix of inputs that exercise every
+    code branch in the lexIdentifier body, and emits the
+    (start, end, cur_strlen, next-byte) tuple for each
+    input. The same matrix is run through the C reference
+    oracle. The two outputs are compared line-by-line.
+    This directly supports cursor equivalence.
+
+`cursor-equivalence.txt` is REFRAMED as pillar A only
+(end-to-end conservation). A NEW evidence file
+`cursor-direct-witness.txt` is added to provide pillar B.
+
+============================================================
+What this defect does NOT mean
+============================================================
+
+- It does NOT mean the C2 IMPL is wrong.
+- It does NOT mean byte-equality is bad evidence.
+- It does NOT mean stage0 and stage1 produce different
+  token streams.
+
+It ONLY means the C2 evidence labelled its claims more
+strongly than the observations support. The corrected
+two-pillar taxonomy is honest: pillar A (object parity)
+is real and proven; pillar B (direct cursor equivalence)
+is added in this correction ACT and is real and proven.

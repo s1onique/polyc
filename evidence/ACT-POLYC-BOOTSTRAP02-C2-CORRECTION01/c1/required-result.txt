@@ -1,0 +1,81 @@
+ACT-POLYC-BOOTSTRAP02-C2-CORRECTION01 — C1 RED —
+required-result block
+==================================================
+
+This is the binding contract between C1 RED and C2 IMPL
+for this correction ACT. Per §9 of the ACT, C2 may
+proceed only if every required predicate below is GREEN
+at C1 close.
+
+------------------------------------------------------------
+Section A — P0 §14 wording correction
+------------------------------------------------------------
+
+A01  Original §14 wording captured.                PASS
+       (c1/defect-p0-wording.txt — verbatim quote of
+        "No runtime toggle. No `#ifdef`. No legacy
+        fallback.")
+
+A02  C2 IMPL extracts captured.                   PASS
+       (c1/defect-p0-wording.txt — verbatim extract of
+        src/lexer.c showing the #ifdef HCC_BOOTSTRAP02_STAGE1)
+
+A03  Violation mechanically classified.           PASS
+       (c1/defect-p0-wording.txt — §14 forbids the
+        literal `#ifdef` token; C2 IMPL uses it for
+        build-time stage separation; semantically
+        correct, literally violates the wording.)
+
+A04  Corrected §14 wording recorded.              PASS
+       (c1/corrected-w14-wording.txt — new rule:
+        "no runtime fallback in hcc-bootstrap02")
+
+A05  Predicate form locked.                       PASS
+       (c1/corrected-w14-wording.txt — predicates
+        C2_STAGE1_NO_RUNTIME_FALLBACK and
+        C2_STAGE1_BUILD_TIME_SELECTOR_OK defined)
+
+------------------------------------------------------------
+Section B — P1 cursor evidence taxonomy correction
+------------------------------------------------------------
+
+B01  Original cursor-equivalence over-claim captured.
+                                                    PASS
+       (c1/defect-p1-over-claim.txt — verbatim quote of
+        "Mechanically: when both compilers produce
+        byte-identical object code on a source that
+        contains `$`-bearing identifiers, the lexer
+        must have observed the same byte sequence and
+        built the same token stream")
+
+B02  Two-pillar taxonomy recorded.                PASS
+       (c1/corrected-cursor-taxonomy.txt —
+        pillar A = end-to-end conservation;
+        pillar B = direct seam-level cursor witness)
+
+B03  Pillar B scope locked.                       PASS
+       (c1/corrected-cursor-taxonomy.txt — exact 6-input
+        reviewer matrix and exact tuple format)
+
+------------------------------------------------------------
+Section C — Authoritative C1 verdict
+------------------------------------------------------------
+
+  ACT-Verdict                          = OPEN
+  ACT-Phase                            = RED
+  HALT_RED_NOT_REPRODUCED              = NOT_FIRED
+  HALT_SCOPE_EXPANSION_REQUIRED        = NOT_FIRED
+  HALT_B0_REGRESSION                   = NOT_FIRED
+  C1_RED_TO_C2_IMPL_GATE               = OPEN
+
+------------------------------------------------------------
+Section D — Conservation at C1 close
+------------------------------------------------------------
+
+The C1 RED packet is GOVERNANCE-ONLY: it rewrites the §14
+wording and adds an evidence-tactic classification. No
+production source is modified. Conservation is
+trivially preserved:
+
+  B0_CONSERVATION_AFTER_C1            = PASS  15/15
+  (re-verified at C3 EVIDENCE)

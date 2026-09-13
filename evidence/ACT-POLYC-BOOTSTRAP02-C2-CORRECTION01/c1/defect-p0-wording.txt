@@ -1,0 +1,90 @@
+ACT-POLYC-BOOTSTRAP02-C2-CORRECTION01 — C1 RED —
+defect-p0-wording
+=================================================
+
+DEFECT: ACT §14 (original) forbids `#ifdef` literally;
+C2 IMPL uses a build-time `#ifdef` for stage separation
+(semantically correct, literally violates the wording).
+
+============================================================
+Original §14 wording (binding)
+============================================================
+
+From docs/acts/ACT-POLYC-BOOTSTRAP02.md §14:
+
+  C2 modifies `src/lexer.c` *only*:
+
+      lexIdentifier() body
+          ↓ delegates to
+      BootstrapScanIdent(src, src_len, start, &end)
+          ↓ caller (lexCore) sets
+      l->ptr        = src + end
+      l->cur_strlen = end - start
+
+  No runtime toggle. No `#ifdef`. No legacy fallback.
+
+The phrase "No `#ifdef`" is a literal token prohibition
+without semantic qualification.
+
+============================================================
+C2 IMPL implementation extract (src/lexer.c:874-957)
+============================================================
+
+  int lexIdentifier(Lexer *l, char ch) {
+  #ifdef HCC_BOOTSTRAP02_STAGE1
+      /*
+       * ACT-POLYC-BOOTSTRAP02 C2 IMPL — stage1 delegation to
+       * the B1 PolyC component BootstrapScanIdent. Compiled in
+       * ONLY when -DHCC_BOOTSTRAP02_STAGE1 is passed (the
+       * opt-in stage1 build). The production ./hcc binary uses
+       * the legacy ctype-based path below; there is no
+       * runtime fallback, only a build-time selection.
+       */
+      ...
+      return TK_IDENT;
+  #else
+      /* Legacy production path. ... */
+      int i = 0;
+      while (ch && (isalnum(ch) || ch == '_' ||  ch == '$')) {
+          i++;
+          ch = lexNextChar(l);
+      }
+      l->cur_strlen = i;
+      if (ch != '\0') {
+          lexRewindChar(l);
+      }
+      return TK_IDENT;
+  #endif
+  }
+
+The preprocessor `#ifdef HCC_BOOTSTRAP02_STAGE1` /
+`#else` / `#endif` is exactly the literal token §14
+forbids, regardless of its semantic role.
+
+============================================================
+Authoritative classification
+============================================================
+
+  W14_NO_IFDEF_LITERAL_TOKENS      = VIOLATED
+  W14_NO_RUNTIME_FALLBACK           = SATISFIED
+  W14_NO_RUNTIME_TOGGLE             = SATISFIED
+
+The defect is one of authorization scope, NOT of
+implementation correctness. The corrected §14 wording
+(see corrected-w14-wording.txt) tightens the rule to
+"no runtime fallback in hcc-bootstrap02" which the
+implementation actually satisfies.
+
+============================================================
+What this defect does NOT mean
+============================================================
+
+- It does NOT mean the C2 IMPL is wrong.
+- It does NOT mean the `#ifdef` is unsafe.
+- It does NOT mean the production build is at risk.
+
+It ONLY means the original §14 wording over-promised by
+listing the `#ifdef` token without distinguishing
+between runtime branches (forbidden) and build-time
+artifacts (which are the only way to keep the stage0
+build hermetic and the stage1 build self-hosted).
