@@ -1,0 +1,134 @@
+ACT-POLYC-BOOTSTRAP02-C2-CORRECTION01 — C4 CLOSE —
+closure summary
+==================================================
+
+VERDICT
+-------
+ACT-Verdict                          = PASS_WITH_CORRECTION_RESIDUE
+
+IDENTITY
+--------
+Entry HEAD:  3942df26c496e18d1ebbe7b6423c7aa1b195a920
+             (end of ACT-POLYC-BOOTSTRAP02 C2 IMPL trail)
+Final HEAD:  <this-close-commit>
+Working tree at close: clean
+Branch:      main
+git replace -l at close: empty
+APPEND_ONLY_START_POINT (baf5dbd7...): not violated
+
+ROOT CAUSE / FINDING
+--------------------
+A reviewer audit of the C2 IMPL commits (27cbb33..3942df2)
+identified two bounded defects in the implementation
+package, both governance / evidence classification issues,
+neither requiring semantic code change:
+
+  P0 — ACT §14 wording over-narrow: the original rule
+       listed `#ifdef` as a forbidden literal token. C2
+       IMPL uses a build-time `#ifdef` to select between
+       the stage0 `./hcc` (legacy host-C identifier seam)
+       and the stage1 `build/hcc-bootstrap02` (mandatory
+       B1 delegation). Semantically correct (no runtime
+       branch within one binary); literally violated the
+       wording.
+
+  P1 — `cursor-equivalence.txt` over-claimed that byte-
+       identical objects imply identical token streams.
+       The claim conflates two distinct things: object-
+       emission parity (end-to-end conservation) and
+       cursor-binding equivalence (intermediate lex state).
+
+Both defects are corrected in this ACT without any
+production-source mutation, without any B1 component
+mutation, and without any build-system behavioural change.
+
+RED
+---
+C1 RED packet at
+evidence/ACT-POLYC-BOOTSTRAP02-C2-CORRECTION01/c1/:
+  README.md
+  defect-p0-wording.txt
+  defect-p1-over-claim.txt
+  corrected-w14-wording.txt
+  corrected-cursor-taxonomy.txt
+  required-result.txt
+
+Captures the verbatim original §14 wording, the verbatim
+over-claim in cursor-equivalence.txt, and the corrected
+two-pillar cursor evidence taxonomy.
+
+IMPLEMENTATION
+--------------
+C2 IMPL trail (commits 76afe9b, e8840c8, 94d5b01):
+  76afe9b — C1 RED: open the correction ACT.
+  e8840c8 — C2 IMPL: pillar-B direct cursor witness
+            (tools/quality/bootstrap02-cursor-{host,
+            oracle}.c; Makefile target; evidence file).
+  94d5b01 — C2 IMPL: reframe C2 evidence under the
+            corrected §14 + two-pillar taxonomy
+            (cursor-equivalence.txt, implementation-
+            delta.txt, required-result.txt).
+
+Three commits, each a small truthful proof step.
+
+GATES
+-----
+All gates PASS at C3 entry (commit 8969694 captures the
+verbatim transcripts):
+
+  make bootstrap01-test               PASS  15/15
+  make bootstrap02-test               PASS  15/15 byte-identical
+  make bootstrap02-cursor-test        PASS  6/6 byte-identical
+  make bootstrap02-stage1             PASS
+  stage0 vs stage1 byte-equality      PASS  5/5 real sources
+  production hermetic build           PASS
+  gate-fast                           PASS
+  factory-v2                          PASS  35/35
+  factory-halt-classification         PASS  12/12
+  factory-append-only                 PASS  11/11
+  shell-loc-gate                      PASS
+  factory-closure-status              PASS  6/6
+
+Cardinality-1 invariant verified:
+
+  git log --all-match --oneline \
+      --grep='^ACT: ACT-POLYC-BOOTSTRAP02-C2-CORRECTION01$' \
+      --grep='^ACT-Phase: CLOSE$'
+
+  returns exactly 1 commit (this commit).
+
+SCOPE
+-----
+Production-source mutation:           NONE
+B1 component mutation:                NONE
+B0 component mutation:                NONE
+Build-system behavioural change:      NONE
+Authorization scope expanded:         NONE
+Residue beyond the corrections:       NONE
+
+RESIDUE
+-------
+  P0 — REPAIRED (corrected §14 wording, evidence reframed)
+  P1 — REPAIRED (pillar B added; cursor-equivalence.txt
+                  reframed as pillar A only)
+  P2 (pre-existing PUSH_RESIDUE = GEP01_D1_D2) — unchanged
+  P3 (HANDOFF.rst / doc-invariants cleanup, if any) — n/a
+
+NEXT ACT
+--------
+After this correction ACT closes, the original
+ACT-POLYC-BOOTSTRAP02 may proceed to its own C3 EVIDENCE
+phase. The corrected two-pillar cursor evidence unlocks
+the reviewer-blocked C2-to-C3 transition.
+
+ACT-POLYC-BOOTSTRAP02 C3 EVIDENCE should:
+  - Extend the production-source corpus (e.g. compile
+    every .HC file in src/holyc-lib/ and src/tests/ with
+    both stage0 and stage1, capture byte-parity diff).
+  - If a token-dump seam exists in the production
+    lexer, capture identical-token-stream diffs.
+  - Consolidate all gates and produce the C3 required-
+    result block per ACT §15.
+  - Open C4 CLOSE for ACT-POLYC-BOOTSTRAP02.
+
+No SHA-of-self claims (DOCTRINE.md §22).
