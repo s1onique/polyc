@@ -1821,6 +1821,70 @@ is a deliberately narrow substrate: bytes in, deterministic
 token stream out, no parser, no AST, no codegen, no allocation
 unless the recon proves otherwise.
 
+#### B0 outcome (ACT-POLYC-BOOTSTRAP01, CLOSED PASS)
+
+```text
+ACT                   ACT-POLYC-BOOTSTRAP01
+ACT-Verdict           PASS
+BOOTSTRAP_B0          GREEN
+BOOTSTRAP_STABILITY   NOT_YET
+FIRST_SELF_HOST       NOT_YET
+
+B0_POLYC_LEXER                PASS  (tools/bootstrap/bootstrap01-lexer.HC,
+                                       allocation-free, single-pass,
+                                       public BootstrapToken +
+                                       public I64 BootstrapLex)
+B0_HCC_NATIVE_COMPILE         PASS
+B0_LLVM_EMIT                  PARTIAL (MEMORY01 STORE_DEREF fence;
+                                          path-dependent per Option-W C6)
+B0_NATIVE_LINK                PASS
+B0_NATIVE_RUN                 PASS  (15/15 fixtures)
+B0_TOKEN_EQUIVALENCE          PASS  (15/15 vs independent C oracle)
+B0_DETERMINISM                PASS  (run1 == run2)
+B0_SOURCE_IMMUTABILITY        PASS  (src bytewise equal)
+B0_OUTPUT_BOUNDARY            PASS  (T12 + NC8 negative controls)
+
+GEP_FEATURE_DEPENDENCY        YES   (byte substrate)
+GEP01_HARNESS_DEPENDENCY      NO    (Outcome A)
+GATE_PUSH_DEPENDENCY          NO
+
+PARSER_IMPLEMENTED             NO
+AST_IMPLEMENTED                NO
+CODEGEN_IMPLEMENTED            NO
+PRODUCTION_LEXER_REPLACED      NO
+COMPILER_SEMANTIC_WIDENING     NO
+
+BOOTSTRAP01_CASES              15
+BOOTSTRAP01_PASS               15
+BOOTSTRAP01_FAIL               0
+
+PUSH_RESIDUE                   GEP01_D1_D2 (pre-existing)
+LLVM_COMPILE_VERIFY_RUN        PARTIAL (path-dependent)
+
+Residue:
+  P0: NONE
+  P1: GEP01 cap-verifier 26/4; LLVM IR_STORE_DEREF fence;
+      inherited src/tests/run.HC spawn path
+  P2: LLVM-capable B0 variant; make bootstrap01-oracle-all
+```
+
+#### P4 bootstrap milestones (current status)
+
+```text
+B0 — COMPILER-SHAPED      GREEN     ACT-POLYC-BOOTSTRAP01 CLOSED PASS
+B1 — PARTIAL SELF-HOST    OPEN next recommended
+B2 — FIRST SELF-HOST      LOCKED
+B3 — BOOTSTRAP STABILITY  LOCKED
+```
+
+Recommended next ACT:
+`ACT-POLYC-BOOTSTRAP02` (or equivalent bounded B1 ACT):
+replace one bounded production lexer path with the proven
+B0 lexer and pass differential tests against the current
+compiler. Do NOT open until the B0 evidence is audited and
+the LLVM-path question (R-P1-2) is decided if the B1 target
+needs the LLVM path.
+
 The SH1–SH6 progression below remains the long-horizon
 vocabulary, but it is **no longer the active critical path**.
 SH1–SH6 vocabulary will be re-stated in B0–B3 terms when
