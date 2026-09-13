@@ -12,7 +12,7 @@ HCC_ENABLE_LLVM ?= OFF
 
 default: all
 
-.PHONY: all gate-fast gate-push install-hooks llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test
+.PHONY: all gate-fast gate-push install-hooks llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test selfhost-component-build selfhost-component-test selfhost-registry-validate
 
 # To add sqlite3 support add -DHCC_LINK_SQLITE3=1 to the below like so:
 #```
@@ -957,3 +957,29 @@ bootstrap04-lexer-seam-test: bootstrap04-stage3
 		echo "BOOTSTRAP04_LEXER_SEAM_DOWNSTREAM=PASS (byte-identical, including labels)"; \
 		echo "BOOTSTRAP04_LEXER_SEAM_RESIDUE=NONE"; \
 	fi
+
+# ACT-POLYC-SELFHOST-SURFACE01 C2 IMPL — generic self-host
+# component surface. Driven by docs/factory/SELF-HOST-COMPONENTS.tsv
+# via tools/selfhost/selfhost-component.sh.
+#
+# Stage mapping (binding):
+#   STAGE=0  -> ./hcc
+#   STAGE=1  -> ./build/hcc-bootstrap02
+#   STAGE=2  -> ./build/hcc-bootstrap03
+#
+# Generic output paths (binding):
+#   build/selfhost/stage<STAGE>/<component_id>.o
+#
+# Registry fields are DATA, never shell-evaluated.
+selfhost-component-build:
+	@test -n "$(COMPONENT)" || (echo "selfhost-component-build: COMPONENT=<id> required (e.g. make selfhost-component-build COMPONENT=identifier_scanner STAGE=0)" >&2; exit 1)
+	@test -n "$(STAGE)" || (echo "selfhost-component-build: STAGE=<0|1|2> required (e.g. make selfhost-component-build COMPONENT=identifier_scanner STAGE=0)" >&2; exit 1)
+	./tools/selfhost/selfhost-component.sh build COMPONENT=$(COMPONENT) STAGE=$(STAGE)
+
+selfhost-component-test:
+	@test -n "$(COMPONENT)" || (echo "selfhost-component-test: COMPONENT=<id> required" >&2; exit 1)
+	@test -n "$(STAGE)" || (echo "selfhost-component-test: STAGE=<0|1|2> required" >&2; exit 1)
+	./tools/selfhost/selfhost-component.sh test COMPONENT=$(COMPONENT) STAGE=$(STAGE)
+
+selfhost-registry-validate:
+	@python3 scripts/quality/selfhost-component-registry.py
