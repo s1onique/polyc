@@ -721,4 +721,3 @@ A `YES` requires a demonstrated successor dependency. If
 GEP01 D1/D2: ACT B0 semantic closure may still PASS;
 gate-push status is recorded honestly; no push is performed
 unless the push gate itself passes.
-

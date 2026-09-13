@@ -1,0 +1,57 @@
+ACT-POLYC-BOOTSTRAP01-CORRECTION01 C1 — defect classification
+==============================================================
+
+Predecessor ACT: ACT-POLYC-BOOTSTRAP01 (CLOSED PASS_WITH_
+CARDINALITY_AND_HYGIENE_DEFECTS in C4 of this correction).
+
+DEFECT-1 (P0): Cardinality-1 CLOSE invariant violation
+  Two commits carry both `ACT: ACT-POLYC-BOOTSTRAP01`
+  and `ACT-Phase: CLOSE`:
+    - 4b42e06 (closure-truth pack)
+    - 147069f (ROADMAP B0 outcome block)
+  Per DOCTRINE.md §22 / Cardinality-1-CLOSE invariant,
+  the set MUST have cardinality exactly 1.
+  DOCTRINE.md §24 explicitly contemplates this class of
+  violation; the disposition is to open a CORRECTION ACT
+  and append a historical exception.
+
+DEFECT-2 (P0): Source patch-hygiene defects (3 files)
+  git diff --check reports new blank line at EOF for:
+    - tools/bootstrap/bootstrap01-lexer.HC:224
+    - tools/quality/bootstrap01-lexer-oracle.c:333
+    - tools/quality/bootstrap01-lexer-test.HC:337
+  These were introduced by the predecessor ACT's C2
+  implementation (commit 4992870). They are not
+  captured-evidence residue; they are production/test
+  patch-hygiene failures that must be repaired.
+
+DEFECT-3 (P1): Captured-evidence trailing whitespace
+  evidence/ACT-POLYC-BOOTSTRAP01/c3/fresh-build.txt:144
+  has trailing whitespace. This is captured evidence
+  (a verbatim copy of a Makefile command line that ends
+  in a literal space). Classified GOVERNANCE_RESIDUE
+  per F-MECHANICAL-BLOCKING. NOT blocking per the
+  "prose alone never blocks engineering" doctrine.
+
+DEFECT-4 (P1): B0_LLVM acceptance criterion reframed
+  The predecessor ACT §16 required hcc --emit-llvm /
+  llvm-as / opt --passes=verify as part of PASS. The
+  closure truth at c4/closure-summary.txt recorded
+  B0_LLVM_AS = N/A and B0_LLVM_VERIFY = N/A. The
+  reframing is *substantively correct* (MEMORY01
+  IR_STORE_DEREF fence is a known substrate boundary;
+  widening it is outside B0 scope) but the closure
+  verdict wording was permissive where the original
+  authorization was strict. This correction re-words
+  the verdict so the B0 engineering result and the
+  LLVM-path blocker are both recorded truthfully.
+
+DEFECT-5 (P1): ACT document section ordering wrong
+  grep -n '^## ' docs/acts/ACT-POLYC-BOOTSTRAP01.md
+  reports §24/§25 placed *after* the Closure metadata
+  (§37), and §6 and §1 placed *after* §25. This is a
+  structural authoring defect. Per F14, the original
+  file remains immutable; a corrected authoring copy
+  is deposited in this correction's evidence tree.
+
+End of defect classification.

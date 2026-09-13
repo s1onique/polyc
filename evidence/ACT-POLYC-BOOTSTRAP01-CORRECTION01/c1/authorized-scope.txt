@@ -1,0 +1,37 @@
+ACT-POLYC-BOOTSTRAP01-CORRECTION01 C1 — authorized scope
+=========================================================
+
+2.1 Append ACT-POLYC-BOOTSTRAP01 to
+    historical-cardinality-exceptions.txt as EXCEPTION 4.
+
+2.2 Strip the three introduced EOF blank lines from:
+    - tools/bootstrap/bootstrap01-lexer.HC
+    - tools/quality/bootstrap01-lexer-oracle.c
+    - tools/quality/bootstrap01-lexer-test.HC
+
+2.3 Verify `git diff --check <entry>..HEAD` rc=0 modulo
+    captured-evidence residue (DEFECT-3), which is
+    recorded but not blocking.
+
+2.4 Write a corrected authoring copy of
+    docs/acts/ACT-POLYC-BOOTSTRAP01.md to
+    evidence/ACT-POLYC-BOOTSTRAP01-CORRECTION01/
+      ACT-POLYC-BOOTSTRAP01-CORRECTED.md
+    with sections in numerical order. The original
+    docs/acts/ACT-POLYC-BOOTSTRAP01.md stays in place
+    (F14 historical evidence).
+
+2.5 Re-author the B0_LLVM verdict wording as
+    BLOCKED_BY_EXISTING_MEMORY01_FENCE (not N/A).
+
+2.6 Re-author the B0 native/LLVM engineering result as
+    GREEN_WITH_CLOSURE_CORRECTION and lift B1's
+    TEMPORARILY_LOCKED status to
+    READY_FOR_AUTH_AFTER_CORRECTION_CLOSES.
+
+2.7 Re-run `make bootstrap01-test` at this correction's
+    CLOSE commit and prove BOOTSTRAP01_CASES=15 / PASS=15
+    / FAIL=0 / STATUS=PASS.
+
+(Items 2.1..2.7 are the canonical scope from the ACT
+document §2.)
