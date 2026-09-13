@@ -1,0 +1,155 @@
+DAFNY_TOOLCHAIN_PROVENANCE
+============================
+
+Dafny version
+-------------
+Dafny 4.11.0 (release tag v4.11.0; commit
+fcb2042d6d043a2634f0854338c08feeaaaf4ae2).
+
+The Dafny driver reports the version as:
+  $ tools/dafny/dafny-4.11.0/dafny/dafny --version
+  4.11.0+fcb2042d6d043a2634f0854338c08feeaaaf4ae2
+
+Z3 version
+----------
+Z3 version 4.12.1 - 64 bit (bundled with the dafny
+distribution):
+  $ tools/dafny/dafny-4.11.0/dafny/z3/bin/z3-4.12.1 -version
+  Z3 version 4.12.1 - 64 bit
+
+Both are arm64 Mach-O binaries.
+
+Distribution source
+-------------------
+dafny-4.11.0-arm64-macos-13.zip
+  Source URL:
+    https://github.com/dafny-lang/dafny/releases/download/v4.11.0/dafny-4.11.0-arm64-macos-13.zip
+  Mirrored via gh-proxy.com for download speed:
+    https://gh-proxy.com/https://github.com/dafny-lang/dafny/releases/download/v4.11.0/dafny-4.11.0-arm64-macos-13.zip
+  SHA-256:
+    c90c75e7d5db9c6ccbb7127840dfe43f0ac938b039a7ebed146d8ead383a572f
+  This SHA-256 matches the GitHub release asset digest
+  recorded in api.github.com/repos/dafny-lang/dafny/releases/tags/v4.11.0.
+
+Installed location
+------------------
+tools/dafny/dafny-4.11.0/
+  dafny/        (the Dafny driver + bundled .NET 8 runtime)
+    dafny                 (executable)
+    DafnyDriver.dll       (.NET driver entry point)
+    Boogie.*.dll          (verification engine)
+    DafnyCore.dll         (language + resolver)
+    z3/bin/z3-4.12.1      (Z3 SMT solver, arm64)
+    z3/bin/z3-4.14.1      (additional Z3 binary, arm64)
+    ... (Dafny standard libraries, language server, etc.)
+
+Aggregate SHA-256 of all files under tools/dafny/dafny-4.11.0/:
+  cad968d7bf32151a62f4b4833bc7864b82f3e31d43178e108528037b0ac6f206
+
+Why this distribution was selected
+----------------------------------
+The Dafny 4.11.0 release ships three native artefacts on
+GitHub:
+  - dafny-4.11.0-arm64-macos-13.zip (standalone, with Z3)
+  - dafny-4.11.0-x64-macos-13.zip  (x64 standalone)
+  - dafny-4.11.0.nupkg              (.NET tool only)
+The macOS arm64 standalone is the only artefact that:
+  (a) is self-contained (includes Z3 binary, no PATH needed)
+  (b) matches the host architecture (arm64)
+  (c) is verifiable end-to-end via
+      `dotnet DafnyDriver.dll --version` returning
+      "4.11.0+fcb2042..." (not "0.0.0.0" which is what
+      the nupkg-only path reports on this host).
+
+Required flags discovered from --help-internal
+----------------------------------------------
+  --warn-contradictory-assumptions
+       (experimental) Emits a warning if any assertions
+       are proved based on contradictory assumptions
+       (vacuously).
+  --warn-redundant-assumptions
+       (experimental) Emits a warning if any `requires`
+       clause or `assume` statement was not needed to
+       complete verification.
+
+dafny audit (text/HTML/Markdown/IETF report writer)
+---------------------------------------------------
+  dafny audit <files...> [--report-file PATH]
+                           [--report-format txt|html|md|md-ietf]
+
+dafny audit checks for, at minimum: assume statements,
+{:axiom}, {:verify false}, {:extern} with contracts,
+bodyless declarations with trusted postconditions,
+bodyless forall used as assumption, bodyless loop used
+as assumption.
+
+Toolchain access from gate
+--------------------------
+scripts/quality/formal-dafny.sh puts
+tools/dafny/dafny-4.11.0/dafny/z3/bin/ on PATH for
+the duration of the gate run, but verification
+itself does NOT rely on PATH-based auto-discovery:
+the dafny verify call passes --solver-path "$Z3"
+(I7), so the exact Z3 executable the gate
+authenticated is the exact solver Dafny uses.
+PATH is set only so that tools dafny invokes
+transitively (e.g. for audit) still find a Z3
+in the bundled tree if they look one up.
+
+Runtime-pinned identities (CORRECTION01)
+----------------------------------------
+The stable gate scripts/quality/formal-dafny.sh
+mechanically checks the following VERSION identities
+BEFORE running any verification:
+
+  EXPECTED_DAFNY_VERSION = 4.11.0+fcb2042d6d043a2634f0854338c08feeaaaf4ae2
+  EXPECTED_Z3_PREFIX     = Z3 version 4.12.1
+
+A mismatch causes the gate to exit 3 before any
+verify/audit invocation.
+
+This is a runtime VERSION pin. It is NOT a runtime
+BINARY hash pin: the gate does NOT compare the SHA-256
+of the `dafny` executable or the `z3` binary against a
+recorded digest. Recorded digests (see Distinction of
+digests below) are provenance information used during
+provisioning and reproduced in evidence; they are
+not re-checked on every gate run.
+
+Scope of the runtime check:
+  - dafny --version output must equal the expected
+    string exactly;
+  - z3 -version output must start with the expected
+    prefix;
+  - dafny verify is invoked with --solver-path
+    pointing at the EXACT Z3 executable we just
+    checked, so the solver Dafny uses is the same
+    file we authenticated (not whatever PATH
+    resolution would have picked).
+
+Out-of-scope at runtime:
+  - SHA-256 of the dafny executable
+  - SHA-256 of the z3 executable
+  - signing-key / notarisation validation
+  - dependency-graph (e.g. .dll / .so) validation
+
+If a content-identity invariant on the binary is
+required, an additional hash check must be added to
+scripts/quality/formal-dafny.sh and TOOLCHAIN_BINARY_
+SHA_PIN_ENFORCED must be set to true.
+
+Distinction of digests (CORRECTION01)
+-------------------------------------
+The digest
+  c90c75e7d5db9c6ccbb7127840dfe43f0ac938b039a7ebed146d8ead383a572f
+is the upstream distribution archive
+(dafny-4.11.0-arm64-macos-13.zip) digest, NOT the
+extracted executable digest.
+
+The extracted executable digest (sha256) is:
+  dafny: 5d02cbb88300aef0726e933bd6f19754960b7409a9e0e2212a5e07edd1686012
+
+Gate script digest (CORRECTION01)
+---------------------------------
+  scripts/quality/formal-dafny.sh SHA-256:
+  4fa159665f5d6ef706d800be04253bdb72bc9a9e03f2e967f075dbc096aab3fb

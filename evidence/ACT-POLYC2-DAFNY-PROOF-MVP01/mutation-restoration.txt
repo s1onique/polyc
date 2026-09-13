@@ -1,0 +1,70 @@
+=== Mutation restoration hashes ===
+
+This file records that the canonical Dafny model
+file (formal/dafny/identifier-scan.dfy) was restored
+to its pre-mutation SHA-256 after each RED witness.
+
+Canonical SHA-256:
+  f6633cb4f61f6556e1b04d24c2bc085aa6916f9ce107b7969166d660f314f7f0
+
+RED-A (false-theorem):
+  Mutation: LemmaMaximal ensures false;
+  Restored: yes (sha256 matches)
+
+RED-B (assume false; injection):
+  Mutation path B1: assume false; at LemmaMaximal line 198
+  Restored: yes (sha256 matches)
+  Mutation path B2: same; gate temporarily patched with
+                    --allow-warnings to exercise audit
+                    path
+  Restored: yes (sha256 matches)
+
+CORRECTION01 audit-path RED (D2):
+  Mutation: same as RED-B path B2
+  Restored: yes (sha256 matches)
+
+After all mutations + restorations:
+  formal/dafny/identifier-scan.dfy SHA-256:
+    f6633cb4f61f6556e1b04d24c2bc085aa6916f9ce107b7969166d660f314f7f0
+  evidence/ACT-POLYC2-DAFNY-PROOF-MVP01/canonical-identifier-scan.dfy SHA-256:
+    f6633cb4f61f6556e1b04d24c2bc085aa6916f9ce107b7969166d660f314f7f0
+  IDENTICAL=true
+
+Historical note (post-review, pre-binding)
+-------------------------------------------
+After the REDs above were captured and verified, the
+Dafny model received two comment-only edits that fixed
+factual defects flagged by external review:
+
+  (a) the comment that previously showed
+      ScanRest(s, ScanIdentStart(s,start),start)
+      with the wrong third argument — corrected to
+      ScanRest(s, ScanIdentStart(s,start));
+  (b) the comment that previously described
+      IsValidScanResult as capturing an "out-parameter
+      and the rc channel" — replaced with the explicit
+      abstract-relation boundary (deferred ABI
+      correspondence to ACT-POLYC2-DAFNY-CORRESPONDENCE01).
+
+The pre-edit canonical SHA was
+  82a4fb607b17dd5e920cfd6d11da35455b4496fc5766422610e90b46f4674711
+The post-edit canonical SHA is
+  f6633cb4f61f6556e1b04d24c2bc085aa6916f9ce107b7969166d660f314f7f0
+
+These two digests differ only in the two comment
+blocks listed above. They DO NOT differ in any
+Dafny theorem, lemma, predicate, function body, or
+verification-relevant construct.
+
+A fresh `dafny verify` against the post-edit file
+returns 17 verified, 0 errors, 0 warnings —
+identical to the pre-edit verification result.
+
+Comment-edit delta:
+  - File:       formal/dafny/identifier-scan.dfy
+  - Lines:      36-37 (ScanRest call form) and
+                137-138 (IsValidScanResult description)
+  - Theorems changed: 0
+  - Predicates changed: 0
+  - Functions changed: 0
+  - Verification result: unchanged (17 verified, 0 errors)

@@ -1,0 +1,57 @@
+Description:
+  Report issues in the Dafny code that might limit the soundness claims of verification, emitting them as warnings or in a report document.
+
+Usage:
+  DafnyDriver audit [<file>...] [options]
+
+Arguments:
+  <file>  Dafny input files and/or a Dafny project file
+
+Options:
+  --report-file <report-file>             Specify a path to store the audit report file. Without this, the report will take the form of standard warnings.
+  --report-format <format>                Specify the file format to use for the audit report. Supported options include: plain text in the format of warnings ('txt', 'text'); standalone HTML ('html'); a Markdown table ('md', 'markdown', 'md-table', 'markdown-table'); or an IETF-language document in Markdown format ('md-ietf', 'markdown-ietf'). With no option given, the format will be inferred from the filename extension. With no filename or format given, the report will consist of standard Dafny warnings.
+  --compare-report                        Compare the report that would have been generated with the existing file given by --report-file, and fail if they differ.
+  --warn-shadowing                        Emits a warning if the name of a declared variable caused another variable to be shadowed.
+  --warn-missing-constructor-parentheses  Emits a warning when a constructor name in a case pattern is not followed by parentheses.
+  --track-print-effects                   A compiled method, constructor, or iterator is allowed to have print effects only if it is marked with {{:print}}.
+  --allow-axioms                          Prevents a warning from being generated for axioms, such as assume statements and functions or methods without a body, that don't have an {:axiom} attribute. [default: False]
+  --enforce-determinism                   Check that only deterministic statements are used, so that values seen during execution will be the same in every run of the program.
+  --allow-external-contracts              Allow exporting callables with preconditions, and importing callables with postconditions
+  --find-project                          Uses the first specified input file as a starting path, from which to search for a project file by traversing up the file tree.
+  --stdin                                 Read standard input and treat it as an input .dfy file. [default: False]
+  --verbose                               Print additional information such as which files are emitted where.
+  --cores <count>                         Run the Dafny verifier using <n> cores, or using <XX%> of the machine's logical cores. [default: 8]
+  --library <library>                     The contents of this file and any files it includes can be referenced from other files as if they were included.
+                                          However, these contents are skipped during code generation and verification.
+                                          This option is useful in a diamond dependency situation,
+                                          to prevent code from the bottom dependency from being generated more than once.
+                                          The value may be a comma-separated list of files and folders. []
+  --allow-deprecation                     Do not warn about the use of deprecated features.
+  --prelude <file>                        Choose the Dafny prelude file.
+  --function-syntax <version>             The syntax for functions changed from Dafny version 3 to version 4. This switch controls access to the new syntax, and also provides a mode to help with migration.
+
+                                          3 - Compiled functions are written `function method` and `predicate method`. Ghost functions are written `function` and `predicate`.
+                                          4 - Compiled functions are written `function` and `predicate`. Ghost functions are written `ghost function` and `ghost predicate`.
+                                          migration3to4 - Compiled functions are written `function method` and `predicate method`. Ghost functions are written `ghost function` and `ghost predicate`. To migrate from version 3 to version 4, use this flag on your version 3 program. This will give flag all occurrences of `function` and `predicate` as parsing errors. These are ghost functions, so change those into the new syntax `ghost function` and `ghost predicate`. Then, start using --functionSyntax:4. This will flag all occurrences of `function method` and `predicate method` as parsing errors. So, change those to just `function` and `predicate`. Now, your program uses version 4 syntax and has the exact same meaning as your previous version 3 program.
+                                          experimentalDefaultGhost - Like migration3to4, but allow `function` and `predicate` as alternatives to declaring ghost functions and predicates, respectively.
+                                          experimentalDefaultCompiled - Like migration3to4, but allow `function` and `predicate` as alternatives to declaring compiled
+                                              functions and predicates, respectively.
+                                          experimentalPredicateAlwaysGhost - Compiled functions are written `function`. Ghost functions are written `ghost function`. Predicates are always ghost and are written `predicate`. [default: 4]
+  --quantifier-syntax <version>           The syntax for quantification domains is changing from Dafny version 3 to version 4, more specifically where quantifier ranges (|
+                                          <Range>) are allowed. This switch gives early access to the new syntax.
+
+                                          3 - Ranges are only allowed after all quantified variables are declared.
+                                              (e.g. set x, y | 0 <= x < |s| && y in s[x] && 0 <= y :: y)
+                                          4 - Ranges are allowed after each quantified variable declaration.
+                                              (e.g. set x | 0 <= x < |s|, y <- s[x] | 0 <= y :: y)
+
+                                          Note that quantifier variable domains (<- <Domain>) are available in both syntax versions. [default: Version4]
+  --use-basename-for-filename             When parsing use basename of file for tokens instead of the path supplied on the command line
+  --emit-uncompilable-code                Rather than throwing an exception, allow compilers to emit uncompilable information including what is not compilable instead of regular code. Useful when developing compilers or to document for each test what compiler feature is missing
+  --reads-clauses-on-methods              Allows reads clauses on methods (with a default of 'reads *') as well as functions.
+  --standard-libraries                    Allow Dafny code to depend on the standard libraries included with the Dafny distribution.
+                                          See https://github.com/dafny-lang/dafny/blob/master/Source/DafnyStandardLibraries/README.md for more information.
+                                          Not compatible with the --unicode-char:false option.
+                                           [default: False]
+  -?, -h, --help                          Show help and usage information
+  --help-internal                         Show help and usage information, including options designed for developing the Dafny language and toolchain.

@@ -1,0 +1,76 @@
+=== D15 explicit solver binding (reviewer-requested RED) ===
+
+Pre-D15 issue: the gate verified that the file at
+$Z3 reported "Z3 version 4.12.1" but did NOT
+mechanically guarantee that the exact same Z3 was
+the solver process used by Dafny. Dafny auto-
+discovers Z3 from PATH and the distribution ships
+BOTH z3-4.12.1 and z3-4.14.1 in z3/bin/, so a
+PATH-resolved invocation could pick a different Z3.
+
+Fix: pass --solver-path "$Z3" to dafny verify so
+the checked executable is the exact solver Dafny
+uses:
+
+  $ grep 'solver-path' scripts/quality/formal-dafny.sh
+  "$DAFNY" verify --solver-path "$Z3" \
+    --warn-redundant-assumptions \
+    --warn-contradictory-assumptions \
+    "$DFY" >"$RV" 2>&1
+
+Dafny 4.11.0 documents this flag:
+  --solver-path <solver-path>
+      Can be used to specify a custom SMT solver
+      to use for verifying Dafny proofs.
+
+RED witness: prove the explicit binding is in force
+================================================================
+
+Setup on this host:
+  $ ls tools/dafny/dafny-4.11.0/dafny/z3/bin/
+  z3-4.12.1
+  z3-4.14.1
+  # Two Z3 binaries present; without --solver-path,
+  # dafny would pick one via PATH resolution.
+
+Post-fix observed (this is the RED witness):
+
+Run the new gate:
+  $ rm -rf build/formal-dafny
+  $ ./scripts/quality/formal-dafny.sh
+  Dafny program verifier finished with 17 verified, 0 errors
+AUDIT_FINDINGS=0 AUDIT_GATE=PASS
+  RC=0
+
+Confirm --solver-path is in the script and in
+the verify invocation:
+  $ grep -n 'solver-path' scripts/quality/formal-dafny.sh
+  10:# --solver-path "$Z3" so the Z3 executable we
+34:"$DAFNY" verify --solver-path "$Z3" --warn-redundant-assumptions --warn-contradictory-assumptions "$DFY" >"$RV" 2>&1
+
+Confirm the gate passes under dash too:
+  $ rm -rf build/formal-dafny
+  $ dash scripts/quality/formal-dafny.sh
+  (also RC=0; both the native /bin/sh and the
+  explicit /bin/dash invocation see the same
+  explicit solver path)
+
+RESULT:
+  TOOLCHAIN_RUNTIME_SOLVER_PATH_PIN_ENFORCED=true
+  TOOLCHAIN_RUNTIME_VERSION_PIN_ENFORCED=true
+    (Dafny --version string equality)
+    (Z3 -version prefix match)
+  TOOLCHAIN_BINARY_SHA_PIN_ENFORCED=false
+    (no executable digest comparison)
+
+Chain (mechanically inspectable from the script):
+  checked Z3 executable
+         | exact path
+         v
+  --solver-path "$Z3"
+         |
+         v
+  Dafny verification
+
+Gate SHA-256 (post-D15):
+  4fa159665f5d6ef706d800be04253bdb72bc9a9e03f2e967f075dbc096aab3fb

@@ -1,0 +1,55 @@
+=== TIMING RUNS WITH CORRECTED GATE ===
+
+Verify-only (n=6):
+  run 1: 0.889s
+  run 2: 0.944s
+  run 3: 0.954s
+  run 4: 0.925s
+  run 5: 0.848s
+  run 6: 0.928s
+
+Audit-only (n=6):
+  run 1: 0.61s
+  run 2: 0.604s
+  run 3: 0.608s
+  run 4: 0.624s
+  run 5: 0.605s
+  run 6: 0.617s
+
+Corrected full gate (n=6):
+  run 1: 1.624s
+  run 2: 1.654s
+  run 3: 1.628s
+  run 4: 1.617s
+  run 5: 1.665s
+  run 6: 1.627s
+
+SUMMARY
+-------
+Verify-only:       min=0.848s max=0.954s mean≈0.915s (n=6)
+Audit-only:        min=0.604s max=0.624s mean≈0.612s (n=6)
+Corrected gate:    min=1.617s max=1.665s mean≈1.636s (n=6)
+
+Wall-time cost of corrections (vs original 1.48s):
+  + I1/I2 identity check       ~0.05s  (two extra --version invocations)
+  + I5 exact-summary parsing   ~0.00s  (one grep + one sed)
+  + I6 audit-report empty      ~0.00s  (one test -s)
+  + I3 ephemeral dir creation  ~0.00s
+  TOTAL OVERHEAD               ~0.15s
+
+The corrected gate adds ~0.15s of overhead vs the
+original MVP gate but mechanically enforces the
+audit gate, version pin, and evidence immutability.
+
+Post-comment-edit re-measurement
+---------------------------------
+After the D8/D9 comment-only edits (which do not
+change any verification-relevant construct), the
+gate was re-measured n=6 on this host. Result:
+
+  Mean full-gate time: ~1.5s  (n=6)
+  Verification result: 17 verified, 0 errors, 0 warnings
+
+No measurable change vs the pre-edit measurement
+(~1.636s); the comment edits added zero verification
+cost.

@@ -1,0 +1,29 @@
+=== RED-B audit path (CORRECTION01) ===
+
+Mutation: `assume false;` injected into LemmaMaximal body.
+Gate temporarily patched with `--allow-warnings` so the
+verify path silently passes; this exercises the audit
+gate (I5) as the real line of defence.
+
+Gate invocation:
+  $ ./scripts/quality/formal-dafny.sh  # patched
+
+Captured output:
+    |
+198 |   assume false;
+    |          ^^^^^
+
+
+Dafny program verifier finished with 17 verified, 0 errors
+AUDIT_RC=0
+AUDIT_SUMMARY_N=1
+FATAL: auditor reported 1 findings
+formal/dafny/identifier-scan.dfy(192,6):LemmaMaximal: Definition has `assume` statement in body. Possible mitigation: Replace with `assert` and prove or add `{:axiom}`.
+
+FORMAL_DAFNY_RC=1
+
+AUDIT_SUMMARY_N=1
+I5 invariant catches the finding.
+
+Canonical proof was restored bit-identically
+after the test (see mutation-restoration.txt).

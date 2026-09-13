@@ -1,0 +1,138 @@
+SOURCE_COMMIT=648bd3c46c79d7ec70e3898ac77d705f9038e20b
+SOURCE_FILE=src/lexer.c
+SOURCE_FILE_SHA256=bee48b7e36a12abd5a0b26471dead96609f02c70bcfacfd0eaaf72e6ea891708
+SOURCE_SYMBOL=lexIdentifier (default ctype path) + B02IsIdentStart/B02IsIdentRest (B1 PolyC component)
+PRODUCTION_LEX_LINE_RANGE=src/lexer.c:874-961 (production default ctype path)
+DISPATCHER_GATE_LINE_RANGE=src/lexer.c (lexCore default arm: if (isalpha(ch) || ch == '_') { lexIdentifier(l, ch) })
+B1_POLYC_SOURCE=tools/bootstrap/bootstrap02-ident.HC:81-146
+B1_POLYC_HASH=4a2bfa9f6184361e07ee560fb5fb0e703306ab7744e7a17440eb24296100845f
+FROZEN_PRIOR_EVIDENCE=evidence/ACT-POLYC-BOOTSTRAP02/c1/identifier-contract.txt
+
+CANONICAL_IDENTIFIER_START_RULE
+-------------------------------
+prod_is_ident_start(c) := c == '_' \/ (c >= 'A' && c <= 'Z')
+                                  \/ (c >= 'a' && c <= 'z')
+(In Dafny: IsIdentStart byte predicate, byte range ASCII only.
+Domain: byte = int in 0..255.)
+
+CANONICAL_IDENTIFIER_CONTINUATION_RULE
+--------------------------------------
+prod_is_ident_cont(c) := prod_is_ident_start(c)
+                       \/ c == '$'
+                       \/ (c >= '0' && c <= '9')
+(In Dafny: IsIdentContinue byte predicate, byte range ASCII only.)
+
+BYTE / NON-ASCII SEMANTICS
+--------------------------
+Frozen contract (per evidence/ACT-POLYC-BOOTSTRAP02/c1/identifier-contract.txt
+and ACT-POLYC-BOOTSTRAP02-C1-CORRECTION01):
+
+  B1_IDENTIFIER_CHARACTER_DOMAIN = ASCII
+  B1_CTYPE_DEPENDENCY            = NONE
+  B1_NON_ASCII_EQUIVALENCE       = NOT_CLAIMED
+
+Bytes >= 0x80 are NEVER classified as identifier-start
+or identifier-continue under the frozen contract.
+
+The production default ctype path uses isalpha(c) /
+isalnum(c) which on a "C" locale evaluate to the same
+ASCII subset. The "C" locale is the documented production
+locale because hcc does NOT call setlocale(). The
+contract frozen for this Dafny model is the ASCII-only
+contract, which is provably equivalent to production
+under "C" locale but NOT claimed equivalent under any
+other locale.
+
+MODEL_INPUT_DOMAIN             = seq<byte>
+IMPLEMENTATION_INPUT_DOMAIN    = U8* + explicit length (l->start, src_len)
+DOMAIN_CORRESPONDENCE_CLAIM    = SPECIFICATION_ALIGNMENT_ONLY
+
+Production C signature under the frozen contract (verbatim):
+
+    int lexIdentifier(Lexer *l, char ch) {
+        int i = 0;
+        while (ch && (isalnum(ch) || ch == '_' ||  ch == '$')) {
+            i++;
+            ch = lexNextChar(l);
+        }
+        l->cur_strlen = i;
+        if (ch != '\0') {
+            lexRewindChar(l);
+        }
+        return TK_IDENT;
+    }
+
+The Dafny model does NOT consume a "Lexer" struct. It
+implements a pure spec-equivalent algorithm:
+
+    ScanIdentEnd(s, start) := smallest end > start such that
+      (start <= end <= |s|)
+      && (forall i in start..end-1 :: IsIdentContinue(s[i]))
+      && IsIdentStart(s[start])
+      && (end == |s| || !IsIdentContinue(s[end]))
+
+The Dafny model is an abstract endpoint relation. It does
+NOT model the production lexIdentifier ABI.
+
+Production lexIdentifier observable behaviour:
+  - sets l->cur_strlen (length of identifier text)
+  - advances the lexer's cursor state by |ident|
+  - when scanning terminates on a non-NUL byte,
+    lexRewindChar(l) performs a one-byte cursor rewind
+    (the post-lexRewindChar byte is therefore the
+    first byte AFTER the identifier in the input);
+    when scanning terminates on NUL, no rewind occurs.
+  - returns TK_IDENT
+
+None of these ABI channels (cur_strlen, cursor
+position, lexRewindChar effect, return value) is
+modelled by the Dafny MVP.
+
+The Dafny predicate IsValidScanResult(s, start, end)
+is an abstract endpoint relation, NOT a
+correspondence predicate for any C out-parameter or
+return-value channel. Production correspondence to
+l->cur_strlen, cursor state, lexRewindChar behavior,
+and the TK_IDENT return value is deferred to
+ACT-POLYC2-DAFNY-CORRESPONDENCE01.
+
+CLAIM_BOUNDARY (CORRECTION01)
+-----------------------------
+This boundary is added by ACT-POLYC2-DAFNY-PROOF-MVP01-
+CORRECTION01 in response to external review.
+
+MODEL_CHARACTER_DOMAIN                = BYTE_0_255
+FROZEN_IDENTIFIER_GRAMMAR             = ASCII
+ASCII_PRODUCTION_CORRESPONDENCE_CLAIM = CTYPE_C_LOCALE_FOR_ASCII_INPUTS
+NON_ASCII_PRODUCTION_CORRESPONDENCE_CLAIM = NOT_CLAIMED
+CTYPE_SIGNED_CHAR_UB_EXCLUDED_FROM_MODEL = true
+
+Notes:
+
+1. The Dafny model assumes `byte = int | 0 <= x < 256`.
+   It does NOT model C's `char` type or its signedness.
+
+2. The production path passes `char` (typically signed
+   on x86_64/aarch64) to `isalpha` / `isalnum`. The
+   ISO C standard requires the ctype argument to be
+   representable as `unsigned char` (or EOF);
+   passing a negative `char` is undefined behaviour.
+
+3. The frozen contract is therefore stated for ASCII
+   inputs only. The Dafny model claims equivalence to
+   production only when:
+     a) the input bytes are in 0..127 (ASCII), AND
+     b) the C runtime's ctype behaviour under the "C"
+        locale matches the documented ASCII subset.
+
+4. Bytes >= 0x80 are explicitly OUT OF SCOPE for this
+   Dafny model. A future correspondence ACT
+   (DAFNY-CORRESPONDENCE01) is required to formalise:
+     - the C-locale ctype equivalence, AND
+     - the signed-char-to-unsigned-char cast boundary,
+   before any claim of model/implementation equivalence
+   can be made.
+
+5. Existing B1 differential oracle evidence
+   (ACT-POLYC-BOOTSTRAP02) covers ASCII inputs only
+   and is itself bounded by the same caveat.

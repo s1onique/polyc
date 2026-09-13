@@ -1,0 +1,59 @@
+=== D11 POSIX /bin/sh portability (reviewer-requested RED) ===
+
+Bug: scripts/quality/formal-dafny.sh started with
+`#!/bin/sh` but used Bash-only `PIPESTATUS[0]` to
+capture the exit status of the verify pipeline.
+PIPESTATUS is a Bash array variable, not POSIX. On
+systems where /bin/sh is dash (Debian/Ubuntu default,
+Alpine, etc.) the script would either fail to parse
+or fail the exit-status check non-portably.
+
+Fix (reviewer-prescribed, keep POSIX):
+  set +e
+  "$DAFNY" verify --warn-redundant-assumptions \
+       --warn-contradictory-assumptions \
+       "$DFY" >"$RV" 2>&1
+  VRC=$?
+  set -e
+  cat "$RV"
+  [ "$VRC" -eq 0 ] || { echo FATAL: ...; exit 1; }
+
+After the fix, no Bash-only constructs remain.
+
+RED witness: native /bin/sh + explicit dash, both PASS
+================================================================
+
+Setup on this host:
+  $ ls -la /bin/sh
+  -rwxr-xr-x 1 root wheel 101232 Feb  4  2025 /bin/sh
+  $ which dash
+  /bin/dash
+
+Native /bin/sh invocation (uses the host's default
+shell implementation):
+  $ ./scripts/quality/formal-dafny.sh
+  Dafny program verifier finished with 17 verified, 0 errors
+AUDIT_FINDINGS=0 AUDIT_GATE=PASS
+  RC=0
+
+Explicit dash invocation (genuine POSIX /bin/sh;
+separate executable):
+  $ dash scripts/quality/formal-dafny.sh
+  Dafny program verifier finished with 17 verified, 0 errors
+AUDIT_FINDINGS=0 AUDIT_GATE=PASS
+  RC=0
+
+RESULT:
+  native /bin/sh   RC = 0   PASS
+  dash (explicit)  RC = 0   PASS
+  Both canonical gate outputs identical.
+  Both verify 17 / 0 / 0.
+  Both audit 0 findings.
+  No PIPESTATUS in the script after the fix.
+
+Note: on macOS the native /bin/sh is historically
+bash-as-sh (Apple platform shell history), which is
+why a separate explicit dash invocation is needed
+to actually exercise a POSIX shell implementation.
+This witness captures both runs as separate
+executables, not as variants of the same /bin/sh.
