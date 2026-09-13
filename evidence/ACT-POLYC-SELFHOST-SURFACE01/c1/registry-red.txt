@@ -1,0 +1,152 @@
+ACT-POLYC-SELFHOST-SURFACE01 — C1 — registry RED
+================================================
+
+The user proposal §4 / §8 specifies the canonical registry
+as `docs/factory/SELF-HOST-COMPONENTS.tsv` with the schema:
+
+```text
+component_id
+source
+symbol
+consumer_seam
+language
+state
+oracle
+cursor_gate
+production_seam_gate
+introduced_by
+```
+
+This file records **what the registry would have to encode**
+for the existing `identifier_scanner` component if the
+registry existed today.
+
+This is RED-stage content: it states what must be true of
+the registry, but the registry file itself does NOT yet
+exist. The act of creating the registry file is part of
+C2 IMPL.
+
+------------------------------------------------------------
+What the registry must capture for identifier_scanner
+------------------------------------------------------------
+
+```text
+component_id           identifier_scanner
+source                 tools/bootstrap/bootstrap02-ident.HC
+symbol                 BootstrapScanIdent
+consumer_seam          src/lexer.c::lexIdentifier
+language               POLYC
+state                  STABLE
+oracle                 bootstrap02-ident-oracle
+cursor_gate            bootstrap02-cursor-test
+production_seam_gate   bootstrap02-lexer-seam-test
+introduced_by          ACT-POLYC-BOOTSTRAP02
+```
+
+Each of these is **observable today** in the bespoke
+wiring inventory (`bespoke-wiring-inventory.tsv`):
+
+```text
+source              -> 149 grep hits in tools/bootstrap/bootstrap02-ident.HC
+symbol              -> _BootstrapScanIdent appears in src/lexer_bridge.h:24+
+consumer_seam       -> src/lexer.c::lexIdentifier (BootstrapScanIdent
+                       delegation introduced by ACT-POLYC-BOOTSTRAP02)
+language            -> POLYC (the source file is PolyC; verified)
+state               -> STABLE (B3 CLOSED PASS freezes it as such)
+oracle              -> tools/quality/bootstrap02-ident-oracle.c
+cursor_gate         -> tools/quality/bootstrap02-cursor-oracle.c
+                       + bootstrap02-cursor-host.c
+production_seam_gate-> bootstrap02-lexer-seam-runner.c
+                       + bootstrap02-lexer-seam-fixture.h
+introduced_by       -> ACT-POLYC-BOOTSTRAP02 (CLOSED PASS)
+```
+
+------------------------------------------------------------
+What the registry must NOT encode
+------------------------------------------------------------
+
+```text
+- transient generation paths
+    (build/bootstrap02-ident.o, etc.)
+- producer stage numbers
+    (stage0, stage1, stage2)
+- generation-specific cmake option names
+    (HCC_ENABLE_BOOTSTRAP0N_STAGEn)
+- generation-specific cmake variable names
+    (BOOTSTRAP0N_IDENT_OBJECT)
+- oracle harness invocation details that depend on
+  generation (e.g. which host harness is linked against
+  which object)
+```
+
+Per proposal §4: "The registry describes the component.
+The build graph describes the generation."
+
+------------------------------------------------------------
+What a generic build operation must consume
+------------------------------------------------------------
+
+```text
+input:
+  COMPONENT=identifier_scanner
+  STAGE=2
+steps:
+  1. resolve component row from registry
+       source           = tools/bootstrap/bootstrap02-ident.HC
+       symbol           = BootstrapScanIdent
+       language         = POLYC
+       expected_symbol  = _BootstrapScanIdent (C-ABI name)
+       producer_stage   = 2
+       producer_binary  = ./build/hcc-bootstrap03
+       producer_object  = build/selfhost/stage2/identifier_scanner.o
+  2. invoke producer
+       $producer_binary -c $source -o $producer_object
+  3. verify symbol
+       nm $producer_object | grep -q $expected_symbol
+  4. record provenance
+       component_id, source_path, producer_stage,
+       producer_binary, producer_binary_hash,
+       output_path, output_hash, expected_symbol
+  5. invoke oracle
+       $CC tools/quality/bootstrap02-ident-oracle.c -o oracle
+       $CC tools/quality/bootstrap02-ident-host.c  $producer_object -o host
+       oracle > oracle.txt
+       host   > host.txt
+       diff oracle.txt host.txt
+  6. invoke cursor gate
+       (analogous)
+  7. invoke production_seam gate
+       (analogous)
+```
+
+------------------------------------------------------------
+Negative controls the registry must satisfy
+------------------------------------------------------------
+
+```text
+unknown component_id               -> FAIL
+duplicate component_id             -> FAIL
+missing source                     -> FAIL
+missing expected symbol            -> FAIL
+invalid state                      -> FAIL
+producer stage unknown             -> FAIL
+output accidentally aliases source -> FAIL
+component source changed but metadata stale -> FAIL
+```
+
+------------------------------------------------------------
+Conclusion
+------------------------------------------------------------
+
+```text
+REGISTRY_REQUIRED_ENCODING       = 1 row, 10 fields
+REGISTRY_CONTENT_PROVENANCE      = all 10 fields are
+                                     mechanically derivable
+                                     from the bespoke wiring
+                                     inventory
+REGISTRY_DOES_NOT_ENCODE_GENPATH = YES
+GENERIC_BUILD_OPERATION_SHAPE    = 7 mechanical steps
+                                    (resolve, compile,
+                                     verify, prove, oracle,
+                                     cursor, seam)
+```

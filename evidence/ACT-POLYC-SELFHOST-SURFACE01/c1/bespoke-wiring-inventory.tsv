@@ -1,0 +1,150 @@
+path	line	role	category	notes
+Makefile	279	comment	PROVENANCE	# Compiles the B1 PolyC component (tools/bootstrap/bootstrap02-ident.HC)
+Makefile	280	comment	PROVENANCE	# to build/bootstrap02-ident.o using the existing stage0 ./hcc.
+Makefile	284	compile-step	PRODUCER	  -c tools/bootstrap/bootstrap02-ident.HC \
+Makefile	285	output-path	STAGE_IDENTITY	  -o ./build/bootstrap02-ident.o
+Makefile	286	other-make	PRODUCER	 @if [ ! -f ./build/bootstrap02-ident.o ]; then \
+Makefile	287	other-make	PRODUCER	  echo "bootstrap02-component-build: ./build/bootstrap02-ident.o not produced" >&2; \
+Makefile	290	symbol-check	PRODUCER	 @nm ./build/bootstrap02-ident.o | grep -q '_BootstrapScanIdent' \
+Makefile	297	output-path	STAGE_IDENTITY	 cc -std=c99 -O2 -Wall -Wextra -o ./build/bootstrap02-ident-oracle \
+Makefile	298	harness-build	TEST	  tools/quality/bootstrap02-ident-oracle.c
+Makefile	299	other-make	PRODUCER	 @if [ ! -x ./build/bootstrap02-ident-oracle ]; then \
+Makefile	300	other-make	PRODUCER	  echo "bootstrap02-oracle: ./build/bootstrap02-ident-oracle not produced" >&2; \
+Makefile	309	output-path	STAGE_IDENTITY	 cc -std=c99 -O2 -Wall -Wextra -o ./build/bootstrap02-ident-host \
+Makefile	310	harness-link	TEST	  tools/quality/bootstrap02-ident-host.c ./build/bootstrap02-ident.o
+Makefile	311	other-make	PRODUCER	 @if [ ! -x ./build/bootstrap02-ident-host ]; then \
+Makefile	312	other-make	PRODUCER	  echo "bootstrap02-test: ./build/bootstrap02-ident-host not produced" >&2; \
+Makefile	315	other-make	PRODUCER	 ./build/bootstrap02-ident-oracle > /tmp/b02-oracle.txt
+Makefile	316	other-make	PRODUCER	 ./build/bootstrap02-ident-host   > /tmp/b02-host.txt
+Makefile	332	other-make	PRODUCER	  echo "BOOTSTRAP02_REFERENCE_ORACLE=./build/bootstrap02-ident-oracle"; \
+Makefile	333	other-make	PRODUCER	  echo "BOOTSTRAP02_POLYC_OBJECT=./build/bootstrap02-ident.o"; \
+Makefile	338	comment	PROVENANCE	# into the modified hcc source tree (with HCC_ENABLE_BOOTSTRAP02_STAGE1=ON).
+Makefile	350	cmake-configure	STAGE_IDENTITY	  -DHCC_ENABLE_BOOTSTRAP02_STAGE1=ON \
+Makefile	351	cmake-configure	STAGE_IDENTITY	  -DBOOTSTRAP02_IDENT_OBJECT=$(CURDIR)/build/bootstrap02-ident.o
+Makefile	370	harness-build	TEST	  tools/quality/bootstrap02-cursor-host.c ./build/bootstrap02-ident.o
+Makefile	508	other-make	PRODUCER	  $(HCC_STAGE1_OBJECTS) ./build/bootstrap02-ident.o $(TASM_LIB) -lm -lpthread -ldl
+Makefile	532	comment	PROVENANCE	# bootstrap02-ident.HC) using STAGE1 (build/hcc-bootstrap02)
+Makefile	533	comment	PROVENANCE	# and emits build/bootstrap03-ident.stage1.o.
+Makefile	536	comment	PROVENANCE	# from build/bootstrap02-ident.o so that the build graph cannot
+Makefile	548	other-make	PRODUCER	 @rm -f ./build/bootstrap03-ident.stage1.o
+Makefile	550	compile-step	PRODUCER	  -c tools/bootstrap/bootstrap02-ident.HC \
+Makefile	551	output-path	STAGE_IDENTITY	  -o ./build/bootstrap03-ident.stage1.o
+Makefile	552	other-make	PRODUCER	 @if [ ! -f ./build/bootstrap03-ident.stage1.o ]; then \
+Makefile	553	other-make	PRODUCER	  echo "bootstrap03-component-build: ./build/bootstrap03-ident.stage1.o not produced" >&2; \
+Makefile	556	symbol-check	PRODUCER	 @nm ./build/bootstrap03-ident.stage1.o | grep -q '_BootstrapScanIdent' \
+Makefile	558	provenance-print	PROVENANCE	 @echo "BOOTSTRAP03_STAGE1_B1_OBJECT=./build/bootstrap03-ident.stage1.o"
+Makefile	563	comment	PROVENANCE	# source tree with HCC_ENABLE_BOOTSTRAP03_STAGE2=ON.
+Makefile	566	comment	PROVENANCE	# and the stage0-produced B1 object (./build/bootstrap02-ident.o)
+Makefile	571	comment	PROVENANCE	# distinct path (build/bootstrap03-ident.stage1.o vs
+Makefile	572	comment	PROVENANCE	# build/bootstrap02-ident.o) makes accidental reuse impossible.
+Makefile	574	other-make	PRODUCER	 @if [ ! -f ./build/bootstrap03-ident.stage1.o ]; then \
+Makefile	575	other-make	PRODUCER	  echo "bootstrap03-stage2: ./build/bootstrap03-ident.stage1.o missing. Run: make bootstrap03-component-build" >&2; \
+Makefile	586	cmake-configure	STAGE_IDENTITY	  -DHCC_ENABLE_BOOTSTRAP02_STAGE1=ON \
+Makefile	587	cmake-configure	STAGE_IDENTITY	  -DBOOTSTRAP02_IDENT_OBJECT=$(CURDIR)/build/bootstrap02-ident.o \
+Makefile	588	cmake-configure	STAGE_IDENTITY	  -DHCC_ENABLE_BOOTSTRAP03_STAGE2=ON \
+Makefile	589	cmake-configure	STAGE_IDENTITY	  -DBOOTSTRAP03_IDENT_OBJECT=$(CURDIR)/build/bootstrap03-ident.stage1.o
+Makefile	601	comment	PROVENANCE	# Reuses tools/quality/bootstrap02-ident-host.c /
+Makefile	602	comment	PROVENANCE	# bootstrap02-ident-oracle.c, but links the stage1-produced
+Makefile	606	output-path	STAGE_IDENTITY	 cc -std=c99 -O2 -Wall -Wextra -o ./build/bootstrap03-ident-host \
+Makefile	607	harness-link	TEST	  tools/quality/bootstrap02-ident-host.c ./build/bootstrap03-ident.stage1.o
+Makefile	608	other-make	PRODUCER	 @if [ ! -x ./build/bootstrap03-ident-host ]; then \
+Makefile	609	other-make	PRODUCER	  echo "bootstrap03-test: ./build/bootstrap03-ident-host not produced" >&2; \
+Makefile	612	other-make	PRODUCER	 ./build/bootstrap02-ident-oracle > /tmp/b03-oracle.txt
+Makefile	613	other-make	PRODUCER	 ./build/bootstrap03-ident-host   > /tmp/b03-host.txt
+Makefile	628	other-make	PRODUCER	  echo "BOOTSTRAP03_REFERENCE_ORACLE=./build/bootstrap02-ident-oracle"; \
+Makefile	629	provenance-print	PROVENANCE	  echo "BOOTSTRAP03_STAGE1_B1_OBJECT=./build/bootstrap03-ident.stage1.o"; \
+Makefile	702	other-make	PRODUCER	  $(HCC_STAGE1_OBJECTS) ./build/bootstrap02-ident.o $(TASM_LIB) -lm -lpthread -ldl
+Makefile	707	other-make	PRODUCER	  $(HCC_STAGE2_OBJECTS) ./build/bootstrap03-ident.stage1.o $(TASM_LIB) -lm -lpthread -ldl
+Makefile	731	comment	PROVENANCE	# bootstrap02-ident.HC) using STAGE2 (build/hcc-bootstrap03)
+Makefile	732	comment	PROVENANCE	# and emits build/bootstrap04-ident.stage2.o.
+Makefile	735	comment	PROVENANCE	# from build/bootstrap03-ident.stage1.o (and from
+Makefile	736	comment	PROVENANCE	# build/bootstrap02-ident.o) so the build graph cannot
+Makefile	749	other-make	PRODUCER	 @rm -f ./build/bootstrap04-ident.stage2.o
+Makefile	751	compile-step	PRODUCER	  -c tools/bootstrap/bootstrap02-ident.HC \
+Makefile	752	output-path	STAGE_IDENTITY	  -o ./build/bootstrap04-ident.stage2.o
+Makefile	753	other-make	PRODUCER	 @if [ ! -f ./build/bootstrap04-ident.stage2.o ]; then \
+Makefile	754	other-make	PRODUCER	  echo "bootstrap04-component-build: ./build/bootstrap04-ident.stage2.o not produced" >&2; \
+Makefile	757	symbol-check	PRODUCER	 @nm ./build/bootstrap04-ident.stage2.o | grep -q '_BootstrapScanIdent' \
+Makefile	759	provenance-print	PROVENANCE	 @echo "BOOTSTRAP04_STAGE2_B1_OBJECT=./build/bootstrap04-ident.stage2.o"
+Makefile	764	comment	PROVENANCE	# modified hcc source tree with HCC_ENABLE_BOOTSTRAP04_STAGE3=ON.
+Makefile	769	other-make	PRODUCER	 @if [ ! -f ./build/bootstrap04-ident.stage2.o ]; then \
+Makefile	770	other-make	PRODUCER	  echo "bootstrap04-stage3: ./build/bootstrap04-ident.stage2.o missing. Run: make bootstrap04-component-build" >&2; \
+Makefile	781	cmake-configure	STAGE_IDENTITY	  -DHCC_ENABLE_BOOTSTRAP02_STAGE1=ON \
+Makefile	782	cmake-configure	STAGE_IDENTITY	  -DBOOTSTRAP02_IDENT_OBJECT=$(CURDIR)/build/bootstrap02-ident.o \
+Makefile	783	cmake-configure	STAGE_IDENTITY	  -DHCC_ENABLE_BOOTSTRAP03_STAGE2=ON \
+Makefile	784	cmake-configure	STAGE_IDENTITY	  -DBOOTSTRAP03_IDENT_OBJECT=$(CURDIR)/build/bootstrap03-ident.stage1.o \
+Makefile	785	cmake-configure	STAGE_IDENTITY	  -DHCC_ENABLE_BOOTSTRAP04_STAGE3=ON \
+Makefile	786	cmake-configure	STAGE_IDENTITY	  -DBOOTSTRAP04_IDENT_OBJECT=$(CURDIR)/build/bootstrap04-ident.stage2.o
+Makefile	799	comment	PROVENANCE	# against the B1 C oracle (./build/bootstrap02-ident-oracle).
+Makefile	808	output-path	STAGE_IDENTITY	 cc -std=c99 -O2 -Wall -Wextra -o ./build/bootstrap04-ident-stage3 \
+Makefile	809	harness-link	TEST	  tools/quality/bootstrap02-ident-host.c ./build/bootstrap04-ident.stage2.o
+Makefile	810	other-make	PRODUCER	 @if [ ! -x ./build/bootstrap04-ident-stage3 ]; then \
+Makefile	811	other-make	PRODUCER	  echo "bootstrap04-test: ./build/bootstrap04-ident-stage3 not produced" >&2; \
+Makefile	814	other-make	PRODUCER	 ./build/bootstrap02-ident-oracle    > /tmp/b04-oracle.txt
+Makefile	815	other-make	PRODUCER	 ./build/bootstrap04-ident-stage3     > /tmp/b04-stage3.txt
+Makefile	829	provenance-print	PROVENANCE	 @echo "BOOTSTRAP04_STAGE2_B1_OBJECT=./build/bootstrap04-ident.stage2.o"
+Makefile	851	harness-build	TEST	  tools/quality/bootstrap02-cursor-host.c ./build/bootstrap04-ident.stage2.o
+Makefile	934	other-make	PRODUCER	  $(HCC_STAGE2_OBJECTS) ./build/bootstrap03-ident.stage1.o $(TASM_LIB) -lm -lpthread -ldl
+Makefile	939	other-make	PRODUCER	  $(HCC_STAGE3_OBJECTS) ./build/bootstrap04-ident.stage2.o $(TASM_LIB) -lm -lpthread -ldl
+src/CMakeLists.txt	190	comment	PROVENANCE	#     without requiring tools/bootstrap/bootstrap02-ident.HC
+src/CMakeLists.txt	200	comment	PROVENANCE	#       ../tools/bootstrap/bootstrap02-ident.HC \
+src/CMakeLists.txt	201	comment	PROVENANCE	#       -o build/bootstrap02-ident.o
+src/CMakeLists.txt	204	comment	PROVENANCE	#       -DHCC_ENABLE_BOOTSTRAP02_STAGE1=ON \
+src/CMakeLists.txt	205	comment	PROVENANCE	#       -DBOOTSTRAP02_IDENT_OBJECT=<abs-path>/build/bootstrap02-ident.o \
+src/CMakeLists.txt	210	cmake-option	STAGE_IDENTITY	option(HCC_ENABLE_BOOTSTRAP02_STAGE1
+src/CMakeLists.txt	214	cmake-gate	STAGE_IDENTITY	if (HCC_ENABLE_BOOTSTRAP02_STAGE1)
+src/CMakeLists.txt	215	cmake-validate	STAGE_IDENTITY	    if (NOT BOOTSTRAP02_IDENT_OBJECT)
+src/CMakeLists.txt	217	other-cmake	STAGE_IDENTITY	            "HCC_ENABLE_BOOTSTRAP02_STAGE1=ON but BOOTSTRAP02_IDENT_OBJECT is not set. "
+src/CMakeLists.txt	218	other-cmake	STAGE_IDENTITY	            "Pass -DBOOTSTRAP02_IDENT_OBJECT=<abs-path>/build/bootstrap02-ident.o "
+src/CMakeLists.txt	219	source-ref	PRODUCER	            "produced by: ./hcc -c tools/bootstrap/bootstrap02-ident.HC -o build/bootstrap02-ident.o")
+src/CMakeLists.txt	221	other-cmake	STAGE_IDENTITY	    if (NOT EXISTS "${BOOTSTRAP02_IDENT_OBJECT}")
+src/CMakeLists.txt	223	other-cmake	STAGE_IDENTITY	            "HCC_ENABLE_BOOTSTRAP02_STAGE1=ON but BOOTSTRAP02_IDENT_OBJECT=${BOOTSTRAP02_IDENT_OBJECT} "
+src/CMakeLists.txt	234	link-input	CONSUMER	    target_link_libraries(hcc-bootstrap02 ${BOOTSTRAP02_IDENT_OBJECT} m)
+src/CMakeLists.txt	257	comment	PROVENANCE	#       ../tools/bootstrap/bootstrap02-ident.HC \
+src/CMakeLists.txt	258	comment	PROVENANCE	#       -o build/bootstrap03-ident.stage1.o
+src/CMakeLists.txt	261	comment	PROVENANCE	#       -DHCC_ENABLE_BOOTSTRAP02_STAGE1=ON \
+src/CMakeLists.txt	262	comment	PROVENANCE	#       -DBOOTSTRAP02_IDENT_OBJECT=<abs>/build/bootstrap02-ident.o \
+src/CMakeLists.txt	263	comment	PROVENANCE	#       -DHCC_ENABLE_BOOTSTRAP03_STAGE2=ON \
+src/CMakeLists.txt	264	comment	PROVENANCE	#       -DBOOTSTRAP03_IDENT_OBJECT=<abs>/build/bootstrap03-ident.stage1.o \
+src/CMakeLists.txt	269	cmake-option	STAGE_IDENTITY	option(HCC_ENABLE_BOOTSTRAP03_STAGE2
+src/CMakeLists.txt	273	cmake-gate	STAGE_IDENTITY	if (HCC_ENABLE_BOOTSTRAP03_STAGE2)
+src/CMakeLists.txt	274	cmake-prereq	STAGE_IDENTITY	    if (NOT HCC_ENABLE_BOOTSTRAP02_STAGE1)
+src/CMakeLists.txt	276	other-cmake	STAGE_IDENTITY	            "HCC_ENABLE_BOOTSTRAP03_STAGE2=ON requires HCC_ENABLE_BOOTSTRAP02_STAGE1=ON. "
+src/CMakeLists.txt	279	cmake-validate	STAGE_IDENTITY	    if (NOT BOOTSTRAP03_IDENT_OBJECT)
+src/CMakeLists.txt	281	other-cmake	STAGE_IDENTITY	            "HCC_ENABLE_BOOTSTRAP03_STAGE2=ON but BOOTSTRAP03_IDENT_OBJECT is not set. "
+src/CMakeLists.txt	282	other-cmake	STAGE_IDENTITY	            "Pass -DBOOTSTRAP03_IDENT_OBJECT=<abs-path>/build/bootstrap03-ident.stage1.o "
+src/CMakeLists.txt	283	source-ref	PRODUCER	            "produced by: ./build/hcc-bootstrap02 -c tools/bootstrap/bootstrap02-ident.HC -o <path>")
+src/CMakeLists.txt	285	other-cmake	STAGE_IDENTITY	    if (NOT EXISTS "${BOOTSTRAP03_IDENT_OBJECT}")
+src/CMakeLists.txt	287	other-cmake	STAGE_IDENTITY	            "HCC_ENABLE_BOOTSTRAP03_STAGE2=ON but BOOTSTRAP03_IDENT_OBJECT=${BOOTSTRAP03_IDENT_OBJECT} "
+src/CMakeLists.txt	292	comment	PROVENANCE	    # the distinct BOOTSTRAP03_IDENT_OBJECT path makes that
+src/CMakeLists.txt	299	comment	PROVENANCE	    # need to coexist (B3), the BOOTSTRAP02_IDENT_OBJECT input
+src/CMakeLists.txt	311	link-input	CONSUMER	    target_link_libraries(hcc-bootstrap03 ${BOOTSTRAP03_IDENT_OBJECT} m)
+src/CMakeLists.txt	337	comment	PROVENANCE	#       ../tools/bootstrap/bootstrap02-ident.HC \
+src/CMakeLists.txt	338	comment	PROVENANCE	#       -o build/bootstrap04-ident.stage2.o
+src/CMakeLists.txt	341	comment	PROVENANCE	#       -DHCC_ENABLE_BOOTSTRAP02_STAGE1=ON \
+src/CMakeLists.txt	342	comment	PROVENANCE	#       -DBOOTSTRAP02_IDENT_OBJECT=<abs>/build/bootstrap02-ident.o \
+src/CMakeLists.txt	343	comment	PROVENANCE	#       -DHCC_ENABLE_BOOTSTRAP03_STAGE2=ON \
+src/CMakeLists.txt	344	comment	PROVENANCE	#       -DBOOTSTRAP03_IDENT_OBJECT=<abs>/build/bootstrap03-ident.stage1.o \
+src/CMakeLists.txt	345	comment	PROVENANCE	#       -DHCC_ENABLE_BOOTSTRAP04_STAGE3=ON \
+src/CMakeLists.txt	346	comment	PROVENANCE	#       -DBOOTSTRAP04_IDENT_OBJECT=<abs>/build/bootstrap04-ident.stage2.o \
+src/CMakeLists.txt	351	cmake-option	STAGE_IDENTITY	option(HCC_ENABLE_BOOTSTRAP04_STAGE3
+src/CMakeLists.txt	355	cmake-gate	STAGE_IDENTITY	if (HCC_ENABLE_BOOTSTRAP04_STAGE3)
+src/CMakeLists.txt	356	cmake-prereq	STAGE_IDENTITY	    if (NOT HCC_ENABLE_BOOTSTRAP03_STAGE2)
+src/CMakeLists.txt	358	other-cmake	STAGE_IDENTITY	            "HCC_ENABLE_BOOTSTRAP04_STAGE3=ON requires HCC_ENABLE_BOOTSTRAP03_STAGE2=ON. "
+src/CMakeLists.txt	361	cmake-validate	STAGE_IDENTITY	    if (NOT BOOTSTRAP04_IDENT_OBJECT)
+src/CMakeLists.txt	363	other-cmake	STAGE_IDENTITY	            "HCC_ENABLE_BOOTSTRAP04_STAGE3=ON but BOOTSTRAP04_IDENT_OBJECT is not set. "
+src/CMakeLists.txt	364	other-cmake	STAGE_IDENTITY	            "Pass -DBOOTSTRAP04_IDENT_OBJECT=<abs-path>/build/bootstrap04-ident.stage2.o "
+src/CMakeLists.txt	365	source-ref	PRODUCER	            "produced by: ./build/hcc-bootstrap03 -c tools/bootstrap/bootstrap02-ident.HC -o <path>")
+src/CMakeLists.txt	367	other-cmake	STAGE_IDENTITY	    if (NOT EXISTS "${BOOTSTRAP04_IDENT_OBJECT}")
+src/CMakeLists.txt	369	other-cmake	STAGE_IDENTITY	            "HCC_ENABLE_BOOTSTRAP04_STAGE3=ON but BOOTSTRAP04_IDENT_OBJECT=${BOOTSTRAP04_IDENT_OBJECT} "
+src/CMakeLists.txt	374	comment	PROVENANCE	    # the distinct BOOTSTRAP04_IDENT_OBJECT path makes that
+src/CMakeLists.txt	386	link-input	CONSUMER	    target_link_libraries(hcc-bootstrap04 ${BOOTSTRAP04_IDENT_OBJECT} m)
+src/lexer_bridge.h	9	abi-declaration	PRODUCER	 * PolyC component (tools/bootstrap/bootstrap02-ident.HC).
+src/lexer_bridge.h	16	abi-declaration	PRODUCER	 * object (build/bootstrap02-ident.o) and linked into the
+tools/bootstrap/bootstrap02-ident.HC	1	self-header-comment	PROVENANCE	// tools/bootstrap/bootstrap02-ident.HC
+tools/bootstrap/bootstrap02-ident.HC	61	self-header-comment	PROVENANCE	// Oracle: see tools/quality/bootstrap02-ident-oracle.c
+tools/quality/bootstrap02-cursor-host.c	9	host-harness	TEST	// linked in from build/bootstrap02-ident.o). Emits the
+tools/quality/bootstrap02-cursor-oracle.c	11	oracle-source	ORACLE	// tools/quality/bootstrap02-ident-oracle.c. Emits a
+tools/quality/bootstrap02-ident-host.c	1	host-harness	TEST	// tools/quality/bootstrap02-ident-host.c
+tools/quality/bootstrap02-ident-host.c	7	host-harness	TEST	// independent C oracle (tools/quality/bootstrap02-ident-
+tools/quality/bootstrap02-ident-oracle.c	1	oracle-source	ORACLE	// tools/quality/bootstrap02-ident-oracle.c

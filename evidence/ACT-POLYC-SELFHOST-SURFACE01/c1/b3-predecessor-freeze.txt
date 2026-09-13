@@ -1,0 +1,138 @@
+ACT-POLYC-SELFHOST-SURFACE01 — C1 — B3 predecessor freeze
+========================================================
+
+The B3 predecessor `ACT-POLYC-BOOTSTRAP04` is CLOSED PASS
+at C1 entry. The binding block is reproduced here so
+that downstream phases do not have to re-read the
+predecessor ACT body.
+
+------------------------------------------------------------
+Entry identity
+------------------------------------------------------------
+
+```text
+git branch --show-current = main
+git status --short        = clean
+git rev-parse HEAD        = 7d7b983686fac2239a47288fe4b8e5dbbb617d55
+                           ACT-POLYC-BOOTSTRAP04 — CLOSE: B3 bootstrap stability PASS
+```
+
+------------------------------------------------------------
+Predecessor PASS block (binding)
+------------------------------------------------------------
+
+```text
+ACT-POLYC-BOOTSTRAP04 CLOSED PASS
+  BOOTSTRAP_STABILITY                PASS
+  BOOTSTRAP_STABILITY_DOMAIN         CURRENT_SELF_HOSTED_COMPILER_COMPONENT
+  FIRST_SELF_HOST                    YES
+  FULL_SELF_HOST                     NO
+  HOST_C_DEPENDENCY                  PRESENT
+  STAGE3_CREATED                     NO
+  STAGE4_CREATED                     NO   (binding; §52)
+```
+
+------------------------------------------------------------
+Generation chain (binding, from predecessor CLOSE)
+------------------------------------------------------------
+
+```text
+stage0 (./hcc)             ──S0──► stage1 (hcc-bootstrap02)
+stage1 (hcc-bootstrap02)   ──S1──► stage2 (hcc-bootstrap03)
+stage2 (hcc-bootstrap03)   ──S2──► stage3 (hcc-bootstrap04)
+
+S0 == S1 == S2 == S3 byte-equal
+sha256 a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f
+```
+
+------------------------------------------------------------
+Direct stage2↔stage3 results
+------------------------------------------------------------
+
+```text
+component differential  15/15  PASS
+cursor model            6/6    PASS
+production Lexer seam   6/6    PASS
+```
+
+------------------------------------------------------------
+Broad corpus (181 sources)
+------------------------------------------------------------
+
+```text
+stage2-success -> stage3-success     175/175
+byte-equal artifacts                 175/175
+stage2-failure -> stage3-failure       6/6
+divergence                              0
+unaccounted                             0
+```
+
+------------------------------------------------------------
+Error corpus (4 fixtures)
+------------------------------------------------------------
+
+```text
+divergence = 0
+all rc/class/diag equivalent
+```
+
+------------------------------------------------------------
+Reproducibility
+------------------------------------------------------------
+
+```text
+Build A == Build B
+181/181 corpus matrix rows identical
+175/175 stage2 + 175/175 stage3 artifacts byte-identical
+```
+
+------------------------------------------------------------
+B0/B1/B2 conservation
+------------------------------------------------------------
+
+```text
+B0 15/15
+B1 15/15 + 6/6 + 6/6
+B2 15/15 + 6/6
+LSP 43/43
+```
+
+------------------------------------------------------------
+Factory gates
+------------------------------------------------------------
+
+```text
+factory-v2-test            PASS 35/35
+factory-append-only-test   PASS 11/11
+factory-halt-classification PASS 12/12
+factory-closure-status     PASS 6/6 pairs
+shell-loc-gate             PASS
+gate-fast                  PASS
+```
+
+------------------------------------------------------------
+Scope/hygiene (binding for this ACT)
+------------------------------------------------------------
+
+```text
+Compiler semantic delta       ZERO
+B1 source delta               ZERO
+Lexer semantic delta          ZERO
+Parser/AST/IR/backend delta   ZERO
+Prior evidence unchanged
+No committed binary evidence
+git diff --check 245da70..HEAD clean
+```
+
+------------------------------------------------------------
+HALT gate
+------------------------------------------------------------
+
+```text
+HALT_B3_PREDECESSOR_NOT_GREEN
+  precondition:  B3 verdict != PASS
+  observed:      ACT-POLYC-BOOTSTRAP04 CLOSED PASS
+  fired:         NO
+
+C1_TO_C2_GATE = OPEN
+```

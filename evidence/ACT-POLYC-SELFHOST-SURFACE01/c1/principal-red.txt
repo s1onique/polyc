@@ -1,0 +1,118 @@
+ACT-POLYC-SELFHOST-SURFACE01 — C1 — principal RED
+=================================================
+
+The principal RED is not that the existing bootstrap is
+broken. It is that **no generic self-host component model
+exists**.
+
+------------------------------------------------------------
+Statement
+------------------------------------------------------------
+
+```text
+SELF_HOST_COMPONENT_MODEL = ABSENT
+```
+
+------------------------------------------------------------
+Mechanically observable (positive facts)
+------------------------------------------------------------
+
+```text
+identifier component exists                       YES
+component source is PolyC                          YES
+component self-host chain stable                   YES
+  (per ACT-POLYC-BOOTSTRAP04 CLOSED PASS)
+component oracle                                   YES
+  (tools/quality/bootstrap02-ident-oracle.c)
+component cursor gate                              YES
+  (tools/quality/bootstrap02-cursor-*)
+component production-seam gate                     YES
+  (tools/quality/bootstrap02-lexer-seam-*)
+component B1 byte-equality proven                  YES
+  (S0 == S1 == S2 == S3 per predecessor §4)
+```
+
+------------------------------------------------------------
+Mechanically observable (the RED)
+------------------------------------------------------------
+
+```text
+generic component registry                         NO
+generic component metadata                         NO
+generic stage producer abstraction                 NO
+generic component verification entrypoint          NO
+
+B1/B2/B3 wiring is encoded directly in:
+  Makefile          (87 grep hits across the bespoke names)
+  src/CMakeLists.txt (53 grep hits across the bespoke names)
+  bootstrap02 / bootstrap03 / bootstrap04 naming
+```
+
+------------------------------------------------------------
+C1 RED questions (per user proposal §3)
+------------------------------------------------------------
+
+```text
+HOW_MANY_BESPOKE_COMPONENT_BUILD_SEAMS?
+  149 (per bespoke-wiring-inventory.tsv)
+
+HOW_MANY_ARE_SEMANTICALLY_IDENTICAL?
+  149 / 149 (all reference the same component:
+  identifier_scanner; differences are about which
+  generation / which consumer)
+
+WHICH_ARE_REQUIRED_FOR_HISTORICAL_STAGE_REPRODUCTION?
+  149 / 149 (per ACT-POLYC-BOOTSTRAP0[2-4] frozen
+  evidence)
+
+WHICH_CAN_BE_REPLACED_BY_GENERIC_COMPONENT_METADATA?
+  ALL 149.
+  Reasoning:
+    3 PRODUCER         compile steps   -> generic producer
+    7 STAGE_IDENTITY   output paths    -> generic output path
+    3 PRODUCER         symbol checks   -> generic symbol check
+    6 TEST             harness build   -> generic harness build
+    3 TEST             harness link    -> generic harness link
+    3 CONSUMER         link inputs     -> generic link-input
+                                          list per component
+   12 PRODUCER         configure flags -> generic
+                                          HCC_SELFHOST_COMPONENTS
+   44 STAGE_IDENTITY   cmake options   -> generic component-
+                                          enable abstraction
+   46 PROVENANCE       comments        -> absorbed into the
+                                          registry / build-graph
+                                          docs (no execution
+                                          consequence)
+   17 PRODUCER         other-make      -> mostly guards and
+                                          diagnostics; absorbed
+                                          into the generic
+                                          operation
+    5 OTHER            housekeeping    -> absorbed into the
+                                          generic operation
+```
+
+------------------------------------------------------------
+Conclusion
+------------------------------------------------------------
+
+```text
+PRINCIPAL_RED_PROVEN    = YES
+REGISTRY_ABSENT         = YES
+BESPOKE_WIRING_PROVEN   = YES
+  (149 classified entries across 6 categories)
+PRODUCER_COUNT          = 45
+CONSUMER_COUNT          = 3
+STAGE_IDENTITY_COUNT    = 44
+TEST_COUNT              = 9
+ORACLE_COUNT            = 2
+PROVENANCE_COUNT        = 46
+LEGACY_BOOTSTRAP_ONLY   = 0
+
+NEXT_PHASE              = C2 IMPL
+  C2 must:
+    1. create docs/factory/SELF-HOST-COMPONENTS.tsv
+    2. implement the generic selfhost-component-build
+       and selfhost-component-test operations
+    3. preserve all frozen historical artifact paths
+    4. re-prove B3 corpus / error conservation
+```

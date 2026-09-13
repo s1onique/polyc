@@ -1,0 +1,126 @@
+ACT-POLYC-SELFHOST-SURFACE01 — C1 — semantic vs generation coupling
+==================================================================
+
+The user's proposal §9 identifies the architectural defect
+that this ACT must address: **generation-specific macros
+leak into compiler composition**. This file maps each
+generation-specific surface in the current code and asks
+whether it is (a) only build-graph plumbing, (b) build-graph
+plumbing that has crept into a shared compile-time decision,
+or (c) genuinely required by the production semantics.
+
+------------------------------------------------------------
+The seven generation-coupled surfaces today
+------------------------------------------------------------
+
+```text
+1. HCC_ENABLE_BOOTSTRAP02_STAGE1    (src/CMakeLists.txt:210)
+2. HCC_ENABLE_BOOTSTRAP03_STAGE2    (src/CMakeLists.txt:269)
+3. HCC_ENABLE_BOOTSTRAP04_STAGE3    (src/CMakeLists.txt:351)
+4. BOOTSTRAP02_IDENT_OBJECT         (src/CMakeLists.txt:217+)
+5. BOOTSTRAP03_IDENT_OBJECT         (src/CMakeLists.txt:279+)
+6. BOOTSTRAP04_IDENT_OBJECT         (src/CMakeLists.txt:361+)
+7. ./build/bootstrap0N-ident*.o      (Makefile + CMakeLists.txt)
+```
+
+------------------------------------------------------------
+Classification
+------------------------------------------------------------
+
+```text
+surface                                    role         semantic?
+-----------------------------------------  -----------  ---------
+HCC_ENABLE_BOOTSTRAP02_STAGE1             cmake-opt    NO  (just gates a target)
+HCC_ENABLE_BOOTSTRAP03_STAGE2             cmake-opt    NO  (just gates a target)
+HCC_ENABLE_BOOTSTRAP04_STAGE3             cmake-opt    NO  (just gates a target)
+BOOTSTRAP02_IDENT_OBJECT                  cmake-var    NO  (consumed only by hcc-bootstrap02 target)
+BOOTSTRAP03_IDENT_OBJECT                  cmake-var    NO  (consumed only by hcc-bootstrap03 target)
+BOOTSTRAP04_IDENT_OBJECT                  cmake-var    NO  (consumed only by hcc-bootstrap04 target)
+./build/bootstrap02-ident.o               object-path  NO  (link input only)
+./build/bootstrap03-ident.stage1.o        object-path  NO  (link input only)
+./build/bootstrap04-ident.stage2.o        object-path  NO  (link input only)
+```
+
+All seven surfaces are **build-graph plumbing**. None of
+them are referenced from any production C source file or
+from any production compiler semantic. The hcc-bootstrap0N
+binary *contains* the B1 component (which is itself a
+semantic change relative to the production ./hcc), but
+this difference is achieved entirely via the link
+boundary, not via the cmake option names.
+
+------------------------------------------------------------
+The architectural defect
+------------------------------------------------------------
+
+Even though no individual surface is semantic, the **shape**
+of the surfaces is. The compiler composition decision is
+expressed as a stage-N recipe:
+
+```text
+HCC_ENABLE_BOOTSTRAP04_STAGE3=ON
+  requires HCC_ENABLE_BOOTSTRAP03_STAGE2=ON
+  requires HCC_ENABLE_BOOTSTRAP02_STAGE1=ON
+  consumes BOOTSTRAP04_IDENT_OBJECT
+  consumed by hcc-bootstrap04 target
+```
+
+That is: **compiler semantics are coupled to stage number**.
+
+If tomorrow we migrate the next lexer component, the
+natural expression would be:
+
+```text
+HCC_ENABLE_BOOTSTRAP05_STAGE4=ON
+  ...
+```
+
+i.e. extend the stage ladder.
+
+The user's proposal is to invert this: instead of asking
+"which stage is this", ask "which components are enabled":
+
+```text
+HCC_SELFHOST_COMPONENTS=identifier_scanner[,...]
+```
+
+The stage number is then an artifact-provenance question,
+not a compiler-composition question.
+
+------------------------------------------------------------
+What is NOT coupled (and must remain so)
+------------------------------------------------------------
+
+```text
+src/lexer.c::lexIdentifier        delegates to
+  -> BootstrapScanIdent (ABI contract from src/lexer_bridge.h)
+  unconditionally (in production ./hcc too, but the
+  production build does not link the B1 object, so the
+  symbol is unresolved and the production build FAILS
+  to link if BootstrapScanIdent is missing).
+
+  This is the SEMANTIC coupling point. It is unchanged
+  by this ACT. The proposal is:
+    - keep src/lexer.c::lexIdentifier as-is
+    - keep src/lexer_bridge.h ABI as-is
+    - move the link-side of the coupling from
+      "stage-N recipe" to "component registry"
+```
+
+------------------------------------------------------------
+Summary
+------------------------------------------------------------
+
+```text
+GENERATION_SPECIFIC_WIRING = PRESENT
+SEMANTIC_LEAK_FROM_GENERATION = NO   (no semantic currently
+                                       depends on stage number)
+ARCHITECTURAL_DEFECT = YES            (the *shape* of the
+                                       coupling makes future
+                                       migration require
+                                       HCC_ENABLE_BOOTSTRAP05
+                                       for every new component)
+```
+
+The defect is **architectural**, not semantic. C2 must
+fix the shape without touching the semantic.

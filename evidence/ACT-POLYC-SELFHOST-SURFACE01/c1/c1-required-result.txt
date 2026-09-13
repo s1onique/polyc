@@ -1,0 +1,125 @@
+ACT-POLYC-SELFHOST-SURFACE01 — C1 — required result
+====================================================
+
+This is the **binding C1 result block**. It is the
+deliverable of C1 RED and the entry gate for C2 IMPL.
+
+------------------------------------------------------------
+Predecessor freeze
+------------------------------------------------------------
+
+```text
+ACT-POLYC-BOOTSTRAP04 CLOSED PASS
+  HEAD                           = 7d7b983686fac2239a47288fe4b8e5dbbb617d55
+  BOOTSTRAP_STABILITY            = PASS
+  BOOTSTRAP_STABILITY_DOMAIN     = CURRENT_SELF_HOSTED_COMPILER_COMPONENT
+  STAGE3_CREATED                 = NO   (binding)
+  STAGE4_CREATED                 = NO   (binding)
+  COMPILER_SEMANTIC_DELTA        = ZERO
+  B1_SOURCE_DELTA                = ZERO
+```
+
+------------------------------------------------------------
+Inventory facts (from C1 RED)
+------------------------------------------------------------
+
+```text
+BESPOKE_WIRING_REFERENCES        = 149
+BESPOKE_WIRING_BY_CATEGORY:
+  PRODUCER                       = 45
+  CONSUMER                       =  3
+  STAGE_IDENTITY                 = 44
+  TEST                           =  9
+  ORACLE                         =  2
+  PROVENANCE                     = 46
+  LEGACY_BOOTSTRAP_ONLY          =  0
+
+SEMANTIC_LEAK_FROM_GENERATION    = NO
+ARCHITECTURAL_DEFECT             = YES
+  (the SHAPE of the build graph forces every future
+   migration to invent a new stage-N recipe)
+
+REGISTRY_PROVENANCE              = complete
+  (all 10 fields of the proposed row are mechanically
+   derivable from existing files)
+```
+
+------------------------------------------------------------
+Negative controls (binding)
+------------------------------------------------------------
+
+```text
+build/hcc-bootstrap05            = ABSENT
+HCC_ENABLE_BOOTSTRAP05_STAGE4    = ABSENT
+stage4 recipe added              = NO
+new bootstrap stage literal      = NONE
+```
+
+------------------------------------------------------------
+HALT gates (none fired)
+------------------------------------------------------------
+
+```text
+HALT_B3_PREDECESSOR_NOT_GREEN
+  fired: NO
+  evidence: 7d7b983 ACT-POLYC-BOOTSTRAP04 — CLOSE: B3 bootstrap stability PASS
+
+HALT_COMPONENT_SEAM_NOT_REPRODUCIBLE
+  fired: NO  (no production change attempted; C1 is RED)
+
+HALT_GENERIC_MODEL_REQUIRES_SEMANTIC_CHANGE
+  fired: NO  (C1 declares this binding; C2 must preserve it)
+
+HALT_REGISTRY_BESPOKE_FALLBACK
+  fired: NO  (no generic build attempted)
+
+HALT_STAGE4_LITERAL_DETECTED
+  fired: NO
+  evidence: grep -RE 'bootstrap05|HCC_ENABLE_BOOTSTRAP05' .  = 0 matches
+```
+
+------------------------------------------------------------
+Binding C1 result
+------------------------------------------------------------
+
+```text
+B3_BOOTSTRAP_STABILITY         = PASS
+
+SELF_HOSTED_COMPONENT_COUNT    = 1
+SELF_HOST_COMPONENT_MODEL      = ABSENT
+GENERATION_SPECIFIC_WIRING     = PRESENT
+
+C1_TO_C2_GATE                  = OPEN
+```
+
+------------------------------------------------------------
+C2 IMPL entry contract (binding)
+------------------------------------------------------------
+
+C2 may proceed iff:
+
+```text
+AC01  docs/factory/SELF-HOST-COMPONENTS.tsv exists
+AC02  registry schema mechanically validated
+AC03  identifier_scanner registered exactly once
+AC04  generic stage0 component build PASS
+AC05  generic stage1 component build PASS
+AC06  generic stage2 component build PASS
+AC07  all three generic outputs export BootstrapScanIdent
+AC08  provenance recorded for all three builds
+AC09  component oracle 15/15 PASS
+AC10  cursor oracle     6/6  PASS
+AC11  production seam   6/6  PASS
+AC12  bootstrap02-stage1 still PASS (compat alias)
+AC13  bootstrap03-stage2 still PASS (compat alias)
+AC14  bootstrap04-stage3 still PASS (compat alias)
+AC15  generic vs historical artifact equivalence PASS
+AC16  B3 corpus conservation PASS
+AC17  B3 error-corpus conservation PASS
+AC18  compiler semantic delta ZERO
+AC19  no new compiler component migrated
+AC20  no stage4 / no new generation
+AC21  diff-check clean
+AC22  Factory gates PASS
+AC23  C2_TO_C3_GATE = OPEN
+```

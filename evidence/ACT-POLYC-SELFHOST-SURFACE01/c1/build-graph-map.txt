@@ -1,0 +1,192 @@
+ACT-POLYC-SELFHOST-SURFACE01 — C1 — build graph map (pre-IMPL)
+==============================================================
+
+This is the **bespoke build graph** as it exists today.
+It is the thing the registry-driven generic surface must
+mechanically reconstruct.
+
+------------------------------------------------------------
+Source of truth
+------------------------------------------------------------
+
+```text
+tools/bootstrap/bootstrap02-ident.HC
+  ↓  (frozen PolyC source; ABI frozen by predecessor §5 / §9)
+
+build/bootstrap02-ident.o         (S0; stage0 ./hcc)
+build/bootstrap03-ident.stage1.o  (S1; stage1 hcc-bootstrap02)
+build/bootstrap04-ident.stage2.o  (S2; stage2 hcc-bootstrap03)
+
+build/hcc-bootstrap02  links S0
+build/hcc-bootstrap03  links S1
+build/hcc-bootstrap04  links S2
+```
+
+------------------------------------------------------------
+Edges (current bespoke graph)
+------------------------------------------------------------
+
+```text
+[./hcc]
+   |
+   | -c tools/bootstrap/bootstrap02-ident.HC
+   | -o build/bootstrap02-ident.o
+   v
+[build/bootstrap02-ident.o]  S0
+   |
+   | linked into hcc-bootstrap02 (Makefile HCC_STAGE1_OBJECTS)
+   v
+[build/hcc-bootstrap02]
+   |
+   | -c tools/bootstrap/bootstrap02-ident.HC
+   | -o build/bootstrap03-ident.stage1.o
+   v
+[build/bootstrap03-ident.stage1.o]  S1
+   |
+   | linked into hcc-bootstrap03
+   v
+[build/hcc-bootstrap03]
+   |
+   | -c tools/bootstrap/bootstrap02-ident.HC
+   | -o build/bootstrap04-ident.stage2.o
+   v
+[build/bootstrap04-ident.stage2.o]  S2
+   |
+   | linked into hcc-bootstrap04
+   v
+[build/hcc-bootstrap04]
+```
+
+The same PolyC source
+(`tools/bootstrap/bootstrap02-ident.HC`) is recompiled at
+each stage; the resulting objects are byte-identical
+because the B1 component is small and deterministic.
+
+------------------------------------------------------------
+Per-generation wiring mechanics
+------------------------------------------------------------
+
+```text
+Stage 0 (./hcc):
+  Makefile:
+    bootstrap02-component-build
+  src/CMakeLists.txt:
+    not used (production ./hcc has no B1 link by default)
+
+Stage 1 (build/hcc-bootstrap02):
+  Makefile:
+    bootstrap02-stage1 (configure with
+      -DHCC_ENABLE_BOOTSTRAP02_STAGE1=ON
+      -DBOOTSTRAP02_IDENT_OBJECT=$(CURDIR)/build/bootstrap02-ident.o)
+  src/CMakeLists.txt:
+    option(HCC_ENABLE_BOOTSTRAP02_STAGE1) +
+    target_link_libraries(hcc-bootstrap02
+      ${BOOTSTRAP02_IDENT_OBJECT} m)
+
+Stage 2 (build/hcc-bootstrap03):
+  Makefile:
+    bootstrap03-stage2 (configure with all prior stage
+      flags plus
+      -DHCC_ENABLE_BOOTSTRAP03_STAGE2=ON
+      -DBOOTSTRAP03_IDENT_OBJECT=$(CURDIR)/build/bootstrap03-ident.stage1.o)
+  src/CMakeLists.txt:
+    option(HCC_ENABLE_BOOTSTRAP03_STAGE2) +
+    target_link_libraries(hcc-bootstrap03
+      ${BOOTSTRAP03_IDENT_OBJECT} m)
+
+Stage 3 (build/hcc-bootstrap04):
+  Makefile:
+    bootstrap04-stage3 (configure with all prior stage
+      flags plus
+      -DHCC_ENABLE_BOOTSTRAP04_STAGE3=ON
+      -DBOOTSTRAP04_IDENT_OBJECT=$(CURDIR)/build/bootstrap04-ident.stage2.o)
+  src/CMakeLists.txt:
+    option(HCC_ENABLE_BOOTSTRAP04_STAGE3) +
+    target_link_libraries(hcc-bootstrap04
+      ${BOOTSTRAP04_IDENT_OBJECT} m)
+```
+
+------------------------------------------------------------
+Test / oracle mechanics
+------------------------------------------------------------
+
+```text
+component differential:
+  build/bootstrap02-ident-oracle (C oracle, bootstrap02-ident-oracle.c)
+  build/bootstrap0N-ident-host  (links the PolyC object into the host harness)
+  → diff oracle.txt vs host.txt
+
+cursor model:
+  build/bootstrap02-cursor-oracle (C oracle)
+  build/bootstrap02-cursor-host   (links the PolyC object)
+  → diff oracle.txt vs host.txt
+
+production Lexer seam:
+  bootstrap02-lexer-seam-runner.c
+  bootstrap02-lexer-seam-fixture.h
+  → drives src/lexer.c::lexIdentifier via seam
+
+broad corpus:
+  bootstrap0N-corpus-runner.py
+  → builds ./build/hcc-bootstrap0N, runs corpus
+
+error corpus:
+  bootstrap0N-error-corpus.py
+  → 4 explicit error fixtures; rc/class/diag equivalence
+```
+
+------------------------------------------------------------
+What the generic surface must reconstruct
+------------------------------------------------------------
+
+```text
+Given only:
+  - SELF-HOST-COMPONENTS.tsv (component_id=identifier_scanner)
+  - the registry row (source, symbol, consumer_seam,
+    language, state, oracle, cursor_gate,
+    production_seam_gate, introduced_by)
+  - the existing compiler stages (./hcc,
+    build/hcc-bootstrap02, build/hcc-bootstrap03,
+    build/hcc-bootstrap04)
+  - the existing oracle / harness / corpus / error scripts
+
+The generic surface must be able to:
+  1. resolve component source from registry;
+  2. invoke the right producer compiler for the
+     requested stage;
+  3. emit the object to a deterministic, stage-qualified
+     path under build/selfhost/stage<N>/<component_id>.o;
+  4. verify the expected symbol is exported;
+  5. invoke the component oracle, cursor gate, and
+     production-seam gate registered for the component;
+  6. record provenance (component_id, source_path,
+     producer_stage, producer_binary, producer_binary_hash,
+     output_path, output_hash, expected_symbol).
+
+It must do this without re-deriving the bespoke wiring by
+hand each time a new component is added.
+```
+
+------------------------------------------------------------
+Conclusion
+------------------------------------------------------------
+
+```text
+GENERIC_COMPONENT_MODEL    = ABSENT
+BESPOKE_GRAPH_NODES        = 6
+  source                 x 1
+  stage object outputs   x 3 (S0, S1, S2)
+  stage compiler outputs x 3 (stage1, stage2, stage3)
+BESPOKE_GRAPH_EDGES        = 5
+  stage0 -> S0
+  S0    -> stage1
+  stage1 -> S1
+  S1    -> stage2
+  stage2 -> S2
+  S2    -> stage3
+
+BESPOKE_STAGE4_REQUIRED    = NO
+NEGATIVE_CONTROL_OK        = YES
+  build/hcc-bootstrap05            = ABSENT
+  HCC_ENABLE_BOOTSTRAP05_STAGE4   = ABSENT
+```

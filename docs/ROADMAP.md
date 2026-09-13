@@ -2030,7 +2030,92 @@ acceptance criteria.
 Do **not** immediately invent B4 or extend the bootstrap
 chain further. The B3 ACT §52 hard stop applies.
 
-### P5 — LLVM feature depth (PARALLEL BACKLOG, NON-BLOCKING)
+The "board design" recommendation above is recorded here
+verbatim because it is the historical evidence of
+BOOTSTRAP04's closure condition. It is **not** rewritten
+(F14). The board-design outcome is captured by the next
+authorization artifact:
+
+```text
+ACT-POLYC-SELFHOST-SURFACE01
+  Title: First-class self-host component registry and
+         deterministic build graph
+  Predecessor: ACT-POLYC-BOOTSTRAP04 CLOSED PASS
+  Authorization artifact: docs/acts/ACT-POLYC-SELFHOST-SURFACE01.md
+  C1 RED evidence: evidence/ACT-POLYC-SELFHOST-SURFACE01/c1/
+  Status at this commit: C1 RED open
+```
+
+The post-B3 decision (per that ACT's anticipated CLOSE
+state, recorded for honesty only — binding verdict lives
+on the C4 CLOSE commit trailer) is:
+
+```text
+BOOTSTRAP FOUNDATION
+  B0 COMPILER-SHAPED          GREEN
+  B1 PARTIAL SELF-HOST        GREEN
+  B2 FIRST SELF-HOST          GREEN
+  B3 BOOTSTRAP STABILITY      GREEN
+  FOUNDATION                  COMPLETE
+
+SELF-HOST EXPANSION
+  S0 COMPONENT FRAMEWORK      ACT-POLYC-SELFHOST-SURFACE01
+  S1 PRODUCTION LEXER         LOCKED
+  S2 PARSER                   LOCKED
+  S3 FRONTEND                 LOCKED
+  S4 FULL COMPILER            LOCKED
+```
+
+#### P5 — self-host expansion (active)
+
+B0–B3 was one coherent bootstrap experiment; B3 is its
+natural terminal condition. The next ratchet is **ownership
+expansion**, not a fourth generation:
+
+```text
+1 stable PolyC compiler component
+       ↓
+2
+       ↓
+3
+       ↓
+entire lexer
+       ↓
+parser
+       ↓
+frontend
+       ↓
+compiler
+```
+
+To grow that ratchet we need a registry-driven build
+abstraction so that the next migration does not require
+authoring one bespoke stage recipe per migrated function.
+That abstraction is `ACT-POLYC-SELFHOST-SURFACE01`.
+
+```text
+S0 — COMPONENT FRAMEWORK         ACT-POLYC-SELFHOST-SURFACE01
+                                   (C1 RED open at this commit)
+                                   predecessor: B3 CLOSED PASS
+                                   target: replace bespoke B1/B2/B3
+                                           plumbing with one generic
+                                           SELF_HOST_COMPONENT model
+                                   forbidden: any compiler semantic
+                                              change; any new bootstrap
+                                              stage; any new migrated
+                                              compiler component
+S1 — PRODUCTION LEXER            LOCKED
+S2 — PARSER                      LOCKED
+S3 — FRONTEND                    LOCKED
+S4 — FULL COMPILER               LOCKED
+```
+
+The S1 candidate must be chosen mechanically from the
+actual lexer seam map (call graph, state mutated, token
+types produced, existing test coverage, ABI complexity,
+candidate migration size), not by intuition.
+
+### P5a — LLVM feature depth (PARALLEL BACKLOG, NON-BLOCKING)
 
 The previously-promised "expand only from evidence" widening
 of LLVM core coverage is demoted from the critical path to a
