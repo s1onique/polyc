@@ -47,8 +47,8 @@ TEST_PREFIX="${REPO_ROOT}/build/test-prefix"
 OP="${1:-}"
 shift || true
 
-COMPONENT=""
-STAGE=""
+COMPONENT="${COMPONENT:-}"
+STAGE="${STAGE:-}"
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -78,6 +78,23 @@ if [ -z "$STAGE" ]; then
     echo "selfhost-component: STAGE=<n> is required" >&2
     exit 2
 fi
+
+# Argument-injection hardening (ACT-POLYC-SELFHOST-SURFACE01-
+# CORRECTION01 C2.1 IMPL). COMPONENT must match
+# /^[A-Za-z0-9_]+$/ and STAGE must be exactly 0|1|2.
+case "$COMPONENT" in
+    *[!A-Za-z0-9_]*)
+        echo "selfhost-component: COMPONENT contains forbidden characters" >&2
+        exit 2
+        ;;
+esac
+case "$STAGE" in
+    0|1|2) ;;
+    *)
+        echo "selfhost-component: STAGE=<n> is required" >&2
+        exit 2
+        ;;
+esac
 
 # ---------------------------------------------------------------------------
 # Stage -> producer binary mapping (binding).

@@ -1058,3 +1058,219 @@ command line; it does NOT walk repository history.
 
 This section is the durable, normative binding for
 ACT-POLYC-FACTORY-MECHANICAL-BLOCKING01 §0 and §5.
+
+---
+
+## 26. F-NO-PYTHON — Python is forbidden in the repository
+
+Binding repository invariant:
+
+```text
+F-NO-PYTHON
+
+PolyC repositories SHALL NOT contain or execute Python.
+```
+
+Mechanical prohibitions:
+
+1. No tracked Python source:
+
+       *.py  *.pyw  *.pyi  *.pyc
+
+2. No tracked Python runtime/cache artifacts:
+
+       __pycache__/
+       .python-version
+       Pipfile  Pipfile.lock  poetry.lock
+       requirements*.txt  setup.py  tox.ini  pytest.ini
+
+3. No Python interpreter shebang in any tracked file:
+
+       python
+       python3
+       python3.x
+       /usr/bin/python*
+       /usr/bin/env python*
+
+4. No executable build/tool/CI invocation of:
+
+       python  python3  python3.x
+       pip  pip3  pytest  tox  poetry
+
+5. No Python fallback:
+
+       "use PolyC, otherwise invoke Python"
+       is FORBIDDEN.
+
+6. No grandfathering exists for executable Python.
+
+7. Historical prose may mention Python. Evidence may
+   describe removed Python files. Prose is not
+   executable repository state.
+
+8. If an existing Python tool cannot yet be implemented
+   in PolyC, the correct result is
+   `HALT_POLYC_TOOLING_CAPABILITY_GAP`,
+   not an exception.
+
+### Enforcement
+
+The authoritative enforcement checker for this rule is
+`tools/factory/factory-no-python-check.HC`, invoked from
+`gate-fast` and/or `gate-push`. The checker inspects:
+
+* `git ls-files -z` output (canonical tracked-file stream).
+* The shebang of every tracked file.
+* The command-text of every tracked shell script and
+  Makefile recipe for Python interpreter invocations.
+* The presence of Python package metadata files.
+
+The checker fails CLOSED on:
+
+* `git` failure.
+* Malformed path stream.
+* Unreadable tracked file required for classification.
+* Any of the prohibitions above.
+
+Historical docs/evidence references do not count toward
+the prohibition (mechanical; the checker tracks
+comment-vs-code classification).
+
+### Activation boundary
+
+`F-NO-PYTHON` is active from the closing commit of
+`ACT-POLYC-SELFHOST-SURFACE01-CORRECTION01` forward.
+Historical CLOSE commits and historical evidence are
+grandfathered (F14). The mechanical checker applies only
+to the current tree state and forward.
+
+### Scope
+
+This section is the durable, normative binding for
+`ACT-POLYC-SELFHOST-SURFACE01-CORRECTION01` §0 / §1.
+
+---
+
+## 27. F-POLYC-TOOLS — All future tool implementations are PolyC
+
+Binding repository invariant:
+
+```text
+F-POLYC-TOOLS
+
+All newly introduced repository tool implementations
+SHALL be written in PolyC.
+```
+
+Canonical implementation suffix: `.HC`.
+
+A **tool implementation** means an executable program or
+executable repository entrypoint intended to:
+
+```text
+build
+verify
+inspect
+migrate
+generate
+lint
+test repository structure
+capture evidence
+manage compiler components
+perform release/developer automation
+```
+
+Binding:
+
+```text
+NEW_TOOL_IMPLEMENTATION_LANGUAGE = POLYC
+```
+
+Forbidden for future new tools:
+
+```text
+Python
+Go
+Rust
+JavaScript
+TypeScript
+Perl
+Ruby
+C
+C++
+large shell programs (>50 LOC)
+```
+
+Existing non-PolyC tools are grandfathered and recorded
+in `docs/factory/LEGACY-NON-POLYC-TOOLS.tsv`. They may
+remain; they may be replaced (replacement MUST be PolyC);
+they may not split into multiple new non-PolyC tools.
+
+### Shell exception
+
+Shell remains allowed ONLY as bootstrap glue. A new shell
+file MUST be:
+
+```text
+SHELL_FILE_ROLE in
+  { BOOTSTRAP_WRAPPER, TINY_DISPATCH_WRAPPER }
+
+MAX_LOC = 50
+```
+
+A new wrapper may:
+
+```text
+set -eu
+
+locate repository root
+check one prerequisite
+invoke make
+exec one PolyC executable
+propagate exit status
+```
+
+It may NOT implement TSV parsing, business/domain rules,
+component validation, test matrices, migration logic,
+filesystem traversal, provenance calculation, policy
+classification, or multi-step orchestration.
+
+### Enforcement
+
+The authoritative enforcement checker for this rule is
+`tools/factory/factory-polyc-tools-check.HC`, invoked
+from `gate-fast` and/or `gate-push`. The checker inspects:
+
+* `git ls-files -z` output (canonical tracked-file stream).
+* The implementation language of every new path under
+  `tools/**`, `scripts/quality/**`, `scripts/**`,
+  `.githooks/**`.
+* The LOC count of every new shell file.
+* The presence of new Python / Go / Rust / JS / TS / C /
+  C++ tool implementations under canonical tool roots.
+
+The checker fails CLOSED on:
+
+* `git` failure.
+* Malformed path stream.
+* Unreadable tracked file required for classification.
+* A new tool implementation that is not PolyC.
+* A new shell file > 50 LOC.
+* Unknown baseline format or duplicate baseline entries.
+
+A frozen baseline of pre-rule legacy tools lives at
+`docs/factory/LEGACY-NON-POLYC-TOOLS.tsv`. The baseline
+is the prospective boundary; new paths not in the
+baseline must be PolyC.
+
+### Activation boundary
+
+`F-POLYC-TOOLS` is active from the closing commit of
+`ACT-POLYC-SELFHOST-SURFACE01-CORRECTION01` forward.
+Historical tool implementations are grandfathered (F14)
+and recorded in the legacy baseline.
+
+### Scope
+
+This section is the durable, normative binding for
+`ACT-POLYC-SELFHOST-SURFACE01-CORRECTION01` §0 / §2.

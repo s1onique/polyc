@@ -708,3 +708,33 @@ F14 forbids mutating any closed ACT's evidence directory,
 including appending "ADDENDUM" blocks to existing files.
 Corrections live in new `<original-id>-CORRECTION<N+1>/`
 directories.
+
+---
+
+## F-NO-PYTHON and F-POLYC-TOOLS pointers
+
+Two additional Factory invariants are active from the
+closing commit of
+`ACT-POLYC-SELFHOST-SURFACE01-CORRECTION01` forward:
+
+* `F-NO-PYTHON` — Python is forbidden in the repository.
+  No tracked Python source, no Python shebangs, no
+  Python invocations, no Python fallback, no Python
+  grandfathering. Authoritative text at
+  `docs/factory/DOCTRINE.md` §26. Authoritative
+  enforcement at
+  `tools/factory/factory-no-python-check.HC`.
+
+* `F-POLYC-TOOLS` — Every new tool implementation SHALL
+  be PolyC. Shell is permitted only as ≤50-LOC
+  bootstrap glue. Existing non-PolyC legacy tools are
+  recorded in
+  `docs/factory/LEGACY-NON-POLYC-TOOLS.tsv`.
+  Authoritative text at `docs/factory/DOCTRINE.md` §27.
+  Authoritative enforcement at
+  `tools/factory/factory-polyc-tools-check.HC`.
+
+Both checkers are wired into `gate-fast` and emit
+non-zero exit codes on any violation. Neither checker
+may be removed, weakened, or bypassed except by an
+explicit bounded correction ACT.

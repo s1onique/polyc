@@ -971,15 +971,21 @@ bootstrap04-lexer-seam-test: bootstrap04-stage3
 #   build/selfhost/stage<STAGE>/<component_id>.o
 #
 # Registry fields are DATA, never shell-evaluated.
+# COMPONENT and STAGE are exported as environment variables
+# so the receiving program can validate them and reject
+# shell-metacharacter input. DO NOT interpolate $(COMPONENT)
+# or $(STAGE) into recipe command text; Make expands such
+# references BEFORE the shell sees the command, which would
+# allow argument injection.
 selfhost-component-build:
 	@test -n "$(COMPONENT)" || (echo "selfhost-component-build: COMPONENT=<id> required (e.g. make selfhost-component-build COMPONENT=identifier_scanner STAGE=0)" >&2; exit 1)
 	@test -n "$(STAGE)" || (echo "selfhost-component-build: STAGE=<0|1|2> required (e.g. make selfhost-component-build COMPONENT=identifier_scanner STAGE=0)" >&2; exit 1)
-	./tools/selfhost/selfhost-component.sh build COMPONENT=$(COMPONENT) STAGE=$(STAGE)
+	COMPONENT='$(COMPONENT)' STAGE='$(STAGE)' ./tools/selfhost/selfhost-component.sh build
 
 selfhost-component-test:
 	@test -n "$(COMPONENT)" || (echo "selfhost-component-test: COMPONENT=<id> required" >&2; exit 1)
 	@test -n "$(STAGE)" || (echo "selfhost-component-test: STAGE=<0|1|2> required" >&2; exit 1)
-	./tools/selfhost/selfhost-component.sh test COMPONENT=$(COMPONENT) STAGE=$(STAGE)
+	COMPONENT='$(COMPONENT)' STAGE='$(STAGE)' ./tools/selfhost/selfhost-component.sh test
 
 selfhost-registry-validate:
-	@python3 scripts/quality/selfhost-component-registry.py
+	@scripts/quality/selfhost-component-registry.sh

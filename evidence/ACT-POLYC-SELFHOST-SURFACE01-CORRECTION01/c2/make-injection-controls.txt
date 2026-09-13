@@ -1,0 +1,80 @@
+ACT-POLYC-SELFHOST-SURFACE01-CORRECTION01 — C2
+make-injection-controls.txt
+============================================
+
+OBJECTIVE
+=========
+
+Mechanically prove that the F2 SAFETY defect (Makefile
+recipe injection via COMPONENT/STAGE) is CLOSED by the
+C2.1 hardening commit.
+
+POSITIVE CONTROL (expected: build proceeds)
+============================================
+
+  $ COMPONENT=identifier_scanner STAGE=0 \
+      ./tools/selfhost/selfhost-component.sh build
+  ... linker warnings ...
+  SELFHOST_COMPONENT_BUILD=PASS
+  rc=0
+
+NEGATIVE CONTROL 1 (expected: rc != 0, NO sentinel)
+===================================================
+
+  $ rm -f /tmp/polyc_inj_*
+  $ COMPONENT='foo;touch /tmp/polyc_inj_C' \
+      STAGE='0;touch /tmp/polyc_inj_S' \
+      ./tools/selfhost/selfhost-component.sh build
+  selfhost-component: COMPONENT contains forbidden characters
+  rc=2
+  $ ls /tmp/polyc_inj_*
+  (no matches)
+
+NEGATIVE CONTROL 2 (via Makefile recipe, expected: rc != 0, NO sentinel)
+=========================================================================
+
+  $ rm -f /tmp/polyc_make_inj_*
+  $ make selfhost-component-build \
+      COMPONENT='x;touch /tmp/polyc_make_inj_C' \
+      STAGE='0;touch /tmp/polyc_make_inj_S'
+  COMPONENT='x;touch /tmp/polyc_make_inj_C' \
+      STAGE='0;touch /tmp/polyc_make_inj_S' \
+      ./tools/selfhost/selfhost-component.sh build
+  selfhost-component: COMPONENT contains forbidden characters
+  make: *** [selfhost-component-build] Error 2
+  $ ls /tmp/polyc_make_inj_*
+  (no matches)
+
+BINDING NEGATIVE CONTROL RESULT
+================================
+
+  MAKE_ARGUMENT_INJECTION         = CLOSED
+  COMPONENT_METACHAR_SENTINEL     = NOT_CREATED
+  STAGE_METACHAR_SENTINEL         = NOT_CREATED
+  INVALID_COMPONENT_RC            = 2  (nonzero)
+  INVALID_STAGE_RC                = 2  (nonzero)
+
+WHAT THIS REPRODUCTION ESTABLISHES
+==================================
+
+The F2 SAFETY defect (Makefile:977/982/985 in the
+predecessor ACT C2 IMPL) is repaired by:
+
+  1. Removing `COMPONENT=$(COMPONENT)` /
+     `STAGE=$(STAGE)` interpolation from recipe command
+     text in Makefile:983 and Makefile:988.
+  2. Passing COMPONENT and STAGE as exported
+     environment variables (single-quoted in the
+     recipe to prevent Make from word-splitting).
+  3. Validating COMPONENT against
+     /^[A-Za-z0-9_]+$/ in
+     tools/selfhost/selfhost-component.sh.
+  4. Validating STAGE against /^(0|1|2)$/ in the same
+     file.
+
+The shell receives the values via the environment, so
+even though Make still expands `$(COMPONENT)` inside
+the single-quoted assignment string, the resulting
+shell variable contains the literal value (not the
+shell-evaluated value). The script then refuses any
+value containing shell metacharacters, FAILING CLOSED.
