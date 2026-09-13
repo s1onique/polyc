@@ -1,0 +1,18 @@
+=== C2.3 PolyC build + selftest ===
+
+--- factory-halt-classification-binary build ---
+-- Installing: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/test-prefix/lib/libtos.0.0.1.dylib
+./hcc --install-dir=./build/test-prefix -c \
+		tools/factory/factory-halt-classification.HC \
+		-o build/factory-halt-classification.o
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+cc build/factory-halt-classification.o \
+		-L./build/test-prefix/lib -ltos \
+		-o build/factory-halt-classification
+
+--- factory-halt-classification-selftest ---
+FHC_SELFTEST_PASS=28
+FHC_SELFTEST_FAIL=0
+STATUS=PASS

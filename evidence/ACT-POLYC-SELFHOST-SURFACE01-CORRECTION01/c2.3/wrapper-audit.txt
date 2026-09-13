@@ -1,0 +1,57 @@
+=== C2.3 wrapper audit ===
+
+--- factory-halt-classification-check.sh ---
+#!/bin/sh
+# scripts/quality/factory-halt-classification-check.sh
+#
+# ACT-POLYC-FACTORY-MECHANICAL-BLOCKING01
+# ACT-POLYC-INTEGRATION-PREBOOTSTRAP-GATES01 D3
+# ACT-POLYC-SELFHOST-SURFACE01-CORRECTION01 C2.3.c
+#
+# Thin shell wrapper that dispatches to the PolyC authoritative
+# implementation at tools/factory/factory-halt-classification.HC
+# (built into ./build/factory-halt-classification by
+# `make factory-halt-classification-binary`). No substantive
+# policy in this file; the wrapper stays under the <=50 LOC
+# ratchet.
+
+set -eu
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+REPO_ROOT=$(cd "$SCRIPT_DIR/../.." && pwd)
+cd "$REPO_ROOT"
+exec "$REPO_ROOT/build/factory-halt-classification" "$@"
+
+--- factory-halt-classification-test.sh ---
+#!/bin/sh
+# scripts/quality/factory-halt-classification-test.sh
+#
+# ACT-POLYC-FACTORY-MECHANICAL-BLOCKING01
+# ACT-POLYC-INTEGRATION-PREBOOTSTRAP-GATES01 D3
+# ACT-POLYC-SELFHOST-SURFACE01-CORRECTION01 C2.3.c
+#
+# Thin shell wrapper that invokes the 12-fixture regression
+# matrix implemented inside the PolyC authoritative binary at
+# tools/factory/factory-halt-classification.HC (built into
+# ./build/factory-halt-classification). No substantive policy
+# in this file; the wrapper stays under the <=50 LOC ratchet.
+
+set -eu
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+REPO_ROOT=$(cd "$SCRIPT_DIR/../.." && pwd)
+cd "$REPO_ROOT"
+exec "$REPO_ROOT/build/factory-halt-classification" --matrix
+
+--- LOC counts ---
+  19 scripts/quality/factory-halt-classification-check.sh
+  18 scripts/quality/factory-halt-classification-test.sh
+  37 total
+
+--- LOC <= 50 LOC ---
+scripts/quality/factory-halt-classification-check.sh: PASS (19 LOC)
+scripts/quality/factory-halt-classification-test.sh: PASS (18 LOC)
+
+--- substantive policy scan ---
+scripts/quality/factory-halt-classification-check.sh:
+  (none found)
+scripts/quality/factory-halt-classification-test.sh:
+  (none found)
