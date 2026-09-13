@@ -1,0 +1,70 @@
+ACT-POLYC-BOOTSTRAP02-C2-CORRECTION03 — C1 RED —
+defect P0: l->ptr_after at EOF is undefined behavior
+(re-classified from R2 of CORRECTION02)
+==================================================
+
+The real-Lexer seam witness established this
+mechanically:
+
+  legacy E4:
+    ptr_after = 3       # AT the terminating NUL
+    eof_state = 1
+    next_byte_hex = 00  # NUL
+
+  stage1 E4:
+    ptr_after = 4       # ONE PAST the terminating NUL
+    eof_state = 2
+    next_byte_hex = 00  # NUL (only because harness
+                         # memsets the buffer to 0)
+
+The stage1 path then performs `l->ptr = final_ptr + 1`
+(src/lexer.c:932-934). For an NUL-terminated string
+"abc" with src_len = 3, end_off = 3, `final_ptr =
+src + 3` (the NUL), and `final_ptr + 1 = src + 4`.
+
+Per the C memory model, `src + 4` is a legitimate
+one-past-end pointer IF the array actually has 4
+elements. But the C standard explicitly forbids
+dereferencing a one-past-end pointer:
+
+    "C permits forming a one-past pointer; it does
+     not permit *p at that position."
+         — C standard, §6.5.6 paragraph 8
+
+For a NUL-terminated string, `strlen(s)` returns
+the length NOT counting the NUL. The storage
+layout may or may not have an accessible byte
+at `s[strlen(s)]`:
+
+  - Production AoStr buffers come from aoStrAlloc,
+    which uses arenaAlloc. The arena allocations
+    are NOT guaranteed to leave a zero byte at the
+    one-past-end position; neighbouring objects
+    may abut, and the memory may not be mapped
+    readable at all if it's the exact end of a
+    page.
+  - The harness deliberately does
+    `memset(src_buf, 0, sizeof(src_buf))` so E4
+    HAPPENS to have src[4] = NUL. This masks the
+    bug diagnostically but does not demonstrate
+    safety of the production pointer state.
+
+Subsequent `lexNextChar(l)` after stage1's EOF
+lexIdentifier would do `ch = *l->ptr`, reading
+`src[4]`. In production, this is undefined
+behavior.
+
+Severity: P0 (production semantic defect, not
+latent residue). The legacy path correctly leaves
+`l->ptr = src + 3` (AT the NUL); the B1 path
+incorrectly leaves it at `src + 4`.
+
+This BLOCKS the parent ACT-POLYC-BOOTSTRAP02 C4
+CLOSE per the re-review verdict. C3 EVIDENCE may
+still proceed (broad corpus execution while the
+bug is known is useful for evidence collection,
+and the bug is benign for the corpus we already
+have).
+
+Proposed correction: see
+`corrected-stage1-branch.txt`.

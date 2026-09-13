@@ -1,0 +1,97 @@
+ACT-POLYC-BOOTSTRAP02-C2-CORRECTION03 — C1 RED —
+corrected stage1 branch of lexIdentifier
+==================================================
+
+Per the re-reviewer verdict, this correction
+collapses both R1 (l->start) and R2 (l->ptr at
+EOF) into a single bounded production-source
+fix. The legacy invariant is:
+
+  after lexIdentifier returns TK_IDENT:
+
+    l->ptr       == address of the first
+                  non-identifier byte (or NUL at EOF)
+    l->start     == l->ptr
+                  (set by the LAST lexNextChar call
+                   in the legacy loop)
+    l->cur_strlen == number of identifier bytes
+                  AFTER the dispatcher's pre-consumed
+                  byte (>= 1)
+    Lexeme       == { start = pre-call l->start,
+                      len = l->cur_strlen }
+
+The corrected stage1 branch of
+src/lexer.c::lexIdentifier is:
+
+    (void)ch;
+
+    unsigned char *src = (unsigned char *)l->start;
+    long long src_len = (long long)strlen(l->start);
+    long long start_off = 0;
+    long long end_off = 0;
+    int rc = (int)BootstrapScanIdent(src, src_len,
+                                     start_off, &end_off);
+    if (rc == 0) {
+        /* Should be unreachable: the dispatcher gate
+         * at lexCore only calls us when isalpha(ch)
+         * || ch == '_', which satisfies B02IsIdentStart.
+         * If the B1 component ever disagrees, rewind
+         * the single byte the dispatcher had already
+         * consumed and report malformed identifier. */
+        lexRewindChar(l);
+        return -1;
+    }
+
+    l->cur_strlen = (s64)(end_off - start_off);
+
+    /* final_ptr is the address of the first
+     * non-identifier byte (or the terminating NUL
+     * at EOF). It is identical to where the legacy
+     * lexNextChar loop would leave l->ptr after
+     * its final iteration. */
+    unsigned char *final_ptr = src + end_off;
+
+    /* Match the legacy postcondition:
+     *   l->ptr = first non-identifier byte (or NUL)
+     *   l->start = first non-identifier byte (or NUL)
+     *
+     * The previous stage1 code advanced l->ptr to
+     * final_ptr + 1 at EOF (one past the NUL), which
+     * is undefined behavior per the C memory model
+     * (a one-past-end pointer must not be
+     * dereferenced). The harness previously masked
+     * this because it memset'd its buffer to zero,
+     * making src[4] accidentally accessible. In
+     * production AoStr buffers, src[4] need not be
+     * accessible at all. */
+    l->ptr = (char *)final_ptr;
+    l->start = (char *)final_ptr;
+    return TK_IDENT;
+
+Diff vs current stage1 branch:
+
+  -      if (end_off >= src_len || *final_ptr == '\0') {
+  -          /* Old path did NOT rewind: l->ptr sits
+  -           * one past the NUL. */
+  -          l->ptr = (char *)(final_ptr + 1);
+  -      } else {
+  -          /* Old path DID rewind: l->ptr sits AT
+  -           * the non-identifier byte. */
+  -          l->ptr = (char *)final_ptr;
+  -      }
+  -      return TK_IDENT;
+  +    l->ptr = (char *)final_ptr;
+  +    l->start = (char *)final_ptr;
+  +    return TK_IDENT;
+
+The new code is a strict subset of the old code's
+correctness (the +1 branch is removed; the AT-the-
+byte branch becomes unconditional). The legacy
+invariant `l->start == l->ptr` is now mechanical.
+
+No B1 component change (tools/bootstrap/
+bootstrap02-ident.HC unchanged).
+No B0 component change.
+No build-system behavioural change.
+Authorization scope: src/lexer.c::lexIdentifier
+stage1 branch ONLY.

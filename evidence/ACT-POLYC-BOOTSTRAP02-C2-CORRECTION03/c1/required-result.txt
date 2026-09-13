@@ -1,0 +1,116 @@
+ACT-POLYC-BOOTSTRAP02-C2-CORRECTION03 — C1 RED —
+required-result block
+==================================================
+
+This is the binding contract between C1 RED and C2
+IMPL for this correction ACT.
+
+------------------------------------------------------------
+Section A — Defect classification
+------------------------------------------------------------
+
+A01  DEFECT_P0_EOF_CURSOR_UB        = DOCUMENTED
+       src/lexer.c:932-934 advances l->ptr past
+       the EOF NUL. Per C memory model, the
+       one-past-end pointer is not dereferenceable.
+       See defect-p0-eof-cursor-ub.txt.
+
+A02  DEFECT_P2_L_START_AFTER        = DOCUMENTED
+       src/lexer.c stage1 branch never sets
+       l->start; legacy sets it via lexNextChar.
+       See defect-r1-start-after.txt.
+
+A03  PRIOR_CORRECTION02_VERDICT     = PARTIAL_PASS_WITH_RESIDUE
+       Closed PASS_WITH_RESIDUE; the EOF
+       residue was correctly classified as P0 by
+       the re-review.
+
+A04  C3_EVIDENCE_AUTHORIZED         = YES
+       Re-reviewer: broad corpus while the bug
+       is known is useful.
+
+A05  C4_CLOSE_BLOCKED               = YES_BY_R2
+       Re-reviewer: C4 CLOSE of the parent ACT
+       BLOCKED until R2 fixed.
+
+------------------------------------------------------------
+Section B — Required deliverables
+------------------------------------------------------------
+
+B01  corrected-stage1-branch.txt EXISTS    PASS
+B02  desired-postcondition.txt EXISTS      PASS
+B03  defect-p0-eof-cursor-ub.txt EXISTS    PASS
+B04  defect-r1-start-after.txt EXISTS      PASS
+
+------------------------------------------------------------
+Section C — C2 IMPL scope (forward-only)
+------------------------------------------------------------
+
+C01  src/lexer.c::lexIdentifier stage1 branch
+       = TO_BE_MODIFIED
+       (the FIRST production-source mutation in
+        this entire bootstrap work; explicitly
+        authorized by the re-reviewer)
+C02  src/lexer.c::lexIdentifier legacy branch
+       = UNCHANGED (F10 conservation)
+C03  tools/bootstrap/bootstrap02-ident.HC
+       = UNCHANGED (B1 component not modified)
+C04  src/lexer_bridge.h
+       = UNCHANGED
+C05  Other production source files
+       = UNCHANGED
+
+------------------------------------------------------------
+Section D — C3 EVIDENCE required-result
+------------------------------------------------------------
+
+D01  REAL_LEXER_SEAM_6_OF_6          = REQUIRED_PASS
+       All 6 reviewer-specified inputs produce
+       byte-identical output between legacy and
+       stage1 builds, modulo BUILD_LABEL header.
+
+D02  EOF_CURSOR_STATE_EQUIVALENCE    = REQUIRED_PASS
+       For E4 ("abc" EOF), both builds must
+       leave l->ptr = src + 3 (AT the NUL),
+       eof_state = 1.
+
+D03  EOF_POINTER_SAFETY              = REQUIRED_PASS
+       For E4, stage1 must NOT advance l->ptr
+       past src + 3. l->ptr at src + 4 would be
+       one-past-end and undereferenceable.
+
+D04  NON_EOF_PRODUCTION_CURSOR_EQ    = REQUIRED_PASS
+       For E1, E2, E3, E5, E6, both builds must
+       produce byte-identical l->ptr and l->start.
+
+D05  STAGE0_STAGE1_OBJECT_PARITY     = REQUIRED_PASS
+       5/5 real production sources still produce
+       byte-identical objects.
+
+D06  PRODUCTION_HERMETIC             = REQUIRED_PASS
+       Default ./hcc still builds without B1.
+
+------------------------------------------------------------
+Section E — HALT predicates (NOT FIRED at C1 close)
+------------------------------------------------------------
+
+E01  HALT_RED_NOT_REPRODUCED         NOT_FIRED
+E02  HALT_SCOPE_EXPANSION_REQUIRED   NOT_FIRED
+E03  HALT_IMPL_ALREADY_DONE          NOT_FIRED
+E04  HALT_PRODUCTION_UB_UNFIXED      NOT_FIRED
+       (will fire at C3 if D02/D03 fail)
+
+------------------------------------------------------------
+Section F — C1 verdict
+------------------------------------------------------------
+
+  ACT-Phase                          = RED
+  C1_TO_C2_IMPL_GATE                 = OPEN
+  Defect P0 (EOF cursor UB)          = DOCUMENTED
+  Defect P2 (l->start_after)         = DOCUMENTED
+  Production-source authorization     = GRANTED
+  Scope restriction                  = lexIdentifier
+                                       stage1 branch
+                                       ONLY
+
+C1 RED may pass the baton to C2 IMPL.

@@ -1,0 +1,60 @@
+ACT-POLYC-BOOTSTRAP02-C2-CORRECTION03 — C1 RED —
+desired postcondition for the real-Lexer seam
+==================================================
+
+The re-reviewer specified the desired postcondition
+in plain prose:
+
+    "after stage1 lexIdentifier:
+
+     l->ptr       == legacy l->ptr
+     l->start     == legacy l->start
+     l->cur_strlen == legacy l->cur_strlen
+     Lexeme       == legacy Lexeme
+
+     for all six real-Lexer cases."
+
+This translates to the following machine-diffable
+predicates (which are what the C3 EVIDENCE will
+verify):
+
+  Field-by-field byte-identity (6/6 inputs):
+
+    Field            | Predicted | Justification
+    -----------------+-----------+-----------------------
+    start_before     | MATCH     | Both start at same
+                     |           | src position
+    ptr_before       | MATCH     | Both start at same
+                     |           | src position
+    cur_strlen_pre   | MATCH     | 0 in both
+    start_after      | MATCH     | Now mechanical (the
+                     |           | fix sets both to
+                     |           | final_ptr)
+    ptr_after        | MATCH     | Now mechanical (the
+                     |           | fix removes the +1)
+    cur_strlen_post  | MATCH     | Both set from end_off
+    next_byte_hex    | MATCH     | *final_ptr in both
+    eof_state        | MATCH     | Mechanical consequence
+                     |           | of ptr_after match
+    le_start_off     | MATCH     | Captured pre-call
+    le_len           | MATCH     | Set from l->cur_strlen
+
+  EOF_CURSOR_STATE_EQUIVALENCE:
+    ptr_after at E4: legacy = 3, stage1 = 3
+    eof_state at E4: legacy = 1, stage1 = 1
+
+  EOF_POINTER_SAFETY:
+    For input "abc" (src_len = 3), stage1 leaves
+    l->ptr = src + 3, NOT src + 4. So the next
+    lexNextChar reads src[3] (the NUL), which is
+    guaranteed accessible per the C memory model.
+
+  NON_EOF_PRODUCTION_CURSOR_EQUIVALENCE:
+    For inputs E1, E2, E3, E5, E6 (non-EOF),
+    both builds produce byte-identical l->ptr
+    and l->start (pointing at the non-identifier
+    byte).
+
+These predicates will be promoted from "PASS_WITH_
+RESIDUE" to "PASS" in the C2 evidence trail after
+the fix.

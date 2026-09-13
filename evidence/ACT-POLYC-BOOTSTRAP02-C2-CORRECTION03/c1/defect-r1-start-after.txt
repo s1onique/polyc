@@ -1,0 +1,51 @@
+ACT-POLYC-BOOTSTRAP02-C2-CORRECTION03 — C1 RED —
+defect P2 (folded from R1 of CORRECTION02):
+l->start_after divergence
+==================================================
+
+The real-Lexer seam witness established this
+mechanically:
+
+  legacy:    l->start_after = l->ptr_after
+            (set by the LAST lexNextChar in the
+             legacy identifier loop)
+
+  stage1:    l->start_after = l->start_at_pre_call
+            (the B1 path never sets l->start;
+             src/lexer.c:911-939 only sets
+             l->cur_strlen and l->ptr)
+
+Re-reviewer verdict (CORRECTION02 re-review):
+
+    "If that data-flow claim holds across all users,
+     this is an internal invariant mismatch with no
+     current observable consequence."
+
+The grep audit (searching for `l->start` reads
+after lexIdentifier in src/lexer.c lines 960-1557,
+src/parser.c, src/cctrl.c, src/ast.c,
+src/compile.c) shows:
+
+  - The only read of `l->start` is at
+    src/lexer.c:1209 (`start = l->start`),
+    which is BEFORE `ch = lexNextChar(l)` on the
+    NEXT iteration. So `l->start` is captured
+    fresh by the next `lexNextChar` overwriting it.
+
+  - No consumer (parser, controller, AST builder,
+    compile driver) reads `l->start` directly.
+
+Severity: P2 / cleanup. BLOCKS_NEXT = NO.
+
+However, the reviewer's recommended fix is
+simpler than continuing to argue about
+reachability:
+
+    "Reproduce the legacy postcondition rather than
+     arguing that no current consumer sees it. That
+     costs almost nothing and removes an unnecessary
+     state-invariant divergence."
+
+This correction ACT folds the l->start fix into
+the same bounded production-source change as the
+EOF fix. The combined fix is two lines.
