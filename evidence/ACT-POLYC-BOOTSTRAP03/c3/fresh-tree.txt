@@ -1,0 +1,70 @@
+ACT-POLYC-BOOTSTRAP03 — C3 — fresh-tree evidence
+================================================
+
+Per ACT §32 and AGENTS.md F9: prefer fresh builds; record
+the exact tree state at C3 capture.
+
+------------------------------------------------------------
+C3 capture identity
+------------------------------------------------------------
+
+```text
+branch                  = main
+worktree                = clean (only ACT/evidence files untracked before add)
+git replace             = empty
+HEAD (C3 capture start) = 5e9d140 ACT-POLYC-BOOTSTRAP03 — C2 IMPL
+```
+
+------------------------------------------------------------
+Build state at C3 entry
+------------------------------------------------------------
+
+```text
+$ ls -la build/hcc build/hcc-bootstrap02 build/hcc-bootstrap03 \
+                 build/bootstrap02-ident.o \
+                 build/bootstrap03-ident.stage1.o
+
+-rw-r--r--  build/bootstrap02-ident.o         (stage0 → stage1 B1 object)
+-rw-r--r--  build/bootstrap03-ident.stage1.o  (stage1 → stage2 B1 object)
+-rwxr-xr-x  build/hcc                          (stage0 ordinary compiler)
+-rwxr-xr-x  build/hcc-bootstrap02              (stage1; carries B1)
+-rwxr-xr-x  build/hcc-bootstrap03              (stage2; carries B1)
+```
+
+------------------------------------------------------------
+Fresh rebuild protocol (§32)
+------------------------------------------------------------
+
+Per F9 (fresh-tree evidence outranks warm-tree), C3
+re-runs the entire build chain from the current source
+tree at C3 capture time, then runs all gates against the
+freshly produced binaries. The previously-built
+binaries at C2 commit time are NOT relied on.
+
+```text
+$ make bootstrap02-stage1          (rebuilds stage1)
+$ make bootstrap03-component-build  (rebuilds stage1 B1 object)
+$ make bootstrap03-stage2          (rebuilds stage2)
+$ make bootstrap03-test            (stage2 differential)
+$ python3 tools/quality/bootstrap03-corpus-runner.py ...
+```
+
+------------------------------------------------------------
+Working-tree mutation scope (B2 ACT §30 + C3)
+------------------------------------------------------------
+
+The following directories are .gitignore'd and contain
+fresh build output for C3 capture:
+
+```text
+build/hcc                    (stage0)
+build/hcc-bootstrap02        (stage1)
+build/hcc-bootstrap03        (stage2)
+build/bootstrap02-ident.o    (stage0 → stage1 B1 object)
+build/bootstrap03-ident.stage1.o  (stage1 → stage2 B1 object)
+build/b03-corpus-A/, build/b03-corpus-A2/  (Build A artifacts)
+build/b03-corpus-B/, build/b03-corpus-B2/  (Build B artifacts)
+build/b03-self-source.o       (stage2 → B1 self-source property)
+```
+
+No binary file under `evidence/` is committed.

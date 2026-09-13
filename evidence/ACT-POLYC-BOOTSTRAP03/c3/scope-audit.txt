@@ -1,0 +1,109 @@
+ACT-POLYC-BOOTSTRAP03 — C3 — scope audit
+========================================
+
+Per ACT §7, §34 (AC-C3-46..AC-C3-50): verify B1 semantics
+unchanged, no parser/AST/IR/backend widening, no stage3,
+no prior evidence mutation, no committed binary
+evidence.
+
+------------------------------------------------------------
+B1 semantics unchanged (AC-C3-46)
+------------------------------------------------------------
+
+```text
+$ git diff --name-only 9e67a75 HEAD -- \
+    tools/bootstrap/bootstrap02-ident.HC \
+    src/lexer.c \
+    src/lexer_bridge.h
+(no matches)
+```
+
+The B1 component source, the production lexIdentifier
+delegate, and the bridge header are all untouched.
+
+------------------------------------------------------------
+No parser/AST/IR/backend widening (AC-C3-47)
+------------------------------------------------------------
+
+Files modified by B2:
+
+```text
+$ git diff --name-only 9e67a75 HEAD -- 'src/*.c' 'src/*.h'
+(no matches)
+
+$ git diff --name-only 9e67a75 HEAD
+Makefile
+src/CMakeLists.txt
+docs/acts/ACT-POLYC-BOOTSTRAP03.md
+evidence/ACT-POLYC-BOOTSTRAP03/c1/...
+evidence/ACT-POLYC-BOOTSTRAP03/c2/...
+evidence/ACT-POLYC-BOOTSTRAP03/c3/...
+tools/quality/bootstrap03-corpus-runner.py
+tools/quality/bootstrap03-error-corpus.py
+```
+
+Only `Makefile`, `src/CMakeLists.txt`, the ACT doc,
+the B2 evidence tree, and the two B2-specific
+test-only runners. No production `src/*.c` or `src/*.h`
+was modified.
+
+------------------------------------------------------------
+No stage3 (AC-C3-48)
+------------------------------------------------------------
+
+```text
+$ grep -n 'bootstrap04\|stage3\|hcc-bootstrap04' \
+    Makefile src/CMakeLists.txt docs/acts/ACT-POLYC-BOOTSTRAP03.md
+(no matches in any committed file at C3)
+```
+
+Stage3 is forbidden by §40 of the ACT and is not
+attempted here.
+
+------------------------------------------------------------
+Prior evidence mutation (AC-C3-49)
+------------------------------------------------------------
+
+```text
+$ git diff --name-only 9e67a75 HEAD -- \
+    evidence/ACT-POLYC-BOOTSTRAP02/ \
+    evidence/ACT-POLYC-BOOTSTRAP02-C1-CORRECTION01/ \
+    evidence/ACT-POLYC-BOOTSTRAP02-C2-CORRECTION01/ \
+    evidence/ACT-POLYC-BOOTSTRAP02-C2-CORRECTION02/ \
+    evidence/ACT-POLYC-BOOTSTRAP02-C2-CORRECTION03/
+(no matches)
+```
+
+F14 (Current truth may invalidate history) is
+respected: prior evidence is not mutated.
+
+------------------------------------------------------------
+No committed binary evidence (AC-C3-50)
+------------------------------------------------------------
+
+```text
+$ git diff --name-only 9e67a75 HEAD | grep -E '\.(o|a|dylib|so)$|hcc$|hcc-'
+(no matches)
+
+$ find evidence/ACT-POLYC-BOOTSTRAP03 -type f \
+    \( -name '*.o' -o -name '*.a' -o -name '*.dylib' \
+       -o -name '*.so' -o -name 'hcc*' \)
+(no output)
+```
+
+Only textual evidence (commands, hashes, matrices,
+summaries) is committed.
+
+------------------------------------------------------------
+Verdict
+------------------------------------------------------------
+
+```text
+B1_SEMANTICS_UNCHANGED              = YES
+NO_PARSER_AST_IR_BACKEND_WIDENING   = YES
+STAGE3_ABSENT                       = YES
+PRIOR_EVIDENCE_MUTATION             = ZERO
+COMMITTED_BINARY_EVIDENCE           = ZERO
+
+SCOPE_AUDIT                         = PASS
+```

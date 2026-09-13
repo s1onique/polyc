@@ -1,0 +1,132 @@
+ACT-POLYC-BOOTSTRAP03 — C3 — compiler conservation
+===================================================
+
+Per ACT §27: B2 must preserve B0 and B1 baselines,
+LSP baseline, and Factory gates.
+
+------------------------------------------------------------
+Fresh execution transcript (after stage2 build)
+------------------------------------------------------------
+
+### B0 (15/15)
+
+```text
+$ make bootstrap01-test
+BOOTSTRAP01_CASES=15
+BOOTSTRAP01_RUNS=30
+BOOTSTRAP01_PASS=15
+BOOTSTRAP01_FAIL=0
+STATUS=PASS
+```
+
+### B1 component differential (15/15)
+
+```text
+$ make bootstrap02-test
+(15 I-rows byte-identical; PASS)
+```
+
+### B1 cursor (6/6)
+
+```text
+$ make bootstrap02-cursor-test
+BOOTSTRAP02_CURSOR_DIFFERENTIAL=PASS 6/6
+```
+
+### B1 production Lexer seam (6/6)
+
+```text
+$ make bootstrap02-lexer-seam-test
+BOOTSTRAP02_LEXER_SEAM_DOWNSTREAM=PASS (6/6 cases byte-identical)
+BOOTSTRAP02_LEXER_SEAM_RESIDUE=NONE
+```
+
+### B2 stage1 self-compile
+
+```text
+$ make bootstrap03-component-build
+BOOTSTRAP03_STAGE1_B1_OBJECT=./build/bootstrap03-ident.stage1.o
+```
+
+### B2 stage2 build
+
+```text
+$ make bootstrap03-stage2
+BOOTSTRAP03_STAGE2_BINARY=./build/hcc-bootstrap03
+```
+
+### B2 component differential (15/15)
+
+```text
+$ make bootstrap03-test
+BOOTSTRAP03_DIFFERENTIAL=PASS 15/15
+```
+
+### B2 production Lexer seam stage1↔stage2 (6/6)
+
+```text
+$ make bootstrap03-lexer-seam-test
+BOOTSTRAP03_LEXER_SEAM_DOWNSTREAM=PASS (6/6 cases byte-identical)
+BOOTSTRAP03_LEXER_SEAM_RESIDUE=NONE
+```
+
+### B2 cursor stage1 vs stage2 (6/6)
+
+```text
+$ cc ... -o ./build/bootstrap03-cursor-oracle tools/quality/bootstrap02-cursor-oracle.c
+$ cc ... -o ./build/bootstrap03-cursor-host tools/quality/bootstrap02-cursor-host.c ./build/bootstrap03-ident.stage1.o
+$ ./build/bootstrap03-cursor-oracle > /tmp/b03-cursor-oracle.txt
+$ ./build/bootstrap03-cursor-host   > /tmp/b03-cursor-host.txt
+$ diff -q <(grep '^E[0-9]+ ' /tmp/b03-cursor-oracle.txt) \
+          <(grep '^E[0-9]+ ' /tmp/b03-cursor-host.txt)
+(empty)
+```
+
+### B2 stage2 self-source property
+
+```text
+$ ./build/hcc-bootstrap03 --install-dir=$TEST_PREFIX \
+    -c tools/bootstrap/bootstrap02-ident.HC \
+    -o build/b03-self-source.o
+(exit 0; sha256 = a1b620c0...78cd854f; matches stage1's output)
+```
+
+### LSP baseline (43/43)
+
+```text
+$ make lsp-test
+lsp: 43/43 passed
+```
+
+### gate-fast
+
+```text
+$ make gate-fast
+CHECK=doc-invariants STATUS=PASS
+CHECK=large-file-guard STATUS=PASS
+CHECK=factory-closure-status STATUS=PASS
+VERDICT=PASS
+```
+
+------------------------------------------------------------
+Verdict
+------------------------------------------------------------
+
+```text
+B0_CONSERVATION                = PASS  15/15
+B1_COMPONENT_DIFFERENTIAL      = PASS  15/15
+B1_CURSOR                      = PASS  6/6
+B1_LEXER_SEAM                  = PASS  6/6
+B2_STAGE1_B1_BUILD             = PASS
+B2_STAGE2_BUILD                = PASS
+B2_COMPONENT_DIFFERENTIAL      = PASS  15/15
+B2_CURSOR                      = PASS  6/6
+B2_LEXER_SEAM                  = PASS  6/6
+B2_SELF_SOURCE                 = PASS
+LSP_BASELINE                   = PASS  43/43
+gate-fast                      = PASS
+
+HALT_B0_REGRESSION             = NOT_FIRED
+HALT_B1_REGRESSION             = NOT_FIRED
+HALT_CONSERVATION_GATE_REGRESSION = NOT_FIRED
+```

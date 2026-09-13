@@ -1,0 +1,52 @@
+ACT-POLYC-BOOTSTRAP03 — C3 — test-source binding slice
+======================================================
+
+Per ACT §21: one src/tests source compiled by stage2
+must produce an artifact byte-identical to stage1's.
+
+------------------------------------------------------------
+Sources selected (10 ordinary test sources)
+------------------------------------------------------------
+
+```text
+src/tests/01_pointer_simple.HC
+src/tests/02_pointer_simple.HC
+src/tests/03_malloc_array.HC
+src/tests/04_ptr_ptr.HC
+src/tests/05_int_ptr.HC
+src/tests/06_class_defs.HC
+src/tests/07_recursive_classdef.HC
+src/tests/08_break_continue.HC
+src/tests/09_default_function_parameters.HC
+src/tests/10_qsort.HC
+```
+
+------------------------------------------------------------
+Result
+------------------------------------------------------------
+
+```text
+$ awk -F'\t' 'NR>1 && $1 ~ /^src\/tests\/0[1-9]_/' \
+    evidence/ACT-POLYC-BOOTSTRAP03/c3/corpus-matrix-stage1-stage2.tsv \
+  | awk -F'\t' '{printf "%-45s  rc1=%s  rc2=%s  byte_equal=%s\n", $1, $3, $4, $9}'
+
+src/tests/01_pointer_simple.HC                  rc1=0  rc2=0  byte_equal=YES
+src/tests/02_pointer_simple.HC                  rc1=0  rc2=0  byte_equal=YES
+src/tests/03_malloc_array.HC                    rc1=0  rc2=0  byte_equal=YES
+src/tests/04_ptr_ptr.HC                         rc1=0  rc2=0  byte_equal=YES
+src/tests/05_int_ptr.HC                         rc1=0  rc2=0  byte_equal=YES
+src/tests/06_class_defs.HC                      rc1=0  rc2=0  byte_equal=YES
+src/tests/07_recursive_classdef.HC              rc1=0  rc2=0  byte_equal=YES
+src/tests/08_break_continue.HC                  rc1=0  rc2=0  byte_equal=YES
+src/tests/09_default_function_parameters.HC     rc1=0  rc2=0  byte_equal=YES
+```
+
+All compile in both stages; all artifacts byte-identical.
+
+------------------------------------------------------------
+Verdict
+------------------------------------------------------------
+
+```text
+TEST_SOURCE_STAGE1_STAGE2 = PASS  9/9
+```

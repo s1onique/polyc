@@ -1,0 +1,97 @@
+ACT-POLYC-BOOTSTRAP03 — C3 — component differential
+===================================================
+
+Per ACT §18: compile tools/bootstrap/bootstrap02-ident.HC
+with stage0, stage1, and stage2, and compare.
+
+------------------------------------------------------------
+Build commands
+------------------------------------------------------------
+
+```text
+# Stage0
+./hcc --install-dir=$TEST_PREFIX \
+    -c tools/bootstrap/bootstrap02-ident.HC \
+    -o build/c3-experiment/s0-bootstrap02-ident.o
+
+# Stage1
+./build/hcc-bootstrap02 --install-dir=$TEST_PREFIX \
+    -c tools/bootstrap/bootstrap02-ident.HC \
+    -o build/c3-experiment/s1-bootstrap02-ident.o
+
+# Stage2
+./build/hcc-bootstrap03 --install-dir=$TEST_PREFIX \
+    -c tools/bootstrap/bootstrap02-ident.HC \
+    -o build/c3-experiment/s2-bootstrap02-ident.o
+```
+
+------------------------------------------------------------
+Observed
+------------------------------------------------------------
+
+```text
+$ sha256sum build/c3-experiment/s?-bootstrap02-ident.o
+a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f  build/c3-experiment/s0-bootstrap02-ident.o
+a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f  build/c3-experiment/s1-bootstrap02-ident.o
+a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f  build/c3-experiment/s2-bootstrap02-ident.o
+
+$ size build/c3-experiment/s?-bootstrap02-ident.o
+   2704  build/c3-experiment/s0-bootstrap02-ident.o
+   2704  build/c3-experiment/s1-bootstrap02-ident.o
+   2704  build/c3-experiment/s2-bootstrap02-ident.o
+
+$ for f in build/c3-experiment/s?-bootstrap02-ident.o; do
+    PATH=/tmp/polyc-shim:$PATH nm $f | grep _BootstrapScanIdent
+  done
+00000000000002e0 T _BootstrapScanIdent
+00000000000002e0 T _BootstrapScanIdent
+00000000000002e0 T _BootstrapScanIdent
+```
+
+------------------------------------------------------------
+Verdict
+------------------------------------------------------------
+
+```text
+S0_B1_OBJ_SHA      = a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f
+S1_B1_OBJ_SHA      = a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f
+S2_B1_OBJ_SHA      = a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f
+
+S0_B1_OBJ_SHA == S1_B1_OBJ_SHA == S2_B1_OBJ_SHA       YES
+
+B1_OBJECT_STAGE0_STAGE1_EQ = PASS
+B1_OBJECT_STAGE1_STAGE2_EQ = PASS
+```
+
+All three stages emit byte-identical B1 objects. This is
+the strongest determinism witness of the closed
+self-host chain:
+
+> Three compiler stages, all carrying the same PolyC B1
+> component, when asked to compile the B1 source
+> themselves, produce byte-identical output.
+
+The byte-equality is incidental to the structural proof
+(provenance = stage1); it is a beneficial side effect of
+the deterministic host-clang backend.
+
+------------------------------------------------------------
+Why byte equality is NOT the B2 primary witness
+------------------------------------------------------------
+
+Per ACT §5:
+
+> A matching SHA between stage0 and stage1 B1 objects is
+> desirable but not sufficient to prove provenance.
+> You need causal binding, not merely equal bytes.
+
+The B2 primary witness is the build graph:
+
+```text
+stage1 -> build/bootstrap03-ident.stage1.o  (record 1)
+stage2 -> target_link_libraries(hcc-bootstrap03 ${BOOTSTRAP03_IDENT_OBJECT} m)
+         with BOOTSTRAP03_IDENT_OBJECT = build/bootstrap03-ident.stage1.o
+```
+
+This evidence file records the **secondary** witness
+(byte equality) which is informative but not load-bearing.

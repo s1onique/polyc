@@ -1,0 +1,68 @@
+ACT-POLYC-BOOTSTRAP03 — C3 — stage2 delegation witness
+=======================================================
+
+Dynamic delegation proof: stage2 lexIdentifier actually
+calls the B1 component, AND stage2 compiles a real
+PolyC source that exercises identifier scanning
+(including `$`-identifiers).
+
+------------------------------------------------------------
+Static disassembly (mirrors B1 stage1)
+------------------------------------------------------------
+
+```text
+$ otool -tv build/hcc-bootstrap03 | grep -B1 -A1 'BootstrapScanIdent'
+00000001000303f0	mov	x2, #0x0
+00000001000303f4	bl	_BootstrapScanIdent
+00000001000303f8	cbz	w0, 0x100030414
+--
+000000010003145c	mov	x2, #0x0
+0000000100031460	bl	_BootstrapScanIdent
+0000000100031464	cbz	w0, 0x100031bb0
+--
+000000010007c314	ret
+_BootstrapScanIdent:
+000000010007c318	stp	x29, x30, [sp, #-0x10]!
+```
+
+Two `bl _BootstrapScanIdent` instruction sites. Both
+land inside stage2's linked image at addresses in the
+production code segment, not the B1 component object
+(loaded separately at link time and resolved by the
+static linker).
+
+------------------------------------------------------------
+Dynamic compile (mandatory $-identifier source)
+------------------------------------------------------------
+
+```text
+$ ls -la build/b03-corpus-B/6_dir.o
+-rw-r--r--  ... build/b03-corpus-B/6_dir.o
+
+$ nm build/b03-corpus-B/6_dir.o | grep -i 'opendir'
+                 U _opendir$INODE64
+```
+
+Stage2 (hcc-bootstrap03) successfully compiled
+src/holyc-lib/dir.HC, which contains the real $-bearing
+identifier `_opendir$INODE64`. The unresolved external
+in the resulting object proves the lexer scanned the
+full identifier span including `$` — exactly the path
+that the B1 component is responsible for.
+
+The compile succeeded, the artifact was produced, and
+its SHA matches stage1's artifact byte-for-byte.
+
+------------------------------------------------------------
+Verdict
+------------------------------------------------------------
+
+```text
+STAGE2_DELEGATION_BL_SITES       = 2
+STAGE2_DELEGATION_TARGET         = _BootstrapScanIdent
+STAGE2_DELEGATION_IN_SAME_SEGMENT = YES
+STAGE2_B1_DELEGATION_PROVEN_NONZERO = YES
+STAGE2_DYNAMIC_DELEGATION_PROVEN = YES  (src/holyc-lib/dir.HC)
+
+HALT_STAGE2_BINDING_LOST         = NOT_FIRED
+```

@@ -1,0 +1,99 @@
+ACT-POLYC-BOOTSTRAP03 — C3 — $-identifier binding slice
+=======================================================
+
+Per ACT §21: the corpus is filtered for sources that
+contain `$`-identifiers. Stage1 and stage2 must produce
+byte-identical artifacts for these sources because the
+B1 component is the entity responsible for accepting the
+`$` continuation rule.
+
+------------------------------------------------------------
+Filter
+------------------------------------------------------------
+
+```text
+$ awk -F'\t' 'NR>1 && $2=="1"' \
+    evidence/ACT-POLYC-BOOTSTRAP03/c3/corpus-matrix-stage1-stage2.tsv
+```
+
+------------------------------------------------------------
+$-identifier sources (3 sources)
+------------------------------------------------------------
+
+```text
+src/holyc-lib/dir.HC    has_dollar=1
+src/tests/30_fzf.HC     has_dollar=1
+src/tests/run_shared.HC has_dollar=1
+```
+
+All three contain real `$`-identifiers (e.g.
+`_opendir$INODE64` in dir.HC) that would fail under
+the B0 grammar `[A-Za-z_][A-Za-z0-9_]*` but pass under
+the production grammar `[A-Za-z_][A-Za-z0-9_$]*` that the
+B1 component implements.
+
+------------------------------------------------------------
+Per-source stage1 ↔ stage2 result
+------------------------------------------------------------
+
+```text
+$ awk -F'\t' 'NR>1 && $2=="1" {printf "%-30s  rc1=%s  rc2=%s  verdict=%s\n", $1, $3, $4, $10}' \
+    evidence/ACT-POLYC-BOOTSTRAP03/c3/corpus-matrix-stage1-stage2.tsv
+
+src/holyc-lib/dir.HC        rc1=0  rc2=0  verdict=STAGE1_PASS_STAGE2_PASS
+src/tests/30_fzf.HC         rc1=0  rc2=0  verdict=STAGE1_PASS_STAGE2_PASS
+src/tests/run_shared.HC     rc1=0  rc2=0  verdict=STAGE1_PASS_STAGE2_PASS
+```
+
+------------------------------------------------------------
+Artifact byte equality
+------------------------------------------------------------
+
+```text
+$ for path in src/holyc-lib/dir.HC src/tests/30_fzf.HC src/tests/run_shared.HC; do
+    grep -E "^$path\t" evidence/ACT-POLYC-BOOTSTRAP03/c3/corpus-matrix-stage1-stage2.tsv \
+      | awk -F'\t' '{print $1, "byte_equal=" $9}'
+  done
+src/holyc-lib/dir.HC        byte_equal=YES
+src/tests/30_fzf.HC         byte_equal=YES
+src/tests/run_shared.HC     byte_equal=YES
+```
+
+All 3 $-identifier sources compile in stage1 AND stage2,
+producing byte-identical artifacts.
+
+------------------------------------------------------------
+Mandatory $-source dynamic delegation
+------------------------------------------------------------
+
+```text
+src/holyc-lib/dir.HC contains:
+  public _extern _opendir$INODE64 cDIR *opendir(U8 *dirname);
+  public _extern _readdir$INODE64 Dirent *readdir(cDIR *dir);
+  public _extern _opendir         cDIR *opendir(U8 *dirname);
+```
+
+Stage2's successful compile of dir.HC proves that the
+B1 component correctly scanned `_opendir$INODE64` as a
+single identifier span (the production grammar accepts
+`$` in continuation; the B0 grammar would not have).
+
+If the B1 component were absent or broken in stage2,
+the lexer would have terminated the identifier at the
+`_` preceding `$INODE64`, leaving `$INODE64` as a stray
+token, which would then fail at the parser stage. The
+successful compile proves the delegation fired.
+
+------------------------------------------------------------
+Verdict
+------------------------------------------------------------
+
+```text
+$-IDENTIFIER_SOURCES              = 3
+$-IDENTIFIER_STAGE1_PASS          = 3
+$-IDENTIFIER_STAGE2_PASS          = 3
+$-IDENTIFIER_BYTE_IDENTICAL       = 3
+
+DOLLAR_IDENTIFIER_STAGE1_STAGE2   = PASS
+STAGE2_B1_DELEGATION_PROVEN_NONZERO = YES
+```

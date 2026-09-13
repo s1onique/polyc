@@ -1,0 +1,85 @@
+ACT-POLYC-BOOTSTRAP03 — C3 — stage provenance
+==============================================
+
+Captured at C3 capture time on the freshly-rebuilt tree.
+
+------------------------------------------------------------
+Stage0: ordinary ./hcc
+------------------------------------------------------------
+
+```text
+path          = ./hcc, build/hcc
+size (bytes)  = 740752
+sha256        = 2bc41eef0cce2e50b7126a756527adad45f751c0e31833018dddcd7445725a89
+_BootstrapScanIdent = ABSENT (nm returns nothing)
+producer of   = nothing (this is the source stage)
+consumer of   = nothing (this is the source stage)
+```
+
+------------------------------------------------------------
+Stage1: build/hcc-bootstrap02
+------------------------------------------------------------
+
+```text
+path          = build/hcc-bootstrap02
+size (bytes)  = 742160
+sha256        = 3435e4dc288f04fbe8c3683639b1d14333f2f9c835ab72383faa0a6924a776b6
+_BootstrapScanIdent = DEFINED  (T 0x10007c318)
+producer of   = build/bootstrap03-ident.stage1.o
+                (compiled by ./build/hcc-bootstrap02)
+consumer of   = build/bootstrap02-ident.o
+                (linked from stage0's B1 object)
+```
+
+------------------------------------------------------------
+Stage2: build/hcc-bootstrap03
+------------------------------------------------------------
+
+```text
+path          = build/hcc-bootstrap03
+size (bytes)  = 742160
+sha256        = f885d61200689c9e6f218798ce3f265f9133e057d2c9cd27c1046997400ec1ac
+_BootstrapScanIdent = DEFINED  (T 0x10007c318)
+producer of   = (not asked for in B2; B3 will define stage3)
+consumer of   = build/bootstrap03-ident.stage1.o
+                (the STAGE1-produced B1 object)
+```
+
+------------------------------------------------------------
+Three-stage binary coexistence (binding)
+------------------------------------------------------------
+
+```text
+STAGE0_PRESENT   = YES  (./hcc)
+STAGE1_PRESENT   = YES  (./build/hcc-bootstrap02)
+STAGE2_PRESENT   = YES  (./build/hcc-bootstrap03)
+
+STAGE0_B1_SYMBOL = ABSENT
+STAGE1_B1_SYMBOL = DEFINED
+STAGE2_B1_SYMBOL = DEFINED
+```
+
+None of the three binaries overwrites the other. Stage2
+binary SHA differs from stage1 (different intermediate
+build state captured at different instants), but the
+B1 component carried by each is the same PolyC source
+compiled by different stages.
+
+------------------------------------------------------------
+Source-of-truth binding (provenance chain)
+------------------------------------------------------------
+
+```text
+SOURCE:
+  tools/bootstrap/bootstrap02-ident.HC  (PolyC)
+
+GENERATION 1 (B1, predecessor ACT):
+  stage0 ./hcc
+    -> build/bootstrap02-ident.o
+    -> linked into build/hcc-bootstrap02  (stage1)
+
+GENERATION 2 (B2, this ACT):
+  stage1 ./build/hcc-bootstrap02
+    -> build/bootstrap03-ident.stage1.o
+    -> linked into build/hcc-bootstrap03  (stage2)
+```

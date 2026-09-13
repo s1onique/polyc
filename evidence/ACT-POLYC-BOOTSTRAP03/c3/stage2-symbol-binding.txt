@@ -1,0 +1,43 @@
+ACT-POLYC-BOOTSTRAP03 — C3 — stage2 symbol binding
+==================================================
+
+Static binding proof: stage2 contains _BootstrapScanIdent.
+
+------------------------------------------------------------
+nm output (stage2)
+------------------------------------------------------------
+
+```text
+$ nm build/hcc-bootstrap03 | grep _BootstrapScanIdent
+000000010007c318 T _BootstrapScanIdent
+```
+
+Stage2 defines `_BootstrapScanIdent` as a text symbol
+in the production code segment at the same address as
+stage1's (0x10007c318), confirming the B1 component is
+linked into stage2.
+
+------------------------------------------------------------
+Comparison with stage1
+------------------------------------------------------------
+
+```text
+$ nm build/hcc-bootstrap02 | grep _BootstrapScanIdent
+000000010007c318 T _BootstrapScanIdent
+```
+
+Same address. The B1 component occupies the same code
+slot in both stages because both stages link the same
+PolyC B1 source compiled by the same host-clang backend.
+
+------------------------------------------------------------
+Verdict
+------------------------------------------------------------
+
+```text
+STAGE2_CONTAINS_B1_SYMBOL = YES
+STAGE1_B1_SYMBOL_ADDRESS  = 0x10007c318
+STAGE2_B1_SYMBOL_ADDRESS  = 0x10007c318
+
+STAGE2_COMPONENT_LINKED   = YES
+```

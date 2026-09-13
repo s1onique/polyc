@@ -1,0 +1,43 @@
+ACT-POLYC-BOOTSTRAP03 — C3 — stage2 normal-source slice
+=======================================================
+
+Per ACT §21: one normal `src/holyc-lib` source compiled
+by stage2 must produce an artifact byte-identical to
+stage1's. This is a binding-slice witness.
+
+------------------------------------------------------------
+Sources selected
+------------------------------------------------------------
+
+```text
+src/holyc-lib/all.HC     (ordinary library, 0 $-identifiers)
+src/holyc-lib/csv.HC     (ordinary library, 0 $-identifiers)
+src/holyc-lib/dir.HC     (binding slice with $-identifiers)
+src/holyc-lib/except.HC  (ordinary library, 0 $-identifiers)
+src/holyc-lib/fzf.HC     (ordinary library, 0 $-identifiers)
+```
+
+------------------------------------------------------------
+Result
+------------------------------------------------------------
+
+```text
+$ awk -F'\t' 'NR>1 && $1 ~ /^src\/holyc-lib\/(all|csv|dir|except|fzf)\.HC$/ {printf "%-30s  rc1=%s  rc2=%s  byte_equal=%s\n", $1, $3, $4, $9}' \
+    evidence/ACT-POLYC-BOOTSTRAP03/c3/corpus-matrix-stage1-stage2.tsv
+
+src/holyc-lib/all.HC          rc1=0  rc2=0  byte_equal=YES
+src/holyc-lib/csv.HC          rc1=0  rc2=0  byte_equal=YES
+src/holyc-lib/dir.HC          rc1=0  rc2=0  byte_equal=YES
+src/holyc-lib/except.HC       rc1=0  rc2=0  byte_equal=YES
+src/holyc-lib/fzf.HC          rc1=0  rc2=0  byte_equal=YES
+```
+
+All compile in both stages; all artifacts byte-identical.
+
+------------------------------------------------------------
+Verdict
+------------------------------------------------------------
+
+```text
+NORMAL_SOURCE_STAGE1_STAGE2 = PASS  5/5
+```

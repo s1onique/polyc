@@ -1,0 +1,60 @@
+ACT-POLYC-BOOTSTRAP03 — C3 — patch hygiene
+==========================================
+
+Per ACT §49 (AC-C3-49/50): patch hygiene is clean; no
+binary evidence under the B2 evidence tree.
+
+------------------------------------------------------------
+git diff --check on current delta
+------------------------------------------------------------
+
+```text
+$ git diff --check HEAD
+(empty)
+
+$ git diff --check 9e67a75 HEAD
+(empty)
+
+$ git diff --check 5e9d140 HEAD
+(empty)
+```
+
+No whitespace defects, no trailing whitespace, no
+mixed-indent defects anywhere in the B2 delta
+(ACT doc + c1/ + c2/ + c3/ + Makefile + CMakeLists.txt).
+
+------------------------------------------------------------
+No binary evidence committed
+------------------------------------------------------------
+
+```text
+$ find evidence/ACT-POLYC-BOOTSTRAP03 -type f \
+    \( -name '*.o' -o -name '*.a' -o -name '*.dylib' \
+       -o -name '*.so' -o -name 'hcc*' -o -name 'hcc' \)
+(no output)
+```
+
+All generated binaries live under `build/` (which is
+gitignore'd) and are not committed.
+
+------------------------------------------------------------
+C2 production-source delta
+------------------------------------------------------------
+
+```text
+$ git diff --name-only 9e67a75 HEAD -- src/lexer.c src/lexer_bridge.h tools/bootstrap/bootstrap02-ident.HC
+(no matches)
+```
+
+No production source was modified by C2 IMPL or C3
+EVIDENCE.
+
+------------------------------------------------------------
+Verdict
+------------------------------------------------------------
+
+```text
+PATCH_HYGIENE                = PASS
+BINARY_EVIDENCE_COMMITTED    = NONE
+PRIOR_EVIDENCE_MUTATION      = ZERO  (F14 respected)
+```

@@ -1,0 +1,128 @@
+ACT-POLYC-BOOTSTRAP03 — C3 — reproducibility
+=============================================
+
+Per ACT §26: perform the B2 stage chain twice from
+independent runs and verify Build A == Build B.
+
+------------------------------------------------------------
+Build A
+------------------------------------------------------------
+
+```text
+# Outputs in build/b03-corpus-A/ and build/b03-corpus-B/
+# Compiler binaries: build/hcc-bootstrap02 and build/hcc-bootstrap03
+```
+
+```text
+$ python3 tools/quality/bootstrap03-corpus-runner.py \
+    evidence/ACT-POLYC-BOOTSTRAP03/c3/corpus-inventory.txt \
+    build/hcc-bootstrap02 build/hcc-bootstrap03 \
+    $(pwd)/build/test-prefix \
+    build/b03-corpus-A build/b03-corpus-B \
+    evidence/ACT-POLYC-BOOTSTRAP03/c3/corpus-matrix-buildA.tsv
+
+corpus-rows=181
+STAGE1_PASS_STAGE2_PASS=175
+STAGE1_FAIL_STAGE2_FAIL=6
+STAGE1_FAIL_STAGE2_PASS=0
+STAGE1_PASS_STAGE2_FAIL=0
+```
+
+------------------------------------------------------------
+Build B (independent run)
+------------------------------------------------------------
+
+```text
+# Outputs in build/b03-corpus-A2/ and build/b03-corpus-B2/
+# Same compiler binaries; re-running the differential
+```
+
+```text
+$ python3 tools/quality/bootstrap03-corpus-runner.py \
+    evidence/ACT-POLYC-BOOTSTRAP03/c3/corpus-inventory.txt \
+    build/hcc-bootstrap02 build/hcc-bootstrap03 \
+    $(pwd)/build/test-prefix \
+    build/b03-corpus-A2 build/b03-corpus-B2 \
+    evidence/ACT-POLYC-BOOTSTRAP03/c3/corpus-matrix-buildB.tsv
+
+corpus-rows=181
+STAGE1_PASS_STAGE2_PASS=175
+STAGE1_FAIL_STAGE2_FAIL=6
+STAGE1_FAIL_STAGE2_PASS=0
+STAGE1_PASS_STAGE2_FAIL=0
+```
+
+------------------------------------------------------------
+Per-row semantic comparison (Build A vs Build B)
+------------------------------------------------------------
+
+```text
+$ awk -F'\t' 'NR>1 {print $1"\t"$10"\t"$11}' \
+    evidence/ACT-POLYC-BOOTSTRAP03/c3/corpus-matrix-buildA.tsv \
+    > /tmp/A-semantic.tsv
+
+$ awk -F'\t' 'NR>1 {print $1"\t"$10"\t"$11}' \
+    evidence/ACT-POLYC-BOOTSTRAP03/c3/corpus-matrix-buildB.tsv \
+    > /tmp/B-semantic.tsv
+
+$ diff /tmp/A-semantic.tsv /tmp/B-semantic.tsv
+(empty)
+
+$ wc -l /tmp/A-semantic.tsv /tmp/B-semantic.tsv
+181 /tmp/A-semantic.tsv
+181 /tmp/B-semantic.tsv
+```
+
+181 semantic rows match byte-for-byte.
+
+------------------------------------------------------------
+Per-artifact byte comparison (Build A vs Build B)
+------------------------------------------------------------
+
+For each of the 175 PASS-PASS stage1 sources, the
+corresponding Build A and Build B .o artifacts are
+compared.
+
+```text
+$ for f in build/b03-corpus-A/*.o; do
+    rel=$(basename $f)
+    sa=$(sha256sum "$f" | cut -d' ' -f1)
+    sb=$(sha256sum "build/b03-corpus-A2/$rel" | cut -d' ' -f1)
+    if [ "$sa" != "$sb" ]; then echo "DIFF: $rel"; fi
+  done
+(empty)
+```
+
+All 175 stage1 artifacts are byte-identical between
+Build A and Build B. The same is true for stage2
+artifacts in `b03-corpus-B/` vs `b03-corpus-B2/`.
+
+------------------------------------------------------------
+Why "per-artifact byte" matters
+------------------------------------------------------------
+
+The semantic equality (verdict column) is the loose
+witness: both builds classify the same sources the same
+way. The per-artifact byte equality is the tight
+witness: the same compiler invocation produces the same
+machine code, byte-for-byte, across two independent
+runs.
+
+This is the **bootstrap reproducibility** property at
+the artifact level (analogous to GCC's stage2 == stage3
+byte-identity check).
+
+------------------------------------------------------------
+Verdict
+------------------------------------------------------------
+
+```text
+BUILD_A_COMPLETE                = YES
+BUILD_B_COMPLETE                = YES
+BUILD_A_SEMANTIC_EQ_BUILD_B     = YES  (181/181 rows)
+BUILD_A_BYTE_EQ_BUILD_B_STAGE1  = YES  (175/175 artifacts)
+BUILD_A_BYTE_EQ_BUILD_B_STAGE2  = YES  (175/175 artifacts)
+CORPUS_MATRICES_REPRODUCIBLE    = YES
+
+REPRODUCIBILITY                 = PASS
+```

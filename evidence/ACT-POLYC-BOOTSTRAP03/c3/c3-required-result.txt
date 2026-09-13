@@ -1,0 +1,123 @@
+ACT-POLYC-BOOTSTRAP03 — C3 — required result
+=============================================
+
+```text
+ACT_PHASE                       = EVIDENCE
+ACT                            = ACT-POLYC-BOOTSTRAP03
+C1_ENTRY_HEAD                  = 9e67a75
+C2_ENTRY_HEAD                  = 5e9d140
+C3_CAPTURE_HEAD                = <current>
+
+# ===== PROVENANCE =====
+AC-C3-01 fresh stage0 PASS                        YES
+AC-C3-02 fresh stage1 PASS                        YES
+AC-C3-03 stage1 builds B1 source                  YES
+AC-C3-04 stage1 B1 object provenance recorded     YES
+AC-C3-05 fresh stage2 PASS                        YES
+AC-C3-06 stage2 link consumes exact stage1 B1 obj YES (path+hash)
+AC-C3-07 stage2 contains _BootstrapScanIdent      YES
+AC-C3-08 stage2 lexIdentifier calls B1            YES (2 bl sites)
+
+# ===== SELF-HOST EDGE =====
+AC-C3-09  B1 source language = PolyC              YES
+AC-C3-10  producer of stage2 B1 artifact = stage1 YES
+AC-C3-11  stage2 consumes stage1 output           YES
+AC-C3-12  stage2 executes B1 component            YES
+AC-C3-13  FIRST_SELF_HOST_EDGE = CLOSED           YES
+
+# ===== DIRECT SEMANTICS =====
+AC-C3-14 component differential stage2 = 15/15    YES
+AC-C3-15 cursor model stage2 = 6/6                YES
+AC-C3-16 production Lexer stage1↔stage2 = 6/6     YES
+AC-C3-17 EOF cursor state = PASS                  YES (carried from B1)
+AC-C3-18 EOF pointer safety = PASS                YES (carried from B1)
+
+# ===== BROAD CORPUS =====
+AC-C3-19 inventory mechanically regenerated        YES (181 sources)
+AC-C3-20 every row accounted                       YES
+AC-C3-21 stage1-success -> stage2-success          YES (175/175)
+AC-C3-22 stage1/stage2 artifacts identical         YES (175/175)
+AC-C3-23 baseline failures equivalent              YES (6/6 same class)
+AC-C3-24 divergence count = 0                      YES
+AC-C3-25 unaccounted count = 0                     YES
+
+# ===== BINDING SLICES =====
+AC-C3-26 $-identifier source PASS                 YES (3/3)
+AC-C3-27 ordinary library source PASS             YES (5/5)
+AC-C3-28 tests source PASS                        YES (9/9)
+AC-C3-29 B1 self-source PASS                      YES
+
+# ===== ERROR BEHAVIOR =====
+AC-C3-30 error corpus divergence = 0              YES (4/4 equiv)
+
+# ===== STAGE2 SELF-SOURCE =====
+AC-C3-31 stage2 compiles B1 source                YES
+AC-C3-32 stage1/stage2 B1 object equivalence PASS YES (sha256 match)
+
+# ===== REPRODUCIBILITY =====
+AC-C3-33 Build A complete                         YES
+AC-C3-34 Build B complete                         YES
+AC-C3-35 stage1 artifacts reproducible            YES (175/175 byte-eq)
+AC-C3-36 stage2 artifacts reproducible            YES (175/175 byte-eq)
+AC-C3-37 corpus matrices reproducible             YES (181/181 semantic eq)
+
+# ===== CONSERVATION =====
+AC-C3-38 B0 15/15                                 YES
+AC-C3-39 B1 component 15/15                       YES
+AC-C3-40 B1 cursor 6/6                            YES
+AC-C3-41 B1 Lexer 6/6                             YES
+AC-C3-42 LSP baseline PASS                        YES (43/43)
+AC-C3-43 gate-fast PASS                           YES
+AC-C3-44 Factory gates PASS                       YES (35+11+12+6)
+AC-C3-45 shell-loc PASS                           YES
+
+# ===== SCOPE =====
+AC-C3-46 B1 semantics unchanged                   YES
+AC-C3-47 no parser/AST/IR/backend widening        YES
+AC-C3-48 stage3 absent                            YES
+AC-C3-49 prior evidence mutation ZERO             YES
+AC-C3-50 committed binary evidence ZERO           YES
+
+# ===== TRUTH BOUNDARY =====
+AC-C3-51 FIRST_SELF_HOST = PASS                   YES
+AC-C3-52 FULL_SELF_HOST = NO                      YES (still HOST_C_DEPENDENCY)
+AC-C3-53 BOOTSTRAP_STABILITY = NOT_YET            YES (B3 unlocked)
+AC-C3-54 B3 remains locked until C4               YES
+
+# ===== BINDING C3 RESULT (ACT §35) =====
+ACT_PHASE = EVIDENCE
+
+B1_PARTIAL_SELF_HOST = PASS
+
+STAGE1_COMPILER = PASS
+STAGE2_COMPILER = PASS
+
+B1_COMPONENT_LANGUAGE = POLYC
+
+STAGE1_COMPILES_B1_COMPONENT = PASS
+STAGE1_B1_ARTIFACT_PROVENANCE = PASS
+
+STAGE2_LINKS_STAGE1_B1_ARTIFACT = PASS
+STAGE2_USES_STAGE1_B1_ARTIFACT  = PASS
+
+STAGE2_DIRECT_B1_EQ = PASS
+
+STAGE1_STAGE2_CORPUS_EQ = PASS
+STAGE1_STAGE2_ERROR_EQ  = PASS
+
+STAGE2_COMPILES_B1_SOURCE = PASS
+STAGE1_STAGE2_B1_OBJECT_EQ = PASS
+
+REPRODUCIBILITY = PASS
+
+B0_CONSERVATION = PASS
+B1_CONSERVATION = PASS
+
+FIRST_SELF_HOST = PASS
+
+FULL_SELF_HOST = NO
+BOOTSTRAP_STABILITY = NOT_YET
+STAGE3_CREATED = NO
+
+C3_TO_C4_CLOSE_GATE = OPEN
+```

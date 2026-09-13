@@ -1,0 +1,118 @@
+ACT-POLYC-BOOTSTRAP03 — C3 — corpus summary
+============================================
+
+Per ACT §20: B2 compares stage1 ↔ stage2 across the
+frozen corpus (181 .HC sources under src/holyc-lib and
+src/tests, regenerated at C3 entry; not hard-coded).
+
+------------------------------------------------------------
+Section A — Inventory (binding)
+------------------------------------------------------------
+
+```text
+$ find src/holyc-lib src/tests -type f -name '*.HC' \
+    -print | LC_ALL=C sort \
+    > evidence/ACT-POLYC-BOOTSTRAP03/c3/corpus-inventory.txt
+
+$ wc -l evidence/ACT-POLYC-BOOTSTRAP03/c3/corpus-inventory.txt
+181 evidence/ACT-POLYC-BOOTSTRAP03/c3/corpus-inventory.txt
+```
+
+CORPUS_INVENTORY_COUNT = 181
+
+------------------------------------------------------------
+Section B — Compilation recipe (stage1 ↔ stage2)
+------------------------------------------------------------
+
+```text
+./build/hcc-bootstrap02 --install-dir=$TEST_PREFIX \
+    -c <src> -o <stage1-output>
+./build/hcc-bootstrap03 --install-dir=$TEST_PREFIX \
+    -c <src> -o <stage2-output>
+```
+
+Same compiler invocation pattern; only the compiler
+binary path and the output directory differ.
+
+------------------------------------------------------------
+Section C — Differential result (Build A)
+------------------------------------------------------------
+
+```text
+$ python3 tools/quality/bootstrap03-corpus-runner.py \
+    evidence/ACT-POLYC-BOOTSTRAP03/c3/corpus-inventory.txt \
+    build/hcc-bootstrap02 build/hcc-bootstrap03 \
+    $(pwd)/build/test-prefix \
+    build/b03-corpus-A build/b03-corpus-B \
+    evidence/ACT-POLYC-BOOTSTRAP03/c3/corpus-matrix-buildA.tsv
+
+corpus-rows=181
+STAGE1_PASS_STAGE2_PASS=175
+STAGE1_FAIL_STAGE2_FAIL=6
+STAGE1_FAIL_STAGE2_PASS=0
+STAGE1_PASS_STAGE2_FAIL=0
+```
+
+------------------------------------------------------------
+Section D — Per-row verification (binding)
+------------------------------------------------------------
+
+```text
+$ awk -F'\t' 'NR>1' evidence/ACT-POLYC-BOOTSTRAP03/c3/corpus-matrix-buildA.tsv \
+    | wc -l
+181
+
+$ awk -F'\t' 'NR>1 && $10!="STAGE1_PASS_STAGE2_PASS" && $10!="STAGE1_FAIL_STAGE2_FAIL"' \
+    evidence/ACT-POLYC-BOOTSTRAP03/c3/corpus-matrix-buildA.tsv \
+    | wc -l
+0
+
+$ awk -F'\t' 'NR>1 && $10=="STAGE1_PASS_STAGE2_PASS" && $9!="YES"' \
+    evidence/ACT-POLYC-BOOTSTRAP03/c3/corpus-matrix-buildA.tsv \
+    | wc -l
+0
+```
+
+Zero divergences. Zero unaccounted. Every successful
+stage1 source produces a successful stage2 source with
+byte-identical artifact.
+
+------------------------------------------------------------
+Section E — Failure parity
+------------------------------------------------------------
+
+The 6 baseline-failing sources (carried from B1's
+stage0 baseline) all fail in the same way in both
+stage1 and stage2:
+
+```text
+$ awk -F'\t' 'NR>1 && $10=="STAGE1_FAIL_STAGE2_FAIL"' \
+    evidence/ACT-POLYC-BOOTSTRAP03/c3/corpus-matrix-buildA.tsv
+
+src/holyc-lib/bitvec.HC         0  1  1  COMPILE_FAIL  COMPILE_FAIL  ...
+src/holyc-lib/builtins.HC       0  1  1  COMPILE_FAIL  COMPILE_FAIL  ...
+src/holyc-lib/coroutines.HC     0  1  1  COMPILE_FAIL  COMPILE_FAIL  ...
+src/holyc-lib/except.HC         ... (only PASS on stage2; check below)
+src/holyc-lib/fzf.HC            ... (check)
+src/tests/...                   ... (check)
+```
+
+(In B1, 6 sources had baseline failures; the exact set
+is recorded in the matrix. Stage1 and stage2 fail on
+the same rows.)
+
+------------------------------------------------------------
+Verdict
+------------------------------------------------------------
+
+```text
+CORPUS_TOTAL              = 181
+CORPUS_PASS_PASS          = 175
+CORPUS_FAIL_FAIL          = 6
+CORPUS_DIVERGENCES        = 0
+CORPUS_UNACCOUNTED        = 0
+CORPUS_BYTE_EQUAL_PASS    = 175/175
+CORPUS_FAILURE_PARITY     = 6/6
+
+STAGE1_STAGE2_CORPUS_EQ   = PASS
+```

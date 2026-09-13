@@ -1,0 +1,79 @@
+ACT-POLYC-BOOTSTRAP03 — C3 — production Lexer seam (stage1 ↔ stage2)
+====================================================================
+
+Per ACT §19: run the production Lexer seam differential
+between stage1 and stage2 (B1 compared stage0 ↔ stage1).
+
+------------------------------------------------------------
+Build (mirrors B1 pattern)
+------------------------------------------------------------
+
+```text
+make bootstrap03-lexer-seam-test
+```
+
+Effective commands:
+
+```text
+cc ... -DBUILD_LABEL='"stage1"' -Isrc \
+    -o build/bootstrap03-lexer-seam-stage1 \
+    tools/quality/bootstrap02-lexer-seam-runner.c \
+    $(HCC_STAGE1_OBJECTS) build/bootstrap02-ident.o $(TASM_LIB) ...
+
+cc ... -DBUILD_LABEL='"stage2"' -Isrc \
+    -o build/bootstrap03-lexer-seam-stage2 \
+    tools/quality/bootstrap02-lexer-seam-runner.c \
+    $(HCC_STAGE2_OBJECTS) build/bootstrap03-ident.stage1.o $(TASM_LIB) ...
+
+build/bootstrap03-lexer-seam-stage1 > /tmp/b03-lexer-seam-stage1.txt
+build/bootstrap03-lexer-seam-stage2 > /tmp/b03-lexer-seam-stage2.txt
+```
+
+------------------------------------------------------------
+Observed
+------------------------------------------------------------
+
+```text
+$ make bootstrap03-lexer-seam-test
+...
+bootstrap03-lexer-seam-test: stripping BUILD_LABEL and case-name suffixes; re-checking fields
+BOOTSTRAP03_LEXER_SEAM_DOWNSTREAM=PASS (6/6 cases byte-identical)
+BOOTSTRAP03_LEXER_SEAM_RESIDUE=NONE
+```
+
+Both stage1 and stage2 produce the same 6 production
+Lexer outputs on the same 6 inputs. The seven
+downstream-visible fields
+(`le_start_off, le_len, next_byte_hex, ptr_after,
+cur_strlen_post, eof_state`) are byte-identical between
+stages.
+
+------------------------------------------------------------
+EOF cursor + EOF pointer safety (per ACT §19)
+------------------------------------------------------------
+
+```text
+EOF cursor state      PASS  (carried from B1; same B1 component
+                              is used in stage2's lexer)
+EOF pointer safety    PASS  (carried from B1; same B1 component
+                              enforces the no-one-past-end rule
+                              identically)
+```
+
+These two predicates are properties of the B1 component
+itself, not of the producing compiler. Because stage2
+links the stage1-produced B1 component, and that
+component is byte-identical to the stage0-produced one
+(see `component-stage0-stage1-stage2.txt`), the
+properties transfer identically.
+
+------------------------------------------------------------
+Verdict
+------------------------------------------------------------
+
+```text
+PRODUCTION_LEXER_STAGE1_STAGE2 = PASS  6/6
+EOF_CURSOR_STATE               = PASS
+EOF_POINTER_SAFETY             = PASS
+STAGE2_B1_DIRECT_EQ            = PASS
+```

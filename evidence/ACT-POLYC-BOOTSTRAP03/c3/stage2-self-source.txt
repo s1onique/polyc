@@ -1,0 +1,78 @@
+ACT-POLYC-BOOTSTRAP03 — C3 — stage2 self-source
+==============================================
+
+Per ACT §24: stage2 (hcc-bootstrap03) compiles the
+PolyC B1 component source, and the resulting object
+matches stage1's output.
+
+------------------------------------------------------------
+Source
+------------------------------------------------------------
+
+```text
+tools/bootstrap/bootstrap02-ident.HC
+```
+
+This is the same PolyC source that constitutes the B1
+component. It is written in PolyC (not C), it implements
+`BootstrapScanIdent`, and it is linked into both stage1
+and stage2.
+
+------------------------------------------------------------
+Stage2 self-compile (capture)
+------------------------------------------------------------
+
+```text
+$ ./build/hcc-bootstrap03 --install-dir=$TEST_PREFIX \
+    -c tools/bootstrap/bootstrap02-ident.HC \
+    -o build/b03-self-source.o
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+```
+
+```text
+$ ls -la build/b03-self-source.o
+-rw-r--r-- ... 2704 ... build/b03-self-source.o
+
+$ sha256sum build/b03-self-source.o
+a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f  build/b03-self-source.o
+```
+
+------------------------------------------------------------
+Stage1 vs stage2 self-source comparison
+------------------------------------------------------------
+
+```text
+$ sha256sum build/bootstrap03-ident.stage1.o build/b03-self-source.o
+a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f  build/bootstrap03-ident.stage1.o
+a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f  build/b03-self-source.o
+```
+
+The stage1-produced B1 object and the stage2-produced
+B1 object are byte-identical.
+
+------------------------------------------------------------
+Three-stage B1 object comparison (cross-reference)
+------------------------------------------------------------
+
+```text
+$ sha256sum build/c3-experiment/s?-bootstrap02-ident.o
+a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f  s0-bootstrap02-ident.o  (stage0)
+a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f  s1-bootstrap02-ident.o  (stage1)
+a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f  s2-bootstrap02-ident.o  (stage2)
+```
+
+All three stages produce byte-identical B1 objects. The
+closed self-host chain is deterministic.
+
+------------------------------------------------------------
+Verdict
+------------------------------------------------------------
+
+```text
+STAGE2_COMPILES_B1_SOURCE     = YES
+STAGE1_B1_OBJECT_SHA          = a1b620c0...78cd854f
+STAGE2_B1_OBJECT_SHA          = a1b620c0...78cd854f
+STAGE1_STAGE2_B1_OBJECT_EQ    = PASS
+```

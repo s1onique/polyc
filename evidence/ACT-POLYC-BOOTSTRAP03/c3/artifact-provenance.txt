@@ -1,0 +1,122 @@
+ACT-POLYC-BOOTSTRAP03 — C3 — artifact provenance (strong witness)
+=================================================================
+
+Per ACT §17: capture producer command, output path,
+artifact hash, stage2 link command, stage2 symbol
+table, stage2 call site.
+
+------------------------------------------------------------
+Capture record (Build A; Build B is in reproducibility.txt)
+------------------------------------------------------------
+
+### 1. Stage1 compile command (producer of stage2's B1 input)
+
+```text
+make bootstrap03-component-build
+
+  Effective:
+    rm -f ./build/bootstrap03-ident.stage1.o
+    ./build/hcc-bootstrap02 --install-dir=$TEST_PREFIX \
+        -c tools/bootstrap/bootstrap02-ident.HC \
+        -o ./build/bootstrap03-ident.stage1.o
+    nm ./build/bootstrap03-ident.stage1.o | grep _BootstrapScanIdent
+```
+
+### 2. Stage1 component object (output)
+
+```text
+producer    = ./build/hcc-bootstrap02
+input       = tools/bootstrap/bootstrap02-ident.HC
+output      = ./build/bootstrap03-ident.stage1.o
+size        = 2704 bytes
+sha256      = a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f
+symbol      = T _BootstrapScanIdent
+```
+
+### 3. Stage2 link command (consumer of stage1's B1 output)
+
+```text
+make bootstrap03-stage2
+
+  Effective CMake invocation:
+    cmake -S ./src -B ./build/hcc-bootstrap03-build -G 'Unix Makefiles' \
+        -DCMAKE_C_COMPILER=gcc \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_C_FLAGS='-Wextra -Wall -Wpedantic' \
+        -DHCC_ENABLE_JIT=on \
+        -DHCC_ENABLE_LLVM=OFF \
+        -DHCC_ENABLE_BOOTSTRAP02_STAGE1=ON \
+        -DBOOTSTRAP02_IDENT_OBJECT=/Volumes/.../build/bootstrap02-ident.o \
+        -DHCC_ENABLE_BOOTSTRAP03_STAGE2=ON \
+        -DBOOTSTRAP03_IDENT_OBJECT=/Volumes/.../build/bootstrap03-ident.stage1.o
+
+  Effective link line (resolved by CMakeLists.txt):
+    target_link_libraries(hcc-bootstrap03
+        ${BOOTSTRAP03_IDENT_OBJECT} m)
+    with BOOTSTRAP03_IDENT_OBJECT = /Volumes/.../build/bootstrap03-ident.stage1.o
+```
+
+### 4. Stage2 binary (output)
+
+```text
+path        = build/hcc-bootstrap03
+size        = 742160 bytes
+sha256      = f885d61200689c9e6f218798ce3f265f9133e057d2c9cd27c1046997400ec1ac
+```
+
+### 5. Stage2 symbol table
+
+```text
+$ nm build/hcc-bootstrap03 | grep _BootstrapScanIdent
+000000010007c318 T _BootstrapScanIdent
+```
+
+### 6. Stage2 call site (disassembly)
+
+```text
+$ otool -tv build/hcc-bootstrap03 | grep -B1 'BootstrapScanIdent'
+00000001000303f0	mov	x2, #0x0
+00000001000303f4	bl	_BootstrapScanIdent
+--
+000000010003145c	mov	x2, #0x0
+0000000100031460	bl	_BootstrapScanIdent
+--
+000000010007c314	ret
+_BootstrapScanIdent:
+000000010007c318	stp	x29, x30, [sp, #-0x10]!
+```
+
+------------------------------------------------------------
+Binding equalities (ACT §17)
+------------------------------------------------------------
+
+```text
+STAGE1_B1_OUTPUT_PATH     = /Volumes/.../build/bootstrap03-ident.stage1.o
+STAGE2_B1_LINK_INPUT_PATH = /Volumes/.../build/bootstrap03-ident.stage1.o
+STAGE1_B1_OUTPUT_PATH     == STAGE2_B1_LINK_INPUT_PATH     YES (path equality)
+
+STAGE1_B1_OUTPUT_SHA      = a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f
+STAGE2_B1_LINK_INPUT_SHA  = a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f
+STAGE1_B1_OUTPUT_SHA      == STAGE2_B1_LINK_INPUT_SHA      YES (hash equality)
+
+STAGE2_B1_LINK_COMMAND    = target_link_libraries(hcc-bootstrap03
+                              ${BOOTSTRAP03_IDENT_OBJECT} m)
+                              with BOOTSTRAP03_IDENT_OBJECT = the stage1-produced object
+STAGE2_B1_ARTIFACT_PROVENANCE = STAGE1 (binding by build graph)
+```
+
+Path equality is the strongest proof (same file on disk
+is consumed). Hash equality is the corollary (same
+content). Both equalities hold.
+
+------------------------------------------------------------
+Verdict
+------------------------------------------------------------
+
+```text
+STAGE2_B1_ARTIFACT_PROVENANCE       = STAGE1
+STAGE2_LINKS_STAGE1_B1_ARTIFACT     = YES
+STAGE2_USES_STAGE1_B1_ARTIFACT      = YES
+
+HALT_STAGE2_PROVENANCE_UNPROVEN     = NOT_FIRED
+```

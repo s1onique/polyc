@@ -1,0 +1,58 @@
+ACT-POLYC-BOOTSTRAP03 — C3 — error corpus summary
+=================================================
+
+Per ACT §22: reuse the B1 C3 error corpus (4 fixtures)
+and verify stage1 ↔ stage2 produce equivalent exit
+classes and equivalent normalized diagnostics.
+
+------------------------------------------------------------
+Fixtures (inherited from B1)
+------------------------------------------------------------
+
+```text
+ERR01_unterminated_string.HC
+ERR02_invalid_declaration.HC
+ERR03_identifier_start_digit.HC
+ERR04_intentional_parser_error.HC
+```
+
+Source: `evidence/ACT-POLYC-BOOTSTRAP02/c3/error-corpus/`.
+
+------------------------------------------------------------
+Result
+------------------------------------------------------------
+
+```text
+$ python3 tools/quality/bootstrap03-error-corpus.py \
+    evidence/ACT-POLYC-BOOTSTRAP02/c3/error-corpus \
+    build/hcc-bootstrap02 build/hcc-bootstrap03 \
+    $(pwd)/build/test-prefix \
+    evidence/ACT-POLYC-BOOTSTRAP03/c3/error-corpus.tsv
+
+error-corpus-rows=4
+error-corpus-mismatch=0
+```
+
+Per-fixture table (from `error-corpus.tsv`):
+
+```text
+ERR01_unterminated_string.HC     rc1=1  rc2=1  class1=FAIL class2=FAIL  equiv=YES
+ERR02_invalid_declaration.HC     rc1=1  rc2=1  class1=FAIL class2=FAIL  equiv=YES
+ERR03_identifier_start_digit.HC  rc1=1  rc2=1  class1=FAIL class2=FAIL  equiv=YES
+ERR04_intentional_parser_error.HC rc1=1  rc2=1  class1=FAIL class2=FAIL  equiv=YES
+```
+
+Normalized diagnostics are path:line:col identical
+between stage1 and stage2.
+
+------------------------------------------------------------
+Verdict
+------------------------------------------------------------
+
+```text
+ERROR_CORPUS_ROWS               = 4
+ERROR_CORPUS_MISMATCH           = 0
+ERROR_CORPUS_STAGE1_STAGE2_MISMATCH = 0
+
+STAGE1_STAGE2_ERROR_EQ          = PASS
+```
