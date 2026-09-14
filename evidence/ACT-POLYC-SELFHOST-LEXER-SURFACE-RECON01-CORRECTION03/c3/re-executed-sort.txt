@@ -1,0 +1,74 @@
+ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01-CORRECTION03 — C3 EVIDENCE
+==================================================================
+
+Re-executed sort command against the canonical source.
+
+=== COMMAND (corrected) ===
+
+  awk -F'\t' 'NR>1 && $1 ~ /^R-/ {gsub(/=/,""); print $1"\t"$NF}' \
+      evidence/ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01/c3/fresh-scores.tsv \
+    | sort -k2,2nr
+
+=== VERBATIM COMMAND OUTPUT ===
+
+R-F	627
+R-E	285
+R-D	275
+R-N	242
+R-K	230
+R-O	221
+R-M	213
+R-Q	201
+R-H	200
+R-P	193
+R-L	190
+R-J	INELIGIBLE
+R-A	-38
+R-I	-45
+R-B	-49
+R-G	-53
+R-C	-70
+
+=== COMPARISON TO CORRECTION02/c2/ranking-repaired-v2.txt ===
+
+The corrected ranking-repaired-v2.txt has 16 eligible regions
+(rows 1-16; R-J excluded as INELIGIBLE_E5). The sort output
+has 17 rows (including R-J with value INELIGIBLE). Mapping:
+
+  rank  region_id  FINAL_SCORE  matches CORRECTION02 row?
+  ----  ---------  -----------  -----------------------
+  1     R-F        +627         YES (rank 1)
+  2     R-E        +285         YES (rank 2)
+  3     R-D        +275         YES (rank 3)
+  4     R-N        +242         YES (rank 4)
+  5     R-K        +230         YES (rank 5)
+  6     R-O        +221         YES (rank 6)
+  7     R-M        +213         YES (rank 7)
+  8     R-Q        +201         YES (rank 8)
+  9     R-H        +200         YES (rank 9)
+  10    R-P        +193         YES (rank 10)
+  11    R-L        +190         YES (rank 11)
+  12    R-A        -38          YES (rank 12, post-CORRECTION02 reorder)
+  13    R-I        -45          YES (rank 13, post-CORRECTION02 reorder)
+  14    R-B        -49          YES (rank 14)
+  15    R-G        -53          YES (rank 15, post-CORRECTION02 reorder)
+  16    R-C        -70          YES (rank 16)
+  ---   R-J        INELIGIBLE   not in CORRECTION02 ranking-repaired-v2.txt
+                                (correctly excluded; presented separately)
+
+All 16 eligible ranks match CORRECTION02/c2/ranking-repaired-v2.txt.
+
+=== VERDICT ===
+
+DEFECT-6 forward-fix is mechanically complete:
+  - Command reproduces successfully (no "No such file or directory")
+  - Output matches CORRECTION02/c2/ranking-repaired-v2.txt exactly
+  - Path citation is now accurate
+
+The numerical sort values are unchanged; only the cited source
+path is corrected.
+
+The engineering result remains:
+  WINNER = R-F (scalar_literal_scanner) +627
+  MARGIN = 342 (ROBUST)
+  E1..E14 = PASS
