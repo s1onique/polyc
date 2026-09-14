@@ -1,0 +1,53 @@
+ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01-CORRECTION02 — C2 — DEFECT-4 forward-fix
+=================================================================================
+
+Per F14, the closed CORRECTION01 evidence tree is IMMUTABLE.
+This file records the forward-fix for DEFECT-4 (negative-score
+block of ranking-repaired.txt not monotonic) WITHOUT mutating
+the closed tree.
+
+The CORRECTION01's c3/independent-re-derivation.txt V-2 already
+mechanically computed the correct order via awk | sort -k2 -n -r.
+The corrected ranking below is consistent with that sort.
+
+Corrected ranking for all 16 eligible region candidates (R-A..R-Q
+excluding R-J which is E5-ineligible), sorted by FINAL_SCORE
+descending; tie-breaks per ACT §34 (stable on region_id).
+
+  rank  region_id  FINAL_SCORE  E1_to_E14  eligible  notes
+  ----  ---------  -----------  ---------  --------  -----
+  1     R-F        +627         PASS       YES       WINNER; ROBUST margin 342
+  2     R-E        +285         PASS       YES       2-function value+char
+  3     R-D        +275         PASS       YES       extent+value (subset of R-F)
+  4     R-N        +242         PASS       YES       value+whitespace (C3-only)
+  5     R-K        +230         PASS       YES       extent+char (subset of R-F)
+  6     R-O        +221         PASS       YES       char+whitespace (C3-only)
+  7     R-M        +213         PASS       YES       extent+whitespace (C3-only)
+  8     R-Q        +201         PASS       YES       char+comment (C3-only)
+  9     R-H        +200         PASS       YES       comment+whitespace
+  10    R-P        +193         PASS       YES       extent+comment (C3-only)
+  11    R-L        +190         PASS       YES       value+comment
+  12    R-A        -38          PASS       YES       extent only
+  13    R-I        -45          PASS       YES       whitespace only
+  14    R-B        -49          PASS       YES       value only
+  15    R-G        -53          PASS       YES       comment only
+  16    R-C        -70          PASS       YES       char only
+  ---   R-J        INELIG       FAIL_E5    NO        Arena char* return (E5 violation)
+
+Tie-break ACT §34 not triggered (no ties at any rank).
+Strictly monotonic in FINAL_SCORE descending (verified by
+independent sort in c3/independent-re-derivation.txt).
+
+COMPARISON TO CORRECTION01 c2/ranking-repaired.txt (which had
+DEFECT-4):
+
+  rank  CORRECTION01  CORRECTION02  FINAL_SCORE  delta
+  ----  ------------  ------------  -----------  -----
+  12    R-G  -53      R-A  -38      -38          swapped
+  13    R-I  -45      R-I  -45      -45          unchanged
+  14    R-B  -49      R-B  -49      -49          unchanged
+  15    R-A  -38      R-G  -53      -53          swapped
+  16    R-C  -70      R-C  -70      -70          unchanged
+
+Only ranks 12 and 15 differ (a two-row swap within the
+negative-score block). Ranks 1-11 and rank 16 are unchanged.
