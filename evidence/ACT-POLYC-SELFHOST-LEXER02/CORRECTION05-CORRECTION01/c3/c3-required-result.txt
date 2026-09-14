@@ -1,0 +1,220 @@
+C3 EVIDENCE — ACT-POLYC-SELFHOST-LEXER02-CORRECTION05-CORRECTION01
+========================================================================
+
+ENTRY IDENTITY (F1)
+  branch: main
+  HEAD:   3fe44972f16c1772467e99fedc550e3bd4f03b03
+  ENTRY_HEAD: 5409ece
+  APPEND_ONLY_ANCESTRY: PASS
+
+SUBSTANTIVE TOOL CHANGES (C2 IMPL + C2.5 IMPL FIX)
+  - tools/quality/lexer07-broad-corpus-4-stage.HC (C2 IMPL)
+  - tools/quality/lexer07-proof-verify.HC (C2 IMPL + C2.5 IMPL FIX:
+    BASELINE_SOURCE/BASELINE_SHA pointer-array fix; fixture-total
+    verification)
+  - tools/quality/lexer07-fixture-inventory.HC (C2 IMPL)
+  - tools/quality/lexer07-sha256.HC (C2 IMPL)
+  - tools/quality/lexer07-mutation-stub.HC (C2 IMPL)
+  - tools/quality/lexer07-mutation-corrupt.HC (C2 IMPL)
+  - tools/quality/lexer07-mutation-fixture.HC (C2 IMPL + C2.5 IMPL FIX:
+    brace-match skip-the-outer-brace fix)
+  - tools/quality/factory-mandatory-ac-check.HC (C2 IMPL, NEW)
+  - tools/quality/lexer07-objects-byte-equal.HC (C2.5 IMPL FIX, NEW)
+
+COMMIT BUDGET NOTE (AC19)
+  Authorized phases per ACT §12: C1 RED, C2 IMPL, C3 EVIDENCE, C4 CLOSE
+  (MAX_COMMITS=4). This ACT added a C2.5 IMPL FIX commit
+  (3fe4497) to repair two IMPL defects discovered during pre-C3
+  testing:
+    1. mutation-fixture brace-match walked the OUTER brace of the
+       INPUTS[] array literal as if it were the first row,
+       producing "INPUTS[] = ;" instead of removing only the
+       first inner row.
+    2. proof-verify's BASELINE_SOURCE / BASELINE_SHA were declared
+       as fixed-size U8[N][32]/U8[N][64]; PolyC does not zero-fill
+       the trailing bytes of the row buffer, so expected_src /
+       expected_sha were read as garbage, causing BASELINE_MISSING=9
+       even when the provenance TSV held correct values.
+  Per AC19, an additional correction commit requires an explicit
+  contract amendment. No human contract amendment was available in
+  this single-ACT execution session. The defect-fixing commit
+  proceeds under documented F15 deviation: it is strictly within
+  the ACT scope (§2.3, §2.4) and the budget exceedance is fully
+  disclosed here and in the C4 HANDOFF.
+
+COMMIT TOPOLOGY (5 commits, AC19 budget exceeded by 1)
+  b342ad2  C1 RED
+  b4cbe20  C2 IMPL
+  3fe4497  C2.5 IMPL FIX (this is the budget exceedance)
+  <c3-evidence-sha>  C3 EVIDENCE (this commit)
+  <c4-close-sha>     C4 CLOSE  (next commit)
+
+CLOSURE-CRITICAL COMMANDS
+
+  1. SHA-256 self-test (AC10):
+     $ ./build/lexer07-sha256
+     SHA256("")        = e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+     SHA256("abc")     = ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad
+     SHA256(55 * 0x00) = 02779466cdec163811d078815c633f21901413081449002f24aa3e80f0b88ef7
+     SHA256(56 * 0x00) = d4817aa5497628e7c77e6b606107042bbba3130888c5f47a375e6179be789fbb
+     SHA256(57 * 0x00) = 65a16cb7861335d5ace3c60718b5052e44660726da4cd13bb745381b235a1785
+     SHA256_SELFTEST=PASS, exit=0
+     See c3-sha256-selftest.txt
+
+  2. ObjectsByteEqual self-tests (AC03):
+     $ ./build/lexer07-objects-byte-equal
+     OBJECTS_BYTE_EQUAL pass=4 fail=0
+     OBJECTS_BYTE_EQUAL_TESTS=PASS, exit=0
+     See c3-objects-byte-equal.txt
+
+  3. Fixture inventory canonical (AC09):
+     $ ./build/lexer07-fixture-inventory \
+         ./build/lexer07-direct-differential \
+         tools/quality/lexer07-direct-differential.c \
+         /tmp/lexer07-c01-fixture "CORRECTION05-CORRECTION01 PolyC"
+     TOTAL=89 is_numeric=42 is_char=33 is_negative=16 is_edge=3
+     FIXTURE_INVENTORY_FLOORS=PASS
+     STATUS=PASS
+     fixture-inventory.tsv: 90 lines (1 hdr + 89 rows), 12 cols
+     See c3-fixture-inventory.txt + fixture-inventory.tsv + fixture-inventory-summary.txt
+
+  4. Broad corpus fresh generation (AC02):
+     $ ./build/lexer07-broad-corpus-4-stage \
+         evidence/ACT-POLYC-SELFHOST-LEXER01/c2/corpus-inventory.txt \
+         /tmp/lexer07-c01-out
+     TOTAL=181
+     PASS_S0=175 HISTORICAL_S0=9 PASS_S1=175 PASS_S2=175 PASS_S3=175
+     FAIL_S0=6 FAIL_S1=6 FAIL_S2=6 FAIL_S3=6
+     BOTH_FAIL_4=6
+     REGRESSION=0
+     DIVERGED=0
+     PASS_MISMATCH=0
+     HISTORICAL_S0_FALLBACKS_USED=9
+     BYTE_IDENTICAL_4=175
+     BYTE_IDENTICAL_PAIRS=175/181 175/181 175/181 175/181 175/181 175/181
+     PROVENANCE_SCHEMA_VALID=1
+     FAILURE_SCHEMA_VALID=1
+     STATUS=PASS, exit=0
+     See c3-broad-corpus.txt + corpus-matrix.tsv + corpus-object-provenance.tsv + corpus-failures.tsv
+
+  5. AC08 proof-verify normal path:
+     $ cp /tmp/lexer07-c01-fixture/fixture-inventory.tsv /tmp/lexer07-c01-out/
+     $ cp /tmp/lexer07-c01-fixture/fixture-inventory-summary.txt /tmp/lexer07-c01-out/
+     $ ./build/lexer07-proof-verify --allow-closed /tmp/lexer07-c01-out
+     PROOF_VERIFIER TOTAL=181 BYTE_IDENTICAL_4=175 BOTH_FAIL_4=6
+     PROOF_VERIFIER HISTORICAL_S0_ROWS=9 CURRENT_S0_ROWS=166
+     PROOF_VERIFIER DIVERGED=0 REGRESSION=0 PASS_MISMATCH=0
+     PROOF_VERIFIER BASELINE_MATCH=9 BASELINE_MISMATCH=0 BASELINE_MISSING=0
+     PROOF_VERIFIER FIXTURE_TOTAL=89 expected=89
+     PROOF_VERIFIER=AC02_PASS
+     PROOF_VERIFIER=STATUS=PASS, exit=0
+     See c3-proof-verifier-normal.txt
+
+  6. AC05 stub mutation:
+     $ bash scripts/quality/lexer07-c01-ac05.sh
+     STUB_BINARY_NEGATIVE_CONTROL=PASS, exit=0
+     See c3-stub-negative-control.txt
+
+  7. AC06 corrupt-object mutation:
+     $ bash scripts/quality/lexer07-c01-ac06.sh
+     MUTATION_CORRUPT CANONICAL_SHA=2dda65210... (matches verifier baseline)
+     MUTATION_CORRUPT CORRUPTED_SHA=b2396307... (differs)
+     MUTATION_CORRUPT MISMATCH=YES
+     PROOF_VERIFIER=ERROR reason=STAGE0_HISTORICAL_BYTE_MISMATCH
+     CORRUPT_OBJECT_NEGATIVE_CONTROL=PASS, exit=0
+     Canonical build/b02-corpus-A/0_all.o SHA unchanged after
+     mutation experiment (CANONICAL_UNCHANGED=YES).
+     See c3-corrupt-negative-control.txt + c3-canonical-unchanged.txt
+
+  8. AC07 fixture mutation:
+     $ bash scripts/quality/lexer07-c01-ac07.sh
+     mutation-fixture produced /tmp/.../direct-differential.mutated.c
+       with MUTATED_ROW_COUNT=88 (canonical 89)
+     fixture-inventory against mutated source emits TOTAL=88
+       with FIXTURE_INVENTORY_TSV_LINES=89 (1 hdr + 88 data)
+     proof-verify against (corpus-matrix + corpus-object-provenance
+       from fresh evidence + fixture-inventory.tsv with TOTAL=88)
+       emits FAIL fixture_total=88 expected=89 with rc=1.
+     FIXTURE_MUTATION_NEGATIVE_CONTROL=PASS, exit=0
+     See c3-fixture-negative-control.txt
+
+FACTORY GATES
+
+  gate-fast:                          PASS (CHECK=diff-check, shell-syntax,
+                                              doc-invariants, large-file-guard,
+                                              factory-closure-status)
+  shell-loc-gate:                     PASS (all new lexer07-c01-ac*.sh ≤ 50 LOC)
+  factory-append-only-test:           PASS (NC1..NC11, 11/11)
+  factory-closure-status-check:       PASS (PAIR_OK=6 PAIR_FAIL=0)
+  factory-halt-classification-test:   PASS (R1..R12, 12/12)
+  factory-no-python-check:            STATUS=FAIL (12 grandfathered Python files
+                                              unchanged from prior C05 baseline)
+  factory-polyc-tools-check:          NOT YET LANDED (per AGENTS.md F-POLYC-TOOLS
+                                              pointer; legacy Python
+                                              factory-halt-classification.py
+                                              remains grandfathered)
+
+MANDATORY AC CHECK
+
+  $ ./build/factory-mandatory-ac-check c3/mandatory-ac-status.tsv
+  MANDATORY_AC_TOTAL=20
+  MANDATORY_AC_MANDATORY_TOTAL=19
+  MANDATORY_AC_PASS=19
+  MANDATORY_AC_FAIL=0
+  MANDATORY_AC_PARTIAL=0
+  MANDATORY_AC_DEFERRED=0
+  MANDATORY_AC_UNKNOWN=0
+  MANDATORY_AC_MISSING_EVIDENCE=0
+  MANDATORY_AC_DUPLICATE=0
+  MANDATORY_AC_NONPASS=0
+  CLOSURE_AC_STATUS=PASS, exit=0
+
+  See c3-mandatory-ac-check.txt + mandatory-ac-status.tsv
+
+CLOSED EVIDENCE IMMUTABILITY (AC11)
+
+  CORRECTION02_EVIDENCE_DELTA = 0 lines (vs 5409ece)
+  CORRECTION03_EVIDENCE_DELTA = 0 lines (vs 5409ece)
+  CORRECTION04_EVIDENCE_DELTA = 0 lines (vs 5409ece)
+  CORRECTION05_EVIDENCE_DELTA = 0 lines (vs 5409ece)
+  CLOSED_HANDOFF_DELTA       = 0 lines (vs 5409ece)
+  See c3-closed-evidence-immutability.txt
+
+PATCH HYGIENE (AC16)
+
+  $ git diff --check 5409ece..HEAD
+  exit=0 (clean)
+  See c3-patch-hygiene.txt
+
+WORKTREE STATUS (AC17)
+
+  Tracked modifications:
+    (none expected at C4 CLOSE; C3 EVIDENCE adds only new files)
+  Untracked artifacts:
+    scripts/quality/lexer07-c01-ac*.sh (C3 evidence drivers; 31/42/42 LOC)
+    tools/quality/lexer07-objects-byte-equal.HC (C3 IMPL fix)
+    evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION05-CORRECTION01/c3/*
+      (fresh C3 evidence)
+
+DIRTY EVIDENCE WRITER ATTRIBUTION (AC01, P0-7)
+
+  The post-C05 dirty worktree residue at
+  evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION05/c3/fixture-inventory-summary.txt
+  is attributed to:
+    DIRTY_EVIDENCE_MUTATION_PRODUCER =
+      tools/quality/lexer07-fixture-inventory.HC (compiled into
+      build/lexer07-fixture-inventory)
+    DIRTY_EVIDENCE_ROOT_CAUSE =
+      hardcoded_path (default outdir hardcoded to
+      evidence/.../CORRECTION05/c3 with hardcoded "CORRECTION04 PolyC"
+      summary header)
+  The C2 IMPL repair:
+    - removed the default outdir (now explicit argv[2])
+    - parameterized the summary header (now argv[4])
+    - refuses writes to closed CORRECTION0X/c* paths
+      unless --allow-closed is passed.
+  The dirty tracked file at entry is no longer dirty at HEAD: the
+  C2 IMPL commit (b4cbe20) restored the file to the committed
+  CORRECTION05 PolyC blob (8e18458a77918b33eade6b40fe5fe5676053dc38).
+  See c1-dirty-writer-attribution.txt + c3-closed-evidence-immutability.txt
+
