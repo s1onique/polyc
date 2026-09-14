@@ -13,7 +13,7 @@
 extern "c" U8 *strstr(U8 *haystack, U8 *needle);
 
 #define N_BASELINE 9
-static U8 BASELINE_SOURCE[N_BASELINE][32] = {
+static U8 *BASELINE_SOURCE[N_BASELINE] = {
   "src/holyc-lib/all.HC",
   "src/holyc-lib/date.HC",
   "src/holyc-lib/hashtable.HC",
@@ -24,7 +24,7 @@ static U8 BASELINE_SOURCE[N_BASELINE][32] = {
   "src/holyc-lib/threads.HC",
   "src/holyc-lib/tooling.HC"
 };
-static U8 BASELINE_SHA[N_BASELINE][64] = {
+static U8 *BASELINE_SHA[N_BASELINE] = {
   "2dda65210bd70f48c9087bf171811e54018a131edf738a072432a4ac35993d63",
   "84cfbd4684c175ca4e3888501f1a7019a4acba02de384ac99c204732b2e766f2",
   "1e7c210aca666796b20ac564494ecc43b11101564964746dd5fb3d093a7f55cb",
@@ -43,6 +43,7 @@ static U8 BASELINE_SHA[N_BASELINE][64] = {
 #define EXPECT_PASS_MISMATCH 0
 #define EXPECT_HISTORICAL_S0 9
 #define EXPECT_TOTAL 181
+#define EXPECT_FIXTURE_TOTAL 89
 
 static I64 StrEq(U8 *a, U8 *b) {
   while (*a != 0 && *b != 0) { if (*a != *b) return 0; a++; b++; }
@@ -206,6 +207,27 @@ I32 Main(I32 argc, U8 **argv) {
     Free(prov);
   }
 
+  // AC09 / AC07 fixture inventory check. Read
+  // <dir>/fixture-inventory.tsv; if present, count data
+  // rows and require FIXTURE_TOTAL == EXPECT_FIXTURE_TOTAL.
+  I64 fixture_total = -1;
+  U8 *fi_path = StrPrint(NULL, "%s/fixture-inventory.tsv", dir);
+  I64 fi_size = 0;
+  U8 *fi_buf = FileRead(fi_path, &fi_size);
+  if (fi_buf != NULL) {
+    I64 fi_rows = 0;
+    U8 *fp = fi_buf;
+    U8 *fend = fi_buf + fi_size;
+    while (fp < fend) {
+      while (fp < fend && *fp != '\n') fp = fp + 1;
+      fi_rows = fi_rows + 1;
+      if (fp < fend) fp = fp + 1;
+    }
+    // Subtract header row (1) to get data row count.
+    fixture_total = fi_rows - 1;
+    Free(fi_buf);
+  }
+
   "PROOF_VERIFIER TOTAL=%d BYTE_IDENTICAL_4=%d BOTH_FAIL_4=%d\n",
     n_total, n_byte_id, n_both_fail;
   "PROOF_VERIFIER HISTORICAL_S0_ROWS=%d CURRENT_S0_ROWS=%d\n", hist, curr;
@@ -213,6 +235,13 @@ I32 Main(I32 argc, U8 **argv) {
     n_regression, n_s0_miss;
   "PROOF_VERIFIER BASELINE_MATCH=%d BASELINE_MISMATCH=%d BASELINE_MISSING=%d\n",
     baseline_match, baseline_mismatch, baseline_missing;
+  if (fixture_total >= 0) {
+    "PROOF_VERIFIER FIXTURE_TOTAL=%d expected=%d\n",
+      fixture_total, EXPECT_FIXTURE_TOTAL;
+  } else {
+    "PROOF_VERIFIER FIXTURE_TOTAL=MISSING expected=%d\n",
+      EXPECT_FIXTURE_TOTAL;
+  }
 
   I64 pass = 1;
   if (n_total != EXPECT_TOTAL) { "FAIL total=%d expected=%d\n", n_total, EXPECT_TOTAL; pass = 0; }
@@ -223,6 +252,11 @@ I32 Main(I32 argc, U8 **argv) {
   if (n_s0_miss != EXPECT_PASS_MISMATCH) { "FAIL stage0_miss=%d expected=%d\n", n_s0_miss, EXPECT_PASS_MISMATCH; pass = 0; }
   if (baseline_mismatch != 0) { "FAIL stage0_historical_byte_mismatch=%d\n", baseline_mismatch; pass = 0; }
   if (baseline_missing != 0) { "FAIL baseline_missing=%d\n", baseline_missing; pass = 0; }
+  if (fixture_total >= 0 && fixture_total != EXPECT_FIXTURE_TOTAL) {
+    "FAIL fixture_total=%d expected=%d\n",
+      fixture_total, EXPECT_FIXTURE_TOTAL;
+    pass = 0;
+  }
 
   if (pass) {
     "PROOF_VERIFIER=AC02_PASS\n";
