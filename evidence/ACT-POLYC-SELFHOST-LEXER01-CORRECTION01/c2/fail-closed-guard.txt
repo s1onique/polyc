@@ -1,0 +1,55 @@
+ACT-POLYC-SELFHOST-LEXER01-CORRECTION01 -- C2: fail-closed guard test
+====================================================================
+
+The reviewer's DEFECT-5 required that the operator object
+linkage be a HARD prerequisite, not an optional
+if(EXISTS) branch.
+
+Implementation
+--------------
+src/CMakeLists.txt now contains three
+message(FATAL_ERROR ...) guards:
+
+  Stage1 (hcc-bootstrap02):
+    if (NOT EXISTS "${BOOTSTRAP06_OPERATOR_OBJECT}")
+        message(FATAL_ERROR
+            "ACT-POLYC-SELFHOST-LEXER01-CORRECTION01: required self-host "
+            "operator component missing at ${BOOTSTRAP06_OPERATOR_OBJECT}. "
+            "Build it first with stage0 hcc: ...")
+    endif()
+
+  Stage2 (hcc-bootstrap03):
+    if (NOT EXISTS "${BOOTSTRAP06_OPERATOR_OBJECT_STAGE1}")
+        message(FATAL_ERROR
+            "ACT-POLYC-SELFHOST-LEXER01-CORRECTION01: required stage2 "
+            "operator component missing at ...")
+    endif()
+
+  Stage3 (hcc-bootstrap04):
+    if (NOT EXISTS "${BOOTSTRAP06_OPERATOR_OBJECT_STAGE2}")
+        message(FATAL_ERROR
+            "ACT-POLYC-SELFHOST-LEXER01-CORRECTION01: required stage3 "
+            "operator component missing at ...")
+    endif()
+
+Confirmed: stage1 guard fires
+-----------------------------
+$ mv build/bootstrap06-operator-classify.o /tmp/operator-saved.o
+$ cd build && cmake -S ../src -B . -DHCC_ENABLE_BOOTSTRAP02_STAGE1=ON -DBOOTSTRAP02_IDENT_OBJECT=$(pwd)/bootstrap02-ident.o
+  ACT-POLYC-SELFHOST-LEXER01-CORRECTION01: required self-host operator
+  /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/src/../build/bootstrap06-operator-classify.o.
+  tools/bootstrap/selfhost-lexer-operator-classify.HC -o
+  build/bootstrap06-operator-classify.o
+  CMake Error at src/CMakeLists.txt:251 (message):
+    ACT-POLYC-SELFHOST-LEXER01-CORRECTION01: required self-host ...
+
+(reverted: $ mv /tmp/operator-saved.o build/bootstrap06-operator-classify.o)
+
+Confirmed: stage2/stage3 guards wired
+-------------------------------------
+$ cd build && cmake -S ../src -B . -DHCC_ENABLE_BOOTSTRAP02_STAGE1=ON -DHCC_ENABLE_BOOTSTRAP03_STAGE2=ON -DHCC_ENABLE_BOOTSTRAP04_STAGE3=ON -DBOOTSTRAP02_IDENT_OBJECT=$(pwd)/bootstrap02-ident.o -DBOOTSTRAP03_IDENT_OBJECT=$(pwd)/bootstrap03-ident.stage1.o -DBOOTSTRAP04_IDENT_OBJECT=$(pwd)/bootstrap04-ident.stage2.o
+-- ACT-POLYC-SELFHOST-LEXER01-CORRECTION01: stage1 operator component linked (fail-closed): /.../build/bootstrap06-operator-classify.o
+-- ACT-POLYC-SELFHOST-LEXER01-CORRECTION01: stage2 operator component linked (fail-closed): /.../build/bootstrap06-operator-classify.stage1.o
+-- ACT-POLYC-SELFHOST-LEXER01-CORRECTION01: stage3 operator component linked (fail-closed): /.../build/bootstrap06-operator-classify.stage2.o
+
+LINKAGE_FAIL_CLOSED = PASS

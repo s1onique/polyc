@@ -1,0 +1,74 @@
+ACT-POLYC-SELFHOST-LEXER01-CORRECTION01 -- C1 RED: defect summary
+=============================================================
+
+This file enumerates the four closed defects reproduced
+at C1 RED. The reproductions are commands + observed
+output, recorded BEFORE any C2 IMPL work.
+
+DEFECT-1 (P0): identifier fixed-point is only 3 generations
+----------------------------------------------------
+ls: cannot access 'build/bootstrap05-ident.stage3.o': No such file or directory
+
+REQUIRED: stage3 identifier object not yet built.
+
+DEFECT-2 (P0): corpus columns
+----------------------------------------------------
+src	idx	stem	s0_rc	s1_rc	s2_rc	class	diff
+src/holyc-lib/all.HC	1	all	0	0	0	BYTE_IDENTICAL	NONE
+
+REQUIRED: add s3_rc column for stage3.
+
+DEFECT-3 (P0): production seam only stage1
+----------------------------------------------------
+BUILD_LABEL=stage1
+OP_SEAM_CASE_COUNT=33
+
+
+REQUIRED: capture stage0, stage2, stage3.
+
+DEFECT-4 (P1): call-site disassembly missing
+----------------------------------------------------
+Static binding proof (nm output):
+000000010024688c T _BootstrapClassifyOperator
+0000000100246438 T _BootstrapScanIdent
+0000000100104504 t _lspBootstrap
+00000001001c4d3c t _replBootstrap
+
+hcc-bootstrap03:
+000000010024688c T _BootstrapClassifyOperator
+0000000100246438 T _BootstrapScanIdent
+0000000100104504 t _lspBootstrap
+00000001001c4d3c t _replBootstrap
+
+hcc-bootstrap04:
+000000010024688c T _BootstrapClassifyOperator
+0000000100246438 T _BootstrapScanIdent
+0000000100104504 t _lspBootstrap
+00000001001c4d3c t _replBootstrap
+
+REQUIRED: otool -tvV captures per stage.
+
+DEFECT-5 (P1): CMake linkage is not fail-closed
+----------------------------------------------------
+    # binary. Optional via BOOTSTRAP06_OPERATOR_OBJECT; default
+    # path is ./build/bootstrap06-operator-classify.o.
+    if (NOT BOOTSTRAP06_OPERATOR_OBJECT)
+        set(BOOTSTRAP06_OPERATOR_OBJECT "${CMAKE_SOURCE_DIR}/../build/bootstrap06-operator-classify.o")
+    endif()
+    if (EXISTS "${BOOTSTRAP06_OPERATOR_OBJECT}")
+        target_link_libraries(hcc-bootstrap02 ${BOOTSTRAP02_IDENT_OBJECT} ${BOOTSTRAP06_OPERATOR_OBJECT} m)
+        message(STATUS "ACT-POLYC-SELFHOST-LEXER01: linking stage0 operator component ${BOOTSTRAP06_OPERATOR_OBJECT}")
+    else()
+        target_link_libraries(hcc-bootstrap02 ${BOOTSTRAP02_IDENT_OBJECT} m)
+--
+    if (NOT BOOTSTRAP06_OPERATOR_OBJECT_STAGE1)
+        set(BOOTSTRAP06_OPERATOR_OBJECT_STAGE1 "${CMAKE_SOURCE_DIR}/../build/bootstrap06-operator-classify.stage1.o")
+    endif()
+    if (EXISTS "${BOOTSTRAP06_OPERATOR_OBJECT_STAGE1}")
+        target_link_libraries(hcc-bootstrap03 ${BOOTSTRAP03_IDENT_OBJECT} ${BOOTSTRAP06_OPERATOR_OBJECT_STAGE1} m)
+    else()
+        target_link_libraries(hcc-bootstrap03 ${BOOTSTRAP03_IDENT_OBJECT} m)
+--
+    if (NOT BOOTSTRAP06_OPERATOR_OBJECT_STAGE2)
+
+REQUIRED: replace if(EXISTS) with message(FATAL_ERROR).

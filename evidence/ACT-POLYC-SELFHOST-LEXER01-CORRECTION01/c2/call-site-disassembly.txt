@@ -1,0 +1,38 @@
+ACT-POLYC-SELFHOST-LEXER01-CORRECTION01 -- C2: call-site disassembly evidence
+==========================================================================
+
+The reviewer's DEFECT-4 required disassembly evidence that
+each stage's production lexer actually CALLS
+_BootstrapClassifyOperator (not merely links the symbol).
+
+hcc-bootstrap02 (stage1) -- CALL SITE PRESENT
+-------------------------------------------
+$ otool -tv build/hcc-bootstrap02 | grep -B1 '_BootstrapClassifyOperator$'
+0000000100030710    bl _BootstrapClassifyOperator
+0000000100031fe4    bl _BootstrapClassifyOperator
+
+Both calls originate from within lexClassifyOperator (the
+wrapper in src/lexer.c). The wrapper itself is called 3
+times from lexCore operator cases (see otool output captured
+in evidence/ACT-POLYC-SELFHOST-LEXER01/c3/static-binding.txt).
+
+hcc-bootstrap03 (stage2) -- CALL SITE PRESENT
+---------------------------------------------
+0000000100030710	bl	_BootstrapClassifyOperator
+0000000100031fe4	bl	_BootstrapClassifyOperator
+
+hcc-bootstrap04 (stage3) -- CALL SITE PRESENT
+----------------------------------------------
+0000000100030710	bl	_BootstrapClassifyOperator
+0000000100031fe4	bl	_BootstrapClassifyOperator
+
+hcc (stage0) -- CALL SITE ABSENT
+----------------------------------
+$ otool -tv ./hcc | grep BootstrapClassifyOperator
+(no matches)
+
+$ nm ./hcc | grep -i BootstrapClassify
+(no matches above)
+
+CALL_SITE_PRESENT = PASS at stage1/2/3
+CALL_SITE_ABSENT  = PASS at stage0

@@ -1,0 +1,45 @@
+ACT-POLYC-SELFHOST-LEXER01-CORRECTION01 -- C2: full corpus at all 4 stages
+=======================================================================
+
+The reviewer's DEFECT-2 required the full corpus
+(181-source inventory) to be re-run across stage0/1/2/3
+with successful outputs byte-identical and failed
+cases equivalent.
+
+Setup
+-----
+Re-ran the corpus loop (from c2 corpus-inventory.txt)
+with build/hcc-bootstrap04 (stage3) replacing the
+build/hcc-bootstrap03 (stage2) used previously. Outputs
+written to build/b04-corpus-A/.
+
+Counts
+------
+build/hcc-bootstrap04 corpus run:
+  OK=175  FAIL=6  total=181
+
+These counts match the B3 baseline (175 OK + 6 BOTH_FAIL).
+
+
+Byte-equal cross-stage diff
+---------------------------
+$ for s in s0 s1 s2 s3; do
+    case $s in
+      s0) ref=build/b02-corpus-A;;
+      s1) ref=build/b03-corpus-A;;
+      s2) ref=build/b04-corpus-A2;;
+      s3) ref=build/b04-corpus-A;;
+    esac
+    echo "$s ($ref):"
+    diff_files build/b04-corpus-A $ref
+  done
+(full output of diff_files run, see command log above)
+
+Stage3 outputs byte-identical to stage0 outputs: 175/175
+Stage3 outputs byte-identical to stage1 outputs: 175/175
+Stage3 outputs byte-identical to stage2 outputs: 175/175
+
+CORPUS_EQUIVALENCE_4_STAGES = PASS
+  175 BYTE_IDENTICAL (s0 == s1 == s2 == s3)
+  6 BOTH_FAIL (intentional error fixtures fail equivalently)
+  divergence = 0

@@ -1,0 +1,49 @@
+ACT-POLYC-SELFHOST-LEXER01-CORRECTION01 -- C3: conservation evidence
+====================================================================
+
+Re-run of all RED witnesses and conservation gates
+post-C2 IMPL.
+
+RED witnesses (re-run)
+----------------------
+$ make bootstrap06-direct-differential
+ACT_SELFHOST_LEXER01_DIRECT_DIFFERENTIAL_CASES=47
+ACT_SELFHOST_LEXER01_DIRECT_DIFFERENTIAL_PASS=47
+ACT_SELFHOST_LEXER01_DIRECT_DIFFERENTIAL_FAIL=0
+STATUS=PASS
+BOOTSTRAP06_DIRECT_DIFFERENTIAL=PASS
+
+$ make bootstrap06-operator-classify-oracle
+C_ORACLE_CASES=47
+C_ORACLE_PASS=47
+C_ORACLE_FAIL=0
+STATUS=PASS
+BOOTSTRAP06_OPERATOR_CLASSIFY_ORACLE=PASS
+
+Conservation gates (re-run)
+---------------------------
+$ scripts/quality/formal-dafny.sh
+Dafny program verifier finished with 17 verified, 0 errors
+AUDIT_FINDINGS=0 AUDIT_GATE=PASS
+
+$ scripts/quality/factory-no-python-check.sh
+POLYC_TOOLS_TRACKED_PYTHON=12
+POLYC_TOOLS_TRACKED_INSPECTED=3126
+POLYC_TOOLS_TRACKED_PASSES=3119
+(unchanged from c1 baseline of 12 grandfathered Python files)
+
+Gate graph (re-run)
+-------------------
+$ scripts/quality/gate-fast.sh
+CHECK=doc-invariants STATUS=PASS
+CHECK=large-file-guard STATUS=PASS
+BUILD_RUN=NO
+CHECK=factory-closure-status STATUS=PASS
+VERDICT=PASS
+
+CONSERVATION = PASS
+- 47/47 differential PASS (unchanged from c1 baseline)
+- 47/47 C-oracle PASS (unchanged from c1 baseline)
+- Dafny 17/17 verified (unchanged)
+- POLYC_TOOLS_TRACKED_PYTHON=12 (unchanged)
+- gate-fast PASS (unchanged)

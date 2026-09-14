@@ -237,21 +237,26 @@ if (HCC_ENABLE_BOOTSTRAP02_STAGE1)
     if (HCC_ENABLE_JIT)
         target_link_libraries(hcc-bootstrap02 tasm ${CMAKE_DL_LIBS})
     endif()
-    # ACT-POLYC-SELFHOST-LEXER01 C2 IMPL: link the operator /
-    # punctuation classifier (tools/bootstrap/selfhost-lexer-
-    # operator-classify.HC, compiled by stage0) into the stage1
-    # binary. Optional via BOOTSTRAP06_OPERATOR_OBJECT; default
-    # path is ./build/bootstrap06-operator-classify.o.
+    # ACT-POLYC-SELFHOST-LEXER01-CORRECTION01 C2 IMPL: link the
+    # operator / punctuation classifier (tools/bootstrap/
+    # selfhost-lexer-operator-classify.HC, compiled by stage0)
+    # into the stage1 binary. Per correction01, the operator
+    # object is now a HARD prerequisite: HCC_USE_SELFHOST_COMPONENTS
+    # is enabled above, so the source expects _BootstrapClassifyOperator;
+    # accidental fail-closed via the linker is no longer enough.
     if (NOT BOOTSTRAP06_OPERATOR_OBJECT)
         set(BOOTSTRAP06_OPERATOR_OBJECT "${CMAKE_SOURCE_DIR}/../build/bootstrap06-operator-classify.o")
     endif()
-    if (EXISTS "${BOOTSTRAP06_OPERATOR_OBJECT}")
-        target_link_libraries(hcc-bootstrap02 ${BOOTSTRAP02_IDENT_OBJECT} ${BOOTSTRAP06_OPERATOR_OBJECT} m)
-        message(STATUS "ACT-POLYC-SELFHOST-LEXER01: linking stage0 operator component ${BOOTSTRAP06_OPERATOR_OBJECT}")
-    else()
-        target_link_libraries(hcc-bootstrap02 ${BOOTSTRAP02_IDENT_OBJECT} m)
-        message(STATUS "ACT-POLYC-SELFHOST-LEXER01: operator component not yet built; linking only B1")
+    if (NOT EXISTS "${BOOTSTRAP06_OPERATOR_OBJECT}")
+        message(FATAL_ERROR
+            "ACT-POLYC-SELFHOST-LEXER01-CORRECTION01: required self-host "
+            "operator component missing at ${BOOTSTRAP06_OPERATOR_OBJECT}. "
+            "Build it first with stage0 hcc: "
+            "./hcc -c tools/bootstrap/selfhost-lexer-operator-classify.HC "
+            "-o build/bootstrap06-operator-classify.o")
     endif()
+    target_link_libraries(hcc-bootstrap02 ${BOOTSTRAP02_IDENT_OBJECT} ${BOOTSTRAP06_OPERATOR_OBJECT} m)
+    message(STATUS "ACT-POLYC-SELFHOST-LEXER01-CORRECTION01: stage1 operator component linked (fail-closed): ${BOOTSTRAP06_OPERATOR_OBJECT}")
     install(TARGETS hcc-bootstrap02 DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 endif()
 
@@ -330,16 +335,22 @@ if (HCC_ENABLE_BOOTSTRAP03_STAGE2)
     if (HCC_ENABLE_JIT)
         target_link_libraries(hcc-bootstrap03 tasm ${CMAKE_DL_LIBS})
     endif()
-    # ACT-POLYC-SELFHOST-LEXER01 C2 IMPL: also link the operator
-    # component (this time as produced by stage1).
+    # ACT-POLYC-SELFHOST-LEXER01-CORRECTION01 C2 IMPL: also link
+    # the operator component (this time as produced by stage1).
+    # Per correction01, fail-closed.
     if (NOT BOOTSTRAP06_OPERATOR_OBJECT_STAGE1)
         set(BOOTSTRAP06_OPERATOR_OBJECT_STAGE1 "${CMAKE_SOURCE_DIR}/../build/bootstrap06-operator-classify.stage1.o")
     endif()
-    if (EXISTS "${BOOTSTRAP06_OPERATOR_OBJECT_STAGE1}")
-        target_link_libraries(hcc-bootstrap03 ${BOOTSTRAP03_IDENT_OBJECT} ${BOOTSTRAP06_OPERATOR_OBJECT_STAGE1} m)
-    else()
-        target_link_libraries(hcc-bootstrap03 ${BOOTSTRAP03_IDENT_OBJECT} m)
+    if (NOT EXISTS "${BOOTSTRAP06_OPERATOR_OBJECT_STAGE1}")
+        message(FATAL_ERROR
+            "ACT-POLYC-SELFHOST-LEXER01-CORRECTION01: required stage2 "
+            "operator component missing at ${BOOTSTRAP06_OPERATOR_OBJECT_STAGE1}. "
+            "Build it first with stage1 hcc-bootstrap02: "
+            "./hcc-bootstrap02 -c tools/bootstrap/selfhost-lexer-operator-classify.HC "
+            "-o build/bootstrap06-operator-classify.stage1.o")
     endif()
+    target_link_libraries(hcc-bootstrap03 ${BOOTSTRAP03_IDENT_OBJECT} ${BOOTSTRAP06_OPERATOR_OBJECT_STAGE1} m)
+    message(STATUS "ACT-POLYC-SELFHOST-LEXER01-CORRECTION01: stage2 operator component linked (fail-closed): ${BOOTSTRAP06_OPERATOR_OBJECT_STAGE1}")
     install(TARGETS hcc-bootstrap03 DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 endif()
 
@@ -416,16 +427,22 @@ if (HCC_ENABLE_BOOTSTRAP04_STAGE3)
     if (HCC_ENABLE_JIT)
         target_link_libraries(hcc-bootstrap04 tasm ${CMAKE_DL_LIBS})
     endif()
-    # ACT-POLYC-SELFHOST-LEXER01 C2 IMPL: also link the operator
-    # component as produced by stage2.
+    # ACT-POLYC-SELFHOST-LEXER01-CORRECTION01 C2 IMPL: also link
+    # the operator component as produced by stage2. Per
+    # correction01, fail-closed.
     if (NOT BOOTSTRAP06_OPERATOR_OBJECT_STAGE2)
         set(BOOTSTRAP06_OPERATOR_OBJECT_STAGE2 "${CMAKE_SOURCE_DIR}/../build/bootstrap06-operator-classify.stage2.o")
     endif()
-    if (EXISTS "${BOOTSTRAP06_OPERATOR_OBJECT_STAGE2}")
-        target_link_libraries(hcc-bootstrap04 ${BOOTSTRAP04_IDENT_OBJECT} ${BOOTSTRAP06_OPERATOR_OBJECT_STAGE2} m)
-    else()
-        target_link_libraries(hcc-bootstrap04 ${BOOTSTRAP04_IDENT_OBJECT} m)
+    if (NOT EXISTS "${BOOTSTRAP06_OPERATOR_OBJECT_STAGE2}")
+        message(FATAL_ERROR
+            "ACT-POLYC-SELFHOST-LEXER01-CORRECTION01: required stage3 "
+            "operator component missing at ${BOOTSTRAP06_OPERATOR_OBJECT_STAGE2}. "
+            "Build it first with stage2 hcc-bootstrap03: "
+            "./hcc-bootstrap03 -c tools/bootstrap/selfhost-lexer-operator-classify.HC "
+            "-o build/bootstrap06-operator-classify.stage2.o")
     endif()
+    target_link_libraries(hcc-bootstrap04 ${BOOTSTRAP04_IDENT_OBJECT} ${BOOTSTRAP06_OPERATOR_OBJECT_STAGE2} m)
+    message(STATUS "ACT-POLYC-SELFHOST-LEXER01-CORRECTION01: stage3 operator component linked (fail-closed): ${BOOTSTRAP06_OPERATOR_OBJECT_STAGE2}")
     install(TARGETS hcc-bootstrap04 DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 endif()
 
