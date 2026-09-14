@@ -1,0 +1,62 @@
+ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01-CORRECTION03 — C2 — DEFECT-6 forward-fix
+================================================================================
+
+Per F14, the closed CORRECTION02 evidence tree is IMMUTABLE.
+This file records the forward-fix for DEFECT-6 (cited evidence
+path does not exist) WITHOUT mutating the closed tree.
+
+=== CORRECTED CANONICAL SCORE SOURCE ===
+
+field                       value
+--------------------------  ----------------------------------------------------------
+CANONICAL_SCORE_SOURCE      evidence/ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01/
+                            c3/fresh-scores.tsv
+
+reason                      The fresh-scores.tsv file was created at the recon
+                            ACT C3 phase (commit a386810..12acf94). It contains
+                            the measured 17-region score table computed by the
+                            frozen ACT §17 formula. It is the SOLE authoritative
+                            score source for the recon lineage.
+
+verified                    $ ls evidence/.../SURFACE-RECON01/c3/fresh-scores.tsv
+                            evidence/.../SURFACE-RECON01/c3/fresh-scores.tsv
+
+                            $ head -1 evidence/.../SURFACE-RECON01/c3/fresh-scores.tsv
+                            # C3 fresh-scores.tsv -- re-derived from C1 inputs
+                              only using the frozen ACT §17 formula
+                            ...
+                            (17 region rows + 1 header)
+
+NOT_THE_SOURCE              evidence/.../CORRECTION01/c3/fresh-scores.tsv
+                            (does not exist; CORRECTION01 c3/ contains only
+                             independent-re-derivation.txt)
+                            evidence/.../CORRECTION02/c3/fresh-scores.tsv
+                            (does not exist; CORRECTION02 c3/ contains only
+                             independent-re-derivation.txt)
+
+=== LINEAGE OF THE SCORE TABLE ===
+
+  SURFACE-RECON01  -> owns the measured 17-region score table
+                       (created at commit 12acf94; preserved immutable per F14)
+
+  CORRECTION01     -> interpreted/corrected claims about that table
+                       (defect repairs in c2/winner-invariance.tsv etc.)
+
+  CORRECTION02     -> fixed CORRECTION01's presentation mistakes
+                       (DEFECT-4 ranking monotonicity, DEFECT-5 byte description)
+                       and inadvertently cited the wrong source path
+
+  CORRECTION03     -> binds CORRECTION02's sort command to the actual
+                       canonical source (this file)
+
+=== CORRECTED COMMAND ===
+
+The CORRECTION02 C3 sort command:
+
+  awk -F'\t' 'NR>1 && $1 ~ /^R-/ {gsub(/=/,""); print $1"\t"$NF}' \
+      evidence/.../SURFACE-RECON01/c3/fresh-scores.tsv \
+    | sort -k2 -n -r
+
+produces the same ranking values as CORRECTION02/c2/
+ranking-repaired-v2.txt. The numerical sort is unchanged;
+only the cited source path is corrected.
