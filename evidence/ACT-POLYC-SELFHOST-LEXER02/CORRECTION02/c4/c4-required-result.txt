@@ -1,0 +1,74 @@
+ACT-POLYC-SELFHOST-LEXER02-CORRECTION02 — C4 CLOSE — c4-required-result.txt
+================================================
+
+## Final identity
+  branch:    main
+  HEAD:      <filled at commit time>
+  Status:    CLOSED PASS
+  Predecessor (CLOSED): d048ca9 ACT-POLYC-SELFHOST-LEXER02-CORRECTION01
+  C1 RED:        7491bcc
+  C2 IMPL:       b9f69c3
+  C3 EVIDENCE:   30b7045
+  C4 CLOSE:      <filled at commit time>
+
+## All gates green at fresh re-proof (post-C4 commit)
+
+  $ make lexer07-fixture-inventory
+  TOTAL=89  is_char=33  is_negative=16
+  TOTAL         >= 64   : 89  PASS
+  is_char       >= 24   : 33  PASS
+  is_negative   >= 16   : 16  PASS
+  FIXTURE_INVENTORY_FLOORS=PASS
+  STATUS=PASS
+
+  $ make lexer07-broad-corpus-4-stage
+  TOTAL=181
+  BYTE_IDENTICAL_4=175
+  BOTH_FAIL_4=6
+  HISTORICAL_STAGE0_FALLBACKS_USED=9
+  DIVERGED=0
+  REGRESSION=0
+  LEXER02_BROAD_CORPUS_4_STAGE=PASS
+  STATUS=PASS
+
+  $ make lexer07-lexer-seam-all-stages
+  LEXER07_PRODUCTION_SEAM_4_STAGES=PASS
+
+  $ make gate-fast
+  STATUS=PASS VERDICT=PASS
+  CHECK=factory-closure-status STATUS=PASS VERDICT=PASS
+
+  $ ./build/bootstrap06-lexer-seam-stage1
+  OP_SEAM_PASS=33 STATUS=PASS
+
+  4-stage PolyC-built .o sha256 (fixed point):
+    216053670359381d3a3d4f634607d2c63c9d3b0a6ad6f77a87da9149ec9ad71b
+
+## All three reopened defects mechanically closed
+
+  P0 #1: Mechanical fixture inventory PASS (3/3 floors)
+  P0 #2: Canonical 181-source compiler corpus PASS at all 4 stages
+         (175/175 byte-identical + 6/6 both-fail)
+  P1:    Bookkeeping corrected; hand-typed category prefixes
+         replaced by observed contract classification.
+
+  Direct differential (89 fixtures):   89/89 PASS at all 4 stages
+  Real-lexer seam (28 fixtures):      IDENTICAL at all 6 pairs
+  Mechanical fixture inventory:       PASS
+  Broad compiler corpus (181 sources): 175/175 byte-identical
+                                       + 6/6 both-fail
+  Operator seam (LEXER01):            33/33 PASS
+  Factory gate-fast:                  PASS
+  F-NO-PYTHON:                        unchanged
+  Append-only Git history:            preserved
+
+## ROADMAP update
+  ACT-POLYC-SELFHOST-LEXER02-CORRECTION02: CLOSED PASS
+  Lexer02 closure verdict: still PASS, with both CORRECTION01
+  and CORRECTION02 closure packets; the implementation has
+  been verified by both patterns.
+
+## Verdict
+  ACT-POLYC-SELFHOST-LEXER02-CORRECTION02 is CLOSED PASS.
+  The implementation is unchanged; only closure truth and
+  proof depth were further repaired.

@@ -2578,6 +2578,95 @@ ACT-POLYC-SELFHOST-LEXER02-CORRECTION01          CLOSED PASS
       authoritative; it is the same evidence assembled via a
       different path.
 
+#### ACT-POLYC-SELFHOST-LEXER02-CORRECTION02 status (CLOSED PASS at this commit)
+
+```
+ACT-POLYC-SELFHOST-LEXER02-CORRECTION02          CLOSED PASS
+  Title: Repair three additional closure-truth defects identified
+         by the post-CORRECTION01 reviewer audit of LEXER02
+  ACT-Supersedes: ACT-POLYC-SELFHOST-LEXER02-CORRECTION01
+  Authorization: docs/acts/ACT-POLYC-SELFHOST-LEXER02-CORRECTION02.md
+  Predecessor:    ACT-POLYC-SELFHOST-LEXER02-CORRECTION01 CLOSED d048ca9
+
+  Three additional closure defects repaired:
+
+    P0 #1 (mechanical fixture inventory): The CORRECTION01
+           "16 error/negative fixtures" claim was based on
+           hand-typed `err_` prefix, not observed contract.
+           After observing actual kind/err:
+             is_negative = (err != 0)  => 16 fixtures
+           The 16 are a different set from the 21 err_-prefixed
+           fixtures (9 of which return err=0 because the
+           production lexer accepts them as valid forms).
+
+    P0 #2 (canonical 181-source compiler corpus): The CORRECTION01
+           "broad corpus" evidence proved only scalar-token
+           stream equivalence across stages. The LEXER01-CORRECTION01
+           canonical pattern requires full compiler invocation
+           + .o sha256 byte-equality on the 181-source corpus,
+           with success/failure equivalence:
+             175/175 BYTE_IDENTICAL + 6/6 BOTH_FAIL
+           CORRECTION02 implements and proves this pattern.
+
+    P1 (bookkeeping): The CORRECTION01 narrative "88 + 1
+         overlap = 89" arithmetic was fictional. The 89
+         fixtures are real; the categories are now derived
+         from OBSERVED kind/err/cursor, not hand-typed names.
+
+  Conservation (re-proved):
+    Mechanical fixture inventory (CORRECTION02 gate):
+      TOTAL=89 PASS (>=64)
+      is_char=33 PASS (>=24)
+      is_negative=16 PASS (>=16)
+
+    Canonical 181-source compiler corpus at all 4 stages:
+      BYTE_IDENTICAL_4=175 (s0==s1==s2==s3 byte-equality)
+      BOTH_FAIL_4=6 (all four stages fail equivalently)
+      HISTORICAL_STAGE0_FALLBACKS_USED=9 (pre-existing
+        ./hcc ARM64 inline asm binary regression; not
+        caused by LEXER02; explicit provenance in
+        corpus-object-provenance.tsv with compiler identity
+        + sha256 binding)
+      DIVERGED=0
+      REGRESSION=0
+
+    Direct differential (CORRECTION01 gate, 89 fixtures):
+      89/89 PASS at all 4 stages
+
+    Real-lexer seam (CORRECTION01 gate, 28 fixtures):
+      IDENTICAL at all 6 pairwise stage diffs
+
+    Operator seam (LEXER01 regression check):
+      33/33 PASS
+
+    Factory gate-fast:
+      PASS
+
+    F-NO-PYTHON:           unchanged
+    Append-only Git history: preserved (no amends, no rebases)
+    Dafny:                  N/A
+
+  Lexer02 final verdict: PASS (closure truth, mechanical
+    fixture classification, and canonical compiler corpus
+    equivalence all repaired; implementation preserved verbatim).
+
+  Makefile additions (no production source mutation):
+    - lexer07-fixture-inventory: runs the mechanical
+      classifier and emits PASS/FAIL on the §32 floors.
+    - lexer07-broad-corpus-4-stage: runs the 181-source
+      corpus through all 4 stage compilers with explicit
+      provenance binding.
+    - lexer07-correction02-all: composite gate combining
+      all CORRECTION02 tests.
+
+  Residue:
+    - 9 sources where current ./hcc has ARM64 inline asm
+      regression (pre-existing ./hcc binary issue, NOT
+      LEXER02). Tracked as stage0-historical in provenance
+      TSV with explicit compiler identity binding.
+    - test-prefix-install target repair (pre-existing,
+      out of scope per CORRECTION01).
+
   NEXT:    ACT-POLYC-SELFHOST-LEXER03 (the next surface-recon winner)
 ```
 

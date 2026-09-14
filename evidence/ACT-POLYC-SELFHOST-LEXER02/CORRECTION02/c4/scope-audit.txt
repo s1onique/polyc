@@ -1,0 +1,47 @@
+ACT-POLYC-SELFHOST-LEXER02-CORRECTION02 — C4 CLOSE — scope-audit.txt
+================================================
+
+## Scope discipline (F7)
+
+### Mutations in scope
+  - scripts/quality/lexer07-fixture-inventory.sh (NEW)
+  - scripts/quality/lexer07-broad-corpus-4-stage.sh (NEW)
+  - Makefile (3 new targets: lexer07-fixture-inventory,
+    lexer07-broad-corpus-4-stage, lexer07-correction02-all;
+    .PHONY updated)
+  - docs/ROADMAP.md (CLOSED status block added for CORRECTION02)
+  - docs/factory/HANDOFF-ACT-POLYC-SELFHOST-LEXER02-CORRECTION02.md (NEW)
+  - evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION02/ (NEW)
+
+### Mutations NOT in scope (NOT touched)
+  - src/lexer.c (semantics)
+  - tools/bootstrap/selfhost-lexer-scalar-literal.HC (semantics)
+  - src/lexer_bridge.h (ABI declaration)
+  - src/CMakeLists.txt (stage linkage)
+  - tools/quality/lexer07-scalar-literal-oracle.c (oracle body)
+  - tools/quality/lexer07-direct-differential.c (fixture corpus)
+    (CORRECTION01's expansion from 40 to 89 is preserved verbatim)
+  - The 9 stage0 fallback files (not modified; their historical
+    byte-identical outputs in build/b02-corpus-A are used as-is)
+
+### Residue (out of scope)
+  - P2: 9 sources where current ./hcc has ARM64 inline asm
+    regression (pre-existing ./hcc binary issue, NOT LEXER02).
+    Tracked as stage0-historical in provenance TSV with explicit
+    compiler identity binding.
+  - P2: test-prefix-install target repair (out of scope per
+    CORRECTION01 §Out of scope).
+
+### Trace: every changed line traces to CORRECTION02 scope
+
+| File                                              | Lines | Scope binding                            |
+|---------------------------------------------------|-------|------------------------------------------|
+| scripts/quality/lexer07-fixture-inventory.sh      | NEW   | P0 #1 mechanical classification          |
+| scripts/quality/lexer07-broad-corpus-4-stage.sh   | NEW   | P0 #2 canonical compiler corpus           |
+| Makefile                                          | +20   | New Makefile targets                     |
+| docs/ROADMAP.md                                   | +60   | CORRECTION02 CLOSED status block         |
+| docs/factory/HANDOFF-...CORRECTION02.md           | NEW   | Closure handoff                          |
+| evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION02/ | NEW   | All new evidence                         |
+
+No changes to: src/, tools/bootstrap/, tools/quality/*-oracle.c,
+tools/quality/lexer07-direct-differential.c.
