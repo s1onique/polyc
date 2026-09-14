@@ -2758,12 +2758,31 @@ ACT-POLYC-SELFHOST-LEXER02-CORRECTION04          CLOSED PASS
            OR ACT-POLYC-SELFHOST-LEXER02-CORRECTION05 (negative
            control mutation tests; residue P1).
 ```
-```
 
-#### ACT-POLYC-SELFHOST-LEXER02-CORRECTION05 status (CLOSED PASS at this commit)
+> **HALT reclassification banner.** The C05 closure
+> commits `eda6ad0`, `ceb9daf`, `e734bf7` were
+> recorded with verdict `PASS_TRUE_GREEN` but are
+> mechanically false on six counts (R1..R6 +
+> R7 budget/identity). The C05 verdict is
+> **reclassified to HALT DEPENDENCY/YES** (the
+> defects are governance defects, but the BLOCK
+> is justified under DOCTRINE §25 B5 since
+> LEXER03 mechanically depends on the missing
+> broad-corpus rewrite); the LEXER03 BLOCKED
+> signal is **re-imposed**; and
+> `ACT-POLYC-SELFHOST-LEXER02-CORRECTION05-
+> CORRECTION01` (RECOMMENDED, NOT YET OPEN) is
+> the only path to flip this back to CLOSED
+> PASS_TRUE_GREEN. Full rationale lives in the
+> C05 status block below.
+
+#### ACT-POLYC-SELFHOST-LEXER02-CORRECTION05 status (HALT DEPENDENCY/YES at `e734bf7`; reviewer verdict FALSE_GREEN — see CORRECTION05-CORRECTION01 block below)
 
 ```
-ACT-POLYC-SELFHOST-LEXER02-CORRECTION05          CLOSED PASS
+ACT-POLYC-SELFHOST-LEXER02-CORRECTION05          HALT DEPENDENCY/YES
+                                                    (reclassified from
+                                                    CLOSED PASS at
+                                                    e734bf7)
   Title: Repair CORRECTION04 closure-truth defects
          (FALSE_GREEN on 58a89cc).
   Authorization: docs/acts/ACT-POLYC-SELFHOST-LEXER02-CORRECTION05.md
@@ -2931,9 +2950,34 @@ ACT-POLYC-SELFHOST-LEXER02-CORRECTION05          CLOSED PASS
 
     Pri    ACT                                                State
     ----   ------------------------------------------------   ----------------
-    P0     ACT-POLYC-SELFHOST-LEXER02-CORRECTION05            ✅ CLOSED PASS
-    P1     ACT-POLYC-SELFHOST-LEXER03 / fresh surface recon   UNBLOCKED
-                                                               (exit: C05 TRUE GREEN)
+    P0     ACT-POLYC-SELFHOST-LEXER02-CORRECTION05-CORRECTION01  READY (the substantive
+                                                                  broad-corpus-4-stage.HC
+                                                                  rewrite residue; will
+                                                                  flip C05 from
+                                                                  HALT GOVERNANCE/YES to
+                                                                  CLOSED PASS_TRUE_GREEN
+                                                                  under fresh evidence)
+    P0     ACT-POLYC-SELFHOST-LEXER02-CORRECTION05            🔴 HALT DEPENDENCY/YES
+                                                               (false PASS_TRUE_GREEN;
+                                                                mandatory AC02/AC03/AC04/
+                                                                AC18 deferred without
+                                                                authorization; 8 commits
+                                                                vs. ≤6 budget; LOC over-
+                                                                runs; mutation controls
+                                                                not end-to-end; C05-only
+                                                                proof-verifier run is
+                                                                STATUS=FAIL against C04
+                                                                evidence; defects are
+                                                                governance, but the
+                                                                BLOCKS_NEXT=YES classi-
+                                                                fication is B5 DEPEN-
+                                                                DENCY since LEXER03 me-
+                                                                chanically depends on
+                                                                the missing broad-
+                                                                corpus rewrite)
+    P1     ACT-POLYC-SELFHOST-LEXER03 / fresh surface recon   ⛔ BLOCKED again
+                                                               (gate: CORRECTION05-
+                                                                CORRECTION01)
     P2     724-invocation parallelization                     Deferred
                                                                (performance)
     P2     9 current-stage0 ARM64 asm failures                Deferred
@@ -3024,9 +3068,261 @@ ACT-POLYC-SELFHOST-LEXER02-CORRECTION05          CLOSED PASS
 
   Six commits (C1, C1.1, C1.2, C2, C3, C4) per the
   pre-authorized commit topology. ≤6 constraint
-  satisfied. LEXER03 BLOCKED signal lifted: the next
-  ACT may open via fresh surface recon.
-```
+  VIOLATED: the actual C05 commit range
+  (9824027..e734bf7) contains 8 commits; the two
+  extras (ceb9daf, e734bf7) were created without
+  an explicit contract revision and are recorded
+  here as governance residue, not as authorized
+  budget. LEXER03 BLOCKED signal RE-IMPOSED at
+  this HALT (see below). The next ACT may open
+  via fresh surface recon ONLY after
+  ACT-POLYC-SELFHOST-LEXER02-CORRECTION05-
+  CORRECTION01 closes PASS_TRUE_GREEN.
+
+  ----
+
+  REJECTION NOTE (recorded by the C05 closure
+  review; original closure commits 9824027,
+  91ae216, e0ec05a, 3466fef, 632c0bc, eda6ad0,
+  ceb9daf, e734bf7 remain immutable per F14):
+
+    The CLOSED PASS_TRUE_GREEN verdict at e734bf7
+    is mechanically false on six counts.
+
+    (R1) AC02 was recorded as PARTIAL inside the
+         C3 evidence file itself
+         (evidence/ACT-POLYC-SELFHOST-LEXER02/
+          CORRECTION05/c3/c3-required-result.txt
+          lines 144-148): the verifier rejects the
+          C04 5-column provenance schema with
+          "AC02_FAIL" / "STATUS=FAIL" (exit=1),
+          and the C05 8-column schema is deferred
+          to the broad-corpus-4-stage.HC rewrite
+          residue. A PARTIAL AC cannot underwrite
+          a PASS_TRUE_GREEN verdict.
+
+    (R2) AC03, AC04, and AC18 were recorded as
+         DEFERRED in the same C3 file (lines
+         148-150 and 173-175), explicitly bound
+         to the broad-corpus-4-stage.HC rewrite
+         that was NEVER executed in this ACT
+         (zero diff lines against the C05 range
+         per `git diff 9824027^..e734bf7 --stat --
+          tools/quality/lexer07-broad-corpus-4-stage.HC`).
+         The closed ACT therefore retained the
+         pre-existing FNV-1a 408-LOC generator —
+         exactly the defect R2 in C05 §0 lists
+         as the thing AC03 + AC18 must close.
+
+    (R3) AC05 mutation control: the only recorded
+         log is `MUTATION_STUB ok rc=0
+         evidence=NONE` (c3-stub-control.log). No
+         independent verifier rejection with
+         non-zero exit is recorded. AC05 closure
+         is narrative, not evidence.
+
+    (R4) AC06 mutation control:
+         c3-corrupt-control.log records only the
+         corrupted-file creation (`MUTATION_CORRUPT
+         ok dst=... flipped_byte_...`). No SHA
+         computation, no immutable-baseline
+         comparison, no OBJECT_IDENTITY_MISMATCH
+         exit code is recorded. AC06 closure is
+         narrative, not evidence.
+
+    (R5) AC07 mutation control:
+         c3-fixture-mutation.log records
+         `expected_total=88 canonical=89` and the
+         source code (lexer07-mutation-fixture.HC)
+         does not actually mutate the fixture
+         table; the mutation is delegated to an
+         external test-driver wrapper that is
+         neither present in the C05 commit range
+         nor visible in any shell wrapper or
+         Makefile. AC07 closure is narrative,
+         not evidence.
+
+    (R6) The only recorded proof-verifier run
+         (c3-proof-verify-c04-verdict.txt) is
+         STATUS=FAIL / AC02_FAIL / exit=1 — the
+         verifier correctly refuses to read C04
+         evidence under the C05 8-column schema
+         contract. No successful verifier run
+         against C05 evidence exists; the CLOSE
+         verdict therefore proves only that the
+         verifier rejects the OLD evidence, not
+         that the NEW proof succeeded.
+
+    (R7) Identity and budget:
+
+         - The C05 ACT §10 commits "Do not exceed
+           6 commits." The actual range contains
+           8 commits. The two extras are recorded
+           as "amend-residue boundary commits"
+           without a contract revision. AUTHORIZED
+           commit budget was violated, not the
+           append-only invariant.
+
+         - The HANDOFF records the C4 CLOSE
+           SHA as `eda6ad0`; the C05 commit range
+           terminates at `e734bf7`, with both
+           `ceb9daf` and `e734bf7` bearing the
+           "C4 CLOSE (SHA fill)" / "C4 CLOSE (SHA
+           fill v2)" subject. Identity is
+           internally inconsistent: the
+           HANDOFF's named exit SHA is not the
+           range's tip.
+
+         - SHA-256 implementation: 173 LOC vs.
+           ≤120 authorized budget.
+         - Predecessor verifier: 108 LOC vs.
+           ≤80 authorized budget.
+         - Mutation-corrupt tool: 53 LOC vs.
+           ≤40 authorized budget.
+         None of the overruns were authorized by
+         a contract revision.
+
+    HALT CLASSIFICATION:
+
+      HALT_CLASS:    DEPENDENCY
+      BLOCKS_NEXT:   YES
+
+      (The defects themselves are governance
+      defects — contract deferred ACs, narrative
+      outran evidence, LOC/commit budget over-
+      runs. The BLOCKS_NEXT=YES classification
+      is justified under the DOCTRINE §25 B5
+      mechanical predicate: the LEXER03
+      successor ACT mechanically depends on a
+      predecessor capability
+      (broad-corpus-4-stage.HC substantive
+      rewrite + fresh C05-owned evidence) that
+      does not exist in any committed C05
+      commit. Under DEPENDENCY the verifier
+      accepts either BLOCKS_NEXT value per
+      factory-halt-classification.HC:665
+      `RequiredBlocksNext("DEPENDENCY") == -1`.
+      Choosing YES to reflect that the
+      LEXER03 BLOCKED signal was lifted by the
+      false PASS and must be re-imposed.
+
+      The closure narrative outran the closure
+      reality. LEXER03 was BLOCKED at `58a89cc`
+      with the explicit predicate that
+      "CORRECTION05 closes PASS" lifts the
+      signal (C05 ACT §12). Since the C05 PASS
+      is mechanically false, the LEXER03
+      BLOCKED signal must be re-imposed.
+
+      B5 mechanical predicate: the LEXER03
+      successor ACT mechanically depends on the
+      broad-corpus-4-stage.HC substantive
+      rewrite; that rewrite does not exist in
+      any committed C05 commit. Until
+      ACT-POLYC-SELFHOST-LEXER02-CORRECTION05-
+      CORRECTION01 produces fresh C05-owned
+      evidence, runs the independent verifier to
+      AC02_PASS_TRUE_GREEN, executes all three
+      mutation controls end-to-end with recorded
+      non-zero verifier exits, and closes under
+      ≤6 commits with no LOC budget overruns,
+      the LEXER03 BLOCKED signal stays.
+
+    IMPLEMENTATION (preserved, useful):
+
+      tools/quality/lexer07-sha256.HC          (173 LOC)
+        Verified against NIST SHA-2 Additional
+        Test Data (empty / "abc" / 55-56-57-byte
+        zero-byte boundary). All 5 vectors PASS.
+        Useful regardless of this HALT.
+
+      tools/quality/lexer07-proof-verify.HC    (136 LOC)
+        Independent PolyC verifier. Carries
+        compiled-in immutable SHA-256 baseline
+        for the 9 stage0-historical objects at
+        58a89cc. Useful regardless of this HALT.
+
+      tools/quality/lexer07-predecessor-verify.HC
+                                                 (108 LOC)
+        Detects the C04 predecessor-record defect
+        (recorded_sha=35c67ac matches known-wrong;
+        correct predecessor is 6abde99). Useful
+        regardless of this HALT.
+
+      tools/quality/lexer07-mutation-{stub,
+        corrupt,fixture}.HC                    (24+53+35 LOC)
+        Negative-control mutation harnesses. The
+        harness plumbing is useful; the recorded
+        C05 runs are NOT end-to-end (see R3..R5
+        above) and must be re-run under
+        CORRECTION05-CORRECTION01.
+
+      tools/quality/lexer07-fixture-inventory.HC
+                                                 (395 LOC)
+        TSV-cell escaping for embedded control
+        bytes (P1-5 closed). Useful regardless
+        of this HALT.
+
+    ADDITIONAL P0 RESIDUE (post-CLOSURE
+    worktree noise, recorded but NOT
+    evidence-of-defect for C05 closure truth):
+
+      At the time of this HALT, the live
+      worktree at e734bf7 contains an unstaged
+      modification to
+        evidence/ACT-POLYC-SELFHOST-LEXER02/
+        CORRECTION05/c3/fixture-inventory-summary.txt
+      that rewrites the header from
+        "FIXTURE INVENTORY SUMMARY
+         (CORRECTION05 PolyC)"
+      back to
+        "FIXTURE INVENTORY SUMMARY
+         (CORRECTION04 PolyC)".
+      This dirty state appeared at
+      2026-09-14 16:46 (filesystem mtime =
+      e734bf7 commit timestamp). It is
+      NOT present in any C05 commit; the
+      committed C05 evidence at 632c0bc /
+      eda6ad0 / ceb9daf / e734bf7 retains
+      "CORRECTION05 PolyC". The dirt is
+      therefore post-CLOSURE worktree noise,
+      not a committed C05 evidence rewrite.
+      It IS a fresh AC16 violation against
+      the live worktree and is recorded here
+      as P0 residue for
+      ACT-POLYC-SELFHOST-LEXER02-CORRECTION05-
+      CORRECTION01 to either (a) verify it
+      was introduced by the reviewer's own
+      verification tooling and discard, or
+      (b) treat as a separate operational
+      residue.
+
+      F1 forbids auto-discard of unrelated
+      work; F14 forbids rewrites of the
+      committed C05 evidence; F15 forbids
+      silent scope expansion. Therefore this
+      HALT records the dirty state but does
+      NOT mutate the file.
+
+    NEXT ACT = ACT-POLYC-SELFHOST-LEXER02-
+    CORRECTION05-CORRECTION01 (RECOMMENDED,
+    NOT YET OPEN): bounded governance
+    correction that (1) actually rewrites
+    tools/quality/lexer07-broad-corpus-4-stage.HC
+    with the R2/R3/R4/R5 substantive work,
+    (2) produces fresh C05-owned evidence
+    under the new 8-column provenance
+    schema, (3) runs
+    lexer07-proof-verify.HC end-to-end to
+    AC02_PASS_TRUE_GREEN, (4) executes the
+    three mutation controls (AC05/AC06/AC07)
+    end-to-end with recorded non-zero
+    verifier exits, (5) investigates the
+    post-CLOSURE worktree mutation residue,
+    and (6) closes under ≤6 commits and the
+    authorized LOC budgets. LEXER03 remains
+    BLOCKED until this ACT closes
+    PASS_TRUE_GREEN.
 
 ### P5a — LLVM feature depth (PARALLEL BACKLOG, NON-BLOCKING)
 
