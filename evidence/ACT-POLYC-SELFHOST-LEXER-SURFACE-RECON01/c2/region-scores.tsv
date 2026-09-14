@@ -1,0 +1,126 @@
+# ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01 — C2 — region scoring
+# Frozen formulas (ACT §17):
+#   OWNERSHIP_GAIN  = semantic_loc + 24*distinct_token_kinds + 12*host_C_functions_absorbed + 16*scalar_fields_semantically_owned
+#   COHESION_GAIN   = internal_coupling  (sum of pair SHARED_STATE scores from state-coupling.tsv within the region)
+#   BOUNDARY_AMORT  = 24*eliminated_abi_slots + 32*eliminated_cross_boundary_cursor_transitions
+#   RISK            = 16*final_abi_input_slots + 16*final_abi_output_slots + 40*pointer_fields_written
+#                    + 48*diagnostic_edges + 64*allocation_ownership_edges + 96*container_edges
+#   FINAL_SCORE     = OWNERSHIP_GAIN + COHESION_GAIN + BOUNDARY_AMORT - RISK
+#
+# Notes on "scalar_fields_semantically_owned": fields the region produces semantically
+# (not just reads transiently). For numeric+char: ishex (R-A produces), cur_i64 (R-B,R-C),
+# cur_f64 (R-B), cur_strlen (all three). Comment produces l->lineno / l->line_start_ptr
+# updates (line accounting scalars). Whitespace produces same.
+#
+# Format: region_id<TAB>semantic_loc<TAB>kinds<TAB>absorbed<TAB>scalar_owned<TAB>internal_coupling<TAB>elim_abi_slots<TAB>elim_cursor_xings<TAB>abi_in<TAB>abi_out<TAB>ptr_writes<TAB>diag_edges<TAB>alloc_edges<TAB>container_edges<TAB>OWNERSHIP_GAIN<TAB>COHESION_GAIN<TAB>BOUNDARY_AMORT<TAB>RISK<TAB>FINAL_SCORE
+
+# R-A scalar_literal_extent: countNumberLen
+# scalar_owned: 3 (isfloat, ishex, err returned; semantically produces isfloat/ishex)
+# internal_coupling: N/A (single op)
+# eliminated_abi_slots: 0 (single op is the baseline; no merge)
+# eliminated_cursor_xings: 0
+# abi_in/out: 4/4
+# ptr_writes: 0 (countNumberLen does NOT mutate l->ptr; pure byte walk on local var)
+# diag_edges: 1 (loggerWarning)
+# alloc_edges: 0
+# container_edges: 0
+R-A	78	0	1	3	0	0	0	4	4	0	1	0	0	=78+0+12+48=138	=0	=0+0=0	=64+64+0+48+0+0=176	=138-176=-38	-38
+
+# R-B scalar_literal_value: lexNumeric
+# scalar_owned: 3 (cur_i64, cur_f64, ishex)
+# internal_coupling: 0
+# abi_in/out: 4/5
+# ptr_writes: 1 (l->ptr += numlen - 1)
+# diag_edges: 0
+R-B	27	2	1	3	0	0	0	4	5	1	0	0	0	=27+48+12+48=135	=0	=0	=64+80+40+0+0+0=184	=135-184=-49	-49
+
+# R-C scalar_literal_char: lexCharConst
+# scalar_owned: 2 (cur_i64, cur_strlen)
+# internal_coupling: 0
+# abi_in/out: 4/4
+# ptr_writes: 1 (l->ptr)
+# diag_edges: 1 (lexRaise overflow/unterminated)
+R-C	78	1	1	2	0	0	0	4	4	1	1	0	0	=78+24+12+32=146	=0	=0	=64+64+40+48+0+0=216	=146-216=-70	-70
+
+# R-D scalar_literal_extent_value: R-A + R-B
+# scalar_owned: 5 (cur_i64, cur_f64, ishex, isfloat_or_implicit, kind)
+# internal_coupling: SHARED_STATE(R-A,R-B) = 34
+# eliminated_abi_slots: vs R-A alone (8) + R-B alone (9) = 17 -> R-D 10; saved 7 slots
+# eliminated_cursor_xings: 2 (R-A and R-B each had one; R-D has one)
+# abi_in/out: 4/6
+# ptr_writes: 1
+# diag_edges: 1 (inherited from R-A's loggerWarning)
+R-D	105	2	2	5	34	7	2	4	6	1	1	0	0	=105+48+24+80=257	=34	=168+64=232	=64+96+40+48+0+0=248	=257+34+232-248=275	275
+
+# R-E scalar_literal_value_char: R-B + R-C
+# scalar_owned: 4 (cur_i64, cur_f64, cur_strlen_union_for_char, ishex)
+# internal_coupling: SHARED_STATE(R-B,R-C) = 36
+# eliminated_abi_slots: vs R-B (9) + R-C (8) = 17 -> R-E 10; saved 7 slots
+# eliminated_cursor_xings: 2
+# abi_in/out: 4/6
+# ptr_writes: 1
+# diag_edges: 1 (R-C's lexRaise)
+R-E	105	3	2	4	36	7	2	4	6	1	1	0	0	=105+72+24+64=265	=36	=168+64=232	=64+96+40+48+0+0=248	=265+36+232-248=285	285
+
+# R-F scalar_literal_scanner: R-A + R-B + R-C
+# scalar_owned: 6 (cur_i64, cur_f64, ishex, isfloat, cur_strlen, kind)
+# internal_coupling: SHARED_STATE(R-A,R-B)+SHARED_STATE(R-B,R-C)+SHARED_STATE(R-A,R-C) = 34+36+26 = 96
+# eliminated_abi_slots: vs R-A (8) + R-B (9) + R-C (8) = 25 -> R-F 11; saved 14 slots
+# eliminated_cursor_xings: 3 (each constituent had 1)
+# abi_in/out: 4/7
+# ptr_writes: 1 (single cursor advance)
+# diag_edges: 2 (R-A's loggerWarning + R-C's lexRaise; max(diag)=2 not additive)
+R-F	183	4	3	6	96	14	3	4	7	1	2	0	0	=183+96+36+96=411	=96	=336+96=432	=64+112+40+96+0+0=312	=411+96+432-312=627	627
+
+# R-G comment_skip: lexSkipCodeComment
+# scalar_owned: 1 (eof_in_comment)
+# internal_coupling: 0
+# eliminated_abi_slots: 0
+# eliminated_cursor_xings: 0
+# abi_in/out: 4/2
+# ptr_writes: 1 (l->ptr advance)
+# diag_edges: 0 (no lexRaise; legacy "walk off EOF" recovery preserved)
+R-G	31	1	1	1	0	0	0	4	2	1	0	0	0	=31+24+12+16=83	=0	=0	=64+32+40+0+0+0=136	=83-136=-53	-53
+
+# R-H comment_with_whitespace: R-G + R-I
+# scalar_owned: 2 (eof_in_comment, kind)
+# internal_coupling: SHARED_STATE(R-G, R-I) = estimate 18 (shared cursor writes, shared lineno/line_start_ptr writes)
+# eliminated_abi_slots: vs R-G (6) + R-I (6) = 12 -> R-H 7; saved 5 slots
+# eliminated_cursor_xings: 2
+# abi_in/out: 4/3
+# ptr_writes: 1 (combined advance)
+# diag_edges: 0
+R-H	46	2	2	2	18	5	2	4	3	1	0	0	0	=46+48+24+32=150	=18	=120+64=184	=64+48+40+0+0+0=152	=150+18+184-152=200	200
+
+# R-I whitespace_dispatch: inline cases in lexCore
+# scalar_owned: 1 (kind)
+# internal_coupling: 0
+# eliminated_abi_slots: 0
+# eliminated_cursor_xings: 0
+# abi_in/out: 4/2
+# ptr_writes: 1 (l->ptr)
+# diag_edges: 0
+R-I	15	2	1	1	0	0	0	4	2	1	0	0	0	=15+48+12+16=91	=0	=0	=64+32+40+0+0+0=136	=91-136=-45	-45
+
+# R-J string_literal_scan: lexString  -> INELIGIBLE (E5) -> NOT SCORED
+R-J	-	-	-	-	-	-	-	-	-	-	-	-	-	INELIGIBLE_E5	-	-	-	-
+
+# R-K numeric_extent_char: R-A + R-C
+# scalar_owned: 4 (isfloat, ishex, cur_i64, cur_strlen)
+# internal_coupling: SHARED_STATE(R-A,R-C) = 26
+# eliminated_abi_slots: vs R-A (8) + R-C (8) = 16 -> R-K 10; saved 6 slots
+# eliminated_cursor_xings: 2
+# abi_in/out: 4/6
+# ptr_writes: 1
+# diag_edges: 1 (loggerWarning from R-A + lexRaise from R-C, max=1 distinct kind but both observed; counted as 2? R-K includes BOTH diagnostic paths, so diag_edges=2)
+R-K	156	2	2	4	26	6	2	4	6	1	2	0	0	=156+48+24+64=292	=26	=144+64=208	=64+96+40+96+0+0=296	=292+26+208-296=230	230
+
+# R-L numeric_value_comment: R-B + R-G
+# scalar_owned: 4 (cur_i64, cur_f64, ishex, eof_in_comment)
+# internal_coupling: SHARED_STATE(R-B,R-G) = 28
+# eliminated_abi_slots: vs R-B (9) + R-G (6) = 15 -> R-L 11; saved 4 slots
+# eliminated_cursor_xings: 2
+# abi_in/out: 4/7
+# ptr_writes: 1
+# diag_edges: 0
+R-L	58	3	2	4	28	4	2	4	7	1	0	0	0	=58+72+24+64=218	=28	=96+64=160	=64+112+40+0+0+0=216	=218+28+160-216=190	190

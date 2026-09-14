@@ -1,0 +1,45 @@
+ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01 — C2 — required result
+===============================================================
+
+```text
+ACT_PHASE                       = IMPL (recon/design, no compiler mutation)
+REGION_MODEL                    = COMPLETE
+REGION_COUNT                    = 12 (R-A through R-L)
+ELIGIBLE_REGION_COUNT           = 11 (R-J excluded by E5)
+
+POSITIVE_ELIGIBLE_REGIONS       = 6
+  R-F (scalar_literal_scanner)         +627  RANK 1  WINNER
+  R-E (scalar_literal_value_char)      +285  RANK 2
+  R-D (scalar_literal_extent_value)    +275  RANK 3
+  R-K (numeric_extent_char)            +230  RANK 4
+  R-H (comment_with_whitespace)        +200  RANK 5
+  R-L (numeric_value_comment)          +190  RANK 6
+
+NEGATIVE_OR_INELIGIBLE_REGIONS  = 6
+  R-G  -53  R-I  -45  R-A  -38  R-B  -49  R-C  -70
+  R-J  E5 ineligible
+
+WINNER                          = R-F (scalar_literal_scanner)
+WINNER_RANK                     = 1
+WINNER_FINAL_SCORE              = +627
+WINNER_E1_E14                   = PASS (all 14)
+WINNER_ABI                      = BOUNDED (4 in / 7 out logical slots)
+WINNER_DIRECT_ORACLE            = TEST_ONLY_PRODUCTION_EXTRACTION (feasible)
+WINNER_PRODUCTION_SEAM          = POSSIBLE
+WINNER_FIXED_POINT_FEASIBILITY  = PASS
+WINNER_MIGRATION_READY          = YES
+
+WINNER_MARGIN                   = 342  (ROBUST)
+
+PRODUCTION_DELTA                = ZERO  (no compiler code changed in C2)
+C2_TO_C3_GATE                   = OPEN
+```
+
+No HALT conditions triggered.
+Anti-gaming order respected:
+  graph freeze (C1) -> region construction -> eligibility -> score -> winner.
+
+NEXT ACT BINDING:
+  ACT-POLYC-SELFHOST-LEXER02
+  LEXER02_SCOPE = EXACTLY (scalar_literal_scanner covering
+                          countNumberLen, lexNumeric, lexCharConst)

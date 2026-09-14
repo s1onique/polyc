@@ -1,0 +1,21 @@
+# ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01 — C2 — dynamic region coverage
+# Instrumentation is disproportionately invasive for this recon ACT;
+# we record UNABAILABLE_NONBLOCKING and rely on static + corpus evidence.
+#
+# Static evidence (from inventory + state graph + corpus-region-map):
+DYNAMIC_COVERAGE = UNAVAILABLE_NONBLOCKING
+#
+# Region invocation paths in production code (statically traced):
+region_id	static_invocation_paths	production_files_with_invocation
+R-A	lexCore case '0'..'9' -> lexNumeric -> countNumberLen	src/lexer.c, src/*.c (any numeric literal)
+R-B	lexCore case '0'..'9' -> lexNumeric	src/lexer.c, src/*.c (any numeric literal)
+R-C	lexCore case '\'' -> lexCharConst	src/lexer.c, src/*.c (any char const)
+R-D	(union)	union of R-A and R-B
+R-E	(union)	union of R-B and R-C
+R-F	(union)	union of R-A, R-B, R-C
+R-G	lexCore case '/' (when next is '/' or '*') -> lexSkipCodeComment	src/lexer.c, src/*.c (any // or /* comment)
+R-H	(union)	union of R-G and R-I
+R-I	lexCore cases '\\r','\\n','\\t',' '	src/lexer.c, src/*.c (any whitespace)
+R-J	lexCore case '"' -> lexString	src/lexer.c, src/*.c (any string literal)
+R-K	(union)	union of R-A and R-C
+R-L	(union)	union of R-B and R-G

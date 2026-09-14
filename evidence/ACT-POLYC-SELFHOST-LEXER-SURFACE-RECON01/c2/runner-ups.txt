@@ -1,0 +1,51 @@
+ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01 — C2 — runner-up record
+================================================================
+
+Top 3 runners-up (after R-F winner):
+
+  RANK 2: R-E (scalar_literal_value_char = R-B + R-C)
+    FINAL_SCORE = +285
+    OWNERSHIP_GAIN = 265
+    COHESION_GAIN  = 36
+    BOUNDARY_AMORT = 232
+    RISK           = 248
+    WHY_LOST: smaller than R-F (no numeric_extent walk absorbed; 2 functions vs 3)
+              but otherwise valid; would be a viable alternative if R-F proved too large.
+
+  RANK 3: R-D (scalar_literal_extent_value = R-A + R-B)
+    FINAL_SCORE = +275
+    OWNERSHIP_GAIN = 257
+    COHESION_GAIN  = 34
+    BOUNDARY_AMORT = 232
+    RISK           = 248
+    WHY_LOST: same as R-E but missing char_const; closer to R-E but loses on
+              distinct_token_kinds (2 vs 3) because char_const adds a kind.
+
+  RANK 4: R-K (numeric_extent_char = R-A + R-C)
+    FINAL_SCORE = +230
+    WHY_LOST: omits the numeric_value_parse step (lexNumeric); the value
+              fields (cur_i64, cur_f64) are not produced, so the
+              OWNERSHIP_GAIN pays for length but not for value.
+
+Ranks 5+6 (R-H comment_with_whitespace, R-L numeric_value_comment) are
+also positive but use orthogonal token-kind sets; useful as
+parallel-track future candidates.
+
+Negative-region record (kept for completeness; not eligible for selection):
+
+  R-G  comment_skip               FINAL=-53  same as LEXER01 microscopic
+  R-I  whitespace_dispatch        FINAL=-45  same as LEXER01 microscopic
+  R-A  scalar_literal_extent      FINAL=-38  larger LOC than LEXER01 microscopic
+                                              (78 vs 75) but no kind credit
+                                              (countNumberLen doesn't pick a kind)
+  R-B  scalar_literal_value       FINAL=-49  same as LEXER01 microscopic
+  R-C  scalar_literal_char        FINAL=-70  same as LEXER01 microscopic
+                                              (slight diff due to region-specific
+                                               scalar_fields_semantically_owned=2 vs
+                                               LEXER01's accounting)
+
+Ineligible:
+  R-J  string_literal_scan        E5 violation remains; cannot be lifted by region
+                                  aggregation (the Arena/heap-allocated char*
+                                  must cross the ABI regardless of how the
+                                  upstream work is partitioned).

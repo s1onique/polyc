@@ -1,0 +1,26 @@
+ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01 — C2 — sensitivity check
+================================================================
+
+WINNER: R-F (scalar_literal_scanner), FINAL_SCORE=627
+RUNNER-UP: R-E (scalar_literal_value_char), FINAL_SCORE=285
+MARGIN: 627 - 285 = 342
+
+Classification (ACT §37):
+  342 >= 100 -> ROBUST
+
+Notes on sensitivity:
+  - R-F remains positive under all perturbations explored:
+    * if internal_coupling is halved (R-A,R-B only counted, no R-A,R-C):
+      411 + 48 + 432 - 312 = 579  (still >0, still rank 1)
+    * if eliminated_abi_slots under-counted by 5 (i.e., only 9 saved instead
+      of 14): 411 + 96 + 9*24 + 3*32 - 312 = 411+96+216+96-312 = 507 (still rank 1)
+    * if diag_edges is 1 instead of 2 (char_const overflow treated as warning):
+      411 + 96 + 432 - (312 - 48) = 411+96+432-264 = 675 (still rank 1)
+  - R-F outranks R-E by a robust margin under all reasonable
+    perturbations of the formula's inputs.
+
+  - R-E would only outrank R-F if R-F's `scalar_fields_semantically_owned`
+    dropped from 6 to 2 (e.g., if we only credited cur_i64+cur_f64, not
+    ishex/isfloat/cur_strlen/kind). The frozen formula specifies 6.
+
+No weights changed. This is a robustness report, not a re-score.

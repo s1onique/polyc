@@ -1,0 +1,37 @@
+ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01 — C2 — projected surface delta
+=====================================================================
+
+If a future ACT-POLYC-SELFHOST-LEXER02 successfully migrates the
+WINNER region R-F (scalar_literal_scanner), the projected post-state is:
+
+```text
+PROJECTED_SELFHOST_COMPONENTS     = 2 -> 3
+  identifier_scanner
+  operator_punctuation_recognizer
+  scalar_literal_scanner          (NEW; subject of LEXER02)
+
+PROJECTED_SELFHOSTED_SEMANTIC_LOC  = (predecessor selfhosted) + ~183
+  = approximately doubled relative to predecessor.
+
+PROJECTED_HOST_C_CORE_SEMANTIC_LOC = 333 - 183 = 150
+  Remaining host-C core lexical work shrinks by ~55%.
+
+PROJECTED_TOKEN_KIND_DELTA         = +4
+  TK_I64, TK_F64, TK_CHAR_CONST, plus an internal dispatch kind
+  (4 distinct kinds absorbed; matches region-scores.tsv).
+
+PROJECTED_ENTRY_SEAM_DELTA         = +3
+  lexCore case '0'..'9'    -> scalar_literal_scanner
+  lexCore case '\''         -> scalar_literal_scanner
+  (and the countNumberLen internal call disappears; lexNumeric and
+   lexCharConst dispatch lines disappear from lexCore.)
+  3 distinct lexCore dispatch arms collapse into the region.
+```
+
+These are projections, clearly labeled. They are NOT closure claims.
+The actual delta will be measured in LEXER02 C4.
+
+If R-F migration encounters an unforeseen E1..E14 violation in LEXER02,
+the next-best region is R-E (scalar_literal_value_char) at FINAL_SCORE
++285; or R-D (scalar_literal_extent_value) at +275. Either is a viable
+fallback with a more conservative scope.

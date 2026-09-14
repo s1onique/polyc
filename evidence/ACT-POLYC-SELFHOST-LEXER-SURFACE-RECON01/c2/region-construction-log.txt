@@ -1,0 +1,199 @@
+ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01 — C2 — region construction log
+=====================================================================
+
+Frozen rules (ACT §13):
+  Pass A: one region per primary semantic class (CORE_NUMERIC_EXTENT,
+          CORE_NUMERIC_VALUE, CORE_CHAR_LITERAL, CORE_COMMENT, CORE_WHITESPACE,
+          CORE_STRING_LITERAL stay separate).
+  Pass B: merge two regions when INTERNAL_COUPLING_GAIN >= 16 AND E1..E14 still pass.
+  Pass C: merge adjacent regions when BOUNDARY_SLOTS(A) + BOUNDARY_SLOTS(B) -
+          BOUNDARY_SLOTS(A+B) >= 3 AND E1..E14 still pass.
+
+PASS A — single ownership classes (deterministic, sorted lexically by class id):
+
+  R1  numeric_extent               [countNumberLen]
+  R2  numeric_value                [lexNumeric]
+  R3  char_literal                 [lexCharConst]
+  R4  string_literal               [lexString]
+  R5  comment_skip                 [lexSkipCodeComment]
+  R6  whitespace_dispatch          [inline cases in lexCore]
+  R7  cursor_advance               [lexNextChar]
+  R8  cursor_rewind                [lexRewindChar]
+  R9  cursor_peek                  [lexPeek, lexPeekMatch]
+
+For region derivation purposes we collapse R7/R8/R9 into one
+"shared_cursor" helper class because they are 1-byte helpers used
+across all CORE_LEXER regions; they will not be migrated as their
+own region (they are ABI-neutral helpers used by every candidate).
+R7R8R9 are HOST_C_CORE_LEXER but excluded from region candidates
+because they do not produce a token kind (per §15 anti-gaming:
+helper, not a slice).
+
+REVISED PASS A — region candidates:
+
+  R1 numeric_extent               [countNumberLen]
+  R2 numeric_value                [lexNumeric]
+  R3 char_literal                 [lexCharConst]
+  R4 string_literal               [lexString]            (E5 ineligible: see below)
+  R5 comment_skip                 [lexSkipCodeComment]
+  R6 whitespace_dispatch          [inline cases in lexCore]
+
+PASS B — high-coupling merge:
+
+  Examine ordered pairs (region id ascending; both directions scored):
+
+    (R1,R2) SHARED_STATE=34  gain=34 >= 16? YES. E1..E14 still pass? See R1R2 evaluation below.
+    (R1,R3) SHARED_STATE=26  gain=26 >= 16? YES. Eligible? See R1R3 below.
+    (R1,R4) SHARED_STATE=32  gain=32 >= 16? YES. E5 violation (R4)? ELIGIBLE=no.
+    (R1,R5) SHARED_STATE=28  gain=28 >= 16? YES. Eligible? See R1R5.
+    (R1,R6) (not precomputed but share cursor+line_start_ptr; estimate >=16).
+    (R2,R3) SHARED_STATE=36  gain=36 >= 16? YES. Eligible? See R2R3.
+    (R2,R4) SHARED_STATE=40  gain=40 >= 16? YES. E5 violation (R4)? ELIGIBLE=no.
+    (R2,R5) SHARED_STATE=28  gain=28 >= 16? YES. Eligible? See R2R5.
+    (R3,R4) SHARED_STATE=36  gain=36 >= 16? YES. E5 violation (R4)? ELIGIBLE=no.
+    (R3,R5) SHARED_STATE=28  gain=28 >= 16? YES. Eligible? See R3R5.
+    (R4,R5) (R4 ineligible so skipped)
+    (R5,R6) (share cursor + line_start_ptr; gain >=16)
+
+  E1..E14 re-evaluation for each promising merge:
+
+  R1+R2 = scalar_literal_extent_value:
+    E1  yes (lexCore case '0'..'9')
+    E2  yes (pure lexical scan + libc strtoll/strtoull/strtold; no parsing per se)
+    E3  yes (src + src_len + cursor; output bounded)
+    E4  yes (length, kind, ishex, i64_value, f64_value, status)
+    E5  YES (no Map*/List*/Set*/AoStr*/Arena* crossed)
+    E6  yes (no AST/parser touched)
+    E7  yes (no symbol_table mutation)
+    E8  yes (no file-stack crossing)
+    E9  yes (no callbacks)
+    E10 yes (no unsupported PolyC feature)
+    E11 yes (direct C oracle: separate test-only prod-extraction that walks same bytes)
+    E12 yes (real production seam observable)
+    E13 yes (stage0 retains countNumberLen + strtoll path)
+    E14 yes (stage1+ uses PolyC; no runtime fallback)
+    -> ELIGIBLE
+
+  R2+R3 = scalar_value_with_quoted:
+    E1  yes
+    E2  yes
+    E3  yes
+    E4  yes
+    E5  yes
+    E6  yes
+    E7  yes
+    E8  yes
+    E9  yes
+    E10 yes
+    E11 yes
+    E12 yes
+    E13 yes
+    E14 yes
+    -> ELIGIBLE
+    -> But also consider R1+R2+R3 = full scalar_literal_scanner (see below)
+
+  R1+R3 = extent_with_quoted:
+    Couples length-only with char_const scan; they share cursor writes
+    but not ishex/cur_i64 outputs. Eligibility OK; but region has lower
+    OWNERSHIP_GAIN than R1+R2 (no numeric value) or R2+R3 (no numeric length).
+    -> ELIGIBLE but DOMINATED by R1+R2+R3.
+
+  R1+R5 / R2+R5 / R3+R5 = scalar_with_comment:
+    Coupling exists but tokens produced are orthogonal (numeric/char vs
+    TK_COMMENT). A merge pays shared_cursor + line_start_ptr amortization
+    (Pass C territory), not semantic compression.
+    -> ELIGIBLE but DOMINATED; defer to Pass C.
+
+  R5+R6 = comment_with_whitespace:
+    Coupling exists via shared cursor + line_start_ptr writes.
+    Both produce line accounting effects (lineno, line_start_ptr).
+    -> ELIGIBLE for a small region.
+
+CANDIDATE REGION SET AFTER PASS B (one region per PASS B merge that
+beats its constituents; constituents also kept as fallback candidates
+to ensure region derivation is downward-closed):
+
+  R-A  scalar_literal_extent        = R1 (countNumberLen)                  <- keep as fallback
+  R-B  scalar_literal_value         = R2 (lexNumeric)                      <- keep as fallback
+  R-C  scalar_literal_char          = R3 (lexCharConst)                    <- keep as fallback
+  R-D  scalar_literal_extent_value  = R1 + R2                              <- PASS B merge
+  R-E  scalar_literal_value_char    = R2 + R3                              <- PASS B merge
+  R-F  scalar_literal_scanner       = R1 + R2 + R3  (full extent+value+char) <- transitive merge
+  R-G  comment_skip                 = R5 (lexSkipCodeComment)              <- keep as fallback
+  R-H  comment_with_whitespace      = R5 + R6                              <- PASS B merge
+  R-I  whitespace_dispatch          = R6                                   <- keep as fallback
+  R-J  string_literal_scan          = R4 (lexString)                       <- E5 ineligible
+  R-K  numeric_extent_char          = R1 + R3                              <- PASS B merge
+  R-L  numeric_value_comment        = R2 + R5                              <- PASS B merge
+
+PASS C — boundary-amortization merge:
+
+  The two big consolidation candidates are:
+    R-F (scalar_literal_scanner = R1+R2+R3) absorbs R-K, R-L (its own subsets).
+    R-H (comment_with_whitespace = R5+R6) is its own PASS C anchor.
+
+  Boundary slots analysis for R-F vs the union of R-A + R-B + R-C
+  individually migrated:
+
+    R-A alone (countNumberLen): abi_input_slots=4, abi_output_slots=4  (src,src_len,cursor,flags; out_isfloat,out_ishex,out_err,out_end)
+    R-B alone (lexNumeric):      abi_input_slots=4, abi_output_slots=5  (src,src_len,cursor,flags; out_strlen,out_i64,out_f64,out_ishex,out_kind)
+    R-C alone (lexCharConst):    abi_input_slots=4, abi_output_slots=4  (src,src_len,cursor,flags; out_i64,out_strlen,out_end,out_status)
+    Individual TOTAL input slots = 12, output slots = 13
+    cross-boundary cursor transitions (one ABI per op) = 3
+
+    R-F (scalar_literal_scanner) candidate ABI:
+      inputs:  src, src_len, cursor, flags          (4)
+      outputs: end_cursor, kind, subkind,
+               i64_value, f64_value_bits,
+               ishex, status, error_offset         (8)
+    R-F TOTAL input slots = 4, output slots = 8
+    cross-boundary cursor transitions = 1
+
+    BOUNDARY_SLOTS(R-A)+BOUNDARY_SLOTS(R-B)+BOUNDARY_SLOTS(R-C)
+      - BOUNDARY_SLOTS(R-F)
+    = (12+13+3) - (4+8+1)
+    = 28 - 13
+    = 15
+    15 >= 3 => MERGE QUALIFIES under Pass C.
+
+    Same calculation for R5+R6 = R-H (comment_with_whitespace):
+      R5 alone (lexSkipCodeComment) requires cursor-in, cursor-out
+        inputs: src, src_len, cursor, flags     (4)
+        outputs: end_cursor, status             (2)
+      R6 alone (whitespace_dispatch) is purely dispatch logic; if
+        extracted, requires cursor-in, cursor-out
+        inputs: src, src_len, cursor, flags     (4)
+        outputs: end_cursor, kind (whitespace/tk newline)  (2)
+      Individual TOTAL = 12
+      R-H candidate ABI = same shape (4 in, 2 out) = 6
+      Amortization = 12 - 6 = 6 >= 3 => MERGE QUALIFIES under Pass C.
+
+PASS C also checks: can R-F and R-H be merged into a single
+scalar_or_trivia_scanner region? They produce orthogonal token
+kinds and have no shared state beyond the cursor. SHARED_STATE
+estimate is low (no shared scalar writes, only shared pointer
+read of l->ptr). The merge would pay the cost of:
+  - dispatch on byte in the PolyC component (could be done)
+  - two separate output structs (subkind selector)
+  - no semantic compression (numeric vs comment logic is genuinely different)
+The boundary-amortization formula does NOT justify the merge (it would
+merge 4 input slots + 8 output slots + 2 input slots + 2 output slots
+into 4+10 = 14 slots, no real saving when the ABI must carry BOTH
+kinds of output). Reject.
+
+REGION CANDIDATE SET (final, deterministic, anti-gaming-respecting):
+
+  R-A  scalar_literal_extent
+  R-B  scalar_literal_value
+  R-C  scalar_literal_char
+  R-D  scalar_literal_extent_value        (R-A + R-B)
+  R-E  scalar_literal_value_char          (R-B + R-C)
+  R-F  scalar_literal_scanner             (R-A + R-B + R-C)
+  R-G  comment_skip
+  R-H  comment_with_whitespace            (R-G + R-I)
+  R-I  whitespace_dispatch
+  R-J  string_literal_scan                (E5 ineligible)
+  R-K  numeric_extent_char                (R-A + R-C)
+  R-L  numeric_value_comment              (R-B + R-G)
+
+NO HAND-TUNED ADJUSTMENTS.

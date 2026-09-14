@@ -1,0 +1,66 @@
+ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01 — C2 — winner
+=======================================================
+
+WINNER=R-F
+RANK=1
+FINAL_SCORE=627
+
+MEMBERS=
+  src/lexer.c::countNumberLen          (CORE_NUMERIC_EXTENT)
+  src/lexer.c::lexNumeric               (CORE_NUMERIC_VALUE)
+  src/lexer.c::lexCharConst             (HOST_C_CORE_CHAR_LITERAL)
+
+OWNERSHIP_GAIN=411
+  = semantic_loc (183) + 24*distinct_token_kinds (24*4=96) + 12*host_C_functions_absorbed (12*3=36) + 16*scalar_fields_semantically_owned (16*6=96)
+
+COHESION_GAIN=96
+  = internal_coupling = SHARED_STATE(R-A,R-B)+SHARED_STATE(R-B,R-C)+SHARED_STATE(R-A,R-C) = 34+36+26 = 96
+
+BOUNDARY_AMORTIZATION=432
+  = 24*eliminated_abi_slots (24*14=336) + 32*eliminated_cross_boundary_cursor_transitions (32*3=96)
+
+RISK=312
+  = 16*final_abi_input_slots (16*4=64) + 16*final_abi_output_slots (16*7=112)
+  + 40*pointer_fields_written (40*1=40) + 48*diagnostic_edges (48*2=96)
+  + 64*allocation_ownership_edges (0) + 96*container_edges (0)
+
+E1=PASS E2=PASS E3=PASS E4=PASS E5=PASS E6=PASS E7=PASS E8=PASS E9=PASS E10=PASS E11=PASS E12=PASS E13=PASS E14=PASS
+
+DIRECT_ORACLE=TEST_ONLY_PRODUCTION_EXTRACTION
+  (extracts countNumberLen+lexNumeric+lexCharConst as pure functions
+   operating on (src, src_len, cursor, flags); compares against the
+   in-line lexCore path; analogous to bootstrap02-cursor-oracle.c)
+
+PRODUCTION_SEAM=YES
+  (production-seam harness measures cursor advance, cur_i64/cur_f64
+   values, ishex flag, TK_I64/TK_F64/TK_CHAR_CONST kinds, status enum;
+   harness pattern analogous to bootstrap06-lexer-seam-runner.c)
+
+PROJECTED_ABI_INPUT_SLOTS=4
+  (src, src_len, cursor, flags)
+
+PROJECTED_ABI_OUTPUT_SLOTS=7
+  (end_cursor, kind, i64_value, f64_value_bits, ishex, err_status, char_const_overflow)
+
+REAL_CORPUS_FILES>=5
+  src/lexer.c, src/prslib.c, src/aostr.c, src/cctrl.c, src/parser.c,
+  src/holyc-lib/*.HC (arbitrary numeric + char_const occurrences)
+
+CHARACTER_DOMAIN (frozen from LEXER01 precedent for the ASCII subset):
+  B_SCALAR_LITERAL_CHARACTER_DOMAIN = ASCII
+  B_SCALAR_LITERAL_CTYPE_DEPENDENCY  = NONE for the numeric_extent walk
+                                        (only lexer.c uses isNum/isHex macros;
+                                         the PolyC component will inline the
+                                         ASCII byte ranges, not <ctype.h>)
+                                        BUT: lexNumeric uses libc strtoll/strtoull/strtold
+                                        These are ALSO part of the projected region.
+                                        PolyC must reproduce them or call into libc.
+
+FIXED_POINT_FEASIBILITY=PASS
+  Stage0/stage1/stage2/stage3 all compilable; no new backend capability;
+  no new LLVM requirement; no new runtime primitive needed.
+
+WINNER_MIGRATION_READY=YES
+
+NEXT_ACT=ACT-POLYC-SELFHOST-LEXER02
+LEXER02_SCOPE=EXACTLY (scalar_literal_scanner covering countNumberLen, lexNumeric, lexCharConst)

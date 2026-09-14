@@ -1,0 +1,35 @@
+# ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01 — C2 — corpus region map
+# Format: region_id<TAB>source<TAB>line<TAB>lexical_construct<TAB>notes
+# Real corpus examples found in src/* and tools/quality/*; each region has nontrivial coverage.
+R-A	src/lexer.c	1160-1190	countNumberLen + lexNumeric	call to countNumberLen inside lexNumeric for "0x..." "1.5" etc.
+R-A	src/lexer.c	1444-1508	lexCore case '0'..'9'	production entry point for every numeric literal in the compiler itself
+R-A	src/prslib.c	(real corpus)	integer literals	arbitrary numerics appear throughout
+R-A	src/aostr.c	(real corpus)	integer literals	arbitrary numerics appear throughout
+R-A	tools/quality/bootstrap02-ident-oracle.c	-	integer constants	oracle test fixture
+R-B	src/lexer.c	1164-1190	lexNumeric body	strtoll/strtoull/strtold dispatch; ishex/isfloat branching
+R-B	src/lexer.c	1500-1505	lexCore numeric-result copy	to cur_i64/cur_f64 via le->i64/le->f64
+R-B	src/cctrl.c	(real corpus)	hex/int literals	production integer literals
+R-B	src/parser.c	(real corpus)	integer/float literals	arbitrary numerics
+R-C	src/lexer.c	1521-1530	lexCore case '\''	production entry point for char const
+R-C	src/lexer.c	1085-1162	lexCharConst body	escape decoding loop
+R-C	src/cctrl.c	(real corpus)	char literals	'\\n' '\\t' '\\xFF' usage
+R-C	src/parser.c	(real corpus)	char literals	arbitrary char consts
+R-C	src/holyc-lib/*.HC	(real corpus)	char const usage	TempleOS-style char constants
+R-D	(union of R-A + R-B)	src/lexer.c	1164-1190	lexNumeric covering length+value	direct mechanical composition
+R-E	(union of R-B + R-C)	src/lexer.c	1085-1190 + 1521-1530	both numeric and char_const paths invoked from lexCore	mechanical composition
+R-F	(union of R-A + R-B + R-C)	src/lexer.c	1085-1190 + 1494-1530	all scalar literal scanning in the dispatcher	mechanical composition
+R-G	src/lexer.c	1532-1556	lexCore case '/'	when *l->ptr is '/' or '*', lexSkipCodeComment
+R-G	src/lexer.c	763-793	lexSkipCodeComment body	/ and /* loops
+R-G	src/lexer.c	0..end	// line comments	arbitrary // comments appear throughout src/*.c
+R-G	src/lexer.c	0..end	/* block comments */	arbitrary /* */ comments appear throughout
+R-G	src/cctrl.c	(real corpus)	// and /* */	arbitrary
+R-G	src/parser.c	(real corpus)	// and /* */	arbitrary
+R-G	src/holyc-lib/*.HC	(real corpus)	// and /* */	arbitrary
+R-H	(union of R-G + R-I)	src/lexer.c	1444-1478 + 1532-1556	whitespace + comment in lexCore	mechanical composition
+R-I	src/lexer.c	1462-1478	whitespace cases in lexCore	'\\r','\\n','\\t',' ' dispatch under CCF_ACCEPT_WHITESPACE/CCF_ACCEPT_NEWLINES
+R-J	src/lexer.c	1510-1519	lexCore case '"'	production string entry
+R-J	src/lexer.c	978-1081	lexString body	AoStr-allocated char* returned to le->start
+R-J	src/cctrl.c	(real corpus)	string literals	arbitrary
+R-J	src/holyc-lib/*.HC	(real corpus)	string literals	arbitrary
+R-K	(union of R-A + R-C)	src/lexer.c	1164-1190 + 1521-1530	both numeric extent and char_const in dispatcher	mechanical composition
+R-L	(union of R-B + R-G)	src/lexer.c	1164-1190 + 1532-1556	both numeric value and comment in dispatcher	mechanical composition

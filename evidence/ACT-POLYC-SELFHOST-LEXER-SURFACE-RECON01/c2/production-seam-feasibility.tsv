@@ -1,0 +1,14 @@
+# ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01 — C2 — production-seam feasibility
+# Format: region_id<TAB>seam_possible<TAB>observable_subset<TAB>notes
+R-A	YES	cursor advance, end-of-numeric position	lexCore numeric case is reached for every digit-starting token in every compiled source; observe l->ptr before/after dispatch; production seam harness analogous to bootstrap06-lexer-seam-runner.c.
+R-B	YES	cursor advance; cur_i64/cur_f64 values; TK_I64/TK_F64; ishex flag	extends R-A seam with numeric value observation.
+R-C	YES	cursor advance; cur_i64 (char const); cur_strlen; TK_CHAR_CONST; status (overflow/unterminated)	observation includes diagnostic edges (over-LEX_CHAR_CONST_LEN char counts, unterminated chars).
+R-D	YES	union of R-A and R-B observables	same harness covers both length and value.
+R-E	YES	union of R-B and R-C observables.
+R-F	YES	union of R-A, R-B, R-C observables (cursor advance + numeric value + char const value + status).
+R-G	YES	cursor advance; l->lineno delta; l->line_start_ptr update; eof_in_comment flag	observation includes line accounting side-effects (key for production seam).
+R-H	YES	union of R-G observables with whitespace token kind.
+R-I	YES	cursor advance; l->lineno delta; l->line_start_ptr update; WS/NL token kind.
+R-J	NO (E5)	-	E5 ineligible; informational only.
+R-K	YES	union of R-A and R-C observables.
+R-L	YES	union of R-B and R-G observables (cursor + numeric value + comment line accounting).

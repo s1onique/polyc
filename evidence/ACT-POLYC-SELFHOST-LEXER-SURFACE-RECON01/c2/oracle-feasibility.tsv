@@ -1,0 +1,14 @@
+# ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01 — C2 — direct-oracle feasibility
+# Format: region_id<TAB>strategy<TAB>notes
+R-A	TEST_ONLY_PRODUCTION_EXTRACTION	test harness extracts countNumberLen as a pure function operating on (src, src_len, cursor, flags) and compares against the in-line lexCore path. Mirrors the existing ACT-POLYC-BOOTSTRAP02 pattern (tools/quality/bootstrap02-cursor-oracle.c).
+R-B	TEST_ONLY_PRODUCTION_EXTRACTION	extract lexNumeric's calls to countNumberLen + strtoll/strtoull/strtold as a pure function. C oracle uses the same libc strto*; PolyC component must reproduce the EXACT same numeric value (bit-exact for I64, IEEE-exact for F64).
+R-C	TEST_ONLY_PRODUCTION_EXTRACTION	extract lexCharConst's escape decoding loop. C oracle operates on (src, src_len, cursor); PolyC must match char_const result bit-for-bit including overflow and unterminated cases.
+R-D	TEST_ONLY_PRODUCTION_EXTRACTION	composes R-A and R-B oracles; same harness can drive both.
+R-E	TEST_ONLY_PRODUCTION_EXTRACTION	composes R-B and R-C oracles.
+R-F	TEST_ONLY_PRODUCTION_EXTRACTION	composes R-A, R-B, R-C oracles; one harness exercises numeric+char paths.
+R-G	TEST_ONLY_PRODUCTION_EXTRACTION	extract lexSkipCodeComment's two-arm (/ and /*) loop as pure function; harness compares cursor and eof flag.
+R-H	TEST_ONLY_PRODUCTION_EXTRACTION	composes R-G with the lexCore whitespace cases.
+R-I	TEST_ONLY_PRODUCTION_EXTRACTION	extract lexCore's whitespace cases ('\\r','\\n','\\t',' ') as pure function.
+R-J	DIRECT_EXISTING_FUNCTION	(test-only oracle is feasible) but the region is E5-ineligible, so this row is informational only.
+R-K	TEST_ONLY_PRODUCTION_EXTRACTION	composes R-A and R-C oracles.
+R-L	TEST_ONLY_PRODUCTION_EXTRACTION	composes R-B and R-G oracles.
