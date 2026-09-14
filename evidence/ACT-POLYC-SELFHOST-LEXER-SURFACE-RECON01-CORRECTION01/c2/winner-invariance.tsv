@@ -1,0 +1,14 @@
+claim_id	claim_value	supporting_evidence
+C2_WINNER_REPRODUCED_IN_C3	YES	c3/fresh-region-inventory.tsv row R-F; c3/fresh-scores.tsv FINAL=627
+C3_SEARCH_SPACE_SUPERSET_OF_C2	YES	wc -l c2/region-membership.tsv=13 (12+header); wc -l c3/fresh-region-inventory.tsv=20 (17+header+2comments); delta=+5 (R-M,R-N,R-O,R-P,R-Q)
+WINNER_INVARIANT_UNDER_EXTENSION	YES	R-F in both C2 and C3 rank #1 with FINAL_SCORE=+627
+WINNER_MARGIN	342	627 - 285 (R-E runner-up); ROBUST (>=100 per ACT §37)
+RANKING_MONOTONIC_IN_C4_LIST	NO	c4/final-ranking.txt lines 7-8 list R-H +200 at rank 7 and R-Q +201 at rank 8; R-Q numerically outranks R-H
+RANKING_MONOTONIC_IN_REPAIRED	YES	c2/ranking-repaired.txt (this ACT) sorts by FINAL_SCORE descending with deterministic tie-breaks per ACT §34
+C2_RANKING_EQUAL_C3_RANKING	NO	overstated claim; universes differ (12 vs 17); this corrected ledger replaces the overstated claim
+WINNER_E1_E14	PASS	c3/winner-recheck.txt
+WINNER_ABI	BOUNDED	c3/abi-recheck.txt
+WINNER_DIRECT_ORACLE	TEST_ONLY_PRODUCTION_EXTRACTION	c3/oracle-recheck.txt
+WINNER_PRODUCTION_SEAM	POSSIBLE	c3/production-seam-recheck.txt
+WINNER_FIXED_POINT_FEASIBILITY	PASS	c3/winner-recheck.txt
+WINNER_MIGRATION_READY	YES	derived from above

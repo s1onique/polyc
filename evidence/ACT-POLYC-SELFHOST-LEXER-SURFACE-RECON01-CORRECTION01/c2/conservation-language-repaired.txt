@@ -1,0 +1,75 @@
+ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01-CORRECTION01 — C2 — DEFECT-3 forward-fix
+==================================================================================
+
+Per F14, the closed predecessor evidence tree is IMMUTABLE.
+This file records the corrected broad-corpus conservation
+phrasing WITHOUT mutating the closed tree.
+
+The recon ACT's c3/current-selfhost-conservation.txt and
+c4/final-conservation.txt describe the broad four-stage corpus
+as "PASS 175/175 + 6/6". That phrasing is overstated because
+the recon ACT did not execute a fresh four-stage corpus run;
+it reused the predecessor's evidence based on zero semantic
+delta inference.
+
+The corrected phrasing below replaces the overstated claim.
+
+=== CORRECTED BROAD-CORPUS CONSERVATION ===
+
+field                              value
+----------------------------------  ----
+BROAD_CORPUS_CURRENT_EXECUTION      ENVIRONMENTALLY_UNAVAILABLE
+
+reason                             Apple Silicon host (darwin/aarch64) inherited
+                                   libtos/strings.HC ARM-assembly residue blocks
+                                   stage1/2/3 builds via test-prefix-install target.
+                                   Recorded in predecessor ACT-POLYC-SELFHOST-
+                                   LEXER-SURFACE-RECON01/c1/predecessor-freeze.txt
+                                   as P2 platform residue. The recon ACT (and this
+                                   correction ACT) do not change tools/ or libtos/.
+
+BROAD_CORPUS_LAST_KNOWN_GOOD       PASS 175/175 BYTE_IDENTICAL +
+                                          6/6  BOTH_FAIL across stage0..3
+
+source                             ACT-POLYC-SELFHOST-LEXER01-CORRECTION01
+                                   c2/corpus-4-stages.txt
+                                   (closed at c80f79d)
+
+ATTRIBUTABLE_MUTATION              NONE
+
+basis                              This correction ACT mutates only:
+                                     docs/acts/.../CORRECTION01.md  (NEW)
+                                     evidence/.../CORRECTION01/      (NEW)
+                                     docs/ROADMAP.md                 (bounded status
+                                                                    transition block)
+                                   The recon ACT (predecessor) mutated only:
+                                     docs/acts/.../SURFACE-RECON01.md (NEW)
+                                     evidence/.../SURFACE-RECON01/    (NEW)
+                                     docs/ROADMAP.md                  (bounded status
+                                                                    transition block)
+                                   Neither ACT changes:
+                                     src/**, parser, AST, IR, backend, runtime,
+                                     llvm, formal, tools/bootstrap, libtos,
+                                     registry rows, Python.
+
+CONSERVATION_INFERENCE             PASS_BY_ZERO_SEMANTIC_DELTA
+
+conservation rules applied         Per AGENTS.md F10:
+                                     - required behavior changed: NO (recon-only)
+                                     - unrelated established behavior remained:
+                                       unchanged (zero attributable semantic delta)
+                                   Per AGENTS.md F13 (evidence over prose):
+                                     - the broad-corpus claim is now bounded by
+                                       the LAST_KNOWN_GOOD attribution, not
+                                       asserted as a current execution.
+
+=== ACCEPTANCE CRITERION RESTORATION ===
+
+The corrected phrasing is consistent with AGENTS.md F13
+("evidence over persuasive prose") and with the truth-shaping
+discipline previously used for unit/jit tests when an
+inherited platform residue blocks fresh re-execution.
+
+No "fresh rerun PASS" claim is asserted. The conservation
+PASS_BY_ZERO_SEMANTIC_DELTA is recorded as the truthful
+disposition.

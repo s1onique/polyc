@@ -1,0 +1,69 @@
+ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01-CORRECTION01 — C2 — DEFECT-1 forward-fix
+==================================================================================
+
+Per F14, the closed predecessor evidence tree is IMMUTABLE. This
+file records the forward-fix for DEFECT-1 (AC40 patch-hygiene FAIL)
+WITHOUT mutating the closed tree. The corrected file content is
+reproduced here as evidence; the closed files remain as-is in the
+predecessor tree.
+
+=== DEFECT-1 DIAGNOSTICS (empirically reproduced) ===
+
+$ git diff --check a386810^..HEAD
+evidence/ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01/c1/prior-negative-score-red.txt:37: new blank line at EOF.
+evidence/ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01/c1/selfhost-surface-baseline.txt:79: new blank line at EOF.
+evidence/ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01/c4/final-region-map.txt:35: new blank line at EOF.
+
+=== FORWARD-FIX TRANSFORMATION ===
+
+For each affected file, the corrected content = original content
+with the trailing blank line removed.
+
+The three files all end with a single trailing blank line after a
+final non-blank text line. Removing that single trailing blank
+line eliminates the "new blank line at EOF" diagnostic and
+restores AC40 = PASS.
+
+The transformation is recorded in c2/ac40-transform.tsv.
+
+=== CORRECTED CONTENT FOR FILE 1 (c1/prior-negative-score-red.txt, line 37) ===
+
+Closed file ends with:
+    line 35:   `FROZEN_AS_HISTORICAL_EVIDENCE` and does NOT change E1..E14 or
+    line 36:   the LEXER01 scoring weights.
+    line 37:   <blank line, this is the diff-check violation>
+
+Corrected file ends with:
+    line 35:   `FROZEN_AS_HISTORICAL_EVIDENCE` and does NOT change E1..E14 or
+    line 36:   the LEXER01 scoring weights.
+
+=== CORRECTED CONTENT FOR FILE 2 (c1/selfhost-surface-baseline.txt, line 79) ===
+
+Closed file ends with:
+    line 77:   - The component registry docs/factory/SELF-HOST-COMPONENTS.tsv has exactly
+    line 78:     2 rows at C1 entry. The recon ACT does NOT add a row (AC26/AC27).
+    line 79:   <blank line, this is the diff-check violation>
+
+Corrected file ends with:
+    line 77:   - The component registry docs/factory/SELF-HOST-COMPONENTS.tsv has exactly
+    line 78:     2 rows at C1 entry. The recon ACT does NOT add a row (AC26/AC27).
+
+=== CORRECTED CONTENT FOR FILE 3 (c4/final-region-map.txt, line 35) ===
+
+Closed file ends with:
+    line 33:   the canonical ranking.txt / fresh-scores.tsv orders strictly by
+    line 34:   FINAL_SCORE descending with deterministic tie-breaks.
+    line 35:   <blank line, this is the diff-check violation>
+
+Corrected file ends with:
+    line 33:   the canonical ranking.txt / fresh-scores.tsv orders strictly by
+    line 34:   FINAL_SCORE descending with deterministic tie-breaks.
+
+=== ACCEPTANCE CRITERION RESTORATION ===
+
+AC40 (ACT-range diff-check clean) is restored to PASS when the
+forward-fix is applied to the immutable content (which is
+recorded here as corrected evidence) and the corrected content
+is propagated forward. The corrected content itself remains
+identical to the original content modulo the removed trailing
+blank line; no semantic content changes.
