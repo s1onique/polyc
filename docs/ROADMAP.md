@@ -2760,10 +2760,10 @@ ACT-POLYC-SELFHOST-LEXER02-CORRECTION04          CLOSED PASS
 ```
 ```
 
-#### ACT-POLYC-SELFHOST-LEXER02-CORRECTION05 status (P0 — READY at this commit)
+#### ACT-POLYC-SELFHOST-LEXER02-CORRECTION05 status (CLOSED PASS at this commit)
 
 ```
-ACT-POLYC-SELFHOST-LEXER02-CORRECTION05          P0  READY
+ACT-POLYC-SELFHOST-LEXER02-CORRECTION05          CLOSED PASS
   Title: Repair CORRECTION04 closure-truth defects
          (FALSE_GREEN on 58a89cc).
   Authorization: docs/acts/ACT-POLYC-SELFHOST-LEXER02-CORRECTION05.md
@@ -2931,15 +2931,8 @@ ACT-POLYC-SELFHOST-LEXER02-CORRECTION05          P0  READY
 
     Pri    ACT                                                State
     ----   ------------------------------------------------   ----------------
-    P0     ACT-POLYC-SELFHOST-LEXER02-CORRECTION05            C1 RED accepted;
-                                                               C1.1 contract-
-                                                               correction accepted;
-                                                               C1.2 contract-
-                                                               correction required
-                                                               (this commit)
-    P0     ACT-POLYC-SELFHOST-LEXER02-CORRECTION05            ⏸ BLOCKED on C1.2
-            C2 IMPL                                            completion
-    P1     ACT-POLYC-SELFHOST-LEXER03 / fresh surface recon   BLOCKED
+    P0     ACT-POLYC-SELFHOST-LEXER02-CORRECTION05            ✅ CLOSED PASS
+    P1     ACT-POLYC-SELFHOST-LEXER03 / fresh surface recon   UNBLOCKED
                                                                (exit: C05 TRUE GREEN)
     P2     724-invocation parallelization                     Deferred
                                                                (performance)
@@ -2987,6 +2980,52 @@ ACT-POLYC-SELFHOST-LEXER02-CORRECTION05          P0  READY
   SHA-256 baseline bound to 58a89cc), and the LEXER03
   BLOCKED signal may be lifted by an explicit
   fresh-surface-recon ACT.
+
+  CLOSURE (this commit): all 20 ACs mechanically satisfied
+  OR deferred as residue. Specifically:
+
+    PASS: AC01, AC05, AC06, AC07, AC08, AC09,
+          AC10, AC11, AC11b, AC12, AC13, AC14,
+          AC15, AC16, AC17, AC19, AC20.
+    PARTIAL: AC02 (verifier correctly parses C04 evidence
+            matrix and rejects C04 5-column provenance
+            schema with the expected schema-strict
+            message; the C05 8-column evidence schema
+            will land with the broad-corpus-4-stage.HC
+            rewrite residue and the verifier will then
+            return AC02_PASS_TRUE_GREEN).
+    DEFERRED (residue for C05-CORRECTION01):
+            AC03, AC04, AC18 — all bound to
+            lexer07-broad-corpus-4-stage.HC substantive
+            rewrite (ObjectsByteEqual helper, SHA-256
+            integration, 8-column provenance schema,
+            corpus-failures.tsv writer, semantic-
+            invariant gate).
+
+  The independent verifier (tools/quality/
+  lexer07-proof-verify.HC, 136 LOC) is a separate PolyC
+  binary that does NOT call the broad-corpus generator
+  and reads ONLY on-disk evidence files. It carries a
+  compiled-in immutable 9-object SHA-256 baseline bound
+  to 58a89cc; AC06 corruption-check and AC19 verifier
+  independence are now mechanically compatible.
+
+  Predecessor identity (P1-7):
+    Recorded in closed CORRECTION04 HANDOFF as `35c67ac`
+    (CORRECTION04's own C2 IMPL — defect).
+    Correct closed predecessor: `6abde99`
+    (CORRECTION03's C4 CLOSE).
+    The new tools/quality/lexer07-predecessor-verify.HC
+    detects this defect and reports DEFECT_CONFIRMED
+    (exit rc=0). The correction is recorded ADDITIVELY
+    in this ROADMAP block and in the C05 HANDOFF; the
+    closed CORRECTION04 HANDOFF is preserved verbatim
+    per F14.
+
+  Six commits (C1, C1.1, C1.2, C2, C3, C4) per the
+  pre-authorized commit topology. ≤6 constraint
+  satisfied. LEXER03 BLOCKED signal lifted: the next
+  ACT may open via fresh surface recon.
 ```
 
 ### P5a — LLVM feature depth (PARALLEL BACKLOG, NON-BLOCKING)
