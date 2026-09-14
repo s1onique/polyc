@@ -1,0 +1,42 @@
+ACT-POLYC-SELFHOST-LEXER02 — C4 — scope-audit.txt
+================================================
+
+# Scope audit — every changed line traced to authorized scope
+
+## Files modified or created in C1 (RED):
+  Makefile                                                (added LEXER07 targets)
+  tools/quality/lexer07-scalar-literal-oracle.c           (NEW)
+  tools/quality/lexer07-real-seam-runner.c                (NEW)
+  evidence/ACT-POLYC-SELFHOST-LEXER02/c1/                 (NEW evidence directory)
+  docs/acts/ACT-POLYC-SELFHOST-LEXER02.md                 (NEW ACT)
+
+## Files modified or created in C2 (IMPL):
+  tools/bootstrap/selfhost-lexer-scalar-literal.HC        (NEW PolyC subject)
+  tools/quality/lexer07-direct-differential.c             (NEW differential)
+  tools/quality/lexer07-scalar-literal-oracle.c           (out_strlen amendment)
+  src/lexer.c                                             (lexCharConst + lexNumeric wrap)
+  src/lexer_bridge.h                                      (ABI 3 + strlen amendment)
+  src/CMakeLists.txt                                      (stage1/2/3 scalar linkage)
+  docs/factory/SELF-HOST-COMPONENTS.tsv                   (row 3 added)
+  evidence/ACT-POLYC-SELFHOST-LEXER02/c2/                 (NEW evidence directory)
+
+## Files modified in C3 (EVIDENCE):
+  evidence/ACT-POLYC-SELFHOST-LEXER02/c3/                 (NEW evidence directory)
+
+## Files modified in C4 (CLOSE):
+  docs/ROADMAP.md                                         (S1 LEXER EXPANSION ACTIVE)
+  evidence/ACT-POLYC-SELFHOST-LEXER02/c4/                 (NEW evidence directory)
+
+## Scope-conservation check (F7)
+  No files outside the LEXER02 scope were modified. In
+  particular:
+    - src/holyc-lib/*  UNCHANGED
+    - src/parser.c     UNCHANGED
+    - src/cctrl.c      UNCHANGED
+    - src/ir*          UNCHANGED
+    - src/asm*         UNCHANGED
+    - other lex/ files in src/ (lexSkipCodeComment, lexString,
+      lexIdentifier, lexCore operators) UNCHANGED
+  Only src/lexer.c (lexCharConst + lexNumeric), src/lexer_bridge.h
+  (ABI 3 declaration), and src/CMakeLists.txt (link line) were
+  modified. All three are within the LEXER02 region R-F.

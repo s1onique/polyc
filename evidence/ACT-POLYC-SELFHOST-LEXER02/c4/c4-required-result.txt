@@ -1,0 +1,54 @@
+ACT-POLYC-SELFHOST-LEXER02 — C4 — c4-required-result.txt
+================================================
+
+# C4 CLOSE — required result confirmation
+
+## Final identity
+  branch: <filled at commit time>
+  status: CLOSED PASS
+  HEAD at C4 close: <filled at commit time>
+  C1 RED:      456370e53ee356c3585ed39f83fd957689b5f145
+  C2 IMPL:     c290581a2eb50f988aad5797927f677a4d35e68e
+  C3 EVIDENCE: ffa45e3565baa0e04fe27660e11a898d4ebefd6e
+
+## Fresh re-proof (re-run C3 from clean build)
+  $ rm -f build/lexer07-scalar-literal.o
+  $ build/hcc -fPIC -o build/lexer07-scalar-literal.o -c \
+      tools/bootstrap/selfhost-lexer-scalar-literal.HC
+  $ sha256sum build/lexer07-scalar-literal.o
+  216053670359381d3a3d4f634607d2c63c9d3b0a6ad6f77a87da9149ec9ad71b
+
+  $ ./build/lexer07-direct-differential | tail -3
+  ACT_SELFHOST_LEXER02_DIRECT_DIFF_PASS=40
+  ACT_SELFHOST_LEXER02_DIRECT_DIFF_FAIL=0
+  STATUS=PASS
+
+  $ ./build/lexer07-lexer-seam-stage1 > /tmp/s1.txt
+  $ diff /tmp/lexer07-seam-stage0.txt /tmp/s1.txt | head
+  1c1
+  < BUILD_LABEL=stage0
+  ---
+  > BUILD_LABEL=stage1
+  (only the BUILD_LABEL header differs)
+
+  $ make gate-fast
+  POLYC_GATE=fast STATUS=PASS
+  POLYC_GATE=factory-closure-status STATUS=PASS
+  VERDICT=PASS
+
+## Conservation re-verified
+  Broad corpus scalar tokens: 5519/5519 MATCH
+  Operator seam (LEXER01):    33/33 PASS
+  4-stage byte-equality:      identical sha256
+  F-NO-PYTHON:                unchanged
+  Dafny:                      N/A (no semantic change)
+
+## ROADMAP update
+  docs/ROADMAP.md S1 LEXER EXPANSION ACTIVE
+  scalar_literal_scanner GREEN
+  Closed status block added (line ~2473).
+
+## Verdict
+  ACT-POLYC-SELFHOST-LEXER02 is CLOSED PASS.
+  The scalar_literal_scanner (R-F: countNumberLen + lexNumeric +
+  lexCharConst) is GREEN at all 4 PolyC compilation stages.

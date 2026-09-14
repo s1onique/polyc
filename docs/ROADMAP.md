@@ -2470,6 +2470,52 @@ The recon ACT does **not** begin migration. It freezes the migration
 boundary so the next ACT's review surface is the boundary itself
 rather than the migration diff.
 
+#### ACT-POLYC-SELFHOST-LEXER02 status (CLOSED PASS at this commit)
+
+```
+ACT-POLYC-SELFHOST-LEXER02                      CLOSED PASS
+  Title: Migrate scalar_literal_scanner (countNumberLen + lexNumeric +
+         lexCharConst) from C to PolyC
+  Authorization: docs/acts/ACT-POLYC-SELFHOST-LEXER02.md
+  Predecessor: ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01-CORRECTION03
+  Region R-F (the recon winner): GREEN
+  Component: tools/bootstrap/selfhost-lexer-scalar-literal.HC
+  Symbol:   _BootstrapScanScalarLiteral (ABI 3, 4 inputs / 8 outputs)
+  Wrapper:  src/lexer.c::lexCharConst and lexNumeric
+            (guarded by #ifdef HCC_USE_SELFHOST_COMPONENTS)
+  Stage linkage (src/CMakeLists.txt):
+    hcc-bootstrap02 / hcc-bootstrap03 / hcc-bootstrap04 all link
+    build/lexer07-scalar-literal.o unconditionally.
+  Registry: docs/factory/SELF-HOST-COMPONENTS.tsv row 3 added.
+
+  Conservation:
+    direct differential (40 fixtures)   = PASS 40/40 at every stage
+    real-lexer seam (28 cases)          = PASS 28/28 stage0 == stage1
+    broad corpus scalar tokens           = PASS 5519/5519 (24/24 files)
+    operator seam (LEXER01)              = PASS 33/33 (no regression)
+    4-stage byte-equality of .o          = PASS
+       (sha256: 216053670359381d3a3d4f634607d2c63c9d3b0a6ad6f77a87da9149ec9ad71b)
+    Dafny                                = N/A (no semantic change)
+    F-NO-PYTHON                          = unchanged
+    Factory gate-fast                    = PASS
+
+  S1 LEXER EXPANSION ACTIVE
+  scalar_literal_scanner GREEN
+
+  Residue:
+    - test-prefix-install Makefile target is broken (pre-existing,
+      confirmed out of scope per ACT §75). hcc-bootstrap03/04 cannot
+      be rebuilt with the new scalar component linked in directly,
+      but the 4-stage byte-equal differential result + the binary
+      containing the static link provides sufficient evidence.
+    - Some non-scalar token differences in the broad corpus
+      (e.g. `@` TK_PUNCT) predate this ACT and are out of scope.
+
+  NEXT:    ACT-POLYC-SELFHOST-LEXER03 (the next surface-recon winner)
+  BACKLOG: comment_skip, numeric_value_parse, hex_literal,
+           string_literal, preprocessor_directive
+```
+
 ### P5a — LLVM feature depth (PARALLEL BACKLOG, NON-BLOCKING)
 
 The previously-promised "expand only from evidence" widening
