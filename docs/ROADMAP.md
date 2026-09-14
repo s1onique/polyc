@@ -2853,9 +2853,79 @@ ACT-POLYC-SELFHOST-LEXER02-CORRECTION05          P0  READY
          not the verifier. Closed by AC05/AC06/AC07.
     R7   AC06 must not derive both expected and actual
          SHA from the same mutated file. Closed by AC06
-         (uses immutable pre-mutation snapshot).
+         (uses immutable pre-mutation snapshot, now
+         compiled into the verifier per C1.2).
     R8   AC10 must use baseline/delta semantics
          (NEW_PYTHON_SOURCES=0 etc.). Closed by AC10.
+
+  Reviewer audit findings at C1.1 (closed by C1.2
+  CONTRACT-CORRECTION):
+
+    F1   (P0) AC13 cited fictional "55/56/57-byte 'a'
+         NIST vectors" with the wrong "FIPS 180-4 §B.2"
+         citation. FIPS 180-4 has no §B.2 (Appendix B is
+         references); NIST publishes three exact
+         zero-byte boundary vectors for SHA-256 in the
+         SHA-2 Additional Test Data document.
+         Closed by AC13 rewritten to cite NIST SHA-2
+         Additional Test Data and the three verified
+         zero-byte digests (02779466cdec1638...,
+         d4817aa5497628e7..., 65a16cb7861335d5...).
+         Plus §0, §2, §5, §8 corrected to drop the
+         fictional §B.2 citation.
+
+    F2   (P0) AC06 and AC19 were not yet mechanically
+         compatible: AC06 requires comparison against an
+         immutable pre-mutation SHA, but AC19 said the
+         verifier reads only the four generated evidence
+         files.
+         Closed by AC19 rewritten so the verifier has a
+         compiled-in immutable SHA-256 baseline for the
+         9 stage0-historical objects (the 9 digests of
+         build/b02-corpus-A/{0_all,5_date,9_hashtable,
+         10_io,12_list,14_memory,19_strings,
+         21_threads,22_tooling}.o as they exist at the
+         closed predecessor 58a89cc). AC06's expected
+         SHA now comes from this compiled-in baseline
+         rather than from any on-disk artifact at
+         runtime.
+
+    F3   (P1) AC04 was ambiguous about failed rows: it
+         demanded exactly 700 + header = 701 rows in
+         corpus-object-provenance.tsv while §2 said
+         failed rows are "recorded separately with empty
+         object_sha256" — making the line-count predicate
+         self-contradictory.
+         Closed by AC04 rewritten: provenance TSV
+         contains successful objects only (701 lines);
+         failed compilation observations go to a new
+         corpus-failures.tsv (separate file, columns
+         source / stage / rc). No empty object_sha256
+         in the provenance TSV.
+
+    F4   (P1) The reusable generator's "rate has not
+         regressed vs previous entry" had no defined
+         authority or direction.
+         Closed by §2 (allowed list) + §0 item 5 + AC02
+         rewritten: the generator enforces ONLY
+         structural/semantic invariants (DIVERGED=0;
+         REGRESSION=0; PASS_MISMATCH=0; provenance TSV
+         structurally valid); the C05 independent
+         verifier owns the 166/9/175/6/0 snapshot.
+
+    Plus two textual fixes:
+
+    T1   §6/AC15 (and four other places) referred to
+         "eight" C1.1 reviewer findings although C1.1
+         recorded "ten". Fixed: "eight" → "ten" in §0,
+         §2 allowed list, §6 acceptance criteria prose,
+         §6 AC15, ROADMAP.
+
+    T2   AC11b said "correct successor" where it means
+         "correct predecessor" (6abde99 is C03's C4
+         CLOSE, which is C04's predecessor — the
+         successor of C04 is C05 itself, which is
+         trivially not in question). Fixed.
 
   Epic-board status:
 
@@ -2863,9 +2933,11 @@ ACT-POLYC-SELFHOST-LEXER02-CORRECTION05          P0  READY
     ----   ------------------------------------------------   ----------------
     P0     ACT-POLYC-SELFHOST-LEXER02-CORRECTION05            C1 RED accepted;
                                                                C1.1 contract-
+                                                               correction accepted;
+                                                               C1.2 contract-
                                                                correction required
                                                                (this commit)
-    P0     ACT-POLYC-SELFHOST-LEXER02-CORRECTION05            ⏸ BLOCKED on C1.1
+    P0     ACT-POLYC-SELFHOST-LEXER02-CORRECTION05            ⏸ BLOCKED on C1.2
             C2 IMPL                                            completion
     P1     ACT-POLYC-SELFHOST-LEXER03 / fresh surface recon   BLOCKED
                                                                (exit: C05 TRUE GREEN)
@@ -2883,8 +2955,8 @@ ACT-POLYC-SELFHOST-LEXER02-CORRECTION05          P0  READY
   Constraints:
     Production semantic changes:  FORBIDDEN
     Append-only history:           PRESERVED (no amend, rebase,
-                                   force-push). C05 commits ≤5
-                                   (C1, C1.1, C2, C3, C4).
+                                   force-push). C05 commits ≤6
+                                   (C1, C1.1, C1.2, C2, C3, C4).
     F-NO-PYTHON:                   preserved (AC10 baseline/
                                    delta contract; literal
                                    STATUS=FAIL on grandfathered
@@ -2907,10 +2979,13 @@ ACT-POLYC-SELFHOST-LEXER02-CORRECTION05          P0  READY
 
   Closure: when AC01..AC20 are mechanically satisfied at
   the CORRECTION05 C4 CLOSE commit, the seven CORRECTION04
-  defects AND the eight reviewer-audit findings from C1.1
-  are CLOSED, the CORRECTION02 contract is re-proven under
-  MemCmp + SHA-256 by an independent PolyC verifier, and
-  the LEXER03 BLOCKED signal may be lifted by an explicit
+  defects AND the ten C1.1 reviewer-audit findings AND
+  the four C1.2 reviewer-audit findings (F1..F4) are
+  CLOSED, the CORRECTION02 contract is re-proven under
+  MemCmp + SHA-256 by an independent PolyC verifier
+  (which carries a compiled-in 9-object historical
+  SHA-256 baseline bound to 58a89cc), and the LEXER03
+  BLOCKED signal may be lifted by an explicit
   fresh-surface-recon ACT.
 ```
 

@@ -1,0 +1,206 @@
+ACT-POLYC-SELFHOST-LEXER02-CORRECTION05 — C1.2 CONTRACT-CORRECTION
+====================================================================
+
+Reviewer authorization at the C1.1 review (`91ae216`)
+authorized a single intermediate commit `C1.2
+CONTRACT-CORRECTION` between C1.1 and C2 IMPL, then
+DIRECT execution of C2 without another human pause.
+MAX_COMMITS for this ACT is revised from 5 to 6.
+
+The Factory v2 commit-msg-check grammar is
+`RED | IMPL | EVIDENCE | CLOSE`; a literal
+`CONTRACT-CORRECTION` phase token is not in the
+grammar. This C1.2 commit therefore carries
+`ACT-Phase: RED` (no verdict required for RED; the
+change is contract-only and pre-production). The
+commit subject records the C1.2 phase descriptively.
+
+Reviewer audit findings (four blocking issues, plus
+two trivial textual fixes) closed by this C1.2
+contract correction. Each finding names the ACT
+section(s) that changed; no production code mutated
+in this commit.
+
+P0 findings:
+
+  F1   (P0) AC13 cited fictional "55/56/57-byte 'a'
+       NIST vectors" with the wrong "FIPS 180-4 §B.2"
+       citation. FIPS 180-4 has no §B.2 (Appendix B is
+       references). NIST publishes three exact
+       zero-byte boundary vectors for SHA-256 in the
+       SHA-2 Additional Test Data document.
+       ACT changes: §0 item 3 (allowed list) rewritten;
+       §2 (allowed list) rewritten with the actual NIST
+       vectors and a citation to the NIST PDF;
+       §5 implementation boundary row rewritten;
+       §6 AC13 rewritten with the three verified
+       zero-byte digests; §8 halt taxonomy note
+       rewritten; §10 commit topology C2 line
+       rewritten.
+       Verified on this commit:
+         printf '%0.s\0' {1..55} | sha256sum
+           -> 02779466cdec163811d078815c633f21
+              901413081449002f24aa3e80f0b88ef7
+         printf '%0.s\0' {1..56} | sha256sum
+           -> d4817aa5497628e7c77e6b606107042b
+              bba3130888c5f47a375e6179be789fbb
+         printf '%0.s\0' {1..57} | sha256sum
+           -> 65a16cb7861335d5ace3c60718b5052e
+              44660726da4cd13bb745381b235a1785
+
+  F2   (P0) AC06 and AC19 were not yet mechanically
+       compatible: AC06 requires comparison against an
+       immutable pre-mutation SHA, but AC19 said the
+       verifier reads only the four generated evidence
+       files.
+       ACT changes: §0 item 4 (allowed list) unchanged
+       but clarified; §6 AC06 rewritten to cite the
+       compiled-in immutable SHA-256 baseline; §6 AC19
+       rewritten to define the compiled-in baseline for
+       the 9 stage0-historical objects (the 9 digests
+       of build/b02-corpus-A/{0_all,5_date,9_hashtable,
+       10_io,12_list,14_memory,19_strings,21_threads,
+       22_tooling}.o as they exist at the closed
+       predecessor `58a89cc`).
+       Verified on this commit (the 9 SHA-256 digests
+       of the canonical historical .o files at
+       `58a89cc`):
+         0_all        2dda65210bd70f48c9087bf171811e54
+                      018a131edf738a072432a4ac35993d63
+         5_date       84cfbd4684c175ca4e3888501f1a7019
+                      a4acba02de384ac99c204732b2e766f2
+         9_hashtable  1e7c210aca666796b20ac564494ecc43
+                      b11101564964746dd5fb3d093a7f55cb
+         10_io        acf6f2cc28a7397bd50ba763a21aeff1
+                      fcd8350af479ee04a8cd127fbd4cd336
+         12_list      d1a05d7932fe99f4e7718f781416f600
+                      416e484a05e6600cb3be4d15dde94138
+         14_memory    39249c78f3bdb4e84397c3b75c5b8f90
+                      c996e2bbd1df78031cd0b529c93c1321
+         19_strings   4861dedd37a414d596857516a0193fe4
+                      ad5990701a2c36e9644718d86597a325
+         21_threads   38030efad11fc811f247e43453c64de6
+                      80431ee22cc4cba74b0017068652c909
+         22_tooling   e59bd907b862ee807705152abc262a78
+                      19fbc9768e5344e15adb23db2a126960
+       These nine digests MUST be compiled into
+       tools/quality/lexer07-proof-verify.HC at C2 IMPL.
+
+P1 findings:
+
+  F3   (P1) AC04 was ambiguous about failed rows: it
+       demanded exactly 700 + header = 701 rows in
+       corpus-object-provenance.tsv while §2 said
+       failed rows are "recorded separately with empty
+       object_sha256" — making the line-count predicate
+       self-contradictory.
+       ACT changes: §2 (allowed list) — failed rows now
+       go to a new corpus-failures.tsv (columns
+       source / stage / rc); §6 AC04 rewritten to
+       enforce 700 + 1 = 701 successful-only lines and
+       ban empty object_sha256; the §2 "recorded
+       separately with empty object_sha256" phrase is
+       REPLACED with "recorded separately in
+       corpus-failures.tsv".
+
+  F4   (P1) The reusable generator's "rate has not
+       regressed vs previous entry" had no defined
+       authority or direction.
+       ACT changes: §0 item 5 (allowed list) rewritten
+       — the generator enforces ONLY semantic
+       invariants (DIVERGED=0; REGRESSION=0;
+       PASS_MISMATCH=0; structural validity of the
+       provenance TSV); §2 (allowed list) — same
+       change; §6 AC02 rewritten — the generator's
+       gate is purely structural/semantic; the C05
+       independent verifier owns the literal
+       CORRECTION02 snapshot.
+
+Textual fixes:
+
+  T1   §6/AC15 (and four other places) referred to
+       "eight" C1.1 reviewer findings although C1.1
+       recorded "ten". Fixed in: §0 Mission, §2
+       allowed list, §6 acceptance criteria prose, §6
+       AC15, §10 commit topology note 2, and ROADMAP.
+       All occurrences of "eight reviewer-audit
+       findings" → "ten reviewer-audit findings".
+
+  T2   AC11b said "correct successor" where it means
+       "correct predecessor" (6abde99 is C03's C4
+       CLOSE, which is C04's predecessor — the
+       successor of C04 is C05 itself, which is
+       trivially not in question). Fixed in §6 AC11b.
+
+ACT changes NOT attributable to a single reviewer
+finding (structural improvements to the authorization
+artifact):
+
+  * Title block updated to enumerate the new C1.2
+    attributes (immutable baseline, provenance TSV
+    restricted to successful objects).
+  * §10 commit topology expanded from 5 to 6 commits
+    with a C1.2 CONTRACT-CORRECTION intermediate
+    commit (this commit). The trailer grammar forces
+    `ACT-Phase: RED` for this commit; the descriptive
+    commit subject is
+    `ACT-POLYC-SELFHOST-LEXER02-CORRECTION05 — C1.2
+    CONTRACT-CORRECTION`.
+
+Acceptance-criteria count before C1.2: AC01..AC20 +
+AC11b (21 ACs total).
+Acceptance-criteria count after  C1.2: 21 ACs (no AC
+additions; AC02, AC04, AC06, AC11b, AC13, AC15, AC19
+text rewritten).
+
+F14 (no closed-evidence rewrite) compliance:
+
+  evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION02/  -- untouched
+  evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION03/  -- untouched
+  evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION04/  -- untouched
+  evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION05/c1/   -- untouched
+  evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION05/c1.1/ -- untouched
+  docs/factory/HANDOFF-ACT-POLYC-SELFHOST-LEXER02-CORRECTION04.md
+    -- untouched (preserved verbatim)
+
+F7 (scope is conserved) compliance: only the ACT
+authorization artifact, the ROADMAP C05 status block,
+and this C1.2 evidence file are added/modified by this
+commit. No production code, no shell wrapper, no
+Makefile, no `.HC` PolyC file, no evidence file in
+CORRECTION02/03/04 is modified.
+
+F12 (small truthful commits) compliance: this commit
+is a contract-only correction. It documents the four
+C1.2 reviewer-audit findings (F1..F4) and the two
+textual fixes (T1, T2) and the corresponding ACT
+revisions; it makes no production-code claim.
+
+Trailer grammar (this commit):
+
+  ACT: ACT-POLYC-SELFHOST-LEXER02-CORRECTION05
+  ACT-Phase: RED
+
+  Verdict: none (RED forbids verdict).
+  Supersedes: none (C1.1 remains the authoritative
+  contract correction; this C1.2 commit is additive).
+
+Authoritative source-of-truth:
+
+  ACT authorization (this commit):
+    docs/acts/ACT-POLYC-SELFHOST-LEXER02-CORRECTION05.md
+    (revised §0, §2, §5, §6, §7, §8, §10; added
+    C1.2 to commit topology)
+  ROADMAP epic-board (this commit):
+    docs/ROADMAP.md (C05 P0 status changed from "C1
+    RED accepted / C1.1 contract-correction required"
+    to "C1 RED accepted / C1.1 contract-correction
+    accepted / C1.2 contract-correction required";
+    added F1..F4 + T1 + T2 reviewer-audit findings
+    list; C05 commits ≤6).
+  C1 RED evidence (immutable, prior commit):
+    evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION05/c1/
+  C1.1 evidence (immutable, prior commit):
+    evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION05/c1.1/
+  C1.2 evidence (this commit):
+    evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION05/c1.2/

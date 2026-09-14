@@ -8,8 +8,10 @@ on `58a89cc`): independent verifier surface, mandatory negative
 controls, real byte-equality predicate, NIST-vectored PolyC SHA-256,
 truthful provenance schema, invariant-vs-snapshot corpus contract,
 deterministic TSV serialization, fresh Factory gates, additive
-predecessor correction binding, and baseline-delta F-NO-PYTHON
-semantics.
+predecessor correction binding, baseline-delta F-NO-PYTHON
+semantics, immutable 9-object historical SHA-256 baseline
+(compiled into the verifier), and provenance TSV restricted to
+successful objects (700 + header).
 
 **Repository:** https://github.com/s1onique/polyc
 
@@ -68,9 +70,9 @@ gate evidence. Shell wrappers remain ≤50 LOC dispatch glue
 (`lexer07-fixture-inventory.sh` 14 LOC;
 `lexer07-broad-corpus-4-stage.sh` 16 LOC).
 
-CORRECTION05 also addresses the eight reviewer-audit findings
+CORRECTION05 also addresses the ten reviewer-audit findings
 issued at C1 (the C1.1 CONTRACT-CORRECTION phase authorized by
-the reviewer at `9824027+1`):
+the reviewer at `9824027+1`; see §10 commit topology note 2):
 
 1. Generation MUST be separated from verification. A new
    `tools/quality/lexer07-proof-verify.HC` is the **independent
@@ -82,11 +84,25 @@ the reviewer at `9824027+1`):
    participate in the truth value of `BYTE_IDENTICAL_4`. FNV
    MAY remain informational only.
 3. SHA-256 MUST be canonical evidence identity and MUST be
-   verified against NIST vectors that cross the 55/56/57-byte
-   padding-boundary block transitions (homemade SHA
-   implementations commonly fail around padding/block
-   transitions; FIPS 180-4 §B.2 publishes test data for
-   55/56/57-byte messages).
+   a PolyC-local implementation verified against the
+   authoritative NIST SHA-2 **Additional Test Data**
+   (`csrc.nist.gov/csrc/media/projects/cryptographic-standards-and-guidelines/documents/examples/sha2_additional.pdf`).
+   The boundary vectors cross the 55/56/57-byte
+   padding-block transitions (homemade SHA implementations
+   commonly fail around padding/block transitions). NIST
+   publishes three exact zero-byte boundary vectors:
+   ```
+   SHA256(55 * 0x00) = 02779466cdec163811d078815c633f21901413081449002f24aa3e80f0b88ef7
+   SHA256(56 * 0x00) = d4817aa5497628e7c77e6b606107042bbba3130888c5f47a375e6179be789fbb
+   SHA256(57 * 0x00) = 65a16cb7861335d5ace3c60718b5052e44660726da4cd13bb745381b235a1785
+   ```
+   The empty-string and "abc" vectors
+   (`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`
+   and
+   `ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad`)
+   are also required. Note: FIPS 180-4 has no §B.2
+   (Appendix B is references); the correct citation is
+   "NIST SHA-2 Additional Test Data" not "FIPS 180-4 §B.2".
 4. Provenance schema MUST bind: `source`, `stage`,
    `object_path`, `provenance_class`, `object_sha256`,
    `compiler_binary_path`, `compiler_binary_sha256`. For
@@ -97,10 +113,14 @@ the reviewer at `9824027+1`):
 5. The CORRECTION02 literal counts (166/9/175/6/0) MUST be a
    snapshot enforced by the **C05 independent verifier**, NOT
    the permanent success semantics of the reusable
-   broad-corpus generator. The generator enforces only the
-   semantic invariants; a later genuine improvement (e.g.
-   elimination of the 9 historical fallbacks) is an
-   improvement, not a regression.
+   broad-corpus generator. The generator enforces ONLY the
+   semantic invariants (DIVERGED=0; REGRESSION=0;
+   PASS_MISMATCH=0; structural validity of the provenance
+   TSV); it MUST NOT carry hidden "previous entry rate"
+   policy. A later genuine improvement (e.g. elimination of
+   the 9 historical fallbacks) is observable by the
+   verifier as an updated snapshot, not penalized by the
+   generator.
 6. AC05/AC06/AC07 negative controls MUST mutate only the
    evidence GENERATOR while leaving the independent verifier
    intact. Replacing the verifier with an rc=0 stub does not
@@ -133,8 +153,8 @@ reproduced from a clean destination with:
 * a real `MemCmp`-based byte-equality predicate (not FNV hash
   equality) using a named `ObjectsByteEqual` helper;
 * a PolyC-local SHA-256 implementation verified against
-  NIST FIPS 180-4 §B.2 vectors including the 55/56/57-byte
-  padding-boundary cases;
+  NIST SHA-2 Additional Test Data vectors including the
+  55/56/57-byte zero-byte padding-boundary cases;
 * three real negative-control mutation tests (AC05/AC06/AC07)
   that mechanically reject (a) a stub generator that returns
   rc=0 with bad evidence, (b) a corrupted stage0 historical
@@ -319,21 +339,31 @@ governance layer did not engage at CORRECTION04 CLOSE.
   secondary per-object identifier in the provenance TSV;
   it MUST NOT participate in the truth value of
   `BYTE_IDENTICAL_4`.
-* **PolyC-local SHA-256** with NIST FIPS 180-4 §B.2
-  test vectors: `tools/quality/lexer07-sha256.HC` (or an
-  internal block in `lexer07-broad-corpus-4-stage.HC`)
-  implements SHA-256 and is verified at minimum against:
+* **PolyC-local SHA-256** verified against the
+  authoritative NIST SHA-2 **Additional Test Data**
+  (`csrc.nist.gov/csrc/media/projects/cryptographic-standards-and-guidelines/documents/examples/sha2_additional.pdf`).
+  `tools/quality/lexer07-sha256.HC` (or an internal block
+  in `lexer07-broad-corpus-4-stage.HC`) implements SHA-256
+  and is verified at minimum against:
   * `SHA256("")` =
     `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`
   * `SHA256("abc")` =
     `ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad`
-  * 55-byte / 56-byte / 57-byte NIST vectors (FIPS 180-4
-    §B.2), which cross the 64-byte block-boundary that
-    exposes padding-off-by-one defects in homemade SHA
-    implementations.
-  The SHA-256 output is the canonical hash recorded in
-  `corpus-object-provenance.tsv`; FNV-1a is retained
-  alongside for cross-check.
+  * **NIST SHA-2 Additional Test Data** zero-byte
+    boundary vectors (NOT "FIPS 180-4 §B.2" — that
+    section does not exist; FIPS 180-4 Appendix B is
+    references):
+    - `SHA256(55 * 0x00)` =
+      `02779466cdec163811d078815c633f21901413081449002f24aa3e80f0b88ef7`
+    - `SHA256(56 * 0x00)` =
+      `d4817aa5497628e7c77e6b606107042bbba3130888c5f47a375e6179be789fbb`
+    - `SHA256(57 * 0x00)` =
+      `65a16cb7861335d5ace3c60718b5052e44660726da4cd13bb745381b235a1785`
+  These three cross the 64-byte block boundary and
+  expose padding-off-by-one defects in homemade SHA
+  implementations. The SHA-256 output is the canonical
+  hash recorded in `corpus-object-provenance.tsv`;
+  FNV-1a is retained alongside for cross-check.
 * **Three negative-control mutation binaries** that
   exercise AC05/AC06/AC07 by mutating only the evidence
   GENERATOR (or its inputs) while leaving the independent
@@ -379,15 +409,24 @@ governance layer did not engage at CORRECTION04 CLOSE.
   `object_sha256`.
 * **Semantic-invariant gate** in the broad-corpus
   generator: success iff
-  * `BYTE_IDENTICAL_4` rate has not regressed vs the
-    previous entry;
-  * `BOTH_FAIL_4` rate has not regressed vs the previous
-    entry;
   * `DIVERGED == 0`;
   * `REGRESSION == 0`;
   * `PASS_MISMATCH == 0`;
   * provenance TSV is structurally valid (700 rows +
-    header, 8 columns each, no embedded control bytes).
+    header, 8 columns each, no embedded control bytes,
+    no empty `object_sha256`).
+
+  The generator enforces ONLY structural and semantic
+  invariants; it does NOT track any "previous entry
+  rate" and it does NOT bind to literal CORRECTION02
+  counts (166/9/175/6/0). A later genuine improvement
+  (e.g. elimination of the 9 historical fallbacks) is
+  observable by the verifier as an updated snapshot,
+  not penalized by the generator. The generator's
+  invariant gate is what `tools/quality/lexer07-proof-verify.HC`
+  uses to detect an AC05 stub (rc=0 with bad evidence
+  would still trigger `DIVERGED > 0` or
+  `REGRESSION > 0` or fail the structural check).
 * **C05 independent-verifier snapshot** enforces the
   present-tree literal CORRECTION02 counts:
   * `CURRENT_4_STAGE_BYTE_IDENTICAL == 166`
@@ -430,7 +469,7 @@ governance layer did not engage at CORRECTION04 CLOSE.
   grandfathered 12 pre-existing Python files.
 * Update of `docs/ROADMAP.md` with the CORRECTION05
   status block (P0 READY → P0 CLOSED PASS, FALSE_GREEN
-  verdict on CORRECTION04, the eight reviewer-audit
+  verdict on CORRECTION04, the ten reviewer-audit
   findings from C1.1 marked CLOSED, LEXER03 BLOCKED
   until C05 TRUE GREEN).
 * Creation of
@@ -589,7 +628,7 @@ file, the kind of change, and the LOC budget):
 | --- | --- | --- | --- |
 | `tools/quality/lexer07-broad-corpus-4-stage.HC` | modified | 408 → ≤500 | expose `ObjectsByteEqual` helper; replace FNV equality with `MemCmp`; write the 8-column provenance TSV (700 successful rows + header); integrate SHA-256; emit invariant-gate verdict |
 | `tools/quality/lexer07-fixture-inventory.HC` | modified | 395 → ≤420 | `EscapeTsvCell` for CR/LF/tab/backslash |
-| `tools/quality/lexer07-sha256.HC` | new | ≤120 | PolyC-local SHA-256 with NIST FIPS 180-4 §B.2 vectors |
+| `tools/quality/lexer07-sha256.HC` | new | ≤120 | PolyC-local SHA-256 with NIST SHA-2 Additional Test Data vectors (empty/"abc"/55-/56-/57-byte zero) |
 | `tools/quality/lexer07-proof-verify.HC` | new | ≤150 | **Independent verifier**: reads on-disk evidence, emits PASS/FAIL |
 | `tools/quality/lexer07-predecessor-verify.HC` | new | ≤80 | **Direct predecessor-identity verifier** for P1-7 |
 | `tools/quality/lexer07-mutation-stub.HC` | new | ≤40 | AC05 mutation (generator-only, verifier intact) |
@@ -707,7 +746,7 @@ Deliberately not included:
 
 Each AC is checkable by a single concrete command.
 The seven CORRECTION04 defects (P0-1..P1-7) are closed
-1-to-1 by AC01..AC07; the eight reviewer-audit findings
+1-to-1 by AC01..AC07; the ten reviewer-audit findings
 from C1.1 are closed 1-to-1 by AC03 split, AC13 NIST
 vectors, AC04 schema, AC02 snapshot split, AC05/06/07
 generator-only mutation, AC10 baseline/delta, AC14
@@ -737,13 +776,19 @@ AC01  CORRECTION02 fixture-inventory contract reproduced
 
 AC02  CORRECTION02 broad-corpus contract reproduced from
       a clean destination. The reusable broad-corpus
-      generator emits an invariant-gate verdict (no
-      regression of BYTE_IDENTICAL_4 rate; no regression
-      of BOTH_FAIL_4 rate; DIVERGED=0; REGRESSION=0;
-      PASS_MISMATCH=0; provenance TSV structurally
-      valid). The C05 independent verifier
+      generator emits an invariant-gate verdict
+      (DIVERGED=0; REGRESSION=0; PASS_MISMATCH=0;
+      provenance TSV structurally valid: 700 successful
+      rows + 1 header, 8 columns each, no embedded
+      control bytes, no empty `object_sha256`). The
+      generator does NOT track any "previous entry rate"
+      and does NOT bind to literal CORRECTION02 counts;
+      its gate is purely structural/semantic. The C05
+      independent verifier
       (`tools/quality/lexer07-proof-verify.HC`) then
-      asserts the literal CORRECTION02 snapshot:
+      asserts the literal CORRECTION02 snapshot (this
+      is the verifier's responsibility, not the
+      generator's):
         CURRENT_4_STAGE_BYTE_IDENTICAL   == 166
         HISTORICAL_S0_BASELINED_4_WAY_EQ == 9
         TOTAL_EQUIVALENCE_COVERAGE      == 175
@@ -776,27 +821,46 @@ AC03  BYTE_IDENTICAL_4 classification is computed by
           -> calls the helper, NOT a raw `h0 == h1`
           FNV equality chain
 
-AC04  corpus-object-provenance.tsv has the schema
+AC04  corpus-object-provenance.tsv contains
+      **successful-object provenance only** with schema
         source<TAB>stage<TAB>object_path
         <TAB>provenance_class<TAB>object_sha256
         <TAB>compiler_binary_path
         <TAB>compiler_binary_sha256<TAB>fnv1a64
       and exactly 700 successful object rows
-      (`175 × 4`) plus 1 header. For every row where
-      `provenance_class` contains `stage0-historical`,
-      `compiler_binary_sha256` MUST be the actual
-      historical compiler digest from immutable evidence,
-      or literally `UNKNOWN`. The current `./build/hcc`
-      SHA MUST NOT appear in a `stage0-historical` row.
+      (`175 × 4`) plus 1 header — total 701 lines, 8
+      columns each. **Failed compilation observations are
+      recorded separately** in
+      `corpus-failures.tsv` (one row per failed
+      source/stage with columns `source`, `stage`,
+      `rc`) and do NOT appear in the provenance TSV.
+      The provenance TSV never carries a row whose
+      `provenance_class` indicates a failed compilation;
+      an empty `object_sha256` is not permitted in
+      `corpus-object-provenance.tsv` (it would defeat the
+      SHA-256 binding).
+
+      For every row where `provenance_class` contains
+      `stage0-historical`, `compiler_binary_sha256` MUST
+      be the actual historical compiler digest from
+      immutable evidence, or literally `UNKNOWN`. The
+      current `./build/hcc` SHA MUST NOT appear in a
+      `stage0-historical` row.
+
       Mechanically verified by:
         awk -F'\t' '{print NF}' .../corpus-object-provenance.tsv \
           | sort | uniq -c
           -> 701   8
+        awk -F'\t' 'NR>1 && ($5 == "" || $5 == "(empty)")' \
+          .../corpus-object-provenance.tsv | wc -l
+          -> 0   (no empty object_sha256 in provenance)
         awk -F'\t' '$4 ~ /stage0-historical/ {print $7}' \
           .../corpus-object-provenance.tsv \
           | sort -u
           -> [set of historical digests] plus possibly
              UNKNOWN; never the current ./build/hcc SHA
+        wc -l .../corpus-failures.tsv
+          -> 6 + 1 header  (BOTH_FAIL_4 count)
 
 AC05  STUB_BINARY_NEGATIVE_CONTROL=PASS.
       The mutation test substitutes the broad-corpus
@@ -813,9 +877,15 @@ AC06  CORRUPT_OBJECT_NEGATIVE_CONTROL=PASS.
       The mutation test corrupts one byte in a TEMPORARY
       COPY of a `build/b02-corpus-A/<idx>_<stem>.o`
       historical fallback. The expected SHA is taken
-      from the immutable pre-mutation snapshot, NOT
-      derived from the mutated file at runtime. The
-      independent verifier rejects with
+      from the **immutable independent SHA-256 baseline**
+      compiled into
+      `tools/quality/lexer07-proof-verify.HC` as a static
+      9-line manifest bound to the closed predecessor
+      `58a89cc` (see AC19). The expected SHA is NEVER
+      derived from the mutated file at runtime; the
+      independent verifier compares the runtime SHA of
+      the mutated copy against the compiled-in baseline.
+      The verifier rejects with
       `OBJECT_IDENTITY_MISMATCH` or
       `STAGE0_HISTORICAL_BYTE_MISMATCH`. The canonical
       historical object is NEVER mutated in place.
@@ -860,8 +930,9 @@ AC11  factory-closure-status-check PASS.
 AC11b Direct predecessor-identity verifier
       (`tools/quality/lexer07-predecessor-verify.HC`)
       reports the CORRECTION04 HANDOFF predecessor as
-      INCORRECT and identifies the correct successor as
-      `6abde99`. The verifier runs from a fresh tree
+      INCORRECT and identifies the correct **predecessor**
+      as `6abde99` (the actual C04-closing C03 CLOSE
+      commit). The verifier runs from a fresh tree
       (F9) and exits 0 on a clean reproduction.
       Evidence:
         evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION05/c3/
@@ -869,23 +940,32 @@ AC11b Direct predecessor-identity verifier
 
 AC12  factory-append-only-test PASS.
 
-AC13  PolyC-local SHA-256 passes published FIPS 180-4 §B.2
-      vectors AND the 55/56/57-byte padding-boundary
+AC13  PolyC-local SHA-256 passes the authoritative
+      **NIST SHA-2 Additional Test Data** vectors AND
+      the 55/56/57-byte zero-byte padding-boundary
       vectors (homemade SHA implementations commonly
-      fail around padding/block transitions):
-        SHA256("")    = e3b0c44298fc1c149afbf4c8996fb924
-                        27ae41e4649b934ca495991b7852b855
-        SHA256("abc") = ba7816bf8f01cfea414140de5dae2223
-                        b00361a396177a9cb410ff61f20015ad
-        SHA256(56-byte 'a' string) = the NIST 56-byte
-          vector (one full block, padding in second block)
-        SHA256(55-byte 'a' string) = the NIST 55-byte
-          vector (just under block boundary)
-        SHA256(57-byte 'a' string) = the NIST 57-byte
-          vector (just over block boundary)
-      A failure of any vector halts with
-      `HALT_SHA256_VECTOR_MISMATCH` (F5: the
-      implementation is wrong, not the test).
+      fail around padding/block transitions). The
+      authoritative source is
+      `csrc.nist.gov/csrc/media/projects/cryptographic-standards-and-guidelines/documents/examples/sha2_additional.pdf`.
+      FIPS 180-4 has no §B.2 (Appendix B is references);
+      the correct citation is "NIST SHA-2 Additional
+      Test Data".
+        SHA256("")         = e3b0c44298fc1c149afbf4c8996fb924
+                             27ae41e4649b934ca495991b7852b855
+        SHA256("abc")      = ba7816bf8f01cfea414140de5dae2223
+                             b00361a396177a9cb410ff61f20015ad
+        SHA256(55 * 0x00)  = 02779466cdec163811d078815c633f21
+                             901413081449002f24aa3e80f0b88ef7
+        SHA256(56 * 0x00)  = d4817aa5497628e7c77e6b606107042b
+                             bba3130888c5f47a375e6179be789fbb
+        SHA256(57 * 0x00)  = 65a16cb7861335d5ace3c60718b5052e
+                             44660726da4cd13bb745381b235a1785
+      The three zero-byte boundary vectors are exactly
+      the values NIST publishes for informal correctness
+      testing of SHA-256 padding; they cross the
+      64-byte block boundary. A failure of ANY vector
+      halts with `HALT_SHA256_VECTOR_MISMATCH` (F5:
+      the implementation is wrong, not the test).
       Evidence:
         evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION05/c3/
           c3-sha256-test-vector.log
@@ -905,7 +985,7 @@ AC14  Predecessor correction is recorded ADDITIVELY in
 
 AC15  ROADMAP status block for CORRECTION05 records
       CLOSED PASS with the seven CORRECTION04 defects
-      AND the eight reviewer-audit findings from C1.1
+      AND the ten reviewer-audit findings from C1.1
       marked CLOSED.
 AC16  Worktree clean at closure.
 AC17  Append-only Git history preserved.
@@ -927,10 +1007,26 @@ AC19  `tools/quality/lexer07-proof-verify.HC` exists as a
       the on-disk evidence files
       (corpus-matrix.tsv,
        corpus-object-provenance.tsv,
+       corpus-failures.tsv,
        fixture-inventory.tsv,
        fixture-inventory-summary.txt) and emits its own
-      PASS/FAIL verdict. Replacing this verifier in any
-      AC05/AC06/AC07 test is forbidden.
+      PASS/FAIL verdict. The verifier has a
+      **compiled-in immutable SHA-256 baseline** for the
+      9 `stage0-historical` objects (the 9 digests of
+      `build/b02-corpus-A/{0_all,5_date,9_hashtable,
+      10_io,12_list,14_memory,19_strings,21_threads,
+      22_tooling}.o` as they exist at the closed
+      predecessor `58a89cc`). The verifier uses this
+      baseline to detect AC06 corruption and to assert
+      that the `stage0-historical` rows of the
+      provenance TSV carry the correct historical
+      digests. The baseline is bound to `58a89cc` and
+      CANNOT be learned from the on-disk evidence at
+      runtime (the verifier does NOT inspect mutated
+      copies or live stage0 files to discover the
+      expected SHA — the expected SHA comes from the
+      compiled-in manifest). Replacing this verifier in
+      any AC05/AC06/AC07 test is forbidden.
       Evidence:
         build/lexer07-proof-verify (PolyC-built binary)
         file -b build/lexer07-proof-verify
@@ -998,9 +1094,10 @@ this conservation in `c4/c4-conservation-gates.txt`.
   `--install-dir=./build/test-prefix`, and no PolyC
   workaround is possible.
 * `HALT_SHA256_VECTOR_MISMATCH` — if the PolyC-local
-  SHA-256 implementation diverges from the published test
-  vectors in AC13 (including the 55/56/57-byte
-  padding-boundary cases). This is an F5-class halt: the
+  SHA-256 implementation diverges from the published
+  NIST SHA-2 Additional Test Data vectors in AC13
+  (including the 55/56/57-byte zero-byte padding-
+  boundary cases). This is an F5-class halt: the
   implementation is wrong, not the test.
 * `HALT_OBJECTS_BYTE_EQUAL_TEST_FAIL` — if the
   `ObjectsByteEqual` helper fails any of its executable
@@ -1047,7 +1144,7 @@ Suggested commit ordering. Mark "do not exceed".
    RED witnesses in §4), scope audit, ancestor of
    `58a89cc`. Trailer `ACT-Phase: RED`.
 2. `C1.1 CONTRACT-CORRECTION` — revision of the
-   authorization artifact in response to the eight
+   authorization artifact in response to the ten
    reviewer-audit findings (see §0 items 1-10 and §2
    scope corrections). **Single intermediate commit
    authorized by the reviewer at the C1 RED review.**
@@ -1060,29 +1157,53 @@ Suggested commit ordering. Mark "do not exceed".
    `evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION05/c1.1/`
    records the ten reviewer-audit findings and the
    contract corrections.
-3. `C2 IMPL` — `ObjectsByteEqual` helper + executable
-   self-tests; PolyC-local SHA-256 with NIST vectors
-   including 55/56/57-byte padding boundary; 8-column
-   provenance schema (700 successful rows + header);
+3. `C1.2 CONTRACT-CORRECTION` — revision of the
+   authorization artifact in response to four
+   pre-C2 reviewer findings issued at the C1.1 review:
+   (a) AC13 NIST vectors are the actual zero-byte
+   boundary vectors from NIST SHA-2 Additional Test
+   Data, not the fictional "55/56/57-byte 'a'" with
+   the wrong §B.2 citation; (b) AC06/AC19 are made
+   mechanically compatible by compiling an immutable
+   9-object SHA-256 baseline into the verifier
+   (`tools/quality/lexer07-proof-verify.HC`); (c) AC04
+   is disambiguated so `corpus-object-provenance.tsv`
+   is successful-objects-only (700 + header) with
+   failed rows in a separate `corpus-failures.tsv`;
+   (d) the "previous entry rate" hidden policy is
+   removed from the generator (verifier owns the
+   snapshot). Plus two textual fixes ("eight" →
+   "ten"; "correct successor" → "correct predecessor").
+   Trailer `ACT-Phase: RED` (same commit-msg-check
+   grammar constraint as C1.1: a `CONTRACT-CORRECTION`
+   phase token is not in the grammar; the change is
+   contract-only and pre-production). Evidence under
+   `evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION05/c1.2/`.
+4. `C2 IMPL` — `ObjectsByteEqual` helper + executable
+   self-tests; PolyC-local SHA-256 with NIST SHA-2
+   Additional Test Data vectors including the
+   55/56/57-byte zero-byte padding boundary; 8-column
+   provenance schema (700 successful rows + 1 header);
    `EscapeTsvCell`; three negative-control mutation
    binaries; the new independent verifier
-   `tools/quality/lexer07-proof-verify.HC`; the new
-   direct predecessor-identity verifier
-   `tools/quality/lexer07-predecessor-verify.HC`;
+   `tools/quality/lexer07-proof-verify.HC` (which
+   consumes the compiled-in 9-object historical SHA
+   baseline); the new direct predecessor-identity
+   verifier `tools/quality/lexer07-predecessor-verify.HC`;
    additive predecessor correction binding recorded in
    the C05 HANDOFF and ROADMAP (no edit to the closed
    C04 HANDOFF). Trailer `ACT-Phase: IMPL`.
-4. `C3 EVIDENCE` — fresh re-proof + three mutation
+5. `C3 EVIDENCE` — fresh re-proof + three mutation
    tests + `gate-fast` + `factory-closure-status-check`
    + the new direct predecessor-identity verifier fresh
    evidence. Trailer `ACT-Phase: EVIDENCE`.
-5. `C4 CLOSE` — ROADMAP status block (CLOSED PASS,
+6. `C4 CLOSE` — ROADMAP status block (CLOSED PASS,
    FALSE_GREEN cross-reference), CORRECTION05 HANDOFF,
    identity, ancestor binding to C3. Trailer
    `ACT-Phase: CLOSE` + `ACT-Verdict: PASS_TRUE_GREEN`.
 
-Do not exceed 5 commits. The append-only invariant is
-preserved across all five commits (no amend, no rebase,
+Do not exceed 6 commits. The append-only invariant is
+preserved across all six commits (no amend, no rebase,
 no force-push, no reset+recommit).
 
 ## 11. Closure handoff
