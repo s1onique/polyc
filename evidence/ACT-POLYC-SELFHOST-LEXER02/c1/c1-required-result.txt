@@ -1,0 +1,93 @@
+ACT-POLYC-SELFHOST-LEXER02 — C1 — required result
+==================================================
+
+ACT_PHASE = RED
+
+SUBJECT =
+  scalar_literal_scanner
+
+MEMBERS =
+  countNumberLen
+  lexNumeric
+  lexCharConst
+
+SELECTION_REOPENED =
+  NO
+
+DIRECT_ORACLE =
+  FROZEN (tools/quality/lexer07-scalar-literal-oracle.c,
+          extracted verbatim from src/lexer.c countNumberLen,
+          lexNumeric, lexCharConst; standalone C99 wrapper
+          exposing the 4-input/7-output ABI; self-test:
+          40/40 PASS against fixture matrix in the same file)
+
+REAL_LEXER_SEAM =
+  FROZEN (tools/quality/lexer07-real-seam-runner.c;
+          28 production lexer cases through the real lex()
+          entry point with the legacy C scalar literal
+          code; output captured in
+          c1/real-lexer-seam-oracle.tsv)
+
+LOGICAL_INPUT_SLOTS =
+  4  (src, src_len, cursor, flags)
+
+LOGICAL_OUTPUT_SLOTS =
+  7  (out_end, out_kind, out_i64, out_f64_bits, out_ishex,
+      out_error, [implicit char_overflow derived from out_error])
+
+NUMERIC_EXTENT_CONTRACT =
+  FROZEN (verified via 12 integer/hex/float extent cases
+          in c1/numeric-extent-oracle.tsv)
+
+INTEGER_VALUE_CONTRACT =
+  FROZEN (strtoll semantics for decimal; strtoull for hex;
+          captured via i64=0x.. for each fixture; matches
+          real lexCore output for D01..D03)
+
+HEX_VALUE_CONTRACT =
+  FROZEN (ishex bit set on hex-formatted literals; strtoull
+          value cast to I64; production behavior: bare "0x"
+          is I64=0 ishex=1, len=2)
+
+F64_BIT_CONTRACT =
+  FROZEN (raw IEEE-754 double bits via union copy from
+          strtold's long double result; F64 cases in
+          c1/real-lexer-seam-oracle.tsv match the union'd
+          bits of the canonical double)
+
+CHAR_PACKING_CONTRACT =
+  FROZEN (byte-OR-shift packing: byte[len] << (len*8); max
+          8 bytes; overflow path absorbs further bytes
+          without packing them; unterminated path leaves
+          cursor past EOF; cursor after lexeme is past
+          closing quote)
+
+ERROR_CONTRACT =
+  FROZEN (5 bounded error codes mechanically present in
+          production; BAD_ESCAPE / HEX_FLOAT / HEX_EXP /
+          INVALID_BYTE reserved for grammar closure)
+
+EOF_POINTER_CONTRACT =
+  FROZEN (peek_at() in the oracle returns 0 for idx < 0
+          or idx >= src_len; no src[src_len+1] read;
+          out_end <= src_len)
+
+POLYC_CAPABILITY =
+  PASS (boundary: the C oracle is callable from PolyC via
+        extern; the PolyC -> libc strto* binding is the
+        selected conversion strategy and is the canonical
+        external-function pattern in the existing codebase)
+
+CONVERSION_STRATEGY =
+  B (PolyC -> libc strtoll / strtoull / strtold)
+
+PRODUCTION_MUTATION =
+  ZERO (only tools/quality/lexer07-scalar-literal-oracle.c
+        and tools/quality/lexer07-real-seam-runner.c added
+        at C1; src/lexer.c unchanged)
+
+C1_TO_C2_GATE =
+  OPEN
+
+C1_HALTS_FIRED =
+  NONE

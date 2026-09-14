@@ -1,0 +1,78 @@
+ACT-POLYC-SELFHOST-LEXER02 — C1 — region ABI contract (frozen)
+==============================================================
+
+ABI inputs (4):
+
+  src        : U8*   (caller-owned, read-only)
+  src_len    : I64   (explicit byte length; bounds all reads)
+  cursor     : I64   (offset of the leading byte of the literal)
+  flags      : I64   (CCF_* flag bits, currently ignored for
+                       scalar literals; CCF_PERMISSIVE only
+                       affects the production raise path which
+                       is owned by the C wrapper, not the
+                       component)
+
+ABI outputs (7):
+
+  out_end        : I64*  absolute cursor position AFTER the
+                         lexeme (0 <= out_end <= src_len)
+  out_kind       : I64*  result kind:
+                         SCALAR_NONE  = 0 (not a scalar literal
+                                           at cursor; dispatcher
+                                           continues)
+                         SCALAR_I64   = 1
+                         SCALAR_F64   = 2
+                         SCALAR_CHAR  = 3
+                         SCALAR_ERROR = 4
+  out_i64        : I64*  decimal or hex integer value (bits)
+  out_f64_bits   : U64*  raw IEEE-754 double bits (NOT a string)
+  out_ishex      : I64*  1 iff the literal was hex-formatted
+  out_error      : I64*  bounded error code:
+                         SCALAR_ERR_NONE              = 0
+                         SCALAR_ERR_MALFORMED_NUMERIC = 1
+                         SCALAR_ERR_CHAR_UNTERMINATED = 2
+                         SCALAR_ERR_CHAR_OVERFLOW     = 3
+                         SCALAR_ERR_BAD_ESCAPE        = 4 (reserved)
+                         SCALAR_ERR_HEX_FLOAT         = 5 (reserved)
+                         SCALAR_ERR_HEX_EXP           = 6 (reserved)
+                         SCALAR_ERR_INVALID_BYTE      = 7 (reserved)
+
+C declaration (frozen):
+
+  long long BootstrapScanScalarLiteral(
+      unsigned char *src,
+      long long src_len,
+      long long cursor,
+      long long flags,
+      long long *out_end,
+      long long *out_kind,
+      long long *out_i64,
+      unsigned long long *out_f64_bits,
+      long long *out_ishex,
+      long long *out_error);
+
+ABI rules (binding, ACT §13):
+
+  NO Lexer *
+  NO Lexeme *
+  NO Cctrl *
+  NO Arena *
+  NO Map *
+  NO List *
+  NO owned heap pointer
+  NO callback
+  NO varargs
+
+Cursor contract (binding, ACT §26):
+
+  0 <= cursor < src_len on entry
+  0 <= out_end <= src_len on exit
+  NO src[src_len + 1] read
+  SCALAR_NONE sets out_end = cursor (no advance)
+
+NOT_A_LITERAL contract (ACT §41):
+
+  out_kind = SCALAR_NONE
+  out_end  = cursor
+  no output value is semantically consumed
+  dispatcher falls through to next arm

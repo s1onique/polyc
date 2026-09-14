@@ -1,0 +1,71 @@
+ACT-POLYC-SELFHOST-LEXER02 — C1 — frozen source seam map
+========================================================
+
+Real-C call graph for the frozen region (R-F):
+
+  lexCore  (src/lexer.c:1442)
+    +- lexNumeric  (src/lexer.c:1164)
+    |   +- countNumberLen (src/lexer.c:795) [reads *ptr for extent]
+    |   +- strtoll / strtoull / strtold  (libc, numeric conversion)
+    +- lexCharConst (src/lexer.c:1085)
+        +- lexNextChar / lexPeek (src/lexer.c:620, 658)
+        +- toupper (libc, hex-escape)
+        +- lexRaise  (src/lexer.c:254) [via CCF_PERMISSIVE gate]
+
+Caller inventory (binding):
+
+  src/lexer.c:1494   lexCore() in '0'..'9' arms: lexNumeric(l, 0)
+  src/lexer.c:1522   lexCore() in '\'' arm:     lexCharConst(l)
+  src/lexer.c:1610   lexCore() in '.' arm
+                     (when followed by digit): lexNumeric(l, 0)
+
+Entry conditions:
+
+  countNumberLen(l, ptr, &isfloat, &ishex, &err):
+    ptr:    points at the byte just lexNextChar'd (the leading
+            digit, '.', 'x', or 'X'). For lexCore's number
+            arms this is l->ptr-1.
+    isfloat: passed in by caller; should be 0 from production.
+    ishex:   passed in by caller; should be 0 from production.
+    err:     output, set to 1 on malformed.
+
+  lexNumeric(l, _isfloat):
+    _isfloat: 0 in all production call sites.
+    cursor  : l->ptr (just past leading byte).
+    returns : TK_I64, TK_F64, or -1 (err).
+
+  lexCharConst(l):
+    cursor  : l->ptr (just past leading '\'').
+    returns : TK_CHAR_CONST.
+
+Output fields touched:
+
+  l->cur_i64      (read-write in all three functions)
+  l->cur_f64      (written by lexNumeric, strtold path)
+  l->cur_strlen   (written by lexNumeric, set to numlen;
+                   by lexCharConst, set to packed byte count)
+  l->ishex        (written by lexNumeric on hex path; reset
+                   to 0 by lexCore after lexNumeric returns)
+  l->ptr          (advanced by lexNumeric via `l->ptr += numlen-1`;
+                   advanced by lexCharConst via lexNextChar loop)
+
+State read/write matrix:
+
+  field          countNumberLen   lexNumeric       lexCharConst
+  -------------- ---------------- ---------------- ----------------
+  read
+    l->ptr       no (uses arg)    yes (l->ptr-1)   yes (via lNextChar)
+    l->lineno    yes (warn only)  no               no
+  write
+    *err         yes              indirect (return-1)
+    *isfloat     yes              indirect (cur_f64)
+    *ishex       yes              l->ishex
+    l->cur_i64   no               yes (via strtoll/toull)
+    l->cur_f64   no               yes (via strtold)
+    l->cur_strlen no              yes (= numlen)    yes (= len)
+    l->ptr       no               yes (+= numlen-1) yes (via lNextChar)
+  derived
+    n/a
+  not touched
+    l->flags (except via CCF_PERMISSIVE in lexCharConst raise)
+    l->start (the dispatcher manages)

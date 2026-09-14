@@ -1,0 +1,48 @@
+ACT-POLYC-SELFHOST-LEXER02 — C1 — numeric conversion strategy
+=============================================================
+
+Per ACT §21, three strategies were mechanically considered:
+
+  A. PolyC implements conversion algorithm itself.
+  B. PolyC calls the same libc conversion functions
+     through external ABI.
+  C. HALT capability gap.
+
+SELECTED = B (PolyC -> libc strtoll / strtoull / strtold).
+
+Rationale:
+
+  - The act is about transferring compiler ownership of
+    the R-F region into PolyC; it is NOT about
+    reimplementing libc numeric conversion.
+
+  - Production behavior (callNumberLen followed by
+    strtoll / strtoull / strtold) depends on libc locale
+    and rounding semantics that would be expensive and
+    risky to reimplement from scratch.
+
+  - PolyC can bind external C functions through its
+    existing external-call ABI; the only PolyC-side
+    requirement is to pass a NUL-terminated scratch
+    buffer holding the consumed bytes.
+
+  - Delegation back to src/lexer.c is FORBIDDEN per
+    ACT §21 / §47; that would silently re-introduce a
+    second semantic implementation.
+
+  - Calling libc strtoll / strtoull / strtold from
+    PolyC is compatible with self-hosting; it is the
+    canonical PolyC -> libc boundary pattern.
+
+Binding distinction:
+
+  PolyC -> libc strto*        = allowed (selected)
+  PolyC -> legacy lexNumeric  = forbidden (F8 / §47)
+
+Locale contract (ACT §20):
+
+  LC_ALL=C used for the differential test suite to
+  suppress locale-dependent decimal-point interpretation.
+  Production locale is preserved unchanged.
+
+CONVERSION_STRATEGY = B
