@@ -1,0 +1,122 @@
+C3 EVIDENCE — ACT-POLYC-SELFHOST-LEXER02-CORRECTION04
+=====================================================
+
+ENTRY IDENTITY (F1)
+- branch: main
+- HEAD:   a9b3e41 (C1 RED commit)
+- C2 IMPL adds the substantive PolyC tools.
+
+CLOSURE-CRITICAL COMMANDS
+
+  1. Compile fixture inventory:
+     ./hcc --install-dir=./build/test-prefix \
+       tools/quality/lexer07-fixture-inventory.HC \
+       -o build/lexer07-fixture-inventory
+     -> exit 0
+
+  2. Compile broad corpus:
+     ./hcc --install-dir=./build/test-prefix \
+       tools/quality/lexer07-broad-corpus-4-stage.HC \
+       -o build/lexer07-broad-corpus-4-stage
+     -> exit 0
+
+  3. Run fixture inventory:
+     build/lexer07-fixture-inventory
+     exit=0
+     stdout:
+       TOTAL=89 is_numeric=42 is_char=33 is_negative=16 is_edge=3
+       FIXTURE_INVENTORY_FLOORS=PASS
+       STATUS=PASS
+     evidence/.../c3/fixture-inventory.tsv: 91 lines (1 hdr + 89 rows)
+     evidence/.../c3/fixture-inventory-summary.txt:
+       TOTAL=89, is_numeric=42, is_char=33, is_negative=16, is_edge=3
+       OBSERVED=89/89, FIXTURE_INVENTORY_FLOORS=PASS, STATUS=PASS
+
+  4. Run broad corpus (181 sources x 4 stages):
+     build/lexer07-broad-corpus-4-stage
+     exit=0
+     runtime: ~80s wall-clock (724 compiler invocations + 724 .o reads)
+     stdout:
+       TOTAL=181
+       PASS_S0=175 HISTORICAL_S0=9 PASS_S1=175 PASS_S2=175 PASS_S3=175
+       FAIL_S0=6 FAIL_S1=6 FAIL_S2=6 FAIL_S3=6
+       BOTH_FAIL_4=6
+       REGRESSION=0
+       DIVERGED=0
+       PASS_MISMATCH=0
+       HISTORICAL_S0_FALLBACKS_USED=9
+       BYTE_IDENTICAL_4=175/181 (all 6 pairwise hashes agree)
+       STATUS=PASS
+
+     9 stage0-historical rows:
+       build/b02-corpus-A/0_all.o        src/holyc-lib/all.HC
+       build/b02-corpus-A/5_date.o       src/holyc-lib/date.HC
+       build/b02-corpus-A/9_hashtable.o  src/holyc-lib/hashtable.HC
+       build/b02-corpus-A/10_io.o        src/holyc-lib/io.HC
+       build/b02-corpus-A/12_list.o      src/holyc-lib/list.HC
+       build/b02-corpus-A/14_memory.o    src/holyc-lib/memory.HC
+       build/b02-corpus-A/19_strings.o   src/holyc-lib/strings.HC
+       build/b02-corpus-A/21_threads.o   src/holyc-lib/threads.HC
+       build/b02-corpus-A/22_tooling.o   src/holyc-lib/tooling.HC
+
+FACTORY GATES
+
+  5. shell-loc-gate:
+     bash scripts/quality/shell-loc-gate.sh
+     -> PASS (lexer07-fixture-inventory.sh = 14 LOC,
+              lexer07-broad-corpus-4-stage.sh = 16 LOC, both <= 50)
+
+  6. factory-no-python-check:
+     bash scripts/quality/factory-no-python-check.sh
+     -> no new Python sources / invocations introduced by this commit
+     -> 12 pre-existing Python source files (legacy grandfathered)
+     -> all my lexer07 files (HC source, sh wrappers) PASS
+
+  7. factory-append-only-test:
+     bash scripts/quality/factory-append-only-test.sh
+     -> PASS (11/11 NC1..NC11)
+
+CONSERVATION (F10)
+
+  Required behavior changed: CORRECTION03 stub (MkDirpRecursive only)
+  replaced by substantive PolyC implementation that executes the
+  CORRECTION02 proof (89 fixtures, 181 sources x 4 stages).
+
+  Unrelated established behavior remained unchanged:
+    shell wrappers unchanged (already F-POLYC-TOOLS compliant).
+    libtos runtime unchanged.
+    inventory file unchanged.
+    historical dir build/b02-corpus-A/ unchanged (read-only input).
+    all Factory gates still PASS.
+
+SCOPE (F7)
+
+  Files changed (tracked):
+    tools/quality/lexer07-fixture-inventory.HC   (modified)
+    tools/quality/lexer07-broad-corpus-4-stage.HC (modified)
+
+  Files added (untracked):
+    evidence/.../c3/c2-required-result.txt
+    evidence/.../c3/c3-required-result.txt
+    evidence/.../c3/corpus-matrix.tsv
+    evidence/.../c3/corpus-object-provenance.tsv
+    evidence/.../c3/fixture-inventory.tsv
+    evidence/.../c3/fixture-inventory-summary.txt
+    evidence/.../c3/fixture-inventory.stdout.txt
+    evidence/.../c3/broad-corpus.stdout.txt
+
+RESIDUE
+
+  P1 - Replace FNV-1a with SHA-256 when libtos exposes SHA-256.
+       Current contract is BYTE-EQUALITY (satisfied by both);
+       FNV-1a is stable identifier for evidence TSVs only.
+       F-POLYC-TOOLS allows PolyC-local hash implementations.
+
+  P1 - Three negative control mutation tests (AC05/06/07):
+       stub binary should fail gate;
+       corrupted b02-corpus-A/*.o should fail gate;
+       mutated lexer07-direct-differential.c (drop one fixture)
+       should fail gate. Tracked as residue for next ACT or C4.
+
+  P2 - Parallelize the 181x4 = 724 compiler invocations.
+       Current serial run ~80s; pipeline could reduce to ~20s.
