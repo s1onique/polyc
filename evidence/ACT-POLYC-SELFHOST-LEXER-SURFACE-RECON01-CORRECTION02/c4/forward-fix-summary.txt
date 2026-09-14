@@ -1,0 +1,62 @@
+ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01-CORRECTION02 — C4 — forward-fix summary
+================================================================================
+
+Two residual bookkeeping defects of ACT-POLYC-SELFHOST-LEXER-
+SURFACE-RECON01-CORRECTION01 were forward-fixed. Per F14, the
+closed CORRECTION01 evidence tree is immutable; all forward-fixes
+live in this correction ACT's evidence directory.
+
+---
+
+## FIX-4 (was DEFECT-4): negative-score block not monotonic
+
+Closed file with non-monotonic block:
+  c2/ranking-repaired.txt rows 12..16:
+    12  R-G  -53
+    13  R-I  -45
+    14  R-B  -49
+    15  R-A  -38
+    16  R-C  -70
+
+Forward-fix: c2/ranking-repaired-v2.txt
+  Reorders rows 12 and 15 (a two-row swap of R-A and R-G):
+    12  R-A  -38
+    13  R-I  -45
+    14  R-B  -49
+    15  R-G  -53
+    16  R-C  -70
+
+Restoration: Strictly monotonic in FINAL_SCORE descending.
+Matches the CORRECTION01's own C3 V-2 mechanical sort.
+
+---
+
+## FIX-5 (was DEFECT-5): byte-description misleading
+
+Closed file with misleading description:
+  c2/ac40-transform.tsv columns:
+    original_eof_byte  = 0x0a (LF)
+    corrected_eof_byte = (no trailing LF)
+
+Forward-fix: c2/ac40-transform-v2.tsv
+  Replaces single-byte columns with suffix-based columns:
+    original_suffix  = 0x0a 0x0a
+    corrected_suffix = 0x0a
+  The "new blank line at EOF" diagnostic corresponds to the
+  EXTRA 0x0a byte, not to removal of the final 0x0a.
+
+Restoration: Mechanically unambiguous byte-level description.
+The final 0x0a (line terminator) is preserved; only the
+extra blank-line 0x0a is removed.
+
+---
+
+## No engineering claim changed
+
+WINNER = R-F (scalar_literal_scanner)         unchanged
+WINNER FINAL_SCORE = +627                      unchanged
+WINNER MARGIN = 342 (ROBUST)                   unchanged
+WINNER E1..E14 = PASS                          unchanged
+WINNER ABI = BOUNDED (4 in / 7 out)            unchanged
+WINNER ORACLE = feasible                       unchanged
+WINNER PRODUCTION_SEAM = POSSIBLE              unchanged

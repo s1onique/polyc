@@ -1,0 +1,62 @@
+ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01-CORRECTION02 — C4 CLOSE summary
+========================================================================
+
+VERDICT:               PASS_WITH_CORRECTION_RESIDUE
+ACT-Corrected-Verdict: PASS_WITH_CORRECTION_RESIDUE (no engineering claim changed)
+ACT-Supersedes:        ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01-CORRECTION01
+
+IDENTITY:              This commit is the C4 CLOSE commit.
+
+ROOT CAUSE:            The CORRECTION01 ACT closed with two residual
+                       bookkeeping defects in its forward-fix ledger
+                       that did NOT invalidate the engineering result
+                       but DID invalidate two presentation claims.
+
+DEFECTS REPAIRED:      2 of 2
+  DEFECT-4 (P1): ranking-repaired.txt rows 12..16 (negative-score
+                  block) were not in strict descending FINAL_SCORE order.
+                  Status: FORWARD-FIX (in CORRECTION02/c2/ranking-repaired-v2.txt)
+  DEFECT-5 (P2): ac40-transform.tsv byte-description was misleading
+                  (suggested removing final LF; actually removes extra LF).
+                  Status: FORWARD-FIX (in CORRECTION02/c2/ac40-transform-v2.tsv)
+
+F14 COMPLIANCE:        Closed CORRECTION01 evidence tree
+                       (evidence/ACT-POLYC-SELFHOST-LEXER-SURFACE-
+                       RECON01-CORRECTION01/c1|2|3|4/) is immutable.
+                       All forward-fixes live in this ACT's CORRECTION02/
+                       evidence directory.
+
+GATES:
+  gate-fast           PASS
+  Dafny               PASS 17/17
+  F_NO_PYTHON         12 (unchanged)
+  identifier hash     PASS I0==I1==I2==I3 (unchanged)
+  operator hash       PASS N0==N1==N2==N3 (unchanged)
+
+SCOPE:
+  docs/acts/ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01-CORRECTION02.md  (NEW)
+  docs/ROADMAP.md                                                     (bounded status block)
+  evidence/ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01-CORRECTION02/     (NEW)
+
+  No compiler source changes.
+  No new bootstrap component.
+  No new registry row.
+  No Python mutation.
+  Closed CORRECTION01 evidence tree: UNCHANGED (F14 honored).
+  Closed recon ACT evidence tree: UNCHANGED.
+
+RESIDUE:
+  P0:  (none)
+  P1:  (none new)
+  P2:  ARM-specific libtos/strings.HC asm residue blocks stage1/2/3
+       build on Apple Silicon hosts. Inherited platform residue
+       (carried from LEXER01).
+  P2:  Wrapper synthetic l->ptr advance unification residue (LEXER01).
+  P2:  Wrapper strlen(start) buffer-bound tightening residue (LEXER01).
+
+NEXT ACT:             ACT-POLYC-SELFHOST-LEXER02
+                       LEXER02_SCOPE = EXACTLY (scalar_literal_scanner
+                                                covering countNumberLen +
+                                                lexNumeric + lexCharConst)
+                       (Recon ACT result bound; CORRECTION01 preserved;
+                       this correction ACT does not begin migration.)

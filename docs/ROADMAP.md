@@ -2351,6 +2351,65 @@ ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01-CORRECTION01      CLOSED PASS_WITH_CORR
         (Unchanged from recon ACT; correction ACT does not begin migration.)
 ```
 
+#### ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01-CORRECTION02 status (CLOSED PASS_WITH_CORRECTION_RESIDUE)
+
+```
+ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01-CORRECTION02      CLOSED PASS_WITH_CORRECTION_RESIDUE
+  ACT-Corrected-Verdict: PASS_WITH_CORRECTION_RESIDUE (no engineering claim changed)
+  ACT-Supersedes:        ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01-CORRECTION01
+  Authorization artifact: docs/acts/ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01-CORRECTION02.md
+  Predecessor:           ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01-CORRECTION01 CLOSED ec12b5c
+
+  Two residual bookkeeping defects in CORRECTION01 forward-fix ledger
+  repaired (forward-fix in CORRECTION02/c2/; closed CORRECTION01 and
+  recon ACT evidence trees immutable per F14):
+
+    DEFECT-4 (P1): CORRECTION01 c2/ranking-repaired.txt rows 12..16
+                    (negative-score block) were not in strict descending
+                    FINAL_SCORE order.
+                    Closed listing:  R-G -53, R-I -45, R-B -49, R-A -38, R-C -70
+                    Corrected order: R-A -38, R-I -45, R-B -49, R-G -53, R-C -70
+                    (matches CORRECTION01's own C3 V-2 mechanical sort;
+                     a two-row swap of R-A and R-G at ranks 12 and 15).
+                    Forward-fix: CORRECTION02/c2/ranking-repaired-v2.txt
+                    All other ranks (1-11, 16) unchanged.
+
+    DEFECT-5 (P2): CORRECTION01 c2/ac40-transform.tsv byte-description
+                    was misleading (suggested removing final LF; actually
+                    removes extra LF).
+                    Closed claim:    original_eof_byte = 0x0a (LF),
+                                     corrected_eof_byte = (no trailing LF)
+                    Corrected claim: original_suffix = 0x0a 0x0a,
+                                     corrected_suffix = 0x0a
+                    (empirical: tail -c 4 of the three files shows
+                     `0x0a 0x0a` vs `0x0a` for normal files).
+                    Forward-fix: CORRECTION02/c2/ac40-transform-v2.tsv
+
+  Engineering result preserved verbatim (unchanged from CORRECTION01):
+    WINNER                        = R-F (scalar_literal_scanner)
+    WINNER FINAL_SCORE            = +627
+    WINNER MARGIN                 = 342 (ROBUST)
+    WINNER E1..E14                = PASS
+    WINNER ABI                    = BOUNDED (4 in / 7 out)
+    WINNER DIRECT_ORACLE          = feasible
+    WINNER PRODUCTION_SEAM        = POSSIBLE
+    WINNER FIXED_POINT_FEASIBILITY= PASS
+    WINNER MIGRATION_READY        = YES
+
+  Gates: gate-fast PASS, Dafny 17/17 PASS, F_NO_PYTHON=12 (unchanged),
+         identifier I0==I1==I2==I3 PASS, operator N0==N1==N2==N3 PASS.
+  F14 honored: closed CORRECTION01 evidence tree UNCHANGED.
+  Scope: docs/acts/.../CORRECTION02.md (NEW), evidence/.../CORRECTION02/ (NEW),
+         ROADMAP.md (this block). No compiler source mutation. No new
+         registry row. No Python mutation. No new bootstrap component.
+
+  NEXT: ACT-POLYC-SELFHOST-LEXER02
+        LEXER02_SCOPE = EXACTLY (scalar_literal_scanner covering
+                                countNumberLen, lexNumeric, lexCharConst)
+        (Unchanged from recon ACT and CORRECTION01; this correction ACT
+         does not begin migration.)
+```
+
 The recon ACT does **not** begin migration. It freezes the migration
 boundary so the next ACT's review surface is the boundary itself
 rather than the migration diff.
