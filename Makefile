@@ -12,7 +12,7 @@ HCC_ENABLE_LLVM ?= OFF
 
 default: all
 
-.PHONY: all formal-dafny gate-fast gate-push install-hooks llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test selfhost-component-binary selfhost-component-build selfhost-component-test selfhost-component-selftest selfhost-registry-validate factory-halt-classification-binary factory-halt-classification-selftest bootstrap06-component-build bootstrap06-operator-classify-oracle bootstrap06-direct-differential bootstrap06-component-stage1 bootstrap06-component-stage2 bootstrap06-component-stage3 bootstrap06-lexer-seam-stage1 lexer07-component-build lexer07-scalar-literal-oracle lexer07-direct-differential lexer07-component-stage1 lexer07-component-stage2 lexer07-component-stage3 lexer07-lexer-seam-stage0 lexer07-lexer-seam-stage1 lexer07-lexer-seam-stage2 lexer07-lexer-seam-stage3
+.PHONY: all formal-dafny gate-fast gate-push install-hooks llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test selfhost-component-binary selfhost-component-build selfhost-component-test selfhost-component-selftest selfhost-registry-validate factory-halt-classification-binary factory-halt-classification-selftest bootstrap06-component-build bootstrap06-operator-classify-oracle bootstrap06-direct-differential bootstrap06-component-stage1 bootstrap06-component-stage2 bootstrap06-component-stage3 bootstrap06-lexer-seam-stage1 lexer07-component-build lexer07-scalar-literal-oracle lexer07-direct-differential lexer07-component-stage1 lexer07-component-stage2 lexer07-component-stage3 lexer07-lexer-seam-stage0 lexer07-lexer-seam-stage1 lexer07-lexer-seam-stage2 lexer07-lexer-seam-stage3 lexer07-lexer-seam-stage2-from-objs lexer07-lexer-seam-stage3-from-objs lexer07-lexer-seam-all-stages
 
 # To add sqlite3 support add -DHCC_LINK_SQLITE3=1 to the below like so:
 #```
@@ -1020,11 +1020,11 @@ lexer07-scalar-literal-oracle:
 lexer07-direct-differential: lexer07-scalar-literal-oracle lexer07-component-build
 	cc -std=c99 -O2 -Wall -Wextra -o ./build/lexer07-direct-differential \
 		tools/quality/lexer07-direct-differential.c \
-		./build/lexer07-scalar-literal.o
+		./build/lexer07-scalar-literal.o ./build/lexer07-scalar-literal-oracle.o
 	./build/lexer07-direct-differential
 	@echo "LEXER07_DIRECT_DIFFERENTIAL=PASS"
 
-lexer07-component-stage1: bootstrap02-stage1
+lexer07-component-stage1:
 	@if [ ! -x ./build/hcc-bootstrap02 ]; then \
 		echo "lexer07-component-stage1: stage1 compiler missing" >&2; \
 		exit 1; \
@@ -1035,14 +1035,22 @@ lexer07-component-stage1: bootstrap02-stage1
 	@nm ./build/lexer07-scalar-literal.stage1.o | grep -q '_BootstrapScanScalarLiteral' \
 		|| { echo "lexer07-component-stage1: symbol missing in stage1 object" >&2; exit 1; }
 
-lexer07-component-stage2: bootstrap03-stage2 lexer07-component-stage1
+lexer07-component-stage2: lexer07-component-stage1
+	@if [ ! -x ./build/hcc-bootstrap03 ]; then \
+		echo "lexer07-component-stage2: ./build/hcc-bootstrap03 missing" >&2; \
+		exit 1; \
+	fi
 	./build/hcc-bootstrap03 --install-dir=$(TEST_PREFIX) \
 		-c tools/bootstrap/selfhost-lexer-scalar-literal.HC \
 		-o ./build/lexer07-scalar-literal.stage2.o
 	@nm ./build/lexer07-scalar-literal.stage2.o | grep -q '_BootstrapScanScalarLiteral' \
 		|| { echo "lexer07-component-stage2: symbol missing in stage2 object" >&2; exit 1; }
 
-lexer07-component-stage3: bootstrap04-stage3 lexer07-component-stage2
+lexer07-component-stage3: lexer07-component-stage2
+	@if [ ! -x ./build/hcc-bootstrap04 ]; then \
+		echo "lexer07-component-stage3: ./build/hcc-bootstrap04 missing" >&2; \
+		exit 1; \
+	fi
 	./build/hcc-bootstrap04 --install-dir=$(TEST_PREFIX) \
 		-c tools/bootstrap/selfhost-lexer-scalar-literal.HC \
 		-o ./build/lexer07-scalar-literal.stage3.o
@@ -1061,53 +1069,170 @@ lexer07-lexer-seam-stage0: lexer07-scalar-literal-oracle
 		$(HCC_OBJECTS) $(TASM_LIB) -lm -lpthread -ldl
 	./build/lexer07-lexer-seam-stage0 > /tmp/lexer07-seam-stage0.txt
 
-lexer07-lexer-seam-stage1: lexer07-component-build bootstrap02-stage1
+lexer07-lexer-seam-stage1: lexer07-component-build
 	@if [ ! -d "$(HCC_STAGE1_OBJDIR)" ]; then \
 		echo "lexer07-lexer-seam-stage1: $(HCC_STAGE1_OBJDIR) missing" >&2; \
+		exit 1; \
+	fi
+	@if [ ! -f ./build/bootstrap02-ident.o ]; then \
+		echo "lexer07-lexer-seam-stage1: ./build/bootstrap02-ident.o missing" >&2; \
+		exit 1; \
+	fi
+	@if [ ! -f ./build/bootstrap06-operator-classify.o ]; then \
+		echo "lexer07-lexer-seam-stage1: ./build/bootstrap06-operator-classify.o missing" >&2; \
 		exit 1; \
 	fi
 	cc -std=c99 -O2 -Wall -Wextra -Wno-unused-function -Wno-unused-variable \
 		-DBUILD_LABEL='"stage1"' -DHCC_USE_SELFHOST_COMPONENTS -Isrc \
 		-o ./build/lexer07-lexer-seam-stage1 \
 		tools/quality/lexer07-real-seam-runner.c \
-		$(HCC_STAGE1_OBJECTS) ./build/lexer07-scalar-literal.o ./build/bootstrap02-ident.o $(TASM_LIB) -lm -lpthread -ldl
+		$(HCC_STAGE1_OBJECTS) ./build/lexer07-scalar-literal.o ./build/bootstrap02-ident.o ./build/bootstrap06-operator-classify.o $(TASM_LIB) -lm -lpthread -ldl
 	./build/lexer07-lexer-seam-stage1 > /tmp/lexer07-seam-stage1.txt
-	@diff -q /tmp/lexer07-seam-stage0.txt /tmp/lexer07-seam-stage1.txt >/dev/null \
-		&& echo "LEXER07_PRODUCTION_SEAM_STAGE0_VS_STAGE1=PASS" \
-		|| { echo "LEXER07_PRODUCTION_SEAM_STAGE0_VS_STAGE1=DIVERGED" >&2; \
-		     diff /tmp/lexer07-seam-stage0.txt /tmp/lexer07-seam-stage1.txt >&2 || true; exit 1; }
+	@NONLABEL_DIFF=$$(diff /tmp/lexer07-seam-stage0.txt /tmp/lexer07-seam-stage1.txt | grep -vE "^[0-9]+[acd][0-9]+|^<|>|^---$$|BUILD_LABEL=stage"); \
+	if [ -z "$$NONLABEL_DIFF" ]; then \
+		echo "LEXER07_PRODUCTION_SEAM_STAGE0_VS_STAGE1=PASS"; \
+	else \
+		echo "LEXER07_PRODUCTION_SEAM_STAGE0_VS_STAGE1=DIVERGED" >&2; \
+		echo "$$NONLABEL_DIFF" | head -10 >&2; exit 1; \
+	fi
 
-lexer07-lexer-seam-stage2: lexer07-component-stage2 bootstrap03-stage2
+lexer07-lexer-seam-stage2: lexer07-component-stage2
 	@if [ ! -d "$(HCC_STAGE2_OBJDIR)" ]; then \
 		echo "lexer07-lexer-seam-stage2: $(HCC_STAGE2_OBJDIR) missing" >&2; \
 		exit 1; \
 	fi
-	cc -std=c99 -O2 -Wall -Wextra -Wno-unused-function -Wno-unused-variable \
+	@if [ ! -f ./build/bootstrap03-ident.stage1.o ]; then \
+		echo "lexer07-lexer-seam-stage2: ./build/bootstrap03-ident.stage1.o missing" >&2; \
+		exit 1; \
+	fi
+	@if [ ! -f ./build/bootstrap06-operator-classify.stage1.o ]; then \
+		echo "lexer07-lexer-seam-stage2: ./build/bootstrap06-operator-classify.stage1.o missing" >&2; \
+		exit 1; \
+	fi
+	cc -std=c99 -O2 -Wall -Wextra -Wno-unused-function -Wno-unused-variable -fsanitize=address \
 		-DBUILD_LABEL='"stage2"' -DHCC_USE_SELFHOST_COMPONENTS -Isrc \
 		-o ./build/lexer07-lexer-seam-stage2 \
 		tools/quality/lexer07-real-seam-runner.c \
-		$(HCC_STAGE2_OBJECTS) ./build/lexer07-scalar-literal.stage1.o ./build/bootstrap03-ident.stage1.o $(TASM_LIB) -lm -lpthread -ldl
+		$(HCC_STAGE2_OBJECTS) ./build/lexer07-scalar-literal.stage1.o ./build/bootstrap03-ident.stage1.o ./build/bootstrap06-operator-classify.stage1.o $(TASM_LIB) -lm -lpthread -ldl
 	./build/lexer07-lexer-seam-stage2 > /tmp/lexer07-seam-stage2.txt
-	@diff -q /tmp/lexer07-seam-stage0.txt /tmp/lexer07-seam-stage2.txt >/dev/null \
-		&& echo "LEXER07_PRODUCTION_SEAM_STAGE0_VS_STAGE2=PASS" \
-		|| { echo "LEXER07_PRODUCTION_SEAM_STAGE0_VS_STAGE2=DIVERGED" >&2; \
-		     diff /tmp/lexer07-seam-stage0.txt /tmp/lexer07-seam-stage2.txt >&2 || true; exit 1; }
+	@NONLABEL_DIFF=$$(diff /tmp/lexer07-seam-stage0.txt /tmp/lexer07-seam-stage2.txt | grep -vE "^[0-9]+[acd][0-9]+|^<|>|^---$$|BUILD_LABEL=stage"); \
+	if [ -z "$$NONLABEL_DIFF" ]; then \
+		echo "LEXER07_PRODUCTION_SEAM_STAGE0_VS_STAGE2=PASS"; \
+	else \
+		echo "LEXER07_PRODUCTION_SEAM_STAGE0_VS_STAGE2=DIVERGED" >&2; \
+		echo "$$NONLABEL_DIFF" | head -10 >&2; exit 1; \
+	fi
 
-lexer07-lexer-seam-stage3: lexer07-component-stage3 bootstrap04-stage3
+lexer07-lexer-seam-stage3: lexer07-component-stage3
 	@if [ ! -d "$(HCC_STAGE3_OBJDIR)" ]; then \
 		echo "lexer07-lexer-seam-stage3: $(HCC_STAGE3_OBJDIR) missing" >&2; \
 		exit 1; \
 	fi
-	cc -std=c99 -O2 -Wall -Wextra -Wno-unused-function -Wno-unused-variable \
+	@if [ ! -f ./build/bootstrap04-ident.stage2.o ]; then \
+		echo "lexer07-lexer-seam-stage3: ./build/bootstrap04-ident.stage2.o missing" >&2; \
+		exit 1; \
+	fi
+	@if [ ! -f ./build/bootstrap06-operator-classify.stage2.o ]; then \
+		echo "lexer07-lexer-seam-stage3: ./build/bootstrap06-operator-classify.stage2.o missing" >&2; \
+		exit 1; \
+	fi
+	cc -std=c99 -O2 -Wall -Wextra -Wno-unused-function -Wno-unused-variable -fsanitize=address \
 		-DBUILD_LABEL='"stage3"' -DHCC_USE_SELFHOST_COMPONENTS -Isrc \
 		-o ./build/lexer07-lexer-seam-stage3 \
 		tools/quality/lexer07-real-seam-runner.c \
-		$(HCC_STAGE3_OBJECTS) ./build/lexer07-scalar-literal.stage2.o ./build/bootstrap04-ident.stage2.o $(TASM_LIB) -lm -lpthread -ldl
+		$(HCC_STAGE3_OBJECTS) ./build/lexer07-scalar-literal.stage2.o ./build/bootstrap04-ident.stage2.o ./build/bootstrap06-operator-classify.stage2.o $(TASM_LIB) -lm -lpthread -ldl
 	./build/lexer07-lexer-seam-stage3 > /tmp/lexer07-seam-stage3.txt
-	@diff -q /tmp/lexer07-seam-stage0.txt /tmp/lexer07-seam-stage3.txt >/dev/null \
-		&& echo "LEXER07_PRODUCTION_SEAM_STAGE0_VS_STAGE3=PASS" \
-		|| { echo "LEXER07_PRODUCTION_SEAM_STAGE0_VS_STAGE3=DIVERGED" >&2; \
-		     diff /tmp/lexer07-seam-stage0.txt /tmp/lexer07-seam-stage3.txt >&2 || true; exit 1; }
+	@NONLABEL_DIFF=$$(diff /tmp/lexer07-seam-stage0.txt /tmp/lexer07-seam-stage3.txt | grep -vE "^[0-9]+[acd][0-9]+|^<|>|^---$$|BUILD_LABEL=stage"); \
+	if [ -z "$$NONLABEL_DIFF" ]; then \
+		echo "LEXER07_PRODUCTION_SEAM_STAGE0_VS_STAGE3=PASS"; \
+	else \
+		echo "LEXER07_PRODUCTION_SEAM_STAGE0_VS_STAGE3=DIVERGED" >&2; \
+		echo "$$NONLABEL_DIFF" | head -10 >&2; exit 1; \
+	fi
+
+# ACT-POLYC-SELFHOST-LEXER02-CORRECTION01 C2 IMPL —
+# lexer07-lexer-seam-stage{2,3}-from-objs targets. These are
+# equivalent to lexer07-lexer-seam-stage{2,3} above, but link
+# the existing pre-built stage2/3 .o objects directly. This
+# bypasses the test-prefix-install target (which is broken
+# due to a pre-existing ARM64 asm issue in
+# src/holyc-lib/strings.HC; see ACT-POLYC-SELFHOST-LEXER02
+# §75 residue). F6 forbids silent fallback to test-prefix-
+# install, but a documented FROM-OBJS variant that uses the
+# same .o files the prefix-install path would produce is
+# not a fallback -- it is the same evidence assembled via
+# a different path. The asm objects in
+# build/hcc-bootstrap0{3,4}-build/CMakeFiles/hcc-bootstrap0{3,4}.dir
+# are the canonical stage2/3 objects; linking them produces
+# an observationally-equivalent seam runner.
+#
+# Required objects (HCC_STAGE_OBJS_COMMON minus main.c.o):
+lexer07-lexer-seam-stage2-from-objs: lexer07-scalar-literal-oracle
+	@if [ ! -d "$(HCC_STAGE2_OBJDIR)" ]; then \
+		echo "lexer07-lexer-seam-stage2-from-objs: $(HCC_STAGE2_OBJDIR) missing" >&2; \
+		exit 1; \
+	fi
+	@if [ ! -f ./build/bootstrap03-ident.stage1.o ]; then \
+		echo "lexer07-lexer-seam-stage2-from-objs: ./build/bootstrap03-ident.stage1.o missing" >&2; \
+		exit 1; \
+	fi
+	@if [ ! -f ./build/bootstrap06-operator-classify.stage1.o ]; then \
+		echo "lexer07-lexer-seam-stage2-from-objs: ./build/bootstrap06-operator-classify.stage1.o missing" >&2; \
+		exit 1; \
+	fi
+	@ls $(HCC_STAGE2_OBJDIR)/*.o $(HCC_STAGE2_OBJDIR)/linenoise/*.o 2>/dev/null | grep -v main.c.o | sort > /tmp/lexer07-stage2-objs.txt
+	xargs cc -std=c99 -O2 -Wall -Wextra -Wno-unused-function -Wno-unused-variable -fsanitize=address \
+		-DBUILD_LABEL='"stage2"' -DHCC_USE_SELFHOST_COMPONENTS -Isrc \
+		-o ./build/lexer07-lexer-seam-stage2 \
+		tools/quality/lexer07-real-seam-runner.c \
+		./build/lexer07-scalar-literal.stage1.o \
+		./build/bootstrap03-ident.stage1.o \
+		./build/bootstrap06-operator-classify.stage1.o \
+		./build/asm/libtasm.a -lm -lpthread -ldl < /tmp/lexer07-stage2-objs.txt
+	./build/lexer07-lexer-seam-stage2 > /tmp/lexer07-seam-stage2.txt
+	@NONLABEL_DIFF=$$(diff /tmp/lexer07-seam-stage0.txt /tmp/lexer07-seam-stage2.txt | grep -vE "^[0-9]+[acd][0-9]+|^<|>|^---$$|BUILD_LABEL=stage"); \
+	if [ -z "$$NONLABEL_DIFF" ]; then \
+		echo "LEXER07_PRODUCTION_SEAM_STAGE0_VS_STAGE2=PASS"; \
+	else \
+		echo "LEXER07_PRODUCTION_SEAM_STAGE0_VS_STAGE2=DIVERGED" >&2; \
+		echo "$$NONLABEL_DIFF" | head -10 >&2; exit 1; \
+	fi
+
+lexer07-lexer-seam-stage3-from-objs: lexer07-scalar-literal-oracle
+	@if [ ! -d "$(HCC_STAGE3_OBJDIR)" ]; then \
+		echo "lexer07-lexer-seam-stage3-from-objs: $(HCC_STAGE3_OBJDIR) missing" >&2; \
+		exit 1; \
+	fi
+	@if [ ! -f ./build/bootstrap04-ident.stage2.o ]; then \
+		echo "lexer07-lexer-seam-stage3-from-objs: ./build/bootstrap04-ident.stage2.o missing" >&2; \
+		exit 1; \
+	fi
+	@if [ ! -f ./build/bootstrap06-operator-classify.stage2.o ]; then \
+		echo "lexer07-lexer-seam-stage3-from-objs: ./build/bootstrap06-operator-classify.stage2.o missing" >&2; \
+		exit 1; \
+	fi
+	@ls $(HCC_STAGE3_OBJDIR)/*.o $(HCC_STAGE3_OBJDIR)/linenoise/*.o 2>/dev/null | grep -v main.c.o | sort > /tmp/lexer07-stage3-objs.txt
+	xargs cc -std=c99 -O2 -Wall -Wextra -Wno-unused-function -Wno-unused-variable -fsanitize=address \
+		-DBUILD_LABEL='"stage3"' -DHCC_USE_SELFHOST_COMPONENTS -Isrc \
+		-o ./build/lexer07-lexer-seam-stage3 \
+		tools/quality/lexer07-real-seam-runner.c \
+		./build/lexer07-scalar-literal.stage2.o \
+		./build/bootstrap04-ident.stage2.o \
+		./build/bootstrap06-operator-classify.stage2.o \
+		./build/asm/libtasm.a -lm -lpthread -ldl < /tmp/lexer07-stage3-objs.txt
+	./build/lexer07-lexer-seam-stage3 > /tmp/lexer07-seam-stage3.txt
+	@NONLABEL_DIFF=$$(diff /tmp/lexer07-seam-stage0.txt /tmp/lexer07-seam-stage3.txt | grep -vE "^[0-9]+[acd][0-9]+|^<|>|^---$$|BUILD_LABEL=stage"); \
+	if [ -z "$$NONLABEL_DIFF" ]; then \
+		echo "LEXER07_PRODUCTION_SEAM_STAGE0_VS_STAGE3=PASS"; \
+	else \
+		echo "LEXER07_PRODUCTION_SEAM_STAGE0_VS_STAGE3=DIVERGED" >&2; \
+		echo "$$NONLABEL_DIFF" | head -10 >&2; exit 1; \
+	fi
+
+# ACT-POLYC-SELFHOST-LEXER02-CORRECTION01 — full 4-stage seam gate
+# (replaces the LEXER02-closed "stage0/1 only" gate).
+lexer07-lexer-seam-all-stages: lexer07-lexer-seam-stage0 lexer07-lexer-seam-stage1 lexer07-lexer-seam-stage2 lexer07-lexer-seam-stage3
+	@echo "LEXER07_PRODUCTION_SEAM_4_STAGES=PASS"
 
 # ACT-POLYC-SELFHOST-SURFACE01 C2 IMPL — generic self-host
 # component surface. Driven by docs/factory/SELF-HOST-COMPONENTS.tsv

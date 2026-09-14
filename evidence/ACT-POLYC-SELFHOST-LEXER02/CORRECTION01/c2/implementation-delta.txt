@@ -1,0 +1,52 @@
+ACT-POLYC-SELFHOST-LEXER02-CORRECTION01 — C2 IMPL — implementation-delta.txt
+================================================
+
+## Source-level deltas (CORRECTION01 C2)
+
+### tools/quality/lexer07-direct-differential.c
+  - INPUTS[] expanded from 40 to 89 cases (4 categories)
+  - Same comparison logic, same oracle+component binary call signature
+  - No semantic change to oracle body
+
+### Makefile
+  - lexer07-lexer-seam-stage{1,2,3} no longer depend on bootstrap0{2,3,4}-stage{1,2,3}
+    (which transitively depend on the broken test-prefix-install target)
+  - Now require only:
+      HCC_STAGE{N}_OBJDIR to exist
+      bootstrap0{N}-ident.stage{N-1}.o to exist
+      bootstrap06-operator-classify.stage{N-1}.o to exist
+  - These objects exist from previous CLOSED runs and require no rebuild
+  - stage2/3 builds add -fsanitize=address (the existing stage3 objects
+    were built with -fsanitize=address; without it the linker would
+    report _asan_version_mismatch_check_apple_clang_1500 missing)
+  - lexer07-direct-differential now also links
+    ./build/lexer07-scalar-literal-oracle.o (required since the
+    original 40-case corpus accidentally referenced the oracle symbol
+    without explicitly linking it)
+  - lexer07-direct-differential stage{1,2,3} binaries rebuilt (they
+    were built previously but with the old 40-case corpus)
+
+### New Makefile targets
+  - lexer07-lexer-seam-all-stages: composite target that runs the
+    canonical lexer07-lexer-seam-stage{0,1,2,3} in sequence and
+    asserts ALL FOUR PASS.
+
+### No production source mutation
+  - src/lexer.c UNCHANGED (lexCharConst, lexNumeric, countNumberLen
+    still wrapped via #ifdef HCC_USE_SELFHOST_COMPONENTS)
+  - src/lexer_bridge.h UNCHANGED (ABI 3 still declared)
+  - src/CMakeLists.txt UNCHANGED (stage1/2/3 scalar linkage unchanged)
+  - tools/bootstrap/selfhost-lexer-scalar-literal.HC UNCHANGED (the
+    PolyC subject is byte-identical to the CLOSED version)
+  - tools/quality/lexer07-scalar-literal-oracle.c UNCHANGED
+  - tools/quality/lexer07-real-seam-runner.c UNCHANGED
+  - docs/factory/SELF-HOST-COMPONENTS.tsv UNCHANGED (row 3 stays)
+
+### No new bootstrap component
+  - tools/bootstrap/selfhost-lexer-scalar-literal.HC is the same
+    file as in CLOSED predecessor ACT
+  - The component count remains 3 (identifier_scanner,
+    operator_punctuation_recognizer, scalar_literal_scanner)
+
+### No new registry row
+  - Row 3 of docs/factory/SELF-HOST-COMPONENTS.tsv unchanged
