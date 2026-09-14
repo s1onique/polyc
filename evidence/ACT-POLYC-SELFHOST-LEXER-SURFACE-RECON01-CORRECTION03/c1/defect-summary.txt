@@ -1,0 +1,73 @@
+ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01-CORRECTION03 — C1 RED
+===============================================================
+
+This is the principal RED. It records the single residual
+evidence-path defect of ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01-
+CORRECTION02 (CLOSED at 8698423).
+
+---
+
+## DEFECT-6 (P1): cited evidence path does not exist
+
+CORRECTION02 C1 and C3 both cite the following path as the
+source for the awk sort:
+
+  evidence/ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01-CORRECTION01/c3/fresh-scores.tsv
+
+Empirical reproduction:
+
+  $ ls evidence/.../CORRECTION01/c3/
+  independent-re-derivation.txt
+
+  $ ls evidence/.../CORRECTION01/c3/fresh-scores.tsv
+  ls: cannot access '...': No such file or directory
+
+  $ awk -F'\t' 'NR>1 && $1 ~ /^R-/ {gsub(/=/,""); print $1"\t"$NF}' \
+        evidence/.../CORRECTION01/c3/fresh-scores.tsv
+  awk: fatal: cannot open file `.../CORRECTION01/c3/fresh-scores.tsv'
+        for reading: No such file or directory
+
+The CORRECTION01 evidence tree at c3/ contains only
+`independent-re-derivation.txt`. There is no `fresh-scores.tsv`.
+
+The actual canonical score source is the **original recon ACT**'s
+`fresh-scores.tsv`:
+
+  $ ls evidence/.../SURFACE-RECON01/c3/fresh-scores.tsv
+  .../SURFACE-RECON01/c3/fresh-scores.tsv    (PRESENT)
+
+That file was created at the recon ACT C3 phase and is preserved
+immutable per F14.
+
+Lineage statement:
+
+  SURFACE-RECON01  -> owns the measured 17-region score table
+  CORRECTION01     -> interpreted/corrected claims about that table
+  CORRECTION02     -> fixed CORRECTION01's presentation mistakes
+                      (and cited the wrong source path)
+  CORRECTION03     -> binds CORRECTION02's sort command to the
+                      actual canonical source
+
+This is provenance/path bookkeeping, not a ranking or scoring
+defect. The numerical sort values produced by the corrected
+path are identical to those CORRECTION02 recorded.
+
+Forward-fix: CORRECTION03/c2/canonical-score-source.txt
+records the correct provenance statement and lineage.
+
+---
+
+## Summary
+
+  defect    severity  status         target repair phase
+  -------   -------   ------------   -------------------
+  DEFECT-6  P1        FORWARD-FIX    C2 IMPL (canonical-score-source.txt)
+
+Single defect is mechanically reproducible and forward-fixable
+WITHOUT mutating the closed CORRECTION02 evidence tree (F14
+honored).
+
+The engineering result is preserved verbatim:
+  WINNER = R-F (scalar_literal_scanner)         unchanged
+  WINNER FINAL_SCORE = +627                      unchanged
+  WINNER MARGIN = 342 (ROBUST)                   unchanged
