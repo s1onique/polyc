@@ -1,0 +1,133 @@
+ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01-CORRECTION02 — C1 RED
+===============================================================
+
+This is the principal RED. It records the two residual
+bookkeeping defects of ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01-
+CORRECTION01 (CLOSED at ec12b5c).
+
+Each defect is reproduced against the actual immutable closed
+tree (no production semantic mutation; only evidence
+inspection).
+
+---
+
+## DEFECT-4 (P1): ranking-repaired.txt negative-score block not monotonic
+
+The CORRECTION01 ACT's `c2/ranking-repaired.txt` claims
+"Strictly monotonic in FINAL_SCORE descending" but its
+negative-score block (rows 12..16) is not in strict descending
+order.
+
+Closed file rows 12..16:
+
+  12  R-G  -53
+  13  R-I  -45
+  14  R-B  -49
+  15  R-A  -38
+  16  R-C  -70
+
+Strictly descending FINAL_SCORE order for these five rows:
+
+  12  R-A  -38
+  13  R-I  -45
+  14  R-B  -49
+  15  R-G  -53
+  16  R-C  -70
+
+The CORRECTION01's own C3 independent re-derivation
+(`c3/independent-re-derivation.txt` V-2) mechanically computed
+the correct order via `awk | sort -k2 -n -r`:
+
+  R-A  -38
+  R-I  -45
+  R-B  -49
+  R-G  -53
+  R-C  -70
+
+So the C2 forward-fix and the C3 independent re-derivation
+disagree inside the CORRECTION01 ACT itself.
+
+Empirical reproduction:
+
+  $ sed -n '20,35p' evidence/.../CORRECTION01/c2/ranking-repaired.txt
+    ... rows 12..16 are R-G, R-I, R-B, R-A, R-C in that order
+
+  $ awk -F'\t' 'NR>1 && $1 ~ /^R-/ {gsub(/=/,""); print $1"\t"$NF}' \
+        evidence/.../CORRECTION01/c3/fresh-scores.tsv | sort -k2 -n -r
+    R-F  627
+    R-E  285
+    R-D  275
+    R-N  242
+    R-K  230
+    R-O  221
+    R-M  213
+    R-Q  201
+    R-H  200
+    R-P  193
+    R-L  190
+    R-A  -38
+    R-I  -45
+    R-B  -49
+    R-G  -53
+    R-C  -70
+
+Forward-fix: c2/ranking-repaired-v2.txt reproduces the
+corrected monotonic ranking for all 16 eligible regions.
+
+---
+
+## DEFECT-5 (P2): ac40-transform.tsv byte-description misleading
+
+The CORRECTION01 ACT's `c2/ac40-transform.tsv` describes the
+byte-level correction as:
+
+  original_eof_byte  = 0x0a (LF)
+  corrected_eof_byte = (no trailing LF)
+
+For a Git `"new blank line at EOF"` diagnostic, the actual
+byte-level interpretation is:
+
+  original_suffix  = 0x0a 0x0a   (one LF ending content + one extra LF for the blank line)
+  corrected_suffix = 0x0a         (one LF ending content; no extra blank line)
+
+The TSV's `(no trailing LF)` description is misleading:
+removing the final LF entirely would create a different
+"no newline at end of file" diagnostic. The prose elsewhere in
+the CORRECTION01 evidence correctly says "remove the trailing
+blank line"; only the TSV byte column is misleading.
+
+Empirical reproduction (using the recon ACT's closed file
+content):
+
+  $ tail -c 4 evidence/.../c1/prior-negative-score-red.txt | od -c | head -1
+    ... two 0x0a bytes at end (the extra blank line LF)
+
+  $ git diff --check 7adb9e8 -- evidence/.../c1/prior-negative-score-red.txt
+    evidence/.../c1/prior-negative-score-red.txt:37: new blank line at EOF.
+
+The diagnostic message literally says "new blank line", which
+corresponds to the extra 0x0a byte, not to removal of the
+final 0x0a.
+
+Forward-fix: c2/ac40-transform-v2.tsv reproduces the corrected
+byte-level description using `original_suffix` and
+`corrected_suffix` columns.
+
+---
+
+## Summary of defects
+
+  defect    severity  status         target repair phase
+  -------   -------   ------------   -------------------
+  DEFECT-4  P1        FORWARD-FIX    C2 IMPL (ranking-repaired-v2.txt)
+  DEFECT-5  P2        FORWARD-FIX    C2 IMPL (ac40-transform-v2.tsv)
+
+Both defects are mechanically reproducible and forward-fixable
+WITHOUT mutating the closed CORRECTION01 evidence tree (F14
+honored).
+
+The engineering result is preserved verbatim:
+  WINNER = R-F (scalar_literal_scanner)         unchanged
+  WINNER FINAL_SCORE = +627                      unchanged
+  WINNER MARGIN = 342 (ROBUST)                   unchanged
+  WINNER E1..E14 = PASS                          unchanged
