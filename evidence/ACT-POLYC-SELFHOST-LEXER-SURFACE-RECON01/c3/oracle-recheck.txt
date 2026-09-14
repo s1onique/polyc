@@ -1,0 +1,17 @@
+ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01 — C3 — oracle recheck
+============================================================
+
+C3 strategy: TEST_ONLY_PRODUCTION_EXTRACTION
+  - Extract countNumberLen, lexNumeric, lexCharConst as pure functions
+    operating on (src, src_len, cursor, flags).
+  - Compare against the in-line lexCore numeric and char_const paths
+    under a test harness.
+  - Harness pattern: tools/quality/bootstrap02-cursor-oracle.c.
+
+Real C oracle fixtures needed (proposed; not built in this recon ACT):
+  - 30+ numeric literal cases (decimal int, hex int, float, f32 suffix, etc.)
+  - 20+ char const cases (single char, escape sequences, hex escapes, overflow, unterminated)
+  - 10+ edge cases (empty input, immediate NUL, malformed escapes, etc.)
+
+RE-VERIFIED: TEST_ONLY_PRODUCTION_EXTRACTION feasible.
+DIRECT_ORACLE = POSSIBLE (re-confirmed).

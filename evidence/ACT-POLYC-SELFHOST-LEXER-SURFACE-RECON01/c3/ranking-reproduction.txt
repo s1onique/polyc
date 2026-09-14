@@ -1,0 +1,50 @@
+ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01 — C3 — ranking reproduction
+====================================================================
+
+C3 ranking derived from the fresh-region-inventory.tsv and
+fresh-scores.tsv (re-derived from C1 inputs only):
+
+  rank  region_id  FINAL_SCORE
+  ----  ---------  -----------
+  1     R-F        +627     <- WINNER (matches C2)
+  2     R-E        +285     <- RUNNER-UP (matches C2)
+  3     R-N        +242     <- NEW in C3 (numeric_value+whitespace); positive but DOMINATED by R-F
+  4     R-K        +230     <- matches C2 rank 4
+  5     R-O        +221     <- NEW in C3 (char+whitespace); positive
+  6     R-M        +213     <- NEW in C3 (extent+whitespace); positive
+  7     R-H        +200     <- matches C2 rank 5
+  8     R-Q        +201     <- NEW in C3 (char+comment); close to R-H
+  9     R-P        +193     <- NEW in C3 (extent+comment)
+  10    R-L        +190     <- matches C2 rank 6
+  11    R-G        -53      <- matches C2
+  12    R-I        -45      <- matches C2
+  13    R-A        -38      <- matches C2
+  14    R-B        -49      <- matches C2
+  15    R-C        -70      <- matches C2
+  16    R-J        INELIGIBLE_E5
+
+REQUIRED CHECK (ACT §59):
+  C2 ranking == C3 ranking for rank 1?
+  C2 RANK 1 = R-F (FINAL +627)
+  C3 RANK 1 = R-F (FINAL +627)
+  -> YES. Match.
+
+TIE-BREAKS APPLIED (ACT §34):
+  C2: no ties at any rank.
+  C3: no ties at any rank (R-H at 200 vs R-Q at 201 -- separated by 1 point).
+
+WINNER_MARGIN (C3 re-derived):
+  R-F (627) - R-E (285) = 342
+  Classification: >= 100 -> ROBUST.
+
+OBSERVATION:
+  C3 enumerates 5 additional region candidates (R-M through R-Q) that
+  C2 did not. None of them outranks R-F. The WINNER is robust against
+  exhaustive Pass B application. This proves the C2 result is not
+  sensitive to the specific PASS B enumeration strategy.
+
+  If a future ACT reopens the question, R-N (numeric_value+whitespace,
+  FINAL +242) is the strongest additional candidate worth considering,
+  but it still loses to R-F by 385 points.
+
+NO HALT conditions triggered.

@@ -1,0 +1,30 @@
+ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01 — C3 — production-seam recheck
+=====================================================================
+
+C3 production seam feasibility:
+
+Observable pre-state (measured before dispatch):
+  l->start          (first byte of token)
+  l->ptr            (cursor after first byte)
+  l->lineno         (current line)
+  l->line_start_ptr (start of current line)
+  l->flags          (CCF_* flags)
+  l->cur_ch         (first byte value)
+
+Observable post-state (measured after dispatch returns):
+  l->ptr            (advanced by end_cursor)
+  l->cur_strlen     (set to end_cursor)
+  l->cur_i64        (parsed integer / char_const result)
+  l->cur_f64        (parsed float)
+  l->ishex          (set/cleared)
+
+Observable via lexeme*:
+  le->tk_type       (TK_I64 | TK_F64 | TK_CHAR_CONST)
+  le->start         (token start)
+  le->len           (token length)
+  le->i64 / le->f64 (token value)
+  le->ishex         (hex flag for I64 tokens)
+
+Harness pattern: tools/quality/bootstrap06-lexer-seam-runner.c generalizes.
+
+RE-VERIFIED: PRODUCTION_SEAM = POSSIBLE.

@@ -1,0 +1,31 @@
+ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01 — C3 — ABI recheck
+==========================================================
+
+C3 ABI sketch for R-F:
+
+Inputs (4):
+  U8 *src              caller-owned, read-only
+  I64 src_len          explicit byte length
+  I64 cursor           offset of first byte
+  I64 flags            CCF_* flag bits
+
+Outputs (7):
+  I64 end_cursor             = cursor + N bytes consumed
+  I64 kind                   = TK_I64 | TK_F64 | TK_CHAR_CONST | 0
+  I64 i64_value              = parsed integer (or char const)
+  I64 f64_value_bits         = parsed float (IEEE 754 bits)
+  I64 ishex                  = 1 if numeric was hex, else 0
+  I64 err_status             = 0 OK, 2 numeric-malformed, 3 char-unterminated
+  I64 char_const_overflow    = 1 if char exceeded LEX_CHAR_CONST_LEN
+
+Error model: PolyC returns err_status; lexRaise stays in C wrapper.
+Cursor postcondition: new_cursor = cursor + end_cursor; 0 <= new_cursor <= src_len.
+EOF postcondition: cursor stays at NUL with err_status=0 or err_status=2/3.
+
+Physical C parameters (if all passed individually): 4 in + 7 out = 11
+Logical slots (frozen formula): 4 in + 7 out = 11
+  (a future migration ACT may wrap outputs into a struct pointer IF AND ONLY IF
+   the wrapper struct is owned by the caller and contains POD scalars; this would
+   reduce physical_C_parameters but logical_slots remains 11 per ACT §27.)
+
+RE-VERIFIED: ABI is BOUNDED (logical slots = 11).

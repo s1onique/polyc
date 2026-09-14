@@ -1,0 +1,20 @@
+ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01 — C3 — corpus conservation
+=================================================================
+
+Per prior ACT (ACT-POLYC-SELFHOST-LEXER01-CORRECTION01/c2/corpus-4-stages.txt):
+
+  Stage3 outputs byte-identical to stage0 outputs: 175/175
+  Stage3 outputs byte-identical to stage1 outputs: 175/175
+  Stage3 outputs byte-identical to stage2 outputs: 175/175
+  Equivalent failure counts at each stage: 6/6
+
+This ACT performs no semantic mutation, so the corpus must remain
+conserved. Re-running the corpus would require a fresh stage0/1/2/3 build;
+on this Apple Silicon host, the stage1/2/3 builds hit an inherited
+ARM-specific libtos/strings.HC asm residue that is OUTSIDE this ACT's
+scope (documented in C1 predecessor-freeze.txt as P2 RESIDUE).
+
+The authoritative corpus conservation is the prior ACT's four-stage
+record, which was PASS at predecessor CLOSE. This ACT has not altered
+src/lexer.c, the registry, or any stage build graph, so the corpus
+invariants remain intact.

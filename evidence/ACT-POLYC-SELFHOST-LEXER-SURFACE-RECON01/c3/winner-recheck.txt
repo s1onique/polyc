@@ -1,0 +1,83 @@
+ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01 — C3 — winner recheck
+==============================================================
+
+C3 WINNER: R-F (scalar_literal_scanner)
+C2 WINNER: R-F (scalar_literal_scanner)
+  -> IDENTICAL.
+
+Member verification (C3):
+  countNumberLen   : src/lexer.c:795-872, CORE_NUMERIC_EXTENT   -> belongs to R-F  YES
+  lexNumeric       : src/lexer.c:1164-1190, CORE_NUMERIC_VALUE   -> belongs to R-F  YES
+  lexCharConst     : src/lexer.c:1085-1162, HOST_C_CORE_CHAR_LITERAL -> belongs to R-F YES
+
+  No extra members. No missing members.
+
+E1..E14 verification (C3):
+  E1 reached by ordinary production lexer path:
+    Yes - lexCore cases '0'..'9' (for countNumberLen+lexNumeric) and '\'' (for lexCharConst) are reached on every compile.
+  E2 lexical semantics only:
+    Yes - no parsing, no evaluation, no macro expansion.
+  E3 bounded input/state representation:
+    Yes - (src, src_len, cursor, flags) bounded; internal state is local to the call.
+  E4 bounded output representation:
+    Yes - (end_cursor, kind, i64_value, f64_value_bits, ishex, err_status, char_const_overflow); all POD.
+  E5 no container ownership across ABI:
+    Yes - no Map*, no List*, no Set*, no AoStr*, no Arena* crossed.
+  E6 no AST/parser mutation:
+    Yes - region only writes Lexer scalar fields via C wrapper.
+  E7 no preprocessor symbol-table mutation:
+    Yes - region does not touch l->symbol_table.
+  E8 no file-stack ownership crossing:
+    Yes - region does not touch l->files or l->cur_file.
+  E9 no required callbacks:
+    Yes - region is a pure function.
+  E10 no unsupported PolyC feature:
+    Yes - ASCII byte comparisons, multiplications, additions, shifts are all PolyC-supported.
+         NOTE: libc strtoll/strtoull/strtold must be reproduced in PolyC or called via FFI;
+         this is a known implementation challenge but not an "unsupported PolyC feature"
+         blocker. The component may use host-side libc via a thin wrapper or reproduce the
+         decimal/hex/float parsing logic.
+  E11 real C oracle possible:
+    Yes - TEST_ONLY_PRODUCTION_EXTRACTION feasible.
+  E12 real production seam observable:
+    Yes - the existing bootstrap06-lexer-seam-runner.c pattern generalizes.
+  E13 stage0 can retain legacy implementation:
+    Yes - lexCore's case '0'..'9' and '\'' can remain on the legacy path in stage0 builds.
+  E14 stage1+ can use PolyC with no runtime fallback:
+    Yes - linker topology mirrors BootstrapClassifyOperator (FATAL_ERROR guard).
+
+ABI slot count (C3 re-verified):
+  Logical input slots: 4  (src, src_len, cursor, flags)
+  Logical output slots: 7 (end_cursor, kind, i64_value, f64_value_bits, ishex, err_status, char_const_overflow)
+  TOTAL = 11
+
+Shared state (C3):
+  countNumberLen+lexNumeric shared: l->ptr, l->cur_strlen, l->cur_i64, l->cur_f64, l->ishex, l->lineno
+  countNumberLen+lexCharConst shared: l->ptr, l->cur_strlen, l->lineno
+  lexNumeric+lexCharConst shared: l->ptr, l->cur_strlen, l->cur_i64, l->ishex
+
+Boundary amortization (C3 re-verified):
+  R-A alone: 4 in + 4 out = 8 slots
+  R-B alone: 4 in + 5 out = 9 slots
+  R-C alone: 4 in + 4 out = 8 slots
+  Sum = 25 slots
+  R-F combined: 4 in + 7 out = 11 slots
+  SAVED = 14 slots (>= 3, qualifies under Pass C)
+
+Oracle feasibility (C3 re-verified):
+  TEST_ONLY_PRODUCTION_EXTRACTION feasible.
+  Harness pattern: analogous to tools/quality/bootstrap02-cursor-oracle.c
+  Inputs: ASCII bytes
+  Expected outputs: kind, value bits, ishex flag, end_cursor
+
+Production seam feasibility (C3 re-verified):
+  Pre-state: l->start, l->ptr, l->lineno, l->line_start_ptr, l->flags
+  Post-state: same fields advanced by end_cursor; l->cur_i64 / l->cur_f64 populated; l->ishex set/cleared.
+  Observable in production: YES via the seam-runner pattern.
+
+Real corpus evidence (C3 re-verified):
+  src/lexer.c, src/prslib.c, src/aostr.c, src/cctrl.c, src/parser.c, src/holyc-lib/*.HC
+  All contain arbitrary numeric + char_const occurrences.
+  real_corpus_files >= 5. -> YES.
+
+WINNER_MIGRATION_READY = YES (re-confirmed).

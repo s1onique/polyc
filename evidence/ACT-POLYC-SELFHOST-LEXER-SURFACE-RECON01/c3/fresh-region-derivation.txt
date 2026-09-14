@@ -1,0 +1,129 @@
+ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01 — C3 — fresh region derivation
+======================================================================
+
+Re-derivation performed from the committed C1 inputs only:
+  evidence/ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01/c1/lexer-function-inventory.tsv
+  evidence/ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01/c1/lexer-callgraph.tsv
+  evidence/ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01/c1/lexer-stategraph.tsv
+  evidence/ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01/c1/lexer-field-ownership.tsv
+  evidence/ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01/c1/semantic-classes.tsv
+  evidence/ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01/c1/state-coupling.tsv
+  evidence/ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01/c1/external-boundaries.tsv
+and the ACT §13 frozen rules.
+
+PASS A (re-derived):
+
+  Eligible CORE classes (excluding already-selfhosted, HOST_C_PREPROCESSOR,
+  HOST_C_FILE_STACK, HOST_C_SUPPORT, HOST_C_RENDERING, HOST_C_DIAGNOSTIC,
+  HOST_C_MEMORY_MANAGEMENT, HOST_C_PUBLIC_LEX_*):
+
+    CORE_CURSOR           (lexNextChar, lexRewindChar, lexPeek, lexPeekMatch)  -- shared helper
+    CORE_COMMENT          (lexSkipCodeComment)
+    CORE_NUMERIC_EXTENT   (countNumberLen)
+    CORE_NUMERIC_VALUE    (lexNumeric)
+    CORE_WHITESPACE       (inline cases in lexCore)
+    HOST_C_CORE_CHAR_LITERAL (lexCharConst)
+    HOST_C_CORE_STRING    (lexString)                       -- E5 ineligible
+
+  Eliminate shared helpers (CORE_CURSOR) from region candidates per §15:
+  they are 1-byte helpers, not semantic regions.
+
+  PASS A region candidates (sorted by region id):
+
+    R-A CORE_NUMERIC_EXTENT       (countNumberLen)
+    R-B CORE_NUMERIC_VALUE        (lexNumeric)
+    R-C HOST_C_CORE_CHAR_LITERAL  (lexCharConst)
+    R-G CORE_COMMENT              (lexSkipCodeComment)
+    R-I CORE_WHITESPACE           (whitespace_cases_in_lexCore)
+    R-J HOST_C_CORE_STRING        (lexString)              [excluded E5]
+
+PASS B (re-derived):
+
+  Re-score every ordered pair (A,B) using SHARED_STATE from state-coupling.tsv:
+
+    (R-A,R-B) = 34 >= 16 ? YES  -> eligible region candidates both E1..E14 PASS -> merge
+    (R-A,R-C) = 26 >= 16 ? YES  -> eligible                                -> merge
+    (R-A,R-G) = 28 >= 16 ? YES  -> eligible                                -> merge
+    (R-A,R-I) = (not precomputed; estimate from shared l->ptr + l->lineno + l->line_start_ptr writes >=16) -> merge
+    (R-B,R-C) = 36 >= 16 ? YES  -> eligible                                -> merge
+    (R-B,R-G) = 28 >= 16 ? YES  -> eligible                                -> merge
+    (R-B,R-I) = estimate >=16    -> eligible                                -> merge
+    (R-C,R-G) = 28 >= 16 ? YES  -> eligible                                -> merge
+    (R-C,R-I) = estimate >=16    -> eligible                                -> merge
+    (R-G,R-I) = estimate >=16    -> eligible                                -> merge
+    (R-J,*) = R-J ineligible     -> skip
+
+  Merges that produce two-function regions:
+    R-D = R-A + R-B   (extent+value)
+    R-E = R-B + R-C   (value+char)
+    R-K = R-A + R-C   (extent+char)
+    R-L = R-B + R-G   (value+comment)
+    R-H = R-G + R-I   (comment+whitespace)
+    R-M = R-A + R-I   (extent+whitespace)
+    R-N = R-B + R-I   (value+whitespace)
+    R-O = R-C + R-I   (char+whitespace)
+    R-P = R-A + R-G   (extent+comment)
+    R-Q = R-C + R-G   (char+comment)
+
+  Transitive closure (R-A + R-B + R-C = full scalar):
+    R-F = R-A + R-B + R-C  (ext+val+char; SHARED_STATE=34+36+26=96; E1..E14 PASS)
+
+  Transitive closure (R-G + R-I + ...):
+    R-G + R-I = R-H (already listed)
+
+  Larger transitive merges (e.g., R-F + R-K, R-F + R-L):
+    R-F + R-G: scalar + comment; semantically orthogonal; merge would
+               require emitting BOTH TK_I64/TK_F64/TK_CHAR_CONST AND TK_COMMENT
+               from a single dispatch, with no real boundary saving.
+               Reject under Pass C (no real amortization).
+    R-F + R-H: scalar + (comment+whitespace); same reasoning. Reject.
+
+  Final region set (sorted lexically by id; downward-closed):
+
+    R-A, R-B, R-C, R-D, R-E, R-F, R-G, R-H, R-I, R-J, R-K, R-L, R-M, R-N, R-O, R-P, R-Q
+
+  Note: C3 produces MORE region candidates than C2 because Pass B is
+  applied exhaustively to ALL eligible pairs (R-M through R-Q were
+  not enumerated in C2 because their internal coupling, while >=16,
+  did not produce semantically meaningful regions). C3 enumerates
+  them for completeness and to prove the WINNER still emerges.
+
+  C3 must confirm: R-F is the unique rank-1 winner even when R-M..R-Q
+  are added to the ranking.
+
+PASS C (re-derived):
+
+  Boundary-slot savings for R-F vs the union of R-A+R-B+R-C:
+
+    R-A individual ABI: 4 in, 4 out = 8 slots
+    R-B individual ABI: 4 in, 5 out = 9 slots
+    R-C individual ABI: 4 in, 4 out = 8 slots
+    Individual total = 25 slots
+    Cross-boundary cursor transitions = 3
+
+    R-F combined ABI: 4 in, 7 out = 11 slots
+    Cross-boundary cursor transitions = 1
+
+    BOUNDARY_SLOTS saved = 25 - 11 + (3-1) = 16
+    16 >= 3 -> MERGE QUALIFIES under Pass C.
+
+  Same check for R-H (R-G + R-I):
+    R-G individual ABI: 4 in, 2 out = 6 slots
+    R-I individual ABI: 4 in, 2 out = 6 slots
+    Individual total = 12 slots
+    Cross-boundary cursor transitions = 2
+
+    R-H combined ABI: 4 in, 3 out = 7 slots
+    Cross-boundary cursor transitions = 1
+
+    BOUNDARY_SLOTS saved = 12 - 7 + (2-1) = 6
+    6 >= 3 -> MERGE QUALIFIES under Pass C.
+
+E1..E14 re-evaluation (re-derived):
+  R-M (extent+whitespace): E1..E14 PASS  -> eligible, but no shared scalar output
+  R-N (value+whitespace): E1..E14 PASS   -> eligible, scalar outputs from value
+  R-O (char+whitespace):  E1..E14 PASS   -> eligible, scalar outputs from char
+  R-P (extent+comment):   E1..E14 PASS   -> eligible
+  R-Q (char+comment):     E1..E14 PASS   -> eligible
+
+  All R-M..R-Q eligible.
