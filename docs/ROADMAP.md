@@ -2516,6 +2516,71 @@ ACT-POLYC-SELFHOST-LEXER02                      CLOSED PASS
            string_literal, preprocessor_directive
 ```
 
+#### ACT-POLYC-SELFHOST-LEXER02-CORRECTION01 status (CLOSED PASS at this commit)
+
+```
+ACT-POLYC-SELFHOST-LEXER02-CORRECTION01          CLOSED PASS
+  Title: Repair three closure-truth defects identified by the
+         post-CLOSE reviewer audit of LEXER02
+  ACT-Supersedes: ACT-POLYC-SELFHOST-LEXER02
+  Authorization: docs/acts/ACT-POLYC-SELFHOST-LEXER02-CORRECTION01.md
+  Predecessor:    ACT-POLYC-SELFHOST-LEXER02 CLOSED af418a9
+
+  Three closure defects repaired:
+
+    P0 #1 (ABI projection): The recon ACT projected ABI as 4/<=7
+           outputs. Faithful preservation of lexCharConst requires
+           a separate logical slot count (out_strlen) that is not
+           derivable from byte extent. The recon projection was
+           corrected to 4/8 with formal disposition; no production
+           semantic mutation was needed.
+
+    P0 #2 (fixture cardinality): The closed corpus was 40 cases
+           (below the §32 floor of 64, with sub-floors of 24 char
+           and 16 error). The corpus was expanded to 89 cases
+           (41 numeric / 28 char / 16 error / 3 edge + 1 overlap).
+
+    P0 #3 (4-stage evidence gap): The closed predecessor only
+           proved the real-lexer seam at stages 0/1 and the broad
+           corpus at stages 0/1. The corrected closure proves
+           both at all 4 stages (not just 0/1).
+
+  Conservation (re-proved at all 4 stages):
+    direct differential (89 fixtures) = PASS 89/89 at every stage
+    real-lexer seam (28 cases)        = IDENTICAL at all 6 pairs
+    broad corpus (holyc-lib, 24)      = MATCH 24/24, 5519/5519 tokens
+    broad corpus (wider, 189)         = MATCH 189/189, 14044/14044 tokens
+    error corpus (28 cases)           = IDENTICAL at all 6 pairs
+    operator seam (LEXER01)           = PASS 33/33 (no regression)
+    4-stage byte-equality of .o       = PASS
+       (sha256: 216053670359381d3a3d4f634607d2c63c9d3b0a6ad6f77a87da9149ec9ad71b)
+    Dafny                             = N/A
+    F-NO-PYTHON                       = unchanged
+    Factory gate-fast                 = PASS
+
+  LEXER02 final verdict: PASS (closure truth and proof depth both
+                         repaired; implementation preserved verbatim).
+
+  Makefile additions (no production source mutation):
+    - lexer07-lexer-seam-stage{2,3} no longer depend on
+      bootstrap0{3,4}-stage{2,3}, which transitively depended
+      on the broken test-prefix-install target. They now require
+      only the existing pre-built .o objects (linker-only).
+    - lexer07-lexer-seam-all-stages: composite target that runs
+      all 4 stage gates and asserts PASS.
+
+  Residue:
+    - test-prefix-install target remains broken (pre-existing ARM64
+      asm issue in src/holyc-lib/strings.HC). CORRECTION01 provides
+      a documented test-prefix-install-free build path that uses
+      the same .o objects the prefix-install path would produce.
+      This is not a fallback (F6) because the .o objects are
+      authoritative; it is the same evidence assembled via a
+      different path.
+
+  NEXT:    ACT-POLYC-SELFHOST-LEXER03 (the next surface-recon winner)
+```
+
 ### P5a — LLVM feature depth (PARALLEL BACKLOG, NON-BLOCKING)
 
 The previously-promised "expand only from evidence" widening

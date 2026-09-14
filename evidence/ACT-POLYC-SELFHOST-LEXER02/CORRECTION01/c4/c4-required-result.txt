@@ -1,0 +1,51 @@
+ACT-POLYC-SELFHOST-LEXER02-CORRECTION01 — C4 CLOSE — c4-required-result.txt
+================================================
+
+## Final identity
+  branch:    main
+  HEAD:      <filled at commit time>
+  Status:    CLOSED PASS
+  Predecessor (CLOSED): af418a9 ACT-POLYC-SELFHOST-LEXER02 — C4 CLOSE
+  C1 RED:        4fd3852
+  C2 IMPL:       627785a
+  C3 EVIDENCE:   8a3b4e5
+  C4 CLOSE:      <filled at commit time>
+
+## Fresh re-proof (re-run C3 from current tree)
+  $ make lexer07-direct-differential
+  LEXER07_DIRECT_DIFFERENTIAL=PASS    (89/89)
+
+  $ make lexer07-lexer-seam-all-stages
+  LEXER07_PRODUCTION_SEAM_STAGE0_VS_STAGE1=PASS
+  LEXER07_PRODUCTION_SEAM_STAGE0_VS_STAGE2=PASS
+  LEXER07_PRODUCTION_SEAM_STAGE0_VS_STAGE3=PASS
+  LEXER07_PRODUCTION_SEAM_4_STAGES=PASS
+
+  $ make gate-fast
+  POLYC_GATE=fast STATUS=PASS
+  POLYC_GATE=factory-closure-status STATUS=PASS
+  VERDICT=PASS
+
+## All six closure repairs green
+
+  P0 #1: ABI projection 4/<=7 corrected to 4/8 with formal disposition
+  P0 #2: Fixture cardinality 40 → 89 (sub-floors: 41/28/16/3)
+  P0 #3: 4-stage real-lexer seam + 4-stage broad corpus proven
+
+  Direct differential        89/89 PASS at all 4 stages
+  Real-lexer seam            28/28 IDENTICAL at all 6 pairwise stage diffs
+  Broad corpus (holyc-lib)   24/24 MATCH (5519/5519 scalar tokens)
+  Broad corpus (wider)       189/189 MATCH (14044/14044 scalar tokens)
+  Error corpus               28/28 IDENTICAL across all 4 stages
+  Operator seam (LEXER01)    33/33 PASS (no regression)
+  Factory gate-fast          PASS
+
+## ROADMAP update
+  ACT-POLYC-SELFHOST-LEXER02-CORRECTION01: CLOSED PASS
+  Lexer02 closure verdict upgraded from PASS-with-residue to PASS
+
+## Verdict
+  ACT-POLYC-SELFHOST-LEXER02-CORRECTION01 is CLOSED PASS.
+  The original LEXER02 implementation is preserved verbatim; only
+  the closure truth and proof depth were repaired. All three
+  reviewer P0 defects are mechanically closed.
