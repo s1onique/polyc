@@ -2654,7 +2654,20 @@ ACT-POLYC-SELFHOST-LEXER02-CORRECTION03          CLOSED PASS
 
   NEXT:    ACT-POLYC-SELFHOST-LEXER03 (the next surface-recon winner)
 
-#### ACT-POLYC-SELFHOST-LEXER02-CORRECTION04 status (CLOSED PASS at this commit)
+#### ACT-POLYC-SELFHOST-LEXER02-CORRECTION04 status (CLOSED PASS at `58a89cc`; reviewer verdict FALSE_GREEN — see CORRECTION05 block below)
+
+> **Reviewer audit (post-CLOSE)**: `CORRECTION04_CLOSE_PASS=FALSE_GREEN`.
+> Seven closure-truth defects observed. The substantive PolyC
+> tooling is retained (CORRECTION05 preserves it); the predicate
+> surfaces (FNV-1a → MemCmp + SHA-256), the missing three
+> negative-control mutation tests (AC05/AC06/AC07), the malformed
+> TSV, the missing fresh `gate-fast` /
+> `factory-closure-status-check` evidence, and the predecessor
+> identity binding are repaired in
+> `ACT-POLYC-SELFHOST-LEXER02-CORRECTION05`. F14 forbids
+> rewriting the CORRECTION04 evidence directory; the seven
+> defects live in this annotation and in the CORRECTION05 ACT
+> body, not as silent edits to the CORRECTION04 packet.
 
 ```
 ACT-POLYC-SELFHOST-LEXER02-CORRECTION04          CLOSED PASS
@@ -2745,6 +2758,96 @@ ACT-POLYC-SELFHOST-LEXER02-CORRECTION04          CLOSED PASS
            OR ACT-POLYC-SELFHOST-LEXER02-CORRECTION05 (negative
            control mutation tests; residue P1).
 ```
+```
+
+#### ACT-POLYC-SELFHOST-LEXER02-CORRECTION05 status (P0 — READY at this commit)
+
+```
+ACT-POLYC-SELFHOST-LEXER02-CORRECTION05          P0  READY
+  Title: Repair CORRECTION04 closure-truth defects
+         (FALSE_GREEN on 58a89cc).
+  Authorization: docs/acts/ACT-POLYC-SELFHOST-LEXER02-CORRECTION05.md
+  Predecessor (closed): ACT-POLYC-SELFHOST-LEXER02-CORRECTION04
+                         at 58a89cc (CLOSED PASS, reviewer
+                         verdict FALSE_GREEN)
+  ACT-Supersedes: ACT-POLYC-SELFHOST-LEXER02-CORRECTION04
+                  (for the seven closure-truth defects only;
+                   the substantive PolyC tooling from C04 is
+                   preserved by C05)
+
+  Seven defects observed at 58a89cc (1-to-1 with C05 ACs):
+
+    P0-1  Mandatory AC05/AC06/AC07 demoted to residue
+          without an authorized contract revision.
+          Closed by C05 AC05/AC06/AC07.
+
+    P0-2  BYTE_IDENTICAL_4 classified by FNV-1a 64-bit hash
+          equality, not by MemCmp byte equality.
+          Closed by C05 AC03.
+
+    P0-3  ACT explicitly required PolyC-local SHA-256; the
+          implementation substituted FNV-1a and the HANDOFF
+          retroactively re-labeled SHA-256 as residue.
+          Closed by C05 AC04 + AC13.
+
+    P0-4  Gate success predicate is
+          (regression == 0 && pass_mismatch == 0); it does
+          NOT enforce the literal CORRECTION02 counts
+          (166 / 9 / 175 / 6 / 0).
+          Closed by C05 AC02.
+
+    P1-5  fixture-inventory.tsv has 91 physical lines but
+          one logical record (hex_0xff_no_semi) is split
+          across two lines by an embedded CR/LF.
+          Closed by C05 AC01 (TSV-cell escaping).
+
+    P0-6  Mandatory fresh gate-fast and
+          factory-closure-status-check evidence missing
+          from C04 c3-required-result.txt.
+          Closed by C05 AC09 + AC11.
+
+    P1-7  CORRECTION04 HANDOFF records
+          "Predecessor (closed): 35c67ac" but 35c67ac is
+          CORRECTION04's own C2 IMPL; the actual closed
+          predecessor is 6abde99 (CORRECTION03 C4 CLOSE).
+          Closed by C05 AC14 (single-field HANDOFF repair).
+
+  Epic-board status:
+
+    Pri    ACT                                                State
+    ----   ------------------------------------------------   ----------------
+    P0     ACT-POLYC-SELFHOST-LEXER02-CORRECTION05            READY (this block)
+    P1     ACT-POLYC-SELFHOST-LEXER03 / fresh surface recon   BLOCKED
+                                                               (exit: C05 TRUE GREEN)
+    P2     724-invocation parallelization                     Deferred
+                                                               (performance)
+    P2     9 current-stage0 ARM64 asm failures                Deferred
+                                                               (eventually remove
+                                                                historical fallback)
+    P2     factory-polyc-tools-check.HC -> gate-fast          Deferred but valuable
+                                                               (mechanize this class
+                                                                of governance)
+    P2     test-prefix-install                                Deferred (existing
+                                                                residue)
+
+  Constraints:
+    Production semantic changes:  FORBIDDEN
+    Append-only history:           PRESERVED (no amend, rebase,
+                                   force-push)
+    F-NO-PYTHON:                   preserved
+    F-POLYC-TOOLS:                 preserved (shell wrappers
+                                   remain ≤50 LOC dispatch glue)
+    F14 (no closed-evidence rewrite): the CORRECTION04 evidence
+                                   directory is NOT touched;
+                                   only the single HANDOFF
+                                   predecessor field is repaired
+                                   inside C05.
+
+  Closure: when AC01..AC17 are mechanically satisfied at the
+  CORRECTION05 C4 CLOSE commit, the seven defects are CLOSED,
+  the CORRECTION02 contract is re-proven under MemCmp + SHA-256,
+  and the LEXER03 BLOCKED signal may be lifted by an explicit
+  fresh-surface-recon ACT.
 ```
 
 ### P5a — LLVM feature depth (PARALLEL BACKLOG, NON-BLOCKING)

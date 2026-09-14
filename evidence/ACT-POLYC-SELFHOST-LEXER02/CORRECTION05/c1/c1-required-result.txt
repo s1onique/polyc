@@ -1,0 +1,154 @@
+ACT-POLYC-SELFHOST-LEXER02-CORRECTION05 — C1 RED — required result
+==================================================================
+
+ENFORCEMENT POLICY (this ACT)
+----------------------------
+Per the AGENTS.md "evidence must remain separable" rule and
+the C04 C1-RED precedent (`229932d`), this C1 packet is
+documentation only. It records the mechanically-observed
+defects that justify the ACT. No production code is
+mutated. No C2 / C3 / C4 work happens in this commit.
+
+The five RED witnesses below correspond 1-to-1 to
+ACT-POLYC-SELFHOST-LEXER02-CORRECTION05 §4 (Principal RED)
+and to the seven defects enumerated in §1 of the same ACT.
+Each witness is reproducible by a single shell command at
+the entry commit `58a89cc`.
+
+----------------------------------------------------------------------------
+
+C1.1 — Stale FNV-1a predicate (P0-2 / P0-3 in §1)
+
+  $ grep -n 'h0 == h1\|h1 == h2\|h2 == h3' \
+      tools/quality/lexer07-broad-corpus-4-stage.HC
+  295:               h0 == h1 && h1 == h2 && h2 == h3) {
+
+  $ grep -n 'FNV1a\|MemCmp' \
+      tools/quality/lexer07-broad-corpus-4-stage.HC
+  19://        BYTE_IDENTICAL_4
+  34:// libtos does NOT export SHA-256. We use a PolyC-local FNV-1a
+  36:// BYTE-EQUALITY (MemCmp on .o files), not cryptographic hash.
+  74:// FNV-1a 64-bit hash of buf[0..len). Returns the hash.
+  75:U64 FNV1a(U8 *buf, I64 len)
+  144:  if (out_hash) *out_hash = FNV1a(buf, size);
+  296:      class_str = "BYTE_IDENTICAL_4";
+  393:  "BYTE_IDENTICAL_4=%d/%d %d/%d %d/%d %d/%d %d/%d %d/%d\n",
+
+  Result:
+    BROAD_CORPUS_PREDICATE_FAMILY = FNV1A_64
+    REQUIRED_PREDICATE_FAMILY     = MEMCMP_AND_SHA256
+    STATUS                        = NOT_SATISFIED
+
+----------------------------------------------------------------------------
+
+C1.2 — Three mutation tests not implemented (P0-1 in §1)
+
+  $ ls evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION04/c3/ \
+      | grep -E 'negative-control|stub-control|corrupt-control|fixture-mutation'
+  (no output)
+
+  $ grep -n 'STUB_BINARY_NEGATIVE_CONTROL\|CORRUPT_OBJECT\|FIXTURE_MUTATION' \
+      docs/factory/HANDOFF-ACT-POLYC-SELFHOST-LEXER02-CORRECTION04.md
+  185:    - Three negative control mutation tests (AC05/06/07):
+  186:      stub binary should fail gate; corrupted
+  188:      should fail gate. Not implemented in this C2;
+
+  Result:
+    STUB_BINARY_NEGATIVE_CONTROL          = NOT_IMPLEMENTED
+    CORRUPT_OBJECT_NEGATIVE_CONTROL       = NOT_IMPLEMENTED
+    FIXTURE_MUTATION_NEGATIVE_CONTROL     = NOT_IMPLEMENTED
+    STATUS                                = NOT_SATISFIED
+
+----------------------------------------------------------------------------
+
+C1.3 — Fresh gate-fast and factory-closure-status-check
+       evidence missing from C04 c3 (P0-6 in §1)
+
+  $ grep -nE 'gate-fast|closure-status-check' \
+      evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION04/c3/c3-required-result.txt
+  (no output)
+
+  Result:
+    C03_EVIDENCE_HAS_FRESH_GATE_FAST                  = NO
+    C03_EVIDENCE_HAS_FRESH_FACTORY_CLOSURE_STATUS_CHECK = NO
+    STATUS                                             = NOT_SATISFIED
+
+----------------------------------------------------------------------------
+
+C1.4 — Malformed fixture-inventory.tsv (P1-5 in §1)
+
+  $ wc -l evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION04/c3/fixture-inventory.tsv
+  91 .../fixture-inventory.tsv
+
+  $ awk -F'\t' '{print NF}' \
+      evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION04/c3/fixture-inventory.tsv \
+      | sort | uniq -c
+        1 11
+       89 12
+        1 2
+
+  $ sed -n '20,25p' \
+      evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION04/c3/fixture-inventory.tsv \
+      | cat -A
+  hex_0xCAFEBABE^I0xCAFEBABE;^I0^I0^I1^I0^I10^I11^I1^I0^I0^I0$
+  hex_0xMixedCase^I0xAbCdEf;^I0^I0^I1^I0^I8^I9^I1^I0^I0^I0$
+  hex_0xff_no_semi^I0xff$
+  ^I0^I0^I1^I0^I4^I5^I1^I0^I0^I0$
+  hex_0x_op_letter^I0xZ;^I0^I0^I1^I0^I2^I4^I1^I0^I0^I0$
+  flt_0_0^I0.0;^I0^I0^I2^I0^I3^I4^I1^I0^I0^I0$
+
+  Result:
+    FIXTURE_INVENTORY_TSV_PHYSICAL_LINES  = 91
+    FIXTURE_INVENTORY_TSV_DATA_ROWS      = 88
+        (1 logical record, hex_0xff_no_semi, is split across
+         two physical lines; the second fragment has 11
+         columns instead of 12; 89 of the 91 physical lines
+         are 12-column complete rows; 1 has 2 columns)
+    REQUIRED_DATA_ROWS                   = 89
+    STATUS                               = NOT_SATISFIED
+
+----------------------------------------------------------------------------
+
+C1.5 — Predecessor identity corruption in CORRECTION04 HANDOFF
+       (P1-7 in §1)
+
+  $ git show --no-patch --format='%h %s' 35c67ac
+  35c67ac ACT-POLYC-SELFHOST-LEXER02-CORRECTION04 C2 IMPL
+
+  $ git show --no-patch --format='%h %s' 6abde99
+  6abde99 ACT-POLYC-SELFHOST-LEXER02-CORRECTION03 — C4 CLOSE
+
+  $ grep -n 'Predecessor' \
+      docs/factory/HANDOFF-ACT-POLYC-SELFHOST-LEXER02-CORRECTION04.md
+  14:  Predecessor (closed): 35c67ac ACT-POLYC-SELFHOST-LEXER02-CORRECTION03
+
+  Result:
+    C04_HANDOFF_PREDECESSOR_SHA          = 35c67ac
+    C04_HANDOFF_PREDECESSOR_SUBJECT      = ACT-POLYC-SELFHOST-LEXER02-CORRECTION03
+    ACTUAL_CORRECTION03_CLOSE_SHA        = 6abde99
+    STATUS                               = NOT_SATISFIED
+        (the recorded predecessor is this ACT's own C2 IMPL
+         commit; the actual closed predecessor is the C04
+         CLOSE of CORRECTION03, six commits earlier)
+
+----------------------------------------------------------------------------
+
+Summary (mechanical, at entry commit `58a89cc`)
+
+  C1.1 STALE_PREDICATE                = FAIL
+  C1.2 MUTATION_CONTROLS_MISSING      = FAIL
+  C1.3 MANDATORY_GATES_MISSING        = FAIL
+  C1.4 TSV_NOT_DETERMINISTIC          = FAIL
+  C1.5 PREDECESSOR_IDENTITY_CORRUPT   = FAIL
+
+  AC01 .. AC17 (per ACT §6)           = 0 / 17 satisfied at entry
+
+  ACT-POLYC-SELFHOST-LEXER02-CORRECTION05 C1 RED is
+  GREEN-by-evidence: every defect is reproducible by a
+  single shell command and a single observable predicate.
+  No defect is dependent on the reviewer's prose alone;
+  every claim in §1 of the ACT is backed by an executable
+  witness here.
+
+C1 only documents defects. No `.HC`, no `.sh`, no
+Makefile changes in this commit.

@@ -1,0 +1,175 @@
+ACT-POLYC-SELFHOST-LEXER02-CORRECTION05 — C1 RED — scope audit
+=============================================================
+
+Predecessor
+-----------
+ACT-POLYC-SELFHOST-LEXER02-CORRECTION04 closed at `58a89cc`.
+Reviewer verdict: CORRECTION04_CLOSE_PASS=FALSE_GREEN (seven
+defects enumerated in ACT §1).  CORRECTION05 supersedes only
+the closure-truth defects; the substantive PolyC tooling
+introduced by CORRECTION04 (395 + 408 LOC) is preserved.
+
+Production semantic changes
+---------------------------
+FORBIDDEN. The PolyC tooling layer is the only thing in
+scope. No lexer / parser / IR / codegen / library-header
+mutation. No new dependency. No ABI / LLVM change.
+
+Append-only invariant
+---------------------
+PRESERVED. No amend, no rebase, no force-push, no
+reset+recommit. CORRECTION02 / CORRECTION03 / CORRECTION04
+history and evidence directories are not touched, except
+for the single predecessor-identity field of the
+CORRECTION04 HANDOFF (allowed by the C05 ACT §2 scope;
+F14 forbids evidence-directory rewrites; the HANDOFF
+lives at docs/factory/ and is not part of the C04
+evidence directory).
+
+F-NO-PYTHON
+-----------
+PRESERVED. The PolyC-local SHA-256 is implemented in
+PolyC. No Python is added. The new mutation-test
+executables are PolyC.
+
+F-POLYC-TOOLS
+-------------
+PRESERVED. Shell wrappers
+(`scripts/quality/lexer07-fixture-inventory.sh` 14 LOC;
+`scripts/quality/lexer07-broad-corpus-4-stage.sh` 16 LOC)
+remain ≤50 LOC dispatch glue. The C02 / C03 / C04 budget
+is the binding envelope; the optional launcher lines for
+the three new mutation tests stay inside the 50-LOC
+envelope.
+
+F1 — Identity before mutation
+-----------------------------
+Recorded in c1-entry-identity.txt at the session start
+of this ACT. Branch main, HEAD `58a89cc`, worktree clean.
+
+F2 — Recon before redesign
+--------------------------
+Inspected:
+  * tools/quality/lexer07-broad-corpus-4-stage.HC
+    (h0 == h1 && h1 == h2 && h2 == h3; FNV1a only;
+     no MemCmp call; SHA-256 absent)
+  * tools/quality/lexer07-fixture-inventory.HC
+    (SanitizeCell replaces tabs but not CR/LF;
+     89-row contract violated by hex_0xff_no_semi)
+  * evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION04/c3/
+    (no negative-control log files; c3-required-result.txt
+     has no fresh gate-fast / factory-closure-status-check
+     evidence)
+  * docs/factory/HANDOFF-ACT-POLYC-SELFHOST-LEXER02-CORRECTION04.md
+    (Predecessor recorded as 35c67ac instead of 6abde99)
+
+F3 — RED before production
+--------------------------
+The five C1.x witnesses in c1-required-result.txt are
+the principal RED. No `.HC`, no `.sh`, no Makefile
+production change in this commit.
+
+F4 — Failures are evidence
+--------------------------
+The C1.x FAIL values are recorded as such; they are not
+converted into a "PASS by silence" claim.
+
+F5 — No test weakening
+----------------------
+The strict CORRECTION02 counts (166 / 9 / 175 / 6 / 0)
+become the gate's hard success predicate (AC02). The
+reviewer's weaker "no regression" prose is replaced with
+the literal CORRECTION02 contract.
+
+F6 — No silent fallback
+-----------------------
+The PolyC-local SHA-256 is the canonical hash; FNV-1a is
+retained as a secondary column for cross-check. The
+literal byte-equality test is `MemCmp`. There is no
+silent fallback to a different hash family.
+
+F7 — Scope is conserved
+-----------------------
+The seven defects map 1-to-1 to seven ACs in the ACT.
+Nothing else is touched. The C04 substantive PolyC
+implementation is preserved verbatim.
+
+F8 — No speculative abstraction
+-------------------------------
+The PolyC SHA-256 is bounded by AC13 (published test
+vectors). No new framework, no new abstraction layer
+beyond the two .HC files.
+
+F9 — Fresh-tree evidence outranks warm-tree evidence
+----------------------------------------------------
+C3 will run from a clean destination against a freshly
+built `lexer07-broad-corpus-4-stage` binary (per F9, the
+CORRECTION04 PolyC binaries are rebuilt, not reused from
+warm-tree state).
+
+F10 — Conservation before closure
+---------------------------------
+The direct differential (89 fixtures, 4 stages) must
+remain 89/89 PASS. The shell-loc-gate, factory-no-python-
+check, and factory-append-only-test gates must remain
+PASS. The new gates (gate-fast, factory-closure-status-
+check) are added to the conservation list.
+
+F11 — Explicit residue
+----------------------
+Residue (§9 of the ACT) is pre-declared and covers
+factory-polyc-tools-check.HC wiring, test-prefix-install,
+the 9 ARM64 inline asm failures, the PolyC SHA-256
+promotion to libtos, and 724-invocation parallelization.
+
+F12 — Small truthful commits
+----------------------------
+The ACT prescribes 4 commits (C1 RED, C2 IMPL, C3
+EVIDENCE, C4 CLOSE). The reviewer's audit is a separate
+event; this ACT does not manufacture review commits.
+
+F13 — Evidence over prose
+-------------------------
+Every AC has a concrete `grep` / `awk` / `wc` /
+`make ...` verification path; no claim is made that
+cannot be checked by a single command.
+
+F14 — Historical truth preservation
+-----------------------------------
+The CORRECTION02 / CORRECTION03 / CORRECTION04 evidence
+trees are immutable. The single HANDOFF predecessor
+field repair is the only exception (the HANDOFF lives at
+docs/factory/ and is not part of any evidence directory;
+F14 explicitly forbids appending to closed ACT
+evidence directories, which is not what the predecessor
+repair does).
+
+F15 — Never self-authorize scope expansion
+------------------------------------------
+The seven defects are bounded to the seven ACs. If a
+later review discovers an eighth defect that requires
+editing the lexer surface, this ACT halts with
+HALT_SCOPE_EXPANSION_REQUIRED.
+
+F-MECHANICAL-BLOCKING
+---------------------
+Not yet binding at CLOSE for this ACT (it will be
+binding when C05 reaches C4-CLOSE). The new
+AC09 (gate-fast) and AC11 (factory-closure-status-check)
+are introduced precisely to mechanize the closure-truth
+class of governance so that future CORRECTION ACTs cannot
+repeat the CORRECTION04 FALSE_GREEN pattern.
+
+F-NO-PYTHON
+-----------
+Pre-existing 12 grandfathered Python files in
+docs/factory/LEGACY-NON-POLYC-TOOLS.tsv are not modified.
+No new Python source / shebang / invocation is added by
+this ACT.
+
+F-POLYC-TOOLS
+-------------
+Not yet enforced mechanically by `factory-polyc-tools-check.HC`
+(C2.9 residue; wiring into gate-fast is P2 deferred).
+`shell-loc-gate` remains the binding F-POLYC-TOOLS ratchet
+during this ACT's execution.
