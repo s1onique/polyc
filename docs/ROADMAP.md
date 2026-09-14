@@ -2954,7 +2954,7 @@ ACT-POLYC-SELFHOST-LEXER02-CORRECTION05          HALT DEPENDENCY/YES
                                                                   broad-corpus-4-stage.HC
                                                                   rewrite residue; will
                                                                   flip C05 from
-                                                                  HALT GOVERNANCE/YES to
+                                                                  HALT DEPENDENCY/YES to
                                                                   CLOSED PASS_TRUE_GREEN
                                                                   under fresh evidence)
     P0     ACT-POLYC-SELFHOST-LEXER02-CORRECTION05            🔴 HALT DEPENDENCY/YES
