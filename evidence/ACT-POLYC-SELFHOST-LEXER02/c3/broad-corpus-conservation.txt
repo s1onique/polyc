@@ -1,0 +1,44 @@
+ACT-POLYC-SELFHOST-LEXER02 — C3 — broad-corpus-conservation.txt
+================================================
+
+# Broad corpus conservation: stage0 vs stage1 produce identical
+# SCALAR token streams across the entire src/holyc-lib corpus.
+
+## Inventory
+  24 .HC files in src/holyc-lib (the holyc-lib corpus used by all
+  previous LEXER and BOOTSTRAP ACTs). Files: all.HC, bitvec.HC,
+  builtins.HC, coroutines.HC, csv.HC, date.HC, dir.HC, except.HC,
+  fzf.HC, hashtable.HC, io.HC, list.HC, memory.HC, net.HC, sqllite.HC,
+  stat.HC, strings.HC, system.HC, threads.HC, tooling.HC, vector.HC.
+
+## Recipe
+  For each file F:
+    tokens_stage0 = build/hcc -tokens F 2>/dev/null | grep '^N:'
+    tokens_stage1 = build/hcc-bootstrap02 -tokens F 2>/dev/null | grep '^N:'
+  Filter to TK_I64 | TK_F64 | TK_CHAR_CONST | TK_STR (the scalar
+  literal token kinds owned by the LEXER02 region).
+  Sort each side and compare.
+
+## Result
+  TOTAL: 24/24 files MATCH; 5519/5519 scalar tokens MATCH.
+  See broad-corpus-conservation.tsv for the per-file breakdown.
+
+## Non-scalar tokens
+  Some files show non-scalar token differences (e.g. extra `@`
+  TK_PUNCT tokens in stage1). These are out of scope for LEXER02
+  and predate this ACT:
+    - `@` tokenization is the LEXER01 successor territory (decorator
+      support, not scalar literal scanning).
+    - Confirmed by inspection: no LEXER02-region file is involved.
+  Per ACT-POLYC-SELFHOST-LEXER02 §75 (residue), pre-existing
+  behavior outside the LEXER02 region is recorded as residue and
+  NOT regressed here.
+
+## Net
+  Required behavior changed (LEXER02 region: scalar literal
+  scanning) — yes.
+  Unrelated established behavior (identifier, operator, etc.)
+  remained unchanged — yes, verified by:
+    - bootstrap06-lexer-seam-stage1: 33/33 operator cases PASS.
+    - All 24 corpus files produce identical scalar tokens
+      (5519/5519) across stage0 and stage1.

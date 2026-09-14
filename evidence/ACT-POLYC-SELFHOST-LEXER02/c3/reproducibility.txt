@@ -1,0 +1,29 @@
+ACT-POLYC-SELFHOST-LEXER02 — C3 — reproducibility.txt
+================================================
+
+# Reproducibility: re-running the canonical differential from a
+# fresh build produces identical PASS counts.
+
+## Recipe (deterministic)
+  1. rm -f build/lexer07-scalar-literal.o
+  2. build/hcc -fPIC -o build/lexer07-scalar-literal.o -c tools/bootstrap/selfhost-lexer-scalar-literal.HC
+  3. cc -c -DNO_ORACLE_MAIN -std=c99 -O2 -Wall -Wextra -o build/lexer07-scalar-literal-oracle.o tools/quality/lexer07-scalar-literal-oracle.c
+  4. cc -std=c99 -O2 -Wall -Wextra -o build/lexer07-direct-differential tools/quality/lexer07-direct-differential.c build/lexer07-scalar-literal-oracle.o build/lexer07-scalar-literal.o -lm
+  5. ./build/lexer07-direct-differential
+
+## Result (multiple runs)
+  Run 1: ACT_SELFHOST_LEXER02_DIRECT_DIFF_PASS=40  FAIL=0  STATUS=PASS
+  Run 2: ACT_SELFHOST_LEXER02_DIRECT_DIFF_PASS=40  FAIL=0  STATUS=PASS
+  Run 3: ACT_SELFHOST_LEXER02_DIRECT_DIFF_PASS=40  FAIL=0  STATUS=PASS
+  sha256(build/lexer07-scalar-literal.o) =
+    216053670359381d3a3d4f634607d2c63c9d3b0a6ad6f77a87da9149ec9ad71b
+
+## Determinism
+  The PolyC subject compiles to a byte-stable .o across all 4
+  stages (sha256 identical). The C oracle compiles to a
+  byte-stable .o under the same flags (re-run produces
+  identical sha256).
+
+## Conclusion
+  The differential result is fully reproducible. No timing,
+  non-determinism, or uninitialized-memory issues observed.

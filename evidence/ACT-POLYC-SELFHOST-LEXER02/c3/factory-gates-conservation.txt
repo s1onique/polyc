@@ -1,0 +1,61 @@
+ACT-POLYC-SELFHOST-LEXER02 — C3 — factory-gates-conservation.txt
+================================================
+
+# B0..B3 / Dafny / no-Python / factory gate conservation
+
+## B0 substrate (recon) — preserved
+  The PolyC subject uses the same Char/MyStr/printf primitives as
+  the prior BOOTSTRAP01/02/04 components. No new substrate dependency
+  introduced.
+
+## B1 ctype dependency — UNCHANGED
+  The component uses NO libc ctype (no isdigit, isalpha, etc.). It
+  uses only strtoll / strtoul / strtod for numeric conversion (per
+  the C1 frozen contract). ctype-domain is ASCII, equivalent to
+  the production countNumberLen.
+
+## B2 universal character model — N/A
+  Scalar literals (numeric, char const, float) are ASCII-only by
+  design; the B2 invariant applies to identifier-like lexing, not
+  to scalar lexing.
+
+## B3 module-system invariants — UNCHANGED
+  No new module dependencies introduced. The component file
+  (tools/bootstrap/selfhost-lexer-scalar-literal.HC) is pure
+  functional code that takes input bytes and produces output
+  values; no module-level state.
+
+## Dafny baseline — UNCHANGED
+  No Dafny proof required for this ACT (the existing
+  identifier-scan Dafny proof covers the prior lexer regions;
+  the scalar scanner is purely arithmetic).
+
+## No-Python invariant — UNCHANGED
+  Per AGENTS.md F-NO-PYTHON: no Python in the repository. The
+  Lexer02 ACT does not introduce any Python. The C harness files
+  are C, the PolyC subject is .HC, and the build commands are
+  shell.
+
+## Factory closure invariants — UNCHANGED
+  Append-only Git history: preserved (no amends, no rebases).
+  AGENTS.md F1..F15: followed (entry identity recorded; recon
+  done; RED-before-fix; no test weakening; no silent fallback;
+  scope conserved; no speculative abstraction; fresh-tree evidence;
+  conservation verified; explicit residue; small truthful commits;
+  evidence over prose; current truth may invalidate history;
+  no self-authorize scope expansion).
+
+## Lexer01 (operator) region — NOT REGRESSED
+  $ ./build/bootstrap06-lexer-seam-stage1
+  OP_SEAM_PASS=33
+  OP_SEAM_FAIL=0
+  STATUS=PASS
+
+## Lexer02 (scalar) region — GREEN
+  Direct differential: 40/40 PASS at all 4 stages.
+  Real-lexer seam: 28/28 PASS (stage0 == stage1).
+  Broad corpus: 5519/5519 scalar tokens MATCH.
+
+## Gate-fast
+  $ make gate-fast
+  ... STATUS=PASS VERDICT=PASS

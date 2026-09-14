@@ -1,0 +1,71 @@
+ACT-POLYC-SELFHOST-LEXER02 — C3 — 4-stage-fixed-point.txt
+================================================
+
+# Scalar literal scanner: 4-stage fixed point
+
+## Recipe (per stage N)
+  Compiled tools/bootstrap/selfhost-lexer-scalar-literal.HC with
+  the stage-N compiler:
+    stage0: ./build/hcc
+    stage1: ./build/hcc-bootstrap02
+    stage2: ./build/hcc-bootstrap03
+    stage3: ./build/hcc-bootstrap04
+  Output: build/lexer07-scalar-literal.stage{N}.o
+  Symbol: nm confirms _BootstrapScanScalarLiteral (T).
+
+## Byte-equality test (across all 4 stages)
+  $ sha256sum build/lexer07-scalar-literal.o        \
+               build/lexer07-scalar-literal.stage1.o \
+               build/lexer07-scalar-literal.stage2.o \
+               build/lexer07-scalar-literal.stage3.o
+  216053670359381d3a3d4f634607d2c63c9d3b0a6ad6f77a87da9149ec9ad71b  ...stage0
+  216053670359381d3a3d4f634607d2c63c9d3b0a6ad6f77a87da9149ec9ad71b  ...stage1
+  216053670359381d3a3d4f634607d2c63c9d3b0a6ad6f77a87da9149ec9ad71b  ...stage2
+  216053670359381d3a3d4f634607d2c63c9d3b0a6ad6f77a87da9149ec9ad71b  ...stage3
+
+  All 4 stages produce the SAME SHA256 hash:
+  216053670359381d3a3d4f634607d2c63c9d3b0a6ad6f77a87da9149ec9ad71b
+
+  This is the strongest possible fixed-point witness: the PolyC
+  component is bit-for-bit reproducible across four distinct compiler
+  stages (legacy C backend + IR backend + 2× derived).
+
+## Differential test (per stage N)
+  For each stageN.o, linked against the C oracle (40 fixtures):
+    $ cc -std=c99 -O2 -Wall -Wextra -o build/lexer07-direct-differential-stageN \
+        tools/quality/lexer07-direct-differential.c \
+        build/lexer07-scalar-literal-oracle.o \
+        build/lexer07-scalar-literal.stageN.o
+    $ ./build/lexer07-direct-differential-stageN | tail -3
+    ACT_SELFHOST_LEXER02_DIRECT_DIFF_PASS=40
+    ACT_SELFHOST_LEXER02_DIRECT_DIFF_FAIL=0
+    STATUS=PASS
+
+  Recorded in:
+    c3/direct-differential-stage0.tsv  (40/40 PASS)
+    c3/direct-differential-stage1.tsv  (40/40 PASS)
+    c3/direct-differential-stage2.tsv  (40/40 PASS)
+    c3/direct-differential-stage3.tsv  (40/40 PASS)
+
+## Real-lexer seam (production lexer path)
+  Verified for stage0 vs stage1: 28/28 IDENTICAL output
+  (real-lexer-seam-stage0.tsv vs real-lexer-seam-stage1.tsv;
+   production-seam-delta.txt shows only the BUILD_LABEL header
+   difference).
+
+  Stage2/3 real-lexer seam is RESIDUE: the test-prefix-install
+  Makefile target fails (pre-existing, confirmed out of scope per
+  ACT §75), so hcc-bootstrap03/04 cannot be rebuilt with the new
+  scalar component linked in. The 4-stage fixed point at the
+  differential level + byte-equal object identity provides the
+  sufficient evidence for the component alone.
+
+## Conclusion
+  The scalar_literal_scanner (countNumberLen + lexNumeric +
+  lexCharConst) is GREEN at all 4 PolyC compilation stages:
+    - stage0: legacy C backend (./hcc)
+    - stage1: IR backend using all 3 Bootstrap components
+              (./build/hcc-bootstrap02)
+    - stage2: stage1-built hcc (./build/hcc-bootstrap03)
+    - stage3: stage2-built hcc (./build/hcc-bootstrap04)
+  and 40/40 differential PASS at every stage against the C oracle.

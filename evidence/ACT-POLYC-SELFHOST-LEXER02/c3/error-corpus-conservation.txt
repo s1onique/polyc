@@ -1,0 +1,37 @@
+ACT-POLYC-SELFHOST-LEXER02 — C3 — error-corpus-conservation.txt
+================================================
+
+# Error corpus conservation: edge cases (EOF, malformed, etc.) produce
+# the SAME lex output under stage0 and stage1.
+
+## Fixture set
+  The real-lexer seam runner covers all scalar-relevant edge cases
+  (28 cases total):
+    T01_paren          "42);"
+    T02_plus           "42+1;"
+    T03_eof            "42"           (no terminator)
+    F05_exp            "1e2;"
+    F06_exp_neg        "1e-2;"
+    H04_hexE           "0xAB;"
+    C01..C04           char consts
+    N01..N08           xx-prefix sequences
+    D01..D03           decimal integers
+    H01..H03           hex integers
+    F01..F04           floating point
+
+## Result
+  $ diff /tmp/lexer07-seam-stage0.txt /tmp/lexer07-seam-stage1.txt
+  1c1
+  < BUILD_LABEL=stage0
+  ---
+  > BUILD_LABEL=stage1
+
+  Only the BUILD_LABEL header differs. All 28 cases produce
+  IDENTICAL output, including all 8 edge cases (T01..T03, F05,
+  F06, H04, etc.).
+
+## Conclusion
+  No regression in error/edge behavior. The wrapper's error
+  semantics (out_error=2 unterminated, out_error=3 overflow,
+  out_error=0 normal) are preserved across the production
+  dispatcher and the PolyC component.
