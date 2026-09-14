@@ -39,4 +39,3 @@ echo "AC07_VERIFIER_RC=${VRC:-1}"
 [ "${VRC:-1}" != "0" ] || { echo "AC07_FAIL: verifier accepted"; exit 9; }
 echo "FIXTURE_MUTATION_NEGATIVE_CONTROL=PASS"
 exit 0
-
