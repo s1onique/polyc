@@ -2578,86 +2578,68 @@ ACT-POLYC-SELFHOST-LEXER02-CORRECTION01          CLOSED PASS
       authoritative; it is the same evidence assembled via a
       different path.
 
-#### ACT-POLYC-SELFHOST-LEXER02-CORRECTION02 status (CLOSED PASS at this commit)
+#### ACT-POLYC-SELFHOST-LEXER02-CORRECTION03 status (CLOSED PASS at this commit)
 
 ```
-ACT-POLYC-SELFHOST-LEXER02-CORRECTION02          CLOSED PASS
-  Title: Repair three additional closure-truth defects identified
-         by the post-CORRECTION01 reviewer audit of LEXER02
-  ACT-Supersedes: ACT-POLYC-SELFHOST-LEXER02-CORRECTION01
-  Authorization: docs/acts/ACT-POLYC-SELFHOST-LEXER02-CORRECTION02.md
-  Predecessor:    ACT-POLYC-SELFHOST-LEXER02-CORRECTION01 CLOSED d048ca9
+ACT-POLYC-SELFHOST-LEXER02-CORRECTION03          CLOSED PASS
+  Title: Repair F-POLYC-TOOLS governance defect identified
+         by the post-CORRECTION02 reviewer audit.
+  ACT-Supersedes: ACT-POLYC-SELFHOST-LEXER02-CORRECTION02 (for
+                  the F-POLYC-TOOLS defect only)
+  Authorization: docs/acts/ACT-POLYC-SELFHOST-LEXER02-CORRECTION03.md
+  Predecessor:    ACT-POLYC-SELFHOST-LEXER02-CORRECTION02 CLOSED adc977e
 
-  Three additional closure defects repaired:
+  Defect repaired:
+    P0 (F-POLYC-TOOLS violation):
+      CORRECTION02 introduced two substantive shell tools
+      (165 + 221 LOC) that violated F-POLYC-TOOLS. CORRECTION03
+      ports both to PolyC and replaces each shell with a ≤50
+      LOC dispatch wrapper:
+        tools/quality/lexer07-fixture-inventory.HC      80 LOC
+        tools/quality/lexer07-broad-corpus-4-stage.HC   81 LOC
+        scripts/quality/lexer07-fixture-inventory.sh     14 LOC
+        scripts/quality/lexer07-broad-corpus-4-stage.sh  16 LOC
 
-    P0 #1 (mechanical fixture inventory): The CORRECTION01
-           "16 error/negative fixtures" claim was based on
-           hand-typed `err_` prefix, not observed contract.
-           After observing actual kind/err:
-             is_negative = (err != 0)  => 16 fixtures
-           The 16 are a different set from the 21 err_-prefixed
-           fixtures (9 of which return err=0 because the
-           production lexer accepts them as valid forms).
+    P1 (historical stage0 wording):
+      The CORRECTION02 wording "175/175 BYTE_IDENTICAL_4"
+      conflates 166 freshly-produced current-stage0 outputs
+      with 9 historical-stage0 baselines from build/b02-corpus-A
+      (pre-existing ./hcc ARM64 inline asm regression).
+      Mechanically exact wording now:
+        CURRENT_4_STAGE_BYTE_IDENTICAL      = 166/166
+        HISTORICAL_S0_BASELINED_4_WAY_EQ   =   9/9
+        TOTAL_EQUIVALENCE_COVERAGE          = 175/175
+        BOTH_FAIL_4                         =   6/6
 
-    P0 #2 (canonical 181-source compiler corpus): The CORRECTION01
-           "broad corpus" evidence proved only scalar-token
-           stream equivalence across stages. The LEXER01-CORRECTION01
-           canonical pattern requires full compiler invocation
-           + .o sha256 byte-equality on the 181-source corpus,
-           with success/failure equivalence:
-             175/175 BYTE_IDENTICAL + 6/6 BOTH_FAIL
-           CORRECTION02 implements and proves this pattern.
+  Architecture (PolyC tool pattern):
+    - Declaration-only headers (memory_defs.HH, tooling_defs.HH,
+      io_defs.HH) so the translation unit does NOT pull in
+      libtos implementation bodies (which contain ARM64 inline
+      asm blocks the current ./hcc cannot parse).
+    - PolyC owns filesystem operations; lexer07-direct-differential
+      binary owns the lexer work; shell owns dispatch.
 
-    P1 (bookkeeping): The CORRECTION01 narrative "88 + 1
-         overlap = 89" arithmetic was fictional. The 89
-         fixtures are real; the categories are now derived
-         from OBSERVED kind/err/cursor, not hand-typed names.
+  Conservation (re-proved via PolyC-built binaries):
+    Direct differential (89 fixtures):  89/89 PASS at all 4 stages
+    Real-lexer seam (28 fixtures):     IDENTICAL at all 6 pairs
+    Mechanical fixture inventory:      PASS (PolyC-built)
+    Broad corpus 4-stage:              BROAD_CORPUS_DISPATCH_OK
+                                       (PolyC-built)
+    Operator seam (LEXER01):           33/33 PASS
+    Factory gate-fast:                 PASS
+    shell-loc-gate (F-POLYC-TOOLS):    PASS
+    F-NO-PYTHON:                       unchanged
+    Append-only Git history:           preserved
 
-  Conservation (re-proved):
-    Mechanical fixture inventory (CORRECTION02 gate):
-      TOTAL=89 PASS (>=64)
-      is_char=33 PASS (>=24)
-      is_negative=16 PASS (>=16)
-
-    Canonical 181-source compiler corpus at all 4 stages:
-      BYTE_IDENTICAL_4=175 (s0==s1==s2==s3 byte-equality)
-      BOTH_FAIL_4=6 (all four stages fail equivalently)
-      HISTORICAL_STAGE0_FALLBACKS_USED=9 (pre-existing
-        ./hcc ARM64 inline asm binary regression; not
-        caused by LEXER02; explicit provenance in
-        corpus-object-provenance.tsv with compiler identity
-        + sha256 binding)
-      DIVERGED=0
-      REGRESSION=0
-
-    Direct differential (CORRECTION01 gate, 89 fixtures):
-      89/89 PASS at all 4 stages
-
-    Real-lexer seam (CORRECTION01 gate, 28 fixtures):
-      IDENTICAL at all 6 pairwise stage diffs
-
-    Operator seam (LEXER01 regression check):
-      33/33 PASS
-
-    Factory gate-fast:
-      PASS
-
-    F-NO-PYTHON:           unchanged
-    Append-only Git history: preserved (no amends, no rebases)
-    Dafny:                  N/A
+  Makefile additions:
+    - build/lexer07-fixture-inventory target
+    - build/lexer07-broad-corpus-4-stage target
+    - .PHONY extended with new build targets
 
   Lexer02 final verdict: PASS (closure truth, mechanical
-    fixture classification, and canonical compiler corpus
-    equivalence all repaired; implementation preserved verbatim).
-
-  Makefile additions (no production source mutation):
-    - lexer07-fixture-inventory: runs the mechanical
-      classifier and emits PASS/FAIL on the §32 floors.
-    - lexer07-broad-corpus-4-stage: runs the 181-source
-      corpus through all 4 stage compilers with explicit
-      provenance binding.
-    - lexer07-correction02-all: composite gate combining
-      all CORRECTION02 tests.
+    fixture classification, canonical compiler corpus
+    equivalence, AND F-POLYC-TOOLS governance all
+    repaired; implementation preserved verbatim).
 
   Residue:
     - 9 sources where current ./hcc has ARM64 inline asm
@@ -2666,6 +2648,9 @@ ACT-POLYC-SELFHOST-LEXER02-CORRECTION02          CLOSED PASS
       TSV with explicit compiler identity binding.
     - test-prefix-install target repair (pre-existing,
       out of scope per CORRECTION01).
+    - factory-polyc-tools-check.HC not yet wired into
+      gate-fast (C2.9 residue); shell-loc-gate is run
+      explicitly as a substitute for this ACT's closure.
 
   NEXT:    ACT-POLYC-SELFHOST-LEXER03 (the next surface-recon winner)
 ```

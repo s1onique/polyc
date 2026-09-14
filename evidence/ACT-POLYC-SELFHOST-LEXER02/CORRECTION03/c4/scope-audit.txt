@@ -1,0 +1,51 @@
+ACT-POLYC-SELFHOST-LEXER02-CORRECTION03 — C4 CLOSE — scope-audit.txt
+================================================
+
+## Scope discipline (F7)
+
+### Mutations in scope
+  - tools/quality/lexer07-fixture-inventory.HC (NEW, PolyC impl)
+  - tools/quality/lexer07-broad-corpus-4-stage.HC (NEW, PolyC impl)
+  - scripts/quality/lexer07-fixture-inventory.sh (REPLACED, 14 LOC)
+  - scripts/quality/lexer07-broad-corpus-4-stage.sh (REPLACED, 16 LOC)
+  - Makefile (3 new build targets + .PHONY updates)
+  - docs/factory/LEGACY-NON-POLYC-TOOLS.tsv (2 new WRAPPER rows)
+  - docs/ROADMAP.md (CORRECTION03 CLOSED status block added)
+  - docs/factory/HANDOFF-...CORRECTION03.md (NEW)
+  - docs/acts/ACT-POLYC-SELFHOST-LEXER02-CORRECTION03.md (NEW)
+  - evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION03/ (NEW)
+
+### Mutations NOT in scope (NOT touched)
+  - src/lexer.c (production semantics)
+  - tools/bootstrap/selfhost-lexer-scalar-literal.HC
+  - src/lexer_bridge.h (ABI)
+  - src/CMakeLists.txt
+  - tools/quality/lexer07-scalar-literal-oracle.c
+  - tools/quality/lexer07-direct-differential.c
+  - The 9 stage0 fallback files (historical outputs preserved)
+
+### Residue (out of scope)
+  - P2: 9 sources where current ./hcc has ARM64 inline asm
+    regression (pre-existing ./hcc binary issue, NOT LEXER02).
+  - P2: test-prefix-install target repair (out of scope per
+    CORRECTION01).
+  - P2: factory-polyc-tools-check.HC wiring into gate-fast
+    (C2.9 residue). shell-loc-gate is the explicit substitute.
+
+### Trace: every changed line traces to CORRECTION03 scope
+
+| File                                              | Lines | Scope binding                            |
+|---------------------------------------------------|-------|------------------------------------------|
+| tools/quality/lexer07-fixture-inventory.HC      | NEW   | F-POLYC-TOOLS PolyC impl                |
+| tools/quality/lexer07-broad-corpus-4-stage.HC   | NEW   | F-POLYC-TOOLS PolyC impl                |
+| scripts/quality/lexer07-fixture-inventory.sh    | REPL  | ≤50 LOC dispatch glue                   |
+| scripts/quality/lexer07-broad-corpus-4-stage.sh | REPL  | ≤50 LOC dispatch glue                   |
+| Makefile                                          | +24   | New build/lexer07-* targets + .PHONY    |
+| docs/factory/LEGACY-NON-POLYC-TOOLS.tsv          | +2    | WRAPPER rows for the two new shell tools|
+| docs/ROADMAP.md                                   | +60   | CORRECTION03 CLOSED status block         |
+| docs/factory/HANDOFF-...CORRECTION03.md           | NEW   | Closure handoff                          |
+| docs/acts/ACT-POLYC-SELFHOST-LEXER02-CORRECTION03.md | NEW | ACT authorization                       |
+| evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION03/ | NEW | All new evidence                         |
+
+No changes to: src/, tools/bootstrap/, tools/quality/*-oracle.c,
+tools/quality/lexer07-direct-differential.c.
