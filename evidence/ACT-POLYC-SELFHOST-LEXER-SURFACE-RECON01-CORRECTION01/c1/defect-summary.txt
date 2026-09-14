@@ -1,0 +1,147 @@
+ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01-CORRECTION01 — C1 RED
+==============================================================
+
+This is the principal RED. It records the three mechanically
+checkable closure defects of the predecessor ACT
+(ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01 CLOSED at 7adb9e8).
+
+Each defect below is reproduced against the actual immutable
+closed tree (no production semantic mutation; only evidence
+inspection).
+
+---
+
+## DEFECT-1 (P0): AC40 patch-hygiene FAIL
+
+The recon ACT's C4 evidence claims:
+
+    AC40  ACT-range diff-check clean            PASS
+
+The empirical evidence:
+
+    $ git diff --check a386810^..HEAD
+    evidence/ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01/c1/prior-negative-score-red.txt:37: new blank line at EOF.
+    evidence/ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01/c1/selfhost-surface-baseline.txt:79: new blank line at EOF.
+    evidence/ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01/c4/final-region-map.txt:35: new blank line at EOF.
+
+All three diagnostics are inside files the recon ACT itself
+created. They are NOT historical residue; they are not from
+the predecessor ACT (LEXER01-CORRECTION01).
+
+The recon ACT's c3/patch-hygiene.txt, c4/patch-hygiene.txt,
+and c4/acceptance-matrix.txt all claim PASS. That claim is
+mechanically false.
+
+AC40 is therefore FAIL on the closed ACT range.
+
+Forward-fix plan (in c2/, NOT in the closed tree):
+  c2/ac40-patch-hygiene-corrected.txt records the three
+  file:line diagnostics and the corrected file contents
+  (with the trailing blank line removed).
+
+---
+
+## DEFECT-2 (P1): "C2 == C3 ranking" overstatement + non-monotonic listing
+
+The recon ACT's C3 evidence and HANDOFF claim:
+
+    C2 ranking == C3 ranking                    PASS
+    Anti-gaming order respected                 PASS
+
+The empirical evidence:
+
+    $ wc -l evidence/.../c2/region-membership.tsv
+          13  ...    (header + 12 candidates)
+
+    $ wc -l evidence/.../c3/fresh-region-inventory.tsv
+          20  ...    (header + 17 candidates + 2 comment)
+
+C2 enumerated 12 candidates. C3 enumerated 17 (5 additional:
+R-M, R-N, R-O, R-P, R-Q). The universe expanded.
+
+What was actually reproduced across both runs:
+
+    C2 rank #1 = R-F (scalar_literal_scanner)   FINAL_SCORE +627
+    C3 rank #1 = R-F (scalar_literal_scanner)   FINAL_SCORE +627
+
+That is rank-#1 invariance under an expanded enumeration,
+not equality of two complete ranking lists (which have
+different universes).
+
+The recon ACT's c4/final-ranking.txt is also non-monotonic
+in FINAL_SCORE descending order:
+
+    7     R-H        +200         PASS     4 / 3
+    8     R-Q        +201         PASS     4 / 4
+
+`R-Q 201` numerically outranks `R-H 200` but is listed below
+it (a presentation ordering bug, not a substantive scoring
+defect).
+
+Forward-fix plan (in c2/, NOT in the closed tree):
+  c2/winner-invariance.tsv records the precise corrected
+  claim that replaces "C2 == C3 ranking":
+    C2_WINNER_REPRODUCED_IN_C3      = YES
+    C3_SEARCH_SPACE_SUPERSET_OF_C2 = YES (12 -> 17)
+    WINNER_INVARIANT_UNDER_EXT      = YES (R-F +627)
+    WINNER_MARGIN                   = 342 (ROBUST)
+    RANKING_MONOTONIC_IN_C4_LIST    = NO  (presentation bug)
+    RANKING_MONOTONIC_IN_REPAIRED   = YES (per c2/ranking-repaired.txt)
+  c2/ranking-repaired.txt reproduces the corrected monotonic
+  ranking for all 17 candidates.
+
+---
+
+## DEFECT-3 (P2): broad-corpus conservation language overstated
+
+The recon ACT's C3 evidence and C4 closure summary claim:
+
+    broad corpus 4-stage           = PASS 175/175 + 6/6 (per prior ACT)
+    broad corpus 4-stage           = PASS 175/175 + 6/6 (per prior ACT)
+
+The empirical reality:
+
+    The recon ACT did NOT execute a fresh four-stage corpus run.
+    The C3 environment (Apple Silicon host) hit the inherited
+    ARM libtos/strings.HC assembly residue, which blocks stage1/2/3
+    builds via the test-prefix-install target (recorded in
+    c1/predecessor-freeze.txt as P2 inherited platform residue).
+
+    C3 therefore reused the predecessor ACT-POLYC-SELFHOST-LEXER01-
+    CORRECTION01's `c2/corpus-4-stages.txt` 175/175 + 6/6 evidence,
+    on the basis of:
+      - zero semantic mutation (the recon ACT modifies no
+        compiler source, no parser, no AST, no IR, no backend,
+        no runtime, no llvm, no formal);
+      - zero new bootstrap component;
+      - zero new registry row.
+
+    That is a valid conservation inference, but it is NOT
+    "fresh rerun PASS".
+
+Forward-fix plan (in c2/, NOT in the closed tree):
+  c2/conservation-language-repaired.txt records the
+  corrected phrasing:
+    BROAD_CORPUS_CURRENT_EXECUTION =
+      ENVIRONMENTALLY_UNAVAILABLE (Apple Silicon libtos ARM asm)
+    BROAD_CORPUS_LAST_KNOWN_GOOD =
+      PASS 175/175 BYTE_IDENTICAL + 6/6 BOTH_FAIL across stage0..3
+      (per ACT-POLYC-SELFHOST-LEXER01-CORRECTION01 c2/corpus-4-stages.txt)
+    ATTRIBUTABLE_MUTATION =
+      NONE (this ACT; recon ACT; correction ACT)
+    CONSERVATION_INFERENCE =
+      PASS_BY_ZERO_SEMANTIC_DELTA
+
+---
+
+## Summary of defects
+
+  defect    severity  status         target repair phase
+  -------   -------   ------------   -------------------
+  DEFECT-1  P0        FORWARD-FIX    C2 IMPL (ac40-patch-hygiene-corrected.txt)
+  DEFECT-2  P1        FORWARD-FIX    C2 IMPL (winner-invariance.tsv + ranking-repaired.txt)
+  DEFECT-3  P2        FORWARD-FIX    C2 IMPL (conservation-language-repaired.txt)
+
+All three defects are mechanically reproducible and
+forward-fixable WITHOUT mutating the closed predecessor
+evidence tree (F14 honored).
