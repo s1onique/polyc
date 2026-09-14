@@ -1,0 +1,126 @@
+ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01-CORRECTION02 — C3 EVIDENCE
+==================================================================
+
+Independent re-derivation of the corrected claims against the
+immutable closed CORRECTION01 evidence tree.
+
+---
+
+## V-1: negative-block monotonicity re-sort
+
+The CORRECTION01's c3/fresh-scores.tsv is the canonical score
+source. Re-sorting FINAL_SCORE descending produces:
+
+$ awk -F'\t' 'NR>1 && $1 ~ /^R-/ {gsub(/=/,""); print $1"\t"$NF}' \
+    evidence/.../CORRECTION01/c3/fresh-scores.tsv | sort -k2 -n -r
+
+R-F  627
+R-E  285
+R-D  275
+R-N  242
+R-K  230
+R-O  221
+R-M  213
+R-Q  201
+R-H  200
+R-P  193
+R-L  190
+R-A  -38
+R-I  -45
+R-B  -49
+R-G  -53
+R-C  -70
+
+Conclusion: Strictly monotonic in FINAL_SCORE descending.
+Negative block (rows 12-16): R-A -38, R-I -45, R-B -49,
+R-G -53, R-C -70.
+
+CONFIRMS CORRECTION02 c2/ranking-repaired-v2.txt.
+
+CONTRADICTS CORRECTION01 c2/ranking-repaired.txt at rows
+12 and 15 (a two-row swap of R-A and R-G).
+
+---
+
+## V-2: byte-suffix empirical verification
+
+For each of the three closed recon ACT evidence files,
+inspect the last 4 bytes via xxd:
+
+$ tail -c 4 evidence/.../c1/prior-negative-score-red.txt | xxd
+00000000: 732e 0a0a                                s...
+
+$ tail -c 4 evidence/.../c1/selfhost-surface-baseline.txt | xxd
+00000000: 292e 0a0a                                )...
+
+$ tail -c 4 evidence/.../c4/final-region-map.txt | xxd
+00000000: 732e 0a0a                                s...
+
+Each file ends with `<ascii>.0a 0a` — i.e. the literal
+character `.` followed by TWO line-feed (LF / 0x0a) bytes.
+
+A normal file (single trailing LF) ends with `<ascii>.0a`:
+
+$ tail -c 4 evidence/.../c2/winner.txt | xxd
+00000000: 7374 290a                                st).
+
+Conclusion: The "new blank line at EOF" diagnostic corresponds
+to the EXTRA 0x0a byte, not to removal of the final 0x0a.
+
+CONFIRMS CORRECTION02 c2/ac40-transform-v2.tsv:
+  original_suffix  = 0x0a 0x0a
+  corrected_suffix = 0x0a
+
+CONTRADICTS CORRECTION01 c2/ac40-transform.tsv:
+  original_eof_byte  = 0x0a (LF)
+  corrected_eof_byte = (no trailing LF)
+  (the "no trailing LF" description would produce a different
+   "no newline at end of file" diagnostic, not "new blank
+   line at EOF")
+
+---
+
+## V-3: gate re-runs
+
+gate-fast:        PASS (re-run; identical to closed CORRECTION01)
+Dafny:            PASS 17/17 (re-run; identical)
+F_NO_PYTHON:      12 (re-run; identical)
+identifier hash:  PASS I0==I1==I2==I3 (re-hashed; identical)
+operator hash:    PASS N0==N1==N2==N3 (re-hashed; identical)
+
+---
+
+## V-4: scope audit
+
+Closed CORRECTION01 evidence tree (immutable): UNCHANGED.
+Closed recon ACT evidence tree (immutable): UNCHANGED.
+Closed recon ACT commits: UNCHANGED.
+This CORRECTION02 ACT mutations:
+  docs/acts/.../CORRECTION02.md  (NEW)
+  evidence/.../CORRECTION02/      (NEW)
+  docs/ROADMAP.md                 (pending in c4)
+No compiler source mutation. No parser/AST/IR/backend/runtime
+mutation. No llvm mutation. No formal mutation. No libtos
+mutation. No new registry row. No new bootstrap component.
+No new Python source. No new Python execution edge.
+
+---
+
+## V-5: verdict assessment
+
+The two defects are mechanically reproducible and
+forward-fixable.
+
+Engineering result preserved verbatim:
+  WINNER = R-F (scalar_literal_scanner)         unchanged
+  WINNER FINAL_SCORE = +627                      unchanged
+  WINNER MARGIN = 342 (ROBUST)                   unchanged
+  WINNER E1..E14 = PASS                          unchanged
+  WINNER ABI = BOUNDED (4 in / 7 out)            unchanged
+  WINNER ORACLE = feasible                       unchanged
+  WINNER PRODUCTION_SEAM = POSSIBLE              unchanged
+
+The corrected ACT verdict will be PASS_WITH_CORRECTION_RESIDUE.
+The corrected engineering verdict will be PASS_WITH_CORRECTION_RESIDUE
+(same as CORRECTION01, since no engineering claim changed here;
+only the bookkeeping presentation was repaired).
