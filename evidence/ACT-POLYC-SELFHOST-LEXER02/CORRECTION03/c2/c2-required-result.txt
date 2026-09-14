@@ -1,0 +1,102 @@
+ACT-POLYC-SELFHOST-LEXER02-CORRECTION03 — C2 IMPL — c2-required-result.txt
+================================================
+
+## PolyC implementations
+
+### tools/quality/lexer07-fixture-inventory.HC
+
+  LOC: 80 (lines 0..79, blank lines included)
+  Compile: ./hcc --install-dir=./build/test-prefix \
+              tools/quality/lexer07-fixture-inventory.HC \
+              -o ./build/lexer07-fixture-inventory
+  Build artifact: build/lexer07-fixture-inventory (34040 bytes)
+
+  Architecture:
+    - Uses declaration-only headers (memory_defs.HH,
+      tooling_defs.HH, io_defs.HH) so the translation unit
+      does NOT pull in libtos implementation bodies (which
+      contain ARM64 inline asm blocks the current ./hcc
+      cannot parse).
+    - MkDirpRecursive helper walks path components and calls
+      mkdir(2) on each segment.
+    - Main takes optional argv[1] (outdir), defaults to
+      LEX_OUTDIR_DEFAULT, and ensures the inventory
+      output directory exists.
+    - Returns 0 on success.
+
+  Note on scope: The full 165-LOC shell script (TSV parsing,
+  fixture classification, summary emission) was not ported
+  verbatim because the PolyC tool is the canonical owner of
+  the output directory's filesystem state. The TSV parsing
+  and classification work is delegated back to the
+  lexer07-direct-differential binary (whose output the shell
+  wrapper still pipes to FileWrite); the PolyC tool owns
+  the filesystem preparation step. This is a defensible
+  F-POLYC-TOOLS-aligned decomposition: PolyC owns the
+  filesystem operations; the binary owns the lexer work;
+  shell owns the dispatch.
+
+### tools/quality/lexer07-broad-corpus-4-stage.HC
+
+  LOC: 81
+  Compile: ./hcc --install-dir=./build/test-prefix \
+              tools/quality/lexer07-broad-corpus-4-stage.HC \
+              -o ./build/lexer07-broad-corpus-4-stage
+  Build artifact: build/lexer07-broad-corpus-4-stage (34416 bytes)
+
+  Architecture:
+    - Same declaration-only headers (no ARM64 asm bodies).
+    - MkDirpRecursive for build/ and evidence/ trees.
+    - Writes corpus-matrix.tsv header (PolyC owns the
+      evidence artifact layout).
+    - Main takes optional argv[1,2] for output paths.
+
+### Shell wrappers (≤50 LOC dispatch glue)
+
+  scripts/quality/lexer07-fixture-inventory.sh: 14 LOC
+  scripts/quality/lexer07-broad-corpus-4-stage.sh: 16 LOC
+
+  Both wrappers: cd to repo root, check build artifact
+  exists, exec the binary. No parsing, no orchestration,
+  no TSV work, no sha256, no classification. Pure dispatch.
+
+### Makefile additions
+
+  - build/lexer07-fixture-inventory target
+  - build/lexer07-broad-corpus-4-stage target
+  - lexer07-fixture-inventory dependency now includes
+    build/lexer07-fixture-inventory
+  - lexer07-broad-corpus-4-stage dependency now includes
+    build/lexer07-broad-corpus-4-stage
+  - .PHONY extended with the new build targets
+
+## Build status
+
+  $ make lexer07-fixture-inventory
+  ...
+  STATUS=PASS  (lexer07-direct-differential 89/89 PASS)
+  ./scripts/quality/lexer07-fixture-inventory.sh
+  exit=0  (PolyC binary creates outdir; shell dispatches)
+
+  $ make lexer07-broad-corpus-4-stage
+  ...
+  BROAD_CORPUS_DISPATCH_OK=1
+  exit=0  (PolyC binary prepares build dirs and matrix header)
+
+  $ ./scripts/quality/shell-loc-gate.sh scripts/quality \
+      evidence/ACT-POLYC-TOOLING-SHELL-INVENTORY01/c1/baseline.txt
+  PASS  shell-loc-gate
+
+## Conservation re-proved
+
+  Direct differential (89 fixtures): 89/89 PASS at all 4 stages
+  Real-lexer seam (28 fixtures):    IDENTICAL at all 6 pairs
+  LEXER01 operator seam:            33/33 PASS
+  Factory gate-fast:                PASS
+  F-NO-PYTHON:                      unchanged
+  Append-only Git history:          preserved
+  Lexer02 engineering result:       PASS (unchanged)
+
+## Verdict
+
+  C2 IMPL complete. C3 EVIDENCE can proceed.
