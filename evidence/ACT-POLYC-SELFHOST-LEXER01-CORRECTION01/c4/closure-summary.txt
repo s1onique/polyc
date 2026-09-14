@@ -1,0 +1,88 @@
+ACT-POLYC-SELFHOST-LEXER01-CORRECTION01 -- C4 CLOSE summary
+==========================================================
+
+VERDICT:        PASS_WITH_CORRECTION_RESIDUE
+IDENTITY:       git rev-parse HEAD at close commit time
+ROOT CAUSE:     The original ACT-POLYC-SELFHOST-LEXER01
+                CLOSE (commit 3760de9) closed on
+                evidence that was real but mechanically
+                incomplete in three P0 ways and two P1
+                ways. The substantive self-hosting advance
+                was correct; the closure evidence had
+                truncated SHA lists, missing stage3
+                columns, stage1-only production seam
+                runs, no disassembly call-site proof, and
+                non-fail-closed CMake linkage.
+RED:            evidence/ACT-POLYC-SELFHOST-LEXER01-CORRECTION01/c1/defect-summary.txt
+                enumerates the five defects with concrete
+                file-output reproductions taken BEFORE
+                any C2 IMPL work.
+IMPLEMENTATION: evidence/ACT-POLYC-SELFHOST-LEXER01-CORRECTION01/c2/*.txt
+                - call-site-disassembly.txt (DEFECT-4)
+                - corpus-4-stages.txt (DEFECT-2)
+                - identifier-fixed-point-4-stages.txt (DEFECT-1)
+                - operator-fixed-point-4-stages.txt (re-captured)
+                - production-seam-4-stages.txt (DEFECT-3)
+                - fail-closed-guard.txt (DEFECT-5)
+
+                src/CMakeLists.txt: three optional
+                if(EXISTS) branches replaced with
+                message(FATAL_ERROR) guards.
+GATES:          - IDENTIFIER_FIXED_POINT = PASS I0==I1==I2==I3
+                - OPERATOR_FIXED_POINT   = PASS N0==N1==N2==N3
+                - CORPUS_EQUIVALENCE_4_STAGES = PASS
+                  (175/175 BYTE_IDENTICAL + 6/6 BOTH_FAIL)
+                - OPERATOR_SEAM_4_STAGES = PASS
+                  (33/33 at each of stage0/1/2/3)
+                - CALL_SITE_PRESENT = PASS
+                  (bl _BootstrapClassifyOperator at stage1/2/3)
+                - CALL_SITE_ABSENT  = PASS
+                  (no such call at stage0)
+                - LINKAGE_FAIL_CLOSED = PASS
+                - DIRECT_DIFFERENTIAL = PASS 47/47
+                - C_ORACLE           = PASS 47/47
+                - FORMAL_DAFNY       = PASS 17/17
+                - NO_PYTHON          = PASS (POLYC_TOOLS_TRACKED_PYTHON=12)
+                - FACTORY_GATES      = PASS (gate-fast)
+SCOPE:          - src/CMakeLists.txt (3 hard guards)
+                - docs/acts/ACT-POLYC-SELFHOST-LEXER01-CORRECTION01.md
+                  (NEW authoritative ACT contract)
+                - evidence/ACT-POLYC-SELFHOST-LEXER01-CORRECTION01/
+                  (NEW evidence directory)
+RESIDUE:        P1: No-Python campaign remains paused at C2.3 GREEN
+                   (12 grandfathered Python files); not in ACT scope.
+                P1: There is no docs/acts/ACT-POLYC-SELFHOST-LEXER01.md
+                   file -- the original ACT was closed by direct
+                   evidence + commit trailer without an authoritative
+                   ACT contract document. This correction ACT does
+                   not retroactively repair that governance gap; a
+                   separate bounded correction could.
+                P2: Wrapper synthetic l->ptr advance could be unified
+                   with lexNextChar's step-by-step advance (carried
+                   from the original ACT).
+                P2: Wrapper strlen(start) for src_len could be
+                   tightened to use lexer's known buffer bound
+                   (carried from the original ACT).
+                P2: The seam-runner emits l.start as a measurement
+                   field; stage0/1+ produce different l.start offsets
+                   in this measurement. The lexeme-observable fields
+                   (tk_type, len, line, le_start_off, l_ptr_off,
+                   next_byte, eof_state, rc) are byte-identical
+                   across stages. Production lexer resets
+                   l.start = l.ptr after every token, so the
+                   measurement difference does not propagate.
+                   Documented; not blocking.
+NEXT ACT:       ACT-POLYC-SELFHOST-LEXER01-CORRECTION01 CLOSED.
+
+                The remaining C1 candidates (numeric_length_scan,
+                comment_skip, char_const_scan, numeric_value_parse)
+                all have negative FINAL_SCORE. Per reviewer
+                recommendation, do NOT relax E1..E14 to make them
+                eligible. Instead, a successor recon ACT
+                (proposed id: ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01)
+                should re-survey the lexer surface for larger
+                coherent migration regions (e.g., a single
+                "scalar lexical scanning" component covering
+                numbers + character literals + comments/whitespace
+                where coherent), rather than LEXER02/03/04
+                for microscopic functions.
