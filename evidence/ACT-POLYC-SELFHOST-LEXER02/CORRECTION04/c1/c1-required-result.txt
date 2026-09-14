@@ -1,0 +1,285 @@
+C1 RED EVIDENCE — ACT-POLYC-SELFHOST-LEXER02-CORRECTION04
+======================================================
+
+ENTRY IDENTITY (F1)
+- branch: main
+- HEAD:   6abde99a961d7c21f767bf511486d0eab319264a (CORRECTION03 C4 CLOSE)
+- worktree status: clean prior to this ACT (untracked: ACT doc + this evidence dir)
+
+PREDICATES THE STUBS MUST FAIL
+------------------------------
+STUB_FIXTURE_INVENTORY_SEMANTIC_EQUIVALENCE      = FAIL (red, see below)
+STUB_BROAD_CORPUS_SEMANTIC_EQUIVALENCE           = FAIL (red, see below)
+FIXTURE_WRAPPER_PIPE_PRESENT                     = FALSE (no pipe in wrapper)
+BROAD_CORPUS_WRAPPER_SUBSTANTIVE_LOGIC_PRESENT   = FALSE (no logic in wrapper)
+
+
+C1.1 — FIXTURE INVENTORY STUB WITNESS
+======================================
+Reproduction (run from /tmp, isolated from the host worktree):
+
+  rm -rf /tmp/lexer07-c04-red
+  mkdir -p /tmp/lexer07-c04-red
+  cp build/lexer07-fixture-inventory /tmp/lexer07-c04-red/
+  /tmp/lexer07-c04-red/lexer07-fixture-inventory /tmp/lexer07-c04-red/inv-out
+  echo EXIT=$?
+  cat /tmp/lexer07-c04-red/inv-stdout.txt
+  cat /tmp/lexer07-c04-red/inv-stderr.txt
+  find /tmp/lexer07-c04-red/inv-out -type f
+
+Observed:
+
+  EXIT=0
+  ---inv-stdout---  (empty)
+  ---inv-stderr---  (empty)
+  ---inv-out dir contents---  (empty)
+
+The stub binary created the requested directory (the only piece of
+substantive behavior left in `Main()`) and returned 0. It did NOT:
+
+* spawn `./build/lexer07-direct-differential`;
+* parse OK/FAIL output lines;
+* join with the canonical fixture table;
+* write any rows of fixture-inventory.tsv;
+* write any summary file;
+* compute TOTAL / is_numeric / is_char / is_negative / is_edge;
+* emit STATUS=PASS / STATUS=FAIL.
+
+CORRECTION02 contract:
+
+  TOTAL=89
+  is_numeric=42
+  is_char=33
+  is_negative=16
+  is_edge=3
+  STATUS=PASS
+
+Observed vs CORRECTION02 contract:
+
+  TOTAL=0     (CORRECTION02: 89)
+  is_char=0   (CORRECTION02: 33)
+  is_negative=0 (CORRECTION02: 16)
+  fixture-inventory.tsv MISSING
+  fixture-inventory-summary.txt MISSING
+  STATUS line MISSING
+
+=> STUB_FIXTURE_INVENTORY_SEMANTIC_EQUIVALENCE = FAIL
+
+
+C1.2 — BROAD CORPUS STUB WITNESS
+=================================
+Reproduction:
+
+  rm -rf /tmp/lexer07-c04-red/bc-out
+  mkdir -p /tmp/lexer07-c04-red/bc-out
+  /tmp/lexer07-c04-red/lexer07-broad-corpus-4-stage \
+      /tmp/lexer07-c04-red/bc-out \
+      /tmp/lexer07-c04-red/corpus-matrix.tsv
+  echo EXIT=$?
+  cat /tmp/lexer07-c04-red/bc-stdout.txt
+  cat /tmp/lexer07-c04-red/bc-stderr.txt
+  find /tmp/lexer07-c04-red/bc-out -type f
+  cat /tmp/lexer07-c04-red/corpus-matrix.tsv
+
+Observed:
+
+  EXIT=0
+  ---bc-stdout---
+  BROAD_CORPUS_DISPATCH_OK=1
+  ---bc-stderr---  (empty)
+  ---bc-out dir contents---  (empty — only the directory was created,
+                              no .o / .stderr files were produced)
+  ---matrix.tsv---  MISSING (FileWrite silently failed; the
+                            "BROAD_CORPUS_DISPATCH_OK=1" line was
+                            printed but the TSV file was never
+                            created — the stub's StrPrint / FileWrite
+                            path does not actually produce any
+                            output to disk)
+
+CORRECTION02 contract:
+
+  TOTAL=181
+  CURRENT_4_STAGE_BYTE_IDENTICAL=166
+  HISTORICAL_S0_BASELINED_4_WAY_EQ=9
+  TOTAL_EQUIVALENCE_COVERAGE=175
+  BOTH_FAIL_4=6
+  DIVERGED=0
+  REGRESSION=0
+  PASS_MISMATCH=0
+
+Observed vs CORRECTION02 contract:
+
+  TOTAL enumerated       = 0  (CORRECTION02: 181)
+  Sources compiled       = 0  (CORRECTION02: 175 successful + 6 both-fail)
+  corpus-matrix.tsv      = MISSING
+  corpus-object-provenance.tsv = MISSING
+  CURRENT_4_STAGE_BYTE_IDENTICAL = uncomputable
+  HISTORICAL_S0_BASELINED_4_WAY_EQ = uncomputable
+  TOTAL_EQUIVALENCE_COVERAGE = uncomputable
+  BOTH_FAIL_4 = uncomputable
+  DIVERGED = uncomputable
+  REGRESSION = uncomputable
+  PASS_MISMATCH = uncomputable
+
+=> STUB_BROAD_CORPUS_SEMANTIC_EQUIVALENCE = FAIL
+
+
+C1.3 — ARCHITECTURE / PROSE CONTRADICTION
+=========================================
+Wrapper scripts (full content captured below):
+
+  scripts/quality/lexer07-fixture-inventory.sh      (14 LOC, pure `exec`)
+  scripts/quality/lexer07-broad-corpus-4-stage.sh   (16 LOC, pure `exec`)
+
+Neither script pipes the differential output anywhere. Neither
+contains a `|` operator. Neither writes to a file. Neither calls
+the lexer07-direct-differential binary. The CORRECTION03 closure
+prose claimed:
+
+  "TSV parsing and classification work is delegated back to
+   the lexer07-direct-differential binary (whose output the
+   shell wrapper still pipes to FileWrite)"
+
+This description is FALSE in the implemented source. The
+wrappers are 14 + 16 LOC pure dispatchers.
+
+=> FIXTURE_WRAPPER_PIPE_PRESENT = FALSE
+=> BROAD_CORPUS_WRAPPER_SUBSTANTIVE_LOGIC_PRESENT = FALSE
+
+
+C1.4 — MAKEFILE OWNERSHIP AUDIT
+===============================
+Makefile targets (excerpts):
+
+  lexer07-fixture-inventory: lexer07-direct-differential \
+                              build/lexer07-fixture-inventory
+          ./scripts/quality/lexer07-fixture-inventory.sh
+
+  build/lexer07-fixture-inventory: \
+          tools/quality/lexer07-fixture-inventory.HC
+          ./hcc --install-dir=./build/test-prefix \
+                  tools/quality/lexer07-fixture-inventory.HC \
+                  -o ./build/lexer07-fixture-inventory
+
+  lexer07-broad-corpus-4-stage: build/hcc build/hcc-bootstrap02 \
+                                 build/hcc-bootstrap03 \
+                                 build/hcc-bootstrap04 \
+                                 build/lexer07-broad-corpus-4-stage
+          ./scripts/quality/lexer07-broad-corpus-4-stage.sh
+
+  build/lexer07-broad-corpus-4-stage: \
+          tools/quality/lexer07-broad-corpus-4-stage.HC
+          ./hcc --install-dir=./build/test-prefix \
+                  tools/quality/lexer07-broad-corpus-4-stage.HC \
+                  -o ./build/lexer07-broad-corpus-4-stage
+
+The Makefile builds the PolyC binaries with the correct install
+prefix. The produced binaries ARE linked against the full libtos
+API at runtime:
+
+  otool -L build/lexer07-fixture-inventory :
+      /Volumes/.../build/test-prefix/lib/libtos.0.0.1.dylib
+      /usr/lib/libSystem.B.dylib
+
+  nm build/test-prefix/lib/libtos.a (key exported symbols):
+      T _SpawnAndCapture
+      T _FileRead
+      T _FileWrite
+      T _Dir
+      T _FileExists
+      T _Stat
+      T _MkDir
+      T _MkDirIfNotExist
+      T _StrPrint
+      T _StrLen
+      T _StrCmp
+      T _StrNCmp
+      T _StrNCpy
+      T _StrNew
+      T _StrLastOcc
+      T _StrLastRem
+      T _CatPrint
+      T _CatLenPrint
+      T _MAlloc
+      T _Free
+      T _MemCpy
+      T _MemSet
+
+The runtime libtos surface is COMPLETE. The CORRECTION03 stubs
+simply do not CALL these symbols from their Main() functions.
+This proves that the F-POLYC-TOOLS violation was achieved by
+deleting the substantive behavior, not by porting it.
+
+=> Makefile ownership graph is CORRECT (build steps produce
+   real PolyC binaries linked against the full libtos API).
+   The defect is in the .HC source, not in the build graph.
+
+This RED is therefore not "the build graph is wrong"; it is
+"the .HC source is a stub".
+
+
+C1.5 — SUMMARY OF DEFECT
+=========================
+The CORRECTION03 closure prose claimed:
+
+  "TSV parsing and classification work is delegated back to
+   the lexer07-direct-differential binary (whose output the
+   shell wrapper still pipes to FileWrite)"
+
+  "All that work now lives in PolyC."
+
+Mechanically demonstrated facts:
+
+  - tools/quality/lexer07-fixture-inventory.HC       : 80 LOC,
+    of which only MkDirpRecursive(outdir) is called from
+    Main(); no SpawnAndCapture, no FileRead, no FileWrite,
+    no parsing, no floor computation.
+
+  - tools/quality/lexer07-broad-corpus-4-stage.HC     : 84 LOC,
+    Main() only MkDirpRecursive on 5 subdirs and writes a
+    TSV header that does not actually appear on disk;
+    prints BROAD_CORPUS_DISPATCH_OK=1; returns 0. No
+    SpawnAndCapture, no SHA-256, no source enumeration,
+    no compiler invocation, no classification.
+
+  - scripts/quality/lexer07-fixture-inventory.sh      : 14 LOC,
+    pure `exec`.
+
+  - scripts/quality/lexer07-broad-corpus-4-stage.sh   : 16 LOC,
+    pure `exec`.
+
+  - The fresh evidence in CORRECTION03/c3/ is
+    "BROAD_CORPUS_DISPATCH_OK=1" — which proves only that
+    the stub returned 0.
+
+CORRECTION03 transformed the governance violation from
+
+  SUBSTANTIVE_LOGIC_IN_SHELL       (CORRECTION02)
+
+into
+
+  SUBSTANTIVE_LOGIC_MISSING        (CORRECTION03)
+
+without repairing either the F-POLYC-TOOLS contract or the
+CORRECTION02 proof machinery. The reviewer verdict of
+FALSE_GREEN is mechanically correct.
+
+CORRECTION04 must therefore:
+
+  1. Restore the substantive logic INSIDE PolyC, using the
+     libtos API that is already linked via
+     --install-dir=./build/test-prefix.
+
+  2. PolyC-local SHA-256 (libtos has no SHA-256 export;
+     PolyC-local ~120 LOC SHA-256 is the only sanctioned
+     mechanism; this is acknowledged as P3 residue).
+
+  3. Keep the shell wrappers at ≤50 LOC.
+
+  4. Prove semantic equivalence to the CORRECTION02 contract
+     from a clean destination, with three mutation tests
+     proving the gates are not ornamental.
+
+
+NO NEW PRODUCTION MUTATIONS IN C1.
+C1 only documents defects; no .HC, no .sh, no Makefile changes.

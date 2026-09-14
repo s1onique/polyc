@@ -1,0 +1,40 @@
+C1 SCOPE AUDIT — ACT-POLYC-SELFHOST-LEXER02-CORRECTION04
+=========================================================
+
+Files inspected (none mutated in C1):
+
+  tools/quality/lexer07-fixture-inventory.HC           (80 LOC)
+  tools/quality/lexer07-broad-corpus-4-stage.HC        (84 LOC)
+  scripts/quality/lexer07-fixture-inventory.sh         (14 LOC)
+  scripts/quality/lexer07-broad-corpus-4-stage.sh      (16 LOC)
+  Makefile                                              (lexer07-* targets)
+
+Defect summary (mechanically demonstrated in c1-required-result.txt):
+
+  - tools/quality/lexer07-fixture-inventory.HC:
+      Main() body: MkDirpRecursive(outdir); return 0;
+      No SpawnAndCapture, no FileRead, no FileWrite,
+      no parsing, no classification, no summary emission.
+
+  - tools/quality/lexer07-broad-corpus-4-stage.HC:
+      Main() body: MkDirpRecursive on 5 dirs; StrPrint/Free
+      for hdr; FileWrite(matrix_path, hdr, ...); print
+      "BROAD_CORPUS_DISPATCH_OK=1"; return 0;
+      No SpawnAndCapture, no source enumeration, no
+      compiler invocation, no SHA-256, no classification,
+      no provenance emission.
+
+  - Both PolyC binaries link correctly against the full
+    libtos API surface (verified via nm and otool -L), but
+    do not actually call it. The build graph is correct;
+    the .HC source is a stub.
+
+  - Both shell wrappers are pure `exec` dispatch glue.
+    No pipe. No FileWrite. No orchestration.
+
+  - The reviewer verdict on CORRECTION03 (FALSE_GREEN) is
+    mechanically correct: the fresh evidence proves only
+    that the stubs returned 0, not that the canonical
+    CORRECTION02 proof machinery was reproduced.
+
+NO NEW PRODUCTION MUTATIONS IN C1.
