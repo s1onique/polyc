@@ -1,0 +1,70 @@
+ACT-POLYC-SELFHOST-LEXER02-CORRECTION01 — C3 EVIDENCE — error-corpus-4-stage.txt
+================================================
+
+## Error corpus conservation at all 4 stages
+
+The real-lexer seam runner
+(tools/quality/lexer07-real-seam-runner.c) contains 28 cases
+covering the malformed / error / edge inputs for lexCharConst,
+lexNumeric, and countNumberLen.
+
+### Procedure
+  1. Build the seam runner against each stage's compiled objects
+     (using -DHCC_USE_SELFHOST_COMPONENTS for stage1/2/3)
+  2. Run with -DBUILD_LABEL='"stageN"'
+  3. Diff the output pairwise across all 4 stages (ignoring
+     the BUILD_LABEL header line, which is the only legitimate
+     per-stage difference)
+
+### Result
+
+  CASE_COUNT = 28 cases
+  CASE_KINDS = lexCharConst (C01..C12), lexNumeric (N01..N08),
+               countNumberLen (E01..E08)
+
+  Pairwise stage diffs (excluding BUILD_LABEL):
+
+    stage0 vs stage1 = IDENTICAL
+    stage0 vs stage2 = IDENTICAL
+    stage0 vs stage3 = IDENTICAL
+    stage1 vs stage2 = IDENTICAL
+    stage1 vs stage3 = IDENTICAL
+    stage2 vs stage3 = IDENTICAL
+
+  Error corpus 4-stage conservation: PASS
+
+### Sample error cases covered
+
+  lexCharConst:
+    C01: 'a'             (basic)
+    C02: '\n'            (escape, raw=4, logical=1)
+    C03: 'abc'           (multi)
+    C04: 'abcdefgh'      (8 slots, full)
+    C05: 'abcdefghi'     (9 slots, overflow at boundary)
+    C06: 'abcdefghij'    (10 slots, deep overflow)
+    C07: 'abc            (unterminated)
+    C08: ''              (empty)
+    C09: '\x41'          (hex escape)
+    C10: '\\\\'          (backslash escape)
+    C11: '\\\"'          (dq escape)
+    C12: '\\0'           (null escape)
+
+  lexNumeric:
+    N01: 0               (zero)
+    N02: 1, 42, 123456789 (decimals)
+    N03: 0x0, 0xFF, 0xdeadbeef (hex)
+    N04: 1.0, 123.456    (floats)
+    N05: 1e2, 1e-2, 2.5e10 (exp)
+    N06: 1.0f32, 1.0f64  (typed floats)
+    N07: 0x              (incomplete hex, error)
+    N08: 1.2.3           (two dots, error)
+
+  countNumberLen:
+    E01: 0xFe (hex + e, error: HEX_EXP)
+    E02: 1e2e3 (two e, error: MALFORMED_NUMERIC)
+    E03: 1e (no digits after e, error)
+    E04: 0xx1 (two x, error)
+    E05: 0x.5 (hex + dot, error: HEX_FLOAT)
+    E06: 1e- (trailing minus, error)
+    E07: 1. (trailing dot, valid as float)
+    E08: . (lone dot, not a scalar)

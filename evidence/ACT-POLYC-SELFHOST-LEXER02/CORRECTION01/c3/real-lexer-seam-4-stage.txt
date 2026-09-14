@@ -1,0 +1,33 @@
+ACT-POLYC-SELFHOST-LEXER02-CORRECTION01 — C3 EVIDENCE — real-lexer-seam-4-stage.txt
+================================================
+
+## Real-lexer seam 4-stage conservation (P0 #3 fix)
+
+### Procedure
+The real-lexer seam runner links the production lexer (src/lexer.c)
+plus the bootstrap06-operator-classify.o PolyC component plus the
+bootstrap{02,03,04}-ident.o PolyC component plus the
+lexer07-scalar-literal.o PolyC component. It then runs the
+production lexer's lexCharConst, lexNumeric, and countNumberLen
+on 28 fixtures and dumps all observable state.
+
+### 4-stage builds
+  - stage0: ./hcc lexer.c.o + (no PolyC components)
+  - stage1: ./hcc-bootstrap02 lexer.c.o + bootstrap06-operator-classify.o
+            + bootstrap02-ident.o + lexer07-scalar-literal.o
+  - stage2: ./hcc-bootstrap03 lexer.c.o + bootstrap06-operator-classify.stage1.o
+            + bootstrap03-ident.stage1.o + lexer07-scalar-literal.stage1.o
+  - stage3: ./hcc-bootstrap04 lexer.c.o + bootstrap06-operator-classify.stage2.o
+            + bootstrap04-ident.stage2.o + lexer07-scalar-literal.stage2.o
+
+### Pairwise stage comparison (ignoring BUILD_LABEL header)
+  stage0 vs stage1: IDENTICAL
+  stage0 vs stage2: IDENTICAL
+  stage0 vs stage3: IDENTICAL
+  stage1 vs stage2: IDENTICAL
+  stage1 vs stage3: IDENTICAL
+  stage2 vs stage3: IDENTICAL
+
+### Verdict
+  REAL_SEAM_4_STAGE = PASS
+  All 28 cases identical across all 6 pairwise stage comparisons.

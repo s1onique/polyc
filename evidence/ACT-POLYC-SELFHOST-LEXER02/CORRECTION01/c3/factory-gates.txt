@@ -1,0 +1,34 @@
+ACT-POLYC-SELFHOST-LEXER02-CORRECTION01 — C3 EVIDENCE — factory-gates.txt
+================================================
+
+## Factory gates re-run (post-CORRECTION01 C2)
+
+  $ make gate-fast
+  EXACT_VERDICT_MISMATCHES=0
+  STATUS=PASS
+  VERDICT=PASS
+  CHECK=factory-closure-status STATUS=PASS
+  VERDICT=PASS
+
+## B0..B3 / Dafny / no-Python invariants preserved
+  B0 substrate             unchanged
+  B1 ctype dependency      UNCHANGED (uses libc strto*, not ctype)
+  B2 universal char model  N/A (ASCII-only scalar literals)
+  B3 module system         UNCHANGED
+  Dafny baseline           N/A (no semantic change)
+  No-Python invariant      UNCHANGED
+  Append-only Git history  preserved (no amends, no rebases)
+
+## LEXER01 (operator) regression check
+  $ ./build/bootstrap06-lexer-seam-stage1
+  OP_SEAM_CASE_COUNT=33
+  OP_SEAM_PASS=33
+  OP_SEAM_FAIL=0
+  STATUS=PASS
+
+## 4-stage seam gate
+  $ make lexer07-lexer-seam-all-stages
+  LEXER07_PRODUCTION_SEAM_STAGE0_VS_STAGE1=PASS
+  LEXER07_PRODUCTION_SEAM_STAGE0_VS_STAGE2=PASS
+  LEXER07_PRODUCTION_SEAM_STAGE0_VS_STAGE3=PASS
+  LEXER07_PRODUCTION_SEAM_4_STAGES=PASS
