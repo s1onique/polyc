@@ -1,0 +1,65 @@
+C1 RED — SCOPE AUDIT (F7)
+==========================
+ACT:                  ACT-POLYC-SELFHOST-LEXER02-CORRECTION05-CORRECTION01
+Predecessor ACT:      ACT-POLYC-SELFHOST-LEXER02-CORRECTION05
+
+ALLOWED TOUCH POINTS (per ACT §2)
+  Allowed (in scope for this correction):
+    tools/quality/lexer07-broad-corpus-4-stage.HC       (modify)
+    tools/quality/lexer07-proof-verify.HC              (modify if needed)
+    tools/quality/lexer07-mutation-stub.HC             (modify or replace)
+    tools/quality/lexer07-mutation-corrupt.HC          (modify or replace)
+    tools/quality/lexer07-mutation-fixture.HC          (modify or replace)
+    tools/quality/lexer07-fixture-inventory.HC         (modify)
+    tools/quality/factory-mandatory-ac-check.HC        (NEW)
+    Makefile                                           (bounded build deps)
+    scripts/quality/lexer07-*.sh                       (bounded wrapper deps)
+    evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION05-CORRECTION01/  (NEW)
+    docs/factory/HANDOFF-ACT-POLYC-SELFHOST-LEXER02-CORRECTION05-CORRECTION01.md  (NEW)
+    docs/ROADMAP.md                                    (status block only)
+
+FORBIDDEN TOUCH POINTS (per ACT §3)
+  Forbidden (out of scope; not to be modified):
+    src/                                                (production code)
+    tools/quality/lexer07-scalar-literal-oracle.c
+    tools/quality/lexer07-direct-differential.c
+    tools/quality/lexer07-real-seam-runner.c
+    tools/quality/lexer07-scalar-literal.HC
+    evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION02/  (closed)
+    evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION03/  (closed)
+    evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION04/  (closed)
+    evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION05/c1/  (closed)
+    evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION05/c2/  (closed)
+    evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION05/c3/  (closed)
+    docs/factory/HANDOFF-ACT-POLYC-SELFHOST-LEXER02-CORRECTION04.md  (closed)
+    docs/factory/HANDOFF-ACT-POLYC-SELFHOST-LEXER02-CORRECTION05.md  (closed)
+    build/b02-corpus-A/*.o                              (canonical inputs)
+
+SCOPE-CONTRACT VIOLATIONS AT ENTRY
+  $ git diff --stat 5409ece -- 'evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION0[2-5]/'
+  (zero tracked changes against any closed evidence dir)
+
+  $ git diff --stat 5409ece -- 'src/' 'tools/quality/lexer07-*real*' \
+                                    'tools/quality/lexer07-scalar-literal.HC'
+  (zero tracked changes against any production source)
+
+  The only dirty tracked file is
+    evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION05/c3/fixture-inventory-summary.txt
+  whose writer has been attributed in
+    c1-dirty-writer-attribution.txt
+  and which will be restored by an additive C2 commit
+  after attribution is frozen.
+
+  Therefore no F7 contract violation exists at entry.
+
+CROSS-CHECK AGAINST PRIOR C05 SCOPE AUDIT
+  evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION05/c1/scope-audit.txt
+  documented the same C05 scope; this C05-C01 audit is a
+  narrowing of that scope to the seven FALSE_GREEN defects
+  only (P0-1..P0-6 + P0-8) and the additional P0-7
+  dirty-writer attribution.
+
+  No new forbidden path was added by C05-C01. No allowed
+  path was relaxed by C05-C01.
+
+STATUS: PASS — scope contract preserved.

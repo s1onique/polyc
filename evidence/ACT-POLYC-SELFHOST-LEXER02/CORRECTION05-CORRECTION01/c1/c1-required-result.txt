@@ -1,0 +1,75 @@
+C1 RED — REQUIRED RESULT
+=========================
+ACT:                  ACT-POLYC-SELFHOST-LEXER02-CORRECTION05-CORRECTION01
+Predecessor ACT:      ACT-POLYC-SELFHOST-LEXER02-CORRECTION05
+
+GATE — ENTRY IDENTITY
+  branch:             main
+  HEAD:               5409ece1ab4ca870998492a1f379a5c4a1a9550e
+  ancestry (5409ece): PASS
+  status --short:     M evidence/.../CORRECTION05/c3/fixture-inventory-summary.txt
+  (one pre-existing dirty tracked file; attributed in
+   c1-dirty-writer-attribution.txt; not an entry failure)
+
+GATE — FALSE_GREEN REPRODUCTION (P0-1 .. P0-6, P0-8)
+  AC02 PARTIAL:        YES  (closed-c05 c3-required-result.txt)
+  AC03 DEFERRED:       YES
+  AC04 DEFERRED:       YES
+  AC18 DEFERRED:       YES
+  C05_MANDATORY_AC_NONPASS_COUNT: 4
+  C05_RECORDED_CLOSE:            PASS_TRUE_GREEN
+  FALSE_GREEN_REPRODUCED:        YES
+  Detail: c1-false-green-witnesses.txt
+
+GATE — DIRTY WRITER ATTRIBUTION (P0-7)
+  DIRTY_EVIDENCE_MUTATION_PRODUCER:
+    tools/quality/lexer07-fixture-inventory.HC
+    (compiled into build/lexer07-fixture-inventory)
+  DIRTY_EVIDENCE_ROOT_CAUSE:        hardcoded_path
+  Detail: c1-dirty-writer-attribution.txt
+
+GATE — BROAD-CORPUS IMPLEMENTATION GAP (P0-2)
+  ObjectsByteEqual:               MISSING
+  MemCmp byte comparison:         MISSING
+  SHA-256 integration:            MISSING
+  8-column provenance writer:     MISSING
+  corpus-failures.tsv writer:     MISSING
+  semantic invariant gate:        MISSING
+  explicit outdir argv[2]:        MISSING
+  closed-evidence-files assertion: MISSING
+  BROAD_CORPUS_REWRITE_COMPLETE:  NO
+  Detail: c1-broad-corpus-gap.txt
+
+GATE — NORMAL-PATH VERIFIER WITNESS (P0-3)
+  C05_NORMAL_PATH_PROOF_VERIFIER_PASS: NO
+  C05_RECORDED_VERIFIER_STATUS:        FAIL
+  Detail: c3-proof-verify-c04-verdict.txt (C05 evidence)
+
+GATE — NEGATIVE-CONTROL INSUFFICIENCY (P0-4..P0-6)
+  AC05_VERIFIER_INVOKED:                 NO
+  AC06_VERIFIER_INVOKED:                 NO
+  AC07_REAL_MUTATION_AND_VERIFIER_INVOKED: NO
+
+GATE — CLOSURE MACHINERY (P0-8)
+  CLOSURE_AC_VERIFIER_EXISTS:    NO
+  MANDATORY_AC_MANIFEST_EXISTS:  NO
+
+GATE — SCOPE CONTRACT (F7)
+  Zero tracked changes against any closed evidence dir.
+  Zero tracked changes against any production source.
+  Status: PASS
+  Detail: scope-audit.txt
+
+REQUIRED-C1 RED ENTRY PREDICATE
+  ENTRY_HEAD=5409ece
+  APPEND_ONLY_ANCESTRY=PASS
+  DIRTY_EVIDENCE_MUTATION_PRODUCER != UNKNOWN
+  DIRTY_EVIDENCE_ROOT_CAUSE       != UNKNOWN
+  FALSE_GREEN_REPRODUCED           = YES
+  C05_MANDATORY_AC_NONPASS_COUNT  = 4
+  BROAD_CORPUS_REWRITE_COMPLETE   = NO
+  C05_NORMAL_PATH_PROOF_VERIFIER_PASS = NO
+
+  All eight predicates: SATISFIED.
+
+STATUS: PASS — C1 RED packet complete; ready for C2 IMPL.

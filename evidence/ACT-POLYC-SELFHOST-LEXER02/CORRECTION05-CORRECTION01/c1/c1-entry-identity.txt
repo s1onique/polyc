@@ -1,0 +1,51 @@
+C1 RED — ENTRY IDENTITY
+======================
+ACT:                  ACT-POLYC-SELFHOST-LEXER02-CORRECTION05-CORRECTION01
+Class:                CORRECTION (DEPENDENCY / CLOSURE-TRUTH / TOOLING)
+Predecessor ACT:      ACT-POLYC-SELFHOST-LEXER02-CORRECTION05
+Binding entry HEAD:   5409ece (HALT follow-up; Epic-board
+                      HALT_CLASS=DEPENDENCY/YES)
+
+ENTRY MEASUREMENT (F1)
+  branch: main
+  HEAD:   5409ece1ab4ca870998492a1f379a5c4a1a9550e
+  log:    5409ece HALT follow-up: fix Epic-board HALT_CLASS label to
+          DEPENDENCY/YES (was GOVERNANCE/YES — wrong class;
+          GOVERNANCE forbids YES)
+
+ANCESTRY GATE
+  git merge-base --is-ancestor 5409ece HEAD   =>  PASS
+  No C05-C01 work has been committed yet (HEAD = 5409ece).
+
+DIRTY-WORKTREE ENTRY CONDITION (EXPECTED)
+  git status --short:
+    M evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION05/c3/fixture-inventory-summary.txt
+
+  This mutation is the live-tree manifestation of the
+  P0-7 defect that C05-CORRECTION01 is required to attribute
+  before closing. The diff against the committed blob is:
+    -FIXTURE INVENTORY SUMMARY (CORRECTION05 PolyC)
+    +FIXTURE INVENTORY SUMMARY (CORRECTION04 PolyC)
+
+  Attribution evidence is captured in
+    c1-dirty-writer-attribution.txt
+  and resolved to:
+    DIRTY_EVIDENCE_MUTATION_PRODUCER =
+      tools/quality/lexer07-fixture-inventory.HC
+      (built into build/lexer07-fixture-inventory)
+    DIRTY_EVIDENCE_ROOT_CAUSE = hardcoded_path
+      (default outdir hardcoded to
+       evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION05/c3;
+       summary header string hardcoded to
+       "FIXTURE INVENTORY SUMMARY (CORRECTION04 PolyC)")
+
+  The dirty blob hash is 7a7492b96264faa480ac6103415181f123384aa6;
+  the committed (correct) blob hash is 8e18458a77918b33eade6b40fe5fe5676053dc38.
+
+  Per C05-CORRECTION01 §C1.6 the dirty tracked file may be
+  restored to its committed state by an additive
+  implementation commit AFTER attribution is frozen in
+  C1 evidence.
+
+STATUS: PASS (entry identity valid; ancestry gate green;
+         dirty worktree attributed and isolated)

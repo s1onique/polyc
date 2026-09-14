@@ -1,0 +1,62 @@
+C1 RED — BROAD-CORPUS IMPLEMENTATION GAP
+=========================================
+ACT:                  ACT-POLYC-SELFHOST-LEXER02-CORRECTION05-CORRECTION01
+
+  The active file
+  tools/quality/lexer07-broad-corpus-4-stage.HC (408 LOC)
+  is the C04-era implementation. C05 deferred the
+  substantive rewrite to this correction.
+
+  Mechanical presence/absence scan (grep -nE ...):
+
+    feature                        | required | present
+    -------------------------------|----------|--------
+    ObjectsByteEqual helper        | YES      | NO
+    MemCmp byte comparison         | YES      | NO
+    PolyC SHA-256 integration      | YES      | NO
+    8-column provenance writer     | YES      | NO
+    corpus-failures.tsv writer     | YES      | NO
+    semantic invariant gate        | YES      | NO
+    explicit outdir (argv[2])      | YES      | NO
+    closed-evidence-files assertion| YES      | NO
+
+  Current classification uses FNV-1a 64-bit hash equality
+  (line 75, line 144). FNV is NOT a substitute for byte
+  equality; SHA-256 is the canonical per-object
+  provenance identifier required by the ACT.
+
+  Current provenance schema (line 213):
+    "object_path\tcompiler_identity\tcompiler_binary_id\tsource\thash\n"
+  This is 5 columns. The ACT requires 8:
+    source
+    stage
+    object_path
+    provenance_class
+    object_sha256
+    compiler_binary_path
+    compiler_binary_sha256
+    fnv1a64
+
+  Current hardcoded write paths (lines 47-48):
+    LEX_MATRIX     "evidence/.../CORRECTION04/c3/corpus-matrix.tsv"
+    LEX_PROVENANCE "evidence/.../CORRECTION04/c3/corpus-object-provenance.tsv"
+  These point at CLOSED evidence. There is no argv[2]
+  outdir override (only argv[1] for inventory source).
+
+  C2 IMPL scope is therefore:
+    - add explicit outdir parameter (argv[2]);
+    - implement ObjectsByteEqual via MemCmp;
+    - integrate lexer07-sha256.HC SHA256() for per-object
+      provenance identity (FNV-1a retained as secondary
+      metadata column);
+    - rewrite the provenance writer to 8 columns;
+    - add corpus-failures.tsv writer (4 columns:
+      source / stage / rc / failure_class);
+    - add semantic-invariant gate
+      (DIVERGED=0; REGRESSION=0; PASS_MISMATCH=0;
+       PROVENANCE_SCHEMA_VALID=1; FAILURE_SCHEMA_VALID=1);
+    - refuse to write into closed evidence dirs unless
+      explicitly opted in.
+
+STATUS: PASS — implementation gap fully characterized;
+        C2 scope authorized and bounded.

@@ -1,0 +1,147 @@
+C1 RED — DIRTY EVIDENCE WRITER ATTRIBUTION (P0-7)
+=================================================
+ACT:                  ACT-POLYC-SELFHOST-LEXER02-CORRECTION05-CORRECTION01
+Predecessor ACT:      ACT-POLYC-SELFHOST-LEXER02-CORRECTION05
+
+DEFECT OBSERVED
+  The worktree at HEAD = 5409ece contains a single dirty
+  tracked file:
+    M evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION05/c3/fixture-inventory-summary.txt
+
+  The diff against the committed blob is:
+    -FIXTURE INVENTORY SUMMARY (CORRECTION05 PolyC)
+    +FIXTURE INVENTORY SUMMARY (CORRECTION04 PolyC)
+
+  Committed (correct) blob hash:
+    8e18458a77918b33eade6b40fe5fe5676053dc38
+  Dirty (worktree) blob hash:
+    7a7492b96264faa480ac6103415181f123384aa6
+
+ATTRIBUTION EXPERIMENT 1 — source-string scan
+  $ grep -n 'FIXTURE INVENTORY SUMMARY' tools/quality/lexer07-fixture-inventory.HC
+  tools/quality/lexer07-fixture-inventory.HC:390:    "FIXTURE INVENTORY SUMMARY (CORRECTION04 PolyC)\n"
+
+  The literal string `CORRECTION05 PolyC` does NOT appear
+  in any source or build artifact (verified via
+  `grep -rn 'CORRECTION05 PolyC'` over tools/, scripts/,
+  src/ — zero matches).
+
+ATTRIBUTION EXPERIMENT 2 — binary strings
+  $ strings build/lexer07-fixture-inventory | grep -E 'evidence/ACT|CORRECTION|FIXTURE INVENTORY SUMMARY'
+  evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION05/c3
+  FIXTURE INVENTORY SUMMARY (CORRECTION04 PolyC)
+
+  The compiled binary contains BOTH the destination path
+  and the header literal as static data. There is no
+  plausible alternate writer — only this binary has both
+  strings.
+
+ATTRIBUTION EXPERIMENT 3 — code path
+  In tools/quality/lexer07-fixture-inventory.HC:
+    line 296: U8 *bin_path = "./build/lexer07-direct-differential";
+    line 297: U8 *c_path  = "tools/quality/lexer07-direct-differential.c";
+    line 298: U8 *outdir  = "evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION05/c3";
+    line 301: if (argc > 3) outdir = argv[3];
+    line 390: "FIXTURE INVENTORY SUMMARY (CORRECTION04 PolyC)\n"
+
+  When invoked with no outdir argument, the binary writes
+  BOTH the .tsv AND the summary.txt to the hardcoded
+  CORRECTION05 c3 evidence path, with a CORRECTION04
+  header. The hardcoded header is the inherited CORRECTION04
+  payload — it was never updated when the canonical path
+  was rebased to CORRECTION05.
+
+ATTRIBUTION EXPERIMENT 4 — Make orchestration
+  $ sed -n '1243,1256p' Makefile
+  lexer07-fixture-inventory: lexer07-direct-differential build/lexer07-fixture-inventory
+          ./scripts/quality/lexer07-fixture-inventory.sh
+  build/lexer07-fixture-inventory: tools/quality/lexer07-fixture-inventory.HC
+          ./hcc --install-dir=./build/test-prefix \
+                  tools/quality/lexer07-fixture-inventory.HC \
+                  -o ./build/lexer07-fixture-inventory
+
+  $ cat scripts/quality/lexer07-fixture-inventory.sh
+  ...
+  exec ./build/lexer07-fixture-inventory "$@"
+
+  The wrapper passes through "$@" — when invoked with no
+  outdir (e.g. by `make lexer07-fixture-inventory`), the
+  binary writes to the hardcoded CORRECTION05 c3 path with
+  the CORRECTION04 header.
+
+ATTRIBUTION EXPERIMENT 5 — warm/fresh isolated reproduction
+  Stage 1: prepare isolated dir mirroring repo structure
+  $ rm -rf /tmp/lexer07-attrib-isolated
+  $ mkdir -p /tmp/lexer07-attrib-isolated/tools/quality
+  $ cp tools/quality/lexer07-direct-differential.c /tmp/lexer07-attrib-isolated/tools/quality/
+  $ cp build/lexer07-direct-differential             /tmp/lexer07-attrib-isolated/
+  $ cp build/lexer07-scalar-literal.o               /tmp/lexer07-attrib-isolated/
+  $ cp build/lexer07-scalar-literal-oracle.o        /tmp/lexer07-attrib-isolated/
+  $ cp build/lexer07-fixture-inventory              /tmp/lexer07-attrib-isolated/
+  $ cp build/lexer07-fixture-inventory /tmp/lexer07-attrib-isolated/lexer07-fixture-inventory.warm
+  $ diff build/lexer07-fixture-inventory /tmp/lexer07-attrib-isolated/lexer07-fixture-inventory.warm
+  WARM_BINARY_IDENTICAL=YES (no bytes differ)
+
+  Stage 2: invoke warm binary with explicit outdir argument
+  $ cd /tmp/lexer07-attrib-isolated
+  $ ./lexer07-fixture-inventory \
+        ./lexer07-direct-differential \
+        tools/quality/lexer07-direct-differential.c \
+        /tmp/lexer07-attrib-isolated/evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION05/c3
+
+  Output (verbatim):
+    TOTAL=89 is_numeric=42 is_char=33 is_negative=16 is_edge=3
+    FIXTURE_INVENTORY_FLOORS=PASS
+    STATUS=PASS
+
+  Resulting file:
+    $ cat .../CORRECTION05/c3/fixture-inventory-summary.txt
+    FIXTURE INVENTORY SUMMARY (CORRECTION04 PolyC)
+    TOTAL=89
+    is_numeric=42
+    is_char=33
+    is_negative=16
+    is_edge=3
+    OBSERVED=89/89
+    FIXTURE_INVENTORY_FLOORS=PASS
+    STATUS=PASS
+
+  This output is BYTE-FOR-BYTE identical to the dirty
+  worktree blob (modulo filesystem path; the data
+  content matches the diff above).
+
+CONCLUSION
+  DIRTY_EVIDENCE_MUTATION_PRODUCER =
+    tools/quality/lexer07-fixture-inventory.HC
+    (compiled into build/lexer07-fixture-inventory)
+
+  DIRTY_EVIDENCE_ROOT_CAUSE = hardcoded_path
+    (default outdir hardcoded to
+     evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION05/c3;
+     summary header string hardcoded to
+     "FIXTURE INVENTORY SUMMARY (CORRECTION04 PolyC)")
+
+  The dirty worktree is NOT caused by:
+    - a stale built binary (the warm binary reproduces
+      the same output when invoked with the same args
+      from an isolated dir);
+    - manual mutation (no git reflog deletion);
+    - a different writer (the literal strings exist
+      nowhere else in the repository).
+
+  Resolution path (preserved for C2):
+    (a) The PolyC source must accept an explicit outdir
+        that does NOT default to a closed evidence dir.
+    (b) The summary header string must be parameterized
+        so it cannot silently mislabel evidence.
+
+PROVENANCE-PRESERVATION POLICY
+  Per C05-CORRECTION01 §C1.6, the dirty tracked file
+  remains dirty in the worktree until attribution is
+  frozen in this C1 evidence packet. The dirty blob
+  hash 7a7492b96264faa480ac6103415181f123384aa6 and
+  the committed blob hash 8e18458a77918b33eade6b40fe5fe5676053dc38
+  are recorded above as the F1 / F14 cross-check.
+
+STATUS: PASS — attribution frozen; writer identified;
+        root cause classified; reproduction logged.

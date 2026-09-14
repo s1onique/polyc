@@ -1,0 +1,216 @@
+C1 RED — FALSE_GREEN WITNESSES (P0-1 .. P0-6)
+===============================================
+ACT:                  ACT-POLYC-SELFHOST-LEXER02-CORRECTION05-CORRECTION01
+Predecessor ACT:      ACT-POLYC-SELFHOST-LEXER02-CORRECTION05
+
+P0-1 — MANDATORY ACs DEFERRED AT C05 CLOSURE
+  Source: docs/factory/HANDOFF-...CORRECTION05.md + c3-required-result.txt
+
+  AC02 status (verbatim from c3-required-result.txt):
+    "AC02 partial (verifier correctly reads C04 matrix
+     but rejects C04 5-column provenance schema;
+     C05 8-column schema deferred to broad-corpus
+     rewrite; residue)"
+  AC03 status:
+    "AC03 deferred (broad-corpus rewrite residue)"
+  AC04 status:
+    "AC04 deferred (broad-corpus rewrite residue;
+     C1.2 finding F3 closed in ACT contract)"
+  AC18 status:
+    "AC18 deferred (ObjectsByteEqual self-tests will
+     land in broad-corpus-4-stage.HC rewrite;
+     residue)"
+
+  Mechanical extraction (grep on the closed evidence):
+    $ grep -E 'AC0[2348].*(partial|deferred)' \
+         evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION05/c3/c3-required-result.txt
+    AC02 partial (verifier correctly reads C04 matrix
+    AC03 deferred (broad-corpus rewrite residue)
+    AC04 deferred (broad-corpus rewrite residue;
+    AC18 deferred (ObjectsByteEqual self-tests will
+
+  Required predicate:
+    C05_MANDATORY_AC_NONPASS_COUNT >= 4   (4 mandatory ACs
+                                            not in PASS state)
+    C05_RECORDED_CLOSE = PASS_TRUE_GREEN (closed at eda6ad0)
+    FALSE_GREEN_REPRODUCED = YES
+
+  Observed: PASS
+
+P0-2 — BROAD-CORPUS IMPLEMENTATION UNCHANGED
+  The active implementation
+  (tools/quality/lexer07-broad-corpus-4-stage.HC) was
+  authored at CORRECTION04; the CORRECTION05 HANDOFF
+  explicitly defers the substantive rewrite:
+
+    $ grep -nE 'ObjectsByteEqual|MemCmp|SHA256|corpus-failures' \
+           tools/quality/lexer07-broad-corpus-4-stage.HC
+    (no matches for ObjectsByteEqual, MemCmp, SHA256,
+     corpus-failures.tsv in the implementation)
+
+  The implementation uses:
+    - FNV-1a 64-bit hash (line 75) — NOT byte equality;
+    - 5-column provenance (line 213) — NOT 8-column;
+    - no separate corpus-failures.tsv writer;
+    - no semantic invariant gate;
+    - hardcoded write path to
+      "evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION04/c3".
+
+  Required pre-state:
+    BROAD_CORPUS_REWRITE_COMPLETE = NO
+
+  Observed: PASS
+
+P0-3 — NORMAL-PATH VERIFIER PASS DOES NOT EXIST
+  The recorded C05 verifier execution
+  (evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION05/c3/c3-proof-verify-c04-verdict.txt):
+
+    $ cat c3-proof-verify-c04-verdict.txt
+    PROOF_VERIFIER evidence_dir=evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION04/c3
+    PROOF_VERIFIER matrix_size=27061
+    PROOF_VERIFIER TOTAL=181 BYTE_IDENTICAL_4=175 BOTH_FAIL_4=6
+    PROOF_VERIFIER HISTORICAL_S0_ROWS=0 CURRENT_S0_ROWS=0
+    PROOF_VERIFIER DIVERGED=0 REGRESSION=0 PASS_MISMATCH=0
+    FAIL historical_s0=0 expected=9
+    PROOF_VERIFIER=AC02_FAIL
+    PROOF_VERIFIER=STATUS=FAIL
+
+  This proves rejection of C04 evidence (5-column schema).
+  It does NOT prove a normal-path PASS against fresh C05
+  evidence.
+
+  Required pre-state:
+    C05_NORMAL_PATH_PROOF_VERIFIER_PASS = NO
+    C05_RECORDED_VERIFIER_STATUS       = FAIL
+
+  Observed: PASS
+
+P0-4 — AC05 STUB NEGATIVE CONTROL INSUFFICIENT
+  The recorded AC05 evidence
+  (evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION05/c3/c3-stub-control.log):
+
+    $ cat c3-stub-control.log
+    MUTATION_STUB ok rc=0 evidence=NONE
+
+  The recorded run proves:
+    - the stub binary returned rc=0;
+    - no verifier invocation followed.
+
+  It does NOT prove:
+    - the independent verifier was invoked against the
+      stub-generated (absent) evidence;
+    - the verifier emitted a non-zero rc;
+    - any rejection token was observed.
+
+  The C05 HANDOFF relies on a free-text claim
+  ("the independent verifier ... rejects such
+  stub-generated evidence under its AC02 snapshot
+  predicate") without a verifier invocation log.
+  This is the P0-4 "stub returns success while emitting
+  no evidence" gap.
+
+  Required pre-state:
+    AC05_VERIFIER_INVOKED = NO
+
+  Observed: PASS
+
+P0-5 — AC06 CORRUPT NEGATIVE CONTROL INSUFFICIENT
+  The recorded AC06 evidence
+  (evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION05/c3/c3-corrupt-control.log):
+
+    $ cat c3-corrupt-control.log
+    MUTATION_CORRUPT ok dst=/tmp/lexer07-mut-0_all.o size=150064 flipped_byte_offset=75032
+
+  The recorded run proves:
+    - the corruption binary created a /tmp/ copy;
+    - one byte was flipped.
+
+  It does NOT prove:
+    - the runtime SHA of the corrupted copy was computed;
+    - the runtime SHA was compared against the compiled-in
+      immutable baseline;
+    - the independent verifier was invoked against
+      evidence derived from the corrupted copy;
+    - any OBJECT_IDENTITY_MISMATCH or
+      STAGE0_HISTORICAL_BYTE_MISMATCH token was emitted;
+    - the verifier exited non-zero.
+
+  Required pre-state:
+    AC06_VERIFIER_INVOKED = NO
+
+  Observed: PASS
+
+P0-6 — AC07 FIXTURE NEGATIVE CONTROL INSUFFICIENT
+  The recorded AC07 evidence
+  (evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION05/c3/c3-fixture-mutation.log):
+
+    $ cat c3-fixture-mutation.log
+    MUTATION_FIXTURE src=tools/quality/lexer07-direct-differential.c size=8165 expected_total=88 canonical=89
+
+  The recorded run prints expected values only.
+  It does NOT prove:
+    - a temporary copy of the fixture source was created;
+    - exactly one fixture row was removed;
+    - the fixture-inventory generator was actually run
+      against the temporary mutated copy;
+    - the generator emitted TOTAL=88 (only the expected
+      value is printed);
+    - the independent verifier was invoked against the
+      mutated evidence;
+    - any FIXTURE_TOTAL_MISMATCH token was emitted;
+    - the verifier exited non-zero.
+
+  Required pre-state:
+    AC07_REAL_MUTATION_AND_VERIFIER_INVOKED = NO
+
+  Observed: PASS
+
+P0-8 — CLOSURE MACHINERY ALLOWED PARTIAL/DEFERRED MANDATORY ACs
+  At C05 closure (eda6ad0), the closure predicate was
+  prose-only. The HANDOFF summary table recorded AC02 as
+  PARTIAL and AC03/AC04/AC18 as DEFERRED, yet the
+  CLOSE commit trailer `ACT-Verdict: PASS_TRUE_GREEN`
+  was allowed.
+
+  No machine-readable mandatory-AC manifest exists in
+  C05 evidence (no
+  evidence/.../CORRECTION05/c3/mandatory-ac-status.tsv).
+
+  Required correction:
+    - introduce tools/quality/factory-mandatory-ac-check.HC
+      (PolyC verifier that parses a deterministic TSV);
+    - require the C4 CLOSE commit to pass that checker;
+    - no PASS_TRUE_GREEN trailer is permitted while the
+      checker reports non-PASS.
+
+  Required pre-state:
+    CLOSURE_AC_VERIFIER_EXISTS = NO
+    MANDATORY_AC_MANIFEST_EXISTS = NO
+
+  Observed: PASS
+
+SUMMARY
+  All eight C05 FALSE_GREEN defects (P0-1 .. P0-6, P0-8)
+  are mechanically reproduced against the C05 evidence
+  tree at HEAD = 5409ece.
+
+  FALSE_GREEN_REPRODUCED = YES
+  C05_MANDATORY_AC_NONPASS_COUNT = 4 (AC02, AC03, AC04, AC18)
+  C05_RECORDED_CLOSE = PASS_TRUE_GREEN
+  CLOSURE_AC_VERIFIER_EXISTS = NO
+
+  Required C2 / C3 work scope:
+    - Rewrite tools/quality/lexer07-broad-corpus-4-stage.HC
+      with ObjectsByteEqual, SHA-256, 8-col provenance,
+      corpus-failures.tsv, semantic invariant gate, and
+      explicit outdir.
+    - Re-author mutation controls to actually execute
+      full experiments + invoke the independent verifier
+      with rc + token captured.
+    - Add tools/quality/factory-mandatory-ac-check.HC.
+    - Generate fresh C3 evidence from clean dest.
+    - All C3 witnesses must mechanically observe non-zero
+      verifier rc + token.
+
+STATUS: PASS — all eight FALSE_GREEN defects reproduced
+        against the live C05 evidence tree.
