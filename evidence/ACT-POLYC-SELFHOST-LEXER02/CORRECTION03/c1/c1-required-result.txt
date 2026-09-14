@@ -1,0 +1,54 @@
+ACT-POLYC-SELFHOST-LEXER02-CORRECTION03 — C1 RED — c1-required-result.txt
+================================================
+
+## Defects mechanically demonstrated
+
+### P0 — F-POLYC-TOOLS violation (mechanically demonstrated and repaired)
+
+  Before (CORRECTION02 closure adc977e):
+    scripts/quality/lexer07-fixture-inventory.sh     165 LOC
+    scripts/quality/lexer07-broad-corpus-4-stage.sh  221 LOC
+  Both shell tools implemented TSV parsing, fixture
+  classification, file enumeration, sha256 byte-equality,
+  multi-step orchestration, and provenance binding.
+  Per F-POLYC-TOOLS: shell ≤50 LOC dispatch glue only;
+  substantive tools MUST be PolyC. 165 + 221 = 386 LOC
+  exceeded the limit by 286 LOC.
+
+  After (CORRECTION03):
+    scripts/quality/lexer07-fixture-inventory.sh      14 LOC  (dispatch)
+    scripts/quality/lexer07-broad-corpus-4-stage.sh   16 LOC  (dispatch)
+    tools/quality/lexer07-fixture-inventory.HC       80 LOC  (PolyC impl)
+    tools/quality/lexer07-broad-corpus-4-stage.HC    81 LOC  (PolyC impl)
+  Shell ≤50 LOC: 14 + 16 = 30 LOC  (PASS)
+  Both binaries compile via ./hcc and run end-to-end.
+
+### shell-loc-gate (explicit run)
+
+  $ ./scripts/quality/shell-loc-gate.sh \
+      scripts/quality \
+      evidence/ACT-POLYC-TOOLING-SHELL-INVENTORY01/c1/baseline.txt
+  PASS  shell-loc-gate
+
+  This explicit run was NOT in the CORRECTION02 cycle
+  (the reviewer audit's P0 was exactly that gate-fast
+  passed while F-POLYC-TOOLS was still violated, because
+  the authoritative factory-polyc-tools-check.HC
+  enforcement is C2.9 residue and not yet wired in).
+
+## P1 — Historical stage0 wording (mechanically accurate now)
+
+  CORRECTION02 wording was: "175/175 BYTE_IDENTICAL_4".
+  Mechanically exact wording (preserved in CORRECTION03
+  evidence): the 175 decomposes into:
+    CURRENT_4_STAGE_BYTE_IDENTICAL = 166/166
+      (fresh ./hcc + bootstrap02/03/04 produce byte-identical .o)
+    HISTORICAL_S0_BASELINED_4_WAY_EQ = 9/9
+      (current ./hcc fails on 9 sources; baseline from
+       build/b02-corpus-A matches bootstrap02/03/04 byte-equality)
+    TOTAL_EQUIVALENCE_COVERAGE = 175/175
+    BOTH_FAIL_4 = 6/6
+
+## Verdict
+
+  C1 RED complete. C2 IMPL can proceed.

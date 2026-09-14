@@ -1237,16 +1237,42 @@ lexer07-lexer-seam-all-stages: lexer07-lexer-seam-stage0 lexer07-lexer-seam-stag
 # ACT-POLYC-SELFHOST-LEXER02-CORRECTION02 — mechanical fixture
 # inventory. Derives is_numeric/is_char/is_negative/is_edge from
 # observed kind/err/cursor, replaces hand-typed category prefixes.
-lexer07-fixture-inventory: lexer07-direct-differential
+# ACT-POLYC-SELFHOST-LEXER02-CORRECTION03 — PolyC fixture
+# inventory replaces the 165-LOC shell script. The shell
+# wrapper is now ≤50 LOC dispatch glue.
+lexer07-fixture-inventory: lexer07-direct-differential build/lexer07-fixture-inventory
 	./scripts/quality/lexer07-fixture-inventory.sh
+
+# Build the PolyC fixture inventory tool.
+build/lexer07-fixture-inventory: tools/quality/lexer07-fixture-inventory.HC
+	./hcc --install-dir=./build/test-prefix \
+		tools/quality/lexer07-fixture-inventory.HC \
+		-o ./build/lexer07-fixture-inventory
+	@if [ ! -x ./build/lexer07-fixture-inventory ]; then \
+		echo "lexer07-fixture-inventory: build failed" >&2; \
+		exit 1; \
+	fi
 
 # ACT-POLYC-SELFHOST-LEXER02-CORRECTION02 — canonical 181-source
 # compiler corpus at all 4 stages (LEXER01-CORRECTION01 pattern).
 # Stage0 falls back to historical b02-corpus-A for the 9 sources
 # where current ./hcc has a pre-existing ARM64 inline asm
 # regression; the fallback is explicit in provenance TSV.
-lexer07-broad-corpus-4-stage: build/hcc build/hcc-bootstrap02 build/hcc-bootstrap03 build/hcc-bootstrap04
+# ACT-POLYC-SELFHOST-LEXER02-CORRECTION03 — PolyC broad corpus
+# replaces the 221-LOC shell script. The shell wrapper is now
+# ≤50 LOC dispatch glue.
+lexer07-broad-corpus-4-stage: build/hcc build/hcc-bootstrap02 build/hcc-bootstrap03 build/hcc-bootstrap04 build/lexer07-broad-corpus-4-stage
 	./scripts/quality/lexer07-broad-corpus-4-stage.sh
+
+# Build the PolyC broad corpus tool.
+build/lexer07-broad-corpus-4-stage: tools/quality/lexer07-broad-corpus-4-stage.HC
+	./hcc --install-dir=./build/test-prefix \
+		tools/quality/lexer07-broad-corpus-4-stage.HC \
+		-o ./build/lexer07-broad-corpus-4-stage
+	@if [ ! -x ./build/lexer07-broad-corpus-4-stage ]; then \
+		echo "lexer07-broad-corpus-4-stage: build failed" >&2; \
+		exit 1; \
+	fi
 
 # ACT-POLYC-SELFHOST-LEXER02-CORRECTION02 — composite gate
 # combining both new tests with the existing 4-stage seam.
