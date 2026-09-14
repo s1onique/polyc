@@ -1,0 +1,40 @@
+ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01 — C4 CLOSE summary
+==========================================================
+
+VERDICT:               PASS
+IDENTITY:              git rev-parse HEAD at close commit time
+ROOT CAUSE:            LEXER01 microscopic candidates all scored negative
+                       under the function-level model. The recon ACT
+                       tests the hypothesis that larger coherent semantic
+                       REGIONS may absorb the ABI/state-boundary cost and
+                       produce a positive winner.
+RED:                   c1/prior-negative-score-red.txt + c1/entry-identity.txt
+                       + c1/predecessor-freeze.txt
+IMPLEMENTATION:        c2/region-construction-log.txt + c2/lexer-region-inventory.tsv
+                       + c2/region-scores.tsv + c2/ranking.txt + c2/winner.txt
+GATES:                 C2 ranking == C3 ranking == R-F (FINAL +627)
+                       - C2 winner reproducible in C3: YES
+                       - Winner margin: 342 (ROBUST)
+                       - Conservation: I0==I1==I2==I3 PASS, N0==N1==N2==N3 PASS,
+                         47/47 differential PASS, 33/33 four-stage seam PASS,
+                         broad corpus 175/175 + 6/6 PASS, Dafny 17/17 PASS,
+                         F_NO_PYTHON = 12 (unchanged), gate-fast PASS
+SCOPE:                 docs/acts/ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01.md (NEW)
+                       docs/ROADMAP.md (bounded status transition only)
+                       evidence/ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01/ (NEW)
+                       No compiler source changes.
+                       No new bootstrap component.
+                       No new registry row.
+                       No new Python source.
+                       No new Python execution edge.
+RESIDUE:               P2: ARM-specific libtos/strings.HC asm residue blocks stage1/2/3
+                            build on Apple Silicon hosts (test-prefix-install target fails).
+                            Inherited platform residue, not in this ACT's scope.
+                            Recorded in c1/predecessor-freeze.txt.
+                       P2: Wrapper synthetic l->ptr advance could be unified with
+                            lexNextChar's step-by-step advance (carried from LEXER01).
+                       P2: Wrapper strlen(start) for src_len could be tightened to
+                            use lexer's known buffer bound (carried from LEXER01).
+NEXT ACT:             ACT-POLYC-SELFHOST-LEXER02
+                       LEXER02_SCOPE = EXACTLY (scalar_literal_scanner covering
+                                               countNumberLen + lexNumeric + lexCharConst)

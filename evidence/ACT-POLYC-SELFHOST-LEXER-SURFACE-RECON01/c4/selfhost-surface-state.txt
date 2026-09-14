@@ -1,0 +1,32 @@
+ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01 — C4 — self-host surface state
+=====================================================================
+
+Post-LEXER-SURFACE-RECON01 (i.e., post-this-ACT) state:
+
+```text
+SELFHOST_LEXER_COMPONENTS             = 2
+  identifier_scanner                  (ACT-POLYC-BOOTSTRAP02)
+  operator_punctuation_recognizer     (ACT-POLYC-SELFHOST-LEXER01)
+
+SELFHOSTED_SEMANTIC_LOC               = unchanged from predecessor
+HOST_C_CORE_SEMANTIC_LOC              = unchanged from predecessor
+
+SELFHOSTED_TOKEN_KINDS                = 33 (TK_IDENT + 32 operator/punct kinds)
+HOST_C_CORE_TOKEN_KINDS               = 5 (TK_COMMENT, TK_STR, TK_CHAR_CONST, TK_I64, TK_F64)
+
+SELFHOSTED_ENTRY_SEAMS                = 2
+HOST_C_CORE_ENTRY_SEAMS               = 6
+
+POLYC_PRODUCTION_CALL_SITES           = 2
+HOST_C_CORE_REGION_COUNT              = 12 (this ACT's candidate region count)
+
+PROJECTED POST-LEXER02 STATE (if R-F migration succeeds):
+  SELFHOST_LEXER_COMPONENTS           = 3
+  HOST_C_CORE_SEMANTIC_LOC            = 333 - 183 = 150
+  HOST_C_CORE_TOKEN_KINDS             = 5 - 4 = 1 (only TK_STR remains in host C)
+  HOST_C_CORE_REGION_COUNT            = decreases by 1
+```
+
+(Recon ACT does NOT migrate anything; surface state is unchanged
+at CLOSE. The projected state is documented for the next ACT's
+target, not as a closure claim.)

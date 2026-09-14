@@ -1,0 +1,45 @@
+ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01 — C4 — final winner
+============================================================
+
+WINNER = R-F (scalar_literal_scanner)
+RANK   = 1
+FINAL_SCORE = +627
+MARGIN = 342 (ROBUST)
+
+WINNER_HOST_FUNCTIONS:
+  src/lexer.c:795-872   countNumberLen       (CORE_NUMERIC_EXTENT)
+  src/lexer.c:1164-1190 lexNumeric           (CORE_NUMERIC_VALUE)
+  src/lexer.c:1085-1162 lexCharConst         (HOST_C_CORE_CHAR_LITERAL)
+
+OWNERSHIP_GAIN  = 411  (semantic_loc 183 + 24*4 + 12*3 + 16*6)
+COHESION_GAIN   = 96   (internal_coupling: SHARED_STATE sum 34+36+26)
+BOUNDARY_AMORT  = 432  (24*14 + 32*3)
+RISK            = 312  (16*4 + 16*7 + 40*1 + 48*2 + 0 + 0)
+FINAL_SCORE     = 411 + 96 + 432 - 312 = +627
+
+E1..E14 = PASS (all 14; c3/winner-recheck.txt)
+
+ABI (BOUNDED):
+  Inputs (4):   U8 *src; I64 src_len; I64 cursor; I64 flags
+  Outputs (7):  I64 end_cursor; I64 kind; I64 i64_value;
+                I64 f64_value_bits; I64 ishex; I64 err_status;
+                I64 char_const_overflow
+
+DIRECT_ORACLE          = TEST_ONLY_PRODUCTION_EXTRACTION (feasible)
+PRODUCTION_SEAM        = POSSIBLE
+FIXED_POINT_FEASIBILITY= PASS
+
+REAL_CORPUS_FILES >= 5 (src/lexer.c, src/prslib.c, src/aostr.c,
+                         src/cctrl.c, src/parser.c, src/holyc-lib/*.HC)
+
+CHARACTER_DOMAIN (frozen):
+  B_SCALAR_LITERAL_CHARACTER_DOMAIN = ASCII
+  B_SCALAR_LITERAL_CTYPE_DEPENDENCY  = NONE for numeric_extent (inline ASCII byte ranges);
+                                       libc strto* required for numeric value (FFI or
+                                       re-implementation in PolyC).
+
+WINNER_MIGRATION_READY = YES
+
+NEXT_ACT      = ACT-POLYC-SELFHOST-LEXER02
+LEXER02_SCOPE = EXACTLY (scalar_literal_scanner covering
+                        countNumberLen + lexNumeric + lexCharConst)

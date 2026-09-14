@@ -2238,6 +2238,65 @@ actual lexer seam map (call graph, state mutated, token
 types produced, existing test coverage, ABI complexity,
 candidate migration size), not by intuition.
 
+#### ACT-POLYC-SELFHOST-LEXER01 status (CLOSED PASS at 3760de9; CORRECTION01 CLOSED PASS_WITH_CORRECTION_RESIDUE)
+
+```
+ACT-POLYC-SELFHOST-LEXER01                    CLOSED PASS  (operator_punctuation_recognizer migrated; 33/33 seam)
+ACT-POLYC-SELFHOST-LEXER01-CORRECTION01      CLOSED PASS_WITH_CORRECTION_RESIDUE
+                                                       (four-stage fixed-point, corpus, real-seam,
+                                                        disassembly, fail-closed linkage all PASS;
+                                                        F-NO-PYTHON=12; Dafny=17/17; Factory gates PASS)
+  Remaining microscopic candidates (numeric_length_scan, comment_skip,
+  char_const_scan, numeric_value_parse) all have negative FINAL_SCORE
+  under the function-level model. Per reviewer recommendation, do NOT
+  relax E1..E14 to make them eligible; instead, a successor recon ACT
+  should re-survey the lexer surface for larger coherent migration
+  regions.
+```
+
+#### ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01 status (CLOSED PASS at this commit)
+
+```
+ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01      CLOSED PASS
+  Title: Reconstruct the remaining production-lexer ownership graph
+         and select the next coherent PolyC migration region
+  Predecessor: ACT-POLYC-SELFHOST-LEXER01-CORRECTION01 CLOSED
+  Authorization artifact: docs/acts/ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01.md
+  Region model: COMPLETE (17 region candidates mechanically derived)
+  Winner: R-F (scalar_literal_scanner) = countNumberLen + lexNumeric + lexCharConst
+  Winner FINAL_SCORE: +627 (ROBUST margin: 342 over runner-up)
+  Winner E1..E14: PASS (re-verified in C3)
+  Winner ABI: BOUNDED (4 in / 7 out logical slots)
+  Winner DIRECT_ORACLE: TEST_ONLY_PRODUCTION_EXTRACTION (feasible)
+  Winner PRODUCTION_SEAM: POSSIBLE
+  Winner FIXED_POINT_FEASIBILITY: PASS
+  Winner MIGRATION_READY: YES
+
+  Conservation:
+    identifier I0==I1==I2==I3   = PASS
+    operator   N0==N1==N2==N3   = PASS
+    operator direct differential = PASS 47/47
+    operator production seam     = PASS 33/33 at each stage
+    broad corpus 4-stage         = PASS 175/175 + 6/6 (per prior ACT)
+    Dafny                        = PASS 17/17
+    F_NO_PYTHON                  = 12 (unchanged)
+    Factory gates                = PASS
+
+  C2 ranking == C3 ranking for rank 1: YES (independently verified).
+  Anti-gaming order respected: graph -> construction -> eligibility -> score -> winner.
+  NO production semantic mutation. NO new bootstrap component. NO new registry row.
+
+  NEXT: ACT-POLYC-SELFHOST-LEXER02
+        LEXER02_SCOPE = EXACTLY (scalar_literal_scanner covering
+                                countNumberLen, lexNumeric, lexCharConst)
+        (i.e., the next ACT may begin migrating the chosen region.
+         The recon ACT itself stops here per ACT §72.)
+```
+
+The recon ACT does **not** begin migration. It freezes the migration
+boundary so the next ACT's review surface is the boundary itself
+rather than the migration diff.
+
 ### P5a — LLVM feature depth (PARALLEL BACKLOG, NON-BLOCKING)
 
 The previously-promised "expand only from evidence" widening

@@ -1,0 +1,62 @@
+ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01 — C4 — acceptance matrix
+================================================================
+
+AC01  predecessor correction GREEN                                              PASS
+AC02  current self-host components    = 2                                       PASS
+AC03  prior microscopic candidates    frozen                                   PASS  (see c1/prior-candidate-freeze.tsv)
+AC04  full lexer function inventory   complete                                 PASS  (60 functions in c1/lexer-function-inventory.tsv)
+AC05  full Lexer field R/W map        complete                                 PASS  (22 fields in c1/lexer-field-ownership.tsv)
+AC06  call graph                       complete                                 PASS  (192 edges in c1/lexer-callgraph.tsv)
+AC07  state-coupling graph             complete                                 PASS  (15 pairs in c1/state-coupling.tsv)
+AC08  external-boundary graph          complete                                 PASS  (12 ops in c1/external-boundaries.tsv)
+
+AC09  semantic ownership classes       complete                                 PASS  (17 classes in c1/semantic-classes.tsv)
+AC10  region derivation rules          frozen before scoring                   PASS  (ACT §13 frozen; c2/region-construction-log.txt)
+AC11  region candidate set             mechanically produced                    PASS  (12 candidates in C2; 17 candidates re-derived in C3)
+AC12  no manual post-score merge/split                                       PASS  (no rescore; frozen weights used throughout)
+
+AC13  E1..E14 preserved                                                         PASS  (c2/eligibility-matrix.tsv; c3 verification)
+AC14  eligibility mechanically derived                                         PASS  (E5 violation on R-J preserved across all phases)
+
+AC15  region score formula             frozen before rank                       PASS  (ACT §17; weights never changed during C2 or C3)
+AC16  all score inputs                 evidenced                                PASS  (c2/region-scores.tsv; c3/fresh-scores.tsv)
+AC17  deterministic tie-break          used                                    PASS  (c2/ranking.txt; c3/ranking-reproduction.txt)
+
+AC18  ABI sketch exists                for every eligible region                PASS  (c2/abi-sketches.tsv)
+AC19  oracle strategy exists           for every eligible region                PASS  (c2/oracle-feasibility.tsv)
+AC20  production-seam strategy exists  for every eligible region                PASS  (c2/production-seam-feasibility.tsv)
+
+AC21  old microscopic candidates       mapped to regions                        PASS  (c2/legacy-candidate-mapping.tsv)
+AC22  self-host surface baseline       mechanically measured                    PASS  (c1/selfhost-surface-baseline.txt)
+
+AC23  C2 ranking reproducible in C3                                           PASS  (c3/ranking-reproduction.txt)
+AC24  winner rank reproducible OR no-winner reproducible                      PASS  (C2 RANK1=R-F; C3 RANK1=R-F)
+
+AC25  no production semantic delta                                             PASS  (git status shows only ACT-related new files)
+AC26  no new component                                                         PASS  (no new tools/bootstrap/*.HC created)
+AC27  no registry row                                                          PASS  (docs/factory/SELF-HOST-COMPONENTS.tsv unchanged)
+AC28  no stage4                                                                PASS  (only stage0/1/2/3 referenced)
+AC29  no parser/AST/IR/backend changes                                         PASS  (forbidden-mutation list honored)
+
+AC30  identifier fixed point           conserved                                PASS  (c3/current-selfhost-conservation.txt; re-hashed)
+AC31  operator fixed point             conserved                                PASS  (c3/current-selfhost-conservation.txt; re-hashed)
+AC32  operator direct differential     conserved                                PASS  (47/47)
+AC33  real operator seam               conserved                                PASS  (33/33 at each stage; per prior ACT)
+AC34  broad four-stage corpus          conserved                                PASS  (175/175 + 6/6; per prior ACT)
+
+AC35  formal Dafny                     PASS                                    PASS  (17/17, 0 errors, 0 audit findings)
+AC36  F_NO_PYTHON                      unchanged                                PASS  (12 == 12)
+AC37  no new Python source                                                     PASS  (scope audit)
+AC38  no new Python edge                                                          PASS  (scope audit)
+
+AC39  Factory gates                    PASS                                    PASS  (c3/factory-gates.txt)
+AC40  ACT-range diff-check             clean                                   PASS  (c3/patch-hygiene.txt)
+AC41  historical closed evidence       unchanged                                PASS  (F14 honored; prior ACT evidence directories untouched)
+AC42  no binary evidence                                                         PASS  (text-only files in evidence/)
+
+AC43  exactly one CLOSE commit                                                 PASS  (this commit; trailer = ACT-Phase:CLOSE, ACT-Verdict:PASS)
+AC44  no SHA-of-self claims                                                     PASS  (no ACT/HANDOFF contains its own commit SHA)
+
+AC45  NEXT is derived from result, not decided before recon                     PASS  (LEXER02 binding follows from c2/winner.txt; not pre-decided)
+
+ALL ACCEPTANCE CRITERIA PASS.
