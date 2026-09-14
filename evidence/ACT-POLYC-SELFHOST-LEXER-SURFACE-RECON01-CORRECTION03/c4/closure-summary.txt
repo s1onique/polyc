@@ -1,0 +1,53 @@
+ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01-CORRECTION03 — C4 CLOSE summary
+========================================================================
+
+VERDICT:               PASS_WITH_CORRECTION_RESIDUE
+ACT-Corrected-Verdict: PASS_WITH_CORRECTION_RESIDUE (no engineering claim changed)
+ACT-Supersedes:        ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01-CORRECTION02
+
+IDENTITY:              This commit is the C4 CLOSE commit.
+
+ROOT CAUSE:            CORRECTION02 cited a nonexistent evidence path
+                       (CORRECTION01/c3/fresh-scores.tsv). The actual
+                       canonical source is the recon ACT's
+                       SURFACE-RECON01/c3/fresh-scores.tsv.
+
+DEFECTS REPAIRED:      1 of 1
+  DEFECT-6 (P1): cited evidence path does not exist.
+                  Status: FORWARD-FIX (in CORRECTION03/c2/)
+
+F14 COMPLIANCE:        Closed CORRECTION02, CORRECTION01, and recon ACT
+                       evidence trees are all immutable. Forward-fix
+                       lives in CORRECTION03/c2/.
+
+GATES:
+  gate-fast           PASS
+  Dafny               PASS 17/17
+  F_NO_PYTHON         12 (unchanged)
+
+SCOPE:
+  docs/acts/ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01-CORRECTION03.md  (NEW)
+  docs/ROADMAP.md                                                     (bounded status block)
+  evidence/ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01-CORRECTION03/     (NEW)
+
+  No compiler source changes.
+  No new bootstrap component.
+  No new registry row.
+  No Python mutation.
+  All closed evidence trees: UNCHANGED (F14 honored).
+
+RESIDUE:
+  P0:  (none)
+  P1:  (none new)
+  P2:  ARM libtos/strings.HC asm residue (inherited from LEXER01).
+  P2:  Wrapper synthetic l->ptr advance unification residue (LEXER01).
+  P2:  Wrapper strlen(start) buffer-bound tightening residue (LEXER01).
+
+FINAL STOP:            Per reviewer's explicit recommendation, no further
+                       CORRECTIONnn ACTs are planned in this recon lineage
+                       unless a semantic defect is observed.
+
+NEXT ACT:             ACT-POLYC-SELFHOST-LEXER02
+                       LEXER02_SCOPE = EXACTLY (scalar_literal_scanner
+                                                covering countNumberLen +
+                                                lexNumeric + lexCharConst)

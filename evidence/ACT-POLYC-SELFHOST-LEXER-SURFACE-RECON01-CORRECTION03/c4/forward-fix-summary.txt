@@ -1,0 +1,45 @@
+ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01-CORRECTION03 — C4 — forward-fix summary
+================================================================================
+
+Single residual defect of ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01-
+CORRECTION02 was forward-fixed. Per F14, the closed CORRECTION02
+evidence tree is immutable; forward-fix lives in this correction
+ACT's evidence directory.
+
+---
+
+## FIX-6 (was DEFECT-6): cited evidence path does not exist
+
+Closed file with wrong path citation:
+  c1/defect-summary.txt and c3/independent-re-derivation.txt
+  cite evidence/.../CORRECTION01/c3/fresh-scores.tsv
+  but that file does not exist in the closed CORRECTION01 tree.
+
+Forward-fix: c2/canonical-score-source.txt
+  CANONICAL_SCORE_SOURCE = evidence/.../SURFACE-RECON01/c3/fresh-scores.tsv
+  (created at recon ACT C3 phase commit 12acf94; immutable per F14)
+
+  Lineage statement:
+    SURFACE-RECON01 -> owns the measured 17-region score table
+    CORRECTION01    -> interpreted/corrected claims about that table
+    CORRECTION02    -> fixed presentation mistakes (cited wrong path)
+    CORRECTION03    -> binds sort command to actual canonical source
+
+C3 verification: re-executed the corrected command successfully
+and confirmed the output matches CORRECTION02/c2/
+ranking-repaired-v2.txt for all 16 eligible regions.
+
+---
+
+## No engineering claim changed
+
+WINNER = R-F (scalar_literal_scanner)         unchanged
+WINNER FINAL_SCORE = +627                      unchanged
+WINNER MARGIN = 342 (ROBUST)                   unchanged
+WINNER E1..E14 = PASS                          unchanged
+WINNER ABI = BOUNDED (4 in / 7 out)            unchanged
+WINNER ORACLE = feasible                       unchanged
+WINNER PRODUCTION_SEAM = POSSIBLE              unchanged
+
+Only the cited source path is corrected. The numerical sort
+values are identical to those CORRECTION02 recorded.

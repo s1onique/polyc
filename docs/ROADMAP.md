@@ -2410,6 +2410,62 @@ ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01-CORRECTION02      CLOSED PASS_WITH_CORR
          does not begin migration.)
 ```
 
+#### ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01-CORRECTION03 status (CLOSED PASS_WITH_CORRECTION_RESIDUE)
+
+```
+ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01-CORRECTION03      CLOSED PASS_WITH_CORRECTION_RESIDUE
+  ACT-Corrected-Verdict: PASS_WITH_CORRECTION_RESIDUE (no engineering claim changed)
+  ACT-Supersedes:        ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01-CORRECTION02
+  Authorization artifact: docs/acts/ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01-CORRECTION03.md
+  Predecessor:           ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01-CORRECTION02 CLOSED 8698423
+
+  Single residual evidence-path defect in CORRECTION02 repaired
+  (forward-fix in CORRECTION03/c2/; all closed evidence trees
+  immutable per F14):
+
+    DEFECT-6 (P1): CORRECTION02 C1 and C3 cited
+                    evidence/.../CORRECTION01/c3/fresh-scores.tsv
+                    as the source for the awk sort. That file does
+                    not exist in the closed CORRECTION01 tree.
+                    Forward-fix: CORRECTION03/c2/canonical-score-source.txt
+                      CANONICAL_SCORE_SOURCE =
+                        evidence/.../SURFACE-RECON01/c3/fresh-scores.tsv
+                      (created at recon ACT C3 phase commit 12acf94)
+                    Lineage:
+                      SURFACE-RECON01 -> owns measured 17-region score table
+                      CORRECTION01    -> interpreted/corrected claims
+                      CORRECTION02    -> fixed presentation mistakes (wrong path)
+                      CORRECTION03    -> binds sort to actual canonical source
+                    C3 re-executed the corrected command successfully;
+                    output matches CORRECTION02/c2/ranking-repaired-v2.txt
+                    for all 16 eligible regions.
+
+  Engineering result preserved verbatim (unchanged throughout lineage):
+    WINNER                        = R-F (scalar_literal_scanner)
+    WINNER FINAL_SCORE            = +627
+    WINNER MARGIN                 = 342 (ROBUST)
+    WINNER E1..E14                = PASS
+    WINNER ABI                    = BOUNDED (4 in / 7 out)
+    WINNER DIRECT_ORACLE          = feasible
+    WINNER PRODUCTION_SEAM        = POSSIBLE
+
+  Gates: gate-fast PASS, Dafny 17/17 PASS, F_NO_PYTHON=12 (unchanged).
+  F14 honored: all three closed evidence trees UNCHANGED
+  (SURFACE-RECON01, CORRECTION01, CORRECTION02).
+  Scope: docs/acts/.../CORRECTION03.md (NEW), evidence/.../CORRECTION03/ (NEW),
+         ROADMAP.md (this block). No compiler source mutation. No new
+         registry row. No Python mutation. No new bootstrap component.
+
+  FINAL STOP: Per reviewer recommendation, no further CORRECTIONnn ACTs
+              are planned in this recon lineage unless a semantic defect
+              appears. The recon ACT result is bound; LEXER02 may now open.
+
+  NEXT: ACT-POLYC-SELFHOST-LEXER02
+        LEXER02_SCOPE = EXACTLY (scalar_literal_scanner covering
+                                countNumberLen, lexNumeric, lexCharConst)
+        (Final stop on recon lineage; this ACT does not begin migration.)
+```
+
 The recon ACT does **not** begin migration. It freezes the migration
 boundary so the next ACT's review surface is the boundary itself
 rather than the migration diff.
