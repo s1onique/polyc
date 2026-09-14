@@ -1,0 +1,95 @@
+ACT-POLYC-SELFHOST-LEXER02-CORRECTION02 — C1 RED — c1-required-result.txt
+================================================
+
+## Entry identity
+  branch:    main
+  HEAD:      d048ca9 ACT-POLYC-SELFHOST-LEXER02-CORRECTION01 — C4 CLOSE
+  Status:    OPEN
+
+## Three reopened defects
+
+### P0 #1 (reopened): error-corpus claim is hand-typed, not mechanical
+
+The CORRECTION01 evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION01/c3/
+error-corpus-4-stage.txt asserts:
+  Error corpus (real-lexer-seam runner, 28 cases): all 6 pairwise
+  stage diffs IDENTICAL
+
+But the claim is built on the same INPUTS[] the direct-differential
+test uses, and that INPUTS[] labels fixtures with hand-typed
+prefixes. The mechanical truth is that 16 of the 89 fixtures have
+observed `err != 0` — exactly the floor — but they are not the same
+16 that the prefix heuristic suggests.
+
+Evidence:
+  $ ./build/lexer07-direct-differential 2>&1 | grep "err=" | awk -F= '
+      { split($NF, e, "/"); if (e[1] != "0") print $0 }' | wc -l
+  16
+
+  $ ./build/lexer07-direct-differential 2>&1 | awk '
+      /^OK/ || /^FAIL/ {
+        n=$2;
+        if (n~/^err_/) C++;
+      } END { print "C (err_-prefixed)=" C }'
+  21
+
+9 of the 21 err_-prefixed fixtures are NOT actually error cases;
+they are valid forms that happen to have unusual syntax. The 16
+actually-erroneous fixtures are a different (overlapping) set.
+
+Fix: emit per-fixture observed (kind, err, strlen, ishex) in the
+binary output; build inventory TSV mechanically from that.
+
+### P0 #2 (reopened): broad-corpus evidence is not the canonical pattern
+
+The CORRECTION01 c3/broad-corpus-4-stage.txt proves scalar-token
+stream equivalence across stages. The LEXER01-CORRECTION01 canonical
+pattern (which LEXER02 must follow because both are S1 LEXER EXPANSION
+ACTS) is:
+
+  175/175 BYTE_IDENTICAL + 6/6 BOTH_FAIL across stages 0/1/2/3
+  via full compiler invocation + .o file sha256 byte-equality
+
+The existing b02-corpus-A (175), b03-corpus-A (175), b04-corpus-A2 (175)
+directories on disk are stage0/1/2 outputs from the LEXER01 cycle.
+The b04-corpus-A directory (529 files) is the wider new corpus.
+For CORRECTION02, the canonical 181-source corpus must be re-run
+through all 4 stages and the bytecode diff matrix must show 0
+divergence in success cases and equivalent failure in the 6
+intentional error fixtures.
+
+Fix: write scripts/quality/lexer07-broad-corpus-4-stage.sh that
+runs the 181-source inventory through each stage compiler, captures
+.o (or whatever the canonical output is) + stderr, and computes
+the byte-equality matrix.
+
+### P1: 88 vs 89 arithmetic is fictional
+
+The CORRECTION01 narrative says A=41 + B=28 + C=16 + D=3 = 88 +
+"1 overlap" = 89. The "1 overlap" handwave does not justify
+the arithmetic; the truth is that the prefixes are not disjoint
+and the categories were always vaguely defined. The mechanical
+classification (kind=1/2/3/4, err=0/!=0) yields:
+  89 total
+  kind=1 (I64) = 31
+  kind=2 (F64) = 11
+  kind=3 (CHAR) = 33 (≥24 ✓)
+  kind=4 (NONE/ERR) = 8
+  err != 0 = 16 (≥16 ✓)
+
+Fix: emit a fixture_inventory.tsv from the binary output and
+replace the categorical arithmetic with the mechanical breakdown.
+
+## Predecessor freeze
+F14: CORRECTION01 at d048ca9 is immutable. All new evidence
+lives under evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION02/.
+
+## Closure targets
+CORRECTION02 closes PASS only when:
+  FIXTURE_INVENTORY_TSV_MECHANICAL = PASS (89 rows, 16 with err!=0)
+  BROAD_COMPILER_CORPUS_4_STAGE    = PASS (175/175 BYTE_IDENTICAL
+                                          + 6/6 BOTH_FAIL)
+  OBJECT_PROVENANCE_BINDING        = PASS (sha256 + compiler
+                                          identity for all .o)
+  CARDINALITY_BOOKKEEPING          = PASS (replaced by mechanical
+                                          inventory)
