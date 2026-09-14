@@ -315,7 +315,8 @@ I64 BootstrapScalarLiteralOracle(
     I64 *out_i64,
     U64 *out_f64_bits,
     I64 *out_ishex,
-    I64 *out_err)
+    I64 *out_err,
+    I64 *out_strlen)
 {
     (void)flags;
     if (src == NULL) {
@@ -325,6 +326,7 @@ I64 BootstrapScalarLiteralOracle(
         *out_f64_bits = 0;
         *out_ishex = 0;
         *out_err = SCALAR_ERR_INVALID_BYTE;
+        *out_strlen = 0;
         return SCALAR_ERROR;
     }
     if (cursor < 0 || cursor >= src_len) {
@@ -334,6 +336,7 @@ I64 BootstrapScalarLiteralOracle(
         *out_f64_bits = 0;
         *out_ishex = 0;
         *out_err = SCALAR_ERR_NONE;
+        *out_strlen = 0;
         return SCALAR_NONE;
     }
     unsigned char ch = src[cursor];
@@ -347,13 +350,13 @@ I64 BootstrapScalarLiteralOracle(
         I64 consumed = lexCharConstCore(src, src_len, cursor + 1,
                                          &bits, &slen, &ov, &e);
         (void)ov;
-        (void)slen;
         *out_end = cursor + 1 + consumed; /* cursor + leading '\'' + bytes-after */
         *out_kind = SCALAR_CHAR;
         *out_i64 = bits;
         *out_f64_bits = 0;
         *out_ishex = 0;
         *out_err = e;
+        *out_strlen = slen;
         return SCALAR_CHAR;
     }
     if (!SC_isNum(ch) && ch != '.') {
@@ -363,6 +366,7 @@ I64 BootstrapScalarLiteralOracle(
         *out_f64_bits = 0;
         *out_ishex = 0;
         *out_err = SCALAR_ERR_NONE;
+        *out_strlen = 0;
         return SCALAR_NONE;
     }
     I64 i64v = 0, ishex = 0, e = 0;
@@ -375,6 +379,7 @@ I64 BootstrapScalarLiteralOracle(
     *out_f64_bits = f64bits;
     *out_ishex = ishex;
     *out_err = e;
+    *out_strlen = end - cursor; /* numeric literals: strlen == consumed bytes */
     if (e != SCALAR_ERR_NONE) {
         *out_kind = SCALAR_ERROR;
         return SCALAR_ERROR;
@@ -508,6 +513,7 @@ static void fill_float_expected(fixture_t *f) {
     f->exp_i64 = 0;
 }
 
+#ifndef NO_ORACLE_MAIN
 int main(void) {
     int total = (int)(sizeof(FIXTURES) / sizeof(FIXTURES[0]));
     int pass = 0, fail = 0;
@@ -527,13 +533,13 @@ int main(void) {
         I64 src_len = (I64)n;
 
         I64 out_end = 0, out_kind = 0, out_i64 = 0;
-        I64 out_ishex = 0, out_err = 0;
+        I64 out_ishex = 0, out_err = 0, out_strlen = 0;
         U64 out_f64_bits = 0;
         I64 got = BootstrapScalarLiteralOracle(buf, src_len, f->cursor,
                                                 f->flags, &out_end,
                                                 &out_kind, &out_i64,
                                                 &out_f64_bits, &out_ishex,
-                                                &out_err);
+                                                &out_err, &out_strlen);
 
         int ok = (got == f->exp_kind) && (out_end == f->exp_end) &&
                  (out_i64 == f->exp_i64) &&
@@ -564,3 +570,4 @@ int main(void) {
     printf("STATUS=%s\n", fail ? "FAIL" : "PASS");
     return fail ? 1 : 0;
 }
+#endif /* LEXER07_ORACLE_NO_MAIN */

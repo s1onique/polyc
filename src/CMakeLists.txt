@@ -257,6 +257,23 @@ if (HCC_ENABLE_BOOTSTRAP02_STAGE1)
     endif()
     target_link_libraries(hcc-bootstrap02 ${BOOTSTRAP02_IDENT_OBJECT} ${BOOTSTRAP06_OPERATOR_OBJECT} m)
     message(STATUS "ACT-POLYC-SELFHOST-LEXER01-CORRECTION01: stage1 operator component linked (fail-closed): ${BOOTSTRAP06_OPERATOR_OBJECT}")
+    # ACT-POLYC-SELFHOST-LEXER02 C2 IMPL — also link the
+    # scalar literal component (BootstrapScanScalarLiteral).
+    # Per §38 / §55, fail-closed: the object MUST exist when
+    # HCC_USE_SELFHOST_COMPONENTS is enabled.
+    if (NOT LEXER07_SCALAR_OBJECT)
+        set(LEXER07_SCALAR_OBJECT "${CMAKE_SOURCE_DIR}/../build/lexer07-scalar-literal.o")
+    endif()
+    if (NOT EXISTS "${LEXER07_SCALAR_OBJECT}")
+        message(FATAL_ERROR
+            "ACT-POLYC-SELFHOST-LEXER02: required self-host "
+            "scalar literal component missing at ${LEXER07_SCALAR_OBJECT}. "
+            "Build it first with stage0 hcc: "
+            "./hcc -c tools/bootstrap/selfhost-lexer-scalar-literal.HC "
+            "-o build/lexer07-scalar-literal.o")
+    endif()
+    target_link_libraries(hcc-bootstrap02 ${LEXER07_SCALAR_OBJECT})
+    message(STATUS "ACT-POLYC-SELFHOST-LEXER02: stage1 scalar literal component linked (fail-closed): ${LEXER07_SCALAR_OBJECT}")
     install(TARGETS hcc-bootstrap02 DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 endif()
 
@@ -351,6 +368,22 @@ if (HCC_ENABLE_BOOTSTRAP03_STAGE2)
     endif()
     target_link_libraries(hcc-bootstrap03 ${BOOTSTRAP03_IDENT_OBJECT} ${BOOTSTRAP06_OPERATOR_OBJECT_STAGE1} m)
     message(STATUS "ACT-POLYC-SELFHOST-LEXER01-CORRECTION01: stage2 operator component linked (fail-closed): ${BOOTSTRAP06_OPERATOR_OBJECT_STAGE1}")
+    # ACT-POLYC-SELFHOST-LEXER02 C2 IMPL — also link the
+    # scalar literal component (this time as produced by
+    # stage1).
+    if (NOT LEXER07_SCALAR_OBJECT_STAGE1)
+        set(LEXER07_SCALAR_OBJECT_STAGE1 "${CMAKE_SOURCE_DIR}/../build/lexer07-scalar-literal.stage1.o")
+    endif()
+    if (NOT EXISTS "${LEXER07_SCALAR_OBJECT_STAGE1}")
+        message(FATAL_ERROR
+            "ACT-POLYC-SELFHOST-LEXER02: required stage2 "
+            "scalar literal component missing at ${LEXER07_SCALAR_OBJECT_STAGE1}. "
+            "Build it first with stage1 hcc-bootstrap02: "
+            "./hcc-bootstrap02 -c tools/bootstrap/selfhost-lexer-scalar-literal.HC "
+            "-o build/lexer07-scalar-literal.stage1.o")
+    endif()
+    target_link_libraries(hcc-bootstrap03 ${LEXER07_SCALAR_OBJECT_STAGE1})
+    message(STATUS "ACT-POLYC-SELFHOST-LEXER02: stage2 scalar literal component linked (fail-closed): ${LEXER07_SCALAR_OBJECT_STAGE1}")
     install(TARGETS hcc-bootstrap03 DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 endif()
 
@@ -443,6 +476,22 @@ if (HCC_ENABLE_BOOTSTRAP04_STAGE3)
     endif()
     target_link_libraries(hcc-bootstrap04 ${BOOTSTRAP04_IDENT_OBJECT} ${BOOTSTRAP06_OPERATOR_OBJECT_STAGE2} m)
     message(STATUS "ACT-POLYC-SELFHOST-LEXER01-CORRECTION01: stage3 operator component linked (fail-closed): ${BOOTSTRAP06_OPERATOR_OBJECT_STAGE2}")
+    # ACT-POLYC-SELFHOST-LEXER02 C2 IMPL — also link the
+    # scalar literal component (this time as produced by
+    # stage2).
+    if (NOT LEXER07_SCALAR_OBJECT_STAGE2)
+        set(LEXER07_SCALAR_OBJECT_STAGE2 "${CMAKE_SOURCE_DIR}/../build/lexer07-scalar-literal.stage2.o")
+    endif()
+    if (NOT EXISTS "${LEXER07_SCALAR_OBJECT_STAGE2}")
+        message(FATAL_ERROR
+            "ACT-POLYC-SELFHOST-LEXER02: required stage3 "
+            "scalar literal component missing at ${LEXER07_SCALAR_OBJECT_STAGE2}. "
+            "Build it first with stage2 hcc-bootstrap03: "
+            "./hcc-bootstrap03 -c tools/bootstrap/selfhost-lexer-scalar-literal.HC "
+            "-o build/lexer07-scalar-literal.stage2.o")
+    endif()
+    target_link_libraries(hcc-bootstrap04 ${LEXER07_SCALAR_OBJECT_STAGE2})
+    message(STATUS "ACT-POLYC-SELFHOST-LEXER02: stage3 scalar literal component linked (fail-closed): ${LEXER07_SCALAR_OBJECT_STAGE2}")
     install(TARGETS hcc-bootstrap04 DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 endif()
 

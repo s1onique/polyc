@@ -1,0 +1,45 @@
+ACT-POLYC-SELFHOST-LEXER02 — C2 — registry-delta.txt
+================================================
+
+# SELF-HOST-COMPONENTS registry delta
+
+## Pre-C2 (2 rows)
+  row 1: identifier_scanner
+          tools/bootstrap/bootstrap02-ident.HC
+          BootstrapScanIdent
+          src/lexer.c::lexIdentifier
+          POLYC, STABLE, ACT-POLYC-BOOTSTRAP02
+  row 2: operator_punctuation_recognizer
+          tools/bootstrap/selfhost-lexer-operator-classify.HC
+          BootstrapClassifyOperator
+          src/lexer.c::lexCore operator cases
+          POLYC, STABLE, ACT-POLYC-SELFHOST-LEXER01
+
+## Post-C2 (3 rows)
+  row 1: identifier_scanner                        (unchanged)
+  row 2: operator_punctuation_recognizer           (unchanged)
+  row 3: scalar_literal_scanner                    (NEW)
+          tools/bootstrap/selfhost-lexer-scalar-literal.HC
+          BootstrapScanScalarLiteral
+          src/lexer.c::lexCharConst + src/lexer.c::lexNumeric
+          POLYC, STABLE
+          ACT-POLYC-SELFHOST-LEXER02
+
+## Cross-component ABI table (post-C2)
+  | Component                        | ABI sig | in | out | Callsite                |
+  | identifier_scanner               |    1    |  3 |  1  | src/lexer.c::lexIdentifier |
+  | operator_punctuation_recognizer  |    2    |  4 |  2  | src/lexer.c::lexCore op |
+  | scalar_literal_scanner           |    3    |  4 |  8  | src/lexer.c::lexCharConst |
+  |                                  |         |    |     | src/lexer.c::lexNumeric   |
+
+The row 3 callsite is wired into BOTH lexCharConst and lexNumeric
+(two production functions in the frozen region R-F). All three
+components compile with the same -DHCC_USE_SELFHOST_COMPONENTS switch.
+
+## TSV diff stat (uncommitted at C2 close)
+  M docs/factory/SELF-HOST-COMPONENTS.tsv
+   1 row added (row 3)
+   header doc updated to mention 3 components
+   cross-component ABI table updated to 3 rows
+
+See the diff in the C2 commit.

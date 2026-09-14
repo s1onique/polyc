@@ -1,0 +1,13 @@
+ACT-POLYC-SELFHOST-LEXER02 — C2 — stage-link-provenance.tsv
+================================================
+
+# Stage-by-stage link provenance for the PolyC component
+
+# Format: stage<TAB>binary_or_object<TAB>source_TSV_or_path<TAB>build_command<TAB>resolved_at
+
+stage0	build/lexer07-scalar-literal.o	tools/bootstrap/selfhost-lexer-scalar-literal.HC	build/hcc -fPIC -o build/lexer07-scalar-literal.o -c tools/bootstrap/selfhost-lexer-scalar-literal.HC	static_link
+stage1	build/lexer07-scalar-literal.stage1.o	tools/bootstrap/selfhost-lexer-scalar-literal.HC	build/hcc-bootstrap02 --install-dir=$(pwd)/build/test-prefix -o build/lexer07-scalar-literal.stage1.o -c tools/bootstrap/selfhost-lexer-scalar-literal.HC	static_link
+stage1	build/hcc-bootstrap02-build/CMakeFiles/hcc-bootstrap02.dir/lexer.c.o	src/lexer.c	cc -std=c99 ... (CMake)	static_link
+stage1	build/hcc-bootstrap02	(linked binary, depends on the above)	cmake --build build/hcc-bootstrap02-build --target hcc-bootstrap02	static_link
+stage2	(residue — same recipe as stage1 with stage1 hcc-bootstrap02 as compiler; deferred to C3 evidence per the bounded SDF model)
+stage3	(residue — same recipe as stage2 with stage2 hcc-bootstrap03 as compiler; deferred to C3 evidence per the bounded SDF model)

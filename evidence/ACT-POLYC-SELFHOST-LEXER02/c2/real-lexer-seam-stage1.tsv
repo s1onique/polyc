@@ -1,0 +1,33 @@
+BUILD_LABEL=stage1
+SCALAR_SEAM_CASE_COUNT=28
+
+CASE D01_zero src=0; cursor=0 rc=1 kind=0x302 len=1 consumed=1 i64=0x0 f64_bits=0x0000000000000000 ishex=0
+CASE D02_one src=1; cursor=0 rc=1 kind=0x302 len=1 consumed=1 i64=0x1 f64_bits=0x0000000000000000 ishex=0
+CASE D03_big src=123456789; cursor=0 rc=1 kind=0x302 len=9 consumed=9 i64=0x75bcd15 f64_bits=0x0000000000000000 ishex=0
+CASE H01_hex0 src=0x0; cursor=0 rc=1 kind=0x302 len=3 consumed=3 i64=0x0 f64_bits=0x0000000000000000 ishex=1
+CASE H02_hexFF src=0xFF; cursor=0 rc=1 kind=0x302 len=4 consumed=4 i64=0xff f64_bits=0x0000000000000000 ishex=1
+CASE H03_deadbeef src=0xdeadbeef; cursor=0 rc=1 kind=0x302 len=10 consumed=10 i64=0xdeadbeef f64_bits=0x0000000000000000 ishex=1
+CASE F01_zero_dot src=0.0; cursor=0 rc=1 kind=0x304 len=3 consumed=3 i64=0x0 f64_bits=0x0000000000000000 ishex=0
+CASE F02_one_dot src=1.0; cursor=0 rc=1 kind=0x304 len=3 consumed=3 i64=0x3ff0000000000000 f64_bits=0x3ff0000000000000 ishex=0
+CASE F03_decimal src=123.456; cursor=0 rc=1 kind=0x304 len=7 consumed=7 i64=0x405edd2f1a9fbe77 f64_bits=0x405edd2f1a9fbe77 ishex=0
+CASE F04_trailing src=1.; cursor=0 rc=1 kind=0x304 len=2 consumed=2 i64=0x3ff0000000000000 f64_bits=0x3ff0000000000000 ishex=0
+CASE C01_a src='a'; cursor=0 rc=1 kind=0x303 len=1 consumed=2 i64=0x61 f64_bits=0x0000000000000000 ishex=0
+CASE C02_nl src='\5cn'; cursor=0 rc=1 kind=0x303 len=1 consumed=2 i64=0xa f64_bits=0x0000000000000000 ishex=0
+CASE C03_x41 src='\5cx41'; cursor=0 rc=1 kind=0x303 len=1 consumed=2 i64=0x41 f64_bits=0x0000000000000000 ishex=0
+CASE C04_bsl src='\5c\5c'; cursor=0 rc=1 kind=0x303 len=1 consumed=2 i64=0x5c f64_bits=0x0000000000000000 ishex=0
+CASE N01_xx_int src=xx 123; cursor=3 rc=1 kind=0x302 len=3 consumed=3 i64=0x7b f64_bits=0x0000000000000000 ishex=0
+CASE N02_xx_hex src=xx 0xff; cursor=3 rc=1 kind=0x302 len=4 consumed=4 i64=0xff f64_bits=0x0000000000000000 ishex=1
+CASE N03_xx_flt src=xx 1.5; cursor=3 rc=1 kind=0x304 len=3 consumed=3 i64=0x3ff8000000000000 f64_bits=0x3ff8000000000000 ishex=0
+CASE N04_xx_chr src=xx 'a'; cursor=3 rc=1 kind=0x303 len=1 consumed=2 i64=0x61 f64_bits=0x0000000000000000 ishex=0
+CASE N05_xx_int_nospc src=xx123; cursor=2 rc=1 kind=0x302 len=3 consumed=3 i64=0x7b f64_bits=0x0000000000000000 ishex=0
+CASE N06_xx_hex_nospc src=xx0xff; cursor=2 rc=1 kind=0x302 len=4 consumed=4 i64=0xff f64_bits=0x0000000000000000 ishex=1
+CASE N07_xx_flt_nospc src=xx1.5; cursor=2 rc=1 kind=0x304 len=3 consumed=3 i64=0x3ff8000000000000 f64_bits=0x3ff8000000000000 ishex=0
+CASE N08_xx_chr_nospc src=xx'a'; cursor=2 rc=1 kind=0x303 len=1 consumed=2 i64=0x61 f64_bits=0x0000000000000000 ishex=0
+CASE H04_hexE src=0xAB; cursor=0 rc=1 kind=0x302 len=4 consumed=4 i64=0xab f64_bits=0x0000000000000000 ishex=1
+CASE F05_exp src=1e2; cursor=0 rc=1 kind=0x302 len=3 consumed=3 i64=0x1 f64_bits=0x0000000000000000 ishex=0
+CASE F06_exp_neg src=1e-2; cursor=0 rc=1 kind=0x302 len=2 consumed=2 i64=0x1 f64_bits=0x0000000000000000 ishex=0
+CASE T01_paren src=42); cursor=0 rc=1 kind=0x302 len=2 consumed=2 i64=0x2a f64_bits=0x0000000000000000 ishex=0
+CASE T02_plus src=42+1; cursor=0 rc=1 kind=0x302 len=2 consumed=2 i64=0x2a f64_bits=0x0000000000000000 ishex=0
+CASE T03_eof src=42 cursor=0 rc=1 kind=0x302 len=2 consumed=2 i64=0x2a f64_bits=0x0000000000000000 ishex=0
+
+END

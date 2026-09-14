@@ -1,0 +1,61 @@
+ACT-POLYC-SELFHOST-LEXER02 — C2 — c2-required-result.txt
+================================================
+
+# C2 IMPL — required result confirmation
+
+## C2.1 — PolyC subject compiled and exported the ABI 3 symbol
+  $ build/hcc -fPIC -o build/lexer07-scalar-literal.o -c tools/bootstrap/selfhost-lexer-scalar-literal.HC
+  $ nm build/lexer07-scalar-literal.o | grep -q '_BootstrapScanScalarLiteral' && echo OK
+  OK
+  RESULT: PASS
+
+## C2.2 — Direct differential (40 fixtures)
+  $ ./build/lexer07-direct-differential | tail -3
+  ACT_SELFHOST_LEXER02_DIRECT_DIFF_PASS=40
+  ACT_SELFHOST_LEXER02_DIRECT_DIFF_FAIL=0
+  STATUS=PASS
+  RESULT: PASS
+
+## C2.3 — Real-lexer seam (28 cases) stage0 vs stage1 IDENTICAL
+  $ diff /tmp/lexer07-seam-stage0.txt /tmp/lexer07-seam-stage1.txt
+  1c1
+  < BUILD_LABEL=stage0
+  ---
+  > BUILD_LABEL=stage1
+  RESULT: PASS (only the BUILD_LABEL header differs)
+
+## C2.4 — Stage1 binary statically links the PolyC component
+  $ nm build/hcc-bootstrap02 | grep BootstrapScanScalarLiteral
+  000000010007bc30 T _BootstrapScanScalarLiteral
+  RESULT: PASS
+
+## C2.5 — Link is fail-closed (no silent fallback)
+  $ mv build/lexer07-scalar-literal.o /tmp/lexer07-bak.o
+  $ cmake --build build/hcc-bootstrap02-build --target hcc-bootstrap02 2>&1 | tail -2
+  make[1]: *** [CMakeFiles/hcc-bootstrap02.dir/rule] Error 2
+  make: *** [hcc-bootstrap02] Error 2
+  RESULT: PASS (build fails when .o is missing)
+
+## C2.6 — Stage1 hcc-bootstrap02 builds with all 3 Bootstrap symbols
+  $ nm build/hcc-bootstrap02 | grep -E 'Bootstrap[A-Z]'
+  T _BootstrapClassifyOperator
+  T _BootstrapScanIdent
+  T _BootstrapScanScalarLiteral
+  RESULT: PASS
+
+## C2.7 — Oracle self-test (40 fixtures)
+  $ ./build/lexer07-scalar-literal-oracle | tail -3
+  ACT_SELFHOST_LEXER02_SCALAR_PASS=40
+  ACT_SELFHOST_LEXER02_SCALAR_FAIL=0
+  STATUS=PASS
+  RESULT: PASS
+
+## C2.8 — Stage1-built subject differential (40 fixtures)
+  $ ./build/lexer07-direct-differential-stage1 | tail -3
+  ACT_SELFHOST_LEXER02_DIRECT_DIFF_PASS=40
+  ACT_SELFHOST_LEXER02_DIRECT_DIFF_FAIL=0
+  STATUS=PASS
+  RESULT: PASS
+
+## Summary
+  All 8 C2 sub-checks PASS. C2 IMPL is GREEN; ready for C3 EVIDENCE.

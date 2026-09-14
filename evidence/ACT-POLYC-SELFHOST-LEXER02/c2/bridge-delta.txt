@@ -1,0 +1,80 @@
+ACT-POLYC-SELFHOST-LEXER02 — C2 — bridge-delta.txt
+================================================
+
+# Bridge ABI delta from C1 freeze to C2 close
+
+## ABI 1 — BootstrapScanIdent — UNCHANGED
+Signature (frozen in C1 of LEXER02):
+  I64 BootstrapScanIdent(U8 *src, I64 src_len, I64 start, I64 *out_end);
+Called from src/lexer.c::lexIdentifier when HCC_USE_SELFHOST_COMPONENTS
+is defined. No C2 modification.
+
+## ABI 2 — BootstrapClassifyOperator — UNCHANGED
+Signature (frozen in C1 of LEXER02 / ACT-POLYC-SELFHOST-LEXER01):
+  I64 BootstrapClassifyOperator(U8 *src, I64 src_len, I64 cursor, I64 flags,
+                                I64 *out_kind, I64 *out_length);
+Called from src/lexer.c::lexCore operator/punctuation arm when
+HCC_USE_SELFHOST_COMPONENTS is defined. No C2 modification.
+
+## ABI 3 — BootstrapScanScalarLiteral — AMENDED (added out_strlen)
+
+### C1-frozen signature (4 inputs, 7 outputs):
+  I64 BootstrapScanScalarLiteral(
+      U8  *src,
+      I64  src_len,
+      I64  cursor,
+      I64  flags,
+      I64 *out_end,
+      I64 *out_kind,
+      I64 *out_i64,
+      U64 *out_f64_bits,
+      I64 *out_ishex,
+      I64 *out_error);
+
+### C2-amended signature (4 inputs, 8 outputs):
+  I64 BootstrapScanScalarLiteral(
+      U8  *src,
+      I64  src_len,
+      I64  cursor,
+      I64  flags,
+      I64 *out_end,
+      I64 *out_kind,
+      I64 *out_i64,
+      U64 *out_f64_bits,
+      I64 *out_ishex,
+      I64 *out_error,
+      I64 *out_strlen);          /* AMENDMENT (C2) */
+
+### Reason for amendment
+The C1-frozen signature let the wrapper compute `l->cur_strlen = out_end - 2`
+for char constants. This is INCORRECT: the production lexCharConst
+increments its `len` counter once per LOOP ITERATION, so for char
+constants containing escape sequences (`'\n'`, `'\x41'`, `'\\'`),
+production reports `cur_strlen = 1` even though `out_end = 4` (one
+leading quote + two body bytes + one trailing quote). The byte-count
+heuristic produces wrong values; the component must carry the
+slot-count through to the wrapper.
+
+The amendment is forward-compatible: the new out parameter is
+trailing, callers without it (none in the tree) would simply pass an
+unused address. The ABI 3 documentation block in src/lexer_bridge.h
+records the per-kind semantics:
+  - SCALAR_I64 / SCALAR_F64: bytes consumed (== numlen).
+  - SCALAR_CHAR: number of body "slots" (each raw char or escape
+    sequence counts 1, regardless of escape-byte span).
+  - SCALAR_NONE / SCALAR_ERROR: 0.
+
+The amendment is the minimum surface area needed to preserve
+production semantics (slot-counting) while keeping the byte-counting
+semantics for numerics. No semantic change to the existing 7 outputs.
+
+## Stage linkage provenance (binding)
+src/CMakeLists.txt now links build/lexer07-scalar-literal.o into the
+hcc-bootstrap02/03/04 targets. Fail-closed: the .o is required (no
+fallback). The build command emits the link line; absence of the .o
+causes a linker error.
+
+## Cross-reference
+- C1 ABI freeze:        evidence/ACT-POLYC-SELFHOST-LEXER02/c1/region-abi-contract.txt
+- SELF-HOST-COMPONENTS:  docs/factory/SELF-HOST-COMPONENTS.tsv (row 3)
+- Bridge header:         src/lexer_bridge.h (ABI 3 doc + extern decl)

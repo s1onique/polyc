@@ -1,0 +1,49 @@
+ACT-POLYC-SELFHOST-LEXER02 — C2 — static-binding.txt
+================================================
+
+# Static binding proof: stage1 binary links the PolyC component,
+# not the legacy C implementation in src/lexer.c (when wrapped under
+# HCC_USE_SELFHOST_COMPONENTS).
+
+## Setup
+  The src/lexer.c::lexCharConst body is guarded by:
+    #ifdef HCC_USE_SELFHOST_COMPONENTS
+        /* delegate to BootstrapScanScalarLiteral */
+    #else
+        /* legacy C implementation */
+    #endif
+  Identical guard on lexNumeric.
+
+  The stage1 hcc-bootstrap02 binary is compiled with
+  -DHCC_USE_SELFHOST_COMPONENTS in CMakeLists.txt.
+  Therefore the legacy C body of lexCharConst / lexNumeric is NOT
+  included in the stage1 binary; the only implementation that the
+  linker can resolve those symbols to is BootstrapScanScalarLiteral.
+
+## nm evidence (stage1 binary: build/hcc-bootstrap02-build/CMakeFiles/hcc-bootstrap02.dir/lexer.c.o)
+  $ nm build/hcc-bootstrap02-build/CMakeFiles/hcc-bootstrap02.dir/lexer.c.o \
+        | grep -E 'lexCharConst|lexNumeric|BootstrapScanScalarLiteral'
+        U _BootstrapScanScalarLiteral        ← undefined; resolved at link
+        T _lexCharConst                       ← present; #ifdef branch
+        T _lexNumeric                         ← present; #ifdef branch
+  BootstrapScanScalarLiteral is undefined in lexer.c.o (the component
+  function lives in build/lexer07-scalar-literal.o).
+
+## nm evidence (component object: build/lexer07-scalar-literal.o)
+  $ nm build/lexer07-scalar-literal.o | grep -E 'lexCharConst|lexNumeric|BootstrapScanScalarLiteral'
+        T _BootstrapScanScalarLiteral        ← defined; produced by stage0 hcc
+  No legacy lexCharConst / lexNumeric symbols in the component object.
+
+## nm evidence (linked stage1 binary: build/hcc-bootstrap02)
+  $ nm build/hcc-bootstrap02 | grep -E 'lexCharConst|lexNumeric|BootstrapScanScalarLiteral'
+        T _lexCharConst                       ← resolved (lexCharConst wrapper)
+        T _lexNumeric                         ← resolved (lexNumeric wrapper)
+        T _BootstrapScanScalarLiteral        ← resolved (component)
+  All three are bound; no multiple-definition or unresolved-symbol errors.
+
+## Conclusion
+  The legacy C implementation of countNumberLen, lexNumeric, and the
+  scan-and-pack body of lexCharConst is NOT linked into stage1
+  hcc-bootstrap02. The production lexer path goes through the PolyC
+  component at static-link time. No runtime fallback, no shadow
+  execution, no interpreter (per F6).

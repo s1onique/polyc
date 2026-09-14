@@ -1,0 +1,21 @@
+ACT-POLYC-SELFHOST-LEXER02 — C2 — predecessor-freeze.txt
+================================================
+Predecessor ACT: ACT-POLYC-SELFHOST-LEXER01 (operator_punctuation_recognizer)
+Predecessor closure commit: 27 commits ago in main; see
+  docs/acts/ACT-POLYC-SELFHOST-LEXER01.md and the SELF-HOST-COMPONENTS.tsv
+  row 2 for the binding.
+
+The C1 RED commit (456370e) was opened AFTER predecessor LEXER01 was
+already merged into main. The LEXER02 region (countNumberLen +
+lexNumeric + lexCharConst) does NOT overlap with the LEXER01 region
+(BootstrapClassifyOperator for the lexCore operator/punctuation arm).
+See evidence/ACT-POLYC-SELFHOST-LEXER02/c1/source-seam-map.txt for
+the non-overlap argument.
+
+Predecessor invariants preserved:
+  - BootstrapClassifyOperator ABI 2 (5 outputs) unchanged.
+  - src/lexer.c::lexIdentifier still routes to BootstrapScanIdent
+    when HCC_USE_SELFHOST_COMPONENTS is defined.
+  - SELF-HOST-COMPONENTS.tsv row 2 unchanged.
+
+No predecessor modification occurred in C2.

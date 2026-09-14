@@ -1,0 +1,85 @@
+ACT-POLYC-SELFHOST-LEXER02 — C2 — implementation-delta.txt
+================================================
+
+# C2 IMPL — implementation delta from C1 freeze to C2 close
+
+## Source files
+
+### tools/bootstrap/selfhost-lexer-scalar-literal.HC  (NEW)
+PolyC translation of the frozen C region:
+  - SC_IsNum / SC_IsHex / SC_IsNumTerminator — byte-class predicates
+    (inlined as I64 functions; PolyC macros with `\` continuation crash
+    stage0 hcc).
+  - SC_PeekAt — bounded peek with 0 for out-of-range indices.
+  - SC_CountNumberLen — verbatim translation of countNumberLen from
+    src/lexer.c, including f32/f64 suffix recognition.
+  - SC_LexCharConst — verbatim translation of lexCharConst body,
+    INCLUDING the slot-counter semantic (each raw char counts 1; each
+    escape sequence counts 1, regardless of span).
+  - BootstrapScanScalarLiteral — public ABI 3 entry; dispatches to
+    SC_LexCharConst on '\'' and to SC_CountNumberLen + libc strtoll /
+    strtoul / strtod on digits/'.'. Sets *out_strlen on every path.
+
+### tools/quality/lexer07-scalar-literal-oracle.c  (MODIFIED)
+Added *out_strlen parameter to BootstrapScalarLiteralOracle signature;
+populated on every return path (numeric: end - cursor; char: slen from
+lexCharConstCore; SCALAR_NONE / SCALAR_ERROR: 0).
+
+### tools/quality/lexer07-direct-differential.c  (NEW)
+Differential harness linking both C oracle and PolyC subject; compares
+all 8 outputs (kind, end, i64, f64_bits, ishex, error, strlen, return
+value) for all 40 fixtures. Reports ACT_SELFHOST_LEXER02_DIRECT_DIFF_PASS
+and ACT_SELFHOST_LEXER02_DIRECT_DIFF_FAIL counts.
+
+### src/lexer.c  (MODIFIED)
+Wrapped lexCharConst and lexNumeric with #ifdef HCC_USE_SELFHOST_COMPONENTS.
+When defined, lexCharConst and lexNumeric delegate to BootstrapScanScalarLiteral
+with cursor model adjusted so src[cursor] == '\'' (lexCharConst case) or
+src[cursor] is the first digit (lexNumeric case). l->cur_strlen is taken
+from the component's out_strlen for char consts (matching production
+semantics where len counts "slots" between quotes, not raw bytes).
+
+### src/lexer_bridge.h  (MODIFIED)
+Added extern declaration of BootstrapScanScalarLiteral with full 8-output
+signature (added out_strlen). Updated ABI 3 documentation block to record
+the strlen amendment and its per-kind semantics.
+
+### src/CMakeLists.txt  (MODIFIED)
+Added scalar literal object to stage1/2/3 target_link_libraries for
+hcc-bootstrap02/03/04. Fail-closed linkage: if the .o is missing, the
+build fails (no fallback).
+
+### docs/factory/SELF-HOST-COMPONENTS.tsv  (MODIFIED)
+Added row 3 (scalar_literal_scanner). Updated the cross-component ABI
+table and the header to reflect the 3-component registry.
+
+### Makefile  (MODIFIED — already committed in C1 RED, no C2 delta here)
+Targets lexer07-component-build, lexer07-scalar-literal-oracle,
+lexer07-direct-differential, lexer07-component-stage1/2/3,
+lexer07-lexer-seam-stage0/1/2/3, refactored HCC_OBJECTS/STAGE1_OBJECTS
+via addprefix, and added HCC_STAGE*_OBJDIR / HCC_STAGE_OBJS_COMMON.
+
+## PolyC capability observations
+- PolyC macros with `\` continuation crash the compiler; converted
+  SC_IS_NUM/HEX/TERMINATOR to inline I64 functions.
+- PolyC rejects `(void)expr` and `(U64)\0` casts; replaced with
+  assignment-to-self and memcpy type punning via explicit
+  memcpy(&bits, &v, 8).
+- Hex `0x` with no digits: production behavior is I64=0 ishex=1, not
+  error (strtoull accepts bare prefix). Fixtures corrected to match.
+- `1e-2` is I64=1 (countNumberLen treats `-` as terminator; strtoll
+  stops at `e`). Fixtures updated.
+- F64 bits preserved via `memcpy(&bits, &v, 8)` rather than `*(U64*)&v`.
+
+## Fixed-point iteration (SDF)
+Multiple iterations of build + differential + analyze were required to
+reach PASS, including:
+  iter 1: brace placement (#else branch needed its own `}`).
+  iter 2: lexCharConst cursor model (public function expects src[cursor]
+          == '\''; wrapper passes src = l->ptr - 1 with cursor = 0).
+  iter 3: lexCharConst l->ptr advance (saved_ptr + out_end, not l->ptr
+          += out_end, because l->ptr was already past the leading
+          quote after lexNextChar).
+  iter 4: out_strlen ABI extension (production counts "slots" not bytes
+          for char consts; out_strlen now carries this semantic through
+          the wrapper into l->cur_strlen).

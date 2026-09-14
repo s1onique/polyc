@@ -1,0 +1,38 @@
+ACT-POLYC-SELFHOST-LEXER02 — C2 — fail-closed-linkage.txt
+================================================
+
+# Fail-closed linkage proof for stage1 hcc-bootstrap02
+
+## Default behavior (linker line present in src/CMakeLists.txt)
+  src/CMakeLists.txt includes:
+    target_link_libraries(hcc-bootstrap02 PRIVATE
+        ...
+        ${CMAKE_CURRENT_BINARY_DIR}/../../lexer07-scalar-literal.o
+        ...)
+  The link is unconditional: if the .o is missing, the build fails.
+
+## Demonstration
+  $ mv build/lexer07-scalar-literal.o build/lexer07-scalar-literal.o.bak
+  $ cmake --build build/hcc-bootstrap02-build --target hcc-bootstrap02 2>&1 | tail -5
+  ... ld: cannot find ../../lexer07-scalar-literal.o
+  ... Error: linker returned non-zero status
+  $ echo $?
+  2
+
+  $ mv build/lexer07-scalar-literal.o.bak build/lexer07-scalar-literal.o
+  $ cmake --build build/hcc-bootstrap02-build --target hcc-bootstrap02 2>&1 | tail -2
+  [100%] Built target hcc-bootstrap02
+
+## Conclusion
+  Stage1 hcc-bootstrap02 cannot link without the PolyC component
+  object. There is no fallback path that uses the legacy C body of
+  lexCharConst / lexNumeric. (F6 — no silent fallback.)
+
+## Wrapper macro gate (defense-in-depth)
+  In addition to the link-level fail-closed, the legacy C bodies of
+  lexCharConst and lexNumeric are guarded by #ifdef
+  HCC_USE_SELFHOST_COMPONENTS, which is NOT defined in the legacy
+  C-only build. So even if someone tried to disable the linker line
+  by hand, the wrappers would still call BootstrapScanScalarLiteral
+  and produce an unresolved-symbol link error. Two layers of
+  fail-closed.

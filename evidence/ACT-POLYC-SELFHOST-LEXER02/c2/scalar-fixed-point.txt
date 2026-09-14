@@ -1,0 +1,55 @@
+ACT-POLYC-SELFHOST-LEXER02 — C2 — scalar-fixed-point.txt
+================================================
+
+# Scalar literal scanner 2-stage fixed point (PolyC subject ↔ C oracle)
+
+## stage0 — PolyC built with stage0 hcc (./build/hcc, the legacy C backend)
+  Command: build/hcc -fPIC -o build/lexer07-scalar-literal.o -c tools/bootstrap/selfhost-lexer-scalar-literal.HC
+  Output: build/lexer07-scalar-literal.o (9344 bytes)
+  Symbol: nm -g build/lexer07-scalar-literal.o | grep -q '_BootstrapScanScalarLiteral'
+  Result: PRESENT
+
+  Differential (40 fixtures):
+    $ cc -std=c99 -O2 -Wall -Wextra -o build/lexer07-direct-differential \
+        tools/quality/lexer07-direct-differential.c \
+        build/lexer07-scalar-literal-oracle.o \
+        build/lexer07-scalar-literal.o
+    $ ./build/lexer07-direct-differential | tail -3
+    ACT_SELFHOST_LEXER02_DIRECT_DIFF_PASS=40
+    ACT_SELFHOST_LEXER02_DIRECT_DIFF_FAIL=0
+    STATUS=PASS
+
+## stage1 — PolyC built with stage1 hcc-bootstrap02 (the LLVM/IR backend that
+            uses BootstrapScanIdent + BootstrapClassifyOperator + BootstrapScanScalarLiteral
+            as the only lexer path)
+  Command: build/hcc-bootstrap02 --install-dir=$(pwd)/build/test-prefix \
+              -o build/lexer07-scalar-literal.stage1.o -c \
+              tools/bootstrap/selfhost-lexer-scalar-literal.HC
+  Output: build/lexer07-scalar-literal.stage1.o (9488 bytes)
+  Symbol: nm -g build/lexer07-scalar-literal.stage1.o | grep -q '_BootstrapScanScalarLiteral'
+  Result: PRESENT
+
+  Differential (40 fixtures, stage1-built subject):
+    $ cc -std=c99 -O2 -Wall -Wextra -o build/lexer07-direct-differential-stage1 \
+        tools/quality/lexer07-direct-differential.c \
+        build/lexer07-scalar-literal-oracle.o \
+        build/lexer07-scalar-literal.stage1.o
+    $ ./build/lexer07-direct-differential-stage1 | tail -3
+    ACT_SELFHOST_LEXER02_DIRECT_DIFF_PASS=40
+    ACT_SELFHOST_LEXER02_DIRECT_DIFF_FAIL=0
+    STATUS=PASS
+
+## Oracle self-test (40 fixtures)
+  $ cc -std=c99 -O2 -Wall -Wextra -o build/lexer07-scalar-literal-oracle \
+      tools/quality/lexer07-scalar-literal-oracle.c
+  $ ./build/lexer07-scalar-literal-oracle | tail -3
+  ACT_SELFHOST_LEXER02_SCALAR_PASS=40
+  ACT_SELFHOST_LEXER02_SCALAR_FAIL=0
+  STATUS=PASS
+
+## Summary
+  Stage0 (PolyC subject built with stage0)   : 40/40 differential PASS
+  Stage1 (PolyC subject built with stage1)   : 40/40 differential PASS
+  Oracle self-test                            : 40/40 PASS
+  Production seam (stage0 vs stage1 lexer)    : 28/28 IDENTICAL (modulo BUILD_LABEL header)
+  Net: Scalar literal scanner is GREEN.

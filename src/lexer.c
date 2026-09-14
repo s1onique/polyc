@@ -1083,6 +1083,64 @@ done:
 /* Length of the char const is returned, it OR's in at max 8 characters. 
  * A s64 being 64 bits and 64/8 = 8. */
 u64 lexCharConst(Lexer *l) {
+#ifdef HCC_USE_SELFHOST_COMPONENTS
+    /* ACT-POLYC-SELFHOST-LEXER02 C2 IMPL — char constant
+     * scanning delegated to the PolyC scalar literal component.
+     *
+     * The dispatcher (`lexCore`) calls `lexNextChar` before
+     * dispatching on the leading `'`, so by the time we reach here
+     * `l->ptr` is positioned one byte PAST the opening quote. We
+     * therefore pass `src = l->ptr - 1` so that `src[0] == '\''`,
+     * matching the public-function cursor model (which expects
+     * `src[cursor] == '\''` and internally advances past it).
+     *
+     * The component returns:
+     *   out_end   = 1 + body_bytes + 1 (full `'…'` span)
+     *   out_strlen = number of "slots" between the quotes (each
+     *                raw char counts 1; each escape sequence counts
+     *                1 regardless of how many bytes it spans). This
+     *                matches the legacy lexCharConst's `len` counter
+     *                and is what lexCore copies into `le->len`.
+     *
+     * Since `l->ptr` was already past the leading quote, we set
+     * `l->ptr = saved_ptr + out_end` so it ends up past the trailing
+     * quote, matching production semantics exactly. */
+    unsigned char *src = (unsigned char *)(l->ptr - 1);
+    unsigned char *saved_ptr = (unsigned char *)(l->ptr - 1);
+    long long src_len = (long long)strlen((const char *)src);
+    long long out_end = 0;
+    long long out_kind = 0;
+    long long out_i64 = 0;
+    unsigned long long out_f64_bits = 0;
+    long long out_ishex = 0;
+    long long out_error = 0;
+    long long out_strlen = 0;
+    int rc = (int)BootstrapScanScalarLiteral(src, src_len, 0,
+                                            (long long)l->flags,
+                                            &out_end, &out_kind, &out_i64,
+                                            &out_f64_bits, &out_ishex,
+                                            &out_error, &out_strlen);
+    (void)rc;
+    (void)out_kind;
+    (void)out_f64_bits;
+    (void)out_ishex;
+    l->cur_i64 = out_i64;
+    /* Use the component's out_strlen directly. The component counts
+     * the number of body "slots" — this matches production lexCore's
+     * `le->len = l->cur_strlen`. */
+    l->cur_strlen = out_strlen;
+    l->ptr = saved_ptr + out_end;
+    if (!(l->flags & CCF_PERMISSIVE)) {
+        if (out_error == 3) {
+            lexRaise(l, "Char const limited to %d characters",
+                     LEX_CHAR_CONST_LEN);
+        } else if (out_error == 2) {
+            lexRaise(l, "Unterminated char const");
+        }
+    }
+    return TK_CHAR_CONST;
+}
+#else
     u64 char_const = 0, idx;
     s64 hex_num = 0;
     s64 len, overflowed = 0;
@@ -1160,8 +1218,48 @@ u64 lexCharConst(Lexer *l) {
     l->cur_strlen = len;
     return TK_CHAR_CONST;
 }
-
+#endif /* HCC_USE_SELFHOST_COMPONENTS */
 int lexNumeric(Lexer *l, int _isfloat) {
+#ifdef HCC_USE_SELFHOST_COMPONENTS
+    /* ACT-POLYC-SELFHOST-LEXER02 C2 IMPL — numeric scanning
+     * delegated to the PolyC scalar literal component. */
+    (void)_isfloat;
+    unsigned char *src = (unsigned char *)(l->ptr - 1);
+    long long src_len = (long long)strlen(l->ptr - 1);
+    long long cursor = 0;
+    long long out_end = 0;
+    long long out_kind = 0;
+    long long out_i64 = 0;
+    unsigned long long out_f64_bits = 0;
+    long long out_ishex = 0;
+    long long out_error = 0;
+    long long out_strlen = 0;
+    int rc = (int)BootstrapScanScalarLiteral(src, src_len, cursor,
+                                            (long long)l->flags,
+                                            &out_end, &out_kind, &out_i64,
+                                            &out_f64_bits, &out_ishex,
+                                            &out_error, &out_strlen);
+    (void)rc;
+    (void)out_strlen;
+    if (out_error == 1 /* SCALAR_ERR_MALFORMED_NUMERIC */) {
+        return -1;
+    }
+    if (out_kind == 2 /* SCALAR_F64 */) {
+        double v;
+        memcpy(&v, &out_f64_bits, sizeof(v));
+        l->cur_f64 = v;
+        l->cur_strlen = out_end;
+        l->ptr = (l->ptr - 1) + out_end;
+        return TK_F64;
+    }
+    /* SCALAR_I64 */
+    l->cur_i64 = out_i64;
+    l->ishex = (int)out_ishex;
+    l->cur_strlen = out_end;
+    l->ptr = (l->ptr - 1) + out_end;
+    return TK_I64;
+}
+#else
     int ishex, isfloat, err, numlen;
     char *endptr;
 
@@ -1188,6 +1286,7 @@ int lexNumeric(Lexer *l, int _isfloat) {
         return TK_I64;
     }
 }
+#endif
 
 LexerType *lexPreProcDirective(Lexer *l) {
     Lexeme le;
