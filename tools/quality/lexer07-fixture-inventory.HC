@@ -170,16 +170,31 @@ U0 MkDirpRecursive(U8 *path)
   Free(tmp);
 }
 
-// SanitizeCell: replace tabs with spaces in fixture TSV cell.
-U0 SanitizeCell(U8 *src, U8 *dst)
+// EscapeTsvCell: escape CR/LF/tab/backslash in fixture TSV
+// cell so no physical line break can corrupt the row
+// (this closes P1-5: the hex_0xff_no_semi row of the
+// CORRECTION04 fixture-inventory.tsv was split across
+// two physical lines by an embedded newline).
+U0 EscapeTsvCell(U8 *src, U8 *dst)
 {
   I64 i = 0;
+  I64 j = 0;
   while (src[i] != 0) {
-    if (src[i] == '\t') dst[i] = ' ';
-    else dst[i] = src[i];
+    U8 c = src[i];
+    if (c == '\\') {
+      dst[j] = '\\'; dst[j+1] = '\\'; j = j + 2;
+    } else if (c == '\t') {
+      dst[j] = '\\'; dst[j+1] = 't'; j = j + 2;
+    } else if (c == '\n') {
+      dst[j] = '\\'; dst[j+1] = 'n'; j = j + 2;
+    } else if (c == '\r') {
+      dst[j] = '\\'; dst[j+1] = 'r'; j = j + 2;
+    } else {
+      dst[j] = c; j = j + 1;
+    }
     i = i + 1;
   }
-  dst[i] = 0;
+  dst[j] = 0;
 }
 
 // ParseLeadingInt: read leading digits at *pp; advance *pp.
@@ -280,7 +295,7 @@ I32 Main(I32 argc, U8 **argv)
 {
   U8 *bin_path = "./build/lexer07-direct-differential";
   U8 *c_path = "tools/quality/lexer07-direct-differential.c";
-  U8 *outdir = "evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION04/c3";
+  U8 *outdir = "evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION05/c3";
   if (argc > 1) bin_path = argv[1];
   if (argc > 2) c_path = argv[2];
   if (argc > 3) outdir = argv[3];
@@ -342,7 +357,7 @@ I32 Main(I32 argc, U8 **argv)
     if (is_neg != 0) n_neg = n_neg + 1;
     if (is_edg != 0) n_edge = n_edge + 1;
     U8 clean[1024];
-    SanitizeCell(srcs[i], clean);
+    EscapeTsvCell(srcs[i], clean);
     U8 *line = StrPrint(NULL,
       "%s\t%s\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n",
       names[i], clean, cursors[i], flags[i],
