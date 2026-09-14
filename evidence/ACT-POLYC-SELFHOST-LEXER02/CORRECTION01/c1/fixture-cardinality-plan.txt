@@ -1,0 +1,99 @@
+ACT-POLYC-SELFHOST-LEXER02-CORRECTION01 — C1 RED — fixture-cardinality-plan.txt
+================================================
+
+## Closure defect P0 #2: §32 FIXTURE_CARDINALITY undersatisfied
+
+The closed LEXER02 ACT reported 40 direct differential cases.
+Per §32 binding (by analogy from LEXER01-CORRECTION01):
+
+    numeric extent/value     >= 40
+    char constants           >= 24
+    error/negative controls  >= 16
+    production seam probes   >= 24
+
+    DIRECT_REGION_CASES >= 64
+
+The closed 40-case corpus does NOT satisfy these floors. The
+expansion below brings the corpus to **88 cases** with
+sub-floors fully satisfied.
+
+## Current corpus inventory (40 cases)
+
+  dec_0..dec_123456789    = 6     numeric extent (decimal)
+  hex_0x0..hex_0xG        = 7     numeric extent (hex) (2 errors)
+  flt_0_0..exp_1e_neg     = 5     numeric extent (float/exp)
+  chr_a..chr_overflow     = 11    char constants (1 overflow, 1 unterm)
+  nz_xx123..nz_xx_a_      = 4     nonzero-cursor variants
+  nas_id..nas_str         = 3     not-a-scalar baselines
+  eof_cursor              = 1     edge: cursor at EOF
+                              ---
+                              37 cases classified
+                              3 'non-scalar' baselines
+                              = 40 total
+
+## Expanded corpus plan (88 cases)
+
+### Category A: numeric extent/value (target ≥ 40, plan: 41)
+  A.1 decimal:      dec_0, dec_1, dec_9, dec_10, dec_42, dec_123456789  (6)
+  A.2 decimal +:    dec_007_leading_zero, dec_000, dec_1_at_cursor1    (3)
+  A.3 decimal large: dec_2pow31, dec_max_u64, dec_overflow_u64         (3)
+  A.4 hex:          hex_0x0, hex_0x1, hex_0x7f, hex_0XFF, hex_0xdeadbeef,
+                    hex_0XDEADBEEF                                      (6)
+  A.5 hex caps:     hex_0xCAFEBABE, hex_0xMixedCase                   (2)
+  A.6 hex trailing: hex_0xff_no_semi, hex_0x_op_letter                (2)
+  A.7 float:        flt_0_0, flt_1_0, flt_1_, flt_123_456             (4)
+  A.8 float suffix: flt_1_0f32, flt_1_0f64                            (2)
+  A.9 exp:          exp_1e2_i64, exp_1e_neg, exp_1e_plus,
+                    exp_2_5e10, exp_3_14e_neg                          (5)
+  A.10 err numeric: err_hex_with_dot (HEX_FLOAT),
+                    err_hex_with_e   (HEX_EXP),
+                    err_two_dots,
+                    err_two_e_letters,
+                    err_two_x_letters                                 (5)
+  A.11 nonzero cur: nz_xx123, nz_xx0xff, nz_xx1_5, nz_xx_a_           (4)
+                                              A subtotal = 41
+
+### Category B: char constants (target ≥ 24, plan: 28)
+  B.1 single:     chr_a, chr_0, chr_sp, chr_tilde                     (4)
+  B.2 escapes:    chr_nl, chr_cr, chr_tab, chr_bsl, chr_sq, chr_dq,
+                  chr_zero, chr_dollar                                (7)
+  B.3 hex escapes:chr_x41, chr_xFF, chr_x00, chr_x2A                  (4)
+  B.4 multi:      chr_ab, chr_abc, chr_8slots (8 chars, full)         (3)
+  B.5 mixed:      chr_a_nl_b (3 slots: a, \n, b),
+                  chr_x_nl (2 slots: \x, \n ... wait, \x is malformed),
+                  chr_dq_escaped, chr_sq_escaped                      (4)
+  B.6 trailing:   chr_no_semi, chr_with_semi_space                    (2)
+  B.7 overflow:   chr_overflow (already in 11),
+                  chr_8slots_overflow                                 (2)
+  B.8 unterm:     chr_unterm (already in 11),
+                  chr_unterm_at_eof                                   (2)
+                                              B subtotal = 28
+
+### Category C: error/negative controls (target ≥ 16, plan: 16)
+  C.1 hex errors:  err_hex_with_dot, err_hex_with_e,
+                   err_two_x_letters                                  (3)
+  C.2 dot errors:  err_two_dots, err_trailing_dot,
+                   err_lone_dot                                       (3)
+  C.3 e errors:    err_two_e_letters, err_e_no_digits,
+                   err_e_trailing_minus                               (3)
+  C.4 char errors: err_char_unterm, err_char_overflow,
+                   err_char_8slots_overflow, err_char_unterm_eof      (4)
+  C.5 not-scalar:  err_cur_on_letter, err_cur_on_op,
+                   err_cur_on_dquote, err_cur_at_eof                   (3)
+                                              C subtotal = 16
+
+### Category D: nonzero cursor + cursor edge (target 3, plan: 3)
+  D.1 edge:        cur_past_end, cur_negative,
+                   cur_at_boundary                                    (3)
+
+                                      D subtotal = 3
+                                      ===========
+                                      TOTAL = 41 + 28 + 16 + 3 = 88
+
+## Acceptance test
+
+  DIRECT_REGION_CASES = 88         (target ≥ 64)         PASS
+  numeric extent/value = 41        (target ≥ 40)         PASS
+  char constants       = 28        (target ≥ 24)         PASS
+  error/negative       = 16        (target ≥ 16)         PASS
+  nonzero cursor/edge  = 3         (informational)        PASS

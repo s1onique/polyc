@@ -1,0 +1,45 @@
+ACT-POLYC-SELFHOST-LEXER02-CORRECTION01 — C1 RED — entry-identity.txt
+================================================
+
+## F1 — identity before mutation
+
+  branch:    main
+  HEAD:      af418a9f76d44674ab1f441fce0440582dcc90c4 (pre-CORRECTION01)
+  worktree:  clean (only docs/acts/.../CORRECTION01.md present)
+  HEAD~1:    ffa45e3 ACT-POLYC-SELFHOST-LEXER02 — C3 EVIDENCE
+  HEAD~2:    c290581 ACT-POLYC-SELFHOST-LEXER02 — C2 IMPL
+  HEAD~3:    456370e ACT-POLYC-SELFHOST-LEXER02 — C1 RED
+
+## Predecessor freeze (F14)
+
+The CLOSED predecessor ACT-POLYC-SELFHOST-LEXER02 at af418a9 is
+immutable. Its evidence tree is preserved verbatim; the
+CORRECTION01 evidence tree is a NEW sibling at
+evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION01/.
+
+## Authorized scope of CORRECTION01
+
+  Per docs/acts/ACT-POLYC-SELFHOST-LEXER02-CORRECTION01.md:
+
+  - ABI projection correction: 4/≤7 → 4/8 (formal disposition)
+  - Fixture cardinality expansion: 40 → ≥ 64, with sub-floors
+    of ≥ 24 char-const, ≥ 16 error/negative
+  - Real-lexer seam at all 4 stages (not just 0/1)
+  - Broad corpus at all 4 stages
+  - Error corpus at all 4 stages
+  - Factory gate re-run
+
+  Out of scope:
+  - src/lexer.c semantics
+  - tools/bootstrap/selfhost-lexer-scalar-literal.HC semantics
+  - The C oracle body (verbatim extraction, F2 contract)
+  - test-prefix-install target repair
+
+## Engineering verdict preserved (reviewer-accepted)
+
+  scalar_literal_scanner = SELF-HOSTED IN POLYC
+  component fixed point   = S0 == S1 == S2 == S3 (sha256 identical)
+  direct differential     = 40/40 PASS at all four producer stages
+  operator regression     = 33/33 PASS
+  stage1/2/3 linkage      = PRESENT
+  stage0 remains host-C   = YES

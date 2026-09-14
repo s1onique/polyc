@@ -1,0 +1,71 @@
+ACT-POLYC-SELFHOST-LEXER02-CORRECTION01 — C1 RED — abi-projection-correction.txt
+================================================
+
+## Closure defect P0 #1: ABI projection was wrong
+
+The recon ACT (ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01 lineage)
+projected the LEXER02 region ABI as:
+
+    FROZEN_PROJECTION = 4 inputs / 7 outputs
+
+The closed implementation discovered that faithful preservation
+of `lexCharConst` requires an additional output:
+
+    MEASURED_REQUIRED_ABI = 4 inputs / 8 outputs
+    new output = out_strlen
+
+### Why an additional output is genuinely necessary
+
+For character constants, production `lexCharConst` counts **logical
+character slots** (each raw character or escape sequence between
+the quotes counts as 1), NOT raw bytes between the quotes. This
+is because `char_const` in HolyC is an 8-byte packed value holding
+up to 8 slots:
+
+    raw         logical  out_end  out_strlen
+    ---         -------  -------  ----------
+    'a'         1        3        1
+    'ab'        2        4        2
+    '\n'        4        6        1     <-- DIFFERENT
+    '\\\\'      4        6        1     <-- DIFFERENT
+    'abc'       3        5        3
+    'abcdefghij' (overflow)  11   8
+
+So `out_end` (byte extent past the cursor) is NOT derivable from
+`out_strlen` (logical slot count), nor vice versa. Packing them
+would lose the observable distinction between byte span and
+logical slot count.
+
+### Disposition (per F-ABI-PROJECTION-CORRECTION)
+
+    FROZEN_PROJECTION       = 4/7
+    MEASURED_REQUIRED_ABI   = 4/8
+    ROOT_CAUSE =
+      char-constant logical slot length is independent of byte extent
+    DISPOSITION =
+      projection corrected to 4/8 (no production semantic mutation;
+      this is a CORRECTION to the recon ACT's projection, not to
+      the LEXER02 implementation)
+    ENGINEERING_CHANGE_REQUIRED = NO
+    CONSUMER_AWARE = production lexCharConst already consumed out_strlen
+                     (the value is stored in l->cur_strlen)
+
+### What is NOT a defect
+
+The implementation itself is sound. We do NOT redesign it to fit
+the 7-output projection; that would be gaming the metric.
+
+### Why HALT_LEXER02_ABI_BOUNDARY_MISMATCH was not fired
+
+The CLOSED predecessor ACT did not contain the explicit
+HALT_LEXER02_ABI_BOUNDARY_MISMATCH token the reviewer cited.
+The recon ACT bound the ABI projection as 4/≤7 outputs in the
+LEXER02 act body via:
+
+    projected ABI = 4 inputs / 7 outputs
+
+and the LEXER02 ACT (§35 / c1/region-abi-contract.txt) made the
+projection binding conditional on §32 cardinality gates. The
+HALT was a reviewer observation applied by analogy from LEXER01,
+not a verbatim token from the LEXER02 ACT. The CORRECTION01 ACT
+records the disposition above and supersedes the projection.
