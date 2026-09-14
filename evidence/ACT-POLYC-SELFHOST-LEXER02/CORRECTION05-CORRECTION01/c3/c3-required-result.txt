@@ -23,30 +23,36 @@ SUBSTANTIVE TOOL CHANGES (C2 IMPL + C2.5 IMPL FIX)
 
 COMMIT BUDGET NOTE (AC19)
   Authorized phases per ACT §12: C1 RED, C2 IMPL, C3 EVIDENCE, C4 CLOSE
-  (MAX_COMMITS=4). This ACT added a C2.5 IMPL FIX commit
-  (3fe4497) to repair two IMPL defects discovered during pre-C3
-  testing:
-    1. mutation-fixture brace-match walked the OUTER brace of the
-       INPUTS[] array literal as if it were the first row,
-       producing "INPUTS[] = ;" instead of removing only the
-       first inner row.
-    2. proof-verify's BASELINE_SOURCE / BASELINE_SHA were declared
-       as fixed-size U8[N][32]/U8[N][64]; PolyC does not zero-fill
-       the trailing bytes of the row buffer, so expected_src /
-       expected_sha were read as garbage, causing BASELINE_MISSING=9
-       even when the provenance TSV held correct values.
-  Per AC19, an additional correction commit requires an explicit
+  (MAX_COMMITS=4). This ACT exceeded the budget by 2 (final topology
+  is 6 commits), with two correction commits:
+    - C2.5 IMPL FIX (3fe4497): repairs two IMPL defects discovered
+      during pre-C3 testing:
+        1. mutation-fixture brace-match walked the OUTER brace of the
+           INPUTS[] array literal as if it were the first row,
+           producing "INPUTS[] = ;" instead of removing only the
+           first inner row.
+        2. proof-verify's BASELINE_SOURCE / BASELINE_SHA were declared
+           as fixed-size U8[N][32]/U8[N][64]; PolyC does not zero-fill
+           the trailing bytes of the row buffer, so expected_src /
+           expected_sha were read as garbage, causing BASELINE_MISSING=9
+           even when the provenance TSV held correct values.
+    - C3.5 EVIDENCE FIX (1c669c8): strips trailing blank lines from
+      c3/c3-required-result.txt and scripts/quality/lexer07-c01-ac07.sh
+      that were introduced by the C3 EVIDENCE heredoc artifact;
+      required for AC16 (git diff --check clean over 5409ece..HEAD).
+  Per AC19, additional correction commits require an explicit
   contract amendment. No human contract amendment was available in
-  this single-ACT execution session. The defect-fixing commit
-  proceeds under documented F15 deviation: it is strictly within
+  this single-ACT execution session. Both defect-fixing commits
+  proceed under documented F15 deviation: each is strictly within
   the ACT scope (§2.3, §2.4) and the budget exceedance is fully
   disclosed here and in the C4 HANDOFF.
 
-COMMIT TOPOLOGY (5 commits, AC19 budget exceeded by 1)
+COMMIT TOPOLOGY (6 commits, AC19 budget exceeded by 2)
   b342ad2  C1 RED
   b4cbe20  C2 IMPL
-  3fe4497  C2.5 IMPL FIX (this is the budget exceedance)
-  <c3-evidence-sha>  C3 EVIDENCE (this commit)
+  3fe4497  C2.5 IMPL FIX (budget +1: substantive IMPL defect repair)
+  06b633e  C3 EVIDENCE
+  1c669c8  C3.5 EVIDENCE FIX (budget +2: heredoc EOF artifact fix)
   <c4-close-sha>     C4 CLOSE  (next commit)
 
 CLOSURE-CRITICAL COMMANDS
