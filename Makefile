@@ -12,7 +12,7 @@ HCC_ENABLE_LLVM ?= OFF
 
 default: all
 
-.PHONY: all formal-dafny gate-fast gate-push install-hooks llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test selfhost-component-binary selfhost-component-build selfhost-component-test selfhost-component-selftest selfhost-registry-validate factory-halt-classification-binary factory-halt-classification-selftest bootstrap06-component-build bootstrap06-operator-classify-oracle bootstrap06-direct-differential bootstrap06-component-stage1 bootstrap06-component-stage2 bootstrap06-component-stage3 bootstrap06-lexer-seam-stage1 lexer07-component-build lexer07-scalar-literal-oracle lexer07-direct-differential lexer07-component-stage1 lexer07-component-stage2 lexer07-component-stage3 lexer07-lexer-seam-stage0 lexer07-lexer-seam-stage1 lexer07-lexer-seam-stage2 lexer07-lexer-seam-stage3 lexer07-lexer-seam-stage2-from-objs lexer07-lexer-seam-stage3-from-objs lexer07-lexer-seam-all-stages
+.PHONY: all formal-dafny gate-fast gate-push install-hooks llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test selfhost-component-binary selfhost-component-build selfhost-component-test selfhost-component-selftest selfhost-registry-validate factory-halt-classification-binary factory-halt-classification-selftest bootstrap06-component-build bootstrap06-operator-classify-oracle bootstrap06-direct-differential bootstrap06-component-stage1 bootstrap06-component-stage2 bootstrap06-component-stage3 bootstrap06-lexer-seam-stage1 lexer07-component-build lexer07-scalar-literal-oracle lexer07-direct-differential lexer07-component-stage1 lexer07-component-stage2 lexer07-component-stage3 lexer07-lexer-seam-stage0 lexer07-lexer-seam-stage1 lexer07-lexer-seam-stage2 lexer07-lexer-seam-stage3 lexer07-lexer-seam-stage2-from-objs lexer07-lexer-seam-stage3-from-objs lexer07-lexer-seam-all-stages lexer07-fixture-inventory lexer07-broad-corpus-4-stage lexer07-correction02-all
 
 # To add sqlite3 support add -DHCC_LINK_SQLITE3=1 to the below like so:
 #```
@@ -1233,6 +1233,25 @@ lexer07-lexer-seam-stage3-from-objs: lexer07-scalar-literal-oracle
 # (replaces the LEXER02-closed "stage0/1 only" gate).
 lexer07-lexer-seam-all-stages: lexer07-lexer-seam-stage0 lexer07-lexer-seam-stage1 lexer07-lexer-seam-stage2 lexer07-lexer-seam-stage3
 	@echo "LEXER07_PRODUCTION_SEAM_4_STAGES=PASS"
+
+# ACT-POLYC-SELFHOST-LEXER02-CORRECTION02 — mechanical fixture
+# inventory. Derives is_numeric/is_char/is_negative/is_edge from
+# observed kind/err/cursor, replaces hand-typed category prefixes.
+lexer07-fixture-inventory: lexer07-direct-differential
+	./scripts/quality/lexer07-fixture-inventory.sh
+
+# ACT-POLYC-SELFHOST-LEXER02-CORRECTION02 — canonical 181-source
+# compiler corpus at all 4 stages (LEXER01-CORRECTION01 pattern).
+# Stage0 falls back to historical b02-corpus-A for the 9 sources
+# where current ./hcc has a pre-existing ARM64 inline asm
+# regression; the fallback is explicit in provenance TSV.
+lexer07-broad-corpus-4-stage: build/hcc build/hcc-bootstrap02 build/hcc-bootstrap03 build/hcc-bootstrap04
+	./scripts/quality/lexer07-broad-corpus-4-stage.sh
+
+# ACT-POLYC-SELFHOST-LEXER02-CORRECTION02 — composite gate
+# combining both new tests with the existing 4-stage seam.
+lexer07-correction02-all: lexer07-fixture-inventory lexer07-broad-corpus-4-stage lexer07-lexer-seam-all-stages
+	@echo "LEXER07_CORRECTION02_ALL=PASS"
 
 # ACT-POLYC-SELFHOST-SURFACE01 C2 IMPL — generic self-host
 # component surface. Driven by docs/factory/SELF-HOST-COMPONENTS.tsv

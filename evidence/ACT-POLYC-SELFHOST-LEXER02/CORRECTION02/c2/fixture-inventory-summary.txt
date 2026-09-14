@@ -1,0 +1,47 @@
+FIXTURE INVENTORY SUMMARY (mechanical)
+======================================
+
+TOTAL=89
+is_numeric (kind==1 OR kind==2)=42
+is_char    (kind==3)=33
+is_negative (err != 0)=16
+is_edge    (cursor<0 OR cursor>=src_len)=3
+
+Floor requirements:
+  TOTAL         >= 64   : 89  PASS
+  is_char       >= 24   : 33  PASS
+  is_negative   >= 16   : 16  PASS
+
+Negative fixtures (err != 0):
+  err_hex_with_dot                 kind=4 err=1
+  err_two_dots                     kind=4 err=1
+  err_two_e_letters                kind=4 err=1
+  err_two_x_letters                kind=4 err=1
+  chr_overflow                     kind=3 err=3
+  chr_8slots_overflow              kind=3 err=3
+  chr_unterm                       kind=3 err=2
+  chr_unterm_at_eof                kind=3 err=2
+  err_hex_with_dot2                kind=4 err=1
+  err_two_x_letters2               kind=4 err=1
+  err_two_dots2                    kind=4 err=1
+  err_two_e_letters2               kind=4 err=1
+  err_char_unterm                  kind=3 err=2
+  err_char_overflow                kind=3 err=3
+  err_char_8slots_overflow         kind=3 err=3
+  err_char_unterm_eof              kind=3 err=2
+
+Char fixtures (kind==3): count=33
+  nz_xx_a_
+  chr_a
+  chr_0
+  chr_sp
+  chr_tilde
+  chr_nl
+  chr_cr
+  chr_tab
+  chr_bsl
+  chr_sq
+  ... (showing first 10)
+
+FIXTURE_INVENTORY_FLOORS=PASS
+STATUS=PASS
