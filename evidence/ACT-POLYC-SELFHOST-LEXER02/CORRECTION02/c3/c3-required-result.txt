@@ -1,0 +1,63 @@
+ACT-POLYC-SELFHOST-LEXER02-CORRECTION02 — C3 EVIDENCE — c3-required-result.txt
+================================================
+
+## All three reopened defects mechanically closed
+
+### P0 #1: error-corpus cardinality mechanically verified
+
+```
+TOTAL=89         PASS (>=64 floor)
+is_char=33       PASS (>=24 floor)
+is_negative=16   PASS (>=16 floor)
+```
+
+The 16 negative fixtures are derived from observed err != 0
+(not from hand-typed `err_` prefix). The mechanical
+classification revealed that 9 of the 21 `err_`-prefixed
+fixtures are NOT actually error cases — they are valid forms
+that the production lexer accepts (err=0).
+
+Floor TSV: evidence/.../CORRECTION02/c2/fixture-inventory.tsv
+
+### P0 #2: canonical 181-source compiler corpus at all 4 stages
+
+```
+175/175 BYTE_IDENTICAL_4 (s0==s1==s2==s3)
+6/6 BOTH_FAIL_4 (all four stages fail)
+9 historical stage0 fallbacks (pre-existing ./hcc ARM64 asm regression)
+0 DIVERGED
+0 REGRESSION
+LEXER02_BROAD_CORPUS_4_STAGE=PASS
+```
+
+This matches the LEXER01-CORRECTION01 canonical pattern
+exactly: full compiler invocation + .o sha256 byte-equality.
+
+The 9 stage0 fallbacks are EXPLICIT and BOUND to compiler
+provenance in corpus-object-provenance.tsv. They are not
+silent (F6 satisfied).
+
+### P1: bookkeeping corrected
+
+The fictional "88 + 1 overlap = 89" arithmetic in CORRECTION01
+is replaced by the mechanical inventory TSV. The 89 fixtures
+are real (the binary reports it); the categories are now
+derived from OBSERVED kind/err/cursor, not hand-typed names.
+
+## Conservation re-verified at CORRECTION02 CLOSE
+
+  Direct differential (89 fixtures):     89/89 PASS at all 4 stages
+  Real-lexer seam (28 fixtures):        IDENTICAL at all 6 pairs
+  Mechanical fixture inventory:         PASS (3/3 floors)
+  Broad compiler corpus (181 sources):  175/175 byte-identical +
+                                         6/6 both-fail
+  Operator seam (LEXER01):              33/33 PASS (no regression)
+  Factory gate-fast:                    PASS
+  F-NO-PYTHON:                          unchanged
+  Append-only Git history:              preserved
+  Dafny:                                N/A
+
+## Verdict
+
+  ACT-POLYC-SELFHOST-LEXER02-CORRECTION02 is ready for C4 CLOSE.
+  All three reopened defects have mechanical closure evidence.

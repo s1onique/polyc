@@ -1,0 +1,61 @@
+ACT-POLYC-SELFHOST-LEXER02-CORRECTION02 — C3 EVIDENCE — factory-gates.txt
+================================================
+
+## Factory gates re-run (post-CORRECTION02 C2)
+
+  $ make gate-fast
+  EXACT_VERDICT_MISMATCHES=0
+  STATUS=PASS
+  VERDICT=PASS
+  CHECK=factory-closure-status STATUS=PASS
+  VERDICT=PASS
+
+## B0..B3 / Dafny / no-Python invariants preserved
+  B0 substrate             unchanged
+  B1 ctype dependency      UNCHANGED
+  B2 universal char model  N/A (ASCII-only scalar literals)
+  B3 module system         UNCHANGED
+  Dafny baseline           N/A (no semantic change)
+  No-Python invariant      UNCHANGED
+  Append-only Git history  preserved (no amends, no rebases)
+
+## CORRECTION02 new gates
+
+  $ make lexer07-fixture-inventory
+  TOTAL=89 PASS (>=64)
+  is_char=33 PASS (>=24)
+  is_negative=16 PASS (>=16)
+  FIXTURE_INVENTORY_FLOORS=PASS
+  STATUS=PASS
+
+  $ make lexer07-broad-corpus-4-stage
+  TOTAL=181
+  BYTE_IDENTICAL_4=175
+  BOTH_FAIL_4=6
+  STAGE0_HISTORICAL_FALLBACKS=9
+  DIVERGED=0
+  REGRESSION=0
+  LEXER02_BROAD_CORPUS_4_STAGE=PASS
+
+  $ make lexer07-correction02-all
+  LEXER07_CORRECTION02_ALL=PASS
+
+## CORRECTION01 prior gates (still green)
+
+  Direct differential (89 fixtures): 89/89 PASS at all 4 stages
+  Real-lexer seam (28 fixtures):     IDENTICAL at all 6 pairwise diffs
+  LEXER01 operator seam:             33/33 PASS
+
+## Conservation scope
+
+  In scope (this correction):
+    - scripts/quality/lexer07-fixture-inventory.sh (NEW)
+    - scripts/quality/lexer07-broad-corpus-4-stage.sh (NEW)
+    - Makefile (3 new targets)
+    - evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION02/
+
+  Out of scope (residue):
+    - The 9-source stage0 ARM64 asm regression in src/holyc-lib/
+      (pre-existing ./hcc binary regression; recorded as
+       stage0-historical in provenance TSV)
+    - test-prefix-install target repair

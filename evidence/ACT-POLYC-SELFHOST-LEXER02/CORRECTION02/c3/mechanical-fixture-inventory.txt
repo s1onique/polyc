@@ -1,0 +1,67 @@
+ACT-POLYC-SELFHOST-LEXER02-CORRECTION02 — C3 EVIDENCE — mechanical-fixture-inventory.txt
+================================================
+
+## P0 #1 closure: mechanical fixture inventory
+
+The "16 error/negative" claim in CORRECTION01 was based on the
+prefix `err_` of the fixture name. After observing the actual
+contract:
+
+```text
+TOTAL=89
+is_numeric (kind==1 OR kind==2) = 42
+is_char    (kind==3)            = 33
+is_negative (err != 0)          = 16
+is_edge    (cursor<0 OR cursor>=src_len) = 3
+```
+
+The 16 negative fixtures are:
+
+```
+err_hex_with_dot            (kind=4 err=1)
+err_two_dots                (kind=4 err=1)
+err_two_e_letters           (kind=4 err=1)
+err_two_x_letters           (kind=4 err=1)
+chr_overflow                (kind=3 err=3)
+chr_8slots_overflow         (kind=3 err=3)
+chr_unterm                  (kind=3 err=2)
+chr_unterm_at_eof           (kind=3 err=2)
+err_hex_with_dot2           (kind=4 err=1)
+err_two_x_letters2          (kind=4 err=1)
+err_two_dots2               (kind=4 err=1)
+err_two_e_letters2          (kind=4 err=1)
+err_char_unterm             (kind=3 err=2)
+err_char_overflow           (kind=3 err=3)
+err_char_8slots_overflow    (kind=3 err=3)
+err_char_unterm_eof         (kind=3 err=2)
+```
+
+Note that some `err_`-prefixed fixtures are NOT in this list:
+```
+err_hex_with_e              (kind=1 err=0)  [valid hex 0xFE]
+err_hex_with_e2             (kind=1 err=0)
+err_trailing_dot            (kind=2 err=0)  [valid float 1.0]
+err_lone_dot                (kind=2 err=0)  [valid float 0]
+err_e_no_digits             (kind=1 err=0)  [valid I64=1]
+err_e_trailing_minus        (kind=1 err=0)
+err_cur_on_letter           (kind=0 err=0)  [not a scalar]
+err_cur_on_op               (kind=0 err=0)
+err_cur_at_eof              (kind=0 err=0)
+```
+
+These 9 fixtures are valid forms that the production lexer
+accepts; they exercise boundary/edge behavior, not errors.
+
+## Floor verdicts
+
+```
+TOTAL >= 64         : 89 PASS
+is_char >= 24       : 33 PASS
+is_negative >= 16   : 16 PASS
+```
+
+The mechanical inventory TSV is at:
+  evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION02/c2/
+    fixture-inventory.tsv
+  evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION02/c2/
+    fixture-inventory-summary.txt
