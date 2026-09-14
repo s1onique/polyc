@@ -1,10 +1,17 @@
 // tools/quality/lexer07-sha256.HC
 // ACT-POLYC-SELFHOST-LEXER02-CORRECTION05 C2 IMPL.
+// ACT-POLYC-SELFHOST-LEXER02-CORRECTION05-CORRECTION01 C2 IMPL.
 // PolyC-local SHA-256 (FIPS 180-4). Verified against
 // NIST SHA-2 Additional Test Data vectors including the
 // 55/56/57-byte zero-byte padding-boundary cases.
+//
+// Modes (preserves original self-test default):
+//   (no args)                self-test; rc 0 on PASS
+//   <string>                 hash argv[1] as bytes; print hex
+//   --file <path>            hash file content; print hex
 
 #include "../../src/holyc-lib/memory_defs.HH"
+#include "../../src/holyc-lib/io_defs.HH"
 
 #define SHA256_BLOCK 64
 
@@ -162,6 +169,22 @@ I64 SHA256SelfTest() {
 }
 
 I32 Main(I32 argc, U8 **argv) {
+  if (argc >= 3 && StrNCmp(argv[1], "--file", 6) == 0) {
+    // File-hash mode. Reads the file at argv[2] and prints
+    // its SHA-256 hex. Returns non-zero on read error.
+    I64 sz = 0;
+    U8 *buf = FileRead(argv[2], &sz);
+    if (buf == NULL) {
+      "SHA256_FILE_ERROR path=%s\n", argv[2];
+      return 2;
+    }
+    U8 dig[32]; U8 hex[65];
+    SHA256(buf, sz, dig);
+    HexOfBytes(dig, 32, hex);
+    Free(buf);
+    "%s\n", hex;
+    return 0;
+  }
   if (argc > 1) {
     U8 dig[32]; U8 hex[65];
     SHA256(argv[1], StrLen(argv[1]), dig);

@@ -1,6 +1,13 @@
 // tools/quality/lexer07-fixture-inventory.HC
 //
 // ACT-POLYC-SELFHOST-LEXER02-CORRECTION04 C2 IMPL.
+// ACT-POLYC-SELFHOST-LEXER02-CORRECTION05-CORRECTION01 C2 IMPL:
+//   - default outdir is now derived from argv[3] and
+//     refuses to write into a closed evidence directory
+//     unless explicitly opted in via --allow-closed path;
+//   - summary header is parameterized via argv[4] (default
+//     "CORRECTION05-CORRECTION01 PolyC"); this prevents
+//     silent mislabeling of evidence.
 // Substantive PolyC implementation. Owns the full CORRECTION02
 // fixture-inventory contract.
 //
@@ -295,10 +302,36 @@ I32 Main(I32 argc, U8 **argv)
 {
   U8 *bin_path = "./build/lexer07-direct-differential";
   U8 *c_path = "tools/quality/lexer07-direct-differential.c";
-  U8 *outdir = "evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION05/c3";
-  if (argc > 1) bin_path = argv[1];
-  if (argc > 2) c_path = argv[2];
-  if (argc > 3) outdir = argv[3];
+  U8 *outdir = "./build/lexer07-fixture-inventory-out";
+  U8 *header_label = "CORRECTION05-CORRECTION01 PolyC";
+  I64 i = 1;
+  Bool allow_closed = FALSE;
+  // Optional leading flags.
+  while (i < argc && argv[i][0] == '-' && argv[i][1] == '-') {
+    if (StrNCmp(argv[i], "--allow-closed", 14) == 0) {
+      allow_closed = TRUE;
+      i = i + 1;
+      continue;
+    }
+    break;
+  }
+  if (argc > i)     bin_path = argv[i];
+  if (argc > i + 1) c_path = argv[i + 1];
+  if (argc > i + 2) outdir = argv[i + 2];
+  if (argc > i + 3) header_label = argv[i + 3];
+  // Refuse to write into a closed evidence directory unless
+  // --allow-closed is explicitly set. The substring check
+  // covers every closed CORRECTION0X/c* path.
+  if (!allow_closed) {
+    if (strstr(outdir, "/CORRECTION02/c") != NULL ||
+        strstr(outdir, "/CORRECTION03/c") != NULL ||
+        strstr(outdir, "/CORRECTION04/c") != NULL ||
+        strstr(outdir, "/CORRECTION05/c") != NULL) {
+      "FIXTURE_INVENTORY_STATUS=ERROR reason=closed-evidence-dir outdir=%s\n", outdir;
+      "FIXTURE_INVENTORY_HINT=pass --allow-closed to override\n";
+      return 4;
+    }
+  }
   MkDirpRecursive(outdir);
 
   U8 *names[MAX_INPUTS]; U8 *srcs[MAX_INPUTS];
@@ -387,11 +420,11 @@ I32 Main(I32 argc, U8 **argv)
   if (f_pass != 0) { pass_str = "PASS"; pass_str2 = "PASS"; }
   else { pass_str = "FAIL"; pass_str2 = "FAIL"; }
   U8 *sum = StrPrint(NULL,
-    "FIXTURE INVENTORY SUMMARY (CORRECTION04 PolyC)\n"
+    "FIXTURE INVENTORY SUMMARY (%s)\n"
     "TOTAL=%d\nis_numeric=%d\nis_char=%d\nis_negative=%d\nis_edge=%d\n"
     "OBSERVED=%d/%d\n"
     "FIXTURE_INVENTORY_FLOORS=%s\nSTATUS=%s\n",
-    n, n_num, n_chr, n_neg, n_edge, n_obs, n,
+    header_label, n, n_num, n_chr, n_neg, n_edge, n_obs, n,
     pass_str, pass_str2);
   FileWrite(sum_path, sum, StrLen(sum), 0x0202);
   Free(sum);
