@@ -1,0 +1,120 @@
+ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01-CORRECTION01 — C3 EVIDENCE
+==================================================================
+
+This file re-derives the corrected claims from independent
+inputs against the closed predecessor evidence tree.
+
+Each verification was executed against the immutable closed
+tree. None of the predecessor files were modified.
+
+---
+
+## V-1: candidate-count verification
+
+$ wc -l evidence/.../c2/region-membership.tsv
+13 evidence/ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01/c2/region-membership.tsv
+$ awk 'NR>1{c++} END{print "candidate_count="c}' evidence/.../c2/region-membership.tsv
+candidate_count=12
+
+$ wc -l evidence/.../c3/fresh-region-inventory.tsv
+20 evidence/ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01/c3/fresh-region-inventory.tsv
+$ awk 'NR>3 && $1 ~ /^R-/ {c++} END{print "candidate_count="c}' evidence/.../c3/fresh-region-inventory.tsv
+candidate_count=17
+
+Conclusion: C2 had 12 candidates; C3 had 17. Delta = +5
+(R-M, R-N, R-O, R-P, R-Q). Confirms C3_SEARCH_SPACE_SUPERSET_OF_C2.
+
+## V-2: monotonic-ranking re-sort
+
+$ awk -F'\t' 'NR>1 && $1 ~ /^R-/ {gsub(/=/,""); print $1"\t"$NF}' \
+    evidence/.../c3/fresh-scores.tsv | sort -k2 -n -r
+
+R-F       627
+R-E       285
+R-D       275
+R-N       242
+R-K       230
+R-O       221
+R-M       213
+R-Q       201
+R-H       200
+R-P       193
+R-L       190
+R-J       INELIGIBLE
+R-A       -38
+R-I       -45
+R-B       -49
+R-G       -53
+R-C       -70
+
+Conclusion: Strictly monotonic in FINAL_SCORE descending.
+The non-monotonic (R-H 200 at rank 7 / R-Q 201 at rank 8) in
+the predecessor's c4/final-ranking.txt is a presentation bug,
+not a substantive scoring defect. Corrected ranking is
+recorded in c2/ranking-repaired.txt.
+
+## V-3: diff-check re-emit
+
+$ git diff --check a386810^..HEAD
+evidence/.../c1/prior-negative-score-red.txt:37: new blank line at EOF.
+evidence/.../c1/selfhost-surface-baseline.txt:79: new blank line at EOF.
+evidence/.../c4/final-region-map.txt:35: new blank line at EOF.
+
+Conclusion: DEFECT-1 confirmed. All three diagnostics are
+inside files the recon ACT itself created. The closed
+predecessor ACT's claim AC40 = PASS is mechanically false.
+
+Forward-fix in c2/ac40-patch-hygiene-corrected.txt and
+c2/ac40-transform.tsv records the corrected content with the
+trailing blank line removed.
+
+## V-4: conservation re-emit (broad-corpus language)
+
+Closed c4/final-conservation.txt contains:
+    broad corpus 4-stage         = PASS 175/175 + 6/6 (per prior ACT)
+    Dafny                        = PASS 17/17
+
+This phrasing asserts "broad corpus 4-stage = PASS", which
+implies a fresh four-stage corpus run. No such run was
+executed in the recon ACT (or this correction ACT).
+
+Corrected phrasing per c2/conservation-language-repaired.txt:
+    BROAD_CORPUS_CURRENT_EXECUTION = ENVIRONMENTALLY_UNAVAILABLE
+    BROAD_CORPUS_LAST_KNOWN_GOOD   = PASS 175/175 + 6/6
+    ATTRIBUTABLE_MUTATION          = NONE
+    CONSERVATION_INFERENCE         = PASS_BY_ZERO_SEMANTIC_DELTA
+
+## V-5: gate re-runs
+
+gate-fast:        PASS (re-run; identical to closed predecessor)
+Dafny:            PASS 17/17 (re-run; identical)
+F_NO_PYTHON:      12 (re-run; identical to predecessor)
+identifier hash:  PASS I0==I1==I2==I3 (re-hashed; identical)
+operator hash:    PASS N0==N1==N2==N3 (re-hashed; identical)
+
+## V-6: scope audit
+
+Closed predecessor tree (immutable): UNCHANGED.
+This correction ACT's mutations:
+  docs/acts/.../CORRECTION01.md  (NEW)
+  evidence/.../CORRECTION01/      (NEW; c1+c2 done, c3+c4 pending)
+  docs/ROADMAP.md                 (pending in c4)
+No compiler source mutation. No parser/AST/IR/backend/runtime
+mutation. No llvm mutation. No formal mutation. No libtos
+mutation. No new registry row. No new bootstrap component.
+No new Python source. No new Python execution edge.
+
+## V-7: verdict assessment
+
+The three defects are mechanically reproducible and
+forward-fixable. The engineering result is preserved:
+  WINNER = R-F (scalar_literal_scanner)         unchanged
+  WINNER FINAL_SCORE = +627                      unchanged
+  WINNER MARGIN = 342 (ROBUST)                   unchanged
+  WINNER E1..E14 = PASS                          unchanged
+  WINNER ABI = BOUNDED (4 in / 7 out)            unchanged
+  WINNER ORACLE = feasible                       unchanged
+  WINNER PRODUCTION_SEAM = POSSIBLE              unchanged
+
+The corrected ACT verdict will be PASS_WITH_CORRECTION_RESIDUE.
+The corrected engineering verdict will be PASS.
