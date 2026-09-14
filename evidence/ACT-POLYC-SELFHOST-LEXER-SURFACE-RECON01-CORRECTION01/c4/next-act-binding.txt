@@ -1,0 +1,25 @@
+ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01-CORRECTION01 — C4 — next ACT binding
+==============================================================================
+
+NEXT_ACT      = ACT-POLYC-SELFHOST-LEXER02
+LEXER02_SCOPE = EXACTLY (scalar_literal_scanner)
+
+The recon ACT's c4/next-act-binding.txt already records the
+authorized scope for LEXER02. This correction ACT does not
+modify that scope; it inherits the binding verbatim.
+
+Concretely, LEXER02 is authorized to:
+  - Create tools/bootstrap/selfhost-lexer-scalar-literal.HC
+  - Add a row to docs/factory/SELF-HOST-COMPONENTS.tsv
+  - Modify src/lexer.c (under -DHCC_USE_SELFHOST_COMPONENTS)
+  - Update src/CMakeLists.txt to add FATAL_ERROR guards
+  - Create oracle/seam-runner test fixtures
+
+LEXER02 is NOT authorized to:
+  - Migrate string literal scanning (E5 ineligible)
+  - Migrate the keyword classification Map* lookup (E5 ineligible)
+  - Modify parser, AST, IR, backend, runtime
+  - Add Python source or Python execution edges
+
+This correction ACT stops at this binding. LEXER02 must open
+with its own C1 RED phase; this ACT does not begin migration.

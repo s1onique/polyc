@@ -2293,6 +2293,64 @@ ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01      CLOSED PASS
          The recon ACT itself stops here per ACT §72.)
 ```
 
+#### ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01-CORRECTION01 status (CLOSED PASS_WITH_CORRECTION_RESIDUE)
+
+```
+ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01-CORRECTION01      CLOSED PASS_WITH_CORRECTION_RESIDUE
+  ACT-Corrected-Verdict: PASS (engineering result preserved verbatim)
+  ACT-Supersedes:        ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01
+  Authorization artifact: docs/acts/ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01-CORRECTION01.md
+  Predecessor:           ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01 CLOSED 7adb9e8
+
+  Three mechanical closure defects repaired (forward-fix in CORRECTION01/c2/;
+  closed predecessor evidence tree immutable per F14):
+
+    DEFECT-1 (P0): AC40 'ACT-range diff-check clean' was false on closed range
+                   (3 'new blank line at EOF' diagnostics in recon ACT evidence).
+                   Forward-fix: trailing blank lines removed; corrected content
+                   recorded in CORRECTION01/c2/ac40-patch-hygiene-corrected.txt.
+    DEFECT-2 (P1): 'C2 ranking == C3 ranking' overstated. Replaced with precise
+                   winner-invariance-under-extension claims:
+                     C2_WINNER_REPRODUCED_IN_C3     = YES
+                     C3_SEARCH_SPACE_SUPERSET_OF_C2= YES (12 -> 17 candidates)
+                     WINNER_INVARIANT_UNDER_EXTENSION = YES (R-F +627)
+                     WINNER_MARGIN                  = 342 (ROBUST)
+                     RANKING_MONOTONIC_IN_C4_LIST   = NO (presentation bug)
+                     RANKING_MONOTONIC_IN_REPAIRED  = YES (CORRECTION01/c2/ranking-repaired.txt)
+                   Strictly monotonic descending FINAL_SCORE ranking recorded.
+    DEFECT-3 (P2): Broad-corpus conservation language overstated as 'fresh rerun PASS'.
+                   Replaced with bounded phrasing:
+                     BROAD_CORPUS_CURRENT_EXECUTION = ENVIRONMENTALLY_UNAVAILABLE
+                                                      (Apple Silicon libtos ARM asm)
+                     BROAD_CORPUS_LAST_KNOWN_GOOD   = PASS 175/175 + 6/6
+                                                      (per LEXER01-CORRECTION01)
+                     ATTRIBUTABLE_MUTATION          = NONE
+                     CONSERVATION_INFERENCE         = PASS_BY_ZERO_SEMANTIC_DELTA
+
+  Engineering result preserved verbatim:
+    WINNER                        = R-F (scalar_literal_scanner)
+    WINNER FINAL_SCORE            = +627
+    WINNER MARGIN                 = 342 (ROBUST)
+    WINNER E1..E14                = PASS
+    WINNER ABI                    = BOUNDED (4 in / 7 out)
+    WINNER DIRECT_ORACLE          = TEST_ONLY_PRODUCTION_EXTRACTION (feasible)
+    WINNER PRODUCTION_SEAM        = POSSIBLE
+    WINNER FIXED_POINT_FEASIBILITY= PASS
+    WINNER MIGRATION_READY        = YES
+
+  Gates: gate-fast PASS, Dafny 17/17 PASS, F_NO_PYTHON=12 (unchanged),
+         identifier I0==I1==I2==I3 PASS, operator N0==N1==N2==N3 PASS.
+  F14 honored: closed predecessor evidence tree UNCHANGED.
+  Scope: docs/acts/.../CORRECTION01.md (NEW), evidence/.../CORRECTION01/ (NEW),
+         ROADMAP.md (this block). No compiler source mutation. No new registry row.
+         No Python mutation. No new bootstrap component.
+
+  NEXT: ACT-POLYC-SELFHOST-LEXER02
+        LEXER02_SCOPE = EXACTLY (scalar_literal_scanner covering
+                                countNumberLen, lexNumeric, lexCharConst)
+        (Unchanged from recon ACT; correction ACT does not begin migration.)
+```
+
 The recon ACT does **not** begin migration. It freezes the migration
 boundary so the next ACT's review surface is the boundary itself
 rather than the migration diff.

@@ -1,0 +1,68 @@
+ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01-CORRECTION01 — C4 — forward-fix summary
+================================================================================
+
+Three closure defects of ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01
+were forward-fixed. Per F14, the closed predecessor evidence
+tree is immutable; all forward-fixes live in this correction
+ACT's evidence directory.
+
+---
+
+## FIX-1 (was DEFECT-1): AC40 patch-hygiene
+
+Closed files with trailing blank lines:
+  c1/prior-negative-score-red.txt:37
+  c1/selfhost-surface-baseline.txt:79
+  c4/final-region-map.txt:35
+
+Forward-fix: c2/ac40-patch-hygiene-corrected.txt + c2/ac40-transform.tsv
+  Records the corrected file content (with trailing blank line
+  removed) and the per-file transformation log.
+
+Restoration: AC40 = PASS (when forward-fix is applied to the
+immutable content; the corrected content is recorded here as
+forward-fix evidence).
+
+---
+
+## FIX-2 (was DEFECT-2): ranking overstatement + non-monotonic listing
+
+Closed files with overstated / non-monotonic ranking:
+  c4/final-ranking.txt (claims 'C2 == C3 ranking' and lists
+   R-H 200 at rank 7 / R-Q 201 at rank 8 -- non-monotonic)
+
+Forward-fix: c2/winner-invariance.tsv + c2/ranking-repaired.txt
+  Replaces 'C2 == C3 ranking' with precise claims:
+    C2_WINNER_REPRODUCED_IN_C3      = YES
+    C3_SEARCH_SPACE_SUPERSET_OF_C2 = YES (12 -> 17)
+    WINNER_INVARIANT_UNDER_EXT      = YES (R-F +627)
+    WINNER_MARGIN                   = 342 (ROBUST)
+    RANKING_MONOTONIC_IN_REPAIRED   = YES
+    C2_RANKING_EQUAL_C3_RANKING     = NO (overstated claim)
+  Replaces the ranking listing with a strictly monotonic
+  descending FINAL_SCORE ordering for all 17 candidates.
+
+Restoration: The engineering claim is precise and the
+ranking presentation is monotonic.
+
+---
+
+## FIX-3 (was DEFECT-3): broad-corpus conservation language
+
+Closed files with overstated broad-corpus language:
+  c3/current-selfhost-conservation.txt
+  c4/final-conservation.txt
+  (both claim 'broad corpus 4-stage = PASS 175/175 + 6/6'
+   without noting that no fresh four-stage run was executed)
+
+Forward-fix: c2/conservation-language-repaired.txt
+  Replaces the phrasing with:
+    BROAD_CORPUS_CURRENT_EXECUTION = ENVIRONMENTALLY_UNAVAILABLE
+    BROAD_CORPUS_LAST_KNOWN_GOOD   = PASS 175/175 + 6/6
+                                      (per LEXER01-CORRECTION01)
+    ATTRIBUTABLE_MUTATION          = NONE
+    CONSERVATION_INFERENCE         = PASS_BY_ZERO_SEMANTIC_DELTA
+
+Restoration: The conservation claim is bounded by LAST_KNOWN_GOOD
+attribution and zero semantic-delta inference; no false claim
+of fresh execution is asserted.

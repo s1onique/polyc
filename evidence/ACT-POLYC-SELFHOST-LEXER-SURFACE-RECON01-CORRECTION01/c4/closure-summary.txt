@@ -1,0 +1,76 @@
+ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01-CORRECTION01 — C4 CLOSE summary
+========================================================================
+
+VERDICT:               PASS_WITH_CORRECTION_RESIDUE
+ACT-Corrected-Verdict: PASS (engineering result preserved)
+ACT-Supersedes:        ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01
+
+IDENTITY:              This commit is the C4 CLOSE commit.
+
+ROOT CAUSE:            The recon ACT closed with three mechanical
+                       governance defects in its closure evidence
+                       that did NOT invalidate the engineering
+                       result but DID invalidate the false-green
+                       PASS claim.
+
+DEFECTS REPAIRED:      3 of 3
+  DEFECT-1 (P0): AC40 'ACT-range diff-check clean' was false on
+                  the closed range due to three trailing blank
+                  lines in recon ACT evidence files.
+                  Status: FORWARD-FIX (in CORRECTION01/c2/)
+  DEFECT-2 (P1): 'C2 ranking == C3 ranking' overstatement.
+                  Replaced with winner-invariance-under-extension.
+                  Ranking also fixed to be monotonic.
+                  Status: FORWARD-FIX (in CORRECTION01/c2/)
+  DEFECT-3 (P2): Broad-corpus conservation language overstated
+                  as 'fresh rerun PASS'.
+                  Replaced with LAST_KNOWN_GOOD +
+                  ATTRIBUTABLE_MUTATION=NONE.
+                  Status: FORWARD-FIX (in CORRECTION01/c2/)
+
+F14 COMPLIANCE:        Closed predecessor evidence tree
+                       (evidence/ACT-POLYC-SELFHOST-LEXER-
+                       SURFACE-RECON01/c1|2|3|4/) is immutable.
+                       All forward-fixes live in this ACT's
+                       CORRECTION01/ evidence directory.
+
+GATES:
+  gate-fast           PASS
+  Dafny               PASS 17/17
+  F_NO_PYTHON         12 (unchanged)
+  identifier hash     PASS I0==I1==I2==I3 (unchanged)
+  operator hash       PASS N0==N1==N2==N3 (unchanged)
+  broad corpus        LAST_KNOWN_GOOD = PASS 175/175 + 6/6
+                      (per LEXER01-CORRECTION01)
+                      ATTRIBUTABLE_MUTATION = NONE
+                      CONSERVATION_INFERENCE = PASS_BY_ZERO_SEMANTIC_DELTA
+
+SCOPE:
+  docs/acts/ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01-CORRECTION01.md  (NEW)
+  docs/ROADMAP.md                                                     (bounded status block)
+  evidence/ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01-CORRECTION01/     (NEW)
+
+  No compiler source changes.
+  No new bootstrap component.
+  No new registry row.
+  No Python mutation.
+  Closed predecessor evidence tree: UNCHANGED (F14 honored).
+
+RESIDUE:
+  P0:  (none)
+  P1:  (none new)
+  P2:  ARM-specific libtos/strings.HC asm residue blocks stage1/2/3
+       build on Apple Silicon hosts. Inherited platform residue
+       (carried from LEXER01; documented in
+       ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01/c1/predecessor-freeze.txt).
+  P2:  Wrapper synthetic l->ptr advance unification residue
+       (carried from LEXER01).
+  P2:  Wrapper strlen(start) buffer-bound tightening residue
+       (carried from LEXER01).
+
+NEXT ACT:             ACT-POLYC-SELFHOST-LEXER02
+                       LEXER02_SCOPE = EXACTLY (scalar_literal_scanner
+                                                covering countNumberLen +
+                                                lexNumeric + lexCharConst)
+                       (Recon ACT result bound; correction ACT
+                       does not begin migration.)
