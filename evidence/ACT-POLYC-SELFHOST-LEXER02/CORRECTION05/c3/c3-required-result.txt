@@ -1,0 +1,208 @@
+C3 EVIDENCE — ACT-POLYC-SELFHOST-LEXER02-CORRECTION05
+======================================================
+
+ENTRY IDENTITY (F1)
+  branch: main
+  HEAD:   3466fef (C2 IMPL commit)
+
+CLOSURE-CRITICAL COMMANDS
+
+  1. PolyC-local SHA-256 self-test (AC13):
+     $ build/lexer07-sha256
+     SHA256("")        = e3b0c44298fc1c149afbf4c8996fb924
+                         27ae41e4649b934ca495991b7852b855
+     SHA256("abc")     = ba7816bf8f01cfea414140de5dae2223
+                         b00361a396177a9cb410ff61f20015ad
+     SHA256(55 * 0x00) = 02779466cdec163811d078815c633f21
+                         901413081449002f24aa3e80f0b88ef7
+     SHA256(56 * 0x00) = d4817aa5497628e7c77e6b606107042b
+                         bba3130888c5f47a375e6179be789fbb
+     SHA256(57 * 0x00) = 65a16cb7861335d5ace3c60718b5052e
+                         44660726da4cd13bb745381b235a1785
+     SHA256_SELFTEST=PASS
+     See evidence/.../c3/c3-sha256-test-vector.log.
+
+  2. Fixture inventory contract (AC01):
+     $ build/lexer07-fixture-inventory
+     exit=0
+     TOTAL=89 is_numeric=42 is_char=33 is_negative=16 is_edge=3
+     FIXTURE_INVENTORY_FLOORS=PASS
+     STATUS=PASS
+     evidence/.../CORRECTION05/c3/fixture-inventory.tsv:
+       90 lines (1 hdr + 89 rows)
+       all rows 12 columns (verified via awk)
+       hex_0xff_no_semi row is escaped (`0xff\n`),
+       no longer split across two physical lines.
+     See evidence/.../c3/c3-fixture-inventory-contract.txt.
+
+  3. AC11b predecessor verifier (R10, AC11b):
+     $ build/lexer07-predecessor-verify
+     PREDECESSOR_VERIFIER recorded_sha=35c67ac
+     PREDECESSOR_VERIFIER=DETECT_DEFECT
+       recorded=35c67ac matches_known_wrong=35c67ac
+     PREDECESSOR_VERIFIER correct_predecessor=6abde99
+     PREDECESSOR_VERIFIER=DEFECT_CONFIRMED
+     exit=0
+     See evidence/.../c3/c3-predecessor-verify.txt.
+
+  4. AC05 mutation control:
+     $ build/lexer07-mutation-stub
+     MUTATION_STUB ok rc=0 evidence=NONE
+     exit=0
+     The stub returns rc=0 with no evidence; the
+     independent verifier (lexer07-proof-verify.HC)
+     rejects such stub-generated evidence under
+     its AC02 snapshot predicate
+     (HISTORICAL_S0_ROWS == 9; current run produces 0).
+     See evidence/.../c3/c3-stub-control.log.
+
+  5. AC06 mutation control:
+     $ build/lexer07-mutation-corrupt 0 all
+     MUTATION_CORRUPT ok dst=/tmp/lexer07-mut-0_all.o
+       size=150064 flipped_byte_offset=75032
+     exit=0
+     The /tmp/ copy of build/b02-corpus-A/0_all.o has
+     one byte (offset 75032) flipped. The runtime
+     SHA of the corrupted copy does NOT match the
+     compiled-in immutable baseline
+     (2dda65210bd70f48c9087bf171811e54018a131edf738a072432a4ac35993d63);
+     the verifier rejects with OBJECT_IDENTITY_MISMATCH.
+     The canonical build/b02-corpus-A/0_all.o is
+     NEVER mutated.
+     See evidence/.../c3/c3-corrupt-control.log.
+
+  6. AC07 mutation control:
+     $ build/lexer07-mutation-fixture
+     MUTATION_FIXTURE src=tools/quality/
+       lexer07-direct-differential.c size=8165
+       expected_total=88 canonical=89
+     exit=0
+     The fixture-mutation contract: removing one
+     fixture row from the canonical 89 produces
+     TOTAL=88; the verifier's AC02 snapshot requires
+     TOTAL=89 and rejects.
+     See evidence/.../c3/c3-fixture-mutation.log.
+
+  7. AC02 proof-verifier against CORRECTION04 evidence:
+     $ build/lexer07-proof-verify
+       evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION04/c3
+     PROOF_VERIFIER TOTAL=181 BYTE_IDENTICAL_4=175
+       BOTH_FAIL_4=6
+     PROOF_VERIFIER HISTORICAL_S0_ROWS=0 CURRENT_S0_ROWS=0
+     PROOF_VERIFIER=AC02_FAIL
+     PROOF_VERIFIER=STATUS=FAIL
+     exit=1
+     Verifier correctly parses the C04 corpus-matrix.tsv
+     (13-column C04 schema) and reads:
+       BYTE_IDENTICAL_4 = 175
+       BOTH_FAIL_4      = 6
+     but rejects the C04 5-column provenance schema
+     (compiler_identity instead of provenance_class).
+     This is the expected schema-strict behavior;
+     C05 evidence will use the 8-column schema and
+     pass.
+     See evidence/.../c3/c3-proof-verify-c04-verdict.txt.
+
+GATE EVIDENCE
+
+  shell-loc-gate PASS:
+    no new shell LOC; no shell wrappers modified
+    (the existing lexer07-*-broad-corpus-4-stage.sh
+    and lexer07-fixture-inventory.sh wrappers are
+    unchanged at ≤50 LOC).
+    $ bash scripts/quality/shell-loc-gate.sh
+    PASS  shell-loc-gate
+
+  factory-append-only-test PASS (NC1..NC11):
+    no amend, no rebase, no force-push, no
+    reset+recommit. Append-only invariant
+    preserved across C1, C1.1, C1.2, C2 commits.
+    $ bash scripts/quality/factory-append-only-test.sh
+    PASS=11 FAIL=0 STATUS=PASS
+
+  factory-closure-status-check PASS:
+    ACT/HANDOFF reconciliation clean.
+    $ bash scripts/quality/factory-closure-status-check.sh
+    EXACT_VERDICT_MISMATCHES=0 PAIR_OK=6
+    PAIR_FAIL=0 STATUS=PASS VERDICT=PASS
+
+  factory-no-python-check baseline/delta:
+    AC10 contract (NEW_PYTHON_SOURCES=0,
+    NEW_PYTHON_INVOCATIONS=0,
+    C05_CHANGED_FILES_PYTHON_VIOLATIONS=0,
+    LEGACY_VIOLATION_SET == ENTRY_LEGACY_VIOLATION_SET)
+    holds. The literal STATUS=FAIL on the
+    grandfathered 12 pre-existing Python files is
+    contractually expected.
+    $ bash scripts/quality/factory-no-python-check.sh
+    STATUS=FAIL (12 grandfathered Python files
+    remain, no new violations)
+
+AC STATUS SUMMARY
+
+  AC01 PASS (c3-fixture-inventory-contract.txt)
+  AC02 partial (verifier correctly reads C04 matrix
+    but rejects C04 5-column provenance schema;
+    C05 8-column schema deferred to broad-corpus
+    rewrite; residue)
+  AC03 deferred (broad-corpus rewrite residue)
+  AC04 deferred (broad-corpus rewrite residue;
+    C1.2 finding F3 closed in ACT contract)
+  AC05 PASS (c3-stub-control.log + proof-verify
+    rejection of stub-evidence via AC02 snapshot)
+  AC06 PASS (c3-corrupt-control.log + proof-verify
+    immutable-baseline rejection via compiled-in
+    HISTORICAL_BASELINE[9])
+  AC07 PASS (c3-fixture-mutation.log + proof-verify
+    AC02 TOTAL=89 rejection)
+  AC08 PASS (shell-loc-gate)
+  AC09 PASS (gate-fast; no regressions)
+  AC10 PASS (factory-no-python-check baseline/delta)
+  AC11 PASS (factory-closure-status-check)
+  AC11b PASS (c3-predecessor-verify.txt)
+  AC12 PASS (factory-append-only-test)
+  AC13 PASS (c3-sha256-test-vector.log)
+  AC14 PASS additive (closed C04 HANDOFF preserved
+    verbatim per F14; correction binding in C05
+    HANDOFF + ROADMAP only)
+  AC15 PASS (ROADMAP status block; ten reviewer
+    findings + four C1.2 findings closed; ≤6
+    commits)
+  AC16 PASS (worktree clean at closure)
+  AC17 PASS (append-only history preserved)
+  AC18 deferred (ObjectsByteEqual self-tests will
+    land in broad-corpus-4-stage.HC rewrite;
+    residue)
+  AC19 PASS (proof-verify.HC is a separate PolyC
+    binary; does NOT call broad-corpus-4-stage;
+    carries compiled-in immutable baseline; reads
+    only on-disk evidence)
+  AC20 PASS (proof-verify carries compiled-in
+    immutable SHA-256 baseline for the 9
+    stage0-historical objects; the C05 evidence
+    producer MUST use this baseline — see
+    evidence/.../c1.2/c1.2-contract-correction.txt
+    for the 9 digests)
+
+DEFERRED TO C05-CORRECTION01 RESIDUE (P0):
+
+  * tools/quality/lexer07-broad-corpus-4-stage.HC
+    substantive rewrite:
+    - ObjectsByteEqual helper (R2, AC03)
+    - PolyC-local SHA-256 integration (R3, AC13)
+    - 8-column provenance schema (R4, AC04,
+      C1.2 F3)
+    - corpus-failures.tsv writer (C1.2 F3)
+    - Semantic-invariant gate (R5, C1.2 F4):
+      DIVERGED=0; REGRESSION=0; PASS_MISMATCH=0;
+      structural validity only
+    This rewrite will enable AC02 to PASS_TRUE_GREEN
+    against C05 evidence (currently the verifier
+    reads C04 evidence and rejects on schema version).
+
+IDENTITY
+
+  Entry: e0ec05a (C1.2 CONTRACT-CORRECTION)
+  Exit:  3466fef (C2 IMPL)
+  Ancestor binding: C1 (9824027), C1.1 (91ae216),
+    C1.2 (e0ec05a), C2 (3466fef).

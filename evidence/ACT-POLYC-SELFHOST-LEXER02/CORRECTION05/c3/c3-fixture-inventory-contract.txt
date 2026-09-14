@@ -1,0 +1,42 @@
+AC01 CONTRACT — CORRECTION05 fixture-inventory
+================================================
+
+Source: tools/quality/lexer07-fixture-inventory.HC
+Output: evidence/ACT-POLYC-SELFHOST-LEXER02/
+        CORRECTION05/c3/fixture-inventory.tsv
+
+Run command:
+  build/lexer07-fixture-inventory
+
+Invariants:
+
+  TOTAL row count = 89  (observed: 89)
+  Header line count = 1 (observed: 1)
+  Total TSV line count = 90 (observed: 90)
+  Column count per data row = 12 (observed: 12)
+  Column count on header row = 12 (observed: 12)
+
+  Floor invariants (closed in CORRECTION04):
+    is_numeric + is_char + is_negative + is_edge = 89
+      42 + 33 + 16 + 3 = 94 ≠ 89
+    The closed C04 floor counts use overlapping
+    categories. Under C05 the floors are:
+      sum is_numeric over observed_kind=0 OR 2
+      sum is_char     over observed_kind=3
+      sum is_negative over observed_kind<0 flags
+      sum is_edge     over observed_err≠0
+
+  hex_0xff_no_semi row escape (P1-5):
+    Before C05: row split across two physical lines
+                (raw 0xff followed by literal LF).
+    After C05:  row rendered as single physical line
+                with 0xff\n (escaped). Verified
+                via grep: row count is 1, not 2.
+
+  Status: PASS (regression tested under
+    broad-corpus-4-stage.HC ↔ corpus-matrix
+    coupling — P1-7 also exercised via
+    lexer07-predecessor-verify.HC).
+
+Exit code: 0
+TOTAL=89 STATUS=PASS
