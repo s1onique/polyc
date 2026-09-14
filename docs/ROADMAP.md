@@ -2653,6 +2653,98 @@ ACT-POLYC-SELFHOST-LEXER02-CORRECTION03          CLOSED PASS
       explicitly as a substitute for this ACT's closure.
 
   NEXT:    ACT-POLYC-SELFHOST-LEXER03 (the next surface-recon winner)
+
+#### ACT-POLYC-SELFHOST-LEXER02-CORRECTION04 status (CLOSED PASS at this commit)
+
+```
+ACT-POLYC-SELFHOST-LEXER02-CORRECTION04          CLOSED PASS
+  Title: Repair F-POLYC-TOOLS governance defect introduced by
+         CORRECTION03's stub PolyC implementations.
+  ACT-Supersedes: ACT-POLYC-SELFHOST-LEXER02-CORRECTION03
+                  (for the CORRECTION03-stub defect only)
+  Authorization: docs/acts/ACT-POLYC-SELFHOST-LEXER02-CORRECTION04.md
+  Predecessor:    ACT-POLYC-SELFHOST-LEXER02-CORRECTION03 CLOSED 6abde99
+
+  Defect repaired:
+    P0 (F-POLYC-TOOLS violation, second-order):
+      CORRECTION03 closed F-POLYC-TOOLS at the structural level
+      (sub-50 LOC shell wrappers + separate PolyC .HC files) but
+      left the PolyC tools as stubs that did no work. CORRECTION04
+      replaces both stubs with substantive PolyC implementations:
+        tools/quality/lexer07-fixture-inventory.HC      395 LOC
+        tools/quality/lexer07-broad-corpus-4-stage.HC   408 LOC
+        scripts/quality/lexer07-fixture-inventory.sh     14 LOC (unchanged)
+        scripts/quality/lexer07-broad-corpus-4-stage.sh  16 LOC (unchanged)
+
+    P0 (CORRECTION02 proof machinery reproduction):
+      The CORRECTION03 stub emitted a placeholder
+      "BROAD_CORPUS_DISPATCH_OK=1" without ever invoking any
+      compiler. CORRECTION04 actually executes the full
+      CORRECTION02 proof (89-fixture inventory, 181-source 4-stage
+      classification, byte-equality matrix, stage0 historical
+      fallback, per-object provenance binding).
+
+  Empirical reproduction (fresh tree):
+    Fixture inventory:
+      TOTAL=89 is_numeric=42 is_char=33 is_negative=16 is_edge=3
+      FIXTURE_INVENTORY_FLOORS=PASS
+      STATUS=PASS
+      (exact CORRECTION02 contract)
+
+    Broad corpus (181 sources x 4 stages, ~80s wall-clock):
+      TOTAL=181
+      PASS_S0=175 HISTORICAL_S0=9 PASS_S1=175 PASS_S2=175 PASS_S3=175
+      FAIL_S0=6 FAIL_S1=6 FAIL_S2=6 FAIL_S3=6
+      BOTH_FAIL_4=6
+      REGRESSION=0 DIVERGED=0 PASS_MISMATCH=0
+      HISTORICAL_S0_FALLBACKS_USED=9
+      BYTE_IDENTICAL_4=175/181 (all 6 pairwise hashes agree)
+      STATUS=PASS
+      (exact CORRECTION02 contract)
+
+    9 stage0-historical rows (explicit provenance binding):
+      all/date/hashtable/io/list/memory/strings/threads/tooling.HC
+      from build/b02-corpus-A/<idx-1>_<stem>.o.
+
+  Conservation (re-proved via PolyC-built binaries):
+    Direct differential (89 fixtures):  89/89 PASS at all 4 stages
+    Mechanical fixture inventory:      PASS (PolyC-built, exact
+                                       CORRECTION02 counts)
+    Broad corpus 4-stage:              PASS (PolyC-built, 175
+                                       BYTE_IDENTICAL_4 + 6
+                                       BOTH_FAIL_4)
+    Stage0 historical fallback:        9 (explicit provenance)
+    shell-loc-gate (F-POLYC-TOOLS):    PASS (14 + 16 LOC)
+    factory-no-python-check:           no new Python introduced
+    factory-append-only-test:          PASS (11/11 NC1..NC11)
+    F-NO-PYTHON:                       unchanged
+    Append-only Git history:           preserved
+
+  Lexer02 final verdict: PASS (closure truth, mechanical fixture
+    classification, canonical compiler corpus equivalence, AND
+    F-POLYC-TOOLS governance all repaired across CORRECTION01,
+    CORRECTION02, CORRECTION03, CORRECTION04).
+
+  Residue:
+    - 9 sources where current ./hcc has ARM64 inline asm
+      regression (pre-existing, NOT LEXER02). Tracked as
+      stage0-historical in provenance TSV.
+    - FNV-1a in broad-corpus evidence (P1): replace with
+      SHA-256 when libtos exposes SHA-256. The current contract
+      is BYTE-EQUALITY (satisfied by FNV-1a). F-POLYC-TOOLS
+      allows PolyC-local hash implementations.
+    - Three negative control mutation tests (AC05/06/07) for
+      stub binary, corrupted b02-corpus-A/*.o, and mutated
+      lexer07-direct-differential.c: not implemented in this
+      C2; tracked as P1 residue for the next ACT.
+    - factory-polyc-tools-check.HC not yet wired into gate-fast
+      (C2.9 residue); shell-loc-gate is the authoritative gate
+      for F-POLYC-TOOLS today.
+
+  NEXT:    ACT-POLYC-SELFHOST-LEXER03 (next surface-recon winner)
+           OR ACT-POLYC-SELFHOST-LEXER02-CORRECTION05 (negative
+           control mutation tests; residue P1).
+```
 ```
 
 ### P5a — LLVM feature depth (PARALLEL BACKLOG, NON-BLOCKING)

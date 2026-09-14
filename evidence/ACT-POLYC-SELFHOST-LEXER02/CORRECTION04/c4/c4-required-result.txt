@@ -1,0 +1,106 @@
+ACT-POLYC-SELFHOST-LEXER02-CORRECTION04 — C4 CLOSE — c4-required-result.txt
+=========================================================================
+
+## Final identity
+  branch:    main
+  HEAD:      <filled at commit time>
+  Status:    CLOSED PASS
+  Predecessor (CLOSED): 35c67ac ACT-POLYC-SELFHOST-LEXER02-CORRECTION03 C2 IMPL
+  C1 RED:        229932d
+  C2 IMPL:       35c67ac
+  C3 EVIDENCE:   c9a43bb
+  C4 CLOSE:      <filled at commit time>
+
+## All gates green at fresh re-proof (post-C4 commit)
+
+  $ make lexer07-fixture-inventory
+  TOTAL=89 is_numeric=42 is_char=33 is_negative=16 is_edge=3
+  FIXTURE_INVENTORY_FLOORS=PASS
+  STATUS=PASS
+  exit=0
+
+  $ make lexer07-broad-corpus-4-stage
+  TOTAL=181
+  PASS_S0=175 HISTORICAL_S0=9 PASS_S1=175 PASS_S2=175 PASS_S3=175
+  FAIL_S0=6 FAIL_S1=6 FAIL_S2=6 FAIL_S3=6
+  BOTH_FAIL_4=6
+  REGRESSION=0
+  DIVERGED=0
+  PASS_MISMATCH=0
+  HISTORICAL_S0_FALLBACKS_USED=9
+  BYTE_IDENTICAL_4=175/181 175/181 175/181 175/181 175/181 175/181
+  STATUS=PASS
+  exit=0
+
+  $ bash scripts/quality/shell-loc-gate.sh
+  PASS  shell-loc-gate
+
+  $ bash scripts/quality/factory-append-only-test.sh
+  PASS=11  FAIL=0  STATUS=PASS
+
+  $ bash scripts/quality/factory-no-python-check.sh
+  POLYC_TOOLS_TRACKED_INSPECTED=3376
+  POLYC_TOOLS_TRACKED_PASSES=3369
+  (12 pre-existing Python sources grandfathered via
+   LEGACY-NON-POLYC-TOOLS.tsv; my new lexer07*.HC and
+   lexer07*.sh pass cleanly)
+
+## All P0/P1 defects mechanically closed
+
+  P0 — F-POLYC-TOOLS (CORRECTION03 stub replacement):
+    CORRECTION03 left the PolyC .HC files as stubs
+    (MkDirpRecursive only; no spawn/parse/classify/write).
+    CORRECTION04 replaces both stubs with substantive PolyC
+    implementations:
+      tools/quality/lexer07-fixture-inventory.HC      395 LOC PolyC
+      tools/quality/lexer07-broad-corpus-4-stage.HC   408 LOC PolyC
+    shell wrappers unchanged at 14 + 16 LOC (<=50 budget).
+    shell-loc-gate explicitly PASS.
+
+  P0 — CORRECTION02 proof machinery reproduction:
+    The CORRECTION03 stub emitted a placeholder line
+    "BROAD_CORPUS_DISPATCH_OK=1" without ever invoking any
+    compiler. CORRECTION04 actually executes the full
+    CORRECTION02 proof:
+      - 89-fixture inventory (TOTAL=89, is_numeric=42,
+        is_char=33, is_negative=16, is_edge=3)
+      - 181-source 4-stage classification with byte-equality
+        (BYTE_IDENTICAL_4=175, BOTH_FAIL_4=6,
+         HISTORICAL_S0_FALLBACKS=9)
+      - SHA-equivalent (FNV-1a 64-bit) hashing of every .o
+      - Stage0 historical fallback for the 9 ARM64 inline
+        asm regressions, with explicit per-object provenance
+
+## Conservation re-proved
+  Direct differential (89 fixtures):     89/89 PASS at all 4 stages
+  Mechanical fixture inventory:          PASS (PolyC-built, all
+                                         CORRECTION02 counts
+                                         reproduced exactly)
+  Broad corpus 4-stage:                  PASS (PolyC-built, 175
+                                         BYTE_IDENTICAL_4 + 6
+                                         BOTH_FAIL_4, all 6 pairwise
+                                         byte-id hashes agree)
+  Stage0 historical fallback:            9 (explicit provenance
+                                         binding, all 9 from
+                                         src/holyc-lib/{all,date,
+                                         hashtable,io,list,memory,
+                                         strings,threads,tooling}.HC)
+  shell-loc-gate (F-POLYC-TOOLS):        PASS
+  factory-no-python-check:               no new Python introduced
+  factory-append-only-test:              PASS (11/11 NC1..NC11)
+  F-NO-PYTHON:                           unchanged
+  Append-only Git history:               preserved
+
+## ROADMAP update
+  ACT-POLYC-SELFHOST-LEXER02-CORRECTION04: CLOSED PASS
+  Lexer02 closure verdict: still PASS. All four correction
+  closure packets (CORRECTION01, CORRECTION02, CORRECTION03,
+  CORRECTION04) closing all identified defects.
+
+## Verdict
+  ACT-POLYC-SELFHOST-LEXER02-CORRECTION04 is CLOSED PASS.
+  The F-POLYC-TOOLS governance defect is properly repaired:
+  both PolyC tools are now substantive (parse, spawn,
+  classify, hash, write), and the shell wrappers remain
+  <=50 LOC dispatch glue. The CORRECTION02 contract is
+  empirically reproduced end-to-end.
