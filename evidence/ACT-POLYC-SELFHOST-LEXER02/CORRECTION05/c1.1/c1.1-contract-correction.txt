@@ -1,0 +1,171 @@
+ACT-POLYC-SELFHOST-LEXER02-CORRECTION05 — C1.1 CONTRACT-CORRECTION
+====================================================================
+
+Reviewer authorization at the C1 RED review (commit `9824027`)
+explicitly authorized a single intermediate commit
+`C1.1 CONTRACT-CORRECTION` between C1 RED and C2 IMPL.
+MAX_COMMITS for this ACT is revised from 4 to 5.
+
+The Factory v2 commit-msg-check grammar is
+`RED | IMPL | EVIDENCE | CLOSE`; a literal
+`CONTRACT-CORRECTION` phase token is not in the grammar.
+This C1.1 commit therefore carries `ACT-Phase: RED`
+(no verdict required for RED; the change is contract-only
+and pre-production). The commit subject records the
+C1.1 phase descriptively for human readers and the
+authoritative commit-msg-check.
+
+Reviewer audit findings (ten blocking issues) closed by
+this C1.1 contract correction. Each finding names the
+ACT section(s) that changed; no production code mutated
+in this commit.
+
+  R1   Generator MUST be separated from verifier.
+       ACT change: §0 items 1, 2 (allowed list);
+       §2 (allowed list — new
+       `tools/quality/lexer07-proof-verify.HC` ≤150 LOC);
+       §5 (implementation boundary — table row);
+       §6 (new AC19); §7 (conservation gates).
+
+  R2   BYTE_IDENTICAL means actual bytes (named helper).
+       ACT change: §0 item 2 (allowed list);
+       §2 (allowed list — `ObjectsByteEqual(a,asz,b,bsz)`
+       named helper); §5 (prose bullet); §6 (AC03
+       rewritten; new AC18 executable self-tests); §8
+       (new HALT_OBJECTS_BYTE_EQUAL_TEST_FAIL).
+
+  R3   SHA-256 must be canonical and tested at the
+       55/56/57-byte padding-boundary.
+       ACT change: §0 item 3 (allowed list);
+       §2 (allowed list — PolyC-local SHA-256 with NIST
+       FIPS 180-4 §B.2 vectors including 55/56/57-byte
+       cases); §5 (prose bullet); §6 (AC13 strengthened);
+       §8 (HALT_SHA256_VECTOR_MISMATCH note).
+
+  R4   Provenance schema must bind
+       source/stage/object_path/provenance_class/
+       object_sha256/compiler_binary_path/
+       compiler_binary_sha256 with truthful
+       stage0-historical rows.
+       ACT change: §0 item 4 (allowed list); §2 (allowed
+       list — provenance schema); §5 (prose bullet);
+       §6 (AC04 rewritten; new AC20); §8 (new
+       HALT_PROVENANCE_SCHEMA_FAIL).
+
+  R5   CORRECTION02 literal counts belong to the C05
+       snapshot, not the generator's permanent semantics.
+       ACT change: §0 item 5 (allowed list); §2 (allowed
+       list — split invariant-gate vs C05-snapshot);
+       §5 (prose bullet); §6 (AC02 rewritten).
+
+  R6   AC05/AC06/AC07 must mutate only the generator,
+       not the verifier.
+       ACT change: §0 item 6 (allowed list); §2 (allowed
+       list — three negative-control mutation binaries
+       leave the independent verifier intact); §5 (prose
+       bullet); §6 (AC05/06/07 rewritten); §8 (new
+       HALT_INDEPENDENT_VERIFIER_RC_ZERO_ON_STUB).
+
+  R7   AC06 must not derive both expected and actual
+       SHA from the same mutated file.
+       ACT change: §0 item 7 (allowed list); §2 (allowed
+       list — uses immutable pre-mutation snapshot);
+       §5 (prose bullet); §6 (AC06 rewritten).
+
+  R8   AC10 must use baseline/delta semantics
+       (NEW_PYTHON_SOURCES=0 etc.).
+       ACT change: §0 item 8 (allowed list); §2 (allowed
+       list — F-NO-PYTHON baseline/delta contract);
+       §5 (prose bullet); §6 (AC10 rewritten);
+       §7 (conservation gates).
+
+  R9   AC14 must preserve the closed CORRECTION04 HANDOFF
+       additively.
+       ACT change: §0 item 9 (allowed list); §2 (allowed
+       list — additive predecessor correction binding);
+       §2 forbidden list — "Editing the closed CORRECTION04
+       HANDOFF document" is FORBIDDEN; §5 (prose bullet
+       — single-field HANDOFF repair REMOVED);
+       §6 (AC14 rewritten); §7 (conservation gates).
+
+  R10  `factory-closure-status-check` is bounded to the
+       LLVM-CORE03 universe and CANNOT mechanically close
+       P1-7.
+       ACT change: §0 item 10 (allowed list); §2 (allowed
+       list — new
+       `tools/quality/lexer07-predecessor-verify.HC` ≤80 LOC);
+       §5 (implementation boundary — table row);
+       §6 (new AC11b direct predecessor-identity
+       verifier); §7 (conservation gates — NEW
+       predecessor verifier); §8 (new
+       HALT_PREDECESSOR_VERIFIER_FAIL).
+
+ACT changes NOT attributable to a single reviewer finding
+(structural improvements to the authorization artifact):
+
+  * Title block updated to enumerate the ten
+    reviewer-audit findings explicitly.
+  * §10 commit topology expanded from 4 to 5 commits with
+    a C1.1 CONTRACT-CORRECTION intermediate commit (this
+    commit). The trailer grammar forces `ACT-Phase: RED`
+    for this commit; the descriptive commit subject is
+    `ACT-POLYC-SELFHOST-LEXER02-CORRECTION05 — C1.1
+    CONTRACT-CORRECTION`.
+  * F14 explicitly forbids appending to the closed
+    CORRECTION02 / CORRECTION03 / CORRECTION04 evidence
+    directories AND to the closed CORRECTION04 HANDOFF.
+    The forbidden list (§2) calls this out explicitly.
+  * The `HALT_INDEPENDENT_VERIFIER_RC_ZERO_ON_STUB` token
+    names the F5-equivalent exact predicate for AC05.
+
+Acceptance-criteria count before C1.1: AC01..AC17
+(17 ACs).
+Acceptance-criteria count after  C1.1: AC01..AC20 +
+AC11b (21 ACs total).
+
+F14 (no closed-evidence rewrite) compliance:
+
+  evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION02/  -- untouched
+  evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION03/  -- untouched
+  evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION04/  -- untouched
+  docs/factory/HANDOFF-ACT-POLYC-SELFHOST-LEXER02-CORRECTION04.md
+    -- untouched (preserved verbatim per R9 / F14)
+
+F7 (scope is conserved) compliance: only the ACT
+authorization artifact, the ROADMAP C05 status block,
+and this C1.1 evidence file are added/modified by this
+commit. No production code, no shell wrapper, no
+Makefile, no `.HC` PolyC file, no evidence file in
+CORRECTION02/03/04 is modified.
+
+F12 (small truthful commits) compliance: this commit is
+a contract-only correction. It documents the ten
+reviewer-audit findings and the corresponding ACT
+revisions; it makes no production-code claim.
+
+Trailer grammar (this commit):
+
+  ACT: ACT-POLYC-SELFHOST-LEXER02-CORRECTION05
+  ACT-Phase: RED
+
+  Verdict: none (RED forbids verdict).
+  Supersedes: none (the C1 RED commit remains the
+  authoritative RED; this commit is an additive
+  contract correction and does not supersede the
+  C1 RED commit's evidence tree).
+
+Authoritative source-of-truth:
+
+  ACT authorization (this commit):
+    docs/acts/ACT-POLYC-SELFHOST-LEXER02-CORRECTION05.md
+    (revised §0, §2, §5, §6, §7, §8, §10)
+  ROADMAP epic-board (this commit):
+    docs/ROADMAP.md (C05 P0 READY → C05 P0 C1 RED
+    accepted / C1.1 contract-correction required;
+    added R1..R8 reviewer-audit-findings list;
+    strengthened F-NO-PYTHON, F-POLYC-TOOLS, F14
+    constraints; C05 commits ≤5).
+  C1 RED evidence (immutable, prior commit):
+    evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION05/c1/
+  C1.1 evidence (this commit):
+    evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION05/c1.1/

@@ -2783,18 +2783,28 @@ ACT-POLYC-SELFHOST-LEXER02-CORRECTION05          P0  READY
 
     P0-2  BYTE_IDENTICAL_4 classified by FNV-1a 64-bit hash
           equality, not by MemCmp byte equality.
-          Closed by C05 AC03.
+          Closed by C05 AC03 + AC18.
 
     P0-3  ACT explicitly required PolyC-local SHA-256; the
           implementation substituted FNV-1a and the HANDOFF
           retroactively re-labeled SHA-256 as residue.
-          Closed by C05 AC04 + AC13.
+          Closed by C05 AC04 + AC13 (with NIST FIPS 180-4
+          §B.2 vectors including 55/56/57-byte
+          padding-boundary cases; the C1.1 CONTRACT-
+          CORRECTION strengthened AC13 beyond just ""
+          and "abc").
 
     P0-4  Gate success predicate is
           (regression == 0 && pass_mismatch == 0); it does
           NOT enforce the literal CORRECTION02 counts
           (166 / 9 / 175 / 6 / 0).
-          Closed by C05 AC02.
+          Closed by C05 AC02 (the C1.1 CONTRACT-CORRECTION
+          moved the literal CORRECTION02 counts from the
+          generator's permanent semantics to the C05
+          independent verifier's snapshot; the generator
+          enforces semantic invariants only, so a future
+          genuine improvement does not become a
+          regression).
 
     P1-5  fixture-inventory.tsv has 91 physical lines but
           one logical record (hex_0xff_no_semi) is split
@@ -2804,19 +2814,59 @@ ACT-POLYC-SELFHOST-LEXER02-CORRECTION05          P0  READY
     P0-6  Mandatory fresh gate-fast and
           factory-closure-status-check evidence missing
           from C04 c3-required-result.txt.
-          Closed by C05 AC09 + AC11.
+          Closed by C05 AC09 + AC11 + AC11b (AC11b is the
+          NEW direct predecessor-identity verifier; it is
+          required because factory-closure-status-check is
+          bounded to the LLVM-CORE03 universe and cannot
+          mechanically close P1-7).
 
     P1-7  CORRECTION04 HANDOFF records
           "Predecessor (closed): 35c67ac" but 35c67ac is
           CORRECTION04's own C2 IMPL; the actual closed
           predecessor is 6abde99 (CORRECTION03 C4 CLOSE).
-          Closed by C05 AC14 (single-field HANDOFF repair).
+          Closed by C05 AC14 ADDITIVELY — the closed
+          CORRECTION04 HANDOFF is preserved verbatim per
+          F14; the correction is recorded in the C05
+          HANDOFF and ROADMAP only.
+
+  Reviewer audit findings at C1 (closed by C1.1
+  CONTRACT-CORRECTION, then C2/C3):
+
+    R1   Generator MUST be separated from verifier. Closed
+         by AC19 (new
+         tools/quality/lexer07-proof-verify.HC).
+    R2   BYTE_IDENTICAL means actual bytes (named helper).
+         Closed by AC03 + AC18 (ObjectsByteEqual +
+         executable self-tests).
+    R3   SHA-256 must be canonical and tested at the
+         55/56/57-byte padding-boundary. Closed by AC13.
+    R4   Provenance schema must bind
+         source/stage/object_path/provenance_class/
+         object_sha256/compiler_binary_path/
+         compiler_binary_sha256 with truthful
+         stage0-historical rows. Closed by AC04 + AC20.
+    R5   CORRECTION02 literal counts belong to the C05
+         snapshot, not the generator's permanent
+         semantics. Closed by AC02 (split invariant-gate
+         vs C05-snapshot).
+    R6   AC05/AC06/AC07 must mutate only the generator,
+         not the verifier. Closed by AC05/AC06/AC07.
+    R7   AC06 must not derive both expected and actual
+         SHA from the same mutated file. Closed by AC06
+         (uses immutable pre-mutation snapshot).
+    R8   AC10 must use baseline/delta semantics
+         (NEW_PYTHON_SOURCES=0 etc.). Closed by AC10.
 
   Epic-board status:
 
     Pri    ACT                                                State
     ----   ------------------------------------------------   ----------------
-    P0     ACT-POLYC-SELFHOST-LEXER02-CORRECTION05            READY (this block)
+    P0     ACT-POLYC-SELFHOST-LEXER02-CORRECTION05            C1 RED accepted;
+                                                               C1.1 contract-
+                                                               correction required
+                                                               (this commit)
+    P0     ACT-POLYC-SELFHOST-LEXER02-CORRECTION05            ⏸ BLOCKED on C1.1
+            C2 IMPL                                            completion
     P1     ACT-POLYC-SELFHOST-LEXER03 / fresh surface recon   BLOCKED
                                                                (exit: C05 TRUE GREEN)
     P2     724-invocation parallelization                     Deferred
@@ -2833,20 +2883,34 @@ ACT-POLYC-SELFHOST-LEXER02-CORRECTION05          P0  READY
   Constraints:
     Production semantic changes:  FORBIDDEN
     Append-only history:           PRESERVED (no amend, rebase,
-                                   force-push)
-    F-NO-PYTHON:                   preserved
+                                   force-push). C05 commits ≤5
+                                   (C1, C1.1, C2, C3, C4).
+    F-NO-PYTHON:                   preserved (AC10 baseline/
+                                   delta contract; literal
+                                   STATUS=FAIL on grandfathered
+                                   12 Python files is
+                                   contractually expected and
+                                   is NOT a regression).
     F-POLYC-TOOLS:                 preserved (shell wrappers
-                                   remain ≤50 LOC dispatch glue)
-    F14 (no closed-evidence rewrite): the CORRECTION04 evidence
-                                   directory is NOT touched;
-                                   only the single HANDOFF
-                                   predecessor field is repaired
-                                   inside C05.
+                                   remain ≤50 LOC dispatch glue;
+                                   PolyC-local SHA-256 is the
+                                   canonical hash; FNV-1a is
+                                   informational only).
+    F14 (no closed-evidence rewrite): the CORRECTION02 /
+                                   CORRECTION03 / CORRECTION04
+                                   evidence directories and the
+                                   closed CORRECTION04 HANDOFF
+                                   are NOT modified. The C04
+                                   predecessor correction is
+                                   recorded ADDITIVELY in the
+                                   C05 HANDOFF and ROADMAP only.
 
-  Closure: when AC01..AC17 are mechanically satisfied at the
-  CORRECTION05 C4 CLOSE commit, the seven defects are CLOSED,
-  the CORRECTION02 contract is re-proven under MemCmp + SHA-256,
-  and the LEXER03 BLOCKED signal may be lifted by an explicit
+  Closure: when AC01..AC20 are mechanically satisfied at
+  the CORRECTION05 C4 CLOSE commit, the seven CORRECTION04
+  defects AND the eight reviewer-audit findings from C1.1
+  are CLOSED, the CORRECTION02 contract is re-proven under
+  MemCmp + SHA-256 by an independent PolyC verifier, and
+  the LEXER03 BLOCKED signal may be lifted by an explicit
   fresh-surface-recon ACT.
 ```
 
