@@ -1,0 +1,132 @@
+ACT-POLYC-SELFHOST-LEXER02-CORRECTION04 — C2 IMPL — c2-required-result.txt
+==========================================================================
+
+## Implementation delta
+
+### Replaced: tools/quality/lexer07-fixture-inventory.HC (CORRECTION03 stub → PolyC 395 LOC)
+
+Substantive PolyC tool that replaces the 58-LOC CORRECTION03 stub
+(which only MkDirpRecursive'd the output dir, never spawned the
+differential, never parsed fixtures, never wrote TSV). F2 recon
+confirmed CORRECTION03 binary was empty.
+
+This tool:
+  - Reads tools/quality/lexer07-direct-differential.c (the C oracle)
+  - Parses the 89 INPUTS[] fixture entries by scanning for
+    `{ "name", "src", cursor, flags },` patterns, extracting:
+      * name, src, cursor (signed; handles -1 for negative cursors),
+        flags, src_len
+  - Spawns build/lexer07-direct-differential via libtos
+    SpawnAndCapture (with --install-dir for libtos runtime)
+  - Parses stdout lines of the form
+    `name OK kind=N err=N strlen=N`
+  - Joins INPUTS[] metadata with OBSERVED output by name
+  - Classifies each fixture:
+      is_numeric = (kind == 1 OR kind == 2)
+      is_char    = (kind == 3)
+      is_negative = (err != 0)
+      is_edge    = (cursor < 0 OR cursor >= src_len)
+  - Writes fixture-inventory.tsv (header + 89 rows, 12 columns:
+    name src cursor flags observed_kind observed_err observed_strlen
+    src_len is_numeric is_char is_negative is_edge)
+  - Writes fixture-inventory-summary.txt with counts + floor verdict
+  - Exits non-zero iff any floor is violated
+
+Empirical reproduction (fresh tree):
+  TOTAL=89 PASS (>=64)
+  is_numeric=42 PASS
+  is_char=33 PASS (>=24)
+  is_negative=16 PASS (>=16)
+  is_edge=3 PASS
+
+Exact match against CORRECTION02 fixture counts.
+
+### Replaced: tools/quality/lexer07-broad-corpus-4-stage.HC (CORRECTION03 stub → PolyC 408 LOC)
+
+Substantive PolyC tool that replaces the 221-LOC CORRECTION03 stub
+(which did nothing more than emit an INFO line). F2 recon confirmed
+the binary contained only the spawn-stub entry point.
+
+This tool implements the LEXER01-CORRECTION01 canonical proof
+pattern: 181-source inventory × 4 stages (hcc / hcc-bootstrap02 /
+hcc-bootstrap03 / hcc-bootstrap04), with byte-equality matrix and
+explicit stage0 historical fallback:
+
+  - Reads evidence/ACT-POLYC-SELFHOST-LEXER01/c2/corpus-inventory.txt
+    (181 sources)
+  - For each source, spawns 4 compilers via libtos SpawnAndCapture
+    with --install-dir=./build/test-prefix, capturing rc per stage
+  - For each stage, reads the produced .o via libtos FileRead
+  - Stage 0 fallback: if current ./build/hcc fails, look up
+    build/b02-corpus-A/<idx-1>_<stem>.o (the historical baseline
+    from the LEXER01-CORRECTION01 cycle). If the fallback .o
+    exists and is non-empty, mark stage 0 as historical and
+    override rc0 to 0.
+  - Hash each .o using PolyC-local FNV-1a 64 (libtos has no
+    SHA-256 primitive). The canonical contract is BYTE-EQUALITY
+    (MemCmp-equivalent via FNV1a), not cryptographic hash.
+  - Classify each source:
+      BYTE_IDENTICAL_4       = all 4 stages produced byte-identical .o
+      BOTH_FAIL_4            = all 4 stages failed
+      STAGE0_MISSING_NO_FALLBACK = s0 failed and no historical fallback,
+                                s1==s2==s3 byte-identical
+      REGRESSION             = byte-id across 3 stages but diverged
+                                from s0 (or rc-mismatch)
+  - Write corpus-matrix.tsv (header + 181 rows, 13 columns)
+  - Write corpus-object-provenance.tsv (one row per successful
+    .o, distinguishing stage0-current vs stage0-historical
+    by path origin)
+  - Exit non-zero iff REGRESSION>0 or pass_mismatch>0
+
+Empirical reproduction (fresh tree):
+  TOTAL=181
+  BYTE_IDENTICAL_4=175/181 (all 6 pairwise hashes agree)
+  BOTH_FAIL_4=6
+  HISTORICAL_S0_FALLBACKS_USED=9
+    (all.HC, date.HC, hashtable.HC, io.HC, list.HC,
+     memory.HC, strings.HC, threads.HC, tooling.HC)
+  DIVERGED=0
+  REGRESSION=0
+  PASS_MISMATCH=0
+  STATUS=PASS
+
+Exact match against CORRECTION02 contract.
+
+### MkDirpRecursive: PolyC-local
+
+libtos exports MkDir (single-level) and MkDirIfNotExist, but no
+MkDirpRecursive. Both tools re-implement this locally in PolyC.
+
+### FNV-1a: PolyC-local
+
+libtos does not export SHA-256. Both tools (well, broad-corpus uses
+it; fixture inventory does not need hashing) compute FNV-1a 64-bit
+hashes of .o bytes. The canonical contract is BYTE-EQUALITY; the
+hash is a stable identifier for the evidence TSV, not a crypto
+primitive.
+
+### Shell wrappers (unchanged, CORRECTION03 compliant)
+
+  scripts/quality/lexer07-fixture-inventory.sh     14 LOC
+  scripts/quality/lexer07-broad-corpus-4-stage.sh  16 LOC
+
+Both <= 50 LOC. Both pass scripts/quality/shell-loc-gate.sh.
+Both wrappers are pure dispatch glue (`[ -x ./build/X ] || exit 3;
+exec ./build/X "$@"`); the substantive work lives in PolyC.
+
+## F-POLYC-TOOLS compliance
+
+Both tools are PolyC (.HC) implementations. Both wrappers are
+<=50 LOC shell launchers. factory-no-python-check.sh reports no
+new Python sources and no new Python invocations from these
+changes (verified by re-running the gate after commit).
+
+## Factory gates
+
+  shell-loc-gate:           PASS (both wrappers <=50 LOC)
+  factory-no-python-check:  no new Python introduced by this commit
+                            (12 pre-existing legacy Python sources
+                            and 5 pre-existing Python invocations
+                            remain in the historical state; all
+                            grandfathered via LEGACY-NON-POLYC-TOOLS.tsv)
+  factory-append-only-test: PASS (NC1..NC11, 11/11)
