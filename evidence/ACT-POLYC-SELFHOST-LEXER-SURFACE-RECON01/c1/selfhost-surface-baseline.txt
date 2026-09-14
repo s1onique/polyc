@@ -1,0 +1,79 @@
+ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01 — C1 — self-host surface baseline
+========================================================================
+
+Mechanically measured at C1 entry, AFTER the predecessor ACT closure.
+All counts derived from inventory.tsv, semantic-classes.tsv, and
+docs/factory/SELF-HOST-COMPONENTS.tsv (frozen by LEXER01-CORRECTION01).
+
+```text
+SELFHOST_LEXER_COMPONENTS             = 2
+  identifier_scanner                  (ACT-POLYC-BOOTSTRAP02)
+  operator_punctuation_recognizer     (ACT-POLYC-SELFHOST-LEXER01)
+
+SELFHOSTED_SEMANTIC_LOC               = ~952 + ~120 (identifier + operator)
+  identifier_scanner:
+    BootstrapScanIdent body           ~952 effective LOC
+    (measured at ACT-POLYC-BOOTSTRAP02 C4 closure)
+  operator_punctuation_recognizer:
+    lexCore operator cases            120 (per LEXER01 winner-state-contract.txt)
+
+HOST_C_CORE_SEMANTIC_LOC              = sum of CORE_* and HOST_C_* host-C ops
+  countNumberLen                       78
+  lexNumeric                            27
+  lexSkipCodeComment                    31
+  lexCharConst                          78
+  lexString                            104
+  lexCore whitespace cases              15
+  TOTAL HOST_C_CORE_SEMANTIC_LOC      = 333
+
+SELFHOSTED_TOKEN_KINDS                = 33
+  TK_IDENT                             1
+  TK_PUNCT subset (per winner-source-seam.txt) 32
+
+HOST_C_CORE_TOKEN_KINDS               = token kinds produced by HOST_C_CORE_LEXER ops
+  TK_COMMENT                           1 (when CCF_ACCEPT_COMMENTS)
+  TK_STR                               1
+  TK_CHAR_CONST                        1
+  TK_I64                               1
+  TK_F64                               1
+  (TK_KEYWORD with KW_PP_* and KW_* also flow through lexCore's preprocessor
+   branch, but those are produced by PREPROCESSOR not CORE_LEXER.)
+  TOTAL HOST_C_CORE_TOKEN_KINDS       = 5
+
+SELFHOSTED_ENTRY_SEAMS                = 2
+  src/lexer.c::lexIdentifier          (B1)
+  src/lexer.c::lexCore operator cases (B_LEXER_OPERATOR)
+
+HOST_C_CORE_ENTRY_SEAMS               = 6
+  src/lexer.c::lexCore calls:
+    lexNumeric (case '0'..'9')
+    lexString  (case '"')
+    lexCharConst (case '\'')
+    lexSkipCodeComment (case '/' when *l->ptr is '/' or '*')
+    whitespace cases (cases '\r','\n','\t',' ') in lexCore
+    identifier-keyword classify (default-case map lookup; not yet migrated)
+
+POLYC_PRODUCTION_CALL_SITES           = 2
+  BootstrapScanIdent in lexIdentifier (stage1+ only)
+  BootstrapClassifyOperator in lexCore (stage1+ only)
+
+HOST_C_CORE_REGION_COUNT              = 6 microscopic candidates per LEXER01 c1 inventory
+  numeric_length_scan
+  numeric_value_parse
+  char_const_scan
+  string_literal_scan (E5 ineligible)
+  comment_skip
+  whitespace_dispatch
+  (operator_punctuation_recognizer migrated; identifier_keyword_classify E5 ineligible)
+```
+
+NOTES:
+- SELFHOSTED_SEMANTIC_LOC for identifier_scanner is the effective semantic
+  LOC of the PolyC component (B1) including its oracle and seam-runner
+  plumbing; the legacy lexIdentifier legacy C body (~16 LOC) is no longer
+  in scope.
+- HOST_C_CORE_SEMANTIC_LOC is the remaining host-C lexical code that the
+  recon ACT will reason about as candidate regions.
+- The component registry docs/factory/SELF-HOST-COMPONENTS.tsv has exactly
+  2 rows at C1 entry. The recon ACT does NOT add a row (AC26/AC27).
+

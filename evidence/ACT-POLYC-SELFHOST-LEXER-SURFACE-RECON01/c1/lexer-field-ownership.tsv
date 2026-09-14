@@ -1,0 +1,24 @@
+# ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01 — C1 — Lexer field ownership
+# Format: field<TAB>type<TAB>readers<TAB>writers<TAB>semantic_purpose<TAB>cross_file_behavior<TAB>diagnostic_relevance<TAB>already_selfhosted_owned?
+ptr	pointer_char	lexCore,lexNextChar,lexRewindChar,lexPeekMatch,lexPeek,lexPushFile,lexPushString,lexSkipCodeComment,lexIdentifier,lexString,lexCharConst,lexClassifyOperator,lexInclude,lexCore(lexRaise paths)	lexNextChar,lexRewindChar,lexPushFile,lexPushString,lexSkipCodeComment,lexIdentifier,lexString,lexCharConst,lexClassifyOperator,lexCore,lexInclude,RW every cursor-mutator	Cursor (primary). One past NUL would be UB.	YES (resets to f->ptr on file push, pops from l->files on NUL)	YES (col math from line_start_ptr)	PARTIAL (BootstrapScanIdent reads/writes through l->start/l->ptr; BootstrapClassifyOperator only writes via wrapper advance)
+start	pointer_char	lexIdentifier,lexClassifyOperator,lexCore,lexCore(lexNumeric dispatch)	lexNextChar,lexCore	Pointer to first byte of current token (legacy convention)	NO	NO (col math uses line_start_ptr)	PARTIAL (legacy path)
+cur_ch	char	lexCore	lexNextChar	Current byte (legacy single-byte state machine)	NO	NO	NO
+lineno	int	lexCore,lexSkipCodeComment,lexString,lexCharConst,lexPreProcDirective,lexDefine,lexPreProcBoolean	lexInit,lexNextChar,lexCore,lexSkipCodeComment,lexString,lexPreProcBoolean,lexToken	1-based current line number	YES (saved/restored on file push/pop)	YES (used by lexRaise)	NO
+line_start_ptr	pointer_char	lexCore,lexSkipCodeComment,lexString	lexInit,lexNextChar,lexCore,lexPushFile,lexPushString,lexSkipCodeComment,lexString	Pointer to first byte of current source line (col math)	YES (saved/restored on file push/pop)	YES (used to compute tok_start_col and by lexRaise/lexerReportLine)	NO
+cur_i64	s64	lexCore(lexCharConst dispatch,lexNumeric dispatch)	lexCharConst,lexNumeric	Latest I64 token value (or char const result)	NO	NO	NO
+cur_f64	double	lexCore(lexNumeric dispatch)	lexNumeric	Latest F64 token value	NO	NO	NO
+cur_strlen	s64	lexCore	lexIdentifier,lexCharConst,lexNumeric,lexCore,Lexeme * copying	Length of current token's payload	NO	NO	PARTIAL (BootstrapScanIdent sets via wrapper)
+cur_str	char_star	-	lexString,lexCore(sets to NULL on return)	Owned AoStr-allocated string (legacy field; mostly NULL after each token)	NO	NO	NO
+ishex	int	lexCore(lexNumeric dispatch)	lexNumeric,lexCore	Last numeric was hex (legacy flag; cleared after every numeric token)	NO	NO	NO
+flags	int	lexCore,lexString,lexCharConst,lexClassifyOperator,lexToken,lexPreProcBoolean,lexLink	lexInit,lexSetAsmFlags,lexUnSetAsmFlags,lexCore,lexPreProcIf,lexPreProcBoolean,lexToken	CCF_* flags (block mode, asm block, permissive)	NO	NO	NO
+files	List_star	lexNextChar,lexInclude,lexPushFile,lexPushString	lexInit,lexNextChar,lexPushFile,lexPushString,lexerRelease,lexCore	Stack of pending files (for #include push/pop)	YES (popped on NUL EOF in lexNextChar)	NO	NO
+all_source	List_star	-	lexInit,lexReleaseAllFiles,lexerRelease	Tracking list of all sources (for free on lexerRelease)	NO	NO	NO
+cur_file	LexFile_star	lexInclude,lexerReportLine,lexCore	lexInit,lexNextChar,lexPushFile,lexPushString	Currently active file (for #include routing + diagnostic line rendering)	YES (set on file push/pop)	YES (lexerReportLine uses src->data)	NO
+symbol_table	Map_star	lexCore(default-case ident lookup),lexPreProcDirective	lexInit,lexPreProcDirective(string "name" prefix)	Map of builtin LexerType entries (U0, I64, switch, if, #if...)	NO	NO	NO
+seen_files	Set_star	lexInclude(setHas),lexPushFile(setAdd)	lexInit,lexPushFile,lexInclude	Set of seen filenames (prevent #include cycles)	NO	NO	NO
+collecting	int	-	lexInit,lexPreProcBoolean,lexPreProcIf,lexToken	Whether current #if branch is being collected	NO	NO	NO
+skip_else	int	-	lexInit,lexPreProcBoolean,lexPreProcIf,lexToken	Whether to skip remaining #else branches	NO	NO	NO
+cc	Cctrl_star	lexRaise,lexLink,lexDefine,lexPreProcIf,lexPreProcBoolean,lexToken	-	Back-pointer to owning compiler (for diagnostic accumulation)	NO	YES (routes lexRaise through cctrlTerminate)	NO
+tok_start_line	int	-	lexCore,lex,lexToken	Line of first byte of current token	NO	YES (used by lexRaise)	NO
+tok_start_col	int	-	lexCore,lex	Column of first byte of current token	NO	YES (used by lexRaise)	NO
+builtin_root	char_star	-	lexSetBuiltinRoot,lexInclude	Builtin include root path	NO	NO	NO

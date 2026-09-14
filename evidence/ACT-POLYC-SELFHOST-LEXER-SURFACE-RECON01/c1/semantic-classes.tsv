@@ -1,0 +1,72 @@
+# ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01 — C1 — semantic ownership classes
+# Format: function<TAB>primary_class<TAB>justification
+# Order = the order operations appear in lexCore's switch, then post-dispatch helpers
+lexCore	HOST_C_DISPATCHER	top-level dispatcher (the only place all helper regions are invoked from)
+lexInit	PUBLIC_LEX_INIT	public entry; sets up Lexer fields, files, all_source, symbol_table
+lexerRelease	PUBLIC_LEX_INIT	teardown; releases files + all_source
+lexToken	PUBLIC_LEX_ENTRY	parse-time driver with macro substitution
+lex	PUBLIC_LEX_ENTRY	public entry; wraps lexCore with line/col capture
+
+lexNextChar	CORE_CURSOR	low-level cursor advance (state machine; reads/writes l->ptr/l->start/l->cur_ch/l->files/l->cur_file/l->lineno/l->line_start_ptr)
+lexRewindChar	CORE_CURSOR	single-byte rewind
+lexPeekMatch	CORE_CURSOR	peek-and-compare
+lexPeek	CORE_CURSOR	single-byte peek
+
+lexSkipCodeComment	CORE_COMMENT	whitespace+comment skip; mutates l->ptr/l->lineno/l->line_start_ptr
+countNumberLen	CORE_NUMERIC_EXTENT	length scanner; pure byte walking; 3 out-params
+lexNumeric	CORE_NUMERIC_VALUE	length+value dispatch; mutates l->cur_*, l->ptr, l->ishex; calls libc strtoll/strtoull/strtold
+lexCharConst	HOST_C_CORE_CHAR_LITERAL	char-const scanner; mutates l->cur_i64, l->cur_strlen, l->ptr
+lexString	HOST_C_CORE_STRING	string scanner; mutates l->cur_str, l->ptr, l->lineno, l->line_start_ptr; AoStr/Arena allocator coupling
+
+lexIdentifier	SELFHOSTED_IDENTIFIER	already migrated via ACT-POLYC-BOOTSTRAP02
+lexClassifyOperator	SELFHOSTED_OPERATOR	already migrated via ACT-POLYC-SELFHOST-LEXER01
+
+lexPreProcDirective	PREPROCESSOR	"#..." dispatch; touches l->symbol_table (Map*)
+lexInclude	INCLUDE_FILE_STACK	#include handling; touches l->seen_files, l->files, l->cur_file
+lexLink	LINK_TRACKING	#link bookkeeping; touches cc (Cctrl*); accumulates Vec*
+lexDefine	MACRO_EXPANSION	#define expansion; touches macro_defs (Map*), cc (Cctrl*)
+lexUndef	MACRO_EXPANSION	#undef; touches macro_defs (Map*)
+lexPreProcIf	PREPROCESSOR	#if expression parser; touches macro_defs (Map*), cc (Cctrl*), l->collecting, l->skip_else
+lexPreProcBoolean	PREPROCESSOR	#if/#elif/#else/#endif boolean machine
+
+lexRaise	DIAGNOSTIC	exception raise; routes through cc (Cctrl*) or loggerPanic
+lexerReportLine	DIAGNOSTIC	error report renderer; touches l->cur_file (LexFile*)
+
+lexSetBuiltinRoot	FILE_STACK	set builtin include root
+lexPushFile	FILE_STACK	file-stack push; malloc LexFile; touches l->files, l->cur_file, l->seen_files, l->ptr, l->lineno, l->line_start_ptr, l->start
+lexPushString	FILE_STACK	in-memory file push (REPL); touches l->files, l->cur_file, l->ptr, l->lineno, l->line_start_ptr, l->start
+lexReadfile	FILE_STACK	file IO; malloc-allocated char*; loggerPanic on error
+lexReleaseLexFile	FILE_STACK	free LexFile
+lexReleaseAllFiles	FILE_STACK	listRelease loop
+
+lexemeMemoryInit	MEMORY_MANAGEMENT	arena init for lexemes
+lexemeMemoryRelease	MEMORY_MANAGEMENT	arena release
+lexemeMemoryStats	MEMORY_MANAGEMENT	arena stats
+lexerAllocLexeme	MEMORY_MANAGEMENT	arena-allocated Lexeme*
+lexerAllocateBuffer	MEMORY_MANAGEMENT	arena-allocated char*
+lexerReAllocBuffer	MEMORY_MANAGEMENT	arena realloc
+lexemeNew	MEMORY_MANAGEMENT	lexeme constructor
+lexemeSentinal	MEMORY_MANAGEMENT	EOF sentinel lexeme
+lexemeCopy	MEMORY_MANAGEMENT	lexeme copy
+lexemeTokNew	MEMORY_MANAGEMENT	lexeme constructor (TK_PUNCT)
+lexemeNewOp	MEMORY_MANAGEMENT	lexeme constructor (op token)
+lexemeAssignOp	TOKEN_CONSTRUCTION	lexeme field assignment for op tokens
+lexemeFree	MEMORY_MANAGEMENT	lexeme free (currently no-op)
+
+vecLexemeToString	RENDERING	debug print
+vecLexemeRelease	RENDERING	Vec release helper
+mapLexerTypeToString	RENDERING	Map<LexerType*> stringify
+lexemeTypeToString	RENDERING	TK_* -> string
+lexemePunctToEncodedString	RENDERING	op -> HTML-encoded string
+lexemePunctToString	RENDERING	op -> string
+lexemePunctToStringWithFlags	RENDERING	flag-aware wrapper
+lexemeToAoStr	RENDERING	Lexeme -> AoStr
+lexemeToString	RENDERING	Lexeme -> char*
+lexemePrint	RENDERING	print one lexeme
+
+tokenPunctIs	SUPPORT	lexeme matcher helper
+tokenIdentIs	SUPPORT	lexeme matcher helper
+listContainsAoStr	SUPPORT	List<AoStr*> predicate
+lexSetAsmFlags	SUPPORT	set asm-block flag bits
+lexUnSetAsmFlags	SUPPORT	clear asm-block flag bits
+lexemeEq	SUPPORT	lexeme equality

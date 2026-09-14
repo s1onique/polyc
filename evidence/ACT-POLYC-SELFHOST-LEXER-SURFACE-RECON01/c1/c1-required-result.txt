@@ -1,0 +1,38 @@
+ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01 — C1 — required result
+===============================================================
+
+```text
+ACT_PHASE                    = RED
+PREDECESSOR_GREEN            = YES
+
+SELFHOST_LEXER_COMPONENTS    = 2
+OLD_MICRO_CANDIDATES         = 4 (countNumberLen, lexSkipCodeComment, lexCharConst, lexNumeric; whitespace_dispatch and string_literal_scan are also negative/E5 but counted separately below)
+OLD_POSITIVE_CANDIDATES      = 0
+OLD_NEGATIVE_CANDIDATES      = 4
+OLD_INELIGIBLE_CANDIDATES    = 2 (identifier_keyword_classify E5, string_literal_scan E5)
+
+LEXER_FUNCTION_INVENTORY     = COMPLETE (60 functions in src/lexer.c)
+LEXER_CALLGRAPH              = COMPLETE (192 edges)
+LEXER_STATEGRAPH             = COMPLETE (122 field R/W edges)
+LEXER_FIELD_OWNERSHIP        = COMPLETE (22 Lexer fields mapped)
+SEMANTIC_CLASSES             = COMPLETE (60 functions mapped to 17 frozen classes)
+STATE_COUPLING_MATRIX        = COMPLETE (15 op-pair couplings)
+EXTERNAL_BOUNDARIES          = COMPLETE (12 op-pair boundary costs)
+
+REGION_MODEL                 = ABSENT_AT_ENTRY
+PRODUCTION_DELTA             = ZERO
+C1_TO_C2_GATE                = OPEN
+```
+
+PREDECESSOR TRUTH (mechanically re-observed now):
+- identifier I0==I1==I2==I3   = PASS (SHA a1b620c...)
+- operator   N0==N1==N2==N3   = PASS (SHA c9fec4f...)
+- operator direct differential = PASS 47/47
+- operator production seam     = PASS 33/33 at each stage0/1/2/3 (from prior ACT)
+- broad corpus 4-stage         = PASS 175/175 + 6/6 (from prior ACT)
+- Dafny                        = PASS 17/17
+- F_NO_PYTHON                  = 12 (unchanged)
+- Factory gate-fast            = PASS
+
+NO HALT conditions triggered in C1.
+ACT may proceed to C2 IMPL (region derivation).

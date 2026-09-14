@@ -1,0 +1,37 @@
+ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01 — C1 — prior-negative-score RED
+======================================================================
+
+The binding RED for this recon ACT is:
+
+  REMAINING_FUNCTION_CANDIDATES_POSITIVE = 0
+  COHERENT_REGION_MODEL                  = NOT YET DERIVED
+  NEXT_MIGRATION_BOUNDARY                = UNKNOWN
+
+Mechanically reproduced from the historical
+evidence/ACT-POLYC-SELFHOST-LEXER01/c1/lexer-candidate-inventory.tsv:
+
+  Rank   Candidate                      FINAL   Status
+  ----   --------                       -----   ------
+  1      operator_punctuation_recognizer  +952  MIGRATED (LEXER01 winner)
+  2      numeric_length_scan             -53    negative
+  3      comment_skip                    -226   negative
+  4      char_const_scan                 -47    negative (deferred, complex ABI)
+  5      numeric_value_parse             -103   negative
+  6      whitespace_dispatch             -193   negative
+
+  All 6 remaining function-level candidates are negative.
+  Of the 8 candidates total, 2 are ineligible (E5 violations).
+
+Hypothesis for this ACT to falsify:
+
+  The negative scores are an artifact of paying ABI/state-boundary
+  costs individually. Coherent semantic REGIONS (e.g. scalar_literal_scanner
+  combining numeric extent + numeric value + quoted-char extent; or
+  comment_whitespace_scanner combining whitespace + line accounting +
+  comments) may reduce boundary complexity enough that the region-level
+  FINAL_SCORE becomes positive.
+
+The ACT freezes the historical LEXER01 ranking as
+`FROZEN_AS_HISTORICAL_EVIDENCE` and does NOT change E1..E14 or
+the LEXER01 scoring weights.
+

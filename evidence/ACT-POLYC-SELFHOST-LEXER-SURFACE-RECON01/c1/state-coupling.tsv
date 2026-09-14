@@ -1,0 +1,33 @@
+# ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01 — C1 — state coupling matrix
+# Frozen formula (ACT §10):
+#   SHARED_STATE(A,B) =
+#       8  * shared_pointer_fields_written
+#     + 4  * shared_scalar_fields_written
+#     + 2  * shared_fields_read
+#     + 8  * ordered cursor dependency
+#     + 4  * shared token/result representation
+#
+# Format: opA<TAB>opB<TAB>spfw<TAB>ssfw<TAB>sfr<TAB>ocd<TAB>str<TAB>TOTAL
+#
+# This matrix only considers HOST_C_CORE_LEXER ops (eligible for migration).
+# SELFHOSTED ops and HOST_C_SUPPORT/RENDERING/FILE_STACK/PREPROCESSOR are
+# out-of-scope for direct coupling measurement.
+#
+# Only the 6 prior microscopic candidates are scored here; region coupling
+# is recomputed in C2 from the candidate set.
+opA	opB	spfw	ssfw	sfr	ocd	str	SHARED_STATE_TOTAL
+countNumberLen	lexNumeric	1	3	1	1	1	=8+12+2+8+4 = 34
+countNumberLen	lexCharConst	1	2	1	1	0	=8+8+2+8+0  = 26
+countNumberLen	lexString	1	3	2	1	0	=8+12+4+8+0  = 32
+countNumberLen	lexSkipCodeComment	1	2	2	1	0	=8+8+4+8+0   = 28
+countNumberLen	lexIdentifier	1	1	2	1	0	=8+4+4+8+0    = 24
+lexNumeric	lexCharConst	1	3	2	1	1	=8+12+4+8+4 = 36
+lexNumeric	lexString	1	4	2	1	1	=8+16+4+8+4 = 40
+lexNumeric	lexSkipCodeComment	1	2	2	1	0	=8+8+4+8+0  = 28
+lexNumeric	lexIdentifier	1	1	2	1	0	=8+4+4+8+0   = 24
+lexCharConst	lexString	1	3	2	1	1	=8+12+4+8+4 = 36
+lexCharConst	lexSkipCodeComment	1	2	2	1	0	=8+8+4+8+0  = 28
+lexCharConst	lexIdentifier	1	1	2	1	0	=8+4+4+8+0   = 24
+lexString	lexSkipCodeComment	1	3	2	1	0	=8+12+4+8+0 = 32
+lexString	lexIdentifier	1	1	2	1	0	=8+4+4+8+0    = 24
+lexSkipCodeComment	lexIdentifier	1	1	2	1	0	=8+4+4+8+0    = 24

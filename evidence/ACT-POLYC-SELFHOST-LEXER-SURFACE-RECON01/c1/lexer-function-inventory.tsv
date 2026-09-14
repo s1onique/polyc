@@ -1,0 +1,61 @@
+function	line_start	line_end	semantic_loc	primary_class	calls	called_by	lexer_fields_read	lexer_fields_written	containers_read	containers_written	allocates	frees	diagnostic_edges	file_stack_edges	preprocessor_edges	token_kinds_produced	already_selfhosted	region_candidate
+vecLexemeToString	27	30	4	SUPPORT	lexemeToString	(callers outside lexer.c)	-	-	-	-	-	-	0	0	0	0	NO	no
+vecLexemeRelease	32	35	4	SUPPORT	-	-	-	-	-	-	-	-	0	0	0	0	NO	no
+mapLexerTypeToString	48	51	4	SUPPORT	-	lexPreProcDirective	-	-	-	-	-	-	0	0	0	0	NO	no
+lexemeMemoryInit	71	76	6	SUPPORT	arenaInit	-	-	-	-	-	-	-	0	0	0	0	NO	no
+lexemeMemoryRelease	78	83	6	SUPPORT	arenaClear	-	-	-	-	-	-	-	0	0	0	0	NO	no
+lexemeMemoryStats	85	88	4	SUPPORT	arenaPrintStats	-	-	-	-	-	-	-	0	0	0	0	NO	no
+lexerAllocLexeme	90	92	3	MEMORY_MANAGEMENT	arenaAlloc	lexemeNew,lexemeSentinal,lexemeTokNew,lexemeCopy,lexemeNewOp,lexemeAssignOp	-	-	-	-	Arena*-allocated Lexeme*	-	0	0	0	0	NO	no
+lexerAllocateBuffer	94	96	3	MEMORY_MANAGEMENT	arenaAlloc	lexString,lexerReAllocBuffer	-	-	-	-	Arena*-allocated char*	-	0	0	0	0	NO	no
+lexerReAllocBuffer	98	103	6	MEMORY_MANAGEMENT	lexerAllocateBuffer,memcpy	lexString	-	-	-	-	-	-	0	0	0	0	NO	no
+lexemeNew	192	200	9	MEMORY_MANAGEMENT	lexerAllocLexeme	lexInit,lexCore,lexString,lexToken,lexDefine,etc	-	-	-	-	Arena*-allocated Lexeme*	-	0	0	0	0	NO	no
+lexemeSentinal	202	210	9	MEMORY_MANAGEMENT	lexerAllocLexeme	lexPreProcIf	-	-	-	-	Arena*-allocated Lexeme*	-	0	0	0	0	NO	no
+lexemeAssignOp	212	223	12	TOKEN_CONSTRUCTION	-	lexCore,lexToken	le->tk_type,le->line,le->col,le->start,le->len,le->i64	le->tk_type,le->line,le->col,le->start,le->len,le->i64	-	-	-	-	0	0	0	TK_PUNCT	NO	no
+lexemeTokNew	225	234	10	TOKEN_CONSTRUCTION	lexerAllocLexeme	(callers outside lexer.c)	copy->tk_type,copy->start,copy->len,copy->line,copy->col,copy->i64	-	-	-	-	Arena*-allocated Lexeme*	-	0	0	0	TK_PUNCT	NO	no
+lexemeCopy	236	240	5	TOKEN_CONSTRUCTION	lexerAllocLexeme,memcpy	lexToken,lexPreProcIf	copy,le	-	-	-	Arena*-allocated Lexeme*	-	0	0	0	0	NO	no
+lexemeNewOp	242	246	5	TOKEN_CONSTRUCTION	lexemeNew,lexemeAssignOp	(callers outside lexer.c)	-	-	-	-	-	-	0	0	0	TK_PUNCT	NO	no
+lexRaise	254	290	37	DIAGNOSTIC	mprintVa,aoStrNew,cctrlCreateErrorLineAt,cctrlMakeDiag,cctrlDiagPush,cctrlTerminate,loggerPanic	lexCore,lexNumeric,lexCharConst,lexString,lexInclude,lexLink,lexPreProcBoolean	cc,flags	-	-	-	-	-	1	0	0	-	NO	no
+lexInit	292	328	37	PUBLIC_LEX_INIT	arenaAlloc,listNew,mapNew,setNew	lexer users (main, etc.)	-	ptr,line_start_ptr,cur_ch,lineno,cur_f64,cur_i64,cur_str,cur_strlen,cur_file,ishex,flags,files,all_source,symbol_table,seen_files,collecting	-	listNew(2x),mapNew,setNew	-	0	0	0	-	NO	no
+lexerRelease	330	336	7	PUBLIC_LEX_INIT	listRelease	lexer users	-	files,all_source	-	listRelease(2x)	-	-	0	0	0	-	NO	no
+lexSetBuiltinRoot	338	340	3	FILE_STACK	-	lexLink	builtin_root	-	-	-	-	-	0	0	0	-	NO	no
+tokenPunctIs	343	345	3	SUPPORT	-	(callers)	-	-	-	-	-	-	0	0	0	0	NO	no
+tokenIdentIs	348	352	5	SUPPORT	-	(callers)	-	-	-	-	-	-	0	0	0	0	NO	no
+lexemeTypeToString	354	367	14	SUPPORT	-	lexemeToString,lexemeToAoStr	-	-	-	-	-	-	0	0	0	0	NO	no
+lexemePunctToEncodedString	369	440	72	RENDERING	snprintf	lexemePunctToStringWithFlags	-	-	-	-	-	-	0	0	0	0	NO	no
+lexemePunctToString	442	483	42	RENDERING	snprintf	lexemePunctToStringWithFlags,lexemeToAoStr,lexemeToString,lexemeEq	-	-	-	-	-	-	0	0	0	0	NO	no
+lexemePunctToStringWithFlags	485	488	4	RENDERING	lexemePunctToEncodedString,lexemePunctToString	(callers)	-	-	-	-	-	-	0	0	0	0	NO	no
+lexemeToAoStr	490	605	116	RENDERING	lexemePunctToString,aoStrNew,aoStrCatPrintf	(callers)	-	-	-	-	-	-	0	0	0	0	NO	no
+lexemeToString	607	610	4	RENDERING	lexemePunctToString,lexemeTypeToString	lexemePrint,lexemeEq	-	-	-	-	-	-	0	0	0	0	NO	no
+lexemePrint	612	618	7	RENDERING	lexemeToString	(callers)	-	-	-	-	-	-	0	0	0	0	NO	no
+lexNextChar	620	647	28	CORE_CURSOR	-	lexIdentifier,lexCore,lexString,lexCharConst,lexNumeric	ptr,files,cur_file,cur_ch,lineno,line_start_ptr	start,ptr,cur_file,cur_ch,lineno,line_start_ptr,files(pop)	listPop	-	-	-	1 (EOF crosses files)	0	0	char	NO	cursor
+lexRewindChar	649	651	3	CORE_CURSOR	-	lexCore,lexIdentifier	ptr	ptr	-	-	-	-	0	0	0	0	NO	cursor
+lexPeekMatch	654	656	3	CORE_CURSOR	-	lexCore,lexClassifyOperator	ptr	-	-	-	-	-	0	0	0	0	NO	cursor
+lexPeek	658	660	3	CORE_CURSOR	-	lexCharConst	ptr	-	-	-	-	-	0	0	0	0	NO	cursor
+lexReadfile	663	697	35	FILE_STACK	open,lseek,read,close,malloc,loggerPanic	lexPushFile	-	-	-	-	malloc-allocated char*	-	0	0	0	-	NO	no
+lexPushFile	699	730	32	FILE_STACK	lexReadfile,malloc,aoStrNew,setAdd,listAppend	lexInclude,lexPreProcDirective?	seen_files	ptr,cur_file,lineno,line_start_ptr,start,files	push	files,cur_file->ptr/lineno/line_start_ptr	-	-	0	1	0	-	NO	no
+lexPushString	737	761	25	FILE_STACK	malloc,aoStrNew,aoStrDupRaw,listAppend	(callers)	-	ptr,cur_file,lineno,line_start_ptr,start,files	-	files,cur_file->ptr/lineno/line_start_ptr	-	-	0	1	0	-	NO	no
+lexSkipCodeComment	763	793	31	CORE_COMMENT	-	lexCore	ptr,lineno,line_start_ptr	ptr,lineno,line_start_ptr	-	-	-	-	0	0	0	TK_COMMENT(if CCF_ACCEPT_COMMENTS)	NO	yes
+countNumberLen	795	872	78	CORE_NUMERIC_EXTENT	-	lexNumeric	ptr	(out-params: isfloat,ishex,err)	-	-	-	-	1 (loggerWarning)	0	0	0	NO	yes
+lexIdentifier	874	973	100	SELFHOSTED_IDENTIFIER	BootstrapScanIdent,lexNextChar,lexRewindChar	lexCore	start,ptr	ch start/ptr,cur_strlen	-	-	-	-	0	0	0	TK_IDENT	YES	no
+lexString	978	1081	104	HOST_C_CORE_STRING	lexerAllocateBuffer,lexerReAllocBuffer,lexNextChar,lexRaise,aoStrNew,aoStrCatPrintf,etc.	lexCore	ptr,flags,lineno,line_start_ptr,is_bytes(real_len)	ptr,cur_str(real_len),cur_strlen,lineno,line_start_ptr	-	-	Arena*-allocated char* returned	-	1 (lexRaise on invalid escape)	0	0	TK_STR	NO	yes
+lexCharConst	1085	1162	78	HOST_C_CORE_CHAR_LITERAL	lexNextChar,lexPeek,lexRaise,toupper	lexCore	ptr,flags	ptr,cur_i64,cur_strlen,lineno	-	-	-	-	1 (lexRaise on overflow/unterminated)	0	0	TK_CHAR_CONST	NO	yes
+lexNumeric	1164	1190	27	HOST_C_CORE_NUMERIC_VALUE	countNumberLen,strtoll,strtoull,strtold	lexCore	ptr,cur_strlen	ptr,cur_f64,cur_i64,cur_strlen,ishex	-	-	-	-	0	0	0	TK_I64,TK_F64	NO	yes
+lexPreProcDirective	1192	1215	24	PREPROCESSOR	lex,memcmp,str_lit,mapGetLen,lexRaise	lexCore (case '#')	lineno,symbol_table	-	symbol_table	-	-	1	0	1	0	TK_KEYWORD(KW_PP_*)	NO	no
+lexClassifyOperator	1242	1437	196	SELFHOSTED_OPERATOR	BootstrapClassifyOperator,lexPeekMatch,lexNextChar	lexCore (in '/', '.', '#' cases)	start,ptr,flags,cur_ch	ptr (via wrapper advance)	-	-	-	-	0	0	0	TK_PUNCT,32 kinds	YES	no
+lexCore	1440	1696	257	HOST_C_DISPATCHER	lexNextChar,lexIdentifier,lexNumeric,lexString,lexCharConst,lexClassifyOperator,lexSkipCodeComment,lexRaise,lexemeAssignOp,lexPreProcDirective,mapGetLen	lex,lexToken,lexInclude,lexLink,lexDefine,lexPreProcBoolean	ptr,start,flags,line_start_ptr,lineno,tok_start_line,tok_start_col,cur_ch,files,cur_file,symbol_table,line_start_ptr,ishex,cur_strlen,cur_i64,cur_f64	ptr,start,lineno,line_start_ptr,tok_start_line,tok_start_col,ishex,cur_strlen,cur_i64,cur_f64	symbol_table	-	-	-	2 (lexRaise call paths)	1 (case '#' file stack edge)	1 (case '#' preprocessor edge)	ALL	NO	no
+lex	1698	1704	7	PUBLIC_LEX_ENTRY	lexCore	(parser, cctrlTokenGet, etc.)	-	tok_start_line,tok_start_col	-	-	-	-	0	0	0	-	NO	no
+lexInclude	1706	1753	48	INCLUDE_FILE_STACK	lex,aoStrNew,aoStrCatPrintf,aoStrRelease,aoStrDupRaw,setHas,lexPushFile,lexRaise,strrchr,aoStrPrintf	lexPreProcDirective	cur_file,files,seen_files	cur_file,files	-	-	-	-	1 (lexRaise)	1	0	-	NO	no
+listContainsAoStr	1755	1761	7	SUPPORT	-	lexPreProcDirective	-	-	List	-	-	-	0	0	0	-	NO	no
+lexLink	1769	1815	47	LINK_TRACKING	lex,lexRaise,tokenPunctIs,aoStrNew,aoStrCatPrintf,aoStrDupRaw,aoStrRelease,vecPush	lexPreProcDirective	cc,flags	-	-	Vec*->push	-	1 (lexRaise)	0	0	-	NO	no
+lexDefine	1817	1931	115	MACRO_EXPANSION	lex,malloc,lexemeNew,aoStrNew,lexemeCopy,vecPush,parseExpr,evalIntConstExpr,evalFloatExpr,vecRelease,roundUpToNextPowerOf2,lexemeSentinal,aoStrRelease,free,lexRaise,tokenPunctIs	lexToken,lexPreProcBoolean	macro_defs,cc	lineno	macro_defs(Map*),Vec*	-	-	malloc ring buffer	-	1 (lexRaise empty #if)	0	1	-	NO	no
+lexUndef	1933	1946	14	MACRO_EXPANSION	mapRemove,lexRaise	lexPreProcBoolean	macro_defs	-	macro_defs(Map*)	macro_defs	-	-	1 (lexRaise)	0	1	-	NO	no
+lexPreProcIf	1948	2081	134	PREPROCESSOR	lex,malloc,lexemeNew,lexemeSentinal,lexemeCopy,vecPush,parseExpr,free,roundUpToNextPowerOf2,cctrlInitMacroProcessor,evalFloatExpr,evalIntConstExpr,vecRelease,lexRaise,tokenPunctIs	lexPreProcBoolean,lexDefine	macro_defs,cc	lineno,collecting,skip_else,flags	macro_defs(Map*),Vec*	-	malloc ring buffer	-	1 (lexRaise)	0	1	-	NO	no
+lexPreProcBoolean	2084	2190	107	PREPROCESSOR	lex,mapGetLen,lexRaise	lexToken	macro_defs,collecting,skip_else,flags,cc	collecting,skip_else	macro_defs(Map*)	-	-	-	1 (lexRaise via #error)	0	1	-	NO	no
+lexSetAsmFlags	2192	2194	3	SUPPORT	-	lexToken	-	flags	-	-	-	-	0	0	0	-	NO	no
+lexUnSetAsmFlags	2196	2198	3	SUPPORT	-	lexToken,lex	-	flags	-	-	-	-	0	0	0	-	NO	no
+lexToken	2200	2303	104	PUBLIC_LEX_ENTRY	lex,lexPreProcBoolean,lexemeCopy,lexemeNew,lexUnSetAsmFlags,tokenPunctIs,lexRaise	parser	flags,cc,lineno,collecting,skip_else,macro_defs,tok_start_line	flags,lineno,skip_else	-	-	-	-	1 (lexRaise via #error)	0	1	-	NO	no
+lexemeFree	2305	2310	6	MEMORY_MANAGEMENT	-	lexeme Vec release	-	-	-	-	-	-	0	0	0	-	NO	no
+lexReleaseLexFile	2312	2314	3	FILE_STACK	free	lexReleaseAllFiles	-	-	-	-	-	free(LexFile*)	0	0	0	-	NO	no
+lexReleaseAllFiles	2316	2319	4	FILE_STACK	listRelease,lexReleaseLexFile	lexer users	-	all_source	-	all_source	-	-	0	0	0	-	NO	no
+lexerReportLine	2321	2355	35	DIAGNOSTIC	aoStrAlloc,aoStrMove,aoStrPutChar	lexRaise,loggerPanic	cur_file	-	-	-	-	-	0	0	0	-	NO	no
+lexemeEq	2357	2377	21	SUPPORT	lexemePunctToString,loggerPanic	(callers)	l1->i64,l1->f64,l1->tk_type,l1->len,l1->start	-	-	-	-	-	0	0	0	0	NO	no

@@ -1,0 +1,79 @@
+ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01 — C1 — predecessor freeze
+=============================================================
+
+Per ACT §4, mechanically observed state at C1 entry:
+
+PREDECESSOR:
+  ACT-POLYC-SELFHOST-LEXER01-CORRECTION01 CLOSED PASS_WITH_CORRECTION_RESIDUE
+
+IDENTIFIER FIXED POINT (4-stage, mechanically re-hashed now):
+  build/bootstrap02-ident.o                = a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f
+  build/bootstrap03-ident.stage1.o         = a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f
+  build/bootstrap04-ident.stage2.o         = a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f
+  build/bootstrap04-ident.stage3.o         = a1b620c076e81d898f953889f2b9db97f0bf8f6228af3b4a10644e2e78cd854f
+  STATUS: I0 == I1 == I2 == I3 -> PASS
+
+OPERATOR FIXED POINT (4-stage, mechanically re-hashed now):
+  build/bootstrap06-operator-classify.o     = c9fec4f255a88fcdbb34237beb789db1f74a72fd3f3f62b98b9f08fe2055329c
+  build/bootstrap06-operator-classify.stage1.o = c9fec4f255a88fcdbb34237beb789db1f74a72fd3f3f62b98b9f08fe2055329c
+  build/bootstrap06-operator-classify.stage2.o = c9fec4f255a88fcdbb34237beb789db1f74a72fd3f3f62b98b9f08fe2055329c
+  build/bootstrap06-operator-classify.stage3.o = c9fec4f255a88fcdbb34237beb789db1f74a72fd3f3f62b98b9f08fe2055329c
+  STATUS: N0 == N1 == N2 == N3 -> PASS
+
+OPERATOR DIRECT DIFFERENTIAL (mechanically re-run now):
+  ACT_SELFHOST_LEXER01_DIRECT_DIFFERENTIAL_CASES = 47
+  ACT_SELFHOST_LEXER01_DIRECT_DIFFERENTIAL_PASS  = 47
+  ACT_SELFHOST_LEXER01_DIRECT_DIFFERENTIAL_FAIL  = 0
+  STATUS: PASS
+
+OPERATOR PRODUCTION SEAM (authoritative from prior ACT):
+  Per evidence/ACT-POLYC-SELFHOST-LEXER01-CORRECTION01/c2/production-seam-4-stages.txt:
+    BUILD_LABEL=stage0 OP_SEAM_PASS=33 OP_SEAM_FAIL=0 STATUS=PASS
+    BUILD_LABEL=stage1 OP_SEAM_PASS=33 OP_SEAM_FAIL=0 STATUS=PASS
+    BUILD_LABEL=stage2 OP_SEAM_PASS=33 OP_SEAM_FAIL=0 STATUS=PASS
+    BUILD_LABEL=stage3 OP_SEAM_PASS=33 OP_SEAM_FAIL=0 STATUS=PASS
+  STATUS: 33/33 at each of stage0/1/2/3 -> PASS
+
+BROAD CORPUS 4-STAGE (authoritative from prior ACT):
+  Per evidence/ACT-POLYC-SELFHOST-LEXER01-CORRECTION01/c2/corpus-4-stages.txt:
+    Stage3 outputs byte-identical to stage0/1/2 outputs: 175/175
+    Equivalent failure counts at each stage: 6/6
+  STATUS: 175 BYTE_IDENTICAL + 6 BOTH_FAIL -> PASS
+
+FAIL-CLOSED LINKAGE (authoritative from prior ACT):
+  Per evidence/ACT-POLYC-SELFHOST-LEXER01-CORRECTION01/c2/fail-closed-guard.txt:
+    src/CMakeLists.txt now has FATAL_ERROR guards for all three self-host stages.
+  STATUS: FAIL_CLOSED_LINKAGE = PASS
+
+Dafny (mechanically re-run now):
+  Dafny program verifier finished with 17 verified, 0 errors
+  AUDIT_FINDINGS = 0
+  STATUS: PASS
+
+F_NO_PYTHON (mechanically re-run now):
+  POLYC_TOOLS_TRACKED_PYTHON = 12
+  STATUS: 12 (unchanged)
+
+Factory gate-fast (mechanically re-run now):
+  CHECK=diff-check STATUS=PASS
+  CHECK=shell-syntax STATUS=PASS
+  CHECK=doc-invariants STATUS=PASS
+  CHECK=large-file-guard STATUS=PASS
+  CHECK=factory-closure-status STATUS=PASS
+  VERDICT=PASS
+
+SELF-HOST-COMPONENTS.tsv (mechanically read):
+  component_id                                source                                              symbol                     consumer_seam                  language  state
+  identifier_scanner                          tools/bootstrap/bootstrap02-ident.HC                BootstrapScanIdent          src/lexer.c::lexIdentifier    POLYC      STABLE
+  operator_punctuation_recognizer             tools/bootstrap/selfhost-lexer-operator-classify.HC BootstrapClassifyOperator   src/lexer.c::lexCore (op cases) POLYC    STABLE
+
+RESIDUE FROM PREDECESSOR:
+  P1: No-Python campaign remains paused at C2.3 GREEN (12 grandfathered Python files).
+      Not in scope of this ACT.
+  P2: Wrapper synthetic l->ptr advance could be unified with lexNextChar's step-by-step
+      advance (carried from the original LEXER01 ACT).
+  P2: Wrapper strlen(start) for src_len could be tightened to use lexer's known buffer
+      bound (carried from the original LEXER01 ACT).
+  P2: ARM-specific libtos/strings.HC asm residue blocks running stage1/2/3 build tests
+      on Apple Silicon hosts (test-prefix-install target fails). This is an inherited
+      platform residue, not a regression introduced by this ACT.

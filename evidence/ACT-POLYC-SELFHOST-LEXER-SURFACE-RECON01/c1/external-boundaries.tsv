@@ -1,0 +1,24 @@
+# ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01 — C1 — external-boundary matrix
+# Frozen formula (ACT §11):
+#   BOUNDARY_COST(op) =
+#       64 * container mutation
+#     + 64 * preprocessor mutation
+#     + 64 * file-stack mutation
+#     + 48 * diagnostic callback
+#     + 96 * parser/AST dependency
+#     + 32 * allocation ownership crossing
+#
+# Format: op<TAB>container_edges<TAB>preprocessor_edges<TAB>file_stack_edges<TAB>diagnostic_edges<TAB>parser_dep_edges<TAB>alloc_crossings<TAB>BOUNDARY_COST
+op	container_edges	preprocessor_edges	file_stack_edges	diagnostic_edges	parser_dep_edges	alloc_crossings	BOUNDARY_COST
+countNumberLen	0	0	0	1	0	0	=48
+lexNumeric	0	0	0	0	0	0	=0
+lexCharConst	0	0	0	1	0	0	=48
+lexString	0	0	0	1	0	1	=48+32=80
+lexSkipCodeComment	0	0	0	0	0	0	=0
+lexIdentifier	0	0	0	0	0	0	=0
+lexPreProcDirective	1	1	0	1	0	0	=64+64+48=176
+lexInclude	0	0	1	1	0	0	=64+48=112
+lexDefine	1	1	0	1	1	1	=64+64+48+96+32=304
+lexPreProcIf	1	1	0	1	1	1	=64+64+48+96+32=304
+lexPreProcBoolean	1	1	0	1	0	0	=64+64+48=176
+lexRaise	0	0	0	0	0	0	=0 (lexRaise IS the diagnostic engine)
