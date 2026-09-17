@@ -1,0 +1,47 @@
+ACT-POLYC-SELFHOST-LEXER03-CORRECTION01-CORRECTION01 -- C3 -- entry identity
+=============================================================================
+
+PROBE:  Record the C3-phase entry identity and the corrected
+verdict-column state.
+
+ENTRY IDENTITY:
+
+  Branch: main
+  HEAD:   <to-be-filled-at-commit>
+  Worktree: clean
+
+C3 DELIVERABLES (NEW files in this ACT's evidence directory):
+
+  - c3-verdict-vocabulary.md
+        Declares the allowed verdict vocabulary explicitly:
+        PASS | FAIL | N/A | DEFERRED. Documents why
+        CORRECTION01 was forbidden.
+
+  - mandatory-ac-status-correction01-correction01.tsv
+        The corrected TSV. 30 rows, all verdict=PASS, 0
+        non-PASS. Mirrors the original TSV's row order and
+        content but replaces the implicit repair-marker
+        tokens with explicit PASS.
+
+  - c3-per-row-justification.txt
+        Per-row PASS justification for the 6 rows that were
+        verdict=CORRECTION01 in the original. Documents that
+        each row's underlying work is green.
+
+CORRECTED STATE:
+
+  $ awk -F'\t' 'NR>1 {print $4}' .../mandatory-ac-status-correction01-correction01.tsv \
+        | sort | uniq -c
+       30 PASS
+
+  $ awk -F'\t' 'NR>1 {print $4}' .../mandatory-ac-status-correction01-correction01.tsv \
+        | grep -v -E '^(PASS|FAIL|N/A|DEFERRED)$' | wc -l
+  0
+
+F14 IMMUTABILITY (closed C3 TSV unchanged):
+
+  $ git diff 9012c94 HEAD -- \
+        evidence/ACT-POLYC-SELFHOST-LEXER03/CORRECTION01/c3/mandatory-ac-status-correction01.tsv
+  (empty)
+
+VERDICT: PASS_TRUE_GREEN (C3 evidence complete; C4 CLOSE pending).

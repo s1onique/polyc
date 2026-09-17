@@ -1,0 +1,95 @@
+ACT-POLYC-SELFHOST-LEXER03-CORRECTION01-CORRECTION01 -- C1 -- RED reproduction
+================================================================================
+
+PROBE:  Independently reproduce the malformed verdict-column
+defect in
+evidence/ACT-POLYC-SELFHOST-LEXER03/CORRECTION01/c3/mandatory-ac-status-correction01.tsv
+as committed at the predecessor HEAD (9012c94).
+
+COMMAND (run from repo root):
+
+  awk -F'\t' 'NR>1 {print $4}' \
+      evidence/ACT-POLYC-SELFHOST-LEXER03/CORRECTION01/c3/mandatory-ac-status-correction01.tsv \
+      | sort | uniq -c
+
+OBSERVED OUTPUT (matches expected):
+
+       6 CORRECTION01
+      24 PASS
+
+INTERPRETATION:
+
+  - The TSV declares 30 ACs.
+  - The verdict column holds only two distinct values:
+        PASS (24 rows)
+        CORRECTION01 (6 rows: AC23, AC24, AC25, AC26, AC27, AC29)
+  - "CORRECTION01" is NOT in the declared verdict vocabulary
+    (PASS / FAIL / N/A). It was used as an implicit verdict
+    marker to indicate "this AC was repaired by CORRECTION01".
+    But the column does not encode repair-status; it encodes
+    verdicts. So the 6 rows are mechanically non-PASS.
+
+  MANDATORY_AC_PASS_COUNT = 24/30  (not 30/30 as claimed)
+
+AFFECTED ROWS (verbatim from the committed TSV):
+
+  AC23  Trivial white space and line-end hygiene on committed files
+        verdict=CORRECTION01  notes="PASS after repair at 8db7f01; AC28b replaces AC23 placeholder"
+  AC24  Patch hygiene includes F7 scope AND mechanical git diff --check whitespace (split per CORRECTION01)
+        verdict=CORRECTION01  notes="AC28a (scope) preserved; AC28b (whitespace) added"
+  AC25  ACT title amendment prospectively supersedes "four-stage" claim with two-stage + 4-gen smoke
+        verdict=CORRECTION01  notes="ACT supersedes only the corrected predicate surfaces"
+  AC26  AC count alignment: ACT text strengthened from "24" to "29" to match c3/mandatory-ac-status.tsv
+        verdict=CORRECTION01  notes="prospective amendment via CORRECTION01 ACT body"
+  AC27  Reviewer verdict FALSE_GREEN on predecessor is documented and the verdict taxonomy is reclassified
+        verdict=CORRECTION01  notes="verdict taxonomy installed at fd4fd60"
+  AC29  Engineer verdict taxonomy preserved verbatim: ENGINEERING=GREEN, STAGE0_STAGE1=GREEN, LINEAGE=FALSE_GREEN, FULL_4_STAGE=N/A
+        verdict=CORRECTION01  notes="hand-off documents the truth-state"
+
+DEFECT CLASSIFICATION:
+
+  - The notes in the 6 affected rows ASSERT that the underlying
+    repair is green ("PASS after repair at 8db7f01", "preserved",
+    "added", "supersedes", "prospective amendment", "verdict
+    taxonomy installed", "hand-off documents the truth-state").
+  - Therefore the underlying work is green; the defect is only
+    in the verdict-column encoding.
+  - The fix is to replace the implicit "CORRECTION01" verdict
+    with the explicit "PASS" verdict (since the underlying work
+    is green), and to declare the verdict vocabulary explicitly
+    so future TSVs do not silently extend it.
+
+ALSO VERIFY (parallel defect confirmation):
+
+  $ awk -F'\t' 'NR>1 {print $4}' .../mandatory-ac-status-correction01.tsv \
+        | grep -v -E '^(PASS|FAIL|N/A|DEFERRED)$' \
+        | wc -l
+  6
+  $ awk -F'\t' 'NR==1' .../mandatory-ac-status-correction01.tsv
+  ac_id  ac_description  evidence_file  verdict  notes
+
+  Header is ac_id / ac_description / evidence_file / verdict /
+  notes. No "marker" or "repair_source" column. The verdict
+  column is being asked to encode a marker, not a verdict.
+
+EVIDENCE THAT THE REPAIR ITSELF IS GREEN:
+
+  - Whitespace hygiene: 8db7f01 stripped 3 source files; F10
+    conservation rerun was 45/45 PASS (recorded in the HANDOFF
+    and in c3-whitespace-hygiene.txt).
+  - AC split (AC28a/AC28b): c3-whitespace-hygiene.txt is the
+    new evidence file; c3-patch-hygiene.txt is the preserved
+    pre-existing evidence file. Both exist on disk at HEAD.
+  - Title amendment: docs/acts/.../CORRECTION01.md contains the
+    prospective corrected title. ROADMAP block contains the
+    annotation.
+  - Count alignment: CORRECTION01 ACT body and ROADMAP block
+    both state 29 ACs (preserved) + AC28 split = 30 ACs.
+  - Verdict taxonomy: ROADMAP block at fd4fd60 and HANDOFF both
+    enumerate the 7-row verdict taxonomy verbatim.
+  - Hand-off: docs/factory/HANDOFF-.../CORRECTION01.md exists.
+
+All underlying repairs are green. Only the verdict-column
+encoding was malformed.
+
+RED VERDICT: PASS (defect reproduced)

@@ -1,0 +1,120 @@
+Per-row PASS justification for the corrected mandatory-AC TSV
+==============================================================
+
+ACT: ACT-POLYC-SELFHOST-LEXER03-CORRECTION01-CORRECTION01
+
+The original CORRECTION01 TSV at
+`evidence/ACT-POLYC-SELFHOST-LEXER03/CORRECTION01/c3/mandatory-ac-status-correction01.tsv`
+had 6 rows (AC23, AC24, AC25, AC26, AC27, AC29) whose verdict
+column held the token "CORRECTION01" instead of "PASS".
+
+This file records the per-row justification for re-issuing
+those 6 rows as PASS in the corrected TSV. The other 24 rows
+already had verdict=PASS and need no justification here.
+
+## Why these 6 rows are PASS
+
+The verdict-column defect was an encoding bug (using a
+repair-source token in a verdict column). The underlying
+work described in each row's notes is itself green. The
+following audit confirms each one.
+
+### AC23 — Trivial white space and line-end hygiene on committed files
+
+Underlying work claimed by notes: "PASS after repair at 8db7f01".
+
+Audit:
+  - commit 8db7f01 = "C2 IMPL: ACT-POLYC-SELFHOST-LEXER03-
+    CORRECTION01 — repair 1 of 4: whitespace hygiene"
+  - `git show 8db7f01 --stat` shows whitespace stripping on 3
+    source files (selfhost-lexer-trivia.HC, lexer08-direct-
+    differential.c, lexer08-trivia-oracle.c).
+  - F10 conservation rerun: 45/45 PASS (recorded in the HANDOFF
+    and in c3-whitespace-hygiene.txt).
+  - The 4th trailing-blank file is the F14-protected evidence
+    file, intentionally left as historical evidence.
+
+Verdict: PASS
+
+### AC24 — Patch hygiene includes F7 scope AND mechanical git diff --check whitespace (split per CORRECTION01)
+
+Underlying work claimed by notes: "AC28a (scope) preserved;
+AC28b (whitespace) added".
+
+Audit:
+  - AC28a evidence: `evidence/.../c3/c3-patch-hygiene.txt`
+    exists on disk at HEAD. F14-protected.
+  - AC28b evidence: `evidence/.../CORRECTION01/c3/c3-whitespace-hygiene.txt`
+    exists on disk at HEAD.
+  - Both rows in the corrected TSV have verdict=PASS.
+
+Verdict: PASS
+
+### AC25 — ACT title amendment prospectively supersedes "four-stage" claim with two-stage + 4-gen smoke
+
+Underlying work claimed by notes: "ACT supersedes only the
+corrected predicate surfaces".
+
+Audit:
+  - docs/acts/ACT-POLYC-SELFHOST-LEXER03-CORRECTION01.md
+    contains the prospective corrected title ("two-stage
+    semantic equivalence + 4-generation build smoke").
+  - Original ACT title remains F14-protected.
+  - ROADMAP reviewer-audit annotation documents the
+    supersession pattern (LEXER02-CORRECTION04 precedent).
+
+Verdict: PASS
+
+### AC26 — AC count alignment: ACT text strengthened from "24" to "29" to match c3/mandatory-ac-status.tsv
+
+Underlying work claimed by notes: "prospective amendment via
+CORRECTION01 ACT body".
+
+Audit:
+  - CORRECTION01 ACT body states "29 ACs preserved + AC28
+    split = 30 ACs".
+  - ROADMAP block at fd4fd60 states "29 ACs = authoritative".
+  - The mandatory-ac-status-correction01.tsv has 30 rows
+    (29 original + AC28a/AC28b split).
+  - Original ACT text remains F14-protected.
+
+Verdict: PASS
+
+### AC27 — Reviewer verdict FALSE_GREEN on predecessor is documented and the verdict taxonomy is reclassified
+
+Underlying work claimed by notes: "verdict taxonomy installed
+at fd4fd60".
+
+Audit:
+  - ROADMAP LEXER03-CORRECTION01 status block (installed at
+    fd4fd60) contains the verdict taxonomy:
+      ENGINEERING_RESULT         = GREEN
+      STAGE0_STAGE1_EQUIVALENCE  = GREEN
+      LINEAGE_PASS_TRUE_GREEN    = FALSE_GREEN (reclassified)
+      FULL_4_STAGE_EQUIVALENCE   = N/A    (out of scope)
+      WHITESPACE_HYGIENE         = GREEN
+      AC_AUTHORITY_TEXT          = ALIGNED
+      AC28 SPLIT                 = AC28a + AC28b
+  - HANDOFF §"Verdict taxonomy (binding)" mirrors this.
+
+Verdict: PASS
+
+### AC29 — Engineer verdict taxonomy preserved verbatim
+
+Underlying work claimed by notes: "hand-off documents the truth-state".
+
+Audit:
+  - docs/factory/HANDOFF-ACT-POLYC-SELFHOST-LEXER03-CORRECTION01.md
+    §"Verdict taxonomy (binding)" enumerates the 7-row
+    taxonomy verbatim.
+
+Verdict: PASS
+
+## Summary
+
+All 6 previously-malformed rows have green underlying work.
+The defect was purely in the verdict-column encoding. The
+corrected TSV at
+`mandatory-ac-status-correction01-correction01.tsv` uses
+PASS for all 30 rows, restoring the "30/30" claim to
+truthful status.

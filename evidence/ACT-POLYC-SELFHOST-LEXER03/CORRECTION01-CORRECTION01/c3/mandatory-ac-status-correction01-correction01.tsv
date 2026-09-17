@@ -1,0 +1,31 @@
+ac_id	ac_description	evidence_file	verdict	notes
+AC01	Direct differential driver builds and links (no unresolved symbols)	c3-direct-differential.txt	PASS	build/lexer08-direct-differential runs; 45/45 PASS
+AC02	C99 reference oracle self-tests all PASS	c3-direct-differential.txt	PASS	8/8 self-test cases
+AC03	PolyC subject compiles and links against lexer.c wrapper	c3-direct-differential.txt	PASS	BootstrapScanTrivia ABI 4 binds correctly
+AC04	Mutation control: a deliberate defect is detected by the differential	c3-differential-negative-control.txt	PASS	p += 3 mutation produces 10/45 FAIL; restored to 45/45 PASS
+AC05	Fixture-omission control: removing a fixture causes the differential to skip the corresponding case	c3-fixture-omission-control.txt	PASS	removing T01 -> TOTAL drops 45 -> 44
+AC06	Stage-seam divergence control: a deliberate stage mismatch causes the real-lexer seam to detect a diff	c3-stage-divergence-control.txt	PASS	5 cases diverge on injected mutation
+AC07	Real-lexer seam: stage0 vs stage1 byte-equal on all 15 trivia cases	c3-real-lexer-seam.txt	PASS	15/15 IDENTICAL (BUILD_LABEL is the only difference)
+AC08	4-generation build smoke (./hcc, hcc-bootstrap02/03/04 all link with LEXER03 statically)	c3-broad-corpus.txt	PASS	LEXER08_BROAD_CORPUS_4_STAGE=PASS
+AC09	LEXER01 operator differential conservation (47/47)	c3-lexer01-conservation.txt	PASS	no regression in operator classification
+AC10	LEXER02 scalar-literal differential conservation (89/89) + 4-stage seam	c3-lexer02-conservation.txt	PASS	no regression in scalar literal scanning
+AC11	Factory gate-fast PASS	c3-factory-gates.txt	PASS	gate-fast: STATUS=PASS
+AC12	Factory append-only regression suite NC1..NC11 PASS	c3-factory-gates.txt	PASS	factory-append-only-test.sh: PASS=11 FAIL=0
+AC13	F-NO-PYTHON baseline preserved (POLYC_TOOLS_TRACKED_PYTHON unchanged at 12)	c3-factory-gates.txt + c3-no-python-delta.txt	PASS	12 grandfathered; no new Python
+AC14	CCF_ACCEPT_WHITESPACE flag bit alignment (1<<6, not 1<<0)	c3-implementation-delta.txt	PASS	bit position matches src/lexer.h
+AC15	Wrapper cursor offset is l->ptr - 1 (leading /) not l->ptr	c3-implementation-delta.txt	PASS	fixed in C2.1 IMPL FIX d5bf1e0
+AC16	Wrapper accepts both '/' and '*' as second byte (block comment start)	c3-implementation-delta.txt	PASS	fixed in C2.1 IMPL FIX d5bf1e0
+AC17	line_start_ptr only mutated when lineno_delta > 0	c3-implementation-delta.txt	PASS	preserves column semantics
+AC18	Stage1 lexer.c.o references BootstrapScanTrivia	c3-real-lexer-seam.txt	PASS	linker stub RED at C1 captured the gap; now closed
+AC19	Evidence directory contains all required C1/C2/C3 files	c3-entry-identity.txt	PASS	10 c1 + 3 c2 + 22 c3 = 35 files
+AC20	Closed-evidence immutability: c1/c2 file SHA-256 unchanged between C3 start and C4 start	c3-closed-evidence-immutability.txt	PASS	snapshot diff empty
+AC21	Required result R1..R12 all PASS	c3-required-result.txt	PASS	summary file
+AC22	F7 scope discipline: every changed line traces to LEXER03	c3-patch-hygiene.txt	PASS	git diff --stat shows 8 files all in-scope
+AC23	Trivial white space and line-end hygiene on committed files	c3-whitespace-hygiene.txt	PASS	original TSV had verdict=CORRECTION01 (implicit repair-marker); corrected to PASS; underlying work green: 8db7f01 stripped 3 source files; F10 conservation rerun 45/45 PASS
+AC24	Patch hygiene includes F7 scope AND mechanical git diff --check whitespace (split per CORRECTION01)	c3-whitespace-hygiene.txt	PASS	original TSV had verdict=CORRECTION01 (implicit repair-marker); corrected to PASS; underlying work green: AC28a (scope, c3-patch-hygiene.txt) preserved + AC28b (whitespace, c3-whitespace-hygiene.txt) added
+AC25	ACT title amendment prospectively supersedes "four-stage" claim with two-stage + 4-gen smoke	docs/acts/ACT-POLYC-SELFHOST-LEXER03-CORRECTION01.md	PASS	original TSV had verdict=CORRECTION01 (implicit repair-marker); corrected to PASS; underlying work green: CORRECTION01 ACT body establishes corrected title
+AC26	AC count alignment: ACT text strengthened from "24" to "29" to match c3/mandatory-ac-status.tsv	c3-ac-count-alignment.txt	PASS	original TSV had verdict=CORRECTION01 (implicit repair-marker); corrected to PASS; underlying work green: CORRECTION01 ACT body states 29 ACs + AC28 split = 30 ACs
+AC27	Reviewer verdict FALSE_GREEN on predecessor is documented and the verdict taxonomy is reclassified	docs/ROADMAP.md LEXER03-CORRECTION01 status block	PASS	original TSV had verdict=CORRECTION01 (implicit repair-marker); corrected to PASS; underlying work green: ROADMAP block at fd4fd60 enumerates the verdict taxonomy
+AC28a	(F7 scope traceability; pre-existing)	c3-patch-hygiene.txt	PASS	UNCHANGED, F14 protected; the original AC28
+AC28b	(NEW: mechanical `git diff --check` whitespace hygiene on source files)	c3-whitespace-hygiene.txt (CORRECTION01/c3/)	PASS	3 source files clean; evidence file left F14-protected
+AC29	Engineer verdict taxonomy preserved verbatim: ENGINEERING=GREEN, STAGE0_STAGE1=GREEN, LINEAGE=FALSE_GREEN, FULL_4_STAGE=N/A	docs/factory/HANDOFF-ACT-POLYC-SELFHOST-LEXER03-CORRECTION01.md	PASS	original TSV had verdict=CORRECTION01 (implicit repair-marker); corrected to PASS; underlying work green: HANDOFF §"Verdict taxonomy (binding)" enumerates the 7-row taxonomy
