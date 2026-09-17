@@ -12,7 +12,7 @@ The CORRECTION01 closure verdict is reclassified:
 ## IDENTITY
 
   Branch: main
-  HEAD:   <to-be-filled-at-commit>
+  HEAD:   1ce0cd63463052ac3f8702a6dcf796b9972dc0f1
   Worktree: clean
   ACT:    docs/acts/ACT-POLYC-SELFHOST-LEXER03-CORRECTION01-CORRECTION01.md
   Predecessor: ACT-POLYC-SELFHOST-LEXER03-CORRECTION01 (CLOSED at 9012c94)

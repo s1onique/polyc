@@ -2668,7 +2668,7 @@ ACT-POLYC-SELFHOST-LEXER03-CORRECTION01     CLOSED PASS
 > historical evidence of the malformed state.
 
 
-#### ACT-POLYC-SELFHOST-LEXER03-CORRECTION01-CORRECTION01 status (CLOSED PASS_TRUE_GREEN at `<this commit>`)
+#### ACT-POLYC-SELFHOST-LEXER03-CORRECTION01-CORRECTION01 status (CLOSED PASS_TRUE_GREEN at `1ce0cd63463052ac3f8702a6dcf796b9972dc0f1`)
 
 ```
 ACT-POLYC-SELFHOST-LEXER03-CORRECTION01-CORRECTION01    CLOSED PASS_TRUE_GREEN
@@ -2687,7 +2687,7 @@ ACT-POLYC-SELFHOST-LEXER03-CORRECTION01-CORRECTION01    CLOSED PASS_TRUE_GREEN
                 c3-verdict-vocabulary.md declares the closed-set
                 vocabulary PASS|FAIL|N/A|DEFERRED;
                 c3-per-row-justification.txt audits each repaired row)
-  C4 CLOSE:     <this commit> (HANDOFF + ROADMAP additive amendment)
+  C4 CLOSE:     1ce0cd63463052ac3f8702a6dcf796b9972dc0f1 (HANDOFF + ROADMAP additive amendment)
 
   Verdict reclassification:
     MANDATORY_AC_TABLE_OLD         = MALFORMED_SEMANTICALLY (24 PASS, 6 CORRECTION01)
