@@ -235,5 +235,3 @@ I64 BootstrapScanTrivia(U8 *src, I64 src_len, I64 cursor, I64 flags,
   *out_comment_started = 0;
   return 0;
 }
-
-

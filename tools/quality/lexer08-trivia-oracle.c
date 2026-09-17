@@ -254,6 +254,3 @@ int main(int argc, char **argv)
     fprintf(stderr, "unknown test: %s\n", argv[1]);
     return 2;
 }
-
-
-
