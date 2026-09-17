@@ -2578,10 +2578,10 @@ ACT-POLYC-SELFHOST-LEXER03                  CLOSED PASS_TRUE_GREEN
            (substitute if a fresh surface-recon is preferred
            before opening LEXER04)
 ```
-#### ACT-POLYC-SELFHOST-LEXER03-CORRECTION01 status (HANDOFF pending; repair 1 of 4 complete)
+#### ACT-POLYC-SELFHOST-LEXER03-CORRECTION01 status (CLOSED PASS at `78510ed`)
 
 ```
-ACT-POLYC-SELFHOST-LEXER03-CORRECTION01     HANDOFF PENDING
+ACT-POLYC-SELFHOST-LEXER03-CORRECTION01     CLOSED PASS
   Title:        Repair four closure-truth defects in
                 ACT-POLYC-SELFHOST-LEXER03 closure (`746880c`).
   Authorization: docs/acts/ACT-POLYC-SELFHOST-LEXER03-CORRECTION01.md
@@ -2591,50 +2591,64 @@ ACT-POLYC-SELFHOST-LEXER03-CORRECTION01     HANDOFF PENDING
   C0 AUTH:      f27e1c7
   C2 IMPL:      8db7f01 (repair 1: whitespace hygiene — 3/3 source
                 files stripped, F10 conservation 45/45 PASS)
+  C2 IMPL:      fd4fd60 (repairs 2-4 prep: ROADMAP annotation +
+                CORRECTION01 status block)
+  C3 EVIDENCE:  d0b5589 (7 new evidence files: RED + 5 C3 + 1 C4
+                entry-identity)
+  C4 CLOSE:     78510ed (HANDOFF-CORRECTION01 + metadata fill)
 
-  Defects being repaired (verbatim from reviewer):
-    1. Whitespace hygiene: 4 trailing-blank-line errors on
-       committed files (3 source + 1 evidence; evidence left
-       F14-protected; source files repaired at 8db7f01).
-    2. Authority-text mismatch: ACT text says "24 acceptance
-       criteria" but C3 mandatory-ac-status.tsv enumerates 29
-       rows. Repaired by superseding the ACT text via
-       CORRECTION01 (the TSV is the authoritative evidence
-       artifact).
-    3. AC28 redefinition: split into AC28a (F7 scope traceability;
-       pre-existing evidence c3-patch-hygiene.txt) and AC28b
-       (mechanical git diff --check whitespace hygiene; new
-       evidence file inside CORRECTION01/c3/).
-    4. Title amendment: original ACT title and mission claim
-       "four-stage semantic equivalence" but only two-stage
-       semantic equivalence (stage0 vs stage1) plus 4-generation
-       build smoke was proven. CORRECTION01 is the new
-       authoritative artifact; the original ACT text remains
-       F14-protected historical evidence. The CORRECTION01 ACT
-       supersedes only for the corrected predicate surfaces
-       (title, AC count, AC28 split).
+  Defects repaired:
+    1. Whitespace hygiene = GREEN  (commit 8db7f01; 3 source files
+       stripped; F14-protected evidence file left as historical)
+    2. AC count           = ALIGNED  (CORRECTION01 ACT body
+       supersedes; TSV is the authoritative evidence artifact;
+       29 ACs preserved + AC28 split = 30 ACs in CORRECTION01)
+    3. AC28 split         = AC28a (F7 scope, pre-existing) +
+                            AC28b (mechanical `git diff --check`,
+                            new evidence file in CORRECTION01/c3/)
+    4. Title amendment    = PROSPECTIVE  (CORRECTION01 ACT body
+       establishes corrected understanding: "two-stage semantic
+       equivalence + 4-generation build smoke"; original ACT text
+       remains F14-protected historical evidence)
 
-  Verdict taxonomy (binding):
-    ENGINEERING_RESULT        = GREEN  (preserved from predecessor)
-    STAGE0_STAGE1_EQUIVALENCE = GREEN  (preserved from predecessor)
-    LINEAGE_PASS_TRUE_GREEN   = FALSE_GREEN (reviewer correct;
-                                            reclassified here)
-    FULL_4_STAGE_EQUIVALENCE  = N/A    (out of CORRECTION01 scope;
-                                            residue for CORRECTION02)
+  Verdict taxonomy (binding, final):
+    ENGINEERING_RESULT         = GREEN
+    STAGE0_STAGE1_EQUIVALENCE  = GREEN
+    LINEAGE_PASS_TRUE_GREEN    = FALSE_GREEN (reclassified; ACT-
+                                              after-work F15 lineage
+                                              preserved as historical
+                                              fact per F14)
+    FULL_4_STAGE_EQUIVALENCE   = N/A    (out of CORRECTION01 scope;
+                                         residue for CORRECTION02)
+    WHITESPACE_HYGIENE         = GREEN  (repaired at 8db7f01)
+    AC_AUTHORITY_TEXT          = ALIGNED (29 ACs = authoritative)
+    AC28 SPLIT                 = AC28a + AC28b (30 ACs total)
 
-  Resolved so far:
-    Repair 1: whitespace hygiene      = GREEN  (commit 8db7f01)
-    Repair 2: AC count                = PENDING (next commit)
-    Repair 3: AC28 split              = PENDING (next commit)
-    Repair 4: title amendment         = PENDING (next commit)
+  Mandatory AC status: evidence/ACT-POLYC-SELFHOST-LEXER03/
+                       CORRECTION01/c3/mandatory-ac-status-
+                       correction01.tsv (30 rows; PASS=30 FAIL=0)
 
-  F10 conservation: re-validated after whitespace repair
-    DIRECT_DIFFERENTIAL_TOTAL=45 DIRECT_DIFFERENTIAL_PASS=45
-    STATUS=PASS (45/45 differential still green)
+  Hand-off: docs/factory/HANDOFF-ACT-POLYC-SELFHOST-LEXER03-
+            CORRECTION01.md
 
-  NEXT:    finish repairs 2, 3, 4; then C3 EVIDENCE (one new
-           file per repair); then C4 CLOSE (HANDOFF-CORRECTION01
-           + ROADMAP close block + factory gates re-run).
+  Resolved residue:
+    - Repair 1: GREEN
+    - Repair 2: GREEN
+    - Repair 3: GREEN
+    - Repair 4: GREEN (prospective)
+
+  Outstanding residue (for ACT-POLYC-SELFHOST-LEXER03-CORRECTION02):
+    P0: LEXER03-specific stage2/stage3 fixed-point evidence
+        (out of CORRECTION01 scope; requires bounded-evidence
+        work in a future ACT)
+    P1: test-prefix-install failure (pre-existing, unrelated)
+    P1: ACT-after-work governance (already documented in HANDOFF)
+    P2: broader self-host recon refresh
+
+  NEXT:    ACT-POLYC-SELFHOST-LEXER03-CORRECTION02 (LEXER03-
+           specific stage2/stage3 fixed-point)
+           OR ACT-POLYC-SELFHOST-LEXER04 (next surface-recon
+           winner, with fresh recon first)
 ```
 
 
