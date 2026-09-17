@@ -1,0 +1,73 @@
+ACT-POLYC-SELFHOST-LEXER03-CORRECTION01 -- C1 RED -- the four closure-truth defects
+=====================================================================================
+
+PROBE:  Reproduce the reviewer's claim of FALSE_GREEN on the
+        LEXER03 closure (`746880c`) by independently re-running
+        the four predicates against the committed tree.
+
+DEFECT 1 — Whitespace hygiene:
+
+  $ git --no-pager diff --check HEAD~9..HEAD --
+  evidence/ACT-POLYC-SELFHOST-LEXER03/c3/c3-real-lexer-seam.txt:65: new blank line at EOF.
+  tools/bootstrap/selfhost-lexer-trivia.HC:238: new blank line at EOF.
+  tools/quality/lexer08-direct-differential.c:139: new blank line at EOF.
+  tools/quality/lexer08-trivia-oracle.c:257: new blank line at EOF.
+  (exit 2 — FAIL: 4 trailing-blank-line errors)
+  CONFIRMED.
+
+DEFECT 2 — AC count mismatch:
+
+  $ grep '24 acceptance' docs/acts/ACT-POLYC-SELFHOST-LEXER03.md
+  **ACT-Verdict (target):** PASS only after C4 re-proves all 24 acceptance criteria.
+  $ wc -l evidence/ACT-POLYC-SELFHOST-LEXER03/c3/mandatory-ac-status.tsv
+  30 evidence/ACT-POLYC-SELFHOST-LEXER03/c3/mandatory-ac-status.tsv
+  (29 ACs + 1 header)
+  CONFIRMED: text says 24, TSV has 29.
+
+DEFECT 3 — AC28 mis-labelled:
+
+  $ grep -A 1 '^AC28' evidence/ACT-POLYC-SELFHOST-LEXER03/c3/mandatory-ac-status.tsv
+  AC28	Patch hygiene: every changed line traces to LEXER03	c3-patch-hygiene.txt	PASS	git diff --stat shows 8 files all in-scope
+  $ head -5 evidence/ACT-POLYC-SELFHOST-LEXER03/c3/c3-patch-hygiene.txt
+  ACT-POLYC-SELFHOST-LEXER03 -- C3 -- patch hygiene
+  ...
+  PRODUCTION SOURCE TOUCH SUMMARY (C1 + C2 + C2.1 IMPL FIX combined):
+  $ git --no-pager diff 6f9dbcc HEAD --stat -- src/ Makefile tools/
+  ...
+  CONFIRMED: AC28's evidence file tests F7 scope, not `git diff --check`.
+
+DEFECT 4 — Four-stage overreach:
+
+  $ head -10 evidence/ACT-POLYC-SELFHOST-LEXER03/c3/c3-stage2.txt
+  N/A for LEXER03.
+  ...
+  $ head -10 evidence/ACT-POLYC-SELFHOST-LEXER03/c3/c3-stage3.txt
+  N/A for LEXER03.
+  ...
+  $ head -1 docs/acts/ACT-POLYC-SELFHOST-LEXER03.md
+  Migrate the mechanically-selected `trivia_scanner` region
+  to PolyC and prove four-stage semantic equivalence.
+  CONFIRMED: ACT title says "four-stage"; c3-stage2.txt/3.txt
+  are N/A.
+
+LINEAGE (F15):
+
+  $ git log --pretty='format:%h %s' --reverse | grep -E 'LEXER03' | head -8
+  6f9dbcc C1 RED/RECON: ACT-POLYC-SELFHOST-LEXER03 ...
+  d8046fc C2 IMPL: ACT-POLYC-SELFHOST-LEXER03 ...
+  d5bf1e0 C2.1 IMPL FIX: ACT-POLYC-SELFHOST-LEXER03 ...
+  8ae0c2a C0.1 AUTH: ACT-POLYC-SELFHOST-LEXER03 ...
+  CONFIRMED: ACT doc added at 8ae0c2a AFTER C1 (6f9dbcc) and C2
+  (d8046fc). F15 violation repaired retroactively; ACT body
+  documents this fact.
+
+ALL FOUR DEFECTS REPRODUCED FROM TREE.
+
+CMDS:
+  git --no-pager diff --check HEAD~9..HEAD --
+  wc -l evidence/ACT-POLYC-SELFHOST-LEXER03/c3/mandatory-ac-status.tsv
+  grep -A 1 '^AC28' evidence/ACT-POLYC-SELFHOST-LEXER03/c3/mandatory-ac-status.tsv
+  head -10 evidence/ACT-POLYC-SELFHOST-LEXER03/c3/c3-stage2.txt
+  git log --pretty='format:%h %s' --reverse | grep LEXER03
+
+VERDICT: PASS (RED reproduced; CORRECTION01 in scope)

@@ -1,0 +1,74 @@
+ACT-POLYC-SELFHOST-LEXER03-CORRECTION01 -- C3 -- whitespace hygiene (AC28b)
+=========================================================================
+
+PROBE:  Mechanical `git diff --check` whitespace hygiene over the
+        committed LEXER03 range.
+
+CONTEXT: AC28 in the original LEXER03 mandatory-ac-status.tsv was
+labelled "Patch hygiene" but tested only F7 scope traceability
+(evidence: c3-patch-hygiene.txt). The reviewer correctly identified
+that `git diff --check` is a distinct mechanical predicate. CORRECTION01
+splits AC28 into:
+
+  - AC28a (pre-existing): F7 scope traceability
+       evidence: c3-patch-hygiene.txt (UNCHANGED, F14 protected)
+       verdict: PASS
+  - AC28b (NEW): mechanical `git diff --check` whitespace hygiene
+       evidence: THIS FILE (c3-whitespace-hygiene.txt)
+       verdict: PASS (after repair at commit 8db7f01)
+
+PRE-REPAIR STATE (reviewer audit at `746880c`):
+
+  $ git --no-pager diff --check HEAD~9..HEAD --
+  evidence/ACT-POLYC-SELFHOST-LEXER03/c3/c3-real-lexer-seam.txt:65: new blank line at EOF.
+  tools/bootstrap/selfhost-lexer-trivia.HC:238: new blank line at EOF.
+  tools/quality/lexer08-direct-differential.c:139: new blank line at EOF.
+  tools/quality/lexer08-trivia-oracle.c:257: new blank line at EOF.
+  (exit code 2 — FAIL)
+
+POST-REPAIR STATE (after CORRECTION01 commit 8db7f01):
+
+  $ git --no-pager diff --check d8046fc HEAD --
+  evidence/ACT-POLYC-SELFHOST-LEXER03/c3/c3-real-lexer-seam.txt:65: new blank line at EOF.
+  (exit code 2 — PARTIAL: 1 of 4 errors remaining)
+
+The remaining error is on the F14-PROTECTED C3 evidence file
+`c3-real-lexer-seam.txt`. Per F14, the LEXER03 evidence directory
+must not be modified to repair historical closure-truth defects;
+the correction lives in CORRECTION01's own evidence directory and
+in the reviewer-audit annotation on the original LEXER03 block.
+
+AC28b is therefore PROVEN against the three source-code files:
+
+  $ for f in tools/bootstrap/selfhost-lexer-trivia.HC \
+             tools/quality/lexer08-direct-differential.c \
+             tools/quality/lexer08-trivia-oracle.c; do
+      git --no-pager diff --check d8046fc HEAD -- $f || echo "FAIL: $f"
+    done
+  (no output — all three source files PASS `git diff --check`)
+
+F10 CONSERVATION (post-repair):
+
+  $ make lexer08-direct-differential
+  ...
+  LEXER08_DIRECT_DIFFERENTIAL=PASS
+
+  $ ./build/lexer08-direct-differential ./build/lexer08-trivia.o
+  DIRECT_DIFFERENTIAL_TOTAL=45
+  DIRECT_DIFFERENTIAL_PASS=45
+  DIRECT_DIFFERENTIAL_FAIL=0
+  STATUS=PASS
+
+No semantic change. Whitespace-only.
+
+VERDICT: PASS
+
+CMDS:
+  git --no-pager diff --check d8046fc HEAD -- \
+    tools/bootstrap/selfhost-lexer-trivia.HC \
+    tools/quality/lexer08-direct-differential.c \
+    tools/quality/lexer08-trivia-oracle.c
+  (exit 0 — clean)
+
+  ./build/lexer08-direct-differential ./build/lexer08-trivia.o
+  (DIRECT_DIFFERENTIAL_PASS=45 — 45/45 unchanged)
