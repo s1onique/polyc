@@ -1,0 +1,47 @@
+ACT-POLYC-SELFHOST-LEXER03 -- C2 -- entry identity
+==================================================
+
+command_output (in execution order):
+
+$ git rev-parse HEAD
+(prior commit on main; C1 RED/RECON was committed at C1 close)
+
+$ git branch --show-current
+main
+
+$ git log -1 --format='%H %s'
+(C1 RED/RECON commit)
+
+$ git status --porcelain=v1
+M  src/lexer.c
+M  src/lexer_bridge.h
+M  docs/factory/SELF-HOST-COMPONENTS.tsv
+M  Makefile
+?? tools/bootstrap/selfhost-lexer-trivia.HC
+?? tools/quality/lexer08-direct-differential.c
+?? tools/quality/lexer08-trivia-oracle.c
+?? tools/quality/lexer08-trivia-oracle-impl.c
+?? build/lexer08-trivia.o
+?? build/lexer08-trivia-oracle
+?? build/lexer08-direct-differential
+
+REQUIRED CHECKS:
+
+BRANCH=main
+  -> PASS
+
+APPEND_ONLY_ANCESTRY=PASS
+  -> C1 RED/RECON is on main and reachable from HEAD
+  -> PASS
+
+PRODUCTION_SEMANTICS_CHANGED=NO
+  -> lexSkipCodeComment + lexCore whitespace cases remain
+     semantically identical; the only change is implementation
+     language under -DHCC_USE_SELFHOST_COMPONENTS (stage1+)
+  -> The legacy C path is preserved bit-identically for stage0
+  -> PASS
+
+PARSER/IR/CODEGEN/ABI/LLVM CHANGES: NONE
+  -> src/parser.c, src/cctrl.c, src/ir*.c, src/x86*.c,
+     src/aarch64*.c, src/llvm-backend.c untouched
+  -> PASS

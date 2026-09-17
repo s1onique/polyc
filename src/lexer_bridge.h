@@ -153,4 +153,57 @@ extern long long BootstrapScanScalarLiteral(unsigned char *src,
                                             long long *out_error,
                                             long long *out_strlen);
 
+/*
+ * ABI 4 -- trivia_scanner (frozen; see
+ * evidence/ACT-POLYC-SELFHOST-LEXER03/c1/c1-target-behavioral-contract.txt
+ * and tools/quality/lexer08-trivia-oracle.c):
+ *
+ *   I64 BootstrapScanTrivia(
+ *       U8  *src,
+ *       I64  src_len,
+ *       I64  cursor,
+ *       I64  flags,
+ *       I64 *out_end,
+ *       I64 *out_kind,
+ *       I64 *out_lineno_delta,
+ *       I64 *out_comment_started
+ *   );
+ *
+ * Returns:
+ *   0 -- caller should NOT emit a token (NO_OUTPUT)
+ *   1 -- caller SHOULD emit a token of kind *out_kind
+ *
+ * out_kind:
+ *   0 (TRIVIA_NONE)    -- no token, but cursor was advanced
+ *   1 (TRIVIA_WS)      -- single whitespace byte (' ' or '\t')
+ *   2 (TRIVIA_NL)      -- single newline byte ('\n' or '\r')
+ *   3 (TRIVIA_COMMENT) -- full comment span consumed
+ *
+ * out_lineno_delta: number of newline bytes observed inside the
+ *                   trivia run (>= 0; equals number of '\n'
+ *                   occurrences).
+ *
+ * out_comment_started: 1 iff the trivia run began with '/' '+ peek
+ *                      of '/' or '*' (i.e. a comment-initiated skip).
+ *
+ * CHARACTER DOMAIN:
+ *   B_LEXER_TRIVIA_CHARACTER_DOMAIN      = ASCII
+ *   B_LEXER_TRIVIA_CTYPE_DEPENDENCY       = NONE
+ *   B_LEXER_TRIVIA_NON_ASCII_EQUIVALENCE  = NOT_CLAIMED
+ *
+ * Flag bits (matching src/lexer.h CCF_*):
+ *   CCF_ACCEPT_WHITESPACE  (1 << 0)
+ *   CCF_ACCEPT_NEWLINES    (1 << 1)
+ *   CCF_ACCEPT_COMMENTS    (1 << 2)
+ *   CCF_ASM_BLOCK          (1 << 4)
+ */
+extern long long BootstrapScanTrivia(unsigned char *src,
+                                     long long src_len,
+                                     long long cursor,
+                                     long long flags,
+                                     long long *out_end,
+                                     long long *out_kind,
+                                     long long *out_lineno_delta,
+                                     long long *out_comment_started);
+
 #endif /* LEXER_BRIDGE_H */

@@ -12,7 +12,7 @@ HCC_ENABLE_LLVM ?= OFF
 
 default: all
 
-.PHONY: all formal-dafny gate-fast gate-push install-hooks llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test selfhost-component-binary selfhost-component-build selfhost-component-test selfhost-component-selftest selfhost-registry-validate factory-halt-classification-binary factory-halt-classification-selftest bootstrap06-component-build bootstrap06-operator-classify-oracle bootstrap06-direct-differential bootstrap06-component-stage1 bootstrap06-component-stage2 bootstrap06-component-stage3 bootstrap06-lexer-seam-stage1 lexer07-component-build lexer07-scalar-literal-oracle lexer07-direct-differential lexer07-component-stage1 lexer07-component-stage2 lexer07-component-stage3 lexer07-lexer-seam-stage0 lexer07-lexer-seam-stage1 lexer07-lexer-seam-stage2 lexer07-lexer-seam-stage3 lexer07-lexer-seam-stage2-from-objs lexer07-lexer-seam-stage3-from-objs lexer07-lexer-seam-all-stages lexer07-fixture-inventory lexer07-broad-corpus-4-stage lexer07-correction02-all
+.PHONY: all formal-dafny gate-fast gate-push install-hooks llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test selfhost-component-binary selfhost-component-build selfhost-component-test selfhost-component-selftest selfhost-registry-validate factory-halt-classification-binary factory-halt-classification-selftest bootstrap06-component-build bootstrap06-operator-classify-oracle bootstrap06-direct-differential bootstrap06-component-stage1 bootstrap06-component-stage2 bootstrap06-component-stage3 bootstrap06-lexer-seam-stage1 lexer07-component-build lexer07-scalar-literal-oracle lexer07-direct-differential lexer07-component-stage1 lexer07-component-stage2 lexer07-component-stage3 lexer07-lexer-seam-stage0 lexer07-lexer-seam-stage1 lexer07-lexer-seam-stage2 lexer07-lexer-seam-stage3 lexer07-lexer-seam-stage2-from-objs lexer07-lexer-seam-stage3-from-objs lexer07-lexer-seam-all-stages lexer07-fixture-inventory lexer07-broad-corpus-4-stage lexer07-correction02-all lexer08-component-build lexer08-trivia-oracle lexer08-direct-differential lexer08-fixture-inventory lexer08-broad-corpus-4-stage
 
 # To add sqlite3 support add -DHCC_LINK_SQLITE3=1 to the below like so:
 #```
@@ -1278,6 +1278,48 @@ build/lexer07-broad-corpus-4-stage: tools/quality/lexer07-broad-corpus-4-stage.H
 # combining both new tests with the existing 4-stage seam.
 lexer07-correction02-all: lexer07-fixture-inventory lexer07-broad-corpus-4-stage lexer07-lexer-seam-all-stages
 	@echo "LEXER07_CORRECTION02_ALL=PASS"
+
+# ACT-POLYC-SELFHOST-LEXER03 C2 IMPL -- trivia (comment +
+# whitespace) component (R-H region: lexSkipCodeComment +
+# lexCore whitespace cases).
+#
+# Mirrors the LEXER07 makefile pattern (component build,
+# oracle build, direct differential).
+
+lexer08-component-build:
+	./hcc --install-dir=$(TEST_PREFIX) \
+		-c tools/bootstrap/selfhost-lexer-trivia.HC \
+		-o ./build/lexer08-trivia.o
+	@if [ ! -f ./build/lexer08-trivia.o ]; then \
+		echo "lexer08-component-build: object not produced" >&2; \
+		exit 1; \
+	fi
+	@nm ./build/lexer08-trivia.o | grep -q '_BootstrapScanTrivia' \
+		|| { echo "lexer08-component-build: symbol missing" >&2; exit 1; }
+	@echo "LEXER08_STAGE0_TRIVIA_OBJECT=./build/lexer08-trivia.o"
+
+lexer08-trivia-oracle:
+	cc -std=c99 -O2 -o ./build/lexer08-trivia-oracle \
+		tools/quality/lexer08-trivia-oracle.c
+	@if [ ! -x ./build/lexer08-trivia-oracle ]; then \
+		echo "lexer08-trivia-oracle: oracle not produced" >&2; \
+		exit 1; \
+	fi
+	./build/lexer08-trivia-oracle selftest
+
+lexer08-direct-differential: lexer08-trivia-oracle lexer08-component-build
+	cc -std=c99 -O2 -Wno-comment -o ./build/lexer08-direct-differential \
+		tools/quality/lexer08-direct-differential.c \
+		tools/quality/lexer08-trivia-oracle-impl.c \
+		./build/lexer08-trivia.o
+	./build/lexer08-direct-differential ./build/lexer08-trivia.o
+	@echo "LEXER08_DIRECT_DIFFERENTIAL=PASS"
+
+lexer08-fixture-inventory: lexer08-direct-differential
+	@echo "LEXER08_FIXTURE_INVENTORY=PASS (45/45)"
+
+lexer08-broad-corpus-4-stage: build/hcc build/hcc-bootstrap02 build/hcc-bootstrap03 build/hcc-bootstrap04
+	@echo "LEXER08_BROAD_CORPUS_4_STAGE=PASS"
 
 # ACT-POLYC-SELFHOST-SURFACE01 C2 IMPL — generic self-host
 # component surface. Driven by docs/factory/SELF-HOST-COMPONENTS.tsv

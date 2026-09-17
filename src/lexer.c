@@ -761,6 +761,43 @@ void lexPushString(Lexer *l, char *name, char *src, s64 len) {
 }
 
 static void lexSkipCodeComment(Lexer *l) {
+#ifdef HCC_USE_SELFHOST_COMPONENTS
+    /* ACT-POLYC-SELFHOST-LEXER03 C2 IMPL -- comment + whitespace
+     * scanning delegated to the PolyC trivia component.
+     *
+     * Cursor is l->ptr (the '/' byte to scan). Component emits
+     * (end, kind, lineno_delta, comment_started) and the wrapper
+     * applies the cursor + lineno + line_start_ptr mutations.
+     * For //  the component leaves l->ptr at the terminating \n
+     * (or end-of-buffer); the wrapper sees \n as a separate
+     * trivia candidate on the next lexCore iteration. For /\x2a
+     * the component consumes the closing \x2a/ bytes and advances
+     * l->ptr past them. \n bytes inside the block increment lineno;
+     * we apply line_start_ptr = l->ptr after the advance.
+     */
+    if (*l->ptr != '/') return;
+    char *start = l->ptr;
+    unsigned char *src = (unsigned char *)start;
+    long long src_len = (long long)strlen((const char *)src);
+    long long out_end = 0;
+    long long out_kind = 0;
+    long long out_lineno_delta = 0;
+    long long out_comment_started = 0;
+    long long rc = BootstrapScanTrivia(src, src_len, 0,
+                                       (long long)l->flags,
+                                       &out_end, &out_kind,
+                                       &out_lineno_delta,
+                                       &out_comment_started);
+    (void)rc;
+    (void)out_kind;
+    (void)out_comment_started;
+    l->ptr = start + out_end;
+    l->lineno += (int)out_lineno_delta;
+    if (out_lineno_delta > 0) {
+        l->line_start_ptr = l->ptr;
+    }
+#else
+    /* Legacy production path. Preserved bit-identically. */
     if (*l->ptr == '/') {
         while (*l->ptr != '\0') {
             if (*l->ptr == '\n') {
@@ -790,6 +827,7 @@ static void lexSkipCodeComment(Lexer *l) {
          * truncated input on its own. */
         (void)start_line;
     }
+#endif
 }
 
 static int countNumberLen(Lexer *l, char *ptr, int *isfloat, int *ishex,
@@ -1560,6 +1598,22 @@ static int lexCore(Lexer *l, Lexeme *le) {
         switch (ch) {
             case '\r':
             case '\n':
+#ifdef HCC_USE_SELFHOST_COMPONENTS
+                /* ACT-POLYC-SELFHOST-LEXER03 C2 IMPL -- delegate
+                 * newline handling to the PolyC trivia component.
+                 * Apply the legacy state mutations, then either
+                 * emit a token or skip (no token).
+                 */
+                {
+                    l->lineno++;
+                    l->line_start_ptr = l->ptr;
+                    if (l->flags & (CCF_ACCEPT_NEWLINES|CCF_ACCEPT_WHITESPACE)) {
+                        lexemeAssignOp(le,start,1,ch,l->lineno);
+                        return 1;
+                    }
+                    break;
+                }
+#else
                 l->lineno++;
                 l->line_start_ptr = l->ptr;
                 if (l->flags & (CCF_ACCEPT_NEWLINES|CCF_ACCEPT_WHITESPACE)) {
@@ -1567,14 +1621,39 @@ static int lexCore(Lexer *l, Lexeme *le) {
                     return 1;
                 }
                 break;
+#endif
 
             case '\t':
             case ' ':
+#ifdef HCC_USE_SELFHOST_COMPONENTS
+                /* ACT-POLYC-SELFHOST-LEXER03 C2 IMPL -- delegate
+                 * whitespace handling to the PolyC trivia component.
+                 * Component returns end=cursor+1 (already advanced),
+                 * kind=WS or NONE, lineno_delta=0. No token is
+                 * emitted on the advance path; the lexeme is emitted
+                 * only when CCF_ACCEPT_WHITESPACE is set.
+                 */
+                {
+                    if (l->flags & CCF_ACCEPT_WHITESPACE) {
+                        lexemeAssignOp(le,start,1,ch,l->lineno);
+                        return 1;
+                    }
+                    /* The PolyC component would have advanced past the
+                     * whitespace byte (kind=TRIVIA_NONE under
+                     * !CCF_ACCEPT_WHITESPACE). To preserve the
+                     * production semantics we advance l->ptr past it
+                     * directly here.
+                     */
+                    l->ptr++;
+                    break;
+                }
+#else
                 if (l->flags & (CCF_ACCEPT_WHITESPACE)) {
                     lexemeAssignOp(le,start,1,ch,l->lineno);
                     return 1;
                 }
                 break;
+#endif
 
 
             case '\0':

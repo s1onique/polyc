@@ -1,0 +1,26 @@
+cc -std=c99 -O2 -o ./build/lexer08-trivia-oracle \
+		tools/quality/lexer08-trivia-oracle.c
+./build/lexer08-trivia-oracle selftest
+PASS  ws_only
+PASS  nl_only
+PASS  ws_nl_mixed
+PASS  line_comment_to_nl
+PASS  line_comment_to_eof
+PASS  block_single
+PASS  block_multi
+PASS  block_truncated
+PASS=8 FAIL=0
+./hcc --install-dir=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/test-prefix \
+		-c tools/bootstrap/selfhost-lexer-trivia.HC \
+		-o ./build/lexer08-trivia.o
+LEXER08_STAGE0_TRIVIA_OBJECT=./build/lexer08-trivia.o
+cc -std=c99 -O2 -Wno-comment -o ./build/lexer08-direct-differential \
+		tools/quality/lexer08-direct-differential.c \
+		tools/quality/lexer08-trivia-oracle-impl.c \
+		./build/lexer08-trivia.o
+./build/lexer08-direct-differential ./build/lexer08-trivia.o
+DIRECT_DIFFERENTIAL_TOTAL=45
+DIRECT_DIFFERENTIAL_PASS=45
+DIRECT_DIFFERENTIAL_FAIL=0
+STATUS=PASS
+LEXER08_DIRECT_DIFFERENTIAL=PASS

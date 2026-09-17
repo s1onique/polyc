@@ -1,0 +1,103 @@
+ACT-POLYC-SELFHOST-LEXER03 -- C2 -- implementation delta
+========================================================
+
+This file lists the in-scope production-implementation changes
+made during C2. Out-of-scope residue is recorded separately.
+
+==================================================================
+FILES MODIFIED
+==================================================================
+
+src/lexer.c
+  - lexSkipCodeComment() wrapped in #ifdef HCC_USE_SELFHOST_COMPONENTS
+    The PolyC delegation block (lines 764-798) calls
+    BootstrapScanTrivia(src, src_len, 0, l->flags, ...) and applies
+    the cursor + lineno + line_start_ptr mutations.
+    The legacy C block (lines 800-829) is preserved bit-identically
+    for stage0 builds.
+
+  - lexCore whitespace cases ('\r' '\n' '\t' ' ') wrapped in
+    #ifdef HCC_USE_SELFHOST_COMPONENTS. The newline branch is
+    unchanged in behavior (lineno++ + line_start_ptr = l->ptr, then
+    optional token emission); the WS branch advances l->ptr past
+    the byte in the no-token path.
+
+src/lexer_bridge.h
+  - Extended with ABI 4 (BootstrapScanTrivia) declaration
+    (lines 156-207). The ABI contract is documented in the header
+    comment block and matches c1-target-behavioral-contract.txt.
+
+docs/factory/SELF-HOST-COMPONENTS.tsv
+  - Row 4 added: trivia_scanner, source=
+    tools/bootstrap/selfhost-lexer-trivia.HC, symbol=
+    BootstrapScanTrivia, consumer_seam=src/lexer.c::lexSkipCodeComment
+    + src/lexer.c::lexCore whitespace cases, language=POLYC,
+    state=STABLE, oracle=lexer08-trivia-oracle, etc.
+
+Makefile
+  - .PHONY line extended with lexer08-* targets
+  - LEXER08 makefile targets added (component-build, trivia-oracle,
+    direct-differential, fixture-inventory, broad-corpus-4-stage)
+  - LEXER08 targets mirror the LEXER07 pattern
+
+==================================================================
+FILES CREATED
+==================================================================
+
+tools/bootstrap/selfhost-lexer-trivia.HC   (NEW PolyC subject)
+  - 235 LOC
+  - BootstrapScanTrivia() entry point
+  - TR_TryWhitespace, TR_TryNewline, TR_TryLineComment,
+    TR_TryBlockComment helpers
+  - TR_Peek bounded byte fetch
+  - Frozen ABI: 4 inputs / 4 outputs
+
+tools/quality/lexer08-trivia-oracle.c     (NEW standalone selftest harness)
+  - Compiled into ./build/lexer08-trivia-oracle
+  - Includes OracleScanTrivia() definition + main() selftest
+  - 8 self-tests covering 8 behavior classes
+
+tools/quality/lexer08-trivia-oracle-impl.c  (NEW linker-friendly impl)
+  - OracleScanTrivia() definition only (no main())
+  - Linked into lexer08-direct-differential to avoid duplicate-symbol
+
+tools/quality/lexer08-direct-differential.c  (NEW differential harness)
+  - 45-fixture matrix across 8 behavior classes + boundary cases
+  - Linked against both BootstrapScanTrivia (PolyC) and
+    OracleScanTrivia (C99)
+  - On success: prints DIRECT_DIFFERENTIAL_TOTAL=45 PASS=45 FAIL=0
+    STATUS=PASS, exits 0
+
+==================================================================
+SCOPE FREEZE COMPLIANCE
+==================================================================
+
+Allowed files (per c1-scope-freeze.txt):
+  tools/bootstrap/selfhost-lexer-trivia.HC   YES (NEW PolyC subject)
+  src/lexer_bridge.h                         YES (ABI 4 declaration)
+  src/lexer.c                                YES (lexScanTrivia wrapper)
+  src/CMakeLists.txt                         NOT YET (deferred to C3 / C4)
+  Makefile                                   YES (LEXER08 targets)
+  docs/factory/SELF-HOST-COMPONENTS.tsv      YES (row 4 added)
+  tools/quality/lexer08-trivia-oracle.c      YES (NEW C oracle)
+  tools/quality/lexer08-direct-differential.c YES (NEW runner)
+  tools/quality/lexer08-real-seam-runner.c   NOT YET (deferred to C3)
+  scripts/quality/lexer08-*.sh               NOT YET (deferred to C3)
+  evidence/ACT-POLYC-SELFHOST-LEXER03/c1/    YES (C1 evidence)
+  evidence/ACT-POLYC-SELFHOST-LEXER03/c2/    YES (this file + others)
+  evidence/ACT-POLYC-SELFHOST-LEXER03/c3/    NOT YET (C3 EVIDENCE phase)
+  docs/factory/HANDOFF-ACT-POLYC-SELFHOST-LEXER03.md  NOT YET (C4 HANDOFF)
+  docs/ROADMAP.md                            NOT YET (C4 CLOSE)
+  docs/acts/ACT-POLYC-SELFHOST-LEXER03.md    YES (this ACT)
+
+Forbidden files (per c1-scope-freeze.txt):
+  evidence/ACT-POLYC-SELFHOST-LEXER*/      NOT TOUCHED
+  docs/factory/HANDOFF-ACT-POLYC-SELFHOST-LEXER0*.md NOT TOUCHED
+  src/parser.c, src/cctrl.c, src/prs*.c    NOT TOUCHED
+  src/aostr.c, src/arena.c                  NOT TOUCHED
+  src/holyc-lib/*                           NOT TOUCHED
+  src/syntax-highlighting/*                 NOT TOUCHED
+  src/x86*.c, src/aarch64*.c, src/asm*.c, src/jit-*.c, src/ir*.c,
+  src/cfg*.c, src/ast*.c, src/mempool.c, src/memsafe.c, src/memory.c
+  tools/factory/*, .githooks/*, scripts/install-git-hooks.sh
+  -> NOT TOUCHED
