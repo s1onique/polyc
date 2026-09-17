@@ -2487,7 +2487,7 @@ ACT-POLYC-SELFHOST-LEXER03                  CLOSED PASS_TRUE_GREEN
   C2.1 IMPL FIX:  d5bf1e0  (three ABI bugs repaired in C3 prep)
   C0.1 AUTH:      8ae0c2a  (retroactive ACT document)
   C3 EVIDENCE:    15c14d8
-  C4 CLOSE:       <this commit>
+  C4 CLOSE:       89edf70
 
   Region selected (from recon ACT):
     region_id           = R-H
