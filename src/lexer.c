@@ -775,8 +775,12 @@ static void lexSkipCodeComment(Lexer *l) {
      * l->ptr past them. \n bytes inside the block increment lineno;
      * we apply line_start_ptr = l->ptr after the advance.
      */
-    if (*l->ptr != '/') return;
-    char *start = l->ptr;
+    if (*l->ptr != '/' && *l->ptr != '*') return;
+    /* Cursor is l->ptr (the second '/' or '*' byte); the FIRST
+     * '/' byte is at l->ptr - 1. The PolyC component expects
+     * src[cursor] to be the leading '/', so we pass the full
+     * address l->ptr - 1 and cursor = 0. */
+    char *start = l->ptr - 1;
     unsigned char *src = (unsigned char *)start;
     long long src_len = (long long)strlen((const char *)src);
     long long out_end = 0;
@@ -1628,23 +1632,17 @@ static int lexCore(Lexer *l, Lexeme *le) {
 #ifdef HCC_USE_SELFHOST_COMPONENTS
                 /* ACT-POLYC-SELFHOST-LEXER03 C2 IMPL -- delegate
                  * whitespace handling to the PolyC trivia component.
-                 * Component returns end=cursor+1 (already advanced),
-                 * kind=WS or NONE, lineno_delta=0. No token is
-                 * emitted on the advance path; the lexeme is emitted
-                 * only when CCF_ACCEPT_WHITESPACE is set.
+                 * Under CCF_ACCEPT_WHITESPACE we emit a token.
+                 * Otherwise we fall through to the next iteration
+                 * of the lexCore while loop, which will call
+                 * lexNextChar() to advance past this byte (matching
+                 * the legacy production behavior).
                  */
                 {
                     if (l->flags & CCF_ACCEPT_WHITESPACE) {
                         lexemeAssignOp(le,start,1,ch,l->lineno);
                         return 1;
                     }
-                    /* The PolyC component would have advanced past the
-                     * whitespace byte (kind=TRIVIA_NONE under
-                     * !CCF_ACCEPT_WHITESPACE). To preserve the
-                     * production semantics we advance l->ptr past it
-                     * directly here.
-                     */
-                    l->ptr++;
                     break;
                 }
 #else

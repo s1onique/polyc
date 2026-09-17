@@ -192,10 +192,10 @@ extern long long BootstrapScanScalarLiteral(unsigned char *src,
  *   B_LEXER_TRIVIA_NON_ASCII_EQUIVALENCE  = NOT_CLAIMED
  *
  * Flag bits (matching src/lexer.h CCF_*):
- *   CCF_ACCEPT_WHITESPACE  (1 << 0)
- *   CCF_ACCEPT_NEWLINES    (1 << 1)
- *   CCF_ACCEPT_COMMENTS    (1 << 2)
+ *   CCF_ACCEPT_NEWLINES    (1 << 2)
  *   CCF_ASM_BLOCK          (1 << 4)
+ *   CCF_ACCEPT_WHITESPACE  (1 << 6)
+ *   CCF_ACCEPT_COMMENTS    (1 << 7)
  */
 extern long long BootstrapScanTrivia(unsigned char *src,
                                      long long src_len,

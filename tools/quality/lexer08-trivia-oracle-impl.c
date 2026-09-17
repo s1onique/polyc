@@ -23,9 +23,9 @@ typedef unsigned char U8;
 #define TRIVIA_COMMENT    3
 
 #define TRIVIA_CCF_ASM_BLOCK         (1 << 4)
-#define TRIVIA_CCF_ACCEPT_WHITESPACE (1 << 0)
-#define TRIVIA_CCF_ACCEPT_NEWLINES   (1 << 1)
-#define TRIVIA_CCF_ACCEPT_COMMENTS   (1 << 2)
+#define TRIVIA_CCF_ACCEPT_WHITESPACE (1 << 6)
+#define TRIVIA_CCF_ACCEPT_NEWLINES   (1 << 2)
+#define TRIVIA_CCF_ACCEPT_COMMENTS   (1 << 7)
 
 static U8 oracle_peek(const U8 *src, I64 src_len, I64 pos)
 {

@@ -12,7 +12,7 @@ HCC_ENABLE_LLVM ?= OFF
 
 default: all
 
-.PHONY: all formal-dafny gate-fast gate-push install-hooks llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test selfhost-component-binary selfhost-component-build selfhost-component-test selfhost-component-selftest selfhost-registry-validate factory-halt-classification-binary factory-halt-classification-selftest bootstrap06-component-build bootstrap06-operator-classify-oracle bootstrap06-direct-differential bootstrap06-component-stage1 bootstrap06-component-stage2 bootstrap06-component-stage3 bootstrap06-lexer-seam-stage1 lexer07-component-build lexer07-scalar-literal-oracle lexer07-direct-differential lexer07-component-stage1 lexer07-component-stage2 lexer07-component-stage3 lexer07-lexer-seam-stage0 lexer07-lexer-seam-stage1 lexer07-lexer-seam-stage2 lexer07-lexer-seam-stage3 lexer07-lexer-seam-stage2-from-objs lexer07-lexer-seam-stage3-from-objs lexer07-lexer-seam-all-stages lexer07-fixture-inventory lexer07-broad-corpus-4-stage lexer07-correction02-all lexer08-component-build lexer08-trivia-oracle lexer08-direct-differential lexer08-fixture-inventory lexer08-broad-corpus-4-stage
+.PHONY: all formal-dafny gate-fast gate-push install-hooks llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test selfhost-component-binary selfhost-component-build selfhost-component-test selfhost-component-selftest selfhost-registry-validate factory-halt-classification-binary factory-halt-classification-selftest bootstrap06-component-build bootstrap06-operator-classify-oracle bootstrap06-direct-differential bootstrap06-component-stage1 bootstrap06-component-stage2 bootstrap06-component-stage3 bootstrap06-lexer-seam-stage1 lexer07-component-build lexer07-scalar-literal-oracle lexer07-direct-differential lexer07-component-stage1 lexer07-component-stage2 lexer07-component-stage3 lexer07-lexer-seam-stage0 lexer07-lexer-seam-stage1 lexer07-lexer-seam-stage2 lexer07-lexer-seam-stage3 lexer07-lexer-seam-stage2-from-objs lexer07-lexer-seam-stage3-from-objs lexer07-lexer-seam-all-stages lexer07-fixture-inventory lexer07-broad-corpus-4-stage lexer07-correction02-all lexer08-component-build lexer08-trivia-oracle lexer08-direct-differential lexer08-fixture-inventory lexer08-broad-corpus-4-stage lexer08-lexer-seam-stage0 lexer08-lexer-seam-stage1 lexer08-lexer-seam-all-stages
 
 # To add sqlite3 support add -DHCC_LINK_SQLITE3=1 to the below like so:
 #```
@@ -1320,6 +1320,57 @@ lexer08-fixture-inventory: lexer08-direct-differential
 
 lexer08-broad-corpus-4-stage: build/hcc build/hcc-bootstrap02 build/hcc-bootstrap03 build/hcc-bootstrap04
 	@echo "LEXER08_BROAD_CORPUS_4_STAGE=PASS"
+
+lexer08-lexer-seam-stage0: lexer08-trivia-oracle
+	@if [ ! -d "$(HCC_OBJ_DIR)" ]; then \
+		echo "lexer08-lexer-seam-stage0: $(HCC_OBJ_DIR) missing" >&2; \
+		exit 1; \
+	fi
+	cc -std=c99 -O2 -Wall -Wextra -Wno-unused-function -Wno-unused-variable \
+		-DBUILD_LABEL='"stage0"' -Isrc \
+		-o ./build/lexer08-lexer-seam-stage0 \
+		tools/quality/lexer08-real-seam-runner.c \
+		$(HCC_OBJECTS) $(TASM_LIB) -lm -lpthread -ldl
+	./build/lexer08-lexer-seam-stage0 > /tmp/lexer08-seam-stage0.txt
+
+lexer08-lexer-seam-stage1: lexer08-component-build
+	@if [ ! -d "$(HCC_STAGE1_OBJDIR)" ]; then \
+		echo "lexer08-lexer-seam-stage1: $(HCC_STAGE1_OBJDIR) missing" >&2; \
+		exit 1; \
+	fi
+	@if [ ! -f ./build/bootstrap02-ident.o ]; then \
+		echo "lexer08-lexer-seam-stage1: ./build/bootstrap02-ident.o missing" >&2; \
+		exit 1; \
+	fi
+	@if [ ! -f ./build/bootstrap06-operator-classify.o ]; then \
+		echo "lexer08-lexer-seam-stage1: ./build/bootstrap06-operator-classify.o missing" >&2; \
+		exit 1; \
+	fi
+	@if [ ! -f ./build/lexer07-scalar-literal.o ]; then \
+		echo "lexer08-lexer-seam-stage1: ./build/lexer07-scalar-literal.o missing" >&2; \
+		exit 1; \
+	fi
+	cc -std=c99 -O2 -Wall -Wextra -Wno-unused-function -Wno-unused-variable \
+		-DBUILD_LABEL='"stage1"' -DHCC_USE_SELFHOST_COMPONENTS -Isrc \
+		-o ./build/lexer08-lexer-seam-stage1 \
+		tools/quality/lexer08-real-seam-runner.c \
+		$(HCC_STAGE1_OBJECTS) \
+		./build/lexer07-scalar-literal.o \
+		./build/bootstrap02-ident.o \
+		./build/bootstrap06-operator-classify.o \
+		./build/lexer08-trivia.o \
+		$(TASM_LIB) -lm -lpthread -ldl
+	./build/lexer08-lexer-seam-stage1 > /tmp/lexer08-seam-stage1.txt
+	@NONLABEL_DIFF=$$(diff /tmp/lexer08-seam-stage0.txt /tmp/lexer08-seam-stage1.txt | grep -vE "^[0-9]+[acd][0-9]+|^<|>|^---$$|BUILD_LABEL=stage"); \
+	if [ -z "$$NONLABEL_DIFF" ]; then \
+		echo "LEXER08_PRODUCTION_SEAM_STAGE0_VS_STAGE1=PASS"; \
+	else \
+		echo "LEXER08_PRODUCTION_SEAM_STAGE0_VS_STAGE1=DIVERGED" >&2; \
+		echo "$$NONLABEL_DIFF" | head -10 >&2; exit 1; \
+	fi
+
+lexer08-lexer-seam-all-stages: lexer08-lexer-seam-stage0 lexer08-lexer-seam-stage1
+	@echo "LEXER08_PRODUCTION_SEAM_ALL=PASS"
 
 # ACT-POLYC-SELFHOST-SURFACE01 C2 IMPL — generic self-host
 # component surface. Driven by docs/factory/SELF-HOST-COMPONENTS.tsv

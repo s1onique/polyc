@@ -23,9 +23,9 @@ extern I64 OracleScanTrivia(const U8 *src, I64 src_len, I64 cursor, I64 flags,
                             I64 *out_lineno_delta,
                             I64 *out_comment_started);
 
-#define CCF_AW (1 << 0)
-#define CCF_AN (1 << 1)
-#define CCF_AC (1 << 2)
+#define CCF_AW (1 << 6)
+#define CCF_AN (1 << 2)
+#define CCF_AC (1 << 7)
 
 #define F(name, src_lit, cursor, flags) \
     { #name, (const U8 *)(src_lit), sizeof(src_lit)-1, (cursor), (flags) }

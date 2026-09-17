@@ -40,9 +40,9 @@
 #define TRIVIA_COMMENT    3
 
 #define TRIVIA_CCF_ASM_BLOCK         (1 << 4)
-#define TRIVIA_CCF_ACCEPT_WHITESPACE (1 << 0)
-#define TRIVIA_CCF_ACCEPT_NEWLINES   (1 << 1)
-#define TRIVIA_CCF_ACCEPT_COMMENTS   (1 << 2)
+#define TRIVIA_CCF_ACCEPT_WHITESPACE (1 << 6)
+#define TRIVIA_CCF_ACCEPT_NEWLINES   (1 << 2)
+#define TRIVIA_CCF_ACCEPT_COMMENTS   (1 << 7)
 
 // Safe byte fetch: returns 0 if pos >= src_len (the legacy C
 // implementation also reads past src_len via its '\0'-terminated
