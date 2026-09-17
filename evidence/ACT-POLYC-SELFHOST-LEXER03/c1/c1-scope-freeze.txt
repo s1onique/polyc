@@ -1,0 +1,109 @@
+ACT-POLYC-SELFHOST-LEXER03 -- C1 -- scope freeze
+================================================
+
+This file freezes the C1 scope selection. C2 implementation
+MUST NOT exceed this scope. Any C2/C3 work that requires a
+file or symbol outside this freeze is
+HALT_SCOPE_EXPANSION_REQUIRED, not silent extension.
+
+LEXER03_TARGET_ID         = LEXER03-T01
+LEXER03_TARGET_REGION_ID  = R-H (comment + whitespace)
+LEXER03_TARGET_SYMBOLS    = lexSkipCodeComment + lexCore whitespace cases
+                            ('\r' '\n' '\t' ' ')
+LEXER03_TARGET_RESPONSIBILITY =
+    trivia cursor advance + line accounting +
+    optional TK_COMMENT / WS / NL token emission under CCF_ACCEPT_* flags
+
+==================================================================
+TARGET_FILES_ALLOWED (allowed to mutate)
+==================================================================
+
+  tools/bootstrap/selfhost-lexer-trivia.HC           (NEW PolyC subject)
+  src/lexer_bridge.h                                 (extend with ABI 4)
+  src/lexer.c                                        (add lexScanTrivia wrapper)
+  src/CMakeLists.txt                                 (link line addition)
+  Makefile                                           (LEXER08 targets)
+  docs/factory/SELF-HOST-COMPONENTS.tsv              (row 4 added)
+  tools/quality/lexer08-trivia-oracle.c              (NEW C oracle)
+  tools/quality/lexer08-direct-differential.c        (NEW runner)
+  tools/quality/lexer08-real-seam-runner.c           (NEW seam runner)
+  scripts/quality/lexer08-*.sh                       (NEW harness glue; <=50 LOC each)
+  evidence/ACT-POLYC-SELFHOST-LEXER03/c1/            (C1 evidence)
+  evidence/ACT-POLYC-SELFHOST-LEXER03/c2/            (C2 IMPL evidence)
+  evidence/ACT-POLYC-SELFHOST-LEXER03/c3/            (C3 EVIDENCE)
+  docs/factory/HANDOFF-ACT-POLYC-SELFHOST-LEXER03.md (C4 HANDOFF)
+  docs/ROADMAP.md                                    (CLOSE block)
+  docs/acts/ACT-POLYC-SELFHOST-LEXER03.md            (this ACT)
+
+==================================================================
+TARGET_SYMBOLS_ALLOWED (allowed to define / reference)
+==================================================================
+
+  BootstrapScanTrivia                                 (PolyC; ABI 4)
+  lexScanTrivia                                       (C wrapper in src/lexer.c)
+  TRIVIA_KIND_NONE/WS/NL/COMMENT                      (PolyC kind enum)
+  CCF_ACCEPT_WHITESPACE / CCF_ACCEPT_NEWLINES /
+  CCF_ACCEPT_COMMENTS / CCF_ASM_BLOCK                 (existing; read-only)
+
+==================================================================
+TARGET_TEST_SURFACES (allowed to introduce)
+==================================================================
+
+  tools/quality/lexer08-trivia-oracle.c              (independent C99 oracle)
+  tools/quality/lexer08-direct-differential.c        (OLD vs NEW diff)
+  tools/quality/lexer08-real-seam-runner.c           (real-lexer integration)
+  tools/quality/lexer08-fixture-inventory.HC         (fixture floor check)
+  tools/quality/lexer08-broad-corpus-4-stage.HC      (broad corpus 4-stage diff)
+  tools/quality/lexer08-proof-verify.HC              (proof verifier)
+  scripts/quality/lexer08-*.sh                       (harness glue; <=50 LOC each)
+
+==================================================================
+TARGET_BEHAVIOR_CONTRACT (frozen; see c1-target-behavioral-contract.txt)
+==================================================================
+
+  inputs:  src, src_len, cursor, flags (CCF_*)
+  outputs: out_end, out_kind, out_lineno_delta, out_comment_started
+  side effects (caller-applied):
+    l->ptr          := start + *out_end
+    l->lineno       += *out_lineno_delta
+    l->line_start_ptr := l->ptr (when *out_lineno_delta > 0)
+
+==================================================================
+FORBIDDEN_FILES (must NOT be mutated by C2/C3)
+==================================================================
+
+  evidence/ACT-POLYC-SELFHOST-LEXER*/      (any predecessor closed lineage)
+  docs/factory/HANDOFF-ACT-POLYC-SELFHOST-LEXER0*.md (any closed HANDOFF)
+  docs/factory/HANDOFF-ACT-POLYC-SELFHOST-LEXER-SURFACE-RECON01*.md (closed)
+  docs/factory/HANDOFF-ACT-POLYC-BOOTSTRAP*.md (closed)
+  src/parser.c, src/cctrl.c, src/prs*.c, src/aostr.c, src/arena.c
+  src/holyc-lib/* (NOT allowed; out of scope)
+  src/syntax-highlighting/*
+  src/lexer.c (except the lexScanTrivia wrapper inside)
+  src/x86*.c, src/aarch64*.c, src/asm*.c, src/jit-*.c, src/ir*.c,
+  src/cfg*.c, src/ast*.c, src/mempool.c, src/memsafe.c, src/memory.c
+  tools/factory/*, .githooks/*, scripts/install-git-hooks.sh
+  Makefile (only LEXER08 targets may be added; no other Makefile changes)
+
+==================================================================
+SCOPE_RATIONALE (why this target is atomic)
+==================================================================
+
+  R-H (comment + whitespace) is a single bounded responsibility
+  with one shared-state contract (cursor + lineno + line_start_ptr)
+  and one ABI shape (4-in / 4-out with a kind selector).
+
+  The Pass-B-style merge is justified because:
+    (a) Both regions touch the SAME mutable state.
+    (b) Both regions share the SAME peek-ahead budget (1 byte).
+    (c) Both regions share the SAME end-of-trivia boundary semantics.
+    (d) The recon assigned them a FINAL_SCORE = +200 (positive).
+    (e) Migrating R-G alone leaves R-I in C, which creates an
+        ABI mismatch (one PolyC region + one C region both
+        touching l->lineno + l->line_start_ptr).
+
+  The migration does NOT change parser / IR / codegen / ABI / LLVM
+  semantics. It only changes the implementation language of one
+  lexer responsibility, preserving bit-identical observable behavior
+  via the legacy C path during migration and the differential oracle
+  as the equivalence proof.

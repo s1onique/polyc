@@ -1,0 +1,62 @@
+ACT-POLYC-SELFHOST-LEXER03 -- C1 -- entry identity
+====================================================
+
+command_output (in execution order):
+
+$ git rev-parse HEAD
+c44d45f63e4517d8a52ba414c5872f3951342af8
+
+$ git branch --show-current
+main
+
+$ git log -1 --format='%H %s'
+c44d45f63e4517d8a52ba414c5872f3951342af8 C4 CLOSE: ACT-POLYC-SELFHOST-LEXER02-CORRECTION05-CORRECTION01 — PASS_TRUE_GREEN
+
+$ git status --porcelain=v1
+(empty)
+  -- NOTE: at the moment this command was captured, the new
+     evidence/ACT-POLYC-SELFHOST-LEXER03/ directory did not
+     yet exist; subsequent git status --porcelain after the
+     C1 evidence creation reports the new directory as a
+     single untracked entry, but it is produced by THIS ACT
+     and not pre-existing dirt.
+
+$ git merge-base --is-ancestor c44d45f63e4517d8a52ba414c5872f3951342af8 HEAD
+exit=0
+
+REQUIRED CHECKS:
+
+BRANCH=main
+  -> required: main
+  -> observed: main
+  -> PASS
+
+APPEND_ONLY_ANCESTRY=PASS
+  -> required: predecessor CLOSE commit at or before HEAD, no rewrite
+  -> observed: c44d45f63e45 is reachable as HEAD itself
+  -> PASS
+
+WORKTREE_CLEAN=TRUE
+  -> required: no pre-existing dirty work unrelated to this ACT
+  -> observed: git status --porcelain=v1 was empty before
+                the new evidence/ACT-POLYC-SELFHOST-LEXER03/
+                untracked entry was produced
+  -> PASS
+
+PREDECESSOR_BINDING:
+
+  LEXER02_LINEAGE_TRUE_GREEN = YES
+    Evidence:
+      HEAD commit subject: "C4 CLOSE: ACT-POLYC-SELFHOST-LEXER02-CORRECTION05-CORRECTION01 — PASS_TRUE_GREEN"
+      docs/factory/HANDOFF-ACT-POLYC-SELFHOST-LEXER02-CORRECTION05-CORRECTION01.md
+        VERDICT = PASS_TRUE_GREEN (CLOSED)
+        LEXER03_BLOCKED = FALSE
+        P0_RESIDUE      = NONE
+
+  LEXER02_CLOSE = c44d45f63e4517d8a52ba414c5872f3951342af8
+  ENTRY_HEAD    = c44d45f63e4517d8a52ba414c5872f3951342af8
+    (HEAD has not advanced past the Lexer02 CLOSE.)
+
+  Lexer02 -> Lexer03 transition authorized by ACT §1.
+
+NO HALT conditions triggered.

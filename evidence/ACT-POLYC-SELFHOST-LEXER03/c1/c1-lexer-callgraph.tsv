@@ -1,0 +1,24 @@
+caller	callee	entrypoint	stage_applicability	fallback_path	shared_state_touched	token_or_output_type
+lexToken (SURF-23)	lex (SURF-24)	recursive via lex / lexCore	ALL	none	l->ptr, l->lineno, l->line_start_ptr, l->cur_str, l->cur_i64, l->cur_f64, l->ishex, l->flags	Lexeme* out
+lex (SURF-24)	lexCore (SURF-24)	inline call from lex()	ALL	none	l->tok_start_line, l->tok_start_col	Lexeme* out
+lexCore (SURF-24)	lexNextChar (SURF-01)	read next byte	ALL	none	l->ptr, l->lineno, l->line_start_ptr	char ch
+lexCore (SURF-24)	lexPeek (SURF-04)	case '.' + isNum check	ALL	none	l->ptr (read-only)	char ch
+lexCore (SURF-24)	lexPeekMatch (SURF-03)	cases '<', '>', etc.	ALL	none	l->ptr (read-only)	int match
+lexCore (SURF-24)	lexIdentifier (SURF-05)	default alpha/_ branch	ALL	delegated to BootstrapScanIdent in stage1+; C fallback in stage0	l->ptr, l->cur_strlen, l->cur_str, l->symbol_table	Lexeme via TK_IDENT/TK_KEYWORD
+lexCore (SURF-24)	lexNumeric (SURF-08)	case '0'..'9' or '.'+digit	ALL	delegated to BootstrapScanScalarLiteral in stage1+; C fallback in stage0	l->ptr, l->cur_strlen, l->cur_i64, l->cur_f64, l->ishex	TK_I64/TK_F64
+lexCore (SURF-24)	lexString (SURF-06)	case '"'	ALL	none (still in C)	l->ptr, l->lineno, l->line_start_ptr, l->cur_str, l->cur_strlen, l->lexeme_arena	TK_STR (returns char* from arena)
+lexCore (SURF-24)	lexCharConst (SURF-07)	case '\''	ALL	delegated to BootstrapScanScalarLiteral subkind=CHAR in stage1+; C fallback in stage0	l->ptr, l->cur_strlen, l->cur_i64	TK_CHAR_CONST
+lexCore (SURF-24)	lexSkipCodeComment (SURF-10)	case '/'	ALL	none (still in C)	l->ptr, l->lineno, l->line_start_ptr	TK_COMMENT or no-output (skip)
+lexCore (SURF-24)	lexClassifyOperator (SURF-14)	case '=' '<' '>' '+' '-' '!' '&' '|' '*' '%' '^' '~' '(' ')' ',' ';' '[' ']' '{' '}' ':' '\\' '/' '$' '@' '.'	ALL	delegated to BootstrapClassifyOperator in stage1+; C fallback in stage0	l->ptr, l->flags	TK_PLUS_PLUS / TK_MINUS_MINUS / ... / TK_PUNCT
+lexCore (SURF-24)	lexPreProcDirective (SURF-16)	case '#'	ALL	none (still in C)	l->symbol_table (Map*), l->ptr	TK_KEYWORD (preprocessor directive)
+lexCore (SURF-24)	lexRaise (lexRaise helper)	inline at error path	ALL	none	diagnostic dispatch + loggerPanic / cctrlRaiseException	error path
+lexPreProcDirective (SURF-16)	lex (SURF-24)	recursive to read directive name	ALL	none	l->ptr	Lexeme
+lexPreProcDirective (SURF-16)	lexRaise (helper)	directive not found	ALL	none	diagnostic dispatch	error path
+lexInclude (SURF-17)	lex (SURF-24)	recursive to read <ident or "path"	ALL	none	l->ptr, l->cur_file, l->builtin_root	Lexeme (multiple)
+lexInclude (SURF-17)	lexPushFile (SURF-25)	resolve new file	ALL	none	l->files, l->seen_files, l->all_source	side effect: file push
+lexLink (SURF-18)	lex (SURF-24)	recursive to read <name or "path"	ALL	none	l->ptr, l->cc->shared_object_files / l->cc->link_libs	Lexeme (multiple)
+lexDefine (SURF-19)	lex (SURF-24)	recursive to capture body	ALL	none	Map* macro_defs (write)	Lexeme (multiple)
+lexUndef (SURF-20)	lex (SURF-24)	recursive to read name	ALL	none	Map* macro_defs (remove)	Lexeme
+lexPreProcIf (SURF-21)	lexPreProcBoolean (SURF-22)	#if expression eval	ALL	none	Map* macro_defs, l->skip_else	int condition
+lexPreProcBoolean (SURF-22)	lexToken (SURF-23)	recursive token pull for expression	ALL	none	Map* macro_defs	Lexeme*
+lexToken (SURF-23)	lex (SURF-24)	recursive pull w/ macro expansion	ALL	none	Map* macro_defs	Lexeme*

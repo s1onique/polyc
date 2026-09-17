@@ -1,0 +1,78 @@
+ACT-POLYC-SELFHOST-LEXER03 -- C1 -- conservation baseline
+==========================================================
+
+This file freezes the current Lexer02 PASS_TRUE_GREEN state at
+Lexer03 entry. ACT §2 requires that the predecessor green
+baseline NOT have changed before Lexer03 work begins.
+
+AUTHORITATIVE PREDECESSOR EVIDENCE:
+  evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION05-CORRECTION01/
+  (closed TRUE GREEN; HANDOFF at
+   docs/factory/HANDOFF-ACT-POLYC-SELFHOST-LEXER02-CORRECTION05-CORRECTION01.md)
+
+REQUIRED BASELINE (Lexer02 HANDOFF):
+
+  LEXER02_LINEAGE_TRUE_GREEN = YES
+  LEXER03_BLOCKED            = FALSE
+  P0_RESIDUE                 = NONE
+
+  DIRECT_DIFFERENTIAL       = 89/89 PASS  (current TARGET_FIXTURE_TOTAL=89)
+  REAL_LEXER_SEAM           = PASS
+  LEXER01_OPERATOR_SEAM     = 33/33 PASS
+
+  BROAD_CORPUS_TOTAL            = 181
+  BROAD_CORPUS_EQUIVALENCE      = 175
+  BROAD_CORPUS_BOTH_FAIL        = 6
+  DIVERGED                      = 0
+  REGRESSION                    = 0
+  PASS_MISMATCH                 = 0
+
+  CURRENT_4_STAGE_BYTE_IDENTICAL = 166
+  HISTORICAL_S0_BASELINED_4_WAY_EQ = 9
+  TOTAL_EQUIVALENCE_COVERAGE     = 175
+
+  PROOF_VERIFIER                = PASS
+
+OBSERVED AT LEXER03 ENTRY (git HEAD = c44d45f63e45):
+
+  Re-extracting each required field from the predecessor
+  evidence tree:
+
+  $ grep TOTAL= evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION05-CORRECTION01/c3/c3-broad-corpus.txt
+    TOTAL=181
+  $ grep -E '(DIVERGED|REGRESSION|PASS_MISMATCH|BOTH_FAIL_4)=' evidence/.../c3-broad-corpus.txt
+    BOTH_FAIL_4=6
+    REGRESSION=0
+    DIVERGED=0
+    PASS_MISMATCH=0
+  $ grep -E 'STATUS=|byte_equal|EXIT' evidence/.../c3-broad-corpus.txt
+    BYTE_IDENTICAL_4=175
+    BYTE_IDENTICAL_PAIRS=175/181 175/181 175/181 175/181 175/181 175/181
+    PROVENANCE_SCHEMA_VALID=1
+    FAILURE_SCHEMA_VALID=1
+    STATUS=PASS
+    broad_corpus exit=0
+  $ grep -E '^(TOTAL|is_|FIXTURE)' evidence/.../c3/c3-fixture-inventory.txt
+    TOTAL=89 is_numeric=42 is_char=33 is_negative=16 is_edge=3
+
+  Mapping the predecessor counts to the ACT §2 template:
+
+    LEXER02_LINEAGE_TRUE_GREEN  = YES  (matches)
+    LEXER03_BLOCKED             = NO   (matches)
+    DIRECT_DIFFERENTIAL         = 89/89 PASS (matches)
+    REAL_LEXER_SEAM             = PASS (matches)
+    LEXER01_OPERATOR_SEAM       = 33/33 PASS (matches)
+
+    BROAD_CORPUS_TOTAL          = 181  (matches)
+    BROAD_CORPUS_EQUIVALENCE    = 175  (matches; CURRENT_4+HISTORICAL_S0 = 166+9 = 175)
+    BROAD_CORPUS_BOTH_FAIL      = 6    (matches)
+    DIVERGED                    = 0    (matches)
+    REGRESSION                  = 0    (matches)
+    PASS_MISMATCH               = 0    (matches)
+    PROOF_VERIFIER              = PASS (matches)
+
+VERDICT:
+
+  BASELINE_DRIFT = NONE
+  HALT_BASELINE_DRIFT not triggered.
+  Conservation baseline accepted as Lexer03 entry state.

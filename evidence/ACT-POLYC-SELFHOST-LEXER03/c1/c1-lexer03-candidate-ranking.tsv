@@ -1,0 +1,30 @@
+candidate_id	runtime_reachable	lexer_responsibility	semantic_boundary_identifiable	can_be_differentially_tested	can_migrate_without_parser_change	atomic_responsibility	recon_region_id	selection_score	notes
+CAND-01 (R-G)	YES	YES	YES	YES	YES	YES	R-G (lexSkipCodeComment only)	7.0	Smallest bounded candidate: 31 LOC, no allocation, no Map/List/AoStr state; pure cursor+lineno mutation; read by lexCore '/' case (every C src + every HC file); ABI 4-in / 3-out (src,src_len,cursor,flags; end_cursor,kind,lineno_delta). Survives every existing seam.
+CAND-02 (R-I)	YES	YES	YES	YES	YES	YES	R-I (lexCore whitespace cases)	6.5	Inline dispatch for '\r' '\n' '\t' ' '; 15 LOC; only writes lineno, line_start_ptr, ptr; emits WS/NL token kind under CCF_ACCEPT_* flags; ABI 4-in / 3-out. Trivial. Couples with CAND-01 in shared state.
+CAND-03 (R-H)	YES	YES	YES	YES	YES	YES	R-H (lexSkipCodeComment + whitespace_cases)	7.5	Union of CAND-01 and CAND-02: 46 LOC; single ABI (4-in / 3-out with subkind selector); no allocation; no Map/List/AoStr state. Both write lineno, line_start_ptr, ptr. Pass B-style merge justified by shared mutation contract. Bigger than either constituent but cleaner ABI shape.
+CAND-04 (R-J)	YES	YES	YES	YES	NO	NO	R-J (lexString)	2.5	HIGH-LEVERAGE but E5 ineligible per recon: returns Arena*-allocated char* across the ABI. To migrate would require either (a) caller-provided buffer redesign (changes ABI semantics; not self-host), (b) PolyC-internal allocator (re-introduces E5). Per F8, do not migrate without separating the seam first.
+CAND-05 (R-N)	YES	YES	NO	YES	YES	NO	R-N (lexNumeric + whitespace)	4.5	Mixes an already-selfhosted region with new whitespace responsibility; no new semantic compression. Does not satisfy atomic_responsibility (R-F / R-B already cover lexNumeric; whitespace is R-I).
+CAND-06 (R-O)	YES	YES	NO	YES	YES	NO	R-O (lexCharConst + whitespace)	4.5	Same as CAND-05 but with char_const; already covered by R-F.
+CAND-07 (R-P)	YES	YES	NO	YES	YES	NO	R-P (countNumberLen + lexSkipCodeComment)	4.0	Already covered by R-F (countNumberLen) + R-G; no atomicity.
+CAND-08 (R-Q)	YES	YES	NO	YES	YES	NO	R-Q (lexCharConst + lexSkipCodeComment)	4.0	Same.
+CAND-09 (SURF-12)	YES	YES	NO	YES	YES	NO	inline '.' cases	3.5	Tiny surface but composite: delegates to lexNumeric + lexClassifyOperator. Not a single responsibility.
+CAND-10 (SURF-13)	YES	YES	NO	YES	YES	NO	'#' dispatch (SURF-13)	3.0	Delegates entirely to lexPreProcDirective; not a token producer on its own.
+CAND-11 (SURF-16)	YES	YES	NO	YES	YES	NO	lexPreProcDirective	2.5	Uses Map* symbol_table; ABI redesign required.
+CAND-12 (SURF-17+)	YES	YES	NO	YES	YES	NO	lexInclude / lexLink / lexDefine / lexUndef / lexPreProcIf / lexPreProcBoolean / lexToken	1.0	All preprocessor surfaces; orchestrations; stateful; out of scope per ACT §3.4.
+ELIGIBLE_CANDIDATE_COUNT=3
+ELIGIBLE_CANDIDATE_IDS=CAND-01,CAND-02,CAND-03
+TOP_RANK=CAND-03
+TOP_RANK_REGION=R-H (lexSkipCodeComment + lexCore whitespace_cases)
+TOP_RANK_REASON=
+  CAND-03 is the Pass-B-equivalent union of the two cleanest
+  allocation-free regions. It absorbs the lineno / line_start_ptr
+  shared state once, not twice. The ABI shape is the same as
+  either constituent (4 in / 3 out with a subkind selector)
+  and avoids the orphan-abort risk of migrating CAND-01 alone
+  and leaving R-I in C (the lexCore whitespace cases MUST still
+  write lineno + line_start_ptr to keep column tracking
+  consistent across both regions).
+SELECTED_TARGET=CAND-03
+SELECTED_TARGET_ID=LEXER03-T01
+SELECTED_TARGET_SYMBOLS=lexSkipCodeComment + lexCore whitespace cases ('\r' '\n' '\t' ' ')
+SELECTED_TARGET_RESPONSIBILITY=trivia (comment + whitespace) cursor advance + line accounting + optional TK_COMMENT / WS / NL token emission under CCF_ACCEPT_* flags

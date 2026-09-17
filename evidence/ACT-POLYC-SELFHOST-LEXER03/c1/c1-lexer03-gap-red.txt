@@ -1,0 +1,136 @@
+ACT-POLYC-SELFHOST-LEXER03 -- C1 -- principal RED
+==================================================
+
+The RED must prove that the chosen migration target (LEXER03-T01:
+trivia scanner) actually exists as a residual non-PolyC responsibility
+in the live tree. This file demonstrates the gap by enumeration,
+by live grep, and by stub invocation.
+
+==================================================================
+1. Inventory witness (mechanical)
+==================================================================
+
+$ grep -nE 'lexSkipCodeComment' src/lexer.c
+763:static void lexSkipCodeComment(Lexer *l) {
+
+$ sed -n '763,793p' src/lexer.c
+  ... (full body of lexSkipCodeComment, all in C) ...
+
+$ sed -n '1561,1577p' src/lexer.c
+  ... (inline whitespace cases in lexCore, all in C) ...
+
+$ grep -rn 'BootstrapScanTrivia' src/ tools/ build/ 2>/dev/null
+  (no output)
+
+$ grep -nE 'trivia|TRIVIA' tools/bootstrap/*.HC src/lexer.c src/lexer.h src/lexer_bridge.h
+  (no output)
+
+  -> The BootstrapScanTrivia symbol does NOT exist anywhere in the
+     repository. The trivia responsibility has NO PolyC subject.
+
+==================================================================
+2. SELF-HOST-COMPONENTS registry witness
+==================================================================
+
+$ cat docs/factory/SELF-HOST-COMPONENTS.tsv
+  ... (3 components: identifier_scanner, operator_punctuation_recognizer,
+       scalar_literal_scanner) ...
+  -> The self-host component registry lists exactly 3 components,
+     none of which is a trivia scanner.
+
+==================================================================
+3. Bridge header witness
+==================================================================
+
+$ grep -nE 'ABI [0-9]' src/lexer_bridge.h
+ABI 1 -- identifier_scanner
+ABI 2 -- operator_punctuation_recognizer
+ABI 3 -- scalar_literal_scanner
+  -> No ABI 4 declaration. No trivia declaration.
+
+==================================================================
+4. Self-host coverage taxonomy (post-LEXER02)
+==================================================================
+
+  lexIdentifier                  -> POLYC (B1)
+  lexClassifyOperator            -> POLYC (ABI 2)
+  lexNumeric + lexCharConst      -> POLYC (ABI 3 subkinds)
+  lexString                      -> C     (R-J ineligible per recon E5)
+  lexSkipCodeComment             -> C     (R-G)
+  lexCore whitespace cases       -> C     (R-I)
+  lexPreProcDirective            -> C     (SURF-16)
+  lexInclude / lexLink / ...     -> C     (preprocessor orchestration)
+
+  Token kinds not yet semantically PolyC-owned:
+    TK_STR        (R-J ineligible)
+    TK_COMMENT    (R-G)
+    WS / NL       (R-I; via CCF_ACCEPT_* flag tokens)
+
+  LEXER03_TOKENS_NOT_OWNED = TK_COMMENT, WS, NL
+
+==================================================================
+5. Stub call witness (LEXER03_GAP_REPRODUCED)
+==================================================================
+
+To prove the gap, attempt to call BootstrapScanTrivia through the
+production linker.
+
+Stub source (verbatim, written to /tmp/_stub_bootstrap_trivia.c):
+
+    extern long long BootstrapScanTrivia(unsigned char *src,
+                                         long long src_len,
+                                         long long cursor,
+                                         long long flags,
+                                         long long *out_end,
+                                         long long *out_kind,
+                                         long long *out_lineno_delta,
+                                         long long *out_comment_started);
+    long long probe(void) {
+        long long end=0, kind=0, ldelta=0, cstarted=0;
+        return BootstrapScanTrivia((unsigned char *)"// hi\n",
+                                    6, 0, 0,
+                                    &end, &kind, &ldelta, &cstarted);
+    }
+    int main(void){return (int)probe();}
+
+Verbatim command output (run on the Lexer03 entry tree, BEFORE any
+PolyC component):
+
+    $ cc -std=c99 -c /tmp/_stub_bootstrap_trivia.c \
+          -o /tmp/_stub_bootstrap_trivia.o
+    compile rc=0
+
+    $ cc -Wl,-undefined,error /tmp/_stub_bootstrap_trivia.o \
+          -o /tmp/_stub_probe_strict
+    link rc=1
+
+    stderr (verbatim, xcrun cache warnings filtered):
+      ld: Undefined symbols:
+        _BootstrapScanTrivia, referenced from:
+            _probe in _stub_bootstrap_trivia.o
+      clang: error: linker command failed with exit code 1
+
+    artifact: /tmp/_stub_probe_strict not produced (linker refused).
+
+LEXER03_GAP_REPRODUCED=YES
+  -> The BootstrapScanTrivia symbol is referenced but undefined,
+     proving the trivia responsibility has NO PolyC implementation.
+
+==================================================================
+6. Conclusion
+==================================================================
+
+The principal RED is established:
+
+  LEXER03_GAP_REPRODUCED = YES
+
+  Concretely:
+    (a) src/lexer.c::lexSkipCodeComment is fully in C
+    (b) the lexCore whitespace cases ('\r' '\n' '\t' ' ') are fully in C
+    (c) no PolyC subject exists for trivia
+    (d) the SELF-HOST-COMPONENTS registry has 3 entries, none trivia
+    (e) the lexer_bridge.h has 3 ABI declarations, none trivia
+    (f) a stub invocation of BootstrapScanTrivia fails to link
+        (Undefined symbols), proving the gap is real
+
+  Per ACT §5, this is the required principal RED before C2 IMPL.

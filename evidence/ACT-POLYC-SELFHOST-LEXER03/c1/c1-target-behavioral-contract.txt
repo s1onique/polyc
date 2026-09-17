@@ -1,0 +1,244 @@
+ACT-POLYC-SELFHOST-LEXER03 -- C1 -- behavioral contract for LEXER03-T01
+======================================================================
+
+Target: trivia (comment + whitespace) cursor advance + line accounting +
+        optional TK_COMMENT / WS / NL token emission under CCF_ACCEPT_* flags
+
+This contract is FROZEN at C1 closure. Any deviation discovered during
+C2 / C3 is a HALT_PREEXISTING_LEXER_SEMANTIC_DEFECT or
+HALT_SCOPE_EXPANSION_REQUIRED, not a silent mutation.
+
+==================================================================
+1. Inputs
+==================================================================
+
+ABI 4 -- trivia_scanner (frozen; subject of LEXER03):
+
+    I64 BootstrapScanTrivia(
+        U8  *src,        // caller-owned, read-only
+        I64  src_len,    // explicit byte length
+        I64  cursor,     // byte offset of the first byte to scan
+        I64  flags,      // CCF_* bitmask (CCF_ACCEPT_WHITESPACE, CCF_ACCEPT_NEWLINES,
+                         //                  CCF_ACCEPT_COMMENTS, CCF_ASM_BLOCK)
+        I64 *out_end,    // byte offset of the first byte AFTER the trivia run
+        I64 *out_kind,   // 0=NO_OUTPUT, 1=WS, 2=NL, 3=COMMENT
+        I64 *out_lineno_delta, // number of newline bytes observed (>= 0)
+        I64 *out_comment_started // 1 if '/' '+ peek of '/' or '*' initiated the run
+    );
+
+Return values:
+  0  -- caller should NOT emit a token (caller advances to *out_end
+        and continues the lexCore loop). Trivia was skipped.
+  1  -- caller SHOULD emit a token:
+        *out_kind = 1 (WS)       -> emit a TK_WS lexeme with kind=' '
+                                    (single space or tab byte; consumes 1 byte)
+        *out_kind = 2 (NL)       -> emit a TK_NL lexeme with kind='\n' or '\r'
+                                    (single newline byte; consumes 1 byte)
+        *out_kind = 3 (COMMENT)  -> emit a TK_COMMENT lexeme spanning the
+                                    entire consumed comment bytes
+        The exact byte to emit as the token kind is the byte at
+        src[cursor] for kind=1/2, OR a synthetic '.' (any unique byte
+        not consumed elsewhere) for kind=3 (since lexemeAssignOp is
+        the caller's responsibility).
+
+CHARACTER DOMAIN (frozen):
+    LEXER03_TRIVIA_CHARACTER_DOMAIN      = ASCII
+    LEXER03_TRIVIA_CTYPE_DEPENDENCY       = NONE
+    LEXER03_TRIVIA_NON_ASCII_EQUIVALENCE  = NOT_CLAIMED
+
+==================================================================
+2. Outputs / state effects
+==================================================================
+
+Observable results (frozen):
+
+  - cursor advance:        *out_end = cursor + (number of bytes consumed
+                                              in the trivia run)
+  - token-kind hint:       *out_kind as above (0=NO_OUTPUT, 1=WS, 2=NL, 3=COMMENT)
+  - lineno delta:          *out_lineno_delta = number of newline bytes
+                                            observed inside the trivia run
+                                              (>= 0; equals number of '\n'
+                                               occurrences)
+  - comment-started flag:  *out_comment_started = 1 iff the trivia run began
+                                              with '/' '+ peek of '/' or '*'
+                                              (i.e. a comment-initiated skip)
+
+Caller-side observable state that the C wrapper must apply:
+
+  l->ptr                   := start + *out_end
+  l->lineno                += *out_lineno_delta
+  l->line_start_ptr        := l->ptr AFTER the advance
+                              (only meaningful when *out_lineno_delta > 0;
+                               set to the byte after the LAST '\n' that was
+                               consumed)
+
+NOTE: The component does NOT touch l->ptr, l->lineno, or
+l->line_start_ptr directly; it returns the delta and the wrapper
+applies it (matches the LEXER02 ABI-3 wrapper pattern).
+
+==================================================================
+3. Input domain (frozen)
+==================================================================
+
+Valid forms:
+  - whitespace: ' ' '\t' at cursor (under CCF_ACCEPT_WHITESPACE -> emit WS;
+                 otherwise -> return NO_OUTPUT with end=cursor+1, no lineno delta)
+  - newline:    '\n' '\r' at cursor (under CCF_ACCEPT_NEWLINES -> emit NL;
+                 otherwise -> return NO_OUTPUT with end=cursor+1,
+                 lineno_delta=1 if '\n', lineno_delta=0 if '\r')
+  - '// comment\r?\n?': consume bytes until '\n' or '\0' or EOF
+                         (whichever comes first); under CCF_ACCEPT_COMMENTS
+                         -> emit COMMENT with comment_started=1;
+                         otherwise -> return NO_OUTPUT with end=cursor+N
+                         (caller's next iteration sees the cursor past
+                         the newline)
+  - '/* ... */' : consume bytes until '*' '/' or '\0' (truncated);
+                   '\n' bytes inside increment lineno;
+                   under CCF_ACCEPT_COMMENTS -> emit COMMENT with
+                   comment_started=1; otherwise -> NO_OUTPUT
+  - truncated '/*' at EOF: treat as running to EOF (current C behavior;
+                   do not raise); consume up to and including '\0' if
+                   cursor points into a '\0'-terminated buffer.
+
+Boundary cases:
+  - src_len == 0                    -> end=cursor, kind=NO_OUTPUT, lineno_delta=0
+  - cursor == src_len               -> end=cursor, kind=NO_OUTPUT, lineno_delta=0
+  - cursor > src_len                -> end=cursor, kind=NO_OUTPUT, lineno_delta=0
+  - src[cursor] == '\0'             -> end=cursor, kind=NO_OUTPUT, lineno_delta=0
+  - src[cursor] not in trivia set   -> end=cursor, kind=NO_OUTPUT, lineno_delta=0
+  - src[cursor] == '/' and src[cursor+1] not in {'/', '*'} -> end=cursor,
+                                       kind=NO_OUTPUT, lineno_delta=0
+                                       (caller falls through to lexClassifyOperator
+                                       which classifies '/' as TK_DIV_EQU or TK_DIV)
+
+EOF cases:
+  - '/* ... ' (no closing '*/' at EOF) -> consume to end-of-buffer;
+                                          comment_started=1 if comment otherwise
+                                          would have been emitted
+                                          (the C wrapper decides whether to
+                                           emit COMMENT or NO_OUTPUT based
+                                           on flags AFTER reading lineno_delta)
+  - '// ... ' (no closing '\n' at EOF) -> consume to end-of-buffer
+
+Lookahead cases:
+  - peek 1 byte ahead at cursor+1 when src[cursor] == '/'
+  - peek 2 bytes ahead at cursor+1 and cursor+2 when src[cursor] == '*'
+
+Cursor start/end conditions:
+  - cursor start must be within [0, src_len]
+  - *out_end must be in [cursor, src_len]
+  - *out_end may equal cursor (no-op if src[cursor] is not trivia)
+
+==================================================================
+4. State effects (frozen)
+==================================================================
+
+MUTATIONS the C wrapper MUST apply based on outputs:
+
+  l->ptr                := start + *out_end
+  l->lineno             += *out_lineno_delta
+  l->line_start_ptr     := l->ptr
+                             (when *out_lineno_delta > 0; matches C
+                              behavior in lexSkipCodeComment)
+
+UNEXPECTED new state mutation after implementation is a regression.
+
+==================================================================
+5. Existing fixtures (frozen)
+==================================================================
+
+The Lexer02 baseline already exercises every trivia class via the
+broad-corpus 181-file compiler corpus:
+
+  Every file (181/181) contains whitespace (\n, \t, ' ').
+  Every file (181/181) contains '//' comments.
+  Many files contain '/* ... */' comments.
+  A subset contains '/*' truncated at EOF (the C wrapper tolerates
+  this; PolyC component must match).
+
+Direct differential fixtures will be added during C2:
+
+  - 40+ trivia-only fixture inputs (WS, NL, //, /*..*/, mixed, EOF, ...)
+  - 1 direct-differential harness (tools/quality/lexer08-direct-differential)
+  - 1 real-lexer seam runner (tools/quality/lexer08-real-seam-runner)
+  - 1 oracle (tools/quality/lexer08-trivia-oracle.c)
+
+The Lexer02 baseline DOES NOT separately cover trivia because trivia
+was always inside the lexCore dispatch loop (no separate function
+existed for it). LEXER03 introduces the first isolated trivia seam.
+
+==================================================================
+6. Coverage floor (frozen)
+==================================================================
+
+TARGET_FIXTURE_TOTAL_MIN       = 40
+TARGET_BEHAVIOR_CLASS_TOTAL    = 8
+
+Behavior classes (8):
+  1. WS-only run (1+ space or tab bytes)
+  2. NL-only run (1 newline byte)
+  3. WS+NL mixed run (multiple whitespace kinds)
+  4. // comment to '\n'
+  5. // comment to EOF (no terminating newline)
+  6. /*..*/ comment (single line)
+  7. /*..*/ comment (multi-line, embedded '\n')
+  8. /*..*/ comment truncated at EOF
+
+Each class needs at least 5 fixture inputs spanning lengths and edge
+cases. Floor = 8 * 5 = 40.
+
+==================================================================
+7. Target symbols / files (frozen)
+==================================================================
+
+ALLOWED SYMBOLS / FILES:
+
+  tools/bootstrap/selfhost-lexer-trivia.HC           (NEW PolyC subject)
+  src/lexer_bridge.h                                 (extend with ABI 4)
+  src/lexer.c                                        (add lexScanTrivia wrapper)
+  src/CMakeLists.txt                                 (link line addition)
+  Makefile                                           (LEXER08 targets)
+  docs/factory/SELF-HOST-COMPONENTS.tsv              (row 4 added)
+  tools/quality/lexer08-trivia-oracle.c              (NEW C oracle)
+  tools/quality/lexer08-direct-differential.c        (NEW runner)
+  tools/quality/lexer08-real-seam-runner.c           (NEW seam runner)
+  scripts/quality/lexer08-*.sh                       (NEW harness glue; <=50 LOC each)
+  evidence/ACT-POLYC-SELFHOST-LEXER03/{c1,c2,c3,c4}/ (NEW namespace)
+  docs/factory/HANDOFF-ACT-POLYC-SELFHOST-LEXER03.md (NEW HANDOFF)
+  docs/ROADMAP.md                                    (CLOSE block)
+  docs/acts/ACT-POLYC-SELFHOST-LEXER03.md            (this ACT)
+
+FORBIDDEN FILES:
+
+  evidence/ACT-POLYC-SELFHOST-LEXER*/   (any predecessor closed lineage)
+  docs/factory/HANDOFF-ACT-POLYC-SELFHOST-LEXER0*.md (any closed HANDOFF)
+  src/parser.c, src/cctrl.c, src/prs*.c, src/aostr.c, src/arena.c,
+  src/holyc-lib/*, src/syntax-highlighting/*
+  tools/factory/*, .githooks/*, scripts/install-git-hooks.sh
+
+==================================================================
+8. Source / contract cross-references
+==================================================================
+
+  src/lexer.c:763-793    lexSkipCodeComment (existing C impl; preserved as
+                         legacy fallback for stage0)
+  src/lexer.c:1561-1577  lexCore whitespace cases (existing C impl;
+                         preserved as legacy fallback for stage0)
+
+  ABI-3 (LEXER02) ABI-4 (LEXER03) boundaries are independent:
+    ABI-3 covers scalar literals (numeric / char const / hex / float).
+    ABI-4 covers trivia (whitespace / newline / comment).
+    No shared state at the PolyC component level; both ABI outputs
+    flow through the same C wrapper (lexCore) but as separate calls.
+
+==================================================================
+9. Migration contract
+==================================================================
+
+The PolyC implementation is the single source of truth for trivia
+classification in stage1+ builds. The legacy C path remains
+compile-time gated by -DHCC_USE_SELFHOST_COMPONENTS (or its
+predecessor alias) and is preserved bit-identically for stage0.
+
+No runtime fallback. No shadow execution. No silent migration of
+subtly-different semantics.

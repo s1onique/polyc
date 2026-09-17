@@ -1,0 +1,86 @@
+ACT-POLYC-SELFHOST-LEXER03 -- C1 -- required result
+====================================================
+
+C1 CLOSE CHECKLIST:
+
+[AC01] LEXER02_LINEAGE_TRUE_GREEN = YES
+       APPEND_ONLY_ANCESTRY       = PASS
+       See c1-entry-identity.txt and c1-conservation-baseline.txt.
+
+[AC02] LEXER_SURFACE_UNKNOWN       = 0
+       RUNTIME_REACHABLE_UNKNOWN   = 0
+       See c1-lexer-surface-inventory.tsv (32 surfaces, 0 UNKNOWN entries).
+
+[AC03] SELECTED_TARGET_COUNT       = 1
+       See c1-lexer03-candidate-ranking.tsv (CAND-03 / R-H selected).
+
+[AC04] LEXER03_GAP_REPRODUCED      = YES
+       See c1-lexer03-gap-red.txt (linker error: undefined _BootstrapScanTrivia).
+
+[AC05] target contract frozen before implementation
+       target responsibility          = trivia (comment + whitespace) cursor advance
+       input classes                  = WS / NL / //-comment / /*..*/-comment / mixed / EOF
+       output contract                = out_end, out_kind, out_lineno_delta, out_comment_started
+       state effects                  = l->ptr / l->lineno / l->line_start_ptr (caller-applied)
+       fixture floor                  = TARGET_FIXTURE_TOTAL_MIN = 40; TARGET_BEHAVIOR_CLASS_TOTAL = 8
+       allowed symbols/files          = see c1-scope-freeze.txt
+       See c1-target-behavioral-contract.txt.
+
+[AC06] TARGET_IMPLEMENTATION_LANGUAGE = POLYC
+       (deferred to C2; placeholder: language must be PolyC per scope freeze)
+
+[AC07-AC25] Deferred to C2/C3/C4 (per phase discipline; no closure claim in C1)
+
+==================================================================
+C1 HALT CHECKS (per ACT §23)
+==================================================================
+
+HALT_ENTRY_DIRTY                        : not triggered (worktree clean at entry)
+HALT_BASELINE_DRIFT                     : not triggered (Lexer02 baseline intact)
+HALT_NO_BOUNDED_LEXER03_SURFACE         : not triggered (CAND-03 / R-H selected)
+HALT_SCOPE_NOT_ATOMIC                   : not triggered (single responsibility)
+HALT_PREEXISTING_LEXER_SEMANTIC_DEFECT   : not triggered (no semantic defect found)
+HALT_STAGE_BUILD_FAILURE                : not triggered (C1 is recon; no build)
+HALT_DIRECT_DIFFERENTIAL_MISMATCH       : not triggered (no implementation yet)
+HALT_REAL_LEXER_SEAM_MISMATCH           : not triggered
+HALT_BROAD_CORPUS_REGRESSION            : not triggered (broad corpus unchanged)
+HALT_BASELINE_IMPROVEMENT_REQUIRES_RECONCILIATION : not triggered
+HALT_PROVENANCE_INVALID                 : not triggered
+HALT_NEGATIVE_CONTROL_FAILED            : not triggered (controls are C3)
+HALT_FACTORY_GATE_REGRESSION            : not triggered (gate-fast PASS, gates baseline)
+HALT_F_NO_PYTHON_REGRESSION             : not triggered (no new Python)
+HALT_F_POLYC_TOOLS_REGRESSION           : not triggered (no new non-PolyC tools)
+HALT_IMPLEMENTATION_DEFECT_FOUND_DURING_EVIDENCE : not triggered (C1 has no IMPL)
+HALT_PHASE_CORRECTION_REQUIRED          : not triggered
+HALT_C3_MUTATED_AT_CLOSE                : not triggered (C4 not yet started)
+HALT_MANDATORY_AC_NOT_GREEN             : not triggered (C1 ACs are PASS / DEFERRED)
+
+==================================================================
+C1 TERMINAL STATE
+==================================================================
+
+C1_RECON                 = PASS
+LEXER03_TARGET_SELECTED   = CAND-03 (R-H: comment + whitespace trivia)
+SCOPE_FROZEN              = TRUE
+NEXT                      = C2_IMPL
+HALT                      = NONE
+
+The required first terminal state per ACT §28 is achieved.
+
+==================================================================
+C1 EVIDENCE PACKET
+==================================================================
+
+  c1-entry-identity.txt
+  c1-conservation-baseline.txt
+  c1-lexer-surface-inventory.tsv
+  c1-lexer-callgraph.tsv
+  c1-residual-non-polyc-authority.tsv
+  c1-lexer03-candidate-ranking.tsv
+  c1-target-behavioral-contract.txt
+  c1-lexer03-gap-red.txt
+  c1-scope-freeze.txt
+  c1-required-result.txt   (this file)
+
+  STATUS = C1_PASS
+  NEXT   = C2_IMPL
