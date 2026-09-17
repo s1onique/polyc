@@ -39,7 +39,7 @@ HANDOFF-ACT-POLYC-SELFHOST-LEXER03-CORRECTION01
   C2 IMPL repair 1:     8db7f01  (whitespace hygiene on 3 source files)
   C2 IMPL repair 2/4:   fd4fd60  (ROADMAP annotation + status block)
   C3 EVIDENCE:          <this commit>
-  C4 CLOSE:             <this commit>
+  C4 CLOSE:             d0b55891699be20427437cf7b370cbc0085ba648
 
 ## ROOT CAUSE / FINDING
 
