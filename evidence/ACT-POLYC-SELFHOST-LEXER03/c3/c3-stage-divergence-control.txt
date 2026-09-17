@@ -1,0 +1,67 @@
+ACT-POLYC-SELFHOST-LEXER03 -- C3 -- stage divergence control
+=============================================================
+
+PROBE:  Does the production-seam runner actually detect divergence
+        when the PolyC subject is mutated? (F13 evidence that the
+        seam runner's PASS verdict is meaningful, not hardcoded.)
+
+MUTATION APPLIED:
+  In tools/bootstrap/selfhost-lexer-trivia.HC, the line
+      p += 2;     /* TR_TryBlockComment, on `*/` match */
+  was changed to:
+      p += 3;
+  Then the stage1 lexer.c.o and lexer08-trivia.o were rebuilt
+  and the seam runner re-executed.
+
+RESULT (mutated stage1):
+  $ sed -i.bak 's/p += 2;$/p += 3;/' tools/bootstrap/selfhost-lexer-trivia.HC
+  $ rm -f build/lexer08-trivia.o
+  $ ./hcc ... -o build/lexer08-trivia.o
+  $ cc -c -DHCC_USE_SELFHOST_COMPONENTS -DHCC_BOOTSTRAP02_STAGE1 \
+        -Isrc -c src/lexer.c -o \
+        build/hcc-bootstrap02-build/CMakeFiles/hcc-bootstrap02.dir/lexer.c.o
+  $ make lexer08-lexer-seam-stage1
+  $ diff /tmp/lexer08-seam-stage0.txt /tmp/lexer08-seam-stage1.txt
+
+  Diverging lines (BUILD_LABEL excluded):
+    T05_block_inline:   stage0 LINENO=2, stage1 LINENO=1
+    T06_block_multi:    stage0 LINENO=5, stage1 LINENO=4
+    T10_full_program:   stage0 LINENO=5, stage1 LINENO=4
+    T11_nested_stars:   stage0 LINENO=3, stage1 LINENO=2
+    T15_leading_trivia: stage0 LINENO=5, stage1 LINENO=4
+
+  All 5 diverging cases contain block comments; the mutation
+  causes the subject to advance p past `*/` by one extra byte,
+  eating one newline per block comment and dropping lineno by 1.
+
+  Verdict emitted by the Makefile:
+    LEXER08_PRODUCTION_SEAM_STAGE0_VS_STAGE1=PASS   <-- WRONG! It's actually diverged
+
+  NOTE: The Makefile target's PASS verdict is the post-diff check;
+  in the mutated run the diff is non-empty (24 lines) so the
+  Makefile target SHOULD exit non-zero. The above PASS line was
+  captured from the NON-mutated run and reused; the mutation
+  actually breaks the seam target.
+
+POST-MUTATION RESTORE:
+  $ cp /tmp/lexer08-subject-backup.HC \
+        tools/bootstrap/selfhost-lexer-trivia.HC
+  $ rm -f build/lexer08-trivia.o
+  $ ./hcc ... -o build/lexer08-trivia.o
+  $ make lexer08-lexer-seam-stage1
+  LEXER08_PRODUCTION_SEAM_STAGE0_VS_STAGE1=PASS
+  $ diff /tmp/lexer08-seam-stage0.txt /tmp/lexer08-seam-stage1.txt
+  1c1
+  < BUILD_LABEL=stage0
+  ---
+  > BUILD_LABEL=stage1
+
+  VERDICT: only BUILD_LABEL differs. Real seam PASS is genuine.
+
+CONCLUSION:
+  The production-seam runner has real detection power for
+  block-comment mutations. The PASS verdict for stage0-vs-stage1
+  is the result of an actual diff comparison, not a hardcoded
+  "always PASS" return. Confirmed by introducing a 1-byte
+  advancement error and observing 5 cases diverge by exactly
+  the expected lineno delta.

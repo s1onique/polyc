@@ -1,0 +1,51 @@
+ACT-POLYC-SELFHOST-LEXER03 -- C3 -- Factory gate evidence
+==========================================================
+
+GATES RUN:
+
+  1. gate-fast
+     $ make gate-fast
+     Result:
+       CHECK=diff-check            STATUS=PASS
+       CHECK=shell-syntax          STATUS=PASS
+       CHECK=doc-invariants        STATUS=PASS
+       CHECK=large-file-guard      STATUS=PASS
+       CHECK=factory-closure-status STATUS=PASS
+         MANIFEST_ROWS=6
+         MISSING_HANDOFF_FILES=0
+         MALFORMED_ACT_STATUS=0
+         MALFORMED_HANDOFF_VERDICT=0
+         EXACT_VERDICT_MISMATCHES=0
+         PAIR_OK=6  PAIR_FAIL=0
+       VERDICT=PASS
+     Full log: /tmp/gate-fast.log
+
+  2. factory-append-only-test
+     $ bash scripts/quality/factory-append-only-test.sh
+     Result: PASS=11  FAIL=0  STATUS=PASS
+     (NC1..NC11 all pass; covers the three graph-property checks
+      of the .githooks/pre-push hook contract.)
+     Full log: /tmp/append-only.log
+
+  3. factory-no-python-check
+     $ bash scripts/quality/factory-no-python-check.sh
+     Result:
+       POLYC_TOOLS_TRACKED_PYTHON=12  (grandfathered, unchanged)
+       POLYC_TOOLS_TRACKED_INSPECTED=3467
+       POLYC_TOOLS_TRACKED_PASSES=3460
+       STATUS=FAIL  (because 12 grandfathered Python files
+                     exist; this is the pre-existing state,
+                     not introduced by LEXER03)
+     Full log: /tmp/no-python.log
+     The factory-no-python-check is NOT yet wired into gate-fast
+     (per AGENTS.md F-NO-PYTHON pointer; residue C2.9). The
+     grandfathered count of 12 is unchanged from the LEXER02
+     closure, satisfying F-NO-PYTHON's baseline-delta
+     requirement.
+
+VERDICT: PASS
+
+  gate-fast (the canonical fast gate) PASSes.
+  factory-append-only-test PASSes.
+  factory-no-python-check shows the unchanged grandfathered
+  baseline (no new Python introduced).

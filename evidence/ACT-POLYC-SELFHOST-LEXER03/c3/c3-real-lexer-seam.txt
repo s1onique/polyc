@@ -1,0 +1,65 @@
+ACT-POLYC-SELFHOST-LEXER03 -- C3 -- real lexer seam (production code path)
+==========================================================================
+
+PROBE:  15 trivia cases run through lex() on stage0 (legacy C) and
+        stage1 (C lexer statically linked to BootstrapScanTrivia PolyC
+        component via HCC_USE_SELFHOST_COMPONENTS).
+
+OBSERVATIONS:
+  - stage0 inputs use ./build/CMakeFiles/hcc.dir/lexer.c.o (no
+    HCC_USE_SELFHOST_COMPONENTS)
+  - stage1 inputs use ./build/hcc-bootstrap02-build/CMakeFiles/
+    hcc-bootstrap02.dir/lexer.c.o (compiled with
+    -DHCC_USE_SELFHOST_COMPONENTS -DHCC_BOOTSTRAP02_STAGE1)
+  - Both link the same legacy C runtime (aostr, containers, list,
+    arena, ast, cctrl, parser, json, mempool, memory, memsafe, asm,
+    cfg, cfg-print, cli, compile, ir*, lsp, prs*, transpiler,
+    x86_64*, aarch64*, x86, jit-common, linenoise, libtasm.a).
+  - stage1 additionally statically links:
+      ./build/lexer07-scalar-literal.o   (LEXER02)
+      ./build/bootstrap02-ident.o        (BOOTSTRAP02)
+      ./build/bootstrap06-operator-classify.o (LEXER01)
+      ./build/lexer08-trivia.o           (LEXER03 — THIS ACT)
+
+DIFF SUMMARY:
+  Stage0 vs Stage1 outputs differ in exactly one line:
+    < BUILD_LABEL=stage0
+    > BUILD_LABEL=stage1
+
+  All 15 trivia cases produce IDENTICAL TOKENS, LINENO, and
+  CURSOR_AT_EOF values at stage0 and stage1.
+
+  The 15 cases cover:
+    T01  ws_only          ([   ])              TOKENS=0 LINENO=1 EOF=3
+    T02  newlines         ([\n\n\n])           TOKENS=0 LINENO=4 EOF=3
+    T03  mixed_ws         ([ \t\n \r\n])       TOKENS=0 LINENO=4 EOF=6
+    T04  line_comment     ([// hello\n])       TOKENS=0 LINENO=2 EOF=9
+    T05  block_inline     ([/* hi */\n])       TOKENS=0 LINENO=2 EOF=9
+    T06  block_multi      ([/* a\nb\nc\n*/\n]) TOKENS=0 LINENO=5 EOF=12
+    T07  code_after       ([int x; // note\n]) TOKENS=3 LINENO=2 EOF=15
+    T08  ws_then_code     ([   int y;])        TOKENS=3 LINENO=1 EOF=9
+    T09  comment_gap      ([/* gap */ int z;]) TOKENS=3 LINENO=1 EOF=16
+    T10  full_program     (multi-line program) TOKENS=9 LINENO=5 EOF=36
+    T11  nested_stars     ([/* *\n**/\nint x;])TOKENS=3 LINENO=3 EOF=15
+    T12  truncated        ([/* never ends])    TOKENS=0 LINENO=1 EOF=13
+    T13  only_ws          ([ \t \t])           TOKENS=0 LINENO=1 EOF=4
+    T14  block_in_block   ([/* outer /* inner */ still outer */\nint x;]) TOKENS=7 LINENO=2 EOF=42
+    T15  leading_trivia   ([\n\n  /* h */\n  int y;\n]) TOKENS=3 LINENO=5 EOF=21
+
+VERDICT: PASS
+
+  Real lexer seam proves that the C lexer compiled with
+  HCC_USE_SELFHOST_COMPONENTS produces byte-identical tokenization
+  for 15 trivia test cases covering all 4 trivia classes
+  (WS, NL, line comment, block comment) plus boundary negatives
+  (truncated, nested stars, block-inside-block, leading trivia).
+
+  The seam command is `make lexer08-lexer-seam-stage0` and
+  `make lexer08-lexer-seam-stage1`; the Makefile target
+  `lexer08-lexer-seam-all-stages` prints the stage0-vs-stage1
+  PASS verdict.
+
+RAW OUTPUTS:
+  - /tmp/lexer08-seam-stage0.txt  (also c3-real-lexer-seam-stage0.txt)
+  - /tmp/lexer08-seam-stage1.txt  (also c3-real-lexer-seam-stage1.txt)
+

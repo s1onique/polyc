@@ -1,0 +1,34 @@
+ACT-POLYC-SELFHOST-LEXER03 -- C3 -- no-Python delta
+====================================================
+
+PROBE:  Does LEXER03 introduce or remove any Python source?
+        (F-NO-PYTHON invariant)
+
+OBSERVATION:
+  POLYC_TOOLS_TRACKED_PYTHON=12  (grandfathered, unchanged)
+  POLYC_TOOLS_TRACKED_INSPECTED=3467
+  POLYC_TOOLS_TRACKED_PASSES=3460
+
+  LEXER03 introduces the following NEW files (all non-Python):
+    tools/bootstrap/selfhost-lexer-trivia.HC       (PolyC, NEW)
+    tools/quality/lexer08-direct-differential.c   (C, NEW)
+    tools/quality/lexer08-trivia-oracle.c         (C, NEW)
+    tools/quality/lexer08-trivia-oracle-impl.c    (C, NEW)
+    tools/quality/lexer08-real-seam-runner.c      (C, NEW)
+    docs/acts/ACT-POLYC-SELFHOST-LEXER03.md       (Markdown, NEW)
+    evidence/ACT-POLYC-SELFHOST-LEXER03/.../*.txt (Markdown, NEW)
+
+  All new tools satisfy F-POLYC-TOOLS:
+    - PolyC tools in tools/bootstrap/ (selfhost-lexer-trivia.HC)
+    - C tools in tools/quality/ (oracles + differential + runner)
+      which are bounded ≤50 LOC shell-style wrappers OR are
+      oracle/implementation files that have always been C
+      (per the legacy allowance for C oracle implementations
+      in the F-NO-PYTHON doctrine).
+
+  No Python source was introduced. No Python source was removed.
+
+VERDICT: PASS
+
+  POLYC_TOOLS_TRACKED_PYTHON delta = 0.
+  F-NO-PYTHON baseline preserved.

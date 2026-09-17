@@ -1,0 +1,37 @@
+ACT-POLYC-SELFHOST-LEXER03 -- C3 -- LEXER02 (scalar literal) conservation
+=========================================================================
+
+PROBE:  The LEXER03 implementation does not regress the LEXER02
+        (scalar_literal_scanner) which is already PolyC-selfhosted
+        via BootstrapScanScalarLiteral.
+
+CHECKS:
+  1. LEXER02 direct differential: 89/89 PASS (per LEXER02 CORRECTION05)
+     Command: make lexer07-direct-differential
+     Result: LEXER07_DIRECT_DIFFERENTIAL=PASS
+
+  2. LEXER02 production seam, all 4 stages: PASS
+     Command: make lexer07-lexer-seam-all-stages
+     Result: LEXER07_PRODUCTION_SEAM_4_STAGES=PASS
+     (i.e. stage0/1/2/3 all produce identical tokenization for
+      the LEXER02 production-seam runner)
+
+  3. The Makefile was extended to add ./build/lexer08-trivia.o to
+     the lexer07-lexer-seam-stage{1,2,3} link lines, because the
+     stage1 lexer.c.o now references BootstrapScanTrivia. Without
+     this link-time addition the existing seam runners would fail
+     to link. The semantic behavior is unchanged — the diff still
+     shows byte-identical output.
+
+  4. Stage1 lexCore case for numerics and char consts still calls
+     into the BootstrapScanScalarLiteral ABI without modification.
+     The lexer.c changes for LEXER03 are limited to:
+       - lexSkipCodeComment (trivia)
+       - lexCore whitespace cases ' ', '\t', '\n', '\r' (trivia)
+     Numeric and char-const cases are unchanged.
+
+VERDICT: PASS
+
+  No regression observed in LEXER02. The 4-stage production seam
+  still produces byte-identical tokenization after LEXER03 is added
+  to the link topology.

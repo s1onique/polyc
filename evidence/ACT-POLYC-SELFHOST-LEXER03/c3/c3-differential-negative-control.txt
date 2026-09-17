@@ -1,0 +1,60 @@
+ACT-POLYC-SELFHOST-LEXER03 -- C3 -- differential negative control
+================================================================
+
+PROBE:  Does the differential driver actually detect a single-byte
+        mutation in the PolyC subject? (F13 evidence over prose)
+
+MUTATION APPLIED:
+  In tools/bootstrap/selfhost-lexer-trivia.HC, the line
+      p += 2;     /* in TR_TryBlockComment, on `*/` match */
+  was changed to:
+      p += 3;
+  This advances the cursor one byte past where the oracle advances
+  on every block-comment terminator. Expected: differential fails
+  on every block-comment fixture (bs_01..bs_05, bm_01..bm_05) and
+  every fixture that contains a block comment (lc_04 partial,
+  neg_04 partial). That's 10 of 45 fixtures.
+
+RESULT:
+  $ sed -i.bak 's/p += 2;$/p += 3;/' tools/bootstrap/selfhost-lexer-trivia.HC
+  $ rm -f build/lexer08-trivia.o build/lexer08-direct-differential
+  $ ./hcc --install-dir=$(pwd)/build/test-prefix \
+        -c tools/bootstrap/selfhost-lexer-trivia.HC \
+        -o build/lexer08-trivia.o
+  $ cc -std=c99 -O2 -Wno-comment -o build/lexer08-direct-differential \
+        tools/quality/lexer08-direct-differential.c \
+        tools/quality/lexer08-trivia-oracle-impl.c \
+        ./build/lexer08-trivia.o
+  $ ./build/lexer08-direct-differential ./build/lexer08-trivia.o
+  DIRECT_DIFFERENTIAL_TOTAL=45
+  DIRECT_DIFFERENTIAL_PASS=35
+  DIRECT_DIFFERENTIAL_FAIL=10
+  first_fail=bs_01 poly=(rc=1 end=9 kind=3 lineno=0 cstart=1)
+                 oracle=(rc=1 end=8 kind=3 lineno=0 cstart=1)
+  STATUS=FAIL
+
+  VERDICT: differential DETECTED the mutation. PASS=35, FAIL=10,
+           first failure at fixture bs_01 with the exact expected
+           end-of-comment mismatch (subject end=9 vs oracle end=8).
+
+POST-MUTATION RESTORE:
+  $ cp /tmp/lexer08-subject-backup.HC tools/bootstrap/selfhost-lexer-trivia.HC
+  $ rm -f build/lexer08-trivia.o build/lexer08-direct-differential
+  $ ./hcc ... (rebuild + retest)
+  $ ./build/lexer08-direct-differential ./build/lexer08-trivia.o
+  DIRECT_DIFFERENTIAL_TOTAL=45
+  DIRECT_DIFFERENTIAL_PASS=45
+  DIRECT_DIFFERENTIAL_FAIL=0
+  STATUS=PASS
+
+  VERDICT: source restored, differential returns to PASS=45/45.
+
+CONCLUSION:
+  The direct-differential driver has real detection power for
+  block-comment cursor mutations. The differential is NOT a
+  generator self-accepting its own rc=0; it is a mechanically
+  enforced oracle comparison with first-fail diagnostics.
+
+  This negative control satisfies F13 (evidence over prose): the
+  claim "differential is meaningful" is supported by an actual
+  failure mode, not by the binary's exit code alone.

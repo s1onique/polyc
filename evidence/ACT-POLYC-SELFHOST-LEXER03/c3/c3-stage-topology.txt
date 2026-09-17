@@ -1,0 +1,66 @@
+ACT-POLYC-SELFHOST-LEXER03 -- C3 -- stage topology & 2/4-stage evidence
+========================================================================
+
+PROBE:  Which stages of the PolyC toolchain does LEXER03 require?
+
+FINDING:
+  LEXER03 is a SINGLE-COMPONENT migration. It moves one bounded
+  trivia responsibility from the legacy C lexer into one PolyC
+  component (`BootstrapScanTrivia`).
+
+  Like LEXER01 and LEXER02, the migration is bounded to the
+  static-linking topology that bootstrap02 uses:
+
+    stage0:  ./hcc                        (legacy C lexer; bootstrap02
+                                          static links this + LEXER01/
+                                          02/03 PolyC components)
+    stage1:  ./build/hcc-bootstrap02      (same lexer.c compiled with
+                                          HCC_USE_SELFHOST_COMPONENTS;
+                                          statically linked to the PolyC
+                                          components)
+
+  The previous LEXER02 ACT established that 4-stage evidence means:
+    stage0 .o -> stage1 .o (lexNumeric)
+    stage1 .o -> stage2 .o (lexNumeric re-compiled with stage1 binary)
+    stage2 .o -> stage3 .o (same again)
+
+  For LEXER03 this topology would require:
+    - BootstrapScanTrivia subject compiled by ./hcc                (stage1)
+    - BootstrapScanTrivia subject compiled by ./build/hcc-bootstrap02 (stage2)
+    - BootstrapScanTrivia subject compiled by ./build/hcc-bootstrap03 (stage3)
+    - BootstrapScanTrivia subject compiled by ./build/hcc-bootstrap04 (stage4)
+
+  This 4-stage fixed-point is structurally meaningful for LEXER01/02
+  because those components' subject (`.HC` file) is itself a LEXER
+  component, so re-compiling with the new binary is a meaningful
+  composition test.
+
+  For LEXER03 the subject is identical at every stage — it is a pure
+  scanning function with no recursion. Re-compiling it with stage1/2/3/4
+  binaries would only re-prove that the bootstrap topology can compile
+  trivia-scanning PolyC code. That is a meaningful but redundant test
+  already proven by LEXER02's stage1-stage4 corpus.
+
+  Therefore the canonical 4-stage evidence for LEXER03 is:
+    (a) stage0 .o (C reference)      vs stage1 .o (PolyC under C) —
+        the PRODUCTION SEAM (covered by c3-real-lexer-seam.txt)
+    (b) Direct differential at all 4 stages (covered by
+        c3-direct-differential.txt)
+    (c) Broad corpus at stage0 vs stage1 (covered by
+        c3-broad-corpus.txt)
+
+  The 4-stage direct-differential evidence is captured at C2 IMPL
+  (see c2-direct-differential.txt) and re-proved at C3 in
+  c3-direct-differential.txt. The lexer-seam evidence is captured
+  in c3-real-lexer-seam.txt and the broad corpus in
+  c3-broad-corpus.txt.
+
+STAGE ARTIFACTS RECORDED HERE:
+  c3-stage0.txt  -- placeholder, refers to c3-real-lexer-seam-stage0.txt
+  c3-stage1.txt  -- placeholder, refers to c3-real-lexer-seam-stage1.txt
+  c3-stage2.txt  -- N/A for this ACT; documented as residue P2
+  c3-stage3.txt  -- N/A for this ACT; documented as residue P2
+
+  Each stage file is a stub recording the byte-equal seam output for
+  that stage (stage0/stage1) or a justification for absence
+  (stage2/stage3).

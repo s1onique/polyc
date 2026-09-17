@@ -1,0 +1,43 @@
+ACT-POLYC-SELFHOST-LEXER03 -- C3 -- fixture-omission control
+=============================================================
+
+PROBE:  Does removing a fixture from the differential driver
+        actually decrease the fixture count? (F13 evidence that
+        the count is meaningful, not hardcoded.)
+
+MUTATION APPLIED:
+  In tools/quality/lexer08-direct-differential.c, the fixture
+      F(bs_01,        "/* hi */\nfoo",   0, CCF_AC),
+  was deleted.
+
+RESULT:
+  $ sed -i.bak '/F(bs_01,.*hi \*\/.*foo/d' \
+        tools/quality/lexer08-direct-differential.c
+  $ cc -std=c99 -O2 -Wno-comment -o /tmp/test-no-bs01 \
+        tools/quality/lexer08-direct-differential.c \
+        tools/quality/lexer08-trivia-oracle-impl.c \
+        ./build/lexer08-trivia.o
+  $ /tmp/test-no-bs01 ./build/lexer08-trivia.o
+  DIRECT_DIFFERENTIAL_TOTAL=44
+  DIRECT_DIFFERENTIAL_PASS=44
+  DIRECT_DIFFERENTIAL_FAIL=0
+  STATUS=PASS
+
+  VERDICT: TOTAL dropped from 45 to 44, exactly matching the
+           single-fixture removal. PASS=44 (no spurious failures
+           introduced by the deletion).
+
+POST-MUTATION RESTORE:
+  $ cp /tmp/lexer08-direct-differential-backup.c \
+        tools/quality/lexer08-direct-differential.c
+  $ diff /tmp/lexer08-direct-differential-backup.c \
+        tools/quality/lexer08-direct-differential.c
+  (no diff — source restored)
+
+CONCLUSION:
+  The TOTAL=45 fixture count is derived from the sizeof(fxs)
+  array in the driver, not hardcoded. A real fixture deletion
+  reduces the count by exactly 1. This satisfies the
+  fixture-cardinality floor of 24+ per LEXER02-CORRECTION01's
+  AC pattern, and confirms that the LEXER03 corpus is genuinely
+  45 fixtures and not a smaller set faked to a higher number.

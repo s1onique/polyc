@@ -1,0 +1,35 @@
+BUILD_LABEL=stage1
+TRIVIA_SEAM_CASE_COUNT=15
+
+CASE=T01_ws_only SRC=[   ]
+CASE_END=T01_ws_only TOKENS=0 LINENO=1 CURSOR_AT_EOF=3
+CASE=T02_newlines SRC=[\n\n\n]
+CASE_END=T02_newlines TOKENS=0 LINENO=4 CURSOR_AT_EOF=3
+CASE=T03_mixed_ws SRC=[ \t\n \r\n]
+CASE_END=T03_mixed_ws TOKENS=0 LINENO=4 CURSOR_AT_EOF=6
+CASE=T04_line_comment SRC=[// hello\n]
+CASE_END=T04_line_comment TOKENS=0 LINENO=2 CURSOR_AT_EOF=9
+CASE=T05_block_inline SRC=[/* hi */\n]
+CASE_END=T05_block_inline TOKENS=0 LINENO=2 CURSOR_AT_EOF=9
+CASE=T06_block_multi SRC=[/* a\nb\nc\n*/\n]
+CASE_END=T06_block_multi TOKENS=0 LINENO=5 CURSOR_AT_EOF=12
+CASE=T07_code_after SRC=[int x; // note\n]
+CASE_END=T07_code_after TOKENS=3 LINENO=2 CURSOR_AT_EOF=15
+CASE=T08_ws_then_code SRC=[   int y;]
+CASE_END=T08_ws_then_code TOKENS=3 LINENO=1 CURSOR_AT_EOF=9
+CASE=T09_comment_gap SRC=[/* gap */ int z;]
+CASE_END=T09_comment_gap TOKENS=3 LINENO=1 CURSOR_AT_EOF=16
+CASE=T10_full_program SRC=[/* hi */\nint main() {\n  return 0;\n}\n]
+CASE_END=T10_full_program TOKENS=9 LINENO=5 CURSOR_AT_EOF=36
+CASE=T11_nested_stars SRC=[/* *\n**/\nint x;]
+CASE_END=T11_nested_stars TOKENS=3 LINENO=3 CURSOR_AT_EOF=15
+CASE=T12_truncated SRC=[/* never ends]
+CASE_END=T12_truncated TOKENS=0 LINENO=1 CURSOR_AT_EOF=13
+CASE=T13_only_ws SRC=[ \t \t]
+CASE_END=T13_only_ws TOKENS=0 LINENO=1 CURSOR_AT_EOF=4
+CASE=T14_block_in_block SRC=[/* outer /* inner */ still outer */\nint x;]
+CASE_END=T14_block_in_block TOKENS=7 LINENO=2 CURSOR_AT_EOF=42
+CASE=T15_leading_trivia SRC=[\n\n  /* h */\n  int y;\n]
+CASE_END=T15_leading_trivia TOKENS=3 LINENO=5 CURSOR_AT_EOF=21
+
+STATUS=PASS

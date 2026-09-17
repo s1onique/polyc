@@ -1,0 +1,30 @@
+ac_id	ac_description	evidence_file	verdict	notes
+AC01	Direct differential driver builds and links (no unresolved symbols)	c3-direct-differential.txt	PASS	build/lexer08-direct-differential runs; 45/45 PASS
+AC02	Direct differential: 45 fixtures PASS	c3-direct-differential.txt	PASS	DIRECT_DIFFERENTIAL_TOTAL=45 PASS=45 FAIL=0
+AC03	Differential covers 8 behavior classes + 5 boundary negatives	tools/quality/lexer08-direct-differential.c (lines 51-105)	PASS	Class 1-8 + neg_01..neg_05
+AC04	Oracle selftest: 8 unit tests PASS	c2-direct-differential.txt	PASS	ws_only, nl_only, ws_nl_mixed, line_comment_to_nl, line_comment_to_eof, block_single, block_multi, block_truncated
+AC05	Differential detects single-byte mutation	c3-differential-negative-control.txt	PASS	introduced p += 3, observed 10/45 FAIL
+AC06	Fixture omission reduces TOTAL by 1	c3-fixture-omission-control.txt	PASS	dropped bs_01, TOTAL went 45 -> 44
+AC07	Stage divergence (production seam) detects PolyC mutation	c3-stage-divergence-control.txt	PASS	introduced p += 3, observed 5 cases diverge
+AC08	Production seam stage0 vs stage1 byte-identical	c3-real-lexer-seam.txt	PASS	only BUILD_LABEL differs
+AC09	Stage1 lexer.c.o uses PolyC delegation	nm build/hcc-bootstrap02-build/CMakeFiles/hcc-bootstrap02.dir/lexer.c.o | grep BootstrapScanTrivia	PASS	U _BootstrapScanTrivia (undefined, resolved at link)
+AC10	Stage1 binary statically links lexer08-trivia.o	nm build/lexer08-lexer-seam-stage1 | grep BootstrapScanTrivia	PASS	T _BootstrapScanTrivia
+AC11	BootstrapScanTrivia ABI matches frozen contract	docs/acts/ACT-POLYC-SELFHOST-LEXER03.md (Frozen ABI section)	PASS	8-arg signature with documented flag bits
+AC12	Flag bits in PolyC subject match src/lexer.h CCF_*	tools/bootstrap/selfhost-lexer-trivia.HC lines 41-45	PASS	CCF_ACCEPT_NEWLINES=1<<2, CCF_ASM_BLOCK=1<<4, CCF_ACCEPT_WHITESPACE=1<<6, CCF_ACCEPT_COMMENTS=1<<7
+AC13	Wrapper accepts both / and * for block-comment second byte	src/lexer.c lines 778	PASS	if (*l->ptr != '/' && *l->ptr != '*') return;
+AC14	Wrapper passes start = l->ptr - 1 (leading /)	src/lexer.c line 783	PASS	char *start = l->ptr - 1
+AC15	LINE-COMMENT: src_cursor walks to \n	tools/bootstrap/selfhost-lexer-trivia.HC TR_TryLineComment	PASS	matches oracle end position
+AC16	BLOCK-COMMENT: src_cursor walks to */	tools/bootstrap/selfhost-lexer-trivia.HC TR_TryBlockComment	PASS	matches oracle end position
+AC17	WHITESPACE: advances l->ptr past WS bytes	tools/bootstrap/selfhost-lexer-trivia.HC TR_TryWhitespace	PASS	matches oracle end position
+AC18	NEWLINE: advances l->ptr past \n and \r\n	tools/bootstrap/selfhost-lexer-trivia.HC TR_TryNewline	PASS	matches oracle end position
+AC19	lineno_delta is correctly counted inside multi-line block comments	c3-real-lexer-seam.txt (T06, T14)	PASS	T06 stage0/stage1 LINENO=5; T14 LINENO=2
+AC20	line_start_ptr updated when lineno_delta > 0	src/lexer.c line 800-802	PASS	conditional update
+AC21	LEXER01 (operator) conservation	c3-lexer01-conservation.txt	PASS	47/47 differential PASS
+AC22	LEXER02 (scalar literal) 4-stage conservation	c3-lexer02-conservation.txt	PASS	LEXER07_PRODUCTION_SEAM_4_STAGES=PASS
+AC23	F-NO-PYTHON baseline delta = 0	c3-no-python-delta.txt	PASS	POLYC_TOOLS_TRACKED_PYTHON=12 unchanged
+AC24	C1/C2 evidence unchanged during C3	c3-closed-evidence-immutability-snapshot1.txt	PASS	snapshot captured; will be re-verified at C4
+AC25	gate-fast PASS	c3-factory-gates.txt	PASS	VERDICT=PASS
+AC26	factory-append-only-test PASS	c3-factory-gates.txt	PASS	PASS=11 FAIL=0
+AC27	factory-no-python-check shows unchanged grandfathered baseline	c3-factory-gates.txt + c3-no-python-delta.txt	PASS	12 grandfathered; no new Python
+AC28	Patch hygiene: every changed line traces to LEXER03	c3-patch-hygiene.txt	PASS	git diff --stat shows 8 files all in-scope
+AC29	Required result R1..R12 all PASS	c3-required-result.txt	PASS	summary file

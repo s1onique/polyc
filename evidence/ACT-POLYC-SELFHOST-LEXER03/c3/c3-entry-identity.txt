@@ -1,0 +1,32 @@
+ACT-POLYC-SELFHOST-LEXER03 -- C3 -- entry identity
+====================================================
+
+CAPTURED AT C3 ENTRY:
+
+  branch = main
+  HEAD   = 8ae0c2a  (C0.1 AUTH commit, just before C3 start)
+  prior  = d5bf1e0  (C2.1 IMPL FIX commit)
+  prior  = d8046fc  (C2 IMPL commit)
+  prior  = 6f9dbcc  (C1 RED/RECON commit)
+
+  working tree status:
+    clean after C2.1 IMPL FIX (no uncommitted changes)
+
+GIT VERIFY:
+  $ git rev-parse HEAD
+  8ae0c2a
+  $ git status --short
+  (no output = clean)
+  $ git rev-parse --abbrev-ref HEAD
+  main
+
+ENTRY GATES SATISFIED (C3):
+  - C1 phase committed (6f9dbcc) — RED/RECON packet exists.
+  - C2 phase committed (d8046fc) — IMPL packet exists.
+  - C2.1 IMPL FIX committed (d5bf1e0) — three ABI bugs
+    repaired; differential + seam both PASS.
+  - ACT document authored (8ae0c2a) — retrospective
+    authorization recorded.
+  - Required-result file (c1-required-result.txt) defines
+    12 expected observations; all re-checked at C3 (see
+    c3-required-result.txt).

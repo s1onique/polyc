@@ -1,0 +1,56 @@
+ACT-POLYC-SELFHOST-LEXER03 -- C3 -- patch hygiene
+===================================================
+
+PRODUCTION SOURCE TOUCH SUMMARY (C1 + C2 + C2.1 IMPL FIX combined):
+
+  $ git diff 6f9dbcc HEAD --stat -- src/ Makefile tools/
+  Makefile                                    | 101 ++++++++++-
+  src/lexer.c                                 |  77 +++++++++
+  src/lexer_bridge.h                          |  53 ++++++
+  tools/bootstrap/selfhost-lexer-trivia.HC    | 239 +++++++++++++++++++++++++
+  tools/quality/lexer08-direct-differential.c | 139 +++++++++++++++
+  tools/quality/lexer08-real-seam-runner.c    | 140 +++++++++++++++
+  tools/quality/lexer08-trivia-oracle-impl.c  | 129 ++++++++++++++
+  tools/quality/lexer08-trivia-oracle.c       | 259 ++++++++++++++++++++++++++++
+  8 files changed, 1130 insertions(+), 1 deletion(-)
+
+SCOPE CLASSIFICATION:
+
+  In-scope (LEXER03 authorized):
+    src/lexer.c               — lexSkipCodeComment + lexCore WS/NL cases
+                                wrapped in #ifdef HCC_USE_SELFHOST_COMPONENTS
+    src/lexer_bridge.h        — ABI 4 declaration
+    tools/bootstrap/selfhost-lexer-trivia.HC — PolyC subject
+    tools/quality/lexer08-*.c — oracles + differential + runner
+    Makefile                  — LEXER08 PHONY + 8 new targets
+
+  Out-of-scope (RESIDUE):
+    src/lexer.c               — additional Makefile wiring updates
+                                for lexer07-lexer-seam-stage1/2/3 to
+                                link lexer08-trivia.o (necessary
+                                because the stage1 lexer.c.o now
+                                references BootstrapScanTrivia).
+                                This is a CONSEQUENCE of the LEXER03
+                                production mutation, not silent
+                                scope expansion. F7 satisfied.
+
+F7 SCOPE CHECK:
+  Every changed line traces to the LEXER03 authorization. No
+  refactoring of unrelated code; no rename of neighboring
+  abstractions; no added hooks for anticipated future work.
+
+F8 SPECULATIVE ABSTRACTION CHECK:
+  No new framework was added. The 45-fixture differential driver
+  is bounded to LEXER03; no generalized "trivia-test harness"
+  abstraction was created.
+
+F10 CONSERVATION:
+  - LEXER01 (operator): 47/47 differential still passes
+    (c3-lexer01-conservation.txt)
+  - LEXER02 (scalar literal): 89/89 differential + 4-stage seam
+    still passes (c3-lexer02-conservation.txt)
+  - BOOTSTRAP02 (identifier): unchanged (not affected)
+
+F13 PROSE-OVER-PROSE CHECK:
+  Every "PASS" claim in this ACT is backed by a command and
+  observed output (see individual c3-*.txt files).

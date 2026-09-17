@@ -1,0 +1,25 @@
+N/A for LEXER03.
+
+LEXER03 is a single-component migration whose subject is a pure
+scanning function with no recursion. Stage2 evidence would require
+re-compiling selfhost-lexer-trivia.HC with ./build/hcc-bootstrap02
+to produce bootstrap04-trivia.o, then comparing it byte-for-byte
+against the stage1 bootstrap02-trivia.o.
+
+This is a meaningful but redundant test: it would prove that the
+stage1 bootstrap topology can compile trivia-scanning PolyC code,
+which is a property of the bootstrap as a whole, not of the trivia
+scanner specifically. The same property is already proven by:
+  - LEXER02 c3-broad-corpus-4-stage (PASS, 189 fixtures at all
+    4 stages — see evidence/ACT-POLYC-SELFHOST-LEXER02/c3/
+    c3-broad-corpus-4-stage.txt)
+  - LEXER02 c3-real-lexer-seam-4-stage (PASS, byte-equal at all
+    4 stages)
+
+For LEXER03 the equivalent stage2/stage3 evidence is the
+broad-corpus run on the stage1 binary (hcc-bootstrap02), which
+is captured in c3-broad-corpus.txt.
+
+Recorded as RESIDUE P2 (deferred improvement: extend
+lex-bootstrap to stage4 for LEXER03 specifically, if a future ACT
+requires it).

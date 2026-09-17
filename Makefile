@@ -1086,7 +1086,7 @@ lexer07-lexer-seam-stage1: lexer07-component-build
 		-DBUILD_LABEL='"stage1"' -DHCC_USE_SELFHOST_COMPONENTS -Isrc \
 		-o ./build/lexer07-lexer-seam-stage1 \
 		tools/quality/lexer07-real-seam-runner.c \
-		$(HCC_STAGE1_OBJECTS) ./build/lexer07-scalar-literal.o ./build/bootstrap02-ident.o ./build/bootstrap06-operator-classify.o $(TASM_LIB) -lm -lpthread -ldl
+		$(HCC_STAGE1_OBJECTS) ./build/lexer07-scalar-literal.o ./build/bootstrap02-ident.o ./build/bootstrap06-operator-classify.o ./build/lexer08-trivia.o $(TASM_LIB) -lm -lpthread -ldl
 	./build/lexer07-lexer-seam-stage1 > /tmp/lexer07-seam-stage1.txt
 	@NONLABEL_DIFF=$$(diff /tmp/lexer07-seam-stage0.txt /tmp/lexer07-seam-stage1.txt | grep -vE "^[0-9]+[acd][0-9]+|^<|>|^---$$|BUILD_LABEL=stage"); \
 	if [ -z "$$NONLABEL_DIFF" ]; then \
@@ -1113,7 +1113,7 @@ lexer07-lexer-seam-stage2: lexer07-component-stage2
 		-DBUILD_LABEL='"stage2"' -DHCC_USE_SELFHOST_COMPONENTS -Isrc \
 		-o ./build/lexer07-lexer-seam-stage2 \
 		tools/quality/lexer07-real-seam-runner.c \
-		$(HCC_STAGE2_OBJECTS) ./build/lexer07-scalar-literal.stage1.o ./build/bootstrap03-ident.stage1.o ./build/bootstrap06-operator-classify.stage1.o $(TASM_LIB) -lm -lpthread -ldl
+		$(HCC_STAGE2_OBJECTS) ./build/lexer07-scalar-literal.stage1.o ./build/bootstrap03-ident.stage1.o ./build/bootstrap06-operator-classify.stage1.o ./build/lexer08-trivia.o $(TASM_LIB) -lm -lpthread -ldl
 	./build/lexer07-lexer-seam-stage2 > /tmp/lexer07-seam-stage2.txt
 	@NONLABEL_DIFF=$$(diff /tmp/lexer07-seam-stage0.txt /tmp/lexer07-seam-stage2.txt | grep -vE "^[0-9]+[acd][0-9]+|^<|>|^---$$|BUILD_LABEL=stage"); \
 	if [ -z "$$NONLABEL_DIFF" ]; then \
@@ -1140,7 +1140,7 @@ lexer07-lexer-seam-stage3: lexer07-component-stage3
 		-DBUILD_LABEL='"stage3"' -DHCC_USE_SELFHOST_COMPONENTS -Isrc \
 		-o ./build/lexer07-lexer-seam-stage3 \
 		tools/quality/lexer07-real-seam-runner.c \
-		$(HCC_STAGE3_OBJECTS) ./build/lexer07-scalar-literal.stage2.o ./build/bootstrap04-ident.stage2.o ./build/bootstrap06-operator-classify.stage2.o $(TASM_LIB) -lm -lpthread -ldl
+		$(HCC_STAGE3_OBJECTS) ./build/lexer07-scalar-literal.stage2.o ./build/bootstrap04-ident.stage2.o ./build/bootstrap06-operator-classify.stage2.o ./build/lexer08-trivia.o $(TASM_LIB) -lm -lpthread -ldl
 	./build/lexer07-lexer-seam-stage3 > /tmp/lexer07-seam-stage3.txt
 	@NONLABEL_DIFF=$$(diff /tmp/lexer07-seam-stage0.txt /tmp/lexer07-seam-stage3.txt | grep -vE "^[0-9]+[acd][0-9]+|^<|>|^---$$|BUILD_LABEL=stage"); \
 	if [ -z "$$NONLABEL_DIFF" ]; then \

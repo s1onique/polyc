@@ -1,0 +1,72 @@
+ACT-POLYC-SELFHOST-LEXER03 -- C3 -- required result summary
+============================================================
+
+ENTRY IDENTITY (at start of C3):
+  branch = main
+  HEAD   = d5bf1e0 (C2.1 IMPL FIX commit)
+  prior  = 6f9dbcc (C1 RED/RECON commit)
+
+CLOSING TARGETS (at C4):
+  branch = main
+  HEAD   = <pending C4 CLOSE commit>
+
+REQUIRED RESULT (from c1-required-result.txt):
+
+  R1  Direct differential: 45/45 PASS (45 fixtures across 8
+      behavior classes + 5 boundary negatives)
+      -> c3-direct-differential.txt: PASS 45/45
+
+  R2  Real-lexer seam: stage0 vs stage1 byte-identical on all
+      15 trivia cases (modulo BUILD_LABEL)
+      -> c3-real-lexer-seam.txt: PASS
+
+  R3  Oracle selftest: 8/8 PASS (unit tests of OracleScanTrivia)
+      -> c2-direct-differential.txt + repeated at C3
+
+  R4  Factory gate-fast: PASS
+      -> c3-factory-gates.txt: PASS
+
+  R5  Factory append-only test: PASS (NC1..NC11)
+      -> c3-factory-gates.txt: PASS
+
+  R6  F-NO-PYTHON baseline delta: 0 (POLYC_TOOLS_TRACKED_PYTHON
+      unchanged at 12)
+      -> c3-no-python-delta.txt: PASS
+
+  R7  LEXER01 (operator) conservation: 47/47 differential PASS
+      -> c3-lexer01-conservation.txt: PASS
+
+  R8  LEXER02 (scalar literal) conservation: 89/89 differential
+      + 4-stage seam PASS
+      -> c3-lexer02-conservation.txt: PASS
+
+  R9  Negative control (differential detects mutations): PASS
+      (introduced `p += 3`, observed 10/45 FAIL)
+      -> c3-differential-negative-control.txt: PASS
+
+  R10 Negative control (fixture omission reduces count):
+      (dropped bs_01, observed TOTAL=44)
+      -> c3-fixture-omission-control.txt: PASS
+
+  R11 Negative control (seam detects divergence):
+      (introduced `p += 3`, observed 5 cases diverge)
+      -> c3-stage-divergence-control.txt: PASS
+
+  R12 Patch hygiene: every changed line traces to LEXER03
+      authorization; F7 satisfied.
+      -> c3-patch-hygiene.txt: PASS
+
+ALL REQUIRED RESULTS: PASS.
+
+VERBATIM CMD+OUTPUT SUMMARIES:
+  $ ./build/lexer08-direct-differential ./build/lexer08-trivia.o
+    DIRECT_DIFFERENTIAL_TOTAL=45 PASS=45 FAIL=0 STATUS=PASS
+  $ ./build/lexer08-lexer-seam-stage0 > /tmp/lexer08-seam-stage0.txt
+  $ ./build/lexer08-lexer-seam-stage1 > /tmp/lexer08-seam-stage1.txt
+  $ diff /tmp/lexer08-seam-stage0.txt /tmp/lexer08-seam-stage1.txt
+    1c1 < BUILD_LABEL=stage0
+    --- > BUILD_LABEL=stage1
+  $ make gate-fast
+    VERDICT=PASS
+  $ bash scripts/quality/factory-append-only-test.sh
+    PASS=11 FAIL=0 STATUS=PASS

@@ -1,0 +1,29 @@
+ACT-POLYC-SELFHOST-LEXER03 -- C3 -- broad corpus conservation
+=============================================================
+
+PROBE:  Make lexer08-broad-corpus-4-stage (which depends on
+        build/hcc, build/hcc-bootstrap02, build/hcc-bootstrap03,
+        build/hcc-bootstrap04 — i.e. all four compiler generations
+        successfully build with the LEXER03 PolyC component statically
+        linked).
+
+RESULT: LEXER08_BROAD_CORPUS_4_STAGE=PASS
+
+The Makefile target is a smoke test that all four compiler generations
+build successfully with the new PolyC trivia component in the link
+topology. Each generation's success proves:
+
+  - stage0 ./hcc             (no PolyC) builds with LEXER03 source in tree
+  - stage1 ./build/hcc-bootstrap02  (PolyC identifier+operator+scalar+trivia)
+                              builds and links BootstrapScanTrivia
+  - stage2 ./build/hcc-bootstrap03  (re-built from stage1) still links
+                              BootstrapScanTrivia
+  - stage3 ./build/hcc-bootstrap04  (re-built from stage2) still links
+                              BootstrapScanTrivia
+
+CMDS:
+  make lexer08-broad-corpus-4-stage
+  -> LEXER08_BROAD_CORPUS_4_STAGE=PASS
+
+No regressions observed. The four-generation build is stable with
+LEXER03 statically linked.
