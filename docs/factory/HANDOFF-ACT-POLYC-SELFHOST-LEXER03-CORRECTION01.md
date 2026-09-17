@@ -185,3 +185,66 @@ HANDOFF-ACT-POLYC-SELFHOST-LEXER03-CORRECTION01
 
   LEXER04 is NOT authorized by this CORRECTION01; a separate
   LEXER04 ACT must be opened with its own C0 authorization.
+
+---
+
+## ADDITIVE AMENDMENT (CORRECTION01-CORRECTION01)
+
+This HANDOFF is amended additively by
+ACT-POLYC-SELFHOST-LEXER03-CORRECTION01-CORRECTION01 (closed
+PASS_TRUE_GREEN). The amendment does NOT modify the body of
+this HANDOFF above; it adds a post-closure reclassification
+section below.
+
+### Reclassification
+
+A reviewer of the CORRECTION01 closure identified that the C3
+mandatory-AC TSV
+(`evidence/ACT-POLYC-SELFHOST-LEXER03/CORRECTION01/c3/mandatory-ac-status-correction01.tsv`)
+had 6 rows whose verdict column held the implicit repair-marker
+token `CORRECTION01` rather than `PASS`. Mechanically the
+closed TSV therefore reads `PASS_ROWS=24 / TOTAL_ROWS=30`, not
+`30/30`.
+
+### Disposition
+
+The defect was in the verdict-column encoding, not in the
+underlying work. All 6 affected rows' underlying work IS green:
+
+  AC23 (whitespace hygiene): green at 8db7f01
+  AC24 (AC28 split):         green; AC28a + AC28b both PASS
+  AC25 (title amendment):    green in CORRECTION01 ACT body
+  AC26 (count alignment):    green in CORRECTION01 ACT body
+  AC27 (verdict taxonomy):   green in ROADMAP block at fd4fd60
+  AC29 (hand-off):           green; this HANDOFF documents it
+
+The CORRECTION01-CORRECTION01 therefore:
+
+  - Adds a NEW corrected TSV
+    (`mandatory-ac-status-correction01-correction01.tsv`)
+    with verdict=PASS for all 30 rows.
+  - Declares the verdict vocabulary explicitly
+    (PASS | FAIL | N/A | DEFERRED only).
+  - Updates ROADMAP and HANDOFF additively (no rewrites).
+  - Does NOT consume CORRECTION02 budget.
+
+### Verdict reclassification
+
+  CORRECTION01_CLOSE_PASS_OLD = FALSE_GREEN (mechanical TSV defect)
+  CORRECTION01_CLOSE_PASS_NEW = TRUE_GREEN  (after additive repair)
+
+The original C01 close was engineering-green (the 4 reviewer
+defects were repaired) but the C01 closure TRUTH-STATEMENT
+was mechanically false (the TSV did not actually have 30
+PASS rows). The additive reclassification makes the
+truth-statement true while preserving the engineering-green
+state.
+
+### F14 immutability
+
+The closed C3 TSV is preserved verbatim as F14-protected
+historical evidence of the malformed state:
+
+  $ git diff 9012c94 HEAD -- \
+        evidence/.../CORRECTION01/c3/mandatory-ac-status-correction01.tsv
+  (empty)

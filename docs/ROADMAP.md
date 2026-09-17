@@ -2651,6 +2651,75 @@ ACT-POLYC-SELFHOST-LEXER03-CORRECTION01     CLOSED PASS
            winner, with fresh recon first)
 ```
 
+> **ADDITIVE RECLASSIFICATION (CORRECTION01-CORRECTION01, b23483a
+> onwards):** the C3 mandatory-AC TSV had 6 rows whose verdict
+> column held the implicit repair-marker token `CORRECTION01`
+> rather than `PASS`. Mechanically the closed TSV therefore reads
+> `PASS_ROWS=24 / TOTAL_ROWS=30`, not `30/30`. The underlying
+> repairs themselves are green; only the verdict-column encoding
+> was malformed. ACT-POLYC-SELFHOST-LEXER03-CORRECTION01-CORRECTION01
+> added a corrected TSV at
+> `evidence/.../CORRECTION01-CORRECTION01/c3/mandatory-ac-status-correction01-correction01.tsv`
+> and declared the verdict vocabulary explicitly. After the
+> additive reclassification:
+>   CORRECTION01_CLOSE_PASS_OLD = FALSE_GREEN (mechanical TSV defect)
+>   CORRECTION01_CLOSE_PASS_NEW = TRUE_GREEN  (TSV repaired)
+> The closed c3 TSV is preserved verbatim as F14-protected
+> historical evidence of the malformed state.
+
+
+#### ACT-POLYC-SELFHOST-LEXER03-CORRECTION01-CORRECTION01 status (CLOSED PASS_TRUE_GREEN at `<this commit>`)
+
+```
+ACT-POLYC-SELFHOST-LEXER03-CORRECTION01-CORRECTION01    CLOSED PASS_TRUE_GREEN
+  Title:        Repair mechanical TSV verdict-column defect in
+                ACT-POLYC-SELFHOST-LEXER03-CORRECTION01's mandatory-AC
+                table, and additively reclassify the C01 closure verdict.
+  Authorization: docs/acts/ACT-POLYC-SELFHOST-LEXER03-CORRECTION01-CORRECTION01.md
+                (C0 AUTH at c2cb20c)
+  Predecessor:  ACT-POLYC-SELFHOST-LEXER03-CORRECTION01 CLOSED PASS
+                (engineer-side close at 9012c94; mechanical TSV defect
+                discovered by reviewer of the C01 closure)
+  C0 AUTH:      c2cb20c
+  C1 RED:       b23483a (reproduce 24 PASS + 6 CORRECTION01 verdict
+                defect; audit confirms underlying work is green)
+  C3 EVIDENCE:  b23483a (corrected TSV with 30 PASS rows;
+                c3-verdict-vocabulary.md declares the closed-set
+                vocabulary PASS|FAIL|N/A|DEFERRED;
+                c3-per-row-justification.txt audits each repaired row)
+  C4 CLOSE:     <this commit> (HANDOFF + ROADMAP additive amendment)
+
+  Verdict reclassification:
+    MANDATORY_AC_TABLE_OLD         = MALFORMED_SEMANTICALLY (24 PASS, 6 CORRECTION01)
+    MANDATORY_AC_TABLE_NEW         = GREEN (30 PASS, 0 non-PASS)
+    CORRECTION01_CLOSE_PASS_OLD    = FALSE_GREEN (defect)
+    CORRECTION01_CLOSE_PASS_NEW    = TRUE_GREEN  (after additive repair)
+    F14_IMMUTABILITY               = PRESERVED (closed c3 TSV untouched)
+    SCOPE_DISCIPLINE               = PRESERVED (no production/tool edits)
+
+  Mandatory AC status: evidence/ACT-POLYC-SELFHOST-LEXER03/
+                       CORRECTION01-CORRECTION01/c3/mandatory-ac-status-
+                       correction01-correction01.tsv
+                       (30 rows; PASS=30, NONPASS=0)
+
+  Hand-off: docs/factory/HANDOFF-ACT-POLYC-SELFHOST-LEXER03-
+            CORRECTION01-CORRECTION01.md
+
+  Resolved residue:
+    - TSV verdict-column defect: GREEN (30/30 PASS)
+    - Verdict-vocabulary ambiguity: GREEN (declared closed set)
+
+  Outstanding residue (unchanged from CORRECTION01):
+    P0: LEXER03-specific stage2/stage3 fixed-point evidence
+        (reserved for ACT-POLYC-SELFHOST-LEXER03-CORRECTION02)
+    P1: ACT-after-work governance
+    P2: broader self-host recon refresh
+
+  NEXT:    ACT-POLYC-SELFHOST-LEXER03-CORRECTION02 (LEXER03-
+           specific stage2/stage3 fixed-point, REAL evidence)
+           OR ACT-POLYC-SELFHOST-LEXER04 (next surface-recon
+           winner, with fresh recon first)
+```
 
 
 #### ACT-POLYC-SELFHOST-LEXER02 status (CLOSED PASS at this commit)
