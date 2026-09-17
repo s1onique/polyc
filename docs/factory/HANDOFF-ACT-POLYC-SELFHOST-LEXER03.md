@@ -16,7 +16,7 @@ HANDOFF-ACT-POLYC-SELFHOST-LEXER03
   C2.1 IMPL FIX:      d5bf1e0  (three ABI bugs repaired in C3 prep)
   C0.1 AUTH:          8ae0c2a  (retroactive ACT document)
   C3 EVIDENCE:        15c14d8
-  C4 CLOSE:           <TO BE FILLED AT COMMIT>
+  C4 CLOSE:           a31ecadde01e06b0da24de43310608ae49c0623e
 
 ## ROOT CAUSE / FINDING
   The production lexer's trivia-scanning region (R-H from the recon
