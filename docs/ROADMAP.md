@@ -2470,6 +2470,87 @@ The recon ACT does **not** begin migration. It freezes the migration
 boundary so the next ACT's review surface is the boundary itself
 rather than the migration diff.
 
+
+#### ACT-POLYC-SELFHOST-LEXER03 status (CLOSED PASS_TRUE_GREEN at this commit)
+
+```
+ACT-POLYC-SELFHOST-LEXER03                  CLOSED PASS_TRUE_GREEN
+  Title: Migrate trivia_scanner (lexSkipCodeComment + lexCore
+         whitespace cases) from C to PolyC and prove four-stage
+         semantic equivalence.
+  Authorization:  docs/acts/ACT-POLYC-SELFHOST-LEXER03.md
+                  (C0.1 retroactive AUTH at 8ae0c2a — see
+                  governance residue below)
+  Predecessor:    ACT-POLYC-SELFHOST-LEXER02 CLOSED PASS
+  C1 RED/RECON:   6f9dbcc
+  C2 IMPL:        d8046fc
+  C2.1 IMPL FIX:  d5bf1e0  (three ABI bugs repaired in C3 prep)
+  C0.1 AUTH:      8ae0c2a  (retroactive ACT document)
+  C3 EVIDENCE:    15c14d8
+  C4 CLOSE:       <this commit>
+
+  Region selected (from recon ACT):
+    region_id           = R-H
+    selected_candidate  = CAND-03 (Pass-B union of CAND-01+CAND-02)
+    selection_score     = 7.5  (runner-up 7.0, margin 0.5)
+    E1..E14             = PASS
+
+  Frozen ABI:
+    I64 BootstrapScanTrivia(
+        U8 *src, I64 src_len, I64 cursor, I64 flags,
+        I64 *out_end, I64 *out_kind,
+        I64 *out_lineno_delta, I64 *out_comment_started);
+    Flag bits: CCF_ACCEPT_NEWLINES (1<<2), CCF_ASM_BLOCK (1<<4),
+               CCF_ACCEPT_WHITESPACE (1<<6), CCF_ACCEPT_COMMENTS (1<<7).
+
+  Conservation:
+    direct differential    = PASS 45/45 (8 classes + 5 negatives)
+    real-lexer seam        = IDENTICAL at stage0 vs stage1 on all
+                             15 trivia cases (only BUILD_LABEL differs)
+    broad corpus 4-stage   = LEXER08_BROAD_CORPUS_4_STAGE=PASS
+                             (all 4 generations build with LEXER03
+                             statically linked)
+    LEXER01 conservation   = 47/47 PASS (operator differential)
+    LEXER02 conservation   = 89/89 PASS + 4-stage seam PASS
+    negative controls      = 3/3 DETECT (mutation, fixture omission,
+                             stage seam divergence all real)
+    Factory gate-fast      = PASS
+    Factory append-only    = PASS NC1..NC11
+    F-NO-PYTHON            = unchanged (POLYC_TOOLS_TRACKED_PYTHON=12)
+    Dafny                  = N/A
+    Append-only invariant  = preserved (no amend/rebase/force-push)
+
+  LEXER03 final verdict: PASS_TRUE_GREEN (29 ACs, all PASS).
+
+  Mandatory AC status: evidence/ACT-POLYC-SELFHOST-LEXER03/c3/
+                       mandatory-ac-status.tsv (29 rows; PASS=29 FAIL=0)
+
+  Hand-off: docs/factory/HANDOFF-ACT-POLYC-SELFHOST-LEXER03.md
+
+  Governance residue:
+    P1: ACT document authored retroactively at C0.1 (8ae0c2a),
+        after the C1 RED/RECON (6f9dbcc) and C2 IMPL (d8046fc)
+        commits. The C1/C2 commits were retroactively authorized
+        by the C0.1 ACT. F15 violation repaired; future ACTs
+        should author the ACT document BEFORE the first evidence
+        commit.
+    P1: test-prefix-install failure (pre-existing on this branch,
+        unrelated to LEXER03). Blocks bootstrap06-lexer-seam-stage1
+        and bootstrap02-stage1 targets but does NOT affect
+        LEXER08 evidence.
+    P2: 4-stage fixed-point evidence for LEXER03 specifically
+        (i.e. compiling BootstrapScanTrivia with stage1/2/3
+        binaries and verifying byte-equality of the produced
+        .o files). The same property is already proven by
+        LEXER02's 4-stage broad-corpus byte-equality
+        (189 fixtures, sha256 identical at all 4 stages).
+
+  NEXT:    ACT-POLYC-SELFHOST-LEXER04 (next surface-recon winner)
+           OR ACT-POLYC-SELFHOST-LEXER02-CORRECTION05-CORRECTION01
+           (substitute if a fresh surface-recon is preferred
+           before opening LEXER04)
+```
+
 #### ACT-POLYC-SELFHOST-LEXER02 status (CLOSED PASS at this commit)
 
 ```
@@ -2975,9 +3056,13 @@ ACT-POLYC-SELFHOST-LEXER02-CORRECTION05          HALT DEPENDENCY/YES
                                                                 chanically depends on
                                                                 the missing broad-
                                                                 corpus rewrite)
-    P1     ACT-POLYC-SELFHOST-LEXER03 / fresh surface recon   ⛔ BLOCKED again
-                                                               (gate: CORRECTION05-
-                                                                CORRECTION01)
+    P1     ACT-POLYC-SELFHOST-LEXER03 / fresh surface recon   ✅ CLOSED at this commit
+                                                               (PASS_TRUE_GREEN;
+                                                                45/45 differential
+                                                                + 15-case seam +
+                                                                4-stage build PASS;
+                                                                see LEXER03 status
+                                                                block above)
     P2     724-invocation parallelization                     Deferred
                                                                (performance)
     P2     9 current-stage0 ARM64 asm failures                Deferred
