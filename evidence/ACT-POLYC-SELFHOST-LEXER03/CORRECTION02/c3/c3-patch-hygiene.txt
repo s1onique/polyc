@@ -1,0 +1,25 @@
+ACT-POLYC-SELFHOST-LEXER03-CORRECTION02 -- C3 EVIDENCE -- patch hygiene
+======================================================================
+
+COMMAND (literal):
+  git diff --check <ENTRY_HEAD>..<CANDIDATE_CLOSE>
+  git diff --stat  <ENTRY_HEAD>..<CANDIDATE_CLOSE> -- src/ tools/bootstrap/selfhost-lexer-trivia.HC
+  git diff --stat  <ENTRY_HEAD>..<CANDIDATE_CLOSE> --name-only
+
+OBSERVED:
+  git diff --check c6e56fd HEAD  -> (empty; no whitespace-only issues)
+  git diff --stat  c6e56fd HEAD -- src/ tools/bootstrap/selfhost-lexer-trivia.HC
+    -> (empty; no production source mutation)
+
+  Changed files since entry:
+    Makefile                                                  (build orchestration)
+    scripts/quality/lexer08-trivia-fixedpoint.sh              (shell launcher)
+    tools/quality/lexer08-fixedpoint-verify.HC                (PolyC verifier)
+    evidence/ACT-POLYC-SELFHOST-LEXER03/CORRECTION02/c1/...   (C1 evidence)
+    evidence/ACT-POLYC-SELFHOST-LEXER03/CORRECTION02/c3/...   (C3 evidence; this dir)
+
+INTERPRETATION:
+  AC21: no semantic mutation of src/ or tools/bootstrap/selfhost-lexer-trivia.HC
+  AC25: git diff --check is clean
+  All changes trace to the ACT scope (build orchestration, bounded
+  PolyC verifier, evidence files).

@@ -1,0 +1,28 @@
+ACT-POLYC-SELFHOST-LEXER03-CORRECTION02 -- C3 EVIDENCE -- production seam
+========================================================================
+
+Per ACT §14: even though this ACT does not change trivia semantics,
+re-run the existing production-seam runner on stage1 (the canonical
+stage0-vs-stage1 byte-equal lexer seam) to ensure the existing
+qualification still holds.
+
+COMMAND (literal):
+  make lexer08-lexer-seam-stage1
+  make lexer08-lexer-seam-all-stages
+
+OBSERVED (relevant lines only):
+  ./build/lexer08-lexer-seam-stage1 > /tmp/lexer08-seam-stage1.txt
+  LEXER08_PRODUCTION_SEAM_STAGE0_VS_STAGE1=PASS
+  LEXER08_PRODUCTION_SEAM_ALL=PASS
+
+The stage0-vs-stage1 comparison remains byte-identical on all 15
+trivia cases (modulo BUILD_LABEL), preserving the LEXER03 close state.
+
+INTERPRETATION:
+  LEXER08_PRODUCTION_SEAM_STAGE0_VS_STAGE1 = PASS
+
+AC17  LEXER08_PRODUCTION_SEAM_STAGE0_VS_STAGE1 = PASS   (PASS)
+
+This ACT did not modify tools/bootstrap/selfhost-lexer-trivia.HC,
+src/lexer.c, or src/lexer_bridge.h, so the existing seam equivalence
+is preserved by F14 / scope discipline.

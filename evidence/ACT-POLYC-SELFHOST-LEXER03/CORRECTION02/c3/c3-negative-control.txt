@@ -1,0 +1,82 @@
+ACT-POLYC-SELFHOST-LEXER03-CORRECTION02 -- C3 EVIDENCE -- negative control
+=========================================================================
+
+Per ACT §12 + §21: prove the verifier is load-bearing. A temporary
+one-byte mutation of O3 must be rejected with non-zero exit; the
+pristine verifier run must succeed.
+
+PROCEDURE (executed in order, with REAL exit codes captured via $?):
+
+STEP 1: pristine verifier run on the four untouched objects.
+  EXIT_CODE=0
+FILE[0] path=build/lexer08-fixedpoint/trivia.g0.o size=3880 sha256=560e98bf20277d1cedde553ee4cb3ef67f62dc9a5f4d3145813a55e7921f39c0
+FILE[1] path=build/lexer08-fixedpoint/trivia.g1.o size=3880 sha256=560e98bf20277d1cedde553ee4cb3ef67f62dc9a5f4d3145813a55e7921f39c0
+FILE[2] path=build/lexer08-fixedpoint/trivia.g2.o size=3880 sha256=560e98bf20277d1cedde553ee4cb3ef67f62dc9a5f4d3145813a55e7921f39c0
+FILE[3] path=build/lexer08-fixedpoint/trivia.g3.o size=3880 sha256=560e98bf20277d1cedde553ee4cb3ef67f62dc9a5f4d3145813a55e7921f39c0
+PAIR G0_G1 file_i=0 file_j=1 size_a=3880 size_b=3880 equal=YES
+PAIR G0_G2 file_i=0 file_j=2 size_a=3880 size_b=3880 equal=YES
+PAIR G0_G3 file_i=0 file_j=3 size_a=3880 size_b=3880 equal=YES
+PAIR G1_G2 file_i=1 file_j=2 size_a=3880 size_b=3880 equal=YES
+PAIR G1_G3 file_i=1 file_j=3 size_a=3880 size_b=3880 equal=YES
+PAIR G2_G3 file_i=2 file_j=3 size_a=3880 size_b=3880 equal=YES
+FIXEDPOINT_VERIFIER_RC=0 verdict=PASS
+LEXER03_TRIVIA_FIXED_POINT_4_GENERATIONS=PASS
+
+STEP 2: create mutated copy of G3 object (flip last byte).
+  original_last_byte=0xcf
+  flipped_last_byte=0xce
+  3880   0 316
+
+STEP 3: verifier run with 5 files (O0..O2, mutated(O3)).
+  EXIT_CODE=1
+FILE[0] path=build/lexer08-fixedpoint/trivia.g0.o size=3880 sha256=560e98bf20277d1cedde553ee4cb3ef67f62dc9a5f4d3145813a55e7921f39c0
+FILE[1] path=build/lexer08-fixedpoint/trivia.g1.o size=3880 sha256=560e98bf20277d1cedde553ee4cb3ef67f62dc9a5f4d3145813a55e7921f39c0
+FILE[2] path=build/lexer08-fixedpoint/trivia.g2.o size=3880 sha256=560e98bf20277d1cedde553ee4cb3ef67f62dc9a5f4d3145813a55e7921f39c0
+FILE[3] path=build/lexer08-fixedpoint/trivia.g3.o size=3880 sha256=560e98bf20277d1cedde553ee4cb3ef67f62dc9a5f4d3145813a55e7921f39c0
+FILE[4] path=build/lexer08-fixedpoint/trivia.g3.mutated.o size=3880 sha256=04d864da59f481108d2ffd0a70d06f8010a073946153ff9c51cfe0aa606f1d62
+PAIR G0_G1 file_i=0 file_j=1 size_a=3880 size_b=3880 equal=YES
+PAIR G0_G2 file_i=0 file_j=2 size_a=3880 size_b=3880 equal=YES
+PAIR G0_G3 file_i=0 file_j=3 size_a=3880 size_b=3880 equal=YES
+PAIR G1_G2 file_i=1 file_j=2 size_a=3880 size_b=3880 equal=YES
+PAIR G1_G3 file_i=1 file_j=3 size_a=3880 size_b=3880 equal=YES
+PAIR G2_G3 file_i=2 file_j=3 size_a=3880 size_b=3880 equal=YES
+PAIR G3_VS_MUTATED file_i=3 file_j=4 equal=NO
+BYTE_MISMATCH_DETECTED=YES
+NEGATIVE_CONTROL=PASS
+FIXEDPOINT_VERIFIER_RC=1 verdict=NEGATIVE_CONTROL_DETECTED_MISMATCH
+
+STEP 4: pristine verifier run AGAIN (canonical objects still pristine).
+  EXIT_CODE=0
+PAIR G2_G3 file_i=2 file_j=3 size_a=3880 size_b=3880 equal=YES
+FIXEDPOINT_VERIFIER_RC=0 verdict=PASS
+LEXER03_TRIVIA_FIXED_POINT_4_GENERATIONS=PASS
+
+STEP 5: cleanup the mutation artifact (canonical objects remain pristine).
+trivia.g0.o
+trivia.g1.o
+trivia.g2.o
+trivia.g3.o
+trivia.g3a.o
+trivia.g3b.o
+
+
+INTERPRETATION:
+  PRISTINE_VERIFIER_RC            = 0       (expected 0)
+  NEGATIVE_CONTROL_MUTATION_APPLIED = YES
+  BYTE_MISMATCH_DETECTED          = YES (verifier reported equal=NO on G3_VS_MUTATED pair)
+  NEGATIVE_VERIFIER_RC            = 1       (expected non-zero)
+  PRISTINE_AGAIN_VERIFIER_RC      = 0       (expected 0)
+
+  NEGATIVE_CONTROL = PASS
+
+AC15  NEGATIVE_CONTROL = PASS   (PASS)
+
+Per ACT §21 causal chain:
+  pristine -> verifier PASS (exit=0)
+  one-byte mutation
+  same verifier invocation -> verifier reports mismatch, exits non-zero (exit=1)
+  pristine artifacts (still on disk) selected again
+  same verifier -> PASS (exit=0)
+
+The mutation control proves the verifier can reject a false fixed-point
+claim. It does not merely print expected unequal hashes.

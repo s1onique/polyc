@@ -1,0 +1,29 @@
+ACT-POLYC-SELFHOST-LEXER03-CORRECTION02 -- C3 EVIDENCE -- G1 compile
+=================================================================
+
+BEFORE COMPILE:
+  rm -f build/lexer08-fixedpoint/trivia.g1.o
+  test ! -e build/lexer08-fixedpoint/trivia.g1.o  -> OK (absent)
+
+COMMAND (literal):
+  ./build/hcc-bootstrap02 --install-dir=$(pwd)/build/test-prefix \
+      -c tools/bootstrap/selfhost-lexer-trivia.HC \
+      -o build/lexer08-fixedpoint/trivia.g1.o
+
+OUTPUT (relevant):
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+
+AFTER COMPILE:
+  ls -la build/lexer08-fixedpoint/trivia.g1.o -> 3880 bytes
+  wc -c                              -> 3880 bytes
+  shasum -a 256                      -> 560e98bf20277d1cedde553ee4cb3ef67f62dc9a5f4d3145813a55e7921f39c0
+  file                               -> Mach-O 64-bit object arm64
+
+RC: 0
+
+INTERPRETATION:
+  G1_COMPILE_RC = 0   (PASS)
+  G1_OBJECT_SIZE = 3880
+  G1_OBJECT_SHA256 = 560e98bf20277d1cedde553ee4cb3ef67f62dc9a5f4d3145813a55e7921f39c0

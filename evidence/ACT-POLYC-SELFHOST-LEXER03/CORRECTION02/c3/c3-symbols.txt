@@ -1,0 +1,30 @@
+ACT-POLYC-SELFHOST-LEXER03-CORRECTION02 -- C3 EVIDENCE -- symbol presence
+========================================================================
+
+COMMAND (literal):
+  for obj in build/lexer08-fixedpoint/trivia.g{0,1,2,3}.o; do
+    nm "$obj" | grep '_BootstrapScanTrivia' || echo MISSING $obj
+  done
+
+OBSERVED:
+--- build/lexer08-fixedpoint/trivia.g0.o ---
+0000000000000678 T _BootstrapScanTrivia
+--- build/lexer08-fixedpoint/trivia.g1.o ---
+0000000000000678 T _BootstrapScanTrivia
+--- build/lexer08-fixedpoint/trivia.g2.o ---
+0000000000000678 T _BootstrapScanTrivia
+--- build/lexer08-fixedpoint/trivia.g3.o ---
+0000000000000678 T _BootstrapScanTrivia
+
+INTERPRETATION:
+  G0_BOOTSTRAP_SCAN_TRIVIA_SYMBOL = YES
+  G1_BOOTSTRAP_SCAN_TRIVIA_SYMBOL = YES
+  G2_BOOTSTRAP_SCAN_TRIVIA_SYMBOL = YES
+  G3_BOOTSTRAP_SCAN_TRIVIA_SYMBOL = YES
+
+  BOOTSTRAP_SCAN_TRIVIA_PRESENT_ALL_GENERATIONS = YES
+
+AC13  BOOTSTRAP_SCAN_TRIVIA_PRESENT_ALL_GENERATIONS = YES   (PASS)
+
+NOTE: platform symbol decoration yields "_BootstrapScanTrivia"
+(leading underscore). No other normalizations applied.

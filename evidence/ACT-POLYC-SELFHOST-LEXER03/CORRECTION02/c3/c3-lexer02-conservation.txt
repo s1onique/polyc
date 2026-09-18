@@ -1,0 +1,33 @@
+ACT-POLYC-SELFHOST-LEXER03-CORRECTION02 -- C3 EVIDENCE -- LEXER02 conservation
+============================================================================
+
+Per ACT §15: re-run the LEXER02 (scalar literal scanner)
+qualification AND the LEXER02 4-stage production seam.
+
+COMMAND (literal):
+  make lexer07-direct-differential
+  make lexer07-lexer-seam-all-stages
+
+OBSERVED (LEXER02 direct differential):
+ACT_SELFHOST_LEXER02_DIRECT_DIFF_CASES=89
+ACT_SELFHOST_LEXER02_DIRECT_DIFF_PASS=89
+ACT_SELFHOST_LEXER02_DIRECT_DIFF_FAIL=0
+STATUS=PASS
+LEXER07_DIRECT_DIFFERENTIAL=PASS
+
+OBSERVED (LEXER02 4-stage production seam):
+LEXER07_PRODUCTION_SEAM_STAGE0_VS_STAGE1=PASS
+LEXER07_PRODUCTION_SEAM_STAGE0_VS_STAGE2=PASS
+LEXER07_PRODUCTION_SEAM_STAGE0_VS_STAGE3=PASS
+LEXER07_PRODUCTION_SEAM_4_STAGES=PASS
+
+INTERPRETATION:
+  LEXER02 = 89/89 PASS
+  LEXER07_PRODUCTION_SEAM_4_STAGES = PASS
+
+AC19  LEXER02_CONSERVATION                = 89/89 PASS   (PASS)
+      LEXER07_PRODUCTION_SEAM_4_STAGES    = PASS         (PASS)
+
+This ACT did not modify tools/bootstrap/selfhost-lexer-scalar-literal.HC
+nor the LEXER02 component object; the 89/89 baseline and the 4-stage
+production seam byte-equality are both preserved.

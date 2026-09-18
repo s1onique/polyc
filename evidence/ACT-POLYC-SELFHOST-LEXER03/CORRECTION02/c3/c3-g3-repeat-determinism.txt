@@ -1,0 +1,35 @@
+ACT-POLYC-SELFHOST-LEXER03-CORRECTION02 -- C3 EVIDENCE -- G3 determinism
+========================================================================
+
+Per ACT §11: compile the same source with the same compiler (G3)
+twice into two separate fresh outputs. This distinguishes a true
+cross-generation mismatch from same-compiler nondeterminism.
+
+COMMAND (literal):
+  rm -f build/lexer08-fixedpoint/trivia.g3a.o build/lexer08-fixedpoint/trivia.g3b.o
+  ./build/hcc-bootstrap04 --install-dir=$(pwd)/build/test-prefix \
+      -c tools/bootstrap/selfhost-lexer-trivia.HC \
+      -o build/lexer08-fixedpoint/trivia.g3a.o
+  ./build/hcc-bootstrap04 --install-dir=$(pwd)/build/test-prefix \
+      -c tools/bootstrap/selfhost-lexer-trivia.HC \
+      -o build/lexer08-fixedpoint/trivia.g3b.o
+  cmp -s build/lexer08-fixedpoint/trivia.g3a.o \
+          build/lexer08-fixedpoint/trivia.g3b.o
+  shasum -a 256 build/lexer08-fixedpoint/trivia.g3a.o \
+                   build/lexer08-fixedpoint/trivia.g3b.o
+
+OBSERVED:
+-rw-r--r-- 1 chistyakov staff 3880 Sep 18 11:18 build/lexer08-fixedpoint/trivia.g3a.o
+-rw-r--r-- 1 chistyakov staff 3880 Sep 18 11:18 build/lexer08-fixedpoint/trivia.g3b.o
+  G3A_G3B_CMP_RC=0
+560e98bf20277d1cedde553ee4cb3ef67f62dc9a5f4d3145813a55e7921f39c0  build/lexer08-fixedpoint/trivia.g3a.o
+560e98bf20277d1cedde553ee4cb3ef67f62dc9a5f4d3145813a55e7921f39c0  build/lexer08-fixedpoint/trivia.g3b.o
+
+INTERPRETATION:
+  G3A_G3B_BYTE_EQUAL = YES
+  G3A_G3B_SHA256_EQUAL = YES
+
+AC14  G3_REPEAT_BYTE_EQUAL = YES   (PASS)
+
+If this were non-deterministic the ACT would have halted with
+HALT_OBJECT_OUTPUT_NONDETERMINISTIC; it does not.
