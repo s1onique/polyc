@@ -1,0 +1,30 @@
+RED_LEGACY_X86_GLOBAL_OVERRIDE
+
+Witnesed at HEAD 712a3b7 (predecessor C4 commit, --use-legacy-x86).
+
+Setup:
+  tests/compiler/static-function-linkage/s09-legacy-x86-static.HC
+    static I64 StaticFn(I64 x) { return x * 11; }
+    public I64 PublicFn(I64 x) { return x * 22; }
+    I64 main(I64 argc, U8 **argv) {
+        return StaticFn(argc) + PublicFn(argc);
+    }
+
+Repro:
+  hcc --use-legacy-x86 --target=x86_64-apple-darwin -c s09-legacy-x86-static.HC
+  nm -m s09-legacy-x86-static.o
+
+Observed (c1-red-witness.nm.txt):
+  external _StaticFn    <-- NOT_EXPECTED (should be non-external)
+  external _PublicFn
+  external _main
+
+Expected (post-fix):
+  non-external _StaticFn
+  external _PublicFn
+  external _main
+
+Root cause:
+  src/x86.c:asmFunctionInit unconditionally emits `.global %s` for
+  every AST_FUNC. fn_is_static is never consulted in the legacy
+  backend.

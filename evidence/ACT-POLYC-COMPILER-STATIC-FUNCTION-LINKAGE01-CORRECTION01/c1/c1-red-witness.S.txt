@@ -1,0 +1,15 @@
+$ grep -E '\.global|\.globl|_StaticFn|_PublicFn|_main' s09-legacy-x86-static.s
+.globl argc
+.globl argv
+        .global _StaticFn
+_StaticFn:
+        .global _PublicFn
+_PublicFn:
+        .global _main
+_main:
+        call   _StaticFn
+        call   _PublicFn
+
+LEGACY_X86_RED_OBSERVED = YES
+STATIC_FN_EXTERNALLY_LINKED_UNDER_LEGACY_X86 = YES
+EXPECTED_STATIC_FN_TO_BE_LOCAL = YES (FAIL)

@@ -1,0 +1,11 @@
+# ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01-CORRECTION01 / c1 / c1-legacy-x86-paths.tsv
+# Path inventory for legacy x86 backend linkage qualification.
+# Format: <row_id><TAB><file><TAB><function><TAB><kind><TAB><backend><TAB><live><TAB><fn_is_static_supported_pre_fix>
+1	P01	src/x86.c	asmFunctionInit	native	X86_64_NATIVE_LEGACY	YES	NO
+2	P02	src/x86.c	x86AsmGenerate	native	X86_64_NATIVE_LEGACY	YES	NO
+3	P03	src/asm.c	asmGenerate	dispatch	X86_64_NATIVE_LEGACY	YES	NO
+4	P04	src/cli.c	CLI_USE_LEGACY_X86	set_flag	X86_64_NATIVE_LEGACY	YES	NO
+# Note: P03 dispatches to x86_64AsmGenerate (default) or x86AsmGenerate
+#       (legacy, when --use-legacy-x86 is set).
+# Note: P01 emits unconditional `.global <fname>` for every AST_FUNC
+#       regardless of fn_is_static. That is the RED site.
