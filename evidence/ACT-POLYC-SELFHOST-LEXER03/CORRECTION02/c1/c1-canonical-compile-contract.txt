@@ -1,0 +1,65 @@
+ACT-POLYC-SELFHOST-LEXER03-CORRECTION02 -- C1 RED -- canonical compile contract
+==============================================================================
+
+RECON METHOD:
+  Inspect existing LEXER03 component build rule in Makefile.
+  Inspect analogous bootstrap component rules (bootstrap03-component-build
+  and bootstrap04-component-build) to confirm that the same flag
+  pattern applies to all four generations.
+
+OBSERVED RULE (Makefile lines 1289..1299):
+  lexer08-component-build:
+      ./hcc --install-dir=$(TEST_PREFIX) \
+          -c tools/bootstrap/selfhost-lexer-trivia.HC \
+          -o ./build/lexer08-trivia.o
+
+OBSERVED ANALOG (Makefile lines 502..512, 707..717):
+  bootstrap03-component-build:
+      ./build/hcc-bootstrap02 --install-dir=$(TEST_PREFIX) \
+          -c tools/bootstrap/bootstrap02-ident.HC \
+          -o ./build/bootstrap03-ident.stage1.o
+  bootstrap04-component-build:
+      ./build/hcc-bootstrap03 --install-dir=$(TEST_PREFIX) \
+          -c tools/bootstrap/bootstrap02-ident.HC \
+          -o ./build/bootstrap04-ident.stage2.o
+
+INTERPRETATION:
+  The same compile template applies to all four generations; only the
+  COMPILER binary and the OUTPUT path vary. There is no flag difference
+  between G0..G3 (no -D stage=2 / -D stage=3 is needed; the same
+  `selfhost-lexer-trivia.HC` source is compiled by every generation).
+
+
+FROZEN CANONICAL COMPILE CONTRACT
+------------------------------------------------------------------------
+
+TEMPLATE:
+  <COMPILER> --install-dir=$(TEST_PREFIX) \
+      -c tools/bootstrap/selfhost-lexer-trivia.HC \
+      -o <OUTPUT_OBJECT>
+
+  where $(TEST_PREFIX) is ./build/test-prefix (canonical, set by
+  `make test-prefix-install`; already present at entry).
+
+VARIABLES PER GENERATION:
+  G0  COMPILER = ./hcc                       OUTPUT = build/lexer08-fixedpoint/trivia.g0.o
+  G1  COMPILER = ./build/hcc-bootstrap02     OUTPUT = build/lexer08-fixedpoint/trivia.g1.o
+  G2  COMPILER = ./build/hcc-bootstrap03     OUTPUT = build/lexer08-fixedpoint/trivia.g2.o
+  G3  COMPILER = ./build/hcc-bootstrap04     OUTPUT = build/lexer08-fixedpoint/trivia.g3.o
+
+CANONICAL_COMPILE_CONTRACT = FROZEN
+
+SOURCE                = tools/bootstrap/selfhost-lexer-trivia.HC
+SOURCE_SHA256         = 515c0e025929f2a8ee278e1f967bcd67414dd639c1d179c49b1ba8ad27559d6f
+FLAGS                 = --install-dir=$(TEST_PREFIX) -c <source> -o <output>
+OUTPUT_KIND           = OBJECT
+EXTRA_INCLUDE_PATHS   = (none; the .HC file is self-contained)
+EXTRA_DEFINES         = (none)
+ENVIRONMENT_REQUIREMENTS:
+  - ./build/test-prefix/ must contain the installed libtos.{a,dylib}
+    produced by `make test-prefix-install` (already satisfied; the
+    existing `lexer08-component-build` target also depends on this
+    path and works without re-running test-prefix-install).
+  - The current working directory must be the repository root.
+
+AC04 PASS (CANONICAL_COMPILE_CONTRACT = FROZEN).

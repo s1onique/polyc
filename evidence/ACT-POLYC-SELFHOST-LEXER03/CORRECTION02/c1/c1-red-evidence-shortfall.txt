@@ -1,0 +1,94 @@
+ACT-POLYC-SELFHOST-LEXER03-CORRECTION02 -- C1 RED -- existing-evidence shortfall
+===============================================================================
+
+PROBE 1: stage2/stage3 of original LEXER03 evidence explicitly N/A.
+------------------------------------------------------------------------
+COMMAND:
+  head -8 evidence/ACT-POLYC-SELFHOST-LEXER03/c3/c3-stage2.txt
+  head -8 evidence/ACT-POLYC-SELFHOST-LEXER03/c3/c3-stage3.txt
+
+OBSERVED:
+  c3-stage2.txt:
+    N/A for LEXER03.
+    LEXER03 is a single-component migration whose subject is a pure
+    scanning function with no recursion. Stage2 evidence would require
+    re-compiling selfhost-lexer-trivia.HC with ./build/hcc-bootstrap02
+    to produce bootstrap04-trivia.o, then comparing it byte-for-byte
+    against the stage1 bootstrap02-trivia.o.
+
+  c3-stage3.txt: (identical text)
+
+INTERPRETATION:
+  LEXER03_EXISTING_STAGE2_COMPONENT_OBJECT = N/A_OR_ABSENT
+  LEXER03_EXISTING_STAGE3_COMPONENT_OBJECT = N/A_OR_ABSENT
+  LEXER03_4GEN_COMPONENT_FIXED_POINT       = NOT_PROVEN
+
+
+PROBE 2: stage0 / stage1 do not constitute 4-generation set.
+------------------------------------------------------------------------
+COMMAND:
+  head -3 evidence/ACT-POLYC-SELFHOST-LEXER03/c3/c3-stage0.txt
+  head -3 evidence/ACT-POLYC-SELFHOST-LEXER03/c3/c3-stage1.txt
+
+OBSERVED:
+  c3-stage0.txt: BUILD_LABEL=stage0   (15-case seam run)
+  c3-stage1.txt: BUILD_LABEL=stage1   (15-case seam run)
+
+INTERPRETATION:
+  These are *seam outputs* (lexer08-lexer-seam-stage{0,1}),
+  not four-generation *component object* equality evidence.
+  LEXER03_EXISTING_STAGE0_COMPONENT_OBJECT = NOT_PROVEN_AS_4GEN_SET
+  LEXER03_EXISTING_STAGE1_COMPONENT_OBJECT = NOT_PROVEN_AS_4GEN_SET
+
+
+PROBE 3: Make topology does not produce 4 independent trivia objects.
+------------------------------------------------------------------------
+COMMAND:
+  grep -nE 'selfhost-lexer-trivia|trivia.g[0-9]\.o|lexer08-fixedpoint' Makefile
+
+OBSERVED:
+  Only one rule compiles selfhost-lexer-trivia.HC:
+    1289: lexer08-component-build:
+    1290:   ./hcc --install-dir=$(TEST_PREFIX) \
+    1291:     -c tools/bootstrap/selfhost-lexer-trivia.HC \
+    1292:     -o ./build/lexer08-trivia.o
+
+  No rule builds ./build/lexer08-fixedpoint/trivia.g{0,1,2,3}.o.
+  The directory build/lexer08-fixedpoint does not exist:
+    find build -path '*lexer08-fixedpoint*' -type d
+      (no output -- 0 hits)
+
+INTERPRETATION:
+  INDEPENDENT_G0_OBJECT = NO  (only ./build/lexer08-trivia.o exists from stage0)
+  INDEPENDENT_G1_OBJECT = NO
+  INDEPENDENT_G2_OBJECT = NO
+  INDEPENDENT_G3_OBJECT = NO
+
+  The four independent fixed-point objects must be produced by
+  this ACT's C2 implementation. RED is firmly closed.
+
+
+CONCLUSION
+========================================================================
+LEXER03_4GEN_COMPONENT_FIXED_POINT = NOT_PROVEN  (principal RED holds)
+
+The LEXER03 CORRECTION01 closure explicitly recorded the 4-gen fixed-
+point evidence as P0 residue. This ACT is the bounded ACT that closes
+that residue without touching production semantics.
+
+
+PROBE 4: per-generation inventory (truthful).
+------------------------------------------------------------------------
+COMMAND:
+  ls build/ 2>&1 | grep -E 'trivia|lexer08-trivia\.o' || echo NONE
+  find build -name 'trivia*' -type f
+
+OBSERVED:
+  build/lexer08-trivia.o           (single stage0 object, just produced
+                                    by an in-flight test compile)
+  No trivia.g{0,1,2,3}.o anywhere.
+
+INTERPRETATION:
+  Only one independent component object exists in the repository,
+  and it is produced by G0. The four-generation fixed-point surface
+  is genuinely absent.
