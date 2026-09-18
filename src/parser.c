@@ -2011,7 +2011,8 @@ static int asmTextHasReturn(AoStr *text) {
 }
 
 Ast *parseFunctionDef(Cctrl *cc, AstType *rettype,
-        char *fname, int len, Vec *params, int has_var_args, int is_inline)
+        char *fname, int len, Vec *params, int has_var_args, int is_inline,
+        int is_static)
 {
     Lexeme *next = cctrlTokenPeek(cc);
     /* Anchor for the end-of-function missing-return warning: by the time
@@ -2180,8 +2181,13 @@ Ast *parseFunctionDef(Cctrl *cc, AstType *rettype,
         cc->tmp_params = params;
         cc->tmp_rettype = rettype;
         fn_type = astMakeFunctionType(cc->tmp_rettype, params);
-        func = astFunction(fn_type,fname,len,params,NULL,locals,
-                has_var_args);
+        func = astFunctionWithLinkage(fn_type,fname,len,params,NULL,locals,
+                has_var_args, is_static);
+        /* ACT-POLYC-SELFHOST-LEXER04-CORRECTION01 C2A: keep static
+         * functions in cc->global_env so the IR backends
+         * (aarch64.c / aarch64-jit.c) can resolve internal callers;
+         * final visibility is constrained at hccJitFinalize via the
+         * jit->private_fns set. */
         mapAdd(cc->global_env, func->fname->data, func);
     } else {
         switch (func->kind) {
@@ -2197,8 +2203,23 @@ Ast *parseFunctionDef(Cctrl *cc, AstType *rettype,
                     cc->tmp_params = params;
                     cc->tmp_rettype = rettype;
                     fn_type = astMakeFunctionType(cc->tmp_rettype, params);
-                    func = astFunction(fn_type,fname,len,params,NULL,locals,
-                            has_var_args);
+                    func = astFunctionWithLinkage(fn_type,fname,len,params,NULL,locals,
+                            has_var_args, is_static);
+                    /* ACT-POLYC-SELFHOST-LEXER04-CORRECTION01 C2A. */
+                    mapAdd(cc->global_env, func->fname->data, func);
+                    break;
+                }
+                /* ACT-POLYC-SELFHOST-LEXER04-CORRECTION01 C2A: allow
+                 * a static function to be redefined when the prior
+                 * definition was ALSO static (two TUs each declaring
+                 * `static Foo` may both compile; visibility is gated
+                 * at hccJitFinalize). */
+                if (is_static && func->fn_is_static) {
+                    cc->tmp_params = params;
+                    cc->tmp_rettype = rettype;
+                    fn_type = astMakeFunctionType(cc->tmp_rettype, params);
+                    func = astFunctionWithLinkage(fn_type,fname,len,params,NULL,locals,
+                            has_var_args, 1);
                     mapAdd(cc->global_env, func->fname->data, func);
                     break;
                 }
@@ -2216,6 +2237,7 @@ Ast *parseFunctionDef(Cctrl *cc, AstType *rettype,
                 cc->tmp_rettype = func->type->rettype;
                 fn_type = func->type;
                 func->kind = AST_FUNC;
+                func->fn_is_static = is_static;
                 break;
 
             default:
@@ -2327,7 +2349,8 @@ Ast *parseExternFunctionProto(Cctrl *cc, AstType *rettype, char *fname, int len)
     return func;
 }
 
-Ast *parseFunctionOrDef(Cctrl *cc, AstType *rettype, char *fname, int len, int is_inline) {
+Ast *parseFunctionOrDef(Cctrl *cc, AstType *rettype, char *fname, int len, int is_inline,
+                           int is_static) {
     /* Anchor: the name token was just consumed, so the cursor still
      * sits on its line - stamp the function Ast with the NAME's
      * position, not the body's `{` (which is where the node is
@@ -2347,7 +2370,7 @@ Ast *parseFunctionOrDef(Cctrl *cc, AstType *rettype, char *fname, int len, int i
     Lexeme *tok = cctrlTokenGet(cc);
     if (tokenPunctIs(tok, '{')) {
         Ast *fn = parseFunctionDef(cc,rettype,fname,len,params,
-                                   has_var_args,is_inline);
+                                   has_var_args,is_inline,is_static);
         if (fn) {
             fn->line = name_line;
             fn->col = name_col;
@@ -2360,9 +2383,14 @@ Ast *parseFunctionOrDef(Cctrl *cc, AstType *rettype, char *fname, int len, int i
                     len,fname);
         }
         AstType *type = astMakeFunctionType(rettype, params);
-        Ast *fn = astFunction(type,fname,len,params,NULL,NULL,has_var_args);
+        Ast *fn = astFunctionWithLinkage(type,fname,len,params,NULL,NULL,has_var_args,
+                                         is_static);
         fn->kind = AST_FUN_PROTO;
-        mapAdd(cc->global_env,fn->fname->data,fn);
+        /* ACT-POLYC-SELFHOST-LEXER04-CORRECTION01 C2A: same rationale
+         * as the body branch above (IR backends look up callees in
+         * cc->global_env; final visibility is gated by
+         * jit->private_fns). */
+        mapAdd(cc->global_env, fn->fname->data, fn);
         return fn;
     } else {
         /* Neither `{ ... }` (definition) nor `;` (prototype). Almost
@@ -2518,8 +2546,8 @@ Ast *parseToplevelDef(Cctrl *cc, int *is_global) {
                     }
                     type = parseFullType(cc);
                     name = cctrlTokenGet(cc);
-                    
-                    ast = parseFunctionOrDef(cc,type,name->start,name->len,1);
+
+                    ast = parseFunctionOrDef(cc,type,name->start,name->len,1,is_static);
                     ast->flags |= AST_FLAG_INLINE;
                     ast->line = name->line;
                     ast->col = name->col;
@@ -2799,7 +2827,7 @@ Ast *parseToplevelDef(Cctrl *cc, int *is_global) {
         }
 
         if (tokenPunctIs(tok, '(')) {
-            Ast *fn = parseFunctionOrDef(cc,type,name->start,name->len,0);
+            Ast *fn = parseFunctionOrDef(cc,type,name->start,name->len,0,is_static);
             /* Anchor to the name token - covers prototypes too, and
              * corrects the in-function anchor (a token get+rewind
              * between name and call left the hint on the `(`). */

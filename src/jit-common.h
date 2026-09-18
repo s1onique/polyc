@@ -42,6 +42,14 @@ typedef struct HccJit {
      * host_symbols/dlsym. Reset per chunk. */
     Map *chunk_fns;
 
+    /* ACT-POLYC-SELFHOST-LEXER04-CORRECTION01 C2A: function names
+     * declared with HolyC `static` linkage. These are still emitted
+     * (in-chunk calls must resolve), but their labels are NOT
+     * registered into `symbols` / `host_symbols` so two translation
+     * units may each define their own private copy without colliding
+     * at link time. Reset per chunk. */
+    Map *private_fns;
+
     /* Finalized RX mappings (AsmJitCode *), one per chunk. Old chunks
      * stay mapped forever - earlier code may hold pointers into them. */
     List *chunks;

@@ -2390,12 +2390,23 @@ static void x86_64EmitFunctionPrologue(Cctrl *cc,
     char *fname = asmNormaliseFunctionName(cc, func->fname);
     /* .p2align 4 = 16-byte aligned function entries (x86_64
      * convention for the I-cache fetch boundary). */
-    aoStrCatFmt(buf,
-                ".text\n\t"
-                ".p2align 4\n\t"
-                ".globl %s\n"
-                "%s:\n\t",
-                fname, fname);
+    /* ACT-POLYC-SELFHOST-LEXER04-CORRECTION01 C2A: HolyC `static`
+     * functions must NOT be marked `.globl` so the final cc link
+     * step does not treat them as globally visible symbols. */
+    if (func->fn_is_static) {
+        aoStrCatFmt(buf,
+                    ".text\n\t"
+                    ".p2align 4\n\t"
+                    "%s:\n\t",
+                    fname);
+    } else {
+        aoStrCatFmt(buf,
+                    ".text\n\t"
+                    ".p2align 4\n\t"
+                    ".globl %s\n"
+                    "%s:\n\t",
+                    fname, fname);
+    }
     /* Leaf function with empty frame: skip the rbp dance entirely
      * (saves 3 instructions per call). Caller-saved rbp survives
      * untouched, no slot accesses to anchor, no callee-saved regs

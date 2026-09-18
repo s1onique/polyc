@@ -2138,12 +2138,23 @@ static void aarch64EmitFunctionPrologue(Cctrl *cc, AoStr *buf, Ast *func,
                                         u16 total_stack, int omit_frame)
 {
     char *fname = asmNormaliseFunctionName(cc, func->fname);
-    aoStrCatFmt(buf,
-                ".text\n\t"
-                ".p2align 2\n\t"
-                ".globl %s\n"
-                "%s:\n\t",
-                fname, fname);
+    /* ACT-POLYC-SELFHOST-LEXER04-CORRECTION01 C2A: HolyC `static`
+     * functions must NOT be marked `.globl` so the final cc link
+     * step does not treat them as globally visible symbols. */
+    if (func->fn_is_static) {
+        aoStrCatFmt(buf,
+                    ".text\n\t"
+                    ".p2align 2\n\t"
+                    "%s:\n\t",
+                    fname);
+    } else {
+        aoStrCatFmt(buf,
+                    ".text\n\t"
+                    ".p2align 2\n\t"
+                    ".globl %s\n"
+                    "%s:\n\t",
+                    fname, fname);
+    }
     if (omit_frame) return;
     /* Standard prologue: push fp/lr pair, set new fp = sp, sub sp. */
     aoStrCatFmt(buf,

@@ -532,6 +532,10 @@ HccJit *hccJitNew(Cctrl *cc, const HccJitBackend *backend) {
     jit->symbols        = mapNew(64, &map_cstring_opaque_type);
     jit->host_symbols   = mapNew(64, &map_cstring_opaque_type);
     jit->chunk_fns      = mapNew(64, &map_cstring_opaque_type);
+    /* ACT-POLYC-SELFHOST-LEXER04-CORRECTION01 C2A: per-chunk set of
+     * static-function names whose labels must not be globally
+     * registered. */
+    jit->private_fns    = mapNew(64, &map_cstring_opaque_type);
     jit->chunks         = listNew();
     jit->globals_arenas = listNew();
     jit->block_local    = mapNew(64, &map_uint_to_uint_type);
@@ -587,9 +591,26 @@ int hccJitCompileChunk(HccJit *jit, Ast *extra_fn) {
     for (List *it = ast_from; it != cc->ast_list; it = it->next) {
         Ast *ast = it->value;
         if (ast->kind != AST_FUNC) continue;
+        /* ACT-POLYC-SELFHOST-LEXER04-CORRECTION01 C2A: track
+         * static-function names so hccJitFinalize can suppress their
+         * entry into the JIT's global symbol table. */
+        if (ast->fn_is_static) {
+            const char *n = asmNormaliseFunctionName(cc, ast->fname);
+            if (!mapHas(jit->private_fns, (void *)n)) {
+                mapAdd(jit->private_fns, strdup(n), (void *)(uintptr_t)1);
+            }
+        }
         jitChunkFnAdd(jit, asmNormaliseFunctionName(cc, ast->fname));
     }
     if (extra_fn) {
+        /* ACT-POLYC-SELFHOST-LEXER04-CORRECTION01 C2A: mirror the
+         * per-AST tracking for the extra_fn injected at compile time. */
+        if (extra_fn->fn_is_static) {
+            const char *n = asmNormaliseFunctionName(cc, extra_fn->fname);
+            if (!mapHas(jit->private_fns, (void *)n)) {
+                mapAdd(jit->private_fns, strdup(n), (void *)(uintptr_t)1);
+            }
+        }
         jitChunkFnAdd(jit, asmNormaliseFunctionName(cc, extra_fn->fname));
     }
 
@@ -696,10 +717,18 @@ int hccJitCompileChunk(HccJit *jit, Ast *extra_fn) {
      * Register in `symbols` (hccJitLookup) and in `host_symbols` so
      * later chunks' emit-time addressing and finalize-time resolver
      * both see it. A redefinition overwrites: future chunks bind to
-     * the newest body, already-patched code keeps the old one. */
+     * the newest body, already-patched code keeps the old one.
+     *
+     * ACT-POLYC-SELFHOST-LEXER04-CORRECTION01 C2A: labels belonging
+     * to HolyC `static` functions are NOT registered here, so two
+     * translation units may each define their own private copy of
+     * the same name without link-time collision. */
     for (int i = 0; i < jit->enc.n_labels; ++i) {
         AsmLabelDef *L = &jit->enc.labels[i];
         if (!L->name) continue;
+        if (jit->private_fns && mapHas(jit->private_fns, (void *)L->name)) {
+            continue;
+        }
         void *addr = (uint8_t *)code->code + L->byte_offset;
         mapAdd(jit->symbols, strdup(L->name), addr);
         mapAdd(jit->host_symbols, strdup(L->name), addr);

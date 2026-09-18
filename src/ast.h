@@ -320,13 +320,22 @@ typedef struct Ast {
             /* Declaration */
             List *locals;
             Ast *body;
-            Ast *ref; /* for function pointers, a reference to the variable 
-                       * allows for keeping track of the offset when converting 
+            Ast *ref; /* for function pointers, a reference to the variable
+                       * allows for keeping track of the offset when converting
                        * to assembly. */
             Ast *default_fn; /* For function pointers, allows setting a default
                               * value... we could use this for all default vals
                               * might be easier? */
             int has_var_args;
+            /* ACT-POLYC-SELFHOST-LEXER04-CORRECTION01 C2A: 1 when this
+             * function was declared with HolyC `static` linkage. Static
+             * functions must NOT be registered into cc->global_env as
+             * globally-visible symbols and must NOT be added to the
+             * JIT chunk's symbols / host_symbols maps.
+             *
+             * Named `fn_is_static` to avoid colliding with the
+             * existing `is_static` field on AST_GVAR (union storage). */
+            int fn_is_static;
         };
 
         /* Declaration */
@@ -510,6 +519,17 @@ Ast *astDefault(AoStr *case_label,List *case_asts);
 Ast *astFunctionCall(AstType *type, char *fname, int len, Vec *argv);
 Ast *astFunction(AstType *rettype, char *fname, int len, Vec *params,
                  Ast *body, List *locals, int has_var_args);
+/* ACT-POLYC-SELFHOST-LEXER04-CORRECTION01 C2A: variant that captures
+ * HolyC `static` linkage at construction time so downstream
+ * symbol-table registration can honour it BEFORE the AST is added to
+ * cc->global_env. Existing callers keep using astFunction() with the
+ * default (externally visible). */
+Ast *astFunctionWithLinkage(AstType *rettype, char *fname, int len, Vec *params,
+                            Ast *body, List *locals, int has_var_args,
+                            int fn_is_static);
+/* ACT-POLYC-SELFHOST-LEXER04-CORRECTION01 C2A: set HolyC `static`
+ * linkage on an AST_FUNC node. Idempotent. */
+void astFunctionSetStatic(Ast *ast, int is_static);
 Ast *astReturn(Ast *retval, AstType *rettype);
 Ast *astTry(Ast *try_body, Ast *catch_body);
 Ast *astThrow(Ast *value);

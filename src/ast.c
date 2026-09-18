@@ -417,7 +417,24 @@ Ast *astFunction(AstType *type, char *fname, int len, Vec *params, Ast *body,
     ast->locals = locals;
     ast->body = body;
     ast->has_var_args = has_var_args;
+    ast->fn_is_static = 0;  /* C2A: default to externally visible */
     return ast;
+}
+
+Ast *astFunctionWithLinkage(AstType *type, char *fname, int len, Vec *params,
+                            Ast *body, List *locals, int has_var_args,
+                            int fn_is_static)
+{
+    Ast *ast = astFunction(type, fname, len, params, body, locals, has_var_args);
+    ast->fn_is_static = fn_is_static ? 1 : 0;
+    return ast;
+}
+
+/* C2A: set linkage after the parser has determined whether `static`
+ * was written at the declaration site. Idempotent. */
+void astFunctionSetStatic(Ast *ast, int is_static) {
+    if (!ast) return;
+    ast->fn_is_static = is_static ? 1 : 0;
 }
 
 Ast *astDecl(Ast *var, Ast *init) {
