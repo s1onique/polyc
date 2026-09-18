@@ -135,3 +135,13 @@ new HANDOFF is not in the bounded managed universe:
   extension pair is recorded but does NOT downgrade this ACT's
   verdict because the closure-status oracle's bounded universe
   is the documented defect.
+
+## Status
+
+PASS_ENGINEERING_HALT_GOVERNANCE_DEPENDENCY
+
+Mirrors the HANDOFF's authoritative VERDICT. The HANDOFF remains the
+canonical source; this section is structural metadata required by the
+closure-status oracle (added by ACT-POLYC-FACTORY-CLOSURE-ORACLE-
+EXTENSIBLE01 to register this ACT/HANDOFF pair in the manifest). No
+semantic change to the historical verdict.

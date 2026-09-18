@@ -1,0 +1,35 @@
+ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01 / c2 / c2-oracle-freeze.txt
+
+At C2 close, the checker and manifest are FROZEN. C3 and C4 SHALL
+require exact hash equality.
+
+  CHECKER_SHA256=1ca6ef4dcac67505f1549a46126eb1474c71f3a5f8d10d2b1763ee3af19666fe
+  MANIFEST_SHA256=c21289718c17fc1352ec76320e86afcf7f14865eacb91c68d907d44d7087fccb
+
+  scripts/quality/factory-closure-status-check.sh: SHA256=1ca6ef4dcac67505f1549a46126eb1474c71f3a5f8d10d2b1763ee3af19666fe
+  docs/factory/act-handoff-map.tsv:               SHA256=c21289718c17fc1352ec76320e86afcf7f14865eacb91c68d907d44d7087fccb
+
+Verification commands (re-runnable by C3 and C4):
+
+  $ shasum -a 256 scripts/quality/factory-closure-status-check.sh
+  $ shasum -a 256 docs/factory/act-handoff-map.tsv
+
+  Required equalities (per ACT §39):
+
+    CHECKER_C3_SHA256  == 1ca6ef4dcac67505f1549a46126eb1474c71f3a5f8d10d2b1763ee3af19666fe
+    MANIFEST_C3_SHA256 == c21289718c17fc1352ec76320e86afcf7f14865eacb91c68d907d44d7087fccb
+
+    CHECKER_C4_SHA256  == 1ca6ef4dcac67505f1549a46126eb1474c71f3a5f8d10d2b1763ee3af19666fe
+    MANIFEST_C4_SHA256 == c21289718c17fc1352ec76320e86afcf7f14865eacb91c68d907d44d7087fccb
+
+  Required predicates:
+
+    ORACLE_FROZEN=YES
+    CLOSURE_ORACLE_FROZEN_BEFORE_C3=YES
+
+  AC24=PASS
+  AC25=PASS
+
+Note: the C2 commit's tree SHA also contains these SHA256 values
+and is reproducible from the commit history. The C4 close will
+verify equality before commit and again after.

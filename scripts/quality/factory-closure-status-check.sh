@@ -2,34 +2,46 @@
 # scripts/quality/factory-closure-status-check.sh
 #
 # ACT-POLYC-FACTORY-STATUS-RECONCILIATION-CORRECTION01 M1:
-# exact-token factory closure-status oracle with independent
-# bidirectional completeness against the bounded managed universe.
+# exact-token factory closure-status oracle.
+#
+# ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01:
+# this checker is MANIFEST-DRIVEN. The manifest at
+# docs/factory/act-handoff-map.tsv is the SINGLE enumeration
+# authority for managed ACT/HANDOFF pairs. The previous
+# bounded-list enumeration (MANAGED_ACTS, MANAGED_HANDOFFS) is
+# REMOVED. Adding a new pair requires only appending a row to
+# the manifest; the checker code does not change.
 #
 # This script is genuine POSIX /bin/sh. It uses case/awk/grep/sed
 # and explicit positional variables only; no associative arrays,
 # no Bash extensions. It is invokable under both `sh` and `dash`.
 #
-# Bounded managed universe (authoritative; named in the ACT):
+# Manifest contract (per ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01 §7):
 #
-#   MANAGED_ACTS     = 5  hard-coded list
-#   MANAGED_HANDOFFS = 5  hard-coded list
+#   field 1: docs/acts/*.md            (act_path)
+#   field 2: docs/factory/HANDOFF-*.md (handoff_path)
+#             OR evidence/*/HANDOFF.md (legacy ACT-managed pairs)
 #
-# The manifest (docs/factory/act-handoff-map.tsv) is the pairing
-# map. The checker enumerates the manifest AND the bounded managed
-# universe independently, then computes four set differences:
+# The legacy HANDOFF path class (evidence/*/HANDOFF.md) is preserved
+# per F14 to keep closed predecessor evidence immutable. New HANDOFFs
+# SHOULD use the docs/factory/HANDOFF-*.md prefix; legacy paths
+# remain acceptable but the canonical location is the factory dir.
 #
-#   UNMAPPED_MANAGED_ACTS      = MANAGED_ACTS     \ MANIFEST_ACTS
-#   UNMAPPED_MANAGED_HANDOFFS  = MANAGED_HANDOFFS \ MANIFEST_HANDOFFS
-#   EXTRA_MANIFEST_ACTS        = MANIFEST_ACTS     \ MANAGED_ACTS
-#   EXTRA_MANIFEST_HANDOFFS    = MANIFEST_HANDOFFS \ MANAGED_HANDOFFS
-#
-# Any non-zero value in those four counters, plus any of the
-# previously-bound counters (DUPLICATE_*, MISSING_*, MALFORMED_*,
-# EXACT_VERDICT_MISMATCHES), plus MANIFEST_ROWS=0, plus a manifest
-# parse failure, all cause exit 1 with STATUS=FAIL.
+# Each data row must contain exactly two TAB-separated fields.
+# Comments start with '#'; blank lines are ignored. The closure
+# predicate applies only to data rows; MANIFEST_DATA_ROWS counts
+# valid two-field rows.
 #
 # Token regex (unchanged from the predecessor):
 #   ^(OPEN|PASS(_[A-Z0-9_]+)*|HALT_[A-Z0-9_]+)$
+#
+# Test seam (per ACT §18):
+#
+#   FACTORY_ACT_HANDOFF_MAP=<path>
+#
+# When set, the checker reads the manifest from this path instead
+# of the canonical docs/factory/act-handoff-map.tsv. Canonical
+# gate-fast does not set this env var.
 
 set -eu
 
@@ -37,30 +49,13 @@ SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 REPO_ROOT=$(cd "$SCRIPT_DIR/../.." && pwd)
 cd "$REPO_ROOT"
 
-MANIFEST="docs/factory/act-handoff-map.tsv"
-
-# Bounded managed universe (R1: independent enumeration, hard-coded).
-#
-# ACT-POLYC-FACTORY-STATUS-RECONCILIATION-CORRECTION02 grew the
-# universe from 5 pairs to 6 pairs by adding this ACT's own pair.
-MANAGED_ACTS="
-docs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION01.md
-docs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION02.md
-docs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION03.md
-docs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION04.md
-docs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION05.md
-docs/acts/ACT-POLYC-FACTORY-STATUS-RECONCILIATION-CORRECTION02.md
-docs/acts/ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01.md
-"
-MANAGED_HANDOFFS="
-evidence/llvmspike01-core03-correction01/HANDOFF.md
-evidence/llvmspike01-core03-correction02/HANDOFF.md
-evidence/llvmspike01-core03-correction03/HANDOFF.md
-evidence/llvmspike01-core03-correction04/HANDOFF.md
-evidence/llvmspike01-core03-correction05/HANDOFF.md
-evidence/factory-status-reconciliation-correction02/HANDOFF.md
-docs/factory/HANDOFF-ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01.md
-"
+# Test seam: allow test harnesses to supply an alternate manifest.
+# Canonical invocation: env var unset, defaults to the canonical path.
+if [ -n "${FACTORY_ACT_HANDOFF_MAP-}" ]; then
+    MANIFEST="$FACTORY_ACT_HANDOFF_MAP"
+else
+    MANIFEST="docs/factory/act-handoff-map.tsv"
+fi
 
 if [ ! -f "$MANIFEST" ]; then
     echo "POLYC_GATE=factory-closure-status"
@@ -70,28 +65,21 @@ if [ ! -f "$MANIFEST" ]; then
 fi
 
 # Counters
-MANAGED_ACTS_COUNT=0
-MANAGED_HANDOFFS_COUNT=0
 MANIFEST_ROWS=0
+MANIFEST_DATA_ROWS=0
+MANIFEST_COMMENT_ROWS=0
+MANIFEST_BLANK_ROWS=0
 MANIFEST_PARSE_ERRORS=0
 DUPLICATE_ACT_PATHS=0
 DUPLICATE_HANDOFF_PATHS=0
+DUPLICATE_PAIRS=0
 MISSING_ACT_FILES=0
 MISSING_HANDOFF_FILES=0
 MALFORMED_ACT_STATUS=0
 MALFORMED_HANDOFF_VERDICT=0
 EXACT_VERDICT_MISMATCHES=0
-UNMAPPED_MANAGED_ACTS=0
-UNMAPPED_MANAGED_HANDOFFS=0
-EXTRA_MANIFEST_ACTS=0
-EXTRA_MANIFEST_HANDOFFS=0
 PAIR_OK=0
 PAIR_FAIL=0
-
-# Strip leading whitespace and blank lines from a here-doc list.
-strip_list() {
-    printf '%s\n' "$1" | sed -e 's/^[[:space:]]*//' -e '/^$/d'
-}
 
 # token_ok: POSIX-compliant regex test (no bashisms).
 token_ok() {
@@ -138,65 +126,155 @@ count_status_headings() {
 }
 
 count_verdict_sections() {
-    # Count lines that equal "VERDICT" exactly.
     grep -cE '^VERDICT[[:space:]]*$' "$1" 2>/dev/null || printf '0\n'
 }
 
-# Count a clean list and store into the named variable.
-count_clean_lines() {
-    printf '%s\n' "$1" | sed -e 's/^[[:space:]]*//' -e '/^$/d' | wc -l | tr -d ' '
-}
-
-# Build a clean newline-separated list to a temp file.
-list_to_tmp() {
-    TMP=$(mktemp)
-    printf '%s\n' "$1" | sed -e 's/^[[:space:]]*//' -e '/^$/d' > "$TMP"
-    printf '%s\n' "$TMP"
-}
-
-# ------------------------------------------------------------------
-# Phase 1: parse manifest, detect duplicates, missing files,
-# malformed metadata, exact-token mismatches. Also write the
-# set of manifest ACT paths and manifest HANDOFF paths to a temp
-# file each for later set-difference computation.
-# ------------------------------------------------------------------
-
-MANIFEST_ACTS_TMP=$(mktemp)
-MANIFEST_HANDOFFS_TMP=$(mktemp)
+# Temp files for duplicate detection.
 SEEN_ACT_TMP=$(mktemp)
 SEEN_HANDOFF_TMP=$(mktemp)
-trap 'rm -f "$MANIFEST_ACTS_TMP" "$MANIFEST_HANDOFFS_TMP" "$SEEN_ACT_TMP" "$SEEN_HANDOFF_TMP"' EXIT
+SEEN_PAIR_TMP=$(mktemp)
+trap 'rm -f "$SEEN_ACT_TMP" "$SEEN_HANDOFF_TMP" "$SEEN_PAIR_TMP"' EXIT
 
-# Parse manifest line-by-line (no associative arrays).
-while IFS="$(printf '\t')" read -r act_path handoff_path; do
-    # Skip comments and blanks.
-    case "$act_path" in
-        ""|\#*) continue ;;
-    esac
-    if [ -z "$handoff_path" ]; then
-        MANIFEST_PARSE_ERRORS=$((MANIFEST_PARSE_ERRORS+1))
-        echo "MANIFEST_PARSE_ERROR  line=$act_path  reason=missing_handoff"
+# ------------------------------------------------------------------
+# Phase 1: parse manifest, validate every data row fail-closed.
+# ------------------------------------------------------------------
+
+# Use awk to parse rows; preserve multi-tab content via cut/awk split.
+while IFS= read -r raw_line || [ -n "$raw_line" ]; do
+    # Trim leading whitespace for classification.
+    trimmed=$(printf '%s' "$raw_line" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+
+    # Classify line.
+    if [ -z "$trimmed" ]; then
+        MANIFEST_BLANK_ROWS=$((MANIFEST_BLANK_ROWS+1))
         continue
     fi
+    case "$trimmed" in
+        \#*)
+            MANIFEST_COMMENT_ROWS=$((MANIFEST_COMMENT_ROWS+1))
+            continue
+            ;;
+    esac
     MANIFEST_ROWS=$((MANIFEST_ROWS+1))
-    printf '%s\n' "$act_path"     >> "$MANIFEST_ACTS_TMP"
-    printf '%s\n' "$handoff_path" >> "$MANIFEST_HANDOFFS_TMP"
 
-    # Duplicate detection (R-pre: already required by predecessor ACT).
+    # Split into exactly two TAB-separated fields.
+    # Use awk to perform the split (handles edge cases of empty fields).
+    n_fields=$(printf '%s' "$raw_line" | awk -F'\t' '{print NF}')
+    act_path=$(printf '%s' "$raw_line" | awk -F'\t' '{print $1}')
+    handoff_path=$(printf '%s' "$raw_line" | awk -F'\t' '{print $2}')
+
+    # Empty-act path detection.
+    if [ -z "$act_path" ]; then
+        MANIFEST_PARSE_ERRORS=$((MANIFEST_PARSE_ERRORS+1))
+        echo "EMPTY_ACT_PATH  line=$raw_line"
+        PAIR_FAIL=$((PAIR_FAIL+1))
+        continue
+    fi
+
+    # Empty-handoff path detection.
+    if [ -z "$handoff_path" ]; then
+        MANIFEST_PARSE_ERRORS=$((MANIFEST_PARSE_ERRORS+1))
+        echo "EMPTY_HANDOFF_PATH  line=$raw_line"
+        PAIR_FAIL=$((PAIR_FAIL+1))
+        continue
+    fi
+
+    # Field-count check.
+    if [ "$n_fields" != "2" ]; then
+        MANIFEST_PARSE_ERRORS=$((MANIFEST_PARSE_ERRORS+1))
+        echo "FIELD_COUNT_NOT_2  line=$raw_line  n_fields=$n_fields"
+        PAIR_FAIL=$((PAIR_FAIL+1))
+        continue
+    fi
+
+    # Path safety: reject absolute paths.
+    case "$act_path" in
+        /*)
+            MANIFEST_PARSE_ERRORS=$((MANIFEST_PARSE_ERRORS+1))
+            echo "ABSOLUTE_PATH_REJECTED  $act_path"
+            PAIR_FAIL=$((PAIR_FAIL+1))
+            continue
+            ;;
+    esac
+    case "$handoff_path" in
+        /*)
+            MANIFEST_PARSE_ERRORS=$((MANIFEST_PARSE_ERRORS+1))
+            echo "ABSOLUTE_PATH_REJECTED  $handoff_path"
+            PAIR_FAIL=$((PAIR_FAIL+1))
+            continue
+            ;;
+    esac
+
+    # Path safety: reject path traversal.
+    case "$act_path" in
+        *..*)
+            MANIFEST_PARSE_ERRORS=$((MANIFEST_PARSE_ERRORS+1))
+            echo "PATH_TRAVERSAL_REJECTED  $act_path"
+            PAIR_FAIL=$((PAIR_FAIL+1))
+            continue
+            ;;
+    esac
+    case "$handoff_path" in
+        *..*)
+            MANIFEST_PARSE_ERRORS=$((MANIFEST_PARSE_ERRORS+1))
+            echo "PATH_TRAVERSAL_REJECTED  $handoff_path"
+            PAIR_FAIL=$((PAIR_FAIL+1))
+            continue
+            ;;
+    esac
+
+    # Path-prefix validation.
+    case "$act_path" in
+        docs/acts/*.md) ;;
+        *)
+            MANIFEST_PARSE_ERRORS=$((MANIFEST_PARSE_ERRORS+1))
+            echo "INVALID_ACT_PREFIX  $act_path"
+            PAIR_FAIL=$((PAIR_FAIL+1))
+            continue
+            ;;
+    esac
+    case "$handoff_path" in
+        docs/factory/HANDOFF-*.md) ;;
+        evidence/*/HANDOFF.md) ;;
+        *)
+            MANIFEST_PARSE_ERRORS=$((MANIFEST_PARSE_ERRORS+1))
+            echo "INVALID_HANDOFF_PREFIX  $handoff_path"
+            PAIR_FAIL=$((PAIR_FAIL+1))
+            continue
+            ;;
+    esac
+
+    MANIFEST_DATA_ROWS=$((MANIFEST_DATA_ROWS+1))
+
+    # Duplicate ACT path detection.
     if grep -Fxq "$act_path" "$SEEN_ACT_TMP"; then
         DUPLICATE_ACT_PATHS=$((DUPLICATE_ACT_PATHS+1))
         echo "DUPLICATE_ACT_PATH  $act_path"
-    else
-        printf '%s\n' "$act_path" >> "$SEEN_ACT_TMP"
+        PAIR_FAIL=$((PAIR_FAIL+1))
+        continue
     fi
+    printf '%s\n' "$act_path" >> "$SEEN_ACT_TMP"
+
+    # Duplicate HANDOFF path detection.
     if grep -Fxq "$handoff_path" "$SEEN_HANDOFF_TMP"; then
         DUPLICATE_HANDOFF_PATHS=$((DUPLICATE_HANDOFF_PATHS+1))
         echo "DUPLICATE_HANDOFF_PATH  $handoff_path"
-    else
-        printf '%s\n' "$handoff_path" >> "$SEEN_HANDOFF_TMP"
+        PAIR_FAIL=$((PAIR_FAIL+1))
+        continue
     fi
+    printf '%s\n' "$handoff_path" >> "$SEEN_HANDOFF_TMP"
 
-    # File presence.
+    # Duplicate pair detection.
+    pair_key="$act_path"$'\t'"$handoff_path"
+    if grep -Fxq "$pair_key" "$SEEN_PAIR_TMP"; then
+        DUPLICATE_PAIRS=$((DUPLICATE_PAIRS+1))
+        echo "DUPLICATE_PAIR  $act_path <-> $handoff_path"
+        PAIR_FAIL=$((PAIR_FAIL+1))
+        continue
+    fi
+    printf '%s\n' "$pair_key" >> "$SEEN_PAIR_TMP"
+
+    # File existence.
     if [ ! -f "$act_path" ]; then
         MISSING_ACT_FILES=$((MISSING_ACT_FILES+1))
         echo "MISSING_ACT_FILE  $act_path"
@@ -245,103 +323,52 @@ while IFS="$(printf '\t')" read -r act_path handoff_path; do
 
     if [ "$act_token" = "$handoff_token" ]; then
         PAIR_OK=$((PAIR_OK+1))
-        printf 'OK    %-60s  %s\n' "$act_path" "$act_token"
+        printf 'OK    %-72s  %s\n' "$act_path" "$act_token"
     else
         EXACT_VERDICT_MISMATCHES=$((EXACT_VERDICT_MISMATCHES+1))
         PAIR_FAIL=$((PAIR_FAIL+1))
-        printf 'FAIL  %-60s  act=%s handoff=%s\n' "$act_path" "$act_token" "$handoff_token"
+        printf 'FAIL  %-72s  act=%s handoff=%s\n' "$act_path" "$act_token" "$handoff_token"
     fi
 done < "$MANIFEST"
 
 # ------------------------------------------------------------------
-# Phase 2: independent managed-universe completeness (R1+R2).
-# Compute four set-difference counters:
-#   UNMAPPED_MANAGED_ACTS      = MANAGED_ACTS     \ MANIFEST_ACTS
-#   UNMAPPED_MANAGED_HANDOFFS  = MANAGED_HANDOFFS \ MANIFEST_HANDOFFS
-#   EXTRA_MANIFEST_ACTS        = MANIFEST_ACTS     \ MANAGED_ACTS
-#   EXTRA_MANIFEST_HANDOFFS    = MANAGIFEST_HANDOFFS \ MANAGED_HANDOFFS
-# ------------------------------------------------------------------
-
-MANAGED_ACTS_TMP=$(list_to_tmp "$MANAGED_ACTS")
-MANAGED_HANDOFFS_TMP=$(list_to_tmp "$MANAGED_HANDOFFS")
-trap 'rm -f "$MANIFEST_ACTS_TMP" "$MANIFEST_HANDOFFS_TMP" "$SEEN_ACT_TMP" "$SEEN_HANDOFF_TMP" "$MANAGED_ACTS_TMP" "$MANAGED_HANDOFFS_TMP"' EXIT
-
-MANAGED_ACTS_COUNT=$(count_clean_lines "$MANAGED_ACTS")
-MANAGED_HANDOFFS_COUNT=$(count_clean_lines "$MANAGED_HANDOFFS")
-
-# UNMAPPED_MANAGED_ACTS: managed ACTs not in manifest.
-while IFS= read -r path; do
-    [ -z "$path" ] && continue
-    if ! grep -Fxq "$path" "$MANIFEST_ACTS_TMP"; then
-        UNMAPPED_MANAGED_ACTS=$((UNMAPPED_MANAGED_ACTS+1))
-        echo "UNMAPPED_MANAGED_ACT  $path"
-    fi
-done < "$MANAGED_ACTS_TMP"
-
-# UNMAPPED_MANAGED_HANDOFFS: managed HANDOFFs not in manifest.
-while IFS= read -r path; do
-    [ -z "$path" ] && continue
-    if ! grep -Fxq "$path" "$MANIFEST_HANDOFFS_TMP"; then
-        UNMAPPED_MANAGED_HANDOFFS=$((UNMAPPED_MANAGED_HANDOFFS+1))
-        echo "UNMAPPED_MANAGED_HANDOFF  $path"
-    fi
-done < "$MANAGED_HANDOFFS_TMP"
-
-# EXTRA_MANIFEST_ACTS: manifest ACTs not in managed universe.
-while IFS= read -r path; do
-    [ -z "$path" ] && continue
-    if ! grep -Fxq "$path" "$MANAGED_ACTS_TMP"; then
-        EXTRA_MANIFEST_ACTS=$((EXTRA_MANIFEST_ACTS+1))
-        echo "EXTRA_MANIFEST_ACT  $path"
-    fi
-done < "$MANIFEST_ACTS_TMP"
-
-# EXTRA_MANIFEST_HANDOFFS: manifest HANDOFFs not in managed universe.
-while IFS= read -r path; do
-    [ -z "$path" ] && continue
-    if ! grep -Fxq "$path" "$MANAGED_HANDOFFS_TMP"; then
-        EXTRA_MANIFEST_HANDOFFS=$((EXTRA_MANIFEST_HANDOFFS+1))
-        echo "EXTRA_MANIFEST_HANDOFF  $path"
-    fi
-done < "$MANIFEST_HANDOFFS_TMP"
-
-# ------------------------------------------------------------------
-# Phase 3: emit counters and decide exit.
+# Phase 2: emit counters and decide exit.
 # ------------------------------------------------------------------
 
 echo
 echo "POLYC_GATE=factory-closure-status"
-echo "MANIFEST=$MANIFEST"
-echo "MANAGED_ACTS=$MANAGED_ACTS_COUNT"
-echo "MANAGED_HANDOFFS=$MANAGED_HANDOFFS_COUNT"
+echo "MANIFEST_PATH=$MANIFEST"
 echo "MANIFEST_ROWS=$MANIFEST_ROWS"
+echo "MANIFEST_DATA_ROWS=$MANIFEST_DATA_ROWS"
+echo "MANIFEST_COMMENT_ROWS=$MANIFEST_COMMENT_ROWS"
+echo "MANIFEST_BLANK_ROWS=$MANIFEST_BLANK_ROWS"
 echo "MANIFEST_PARSE_ERRORS=$MANIFEST_PARSE_ERRORS"
 echo "DUPLICATE_ACT_PATHS=$DUPLICATE_ACT_PATHS"
 echo "DUPLICATE_HANDOFF_PATHS=$DUPLICATE_HANDOFF_PATHS"
+echo "DUPLICATE_PAIRS=$DUPLICATE_PAIRS"
 echo "MISSING_ACT_FILES=$MISSING_ACT_FILES"
 echo "MISSING_HANDOFF_FILES=$MISSING_HANDOFF_FILES"
 echo "MALFORMED_ACT_STATUS=$MALFORMED_ACT_STATUS"
 echo "MALFORMED_HANDOFF_VERDICT=$MALFORMED_HANDOFF_VERDICT"
-echo "UNMAPPED_MANAGED_ACTS=$UNMAPPED_MANAGED_ACTS"
-echo "UNMAPPED_MANAGED_HANDOFFS=$UNMAPPED_MANAGED_HANDOFFS"
-echo "EXTRA_MANIFEST_ACTS=$EXTRA_MANIFEST_ACTS"
-echo "EXTRA_MANIFEST_HANDOFFS=$EXTRA_MANIFEST_HANDOFFS"
 echo "EXACT_VERDICT_MISMATCHES=$EXACT_VERDICT_MISMATCHES"
 echo "PAIR_OK=$PAIR_OK"
 echo "PAIR_FAIL=$PAIR_FAIL"
 
+# Empty-manifest halt (per ACT §36).
+if [ "$MANIFEST_ROWS" -eq 0 ]; then
+    echo "HALT_EMPTY_MANAGED_UNIVERSE"
+fi
+
+# Fail-closed predicate.
 if [ "$MANIFEST_PARSE_ERRORS" -gt 0 ] \
    || [ "$MANIFEST_ROWS" -eq 0 ] \
    || [ "$DUPLICATE_ACT_PATHS" -gt 0 ] \
    || [ "$DUPLICATE_HANDOFF_PATHS" -gt 0 ] \
+   || [ "$DUPLICATE_PAIRS" -gt 0 ] \
    || [ "$MISSING_ACT_FILES" -gt 0 ] \
    || [ "$MISSING_HANDOFF_FILES" -gt 0 ] \
    || [ "$MALFORMED_ACT_STATUS" -gt 0 ] \
    || [ "$MALFORMED_HANDOFF_VERDICT" -gt 0 ] \
-   || [ "$UNMAPPED_MANAGED_ACTS" -gt 0 ] \
-   || [ "$UNMAPPED_MANAGED_HANDOFFS" -gt 0 ] \
-   || [ "$EXTRA_MANIFEST_ACTS" -gt 0 ] \
-   || [ "$EXTRA_MANIFEST_HANDOFFS" -gt 0 ] \
    || [ "$EXACT_VERDICT_MISMATCHES" -gt 0 ] \
    || [ "$PAIR_FAIL" -gt 0 ]; then
     echo "STATUS=FAIL"
