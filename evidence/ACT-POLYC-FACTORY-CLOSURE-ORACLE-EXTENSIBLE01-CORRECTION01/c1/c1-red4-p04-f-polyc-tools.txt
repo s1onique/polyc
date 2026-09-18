@@ -1,0 +1,72 @@
+ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION01 / c1 / c1-red4-p04-f-polyc-tools.txt
+
+P0-4 RED REPRODUCTION — F-POLYC-TOOLS VIOLATION
+
+This ACT reproduces the F-POLYC-TOOLS violation identified in the
+post-closure reviewer audit of
+ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01 (closed at 985ebbd).
+
+Substantive new shell test harness:
+
+  scripts/quality/factory-closure-status-check-test.sh
+  Introduced at: C3 (commit 43e7f1e)
+  Size: 123 LOC (exceeds 50-LOC bootstrap-glue cap)
+
+F-POLYC-TOOLS rule (DOCTRINE §27):
+
+  - All newly introduced tool implementations SHALL be PolyC
+  - Shell remains allowed ONLY as bootstrap glue
+  - A new shell file > 50 LOC is the documented violation class
+  - Existing non-PolyC tools are grandfathered and recorded in
+    docs/factory/LEGACY-NON-POLYC-TOOLS.tsv
+
+Activation status:
+
+  - F-POLYC-TOOLS is ACTIVE per its doctrine text:
+    "active from the closing commit of
+     ACT-POLYC-SELFHOST-SURFACE01-CORRECTION01 forward"
+  - The mechanical checker tools/factory/factory-polyc-tools-check.HC
+    is NOT YET LANDED (AGENTS.md F-POLYC-TOOLS pointer, C2.9 residue)
+  - So the violation is doctrine-binding but not yet gate-enforced
+
+Legacy-baseline check:
+
+  docs/factory/LEGACY-NON-POLYC-TOOLS.tsv does NOT contain
+  scripts/quality/factory-closure-status-check-test.sh
+  => It is NOT grandfathered.
+
+Consequence:
+
+  - The 123-LOC shell test harness is a new substantive tool
+    implementation that violates F-POLYC-TOOLS by doctrine.
+  - C3 evidence narrative ("No new substantive shell application
+    is introduced") is a false positive.
+  - Binding enforcement is not yet active, so no current gate
+    fires the violation, but the violation is real and must
+    be repaired before the F-POLYC-TOOLS gate is wired in.
+
+Reproduction commands:
+
+  $ wc -l scripts/quality/factory-closure-status-check-test.sh
+  123 scripts/quality/factory-closure-status-check-test.sh
+
+  $ grep -c 'factory-closure-status-check-test' \
+      docs/factory/LEGACY-NON-POLYC-TOOLS.tsv
+  0
+
+  $ ls tools/factory/factory-polyc-tools-check.HC
+  tools/factory/factory-polyc-tools-check.HC: No such file or directory
+
+Required repair (per C0 AUTH P0-4):
+
+  1. Implement the substantive fixture generation and assertion
+     engine in PolyC:
+       tools/quality/factory-closure-status-test.HC
+  2. Reduce the shell wrapper to <=50-LOC dispatch:
+       scripts/quality/factory-closure-status-check-test.sh
+  3. Either add the test binary to legacy baseline (NOT recommended;
+     defeats the purpose) or get an explicit Factory exception
+     recorded in LEGACY-NON-POLYC-TOOLS.tsv.
+
+  CORRECTION01 must NOT manufacture an exception; the right
+  disposition is to actually write the PolyC test.

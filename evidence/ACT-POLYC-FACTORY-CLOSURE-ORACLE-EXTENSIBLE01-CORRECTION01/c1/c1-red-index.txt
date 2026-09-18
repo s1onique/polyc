@@ -1,0 +1,81 @@
+ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION01 / c1 / c1-red-index.txt
+
+C1 RED SUMMARY (post-closure defect reproduction)
+
+All four P0 defects from the post-closure reviewer audit
+(evidence/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION01/c0/c0-postclosure-review-disposition.txt)
+have been reproduced against the committed tree at HEAD = 0665ada.
+
+RED-1 (P0-1): c1-red1-p01-baseline.txt
+  OLD checker (git show 712a3b7:.../factory-closure-status-check.sh)
+  on a 7-row legacy manifest (real paths):
+    PAIR_OK=7 PAIR_FAIL=0 STATUS=PASS VERDICT=PASS
+  NEW checker (HEAD) on the same manifest:
+    PAIR_OK=7 PAIR_FAIL=0 STATUS=PASS VERDICT=PASS
+  => Both checkers agree. AC07 baseline equivalence is mechanically
+     TRUE; the C3 error artifact was a broken test harness.
+
+RED-2 (P0-2): c1-red2-p02-duplicate-pair.txt
+  Manifest with two identical (ACT_A, HANDOFF_A) rows:
+    DUPLICATE_ACT_PATHS=1
+    DUPLICATE_HANDOFF_PATHS=0   (short-circuited)
+    DUPLICATE_PAIRS=0           (short-circuited)
+  => DUPLICATE_PAIRS never fires because ACT-path dedup
+     short-circuits via `continue` before pair-key check.
+
+RED-3 (P0-3): c1-red3-p03-self-judgment.txt
+  Manifest with one valid HANDOFF (PASS_TRUE_GREEN) but
+  ACT body lacking ## Status heading:
+    MALFORMED_ACT_STATUS=1  n_status=0
+    PAIR_OK=0  PAIR_FAIL=1
+    STATUS=FAIL
+  => Checker rejects ACT bodies without ## Status. C4 cannot
+     be done with HANDOFF-only addition; current oracle
+     requires verdict metadata inside the ACT being judged.
+
+RED-4 (P0-4): c1-red4-p04-f-polyc-tools.txt
+  scripts/quality/factory-closure-status-check-test.sh
+    LOC = 123 (introduced at C3, commit 43e7f1e)
+  NOT in docs/factory/LEGACY-NON-POLYC-TOOLS.tsv
+  tools/factory/factory-polyc-tools-check.HC does not exist
+  => Doctrine-binding F-POLYC-TOOLS violation. C3 narrative
+     claim is a false positive.
+
+NEXT PHASE (per F-CONVERGENCE):
+
+  C2 IMPL:
+    - Modify scripts/quality/factory-closure-status-check.sh to:
+        (a) collect all three duplicate dimensions without
+            short-circuit;
+        (b) remove ## Status / extract_status_token /
+            MALFORMED_ACT_STATUS / EXACT_VERDICT_MISMATCHES;
+        (c) rely on HANDOFF VERDICT exclusively.
+    - Add the self-pair to docs/factory/act-handoff-map.tsv.
+    - Write tools/quality/factory-closure-status-test.HC
+      (PolyC test executable).
+    - Reduce scripts/quality/factory-closure-status-check-test.sh
+      to <=50 LOC dispatch.
+    - Freeze checker and manifest (record SHA-256).
+
+  C3 VERIFY:
+    - Re-run all controls with new checker.
+    - Demonstrate C4 transition via HANDOFF only.
+    - Record SHA-256 of ACT body, checker, manifest between
+      C0/C2/C4 to prove HANDOFF-only mutation.
+
+  C4 CLOSE:
+    - Add HANDOFF only.
+    - No other mutations.
+
+  C2/C3/C4 evidence files to write:
+    c2/c2-checker-fix.txt
+    c2/c2-manifest-self-row.txt
+    c2/c2-polyc-test.HC
+    c2/c2-shell-dispatch.sh
+    c2/c2-freeze-sha256.txt
+    c3/c3-controls-all-pass.txt
+    c3/c3-act-body-sha256-unchanged.txt
+    c3/c3-checker-sha256-unchanged.txt
+    c3/c3-manifest-sha256-unchanged.txt
+    c3/c3-c4-transition.txt
+    c4/c4-final-gate.txt
