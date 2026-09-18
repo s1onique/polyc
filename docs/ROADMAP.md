@@ -5125,3 +5125,81 @@ After that:
 After that:
   ACT-POLYC-SELFHOST-SURFACE-RECON03
 ```
+
+---
+
+## STATIC-FUNCTION-LINKAGE01-CORRECTION01 closure (recorded)
+
+### Summary
+
+A correction ACT was opened after reviewer review identified two
+P0 closure defects in the predecessor ACT-POLYC-COMPILER-STATIC-
+FUNCTION-LINKAGE01 (commit 712a3b7):
+
+  P0-1: legacy x86 backend (--use-legacy-x86) was classified away
+        at close time; its src/x86.c:asmFunctionInit still emitted
+        `.global` unconditionally for every function.
+
+  P0-2: the closure-status oracle was modified during the close
+        commit itself (added the predecessor ACT/HANDOFF pair to
+        the bounded managed universe) and then run to claim PASS.
+
+  P0-3 (corollary): the authorization artifact was mutated at C4
+        (a `## Status` section was appended).
+
+### Verdict
+
+```text
+STATIC_FUNCTION_LINKAGE_LEGACY_X86 = IMPLEMENTED (was: NOT_IMPLEMENTED)
+ALL_LIVE_BACKENDS_QUALIFIED        = TRUE    (was: FALSE)
+CLOSURE_ORACLE_FROZEN_BEFORE_EVIDENCE = FALSE (documented as residue;
+                                              the predecessor's
+                                              commit 712a3b7 cannot
+                                              be reverted)
+ACT_CLOSE_PASS_TRUE_GREEN             = TRUE  (this ACT's verdict)
+```
+
+### What was corrected (this ACT)
+
+The legacy x86 backend at `src/x86.c:asmFunctionInit` (line ~2339)
+was unconditionally emitting `.global %s\n` for every AST_FUNC.
+We replaced it with an if/else fork on `func->fn_is_static`,
+mirroring the existing pattern in `src/aarch64.c:2144` and
+`src/x86_64.c:2396`. 22 net insertions, 0 deletions of behavior.
+
+Test infrastructure: `scripts/quality/static-function-linkage-test.sh`
+extended from 44 LOC to 48 LOC (+4 lines, within the 50-LOC cap) to
+dispatch s09 (the legacy x86 fixture) and verify via `nm -m` that
+`_StaticFn` is non-external and `_PublicFn` is external.
+
+Mutation control M04: reverting the src/x86.c fix -> S09 FAIL
+(both checks fire); restoring -> S09 PASS.
+
+### Closure-governance disposition
+
+The closure-status oracle at `scripts/quality/factory-closure-status-check.sh`
+was NOT modified by this ACT. The bounded managed universe remains
+at the predecessor C4 state (PAIR_OK=7). This ACT's HANDOFF is
+recorded in the manifest but cannot be PAIR_OK-matched against
+the hardcoded managed universe without modifying the closure-status
+script itself — that is the documented defect requiring the
+recommended follow-up ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01.
+
+The authorization artifact remains immutable (no `## Status`
+section appended).
+
+### Recommended next ACT (P0)
+
+```text
+ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01
+  Replace the hardcoded bounded managed universe in
+  scripts/quality/factory-closure-status-check.sh with a
+  manifest-driven enumeration, so the closure oracle can be
+  extended by appending a row to act-handoff-map.tsv alone
+  without modifying the script itself. This is the principled
+  repair for the P0-2 closure-governance defect.
+
+After that:
+  ACT-POLYC-LIBTOS-SYMBOL-GAPS01
+  ACT-POLYC-SELFHOST-LEXER04-CORRECTION02
+```

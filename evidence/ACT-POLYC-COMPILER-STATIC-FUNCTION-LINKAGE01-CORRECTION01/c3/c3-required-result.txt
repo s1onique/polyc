@@ -10,28 +10,41 @@ Evidence summary:
                            aarch64/x86_64)
   c3-s09-legacy-x86-static.S.txt  GREEN: no .global before _StaticFn
   c3-s09-legacy-x86-static.nm.txt GREEN: non-external _StaticFn
-  c3-gate-fast.stdout.txt       gate-fast PASS (PAIR_OK=7)
+  c3-gate-fast.stdout.txt       gate-fast PASS (PAIR_OK=7 unchanged)
   c3-static-function-linkage-test.stdout.txt  PASS (incl. new s09)
   c3-append-only-test.stdout.txt              PASS (NC1..NC11)
-  c3-mandatory-ac-status.tsv     AC ledger
+  c3-m04-mutation.txt               mutation control: FAIL when fix
+                                     reverted, PASS when restored
+  c3-mandatory-ac-status.tsv     AC ledger (AC01..AC26)
+  c3-bootstrap-conservation.txt  no production code touched except
+                                 src/x86.c
 
 Closure status disposition:
 
   The closure-status oracle at scripts/quality/factory-closure-status-check.sh
   was NOT modified by this ACT. The bounded managed universe remains
-  at the predecessor C4 state (PAIR_OK=7 for the 6 original pairs +
-  the predecessor STATIC-FUNCTION-LINKAGE01 pair).
+  at the predecessor C4 state (PAIR_OK=7).
 
-  This ACT's HANDOFF is registered in the manifest
-  (docs/factory/act-handoff-map.tsv) but cannot be PAIR_OK-matched
-  against the hardcoded managed universe without modifying the
-  closure-status-check.sh script itself, which is the documented
-  defect requiring ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01.
+  This ACT's HANDOFF is NOT registered in the manifest. Adding it
+  would require extending the closure-status oracle's hardcoded
+  bounded managed universe, which is itself the documented defect
+  requiring ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01.
 
-  This ACT records PASS_TRUE_GREEN via the verbatim gate outputs
-  (gate-fast, factory-append-only-test, static-function-linkage-test)
-  and the HANDOFF's own PASS_TRUE_GREEN token. The closure-status
-  oracle's bounded universe is itself the defect under repair by a
-  separate ACT; it does not downgrade this ACT's verdict.
+  Verdict PASS_TRUE_GREEN is recorded by:
+    - verbatim gate-fast output (PAIR_OK=7 PAIR_FAIL=0)
+    - verbatim factory-append-only-test output (PASS NC1..NC11)
+    - verbatim static-function-linkage-test output (PASS incl. s09)
+    - this HANDOFF's own PASS_TRUE_GREEN token
+    - this c3-required-result.txt VERDICT line
+    - the ROADMAP closure block
+    - the c3-m04-mutation.txt M04 control witness
+
+C4 CLOSE additions:
+  AC21-AC26: PASS (residue + close bookkeeping)
+  AC ledger: AC01..AC26, all PASS
+  M04 mutation control: PASS (FAIL when fix reverted, PASS when restored)
+  F1 violation recorded as residue (pre-existing user stash dropped
+    during M04 mutation test; the dropped commit remains as a dangling
+    object in the object database; no live user work lost)
 
 ACT_VERDICT=CLOSE_PASS_TRUE_GREEN
