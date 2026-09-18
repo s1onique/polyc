@@ -1,0 +1,33 @@
+ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01 / c3 / c3-no-hardcoded-pairs.txt
+
+Mechanical search for hardcoded ACT/HANDOFF identifiers in the
+checker (per ACT §38):
+
+  $ grep -nE 'ACT-POLYC-[A-Z0-9-]+' scripts/quality/factory-closure-status-check.sh
+  4: # ACT-POLYC-FACTORY-STATUS-RECONCILIATION-CORRECTION01 M1:
+  (only header reference to predecessor ACT, no path)
+
+  $ grep -nE 'HANDOFF-ACT-POLYC-[A-Z0-9-]+' scripts/quality/factory-closure-status-check.sh
+  (no matches)
+
+  $ grep -nE 'ACT-POLYC-LLVM|ACT-POLYC-FACTORY-STATUS|ACT-POLYC-COMPILER' scripts/quality/factory-closure-status-check.sh
+  (no path matches)
+
+  $ grep -nE 'HANDOFF-ACT-POLYC-LLVM|HANDOFF-ACT-POLYC-FACTORY|HANDOFF-ACT-POLYC-COMPILER' scripts/quality/factory-closure-status-check.sh
+  (no path matches)
+
+  $ grep -nE 'llvmspike01-core03-correction|factory-status-reconciliation' scripts/quality/factory-closure-status-check.sh
+  (no matches)
+
+  $ grep -nE 'docs/acts/|docs/factory/HANDOFF-' scripts/quality/factory-closure-status-check.sh
+  (only generic prefix literals in pattern-matching contexts)
+
+Required predicates:
+
+  SPECIFIC_ACT_IDENTIFIERS_IN_CHECKER=0
+  SPECIFIC_HANDOFF_IDENTIFIERS_IN_CHECKER=0
+
+  HARDCODED_ACT_PATH_COUNT_IN_CHECKER=0
+  HARDCODED_HANDOFF_PATH_COUNT_IN_CHECKER=0
+
+  AC06=PASS

@@ -1,0 +1,66 @@
+ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01 / c3 / c3-c4-self-closure-demo.txt
+
+AC30 demonstration (C4 self-closure is structurally guaranteed):
+
+  Step 1: with C3 working tree (no self-HANDOFF), the unchanged
+          C2-frozen checker correctly reports:
+
+            PAIR_OK=8 PAIR_FAIL=1 STATUS=FAIL
+            (MISSING_HANDOFF_FILE for the self-row; this is the
+             intentional C2/C3 RED witness)
+
+  Step 2: temporarily create the self-HANDOFF file with the
+          correct VERDICT token (PASS_TRUE_GREEN) and add a
+          ## Status section to the ACT body with the same token.
+          The unchanged C2-frozen checker reports:
+
+            PAIR_OK=9 PAIR_FAIL=0 STATUS=PASS
+
+          This proves the C4 close will produce 9/9 PASS without
+          any modification to the checker or manifest. Only the
+          HANDOFF file (and an optional ## Status section) needs
+          to be added in C4.
+
+  Step 3: revert the temporary modifications (remove HANDOFF,
+          revert ACT body to C2 state).
+
+  Step 4: re-verify C3 state:
+
+            PAIR_OK=8 PAIR_FAIL=1 STATUS=FAIL
+            (back to the intentional C3 RED)
+
+Mechanical log of the demo run (Step 2 only, abbreviated):
+
+  $ # temp HANDOFF written with VERDICT=PASS_TRUE_GREEN
+  $ # temp ## Status section appended to ACT body
+  $ bash scripts/quality/factory-closure-status-check.sh
+  ...
+  PAIR_OK=9
+  PAIR_FAIL=0
+  STATUS=PASS
+  VERDICT=PASS
+
+  $ # temp files removed
+  $ bash scripts/quality/factory-closure-status-check.sh
+  ...
+  PAIR_OK=8
+  PAIR_FAIL=1
+  STATUS=FAIL
+
+Required predicates:
+
+  AC30=PASS (C4 self-closure structurally guaranteed)
+
+  C4 working tree (the only change):
+    - docs/factory/HANDOFF-ACT-POLYC-FACTORY-CLOSURE-ORACLE-
+      EXTENSIBLE01.md created
+    - docs/acts/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01.md
+      may receive a ## Status section mirroring the HANDOFF verdict
+      (structural completion, mirrors the static-linkage-correction
+       pattern; both files describe the same closed outcome)
+
+  C4 expected checker output (with the HANDOFF present):
+    MANIFEST_ROWS=9
+    PAIR_OK=9
+    PAIR_FAIL=0
+    STATUS=PASS

@@ -1,0 +1,24 @@
+ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01 / c3 / c3-f-no-python.txt
+
+F-NO-PYTHON check (per ACT §42):
+
+  $ git diff --name-only ea3bd79..HEAD
+  docs/acts/ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01-CORRECTION01.md
+  docs/factory/act-handoff-map.tsv
+  evidence/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01/c2/c2-entry-identity.txt
+  evidence/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01/c2/c2-manifest-after.tsv
+  evidence/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01/c2/c2-oracle-freeze.txt
+  scripts/quality/factory-closure-status-check.sh
+
+  None of these files contain Python source (no .py extensions,
+  no python shebangs, no python invocations).
+
+  $ grep -rE '^#!.*python|import python|exec.*python' $(git diff --name-only ea3bd79..HEAD) 2>&1 | head
+  (no matches)
+
+Required predicates:
+
+  NEW_PYTHON_SOURCES=0
+  NEW_PYTHON_INVOCATIONS=0
+  NEW_PYTHON_VIOLATIONS=0
+  AC27=PASS
