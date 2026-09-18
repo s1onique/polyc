@@ -206,4 +206,53 @@ extern long long BootstrapScanTrivia(unsigned char *src,
                                      long long *out_lineno_delta,
                                      long long *out_comment_started);
 
+/*
+ * ABI 5 -- link_directive_scanner (frozen; see
+ * evidence/ACT-POLYC-SELFHOST-LEXER04/c1/c1-scope-freeze.txt
+ * and tools/quality/lexer09-link-oracle.c):
+ *
+ *   I64 BootstrapLinkDirective(
+ *       U8  *src,
+ *       I64  src_len,
+ *       I64  flags,
+ *       I64 *out_consumed,
+ *       I64 *out_is_path,
+ *       I64 *out_stored_len,
+ *       I64 *out_error
+ *   );
+ *
+ * Scans a `#link` directive body (one of:
+ *   - quoted path form   "<path>"
+ *   - angle-bracket form <name>
+ * ) starting at the byte immediately after the `#link` keyword.
+ * Returns 0 on success or an error code in [1..5].
+ *
+ *   0 = LINK_OK
+ *   1 = LINK_ERR_MISSING      (no target at all)
+ *   2 = LINK_ERR_INVALID_TOK  (first byte isn't '<' or '"')
+ *   3 = LINK_ERR_UNTERM_ANG   (no closing '>' before EOF)
+ *   4 = LINK_ERR_UNTERM_QUOT  (no closing '"' before EOF)
+ *   5 = LINK_ERR_LEX_FAILURE  (any other lex() returning 0)
+ *
+ * On success:
+ *   *out_consumed   = total bytes consumed from src.
+ *   *out_is_path    = 1 if quoted-path form (lands in
+ *                     cc->shared_object_files); 0 if
+ *                     angle-name form (lands in cc->link_libs).
+ *   *out_stored_len = length of body bytes (no surrounding
+ *                     quotes / angle brackets).
+ *
+ * CHARACTER DOMAIN:
+ *   B_LINK_DIRECTIVE_CHARACTER_DOMAIN     = ASCII
+ *   B_LINK_DIRECTIVE_CTYPE_DEPENDENCY      = NONE
+ *   B_LINK_DIRECTIVE_NON_ASCII_EQUIVALENCE = NOT_CLAIMED
+ */
+extern long long BootstrapLinkDirective(unsigned char *src,
+                                        long long src_len,
+                                        long long flags,
+                                        long long *out_consumed,
+                                        long long *out_is_path,
+                                        long long *out_stored_len,
+                                        long long *out_error);
+
 #endif /* LEXER_BRIDGE_H */

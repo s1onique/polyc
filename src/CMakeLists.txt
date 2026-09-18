@@ -274,6 +274,38 @@ if (HCC_ENABLE_BOOTSTRAP02_STAGE1)
     endif()
     target_link_libraries(hcc-bootstrap02 ${LEXER07_SCALAR_OBJECT})
     message(STATUS "ACT-POLYC-SELFHOST-LEXER02: stage1 scalar literal component linked (fail-closed): ${LEXER07_SCALAR_OBJECT}")
+    # ACT-POLYC-SELFHOST-LEXER03 C2 IMPL — also link the
+    # trivia component (BootstrapScanTrivia). Per §38 / §55,
+    # fail-closed.
+    if (NOT LEXER08_TRIVIA_OBJECT)
+        set(LEXER08_TRIVIA_OBJECT "${CMAKE_SOURCE_DIR}/../build/lexer08-trivia.o")
+    endif()
+    if (NOT EXISTS "${LEXER08_TRIVIA_OBJECT}")
+        message(FATAL_ERROR
+            "ACT-POLYC-SELFHOST-LEXER03: required self-host "
+            "trivia component missing at ${LEXER08_TRIVIA_OBJECT}. "
+            "Build it first with stage0 hcc: "
+            "./hcc -c tools/bootstrap/selfhost-lexer-trivia.HC "
+            "-o build/lexer08-trivia.o")
+    endif()
+    target_link_libraries(hcc-bootstrap02 ${LEXER08_TRIVIA_OBJECT})
+    message(STATUS "ACT-POLYC-SELFHOST-LEXER03: stage1 trivia component linked (fail-closed): ${LEXER08_TRIVIA_OBJECT}")
+    # ACT-POLYC-SELFHOST-LEXER04 C2 IMPL — also link the
+    # link directive component (BootstrapLinkDirective).
+    # Per §38 / §55, fail-closed.
+    if (NOT LEXER09_LINK_OBJECT)
+        set(LEXER09_LINK_OBJECT "${CMAKE_SOURCE_DIR}/../build/lexer09-link.o")
+    endif()
+    if (NOT EXISTS "${LEXER09_LINK_OBJECT}")
+        message(FATAL_ERROR
+            "ACT-POLYC-SELFHOST-LEXER04: required self-host "
+            "link directive component missing at ${LEXER09_LINK_OBJECT}. "
+            "Build it first with stage0 hcc: "
+            "./hcc -c tools/bootstrap/selfhost-lexer-link.HC "
+            "-o build/lexer09-link.o")
+    endif()
+    target_link_libraries(hcc-bootstrap02 ${LEXER09_LINK_OBJECT})
+    message(STATUS "ACT-POLYC-SELFHOST-LEXER04: stage1 link directive component linked (fail-closed): ${LEXER09_LINK_OBJECT}")
     install(TARGETS hcc-bootstrap02 DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 endif()
 
@@ -384,6 +416,36 @@ if (HCC_ENABLE_BOOTSTRAP03_STAGE2)
     endif()
     target_link_libraries(hcc-bootstrap03 ${LEXER07_SCALAR_OBJECT_STAGE1})
     message(STATUS "ACT-POLYC-SELFHOST-LEXER02: stage2 scalar literal component linked (fail-closed): ${LEXER07_SCALAR_OBJECT_STAGE1}")
+    # ACT-POLYC-SELFHOST-LEXER03 C2 IMPL — also link the
+    # trivia component as produced by stage1.
+    if (NOT LEXER08_TRIVIA_OBJECT_STAGE1)
+        set(LEXER08_TRIVIA_OBJECT_STAGE1 "${CMAKE_SOURCE_DIR}/../build/lexer08-trivia.stage1.o")
+    endif()
+    if (NOT EXISTS "${LEXER08_TRIVIA_OBJECT_STAGE1}")
+        message(FATAL_ERROR
+            "ACT-POLYC-SELFHOST-LEXER03: required stage2 "
+            "trivia component missing at ${LEXER08_TRIVIA_OBJECT_STAGE1}. "
+            "Build it first with stage1 hcc-bootstrap02: "
+            "./hcc-bootstrap02 -c tools/bootstrap/selfhost-lexer-trivia.HC "
+            "-o build/lexer08-trivia.stage1.o")
+    endif()
+    target_link_libraries(hcc-bootstrap03 ${LEXER08_TRIVIA_OBJECT_STAGE1})
+    message(STATUS "ACT-POLYC-SELFHOST-LEXER03: stage2 trivia component linked (fail-closed): ${LEXER08_TRIVIA_OBJECT_STAGE1}")
+    # ACT-POLYC-SELFHOST-LEXER04 C2 IMPL — also link the
+    # link directive component as produced by stage1.
+    if (NOT LEXER09_LINK_OBJECT_STAGE1)
+        set(LEXER09_LINK_OBJECT_STAGE1 "${CMAKE_SOURCE_DIR}/../build/lexer09-link.stage1.o")
+    endif()
+    if (NOT EXISTS "${LEXER09_LINK_OBJECT_STAGE1}")
+        message(FATAL_ERROR
+            "ACT-POLYC-SELFHOST-LEXER04: required stage2 "
+            "link directive component missing at ${LEXER09_LINK_OBJECT_STAGE1}. "
+            "Build it first with stage1 hcc-bootstrap02: "
+            "./hcc-bootstrap02 -c tools/bootstrap/selfhost-lexer-link.HC "
+            "-o build/lexer09-link.stage1.o")
+    endif()
+    target_link_libraries(hcc-bootstrap03 ${LEXER09_LINK_OBJECT_STAGE1})
+    message(STATUS "ACT-POLYC-SELFHOST-LEXER04: stage2 link directive component linked (fail-closed): ${LEXER09_LINK_OBJECT_STAGE1}")
     install(TARGETS hcc-bootstrap03 DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 endif()
 
@@ -492,6 +554,36 @@ if (HCC_ENABLE_BOOTSTRAP04_STAGE3)
     endif()
     target_link_libraries(hcc-bootstrap04 ${LEXER07_SCALAR_OBJECT_STAGE2})
     message(STATUS "ACT-POLYC-SELFHOST-LEXER02: stage3 scalar literal component linked (fail-closed): ${LEXER07_SCALAR_OBJECT_STAGE2}")
+    # ACT-POLYC-SELFHOST-LEXER03 C2 IMPL — also link the
+    # trivia component as produced by stage2.
+    if (NOT LEXER08_TRIVIA_OBJECT_STAGE2)
+        set(LEXER08_TRIVIA_OBJECT_STAGE2 "${CMAKE_SOURCE_DIR}/../build/lexer08-trivia.stage2.o")
+    endif()
+    if (NOT EXISTS "${LEXER08_TRIVIA_OBJECT_STAGE2}")
+        message(FATAL_ERROR
+            "ACT-POLYC-SELFHOST-LEXER03: required stage3 "
+            "trivia component missing at ${LEXER08_TRIVIA_OBJECT_STAGE2}. "
+            "Build it first with stage2 hcc-bootstrap03: "
+            "./hcc-bootstrap03 -c tools/bootstrap/selfhost-lexer-trivia.HC "
+            "-o build/lexer08-trivia.stage2.o")
+    endif()
+    target_link_libraries(hcc-bootstrap04 ${LEXER08_TRIVIA_OBJECT_STAGE2})
+    message(STATUS "ACT-POLYC-SELFHOST-LEXER03: stage3 trivia component linked (fail-closed): ${LEXER08_TRIVIA_OBJECT_STAGE2}")
+    # ACT-POLYC-SELFHOST-LEXER04 C2 IMPL — also link the
+    # link directive component as produced by stage2.
+    if (NOT LEXER09_LINK_OBJECT_STAGE2)
+        set(LEXER09_LINK_OBJECT_STAGE2 "${CMAKE_SOURCE_DIR}/../build/lexer09-link.stage2.o")
+    endif()
+    if (NOT EXISTS "${LEXER09_LINK_OBJECT_STAGE2}")
+        message(FATAL_ERROR
+            "ACT-POLYC-SELFHOST-LEXER04: required stage3 "
+            "link directive component missing at ${LEXER09_LINK_OBJECT_STAGE2}. "
+            "Build it first with stage2 hcc-bootstrap03: "
+            "./hcc-bootstrap03 -c tools/bootstrap/selfhost-lexer-link.HC "
+            "-o build/lexer09-link.stage2.o")
+    endif()
+    target_link_libraries(hcc-bootstrap04 ${LEXER09_LINK_OBJECT_STAGE2})
+    message(STATUS "ACT-POLYC-SELFHOST-LEXER04: stage3 link directive component linked (fail-closed): ${LEXER09_LINK_OBJECT_STAGE2}")
     install(TARGETS hcc-bootstrap04 DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 endif()
 

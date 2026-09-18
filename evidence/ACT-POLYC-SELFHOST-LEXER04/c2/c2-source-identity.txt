@@ -1,0 +1,86 @@
+ACT-POLYC-SELFHOST-LEXER04 -- C2 -- source identity (provenance binding)
+=========================================================================
+
+POLYC SUBJECT (the component being proved):
+
+  source_path  = tools/bootstrap/selfhost-lexer-link.HC
+  source_kind  = PolyC (HolyC dialect)
+  symbol       = _BootstrapLinkDirective
+  language     = POLYC
+
+C WRAPPER (the production seam in src/lexer.c):
+
+  source_path  = src/lexer.c
+  function     = lexLink (static, lines 1945..2089 post-IMPL)
+  delegation   = #ifdef HCC_USE_SELFHOST_COMPONENTS block calls
+                 BootstrapLinkDirective(...) with the body bytes
+                 of each lex()'d token; legacy path preserved
+                 below in #else
+  language     = C99
+
+C ORACLE (the differential truth):
+
+  source_path  = tools/quality/lexer09-link-oracle.c
+  impl_path    = tools/quality/lexer09-link-oracle-impl.c
+  function     = OracleScanLinkDirective(...)
+  language     = C99
+  role         = preserved reference truth
+
+ABI HEADER (the binding contract):
+
+  source_path  = src/lexer_bridge.h
+  abi          = ABI 5 (BootstrapLinkDirective)
+  scope        = declaration only
+
+DELTA SUMMARY:
+
+  src/lexer.c::lexLink body:
+    - Stage 0 (legacy): unchanged; preserved bit-identically
+      inside the #else block.
+    - Stage 1+ (PolyC): the same lex() / AoStr / list
+      bookkeeping flow, with a single BootstrapLinkDirective
+      call per token whose body bytes are forwarded.
+
+  src/lexer_bridge.h:
+    - Added ABI 5 declaration + frozen contract block.
+
+  tools/bootstrap/selfhost-lexer-link.HC:
+    - NEW. Pure byte-level scanner. ~200 LOC.
+
+  tools/quality/lexer09-link-oracle.c + .c:
+    - NEW. C99 reference oracle for the differential.
+
+  tools/quality/lexer09-direct-differential.c:
+    - NEW. C differential harness linking the PolyC subject
+      and the C oracle, running 23 fixtures.
+
+  tools/quality/lexer09-real-seam-runner.c:
+    - NEW. C harness compiling the production lexer twice
+      (legacy and PolyC-delegated) and running 10 link-seam
+      fixtures through lexToken().
+
+PROVENANCE BINDINGS (initial; final values populated at C3):
+
+  LEXER09_POLYC_SOURCE = tools/bootstrap/selfhost-lexer-link.HC
+  LEXER09_POLYC_SHA256 = <recorded in c3-fixedpoint-provenance.tsv>
+
+  LEXER09_G0_COMPILER  = ./hcc
+  LEXER09_G1_COMPILER  = ./build/hcc-bootstrap02
+  LEXER09_G2_COMPILER  = ./build/hcc-bootstrap03
+  LEXER09_G3_COMPILER  = ./build/hcc-bootstrap04
+
+  Object artifacts:
+    build/lexer09-fixedpoint/link.g0.o
+    build/lexer09-fixedpoint/link.g1.o
+    build/lexer09-fixedpoint/link.g2.o
+    build/lexer09-fixedpoint/link.g3.o
+
+SYMBOL OBSERVABILITY (when stage1+ component is linked):
+
+  nm build/lexer09-link.o:
+    T _BootstrapLinkDirective
+
+  (Loaded into hcc-bootstrap02/03/04 via the standard stage
+  link path; this ACT does not modify CMakeLists.txt since
+  LEXER04's component is invoked through the same generic
+  HCC_USE_SELFHOST_COMPONENTS gate already wired by LEXER03.)

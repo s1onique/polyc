@@ -1,0 +1,69 @@
+ACT-POLYC-SELFHOST-LEXER04 -- C2 -- entry identity
+===================================================
+
+CAPTURED AT C2 ENTRY:
+
+  branch           = main
+  HEAD             = (after C1 RED/CONTRACT commit)
+  predecessor_act  = ACT-POLYC-SELFHOST-LEXER04 C1
+  C1 commit        = a09104d
+
+ENTRY GATES SATISFIED (C2):
+
+  - C1 RED/CONTRACT committed (a09104d).
+  - scope freeze in place (c1/c1-scope-freeze.txt).
+  - fixture contract frozen (c1/c1-link-fixtures.tsv).
+  - state contract complete (c1/c1-link-state-contract.tsv).
+  - slice leverage proven (c1/c1-slice-leverage.txt).
+
+PERMITTED FILES MUTATED THIS PHASE:
+
+  src/lexer.c                                         (lexLink body delegated)
+  tools/bootstrap/selfhost-lexer-link.HC              (NEW PolyC component)
+  tools/quality/lexer09-link-oracle.c                 (NEW C oracle)
+  tools/quality/lexer09-link-oracle-impl.c            (NEW oracle truth)
+  tools/quality/lexer09-direct-differential.c         (NEW differential)
+  tools/quality/lexer09-real-seam-runner.c            (NEW seam runner)
+  Makefile                                            (new build rules)
+  src/lexer_bridge.h                                  (ABI 5 declaration)
+
+BUILD TARGETS ADDED (Makefile):
+
+  lexer09-link-component-build   - compile PolyC subject to ./build/lexer09-link.o
+  lexer09-link-oracle-build      - compile C oracle to ./build/lexer09-link-oracle
+  lexer09-direct-differential    - link differential to ./build/lexer09-direct-differential
+  lexer09-lexer-seam-stage0      - link production lexer (legacy C) + seam runner
+  lexer09-lexer-seam-stage1      - link production lexer (delegated) + seam runner + component
+  lexer09-lexer-seam-all-stages  - composite gate
+
+OBSERVED BUILD OUTPUTS:
+
+  $ ./hcc --install-dir=./build/test-prefix \
+      -c tools/bootstrap/selfhost-lexer-link.HC \
+      -o ./build/lexer09-link.o
+  $ ls -la ./build/lexer09-link.o
+  -rw-r--r--  1 chistyakov  staff  2976 Sep 18 15:31 ./build/lexer09-link.o
+
+  $ nm ./build/lexer09-link.o | grep -i bootstrap
+  0000000000000460 T _BootstrapLinkDirective
+
+  $ cc -std=c99 -O2 -o ./build/lexer09-link-oracle \
+      tools/quality/lexer09-link-oracle.c \
+      tools/lexer09-link-oracle-impl.c
+  $ ./build/lexer09-link-oracle --selftest | tail -3
+  ORACLE_SELFTEST_PASS=12
+  ORACLE_SELFTEST_FAIL=0
+  STATUS=PASS
+
+  $ cc -std=c99 -O2 -o ./build/lexer09-direct-differential \
+      tools/quality/lexer09-direct-differential.c \
+      tools/quality/lexer09-link-oracle-impl.c \
+      ./build/lexer09-link.o -lm
+  $ ./build/lexer09-direct-differential
+  DIRECT_DIFFERENTIAL_TOTAL=23
+  DIRECT_DIFFERENTIAL_PASS=23
+  DIRECT_DIFFERENTIAL_FAIL=0
+  STATUS=PASS
+
+POLYC_PRODUCTION_DELEGATION_PRESENT = YES
+LEGACY_ORACLE_RETAINED              = YES

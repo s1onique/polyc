@@ -12,7 +12,7 @@ HCC_ENABLE_LLVM ?= OFF
 
 default: all
 
-.PHONY: all formal-dafny gate-fast gate-push install-hooks llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test selfhost-component-binary selfhost-component-build selfhost-component-test selfhost-component-selftest selfhost-registry-validate factory-halt-classification-binary factory-halt-classification-selftest bootstrap06-component-build bootstrap06-operator-classify-oracle bootstrap06-direct-differential bootstrap06-component-stage1 bootstrap06-component-stage2 bootstrap06-component-stage3 bootstrap06-lexer-seam-stage1 lexer07-component-build lexer07-scalar-literal-oracle lexer07-direct-differential lexer07-component-stage1 lexer07-component-stage2 lexer07-component-stage3 lexer07-lexer-seam-stage0 lexer07-lexer-seam-stage1 lexer07-lexer-seam-stage2 lexer07-lexer-seam-stage3 lexer07-lexer-seam-stage2-from-objs lexer07-lexer-seam-stage3-from-objs lexer07-lexer-seam-all-stages lexer07-fixture-inventory lexer07-broad-corpus-4-stage lexer07-correction02-all lexer08-component-build lexer08-trivia-oracle lexer08-direct-differential lexer08-fixture-inventory lexer08-broad-corpus-4-stage lexer08-lexer-seam-stage0 lexer08-lexer-seam-stage1 lexer08-lexer-seam-all-stages lexer08-trivia-fixedpoint-g0 lexer08-trivia-fixedpoint-g1 lexer08-trivia-fixedpoint-g2 lexer08-trivia-fixedpoint-g3 lexer08-trivia-fixedpoint-build lexer08-trivia-fixedpoint-verify lexer08-trivia-fixedpoint
+.PHONY: all formal-dafny gate-fast gate-push install-hooks llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test selfhost-component-binary selfhost-component-build selfhost-component-test selfhost-component-selftest selfhost-registry-validate factory-halt-classification-binary factory-halt-classification-selftest bootstrap06-component-build bootstrap06-operator-classify-oracle bootstrap06-direct-differential bootstrap06-component-stage1 bootstrap06-component-stage2 bootstrap06-component-stage3 bootstrap06-lexer-seam-stage1 lexer07-component-build lexer07-scalar-literal-oracle lexer07-direct-differential lexer07-component-stage1 lexer07-component-stage2 lexer07-component-stage3 lexer07-lexer-seam-stage0 lexer07-lexer-seam-stage1 lexer07-lexer-seam-stage2 lexer07-lexer-seam-stage3 lexer07-lexer-seam-stage2-from-objs lexer07-lexer-seam-stage3-from-objs lexer07-lexer-seam-all-stages lexer07-fixture-inventory lexer07-broad-corpus-4-stage lexer07-correction02-all lexer08-component-build lexer08-trivia-oracle lexer08-direct-differential lexer08-fixture-inventory lexer08-broad-corpus-4-stage lexer08-lexer-seam-stage0 lexer08-lexer-seam-stage1 lexer08-lexer-seam-all-stages lexer08-trivia-fixedpoint-g0 lexer08-trivia-fixedpoint-g1 lexer08-trivia-fixedpoint-g2 lexer08-trivia-fixedpoint-g3 lexer08-trivia-fixedpoint-build lexer08-trivia-fixedpoint-verify lexer08-trivia-fixedpoint lexer09-link-component-build lexer09-link-oracle-build lexer09-direct-differential lexer09-lexer-seam-stage0 lexer09-lexer-seam-stage1 lexer09-lexer-seam-all-stages lexer09-link-fixedpoint-g0 lexer09-link-fixedpoint-g1 lexer09-link-fixedpoint-g2 lexer09-link-fixedpoint-g3 lexer09-link-fixedpoint-build lexer09-link-fixedpoint-verify lexer09-link-fixedpoint lexer09-link-negative-control lexer09-link-determinism
 
 # To add sqlite3 support add -DHCC_LINK_SQLITE3=1 to the below like so:
 #```
@@ -1406,6 +1406,235 @@ lexer08-trivia-fixedpoint: lexer08-trivia-fixedpoint-build
 	@$(MAKE) -s lexer08-trivia-fixedpoint-verify
 	@echo "LEXER08_TRIVIA_FIXEDPOINT_4_GENERATIONS=PASS"
 	@echo "FOUR_GENERATION_COMPONENT_FIXED_POINT=PASS"
+
+# ACT-POLYC-SELFHOST-LEXER04 C2 IMPL -- #link directive
+# component (lexLink). Mirrors the LEXER08 trivia pattern.
+
+lexer09-link-component-build:
+	./hcc --install-dir=$(TEST_PREFIX) \
+		-c tools/bootstrap/selfhost-lexer-link.HC \
+		-o ./build/lexer09-link.o
+	@if [ ! -f ./build/lexer09-link.o ]; then \
+		echo "lexer09-link-component-build: object not produced" >&2; \
+		exit 1; \
+	fi
+	@nm ./build/lexer09-link.o | grep -q '_BootstrapLinkDirective' \
+		|| { echo "lexer09-link-component-build: symbol missing" >&2; exit 1; }
+	@echo "LEXER09_STAGE0_LINK_OBJECT=./build/lexer09-link.o"
+
+lexer09-link-oracle-build:
+	cc -std=c99 -O2 -Wall -Wextra -o ./build/lexer09-link-oracle \
+		tools/quality/lexer09-link-oracle.c \
+		tools/quality/lexer09-link-oracle-impl.c
+	@if [ ! -x ./build/lexer09-link-oracle ]; then \
+		echo "lexer09-link-oracle-build: oracle not produced" >&2; \
+		exit 1; \
+	fi
+
+lexer09-direct-differential: lexer09-link-component-build lexer09-link-oracle-build
+	cc -std=c99 -O2 -Wall -Wextra -o ./build/lexer09-direct-differential \
+		tools/quality/lexer09-direct-differential.c \
+		tools/quality/lexer09-link-oracle-impl.c \
+		./build/lexer09-link.o -lm
+	@if [ ! -x ./build/lexer09-direct-differential ]; then \
+		echo "lexer09-direct-differential: binary not produced" >&2; \
+		exit 1; \
+	fi
+	./build/lexer09-direct-differential
+
+HCC_STAGE0_OBJECTS = \
+	$(HCC_OBJ_DIR)/lexer.c.o \
+	$(HCC_OBJ_DIR)/aostr.c.o \
+	$(HCC_OBJ_DIR)/containers.c.o \
+	$(HCC_OBJ_DIR)/list.c.o \
+	$(HCC_OBJ_DIR)/arena.c.o \
+	$(HCC_OBJ_DIR)/ast.c.o \
+	$(HCC_OBJ_DIR)/cctrl.c.o \
+	$(HCC_OBJ_DIR)/parser.c.o \
+	$(HCC_OBJ_DIR)/json.c.o \
+	$(HCC_OBJ_DIR)/mempool.c.o \
+	$(HCC_OBJ_DIR)/memory.c.o \
+	$(HCC_OBJ_DIR)/memsafe.c.o \
+	$(HCC_OBJ_DIR)/asm.c.o \
+	$(HCC_OBJ_DIR)/cfg.c.o \
+	$(HCC_OBJ_DIR)/cfg-print.c.o \
+	$(HCC_OBJ_DIR)/cli.c.o \
+	$(HCC_OBJ_DIR)/compile.c.o \
+	$(HCC_OBJ_DIR)/ir.c.o \
+	$(HCC_OBJ_DIR)/ir-debug.c.o \
+	$(HCC_OBJ_DIR)/ir-eval.c.o \
+	$(HCC_OBJ_DIR)/ir-optimise.c.o \
+	$(HCC_OBJ_DIR)/ir-regalloc.c.o \
+	$(HCC_OBJ_DIR)/ir-types.c.o \
+	$(HCC_OBJ_DIR)/lsp.c.o \
+	$(HCC_OBJ_DIR)/prsasm.c.o \
+	$(HCC_OBJ_DIR)/prslib.c.o \
+	$(HCC_OBJ_DIR)/prsutil.c.o \
+	$(HCC_OBJ_DIR)/transpiler.c.o \
+	$(HCC_OBJ_DIR)/x86_64.c.o \
+	$(HCC_OBJ_DIR)/x86_64-jit.c.o \
+	$(HCC_OBJ_DIR)/aarch64.c.o \
+	$(HCC_OBJ_DIR)/aarch64-jit.c.o \
+	$(HCC_OBJ_DIR)/x86.c.o \
+	$(HCC_OBJ_DIR)/jit-common.c.o \
+	$(HCC_OBJ_DIR)/linenoise/linenoise.c.o
+
+lexer09-lexer-seam-stage0:
+	@if [ ! -d "$(HCC_OBJ_DIR)" ]; then \
+		echo "lexer09-lexer-seam-stage0: $(HCC_OBJ_DIR) missing" >&2; \
+		exit 1; \
+	fi
+	cc -std=c99 -O2 -Wall -Wextra -Wno-unused-function -Wno-unused-variable \
+		-DBUILD_LABEL='"stage0"' -Isrc \
+		-o ./build/lexer09-lexer-seam-stage0 \
+		tools/quality/lexer09-real-seam-runner.c \
+		$(HCC_STAGE0_OBJECTS) $(TASM_LIB) -lm -lpthread -ldl
+	./build/lexer09-lexer-seam-stage0 > /tmp/lexer09-seam-stage0.txt
+	@echo "LEXER09_SEAM_STAGE0_OK"
+
+lexer09-lexer-seam-stage1: lexer09-link-component-build
+	@if [ ! -d "$(HCC_STAGE1_OBJDIR)" ]; then \
+		echo "lexer09-lexer-seam-stage1: $(HCC_STAGE1_OBJDIR) missing" >&2; \
+		exit 1; \
+	fi
+	@if [ ! -f ./build/bootstrap02-ident.o ]; then \
+		echo "lexer09-lexer-seam-stage1: ./build/bootstrap02-ident.o missing" >&2; \
+		exit 1; \
+	fi
+	@if [ ! -f ./build/bootstrap06-operator-classify.o ]; then \
+		echo "lexer09-lexer-seam-stage1: ./build/bootstrap06-operator-classify.o missing" >&2; \
+		exit 1; \
+	fi
+	@if [ ! -f ./build/lexer07-scalar-literal.o ]; then \
+		echo "lexer09-lexer-seam-stage1: ./build/lexer07-scalar-literal.o missing" >&2; \
+		exit 1; \
+	fi
+	@if [ ! -f ./build/lexer08-trivia.o ]; then \
+		echo "lexer09-lexer-seam-stage1: ./build/lexer08-trivia.o missing" >&2; \
+		exit 1; \
+	fi
+	cc -std=c99 -O2 -Wall -Wextra -Wno-unused-function -Wno-unused-variable \
+		-DBUILD_LABEL='"stage1"' -DHCC_USE_SELFHOST_COMPONENTS -Isrc \
+		-o ./build/lexer09-lexer-seam-stage1 \
+		tools/quality/lexer09-real-seam-runner.c \
+		$(HCC_STAGE1_OBJECTS) \
+		./build/lexer07-scalar-literal.o \
+		./build/bootstrap02-ident.o \
+		./build/bootstrap06-operator-classify.o \
+		./build/lexer08-trivia.o \
+		./build/lexer09-link.o \
+		$(TASM_LIB) -lm -lpthread -ldl
+	./build/lexer09-lexer-seam-stage1 > /tmp/lexer09-seam-stage1.txt
+	@NONLABEL_DIFF=$$(diff /tmp/lexer09-seam-stage0.txt /tmp/lexer09-seam-stage1.txt | grep -vE 'BUILD_LABEL=stage'); \
+	if [ -n "$$NONLABEL_DIFF" ]; then \
+		echo "lexer09-lexer-seam-stage1: production seam DIVERGED" >&2; \
+		echo "$$NONLABEL_DIFF" | head -20 >&2; \
+		exit 1; \
+	fi
+	@echo "LEXER09_SEAM_STAGE0_VS_STAGE1=PASS"
+
+lexer09-lexer-seam-all-stages: lexer09-lexer-seam-stage0 lexer09-lexer-seam-stage1
+	@echo "LEXER09_PRODUCTION_SEAM_4_STAGES=PASS"
+
+# 4-generation component fixed point.
+LEXER09_FIXEDPOINT_OUTDIR = build/lexer09-fixedpoint
+LEXER09_FIXEDPOINT_SRC    = tools/bootstrap/selfhost-lexer-link.HC
+
+lexer09-link-fixedpoint-g0: $(LEXER09_FIXEDPOINT_OUTDIR)/link.g0.o
+lexer09-link-fixedpoint-g1: $(LEXER09_FIXEDPOINT_OUTDIR)/link.g1.o
+lexer09-link-fixedpoint-g2: $(LEXER09_FIXEDPOINT_OUTDIR)/link.g2.o
+lexer09-link-fixedpoint-g3: $(LEXER09_FIXEDPOINT_OUTDIR)/link.g3.o
+
+$(LEXER09_FIXEDPOINT_OUTDIR)/link.g0.o: $(LEXER09_FIXEDPOINT_SRC) ./hcc | $(LEXER09_FIXEDPOINT_OUTDIR)
+	@rm -f $@
+	@test ! -e $@
+	./hcc --install-dir=$(TEST_PREFIX) -c $(LEXER09_FIXEDPOINT_SRC) -o $@
+	@test -s $@
+	@echo "LEXER09_FIXEDPOINT_G0_OBJECT=$@"
+
+$(LEXER09_FIXEDPOINT_OUTDIR)/link.g1.o: $(LEXER09_FIXEDPOINT_SRC) ./build/hcc-bootstrap02 | $(LEXER09_FIXEDPOINT_OUTDIR)
+	@rm -f $@
+	@test ! -e $@
+	./build/hcc-bootstrap02 --install-dir=$(TEST_PREFIX) -c $(LEXER09_FIXEDPOINT_SRC) -o $@
+	@test -s $@
+	@echo "LEXER09_FIXEDPOINT_G1_OBJECT=$@"
+
+$(LEXER09_FIXEDPOINT_OUTDIR)/link.g2.o: $(LEXER09_FIXEDPOINT_SRC) ./build/hcc-bootstrap03 | $(LEXER09_FIXEDPOINT_OUTDIR)
+	@rm -f $@
+	@test ! -e $@
+	./build/hcc-bootstrap03 --install-dir=$(TEST_PREFIX) -c $(LEXER09_FIXEDPOINT_SRC) -o $@
+	@test -s $@
+	@echo "LEXER09_FIXEDPOINT_G2_OBJECT=$@"
+
+$(LEXER09_FIXEDPOINT_OUTDIR)/link.g3.o: $(LEXER09_FIXEDPOINT_SRC) ./build/hcc-bootstrap04 | $(LEXER09_FIXEDPOINT_OUTDIR)
+	@rm -f $@
+	@test ! -e $@
+	./build/hcc-bootstrap04 --install-dir=$(TEST_PREFIX) -c $(LEXER09_FIXEDPOINT_SRC) -o $@
+	@test -s $@
+	@echo "LEXER09_FIXEDPOINT_G3_OBJECT=$@"
+
+$(LEXER09_FIXEDPOINT_OUTDIR):
+	@mkdir -p $@
+
+lexer09-link-fixedpoint-build: lexer09-link-fixedpoint-g0 lexer09-link-fixedpoint-g1 lexer09-link-fixedpoint-g2 lexer09-link-fixedpoint-g3
+	@echo "LEXER09_FIXEDPOINT_BUILD=PASS"
+	@echo "LEXER09_FIXEDPOINT_BUILD_OBJECTS=$(LEXER09_FIXEDPOINT_OUTDIR)/link.g{0,1,2,3}.o"
+
+build/lexer09-link-fixedpoint-verify: tools/quality/lexer09-fixedpoint-verify.HC
+	./hcc --install-dir=$(TEST_PREFIX) \
+		tools/quality/lexer09-fixedpoint-verify.HC \
+		-o build/lexer09-link-fixedpoint-verify
+	@if [ ! -x build/lexer09-link-fixedpoint-verify ]; then \
+		echo "lexer09-link-fixedpoint-verify: build failed" >&2; \
+		exit 1; \
+	fi
+
+lexer09-link-fixedpoint-verify: build/lexer09-link-fixedpoint-verify \
+                                 lexer09-link-fixedpoint-build
+	./build/lexer09-link-fixedpoint-verify \
+		$(LEXER09_FIXEDPOINT_OUTDIR)/link.g0.o \
+		$(LEXER09_FIXEDPOINT_OUTDIR)/link.g1.o \
+		$(LEXER09_FIXEDPOINT_OUTDIR)/link.g2.o \
+		$(LEXER09_FIXEDPOINT_OUTDIR)/link.g3.o
+
+lexer09-link-fixedpoint: lexer09-link-fixedpoint-build
+	@echo "--- symbol presence ---"
+	@ok=1; for obj in $(LEXER09_FIXEDPOINT_OUTDIR)/link.g0.o $(LEXER09_FIXEDPOINT_OUTDIR)/link.g1.o $(LEXER09_FIXEDPOINT_OUTDIR)/link.g2.o $(LEXER09_FIXEDPOINT_OUTDIR)/link.g3.o; do if nm "$$obj" | grep -q '_BootstrapLinkDirective'; then echo "SYMBOL_OK $$obj"; else echo "SYMBOL_MISSING $$obj" >&2; ok=0; fi; done; if [ "$$ok" != "1" ]; then echo "HALT_SYMBOL_DIVERGENCE: BootstrapLinkDirective not in every object" >&2; exit 1; fi
+	@echo "BOOTSTRAP_LINK_DIRECTIVE_PRESENT_ALL_GENERATIONS=YES"
+	@echo "--- byte equality + sha256 ---"
+	@$(MAKE) -s lexer09-link-fixedpoint-verify
+	@echo "LEXER09_LINK_FIXEDPOINT_4_GENERATIONS=PASS"
+	@echo "FOUR_GENERATION_COMPONENT_FIXED_POINT=PASS"
+
+lexer09-link-determinism: lexer09-link-fixedpoint-build
+	@rm -f $(LEXER09_FIXEDPOINT_OUTDIR)/link.g3a.o $(LEXER09_FIXEDPOINT_OUTDIR)/link.g3b.o
+	@test ! -e $(LEXER09_FIXEDPOINT_OUTDIR)/link.g3a.o
+	./build/hcc-bootstrap04 --install-dir=$(TEST_PREFIX) -c $(LEXER09_FIXEDPOINT_SRC) -o $(LEXER09_FIXEDPOINT_OUTDIR)/link.g3a.o
+	@test -s $(LEXER09_FIXEDPOINT_OUTDIR)/link.g3a.o
+	@rm -f $(LEXER09_FIXEDPOINT_OUTDIR)/link.g3b.o
+	./build/hcc-bootstrap04 --install-dir=$(TEST_PREFIX) -c $(LEXER09_FIXEDPOINT_SRC) -o $(LEXER09_FIXEDPOINT_OUTDIR)/link.g3b.o
+	@test -s $(LEXER09_FIXEDPOINT_OUTDIR)/link.g3b.o
+	@if cmp -s $(LEXER09_FIXEDPOINT_OUTDIR)/link.g3a.o $(LEXER09_FIXEDPOINT_OUTDIR)/link.g3b.o; then \
+		echo "G3_REPEAT_BYTE_EQUAL=YES"; \
+	else \
+		echo "G3_REPEAT_BYTE_EQUAL=NO"; \
+		echo "HALT_OBJECT_OUTPUT_NONDETERMINISTIC" >&2; \
+		exit 1; \
+	fi
+
+lexer09-link-negative-control: lexer09-link-fixedpoint-build build/lexer09-link-fixedpoint-verify
+	@cp $(LEXER09_FIXEDPOINT_OUTDIR)/link.g3.o $(LEXER09_FIXEDPOINT_OUTDIR)/link.g3.mutated.o
+	@SIZE=$$(stat -f%z $(LEXER09_FIXEDPOINT_OUTDIR)/link.g3.mutated.o); \
+	ORIG=$$(tail -c 1 $(LEXER09_FIXEDPOINT_OUTDIR)/link.g3.mutated.o | od -An -tx1 | tr -d ' '); \
+	NEW=$$(printf '%02x' $$((0x$$ORIG ^ 0x01))); \
+	printf "\\x$$NEW" | dd of=$(LEXER09_FIXEDPOINT_OUTDIR)/link.g3.mutated.o bs=1 count=1 seek=$$((SIZE - 1)) conv=notrunc 2>/dev/null; \
+	./build/lexer09-link-fixedpoint-verify \
+		$(LEXER09_FIXEDPOINT_OUTDIR)/link.g0.o \
+		$(LEXER09_FIXEDPOINT_OUTDIR)/link.g1.o \
+		$(LEXER09_FIXEDPOINT_OUTDIR)/link.g2.o \
+		$(LEXER09_FIXEDPOINT_OUTDIR)/link.g3.o \
+		$(LEXER09_FIXEDPOINT_OUTDIR)/link.g3.mutated.o && echo "NEGATIVE_CONTROL=FAIL" >&2 && exit 1 || echo "NEGATIVE_CONTROL=PASS"
+	@rm -f $(LEXER09_FIXEDPOINT_OUTDIR)/link.g3.mutated.o
 
 lexer08-lexer-seam-stage0: lexer08-trivia-oracle
 	@if [ ! -d "$(HCC_OBJ_DIR)" ]; then \
