@@ -1,0 +1,117 @@
+ACT-POLYC-SELFHOST-LEXER04 -- C1 -- scope freeze
+=================================================
+
+ALLOWED PRODUCTION FILES (per SURFACE-RECON02 binding):
+
+  src/lexer.c                  (modify lexLink body only)
+  tools/bootstrap/selfhost-lexer-link.HC  (NEW PolyC component)
+  Makefile                     (add build rule + tests)
+  tools/quality/lexer09-link-oracle.c     (NEW)
+  tools/quality/lexer09-link-oracle-impl.c (NEW)
+  tools/quality/lexer09-direct-differential.c (NEW)
+  tools/quality/lexer09-real-seam-runner.c (NEW)
+  tools/quality/lexer09-fixedpoint-verify.HC (NEW)
+  scripts/quality/lexer09-link-direct-differential.sh (NEW)
+
+  evidence/ACT-POLYC-SELFHOST-LEXER04/c{1,2,3,4}/  (NEW)
+
+ALLOWED SYMBOLS:
+
+  src/lexer.c::lexLink                              (body rewrite via #ifdef HCC_USE_SELFHOST_COMPONENTS delegation)
+  tools/bootstrap/selfhost-lexer-link.HC::BootstrapLinkDirective (NEW)
+
+ALLOWED TEST FILES:
+
+  tools/quality/lexer09-*                           (NEW oracle + differential + seam + fixedpoint)
+  evidence/ACT-POLYC-SELFHOST-LEXER04/              (NEW)
+
+ALLOWED QUALITY TOOLING:
+
+  tools/quality/lexer09-link-oracle.c               (NEW C oracle harness; preserved as differential truth)
+  tools/quality/lexer09-link-oracle-impl.c          (NEW C oracle truth body)
+  scripts/quality/lexer09-link-direct-differential.sh (NEW shell dispatcher, ≤50 LOC)
+  tools/quality/lexer09-direct-differential.c       (NEW C harness linking the PolyC subject + the C oracle)
+  tools/quality/lexer09-real-seam-runner.c          (NEW C harness compiling the production lexer at G0/G1)
+  tools/quality/lexer09-fixedpoint-verify.HC        (NEW PolyC 4-gen fixed-point verifier)
+
+FORBIDDEN SUBSYSTEMS:
+
+  src/parser.c
+  src/ast.c
+  src/cctrl.c
+  src/ir.c
+  src/x86_64.c
+  src/aarch64.c
+  src/llvm-backend.c
+  src/main.c
+  src/cli.c
+  src/lexer.c::lexCore
+  src/lexer.c::lexInclude
+  src/lexer.c::lexPreProcIf
+  src/lexer.c::lexPreProcBoolean
+  src/lexer.c::lexDefine
+  src/lexer.c::lexUndef
+  src/lexer.c::lexSetAsmFlags
+  src/lexer.c::lexUnSetAsmFlags
+  tools/bootstrap/selfhost-lexer-trivia.HC
+  tools/bootstrap/bootstrap02-ident.HC
+  tools/bootstrap/selfhost-lexer-scalar-literal.HC
+  tools/bootstrap/selfhost-lexer-operator-classify.HC
+  evidence/ACT-POLYC-SELFHOST-LEXER01*/
+  evidence/ACT-POLYC-SELFHOST-LEXER02*/
+  evidence/ACT-POLYC-SELFHOST-LEXER03*/
+
+EXPECTED CONSERVATION GATES:
+
+  LEXER01_DIRECT_DIFFERENTIAL = 47/47 PASS
+  LEXER02_DIRECT_DIFFERENTIAL = 89/89 PASS
+  LEXER03_DIRECT_DIFFERENTIAL = 45/45 PASS
+  LEXER07_PRODUCTION_SEAM_4_STAGES = PASS
+  LEXER08_PRODUCTION_SEAM_STAGE0_VS_STAGE1 = PASS
+  LEXER03_COMPONENT_OBJECT_FIXED_POINT = PASS
+  gate-fast = PASS
+  factory-append-only-test = PASS
+  factory-no-python-check baseline = unchanged
+  LEXER09_DIRECT_DIFFERENTIAL = N/N PASS (NEW; only for #link)
+  LEXER09_PRODUCTION_SEAM = PASS (NEW; #link integration)
+  LEXER09_4_STAGE_SEAM = PASS (NEW; 4-stage byte equality on link-lib output)
+  LEXER09_COMPONENT_OBJECT_FIXED_POINT = PASS (NEW)
+
+DELEGATION PATTERN (binding for lexLink body):
+
+  #ifdef HCC_USE_SELFHOST_COMPONENTS
+      /* ACT-POLYC-SELFHOST-LEXER04 C2 IMPL -- #link directive
+       * delegated to the PolyC BootstrapLinkDirective component.
+       * The legacy C block below is preserved bit-identically
+       * for stage0 builds. */
+      BootstrapLinkDirective(...);
+  #else
+      /* Legacy production path. Preserved bit-identically. */
+      ...
+  #endif
+
+The ABI between src/lexer.c and BootstrapLinkDirective is
+frozen in c2-link-abi.txt and propagated through src/lexer_bridge.h.
+
+CHOSEN ABI (from src/lexer.c lexLink analysis):
+
+  /* Read-only: the entire lexer token state and the active
+   * lexer pointer. We pass the cursor position (l->ptr)
+   * and the active TK_* lexeme's start/len. */
+  I64 BootstrapLinkDirective(
+      U8  *src,         /* current cursor position (start of next lexeme) */
+      I64  src_len,     /* bounded length of the remaining source from src */
+      I64  flags,       /* l->flags (CCF_*) */
+      I64  cc_link_libs_addr,    /* (I64)&l->cc->link_libs  -- output collection pointer */
+      I64  cc_shared_object_files_addr, /* (I64)&l->cc->shared_object_files */
+      I64 *out_consumed,         /* bytes consumed by the directive */
+      I64 *out_is_path,          /* 1 if quoted-path form, 0 if angle-name form */
+      I64 *out_stored_len,       /* length of stored AoStr (matches the stored AoStr's aoStrGetLen) */
+      I64 *out_error             /* 0 = none, 1 = missing_target, 2 = invalid_token, 3 = unterminated_angle, 4 = unterminated_quoted */
+  );
+
+  The function returns 0 on success (directive consumed) and
+  emits a CCTRL_ERROR via lexRaise semantics on the failure paths.
+  In stage1+ builds, lexRaise itself remains a C symbol exported
+  from src/lexer.c; BootstrapLinkDirective calls into it via a
+  wrapper for the lexRaise path.

@@ -1,0 +1,16 @@
+fixture_id	source	class	expected_rc	expected_link_libs	expected_shared_object_files	expected_error_class	expected_consumed
+LF01	"#link \"foo.so\"\n"	quoted_valid	0	exit	[foo.so]	[]	none	"#link" + " " + "\"foo.so\"" + "\n" (i.e. 17 bytes consumed end-to-end by lexToken; lexLink consumes no bytes itself)
+LF02	"#link <m>\n"	angle_valid	0	exit	[m]	[]	none	"#link" + " " + "<m>" + "\n" (i.e. 13 bytes consumed end-to-end; lexLink consumes <m> bytes itself, 3 bytes between the brackets)
+LF03	"#link \"liba.so\"\n#link <libb>\n"	multiple_link	0	exit	[libb]	[liba.so]	none	24 bytes end-to-end (both directives fully consumed)
+LF04	"#link \"\"\n"	quoted_edge_empty	0	exit	[]	[] (empty path stored but listContainsAoStr matches an empty AoStr; an AoStrNew() then dupRaw of 0 length -> data[0]=0; listContainsAoStr compares with that. The empty AoStr is appended and is a duplicate of nothing -> appended; semantically the empty string is the stored path)	none	"#link \"\"\n" = 10 bytes consumed end-to-end
+LF05	"#link <>\n"	angle_edge_empty	0_exit_or_lexRaise	[] or lexRaise	[]	none or CCTRL_ERROR	"#link <>" + "\n" = 10 bytes
+LF06	"#link 42\n"	invalid_token_numeric	0_exit_via_lexRaise	unchanged	unchanged	CCTRL_ERROR (lexRaise via else branch)	"#link " consumed; lex() returns a TK_I64 token; lexLink enters else branch
+LF07	"#link ident\n"	invalid_token_ident	0_exit_via_lexRaise	unchanged	unchanged	CCTRL_ERROR (lexRaise via else branch)	"#link " consumed; lex() returns a TK_IDENT token; lexLink enters else branch
+LF08	"#link\n"	invalid_missing_target	0_exit_via_lexRaise	unchanged	unchanged	CCTRL_ERROR (lexRaise via first lex() == 0 branch)	"#link" consumed (6 bytes); lex() returns 0
+LF09	"#link <foo"	invalid_unterminated_angle	0_exit_via_lexRaise	unchanged	unchanged	CCTRL_ERROR (lexRaise via unterminated <)	"#link <" consumed (7 bytes); lex() returns 0 inside the loop
+LF10	"#link \"./foo"	invalid_unterminated_quoted	0_exit_via_lexRaise (from lexString path)	unchanged	unchanged	CCTRL_ERROR	"#link " consumed; lex returns a non-TK_STR token (or 0); either way lexRaise fires
+LF11	"#link \"x.so\"#link <y>\n"	multiple_link_back_to_back	0	exit	[y]	[x.so]	none	"#link \"x.so\"#link <y>\n" = 24 bytes consumed; two directives back-to-back
+LF12	"#link <m1>\n#link <m1>\n"	angle_duplicate	0	exit	[m1] (single entry)	[]	none	20 bytes; second occurrence's AoStr released
+LF13	"#link \"x.so\"\n#link \"x.so\"\n"	quoted_duplicate	0	exit	[]	[x.so] (single entry)	none	24 bytes; second occurrence's AoStr released
+LF14	"#link <a-b_c.0>\n"	angle_punct_in_name	0_exit	[a-b_c.0]	[]	none	20 bytes; '-' / '.' / '_' are part of the identifier body via TK_IDENT consumptions (within angle form the loop calls lex() and appends whatever the next token's raw bytes are; this includes TK_PUNCT '-' / '_' / '.' / digits as separate tokens whose bytes get appended)
+LF15	"#link <a b>\n"	angle_whitespace_name	0_exit	[a b] or [ab]	[]	none or possibly lexRaise - depends on whether WS becomes a TK_PUNCT and the loop appends it. Actual: lex() in CCF_ACCEPT_WHITESPACE returns a TK_PUNCT space which has length 1 and start at ' '. The for-loop in lexLink appends "%.*s" with len=1 and start=' '. So the stored AoStr contains "a b" (two chars + space).	20 bytes; name AoStr = "a b"

@@ -1,0 +1,108 @@
+ACT-POLYC-SELFHOST-LEXER04 -- C1 -- RED reproduction
+=====================================================
+
+SCOPE:
+
+  Verify that, at C1 entry, the `#link` directive semantic
+  responsibility is owned by legacy C in src/lexer.c, that no PolyC
+  component named BootstrapLinkDirective exists, and that no
+  lexer09-* oracle has been produced yet.
+
+PROBES (literal, with exit codes captured):
+
+  $ test -f tools/bootstrap/selfhost-lexer-link.HC ; echo rc=$?
+  rc=1
+  selfhost-lexer-link.HC: ABSENT
+
+  $ test -f tools/quality/lexer09-link-oracle.c ; echo rc=$?
+  rc=1
+  lexer09-link-oracle.c: ABSENT
+
+  $ grep -nE 'BootstrapLinkDirective|selfhost-lexer-link' src/lexer.c
+  (no output)
+  BootstrapLinkDirective delegation: ABSENT in src/lexer.c
+
+  $ test -f tools/quality/lexer09-direct-differential.c ; echo rc=$?
+  rc=1
+  lexer09-direct-differential.c: ABSENT
+
+  $ test -f scripts/quality/lexer09-link-direct-differential.sh ; echo rc=$?
+  rc=1
+  lexer09-link-direct-differential.sh: ABSENT
+
+OBSERVED LEGACY AUTHORITY (src/lexer.c):
+
+  lexLink lives at lines 1939..1991 in src/lexer.c.
+  Entry is via src/lexer.c:2405 (lexToken dispatcher, KW_PP_LINK).
+
+  Lines 1939..1991 (verbatim):
+
+  1939  /* `#link` records a shared library dependency in the source itself:
+  1940   *   #link "./file.so"   - literal path; spliced into the AOT link
+  1941   *                         command verbatim, dlopen'd by the JIT.
+  1942   *   #link <name>        - library name; `-lname` for the AOT linker,
+  1943   *                         dlopen("lib<name>.{dylib,so}") for the JIT.
+  1944   * Duplicates are dropped so headers can #link freely. */
+  1945  static void lexLink(Lexer *l) {
+  1946      Lexeme next;
+  1947      AoStr *name;
+  1948      int is_path = 0;
+  1949
+  1950      if (!lex(l, &next)) {
+  1951          lexRaise(l, "Syntax is: #link \"<path>\" or #link <libname>");
+  1952      }
+  1953      if (tokenPunctIs(&next, '<')) {
+  1954          name = aoStrNew();
+  1955          for (;;) {
+  1956              if (!lex(l, &next)) {
+  1957                  lexRaise(l, "Unterminated #link <...>");
+  1958              }
+  1959              if (tokenPunctIs(&next, '>')) break;
+  1960              aoStrCatPrintf(name, "%.*s", next.len, next.start);
+  1961          }
+  1962      } else if (next.tk_type == TK_STR) {
+  1963          name = aoStrDupRaw(next.start, next.len);
+  1964          is_path = 1;
+  1965      } else {
+  1966          lexRaise(l,
+  1967                  "Syntax is: #link \"<path>\" or #link <libname> got: %s",
+  1968                  lexemeToString(&next));
+  1969      }
+  1970
+  1971      /* Standalone lexers (e.g. the `-tokens` dump) have nothing to
+  1972       * link against; parse and drop. */
+  1973      if (!l->cc) {
+  1974          aoStrRelease(name);
+  1975          return;
+  1976      }
+  1977
+  1978      /* Paths ride the existing shared-object plumbing (same list the
+  1979       * CLI's positional `.so` arguments land in); names get their own
+  1980       * list as they need `-l`/dlopen-probe treatment downstream. */
+  1981      List **libs = is_path ? &l->cc->shared_object_files
+  1982                            : &l->cc->link_libs;
+  1983      if (*libs == NULL) {
+  1984          *libs = listNew();
+  1985      }
+  1986      if (!listContainsAoStr(*libs, name)) {
+  1987          listAppend(*libs, name);
+  1988      } else {
+  1989          aoStrRelease(name);
+  1990      }
+  1991  }
+
+CONCLUSIONS:
+
+  LEXER04_RED_REPRODUCED=YES
+  selfhost-lexer-link.HC = ABSENT
+  lexer09-link-oracle.c = ABSENT
+  BootstrapLinkDirective delegation in src/lexer.c = ABSENT
+
+  The `#link` semantic responsibility is fully owned by legacy C
+  in src/lexer.c::lexLink. No PolyC authority exists. The slice
+  is reproducible as RED.
+
+ALSO:
+
+  No 4-gen fixed-point object artifacts exist for
+  build/lexer09-fixedpoint/link.g{0,1,2,3}.o yet.

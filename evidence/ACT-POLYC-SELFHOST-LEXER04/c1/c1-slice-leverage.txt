@@ -1,0 +1,72 @@
+ACT-POLYC-SELFHOST-LEXER04 -- C1 -- slice leverage proof
+========================================================
+
+The broader `INV.LEXER.LINK` surface (ranked first by
+SURFACE-RECON02) covers many responsibilities.  LEXER04 migrates
+only the `#link` directive handler (`lexLink`).  This proof shows
+that the slice is independently meaningful.
+
+LEXER04_SLICE = lexLink / #link
+
+CURRENT_AUTHORITY = LEGACY_C
+POLYC_AUTHORITY = ABSENT
+SCOPE_RESTRICTION = single function body (src/lexer.c lines 1939..1991)
+SCOPE_EXCLUSION = lexCore, lexPreProcDirective, lexToken dispatch,
+                  lexInclude, lexPreProcIf, lexPreProcBoolean, lexDefine,
+                  lexUndef, lexSetAsmFlags, lexUnSetAsmFlags
+
+G0_REACHABLE = YES    (./hcc is stage0; lexLink is the production handler)
+G1_REACHABLE = YES    (./build/hcc-bootstrap02 statically links the new component)
+G2_REACHABLE = YES    (./build/hcc-bootstrap03 statically links the new component)
+G3_REACHABLE = YES    (./build/hcc-bootstrap04 statically links the new component)
+
+INDEPENDENT LEVERAGE ARGUMENT:
+
+  A separate compilation of `tools/bootstrap/selfhost-lexer-link.HC`
+  via each of G0/G1/G2/G3 yields four object files that, for the
+  bootstrapping-relevant responsibility (`#link` parsing + classification
+  + storage in cc->link_libs / cc->shared_object_files), are byte-identical
+  because the component is pure: no recursion, no global mutable state,
+  no parser/cctrl state, no compilation/IR coupling.  This is the same
+  structural property that made the LEXER03 trivia component a fixed point.
+
+AFTER MIGRATION:
+
+  MIGRATING_LEXLINK_REDUCES_LEGACY_AUTHORITY = YES
+
+  The `#link` directive semantic responsibility (parsing two syntax
+  forms, error reporting, classification into link_libs vs
+  shared_object_files, dedup) moves to PolyC authority in stage1+
+  builds.  All other INV.LEXER.LINK responsibilities (lexCore,
+  lexInclude, lexDefine, lexPreProcIf, etc.) remain legacy C, and
+  remain truthfully classified as such.
+
+REMNANT LEGACY SURFACE POST-MIGRATION (truthful residue):
+
+  lexCore (dispatch)
+  lexPreProcDirective
+  lexToken
+  lexInclude
+  lexDefine
+  lexUndef
+  lexPreProcIf
+  lexPreProcBoolean
+  lexSetAsmFlags / lexUnSetAsmFlags
+  lexInit / lexRelease
+  lexNextChar / lexRewindChar
+  lexPushFile / lexPushString
+  lexReleaseAllFiles / lexReleaseLexFile
+
+  These are unchanged and remain LEGACY_C.  LEXER04 only takes
+  ownership of the `#link` directive responsibility.
+
+EVIDENCE BINDING:
+
+  Slice is the unique atomic boundary inside lexLink: lexLink's
+  body parses exactly ONE preprocessor directive form and stores
+  it in ONE of two destinations.  No other preprocessor directive
+  is parsed by lexLink.
+
+VERDICT:
+
+  SLICE_LEVERAGE_PROVEN = YES

@@ -1,0 +1,21 @@
+state_field	input_class	before	after	authority	evidence
+l->ptr	quoted_valid	"#link \"./file.so\"\n"	advanced past closing quote by TK_STR consumption (already consumed before lexLink entry)	src/lexer.c::lexLink body; src/lexer.c::lexToken call site	line 1950 (lex consumes TK_STR)
+l->ptr	angle_valid	"#link <name>\n"	advanced past closing `>` byte (consumed inside the for-loop)	src/lexer.c::lexLink body	line 1959 break condition
+l->ptr	invalid_token	"#link IDENT\n"	unchanged on error (lexRaise path)	src/lexer.c::lexRaise contract; src/lexer.c::lexLink	line 1966-1969
+l->ptr	missing_target	"#link\n"	unchanged on error (lexRaise path)	line 1950-1952
+l->ptr	unterminated_angle	"#link <foo"	advanced until EOF of input (lex returns 0)	line 1956-1958
+l->ptr	unterminated_quoted	"#link \"./foo"	caller-side lexRaise at TK_STR (the TK_STR token itself is not produced; lexRaise from lexString path)	lexString path; lexLink sees `lex()` returning 0 or a non-TK_STR token	line 1950 (lex returns 0 / non-TK_STR)
+l->ptr	standalone_lexer	"#link <name>\n" with no cc	advanced past closing `>` byte (consumed inside the for-loop)	line 1973-1976 (release + return)
+l->lineno	any	unchanged	unchanged (lexLink does not mutate l->lineno)	src/lexer.c::lexLink body	lines 1945..1991 (no l->lineno write)
+l->line_start_ptr	any	unchanged	unchanged	src/lexer.c::lexLink body	lines 1945..1991 (no l->line_start_ptr write)
+l->flags	any	unchanged	unchanged	src/lexer.c::lexLink body	lines 1945..1991 (no l->flags write)
+l->cc->link_libs	angle_valid_or_name	NULL or empty	list with new name AoStr appended (if not already present)	src/lexer.c::lexLink; src/cctrl.c line 284	line 1981-1990
+l->cc->link_libs	angle_duplicate	contains name	unchanged; new AoStr released	src/lexer.c::lexLink	line 1986-1990
+l->cc->shared_object_files	quoted_valid	NULL or empty	list with new name AoStr appended (if not already present)	src/lexer.c::lexLink; src/cctrl.c line 283	line 1981-1990
+l->cc->shared_object_files	quoted_duplicate	contains name	unchanged; new AoStr released	src/lexer.c::lexLink	line 1986-1990
+l->cc->link_libs	standalone_lexer	unchanged	unchanged (early return when !l->cc)	src/lexer.c::lexLink	line 1973-1976
+l->cc->shared_object_files	standalone_lexer	unchanged	unchanged (early return when !l->cc)	src/lexer.c::lexLink	line 1973-1976
+cctrl diagnostic accumulator	invalid_token	unchanged	lexRaise emits a CCTRL_ERROR diagnostic via cctrlTerminate	l->cc -> cctrlDiagPush	src/lexer.c::lexRaise
+cctrl diagnostic accumulator	missing_target	unchanged	lexRaise emits a CCTRL_ERROR diagnostic via cctrlTerminate	l->cc -> cctrlDiagPush	src/lexer.c::lexRaise
+cctrl diagnostic accumulator	unterminated_angle	unchanged	lexRaise emits a CCTRL_ERROR diagnostic via cctrlTerminate	l->cc -> cctrlDiagPush	src/lexer.c::lexRaise
+token stream return	any	no token produced by lexLink itself	no token produced by lexLink itself (KW_PP_LINK lexeme is produced before lexLink is called, by lexToken via lexCore)	src/lexer.c::lexToken src/lexer.c::lexCore line 2404-2406	lines 1945..1991 (void return)

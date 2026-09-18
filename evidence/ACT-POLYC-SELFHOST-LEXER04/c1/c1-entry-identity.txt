@@ -1,0 +1,46 @@
+ACT-POLYC-SELFHOST-LEXER04 -- C1 -- entry identity
+===================================================
+
+CAPTURED AT C1 ENTRY:
+
+  branch           = main
+  HEAD             = b7c719b4bac44adece3c56ddc78a1c45c85931f6
+  HEAD_subject     = ACT-POLYC-SELFHOST-SURFACE-RECON02 C4 CLOSE: HANDOFF + ROADMAP
+  predecessor_act  = ACT-POLYC-SELFHOST-SURFACE-RECON02 (PASS_TRUE_GREEN)
+
+ENTRY GATES SATISFIED (C1):
+
+  - SURFACE-RECON02 close is the immediate predecessor commit (HEAD).
+  - LEXER03_BOOTSTRAP_QUALIFICATION = COMPLETE (see CORRECTION02 c3/).
+  - Branch is main.
+  - Worktree clean at entry (no uncommitted changes).
+
+ANCESTRY:
+
+  - b7c719b4 is an ancestor of HEAD (merge-base check PASS).
+  - The closed SURFACE-RECON02 evidence tree
+    (evidence/ACT-POLYC-SELFHOST-SURFACE-RECON02/) is preserved.
+
+SELECTED ATOMIC SLICE:
+
+  INV.LEXER.LINK (lexLink / #link directive)
+  src/lexer.c::lexLink lines 1939..1991
+  Sole entry point: src/lexer.c:2405 (lexToken dispatcher for KW_PP_LINK).
+
+ALLOWED PRODUCTION FILES (per SURFACE-RECON02 binding):
+
+  src/lexer.c                  (modify lexLink body only)
+  tools/bootstrap/selfhost-lexer-link.HC  (NEW PolyC component)
+  Makefile                     (add build rule + tests)
+  tools/quality/lexer09-link-oracle.c     (NEW)
+  tools/quality/lexer09-link-oracle-impl.c (NEW)
+  scripts/quality/lexer09-link-direct-differential.sh (NEW)
+  evidence/ACT-POLYC-SELFHOST-LEXER04/c{1,2,3,4}/  (NEW)
+
+WORKTREE STATUS:
+
+  $ git status --short
+  (no output = clean)
+
+  $ git rev-parse --abbrev-ref HEAD
+  main
