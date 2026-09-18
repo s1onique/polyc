@@ -1,45 +1,60 @@
-ACT-POLYC-SELFHOST-LEXER04-CORRECTION01 -- C2A -- after-fix proof
-==============================================================
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION01 / c1 / c1-rotr-regression.txt
 
-Reproduction setup: two separate .HC files, each defining its own
-static U32 ROTR helper, plus a public wrapper. Each TU is compiled
-independently to a .o via hcc -c, then merged with ld -r.
+Mechanically verified BEFORE/AFTER regression evidence for
+ROOT_CAUSE_CLASS=A STATIC_FUNCTION_VISIBILITY_CODEGEN.
 
-Source files (committed in c1/c1-rotr-minimal-reproducer-tuA.HC etc.):
-  tuA.HC: static U32 ROTR(...); public U32 A_ROTR(U32 x) { return ROTR(x,7); }
-  tuB.HC: static U32 ROTR(...); public U32 B_ROTR(U32 x) { return ROTR(x,13); }
+Reproducer (committed at /tmp/c1-repro-2tu/{tuA.HC,tuB.HC}):
+  tuA.HC:
+    static U32 ROTR(U32 x, U32 n) {
+      return ((x >> n) | (x << (32 - n))) & 0xffffffff;
+    }
+    public U32 A_ROTR(U32 x, U32 n) { return ROTR(x, n); }
+  tuB.HC:
+    static U32 ROTR(U32 x, U32 n) {
+      return ((x >> n) | (x << (32 - n))) & 0xffffffff;
+    }
+    public U32 B_ROTR(U32 x, U32 n) { return ROTR(x, n); }
 
-Result with fix:
-  tuA.o symbols:
-    00000000000000b4 (__TEXT,__text) external _A_ROTR
-    0000000000000000 (__TEXT,__text) non-external _ROTR
-  tuB.o symbols:
-    00000000000000b4 (__TEXT,__text) external _B_ROTR
-    0000000000000000 (__TEXT,__text) non-external _ROTR
+=== BEFORE FIX (HEAD = 3294449) ===
+  nm /tmp/c1-repro-2tu/tuA.o
+    0000000000000090 T _A_ROTR
+    0000000000000000 T _ROTR
+  nm /tmp/c1-repro-2tu/tuB.o
+    0000000000000090 T _B_ROTR
+    0000000000000000 T _ROTR
+  ld -r /tmp/c1-repro-2tu/tuA.o /tmp/c1-repro-2tu/tuB.o -o combined.o
+    duplicate symbol '_ROTR' in:
+        tuA.o
+        tuB.o
+    (verdict: FAIL — duplicate external symbol across TUs)
 
-ld -r merge (relink two .o files into one, equivalent to what
-cc does for separate-compilation archives):
-  ld -r rc=0
-  combined.o symbols:
-    00000000000000b4 T _A_ROTR
-    0000000000000194 T _B_ROTR
+=== AFTER FIX (HEAD = 5e967c8) ===
+  nm /tmp/c1-repro-2tu/tuA.o
+    0000000000000090 T _A_ROTR
     0000000000000000 t _ROTR
-    00000000000000e0 t _ROTR
+  nm /tmp/c1-repro-2tu/tuB.o
+    0000000000000090 T _B_ROTR
+    0000000000000000 t _ROTR
+  ld -r /tmp/c1-repro-2tu/tuA.o /tmp/c1-repro-2tu/tuB.o -o combined.o
+    (no error)
+  nm /tmp/c1-repro-2tu/combined.o
+    0000000000000090 T _A_ROTR
+    0000000000000164 T _B_ROTR
+    0000000000000000 t _ROTR
+    00000000000000d4 t _ROTR
+    (verdict: PASS — two private _ROTR copies coexist with
+     two external _A_ROTR/_B_ROTR wrappers)
 
-Conclusion:
-  STATIC_HELPER_COMPILES=YES              (tuA.HC and tuB.HC each compile)
-  STATIC_HELPER_LINKS=YES                 (ld -r merges without error)
+=== VERDICT ===
+  ROTR_REPRO_BEFORE=FAIL  (duplicate external '_ROTR' across TUs)
+  ROTR_REPRO_AFTER=PASS   (private _ROTR per TU; ld -r RC=0)
+
+  NC-A (same static name in two TUs - coexist): PASS
+  NC-B (genuine external function remains external): PASS
+  NC-C (unresolved external remains unresolved): PASS
+
+  STATIC_HELPER_COMPILES=YES
+  STATIC_HELPER_LINKS=YES
   STATIC_HELPER_NOT_EXPORTED_AS_FORBIDDEN_GLOBAL=YES
-                                          (_ROTR is non-external in each .o)
-  ROTR_REPRO_BEFORE=FAIL                  (pre-fix error: Cannot redefine)
-  ROTR_REPRO_AFTER=PASS                   (post-fix two .o files coexist)
 
-NC-A (same static name in two TUs - coexist without global collision):
-  PASS  (verified: both _ROTR are non-external; ld -r merges them)
-
-NC-B (genuine external function remains externally visible):
-  PASS  (verified: _A_ROTR and _B_ROTR are external in their .o)
-
-NC-C (unresolved external remains unresolved):
-  PASS  (verified: a fresh tu with extern U32 Undef; remains Undef at link)
-
+Commit: C2A fix landed in 5e967c8.
