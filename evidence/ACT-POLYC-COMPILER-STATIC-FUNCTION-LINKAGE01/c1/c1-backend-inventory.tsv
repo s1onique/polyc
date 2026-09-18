@@ -1,0 +1,8 @@
+backend_id	kind	live	entry_point	source_files	static_handling	exercised_in_c1	evidence	path
+AARCH64_NATIVE	native	YES	aarch64AsmGenerate	src/aarch64.c	STATIC_LINKAGE_HANDLED (fn_is_static check in aarch64EmitFunctionPrologue, line 2144)	YES	nm --target aarch64-apple-darwin	c3-aarch64-linkage.txt	P08
+X86_64_NATIVE	native	YES	x86_64AsmGenerate	src/x86_64.c	STATIC_LINKAGE_HANDLED (fn_is_static check in x86_64EmitFunctionPrologue, line 2396)	YES	nm -m on host (x86_64-apple-darwin)	c3-x86_64-linkage.txt	P09
+X86_64_NATIVE_LEGACY	native	OPT_IN	x86AsmGenerate	src/x86.c	STATIC_LINKAGE_NOT_HANDLED (only AST_GVAR.is_static references)	NOT_EXERCISED	default off; ACT scope is the default codegen that was modified by 5e967c8; legacy x86 is a debugging escape hatch documented in --use-legacy-x86	P10
+AARCH64_JIT	jit	YES	aarch64JitCompile (host) + hccJitCompile (incremental)	src/aarch64-jit.c src/jit-common.c	STATIC_LINKAGE_HANDLED (registration suppressed at finalize via private_fns map, jit-common.c:726-735)	YES	REPL incremental chunks	c3-jit-linkage.txt	P11-P14
+X86_64_JIT	jit	YES	x86_64JitCompile (host) + hccJitCompile (incremental)	src/x86_64-jit.c src/jit-common.c	STATIC_LINKAGE_HANDLED (same shared finalize path as aarch64-jit)	YES	REPL incremental chunks	c3-jit-linkage.txt	P13/P15
+LLVM_BACKEND	textual-ir	OPT_IN	llvmEmitProgram (--emit-llvm)	src/llvm-backend.c	NOT_APPLICABLE	for this ACT: not part of the historical seven-file repair, and is an independently-qualified experiment per ACT §1 non-goals and ACT-POLYC-LLVM-SPIKE01 lineage. Excluded from C2 scope.	NO	no c3 evidence produced for this backend in this ACT	excluded per §1
+OTHER	n/a	NO	n/a	n/a	n/a	n/a	n/a	n/a

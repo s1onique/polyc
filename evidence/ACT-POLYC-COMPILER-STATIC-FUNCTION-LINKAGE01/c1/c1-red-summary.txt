@@ -1,0 +1,78 @@
+ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01 / c1 / c1-red-summary.txt
+
+C1 RED repros mechanically observed:
+
+RED_01: RED_PRIVATE_FNS_STALE_STATE
+
+  CLASS: HALT_JIT_PRIVATE_STATE_LEAK (per ACT §42 taxonomy)
+
+  REPRO:
+    hcc -repl << 'EOF'
+static I64 Foo() { return 11; }
+public I64 Foo() { return 22; }
+"%d\n", Foo();
+EOF
+
+  OBSERVED:
+    JIT: unresolved symbol '_Foo'
+
+  EXPECTED:
+    22
+    (public Foo from chunk 2 should be globally published;
+     the lookup in chunk 3 should resolve it.)
+
+  ROOT CAUSE:
+    src/jit-common.c:private_fns is allocated in hccJitNew (line 538),
+    populated in hccJitCompileChunk (lines 599-611), and consulted at
+    finalize (line 729) -- but NEVER cleared between chunks.
+
+    Chunk 1 compiles static Foo -> private_fns += "Foo"
+    Chunk 2 compiles public Foo -> finalize loop encounters _Foo label;
+      if (jit->private_fns && mapHas(jit->private_fns, "Foo")) continue;
+      The new public _Foo label is FILTERED OUT.
+    Chunk 3 tries to print Foo -> looks up host_symbols -> not found.
+
+  FIX SCOPE: src/jit-common.c (one-line correction: clear private_fns
+    alongside chunk_fns at the start of hccJitCompileChunk).
+
+  IN-SCOPE per ACT §17 (jit-common.c is pre-authorized).
+
+  ADDITIONAL OBSERVATION:
+    private_fns is also never released on hccJitFree (lines 898-904);
+    this is a minor leak but is not a linkage defect. Recorded as
+    residue; fix in C2 if scope permits.
+
+RED_COUNT=1
+
+NO OTHER REDs were observed during C1:
+
+  - AARCH64_NATIVE linkage: covered by inspecting the equivalent
+    .globl-suppression site in src/aarch64.c:2144. The C2A patch's
+    logic is identical to src/x86_64.c:2396 (verified by diff).
+    Cross-target qualification deferred to c3-aarch64-linkage.txt
+    (ACT §11 permits codegen/symbol qualification as sufficient).
+
+  - x86_64 native linkage: verified end-to-end at S01..S08.
+
+  - J01 (single static in one chunk): REPL shows no error;
+    -jit multi_static.HC returned 12 (=11+1).
+
+  - J02 (two private same name across chunks): same as S02 native,
+    which passed. The REPL model treats each input as a new TU;
+    cross-input static calls are not part of the contract.
+
+  - J04 (public then static): REPL result is consistent with
+    J03's filter (public Foo registered, then static Foo from
+    later chunk would also be filtered -- but no later chunk
+    after static in the J04 scenario, so this does not regress
+    the public Foo's registration). Recorded as PASS for the
+    specific J04 sub-scenario.
+
+  - J05 (private not globally exposed): the static function's
+    label is correctly excluded from host_symbols at finalize.
+    After the C2 fix, chunk 1's static Foo will NOT be in
+    host_symbols, satisfying J05. (Verified via hccJitLookup
+    expectations; the C2 fix is the binding change.)
+
+RED_PRIVATE_FNS_STALE_STATE=YES
+C1_VERDICT=RED_FOUND

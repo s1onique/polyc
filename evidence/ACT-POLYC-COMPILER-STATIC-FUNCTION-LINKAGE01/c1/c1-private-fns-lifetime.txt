@@ -1,0 +1,80 @@
+ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01 / c1 / c1-private-fns-lifetime.txt
+
+private_fns lifetime classification (Map *private_fns on HccJit):
+
+  ALLOCATED:    src/jit-common.c:538  in hccJitNew()
+                  mapNew(64, &map_cstring_opaque_type)
+                  Lifetime: lives until hccJitFree() releases it.
+
+  POPULATED:    src/jit-common.c:599-602  in hccJitCompileChunk()
+                  Each AST_FUNC with fn_is_static in the new chunk
+                  adds its asmNormaliseFunctionName to the map.
+                  Also handles extra_fn (REPL wrapper case) at line 610.
+
+  CONSULTED:    src/jit-common.c:729-731  in hccJitCompileChunk()
+                  At finalize, each public label whose name is in
+                  private_fns is SKIPPED for symbols / host_symbols.
+
+  CLEARED:      NONE.
+
+  FREED:        NONE.  (Reachable via mapRelease on jit free;
+                  not visible in src/jit-common.c:898-904 because
+                  the C2A patch added the field but did not add a
+                  matching mapRelease.)
+
+  STATE_SCOPE:  per-HccJit  (NOT per-chunk).
+
+CRITICAL FINDING:
+
+  chunk_fns (a peer per-chunk Map) IS cleared on every chunk
+  compile: src/jit-common.c:575:
+      mapClear(jit->chunk_fns);
+
+  private_fns is NOT cleared.
+
+  Consequence for J03 (static Foo chunk1, public Foo chunk2):
+
+    chunk1 compiles static Foo -> private_fns += "Foo"
+    chunk2 compiles public Foo -> finalize loop:
+        if (mapHas(jit->private_fns, "Foo")) continue;
+    The new public Foo's label is SKIPPED.
+    hccJitLookup("Foo") still returns the original address from
+    chunk1 (which is now executable but only inside chunk1).
+
+    This is a true HALT_JIT_PRIVATE_STATE_LEAK with concrete
+    user-visible consequences:
+      - public Foo is NOT registered in chunk2
+      - callers in chunk3+ cannot resolve public Foo by dlsym/lookup
+      - same-spelling later code that depends on the public
+        definition may bind to nothing.
+
+  Concrete observed pre-fix state would be:
+    J03_PRIVATE_FOO_LEAKS=YES  (chunk1 private Foo leaks into
+                                chunk2's filter set)
+    J03_PUBLIC_FOO_VISIBLE_AFTER_PRIVATE=NO  (regression)
+
+EVALUATION:
+
+  Scope of leak is bounded to the HccJit's lifetime, so a process
+  that compiles exactly one chunk never sees it. The REPL is
+  exposed: each input is a chunk.
+
+  RED_PRIVATE_FNS_STALE_STATE = YES
+
+  This is in-scope per ACT §1 (function linkage) and per ACT §17
+  (jit-common.c is pre-authorized). The defect MUST be repaired in
+  C2.
+
+  Required C2 minimal correction: clear private_fns at the same
+  boundary where chunk_fns is cleared (src/jit-common.c:575).
+
+  Side-effect check: clearing private_fns per-chunk is correct
+  because the consultation point (line 729) only consults names
+  for the labels emitted in the CURRENT chunk; names from prior
+  chunks were already filtered out (or not) when those prior
+  chunks were emitted, and reconsulting them would be wrong (it
+  would re-filter a NEW public label that just happens to share
+  the spelling). The C2A author's comment at line 45-50 even
+  says "Reset per chunk" but the implementation never did.
+
+PRIVATE_FNS_LIFETIME_CLASSIFIED=YES

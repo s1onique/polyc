@@ -1,0 +1,32 @@
+ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01 / c1 / c1-scope-freeze.txt
+
+C1 scope freeze (binding C2 to authorized files):
+
+  Pre-authorized (per ACT §17):
+    src/ast.h
+    src/ast.c
+    src/parser.c
+    src/jit-common.h
+    src/jit-common.c
+    src/aarch64.c
+    src/x86_64.c
+
+  Conditionally authorized (per ACT §17, conditional on C1 proof of
+  live function-emission path):
+    src/aarch64-jit.c       NOT NEEDED in C2
+                              (linkage propagation handled at finalize
+                              via shared jit-common.c path; aarch64-jit.c
+                              backend itself is unchanged)
+    src/llvm-backend.c      EXCLUDED from this ACT's scope per ACT §1
+                              (LLVM backend is independently qualified)
+
+  C2 minimal correction (RED_PRIVATE_FNS_STALE_STATE):
+    src/jit-common.c        line 575 area: add mapClear(jit->private_fns)
+                            (or equivalent) alongside mapClear(jit->chunk_fns)
+
+  Optional C2 fix (residue):
+    src/jit-common.c        line 898-904: add mapRelease(jit->private_fns)
+                            in hccJitFree. Memory hygiene, not linkage.
+                            DEFER unless scope permits.
+
+  No other production file is in-scope for this ACT.

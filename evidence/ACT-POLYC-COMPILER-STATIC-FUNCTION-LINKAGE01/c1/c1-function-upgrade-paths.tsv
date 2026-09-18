@@ -1,0 +1,8 @@
+upgrade_id	source_file	line	kind	pre_state	post_state	fn_is_static_correct	c1_evidence
+UP01	src/parser.c	2181-2189	prototype -> definition (no prior)	empty global_env	new AST_FUNC with is_static from parser	YES	direct astFunctionWithLinkage call passes is_static
+UP02	src/parser.c	2197-2209	prototype -> definition (prior prototype)	prior AST_FUN_PROTO	new AST_FUNC with is_static from parser, replaces in cc->global_env	YES	astFunctionWithLinkage preserves is_static
+UP03	src/parser.c	2210-2223	static prototype -> static definition	prior AST_FUN_PROTO with fn_is_static=1	new AST_FUNC with is_static=1 (the new explicit branch)	YES	dedicated static->static redefinition branch; preserves linkage
+UP04	src/parser.c	2224-2237	prototype -> definition body upgrade (same linkage)	prior AST_FUN_PROTO	body attached, fn_is_static = is_static	YES	line 2240: func->fn_is_static = is_static (the missing field assignment is the only upgrade that touches fn_is_static explicitly; correct)
+UP05	src/parser.c	2370-2395	function or def (body branch)	prototype case	body branch and prototype branch both pass is_static through astFunctionWithLinkage	YES	verified at c1-static-function-contract.tsv/S06
+UP06	src/parser.c	2543-2554	KW_INLINE branch	inline attr; static inheritance	parseFunctionOrDef called with is_static	YES	calls the same downstream; static preserved
+UP07	src/parser.c	2827-2831	default branch (no static)	normal function definition	parseFunctionOrDef called with is_static from outer parseToplevelDef	YES	default is_static=0 path; fn_is_static=0

@@ -1,0 +1,18 @@
+path_id	source_file	symbol	role	native_or_jit	backend	static_aware	extern_aware	runtime_reachable	qualification_method	evidence
+P01	src/parser.c	parseToplevelDef	entry;KW_STATIC branch	native+jit	ALL	YES	YES	NO	c1-static-function-contract.tsv/S02	lines 2482/2561-2569
+P02	src/parser.c	parseFunctionOrDef	propagator	is_static arg	native+jit	ALL	YES	YES	indirect	c1-static-function-contract.tsv	S02 RED
+P03	src/parser.c	parseFunctionDef	function constructor + redefinition	native+jit	ALL	YES	YES	YES	S04+S05	c1-static-function-contract.tsv	S04,S05
+P04	src/ast.c	astFunction	default constructor (static=0)	native+jit	ALL	YES	YES	YES	contract	c1-parser-ast-linkage.txt	default static=0 verified
+P05	src/ast.c	astFunctionWithLinkage	constructor with is_static	native+jit	ALL	YES	YES	YES	contract	c1-parser-ast-linkage.txt	static=1 path verified
+P06	src/ast.c	astFunctionSetStatic	setter	idempotent	native+jit	ALL	YES	YES	YES	contract	c1-parser-ast-linkage.txt	API exposed but no live caller; defensive
+P07	src/ast.h	AST_FUNC.fn_is_static	field (union storage)	native+jit	ALL	YES	YES	YES	contract	c1-parser-ast-linkage.txt	field exists at offset in struct
+P08	src/aarch64.c	aarch64EmitFunctionPrologue	suppress .globl on static	native	AARCH64_NATIVE	YES	YES	YES	nm	object inspection	c3-aarch64-linkage.txt
+P09	src/x86_64.c	x86_64EmitFunctionPrologue	suppress .globl on static	native	X86_64_NATIVE	YES	YES	YES	nm	object inspection	c3-x86_64-linkage.txt
+P10	src/x86.c	x86AsmGenerate	LEGACY backend (default off; opt-in via --use-legacy-x86)	native	X86_64_NATIVE_LEGACY	NO	YES	YES	NOT_EXERCISED	this is not the default x86_64 codegen; not modified by 5e967c8; not live unless --use-legacy-x86
+P11	src/jit-common.c	hccJitNew	allocates private_fns Map	jit	ALL_JIT	YES	YES	YES	chunk observability	c1-private-fns-lifetime.txt	line 538
+P12	src/jit-common.c	hccJitCompileChunk	populates private_fns per chunk	jit	ALL_JIT	YES	YES	YES	chunk observability	c1-private-fns-lifetime.txt	lines 591-604
+P13	src/jit-common.c	hccJitCompileChunk	consults private_fns at finalize to skip global registration	jit	ALL_JIT	YES	YES	YES	object inspection	c3-jit-linkage.txt	lines 726-735
+P14	src/aarch64-jit.c	jitCompileFunction	IR backend; no fn_is_static references	jit	AARCH64_JIT	N/A	N/A	YES	REPL	host_symbols registration gated by jit-common.c finalize	c3-jit-linkage.txt
+P15	src/x86_64-jit.c	jitCompileFunction	IR backend; no fn_is_static references	jit	X86_64_JIT	N/A	N/A	YES	REPL	host_symbols registration gated by jit-common.c finalize	c3-jit-linkage.txt
+P16	src/llvm-backend.c	llvmEmitProgram	LLVM textual IR emitter; no fn_is_static references	llvm-textual	LLVM_BACKEND	NO	YES	YES	not_under_c1_scope	excluded from C2 scope per ACT §1 (LLVM is a separately-qualified experiment)	c1-backend-inventory.tsv
+P17	src/jit-common.h	HccJit.private_fns	Map; one per HccJit (not per chunk)	jit	ALL_JIT	YES	YES	YES	chunk observability	c1-private-fns-lifetime.txt	RED_PRIVATE_FNS_STALE_STATE

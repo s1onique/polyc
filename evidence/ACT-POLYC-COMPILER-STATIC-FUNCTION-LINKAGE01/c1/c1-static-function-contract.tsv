@@ -1,0 +1,10 @@
+case_id	description	expected_observed	backend	status	notes
+S01	single static function	callable internally, symbol local, public callable externally	nm shows _Foo non-external; A() returns 1	X86_64_NATIVE	PASS	also verified at -jit (J01)
+S02	same static spelling in two TUs	both _Foo local; ld -r succeeds; A()==11 B()==22	combined.o has two _Foo (both non-external) + two external _A/_B; rc=1122 (low 8=98)	X86_64_NATIVE	PASS	canonical isolation witness; runtime verified
+S03	two external definitions	duplicate-symbol rejected	duplicate symbol '_Foo'	ALL	NATIVE_X86_64 ld rejects; the static fix does NOT accidentally privatize externals
+S04	static in TU A, external same name in TU B	coexist; A()==11 B()==22	resolved to B's external Foo (rc=33=11+22); nm shows two _Foo with one non-external and one external	X86_64_NATIVE	PASS	private and external coexist
+S05	duplicate static definition in one TU	rejected	symbol '_Foo' is already defined (assembler-level)	X86_64_NATIVE	PASS	SAME_TU_STATIC_DUPLICATE_REJECTED=YES
+S06	static forward decl + static def	accepted (both static)	compiles cleanly, _Foo non-external	X86_64_NATIVE	PASS	S06=N/A_SYNTAX_UNSUPPORTED is FALSE; static forward decl is supported
+S07	public forward decl + public def	accepted (both external)	compiles cleanly, _Foo external	X86_64_NATIVE	PASS	ordinary declaration behavior unchanged
+S08a	public decl then static def	accepted; static wins	_Foo non-external (static upgrade path)	X86_64_NATIVE	PASS	most recent declaration rules
+S08b	static decl then public def	accepted; public wins	_Foo external (static upgrade path with public override)	X86_64_NATIVE	PASS	most recent declaration rules
