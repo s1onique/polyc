@@ -1,0 +1,25 @@
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION01 -- C1 -- summary
+========================================================
+
+D1_NO_ORIGINAL_C0_AUTH=CONFIRMED
+D2_C3_MUTATED_IMPLEMENTATION=CONFIRMED  (388fdc2 -> src/lexer.c::lexLink TK_STR fix in C3 EVIDENCE phase)
+D3_AUTHORIZED_AC_CONTRACT_REPLACED=CONFIRMED  (32-row predecessor TSV enumerates AC01=Direct-differential etc., not authorized contract)
+D4_F_POLYC_TOOLS_VIOLATION=CONFIRMED  (lexer09-fixedpoint-verify.c 170 LOC + sha256-tool.c 125 LOC; substantive non-PolyC verifiers)
+D5_4GEN_SEMANTIC_SEAM_MISSING=CONFIRMED  (predecessor production seam is stage0 vs stage1 only)
+D6_PATCH_HYGIENE_DEFECT=CONFIRMED  (git diff --check b7c719b..54e1940 -> tools/bootstrap/selfhost-lexer-link.HC:202 blank line at EOF)
+
+ROTR_ROOT_CAUSE_CLASS=A.STATIC_FUNCTION_VISIBILITY_CODEGEN
+ROTR_ROOT_CAUSE_FILE=src/parser.c
+ROTR_ROOT_CAUSE_SYMBOL=KW_STATIC branch in parseToplevelDef (lines 2538-2540: `is_static = 1; (void)is_static;`)
+SECONDARY_FILE=src/jit-common.c (lines 704-705: unconditional mapAdd into jit->symbols/host_symbols)
+
+REPRODUCER=c1-rotr-minimal-reproducer.HC + c1-rotr-minimal-reproducer-tuA.HC + c1-rotr-minimal-reproducer-tuB.HC
+PRE_FIX_BEHAVIOR: TU_A exports _ROTR as global T symbol; inline 2-TU build fails with "Cannot redefine function: ROTR".
+
+C2A AUTHORIZATION GATE (ACT \xA76):
+  ROTR_ROOT_CAUSE_REPRODUCED=YES
+  ROOT_CAUSE_IS_IN_HCC=YES
+  EXACT_PRODUCTION_FILE_SET_IDENTIFIED=YES
+  SEMANTIC_SCOPE_BOUNDED=YES
+  NO_LANGUAGE_SEMANTIC_CHANGE_REQUIRED=YES
+  ==> C2A REPAIR AUTHORIZED for src/parser.c + src/jit-common.c only.

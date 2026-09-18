@@ -1,0 +1,18 @@
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION01 -- C1 -- D6: patch hygiene
+=============================================================
+
+COMMAND: git diff --check b7c719b..54e1940
+OUTPUT:
+tools/bootstrap/selfhost-lexer-link.HC:202: new blank line at EOF.
+RC: 2
+
+OBSERVATION:
+  git diff --check returns non-zero on the effective LEXER04 range.
+  The single whitespace defect is a new blank line at EOF in
+  tools/bootstrap/selfhost-lexer-link.HC:202.
+  The committed AC29 ("Patch hygiene (F7)") tested scope traceability,
+  NOT git diff --check.
+
+D6_GIT_DIFF_CHECK_RC_NONZERO=YES
+D6_OFFENDING_PATH=tools/bootstrap/selfhost-lexer-link.HC
+D6_PATCH_HYGIENE_DEFECT=CONFIRMED

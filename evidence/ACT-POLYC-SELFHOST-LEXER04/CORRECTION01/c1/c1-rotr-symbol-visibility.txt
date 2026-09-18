@@ -1,0 +1,65 @@
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION01 -- C1 -- ROTR symbol visibility (BEFORE fix)
+============================================================================
+
+TU A compile (returncode 0):
+cc: error: couldn't create cache file '/var/folders/0g/mpt_55f524ndzxymkp20wjfc0000gn/T/xcrun_db-ZxMOi748' (errno=Operation not permitted)
+cc: error: couldn't create cache file '/var/folders/0g/mpt_55f524ndzxymkp20wjfc0000gn/T/xcrun_db-J4vhpbUb' (errno=Operation not permitted)
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+
+
+TU B compile (returncode 1):
+error: Variable or function `A_ROTR` has not been defined
+ --> tuB.HC:10:52
+     |
+  10 |      "A_ROTR(0xdeadbeef)=%d B_ROTR(0xdeadbeef)=%d\n", A_ROTR(3735928559), B_ROTR(3735928559);
+     |                                                       ^^^^^^ Try defining function `A_ROTR()`?
+
+
+INLINE 2-TU compile (returncode 1):
+error: Cannot redefine function: ROTR
+ --> tuB.HC:3:3
+     |
+   3 |      U32 hi = x >> n;
+     |      ^^^
+error: Variable or function `x` has not been defined
+ --> tuB.HC:3:12
+     |
+   3 |      U32 hi = x >> n;
+     |               ^
+error: Variable or function `x` has not been defined
+ --> tuB.HC:4:13
+     |
+   4 |      U32 lo = (x << (32 - n)) & 4294967295;
+     |                ^
+error: Unexpected floating keyword: return
+ --> tuB.HC:5:10
+     |
+   5 |      return (hi | lo) & 4294967295;
+     |             ^
+error: TK_KEYWORD    public can only prefix a class
+ --> tuB.HC:7:8
+     |
+   7 |    public U32 B_ROTR(U32 x) { return ROTR(x, 13); }
+     |           ^^^
+
+
+TU A object symbols (before fix):
+  00000000000000b4 T _A_ROTR
+  0000000000000000 T _ROTR
+
+TU B object symbols (before fix):
+
+OBSERVATIONS:
+  1. Both .o files compile successfully as single-TU.
+  2. TU A and TU B both export _ROTR as a global T symbol.
+  3. The inline 2-TU build fails with:
+       error: Cannot redefine function: ROTR
+     This proves the parser tracks `static` only at single-TU level;
+     the codegen path emits the symbol as global without visibility
+     differentiation.
+
+PRE_FIX_INFILE_STATIC_REDEFINITION_BLOCKED=YES
+PRE_FIX_TWO_TU_INLINE_BUILD=FAIL
+PRE_FIX_TU_A_SYMBOLS=

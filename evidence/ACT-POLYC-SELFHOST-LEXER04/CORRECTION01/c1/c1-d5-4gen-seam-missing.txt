@@ -1,0 +1,26 @@
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION01 -- C1 -- D5: missing four-generation semantic seam
+=========================================================================
+
+Existing predecessor production seam (c3-production-seam.txt) covers:
+  stage0 (legacy C lexer, no HCC_USE_SELFHOST_COMPONENTS)
+  stage1 (production lexer + G0 BootstrapLinkDirective)
+
+  PREDECESSOR_PRODUCTION_SEAM_GENERATIONS=2
+  REQUIRED_PRODUCTION_SEAM_GENERATIONS=4
+
+Existing c3-stage-seam.txt is component-object topology narration:
+  G0 hcc          â component .o compiled by hcc
+  G1 hcc-bootstrap02 â component .o compiled by hcc-bootstrap02 (which itself uses G0 .o)
+  G2 hcc-bootstrap03 â component .o compiled by hcc-bootstrap03 (which itself uses G1 .o)
+  G3 hcc-bootstrap04 â component .o compiled by hcc-bootstrap04 (which itself uses G2 .o)
+  This proves transitive topology and component-object byte-equality,
+  NOT that G0/G1/G2/G3 each RUN the production #link path and emit
+  identical semantic output.
+
+Critical distinction:
+  LEXER09_COMPONENT_OBJECT_FIXED_POINT = PASS  (4 component .o files byte-equal)
+  LEXER09_4_STAGE_SEMANTIC_SEAM        = NOT_PROVEN
+  These are TWO DIFFERENT predicates. The authorized contract (PREV-AC12)
+  requires the second. Predecessor proved only the first.
+
+D5_4GEN_SEMANTIC_SEAM_MISSING=CONFIRMED

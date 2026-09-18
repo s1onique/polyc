@@ -1,0 +1,84 @@
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION01 -- C1 -- ROTR/libtos root cause
+====================================================================
+
+Question: Why does a PolyC static helper (such as ROTR) behave as if
+externally visible at the binary-symbol level?
+
+The predecessor HANDOFF (b5ccba3) claimed the cause was partial libtos.a
+ABI incompatibility. That claim is INCORRECT. Mechanical reproduction:
+
+1. Single-TU ROTR reproducer (committed as c1-rotr-minimal-reproducer-tuA.HC):
+   - Compiles cleanly with ./hcc.
+   - Resulting .o exports BOTH A_ROTR AND ROTR as T (text, global visible).
+     Evidence: nm output showed both "_A_ROTR" and "_ROTR" in T section.
+   - Binary runs and prints correct ROTR(0xdeadbeef, 7) value.
+   - Conclusion: NOT a libtos ABI defect. ROTR links fine.
+
+2. Two-TU ROTR reproducer (committed as c1-rotr-minimal-reproducer-tuB.HC):
+   - When both files are inlined into one compilation unit, hcc errors:
+     error: Cannot redefine function: ROTR
+   - This proves: hcc tracks `static` ONLY at the parse level (preventing
+     in-file redefinition), but treats the resulting symbol identically to
+     a non-static function during code emission.
+
+3. Localization:
+   File: src/parser.c
+   Lines 2538-2540 (KW_STATIC branch in parseToplevelDef):
+       case KW_STATIC:
+           type = parseDeclSpec(cc);
+           if (type == NULL) {
+               cctrlRaiseException(cc,"Expected type declaration");
+           }
+           /* static at the global scope does not yet do anything */
+           is_static = 1;
+           (void)is_static;
+   The author explicitly wrote "does not yet do anything" and discarded
+   the flag. is_static is never passed to parseFunctionOrDef, astFunction,
+   or to any symbol-table registration. As a result:
+   - parseToplevelDef does not skip mapAdd(cc->global_env, fn->fname)
+     for static functions (line 2802 calls parseFunctionOrDef with no
+     is_static argument).
+   - jit-common.c unconditionally mapAdd(jit->symbols, ...) and
+     mapAdd(jit->host_symbols, ...) at lines 704-705.
+
+4. Negative control:
+   File: src/asm/asm_jit.c (line 45) and src/asm/asm_enc.c show no
+   visibility-class handling at all. Static vs non-static are merged
+   into a single global symbol space at codegen.
+
+5. Why the SHA-256 verifier (sha256-tool.c) was rewritten in C:
+   C `static` lowers correctly to .private_extern / .local in Mach-O
+   and to STV_HIDDEN in ELF. Two TUs in C each get their own ROTR
+   with no link-time collision. The author took the path of least
+   resistance by writing the verifier in C instead of repairing the
+   compiler. Per F-POLYC-TOOLS and F8, this is the wrong direction.
+
+ROOT_CAUSE_CLASSIFICATION:
+  ROTR_ROOT_CAUSE_CLASS=A.STATIC_FUNCTION_VISIBILITY_CODEGEN
+  ROTR_ROOT_CAUSE_FILE=src/parser.c (parseToplevelDef, lines 2538-2540)
+  ROTR_ROOT_CAUSE_SYMBOL=KW_STATIC (the discard `is_static = 1; (void)is_static;`)
+  SECONDARY_FILE=src/jit-common.c (lines 704-705, unconditional mapAdd)
+
+AUTHORIZATION GATE FOR C2A REPAIR (per ACT §6):
+  ROTR_ROOT_CAUSE_REPRODUCED=YES
+  ROOT_CAUSE_IS_IN_HCC=YES
+  EXACT_PRODUCTION_FILE_SET_IDENTIFIED=YES (src/parser.c, src/jit-common.c)
+  SEMANTIC_SCOPE_BOUNDED=YES (static keyword gains intended semantics;
+                               no existing program semantics change)
+  NO_LANGUAGE_SEMANTIC_CHANGE_REQUIRED=YES
+  ==> C2A REPAIR AUTHORIZED
+
+SCOPE FREEZE (per ACT §7):
+  ROTR_REPAIR_ALLOWED_FILES=src/parser.c, src/jit-common.c
+  ROTR_REPAIR_ALLOWED_SYMBOLS=KW_STATIC branch in parseToplevelDef;
+                              parseFunctionOrDef (add is_static parameter);
+                              astFunction (add is_static field);
+                              hccJitCompileChunk registration
+  ROTR_REPAIR_MAX_FILES=2
+  ROTR_REPAIR_EXPECTED_BEHAVIOR=static functions do not enter global_env
+                                as visible symbols; static functions are
+                                not registered into jit->symbols/host_symbols
+                                with public visibility.
+  ROTR_REPAIR_NEGATIVE_CONTROL=the existing in-file static redefinition
+                                error MUST still trigger when the same
+                                static name appears twice in one TU.

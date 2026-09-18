@@ -1,0 +1,33 @@
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION01 -- C1 -- D4: F-POLYC-TOOLS violation
+====================================================================
+
+Inventory of new substantive non-PolyC tools introduced at predecessor C3:
+
+  PATH                = tools/quality/lexer09-fixedpoint-verify.c
+  LANGUAGE            = C
+  LOC                 = 154
+  HAS_MAIN            = YES
+  SEMANTIC_RESPONSIBILITY = byte-equal object comparator; 4-gen fixed point; SHA-256 invocation; mutation control; authoritative verdict
+  ORACLE_ONLY         = NO   (substitutes for PolyC verifier + SHA-256)
+  AUTHORITATIVE_VERDICT = YES (called from canonical LEXER09 fixedpoint Makefile target)
+
+  PATH                = tools/quality/sha256-tool.c
+  LANGUAGE            = C
+  LOC                 = 119
+  HAS_MAIN            = YES
+  SEMANTIC_RESPONSIBILITY = self-contained SHA-256 implementation (uses ROTR primitive) used to authoritatively verify fixed-point SHA
+  ORACLE_ONLY         = NO   (substitutes for PolyC verifier + SHA-256)
+  AUTHORITATIVE_VERDICT = YES (called from canonical LEXER09 fixedpoint Makefile target)
+
+SHELL_LOC_GATE_NOTE:
+  The predecessor HANDOFF states these C tools exist because hcc JIT
+  codegen emits "static U32 ROTR" as a global symbol, which fails to
+  link against the partial libtos.a shipped under bootstrap02 ABI.
+  This is a real toolchain defect, but the authorized remedy is
+  either (a) repair the hcc defect or (b) open a bounded enabling ACT
+  to amend F-POLYC-TOOLS ¶ FIRST. Rewriting the authoritative verifier
+  in C and PASS-marking it via a substituted AC table is forbidden.
+
+LEXER09_FIXEDPOINT_VERIFY_C_SUBSTANTIVE=YES
+SHA256_TOOL_C_SUBSTANTIVE=YES
+D4_F_POLYC_TOOLS_VIOLATION=CONFIRMED

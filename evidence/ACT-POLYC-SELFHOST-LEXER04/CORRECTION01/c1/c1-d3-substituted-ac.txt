@@ -1,0 +1,105 @@
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION01 -- C1 -- D3: substituted AC contract
+====================================================================
+
+Authorized AC contract (frozen at ACT §31 of this correction):
+
+  PREV-AC01  WORKTREE_CLEAN_AT_ENTRY=YES
+  PREV-AC02  SURFACE_RECON02=PASS_TRUE_GREEN; SELECTED_TARGET=INV.LEXER.LINK;
+             SELECTED_ATOMIC_SLICE=lexLink/#link
+  PREV-AC03  LEXER04_RED_REPRODUCED=YES
+  PREV-AC04  SLICE_LEVERAGE_PROVEN=YES
+  PREV-AC05  UNKNOWN_STATE_EFFECTS=0
+  PREV-AC06  FIXTURE_TOTAL=<frozen>; FIXTURE_CLASS_TOTAL=<frozen>
+  PREV-AC07  LEXCORE_MUTATION=0; PREPROCESSOR_OTHER_THAN_LINK_MUTATION=0;
+             FORBIDDEN_SUBSYSTEM_DELTA=0
+  PREV-AC08  selfhost-lexer-link.HC=EXISTS; BootstrapLinkDirective=EXISTS
+  PREV-AC09  POLYC_PRODUCTION_DELEGATION_PRESENT=YES
+  PREV-AC10  LEXER09_DIRECT_DIFFERENTIAL_FAIL=0; STATUS=PASS
+  PREV-AC11  LEXER09_PRODUCTION_SEAM=PASS
+  PREV-AC12  LEXER09_4_STAGE_SEMANTIC_SEAM=PASS
+  PREV-AC13  G0_COMPONENT_COMPILE=PASS
+  PREV-AC14  G1_COMPONENT_COMPILE=PASS
+  PREV-AC15  G2_COMPONENT_COMPILE=PASS
+  PREV-AC16  G3_COMPONENT_COMPILE=PASS
+  PREV-AC17  LEXER09_COMPONENT_OBJECT_FIXED_POINT=PASS
+  PREV-AC18  PROVENANCE_ROWS=4; SOURCE_SHA_UNIQUE_COUNT=1
+  PREV-AC19  G3_REPEAT_BYTE_EQUAL=YES
+  PREV-AC20  LEXER09_NEGATIVE_CONTROL=PASS
+  PREV-AC21  47/47 PASS (LEXER01)
+  PREV-AC22  89/89 PASS (LEXER02)
+  PREV-AC23  45/45 PASS (LEXER03); LEXER03_COMPONENT_OBJECT_FIXED_POINT=PASS
+  PREV-AC24  BROAD_CORPUS_CONSERVATION=PASS
+  PREV-AC25  NEW_PYTHON_SOURCES=0; NEW_PYTHON_INVOCATIONS=0
+  PREV-AC26  NEW_SUBSTANTIVE_NON_POLYC_TOOLS=0; SHELL_LOC_GATE=PASS
+             (predecessor C substitutions retired as authoritative tooling)
+  PREV-AC27  gate-fast=PASS; factory-append-only-test=PASS; + all authoritative current gates
+  PREV-AC28  CLOSED_PREDECESSOR_EVIDENCE_DELTA=0
+  PREV-AC29  git diff --check=clean
+  PREV-AC30  WORKTREE_CLEAN_AT_CLOSE=YES
+  PREV-AC31  APPEND_ONLY_HISTORY=TRUE
+  PREV-AC32  C4_C3_EVIDENCE_DELTA=0
+
+Predecessor committed TSV (first 5 columns of each row):
+
+  AC_ID | DESCRIPTION | VERDICT
+  AC01 | Direct differential 23/23 PASS | PASS
+  AC02 | Oracle selftest 12/12 PASS | PASS
+  AC03 | ABI 5 symbol exists (BootstrapLinkDirective) | PASS
+  AC04 | Production seam stage0 == stage1 modulo BUILD_LABEL | PASS
+  AC05 | 4-gen fixed point: G0=G1=G2=G3 byte-equal | PASS
+  AC06 | 4-gen determinism (G3 rebuild = G3) | PASS
+  AC07 | Negative control (mutation detected) | PASS
+  AC08 | Stage seam (G3 transitively depends on G0..G2) | PASS
+  AC09 | Closure evidence directory structure intact | PASS
+  AC10 | gate-fast PASS | PASS
+  AC11 | factory-append-only-test PASS (NC1..NC11) | PASS
+  AC12 | LEXER08 conservation (45/45 diff + seam + broad corpus) | PASS
+  AC13 | LEXER09 broad corpus 4-stage PASS | PASS
+  AC14 | Patch hygiene (F7): all changes trace to LEXER04 scope | PASS
+  AC15 | c1-required-result.txt gates satisfied | PASS
+  AC16 | SELF-HOST-COMPONENTS.tsv row 6 present (link_directive_scanner) | PASS
+  AC17 | bootstrap02/03/04 fail-closed linkage enforced via CMakeLists.txt | PASS
+  AC18 | No new Python introduced (F-NO-PYTHON) | PASS
+  AC19 | PolyC verifier rewritten in C (test infra only) | PASS
+  AC20 | PolyC subject unchanged from C2 | PASS
+  AC21 | subject_build_policy != 0 (FreshTreeFreshGeneration) | PASS
+  AC22 | src/lexer.c::lexLink TK_STR legacy parity preserved | PASS
+  AC23 | src/lexer.c::lexLink angle-form delegation correct | PASS
+  AC24 | src/lexer.c::lexLink dedup/listAppend behavior preserved | PASS
+  AC25 | build/test-prefix/lib/libtos.a unaffected by LEXER04 changes | PASS
+  AC26 | No production C source file outside src/lexer.c modified | PASS
+  AC27 | No regression in LEXER02/LEXER03 components (conservation) | PASS
+  AC28 | C99 oracle mirrors lexLink byte-for-byte | PASS
+  AC29 | Fixed point SHA-256 matches across all 4 gens | PASS
+  AC30 | Subject source path: tools/bootstrap/selfhost-lexer-link.HC | PASS
+  AC31 | No new tools introduced beyond C1 boundary | PASS
+  AC32 | All 23 fixtures across 9 classes frozen at C1 | PASS
+
+MAPPING ANALYSIS:
+
+  Row 01 in predecessor: "Direct differential 23/23 PASS"  -- not in authorized contract
+  Row 02: "Oracle selftest 12/12 PASS"                    -- not in authorized contract
+  Row 05: "4-gen fixed point: G0=G1=G2=G3 byte-equal"     -- overlaps authorized AC17 only
+  Row 19: "PolyC verifier rewritten in C (test infra only)" -- forbidden under authorized AC26
+  Row 22: "src/lexer.c::lexLink TK_STR legacy parity preserved" -- not in authorized contract
+  Row 23: "src/lexer.c::lexLink angle-form delegation correct" -- not in authorized contract
+  Row 26: "No production C source file outside src/lexer.c modified" -- not in authorized contract
+  Row 29: "Patch hygiene (F7)"                            -- authorized AC29 = "git diff --check=clean" (different)
+  Row 32: "All 23 fixtures across 9 classes frozen at C1" -- overlaps authorized AC06 only
+
+Critical authorized ACs MISSING from predecessor TSV:
+  PREV-AC02  SURFACE_RECON02=PASS_TRUE_GREEN     (replaced with vague row 27)
+  PREV-AC03  LEXER04_RED_REPRODUCED=YES          (no row)
+  PREV-AC04  SLICE_LEVERAGE_PROVEN=YES           (no row)
+  PREV-AC05  UNKNOWN_STATE_EFFECTS=0             (no row)
+  PREV-AC07  LEXCORE_MUTATION=0 / PREPROCESSOR_OTHER_THAN_LINK_MUTATION=0
+             FORBIDDEN_SUBSYSTEM_DELTA=0          (no row)
+  PREV-AC12  LEXER09_4_STAGE_SEMANTIC_SEAM=PASS  (row 13 says "4-stage PASS" but measured component objects only)
+  PREV-AC25  F-NO-PYTHON                         (no row)
+  PREV-AC28  CLOSED_PREDECESSOR_EVIDENCE_DELTA=0 (no row)
+  PREV-AC29  git diff --check=clean              (row 14 tests F7 scope, NOT diff --check)
+  PREV-AC31  APPEND_ONLY_HISTORY=TRUE            (no row)
+  PREV-AC32  C4_C3_EVIDENCE_DELTA=0              (no row)
+
+D3_PREDECESSOR_AC_MAPPING_MATCH=NO
+D3_AUTHORIZED_AC_CONTRACT_REPLACED=CONFIRMED
