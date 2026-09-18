@@ -2802,6 +2802,92 @@ ACT-POLYC-SELFHOST-LEXER03-CORRECTION02            CLOSED PASS_TRUE_GREEN
 ```
 
 
+#### ACT-POLYC-SELFHOST-SURFACE-RECON02 status (CLOSED PASS_TRUE_GREEN at `e808108`)
+
+```
+ACT-POLYC-SELFHOST-SURFACE-RECON02                  CLOSED PASS_TRUE_GREEN
+  Title:        Reconstruct the live PolyC self-host boundary after
+                LEXER03, inventory remaining authoritative non-self-hosted
+                compiler surfaces, rank them mechanically, and select
+                exactly one next bounded migration ACT.
+  Authorization: docs/acts/ACT-POLYC-SELFHOST-SURFACE-RECON02.md
+  Predecessor:  ACT-POLYC-SELFHOST-LEXER03-CORRECTION02 CLOSED
+                PASS_TRUE_GREEN at c2504a2 (C4 CLOSE 4fa66c7).
+  C0 AUTH:      0b13abd
+  C1 INVENTORY: f2ec425  (26 surfaces, UNKNOWN=0;
+                          4 SELFHOSTED_TRUE_GREEN + 19 LEGACY_C_AUTHORITY +
+                          1 LEGACY_NON_POLYC_AUTHORITY +
+                          1 BUILD_ORCHESTRATION + 1 QUALITY_TOOLING;
+                          AUTHORITY_RESIDUE=19, NON_POLYC_COMPILER=0,
+                          NON_POLYC_TOOLING_ONLY=58)
+  C2 RANK/SELECT: ea46eef  (3 eligible candidates;
+                            INV.LEXER.LINK wins on R1 leverage=3
+                            BLOCKS_NEXT_SELFHOST_STAGE)
+  C3 VERIFY:    e808108  (controls + recompute + conservation +
+                          AC26 LEXER01..03 PASS + factory gates PASS)
+  C4 CLOSE:     <this commit>  (HANDOFF + additive ROADMAP block)
+
+  Successful terminal predicates:
+    SELFHOST_SURFACE_RECON02        = COMPLETE
+    NEXT_SELFHOST_TARGET            = MECHANICALLY_SELECTED
+    NEXT_ACT_SCOPE                  = FROZEN
+    VERDICT                         = PASS_TRUE_GREEN
+
+  Ranking output (lexicographic R1..R6):
+    rank 1 SELECTED : INV.LEXER.LINK        leverage=3  (BLOCKS_NEXT_SELFHOST_STAGE)
+    rank 2 DEFERRED : INV.PARSER.COMPOUND   leverage=2  (BLOCKS_PRODUCTION_POLYC_AUTHORITY)
+    rank 3 DEFERRED : INV.PARSER.TOPLEVEL   leverage=2  (BLOCKS_PRODUCTION_POLYC_AUTHORITY)
+
+  Atomic slice chosen:
+    INV.LEXER.LINK  ->  lexLink (#link directive handler)
+    Smallest bounded slice within the highest-leverage surface; mirrors
+    the LEXER02/LEXER03 #ifdef-gated delegation pattern.
+
+  Selected target contract:
+    NEXT_TARGET_SURFACE_ID           = INV.LEXER.LINK
+    NEXT_TARGET_SUBSYSTEM            = lexer
+    NEXT_TARGET_RESPONSIBILITY       = Migrate the lexLink() #link directive
+                                       handler from C to PolyC
+    NEXT_TARGET_AUTHORITATIVE_IMPL   = src/lexer.c::lexLink
+    NEXT_TARGET_POLYC_STATUS         = NONE (will become BootstrapLinkDirective)
+    NEXT_TARGET_CALLERS              = lexCore dispatch (per #link preproc),
+                                       cctrlInitParse (token-flow side),
+                                       compileToAsm (link-list consumer)
+    NEXT_TARGET_STAGE_REACH          = G0/G1/G2/G3 (all four generations)
+    NEXT_TARGET_EXISTING_TEST_SURFACE = tools/quality/lexer07/08 differential
+    NEXT_TARGET_EXPECTED_PROOF_SURFACES = direct differential, real production
+                                       seam, 4-stage seam, 4-gen fixed point,
+                                       corpus conservation, negative mutation
+                                       control, provenance binding
+
+  Next ACT:
+    NEXT_ACT_ID                      = ACT-POLYC-SELFHOST-LEXER04
+    NEXT_ACT_SCOPE_FROZEN            = YES
+    NEXT_ACT_RED_IS_MECHANICALLY_REPRODUCIBLE = YES
+    NEXT_ACT_PROOF_MODEL_COMPLETE    = YES
+
+  Deferred (P1/P2):
+    P1: INV.PARSER.TOPLEVEL  -- needs parser-corpus oracle (enabling ACT)
+    P1: INV.PARSER.COMPOUND  -- coupled to INV.CCTRL.SCOPE
+    P2: INV.PREPROC.PP       -- could become LEXER05 (#include etc.)
+    P2: All CHARTER-preserved / experimental / tooling surfaces
+
+  Resolved residue:
+    "Maybe LEXER04?" -> mechanically answered: yes, LEXER04 atomic
+    slice is lexLink. NEXT_ACT_ID and scope are frozen.
+
+  Hand-off: docs/factory/HANDOFF-ACT-POLYC-SELFHOST-SURFACE-RECON02.md
+
+  Mandatory AC table:
+    evidence/ACT-POLYC-SELFHOST-SURFACE-RECON02/c3/mandatory-ac-status.tsv
+    MANDATORY_TOTAL=31  MANDATORY_PASS=31  MANDATORY_FAIL=0
+    MANDATORY_UNKNOWN=0  MANDATORY_MISSING_EVIDENCE=0
+
+  NEXT:    ACT-POLYC-SELFHOST-LEXER04 (atomic lexLink migration).
+           Re-run recon after LEXER04 closes.
+```
+
+
 #### ACT-POLYC-SELFHOST-LEXER02 status (CLOSED PASS at this commit)
 
 ```
