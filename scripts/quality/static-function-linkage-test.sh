@@ -40,5 +40,9 @@ echo "$OUT" | grep -q '^22$' || { echo "J03 FAIL: $OUT"; F=1; }
 OUT=$(printf 'public I64 Foo(){return 11;}\n"%%d\\n", Foo();\nstatic I64 Bar(){return 22;}\n' | $HCC --install-dir="$PREFIX" -repl 2>&1)
 echo "$OUT" | grep -q '^11$' || { echo "J04 FAIL: $OUT"; F=1; }
 $HCC --install-dir="$PREFIX" -jit $FIX/j01-jit-single-private/j01.HC >/dev/null 2>&1; RC=$?; [ "$RC" = "1" ] || { echo "J01 FAIL rc=$RC"; F=1; }
+# s09: legacy x86 backend --use-legacy-x86 must gate .global on fn_is_static
+$HCC --install-dir="$PREFIX" --use-legacy-x86 --target=x86_64-apple-darwin -c -o s09.o $FIX/s09-legacy-x86-static.HC >/dev/null 2>&1
+nm -m s09.o 2>/dev/null | grep -qE ' external _StaticFn$' && { echo "S09 FAIL"; F=1; } || true
+nm -m s09.o 2>/dev/null | grep -qE 'non-external _StaticFn$' || { echo "S09 FAIL (StaticFn not local)"; F=1; }
 [ $F = 0 ] && echo "STATIC_FUNCTION_LINKAGE_TEST=PASS" || echo "STATIC_FUNCTION_LINKAGE_TEST=FAIL"
 exit $F

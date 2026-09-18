@@ -1,0 +1,65 @@
+C2 IMPL repair summary
+
+Production code change:
+
+  src/x86.c:asmFunctionInit (around line 2340)
+
+    Before:
+      aoStrCatPrintf(buf, ".text"            "\n\t"
+                          ".global %s\n"
+                          "%s:\n\t"
+                          "push   %%rbp"       "\n\t"
+                          "movq   %%rsp, %%rbp" "\n\t",
+                          fname,
+                          fname);
+
+    After:
+      if (func->fn_is_static) {
+          aoStrCatPrintf(buf, ".text"            "\n\t"
+                              "%s:\n\t"
+                              "push   %%rbp"       "\n\t"
+                              "movq   %%rsp, %%rbp" "\n\t",
+                              fname);
+      } else {
+          aoStrCatPrintf(buf, ".text"            "\n\t"
+                              ".global %s\n"
+                              "%s:\n\t"
+                              "push   %%rbp"       "\n\t"
+                              "movq   %%rsp, %%rbp" "\n\t",
+                              fname,
+                              fname);
+      }
+
+Total change: 22 net insertions (6 comment + 2 substantive code fork),
+0 deletions of behavior. Mirrors the existing src/aarch64.c:2144 and
+src/x86_64.c:2396 patterns.
+
+Test infrastructure change:
+
+  scripts/quality/static-function-linkage-test.sh extended from 44 LOC
+  to 48 LOC (+4 lines) with the s09 dispatch:
+    +$HCC --use-legacy-x86 --target=x86_64-apple-darwin -c s09.o $FIX/s09-legacy-x86-static.HC
+    +nm -m s09.o check for 'external _StaticFn' (FAIL if found)
+    +nm -m s09.o check for 'non-external _StaticFn' (FAIL if not found)
+
+Within the 50-LOC shell-loc-gate cap.
+
+GREEN verification (post-fix):
+
+  $ make static-function-linkage-test
+  STATIC_FUNCTION_LINKAGE_TEST=PASS
+
+  $ hcc --use-legacy-x86 --target=x86_64-apple-darwin -c s09.HC
+  $ nm -m s09.o
+  0000000000000035 (__TEXT,__text) external _PublicFn
+  0000000000000013 (__TEXT,__text) non-external _StaticFn
+  0000000000000057 (__TEXT,__text) external _main
+
+  $ hcc --use-legacy-x86 --target=x86_64-apple-darwin -S s09.HC | grep '\.global\|\.globl'
+  .globl argc
+  .globl argv
+          _StaticFn:             <-- NO .global (correct, static)
+          .global _PublicFn
+  _PublicFn:
+          .global _main
+  _main:

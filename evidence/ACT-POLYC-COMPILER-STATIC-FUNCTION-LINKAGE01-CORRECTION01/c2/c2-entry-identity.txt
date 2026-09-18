@@ -1,0 +1,16 @@
+ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01-CORRECTION01 / c2 / c2-entry-identity.txt
+
+C2 IMPL entry identity:
+
+```text
+git rev-parse HEAD          = 6ba9f5e (C0+C1 commit)
+git branch --show-current   = main
+git status --porcelain=v1   = M src/x86.c
+                                M scripts/quality/static-function-linkage-test.sh
+```
+
+C0+C1 commit SHA: 6ba9f5e
+
+C2 IMPL modifies src/x86.c:asmFunctionInit to consult fn_is_static
+and suppress `.global` for static functions. Mirrors the pattern in
+src/aarch64.c and src/x86_64.c.

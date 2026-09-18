@@ -2336,13 +2336,28 @@ int asmFunctionInit(Cctrl *cc, AoStr *buf, Ast *func) {
 
     char *fname = asmNormaliseFunctionName(cc, func->fname);
 
-    aoStrCatPrintf(buf, ".text"            "\n\t"
-                        ".global %s\n"
-                        "%s:\n\t"
-                        "push   %%rbp"       "\n\t"
-                        "movq   %%rsp, %%rbp" "\n\t",
-                        fname,
-                        fname);
+    /* ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01-CORRECTION01 C2:
+     * HolyC `static` functions must NOT be marked `.global` so the
+     * final cc link step does not treat them as globally visible
+     * symbols. The IR-based src/x86_64.c and src/aarch64.c already
+     * fork on fn_is_static; the legacy AST-based x86 backend
+     * (this file) was emitting `.global` unconditionally for every
+     * function, which is a P0 closure defect (see HANDOFF §P0-1). */
+    if (func->fn_is_static) {
+        aoStrCatPrintf(buf, ".text"            "\n\t"
+                            "%s:\n\t"
+                            "push   %%rbp"       "\n\t"
+                            "movq   %%rsp, %%rbp" "\n\t",
+                            fname);
+    } else {
+        aoStrCatPrintf(buf, ".text"            "\n\t"
+                            ".global %s\n"
+                            "%s:\n\t"
+                            "push   %%rbp"       "\n\t"
+                            "movq   %%rsp, %%rbp" "\n\t",
+                            fname,
+                            fname);
+    }
 
     int new_offset = 0, alignment = 0;
     /* Now assign offsets */

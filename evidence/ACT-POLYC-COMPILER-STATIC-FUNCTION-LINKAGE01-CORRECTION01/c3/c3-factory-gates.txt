@@ -1,0 +1,23 @@
+ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01-CORRECTION01 / c3 / c3-factory-gates.txt
+
+Factory gate outputs (post-C2, pre-C3 commit):
+
+  gate-fast                          STATUS=PASS  (PAIR_OK=7 unchanged)
+  factory-append-only-test           STATUS=PASS  (NC1..NC11)
+  static-function-linkage-test       STATUS=PASS  (incl. new s09)
+  shell-loc-gate                     STATUS=PASS  (script 44 -> 48 LOC)
+  shell-budget-gate                  STATUS=PASS
+
+Closure-status disposition:
+
+  The closure-status oracle at scripts/quality/factory-closure-status-check.sh
+  was NOT modified by this ACT. The bounded managed universe remains
+  at the predecessor C4 state. PAIR_OK=7 reflects the 6 original
+  pairs plus the predecessor STATIC-FUNCTION-LINKAGE01 pair added
+  in commit 712a3b7.
+
+  This ACT's HANDOFF is registered in the manifest
+  (docs/factory/act-handoff-map.tsv) but cannot be PAIR_OK-matched
+  against the hardcoded managed universe without modifying the
+  closure-status-check.sh script itself, which is the documented
+  defect requiring ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01.

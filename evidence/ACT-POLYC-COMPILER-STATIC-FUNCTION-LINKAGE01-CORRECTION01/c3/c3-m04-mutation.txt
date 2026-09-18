@@ -1,0 +1,20 @@
+M04 mutation: revert src/x86.c fix to unconditional .global
+
+  Mutation: replace the if/else fork with the original
+            unconditional `.global %s\n` emission.
+
+  Observed (mutated binary, with -c and --use-legacy-x86 --target=x86_64-apple-darwin):
+
+    $ nm -m s09_mut.o | grep _StaticFn
+    0000000000000013 (__TEXT,__text) external _StaticFn    <-- NOT_EXPECTED
+
+    $ make static-function-linkage-test
+    S09 FAIL
+    S09 FAIL (StaticFn not local)
+    STATIC_FUNCTION_LINKAGE_TEST=FAIL
+
+  Both checks fired:
+    1. `grep -qE ' external _StaticFn$'` returned nonzero (matched).
+    2. `grep -qE 'non-external _StaticFn$'` returned 1 (no match).
+
+  Source restored: PASS.
