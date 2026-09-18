@@ -1,0 +1,159 @@
+ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION01 / c0 / c0-postclosure-review-disposition.txt
+
+DISPOSITION: REJECT PASS_TRUE_GREEN
+
+Reviewer identified four mechanically-confirmed defects in the
+C3/C4 evidence machinery. Each was reproduced against the committed
+tree:
+
+  P0-1  AC07 baseline equivalence
+    File: evidence/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01/c3/
+          c3-baseline-equivalence.txt
+    Content (literal):
+      POLYC_GATE=factory-closure-status
+      STATUS=ERROR
+      REASON=manifest not found: /tmp/baseline-equiv.tsv
+      RC=2
+    Required predicate (per ACT §AC07):
+      OLD_CHECKER_PAIR_OK=7
+      NEW_CHECKER_PAIR_OK=7
+      OLD_CHECKER_PAIR_FAIL=0
+      NEW_CHECKER_PAIR_FAIL=0
+      LEGACY_ENUMERATION_EQUIVALENCE=PASS
+    Actual: NONE of those predicates established.
+    A manual reproduction at C5 with a populated /tmp/legacy-baseline.tsv
+    (7 legacy pairs at their actual evidence/*/ paths) shows the
+    new checker correctly enumerates and validates the legacy 7-pair
+    universe when given real paths; the C3 control was a broken test
+    harness, not a failing checker.
+    AC07 = NOT_PROVEN (the test artifact was an error, not a negative
+    result; rerunning with correct paths likely would have shown PASS,
+    but the recorded evidence is unusable).
+
+  P0-2  AC16 exact duplicate pair detection
+    File: evidence/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01/c3/
+          c3-n06-duplicate-pair.txt
+    Required predicate (per ACT §AC16, N06):
+      DUPLICATE_PAIR_DETECTED=YES (exact duplicate rows)
+    Actual recorded: DUPLICATE_ACT_PATHS=1, DUPLICATE_PAIRS=0
+    The checker rejected the duplicate row at the ACT-path layer
+    (DUPLICATE_ACT_PATHS=1) which short-circuits before the
+    DUPLICATE_PAIRS counter fires. The dedicated
+    DUPLICATE_PAIR_DETECTED counter is therefore not exercised
+    by the canonical pipeline; it is only reachable if the
+    pipeline is restructured.
+    AC16 = NOT_PROVEN in the recorded sense (the duplicate was
+    caught, but by a different counter than the required one).
+
+  P0-3  C4 authorization artifact mutation
+    C4 commit 985ebbd modified:
+      docs/acts/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01.md
+    Added ## Status section mirroring the HANDOFF VERDICT.
+    ACT §C4-scope said C4 may create HANDOFF + ROADMAP + C4
+    evidence; it did not explicitly forbid ACT-body modification,
+    but it implicitly implied scope discipline (the checker is
+    not to be modified in C4). The ACT being judged by the
+    closure oracle is itself an oracle input; mutating it
+    weakens the self-judgment proof from "HANDOFF appearance
+    alone flips FAIL to PASS" to "HANDOFF + ACT-body mutation
+    flips FAIL to PASS".
+    The closure oracle's structural requirement that an ACT
+    body contain a verdict metadata section (## Status) is in
+    tension with the Factory doctrine that HANDOFF owns the
+    verdict. That tension was surfaced as documented residue
+    at C4 but was not resolved.
+
+  P0-4  F-POLYC-TOOLS / shell test script
+    File: scripts/quality/factory-closure-status-check-test.sh
+    LOC = 123 (committed at C3, commit 43e7f1e).
+    F-POLYC-TOOLS rule (per AGENTS.md / DOCTRINE §27):
+      "Every new tool implementation SHALL be PolyC. Shell is
+       permitted only as ≤50-LOC bootstrap glue."
+    C3 evidence narrative:
+      "No new substantive shell application is introduced."
+    This is misleading: a 123-LOC 12-case regression test
+    harness is itself substantive (it constructs 12 manifests,
+    runs the checker, evaluates RC and substring assertions,
+    reports pass/fail counts). The narrative claim that the
+    controls use "direct FACTORY_ACT_HANDOFF_MAP invocations
+    via the existing test seam" is partly true (controls use
+    the env var) but the test SCRIPT that wraps those controls
+    is new substantive shell.
+    F-POLYC-TOOLS is documented as "NOT YET LANDED — see C2.9
+    of the bound correction ACT" in AGENTS.md, so binding
+    enforcement is not yet active; however, the C3 evidence
+    should have stated this caveat explicitly rather than
+    claiming PASS without justification.
+    AC28 = NOT_JUSTIFIED (no enforcement, but narrative false-
+    positive).
+
+VERDICT DISPOSITION:
+
+  The architectural change (manifest-driven enumeration;
+  freeze; unmanaged-pair registration; self-row load-bearing)
+  is mechanically sound and the gates genuinely PASS at C4.
+
+  The PROOF MACHINERY around it is defective:
+    - 1 of 35 mandatory ACs (AC07) backed by an error artifact
+    - 1 of 35 mandatory ACs (AC16) fired the wrong counter
+    - 1 C4 scope decision (ACT-body ## Status) weakened the
+      self-judgment proof
+    - 1 narrative claim (F-POLYC-TOOLS) understated a real
+      shell test that exceeds the bootstrap-glue cap
+
+  Combined effect: PASS_TRUE_GREEN is not a defensible verdict
+  for this ACT. The right verdict is PASS_FALSE_GREEN or
+  PASS_ENGINEERING_HALT_EVIDENCE_DEFECTS.
+
+  The closed ACT (commits f8ae7ac..985ebbd) is historical
+  evidence per F14. The closed HANDOFF claims PASS_TRUE_GREEN
+  and CANNOT be modified. The correct next step is to:
+
+    1. Open ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-
+       CORRECTION01.
+    2. In that ACT:
+       a. Re-run AC07 with a properly populated baseline
+          manifest and capture real evidence.
+       b. Re-run N06 with a manifest constructed so the
+          DUPLICATE_PAIRS counter fires (e.g., the duplicate
+          ACT path is paired with a different HANDOFF path,
+          so ACT-path dedup doesn't short-circuit before
+          pair dedup; OR restructure the pipeline so
+          DUPLICATE_PAIRS is always computed).
+       c. Strip the structural ## Status requirement from the
+          closure oracle so C4 of future ACTs only needs to
+          add the HANDOFF. Decide explicitly whether the
+          verdict lives in HANDOFF (Factory doctrine) or
+          in ACT body (current oracle contract).
+       d. Replace the 123-LOC shell test harness with a
+          PolyC test implementation, OR reduce to ≤50-LOC
+          dispatch around a PolyC test body, OR get an
+          explicit Factory exception for quality-test shell
+          and record it in LEGACY-NON-POLYC-TOOLS.tsv.
+       e. The HANDOFF for this CORRECTION01 should claim
+          PASS_FALSE_GREEN or
+          PASS_ENGINEERING_HALT_EVIDENCE_DEFECTS, not
+          PASS_TRUE_GREEN.
+
+    3. Do NOT proceed to ACT-POLYC-LIBTOS-SYMBOL-GAPS01
+       until the evidence defects are repaired, because
+       the closure oracle's authority depends on its own
+       closure being honestly demonstrated.
+
+BOARD DECISION REQUIRED:
+
+  Confirm reviewer verdict REJECT and authorize the
+  CORRECTION01 scope, or override and document the
+  override.
+
+ENTRY IDENTITY (this disposition):
+
+  git branch --show-current = main
+  git rev-parse HEAD        = 985ebbd8be173b58b18ee79089f88349e6f8eb6b
+  git status --short        = (clean)
+
+  ACT id: ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION01
+  Phase:  C0 (disposition only; no scope expansion authorized)
+
+HALT_CLASS: GOVERNANCE
+BLOCKS_NEXT: YES
