@@ -4815,3 +4815,101 @@ ACT's evidence tree.
 
 B0 substrate status unchanged: GREEN_WITH_CLOSURE_CORRECTION.
 BOOTSTRAP02 (B1 partial self-host) remains the next compiler ACT.
+
+
+#### ACT-POLYC-SELFHOST-LEXER04 status (CLOSED PASS_TRUE_GREEN at `<this commit>`)
+
+```
+ACT-POLYC-SELFHOST-LEXER04                     CLOSED PASS_TRUE_GREEN
+  Title:        Migrate link_directive_scanner (lexLink / #link directive
+                handler) from C to PolyC and prove four-generation
+                component-object fixed point.
+  Authorization: docs/acts/ACT-POLYC-SELFHOST-LEXER04.md
+                (C0 AUTH precedes C1 RED per ACT-after-work governance
+                repair from LEXER03 closure)
+  Predecessor:  ACT-POLYC-SELFHOST-SURFACE-RECON02 CLOSED PASS_TRUE_GREEN
+                at e808108 (C4 CLOSE b7c719b).
+  C1 RED/CONTRACT: a09104d
+  C2 IMPL:         ffee58b
+  C3 EVIDENCE:     388fdc2  (21 evidence files + 32-row AC TSV, all PASS;
+                             C2 IMPL TK_STR offset defect corrected)
+  C4 CLOSE:        <this commit>  (HANDOFF + additive ROADMAP block)
+
+  Successful terminal predicates:
+    LEXER09_LINK_DIRECT_DIFFERENTIAL         = PASS  23/23
+    LEXER09_LINK_PRODUCTION_SEAM             = PASS  (10/10 cases
+                                                   byte-identical
+                                                   modulo BUILD_LABEL)
+    LEXER09_LINK_FIXED_POINT_4_GENERATIONS   = PASS  (G0=G1=G2=G3,
+                                                   2976 bytes each,
+                                                   sha256 = 70879e46..f57d6e)
+    LEXER09_LINK_DETERMINISM                 = PASS
+    LEXER09_LINK_NEGATIVE_CONTROL            = PASS
+    LEXER09_LINK_BROAD_CORPUS_4_STAGE        = PASS
+    LEXER08_CONSERVATION                     = PASS  (45/45 diff,
+                                                   seam, broad corpus)
+    Factory gate-fast                        = PASS
+    Factory append-only                      = PASS  NC1..NC11
+
+  Per-generation compiler identities (C3 evidence):
+    G0 ./hcc                       sha e1bb1cb5..d6c8822c..3343c39ca125c
+    G1 ./build/hcc-bootstrap02     sha 3b1e2cd1..3755626706601fe785a
+    G2 ./build/hcc-bootstrap03     sha b8a9781a..76a967fd761147c6ef7100b9acdca
+    G3 ./build/hcc-bootstrap04     sha 3b447421..61c6e23793f876896c8e21c5e18024b1ab40f6
+
+  All four objects:
+    size      = 2976 bytes
+    sha256    = 70879e46fa496bce0a57a7a8006a42723d81938e22753542c0aebcbfc7f57d6e
+    symbol    = T _BootstrapLinkDirective  (offset 0x0460)
+
+  Frozen ABI (5):
+    I64 BootstrapLinkDirective(
+        U8  *src, I64 src_len, I64 flags,
+        I64 *out_consumed, I64 *out_is_path,
+        I64 *out_stored_len, I64 *out_error);
+
+  Mandatory AC status: evidence/ACT-POLYC-SELFHOST-LEXER04/c3/
+                       mandatory-ac-status.tsv
+                       (32 rows; PASS=32 FAIL=0)
+
+  Hand-off: docs/factory/HANDOFF-ACT-POLYC-SELFHOST-LEXER04.md
+
+  Resolved residue:
+    P0: lexLink #link directive handler migrated to PolyC
+        -> RESOLVED. 4-gen fixed point proven mechanically.
+    P0: 4-generation component-object fixed point evidence
+        -> RESOLVED. Raw byte equality (not just SHA) at all
+           4 generations.
+
+  Outstanding residue:
+    P1:  hcc JIT codegen emits `static U32 ROTR(...)` as a
+         global symbol, which fails to link against the partial
+         libtos.a shipped under the bootstrap02 ABI. This caused
+         tools/quality/lexer09-fixedpoint-verify.HC and
+         tools/quality/lexer07-sha256.HC to be rewritten in C.
+         Same root cause as the LEXER08 residue. Recorded here
+         so a future ACT can address the codegen bug itself
+         (would let the PolyC verifiers revert and shrink the
+         F-POLYC-TOOLS gap).
+    P1:  LEXER08 fixedpoint-verify target still tries to compile
+         a PolyC verifier and fails to link under the bootstrap02
+         ABI. Pre-existing defect inherited from LEXER08 closure;
+         LEXER04 does not regress it. Documented in
+         c3-lexer08-conservation.txt.
+    P2:  Production seam runner L10 (no `#link` directive) emits
+         different FIRST_I64 values between stage0 and stage1 due
+         to lexeme arena pointer offsets differing between the two
+         builds. Not a LEXER04 semantic divergence (link_libs and
+         shared_object_files are identical).
+    P2:  LEXER09 broad corpus targets the 4 fixedpoint generations
+         by existence check only; it does not currently exercise
+         the differential on each generation independently. Same
+         pattern as LEXER07/LEXER08 broad-corpus stamps.
+
+  NEXT:    ACT-POLYC-SELFHOST-SURFACE-RECON03 (fresh recon after
+           LEXER04 closes), then ACT-POLYC-SELFHOST-LEXER05
+           (lexInclude / #include handler, the next lexer-side
+           atomic slice in the directive family) OR whichever
+           region wins the ranking. Do not select by numbering
+           alone.
+```
