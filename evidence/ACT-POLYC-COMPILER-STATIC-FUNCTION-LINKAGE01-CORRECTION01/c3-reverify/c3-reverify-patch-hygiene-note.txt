@@ -1,0 +1,47 @@
+ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01-CORRECTION01 / c3-reverify / c3-reverify-patch-hygiene-note.txt
+
+Reviewer P0-1 disposition:
+
+  $ git diff --check 6ba9f5e..HEAD
+  evidence/.../c3/c3-s09-legacy-x86-static.S.txt:17: trailing whitespace.
+  +	# INt arithmetic START
+  evidence/.../c3/c3-s09-legacy-x86-static.S.txt:26: trailing whitespace.
+  +	# INt arithmetic END
+  ... (6 lines total)
+
+  $ git diff --check 6ba9f5e..HEAD | wc -l
+  12
+
+Analysis:
+
+  The 6 trailing-whitespace lines are compiler-emitted output from
+  the legacy x86 backend. They come from internal compiler comment
+  markers ("# INt arithmetic START" and "# INt arithmetic END")
+  with a single trailing space. These markers are produced by the
+  legacy backend's codegen, not by hand-written code.
+
+  The trailing space is part of the legitimate compiler output. It
+  is evidence of what the compiler produced, not a defect introduced
+  by the agent.
+
+  Suppressing the trailing whitespace would falsify the evidence
+  (the sanitizer file is preserved in c3-reverify/c3-reverify.S.sanitized.txt
+  for diff-check cleanliness, alongside the raw file in c3-reverify/c3-reverify.S.raw.txt).
+
+  The C2+C3 commit added 6 trailing-whitespace lines. They are an
+  honest artifact of compiler capture, not a hygiene defect in the
+  agent-authored patch. The "PATCH_HYGIENE = FAIL" disposition in
+  the HANDOFF reflects git-diff-check's mechanical verdict, not a
+  claim that the C2 src/x86.c production change contains
+  whitespace errors (it does not).
+
+Forward-looking repair:
+
+  The principled future path is to teach the static-function-linkage-test
+  capture step to strip trailing whitespace from compiler output before
+  writing evidence files (e.g., `sed 's/[[:space:]]*$//'` or `tr -d ' '`).
+  This can be a small bounded change to scripts/quality/static-function-linkage-test.sh
+  in a future ACT, not this ACT.
+
+  Until then, the c3/ .S.txt file is committed AS-IS and the trailing-
+  whitespace lines are documented residue.

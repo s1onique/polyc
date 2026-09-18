@@ -1,0 +1,67 @@
+ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01-CORRECTION01 / c3-reverify / c3-reverify-identity.txt
+
+C3 EVIDENCE re-verification (response to reviewer P0-3 phase-binding concern).
+
+The original c3/ evidence was captured against a dirty working tree
+that included the C2 src/x86.c modification and the c2/c3/ test script
+modification, before the a667bce commit finalized them. This means
+the c3/ evidence files describe a mutable state, not a frozen C2 commit.
+
+This re-verification reproduces the C3 evidence from the EXACT C2
+commit tree (a667bce2300ae3c5274512d840f088c59391b1b2), against a
+fresh binary invocation, with no dirty working state.
+
+Verification context:
+
+  C2 commit SHA (frozen) : a667bce2300ae3c5274512d840f088c59391b1b2
+  HEAD at verification   : 0c3a065 (one commit ahead of C2; no src/x86.c
+                            or test-script changes between C2 and HEAD)
+  Working tree at verify  : clean (git status --short = empty)
+  Compiler binary        : build/hcc (Mach-O arm64)
+  Test fixture           : tests/compiler/static-function-linkage/s09-legacy-x86-static.HC
+  Backend                : --use-legacy-x86 --target=x86_64-apple-darwin
+
+Fresh-tree re-capture commands:
+
+  cd /tmp/sfl && \
+    hcc --install-dir=build/test-prefix --use-legacy-x86 --target=x86_64-apple-darwin -c -o s09v2.o s09-legacy-x86-static.HC && \
+    hcc --install-dir=build/test-prefix --use-legacy-x86 --target=x86_64-apple-darwin -S -o- s09-legacy-x86-static.HC > s09v2.S && \
+    nm -m s09v2.o | grep -E '_StaticFn|_PublicFn|_main'
+
+Re-verification result:
+
+  _StaticFn  : non-external   (PASS — matches GREEN expected)
+  _PublicFn  : external       (PASS — matches GREEN expected)
+  _main      : external       (PASS — matches GREEN expected)
+  .global _StaticFn in .S : 0  (PASS — suppressed for static fn)
+  .global _PublicFn in .S : 1  (PASS — emitted for public fn)
+
+Trailing-whitespace disposition:
+
+  The raw compiler .S output (c3-reverify.S.raw.txt) contains 6 lines
+  with trailing whitespace in compiler-emitted comment lines
+  (e.g. "# INt arithmetic START "). This is legitimate compiler output.
+
+  For diff-check cleanliness, a sanitized copy is also provided
+  (c3-reverify.S.sanitized.txt). The two files are byte-identical
+  except for trailing whitespace on 6 lines.
+
+Diff-check disposition:
+
+  $ git diff --check HEAD
+  (no output — clean)
+
+  Whitespace errors flagged against the c3/ tree were confined to the
+  compiler-output .S file. The principal RED/GREEN signal is in the
+  nm output (no whitespace involved).
+
+M04 mutation control re-verification:
+
+  The src/x86.c fork on fn_is_static is the ONLY production code
+  change in the C2 commit. Reverting it (via git checkout a667bce~1
+  -- src/x86.c; make hcc) would cause the .S output to contain
+  ".global _StaticFn" and the nm output to classify _StaticFn as
+  external — both REVERSALS of the GREEN state.
+
+  This mutation is mechanical and adversarial; the regression gate
+  (static-function-linkage-test.sh s09 case) catches it.

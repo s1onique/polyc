@@ -2,38 +2,63 @@
 
 VERDICT
 
-PASS_TRUE_GREEN
+PASS_ENGINEERING_HALT_GOVERNANCE_DEPENDENCY
 
 ---
 
 ## Verdict disposition
 
-The verdict is PASS_TRUE_GREEN because:
+This ACT's verdict is not PASS_TRUE_GREEN. The engineering work
+is GREEN, but two P0 closure defects remain and a third was
+repaired by the c3-reverify/ sub-evidence:
 
-  - The engineering work is mechanically verified (legacy x86 backend
-    now correctly gates `.global` on `fn_is_static`; M04 mutation
-    control proves the regression gate catches the defect).
+  P0-1 (PATCH_HYGIENE): The C2+C3 commit introduced 6 trailing-
+        whitespace lines in c3-s09-legacy-x86-static.S.txt. They
+        are honest compiler-emitted output (the trailing space on
+        "# INt arithmetic START/END" markers), but `git diff
+        --check 6ba9f5e..HEAD` reports them as 12 whitespace errors
+        (6 in the +line, 6 reflected in -line at delete).
 
-  - The closure-status oracle at
-    `scripts/quality/factory-closure-status-check.sh` was NOT
-    modified by this ACT. The bounded managed universe remains at
-    the predecessor C4 state (PAIR_OK=7 unchanged).
+  P0-2 (CLOSURE_ORACLE): This ACT's HANDOFF cannot be admitted
+        into the closure-status oracle's hardcoded bounded managed
+        universe without modifying the oracle script. The HANDOFF
+        is therefore not registered in the manifest. The closure
+        oracle's PASS_TRUE_GREEN signal is therefore not
+        authoritative for this ACT.
 
-  - This ACT's HANDOFF is NOT added to the manifest
-    (`docs/factory/act-handoff-map.tsv`). Doing so would require
-    extending the closure-status oracle's hardcoded bounded managed
-    universe, which is itself the documented defect requiring the
-    recommended follow-up ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01.
+  P0-3 (C3_PHASE_BINDING): The original c3/ evidence was captured
+        against a dirty working tree that included the C2 production
+        modification before the C2 commit. The c3-reverify/
+        sub-evidence re-captures the GREEN state against the frozen
+        C2 commit tree (a667bce2300ae3c5274512d840f088c59391b1b2)
+        and confirms the engineering disposition remains GREEN.
 
-  - The canonical closure-status gate (factory-closure-status)
-    therefore has no false-claim to manage this ACT and reports
-    PAIR_OK=7 PAIR_FAIL=0, STATUS=PASS.
+Disposition table:
 
-This is a different disposition than the predecessor ACT-POLYC-
-COMPILER-STATIC-FUNCTION-LINKAGE01 (commit 712a3b7), which modified
-the closure-status oracle at C4 and added itself to the manifest,
-then ran the modified oracle to claim PASS. This CORRECTION01 ACT
-avoids both of those closure-governance defects.
+  LEGACY_X86_ENGINEERING               = GREEN
+  M04_MUTATION_CONTROL                 = GREEN
+  C2_FROZEN_AT_COMMIT                  = GREEN (a667bce)
+  F1_STASH_DURABLE_REF                 = GREEN (recovered/stash-4180088 tag)
+  C3_PHASE_BINDING_REVERIFY            = GREEN (c3-reverify/)
+  PATCH_HYGIENE                        = FAIL (6 trailing-ws lines)
+  CLOSURE_ORACLE                       = NOT_APPLICABLE_TO_SELF
+  HANDOFF_MANIFEST_TEXT                = CONTRADICTORY (repaired)
+  CORRECTION01_PASS_TRUE_GREEN         = FALSE_GREEN
+
+Why this is not PASS_TRUE_GREEN:
+
+  - The C4 CLOSE commit (0c3a065) claimed PASS_TRUE_GREEN despite
+    the c3/ trailing-whitespace and the c3-phase-binding weakness.
+    Both defects are now documented as residue and re-verified.
+    The verifier-side disposition (LEGACY_X86_ENGINEERING=GREEN) is
+    solid; the closure-side disposition is not.
+
+  - The recommended next ACT is ACT-POLYC-FACTORY-CLOSURE-ORACLE-
+    EXTENSIBLE01, which (a) makes the closure-status oracle
+    manifest-driven so that future ACTs can register their HANDOFF
+    by appending a row, and (b) provides the principled path to
+    verifying that the F1 durable-ref recovery + hygiene repair
+    constitute a true-green closure.
 
 ---
 
@@ -330,24 +355,23 @@ violation is real. Future ACTs in this lineage should:
 
 The closure-status oracle at
 `scripts/quality/factory-closure-status-check.sh` has a hardcoded
-bounded managed universe. The manifest
-`docs/factory/act-handoff-map.tsv` adds this ACT/HANDOFF pair, but
-the closure-status PAIR_OK counter remains at 7 because the
-managed universe hardcodes only 7 pairs.
+bounded managed universe of 7 ACT/HANDOFF pairs. This ACT's HANDOFF
+is **NOT** registered in `docs/factory/act-handoff-map.tsv` —
+registering it would require extending the closure-status oracle's
+hardcoded bounded managed universe, which is itself the documented
+defect requiring the recommended follow-up
+`ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01`.
+
+Therefore:
+
+  - The closure-status oracle reports `PAIR_OK=7 PAIR_FAIL=0 STATUS=PASS`
+    on a managed universe of 7 pairs.
+  - This ACT is not claimed to be in the managed universe.
+  - The canonical closure gate (factory-closure-status) does not
+    exercise a claim about this ACT.
 
 This ACT does NOT modify the closure-status script (per the
 principle that the judging thing should not be altered by the
 judged ACT). The closure-oracle limitation is recorded as residue
 with the recommended follow-up:
   ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01
-
-This ACT's PASS_TRUE_GREEN verdict is recorded via:
-  - verbatim gate-fast output (c3-gate-fast.stdout.txt)
-  - verbatim factory-append-only-test output (c3-append-only-test.stdout.txt)
-  - verbatim static-function-linkage-test output (c3-static-function-linkage-test.stdout.txt)
-  - this HANDOFF's own PASS_TRUE_GREEN token
-  - the c3-required-result.txt VERDICT line
-  - the ROADMAP closure block
-
-The closure-status check's 7/7 (rather than 8/8) is the closure
-oracle's bounded-universe defect, not this ACT's engineering defect.

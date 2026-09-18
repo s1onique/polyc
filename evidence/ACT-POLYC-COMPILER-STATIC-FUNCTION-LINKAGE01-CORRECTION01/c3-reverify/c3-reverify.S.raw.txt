@@ -1,0 +1,81 @@
+sign_bit:
+	.quad 0x8000000000000000
+one_dbl:
+	.double 1.0
+.L0:
+	.asciz "./"
+.globl argc
+	.comm argc, 8, 8
+.globl argv
+	.comm argv, 8, 8
+	.text
+	_StaticFn:
+	push   %rbp
+	movq   %rsp, %rbp
+	subq   $16, %rsp #STACK LOCAL COUNT 0
+	movq   %rdi, -16(%rbp)
+	# INt arithmetic START 
+	# LOAD rax AST_TYPE_INT START
+	movq  -16(%rbp), %rax
+	# LOAD rax END
+	push   %rax
+	movq   $11, %rax
+	movq   %rax, %rcx
+	pop    %rax
+	imulq   %rcx, %rax
+	# INt arithmetic END 
+	leave
+	ret
+.text
+	.global _PublicFn
+_PublicFn:
+	push   %rbp
+	movq   %rsp, %rbp
+	subq   $16, %rsp #STACK LOCAL COUNT 0
+	movq   %rdi, -16(%rbp)
+	# INt arithmetic START 
+	# LOAD rax AST_TYPE_INT START
+	movq  -16(%rbp), %rax
+	# LOAD rax END
+	push   %rax
+	movq   $22, %rax
+	movq   %rax, %rcx
+	pop    %rax
+	imulq   %rcx, %rax
+	# INt arithmetic END 
+	leave
+	ret
+.text
+	.global _main
+_main:
+	push   %rbp
+	movq   %rsp, %rbp
+	subq   $16, %rsp #STACK LOCAL COUNT 0
+	movq   %rdi, -16(%rbp)
+	movq   %rsi, -8(%rbp)
+	# INt arithmetic START 
+	# StaticFn(s: 0, i:8 f:0) sp: 16
+	# LOAD rax AST_TYPE_INT START
+	movq  -16(%rbp), %rax
+	# LOAD rax END
+	push   %rax
+	pop    %rdi
+	call   _StaticFn
+	push   %rax
+	# PublicFn(s: 0, i:8 f:0) sp: 24
+	subq   $8, %rsp #stack pad
+	# LOAD rax AST_TYPE_INT START
+	movq  -16(%rbp), %rax
+	# LOAD rax END
+	push   %rax
+	pop    %rdi
+	call   _PublicFn
+	addq   $8, %rsp #stack add
+	movq   %rax, %rcx
+	pop    %rax
+	addq   %rcx, %rax
+	# INt arithmetic END 
+	leave
+	ret
+.LFE0:
+	.ident      "hcc: apple x86_64-apple-darwin v0.0.15-beta"

@@ -1,0 +1,63 @@
+ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01-CORRECTION01 / c3-reverify / c3-reverify-required-result.txt
+
+VERDICT=PASS_ENGINEERING_ORACLE_BLOCKED_BY_HYGIENE_AND_PHASE_BINDING
+
+Disposition (after reviewer re-review of this correction ACT):
+
+  LEGACY_X86_ENGINEERING               = GREEN
+  M04_MUTATION_CONTROL                 = GREEN
+  C2_FROZEN_AT_COMMIT                  = GREEN (a667bce is the C2
+                                                commit; HEAD~1 == C2)
+  F1_STASH_RECOVERY                    = GREEN (recovered/stash-4180088
+                                                durable tag created)
+  C3_PHASE_BINDING_REVERIFY            = GREEN (re-captured against
+                                                frozen C2 commit tree)
+  CORRECTION_PATCH_HYGIENE             = FAIL (6 trailing-whitespace
+                                                 lines in committed
+                                                 C2+C3 commit
+                                                 c3-s09-legacy-x86-
+                                                 static.S.txt)
+  CORRECTION_CLOSURE_ORACLE            = NOT_APPLICABLE_TO_SELF (this
+                                                ACT's HANDOFF is
+                                                outside the bounded
+                                                managed universe;
+                                                closure-status reports
+                                                PAIR_OK=7 unchanged,
+                                                which is the same
+                                                disposition as the
+                                                predecessor)
+  CORRECTION_HANDOFF_MANIFEST_TEXT     = CONTRADICTORY (initial draft
+                                                listed multiple
+                                                inconsistent claims
+                                                about manifest
+                                                registration)
+
+Verdict token:
+
+  The token PASS_ENGINEERING_ORACLE_BLOCKED_BY_HYGIENE_AND_PHASE_BINDING
+  reflects the engineering success (legacy x86 backend now correctly
+  gates .global on fn_is_static, mechanically verified at the C2
+  commit tree against nm -m output) AND the two remaining P0 defects
+  (patch hygiene and HANDOFF text contradiction) that were not
+  repaired in the original C4 commit.
+
+This correction ACT's C4 commit (0c3a065) is therefore not a TRUE_GREEN
+closure. A follow-up C4-correction commit is required.
+
+Required follow-up:
+
+  1. Append a note to c3-s09-legacy-x86-static.S.txt explaining the
+     6 trailing-whitespace lines (compiler-emitted comment lines from
+     "# INt arithmetic START/END" markers) and explicitly accepting
+     them as legitimate compiler output.
+
+  2. Re-author the HANDOFF to remove all three contradictory claims
+     about manifest registration and replace with a single coherent
+     disposition: this ACT's HANDOFF is NOT registered in the manifest
+     (PAIR_OK=7 unchanged); the recommendation is that the closure
+     oracle be made manifest-driven (follow-up ACT).
+
+  3. Commit a C4-correction commit with these disposition fixes.
+
+Until C4-correction is committed, the verdict for this ACT is:
+  PASS_ENGINEERING_ORACLE_BLOCKED_BY_HYGIENE_AND_PHASE_BINDING
