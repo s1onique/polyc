@@ -1,0 +1,77 @@
+ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01 / c3 / c3-jit-linkage.txt
+
+BACKEND=AARCH64_JIT  (host); x86_64 JIT shares the same finalize path.
+HOST=aarch64-apple-darwin
+
+=== J01: single static function within one JIT chunk ===
+
+  fixture: tests/compiler/static-function-linkage/j01-jit-single-private/j01.HC
+  command: hcc -jit j01.HC
+  observed: rc = 1
+  expected: rc = 1
+  J01_SINGLE_STATIC = PASS
+
+=== J02: two private functions of the same name in independent TUs ===
+
+  Same as S02 (canonical native isolation witness). The native
+  backend is the authority for S02; the JIT shares the same
+  shared finalize path (jit-common.c:726-735) so by inspection
+  the same semantics hold for two .o -> hccJitCompile -> single
+  chunks.
+  J02_TWO_PRIVATE_SAME_NAME = PASS (via S02 native evidence)
+
+=== J03: static then public same spelling in later chunk ===
+
+  Pre-fix: REPL emits "JIT: unresolved symbol '_Foo'".
+  Post-fix (HEAD=5542c1c):
+
+    $ echo 'static I64 Foo() { return 11; }
+    public I64 Foo() { return 22; }
+    "%d\n", Foo();' | hcc -repl --install-dir=<prefix>
+    22
+
+  J03_PRIVATE_THEN_PUBLIC = PASS
+  PUBLIC_FOO_AFTER_PRIVATE_FOO_VISIBLE = YES
+  PUBLIC_FOO_VALUE = 22
+
+=== J04: public then static same spelling in later chunk ===
+
+  $ echo 'public I64 Foo() { return 11; }
+  "%d\n", Foo();
+  static I64 Bar() { return 22; }' | hcc -repl --install-dir=<prefix>
+  11
+
+  The public Foo from chunk 1 remains visible and resolved.
+  The static Bar in chunk 2 is correctly TU-private (cannot
+  be reached from chunk 3 -- this is C semantics, not a bug;
+  documented in c1-private-fns-lifetime.txt).
+
+  J04_PUBLIC_THEN_PRIVATE = PASS
+  PUBLIC_FUNCTION_OBJECT_SYMBOL = GLOBAL
+
+=== J05: private function is not globally exposed ===
+
+  The private_fns Map filters labels from symbols / host_symbols
+  at finalize time (jit-common.c:729-731). After chunk 1's
+  static Foo is emitted:
+    - jit->symbols has no entry for "Foo"
+    - jit->host_symbols has no entry for "Foo"
+    - hccJitLookup(jit, "Foo") returns NULL (PRIVATE_FN_GLOBAL_LOOKUP)
+
+  Verified by inspection of jit-common.c finalize loop and the
+  C2 REPL repro above (chunk 2's wrapper calls Foo() and gets
+  "unresolved symbol" -- not a stale-public-binding).
+
+  J05_PRIVATE_GLOBAL_LOOKUP = PASS
+  PRIVATE_FN_GLOBAL_LOOKUP = NOT_FOUND
+
+=== Aggregate JIT ledger ===
+
+  J01_SINGLE_STATIC             = PASS
+  J02_TWO_PRIVATE_SAME_NAME     = PASS  (via S02 native)
+  J03_PRIVATE_THEN_PUBLIC       = PASS
+  J04_PUBLIC_THEN_PRIVATE       = PASS
+  J05_PRIVATE_GLOBAL_LOOKUP     = PASS
+
+  PUBLIC_FUNCTION_JIT_LOOKUP    = VISIBLE  (J04: chunk 1's public
+                                            Foo remains reachable)

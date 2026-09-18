@@ -1,0 +1,18 @@
+ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01 / c3 / c3-s07-forward-public.txt
+
+S07: public forward declaration + public definition.
+
+  fixture: tests/compiler/static-function-linkage/s07-public-forward-definition/s07.HC
+
+  Mechanical result:
+
+    hcc -c s07.HC -o s07.o    -> rc=0 (compile clean)
+
+  nm s07.o:
+    _Foo   external (uppercase T)
+
+  Expected:
+    ordinary declaration behavior unchanged : YES
+    resulting symbol external              : YES
+
+  S07 = PASS

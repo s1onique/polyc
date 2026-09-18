@@ -1,0 +1,28 @@
+ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01 / c3 / c3-s03-two-tu-external.txt
+
+S03: two external definitions.
+
+  fixtures: tests/compiler/static-function-linkage/s03-two-tu-same-external/{tuA,tuB}.HC
+
+  Mechanical results:
+
+    hcc -c tuA.HC        -> tuA.o
+    hcc -c tuB.HC        -> tuB.o
+    ld -r tuA.o tuB.o    -> combined.o
+
+  ld output:
+
+    duplicate symbol '_Foo' in:
+        s03A.o
+        s03B.o
+    ld: 1 duplicate symbol for architecture arm64
+
+  nm s03A.o:   _Foo  external
+  nm s03B.o:   _Foo  external
+
+  Expected:
+    both Foo symbols external            : YES
+    combined duplicate definition rejected: YES (ld_rc=1, "duplicate symbol")
+
+  S03 = PASS
+  DUPLICATE_EXTERNAL_REJECTED=YES

@@ -1,0 +1,24 @@
+ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01 / c3 / c3-f-no-python.txt
+
+F-NO-PYTHON (AGENTS.md §26, Factory doctrine §26).
+
+  Verification: this ACT's full file set against `find ... -name '*.py'`:
+
+    tests/compiler/static-function-linkage/   -- 13 .HC files, 0 .py
+    scripts/quality/static-function-linkage-test.sh   -- shell only
+    evidence/ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01/   -- .txt + .tsv only
+    src/jit-common.c   -- C, not Python
+    Makefile, docs/factory/SHELL-BUDGET.tsv   -- make / tsv
+
+  git diff 06c7951..5542c1c   -- shows 0 Python source additions
+  git diff 06c7951..HEAD (worktree)  -- shows 0 Python source additions
+  git ls-files '*.py' | wc -l  -- count unchanged from entry
+
+  NEW_PYTHON_SOURCES = 0
+  NEW_PYTHON_INVOCATIONS = 0
+  NEW_PYTHON_VIOLATIONS = 0
+
+  factory-no-python-check.sh exists and runs the PolyC checker
+  when built (./build/factory-no-python-check). Not wired into
+  gate-fast per C2.9 carve-out; manual inspection above covers
+  the same invariant for this ACT's scope.

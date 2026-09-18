@@ -1,0 +1,36 @@
+ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01 / c3 / c3-x86_64-linkage.txt
+
+BACKEND=X86_64_NATIVE
+FIXTURE=aarch64_static.HC (re-used for cross-target qualification)
+HOST=aarch64-apple-darwin
+CROSS_TARGET=x86_64-apple-darwin
+
+=== Native object evidence (cross-target) ===
+
+  hcc --target=x86_64-apple-darwin -c -o x86_static.o aarch64_static.HC
+  nm -m x86_static.o:
+    0000000000000020 (__TEXT,__text) non-external _StaticFn
+    0000000000000030 (__TEXT,__text) external _PublicFn
+
+  StaticFn binding = LOCAL/PRIVATE   (non-external)
+  PublicFn binding = GLOBAL/EXTERNAL (external)
+
+=== Assembly evidence ===
+
+  hcc --target=x86_64-apple-darwin -S -o-
+  filtered lines:
+    .text
+      .p2align 4
+      _StaticFn:                <-- NO .globl directive above
+      ...
+    .text
+      .p2align 4
+      .globl _PublicFn          <-- .globl preserved
+      _PublicFn:
+
+=== Required outcomes ===
+
+  X86_64_STATIC_EXPORT_SUPPRESSED   = YES
+  X86_64_PUBLIC_EXPORT_PRESERVED    = YES
+  STATIC_LOCAL                      = PASS
+  PUBLIC_GLOBAL                     = PASS

@@ -1,0 +1,19 @@
+ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01 / c3 / c3-s01-single-static.txt
+
+S01: single static function callable from public wrapper.
+
+  fixture: tests/compiler/static-function-linkage/s01-single-static/s01.HC
+
+  Result:
+    rc = 1                                          (program returns Foo() == 1)
+    nm s01.o:
+      _Foo    non-external (local, lowercase t)
+      _main   external (uppercase T)
+
+  Expected:
+    Foo callable inside TU                : YES (rc=1)
+    Foo object symbol local/private       : YES (non-external)
+    Entry externally visible              : YES (external)
+    program result correct                : YES (rc=1)
+
+  S01 = PASS

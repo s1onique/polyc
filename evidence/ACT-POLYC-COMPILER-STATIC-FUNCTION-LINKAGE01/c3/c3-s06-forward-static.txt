@@ -1,0 +1,20 @@
+ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01 / c3 / c3-s06-forward-static.txt
+
+S06: static forward declaration + static definition.
+
+  fixture: tests/compiler/static-function-linkage/s06-static-forward-definition/s06.HC
+
+  Mechanical result:
+
+    hcc -c s06.HC -o s06.o    -> rc=0 (compile clean)
+
+  nm s06.o:
+    _Foo   non-external (local; lowercase t)
+
+  Expected:
+    static forward declaration supported : YES
+    fn_is_static preserved across upgrade : YES
+    resulting symbol local              : YES
+
+  S06 = PASS
+  S06_SYNTAX_SUPPORTED=YES

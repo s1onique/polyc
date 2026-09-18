@@ -1,0 +1,35 @@
+ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01 / c3 / c3-mutation-privatized-public.txt
+
+M02: force public function to be local.
+
+  Procedure:
+    1. sed-edit src/aarch64.c and src/x86_64.c:
+         if (func->fn_is_static) {
+       becomes
+         if (1) /* M02 mutation: always suppress .globl */ {
+    2. make
+    3. Compile a fixture with a public function.
+
+  Fixture: aarch64_static.HC = static I64 StaticFn + public I64 PublicFn
+
+  Before mutation (HEAD=5542c1c):
+
+    nm aarch64_static.o:
+      _StaticFn   non-external
+      _PublicFn   external
+
+  After mutation (force-local in both backends):
+
+    nm aarch64_static.o:
+      _StaticFn   non-external
+      _PublicFn   non-external   <-- DEFECT: public fn is private
+
+  Detection: PASS. nm -m correctly distinguishes external vs
+  non-external bindings, and the mutation makes PublicFn
+  non-external, which is the over-privatization regression
+  guarded against by AC24 / M02.
+
+  After mutation run, both source files were restored via
+  `git checkout HEAD -- src/aarch64.c src/x86_64.c`.
+
+  M02 = PASS

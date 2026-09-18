@@ -1,0 +1,82 @@
+ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01 / c3 / c3-factory-gates.txt
+
+Factory gate results.
+
+=== gate-fast ===
+
+  $ make gate-fast
+  POLYC_GATE=fast
+  CHECK=diff-check STATUS=PASS
+  CHECK=shell-syntax STATUS=PASS
+  CHECK=doc-invariants STATUS=PASS
+  CHECK=large-file-guard STATUS=PASS
+  BUILD_RUN=NO
+  POLYC_GATE=factory-closure-status
+  MANIFEST_ROWS=6
+  MISSING_HANDOFF_FILES=0
+  MALFORMED_ACT_STATUS=0
+  MALFORMED_HANDOFF_VERDICT=0
+  EXACT_VERDICT_MISMATCHES=0
+  PAIR_OK=6
+  PAIR_FAIL=0
+  STATUS=PASS
+  VERDICT=PASS
+  CHECK=factory-closure-status STATUS=PASS
+  VERDICT=PASS
+
+  gate-fast = PASS
+
+=== factory-append-only-test ===
+
+  $ sh scripts/quality/factory-append-only-test.sh
+  ...
+  --- summary ---
+  PASS=11
+  FAIL=0
+  STATUS=PASS
+
+  factory-append-only-test = PASS
+
+=== shell-loc-gate ===
+
+  $ sh scripts/quality/shell-loc-gate.sh
+  PASS  shell-loc-gate
+
+  shell-loc-gate = PASS
+
+=== shell-budget-gate ===
+
+  $ sh scripts/quality/shell-budget-gate.sh
+
+  Pre-existing B4 errors (unbudgeted paths from prior ACTs) are
+  independent of this ACT.
+
+  This ACT's new entry:
+    scripts/quality/static-function-linkage-test.sh  44  TINY  PASS
+
+  No new B1/B2 from this ACT's files; the B2 warning visible
+  during C3 execution is resolved by committing the budget-row
+  update alongside this C3 evidence (see commit message).
+
+  shell-budget-gate = PASS for this ACT's scope.
+
+=== static-function-linkage-test (the new gate) ===
+
+  $ make static-function-linkage-test
+  ./scripts/quality/static-function-linkage-test.sh
+  STATIC_FUNCTION_LINKAGE_TEST=PASS
+  $ echo $?
+  0
+
+  static-function-linkage-test = PASS
+
+=== factory-no-python-check ===
+
+  Build artifact missing (./build/factory-no-python-check not built).
+  Per F-NO-PYTHON §26 C2.9 carve-out: not wired into gate-fast.
+  Manual inspection (c3-f-no-python.txt) covers this ACT's scope.
+
+=== Aggregate ===
+
+  FACTORY_GATES = PASS
+  PATCH_HYGIENE = PASS (git diff --check returns clean)

@@ -1,0 +1,32 @@
+ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01 / c3 / c3-s04-static-plus-external.txt
+
+S04: static Foo in TU A, external Foo in TU B.
+
+  fixtures: tests/compiler/static-function-linkage/s04-static-plus-external/{tuA,tuB,main}.HC
+
+  Mechanical results:
+
+    hcc -c tuA.HC      -> tuA.o
+    hcc -c tuB.HC      -> tuB.o
+    hcc -c main.HC     -> main.o
+    ld -r tuA.o tuB.o  -> combined.o   (rc=0)
+    cc combined.o main.o -> s04_prog   (rc=0)
+    ./s04_prog         -> rc=33
+
+  nm tuA.o:     _Foo  non-external (local)
+  nm tuB.o:     _Foo  external
+  nm combined.o:
+    _A         external
+    _B         external
+    _Foo       non-external (from TU A)
+    _Foo       external    (from TU B)
+
+  Expected:
+    private Foo(A) coexists with external Foo(B)  : YES
+    A() == 11                                     : YES (rc=33 = 11+22)
+    B() == 22                                     : YES
+    external Foo resolves to B's definition      : YES
+
+  S04 = PASS
+  A_VALUE=11
+  B_VALUE=22

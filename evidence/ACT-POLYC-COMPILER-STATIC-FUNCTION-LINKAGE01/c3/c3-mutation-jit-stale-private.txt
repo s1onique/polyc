@@ -1,0 +1,38 @@
+ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01 / c3 / c3-mutation-jit-stale-private.txt
+
+M03: stale private JIT name across chunk boundary.
+
+  Procedure:
+    1. Restore C1 commit jit-common.c (HEAD=1f24d6b):
+         git checkout 1f24d6b -- src/jit-common.c
+    2. Inject a stale `_Foo` entry into jit->private_fns at the
+       start of hccJitCompileChunk (alongside mapClear(jit->chunk_fns)):
+         if (jit->private_fns && !mapHas(jit->private_fns, "_Foo"))
+             mapAdd(jit->private_fns, strdup("_Foo"), (void *)(uintptr_t)1);
+    3. make
+    4. Run the public-only Foo scenario in the REPL.
+
+  Before mutation (C2 fix applied, HEAD=5542c1c):
+
+    $ hcc -repl --install-dir=<prefix> << EOF
+    public I64 Foo() { return 22; }
+    "%d\n", Foo();
+    EOF
+    22
+
+  After mutation (stale `_Foo` injected at start of every chunk):
+
+    $ hcc -repl --install-dir=<prefix> << EOF
+    public I64 Foo() { return 22; }
+    "%d\n", Foo();
+    EOF
+    JIT: unresolved symbol '_Foo'
+
+  Detection: PASS. The mutation reproduces the J03 stale-state
+  defect even for an originally-public function (chunk1 is
+  the very first chunk; the injected `_Foo` poisons it).
+
+  After mutation run, jit-common.c was restored via
+  `git checkout HEAD -- src/jit-common.c`.
+
+  M03 = PASS

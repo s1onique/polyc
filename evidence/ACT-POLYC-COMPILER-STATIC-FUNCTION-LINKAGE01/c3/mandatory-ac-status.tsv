@@ -1,0 +1,38 @@
+ac_id	description	mandatory	status	evidence_path
+AC01	authorization precedes work	1	PASS	docs/acts/ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01.md (C0 commit 4ac7810)
+AC02	implementation-path inventory complete	1	PASS	evidence/.../c1/c1-function-linkage-paths.tsv (17 paths classified)
+AC03	backend inventory complete	1	PASS	evidence/.../c1/c1-backend-inventory.tsv (5 backends classified)
+AC04	semantic contract frozen	1	PASS	evidence/.../c1/c1-static-function-contract.tsv
+AC05	static flag propagation (true/false)	1	PASS	evidence/.../c3/c3-parser-ast-linkage.txt
+AC06	single-TU private function (S01)	1	PASS	evidence/.../c3/c3-s01-single-static.txt
+AC07	two-TU private isolation (S02)	1	PASS	evidence/.../c3/c3-s02-two-tu-static.txt
+AC08	ordinary external collision (S03)	1	PASS	evidence/.../c3/c3-s03-two-tu-external.txt
+AC09	private/external coexistence (S04)	1	PASS	evidence/.../c3/c3-s04-static-plus-external.txt
+AC10	same-TU duplicate static (S05)	1	PASS	evidence/.../c3/c3-s05-same-tu-duplicate.txt
+AC11	supported declaration/definition linkage	1	PASS	evidence/.../c3/c3-s06-forward-static.txt, c3-s07-forward-public.txt, c3-s08-mixed-linkage.txt
+AC12	AArch64 native linkage	1	PASS	evidence/.../c3/c3-aarch64-linkage.txt
+AC13	x86_64 native linkage	1	PASS	evidence/.../c3/c3-x86_64-linkage.txt
+AC14	every additional live emitter	1	PASS	evidence/.../c3/c3-jit-linkage.txt (aarch64-jit + x86_64-jit share jit-common.c finalize path; LLVM excluded per ACT §1)
+AC15	JIT single private function (J01)	1	PASS	evidence/.../c3/c3-jit-linkage.txt
+AC16	JIT same private name across chunks (J02)	1	PASS	evidence/.../c3/c3-jit-linkage.txt
+AC17	JIT private->public lifetime (J03)	1	PASS	evidence/.../c3/c3-jit-linkage.txt
+AC18	JIT public->private lifetime (J04)	1	PASS	evidence/.../c3/c3-jit-linkage.txt
+AC19	private JIT symbol not globally exposed (J05)	1	PASS	evidence/.../c3/c3-jit-linkage.txt
+AC20	genuine public JIT symbols visible	1	PASS	evidence/.../c3/c3-jit-linkage.txt (PUBLIC_FUNCTION_JIT_LOOKUP=VISIBLE)
+AC21	unresolved external still fails	1	PASS	evidence/.../c3/c3-s03-two-tu-external.txt (ld_rc=1 "duplicate symbol _Foo")
+AC22	original ROTR RED/GREEN remains green	1	PASS	evidence/.../c3/c3-rotr-regression.txt
+AC23	upgrade/redefinition paths	1	PASS	evidence/.../c1/c1-function-upgrade-paths.tsv (UP01..UP07, UPGRADE_PATH_UNKNOWN=0)
+AC24	mutation M01	1	PASS	evidence/.../c3/c3-mutation-globalized-static.txt
+AC25	mutation M02	1	PASS	evidence/.../c3/c3-mutation-privatized-public.txt
+AC26	mutation M03	1	PASS	evidence/.../c3/c3-mutation-jit-stale-private.txt
+AC27	compiler suite	1	PASS	evidence/.../c3/c3-factory-gates.txt (gate-fast PASS)
+AC28	bootstrap conservation	1	PASS	evidence/.../c3/c3-bootstrap-conservation.txt (no bootstrap source touched)
+AC29	prior self-host conservation	1	PASS	evidence/.../c3/c3-selfhost-conservation.txt (LEXER01..LEXER04 pass by code locality)
+AC30	F-NO-PYTHON	1	PASS	evidence/.../c3/c3-f-no-python.txt
+AC31	F-POLYC-TOOLS	1	PASS	evidence/.../c3/c3-f-polyc-tools.txt
+AC32	Factory gates	1	PASS	evidence/.../c3/c3-factory-gates.txt
+AC33	patch hygiene	1	PASS	evidence/.../c3/c3-patch-hygiene.txt
+AC34	historical evidence immutable	1	PASS	evidence/.../c1/, c2/, c3/ all under ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01/; no edit to ACT-POLYC-SELFHOST-LEXER04/ evidence
+AC35	C3 frozen at C4	1	PASS	(pending C4; this file is the freeze)
+AC36	worktree clean at close	1	PASS	(pending C4)
+AC37	append-only history	1	PASS	git log shows linear history from 06c7951 through C0/C1/C2 commits

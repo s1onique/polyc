@@ -1,0 +1,31 @@
+ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01 / c3 / c3-f-polyc-tools.txt
+
+F-POLYC-TOOLS (AGENTS.md §27, Factory doctrine §27).
+
+  This ACT introduces no new substantive non-PolyC tooling.
+
+  New artifacts:
+    scripts/quality/static-function-linkage-test.sh
+      44 LOC; shell dispatcher; ≤50 LOC budget verified
+      by shell-budget-gate (TINY class).
+
+    tests/compiler/static-function-linkage/*.HC
+      13 HolyC fixtures. These ARE PolyC tooling (HC) and
+      are evaluated by ./hcc, the PolyC compiler.
+
+    Makefile target `static-function-linkage-test`
+      wired to the script above. Make is build orchestration,
+      not new substantive tooling.
+
+  Permitted per ACT §36:
+    HC fixtures            -- YES (PolyC)
+    existing nm/ld         -- YES (host)
+    ≤50 LOC dispatch shell -- YES (the test script)
+    Makefile orchestration -- YES (Makefile change)
+
+  NEW_SUBSTANTIVE_NON_POLYC_TOOLS = 0
+  SHELL_LOC_GATE = PASS (script is 44 LOC, ≤50 cap)
+
+  factory-polyc-tools-check.HC is not yet landed per the
+  C2.9 carve-out; manual inventory above is the equivalent
+  scope witness for this ACT.

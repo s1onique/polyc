@@ -1,0 +1,83 @@
+ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01 / c3 / c3-parser-ast-linkage.txt
+
+Parser/AST propagation evidence.
+
+=== KW_STATIC captured by parseToplevelDef ===
+
+  src/parser.c:2482 declares `int is_static = 0;`
+  src/parser.c:2561 KW_STATIC branch sets `is_static = 1;`
+  src/parser.c:2567 reads `is_static = 1;`
+  Both call sites of parseFunctionOrDef forward is_static:
+    src/parser.c:2550 (KW_INLINE path)
+    src/parser.c:2830 (default path)
+
+  KW_STATIC_CAPTURED = YES
+
+=== AST_FUNC.fn_is_static field ===
+
+  src/ast.h:338 declares `int fn_is_static;` on the AST_FUNC
+  union member; field exists at the documented offset in struct.
+
+  src/ast.c:420 (astFunction constructor):
+    ast->fn_is_static = 0;   /* default to externally visible */
+
+  src/ast.c:424-431 (astFunctionWithLinkage constructor):
+    ast->fn_is_static = fn_is_static ? 1 : 0;
+
+  src/ast.c:435-438 (astFunctionSetStatic setter):
+    ast->fn_is_static = is_static ? 1 : 0;
+
+  AST_FN_IS_STATIC_TRUE = YES (constructor + parser path verified)
+  NORMAL_FN_IS_STATIC_FALSE = YES (default initialization 0)
+
+=== Parser -> AST propagation (TRUE path) ===
+
+  Test program:
+    static I64 Foo() { return 1; }
+    I64 Bar() { return Foo(); }
+
+  hcc -ast -c:
+    <function_def> I64 Foo(U0);
+    <function_def> I64 Bar(U0);
+
+  Compilation produces a Mach-O object with _Foo non-external
+  (lowercase t) -- proving fn_is_static=1 reached the codegen
+  (aarch64.c:2144 / x86_64.c:2396) and gated the .globl emission.
+
+  STATIC_FLAG_TRUE_PATH = PASS
+
+=== Parser -> AST propagation (FALSE path) ===
+
+  Test program:
+    I64 Foo() { return 1; }
+    I64 Main() { return Foo(); }
+
+  hcc -ast -c:
+    <function_def> I64 Foo(U0);
+    <function_def> I64 Main(U0);
+
+  Compilation produces _Foo external (uppercase T) -- proving
+  fn_is_static=0 reaches codegen and does NOT gate .globl.
+
+  STATIC_FLAG_FALSE_PATH = PASS
+
+=== Upgrade paths (parser/ast) ===
+
+  Every function-definition upgrade path preserves fn_is_static:
+
+  UP01 src/parser.c:2181-2189 (prototype -> definition, no prior):
+       astFunctionWithLinkage(..., is_static)
+  UP02 src/parser.c:2197-2209 (prototype -> definition, prior proto):
+       astFunctionWithLinkage(..., is_static)
+  UP03 src/parser.c:2210-2223 (static proto -> static def):
+       astFunctionWithLinkage(..., 1)   -- dedicated branch
+  UP04 src/parser.c:2224-2240 (prototype -> body upgrade):
+       func->fn_is_static = is_static;   -- explicit set on existing
+  UP05 src/parser.c:2370-2395 (parseFunctionOrDef):
+       Both branches use astFunctionWithLinkage(..., is_static)
+  UP06 src/parser.c:2550 (KW_INLINE path): forwarder
+  UP07 src/parser.c:2830 (default branch): forwarder
+
+  All verified at c1-function-upgrade-paths.tsv (UP01..UP07).
+  UPGRADE_PATHS_PASS = YES
+  UPGRADE_PATH_UNKNOWN = 0

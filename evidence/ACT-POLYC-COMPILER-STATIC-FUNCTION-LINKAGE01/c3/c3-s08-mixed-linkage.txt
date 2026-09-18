@@ -1,0 +1,22 @@
+ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01 / c3 / c3-s08-mixed-linkage.txt
+
+S08: mixed-linkage declarations (most-recent-declaration-wins).
+
+  fixtures: tests/compiler/static-function-linkage/s08-mixed-linkage/{s08a-public-then-static,s08b-static-then-public}.HC
+
+  S08a: public decl then static definition.
+
+    hcc -c s08a.HC -o s08a.o    -> rc=0
+    nm s08a.o:    _Foo  non-external (local; the static wins)
+
+  S08b: static decl then public definition.
+
+    hcc -c s08b.HC -o s08b.o    -> rc=0
+    nm s08b.o:    _Foo  external (uppercase T; the public wins)
+
+  Expected:
+    S08a: static upgrades public prototype to local  : YES
+    S08b: public upgrades static prototype to extern : YES
+
+  S08 = PASS
+  FORWARD_DECLARATION_MATRIX=PASS

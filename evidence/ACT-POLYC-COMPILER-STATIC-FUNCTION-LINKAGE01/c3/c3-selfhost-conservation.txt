@@ -1,0 +1,45 @@
+ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01 / c3 / c3-selfhost-conservation.txt
+
+Prior self-host engineering conservation.
+
+LEXER04_PRESERVED_ENGINEERING:
+
+  src/lexer.c and src/lexer.h were NOT touched by this ACT.
+  BootstrapLinkDirective in tools/bootstrap/selfhost-lexer-link.HC
+  is the WINNER SUBJECT of LEXER04; its ABI signature and frozen
+  semantics depend on src/lexer.h's extern declarations (which
+  this ACT did not modify). Its callers (src/lexer.c:1982, 2008)
+  were not modified.
+
+  LEXER04_PRESERVED_ENGINEERING = PASS (by code locality)
+
+LEXER01, LEXER02, LEXER03:
+
+  These ACTs produced lexical-surface PolyC components under
+  src/ and tools/bootstrap/. None of those source files were
+  touched by this ACT. Their existing evidence directories are
+  intact (F14).
+
+  LEXER01_CONSERVATION = PASS (by code locality)
+  LEXER02_CONSERVATION = PASS (by code locality)
+  LEXER03_CONSERVATION = PASS (by code locality)
+
+Gate:
+
+  $ make gate-fast
+  ...
+  CHECK=factory-closure-status STATUS=PASS
+  VERDICT=PASS
+
+  (gate-fast does not yet wire factory-no-python-check per
+  C2.9 carve-out, but Python was not introduced -- see
+  c3-f-no-python.txt.)
+
+UNCLEAR / DEPENDENT:
+
+  The full unit-test / jit-unit-test suites are not executable on
+  this host due to the libtos symbol gaps that this ACT explicitly
+  excludes per §1 (and which are the subject of
+  ACT-POLYC-LIBTOS-SYMBOL-GAPS01). The new dedicated regression
+  target `make static-function-linkage-test` IS executable and
+  passes (see c3-required-result.txt and the test's own PASS line).

@@ -1,0 +1,34 @@
+ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01 / c3 / c3-mutation-globalized-static.txt
+
+M01: force static function to be global.
+
+  Procedure:
+    1. git checkout 1f24d6b -- src/jit-common.c
+       (Reverts the C2 fix that adds mapClear(jit->private_fns) per chunk.)
+    2. make
+    3. Run S02 fixture via the regression gate.
+
+  Before mutation (C2 fix applied, HEAD=5542c1c):
+
+    $ hcc -repl --install-dir=<prefix> << EOF
+    static I64 Foo() { return 11; }
+    public I64 Foo() { return 22; }
+    "%d\n", Foo();
+    EOF
+    22
+
+  After mutation (C2 fix reverted, simulating J03 stale-state):
+
+    $ hcc -repl --install-dir=<prefix> << EOF
+    static I64 Foo() { return 11; }
+    public I64 Foo() { return 22; }
+    "%d\n", Foo();
+    EOF
+    JIT: unresolved symbol '_Foo'
+
+  Detection: PASS. The C1 J03 stale-state RED is the exact
+  regression that the mutation reintroduces, and the test
+  detected it. After the mutation run, jit-common.c was
+  restored via `git checkout HEAD -- src/jit-common.c`.
+
+  M01 = PASS

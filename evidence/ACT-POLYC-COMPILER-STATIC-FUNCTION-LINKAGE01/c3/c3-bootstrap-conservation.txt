@@ -1,0 +1,41 @@
+ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01 / c3 / c3-bootstrap-conservation.txt
+
+Bootstrap chain conservation.
+
+This ACT modifies only src/jit-common.c (one mapClear and one
+mapRelease) and one Makefile target addition. No bootstrap source
+file was touched:
+
+  tools/bootstrap/bootstrap01-lexer.HC           UNCHANGED
+  tools/bootstrap/bootstrap02-ident.HC          UNCHANGED
+  tools/bootstrap/bootstrap03-lexer-seam.HC     UNCHANGED
+  tools/bootstrap/bootstrap04-lexer-seam.HC     UNCHANGED
+  tools/bootstrap/bootstrap06-operator-classify.HC  UNCHANGED
+  tools/bootstrap/selfhost-lexer-link.HC        UNCHANGED (preserves
+                                                  BootstrapLinkDirective
+                                                  engineering)
+  tools/bootstrap/selfhost-lexer-scalar-literal.HC  UNCHANGED
+  tools/bootstrap/selfhost-lexer-operator-classify.HC  UNCHANGED
+  tools/bootstrap/selfhost-lexer-trivia.HC      UNCHANGED
+
+The bootstrap chain itself is not rebuilt as part of this ACT
+because:
+
+  - The test-prefix-install target depends on libtos, which has
+    independent symbol gaps recorded in the LEXER04-CORRECTION01
+    HALT and explicitly excluded from this ACT per ACT §1.
+
+  - The lexical self-host engineering (BootstrapLinkDirective) does
+    not involve fn_is_static propagation; src/lexer.c was not
+    touched. Its preservation is therefore guaranteed by code
+    locality, not by re-execution.
+
+  - Native object correctness is mechanically proven by S01..S08
+    fresh execution (c3-s01..c3-s08 evidence files).
+
+  BOOTSTRAP_CHAIN_BUILD = N/A (per ACT §32: this ACT does not
+                               depend on G0..G3 because the libtos
+                               gap is excluded; src/lexer.c was not
+                               touched, so BootstrapLinkDirective
+                               cannot regress by code locality)
+  BOOTSTRAP_DRIFT_DETECTED = NO (no bootstrap source touched)

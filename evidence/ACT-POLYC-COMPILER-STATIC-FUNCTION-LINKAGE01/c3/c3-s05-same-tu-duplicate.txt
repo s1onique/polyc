@@ -1,0 +1,25 @@
+ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01 / c3 / c3-s05-same-tu-duplicate.txt
+
+S05: duplicate static definition in one TU.
+
+  fixture: tests/compiler/static-function-linkage/s05-same-tu-static-duplicate/s05.HC
+
+  Mechanical result:
+
+    hcc -c s05.HC -o s05.o  -> FAIL
+
+  Compiler output:
+
+    holyc-asm-XXX.s:18:2: error: symbol '_Foo' is already defined
+     _Foo:
+     ^
+    ERROR: Failed to execute command: 'cc -c ...'
+
+  The compiler emits two .globl-suppressed _Foo labels into the
+  assembly stream; cc's assembler rejects the duplicate label.
+
+  Expected:
+    duplicate static definition rejected  : YES
+
+  S05 = PASS
+  SAME_TU_STATIC_DUPLICATE_REJECTED=YES

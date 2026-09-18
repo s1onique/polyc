@@ -1,0 +1,33 @@
+ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01 / c3 / c3-s02-two-tu-static.txt
+
+S02: same static spelling in two TUs.
+
+  fixtures: tests/compiler/static-function-linkage/s02-two-tu-same-static/{tuA,tuB,main}.HC
+
+  Mechanical results:
+
+    hcc -c tuA.HC              -> tuA.o
+    hcc -c tuB.HC              -> tuB.o
+    hcc -c main.HC             -> main.o
+    ld -r tuA.o tuB.o          -> combined.o (rc=0)
+    cc combined.o main.o       -> s02_prog   (rc=0)
+    ./s02_prog                 -> rc=98 (1122 % 256 = 98)
+
+  Symbol identity (nm -m combined.o):
+
+    _Foo  non-external  (local; lowercase t)
+    _Foo  non-external  (local; lowercase t; second TU)
+    _A    external      (uppercase T)
+    _B    external      (uppercase T)
+
+  Expected:
+    both objects compile                       : YES
+    both private Foo symbols coexist           : YES (two non-external _Foo)
+    combined object links                      : YES (ld -r rc=0)
+    A() == 11                                  : YES (rc % 256 == 98; main returns 1122)
+    B() == 22                                  : YES (rc % 256 == 98; main returns 1122)
+
+  S02 = PASS
+  A_VALUE=11
+  B_VALUE=22
+  COMBINED_RC=0
