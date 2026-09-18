@@ -1,0 +1,83 @@
+ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION01 / c2 / c2-impl-summary.txt
+
+C2 IMPL SUMMARY (post-RED repair of four P0 defects)
+
+Defects addressed (per C0 AUTH and board amendment):
+
+  P0-1  AC07 baseline equivalence:
+    scripts/quality/factory-closure-status-check.sh:
+      Removed ## Status / extract_status_token /
+      count_status_headings requirements; HANDOFF VERDICT now
+      exclusively owns the terminal verdict token.
+      Manifest re-registered without ACT-body metadata.
+    Evidence: c2-p01-baseline-equivalence.txt shows both
+      OLD (712a3b7) and NEW (HEAD) checkers report
+      PAIR_OK=7 PAIR_FAIL=0 STATUS=PASS on the 7-row
+      legacy manifest.
+
+  P0-2  N06 non-short-circuit duplicate classification:
+    scripts/quality/factory-closure-status-check.sh:
+      Removed early `continue` after each dedup check;
+      added row_already_processed flag; collects all three
+      dimensions (DUPLICATE_ACT_PATHS, DUPLICATE_HANDOFF_PATHS,
+      DUPLICATE_PAIRS) per row, plus boolean detection tokens
+      (DUPLICATE_*_DETECTED) and DUPLICATE_CLASSIFICATION_IS_NON_SHORT_CIRCUITING.
+    Evidence: c2-p02-n06-non-short-circuit.txt shows
+      DUPLICATE_ACT_PATHS=1, DUPLICATE_HANDOFF_PATHS=1,
+      DUPLICATE_PAIRS=1, all three DETECTED=YES,
+      DUPLICATE_CLASSIFICATION_IS_NON_SHORT_CIRCUITING=YES.
+    Regression: c2-p02-n01-n05-regression.txt confirms
+      N01 (ACT only), N02 (HANDOFF only), N05 (malformed)
+      still detect correctly.
+
+  P0-3  C4 self-judgment via HANDOFF exclusively:
+    scripts/quality/factory-closure-status-check.sh:
+      ACT body no longer parsed for verdict tokens.
+      MALFORMED_ACT_STATUS and EXACT_VERDICT_MISMATCHES
+      counters removed from FAIL predicate (left at zero,
+      never incremented). extract_status_token and
+      count_status_headings functions removed.
+    Evidence: c2-p03-hand-off-only.txt shows ACT body
+      without ## Status passes when HANDOFF has valid VERDICT.
+    Self-judgment at C2: c2-self-row-c3-red.txt shows
+      self pair FAIL because HANDOFF is not yet added
+      (expected; HANDOFF appears at C4 only).
+
+  P0-4  F-POLYC-TOOLS PolyC test binary:
+    tools/quality/factory-closure-status-test.HC: new
+      PolyC authoritative driver (140 LOC).
+    scripts/quality/factory-closure-status-test.sh: reduced
+      to 15-LOC dispatch wrapper (was 123 LOC).
+    scripts/quality/factory-closure-status-test-cases.sh:
+      new 49-LOC test-fixture holding the 12-case matrix.
+    docs/factory/SHELL-BUDGET.tsv: registered both new
+      shell files as TINY (<=50 LOC) ratchet-locked.
+    Makefile: added factory-closure-status-test-binary
+      target with build pattern matching factory-halt-classification.
+    Evidence: c2-p04-polyc-test.txt shows 12/12 PASS through
+      PolyC binary driving the shell cases driver.
+
+Artifacts frozen at C2:
+  SHA256 of frozen files: c2-freeze-sha256.txt
+    1d69e962e16d253b6c9249d6900c5d5a43236faa78458756c54e2e26923f0bfa
+      scripts/quality/factory-closure-status-check.sh
+    13c843e5ffec04af2f0ba0661412143d1147e861b43402f63c0716df40a2c299
+      docs/factory/act-handoff-map.tsv (10 rows; includes CORRECTION01 self row)
+    6e92265815c86255ab2cfce1d83fab213e27a1c73b09f37fa96e363411c60e48
+      docs/acts/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION01.md
+
+Self-row at C2: FAIL (expected; HANDOFF is added at C4).
+  Overall STATUS=FAIL with PAIR_OK=9 PAIR_FAIL=1.
+
+NEXT (per F-CONVERGENCE):
+  C3 VERIFY: re-run all controls; demonstrate C4 transition
+             via HANDOFF only; record SHA-256 of unchanged
+             ACT body, checker, manifest between C2 freeze
+             and C4.
+  C4 CLOSE:  add HANDOFF only; no other mutations.
+
+ENTRY IDENTITY:
+  git branch --show-current = main
+  git rev-parse HEAD        = 63efbdd0460c91ee2c0e07d857894fb9c89f52f3 (pre-C2)
+  C2 commit:                <queryable via git log>
+  Worktree:                 dirty (with C2 changes staged)

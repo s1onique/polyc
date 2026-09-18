@@ -73,6 +73,7 @@ MANIFEST_PARSE_ERRORS=0
 DUPLICATE_ACT_PATHS=0
 DUPLICATE_HANDOFF_PATHS=0
 DUPLICATE_PAIRS=0
+DUPLICATE_CLASSIFICATION_IS_NON_SHORT_CIRCUITING=NO
 MISSING_ACT_FILES=0
 MISSING_HANDOFF_FILES=0
 MALFORMED_ACT_STATUS=0
@@ -89,21 +90,10 @@ token_ok() {
     printf '%s\n' "$1" | grep -Eq '^(OPEN|PASS(_[A-Z0-9_]+)*|HALT_[A-Z0-9_]+)$'
 }
 
-extract_status_token() {
-    awk '
-        /^##[[:space:]]+Status[[:space:]]*$/ { in_status=1; next }
-        in_status && /^##[[:space:]]/        { exit }
-        in_status && /^[[:space:]]*$/        { next }
-        in_status {
-            line=$0
-            sub(/^[[:space:]]*[-*][[:space:]]*/, "", line)
-            if (match(line, /[^[:space:]]+/)) {
-                print substr(line, RSTART, RLENGTH)
-                exit
-            }
-        }
-    ' "$1"
-}
+# Per ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION01
+# P0-3: extract_status_token() and count_status_headings() are
+# REMOVED. The ACT body is immutable authorization metadata;
+# the HANDOFF exclusively owns the terminal verdict.
 
 extract_handoff_token() {
     awk '
@@ -119,10 +109,6 @@ extract_handoff_token() {
             }
         }
     ' "$1"
-}
-
-count_status_headings() {
-    grep -cE '^##[[:space:]]+Status[[:space:]]*$' "$1" 2>/dev/null || printf '0\n'
 }
 
 count_verdict_sections() {
@@ -246,23 +232,33 @@ while IFS= read -r raw_line || [ -n "$raw_line" ]; do
 
     MANIFEST_DATA_ROWS=$((MANIFEST_DATA_ROWS+1))
 
-    # Duplicate ACT path detection.
+    # Duplicate ACT path detection (non-short-circuit: do not
+    # `continue` after firing; subsequent dedup checks must run
+    # and the row is tagged "already processed" to skip later
+    # checks. Per ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-
+    # CORRECTION01 P0-2, the three duplicate dimensions
+    # (ACT path, HANDOFF path, pair) are independent and must
+    # all fire on a row that violates multiple dimensions.
+    DUPLICATE_CLASSIFICATION_IS_NON_SHORT_CIRCUITING=YES
+    row_already_processed=NO
     if grep -Fxq "$act_path" "$SEEN_ACT_TMP"; then
         DUPLICATE_ACT_PATHS=$((DUPLICATE_ACT_PATHS+1))
         echo "DUPLICATE_ACT_PATH  $act_path"
         PAIR_FAIL=$((PAIR_FAIL+1))
-        continue
+        row_already_processed=YES
+    else
+        printf '%s\n' "$act_path" >> "$SEEN_ACT_TMP"
     fi
-    printf '%s\n' "$act_path" >> "$SEEN_ACT_TMP"
 
     # Duplicate HANDOFF path detection.
     if grep -Fxq "$handoff_path" "$SEEN_HANDOFF_TMP"; then
         DUPLICATE_HANDOFF_PATHS=$((DUPLICATE_HANDOFF_PATHS+1))
         echo "DUPLICATE_HANDOFF_PATH  $handoff_path"
         PAIR_FAIL=$((PAIR_FAIL+1))
-        continue
+        row_already_processed=YES
+    else
+        printf '%s\n' "$handoff_path" >> "$SEEN_HANDOFF_TMP"
     fi
-    printf '%s\n' "$handoff_path" >> "$SEEN_HANDOFF_TMP"
 
     # Duplicate pair detection.
     pair_key="$act_path"$'\t'"$handoff_path"
@@ -270,9 +266,16 @@ while IFS= read -r raw_line || [ -n "$raw_line" ]; do
         DUPLICATE_PAIRS=$((DUPLICATE_PAIRS+1))
         echo "DUPLICATE_PAIR  $act_path <-> $handoff_path"
         PAIR_FAIL=$((PAIR_FAIL+1))
+        row_already_processed=YES
+    else
+        printf '%s\n' "$pair_key" >> "$SEEN_PAIR_TMP"
+    fi
+
+    # If any dedup check fired, skip the file/metadata checks
+    # for this row (they would re-fail on the same content).
+    if [ "$row_already_processed" = "YES" ]; then
         continue
     fi
-    printf '%s\n' "$pair_key" >> "$SEEN_PAIR_TMP"
 
     # File existence.
     if [ ! -f "$act_path" ]; then
@@ -288,14 +291,11 @@ while IFS= read -r raw_line || [ -n "$raw_line" ]; do
         continue
     fi
 
-    # Metadata cardinality.
-    n_status=$(count_status_headings "$act_path")
-    if [ "$n_status" != "1" ]; then
-        MALFORMED_ACT_STATUS=$((MALFORMED_ACT_STATUS+1))
-        echo "MALFORMED_ACT_STATUS  $act_path  n_status=$n_status"
-        PAIR_FAIL=$((PAIR_FAIL+1))
-        continue
-    fi
+    # HANDOFF metadata cardinality.
+    # Per ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-
+    # CORRECTION01 P0-3: the HANDOFF exclusively owns the
+    # terminal verdict. The ACT body is immutable authorization
+    # metadata and is NOT parsed for verdict tokens.
     n_verdict=$(count_verdict_sections "$handoff_path")
     if [ "$n_verdict" != "1" ]; then
         MALFORMED_HANDOFF_VERDICT=$((MALFORMED_HANDOFF_VERDICT+1))
@@ -304,16 +304,9 @@ while IFS= read -r raw_line || [ -n "$raw_line" ]; do
         continue
     fi
 
-    # Token extraction and exact-token equality.
-    act_token=$(extract_status_token "$act_path")
+    # Token extraction: HANDOFF VERDICT only.
     handoff_token=$(extract_handoff_token "$handoff_path")
 
-    if ! token_ok "$act_token"; then
-        MALFORMED_ACT_STATUS=$((MALFORMED_ACT_STATUS+1))
-        echo "MALFORMED_ACT_TOKEN  $act_path  token=$act_token"
-        PAIR_FAIL=$((PAIR_FAIL+1))
-        continue
-    fi
     if ! token_ok "$handoff_token"; then
         MALFORMED_HANDOFF_VERDICT=$((MALFORMED_HANDOFF_VERDICT+1))
         echo "MALFORMED_HANDOFF_TOKEN  $handoff_path  token=$handoff_token"
@@ -321,14 +314,8 @@ while IFS= read -r raw_line || [ -n "$raw_line" ]; do
         continue
     fi
 
-    if [ "$act_token" = "$handoff_token" ]; then
-        PAIR_OK=$((PAIR_OK+1))
-        printf 'OK    %-72s  %s\n' "$act_path" "$act_token"
-    else
-        EXACT_VERDICT_MISMATCHES=$((EXACT_VERDICT_MISMATCHES+1))
-        PAIR_FAIL=$((PAIR_FAIL+1))
-        printf 'FAIL  %-72s  act=%s handoff=%s\n' "$act_path" "$act_token" "$handoff_token"
-    fi
+    PAIR_OK=$((PAIR_OK+1))
+    printf 'OK    %-72s  %s\n' "$act_path" "$handoff_token"
 done < "$MANIFEST"
 
 # ------------------------------------------------------------------
@@ -346,11 +333,14 @@ echo "MANIFEST_PARSE_ERRORS=$MANIFEST_PARSE_ERRORS"
 echo "DUPLICATE_ACT_PATHS=$DUPLICATE_ACT_PATHS"
 echo "DUPLICATE_HANDOFF_PATHS=$DUPLICATE_HANDOFF_PATHS"
 echo "DUPLICATE_PAIRS=$DUPLICATE_PAIRS"
+echo "DUPLICATE_CLASSIFICATION_IS_NON_SHORT_CIRCUITING=$DUPLICATE_CLASSIFICATION_IS_NON_SHORT_CIRCUITING"
+# Boolean detection tokens (computed by derivation from raw counters):
+[ "$DUPLICATE_ACT_PATHS" -gt 0 ] && echo "DUPLICATE_ACT_PATH_DETECTED=YES" || echo "DUPLICATE_ACT_PATH_DETECTED=NO"
+[ "$DUPLICATE_HANDOFF_PATHS" -gt 0 ] && echo "DUPLICATE_HANDOFF_PATH_DETECTED=YES" || echo "DUPLICATE_HANDOFF_PATH_DETECTED=NO"
+[ "$DUPLICATE_PAIRS" -gt 0 ] && echo "DUPLICATE_PAIR_DETECTED=YES" || echo "DUPLICATE_PAIR_DETECTED=NO"
 echo "MISSING_ACT_FILES=$MISSING_ACT_FILES"
 echo "MISSING_HANDOFF_FILES=$MISSING_HANDOFF_FILES"
-echo "MALFORMED_ACT_STATUS=$MALFORMED_ACT_STATUS"
 echo "MALFORMED_HANDOFF_VERDICT=$MALFORMED_HANDOFF_VERDICT"
-echo "EXACT_VERDICT_MISMATCHES=$EXACT_VERDICT_MISMATCHES"
 echo "PAIR_OK=$PAIR_OK"
 echo "PAIR_FAIL=$PAIR_FAIL"
 
@@ -360,6 +350,9 @@ if [ "$MANIFEST_ROWS" -eq 0 ]; then
 fi
 
 # Fail-closed predicate.
+# Per ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION01
+# P0-3: MALFORMED_ACT_STATUS and EXACT_VERDICT_MISMATCHES are no
+# longer checked (the ACT body is not parsed for verdict tokens).
 if [ "$MANIFEST_PARSE_ERRORS" -gt 0 ] \
    || [ "$MANIFEST_ROWS" -eq 0 ] \
    || [ "$DUPLICATE_ACT_PATHS" -gt 0 ] \
@@ -367,9 +360,7 @@ if [ "$MANIFEST_PARSE_ERRORS" -gt 0 ] \
    || [ "$DUPLICATE_PAIRS" -gt 0 ] \
    || [ "$MISSING_ACT_FILES" -gt 0 ] \
    || [ "$MISSING_HANDOFF_FILES" -gt 0 ] \
-   || [ "$MALFORMED_ACT_STATUS" -gt 0 ] \
    || [ "$MALFORMED_HANDOFF_VERDICT" -gt 0 ] \
-   || [ "$EXACT_VERDICT_MISMATCHES" -gt 0 ] \
    || [ "$PAIR_FAIL" -gt 0 ]; then
     echo "STATUS=FAIL"
     echo "VERDICT=FAIL"
