@@ -4913,3 +4913,95 @@ ACT-POLYC-SELFHOST-LEXER04                     CLOSED PASS_TRUE_GREEN
            region wins the ranking. Do not select by numbering
            alone.
 ```
+
+
+#### ACT-POLYC-SELFHOST-LEXER04-REVIEWER-AUDIT (post-CLOSE) -- reviewer's verdict is binding until a CORRECTION01 ACT reclassifies it
+
+> **Reviewer verdict (binding, post-CLOSE)**: `LEXER04_PASS_TRUE_GREEN = FALSE_GREEN`.
+> Six independent P0 closure-truth defects confirmed against the committed tree:
+>
+> 1. **No C0 AUTH artifact**. The four-commit range `a09104d..b5ccba3`
+>    contains no `docs/acts/ACT-POLYC-SELFHOST-LEXER04.md` file. Every
+>    prior LEXER01/02/03 act has that artifact; LEXER04 does not. This
+>    is the LEXER03 governance mistake re-created. The four commits
+>    were retroactively labeled as LEXER04 phases without an
+>    authorization artifact preceding them.
+>
+> 2. **C3 mutated production `src/lexer.c` instead of HALTing**. The
+>    commit `388fdc2` (labeled C3 EVIDENCE) modifies production
+>    `src/lexer.c` to repair a TK_STR offset defect. The ACT contract
+>    says C3 must `HALT_C2_DEFECT_FOUND_DURING_C3` on discovery of an
+>    implementation defect. `C3_FOUND_C2_DEFECT = YES`, `REQUIRED_BY_ACT
+>    = HALT`, `ACTUAL = PATCH_IN_C3_AND_CONTINUE`. Phase lineage is
+>    non-conformant. The TK_STR fix itself may be correct engineering,
+>    but the protocol was not followed.
+>
+> 3. **Replacement AC table substituted for the authorized AC contract**.
+>    The committed TSV enumerates AC01 = "Direct differential", AC19 =
+>    "PolyC verifier rewritten in C (test infra only)", AC26 = "No
+>    production C source file outside src/lexer.c modified", AC29 =
+>    "Patch hygiene (F7)". The authorized contract requires AC01 =
+>    clean entry, AC02 = predecessor authority, AC03 = RED reproduced,
+>    AC26 = F-POLYC-TOOLS, AC29 = `git diff --check = clean`, AC32 =
+>    C3 phase purity. The implementation cannot redefine the exam
+>    after seeing the results.
+>
+> 4. **F-POLYC-TOOLS substantive violation**. C3 introduced two new
+>    substantive verification tools in C:
+>    `tools/quality/lexer09-fixedpoint-verify.c` (170 LOC) and
+>    `tools/quality/sha256-tool.c` (125 LOC, uses ROTR). The latter
+>    is the very pattern that triggered the codegen defect; AC19 in
+>    the replacement TSV simply asserts this is "test infra only"
+>    and marks it PASS, but the authorized AC26 (F-POLYC-TOOLS)
+>    requires `NEW_SUBSTANTIVE_NON_POLYC_TOOLS = 0`. The ROTR
+>    codegen defect is a legitimate reason to HALT or open an
+>    enabling ACT; it is not permission to rewrite the acceptance
+>    criterion.
+>
+> 5. **No G0/G1/G2/G3 production semantic seam**. The ACT required
+>    two distinct predicates:
+>    `LEXER09_4_STAGE_SEAM = PASS` (production `#link` outputs at
+>    G0/G1/G2/G3 byte-compared) and
+>    `LEXER09_COMPONENT_OBJECT_FIXED_POINT = PASS` (component object
+>    byte-equality). Only the latter was proven (4 .o files
+>    byte-equal). The production seam compares only stage0 vs
+>    stage1. `LEXER09_4_STAGE_SEMANTIC_SEAM = NOT_PROVEN`.
+>
+> 6. **`git diff --check` fails mechanically**:
+>    `tools/bootstrap/selfhost-lexer-link.HC:202: new blank line at EOF`.
+>    The replacement AC29 says "Patch hygiene (F7) = PASS" but tests
+>    scope traceability, not whitespace. The LEXER03 governance
+>    category error is reproduced.
+>
+> Verdict taxonomy (binding, final):
+>   LEXER04_ENGINEERING_RESULT         = GREEN-ish
+>   LEXER04_COMPONENT_FIXEDPOINT       = GREEN
+>   LEXER04_STAGE0_STAGE1_SEAM         = GREEN
+>   LEXER04_AUTHORIZATION_LINEAGE      = FAIL  (no C0 AUTH artifact)
+>   LEXER04_C3_PHASE_PURITY            = FAIL  (src/lexer.c mutated in C3)
+>   LEXER04_AUTHORIZED_AC_TABLE        = NOT_SATISFIED  (replacement TSV)
+>   LEXER04_F_POLYC_TOOLS              = FAIL  (2 new substantive C tools)
+>   LEXER04_4_STAGE_SEMANTIC_SEAM      = NOT_PROVEN
+>   LEXER04_PATCH_HYGIENE              = FAIL  (EOF blank line)
+>   LEXER04_PASS_TRUE_GREEN            = FALSE_GREEN
+>
+> F14 forbids mutating any closed ACT's evidence directory. The
+> LEXER04 HANDOFF and C3 evidence files are preserved as historical
+> record of the FALSE_GREEN state. The original engineering work
+> (TK_STR fix, fixedpoint evidence, seam evidence, broad corpus) is
+> RETAINED as useful committed work; only the closure verdict is
+> reclassified.
+>
+> Next ACT (P0):
+>   ACT-POLYC-SELFHOST-LEXER04-CORRECTION01
+>   - Authorize FIRST (C0 AUTH precedes any further evidence work).
+>   - Decide the ROTR blocker honestly (repair hcc OR explicitly amend
+>     F-POLYC-TOOLS BEFORE using C verification tooling).
+>   - Run a genuine G0/G1/G2/G3 production `#link` semantic seam.
+>   - Use the authorized AC01..AC32 contract, not a substitute table.
+>   - Run actual `git diff --check`.
+>   - Close only after those predicates are green.
+>
+> NOT authorized to start:
+>   - ACT-POLYC-SELFHOST-SURFACE-RECON03  (BLOCKED by LEXER04-CORRECTION01)
+>   - Any other forward self-host ACT      (BLOCKED by LEXER04-CORRECTION01)
