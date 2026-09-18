@@ -1,0 +1,62 @@
+NEXT_ACT_ID       = ACT-POLYC-SELFHOST-LEXER04
+NEXT_TARGET       = INV.LEXER.LINK (atomic slice: lexLink / #link directive)
+SUBSYSTEM         = lexer
+RESPONSIBILITY    = Migrate the lexLink() #link directive handler from C to PolyC
+                    as a single-function bootstrap component, applying the
+                    same #ifdef-gated delegation pattern established by
+                    LEXER02 and LEXER03.
+
+ALLOWED_PRODUCTION_FILES =
+    src/lexer.c                                       (modify lexLink body only)
+    tools/bootstrap/selfhost-lexer-link.HC            (NEW PolyC component)
+    Makefile                                          (add build rule + tests)
+    tools/quality/lexer09-link-oracle.c               (NEW: oracle harness)
+    tools/quality/lexer09-link-oracle-impl.c          (NEW: oracle truth)
+    scripts/quality/lexer09-link-direct-differential.sh (NEW: dispatch)
+    evidence/ACT-POLYC-SELFHOST-LEXER04/c{1,2,3,4}/   (NEW evidence)
+
+ALLOWED_SYMBOLS =
+    src/lexer.c::lexLink                              (rewrite body via #ifdef)
+    tools/bootstrap/selfhost-lexer-link.HC::BootstrapLinkDirective (NEW)
+
+ALLOWED_TEST_FILES =
+    tools/quality/lexer09-*                           (NEW oracle + differential harness)
+    evidence/ACT-POLYC-SELFHOST-LEXER04/              (NEW)
+
+ALLOWED_QUALITY_TOOLING =
+    tools/quality/lexer09-link-oracle.c               (NEW C oracle harness)
+    tools/quality/lexer09-link-oracle-impl.c          (NEW C oracle truth)
+    scripts/quality/lexer09-link-direct-differential.sh (NEW shell dispatcher, <=50 LOC)
+
+FORBIDDEN_SUBSYSTEMS =
+    src/parser.c
+    src/ast.c
+    src/cctrl.c
+    src/ir.c
+    src/x86_64.c
+    src/aarch64.c
+    src/llvm-backend.c
+    src/main.c
+    src/cli.c
+    src/lexer.c::lexCore
+    src/lexer.c::lexLink semantics beyond the #link directive
+    tools/bootstrap/selfhost-lexer-trivia.HC
+    tools/bootstrap/bootstrap02-ident.HC
+    tools/bootstrap/selfhost-lexer-scalar-literal.HC
+    tools/bootstrap/selfhost-lexer-operator-classify.HC
+    evidence/ACT-POLYC-SELFHOST-LEXER01*/
+    evidence/ACT-POLYC-SELFHOST-LEXER02*/
+    evidence/ACT-POLYC-SELFHOST-LEXER03*/
+
+EXPECTED_CONSERVATION_GATES =
+    LEXER01_DIRECT_DIFFERENTIAL = 47/47 PASS
+    LEXER02_DIRECT_DIFFERENTIAL = 89/89 PASS
+    LEXER03_DIRECT_DIFFERENTIAL = 45/45 PASS
+    LEXER07_PRODUCTION_SEAM_4_STAGES = PASS
+    LEXER08_PRODUCTION_SEAM_STAGE0_VS_STAGE1 = PASS
+    LEXER03_COMPONENT_OBJECT_FIXED_POINT = PASS (4-gen fixed point)
+    gate-fast = PASS
+    factory-append-only-test = PASS
+    factory-no-python-check baseline = unchanged
+    LEXER09_DIRECT_DIFFERENTIAL = N/N PASS (NEW; only for #link)
+    LEXER09_PRODUCTION_SEAM = PASS (NEW; #link integration)

@@ -1,0 +1,51 @@
+NEXT_ACT_PROOF_MODEL for ACT-POLYC-SELFHOST-LEXER04
+=====================================================
+
+For each evidence class, classify as REQUIRED or NOT_APPLICABLE:
+
+direct differential          REQUIRED (lexer09-direct-differential):
+                              Each #link directive variant (string path,
+                              angle-bracket name, lexRaise on bad syntax)
+                              is exercised against the legacy C truth
+                              (oracle-impl.c) and the PolyC truth
+                              (BootstrapLinkDirective). Identical output
+                              = PASS.
+
+production seam              REQUIRED (lexer09-real-seam-runner):
+                              A real compilation through ./hcc that uses
+                              #link "foo.so" or #link <foo> in source must
+                              produce the same l->cc->link_libs and
+                              l->cc->shared_object_files list across
+                              ./hcc, ./build/hcc-bootstrap02,
+                              ./build/hcc-bootstrap03,
+                              ./build/hcc-bootstrap04.
+
+stage seam                   REQUIRED (4-stage seam):
+                              Same compilation invoked through G0/G1/G2/G3
+                              produces byte-identical link-list output.
+
+object fixed point           REQUIRED for the new BootstrapLinkDirective.o:
+                              tools/bootstrap/selfhost-lexer-link.HC compiled
+                              by G0/G1/G2/G3 must produce 4 byte-identical
+                              .o files (same pattern as LEXER03).
+
+corpus conservation          REQUIRED:
+                              The existing lexer08-broad-corpus-4-stage
+                              (45 fixtures) MUST continue to PASS unchanged.
+
+negative mutation control    REQUIRED:
+                              A mutated BootstrapLinkDirective.HC (e.g. swap
+                              a string-literal path for an angle-bracket
+                              one) MUST cause the verifier to exit non-zero.
+                              This proves the verifier is load-bearing.
+
+provenance binding           REQUIRED:
+                              The C2 IMPL commit binds the source SHA-256 of
+                              tools/bootstrap/selfhost-lexer-link.HC and
+                              the four compiler SHAs. The C3 EVIDENCE
+                              commit records the four object SHAs.
+
+NOT_APPLICABLE classes:
+  - none
+
+NEXT_ACT_PROOF_MODEL_COMPLETE = YES

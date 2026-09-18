@@ -1,0 +1,25 @@
+NEXT_ACT_RED =
+  The src/lexer.c::lexLink function body still contains the legacy-C #link
+  directive handler. The PolyC equivalent BootstrapLinkDirective does not
+  exist in tools/bootstrap/ (no file named selfhost-lexer-link.HC), and
+  no lexer09-* oracle exists for #link. Furthermore, compiling the current
+  tree under ./build/hcc-bootstrap02/03/04 must produce a lexLink whose
+  output (the populated l->cc->link_libs / l->cc->shared_object_files)
+  is identical across all four generations.
+
+This RED is mechanically reproducible as:
+
+  test -f tools/bootstrap/selfhost-lexer-link.HC  -> FAILS (absent)
+  test -f tools/quality/lexer09-link-oracle.c    -> FAILS (absent)
+  grep -l 'BootstrapLinkDirective' src/lexer.c   -> FAILS (not delegated)
+
+After IMPL, all three commands succeed.
+
+NEXT_ACT_RED_IS_MECHANICALLY_REPRODUCIBLE = YES
+
+CONCRETE OBSERVATIONS (pre-IMPL):
+  $ test -f tools/bootstrap/selfhost-lexer-link.HC; echo $?
+  1
+
+  $ grep -c 'BootstrapLinkDirective' src/lexer.c
+  0
