@@ -1,0 +1,51 @@
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION01 / c2b / c2b-polyc-verifier-blocked.txt
+
+HALT: PolyC-native fixedpoint verifier rebuild blocked by pre-existing
+libtos.a symbol gaps on this host (NOT caused by ACT-POLYC-SELFHOST-
+LEXER04-CORRECTION01).
+
+Attempted rebuild:
+  hcc tools/quality/lexer08-fixedpoint-verify.HC -o lexer08-fixedpoint-verify
+  Result:
+    ld: Undefined symbols:
+      _FREE, referenced from: _MemCmp in holyc-asm-08e6e3.o
+      _STRNCMP, referenced from: _MemCmp in holyc-asm-08e6e3.o
+      _SpawnAndCapture, referenced from: _MemCmp in holyc-asm-08e6e3.o
+      _MEMSET, referenced from: _MemCmp in holyc-asm-08e6e3.o
+      _STRLEN_FAST, referenced from: _MemCmp in holyc-asm-08e6e3.o
+    clang: error: linker command failed with exit code 1
+
+libtos.a inventory:
+  /Volumes/.../build/test-prefix/lib/libtos.a contains all.o and errno_shim.o.
+  _FREE, _STRNCMP, _SpawnAndCapture, _MEMSET, _STRLEN_FAST are not defined.
+
+Cross-check that C2A did not introduce the regression:
+  Stashed C2A fix (HEAD reverted to 3294449), rebuilt hcc, retried
+  the same hcc invocation:
+    Same Undefined symbols error.
+  Confirmed: pre-existing host infra issue, NOT a regression.
+
+Recommended follow-up ACT:
+  ACT-POLYC-LIBTOS-SYMBOL-GAPS01 (new):
+    Audit src/holyc-lib/*.HC vs build/test-prefix/lib/all.o.
+    Identify every HC function with public _extern _NAME that lacks
+    a corresponding definition in the libtos snapshot, and either
+    add the missing definitions or repair the all.HC build.
+
+Until ACT-POLYC-LIBTOS-SYMBOL-GAPS01 closes, the C-language verification
+authority (tools/quality/lexer09-fixedpoint-verify.c,
+tools/quality/sha256-tool.c) REMAINS in place under
+F-POLYC-TOOLS CORRECTION01 carve-out (§27 C2.9 residue). They are not
+used in this ACT's closure evidence because the RED/GREEN proof above
+relies only on the well-tested clang `nm` and `ld -r` tools, which are
+POSIX-standard host utilities and not subject to F-POLYC-TOOLS.
+
+F6 FAILED: PolyC verifier binary unavailable. The mechanism that
+FAILED is libtos.a symbol gap, which is mechanical-infrastructure-
+blocker category B5 (independent toolchain gap).
+
+VERDICT:
+  C2B_POLYC_VERIFIER_BUILT=NO (host infra blocker)
+  C2B_RED_PROVEN_VIA_NM_AND_LD=YES (closure evidence uses
+    host nm + ld, which DO work correctly post-fix)
+  C_TOOLS_REMOVED=NO (preserved per F-POLYC-TOOLS C2.9 carve-out)
