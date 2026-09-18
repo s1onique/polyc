@@ -1,0 +1,42 @@
+ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01 / c1 / c1-dual-authority-red.txt
+
+Dual-authority RED witness:
+
+  Two parallel enumerations exist for the closure-managed universe:
+
+  1. The manifest at docs/factory/act-handoff-map.tsv (7 data rows)
+  2. The hardcoded bounded lists at scripts/quality/factory-closure-status-check.sh
+     (MANAGED_ACTS, MANAGED_HANDOFFS, 7 entries each)
+
+  The checker uses BOTH in its validation logic (Phase 2 set-differences
+  UNMAPPED_MANAGED_* vs EXTRA_MANIFEST_*).
+
+  Bootstrap defect consequence:
+
+    $ # imagine an agent appends a new pair to the manifest:
+    $ echo 'docs/acts/ACT-NEW.md<TAB>docs/factory/HANDOFF-ACT-NEW.md' >> docs/factory/act-handoff-map.tsv
+    $ # the checker will now report EXTRA_MANIFEST_ACTS=1 EXTRA_MANIFEST_HANDOFFS=1
+    $ # and exit STATUS=FAIL, even though the new pair is structurally valid.
+
+  Mechanical proof of dual authority:
+
+  $ grep -nE '^MANAGED_(ACTS|HANDOFFS)=' scripts/quality/factory-closure-status-check.sh
+  46:MANAGED_ACTS="
+  55:MANAGED_HANDOFFS="
+
+  Both variables carry a here-doc list of paths. The list is not derived
+  from the manifest.
+
+  Required predicates (this ACT's principal operational RED):
+
+    MANIFEST_EXISTS=YES
+    CHECKER_CONTAINS_HARDCODED_PAIR_ENUMERATION=YES
+    MANIFEST_IS_SINGLE_ENUMERATION_AUTHORITY=NO  (RED witness confirmed)
+
+    HARDCODED_ACT_PATH_COUNT_IN_CHECKER=7
+    HARDCODED_HANDOFF_PATH_COUNT_IN_CHECKER=7
+
+    MANIFEST_ROW_COUNT=7
+    HARDCODED_CHECKER_PAIR_COUNT=7
+
+    AC02=PASS

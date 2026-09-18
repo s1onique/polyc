@@ -1,0 +1,32 @@
+ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01 / c1 / c1-excluded-correction-red.txt
+
+Excluded correction RED witness:
+
+  The predecessor ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01-CORRECTION01
+  has a real HANDOFF but is not currently managed by the closure oracle.
+
+  $ ls -la docs/acts/ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01-CORRECTION01.md
+  -rw-r--r--  1 ... 6567 Sep 18 19:15 docs/acts/ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01-CORRECTION01.md
+
+  $ ls -la docs/factory/HANDOFF-ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01-CORRECTION01.md
+  -rw-r--r--  1 ... 14793 Sep 18 23:50 docs/factory/HANDOFF-ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01-CORRECTION01.md
+
+  $ grep STATIC-FUNCTION-LINKAGE01-CORRECTION01 docs/factory/act-handoff-map.tsv
+  (no output — the row is absent)
+
+  $ grep STATIC-FUNCTION-LINKAGE01-CORRECTION01 scripts/quality/factory-closure-status-check.sh
+  (no output — neither MANAGED_ACTS nor MANAGED_HANDOFFS includes it)
+
+  $ bash scripts/quality/factory-closure-status-check.sh 2>&1 | grep PAIR_OK
+  PAIR_OK=7
+
+  The correction pair is excluded; the oracle has no knowledge of it.
+
+  Required predicates:
+
+    STATIC_LINKAGE_CORRECTION_ACT_EXISTS=YES
+    STATIC_LINKAGE_CORRECTION_HANDOFF_EXISTS=YES
+    STATIC_LINKAGE_CORRECTION_MANIFEST_ROW=NO  (RED witness confirmed)
+    STATIC_LINKAGE_CORRECTION_ORACLE_MANAGED=NO  (RED witness confirmed)
+
+    AC03=PASS

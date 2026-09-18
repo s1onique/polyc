@@ -1,0 +1,41 @@
+ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01 / c1 / c1-checker-hardcoded-universe.txt
+
+Principal dual-authority RED:
+
+  The closure checker contains two hardcoded here-doc lists
+  (MANAGED_ACTS and MANAGED_HANDOFFS) inside
+  scripts/quality/factory-closure-status-check.sh, lines 46-63.
+
+  Mechanical extraction (verbatim lines):
+
+    MANAGED_ACTS="
+    docs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION01.md
+    docs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION02.md
+    docs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION03.md
+    docs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION04.md
+    docs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION05.md
+    docs/acts/ACT-POLYC-FACTORY-STATUS-RECONCILIATION-CORRECTION02.md
+    docs/acts/ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01.md
+    "
+
+    MANAGED_HANDOFFS="
+    evidence/llvmspike01-core03-correction01/HANDOFF.md
+    evidence/llvmspike01-core03-correction02/HANDOFF.md
+    evidence/llvmspike01-core03-correction03/HANDOFF.md
+    evidence/llvmspike01-core03-correction04/HANDOFF.md
+    evidence/llvmspike01-core03-correction05/HANDOFF.md
+    evidence/factory-status-reconciliation-correction02/HANDOFF.md
+    docs/factory/HANDOFF-ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01.md
+    "
+
+  These hardcoded lists are then used in Phase 2 of the checker
+  to compute bidirectional completeness (UNMAPPED_MANAGED_*,
+  EXTRA_MANIFEST_*) against the manifest.
+
+Required RED predicates:
+
+  CHECKER_CONTAINS_HARDCODED_PAIR_ENUMERATION=YES  (two here-doc lists of 7 paths each)
+  HARDCODED_CHECKER_PAIR_COUNT=7  (managed ACTs and managed HANDOFFs each have 7 entries)
+  MANIFEST_IS_SINGLE_ENUMERATION_AUTHORITY=NO  (the bounded list still drives set-difference checks)
+
+  AC02=PASS

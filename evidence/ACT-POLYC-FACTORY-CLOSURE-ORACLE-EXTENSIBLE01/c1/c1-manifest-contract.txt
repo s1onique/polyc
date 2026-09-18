@@ -1,0 +1,64 @@
+ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01 / c1 / c1-manifest-contract.txt
+
+Frozen manifest contract (per ACT §7 and §8):
+
+  Schema version:
+    MANIFEST_SCHEMA_VERSION=1
+    MANIFEST_FIELD_COUNT=2
+
+  Format:
+    Each data row: <act_path><TAB><handoff_path>
+    Comments: lines starting with '#'
+    Blank lines: permitted (ignored)
+
+  Required path classes:
+    field 1 (act_path): docs/acts/*.md
+    field 2 (handoff_path): docs/factory/HANDOFF-*.md
+
+  Forbidden in any row:
+    absolute path (starts with /)
+    path traversal (contains ..)
+    empty field
+    third field
+    shell syntax (e.g. $VAR, backticks)
+    wildcard expansion (e.g. *.md)
+
+  Uniqueness:
+    No duplicate act_paths (independent uniqueness on column 1)
+    No duplicate handoff_paths (independent uniqueness on column 2)
+    No exact duplicate rows (act, handoff)
+
+  File existence:
+    For each data row, both files must exist on the filesystem at
+    canonical invocation time. No implicit "future HANDOFF" state
+    in the production oracle.
+
+  Authority:
+    docs/factory/act-handoff-map.tsv is the single enumeration authority
+    for managed ACT/HANDOFF pairs after C2. The checker SHALL NOT
+    contain a second ACT/HANDOFF path list.
+
+  Test seam (per ACT §18):
+    FACTORY_ACT_HANDOFF_MAP=<path>  (overrides the manifest source
+                                      for falsification tests only)
+
+  C1 freeze decision:
+
+    Test seam mechanism: FACTORY_ACT_HANDOFF_MAP=<path> (env var).
+
+    Rationale: env var is POSIX-portable, requires no new flag-parsing
+    in the checker, and naturally defaults to the canonical path when
+    unset (canonical invocation path).
+
+    Canonical `gate-fast` does not set the env var; it always reads
+    the canonical docs/factory/act-handoff-map.tsv.
+
+  Required predicates:
+
+    MANIFEST_SCHEMA_VERSION=1
+    MANIFEST_FIELD_COUNT=2
+
+    HARDCODED_ACT_PATH_COUNT_IN_CHECKER=7  (current state, RED witness)
+    HARDCODED_HANDOFF_PATH_COUNT_IN_CHECKER=7  (current state, RED witness)
+
+    AC05=PASS
