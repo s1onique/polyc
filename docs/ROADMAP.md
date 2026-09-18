@@ -5203,3 +5203,106 @@ After that:
   ACT-POLYC-LIBTOS-SYMBOL-GAPS01
   ACT-POLYC-SELFHOST-LEXER04-CORRECTION02
 ```
+
+## CLOSURE-ORACLE-EXTENSIBLE01 closure (recorded)
+
+### Summary
+
+`ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01` removed the
+dual-authority governance dependency from the Factory closure-status
+oracle. The checker at `scripts/quality/factory-closure-status-check.sh`
+no longer carries a hardcoded bounded managed universe; the manifest at
+`docs/factory/act-handoff-map.tsv` is now the SINGLE enumeration
+authority for managed ACT/HANDOFF pairs.
+
+### Verdict
+
+```text
+MANIFEST_IS_SINGLE_ENUMERATION_AUTHORITY = YES   (was: NO)
+HARDCODED_PAIR_UNIVERSE                  = NONE  (was: 7)
+STATIC_LINKAGE_CORRECTION_MANAGED        = YES   (was: NO)
+SELF_ACT_MANAGED                         = YES   (was: N/A)
+CLOSURE_ORACLE_FROZEN_BEFORE_C3          = YES   (was: N/A)
+PAIR_OK                                  = 9     (was: 7)
+PAIR_FAIL                                = 0
+STATUS                                   = PASS
+ACT_CLOSE_PASS_TRUE_GREEN                = TRUE
+```
+
+### What changed
+
+  1. The hardcoded here-doc lists `MANAGED_ACTS` and
+     `MANAGED_HANDOFFS` were removed from the checker.
+  2. Phase 2 set-difference computation (UNMAPPED_MANAGED_* /
+     EXTRA_MANIFEST_*) was removed; manifest is sole authority.
+  3. Fail-closed detection added for malformed rows, missing
+     files, duplicate ACTs, duplicate HANDOFFs, duplicate pairs,
+     absolute paths, and path traversal.
+  4. The `FACTORY_ACT_HANDOFF_MAP=<path>` env var provides a
+     bounded test seam for falsification tests.
+  5. The HANDOFF path-prefix check accepts both
+     `docs/factory/HANDOFF-*.md` (canonical) and
+     `evidence/*/HANDOFF.md` (legacy ACT-managed pairs) to
+     preserve closed predecessor artifacts per F14.
+  6. The manifest grew from 7 to 9 rows, registering the
+     previously excluded STATIC-FUNCTION-LINKAGE01-CORRECTION01
+     pair and the new CLOSURE-ORACLE-EXTENSIBLE01 pair.
+  7. A dedicated test target `make factory-closure-status-test`
+     was added with 12 cases (T01..T12).
+
+### Closure-governance dependency resolution
+
+```text
+STATIC_LINKAGE_CORRECTION_GOVERNANCE_DEPENDENCY = RESOLVED
+
+Previously:
+  STATIC-FUNCTION-LINKAGE01-CORRECTION01 had a real HANDOFF
+  but was outside the closure oracle's seven-pair universe.
+
+Now:
+  The pair is registered in the manifest and validated by
+  the checker (PAIR_CHECK=PASS, verdict
+  PASS_ENGINEERING_HALT_GOVERNANCE_DEPENDENCY mirrors
+  between ACT ## Status and HANDOFF VERDICT).
+```
+
+### Self-judgment proof
+
+The checker was frozen at C2 commit 52a8b12:
+
+  CHECKER_C2_SHA256 = 1ca6ef4dcac67505f1549a46126eb1474c71f3a5f8d10d2b1763ee3af19666fe
+
+At C3, the checker reported STATUS=FAIL because the
+CLOSURE-ORACLE-EXTENSIBLE01 HANDOFF was absent
+(PAIR_OK=8, PAIR_FAIL=1, MISSING_HANDOFF_FILE).
+
+At C4, with the HANDOFF present and the checker unchanged,
+the same checker reported:
+
+  MANIFEST_ROWS=9 PAIR_OK=9 PAIR_FAIL=0 STATUS=PASS
+
+This is the core self-judgment proof: the manifest row was
+load-bearing across C2/C3/C4, and the checker did not need
+to be modified between C3 and C4 to flip the verdict.
+
+### Phase topology executed (5 commits)
+
+  f8ae7ac C0 AUTH
+  ea3bd79 C1 RED/CONTRACT
+  52a8b12 C2 IMPL/FREEZE
+  43e7f1e C3 VERIFY
+  <this commit> C4 CLOSE
+
+### Recommended next ACT
+
+```text
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01
+  Repair libtos symbol gaps; resume LEXER04 work.
+
+Followed by:
+  ACT-POLYC-SELFHOST-LEXER04-CORRECTION02
+  ACT-POLYC-SELFHOST-SURFACE-RECON03
+```
+
+The Factory governance dependency that blocked compiler work
+is removed.

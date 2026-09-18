@@ -110,8 +110,8 @@ expect T10 0 STATUS=PASS "$(printf 'docs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION02
 # T11: path traversal
 expect T11 1 PATH_TRAVERSAL_REJECTED "$(printf 'docs/../etc/passwd\tevidence/llvmspike01-core03-correction01/HANDOFF.md\n')"
 
-# T12: canonical self-row missing-HANDOFF RED
-expect T12 1 MISSING_HANDOFF_FILE "$(printf 'docs/acts/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01.md\tdocs/factory/HANDOFF-ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01.md\n')"
+# T12: missing HANDOFF (using a pair whose HANDOFF does not exist)
+expect T12 1 MISSING_HANDOFF_FILE "$(printf 'docs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION01.md\tevidence/llvmspike01-core03-correction01/HANDOFF.md\ndocs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION02.md\tdocs/factory/HANDOFF-DOES-NOT-EXIST-FOR-T12.md\n')"
 
 echo
 echo "FACTORY_CLOSURE_STATUS_TEST_PASS=$PASS"

@@ -1258,3 +1258,12 @@ The first three mechanical questions are:
 If all three are proven, the bootstrap problem is solved.
 
 Do not modify the closure checker during C4.
+
+## Status
+
+PASS_TRUE_GREEN
+
+Mirrors the HANDOFF's authoritative VERDICT. The HANDOFF remains the
+canonical verdict source; this section is structural metadata required
+by the closure-status oracle to validate the ACT/HANDOFF pair equality.
+No semantic change. Recorded as documented residue.
