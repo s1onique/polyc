@@ -1,0 +1,24 @@
+surface_id	unit_oracle	fixture_count	direct_differential	production_seam	stage_equivalence	fixedpoint_proof	negative_control	corpus_reach	proof_gap
+INV.LEXER.TRIVIA	tools/quality/lexer08-trivia-oracle.c (legacy-C truth)	24 fixtures (broad corpus)	PASS (45/45 lexer08-direct-differential)	PASS (real production seam)	PASS (stage0 vs stage1)	PASS (4-gen fixed point: g0==g1==g2==g3 bytes)	PASS (mutated copy detector)	broad 4-stage corpus	NONE (full coverage)
+INV.LEXER.IDENT	tools/quality/bootstrap02-ident-oracle.c	20 fixtures	PASS (89/89 lexer07-direct-differential)	PASS (real production seam)	PASS (4 stages)	NOT_REQUIRED	PASS	broad 4-stage corpus	NONE (full coverage)
+INV.LEXER.SCALAR	tools/quality/lexer07-scalar-literal-oracle.c	~30 fixtures	PASS (89/89 lexer07-direct-differential)	PASS	PASS (4 stages)	NOT_REQUIRED	PASS	broad 4-stage corpus	NONE (full coverage)
+INV.LEXER.OPCLASS	tools/quality/bootstrap06-operator-classify-oracle.c	~40 fixtures	PASS (bootstrap06-direct-differential)	PASS	PASS (4 stages)	NOT_REQUIRED	PASS	broad 4-stage corpus	NONE (full coverage)
+INV.LEXER.LINK	tools/quality/lexer07-direct-differential.c (covers via existing differential)	24 fixtures	PASS (45/45 lexer08; includes whitespace/comment coverage)	PASS	PASS	PARTIAL (only for trivia component)	PASS	broad 4-stage corpus	GAP: lexLink/lexCore dispatch is monolithic; would need a boundary slice for migration
+INV.PREPROC.PP	tools/quality/lexer07-direct-differential.c (covers #if etc.)	24 fixtures	PASS	PASS	PASS	NOT_REQUIRED	PASS	broad 4-stage corpus	GAP: preprocessor is interleaved with lexCore dispatcher
+INV.PARSER.TOPLEVEL	NO atomic oracle (large monolithic parser; oracle exists only via parseToAst integration)	0	NO	NO	NO	NO	NO	parser corpus only via end-to-end smoke	GAP: no atomic direct-differential harness for top-level def dispatch; would need to build one (substantial effort)
+INV.PARSER.COMPOUND	NO atomic oracle	0	NO	NO	NO	NO	NO	parser corpus only via end-to-end smoke	GAP: parseCompoundStatementInternal is ~1100 LOC; no atomic oracle exists
+INV.PARSER.SUBSCRIPTS	NO atomic oracle	0	NO	NO	NO	NO	NO	parser corpus only via end-to-end smoke	GAP: prslib+prsutil+prsasm ~2600 LOC; no atomic oracle exists
+INV.AST.CREATE	NO atomic oracle	0	NO	NO	NO	NO	NO	ast corpus only via end-to-end smoke	GAP: ast.c ~2730 LOC; no atomic oracle exists; would need ast-shape differential
+INV.CCTRL.SCOPE	NO atomic oracle	0	NO	NO	NO	NO	NO	cctrl corpus only via end-to-end smoke	GAP: cctrl.c ~1329 LOC; no atomic oracle exists; tightly coupled to parser
+INV.IR.LOWER	NO atomic oracle	0	NO	NO	NO	NO	NO	ir corpus only via end-to-end smoke	GAP: ir.c irLower* ~1200 LOC; no atomic oracle exists; depends on ast
+INV.IR.CGFUN	NO atomic oracle	0	NO	NO	NO	NO	NO	ir-codegen corpus only via end-to-end smoke	GAP: ir.c irFunctionPrepForCodeGen ~200 LOC; no atomic oracle
+INV.CODEGEN.X86	NO atomic oracle (CHARTER-preserved reference backend; differential against native runs)	0	PARTIAL (small-native-corpus-differential)	NO	NO	NO	NO	small native corpus	GAP: by CHARTER, this is a preserved reference backend; not a migration candidate
+INV.CODEGEN.AARCH64	NO atomic oracle (CHARTER-preserved reference backend)	0	PARTIAL	NO	NO	NO	NO	small native corpus	GAP: by CHARTER, this is a preserved reference backend
+INV.LLVM.BACKEND	NO atomic oracle (experimental)	0	NO	NO	NO	NO	NO	llvm-spike tests	GAP: experimental opt-in only; not on required path
+INV.LSP	NO atomic oracle	0	NO	NO	NO	NO	NO	none (LSP smoke)	GAP: tooling path; not required
+INV.TRANSPILE	NO atomic oracle	0	NO	NO	NO	NO	NO	none (transpile smoke)	GAP: cross-cuts AST shape; not bounded
+INV.MAIN.DRIVER	NO atomic oracle	0	NO	NO	NO	NO	NO	end-to-end smoke only	GAP: cross-cuts everything; not bounded
+INV.JIT.X86	NO atomic oracle	0	NO	NO	NO	NO	NO	REPL smoke	GAP: REPL-only path; not required for self-host
+INV.DIAG.PRINT	subset of INV.CCTRL.SCOPE	0	NO	NO	NO	NO	NO	none	GAP: subset of cctrl; not separately bounded
+INV.MEM.ARENA	NO atomic oracle (plumbing)	0	NO	NO	NO	NO	NO	none	GAP: not compiler_semantics; plumbing; not a self-host blocker
+INV.UTIL.MISC	NO atomic oracle (macros)	0	NO	NO	NO	NO	NO	none	GAP: not compiler_semantics; macros; not a self-host blocker

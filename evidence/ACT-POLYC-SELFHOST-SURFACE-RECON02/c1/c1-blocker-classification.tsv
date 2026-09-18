@@ -1,0 +1,20 @@
+surface_id	subsystem	blocker_class	rationale	candidate_for_next	evidence
+INV.LEXER.LINK	lexer	BLOCKS_NEXT_SELFHOST_STAGE	Once LEXER04 migrates the lexLink/lexCore dispatch, the lexer subsystem is fully self-hosted. This closes the lexer self-host boundary in PolyC.	YES (atomic candidate if a bounded slice is identified)	src/lexer.c#lexLink + lexCore (currently 1581-1945); only 4-5 components delegated; remainder is dispatch plumbing
+INV.PREPROC.PP	preprocessor	DOES_NOT_BLOCK_SELFHOST	Preprocessor is interleaved with lexCore; would couple LEXER04 with a preprocessor migration. Better deferred as a separate ACT.	NO (would couple to LEXER04)	src/lexer.c#lexPreProcIf/lexInclude/lexUndef/lexSetAsmFlags/lexUnSetAsmFlags/lexPreProcBoolean
+INV.PARSER.TOPLEVEL	parser	BLOCKS_PRODUCTION_POLYC_AUTHORITY	Top-level parser dispatch is the next-biggest compiler authority outside the lexer. But the parser is a 2910-LOC monolith; no atomic oracle exists; cross-cuts cctrl.	NO (cross-cutting; would require enabling ACT)	src/parser.c#parseToAst + parseToplevelDef
+INV.PARSER.COMPOUND	parser	BLOCKS_PRODUCTION_POLYC_AUTHORITY	Compound-statement parsing is a 1100-LOC dispatcher; depends on cctrl state; cannot be migrated without migrating cctrl first.	NO (cross-cutting; depends on cctrl)	src/parser.c#parseCompoundStatementInternal
+INV.PARSER.SUBSCRIPTS	parser	DOES_NOT_BLOCK_SELFHOST	Subscript/expression helpers are coupled to parser/cctrl/ast migration; not a bounded target.	NO (cross-cutting)	src/prslib.c + src/prsutil.c + src/prsasm.c
+INV.AST.CREATE	ast	DOES_NOT_BLOCK_SELFHOST	AST is data-structure plumbing used by parser/cctrl/ir/transpiler; cross-cuts everything; not a bounded target.	NO (cross-cutting)	src/ast.c
+INV.CCTRL.SCOPE	semantic	DOES_NOT_BLOCK_SELFHOST	Symbol table + diagnostics is tightly coupled to parser; cannot be migrated independently. Would block parser migration but is not itself a bounded target.	NO (cross-cutting)	src/cctrl.c
+INV.DIAG.PRINT	diagnostics	DOES_NOT_BLOCK_SELFHOST	Subset of cctrl; not bounded.	NO (subset of cctrl)	src/cctrl.c#cctrlInfo/cctrlWarning/...
+INV.IR.LOWER	ir	DOES_NOT_BLOCK_SELFHOST	Per-construct IR lowering depends on AST and feeds codegen; cross-cuts; not bounded.	NO (cross-cutting)	src/ir.c#irLower*
+INV.IR.CGFUN	ir-codegen	DOES_NOT_BLOCK_SELFHOST	IR finalisation; coupled to AST and ABI; not bounded.	NO (cross-cutting)	src/ir.c#irFunctionPrepForCodeGen/irCgFinishFunction
+INV.CODEGEN.X86	x86_64-codegen	DOES_NOT_BLOCK_SELFHOST	Native backend is CHARTER-preserved as reference; not a migration target.	NO (CHARTER-preserved)	src/x86_64.c
+INV.CODEGEN.AARCH64	aarch64-codegen	DOES_NOT_BLOCK_SELFHOST	Native backend is CHARTER-preserved as reference; not a migration target.	NO (CHARTER-preserved)	src/aarch64.c
+INV.LLVM.BACKEND	llvm-backend	DOES_NOT_BLOCK_SELFHOST	Experimental opt-in only; not on required self-host path.	NO (experimental)	src/llvm-backend.c
+INV.LSP	server	DOES_NOT_BLOCK_SELFHOST	Tooling path; not required for self-host.	NO (tooling)	src/lsp.c
+INV.TRANSPILE	transpiler	DOES_NOT_BLOCK_SELFHOST	Cross-cuts AST shape; not bounded.	NO (cross-cutting)	src/transpiler.c
+INV.MAIN.DRIVER	driver	DOES_NOT_BLOCK_SELFHOST	Driver is the entry point; cross-cuts everything; not bounded.	NO (cross-cutting)	src/main.c + src/cli.c
+INV.JIT.X86	x86_64-jit	DOES_NOT_BLOCK_SELFHOST	REPL-only path; not on the AOT path.	NO (REPL only)	src/x86_64-jit.c + src/aarch64-jit.c
+INV.MEM.ARENA	memory	DOES_NOT_BLOCK_SELFHOST	Plumbing (compiler_semantics=NO); not a self-host blocker.	NO (plumbing)	src/arena.c + src/mempool.c + src/memory.c + src/memsafe.c
+INV.UTIL.MISC	utility	DOES_NOT_BLOCK_SELFHOST	Header macros; not compiler_semantics.	NO (macros)	src/util.h

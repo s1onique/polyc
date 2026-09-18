@@ -1,0 +1,37 @@
+caller_surface	callee_surface	edge_kind	stage	required_for_normal_compile	fallback_edge	evidence
+INV.MAIN.DRIVER::main	INV.CCTRL.SCOPE::cctrlNew	CALL	G0/G1/G2/G3	YES	NO	src/main.c:461 cc = cctrlNew(args.target)
+INV.MAIN.DRIVER::main	INV.LEXER.LINK::lexInit	CALL	G0/G1/G2/G3	YES	NO	src/compile.c:54 lexInit(l,NULL,...)
+INV.MAIN.DRIVER::main	INV.LEXER.LINK::lexSetBuiltinRoot	CALL	G0/G1/G2/G3	YES	NO	src/compile.c:55 lexSetBuiltinRoot(l,root_dir)
+INV.MAIN.DRIVER::main	INV.LEXER.LINK::lexPushFile	CALL	G0/G1/G2/G3	YES	NO	src/compile.c:56 lexPushFile(l,...)
+INV.MAIN.DRIVER::main	INV.CCTRL.SCOPE::cctrlInitParse	CALL	G0/G1/G2/G3	YES	NO	src/compile.c:60 cctrlInitParse(cc,l)
+INV.MAIN.DRIVER::main	INV.PARSER.TOPLEVEL::parseToAst	CALL	G0/G1/G2/G3	YES	NO	src/compile.c:62 parseToAst(cc)
+INV.MAIN.DRIVER::main	INV.CCTRL.SCOPE::cctrlDiagFlush	CALL	G0/G1/G2/G3	YES	NO	src/compile.c:65 cctrlDiagFlush(cc)
+INV.MAIN.DRIVER::main	INV.IR.LOWER::asmGenerate	CALL	G0/G1/G2/G3	YES	NO	src/compile.c:39 AoStr *asmbuf = asmGenerate(cc)
+INV.LEXER.LINK::lexLink	INV.LEXER.LINK::lexCore	CALL	G0/G1/G2/G3	YES	NO	src/lexer.c:1945 lexLink -> lexCore loop
+INV.LEXER.LINK::lexCore	INV.LEXER.TRIVIA::BootstrapScanTrivia	CALL	G1/G2/G3	YES (whitespace/comment)	NO	src/lexer.c:790 BootstrapScanTrivia(...) via #ifdef HCC_USE_SELFHOST_COMPONENTS
+INV.LEXER.LINK::lexCore	INV.LEXER.IDENT::BootstrapScanIdent	CALL	G1/G2/G3	YES (identifiers)	NO	src/lexer.c:970 BootstrapScanIdent(...) via #ifdef HCC_USE_SELFHOST_COMPONENTS
+INV.LEXER.LINK::lexCore	INV.LEXER.SCALAR::BootstrapScanScalarLiteral	CALL	G1/G2/G3	YES (numeric+char)	NO	src/lexer.c:1160 / 1279 BootstrapScanScalarLiteral(...) via #ifdef HCC_USE_SELFHOST_COMPONENTS
+INV.LEXER.LINK::lexCore	INV.LEXER.OPCLASS::BootstrapClassifyOperator	CALL	G1/G2/G3	YES (operators)	NO	src/lexer.c:1400 BootstrapClassifyOperator(...) via #ifdef HCC_USE_SELFHOST_COMPONENTS
+INV.PARSER.TOPLEVEL::parseToAst	INV.PARSER.TOPLEVEL::parseToplevelDef	CALL	G0/G1/G2/G3	YES	NO	src/parser.c:2891 ast = parseToplevelDef(cc, &is_global)
+INV.PARSER.TOPLEVEL::parseToplevelDef	INV.PARSER.COMPOUND::parseCompoundStatementInternal	CALL	G0/G1/G2/G3	YES	NO	src/parser.c:2239 parseCompoundStatementInternal(cc, func_body)
+INV.PARSER.COMPOUND::parseCompoundStatementInternal	INV.PARSER.SUBSCRIPTS::parseSubscriptExpr	CALL	G0/G1/G2/G3	YES	NO	src/prslib.c: parseSubscriptExpr dispatch
+INV.PARSER.TOPLEVEL::parseToplevelDef	INV.CCTRL.SCOPE::cctrlTokenPeek	CALL	G0/G1/G2/G3	YES	NO	src/parser.c tok = cctrlTokenPeek(cc)
+INV.PARSER.TOPLEVEL::parseToAst	INV.CCTRL.SCOPE::cctrlSyncToplevel	CALL	G0/G1/G2/G3	YES	NO	src/parser.c cctrlSyncToplevel(cc)
+INV.PARSER.COMPOUND::parseCompoundStatementInternal	INV.AST.CREATE::ast*	CALL	G0/G1/G2/G3	YES	NO	src/parser.c ast allocation/construction
+INV.CCTRL.SCOPE::cctrl*	INV.AST.CREATE::ast*	CALL	G0/G1/G2/G3	YES	NO	src/cctrl.c uses ast helpers
+INV.IR.LOWER::irLowerAst	INV.AST.CREATE::ast*	CALL	G0/G1/G2/G3	YES	NO	src/ir.c irLowerAst takes Ast*
+INV.IR.LOWER::irLowerAst	INV.IR.CGFUN::irFunctionPrepForCodeGen	CALL	G0/G1/G2/G3	YES	NO	src/ir.c irLowerAst -> irFunctionPrepForCodeGen
+INV.IR.CGFUN::irFunctionPrepForCodeGen	INV.CODEGEN.X86::x86_64GenerateFunction	CALL	G0/G1/G2/G3 (x86_64 target)	YES	NO	src/ir.c back-end dispatch
+INV.IR.CGFUN::irFunctionPrepForCodeGen	INV.CODEGEN.AARCH64::aarch64GenerateFunction	CALL	G0/G1/G2/G3 (aarch64 target)	YES	NO	src/ir.c back-end dispatch
+INV.IR.CGFUN::irFunctionPrepForCodeGen	INV.LLVM.BACKEND::llEmitFunction	CALL	G0/G1/G2/G3 (LLVM opt-in)	YES (LLVM only)	NO	src/ir.c back-end dispatch
+INV.MAIN.DRIVER::main	INV.MAIN.DRIVER::writeAsmToTmp	CALL	G0/G1/G2/G3	YES	NO	src/main.c:215 writeAsmToTmp
+INV.MAIN.DRIVER::main	INV.MAIN.DRIVER::emitFile	CALL	G0/G1/G2/G3	YES	NO	src/main.c:247 emitFile
+INV.MAIN.DRIVER::main	INV.MAIN.DRIVER::assemble	CALL	G0/G1/G2/G3	YES	NO	src/main.c:364 assemble
+INV.MAIN.DRIVER::main	INV.LSP::lspRun	CALL	G0/G1/G2/G3 (when --lsp)	NO (only when --lsp)	NO	src/main.c:444 lspRun(&args)
+INV.MAIN.DRIVER::main	INV.TRANSPILE::transpileAstInternal	CALL	G0/G1/G2/G3 (when --transpile)	NO (only when --transpile)	NO	src/transpiler.c: transpile dispatch
+INV.MAIN.DRIVER::main	INV.JIT.X86::x86_64_jit_run	CALL	G0/G1/G2/G3 (REPL only)	NO (REPL only)	NO	src/repl.c REPL dispatch
+INV.MAIN.DRIVER::main	INV.MEM.ARENA::memoryInit	CALL	G0/G1/G2/G3	YES	NO	src/main.c:421 memoryInit
+INV.MAIN.DRIVER::main	INV.MEM.ARENA::memoryRelease	CALL	G0/G1/G2/G3	YES	NO	src/main.c memoryRelease
+INV.LEXER.LINK::lexCore	INV.PREPROC.PP::lexPreProcIf	CALL	G0/G1/G2/G3	YES	NO	src/lexer.c lexCore dispatch to lexPreProcIf on #if
+INV.LEXER.LINK::lexCore	INV.PREPROC.PP::lexInclude	CALL	G0/G1/G2/G3	YES	NO	src/lexer.c lexCore dispatch to lexInclude on #include
+INV.PARSER.TOPLEVEL::parseToAst	INV.DIAG.PRINT::cctrlRaiseException	CALL	G0/G1/G2/G3	YES	NO	src/parser.c setjmp recovery
