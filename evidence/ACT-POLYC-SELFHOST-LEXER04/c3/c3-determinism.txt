@@ -1,0 +1,34 @@
+ACT-POLYC-SELFHOST-LEXER04 -- C3 -- determinism
+==================================================
+
+PROBE:  Rebuild link.g3.o from scratch via the same hcc-bootstrap04
+        binary, then compare to the prior link.g3.o.
+
+OBSERVATIONS:
+
+  $ ./build/hcc-bootstrap04 --install-dir=./build/test-prefix \
+        -c tools/bootstrap/selfhost-lexer-link.HC \
+        -o build/lexer09-fixedpoint/link.g3.rebuild.o
+  -rw-r--r--  1 chistyakov staff 2976 Sep 18 15:48 build/lexer09-fixedpoint/link.g3.rebuild.o
+
+  $ cmp -s build/lexer09-fixedpoint/link.g3.o \
+              build/lexer09-fixedpoint/link.g3.rebuild.o && \
+    echo DETERMINISM=YES || echo DETERMINISM=NO
+  DETERMINISM=YES
+
+  SHA-256 comparison:
+    G3_SHA=        70879e46fa496bce0a57a7a8006a42723d81938e22753542c0aebcbfc7f57d6e
+    G3_REBUILD_SHA=70879e46fa496bce0a57a7a8006a42723d81938e22753542c0aebcbfc7f57d6e
+  DETERMINISM_SHA=YES
+
+  $ ./build/lexer09-link-fixedpoint-verify \
+        build/lexer09-fixedpoint/link.g0.o \
+        build/lexer09-fixedpoint/link.g1.o \
+        build/lexer09-fixedpoint/link.g2.o \
+        build/lexer09-fixedpoint/link.g3.o
+  ... all 6 pair-wise equalities = YES ...
+  FIXEDPOINT_VERIFIER_RC=0 verdict=PASS
+
+VERDICT:
+
+  LEXER09_DETERMINISM=PASS

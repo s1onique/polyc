@@ -1,0 +1,55 @@
+ACT-POLYC-SELFHOST-LEXER04 -- C3 -- production seam (real lexToken path)
+=========================================================================
+
+PROBE:  10 link-bearing cases run through lexToken() on
+        - stage0: legacy C lexer (no HCC_USE_SELFHOST_COMPONENTS)
+        - stage1: production lexer statically linked with BootstrapLinkDirective
+
+  Both link the same legacy C runtime (aostr, containers, list, arena,
+  ast, cctrl, parser, json, mempool, memory, memsafe, asm, cfg, cfg-print,
+  cli, compile, ir*, lsp, prs*, transpiler, x86_64*, aarch64*, x86,
+  jit-common, linenoise, libtasm.a).
+
+  stage1 additionally statically links:
+    ./build/bootstrap02-ident.o                (BOOTSTRAP02)
+    ./build/bootstrap06-operator-classify.o    (LEXER01)
+    ./build/lexer07-scalar-literal.o           (LEXER02)
+    ./build/lexer08-trivia.o                   (LEXER03)
+    ./build/lexer09-link.o                     (LEXER04 -- THIS ACT)
+
+DIFF SUMMARY:
+
+  Stage0 vs Stage1 outputs differ in exactly one line:
+    < BUILD_LABEL=stage0
+    > BUILD_LABEL=stage1
+
+  All 10 link-bearing cases produce IDENTICAL TOKENS, LINENO,
+  CURSOR_AT_EOF, link_libs, and shared_object_files values at
+  stage0 and stage1.
+
+  The 10 cases cover:
+    L01  single quoted path (#link "foo.so")
+    L02  single angle name  (#link <m>)
+    L03  multi mixed        (#link "liba.so" / #link <libb>)
+    L04  angle duplicate    (#link <m1> x2)
+    L05  qpath duplicate    (#link "x.so" x2)
+    L06  back-to-back       (#link "a.so"#link <b>)
+    L07  angle complex      (#link <lib-complex_1.0>)
+    L08  qpath dots         (#link "./relative/path.so")
+    L09  only link          (#link <only>)
+    L10  no directive       (int main() { return 0; })
+
+VERDICT:
+
+  LEXER09_PRODUCTION_SEAM_STAGE0_VS_STAGE1=PASS
+
+PRE-EXISTING SEMANTIC NOTE:
+
+  L07 (angle form with '.0' suffix) demonstrates a legacy lexer
+  pre-existing quirk: the '1.0' gets split into '1' and '.0' by
+  the lexer (the '.' is treated as part of a number). The C-side
+  wrapper concatenates both tokens to 'lib-complex_10' (or similar
+  with the TK_FLOAT lexeme). This is NOT a LEXER04 regression; it
+  is the legacy behavior of the production parser, and is reproduced
+  byte-identically at stage0 and stage1. The C3 contract is
+  semantic equivalence, not new behavior.

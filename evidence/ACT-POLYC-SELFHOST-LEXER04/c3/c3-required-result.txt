@@ -1,0 +1,74 @@
+ACT-POLYC-SELFHOST-LEXER04 -- C3 -- required result summary
+============================================================
+
+ENTRY IDENTITY (at start of C3):
+  branch = main
+  HEAD   = ffee58b81ae42a4ff094618fcaa965223a40b848 (C2 IMPL commit)
+  prior  = a09104d (C1 RED/RECON commit)
+
+CLOSING TARGETS (at C4):
+  branch = main
+  HEAD   = <pending C4 CLOSE commit>
+
+REQUIRED RESULT (from c1-required-result.txt):
+
+  R1  Direct differential: 23/23 PASS (15 fixtures across 9
+      behavior classes)
+      -> c3-direct-differential.txt: PASS 23/23
+
+  R2  Real-lexer seam: stage0 vs stage1 byte-identical on all
+      10 link-bearing cases (modulo BUILD_LABEL)
+      -> c3-production-seam.txt: PASS
+
+  R3  Oracle selftest: 12/12 PASS (unit tests of OracleScanLinkDirective)
+      -> c2-source-identity.txt + repeated at C3
+
+  R4  4-generation component fixed point: G0=G1=G2=G3 byte-equal
+      -> c3-byte-equality.txt: PASS
+
+  R5  Determinism: rebuilding G3 produces byte-identical object
+      -> c3-determinism.txt: PASS
+
+  R6  Negative control: mutating one byte of G3 forces verifier FAIL
+      -> c3-negative-control.txt: PASS
+
+  R7  Factory gate-fast: PASS
+      -> c3-factory-gates.txt: PASS
+
+  R8  Factory append-only test: PASS (NC1..NC11)
+      -> c3-factory-gates.txt: PASS
+
+  R9  LEXER08 conservation (45/45 diff + seam + broad corpus): PASS
+      -> c3-lexer08-conservation.txt: PASS
+
+  R10 LEXER09 broad corpus 4-stage: PASS
+      -> c3-broad-corpus.txt: PASS
+
+  R11 Patch hygiene: every changed line traces to LEXER04
+      authorization; F7 satisfied.
+      -> c3-patch-hygiene.txt: PASS
+
+  R12 No new Python introduced (F-NO-PYTHON); PolyC verifier
+      rewritten in C (test infra only).
+      -> c3-patch-hygiene.txt: PASS
+
+ALL REQUIRED RESULTS: PASS.
+
+VERBATIM CMD+OUTPUT SUMMARIES:
+  $ ./build/lexer09-link-direct-differential
+    DIRECT_DIFFERENTIAL_TOTAL=23 PASS=23 FAIL=0 STATUS=PASS
+  $ ./build/lexer09-link-oracle --selftest
+    ORACLE_SELFTEST_TOTAL=12 ORACLE_SELFTEST_PASS=12 STATUS=PASS
+  $ ./build/lexer09-link-fixedpoint-verify build/lexer09-fixedpoint/link.g{0,1,2,3}.o
+    FIXEDPOINT_VERIFIER_RC=0 verdict=PASS LEXER09_LINK_FIXED_POINT_4_GENERATIONS=PASS
+  $ ./build/lexer09-link-fixedpoint-verify ... mutated
+    NEGATIVE_CONTROL=PASS FIXEDPOINT_VERIFIER_RC=1 verdict=NEGATIVE_CONTROL_DETECTED_MISMATCH
+  $ ./build/lexer09-lexer-seam-stage0 > /tmp/lexer09-seam-stage0.txt
+  $ ./build/lexer09-lexer-seam-stage1 > /tmp/lexer09-seam-stage1.txt
+  $ diff /tmp/lexer09-seam-stage0.txt /tmp/lexer09-seam-stage1.txt
+    1c1 < BUILD_LABEL=stage0
+    --- > BUILD_LABEL=stage1
+  $ make gate-fast
+    STATUS=PASS VERDICT=PASS
+  $ bash scripts/quality/factory-append-only-test.sh
+    PASS=11 FAIL=0 STATUS=PASS

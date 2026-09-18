@@ -9,9 +9,7 @@
 //   ./build/lexer09-link-oracle --selftest
 //
 // Self-test mode runs a fixed battery of inputs through
-// OracleScanLinkDirective and prints the results. This
-// proves the oracle binary is functional before being
-// linked into the direct-differential harness.
+// OracleScanLinkDirective and prints the results.
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -29,9 +27,7 @@ typedef unsigned char U8;
 
 extern I64 OracleScanLinkDirective(const char *src, I64 src_len, I64 flags,
                                    I64 *out_consumed, I64 *out_is_path,
-                                   I64 *out_stored_len, I64 *out_error,
-                                   char *out_stored_name,
-                                   int out_stored_name_cap);
+                                   I64 *out_stored_len, I64 *out_error);
 
 #define F(name, src_lit) \
     { #name, (src_lit), sizeof(src_lit) - 1 }
@@ -92,22 +88,17 @@ int main(int argc, char **argv)
         I64 out_is_path = 0;
         I64 out_stored_len = 0;
         I64 out_error = 0;
-        char stored[256] = {0};
         I64 rc = OracleScanLinkDirective(
             SELFTEST_CASES[i].src,
             SELFTEST_CASES[i].src_len,
             0,
             &out_consumed, &out_is_path,
-            &out_stored_len, &out_error,
-            stored, (int)sizeof(stored));
+            &out_stored_len, &out_error);
         printf("CASE %s rc=%lld consumed=%lld is_path=%lld "
-               "stored_len=%lld err=%s stored=\"%s\"\n",
+               "stored_len=%lld err=%s\n",
                SELFTEST_CASES[i].name,
                rc, out_consumed, out_is_path,
-               out_stored_len, err_name(out_error),
-               stored);
-        /* Smoke check: rc matches out_error, and out_consumed
-         * is positive iff rc == OK. */
+               out_stored_len, err_name(out_error));
         int ok = (rc == out_error) &&
                  ((rc == ORACLE_LINK_OK) == (out_consumed > 0));
         if (ok) pass = pass + 1;

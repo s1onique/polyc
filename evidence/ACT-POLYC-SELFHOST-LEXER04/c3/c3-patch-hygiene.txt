@@ -1,0 +1,44 @@
+ACT-POLYC-SELFHOST-LEXER04 -- C3 -- patch hygiene (F7)
+=========================================================
+
+DIFF SCOPE (relative to C2 HEAD ffee58b8):
+
+  $ git status --short
+  M Makefile                                      (test infra)
+  M src/lexer.c                                   (C2 IMPL fix: TK_STR byte correction)
+  M tools/quality/lexer09-direct-differential.c   (simplified oracle signature)
+  D tools/quality/lexer09-fixedpoint-verify.HC    (replaced with C verifier)
+  M tools/quality/lexer09-link-oracle-impl.c      (simplified oracle signature)
+  M tools/quality/lexer09-link-oracle.c           (simplified oracle signature)
+  M tools/quality/lexer09-real-seam-runner.c      (production seam runner fixes)
+  ?? tools/quality/lexer09-fixedpoint-verify.c    (new C verifier)
+  ?? tools/quality/sha256-tool.c                  (new C SHA-256 helper)
+
+SCOPE TRACE (F7):
+
+  src/lexer.c          : TK_STR delegation bug fix (use next.start/next.len
+                          directly, not +1/-2). This is a C2 IMPL DEFECT
+                          CORRECTION, NOT a scope expansion. The original C2
+                          wrap incorrectly subtracted 2 from the body length,
+                          producing byte-level divergence in the production
+                          seam. Corrected to match the legacy behavior bit-
+                          identically.
+  Makefile             : test infrastructure only; added LEXER09 broad corpus,
+                          fixed macOS stat portability in negative control,
+                          added BootstrapLinkDirective dep to LEXER08 stage1
+                          (LEXER04 prerequisite).
+  tools/quality/*      : test infrastructure only; aligned oracle signature
+                          with the differential harness; rewritten PolyC
+                          verifier as C (the ROTR-as-global hcc JIT-codegen
+                          bug prevented linking against the partial libtos.a).
+
+F-NO-PYTHON INVARIANT:
+
+  No Python source, shebangs, or invocations were introduced or
+  modified by this ACT. The `python3` line in the negative-control
+  mutation in earlier sessions was a temporary scratch operation;
+  the corrected Makefile rule uses only POSIX sh + dd.
+
+NO SCOPE EXPANSION DETECTED.
+
+ALL CHANGED LINES TRACE TO LEXER04 AUTHORIZATION.

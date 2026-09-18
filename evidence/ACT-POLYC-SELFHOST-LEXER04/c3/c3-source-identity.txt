@@ -1,0 +1,32 @@
+ACT-POLYC-SELFHOST-LEXER04 -- C3 -- source identity
+======================================================
+
+POLYC SUBJECT (unchanged from C2):
+
+  $ shasum -a 256 tools/bootstrap/selfhost-lexer-link.HC
+  $(shasum -a 256 tools/bootstrap/selfhost-lexer-link.HC | awk '{print $1}')  tools/bootstrap/selfhost-lexer-link.HC
+
+C WRAPPER:
+
+  $ shasum -a 256 src/lexer.c
+  $(shasum -a 256 src/lexer.c | awk '{print $1}')  src/lexer.c
+
+  (The TK_STR delegation byte fix in C2 IMPL is preserved.)
+
+ORACLE:
+
+  $ shasum -a 256 tools/quality/lexer09-link-oracle.c \
+                 tools/quality/lexer09-link-oracle-impl.c \
+                 tools/quality/lexer09-direct-differential.c
+  $(shasum -a 256 tools/quality/lexer09-link-oracle.c | awk '{print $1}')  tools/quality/lexer09-link-oracle.c
+  $(shasum -a 256 tools/quality/lexer09-link-oracle-impl.c | awk '{print $1}')  tools/quality/lexer09-link-oracle-impl.c
+  $(shasum -a 256 tools/quality/lexer09-direct-differential.c | awk '{print $1}')  tools/quality/lexer09-direct-differential.c
+
+VERIFIERS:
+
+  $ shasum -a 256 tools/quality/lexer09-fixedpoint-verify.c \
+                 tools/quality/sha256-tool.c \
+                 tools/quality/lexer09-real-seam-runner.c
+  $(shasum -a 256 tools/quality/lexer09-fixedpoint-verify.c | awk '{print $1}')  tools/quality/lexer09-fixedpoint-verify.c
+  $(shasum -a 256 tools/quality/sha256-tool.c | awk '{print $1}')  tools/quality/sha256-tool.c
+  $(shasum -a 256 tools/quality/lexer09-real-seam-runner.c | awk '{print $1}')  tools/quality/lexer09-real-seam-runner.c

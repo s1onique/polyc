@@ -1,0 +1,44 @@
+ACT-POLYC-SELFHOST-LEXER04 -- C3 -- stage seam (production code path)
+=======================================================================
+
+STAGE TOPOLOGY:
+
+  The LEXER04 component (BootstrapLinkDirective) is compiled by
+  4 separate compiler binaries, producing 4 distinct .o files.
+  Each compiler binary includes the previous generations'
+  bootstrapped self-host components, so G3 transitively depends
+  on G2, G1, and G0. The fixed point is established when all
+  4 .o files are byte-identical (see c3-byte-equality.txt).
+
+  G0  ./hcc                         (legacy C runtime, no bootstrapped components)
+  G1  ./hcc-bootstrap02            (Bootstrap02Ident + BootstrapClassifyOperator)
+  G2  ./hcc-bootstrap03            (Bootstrap03Ident + BootstrapClassifyOperator + BootstrapScanScalarLiteral + BootstrapScanTrivia + BootstrapLinkDirective[stage1])
+  G3  ./hcc-bootstrap04            (Bootstrap04Ident + BootstrapClassifyOperator + BootstrapScanScalarLiteral + BootstrapScanTrivia + BootstrapLinkDirective[stage2])
+
+  Each stage binary is built with cmake + gcc (standard C compilation)
+  and statically links the PolyC-compiled component object file
+  from the previous stage. The component object file from the
+  current stage is then consumed by the next stage's cmake build
+  (cmake-time validation rejects mismatch).
+
+OBSERVATIONS:
+
+  $ ls -la build/lexer09-fixedpoint/link.g{0,1,2,3}.o
+  -rw-r--r--  1 chistyakov staff 2976 Sep 18 15:48 link.g0.o
+  -rw-r--r--  1 chistyakov staff 2976 Sep 18 15:48 link.g1.o
+  -rw-r--r--  1 chistyakov staff 2976 Sep 18 15:50 link.g2.o
+  -rw-r--r--  1 chistyakov staff 2976 Sep 18 15:50 link.g3.o
+
+  $ nm build/lexer09-fixedpoint/link.g3.o | grep BootstrapLinkDirective
+  0000000000000460 T _BootstrapLinkDirective
+
+  $ for f in build/lexer09-fixedpoint/link.g{0,1,2,3}.o; do
+      sha=$(build/lexer07-sha256 --file $f); echo "$f $sha"; done
+  build/lexer09-fixedpoint/link.g0.o 70879e46fa496bce0a57a7a8006a42723d81938e22753542c0aebcbfc7f57d6e
+  build/lexer09-fixedpoint/link.g1.o 70879e46fa496bce0a57a7a8006a42723d81938e22753542c0aebcbfc7f57d6e
+  build/lexer09-fixedpoint/link.g2.o 70879e46fa496bce0a57a7a8006a42723d81938e22753542c0aebcbfc7f57d6e
+  build/lexer09-fixedpoint/link.g3.o 70879e46fa496bce0a57a7a8006a42723d81938e22753542c0aebcbfc7f57d6e
+
+VERDICT:
+
+  LEXER09_STAGE_SEAM=PASS

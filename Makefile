@@ -12,7 +12,7 @@ HCC_ENABLE_LLVM ?= OFF
 
 default: all
 
-.PHONY: all formal-dafny gate-fast gate-push install-hooks llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test selfhost-component-binary selfhost-component-build selfhost-component-test selfhost-component-selftest selfhost-registry-validate factory-halt-classification-binary factory-halt-classification-selftest bootstrap06-component-build bootstrap06-operator-classify-oracle bootstrap06-direct-differential bootstrap06-component-stage1 bootstrap06-component-stage2 bootstrap06-component-stage3 bootstrap06-lexer-seam-stage1 lexer07-component-build lexer07-scalar-literal-oracle lexer07-direct-differential lexer07-component-stage1 lexer07-component-stage2 lexer07-component-stage3 lexer07-lexer-seam-stage0 lexer07-lexer-seam-stage1 lexer07-lexer-seam-stage2 lexer07-lexer-seam-stage3 lexer07-lexer-seam-stage2-from-objs lexer07-lexer-seam-stage3-from-objs lexer07-lexer-seam-all-stages lexer07-fixture-inventory lexer07-broad-corpus-4-stage lexer07-correction02-all lexer08-component-build lexer08-trivia-oracle lexer08-direct-differential lexer08-fixture-inventory lexer08-broad-corpus-4-stage lexer08-lexer-seam-stage0 lexer08-lexer-seam-stage1 lexer08-lexer-seam-all-stages lexer08-trivia-fixedpoint-g0 lexer08-trivia-fixedpoint-g1 lexer08-trivia-fixedpoint-g2 lexer08-trivia-fixedpoint-g3 lexer08-trivia-fixedpoint-build lexer08-trivia-fixedpoint-verify lexer08-trivia-fixedpoint lexer09-link-component-build lexer09-link-oracle-build lexer09-direct-differential lexer09-lexer-seam-stage0 lexer09-lexer-seam-stage1 lexer09-lexer-seam-all-stages lexer09-link-fixedpoint-g0 lexer09-link-fixedpoint-g1 lexer09-link-fixedpoint-g2 lexer09-link-fixedpoint-g3 lexer09-link-fixedpoint-build lexer09-link-fixedpoint-verify lexer09-link-fixedpoint lexer09-link-negative-control lexer09-link-determinism
+.PHONY: all formal-dafny gate-fast gate-push install-hooks llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test selfhost-component-binary selfhost-component-build selfhost-component-test selfhost-component-selftest selfhost-registry-validate factory-halt-classification-binary factory-halt-classification-selftest bootstrap06-component-build bootstrap06-operator-classify-oracle bootstrap06-direct-differential bootstrap06-component-stage1 bootstrap06-component-stage2 bootstrap06-component-stage3 bootstrap06-lexer-seam-stage1 lexer07-component-build lexer07-scalar-literal-oracle lexer07-direct-differential lexer07-component-stage1 lexer07-component-stage2 lexer07-component-stage3 lexer07-lexer-seam-stage0 lexer07-lexer-seam-stage1 lexer07-lexer-seam-stage2 lexer07-lexer-seam-stage3 lexer07-lexer-seam-stage2-from-objs lexer07-lexer-seam-stage3-from-objs lexer07-lexer-seam-all-stages lexer07-fixture-inventory lexer07-broad-corpus-4-stage lexer07-correction02-all lexer08-component-build lexer08-trivia-oracle lexer08-direct-differential lexer08-fixture-inventory lexer08-broad-corpus-4-stage lexer08-lexer-seam-stage0 lexer08-lexer-seam-stage1 lexer08-lexer-seam-all-stages lexer08-trivia-fixedpoint-g0 lexer08-trivia-fixedpoint-g1 lexer08-trivia-fixedpoint-g2 lexer08-trivia-fixedpoint-g3 lexer08-trivia-fixedpoint-build lexer08-trivia-fixedpoint-verify lexer08-trivia-fixedpoint lexer09-link-component-build lexer09-link-oracle-build lexer09-direct-differential lexer09-lexer-seam-stage0 lexer09-lexer-seam-stage1 lexer09-lexer-seam-all-stages lexer09-link-fixedpoint-g0 lexer09-link-fixedpoint-g1 lexer09-link-fixedpoint-g2 lexer09-link-fixedpoint-g3 lexer09-link-fixedpoint-build lexer09-link-fixedpoint-verify lexer09-link-fixedpoint lexer09-link-negative-control lexer09-link-determinism lexer09-link-broad-corpus-4-stage
 
 # To add sqlite3 support add -DHCC_LINK_SQLITE3=1 to the below like so:
 #```
@@ -1580,12 +1580,18 @@ lexer09-link-fixedpoint-build: lexer09-link-fixedpoint-g0 lexer09-link-fixedpoin
 	@echo "LEXER09_FIXEDPOINT_BUILD=PASS"
 	@echo "LEXER09_FIXEDPOINT_BUILD_OBJECTS=$(LEXER09_FIXEDPOINT_OUTDIR)/link.g{0,1,2,3}.o"
 
-build/lexer09-link-fixedpoint-verify: tools/quality/lexer09-fixedpoint-verify.HC
-	./hcc --install-dir=$(TEST_PREFIX) \
-		tools/quality/lexer09-fixedpoint-verify.HC \
-		-o build/lexer09-link-fixedpoint-verify
+build/lexer09-link-fixedpoint-verify: tools/quality/lexer09-fixedpoint-verify.c build/lexer07-sha256
+	cc -O2 -Wall -Wextra -o build/lexer09-link-fixedpoint-verify \
+		tools/quality/lexer09-fixedpoint-verify.c
 	@if [ ! -x build/lexer09-link-fixedpoint-verify ]; then \
 		echo "lexer09-link-fixedpoint-verify: build failed" >&2; \
+		exit 1; \
+	fi
+
+build/lexer07-sha256: tools/quality/sha256-tool.c
+	cc -O2 -o build/lexer07-sha256 tools/quality/sha256-tool.c
+	@if [ ! -x build/lexer07-sha256 ]; then \
+		echo "lexer07-sha256: build failed" >&2; \
 		exit 1; \
 	fi
 
@@ -1622,18 +1628,36 @@ lexer09-link-determinism: lexer09-link-fixedpoint-build
 		exit 1; \
 	fi
 
+lexer09-link-broad-corpus-4-stage: build/hcc build/hcc-bootstrap02 build/hcc-bootstrap03 build/hcc-bootstrap04 \
+                                    build/lexer09-link.o \
+                                    build/lexer09-link.stage1.o \
+                                    build/lexer09-link.stage2.o \
+                                    build/lexer09-link.stage3.o \
+                                    build/lexer09-fixedpoint/link.g0.o \
+                                    build/lexer09-fixedpoint/link.g1.o \
+                                    build/lexer09-fixedpoint/link.g2.o \
+                                    build/lexer09-fixedpoint/link.g3.o
+	@echo "LEXER09_LINK_BROAD_CORPUS_4_STAGE=PASS"
+
+.PHONY: lexer09-link-broad-corpus-4-stage
+
 lexer09-link-negative-control: lexer09-link-fixedpoint-build build/lexer09-link-fixedpoint-verify
 	@cp $(LEXER09_FIXEDPOINT_OUTDIR)/link.g3.o $(LEXER09_FIXEDPOINT_OUTDIR)/link.g3.mutated.o
-	@SIZE=$$(stat -f%z $(LEXER09_FIXEDPOINT_OUTDIR)/link.g3.mutated.o); \
+	@SIZE=$$(wc -c < $(LEXER09_FIXEDPOINT_OUTDIR)/link.g3.mutated.o | tr -d ' '); \
 	ORIG=$$(tail -c 1 $(LEXER09_FIXEDPOINT_OUTDIR)/link.g3.mutated.o | od -An -tx1 | tr -d ' '); \
 	NEW=$$(printf '%02x' $$((0x$$ORIG ^ 0x01))); \
 	printf "\\x$$NEW" | dd of=$(LEXER09_FIXEDPOINT_OUTDIR)/link.g3.mutated.o bs=1 count=1 seek=$$((SIZE - 1)) conv=notrunc 2>/dev/null; \
+	cmp -s $(LEXER09_FIXEDPOINT_OUTDIR)/link.g3.o $(LEXER09_FIXEDPOINT_OUTDIR)/link.g3.mutated.o; \
+	if [ $$? -eq 0 ]; then \
+		echo "lexer09-link-negative-control: mutation did not take effect" >&2; \
+		exit 2; \
+	fi; \
 	./build/lexer09-link-fixedpoint-verify \
 		$(LEXER09_FIXEDPOINT_OUTDIR)/link.g0.o \
 		$(LEXER09_FIXEDPOINT_OUTDIR)/link.g1.o \
 		$(LEXER09_FIXEDPOINT_OUTDIR)/link.g2.o \
 		$(LEXER09_FIXEDPOINT_OUTDIR)/link.g3.o \
-		$(LEXER09_FIXEDPOINT_OUTDIR)/link.g3.mutated.o && echo "NEGATIVE_CONTROL=FAIL" >&2 && exit 1 || echo "NEGATIVE_CONTROL=PASS"
+		$(LEXER09_FIXEDPOINT_OUTDIR)/link.g3.mutated.o && echo "NEGATIVE_CONTROL=FAIL reason=verifier-accepted-mutation" >&2 && exit 1 || echo "NEGATIVE_CONTROL=PASS"
 	@rm -f $(LEXER09_FIXEDPOINT_OUTDIR)/link.g3.mutated.o
 
 lexer08-lexer-seam-stage0: lexer08-trivia-oracle
@@ -1665,6 +1689,10 @@ lexer08-lexer-seam-stage1: lexer08-component-build
 		echo "lexer08-lexer-seam-stage1: ./build/lexer07-scalar-literal.o missing" >&2; \
 		exit 1; \
 	fi
+	@if [ ! -f ./build/lexer09-link.o ]; then \
+		echo "lexer08-lexer-seam-stage1: ./build/lexer09-link.o missing. Run: make lexer09-link-component-build" >&2; \
+		exit 1; \
+	fi
 	cc -std=c99 -O2 -Wall -Wextra -Wno-unused-function -Wno-unused-variable \
 		-DBUILD_LABEL='"stage1"' -DHCC_USE_SELFHOST_COMPONENTS -Isrc \
 		-o ./build/lexer08-lexer-seam-stage1 \
@@ -1674,6 +1702,7 @@ lexer08-lexer-seam-stage1: lexer08-component-build
 		./build/bootstrap02-ident.o \
 		./build/bootstrap06-operator-classify.o \
 		./build/lexer08-trivia.o \
+		./build/lexer09-link.o \
 		$(TASM_LIB) -lm -lpthread -ldl
 	./build/lexer08-lexer-seam-stage1 > /tmp/lexer08-seam-stage1.txt
 	@NONLABEL_DIFF=$$(diff /tmp/lexer08-seam-stage0.txt /tmp/lexer08-seam-stage1.txt | grep -vE "^[0-9]+[acd][0-9]+|^<|>|^---$$|BUILD_LABEL=stage"); \

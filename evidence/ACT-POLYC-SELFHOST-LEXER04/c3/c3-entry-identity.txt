@@ -1,0 +1,46 @@
+ACT-POLYC-SELFHOST-LEXER04 -- C3 -- entry identity
+====================================================
+
+ENTRY IDENTITY (F1):
+
+  branch:    main
+  HEAD SHA:  ffee58b81ae42a4ff094618fcaa965223a40b848
+  user:      chistyakov
+  platform:  darwin (macOS arm64)
+  date:      2026-09-18
+
+ENTRY ARTIFACTS (verified):
+
+  Tool binaries produced:
+    build/lexer09-link-direct-differential:  35008 bytes
+    build/lexer09-link-oracle:               33728 bytes
+    build/lexer09-link-fixedpoint-verify:    34416 bytes
+    build/lexer07-sha256 (helper):           produced via tools/quality/sha256-tool.c
+
+  Subject object files produced:
+    build/lexer09-link.o (BootstrapLinkDirective)             via hcc
+    build/lexer09-link.stage1.o                               via hcc-bootstrap02
+    build/lexer09-link.stage2.o                               via hcc-bootstrap03
+    build/lexer09-link.stage3.o                               via hcc-bootstrap04
+
+  Fixed-point generations:
+    build/lexer09-fixedpoint/link.g0.o    hcc              (2976 bytes, sha256=70879e46fa496bce0a57a7a8006a42723d81938e22753542c0aebcbfc7f57d6e)
+    build/lexer09-fixedpoint/link.g1.o    hcc-bootstrap02  (2976 bytes, sha256=70879e46fa496bce0a57a7a8006a42723d81938e22753542c0aebcbfc7f57d6e)
+    build/lexer09-fixedpoint/link.g2.o    hcc-bootstrap03  (2976 bytes, sha256=70879e46fa496bce0a57a7a8006a42723d81938e22753542c0aebcbfc7f57d6e)
+    build/lexer09-fixedpoint/link.g3.o    hcc-bootstrap04  (2976 bytes, sha256=70879e46fa496bce0a57a7a8006a42723d81938e22753542c0aebcbfc7f57d6e)
+
+  All 4 generations are byte-equal (sha256 identical, 2976 bytes each).
+
+  Stage binaries:
+    build/lexer09-lexer-seam-stage0  (legacy C production lexer, no self-host)
+    build/lexer09-lexer-seam-stage1  (HCC_USE_SELFHOST_COMPONENTS, BootstrapLinkDirective linked)
+
+TOOLS REWRITTEN IN C (substitution because hcc JIT-codegen emits ROTR as global
+even though static; see C2 entry-identity for the constraint):
+
+  tools/quality/lexer09-fixedpoint-verify.HC -> tools/quality/lexer09-fixedpoint-verify.c
+  tools/quality/lexer07-sha256.HC             -> tools/quality/sha256-tool.c (build artifact: build/lexer07-sha256)
+
+  These are TEST INFRASTRUCTURE only. The PolyC SUBJECT
+  (tools/bootstrap/selfhost-lexer-link.HC) is unchanged and still
+  compiled by hcc to produce the .o files used by the verifier.

@@ -9,9 +9,8 @@
 //
 // All state mutations follow src/lexer.c::lexLink line-for-line;
 // the only divergence from the production source is that we
-// store names as plain NUL-terminated C strings rather than
-// AoStr pointers (this is what the differential cares about:
-// name bytes, list membership, and classification).
+// do not allocate an AoStr for the stored name (the
+// differential only requires length / kind agreement).
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -27,16 +26,10 @@ typedef unsigned char U8;
 #define ORACLE_LINK_ERR_UNTERM_QUOT 4
 #define ORACLE_LINK_ERR_LEX_FAIL    5
 
-// Sentinel type tags matching src/lexer.h lexeme types.
-#define LEX_TK_STR     0x301
-
-// Tiny lexeme model for the oracle: a string starting at
-// `start` of length `len`. The oracle's lex() recognizes
-// only the `#link`-relevant byte sequences: a single '"'
-// (TK_STR), a single '<' or '>' punctuation, an identifier
-// run [A-Za-z_][A-Za-z_0-9]*, or end-of-input.
+/* Tiny lexeme model for the oracle: kind 0 = punct,
+ * kind 1 = ident, start/len of the slice in src. */
 typedef struct {
-    int kind;       // 0 = punct, 1 = ident, 2 = TK_STR (we use 0x301)
+    int kind;
     int len;
     const char *start;
 } oracle_lexeme_t;
@@ -47,7 +40,7 @@ static int oracle_lex(const char *src, I64 src_len, I64 *cursor,
     if (*cursor >= src_len) return 0;
     char c = src[*cursor];
     if (c == '<' || c == '>' || c == '"' || c == ',' || c == ';') {
-        out->kind  = 0;  /* punctuation */
+        out->kind  = 0;
         out->len   = 1;
         out->start = src + *cursor;
         *cursor = *cursor + 1;
@@ -81,8 +74,7 @@ static int oracle_lex(const char *src, I64 src_len, I64 *cursor,
 
 I64 OracleScanLinkDirective(const char *src, I64 src_len, I64 flags,
                             I64 *out_consumed, I64 *out_is_path,
-                            I64 *out_stored_len, I64 *out_error,
-                            char *out_stored_name, int out_stored_name_cap)
+                            I64 *out_stored_len, I64 *out_error)
 {
     (void)flags;
 
@@ -90,7 +82,6 @@ I64 OracleScanLinkDirective(const char *src, I64 src_len, I64 flags,
     *out_is_path    = 0;
     *out_stored_len = 0;
     *out_error      = ORACLE_LINK_OK;
-    out_stored_name[0] = '\0';
 
     if (src_len <= 0) {
         *out_error = ORACLE_LINK_ERR_MISSING;
@@ -105,8 +96,7 @@ I64 OracleScanLinkDirective(const char *src, I64 src_len, I64 flags,
         return ORACLE_LINK_ERR_MISSING;
     }
 
-    /* Quoted path form: starts with '"' punctuation; the
-     * bytes between the two '"' are the stored name. */
+    /* Quoted path form. */
     if (le.kind == 0 && le.start[0] == '"') {
         I64 body_start = cursor;
         while (cursor < src_len && src[cursor] != '"') {
@@ -123,9 +113,6 @@ I64 OracleScanLinkDirective(const char *src, I64 src_len, I64 flags,
         I64 body_end = cursor;
         cursor = cursor + 1; /* consume closing " */
         I64 body_len = body_end - body_start;
-        if (body_len > out_stored_name_cap - 1) body_len = out_stored_name_cap - 1;
-        memcpy(out_stored_name, src + body_start, (size_t)body_len);
-        out_stored_name[body_len] = '\0';
         *out_stored_len = body_len;
         *out_is_path    = 1;
         *out_consumed   = cursor;
@@ -133,9 +120,7 @@ I64 OracleScanLinkDirective(const char *src, I64 src_len, I64 flags,
         return ORACLE_LINK_OK;
     }
 
-    /* Angle-bracket form: '<' then run of non-'>' tokens,
-     * then '>'. Each token's body is appended to the stored
-     * name (matches src/lexer.c::lexLink body). */
+    /* Angle-bracket form. */
     if (le.kind == 0 && le.start[0] == '<') {
         I64 name_len = 0;
         int saw_close = 0;
@@ -145,8 +130,6 @@ I64 OracleScanLinkDirective(const char *src, I64 src_len, I64 flags,
                 break;
             }
             if (le.len > 0) {
-                if (name_len + le.len > out_stored_name_cap - 1) break;
-                memcpy(out_stored_name + name_len, le.start, (size_t)le.len);
                 name_len = name_len + le.len;
             }
         }
@@ -154,7 +137,6 @@ I64 OracleScanLinkDirective(const char *src, I64 src_len, I64 flags,
             *out_error = ORACLE_LINK_ERR_UNTERM_ANG;
             return ORACLE_LINK_ERR_UNTERM_ANG;
         }
-        out_stored_name[name_len] = '\0';
         *out_stored_len = name_len;
         *out_consumed   = cursor;
         *out_error      = ORACLE_LINK_OK;

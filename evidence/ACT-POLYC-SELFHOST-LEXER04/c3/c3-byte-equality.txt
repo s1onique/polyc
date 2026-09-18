@@ -1,0 +1,32 @@
+ACT-POLYC-SELFHOST-LEXER04 -- C3 -- byte equality (4-generation component fixed point)
+=======================================================================================
+
+PROBE:  Build BootstrapLinkDirective (PolyC subject) 4 times,
+        once per compiler generation:
+          G0  ./hcc                  (legacy C runtime + JIT)
+          G1  ./hcc-bootstrap02     (stage1 with bootstrap02 linked in)
+          G2  ./hcc-bootstrap03     (stage2 with stage1 components linked in)
+          G3  ./hcc-bootstrap04     (stage3 with stage2 components linked in)
+
+        Then compare all 4 object files pairwise (6 pairs).
+
+OBSERVATIONS (raw verifier output, see c3-fixedpoint-g3.txt):
+
+  FILE[0] path=build/lexer09-fixedpoint/link.g0.o size=2976 sha256=70879e46fa496bce0a57a7a8006a42723d81938e22753542c0aebcbfc7f57d6e
+  FILE[1] path=build/lexer09-fixedpoint/link.g1.o size=2976 sha256=70879e46fa496bce0a57a7a8006a42723d81938e22753542c0aebcbfc7f57d6e
+  FILE[2] path=build/lexer09-fixedpoint/link.g2.o size=2976 sha256=70879e46fa496bce0a57a7a8006a42723d81938e22753542c0aebcbfc7f57d6e
+  FILE[3] path=build/lexer09-fixedpoint/link.g3.o size=2976 sha256=70879e46fa496bce0a57a7a8006a42723d81938e22753542c0aebcbfc7f57d6e
+
+  PAIR G0_G1 file_i=0 file_j=1 size_a=2976 size_b=2976 equal=YES
+  PAIR G0_G2 file_i=0 file_j=2 size_a=2976 size_b=2976 equal=YES
+  PAIR G0_G3 file_i=0 file_j=3 size_a=2976 size_b=2976 equal=YES
+  PAIR G1_G2 file_i=1 file_j=2 size_a=2976 size_b=2976 equal=YES
+  PAIR G1_G3 file_i=1 file_j=3 size_a=2976 size_b=2976 equal=YES
+  PAIR G2_G3 file_i=2 file_j=3 size_a=2976 size_b=2976 equal=YES
+
+  FIXEDPOINT_VERIFIER_RC=0 verdict=PASS
+  LEXER09_LINK_FIXED_POINT_4_GENERATIONS=PASS
+
+VERDICT:
+
+  LEXER09_4_GEN_FIXED_POINT=PASS

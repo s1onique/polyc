@@ -39,6 +39,9 @@
 #include "containers.h"
 #include "list.h"
 
+/* Stub required by aostr.c. */
+int is_terminal = 0;
+
 #ifndef BUILD_LABEL
 #define BUILD_LABEL "unknown"
 #endif
@@ -148,13 +151,16 @@ int main(void)
 
         Lexer l;
         memset(&l, 0, sizeof(l));
-        l.cc = &cc_storage;
         lexInit(&l, buf, 0);
+        l.cc = &cc_storage;  /* lexInit resets cc to NULL */
 
         printf("CASE=%s\n", c->name);
         /* Drive lexToken() until it returns NULL. lexToken
          * internally consumes preprocessor directives like
-         * #link, so calling it in a loop is sufficient. */
+         * #link, so calling it in a loop is sufficient. The
+         * tokens themselves are not part of the LEXER09 seam
+         * contract — only link_libs and shared_object_files
+         * are. */
         Lexeme *tok = lexToken(NULL, &l);
         int tok_count = 0;
         while (tok) {
@@ -172,7 +178,7 @@ int main(void)
         printf("CASE_END=%s\n\n", c->name);
 
         /* Free the lexer state. */
-        lexerRelease(&l);
+        lexReleaseAllFiles(&l);
         free(buf);
 
         (void)total_failures;

@@ -1994,9 +1994,15 @@ static void lexLink(Lexer *l) {
         }
     } else if (next.tk_type == TK_STR) {
         is_path = 1;
-        if (next.len >= 2) {
-            unsigned char *src = (unsigned char *)(next.start + 1);
-            long long src_len = (long long)(next.len - 2);
+        /* Per ABI 5 (c2-link-abi.txt): for the TK_STR form, src
+         * is the body bytes between the two '"', src_len is the
+         * body length. lexString() already strips the quotes, so
+         * next.start is the body and next.len is the body length.
+         * The component validates and classifies; the C wrapper
+         * does the AoStr assembly (mirroring the legacy path). */
+        {
+            unsigned char *src = (unsigned char *)next.start;
+            long long src_len = (long long)next.len;
             long long out_consumed = 0, out_is_path = 0;
             long long out_stored_len = 0, out_error = 0;
             (void)BootstrapLinkDirective(src, src_len,
@@ -2010,12 +2016,11 @@ static void lexLink(Lexer *l) {
             (void)out_stored_len;
             (void)out_error;
         }
-        if (next.len >= 2) {
-            name = aoStrDupRaw(next.start + 1,
-                               (u64)(next.len - 2));
-        } else {
-            name = aoStrNew();
-        }
+        /* Legacy parity: legacy uses next.start / next.len
+         * directly (no offset / length adjustment), since the
+         * TK_STR lexeme's start already points past the opening
+         * '"' and len already excludes the closing '"'. */
+        name = aoStrDupRaw(next.start, (u64)next.len);
     } else {
         lexRaise(l,
                 "Syntax is: #link \"<path>\" or #link <libname> got: %s",
