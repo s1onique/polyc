@@ -1,0 +1,17 @@
+ACT-POLYC-SELFHOST-SURFACE-RECON02 -- C3 known-selfhosted control
+==============================================================
+
+Control: INV.LEXER.TRIVIA (BootstrapScanTrivia) must be classified
+         SELFHOSTED_TRUE_GREEN.
+
+Method: read selfhost-surface-inventory.tsv row INV.LEXER.TRIVIA,
+        confirm column 19 == 'SELFHOSTED_TRUE_GREEN'.
+
+Result:
+  $ python3 -c "with open('evidence/ACT-POLYC-SELFHOST-SURFACE-RECON02/c1/selfhost-surface-inventory.tsv') as f:
+                for line in f.read().split('\\n'):
+                    if line.startswith('INV.LEXER.TRIVIA\\t'):
+                        print('classification=' + line.split('\\t')[18])"
+  classification=SELFHOSTED_TRUE_GREEN
+
+KNOWN_SELFHOSTED_CONTROL=PASS

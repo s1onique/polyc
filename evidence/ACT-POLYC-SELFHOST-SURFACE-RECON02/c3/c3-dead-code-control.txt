@@ -1,0 +1,21 @@
+ACT-POLYC-SELFHOST-SURFACE-RECON02 -- C3 dead/nonruntime exclusion control
+==========================================================================
+
+Control: a non-compiler-semantic surface (e.g. INV.UTIL.MISC, INV.MEM.ARENA,
+         INV.JIT.X86, INV.LSP, INV.TRANSPILE) must NOT be classified as a
+         migration candidate.
+
+Method: read c1-blocker-classification.tsv for those surface_ids and
+        confirm blocker_class in {DOES_NOT_BLOCK_SELFHOST} and
+        candidate_for_next == 'NO'.
+
+Results:
+  INV.UTIL.MISC        blocker_class=DOES_NOT_BLOCK_SELFHOST  candidate=NO
+  INV.MEM.ARENA        blocker_class=DOES_NOT_BLOCK_SELFHOST  candidate=NO
+  INV.JIT.X86          blocker_class=DOES_NOT_BLOCK_SELFHOST  candidate=NO
+  INV.LSP              blocker_class=DOES_NOT_BLOCK_SELFHOST  candidate=NO
+  INV.TRANSPILE        blocker_class=DOES_NOT_BLOCK_SELFHOST  candidate=NO
+  INV.LLVM.BACKEND     blocker_class=DOES_NOT_BLOCK_SELFHOST  candidate=NO
+  INV.CODEGEN.X86      blocker_class=DOES_NOT_BLOCK_SELFHOST  candidate=NO (CHARTER-preserved)
+
+DEAD_OR_NONRUNTIME_EXCLUDED=PASS

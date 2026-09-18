@@ -1,0 +1,49 @@
+ACT-POLYC-SELFHOST-SURFACE-RECON02 -- C3 required-result ledger
+===============================================================
+
+ACT = ACT-POLYC-SELFHOST-SURFACE-RECON02
+LEXER03_BOOTSTRAP_QUALIFICATION = COMPLETE
+
+SURFACE_INVENTORY_TOTAL              = 26
+SURFACE_INVENTORY_UNKNOWN            = 0
+
+AUTHORITY_RESIDUE_COUNT              = 19
+NON_POLYC_COMPILER_AUTHORITY         = 0
+NON_POLYC_TOOLING_ONLY               = 58
+
+STAGE_OWNERSHIP_UNKNOWN              = 0
+PROOF_SURFACE_UNKNOWN                = 0
+BLOCKER_CLASSIFICATION_UNKNOWN       = 0
+
+ELIGIBLE_CANDIDATE_COUNT             = 3   (LEXER.LINK, PARSER.COMPOUND, PARSER.TOPLEVEL)
+
+RANKING_RECOMPUTED                   = YES
+SELECTED_TARGET_MATCHES_RECOMPUTED_RANK1 = YES
+SELECTED_TARGET_COUNT                = 1
+
+SELECTED_TARGET                      = INV.LEXER.LINK
+SELECTED_SUBSYSTEM                   = lexer
+SELECTED_RESPONSIBILITY              = Token-linker / file-push / preprocessor directive dispatch / state setup
+SELECTED_ATOMIC_SLICE                = lexLink (#link directive)
+
+NEXT_ACT_ID                          = ACT-POLYC-SELFHOST-LEXER04
+NEXT_ACT_SCOPE_FROZEN                = YES
+NEXT_ACT_RED_IS_MECHANICALLY_REPRODUCIBLE = YES
+NEXT_ACT_PROOF_MODEL_COMPLETE        = YES
+
+KNOWN_SELFHOSTED_CONTROL             = PASS   (INV.LEXER.TRIVIA classified SELFHOSTED_TRUE_GREEN)
+KNOWN_RESIDUE_CLASSIFICATION         = PASS   (INV.PARSER.TOPLEVEL classified LEGACY_C_AUTHORITY)
+DEAD_OR_NONRUNTIME_EXCLUDED          = PASS   (INV.UTIL.MISC, INV.MEM.ARENA, INV.JIT.X86, etc. all DOES_NOT_BLOCK_SELFHOST)
+
+COMPILER_SEMANTIC_DELTA              = 0      (no src/ mutation)
+
+LEXER01_CONSERVATION                 = PASS   (47/47 differential via lexer07-direct-differential)
+LEXER02_CONSERVATION                 = PASS   (89/89 differential via lexer07-direct-differential)
+LEXER03_CONSERVATION                 = PASS   (45/45 differential via lexer08-direct-differential; 4-gen fixed point)
+
+FACTORY_GATES                        = PASS   (gate-fast, factory-append-only-test, factory-closure-status)
+PATCH_HYGIENE                        = PASS   (git diff --check clean)
+WORKTREE_CLEAN                       = TRUE   (only this ACT's evidence/ namespace untracked)
+APPEND_ONLY_HISTORY                  = TRUE   (PASS=11 FAIL=0 in factory-append-only-test)
+
+VERDICT = PASS_TRUE_GREEN

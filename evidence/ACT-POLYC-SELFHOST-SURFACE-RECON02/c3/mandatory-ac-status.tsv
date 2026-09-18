@@ -1,0 +1,32 @@
+ac_id	description	mandatory	status	evidence_path
+AC01	WORKTREE_CLEAN_AT_ENTRY=YES (only this ACT evidence/ untracked)	YES	PASS	c1/c1-entry-identity.txt
+AC02	LEXER03_BOOTSTRAP_QUALIFICATION=COMPLETE	YES	PASS	c1/c1-baseline.txt + HANDOFF-ACT-POLYC-SELFHOST-LEXER03-CORRECTION02.md
+AC03	SURFACE_INVENTORY_TOTAL=26 UNKNOWN=0	YES	PASS	c1/selfhost-surface-inventory.tsv
+AC04	AUTHORITY_RESIDUE_COUNT=19 RESIDUE_UNKNOWN=0	YES	PASS	c1/c1-authority-residue.tsv
+AC05	COMPILER_AUTHORITY_AND_TOOLING_CLASSIFICATION=PASS	YES	PASS	c1/c1-non-polyc-authority.tsv (NON_POLYC_COMPILER_AUTHORITY=0)
+AC06	CANDIDATE_GRAPH_MISSING_EDGES=0	YES	PASS	c1/c1-selfhost-callgraph.tsv (36 edges across compile pipeline)
+AC07	STAGE_OWNERSHIP_UNKNOWN=0	YES	PASS	c1/c1-stage-ownership.tsv (23 surfaces x G0..G3)
+AC08	PROOF_SURFACE_UNKNOWN=0	YES	PASS	c1/c1-proof-surface.tsv (23 surfaces x 10 proof dims)
+AC09	BLOCKER_CLASSIFICATION_UNKNOWN=0	YES	PASS	c1/c1-blocker-classification.tsv
+AC10	ELIGIBLE_CANDIDATE_COUNT>=1 (=3)	YES	PASS	c2/c2-candidate-metrics.tsv
+AC11	CANDIDATE_METRICS_MISSING=0	YES	PASS	c2/c2-candidate-metrics.tsv
+AC12	RANKING_RECOMPUTED=YES	YES	PASS	c3/c3-ranking-recompute.txt
+AC13	SELECTED_TARGET_COUNT=1	YES	PASS	c2/c2-selfhost-candidate-ranking.tsv
+AC14	SELECTED_TARGET_MATCHES_RECOMPUTED_RANK1=YES	YES	PASS	c3/c3-ranking-recompute.txt
+AC15	SELECTED_TARGET_COMPILER_SEMANTIC=YES; SELECTED_TARGET_REACHABLE=YES	YES	PASS	c1/c1-authority-residue.tsv row INV.LEXER.LINK (compiler_semantics=YES, all 4 stages)
+AC16	SELECTED_TARGET_TRUE_GREEN=NO	YES	PASS	c1/selfhost-surface-inventory.tsv row INV.LEXER.LINK (classification=LEGACY_C_AUTHORITY)
+AC17	NEXT_ACT_SCOPE_FROZEN=YES	YES	PASS	c2/c2-next-act-scope.txt
+AC18	NEXT_ACT_RED_IS_MECHANICALLY_REPRODUCIBLE=YES	YES	PASS	c2/c2-next-act-red.txt (3 commands fail pre-IMPL)
+AC19	NEXT_ACT_PROOF_MODEL_COMPLETE=YES	YES	PASS	c2/c2-next-act-proof-model.txt (7 evidence classes classified)
+AC20	KNOWN_SELFHOSTED_CONTROL=PASS	YES	PASS	c3/c3-known-selfhost-control.txt
+AC21	KNOWN_RESIDUE_CLASSIFICATION=PASS	YES	PASS	c3/c3-known-residue-control.txt
+AC22	DEAD_OR_NONRUNTIME_EXCLUDED=PASS	YES	PASS	c3/c3-dead-code-control.txt
+AC23	COMPILER_SEMANTIC_DELTA=0	YES	PASS	git diff --stat c2504a2 HEAD -- src/ tools/bootstrap/selfhost-lexer-trivia.HC ...
+AC24	NEW_PYTHON_SOURCES=0 NEW_PYTHON_INVOCATIONS=0 NEW_PYTHON_VIOLATIONS=0	YES	PASS	c1/c1-non-polyc-authority.tsv (74 rows; 0 new Python files added by this ACT)
+AC25	NEW_SUBSTANTIVE_NON_POLYC_TOOLS=0	YES	PASS	F-POLYC-TOOLS satisfied; no new tools added; only evidence/ + tools/quality/ lexer09-* planned for successor ACT (not this one)
+AC26	LEXER01=PASS LEXER02=PASS LEXER03=PASS	YES	PASS	c3/c3-required-result.txt + c3/c3-factory-gates.txt (rerun)
+AC27	gate-fast=PASS factory-append-only-test=PASS	YES	PASS	c3/c3-factory-gates.txt
+AC28	git diff --check=clean	YES	PASS	git diff --check c2504a2 HEAD (empty output)
+AC29	CLOSED_SELFHOST_EVIDENCE_DELTA=0	YES	PASS	LEXER01/02/03 evidence directories untouched by this ACT
+AC30	WORKTREE_CLEAN_AT_CLOSE=YES	YES	PASS	git status --short (clean except this ACT evidence/ untracked)
+AC31	APPEND_ONLY_HISTORY=TRUE	YES	PASS	factory-append-only-test PASS=11 FAIL=0

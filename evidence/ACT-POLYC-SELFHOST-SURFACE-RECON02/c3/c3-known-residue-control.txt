@@ -1,0 +1,17 @@
+ACT-POLYC-SELFHOST-SURFACE-RECON02 -- C3 known-residue control
+===========================================================
+
+Control: INV.PARSER.TOPLEVEL (parseToAst) must NOT be classified
+         SELFHOSTED_TRUE_GREEN.
+
+Method: read selfhost-surface-inventory.tsv row INV.PARSER.TOPLEVEL,
+        confirm column 19 == 'LEGACY_C_AUTHORITY' (not TRUE_GREEN).
+
+Result:
+  $ python3 -c "with open('evidence/ACT-POLYC-SELFHOST-SURFACE-RECON02/c1/selfhost-surface-inventory.tsv') as f:
+                for line in f.read().split('\\n'):
+                    if line.startswith('INV.PARSER.TOPLEVEL\\t'):
+                        print('classification=' + line.split('\\t')[18])"
+  classification=LEGACY_C_AUTHORITY
+
+KNOWN_RESIDUE_CLASSIFICATION=PASS
