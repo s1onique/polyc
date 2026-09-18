@@ -2722,6 +2722,86 @@ ACT-POLYC-SELFHOST-LEXER03-CORRECTION01-CORRECTION01    CLOSED PASS_TRUE_GREEN
 ```
 
 
+#### ACT-POLYC-SELFHOST-LEXER03-CORRECTION02 status (CLOSED PASS_TRUE_GREEN at `c2504a2`)
+
+```
+ACT-POLYC-SELFHOST-LEXER03-CORRECTION02            CLOSED PASS_TRUE_GREEN
+  Title:        Prove the LEXER03 BootstrapScanTrivia component reaches
+                a four-generation object-code fixed point under ./hcc,
+                hcc-bootstrap02, hcc-bootstrap03, and hcc-bootstrap04.
+  Authorization: docs/acts/ACT-POLYC-SELFHOST-LEXER03-CORRECTION02.md
+                (C0 AUTH at c6e56fd)
+  Predecessor:  ACT-POLYC-SELFHOST-LEXER03-CORRECTION01-CORRECTION01
+                CLOSED TRUE_GREEN at
+                1ce0cd63463052ac3f8702a6dcf796b9972dc0f1
+  C0 AUTH:      c6e56fd
+  C1 RED:       a674b1f (entry identity + source/compiler SHAs + RED
+                reproducing the missing 4-generation fixed-point
+                predicate; only one Make rule compiles the trivia
+                source and produces only ./build/lexer08-trivia.o)
+  C2 IMPL:      9037741 (Makefile: 7 new lexer08-trivia-fixedpoint-*
+                targets; tools/quality/lexer08-fixedpoint-verify.HC;
+                scripts/quality/lexer08-trivia-fixedpoint.sh)
+  C3 EVIDENCE:  c2504a2 (4 generations compile trivially from absent
+                output to 3880-byte objects; all 6 pairwise cmp YES;
+                SHA-256 = 560e98bf..a55e7921f39c0 in all four;
+                BootstrapScanTrivia present at offset 0x678 in every
+                object; G3 deterministic; negative-control proves the
+                verifier is load-bearing)
+  C4 CLOSE:     <this commit> (HANDOFF + additive ROADMAP block; no
+                mutation of c1/c2/c3 evidence per F14)
+
+  Successful terminal predicate:
+    LEXER03_TRIVIA_FIXED_POINT_4_GENERATIONS = PASS
+
+  All four objects are byte-identical:
+    O0 = compile(selfhost-lexer-trivia.HC, G0) = compile(..., G1) = O1
+    O1 = compile(selfhost-lexer-trivia.HC, G1) = compile(..., G2) = O2
+    O2 = compile(selfhost-lexer-trivia.HC, G2) = compile(..., G3) = O3
+
+  Per-generation compiler identities (C1 + C3):
+    G0 ./hcc                       sha d6f653b8..0e60aca86
+    G1 ./build/hcc-bootstrap02     sha 9916a378..beb4dd961da2c6
+    G2 ./build/hcc-bootstrap03     sha 9c116686..4922e209e3fe3c84f4
+    G3 ./build/hcc-bootstrap04     sha 2aec4181..1d2e618f471687b40b7c7
+
+  All four objects:
+    size      = 3880 bytes
+    sha256    = 560e98bf20277d1cedde553ee4cb3ef67f62dc9a5f4d3145813a55e7921f39c0
+    symbol    = T _BootstrapScanTrivia  (offset 0x678)
+
+  Mandatory AC status: evidence/ACT-POLYC-SELFHOST-LEXER03/
+                       CORRECTION02/c3/mandatory-ac-status.tsv
+                       (27 rows; PASS=27, NONPASS=0)
+
+  Hand-off: docs/factory/HANDOFF-ACT-POLYC-SELFHOST-LEXER03-
+            CORRECTION02.md
+
+  Resolved residue:
+    P0: LEXER03-specific stage2/stage3 fixed-point evidence
+        -> RESOLVED. The 4-generation object-code fixed point is
+           mechanically proven (raw byte equality, not just hashes).
+
+  LEXER03 bootstrap qualification:
+    LEXER03_STAGE0_STAGE1_SEMANTIC_EQUIVALENCE = PASS (prior ACTs)
+    LEXER03_4_GENERATION_BUILD_SMOKE           = PASS (prior ACTs)
+    LEXER03_COMPONENT_OBJECT_FIXED_POINT       = PASS (this ACT)
+    LEXER03_BOOTSTRAP_QUALIFICATION            = COMPLETE
+
+  Outstanding residue (unchanged):
+    P1: test-prefix-install failure (pre-existing, unrelated)
+    P1: ACT-after-work governance (already documented in prior HANDOFFs)
+    P2: broader self-host recon refresh
+    P2: Python baseline (12 grandfathered files; unchanged)
+    P2: verify fixed-point remains green on x86_64 Linux (this ACT's
+        evidence was captured on arm64-apple-darwin)
+
+  NEXT:    ACT-POLYC-SELFHOST-SURFACE-RECON02 (fresh recon),
+           then ACT-POLYC-SELFHOST-LEXER04 OR whichever region
+           wins the ranking. Do not select by numbering alone.
+```
+
+
 #### ACT-POLYC-SELFHOST-LEXER02 status (CLOSED PASS at this commit)
 
 ```
