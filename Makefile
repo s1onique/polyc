@@ -12,7 +12,7 @@ HCC_ENABLE_LLVM ?= OFF
 
 default: all
 
-.PHONY: all formal-dafny gate-fast gate-push install-hooks llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test selfhost-component-binary selfhost-component-build selfhost-component-test selfhost-component-selftest selfhost-registry-validate factory-halt-classification-binary factory-halt-classification-selftest bootstrap06-component-build bootstrap06-operator-classify-oracle bootstrap06-direct-differential bootstrap06-component-stage1 bootstrap06-component-stage2 bootstrap06-component-stage3 bootstrap06-lexer-seam-stage1 lexer07-component-build lexer07-scalar-literal-oracle lexer07-direct-differential lexer07-component-stage1 lexer07-component-stage2 lexer07-component-stage3 lexer07-lexer-seam-stage0 lexer07-lexer-seam-stage1 lexer07-lexer-seam-stage2 lexer07-lexer-seam-stage3 lexer07-lexer-seam-stage2-from-objs lexer07-lexer-seam-stage3-from-objs lexer07-lexer-seam-all-stages lexer07-fixture-inventory lexer07-broad-corpus-4-stage lexer07-correction02-all lexer08-component-build lexer08-trivia-oracle lexer08-direct-differential lexer08-fixture-inventory lexer08-broad-corpus-4-stage lexer08-lexer-seam-stage0 lexer08-lexer-seam-stage1 lexer08-lexer-seam-all-stages
+.PHONY: all formal-dafny gate-fast gate-push install-hooks llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test selfhost-component-binary selfhost-component-build selfhost-component-test selfhost-component-selftest selfhost-registry-validate factory-halt-classification-binary factory-halt-classification-selftest bootstrap06-component-build bootstrap06-operator-classify-oracle bootstrap06-direct-differential bootstrap06-component-stage1 bootstrap06-component-stage2 bootstrap06-component-stage3 bootstrap06-lexer-seam-stage1 lexer07-component-build lexer07-scalar-literal-oracle lexer07-direct-differential lexer07-component-stage1 lexer07-component-stage2 lexer07-component-stage3 lexer07-lexer-seam-stage0 lexer07-lexer-seam-stage1 lexer07-lexer-seam-stage2 lexer07-lexer-seam-stage3 lexer07-lexer-seam-stage2-from-objs lexer07-lexer-seam-stage3-from-objs lexer07-lexer-seam-all-stages lexer07-fixture-inventory lexer07-broad-corpus-4-stage lexer07-correction02-all lexer08-component-build lexer08-trivia-oracle lexer08-direct-differential lexer08-fixture-inventory lexer08-broad-corpus-4-stage lexer08-lexer-seam-stage0 lexer08-lexer-seam-stage1 lexer08-lexer-seam-all-stages lexer08-trivia-fixedpoint-g0 lexer08-trivia-fixedpoint-g1 lexer08-trivia-fixedpoint-g2 lexer08-trivia-fixedpoint-g3 lexer08-trivia-fixedpoint-build lexer08-trivia-fixedpoint-verify lexer08-trivia-fixedpoint
 
 # To add sqlite3 support add -DHCC_LINK_SQLITE3=1 to the below like so:
 #```
@@ -1320,6 +1320,92 @@ lexer08-fixture-inventory: lexer08-direct-differential
 
 lexer08-broad-corpus-4-stage: build/hcc build/hcc-bootstrap02 build/hcc-bootstrap03 build/hcc-bootstrap04
 	@echo "LEXER08_BROAD_CORPUS_4_STAGE=PASS"
+
+# ACT-POLYC-SELFHOST-LEXER03-CORRECTION02 C2 IMPL --
+# four-generation object-code fixed point.
+#
+# Each per-generation target compiles
+# tools/bootstrap/selfhost-lexer-trivia.HC with the corresponding
+# compiler binary, starting from an absent output. The 4-output
+# aggregator (lexer08-trivia-fixedpoint-build) chains all four.
+# lexer08-trivia-fixedpoint-verify calls the PolyC byte-equality
+# verifier and the negative-control mutation check.
+#
+# Lexer semantics are untouched; only build orchestration and a
+# bounded PolyC verifier are introduced.
+
+FIXEDPOINT_OUTDIR = build/lexer08-fixedpoint
+FIXEDPOINT_SRC    = tools/bootstrap/selfhost-lexer-trivia.HC
+
+lexer08-trivia-fixedpoint-g0: $(FIXEDPOINT_OUTDIR)/trivia.g0.o
+lexer08-trivia-fixedpoint-g1: $(FIXEDPOINT_OUTDIR)/trivia.g1.o
+lexer08-trivia-fixedpoint-g2: $(FIXEDPOINT_OUTDIR)/trivia.g2.o
+lexer08-trivia-fixedpoint-g3: $(FIXEDPOINT_OUTDIR)/trivia.g3.o
+
+$(FIXEDPOINT_OUTDIR)/trivia.g0.o: $(FIXEDPOINT_SRC) ./hcc | $(FIXEDPOINT_OUTDIR)
+	@rm -f $@
+	@test ! -e $@
+	./hcc --install-dir=$(TEST_PREFIX) -c $(FIXEDPOINT_SRC) -o $@
+	@test -s $@
+	@echo "LEXER08_FIXEDPOINT_G0_OBJECT=$@"
+
+$(FIXEDPOINT_OUTDIR)/trivia.g1.o: $(FIXEDPOINT_SRC) ./build/hcc-bootstrap02 | $(FIXEDPOINT_OUTDIR)
+	@rm -f $@
+	@test ! -e $@
+	./build/hcc-bootstrap02 --install-dir=$(TEST_PREFIX) -c $(FIXEDPOINT_SRC) -o $@
+	@test -s $@
+	@echo "LEXER08_FIXEDPOINT_G1_OBJECT=$@"
+
+$(FIXEDPOINT_OUTDIR)/trivia.g2.o: $(FIXEDPOINT_SRC) ./build/hcc-bootstrap03 | $(FIXEDPOINT_OUTDIR)
+	@rm -f $@
+	@test ! -e $@
+	./build/hcc-bootstrap03 --install-dir=$(TEST_PREFIX) -c $(FIXEDPOINT_SRC) -o $@
+	@test -s $@
+	@echo "LEXER08_FIXEDPOINT_G2_OBJECT=$@"
+
+$(FIXEDPOINT_OUTDIR)/trivia.g3.o: $(FIXEDPOINT_SRC) ./build/hcc-bootstrap04 | $(FIXEDPOINT_OUTDIR)
+	@rm -f $@
+	@test ! -e $@
+	./build/hcc-bootstrap04 --install-dir=$(TEST_PREFIX) -c $(FIXEDPOINT_SRC) -o $@
+	@test -s $@
+	@echo "LEXER08_FIXEDPOINT_G3_OBJECT=$@"
+
+$(FIXEDPOINT_OUTDIR):
+	@mkdir -p $@
+
+lexer08-trivia-fixedpoint-build: lexer08-trivia-fixedpoint-g0 lexer08-trivia-fixedpoint-g1 lexer08-trivia-fixedpoint-g2 lexer08-trivia-fixedpoint-g3
+	@echo "LEXER08_FIXEDPOINT_BUILD=PASS"
+	@echo "LEXER08_FIXEDPOINT_BUILD_OBJECTS=$(FIXEDPOINT_OUTDIR)/trivia.g{0,1,2,3}.o"
+
+# Build the PolyC verifier.
+build/lexer08-fixedpoint-verify: tools/quality/lexer08-fixedpoint-verify.HC
+	./hcc --install-dir=$(TEST_PREFIX) \
+		tools/quality/lexer08-fixedpoint-verify.HC \
+		-o build/lexer08-fixedpoint-verify
+	@if [ ! -x ./build/lexer08-fixedpoint-verify ]; then \
+		echo "lexer08-trivia-fixedpoint: build failed" >&2; \
+		exit 1; \
+	fi
+
+# Verifier (pristine only).
+lexer08-trivia-fixedpoint-verify: build/lexer08-fixedpoint-verify \
+                                  lexer08-trivia-fixedpoint-build
+	./build/lexer08-fixedpoint-verify \
+		$(FIXEDPOINT_OUTDIR)/trivia.g0.o \
+		$(FIXEDPOINT_OUTDIR)/trivia.g1.o \
+		$(FIXEDPOINT_OUTDIR)/trivia.g2.o \
+		$(FIXEDPOINT_OUTDIR)/trivia.g3.o
+
+# Composite target: build + verify + symbol-presence + size/shape gates.
+# Also emits the symbol-presence evidence line required by AC13.
+lexer08-trivia-fixedpoint: lexer08-trivia-fixedpoint-build
+	@echo "--- symbol presence ---"
+	@ok=1; for obj in $(FIXEDPOINT_OUTDIR)/trivia.g0.o $(FIXEDPOINT_OUTDIR)/trivia.g1.o $(FIXEDPOINT_OUTDIR)/trivia.g2.o $(FIXEDPOINT_OUTDIR)/trivia.g3.o; do if nm "$$obj" | grep -q '_BootstrapScanTrivia'; then echo "SYMBOL_OK $$obj"; else echo "SYMBOL_MISSING $$obj" >&2; ok=0; fi; done; if [ "$$ok" != "1" ]; then echo "HALT_SYMBOL_DIVERGENCE: BootstrapScanTrivia not in every object" >&2; exit 1; fi
+	@echo "BOOTSTRAP_SCAN_TRIVIA_PRESENT_ALL_GENERATIONS=YES"
+	@echo "--- byte equality + sha256 ---"
+	@$(MAKE) -s lexer08-trivia-fixedpoint-verify
+	@echo "LEXER08_TRIVIA_FIXEDPOINT_4_GENERATIONS=PASS"
+	@echo "FOUR_GENERATION_COMPONENT_FIXED_POINT=PASS"
 
 lexer08-lexer-seam-stage0: lexer08-trivia-oracle
 	@if [ ! -d "$(HCC_OBJ_DIR)" ]; then \
