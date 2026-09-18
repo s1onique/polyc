@@ -1,0 +1,43 @@
+ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION01 / c2 / c2b-manifest-row-correction.txt
+
+C2b: missed-manifest-row correction.
+
+The C2 IMPL/FREEZE commit (1054ae2) did NOT include the
+self-row for the CORRECTION01 pair in
+docs/factory/act-handoff-map.tsv. The C2 freeze evidence
+file (c2-freeze-sha256.txt) therefore recorded the
+pre-row SHA 13c843e5ff... instead of the post-add SHA
+c21289718c....
+
+Resolution: this C2b commit adds the missing manifest row
+AND records the corrected freeze SHA in c2-freeze-sha256.txt.
+The C2 commit's tree is NOT modified; this is a forward-only
+correction.
+
+Updated freeze SHA (post-manifest-add):
+  1d69e962e16d253b6c9249d6900c5d5a43236faa78458756c54e2e26923f0bfa
+    scripts/quality/factory-closure-status-check.sh
+  c21289718c17fc1352ec76320e86afcf7f14865eacb91c68d907d44d7087fccb
+    docs/factory/act-handoff-map.tsv (now 10 rows)
+  6e92265815c86255ab2cfce1d83fab213e27a1c73b09f37fa96e363411c60e48
+    docs/acts/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-
+      CORRECTION01.md
+
+Self-row at C2b: FAIL with PAIR_OK=9 PAIR_FAIL=1 (expected).
+The HANDOFF for the CORRECTION01 pair is added at C4 only.
+
+Manifest row added:
+  docs/acts/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION01.md
+  docs/factory/HANDOFF-ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION01.md
+
+This row exists in the manifest BEFORE the HANDOFF file
+exists, so the checker reports:
+  MISSING_HANDOFF_FILES=1
+  PAIR_OK=9
+  PAIR_FAIL=1
+  STATUS=FAIL
+
+At C4, the HANDOFF file is added; MISSING_HANDOFF_FILES=0
+and the checker transitions to STATUS=PASS, proving that
+C4 is achievable via HANDOFF-only addition (the ACT body,
+checker, and manifest remain unchanged between C2b and C4).
