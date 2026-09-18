@@ -5035,3 +5035,93 @@ LEXER04_EFFECTIVE_ENGINEERING_QUALIFICATION=TRUE_GREEN
    has the necessary toolchain plumbing — only the
    four-generation verifier rebuild is blocked by an
    unrelated host infra issue).
+
+---
+
+## STATIC-FUNCTION-LINKAGE01 closure (recorded)
+
+### Summary
+
+C0 AUTH committed. C1 RED + ROOT CAUSE committed. C2 IMPL (one
+bounded JIT-lifetime correction) + durable regression fixtures
++ Makefile target committed. C3 EVIDENCE (27 files covering
+S01..S08 native, J01..J05 JIT, AArch64 + x86_64 native backends,
+M01..M03 mutations, parser/AST propagation, conservation,
+factory gates, mandatory AC ledger) committed. C4 CLOSE: this
+section + HANDOFF committed.
+
+### Verdict
+
+```text
+STATIC_FUNCTION_INTERNAL_LINKAGE  = IMPLEMENTED
+STATIC_FUNCTION_TU_ISOLATION      = PROVEN
+PUBLIC_FUNCTION_EXTERNAL_LINKAGE  = CONSERVED
+JIT_PRIVATE_FUNCTION_ISOLATION    = PROVEN
+NATIVE_BACKEND_LINKAGE            = PROVEN
+COMPILER_REGRESSION               = NONE
+
+VERDICT = PASS_TRUE_GREEN
+```
+
+### What was corrected (this ACT)
+
+The seven-file historical repair at 5e967c8 (src/ast.h, src/ast.c,
+src/parser.c, src/jit-common.h, src/jit-common.c, src/aarch64.c,
+src/x86_64.c) was ACCEPTED UNCHANGED for its intended semantics.
+C1 falsification found one bounded defect:
+
+  RED_PRIVATE_FNS_STALE_STATE (HALT_JIT_PRIVATE_STATE_LEAK):
+    jit->private_fns was never cleared between chunks (chunk_fns
+    WAS cleared; private_fns was not). A later chunk's public
+    Foo was filtered out of symbols/host_symbols by an earlier
+    chunk's stale static Foo entry, producing "JIT: unresolved
+    symbol '_Foo'" in the REPL.
+
+  C2 correction: 8 changed lines in src/jit-common.c:
+    +mapClear(jit->private_fns) alongside mapClear(jit->chunk_fns)
+    +mapRelease(jit->private_fns) in hccJitFree (memory hygiene)
+
+### New durable regression infrastructure
+
+  tests/compiler/static-function-linkage/    8 native + 5 JIT fixtures
+  scripts/quality/static-function-linkage-test.sh   44-LOC dispatcher
+  Makefile target `static-function-linkage-test`   wired to the script
+  docs/factory/SHELL-BUDGET.tsv                TINY-class row
+
+### Factory gates
+
+```text
+gate-fast                    PASS
+factory-append-only-test     PASS (NC1..NC11 all green)
+shell-loc-gate               PASS
+shell-budget-gate            PASS for this ACT's scope
+static-function-linkage-test PASS (new)
+```
+
+### Original seven-file historical repair status
+
+The C2A commit 5e967c8 was a useful bounded repair that became
+part of `main` without dedicated qualification. This ACT now
+qualifies that repair as a first-class compiler feature. The
+historical commit is preserved (F14); the qualification ledger
+lives entirely under evidence/ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01/.
+
+### Recommended next ACT (P0)
+
+```text
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01
+  Audit src/holyc-lib/*.HC forward declarations against
+  build/test-prefix/lib/libtos.a, then either add the
+  missing definitions to libtos or repair the all.HC
+  build so that hcc can link libtos-dependent programs
+  on this host.
+
+After that:
+  ACT-POLYC-SELFHOST-LEXER04-CORRECTION02
+    True G0/G1/G2/G3 production #link semantic seam;
+    PolyC-native LEXER09 fixed-point verification;
+    remaining LEXER04 requalification.
+
+After that:
+  ACT-POLYC-SELFHOST-SURFACE-RECON03
+```

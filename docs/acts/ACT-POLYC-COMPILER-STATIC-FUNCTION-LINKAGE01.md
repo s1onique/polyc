@@ -2284,3 +2284,15 @@ C1's most valuable early tests are:
 If all three are green, the historical fix is much more credible.
 
 If any fails, we have found a real compiler bug worth fixing inside this ACT.
+
+---
+
+## Status
+
+PASS_TRUE_GREEN
+
+C0 AUTH committed (4ac7810). C1 RED + ROOT CAUSE committed (1f24d6b) with RED_PRIVATE_FNS_STALE_STATE found and mechanically reproduced against entry HEAD 06c7951. C2 IMPL committed (5542c1c) with a bounded 2-line JIT-lifetime correction in src/jit-common.c plus 8-line comment hygiene and a durable regression fixture set (tests/compiler/static-function-linkage/, scripts/quality/static-function-linkage-test.sh at 44 LOC, Makefile target). C3 EVIDENCE committed (97f421c) with 27 evidence files covering S01..S08 native, J01..J05 JIT, AArch64 + x86_64 native backends, M01..M03 mutations, parser/AST propagation, conservation, factory gates, and the mandatory AC ledger (AC01..AC37 all PASS). C4 CLOSE: this entry + HANDOFF committed.
+
+The seven-file historical repair at commit 5e967c8 was ACCEPTED UNCHANGED for its intended semantics. The bounded JIT-lifetime correction found during C1 falsification is recorded as RED_PRIVATE_FNS_STALE_STATE; it is the only production-code change in this ACT.
+
+The bounded managed universe for the closure-status oracle includes this ACT pair (added in C4). The oracle-acceptable Status token is PASS_TRUE_GREEN; the matching HANDOFF VERDICT token is PASS_TRUE_GREEN; the trailers in the C4 commit are `ACT: ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01`, `ACT-Phase: C4`, `ACT-Verdict: CLOSE_PASS_TRUE_GREEN`.
