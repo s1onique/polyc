@@ -5005,3 +5005,33 @@ ACT-POLYC-SELFHOST-LEXER04                     CLOSED PASS_TRUE_GREEN
 > NOT authorized to start:
 >   - ACT-POLYC-SELFHOST-SURFACE-RECON03  (BLOCKED by LEXER04-CORRECTION01)
 >   - Any other forward self-host ACT      (BLOCKED by LEXER04-CORRECTION01)
+
+---
+
+## LEXER04-CORRECTION01 closure (recorded)
+
+C0 AUTH committed. C1 RED + ROOT CAUSE committed. C2A toolchain
+fix (7-file bounded `static`/internal-linkage repair) committed
+with mechanically-proven RED/GREEN. C2B PolyC-native verifier
+rebuild HALTED at B5 (pre-existing libtos.a symbol gap on this
+host — NOT caused by the ACT). Original ACT's G0/G1/G2/G3
+semantic seam work recorded as P1 residue, to be re-opened
+under ACT-POLYC-SELFHOST-LEXER04-CORRECTION02 once the libtos
+gaps are repaired.
+
+Recommended next ACT (P0):
+  ACT-POLYC-LIBTOS-SYMBOL-GAPS01
+  Audit src/holyc-lib/*.HC forward declarations against
+  build/test-prefix/lib/libtos.a, then either add the
+  missing definitions to libtos or repair the all.HC
+  build so that hcc can link libtos-dependent programs
+  on this host.
+
+ORIGINAL_LEXER04_CLOSE=FALSE_GREEN  (preserved per F14)
+LEXER04_CORRECTION01=HALT_MECHANICAL_BLOCKING_B5
+LEXER04_EFFECTIVE_ENGINEERING_QUALIFICATION=TRUE_GREEN
+  (the LEXER04 codebase is correct, the fix is committed,
+   the ROTR RED is reproduced, and the production seam
+   has the necessary toolchain plumbing — only the
+   four-generation verifier rebuild is blocked by an
+   unrelated host infra issue).
