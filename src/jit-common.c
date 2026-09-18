@@ -573,6 +573,12 @@ int hccJitCompileChunk(HccJit *jit, Ast *extra_fn) {
     asm_enc_free(&jit->enc);
     asm_enc_init(&jit->enc);
     mapClear(jit->chunk_fns);
+    /* ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01 C2: clear
+     * private_fns per chunk. The map MUST be per-chunk (matching its
+     * declared intent in jit-common.h:45-50 -- "Reset per chunk") so
+     * a later chunk's public Foo is not filtered by an earlier
+     * chunk's static Foo. See c1-private-fns-lifetime.txt. */
+    mapClear(jit->private_fns);
     jit->n_pending = 0;
 
     /* First unconsumed nodes. The cursors advance immediately: even if
@@ -899,6 +905,10 @@ void hccJitFree(HccJit *jit) {
     if (jit->symbols) mapRelease(jit->symbols);
     if (jit->host_symbols) mapRelease(jit->host_symbols);
     if (jit->chunk_fns) mapRelease(jit->chunk_fns);
+    /* ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01 C2: release
+     * private_fns to match its allocation in hccJitNew. Memory
+     * hygiene; not a linkage defect. */
+    if (jit->private_fns) mapRelease(jit->private_fns);
     if (jit->block_local) mapRelease(jit->block_local);
     if (jit->epi_local) mapRelease(jit->epi_local);
     free(jit);

@@ -1,0 +1,63 @@
+ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01 / c2 / c2-repair-summary.txt
+
+C2 minimal static-linkage correction.
+
+DIAGNOSIS (carried from C1):
+
+  RED_PRIVATE_FNS_STALE_STATE (HALT_JIT_PRIVATE_STATE_LEAK):
+    HccJit's private_fns Map is populated by every chunk's static
+    functions, consulted at finalize to skip the corresponding labels
+    from symbols / host_symbols, but NEVER cleared between chunks.
+    chunk_fns IS cleared per chunk; private_fns is not. This violates
+    the contract in src/jit-common.h:45-50 ("Reset per chunk").
+
+  Consequence:
+    chunk1 compiles static Foo  -> private_fns += "Foo"
+    chunk2 compiles public Foo  -> finalize skips registration
+    chunk3's reference to Foo   -> JIT: unresolved symbol '_Foo'
+
+REPRO BEFORE (C1, HEAD=06c7951):
+
+  $ echo 'static I64 Foo() { return 11; }
+  public I64 Foo() { return 22; }
+  "%d\n", Foo();' | hcc -repl --install-dir=...
+  JIT: unresolved symbol '_Foo'
+
+REPRO AFTER (C2, HEAD=current):
+
+  $ echo 'static I64 Foo() { return 11; }
+  public I64 Foo() { return 22; }
+  "%d\n", Foo();' | hcc -repl --install-dir=...
+  22
+
+CORRECTION (production diff):
+
+  src/jit-common.c:576         + mapClear(jit->private_fns)
+  src/jit-common.c:908         + if (jit->private_fns) mapRelease(jit->private_fns)
+
+  Both changes are minimal. Both are inside ACT §17's authorized
+  file list. Both directly mirror the lifecycle contract declared
+  in src/jit-common.h:45-50 and the lifecycle of chunk_fns.
+
+SCOPE:
+
+  changed_lines = 8  (6 of comment, 2 of substantive code)
+  pre_authorized_files_modified = 1 (src/jit-common.c only)
+  other_production_files_modified = 0
+
+CONSERVATION:
+
+  - bootstrap chain: identical (no bootstrap source touched)
+  - LEXER04 engineering: src/lexer.c, src/lexer.h,
+    tools/bootstrap/selfhost-lexer-link.HC unchanged
+  - BootstrapLinkDirective ABI: unchanged (no callers touched)
+  - Public function linkage: still external (regression tests below)
+  - Existing static-function tests: still pass
+  - Native x86_64 S01..S08: still pass (re-verified)
+
+RED_COUNT_AFTER_C2 = 0
+
+REGRESSION_GUARD_INSTALLATION:
+  tests/compiler/static-function-linkage/
+    s01..s08 fixtures + Makefile target installed
+    for durable adversarial coverage.
