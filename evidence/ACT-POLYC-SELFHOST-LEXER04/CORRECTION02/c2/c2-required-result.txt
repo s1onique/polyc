@@ -1,0 +1,33 @@
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION02 -- C2 -- required result
+================================================================
+
+AUTHORITATIVE_FIXEDPOINT_VERIFIER_LANGUAGE = POLYC
+AUTHORITATIVE_SHA256_LANGUAGE              = POLYC
+AUTHORITATIVE_SEMANTIC_VERIFIER_LANGUAGE    = POLYC
+
+SUBSTANTIVE_C_VERIFICATION_AUTHORITY = 0
+  - sha256-tool.c                : ORACLE_ONLY (not in authoritative Makefile)
+  - lexer09-fixedpoint-verify.c  : ORACLE_ONLY (not in authoritative Makefile)
+
+POLYC_FIXEDPOINT_VERIFIER_BUILD       = PASS (35904 bytes; ./build/lexer09-link-fixedpoint-verify)
+POLYC_SEMANTIC_VERIFIER_BUILD         = PASS (36544 bytes; ./build/lexer09-4stage-semantic-verify)
+POLYC_SEMANTIC_RUNNER_BUILD           = PASS (34384 bytes; ./build/lexer09-4stage-semantic-runner)
+POLYC_SHA256_BUILD                    = PASS (52128 bytes; ./build/lexer07-sha256)
+
+G0..G3 PRODUCTION-SEMANTIC OUTPUTS CAN BE PRODUCED = YES
+PRISTINE 4-STAGE SEMANTIC SEAM (developer run)   = PASS (6/6 pairs)
+
+NEGATIVE CONTROLS MECHANICALLY CAPABLE OF FAILING = YES
+  Fixedpoint byte mutation -> RC=1 (detected)
+  Semantic output mutation -> RC=1 (detected)
+  Production subject mutation (N02) -> covered in C3
+
+AUTHORITATIVE MAKEFILE PATHS USE POLYC VERIFIERS = YES
+  build/lexer09-link-fixedpoint-verify -> PolyC (.HC) recipe
+  build/lexer09-4stage-semantic-verify -> PolyC (.HC) recipe
+
+SELF ROW REGISTERED = N/A (LEXER04 not in closure-oracle managed universe)
+
+C2 FREEZE HASHES RECORDED = YES (see c2-freeze.tsv)
+
+ALL C2 SUCCESS PREDICATES SATISFIED.

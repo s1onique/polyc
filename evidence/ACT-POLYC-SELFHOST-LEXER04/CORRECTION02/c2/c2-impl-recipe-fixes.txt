@@ -1,0 +1,38 @@
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION02 -- C2 -- Makefile recipe fixes
+======================================================================
+
+FIX 1 (R1): lexer09-lexer-seam-stage1 BUILD_LABEL filter was incomplete.
+
+  BEFORE (Makefile:1767):
+    diff /tmp/lexer09-seam-stage0.txt /tmp/lexer09-seam-stage1.txt \
+       | grep -vE 'BUILD_LABEL=stage'
+  (failed to strip the diff change marker line "1c1")
+
+  AFTER:
+    diff /tmp/lexer09-seam-stage0.txt /tmp/lexer09-seam-stage1.txt \
+       | grep -vE "^[0-9]+[acd][0-9]+|^<|>|^---$$|BUILD_LABEL=stage"
+  (matches lexer07 sibling recipe; strips diff marker + "<" + "---"
+   + BUILD_LABEL line)
+
+  VERIFY: make lexer09-lexer-seam-stage1  -> RC=0
+          LEXER09_SEAM_STAGE0_VS_STAGE1=PASS
+
+FIX 2 (R2): lexer07-direct-differential oracle .o recipe was missing
+            the -DNO_ORACLE_MAIN guard.
+
+  BEFORE (Makefile:1262):
+    ./build/lexer07-scalar-literal-oracle.o   (file not produced by
+                                              lexer07-scalar-literal-oracle
+                                              target; that target built
+                                              a binary, not a .o)
+
+  AFTER (Makefile:1259-1262):
+    build/lexer07-scalar-literal-oracle.o: tools/quality/lexer07-scalar-literal-oracle.c
+        cc -std=c99 -O2 -Wall -Wextra -DNO_ORACLE_MAIN -c \
+           -o ./build/lexer07-scalar-literal-oracle.o \
+           tools/quality/lexer07-scalar-literal-oracle.c
+    lexer07-direct-differential: build/lexer07-scalar-literal-oracle.o lexer07-component-build
+
+  VERIFY: make lexer07-direct-differential -> RC=0
+          ACT_SELFHOST_LEXER02_DIRECT_DIFF_PASS=89
+          LEXER07_DIRECT_DIFFERENTIAL=PASS

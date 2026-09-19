@@ -1,0 +1,58 @@
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION02 -- C2 -- PolyC fixedpoint verifier
+==========================================================================
+
+AUTHORITATIVE FIXEDPOINT VERIFIER: PolyC.
+
+  tools/quality/lexer09-4stage-fixedpoint-verify.HC
+
+REPLACES (under F-POLYC-TOOLS):
+  tools/quality/lexer09-fixedpoint-verify.c  (deprecated)
+  tools/quality/sha256-tool.c               (deprecated)
+
+REUSES (no new PolyC SHA needed):
+  tools/quality/lexer07-sha256.HC            (existing PolyC SHA)
+  tools/quality/lexer07-objects-byte-equal.HC (existing helper)
+
+BUILD:
+  $ ./hcc --install-dir=$(TEST_PREFIX) tools/quality/lexer09-4stage-fixedpoint-verify.HC -o ./build/lexer09-link-fixedpoint-verify
+
+  -> 35904 bytes binary
+  -> links via libtos.a (PolyC SHA call uses SpawnAndCapture)
+
+OUTPUT SCHEMA (matches deprecated C verifier exactly):
+  FILE[i] path=... size=... sha256=...
+  PAIR Gx_Gy file_i=... file_j=... size_a=... size_b=... equal=YES|NO
+  FIXEDPOINT_VERIFIER_RC=0 verdict=PASS
+  LEXER09_LINK_FIXED_POINT_4_GENERATIONS=PASS
+
+  (or RC=1/2/3/4 + reason codes)
+
+PRISTINE TEST:
+  $ ./build/lexer09-link-fixedpoint-verify build/lexer09-fixedpoint/link.g{0,1,2,3}.o
+  FILE[0] path=build/lexer09-fixedpoint/link.g0.o size=2976 sha256=70879e46fa496bce0a57a7a8006a42723d81938e22753542c0aebcbfc7f57d6e
+  FILE[1] path=build/lexer09-fixedpoint/link.g1.o size=2976 sha256=70879e46fa496bce0a57a7a8006a42723d81938e22753542c0aebcbfc7f57d6e
+  FILE[2] path=build/lexer09-fixedpoint/link.g2.o size=2976 sha256=70879e46fa496bce0a57a7a8006a42723d81938e22753542c0aebcbfc7f57d6e
+  FILE[3] path=build/lexer09-fixedpoint/link.g3.o size=2976 sha256=70879e46fa496bce0a57a7a8006a42723d81938e22753542c0aebcbfc7f57d6e
+  PAIR G0_G1 file_i=0 file_j=1 size_a=2976 size_b=2976 equal=YES
+  PAIR G0_G2 file_i=0 file_j=2 size_a=2976 size_b=2976 equal=YES
+  PAIR G0_G3 file_i=0 file_j=3 size_a=2976 size_b=2976 equal=YES
+  PAIR G1_G2 file_i=1 file_j=2 size_a=2976 size_b=2976 equal=YES
+  PAIR G1_G3 file_i=1 file_j=3 size_a=2976 size_b=2976 equal=YES
+  PAIR G2_G3 file_i=2 file_j=3 size_a=2976 size_b=2976 equal=YES
+  FIXEDPOINT_VERIFIER_RC=0 verdict=PASS
+  LEXER09_LINK_FIXED_POINT_4_GENERATIONS=PASS
+
+NEGATIVE CONTROL:
+  $ cp build/lexer09-fixedpoint/link.g3.o /tmp/link.g3.mutated.o
+  $ printf '\xff' | dd of=/tmp/link.g3.mutated.o bs=1 count=1 seek=42 conv=notrunc
+  $ ./build/lexer09-link-fixedpoint-verify build/lexer09-fixedpoint/link.g{0,1,2,3}.o /tmp/link.g3.mutated.o
+  ...
+  PAIR G3_VS_MUTATED file_i=3 file_j=4 size_a=2976 size_b=2976 equal=NO
+  BYTE_MISMATCH_DETECTED=YES
+  NEGATIVE_CONTROL=PASS
+  FIXEDPOINT_VERIFIER_RC=1 verdict=NEGATIVE_CONTROL_DETECTED_MISMATCH
+
+  RC=1 on negative control (mismatch detected). Verifier is load-bearing.
+
+POLYC_FIXEDPOINT_VERIFIER = PASS
+FIXEDPOINT_VERIFIER_LOAD_BEARING = YES

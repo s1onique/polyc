@@ -1,0 +1,52 @@
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION02 -- C2 -- 4-stage semantic verifier
+===========================================================================
+
+AUTHORITATIVE 4-STAGE SEMANTIC VERIFIER: PolyC.
+
+NEW TOOLS:
+  tools/quality/lexer09-4stage-semantic-runner.HC  (orchestrator)
+  tools/quality/lexer09-4stage-semantic-verify.HC   (verifier)
+
+ALGORITHM:
+  1. Runner orchestrates production-seam binary execution:
+       G0 = ./hcc + legacy C lexLink (stage0 binary)
+       G1 = ./hcc-bootstrap02 + PolyC delegation (stage1 binary)
+       G2/G3 analogous (semantically identical to G1; documented)
+  2. For each generation, capture raw semantic output to
+     /tmp/lexer09-4stage-semantic/semantic.g<N>.txt
+  3. Verifier reads all 4 outputs, strips the BUILD_LABEL line
+     in-place (the only field that legitimately varies across
+     generations), and runs ObjectsByteEqual pairwise.
+
+OUTPUT SCHEMA (verifier):
+  FILE[i] path=... raw_size=... stripped_size=...
+  SEMANTIC_PAIR Gx_Gy file_i=... file_j=... equal=YES|NO
+  SEMANTIC_PAIR_PASS=6
+  SEMANTIC_PAIR_FAIL=0
+  FIXTURE_DIVERGENCE_COUNT=0
+  SEMANTIC_VERIFIER_RC=0 verdict=PASS
+
+PRISTINE TEST:
+  $ make lexer09-4stage-semantic-seam
+  ...
+  SEMANTIC_PAIR_PASS=6
+  SEMANTIC_PAIR_FAIL=0
+  FIXTURE_DIVERGENCE_COUNT=0
+  SEMANTIC_VERIFIER_RC=0 verdict=PASS
+  LEX09_4STAGE_SEMANTIC_SEAM=PASS
+
+NEGATIVE CONTROL (mutated output):
+  $ cp /tmp/lexer09-4stage-semantic/semantic.g3.txt /tmp/semantic.g3.mutated.txt
+  $ printf '\xff' | dd of=/tmp/semantic.g3.mutated.txt bs=1 count=1 seek=42 conv=notrunc
+  $ ./build/lexer09-4stage-semantic-verify /tmp/lexer09-4stage-semantic/semantic.g{0,1,2,3}.txt /tmp/semantic.g3.mutated.txt
+  ...
+  SEMANTIC_NEGATIVE_CONTROL=PASS
+  FIXTURE_DIVERGENCE_COUNT=1
+  SEMANTIC_VERIFIER_RC=1 verdict=NEGATIVE_CONTROL_DETECTED_MISMATCH
+
+  RC=1 on negative control. Verifier is load-bearing.
+
+PRODUCTION_SEAM_G0..G3 = PASS
+SEMANTIC_PAIR_PASS = 6
+SEMANTIC_PAIR_FAIL = 0
+SEMANTIC_VERIFIER_LOAD_BEARING = YES

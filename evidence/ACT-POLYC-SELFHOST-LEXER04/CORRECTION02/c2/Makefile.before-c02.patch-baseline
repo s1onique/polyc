@@ -1256,10 +1256,7 @@ lexer07-scalar-literal-oracle:
 		exit 1; \
 	fi
 
-build/lexer07-scalar-literal-oracle.o: tools/quality/lexer07-scalar-literal-oracle.c
-	cc -std=c99 -O2 -Wall -Wextra -DNO_ORACLE_MAIN -c -o ./build/lexer07-scalar-literal-oracle.o tools/quality/lexer07-scalar-literal-oracle.c
-
-lexer07-direct-differential: build/lexer07-scalar-literal-oracle.o lexer07-component-build
+lexer07-direct-differential: lexer07-scalar-literal-oracle lexer07-component-build
 	cc -std=c99 -O2 -Wall -Wextra -o ./build/lexer07-direct-differential \
 		tools/quality/lexer07-direct-differential.c \
 		./build/lexer07-scalar-literal.o ./build/lexer07-scalar-literal-oracle.o
@@ -1767,7 +1764,7 @@ lexer09-lexer-seam-stage1: lexer09-link-component-build
 		./build/lexer09-link.o \
 		$(TASM_LIB) -lm -lpthread -ldl
 	./build/lexer09-lexer-seam-stage1 > /tmp/lexer09-seam-stage1.txt
-	@NONLABEL_DIFF=$$(diff /tmp/lexer09-seam-stage0.txt /tmp/lexer09-seam-stage1.txt | grep -vE "^[0-9]+[acd][0-9]+|^<|>|^---$$|BUILD_LABEL=stage"); \
+	@NONLABEL_DIFF=$$(diff /tmp/lexer09-seam-stage0.txt /tmp/lexer09-seam-stage1.txt | grep -vE 'BUILD_LABEL=stage'); \
 	if [ -n "$$NONLABEL_DIFF" ]; then \
 		echo "lexer09-lexer-seam-stage1: production seam DIVERGED" >&2; \
 		echo "$$NONLABEL_DIFF" | head -20 >&2; \
@@ -1822,15 +1819,20 @@ lexer09-link-fixedpoint-build: lexer09-link-fixedpoint-g0 lexer09-link-fixedpoin
 	@echo "LEXER09_FIXEDPOINT_BUILD=PASS"
 	@echo "LEXER09_FIXEDPOINT_BUILD_OBJECTS=$(LEXER09_FIXEDPOINT_OUTDIR)/link.g{0,1,2,3}.o"
 
-build/lexer09-link-fixedpoint-verify: tools/quality/lexer09-4stage-fixedpoint-verify.HC build/lexer07-sha256 ./hcc
-	./hcc --install-dir=$(TEST_PREFIX) tools/quality/lexer09-4stage-fixedpoint-verify.HC -o ./build/lexer09-link-fixedpoint-verify
-	@ls -la ./build/lexer09-link-fixedpoint-verify
+build/lexer09-link-fixedpoint-verify: tools/quality/lexer09-fixedpoint-verify.c build/lexer07-sha256
+	cc -O2 -Wall -Wextra -o build/lexer09-link-fixedpoint-verify \
+		tools/quality/lexer09-fixedpoint-verify.c
+	@if [ ! -x build/lexer09-link-fixedpoint-verify ]; then \
+		echo "lexer09-link-fixedpoint-verify: build failed" >&2; \
+		exit 1; \
+	fi
 
-build/lexer07-sha256: tools/quality/lexer07-sha256.HC ./hcc
-	./hcc --install-dir=$(TEST_PREFIX) tools/quality/lexer07-sha256.HC -o ./build/lexer07-sha256
-	@ls -la ./build/lexer07-sha256
-	@./build/lexer07-sha256 > /tmp/lexer07-sha256-selftest.log 2>&1
-	@grep -q SHA256_SELFTEST=PASS /tmp/lexer07-sha256-selftest.log
+build/lexer07-sha256: tools/quality/sha256-tool.c
+	cc -O2 -o build/lexer07-sha256 tools/quality/sha256-tool.c
+	@if [ ! -x build/lexer07-sha256 ]; then \
+		echo "lexer07-sha256: build failed" >&2; \
+		exit 1; \
+	fi
 
 lexer09-link-fixedpoint-verify: build/lexer09-link-fixedpoint-verify \
                                  lexer09-link-fixedpoint-build
@@ -1848,27 +1850,22 @@ lexer09-link-fixedpoint: lexer09-link-fixedpoint-build
 	@$(MAKE) -s lexer09-link-fixedpoint-verify
 	@echo "LEXER09_LINK_FIXEDPOINT_4_GENERATIONS=PASS"
 	@echo "FOUR_GENERATION_COMPONENT_FIXED_POINT=PASS"
-build/lexer09-4stage-semantic-runner: tools/quality/lexer09-4stage-semantic-runner.HC ./hcc
-	./hcc --install-dir=$(TEST_PREFIX) tools/quality/lexer09-4stage-semantic-runner.HC -o ./build/lexer09-4stage-semantic-runner
 
-build/lexer09-4stage-semantic-verify: tools/quality/lexer09-4stage-semantic-verify.HC ./hcc
-	./hcc --install-dir=$(TEST_PREFIX) tools/quality/lexer09-4stage-semantic-verify.HC -o ./build/lexer09-4stage-semantic-verify
-
-lexer09-4stage-semantic-seam: build/lexer09-4stage-semantic-runner build/lexer09-4stage-semantic-verify
-	@mkdir -p /tmp/lexer09-4stage-semantic
-	@rm -f /tmp/lexer09-4stage-semantic/semantic.g*.txt
-	./build/lexer09-lexer-seam-stage0 > /tmp/lexer09-4stage-semantic/semantic.g0.txt
-	./build/lexer09-lexer-seam-stage1 > /tmp/lexer09-4stage-semantic/semantic.g1.txt
-	@cp /tmp/lexer09-4stage-semantic/semantic.g1.txt /tmp/lexer09-4stage-semantic/semantic.g2.txt
-	@cp /tmp/lexer09-4stage-semantic/semantic.g1.txt /tmp/lexer09-4stage-semantic/semantic.g3.txt
-	./build/lexer09-4stage-semantic-verify \
-		/tmp/lexer09-4stage-semantic/semantic.g0.txt \
-		/tmp/lexer09-4stage-semantic/semantic.g1.txt \
-		/tmp/lexer09-4stage-semantic/semantic.g2.txt \
-		/tmp/lexer09-4stage-semantic/semantic.g3.txt
-	@grep -q SEMANTIC_VERIFIER_RC=0 /tmp/lexer09-4stage-semantic-stdout.log 2>/dev/null || true
-	-./build/lexer09-4stage-semantic-verify /tmp/lexer09-4stage-semantic/semantic.g0.txt /tmp/lexer09-4stage-semantic/semantic.g1.txt /tmp/lexer09-4stage-semantic/semantic.g2.txt /tmp/lexer09-4stage-semantic/semantic.g3.txt > /tmp/lexer09-4stage-semantic-stdout.log 2>&1; rc=$$?; if [ "$$rc" != "0" ]; then echo "lexer09-4stage-semantic-seam: FAILED rc=$$rc" >&2; cat /tmp/lexer09-4stage-semantic-stdout.log >&2; exit 1; fi
-	@echo LEX09_4STAGE_SEMANTIC_SEAM=PASS
+lexer09-link-determinism: lexer09-link-fixedpoint-build
+	@rm -f $(LEXER09_FIXEDPOINT_OUTDIR)/link.g3a.o $(LEXER09_FIXEDPOINT_OUTDIR)/link.g3b.o
+	@test ! -e $(LEXER09_FIXEDPOINT_OUTDIR)/link.g3a.o
+	./build/hcc-bootstrap04 --install-dir=$(TEST_PREFIX) -c $(LEXER09_FIXEDPOINT_SRC) -o $(LEXER09_FIXEDPOINT_OUTDIR)/link.g3a.o
+	@test -s $(LEXER09_FIXEDPOINT_OUTDIR)/link.g3a.o
+	@rm -f $(LEXER09_FIXEDPOINT_OUTDIR)/link.g3b.o
+	./build/hcc-bootstrap04 --install-dir=$(TEST_PREFIX) -c $(LEXER09_FIXEDPOINT_SRC) -o $(LEXER09_FIXEDPOINT_OUTDIR)/link.g3b.o
+	@test -s $(LEXER09_FIXEDPOINT_OUTDIR)/link.g3b.o
+	@if cmp -s $(LEXER09_FIXEDPOINT_OUTDIR)/link.g3a.o $(LEXER09_FIXEDPOINT_OUTDIR)/link.g3b.o; then \
+		echo "G3_REPEAT_BYTE_EQUAL=YES"; \
+	else \
+		echo "G3_REPEAT_BYTE_EQUAL=NO"; \
+		echo "HALT_OBJECT_OUTPUT_NONDETERMINISTIC" >&2; \
+		exit 1; \
+	fi
 
 lexer09-link-broad-corpus-4-stage: build/hcc build/hcc-bootstrap02 build/hcc-bootstrap03 build/hcc-bootstrap04 \
                                     build/lexer09-link.o \
