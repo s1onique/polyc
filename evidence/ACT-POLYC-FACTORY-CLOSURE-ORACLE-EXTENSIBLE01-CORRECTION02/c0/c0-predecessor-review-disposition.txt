@@ -1,0 +1,36 @@
+ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION02 / c0 / c0-predecessor-review-disposition.txt
+
+Disposition of CORRECTION01 by post-closure reviewer (2026-09-18).
+
+Three new mechanical defects found in CORRECTION01 closure:
+
+1. F-POLYC-TOOLS still violated. CORRECTION01 produced a PolyC
+   binary that is a thin driver invoking a 49-LOC shell file
+   containing the substantive 12-case matrix (expect(), fixture
+   construction, checker invocation, RC + grep matching,
+   PASS/FAIL aggregation). LOC-cap factorization forbidden by
+   F-POLYC-TOOLS. The shell does not become bootstrap glue by
+   staying under 50 LOC; it becomes that by holding no logic.
+
+2. C3 phase binding is internally impossible. CORRECTION01
+   claimed "git diff 1054ae2..HEAD -- manifest = empty" while
+   simultaneously recording SHA c2128971... (a non-1054ae2 SHA)
+   for the manifest at C3. Either the diff is empty (=>SHA is
+   13c843e5ff, the 1054ae2 SHA) or the SHA is c2128971... (=>diff
+   is non-empty because C2b added a row). Cannot have both.
+
+3. Patch hygiene: 4 evidence files have trailing blank lines
+   that git diff --check reports as errors:
+     c2/c2-p02-n01-n05-regression.txt:29
+     c3/c3-act-body-unchanged.txt:10
+     c3/c3-checker-unchanged.txt:6
+     c3/c3-manifest-unchanged.txt:6
+   These are mechanically detectable, mechanically repairable,
+   but they exist in CORRECTION01 evidence per F14.
+
+Disposition: CORRECTION01's PASS_TRUE_GREEN verdict is
+REJECTED. Reclassification: PREDECESSOR_RECLASSIFICATION =
+FALSE_GREEN. Three new bounded repairs recorded in
+ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION02.
+
+Board authorization: granted to proceed with CORRECTION02.
