@@ -1,0 +1,6 @@
+symbol	has_declaration	has_definition	definition_in_arch	src	definition_reachable_from_build	definition_reachable_from_archive	notes
+_FREE	YES (memory.HC public Free)	YES (asm _FREE::)	all.o	memory.HC:140	YES (asm _FREE:: resolved at link time)	YES	uppercase symbol via _FREE:: in asm block; Free() PolyC entry calls it
+_STRNCMP	YES (strings.HC public StrNCmp)	YES (asm _STRNCMP::, both archs)	all.o	strings.HC:113 (x86_64) / :307 (aarch64)	YES	YES	asm-resolved via _STRNCMP:: on both architectures
+_SpawnAndCapture	YES (tooling.HC:253 public + tooling_defs.HH:112 forward)	YES (tooling.HC:253 public body)	NOT in all.o	tooling.HC:253	YES in source; NOT in compiled all.o	NO	source body exists; tool was not incorporated into the canonical all.o
+_MEMSET	YES (memory.HC public MemSet)	YES (asm _MEMSET::)	all.o	memory.HC:157	YES	YES	asm-resolved uppercase _MEMSET::
+_STRLEN_FAST	YES (strings.HC public StrLen_Fast)	YES (asm _STRLEN_FAST::, both archs)	all.o	strings.HC:151 (x86_64) / :295 (aarch64)	YES	YES	asm-resolved uppercase _STRLEN_FAST::

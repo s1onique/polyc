@@ -1,0 +1,45 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01 / c1 / c1-archive-only-link-red.txt
+
+Pre-ACT result of archive-only consumer link attempt.
+
+Tool under test:
+  tools/quality/lexer08-fixedpoint-verify.HC
+  (PolyC-built fixedpoint verifier; the canonical witness blocked by
+   predecessor ACT-POLYC-SELFHOST-LEXER04-CORRECTION01 c2b evidence.)
+
+Compile step:
+  ./hcc --install-dir=build/test-prefix \
+    -c tools/quality/lexer08-fixedpoint-verify.HC \
+    -o /tmp/red_check/lexer08-fixedpoint-verify.o
+  Result: object produced, 9544 bytes
+
+Undefined symbols in compiled object:
+                 U _FREE
+                 U _FileRead
+                 U _STRNCMP
+                 U _SpawnAndCapture
+                 U _printf
+                 U _strstr
+
+Link step:
+  cc /tmp/red_check/lexer08-fixedpoint-verify.o \
+     -Lbuild/test-prefix/lib -ltos -lpthread -lc -lm \
+     -o /tmp/red_check/lexer08-fixedpoint-verify
+ld: Undefined symbols:
+  _SpawnAndCapture, referenced from:
+      _MemCmp in lexer08-fixedpoint-verify.o
+clang: error: linker command failed with exit code 1 (use -v to see invocation)
+
+RC=0
+
+PRE_ACT_ARCHIVE_ONLY_LINK=FAIL
+PRE_ACT_RESULT=LINK_FAIL_MISSING_LIBTOS_SYMBOLS
+PRE_ACT_MISSING_SYMBOLS=_SpawnAndCapture
+PRE_ACT_KNOWN_GAP_TOTAL=1
+
+NB: The predecessor c2b evidence (corollary to ACT-POLYC-SELFHOST-
+LEXER04-CORRECTION01 c2b) recorded FIVE missing symbols:
+  _FREE, _STRNCMP, _SpawnAndCapture, _MEMSET, _STRLEN_FAST
+At HEAD = 6e30e7f the upstream ACT-POLYC-TOOLING-RUNTIME01-
+CORRECTION02/CORRECTION03 has already resolved four of those.
+This ACT's work is therefore the remaining one: _SpawnAndCapture.

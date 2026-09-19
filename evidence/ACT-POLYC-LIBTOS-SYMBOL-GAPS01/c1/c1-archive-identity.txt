@@ -1,0 +1,59 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01 / c1 / c1-archive-identity.txt
+
+=== canonical archive candidates ===
+
+build/test-prefix/lib/libtos.a                     size=150360     sha256=25405f1f61bc43ce78b9b14cac63372aa5cc4ed98e1ac73a954ae024df3a4d60
+src/holyc-lib/libtos.a                             size=150360     sha256=25405f1f61bc43ce78b9b14cac63372aa5cc4ed98e1ac73a954ae024df3a4d60
+./libtos.a                                         size=151376     sha256=aa4856f7e19cf70fa481bc6adcc9a2e6d631f77cbf86e52dd245f372d7e3c04a
+src/holyc-lib/libtos.dylib                         size=195312     sha256=43bb265b34e4fbe2da4ca90410bbe0912ed0cf45888b68a26cce2f3e597f2a9f
+./libtos.dylib                                     size=195328     sha256=07285bd74f808d0f79580d0fbe13590d48493fab12687c698b56b5a76a896a5b
+src/holyc-lib/tos.a                                size=142640     sha256=e7135fde3a109ed2f7c6b2d142bebd77c43ad4cd87b15bc11791ff2f26ce524e
+
+Identity inference:
+  - src/holyc-lib/libtos.a and build/test-prefix/lib/libtos.a are byte-identical.
+  - These are the CANONICAL archive (CMake install seam, target test-prefix-install).
+  - ./libtos.a is a DIFFERENT file (extra just_sh.o); not canonical.
+  - src/holyc-lib/libtos.dylib is the canonical dylib counterpart.
+  - src/holyc-lib/tos.a is the deprecated lowercase ABI archive; not canonical.
+
+=== Build/Test prefix inventory ===
+
+-rw-r--r-- 1 chistyakov staff 135992 Sep 18 15:43 build/test-prefix/lib/all.o
+-rw-r--r-- 1 chistyakov staff    560 Sep 18 15:43 build/test-prefix/lib/errno_shim.o
+-rw-r--r-- 1 chistyakov staff 150360 Sep 19 01:57 build/test-prefix/lib/libtos.a
+
+=== Sub-members (after 'ar x') ===
+
+total 152
+-rw-r--r-- 1 chistyakov wheel   6720 Sep 19 10:56 __.SYMDEF SORTED
+-rw-r--r-- 1 chistyakov wheel 143480 Sep 19 10:56 all.o
+
+(NB: the archive stores ONE all.o plus the index. The standalone
+build/test-prefix/lib/all.o at 135992 bytes is a STALE object from an
+earlier build epoch; the all.o embedded inside libtos.a is a different
+143480-byte object produced by a later build.)
+
+=== Build producer (hcc self-identify) ===
+
+hcc: Mach-O 64-bit executable arm64
+hcc v0.0.15-beta
+binary: /usr/local/hcc
+commit-hash: 6ba9f5ec952b0f0d6301fdd2f13aa3bfa830404e
+arch: aarch64-apple-darwin
+build: Release
+
+=== Build hcc-bootstraps (working alternates) ===
+
+build/hcc-bootstrap02                    commit=commit-hash: a09104d08e8e90c20e15fbea38d514a9c9619189
+build/hcc-bootstrap03                    commit=commit-hash: ffee58b81ae42a4ff094618fcaa965223a40b848
+build/hcc-bootstrap04                    commit=commit-hash: ffee58b81ae42a4ff094618fcaa965223a40b848
+
+=== ACTIVE canonical archive ===
+
+LIBTOS_ARCHIVE_PATH=build/test-prefix/lib/libtos.a
+LIBTOS_ARCHIVE_SIZE_BYTES=150360
+LIBTOS_ARCHIVE_SHA256=25405f1f61bc43ce78b9b14cac63372aa5cc4ed98e1ac73a954ae024df3a4d60
+LIBTOS_ARCHIVE_BUILD_TARGET=aarch64-apple-darwin (host)
+LIBTOS_ARCHIVE_BUILD_PRODUCER=commit-hash: 6ba9f5ec952b0f0d6301fdd2f13aa3bfa830404e (./hcc)
+LIBTOS_ARCHIVE_BUILD_HOST=darwin arm64 (this build)
+LIBTOS_ARCHIVE_MEMBER_COUNT=1 (all.o)

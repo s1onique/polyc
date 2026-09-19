@@ -1,0 +1,57 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01 / c1 / c1-spawn-and-capture-contract.txt
+
+ABI SURFACE (frozen from repository authority):
+  declaration: src/holyc-lib/tooling.HC:253 (public decl + body)
+                src/holyc-lib/tooling_defs.HH:112 (forward decl for harnesses)
+  body:        src/holyc-lib/tooling.HC:253-404
+
+SIGNATURE (verbatim from tooling.HC:253-255):
+  public I64 SpawnAndCapture(U8 *program, U8 **args,
+                             U8 **out, U8 **err)
+
+ARGUMENT CONTRACT:
+  program  U8 *    Absolute path to the executable. NULL -> -1.
+                   No PATH search (direct argv execv).
+  args     U8 **   Null-terminated argv vector. argv[0] is the program
+                   name by convention. NULL -> -1.
+  out      U8 **   Output pointer-pointer. On success, *out is set to a
+                   malloc'd, NUL-terminated buffer holding the child's
+                   stdout. Caller MUST Free(*out).
+                   *out is set to NULL on entry. On spawn failure, *out
+                   may be NULL or a 1-byte empty buffer.
+  err      U8 **   Same contract as out, but for stderr.
+
+RETURN CONTRACT (per tooling.HC:219-227 documentation):
+  0..255        Normal exit code (decode of WEXITSTATUS via WaitDecode).
+  127           execv failed (child could not be executed).
+  128+signum    Abnormal termination (signal).
+  -1            Parent-side fork failure OR NULL program/args OR pipe() failed.
+
+OWNERSHIP:
+  *out and *err buffers, when set, are malloc'd. The caller MUST Free()
+  them. Either may be a 1-byte empty NUL buffer (NOT NULL) on success
+  with empty output.
+
+EXIT-STATUS SEMANTICS:
+  WaitDecode(status) decodes waitpid's raw status:
+    WIFEXITED   -> return WEXITSTATUS
+    WIFSIGNALED -> return 128 + WTERMSIG
+  See WaitDecode in tooling.HC:152-178 for the full decode matrix.
+
+STDOUT/STDERR DRAIN SEMANTICS:
+  Concurrent drain via poll(2). Read happens on POLLIN, POLLHUP, POLLERR.
+  EOF only when read() returns 0. POLLHUP-with-buffered-data does NOT
+  close the fd (see tooling.HC:313-322 rationale).
+  Pipes created via pipe(2); child gets dup2(1) and dup2(2) to the write
+  ends; parent closes its copies of the write ends.
+
+NO SHELL:
+  Direct execv(program, args). NO /bin/sh -c. NO system(). See
+  tooling.HC:13-17 for the no-shell contract.
+
+NO ENVIRONMENT-PASSING:
+  ABI does not include envp. The child inherits the parent's environ
+  via execv's default behavior. Comment at tools/selfhost/selfhost-component.HC:1261
+  acknowledges this: "SpawnAndCapture has no envp parameter".
+
+SPAWN_AND_CAPTURE_ABI_FROZEN=YES
