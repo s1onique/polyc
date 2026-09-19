@@ -1,0 +1,27 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION02 / c3 / c3-ac03.txt
+
+AC03: make lib-tos is provenance-strict. Missing bootstrap
+  fails with precondition error that names HCC_BOOTSTRAP_PROVENANCE_SHA.
+
+PROCEDURE:
+  mv build/hcc-bootstrap04 /tmp/bootstrap04.bak3
+  make lib-tos 2>&1 | tee /tmp/ac03-out.txt
+  grep -c HCC_BOOTSTRAP_PROVENANCE_SHA /tmp/ac03-out.txt
+  mv /tmp/bootstrap04.bak3 build/hcc-bootstrap04
+
+RESULT:
+make: error: couldn't create cache file '/var/folders/0g/mpt_55f524ndzxymkp20wjfc0000gn/T/xcrun_db-o4UtMMeU' (errno=Operation not permitted)
+make: error: couldn't create cache file '/var/folders/0g/mpt_55f524ndzxymkp20wjfc0000gn/T/xcrun_db-UJN7fqma' (errno=Operation not permitted)
+lib-tos: FAIL: builder './build/hcc-bootstrap04' not found or not executable
+lib-tos: expected HCC_BOOTSTRAP_PROVENANCE_SHA: <unmeasurable, builder missing>
+lib-tos: required LIBTOS_HCC SHA-256: cannot measure (builder absent)
+lib-tos: build/hcc-bootstrap04 is REQUIRED for fail-closed lib-tos
+lib-tos: build it via 'make bootstrap04-component-build' first
+lib-tos: or override with 'make lib-tos LIBTOS_HCC=/path/to/known-good-hcc'
+make: *** [lib-tos] Error 1
+exit RC=2
+
+HCC_BOOTSTRAP_PROVENANCE_SHA token count: 1
+PASS: nonzero exit AND HCC_BOOTSTRAP_PROVENANCE_SHA named.
+
+VERDICT: PASS

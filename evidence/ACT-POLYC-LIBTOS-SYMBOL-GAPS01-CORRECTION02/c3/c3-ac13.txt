@@ -1,0 +1,27 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION02 / c3 / c3-ac13.txt
+
+AC13: Archive-only consumer link still works.
+  PASS iff:
+    cc build/runtime-contract-test.o \
+       -L./build/test-prefix/lib -ltos -lpthread -lc -lm
+    exits 0 with no undefined symbols.
+
+Note: AC13's reference to build/runtime-contract-test.o was
+a construction-time artifact. The functional witness is
+'make runtime-contract-test' which compiles and links
+the consumer archive-only and runs the matrix.
+
+PROCEDURE:
+  rm -f build/runtime-contract-test build/runtime-contract-test.o
+  make runtime-contract-test 2>&1 | tail -5
+
+RESULT:
+PASS  AC11_SAC_EMPTY_OUTPUT
+PASS  AC11_SAC_STDOUT_CAPTURE
+PASS  AC11_SAC_STDERR_CAPTURE
+RUNTIME_CONTRACT_TEST_PASS=21
+RUNTIME_CONTRACT_TEST_FAIL=0
+exit RC=0
+PASS: archive-only consumer link works.
+
+VERDICT: PASS

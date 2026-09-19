@@ -1,0 +1,39 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION02 / c3 / c3-ac04.txt
+
+AC04: Pristine archive has expected producer identity.
+
+PROCEDURE:
+  rm -f build/test-prefix/lib/libtos.a src/holyc-lib/libtos.a \
+     src/holyc-lib/all.o src/holyc-lib/errno_shim.o \
+     src/holyc-lib/producer_id.o src/holyc-lib/libtos.dylib
+  make lib-tos
+  ar t build/test-prefix/lib/libtos.a
+  nm -j build/test-prefix/lib/libtos.a | grep producer_id
+  strings build/test-prefix/lib/libtos.a | grep HCC_SHA
+
+RESULT:
+lib-tos RC=0
+
+archive members:
+ar: error: couldn't create cache file '/var/folders/0g/mpt_55f524ndzxymkp20wjfc0000gn/T/xcrun_db-fq55edAs' (errno=Operation not permitted)
+__.SYMDEF SORTED
+all.o
+errno_shim.o
+producer_id.o
+
+producer_id symbols:
+nm: error: couldn't create cache file '/var/folders/0g/mpt_55f524ndzxymkp20wjfc0000gn/T/xcrun_db-8AGEnpvM' (errno=Operation not permitted)
+producer_id.o:
+___producer_id
+
+expected SHA in archive strings:
+strings: error: couldn't create cache file '/var/folders/0g/mpt_55f524ndzxymkp20wjfc0000gn/T/xcrun_db-orIhvm5p' (errno=Operation not permitted)
+3b4474213efabcda30eb2d0c0610c6e23793f876896c8e21c5e18024b1ab40f6
+
+EXPECTED SHA: 3b4474213efabcda30eb2d0c0610c6e23793f876896c8e21c5e18024b1ab40f6
+
+nm: error: couldn't create cache file '/var/folders/0g/mpt_55f524ndzxymkp20wjfc0000gn/T/xcrun_db-X8kJw4JY' (errno=Operation not permitted)
+strings: error: couldn't create cache file '/var/folders/0g/mpt_55f524ndzxymkp20wjfc0000gn/T/xcrun_db-ODkBBfJB' (errno=Operation not permitted)
+PASS: producer-id present AND matches expected SHA.
+
+VERDICT: PASS

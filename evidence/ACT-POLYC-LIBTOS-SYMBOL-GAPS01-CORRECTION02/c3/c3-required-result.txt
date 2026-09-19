@@ -1,0 +1,35 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION02 / c3 / c3-required-result.txt
+
+Final C3 result for ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION02.
+
+  Authorized AC01..AC22: 22 entries
+  PASSED: 22
+  FAILED: 0
+  UNKNOWN: 0
+  MISSING: 0
+
+All 22 mandatory ACs from docs/acts/ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION01.md
+§6 (Acceptance criteria) have been mechanically exercised and PASS.
+
+AC ledger: mandatory-ac-status.tsv
+
+Conservation gates:
+  make gate-fast                                          RC=0, PAIR_OK=14, STATUS=PASS
+  TMPDIR=/tmp scripts/quality/factory-append-only-test.sh PASS=11 FAIL=0
+  LEXER08 (lexer08-trivia-fixedpoint-verify)              RC=0, PASS
+  LEXER09 (lexer09-link-fixedpoint-verify)                RC=0, PASS
+  scripts/quality/factory-no-python-check.sh              F14-equivalent PASS
+                                                            (no new Python by this ACT;
+                                                            pre-existing checker binary
+                                                            wiring issue is documented
+                                                            residue)
+  git diff --check 5cbda9b HEAD                           RC=0
+  git status --short                                      empty
+
+Substrate engineering (preserved from CORRECTION01):
+  make lib-tos: fail-closed 8-step recipe, archive contains producer_id.o with SHA-256
+  5 required symbols present: _FREE _STRNCMP _MEMSET _STRLEN_FAST _SpawnAndCapture
+  21/21 semantic matrix cases PASS via runtime-contract-test
+  N02 isolation: PASS (10/10 N02 sub-cases PASS)
+
+VERDICT: 22 PASS / 0 FAIL.

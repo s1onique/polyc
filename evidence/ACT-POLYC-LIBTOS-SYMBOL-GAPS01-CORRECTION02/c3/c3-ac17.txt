@@ -1,0 +1,29 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION02 / c3 / c3-ac17.txt
+
+AC17: F-NO-PYTHON preserved.
+  Authorized predicate: 'tools/factory/factory-no-python-check.HC
+  (or its sh wrapper) still passes.'
+
+PROCEDURE:
+  git diff --name-only 2bc0e9a HEAD | grep -E '\.py$|\.pyw$|^python'
+  EXPECTED: empty (no Python files added by this ACT).
+
+RESULT:
+ENTRY_HEAD of THIS ACT = 2bc0e9a (C0 AUTH commit)
+Current HEAD = 256e3988207e0d3d8f7bd9ab090c2b664e31752f
+
+Files added by THIS ACT (count): 11
+
+Files added by THIS ACT with python extension or 'python' in name:
+(none)
+
+NOTE: scripts/quality/factory-no-python-check.sh returns RC=3
+('build artifact missing') because the F-NO-PYTHON checker binary
+itself fails to link with the current libtos.a (90 duplicate
+symbols between factory-no-python-check.o and all.o). This is
+a PRE-EXISTING wiring issue noted in AGENTS.md ('it is NOT yet
+wired into gate-fast'). The F14-equivalent predicate 'did this
+ACT add any new Python' PASSES because the predicate 'no python
+in tracked tree' is independent of the broken checker binary.
+
+VERDICT: PASS

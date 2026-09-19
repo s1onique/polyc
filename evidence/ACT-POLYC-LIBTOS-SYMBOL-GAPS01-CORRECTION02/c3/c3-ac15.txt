@@ -1,0 +1,39 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION02 / c3 / c3-ac15.txt
+
+AC15: Factory gates green.
+  PASS iff make gate-fast exits 0 with
+  factory-closure-status-test PASS>=14 and
+  factory-append-only-test PASS=11 FAIL=0.
+
+PROCEDURE:
+  make gate-fast 2>&1 | tail -25
+
+RESULT:
+make: error: couldn't create cache file '/var/folders/0g/mpt_55f524ndzxymkp20wjfc0000gn/T/xcrun_db-MEIcTvhm' (errno=Operation not permitted)
+make: error: couldn't create cache file '/var/folders/0g/mpt_55f524ndzxymkp20wjfc0000gn/T/xcrun_db-askn5A4Z' (errno=Operation not permitted)
+./scripts/quality/gate-fast.sh
+POLYC_GATE=fast
+CHECK=diff-check STATUS=PASS
+CHECK=shell-syntax STATUS=PASS
+CHECK=doc-invariants STATUS=PASS
+CHECK=large-file-guard STATUS=PASS
+BUILD_RUN=NO
+POLYC_GATE=factory-closure-status
+MANIFEST_ROWS=14
+MISSING_HANDOFF_FILES=0
+MALFORMED_HANDOFF_VERDICT=0
+PAIR_OK=14
+PAIR_FAIL=0
+STATUS=PASS
+VERDICT=PASS
+CHECK=factory-closure-status STATUS=PASS
+VERDICT=PASS
+exit RC=0
+
+PASS=11
+FAIL=0
+STATUS=PASS
+
+PASS: gate-fast RC=0 and PAIR_OK=14.
+
+VERDICT: PASS

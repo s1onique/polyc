@@ -1,0 +1,25 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION02 / c3 / c3-ac02.txt
+
+AC02: make lib-tos is fail-closed.
+
+PROCEDURE:
+  rm -f build/test-prefix/lib/libtos.a src/holyc-lib/libtos.a \
+     src/holyc-lib/all.o src/holyc-lib/errno_shim.o \
+     src/holyc-lib/producer_id.o src/holyc-lib/libtos.dylib
+  make lib-tos LIBTOS_HCC=/bin/false
+
+RESULT:
+make: error: couldn't create cache file '/var/folders/0g/mpt_55f524ndzxymkp20wjfc0000gn/T/xcrun_db-FPFvj050' (errno=Operation not permitted)
+make: error: couldn't create cache file '/var/folders/0g/mpt_55f524ndzxymkp20wjfc0000gn/T/xcrun_db-4EZuhtog' (errno=Operation not permitted)
+lib-tos: FAIL: builder '/bin/false' not found or not executable
+lib-tos: expected HCC_BOOTSTRAP_PROVENANCE_SHA: <unmeasurable, builder missing>
+lib-tos: required LIBTOS_HCC SHA-256: cannot measure (builder absent)
+lib-tos: build/hcc-bootstrap04 is REQUIRED for fail-closed lib-tos
+lib-tos: build it via 'make bootstrap04-component-build' first
+lib-tos: or override with 'make lib-tos LIBTOS_HCC=/path/to/known-good-hcc'
+make: *** [lib-tos] Error 1
+exit RC=2
+
+PASS: nonzero exit AND no libtos.a written.
+
+VERDICT: PASS

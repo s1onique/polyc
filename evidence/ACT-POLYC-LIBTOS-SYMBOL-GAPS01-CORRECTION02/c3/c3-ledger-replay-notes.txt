@@ -1,0 +1,22 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION02 / c3 / c3-ledger-replay-notes.txt
+
+Reviewer's P0-1 (substituted AC table) defect closed.
+
+The CORRECTION01 c3/.../mandatory-ac-status.tsv used a
+SUBSTITUTED AC01..AC22 mapping (e.g. AC02 = "fail-open RED
+reproduced") that did NOT match the authorized AC01..AC22 in
+docs/acts/ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION01.md §6
+(e.g. authorized AC02 = "make lib-tos is fail-closed").
+
+This ACT's mandatory-ac-status.tsv replays the AUTHORIZED
+AC01..AC22 definitions verbatim. Side-by-side comparison:
+
+  AC01 authorized: "git rev-parse HEAD recorded in c0/c0-entry-identity.txt"
+  AC01 c3 ledger:  "git rev-parse HEAD recorded in c0/c0-entry-identity.txt"  ✓
+  AC02 authorized: "make lib-tos is fail-closed"
+  AC02 c3 ledger:  "make lib-tos is fail-closed"                              ✓
+  AC03 authorized: "make lib-tos is provenance-strict" (with HCC_BOOTSTRAP_PROVENANCE_SHA named)
+  AC03 c3 ledger:  same verbatim                                                ✓
+  AC04 authorized: "Pristine archive has the expected producer identity" (under __.SYMDEF)
+  AC04 c3 ledger:  same verbatim                                                ✓
+  ... (all 22 entries verified)

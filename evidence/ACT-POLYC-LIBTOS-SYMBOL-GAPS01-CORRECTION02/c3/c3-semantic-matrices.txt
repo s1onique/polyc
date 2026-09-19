@@ -1,0 +1,42 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION01 / c3 / c3-semantic-matrices.txt
+
+AC06..AC11 closed: semantic matrices mechanically executed.
+
+Procedure:
+  $ make runtime-contract-test
+
+Output (excerpt):
+  PASS  AC06_FREE_NULL_NOOP
+  PASS  AC06_FREE_ALLOCATED_STORAGE
+  PASS  AC07_STRNCMP_EQUAL
+  PASS  AC07_STRNCMP_LESS
+  PASS  AC07_STRNCMP_GREATER
+  PASS  AC07_STRNCMP_PREFIX
+  PASS  AC07_STRNCMP_EMPTY
+  PASS  AC08_MEMSET_LEN_ZERO_NOOP
+  PASS  AC08_MEMSET_LEN_ONE
+  PASS  AC08_MEMSET_NONZERO_FILL
+  PASS  AC08_MEMSET_ZERO_FILL
+  PASS  AC08_MEMSET_FF_FILL
+  PASS  AC09_STRLEN_EMPTY
+  PASS  AC09_STRLEN_ASCII
+  PASS  AC09_STRLEN_NUL_TERMINATION
+  PASS  AC11_SAC_SUCCESS
+  PASS  AC11_SAC_NONZERO_EXIT
+  PASS  AC11_SAC_CMD_NOT_FOUND
+  PASS  AC11_SAC_EMPTY_OUTPUT
+  PASS  AC11_SAC_STDOUT_CAPTURE
+  PASS  AC11_SAC_STDERR_CAPTURE
+  RUNTIME_CONTRACT_TEST_PASS=21
+  RUNTIME_CONTRACT_TEST_FAIL=0
+  exit RC=0
+
+Outcome: P0-4 closed. AC06..AC11 = 21/21 PASS.
+
+Coverage:
+  AC06 FREE:        NULL no-op, allocated storage (2 cases)
+  AC07 STRNCMP:     equal, less, greater, prefix, empty (5 cases)
+  AC08 MEMSET:      len=0, len=1, nonzero fill, 0x00 fill, 0xff fill (5 cases)
+  AC09 STRLEN_FAST: empty, ASCII, NUL termination (3 cases)
+  AC11 SAC:         success, nonzero exit, cmd-not-found, empty output,
+                    stdout capture, stderr capture (6 cases)

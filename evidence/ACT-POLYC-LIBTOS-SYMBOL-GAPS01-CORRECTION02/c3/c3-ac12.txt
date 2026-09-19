@@ -1,0 +1,50 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION02 / c3 / c3-ac12.txt
+
+AC12: N02 negative control isolated.
+  Corrupted archive contains all pristine members AND only
+  _SpawnAndCapture is hidden, AND link fails solely with
+  _SpawnAndCapture undefined.
+
+PROCEDURE:
+  rm -rf build/tmp /tmp/test-n02
+  make libtos-n02-isolate
+
+RESULT:
+make: error: couldn't create cache file '/var/folders/0g/mpt_55f524ndzxymkp20wjfc0000gn/T/xcrun_db-rSJzHMpj' (errno=Operation not permitted)
+libtos-n02-isolate: building PolyC tool
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+libtos-n02-isolate: running shell dispatch + PolyC isolation
+N02_STEP=1/9: extract pristine members
+N02_CASE=N02_EXTRACT STATUS=PASS
+N02_STEP=2/9: verify pristine has T _SpawnAndCapture
+N02_CASE=N02_PRISTINE_HAS_SYMBOL STATUS=PASS
+N02_STEP=3/9: llvm-objcopy --localize-symbol=_SpawnAndCapture
+N02_CASE=N02_OBJCOPY STATUS=PASS
+N02_STEP=4/9: verify _SpawnAndCapture now 't'
+N02_CASE=N02_LOCALIZED_T STATUS=PASS
+N02_STEP=5/9: ar rcs libtos-corrupted.a
+N02_CASE=N02_AR_CORRUPTED STATUS=PASS
+N02_STEP=6/9: write consumer.HC into build/tmp/
+N02_CWD=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc
+N02_CASE=N02_WRITE_CONSUMER STATUS=PASS
+N02_STEP=7/9: compile consumer with hcc
+N02_CASE=N02_COMPILE STATUS=PASS
+N02_STEP=8/9: link consumer against libtos-corrupted.a
+N02_LINK_RC=1
+N02_CASE=N02_LINK_FAILED STATUS=PASS
+N02_STEP=9/9: verify only _SpawnAndCapture is undefined
+N02_CASE=N02_HAS_SPAWNANDCAPTURE_UNDEFINED STATUS=PASS
+N02_CASE=N02_OTHER_REQUIRED_SYMBOLS_PRESENT STATUS=PASS
+N02_PASS=10
+N02_FAIL=0
+N02_RESULT=PASS
+exit RC=0
+
+N02_PASS=10
+N02_FAIL=0
+N02_RESULT=PASS
+PASS: N02 isolated correctly.
+
+VERDICT: PASS
