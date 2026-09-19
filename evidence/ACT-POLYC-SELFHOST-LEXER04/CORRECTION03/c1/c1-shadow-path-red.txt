@@ -1,0 +1,46 @@
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION03 -- C1 -- shadow-path RED
+===============================================================
+
+Mechanically reproduced from src/lexer.c::lexLink @ HCC_USE_SELFHOST_COMPONENTS:
+
+1. BOOTSTRAP_LINK_DIRECTIVE_CALLED = YES
+   Lines src/lexer.c:1982, 2008 call BootstrapLinkDirective(src, src_len, ...).
+
+2. BOOTSTRAP_LINK_OUTPUTS_LOAD_BEARING = NO
+   Lines src/lexer.c:1988-1991, 2014-2017:
+     (void)out_consumed;
+     (void)out_is_path;
+     (void)out_stored_len;
+     (void)out_error;
+   Every output is explicitly void-cast. The component result has zero
+   effect on production observable behavior.
+
+3. LEGACY_TARGET_BYTES_STILL_USED = YES
+   - src/lexer.c:1993: aoStrCatPrintf(name, "%.*s", next.len, next.start);
+     uses the legacy Lexeme's start/len.
+   - src/lexer.c:2023: aoStrDupRaw(next.start, (u64)next.len);
+     uses the legacy Lexeme's start/len.
+   - The TK_STR body's start/len are taken from the lex() result, not
+     from BootstrapLinkDirective's out_stored_len / out_consumed.
+   - The angle-form tokens are individually lexed and concatenated, not
+     consumed in one pass via BootstrapLinkDirective.
+
+4. PRODUCTION_AUTHORITY_RED = CONFIRMED
+
+This RED will be reproduced by C3-n02-subject-mutation after C2 fixes it.
+Expected outcome after fix: MUTATED_SUBJECT_DIVERGENCE_DETECTED=YES.
+
+Known broken target: lib-complex_1.0 -> lib-complex_1co.
+Source of the corruption: legacy token-by-token concatenation at
+src/lexer.c:1993 (aoStrCatPrintf %.*s with next.len / next.start).
+When the angle form is "#link <lib-complex_1.0>", the lexer tokenizes
+the body as a sequence of tokens. The current Lexer punts on '.'
+inside a TK_IDENT (it lexes "." as TK_PUNCT) so the body becomes
+"lib-complex_1" + "." + "0", concatenated byte-by-byte with no
+preservation of the original ASCII character run. The PolyC component
+sees each token independently and is therefore NOT responsible for the
+defect -- the legacy assembly is.
+
+After C2 IMPL: BootstrapLinkDirective will be called once with the
+unmodified directive body bytes, and out_stored_len / out_consumed
+will drive AoStr assembly. The corruption disappears by construction.

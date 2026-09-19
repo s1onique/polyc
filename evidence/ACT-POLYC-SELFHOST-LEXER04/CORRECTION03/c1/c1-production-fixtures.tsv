@@ -1,0 +1,15 @@
+fixture_id	source	class	expected_target_kind	expected_target_bytes	expected_error	expected_link_libs	expected_shared_object_files	required_for_n02
+L01	#link <complex>	angle-library	name	complex	0	[complex]	[]	yes
+L02	#link "foo.so"	quoted-path	path	foo.so	0	[]	[foo.so]	yes
+L03	#link <complex> #link "bar.so"	mixed	name+path	complex|bar.so	0	[complex]	[bar.so]	no
+L04	#link <dup> #link <dup>	duplicate	name	dup	0	[dup]	[]	no
+L05	#link "dup.so" #link "dup.so"	duplicate-path	path	dup.so	0	[]	[dup.so]	no
+L06	#link <a> #link <b>	back-to-back	name	a|b	0	[a,b]	[]	no
+L07	#link <lib-complex_1.0>	angle-library	name	lib-complex_1.0	0	[lib-complex_1.0]	[]	yes
+L08	#link "./relative.so"	quoted-path	path	./relative.so	0	[]	[./relative.so]	no
+L09	#link <a>	single-library	name	a	0	[a]	[]	no
+L10	// control line	non-directive	none		0	[]	[]	no
+L11	#link <unterminated	angle-library	name	unterminated	3 (UNTERM_ANG)	[]	[]	no
+L12	#link "unterminated	quoted-path	path	unterminated	4 (UNTERM_QUOT)	[]	[]	no
+L13	#link	missing	target		1 (MISSING)	[]	[]	no
+L14	#link 42	invalid-target		2 (INVALID)	[]	[]	no

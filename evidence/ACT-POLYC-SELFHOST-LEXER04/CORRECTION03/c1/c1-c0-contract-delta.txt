@@ -1,0 +1,30 @@
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION03 -- C1 -- C0 contract amendment
+======================================================================
+
+The C0 contract freeze at 0116e9c recorded ABI_MODEL=A with the original
+ABI 5 surface (out_consumed, out_is_path, out_stored_len, out_error).
+
+During C1 recon it became clear that ABI 5 is insufficient for
+production authority:
+
+  - out_stored_len is a count, but the C adapter cannot reconstruct
+    the original byte run from out_stored_len alone without also
+    knowing which bytes to copy.
+  - The legacy C path corrupts lib-complex_1.0 into lib-complex_1co
+    precisely because it concatenates tokens, not the original byte
+    run. Any "consume out_stored_len" adapter that reads from
+    next.start / next.len would inherit the same corruption.
+
+Therefore the C1 contract delta freezes an ABI extension:
+
+  Added to ABI 5: U8 *out_target_bytes, I64 out_target_cap,
+                  I64 *out_target_len.
+
+The component writes the verbatim body bytes to out_target_bytes
+(no quote / angle stripping) so the C adapter can produce an AoStr
+from a guaranteed-correct byte run.
+
+This amendment is recorded ADDITIVELY in C1. The C0 commit (0116e9c)
+remains immutable; the new ABI surface is described in this C1 file.
+
+ABI_MODEL remains A (returned parsed-result adapter).

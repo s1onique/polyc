@@ -1,0 +1,11 @@
+field	allowed_values	notes
+fixture_id	L01..L14	see c1-production-fixtures.tsv
+line_no	integer	1-based source line
+cursor_at_eof	0|1	1 if lex() consumed everything
+directive_consumed	0|1	1 if BootstrapLinkDirective returned out_error==0
+token_count	integer	#lex() tokens pulled for this directive
+link_libs_count	integer	#AoStr in link_libs for this fixture
+shared_object_files_count	integer	#AoStr in shared_object_files
+link_libs_sorted	canonical concat of link_libs sorted, no quotes/brackets	raw bytes from out_target_bytes
+shared_object_files_sorted	canonical concat, sorted	raw bytes from out_target_bytes
+error_class	0..5	0=none, 1=missing, 2=invalid, 3=unterm_angle, 4=unterm_quot, 5=lex_fail

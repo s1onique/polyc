@@ -1,0 +1,8 @@
+input_target	expected_target_kind	expected_target_bytes	expected_error	grammar_evidence	notes
+lib-complex_1.0	angle-library	lib-complex_1.0	NONE	LinkAsciiLower permits letters/digits/_; '.' NOT permitted in TK_IDENT; full byte-run preserved in PolyC LinkScanAngle	source-of-truth component currently produces body_bytes = full byte-run; legacy concatenation fragments it
+lib-complex_1co	angle-library	lib-complex_1co	NONE	same as above	historical (currently broken) outcome captured for delta
+foo.bar	angle-library	foo.bar	NONE	PolyC: full byte-run preserved; legacy: fragment at '.'	grammar accepts '.' as part of an angle-name body in PolyC LinkScanAngle
+foo_bar	angle-library	foo_bar	NONE	PolyC: same; legacy: same	trivial case
+foo-bar	angle-library	foo-bar	NONE	PolyC: '- is not letter/digit/_'; BUT PolyC LinkScanAngle currently consumes ALL non-'>' bytes verbatim (LinkAsciiLower is never applied in LinkScanAngle)	re-examine LinkScanAngle to see if '-' is allowed
+a1	angle-library	a1	NONE	LinkAsciiLower permits digits after letter first char	trivial
+"./file.so"	quoted-path	./file.so	NONE	LinkScanQuoted preserves between-quotes bytes verbatim	trivial
