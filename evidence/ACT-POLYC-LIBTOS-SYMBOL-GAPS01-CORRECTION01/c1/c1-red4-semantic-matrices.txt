@@ -1,0 +1,60 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION01 / c1 / c1-red4-semantic-matrices.txt
+
+RED-4: semantic ACs for FREE / STRNCMP / MEMSET / STRLEN_FAST /
+       SpawnAndCapture were established by source inspection +
+       transitive Factory-test PASS, NOT by mechanical execution
+       of the required edge-case matrices.
+
+Required matrices (per ACT §6 AC06..AC11):
+
+  AC06 FREE:
+    FREE_NULL_NOOP:        Free(NULL) does not crash, no write
+    FREE_ALLOCATED_STORAGE: Free(p) for malloc'd p returns to libc
+
+  AC07 STRNCMP:
+    EQUAL:                 StrNCmp("abc","abc",3) == 0
+    LESS:                  StrNCmp("abc","abd",3) < 0
+    GREATER:               StrNCmp("abd","abc",3) > 0
+    PREFIX:                StrNCmp("ab","abc",2) == 0  (matches up to n)
+    EMPTY:                 StrNCmp("","",0) == 0
+
+  AC08 MEMSET:
+    LEN_ZERO_NOOP:         MemSet(p,0,0) returns p; no write
+    LEN_ONE:               MemSet(p,0xab,1); *p == 0xab; p[1] unchanged
+    NONZERO_FILL:          MemSet(p,0x42,16); every byte == 0x42
+    ZERO_FILL:             MemSet(p,0,16); every byte == 0
+    FF_FILL:               MemSet(p,0xff,16); every byte == 0xff
+    UNALIGNED:             MemSet at non-word-aligned offset
+
+  AC09 STRLEN_FAST:
+    EMPTY:                 StrLen("") == 0
+    ASCII:                 StrLen("hello") == 5
+    UTF8_BOUNDARY:         StrLen("\xC0\x80") == 2 (2 bytes, 1 codepoint)
+    NUL_TERMINATION:       StrLen("abc\0def") == 3
+
+  AC11 SpawnAndCapture:
+    SUCCESS:               /bin/echo hello -> rc == 0; *out non-empty
+    NONZERO_EXIT:          /bin/false -> rc != 0
+    CMD_NOT_FOUND:         /nonexistent -> rc == 127
+    STDOUT_CAPTURE:        *out contains the stdout bytes
+    STDERR_CAPTURE:        *err contains the stderr bytes (separately)
+    EMPTY_OUTPUT:          /bin/true -> *out is a 1-byte NUL buffer
+
+Current predecessor evidence (c3-*-semantics.txt) substitutes:
+  - Source quotation of the assembly bodies (CBZ X0,@@1 for NULL no-op;
+    STRB loop for MEMSET; etc.).
+  - The factory-closure-status-test PASS/FAIL counts (transitive proof
+    that SOME consumer used these symbols without crashing).
+  - The lexer08-fixedpoint-verify success (transitive proof that
+    SpawnAndCapture returned 0 at least once).
+
+None of these substitute for the required matrices:
+  - Source quotation is INSPECTION, not EXECUTION. A miscompiled
+    implementation can pass source inspection and fail at runtime.
+  - Transitive success only proves the happy path; the failure modes
+    (NULL free, UTF-8 boundary, command-not-found) are not exercised.
+
+RED-4 reproduced: P0-4 confirmed.
+HALT_SEMANTIC_MATRICES_MISSING applies until C2-3 produces a
+runtime-contract-test.HC that mechanically exercises every row of
+each matrix, linked archive-only, with PASS/FAIL per row.

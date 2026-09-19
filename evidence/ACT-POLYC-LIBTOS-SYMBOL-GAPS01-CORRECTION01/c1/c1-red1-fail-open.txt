@@ -1,0 +1,57 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION01 / c1 / c1-red1-fail-open.txt
+
+RED-1: make lib-tos is fail-open (|| true masks hcc failure).
+
+Test design (per ACT §4):
+  With the build cache scrubbed AND a deliberately-broken hcc
+  proxy, make lib-tos SHOULD fail closed (RC != 0; no archive
+  written; or, if an archive is written, it must be the fresh,
+  complete archive from a verified producer).
+
+Reproduction:
+  $ rm -rf build/test-prefix src/holyc-lib/libtos.a \
+           src/holyc-lib/all.o src/holyc-lib/errno_shim.o \
+           src/holyc-lib/libtos.dylib
+  $ make lib-tos LIBTOS_HCC=/bin/false
+
+Output (excerpt):
+  /bin/sh: ../..//bin/false: No such file or directory
+  ar: error: couldn't create cache file '/var/folders/.../xcrun_db-...' (errno=Operation not permitted)
+  ar: creating archive ./libtos.a
+  ranlib: error: couldn't create cache file ...
+  cp: cannot create regular file '.../build/test-prefix/lib/libtos.a': No such file or directory
+  make: *** [lib-tos] Error 1
+
+Final RC: 2 (Make exits because cp failed; not because hcc failed)
+
+Observation:
+  The chain in the recipe is:
+    && ../../$(LIBTOS_HCC) ... || true \
+    && cc ... errno_shim.o \
+    && ar r ./libtos.a ./errno_shim.o \
+    && ranlib ./libtos.a \
+    && cp ./libtos.a $(TEST_PREFIX)/lib/libtos.a \
+  When hcc "fails" (returns nonzero) OR is missing entirely:
+    - The `|| true` swallows the nonzero exit.
+    - `cc -c errno_shim.c -o errno_shim.o` SUCCEEDS (errno_shim.c
+      is a standalone .c file; it has no dependency on hcc).
+    - `ar r ./libtos.a ./errno_shim.o` SUCCEEDS but produces an
+      archive with ONLY errno_shim.o. No all.o. No _FREE, no
+      _STRNCMP, no _MEMSET, no _STRLEN_FAST, no _SpawnAndCapture.
+    - `ranlib` succeeds.
+    - `cp` fails because build/test-prefix/lib/ doesn't exist
+      (hcc was supposed to --install-dir=$(TEST_PREFIX) it).
+
+  Verified post-state of src/holyc-lib/libtos.a after RED-1:
+    members: __.SYMDEF SORTED, errno_shim.o
+    nm -A libtos.a | grep " T ":
+        errno_shim.o: T _Errno
+    Total T symbols: 1
+    Required symbols (FREE/STRNCMP/MEMSET/STRLEN_FAST/SpawnAndCapture): ABSENT
+
+  This is fail-open: the recipe CAN produce a "libtos.a" that
+  is missing every required runtime ABI symbol. Any consumer
+  linking against it would fail with all 5 symbols undefined.
+
+RED-1 reproduced: P0-1 confirmed.
+HALT_FAIL_OPEN_REMAINS applies until C2-1 and C2-2 close this gap.

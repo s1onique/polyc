@@ -1,0 +1,84 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION01 / c1 / c1-red3-n02-confound.txt
+
+RED-3: N02 negative control is confounded; the canonical, properly-
+       isolated N02 produces a clean _SpawnAndCapture-only failure.
+
+Test design (per ACT §4):
+  Procedure A (predecessor's broken procedure):
+    Re-derive the corrupted archive by re-running
+    `cc -c errno_shim.c` and `ar r libtos-corrupted.a errno_shim.o`
+    in a working directory where errno_shim.o does not exist.
+    Expected (per the predecessor's evidence):
+      ar: errno_shim.o: No such file or directory
+    Then link the consumer; expect failure citing both
+    _SpawnAndCapture AND _Errno.
+
+  Procedure B (correct isolation):
+    1. Extract pristine archive members into a fresh dir.
+    2. Use llvm-objcopy --localize-symbol=_SpawnAndCapture all.o.
+       Verify: nm all.o shows T -> t for _SpawnAndCapture.
+    3. Rebuild archive with ar rcs, including:
+       - the modified all.o
+       - the ORIGINAL errno_shim.o (NOT recompiled)
+    4. Link consumer. Expect failure citing ONLY _SpawnAndCapture.
+
+Reproduction of Procedure A (predecessor's evidence excerpt):
+  ar: error: couldn't create cache file ...
+  ar: creating archive libtos-corrupted.a
+  ar: errno_shim.o: No such file or directory
+  ...
+  ld: Undefined symbols:
+    _Errno, referenced from:
+        _MALLOC in libtos-corrupted.a[2](all.o)
+        ...
+    _SpawnAndCapture, referenced from:
+        _MemCmp in polyc-verifier.o
+  clang: error: linker command failed with exit code 1
+  Predecessor N02 verdict: N02=PASS
+
+  Falsification: the N02 mutation produced an archive missing
+  errno_shim.o entirely. The link failure cannot be attributed
+  to symbol-hiding _SpawnAndCapture because the consumer would
+  have failed with _Errno undefined regardless of any
+  _SpawnAndCapture manipulation.
+
+Reproduction of Procedure B (this ACT's isolated N02):
+  Working dir: /tmp/n02-red
+  Steps:
+    cd /tmp/n02-red
+    ar x .../build/test-prefix/lib/libtos.a
+        members: __.SYMDEF SORTED, all.o, errno_shim.o
+    llvm-objcopy --localize-symbol=_SpawnAndCapture all.o all-mod.o
+    mv all-mod.o all.o
+    ar rcs libtos-corrupted.a all.o errno_shim.o
+
+  Verification of corrupted archive:
+    ar t libtos-corrupted.a:
+        __.SYMDEF SORTED
+        all.o
+    nm libtos-corrupted.a | grep " T ":
+        T _FREE
+        T _MEMSET
+        T _STRLEN_FAST
+        T _STRNCMP
+        T _Errno
+    (SpawnAndCapture is now t, not T)
+
+  Link consumer (tools/quality/n02 consumer compiled in this ACT):
+    cc src/holyc-lib/_n02_consumer.o -L/tmp/n02-red -ltos-corrupted \
+       -lpthread -lc -lm -o /tmp/n02_consumer_corrupted
+    ld: Undefined symbols:
+      _SpawnAndCapture, referenced from:
+          _Test in _n02_consumer.o
+    clang: error: linker command failed with exit code 1 (use -v to see invocation)
+
+  Procedure B verdict:
+    - _SpawnAndCapture is the ONLY undefined symbol.
+    - _Errno, _FREE, _STRNCMP, _MEMSET, _STRLEN_FAST all resolve
+      from the corrupted archive.
+    - The link failure is unambiguously attributable to the
+      symbol-hiding mutation.
+
+RED-3 reproduced: P0-3 confirmed.
+AC23 in predecessor's mandatory table was NOT_PROVEN (NOT_LOAD_BEARING).
+HALT_N02_CONFOUNDED applies until C2-4 re-establishes proper N02 isolation.

@@ -1,0 +1,56 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION01 / c1 / c1-red2-clean-checkout.txt
+
+RED-2: clean-checkout buildability is NOT proven (build/hcc-bootstrap04
+       used opportunistically; ./hcc is known broken for ARM64 inline-asm).
+
+Test design (per ACT §4):
+  With build/hcc-bootstrap04 absent, make lib-tos SHOULD either:
+    (a) fail closed with a precondition error naming the
+        required producer SHA, OR
+    (b) succeed against a ./hcc that has been verified to
+        produce a complete all.o for the current sources.
+  It MUST NOT silently degrade to a known-broken compiler.
+
+Reproduction:
+  $ rm -rf build/test-prefix src/holyc-lib/libtos.a \
+           src/holyc-lib/all.o src/holyc-lib/errno_shim.o \
+           src/holyc-lib/libtos.dylib
+  $ mv build/hcc-bootstrap04 /tmp/hcc-bootstrap04.bak
+  $ make lib-tos
+
+Output (excerpt):
+  lib-tos: using builder ./hcc
+  ...
+  ERROR: Failed to open file: .../build/test-prefix/include/tos.HH
+  ar: creating archive ./libtos.a
+  cp: cannot create regular file '.../build/test-prefix/lib/libtos.a': No such file or directory
+  make: *** [lib-tos] Error 1
+
+Final RC: 2 (cp fails because test-prefix dir doesn't exist)
+
+Observation:
+  The Makefile's LIBTOS_HCC shell guard:
+    if [ -x ./build/hcc-bootstrap04 ]; then echo ./build/hcc-bootstrap04;
+    else echo ./hcc; fi
+  silently degraded to ./hcc (the known-broken fallback) WITHOUT
+  any precondition error. The recipe then proceeded to invoke
+  ./hcc, which failed on ARM64 inline-asm mnemonics
+  (the ./hcc at HEAD = 6ba9f5ec regression in
+  src/holyc-lib/{memory,strings}.HC).
+
+  This is fail-open at the *builder selection* layer:
+  there is no integrity check on the fallback; the recipe
+  assumes the fallback is valid.
+
+  If build/test-prefix had pre-existed (from a prior successful
+  build, or via a stale cache), the recipe would have continued
+  with the broken ./hcc invocation. The `|| true` would have
+  swallowed the resulting asm-parse failure, leaving a stale or
+  incomplete archive as the canonical artifact.
+
+  Restore:
+    $ mv /tmp/hcc-bootstrap04.bak build/hcc-bootstrap04
+
+RED-2 reproduced: P0-2 confirmed.
+HALT_OPPORTUNISTIC_FALLBACK applies until C2-1 establishes an
+explicit provenance contract.
