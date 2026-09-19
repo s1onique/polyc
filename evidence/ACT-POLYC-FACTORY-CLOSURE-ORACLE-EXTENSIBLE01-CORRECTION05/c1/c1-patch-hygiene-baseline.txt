@@ -1,0 +1,44 @@
+C1 PATCH HYGIENE BASELINE
+==========================
+
+Phase: C1 RED / CONTRACT
+Date: 2026-09-19
+Commit: 4c40a53 (C0 AUTH)
+
+This file freezes the prospective patch-hygiene baseline for the
+entire ACT, before any C2 mutation.
+
+Per ACT §6, the prospective baseline equals the entry HEAD:
+
+  PATCH_HYGIENE_BASELINE=0e6c36e2a34867f5a2454fdafa0f6d4c6699c2ed
+  PATCH_HYGIENE_BASELINE_IS_ENTRY_HEAD=YES
+  PATCH_HYGIENE_BASELINE_FROZEN=YES
+
+Live observation at C1 commit (HEAD = 4c40a53):
+
+  $ git diff --check 0e6c36e2a34867f5a2454fdafa0f6d4c6699c2ed..HEAD
+  (empty)
+  PATCH_HYGIENE_ERRORS_AT_C1=0
+  PATCH_HYGIENE_AT_C1=PASS
+
+Notes:
+
+  - The historical CORRECTION03 predicate
+        git diff --check 0665ada..HEAD
+    is FALSE. This ACT does NOT ratify it. (See ACT §3, §34.)
+  - This ACT instead selects its own prospective clean baseline
+    at C0 and refuses to substitute another baseline later.
+  - Future ACTs MUST also select their own prospective baseline
+    at their C0; no inherited baseline is implied.
+
+Terminal-predicate plan (reminder for C2, C3, C4):
+
+  C2:    git diff --check 0e6c36e..HEAD  must report no errors.
+  C3:    git diff --check 0e6c36e..HEAD  must report no errors.
+  C4:    git diff --check 0e6c36e..HEAD  must report no errors.
+
+No post-C4 hygiene commit is authorized. If the C4 commit fails
+this predicate, the C4 commit is a HALT boundary and requires a
+new bounded correction ACT.
+
+End of C1 patch-hygiene-baseline evidence.

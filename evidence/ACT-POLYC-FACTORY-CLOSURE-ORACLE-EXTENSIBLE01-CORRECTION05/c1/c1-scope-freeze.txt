@@ -1,0 +1,60 @@
+C1 SCOPE FREEZE
+===============
+
+Phase: C1 RED / CONTRACT
+Date: 2026-09-19
+Commit: 4c40a53 (C0 AUTH)
+
+This file freezes the bounded mutation scope for this ACT.
+
+AUTHORIZED MUTATIONS (only):
+
+  docs/acts/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION05.md
+  docs/factory/act-handoff-map.tsv                         (exactly one row append in C2)
+  docs/factory/HANDOFF-ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION05.md   (C4 only)
+  evidence/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION05/**
+
+EXPLICITLY FORBIDDEN (not in any phase of this ACT):
+
+  scripts/quality/factory-closure-status-check.sh
+  scripts/quality/factory-closure-status-check-test.sh
+  scripts/quality/factory-closure-status-test-cases.tsv
+  tools/quality/factory-closure-status-test.HC
+  Makefile
+  docs/factory/SHELL-BUDGET.tsv
+  src/**
+  tools/bootstrap/**
+
+  All evidence/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01*/   (F14 immutability)
+  All docs/acts/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01*.md except the new CORRECTION05 ACT
+  All docs/factory/HANDOFF-ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01*.md except the future CORRECTION05 HANDOFF
+
+C1 EXPLICIT MANIFEST MUTATION AUTHORIZATION (for C2):
+
+  docs/factory/act-handoff-map.tsv
+  Append exactly one row (tab-separated):
+
+    docs/acts/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION05.md
+    docs/factory/HANDOFF-ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION05.md
+
+  No other manifest mutation is authorized.
+  No mutation of any other row.
+
+ROADMAP_MUTATION:
+
+  ROADMAP_MUTATION=NOT_AUTHORIZED
+  (docs/ROADMAP.md is not touched by this ACT; the prospective
+   closure requalification does not require a roadmap signal.)
+
+F-NO-PYTHON:
+
+  No new Python source.
+  No new Python invocation.
+  No new Python shebang.
+
+F-POLYC-TOOLS:
+
+  No new tools of any kind.
+  The existing 16-LOC shell dispatch remains untouched.
+
+END OF SCOPE FREEZE.

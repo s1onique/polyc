@@ -1,0 +1,70 @@
+C1 SELF-REGISTRATION RED
+========================
+
+Phase: C1 RED / CONTRACT
+Date: 2026-09-19
+Commit: 4c40a53 (C0 AUTH)
+
+This file proves that, BEFORE any self-registration mutation in C2,
+the canonical closure oracle does not yet see this ACT and
+therefore cannot fail on it. The pre-self-register universe is:
+
+    MANIFEST_ROWS=13
+    PAIR_OK=13
+    PAIR_FAIL=0
+    STATUS=PASS
+
+Observations:
+
+  CORRECTION05_ACT_EXISTS=YES
+    Path: docs/acts/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION05.md
+    Committed at: 4c40a53 (C0)
+
+  CORRECTION05_MANIFEST_ROW=NO
+    Proof:
+      $ grep 'FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION05' \
+            docs/factory/act-handoff-map.tsv
+      docs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION05.md    evidence/llvmspike01-core03-correction05/HANDOFF.md
+      (the only 'CORRECTION05' match is the unrelated LLVM-CORE03-CORRECTION05 row,
+       not the FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION05 row)
+
+  CORRECTION05_HANDOFF_EXISTS=NO
+    Proof:
+      $ test -f docs/factory/HANDOFF-ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION05.md
+      -> absent
+
+Canonical oracle at C1 (output of scripts/quality/factory-closure-status-check.sh):
+
+  POLYC_GATE=factory-closure-status
+  MANIFEST_PATH=docs/factory/act-handoff-map.tsv
+  MANIFEST_ROWS=13
+  MANIFEST_DATA_ROWS=13
+  MANIFEST_COMMENT_ROWS=17
+  MANIFEST_BLANK_ROWS=0
+  MANIFEST_PARSE_ERRORS=0
+  DUPLICATE_ACT_PATHS=0
+  DUPLICATE_HANDOFF_PATHS=0
+  DUPLICATE_PAIRS=0
+  DUPLICATE_CLASSIFICATION_IS_NON_SHORT_CIRCUITING=YES
+  MISSING_ACT_FILES=0
+  MISSING_HANDOFF_FILES=0
+  MALFORMED_HANDOFF_VERDICT=0
+  PAIR_OK=13
+  PAIR_FAIL=0
+  STATUS=PASS
+  VERDICT=PASS
+
+Frozen pre-self-register universe:
+
+  PRE_SELF_REGISTER_MANIFEST_ROWS=13
+  PRE_SELF_REGISTER_PAIR_OK=13
+  PRE_SELF_REGISTER_PAIR_FAIL=0
+
+Conclusion:
+
+  SELF_REGISTRATION_RED=CONFIRMED
+  (no FAIL exists yet; this is the only state in which the
+   'self-row registered before C3 -> FAIL because HANDOFF absent'
+   RED witness is meaningful to introduce in C2.)
+
+End of C1 self-registration-red evidence.

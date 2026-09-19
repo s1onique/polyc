@@ -1,0 +1,86 @@
+C1 CURRENT ORACLE REGRESSION
+============================
+
+Phase: C1 RED / CONTRACT
+Date: 2026-09-19
+Commit: 4c40a53 (C0 AUTH)
+
+This file proves the closure machinery is conserved: the 13-pair
+oracle is green and the 12-case PolyC regression matrix still
+passes without any implementation change.
+
+Gate A — factory-closure-status-check (live at HEAD = 4c40a53):
+
+  $ bash scripts/quality/factory-closure-status-check.sh
+  ...
+  PAIR_OK=13
+  PAIR_FAIL=0
+  STATUS=PASS
+  VERDICT=PASS
+
+  FACTORY_CLOSURE_STATUS_REGRESSION=13/13 PASS
+
+Gate B — factory-closure-status-check-test (PolyC):
+
+  $ sh scripts/quality/factory-closure-status-check-test.sh
+  PASS  T01
+  PASS  T02
+  PASS  T03
+  PASS  T04
+  PASS  T05
+  PASS  T06
+  PASS  T07
+  PASS  T08
+  PASS  T09
+  PASS  T10
+  PASS  T11
+  PASS  T12
+  FACTORY_CLOSURE_STATUS_TEST_PASS=12
+  FACTORY_CLOSURE_STATUS_TEST_FAIL=0
+
+  FACTORY_CLOSURE_STATUS_TEST_REGRESSION=12/12 PASS
+
+Gate C — PolyC tooling conservation (F-POLYC-TOOLS):
+
+  PolyC authoritative test driver:
+    test -f tools/quality/factory-closure-status-test.HC
+    -> POLYC_TEST_EXISTS=YES
+
+  Shell dispatch wrapper LOC:
+    $ wc -l scripts/quality/factory-closure-status-check-test.sh
+    16 scripts/quality/factory-closure-status-check-test.sh
+    -> LOC=16
+    -> SHELL_DISPATCH_LOC=16
+    -> SHELL_DISPATCH_LE_50_LOC=YES
+    -> SHELL_DISPATCH_ONLY=YES
+
+  No substantive shell test engine:
+    $ grep -c -E '^case .* in$|^if .* then$|^while ' \
+            scripts/quality/factory-closure-status-check-test.sh
+    (test driver is purely a `set -eu; cd; exec env ... ./build/...`
+     shim; no logic)
+    -> NO_SUBSTANTIVE_SHELL_TEST_ENGINE=YES
+
+  Conclusion:
+    POLYC_TEST_AUTHORITY=PASS
+    F_POLYC_TOOLS_CONSERVATION=PASS
+
+Gate D — closure machinery reads the live manifest:
+
+  The checker sources docs/factory/act-handoff-map.tsv via
+  FACTORY_ACT_HANDOFF_MAP env override (default). The current
+  manifest lists 13 data rows; the checker counted 13 managed
+  pairs. No hardcoded MANAGED_ACTS / MANAGED_HANDOFFS list is
+  exercised. (See scripts/quality/factory-closure-status-check.sh
+  FACTORY_ACT_HANDOFF_MAP handling.)
+
+  MANIFEST_SINGLE_ENUMERATION_AUTHORITY=YES
+  HARDCODED_PAIR_UNIVERSE_REMOVED=YES
+
+Freeze:
+
+  CURRENT_ORACLE_STATUS=PASS
+  FACTORY_CLOSURE_STATUS_TEST_PASS=12
+  FACTORY_CLOSURE_STATUS_TEST_FAIL=0
+
+End of C1 oracle regression evidence.
