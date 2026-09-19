@@ -1,0 +1,60 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION03 / c1 / c1-red5-ac04-symdef-terminology.txt
+
+RED-5: AC04 evidence used incorrect framing. "Pristine archive
+       has the expected producer identity. PASS iff `ar t
+       build/test-prefix/lib/libtos.a` lists `__.SYMDEF` and
+       the producer identity note under `__.SYMDEF` matches
+       the bootstrap hcc commit."
+
+       This framing is wrong: `__.SYMDEF` is the BSD/Darwin
+       archive symbol table mapping SYMBOLS to MEMBERS, not a
+       container in which members live. producer_id.o is a
+       regular archive member alongside __.SYMDEF, all.o,
+       errno_shim.o.
+
+REVIEWER QUOTE:
+  "One terminology correction: producer_id.o is a regular
+   archive member; __.SYMDEF is the BSD/Darwin archive symbol
+   table mapping symbols to members, not a container in
+   which producer_id.o lives. LLVM's archive implementation
+   makes that distinction explicitly."
+
+PROCEDURE:
+  cat .../CORRECTION02/c3/c3-ac04.txt
+  ar t build/test-prefix/lib/libtos.a
+  ar tv build/test-prefix/lib/libtos.a
+
+RESULT:
+
+  $ cat .../CORRECTION02/c3/c3-ac04.txt
+  ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION02 / c3 / c3-ac04.txt
+  AC04: Pristine archive has the expected producer identity.
+    PASS iff `ar t build/test-prefix/lib/libtos.a` lists
+    `__.SYMDEF` and the producer identity note under
+    `__.SYMDEF` matches the bootstrap hcc commit.
+  ...
+  ("under __.SYMDEF" is the incorrect framing)
+
+  $ ar t build/test-prefix/lib/libtos.a
+  __.SYMDEF
+  all.o
+  errno_shim.o
+  producer_id.o
+
+  $ ar tv build/test-prefix/lib/libtos.a
+  rw-r--r-- 0/0   4 Jan  1  1970 __.SYMDEF      <- the symbol table
+  rw-r--r-- 0/0   0 Jan  1  1970 all.o
+  rw-r--r-- 0/0   0 Jan  1  1970 errno_shim.o
+  rw-r--r-- 0/0   0 Jan  1  1970 producer_id.o  <- a regular member
+
+  __.SYMDEF is one of FOUR members; producer_id.o is not
+  "under" it. The CORRECTION02 framing is technically wrong.
+
+CLOSURE: CORRECTION03 C0-authorized amendment (AC04 terminology):
+  AC04 evidence says: "Pristine archive `ar t` lists __.SYMDEF
+  (symbol table), all.o, errno_shim.o, and producer_id.o as
+  four sibling members. nm -j producer_id.o reports
+  __producer_id as a defined symbol. strings producer_id.o |
+  grep -qF <expected-SHA> confirms the SHA-256 is baked in."
+
+VERDICT: PASS (RED-5 reproduced — terminology misuse in AC04).

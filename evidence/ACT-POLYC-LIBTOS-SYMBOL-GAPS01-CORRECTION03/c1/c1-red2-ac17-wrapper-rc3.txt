@@ -1,0 +1,51 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION03 / c1 / c1-red2-ac17-wrapper-rc3.txt
+
+RED-2: AC17 authorized predicate is "factory-no-python-check.HC
+       (or its sh wrapper) still passes". The wrapper returns
+       RC=3 because no Makefile target builds the binary.
+
+REVIEWER QUOTE:
+  "The actual evidence says the wrapper returns:
+     RC=3
+   because its binary cannot link. It then substitutes:
+     'F14-equivalent predicate: did this ACT add any new Python'
+   and marks AC17 PASS.
+
+   That is precisely the AC-substitution class CORRECTION02
+   was created to repair."
+
+PROCEDURE:
+  1. ls -la build/factory-no-python-check  -> expected: No such file
+  2. grep -n 'factory-no-python-check' Makefile  -> expected: NO rules
+  3. TMPDIR=/tmp scripts/quality/factory-no-python-check.sh
+  4. echo $?  -> RC=3
+
+RESULT:
+
+  $ ls -la build/factory-no-python-check
+  ls: build/factory-no-python-check: No such file or directory
+
+  $ grep -n 'factory-no-python-check' Makefile
+  (no matches)
+
+  $ TMPDIR=/tmp scripts/quality/factory-no-python-check.sh
+  factory-no-python-check: build artifact missing
+  RC=3
+
+  The wrapper aborts before even running the checker because
+  the binary is missing. The F-NO-PYTHON doctrine is NOT being
+  enforced mechanically; only its source exists.
+
+  The CORRECTION02 C3 evidence then substituted the predicate
+  with "F14-equivalent: did this ACT add any new Python", which
+  is NOT the authorized AC17.
+
+CONFIRMATION: A PolyC source file
+  tools/factory/factory-no-python-check.HC exists, but no
+  Makefile rule builds it. The ./hcc used by the corresponding
+  factory-halt-classification-binary rule fails to compile
+  .HC files with the LDP mnemonic (per P1 residue). The
+  bootstrap hcc ./build/hcc-bootstrap04 compiles it fine and
+  links fine against libtos.a, but no Makefile rule wires this.
+
+VERDICT: PASS (RED-2 reproduced — AC17 predicate substituted).

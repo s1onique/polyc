@@ -1,0 +1,52 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION03 / c1 / c1-red4-ac22-evidence-range.txt
+
+RED-4: AC22 evidence was captured against the wrong range.
+       CORRECTION02 used `git log --oneline 6e30e7f..HEAD`
+       (CORRECTION01 entry), finding 12 commits, while the
+       predicate requires exactly 5 CORRECTION02 commits.
+
+REVIEWER QUOTE:
+  "AC22: the predicate says exactly five separate commits.
+  Its C3 procedure instead runs from 6e30e7f, finds 12
+  commits, says 'expect 5,' and then promotes the result
+  to PASS because ordering is visible."
+
+PROCEDURE:
+  git log --oneline 6e30e7f..HEAD
+  cat .../CORRECTION02/c3/c3-ac22.txt
+
+RESULT:
+
+  $ git log --oneline 6e30e7f..HEAD
+  256e398 C2 IMPL: ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION02
+  c1e1714 C1 RED: ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION02
+  2bc0e9a C0 AUTH: ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION02
+  ad77672 C4 CLOSE: ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION01
+  5580f98 C3 VERIFY: ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION01
+  e4ec317 C2 IMPL: ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION01
+  cb0bd02 C1 RED: ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION01
+  1e04f94 C0 AUTH: ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION01
+  5cbda9b C4 CLOSE: ACT-POLYC-LIBTOS-SYMBOL-GAPS01
+  9275f7c C3 VERIFY: ACT-POLYC-LIBTOS-SYMBOL-GAPS01
+  ...
+  (12 commits total)
+
+  Predicate: "as 5 separate commits in that order". Range used:
+  6e30e7f..HEAD (CORRECTION01 ENTRY) finds 12 commits. The
+  CORRECTION02 evidence contains an additional commit
+  (C4 CLOSE: ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION02 at
+  the top), but otherwise it's the entire ancestor history
+  of CORRECTION01, not the bounded CORRECTION02 commits.
+
+  The CORRECTION02 C3 evidence acknowledges:
+    "expecting 5, got 12 (the bounded CORRECTION02 range is
+     2bc0e9a..HEAD at C3)"
+  and then promotes to PASS based on ordering visibility.
+
+CLOSURE: CORRECTION03 C0-authorized amendment (AC22 procedure):
+  AC22 evidence uses `git log --oneline <ENTRY_HEAD>..HEAD`
+  where ENTRY_HEAD is the C0 commit's first parent (which is
+  the CORRECTION02 C4 CLOSE commit 0f24900). This bounds the
+  range to CORRECTION03's 5 commits only.
+
+VERDICT: PASS (RED-4 reproduced — wrong range made AC22 trivially PASS).

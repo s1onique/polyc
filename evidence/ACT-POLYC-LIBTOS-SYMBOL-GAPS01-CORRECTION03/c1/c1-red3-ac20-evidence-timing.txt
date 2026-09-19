@@ -1,0 +1,53 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION03 / c1 / c1-red3-ac20-evidence-timing.txt
+
+RED-3: AC20 evidence was captured at C3 (before C4 commit),
+       where it correctly recorded FAIL (uncommitted changes),
+       and then the ledger promoted it to PASS anyway.
+
+REVIEWER QUOTE:
+  "AC20: its own evidence literally records:
+
+     RESULT:
+     [?? evidence/.../c3/]
+     FAIL: uncommitted changes.
+
+     VERDICT: (will be evaluated at C4)
+
+   Yet mandatory-ac-status.tsv says:
+
+     AC20 ... PASS c3-ac20.txt
+
+   Final worktree cleanliness after C4 may well be true, but
+   that cited evidence does not prove it."
+
+PROCEDURE:
+  cat evidence/ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION02/c3/c3-ac20.txt
+
+RESULT:
+
+  $ cat .../CORRECTION02/c3/c3-ac20.txt
+  ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION02 / c3 / c3-ac20.txt
+  AC20: Worktree clean at C4.
+    PASS iff 'git status --short' is empty.
+  PROCEDURE:
+    git status --short
+  RESULT:
+  [?? evidence/ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION02/c3/]
+  FAIL: uncommitted changes.
+  VERDICT: (will be evaluated at C4)
+
+  The evidence file itself documents "FAIL: uncommitted changes"
+  and acknowledges the verdict is "deferred to C4".
+
+  Yet the CORRECTION02 mandatory-ac-status.tsv row reads:
+    AC20   Worktree clean at C4   PASS   c3-ac20.txt
+
+  Mechanical contradiction: the evidence says FAIL but the
+  ledger says PASS.
+
+CLOSURE: AC20 is conceptually only verifiable AFTER C4 commits.
+CORRECTION03 C0-authorized amendment (AC20 procedure):
+  AC20 evidence lives in c4/c4-ac20.txt (after C4 commits).
+  The C3 ledger records "AC20 = DEFERRED_TO_C4".
+
+VERDICT: PASS (RED-3 reproduced — C3 evidence contradicts ledger).

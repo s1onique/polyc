@@ -1,0 +1,79 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION03 / c1 / c1-red1-provenance-self-certifying.txt
+
+RED-1: The CORRECTION02 'provenance-strict' mechanism is
+       self-certifying. A different-but-working hcc is
+       accepted because LIBTOS_HCC is overridable AND the
+       producer_id SHA is whatever LIBTOS_HCC measured.
+
+REVIEWER QUOTE:
+  "Worse, LIBTOS_HCC remains overridable. GNU Make explicitly
+   specifies that command-line variable assignments override
+   ordinary Makefile assignments unless `override` is used.
+
+   So, conceptually:
+     make lib-tos LIBTOS_HCC=/path/to/different-but-working-hcc
+
+   causes:
+     actual SHA of different hcc
+       ↓
+     LIBTOS_BOOTSTRAP_SHA
+       ↓
+     producer_id.o
+       ↓
+     strings verification against same SHA
+       ↓
+     PASS
+
+   The judge derives its expected identity from the subject
+   being judged. That is provenance recording, not provenance
+   enforcement."
+
+PROCEDURE:
+  1. Create a wrapper script that exec's the real bootstrap
+     hcc but has a different SHA-256.
+  2. rm -rf build/test-prefix/lib/libtos.a
+  3. make lib-tos LIBTOS_HCC=./wrapper-hcc
+  4. Observe: was the build accepted? What SHA was embedded
+     in producer_id.o?
+
+RESULT:
+
+  Step 1: wrapper-hcc created
+    $ cat ./wrapper-hcc
+    #!/bin/sh
+    exec /Volumes/UserData/.../build/hcc-bootstrap04 "$@"
+
+  $ shasum -a 256 ./wrapper-hcc
+    e2d71e23e70affaabd83c0b898070d7627d3be04ea4578b08dd003dc36ffb609  ./wrapper-hcc
+  $ shasum -a 256 ./build/hcc-bootstrap04
+    3b4474213efabcda30eb2d0c0610c6e23793f876896c8e21c5e18024b1ab40f6  ./build/hcc-bootstrap04
+  Different SHAs: wrapper != bootstrap.
+
+  Step 3: make lib-tos LIBTOS_HCC=./wrapper-hcc
+    lib-tos: builder ./wrapper-hcc
+    lib-tos: HCC_BOOTSTRAP_PROVENANCE_SHA=e2d71e23...
+    lib-tos: required LIBTOS_HCC SHA-256: e2d71e23...
+    lib-tos: HCC_BOOTSTRAP_PROVENANCE_SHA_ENV=HCC_BOOTSTRAP_PROVENANCE_SHA=e2d71e23...
+    ... [build proceeds through all 8 steps] ...
+    lib-tos: step 8/8: verify required symbols + producer-id
+    lib-tos: producer-id verified: SHA=e2d71e23... symbol=producer_id.o
+    lib-tos: complete; libtos.a written to build/test-prefix/lib/
+    RC=0
+
+  Step 4: The build SUCCEEDED with SHA e2d71e23... (WRAPPER)
+          NOT the authorized bootstrap SHA 3b447421...
+
+  The "provenance-strict" check embedded the WRAPPER SHA and
+  then verified the WRAPPER SHA against itself. PASS.
+
+  After removing the wrapper and re-running with default:
+    lib-tos: producer-id verified: SHA=3b447421...
+  The authorized identity is preserved only because the
+  default LIBTOS_HCC happens to be the authorized binary.
+  There is no enforcement.
+
+CLEANUP: rm -f ./wrapper-hcc; rm -rf build/test-prefix/lib/libtos.a;
+         make lib-tos (restore)
+
+VERDICT: PASS (RED-1 reproduced — provenance is self-certifying,
+        not pinned to an external authority).
