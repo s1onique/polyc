@@ -27,12 +27,23 @@
 typedef long long I64;
 typedef unsigned char U8;
 
+/* ACT-POLYC-SELFHOST-LEXER04-CORRECTION03 C2 IMPL -- ABI 6
+ * signature (extended from CORRECTION02 ABI 5). The harness
+ * supplies an out_target_bytes buffer so the production
+ * authority path (which writes the verbatim body bytes there)
+ * is exercised. */
 extern I64 BootstrapLinkDirective(U8 *src, I64 src_len, I64 flags,
+                                  U8 *out_target_bytes, I64 out_target_cap,
+                                  I64 *out_target_len,
                                   I64 *out_consumed, I64 *out_is_path,
-                                  I64 *out_stored_len, I64 *out_error);
+                                  I64 *out_stored_len,
+                                  I64 *out_error);
 extern I64 OracleScanLinkDirective(const char *src, I64 src_len, I64 flags,
+                                   U8 *out_target_bytes, I64 out_target_cap,
+                                   I64 *out_target_len,
                                    I64 *out_consumed, I64 *out_is_path,
-                                   I64 *out_stored_len, I64 *out_error);
+                                   I64 *out_stored_len,
+                                   I64 *out_error);
 
 #define F(name, src_lit) \
     { #name, (const U8 *)(src_lit), sizeof(src_lit) - 1 }
@@ -88,23 +99,35 @@ int main(int argc, char **argv)
     char first_msg[512] = {0};
 
     for (I64 i = 0; i < n; i = i + 1) {
-        I64 p_consumed = 0, p_is_path = 0, p_stored_len = 0, p_error = 0;
+        U8 p_target[256] = {0};
+        U8 o_target[256] = {0};
+        I64 p_target_len = 0, p_consumed = 0, p_is_path = 0;
+        I64 p_stored_len = 0, p_error = 0;
         I64 prc = BootstrapLinkDirective((U8*)FXS[i].src,
                                          FXS[i].src_len, 0,
+                                         p_target, sizeof(p_target),
+                                         &p_target_len,
                                          &p_consumed, &p_is_path,
                                          &p_stored_len, &p_error);
 
-        I64 o_consumed = 0, o_is_path = 0, o_stored_len = 0, o_error = 0;
+        I64 o_target_len = 0, o_consumed = 0, o_is_path = 0;
+        I64 o_stored_len = 0, o_error = 0;
         I64 orc = OracleScanLinkDirective((const char *)FXS[i].src,
                                            FXS[i].src_len, 0,
+                                           o_target, sizeof(o_target),
+                                           &o_target_len,
                                            &o_consumed, &o_is_path,
                                            &o_stored_len, &o_error);
 
+        /* Compare outputs: scalars AND the verbatim target bytes. */
+        int bytes_eq = (p_target_len == o_target_len) &&
+                       (memcmp(p_target, o_target, (size_t)p_target_len) == 0);
         int ok = (prc == orc) &&
                  (p_consumed   == o_consumed) &&
                  (p_is_path    == o_is_path) &&
                  (p_stored_len == o_stored_len) &&
-                 (p_error      == o_error);
+                 (p_error      == o_error) &&
+                 bytes_eq;
         if (ok) {
             pass = pass + 1;
         } else {

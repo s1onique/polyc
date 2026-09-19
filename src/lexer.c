@@ -1943,97 +1943,122 @@ static int listContainsAoStr(List *ll, AoStr *needle) {
  *                         dlopen("lib<name>.{dylib,so}") for the JIT.
  * Duplicates are dropped so headers can #link freely.
  *
- * ACT-POLYC-SELFHOST-LEXER04 C2 IMPL -- the byte-level
- * scanning of the directive body is delegated to the PolyC
- * component BootstrapLinkDirective when
- * HCC_USE_SELFHOST_COMPONENTS is defined. The C-side wrapper
- * still owns the lex() calls, AoStr assembly, dedup / list
- * bookkeeping, and lexRaise error reporting. The component
- * is a pure byte-level scanner. */
+ * ACT-POLYC-SELFHOST-LEXER04-CORRECTION03 C2 IMPL -- the
+ * production lexLink body is now PRODUCER-AUTHORITATIVE on
+ * the self-hosted path. The PolyC component
+ * BootstrapLinkDirective owns:
+ *   - target form recognition ('<' / '"')
+ *   - quoted-path body extraction
+ *   - angle-target body extraction
+ *   - body byte preservation (lib-complex_1.0 stays intact)
+ *   - error classification (5 classes)
+ *
+ * The C adapter owns (and only owns):
+ *   - dispatching lexRaise from the error class
+ *   - AoStr construction from the verbatim byte run
+ *   - listNew / listAppend / dedup bookkeeping
+ *   - list selection via out_is_path
+ *
+ * No legacy token-by-token concatenation remains on the
+ * self-hosted path. The fix for lib-complex_1.0 ->
+ * lib-complex_1co is by construction. */
 static void lexLink(Lexer *l) {
 #ifdef HCC_USE_SELFHOST_COMPONENTS
-    /* ACT-POLYC-SELFHOST-LEXER04 C2 IMPL -- PolyC delegation.
-     * Mirrors the legacy C path below; the only difference
-     * is that the byte-level scan is delegated. */
-    Lexeme next;
-    AoStr *name;
-    int is_path = 0;
+    /* ACT-POLYC-SELFHOST-LEXER04-CORRECTION03 C2 IMPL.
+     * PolyC is the production authority. The C adapter
+     * supplies a buffer for the verbatim body bytes and
+     * consumes every output the component returns. */
+    unsigned char *src;
+    long long src_len;
+    unsigned char target_buf[1024];
+    long long out_target_len = 0;
+    long long out_consumed = 0, out_is_path = 0;
+    long long out_stored_len = 0, out_error = 0;
 
-    if (!lex(l, &next)) {
-        lexRaise(l, "Syntax is: #link \"<path>\" or #link <libname>");
-    }
-    if (tokenPunctIs(&next, '<')) {
-        name = aoStrNew();
-        for (;;) {
-            if (!lex(l, &next)) {
-                aoStrRelease(name);
-                lexRaise(l, "Unterminated #link <...>");
-            }
-            if (tokenPunctIs(&next, '>')) break;
-            /* PolyC component scans this token's bytes; its
-             * result is unused here (legacy AoStr assembly
-             * applies) but the call proves the delegation
-             * contract and is the load-bearing assertion. */
-            {
-                unsigned char *src = (unsigned char *)next.start;
-                long long src_len = (long long)next.len;
-                long long out_consumed = 0, out_is_path = 0;
-                long long out_stored_len = 0, out_error = 0;
-                (void)BootstrapLinkDirective(src, src_len,
-                                             (long long)l->flags,
-                                             &out_consumed,
-                                             &out_is_path,
-                                             &out_stored_len,
-                                             &out_error);
-                (void)out_consumed;
-                (void)out_is_path;
-                (void)out_stored_len;
-                (void)out_error;
-            }
-            aoStrCatPrintf(name, "%.*s", next.len, next.start);
+    /* The lexeme stream has already consumed the `#link`
+     * keyword itself; l->ptr now points at the first byte
+     * after the keyword, which is typically a space. Skip
+     * whitespace so the component receives the directive
+     * body directly. */
+    if (l->cur_file && l->cur_file->src && l->cur_file->src->data) {
+        char *buf_start = l->cur_file->src->data;
+        char *buf_end   = buf_start + (ptrdiff_t)l->cur_file->src->len;
+        if (l->ptr < buf_start) l->ptr = buf_start;
+        if (l->ptr > buf_end)   l->ptr = buf_end;
+        /* Skip ASCII whitespace (space + tab) between the
+         * keyword and the target. Newlines are NOT skipped
+         * here -- that would be a multi-line directive,
+         * which is not in scope. */
+        while (l->ptr < buf_end &&
+               (*l->ptr == ' ' || *l->ptr == '\t')) {
+            l->ptr++;
         }
-    } else if (next.tk_type == TK_STR) {
-        is_path = 1;
-        /* Per ABI 5 (c2-link-abi.txt): for the TK_STR form, src
-         * is the body bytes between the two '"', src_len is the
-         * body length. lexString() already strips the quotes, so
-         * next.start is the body and next.len is the body length.
-         * The component validates and classifies; the C wrapper
-         * does the AoStr assembly (mirroring the legacy path). */
-        {
-            unsigned char *src = (unsigned char *)next.start;
-            long long src_len = (long long)next.len;
-            long long out_consumed = 0, out_is_path = 0;
-            long long out_stored_len = 0, out_error = 0;
-            (void)BootstrapLinkDirective(src, src_len,
-                                         (long long)l->flags,
-                                         &out_consumed,
-                                         &out_is_path,
-                                         &out_stored_len,
-                                         &out_error);
-            (void)out_consumed;
-            (void)out_is_path;
-            (void)out_stored_len;
-            (void)out_error;
-        }
-        /* Legacy parity: legacy uses next.start / next.len
-         * directly (no offset / length adjustment), since the
-         * TK_STR lexeme's start already points past the opening
-         * '"' and len already excludes the closing '"'. */
-        name = aoStrDupRaw(next.start, (u64)next.len);
+        src = (unsigned char *)l->ptr;
+        src_len = (long long)(buf_end - l->ptr);
     } else {
-        lexRaise(l,
-                "Syntax is: #link \"<path>\" or #link <libname> got: %s",
-                lexemeToString(&next));
+        /* Fallback: bounded by a sane upper bound. The component
+         * is allocation-free and only reads; this just prevents
+         * a runaway scan if cur_file bookkeeping is missing. */
+        src = (unsigned char *)l->ptr;
+        src_len = 65536;
     }
+
+    (void)BootstrapLinkDirective(src, src_len,
+                                 (long long)l->flags,
+                                 target_buf,
+                                 (long long)sizeof(target_buf),
+                                 &out_target_len,
+                                 &out_consumed,
+                                 &out_is_path,
+                                 &out_stored_len,
+                                 &out_error);
+
+    if (out_error != 0) {
+        /* CORRECTION03 C2 IMPL -- error path. Dispatch via
+         * lexRaise when the production diagnostic engine is
+         * wired up (real compile). In seam contexts where cc
+         * is a bare struct without diagnostics / recovery,
+         * log to stderr and advance past the directive so the
+         * loop can continue. */
+        const char *msg = NULL;
+        switch (out_error) {
+        case 1: msg = "Syntax is: #link \"<path>\" or #link <libname>"; break;
+        case 2: msg = "Syntax is: #link \"<path>\" or #link <libname>"; break;
+        case 3: msg = "Unterminated #link <...>"; break;
+        case 4: msg = "Unterminated #link \"...\""; break;
+        default: msg = "Lex failure in #link directive"; break;
+        }
+        if (l && l->cc && l->cc->diagnostics) {
+            lexRaise(l, "%s", msg);
+        } else {
+            fprintf(stderr, "ERROR: %s\n", msg);
+            /* Best-effort cursor advance: skip to next newline
+             * so the seam runner can continue with the next
+             * case. */
+            while (l->ptr < (l->cur_file ? l->cur_file->src->data
+                                          + l->cur_file->src->len
+                                        : l->ptr + 1024)
+                   && *l->ptr != '\n' && *l->ptr != '\0') {
+                l->ptr++;
+            }
+        }
+        return;
+    }
+
+    /* Advance the lexer cursor by the bytes the component
+     * consumed. This replaces the legacy lex() loop entirely. */
+    l->ptr = l->ptr + out_consumed;
+
+    /* Build the AoStr from the verbatim byte run. */
+    AoStr *name = aoStrDupRaw((char *)target_buf, (u64)out_target_len);
 
     if (!l->cc) {
         aoStrRelease(name);
         return;
     }
 
-    List **libs = is_path ? &l->cc->shared_object_files
-                          : &l->cc->link_libs;
+    List **libs = out_is_path ? &l->cc->shared_object_files
+                              : &l->cc->link_libs;
     if (*libs == NULL) {
         *libs = listNew();
     }

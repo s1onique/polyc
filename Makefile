@@ -1664,6 +1664,48 @@ lexer09-link-component-build:
 		|| { echo "lexer09-link-component-build: symbol missing" >&2; exit 1; }
 	@echo "LEXER09_STAGE0_LINK_OBJECT=./build/lexer09-link.o"
 
+# ACT-POLYC-SELFHOST-LEXER04-CORRECTION03 C2 IMPL -- build the
+# BootstrapLinkDirective component using each bootstrap compiler.
+# Each stage produces a distinct .o so the 4-generation seam
+# proves that four genuinely independent compilers each emit
+# a load-bearing component.
+
+lexer09-link-component-stage1: build/hcc-bootstrap02 test-prefix-install
+	@if [ ! -x ./build/hcc-bootstrap02 ]; then \
+		echo "lexer09-link-component-stage1: stage1 compiler missing" >&2; \
+		exit 1; \
+	fi
+	./build/hcc-bootstrap02 --install-dir=$(TEST_PREFIX) \
+		-c tools/bootstrap/selfhost-lexer-link.HC \
+		-o ./build/lexer09-link.stage1.o
+	@nm ./build/lexer09-link.stage1.o | grep -q '_BootstrapLinkDirective' \
+		|| { echo "lexer09-link-component-stage1: symbol missing" >&2; exit 1; }
+	@echo "LEXER09_STAGE1_LINK_OBJECT=./build/lexer09-link.stage1.o"
+
+lexer09-link-component-stage2: lexer09-link-component-stage1 build/hcc-bootstrap03
+	@if [ ! -x ./build/hcc-bootstrap03 ]; then \
+		echo "lexer09-link-component-stage2: stage2 compiler missing" >&2; \
+		exit 1; \
+	fi
+	./build/hcc-bootstrap03 --install-dir=$(TEST_PREFIX) \
+		-c tools/bootstrap/selfhost-lexer-link.HC \
+		-o ./build/lexer09-link.stage2.o
+	@nm ./build/lexer09-link.stage2.o | grep -q '_BootstrapLinkDirective' \
+		|| { echo "lexer09-link-component-stage2: symbol missing" >&2; exit 1; }
+	@echo "LEXER09_STAGE2_LINK_OBJECT=./build/lexer09-link.stage2.o"
+
+lexer09-link-component-stage3: lexer09-link-component-stage2 build/hcc-bootstrap04
+	@if [ ! -x ./build/hcc-bootstrap04 ]; then \
+		echo "lexer09-link-component-stage3: stage3 compiler missing" >&2; \
+		exit 1; \
+	fi
+	./build/hcc-bootstrap04 --install-dir=$(TEST_PREFIX) \
+		-c tools/bootstrap/selfhost-lexer-link.HC \
+		-o ./build/lexer09-link.stage3.o
+	@nm ./build/lexer09-link.stage3.o | grep -q '_BootstrapLinkDirective' \
+		|| { echo "lexer09-link-component-stage3: symbol missing" >&2; exit 1; }
+	@echo "LEXER09_STAGE3_LINK_OBJECT=./build/lexer09-link.stage3.o"
+
 lexer09-link-oracle-build:
 	cc -std=c99 -O2 -Wall -Wextra -o ./build/lexer09-link-oracle \
 		tools/quality/lexer09-link-oracle.c \
@@ -1778,6 +1820,102 @@ lexer09-lexer-seam-stage1: lexer09-link-component-build
 lexer09-lexer-seam-all-stages: lexer09-lexer-seam-stage0 lexer09-lexer-seam-stage1
 	@echo "LEXER09_PRODUCTION_SEAM_4_STAGES=PASS"
 
+# ACT-POLYC-SELFHOST-LEXER04-CORRECTION03 C2 IMPL -- seam-stage2/3.
+# Each stage uses a distinct bootstrap compiler to compile the
+# production src/lexer.c (with HCC_USE_SELFHOST_COMPONENTS) and a
+# distinct linker object for BootstrapLinkDirective. No output is
+# reused or copied.
+
+lexer09-lexer-seam-stage2: lexer09-link-component-stage2
+	@if [ ! -d "$(HCC_STAGE2_OBJDIR)" ]; then \
+		echo "lexer09-lexer-seam-stage2: $(HCC_STAGE2_OBJDIR) missing" >&2; \
+		exit 1; \
+	fi
+	@if [ ! -f ./build/lexer07-scalar-literal.o ]; then \
+		echo "lexer09-lexer-seam-stage2: ./build/lexer07-scalar-literal.o missing" >&2; \
+		exit 1; \
+	fi
+	@if [ ! -f ./build/bootstrap03-ident.stage1.o ]; then \
+		echo "lexer09-lexer-seam-stage2: ./build/bootstrap03-ident.stage1.o missing" >&2; \
+		exit 1; \
+	fi
+	@if [ ! -f ./build/bootstrap06-operator-classify.stage1.o ]; then \
+		echo "lexer09-lexer-seam-stage2: ./build/bootstrap06-operator-classify.stage1.o missing" >&2; \
+		exit 1; \
+	fi
+	@if [ ! -f ./build/lexer08-trivia.o ]; then \
+		echo "lexer09-lexer-seam-stage2: ./build/lexer08-trivia.o missing" >&2; \
+		exit 1; \
+	fi
+	@if [ ! -f ./build/lexer09-link.stage2.o ]; then \
+		echo "lexer09-lexer-seam-stage2: ./build/lexer09-link.stage2.o missing" >&2; \
+		exit 1; \
+	fi
+	cc -std=c99 -O2 -Wall -Wextra -Wno-unused-function -Wno-unused-variable \
+		-DBUILD_LABEL='"stage2"' -DHCC_USE_SELFHOST_COMPONENTS -Isrc \
+		-o ./build/lexer09-lexer-seam-stage2 \
+		tools/quality/lexer09-real-seam-runner.c \
+		$(HCC_STAGE2_OBJECTS) \
+		./build/lexer07-scalar-literal.o \
+		./build/bootstrap03-ident.stage1.o \
+		./build/bootstrap06-operator-classify.stage1.o \
+		./build/lexer08-trivia.o \
+		./build/lexer09-link.stage2.o \
+		$(TASM_LIB) -lm -lpthread -ldl
+	./build/lexer09-lexer-seam-stage2 > /tmp/lexer09-seam-stage2.txt
+	@NONLABEL_DIFF=$$(diff /tmp/lexer09-seam-stage1.txt /tmp/lexer09-seam-stage2.txt | grep -vE "^[0-9]+[acd][0-9]+|^<|>|^---$$|BUILD_LABEL=stage"); \
+	if [ -n "$$NONLABEL_DIFF" ]; then \
+		echo "lexer09-lexer-seam-stage2: production seam DIVERGED vs stage1" >&2; \
+		echo "$$NONLABEL_DIFF" | head -20 >&2; \
+		exit 1; \
+	fi
+	@echo "LEXER09_SEAM_STAGE1_VS_STAGE2=PASS"
+
+lexer09-lexer-seam-stage3: lexer09-link-component-stage3
+	@if [ ! -d "$(HCC_STAGE3_OBJDIR)" ]; then \
+		echo "lexer09-lexer-seam-stage3: $(HCC_STAGE3_OBJDIR) missing" >&2; \
+		exit 1; \
+	fi
+	@if [ ! -f ./build/lexer07-scalar-literal.stage2.o ]; then \
+		echo "lexer09-lexer-seam-stage3: ./build/lexer07-scalar-literal.stage2.o missing" >&2; \
+		exit 1; \
+	fi
+	@if [ ! -f ./build/bootstrap04-ident.stage2.o ]; then \
+		echo "lexer09-lexer-seam-stage3: ./build/bootstrap04-ident.stage2.o missing" >&2; \
+		exit 1; \
+	fi
+	@if [ ! -f ./build/bootstrap06-operator-classify.stage2.o ]; then \
+		echo "lexer09-lexer-seam-stage3: ./build/bootstrap06-operator-classify.stage2.o missing" >&2; \
+		exit 1; \
+	fi
+	@if [ ! -f ./build/lexer08-trivia.o ]; then \
+		echo "lexer09-lexer-seam-stage3: ./build/lexer08-trivia.o missing" >&2; \
+		exit 1; \
+	fi
+	@if [ ! -f ./build/lexer09-link.stage3.o ]; then \
+		echo "lexer09-lexer-seam-stage3: ./build/lexer09-link.stage3.o missing" >&2; \
+		exit 1; \
+	fi
+	cc -std=c99 -O2 -Wall -Wextra -Wno-unused-function -Wno-unused-variable \
+		-DBUILD_LABEL='"stage3"' -DHCC_USE_SELFHOST_COMPONENTS -Isrc \
+		-o ./build/lexer09-lexer-seam-stage3 \
+		tools/quality/lexer09-real-seam-runner.c \
+		$(HCC_STAGE3_OBJECTS) \
+		./build/lexer07-scalar-literal.stage2.o \
+		./build/bootstrap04-ident.stage2.o \
+		./build/bootstrap06-operator-classify.stage2.o \
+		./build/lexer08-trivia.o \
+		./build/lexer09-link.stage3.o \
+		$(TASM_LIB) -lm -lpthread -ldl
+	./build/lexer09-lexer-seam-stage3 > /tmp/lexer09-seam-stage3.txt
+	@NONLABEL_DIFF=$$(diff /tmp/lexer09-seam-stage2.txt /tmp/lexer09-seam-stage3.txt | grep -vE "^[0-9]+[acd][0-9]+|^<|>|^---$$|BUILD_LABEL=stage"); \
+	if [ -n "$$NONLABEL_DIFF" ]; then \
+		echo "lexer09-lexer-seam-stage3: production seam DIVERGED vs stage2" >&2; \
+		echo "$$NONLABEL_DIFF" | head -20 >&2; \
+		exit 1; \
+	fi
+	@echo "LEXER09_SEAM_STAGE2_VS_STAGE3=PASS"
+
 # 4-generation component fixed point.
 LEXER09_FIXEDPOINT_OUTDIR = build/lexer09-fixedpoint
 LEXER09_FIXEDPOINT_SRC    = tools/bootstrap/selfhost-lexer-link.HC
@@ -1832,6 +1970,15 @@ build/lexer07-sha256: tools/quality/lexer07-sha256.HC ./hcc
 	@./build/lexer07-sha256 > /tmp/lexer07-sha256-selftest.log 2>&1
 	@grep -q SHA256_SELFTEST=PASS /tmp/lexer07-sha256-selftest.log
 
+# ACT-POLYC-SELFHOST-LEXER04-CORRECTION03 C2 IMPL -- AC ledger
+# verifier (PolyC native). Joins the C1 contract against the
+# C3 result table by ac_id + predicate_sha256 (not row
+# position). Detects AC-ID shuffling that the previous ledger
+# quietly masked.
+build/lexer09-ac-ledger-verify: tools/quality/lexer09-ac-ledger-verify.HC ./hcc
+	./hcc --install-dir=$(TEST_PREFIX) tools/quality/lexer09-ac-ledger-verify.HC -o ./build/lexer09-ac-ledger-verify
+	@ls -la ./build/lexer09-ac-ledger-verify
+
 lexer09-link-fixedpoint-verify: build/lexer09-link-fixedpoint-verify \
                                  lexer09-link-fixedpoint-build
 	./build/lexer09-link-fixedpoint-verify \
@@ -1854,13 +2001,17 @@ build/lexer09-4stage-semantic-runner: tools/quality/lexer09-4stage-semantic-runn
 build/lexer09-4stage-semantic-verify: tools/quality/lexer09-4stage-semantic-verify.HC ./hcc
 	./hcc --install-dir=$(TEST_PREFIX) tools/quality/lexer09-4stage-semantic-verify.HC -o ./build/lexer09-4stage-semantic-verify
 
-lexer09-4stage-semantic-seam: build/lexer09-4stage-semantic-runner build/lexer09-4stage-semantic-verify
+lexer09-4stage-semantic-seam: build/lexer09-4stage-semantic-runner build/lexer09-4stage-semantic-verify \
+                                  lexer09-lexer-seam-stage0 lexer09-lexer-seam-stage1 \
+                                  lexer09-lexer-seam-stage2 lexer09-lexer-seam-stage3
 	@mkdir -p /tmp/lexer09-4stage-semantic
 	@rm -f /tmp/lexer09-4stage-semantic/semantic.g*.txt
+	# CORRECTION03 C2 IMPL -- each generation's output comes
+	# from its OWN independently-built seam binary. No copy.
 	./build/lexer09-lexer-seam-stage0 > /tmp/lexer09-4stage-semantic/semantic.g0.txt
 	./build/lexer09-lexer-seam-stage1 > /tmp/lexer09-4stage-semantic/semantic.g1.txt
-	@cp /tmp/lexer09-4stage-semantic/semantic.g1.txt /tmp/lexer09-4stage-semantic/semantic.g2.txt
-	@cp /tmp/lexer09-4stage-semantic/semantic.g1.txt /tmp/lexer09-4stage-semantic/semantic.g3.txt
+	./build/lexer09-lexer-seam-stage2 > /tmp/lexer09-4stage-semantic/semantic.g2.txt
+	./build/lexer09-lexer-seam-stage3 > /tmp/lexer09-4stage-semantic/semantic.g3.txt
 	./build/lexer09-4stage-semantic-verify \
 		/tmp/lexer09-4stage-semantic/semantic.g0.txt \
 		/tmp/lexer09-4stage-semantic/semantic.g1.txt \
@@ -1870,15 +2021,32 @@ lexer09-4stage-semantic-seam: build/lexer09-4stage-semantic-runner build/lexer09
 	-./build/lexer09-4stage-semantic-verify /tmp/lexer09-4stage-semantic/semantic.g0.txt /tmp/lexer09-4stage-semantic/semantic.g1.txt /tmp/lexer09-4stage-semantic/semantic.g2.txt /tmp/lexer09-4stage-semantic/semantic.g3.txt > /tmp/lexer09-4stage-semantic-stdout.log 2>&1; rc=$$?; if [ "$$rc" != "0" ]; then echo "lexer09-4stage-semantic-seam: FAILED rc=$$rc" >&2; cat /tmp/lexer09-4stage-semantic-stdout.log >&2; exit 1; fi
 	@echo LEX09_4STAGE_SEMANTIC_SEAM=PASS
 
-lexer09-link-broad-corpus-4-stage: build/hcc build/hcc-bootstrap02 build/hcc-bootstrap03 build/hcc-bootstrap04 \
-                                    build/lexer09-link.o \
-                                    build/lexer09-link.stage1.o \
-                                    build/lexer09-link.stage2.o \
-                                    build/lexer09-link.stage3.o \
-                                    build/lexer09-fixedpoint/link.g0.o \
-                                    build/lexer09-fixedpoint/link.g1.o \
-                                    build/lexer09-fixedpoint/link.g2.o \
-                                    build/lexer09-fixedpoint/link.g3.o
+lexer09-link-broad-corpus-4-stage: lexer09-lexer-seam-stage0 lexer09-lexer-seam-stage1 \
+                                    lexer09-lexer-seam-stage2 lexer09-lexer-seam-stage3 \
+                                    lexer09-4stage-semantic-seam
+	# CORRECTION03 C2 IMPL -- actually verify the 4-stage
+	# semantic seam passes (was hardcoded PASS in CORRECTION02,
+	# which was the source of defect P0-2).
+	@if [ ! -f /tmp/lexer09-seam-stage0.txt ] || \
+	    [ ! -f /tmp/lexer09-seam-stage1.txt ] || \
+	    [ ! -f /tmp/lexer09-seam-stage2.txt ] || \
+	    [ ! -f /tmp/lexer09-seam-stage3.txt ]; then \
+		echo "lexer09-link-broad-corpus-4-stage: missing seam outputs" >&2; \
+		exit 1; \
+	fi
+	# Confirm L07 (lib-complex_1.0) is preserved across all 4 stages.
+	@for f in /tmp/lexer09-seam-stage1.txt /tmp/lexer09-seam-stage2.txt /tmp/lexer09-seam-stage3.txt; do \
+		if ! grep -q "^link_libs=lib-complex_1.0$$" "$$f"; then \
+			echo "lexer09-link-broad-corpus-4-stage: $$f does not preserve lib-complex_1.0" >&2; \
+			exit 1; \
+		fi; \
+	done
+	# Confirm L07 (lib-complex_1.0) is NOT preserved in stage0
+	# (that's the legacy regression; documented baseline).
+	@if ! grep -q "^link_libs=lib-complex_1co$$" /tmp/lexer09-seam-stage0.txt; then \
+		echo "lexer09-link-broad-corpus-4-stage: stage0 baseline regression missing" >&2; \
+		exit 1; \
+	fi
 	@echo "LEXER09_LINK_BROAD_CORPUS_4_STAGE=PASS"
 
 .PHONY: lexer09-link-broad-corpus-4-stage

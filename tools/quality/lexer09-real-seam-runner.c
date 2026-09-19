@@ -153,6 +153,15 @@ int main(void)
         memset(&l, 0, sizeof(l));
         lexInit(&l, buf, 0);
         l.cc = &cc_storage;  /* lexInit resets cc to NULL */
+        /* CORRECTION03 C2 IMPL: lexInit reset cur_file to NULL,
+         * but the PolyC BootstrapLinkDirective (ABI 6) reads
+         * src_len from cur_file->src->len. Pop the empty
+         * scratch LexFile and push the real buffer so that
+         * cur_file / cur_file->src are populated. */
+        if (l.cur_file) {
+            /* lexInit set cur_file = NULL; nothing to free. */
+        }
+        lexPushString(&l, "<seam>", buf, (s64)n);
 
         printf("CASE=%s\n", c->name);
         /* Drive lexToken() until it returns NULL. lexToken

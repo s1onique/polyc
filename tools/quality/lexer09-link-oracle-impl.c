@@ -72,75 +72,85 @@ static int oracle_lex(const char *src, I64 src_len, I64 *cursor,
     return 1;
 }
 
+/* ACT-POLYC-SELFHOST-LEXER04-CORRECTION03 C2 IMPL -- ABI 6.
+ * The oracle now writes the verbatim body bytes into
+ * out_target_bytes, mirroring what the PolyC component does.
+ * For the angle form this means the oracle must NOT
+ * concatenate lexed tokens -- it must walk the original
+ * bytes from src[1] to '>' - 1 verbatim, which is the
+ * authority contract. The PolyC component does this with
+ * a single forward scan; the oracle now does the same. */
 I64 OracleScanLinkDirective(const char *src, I64 src_len, I64 flags,
+                            unsigned char *out_target_bytes, I64 out_target_cap,
+                            I64 *out_target_len,
                             I64 *out_consumed, I64 *out_is_path,
-                            I64 *out_stored_len, I64 *out_error)
+                            I64 *out_stored_len,
+                            I64 *out_error)
 {
     (void)flags;
 
-    *out_consumed   = 0;
-    *out_is_path    = 0;
-    *out_stored_len = 0;
-    *out_error      = ORACLE_LINK_OK;
+    *out_target_len  = 0;
+    *out_consumed    = 0;
+    *out_is_path     = 0;
+    *out_stored_len  = 0;
+    *out_error       = ORACLE_LINK_OK;
 
     if (src_len <= 0) {
         *out_error = ORACLE_LINK_ERR_MISSING;
         return ORACLE_LINK_ERR_MISSING;
     }
 
-    I64 cursor = 0;
-    oracle_lexeme_t le;
-
-    if (!oracle_lex(src, src_len, &cursor, &le)) {
-        *out_error = ORACLE_LINK_ERR_MISSING;
-        return ORACLE_LINK_ERR_MISSING;
+    if (src[0] == '"') {
+        /* Quoted form. Walk the bytes between quotes verbatim
+         * into out_target_bytes. */
+        I64 body_start = 1;
+        I64 i = 1;
+        while (i < src_len) {
+            if (src[i] == '\\' && i + 1 < src_len) {
+                i = i + 2;
+                continue;
+            }
+            if (src[i] == '"') {
+                I64 body_len = i - body_start;
+                I64 copy_end = body_len < out_target_cap ? body_len : out_target_cap;
+                for (I64 k = 0; k < copy_end; k = k + 1) {
+                    out_target_bytes[k] = (unsigned char)src[body_start + k];
+                }
+                *out_target_len  = body_len;
+                *out_stored_len  = body_len;
+                *out_consumed    = i + 1;
+                *out_is_path     = 1;
+                *out_error       = ORACLE_LINK_OK;
+                return ORACLE_LINK_OK;
+            }
+            i = i + 1;
+        }
+        *out_error = ORACLE_LINK_ERR_UNTERM_QUOT;
+        return ORACLE_LINK_ERR_UNTERM_QUOT;
     }
 
-    /* Quoted path form. */
-    if (le.kind == 0 && le.start[0] == '"') {
-        I64 body_start = cursor;
-        while (cursor < src_len && src[cursor] != '"') {
-            if (src[cursor] == '\\' && cursor + 1 < src_len) {
-                cursor = cursor + 2;
-            } else {
-                cursor = cursor + 1;
+    if (src[0] == '<') {
+        /* Angle form. Walk the bytes between '<' and '>' verbatim
+         * into out_target_bytes. NO token-by-token concatenation. */
+        I64 body_start = 1;
+        I64 i = 1;
+        while (i < src_len) {
+            if (src[i] == '>') {
+                I64 body_len = i - body_start;
+                I64 copy_end = body_len < out_target_cap ? body_len : out_target_cap;
+                for (I64 k = 0; k < copy_end; k = k + 1) {
+                    out_target_bytes[k] = (unsigned char)src[body_start + k];
+                }
+                *out_target_len  = body_len;
+                *out_stored_len  = body_len;
+                *out_consumed    = i + 1;
+                *out_error       = ORACLE_LINK_OK;
+                return ORACLE_LINK_OK;
             }
+            i = i + 1;
         }
-        if (cursor >= src_len) {
-            *out_error = ORACLE_LINK_ERR_UNTERM_QUOT;
-            return ORACLE_LINK_ERR_UNTERM_QUOT;
-        }
-        I64 body_end = cursor;
-        cursor = cursor + 1; /* consume closing " */
-        I64 body_len = body_end - body_start;
-        *out_stored_len = body_len;
-        *out_is_path    = 1;
-        *out_consumed   = cursor;
-        *out_error      = ORACLE_LINK_OK;
-        return ORACLE_LINK_OK;
-    }
-
-    /* Angle-bracket form. */
-    if (le.kind == 0 && le.start[0] == '<') {
-        I64 name_len = 0;
-        int saw_close = 0;
-        while (oracle_lex(src, src_len, &cursor, &le)) {
-            if (le.kind == 0 && le.start[0] == '>') {
-                saw_close = 1;
-                break;
-            }
-            if (le.len > 0) {
-                name_len = name_len + le.len;
-            }
-        }
-        if (!saw_close) {
-            *out_error = ORACLE_LINK_ERR_UNTERM_ANG;
-            return ORACLE_LINK_ERR_UNTERM_ANG;
-        }
-        *out_stored_len = name_len;
-        *out_consumed   = cursor;
-        *out_error      = ORACLE_LINK_OK;
-        return ORACLE_LINK_OK;
+        *out_error = ORACLE_LINK_ERR_UNTERM_ANG;
+        return ORACLE_LINK_ERR_UNTERM_ANG;
     }
 
     *out_error = ORACLE_LINK_ERR_INVALID;

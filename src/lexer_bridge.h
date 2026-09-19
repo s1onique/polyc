@@ -207,17 +207,20 @@ extern long long BootstrapScanTrivia(unsigned char *src,
                                      long long *out_comment_started);
 
 /*
- * ABI 5 -- link_directive_scanner (frozen; see
- * evidence/ACT-POLYC-SELFHOST-LEXER04/c1/c1-scope-freeze.txt
+ * ABI 6 -- link_directive_scanner (frozen; see
+ * evidence/ACT-POLYC-SELFHOST-LEXER04/CORRECTION03/c0/c0-contract.txt
  * and tools/quality/lexer09-link-oracle.c):
  *
  *   I64 BootstrapLinkDirective(
  *       U8  *src,
  *       I64  src_len,
  *       I64  flags,
+ *       U8  *out_target_bytes,    // NEW: caller buffer for body bytes
+ *       I64  out_target_cap,      // NEW: capacity of out_target_bytes
+ *       I64 *out_target_len,      // NEW: bytes written on success
  *       I64 *out_consumed,
  *       I64 *out_is_path,
- *       I64 *out_stored_len,
+ *       I64 *out_stored_len,      // kept as alias of *out_target_len
  *       I64 *out_error
  *   );
  *
@@ -235,12 +238,20 @@ extern long long BootstrapScanTrivia(unsigned char *src,
  *   5 = LINK_ERR_LEX_FAILURE  (any other lex() returning 0)
  *
  * On success:
+ *   out_target_bytes[0..*out_target_len-1] holds the verbatim body bytes
+ *                     (no surrounding quotes / angle brackets).
  *   *out_consumed   = total bytes consumed from src.
  *   *out_is_path    = 1 if quoted-path form (lands in
  *                     cc->shared_object_files); 0 if
  *                     angle-name form (lands in cc->link_libs).
- *   *out_stored_len = length of body bytes (no surrounding
- *                     quotes / angle brackets).
+ *   *out_stored_len = length of body bytes (== *out_target_len).
+ *
+ * ABI 6 is the ABI 5 surface plus three new output parameters
+ * (out_target_bytes, out_target_cap, *out_target_len) that allow
+ * the C adapter to construct the AoStr from a guaranteed-correct
+ * byte run. This is required because the legacy C adapter
+ * concatenates lexed tokens and corrupts complex targets
+ * (e.g. lib-complex_1.0 -> lib-complex_1co).
  *
  * CHARACTER DOMAIN:
  *   B_LINK_DIRECTIVE_CHARACTER_DOMAIN     = ASCII
@@ -250,6 +261,9 @@ extern long long BootstrapScanTrivia(unsigned char *src,
 extern long long BootstrapLinkDirective(unsigned char *src,
                                         long long src_len,
                                         long long flags,
+                                        unsigned char *out_target_bytes,
+                                        long long out_target_cap,
+                                        long long *out_target_len,
                                         long long *out_consumed,
                                         long long *out_is_path,
                                         long long *out_stored_len,
