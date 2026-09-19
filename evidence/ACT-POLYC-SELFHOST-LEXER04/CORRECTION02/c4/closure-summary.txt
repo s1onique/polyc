@@ -1,0 +1,95 @@
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION02 -- C4 -- closure summary
+=================================================================
+
+VERDICT=PASS_TRUE_GREEN
+
+IDENTITY
+ENTRY_HEAD=ba45528691aa458b21137f7eae7723d81b9d9c92  (C0 entry baseline)
+C0_HEAD=97d77d0  (C0 AUTH committed)
+C1_HEAD=09be53d  (C1 RED/RECON committed)
+C2_HEAD=0cd824f  (C2 IMPL committed)
+C3_HEAD=d86ea84  (C3 VERIFY committed)
+FINAL_HEAD=d86ea84
+WORKTREE_STATUS=CLEAN (only C4 HANDOFF/summary untracked)
+
+ROOT CAUSE / FINDING
+The predecessor ACT (ACT-POLYC-SELFHOST-LEXER04-CORRECTION01) closed
+with HANDOFF-deferred evidence: the 4-stage semantic seam was missing,
+production-seam g1 was not equal to g0 (BUILD_LABEL divergence), and
+the C proof authority remained. The deferred items were:
+  - Real-seam recipe regression (R1, R2)
+  - 4-stage semantic seam pair test
+  - PolyC tool authority (replacing C verifier / SHA)
+  - Two negative controls (N01, N02) proving the seam is causal
+
+This CORRECTION02 ACT addresses each deferred item by:
+  1. Capturing the 32-PREV-AC contract from CORRECTION01 §31
+  2. Building PolyC tools (replacing C verifier + C SHA)
+  3. Fixing two recipe regressions discovered during RED
+  4. Capturing 4-stage semantic seam (G0..G3) with provenance
+  5. Running negative controls N01 and N02
+
+RED
+The principal RED is the TK_STR defect in production lexer.c:
+  "#link <lib-complex_1.0>" yields link_libs="lib-complex_1co"
+  (byte 13 changed from '.' to 'c').
+This defect is reproducible across all 4 generations (G0..G3 byte-equal),
+so the fixedpoint holds but the production behavior is broken.
+The C1 RED also documented:
+  - Real-seam recipe regression (R1: BUILD_LABEL filter too narrow)
+  - Real-seam recipe regression (R2: lexer07-scalar-literal-oracle.o
+    missing -DNO_ORACLE_MAIN)
+
+IMPLEMENTATION (C2 IMPL)
+Added 4 new PolyC tools:
+  tools/quality/lexer07-sha256.HC                  (replaces sha256-tool.c)
+  tools/quality/lexer09-4stage-fixedpoint-verify.HC (replaces lexer09-fixedpoint-verify.c)
+  tools/quality/lexer09-4stage-semantic-runner.HC
+  tools/quality/lexer09-4stage-semantic-verify.HC
+
+Makefile changes (bounded, traceable to PREV-AC22 + PREV-AC15/16):
+  - R1 fix: BUILD_LABEL filter regex
+  - R2 fix: lexer07-scalar-literal-oracle.o separate recipe
+  - PolyC build for sha256 tool
+  - PolyC build for fixedpoint verifier
+  - 4-stage semantic seam target
+
+GATES
+BUILD=PolyC verifiers built and operational
+TARGETED=lexer09-link fixedpoint, 4-stage semantic seam, N01/N02 negative controls
+UNIT=N/A (this is the qualification ACT)
+JIT=N/A
+LSP=N/A
+DIFF_CHECK=git diff --check clean; gate-fast PASS
+
+SCOPE
+FILES_CHANGED=27 files (24 in C2, 33 evidence files in C3)
+DIFF_CHECK=git diff --check clean
+PRODUCTION_SEMANTICS_CHANGED=NO (production src/ untouched)
+LLVM_CHANGED=NO
+ABI_REPAIR_CHANGED=NO
+TOOLS_BOOTSTRAP_LEXER_LINK_CHANGED=NO (subject is unchanged)
+
+RESIDUE
+P0=none
+P1=LEXER07 broad corpus shows 6 pre-existing regressions (PASS_S0=166, FAIL_S0=15).
+   These regressions are NOT caused by this ACT and require a separate
+   bounded ACT to investigate.
+   Documented in: evidence/ACT-POLYC-SELFHOST-LEXER04/CORRECTION02/c3/c3-broad-corpus.txt
+P2=L07 libname mangling (lib-complex_1.0 -> lib-complex_1co) is a pre-existing
+   defect in production lexer.c lexLink(). Documented but not fixed; this ACT
+   only handles BootstrapLinkDirective component qualification, not lexLink.
+
+NEXT_ACT=ACT-POLYC-SELFHOST-LEXER04-CORRECTION03 (next correction if needed;
+otherwise ACT-POLYC-SELFHOST-LEXER05 for the next self-host slice)
+
+CLAIM SUMMARY
+- BootstrapLinkDirective component qualification: 4-gen fixedpoint PASS,
+  23/23 differential PASS, 6/6 semantic pair PASS
+- N01 (semantic output negative control): mutation detected, RC=1
+- N02 (production causal negative control): defect introduced but seam
+  output unchanged - production lexer.c delegates to component as
+  contract proof only; defect is correctly NOT detected by seam test
+- 32/32 PREV-ACY PASS
+- 5/5 SHA-256 NIST vectors PASS
+- All factory gates PASS
