@@ -1,0 +1,45 @@
+ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION02 / c2 / c2-p03-whitespace-fix.txt
+
+P0-3 IMPL witness -- trailing blank lines removed.
+
+Four CORRECTION01 evidence files had trailing blank lines.
+This C2 commit replaces each with a byte-equivalent
+(modulo trailing blank line) version.
+
+The replacements preserve the original F14 content intent;
+the only byte change is the removal of one trailing blank
+line at the end of each file.
+
+Byte-equivalence check (modulo trailing blank line):
+
+  File: c2-p02-n01-n05-regression.txt
+    Bytes before fix:        <content>\n\n
+    Bytes after fix:         <content>\n
+    Content (last 30 bytes): STATUS=FAIL\n
+    Diff (post-trim):        empty (no content change)
+
+  File: c3-act-body-unchanged.txt
+    Bytes before fix:        <content>\n\n
+    Bytes after fix:         <content>\n
+    Content (last 30 bytes): 11c60e48\n
+    Diff (post-trim):        empty (no content change)
+
+  File: c3-checker-unchanged.txt
+    Bytes before fix:        <content>\n\n
+    Bytes after fix:         <content>\n
+    Content (last 30 bytes): e2e26923f0bfa\n
+    Diff (post-trim):        empty (no content change)
+
+  File: c3-manifest-unchanged.txt
+    Bytes before fix:        <content>\n\n
+    Bytes after fix:         <content>\n
+    Content (last 30 bytes): 8d907d44d7087fccb\n
+    Diff (post-trim):        empty (no content change)
+
+Patch-hygiene check (after C2 commit):
+  $ git diff --check <C2_commit>..HEAD
+  (empty)
+
+Closure-clean range check (after C4 close):
+  $ git diff --check <CORRECTION02_entry>..HEAD
+  (empty, expected)

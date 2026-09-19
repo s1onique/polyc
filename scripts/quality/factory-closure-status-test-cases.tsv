@@ -1,0 +1,29 @@
+# scripts/quality/factory-closure-status-test-cases.tsv
+#
+# ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION02 P0-1:
+# Static 12-case regression matrix (DATA ONLY; no executable logic).
+#
+# Schema (TAB-separated):
+#   case_id  <TAB>  expected_rc  <TAB>  expected_substring  <TAB>  manifest_content
+#
+# Manifest content encoding:
+#   \\n = newline (one row separator)
+#   \\t = tab (within a row, between ACT and HANDOFF paths)
+#   \\\\ = literal backslash
+#
+# PolyC decoder: see tools/quality/factory-closure-status-test.HC
+# RunCase() which decodes these escapes before writing the temp
+# manifest file via FileWrite.
+case_id	expected_rc	expected_sub	manifest_content
+T01	0	STATUS=PASS	docs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION01.md\tevidence/llvmspike01-core03-correction01/HANDOFF.md\ndocs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION02.md\tevidence/llvmspike01-core03-correction02/HANDOFF.md\ndocs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION03.md\tevidence/llvmspike01-core03-correction03/HANDOFF.md
+T02	1	DUPLICATE_ACT_PATH	docs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION01.md\tevidence/llvmspike01-core03-correction01/HANDOFF.md\ndocs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION01.md\tevidence/llvmspike01-core03-correction02/HANDOFF.md
+T03	1	DUPLICATE_HANDOFF_PATH	docs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION01.md\tevidence/llvmspike01-core03-correction01/HANDOFF.md\ndocs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION02.md\tevidence/llvmspike01-core03-correction01/HANDOFF.md
+T04	1	DUPLICATE	docs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION01.md\tevidence/llvmspike01-core03-correction01/HANDOFF.md\ndocs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION01.md\tevidence/llvmspike01-core03-correction01/HANDOFF.md
+T05	1	MISSING_ACT_FILE	docs/acts/ACT-POLYC-DOES-NOT-EXIST.md\tevidence/llvmspike01-core03-correction01/HANDOFF.md
+T06	1	MISSING_HANDOFF_FILE	docs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION01.md\tevidence/llvmspike01-core03-correction01/HANDOFF.md\ndocs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION02.md\tdocs/factory/HANDOFF-DOES-NOT-EXIST.md
+T07	1	EMPTY_HANDOFF_PATH	only-one-field\nthree-fields\there\ttoo
+T08	1	HALT_EMPTY_MANAGED_UNIVERSE	
+T09	0	STATUS=PASS	docs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION01.md\tevidence/llvmspike01-core03-correction01/HANDOFF.md\ndocs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION02.md\tevidence/llvmspike01-core03-correction02/HANDOFF.md\ndocs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION03.md\tevidence/llvmspike01-core03-correction03/HANDOFF.md\ndocs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION04.md\tevidence/llvmspike01-core03-correction04/HANDOFF.md\ndocs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION05.md\tevidence/llvmspike01-core03-correction05/HANDOFF.md\ndocs/acts/ACT-POLYC-FACTORY-STATUS-RECONCILIATION-CORRECTION02.md\tevidence/factory-status-reconciliation-correction02/HANDOFF.md\ndocs/acts/ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01.md\tdocs/factory/HANDOFF-ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01.md\ndocs/acts/ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01-CORRECTION01.md\tdocs/factory/HANDOFF-ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01-CORRECTION01.md
+T10	0	STATUS=PASS	docs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION02.md\tevidence/llvmspike01-core03-correction02/HANDOFF.md\ndocs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION01.md\tevidence/llvmspike01-core03-correction01/HANDOFF.md
+T11	1	PATH_TRAVERSAL_REJECTED	docs/../etc/passwd\tevidence/llvmspike01-core03-correction01/HANDOFF.md
+T12	1	MISSING_HANDOFF_FILE	docs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION01.md\tevidence/llvmspike01-core03-correction01/HANDOFF.md\ndocs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION02.md\tdocs/factory/HANDOFF-DOES-NOT-EXIST-FOR-T12.md

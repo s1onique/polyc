@@ -1,0 +1,58 @@
+ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION02 / c2 / c2-p01-polyc-engine.txt
+
+P0-1 IMPL witness -- PolyC owns the 12-case matrix.
+
+Architecture AFTER C2:
+
+  scripts/quality/factory-closure-status-check-test.sh (16 LOC)
+     |
+     | exec env FACTORY_CLOSURE_STATUS_CHECKER=... \
+     |        FACTORY_CLOSURE_STATUS_CASES=... \
+     |        ./build/factory-closure-status-test
+     v
+  build/factory-closure-status-test (PolyC, ~400 LOC)
+     |
+     | 1. FileRead cases.tsv         [data file; no logic]
+     | 2. Loop: parse each row
+     |      DecodeEscapes(manifest_content)
+     |      FileWrite /tmp/fcst-<case>.<pid>
+     |      System("FACTORY_ACT_HANDOFF_MAP=... sh <checker> ...")
+     |      FileRead capture -> FileRead capture.rc
+     |      FindSub(capture, expected_sub)
+     |      Aggregate PASS/FAIL counters
+     v
+  scripts/quality/factory-closure-status-check.sh
+     (the closure oracle; unchanged from CORRECTION01)
+
+Authority graph AFTER C2:
+
+  PolyC binary owns:
+    - TSV parsing
+    - manifest fixture writing
+    - checker invocation
+    - output capture
+    - RC parsing
+    - substring matching
+    - PASS/FAIL aggregation
+    - final summary emission
+
+  TSV fixture contains:
+    - 12 rows of test-case data (no executable logic)
+
+  Shell wrapper contains:
+    - 16 LOC pure dispatch (env vars + exec)
+
+  No substantive logic remains in any shell file.
+  No executable logic is split across files.
+  F-POLYC-TOOLS compliant.
+
+12-case regression result:
+  $ sh scripts/quality/factory-closure-status-check-test.sh
+  factory-closure-status-test (PolyC): checker=... cases=...
+  PASS  T01
+  ...
+  PASS  T12
+  FACTORY_CLOSURE_STATUS_TEST_PASS=12
+  FACTORY_CLOSURE_STATUS_TEST_FAIL=0
+
+  RC=0 (success).

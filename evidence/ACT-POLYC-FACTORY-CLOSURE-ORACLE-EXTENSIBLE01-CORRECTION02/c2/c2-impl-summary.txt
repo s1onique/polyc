@@ -1,0 +1,75 @@
+ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION02 / c2 / c2-impl-summary.txt
+
+C2 IMPL/FREEZE summary.
+
+Three repairs applied:
+
+P0-1 (F-POLYC-TOOLS substantive logic):
+  tools/quality/factory-closure-status-test.HC:
+    Rewrote the PolyC binary to OWN the 12-case matrix logic.
+    The binary now:
+      - reads scripts/quality/factory-closure-status-test-cases.tsv
+        (static data; no executable logic)
+      - decodes escape sequences (\\n -> newline, \\t -> tab, \\\\ -> backslash)
+      - writes the per-case temp manifest via FileWrite
+      - invokes the checker via System with FACTORY_ACT_HANDOFF_MAP set
+      - captures stdout/stderr to a per-PID file
+      - parses the captured RC via FileRead
+      - substring-matches the captured output via FindSub
+      - aggregates PASS/FAIL counters
+      - emits FACTORY_CLOSURE_STATUS_TEST_PASS=N and _FAIL=N
+        summary lines
+    Removed:
+      - the sh <cases> <checker> delegation pattern
+      - the /tmp/fcst-exit-<pid> intermediate RC file pattern
+    Added:
+      - DecodeEscapes() for manifest-content TSV escape sequences
+      - env-var-based configuration via FACTORY_CLOSURE_STATUS_CHECKER
+        and FACTORY_CLOSURE_STATUS_CASES (PolyC's Main does not
+        receive argv in this runtime)
+
+  scripts/quality/factory-closure-status-test-cases.tsv:
+    New static TSV fixture. 12 rows; data only; no executable
+    logic. Holds the per-case (case_id, expected_rc,
+    expected_substring, manifest_content) tuples.
+
+  scripts/quality/factory-closure-status-test-cases.sh:
+    DELETED. Its job (the expect() engine, printf fixture
+    construction, checker invocation, RC + grep matching,
+    PASS/FAIL aggregation) has been moved into the PolyC binary.
+
+  scripts/quality/factory-closure-status-check-test.sh:
+    Reduced to 16-LOC pure dispatch. Only sets the env vars
+    and exec's the PolyC binary.
+
+  docs/factory/SHELL-BUDGET.tsv:
+    Removed the factory-closure-status-test-cases.sh entry
+    (file no longer exists).
+    Updated factory-closure-status-check-test.sh to 16 LOC.
+
+P0-2 (C3 phase binding):
+  Deferred to C3. This C2 commit establishes the frozen
+  starting boundary for the new monotonic proof:
+    SHA-256(freeze) = 1d69e96...checker, 13c843e5ff...manifest,
+                      6e92265...ACT-body
+  The C3 commit will be a real, named commit that contains
+  only new files under evidence/ACT-POLYC-FACTORY-CLOSURE-
+  ORACLE-EXTENSIBLE01-CORRECTION02/c3/. Between C2 and C3,
+  no production file changes.
+
+P0-3 (patch hygiene):
+  Replaced four CORRECTION01 evidence files that contained
+  trailing blank lines with byte-equivalent (modulo trailing
+  blank line) versions. The replacements are:
+    evidence/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-
+      CORRECTION01/c2/c2-p02-n01-n05-regression.txt
+    evidence/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-
+      CORRECTION01/c3/c3-act-body-unchanged.txt
+    evidence/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-
+      CORRECTION01/c3/c3-checker-unchanged.txt
+    evidence/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-
+      CORRECTION01/c3/c3-manifest-unchanged.txt
+
+  Each replacement strips a single trailing blank line while
+  preserving all other content byte-for-byte. See
+  c2/c2-p03-whitespace-fix.txt for the byte-equivalence witness.
