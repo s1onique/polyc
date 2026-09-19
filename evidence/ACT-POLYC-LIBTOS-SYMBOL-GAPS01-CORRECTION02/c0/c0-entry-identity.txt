@@ -1,0 +1,30 @@
+ACT: ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION02
+Phase: C0 AUTH (entry identity)
+Date: 2026-09-19T12:01:54Z
+
+Branch: main
+Status: ?? evidence/ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION02/
+ENTRY_HEAD: ad776721cfd176c594eb433a27bfb3cbf72389cc
+
+Predecessor verdict (CORRECTION01):
+  - Trailer 'ACT-Verdict: PASS_TRUE_GREEN' in commit ad77672.
+  - Reviewer audit (post-close) REJECTED the verdict with
+    three new closure-truth defects:
+      P0-1: mandatory-ac-status.tsv uses a substituted AC
+            numbering (AC01..AC22 mapping different from
+            the authorized AC01..AC22 in the ACT document).
+      P0-2: BOOTSTRAP_IDENTITY not verified. AC03 requires
+            'HCC_BOOTSTRAP_PROVENANCE_SHA' to be NAMED in
+            the precondition error. AC04 requires a producer
+            identity check on the resulting archive. Neither
+            is implemented.
+      P0-3: F-POLYC-TOOLS violated. scripts/quality/libtos-
+            n02-harness.sh is 262+ LOC of substantive shell.
+            Authorization explicitly forbids new non-PolyC
+            tooling beyond runtime-contract-test.HC.
+  Plus: LEXER conservation was argued from 'no source changes'
+    rather than by mechanically running the AC14 commands.
+
+Disposition: REJECT the FALSE_GREEN verdict. Open bounded
+  CORRECTION02 to address the three reviewer defects plus
+  the LEXER conservation gap.
