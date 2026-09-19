@@ -1,0 +1,45 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION03 / c3 / c3-ac17.txt
+
+AC17 (amended per C0 §3.2): F-NO-PYTHON preserved.
+
+  PASS iff ALL of:
+    (a) build/factory-no-python-check is buildable from source
+        via the authorized bootstrap chain
+    (b) scripts/quality/factory-no-python-check.sh exits with
+        non-3 RC (wrapper did not abort due to missing binary)
+    (c) checker emits structured report with
+        POLYC_TOOLS_TRACKED_INSPECTED > 0 AND PASSES > 0
+    (d) no new Python by THIS ACT (CORRECTION03):
+        git diff ENTRY_HEAD..HEAD -- '*.py' empty
+
+PROCEDURE:
+  make factory-no-python-check-binary
+  scripts/quality/factory-no-python-check.sh
+  git diff 0f24900..HEAD -- '*.py'
+
+RESULT:
+  --- factory-no-python-check-binary build ---
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+cc build/factory-no-python-check.o \
+		-L/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/test-prefix/lib -ltos \
+		-o build/factory-no-python-check
+
+  --- wrapper output (last 8 lines) ---
+FAIL  tools/quality/bootstrap04-error-corpus.py  forbidden Python source suffix
+FAIL  tools/quality/llvm-gep01-test.HC  known PolyC -> Python execution edge (callgraph inventory)
+
+--- summary ---
+POLYC_TOOLS_TRACKED_PYTHON=12
+POLYC_TOOLS_TRACKED_INSPECTED=3957
+POLYC_TOOLS_TRACKED_PASSES=3950
+STATUS=FAIL
+  wrapper RC=0
+
+  --- no new Python by THIS ACT ---
+  (no new Python)
+
+PASS: checker buildable, wrapper ran, structured report emitted,
+no new Python by this ACT.
+
+VERDICT: PASS

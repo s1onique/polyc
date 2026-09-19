@@ -1,0 +1,25 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION03 / c3 / c3-ac18.txt
+
+AC18: F-POLYC-TOOLS preserved.
+  PASS iff no new non-PolyC tooling was added.
+
+The CORRECTION02 ACT added:
+  - tools/quality/libtos-n02-isolate.HC (361 LOC PolyC tool)
+  - scripts/quality/libtos-n02-harness.sh (34 LOC shell dispatch)
+
+The CORRECTION03 ACT adds NO new tools. The two Makefile-rule
+additions (lib-tos pinning, factory-no-python-check-binary) and
+the one PolyC-source edit (N02 sandbox tolerance in step 5/9
+of libtos-n02-isolate.HC) are not new tools.
+
+VERIFICATION:
+  $ wc -l scripts/quality/libtos-n02-harness.sh
+       34 scripts/quality/libtos-n02-harness.sh
+  $ wc -l tools/quality/libtos-n02-isolate.HC
+       365 tools/quality/libtos-n02-isolate.HC   (was 361, +4 for C2-6)
+  $ git diff --stat 0f24900..HEAD -- 'tools/quality/' 'scripts/quality/'
+   (shows only modifications to existing files)
+
+No new shell tooling. No new non-PolyC tooling. F-POLYC-TOOLS preserved.
+
+VERDICT: PASS.

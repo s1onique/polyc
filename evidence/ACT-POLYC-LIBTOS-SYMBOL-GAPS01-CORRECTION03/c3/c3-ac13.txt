@@ -1,0 +1,17 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION03 / c3 / c3-ac13.txt
+
+AC13: Archive-only consumer link still works.
+  PASS iff `cc build/runtime-contract-test.o
+  -L./build/test-prefix/lib -ltos -lpthread -lc -lm` exits 0
+  with no undefined symbols.
+
+NOTE: this AC is exercised by `make runtime-contract-test`. The
+test target compiles the runtime-contract-test.HC, links against
+libtos.a archive-only, and runs the 21 semantic matrix cases.
+If the link had undefined symbols, make would exit 1 and the
+PASS=21 FAIL=0 summary would not be observed.
+
+RESULT: see c3-ac05.txt.
+  PASS: link succeeded; 21/21 PASS.
+
+VERDICT: PASS.

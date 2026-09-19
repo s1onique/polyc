@@ -1,0 +1,53 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION03 / c3 / c3-ac03.txt
+
+AC03 (amended per C0 §3.1): make lib-tos is provenance-strict.
+  PASS iff ALL of:
+    (a) Pinned builder absent: precondition error names
+        HCC_BOOTSTRAP_PROVENANCE_SHA.
+    (b) Pinned builder substituted with wrong SHA: precondition
+        error names measured SHA AND expected SHA AND REJECTED.
+    (c) Pinned builder with correct SHA: build succeeds; archive
+        contains producer_id note with the authorized SHA.
+    (d) `override` directive defeats command-line
+        LIBTOS_HCC=... overrides.
+
+PROCEDURE:
+  Test (a): mv ./build/hcc-bootstrap04 /tmp/missing; make lib-tos
+  Test (b): substitute wrapper-hcc at the pinned path; make lib-tos
+  Test (c): default build; rm -rf build/test-prefix/lib/libtos.a;
+            make lib-tos; strings libtos.a | grep -F 3b447421...
+  Test (d): make lib-tos LIBTOS_HCC=/bin/false
+
+RESULT:
+  (a) see AC02 evidence (a) sub-test
+      Output: "lib-tos: HCC_BOOTSTRAP_PROVENANCE_SHA: <unmeasurable>"
+              "build/hcc-bootstrap04 is REQUIRED for fail-closed lib-tos"
+      RC=1; libtos.a NOT written.
+      PASS.
+
+  (b) see AC02 evidence (b) sub-test
+      Output: "lib-tos: HCC_BOOTSTRAP_PROVENANCE_SHA: 6015b0f9..."
+              "lib-tos: HCC_BOOTSTRAP_PROVENANCE_SHA_EXPECTED: 3b447421..."
+              "lib-tos: REJECTED: producer identity mismatch (CORRECTION03 C2-1)"
+      RC=1; libtos.a NOT written.
+      PASS.
+
+  (c) default build:
+      $ rm -rf build/test-prefix/lib/libtos.a
+      $ make lib-tos
+      lib-tos: HCC_BOOTSTRAP_PROVENANCE_SHA=3b447421...
+      lib-tos: HCC_BOOTSTRAP_PROVENANCE_SHA_EXPECTED=3b447421...
+      lib-tos: producer-id verified: SHA=3b447421...
+      lib-tos: complete
+      RC=0
+      $ strings build/test-prefix/lib/libtos.a | grep -F 3b447421...
+      3b4474213efabcda30eb2d0c0610c6e23793f876896c8e21c5e18024b1ab40f6
+      PASS.
+
+  (d) make lib-tos LIBTOS_HCC=/bin/false
+      Output: "lib-tos: builder ./build/hcc-bootstrap04"
+              (override defeated; pinned builder used)
+      RC=0; libtos.a written (by pinned builder, not /bin/false)
+      PASS — the override is correctly defeated.
+
+VERDICT: PASS.

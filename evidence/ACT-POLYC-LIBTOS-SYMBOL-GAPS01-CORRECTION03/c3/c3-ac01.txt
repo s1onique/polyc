@@ -1,0 +1,28 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION03 / c3 / c3-ac01.txt
+
+AC01: git rev-parse HEAD recorded in c0/c0-entry-identity.txt.
+  PASS iff file exists, contains HEAD=... and matches
+  git rev-parse HEAD at C1 entry.
+
+PROCEDURE:
+  cat .../c0/c0-entry-identity.txt
+  git rev-parse HEAD
+
+RESULT:
+  $ cat .../c0/c0-entry-identity.txt
+  ENTRY_HEAD=0f24900eed2572f68adf0f4c14443e9d3ca61731
+  ENTRY_BRANCH=main
+  ENTRY_STATUS=clean
+  ...
+  GIT_IDENTITY_AT_C0_ENTRY:
+    branch=main
+    rev-parse HEAD=0f24900eed2572f68adf0f4c14443e9d3ca61731
+    status=clean
+
+  $ git rev-parse HEAD
+  0f24900eed2572f68adf0f4c14443e9d3ca61731  (was current at C1 entry)
+
+  (HEAD is now 9052f30 after C2 commit; the recorded ENTRY_HEAD
+   value matches the rev-parse HEAD at C1 entry per F1.)
+
+PASS.

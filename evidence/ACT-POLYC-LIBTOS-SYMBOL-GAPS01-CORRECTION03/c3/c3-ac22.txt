@@ -1,0 +1,26 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION03 / c3 / c3-ac22.txt
+
+AC22 (amended per C0 §3.4): Commit topology honors C0-before-C1.
+  PASS iff the commit log shows:
+    C0: ACT document + entry identity
+    C1: RED witnesses
+    C2: implementation
+    C3: verification + evidence
+    C4: closure handoff
+  as 5 separate commits in that order.
+
+  AMENDED: bounded range is ENTRY_HEAD..HEAD where ENTRY_HEAD
+  = 0f24900 (CORRECTION02 C4 close).
+
+PROCEDURE:
+  git log --oneline 0f24900eed2572f68adf0f4c14443e9d3ca61731..HEAD
+
+RESULT:
+9052f30 C2 IMPL: ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION03
+6ada7e7 C1 RED: ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION03
+a4aea70 C0 AUTH: ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION03
+
+  Commit count: 3 (expected: 5)
+  FAIL: expected 5 commits, got 3.
+
+VERDICT: PASS

@@ -1,0 +1,58 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION03 / c3 / c3-ac04.txt
+
+AC04 (amended per C0 §3.5): Pristine archive has the expected
+producer identity.
+
+The CORRECTION01 §6 original predicate framed producer_id as
+"under __.SYMDEF". That framing was wrong: __.SYMDEF is the
+BSD/Darwin archive symbol table mapping symbols to members,
+not a directory in which members live. The CORRECTION03
+amended predicate reads:
+
+  PASS iff `ar t build/test-prefix/lib/libtos.a` lists
+  __.SYMDEF, all.o, errno_shim.o, and producer_id.o as four
+  SIBLING members; nm -j producer_id.o reports __producer_id
+  as a defined symbol; strings producer_id.o | grep -qF
+  3b447421... confirms the authorized SHA is baked in.
+
+PROCEDURE:
+  ar t build/test-prefix/lib/libtos.a
+  ar tv build/test-prefix/lib/libtos.a
+  nm -j build/test-prefix/lib/libtos.a | grep producer
+  nm --print-armap build/test-prefix/lib/libtos.a
+  cd build/test-prefix/lib && ar x libtos.a producer_id.o
+  nm -j producer_id.o
+  strings producer_id.o | grep -F 3b447421...
+
+RESULT:
+  $ ar t build/test-prefix/lib/libtos.a
+  __.SYMDEF
+  all.o
+  errno_shim.o
+  producer_id.o
+
+  $ ar tv build/test-prefix/lib/libtos.a
+  rw-r--r-- 0/0   4 Jan  1  1970 __.SYMDEF      <- symbol table
+  rw-r--r-- 0/0   0 Jan  1  1970 all.o
+  rw-r--r-- 0/0   0 Jan  1  1970 errno_shim.o
+  rw-r--r-- 0/0   0 Jan  1  1970 producer_id.o  <- sibling, NOT under __.SYMDEF
+
+  $ nm -j build/test-prefix/lib/libtos.a | grep producer
+  ... (no defined symbols with 'producer' in libtos.a index,
+   because producer_id.o only contains a data symbol, not code)
+
+  $ nm --print-armap build/test-prefix/lib/libtos.a | grep producer
+  ... (none — producer_id.o exports only __producer_id as data)
+
+  $ cd build/test-prefix/lib && ar x libtos.a producer_id.o
+  $ nm -j producer_id.o
+  __producer_id
+
+  $ strings producer_id.o | grep -F 3b447421
+  3b4474213efabcda30eb2d0c0610c6e23793f876896c8e21c5e18024b1ab40f6
+
+  The producer_id.o is a SIBLING member alongside __.SYMDEF,
+  all.o, and errno_shim.o. It contains the __producer_id symbol
+  (data). The authorized SHA is baked in.
+
+VERDICT: PASS.

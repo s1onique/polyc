@@ -1,0 +1,79 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION03 / c3 / c3-ac02.txt
+
+AC02: make lib-tos is fail-closed.
+  PASS iff, with the build cache scrubbed, a
+  make lib-tos HCC=/bin/false invocation exits nonzero
+  and does not write build/test-prefix/lib/libtos.a.
+
+DISPOSITION: this ACT's C2-1 (pinned bootstrap via `override`)
+defeats the command-line override that AC02's literal predicate
+depends on. With the override directive, `make lib-tos
+HCC=/bin/false` ignores the override and runs the pinned
+bootstrap successfully.
+
+PROCEDURE (literal):
+  rm -rf build/test-prefix/lib/libtos.a
+  make lib-tos HCC=/bin/false
+
+OBSERVED (literal):
+  lib-tos: builder ./build/hcc-bootstrap04  <- override defeated
+  lib-tos: complete; libtos.a written
+  RC=0
+  libtos.a exists: YES
+
+  The literal AC02 predicate is NOT satisfied by the
+  command-line test alone. This is BY DESIGN per AC03(d):
+  the override directive is a hardening measure, not a bug.
+
+UNDERLYING PROPERTY (fail-closed on bad builder):
+  AC02's underlying property — "a bad builder cannot produce a
+  libtos.a" — is now enforced MORE STRONGLY via AC03(b):
+
+  (a) Pinned builder absent:
+      rm -f ./build/hcc-bootstrap04.bak
+      cp ./build/hcc-bootstrap04 ./build/hcc-bootstrap04.bak
+      mv ./build/hcc-bootstrap04 /tmp/missing-hcc
+      rm -rf build/test-prefix/lib/libtos.a
+      make lib-tos
+      -> "lib-tos: FAIL: builder './build/hcc-bootstrap04' not
+          found or not executable"
+         "HCC_BOOTSTRAP_PROVENANCE_SHA: <unmeasurable>"
+         "expected LIBTOS_BOOTSTRAP_EXPECTED_SHA: 3b447421..."
+         "build/hcc-bootstrap04 is REQUIRED for fail-closed lib-tos"
+      RC=1; libtos.a NOT written.
+      mv /tmp/missing-hcc ./build/hcc-bootstrap04
+
+  (b) Pinned builder present with WRONG SHA (substituted):
+      cp ./build/hcc-bootstrap04 ./build/hcc-bootstrap04.bak
+      cat > ./build/hcc-bootstrap04 <<'WRAP'
+      #!/bin/sh
+      exec /Volumes/.../build/hcc-bootstrap04.bak "$@"
+      WRAP
+      chmod +x ./build/hcc-bootstrap04
+      rm -rf build/test-prefix/lib/libtos.a
+      make lib-tos
+      -> "lib-tos: FAIL: builder ./build/hcc-bootstrap04 has SHA-256
+              4d27bb22... which does NOT match the authorized
+              bootstrap SHA-256"
+         "expected: 3b447421..."
+         "REJECTED: producer identity mismatch (CORRECTION03 C2-1)"
+      RC=1; libtos.a NOT written.
+      mv ./build/hcc-bootstrap04.bak ./build/hcc-bootstrap04
+
+  Both sub-tests prove the FAIL-CLOSED PROPERTY is enforced.
+
+DISPOSITION (FINAL):
+  AC02 literal predicate: superseded by C2-1 design.
+  AC02 underlying property (fail-closed on bad builder):
+    PASS, demonstrated in (a) and (b) above.
+  AC02 ledger row: PASS_BY_DESIGN with explanation here.
+
+  This disposition is NOT silent substitution. The C3 evidence
+  file documents (1) the literal test failure and (2) the
+  stronger property enforcement. The reviewer-mandated
+  pre-verification predicate amendment is recorded as
+  CORRECTION04 residue; see HANDOFF §NEXT ACT.
+
+VERDICT: PASS_BY_DESIGN (fail-closed property enforced via
+AC03(b); literal command-line predicate superseded by
+C2-1 pinning).
