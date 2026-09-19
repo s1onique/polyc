@@ -1,0 +1,55 @@
+C3 FREEZE VERIFICATION
+=======================
+
+Phase: C3 VERIFY
+Date: 2026-09-19
+
+Per ACT §16, recompute all C2 hashes and confirm they equal the
+frozen c2-freeze.tsv values.
+
+C2 reference (from c2-freeze.tsv):
+
+  CHECKER          1d69e962e16d253b6c9249d6900c5d5a43236faa78458756c54e2e26923f0bfa
+  MANIFEST         a4848bf51709bf40d49cd01a458197eb173c718de19a4d543a104c1792c5f51c
+  ACT_BODY         5d9575628e2d2f8f8e710f00c7ced9717f8fd83afe4727f4174c651bc32e74fb
+  POLYC_TEST       88943f4ff6897c60244b58343a1767cdb952ea70065828dc501228b4bcf755ad
+  SHELL_WRAPPER    48fd9dab14c4892f20b7e80d5da93531c4cb43ecb67d7cf1c97890a55e3d3b92
+  CASES_TSV        954c4eb814e5eebb91ee95de238b90e66815ddbb4c75cbd14377dfe760332634
+
+C3 recomputation (live):
+
+  $ for f in scripts/quality/factory-closure-status-check.sh \
+             docs/factory/act-handoff-map.tsv \
+             docs/acts/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION05.md \
+             tools/quality/factory-closure-status-test.HC \
+             scripts/quality/factory-closure-status-check-test.sh \
+             scripts/quality/factory-closure-status-test-cases.tsv; do
+      printf '%s\t%s\n' "$f" "$(shasum -a 256 < "$f" | cut -d' ' -f1)"
+    done
+
+Observed at C3 (worktree = committed C2 SHA, no edits):
+
+  CHECKER          1d69e962e16d253b6c9249d6900c5d5a43236faa78458756c54e2e26923f0bfa
+  MANIFEST         a4848bf51709bf40d49cd01a458197eb173c718de19a4d543a104c1792c5f51c
+  ACT_BODY         5d9575628e2d2f8f8e710f00c7ced9717f8fd83afe4727f4174c651bc32e74fb
+  POLYC_TEST       88943f4ff6897c60244b58343a1767cdb952ea70065828dc501228b4bcf755ad
+  SHELL_WRAPPER    48fd9dab14c4892f20b7e80d5da93531c4cb43ecb67d7cf1c97890a55e3d3b92
+  CASES_TSV        954c4eb814e5eebb91ee95de238b90e66815ddbb4c75cbd14377dfe760332634
+
+Assertions:
+
+  CHECKER_C3_SHA256           = CHECKER_C2_SHA256      YES
+  MANIFEST_C3_SHA256          = MANIFEST_C2_SHA256     YES
+  ACT_C3_SHA256               = ACT_C2_SHA256          YES
+  POLYC_TEST_C3_SHA256        = POLYC_TEST_C2_SHA256   YES
+  SHELL_WRAPPER_C3_SHA256     = SHELL_WRAPPER_C2_SHA256 YES
+  CASES_TSV_C3_SHA256         = CASES_TSV_C2_SHA256    YES
+
+  CHECKER_FROZEN=YES
+  MANIFEST_FROZEN=YES
+  ACT_BODY_FROZEN=YES
+  TEST_IMPLEMENTATION_FROZEN=YES
+
+  C2_TO_C3_FROZEN=YES
+
+End of C3 freeze verification.

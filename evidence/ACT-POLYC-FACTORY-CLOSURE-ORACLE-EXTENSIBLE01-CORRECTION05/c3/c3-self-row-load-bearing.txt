@@ -1,0 +1,65 @@
+C3 SELF-ROW LOAD-BEARING
+========================
+
+Phase: C3 VERIFY
+Date: 2026-09-19
+
+Per ACT §17, the unchanged checker against the unchanged manifest
+must report exactly one FAIL — the CORRECTION05 self-row — and
+nothing else.
+
+Live observation (no edits between C2 and C3):
+
+  $ bash scripts/quality/factory-closure-status-check.sh ; echo "exit=$?"
+  ...
+  OK    docs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION01.md ...
+  OK    docs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION02.md ...
+  OK    docs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION03.md ...
+  OK    docs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION04.md ...
+  OK    docs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION05.md ...
+  OK    docs/acts/ACT-POLYC-FACTORY-STATUS-RECONCILIATION-CORRECTION02.md ...
+  OK    docs/acts/ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01.md ...
+  OK    docs/acts/ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01-CORRECTION01.md ...
+  OK    docs/acts/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01.md ...
+  OK    docs/acts/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION01.md ...
+  OK    docs/acts/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION02.md ...
+  OK    docs/acts/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION03.md ...
+  OK    docs/acts/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION04.md ...
+  MISSING_HANDOFF_FILE  docs/factory/HANDOFF-ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION05.md
+
+  POLYC_GATE=factory-closure-status
+  MANIFEST_ROWS=14
+  PAIR_OK=13
+  PAIR_FAIL=1
+  STATUS=FAIL
+  VERDICT=FAIL
+  exit=1
+
+Required assertions:
+
+  C3_SELF_ROW_PRESENT=YES
+    ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION05 row
+    appears as the 14th data row of docs/factory/act-handoff-map.tsv.
+
+  C3_SELF_HANDOFF_PRESENT=NO
+    $ test -f docs/factory/HANDOFF-ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION05.md
+    -> absent
+
+  C3_SELF_PAIR_FAIL=YES
+    Cause: MISSING_HANDOFF_FILE
+    Affected path: docs/factory/HANDOFF-ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION05.md
+
+  C3_UNRELATED_PAIR_FAIL=0
+    All 13 prior pairs continue to report OK.
+
+  MANIFEST_ROWS=14
+  PAIR_OK=13
+  PAIR_FAIL=1
+  STATUS=FAIL
+
+  SELF_ROW_LOAD_BEARING=YES
+
+The transition from C2 to C3 produced no working-tree changes:
+the C2 commit's bytes are exactly what C3 verifies.
+
+End of C3 self-row load-bearing evidence.

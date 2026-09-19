@@ -1,0 +1,55 @@
+C3 PREDECESSOR CONSERVATION
+============================
+
+Phase: C3 VERIFY
+Date: 2026-09-19
+
+Per ACT §19, all prior manifest rows must remain valid through
+this ACT. The oracle is testing structural managed-pair validity,
+not historical epistemic truth.
+
+Live observation:
+
+  $ bash scripts/quality/factory-closure-status-check.sh | grep '^OK '
+  OK    docs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION01.md ...
+  OK    docs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION02.md ...
+  OK    docs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION03.md ...
+  OK    docs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION04.md ...
+  OK    docs/acts/ACT-POLYC-LLVM-CORE03-CORRECTION05.md ...
+  OK    docs/acts/ACT-POLYC-FACTORY-STATUS-RECONCILIATION-CORRECTION02.md ...
+  OK    docs/acts/ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01.md ...
+  OK    docs/acts/ACT-POLYC-COMPILER-STATIC-FUNCTION-LINKAGE01-CORRECTION01.md ...
+  OK    docs/acts/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01.md ...
+  OK    docs/acts/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION01.md ...
+  OK    docs/acts/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION02.md ...
+  OK    docs/acts/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION03.md ...
+  OK    docs/acts/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION04.md ...
+
+This explicitly includes:
+
+  - CORRECTION04 (PASS_FALSE_GREEN_HALTTED_AT_HANDBOFF_LEVEL)
+    which this ACT does not rewrite.
+
+  - CORRECTION03 (PASS_TRUE_GREEN historical verdict)
+    which this ACT explicitly acknowledges as a historical
+    FALSE_GREEN per the reviewer's reclassification by CORRECTION04.
+
+  - CORRECTION01/02 (PASS_TRUE_GREEN historical verdicts)
+    whose reclassifications remain.
+
+Required assertions:
+
+  PREEXISTING_MANIFEST_ROWS=13
+  PREEXISTING_PAIR_OK=13
+  PREEXISTING_PAIR_FAIL=0
+  CORRECTION04_PAIR_OK=YES
+  CORRECTION03_PAIR_OK=YES (structural)
+  CORRECTION02_PAIR_OK=YES (structural)
+  CORRECTION01_PAIR_OK=YES (structural)
+
+  The HANDOFF verdict text on prior HANDOFFs is NOT modified
+  by this ACT; the closure oracle tests structural managed-pair
+  validity (act + handoff both exist; handoff has a valid VERDICT
+  block), not the semantic truth of those verdicts.
+
+End of C3 predecessor conservation evidence.

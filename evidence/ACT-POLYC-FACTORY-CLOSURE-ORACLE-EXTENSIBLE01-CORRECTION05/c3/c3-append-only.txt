@@ -1,0 +1,47 @@
+C3 APPEND-ONLY HISTORY
+=======================
+
+Phase: C3 VERIFY
+Date: 2026-09-19
+
+Per ACT §30, §37, the append-only invariant must hold for the
+ACT's range. Run the canonical regression suite.
+
+Live observation:
+
+  $ sh scripts/quality/factory-append-only-test.sh ; echo "exit=$?"
+  POLYC_GATE=factory-append-only-tests
+    PASS  NC1  rc=0
+    PASS  NC2  rc=1
+    PASS  NC3  rc=1
+    PASS  NC4  rc=0
+    PASS  NC5  rc=1
+    PASS  NC6  rc=0
+    PASS  NC7  rc=0
+    PASS  NC8  rc=1
+    PASS  NC9  rc=1
+    PASS  NC10 rc=1
+    PASS  NC11 rc=0
+  --- summary ---
+  PASS=11
+  FAIL=0
+  STATUS=PASS
+  exit=0
+
+  APPEND_ONLY_HISTORY=PASS
+
+Additionally, the C0..C3 commit topology is strictly append-only:
+
+  $ git rev-list --count 0e6c36e..HEAD
+  3
+  (C0 AUTH, C1 RED/CONTRACT, C2 SELF-REGISTER/FREEZE)
+
+  $ git replace -l
+  (empty)
+
+  NO_AMEND=YES
+  NO_REBASE=YES
+  NO_FORCE_PUSH=YES
+  NO_RESET_RECOMMIT=YES
+
+End of C3 append-only evidence.
