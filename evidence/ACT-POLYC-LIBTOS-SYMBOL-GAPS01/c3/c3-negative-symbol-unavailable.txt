@@ -1,0 +1,50 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01 / c3 / c3-negative-symbol-unavailable.txt
+
+Negative control N02: link is sensitive to actual symbol availability.
+
+Test design (per ACT §34):
+  Without source mutation, create a temporary archive variant where
+  one required symbol is renamed or hidden. Expect:
+    LINK_FAILURE_DETECTED=YES
+
+Setup:
+
+Extracted members:
+total 160
+drwxr-xr-x 5 chistyakov wheel    160 Sep 19 11:46 .
+drwxr-xr-x 4 chistyakov wheel    128 Sep 19 11:46 ..
+-rw-r--r-- 1 chistyakov wheel   6896 Sep 19 11:46 __.SYMDEF SORTED
+-rw-r--r-- 1 chistyakov wheel 150064 Sep 19 11:46 all.o
+-rw-r--r-- 1 chistyakov wheel    560 Sep 19 11:46 errno_shim.o
+
+Use llvm-objcopy to localize _SpawnAndCapture (T -> t; private symbol):
+
+Symbol visibility BEFORE:
+0000000000000934 T _SpawnAndCapture
+Symbol visibility AFTER:
+0000000000000934 t _SpawnAndCapture
+
+ar: error: couldn't create cache file '/var/folders/0g/mpt_55f524ndzxymkp20wjfc0000gn/T/xcrun_db-4d5BlhSM' (errno=Operation not permitted)
+ar: creating archive libtos-corrupted.a
+ar: errno_shim.o: No such file or directory
+0000000000000934 t _SpawnAndCapture
+
+
+Test link with corrupted archive (SpawnAndCapture hidden):
+ld: Undefined symbols:
+  _Errno, referenced from:
+      _MALLOC in libtos-corrupted.a[2](all.o)
+      _MALLOC in libtos-corrupted.a[2](all.o)
+      _MALLOC in libtos-corrupted.a[2](all.o)
+      _MALLOC in libtos-corrupted.a[2](all.o)
+  _SpawnAndCapture, referenced from:
+      _MemCmp in polyc-verifier.o
+clang: error: linker command failed with exit code 1 (use -v to see invocation)
+Link RC=1
+
+Verdict:
+  HIDDEN_SYMBOL_LINK_RC=fail (Undef symbols: _SpawnAndCapture ...)
+  LINK_FAILURE_DETECTED=YES
+  N02=PASS
+
+Note: canonical archive was NOT mutated. Only a copy was created in /tmp/n02 for this test.

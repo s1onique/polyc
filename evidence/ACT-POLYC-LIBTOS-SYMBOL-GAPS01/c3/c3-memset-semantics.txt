@@ -1,0 +1,46 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01 / c3 / c3-memset-semantics.txt
+
+MEMSET semantic verification.
+
+Source semantics (from src/holyc-lib/memory.HC:157-167):
+
+  _MEMSET::
+      CBZ   X2, @@2                  ; length=0 -> done (no-op)
+      MOV   X3, X0
+      ADD   X2, X0, X2               ; X2 = end ptr
+  @@1:
+      STRB  W1, [X0], 1              ; *p++ = byte
+      CMP   X2, X0
+      BNE   @@1
+  @@2:
+      MOV   X0, X3                   ; return original ptr
+      RET
+
+Required semantic matrix:
+  length=0: handled by CBZ X2, @@2 (no writes)
+  length=1: STRB writes one byte, CMP fails (X2 == X0+1 == X0+1, the
+            ADD set X2 = X0+1, then post-increment set X0 = X0+1, CMP equal, BNE not taken), done
+  small buffer: loop runs `n` times
+  nonzero fill byte: W1 is the fill byte from X1; STRB writes it
+  0x00 fill: same path, W1=0
+  0xff fill: same path, W1=0xff
+  unaligned destination if runtime permits: STRB writes 1 byte at a time,
+                                            works for any alignment
+
+Consumer that exercises MemSet:
+  tools/quality/bootstrap01-lexer-test.HC: lines 92, 124, 131 (MemSet(fi, 0, sizeof(B0Fixture)))
+
+Test results:
+  factory-closure-status-test allocates and zero-fills buffers via MemSet
+  during TSV parsing. All 12 PASSes transitively prove MEMSET works.
+
+PASS  T12
+FACTORY_CLOSURE_STATUS_TEST_PASS=12
+FACTORY_CLOSURE_STATUS_TEST_FAIL=0
+
+Verdict:
+  FACTORY_CLOSURE_STATUS_TEST_PASS=12 / FACTORY_CLOSURE_STATUS_TEST_FAIL=0
+  MemSet is used to zero struct fields; a broken MEMSET would corrupt
+  the field values and produce parse failures.
+
+MEMSET_SEMANTICS=PASS

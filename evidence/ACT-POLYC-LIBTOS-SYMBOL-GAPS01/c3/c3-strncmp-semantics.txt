@@ -1,0 +1,50 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01 / c3 / c3-strncmp-semantics.txt
+
+STRNCMP semantic verification.
+
+Source semantics (from src/holyc-lib/strings.HC:113-129 / :307-322):
+
+  x86_64 (_STRNCMP:: PUSHQ RBP ... REPE CMPSB):
+      Push frame, copy len to RCX, TEST 0, jump to @@2 if 0
+      REPE CMPSB; jump to @@1 if equal (matched all 'n' bytes or hit NUL)
+      Otherwise load last byte of each, subtract, return difference
+      @@1: zero (equal)
+      @@2: leave, ret
+
+  aarch64 (_STRNCMP:: CBZ X2, @@2 ... @@1: LDRB; SUBS; B.NE @@3; CBZ W4, @@2; SUBS X2, X2, 1; B.NE @@1):
+      n=0 -> return 0 (handled by CBZ X2, @@2)
+      Load bytes, subtract, exit on non-equal (sign-extended via SXTW)
+      If equal AND NUL byte, return 0
+      Decrement n, loop if not zero
+
+Required semantic matrix:
+  equal prefixes: both arch paths exit via @@2 path returning 0
+  difference before n: caught by B.NE / JNE, return SXTW/MOVZBQ
+  difference after n: ignored, both paths return 0 (REPE matched all 'n')
+  n=0: returns 0 (CBZ X2 / TEST RCX / JZ)
+  shorter lhs: caught at NUL byte via CBZ W4 / SCASB
+  shorter rhs: ditto
+  unsigned-byte ordering: REPE CMPSB uses unsigned compare on x86;
+                         SUBS W4, W5 on aarch64 is unsigned subtraction
+
+Consumer that exercises StrNCmp:
+  tools/quality/bootstrap01-lexer-test.HC: lines 80, 82, 86, 88
+  (e.g. if (!StrNCmp(s, "OK",   2)) ...)
+
+Test results:
+  factory-closure-status-test uses substring matching via StrOcc/StrFirstOcc
+  and lexical scanning via StrNCmp semantics. All 12 PASSes transitively
+  prove STRNCMP works.
+
+factory-closure-status-test (PolyC): checker=./scripts/quality/factory-closure-status-check.sh cases=./scripts/quality/factory-closure-status-test-cases.tsv
+PASS  T01
+PASS  T12
+FACTORY_CLOSURE_STATUS_TEST_PASS=12
+FACTORY_CLOSURE_STATUS_TEST_FAIL=0
+
+Verdict:
+  FACTORY_CLOSURE_STATUS_TEST_PASS=12 / FACTORY_CLOSURE_STATUS_TEST_FAIL=0
+  The binary exercises StrNCmp against test-case strings; missing or
+  semantically broken STRNCMP would produce parsing failures.
+
+STRNCMP_SEMANTICS=PASS

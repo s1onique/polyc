@@ -1,0 +1,34 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01 / c3 / c3-rebuild-reproducibility.txt
+
+Rebuild reproducibility test (per ACT §36).
+
+Build 1: make lib-tos (clean state, copied to /tmp/build_a.a)
+  Size: 157760 bytes
+  T symbols: 313
+
+Build 2: make lib-tos (clean state, copied to /tmp/build_b.a)
+  Size: 157760 bytes
+  T symbols: 313
+
+Symbol set diff (build_a vs build_b):
+
+diff RC=0
+
+Member set diff: identical (both have all.o + errno_shim.o)
+Exported required-symbol set: identical (5/5 present in both)
+Consumer link result: PASS in both builds
+Consumer semantic tests: PASS in both builds
+
+Build 1 SHA: 7ed201c0db234e6b70fa9ac13c58838a686611fdd3fd7e5b816148cedf59da10
+Build 2 SHA: 415a5f08f7ccb3fbdf67de3916d6414247dd6105bb50715060090d5d0a0027a8
+(Note: archive SHA differs because ar embeds timestamps in __.SYMDEF;
+ the symbol set and member set are identical, which is the
+ deterministic invariant required by ACT §36.)
+
+Verdict:
+  BUILD1_SUCCESS=YES
+  BUILD2_SUCCESS=YES
+  REQUIRED_SYMBOL_SET_DETERMINISTIC=YES
+  MEMBER_SET_DETERMINISTIC=YES
+  ARCHIVE_BYTE_DETERMINISTIC=NO (ar metadata; known property)
+  LIBTOS_REBUILD_REPRODUCIBILITY=PASS

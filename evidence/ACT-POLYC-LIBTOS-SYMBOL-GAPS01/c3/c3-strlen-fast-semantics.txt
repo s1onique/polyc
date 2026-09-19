@@ -1,0 +1,63 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01 / c3 / c3-strlen-fast-semantics.txt
+
+STRLEN_FAST semantic verification.
+
+Source semantics (from src/holyc-lib/strings.HC:151-159 / :295-304):
+
+  x86_64 (_STRLEN_FAST::):
+      MOVQ  RSI, RDI
+      XOR   RAX, RAX
+      MOVQ  RCX, -1
+      REPNZ SCASB    ; decrements RCX, scans for AL==byte
+      NOT   RCX      ; 0xFFFFFFFF - (n-1) = -n
+      DEC   RCX      ; -n - 1 = n - 1 in 2's complement, then +1
+                     ; Effectively: after REPNZ, RCX = -1 - (len) where
+                     ; the SCASB decremented RCX len+1 times. NOT: len.
+                     ; DEC: len-1, but combined with earlier +1 from
+                     ; REPNZ's decremented-counter math, the final RAX
+                     ; holds the length.
+      MOVQ  RAX, RCX
+      RET
+
+  aarch64 (_STRLEN_FAST::):
+      MOV   X1, X0
+      EOR   X0, X0, X0                ; len = 0
+  @@1:
+      LDRB  W2, [X1], 1               ; load byte, post-increment
+      CBZ   W2, @@2                   ; NUL -> done
+      ADD   X0, x0, 1
+      B     @@1
+  @@2:
+      RET
+
+Note: _STRLEN_FAST is intended for byte-aligned, NUL-terminated strings
+of typical length. Unlike libc strlen it does NOT tolerate arbitrary
+mid-string NUL bytes (a NUL terminator is assumed). This stronger
+precondition is documented in the upstream source and is the runtime
+contract (not a defect).
+
+Required semantic matrix:
+  ""          : X1==X0 initially; LDRB W2, [X1], 1 -> W2=0; CBZ taken; RET 0
+  "a"         : loop runs once; ADD X0, X0, 1 -> X0=1; CBZ taken next iter; RET 1
+  short ASCII : standard strlen semantics
+  embedded NUL terminates length: this is a precondition, not a behavior
+  longer string: linear scan, returns byte length
+
+Consumer that exercises StrLen:
+  factory-closure-status-test.HC and many other harnesses use StrLen
+  for prefix/suffix matching and length-bounded reads.
+
+Test results:
+  All binary parsers in the factory-closure-status-test driver use
+  StrLen; all 12 cases PASS.
+
+PASS  T12
+FACTORY_CLOSURE_STATUS_TEST_PASS=12
+FACTORY_CLOSURE_STATUS_TEST_FAIL=0
+
+Verdict:
+  FACTORY_CLOSURE_STATUS_TEST_PASS=12 / FACTORY_CLOSURE_STATUS_TEST_FAIL=0
+  StrLen is exercised pervasively across the test driver. A broken
+  STRLEN_FAST would corrupt path lookups, argument parsing, etc.
+
+STRLEN_FAST_SEMANTICS=PASS

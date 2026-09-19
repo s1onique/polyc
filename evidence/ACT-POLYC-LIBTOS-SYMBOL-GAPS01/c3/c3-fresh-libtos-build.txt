@@ -1,0 +1,25 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01 / c3 / c3-fresh-libtos-build.txt
+
+Fresh libtos build (per ACT §27).
+
+Build command: make lib-tos
+Build host: darwin arm64
+Build producer: build/hcc-bootstrap04 (commit ffee58b)
+Build target: aarch64-apple-darwin
+Build command identity:
+  cd ./src/holyc-lib
+  ../../$(LIBTOS_HCC) --install-dir=$(TEST_PREFIX) -lib tos ./all.HC || true
+  cc -O0 -c ./errno_shim.c -o errno_shim.o
+  ar r ./libtos.a ./errno_shim.o
+  ranlib ./libtos.a
+  cp ./libtos.a $(TEST_PREFIX)/lib/libtos.a
+
+Resulting archive:
+  Path: build/test-prefix/lib/libtos.a
+  Size: 157760 bytes
+  SHA256: 7ed201c0db234e6b70fa9ac13c58838a686611fdd3fd7e5b816148cedf59da10
+  T symbols: 313
+
+Verdict:
+  FRESH_LIBTOS_BUILD=PASS
+  PREEXISTING_ARCHIVE_REUSED=NO (this build is from scratch)

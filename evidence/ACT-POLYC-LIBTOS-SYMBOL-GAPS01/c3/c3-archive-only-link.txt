@@ -1,0 +1,42 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01 / c3 / c3-archive-only-link.txt
+
+Post-ACT archive-only consumer link.
+
+Test subject: tools/quality/lexer08-fixedpoint-verify.HC
+  (the LEXER04 closure-path PolyC verifier blocked by libtos gap)
+
+[step 1] Compile PolyC verifier
+  cd /tmp/c3_link
+  ./hcc --install-dir=./build/test-prefix \
+    -c tools/quality/lexer08-fixedpoint-verify.HC \
+    -o polyc-verifier.o
+  RESULT: object produced, 9544 bytes
+
+[step 2] Link against canonical archive ONLY
+  Explicitly forbidden on this path (per ACT §30):
+    - src/holyc-lib/all.s
+    - individual runtime .o supplementation
+    - ad-hoc C shim providing missing functions
+    - linker --undefined hacks
+  Command run:
+    cc polyc-verifier.o \
+      -L./build/test-prefix/lib -ltos \
+      -lpthread -lc -lm \
+      -o polyc-verifier
+  RESULT: binary produced, 200976 bytes, link RC=0
+
+Verdict:
+  POLYC_VERIFIER_OBJECT=9544 bytes
+  POLYC_VERIFIER_LINK_RC=0
+  POLYC_VERIFIER_BINARY=200976 bytes
+  POLYC_VERIFIER_LINKED_AGAINST_CANONICAL_LIBTOS_A_ONLY=YES
+  POLYC_VERIFIER_LINK_USED_ALL_S_SUPPLEMENTATION=NO
+
+Resolved ABI symbols in linked binary (from nm):
+00000001000026c8 T _FREE
+00000001000026f0 T _MEMSET
+00000001000027ac T _STRLEN_FAST
+00000001000027c8 T _STRNCMP
+0000000100002fd8 T _SpawnAndCapture
+
+POLYC_VERIFIER_ARCHIVE_ONLY_LINK=PASS

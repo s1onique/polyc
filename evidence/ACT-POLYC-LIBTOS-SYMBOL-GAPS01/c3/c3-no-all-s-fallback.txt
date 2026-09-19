@@ -1,0 +1,27 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01 / c3 / c3-no-all-s-fallback.txt
+
+all.s fallback elimination (per ACT §32).
+
+For the repaired verifier path:
+--- Makefile 'all.s' references (must be zero) ---
+count=1
+286:# ACT-POLYC-LIBTOS-SYMBOL-GAPS01 C2 IMPL: the prior "all.s supplement"
+
+--- factory-closure-status-test-binary link line ---
+	./hcc --install-dir=./build/test-prefix -c \
+	cc build/factory-closure-status-test.o \
+
+--- selfhost-component-binary link line ---
+	./hcc --install-dir=./build/test-prefix -c \
+	cc build/selfhost-component.o \
+
+--- existence of ./src/holyc-lib/all.s (must NOT exist) ---
+  does NOT exist (PASS)
+
+
+Verdict:
+  ALL_S_FALLBACK_USED=NO
+  VERIFIER_LINK_LINE_CONTAINS_ALL_S=NO
+  VERIFIER_LINK_LINE_CONTAINS_INDIVIDUAL_LIBTOS_OBJECT_FIXUPS=NO
+  factory-closure-status-test-binary: cc ... -L./build/test-prefix/lib -ltos -lpthread -lc -lm
+  selfhost-component-binary:         cc ... -L./build/test-prefix/lib -ltos

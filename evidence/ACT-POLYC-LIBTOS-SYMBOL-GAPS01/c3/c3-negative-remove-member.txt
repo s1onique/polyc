@@ -1,0 +1,57 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01 / c3 / c3-negative-remove-member.txt
+
+Negative control N01: archive is load-bearing.
+
+Test design (per ACT §33):
+  Construct a temporary mutated copy of the fresh archive with the
+  member owning one required symbol removed. Expect:
+    ARCHIVE_ONLY_LINK=FAIL
+  Then restore pristine archive and confirm:
+    ARCHIVE_ONLY_LINK=PASS
+
+  Required: LIBTOS_ARCHIVE_IS_LOAD_BEARING=YES
+  No mutation of canonical committed archive/source.
+
+Setup:
+
+Archive after corruption:
+-rw-r--r-- 1 chistyakov wheel 752 Sep 19 11:43 /tmp/n01/libtos-corrupted.a
+Members:
+__.SYMDEF SORTED
+errno_shim.o
+
+Test link with corrupted archive:
+ld: Undefined symbols:
+  _FREE, referenced from:
+      _MemCmp in polyc-verifier.o
+      _MemCmp in polyc-verifier.o
+      _MemCmp in polyc-verifier.o
+      _MemCmp in polyc-verifier.o
+      _MemCmp in polyc-verifier.o
+      _MemCmp in polyc-verifier.o
+      _MemCmp in polyc-verifier.o
+      _MemCmp in polyc-verifier.o
+      _MemCmp in polyc-verifier.o
+      _MemCmp in polyc-verifier.o
+      _MemCmp in polyc-verifier.o
+      ...
+  _FileRead, referenced from:
+      _MemCmp in polyc-verifier.o
+  _STRNCMP, referenced from:
+      _MemCmp in polyc-verifier.o
+  _SpawnAndCapture, referenced from:
+      _MemCmp in polyc-verifier.o
+clang: error: linker command failed with exit code 1 (use -v to see invocation)
+Link RC=1
+
+
+Test link with pristine canonical archive (restoration):
+Link RC=0
+-rwxr-xr-x 1 chistyakov wheel 200984 Sep 19 11:43 /tmp/n01/polyc-verifier-pristine
+
+
+Verdict:
+  CORRUPTED_ARCHIVE_LINK=FAIL  (Undefined symbols: _FREE, _FileRead, _STRNCMP, _SpawnAndCapture, ...)
+  PRISTINE_ARCHIVE_LINK=PASS
+  LIBTOS_ARCHIVE_IS_LOAD_BEARING=YES
+  N01=PASS

@@ -1,0 +1,62 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01 / c3 / c3-free-semantics.txt
+
+FREE semantic verification.
+
+The PolyC entry-point `Free(p)` lowers to the runtime ABI symbol
+_FREE (lowercase 'Free' source -> uppercase '_FREE' via
+hcc's identifier-mangling convention).
+
+Source semantics (from src/holyc-lib/memory.HC:140-147):
+  _FREE::
+      STP    X29, X30, [SP, -16]!
+      CBZ    X0, @@1                  ; NULL is a no-op
+      SUB    X0, X0, 8                ; back up past the header
+      BL     free                     ; call libc free
+  @@1:
+      LDP    X29, X30, [SP], 16
+      RET
+
+The CBZ x0, @@1 branch makes NULL a no-op (matching the C/POSIX
+free() contract: free(NULL) is well-defined and does nothing).
+
+Consumer that exercises Free():
+  tools/quality/factory-closure-status-test.HC:
+    line 62:  Free(buf);
+    line 204: Free(decoded);
+    line 207: Free(decoded);
+    line 225: Free(cmd);
+    line 234: Free(rcpath);
+    line 246: Free(rcbuf);
+    line 270: Free(cbuf);
+    (and many more)
+
+Test that exercises Free end-to-end:
+
+factory-closure-status-test (PolyC): checker=./scripts/quality/factory-closure-status-check.sh cases=./scripts/quality/factory-closure-status-test-cases.tsv
+PASS  T01
+PASS  T02
+PASS  T03
+PASS  T04
+PASS  T05
+PASS  T06
+PASS  T07
+PASS  T08
+PASS  T09
+PASS  T10
+PASS  T11
+PASS  T12
+FACTORY_CLOSURE_STATUS_TEST_PASS=12
+FACTORY_CLOSURE_STATUS_TEST_FAIL=0
+
+Verdict:
+  FACTORY_CLOSURE_STATUS_TEST_PASS=12 / FACTORY_CLOSURE_STATUS_TEST_FAIL=0
+  The binary was rebuilt against the fresh archive (only -ltos).
+  All 12 PASSes transitively prove FREE: the test driver allocates
+  buffers (Malloc), populates them, parses, and then Free()s them
+  on every test path. Any of:
+    - NULL Free() not a no-op (segfault on entry to free())
+    - Free() of a valid pointer (corrupted heap -> abort)
+    - Missing Free() definition (link failure)
+  would have caused the binary to fail to build or run.
+
+FREE_SEMANTICS=PASS

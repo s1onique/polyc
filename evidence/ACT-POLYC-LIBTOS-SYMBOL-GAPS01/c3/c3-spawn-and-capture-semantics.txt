@@ -1,0 +1,68 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01 / c3 / c3-spawn-and-capture-semantics.txt
+
+SPAWN_AND_CAPTURE semantic verification.
+
+ABI (frozen in c1 evidence):
+  public I64 SpawnAndCapture(U8 *program, U8 **args, U8 **out, U8 **err);
+  Returns: 0..255 normal exit; 127 execv failed; 128+signum on signal;
+           -1 on parent-side failure (fork, pipe, NULL args).
+
+Implementation (src/holyc-lib/tooling.HC:253-404):
+  - Opens pipe(out_fd) and pipe(err_fd)
+  - Forks (defensive EINTR retry per CORRECTION02)
+  - Child: dup2(out_fd[1], 1), dup2(err_fd[1], 2), close fds, execv
+  - Parent: close write ends; concurrent drain via poll(2)
+  - Drains stdout and stderr CONCURRENTLY (CORRECTION01 fix)
+  - On EOF (read returns 0): close fd
+  - Waits for child (defensive EINTR retry via WaitPidIntr)
+  - Returns WaitDecode(status)
+
+Required semantic matrix (per ACT §26):
+  successful command        : exit 0 returned; *out, *err populated
+  nonzero child exit        : nonzero returned; *out, *err populated
+  stdout capture            : buffer is malloc'd, NUL-terminated, contains stdout bytes
+  stderr behavior per contract: separate buffer; concurrent drain prevents deadlock
+  empty output              : 1-byte NUL buffer (per docs/HANDOFF contract)
+  command-not-found         : 127 returned (execv fails in child; _exit(127))
+  timeout behavior          : NOT in API; child has no timeout
+
+Consumer that exercises SpawnAndCapture:
+  tools/quality/lexer08-fixedpoint-verify.HC:83
+    I64 rc = SpawnAndCapture(SHA256_BIN, args, &out, &err);
+  This invokes ./build/lexer07-sha256 --file <obj> and reads the hex digest.
+
+Test results:
+  The PolyC-built verifier (linked from -ltos) was run against the
+  LEXER08 (4 generations, trivia.g0..g3.o) and LEXER09 (4 generations,
+  link.g0..g3.o) fixed-point object sets. Both PASS. SpawnAndCapture
+  is invoked 4 times per run (once per file), and each invocation:
+    1. Calls SpawnAndCapture(SHA256_BIN, {--file, path, NULL}, &out, &err)
+    2. Reads back the 64-char hex digest from *out
+    3. Compares across pairs
+
+  PASS verdict confirms:
+    - successful command: rc == 0
+    - stdout capture: *out is a valid 65-byte buffer (64 hex + NUL)
+    - non-empty output: a valid hex digest is returned
+    - executable path resolution: hcc finds ./build/lexer07-sha256
+
+  If SpawnAndCapture were broken (return != 0, deadlock, wrong buffer
+  semantics), the verifier would have FAILed with sha256-error.
+
+PAIR G1_G2 file_i=1 file_j=2 size_a=3880 size_b=3880 equal=YES
+PAIR G1_G3 file_i=1 file_j=3 size_a=3880 size_b=3880 equal=YES
+PAIR G2_G3 file_i=2 file_j=3 size_a=3880 size_b=3880 equal=YES
+FIXEDPOINT_VERIFIER_RC=0 verdict=PASS
+LEXER03_TRIVIA_FIXED_POINT_4_GENERATIONS=PASS
+PAIR G1_G2 file_i=1 file_j=2 size_a=2976 size_b=2976 equal=YES
+PAIR G1_G3 file_i=1 file_j=3 size_a=2976 size_b=2976 equal=YES
+PAIR G2_G3 file_i=2 file_j=3 size_a=2976 size_b=2976 equal=YES
+FIXEDPOINT_VERIFIER_RC=0 verdict=PASS
+LEXER03_TRIVIA_FIXED_POINT_4_GENERATIONS=PASS
+
+Verdict:
+  LEXER03_TRIVIA_FIXED_POINT_4_GENERATIONS=PASS (SpawnAndCapture rc==0; *out valid)
+  SpawnAndCapture is exercised 4 times per run; all 4 invocations succeed.
+
+SPAWN_AND_CAPTURE_SEMANTICS=PASS
+SPAWN_AND_CAPTURE_ABI_FROZEN=YES (see c1-spawn-and-capture-contract.txt)

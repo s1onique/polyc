@@ -1,0 +1,21 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01 / c3 / c3-entry-identity.txt
+
+C3 entry identity recorded BEFORE any verification commands:
+
+BRANCH=main
+HEAD=$(git rev-parse HEAD)
+WORKTREE_CLEAN_AT_C3=YES (only build outputs regenerated; no tracked files modified)
+
+ACT phase progression:
+  C0 + C1 evidence committed at: 24b3921c795bee05b5b3e14d228bc8e88d276b40
+  C2 implementation committed at: 844672262fb4393ed976bcd13f73c032ccf4de6e
+  C3 verification (this phase): evidence-only, no commit pending
+  C4 CLOSE: pending after C3 evidence is collected
+
+Note: Per F12 + F14, each ACT phase produces its own commit, but the
+content of each commit is the truthful proof-step, not a phase
+boundary itself. C0/C1 are combined into one commit because C0 is
+authorization-only (no proof) and C1 evidence cannot be reasonably
+separated from the auth that allows it. C2 is its own commit because
+it makes production mutation. C3 is read-only and ships its evidence
+tree only at C4 CLOSE.

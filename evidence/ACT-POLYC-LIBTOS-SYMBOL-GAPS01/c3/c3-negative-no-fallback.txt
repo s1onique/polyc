@@ -1,0 +1,40 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01 / c3 / c3-negative-no-fallback.txt
+
+Negative control N03: link succeeds even when fallback is unavailable.
+
+Test design (per ACT §35):
+  Run the verifier link with a temporary environment/path that makes
+  any historical all.s fallback unavailable.
+  Expect: ARCHIVE_ONLY_LINK_STILL_PASS=YES
+  This is the strongest fallback-elimination control.
+
+Setup:
+Search for any fallback (all.s, .s supplements) anywhere in repo:
+(no output means: no fallback .s file exists)
+
+Search for Makefile references to all.s:
+286:# ACT-POLYC-LIBTOS-SYMBOL-GAPS01 C2 IMPL: the prior "all.s supplement"
+(no output means: no Makefile fallback branch)
+
+Link attempt with strict -L only (no ./src/holyc-lib/all.s referenced):
+Link RC=0
+-rwxr-xr-x 1 chistyakov wheel 200976 Sep 19 11:49 /tmp/n03/polyc-verifier
+
+Makefile factory-closure-status-test-binary rule:
+factory-closure-status-test-binary:
+	./hcc --install-dir=./build/test-prefix -c \
+		tools/quality/factory-closure-status-test.HC \
+		-o build/factory-closure-status-test.o
+	cc build/factory-closure-status-test.o \
+		-L./build/test-prefix/lib -ltos \
+		-lpthread -lc -lm \
+
+
+Verdict:
+  ARCHIVE_ONLY_LINK_STILL_PASS=YES
+  NO_ALL_S_SUPPLEMENTATION=YES
+  NO_PER_SYMBOL_FIXUPS=YES
+  Makefile factory-closure-status-test-binary rule contains:
+    ONLY `cc ... -L./build/test-prefix/lib -ltos -lpthread -lc -lm`
+    NO `if [ -f ./src/holyc-lib/all.s ]` branch
+  N03=PASS

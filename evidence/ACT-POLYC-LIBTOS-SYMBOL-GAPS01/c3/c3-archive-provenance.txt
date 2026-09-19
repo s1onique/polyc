@@ -1,0 +1,36 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01 / c3 / c3-archive-provenance.txt
+
+Build command (Makefile lib-tos):
+  make lib-tos
+
+Build producer: build/hcc-bootstrap04 (commit ffee58b)
+Build target: aarch64-apple-darwin
+Build host: darwin arm64 (this build)
+
+Resulting archive:
+  Path: build/test-prefix/lib/libtos.a
+  Size: 157760 bytes
+  SHA256: d8481b9b1fbd3b43a09feb2a115e86d7369a0d22edb17778aa94f4ba2ca1458c
+
+Composition (ar t):
+  __.SYMDEF SORTED
+  all.o
+  errno_shim.o
+
+Linked src files (via all.HC's include chain):
+  src/holyc-lib/defs.HH
+  src/holyc-lib/memory.HC    (asm: _MALLOC, _FREE, _MSIZE, _MEMSET, _MEMCPY, _CALLOC, _REALLOC)
+  src/holyc-lib/system.HC    (asm: _Exit, _Write, _System, _Sh, _Shlurp)
+  src/holyc-lib/tooling.HC   (public: SpawnAndCapture, PollIntr, ReadIntr, WaitPidIntr,
+                                          Contains, WaitDecode, TmpFile, FileExists)
+  src/holyc-lib/except.HC
+  src/holyc-lib/math.HC
+  src/holyc-lib/date.HC
+  src/holyc-lib/io.HC
+  src/holyc-lib/strings.HC   (asm: _STRLEN_FAST, _STRNCMP, _STRNICMP, _STRCMP, _STRCPY,
+                                       plus _TOLOWER/_TOUPPER/_ISSPACE/_STRHASH/_ATOI x86_64)
+  src/holyc-lib/vector.HC, list.HC, threads.HC, csv.HC, hashtable.HC, set.HC,
+  stat.HC, dir.HC, fzf.HC, json.HC, net.HC
+
+Object added by lib-tos target (after hcc -lib):
+  src/holyc-lib/errno_shim.c -> errno_shim.o (resolves _Errno used by all.o's _MALLOC)
