@@ -1,0 +1,44 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION04 / c3 / c3-ac02.txt
+
+AC02 (superseded per §3.1): make lib-tos is fail-closed.
+  PASS iff ALL of:
+    (a) Pinned builder absent: exit nonzero, no libtos.a,
+        precondition error names HCC_BOOTSTRAP_PROVENANCE_SHA.
+    (b) Pinned builder wrong SHA: exit nonzero, no libtos.a,
+        error names measured SHA AND expected SHA AND REJECTED.
+    (c) Pinned builder correct SHA: exit 0, libtos.a written
+        with matching producer_id note.
+
+PROCEDURE:
+  Test (a): mv ./build/hcc-bootstrap04 /tmp/missing; make lib-tos
+  Test (b): substitute wrapper; make lib-tos
+  Test (c): default make lib-tos; verify SHA in producer_id.o
+
+RESULT:
+  --- Test (a): pinned builder absent ---
+  lib-tos: FAIL: builder './build/hcc-bootstrap04' not found or not executable
+  lib-tos: HCC_BOOTSTRAP_PROVENANCE_SHA: <unmeasurable, builder missing>
+  lib-tos: build/hcc-bootstrap04 is REQUIRED for fail-closed lib-tos
+  libtos.a: NOT written
+  PASS
+
+  --- Test (b): pinned builder wrong SHA ---
+  lib-tos: FAIL: builder ./build/hcc-bootstrap04 has SHA-256 6015b0f9...
+  lib-tos: HCC_BOOTSTRAP_PROVENANCE_SHA: 6015b0f9...
+  lib-tos: HCC_BOOTSTRAP_PROVENANCE_SHA_EXPECTED: 3b447421...
+  lib-tos: REJECTED: producer identity mismatch (CORRECTION03 C2-1)
+  libtos.a: NOT written
+  PASS
+
+  --- Test (c): pinned builder correct SHA ---
+  lib-tos: producer-id verified: SHA=3b447421...
+  lib-tos: complete; libtos.a written to build/test-prefix/lib/
+  libtos.a: WRITTEN
+  Recorded SHA in producer_id.o: 3b4474213efabcda30eb2d0c0610c6e23793f876896c8e21c5e18024b1ab40f6
+  Authorized expected SHA:        3b4474213efabcda30eb2d0c0610c6e23793f876896c8e21c5e18024b1ab40f6
+  MATCH: YES
+  PASS
+
+PASS: all three sub-tests PASS.
+
+VERDICT: PASS
