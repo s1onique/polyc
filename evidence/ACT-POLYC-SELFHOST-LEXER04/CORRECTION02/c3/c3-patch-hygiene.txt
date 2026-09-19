@@ -1,0 +1,29 @@
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION02 -- C3 -- patch hygiene
+==============================================================
+
+Patch hygiene check on C2 commit (HEAD vs HEAD~2):
+
+1. Files changed:
+   Makefile                                           |   65 +-
+   3 new tools/quality/*.HC files                     |  456 +  (all PolyC)
+   19 new evidence/ACT-POLYC-SELFHOST-LEXER04/CORRECTION02/{c1,c2}/ files
+   
+2. Makefile diff:
+   - Bounded: 65 lines (additions+deletions), no unrelated refactor
+   - 4 distinct, intentional changes:
+     (a) PolyC build for lexer07-sha256 (replaces deprecated sha256-tool.c)
+     (b) PolyC build for lexer09-link-fixedpoint-verify (replaces deprecated lexer09-fixedpoint-verify.c)
+     (c) R1 fix: seam-stage1 BUILD_LABEL filter regex (was too narrow, would false-fail)
+     (d) R2 fix: lexer07-scalar-literal-oracle.o separate recipe with -DNO_ORACLE_MAIN
+     (e) 4-stage semantic seam target added
+
+3. git diff --check: clean (no whitespace issues, no trailing whitespace)
+
+4. No silent refactor of adjacent code (F7).
+
+5. All edits trace to ACT scope:
+   - PolyC tool replacements: required by PREV-AC15, PREV-AC16 (no C proof authority)
+   - Recipe fixes: required by PREV-AC22 (factory gates), discovered during C2 verification
+   - 4-stage semantic: required by PREV-AC11, PREV-AC12 (semantic seam)
+
+PATCH_HYGIENE = CLEAN

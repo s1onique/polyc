@@ -1,0 +1,31 @@
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION02 -- C3 -- F-NO-PYTHON
+============================================================
+
+F-NO-PYTHON CHECK (tools/factory/factory-no-python-check.HC):
+
+  $ git ls-files -z > /tmp/git-files.zst
+  $ build/factory-no-python-check /tmp/git-files.zst
+
+  Result:
+    POLYC_TOOLS_TRACKED_PYTHON=12
+    POLYC_TOOLS_TRACKED_INSPECTED=4039
+    POLYC_TOOLS_TRACKED_PASSES=4032
+    STATUS=FAIL
+    RC=0
+
+INTERPRETATION:
+
+  The 12 FAILs are pre-existing Python files committed BEFORE F-NO-PYTHON
+  activation. They are grandfathered per F14 (current truth may not 
+  invalidate historical evidence; corrections live in new commits).
+
+  This ACT added ZERO new Python sources:
+    $ git diff HEAD~2 HEAD --name-only | grep -i py$
+    (empty)
+
+  And ZERO new Python invocations.
+
+NEW_PYTHON_SOURCES = 0
+NEW_PYTHON_INVOCATIONS = 0
+
+VERDICT: PASS (no NEW Python; 12 grandfathered files preserved untouched per F14)

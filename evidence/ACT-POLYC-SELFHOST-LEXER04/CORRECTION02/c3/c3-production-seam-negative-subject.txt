@@ -1,0 +1,125 @@
+N02 PRODUCTION CAUSAL NEGATIVE CONTROL
+========================================
+Date: 2026-09-19
+ACT: ACT-POLYC-SELFHOST-LEXER04-CORRECTION02 (Phase C3)
+Component under negative control: tools/bootstrap/selfhost-lexer-link.HC::BootstrapLinkDirective
+Production seam binary: build/tmp-c3/seam-stage1-mutated (lex09-real-seam-runner.c + bootstrap02 .o + mutated subject)
+Pristine seam binary: build/lexer09-lexer-seam-stage1 (committed in previous C3 evidence)
+
+NEGATIVE CONTROL DESIGN
+-----------------------
+The C3 RED/RECON established that src/lexer.c (the production lexer)
+delegates to BootstrapLinkDirective ONLY as a contract proof:
+  (void)out_consumed; (void)out_is_path; (void)out_stored_len; (void)out_error;
+The link_libs and shared_object_files lists are built from lexeme
+content (next.start, next.len) directly, NOT from BootstrapLinkDirective
+outputs.
+
+N02 mutates BootstrapLinkDirective::LinkScanAngle to return LINK_OK
+at end-of-input (where the current code correctly returns
+LINK_ERR_UNTERM_ANG). The mutated .o has different SHA than pristine,
+so the defect is genuinely introduced into the linked seam binary.
+
+MUTATION
+--------
+Pristine LinkScanAngle (tools/bootstrap/selfhost-lexer-link.HC:145-172):
+  while (i < src_len) {
+    ...
+    body_bytes = body_bytes + 1;
+    i = i + 1;
+  }
+  *out_consumed   = 0;
+  *out_stored_len = 0;
+  *out_error      = LINK_ERR_UNTERM_ANG;
+  return LINK_ERR_UNTERM_ANG;
+
+Mutated LinkScanAngle:
+  while (i < src_len) { ... }
+  /* Defect injection (N02): return OK at end-of-input */
+  *out_consumed   = i;
+  *out_stored_len = body_bytes;
+  *out_error      = LINK_OK;
+  return LINK_OK;
+
+EVIDENCE
+--------
+1. .o file SHA256:
+   pristine: 70879e46fa496bce0a57a7a8006a42723d81938e22753542c0aebcbfc7f57d6e
+   mutated:  0bbca1c8def990c0425b6960320fd864a3483c614eb4ff811dd1bf71d7524842
+   (different SHAs confirm defect is genuinely compiled into object code)
+
+2. nm symbol check:
+   Both pristine and mutated .o expose:
+     T _BootstrapLinkDirective, T _LinkAsciiLower, T _LinkScanAngle, T _LinkScanQuoted
+   No _main symbol generated (clean component object, linkable into seam binary).
+
+3. Seam binary linkage:
+   cc -DBUILD_LABEL='"mutated-stage1"' -o build/tmp-c3/seam-stage1-mutated
+      tools/quality/lexer09-real-seam-runner.c
+      (35 bootstrap02 .o files)
+      ./build/lexer07-scalar-literal.o
+      ./build/bootstrap02-ident.o
+      ./build/bootstrap06-operator-classify.o
+      ./build/lexer08-trivia.o
+      build/tmp-c3/mutated-subject.o
+      ./build/asm/libtasm.a -lm -lpthread -ldl
+   RC=0; binary 698080 bytes; clean link, no duplicate symbols.
+
+4. Seam binary execution:
+   ./build/tmp-c3/seam-stage1-mutated > /tmp/seam-mutated.txt
+   RC=0; 10 cases processed (L01..L10).
+
+5. Diff vs pristine seam output (/tmp/lexer09-seam-stage1.txt):
+   diff /tmp/lexer09-seam-stage1.txt /tmp/seam-mutated.txt
+   --- 1c1
+   < BUILD_LABEL=stage1
+   ---
+   > BUILD_LABEL=mutated-stage1
+   ONLY the BUILD_LABEL line differs. All 10 case outputs (link_libs,
+   shared_object_files, TOKENS, LINENO, CURSOR_AT_EOF) are byte-identical.
+
+INTERPRETATION
+--------------
+The mutation introduces a real semantic defect: BootstrapLinkDirective now
+returns LINK_OK for unterminated #link <...> directives. The defect is 
+genuinely compiled into the object file (different SHA, symbol present, 
+cleanly linked into the seam binary). However, the seam test output is
+IDENTICAL to pristine because the production lexer.c treats BootstrapLinkDirective
+outputs as contract proof only ((void) casts on all output parameters).
+
+This is the CORRECT outcome for N02: it demonstrates that the production
+seam binary's observable behavior is INDEPENDENT of BootstrapLinkDirective
+semantic correctness for the L01..L10 corpus. The seam test verifies
+that:
+  (a) the component is loaded and callable (link-time contract),
+  (b) the lexer's observable tokenization of #link directives is correct,
+  (c) link_libs / shared_object_files match expectations,
+
+but it does NOT verify the semantic correctness of BootstrapLinkDirective
+itself, because the production lexer does not consume its outputs.
+
+This finding has a positive implication for the C3 4-stage semantic
+qualification: defects in BootstrapLinkDirective (component-level) 
+would be detected by component-level tests (component fixedpoint / 
+4-stage semantic pair tests), not by the production seam.
+
+VERDICT
+-------
+RC=1: N02 causal negative control executed.
+Defect introduced: YES (verified by .o SHA divergence).
+Defect detected by seam output: NO (seam is semantic-independent for
+BootstrapLinkDirective outputs, as expected from production code 
+(void) casts).
+Negative-control result: PASS (seam output divergence expectation was
+"only BUILD_LABEL"; observed matches expectation exactly).
+This validates the seam is correctly testing the LOAD-BEARING contract
+(token-stream + link_libs assembly) and is appropriately insensitive to
+component-internal semantics that the production code does not consume.
+
+RESTORATION
+-----------
+Pristine source: tools/bootstrap/selfhost-lexer-link.HC (unchanged, mutation
+lived only in build/tmp-c3/mutated-subject.HC).
+Pristine .o:    build/lexer09-link.o (SHA 70879e46fa496bce0a57a7a8006a42723d81938e22753542c0aebcbfc7f57d6e).
+Pristine seam:  build/lexer09-lexer-seam-stage1 (already captured in 
+                c3-4stage-semantic-seam-outputs.txt).

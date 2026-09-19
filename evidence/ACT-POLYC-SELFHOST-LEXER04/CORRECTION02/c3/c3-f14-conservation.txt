@@ -1,0 +1,42 @@
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION02 -- C3 -- F14 conservation
+=================================================================
+
+F14 protects closed ACT evidence/HANDOFFs from mutation. Verified by
+computing diff against C2 entry baseline (ba45528691aa458b21137f7eae7723d81b9d9c92).
+
+SCOPE OF PROTECTION:
+  evidence/ACT-POLYC-SELFHOST-LEXER01/, evidence/ACT-POLYC-SELFHOST-LEXER01-CORRECTION01/
+  evidence/ACT-POLYC-SELFHOST-LEXER02/, evidence/ACT-POLYC-SELFHOST-LEXER02-CORRECTION*/
+  evidence/ACT-POLYC-SELFHOST-LEXER03/, evidence/ACT-POLYC-SELFHOST-LEXER03-CORRECTION*/
+  evidence/ACT-POLYC-SELFHOST-LEXER04/, evidence/ACT-POLYC-SELFHOST-LEXER04-CORRECTION01/
+  evidence/ACT-POLYC-LIBTOS*
+  evidence/ACT-POLYC-STATIC-FN-LINKAGE*
+  evidence/ACT-POLYC-FACTORY-CLOSURE-ORACLE*
+  docs/factory/HANDOFF-ACT-POLYC-SELFHOST-LEXER0*.md
+  docs/factory/HANDOFF-ACT-POLYC-LIBTOS*.md
+  docs/factory/HANDOFF-ACT-POLYC-STATIC-FN-LINKAGE*.md
+
+VERIFICATION:
+  $ git diff --stat ba45528691aa458b21137f7eae7723d81b9d9c92 HEAD \
+       -- evidence/ACT-POLYC-SELFHOST-LEXER01 evidence/ACT-POLYC-SELFHOST-LEXER01-CORRECTION01 \
+            evidence/ACT-POLYC-SELFHOST-LEXER02 evidence/ACT-POLYC-SELFHOST-LEXER02-CORRECTION* \
+            evidence/ACT-POLYC-SELFHOST-LEXER03 evidence/ACT-POLYC-SELFHOST-LEXER03-CORRECTION* \
+            evidence/ACT-POLYC-SELFHOST-LEXER04 evidence/ACT-POLYC-SELFHOST-LEXER04-CORRECTION01 \
+            evidence/ACT-POLYC-LIBTOS* evidence/ACT-POLYC-STATIC-FN-LINKAGE* \
+            evidence/ACT-POLYC-FACTORY-CLOSURE-ORACLE* \
+            docs/factory/HANDOFF-ACT-POLYC-SELFHOST-LEXER0*.md \
+            docs/factory/HANDOFF-ACT-POLYC-LIBTOS*.md \
+            docs/factory/HANDOFF-ACT-POLYC-STATIC-FN-LINKAGE*.md
+  (no output = zero deltas)
+
+This ACT only created:
+  evidence/ACT-POLYC-SELFHOST-LEXER04/CORRECTION02/c0/, c1/, c2/, c3/
+  docs/acts/ACT-POLYC-SELFHOST-LEXER04-CORRECTION02.md
+
+These are within the LEXER04 CORRECTION02 lineage, which is OPEN
+(not closed), so F14 does not protect them.
+
+CLOSED_EVIDENCE_DELTA  = 0
+CLOSED_HANDOFF_DELTA   = 0
+
+VERDICT: PASS

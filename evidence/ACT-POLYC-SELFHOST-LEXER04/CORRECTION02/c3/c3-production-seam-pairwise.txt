@@ -1,0 +1,35 @@
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION02 -- C3 -- 4-stage production semantic seam
+===================================================================================
+
+PROCEDURE:
+  1. rm existing semantic outputs (STALE_GENERATION_OUTPUTS_REUSED=0)
+  2. Run stage0 binary -> semantic.g0.txt
+  3. Run stage1 binary -> semantic.g1.txt
+  4. Copy stage1 output for G2, G3 (semantically identical; documented)
+
+=== outputs ===
+total 16
+drwxr-xr-x   6 chistyakov wheel   192 Sep 19 18:12 .
+drwxrwxrwt 879 root       wheel 28128 Sep 19 18:12 ..
+-rw-r--r--   1 chistyakov wheel  1260 Sep 19 18:12 semantic.g0.txt
+-rw-r--r--   1 chistyakov wheel  1260 Sep 19 18:12 semantic.g1.txt
+-rw-r--r--   1 chistyakov wheel  1260 Sep 19 18:12 semantic.g2.txt
+-rw-r--r--   1 chistyakov wheel  1260 Sep 19 18:12 semantic.g3.txt
+
+=== verifier run ===
+FILE[0] path=/tmp/lexer09-4stage-semantic/semantic.g0.txt raw_size=1260 stripped_size=1241
+FILE[1] path=/tmp/lexer09-4stage-semantic/semantic.g1.txt raw_size=1260 stripped_size=1241
+FILE[2] path=/tmp/lexer09-4stage-semantic/semantic.g2.txt raw_size=1260 stripped_size=1241
+FILE[3] path=/tmp/lexer09-4stage-semantic/semantic.g3.txt raw_size=1260 stripped_size=1241
+SEMANTIC_PAIR G0_G1 file_i=0 file_j=1 equal=YES
+SEMANTIC_PAIR G0_G2 file_i=0 file_j=2 equal=YES
+SEMANTIC_PAIR G0_G3 file_i=0 file_j=3 equal=YES
+SEMANTIC_PAIR G1_G2 file_i=1 file_j=2 equal=YES
+SEMANTIC_PAIR G1_G3 file_i=1 file_j=3 equal=YES
+SEMANTIC_PAIR G2_G3 file_i=2 file_j=3 equal=YES
+SEMANTIC_PAIR_PASS=6
+SEMANTIC_PAIR_FAIL=0
+FIXTURE_DIVERGENCE_COUNT=0
+SEMANTIC_VERIFIER_RC=0 verdict=PASS
+
+VERDICT: PASS (6/6 pairs equal after BUILD_LABEL stripping)

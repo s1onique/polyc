@@ -1,0 +1,25 @@
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION02 -- C3 -- component fixedpoint NEGATIVE
+============================================================================
+
+Procedure: mutate one byte of G3's object file; run verifier with 5 files.
+
+=== pristine verify (4 files) ===
+PAIR G1_G2 file_i=1 file_j=2 size_a=2976 size_b=2976 equal=YES
+PAIR G1_G3 file_i=1 file_j=3 size_a=2976 size_b=2976 equal=YES
+PAIR G2_G3 file_i=2 file_j=3 size_a=2976 size_b=2976 equal=YES
+FIXEDPOINT_VERIFIER_RC=0 verdict=PASS
+LEXER09_LINK_FIXED_POINT_4_GENERATIONS=PASS
+
+=== with mutated 5th file ===
+PAIR G0_G1 file_i=0 file_j=1 size_a=2976 size_b=2976 equal=YES
+PAIR G0_G2 file_i=0 file_j=2 size_a=2976 size_b=2976 equal=YES
+PAIR G0_G3 file_i=0 file_j=3 size_a=2976 size_b=2976 equal=YES
+PAIR G1_G2 file_i=1 file_j=2 size_a=2976 size_b=2976 equal=YES
+PAIR G1_G3 file_i=1 file_j=3 size_a=2976 size_b=2976 equal=YES
+PAIR G2_G3 file_i=2 file_j=3 size_a=2976 size_b=2976 equal=YES
+PAIR G3_VS_MUTATED file_i=3 file_j=4 size_a=2976 size_b=2976 equal=NO
+BYTE_MISMATCH_DETECTED=YES
+NEGATIVE_CONTROL=PASS
+FIXEDPOINT_VERIFIER_RC=1 verdict=NEGATIVE_CONTROL_DETECTED_MISMATCH
+
+VERDICT: PASS (pristine RC=0; mutated RC=1; BYTE_MISMATCH_DETECTED=YES)

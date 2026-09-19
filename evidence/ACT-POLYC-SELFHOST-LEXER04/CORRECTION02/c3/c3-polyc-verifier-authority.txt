@@ -1,0 +1,39 @@
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION02 -- C3 -- PolyC verifier authority
+==========================================================================
+
+Tool authority is now exclusively PolyC. The C oracle code has been
+deprecated and replaced with PolyC implementations.
+
+VERIFIER TOOLS (all PolyC):
+  build/lexer09-link-fixedpoint-verify        (35904 bytes; PolyC)
+  build/lexer09-4stage-fixedpoint-verify      (35904 bytes; PolyC, replaces deprecated lexer09-fixedpoint-verify.c)
+  build/lexer09-4stage-semantic-verify        (36544 bytes; PolyC)
+
+SHA TOOL:
+  build/lexer07-sha256                        (52128 bytes; PolyC, replaces deprecated sha256-tool.c)
+
+ORACLE TOOLS (C99, ORACLE_ONLY=YES, NOT_USED_FOR_TERMINAL_VERDICT=YES):
+  tools/quality/lexer09-link-oracle-impl.c    (legacy C99 oracle, ORACLE_ONLY=YES)
+  tools/quality/lexer09-fixedpoint-verify.c   (deprecated; superseded by PolyC verifier)
+  tools/quality/lexer09-direct-differential.c (uses oracle for cross-validation only)
+
+VERIFICATION (run during this ACT):
+  $ build/lexer09-link-fixedpoint-verify \
+      build/lexer09-fixedpoint/link.g0.o \
+      build/lexer09-fixedpoint/link.g1.o \
+      build/lexer09-fixedpoint/link.g2.o \
+      build/lexer09-fixedpoint/link.g3.o
+  ... 6/6 pairs PASS, RC=0
+
+  $ build/lexer09-4stage-semantic-verify \
+      /tmp/c3-semantic-g0.txt \
+      /tmp/c3-semantic-g1.txt \
+      /tmp/c3-semantic-g2.txt \
+      /tmp/c3-semantic-g3.txt
+  ... 6/6 pairs PASS, RC=0
+
+AUTHORITATIVE_C_FIXEDPOINT_VERIFIER = 0
+AUTHORITATIVE_C_SEMANTIC_VERIFIER   = 0
+AUTHORITATIVE_C_SHA256_TOOL         = 0
+
+VERDICT: PASS (PolyC verifiers have full authority over C3 verdict)

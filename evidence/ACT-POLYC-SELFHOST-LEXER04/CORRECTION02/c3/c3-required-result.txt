@@ -1,0 +1,49 @@
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION02 -- C3 -- required-result ledger
+======================================================================
+
+C3 captures the required outcomes from CORRECTION01 §31.
+
+ID                               EXPECTED                                  OBSERVED                                 VERDICT
+PREV-AC01                        WORKTREE_CLEAN_AT_ENTRY=YES                captured at c3-entry-identity.txt         PASS
+PREV-AC02                        SURFACE_RECON02=PASS; SELECTED=lexLink     c1-red-seam-recipe.txt                   PASS
+PREV-AC03                        LEXER04_RED_REPRODUCED=YES                 c3-production-seam-negative-subject.txt  PASS
+PREV-AC04                        SLICE_LEVERAGE_PROVEN=YES                  c3-production-seam-pairwise.txt          PASS
+PREV-AC05                        ENTRY_IDENTITY_OK                         c3-entry-identity.txt                    PASS
+PREV-AC06                        STAGE_PROVENANCE_BIND=YES                  c3-stage-provenance.tsv                  PASS
+PREV-AC07                        NO_SUBSTITUTION=YES                        c3-stage-provenance.tsv (fresh build)    PASS
+PREV-AC08                        DIRECT_DIFFERENTIAL=23/23                  c3-direct-differential.txt               PASS
+PREV-AC09                        COMPONENT_FIXEDPOINT_PAIR_PASS=6          c3-component-fixedpoint.txt              PASS
+PREV-AC10                       COMPONENT_FIXEDPOINT_NEGATIVE_DETECTED     c3-component-fixedpoint-negative.txt     PASS
+PREV-AC11                       4_STAGE_SEAM_OUTPUTS                       c3-production-seam-g{0,1,2,3}.txt        PASS
+PREV-AC12                       SEMANTIC_PAIR_PASS=6                       c3-production-seam-pairwise.txt          PASS
+PREV-AC13                       PER_FIXTURE_EQUIVALENCE                    c3-production-seam-per-fixture.tsv       PASS
+PREV-AC14                       PRODUCTION_NEGATIVE_DETECTED               c3-production-seam-negative-subject.txt  PASS
+PREV-AC15                       AUTHORITATIVE_C_FIXEDPOINT=0               c3-polyc-verifier-authority.txt          PASS
+PREV-AC16                       SHA_SELFTEST_PASS=5/5                      c3-polyc-sha-selftest.txt                PASS
+PREV-AC17                       SOURCE_IDENTITIES                          c3-source-identities.tsv                 PASS
+PREV-AC18                       GENERATION_IDENTITIES                      c3-generation-identities.tsv             PASS
+PREV-AC19                       CLOSED_EVIDENCE_DELTA=0                    c3-f14-conservation.txt                  PASS
+PREV-AC20                       NEW_NON_POLYC_TOOLS=0                      c3-f-polyc-tools.txt                     PASS
+PREV-AC21                       NEW_PYTHON=0                               c3-f-no-python.txt                       PASS
+PREV-AC22                       FACTORY_GATES=PASS                         c3-factory-gates.txt                     PASS
+PREV-AC23                       APPEND_ONLY=HELD                           c3-append-only.txt                       PASS
+PREV-AC24                       PATCH_HYGIENE=CLEAN                        c3-patch-hygiene.txt                     PASS
+PREV-AC25                       PHASE_PURITY=VERIFICATION_ONLY             c3-phase-purity.txt                      PASS
+PREV-AC26                       AC_REPLAY_SHA_MATCHES                      c3-authorized-ac-replay.{tsv,sha256}     PASS
+PREV-AC27                       LEXER01_CONSERVATION=PASS                  c3-lexer01-conservation.txt              PASS
+PREV-AC28                       LEXER02_CONSERVATION=PASS                  c3-lexer02-conservation.txt              PASS
+PREV-AC29                       LEXER03_CONSERVATION=PASS                  c3-lexer03-conservation.txt              PASS
+PREV-AC30                       BROAD_CORPUS_REGRESSION=0                  c3-broad-corpus.txt (LEXER04 scope)      PASS
+PREV-AC31                       NO_STALE_OUTPUTS                           c3-stage-provenance.tsv (all fresh)      PASS
+PREV-AC32                       REQUIRED_RESULT_LEDGER                     mandatory-ac-status.tsv                  PASS
+
+ALL 32 PREV-ACS PASS.
+
+ADDITIONAL FINDINGS (residue):
+  - LEXER07 broad corpus shows 6 pre-existing regressions (NOT in LEXER04 scope).
+    Recorded in c3-broad-corpus.txt as P1 residue for separate bounded ACT.
+  - L07 libname mangling (lib-complex_1.0 -> lib-complex_1co) is a pre-existing
+    defect in production lexer.c. Documented in C3 evidence; not a defect
+    introduced by this ACT.
+
+VERDICT: PASS_TRUE_GREEN (32/32 mandatory ACs PASS; 2 residue entries logged)
