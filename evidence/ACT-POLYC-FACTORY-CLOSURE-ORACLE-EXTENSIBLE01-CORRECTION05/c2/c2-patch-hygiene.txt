@@ -1,0 +1,33 @@
+C2 PATCH HYGIENE
+================
+
+Phase: C2 SELF-REGISTER / FREEZE
+Date: 2026-09-19
+Prospective baseline: 0e6c36e2a34867f5a2454fdafa0f6d4c6699c2ed (frozen at C0)
+
+Pre-C2-commit hygiene observation (worktree has only the
+authorized manifest append):
+
+  $ git diff --check 0e6c36e2a34867f5a2454fdafa0f6d4c6699c2ed..HEAD
+  (empty: prior commits are patch-clean)
+
+  $ git diff --check 0e6c36e2a34867f5a2454fdafa0f6d4c6699c2ed -- docs/factory/act-handoff-map.tsv
+  (empty: the appended row has no trailing whitespace)
+
+  $ git diff --cached --check
+  (empty: staged change is clean)
+
+  PATCH_HYGIENE_C2=PASS
+  PATCH_HYGIENE_ERRORS=0
+
+Worktree-bound assertion:
+
+  $ git status --short
+  M  docs/factory/act-handoff-map.tsv
+  ?? evidence/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION05/c2/
+
+  WORKTREE_BOUND_TO_C2_SCOPE=YES
+  (the modified file is the only C2-authorized manifest append;
+   the untracked path is this ACT's own evidence directory.)
+
+End of C2 patch-hygiene evidence.

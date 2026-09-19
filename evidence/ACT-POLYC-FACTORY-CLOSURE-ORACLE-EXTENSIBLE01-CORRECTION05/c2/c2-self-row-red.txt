@@ -1,0 +1,68 @@
+C2 SELF-ROW RED WITNESS
+========================
+
+Phase: C2 SELF-REGISTER / FREEZE
+Date: 2026-09-19
+Predecessor commit (C1): b96b0ec
+
+This file is the central RED witness of this ACT.
+
+Mutation performed in C2 (authorized at C1, executed at C2):
+
+  $ tail -c 200 docs/factory/act-handoff-map.tsv
+  ... (CORRECTION04 row)
+  docs/acts/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION05.md\tdocs/factory/HANDOFF-ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION05.md
+
+Only one row appended. The HANDOFF file does NOT exist on disk.
+
+Live oracle output immediately after the append:
+
+  $ bash scripts/quality/factory-closure-status-check.sh ; echo "exit=$?"
+  ...
+  MISSING_HANDOFF_FILE  docs/factory/HANDOFF-ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION05.md
+
+  POLYC_GATE=factory-closure-status
+  MANIFEST_ROWS=14
+  MANIFEST_DATA_ROWS=14
+  MANIFEST_COMMENT_ROWS=17
+  MANIFEST_BLANK_ROWS=0
+  MANIFEST_PARSE_ERRORS=0
+  DUPLICATE_ACT_PATHS=0
+  DUPLICATE_HANDOFF_PATHS=0
+  DUPLICATE_PAIRS=0
+  DUPLICATE_CLASSIFICATION_IS_NON_SHORT_CIRCUITING=YES
+  MISSING_ACT_FILES=0
+  MISSING_HANDOFF_FILES=1
+  MALFORMED_HANDOFF_VERDICT=0
+  PAIR_OK=13
+  PAIR_FAIL=1
+  STATUS=FAIL
+  VERDICT=FAIL
+  exit=1
+
+The single FAIL is:
+
+  ACT:    docs/acts/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION05.md
+  Cause:  MISSING_HANDOFF_FILE docs/factory/HANDOFF-ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION05.md
+
+All 13 other pairs continue to report OK. UNRELATED_PAIR_FAIL=0.
+
+Required assertions:
+
+  MANIFEST_ROWS=14
+  PAIR_OK=13
+  PAIR_FAIL=1
+  STATUS=FAIL
+  SELF_ROW_LOAD_BEARING=YES
+  SELF_HANDOFF_ABSENT=YES
+  SELF_PAIR_FAILS=YES
+  ONLY_SELF_PAIR_FAILS=YES
+  FAIL_CAUSE=MISSING_HANDOFF_FILE
+  UNRELATED_PAIR_FAIL=0
+  EXIT_CODE=1
+
+The oracle has been REDUCED to a mechanical failing-witness
+state by exactly one manifest row append. The checker's
+self-judgment is now load-bearing on this ACT.
+
+End of C2 self-row red witness.
