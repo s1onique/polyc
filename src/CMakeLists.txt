@@ -598,20 +598,35 @@ if (HCC_ENABLE_LLVM)
     target_link_libraries(hcc ${LLVM_LDFLAGS} ${LLVM_LIBS_CORE})
 endif()
 
-# ACT-POLYC-LIBTOS-SYMBOL-GAPS01 C2 IMPL: the libtos installer is
-# bound to a hcc that actually compiles the current source tree.
-# The freshly-installed ./hcc at HEAD (= 6e30e7f, commit 6ba9f5ec)
-# regressed on ARM64 inline-asm mnemonics and cannot build the
-# canonical all.o.  build/hcc-bootstrap04 (commit ffee58b) IS the
-# latest working builder on this host, so prefer it when present.
-# The cmake-driven install_seam runs on every `make install`, so
-# this fallback chain must live in CMakeLists.txt — the Makefile's
-# lib-tos fallback (per this ACT) covers the non-install path.
+# ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION01 C2-1: provenance-strict
+# hcc selection. The cmake-driven install seam must NOT silently
+# fall through to the freshly-built ./hcc (commit 6ba9f5ec) which
+# regressed on ARM64 inline-asm and cannot produce a complete all.o.
+#
+# Strict contract:
+#   - If build/hcc-bootstrap04 (commit ffee58b, the last known-good
+#     producer) is present, use it. This is the canonical producer.
+#   - If it is NOT present, the install seam DOES NOT silently fall
+#     through. Instead it FATAL_ERRORs at configure time, forcing the
+#     caller to build the bootstrap chain first.
+#   - The fallback to ${CMAKE_INSTALL_PREFIX}/bin/hcc is removed
+#     because the fresh hcc at HEAD regressed.
+#
+# This is the cmake analogue of the Makefile lib-tos provenance
+# contract (see Makefile lines around LIBTOS_HCC). Both seams use
+# the same bootstrap-or-fail policy.
 set(HCC_BOOTSTRAP "${CMAKE_SOURCE_DIR}/../build/hcc-bootstrap04")
 if (EXISTS "${HCC_BOOTSTRAP}")
     set(HCC_PATH "${HCC_BOOTSTRAP}")
 else()
-    set(HCC_PATH "${CMAKE_INSTALL_PREFIX}/bin/hcc")
+    # Provenance-strict: refuse to fall through to the broken fresh hcc.
+    # Operators must build the bootstrap chain before installing.
+    message(FATAL_ERROR
+        "libtos install seam: build/hcc-bootstrap04 not found at "
+        "${HCC_BOOTSTRAP}. The current ./hcc at HEAD regressed on "
+        "ARM64 inline-asm mnemonics and cannot produce a complete "
+        "all.o. Build the bootstrap chain first via "
+        "'make bootstrap04-component-build', then re-run cmake.")
 endif()
 
 # Command for unit tests

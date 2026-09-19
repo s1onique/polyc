@@ -12,7 +12,7 @@ HCC_ENABLE_LLVM ?= OFF
 
 default: all
 
-.PHONY: all formal-dafny gate-fast gate-push install-hooks static-function-linkage-test factory-closure-status-test factory-closure-status-test-binary llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test selfhost-component-binary selfhost-component-build selfhost-component-test selfhost-component-selftest selfhost-registry-validate factory-halt-classification-binary factory-halt-classification-selftest bootstrap06-component-build bootstrap06-operator-classify-oracle bootstrap06-direct-differential bootstrap06-component-stage1 bootstrap06-component-stage2 bootstrap06-component-stage3 bootstrap06-lexer-seam-stage1 lexer07-component-build lexer07-scalar-literal-oracle lexer07-direct-differential lexer07-component-stage1 lexer07-component-stage2 lexer07-component-stage3 lexer07-lexer-seam-stage0 lexer07-lexer-seam-stage1 lexer07-lexer-seam-stage2 lexer07-lexer-seam-stage3 lexer07-lexer-seam-stage2-from-objs lexer07-lexer-seam-stage3-from-objs lexer07-lexer-seam-all-stages lexer07-fixture-inventory lexer07-broad-corpus-4-stage lexer07-correction02-all lexer08-component-build lexer08-trivia-oracle lexer08-direct-differential lexer08-fixture-inventory lexer08-broad-corpus-4-stage lexer08-lexer-seam-stage0 lexer08-lexer-seam-stage1 lexer08-lexer-seam-all-stages lexer08-trivia-fixedpoint-g0 lexer08-trivia-fixedpoint-g1 lexer08-trivia-fixedpoint-g2 lexer08-trivia-fixedpoint-g3 lexer08-trivia-fixedpoint-build lexer08-trivia-fixedpoint-verify lexer08-trivia-fixedpoint lexer09-link-component-build lexer09-link-oracle-build lexer09-direct-differential lexer09-lexer-seam-stage0 lexer09-lexer-seam-stage1 lexer09-lexer-seam-all-stages lexer09-link-fixedpoint-g0 lexer09-link-fixedpoint-g1 lexer09-link-fixedpoint-g2 lexer09-link-fixedpoint-g3 lexer09-link-fixedpoint-build lexer09-link-fixedpoint-verify lexer09-link-fixedpoint lexer09-link-negative-control lexer09-link-determinism lexer09-link-broad-corpus-4-stage
+.PHONY: all formal-dafny gate-fast gate-push install-hooks static-function-linkage-test factory-closure-status-test factory-closure-status-test-binary llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test selfhost-component-binary selfhost-component-build selfhost-component-test selfhost-component-selftest selfhost-registry-validate factory-halt-classification-binary factory-halt-classification-selftest bootstrap06-component-build bootstrap06-operator-classify-oracle bootstrap06-direct-differential bootstrap06-component-stage1 bootstrap06-component-stage2 bootstrap06-component-stage3 bootstrap06-lexer-seam-stage1 lexer07-component-build lexer07-scalar-literal-oracle lexer07-direct-differential lexer07-component-stage1 lexer07-component-stage2 lexer07-component-stage3 lexer07-lexer-seam-stage0 lexer07-lexer-seam-stage1 lexer07-lexer-seam-stage2 lexer07-lexer-seam-stage3 lexer07-lexer-seam-stage2-from-objs lexer07-lexer-seam-stage3-from-objs lexer07-lexer-seam-all-stages lexer07-fixture-inventory lexer07-broad-corpus-4-stage lexer07-correction02-all lexer08-component-build lexer08-trivia-oracle lexer08-direct-differential lexer08-fixture-inventory lexer08-broad-corpus-4-stage lexer08-lexer-seam-stage0 lexer08-lexer-seam-stage1 lexer08-lexer-seam-all-stages lexer08-trivia-fixedpoint-g0 lexer08-trivia-fixedpoint-g1 lexer08-trivia-fixedpoint-g2 lexer08-trivia-fixedpoint-g3 lexer08-trivia-fixedpoint-build lexer08-trivia-fixedpoint-verify lexer08-trivia-fixedpoint lexer09-link-component-build lexer09-link-oracle-build lexer09-direct-differential lexer09-lexer-seam-stage0 lexer09-lexer-seam-stage1 lexer09-lexer-seam-all-stages lexer09-link-fixedpoint-g0 lexer09-link-fixedpoint-g1 lexer09-link-fixedpoint-g2 lexer09-link-fixedpoint-g3 lexer09-link-fixedpoint-build lexer09-link-fixedpoint-verify lexer09-link-fixedpoint lexer09-link-negative-control lexer09-link-determinism lexer09-link-broad-corpus-4-stage lib-tos runtime-contract-test
 
 # To add sqlite3 support add -DHCC_LINK_SQLITE3=1 to the below like so:
 #```
@@ -168,34 +168,134 @@ llvm-gep01-test: test-prefix-install
 	rm -f ./build/llvm-gep01-test; \
 	exit $$rc
 
-# ACT-POLYC-LIBTOS-SYMBOL-GAPS01 C2 IMPL: lib-tos uses the working
-# builder when available. The canonical ./hcc at HEAD (= 6e30e7f,
-# commit 6ba9f5ec) regressed on ARM64 inline-asm mnemonics in
-# src/holyc-lib/{memory,strings}.HC and cannot produce a complete
-# all.o. build/hcc-bootstrap04 (commit ffee58b) is the latest
-# working stage and is the canonical builder for libtos.a in
-# this ACT's authority.
+# ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION01 C2 IMPL: lib-tos is
+# fail-closed and provenance-strict.
 #
-# If the bootstrap chain has not been built, fall through to
-# ./hcc so the rule still produces SOMETHING (an incomplete
-# archive). The authoritative repair is to ship a complete
-# archive; that path runs the bootstrap chain.
-LIBTOS_HCC ?= $(shell \
-  if [ -x ./build/hcc-bootstrap04 ]; then \
-    echo ./build/hcc-bootstrap04; \
-  else \
-    echo ./hcc; \
-  fi)
+# Defects addressed (per c1-red1-fail-open.txt and
+# c1-red2-clean-checkout.txt):
+#   P0-1: predecessor recipe used `hcc ... || true && cc ... && ar ...`
+#         which swallowed hcc failure and emitted an archive with only
+#         errno_shim.o (1 T symbol).
+#   P0-2: predecessor's LIBTOS_HCC selection opportunistically fell
+#         through to ./hcc when build/hcc-bootstrap04 was absent.
+#         ./hcc at HEAD (commit 6ba9f5ec) regressed on ARM64 inline-asm
+#         mnemonics in src/holyc-lib/{memory,strings}.HC and CANNOT
+#         produce a complete all.o.
+#
+# Repair:
+#   (a) The build/hcc-bootstrap04 binary is REQUIRED. There is no
+#       silent fallback to ./hcc. Override with
+#       `LIBTOS_HCC=/path/to/known-good-hcc` only on explicit
+#       `make` invocation. There is no opportunistic shell guard.
+#   (b) The hcc invocation may LEGITIMATELY fail at its dylib-link
+#       step (because all.o references _Errno which errno_shim.o
+#       does not yet exist; the cmake install seam at
+#       src/CMakeLists.txt L706-L712 has the documented
+#       `if(NOT hcc_lib_result EQUAL 0) ... Continuing.` pattern
+#       that is the canonical contract). The tolerance is
+#       MECHANICAL: only tolerated if ./src/holyc-lib/all.o was
+#       actually produced. Otherwise the hcc invocation was a real
+#       failure and the recipe fails closed.
+#   (c) Final verification: nm libtos.a must contain all 5 required
+#       T symbols (_FREE, _STRNCMP, _MEMSET, _STRLEN_FAST,
+#       _SpawnAndCapture). If any is missing, make exits nonzero.
+#
+# The .dylib link is intentionally NOT produced by this target.
+# The canonical install seam (`make test-prefix-install`) produces
+# both libtos.a and libtos.dylib via cmake. This target emits ONLY
+# the archive because that is the substrate the PolyC verifier
+# needs. Consumers requiring the dylib must run `make
+# test-prefix-install`.
+#
+# LIBTOS_HCC override (for qualification hosts without bootstrap):
+#   make lib-tos LIBTOS_HCC=/path/to/known-good-hcc
+LIBTOS_HCC ?= ./build/hcc-bootstrap04
+LIBTOS_REQUIRED_SYMBOLS := _FREE _STRNCMP _MEMSET _STRLEN_FAST _SpawnAndCapture
+
 lib-tos:
-	@echo "lib-tos: using builder $(LIBTOS_HCC)"
-	cd ./src/holyc-lib \
-		&& ../../$(LIBTOS_HCC) --install-dir=$(TEST_PREFIX) -lib tos ./all.HC || true \
-		&& cc -O0 -c ./errno_shim.c -o errno_shim.o \
-		&& ar r ./libtos.a ./errno_shim.o \
-		&& ranlib ./libtos.a \
-		&& cp ./libtos.a $(TEST_PREFIX)/lib/libtos.a \
-		&& cd ../../
-	@echo "lib-tos: libtos.a written to $(TEST_PREFIX)/lib/"
+	@if [ ! -x "$(LIBTOS_HCC)" ]; then \
+		echo "lib-tos: FAIL: builder '$(LIBTOS_HCC)' not found or not executable" >&2; \
+		echo "lib-tos: build/hcc-bootstrap04 is REQUIRED for fail-closed lib-tos" >&2; \
+		echo "lib-tos: build it via 'make bootstrap04-component-build' first" >&2; \
+		echo "lib-tos: or override with 'make lib-tos LIBTOS_HCC=/path/to/known-good-hcc'" >&2; \
+		exit 1; \
+	fi
+	@echo "lib-tos: builder $(LIBTOS_HCC)"
+	@mkdir -p $(TEST_PREFIX)/lib $(TEST_PREFIX)/include
+	@echo "lib-tos: step 1/8: install headers (tos.HH) into $(TEST_PREFIX)/include"
+	@cp ./src/holyc-lib/tos.HH $(TEST_PREFIX)/include/tos.HH
+	@echo "lib-tos: step 2/8: hcc -lib tos all.HC (must produce a complete all.o)"
+	@cd ./src/holyc-lib && rm -f libtos.a all.o errno_shim.o libtos.dylib
+	@cd ./src/holyc-lib && (../../$(LIBTOS_HCC) --install-dir=$(TEST_PREFIX) -lib tos ./all.HC || true)
+	@echo "lib-tos: step 3/8: verify all.o was produced (hcc's archive-phase contract)"
+	@if [ ! -f ./src/holyc-lib/all.o ]; then \
+		echo "lib-tos: FAIL: hcc did not produce all.o; recipe is fail-closed" >&2; \
+		exit 3; \
+	fi
+	@echo "lib-tos: step 4/8: compile errno_shim.c"
+	@cd ./src/holyc-lib && cc -O0 -c ./errno_shim.c -o ./errno_shim.o
+	@echo "lib-tos: step 5/8: ar rcs libtos.a all.o errno_shim.o"
+	@cd ./src/holyc-lib && ar rcs ./libtos.a ./all.o ./errno_shim.o && ranlib ./libtos.a
+	@echo "lib-tos: step 6/8: cp libtos.a $(TEST_PREFIX)/lib/"
+	@cp ./src/holyc-lib/libtos.a $(TEST_PREFIX)/lib/libtos.a
+	@echo "lib-tos: step 7/8: verify required symbols"
+	@missing=0; \
+	for sym in $(LIBTOS_REQUIRED_SYMBOLS); do \
+		if ! nm $(TEST_PREFIX)/lib/libtos.a 2>/dev/null | grep -q " T $$sym$$"; then \
+			echo "lib-tos: FAIL: required symbol $$sym missing from archive" >&2; \
+			missing=$$((missing + 1)); \
+		fi; \
+	done; \
+	if [ $$missing -ne 0 ]; then \
+		echo "lib-tos: FAIL: $$missing required symbol(s) missing" >&2; \
+		exit 2; \
+	fi
+	@echo "lib-tos: step 8/8: complete; libtos.a written to $(TEST_PREFIX)/lib/"
+
+# ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION01 C2-3: runtime contract
+# test (PolyC-native edge-case matrix for FREE/STRNCMP/MEMSET/
+# STRLEN_FAST/SpawnAndCapture). Compiles and links archive-only,
+# then runs the matrix. Exit code = number of FAIL cases.
+#
+# Build command:
+#   ./build/hcc-bootstrap04 --install-dir=$(TEST_PREFIX) -obj \
+#       tools/quality/runtime-contract-test.HC \
+#       -o build/runtime-contract-test.o
+#   cc build/runtime-contract-test.o \
+#      -L$(TEST_PREFIX)/lib -ltos -lpthread -lc -lm \
+#      -o build/runtime-contract-test
+#
+# Invocation:
+#   make runtime-contract-test
+# Output: PASS/FAIL per case + final summary line.
+runtime-contract-test:
+	@if [ ! -x "$(LIBTOS_HCC)" ]; then \
+		echo "runtime-contract-test: FAIL: builder '$(LIBTOS_HCC)' not found or not executable" >&2; \
+		echo "runtime-contract-test: build/hcc-bootstrap04 is REQUIRED" >&2; \
+		exit 1; \
+	fi
+	@if [ ! -f "$(TEST_PREFIX)/lib/libtos.a" ]; then \
+		echo "runtime-contract-test: FAIL: $(TEST_PREFIX)/lib/libtos.a does not exist" >&2; \
+		echo "runtime-contract-test: run 'make lib-tos' first" >&2; \
+		exit 1; \
+	fi
+	@echo "runtime-contract-test: building object"
+	@$(LIBTOS_HCC) --install-dir=$(TEST_PREFIX) -obj \
+		tools/quality/runtime-contract-test.HC \
+		-o build/runtime-contract-test.o
+	@echo "runtime-contract-test: linking archive-only"
+	@cc build/runtime-contract-test.o \
+		-L$(TEST_PREFIX)/lib -ltos -lpthread -lc -lm \
+		-o build/runtime-contract-test
+	@if [ ! -x ./build/runtime-contract-test ]; then \
+		echo "runtime-contract-test: FAIL: build did not produce binary" >&2; \
+		exit 1; \
+	fi
+	@echo "runtime-contract-test: running edge-case matrix"
+	@./build/runtime-contract-test
+	@rc=$$?; \
+	rm -f ./build/runtime-contract-test; \
+	exit $$rc
 
 # ACT-POLYC-LLVM-SPIKE01-RESUME01: positive + negative matrix for the
 # LLVM backend. Runs each spike fixture through `hcc --emit-llvm`,
