@@ -1,0 +1,54 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION02 / c1 / c1-red1-ac-table-substituted.txt
+
+RED-1: The C3 mandatory-ac-status.tsv from CORRECTION01 uses a
+*substituted* AC01..AC22 mapping, not the authorized one.
+
+Procedure: read both AC tables side-by-side.
+
+AUTHORIZED AC01..AC22 (from docs/acts/...CORRECTION01.md §6):
+  AC01: `git rev-parse HEAD` recorded in `c0/c0-entry-identity.txt`.
+  AC02: `make lib-tos` is fail-closed.
+  AC03: `make lib-tos` is provenance-strict.
+  AC04: Pristine archive has the expected producer identity.
+  AC05: AC13..AC18 semantic matrices are mechanically
+  AC06: AC13 FREE semantics.
+  AC07: AC14 STRNCMP semantics.
+  AC08: AC15 MEMSET semantics.
+  AC09: AC16 STRLEN_FAST semantics.
+  AC10: AC17 SpawnAndCapture ABI frozen.
+  AC11: AC18 SpawnAndCapture semantics.
+  AC12: N02 negative control isolated.
+  AC13: Archive-only consumer link still works.
+  AC14: LEXER conservation preserved.
+  AC15: Factory gates green.
+  AC16: Patch hygiene.
+  AC17: F-NO-PYTHON preserved.
+  AC18: F-POLYC-TOOLS preserved.
+  AC19: F14 closed-evidence surfaces untouched.
+  AC20: Worktree clean at C4.
+  AC21: Append-only history.
+  AC22: Commit topology honors C0-before-C1.
+
+C3 LEDGER REPORTED AC01..AC22 (from CORRECTION01 c3/...tsv):
+AC01 authorized clean entry
+AC02 fail-open RED reproduced
+AC03 clean-checkout RED reproduced
+AC04 N02 confound RED reproduced
+AC05 semantic matrices RED reproduced
+AC06 FREE semantics (NULL no-op + allocated)
+AC07 STRNCMP semantics (5 cases)
+AC08 MEMSET semantics (5 cases)
+AC09 STRLEN_FAST semantics (3 cases)
+AC10 SpawnAndCapture ABI frozen
+AC11 SpawnAndCapture semantics (6 cases)
+AC12 fresh canonical archive produced
+AC13 5 required symbols present with strong_definition_count=1
+AC14 make lib-tos is fail-closed (RED-1 closed)
+AC15 clean-checkout buildability (RED-2 closed)
+AC16 archive-only consumer link works (canonical test)
+AC17 LEXER conservation preserved
+AC18 Factory gates green
+AC19 prospective patch hygiene
+AC20 F-NO-PYTHON preserved
+AC21 F-POLYC-TOOLS preserved
+AC22 F14 closed-evidence surfaces untouched

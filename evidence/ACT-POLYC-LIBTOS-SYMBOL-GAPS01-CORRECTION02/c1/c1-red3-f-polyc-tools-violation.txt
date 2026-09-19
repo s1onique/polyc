@@ -1,0 +1,27 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION02 / c1 / c1-red3-f-polyc-tools-violation.txt
+
+RED-3: F-POLYC-TOOLS violated. scripts/quality/libtos-n02-harness.sh
+       is 262+ LOC of substantive shell.
+
+Procedure:
+  $ wc -l scripts/quality/libtos-n02-harness.sh
+
+284 scripts/quality/libtos-n02-harness.sh
+
+Authorization (CORRECTION01 §5): 'No new tools beyond
+runtime-contract-test.HC.' The C2 commit added this shell
+harness anyway.
+
+Authorization (CORRECTION01 §2 allowed list): 'New
+tools/quality/runtime-contract-test.HC PolyC-native test
+program that mechanically exercises the required edge-
+case matrices for FREE / STRNCMP / MEMSET / STRLEN_FAST /
+SpawnAndCapture. Links archive-only against libtos.a.'
+
+That's one tool. n02-harness.sh is a second tool.
+
+F-POLYC-TOOLS threshold: shell files <=50 LOC of bootstrap
+glue. This file is the substantive logic (extract / ar rcs
+/ consumer compile / link / undefined-symbol capture).
+
+AC18 (F-POLYC-TOOLS preserved) = FAIL.

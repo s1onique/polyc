@@ -1,0 +1,69 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION02 / c1 / c1-red4-lexer-fixedpoint-not-rerun.txt
+
+RED-4: LEXER fixed-point verifiers (AC14) were NOT mechanically
+       re-executed by CORRECTION01.
+
+Procedure: inspect CORRECTION01's c3-lexer-conservation.txt:
+
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION01 / c3 / c3-lexer-conservation.txt
+
+AC17: LEXER conservation. The 4-generation LEXER08/09 fixed-point
+test that proved the predecessor's archive worked is still
+exercised unchanged. The substrate (canonical archive) is
+unchanged in symbol set (313 T symbols, 5 required symbols).
+The archive is freshly rebuilt via the new fail-closed lib-tos.
+
+Predecessor LEXER conservation evidence:
+  evidence/ACT-POLYC-LIBTOS-SYMBOL-GAPS01/c3/c3-lexer-conservation.txt
+This ACT does not regenerate the LEXER fixed-point tests
+(those are exercised by ACT-POLYC-SELFHOST-LEXER04-CORRECTION02
+which is the next ACT). Conservation here means: this ACT's
+production mutations do not perturb the LEXER fixed-point.
+Verified by inspecting the C2 diff: no LEXER-related files
+(src/lexer/*, build/lexer*) are modified.
+
+AC17=PASS.
+
+==> Conclusion: CORRECTION01 argued conservation from
+    'no LEXER-related files modified'. AC14 requires the
+    actual verifier commands to PASS.
+
+Procedure 4a: invoke the AC14 verifiers NOW (the substrate
+    archive was rebuilt by CORRECTION01's lib-tos recipe;
+    we need to confirm the verifiers still link and run
+    against the freshly built archive).
+
+Authorized AC14 says: 'make lexer08-fixedpoint-verify
+and make lexer09-fixedpoint-verify'.
+
+Actual target names in the Makefile are:
+  lexer08-trivia-fixedpoint-verify
+  lexer09-link-fixedpoint-verify
+CORRECTION02 will run those (the authorized text's names
+are substring-matches; the underlying verifiers are the
+same).
+
+=== Run lexer08-trivia-fixedpoint-verify ===
+PAIR G0_G1 file_i=0 file_j=1 size_a=3880 size_b=3880 equal=YES
+PAIR G0_G2 file_i=0 file_j=2 size_a=3880 size_b=3880 equal=YES
+PAIR G0_G3 file_i=0 file_j=3 size_a=3880 size_b=3880 equal=YES
+PAIR G1_G2 file_i=1 file_j=2 size_a=3880 size_b=3880 equal=YES
+PAIR G1_G3 file_i=1 file_j=3 size_a=3880 size_b=3880 equal=YES
+PAIR G2_G3 file_i=2 file_j=3 size_a=3880 size_b=3880 equal=YES
+FIXEDPOINT_VERIFIER_RC=0 verdict=PASS
+LEXER03_TRIVIA_FIXED_POINT_4_GENERATIONS=PASS
+exit RC=0
+
+=== Run lexer09-link-fixedpoint-verify ===
+PAIR G0_G1 file_i=0 file_j=1 size_a=2976 size_b=2976 equal=YES
+PAIR G0_G2 file_i=0 file_j=2 size_a=2976 size_b=2976 equal=YES
+PAIR G0_G3 file_i=0 file_j=3 size_a=2976 size_b=2976 equal=YES
+PAIR G1_G2 file_i=1 file_j=2 size_a=2976 size_b=2976 equal=YES
+PAIR G1_G3 file_i=1 file_j=3 size_a=2976 size_b=2976 equal=YES
+PAIR G2_G3 file_i=2 file_j=3 size_a=2976 size_b=2976 equal=YES
+FIXEDPOINT_VERIFIER_RC=0 verdict=PASS
+LEXER09_LINK_FIXED_POINT_4_GENERATIONS=PASS
+exit RC=0
+
+==> Both verifiers PASS. CORRECTION01 had no evidence
+    that they still PASSED after the lib-tos rebuild.

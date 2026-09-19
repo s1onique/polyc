@@ -1,0 +1,32 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION02 / c1 / c1-red2-bootstrap-identity.txt
+
+RED-2: BOOTSTRAP_PROVENANCE_SHA not named in precondition error.
+       Archive has no producer-identity under __.SYMDEF.
+
+Procedure 2a: precondition error content.
+
+make: error: couldn't create cache file '/var/folders/0g/mpt_55f524ndzxymkp20wjfc0000gn/T/xcrun_db-gJQr4yNS' (errno=Operation not permitted)
+make: error: couldn't create cache file '/var/folders/0g/mpt_55f524ndzxymkp20wjfc0000gn/T/xcrun_db-nyFJkHpj' (errno=Operation not permitted)
+lib-tos: FAIL: builder './build/hcc-bootstrap04' not found or not executable
+lib-tos: build/hcc-bootstrap04 is REQUIRED for fail-closed lib-tos
+lib-tos: build it via 'make bootstrap04-component-build' first
+lib-tos: or override with 'make lib-tos LIBTOS_HCC=/path/to/known-good-hcc'
+make: *** [lib-tos] Error 1
+exit RC=2
+
+Expected per AC03: error message names HCC_BOOTSTRAP_PROVENANCE_SHA.
+Actual: see error above. Verify by grep.
+
+=== grep for HCC_BOOTSTRAP_PROVENANCE_SHA in error ===
+0
+(0 means token is NOT named in the error; AC03 fails)
+
+=== ar t archive content (AC04) ===
+ar: error: couldn't create cache file '/var/folders/0g/mpt_55f524ndzxymkp20wjfc0000gn/T/xcrun_db-msVj2r3g' (errno=Operation not permitted)
+__.SYMDEF SORTED
+all.o
+errno_shim.o
+
+Producer-identity note expected per AC04: under __.SYMDEF.
+Actual: ar t shows only __.SYMDEF SORTED, all.o, errno_shim.o.
+No producer-id member.
