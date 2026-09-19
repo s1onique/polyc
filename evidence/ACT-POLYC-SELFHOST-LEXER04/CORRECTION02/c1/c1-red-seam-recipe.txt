@@ -1,0 +1,32 @@
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION02 -- C1 -- recipe regression notes
+=========================================================================
+
+Two recipe regressions discovered during recon. Both are NON-SEMANTIC
+(seam content is correct; recipes are incomplete). Both MUST be fixed
+in C2 IMPL because C3 cannot mutate Makefile (C3 phase purity).
+
+R1: lexer09-lexer-seam-stage1 BUILD_LABEL filter is incomplete
+  Makefile line 1767:
+    diff /tmp/lexer09-seam-stage0.txt /tmp/lexer09-seam-stage1.txt \
+      | grep -vE 'BUILD_LABEL=stage'
+  fails to strip the diff change marker line "1c1".
+
+  Compare with lexer07 lines 1330,1357,1384:
+    diff ... | grep -vE "^[0-9]+[acd][0-9]+|^<|>|^---$$|BUILD_LABEL=stage"
+  which DOES strip them.
+
+  Fix in C2: align lexer09-lexer-seam-stage1 with the lexer07 filter.
+
+R2: lexer07-direct-differential missing -DLEXER07_ORACLE_NO_MAIN
+  Makefile line 1262 references ./build/lexer07-scalar-literal-oracle.o
+  but the oracle target (line 1251) builds a binary, not an .o.
+  Re-compiling the .c with -c produces a duplicate `main` symbol when
+  linked with tools/quality/lexer07-direct-differential.c (which has
+  its own main).
+
+  Fix in C2: build the .o with `cc ... -DLEXER07_ORACLE_NO_MAIN -c`
+  so the static main() is excluded.
+
+Both regressions are inert to LEXER04's own qualifiers but they
+block LEXER02 conservation, which is part of the imported AC
+contract (PREV-AC22).

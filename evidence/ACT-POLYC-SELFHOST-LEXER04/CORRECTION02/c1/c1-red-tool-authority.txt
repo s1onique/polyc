@@ -1,0 +1,39 @@
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION02 -- C1 -- tool authority RED
+==================================================================
+
+CLAIM: the LEXER04 authoritative fixedpoint verifier and SHA-256
+tool are currently implemented in C, violating F-POLYC-TOOLS.
+
+INVENTORY:
+
+  $ grep -nE "build/lexer09-link-fixedpoint-verify|lexer07-sha256" Makefile
+  1822:build/lexer09-link-fixedpoint-verify: tools/quality/lexer09-fixedpoint-verify.c build/lexer07-sha256
+  1823:	cc -O2 -Wall -Wextra -o build/lexer09-link-fixedpoint-verify \
+  1824:		tools/quality/lexer09-fixedpoint-verify.c
+  1830:build/lexer07-sha256: tools/quality/sha256-tool.c
+  1831:	cc -O2 -o build/lexer07-sha256 tools/quality/sha256-tool.c
+
+CLASSIFICATION:
+
+  CURRENT_FIXEDPOINT_VERIFIER_LANGUAGE = C (lexer09-fixedpoint-verify.c)
+  CURRENT_SHA256_AUTHORITY_LANGUAGE   = C (sha256-tool.c)
+
+  CURRENT_SEAM_VERIFIER_LANGUAGE      = N/A (seam runner is C but
+    equivalence check is currently shell + diff in Makefile)
+
+  EXISTING_POLYC_SHA256 = YES (tools/quality/lexer07-sha256.HC)
+  EXISTING_POLYC_OBJECTS_BYTE_EQUAL = YES (tools/quality/lexer07-objects-byte-equal.HC)
+
+F_POLYC_TOOLS_LEXER04_RED = CONFIRMED
+
+C2 must:
+  - Reuse tools/quality/lexer07-sha256.HC as the PolyC SHA-256
+    implementation (REUSE_EXISTING_POLYC_SHA256 = YES).
+  - Build a PolyC fixedpoint verifier that uses ObjectsByteEqual
+    + PolyC SHA-256 from tools/quality/lexer07-objects-byte-equal.HC
+    and tools/quality/lexer07-sha256.HC respectively.
+  - Retire sha256-tool.c and lexer09-fixedpoint-verify.c from the
+    authoritative Makefile recipes. They MAY remain as legacy oracle
+    code marked ORACLE_ONLY=YES, NOT_USED_FOR_TERMINAL_VERDICT=YES.
+  - Build a PolyC semantic verifier for 4-generation semantic
+    outputs.

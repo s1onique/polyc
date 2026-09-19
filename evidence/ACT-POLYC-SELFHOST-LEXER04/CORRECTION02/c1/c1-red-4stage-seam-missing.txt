@@ -1,0 +1,51 @@
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION02 -- C1 -- principal RED
+=============================================================
+
+CLAIM: LEXER04 currently lacks a genuine G0/G1/G2/G3 production
+semantic seam for the #link directive.
+
+The existing Makefile target `lexer09-lexer-seam-all-stages` only
+runs stage0 (legacy C) vs stage1 (PolyC delegation). It does NOT
+exercise G0/G1/G2/G3 on the same production path with four
+genuinely independent compiler generations.
+
+PROBE:
+
+  $ make lexer09-link-fixedpoint-verify
+  ... PASS (4-gen fixed point on component objects only)
+
+  $ make lexer09-lexer-seam-all-stages
+  ... FAIL (BUILD_LABEL diff; recipe filter incomplete; see c1-red-seam-recipe.txt)
+
+  $ test -f tools/quality/lexer09-4stage-semantic-runner
+  rc=1
+  lexer09-4stage-semantic-runner: ABSENT
+
+  $ test -f tools/quality/lexer09-4stage-semantic-verify
+  rc=1
+  lexer09-4stage-semantic-verify: ABSENT
+
+OBSERVED:
+
+  G0_PRODUCTION_SEMANTIC_OUTPUT_EXISTS = NO
+  G1_PRODUCTION_SEMANTIC_OUTPUT_EXISTS = YES (via stage1 binary)
+  G2_PRODUCTION_SEMANTIC_OUTPUT_EXISTS = NO
+  G3_PRODUCTION_SEMANTIC_OUTPUT_EXISTS = NO
+
+  PAIR_G0_G1_PROVEN = NO
+  PAIR_G0_G2_PROVEN = NO
+  PAIR_G0_G3_PROVEN = NO
+  PAIR_G1_G2_PROVEN = NO
+  PAIR_G1_G3_PROVEN = NO
+  PAIR_G2_G3_PROVEN = NO
+
+LEXER04_4_STAGE_PRODUCTION_SEAM = NOT_PROVEN
+
+This is the principal RED.
+
+C2 will introduce:
+  tools/quality/lexer09-4stage-semantic-runner.HC
+  tools/quality/lexer09-4stage-semantic-verify.HC
+And a Makefile target that produces G0..G3 production-seam outputs
+and runs the PolyC verifier to compare them pairwise.
+

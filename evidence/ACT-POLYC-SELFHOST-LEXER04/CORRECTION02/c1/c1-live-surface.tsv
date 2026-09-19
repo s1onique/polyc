@@ -1,0 +1,26 @@
+surface	path	type	role
+legacy_lexLink	src/lexer.c:1953..2062	C	original legacy #link directive handler
+legacy_lexLink_entry	src/lexer.c:2508	C	lexToken dispatcher for KW_PP_LINK
+bridge_header	src/lexer_bridge.h:214..250	C	C ABI 5 declaration
+bridge_extern	src/lexer_bridge.h:250	C	extern long long BootstrapLinkDirective
+production_delegation	src/lexer.c:1982,2008	C	BootstrapLinkDirective(...) delegation calls
+polyc_subject	tools/bootstrap/selfhost-lexer-link.HC	PolyC	winner subject: byte-level scanner
+polyc_link_ascii_lower	tools/bootstrap/selfhost-lexer-link.HC:94	PolyC	static helper LinkAsciiLower
+polyc_link_peek	tools/bootstrap/selfhost-lexer-link.HC:103	PolyC	static helper LinkPeek
+polyc_link_scan_quoted	tools/bootstrap/selfhost-lexer-link.HC:110	PolyC	static helper LinkScanQuoted
+polyc_link_scan_angle	tools/bootstrap/selfhost-lexer-link.HC:140	PolyC	static helper LinkScanAngle
+polyc_bootstrap_link_directive	tools/bootstrap/selfhost-lexer-link.HC:170	PolyC	exported entry BootstrapLinkDirective
+c_verifier	tools/quality/lexer09-fixedpoint-verify.c	C	AUTHORITATIVE FIXEDPOINT VERIFIER (REGRESSION: must retire)
+c_sha256	tools/quality/sha256-tool.c	C	AUTHORITATIVE SHA-256 TOOL (REGRESSION: must retire)
+polyc_sha256	tools/quality/lexer07-sha256.HC	PolyC	EXISTING PolyC SHA-256 implementation (reusable)
+polyc_objects_byte_equal	tools/quality/lexer07-objects-byte-equal.HC	PolyC	EXISTING PolyC byte-equality helper (reusable)
+real_seam_runner	tools/quality/lexer09-real-seam-runner.c	C	4-stage seam runner (stage0/stage1 only today)
+direct_differential	tools/quality/lexer09-direct-differential.c	C	23/23 fixture differential
+link_oracle_impl	tools/quality/lexer09-link-oracle-impl.c	C	99-link byte-level C99 oracle
+link_oracle	tools/quality/lexer09-link-oracle.c	C	oracle binary
+make_target_link_fixedpoint_verify	Makefile:1822-1842	Make	authoritative fixedpoint verification recipe
+make_target_link_determinism	Makefile:1854	Make	G3 rebuild = G3 byte equality
+make_target_link_negative_control	Makefile:1883	Make	mutation-detected negative control
+make_target_lexer_seam_all_stages	Makefile:1775	Make	stage0==stage1 production seam
+make_target_direct_differential	Makefile:1673	Make	23/23 direct differential
+make_target_broad_corpus_4_stage	Makefile:lexer09-link-broad-corpus-4-stage	Make	4-stage broad corpus (G0..G3)

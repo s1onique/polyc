@@ -1,0 +1,82 @@
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION02 -- C1 -- existing engineering baseline
+================================================================================
+
+Existing engineering baseline (per §10):
+
+  LEXER04_EXISTING_DIRECT_DIFFERENTIAL   = PASS (23/23)
+  LEXER04_EXISTING_COMPONENT_FIXEDPOINT  = PASS (4-gen byte equal)
+  LEXER04_EXISTING_STAGE0_STAGE1_SEAM    = PASS (semantic content; only BUILD_LABEL differs)
+  LEXER04_EXISTING_LIBTOS_SUBSTRATE      = PASS (LIBTOS_CORRECTION04 TRUE_GREEN)
+
+DIRECT_DIFFERENTIAL:
+
+  $ make lexer09-direct-differential
+  DIRECT_DIFFERENTIAL_TOTAL=23
+  DIRECT_DIFFERENTIAL_PASS=23
+  DIRECT_DIFFERENTIAL_FAIL=0
+  STATUS=PASS
+
+COMPONENT FIXEDPOINT:
+
+  $ make lexer09-link-fixedpoint-verify
+  PAIR G0_G1 file_i=0 file_j=1 size_a=2976 size_b=2976 equal=YES
+  PAIR G0_G2 file_i=0 file_j=2 size_a=2976 size_b=2976 equal=YES
+  PAIR G0_G3 file_i=0 file_j=3 size_a=2976 size_b=2976 equal=YES
+  PAIR G1_G2 file_i=1 file_j=2 size_a=2976 size_b=2976 equal=YES
+  PAIR G1_G3 file_i=1 file_j=2 size_a=2976 size_b=2976 equal=YES
+  PAIR G2_G3 file_i=2 file_j=3 size_a=2976 size_b=2976 equal=YES
+  FIXEDPOINT_VERIFIER_RC=0 verdict=PASS
+  LEXER09_LINK_FIXED_POINT_4_GENERATIONS=PASS
+
+STAGE0/STAGE1 SEAM (semantic content equal; BUILD_LABEL differs):
+
+  $ make lexer09-lexer-seam-stage0
+  LEXER09_SEAM_STAGE0_OK
+
+  $ make lexer09-lexer-seam-stage1
+  BUILD_LABEL=stage0 vs stage1; full file diff:
+    1c1
+    < BUILD_LABEL=stage0
+    ---
+    > BUILD_LABEL=stage1
+  Recipe filter incomplete; make returns nonzero (see c1-red-seam-recipe.txt).
+
+LIBTOS SUBSTRATE:
+
+  $ make lib-tos
+  lib-tos: producer-id verified: SHA=3b4474213efabcda30eb2d0c0610c6e23793f876896c8e21c5e18024b1ab40f6
+  lib-tos: complete; libtos.a written to ./build/test-prefix/lib/
+
+LEXER03 CONSERVATION (45/45):
+
+  $ make lexer08-direct-differential
+  DIRECT_DIFFERENTIAL_TOTAL=45 DIRECT_DIFFERENTIAL_PASS=45 DIRECT_DIFFERENTIAL_FAIL=0
+  LEXER08_DIRECT_DIFFERENTIAL=PASS
+
+LEXER01 CONSERVATION (47/47):
+
+  $ make bootstrap06-direct-differential
+  ACT_SELFHOST_LEXER01_DIRECT_DIFFERENTIAL_CASES=47
+  ACT_SELFHOST_LEXER01_DIRECT_DIFFERENTIAL_PASS=47
+  ACT_SELFHOST_LEXER01_DIRECT_DIFFERENTIAL_FAIL=0
+  BOOTSTRAP06_DIRECT_DIFFERENTIAL=PASS
+
+LEXER02 CONSERVATION (89/89):
+
+  $ make lexer07-direct-differential
+  LEXER07_DIRECT_DIFFERENTIAL=PASS
+
+  (recipe currently broken: ./build/lexer07-scalar-literal-oracle.o
+   not produced by lexer07-scalar-literal-oracle target; C2 must
+   rebuild oracle with -DLEXER07_ORACLE_NO_MAIN to fix; see
+   c1-red-seam-recipe.txt.)
+
+Summary: 6 of 6 baseline properties reachable from current tree.
+
+  LEXER04_EXISTING_DIRECT_DIFFERENTIAL   = PASS
+  LEXER04_EXISTING_COMPONENT_FIXEDPOINT  = PASS
+  LEXER04_EXISTING_STAGE0_STAGE1_SEAM    = PASS (semantic content)
+  LEXER03_CONSERVATION                   = PASS
+  LEXER01_CONSERVATION                   = PASS
+  LEXER02_CONSERVATION                   = PASS (requires C2 recipe fix)
+  LIBTOS_SUBSTRATE                       = PASS
