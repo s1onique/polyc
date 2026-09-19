@@ -12,7 +12,7 @@ HCC_ENABLE_LLVM ?= OFF
 
 default: all
 
-.PHONY: all formal-dafny gate-fast gate-push install-hooks static-function-linkage-test factory-closure-status-test factory-closure-status-test-binary llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test selfhost-component-binary selfhost-component-build selfhost-component-test selfhost-component-selftest selfhost-registry-validate factory-halt-classification-binary factory-halt-classification-selftest bootstrap06-component-build bootstrap06-operator-classify-oracle bootstrap06-direct-differential bootstrap06-component-stage1 bootstrap06-component-stage2 bootstrap06-component-stage3 bootstrap06-lexer-seam-stage1 lexer07-component-build lexer07-scalar-literal-oracle lexer07-direct-differential lexer07-component-stage1 lexer07-component-stage2 lexer07-component-stage3 lexer07-lexer-seam-stage0 lexer07-lexer-seam-stage1 lexer07-lexer-seam-stage2 lexer07-lexer-seam-stage3 lexer07-lexer-seam-stage2-from-objs lexer07-lexer-seam-stage3-from-objs lexer07-lexer-seam-all-stages lexer07-fixture-inventory lexer07-broad-corpus-4-stage lexer07-correction02-all lexer08-component-build lexer08-trivia-oracle lexer08-direct-differential lexer08-fixture-inventory lexer08-broad-corpus-4-stage lexer08-lexer-seam-stage0 lexer08-lexer-seam-stage1 lexer08-lexer-seam-all-stages lexer08-trivia-fixedpoint-g0 lexer08-trivia-fixedpoint-g1 lexer08-trivia-fixedpoint-g2 lexer08-trivia-fixedpoint-g3 lexer08-trivia-fixedpoint-build lexer08-trivia-fixedpoint-verify lexer08-trivia-fixedpoint lexer09-link-component-build lexer09-link-oracle-build lexer09-direct-differential lexer09-lexer-seam-stage0 lexer09-lexer-seam-stage1 lexer09-lexer-seam-all-stages lexer09-link-fixedpoint-g0 lexer09-link-fixedpoint-g1 lexer09-link-fixedpoint-g2 lexer09-link-fixedpoint-g3 lexer09-link-fixedpoint-build lexer09-link-fixedpoint-verify lexer09-link-fixedpoint lexer09-link-negative-control lexer09-link-determinism lexer09-link-broad-corpus-4-stage lib-tos runtime-contract-test
+.PHONY: all formal-dafny gate-fast gate-push install-hooks static-function-linkage-test factory-closure-status-test factory-closure-status-test-binary llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test selfhost-component-binary selfhost-component-build selfhost-component-test selfhost-component-selftest selfhost-registry-validate factory-halt-classification-binary factory-halt-classification-selftest bootstrap06-component-build bootstrap06-operator-classify-oracle bootstrap06-direct-differential bootstrap06-component-stage1 bootstrap06-component-stage2 bootstrap06-component-stage3 bootstrap06-lexer-seam-stage1 lexer07-component-build lexer07-scalar-literal-oracle lexer07-direct-differential lexer07-component-stage1 lexer07-component-stage2 lexer07-component-stage3 lexer07-lexer-seam-stage0 lexer07-lexer-seam-stage1 lexer07-lexer-seam-stage2 lexer07-lexer-seam-stage3 lexer07-lexer-seam-stage2-from-objs lexer07-lexer-seam-stage3-from-objs lexer07-lexer-seam-all-stages lexer07-fixture-inventory lexer07-broad-corpus-4-stage lexer07-correction02-all lexer08-component-build lexer08-trivia-oracle lexer08-direct-differential lexer08-fixture-inventory lexer08-broad-corpus-4-stage lexer08-lexer-seam-stage0 lexer08-lexer-seam-stage1 lexer08-lexer-seam-all-stages lexer08-trivia-fixedpoint-g0 lexer08-trivia-fixedpoint-g1 lexer08-trivia-fixedpoint-g2 lexer08-trivia-fixedpoint-g3 lexer08-trivia-fixedpoint-build lexer08-trivia-fixedpoint-verify lexer08-trivia-fixedpoint lexer09-link-component-build lexer09-link-oracle-build lexer09-direct-differential lexer09-lexer-seam-stage0 lexer09-lexer-seam-stage1 lexer09-lexer-seam-all-stages lexer09-link-fixedpoint-g0 lexer09-link-fixedpoint-g1 lexer09-link-fixedpoint-g2 lexer09-link-fixedpoint-g3 lexer09-link-fixedpoint-build lexer09-link-fixedpoint-verify lexer09-link-fixedpoint lexer09-link-negative-control lexer09-link-determinism lexer09-link-broad-corpus-4-stage lib-tos runtime-contract-test libtos-n02-isolate
 
 # To add sqlite3 support add -DHCC_LINK_SQLITE3=1 to the below like so:
 #```
@@ -212,15 +212,29 @@ llvm-gep01-test: test-prefix-install
 LIBTOS_HCC ?= ./build/hcc-bootstrap04
 LIBTOS_REQUIRED_SYMBOLS := _FREE _STRNCMP _MEMSET _STRLEN_FAST _SpawnAndCapture
 
+# ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION02 C2-1: bootstrap identity.
+# The expected producer identity is the SHA-256 of the binary at
+# the path named by LIBTOS_HCC (default = build/hcc-bootstrap04).
+# The recipe prints this SHA in the precondition error message
+# (AC03) and bakes it into a producer-id note inside libtos.a
+# (AC04). Override on the make command line only; do NOT bake
+# an opportunistic fallback.
+LIBTOS_BOOTSTRAP_SHA ?= $(shell shasum -a 256 $(LIBTOS_HCC) 2>/dev/null | cut -d' ' -f1)
+
 lib-tos:
 	@if [ ! -x "$(LIBTOS_HCC)" ]; then \
 		echo "lib-tos: FAIL: builder '$(LIBTOS_HCC)' not found or not executable" >&2; \
+		echo "lib-tos: expected HCC_BOOTSTRAP_PROVENANCE_SHA: <unmeasurable, builder missing>" >&2; \
+		echo "lib-tos: required LIBTOS_HCC SHA-256: cannot measure (builder absent)" >&2; \
 		echo "lib-tos: build/hcc-bootstrap04 is REQUIRED for fail-closed lib-tos" >&2; \
 		echo "lib-tos: build it via 'make bootstrap04-component-build' first" >&2; \
 		echo "lib-tos: or override with 'make lib-tos LIBTOS_HCC=/path/to/known-good-hcc'" >&2; \
 		exit 1; \
 	fi
 	@echo "lib-tos: builder $(LIBTOS_HCC)"
+	@echo "lib-tos: HCC_BOOTSTRAP_PROVENANCE_SHA=$(LIBTOS_BOOTSTRAP_SHA)"
+	@echo "lib-tos: required LIBTOS_HCC SHA-256: $(LIBTOS_BOOTSTRAP_SHA)"
+	@echo "lib-tos: HCC_BOOTSTRAP_PROVENANCE_SHA_ENV=HCC_BOOTSTRAP_PROVENANCE_SHA=$(LIBTOS_BOOTSTRAP_SHA)"
 	@mkdir -p $(TEST_PREFIX)/lib $(TEST_PREFIX)/include
 	@echo "lib-tos: step 1/8: install headers (tos.HH) into $(TEST_PREFIX)/include"
 	@cp ./src/holyc-lib/tos.HH $(TEST_PREFIX)/include/tos.HH
@@ -234,11 +248,13 @@ lib-tos:
 	fi
 	@echo "lib-tos: step 4/8: compile errno_shim.c"
 	@cd ./src/holyc-lib && cc -O0 -c ./errno_shim.c -o ./errno_shim.o
-	@echo "lib-tos: step 5/8: ar rcs libtos.a all.o errno_shim.o"
-	@cd ./src/holyc-lib && ar rcs ./libtos.a ./all.o ./errno_shim.o && ranlib ./libtos.a
-	@echo "lib-tos: step 6/8: cp libtos.a $(TEST_PREFIX)/lib/"
+	@echo "lib-tos: step 5/8: bake producer-id note (C2-2 / AC04)"
+	@cd ./src/holyc-lib && printf 'const char __producer_id[65] = "%s";\n' "$(LIBTOS_BOOTSTRAP_SHA)" > ./producer_id.c && cc -O0 -c ./producer_id.c -o ./producer_id.o && rm -f ./producer_id.c
+	@echo "lib-tos: step 6/8: ar rcs libtos.a all.o errno_shim.o producer_id.o"
+	@cd ./src/holyc-lib && ar rcs ./libtos.a ./all.o ./errno_shim.o ./producer_id.o && ranlib ./libtos.a
+	@echo "lib-tos: step 7/8: cp libtos.a $(TEST_PREFIX)/lib/"
 	@cp ./src/holyc-lib/libtos.a $(TEST_PREFIX)/lib/libtos.a
-	@echo "lib-tos: step 7/8: verify required symbols"
+	@echo "lib-tos: step 8/8: verify required symbols + producer-id"
 	@missing=0; \
 	for sym in $(LIBTOS_REQUIRED_SYMBOLS); do \
 		if ! nm $(TEST_PREFIX)/lib/libtos.a 2>/dev/null | grep -q " T $$sym$$"; then \
@@ -250,7 +266,18 @@ lib-tos:
 		echo "lib-tos: FAIL: $$missing required symbol(s) missing" >&2; \
 		exit 2; \
 	fi
-	@echo "lib-tos: step 8/8: complete; libtos.a written to $(TEST_PREFIX)/lib/"
+	@observed_sha=$$(nm -j $(TEST_PREFIX)/lib/libtos.a 2>/dev/null | grep -E "(__producer_id|producer_id)" | head -1); \
+	if [ -z "$$observed_sha" ]; then \
+		echo "lib-tos: FAIL: archive has no __producer_id note (AC04)" >&2; \
+		exit 4; \
+	fi; \
+	if ! strings $(TEST_PREFIX)/lib/libtos.a 2>/dev/null | grep -qF "$(LIBTOS_BOOTSTRAP_SHA)"; then \
+		echo "lib-tos: FAIL: archive producer-id string does not contain HCC_BOOTSTRAP_PROVENANCE_SHA" >&2; \
+		echo "lib-tos: expected SHA in archive: $(LIBTOS_BOOTSTRAP_SHA)" >&2; \
+		exit 5; \
+	fi; \
+	echo "lib-tos: producer-id verified: SHA=$(LIBTOS_BOOTSTRAP_SHA) symbol=$$observed_sha"
+	@echo "lib-tos: complete; libtos.a written to $(TEST_PREFIX)/lib/"
 
 # ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION01 C2-3: runtime contract
 # test (PolyC-native edge-case matrix for FREE/STRNCMP/MEMSET/
@@ -295,6 +322,41 @@ runtime-contract-test:
 	@./build/runtime-contract-test
 	@rc=$$?; \
 	rm -f ./build/runtime-contract-test; \
+	exit $$rc
+
+# ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION02 C2-3: PolyC-native
+# N02 isolator build target. Builds tools/quality/libtos-n02-
+# isolate.HC into build/libtos-n02-isolate and runs the shell
+# dispatch (scripts/quality/libtos-n02-harness.sh) which
+# exercises it. The shell dispatch is <=50 LOC; the substantive
+# logic lives in the PolyC tool.
+libtos-n02-isolate:
+	@if [ ! -x "$(LIBTOS_HCC)" ]; then \
+		echo "libtos-n02-isolate: FAIL: builder '$(LIBTOS_HCC)' not found" >&2; \
+		exit 1; \
+	fi
+	@if [ ! -f "$(TEST_PREFIX)/lib/libtos.a" ]; then \
+		echo "libtos-n02-isolate: FAIL: $(TEST_PREFIX)/lib/libtos.a does not exist" >&2; \
+		echo "libtos-n02-isolate: run 'make lib-tos' first" >&2; \
+		exit 1; \
+	fi
+	@echo "libtos-n02-isolate: building PolyC tool"
+	@$(LIBTOS_HCC) --install-dir=$(TEST_PREFIX) -obj \
+		tools/quality/libtos-n02-isolate.HC \
+		-o build/libtos-n02-isolate.o
+	@cc build/libtos-n02-isolate.o \
+		-L$(TEST_PREFIX)/lib -ltos -lpthread -lc -lm \
+		-o build/libtos-n02-isolate
+	@if [ ! -x ./build/libtos-n02-isolate ]; then \
+		echo "libtos-n02-isolate: FAIL: build did not produce binary" >&2; \
+		exit 1; \
+	fi
+	@echo "libtos-n02-isolate: running shell dispatch + PolyC isolation"
+	@scripts/quality/libtos-n02-harness.sh \
+		--pristine-archive $(TEST_PREFIX)/lib/libtos.a \
+		--scratch-dir /tmp/libtos-n02-isolate-$$$$
+	@rc=$$?; \
+	rm -f ./build/libtos-n02-isolate ./build/libtos-n02-isolate.o; \
 	exit $$rc
 
 # ACT-POLYC-LLVM-SPIKE01-RESUME01: positive + negative matrix for the

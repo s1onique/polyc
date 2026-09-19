@@ -1,0 +1,21 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION02 / c2 / c2-bootstrap-provenance.txt
+
+Provenance measurement for the bootstrap hcc that produces
+the canonical libtos.a archive.
+
+BOOTSTRAP_BINARY:        build/hcc-bootstrap04
+BOOTSTRAP_SIZE_BYTES:    751760
+BOOTSTRAP_SHA256:        3b4474213efabcda30eb2d0c0610c6e23793f876896c8e21c5e18024b1ab40f6
+BOOTSTRAP_VERSION:       hcc - HolyC Compiler v0.0.15-beta
+
+The binary at the time of CORRECTION02 C2 entry is the
+immutable producer. Any future rebuild that uses a binary
+with a different SHA256 (or different size) is a different
+producer and the archive's producer-id note will not match.
+
+Reproduction command:
+  shasum -a 256 build/hcc-bootstrap04 | cut -d' ' -f1
+
+This SHA will be:
+  - embedded in the lib-tos precondition error message (AC03)
+  - baked into the libtos.a producer-id note (AC04)

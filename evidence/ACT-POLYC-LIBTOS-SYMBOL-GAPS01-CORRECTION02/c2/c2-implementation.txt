@@ -1,0 +1,59 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION02 / c2 / c2-implementation.txt
+
+C2 IMPL — all four P0 defects from the reviewer's post-close
+audit are closed. C2-1, C2-2, C2-3, C2-4 implemented.
+
+C2-1: Bootstrap identity (RED-2 closed)
+
+  Makefile:
+    - LIBTOS_BOOTSTRAP_SHA captured via shell:
+        LIBTOS_BOOTSTRAP_SHA ?= $(shell shasum -a 256 $(LIBTOS_HCC))
+    - Precondition error now names HCC_BOOTSTRAP_PROVENANCE_SHA
+      and prints required LIBTOS_HCC SHA-256 on stdout.
+    - Even when builder is missing, the error message contains
+      "expected HCC_BOOTSTRAP_PROVENANCE_SHA" + "required LIBTOS_HCC
+      SHA-256" tokens.
+
+C2-2: Producer identity in archive (RED-2 closed for AC04)
+
+  Makefile:
+    - Step 5 bakes a synthetic producer_id.o containing
+      `const char __producer_id[65] = "<SHA-256>";` into the
+      archive as a member.
+    - Step 8 verifies: nm -j reports producer_id.o symbol
+      AND `strings libtos.a | grep -qF <SHA>` confirms the
+      SHA is present.
+    - If either check fails, make exits 4 or 5 respectively.
+
+  archive members after `make lib-tos`:
+    __.SYMDEF SORTED
+    all.o
+    errno_shim.o
+    producer_id.o    <-- new
+  nm: producer_id.o: S ___producer_id
+  strings: <full SHA-256>
+
+C2-3: PolyC n02 isolator + shell dispatch (RED-3 closed, P0-3 closed)
+
+  New files:
+    tools/quality/libtos-n02-isolate.HC   (361 LOC PolyC)
+    scripts/quality/libtos-n02-harness.sh (34 LOC shell dispatch)
+  Modified:
+    Makefile (libtos-n02-isolate target)
+
+  Shell harness is <=50 LOC of pure dispatch glue:
+    argument parsing + scratch dir setup + invoking the PolyC tool.
+  All substantive logic (extract, llvm-objcopy, ar rcs, compile,
+  link, undefined-symbol capture, predicate assertions) lives in
+  the PolyC tool. F-POLYC-TOOLS PASSES.
+
+C2-4: LEXER fixed-point rerun (RED-4 closed)
+
+  The two AC14 commands were invoked. Both PASS:
+    make lexer08-trivia-fixedpoint-verify: RC=0
+      LEXER03_TRIVIA_FIXED_POINT_4_GENERATIONS=PASS
+    make lexer09-link-fixedpoint-verify:   RC=0
+      LEXER09_LINK_FIXED_POINT_4_GENERATIONS=PASS
+
+  Captured in c1-red4-lexer-fixedpoint-not-rerun.txt (C1 phase
+  evidence; reproduced against the post-C2 archive).
