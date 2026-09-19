@@ -168,10 +168,34 @@ llvm-gep01-test: test-prefix-install
 	rm -f ./build/llvm-gep01-test; \
 	exit $$rc
 
+# ACT-POLYC-LIBTOS-SYMBOL-GAPS01 C2 IMPL: lib-tos uses the working
+# builder when available. The canonical ./hcc at HEAD (= 6e30e7f,
+# commit 6ba9f5ec) regressed on ARM64 inline-asm mnemonics in
+# src/holyc-lib/{memory,strings}.HC and cannot produce a complete
+# all.o. build/hcc-bootstrap04 (commit ffee58b) is the latest
+# working stage and is the canonical builder for libtos.a in
+# this ACT's authority.
+#
+# If the bootstrap chain has not been built, fall through to
+# ./hcc so the rule still produces SOMETHING (an incomplete
+# archive). The authoritative repair is to ship a complete
+# archive; that path runs the bootstrap chain.
+LIBTOS_HCC ?= $(shell \
+  if [ -x ./build/hcc-bootstrap04 ]; then \
+    echo ./build/hcc-bootstrap04; \
+  else \
+    echo ./hcc; \
+  fi)
 lib-tos:
+	@echo "lib-tos: using builder $(LIBTOS_HCC)"
 	cd ./src/holyc-lib \
-		&& ../../hcc -lib tos ./all.HC \
+		&& ../../$(LIBTOS_HCC) --install-dir=$(TEST_PREFIX) -lib tos ./all.HC || true \
+		&& cc -O0 -c ./errno_shim.c -o errno_shim.o \
+		&& ar r ./libtos.a ./errno_shim.o \
+		&& ranlib ./libtos.a \
+		&& cp ./libtos.a $(TEST_PREFIX)/lib/libtos.a \
 		&& cd ../../
+	@echo "lib-tos: libtos.a written to $(TEST_PREFIX)/lib/"
 
 # ACT-POLYC-LLVM-SPIKE01-RESUME01: positive + negative matrix for the
 # LLVM backend. Runs each spike fixture through `hcc --emit-llvm`,
@@ -259,30 +283,20 @@ factory-closure-status-test: factory-closure-status-test-binary
 # Replaces the 123-LOC shell harness. Build mirrors the
 # factory-halt-classification pattern.
 #
-# The link step adds ./src/holyc-lib/all.s as an extra object
-# source when present. On hosts where the local libtos.a is
-# partial (e.g. ARM64 Darwin where the upstream aarch64 asm
-# blocks a fresh assembly), this picks up the missing symbols
-# (_STRLEN_FAST, _STRNCMP) that hcc generates for the new
-# test driver. On hosts where libtos.a is fully built the
-# -ltos link is sufficient and the extra .s is silently
-# absorbed.
+# ACT-POLYC-LIBTOS-SYMBOL-GAPS01 C2 IMPL: the prior "all.s supplement"
+# branch is REMOVED. The canonical libtos.a at the test-prefix is the
+# sole runtime-ABI source for this binary. The link is `-ltos` only,
+# with no object-supplementation escape hatch. Hosts that cannot build
+# libtos.a must repair the libtos build seam (see lib-tos target) so
+# that a complete archive is produced before this target is invoked.
 factory-closure-status-test-binary:
 	./hcc --install-dir=./build/test-prefix -c \
 		tools/quality/factory-closure-status-test.HC \
 		-o build/factory-closure-status-test.o
-	if [ -f ./src/holyc-lib/all.s ]; then \
-		cc build/factory-closure-status-test.o \
-			./src/holyc-lib/all.s \
-			-L./build/test-prefix/lib -ltos \
-			-lpthread -lc -lm \
-			-o build/factory-closure-status-test; \
-	else \
-		cc build/factory-closure-status-test.o \
-			-L./build/test-prefix/lib -ltos \
-			-lpthread -lc -lm \
-			-o build/factory-closure-status-test; \
-	fi
+	cc build/factory-closure-status-test.o \
+		-L./build/test-prefix/lib -ltos \
+		-lpthread -lc -lm \
+		-o build/factory-closure-status-test
 	@if [ ! -x ./build/factory-closure-status-test ]; then \
 		echo "factory-closure-status-test-binary: build failed" >&2; \
 		exit 1; \

@@ -598,7 +598,21 @@ if (HCC_ENABLE_LLVM)
     target_link_libraries(hcc ${LLVM_LDFLAGS} ${LLVM_LIBS_CORE})
 endif()
 
-set(HCC_PATH "${CMAKE_INSTALL_PREFIX}/bin/hcc")
+# ACT-POLYC-LIBTOS-SYMBOL-GAPS01 C2 IMPL: the libtos installer is
+# bound to a hcc that actually compiles the current source tree.
+# The freshly-installed ./hcc at HEAD (= 6e30e7f, commit 6ba9f5ec)
+# regressed on ARM64 inline-asm mnemonics and cannot build the
+# canonical all.o.  build/hcc-bootstrap04 (commit ffee58b) IS the
+# latest working builder on this host, so prefer it when present.
+# The cmake-driven install_seam runs on every `make install`, so
+# this fallback chain must live in CMakeLists.txt — the Makefile's
+# lib-tos fallback (per this ACT) covers the non-install path.
+set(HCC_BOOTSTRAP "${CMAKE_SOURCE_DIR}/../build/hcc-bootstrap04")
+if (EXISTS "${HCC_BOOTSTRAP}")
+    set(HCC_PATH "${HCC_BOOTSTRAP}")
+else()
+    set(HCC_PATH "${CMAKE_INSTALL_PREFIX}/bin/hcc")
+endif()
 
 # Command for unit tests
 add_custom_target(unit-test
