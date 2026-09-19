@@ -1,0 +1,99 @@
+Reviewer Reclassification Disposition for CORRECTION03
+======================================================
+
+Predecessor: ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION03
+Reviewer: Factory governance reviewer + Git/CI engineer
+Reviewer verdict: FALSE_GREEN
+
+Reviewer's taxonomy
+-------------------
+
+CORRECTION03_F14_RESTORATION          = GREEN
+CORRECTION03_ADDITIVE_CAPTURE         = GREEN
+CORRECTION03_FACTORY_REGRESSION       = GREEN
+
+AUTHORIZED_PATCH_HYGIENE              = FAIL
+MANIFEST_SCOPE_DISCIPLINE             = FAIL
+
+CORRECTION03_ENGINEERING              = GREEN
+CORRECTION03_PASS_TRUE_GREEN          = FALSE_GREEN
+
+Reviewer's two binding P0s
+---------------------------
+
+P0-1: Authorized patch-hygiene predicate is false.
+
+  The CORRECTION03 ACT body, line 125, froze:
+    6. git diff --check 0665ada..HEAD continues to report clean.
+
+  Observed at HEAD = 8fbf51d:
+    $ git diff --check 0665ada..HEAD
+    ... 4 errors all "new blank line at EOF" in CORRECTION01 evidence
+
+  Reviewer quote: "Git's documented semantics are unambiguous:
+  git diff --check reports introduced whitespace errors and
+  exits non-zero when it finds them. ... The second fact
+  [b9a43f8..HEAD clean] does not satisfy the first predicate.
+  This is exactly the sort of post-hoc gate substitution Factory
+  is supposed to prevent."
+
+P0-2: Manifest mutation under explicit out-of-scope.
+
+  The CORRECTION03 ACT body, line 91, declared:
+    docs/factory/act-handoff-map.tsv (working; do not touch)
+
+  Observed in commit 87aec89 (C0 AUTH):
+    $ git show 87aec89 -- docs/factory/act-handoff-map.tsv
+    ... +ACT-...-CORRECTION03 row added ...
+
+  Reviewer quote: "AUTHORIZED(manifest mutation) = NO
+  OBSERVED(manifest mutation) = YES
+  The fact that self-registration is useful for the closure oracle
+  does not make it authorized. The ACT needed to authorize that
+  mutation at C0."
+
+Reviewer's prescription for CORRECTION04
+----------------------------------------
+
+1. authorize first from a genuinely clean tree;
+2. explicitly authorize the self-row/manifest mutation;
+3. do not touch any older closed evidence;
+4. choose and freeze one patch-hygiene baseline at C0 -
+   preferably this ACT's own clean entry - and require that
+   exact range through CLOSE;
+5. rerun 12/12 PolyC regression and closure oracle;
+6. C3 commit -> C4 HANDOFF-only terminal transition, with no
+   post-C4 cleanup commit.
+
+Reviewer's lifecycle observation
+---------------------------------
+
+Reviewer flagged that CORRECTION03's trajectory includes a
+post-C4 cleanup commit (8fbf51d):
+  26cbee8  C3 VERIFY
+  aa47d58  C4 CLOSE
+  8fbf51d  C4 patch hygiene (cleanup)
+
+This means aa47d58 was not actually terminal. The HANDOFF
+claimed C3 -> C4 = HANDOFF only, terminal closure, but the
+actual terminal commit is 8fbf51d. CORRECTION04 must NOT
+repeat this lifecycle smell.
+
+Reviewer's preserved GREEN work
+-------------------------------
+
+The reviewer explicitly preserved:
+  CORRECTION02_C0_DEFECT_RECORDED         = GREEN
+  CORRECTION01_HISTORICAL_BLOBS_RESTORED  = GREEN
+  ADDITIVE_CLEAN_CONTENT_CAPTURE          = GREEN
+  12_CASE_POLYC_REGRESSION                = GREEN
+  C3_PRE_CLOSE_ORACLE                     = GREEN
+
+Reviewer's unblock statement
+----------------------------
+
+After CORRECTION04 closes (with prescription followed):
+  ACT-POLYC-LIBTOS-SYMBOL-GAPS01
+  ACT-POLYC-SELFHOST-LEXER04-CORRECTION02
+  ACT-POLYC-SELFHOST-SURFACE-RECON03
+may proceed.

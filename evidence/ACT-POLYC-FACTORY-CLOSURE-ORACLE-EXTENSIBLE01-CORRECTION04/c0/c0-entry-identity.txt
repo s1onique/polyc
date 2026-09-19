@@ -1,0 +1,35 @@
+Entry Identity at C0 AUTH of CORRECTION04
+==========================================
+
+Recorded per F1 (Identity before mutation).
+
+  git branch --show-current  : main
+  git status --short         : clean
+  git rev-parse HEAD         : 8fbf51db74217879cc13e4665a49c12942a15670
+
+  HEAD commit: C4 patch hygiene: fix trailing blank line in
+               c3-monotonic-proof.txt
+  (see: git log -1)
+
+Predecessor HEAD at CORRECTION03 C0 AUTH (for reference):
+  08365aad59ac59b1d7dc303278aab2bbca446660
+  (= C4 CLOSE of CORRECTION02)
+
+CORRECTION03 trajectory in full:
+  87aec89  C0 AUTH
+  1669bce  C1 RED
+  6370707  C2 PRE  (additive capture)
+  f9906f1  C2 IMPL (F14 restoration)
+  26cbee8  C3 VERIFY
+  aa47d58  C4 CLOSE  (claimed terminal; FALSE_GREEN per reviewer)
+  8fbf51d  C4 patch hygiene (follow-up cleanup; also reached)
+
+CORRECTION04 entry is at the C4 patch hygiene follow-up commit,
+8fbf51d. This means CORRECTION04's C0 begins AFTER CORRECTION03's
+full trajectory, including the post-C4 cleanup commit that the
+reviewer flagged as a lifecycle smell.
+
+CORRECTION04 will NOT add a post-C4 cleanup commit. The
+prescription is: C3 commit -> C4 HANDOFF-only terminal transition,
+no post-C4 cleanup. The lifecycle smell is bound to CORRECTION03
+and CORRECTION04 explicitly avoids repeating it.

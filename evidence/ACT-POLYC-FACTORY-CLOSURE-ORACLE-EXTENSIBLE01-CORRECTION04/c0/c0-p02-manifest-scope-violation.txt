@@ -1,0 +1,73 @@
+P0-2 Evidence: CORRECTION03 manifest mutation under out-of-scope
+================================================================
+
+The CORRECTION03 ACT body, line 91, declared:
+
+  - docs/factory/act-handoff-map.tsv (working; do not touch)
+
+This is the explicit out-of-scope list.
+
+The same ACT's C0 AUTH commit (87aec89c3f65fc97c0169a657f47ba53bc979d2d)
+modified that exact file:
+
+  $ git show --stat 87aec89
+   .../ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION03.md | 125 +++++++++++
+   docs/factory/act-handoff-map.tsv                                  |   1 +
+   evidence/.../CORRECTION03/c0/c0-predecessor-review-disposition.txt |  22 +
+
+  $ git show 87aec89 -- docs/factory/act-handoff-map.tsv
+  ... +docs/acts/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION03.md
+  +docs/factory/HANDOFF-ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION03.md ...
+
+The diff adds the CORRECTION03 row to the manifest at the C0 AUTH
+commit itself. This means:
+
+  AUTHORIZED(manifest mutation by C0 ACT body) = NO
+  OBSERVED(manifest mutation by C0 AUTH commit) = YES
+
+This is a F15 self-authorization defect: the C0 commit performed
+work that the same C0 ACT body declared out-of-scope.
+
+Why this happened (fact, not justification)
+--------------------------------------------
+
+The closure oracle's 12-pair check requires every ACT in the
+manifest to have a corresponding HANDOFF file. The HANDOFF file
+cannot exist before C4. The manifest self-row cannot exist before
+C0 (the ACT body declares itself at C0). Therefore any closure-
+oracle ACT must, at some phase between C0 and C4, modify the
+manifest.
+
+CORRECTION03's mistake was performing the modification at C0
+itself rather than deferring it to C4. CORRECTION02 had done
+the same thing at C0 (ca67d1a). The pattern is established but
+it is NOT authorized at any ACT body so far.
+
+CORRECTION04's explicit authorization
+--------------------------------------
+
+This ACT's body, in the "Manifest self-row for this ACT
+(CORRECTION04)" subsection under "Scope (bounded)", explicitly
+declares the manifest self-row mutation as IN-SCOPE:
+
+  "This ACT explicitly authorizes that mutation as IN-SCOPE at
+   C0 (here, in this 'Manifest self-row' subsection). This
+   converts the reviewer-flagged P0-2 from a defect of THIS
+   ACT to an intentional, declared design decision."
+
+CORRECTION04 will perform the mutation at C4 (not C0) so the
+C0 AUTH commit remains the smallest possible evidence-only
+commit. The C0 ACT body itself records the authorization; the
+mutation happens at C4.
+
+Forward-only chain
+------------------
+
+  ca67d1a (CORRECTION02 C0 AUTH):  added CORRECTION02 row to manifest
+  87aec89 (CORRECTION03 C0 AUTH):  added CORRECTION03 row to manifest
+  <future C4 of CORRECTION04>:     adds CORRECTION04 row to manifest
+                                    (explicitly authorized here)
+
+F14 immutability forbids removing the rows added by ca67d1a and
+87aec89. The forward-only chain continues to grow by exactly 1
+row per closure-oracle ACT.

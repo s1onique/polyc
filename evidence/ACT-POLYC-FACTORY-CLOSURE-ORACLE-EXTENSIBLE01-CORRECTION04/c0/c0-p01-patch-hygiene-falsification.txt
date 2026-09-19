@@ -1,0 +1,79 @@
+P0-1 Evidence: CORRECTION03 patch-hygiene predicate is false
+============================================================
+
+The CORRECTION03 ACT body, line 125, froze:
+
+  6. git diff --check 0665ada..HEAD continues to report clean.
+
+The actual measurement at the worktree entry for this ACT (HEAD =
+8fbf51db74217879cc13e4665a49c12942a15670):
+
+  $ git diff --check 0665ada..HEAD
+  evidence/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION01/c2/c2-p02-n01-n05-regression.txt:29: new blank line at EOF.
+  evidence/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION01/c3/c3-act-body-unchanged.txt:10: new blank line at EOF.
+  evidence/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION01/c3/c3-checker-unchanged.txt:6: new blank line at EOF.
+  evidence/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION01/c3/c3-manifest-unchanged.txt:6: new blank line at EOF.
+
+  $ git diff --check 0665ada..HEAD 2>&1 | wc -l
+  4
+  $ git diff --check 0665ada..HEAD ; echo exit=$?
+  ... (4 errors)
+  exit=2
+
+Predicate evaluation: FALSE.
+
+Predicate tautology impossibility
+---------------------------------
+
+The 4 files did not exist at 0665ada (they were added by
+CORRECTION01, first appearing at 1054ae2). Therefore any range
+that includes them as added files will report EOF blank-line
+warnings against a baseline that pre-dates them.
+
+Confirmed:
+  $ for f in .../c2/c2-p02-n01-n05-regression.txt .../c3/c3-act-body-unchanged.txt .../c3/c3-checker-unchanged.txt .../c3/c3-manifest-unchanged.txt; do
+      echo "$f: 0665ada=$(git show 0665ada:$f 2>/dev/null | wc -l), 08365aa=$(git show 08365aa:$f 2>/dev/null | wc -l), HEAD=$(wc -l < $f)"
+    done
+  .../c2/c2-p02-n01-n05-regression.txt: 0665ada=0, 08365aa=28, HEAD=29
+  .../c3/c3-act-body-unchanged.txt:      0665ada=0, 08365aa=9,  HEAD=10
+  .../c3/c3-checker-unchanged.txt:       0665ada=0, 08365aa=5,  HEAD=6
+  .../c3/c3-manifest-unchanged.txt:      0665ada=0, 08365aa=5,  HEAD=6
+
+Wait: 08365aa (CORRECTION02 close) had different line counts than
+HEAD. So the cleanup CORRECTION02 did in commit f011d56 was not
+limited to TSV/HC files - it also stripped blank lines from these
+4 CORRECTION01 evidence files (via a865dc8 / f011d56 commits).
+The current HEAD has more lines than 08365aa because CORRECTION03's
+F14 restoration (f9906f1) put the trailing blank lines back.
+
+State at each lineage point:
+
+  0665ada (CORRECTION01 C0): files do not exist
+  1054ae2 (CORRECTION01 C2 IMPL): files exist with trailing blanks
+  a865dc8 (CORRECTION02 C2 IMPL): same as 1054ae2
+  f011d56 (CORRECTION02 patch hygiene fix): trailing blanks stripped
+  08365aa (CORRECTION02 C4 close): trailing blanks stripped
+  f9906f1 (CORRECTION03 C2 IMPL F14 restore): trailing blanks restored
+  HEAD = 8fbf51d (current): trailing blanks restored
+
+Note: the historical b9a43f8 blobs have trailing blanks. This is
+the canonical F14 reference. CORRECTION01 introduced the blanks
+as part of file creation; CORRECTION02 removed them; CORRECTION03
+restored them.
+
+Both facts are simultaneously true:
+  (F14-faithful: HEAD matches b9a43f8 byte-for-byte on these 4 files)
+  (Hygiene-failing: 0665ada..HEAD shows 4 EOF blank-line warnings)
+
+Resolving this contradiction requires a CORRECTION05 (or later)
+ACT that selects one of:
+  (a) accept the EOF blanks as the canonical state and update
+      the patch-hygiene contract to permit them;
+  (b) perform a forward-only normalization (additive, not
+      modifying closed evidence) that documents a successor
+      clean state;
+  (c) accept that the 0665ada..HEAD baseline is unsatisfiable
+      and downgrade the patch-hygiene predicate.
+
+All three options are out of scope for this ACT (F15 forbids
+reopening closed ACTs and F7 forbids scope creep).
