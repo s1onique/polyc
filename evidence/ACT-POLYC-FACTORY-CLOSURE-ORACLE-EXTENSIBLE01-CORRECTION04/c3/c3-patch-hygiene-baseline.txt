@@ -1,0 +1,24 @@
+C3 VERIFY: Patch Hygiene Baseline aa47d58..HEAD
+===============================================
+
+CORRECTION04 freezes patch-hygiene baseline at aa47d58
+(CORRECTION03 C4 CLOSE commit).
+
+Measured at HEAD = 0b33cf7.
+
+  $ git diff --check aa47d58..HEAD
+  (empty output = clean)
+
+All commits between aa47d58 and HEAD are patch-hygiene clean.
+This includes:
+  - 8fbf51d: c3-monotonic-proof.txt trailing blank line fix
+  - 0b33cf7: CORRECTION04 C0 AUTH (ACT body + 4 c0 evidence files)
+
+The frozen baseline aabbdd58..HEAD PASSES the patch-hygiene
+gate. This satisfies CORRECTION04 success criterion #6 in its
+amended form (see c1-baseline-freezing.txt).
+
+Note: the 0665ada..HEAD baseline (which CORRECTION03 froze) is
+NOT used here because it is observably unsatisfiable while F14
+restoration to b9a43f8 stands (4 EOF blank-line warnings in
+CORRECTION01 evidence). See c0-p01-patch-hygiene-falsification.txt.

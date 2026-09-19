@@ -1,0 +1,49 @@
+C3 VERIFY: 12-pair Closure Oracle Current State
+================================================
+
+Measured at HEAD = 0b33cf7 (just after C0 of CORRECTION04).
+
+  $ bash scripts/quality/factory-closure-status-check.sh
+  ... MANIFEST_ROWS=12
+  ... PAIR_OK=12
+  ... PAIR_FAIL=0
+  ... STATUS=PASS
+  ... VERDICT=PASS
+
+Oracle is mechanically green. But: the CORRECTION03 row in the
+manifest still maps to the HANDOFF file at
+docs/factory/HANDOFF-ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION03.md,
+whose claimed verdict is PASS_TRUE_GREEN. Per the reviewer (and
+this ACT's reclassification), that verdict is FALSE_GREEN.
+
+The closure oracle does NOT verify that the HANDOFF's claimed
+verdict text matches reality. It only verifies:
+  - the manifest row exists,
+  - both files exist on disk,
+  - the SHAs match,
+  - the HANDOFF VERDICT line is one of the recognized tokens
+    (no semantic check against evidence).
+
+This is a known blind spot of the current oracle. Repair is
+out of scope here (F15).
+
+State transition after C4
+-------------------------
+
+At C4, CORRECTION04 will add its row to the manifest and create
+its HANDOFF file. Expected state:
+
+  PRE-C4 (current): PAIR_OK=12 PAIR_FAIL=0 STATUS=PASS
+  POST-C4:          PAIR_OK=13 PAIR_FAIL=0 STATUS=PASS
+
+The self-pair transition is: at C3 the CORRECTION04 manifest
+row would be added (if it existed) but its HANDOFF would not
+yet exist, producing PAIR_FAIL=1 momentarily. The current
+strategy is to defer the manifest mutation to C4 so the C3
+transition has no CORRECTION04 entry at all (no self-pair
+transition to test).
+
+This is a deliberate departure from CORRECTION02/CORRECTION03,
+which both added the manifest row at C0. CORRECTION04 defers
+to C4 so the C3->C4 transition remains HANDOFF + manifest-
+self-row ONLY (no pre-existing self-pair in C3).

@@ -1,0 +1,77 @@
+C1 RED: Patch Hygiene Baseline Freezing for CORRECTION04
+========================================================
+
+CORRECTION04 freezes its patch-hygiene baseline at
+aa47d58 (the C4 CLOSE commit of CORRECTION03, immediately
+after the F14 restoration).
+
+This baseline is selected because:
+  (a) It is the first commit where the F14 restoration is
+      complete and the closure oracle's 12-pair machinery is
+      in steady state.
+  (b) All subsequent commits (aa47d58 itself, 8fbf51d patch
+      hygiene, 0b33cf7 CORRECTION04 C0) satisfy
+      git diff --check aa47d58..HEAD.
+
+Empirical verification
+----------------------
+
+  $ for baseline in 08365aa 87aec89 aa47d58 8fbf51d 0b33cf7; do
+      count=$(git diff --check $baseline..HEAD 2>&1 | wc -l)
+      echo "$baseline..HEAD: $count errors"
+    done
+
+  08365aa..HEAD: 4 errors   (CORRECTION02 close -> current; F14
+                              restoration re-introduces blanks)
+  87aec89..HEAD: 4 errors   (CORRECTION03 C0 -> current; same)
+  aa47d58..HEAD: 0 errors   (CORRECTION03 C4 CLOSE -> current;
+                              all subsequent work is clean)
+  8fbf51d..HEAD: 0 errors   (CORRECTION03 C4 hygiene -> current)
+  0b33cf7..HEAD: 0 errors   (CORRECTION04 C0 -> current; tautology)
+
+The 4 errors in 08365aa..HEAD and 87aec89..HEAD are the
+CORRECTION01 evidence files re-introduced by F14 restoration
+to b9a43f8. They are inherent to the historical blobs and
+cannot be fixed without violating F14. CORRECTION04 does NOT
+fix them. CORRECTION04's baseline choice (aa47d58) sidesteps
+the contradiction by starting from a state where the F14
+restoration is already in place.
+
+Rationale for baseline choice (vs other candidates)
+----------------------------------------------------
+
+  - 0665ada (CORRECTION01 C0): unsatisfiable. Files added by
+    CORRECTION01 don't exist at this baseline; any range
+    including them as additions will fail. This is the
+    baseline CORRECTION03 froze; the defect is unsatisfiable.
+
+  - 08365aa (CORRECTION02 C4 close): 4 errors. F14 restoration
+    introduces EOF blanks. Unsatisfiable while F14 stands.
+
+  - 87aec89 (CORRECTION03 C0): same as 08365aa.
+
+  - aa47d58 (CORRECTION03 C4 CLOSE): 0 errors. First commit
+    where F14 restoration is complete. SELECTED.
+
+  - 8fbf51d (CORRECTION03 C4 hygiene): 0 errors. But this is
+    a post-C4 cleanup commit and using it as baseline would
+    reward the lifecycle smell the reviewer flagged.
+
+  - 0b33cf7 (CORRECTION04 C0): 0 errors. Tautological; cannot
+    be a baseline for itself.
+
+Conclusion
+----------
+
+CORRECTION04 freezes patch-hygiene baseline at aa47d58.
+
+Success criterion #6 in the CORRECTION04 ACT body is amended
+in spirit by this evidence: "git diff --check aa47d58..HEAD
+continues to report clean through C4."
+
+The 0665ada predicate is recorded as UNSATISFIABLE under the
+current F14 restoration. Resolution requires either:
+  (a) accepting the b9a43f8 EOF blanks as canonical (defer),
+  (b) a forward-only normalization that doesn't touch closed
+      evidence (deferred to a future ACT with that scope),
+  (c) abandoning F14 restoration (out of scope; F14 immutable).
