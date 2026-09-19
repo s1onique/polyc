@@ -1,0 +1,49 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION04 / c1 / c1-red-a-ac02-contradiction.txt
+
+RED-A: AC02 mechanical contradiction in CORRECTION03 close.
+
+REVIEWER QUOTE:
+  "You cannot simultaneously have:
+     MANDATORY AC02 = PASS
+   and:
+     AC02 cannot be marked PASS until CORRECTION04
+   The second statement wins because it accurately describes
+   the authorization state."
+
+PROCEDURE:
+  grep "AC02" evidence/.../CORRECTION03/c3/mandatory-ac-status.tsv
+  grep -A 3 "AC02" docs/factory/HANDOFF-ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION03.md
+
+RESULT:
+
+  $ grep "AC02" .../CORRECTION03/c3/mandatory-ac-status.tsv
+  AC02   make lib-tos fail-closed (literal predicate superseded by C2-1 pinning; underlying property enforced via AC03(b))   PASS_BY_DESIGN   c3-ac02.txt
+
+  $ grep -A 3 "AC02" .../HANDOFF-ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION03.md
+  P0: ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION04
+      Required to formally amend AC02's literal predicate.
+      ...
+      AC02 is currently marked PASS_BY_DESIGN in the CORRECTION03 ledger,
+      with the amendment recorded as residue. CORRECTION04 promotes the
+      residue to a C0-authorized amendment before C3 verification.
+
+  ...
+  AC02 disposition at C3 is PASS_BY_DESIGN.
+  AC02's underlying property is enforced more strongly via AC03(b).
+  The formal AC02 amendment is recorded as residue for CORRECTION04.
+
+The ledger says AC02 = PASS_BY_DESIGN; the HANDOFF says AC02
+"cannot be marked PASS until CORRECTION04" and the amendment
+is "recorded as residue". These statements are mutually
+exclusive: PASS_BY_DESIGN is not PASS (per AC table column
+header), and the residue language explicitly defers PASS to
+CORRECTION04.
+
+CLOSURE: CORRECTION03 C4 verdict was PASS_TRUE_GREEN with
+this contradiction in its evidence. CORRECTION04 §3.1
+formally supersedes AC02 with the bounded predicate (a)
+absent-builder fails, (b) wrong-SHA builder fails, (c)
+correct-SHA builder succeeds.
+
+VERDICT: PASS (RED-A reproduced — AC02 was not authorized
+to change in CORRECTION03).

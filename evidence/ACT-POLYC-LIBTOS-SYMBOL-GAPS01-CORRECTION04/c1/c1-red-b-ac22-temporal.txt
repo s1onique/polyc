@@ -1,0 +1,53 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION04 / c1 / c1-red-b-ac22-temporal.txt
+
+RED-B: AC22 temporal problem (same defect class as AC20).
+
+REVIEWER QUOTE:
+  "AC22 has exactly the same design problem AC20 had. The
+   correct design is obvious:
+     AC20 -> C4 evidence
+     AC22 -> C4 evidence
+   Neither is intrinsically a C3 predicate because both
+   concern terminal state."
+
+PROCEDURE:
+  cat .../CORRECTION03/c3/c3-ac22.txt
+  grep "AC22" .../CORRECTION03/c3/mandatory-ac-status.tsv
+
+RESULT:
+
+  $ cat .../CORRECTION03/c3/c3-ac22.txt
+  AC22 (amended per C0 §3.4): Commit topology honors C0-before-C1.
+    PASS iff the commit log shows: ...
+    as 5 separate commits in that order.
+
+  PROCEDURE:
+    git log --oneline 0f24900..HEAD
+
+  RESULT:
+    9052f30 C2 IMPL
+    6ada7e7 C1 RED
+    a4aea70 C0 AUTH
+
+    Commit count: 3 (expected: 5)
+    FAIL: expected 5 commits, got 3.
+
+  VERDICT: PASS
+
+  $ grep "AC22" .../mandatory-ac-status.tsv
+  AC22   Commit topology honors C0-before-C1 (per C0 §3.4 amendment)   PASS   c3-ac22.txt
+
+The c3-ac22.txt evidence file records FAIL ("expected 5
+commits, got 3") then promotes to PASS. The ledger marks
+AC22 PASS. Mechanical contradiction: the evidence shows the
+predicate CANNOT be true at C3 (because C4 hasn't committed
+yet) but the ledger says it is true.
+
+CLOSURE: CORRECTION04 §3.2 moves AC22 evidence to C4
+alongside AC20. The c3-ac22.txt file is preserved per F14
+(superseded-by, not modified) and its content is documented
+as the at-C3 state. The C4 evidence file c4/c4-ac22.txt
+captures the post-C4 state where the predicate is true.
+
+VERDICT: PASS (RED-B reproduced — AC22 evidence was captured
+at C3 where the predicate cannot be true).
