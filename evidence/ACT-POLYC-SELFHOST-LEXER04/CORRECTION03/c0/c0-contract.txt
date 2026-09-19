@@ -1,0 +1,27 @@
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION03 -- C0 -- architectural decision frozen
+============================================================================
+
+BOOTSTRAP_LINK_DIRECTIVE_ROLE = PRODUCTION_AUTHORITY
+
+ABI model frozen:
+  ABI_MODEL = A  (returned parsed-result adapter)
+
+ABI exposed:
+  I64 BootstrapLinkDirective(
+      U8  *src, I64 src_len, I64 flags,
+      I64 *out_consumed,
+      I64 *out_is_path,
+      I64 *out_stored_len,
+      I64 *out_error);
+
+The C adapter (src/lexer.c::lexLink) MUST:
+  1. Call BootstrapLinkDirective once per directive (not per token).
+  2. Forward src to point to the byte after the directive keyword
+     (the first byte of the target form: '<' or '"').
+  3. Forward src_len to span from that byte to end of directive.
+  4. Consume out_consumed bytes from the input via the lexeme stream.
+  5. Use out_is_path to choose between shared_object_files / link_libs.
+  6. Use out_stored_len bytes from out_target_bytes for the AoStr.
+  7. Honor out_error by calling lexRaise with the appropriate class.
+
+ABI model change is a HALT (HALT_PRODUCTION_AUTHORITY_ABI_INSUFFICIENT).
