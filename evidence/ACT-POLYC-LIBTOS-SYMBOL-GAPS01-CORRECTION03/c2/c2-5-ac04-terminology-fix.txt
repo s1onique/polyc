@@ -1,0 +1,20 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION03 / c2 / c2-5-ac04-terminology-fix.txt
+
+C2-5: AC04 terminology fix (closes RED-5).
+
+The CORRECTION02 c3-ac04.txt framed producer_id.o as "under __.SYMDEF",
+which is technically wrong: __.SYMDEF is the BSD/Darwin archive symbol
+table, not a containing directory.
+
+The C0 ACT (this ACT) explicitly authorizes the following framing
+amendment (C0 §3.5):
+
+  AC04 evidence says: `ar t libtos.a` lists __.SYMDEF (symbol table),
+  all.o, errno_shim.o, and producer_id.o as four SIBLING members.
+  nm -j producer_id.o reports __producer_id as a defined symbol.
+  strings producer_id.o | grep -qF <expected-SHA> confirms the SHA-256
+  is baked in.
+
+NO PRODUCTION MUTATION REQUIRED for this defect.
+
+VERDICT: PASS (RED-5 closed by procedure amendment).

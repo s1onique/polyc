@@ -1,0 +1,66 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION03 / c2 / c2-1-pinned-bootstrap.txt
+
+C2-1: Pinned bootstrap identity (closes RED-1 / P0-1).
+
+PRODUCTION MUTATIONS:
+
+  Makefile:
+    - LIBTOS_HCC override changed from `?=` to `:=` with `override`
+      directive. Command-line `make lib-tos LIBTOS_HCC=...` is now
+      rejected at parse time.
+
+      BEFORE: LIBTOS_HCC ?= ./build/hcc-bootstrap04
+      AFTER:  override LIBTOS_HCC := ./build/hcc-bootstrap04
+
+    - LIBTOS_BOOTSTRAP_EXPECTED_SHA frozen in Makefile as
+      3b4474213efabcda30eb2d0c0610c6e23793f876896c8e21c5e18024b1ab40f6
+      (the SHA-256 of the authorized ./build/hcc-bootstrap04).
+
+    - LIBTOS_BOOTSTRAP_SHA changed from `?=` to `:=` (no fallback).
+
+    - lib-tos recipe step 1 now rejects any builder whose measured
+      SHA-256 differs from LIBTOS_BOOTSTRAP_EXPECTED_SHA. Error names
+      HCC_BOOTSTRAP_PROVENANCE_SHA (measured), LIBTOS_BOOTSTRAP_EXPECTED_SHA
+      (frozen), and the REJECTED reason.
+
+VERIFICATION:
+
+  (a) Default build:
+      $ rm -rf build/test-prefix/lib/libtos.a
+      $ make lib-tos
+      ...
+      lib-tos: HCC_BOOTSTRAP_PROVENANCE_SHA=3b447421...
+      lib-tos: HCC_BOOTSTRAP_PROVENANCE_SHA_EXPECTED=3b447421...
+      lib-tos: producer-id verified: SHA=3b447421...
+      lib-tos: complete
+      RC=0
+
+  (b) Command-line override attempt:
+      $ rm -rf build/test-prefix/lib/libtos.a
+      $ make lib-tos LIBTOS_HCC=/bin/false
+      ...
+      lib-tos: builder ./build/hcc-bootstrap04    <- override REJECTED
+      ...
+      RC=0 (recipe ran with pinned builder; the LIBTOS_HCC= override
+      had no effect because of `override` directive)
+
+  (c) Substituted binary (different SHA at the pinned path):
+      $ cp ./build/hcc-bootstrap04 ./build/hcc-bootstrap04.bak
+      $ cat > ./build/hcc-bootstrap04 << 'WRAP'
+      #!/bin/sh
+      exec /Volumes/.../build/hcc-bootstrap04.bak "$@"
+      WRAP
+      $ chmod +x ./build/hcc-bootstrap04
+      $ rm -rf build/test-prefix/lib/libtos.a
+      $ make lib-tos
+      ...
+      lib-tos: FAIL: builder ./build/hcc-bootstrap04 has SHA-256
+              4d27bb22... which does NOT match the authorized bootstrap
+              SHA-256 expected: 3b447421...
+      lib-tos: REJECTED: producer identity mismatch (CORRECTION03 C2-1)
+      make: *** [lib-tos] Error 1
+      $ mv ./build/hcc-bootstrap04.bak ./build/hcc-bootstrap04    <- restore
+
+  All three checks behave as designed.
+
+VERDICT: PASS (RED-1 closed).

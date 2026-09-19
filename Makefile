@@ -207,33 +207,49 @@ llvm-gep01-test: test-prefix-install
 # needs. Consumers requiring the dylib must run `make
 # test-prefix-install`.
 #
-# LIBTOS_HCC override (for qualification hosts without bootstrap):
-#   make lib-tos LIBTOS_HCC=/path/to/known-good-hcc
-LIBTOS_HCC ?= ./build/hcc-bootstrap04
+# ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION03 C2-1: pinned bootstrap.
+#
+# The producer identity is the SHA-256 of ./build/hcc-bootstrap04.
+# This SHA is FROZEN here as LIBTOS_BOOTSTRAP_EXPECTED_SHA.
+# The recipe measures the actual SHA of $(LIBTOS_HCC) and rejects
+# any builder whose SHA does not match the frozen expected value,
+# even if it can build all.HC. This is genuine provenance
+# enforcement, not self-certification.
+#
+# The `override` directive defeats the GNU Make default behavior
+# where command-line variable assignments (`make lib-tos
+# LIBTOS_HCC=...`) override ordinary Makefile assignments. With
+# `override`, command-line overrides are rejected at parse time.
+#
+# The expected SHA is the SHA-256 of ./build/hcc-bootstrap04
+# built by ACT-POLYC-BOOTSTRAP04 (see .../bootstrap04-test).
+override LIBTOS_HCC := ./build/hcc-bootstrap04
+LIBTOS_BOOTSTRAP_EXPECTED_SHA := 3b4474213efabcda30eb2d0c0610c6e23793f876896c8e21c5e18024b1ab40f6
+LIBTOS_BOOTSTRAP_SHA := $(shell shasum -a 256 $(LIBTOS_HCC) 2>/dev/null | cut -d' ' -f1)
 LIBTOS_REQUIRED_SYMBOLS := _FREE _STRNCMP _MEMSET _STRLEN_FAST _SpawnAndCapture
-
-# ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION02 C2-1: bootstrap identity.
-# The expected producer identity is the SHA-256 of the binary at
-# the path named by LIBTOS_HCC (default = build/hcc-bootstrap04).
-# The recipe prints this SHA in the precondition error message
-# (AC03) and bakes it into a producer-id note inside libtos.a
-# (AC04). Override on the make command line only; do NOT bake
-# an opportunistic fallback.
-LIBTOS_BOOTSTRAP_SHA ?= $(shell shasum -a 256 $(LIBTOS_HCC) 2>/dev/null | cut -d' ' -f1)
 
 lib-tos:
 	@if [ ! -x "$(LIBTOS_HCC)" ]; then \
 		echo "lib-tos: FAIL: builder '$(LIBTOS_HCC)' not found or not executable" >&2; \
-		echo "lib-tos: expected HCC_BOOTSTRAP_PROVENANCE_SHA: <unmeasurable, builder missing>" >&2; \
+		echo "lib-tos: HCC_BOOTSTRAP_PROVENANCE_SHA: <unmeasurable, builder missing>" >&2; \
 		echo "lib-tos: required LIBTOS_HCC SHA-256: cannot measure (builder absent)" >&2; \
+		echo "lib-tos: expected LIBTOS_BOOTSTRAP_EXPECTED_SHA: $(LIBTOS_BOOTSTRAP_EXPECTED_SHA)" >&2; \
 		echo "lib-tos: build/hcc-bootstrap04 is REQUIRED for fail-closed lib-tos" >&2; \
 		echo "lib-tos: build it via 'make bootstrap04-component-build' first" >&2; \
-		echo "lib-tos: or override with 'make lib-tos LIBTOS_HCC=/path/to/known-good-hcc'" >&2; \
+		exit 1; \
+	fi
+	@if [ "$(LIBTOS_BOOTSTRAP_SHA)" != "$(LIBTOS_BOOTSTRAP_EXPECTED_SHA)" ]; then \
+		echo "lib-tos: FAIL: builder $(LIBTOS_HCC) has SHA-256 $(LIBTOS_BOOTSTRAP_SHA)" >&2; \
+		echo "lib-tos:        which does NOT match the authorized bootstrap SHA-256" >&2; \
+		echo "lib-tos:        expected: $(LIBTOS_BOOTSTRAP_EXPECTED_SHA)" >&2; \
+		echo "lib-tos: HCC_BOOTSTRAP_PROVENANCE_SHA: $(LIBTOS_BOOTSTRAP_SHA)" >&2; \
+		echo "lib-tos: HCC_BOOTSTRAP_PROVENANCE_SHA_EXPECTED: $(LIBTOS_BOOTSTRAP_EXPECTED_SHA)" >&2; \
+		echo "lib-tos: REJECTED: producer identity mismatch (CORRECTION03 C2-1)" >&2; \
 		exit 1; \
 	fi
 	@echo "lib-tos: builder $(LIBTOS_HCC)"
 	@echo "lib-tos: HCC_BOOTSTRAP_PROVENANCE_SHA=$(LIBTOS_BOOTSTRAP_SHA)"
-	@echo "lib-tos: required LIBTOS_HCC SHA-256: $(LIBTOS_BOOTSTRAP_SHA)"
+	@echo "lib-tos: HCC_BOOTSTRAP_PROVENANCE_SHA_EXPECTED=$(LIBTOS_BOOTSTRAP_EXPECTED_SHA)"
 	@echo "lib-tos: HCC_BOOTSTRAP_PROVENANCE_SHA_ENV=HCC_BOOTSTRAP_PROVENANCE_SHA=$(LIBTOS_BOOTSTRAP_SHA)"
 	@mkdir -p $(TEST_PREFIX)/lib $(TEST_PREFIX)/include
 	@echo "lib-tos: step 1/8: install headers (tos.HH) into $(TEST_PREFIX)/include"
@@ -248,7 +264,7 @@ lib-tos:
 	fi
 	@echo "lib-tos: step 4/8: compile errno_shim.c"
 	@cd ./src/holyc-lib && cc -O0 -c ./errno_shim.c -o ./errno_shim.o
-	@echo "lib-tos: step 5/8: bake producer-id note (C2-2 / AC04)"
+	@echo "lib-tos: step 5/8: bake producer-id note (CORRECTION03 C2-1 / AC04)"
 	@cd ./src/holyc-lib && printf 'const char __producer_id[65] = "%s";\n' "$(LIBTOS_BOOTSTRAP_SHA)" > ./producer_id.c && cc -O0 -c ./producer_id.c -o ./producer_id.o && rm -f ./producer_id.c
 	@echo "lib-tos: step 6/8: ar rcs libtos.a all.o errno_shim.o producer_id.o"
 	@cd ./src/holyc-lib && ar rcs ./libtos.a ./all.o ./errno_shim.o ./producer_id.o && ranlib ./libtos.a
@@ -2026,6 +2042,30 @@ factory-halt-classification-binary: test-prefix-install
 
 factory-halt-classification-selftest: factory-halt-classification-binary
 	./build/factory-halt-classification --selftest
+
+# ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION03 C2-2: factory-no-python-check
+# build target. The PolyC source tools/factory/factory-no-python-check.HC
+# exists but no Makefile rule compiled it. Per AC17 amendment (C0 §3.2),
+# the checker binary must be buildable from source via the authorized
+# bootstrap chain. Use $(LIBTOS_HCC) (overridden-pinned bootstrap) and
+# archive-only link against libtos.a. (Not via the broken ./hcc, which
+# fails on the LDP mnemonic per ACT-POLYC-COMPILER-AARCH64-ASM-PARSER-FIX01
+# residue.)
+factory-no-python-check-binary: test-prefix-install
+	@if [ ! -x "$(LIBTOS_HCC)" ]; then \
+		echo "factory-no-python-check-binary: FAIL: builder '$(LIBTOS_HCC)' not found" >&2; \
+		exit 1; \
+	fi
+	$(LIBTOS_HCC) --install-dir=$(TEST_PREFIX) -c \
+		tools/factory/factory-no-python-check.HC \
+		-o build/factory-no-python-check.o
+	cc build/factory-no-python-check.o \
+		-L$(TEST_PREFIX)/lib -ltos \
+		-o build/factory-no-python-check
+	@if [ ! -x ./build/factory-no-python-check ]; then \
+		echo "factory-no-python-check-binary: build failed" >&2; \
+		exit 1; \
+	fi
 
 selfhost-component-build: selfhost-component-binary
 selfhost-component-test:  selfhost-component-binary

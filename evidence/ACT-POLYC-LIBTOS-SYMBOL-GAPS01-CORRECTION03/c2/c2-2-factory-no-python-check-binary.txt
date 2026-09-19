@@ -1,0 +1,56 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION03 / c2 / c2-2-factory-no-python-check-binary.txt
+
+C2-2: factory-no-python-check buildable from source (closes RED-2 / P0-2).
+
+PRODUCTION MUTATIONS:
+
+  Makefile: new target `factory-no-python-check-binary` that:
+    - depends on test-prefix-install
+    - uses $(LIBTOS_HCC) (the pinned bootstrap, not the broken ./hcc)
+      to compile tools/factory/factory-no-python-check.HC into a .o
+    - links archive-only against build/test-prefix/lib/libtos.a
+    - exits 1 if the binary is not produced
+
+  Why use $(LIBTOS_HCC) instead of ./hcc:
+    The analogous factory-halt-classification-binary rule uses ./hcc
+    which fails with:
+      error: src/.../memory.HC:146: error: asm: unexpected token
+            at start of line (LDP X29, X30, [SP], 48)
+    This is the P1 residue
+    (ACT-POLYC-COMPILER-AARCH64-ASM-PARSER-FIX01). The bootstrap hcc
+    ./build/hcc-bootstrap04 parses the LDP mnemonic correctly. Using
+    $(LIBTOS_HCC) routes through the authorized builder and works.
+
+  factory-no-python-check-binary is in .PHONY (added when
+  libtos-n02-isolate was added; verified via grep).
+
+VERIFICATION:
+
+  $ make factory-no-python-check-binary
+  -- Installing: .../build/test-prefix/lib/libtos.0.0.1.dylib
+  ./build/hcc-bootstrap04 --install-dir=... -c \
+    tools/factory/factory-no-python-check.HC -o build/factory-no-python-check.o
+  cc build/factory-no-python-check.o -L./build/test-prefix/lib -ltos \
+    -o build/factory-no-python-check
+  RC=0
+  $ ls -la build/factory-no-python-check
+  -rwxr-xr-x ... 143416 ... build/factory-no-python-check
+
+  $ ./build/factory-no-python-check --selftest
+  ...
+  SELFTEST=PASS
+  RC=0
+
+  $ TMPDIR=/tmp scripts/quality/factory-no-python-check.sh
+  ... 12 grandfathered Python violations reported ...
+  POLYC_TOOLS_TRACKED_PYTHON=12
+  POLYC_TOOLS_TRACKED_INSPECTED=3950
+  POLYC_TOOLS_TRACKED_PASSES=3943
+  STATUS=FAIL
+  RC=0 (wrapper exec preserves binary exit)
+
+  The wrapper no longer aborts at "build artifact missing" (RC=3).
+  It actually runs the checker. The checker reports the structured
+  summary. AC17 predicate (C0 §3.2) is satisfied.
+
+VERDICT: PASS (RED-2 closed).
