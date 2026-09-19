@@ -1,0 +1,114 @@
+ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION03 / c0 / c0-predecessor-review-disposition.txt
+
+Disposition of CORRECTION02 by post-closure reviewer (2026-09-19).
+
+The reviewer accepted the engineering repairs as genuinely real:
+  - The 49-LOC shell engine is deleted; the shell entrypoint is a
+    16-line dispatcher; the fixture is data-only TSV; the PolyC
+    implementation visibly owns manifest generation, checker
+    invocation, output/RC capture, matching, and PASS/FAIL
+    aggregation. F-POLYC-TOOLS substantive logic is now in PolyC.
+  - There is a genuine C3 commit boundary, with the frozen
+    checker/manifest/ACT hashes explicitly equal across C2 -> C3.
+    The "non-1054ae2 SHA with empty diff" contradiction from
+    CORRECTION01 is eliminated.
+  - git diff --check on the cumulative range is clean.
+  - 12/12 PolyC test regression passes.
+  - 11/11 closure-status oracle passes (after C4 close).
+
+But two governance defects remain and are the basis for this
+CORRECTION03 ACT.
+
+=== P0-G1: C0 pre-existing-work authorization ===
+
+The CORRECTION02 C0 ACT body itself admitted:
+
+  Entry identity:
+    git branch --show-current = main
+    git rev-parse HEAD        = b9a43f854ad8f82dd4c95bfabf6f71490f91e616
+    git status --short        = clean (modulo unstaged whitespace fixes
+                                  to CORRECTION01 evidence files; those
+                                  are committed in C2 of this ACT)
+
+The phrase "modulo unstaged whitespace fixes" is a F15 self-
+authorization admission: implementation work existed before
+authorization. The actual chronology is:
+
+    whitespace repair begins
+        |
+        v
+    C0 AUTH (records repair work as authorized scope)
+        |
+        v
+    C1 RED
+        |
+        v
+    C2 commits already-existing repair
+
+not the C0 -> C1 -> C2 RED-before-fix flow that the AGENTS.md
+binding contract requires. The repair itself may be correct; its
+authorization lineage is not.
+
+The defect is recorded as additive evidence under this ACT.
+CORRECTION02's C0 ACT body is immutable per F14; it is not
+rewritten.
+
+=== P0-G2: F14 closed-evidence immutability ===
+
+CORRECTION02 physically rewrote 4 closed CORRECTION01 evidence
+files (removed trailing blank lines). Diff against b9a43f8
+sha256 of each file:
+
+  evidence/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-
+  CORRECTION01/c2/c2-p02-n01-n05-regression.txt
+    sha256 at b9a43f8: 5553b2ab7765ee016afdfbf7cbcd6bd20b9504558e9754af49d33fd25b479766
+    sha256 at 08365aa: 73ed882d24b78440be1d33deda79324c6761f3a356e7cde3b85bc6820de0cdcc
+    -> DIFFER (file physically modified by CORRECTION02)
+
+  evidence/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-
+  CORRECTION01/c3/c3-act-body-unchanged.txt
+    sha256 at b9a43f8: 42c26008ee6796459093b2052b119258afbe66b9f3a36e6cd68e75cc4d4be23a
+    sha256 at 08365aa: ac5982f5460990a018ebf3cea89bca455c9dcae12855bec5b5349e5af5b8df8f
+    -> DIFFER
+
+  evidence/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-
+  CORRECTION01/c3/c3-checker-unchanged.txt
+    sha256 at b9a43f8: 44ad8de0c5d2793224755c5b3576ce94a63c1db812fa3aa31c885715bebd9cdd
+    sha256 at 08365aa: 58557f6406618bcef9322790d42600e1d9920eb97c3960e392f8b3ab706ba0a3
+    -> DIFFER
+
+  evidence/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-
+  CORRECTION01/c3/c3-manifest-unchanged.txt
+    sha256 at b9a43f8: 0bb36968dcde5996b02b3c1a3ffab8d2d5d99496e6bc107aa54c45e03a239165
+    sha256 at 08365aa: 6ffa0c96f5c94f477e561f2e8b9cb2cc2a131b2f933011f5a95f4117d1e5a7b6
+    -> DIFFER
+
+CORRECTION02's HANDOFF recorded: "per F14, CORRECTION01 evidence
+is immutable -- its content cannot be rewritten." This statement
+and the actual repository state are in direct contradiction.
+Forward-only Git history does not excuse modification of a
+closed artifact's current blob.
+
+=== Disposition ===
+
+CORRECTION02's PASS_TRUE_GREEN verdict is REJECTED on governance
+grounds:
+
+  POLYC_TEST_AUTHORITY                 = GREEN
+  SHELL_DISPATCH_ONLY                  = GREEN
+  12_CASE_REGRESSION                   = GREEN
+  REAL_C3_COMMIT                       = GREEN
+  C2_TO_C3_FROZEN_FILES                = GREEN
+  C3_TO_C4_HANDOFF_ONLY                = PLAUSIBLY_GREEN
+  PATCH_HYGIENE_CURRENT_RANGE          = GREEN
+  C0_PRE_WORK_AUTHORIZATION            = FAIL
+  F14_CLOSED_EVIDENCE_IMMUTABILITY     = FAIL
+  CORRECTION02_ENGINEERING             = GREEN
+  CORRECTION02_PASS_TRUE_GREEN         = FALSE_GREEN
+
+Reclassification: PREDECESSOR_RECLASSIFICATION = FALSE_GREEN.
+
+Two new bounded governance repairs recorded in
+ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION03.
+
+Board authorization: granted to proceed with CORRECTION03.
