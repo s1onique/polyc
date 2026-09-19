@@ -1,0 +1,98 @@
+ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION02 / c1 / c1-red-p02-monotonic-rebuild.txt
+
+P0-2 RED -- CORRECTION01 phase binding is internally impossible.
+
+The reviewer correctly identifies a contradiction in
+CORRECTION01's monotonicity proof:
+
+  evidence/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION01/
+    c3/c3-manifest-unchanged.txt (committed at 7fb7621)
+  says:
+    git diff 1054ae2..HEAD -- docs/factory/act-handoff-map.tsv:
+    (empty diff above = manifest unchanged)
+
+    SHA-256 of manifest at C3: c21289718c17fc1352ec76320e86afcf7f14865eacb91c68d907d44d7087fccb
+
+But:
+  - At 1054ae2 (the C2 IMPL/FREEZE commit), the manifest did NOT
+    contain the self-row for CORRECTION01.
+  - The self-row was added at the C2b commit (7fb7621).
+  - The committed manifest SHA at 1054ae2 is therefore
+    13c843e5ffec04af2f0ba0661412143d1147e861b43402f63c0716df40a2c299.
+  - The committed manifest SHA at 7fb7621 (post-self-row-add)
+    is therefore ... well, after git add, the SHA at 7fb7621 is
+    ALSO 13c843e5ffec04af2f0ba0661412143d1147e861b43402f63c0716df40a2c299
+    (git add normalizes line endings; in this case the row was
+    added without an embedded LF mismatch).
+
+So either:
+  - The diff 1054ae2..HEAD is empty, in which case the SHA at
+    HEAD == the SHA at 1054ae2 == 13c843e5ff..., and the
+    claim "SHA at C3 = c21289718c..." is wrong; OR
+  - The SHA at C3 is c21289718c..., in which case the diff
+    1054ae2..HEAD is non-empty, contradicting the claim of
+    "manifest unchanged".
+
+Mechanically:
+
+  $ git show 1054ae2:docs/factory/act-handoff-map.tsv | sha256sum
+  13c843e5ffec04af2f0ba0661412143d1147e861b43402f63c0716df40a2c299  -
+
+  $ git show 7fb7621:docs/factory/act-handoff-map.tsv | sha256sum
+  13c843e5ffec04af2f0ba0661412143d1147e861b43402f63c0716df40a2c299  -
+
+So the c2-freeze-sha256.txt file that recorded c2128971... was
+an intermediate working-tree SHA from before git add's line-
+ending normalization. The committed-bloom SHA at any commit
+where the manifest is part of the tree is 13c843e5ff...
+
+C3 evidence says:
+
+  git diff 1054ae2..HEAD -- docs/factory/act-handoff-map.tsv:
+  (empty diff above = manifest unchanged)
+
+But at the actual C3 state (= HEAD after 7fb7621 was committed,
+which is BEFORE 8efc029 added the HANDOFF), the diff
+1054ae2..7fb7621 for the manifest is also empty (the committed
+SHAs are identical at both commits), so the diff is correctly
+empty. The SHA in the file is c2128971... which is a working-
+tree intermediate, not the committed blob.
+
+The CORRECTION01 phase binding is therefore:
+
+  Confused but not necessarily contradictory if we read
+    "HEAD" loosely as "the state with the self-row added",
+    which is 7fb7621 or 8efc029 (with the HANDOFF also added).
+
+The REAL defect is that C3 was not its own committed boundary.
+CORRECTION01's trajectory is:
+
+  0665ada C0 AUTH
+  63efbdd C1 RED
+  1054ae2 C2 IMPL/FREEZE      <- C2 frozen boundary
+  7fb7621 C2b manifest-row    <- C2b: missed-row correction
+                                + C3 evidence pre-baked into
+                                the same commit
+  8efc029 C4 CLOSE            <- C4: HANDOFF added
+  b9a43f8 C4 close-correction <- SHA-alignment commit
+
+There is NO named C3 commit between C2b and C4. The C3 evidence
+files were committed INSIDE the C2b commit. The reviewer's
+critique is that this makes "between C3 and C4" unverifiable
+from git history alone.
+
+Required repair (CORRECTION02 P0-2):
+
+  - This ACT creates a real, named C3 commit. The C3 commit
+    MUST be a pure-evidence commit; only files under
+    evidence/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-
+    CORRECTION02/c3/ are added between C2 and C3.
+  - The monotonic proof is then re-derived:
+      diff <C2_boundary>..<C3_commit> -- checker = empty
+      diff <C2_boundary>..<C3_commit> -- manifest = empty
+      diff <C2_boundary>..<C3_commit> -- ACT-body = empty
+      diff <C3_commit>..<C4_commit> = exactly HANDOFF file
+
+RED status: CONFIRMED. The C3 boundary does not currently
+exist as its own commit; the phase binding is constructed
+on top of C2b+C4 only.

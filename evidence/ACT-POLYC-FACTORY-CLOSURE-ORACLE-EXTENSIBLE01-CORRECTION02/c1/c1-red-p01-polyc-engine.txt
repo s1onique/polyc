@@ -1,0 +1,83 @@
+ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION02 / c1 / c1-red-p01-polyc-engine.txt
+
+P0-1 RED -- F-POLYC-TOOLS substantive logic NOT in PolyC.
+
+Inspection of the current CORRECTION01 architecture (HEAD at
+C0 entry):
+
+  $ wc -l scripts/quality/factory-closure-status-test-cases.sh \
+        scripts/quality/factory-closure-status-check-test.sh \
+        tools/quality/factory-closure-status-test.HC
+    49 scripts/quality/factory-closure-status-test-cases.sh
+    15 scripts/quality/factory-closure-status-check-test.sh
+   140 tools/quality/factory-closure-status-test.HC
+
+The 49-LOC shell file holds the substantive engine:
+
+  $ grep -c 'expect\|printf\|FACTORY_ACT_HANDOFF_MAP' \
+      scripts/quality/factory-closure-status-test-cases.sh
+    16
+
+The 16 hits are: 1 `expect()` function definition, 12 `expect`
+call sites, 2 `printf` calls (one for the manifest fixture, one
+for the PASS banner), and 1 `FACTORY_ACT_HANDOFF_MAP` environment
+variable that drives the checker's input.
+
+The 140-LOC PolyC binary delegates to the shell engine:
+
+  $ grep -E 'sh |exec|System' tools/quality/factory-closure-status-test.HC | head -3
+    //   Defaults:
+    //     checker_path = ./scripts/quality/factory-closure-status-check.sh
+    //     cases_path   = ./scripts/quality/factory-closure-status-test-cases.sh
+
+  (and inside Main:)
+    U8 *p1 = "sh '";
+    ...
+    I64 rc = System(cmd);
+
+The PolyC binary builds and executes a shell command:
+
+  sh <cases_file> <checker_file> 2>&1; echo EXIT_RC=$? > /tmp/fcst-exit-<pid>
+
+Then reads /tmp/fcst-exit-<pid> to learn whether the shell
+engine's PASS/FAIL verdict was 0 or non-zero.
+
+F-POLYC-TOOLS doctrine (DOCTRINE §27):
+
+  "Existing non-PolyC tools are grandfathered and recorded
+   in docs/factory/LEGACY-NON-POLYC-TOOLS.tsv. They may
+   remain; they may be replaced (replacement MUST be PolyC);
+   they may not split into multiple new non-PolyC tools."
+
+The current architecture is the third form: it splits ONE new
+non-PolyC tool across multiple new files (a 15-LOC dispatcher
++ a 49-LOC engine), each individually under the 50-LOC cap.
+That is the LOC-cap factorization the reviewer flagged.
+
+Authority graph today:
+
+  PolyC driver (140 LOC) -- exec sh --> 49-LOC shell engine
+   |                                       |
+   | invokes checker                        | expects(), fixture, invokes checker,
+   |                                       | RC match, grep match, PASS/FAIL counter
+   v                                       v
+  returns 0/1                            returns 0/1
+
+Required repair (CORRECTION02 P0-1):
+
+  - Move expect() into PolyC as a C function or inline block.
+  - Move fixture construction (TSV-write to /tmp) into PolyC.
+  - Move checker invocation (System or Exec) into PolyC.
+  - Move RC + grep matching into PolyC (substring search of
+    captured stdout/stderr).
+  - Move PASS/FAIL aggregation into PolyC.
+  - Move final verdict emission into PolyC.
+  - Replace the 49-LOC engine file with a TSV fixture containing
+    NO executable logic -- only test-case rows.
+  - Delete the engine shell file entirely.
+
+Acceptance: after C2 IMPL/FREEZE, the 49-LOC engine file is
+deleted; the TSV fixture holds data only; the PolyC binary
+owns all logic; the shell wrapper dispatches and exits.
+
+RED status: CONFIRMED. The current architecture has the defect.

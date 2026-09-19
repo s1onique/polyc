@@ -1,0 +1,26 @@
+ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION02 / c1 / c1-red-p03-whitespace.txt
+
+P0-3 RED -- CORRECTION01 evidence has trailing blank lines.
+
+  $ git diff --check 0665ada..HEAD
+  evidence/.../c2/c2-p02-n01-n05-regression.txt:29: new blank line at EOF.
+  evidence/.../c3/c3-act-body-unchanged.txt:10: new blank line at EOF.
+  evidence/.../c3/c3-checker-unchanged.txt:6: new blank line at EOF.
+  evidence/.../c3/c3-manifest-unchanged.txt:6: new blank line at EOF.
+
+These are byte-level hygiene errors committed as part of
+CORRECTION01 evidence. Per F14 the originals are immutable,
+but forward-only replacement with byte-equivalent versions
+(modulo trailing blank line) is permitted.
+
+Required repair (CORRECTION02 P0-3):
+
+  - In C2, replace each of the four files with a version
+    whose content ends with the last content line (no extra
+    trailing newline-after-blank-line).
+  - Verify the replacement is byte-equivalent (modulo the
+    trailing blank line) by stripping trailing whitespace
+    from both old and new and diffing.
+
+RED status: CONFIRMED. Four files in CORRECTION01 evidence
+are flagged by `git diff --check`.
