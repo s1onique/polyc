@@ -386,6 +386,11 @@ I32 Main(I32 argc, U8 **argv)
       mc[mlen - 1] = 0;
       mlen = mlen - 1;
     }
+    // Sentinel "<empty>" denotes a zero-byte manifest.
+    if (mlen == 7 && mc[0] == '<' && mc[1] == 'e' && mc[2] == 'm' &&
+        mc[3] == 'p' && mc[4] == 't' && mc[5] == 'y' && mc[6] == '>') {
+      mlen = 0;
+    }
 
     RunCase(cid, erc_val, esub, mc, mlen, &pass, &fail);
 
