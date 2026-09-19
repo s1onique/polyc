@@ -81,8 +81,8 @@ EVIDENCE
 INTERPRETATION
 --------------
 The mutation introduces a real semantic defect: BootstrapLinkDirective now
-returns LINK_OK for unterminated #link <...> directives. The defect is 
-genuinely compiled into the object file (different SHA, symbol present, 
+returns LINK_OK for unterminated #link <...> directives. The defect is
+genuinely compiled into the object file (different SHA, symbol present,
 cleanly linked into the seam binary). However, the seam test output is
 IDENTICAL to pristine because the production lexer.c treats BootstrapLinkDirective
 outputs as contract proof only ((void) casts on all output parameters).
@@ -99,8 +99,8 @@ but it does NOT verify the semantic correctness of BootstrapLinkDirective
 itself, because the production lexer does not consume its outputs.
 
 This finding has a positive implication for the C3 4-stage semantic
-qualification: defects in BootstrapLinkDirective (component-level) 
-would be detected by component-level tests (component fixedpoint / 
+qualification: defects in BootstrapLinkDirective (component-level)
+would be detected by component-level tests (component fixedpoint /
 4-stage semantic pair tests), not by the production seam.
 
 VERDICT
@@ -108,7 +108,7 @@ VERDICT
 RC=1: N02 causal negative control executed.
 Defect introduced: YES (verified by .o SHA divergence).
 Defect detected by seam output: NO (seam is semantic-independent for
-BootstrapLinkDirective outputs, as expected from production code 
+BootstrapLinkDirective outputs, as expected from production code
 (void) casts).
 Negative-control result: PASS (seam output divergence expectation was
 "only BUILD_LABEL"; observed matches expectation exactly).
@@ -121,5 +121,5 @@ RESTORATION
 Pristine source: tools/bootstrap/selfhost-lexer-link.HC (unchanged, mutation
 lived only in build/tmp-c3/mutated-subject.HC).
 Pristine .o:    build/lexer09-link.o (SHA 70879e46fa496bce0a57a7a8006a42723d81938e22753542c0aebcbfc7f57d6e).
-Pristine seam:  build/lexer09-lexer-seam-stage1 (already captured in 
+Pristine seam:  build/lexer09-lexer-seam-stage1 (already captured in
                 c3-4stage-semantic-seam-outputs.txt).
