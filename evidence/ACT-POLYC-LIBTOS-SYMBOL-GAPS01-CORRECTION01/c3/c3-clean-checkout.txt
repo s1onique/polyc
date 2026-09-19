@@ -1,0 +1,22 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION01 / c3 / c3-clean-checkout.txt
+
+AC03 RED-2 closed: clean-checkout buildability with provenance error.
+
+Reproduction (clean state, no bootstrap):
+  $ rm -rf build/test-prefix src/holyc-lib/libtos.a \
+           src/holyc-lib/all.o src/holyc-lib/errno_shim.o \
+           src/holyc-lib/libtos.dylib
+  $ mv build/hcc-bootstrap04 /tmp/bootstrap04.bak
+  $ make lib-tos
+
+Result:
+  lib-tos: FAIL: builder './build/hcc-bootstrap04' not found or not executable
+  lib-tos: build/hcc-bootstrap04 is REQUIRED for fail-closed lib-tos
+  lib-tos: build it via 'make bootstrap04-component-build' first
+  lib-tos: or override with 'make lib-tos LIBTOS_HCC=/path/to/known-good-hcc'
+  make: *** [lib-tos] Error 1
+  exit RC=2
+
+  No libtos.a is written. NO silent fallback to ./hcc.
+
+Outcome: P0-2 closed. AC03=PASS.

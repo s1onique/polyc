@@ -1,0 +1,19 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION01 / c3 / c3-fail-closed.txt
+
+AC02 RED-1 closed: `make lib-tos` is fail-closed.
+
+Reproduction (clean state):
+  $ rm -rf build/test-prefix src/holyc-lib/libtos.a \
+           src/holyc-lib/all.o src/holyc-lib/errno_shim.o \
+           src/holyc-lib/libtos.dylib
+  $ make lib-tos LIBTOS_HCC=/bin/false
+
+Result:
+  lib-tos: FAIL: builder '/bin/false' not found or not executable
+  lib-tos: build/hcc-bootstrap04 is REQUIRED for fail-closed lib-tos
+  make: *** [lib-tos] Error 1
+  exit RC=2
+
+  No libtos.a is written. Test prefix dir is not created.
+
+Outcome: P0-1 closed. AC02=PASS.

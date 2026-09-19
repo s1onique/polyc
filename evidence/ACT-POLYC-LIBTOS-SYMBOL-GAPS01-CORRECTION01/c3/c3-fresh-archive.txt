@@ -1,0 +1,28 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION01 / c3 / c3-fresh-archive.txt
+
+AC11 closed: fresh canonical archive produced from clean state.
+
+Reproduction:
+  $ rm -rf build/test-prefix src/holyc-lib/libtos.a \
+           src/holyc-lib/all.o src/holyc-lib/errno_shim.o \
+           src/holyc-lib/libtos.dylib
+  $ make lib-tos
+
+Result:
+  lib-tos: builder ./build/hcc-bootstrap04
+  lib-tos: step 1/8: install headers (tos.HH)
+  lib-tos: step 2/8: hcc -lib tos all.HC
+  lib-tos: step 3/8: verify all.o was produced
+  lib-tos: step 4/8: compile errno_shim.c
+  lib-tos: step 5/8: ar rcs libtos.a all.o errno_shim.o
+  lib-tos: step 6/8: cp libtos.a .../lib/
+  lib-tos: step 7/8: verify required symbols
+  lib-tos: step 8/8: complete; libtos.a written
+  exit RC=0
+
+Archive state:
+  -rw-r--r-- 157760 bytes .../build/test-prefix/lib/libtos.a
+  313 T symbols total
+  5 required symbols with strong_definition_count=1
+
+Outcome: AC11=PASS.

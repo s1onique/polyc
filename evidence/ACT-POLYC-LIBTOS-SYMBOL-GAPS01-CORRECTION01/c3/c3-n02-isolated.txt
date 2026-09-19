@@ -1,0 +1,33 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION01 / c3 / c3-n02-isolated.txt
+
+AC23 closed: N02 negative control is load-bearing (no confound).
+
+Procedure (script: scripts/quality/libtos-n02-harness.sh):
+  $ scripts/quality/libtos-n02-harness.sh \
+        --pristine-archive .../build/test-prefix/lib/libtos.a \
+        --scratch-dir /tmp/c3-n02
+
+Output:
+  n02-harness: step 1/8: extract pristine members
+  n02-harness: step 2/8: verify pristine has T _SpawnAndCapture
+  n02-harness: step 3/8: llvm-objcopy --localize-symbol=_SpawnAndCapture
+  n02-harness: step 4/8: verify _SpawnAndCapture is now 't' (local)
+  n02-harness: step 4b/8: verify other T symbols preserved
+  n02-harness: step 5/8: ar rcs libtos-corrupted.a all.o errno_shim.o
+  n02-harness: step 5b/8: verify corrupted archive structure
+  n02-harness: step 6/8: write minimal consumer
+  n02-harness: step 6b/8: compile consumer
+  n02-harness: step 7/8: link consumer against corrupted archive
+  n02-harness: step 8/8: verify only _SpawnAndCapture is undefined
+  n02-harness: undefined symbols reported:
+    _SpawnAndCapture
+  n02-harness: PASS
+    HIDDEN_SYMBOL_LINK_RC=fail
+    UNDEFINED_SYMBOLS=_SpawnAndCapture
+    CORRUPTED_ARCHIVE_PRESERVED_SYMBOLS=_FREE,_STRNCMP,_MEMSET,_STRLEN_FAST,_Errno
+    CORRUPTED_ARCHIVE_HIDDEN_SYMBOLS=_SpawnAndCapture
+    ERRNO_SHIM_IN_CORRUPTED=YES
+    N02=PASS
+  exit RC=0
+
+Outcome: P0-3 closed. AC23 = LOAD_BEARING.
