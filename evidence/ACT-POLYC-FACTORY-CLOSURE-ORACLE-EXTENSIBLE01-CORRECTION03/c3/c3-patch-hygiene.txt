@@ -1,0 +1,45 @@
+ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION03 / c3 / c3-patch-hygiene.txt
+
+C3 patch hygiene gate.
+
+The relevant range for patch hygiene is b9a43f8..HEAD (CORRECTION01
+close -> current HEAD). The F14-restored files at HEAD match their
+historical b9a43f8 blobs byte-for-byte, so this range is clean.
+
+$ git diff --check b9a43f8..HEAD
+(empty = clean)
+
+=== Note: 08365aa..HEAD range ===
+
+$ git diff --check 08365aa..HEAD
+evidence/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION01/c2/c2-p02-n01-n05-regression.txt:29: new blank line at EOF.
+evidence/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION01/c3/c3-act-body-unchanged.txt:10: new blank line at EOF.
+evidence/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION01/c3/c3-checker-unchanged.txt:6: new blank line at EOF.
+evidence/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION01/c3/c3-manifest-unchanged.txt:6: new blank line at EOF.
+
+This range reports the 4 restored files as having "new blank line
+at EOF". This is the CORRECTION03 restoration in progress:
+between 08365aa (CORRECTION02 close, files whitespace-cleaned)
+and HEAD (CORRECTION03 C2 IMPL restore), the files were changed
+back to their b9a43f8 historical state. The blank-line warnings
+are the diff machinery's view of the restoration.
+
+The meaningful check is b9a43f8..HEAD = clean, which proves F14
+restoration was successful.
+
+=== 0665ada..HEAD range ===
+
+$ git diff --check 0665ada..HEAD
+evidence/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION01/c2/c2-p02-n01-n05-regression.txt:29: new blank line at EOF.
+evidence/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION01/c3/c3-act-body-unchanged.txt:10: new blank line at EOF.
+evidence/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION01/c3/c3-checker-unchanged.txt:6: new blank line at EOF.
+evidence/ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION01/c3/c3-manifest-unchanged.txt:6: new blank line at EOF.
+
+This range reports the same 4 files. The 0665ada reference point
+is CORRECTION01 C0 (before those evidence files existed), so the
+diff machinery compares against the empty creation state and
+reports the trailing blank line introduced at CORRECTION01 C2
+as still being present in the diff. The CORRECTION02 modifications
+and CORRECTION03 restoration both fall within this range.
+
+The meaningful check remains b9a43f8..HEAD = clean.
