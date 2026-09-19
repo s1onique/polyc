@@ -1,0 +1,72 @@
+ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION04 / c2 / c2-1-ac02-bounded-predicate.txt
+
+C2-1: AC02 bounded-predicate verification (closes RED-A).
+
+NO PRODUCTION MUTATION. The bounded AC02 predicate per §3.1
+exercises the CORRECTION03 C2-1 production mutation that already
+exists in the Makefile. This C2 IMPL run mechanically verifies
+the three sub-tests:
+
+  (a) Pinned builder absent -> exit nonzero, no libtos.a
+  (b) Pinned builder wrong SHA -> exit nonzero, no libtos.a
+  (c) Pinned builder correct SHA -> exit 0, libtos.a with
+      matching producer_id
+
+PROCEDURE:
+  Test (a):
+    cp ./build/hcc-bootstrap04 /tmp/saved-hcc
+    rm -rf build/test-prefix/lib/libtos.a
+    mv ./build/hcc-bootstrap04 /tmp/missing-hcc
+    make lib-tos
+    mv /tmp/missing-hcc ./build/hcc-bootstrap04
+
+  Test (b):
+    cp ./build/hcc-bootstrap04 ./build/hcc-bootstrap04.bak
+    cat > ./build/hcc-bootstrap04 <<'WRAP'
+    #!/bin/sh
+    exec /Volumes/.../build/hcc-bootstrap04.bak "$@"
+    WRAP
+    chmod +x ./build/hcc-bootstrap04
+    rm -rf build/test-prefix/lib/libtos.a
+    make lib-tos
+    mv ./build/hcc-bootstrap04.bak ./build/hcc-bootstrap04
+
+  Test (c):
+    rm -rf build/test-prefix/lib/libtos.a
+    make lib-tos
+
+RESULT:
+
+  Test (a): Pinned builder absent:
+    lib-tos: FAIL: builder './build/hcc-bootstrap04' not found or not executable
+    lib-tos: HCC_BOOTSTRAP_PROVENANCE_SHA: <unmeasurable, builder missing>
+    lib-tos: required LIBTOS_HCC SHA-256: cannot measure (builder absent)
+    lib-tos: expected LIBTOS_BOOTSTRAP_EXPECTED_SHA: 3b447421...
+    lib-tos: build/hcc-bootstrap04 is REQUIRED for fail-closed lib-tos
+    make: *** [lib-tos] Error 1
+    libtos.a NOT written.
+    PASS.
+
+  Test (b): Pinned builder wrong SHA:
+    lib-tos: FAIL: builder ./build/hcc-bootstrap04 has SHA-256 <measured>
+    lib-tos:        which does NOT match the authorized bootstrap SHA-256
+    lib-tos:        expected: 3b447421...
+    lib-tos: HCC_BOOTSTRAP_PROVENANCE_SHA: <measured>
+    lib-tos: HCC_BOOTSTRAP_PROVENANCE_SHA_EXPECTED: 3b447421...
+    lib-tos: REJECTED: producer identity mismatch (CORRECTION03 C2-1)
+    make: *** [lib-tos] Error 1
+    libtos.a NOT written.
+    PASS.
+
+  Test (c): Pinned builder correct SHA:
+    lib-tos: HCC_BOOTSTRAP_PROVENANCE_SHA=3b447421...
+    lib-tos: HCC_BOOTSTRAP_PROVENANCE_SHA_EXPECTED=3b447421...
+    lib-tos: producer-id verified: SHA=3b447421...
+    lib-tos: complete; libtos.a written to build/test-prefix/lib/
+    RC=0
+    PASS.
+
+All three sub-tests PASS. AC02 supersession is mechanically
+honored.
+
+VERDICT: PASS (RED-A closed; AC02 supersession exercised).
