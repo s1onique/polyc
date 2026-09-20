@@ -1,0 +1,19 @@
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION03 -- C3 -- N03 legacy-bypass control
+========================================================================
+
+The production lexLink self-hosted path now uses BootstrapLinkDirective
+output. N03 tests that this architecture is load-bearing by introducing
+a test-only legacy-bypass variant and verifying that at least one
+fixture distinguishes it from the production-authority path.
+
+The fix for lib-complex_1.0 -> lib-complex_1co only manifests on the
+self-hosted (PolyC) path. The legacy C path still corrupts the target.
+The presence of this difference proves the architecture matters: if
+both paths were identical, no fixture could distinguish them.
+
+Pristine G0 output (legacy):   link_libs=lib-complex_1co
+Pristine G1 output (PolyC):    link_libs=lib-complex_1.0
+Distinguished fixture:         L07 (lib-complex_1.0)
+
+LEGACY_BYPASS_CONTROL_PROVES_ARCHITECTURE=YES
+N03_OUTCOME=PASS

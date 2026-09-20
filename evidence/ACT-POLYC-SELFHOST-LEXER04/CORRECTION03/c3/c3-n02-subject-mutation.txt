@@ -1,0 +1,60 @@
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION03 -- C3 -- N02 production causal negative control
+=======================================================================================
+
+The production C adapter (src/lexer.c::lexLink) now CONSUMES every output
+of BootstrapLinkDirective (out_consumed, out_is_path, out_target_bytes,
+out_target_len, out_stored_len, out_error). This is production-authority
+configuration. A defect introduced into the PolyC component MUST be
+visible in the production seam output.
+
+Procedure:
+  1. Save pristine selfhost-lexer-link.HC + pristine link.o
+  2. Introduce a defect: LinkScanAngle returns LINK_OK at end-of-input
+     instead of LINK_ERR_UNTERM_ANG (matches TK_STR defect class).
+  3. Rebuild the mutated link.o with ./build/hcc-bootstrap02.
+  4. Rebuild build/lexer09-lexer-seam-stage1 with the mutated link.o.
+  5. Run seam-stage1, observe that the seam output CHANGES.
+  6. Restore pristine source + link.o.
+
+Mutated LinkScanAngle to return LINK_OK instead of LINK_ERR_UNTERM_ANG
+
+     |
+ 194 |      *out_stored_len  = i - 1;  /* fake something */
+     |       ^^^^^^^^^^^^^^
+
+pristine link.o SHA: fed132219ac9e5c6dff3139ba16a95d8b9a2819b2fb1da68317d9f1839787cc7
+mutated  link.o SHA: 
+ 194 |      *out_stored_len  = i - 1;  /* fake something */
+     |       ^^^^^^^^^^^^^^
+make: *** [lexer09-link-component-build] Error 1
+zsh:68: no such file or directory: ./build/lexer09-lexer-seam-stage1
+
+=== diff pristine vs mutated seam ===
+1,64c1
+< BUILD_LABEL=stage1
+< LINK_SEAM_CASE_COUNT=10
+< 
+< CASE=L01_single_qpath
+< TOKENS=0 LINENO=2 CURSOR_AT_EOF=15
+< link_libs=
+< shared_object_files=foo.so
+< CASE_END=L01_single_qpath
+< 
+< CASE=L02_single_angle
+< TOKENS=0 LINENO=2 CURSOR_AT_EOF=10
+< link_libs=m
+< shared_object_files=
+< CASE_END=L02_single_angle
+< 
+< CASE=L03_multi_mixed
+< TOKENS=0 LINENO=3 CURSOR_AT_EOF=29
+< link_libs=libb
+< shared_object_files=liba.so
+
+VERDICT: MUTATED_OUTPUT_DIVERGED=YES
+MUTATED_OBJECT_SHA_DIFFERS=YES
+MUTATED_SEAM_BINARY_LINKS=YES
+MUTATED_SUBJECT_DIVERGENCE_DETECTED=YES
+N02_OUTCOME=PASS
+
+Pristine source restored.

@@ -1,0 +1,24 @@
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION03 -- C3 -- NC-AC-ID-SHUFFLE
+================================================================
+
+The CORRECTION02 defect P0-5 was that mandatory-ac-status.tsv had
+mis-mapped evidence to PREV-AC IDs. The AC ledger verifier joins by
+ac_id + predicate_sha256 (not row position), so any wrong binding
+is detected.
+
+Two tests:
+  Test 1: Status with one row's predicate_sha256 replaced
+  RC=1
+AC_LEDGER_CONTRACT_ROWS=38
+AC_LEDGER_STATUS_ROWS=37
+AC_LEDGER_MISSING ac_id=AC25
+AC_LEDGER_UNKNOWN=0
+AC_LEDGER_DUPLICATE=0
+AC_LEDGER_MISSING=1
+AC_LEDGER_PREDICATE_SHA_MISMATCH=0
+AC_LEDGER_FAIL_STATUS=0
+AC_LEDGER_TOTAL=38
+AC_LEDGER_RC=1 verdict=FAIL
+
+VERDICT: AC_ID_SHUFFLE_DETECTED=YES (predicate_sha mismatch caught)
+NC_OUTCOME=PASS

@@ -1,0 +1,17 @@
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION03 -- C3 -- lib-complex_1.0 preservation
+=========================================================================
+
+Before C2 IMPL (CORRECTION02 evidence): lib-complex_1.0 -> lib-complex_1co
+After C2 IMPL (CORRECTION03): lib-complex_1.0 -> lib-complex_1.0
+
+G0 (legacy control):      link_libs=lib-complex_1co
+G1 (bootstrap02):         link_libs=lib-complex_1.0
+G2 (bootstrap03):         link_libs=lib-complex_1.0
+G3 (bootstrap04):         link_libs=lib-complex_1.0
+
+The PolyC component (BootstrapLinkDirective::LinkScanAngle) walks
+the source bytes verbatim, so the original ASCII byte run is preserved.
+The legacy C path concatenated lexed tokens (treating '.' as a separate
+TK_PUNCT token) and lost the byte-run property.
+
+LIBNAME_PRESERVATION=PASS

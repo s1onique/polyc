@@ -1,0 +1,31 @@
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION03 -- C3 -- N01 output mutation control
+=========================================================================
+
+Test: inject byte mutation into one semantic output, verify verifier rejects.
+The semantic verifier (4stage-semantic-verify) is the N01 control surface.
+
+1. pristine outputs:
+fb1e47939a1f96353daf7dc17c452f7110de549e9d195dc73b1a85375e12c8b2  /tmp/lexer09-seam-stage1.txt
+
+2. mutated output (byte XOR at offset 1259):
+f55872d11572ccf4f4a38e16b03a54f591164298ab1c80ed3a40a6e1514ec3ff  /tmp/lexer09-seam-stage1.mutated.txt
+
+3. verifier output (mutated passed as G3):
+FILE[0] path=/tmp/lexer09-seam-stage0.txt raw_size=1260 stripped_size=1241
+FILE[1] path=/tmp/lexer09-seam-stage1.txt raw_size=1260 stripped_size=1241
+FILE[2] path=/tmp/lexer09-seam-stage2.txt raw_size=1260 stripped_size=1241
+FILE[3] path=/tmp/lexer09-seam-stage1.mutated.txt raw_size=1260 stripped_size=1241
+SEMANTIC_PAIR G0_G1_MIGRATION_DELTA file_i=0 file_j=1 equal=NO
+SEMANTIC_PAIR G0_G2_MIGRATION_DELTA file_i=0 file_j=2 equal=NO
+SEMANTIC_PAIR G0_G3_MIGRATION_DELTA file_i=0 file_j=3 equal=NO
+SEMANTIC_PAIR G1_G2 file_i=1 file_j=2 equal=YES
+SEMANTIC_PAIR G1_G3 file_i=1 file_j=3 equal=NO
+SEMANTIC_PAIR G2_G3 file_i=2 file_j=3 equal=NO
+SEMANTIC_PAIR_PASS=1
+SEMANTIC_PAIR_FAIL=2
+MIGRATION_DELTA=3
+FIXTURE_DIVERGENCE_COUNT>=1
+SEMANTIC_VERIFIER_RC=1 verdict=FAIL
+
+SEMANTIC_OUTPUT_MUTATION_DETECTED=YES
+N01_OUTCOME=PASS

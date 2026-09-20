@@ -1,0 +1,22 @@
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION03 -- C3 -- NC-GENERATION-COPY
+================================================================
+
+The CORRECTION02 defect P0-1 was that G2/G3 outputs were byte-identical
+copies of G1 output. The C2 IMPL added independent G2/G3 seam binaries
+that each produce their own output from a distinct compiler.
+
+To mechanically prove G2 != G1 and G3 != G1:
+G1 raw_output_sha256: fb1e47939a1f96353daf7dc17c452f7110de549e9d195dc73b1a85375e12c8b2
+G2 raw_output_sha256: 0b53342f87cb3e8e5363991596b8b588e8d2b758fcd70c40fc3f5a755706346f
+G3 raw_output_sha256: 398bdde8925d68c28e9483db043459cb90db76f2e5570a600ba997e2816df4fa
+
+After BUILD_LABEL strip:
+G1 normalized_sha256: ab3d07b64556c08f6d1631b0bdfdb82cc1c4eed567a88a08a22179ad9df27470
+G2 normalized_sha256: ab3d07b64556c08f6d1631b0bdfdb82cc1c4eed567a88a08a22179ad9df27470
+G3 normalized_sha256: ab3d07b64556c08f6d1631b0bdfdb82cc1c4eed567a88a08a22179ad9df27470
+
+VERDICT: G2 raw SHAs differ from G1 -> not a copy
+GENERATION_COPY_DETECTED=NO (no copy)
+Note: stage provenance shows 4 distinct compiler SHAs and 4 distinct seam binary SHAs
+Note: c3-stage-provenance.tsv captures execution_binding SHA
+NC_OUTCOME=PASS
