@@ -1,0 +1,18 @@
+fixture_id	source_string	coverage_dimension
+L01_single_qpath	#link "foo.so"\n	quoted path
+L02_single_angle	#link <m>\n	angle name
+L03_multi_mixed	#link "liba.so"\n#link <libb>\n	mixed both
+L04_angle_dup	#link <m1>\n#link <m1>\n	angle dedup
+L05_qpath_dup	#link "x.so"\n#link "x.so"\n	path dedup
+L06_back_to_back	#link "a.so"#link <b>\n	no-newline adjacency
+L07_angle_complex	#link <lib-complex_1.0>\n	polyC body preservation
+L08_qpath_dots	#link "./relative/path.so"\n	quoted path with dots
+L09_only_link	#link <only>\n	simple
+L10_no_directive	int main() { return 0; }\n	no directive
+
+FIXTURE_COUNT=10
+L07_INPUT=#link <lib-complex_1.0>
+L07_G0=lib-complex_1co
+L07_G1=lib-complex_1.0
+L07_G2=lib-complex_1.0
+L07_G3=lib-complex_1.0

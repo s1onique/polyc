@@ -1,0 +1,48 @@
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION04 -- C1 -- N02 mutation contract
+======================================================================
+
+# Per ACT §22: choose exactly one mutation class. Frozen at C1.
+# Per ACT §23: do not edit the tracked production subject in place;
+# copy to build/tmp/lexer04-correction04/.
+
+N02_MUTATION_KIND=B
+N02_MUTATION_CLASS=B_reduce_out_target_len_by_one_preserving_ok
+N02_MUTATION_TARGET=LinkScanAngle
+N02_MUTATION_SITE=after LinkCopyBytes call inside LinkScanAngle
+N02_MUTATION_EDIT=*out_target_len = *out_target_len - 1;  // drop the last body byte
+
+# Expected semantic effect:
+#   For fixture L07:
+#     Pristine: link_libs=lib-complex_1.0
+#     Mutated:  link_libs=lib-complex_1.
+#   For other fixtures, behavior unchanged unless they coincidentally
+#   pass through LinkScanAngle.
+
+N02_EXPECTED_FIXTURE=L07
+N02_EXPECTED_FIELD=link_libs
+N02_EXPECTED_PRISTINE_VALUE=lib-complex_1.0
+N02_EXPECTED_MUTATED_VALUE=lib-complex_1.
+
+# Per ACT §24 expected machine-readable witnesses:
+N02_REQUIRED_TOKEN=PRISTINE_COMPONENT_SHA256
+N02_REQUIRED_TOKEN=MUTATED_COMPONENT_SHA256
+N02_REQUIRED_TOKEN=COMPONENT_SHA_DIFFERS
+N02_REQUIRED_TOKEN=MUTATED_COMPONENT_BUILD_RC
+N02_REQUIRED_TOKEN=MUTATED_SEAM_SHA256
+N02_REQUIRED_TOKEN=MUTATED_SEAM_LINK_RC
+N02_REQUIRED_TOKEN=MUTATED_SEAM_RUN_RC
+N02_REQUIRED_TOKEN=MUTATED_PRODUCTION_DIVERGENCE_DETECTED
+N02_REQUIRED_TOKEN=UNEXPECTED_MUTATION_DIVERGENCE_COUNT
+N02_REQUIRED_TOKEN=PRISTINE_REVERIFY_RC
+
+# Per ACT §23 staging directory:
+N02_STAGING_DIR=build/tmp/lexer04-correction04/
+N02_PRISTINE_COPY=${N02_STAGING_DIR}selfhost-lexer-link.PRISTINE.HC
+N02_MUTATED_COPY=${N02_STAGING_DIR}selfhost-lexer-link.MUTATED.HC
+
+# Per ACT §23: NEVER mutate the tracked subject.
+TRACKED_SUBJECT_MUTATED_DURING_N02=NO
+
+# Per ACT §25 required negative selftest:
+N02_NEG_SELFTEST_KIND=remove_mutated_object_sha
+N02_NEG_SELFTEST_OUTCOME=N02_INCOMPLETE_WITNESS_REJECTED=YES

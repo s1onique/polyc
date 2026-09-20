@@ -1,0 +1,15 @@
+responsibility	production_source	owner	polyC_output_used	legacy_duplicate_parse	mechanical_evidence
+target form	tools/bootstrap/selfhost-lexer-link.HC	PolyC	YES	NO	src/lexer.c::lexLink #if HCC_USE_SELFHOST_COMPONENTS branch calls BootstrapLinkDirective with out_target_bytes/out_target_len/out_consumed/out_is_path/out_error
+target bytes	src/lexer.c	PolyC output	YES	NO	src/lexer.c:2053 `AoStr *name = aoStrDupRaw((char *)target_buf, (u64)out_target_len);` where target_buf was filled by BootstrapLinkDirective
+target length	src/lexer.c	PolyC output	YES	NO	src/lexer.c:2053 casts `out_target_len` to U64 length argument
+path/library classification	src/lexer.c	PolyC output	YES	NO	src/lexer.c:2060 `List **libs = out_is_path ? &l->cc->shared_object_files : &l->cc->link_libs;` selects destination list from PolyC output
+consumed length	src/lexer.c	PolyC output	YES	NO	src/lexer.c:2050 `l->ptr = l->ptr + out_consumed;` advances production cursor from PolyC output
+error result	src/lexer.c	PolyC output	YES	NO	src/lexer.c:2016 `if (out_error != 0)` then switches on out_error classes 1..5 emitted by PolyC
+cursor advance	src/lexer.c	PolyC output	YES	NO	src/lexer.c:2050 `l->ptr = l->ptr + out_consumed;` is the only cursor advance in the selfhost branch
+AoStr construction	src/lexer.c	PolyC output	YES	NO	src/lexer.c:2053 `aoStrDupRaw((char *)target_buf, (u64)out_target_len)` builds the AoStr from PolyC bytes
+link_libs insertion	src/lexer.c	PolyC output	YES	NO	src/lexer.c:2060-2070 pushes to link_libs or shared_object_files based on PolyC out_is_path
+shared_object_files insertion	src/lexer.c	PolyC output	YES	NO	src/lexer.c:2060 `List **libs = out_is_path ? &l->cc->shared_object_files : &l->cc->link_libs;`
+duplicate suppression	src/lexer.c	PolyC output	YES	NO	src/lexer.c:2067-2080 aostrLookupByData / ListElemFind compares against PolyC-built AoStr content
+
+POLYC_OUTPUTS_CONSUMED_BY_PRODUCTION=YES
+SELFHOST_DUPLICATE_TARGET_PARSE=0

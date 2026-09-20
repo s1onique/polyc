@@ -1,0 +1,20 @@
+fixture_id	input	G0_link_libs	G0_shared_object_files	G1_link_libs	G1_shared_object_files	G2_link_libs	G2_shared_object_files	G3_link_libs	G3_shared_object_files	migration_expected
+L01_single_qpath	#link "foo.so"		foo.so		foo.so		foo.so		foo.so	NO
+L02_single_angle	#link <m>	m		m		m		m		NO
+L03_multi_mixed	#link "liba.so"\n#link <libb>	libb	liba.so	libb	liba.so	libb	liba.so	libb	liba.so	NO
+L04_angle_dup	#link <m1>\n#link <m1>	m1		m1		m1		m1		NO
+L05_qpath_dup	#link "x.so"\n#link "x.so"		x.so		x.so		x.so		x.so	NO
+L06_back_to_back	#link "a.so"#link <b>	b	a.so	b	a.so	b	a.so	b	a.so	NO
+L07_angle_complex	#link <lib-complex_1.0>	lib-complex_1co		lib-complex_1.0		lib-complex_1.0		lib-complex_1.0		YES
+L08_qpath_dots	#link "./relative/path.so"		./relative/path.so		./relative/path.so		./relative/path.so		./relative/path.so	NO
+L09_only_link	#link <only>	only		only		only		only		NO
+L10_no_directive	int main() { return 0; }				NO
+
+EXPECTED_MIGRATION_FIXTURE_COUNT=1
+EXPECTED_MIGRATION_FIXTURE_SET=L07
+NON_MIGRATION_FIXTURE_COUNT=9
+EXPECTED_NON_MIGRATION_DIVERGENCE_COUNT=0
+EXPECTED_G0_EXPECTED_MIGRATION_PAIR_COUNT=3
+EXPECTED_G0_UNEXPECTED_MIGRATION_PAIR_COUNT=0
+EXPECTED_POST_MIGRATION_PAIR_PASS=3
+EXPECTED_POST_MIGRATION_PAIR_FAIL=0
