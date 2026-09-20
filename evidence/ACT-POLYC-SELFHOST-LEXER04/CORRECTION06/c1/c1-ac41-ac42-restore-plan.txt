@@ -1,0 +1,67 @@
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION06 -- C1 -- AC41 + AC42 contract restore plan
+================================================================================
+
+# CORRECTION06 restores the C1 witness contract to authorized values.
+
+## D1: AC41 contract restore
+
+Authorized (c1-mandatory-ac-contract.tsv AC41):
+  AC41 PATCH_HYGIENE_ERRORS = 0
+  sha256 = 6b02ab623008dfb0903875e03ba422b8aad215160ca77df730449050f6fb68c5
+
+Currently committed (c1-ac-witness-contract.tsv w71):
+  AC41 PATCH_HYGIENE_ERRORS EQ 1
+
+To pass authorized AC41, PATCH_HYGIENE_ERRORS must equal 0.
+
+## Strategy options:
+
+OPTION A: produce genuine PATCH_HYGIENE_ERRORS=0
+  - the C2 IMPL commit (a046099) introduced trailing blank lines in
+    tools/quality/lexer09-n02-mutation-runner.HC.
+  - These blank lines are cumulative (HEAD vs 87106d6).
+  - We cannot amend C2 (F14/append-only invariant).
+  - We CAN produce a C2/CORRECTION06 follow-up commit that removes
+    the trailing blank lines, then the cumulative range
+    (87106d6..HEAD) would no longer show trailing blank lines.
+  - BUT: the running tool file at HEAD would no longer have trailing
+    blank lines, so 'git diff --check 87106d6..HEAD' would be clean.
+  - This works mechanically.
+
+OPTION B: keep witness contract as-is and document AC41 as PASS=NO
+  - Not allowed; PASS_TRUE_GREEN requires AC41 PATCH_HYGIENE_ERRORS=0
+
+OPTION C: change AC41 to a different authoritative predicate
+  - Requires bounded correction to AC definition (out of scope).
+  - The C1 mandatory AC contract has it locked at EQ 0.
+
+## Decision: OPTION A
+
+  - In C2 IMPL, edit tools/quality/lexer09-n02-mutation-runner.HC
+    to remove trailing blank lines.
+  - In C3 EVIDENCE, run 'git diff --check 87106d6..HEAD' which should
+    now report 0 errors.
+  - In C3 EVIDENCE, write c3-patch-hygiene.txt with:
+      PATCH_HYGIENE_ERRORS=0
+      GIT_DIFF_CHECK_RC=0
+      GIT_DIFF_CHECK_OUTPUT=<empty>
+    Plus a substantive block showing the actual command + result.
+
+## D2: AC42 contract (already at authorized value)
+
+The committed c1-ac-witness-contract.tsv AC42 already matches the
+authorized c1-mandatory-ac-contract.tsv (CORRECTION05_COMMIT_COUNT=5).
+ The post-C4 dirty edit was attempting to align them, but that
+ edit was unauthorized.
+
+Action: ensure the C3 EVIDENCE's c3-required-result.txt contains
+ CORRECTION05_COMMIT_COUNT=5 (it currently says 4 in committed
+ state). Restoring this is in C3 EVIDENCE, not C2 IMPL.
+
+## D2: AC43, AC44
+
+AC43 WORKTREE_CLEAN_AFTER_C4=YES: requires clean tree at C4 close.
+ AC44 POST_C4_COMMIT_COUNT=0: requires no commits after C4 close.
+
+Both are satisfied by closing from a clean tree.
+
