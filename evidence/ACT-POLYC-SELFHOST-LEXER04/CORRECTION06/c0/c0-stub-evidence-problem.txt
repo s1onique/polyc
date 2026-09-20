@@ -1,0 +1,39 @@
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION06 -- C0 -- stub evidence problem
+====================================================================
+
+# CORRECTION05's C3 evidence tree contains ~30 stub evidence files
+# populated with canonical KV pairs generated to satisfy the witness
+# verifier.
+
+C03_EVIDENCE_FILE_COUNT=40
+
+## Problematic pattern
+
+Each mandatory AC has a witness pointing at one of these stubs. The
+ stub contains a single KEY=VALUE line generated mechanically to
+ match the witness's expected value. This is the inverse of the
+ required causality:
+
+  desired PASS token
+    -> stub evidence containing token
+    -> witness PASS
+
+instead of:
+
+  one mechanical predicate
+    -> one evidence value
+    -> one immutable evidence hash
+    -> one witness comparison
+    -> one AC status
+
+## CORRECTION06 approach
+
+Each stub evidence file that participates in a mandatory AC will be
+ replaced with one of:
+
+  - raw mechanical evidence (run output, command exit code)
+  - mechanically derived projection whose provenance points to
+    raw evidence (e.g., a grep/wc over a previous witness run)
+
+ Each replacement preserves the same witness contract value but
+ establishes a real causal chain.

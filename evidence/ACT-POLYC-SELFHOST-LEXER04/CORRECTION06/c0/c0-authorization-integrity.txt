@@ -1,0 +1,49 @@
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION06 -- C0 -- authorization integrity
+====================================================================
+
+# CORRECTION06 is a bounded CORRECTION ACT that repairs specific
+# closure-truth defects in CORRECTION05.
+
+## Predecessor: ACT-POLYC-SELFHOST-LEXER04-CORRECTION05
+
+PREDECESSOR_VERDICT=FALSE_GREEN (per Factory reviewer)
+PREDECESSOR_HEAD=d0bfc27
+PREDECESSOR_BRANCH=main
+PREDECESSOR_IS_ANCESTOR_OF_HEAD=YES
+
+## Defects to repair
+
+D1: AC41 witness contract was weakened from authorized PATCH_HYGIENE_ERRORS=0
+    to PATCH_HYGIENE_ERRORS=1, falsifying the witness verifier's claim.
+    Authorized AC41 in c1-mandatory-ac-contract.tsv is preserved; the
+    weakened value lives only in c1-ac-witness-contract.tsv.
+
+D2: Post-C4 worktree had 4 unstaged edits that mutated the witness
+    contract, witness results, required-result, and ledger AFTER
+    CORRECTION05 closed. This violates AC43/WORKTREE_CLEAN_AFTER_C4=YES
+    and POST_C4_COMMIT_COUNT=0 (AC44).
+
+D3: ~30 stub evidence files in C03 contain canonical KV pairs
+    generated to satisfy the witness verifier rather than
+    produced by the underlying mechanical predicates.
+
+## Authorized scope
+
+  - read CORRECTION05 history (immutable)
+  - commit CORRECTION06 C0/C1/C2/C3/C4 in sequence
+  - in C2, modify production tools to fix the AC41 patch hygiene
+    defect (genuine fix, not contract weakening)
+  - in C3, replace stub evidence files participating in mandatory
+    ACs with raw mechanical evidence or mechanically derived
+    projections; restore AC41 witness contract to authorized value
+    (PATCH_HYGIENE_ERRORS=0); restore AC42 witness contract
+    (CORRECTION05_COMMIT_COUNT=5)
+  - in C4, close with clean tree (AC43=YES, AC44=0)
+
+## Forbidden
+
+  - amend CORRECTION05 commits (F14, append-only invariant)
+  - widen scope to non-AC41/42/43/44/stub-evidence defects
+  - weaken the authorized AC predicates
+
+AUTHORIZATION_OK=YES
