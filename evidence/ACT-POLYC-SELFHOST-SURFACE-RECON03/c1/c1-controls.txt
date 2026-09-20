@@ -1,0 +1,55 @@
+ACT-POLYC-SELFHOST-SURFACE-RECON03 -- C1 INVENTORY -- controls
+============================================================
+
+--- known migrated control ---
+Surface: INV.LEXER.IDENT
+Expected classification: SELFHOSTED_TRUE_GREEN
+Reason: LEXER01/BOOTSTRAP02 closure; BootstrapScanIdent production-authoritative
+Result: PASS
+
+--- known residue control ---
+Surface: INV.PARSER.TOPLEVEL
+Expected classification: LEGACY_C_AUTHORITY
+Reason: parseToplevelDef + parseToAst live in src/parser.c; no PolyC
+        component; production path consumes it via lexToken → parseToAst
+Result: PASS
+
+--- dead/nonruntime negative control ---
+Surface: INV.LSP
+Expected classification: LEGACY_NON_POLYC_AUTHORITY
+Expected exclusion: YES (server tool, not compiler semantic authority)
+Result: PASS
+
+Surface: INV.JIT.X86
+Expected classification: LEGACY_C_AUTHORITY (REPL-only)
+Expected exclusion: YES (REPL-only path)
+Result: PASS
+
+Surface: INV.BUILD.ORCH
+Expected classification: BUILD_ORCHESTRATION
+Expected exclusion: YES (build orchestration)
+Result: PASS
+
+Surface: INV.QA.ORCH
+Expected classification: QUALITY_TOOLING
+Expected exclusion: YES (quality tooling)
+Result: PASS
+
+Surface: INV.LIBTOS
+Expected classification: LEGACY_NON_POLYC_AUTHORITY
+Expected exclusion: YES (runtime library)
+Result: PASS
+
+--- mapped-vs-unmapped selfhost controls ---
+bootstrap-components.tsv rows: 5
+selfhost-call-sites.tsv rows: 6 (BootstrapLinkDirective call site at line 2006)
+UNMAPPED_SELFHOST_COMPONENTS=0
+UNMAPPED_SELFHOST_CALLS=0
+
+--- production-source-delta check ---
+PRODUCTION_SOURCE_DELTA=0
+  src/**           (read-only)
+  tools/bootstrap/** (read-only)
+  src/holyc-lib/** (read-only)
+
+CONFIRMED at C1 entry (no modifications during C1 INVENTORY).

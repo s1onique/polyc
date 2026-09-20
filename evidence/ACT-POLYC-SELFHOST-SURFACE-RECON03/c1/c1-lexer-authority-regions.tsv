@@ -1,0 +1,10 @@
+authority_region	span_lines	primary_functions	selfhost_status	delegate_symbol	r1_rationale	r2_atomicity	notes
+lexer/ident	916..1018	lexIdentifier	PARTIAL_SELFHOSTED	BootstrapScanIdent	ALREADY_DONE	0	LEXER01/LEXER02 closure
+lexer/scalar	1127..1332	lexCharConst, lexNumeric, countNumberLen, lexString	PARTIAL_SELFHOSTED	BootstrapScanScalarLiteral	ALREADY_DONE	0	LEXER02 closure
+lexer/trivia	763..915	lexSkipCodeComment + lexCore whitespace cases	PARTIAL_SELFHOSTED	BootstrapScanTrivia	ALREADY_DONE	0	LEXER03 closure
+lexer/opclass	1383..1580	lexClassifyOperator	PARTIAL_SELFHOSTED	BootstrapClassifyOperator	ALREADY_DONE	0	LEXER01 closure
+lexer/link	1965..2236	lexLink	PARTIAL_SELFHOSTED	BootstrapLinkDirective	ALREADY_DONE	0	LEXER04 closure
+lexer/state	254..760	lexRaise, lexInit, lexerRelease, lexSetBuiltinRoot, lexNextChar, lexRewindChar, lexPeekMatch, lexPeek, lexReadfile, lexPushFile, lexPushString, lexReleaseAllFiles	LEGACY_C	NONE	state/IO plumbing; cross-coupled with file push and asm flags	3	not bounded; couples file IO + state init + asm-flag side effects
+lexer/dispatcher	1581..2120	lexCore, lex, lexToken, lexPreProcDirective	LEGACY_C	NONE	main dispatch loop	3	large region; bounded only by event-driven architecture; not isolated
+lexer/preproc	1333..1342 + 1882..2502	lexPreProcDirective, lexInclude, lexDefine, lexUndef, lexPreProcIf, lexPreProcBoolean, lexSetAsmFlags, lexUnSetAsmFlags	LEGACY_C	NONE	preprocessor directive parsing	3	coupled to dispatcher + macro_defs; bounded-oracle possible but multi-function
+lexer/support	27..253 + 343..612 + 2609..2681	vecLexemeToString, lexemeNew*, lexemePrint*, lexemeEq, lexerReportLine, lexemeFree	LEGACY_C	NONE	utility/print/arena	3	not on candidate list; not a compiler semantic authority

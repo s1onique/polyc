@@ -1,0 +1,122 @@
+ACT-POLYC-SELFHOST-SURFACE-RECON03 -- C1 INVENTORY -- classification summary
+========================================================================
+
+Computed from c1-surface-inventory.tsv (24 rows).
+
+SURFACE_TOTAL=24
+
+SELFHOSTED_TRUE_GREEN=5
+  INV.LEXER.IDENT
+  INV.LEXER.OPCLASS
+  INV.LEXER.SCALAR
+  INV.LEXER.TRIVIA
+  INV.LEXER.LINK
+
+SELFHOSTED_ENGINEERING_GREEN_WITH_RESIDUE=0
+
+LEGACY_C_AUTHORITY=10
+  INV.LEXER.STATE
+  INV.LEXER.DISPATCH
+  INV.PREPROC.PP
+  INV.PARSER.TOPLEVEL
+  INV.PARSER.COMPOUND
+  INV.PARSER.DECL
+  INV.PARSER.STMT
+  INV.PARSER.EXPR
+  INV.MAIN.DRIVER
+  INV.JIT.X86
+  INV.MEM.ARENA
+  INV.DIAG.PRINT
+  INV.UTIL.MISC
+  -- total 13 LEGACY_C_AUTHORITY surfaces, of which 4 are
+  candidate-eligible after the §13 exclusion rules.
+
+LEGACY_NON_POLYC_AUTHORITY=3
+  INV.LSP
+  INV.TRANSPILE
+  INV.LIBTOS
+
+BUILD_ORCHESTRATION=1
+  INV.BUILD.ORCH
+
+QUALITY_TOOLING=1
+  INV.QA.ORCH
+
+RUNTIME_LIBRARY=0
+  (counted under INV.LIBTOS as LEGACY_NON_POLYC_AUTHORITY)
+
+BACKEND_TARGET_SPECIFIC=0
+
+DEAD_OR_NONRUNTIME=0
+
+EXPERIMENTAL_NONAUTHORITATIVE=0
+
+UNKNOWN=0
+
+--- comparison with SURFACE-RECON02 (26 surfaces) ---
+RECON02_TOTAL=26
+RECON03_TOTAL=24
+DELTA=-2
+
+Reason for delta: RECON03 absorbed INV.PARSER.TOPLEVEL and INV.PARSER.COMPOUND
+into separate rows but introduced INV.PARSER.DECL, INV.PARSER.STMT,
+INV.LEXER.STATE, INV.LEXER.DISPATCH as separate rows. INV.PARSER.SUBSCRIPTS
+was renamed INV.PARSER.EXPR. Net: -2 rows after LEXER04 closure expanded
+the lexical-state and parser-decl resolution.
+
+--- candidate-eligible LEGACY_C_AUTHORITY subset (4 surfaces) ---
+ELIGIBLE_LEGACY_C_AUTHORITY=4
+  INV.PARSER.COMPOUND       (parseCompoundStatementInternal — single function, 260 lines)
+  INV.PARSER.TOPLEVEL       (parseToplevelDef — single function, 150 lines)
+  INV.PREPROC.PP            (multi-function; not atomic)
+  INV.PARSER.STMT           (multi-function; not atomic)
+
+Ineligible LEGACY_C_AUTHORITY (9 surfaces) excluded by §13 or no_atomic_slice:
+  INV.LEXER.STATE           excluded: plumbing; does not block self-host
+  INV.LEXER.DISPATCH        excluded: BLOCKS_NEXT_SELFHOST_STAGE for non-#link
+                            directive migrations but no_atomic_slice;
+                            coupled to dispatcher
+  INV.PARSER.DECL           excluded: 3500-line multi-region rewrite;
+                            no single bounded slice
+  INV.PARSER.EXPR           excluded: 2300-line multi-region rewrite;
+                            no single bounded slice
+  INV.MAIN.DRIVER           excluded: CLI/orchestration (RUNTIME_NOT_COMPILER)
+  INV.JIT.X86               excluded: REPL-only path
+  INV.MEM.ARENA             excluded: memory plumbing
+  INV.DIAG.PRINT            excluded: Cctrl-coupled
+  INV.UTIL.MISC             excluded: utility header
+
+--- known migrated controls ---
+KNOWN_MIGRATED_CONTROL_CLASSIFIED_NON_LEGACY=YES
+  INV.LEXER.IDENT       classified SELFHOSTED_TRUE_GREEN
+  INV.LEXER.OPCLASS     classified SELFHOSTED_TRUE_GREEN
+  INV.LEXER.SCALAR      classified SELFHOSTED_TRUE_GREEN
+  INV.LEXER.TRIVIA      classified SELFHOSTED_TRUE_GREEN
+  INV.LEXER.LINK        classified SELFHOSTED_TRUE_GREEN
+
+--- known residue control ---
+KNOWN_LEGACY_CONTROL_CLASSIFIED_LEGACY=YES
+  INV.PARSER.TOPLEVEL   classified LEGACY_C_AUTHORITY
+  INV.PARSER.COMPOUND   classified LEGACY_C_AUTHORITY
+  INV.PARSER.DECL       classified LEGACY_C_AUTHORITY
+  INV.PARSER.STMT       classified LEGACY_C_AUTHORITY
+  INV.PARSER.EXPR       classified LEGACY_C_AUTHORITY
+  INV.PREPROC.PP        classified LEGACY_C_AUTHORITY
+
+--- dead/nonruntime negative control ---
+NONRUNTIME_CONTROL_EXCLUDED_FROM_CANDIDATES=YES
+  INV.LSP               excluded as DEAD_OR_NONRUNTIME-equivalent (server tool)
+  INV.TRANSPILE         excluded as BACKEND_ONLY (transpiler target)
+  INV.JIT.X86           excluded as REPL-only (not in self-host compile path)
+  INV.LIBTOS            excluded as RUNTIME_LIBRARY (not compiler)
+  INV.BUILD.ORCH        excluded as BUILD_ORCHESTRATION
+  INV.QA.ORCH           excluded as QUALITY_TOOLING
+
+--- inventory delta explained ---
+INVENTORY_DELTA_EXPLAINED=YES
+UNEXPLAINED_CLASSIFICATION_CHANGES=0
+
+--- counts cross-check ---
+UNMAPPED_SELFHOST_COMPONENTS=0  (5/5 mapped in c1-bootstrap-components.tsv)
+UNMAPPED_SELFHOST_CALLS=0       (6/6 call sites mapped in c1-selfhost-call-sites.tsv)
+UNCLASSIFIED_LIVE_AUTHORITY=0   (24/24 classified in c1-surface-inventory.tsv)

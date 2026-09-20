@@ -1,0 +1,8 @@
+authority_region	span_lines	primary_functions	selfhost_status	gating	notes
+preproc/directive_dispatch	1333..1342	lexPreProcDirective	LEGACY_C	NONE	called from lexCore; selects directive kind
+preproc/include	1882..2120	lexInclude	LEGACY_C	NONE	#include handler; mutates file stack + macros; calls lexLink at line 2533 only via token loop after lexCore routes through lexPreProcDirective
+preproc/define	2121..2236	lexDefine	LEGACY_C	NONE	#define handler; mutates macro_defs Map
+preproc/undef	2237..2251	lexUndef	LEGACY_C	NONE	#undef handler; mutates macro_defs Map
+preproc/if	2252..2387	lexPreProcIf	LEGACY_C	NONE	#if/#ifdef/#elif dispatcher; recursive; consumes tokens
+preproc/boolean	2388..2495	lexPreProcBoolean	LEGACY_C	NONE	#if boolean expression evaluator; parses && || defined() etc.
+preproc/asm_flags	2496..2503	lexSetAsmFlags, lexUnSetAsmFlags	LEGACY_C	NONE	#asm flag setter/unsetter; mutates l->flags

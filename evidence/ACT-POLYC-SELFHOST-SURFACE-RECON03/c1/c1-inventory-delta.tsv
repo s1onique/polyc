@@ -1,0 +1,24 @@
+surface_id	recon02_classification	recon03_classification	delta_reason	expected
+INV.LEXER.IDENT	SELFHOSTED_TRUE_GREEN	SELFHOSTED_TRUE_GREEN	unchanged	YES
+INV.LEXER.OPCLASS	SELFHOSTED_TRUE_GREEN	SELFHOSTED_TRUE_GREEN	unchanged	YES
+INV.LEXER.SCALAR	SELFHOSTED_TRUE_GREEN	SELFHOSTED_TRUE_GREEN	unchanged	YES
+INV.LEXER.TRIVIA	SELFHOSTED_TRUE_GREEN	SELFHOSTED_TRUE_GREEN	unchanged	YES
+INV.LEXER.LINK	LEGACY_C_AUTHORITY	SELFHOSTED_TRUE_GREEN	LEXER04 closure: BootstrapLinkDirective production-authoritative; ABI 6 frozen; lexer09-direct-differential 23/23 PASS; 4-gen fixed point PASS	YES
+INV.LEXER.STATE	not in recon02 (was rolled into INV.LEXER.LINK)	LEGACY_C_AUTHORITY	RECON02 grouped state/preproc/dispatch under INV.LEXER.LINK because LEXER04 was the focused migration; RECON03 expands after LEXER04 closure to expose residual surfaces	YES (mechanical expansion after LEXER04)
+INV.LEXER.DISPATCH	not in recon02 (was rolled into INV.LEXER.LINK)	LEGACY_C_AUTHORITY	RECON03 expansion; same reasoning as INV.LEXER.STATE	YES
+INV.PREPROC.PP	LEGACY_C_AUTHORITY	LEGACY_C_AUTHORITY	unchanged; lower-priority candidate	YES
+INV.PARSER.TOPLEVEL	LEGACY_C_AUTHORITY	LEGACY_C_AUTHORITY	unchanged; still eligible rank-2 candidate	YES
+INV.PARSER.COMPOUND	LEGACY_C_AUTHORITY	LEGACY_C_AUTHORITY	unchanged; still eligible rank-1 candidate	YES
+INV.PARSER.DECL	not in recon02 (was rolled into INV.PARSER.TOPLEVEL/SUBSCRIPTS)	LEGACY_C_AUTHORITY	RECON03 expansion; declaration parsing family is now its own surface because LEXER04 closure exposed the remainder	YES
+INV.PARSER.STMT	not in recon02 (was rolled into INV.PARSER.COMPOUND)	LEGACY_C_AUTHORITY	RECON03 expansion; statement parsing family separated from compound because they are independently migratable once compound is done	YES
+INV.PARSER.EXPR	LEGACY_C_AUTHORITY (as INV.PARSER.SUBSCRIPTS)	LEGACY_C_AUTHORITY (renamed INV.PARSER.EXPR)	rename for clarity; same region (subscripts + postfix + binop + const-eval + assertions)	YES
+INV.LSP	LEGACY_C_AUTHORITY	LEGACY_NON_POLYC_AUTHORITY	re-classification: LSP is a server tool, not compiler semantic authority; per §13 of RECON03	YES
+INV.TRANSPILE	LEGACY_C_AUTHORITY	LEGACY_NON_POLYC_AUTHORITY	re-classification: transpiler is a backend target, not compiler semantic authority; per §13 of RECON03	YES
+INV.MAIN.DRIVER	LEGACY_C_AUTHORITY	LEGACY_C_AUTHORITY (CLI/orchestration)	unchanged classification but excluded from candidates (CLI orchestration)	YES
+INV.JIT.X86	LEGACY_C_AUTHORITY	LEGACY_C_AUTHORITY (REPL-only)	unchanged classification but excluded from candidates (REPL-only path)	YES
+INV.MEM.ARENA	LEGACY_C_AUTHORITY	LEGACY_C_AUTHORITY (plumbing)	unchanged classification but excluded from candidates (memory plumbing)	YES
+INV.DIAG.PRINT	LEGACY_C_AUTHORITY	LEGACY_C_AUTHORITY	unchanged classification but excluded from candidates (Cctrl-coupled)	YES
+INV.UTIL.MISC	LEGACY_C_AUTHORITY	LEGACY_C_AUTHORITY	unchanged classification but excluded from candidates (utility header)	YES
+INV.LIBTOS	LEGACY_NON_POLYC_AUTHORITY	LEGACY_NON_POLYC_AUTHORITY	unchanged	YES
+INV.BUILD.ORCH	BUILD_ORCHESTRATION	BUILD_ORCHESTRATION	unchanged	YES
+INV.QA.ORCH	QUALITY_TOOLING	QUALITY_TOOLING	unchanged	YES
