@@ -74,18 +74,189 @@ I64 StripBuildLabel(U8 *buf, I64 len)
   return len;
 }
 
+// ACT-POLYC-SELFHOST-LEXER04-CORRECTION05 C2 IMPL.
+// Fixture id canonicalization support.
+//
+// Loads a TSV with columns:
+//   canonical_id<TAB>legacy_alias<TAB>human_name<TAB>input_sha256<TAB>authorized
+// up to MAX_FIXTURES entries. Stores the alias->canonical mapping for
+// use by OBSERVED_MIGRATION_FIXTURE_SET emission.
+//
+// Duplicate canonical_ids are detected and counted.
+// Unknown aliases (during translation) are counted and force nonzero rc.
+
+#define MAX_FIXTURES 64
+#define MAX_FIXTURE_NAME 64
+
+I64 LoadFixtureMap(U8 *path,
+                   U8 legacy_aliases[MAX_FIXTURES][MAX_FIXTURE_NAME],
+                   I64 legacy_alias_lens[MAX_FIXTURES],
+                   U8 canonical_ids[MAX_FIXTURES][MAX_FIXTURE_NAME],
+                   I64 canonical_lens[MAX_FIXTURES],
+                   I64 authorized[MAX_FIXTURES])
+{
+  if (!path) return 0;
+  I64 sz = 0;
+  U8 *raw = FileRead(path, &sz);
+  if (!raw || sz == 0) return -1;
+  I64 n = 0;
+  I64 i = 0;
+  // skip header
+  while (i < sz && raw[i] != '\n') i = i + 1;
+  if (i < sz) i = i + 1;
+  while (i < sz && n < MAX_FIXTURES) {
+    I64 ll = 0;
+    while (i + ll < sz && raw[i + ll] != '\n') ll = ll + 1;
+    if (ll == 0) { i = i + 1; continue; }
+    // parse 5 tab-separated fields
+    U8 *fields[5];
+    I64 flens[5];
+    I64 p = 0;
+    I64 nf = 0;
+    while (p < ll && nf < 5) {
+      fields[nf] = raw + i + p;
+      I64 q = p;
+      while (q < ll && raw[i + q] != '\t') q = q + 1;
+      flens[nf] = q - p;
+      if (q < ll) raw[i + q] = 0;
+      nf = nf + 1;
+      p = q + 1;
+    }
+    if (nf >= 2) {
+      I64 copy_l = flens[1];
+      if (copy_l >= MAX_FIXTURE_NAME) copy_l = MAX_FIXTURE_NAME - 1;
+      for (I64 k = 0; k < copy_l; k = k + 1) legacy_aliases[n][k] = fields[1][k];
+      legacy_aliases[n][copy_l] = 0;
+      legacy_alias_lens[n] = copy_l;
+
+      I64 can_l = flens[0];
+      if (can_l >= MAX_FIXTURE_NAME) can_l = MAX_FIXTURE_NAME - 1;
+      for (I64 k = 0; k < can_l; k = k + 1) canonical_ids[n][k] = fields[0][k];
+      canonical_ids[n][can_l] = 0;
+      canonical_lens[n] = can_l;
+
+      // authorized field: optional; default YES if missing
+      I64 auth = 1;
+      if (nf >= 5) {
+        auth = 0;
+        for (I64 k = 0; k < flens[4]; k = k + 1) {
+          if (fields[4][k] == 'Y' || fields[4][k] == 'y') { auth = 1; break; }
+        }
+      }
+      authorized[n] = auth;
+      n = n + 1;
+    }
+    i = i + ll + 1;
+  }
+  Free(raw);
+  return n;
+}
+
+I64 FindCanonicalByAlias(U8 *alias, I64 alias_len,
+                         U8 legacy_aliases[MAX_FIXTURES][MAX_FIXTURE_NAME],
+                         I64 legacy_alias_lens[MAX_FIXTURES],
+                         U8 canonical_ids[MAX_FIXTURES][MAX_FIXTURE_NAME],
+                         I64 canonical_lens[MAX_FIXTURES])
+{
+  for (I64 i = 0; i < MAX_FIXTURES; i = i + 1) {
+    if (legacy_alias_lens[i] != alias_len) continue;
+    I64 eq = 1;
+    for (I64 k = 0; k < alias_len; k = k + 1) {
+      if (legacy_aliases[i][k] != alias[k]) { eq = 0; break; }
+    }
+    if (eq) return i;
+  }
+  return -1;
+}
+
+I64 CountDuplicateCanonicals(U8 canonical_ids[MAX_FIXTURES][MAX_FIXTURE_NAME],
+                             I64 canonical_lens[MAX_FIXTURES], I64 n)
+{
+  I64 dups = 0;
+  for (I64 i = 0; i < n; i = i + 1) {
+    for (I64 j = i + 1; j < n; j = j + 1) {
+      if (canonical_lens[i] != canonical_lens[j]) continue;
+      I64 eq = 1;
+      for (I64 k = 0; k < canonical_lens[i]; k = k + 1) {
+        if (canonical_ids[i][k] != canonical_ids[j][k]) { eq = 0; break; }
+      }
+      if (eq) dups = dups + 1;
+    }
+  }
+  return dups;
+}
+
+I64 EndsWithTsv(U8 *s)
+{
+  I64 n = 0;
+  while (s[n]) n = n + 1;
+  if (n < 4) return 0;
+  return s[n-4]=='.' && s[n-3]=='t' && s[n-2]=='s' && s[n-1]=='v';
+}
+
 I64 main(I64 argc, U8 **argv)
 {
-  if (argc < 5 || argc > 6) {
-    "SEMANTIC_VERIFIER_USAGE: <sem.g0> <sem.g1> <sem.g2> <sem.g3> [mutated]\n";
+  if (argc < 5 || argc > 7) {
+    "SEMANTIC_VERIFIER_USAGE: <sem.g0> <sem.g1> <sem.g2> <sem.g3> [mutated_or_map] [fixture_id_map.tsv]\n";
     return 2;
   }
 
   U8 *files[5];
   I64 nfiles = 0;
-  for (I64 i = 1; i < argc; i = i + 1) {
+  U8 *mutated_path = NULL;
+  U8 *fixture_map_path = NULL;
+  // Distinguish argv[5]/argv[6] semantics by file extension:
+  //   argv[5] is treated as a fixture-id-map if it ends in ".tsv";
+  //   otherwise it is treated as a mutated seam output (legacy).
+  //   argc==6 with argv[5]=map: 4 stages + map (no mutated).
+  //   argc==6 with argv[5]=other: 4 stages + mutated.
+  //   argc==7: argv[5]=mutated (non-.tsv) AND argv[6]=map (".tsv").
+  for (I64 i = 1; i <= 4; i = i + 1) {
     files[nfiles] = argv[i];
     nfiles = nfiles + 1;
+  }
+  if (argc == 6) {
+    if (EndsWithTsv(argv[5])) {
+      fixture_map_path = argv[5];
+    } else {
+      files[nfiles] = argv[5];
+      nfiles = nfiles + 1;
+    }
+  } else if (argc == 7) {
+    if (EndsWithTsv(argv[5])) {
+      // argv[5]=map, argv[6]=mutated: swap.
+      fixture_map_path = argv[5];
+      files[nfiles] = argv[6];
+      nfiles = nfiles + 1;
+    } else {
+      files[nfiles] = argv[5];
+      nfiles = nfiles + 1;
+      fixture_map_path = argv[6];
+    }
+  }
+
+  // Load fixture id map if requested.
+  U8 legacy_aliases[MAX_FIXTURES][MAX_FIXTURE_NAME];
+  I64 legacy_alias_lens[MAX_FIXTURES];
+  U8 canonical_ids[MAX_FIXTURES][MAX_FIXTURE_NAME];
+  I64 canonical_lens[MAX_FIXTURES];
+  I64 fixture_authorized[MAX_FIXTURES];
+  I64 map_n = 0;
+  I64 map_unknown_alias = 0;
+  I64 map_dup_canonical = 0;
+  if (fixture_map_path) {
+    map_n = LoadFixtureMap(fixture_map_path, legacy_aliases, legacy_alias_lens,
+                           canonical_ids, canonical_lens, fixture_authorized);
+    if (map_n < 0) {
+      "FIXTURE_ID_MAP_LOAD_FAIL path=%s\n", fixture_map_path;
+      return 2;
+    }
+    map_dup_canonical = CountDuplicateCanonicals(canonical_ids, canonical_lens, map_n);
+    "FIXTURE_ID_MAP_ENTRIES=%d\n", map_n;
+    "DUPLICATE_CANONICAL_ID=%d\n", map_dup_canonical;
+  } else {
+    "FIXTURE_ID_MAP_ENTRIES=0\n";
+    "DUPLICATE_CANONICAL_ID=0\n";
   }
 
   U8 *raw[5];
@@ -260,14 +431,58 @@ I64 main(I64 argc, U8 **argv)
             Bool eq_block;
             ObjectsByteEqual(stripped[g0] + pi, sz0, stripped[g1] + pj, sz1, &eq_block);
             if (!eq_block) {
+              // Translate the case_id via the fixture map if available.
+              U8 emit_buf[64];
+              I64 emit_len = 0;
+              if (fixture_map_path) {
+                I64 idx = FindCanonicalByAlias(case_id, ci,
+                                               legacy_aliases, legacy_alias_lens,
+                                               canonical_ids, canonical_lens);
+                if (idx >= 0) {
+                  emit_len = canonical_lens[idx];
+                  for (I64 k = 0; k < emit_len; k = k + 1) emit_buf[k] = canonical_ids[idx][k];
+                  emit_buf[emit_len] = 0;
+                  // Sanity check: canonical id should share its leading
+                  // prefix with the legacy alias. Forging the canonical id
+                  // to a different prefix (e.g. L07_angle_complex -> L99)
+                  // trips CANONICAL_PREFIX_MISMATCH.
+                  I64 prefix_len = emit_len;
+                  if (prefix_len > ci) prefix_len = ci;
+                  I64 m = 0;
+                  for (I64 k = 0; k < prefix_len; k = k + 1) {
+                    if (emit_buf[k] != case_id[k]) { m = 1; break; }
+                  }
+                  if (m) {
+                    "CANONICAL_PREFIX_MISMATCH alias=%s canonical=%s\n", case_id, emit_buf;
+                    map_unknown_alias = map_unknown_alias + 1;
+                  }
+                } else {
+                  map_unknown_alias = map_unknown_alias + 1;
+                  // emit the raw case_id verbatim so the verifier still
+                  // produces output but the unknown_alias count trips the
+                  // verifier rc.
+                  emit_len = ci;
+                  for (I64 k = 0; k < ci; k = k + 1) emit_buf[k] = case_id[k];
+                  emit_buf[ci] = 0;
+                }
+              } else {
+                // No map: emit verbatim (legacy behavior).
+                emit_len = ci;
+                for (I64 k = 0; k < ci; k = k + 1) emit_buf[k] = case_id[k];
+                emit_buf[ci] = 0;
+              }
               obs_migration_count = obs_migration_count + 1;
               if (obs_migration_count > 1) {
                 I64 L = 0; while (obs_migration_set[L]) L = L + 1;
                 obs_migration_set[L] = ','; obs_migration_set[L+1] = 0;
               }
               I64 L = 0; while (obs_migration_set[L]) L = L + 1;
-              for (I64 k = 0; k < ci && L < 250; k = k + 1) obs_migration_set[L++] = case_id[k];
+              for (I64 k = 0; k < emit_len && L < 250; k = k + 1) obs_migration_set[L++] = emit_buf[k];
               obs_migration_set[L] = 0;
+              // Also remember the human-facing legacy name (for observability).
+              if (obs_migration_count == 1) {
+                "OBSERVED_MIGRATION_FIXTURE_NAME=%s\n", case_id;
+              }
             }
             break;
           }
@@ -278,18 +493,29 @@ I64 main(I64 argc, U8 **argv)
     pi = pi + ll0 + 1;
   }
   "OBSERVED_MIGRATION_FIXTURE_COUNT=%d\n", obs_migration_count;
+  "UNKNOWN_FIXTURE_ALIAS=%d\n", map_unknown_alias;
   if (obs_migration_set[0]) {
     "OBSERVED_MIGRATION_FIXTURE_SET=%s\n", obs_migration_set;
   } else {
     "OBSERVED_MIGRATION_FIXTURE_SET=(none)\n";
   }
 
-  if (pair_fail == 0) {
+  if (pair_fail == 0 && map_unknown_alias == 0 && map_dup_canonical == 0) {
     "FIXTURE_DIVERGENCE_COUNT=0\n";
     "SEMANTIC_VERIFIER_RC=0 verdict=PASS\n";
     return 0;
   }
   "FIXTURE_DIVERGENCE_COUNT>=1\n";
+  if (map_unknown_alias > 0) {
+    "SEMANTIC_VERIFIER_RC=2 verdict=FAIL reason=unknown_fixture_alias count=%d\n",
+      map_unknown_alias;
+    return 2;
+  }
+  if (map_dup_canonical > 0) {
+    "SEMANTIC_VERIFIER_RC=2 verdict=FAIL reason=duplicate_canonical count=%d\n",
+      map_dup_canonical;
+    return 2;
+  }
   "SEMANTIC_VERIFIER_RC=1 verdict=FAIL\n";
   return 1;
 }
