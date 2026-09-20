@@ -1,0 +1,45 @@
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION05 -- C1 -- N02 config transport
+====================================================================
+
+# Per ACT §31: recon PolyC `Main`/argv behavior in the repository.
+# All other qualification tools in tools/quality/*.HC use:
+#   I64 main(I64 argc, U8 **argv)
+# Verified examples:
+#   tools/quality/lexer09-ac-witness-verify.HC: I64 main(I64 argc, U8 **argv)
+#   tools/quality/lexer09-ac-ledger-verify.HC: I64 main(I64 argc, U8 **argv)
+#   tools/quality/lexer09-n02-witness-verify.HC: I64 main(I64 argc, U8 **argv)
+#   tools/quality/lexer09-4stage-semantic-verify.HC: I64 main(I64 argc, U8 **argv)
+
+# Decision: argv is the canonical, supported parameter transport.
+N02_CONFIG_TRANSPORT=argv
+
+# N02 runner argv contract (frozen at C1):
+#   argv[1] = pristine source path
+#             (e.g. tools/bootstrap/selfhost-lexer-link.HC)
+#   argv[2] = output evidence path
+#             (e.g. evidence/ACT-POLYC-SELFHOST-LEXER04/CORRECTION05/c3/c3-n02-production-causal-control.txt)
+#   argv[3] = pristine seam binary path (reused for PRISTINE_REVERIFY_RC)
+#             (e.g. ./build/lexer09-lexer-seam-stage1)
+#   argv[4] = seam source path
+#             (e.g. tools/quality/lexer09-real-seam-runner.c)
+#   argv[5] = stage1 object dir (for legacy .o link inputs)
+#             (e.g. ./build/hcc-bootstrap02-build/CMakeFiles/hcc-bootstrap02.dir)
+#   argv[6] = stage1 objdir fallback
+#             (e.g. ./build/hcc-bootstrap02-build/CMakeFiles/hcc-bootstrap02.dir)
+#   argv[7] = mutated seam binary path (where the runner writes the
+#             compiled+linked mutated seam)
+#             (e.g. build/tmp/lexer04-correction05/lexer09-seam-stage1.mutated)
+#   argv[8] = mutated component object path
+#             (e.g. build/tmp/lexer04-correction05/link.mutated.o)
+#   argv[9] = polyC compiler path
+#             (e.g. ./build/hcc-bootstrap02)
+#   argv[10] = TEST_PREFIX (PolyC install dir for ./hcc -I)
+#             (e.g. ./build/test-prefix)
+#   argv[11] = mutated source output path
+#             (e.g. build/tmp/lexer04-correction05/selfhost-lexer-link.MUTATED.HC)
+#   argv[12] = pristine source output path
+#             (e.g. build/tmp/lexer04-correction05/selfhost-lexer-link.PRISTINE.HC)
+#   argv[13] = seam-run raw output path (for PRISTINE_REVERIFY)
+#             (e.g. build/tmp/lexer04-correction05/pristine-rerun.txt)
+
+# No shell-side semantic parsing. The shell wrapper simply forwards argv.

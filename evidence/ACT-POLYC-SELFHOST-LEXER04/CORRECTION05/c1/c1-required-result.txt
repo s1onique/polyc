@@ -1,0 +1,46 @@
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION05 -- C1 -- required result
+================================================================
+
+VERDICT=HALT_RED_NOT_REPRODUCED_RESOLVED
+
+# Defect inventory (per ACT §11):
+CORRECTION04_HALT_REPRODUCED=YES
+CORRECTION04_CONFIRMED_FAIL_COUNT=4
+HISTORICAL_ADDENDUM_TOTAL_FAIL_RECORDED=5
+MECHANICAL_CORRECTION04_FAIL_COUNT=4
+
+# Defect identity (per c1-correction04-defects.tsv):
+D1 AC12 canonical migration id mismatch: REPRODUCED
+D2 AC25 missing/failing witness schema: REPRODUCED (23 non-pass witnesses)
+D3 AC33 substantive shell over budget: REPRODUCED (109 LOC > 50 LOC)
+D4 AC39 prospective patch hygiene failure: REPRODUCED (trailing blank line in CORRECTION04 C3 evidence)
+D5 historical arithmetic mismatch: RECORDED (CORRECTION04-CORRECTION01 not rewritten; prospective value=4)
+
+# F14 reverify (per c1-f14-reverify.txt):
+CORRECTION04_AC35=PASS
+
+# C1 contracts frozen:
+C1_MANDATORY_AC_CONTRACT=c1-mandatory-ac-contract.tsv (44 AC rows)
+C1_AC_WITNESS_CONTRACT=c1-ac-witness-contract.tsv (75 witness rows)
+C1_TOKEN_SCHEMA=c1-token-schema.tsv (73 token rows)
+C1_FIXTURE_ID_MAP=c1-fixture-id-map.tsv (10 fixtures)
+
+# Migration contract frozen:
+C1_MIGRATION_CONTRACT=c1-migration-contract.tsv
+EXPECTED_MIGRATION_FIXTURE_SET=L07
+L07_G0=lib-complex_1co
+L07_G1=lib-complex_1.0
+L07_G2=lib-complex_1.0
+L07_G3=lib-complex_1.0
+
+# N02 architecture defect (per ACT §27):
+C1_N02_AUTHORITY_DEFECT=REPRODUCED (scripts/quality/lexer09-n02-mutation-runner.sh=109 LOC > 50 LOC F-POLYC-TOOLS ceiling)
+N02_CONFIG_TRANSPORT=argv
+C1_N02_MUTATION_CONTRACT=c1-n02-mutation-contract.txt (mutation kind=B; fixture=L07; field=link_libs)
+
+# Broad corpus baseline:
+LEXER07_BASELINE_REGRESSION=6
+LEXER07_BASELINE_TOTAL=181
+
+# No implementation yet. No production mutation. No tool edits.
+# C1 commits are contract-only.

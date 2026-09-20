@@ -1,0 +1,35 @@
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION05 -- C1 -- F14 reverify
+============================================================
+
+# Per ACT §12. Mechanically re-run F14 comparison for the
+# CORRECTION04 entry->close range.
+#
+# CORRECTION04 entry was cbdc818 (C0 commit).
+# CORRECTION04 close was 0cee203 (C4 commit).
+# CORRECTION04-CORRECTION01 (addendum) was 87106d6.
+# CORRECTION05 entry is 87106d6 (current branch tip before CORRECTION05).
+
+# Range
+CORRECTION04_ENTRY_HEAD=cbdc818722dd63706d523247bd72168a6d672eec
+CORRECTION04_C4_HEAD=0cee20335e053d34a48f9a1f6ce57e35136c970aa
+CORRECTION05_ENTRY_HEAD=87106d6f79a42e037d89fccf4ecdb8014cfbddf7
+
+# Commands run
+$ git diff --check $CORRECTION04_ENTRY_HEAD..$CORRECTION04_C4_HEAD -- \
+    evidence/ACT-POLYC-SELFHOST-LEXER04/CORRECTION03/ \
+    docs/factory/HANDOFF-ACT-POLYC-SELFHOST-LEXER04-CORRECTION03.md
+(no output -> CORRECTION03 evidence untouched by CORRECTION04)
+
+$ git diff $CORRECTION04_ENTRY_HEAD..$CORRECTION04_C4_HEAD -- \
+    evidence/ACT-POLYC-SELFHOST-LEXER04/CORRECTION03/ \
+    docs/factory/HANDOFF-ACT-POLYC-SELFHOST-LEXER04-CORRECTION03.md | wc -l
+0
+
+# F14 invariant results
+CLOSED_CORRECTION03_FILES_MODIFIED_COUNT=0
+CLOSED_HANDOFF_CORRECTION03_DELTA=0
+CLOSED_EVIDENCE_CORRECTION03_DELTA=0
+CORRECTION04_AC35=PASS
+
+# Conclusion: CORRECTION04 did not modify closed CORRECTION03 artifacts.
+# The historical AC35/F14 disposition is preserved unchanged.

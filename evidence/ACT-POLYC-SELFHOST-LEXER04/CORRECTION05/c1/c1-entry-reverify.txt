@@ -1,0 +1,24 @@
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION05 -- C1 -- entry reverify
+===============================================================
+
+# Per ACT §38/§39: re-run identity recon immediately before C1 commit.
+
+CORRECTION05_ENTRY_HEAD=87106d6f79a42e037d89fccf4ecdb8014cfbddf7
+CORRECTION05_C0_HEAD=5fedb1414a7ec1aa69592b6e09826d28dc5c3465
+
+BRANCH=main
+WORKTREE_AT_C1=YES
+EXPECTED_HEAD_87106d6_IS_ANCESTOR=YES
+C0_COMMIT_AUTHORED_BY=ACT-POLYC-SELFHOST-LEXER04-CORRECTION05
+
+# Frozen at C0; SHA256 still matches after C0 commit (production source untouched):
+SRC_LEXER_C_SHA256=4e083ce339aa27a11307a3102ce77a7eaca4ea4ada2b197793d9d752f68bd213
+SRC_LEXER_BRIDGE_H_SHA256=bb37451f0a57efd09d3dfd1e71a5ec194bb9df8a219212d9eac43c3fedaba1a0
+SELFHOST_LEXER_LINK_HC_SHA256=11dab368bc60a96edddaeb111f06314596fe58f2b656542ad2fc9cf7e8a39f75
+
+# Patch hygiene range CORRECTION05_ENTRY_HEAD..HEAD at C1 (post C0):
+$ git diff --check 87106d6..HEAD
+(no output -> PATCH_HYGIENE_ERRORS=0)
+
+# No production mutation at C1; C1 is contract-only.
+PRODUCTION_SOURCE_DELTA_AT_C1=0

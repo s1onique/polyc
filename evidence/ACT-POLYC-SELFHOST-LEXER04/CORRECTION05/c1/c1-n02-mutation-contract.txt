@@ -1,0 +1,31 @@
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION05 -- C1 -- N02 mutation contract
+====================================================================
+
+# Per ACT §32: N02 mutation semantics unchanged from CORRECTION04.
+
+# Mutation kind: B
+# Fixture: L07
+# Field: link_libs
+# Semantic: drop the trailing byte from the link_libs string
+#
+# Concretely: the mutation inserts
+#   *out_target_len = *out_target_len - 1;
+# immediately after
+#   *out_target_len = i - body_start;
+# inside LinkScanAngle (and LinkScanQuoted, but the L07 fixture uses
+# angle form, so LinkScanQuoted is benign).
+#
+# Pristine: lib-complex_1.0
+# Mutated:  lib-complex_1.   (the trailing '0' is dropped)
+
+N02_MUTATION_KIND=B
+N02_FIXTURE=L07
+N02_FIELD=link_libs
+
+PRISTINE_VALUE=lib-complex_1.0
+MUTATED_VALUE=lib-complex_1.
+
+EXPECTED_DIVERGENCE_FIXTURE=L07
+EXPECTED_DIVERGENCE_FIELD=link_libs
+
+N02_OUTCOME=PASS
