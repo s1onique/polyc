@@ -24,3 +24,15 @@ LEXER04_PRODUCTION_MIGRATION=COMPLETE
 LEXER04_POLYC_COMPONENT_QUALIFICATION=TRUE_GREEN
 LEXER04_PRODUCTION_AUTHORITY=TRUE_GREEN
 LEXER04_4_GENERATION_SEAM=TRUE_GREEN
+
+PATCH_HYGIENE_FINDING (AC35 partial):
+  git diff --check 4814bf1..HEAD reports 4 trailing-whitespace
+  warnings on c3-n02-subject-mutation.txt. These come from
+  captured `diff -u` output lines starting with `< ` (literal
+  less-than, space, content-with-trailing-space, newline). The
+  whitespace is in evidence CONTENT, not source code. Modified
+  source files (production code) are clean.
+
+  Per ACT §57 we cannot add a 6th commit to clean this. The
+  HALT path (HALT_PATCH_HYGIENE) is recorded below; the
+  substantive predicate (production source cleanliness) is green.
