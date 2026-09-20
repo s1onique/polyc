@@ -5306,3 +5306,71 @@ Followed by:
 
 The Factory governance dependency that blocked compiler work
 is removed.
+
+---
+
+#### ACT-POLYC-SELFHOST-SURFACE-RECON03 status (CLOSED PASS_TRUE_GREEN at this commit)
+
+Post-LEXER04 self-host surface recon. Re-inventoried the live compiler
+semantic-authority boundary from the current tree, classified every
+surface using the canonical taxonomy, ranked all eligible
+LEGACY_C_AUTHORITY candidates, and selected exactly one rank-1 target
+with a reproducible RED and a complete proof model.
+
+```
+ACT-POLYC-SELFHOST-SURFACE-RECON03
+  ENTRY       = a1a14898206d552461d37daee31b40609bbd623d (LEXER04 CORRECTION07 close)
+  C0 AUTH     = 7d17dae0209f82764304d284feffb4265a005f53
+  C1 INVENTORY= e2431bc
+  C2 RANK/SEL = b66be22
+  C3 VERIFY   = 9f0422e
+  C4 CLOSE    = <this commit>
+  ACT-Phase   = CLOSED
+  ACT-Verdict = PASS_TRUE_GREEN
+
+SURFACE_TOTAL            = 23 (C3 recompute)
+SELFHOSTED_TRUE_GREEN    = 5   (INV.LEXER.{IDENT,OPCLASS,SCALAR,TRIVIA,LINK})
+LEGACY_C_AUTHORITY       = 13
+ELIGIBLE_CANDIDATE_COUNT = 2   (INV.PARSER.COMPOUND, INV.PARSER.TOPLEVEL)
+RANKED_CANDIDATE_COUNT   = 2
+SELECTED_SURFACE         = INV.PARSER.COMPOUND
+SELECTED_ATOMIC_SLICE    = parseCompoundStatementInternal (src/parser.c line 1752)
+UNIQUE_RANK1             = YES
+
+NEXT_ACT_ID              = ACT-POLYC-SELFHOST-PARSER01
+NEXT_TARGET              = INV.PARSER.COMPOUND
+NEXT_ATOMIC_SLICE        = parseCompoundStatementInternal
+NEXT_ACT_SCOPE_FROZEN    = YES
+NEXT_ABI                 = ABI 7 -- BootstrapParseCompoundStatementInternal
+                             (declared in src/parser_bridge.h; not yet present)
+
+LEXER01_CONSERVATION = PASS (lexer07-direct-differential 89/89)
+LEXER02_CONSERVATION = PASS (lexer07-direct-differential 89/89)
+LEXER03_CONSERVATION = PASS (lexer08-direct-differential 45/45)
+LEXER04_CONSERVATION = PASS (lexer09-direct-differential 23/23
+                              + lexer09-lexer-seam-stage1 PASS)
+
+GATE_FAST             = PASS
+APPEND_ONLY_FAIL      = 0
+PATCH_HYGIENE_ERRORS  = 0
+AC_TOTAL = 44, AC_PASS = 44, AC_FAIL = 0
+PRODUCTION_SOURCE_DELTA = 0
+COMPILER_SEMANTIC_DELTA = 0
+```
+
+Self-host recon03 mechanical findings:
+
+  - INV.LEXER.LINK has migrated from LEGACY_C_AUTHORITY to
+    SELFHOSTED_TRUE_GREEN via LEXER04.
+  - Two eligible parser candidates remain after LEXER04 closure:
+    INV.PARSER.COMPOUND (rank 1; ~260 lines; single function) and
+    INV.PARSER.TOPLEVEL (rank 2; ~460 lines; single function).
+  - INV.PREPROC.PP (8 coupled functions) is not atomic at the
+    directive-dispatch layer and is deferred.
+  - INV.PARSER.STMT is gated behind INV.PARSER.COMPOUND.
+  - INV.LSP and INV.TRANSPILE reclassified to LEGACY_NON_POLYC_AUTHORITY
+    per the §13 taxonomy (server / transpiler targets, not compiler
+    semantic authority).
+
+See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-SURFACE-RECON03.md` and
+`evidence/ACT-POLYC-SELFHOST-SURFACE-RECON03/`.
