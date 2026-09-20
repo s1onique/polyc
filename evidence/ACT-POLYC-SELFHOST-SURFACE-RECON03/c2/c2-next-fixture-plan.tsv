@@ -1,0 +1,7 @@
+fixture_class	fixture_count	description	input_shape	observable_output	expected_legacy_state
+empty_compound	3	{} with whitespace/newlines/comments	U8 *src = " {} "	no AST nodes appended; cursor past '}'	empty_body_OK
+single_stmt_compound	5	{ <stmt>; } for each stmt kind	U8 *src = " { return 0; } "	1 AST node appended	nonempty_body_OK
+decl_in_compound	5	{ U64 x = 1; ... }	U8 *src = " { U64 x = 1; x = x + 1; } "	≥2 AST nodes appended	decl_stmt_OK
+nested_compound	4	{ { <stmt>; } }	U8 *src = " { { U64 x; } } "	2 nested AST node lists	nested_OK
+unclosed_brace	3	{ <stmt>; (no '}')	U8 *src = " { return 0; "	PARSE_ERR_UNCLOSED_BRACE	error_class_OK
+mid_body_preproc	3	{ #define X 1\n <stmt>; }	U8 *src = " { #define X 1\nU64 x = X; } "	macro defined; AST captures x=1	state_interaction_OK

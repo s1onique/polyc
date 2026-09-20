@@ -1,0 +1,130 @@
+NEXT_ACT_ID                 = ACT-POLYC-SELFHOST-PARSER01
+NEXT_TARGET_SURFACE_ID      = INV.PARSER.COMPOUND
+NEXT_TARGET_DESCRIPTION     = Parse compound statement body inside a function
+NEXT_ATOMIC_SLICE           = parseCompoundStatementInternal (src/parser.c, line 1752)
+
+ALLOWED_PRODUCTION_FILES    =
+    src/parser.c                                         (modify parseCompoundStatementInternal body only)
+    src/parser_bridge.h                                  (NEW: declare BootstrapParseCompoundStatementInternal ABI 7)
+    src/CMakeLists.txt                                   (add PARSER10 component to bootstrap01..04)
+    tools/bootstrap/selfhost-parser-compound-statement-internal.HC   (NEW PolyC component)
+
+ALLOWED_BOOTSTRAP_FILES     =
+    tools/bootstrap/selfhost-parser-compound-statement-internal.HC  (NEW)
+
+ALLOWED_QUALITY_FILES       =
+    tools/quality/parser10-compound-oracle.c             (NEW: C oracle)
+    tools/quality/parser10-compound-oracle-impl.c        (NEW: oracle truth)
+    tools/quality/parser10-direct-differential.c         (NEW: differential harness)
+    tools/quality/parser10-4stage-fixedpoint-verify.c    (NEW: 4-gen fixed point)
+    tools/quality/parser10-real-seam-runner.c            (NEW: production seam)
+    tools/quality/parser10-generation-provenance-verify.HC  (NEW: provenance PolyC tool)
+    tools/quality/parser10-n01-mutation-runner.c         (NEW: negative control)
+    tools/quality/parser10-n01-witness-verify.c          (NEW: negative control verifier)
+    tools/quality/parser10-ac-ledger-verify.c            (NEW: AC ledger)
+    tools/quality/parser10-ac-witness-verify.c           (NEW: AC witness verifier)
+    scripts/quality/parser10-compound-direct-differential.sh  (NEW shell dispatcher, <=50 LOC)
+    scripts/quality/parser10-4stage-fixedpoint.sh        (NEW shell dispatcher, <=50 LOC)
+    scripts/quality/parser10-generation-provenance-verify.sh (NEW shell dispatcher, <=50 LOC)
+    scripts/quality/parser10-n01-mutation-runner.sh      (NEW shell dispatcher, <=50 LOC)
+
+ALLOWED_TEST_FILES          =
+    tools/quality/parser10-*                             (NEW)
+    evidence/ACT-POLYC-SELFHOST-PARSER01/                (NEW evidence namespace)
+
+ALLOWED_QUALITY_TOOLING     =
+    parser10* tool binaries (above)                      (NEW; PolyC implementation under F-POLYC-TOOLS)
+
+FORBIDDEN_SURFACES          =
+    src/parser.c outside parseCompoundStatementInternal body
+    src/lexer.c                                          (no semantic change to lexer)
+    src/ast.c                                            (no semantic change to AST)
+    src/cctrl.c                                          (no semantic change to cctrl)
+    src/ir.c, src/ir-*.c                                 (no IR changes)
+    src/x86_64.c, src/aarch64.c, src/x86.c               (no codegen changes)
+    src/llvm-backend.c                                   (no LLVM backend changes)
+    src/main.c, src/cli.c                                (no CLI changes)
+    src/prslib.c, src/prsutil.c, src/prsasm.c            (no expression/const-eval changes)
+    src/holyc-lib/*                                      (no libtos changes)
+    src/x86_64-jit.c, src/aarch64-jit.c, src/jit-common.c (no JIT changes)
+    src/repl.c, src/lsp.c                                (no REPL/LSP changes)
+    src/transpiler.c                                     (no transpiler changes)
+    src/asm/*                                            (no asm encoder changes)
+    src/ir-optimise.c, src/ir-types.c, src/ir-regalloc.c, src/ir-eval.c, src/ir-debug.c, src/cfg*.c  (no IR/optimiser changes)
+    src/compile.c                                        (no compile driver changes)
+    tools/bootstrap/selfhost-lexer-*.HC                  (no lexer bootstrap changes)
+    tools/bootstrap/bootstrap02-ident.HC                 (no ident bootstrap changes)
+    evidence/ACT-POLYC-SELFHOST-LEXER01..04/             (no historical evidence edits per F14)
+
+EXPECTED_BRIDGE_OR_ABI      =
+    ABI 7 -- BootstrapParseCompoundStatementInternal (src/parser_bridge.h):
+        I64 BootstrapParseCompoundStatementInternal(
+            U8  *src,
+            I64  src_len,
+            I64  cursor,         // start of body (just past '{')
+            I64  flags,
+            I64 *out_end,        // first byte after '}' (or src_len if EOF)
+            I64 *out_ast_kind,   // first AST node kind (for state contract)
+            I64 *out_node_count, // number of statements parsed
+            I64 *out_error       // PARSE_OK / PARSE_ERR_* classification
+        );
+    CHARACTER DOMAIN: ASCII for { } ; identifier bytes; token-stream-shaped input.
+
+RED_COMMANDS                 =
+    1. [ -f tools/bootstrap/selfhost-parser-compound-statement-internal.HC ] \
+       && echo RED_FAIL_component_already_present \
+       || echo RED_PASS_component_absent
+    2. grep -q "BootstrapParseCompoundStatementInternal" src/parser_bridge.h \
+       && echo RED_FAIL_bridge_already_declared \
+       || echo RED_FAIL_bridge_absent
+    3. nm build/hcc 2>/dev/null | grep -q "parseCompoundStatementInternal" \
+       && echo RED_PASS_legacy_function_linked \
+       || echo RED_FAIL_legacy_function_missing
+
+FIXTURE_CLASSES             =
+    empty_compound           (3 fixtures)
+    single_stmt_compound     (5 fixtures)
+    decl_in_compound         (5 fixtures)
+    nested_compound          (4 fixtures)
+    unclosed_brace           (3 fixtures)
+    mid_body_preproc         (3 fixtures)
+    -- total 23 fixtures across 6 classes
+    (mirrors LEXER09 fixture-cardinality shape)
+
+PROOF_MODEL                 =
+    DIRECT_DIFFERENTIAL      REQUIRED
+    PRODUCTION_SEAM          REQUIRED
+    FIXEDPOINT               REQUIRED (4-gen)
+    NEGATIVE_CONTROL         REQUIRED
+    CONSERVATION             REQUIRED (LEXER01..04 + LEXER07 baseline-delta)
+    PROVENANCE               REQUIRED (4-gen binding)
+    PATCH_HYGIENE            REQUIRED
+
+NEGATIVE_CONTROL            =
+    PARSER10-N01-MUTATION-RUNNER: stub the #ifdef branch so the
+    BootstrapParseCompoundStatementInternal call falls through to a
+    no-op; verify that parser10-direct-differential fails for all 23
+    fixtures and that parser10-4stage-fixedpoint fails to converge.
+
+CONSERVATION_REQUIREMENTS   =
+    LEXER01_CONSERVATION     PASS (lexer07-direct-differential 89/89)
+    LEXER02_CONSERVATION     PASS (lexer07-direct-differential 89/89)
+    LEXER03_CONSERVATION     PASS (lexer08-direct-differential 45/45)
+    LEXER04_CONSERVATION     PASS (lexer09-direct-differential 23/23)
+    LEXER07_CONSERVATION     NEW_LEXER07_FAILURES=0 (baseline-delta)
+
+KNOWN_RESIDUE_NOT_IN_SCOPE  =
+    ACT-POLYC-COMPILER-AARCH64-ASM-PARSER-FIX01 (separate P1 residue;
+        RECON03 ranks it independently and finds blocks_next_selfhost_stage=NO
+        on current host/build path because AArch64 asm parsing is
+        backend-targeted and does not block parser migration)
+    PARSER02_EXPR            (gated behind PARSER01)
+    PARSER02_DECL            (gated behind PARSER01)
+    PARSER02_STMT            (gated behind PARSER01)
+    PARSER02_TOPLEVEL        (rank-2 candidate; deferred)
+    PREPROC01_PP             (rank-3 candidate; deferred)
+    LEXER05                  (no remaining bounded lexer slice)
+    hcc JIT ROTR-as-global   (P1 LEXER04 residue; not a migration target)
+    LEXER07 historical broad-corpus 15-S0 / 6-S1..S3 failures (recon
+        context, not a blocker; successor conservation keyed on
+        NEW_LEXER07_FAILURES=0, not on the historical gate going green)

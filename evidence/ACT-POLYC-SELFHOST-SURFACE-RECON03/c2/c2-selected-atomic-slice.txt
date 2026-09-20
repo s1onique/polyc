@@ -1,0 +1,37 @@
+ATOMIC_SLICE=parseCompoundStatementInternal
+ENTRY_SYMBOL=src/parser.c::parseCompoundStatementInternal
+ENTRY_SIGNATURE=void parseCompoundStatementInternal(Cctrl *cc, Ast *body)
+ESTIMATED_SPAN=~260 lines (src/parser.c lines 1752..2012)
+BOUNDED_AUTHORITY=ONE
+  - The function owns the entire compound-statement-body parsing loop.
+  - It dispatches to parseStatement (statement kind) via a single
+    cursor loop.
+  - It exits on encountering the closing '}' token.
+  - It produces AST nodes that are appended to the supplied `body`
+    Ast list.
+EXPLICIT_ENTRY=yes
+DESCRIBABLE_ABI=yes
+  ABI 7 (planned; not yet declared):
+    I64 BootstrapParseCompoundStatementInternal(
+        U8  *src,
+        I64  src_len,
+        I64  cursor,         // start of body (just past '{')
+        I64  flags,
+        I64 *out_end,        // first byte after '}' (or src_len if EOF)
+        I64 *out_ast_kind,   // first AST node kind (for state contract)
+        I64 *out_node_count, // number of statements parsed
+        I64 *out_error       // PARSE_OK / PARSE_ERR_* classification
+    );
+  (Subject character domain: ASCII for { } ; identifier bytes; token-stream-shaped input.)
+FIXTURE_UNIVERSE=PLANNED
+  - empty compound body {}
+  - single-statement compound { <stmt>; }
+  - compound with decl { U64 x = 1; }
+  - nested compound { { <stmt>; } }
+  - compound ending without '}' (UNCLOSED_BRACE_ERR)
+  - compound with mid-body preprocessor directive (state interaction)
+EXPECTED_PRODUCTION_SEAM=
+  - stage0 (hcc, no #ifdef): legacy C function unchanged
+  - stage1+ (hcc-bootstrap01..04, #ifdef HCC_USE_SELFHOST_COMPONENTS):
+    C wrapper calls BootstrapParseCompoundStatementInternal;
+    result is verified bit-identical to legacy C output for the same input

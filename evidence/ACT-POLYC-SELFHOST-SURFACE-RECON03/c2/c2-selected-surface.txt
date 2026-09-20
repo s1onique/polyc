@@ -1,0 +1,28 @@
+SELECTED_SURFACE=INV.PARSER.COMPOUND
+SELECTED_SUBSYSTEM=parser
+SELECTED_RESPONSIBILITY=Parse compound statement body inside a function
+                     (block of statements enclosed in { ... })
+SELECTED_ATOMIC_SLICE=parseCompoundStatementInternal
+SELECTED_ENTRY_SYMBOL=src/parser.c::parseCompoundStatementInternal (line 1752)
+SELECTED_ENTRY_SIGNATURE=void parseCompoundStatementInternal(Cctrl *cc, Ast *body)
+SELECTED_RANK=1
+SELECTED_REASON=Only parser-region candidate whose atomic slice is a single
+                cohesive function with bounded AST output and no
+                cross-file coupling. R1=UNLOCKS_MULTIPLE_FOLLOWING_SURFACES
+                (R1=1) because every statement/control-flow construct
+                routes through compound-body parsing; migrating it
+                unblocks INV.PARSER.STMT, parser/decl-in-block paths,
+                and downstream const-eval reuse.
+
+RANKING_NUMERIC_DUMP:
+  surface_id            R1 R2 R3 R4 R5 R6
+  INV.PARSER.COMPOUND   1  1  2  2  2  260
+  INV.PARSER.TOPLEVEL   1  1  2  3  3  460
+
+Lexicographic ordering: lower R wins.
+  R1: COMPOUND(1) == TOPLEVEL(1) — tie
+  R2: COMPOUND(1) == TOPLEVEL(1) — tie
+  R3: COMPOUND(2) == TOPLEVEL(2) — tie
+  R4: COMPOUND(2) < TOPLEVEL(3) — COMPOUND wins
+
+UNIQUE_RANK1=YES

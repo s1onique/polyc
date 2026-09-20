@@ -1,0 +1,7 @@
+dependency	kind	already_selfhosted	legacy	must_migrate_with_slice	can_bridge	out_of_scope
+Cctrl *cc	parser state	NO	YES	NO	YES (pass as opaque handle; do not dereference from PolyC)	NO
+Ast *body	AST list	NO	YES	NO	YES (opaque; PolyC appends pre-allocated Ast descriptors)	NO
+lex token stream	lexer interface	NO	YES (partially self-hosted via LEXER01..04)	NO	YES (lexeme schema is stable; PolyC consumes Lexeme * directly)	NO
+parseStatement	parser helper	NO	YES	NO	YES (kept as C call; PolyC subjects per statement kind are out of scope for the compound slice)	NO
+parseDeclOrStatement	parser helper	NO	YES	NO	YES (kept as C call)	NO
+lexToken	lexer entry	NO (PARTIAL via LEXER01..04)	YES	NO	YES (caller invokes lexToken as before; subject does not need to call it)	NO

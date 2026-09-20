@@ -1,0 +1,46 @@
+NEXT_ACT_RED_MODEL
+==================
+
+ACT: ACT-POLYC-SELFHOST-PARSER01
+Surface: INV.PARSER.COMPOUND
+Atomic slice: parseCompoundStatementInternal
+
+Required: at least 2 mechanically reproducible REDs against the current
+unmodified tree. The REDs should fail for the reason the successor ACT
+expects (the legacy C function is the sole authority; no PolyC subject
+exists; no differential harness exists yet).
+
+RED COMMAND 1 (file-not-found RED):
+
+  [ -f tools/bootstrap/selfhost-parser-compound-statement-internal.HC ] \
+    && echo RED_FAIL_component_already_present \
+    || echo RED_PASS_component_absent
+
+  Expected (unmodified tree): RED_PASS_component_absent
+
+RED COMMAND 2 (bridge-not-declared RED):
+
+  grep -q "BootstrapParseCompoundStatementInternal" src/parser_bridge.h \
+    && echo RED_FAIL_bridge_already_declared \
+    || echo RED_FAIL_bridge_absent
+  # This is the negative-direction RED: the bridge symbol must be absent
+  # for the migration to be needed. We expect RED_FAIL_bridge_absent.
+
+RED COMMAND 3 (production-seam RED — legacy function still sole authority):
+
+  nm build/hcc 2>/dev/null | grep -q "parseCompoundStatementInternal" \
+    && echo RED_PASS_legacy_function_linked \
+    || echo RED_FAIL_legacy_function_missing
+
+  Expected (unmodified tree): RED_PASS_legacy_function_linked
+  (the legacy function IS linked into hcc; the PolyC subject is NOT.)
+
+RED_COMMAND_COUNT=3
+RED_REPRODUCIBLE=YES
+
+All three REDs run against the current tree at C2 freeze and again at
+C3 VERIFY. They should reproduce identically at both points because no
+implementation lands in this ACT (F15, §55).
+
+The successor ACT must convert each of these RED_PASS results into
+GREEN once the production seam and PolyC subject land.

@@ -1,0 +1,8 @@
+proof_class	classification	rationale
+DIRECT_DIFFERENTIAL	REQUIRED	parseCompoundStatementInternal has a single C implementation; the PolyC subject must produce identical AST output for the same input. Build a direct differential harness (parser10-compound-direct-differential.c) that runs both legacy C and PolyC subjects on each fixture and asserts byte-equality of the produced AST shape.
+PRODUCTION_SEAM	REQUIRED	production compiler changes require a stage0/stage1 differential on real source files (e.g. the unit-test corpus). Same shape as LEXER04 lexer09-real-seam-runner; expected to be defined as parser10-compound-real-seam-runner.c.
+FIXEDPOINT	REQUIRED	the PolyC subject will be compiled by stage1/2/3 hcc-bootstrap binaries; an object fixed point (hcc vs hcc-bootstrap01 vs hcc-bootstrap02 vs hcc-bootstrap03 vs hcc-bootstrap04) materially proves self-host stability. Same shape as LEXER04 lexer09-fixedpoint-4stage.
+NEGATIVE_CONTROL	REQUIRED	at least one mutation that disables the new subject (e.g. comment out the #ifdef branch so the call falls through to a stub that returns an error) and assert the differential fails. This proves the subject is production-load-bearing, not shadow.
+CONSERVATION	REQUIRED	conserve LEXER01..LEXER04 by re-running lexer07-direct-differential, lexer08-direct-differential, lexer09-direct-differential after the implementation lands. Targeted/baseline-delta semantics (NEW_LEXER07_FAILURES=0).
+PROVENANCE	REQUIRED	provenance binding for each fixture and each binary (hcc, hcc-bootstrap01..04) — same shape as LEXER04 lexer09-generation-provenance-verify.
+PATCH_HYGIENE	REQUIRED	git diff --check ENTRY_HEAD..HEAD must yield zero errors at every phase (C0..C4); this is a closure gate for every Factory ACT.

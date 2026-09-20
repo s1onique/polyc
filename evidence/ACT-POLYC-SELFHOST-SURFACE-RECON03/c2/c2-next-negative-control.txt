@@ -1,0 +1,32 @@
+NEXT_NEGATIVE_CONTROL
+======================
+
+ACT: ACT-POLYC-SELFHOST-PARSER01
+Surface: INV.PARSER.COMPOUND
+
+Negative-control class (REQUIRED per §42): the migrated component must
+fail the differential if it is shadow-only, unused, incorrectly wired,
+or the verifier is non-load-bearing.
+
+Concrete control:
+
+  PARSER10-N01-MUTATION-RUNNER
+
+  Mutation: in src/parser.c, replace the #ifdef HCC_USE_SELFHOST_COMPONENTS
+  branch body for parseCompoundStatementInternal with a stub that
+  immediately returns (consumes no token, appends no AST nodes).
+  Equivalently: rename BootstrapParseCompoundStatementInternal in
+  src/parser_bridge.h to a non-existent symbol so the linker fails to
+  resolve and the production binary falls back to legacy C.
+
+  Expected outcome of the mutation:
+    - parser10-direct-differential: FAIL (stage1 output diverges from
+      stage0; AST node count differs on every nonempty fixture)
+    - parser10-4stage-fixedpoint: FAIL (hcc-bootstrap01..04 cannot
+      rebuild because the renamed symbol is unresolved, OR if the
+      fallback is preserved, AST outputs differ)
+
+  Recovery: revert the mutation; re-run; expect PASS.
+
+This proves the migrated subject is production-load-bearing and that
+the differential harness would detect shadow wiring.
