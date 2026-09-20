@@ -1,0 +1,26 @@
+ACT-POLYC-SELFHOST-SURFACE-RECON03 -- C3 VERIFY -- LEXER04 conservation
+=======================================================================
+
+LEXER04 conservation must exercise the production-authority path, not
+merely component compilation (per §63).
+
+Runs:
+  make lexer09-direct-differential
+  make lexer09-lexer-seam-stage1
+
+Output (direct-differential):
+  DIRECT_DIFFERENTIAL_TOTAL=23
+  DIRECT_DIFFERENTIAL_PASS=23
+  DIRECT_DIFFERENTIAL_FAIL=0
+  STATUS=PASS
+
+Output (production-seam):
+  LEXER09_SEAM_STAGE0_VS_STAGE1=PASS
+
+Note: stage0 = hcc (legacy C path); stage1 = hcc-bootstrap01 (PolyC
+delegation via #ifdef HCC_USE_SELFHOST_COMPONENTS). The seam harness
+emits token streams from real source files (unit-test corpus) and
+asserts that the link_libs / shared_object_files outputs are
+bit-identical between the two stages.
+
+LEXER04_CONSERVATION=PASS (23/23 differential + production-seam PASS)

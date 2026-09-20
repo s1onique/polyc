@@ -1,0 +1,25 @@
+ACT-POLYC-SELFHOST-SURFACE-RECON03 -- C3 VERIFY -- successor proof model
+=======================================================================
+
+Verify every proof class from c2-next-proof-model.tsv has classification
++ planned command/target + planned evidence artifact + falsification.
+
+  proof_class         classification  planned_command               planned_artifact             falsification
+  -------------------------------------------------------------------------------------------------------------------------------
+  DIRECT_DIFFERENTIAL REQUIRED        build parser10-direct-         parser10-direct-differential FAIL on stub or stub input (RED1)
+                                       differential.sh                .log
+  PRODUCTION_SEAM     REQUIRED        build parser10-real-seam-      parser10-real-seam-runner.    FAIL on stage0 vs stage1
+                                       runner + run on corpus         log                          divergence (RED1 + RED3)
+  FIXEDPOINT          REQUIRED        build parser10-4stage-         parser10-4stage-fixedpoint-   FAIL on stage1..stage4 byte
+                                       fixedpoint.sh                  verify.log                   divergence (RED3)
+  NEGATIVE_CONTROL    REQUIRED        PARSER10-N01-MUTATION-         parser10-n01-mutation-        FAIL on shadow wiring (RED1
+                                       RUNNER                         runner.log                   and RED3)
+  CONSERVATION        REQUIRED        lexer07/08/09-direct-          lexer07/08/09-direct-        FAIL on regression (NEW_LEXER07
+                                       differential.sh                differential.log              _FAILURES>0)
+  PROVENANCE          REQUIRED        parser10-generation-           parser10-generation-         FAIL on provenance-schema-
+                                       provenance-verify.sh           provenance-verify.log        valid=0
+  PATCH_HYGIENE       REQUIRED        git diff --check ENTRY_HEAD..   patch-hygiene.txt            FAIL on whitespace/tab/no-
+                                       HEAD                                                          newline errors
+
+UNCLASSIFIED_PROOF_CLASSES=0
+NEXT_ACT_PROOF_MODEL_COMPLETE=YES

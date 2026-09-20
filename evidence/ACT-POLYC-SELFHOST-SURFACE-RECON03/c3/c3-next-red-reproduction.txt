@@ -1,0 +1,59 @@
+ACT-POLYC-SELFHOST-SURFACE-RECON03 -- C3 VERIFY -- successor RED reproduction
+============================================================================
+
+Method: execute the 3 frozen RED commands from
+evidence/ACT-POLYC-SELFHOST-SURFACE-RECON03/c2/c2-next-act-red.txt against
+the current unmodified tree at HEAD = b66be22.
+
+RED COMMAND 1 (file-not-found RED):
+
+  [ -f tools/bootstrap/selfhost-parser-compound-statement-internal.HC ] \
+    && echo RED_FAIL_component_already_present \
+    || echo RED_PASS_component_absent
+
+  Observed output:
+    RED_PASS_component_absent
+
+  Expected: RED_PASS_component_absent (unmodified tree has no PolyC
+  parser-compound subject).
+  Match: YES
+
+RED COMMAND 2 (bridge-not-declared RED):
+
+  grep -q "BootstrapParseCompoundStatementInternal" src/parser_bridge.h \
+    && echo RED_FAIL_bridge_already_declared \
+    || echo RED_FAIL_bridge_absent
+
+  Observed output:
+    grep: src/parser_bridge.h: No such file or directory
+    RED_FAIL_bridge_absent
+
+  Expected: RED_FAIL_bridge_absent (src/parser_bridge.h does not exist
+  at HEAD = b66be22; the parser has no bridge header; this is the
+  "negative direction" RED — the bridge symbol must be absent for the
+  migration to be needed).
+  Match: YES
+
+RED COMMAND 3 (production-seam RED — legacy function still sole authority):
+
+  nm build/hcc 2>/dev/null | grep -q "parseCompoundStatementInternal" \
+    && echo RED_PASS_legacy_function_linked \
+    || echo RED_FAIL_legacy_function_missing
+
+  Observed output:
+    000000010003d738 T _parseCompoundStatementInternal
+    RED_PASS_legacy_function_linked
+
+  Expected: RED_PASS_legacy_function_linked (the legacy C function is
+  linked into the hcc binary; the PolyC subject is NOT).
+  Match: YES
+
+Summary:
+
+  RED_COMMAND_COUNT=3
+  RED_REPRODUCIBLE=YES
+  NEXT_ACT_RED_IS_MECHANICALLY_REPRODUCIBLE=YES
+
+All three REDs reproduce identically. The successor ACT
+(ACT-POLYC-SELFHOST-PARSER01) must convert each RED_PASS into GREEN
+when the production seam and PolyC subject land.

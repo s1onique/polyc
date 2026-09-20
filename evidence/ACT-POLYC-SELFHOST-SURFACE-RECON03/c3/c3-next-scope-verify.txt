@@ -1,0 +1,24 @@
+ACT-POLYC-SELFHOST-SURFACE-RECON03 -- C3 VERIFY -- successor scope verify
+=======================================================================
+
+Selected surface:        INV.PARSER.COMPOUND
+Selected atomic slice:   parseCompoundStatementInternal
+Selected next ACT ID:    ACT-POLYC-SELFHOST-PARSER01
+
+Cross-check vs c2-next-act-scope.txt:
+
+  NEXT_ACT_ID                  = ACT-POLYC-SELFHOST-PARSER01                  MATCH
+  NEXT_TARGET_SURFACE_ID       = INV.PARSER.COMPOUND                          MATCH
+  NEXT_ATOMIC_SLICE            = parseCompoundStatementInternal               MATCH
+  EXPECTED_BRIDGE_OR_ABI       = ABI 7 -- BootstrapParseCompoundStatementInternal MATCH
+  ALLOWED_PRODUCTION_FILES     = src/parser.c (parseCompoundStatementInternal body only) + src/parser_bridge.h + src/CMakeLists.txt + tools/bootstrap/selfhost-parser-compound-statement-internal.HC MATCH
+  FORBIDDEN_SURFACES           = listed in c2-next-act-scope.txt              MATCH
+  RED_COMMANDS                 = 3 commands from c2-next-act-red.txt          MATCH
+  FIXTURE_CLASSES              = 6 classes / 23 fixtures                      MATCH
+  PROOF_MODEL                  = 7 classes (DIRECT_DIFFERENTIAL, PRODUCTION_SEAM, FIXEDPOINT, NEGATIVE_CONTROL, CONSERVATION, PROVENANCE, PATCH_HYGIENE) MATCH
+  NEGATIVE_CONTROL             = PARSER10-N01-MUTATION-RUNNER                  MATCH
+  CONSERVATION_REQUIREMENTS    = LEXER01..04 + LEXER07 baseline-delta         MATCH
+  KNOWN_RESIDUE_NOT_IN_SCOPE   = AArch64 inline-asm, PARSER02_EXPR, PARSER02_DECL, PARSER02_STMT, PARSER02_TOPLEVEL, PREPROC01_PP, LEXER05, hcc JIT ROTR, LEXER07 historical MATCH
+
+Scope consistency: PASS
+NEXT_ACT_SCOPE_FROZEN=YES

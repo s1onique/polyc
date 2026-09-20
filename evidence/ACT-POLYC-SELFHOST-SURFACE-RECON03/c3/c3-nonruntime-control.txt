@@ -1,0 +1,28 @@
+ACT-POLYC-SELFHOST-SURFACE-RECON03 -- C3 VERIFY -- Control B (known dead/nonruntime)
+====================================================================================
+
+Method: recompute eligibility for two known nonruntime surfaces
+(INV.LSP and INV.BUILD.ORCH) against the C1 inventory.
+
+Result (INV.LSP):
+
+  Input: surface_id=INV.LSP
+  Inventory classification: LEGACY_NON_POLYC_AUTHORITY
+  Eligibility predicate: classification_eq_LEGACY_C must equal YES
+  Predicate value: NO (LSP is LEGACY_NON_POLYC_AUTHORITY)
+  ELIGIBLE: NO
+  Ineligibility reason: NOT_PRODUCTION_AUTHORITY
+
+Result (INV.BUILD.ORCH):
+
+  Input: surface_id=INV.BUILD.ORCH
+  Inventory classification: BUILD_ORCHESTRATION
+  Eligibility predicate: classification_eq_LEGACY_C must equal YES
+  Predicate value: NO (BUILD_ORCHESTRATION is not LEGACY_C_AUTHORITY)
+  ELIGIBLE: NO
+  Ineligibility reason: NOT_PRODUCTION_AUTHORITY
+
+Expected (§60 Control B): ELIGIBLE=NO for both surfaces.
+Actual:                   ELIGIBLE=NO for both surfaces.
+
+MATCH: YES

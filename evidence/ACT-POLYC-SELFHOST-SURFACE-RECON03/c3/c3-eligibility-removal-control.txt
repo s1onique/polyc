@@ -1,0 +1,32 @@
+ACT-POLYC-SELFHOST-SURFACE-RECON03 -- C3 VERIFY -- Control D (eligibility removal)
+=================================================================================
+
+Method: temporarily fail one eligibility predicate on the selected
+candidate (INV.PARSER.COMPOUND) on a temporary copy of the eligibility
+TSV, then recompute the eligible list.
+
+Original eligibility (C2 freeze): INV.PARSER.COMPOUND = YES
+
+Perturbation: temporarily set INV.PARSER.COMPOUND::bounded_oracle_possible
+to NO (e.g. assert that no bounded oracle can be defined).
+
+Perturbed eligibility: INV.PARSER.COMPOUND = NO
+
+New eligible list: INV.PARSER.TOPLEVEL (only)
+
+Perturbed rank 1: INV.PARSER.TOPLEVEL
+Original rank 1:  INV.PARSER.COMPOUND
+
+Selected target (INV.PARSER.COMPOUND) is REMOVED from ranking.
+
+Result:
+  SELECTED_REMOVED_FROM_RANKING=YES
+
+Expected (§60 Control D): SELECTED_REMOVED_FROM_RANKING=YES
+Actual:                   SELECTED_REMOVED_FROM_RANKING=YES
+
+MATCH: YES
+
+Note: the perturbation was applied to a temporary copy of
+c2-eligibility.tsv only. No on-disk file was mutated. The
+C2 ranking-input-sha.txt hashes remain unchanged.

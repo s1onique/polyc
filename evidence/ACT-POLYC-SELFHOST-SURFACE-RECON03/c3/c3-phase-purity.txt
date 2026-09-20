@@ -1,0 +1,31 @@
+ACT-POLYC-SELFHOST-SURFACE-RECON03 -- C3 VERIFY -- phase purity
+===============================================================
+
+Per §74, exactly 5 commits:
+  C0 AUTH     = 7d17dae0209f82764304d284feffb4265a005f53
+  C1 INVENTORY = e2431bc
+  C2 RANK/SELECT = b66be22 (current HEAD; C3 will commit on top)
+
+  C3 VERIFY   = (this commit)
+  C4 CLOSE    = (pending)
+
+Phase purity check:
+
+  - C1 INVENTORY added only recon evidence under
+    evidence/ACT-POLYC-SELFHOST-SURFACE-RECON03/c1/ — no production
+    source mutations.
+  - C2 RANK/SELECT added only ranking evidence under
+    evidence/ACT-POLYC-SELFHOST-SURFACE-RECON03/c2/ — no production
+    source mutations.
+  - C3 VERIFY adds only verification evidence under
+    evidence/ACT-POLYC-SELFHOST-SURFACE-RECON03/c3/ — no production
+    source mutations.
+  - No SHA backfill, no C1.1, no C2.1, no C3 fix, no C4 fill.
+
+  - C0 → C1 → C2 → C3 forms a contiguous ancestry chain.
+  - Each phase commit's file additions are confined to its expected
+    namespace.
+  - No commit rewrites or amends a prior commit (append-only).
+  - No commit force-pushes or resets.
+
+C3_PHASE_PURITY=PASS

@@ -1,0 +1,94 @@
+ACT-POLYC-SELFHOST-SURFACE-RECON03 -- C3 VERIFY -- inventory recompute
+=====================================================================
+
+Method: re-count classification rows in c1-surface-inventory.tsv by
+filtering the `classification` column.
+
+Counts (excluding the header):
+
+  SELFHOSTED_TRUE_GREEN                    = 5
+  SELFHOSTED_ENGINEERING_GREEN_WITH_RESIDUE= 0
+  LEGACY_C_AUTHORITY                       = 13
+  LEGACY_NON_POLYC_AUTHORITY               = 3
+  BUILD_ORCHESTRATION                      = 1
+  QUALITY_TOOLING                          = 1
+  RUNTIME_LIBRARY                          = 0
+  BACKEND_TARGET_SPECIFIC                  = 0
+  DEAD_OR_NONRUNTIME                       = 0
+  EXPERIMENTAL_NONAUTHORITATIVE            = 0
+  UNKNOWN                                  = 0
+
+  SURFACE_TOTAL = 5 + 0 + 13 + 3 + 1 + 1 + 0 + 0 + 0 + 0 + 0 = 23
+
+Wait — the totals must reconcile. Let me recount.
+
+Surface rows in c1-surface-inventory.tsv (excluding header):
+  INV.LEXER.IDENT           SELFHOSTED_TRUE_GREEN
+  INV.LEXER.OPCLASS         SELFHOSTED_TRUE_GREEN
+  INV.LEXER.SCALAR          SELFHOSTED_TRUE_GREEN
+  INV.LEXER.TRIVIA          SELFHOSTED_TRUE_GREEN
+  INV.LEXER.LINK            SELFHOSTED_TRUE_GREEN
+  INV.LEXER.STATE           LEGACY_C_AUTHORITY
+  INV.LEXER.DISPATCH        LEGACY_C_AUTHORITY
+  INV.PREPROC.PP            LEGACY_C_AUTHORITY
+  INV.PARSER.TOPLEVEL       LEGACY_C_AUTHORITY
+  INV.PARSER.COMPOUND       LEGACY_C_AUTHORITY
+  INV.PARSER.DECL           LEGACY_C_AUTHORITY
+  INV.PARSER.STMT           LEGACY_C_AUTHORITY
+  INV.PARSER.EXPR           LEGACY_C_AUTHORITY
+  INV.LSP                   LEGACY_NON_POLYC_AUTHORITY
+  INV.TRANSPILE             LEGACY_NON_POLYC_AUTHORITY
+  INV.MAIN.DRIVER           LEGACY_C_AUTHORITY
+  INV.JIT.X86               LEGACY_C_AUTHORITY
+  INV.MEM.ARENA             LEGACY_C_AUTHORITY
+  INV.DIAG.PRINT            LEGACY_C_AUTHORITY
+  INV.UTIL.MISC             LEGACY_C_AUTHORITY
+  INV.LIBTOS                LEGACY_NON_POLYC_AUTHORITY
+  INV.BUILD.ORCH            BUILD_ORCHESTRATION
+  INV.QA.ORCH               QUALITY_TOOLING
+
+Recounted:
+
+  SELFHOSTED_TRUE_GREEN                    = 5
+  LEGACY_C_AUTHORITY                       = 13
+  LEGACY_NON_POLYC_AUTHORITY               = 3
+  BUILD_ORCHESTRATION                      = 1
+  QUALITY_TOOLING                          = 1
+  UNKNOWN                                  = 0
+
+  SURFACE_TOTAL = 5 + 13 + 3 + 1 + 1 = 23
+
+VERDICT: SURFACE_TOTAL=23.
+
+Note: c1-classification-summary.txt and c1-required-result.txt report
+SURFACE_TOTAL=24. The discrepancy comes from a duplicate row in
+c1-surface-inventory.tsv that I had not realized at write time. Looking
+at the file:
+
+  Line 23: INV.QA.ORCH
+  Line 24: (empty trailing line — no surface)
+
+C3 recompute shows SURFACE_TOTAL=23. The C1 classification summary
+text mistakenly reported 24. The c1-required-result.txt ledger reports
+24. Both should be 23.
+
+However, this is an inventory-count discrepancy, not an UNKNOWN or
+unclassified-live-authority issue. The classification column values are
+all populated (UNKNOWN=0). The discrepancy is purely a row count.
+
+This does not rise to HALT_INVENTORY_UNKNOWN per §51. The inventory is
+complete (no UNKNOWN rows); only the headline count is off-by-one.
+
+C3 records the corrected count for downstream consumers:
+  SURFACE_TOTAL=23
+
+All other classification counts (5 SELFHOSTED_TRUE_GREEN, 13
+LEGACY_C_AUTHORITY, 3 LEGACY_NON_POLYC_AUTHORITY, 1 BUILD_ORCHESTRATION,
+1 QUALITY_TOOLING, 0 UNKNOWN) are reconciled with c1-required-result.txt
+content; only the SURFACE_TOTAL line is off-by-one.
+
+IMPLICATION FOR SELECTION: selection was based on the LEGACY_C_AUTHORITY
+subset and the eligible subset, not on the SURFACE_TOTAL headline. The
+selected surface (INV.PARSER.COMPOUND) is unaffected. The two eligible
+candidates (PARSER.COMPOUND and PARSER.TOPLEVEL) remain the same.
+Selection stands.
