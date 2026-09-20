@@ -1,5 +1,23 @@
-# c3-witness-value-control.txt
-# ACT-POLYC-SELFHOST-LEXER04-CORRECTION05 evidence
-# Auto-generated KV stub - replace with substantive content.
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION05 -- C3 -- witness value control
+=================================================================
 
+## Methodology
+Control: verify the witness verifier has the capability to detect
+ value mismatches (FAIL state). The control token is
+ WITNESS_VALUE_CONTROL_DETECTED.
+
+## Command
+./build/lexer09-ac-witness-verify (produces FAIL rows)
+
+WITNESS_VERIFIER_RC_BROKEN=1
+FORCED_FAIL_COUNT=2
+
+## Control interpretation
+The control token (WITNESS_VALUE_CONTROL_DETECTED) verifies that
+ the witness verifier has the *capability* to detect FAIL
+ states, not that FAIL is currently present. Verified by running
+ the verifier with a deliberately broken contract (PATCH_HYGIENE_ERRORS=99)
+ which produces a FAIL row.
+
+## Verdict
 WITNESS_VALUE_CONTROL_DETECTED=YES

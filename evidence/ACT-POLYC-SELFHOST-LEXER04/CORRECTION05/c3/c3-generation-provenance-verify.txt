@@ -1,0 +1,35 @@
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION05 -- C3 -- generation provenance verifier
+====================================================================
+
+## TSV structure
+7 columns: generation, compiler_path, compiler_sha256,
+ seam_binary_path, seam_binary_sha256, raw_output_path, raw_output_sha256
+
+## Verifier run (no forgery)
+PROVENANCE_ROW generation=G0 raw_sha_match=YES
+PROVENANCE_ROW generation=G1 raw_sha_match=YES
+PROVENANCE_ROW generation=G2 raw_sha_match=YES
+PROVENANCE_ROW generation=G3 raw_sha_match=YES
+PROVENANCE_ROW_PASS=4
+PROVENANCE_ROW_FAIL=0
+PROVENANCE_VERIFIER_RC=0 verdict=PASS
+
+## Verifier run with forgery (G3 swapped to a fresh file)
+PROVENANCE_ROW generation=G0 raw_sha_match=YES
+PROVENANCE_ROW generation=G1 raw_sha_match=YES
+PROVENANCE_ROW generation=G2 raw_sha_match=YES
+PROVENANCE_ROW generation=G3 raw_sha_match=NO recorded=398bdde8925d68c28e9483db043459cb90db76f2e5570a600ba997e2816df4fa actual=5b1e064a23a2bb71b22dfb7aff693582bb810ef9d803e1c9c374d63cd4411aac
+PROVENANCE_ROW_PASS=3
+PROVENANCE_ROW_FAIL=1
+FORGED_GENERATION=G3
+FORGED_PATH=/private/var/folders/0g/mpt_55f524ndzxymkp20wjfc0000gn/T/clinemm-sandbox-temp-6PuPtg/tmp.DpUJ7MjuMD
+FORGED_RECORDED_RAW_SHA=398bdde8925d68c28e9483db043459cb90db76f2e5570a600ba997e2816df4fa
+FORGED_ACTUAL_RAW_SHA=5b1e064a23a2bb71b22dfb7aff693582bb810ef9d803e1c9c374d63cd4411aac
+FORGED_COPY_DETECTED=YES
+GENERATION_COPY_DETECTED=YES
+GENERATION_COPY_VERIFIER_RC_NONZERO=YES
+PROVENANCE_VERIFIER_RC=1 verdict=FAIL
+
+## Verdict
+PROVENANCE_ROW_FAIL=0
+PROVENANCE_ROW_PASS=4

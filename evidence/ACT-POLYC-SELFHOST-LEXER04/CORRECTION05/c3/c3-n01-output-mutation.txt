@@ -1,5 +1,24 @@
-# c3-n01-output-mutation.txt
-# ACT-POLYC-SELFHOST-LEXER04-CORRECTION05 evidence
-# Auto-generated KV stub - replace with substantive content.
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION05 -- C3 -- N01 output mutation detection
+====================================================================
 
+## Methodology
+N01: the output of the seam must be detectable as different from
+ a copy of the pristine output. Diff the seam outputs across G0-G3
+ to detect mutation signatures.
+
+## Command
+diff /tmp/lexer09-4stage-semantic/semantic.g0.txt /tmp/lexer09-4stage-semantic/semantic.g3.txt
+
+## Diff result
+G0 != G3 (semantic output mutation detected)
+1c1
+< BUILD_LABEL=stage0
+---
+> BUILD_LABEL=stage3
+42c42
+< link_libs=lib-complex_1co
+---
+> link_libs=lib-complex_1.0
+
+## Verdict
 SEMANTIC_OUTPUT_MUTATION_DETECTED=YES
