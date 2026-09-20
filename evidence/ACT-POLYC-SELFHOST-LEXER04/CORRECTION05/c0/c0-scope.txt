@@ -1,0 +1,56 @@
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION05 -- C0 -- scope
+======================================================
+
+# ACT §5..§7 boundary
+
+ACT_CLASS=QUALIFICATION-MACHINERY-REPAIR
+PRODUCTION_MUTATION_AUTHORIZED=NO
+
+PRODUCTION_FILES_READ_ONLY:
+  src/lexer.c
+  src/lexer_bridge.h
+  tools/bootstrap/selfhost-lexer-link.HC
+
+# Authorized implementation scope (C2 may modify or add)
+C2_AUTHORIZED_TOOLS:
+  tools/quality/lexer09-ac-witness-verify.HC
+  tools/quality/lexer09-ac-ledger-verify.HC
+  tools/quality/lexer09-n02-witness-verify.HC
+  tools/quality/lexer09-4stage-semantic-verify.HC
+  tools/quality/lexer09-generation-provenance-verify.HC
+  tools/quality/lexer09-n02-mutation-runner.HC (NEW, PolyC native)
+  Makefile (qualification targets only)
+
+C2_AUTHORIZED_SHELL:
+  scripts/quality/lexer09-n02-mutation-runner.sh (rewrite to dispatch-only)
+  LOC_REQUIRED <= 50 (preferred <= 20)
+
+# Forbidden
+FORBIDDEN_FILES:
+  src/lexer.c
+  src/lexer_bridge.h
+  tools/bootstrap/selfhost-lexer-link.HC
+  src/parser.c
+  src/aarch64.c
+  libtos/**
+  Factory closure-oracle implementation
+  LEXER01/02/03 production source
+  lexInclude/**
+  parser migration
+  preprocessor migration
+
+# Forbidden actions
+FORBIDDEN_ACTIONS:
+  amend commits
+  rebase
+  force-push
+  reset + recommit
+  filter-branch / filter-repo
+  history replacement (rewrite of CORRECTION0[1-4] history)
+  edit closed ACT HANDOFFs
+  edit closed ACT evidence
+
+# Commit topology
+CORRECTION05_COMMIT_COUNT_MAX=5
+PHASES=C0_AUTH C1_RED C2_IMPL C3_EVIDENCE C4_CLOSE
+PHASE_RATCHET=monotonic
