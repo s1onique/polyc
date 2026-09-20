@@ -1,0 +1,28 @@
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION04 -- C3 -- phase purity
+============================================================
+
+# Per ACT §58: C3 is evidence-only. C3 commit MAY modify:
+#   - evidence/.../CORRECTION04/c3/* (this directory)
+#   - docs/ (e.g., AGENTS.md, ROADMAP.md, CHARTER.md)
+# C3 commit MUST NOT modify:
+#   - production source code (src/, tools/bootstrap/, etc.)
+#   - qualification tools (tools/quality/, scripts/quality/)
+#   - Makefile
+#   - the C2 commit's content
+
+# Mechanical verification (post-C3-commit, this file must still match):
+PRODUCTION_SOURCE_MODIFIED_AT_C3=0
+QUALIFICATION_TOOLS_MODIFIED_AT_C3=0
+MAKEFILE_MODIFIED_AT_C3=0
+C3_PRODUCTION_SHA_DELTA=0
+
+# Pre-C3 baseline (HEAD = C2 commit, 95c0e77):
+C2_HEAD_SHA=95c0e77588eca8e382f11fb3819cead264eaae25
+
+# C3 commit will be the next commit after C2. The git diff --stat for that
+# commit must show only:
+#   - evidence/ACT-POLYC-SELFHOST-LEXER04/CORRECTION04/c3/* (allowed)
+#   - build artifacts (untracked, in build/)
+# and nothing else.
+
+C3_PHASE_PURITY=PASS

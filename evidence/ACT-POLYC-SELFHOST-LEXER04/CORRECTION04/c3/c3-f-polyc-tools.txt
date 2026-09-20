@@ -1,0 +1,51 @@
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION04 -- C3 -- F-POLYC-TOOLS
+============================================================
+
+# Per ACT §50 / DOCTRINE §27: All new substantive tooling SHALL be PolyC.
+# Shell is permitted only as ≤50 LOC pure dispatch (bootstrap glue).
+
+# Tools added in CORRECTION04:
+#   tools/quality/lexer09-ac-witness-verify.HC       (PolyC, substantive verifier)
+#   tools/quality/lexer09-n02-witness-verify.HC      (PolyC, substantive verifier)
+#   tools/quality/lexer09-ac-ledger-verify.HC        (PolyC, extended for evidence_sha)
+#   tools/quality/lexer09-4stage-semantic-verify.HC  (PolyC, extended for migration tokens)
+
+# Shell scripts (line counts):
+  37 scripts/quality/lexer09-generation-provenance-verify.sh
+ 109 scripts/quality/lexer09-n02-mutation-runner.sh
+ 146 total
+
+# BUDGET ANALYSIS:
+#   lexer09-generation-provenance-verify.sh: 37 LOC (within budget, pure dispatch)
+#   lexer09-n02-mutation-runner.sh:        109 LOC (exceeds ≤50 LOC budget)
+
+# The 109-LOC script performs: file copy, sed text substitution, hcc-bootstrap02 -c,
+# cc link with custom object substitution, SHA computation, RC capture. Per
+# DOCTRINE §27 "bootstrap glue" definition, this exceeds pure dispatch.
+
+# The substantive mutation logic (sed + cc link) is NOT yet expressible in PolyC
+# without re-implementing text-substitution primitives. This is a known PolyC
+# tooling gap (no popen/fopen-equivalent for arbitrary file streams).
+
+# This is a C2-INTRODUCED VIOLATION. Per F14 + F7, it is documented as residue
+# rather than silently corrected at C3. The C4 HANDOFF must call this out as
+# a budget violation requiring a follow-up ACT to migrate the script to PolyC
+# or split it into ≤50 LOC shell dispatch + PolyC core.
+
+# Strict reading: NEW_SUBSTANTIVE_NON_POLYC_TOOLS=1, AC33=FAIL
+# Pragmatic reading: NEW_SUBSTANTIVE_NON_POLYC_TOOLS=0 (script is glue around
+#                    external tools), AC33=PASS with residue
+
+# Recording both for honesty. The final verdict is FAIL with documented
+# rationale; the C4 HANDOFF will carry this as P1 residue.
+
+NEW_SUBSTANTIVE_NON_POLYC_TOOLS=1
+SHELL_DISPATCH_BUDGET_COMPLIANT=NO
+SHELL_DISPATCH_BUDGET_EXCESS_LOC=59
+
+# A single substantive PolyC tool should encapsulate the sed mutation +
+# cc link invocation, leaving the shell as ≤50 LOC pure dispatch.
+
+F_POLYC_TOOLS=FAIL
+F_POLYC_TOOLS_REASON=lexer09-n02-mutation-runner.sh_exceeds_50_LOC_budget
+F_POLYC_TOOLS_RESIDUE_CLASS=P1

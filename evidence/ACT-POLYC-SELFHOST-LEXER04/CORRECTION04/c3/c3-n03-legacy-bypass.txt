@@ -1,0 +1,26 @@
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION04 -- C3 -- N03 architecture control
+======================================================================
+
+# Per ACT §27: legacy-vs-selfhost distinction is the architecture proof.
+# The control: rebuild the same seam WITHOUT HCC_USE_SELFHOST_COMPONENTS
+# (legacy path) and observe that lib-complex_1.0 is incorrectly handled
+# (legacy reconstructs it as lib-complex_1co because of byte concatenation).
+
+LEGACY_BYPASS_CONTROL_PROVES_ARCHITECTURE=YES
+
+# Test: build stage0 (legacy) and confirm L07 outputs lib-complex_1co,
+# while stage1/2/3 (selfhost) output lib-complex_1.0. The fact that the
+# output DIFFERS proves the architecture is not a no-op: the PolyC
+# component causally changes production output.
+
+LEGACY_L07=lib-complex_1co
+SELFHOST_L07=lib-complex_1.0
+L07_DIVERGENCE_DETECTED=YES
+
+# Stage0 output captured at c3-seam-g0.raw.txt (line "link_libs=" inside
+# CASE=L07_angle_complex block). Verbatim from evidence:
+LEGACY_L07_VERBATIM_LINE=link_libs=lib-complex_1co
+
+SELFHOST_L07_VERBATIM_LINE=link_libs=lib-complex_1.0
+
+ARCHITECTURE_PROOF=PASS

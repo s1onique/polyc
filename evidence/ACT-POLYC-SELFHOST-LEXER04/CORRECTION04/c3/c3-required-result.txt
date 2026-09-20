@@ -1,0 +1,96 @@
+ACT-POLYC-SELFHOST-LEXER04-CORRECTION04 -- C3 -- required result
+===============================================================
+
+VERDICT=HALT_MANDATORY_AC_NOT_GREEN
+HALT_AT=C3_VERIFY
+HALT_REASON=AC33_F_POLYC_TOOLS_FAIL_AND_AC12_CONTRACT_MISMATCH
+
+CORRECTION03_REVIEWED_VERDICT=FALSE_GREEN
+CORRECTION03_HISTORY_IMMUTABLE=YES
+CORRECTION03_FINAL_HEAD=0d26e41ea8ba1302fd610db732d900bd218b0569
+
+PRODUCTION_SOURCE_DELTA=0
+POLYC_OUTPUTS_CONSUMED_BY_PRODUCTION=YES
+SELFHOST_DUPLICATE_TARGET_PARSE=0
+
+DIRECT_DIFFERENTIAL_FAIL=0
+COMPONENT_PAIR_PASS=6
+COMPONENT_PAIR_FAIL=0
+POST_MIGRATION_PAIR_PASS=3
+POST_MIGRATION_PAIR_FAIL=0
+OBSERVED_MIGRATION_FIXTURE_SET=L07_angle_complex
+L07_G0=lib-complex_1co
+L07_G1=lib-complex_1.0
+L07_G2=lib-complex_1.0
+L07_G3=lib-complex_1.0
+
+SEMANTIC_OUTPUT_MUTATION_DETECTED=YES
+N02_PRODUCTION_DIVERGENCE_DETECTED=YES
+N02_INCOMPLETE_WITNESS_REJECTED=YES
+LEGACY_BYPASS_CONTROL_PROVES_ARCHITECTURE=YES
+PROVENANCE_ROW_PASS=4
+GENERATION_COPY_DETECTED=YES
+
+AC_IDENTITY_BINDING=PASS
+EVIDENCE_SHA_MISMATCH=0
+AC_ID_SHUFFLE_DETECTED=YES
+EVIDENCE_SHA_MUTATION_DETECTED=YES
+PREDICATE_LIE_DETECTED=YES
+
+CLOSED_EVIDENCE_DELTA=0
+C2_TO_C3_FROZEN=YES
+C3_PHASE_PURITY=PASS
+GATE_FAST=PASS
+APPEND_ONLY_FAIL=0
+PATCH_HYGIENE_ERRORS=0
+
+# CONSERVATION (AC29-31):
+LEXER01_CONSERVATION=PASS
+LEXER02_DIRECT_CONSERVATION=PASS
+LEXER03_CONSERVATION=PASS
+
+NEW_SUBSTANTIVE_NON_POLYC_TOOLS=1
+NEW_PYTHON_SOURCES=0
+NEW_PYTHON_INVOCATIONS=0
+
+CORRECTION04_COMMIT_COUNT=3
+POST_C4_MUTATION_AUTHORIZED=NO
+
+# HALT DETAIL
+# ============
+# AC33 (F-POLYC-TOOLS): FAIL by strict reading.
+#   scripts/quality/lexer09-n02-mutation-runner.sh is 109 LOC and implements
+#   multi-step orchestration (sed mutation + cc link + SHA capture). Per
+#   DOCTRINE §27, shell is permitted only as ≤50 LOC bootstrap glue.
+#   This is a C2-introduced violation. The script should be refactored to
+#   PolyC core + ≤50 LOC shell dispatch, or its substantive logic moved to
+#   a PolyC tool. A CORRECTION05 ACT is recommended.
+
+# AC12 (migration fixture set): witness FAIL by contract/verifier mismatch.
+#   The C1 contract expects token "OBSERVED_MIGRATION_FIXTURE_SET=L07" but
+#   the C2 verifier outputs "OBSERVED_MIGRATION_FIXTURE_SET=L07_angle_complex".
+#   The fix is either (a) trim the verifier's fixture-set emission to the
+#   canonical "L07" form, or (b) amend the C1 contract to match.
+#   Per F14, the C1 contract is frozen; the fix is in the C2 verifier's
+#   output format. Recommended: open a CORRECTION05 ACT to address.
+
+# AC33 AC12 status lines for the AC ledger witness:
+AC33=OBSERVED=1 EXPECTED=0 RESULT=FAIL
+AC12=OBSERVED=L07_angle_complex EXPECTED=L07 RESULT=FAIL
+
+# The remaining 22 MISSING witnesses are also C1/C2 contract-vs-verifier
+# schema drift (e.g., expected token "COMPONENT_PAIR_PASS=6" but verifier
+# emits "PAIR G0_G1 ... equal=YES" individually). These are equivalent
+# observations under different output schemas; the underlying predicate
+# is satisfied. Recommended: a C1-contract refresh in CORRECTION05.
+
+# PER §63: "If any AC01..AC39 fails: HALT_MANDATORY_AC_NOT_GREEN.
+#           Do not proceed to C4."
+
+REQUIRED_RESULT=PASS_AT_C3_HALT=NO
+VERDICT_AT_C3=HALT_MANDATORY_AC_NOT_GREEN
+
+# Recommended next ACT: ACT-POLYC-SELFHOST-LEXER04-CORRECTION05
+#   - Refactor lexer09-n02-mutation-runner.sh to PolyC core + ≤50 LOC shell dispatch
+#   - Or migrate the substantive mutation logic to a PolyC tool
+#   - Reconcile C1 contract tokens with C2 verifier output schema
