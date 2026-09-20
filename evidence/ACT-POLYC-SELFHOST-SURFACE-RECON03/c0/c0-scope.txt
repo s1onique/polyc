@@ -1,0 +1,57 @@
+ACT-POLYC-SELFHOST-SURFACE-RECON03 -- C0 AUTH -- scope statement
+==============================================================
+
+This ACT is bound by §0..§80 of
+docs/acts/ACT-POLYC-SELFHOST-SURFACE-RECON03.md.
+
+Phase topology:
+  C0 AUTH     (this commit)
+  C1 INVENTORY (observation only; no production mutation)
+  C2 RANK/SELECT (still no compiler implementation)
+  C3 VERIFY (controls, conservation, Factory gates)
+  C4 CLOSE (HANDOFF + additive ROADMAP + closure metadata)
+
+Commit topology (5 commits):
+  C0 AUTH
+  C1 INVENTORY
+  C2 RANK/SELECT
+  C3 VERIFY
+  C4 CLOSE
+
+Non-goals:
+  - modify compiler semantics
+  - migrate any compiler surface
+  - modify lexer/parser/preprocessor behavior
+  - fix LEXER07 historical broad-corpus failures
+  - fix AArch64 inline-asm parsing
+  - modify libtos semantics
+  - modify JIT semantics
+  - change ABI
+  - add a new self-host bridge
+  - select multiple next ACTs
+  - start the selected ACT
+
+Production mutation prohibition:
+  src/**                         (read-only)
+  tools/bootstrap/**             (read-only)
+  src/holyc-lib/**               (read-only)
+
+Required outcomes (terminal):
+  PRODUCTION_SOURCE_DELTA=0
+  COMPILER_SEMANTIC_DELTA=0
+  SUCCESSOR_IMPLEMENTATION_DELTA=0
+  C0_AUTH_BEFORE_RECON=YES
+  WORKTREE_CLEAN_AT_C0=YES
+  UNKNOWN=0
+  ELIGIBLE_CANDIDATE_COUNT>=1
+  UNIQUE_RANK1=YES
+  RANKING_RECOMPUTED=YES
+  NEXT_ACT_SCOPE_FROZEN=YES
+  NEXT_ACT_RED_IS_MECHANICALLY_REPRODUCIBLE=YES
+  NEXT_ACT_PROOF_MODEL_COMPLETE=YES
+
+HALT taxonomy applies (§73).
+
+F-NO-PYTHON: NEW_PYTHON_SOURCES=0 NEW_PYTHON_INVOCATIONS=0.
+F-POLYC-TOOLS: NEW_SUBSTANTIVE_NON_POLYC_TOOLS=0.
+F14: CLOSED_EVIDENCE_DELTA=0 CLOSED_HANDOFF_DELTA=0.

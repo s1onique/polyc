@@ -1,0 +1,90 @@
+ACT-POLYC-SELFHOST-SURFACE-RECON03 -- C0 AUTH -- predecessor state
+================================================================
+
+The expected predecessor engineering state is enumerated in §1 of
+docs/acts/ACT-POLYC-SELFHOST-SURFACE-RECON03.md. This file confirms
+the live state at C0 entry.
+
+=== Lexer lineage ===
+
+ACT-POLYC-SELFHOST-LEXER01 / BOOTSTRAP02:
+  Status: COMPLETE (bootstrap02-ident + LEXER01 operator-classify closed PASS_TRUE_GREEN)
+  Component: tools/bootstrap/bootstrap02-ident.HC, tools/bootstrap/selfhost-lexer-operator-classify.HC
+  Self-host bridge: src/lexer_bridge.h ABI 1 (BootstrapScanIdent), ABI 2 (BootstrapClassifyOperator)
+  Production authority: stage1+ hcc binaries via -DHCC_USE_SELFHOST_COMPONENTS
+
+ACT-POLYC-SELFHOST-LEXER02:
+  Status: COMPLETE (closed PASS_TRUE_GREEN at CORRECTION05)
+  Component: tools/bootstrap/selfhost-lexer-scalar-literal.HC
+  Bridge: src/lexer_bridge.h ABI 3 (BootstrapScanScalarLiteral)
+  Production authority: stage1+ hcc binaries
+  Oracle: tools/quality/lexer07-scalar-literal-oracle
+  Differential: tools/quality/lexer07-direct-differential (89/89 PASS)
+
+ACT-POLYC-SELFHOST-LEXER03:
+  Status: COMPLETE (closed PASS_TRUE_GREEN at CORRECTION02)
+  Component: tools/bootstrap/selfhost-lexer-trivia.HC
+  Bridge: src/lexer_bridge.h ABI 4 (BootstrapScanTrivia)
+  Production authority: stage1+ hcc binaries
+  Oracle: tools/quality/lexer08-trivia-oracle
+  Differential: tools/quality/lexer08-direct-differential (45/45 PASS)
+  4-gen fixed point: PASS
+
+ACT-POLYC-SELFHOST-LEXER04:
+  Status: CLOSED at CORRECTION07 (HEAD = a1a1489)
+  Component: tools/bootstrap/selfhost-lexer-link.HC
+  Bridge: src/lexer_bridge.h ABI 6 (BootstrapLinkDirective)
+  Production authority: stage1+ hcc binaries
+  Oracle: tools/quality/lexer09-link-oracle.c
+  Differential: tools/quality/lexer09-direct-differential (23/23 PASS)
+  4-gen fixed point: PASS (hcc / hcc-bootstrap02 / hcc-bootstrap03 / hcc-bootstrap04)
+
+=== Self-host registry (live) ===
+
+docs/factory/SELF-HOST-COMPONENTS.tsv rows 1..5 are PRODUCTION-AUTHORITATIVE:
+  1  identifier_scanner                 (LEXER01 / BOOTSTRAP02)
+  2  operator_punctuation_recognizer    (LEXER01)
+  3  scalar_literal_scanner             (LEXER02)
+  4  trivia_scanner                     (LEXER03)
+  5  link_directive_scanner             (LEXER04)
+
+All five entries have language=POLYC, state=STABLE.
+
+=== Production seam confirmation ===
+
+make gate-fast                : PASS (LEXER04 closure commit)
+factory-append-only-test      : PASS (NC1..NC11)
+lexer07-direct-differential   : 89/89 PASS (LEXER01/02 conservation)
+lexer08-direct-differential   : 45/45 PASS (LEXER03 conservation)
+lexer09-direct-differential   : 23/23 PASS (LEXER04 conservation)
+lexer09-fixedpoint-4stage     : PASS (LEXER04 4-gen fixed point)
+
+=== Foreground observation: live compiler source shape (C0 entry) ===
+
+src/lexer.c                : 2681 LOC (post-LEXER04)
+src/parser.c               : 2938 LOC
+src/prslib.c               : 1797 LOC
+src/prsutil.c              :  547 LOC
+src/prsasm.c               :  261 LOC
+src/ast.c                  : 2747 LOC
+src/cctrl.c                : 1329 LOC
+
+lexLink body               : lives in src/lexer.c lines ~1965..2237 (post-LEXER04 delegation)
+lexPreProcIf               : lives in src/lexer.c (still LEGACY_C)
+lexPreProcBoolean          : lives in src/lexer.c (still LEGACY_C)
+lexInclude                 : lives in src/lexer.c (still LEGACY_C)
+lexSetAsmFlags/lexUnSetAsmFlags : lives in src/lexer.c (still LEGACY_C)
+lexSkipCodeComment         : legacy C path remains under #else; PolyC path under #ifdef (LEXER03)
+lexNumeric / lexCharConst  : legacy C path remains under #else; PolyC path under #ifdef (LEXER02)
+lexIdentifier              : legacy C path remains under #else; PolyC path under #ifdef (LEXER01/LEXER02)
+lexClassifyOperator        : legacy C path remains under #else; PolyC path under #ifdef (LEXER01)
+lexLink                    : legacy C path remains under #else; PolyC path under #ifdef (LEXER04)
+
+Conclusion: Lexer family (numeric/ident/opclass/trivia/link) is largely self-hosted
+under the #ifdef HCC_USE_SELFHOST_COMPONENTS gate. Remaining legacy C authority in
+the lexer is concentrated in file-push / state-setup / preprocessor directive
+dispatch / asm-flags plumbing, plus parse-loop orchestration. The preprocessor
+sub-surface and the parser file family (parser.c, prslib.c, prsutil.c, prsasm.c)
+remain entirely LEGACY_C at C0 entry.
+
+C1 will mechanically recompute this picture from the live tree.
