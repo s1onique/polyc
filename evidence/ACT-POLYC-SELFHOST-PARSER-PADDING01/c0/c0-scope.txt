@@ -1,0 +1,44 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING01
+PHASE=C0
+
+ALLOWED_WRITES_C0:
+  docs/acts/ACT-POLYC-SELFHOST-PARSER-PADDING01.md
+  evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01/c0/c0-entry-identity.txt
+  evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01/c0/c0-predecessor-binding.txt
+  evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01/c0/c0-scope.txt
+
+FORBIDDEN_PRODUCTION_MUTATIONS:
+  src/parser.c
+  src/parser.h
+  src/cctrl.c
+  src/cctrl.h
+  src/ast.c
+  src/ast.h
+  src/lexer.c
+  src/lexer.h
+  src/list.h
+  src/map.h
+  src/prslib.c
+  src/prslib.h
+
+FORBIDDEN_CALL_SITE_MUTATIONS:
+  parseClassOffsets
+  parseUnionOffsets
+  CalcPadding legacy C implementation
+  any existing CalcPadding call site
+
+REQUIRED_TARGET_REGION:
+  FILE=src/parser.c
+  LINE_START=430
+  LINE_END=438
+
+SUBJECT_FILE=tools/bootstrap/selfhost-parser-padding.HC
+SUBJECT_ABI=I64 BootstrapCalcPadding(I64 offset, I64 size);
+
+LIFECYCLE=EXACTLY_5_COMMITS
+PHASES=C0_AUTH,C1_RED_CONTRACT,C2_IMPL,C3_VERIFY,C4_CLOSE
+
+AUTHORITY_DISTINCTION:
+  COMPONENT_AUTHORITY=POLYC_QUALIFIED
+  PRODUCTION_AUTHORITY=LEGACY_C
+  PRODUCTION_DELEGATION=NOT_PERFORMED
