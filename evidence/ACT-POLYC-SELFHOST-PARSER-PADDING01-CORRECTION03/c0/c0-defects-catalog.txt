@@ -1,0 +1,60 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION03
+PHASE=C0-AUTH
+TOPIC=DEFECTS-CATALOG
+
+# Catalog of three closure-authority defects in predecessor
+# ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION02 (closed 3b38d69).
+
+# D-WS: AC34 (PATCH_HYGIENE_ERRORS=0) claimed PASS against empty
+# working-tree `git diff --check`.  Committed range hygiene FAILS.
+#
+# Reproduction:
+#   git diff --check 1274f36..3b38d69
+# Observed:
+#   evidence/.../c2/c2-baseline-verifier-negative-control.txt:71:
+#   new blank line at EOF.
+#
+# This is the literal predicate of HALT_PATCH_HYGIENE per
+# ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION02 §42.
+#
+# Required-result claim PATCH_HYGIENE_ERRORS=0 in CORRECTION02 c4
+# evidence is therefore mechanically false.
+
+# D-TEMPORAL: AC38/AC40 evidence is non-load-bearing.
+#
+# AC38 (EXACT_COMMIT_COUNT_AT_CLOSE=5) was evidenced by
+#   C4_REV_LIST_ENTRY_TO_HEAD=4
+# computed BEFORE the C4 commit existed (predictive).  After C4
+# exists, the same predicate is not re-derived from this evidence;
+# the literal `4` is a stale number from the pre-C4 state.
+#
+# AC40 (POST_C4_COMMIT_COUNT=0) was NOT recorded in any committed
+# artifact.  The invocation `git rev-list --count HEAD..HEAD` is a
+# tautology that always returns 0 for any HEAD.  It cannot prove
+# the absence of post-C4 commits.
+#
+# Required-result claims EXACT_COMMIT_COUNT_AT_CLOSE=5 and
+# POST_C4_COMMIT_COUNT=0 in CORRECTION02 c4 evidence are
+# mechanically supported by independent observation of the
+# committed tree, but the COMMITTED EVIDENCE MECHANISM cannot
+# itself produce those observations.
+
+# D-PROV: docs/factory/LEXER07-BASELINE-AUTHORITY.tsv schema mismatch
+# and unbound provenance.
+#
+# Declared schema: field/value/evidence.
+# Actual rows mix real SHAs with descriptive labels:
+#   PRODUCER_BINARY_SHA256 = (none; tool invoked directly) — no SHA
+#   PRODUCER_SHA256 = same value as output SHA (not source SHA)
+#   COMPILER_PATH = N/A (uses hcc + hcc-bootstrap02/03/04)
+#   COMPILER_SHA256 = current build/hcc only
+#   INPUT_SHA256 = (unchanged from committed) — no SHA
+#   COMMAND_SHA256 = same as counter-set SHA (not command SHA)
+#
+# The TSV determinism A==B is real (engineering fact); the
+# provenance binding to producing artifacts is not yet established.
+
+# Defect status at entry of CORRECTION03:
+#   D-WS       = REPRODUCIBLE  (literal predicate HALT_PATCH_HYGIENE)
+#   D-TEMPORAL = REPRODUCIBLE  (evidence mechanism is non-load-bearing)
+#   D-PROV     = REPRODUCIBLE  (provenance rows not SHA-bound)

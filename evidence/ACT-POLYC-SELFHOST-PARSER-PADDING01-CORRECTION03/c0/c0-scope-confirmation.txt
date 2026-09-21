@@ -1,0 +1,25 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION03
+PHASE=C0-AUTH
+TOPIC=SCOPE-CONFIRMATION
+
+# This ACT confirms its scope at entry.
+#
+# FORBIDDEN at all times:
+#   - amending/rebasing any committed history (F14);
+#   - editing any historical C0/C1/C2/C3 evidence of CORRECTION02;
+#   - editing the predecessor ACT body, HANDOFF, or HANDOFF-map row;
+#   - editing the predecessor C4 commit's ACT-Verdict trailer;
+#   - editing any parser-padding implementation file.
+#
+# ALLOWED:
+#   - new files under docs/factory/ (HANDOFF, LEXER07 TSV additions);
+#   - new files under evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION03/;
+#   - forward-only additions to docs/factory/LEXER07-BASELINE-AUTHORITY.tsv
+#     (append-only rows; no rewrite of existing rows);
+#   - forward-only append to docs/factory/act-handoff-map.tsv.
+
+SCOPE_LEAK_RISK_FILES_AT_ENTRY=
+  $(git diff --name-only 1274f36..HEAD | grep -E 'parser-padding|src/parser\.c' | head)
+# Expected: empty (no parser-padding subjects in committed range).
+
+SCOPE_LEAK_RISK_FILES_AT_ENTRY_RESULT=EMPTY
