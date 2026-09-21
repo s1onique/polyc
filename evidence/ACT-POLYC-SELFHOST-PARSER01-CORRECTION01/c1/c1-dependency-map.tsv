@@ -1,0 +1,28 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER01-CORRECTION01
+# ACT_PHASE=C1-RED-RECON
+# EVIDENCE_KIND=dependency-map (every Cctrl/Ast field touched by parseCompoundStatementInternal)
+# Format: field<TAB>struct<TAB>line<TAB>read|write|read-write<TAB>classification<TAB>rationale
+field	struct	line	op	classification	rationale
+localenv	Cctrl	1757	read	MIRROR_IN_POLYC_NEEDED	cctrlCreateAstMap(cc->localenv) -- parent pointer for new block scope
+localenv	Cctrl	1758	write	MIRROR_IN_POLYC_NEEDED	push new block_scope as current localenv
+localenv	Cctrl	1770	read	MIRROR_IN_POLYC_NEEDED	outer_recovery saves nothing here but cc->current_recovery is read
+localenv	Cctrl	1790	write	MIRROR_IN_POLYC_NEEDED	on longjmp: cc->localenv = block_scope (restore)
+localenv	Cctrl	1877	read-write	MIRROR_IN_POLYC_NEEDED	pop localenv = localenv->parent
+current_recovery	Cctrl	1770	read-write	THREADED_ACROSS_ABI	owns the jmp_buf* swap; cannot cross ABI as opaque handle
+tmp_locals	Cctrl	1786	read	MIRROR_IN_POLYC_NEEDED	snapshot for truncate-on-recovery
+tmp_locals	Cctrl	1795	write	MIRROR_IN_POLYC_NEEDED	on longjmp: rebuild list tail
+tmp_locals	Cctrl	1839	read	THREADED_ACROSS_ABI	listAppend(cc->tmp_locals, var)
+tmp_locals	Cctrl	1840	write	THREADED_ACROSS_ABI	same
+localenv->var->lname->data	Cctrl	1828	read	THREADED_ACROSS_ABI	mapAddOrErr uses cc->localenv directly
+localenv->var->fname->data	Cctrl	1836	read	THREADED_ACROSS_ABI	mapAdd uses cc->localenv directly
+body->stms	Ast	1784	read	MIRROR_IN_POLYC_NEEDED	snapshot for truncate-on-recovery
+body->stms	Ast	1791..1793	write	MIRROR_IN_POLYC_NEEDED	truncate via prev-pointer dance
+body->stms->next/prev	Ast	1792..1793	write	MIRROR_IN_POLYC_NEEDED	linked-list pointer arithmetic
+body->stms->next/prev	Ast	1849	read-write	THREADED_ACROSS_ABI	listAppend(body->stms, stmt) inside decl arm
+body->stms->next/prev	Ast	1869	read-write	THREADED_ACROSS_ABI	listAppend(body->stms, stmt) inside stmt arm
+stmt->kind	Ast	1865	read	THREADED_ACROSS_ABI	AST_DECL/GVAR dispatch check (post-parseStatement)
+stmt->declvar->kind	Ast	1865	read	THREADED_ACROSS_ABI	same
+var->line, var->col	Ast	1824..1825	write	KEEP_AS_LEGACY	simple field assignments on Ast* var
+var->pinned_kind, var->pinned_reg	Ast	1826..1827	write	KEEP_AS_LEGACY	same
+varname->line, varname->col	Lexeme	1824..1825	read	KEEP_AS_LEGACY	plain field reads
+varname->tk_type	Lexeme	1816	read	KEEP_AS_LEGACY	plain field read

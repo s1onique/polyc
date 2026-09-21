@@ -1,0 +1,31 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER01-CORRECTION01
+ACT_PHASE=C1-RED-RECON
+RED=RED-3 (legacy authority remains linked per PARSER01 SECT_12)
+
+WITNESS=src/parser.c defines parseCompoundStatementInternal at line 1752.
+         No PolyC subject participates.
+         stage0 hcc has no parser_bridge.h, so no PolyC delegation path.
+
+CAPTURED_OUTPUT:
+
+COMMAND_1 (function definition exists in src/parser.c):
+  $ grep -n '^void parseCompoundStatementInternal(' src/parser.c
+  1752:void parseCompoundStatementInternal(Cctrl *cc, Ast *body) {
+
+COMMAND_2 (production call sites are unchanged):
+  $ grep -n 'parseCompoundStatementInternal(' src/parser.c
+  1752:void parseCompoundStatementInternal(Cctrl *cc, Ast *body) {
+  1885:    parseCompoundStatementInternal(cc, ast_compound);
+  2261:    parseCompoundStatementInternal(cc, func_body);
+
+COMMAND_3 (no parser_bridge.h, so stage0 hcc has no PolyC delegation):
+  $ ls src/parser_bridge.h
+  ls: cannot access 'src/parser_bridge.h': No such file or directory
+
+COMMAND_4 (PolyC subject file is absent):
+  $ ls tools/bootstrap/selfhost-parser-compound-statement-internal.HC
+  ls: cannot access 'tools/bootstrap/selfhost-parser-compound-statement-internal.HC': No such file or directory
+
+VERDICT:
+  LEGACY_AUTHORITY_PRESENT=YES
+  POLYC_PRODUCTION_AUTHORITY_PRESENT=NO

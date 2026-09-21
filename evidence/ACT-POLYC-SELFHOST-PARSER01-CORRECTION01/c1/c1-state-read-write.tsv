@@ -1,0 +1,21 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER01-CORRECTION01
+# ACT_PHASE=C1-RED-RECON
+# EVIDENCE_KIND=state-read-write summary (across the function)
+# Format: struct<TAB>field<TAB>read_count<TAB>write_count<TAB>rw_count<TAB>classification
+struct	field	read_count	write_count	rw_count	classification
+Cctrl	localenv	3	3	0	MIRROR_IN_POLYC_NEEDED_OR_THREADED
+Cctrl	current_recovery	1	2	0	THREADED_ACROSS_ABI_MUST_KEEP_HOST_POINTER
+Cctrl	tmp_locals	2	2	0	THREADED_ACROSS_ABI
+Cctrl	diagnostics	0	0	0	(only via subordinate parsers; not direct)
+Cctrl	token_buffer	0	0	0	(via cctrlTokenPeek/Get/Rewind/Expect, classified separately as callbacks)
+Ast	body->stms	1	3	0	MIRROR_IN_POLYC_NEEDED
+Ast	stmt->kind/declvar->kind	1	0	0	THREADED_ACROSS_ABI
+Ast	var (multiple fields)	0	4	0	KEEP_AS_LEGACY
+Lexeme	tok->start, tok->len, etc.	4	0	0	KEEP_AS_LEGACY
+Map	localenv (insertion)	0	2	0	THREADED_ACROSS_ABI
+List	tmp_locals append	0	1	0	THREADED_ACROSS_ABI
+List	body->stms append	0	2	0	THREADED_ACROSS_ABI
+
+UNCLASSIFIED_STATE_DEPENDENCIES=0
+# Every field touched by parseCompoundStatementInternal is classified.
+# No "?" / "TBD" / blank classifications remain.

@@ -1,0 +1,51 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER01-CORRECTION01
+# ACT_PHASE=C1-RED-RECON
+# EVIDENCE_KIND=setjmp/longjmp surface inside parseCompoundStatementInternal
+
+LOCAL_JMP_BUF_DECLARATION_LINE=1769
+LOCAL_JMP_BUF_NAME=stmt_recovery
+LOCAL_JMP_BUF_TYPE=jmp_buf (function-frame-resident, hoisted so address stable across loop iterations)
+
+OUTER_RECOVERY_SAVE_LINE=1770
+OUTER_RECOVERY_VAR=outer_recovery (jmp_buf*, copies cc->current_recovery)
+
+CURRENT_RECOVERY_INSTALL_LINE=1771
+# cc->current_recovery = &stmt_recovery;
+
+SETJMP_CALL_LINE=1789
+# if (setjmp(stmt_recovery) != 0) { ... continue; }
+# Non-zero return means longjmp landed here.
+
+RECOVERY_BODY_LINES=1790..1802
+# Restores: localenv = block_scope; truncates body->stms via body_tail;
+# truncates cc->tmp_locals via locals_tail; calls cctrlSyncStatement(cc);
+# peeks next token; continues loop.
+
+RESTORATION_LINE=1876
+# cc->current_recovery = outer_recovery;
+# Restores caller's recovery point on function exit.
+
+INDIRECT_LONGJMP_TARGETS_THROUGH_cc->current_recovery:
+  cctrlRaiseException(cc, ...) is the canonical longjmp caller in src/cctrl.c.
+  Every parseBaseDeclSpec / parsePointerType / parseArrayDimensions /
+  parseFunctionPointer / parseVariableInitialiser / parseStatement / etc.
+  can longjmp to whichever jmp_buf* is currently installed in
+  cc->current_recovery.
+
+ABI_7_IMPLICATION:
+  The jmp_buf* is a host-runtime object. It cannot cross ABI 7
+  (declared as pure-data-flow in c2-selected-atomic-slice.txt).
+  For ABI 7 to be load-bearing in parseCompoundStatementInternal,
+  the PolyC component would have to either:
+    (a) install its own jmp_buf on the host cc, requiring a callback
+        to a host function that mutates cc->current_recovery,
+        OR
+    (b) accept a callback table of subordinate parsers and reject the
+        host setjmp semantics (which breaks the contract that recovery
+        from subordinate parseStatement failures unwinds back here),
+        OR
+    (c) own the entire recovery protocol end-to-end, including the
+        subordinate parsers -- which contradicts PARSER01 DEFERRED_PARSER_SURFACES
+        (parseStatement etc. are explicitly deferred).
+  Each option (a)/(b)/(c) breaks either ABI 7's pure-data-flow contract
+  or PARSER01's scope discipline.

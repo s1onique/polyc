@@ -1,0 +1,55 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER01-CORRECTION01
+ACT_PHASE=C1-RED-RECON
+EVIDENCE_KIND=function-shape (real read of src/parser.c)
+
+FUNCTION=parseCompoundStatementInternal
+FILE=src/parser.c
+LINE_START=1752
+LINE_END=1880
+LOC=129  (1752..1880 inclusive)
+WRAPPER_FN=parseCompoundStatement (line 1882..1887; one-line delegation to Internal)
+WRAPPER_LOC=6
+
+ENTRY_SIGNATURE=void parseCompoundStatementInternal(Cctrl *cc, Ast *body)
+RETURN_TYPE=void  (all mutation is via the Cctrl*/Ast* pointer args)
+
+PRODUCTION_CALL_SITES:
+  src/parser.c:1885  parseCompoundStatementInternal(cc, ast_compound);   // via parseCompoundStatement wrapper
+  src/parser.c:2261  parseCompoundStatementInternal(cc, func_body);       // direct call in function-body parser
+
+REGION_OF_SETJMP_INSTALL=1769..1771   (jmp_buf stmt_recovery; outer_recovery save; cc->current_recovery rebind)
+REGION_OF_SETJMP_CALL=1789            (if (setjmp(stmt_recovery) != 0) { ... continue; })
+REGION_OF_LONGJMP_TARGETS=unknown at this granularity (longjmp lives in cctrlRaiseException across all parser paths)
+RECOVERY_BODY_LINES=1790..1802  (12 lines: localenv rebind, body_tail/locals_tail truncation, cctrlSyncStatement)
+FINALIZATION_LINES=1876..1879  (cc->current_recovery = outer_recovery; localenv pop; cctrlTokenExpect('}'))
+
+LOCAL_DECLARATIONS=1753..1759
+  Ast *stmt, *var;
+  AstType *base_type, *type, *next_type;
+  Lexeme *tok, *varname, *peek;
+  Map *block_scope = cctrlCreateAstMap(cc->localenv);
+  cc->localenv = block_scope;
+
+MAIN_LOOP=while (tok && !tokenPunctIs(tok, '}'))  (1775..1875)
+
+TWO_DISPATCH_ARMS:
+  ARM_A: declaration-in-compound (1752..1862)   if (cctrlIsKeyword(cc,...)) { ... parseBaseDeclSpec ... parseVariableInitialiser ... }
+  ARM_B: statement-in-compound  (1863..1873)    else { stmt = parseStatement(cc); ... }
+
+KEY_FACT:
+  Both arms reach into subordinate still-legacy parsers via cc.
+  Arm A: parseBaseDeclSpec, parsePointerType, parseRegModifier,
+         parseArrayDimensions, parseFunctionPointer,
+         parseVariableInitialiser, parseAssignAuto (8 calls).
+  Arm B: parseStatement (1 call).
+  Total subordinate-parser callbacks inside the function: 9.
+  None of these are migratable in PARSER01 (deferred to PARSER02+).
+
+ACTUAL_SPAN_VS_AUTHORIZATION:
+  Authorization (c0-entry-identity.txt) said 1752..2012.
+  Actual function body ends at 1880; line 1881..2012 is unrelated code
+  (astStmtFallsThrough analysis region, ~130 LOC of unrelated analysis).
+  Corrected actual span: 1752..1880.
+  This is a 129-line function, not a 260-line one.
+  The 1752..2012 region in PARSER01 authorization was an over-estimate
+  from RECON03's selection-ranking file.

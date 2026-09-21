@@ -1,0 +1,96 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER01-CORRECTION01
+# ACT_PHASE=C1-RED-RECON
+# EVIDENCE_KIND=BOUNDED_DEPENDENCY_GRAPH verdict (LOAD-BEARING)
+
+QUESTION=Can parseCompoundStatementInternal be migrated to a PolyC
+component with bounded PolyC <-> C coupling, such that:
+  (a) the ABI 7 contract (pure-data-flow, no host pointers) is honored;
+  (b) PARSER01 scope discipline (no FORBIDDEN_PRODUCTION_FILES edits,
+      no DEFERRED_PARSER_SURFACES touched) is honored;
+  (c) the migration crosses the "self-hosted" bar (the PolyC component
+      produces the AST/semantic effect, not just a dispatch loop);
+  (d) AC09 (ABI7_CALL_EXECUTED) and AC10 (ABI7_LOAD_BEARING) and
+      AC12 (G1..G3_AUTHORITY=POLYC) all pass simultaneously?
+
+OBSERVATION_1=ABI 7 is pure-data-flow per
+  evidence/ACT-POLYC-SELFHOST-SURFACE-RECON03/c2/c2-selected-atomic-slice.txt
+  (signature: BootstrapParseCompoundStatementInternal(src, src_len,
+  cursor, flags, *out_end, *out_ast_kind, *out_node_count, *out_error)).
+
+OBSERVATION_2=parseCompoundStatementInternal does not have a pure
+  data-flow shape. It mutates Cctrl (localenv, current_recovery,
+  tmp_locals) and Ast (body->stms) by direct pointer arithmetic,
+  not by output projection. Of 11 distinct state mutations, 5 are
+  linked-list prev/next-pointer arithmetic on host structs.
+
+OBSERVATION_3=parseCompoundStatementInternal installs a jmp_buf into
+  cc->current_recovery. The longjmp that lands in its setjmp site can
+  originate from any of 24 subordinate parser functions called via
+  cctrlRaiseException. The recovery protocol is therefore bound to
+  the host cc->current_recovery jmp_buf* and cannot be projected
+  through ABI 7 without either a callback (which contradicts ABI 7
+  being pure-data-flow) or owning the entire recovery path end-to-end
+  (which contradicts PARSER01 DEFERRED_PARSER_SURFACES).
+
+OBSERVATION_4=parseCompoundStatementInternal calls 9 distinct
+  subordinate parsers, all of which are DEFERRED_PARSER_SURFACES. To
+  preserve semantic equivalence, the PolyC component must either
+  (a) replicate their behavior (forbidden, scope discipline),
+  (b) call them through the ABI as callbacks (forbidden, ABI 7 is
+      pure-data-flow), or
+  (c) re-route through a host stub (which means the host C function
+      still owns the loop semantics; the PolyC component is a thin
+      wrapper, not a self-hosted component).
+
+OBSERVATION_5=The LEXER family ABIs worked because the LEXER slice
+  functions are byte-in / cursor+kind-out pure functions. The
+  parseCompoundStatementInternal slice has none of those properties;
+  it is fundamentally stateful.
+
+VERDICT=BOUNDED_DEPENDENCY_GRAPH=NO
+
+SUPPORTING_FACTS:
+  - UNCLASSIFIED_STATE_DEPENDENCIES=0 (every field is classified;
+    classification alone does not make the migration bounded).
+  - SUBORDINATE_PARSER_DEPENDENCY_COUNT=24, of which 9 are PARSER
+    callbacks (all DEFERRED_PARSER_SURFACES) and at least 8 can
+    invoke cctrlRaiseException -> longjmp back into the function.
+  - JMP_BUF coupling is structural, not optional; PARSER01's chosen
+    ABI 7 (pure-data-flow) is incompatible with the function's
+    recovery contract.
+  - AST-list mutation is structural: body->stms, body->stms->prev,
+    cc->tmp_locals, cc->localenv all require host pointer identity
+    to maintain list-tail truncation semantics on recovery.
+
+WHY_NOT_BOUNDED:
+  Any of (a)/(b)/(c)/(d) above (in OBSERVATION_4) violates a binding
+  ACT constraint. The combination (a)-(d) simultaneously is therefore
+  structurally unreachable from the current PARSER01 design.
+
+PARALLEL_WITH_LEXER04:
+  LEXER04-CORRECTION04 worked because lexLink is a 53-line pure
+  text-rewriting function: input bytes -> output bytes. parseCompound
+  StatementInternal is 129 lines of stateful parsing, not text rewriting.
+  The LEXER04 pattern does not transfer to PARSER01's chosen slice.
+
+POSSIBLE_RECONSIDERATIONS (NOT IN PARSER01 SCOPE):
+  R1. Sub-slice the function into a smaller pure component, e.g.
+      "declaration-in-compound arm" only, where the jmp_buf scope
+      is narrower and the AST mutation might be projectable.
+      Cost: reopens the atomic-slice selection (RECON03); out of
+      PARSER01 scope.
+  R2. Promote jmp_buf crossing into ABI 7 by exporting
+      BootstrapInstallRecovery + BootstrapLongjmpToRecovery.
+      Cost: ABI 7 becomes pointer-bearing; breaks PARSER01 SECT_10
+      and SECT_22.
+  R3. Allow subordinate-parser callbacks to cross the ABI via a
+      callback table.
+      Cost: ABI 7 becomes pointer-bearing (function-pointer table);
+      breaks PARSER01 SECT_10, SECT_22, and the "self-hosted" bar
+      (G1..G3_AUTHORITY=POLYC would not be meaningful if every
+      semantic decision still goes through C callbacks).
+  R4. Re-route the subordinate parsers as PolyC modules in PARSER01.
+      Cost: violates DEFERRED_PARSER_SURFACES + FORBIDDEN_PRODUCTION_FILES
+      + the 5-commit topology of PARSER01.
+  None of R1..R4 is in PARSER01's authorized scope. All are valid
+  successor-ACT material.

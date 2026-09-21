@@ -1,0 +1,43 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER01-CORRECTION01
+# ACT_PHASE=C1-RED-RECON
+# EVIDENCE_KIND=subordinate-parser callbacks invoked by parseCompoundStatementInternal
+# Format: called_fn<TAB>deferred_surface<TAB>call_line<TAB>effect<TAB>migratable_in_PARSER01?
+called_fn	deferred_surface	call_line	effect	migratable_in_PARSER01
+cctrlCreateAstMap	INV.CCTRL.SCOPE	1757	creates a fresh local scope map (linked to parent)	NO (deferred; FORBIDDEN_PRODUCTION_FILES lists src/cctrl.c)
+cctrlTokenPeek	INV.CCTRL.SCOPE	1773,1800,1811,1866,1874	read next token (consumes no token)	NO
+cctrlIsKeyword	INV.CCTRL.SCOPE	1804	tests whether current token starts a declaration (keyword test)	NO
+parseBaseDeclSpec	INV.PARSER.DECL	1805	parses declaration base type	NO (INV.PARSER.DECL is DEFERRED)
+parsePointerType	INV.PARSER.DECL	1807	parses pointer indirection	NO
+parseRegModifier	INV.PARSER.DECL	1810	parses pinned-register modifier	NO
+cctrlTokenGet	INV.CCTRL.SCOPE	1815,1834,1852	consume token	NO
+cctrlTokenRewind	INV.CCTRL.SCOPE	1817,1851	rewind token ring buffer	NO
+cctrlRaiseException	INV.CCTRL.SCOPE	1818,1830,1859	queues diagnostic + longjmps to cc->current_recovery	NO
+parseArrayDimensions	INV.PARSER.DECL	1822	parses array [N][M]...	NO
+astLVar	INV.AST.CREATE	1823	creates a local-variable Ast node	NO
+mapAddOrErr	INV.CCTRL.SCOPE	1828	map insert or raise collision error	NO
+cctrlRewindUntilStrMatch	INV.CCTRL.SCOPE	1829	token rewind to given identifier	NO
+parseFunctionPointer	INV.PARSER.DECL	1835	parses function-pointer declaration	NO
+mapAdd	INV.CCTRL.SCOPE	1836	map insert (function-pointer name)	NO
+listAppend	(list.h)	1840,1849,1869	appends to a list	NO (data-structure plumbing)
+parseVariableInitialiser	INV.PARSER.EXPR	1843	parses = expr or initializer list	NO (INV.PARSER.EXPR DEFERRED)
+parseAssignAuto	INV.PARSER.DECL	1845	resolves `auto` types from initializer	NO
+tokenPunctIs	INV.LEXER	1813,1854,1856,1875,1775	tests whether a Lexeme is a punctuation token	NO
+astTypeToString	INV.AST.CREATE	1819	format type for diagnostic	NO
+astLValueToString	INV.AST.CREATE	1831	format lvalue for diagnostic	NO
+lexemeTypeToString	INV.LEXER	1860	format token kind for diagnostic	NO
+cctrlSyncStatement	INV.CCTRL.SCOPE	1799	resync token stream to next ; or }	NO
+cctrlTokenExpect	INV.CCTRL.SCOPE	1878	expect and consume '}'	NO
+parseStatement	INV.PARSER.STMT	1864	parses a non-declaration statement	NO (INV.PARSER.STMT is DEFERRED)
+
+SUBORDINATE_PARSER_DEPENDENCY_COUNT=24
+# Every called function is either (a) on FORBIDDEN_PRODUCTION_FILES,
+# (b) on DEFERRED_PARSER_SURFACES, or (c) a data-structure primitive
+# in src/list.h whose underlying types are coupled to ast/cctrl.
+# None is migratable in PARSER01.
+
+# Critically: at least 8 of these (parseBaseDeclSpec, parsePointerType,
+# parseRegModifier, parseArrayDimensions, parseFunctionPointer,
+# parseVariableInitialiser, parseAssignAuto, parseStatement) perform
+# arbitrary token-stream consumption and can invoke cctrlRaiseException,
+# which means the longjmp recovery path (c1-setjmp-recovery.tsv) is
+# exercised transitively through every subordinate parser.

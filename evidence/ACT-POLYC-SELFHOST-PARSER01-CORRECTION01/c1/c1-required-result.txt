@@ -1,0 +1,75 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER01-CORRECTION01
+ACT_PHASE=C1-RED-RECON
+
+HALT_TOKEN=HALT_DEPENDENCY_EXPLOSION
+HALT_CLASS=GOVERNANCE
+BLOCKS_NEXT=YES  (next ACT must reconsider the atomic parser slice)
+
+C1_VERDICT=BOUNDED_DEPENDENCY_GRAPH=NO
+
+C1_RED_REPRODUCTION=PASS
+  COMPONENT_PRESENT=NO
+  ABI7_PRESENT=NO
+  PARSER_BRIDGE_FILE_PRESENT=NO
+  LEGACY_AUTHORITY_PRESENT=YES
+  POLYC_PRODUCTION_AUTHORITY_PRESENT=NO
+
+C1_FUNCTION_SHAPE_VERIFIED_BY_READ=PASS
+  FUNCTION_LOC=129
+  LEGACY_REGION_CORRECTED=src/parser.c 1752..1880  (not 1752..2012 as authorized;
+    1881..2012 is unrelated astStmtFallsThrough analysis region)
+
+C1_DEPENDENCY_CLASSIFICATION=PASS
+  UNCLASSIFIED_STATE_DEPENDENCIES=0
+  THREADED_ACROSS_ABI_FIELDS=4   (cc->current_recovery, cc->tmp_locals writes,
+                                  listAppend chains, map insertion)
+  MIRROR_IN_POLYC_NEEDED_FIELDS=4   (cc->localenv, body->stms, body->stms->next/prev,
+                                      jmp_buf stmt_recovery install/restore)
+  KEEP_AS_LEGACY_FIELDS=4   (Ast* var fields, Lexeme* fields)
+
+C1_SETJMP_RECOVERY_IDENTIFIED=PASS
+  LOCAL_JMP_BUF_NAME=stmt_recovery
+  SETJMP_CALL_LINE=1789
+  RECOVERY_BODY_LINES=1790..1802
+  INDIRECT_LONGJMP_TARGETS=cctrlRaiseException (in any subordinate parser)
+  ABI_7_IMPLICATION=incompatible with pure-data-flow ABI
+
+C1_SUBORDINATE_PARSER_DEPS_IDENTIFIED=PASS
+  SUBORDINATE_PARSER_DEPENDENCY_COUNT=24
+  DEFERRED_SURFACE_CALLS=9   (parseBaseDeclSpec, parsePointerType,
+                               parseRegModifier, parseArrayDimensions,
+                               parseFunctionPointer, parseVariableInitialiser,
+                               parseAssignAuto, parseStatement via 2 paths)
+
+C1_BOUNDED_DEPENDENCY_GRAPH_VERDICT=NO
+  REASONS:
+    - ABI 7 is pure-data-flow (per RECON03 c2-selected-atomic-slice.txt)
+    - parseCompoundStatementInternal mutates 11 distinct host state fields
+    - jmp_buf coupling is structural (setjmp at line 1789, recovery body
+      1790..1802, restoration at 1876)
+    - AST-list mutation requires host pointer identity (body->stms->prev/next)
+    - 9 subordinate parsers, all DEFERRED_PARSER_SURFACES
+    - LEXER family pattern does not transfer (parsers are stateful)
+
+C1_FIXTURE_CONTRACT=NOT_CAPTURED
+  RATIONALE=HALT at C1 before fixture freeze
+  PROOF_MODEL=INHERITED (PARSER01 SECT_23..45)
+
+C1_LEGACY_BASELINE=NOT_CAPTURED
+  RATIONALE=HALT at C1 before legacy oracle freeze
+
+C1_N01_CONTRACT=INHERITED (not activated; would activate only if C2 proceeded)
+
+C1_PRODUCTION_SOURCE_DELTA=0
+
+C1_PHASE_PURITY=PASS
+
+C1_F14_PROTECTED_EVIDENCE_DELTA=0
+  (no closed evidence directory was modified)
+
+C1_PATCH_HYGIENE=PASS  (zero diff --check errors; only added new evidence files)
+
+C1_COMMIT_TOPOLOGY_BINDING=
+  CORRECTION01 SECT_0 / PARSER01 SECT_73:
+    exactly 5 commits. This C1 commit is C1-RED. C2 IMPL, C3 VERIFY,
+    C4 CLOSE remain. Any additional commit is HALT_PHASE_CORRECTION_REQUIRED.
