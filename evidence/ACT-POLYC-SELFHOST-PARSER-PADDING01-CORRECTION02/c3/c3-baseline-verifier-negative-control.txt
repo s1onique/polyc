@@ -1,0 +1,78 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION02
+PHASE=C3-VERIFY
+
+# C3 reproduction of NC1 (mutation), NC2 (omission), NC3 (fake
+# identity), and NC4 (pristine re-verify) against the C3 verification
+# run (RUN_C) and the re-run of RUN_A for cross-comparison.
+
+# Tool: build/lexer07-baseline-authority-verify
+# Subjects: build/correction02-lexer07-baseline-c (RUN_C)
+#           build/correction02-lexer07-baseline-a (RUN_A re-run)
+
+# All three corpus output files in A and C are byte-identical:
+MATCH_A_C_MATRIX=ee83e375032cf3f39ad8d95838bdd5e4f601fdac3244b7298cf2f68083d3c4fd
+MATCH_A_C_FAILURES=9d8ce2e090a47619a1496df76d2f1efbde47f60f997fc8ad4182f21cf125a29a
+MATCH_A_C_PROVENANCE=7cdf8016b7aceef4f3f244c942430f02452fa8138061d4fa7d246e88813b1c42
+
+# --- NC1: baseline mutation ---
+
+COMMAND_NC1=./build/lexer07-baseline-authority-verify build/correction02-lexer07-baseline-c build/correction02-lexer07-baseline-a --mode=mutate
+NC1_OUTPUT=
+COMPARE match=2 mismatch=1 missing=0
+BASELINE_MUTATION_DETECTED=YES
+NC1_EXIT_CODE=0
+NC1_RESULT=PASS
+
+BASELINE_MUTATION_DETECTED=YES
+
+# --- NC2: failure-set omission ---
+
+COMMAND_NC2=./build/lexer07-baseline-authority-verify build/correction02-lexer07-baseline-c build/correction02-lexer07-baseline-a --mode=omit
+NC2_OUTPUT=
+COMPARE match=2 mismatch=1 missing=0
+BASELINE_OMISSION_DETECTED=YES
+NC2_EXIT_CODE=0
+NC2_RESULT=PASS
+
+BASELINE_OMISSION_DETECTED=YES
+
+# --- NC3: fake identity repair (C3 identity reconciliation) ---
+
+# Per ACT §26 NC3: substitute the stale C3 SHA as canonical expected C3.
+# Verifier/reconciliation logic must reject because it is not the parent
+# edge of C4.
+
+PREDECESSOR_C4_SHA=1274f368c5d2d86e84d67141315f8c02fb4c1426
+CANONICAL_C3_SHA=9c1edc90b34a3462e83fbb6706ba46747667a55a
+STALE_C3_SHA=4d8c970615d54b6b959697daf78a5931e161aae7
+HISTORICAL_HANDOFF_C3_SHA=4d8c970615d54b6b959697daf78a5931e161aae7
+
+ACTUAL_C4_PARENT=9c1edc90b34a3462e83fbb6706ba46747667a55a
+# (verified via: git rev-parse 1274f36^)
+
+# Verifier: actual C4 parent must equal canonical expected C3 SHA.
+CANONICAL_C3_ACCEPTED=YES
+
+# Stale C3 must be rejected (it does NOT match actual C4 parent).
+STALE_C3_ACCEPTED=NO
+
+# Stale C3 reachability from any ref:
+# (Verified: for each ref in git for-each-ref, the SHA is not in its rev-list.)
+STALE_C3_REACHABLE_FROM_ANY_REF=NO
+
+STALE_C3_IDENTITY_REJECTED=YES
+
+# --- NC4: pristine re-verify after negative controls ---
+
+# All .mutated and .omitted directories removed before re-verify.
+
+COMMAND_NC4=rm -rf build/correction02-lexer07-baseline-c.mutated build/correction02-lexer07-baseline-c.omitted build/correction02-lexer07-baseline-a.mutated build/correction02-lexer07-baseline-a.omitted && ./build/lexer07-baseline-authority-verify build/correction02-lexer07-baseline-c build/correction02-lexer07-baseline-a --mode=match
+NC4_OUTPUT=
+COMPARE match=3 mismatch=0 missing=0
+BASELINE_MATCH=YES
+NC4_EXIT_CODE=0
+NC4_RESULT=PASS
+
+PRISTINE_REVERIFY=PASS
+
+BASELINE_VERIFIER_NEGATIVE_CONTROL=PASS
