@@ -207,12 +207,15 @@ result, so future ACTs can re-derive the same authority boundary.
 
 Forward-only file changes:
 
-1. **D-WS fix**: introduce
+1. **D-WS fix**: edit
+   `evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION02/c2/c2-baseline-verifier-negative-control.txt`
+   in place by removing the trailing blank line at EOF.  This is a
+   forward-only fix to the tree at HEAD; the CORRECTION02 C2 commit's
+   blob remains immutable in history (F14: corrections are new commits).
+   The new blob at HEAD is recorded in
    `evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION03/c2/c2-baseline-verifier-negative-control-rewritten.txt`
-   containing the same content as
-   `c2-baseline-verifier-negative-control.txt` minus the trailing
-   blank line.  Record the SHA-256 of both files to prove
-   equivalence-of-content (modulo the trailing newline).
+   for SHA-traceability, and `c2-baseline-diff.txt` records the
+   `diff -u` showing only the trailing newline removed.
 
 2. **D-TEMPORAL fix**: introduce
    `evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION03/c3/c3-pre-c4-frozen-tip.txt`
