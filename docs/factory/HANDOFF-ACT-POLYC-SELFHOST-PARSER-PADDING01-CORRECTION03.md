@@ -15,7 +15,9 @@ Target production mutation: NONE
 
 ## Verdict
 
-ACT-Verdict: PASS_FORWARD_BASELINE_REQUALIFIED_REPAIRED
+VERDICT
+
+PASS_FORWARD_BASELINE_REQUALIFIED_REPAIRED
 
 ## Predecessor disposition correction
 
