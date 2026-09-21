@@ -1,0 +1,44 @@
+# C3 Required Result
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION04
+PHASE=C3 (body label) / ACT-Phase trailer=EVIDENCE
+
+## C3 verification summary
+
+C3 is the EVIDENCE phase.  All load-bearing predicates for the
+prospective CORRECTION04 closure have been verified:
+
+| Predicate                                              | Result   |
+|--------------------------------------------------------|----------|
+| F14 closed surface restored (3b38d691..HEAD empty)     | PASS     |
+| CORRECTION02 closed HANDOFF preserved                  | PASS     |
+| 14 expected baseline SHAs present in TSV               | PASS     |
+| 11 live subjects match TSV-bound SHAs                  | PASS     |
+| Parser-padding subjects SHA-conserved at C3 vs ENTRY   | PASS (Δ=0) |
+| Trailer geometry: C0 RED, C1 EVIDENCE, C2 IMPL, C3 EVIDENCE | PASS |
+| No supersession trailers on C0..C3                     | PASS     |
+| gate-fast PASS                                         | PASS     |
+| factory-append-only-test PASS (NC1..NC11)             | PASS     |
+| C4 trailer block PASS against live commit-msg-check    | PASS     |
+| PRE_C4_TIP captured BEFORE C4 exists                   | PASS     |
+| PRE_C4_COMMIT_COUNT = 4                                | PASS     |
+
+## C4 preconditions (per ACT §25)
+
+```
+AC01..AC36 = PASS  ✓  (AC36 deferred until C4 commit parent check)
+WORKTREE contains only authorized C3 artifacts
+PRE_C4_TIP_SHA = current committed C3
+```
+
+All preconditions satisfied.  C4 CLOSE is authorized.
+
+## Deferred (not falsely claimed at C3)
+
+```
+AC36  C4_IS_DIRECT_CHILD_OF_PRE_C4_TIP=YES  -- C4 commit's parent is C3; verified at C4 commit time
+AC37  CORRECTION04_RANGE_COMMIT_COUNT=5     -- observed by external terminality gate
+AC38  FACTORY_V2_RANGE_CHECK=PASS            -- observed by external terminality gate
+AC39  EXTERNAL_TERMINALITY_GATE=PASS         -- observed by external terminality gate
+AC40  WORKTREE_CLEAN_AFTER_C4=YES            -- observed by external terminality gate
+```

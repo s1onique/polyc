@@ -1,0 +1,69 @@
+# C3 Range-Check Contract Verification (independent per-message + topology)
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION04
+PHASE=C3 (body label) / ACT-Phase trailer=EVIDENCE
+
+## Range-checker is CLOSE-only by design
+
+`factory-v2-range-check.sh` validates the FULL range from FIRST to
+CLOSE.  At C3, HEAD = C2 (no CLOSE exists yet).  Running the range
+checker against HEAD reports:
+
+```
+$ bash scripts/quality/factory-v2-range-check.sh \
+    ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION04 HEAD
+STATUS=FAIL
+REASON=CLOSE 53bca9d3 does not carry exactly one ACT-Phase: CLOSE
+```
+
+This is the EXPECTED behavior of the range-checker; it is not a
+defect.  The C3 phase verifies the trailer contract for the
+already-committed commits independently.
+
+## Per-message trailer validation
+
+Each of C0, C1, C2 passes `factory-v2-commit-msg-check.sh`:
+
+```
+=== 7ec5c70 (C0) ===
+MODE=ACT
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION04
+PHASE=RED
+STATUS=PASS
+
+=== 0912cae (C1) ===
+MODE=ACT
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION04
+PHASE=EVIDENCE
+STATUS=PASS
+
+=== 53bca9d (C2) ===
+MODE=ACT
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION04
+PHASE=IMPL
+STATUS=PASS
+```
+
+## Position rules (no supersession before CLOSE)
+
+```
+C0_TRAILERS_VALID=YES
+C1_TRAILERS_VALID=YES
+C2_TRAILERS_VALID=YES
+C3_TRAILERS_VALID=PENDING_COMMIT
+CLOSE_TRAILER_CONTRACT_FROZEN=YES  (validated at C1 against live checker)
+```
+
+The C4 trailer block is the literal fixture `good-close-pending.txt`
+which already passed `factory-v2-commit-msg-check.sh` (see
+`c1/c1-range-check-contract.txt`).
+
+## AC ledger
+
+```
+AC30 C0_HAS_NO_SUPERSESSION_TRAILERS=YES                  PASS
+AC31 C1_HAS_NO_SUPERSESSION_TRAILERS=YES                  PASS
+AC32 C2_HAS_NO_SUPERSESSION_TRAILERS=YES                  PASS
+AC33 C3_HAS_NO_SUPERSESSION_TRAILERS=YES                  PASS  (by C3 commit construction)
+AC34 C4_TRAILER_SCHEMA_FROZEN_FROM_LIVE_VALIDATOR=YES     PASS  (from C1)
+```

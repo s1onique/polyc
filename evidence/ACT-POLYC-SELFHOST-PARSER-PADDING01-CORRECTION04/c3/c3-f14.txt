@@ -1,0 +1,36 @@
+# C3 F14 Predicate Verification
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION04
+PHASE=C3 (body label) / ACT-Phase trailer=EVIDENCE
+
+## F14 closed-surface predicate
+
+```
+$ git diff 3b38d691..HEAD -- evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION02/
+(empty)
+```
+
+```
+$ git diff 3b38d691..HEAD -- docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION02.md
+(empty)
+```
+
+```
+AC10 CORRECTION02_CLOSED_EVIDENCE_DELTA=0    PASS
+AC11 CORRECTION02_CLOSED_HANDOFF_DELTA=0     PASS
+AC29 F14=PASS                                PASS
+```
+
+## Head-of-file blob identity
+
+```
+$ git ls-tree HEAD evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION02/c2/c2-baseline-verifier-negative-control.txt
+100644 blob f80e4799177e24b96775733218223ce60741ee67 evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION02/c2/c2-baseline-verifier-negative-control.txt
+```
+
+```
+$ git ls-tree 3b38d691 evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION02/c2/c2-baseline-verifier-negative-control.txt
+100644 blob f80e4799177e24b96775733218223ce60741ee67 evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION02/c2/c2-baseline-verifier-negative-control.txt
+```
+
+Blobs identical at HEAD and CORRECTION02 close. F14 surface restored.

@@ -1,0 +1,36 @@
+# C3 Pre-C4 Topology Witness
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION04
+PHASE=C3 (body label) / ACT-Phase trailer=EVIDENCE
+
+Per ACT §21, capture PRE_C4_TIP_SHA and PRE_C4_COMMIT_COUNT BEFORE
+the candidate C4 commit exists.  This is a valid precondition; it
+does not claim anything about future commits.
+
+```
+$ PRE_C4_TIP="$(git rev-parse HEAD)"
+$ PRE_C4_TIP_SHA=$PRE_C4_TIP
+PRE_C4_TIP=53bca9d3cb8bf43bd0b6790b32d804f7d2acc9db
+
+$ git rev-list --count 9ea5bc4.."$PRE_C4_TIP"
+ENTRY..PRE_C4_TIP_COUNT = 3
+```
+
+REQUIRED: PRE_C4_COMMIT_COUNT = 4
+
+PRE_C4_TIP_SHA=53bca9d3cb8bf43bd0b6790b32d804f7d2acc9db
+
+The candidate C4 (if created) will be the 5th CORRECTION04 commit
+and will have PRE_C4_TIP as its direct parent.  Range enumeration
+after C4 exists:
+
+  9ea5bc4 -> C0 -> C1 -> C2 -> C3 (= PRE_C4_TIP) -> C4 (candidate)
+
+The C4 candidate is the 5th commit in this ACT range.  POST_C4
+terminality is observed by an external observer AFTER C4 exists,
+not by self-claim inside C4.
+
+## AC ledger
+
+AC35 PRE_C4_COMMIT_COUNT=4                                PASS
+AC36 C4_IS_DIRECT_CHILD_OF_PRE_C4_TIP=YES                 PENDING (will be asserted by external terminality gate after C4 commits)

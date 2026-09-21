@@ -1,0 +1,51 @@
+# C3 Patch Hygiene Verification
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION04
+PHASE=C3 (body label) / ACT-Phase trailer=EVIDENCE
+
+## Prospective patch hygiene (9ea5bc4..HEAD)
+
+```
+$ git diff --check 9ea5bc4..HEAD
+evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION02/c2/c2-baseline-verifier-negative-control.txt:71: new blank line at EOF.
+```
+
+Interpretation: 1 finding reported.
+  File: evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION02/c2/c2-baseline-verifier-negative-control.txt
+  Line: 71
+  Defect: new blank line at EOF
+
+This is the RESTORED historical defect from CORRECTION02 close
+(blob f80e4799177e24b96775733218223ce60741ee67 ends with "
+
+",
+a trailing blank line).  CORRECTION03 had removed it; CORRECTION04
+restored it as a load-bearing consequence of F14 closed-surface repair.
+
+Per ACT §40 Lock B: "Restoring the old closed blob may intentionally
+restore its historical whitespace defect.  That is correct.  Do not
+rewrite the historical predicate."
+
+Therefore this single finding is INTENTIONALLY PERMITTED and is NOT
+attributable to a CORRECTION04-introduced defect.
+
+## CORRECTION04-introduced defects
+
+PATCH_HYGIENE_ERRORS_FOR_CORRECTION04_INTRODUCED = 0
+
+The only prospective-hygiene finding is the restored historical
+defect.  No other whitespace / line-ending / indentation issues
+are introduced by C0, C1, or C2.
+
+## CORRECTION02 historical hygiene (3b38d691..HEAD)
+
+```
+$ git diff --check 3b38d691..HEAD
+```
+(empty above -> F14 predicate: PASS)
+
+## AC ledger
+
+AC26 PATCH_HYGIENE_ERRORS=0
+       INTERPRETATION: 0 CORRECTION04-introduced defects (PASS)
+       1 restored-historical defect intentionally present (per Lock B)
