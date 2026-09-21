@@ -1,0 +1,67 @@
+# c2-prospective-baseline-failures.tsv
+# ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION02 C2
+#
+# Per ACT §11B.4: every non-pass case becomes a baseline row.
+# Classification schema:
+#   fixture_id  generation  classification  observed_status
+#     historical_relation  root_cause_class  blocking_forward_conservation
+#
+# All classifications derive from corpus-failures.tsv and corpus-matrix.tsv
+# from the prospective baseline runs.
+
+# === 9 NO_FALLBACK cases (formerly stage0-historical) ===
+# These are the 9 sources whose stage0 historical fallback is missing.
+# Their S1/S2/S3 outputs are unchanged from frozen baseline; only S0
+# regression due to lost b02-corpus-A/.
+
+fixture_id	generation	classification	observed_status	historical_relation	root_cause_class	blocking_forward_conservation
+src/holyc-lib/all.HC	stage0	NO_FALLBACK_S0	S0_FAIL	S0_FAIL_WAS_PASS_VIA_HISTORICAL_FALLBACK	TEST_INFRASTRUCTURE_DRIFT	NO
+src/holyc-lib/date.HC	stage0	NO_FALLBACK_S0	S0_FAIL	S0_FAIL_WAS_PASS_VIA_HISTORICAL_FALLBACK	TEST_INFRASTRUCTURE_DRIFT	NO
+src/holyc-lib/hashtable.HC	stage0	NO_FALLBACK_S0	S0_FAIL	S0_FAIL_WAS_PASS_VIA_HISTORICAL_FALLBACK	TEST_INFRASTRUCTURE_DRIFT	NO
+src/holyc-lib/io.HC	stage0	NO_FALLBACK_S0	S0_FAIL	S0_FAIL_WAS_PASS_VIA_HISTORICAL_FALLBACK	TEST_INFRASTRUCTURE_DRIFT	NO
+src/holyc-lib/list.HC	stage0	NO_FALLBACK_S0	S0_FAIL	S0_FAIL_WAS_PASS_VIA_HISTORICAL_FALLBACK	TEST_INFRASTRUCTURE_DRIFT	NO
+src/holyc-lib/memory.HC	stage0	NO_FALLBACK_S0	S0_FAIL	S0_FAIL_WAS_PASS_VIA_HISTORICAL_FALLBACK	TEST_INFRASTRUCTURE_DRIFT	NO
+src/holyc-lib/strings.HC	stage0	NO_FALLBACK_S0	S0_FAIL	S0_FAIL_WAS_PASS_VIA_HISTORICAL_FALLBACK	TEST_INFRASTRUCTURE_DRIFT	NO
+src/holyc-lib/threads.HC	stage0	NO_FALLBACK_S0	S0_FAIL	S0_FAIL_WAS_PASS_VIA_HISTORICAL_FALLBACK	TEST_INFRASTRUCTURE_DRIFT	NO
+src/holyc-lib/tooling.HC	stage0	NO_FALLBACK_S0	S0_FAIL	S0_FAIL_WAS_PASS_VIA_HISTORICAL_FALLBACK	TEST_INFRASTRUCTURE_DRIFT	NO
+
+# === 6 ALL_FAIL cases (BOTH_FAIL_4 in frozen) ===
+# These are pre-existing semantic defects: the source fails to compile
+# at all 4 stages. Identical to frozen baseline.
+
+fixture_id	generation	classification	observed_status	historical_relation	root_cause_class	blocking_forward_conservation
+src/holyc-lib/bitvec.HC	all	ALL_FAIL_4	BOTH_FAIL_4	BOTH_FAIL_4_IN_FROZEN_BASELINE	KNOWN_LEXER07_SEMANTIC_DEFECT	NO
+src/holyc-lib/builtins.HC	all	ALL_FAIL_4	BOTH_FAIL_4	BOTH_FAIL_4_IN_FROZEN_BASELINE	KNOWN_LEXER07_SEMANTIC_DEFECT	NO
+src/holyc-lib/coroutines.HC	all	ALL_FAIL_4	BOTH_FAIL_4	BOTH_FAIL_4_IN_FROZEN_BASELINE	KNOWN_LEXER07_SEMANTIC_DEFECT	NO
+src/tests/32_sql.HC	all	ALL_FAIL_4	BOTH_FAIL_4	BOTH_FAIL_4_IN_FROZEN_BASELINE	KNOWN_LEXER07_SEMANTIC_DEFECT	NO
+src/tests/llvm-spike/neg_asm.HC	all	ALL_FAIL_4	BOTH_FAIL_4	BOTH_FAIL_4_IN_FROZEN_BASELINE	KNOWN_LEXER07_SEMANTIC_DEFECT	NO
+src/tests/llvm-spike/neg_f64.HC	all	ALL_FAIL_4	BOTH_FAIL_4	BOTH_FAIL_4_IN_FROZEN_BASELINE	KNOWN_LEXER07_SEMANTIC_DEFECT	NO
+
+# === 6 DIVERGED cases (S0 succeeds, S1/S2/S3 unchanged) ===
+# NEW vs frozen baseline. S1/S2/S3 outputs are byte-identical to frozen
+# baseline. Only S0 (hcc direct output) has changed for these 6 sources.
+# hcc-binary drift only; bootstrap chain and historical S0 fallback
+# unchanged. NOT a parser-padding regression (git diff src/ = empty
+# vs predecessor).
+
+fixture_id	generation	classification	observed_status	historical_relation	root_cause_class	blocking_forward_conservation
+src/holyc-lib/fzf.HC	stage0	S0_DIVERGED_FROM_S1_S2_S3	REGRESSION	BYTE_IDENTICAL_4_IN_FROZEN_BASELINE	TEST_INFRASTRUCTURE_DRIFT	NO
+src/holyc-lib/json.HC	stage0	S0_DIVERGED_FROM_S1_S2_S3	REGRESSION	BYTE_IDENTICAL_4_IN_FROZEN_BASELINE	TEST_INFRASTRUCTURE_DRIFT	NO
+src/holyc-lib/net.HC	stage0	S0_DIVERGED_FROM_S1_S2_S3	REGRESSION	BYTE_IDENTICAL_4_IN_FROZEN_BASELINE	TEST_INFRASTRUCTURE_DRIFT	NO
+src/holyc-lib/set.HC	stage0	S0_DIVERGED_FROM_S1_S2_S3	REGRESSION	BYTE_IDENTICAL_4_IN_FROZEN_BASELINE	TEST_INFRASTRUCTURE_DRIFT	NO
+src/holyc-lib/sqllite.HC	stage0	S0_DIVERGED_FROM_S1_S2_S3	REGRESSION	BYTE_IDENTICAL_4_IN_FROZEN_BASELINE	TEST_INFRASTRUCTURE_DRIFT	NO
+src/holyc-lib/stat.HC	stage0	S0_DIVERGED_FROM_S1_S2_S3	REGRESSION	BYTE_IDENTICAL_4_IN_FROZEN_BASELINE	TEST_INFRASTRUCTURE_DRIFT	NO
+
+# Summary counts:
+TOTAL_FIXTURE_ROWS=21
+NO_FALLBACK_S0=9
+ALL_FAIL_4=6
+S0_DIVERGED_FROM_S1_S2_S3=6
+
+# Root cause class breakdown:
+TEST_INFRASTRUCTURE_DRIFT=15
+KNOWN_LEXER07_SEMANTIC_DEFECT=6
+UNRESOLVED=0
+
+# ACT §11B.4 negative-control predicate:
+UNRESOLVED_POSSIBLE_COMPILER_REGRESSIONS=0

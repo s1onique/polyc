@@ -1,0 +1,71 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION02
+PHASE=C2-IMPL
+
+# §26 negative controls for the prospective baseline authority.
+
+# Tool under test: build/lexer07-baseline-authority-verify
+# Tool source: tools/quality/lexer07-baseline-authority-verify.HC
+# Tool sha256: (computed at C2 commit time; tracked separately as build/lexer07-baseline-authority-verify)
+
+# Subject baseline directories:
+SUBJECT_A=build/correction02-lexer07-baseline-a
+SUBJECT_B=build/correction02-lexer07-baseline-b
+
+# --- NC1: baseline mutation ---
+
+COMMAND_NC1=./build/lexer07-baseline-authority-verify build/correction02-lexer07-baseline-a build/correction02-lexer07-baseline-b --mode=mutate
+NC1_OUTPUT=
+COMPARE match=2 mismatch=1 missing=0
+BASELINE_MUTATION_DETECTED=YES
+NC1_EXIT_CODE=0
+NC1_RESULT=PASS
+
+# The tool:
+#   1. copies <a> to <a>.mutated
+#   2. mutates the failure_class of the FIRST data row in
+#      corpus-failures.tsv (substitutes "MUTATED_FOR_NEGATIVE_CONTROL"
+#      for "NO_FALLBACK" / "ALL_FAIL" / "DIVERGED_FROM_S1_S2_S3")
+#   3. compares <a>.mutated vs <a>
+#   4. detects mismatch on corpus-failures.tsv (match=2 mismatch=1)
+
+BASELINE_MUTATION_DETECTED=YES
+
+# --- NC2: failure-set omission ---
+
+COMMAND_NC2=./build/lexer07-baseline-authority-verify build/correction02-lexer07-baseline-a build/correction02-lexer07-baseline-b --mode=omit
+NC2_OUTPUT=
+COMPARE match=2 mismatch=1 missing=0
+BASELINE_OMISSION_DETECTED=YES
+NC2_EXIT_CODE=0
+NC2_RESULT=PASS
+
+# The tool:
+#   1. copies <a> to <a>.omitted
+#   2. deletes the FIRST data row from corpus-failures.tsv
+#      (truncates the file by shifting remaining bytes left)
+#   3. compares <a>.omitted vs <a>
+#   4. detects mismatch on corpus-failures.tsv (match=2 mismatch=1)
+
+BASELINE_OMISSION_DETECTED=YES
+
+# --- NC4: pristine re-verify after negative controls ---
+
+# Both .mutated and .omitted directories were removed before re-verify.
+
+COMMAND_NC4=rm -rf build/correction02-lexer07-baseline-a.mutated build/correction02-lexer07-baseline-a.omitted && ./build/lexer07-baseline-authority-verify build/correction02-lexer07-baseline-a build/correction02-lexer07-baseline-b
+NC4_OUTPUT=
+COMPARE match=3 mismatch=0 missing=0
+BASELINE_MATCH=YES
+NC4_EXIT_CODE=0
+NC4_RESULT=PASS
+
+PRISTINE_REVERIFY=PASS
+
+# --- Baseline authority registry artifact ---
+
+# This ACT establishes the canonical forward baseline registry
+# at docs/factory/LEXER07-BASELINE-AUTHORITY.tsv.  No prior
+# canonical registry existed.  The factory-closure-status
+# reconciliation is unaffected (no HANDOFF claims the registry
+# is part of closure-status pairing).
+

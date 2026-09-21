@@ -1,0 +1,84 @@
+# PolyC Factory — Canonical LEXER07 Prospective Baseline Authority Registry
+# Location: docs/factory/LEXER07-BASELINE-AUTHORITY.tsv
+#
+# Established by ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION02 (C2 IMPL).
+#
+# This file is the single forward-compatible location for the
+# prospective LEXER07 baseline authority after the historical
+# `build/b02-corpus-A/` SHA256-only authority was proven
+# unreconstructible.  Future ACTs MUST bind to the baseline
+# identity recorded here.
+#
+# Schema (tab-separated):
+#   field\tvalue\tevidence
+#
+# This file is APPEND-ONLY at the row level: new ACTs that
+# requalify the baseline (e.g. after a fresh corpus generation)
+# add new rows at the bottom.  Old rows are NEVER rewritten;
+# stale rows are NEVER deleted.
+
+# --- Frozen prospective baseline identity (RUN_A) ---
+field	value	evidence
+ACT_ID	ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION02	ACT body
+ACTIVE_BRANCH	B	ACT §10
+PROSPECTIVE_BASELINE_RUN_A_OUTDIR	build/correction02-lexer07-baseline-a	C2 evidence
+PROSPECTIVE_BASELINE_RUN_A_MATRIX_SHA256	ee83e375032cf3f39ad8d95838bdd5e4f601fdac3244b7298cf2f68083d3c4fd	c2-baseline-provenance.tsv
+PROSPECTIVE_BASELINE_RUN_A_FAILURES_SHA256	9d8ce2e090a47619a1496df76d2f1efbde47f60f997fc8ad4182f21cf125a29a	c2-baseline-provenance.tsv
+PROSPECTIVE_BASELINE_RUN_A_PROVENANCE_SHA256	7cdf8016b7aceef4f3f244c942430f02452fa8138061d4fa7d246e88813b1c42	c2-baseline-provenance.tsv
+PROSPECTIVE_BASELINE_RUN_A_COUNTER_SHA256	0aa2315e0d8f4680583ecd1425b236ebd75e7ce6c0fe9f6233853cd9f206b519	c2-baseline-provenance.tsv
+PROSPECTIVE_BASELINE_RUN_A_COUNTER_TEXT	PASS_S0=166 HISTORICAL_S0=0 PASS_S1=175 PASS_S2=175 PASS_S3=175	broad-corpus stdout
+PROSPECTIVE_BASELINE_RUN_A_FAILURE_COUNT	21	broad-corpus stdout
+PROSPECTIVE_BASELINE_RUN_A_BYTES_IDENTICAL_4	160	broad-corpus stdout
+
+# --- Frozen prospective baseline identity (RUN_B) ---
+field	value	evidence
+PROSPECTIVE_BASELINE_RUN_B_OUTDIR	build/correction02-lexer07-baseline-b	C2 evidence
+PROSPECTIVE_BASELINE_RUN_B_MATRIX_SHA256	ee83e375032cf3f39ad8d95838bdd5e4f601fdac3244b7298cf2f68083d3c4fd	c2-baseline-provenance.tsv
+PROSPECTIVE_BASELINE_RUN_B_FAILURES_SHA256	9d8ce2e090a47619a1496df76d2f1efbde47f60f997fc8ad4182f21cf125a29a	c2-baseline-provenance.tsv
+PROSPECTIVE_BASELINE_RUN_B_PROVENANCE_SHA256	7cdf8016b7aceef4f3f244c942430f02452fa8138061d4fa7d246e88813b1c42	c2-baseline-provenance.tsv
+PROSPECTIVE_BASELINE_RUN_B_COUNTER_SHA256	0aa2315e0d8f4680583ecd1425b236ebd75e7ce6c0fe9f6233853cd9f206b519	c2-baseline-provenance.tsv
+PROSPECTIVE_BASELINE_RUN_B_FAILURE_COUNT	21	broad-corpus stdout
+
+# --- Combined baseline identity ---
+field	value	evidence
+PROSPECTIVE_LEXER07_BASELINE_SHA256	00c54408bf29237cf526aeed097f6b097f22ae682683675a0bf5ab9f9c202b9a	c2-baseline-provenance.tsv (concatenation of three SHA-256 strings then re-hashed)
+PROSPECTIVE_BASELINE_DETERMINISTIC	YES	c2-baseline-determinism.txt
+KNOWN_FAILURE_SET_STABLE	YES	c2-baseline-determinism.txt (matrix/failures/provenance all equal A==B)
+
+# --- Failure classification summary ---
+field	value	evidence
+NO_FALLBACK_S0_COUNT	9	c2-prospective-baseline-failures.tsv (sources: all, date, hashtable, io, list, memory, strings, threads, tooling)
+ALL_FAIL_4_COUNT	6	c2-prospective-baseline-failures.tsv (sources: bitvec, builtins, coroutines, 32_sql, neg_asm, neg_f64)
+S0_DIVERGED_FROM_S1_S2_S3_COUNT	6	c2-prospective-baseline-failures.tsv (sources: fzf, json, net, set, sqllite, stat)
+TEST_INFRASTRUCTURE_DRIFT_COUNT	15	c2-prospective-baseline-failures.tsv
+KNOWN_LEXER07_SEMANTIC_DEFECT_COUNT	6	c2-prospective-baseline-failures.tsv
+UNRESOLVED_COUNT	0	c2-prospective-baseline-failures.tsv
+UNRESOLVED_POSSIBLE_COMPILER_REGRESSIONS	0	c2-prospective-baseline-failures.tsv
+
+# --- Verifier tool registration ---
+field	value	evidence
+VERIFIER_TOOL_PATH	tools/quality/lexer07-baseline-authority-verify.HC	C2 commit
+VERIFIER_TOOL_BINARY_PATH	build/lexer07-baseline-authority-verify	C2 build artifact
+VERIFIER_SHELL_DISPATCH	(none; tool invoked directly)	C2 commit
+NEGATIVE_CONTROL_NC1_MUTATION	DETECTED	c2-baseline-verifier-negative-control.txt
+NEGATIVE_CONTROL_NC2_OMISSION	DETECTED	c2-baseline-verifier-negative-control.txt
+NEGATIVE_CONTROL_NC3_FAKE_IDENTITY_REJECT	(handled at C3; canonical C3 SHA differs from stale 4d8c970)	c3-c3-identity-resolution.txt
+NEGATIVE_CONTROL_NC4_PRISTINE_REVERIFY	PASS	c2-baseline-verifier-negative-control.txt
+
+# --- Forward conservation contract ---
+field	value	evidence
+FORWARD_NEW_FAILURE_IDENTITIES_TOLERANCE	0	ACT §11B.5
+FORWARD_REMOVED_PASS_IDENTITIES_TOLERANCE	0	ACT §11B.5
+FORWARD_NEW_DIVERGENCES_TOLERANCE	0	ACT §11B.5
+FORWARD_NEW_PASS_MISMATCHES_TOLERANCE	0	ACT §11B.5
+
+# --- Historical disposition ---
+field	value	evidence
+HISTORICAL_BASELINE_RECONSTRUCTIBLE	NO	c1-reconstructibility-decision.txt
+HISTORICAL_AC39	UNPROVABLE	ACT §11B.1 (Branch B)
+HISTORICAL_CORRECTION01_PASS_TRUE_GREEN	FALSE_GREEN	ACT §11B.1 (Branch B)
+
+# --- Production authority / delegation ---
+field	value	evidence
+PARSER_PADDING_PRODUCTION_AUTHORITY	LEGACY_C	ACT §3 (frozen predecessor engineering)
+PARSER_PADDING_PRODUCTION_DELEGATION	NOT_PERFORMED	ACT §5 non-goals
