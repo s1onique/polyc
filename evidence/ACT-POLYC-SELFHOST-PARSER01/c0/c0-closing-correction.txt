@@ -1,0 +1,77 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER01
+ACT_PHASE=C0-CLOSING-CORRECTION
+
+SUPERSEDES_RATIONALE=c0-execution-scope-halt.txt
+  Prior rationale text fragment "Producing that evidence honestly
+  requires a multi-session engineering effort" is NOT a Factory halt
+  condition. Per AGENTS.md / F4, complexity is not a precondition
+  failure. A session boundary is not a repository precondition and not
+  a Factory defect. The mechanically valid reason is recorded below.
+
+MECHANICALLY_CORRECT_HALT_REASON:
+  PARSER01 binding topology (§73) requires exactly 5 commits:
+    C0 AUTH
+    C1 RED/CONTRACT
+    C2 IMPL
+    C3 VERIFY
+    C4 CLOSE
+  with HALT_PHASE_CORRECTION_REQUIRED if any other commit is added.
+  The current PARSER01 lineage contains TWO C0 commits:
+    cf74b49  C0 authorization
+    3443a4a  C0 amendment
+  Therefore the exact 5-commit topology is unrecoverable from the
+  current HEAD: any C1..C4 progression would end with 6 commits,
+  making AC42 (EXACT_COMMIT_COUNT_AT_CLOSE=5) unachievable.
+  Git's content-addressed object model makes this unambiguous; the
+  second C0 commit cannot be made to disappear by re-labeling.
+  Hence HALT_PHASE_CORRECTION_REQUIRED is correct, but on the
+  topology-violation ground, not on the complexity ground.
+
+CORRECTED_BOARD_VERDICT:
+  PARSER01_C0_AUTHORIZATION             = GREEN
+  PARSER01_ENTRY_IDENTITY               = GREEN
+  PARSER01_SCOPE                        = GREEN
+  PARSER01_F14                          = GREEN
+  PARSER01_PATCH_HYGIENE                = GREEN
+
+  PARSER01_EXACT_5_COMMIT_TOPOLOGY      = IMPOSSIBLE_FROM_CURRENT_HEAD
+  PARSER01_AC42                         = UNACHIEVABLE
+  PARSER01                              = HALT_PHASE_CORRECTION_REQUIRED
+
+BOARD_STATE_AFTER_THIS_COMMIT:
+  ACT-POLYC-SELFHOST-SURFACE-RECON03     CLOSED PASS_TRUE_GREEN
+  ACT-POLYC-SELFHOST-PARSER01            HALT_PHASE_CORRECTION_REQUIRED
+  ACT-POLYC-SELFHOST-PARSER01-CORRECTION01  NEXT / READY (opening now)
+  INV.PARSER.COMPOUND                    still LEGACY_C_AUTHORITY
+
+DOCTRINE_LOCK_FOR_PARSER_FAMILY:
+  A CORRECTION01 ACT may inherit by reference:
+    - selected surface
+    - atomic slice
+    - ABI id and ABI function name
+    - allowed/forbidden production files
+    - 23-fixture shape (per PARSER01 §37-40)
+    - proof model
+    - halt taxonomy
+  from its predecessor PARSER01 evidence directories.
+  It MUST open its own C0 AUTH with its own 5-commit topology:
+    C0  AUTH / bind predecessor + inherited contract
+    C1  RED + live parser dependency recon
+    C2  IMPL
+    C3  VERIFY
+    C4  CLOSE
+  exactly five commits.
+
+PROHIBITION_FOR_FUTURE_PARSER_ACTS:
+  "Producing that evidence honestly requires a multi-session
+   engineering effort" is NOT a HALT condition.
+  A session boundary is NOT a Factory defect.
+  Complexity alone MUST NOT self-HALT an authorized ACT.
+
+HISTORICAL_RECORD_BOUNDARY:
+  PARSER01 is now closed-evidence:
+    ACT-POLYC-SELFHOST-PARSER01
+      C0 AUTH       cf74b49
+      C0 amendment  3443a4a
+      verdict       HALT_PHASE_CORRECTION_REQUIRED
+  CORRECTION01 becomes the actual production execution lineage.
