@@ -1,0 +1,52 @@
+# c1-baseline-input-availability.tsv
+# ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION02 C1 RECON
+#
+# Mechanical check: are the load-bearing inputs for the
+# historical LEXER07 baseline recoverable from committed
+# authority (git history + tracked build recipes)?
+#
+# Schema (tab-separated):
+#   input\tlocation\tavailability\tevidence
+
+# --- Git object reachability ---
+
+input	location	availability	evidence
+b02-corpus-A/0_all.o	git object	UNRECOVERABLE	git rev-list --objects --all | grep '0_all.o' returns 0 hits.
+b02-corpus-A/5_date.o	git object	UNRECOVERABLE	git rev-list --objects --all | grep '5_date.o' returns 0 hits.
+b02-corpus-A/9_hashtable.o	git object	UNRECOVERABLE	git rev-list --objects --all | grep '9_hashtable.o' returns 0 hits.
+b02-corpus-A/10_io.o	git object	UNRECOVERABLE	git rev-list --objects --all | grep '10_io.o' returns 0 hits.
+b02-corpus-A/12_list.o	git object	UNRECOVERABLE	git rev-list --objects --all | grep '12_list.o' returns 0 hits.
+b02-corpus-A/14_memory.o	git object	UNRECOVERABLE	git rev-list --objects --all | grep '14_memory.o' returns 0 hits.
+b02-corpus-A/19_strings.o	git object	UNRECOVERABLE	git rev-list --objects --all | grep '19_strings.o' returns 0 hits.
+b02-corpus-A/21_threads.o	git object	UNRECOVERABLE	git rev-list --objects --all | grep '21_threads.o' returns 0 hits.
+b02-corpus-A/22_tooling.o	git object	UNRECOVERABLE	git rev-list --objects --all | grep '22_tooling.o' returns 0 hits.
+
+input	location	availability	evidence
+b02-corpus-A/0_all.o	git unreachable object	UNRECOVERABLE	git rev-list --objects --all --unreachable | grep '0_all.o' returns 0 hits.
+b02-corpus-A/5_date.o	git unreachable object	UNRECOVERABLE	Same.
+b02-corpus-A/9_hashtable.o	git unreachable object	UNRECOVERABLE	Same.
+b02-corpus-A/10_io.o	git unreachable object	UNRECOVERABLE	Same.
+b02-corpus-A/12_list.o	git unreachable object	UNRECOVERABLE	Same.
+b02-corpus-A/14_memory.o	git unreachable object	UNRECOVERABLE	Same.
+b02-corpus-A/19_strings.o	git unreachable object	UNRECOVERABLE	Same.
+b02-corpus-A/21_threads.o	git unreachable object	UNRECOVERABLE	Same.
+b02-corpus-A/22_tooling.o	git unreachable object	UNRECOVERABLE	Same.
+
+# --- Makefile / build recipe reachability ---
+
+input	location	availability	evidence
+b02-corpus-A/*.o	Makefile recipe	NOT_GENERATED	grep -r 'b02-corpus-A' Makefile yields one comment line (Makefile:1500) with no target/recipe.  No rule produces build/b02-corpus-A/*.o files.
+b02-corpus-A/*.o	scripts/quality/*.sh	NOT_GENERATED	grep -r 'b02-corpus-A' scripts/quality/ yields only references to read paths, no write/produce paths.
+b02-corpus-A/*.o	tools/quality/*.HC	NOT_GENERATED	Same pattern: only reads.
+
+# --- SHA-256 availability (informational, not reconstructive) ---
+
+input	location	availability	evidence
+9 SHA-256 digests	evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION05-CORRECTION01/c3/corpus-object-provenance.tsv	AVAILABLE	See column "object_sha256".  Digests alone cannot reconstruct bytes.
+
+input	location	availability	evidence
+9 SHA-256 digests	tools/quality/lexer07-proof-verify.HC (compiled-in BASELINE_SHA)	AVAILABLE	Static U8 *BASELINE_SHA[9].  Digests alone cannot reconstruct bytes.
+
+# --- Verdict ---
+
+HISTORICAL_BASELINE_RECONSTRUCTIBLE=NO

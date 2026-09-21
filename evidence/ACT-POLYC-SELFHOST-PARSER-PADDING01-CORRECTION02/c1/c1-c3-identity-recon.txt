@@ -1,0 +1,64 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION02
+PHASE=C1-RECON
+
+# C1 §9.3 identity drift RED.
+#
+# Predecessor HANDOFF recorded:
+HISTORICAL_HANDOFF_C3_SHA=4d8c970615d54b6b959697daf78a5931e161aae7
+
+# Git public topology (parent edge of C4):
+PREDECESSOR_C4_SHA=1274f368c5d2d86e84d67141315f8c02fb4c1426
+PREDECESSOR_C4_PARENT_SHA=9c1edc90b34a3462e83fbb6706ba46747667a55a
+CANONICAL_C3_SHA=9c1edc90b34a3462e83fbb6706ba46747667a55a
+
+C3_IDENTITY_MATCH=NO
+IDENTITY_DRIFT_REPRODUCED=YES
+
+# --- Reachability analysis ---
+
+# 9c1edc9 is reachable from main.
+git rev-list main 2>&1 | grep -c '^9c1edc9'
+# => 1 (reachable)
+
+# 4d8c970 is NOT reachable from any ref (including all 70+ checkpoint refs).
+git for-each-ref 2>&1 | awk '{print $2}' | while read ref; do
+  if git rev-list "$ref" 2>/dev/null | grep -q '^4d8c970$'; then
+    echo "REACHABLE-FROM=$ref"
+  fi
+done
+# => no output (unreachable from every ref)
+
+# 4d8c970 exists as an orphan git object (clobbered during a checkpoint
+# rewrite or pre-push history reconciliation).
+
+# --- Tree diff ---
+
+# Both candidates share parent 39bc4eb and subject. They differ in
+# only TWO files (trailing-whitespace-only edits to captured log
+# stdout):
+#   evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION01/c3/c3-ac20-mutations.txt
+#   evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION01/c3/c3-prior-green.txt
+#
+# The reachable commit (9c1edc9) has no trailing whitespace;
+# the orphan (4d8c970) has a single space appended to the end
+# of several captured-log lines.
+#
+# Semantic content is identical; this is a captured-log rewrite,
+# not a substantive change.
+
+git diff --stat 9c1edc9 4d8c970
+# => 2 files changed, 4 insertions(+), 4 deletions(-)
+#    evidence/.../c3-ac20-mutations.txt | 2 +-
+#    evidence/.../c3-prior-green.txt    | 6 +++---
+
+# --- Authority source decision ---
+
+CANONICAL_C3_IDENTITY_SOURCE=GIT_PARENT_EDGE
+HISTORICAL_C3_IDENTITY_DISPOSITION=STALE_PRE_PUSH_OR_PRE_REWRITE_RECORD
+
+# Per ACT §19: the new CORRECTION02 HANDOFF must use only the
+# canonical Git parent identity (9c1edc90...). The historical
+# 4d8c970 record is preserved unchanged in immutable closed evidence
+# and HANDOFFs, but it is NOT edited and it is NOT cited as canonical.
+
+NO_HISTORICAL_ARTIFACT_EDIT_FOR_IDENTITY=YES

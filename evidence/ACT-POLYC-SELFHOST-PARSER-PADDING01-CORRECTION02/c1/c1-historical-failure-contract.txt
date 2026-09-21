@@ -1,0 +1,43 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION02
+PHASE=C1-RECON
+
+# Historical LEXER07 baseline failure contract.
+# Frozen at predecessor CORRECTION01 c3 verbatim.
+#
+# Source: evidence/ACT-POLYC-SELFHOST-LEXER02/CORRECTION05-CORRECTION01/c3/
+
+FROZEN_BASELINE_PASS_S0=175 HISTORICAL_S0=9 PASS_S1=175 PASS_S2=175 PASS_S3=175
+FROZEN_BASELINE_FAIL_S0=6 FAIL_S1=6 FAIL_S2=6 FAIL_S3=6
+FROZEN_BASELINE_BYTE_IDENTICAL_4=175
+FROZEN_BASELINE_BYTE_IDENTICAL_PAIRS=175/181 175/181 175/181 175/181 175/181 175/181
+FROZEN_BASELINE_REGRESSION=0
+FROZEN_BASELINE_DIVERGED=0
+FROZEN_BASELINE_PASS_MISMATCH=0
+FROZEN_BASELINE_HISTORICAL_S0_FALLBACKS_USED=9
+FROZEN_BASELINE_PROVENANCE_SCHEMA_VALID=1
+FROZEN_BASELINE_FAILURE_SCHEMA_VALID=1
+FROZEN_BASELINE_STATUS=PASS
+
+# 6 sources in BOTH_FAIL_4:
+#   src/holyc-lib/bitvec.HC
+#   src/holyc-lib/builtins.HC
+#   src/holyc-lib/coroutines.HC
+#   src/tests/32_sql.HC
+#   src/tests/llvm-spike/neg_asm.HC
+#   src/tests/llvm-spike/neg_f64.HC
+# These 6 are NOT in the historical fallback path; they fail uniformly
+# across all 4 stages (./hcc, hcc-bootstrap02, hcc-bootstrap03, hcc-bootstrap04).
+
+# 9 sources in stage0-historical:
+#   src/holyc-lib/all.HC           (0_all.o,         sha256=2dda65210bd70...)
+#   src/holyc-lib/date.HC          (5_date.o,        sha256=84cfbd4684c17...)
+#   src/holyc-lib/hashtable.HC     (9_hashtable.o,   sha256=1e7c210aca666...)
+#   src/holyc-lib/io.HC            (10_io.o,         sha256=acf6f2cc28a73...)
+#   src/holyc-lib/list.HC          (12_list.o,       sha256=d1a05d7932fe9...)
+#   src/holyc-lib/memory.HC        (14_memory.o,     sha256=39249c78f3bdb...)
+#   src/holyc-lib/strings.HC       (19_strings.o,    sha256=4861dedd37a41...)
+#   src/holyc-lib/threads.HC       (21_threads.o,    sha256=38030efad11fc...)
+#   src/holyc-lib/tooling.HC       (22_tooling.o,    sha256=e59bd907b862e...)
+# These 9's S0 stage is byte-identical to the historical baseline via
+# the build/b02-corpus-A fallback path. Their S1/S2/S3 stages are
+# produced by the current bootstrap chain.
