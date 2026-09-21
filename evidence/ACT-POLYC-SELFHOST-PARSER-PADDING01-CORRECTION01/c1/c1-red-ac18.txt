@@ -1,0 +1,71 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION01
+PHASE=C1-RED
+EVIDENCE_KIND=ac18-red
+
+# C1 RED — AC18 algebraic invariants were not independently proved (D1).
+#
+# Mechanical inspection of predecessor evidence
+#   evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01/c3/mandatory-ac-status.tsv
+# confirms the AC18 row was discharged by an "oracle equality" argument,
+# not by an independent invariant witness.
+
+# --- Predecessor AC18 ledger row (line 19 of mandatory-ac-status.tsv) -----
+
+PREDCECESSOR_AC18_LEDGER_ROW:
+AC18	ALGEBRAIC_INVARIANT_FAIL=0	PASS
+      c3/c3-direct-differential-matrix.txt
+      16640/16640 oracle-equal -> invariants by construction
+      sha256_matrix_artifact
+      oracle=src/parser.c body; pc==oc on all 16640 inputs implies
+      pc satisfies same invariants
+
+# --- The forbidden argument shape -----------------------------------------
+
+PREDECESSOR_AC18_WITNESS_MODE=ORACLE_EQUALITY
+PREDCESSOR_WITNESS_TEXT_RAW=
+  16640/16640 oracle-equal -> invariants by construction
+  oracle=src/parser.c body; pc==oc on all 16640 inputs implies
+  pc satisfies same invariants
+
+# The predecessor AC18 witness reduces to:
+#
+#   pc == oracle for all 16640 inputs
+#   therefore invariants hold.
+#
+# This is exactly the "pc == oc, therefore invariants hold" shape
+# forbidden by ACT-POLYC-SELFHOST-PARSER-PADDING01 C3-S48
+# (algebraic invariants must be mechanically tested and are
+# independent of simple equality with the C result).
+
+# --- Tool inventory: independent algebraic verifier ------------------------
+
+SEARCH[independent PolyC-only algebraic invariant verifier]:
+  find tools/quality -name 'parser-padding-algebraic-invariants*'  -> NOT FOUND
+  find tools/quality -name '*algebraic*'  -> NOT FOUND
+  find tools -name '*algebraic*'          -> NOT FOUND
+  grep -RIn 'algebraic' tools/quality     -> NOT FOUND (only "ALGEBRAIC_INVARIANT_FAIL"
+                                              token emitted by differential.HC,
+                                              not an independent verifier)
+
+INDEPENDENT_ALGEBRAIC_VERIFIER_PRESENT=NO
+
+# --- Source/tool inventory for invariant predicates -----------------------
+
+SEARCH[tools/quality/*]:
+  parser-padding-differential.HC          : pc == oc only
+  parser-padding-oracle-impl.c            : verbatim copy of legacy body
+  parser-padding-fixedpoint-verify.HC     : byte equality only
+  parser-padding-mutation-m1..m4.HC       : mutation harnesses
+
+# No file in tools/quality or tools/bootstrap:
+#   * computes I1..I4 against BootstrapCalcPadding alone,
+#   * counts ZERO_SIZE_CHECKED / RANGE_FAIL / ALIGNMENT_FAIL,
+#   * or emits ALGEBRAIC_INVARIANT_FAIL=0 from non-oracle evidence.
+
+# --- RED terminal tokens (ACT §5) ------------------------------------------
+
+RED_AC18_REPRODUCED=YES
+AC18_INDEPENDENT_WITNESS_ABSENT=YES
+PREDECESSOR_AC18_STATUS=PASS
+PREDECESSOR_AC18_WITNESS_MODE=ORACLE_EQUALITY
+INDEPENDENT_ALGEBRAIC_VERIFIER_PRESENT=NO

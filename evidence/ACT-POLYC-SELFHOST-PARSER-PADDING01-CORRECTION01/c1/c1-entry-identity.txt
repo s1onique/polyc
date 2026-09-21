@@ -1,0 +1,44 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION01
+PHASE=C1-RED
+
+# C1 entry identity (F1, ACT §4)
+# All commands run from the repository root on the committed tree.
+
+# --- F1: identity before mutation ------------------------------------------
+
+COMMAND[git branch --show-current]:
+main
+
+COMMAND[git rev-parse HEAD]:
+04f0578d8b1dac7907d12c589e9fc39f665cfa44
+
+COMMAND[git status --short]:
+(empty)
+
+COMMAND[git diff --check 81afe8b..HEAD]:
+(empty, rc=0)
+
+COMMAND[git rev-list --count 81afe8b..HEAD]:
+1
+
+COMMAND[git log --format='%H %s' 81afe8b..HEAD]:
+04f0578 ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION01 C0: AUTH
+
+# --- ACT §4 required result tokens ------------------------------------------
+
+BRANCH=main
+C1_ENTRY_HEAD=04f0578d8b1dac7907d12c589e9fc39f665cfa44
+WORKTREE_CLEAN_AT_C1_ENTRY=YES
+PATCH_HYGIENE_ERRORS=0
+CORRECTION_COMMITS_VISIBLE_AT_C1=1
+
+# --- Identity tokens captured for downstream C2 freeze ----------------------
+
+C0_HEAD=04f0578d8b1dac7907d12c589e9fc39f665cfa44
+PREDECESSOR_CLOSE_HEAD=81afe8b102fba7300daed90c609f5bec38accbfc
+PREDECESSOR_ACT=ACT-POLYC-SELFHOST-PARSER-PADDING01
+PREDECESSOR_VERDICT_AT_CLOSE=PASS_TRUE_GREEN
+
+# This C1 captures entry identity only. No source / tool mutation was
+# performed between the previous commit and this evidence file. The
+# entry gate satisfies ACT §4; C1 RED may proceed.

@@ -1,0 +1,75 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION01
+PHASE=C1-RED
+EVIDENCE_KIND=oracle-authority-red
+
+# C1 RED — D4: legacy C oracle reimplemented the formula instead of
+# calling the actual legacy authority (ACT §12).
+#
+# Mechanical inspection of:
+#   tools/quality/parser-padding-oracle-impl.c
+#   src/parser.c::CalcPadding  (line 430..438)
+#
+# The oracle source is a verbatim copy of the legacy body, with the
+# only difference being the signature widened from int to I64. This
+# is a "second independent expected-value algorithm" forbidden by
+# predecessor ACT C3-S31.
+
+# --- Legacy authority (src/parser.c, lines 430..438) -----------------------
+
+LEGACY_CALCPADDING_PATH=src/parser.c
+LEGACY_CALCPADDING_LINES=430..438
+LEGACY_CALCPADDING_BODY[verbatim]:
+  int CalcPadding(int offset, int size) {
+      /* Zero-size fields (e.g. trailing `U0 body;` placeholders used as
+       * "rest of bytes" markers) need no padding. Guard before `% size`
+       * so we don't depend on platform UB for `% 0` (x86 traps, ARM
+       * returns the dividend - which here would roll `offset` back to 0
+       * and zero out the whole class size). */
+      if (size == 0) return 0;
+      return offset % size == 0 ? 0 : size - offset % size;
+  }
+
+# --- Oracle (tools/quality/parser-padding-oracle-impl.c) -------------------
+
+ORACLE_PATH=tools/quality/parser-padding-oracle-impl.c
+ORACLE_BODY[verbatim]:
+  I64 OracleCalcPadding(I64 offset, I64 size)
+  {
+    /* Zero-size guard first (do not depend on platform UB for `% 0`). */
+    if (size == 0) return 0;
+    return offset % size == 0 ? 0 : size - offset % size;
+  }
+
+# --- Diff inspection ------------------------------------------------------
+
+SHARED_STRUCTURE_BETWEEN_LEGACY_AND_ORACLE:
+  - size == 0 => return 0;
+  - else if offset % size == 0 => return 0;
+  - else => return size - offset % size;
+
+# The two bodies differ ONLY in:
+#   1) type widening from `int` to `I64` (ABI parity with PolyC);
+#   2) comment text.
+# The semantic formula is identical.
+
+ORACLE_CALLS_ACTUAL_LEGACY_CALC_PADDING=NO
+ORACLE_REIMPLEMENTS_FORMULA=YES
+
+# --- Why this matters -----------------------------------------------------
+
+# Predecessor ACT C3-S31 forbade a second independent expected-value
+# algorithm. The oracle is structurally a second copy of the formula.
+# A bug fix to the legacy CalcPadding body that did NOT simultaneously
+# edit the oracle would silently desynchronize the two. A bug fix that
+# did edit both is a single semantic change presented as a
+# cross-check; that is not a verifier.
+#
+# The C2 repair must thread the oracle through a real call/link to
+# the actual legacy CalcPadding in src/parser.c — either by exporting
+# it (with body unchanged) or by a tiny adjacent wrapper.
+
+# --- RED terminal tokens (ACT §12) ----------------------------------------
+
+RED_ORACLE_AUTHORITY_REPRODUCED=YES
+ORACLE_FORMULA_IS_VERBATIM_COPY=YES
+ORACLE_CALLS_ACTUAL_LEGACY=NO

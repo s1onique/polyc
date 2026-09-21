@@ -1,0 +1,85 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION01
+PHASE=C1-RED
+EVIDENCE_KIND=ac29-red
+
+# C1 RED — AC29 generation-copy control could not distinguish
+# byte-identical artifacts (D2).
+#
+# Mechanical replay of the predecessor generation-copy control on the
+# committed evidence tree.
+
+# --- Predecessor control file (verbatim) -----------------------------------
+
+PATH=evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01/c3/c3-generation-copy-control.txt
+CONTROL_FILE_LINE[0]=FILE[0] path=build/parser-padding-fixedpoint/parser-padding.g0.o size=744 sha256=187a4de9465e8dbe3c640484b05540daaad4a3267dd1543a169e3c304b02d5b1
+CONTROL_FILE_LINE[1]=FILE[1] path=build/parser-padding-fixedpoint/parser-padding.g1.o size=744 sha256=187a4de9465e8dbe3c640484b05540daaad4a3267dd1543a169e3c304b02d5b1
+CONTROL_FILE_LINE[2]=FILE[2] path=build/parser-padding-fixedpoint/parser-padding.g2.o size=744 sha256=187a4de9465e8dbe3c640484b05540daaad4a3267dd1543a169e3c304b02d5b1
+CONTROL_FILE_LINE[3]=FILE[3] path=build/parser-padding-fixedpoint/parser-padding.g3.o size=744 sha256=187a4de9465e8dbe3c640484b05540daaad4a3267dd1543a169e3c304b02d5b1
+CONTROL_FILE_LINE[4]=FILE[4] path=build/parser-padding-fixedpoint/parser-padding.g3.forged.o size=744 sha256=187a4de9465e8dbe3c640484b05540daaad4a3267dd1543a169e3c304b02d5b1
+CONTROL_FILE_LINE[12]=PAIR G3_VS_MUTATED file_i=3 file_j=4 size_a=744 size_b=744 equal=YES
+CONTROL_FILE_LINE[13]=PARSER_PADDING_FIXEDPOINT_RC=1 reason=mutated-equals-pristine
+CONTROL_FILE_LINE[14]=PARSER_PADDING_NEGATIVE_CONTROL=FAIL reason=verifier-accepted-mutation
+
+# --- Predecessor ledger verdict --------------------------------------------
+
+PATH=evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01/c3/mandatory-ac-status.tsv
+LEDGER_ROW=AC29  GENERATION_COPY_DETECTED=YES  PASS  c3/c3-generation-copy-control.txt  forged=G1 detected rc=1
+
+# --- Direct evidence/ledger contradiction ----------------------------------
+
+# 1) The control file (the actual verifier output) records
+#    PARSER_PADDING_NEGATIVE_CONTROL=FAIL with reason
+#    verifier-accepted-mutation.
+# 2) The ledger row (the abstract verdict claim) records PASS with
+#    witness forged=G1 detected rc=1.
+#
+# Both are quoted from immutable evidence. They contradict.
+#
+# The control file's FAIL is the load-bearing verdict:
+# the byte-equality verifier emitted equal=YES on G3_VS_MUTATED and
+# then emitted RC=1 reason=mutated-equals-pristine as a syntactic
+# signal that a "mutation" was supplied, but it did not detect that
+# the mutation IS the G1 forgery in disguise. The byte verifier
+# cannot reject a byte-identical forgery.
+
+# --- Replay summary -------------------------------------------------------
+
+G1_OBJECT_SHA=187a4de9465e8dbe3c640484b05540daaad4a3267dd1543a169e3c304b02d5b1
+G3_OBJECT_SHA=187a4de9465e8dbe3c640484b05540daaad4a3267dd1543a169e3c304b02d5b1
+FORGED_OBJECT_SHA=187a4de9465e8dbe3c640484b05540daaad4a3267dd1543a169e3c304b02d5b1
+
+G1_OBJECT_SHA == G3_OBJECT_SHA=YES
+FORGED_G3_FROM_G1_OBJECT_SHA == LEGITIMATE_G3_OBJECT_SHA=YES
+BYTE_EQUALITY_CAN_DETECT_COPY=NO
+PREDECESSOR_CONTROL_VERDICT=FAIL
+PREDECESSOR_LEDGER_AC29=PASS
+
+# --- Provenance inspection (proves PROVENANCE_BINDING_PRESENT=NO) ---------
+
+PATH=evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01/c3/c3-generation-provenance.tsv
+PROVENANCE_COLUMNS=generation<TAB>compiler_path<TAB>compiler_sha256<TAB>object_path<TAB>object_sha256<TAB>object_size<TAB>command<TAB>built_from_absent_output
+
+MISSING_FROM_SCHEMA:
+  source_path
+  source_sha256
+  command_sha256
+  fresh_build_record
+  fresh_build_record_sha256
+  mtime
+  ctime
+
+# The predecessor provenance schema has no source/command/fresh-build
+# fields. It records compiler identity and the build flag
+# `built_from_absent_output=YES`. It does NOT bind the artifact to a
+# generation-specific build nonce. A byte-equal forgery can therefore
+# match the expected provenance row's column for "object_sha256"
+# because that column is a function only of bytes, not of build
+# provenance.
+
+PROVENANCE_BINDING_PRESENT=NO
+
+# --- RED terminal tokens (ACT §7) -----------------------------------------
+
+RED_AC29_REPRODUCED=YES
+GENERATION_COPY_CONTROL_BYTE_ONLY=YES
+PROVENANCE_BINDING_PRESENT=NO

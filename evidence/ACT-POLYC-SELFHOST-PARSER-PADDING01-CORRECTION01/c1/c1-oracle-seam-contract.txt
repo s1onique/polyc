@@ -1,0 +1,114 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION01
+PHASE=C1-RED
+EVIDENCE_KIND=oracle-seam-contract
+
+# C1 oracle-seam design decision (ACT §13).
+#
+# Goal: let the quality oracle obtain its result from the ACTUAL
+# legacy `CalcPadding` implementation in src/parser.c without altering
+# the result of any existing production caller and without duplicating
+# the formula.
+#
+# Frozen design choice (C1):
+
+ORACLE_SEAM_DESIGN=ADJACENT_WRAPPER
+ORACLE_SEAM_DESIGN_FROZEN=YES
+LEGACY_BODY_REIMPLEMENTATION_REQUIRED=NO
+
+# --- Chosen design ---------------------------------------------------------
+
+# PREFERRED design from ACT §13:
+#
+#   int CalcPadding(int offset, int size)              (in src/parser.c)
+#
+# is made link-visible (non-static) AND a tiny wrapper is exported
+# immediately adjacent to it, for example:
+#
+#   I64 ParserLegacyCalcPaddingOracle(I64 offset, I64 size)
+#   {
+#       return (I64)CalcPadding((int)offset, (int)size);
+#   }
+#
+# This wrapper:
+#   - has zero new logic;
+#   - does not modify CalcPadding's body;
+#   - preserves every existing production caller of CalcPadding
+#     (CalcClassSize, CalcUnionSize, all layout paths);
+#   - exists solely to provide a linkable symbol with the PolyC ABI
+#     for the quality oracle.
+
+SEAM_LOCATION=src/parser.c
+SEAM_NAME=ParserLegacyCalcPaddingOracle
+SEAM_SIGNATURE=I64 ParserLegacyCalcPaddingOracle(I64 offset, I64 size)
+SEAM_BODY_THREE_LINES_BEGIN
+  return (I64)CalcPadding((int)offset, (int)size);
+SEAM_BODY_THREE_LINES_END
+
+# The quality oracle then declares:
+#
+#   extern "c" I64 ParserLegacyCalcPaddingOracle(I64 offset, I64 size);
+#
+# and calls it directly. The oracle file
+# (tools/quality/parser-padding-oracle-impl.c) loses the verbatim
+# copy of the formula and is reduced to either:
+#   (a) a thin wrapper that forwards to ParserLegacyCalcPaddingOracle
+#       and exposes OracleCalcPadding for ABI parity with the
+#       existing differential tool; or
+#   (b) a re-declaration of ParserLegacyCalcPaddingOracle as
+#       OracleCalcPadding (no logic).
+#
+# Either is acceptable as long as no formula is duplicated.
+
+# --- Why this is the smallest legal seam ---------------------------------
+
+# (1) It does NOT modify CalcPadding's body. ACT §2 forbids
+#     CALC_PADDING_BODY_DELTA > 0.
+#
+# (2) It does NOT alter any production caller. CalcPadding remains
+#     called by CalcClassSize and CalcUnionSize exactly as before.
+#     ACT §2 forbids CALC_PADDING_PRODUCTION_CALLER_DELTA > 0.
+#
+# (3) It does NOT modify BootstrapCalcPadding. ACT §2 forbids
+#     BOOTSTRAP_CALC_PADDING_SOURCE_DELTA > 0.
+#
+# (4) It does NOT introduce a generation-copy control on top of
+#     fixed-point; it only resolves the oracle-authority defect.
+#
+# (5) The wrapper is < 50 LOC and adds zero new dependency.
+#
+# (6) The wrapper's correctness is verifiable by:
+#     - source diff: zero changes to CalcPadding;
+#     - link-time symbol presence: nm ./hcc | grep ParserLegacyCalcPaddingOracle;
+#     - call count: bounded instrumentation can record the call;
+#     - causal chain: parser-padding oracle -> exported seam -> actual
+#       CalcPadding in src/parser.c.
+
+# --- Forbidden alternative forms -----------------------------------------
+
+# Forbidden:
+#   * copy the formula again
+#   * macro-copy the body
+#   * generated duplicate C implementation
+#   * include parser.c into the oracle in a way that changes
+#     production build behavior
+#   * reroute production callers to BootstrapCalcPadding
+#   * change BootstrapCalcPadding
+
+# --- Required production-semantics conservation -------------------------
+
+# After C2 introduces the seam:
+CALC_PADDING_BODY_DELTA_EXPECTED=0
+CALC_PADDING_CALLER_DELTA_EXPECTED=0
+BOOTSTRAP_CALC_PADDING_DELTA_EXPECTED=0
+ORACLE_SEAM_PRODUCTION_BEHAVIOR_DELTA_EXPECTED=0
+
+# --- Required oracle-authority proof --------------------------------------
+
+ORACLE_AUTHORITY_CONTRACT_EXPECTED=SATISFIED
+ORACLE_LINKS_LEGACY_SYMBOL_EXPECTED=YES
+ORACLE_CALL_COUNT_EXPECTED_GT_ZERO=YES
+
+# --- Required result tokens for this C1 contract artifact -----------------
+
+ORACLE_SEAM_DESIGN_FROZEN=YES
+LEGACY_BODY_REIMPLEMENTATION_REQUIRED=NO

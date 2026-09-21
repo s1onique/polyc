@@ -1,0 +1,79 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION01
+PHASE=C1-RED
+EVIDENCE_KIND=invariant-contract
+
+# C1 frozen independent invariants for AC18 repair (ACT §6).
+#
+# The C2 algebraic verifier MUST check these four predicates directly
+# against BootstrapCalcPadding(I64 offset, I64 size) and MUST NOT
+# invoke the C oracle, read its output, or derive expected values from
+# any predecessor differential TSV.
+#
+# The four predicates are the executable form of the same semantic
+# contract referenced as "rem=0" / "0<rem<size" in C0 prose. They
+# together establish correctness on the qualified domain.
+
+# --- Domain ----------------------------------------------------------------
+
+DOMAIN_OFFSET=0..255      # offset in 0..255
+DOMAIN_SIZE=0..64         # size   in 0..64
+MATRIX_TOTAL=16640        # 256 * 65
+
+# --- Invariants ------------------------------------------------------------
+
+# I1 — zero size: padding is identically zero when size == 0.
+I1_NAME=zero_size
+I1_PREDICATE=IF size == 0 THEN padding == 0
+
+# I2 — non-negative: padding is never negative on the qualified domain.
+I2_NAME=nonnegative
+I2_PREDICATE=padding >= 0
+
+# I3 — range: padding is strictly less than size when size > 0.
+I3_NAME=range
+I3_PREDICATE=IF size > 0 THEN padding < size
+
+# I4 — aligned result: (offset + padding) is a multiple of size when size > 0.
+I4_NAME=aligned_result
+I4_PREDICATE=IF size > 0 THEN (offset + padding) % size == 0
+
+# --- Forbidden verifier wiring (closure contract) --------------------------
+
+FORBIDDEN_ORACLE_DEPENDENCY=YES
+FORBIDDEN_PRE_READ_OF_ORACLE_OUTPUT=YES
+FORBIDDEN_TSV_DERIVATION=YES
+
+# The C2 verifier (tools/quality/parser-padding-algebraic-invariants.HC)
+# MUST call only:
+#   BootstrapCalcPadding(I64 offset, I64 size)
+# and compute its verdict from the four predicates above. It MUST NOT
+# invoke, read, link, fork, hash, or otherwise observe the C oracle.
+
+# --- Required matrix counts ------------------------------------------------
+
+EXPECTED_TOTAL=16640
+EXPECTED_ZERO_SIZE_CASES=256          # size == 0 with offset in 0..255
+EXPECTED_NONZERO_SIZE_CASES=16384     # size > 0 with offset in 0..255
+EXPECTED_SIZE_GT_ZERO_CASES=16384     # same as above; needed by I3 / I4
+
+# --- Terminal witness token template --------------------------------------
+
+# The C2 verifier MUST emit at least these tokens in PASS state.
+TERMINAL_TOKEN_TEMPLATE_BEGIN
+TOTAL=16640
+ZERO_SIZE_CHECKED=256
+ZERO_SIZE_FAIL=0
+NONNEGATIVE_CHECKED=16640
+NONNEGATIVE_FAIL=0
+RANGE_CHECKED=16384
+RANGE_FAIL=0
+ALIGNMENT_CHECKED=16384
+ALIGNMENT_FAIL=0
+ALGEBRAIC_INVARIANT_FAIL=0
+STATUS=PASS
+TERMINAL_TOKEN_TEMPLATE_END
+
+# --- Required result tokens for this C1 contract artifact -----------------
+
+INVARIANT_CONTRACT_FROZEN=YES
+ORACLE_INDEPENDENT_VERIFIER_REQUIRED=YES

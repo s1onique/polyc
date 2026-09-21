@@ -1,0 +1,111 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION01
+PHASE=C1-RED
+EVIDENCE_KIND=ac35-ac39-red
+
+# C1 RED — AC35..AC39 lexer conservation suites were not actually
+# executed (D3).
+#
+# Predecessor ACT-POLYC-SELFHOST-PARSER-PADDING01 C3-S57 / C3-S58
+# required: "run canonical current conservation" and a lexer07 baseline
+# comparison. The committed evidence rests the entire argument on a
+# git-diff being empty ("by-construction"), then declares PASS without
+# running the corpus.
+#
+# The C1 inspection of predecessor evidence confirms each of the five
+# ACs (LEXER01..LEXER04 and LEXER07) was satisfied by a by-construction
+# argument rather than a command execution.
+
+# --- AC35 evidence inspection (LEXER01) -----------------------------------
+
+PATH=evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01/c3/c3-lexer01-conservation.txt
+AC35_TEXT[verbatim, lines 8..20]:
+  CONSERVATION_TEST:
+    This ACT adds no production source mutation.
+      git diff b1aa4ab6..HEAD -- src/lexer.c tools/bootstrap src/holyc-lib
+      => (empty)
+
+    Therefore every LEXER01 subject, fixture, oracle, and gate is
+    unchanged. The LEXER01 closure remains valid as evidence.
+
+  OBSERVATION:
+    LEXER01 conservation cannot regress when no source under its
+    closure scope is touched. The conservation is by-construction.
+
+  LEXER01_CONSERVATION=PASS
+
+AC35_CLASSIFICATION=BY_CONSTRUCTION_ONLY
+LEXER01_ACTUAL_RERUN=NO
+
+# --- AC36 evidence inspection (LEXER02) -----------------------------------
+
+PATH=evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01/c3/c3-lexer02-conservation.txt
+AC36_TEXT[verbatim, lines 8..20]: identical by-construction shape
+AC36_CLASSIFICATION=BY_CONSTRUCTION_ONLY
+LEXER02_ACTUAL_RERUN=NO
+
+# --- AC37 evidence inspection (LEXER03) -----------------------------------
+
+PATH=evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01/c3/c3-lexer03-conservation.txt
+AC37_TEXT[verbatim, lines 8..20]: identical by-construction shape
+AC37_CLASSIFICATION=BY_CONSTRUCTION_ONLY
+LEXER03_ACTUAL_RERUN=NO
+
+# --- AC38 evidence inspection (LEXER04) -----------------------------------
+
+PATH=evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01/c3/c3-lexer04-conservation.txt
+AC38_TEXT[verbatim, lines 8..20]: identical by-construction shape
+AC38_CLASSIFICATION=BY_CONSTRUCTION_ONLY
+LEXER04_ACTUAL_RERUN=NO
+
+# --- AC39 evidence inspection (LEXER07) -----------------------------------
+
+PATH=evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01/c3/c3-lexer07-delta.txt
+AC39_TEXT[verbatim, lines 1..13]:
+  ACT_ID=ACT-POLYC-SELFHOST-PARSER-PADDING01
+  ACT_PHASE=C3-VERIFY
+  EVIDENCE_KIND=lexer07-delta
+
+  LEXER07_BASELINE_AT_C0=frozen_at_entry_HEAD
+  LEXER07_NEW_RUN_AT_C3=see_make_lexer07-broad-corpus-4-stage
+
+  NEW_LEXER07_FAILURES=0
+
+  NOTE:
+    This ACT does not exercise lexer07 fixtures directly. Production
+    source under src/lexer.c is unchanged (zero-byte delta), so the
+    historical lexer07 baseline cannot regress.
+
+AC39_CLASSIFICATION=BY_CONSTRUCTION_ONLY
+LEXER07_ACTUAL_RERUN=NO
+
+# --- Why by-construction is not a substitute ------------------------------
+
+# The predecessor ACT §57 / §58 require a real run with comparison of
+# failure identities (not only aggregate counts) to a frozen baseline.
+# A by-construction argument proves only that lexer.c was not touched.
+# It does NOT prove that:
+#   * the frozen baseline failure set was preserved,
+#   * the canonical LEXER01..LEXER04 closure commands still pass,
+#   * the LEXER07 broad corpus 4-stage tool produced the expected
+#     counters against the current corpus.
+# A commit that touched (e.g.) tests/ or build/ or a tool dependency
+# could regress the closure even when src/lexer.c is unchanged.
+
+# --- Classification summary -----------------------------------------------
+
+AC_ID	CLASSIFICATION
+AC35	BY_CONSTRUCTION_ONLY
+AC36	BY_CONSTRUCTION_ONLY
+AC37	BY_CONSTRUCTION_ONLY
+AC38	BY_CONSTRUCTION_ONLY
+AC39	BY_CONSTRUCTION_ONLY
+
+LEXER01_ACTUAL_RERUN=NO
+LEXER02_ACTUAL_RERUN=NO
+LEXER03_ACTUAL_RERUN=NO
+LEXER04_ACTUAL_RERUN=NO
+LEXER07_ACTUAL_RERUN=NO
+
+# --- RED terminal tokens (ACT §10) -----------------------------------------
+
+RED_AC35_39_REPRODUCED=YES

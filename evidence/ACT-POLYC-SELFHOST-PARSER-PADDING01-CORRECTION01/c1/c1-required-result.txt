@@ -1,0 +1,68 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION01
+PHASE=C1-RED
+
+# --- ACT §16 required result tokens ---------------------------------------
+
+# Defect reproduction
+RED_AC18_REPRODUCED=YES
+AC18_INDEPENDENT_WITNESS_ABSENT=YES
+
+RED_AC29_REPRODUCED=YES
+GENERATION_COPY_CONTROL_BYTE_ONLY=YES
+PROVENANCE_BINDING_PRESENT=NO
+
+RED_AC35_39_REPRODUCED=YES
+
+RED_ORACLE_AUTHORITY_REPRODUCED=YES
+
+# Contract artifacts
+ORACLE_SEAM_DESIGN_FROZEN=YES
+PRIOR_GREEN_SUBSTRATE_FROZEN=YES
+
+# Source delta (C1 must not mutate production source / tools)
+C1_PRODUCTION_SOURCE_DELTA=0
+C1_TOOL_SOURCE_DELTA=0
+
+# Hygiene / state
+PATCH_HYGIENE_ERRORS=0
+WORKTREE_CLEAN_AT_C1_COMMIT=YES
+
+# --- C1 invariant contract freeze -----------------------------------------
+
+INVARIANT_CONTRACT_FROZEN=YES
+ORACLE_INDEPENDENT_VERIFIER_REQUIRED=YES
+
+# --- C1 generation-copy contract freeze -----------------------------------
+
+GENERATION_COPY_CONTRACT_FROZEN=YES
+PROVENANCE_MODEL_FROZEN=YES
+
+# --- C1 oracle-seam design freeze -----------------------------------------
+
+ORACLE_SEAM_DESIGN=ADJACENT_WRAPPER
+LEGACY_BODY_REIMPLEMENTATION_REQUIRED=NO
+
+# --- C1 frozen prior-green substrate --------------------------------------
+
+# See c1-prior-green-sha256.tsv for the 13-row frozen substrate table.
+# All listed SHAs were captured at C1_ENTRY_HEAD=04f0578.
+
+# --- C1 conservation command contract -------------------------------------
+
+# See c1-conservation-command-contract.tsv for the 5-row command table.
+
+# --- C1 commit subject ----------------------------------------------------
+
+C1_COMMIT_SUBJECT=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION01 C1 RED
+
+# --- C1 -> C2 expected commit count ---------------------------------------
+
+# After C1 commit, git rev-list --count 81afe8b..HEAD must report 2.
+EXPECTED_REV_LIST_COUNT_AFTER_C1=2
+
+# --- HALT/negative statement ----------------------------------------------
+
+# None of the four predecessor defects could be dismissed as
+# by-construction or as having been already repaired. All four are
+# reproduced against the committed predecessor evidence. The defects
+# are admitted as live RED for C2 to repair.

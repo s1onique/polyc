@@ -1,0 +1,125 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION01
+PHASE=C1-RED
+EVIDENCE_KIND=generation-copy-contract
+
+# C1 generation-copy forgery contract (ACT §7, §9).
+#
+# Replay the predecessor generation-copy control. The theorem the
+# predecessor ACT asserted was: "byte-identical forgery of G1 written
+# to the G3 path is rejected". The predecessor ACT's own control file
+# recorded FAIL — the verifier cannot detect a byte-identical forgery
+# because all 4 fixedpoint objects are byte-equal by construction.
+#
+# C2 must implement a provenance verifier that rejects generation
+# substitution on a build-identity basis, not on a byte-inequality
+# basis.
+
+# --- Required observations from predecessor control -----------------------
+
+OBSERVATION[G1_OBJECT_SHA == G3_OBJECT_SHA]:
+  evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01/c3/c3-generation-copy-control.txt
+  FILE[1] sha256=187a4de9465e8dbe3c640484b05540daaad4a3267dd1543a169e3c304b02d5b1
+  FILE[3] sha256=187a4de9465e8dbe3c640484b05540daaad4a3267dd1543a169e3c304b02d5b1
+  EQUAL=YES
+
+OBSERVATION[FORGED_G3_FROM_G1_OBJECT_SHA == LEGITIMATE_G3_OBJECT_SHA]:
+  FILE[3] sha256=187a4de9465e8dbe3c640484b05540daaad4a3267dd1543a169e3c304b02d5b1
+  FILE[4] sha256=187a4de9465e8dbe3c640484b05540daaad4a3267dd1543a169e3c304b02d5b1
+  EQUAL=YES
+
+OBSERVATION[predecessor byte-only verdict]:
+  PAIR G3_VS_MUTATED equal=YES
+  PARSER_PADDING_FIXEDPOINT_RC=1 reason=mutated-equals-pristine
+  PARSER_PADDING_NEGATIVE_CONTROL=FAIL reason=verifier-accepted-mutation
+
+OBSERVATION[predecessor ledger verdict]:
+  AC29  GENERATION_COPY_DETECTED=YES  PASS
+        witness = forged=G1 detected rc=1
+
+OBSERVATION[byte-equality verdict cannot detect forgery]:
+  The verifier's bytes-equal conclusion is correct: the forgery IS
+  byte-identical to G3 (because the forgery is G1's pristine bytes,
+  and all four fixedpoint objects are intentionally byte-identical).
+  The verifier does NOT consult provenance, so it cannot reject the
+  forgery as a generation substitution.
+
+BYTE_EQUALITY_CAN_DETECT_COPY=NO
+PREDECESSOR_CONTROL_VERDICT=FAIL
+PREDECESSOR_LEDGER_AC29=PASS
+RED_AC29_REPRODUCED=YES
+GENERATION_COPY_CONTROL_BYTE_ONLY=YES
+PROVENANCE_BINDING_PRESENT=NO
+
+# --- Negative-control contract for the C2 repair --------------------------
+
+# The C2 verifier SHALL run this exact procedure against fresh-built
+# G0..G3 (rebuilt under distinct compilers with distinct fresh_build_records).
+
+NEGATIVE_CONTROL_PROCEDURE_BEGIN
+1. independently build pristine G1 and G3;
+2. preserve G3's expected provenance row;
+3. replace ONLY the temporary G3 output bytes with G1's bytes;
+4. attach G1's provenance record to the substituted artifact
+   (so its output_sha256 matches expected_G3.output_sha256);
+5. run the C2 provenance verifier;
+6. require rejection because the generation/build identity does not
+   match expected G3;
+7. restore independently-built G3;
+8. require PASS.
+NEGATIVE_CONTROL_PROCEDURE_END
+
+# Required terminal output from the C2 verifier for this control:
+
+REQUIRED_TOKENS_BEGIN
+G1_G3_OBJECT_BYTES_EQUAL=YES
+FORGERY_SOURCE_GENERATION=G1
+FORGERY_TARGET_SLOT=G3
+FORGED_OBJECT_SHA_MATCHES_EXPECTED_G3=YES
+FORGED_PROVENANCE_MATCHES_EXPECTED_G3=NO
+PROVENANCE_VERIFIER_RC!=0
+GENERATION_COPY_DETECTED=YES
+PRISTINE_G3_REBUILD=YES
+PRISTINE_PROVENANCE_REVERIFY=PASS
+REQUIRED_TOKENS_END
+
+# Rejection on byte inequality alone is invalid (HALT_PROVENANCE_CONTROL_INVALID).
+# The verifier MUST NOT claim that "bytes differ" is the cause of rejection.
+
+# --- Provenance schema for the C2 verifier ---------------------------------
+
+# Each generation row SHALL bind (per ACT §8):
+#   generation
+#   compiler_path
+#   compiler_sha256
+#   source_path
+#   source_sha256
+#   command_line
+#   command_sha256
+#   object_path
+#   object_sha256
+#   object_size
+#   fresh_build_record
+#   fresh_build_record_sha256
+#
+# mtime MAY be recorded as an observational field, but is NOT the
+# load-bearing witness for generation identity.
+#
+# The theorem intentionally allows:
+#   G1.output_sha256 == G3.output_sha256
+# while still requiring:
+#   G1.provenance != G3.provenance
+
+# --- Provenance negative controls (ACT §25) -------------------------------
+
+PROVENANCE_NEGATIVE_CONTROLS_BEGIN
+P1: wrong compiler SHA in temporary G3 record -> MUST REJECT
+P2: wrong command SHA                       -> MUST REJECT
+P3: wrong source SHA                        -> MUST REJECT
+PROVENANCE_NEGATIVE_CONTROLS_END
+
+REQUIRED_PROVENANCE_NEGATIVE_CONTROLS_PASS=4/4
+
+# --- Required result tokens for this C1 contract artifact -----------------
+
+GENERATION_COPY_CONTRACT_FROZEN=YES
+PROVENANCE_MODEL_FROZEN=YES
