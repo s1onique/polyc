@@ -1,0 +1,27 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION03
+PHASE=C4-CLOSE
+TOPIC=POST-C4-OBSERVATIONS
+
+# Pre-C4-commit observations captured at C4-commit-creation time.
+# These are recorded BEFORE the C4 commit is finalized, so the
+# values here reflect HEAD = C3 commit (4 commits since ENTRY).
+
+PRE_C4_FROZEN_TIP_SHA=1c5226dbed965f6431979958bc943b4677685b10
+# Captured at C3; the commit observed BEFORE C4 exists.
+
+PRE_C4_COMMIT_HEAD_AT_C4_CREATION=c0845e2
+# C3 commit of this ACT.
+
+ENTRY=3b38d6910c7a117b0a98a98d84ab5114da70cb83
+# Predecessor CORRECTION02 C4 close.
+
+PRE_C4_OBS_AC06=git rev-list --count 3b38d69..1c5226d  = 3
+PRE_C4_OBS_AC07=git rev-list --count 3b38d69..HEAD  = 4  (C3 commit is HEAD)
+PRE_C4_OBS_AC17=git merge-base --is-ancestor 1c5226d HEAD  = 0
+
+# Expected AFTER C4 commit exists (post-C4 observations):
+#   POST_C4_OBS_AC07=git rev-list --count 3b38d69..HEAD  = 5
+#   POST_C4_OBS_AC17=git merge-base --is-ancestor 1c5226d HEAD  = 0
+#   POST_C4_OBS_AC05=git rev-parse 1c5226d  = 1c5226d (resolvable)
+#   POST_C4_OBS_AC02=git diff --check 1274f36..HEAD  = empty
+#   POST_C4_OBS_AC03=git diff --check HEAD  = empty
