@@ -1,0 +1,74 @@
+# C0 Defect Contract
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION04
+
+This ACT repairs FOUR binding closure-authority defects that
+remain after CORRECTION03 closed `PASS_FORWARD_BASELINE_REQUALIFIED_REPAIRED`:
+
+## D1_F14_CLOSED_SURFACE
+
+CORRECTION03 modified a closed CORRECTION02 evidence file:
+
+- Path:
+  `evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION02/c2/c2-baseline-verifier-negative-control.txt`
+- CORRECTION02 close blob (at 3b38d69):
+  `3ac4ebbf0723598ab5b08c1121d23b553cb2aff38ede0d56cccb5e0a0316511a`
+- Current HEAD blob (post-CORRECTION03):
+  `82a88a91bee6fa3e737b7418cfa7484c381658e0df1609706f853e3d086d88dd`
+
+These differ; F14 closed surface is violated.
+
+CORRECTION04 fix: restore the closed blob exactly at C2.
+
+## D2_RANGE_CHECK_TRAILER_PLACEMENT
+
+CORRECTION03 placed supersession trailers on C0:
+
+- C0 (8d87083) trailers:
+  `ACT:` + `ACT-Phase: RED` + `ACT-Supersedes:` +
+  `ACT-Corrected-Verdict:`
+- `factory-v2-range-check.sh` lines 216-222 reject supersession
+  trailers on non-CLOSE commits.
+- Live reproduction confirms: `STATUS=FAIL` with reason
+  "commit 8d87083... in range carries supersession trailers;
+   only CLOSE may".
+
+CORRECTION04 fix: no supersession trailers on C0/C1/C2/C3;
+place them ONLY on the C4 CLOSE commit.
+
+## D3_EXACT_5_COMMIT_TOPOLOGY
+
+CORRECTION03 commit topology:
+
+```
+3b38d69  ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION02 C4: CLOSE
+8d87083  ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION03 C0: AUTH
+0c3163e  ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION03 C1: RECON/RED
+1c5226d  ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION03 C2: IMPL
+c0845e2  ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION03 C3: VERIFY
+17eeb85  ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION03 C4: CLOSE
+9ea5bc4  Fix HANDOFF verdict section format  <-- POST-C4 FIXUP
+```
+
+`git rev-list --count 3b38d69..9ea5bc4 = 6`, not 5.
+POST_C4_COMMIT_COUNT = 1 (the 9ea5bc4 fixup).
+CORRECTION03 closed at 17eeb85 with PASS verdict, then
+subsequent fixup commit invalidated the closure geometry.
+
+CORRECTION04 fix: own fresh 5-commit topology with NO post-C4
+commits. The external terminality gate enforces terminality
+without a follow-up commit.
+
+## D4_POST_C4_TERMINALITY_MODEL
+
+CORRECTION03 evidence used a tautological
+`git rev-list --count HEAD..HEAD = 0` to claim
+`POST_C4_COMMIT_COUNT=0`. That is not a load-bearing post-C4
+external witness.
+
+CORRECTION04 fix: explicit external terminality gate
+(factory-v2-range-check.sh + rev-list count) is run AFTER C4
+exists but creates no follow-up commit. Committed HANDOFF
+records `PASS_PENDING_EXTERNAL_TERMINALITY`; promotion to
+`PASS_FORWARD_BASELINE_GOVERNANCE_REQUALIFIED` happens only
+in the external observation, never inside C4.

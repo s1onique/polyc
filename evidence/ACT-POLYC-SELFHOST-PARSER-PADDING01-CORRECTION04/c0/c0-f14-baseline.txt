@@ -1,0 +1,75 @@
+# C0 F14 Closed-Surface Baseline (RED-1 evidence)
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION04
+
+This file records the closed-surface state at C0 entry, BEFORE
+any CORRECTION04 mutation. It is the baseline against which the
+C2 restoration will be measured.
+
+## Reference: CORRECTION02 close commit
+
+```
+CORRECTION02_CLOSE_COMMIT = 3b38d6910c7a117b0a98a98d84ab5114da70cb83
+```
+
+## Pre-CORRECTION04 status (at C0 entry, HEAD = 9ea5bc4)
+
+### Diff of CORRECTION02 evidence surface
+
+```
+$ git diff --stat 3b38d691..HEAD -- evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION02/
+ ...POLYC-SELFHOST-PARSER-PADDING01-CORRECTION02/c2/c2-baseline-verifier-negative-control.txt | 1 -
+ 1 file changed, 1 deletion(-)
+```
+
+### The single modified file
+
+```
+$ git diff 3b38d691..HEAD -- \
+    evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION02/c2/c2-baseline-verifier-negative-control.txt
+diff --git a/evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION02/c2/c2-baseline-verifier-negative-control.txt
+index f80e479..d6dcf04 100644
+--- a/evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION02/c2/c2-baseline-verifier-negative-control.txt
++++ b/evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION02/c2/c2-baseline-verifier-negative-control.txt
+@@ -68,4 +68,3 @@ PRISTINE_REVERIFY=PASS
+ # canonical registry existed.  The factory-closure-status
+ # reconciliation is unaffected (no HANDOFF claims the registry
+ # is part of closure-status pairing).
+-
+```
+
+A single trailing blank line was removed by CORRECTION03 C2.
+
+### The two blobs
+
+```
+$ git show 3b38d691:evidence/.../c2/c2-baseline-verifier-negative-control.txt | sha256sum
+3ac4ebbf0723598ab5b08c1121d23b553cb2aff38ede0d56cccb5e0a0316511a  -
+
+$ sha256sum evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION02/c2/c2-baseline-verifier-negative-control.txt
+82a88a91bee6fa3e737b7418cfa7484c381658e0df1609706f853e3d086d88dd  evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION02/c2/c2-baseline-verifier-negative-control.txt
+```
+
+CLOSED_CORRECTION02_EVIDENCE_DELTA > 0 (RED confirmed).
+
+### CORRECTION02 closed HANDOFF surface
+
+```
+$ git diff 3b38d691..HEAD -- \
+    docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION02.md
+(empty)
+```
+
+CORRECTION02 closed HANDOFF surface is preserved at HEAD.
+
+## Predicates for C2
+
+```
+C2_RESTORE_TARGET_BLOB = 3ac4ebbf0723598ab5b08c1121d23b553cb2aff38ede0d56cccb5e0a0316511a
+C2_POST_RESTORATION_PREDICATE = sha256(head) == C2_RESTORE_TARGET_BLOB
+C2_F14_PREDICATE = git diff 3b38d691..HEAD -- evidence/.../CORRECTION02/ == empty
+C2_HANDOFF_PREDICATE = git diff 3b38d691..HEAD -- HANDOFF-...-CORRECTION02.md == empty
+```
+
+Historical `CORRECTION02_PATCH_HYGIENE` will remain `FAIL` after
+restoration; this is correct per Lock B.
