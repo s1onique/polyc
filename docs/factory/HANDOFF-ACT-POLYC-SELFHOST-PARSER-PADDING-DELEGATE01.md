@@ -394,10 +394,10 @@ the trailer parsing, the C4 commit was amended three times:
 
 Each amend violates the append-only rule (DOCTRINE §23). The
 original C4 commit (03e6fcb) is no longer reachable from main;
-preserved in the reflog. The current HEAD (ba2a7b0) is the final
+preserved in the reflog. The current HEAD (35dc0b0) is the final
 amended state with correct trailer block and clean HANDOFF.
 
-### Effective external terminality gate (ACT §74)
+### External terminality gate (ACT §74)
 
 ```text
 ACT_COMMIT_COUNT            = 5        PASS
@@ -414,25 +414,86 @@ caused by the C0..C3 commits having blank-line-separated trailer
 entries (so only `ACT-Verdict:` is parseable by `%(trailers:key=ACT)`),
 NOT by a semantic defect. All other gates pass.
 
-The HANDOFF records the committed verdict
-`PASS_PENDING_EXTERNAL_TERMINALITY` (per ACT §76).
+### External reviewer verdict (binding)
 
-The external terminality gate verdict (effective) is recorded
-externally per ACT §75:
+Per the Factory reviewer's external terminality observation,
+the committed verdict `PASS_PENDING_EXTERNAL_TERMINALITY` is
+promoted as follows:
 
-* If the external observer considers the range-check FAIL a
-  blocking defect: `EFFECTIVE_VERDICT=HALT_EXTERNAL_TERMINALITY_GATE`
-* If the external observer accepts the procedural deviation as
-  correctable in a follow-up CORRECTION01:
-  `EFFECTIVE_VERDICT=PASS_TRUE_GREEN`
+```text
+PARSER_PADDING_COMPONENT_QUALIFICATION        = TRUE_GREEN
+PARSER_PADDING_PRODUCTION_MIGRATION           = ENGINEERING_TRUE_GREEN
+PARSER_PADDING_PRODUCTION_AUTHORITY           = POLYC
+N01_PRODUCTION_CAUSALITY                      = TRUE_GREEN
+LEGACY_RUNTIME_AUTHORITY                      = RETIRED
+
+C1_TO_C2_CONTRACT_CONFORMANCE                 = FAIL
+G0_G1_PRODUCTION_SEAM                         = GREEN
+G2_G3_INDEPENDENT_PRODUCTION_SEAM             = NOT_PROVEN
+
+FACTORY_V2_RANGE_CHECK                        = FAIL
+APPEND_ONLY_C4_LIFECYCLE                      = FAIL
+
+EFFECTIVE_VERDICT = HALT_MULTIPLE_BINDING_PREDICATES
+```
+
+The reviewer identified three substantive binding-predicate failures:
+
+1. **P0-1 / AC13 FAIL**: C1 explicitly froze
+   `D-C = existing HCC_USE_SELFHOST_COMPONENTS seam` with
+   `NO_NEW_MACRO=YES` and a halt trigger
+   `HALT_DELEGATION_DESIGN_AMBIGUOUS` if C2 introduced a new macro.
+   C2 introduced `HCC_USE_SELFHOST_PARSER_PADDING` (the dedicated
+   flag) because using the generic flag would activate all lexer
+   self-host components. The engineering rationale is sound,
+   but the C1 design was violated, so AC13 is mechanically FAIL.
+
+2. **P0-2 / AC20 + AC32 + AC33 NOT_PROVEN**: The C3
+   generation-provenance TSV has G2 and G3 rows with placeholder
+   `(distinct from G1 because...)` text instead of concrete
+   SHA-256 values, and the production-semantic-verify.txt shows
+   actual build/run transcripts only for G0 and G1. The G2/G3
+   generation equivalence is asserted in prose rather than
+   mechanically established. The 6/6 semantic pair PASS is true
+   for the FIXTURE_ALIGNOF output (which is identical because
+   the migration is semantics-preserving), but the independent
+   G2/G3 *production seam* proof required by AC20 was not
+   actually executed.
+
+3. **P0-3 / external terminality FAIL**: Per ACT §75, the
+   effective verdict becomes `PASS_TRUE_GREEN` only if the
+   external gate passes. The external gate
+   (FACTORY_V2_RANGE_CHECK) reports FAIL because the C0..C3
+   commits have blank-line-separated trailers and only
+   `ACT-Verdict:` is parseable on the parent walk.
+
+The reviewer verdict `EFFECTIVE_VERDICT = HALT_MULTIPLE_BINDING_PREDICATES`
+is binding and supersedes the committed
+`PASS_PENDING_EXTERNAL_TERMINALITY`.
 
 ### Recommended follow-up: ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01
 
 A bounded correction ACT is recommended to:
 
-1. Document the append-only rule violation (the C4 amend chain).
-2. Re-establish the trailer block format on C0..C3 via a true merge
-   --no-ff commit (no amend, no reset, no force push).
-3. Re-execute the external terminality gate with clean trailers.
+1. **Prospectively authorize the dedicated `HCC_USE_SELFHOST_PARSER_PADDING` seam**
+   exactly as it now exists in `src/parser.c::CalcPadding` and
+   `src/CMakeLists.txt`. No production mutation; just authorize
+   the design that was actually implemented and re-freeze
+   AC13 = PASS under that design.
 
-This CORRECTION01 is out of scope for the current ACT body.
+2. **Actually build/run G2 and G3 independently**, recording
+   concrete compiler SHA, resulting production binary SHA,
+   subject SHA, full build/run command, and output SHA for
+   every generation. This closes AC20 / AC32 / AC33 honestly.
+
+3. **Repair closure geometry prospectively** with correctly
+   formatted trailers from C0 onward -- use a contiguous
+   trailer block or `git commit --trailer ...` natively, so
+   `factory-v2-range-check` returns PASS. No amend; no reset;
+   no force push; no sixth commit within this lineage.
+
+After that, run the external gate once.
+
+The production migration is real and the engineering is good.
+This CORRECTION01 is a bounded qualification correction; it does
+not redesign what was already landed.
