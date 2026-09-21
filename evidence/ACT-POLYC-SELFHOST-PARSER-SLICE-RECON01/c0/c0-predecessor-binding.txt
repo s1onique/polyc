@@ -1,0 +1,44 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON01
+ACT_PHASE=C0-AUTH
+EVIDENCE_KIND=c0-predecessor-binding
+
+PREDECESSOR=ACT-POLYC-SELFHOST-PARSER01-CORRECTION01
+PREDECESSOR_HEAD_AT_BINDING=b1aa4ab6c8567a5626fbb1094121b32b4bbee669
+
+PREDECESSOR_HALT (mechanically recorded, frozen input fact):
+  HALT_TOKEN=HALT_DEPENDENCY_EXPLOSION
+  HALT_CLASS=GOVERNANCE
+  BLOCKS_NEXT=YES
+  C1_VERDICT=BOUNDED_DEPENDENCY_GRAPH=NO
+
+PREDECESSOR_C1_VERDICT_SOURCE=\
+  evidence/ACT-POLYC-SELFHOST-PARSER01-CORRECTION01/c1/c1-required-result.txt
+
+PREDECESSOR_FUNCTION_SHAPE (frozen input fact):
+  FUNCTION=parseCompoundStatementInternal
+  FILE=src/parser.c
+  LINE_START=1752
+  LINE_END=1880
+  LOC=129
+  RECOVERY=jmp_buf stmt_recovery, setjmp at 1789, restore at 1876
+  SUBORDINATE_PARSER_DEPENDENCY_COUNT=24
+  DEFERRED_SURFACE_CALLS=9
+
+INHERITED_CONTRACT_FACTS:
+  F1: ABI 7 is pure-data-flow (per RECON03 c2-selected-atomic-slice.txt)
+  F2: parseCompoundStatementInternal mutates 11 distinct host state fields
+  F3: jmp_buf coupling is structural
+  F4: AST-list mutation requires host pointer identity
+  F5: 9 subordinate parsers are DEFERRED_PARSER_SURFACES
+  F6: LEXER family pattern does not transfer to stateful parsers
+
+SUPERSEDED_ESTIMATE:
+  ORIGINAL_AUTHORIZATION_RANGE=1752..2012 (~260 LOC)
+  LIVE_C1_RANGE=1752..1880 (129 LOC)
+  RATIONALE=lines 1881..2012 are an unrelated astStmtFallsThrough analysis
+    region; they are not part of parseCompoundStatementInternal.
+
+ENTRY_GATE_VERDICT=PASS
+  WORKTREE_CLEAN_AT_C0=YES
+  PATCH_HYGIENE_AT_C0=PASS
+  PREDECESSOR_BINDING_FOUND=YES

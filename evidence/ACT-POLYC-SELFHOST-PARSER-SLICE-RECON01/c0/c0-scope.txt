@@ -1,0 +1,44 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON01
+ACT_PHASE=C0-AUTH
+EVIDENCE_KIND=c0-scope
+
+C0_AUTH_BEFORE_RECON=YES
+  (this file plus the authorization artifact and the c0-entry-identity
+   witness are committed before any new C1 inventory evidence is added)
+
+AUTHORIZED_READ_SCOPE (C1 only, this is recon not implementation):
+  src/parser.c
+  src/parser.h
+  src/cctrl.c
+  src/cctrl.h
+  src/ast.c
+  src/ast.h
+  src/lexer.c
+  src/lexer.h
+  src/list.h
+  src/map.h
+  src/prslib.c
+  src/prslib.h
+  (any directly referenced parser helpers needed to classify a candidate)
+
+AUTHORIZED_WRITE_SCOPE:
+  docs/acts/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON01.md
+  docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE-RECON01.md
+  docs/ROADMAP.md
+  evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON01/**
+
+PRODUCTION_SOURCE_DELTA_BINDING=0
+COMPILER_SEMANTIC_DELTA_BINDING=0
+SUCCESSOR_IMPLEMENTATION_DELTA_BINDING=0
+
+PRODUCTION_SCOPE_INVARIANT:
+  After C4 close, the following MUST be empty:
+    git diff "$ENTRY_HEAD"..HEAD -- src/ tools/bootstrap/ src/holyc-lib/
+
+FORBIDDEN_FAMILIES:
+  - no implementation of selected parser slice in this ACT
+  - no new quality tool (existing tools reused only)
+  - no closure of evidence for closed ACTs (LEXER01..04, SURFACE-RECON03,
+    PARSER01, PARSER01-CORRECTION01)
+  - no modification of Cctrl/Ast/Map/List representation
+  - no migration of parseStatement / parseDecl* / parseExpr* / parseToplevel*
