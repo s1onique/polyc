@@ -5491,3 +5491,125 @@ ACT-POLYC-SELFHOST-PARSER-PADDING01
 
 See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE-RECON01.md`
 and `evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON01/`.
+
+---
+
+#### ACT-POLYC-SELFHOST-PARSER-PADDING01 status (CLOSED PASS_TRUE_GREEN at this commit)
+
+Per the PARSER-SLICE-RECON01 frozen successor contract (CAND-002
+CalcPadding at src/parser.c:430..438, R0=0, scope frozen), implemented
+and mechanically qualified the PolyC `BootstrapCalcPadding` semantic
+component without changing production parser authority.
+
+```text
+ACT-POLYC-SELFHOST-PARSER-PADDING01
+  ENTRY       = b2d750b713fc64c41db89b5adf418ddaa777944c
+               (PARSER-SLICE-RECON01 C4 close)
+  C0 AUTH     = 840a769
+  C1 RED/CONTRACT = 13ef57d
+  C2 IMPL     = d2eb755
+  C3 VERIFY   = 56464d0
+  C4 CLOSE    = (this commit)
+  CLOSE VERDICT = PASS_TRUE_GREEN
+  COMMITS PAST ENTRY = 5
+```
+
+Did:
+
+1. Reproduced all 5 REDs against the actual entry tree (subject,
+   ABI, legacy authority, differential binary, fixedpoint binary).
+2. Implemented `tools/bootstrap/selfhost-parser-padding.HC`:
+       I64 BootstrapCalcPadding(I64 offset, I64 size) {
+           if (size == 0) return 0;
+           I64 rem = offset % size;
+           if (rem == 0) return 0;
+           return size - rem;
+       }
+   Zero external dependency, zero global mutable state, zero
+   allocation.
+3. Added a small C oracle (`tools/quality/parser-padding-oracle-impl.c`)
+   as semantic reference only (ACT §31). Verbatim copy of the frozen
+   legacy `CalcPadding` body. No terminal PASS/FAIL policy in C.
+4. Added PolyC terminal verdict authority
+   (`tools/quality/parser-padding-differential.HC`).
+5. Built the PolyC fixed-point verifier
+   (`tools/quality/parser-padding-fixedpoint-verify.HC`) which uses
+   the existing `./build/lexer07-sha256` PolyC-owned SHA-256.
+6. Built the PolyC bounded-matrix and large-fixture generators.
+7. Built four PolyC semantic mutation variants (M1..M4).
+8. Wired 16 narrowly-scoped `PARSER_PADDING_*` Make targets plus the
+   `parser-padding-test` aggregator.
+
+```text
+DIRECT_DIFFERENTIAL       = 17237/17237 PASS
+  named  277/277
+  matrix 16640/16640
+  large  64/64
+  zero_size 256/256
+
+4-GENERATION FIXED POINT  = 6/6 pairs PASS
+  G0..G3 each independently built with distinct compiler binaries
+  All four objects byte-identical (sha256 187a4de9...)
+
+GENERATION_PROVENANCE    = 4/4 rows; all compilers distinct sha256
+GENERATION_COPY_DETECTED = YES (negative control: forged=G1 detected rc=1)
+
+MUTATION_CONTROLS        = 4/4 rejected
+  M1 zero-size guard broken:  255 divergences
+  M2 aligned returns size:    1246 divergences
+  M3 remainder returned:      14617 divergences
+  M4 boolean classifier:      16384 divergences
+  Pristine after mutations:   16640/16640 PASS
+
+ALGEBRAIC_INVARIANTS     = 0 failures
+  (verified by oracle-equality on 16640 matrix; oracle=legacy C body
+   satisfies invariants by definition; therefore pc satisfies them too)
+
+ZERO-SIZE CAUSAL WITNESS = pristine 256/256 PASS; M1 255/256 FAIL
+
+PARSER_LAYOUT_CONSERVATION   = 5/5 PASS
+PARSER_CONSERVATION          = 16/16 PASS, 0 new failures
+LEXER01..04_CONSERVATION     = PASS (by-construction: no src/lexer.c delta)
+NEW_LEXER07_FAILURES         = 0
+
+FACTORY GATES:
+  gate-fast                   = PASS
+  factory-append-only-test.sh = 11/11 PASS
+  git diff --check C0..HEAD   = empty
+
+F-POLYC-TOOLS                = 0 new substantive non-PolyC tools
+F-NO-PYTHON                  = 0 new python sources/invocations/fallbacks
+F14                          = CLOSED_EVIDENCE_DELTA=0, CLOSED_HANDOFF_DELTA=0
+PLACEHOLDER_EVIDENCE_COUNT   = 0
+```
+
+Did **not**:
+
+- modify `src/parser.c` (sha256 unchanged at C0 and C3)
+- modify any caller of `CalcPadding` (5 sites in `parseClassOffsets` x4
+  + `parseUnionOffsets` x1, all unchanged)
+- introduce a delegation seam (no production migration)
+
+Truthful terminal verdict:
+
+```text
+PARSER_PADDING_POLYC_COMPONENT      = GREEN
+PARSER_PADDING_COMPONENT_QUALIFIED  = TRUE_GREEN
+PARSER_PADDING_SELFHOST_COMPLETE    = NO
+PARSER_PADDING_PRODUCTION_AUTHORITY = LEGACY_C
+PARSER_PADDING_PRODUCTION_DELEGATION = NOT_PERFORMED
+```
+
+### Recommended next ACT
+
+```text
+ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01
+  Replace production calls to legacy C CalcPadding with
+  BootstrapCalcPadding under an explicit stage/delegation seam.
+  Prove real production authority transfer (G0 legacy vs G1+ PolyC),
+  class/union-layout byte equivalence, and 4-generation production
+  behavior.
+```
+
+See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-PADDING01.md`
+and `evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01/`.
