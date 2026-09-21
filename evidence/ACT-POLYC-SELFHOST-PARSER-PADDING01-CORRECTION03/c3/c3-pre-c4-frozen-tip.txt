@@ -1,0 +1,34 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION03
+PHASE=C3-VERIFY
+TOPIC=PRE-C4-FROZEN-TIP-CAPTURED-BEFORE-C4-COMMIT
+
+# PRE_C4_FROZEN_TIP_SHA captured BEFORE the C4 commit exists.
+# After C4, this SHA is the load-bearing reference point for
+# AC38 (EXACT_COMMIT_COUNT_AT_CLOSE=5) and AC40 (POST_C4_COMMIT_COUNT=0).
+
+PRE_C4_FROZEN_TIP_SHA=1c5226dbed965f6431979958bc943b4677685b10
+# ^ SHA of HEAD at the moment this file was committed (C3 of this ACT).
+#   This is the C2 commit of CORRECTION03.
+
+ENTRY_HEAD=3b38d6910c7a117b0a98a98d84ab5114da70cb83
+# ^ Predecessor CORRECTION02 C4 close (= this ACT's ENTRY).
+
+EXPECTED_AT_C4_BEFORE_COMMIT_EXISTS=
+  git rev-list --count <ENTRY>..<PRE_C4_FROZEN_TIP_SHA>  → 3
+  git rev-list --count <PRE_C4_FROZEN_TIP_SHA>..HEAD       → 0
+  git diff --check <ENTRY>..HEAD                            → empty
+  git merge-base --is-ancestor <PRE_C4_FROZEN_TIP_SHA> HEAD → 0
+
+# After C4 of this ACT (i.e., new HEAD = X):
+#   git rev-list --count <ENTRY>..HEAD              → 5
+#   git rev-list --count <ENTRY>..<PRE_C4_FROZEN_TIP_SHA> → 4
+#     (this ACT's C0 + C1 + C2 + C3 = 4 commits ahead of ENTRY)
+#   git rev-list --count <PRE_C4_FROZEN_TIP_SHA>..HEAD → 1
+#     (just the C4 commit)
+#   git diff --check <ENTRY>..HEAD                   → empty (D-WS fixed)
+#   git diff --check HEAD                            → empty
+#   git merge-base --is-ancestor <PRE_C4_FROZEN_TIP_SHA> HEAD → 0
+
+# This file is the load-bearing AC38/AC40 evidence mechanism.
+# It is captured BEFORE the C4 commit, replacing the predecessor's
+# non-load-bearing mechanisms (pre-C4 prediction; HEAD..HEAD tautology).

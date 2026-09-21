@@ -1,0 +1,22 @@
+ac_id	predicate	status	evidence	observed_value
+AC01	git rev-list --count 1274f36..3b38d69	DEFERRED_TO_C4	c1-red-reproduction.txt	5
+AC02	git diff --check 1274f36..HEAD empty	PASS	c2-baseline-diff.txt	0
+AC03	git diff --check HEAD empty	PASS	c2-baseline-diff.txt	0
+AC04	git diff --stat PRE_C4_FROZEN_TIP..HEAD shows only c4/HANDOFF/TSV	DEFERRED_TO_C4	c3-pre-c4-frozen-tip.txt	(observed at C4)
+AC05	git rev-parse PRE_C4_FROZEN_TIP_SHA resolvable	DEFERRED_TO_C4	c3-pre-c4-frozen-tip.txt	1c5226d
+AC06	git rev-list --count ENTRY..PRE_C4_FROZEN_TIP_SHA = 4	DEFERRED_TO_C4	c3-pre-c4-frozen-tip.txt	(observed at C4)
+AC07	git rev-list --count ENTRY..HEAD = 5	DEFERRED_TO_C4	c3-pre-c4-frozen-tip.txt	(observed at C4)
+AC08	sha256sum build/lexer07-broad-corpus-4-stage	PASS	c2-provenance-rebind.tsv	c8165800b15a7e5d326dc1bb53e3579ce7b020174369dc7fc1e7b227f095dea3
+AC09	sha256sum build/hcc	PASS	c2-provenance-rebind.tsv	daac3b43680a0edb131decaf2745dc8e2bb09d9b42bd34cd58f53270c48c60fe
+AC10	sha256sum tools/quality/lexer07-broad-corpus-4-stage.HC	PASS	c2-provenance-rebind.tsv	820e2c3c808411dd13e06ff2850888811b5389c3f98dadc2878bfad9a685bbd2
+AC11	sha256sum baseline-a/corpus-matrix.tsv = ee83e375...	PASS	c2-provenance-rebind.tsv	ee83e375032cf3f39ad8d95838bdd5e4f601fdac3244b7298cf2f68083d3c4fd
+AC12	>= 8 SHA-bound rows in TSV	PASS	c2-provenance-rebind.tsv	16
+AC13	gate-fast STATUS=PASS	PASS	c3-verify.txt	STATUS=PASS
+AC14	factory-append-only-test STATUS=PASS	PASS	c3-verify.txt	STATUS=PASS
+AC15	factory-v2-range-check STATUS=PASS	DEFERRED_TO_C4	c3-verify.txt	(observed at C4)
+AC16	parser-padding subjects unchanged	PASS	c3-verify.txt	identical
+AC17	merge-base --is-ancestor PRE_C4_FROZEN_TIP_SHA HEAD	DEFERRED_TO_C4	c3-pre-c4-frozen-tip.txt	(observed at C4)
+AC18	PROSPECTIVE_LEXER07_BASELINE_SHA256 = 00c54408...	PASS	docs/factory/LEXER07-BASELINE-AUTHORITY.tsv	00c54408bf29237cf526aeed097f6b097f22ae682683675a0bf5ab9f9c202b9a
+AC19	HANDOFF does not claim own SHA	DEFERRED_TO_C4	(deferred)	(observed at C4)
+AC20	factory-closure-status reconciliation PASS for new HANDOFF	DEFERRED_TO_C4	(deferred)	(observed at C4)
+AC21	PREDECESSOR_DISPOSITION_CORRECTION02 = HALT_FALSE_GREEN	PASS	docs/factory/LEXER07-BASELINE-AUTHORITY.tsv	HALT_FALSE_GREEN

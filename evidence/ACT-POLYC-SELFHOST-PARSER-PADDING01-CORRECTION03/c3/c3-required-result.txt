@@ -1,0 +1,30 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION03
+PHASE=C3-VERIFY
+
+# C3 required result.  All C3-checkable ACs verified PASS.
+# Pre-C4 frozen tip captured for AC38/AC40 load-bearing
+# mechanism.  Defer-to-C4 ACs: AC04, AC05, AC06, AC07,
+# AC15, AC17, AC19, AC20.
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION03
+PHASE=C3-VERIFY
+BRANCH=CORRECTION_EVIDENCE_AUTHORITY_REPAIR
+
+C3_CHECKABLE_ACS_PASS=13  # AC01, AC02, AC03, AC08, AC09, AC10, AC11, AC12, AC13, AC14, AC16, AC18, AC21
+C3_DEFERRED_ACS=AC04,AC05,AC06,AC07,AC15,AC17,AC19,AC20
+
+PRE_C4_FROZEN_TIP_SHA_CAPTURED_AT_C3=1c5226dbed965f6431979958bc943b4677685b10
+
+# After C4 of this ACT, expected post-C4 observations:
+#   AC04: git diff --stat 1c5226d..HEAD  → only docs/factory/HANDOFF-..., docs/factory/LEXER07..., docs/factory/act-handoff-map.tsv, evidence/.../CORRECTION03/c4/
+#   AC05: git rev-parse 1c5226d  → 1c5226d (resolvable)
+#   AC06: git rev-list --count 3b38d69..1c5226d  → 4
+#   AC07: git rev-list --count 3b38d69..HEAD  → 5
+#   AC15: factory-v2-range-check ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION03 HEAD  → PASS, COMMITS=5
+#   AC17: git merge-base --is-ancestor 1c5226d HEAD  → 0
+#   AC19: HANDOFF does not contain literal 40-char hex SHAs in CLOSE_SHA= position
+#   AC20: factory-closure-status reconciliation PASS for new HANDOFF
+
+F14=PASS
+SCOPE_LEAK=NO
+PARSER_PADDING_SUBJECTS_UNCHANGED=YES
