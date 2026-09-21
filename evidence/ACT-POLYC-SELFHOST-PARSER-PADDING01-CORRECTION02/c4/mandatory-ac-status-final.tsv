@@ -1,0 +1,50 @@
+ac_id	predicate	status	evidence	observed_value
+AC01	BRANCH=main	PASS	c4-entry-identity.txt	main
+AC02	WORKTREE_CLEAN_AT_C0=YES	PASS	c0-entry-identity.txt	clean of pre-existing tracked changes
+AC03	C0_AUTH_BEFORE_WORK=YES	PASS	c0-required-result.txt	ACT doc + c0 evidence before any C1+ work
+AC04	ENTRY_HEAD_RECORDED=YES	PASS	c0-entry-identity.txt	1274f368c5d2d86e84d67141315f8c02fb4c1426
+AC05	PREDECESSOR_C4_SHA_VERIFIED=YES	PASS	c1-c3-identity-recon.txt	1274f368c5d2d86e84d67141315f8c02fb4c1426
+AC06	CLOSED_PREDECESSOR_EVIDENCE_DELTA=0	PASS	c4-c4-required-result.txt + c3-f14.txt	hashes unchanged
+AC07	CLOSED_PREDECESSOR_HANDOFF_DELTA=0	PASS	c4-c4-required-result.txt + c3-f14.txt	hashes unchanged
+AC08	BOOTSTRAP_CALC_PADDING_DELTA=0	PASS	c3-factory-gates.txt	sha256 unchanged
+AC09	CALC_PADDING_BODY_DELTA=0	PASS	c3-factory-gates.txt	sha256 unchanged
+AC10	PARSER_PADDING_PRODUCTION_AUTHORITY=LEGACY_C	PASS	c4-required-result.txt	LEGACY_C
+AC11	PARSER_PADDING_PRODUCTION_DELEGATION=NOT_PERFORMED	PASS	c4-required-result.txt	NOT_PERFORMED
+AC12	HISTORICAL_BASELINE_REFERENCES_INVENTORIED=YES	PASS	c1-baseline-reference-search.txt	inventoried
+AC13	HISTORICAL_BASELINE_INPUTS_CLASSIFIED=YES	PASS	c1-baseline-provenance.tsv	9 fields classified
+AC14	RECONSTRUCTIBILITY_DECISION_SINGLE_VALUED=YES	PASS	c1-reconstructibility-decision.txt	NO (single value)
+AC15	C1_BRANCH_FROZEN=YES	PASS	c1-reconstructibility-decision.txt	ACTIVE_BRANCH=B (frozen)
+AC16	CANONICAL_C3_SHA_FROM_C4_PARENT=YES	PASS	c3-c3-identity-resolution.txt	9c1edc90 == 1274f36^
+AC17	C3_IDENTITY_DRIFT_DISPOSITION_RECORDED=YES	PASS	c3-c3-identity-resolution.txt	GIT_PARENT_EDGE + STALE_IMMUTABLE_RECORD
+AC18	NO_HISTORICAL_ARTIFACT_EDIT_FOR_IDENTITY=YES	PASS	c3-c3-identity-resolution.txt	no edits to predecessor
+AC19A	HISTORICAL_BASELINE_RECONSTRUCTED=YES	N/A	active branch = B	not applicable
+AC20A	BASELINE_A_B_EQUAL=YES	N/A	active branch = B	not applicable
+AC21A	BASELINE_MUTATION_DETECTED=YES	N/A	active branch = B	not applicable
+AC22A	PRISTINE_BASELINE_REVERIFY=PASS	N/A	active branch = B	not applicable
+AC23A	ORIGINAL_AC39_LITERAL_PASS=YES	N/A	active branch = B	not applicable
+AC24A	NEW_LEXER07_FAILURES=0	N/A	active branch = B	not applicable
+AC25A	DIVERGED=0	N/A	active branch = B	not applicable
+AC26A	REGRESSION=0	N/A	active branch = B	not applicable
+AC27A	PASS_MISMATCH=0	N/A	active branch = B	not applicable
+AC19B	HISTORICAL_BASELINE_RECONSTRUCTIBLE=NO	PASS	c1-reconstructibility-decision.txt	NO
+AC20B	HISTORICAL_AC39=UNPROVABLE	PASS	c3-historical-ac39-disposition.txt	UNPROVABLE
+AC21B	HISTORICAL_FALSE_GREEN_PRESERVED=YES	PASS	c3-historical-ac39-disposition.txt	preserved, reclassified
+AC22B	PROSPECTIVE_BASELINE_RUN_A_COMPLETE=YES	PASS	c2/c2-baseline-determinism.txt	RUN_A complete
+AC23B	PROSPECTIVE_BASELINE_RUN_B_COMPLETE=YES	PASS	c2/c2-baseline-determinism.txt	RUN_B complete
+AC24B	PROSPECTIVE_BASELINE_DETERMINISTIC=YES	PASS	c3-baseline-determinism.txt	A==B==C
+AC25B	KNOWN_FAILURE_SET_STABLE=YES	PASS	c3-baseline-determinism.txt	21 fixture rows stable
+AC26B	UNRESOLVED_POSSIBLE_COMPILER_REGRESSIONS=0	PASS	c2-prospective-baseline-failures.tsv	UNRESOLVED=0
+AC27B	PROSPECTIVE_BASELINE_SHA256_RECORDED=YES	PASS	c3-baseline-determinism.txt	00c54408bf29237cf526aeed097f6b097f22ae682683675a0bf5ab9f9c202b9a
+AC28B	BASELINE_VERIFIER_NEGATIVE_CONTROL=PASS	PASS	c3-baseline-verifier-negative-control.txt	NC1+NC2+NC3+NC4 all pass
+AC29B	PROSPECTIVE_BASELINE_REVERIFY=PASS	PASS	c3-prospective-baseline-reverify.txt	RUN_C matches frozen baseline
+AC30	NEW_PYTHON_SOURCES=0	PASS	c3-factory-gates.txt	0 .py added
+AC31	NEW_PYTHON_INVOCATIONS=0	PASS	c3-factory-gates.txt	0 python invocations added
+AC32	NEW_SUBSTANTIVE_NON_POLYC_TOOLS=0	PASS	c3-factory-gates.txt	only PolyC tool added
+AC33	NEW_SHELL_DISPATCH_MAX_LOC<=50	PASS	c3-factory-gates.txt	0 new shell added
+AC34	PATCH_HYGIENE_ERRORS=0	PASS	c3-patch-hygiene.txt	git diff --check empty
+AC35	GATE_FAST=PASS	PASS	c3-factory-gates.txt	gate-fast full output recorded
+AC36	APPEND_ONLY_FAIL=0	PASS	c3-factory-gates.txt	factory-append-only-test STATUS=PASS
+AC37	F14=PASS	PASS	c3-f14.txt	predecessor hashes unchanged
+AC38	EXACT_COMMIT_COUNT_AT_CLOSE=5	PASS	c4-entry-identity.txt + git rev-list	git rev-list 1274f36..HEAD = 4; +1 for C4 = 5 total
+AC39	WORKTREE_CLEAN_AT_CLOSE=YES	PASS	git status --short (post-C4)	clean of pre-existing tracked changes (only HANDOFF + c4/ artifacts untracked -> now committed)
+AC40	POST_C4_COMMIT_COUNT=0	PASS	git rev-list --count HEAD..HEAD (= 0)	no commits after C4
