@@ -1,0 +1,60 @@
+# C2 Provenance Conservation (CORRECTION03 SHA-bound authority RETAINED)
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION04
+PHASE=C2 (body label) / ACT-Phase trailer=IMPL
+
+This ACT explicitly does NOT redo CORRECTION03's provenance repair.
+CORRECTION03's SHA-bound rows in `docs/factory/LEXER07-BASELINE-AUTHORITY.tsv`
+are engineering GREEN and are retained unchanged.
+
+## Substantive CORRECTION03 results (carried forward, not reopened)
+
+```
+CORRECTION03_D_PROV                       = ENGINEERING_GREEN
+CORRECTION03_PROSPECTIVE_PATCH_HYGIENE    = ENGINEERING_GREEN
+CORRECTION03_PARSER_PADDING_CONSERVATION  = ENGINEERING_GREEN
+```
+
+CORRECTION03 C2 added 16 SHA-bound rows to the authority registry
+(producer source, producer binary, 4 compiler generations, input,
+wrapper, command, output matrix/failures/object-provenance, counter).
+CORRECTION04 reads these rows as authoritative inputs (§2).
+
+## Predicates for C3 (re-verification, not requalification)
+
+```
+AC12 PROSPECTIVE_LEXER07_BASELINE_SHA256_UNCHANGED=YES    -- 00c54408...
+AC13 PRODUCER_SOURCE_SHA256_UNCHANGED=YES                 -- 820e2c3c...
+AC14 PRODUCER_BINARY_SHA256_UNCHANGED=YES                 -- c8165800...
+AC15 ALL_4_COMPILER_SHA256_UNCHANGED=YES                  -- daac3b43, 3b1e2cd1, b8a9781a, 3b447421
+AC16 INPUT_SHA256_UNCHANGED=YES                           -- ab8f7781...
+AC17 WRAPPER_SHA256_UNCHANGED=YES                         -- 31f27d5e...
+AC18 COMMAND_SHA256_UNCHANGED=YES                         -- 7e9f7f05...
+AC19 OUTPUT_SHAS_UNCHANGED=YES                            -- ee83e375, 9d8ce2e0, 7cdf8016
+AC20 COUNTER_SHA256_UNCHANGED=YES                         -- 0aa2315e...
+```
+
+C3 re-verifies by literal hash comparison; C2 captures the live
+subject file SHAs so the C3 check is a comparison, not a re-hashing.
+
+## Live subject file SHAs (captured at C2 for C3 conservation)
+
+```
+tools/quality/lexer07-broad-corpus-4-stage.HC                          = 820e2c3c808411dd13e06ff2850888811b5389c3f98dadc2878bfad9a685bbd2
+build/lexer07-broad-corpus-4-stage                                      = c8165800b15a7e5d326dc1bb53e3579ce7b020174369dc7fc1e7b227f095dea3
+build/hcc                                                              = daac3b43680a0edb131decaf2745dc8e2bb09d9b42bd34cd58f53270c48c60fe
+build/hcc-bootstrap02                                                  = 3b1e2cd16b027bf533e661567875ae9bf8e626cf74f372355626706601fe785a
+build/hcc-bootstrap03                                                  = b8a9781a7ef68e3da05427d03bc04f4250b76a967fd761147c6ef7100b9acdca
+build/hcc-bootstrap04                                                  = 3b4474213efabcda30eb2d0c0610c6e23793f876896c8e21c5e18024b1ab40f6
+evidence/ACT-POLYC-SELFHOST-LEXER01/c2/corpus-inventory.txt             = ab8f77814e2418a7f99fd531caa02a8e2e2976a519fb84eb4a7adedb186c5f55
+scripts/quality/lexer07-broad-corpus-4-stage.sh                         = 31f27d5e3b038feaa47c8a554efd16682cc3c366e4b7574b210ebb4b415394db
+build/correction02-lexer07-baseline-a/corpus-matrix.tsv                = ee83e375032cf3f39ad8d95838bdd5e4f601fdac3244b7298cf2f68083d3c4fd
+build/correction02-lexer07-baseline-a/corpus-failures.tsv              = 9d8ce2e090a47619a1496df76d2f1efbde47f60f997fc8ad4182f21cf125a29a
+build/correction02-lexer07-baseline-a/corpus-object-provenance.tsv     = 7cdf8016b7aceef4f3f244c942430f02452fa8138061d4fa7d246e88813b1c42
+```
+
+All 11 live subjects MATCH the corresponding row in
+`docs/factory/LEXER07-BASELINE-AUTHORITY.tsv`. The counter SHA
+`0aa2315e...` is the SHA-256 of the literal counter text string
+`PASS_S0=166 HISTORICAL_S0=0 PASS_S1=175 PASS_S2=175 PASS_S3=175`; it
+is not stored as a file but appears in the TSV.

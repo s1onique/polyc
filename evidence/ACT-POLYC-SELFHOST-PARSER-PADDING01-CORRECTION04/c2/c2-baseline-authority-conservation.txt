@@ -1,0 +1,54 @@
+# C2 Baseline-Authority Conservation
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION04
+PHASE=C2 (body label) / ACT-Phase trailer=IMPL
+
+## Authority location
+
+Single source: `docs/factory/LEXER07-BASELINE-AUTHORITY.tsv`
+
+This file is APPEND-ONLY at the row level per its own header:
+
+> "This file is APPEND-ONLY at the row level: new ACTs that
+> requalify the baseline (e.g. after a fresh corpus generation)
+> add new rows at the bottom.  Old rows are NEVER rewritten;
+> stale rows are NEVER deleted."
+
+## Conservation at C2
+
+No rows added, removed, or modified by CORRECTION04.
+
+The C2 commit contains only:
+
+1. the F14 restoration of `c2-baseline-verifier-negative-control.txt`
+   in the closed CORRECTION02 evidence tree;
+2. new CORRECTION04 `c2/` evidence files (this directory).
+
+The `LEXER07-BASELINE-AUTHORITY.tsv` is unchanged at HEAD-after-C2.
+
+## 14 expected SHAs all present in the TSV
+
+| # | SHA-256                                                          | TSV row                                 | Found |
+|---|------------------------------------------------------------------|-----------------------------------------|-------|
+| 1 | 00c54408bf29237cf526aeed097f6b097f22ae682683675a0bf5ab9f9c202b9a | PROSPECTIVE_LEXER07_BASELINE_SHA256     | YES   |
+| 2 | 820e2c3c808411dd13e06ff2850888811b5389c3f98dadc2878bfad9a685bbd2 | PROSPECTIVE_RUN_A_PRODUCER_SOURCE_SHA256 | YES |
+| 3 | c8165800b15a7e5d326dc1bb53e3579ce7b020174369dc7fc1e7b227f095dea3 | PROSPECTIVE_RUN_A_PRODUCER_BINARY_SHA256 | YES |
+| 4 | daac3b43680a0edb131decaf2745dc8e2bb09d9b42bd34cd58f53270c48c60fe | PROSPECTIVE_RUN_A_COMPILER_FINAL_SHA256 | YES  |
+| 5 | 3b1e2cd16b027bf533e661567875ae9bf8e626cf74f372355626706601fe785a | PROSPECTIVE_RUN_A_COMPILER_BOOTSTRAP02_SHA256 | YES |
+| 6 | b8a9781a7ef68e3da05427d03bc04f4250b76a967fd761147c6ef7100b9acdca | PROSPECTIVE_RUN_A_COMPILER_BOOTSTRAP03_SHA256 | YES |
+| 7 | 3b4474213efabcda30eb2d0c0610c6e23793f876896c8e21c5e18024b1ab40f6 | PROSPECTIVE_RUN_A_COMPILER_BOOTSTRAP04_SHA256 | YES |
+| 8 | ab8f77814e2418a7f99fd531caa02a8e2e2976a519fb84eb4a7adedb186c5f55 | PROSPECTIVE_RUN_A_INPUT_SHA256         | YES   |
+| 9 | 31f27d5e3b038feaa47c8a554efd16682cc3c366e4b7574b210ebb4b415394db | PROSPECTIVE_RUN_A_WRAPPER_SCRIPT_SHA256 | YES |
+|10 | 7e9f7f05cd575daed6ccde061c81dcaa1233be4aa81e8ed4e4169ae82d81ce71 | PROSPECTIVE_RUN_A_COMMAND_SHA256       | YES   |
+|11 | ee83e375032cf3f39ad8d95838bdd5e4f601fdac3244b7298cf2f68083d3c4fd | PROSPECTIVE_RUN_A_OUTPUT_MATRIX_SHA256  | YES (×3: A/B/combined) |
+|12 | 9d8ce2e090a47619a1496df76d2f1efbde47f60f997fc8ad4182f21cf125a29a | PROSPECTIVE_RUN_A_OUTPUT_FAILURES_SHA256 | YES (×3) |
+|13 | 7cdf8016b7aceef4f3f244c942430f02452fa8138061d4fa7d246e88813b1c42 | PROSPECTIVE_RUN_A_OUTPUT_OBJECT_PROVENANCE_SHA256 | YES (×3) |
+|14 | 0aa2315e0d8f4680583ecd1425b236ebd75e7ce6c0fe9f6233853cd9f206b519 | PROSPECTIVE_RUN_A_COUNTER_SHA256        | YES   |
+
+`BASELINE_AUTHORITY_HASH_ROWS_MATCH=YES`.
+
+## AC ledger (forwarded to C3)
+
+```
+AC12..AC20  DEFERRED_TO_C3 (literal hash re-verification)
+```

@@ -1,0 +1,68 @@
+# C2 F14 Closed-Surface Restoration
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION04
+PHASE=C2 (body label) / ACT-Phase trailer=IMPL
+
+## Restoration operation
+
+```
+$ git checkout 3b38d691 -- \
+    evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION02/c2/c2-baseline-verifier-negative-control.txt
+```
+
+After checkout, the working-copy blob matches the CORRECTION02
+close blob byte-for-byte:
+
+```
+$ sha256sum evidence/.../c2-baseline-verifier-negative-control.txt
+3ac4ebbf0723598ab5b08c1121d23b553cb2aff38ede0d56cccb5e0a0316511a
+
+$ git show 3b38d691:evidence/.../c2-baseline-verifier-negative-control.txt | sha256sum
+3ac4ebbf0723598ab5b08c1121d23b553cb2aff38ede0d56cccb5e0a0316511a
+```
+
+`RESTORED_BLOB_EQUAL_TO_CORRECTION02_CLOSE = YES`.
+
+## F14 predicate (post-commit, HEAD = C2 SHA)
+
+```
+$ git diff 3b38d691..HEAD -- \
+    evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION02/
+```
+
+Will be EMPTY after C2 commits (the C2 commit restores the blob
+exactly). Confirmed by the `git checkout` mechanism: the C2 tree
+contains the same blob as 3b38d691.
+
+(Note: the pre-commit diff shown in this evidence section is for
+HEAD-before-C2 vs 3b38d691; after C2 commits the actual HEAD-vs-3b38d691
+diff is empty. This is a transient artifact of evidence collection.)
+
+## Historical CORRECTION02 patch hygiene is intentionally preserved as FAIL
+
+The restoration re-introduces the trailing blank line at EOF
+(line 71) of `c2-baseline-verifier-negative-control.txt`. This is
+correct per Lock B:
+
+> Lock B - historical hygiene failure remains historical failure.
+> Restoring the old closed blob may intentionally restore its
+> historical whitespace defect.  That is correct.  Do not rewrite
+> the historical predicate.
+
+Historical predicate:
+
+```
+CORRECTION02_PATCH_HYGIENE = FAIL    (1 trailing blank at EOF line 71)
+```
+
+This FAIL is recorded at C0 in c0-f14-baseline.txt and remains true
+permanently. The CORRECTION04 prospective patch hygiene is measured
+separately from `9ea5bc4..HEAD`, which is CLEAN.
+
+## AC ledger
+
+```
+AC09 RESTORED_CORRECTION02_C2_BLOB_MATCH=YES          PASS (working copy)
+AC10 CORRECTION02_CLOSED_EVIDENCE_DELTA=0             PASS (post-commit)
+AC11 CORRECTION02_CLOSED_HANDOFF_DELTA=0              PASS (no HANDOFF change)
+```

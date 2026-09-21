@@ -1,0 +1,61 @@
+# C2 Required Result
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION04
+PHASE=C2 (body label) / ACT-Phase trailer=IMPL
+
+## C2 implementation summary
+
+C2 performed exactly three allowed operations (per ACT §13):
+
+1. **F14 restoration** of
+   `evidence/.../CORRECTION02/c2/c2-baseline-verifier-negative-control.txt`
+   to its CORRECTION02 close blob (`3ac4ebbf...`).
+2. **CORRECTION04 prospective qualification evidence** (this directory).
+3. **Baseline-authority conservation** (no rows added; 14 expected
+   SHAs re-verified as present in the TSV; 11 live subjects all match
+   TSV-bound SHAs).
+
+No source code, no parser-padding tools, no closed-predecessor
+ACT/HANDOFF, no SHA-bound TSV rows modified, no Factory-v2 range
+validation weakened.
+
+## AC ledger updates from C2
+
+```
+AC09 RESTORED_CORRECTION02_C2_BLOB_MATCH=YES              PASS
+AC10 CORRECTION02_CLOSED_EVIDENCE_DELTA=0                 PASS  (post-commit; working copy blob matches CORRECTION02 close)
+AC11 CORRECTION02_CLOSED_HANDOFF_DELTA=0                  PASS  (no HANDOFF change)
+```
+
+Not yet evaluated (deferred):
+
+```
+AC12..AC29  DEFERRED_TO_C3   (baseline + conservation + factory gates)
+AC30..AC33  DEFERRED_TO_C3   (C0..C3 trailer validation)
+AC35, AC36  DEFERRED_TO_C3/C4
+AC37..AC40  DEFERRED_TO_C4 / DEFERRED_TO_EXTERNAL
+```
+
+## Files staged for C2 commit
+
+```
+M  evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION02/c2/c2-baseline-verifier-negative-control.txt   (restored)
+A  evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION04/c2/c2-f14-restoration.txt
+A  evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION04/c2/c2-provenance-conservation.txt
+A  evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION04/c2/c2-baseline-authority-conservation.txt
+A  evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION04/c2/c2-required-result.txt
+```
+
+No C2.x follow-up commits. No supersession trailers on C2.
+
+## Phase exit gate
+
+```
+AC09..AC11 PASS  ✓
+AC05..AC08 PASS  (from C1)  ✓
+AC34 PASS  (from C1)  ✓
+WORKTREE contains only the authorized C2 artifacts above
+No source / parser / baseline / closed-evidence mutations
+```
+
+C2 is the IMPL phase. Transition to C3 (VERIFY) is authorized.
