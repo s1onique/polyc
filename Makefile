@@ -12,7 +12,7 @@ HCC_ENABLE_LLVM ?= OFF
 
 default: all
 
-.PHONY: all formal-dafny gate-fast gate-push install-hooks static-function-linkage-test factory-closure-status-test factory-closure-status-test-binary llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test selfhost-component-binary selfhost-component-build selfhost-component-test selfhost-component-selftest selfhost-registry-validate factory-halt-classification-binary factory-halt-classification-selftest bootstrap06-component-build bootstrap06-operator-classify-oracle bootstrap06-direct-differential bootstrap06-component-stage1 bootstrap06-component-stage2 bootstrap06-component-stage3 bootstrap06-lexer-seam-stage1 lexer07-component-build lexer07-scalar-literal-oracle lexer07-direct-differential lexer07-component-stage1 lexer07-component-stage2 lexer07-component-stage3 lexer07-lexer-seam-stage0 lexer07-lexer-seam-stage1 lexer07-lexer-seam-stage2 lexer07-lexer-seam-stage3 lexer07-lexer-seam-stage2-from-objs lexer07-lexer-seam-stage3-from-objs lexer07-lexer-seam-all-stages lexer07-fixture-inventory lexer07-broad-corpus-4-stage lexer07-correction02-all lexer08-component-build lexer08-trivia-oracle lexer08-direct-differential lexer08-fixture-inventory lexer08-broad-corpus-4-stage lexer08-lexer-seam-stage0 lexer08-lexer-seam-stage1 lexer08-lexer-seam-all-stages lexer08-trivia-fixedpoint-g0 lexer08-trivia-fixedpoint-g1 lexer08-trivia-fixedpoint-g2 lexer08-trivia-fixedpoint-g3 lexer08-trivia-fixedpoint-build lexer08-trivia-fixedpoint-verify lexer08-trivia-fixedpoint lexer09-link-component-build lexer09-link-oracle-build lexer09-direct-differential lexer09-lexer-seam-stage0 lexer09-lexer-seam-stage1 lexer09-lexer-seam-all-stages lexer09-link-fixedpoint-g0 lexer09-link-fixedpoint-g1 lexer09-link-fixedpoint-g2 lexer09-link-fixedpoint-g3 lexer09-link-fixedpoint-build lexer09-link-fixedpoint-verify lexer09-link-fixedpoint lexer09-link-negative-control lexer09-link-determinism lexer09-link-broad-corpus-4-stage lib-tos runtime-contract-test libtos-n02-isolate
+.PHONY: all formal-dafny gate-fast gate-push install-hooks static-function-linkage-test factory-closure-status-test factory-closure-status-test-binary llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test selfhost-component-binary selfhost-component-build selfhost-component-test selfhost-component-selftest selfhost-registry-validate factory-halt-classification-binary factory-halt-classification-selftest bootstrap06-component-build bootstrap06-operator-classify-oracle bootstrap06-direct-differential bootstrap06-component-stage1 bootstrap06-component-stage2 bootstrap06-component-stage3 bootstrap06-lexer-seam-stage1 lexer07-component-build lexer07-scalar-literal-oracle lexer07-direct-differential lexer07-component-stage1 lexer07-component-stage2 lexer07-component-stage3 lexer07-lexer-seam-stage0 lexer07-lexer-seam-stage1 lexer07-lexer-seam-stage2 lexer07-lexer-seam-stage3 lexer07-lexer-seam-stage2-from-objs lexer07-lexer-seam-stage3-from-objs lexer07-lexer-seam-all-stages lexer07-fixture-inventory lexer07-broad-corpus-4-stage lexer07-correction02-all lexer08-component-build lexer08-trivia-oracle lexer08-direct-differential lexer08-fixture-inventory lexer08-broad-corpus-4-stage lexer08-lexer-seam-stage0 lexer08-lexer-seam-stage1 lexer08-lexer-seam-all-stages lexer08-trivia-fixedpoint-g0 lexer08-trivia-fixedpoint-g1 lexer08-trivia-fixedpoint-g2 lexer08-trivia-fixedpoint-g3 lexer08-trivia-fixedpoint-build lexer08-trivia-fixedpoint-verify lexer08-trivia-fixedpoint lexer09-link-component-build lexer09-link-oracle-build lexer09-direct-differential lexer09-lexer-seam-stage0 lexer09-lexer-seam-stage1 lexer09-lexer-seam-all-stages lexer09-link-fixedpoint-g0 lexer09-link-fixedpoint-g1 lexer09-link-fixedpoint-g2 lexer09-link-fixedpoint-g3 lexer09-link-fixedpoint-build lexer09-link-fixedpoint-verify lexer09-link-fixedpoint lexer09-link-negative-control lexer09-link-determinism lexer09-link-broad-corpus-4-stage lib-tos runtime-contract-test libtos-n02-isolate parser-padding-component parser-padding-oracle parser-padding-differential parser-padding-gen-matrix-fixture parser-padding-gen-large-fixture parser-padding-fixedpoint-g0 parser-padding-fixedpoint-g1 parser-padding-fixedpoint-g2 parser-padding-fixedpoint-g3 parser-padding-fixedpoint-build parser-padding-fixedpoint-verify parser-padding-fixedpoint parser-padding-fixedpoint-negative-control parser-padding-mutation-m1 parser-padding-mutation-m2 parser-padding-mutation-m3 parser-padding-mutation-m4 parser-padding-mutation-test parser-padding-test
 
 # To add sqlite3 support add -DHCC_LINK_SQLITE3=1 to the below like so:
 #```
@@ -2272,3 +2272,189 @@ selfhost-component-test:
 
 selfhost-registry-validate:
 	@scripts/quality/selfhost-component-registry.sh
+
+# ACT-POLYC-SELFHOST-PARSER-PADDING01 C2 IMPL.
+#
+# PolyC CalcPadding component qualification pipeline.
+#
+# pipeline:
+#   parser-padding-component          -> build/parser-padding-subject.o (from selfhost-parser-padding.HC)
+#   parser-padding-oracle             -> build/parser-padding-oracle.o (from parser-padding-oracle-impl.c)
+#   parser-padding-differential       -> links subject + oracle + parser-padding-differential.HC
+#   parser-padding-fixedpoint-gN      -> build/parser-padding.gN.o via G_N compiler (independent invocation)
+#   parser-padding-fixedpoint-build   -> all 4 generations
+#   parser-padding-fixedpoint-verify  -> build/parser-padding-fixedpoint-verify
+#   parser-padding-fixedpoint         -> runs the verifier
+#   parser-padding-mutation-mN        -> build/parser-padding-mN.o (mutation)
+#   parser-padding-mutation-test      -> runs M1..M4 through the differential
+#   parser-padding-test               -> aggregate qualification gate
+
+PARSER_PADDING_SRC = tools/bootstrap/selfhost-parser-padding.HC
+PARSER_PADDING_OBJ = build/parser-padding-subject.o
+
+parser-padding-component: $(PARSER_PADDING_OBJ)
+	@echo "PARSER_PADDING_COMPONENT=BUILD source=$(PARSER_PADDING_SRC)"
+	@echo "PARSER_PADDING_COMPONENT_OBJECT=$(PARSER_PADDING_OBJ)"
+
+$(PARSER_PADDING_OBJ): $(PARSER_PADDING_SRC) ./hcc | test-prefix-install
+	@rm -f $@
+	./hcc --install-dir=$(TEST_PREFIX) -c $(PARSER_PADDING_SRC) -o $@
+	@nm $@ | grep -q '_BootstrapCalcPadding' \
+		|| { echo "parser-padding-component: symbol missing" >&2; exit 1; }
+	@echo "PARSER_PADDING_SYMBOL=_BootstrapCalcPadding present=yes"
+
+build/parser-padding-oracle.o: tools/quality/parser-padding-oracle-impl.c
+	@rm -f $@
+	cc -std=c99 -O2 -Wall -Wextra -c -o $@ $<
+	@echo "PARSER_PADDING_ORACLE_OBJECT=$@"
+
+parser-padding-oracle: build/parser-padding-oracle.o
+	@echo "PARSER_PADDING_ORACLE=BUILD"
+
+build/parser-padding-differential.o: tools/quality/parser-padding-differential.HC ./hcc | test-prefix-install
+	./hcc --install-dir=$(TEST_PREFIX) -c tools/quality/parser-padding-differential.HC -o $@
+	@nm $@ | grep -q '_main' \
+		|| { echo "parser-padding-differential.o: main missing" >&2; exit 1; }
+
+build/parser-padding-differential: build/parser-padding-differential.o $(PARSER_PADDING_OBJ) build/parser-padding-oracle.o | test-prefix-install
+	cc -o $@ build/parser-padding-differential.o $(PARSER_PADDING_OBJ) build/parser-padding-oracle.o -L$(TEST_PREFIX)/lib -ltos
+	@ls -la $@
+
+parser-padding-differential: build/parser-padding-differential
+	@echo "PARSER_PADDING_DIFF=BUILD"
+
+# Fixture generators (PolyC).
+build/parser-padding-gen-matrix-fixture: tools/quality/parser-padding-gen-matrix-fixture.HC ./hcc | test-prefix-install
+	./hcc --install-dir=$(TEST_PREFIX) tools/quality/parser-padding-gen-matrix-fixture.HC -o $@
+	@ls -la $@
+
+parser-padding-gen-matrix-fixture: build/parser-padding-gen-matrix-fixture
+	@echo "PARSER_PADDING_GEN_MATRIX=BUILD"
+
+build/parser-padding-gen-large-fixture: tools/quality/parser-padding-gen-large-fixture.HC ./hcc | test-prefix-install
+	./hcc --install-dir=$(TEST_PREFIX) tools/quality/parser-padding-gen-large-fixture.HC -o $@
+	@ls -la $@
+
+parser-padding-gen-large-fixture: build/parser-padding-gen-large-fixture
+	@echo "PARSER_PADDING_GEN_LARGE=BUILD"
+
+# 4-generation component build.
+PARSER_PADDING_FIXEDPOINT_OUTDIR = build/parser-padding-fixedpoint
+
+parser-padding-fixedpoint-g0: $(PARSER_PADDING_FIXEDPOINT_OUTDIR)/parser-padding.g0.o
+
+$(PARSER_PADDING_FIXEDPOINT_OUTDIR)/parser-padding.g0.o: $(PARSER_PADDING_SRC) ./hcc | $(PARSER_PADDING_FIXEDPOINT_OUTDIR)
+	@rm -f $@
+	./hcc --install-dir=$(TEST_PREFIX) -c $(PARSER_PADDING_SRC) -o $@
+	@echo "PARSER_PADDING_FIXEDPOINT_G0=$@"
+
+parser-padding-fixedpoint-g1: $(PARSER_PADDING_FIXEDPOINT_OUTDIR)/parser-padding.g1.o
+
+$(PARSER_PADDING_FIXEDPOINT_OUTDIR)/parser-padding.g1.o: $(PARSER_PADDING_SRC) ./build/hcc-bootstrap02 | $(PARSER_PADDING_FIXEDPOINT_OUTDIR)
+	@rm -f $@
+	./build/hcc-bootstrap02 --install-dir=$(TEST_PREFIX) -c $(PARSER_PADDING_SRC) -o $@
+	@echo "PARSER_PADDING_FIXEDPOINT_G1=$@"
+
+parser-padding-fixedpoint-g2: $(PARSER_PADDING_FIXEDPOINT_OUTDIR)/parser-padding.g2.o
+
+$(PARSER_PADDING_FIXEDPOINT_OUTDIR)/parser-padding.g2.o: $(PARSER_PADDING_SRC) ./build/hcc-bootstrap03 | $(PARSER_PADDING_FIXEDPOINT_OUTDIR)
+	@rm -f $@
+	./build/hcc-bootstrap03 --install-dir=$(TEST_PREFIX) -c $(PARSER_PADDING_SRC) -o $@
+	@echo "PARSER_PADDING_FIXEDPOINT_G2=$@"
+
+parser-padding-fixedpoint-g3: $(PARSER_PADDING_FIXEDPOINT_OUTDIR)/parser-padding.g3.o
+
+$(PARSER_PADDING_FIXEDPOINT_OUTDIR)/parser-padding.g3.o: $(PARSER_PADDING_SRC) ./build/hcc-bootstrap04 | $(PARSER_PADDING_FIXEDPOINT_OUTDIR)
+	@rm -f $@
+	./build/hcc-bootstrap04 --install-dir=$(TEST_PREFIX) -c $(PARSER_PADDING_SRC) -o $@
+	@echo "PARSER_PADDING_FIXEDPOINT_G3=$@"
+
+$(PARSER_PADDING_FIXEDPOINT_OUTDIR):
+	@mkdir -p $@
+
+parser-padding-fixedpoint-build: parser-padding-fixedpoint-g0 parser-padding-fixedpoint-g1 parser-padding-fixedpoint-g2 parser-padding-fixedpoint-g3
+	@echo "PARSER_PADDING_FIXEDPOINT_BUILD=PASS"
+	@echo "PARSER_PADDING_FIXEDPOINT_BUILD_OBJECTS=$(PARSER_PADDING_FIXEDPOINT_OUTDIR)/parser-padding.g{0,1,2,3}.o"
+
+# Fixed-point verifier (PolyC).
+build/parser-padding-fixedpoint-verify: tools/quality/parser-padding-fixedpoint-verify.HC ./hcc | test-prefix-install
+	./hcc --install-dir=$(TEST_PREFIX) tools/quality/parser-padding-fixedpoint-verify.HC -o $@
+	@ls -la $@
+
+parser-padding-fixedpoint-verify: build/parser-padding-fixedpoint-verify parser-padding-fixedpoint-build
+	./build/parser-padding-fixedpoint-verify \
+		$(PARSER_PADDING_FIXEDPOINT_OUTDIR)/parser-padding.g0.o \
+		$(PARSER_PADDING_FIXEDPOINT_OUTDIR)/parser-padding.g1.o \
+		$(PARSER_PADDING_FIXEDPOINT_OUTDIR)/parser-padding.g2.o \
+		$(PARSER_PADDING_FIXEDPOINT_OUTDIR)/parser-padding.g3.o
+
+parser-padding-fixedpoint: parser-padding-fixedpoint-build
+	@$(MAKE) -s parser-padding-fixedpoint-verify
+	@echo "PARSER_PADDING_4GEN_FIXEDPOINT=PASS"
+
+# Fixed-point mutation control.
+parser-padding-fixedpoint-negative-control: build/parser-padding-fixedpoint-verify parser-padding-fixedpoint-build
+	@cp $(PARSER_PADDING_FIXEDPOINT_OUTDIR)/parser-padding.g3.o $(PARSER_PADDING_FIXEDPOINT_OUTDIR)/parser-padding.g3.mutated.o
+	@printf '\x90' | dd of=$(PARSER_PADDING_FIXEDPOINT_OUTDIR)/parser-padding.g3.mutated.o bs=1 count=1 seek=100 conv=notrunc 2>/dev/null
+	@set +e; \
+	./build/parser-padding-fixedpoint-verify \
+		$(PARSER_PADDING_FIXEDPOINT_OUTDIR)/parser-padding.g0.o \
+		$(PARSER_PADDING_FIXEDPOINT_OUTDIR)/parser-padding.g1.o \
+		$(PARSER_PADDING_FIXEDPOINT_OUTDIR)/parser-padding.g2.o \
+		$(PARSER_PADDING_FIXEDPOINT_OUTDIR)/parser-padding.g3.o \
+		$(PARSER_PADDING_FIXEDPOINT_OUTDIR)/parser-padding.g3.mutated.o; \
+	ec=$$?; \
+	rm -f $(PARSER_PADDING_FIXEDPOINT_OUTDIR)/parser-padding.g3.mutated.o; \
+	if [ "$$ec" != "1" ]; then echo "PARSER_PADDING_NEGATIVE_CONTROL_RC=$$ec expected=1" >&2; exit 1; fi
+	@$(MAKE) -s parser-padding-fixedpoint-verify
+	@echo "PARSER_PADDING_NEGATIVE_CONTROL=PASS"
+
+# Mutation variants + differential harnesses.
+build/parser-padding-m1.o: tools/quality/parser-padding-mutation-m1.HC ./hcc | test-prefix-install
+	./hcc --install-dir=$(TEST_PREFIX) -c $< -o $@
+
+build/parser-padding-m2.o: tools/quality/parser-padding-mutation-m2.HC ./hcc | test-prefix-install
+	./hcc --install-dir=$(TEST_PREFIX) -c $< -o $@
+
+build/parser-padding-m3.o: tools/quality/parser-padding-mutation-m3.HC ./hcc | test-prefix-install
+	./hcc --install-dir=$(TEST_PREFIX) -c $< -o $@
+
+build/parser-padding-m4.o: tools/quality/parser-padding-mutation-m4.HC ./hcc | test-prefix-install
+	./hcc --install-dir=$(TEST_PREFIX) -c $< -o $@
+
+parser-padding-mutation-m1: build/parser-padding-m1.o
+parser-padding-mutation-m2: build/parser-padding-m2.o
+parser-padding-mutation-m3: build/parser-padding-m3.o
+parser-padding-mutation-m4: build/parser-padding-m4.o
+
+build/parser-padding-differential-m1: build/parser-padding-differential.o build/parser-padding-m1.o build/parser-padding-oracle.o | test-prefix-install
+	cc -o $@ build/parser-padding-differential.o build/parser-padding-m1.o build/parser-padding-oracle.o -L$(TEST_PREFIX)/lib -ltos
+
+build/parser-padding-differential-m2: build/parser-padding-differential.o build/parser-padding-m2.o build/parser-padding-oracle.o | test-prefix-install
+	cc -o $@ build/parser-padding-differential.o build/parser-padding-m2.o build/parser-padding-oracle.o -L$(TEST_PREFIX)/lib -ltos
+
+build/parser-padding-differential-m3: build/parser-padding-differential.o build/parser-padding-m3.o build/parser-padding-oracle.o | test-prefix-install
+	cc -o $@ build/parser-padding-differential.o build/parser-padding-m3.o build/parser-padding-oracle.o -L$(TEST_PREFIX)/lib -ltos
+
+build/parser-padding-differential-m4: build/parser-padding-differential.o build/parser-padding-m4.o build/parser-padding-oracle.o | test-prefix-install
+	cc -o $@ build/parser-padding-differential.o build/parser-padding-m4.o build/parser-padding-oracle.o -L$(TEST_PREFIX)/lib -ltos
+
+parser-padding-mutation-test: build/parser-padding-gen-matrix-fixture build/parser-padding-differential-m1 build/parser-padding-differential-m2 build/parser-padding-differential-m3 build/parser-padding-differential-m4 build/parser-padding-differential
+	@./build/parser-padding-gen-matrix-fixture > /tmp/parser-padding-matrix.tsv
+	@wc -l /tmp/parser-padding-matrix.tsv
+	@./build/parser-padding-differential /tmp/parser-padding-matrix.tsv > /tmp/parser-padding-pristine.log 2>&1
+	@echo "PRISTINE_DIFF_RC=$$?"
+	@for m in m1 m2 m3 m4 ; do \
+		./build/parser-padding-differential-$$m /tmp/parser-padding-matrix.tsv > /tmp/parser-padding-$$m.log 2>&1 ; \
+		ec=$$? ; \
+		fail_line=$$(grep '^DIRECT_DIFFERENTIAL_FAIL=' /tmp/parser-padding-$$m.log | head -1) ; \
+		echo "MUTATION=$$m exit_code=$$ec $$fail_line" ; \
+		if [ "$$ec" != "1" ]; then echo "PARSER_PADDING_MUTATION_LOAD_BEARING=FAIL mutation=$$m" >&2; exit 1; fi ; \
+	done
+	@./build/parser-padding-differential /tmp/parser-padding-matrix.tsv > /tmp/parser-padding-pristine-recheck.log 2>&1
+	@echo "PRISTINE_RECHECK_RC=$$?"
+	@echo "PARSER_PADDING_MUTATION_LOAD_BEARING=PASS"
+
+# Aggregator.
+parser-padding-test: parser-padding-component parser-padding-oracle parser-padding-differential parser-padding-gen-matrix-fixture parser-padding-gen-large-fixture parser-padding-fixedpoint parser-padding-fixedpoint-negative-control parser-padding-mutation-test
+	@echo "PARSER_PADDING_TEST=PASS"
