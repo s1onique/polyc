@@ -1,0 +1,55 @@
+# C1 RED-3 — delegation absent in production
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01
+
+## RED statement
+
+```text
+PRODUCTION_REFERENCES_BOOTSTRAP_CALC_PADDING=NO
+```
+
+## Evidence
+
+### Source scan
+
+```sh
+$ grep -rn 'BootstrapCalcPadding' src/parser.c src/lexer.c src/ast.c src/cctrl.c src/compile.c
+(no output)
+```
+
+`BootstrapCalcPadding` is not referenced from any production source
+file under `src/`.
+
+### Symbol scan
+
+```sh
+$ nm -gU build/hcc | grep -i CalcPadding
+000000010003abac T _CalcClassSize
+000000010003ac18 T _CalcPadding
+000000010003ab68 T _CalcUnionSize
+000000010003ac3c T _ParserLegacyCalcPaddingOracle
+$ nm build/hcc | grep -i BootstrapCalcPadding; echo "exit=$?"
+1
+```
+
+The production hcc has the legacy `CalcPadding` symbol but no
+`BootstrapCalcPadding` symbol.
+
+### Bridge scan
+
+```sh
+$ ls src/parser_bridge.h 2>&1
+ls: cannot access 'src/parser_bridge.h': No such file or directory
+```
+
+No speculative parser bridge header exists. The C2 implementation
+must introduce any necessary declaration in an existing header
+(`src/parser.h` or in-file extern) or in src/parser.c itself.
+
+## Conclusion
+
+The production compiler does not delegate to `BootstrapCalcPadding`
+on any code path. The only authority for `CalcPadding` semantics is
+the legacy C implementation in src/parser.c::CalcPadding.
+
+This is the expected RED state.

@@ -1,0 +1,18 @@
+generation	description	compiler_path	expected_producer_sha256	expected_parser_binary_path	expected_parser_binary_sha256	subject_object_sha256	POLYC_PADDING_AUTHORITY	expected_fixture_output_sha256
+G0	stage0 legacy control (no PolyC padding delegation)	./build/hcc (entry-state, current binary)	59388e91201f3c477db559a7e4ba02e377432fccfeb43c83720248c93363216a	./hcc (entry-state)	77285899852d779f0af653434c48b703768940541dc2857e55f45719a91f3fa2	n/a	NO	8c9437a04195cdcbaa2dd38f0b31c59bede2de0bd7025217560c8ae2de18d83c
+G1	stage1 production with PolyC padding delegation (default after C2)	./build/hcc (rebuilt after C2 with HCC_USE_SELFHOST_COMPONENTS)	(recomputed at C3)	./hcc (rebuilt)	(recomputed at C3)	(recomputed at C3)	YES	(must equal G0)
+G2	stage2 production with PolyC padding delegation (independently rebuilt)	./build/hcc-bootstrap02 (entry-state; rebuilt at C3 if necessary)	(prior recorded; recomputed at C3 if hash differs)	./build/hcc-bootstrap02-as-parser-test (built by C3 if needed)	(recomputed at C3)	(recomputed at C3)	YES	(must equal G0)
+G3	stage3 production with PolyC padding delegation (independently rebuilt)	./build/hcc-bootstrap03 (entry-state; rebuilt at C3 if necessary)	(prior recorded; recomputed at C3 if hash differs)	./build/hcc-bootstrap03-as-parser-test (built by C3 if needed)	(recomputed at C3)	(recomputed at C3)	YES	(must equal G0)
+
+# Generation-independence rules:
+#
+# 1. G1, G2, G3 are independently built. NO `cp G1 G2` allowed.
+#    G2 and G3 are derived from `./build/hcc-bootstrap02` and
+#    `./build/hcc-bootstrap03` respectively.
+# 2. Each generation's compiler binary must have a distinct SHA-256
+#    (the original hierarchy established by ACT-POLYC-BOOTSTRAP02/03).
+# 3. Each generation's parser/padding binary must independently link
+#    the PolyC subject via the same delegation mechanism.
+# 4. For every fixture, the canonical output SHA must match across G0..G3.
+# 5. Negative control: forging a G3 binary by `cp G1 G3` is detected by
+#    SHA-256 collision on the parser binary.

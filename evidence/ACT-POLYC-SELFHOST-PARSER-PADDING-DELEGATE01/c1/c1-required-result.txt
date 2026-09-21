@@ -1,0 +1,38 @@
+# C1 Required Result
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01
+
+## Closed-list predicates
+
+```text
+RED_PRODUCTION_AUTHORITY_REPRODUCED=YES       PASS
+POLYC_SUBJECT_NOT_LOAD_BEARING=YES            PASS
+PRODUCTION_REFERENCES_BOOTSTRAP_CALC_PADDING=NO  PASS
+
+UNCLASSIFIED_CALC_PADDING_CALL_SITES=0        PASS  (5/5 classified)
+CALC_PADDING_CALL_SITE_CLASS_COVERAGE=100%    PASS  (5/5 classes: tail-aligned-empty, anonymous-pre-align, named-pre-align, tail-aligned-class, tail-aligned-union)
+
+DELEGATION_DESIGN_FROZEN=YES                  PASS  (D-C: HCC_USE_SELFHOST_COMPONENTS)
+PRODUCTION_OUTPUT_SCHEMA_FROZEN=YES          PASS
+N01_CONTRACT_FROZEN=YES                      PASS
+GENERATION_CONTRACT_FROZEN=YES               PASS
+
+C1_PRODUCTION_SOURCE_DELTA=0                 PASS  (no source mutations in C1)
+PATCH_HYGIENE_ERRORS=0                       PASS
+```
+
+## C1 commit
+
+```text
+ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01 C1: RED/CONTRACT
+```
+
+## Halt semantics
+
+If any closed-list predicate above is FALSE:
+
+```text
+HALT_RED_NOT_REPRODUCED              (if RED-* tokens missing)
+HALT_DELEGATION_DESIGN_AMBIGUOUS     (if delegation design is not frozen)
+HALT_UNCLASSIFIED_CALL_SITE          (if any call site lacks a class)
+```

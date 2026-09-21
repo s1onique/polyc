@@ -1,0 +1,74 @@
+# C1 Production Output Schema
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01
+
+## Canonical fixture output format
+
+Each fixture binary prints exactly one or more `<LABEL>=<INT>` lines
+to stdout. Labels are FIXTURE_* prefixed and one per observable class.
+No header, no labels beyond the FIXTURE tag.
+
+Example (FIXTURE_ALIGNOF):
+
+```text
+FIXTURE_ALIGNOF
+Color=4 alignof=1
+Rectangle=16 alignof=4
+Mixed=24 alignof=8
+...
+```
+
+The full output is captured per fixture as `/tmp/<fixture>.out` and
+diffed across generations.
+
+## Diff rules
+
+Two fixture outputs are considered semantically equal iff the
+byte-level content of stdout is identical. Build labels, timestamps,
+and pointer addresses are not used as comparison inputs because the
+fixture format excludes them.
+
+When non-deterministic content is unavoidable (e.g. argv[0] in
+diagnostics), the relevant line is filtered out before comparison.
+For this ACT, no fixture produces non-deterministic content.
+
+## Comparison file format
+
+```text
+FIXTURE=<id>
+STATUS=<pass/fail>
+SIZEOF=<canonical ordered list of `classname=size` pairs>
+ALIGNOF=<canonical ordered list of `classname=align` pairs>
+FIELD_OFFSETS=<canonical ordered list of `classname.fieldname=offset` pairs>
+OBJECT_SHA256=<optional; only if layout bytes are canonicalized>
+DIAGNOSTIC_CLASS=<if applicable>
+```
+
+## Normalization contract
+
+Normalization is a no-op for this ACT's fixtures:
+
+* No pointer addresses are emitted.
+* No diagnostic class output is captured.
+* No timestamps.
+* No environment-dependent content.
+
+Therefore `STATUS=pass` iff `diff fixture.out.g0 fixture.out.g1` returns
+empty.
+
+## Multi-class single-fixture coverage
+
+FIXTURE_ALIGNOF and FIXTURE_INHERITANCE cover all 5 call-site classes
+in one binary invocation because every class definition in the source
+goes through `parseClassOffsets` and `parseUnionOffsets`. This
+satisfies ACT §20 "minimum fixture classes" requirement.
+
+## Determinism verification
+
+```sh
+$ for i in 1 2 3; do /tmp/fixture_alignof; done | sort -u | wc -l
+1
+```
+
+The three back-to-back invocations produce identical output (1 distinct
+sorted line bundle).

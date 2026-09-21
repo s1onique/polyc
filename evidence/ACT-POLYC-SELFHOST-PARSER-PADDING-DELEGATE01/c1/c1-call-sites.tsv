@@ -1,0 +1,16 @@
+id	file	line	function	offset_arg_semantic	size_arg_semantic	returned_padding_consumer	affected_layout_observable	class
+1	src/parser.c	482	parseClassOffsets	offset (running class field offset after flattening base)	max_align (max field alignment)	*aligned_size (return value used as class size)	class size for empty/derived class	tail-aligned-empty
+2	src/parser.c	512	parseClassOffsets	offset (running, before anonymous nested field)	fa (alignment of anonymous class/union field)	offset += ... (advances offset to nested field's start)	anonymous nested field start offset	anonymous-pre-align
+3	src/parser.c	525	parseClassOffsets	offset (running, before this field)	fa (alignment of named/pointer field)	offset += ... (advances offset to field start)	named field start offset	named-pre-align
+4	src/parser.c	538	parseClassOffsets	offset (final running offset after last field)	max_align (max field alignment in class)	*aligned_size (return value used as class size)	class size	tail-aligned-class
+5	src/parser.c	570	parseUnionOffsets	max_size (max field size in union)	max_align (max field alignment in union)	*real_size (return value used as union size)	union size	tail-aligned-union
+
+# Total production call-sites in src/parser.c: 5
+# Each call-site class corresponds to a distinct semantic context that
+# exercises CalcPadding with a different (offset, size) combination.
+# All call-sites currently reach src/parser.c::CalcPadding (legacy C
+# implementation). NO production call-site currently reaches
+# BootstrapCalcPadding.
+#
+# UNCLASSIFIED_CALC_PADDING_CALL_SITES=0
+# PRODUCTION_REFERENCES_BOOTSTRAP_CALC_PADDING=NO (pre-migration)

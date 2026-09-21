@@ -1,0 +1,80 @@
+# C1 RED-1 — PolyC not production-authoritative at entry
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01
+
+## RED statement
+
+```text
+RED_PRODUCTION_AUTHORITY_REPRODUCED=YES
+BOOTSTRAP_CALC_PADDING_PRODUCTION_AUTHORITY=NO
+```
+
+## Source-of-truth hierarchy used
+
+```text
+1. executable source + tests   = src/parser.c, ./hcc, build/hcc
+2. fresh observations          = nm(1), grep(1) below
+3. active ACT contract         = ACT §4 (production-authority definition)
+4. current project docs        = SELF-HOST-COMPONENTS.tsv (no entry for padding)
+5. historical ACT/evidence      = CORRECTION04 HANDOFF §"Board effect"
+6. reviewer/issue/prompt prose = not used
+7. agent inference             = not used
+```
+
+## Evidence
+
+### Production source does not reference BootstrapCalcPadding
+
+```sh
+$ grep -rn 'BootstrapCalcPadding' src/
+(no output)
+```
+
+### Production binary does not contain the symbol
+
+```sh
+$ nm ./hcc | grep BootstrapCalcPadding
+$ echo $?
+1
+
+$ nm build/hcc | grep BootstrapCalcPadding
+$ echo $?
+1
+```
+
+(Exit code 1 means grep found no matches.)
+
+### Production binary DOES contain legacy CalcPadding
+
+```sh
+$ nm -gU build/hcc | grep -E '_CalcPadding|_ParserLegacyCalcPaddingOracle'
+000000010003abac T _CalcClassSize
+000000010003ac18 T _CalcPadding
+000000010003ab68 T _CalcUnionSize
+000000010003ac3c T _ParserLegacyCalcPaddingOracle
+```
+
+### Subject object contains the symbol but is not linked into production
+
+```sh
+$ nm build/parser-padding-subject.o | grep BootstrapCalcPadding
+0000000000000000 T _BootstrapCalcPadding
+```
+
+### PolyC subject object SHA
+
+```sh
+$ sha256sum build/parser-padding-subject.o
+187a4de9465e8dbe3c640484b05540daaad4a3267dd1543a169e3c304b02d5b1  build/parser-padding-subject.o
+```
+
+## Conclusion
+
+The PolyC implementation is qualified and reachable as a component
+object, but it is not linked into the production `./hcc` binary, and
+no production source file references it. Production authority for
+`CalcPadding` semantics is held exclusively by
+`src/parser.c::CalcPadding` (legacy C).
+
+This is the expected RED state. Migration to PolyC authority is the
+work of C2.

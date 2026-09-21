@@ -1,0 +1,151 @@
+# C1 Delegation Design
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01
+
+## Decision
+
+**D-C — existing stage-selection seam (`HCC_USE_SELFHOST_COMPONENTS`).**
+
+## Rationale
+
+The repository already maintains a canonical stage selector macro,
+`HCC_USE_SELFHOST_COMPONENTS`, with binding semantics documented in:
+
+* `src/lexer.c::lexIdentifier` lines 917-928 (legacy alias
+  `HCC_BOOTSTRAP02_STAGE1` is normalized to
+  `HCC_USE_SELFHOST_COMPONENTS`)
+* `src/CMakeLists.txt` lines 234-237 (the macro is passed at compile
+  time for the stage1 binary)
+* `src/lexer_bridge.h` (the declaration-only bridge for all current
+  PolyC components)
+
+D-C reuses this exact mechanism. No new macro is introduced. The
+production `./build/hcc` becomes the stage1 binary in the same sense
+that `hcc-bootstrap02` is stage1 today — its only difference from
+the existing stage1 binary is that it links one additional PolyC
+component (the parser padding component).
+
+## Mechanics
+
+### src/parser.c change (C2 IMPL)
+
+The `CalcPadding` body becomes:
+
+```c
+int CalcPadding(int offset, int size) {
+#ifdef HCC_USE_SELFHOST_COMPONENTS
+    return (int)BootstrapCalcPadding((I64)offset, (I64)size);
+#else
+    if (size == 0) return 0;
+    return offset % size == 0 ? 0 : size - offset % size;
+#endif
+}
+```
+
+### Declaration in src/parser.c
+
+```c
+#ifdef HCC_USE_SELFHOST_COMPONENTS
+extern long long BootstrapCalcPadding(long long offset, long long size);
+#endif
+```
+
+The `extern` declaration is in-file because `BootstrapCalcPadding` is
+a single component and is intentionally colocated with its only
+caller. No new header file is created. (ACT §6: "No speculative
+bridge file should be created if an existing ABI mechanism already
+handles this call.")
+
+### Component linking into production hcc
+
+The production `./build/hcc` is built with `-DHCC_USE_SELFHOST_COMPONENTS`
+and links `build/parser-padding-subject.o` (already produced by
+`make parser-padding-component`).
+
+The stage0 evidence path (the differential and the `parser-padding-legacy.o`
+oracle) continues to compile src/parser.c *without* the macro and
+links `src/parser.c.o` (which contains the legacy `#else` branch).
+
+### Build wiring (C2 IMPL)
+
+`src/CMakeLists.txt` adds a new opt-in stage-selection for the
+production `hcc` target:
+
+```cmake
+option(HCC_USE_SELFHOST_PARSER_PADDING
+       "Link the parser-padding PolyC component into hcc. ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01."
+       ON)
+```
+
+When `ON` (post-C2 default):
+
+* `target_compile_definitions(hcc PRIVATE HCC_USE_SELFHOST_COMPONENTS)`
+* `target_link_libraries(hcc ${PARSER_PADDING_OBJECT} m)`
+
+Where `PARSER_PADDING_OBJECT` defaults to `${CMAKE_SOURCE_DIR}/../build/parser-padding-subject.o`
+(matching the existing convention for the lexer stage1 components).
+
+### Why the existing hcc (production) is rebuilt as a "stage1+" binary
+
+Per ACT §1, the production compiler MUST exercise the PolyC authority.
+This is realized by having the production `./build/hcc` be the binary
+that links the parser-padding component. The existing `./build/hcc`
+already links `tasm` and the canonical C sources; the only addition is
+`build/parser-padding-subject.o` and the `HCC_USE_SELFHOST_COMPONENTS`
+define.
+
+This means the existing `./build/hcc` becomes the analog of
+`hcc-bootstrap02` for the parser-padding slice. The existing
+`hcc-bootstrap02`/`03`/`04` chain continues to build with its
+current PolyC components (BootstrapScanIdent, BootstrapClassifyOperator,
+BootstrapScanScalarLiteral, BootstrapScanTrivia, BootstrapLinkDirective).
+
+### Stage0 evidence path remains intact
+
+The `parser-padding-legacy.o` target builds src/parser.c without the
+macro and without the linked component, preserving the differential's
+ability to reach the legacy algorithm as oracle ground truth.
+
+The differential itself is unchanged (it links the PolyC subject +
+the legacy object + the oracle).
+
+## Why this design satisfies the ACT's required semantic
+
+After C2:
+
+1. `src/parser.c::CalcPadding` body is a one-line delegation to
+   `BootstrapCalcPadding` when `HCC_USE_SELFHOST_COMPONENTS` is
+   defined. Production `./build/hcc` is built with that define.
+2. `LEGACY_SEMANTIC_AUTHORITY_COUNT=0`: the legacy algorithm body
+   exists only in the stage0 evidence path (the `#else` branch of
+   the conditional), which is never compiled into the production
+   binary.
+3. `BootstrapCalcPadding` symbol resolves at production link time
+   via the subject object; no runtime fallback is present.
+4. Stage1+ production parser/layout code obtains padding from
+   `BootstrapCalcPadding` exclusively.
+
+## Halt semantics if C2 deviates
+
+If C2 changes `BootstrapCalcPadding` instead of `CalcPadding`,
+declare `HALT_SUBJECT_NOT_QUALIFIED_FOR_DELEGATION` (ACT §7).
+
+If C2 introduces a new macro, declare
+`HALT_DELEGATION_DESIGN_AMBIGUOUS` and stop; F-CONVERGENCE only
+permits continuing within an authorized design, not re-authorizing
+one.
+
+If C2 silently retains the legacy algorithm body on the production
+path (no `#else` removed), declare `HALT_PRODUCTION_SEMANTIC_REGRESSION`
+(ACT §33: "Forbidden patterns include dual calculate and choose
+legacy result").
+
+## Frozen for C2
+
+```text
+DELEGATION_DESIGN_FROZEN=YES
+DEFAULT_PRODUCTION_PADDING_PATH=POLYC
+STAGE0_LEGACY_CONTROL=PRESERVED
+NO_NEW_MACRO=YES
+NO_NEW_BRIDGE_HEADER=YES
+```

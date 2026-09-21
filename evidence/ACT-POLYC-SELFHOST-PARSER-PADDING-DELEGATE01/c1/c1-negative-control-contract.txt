@@ -1,0 +1,97 @@
+# C1 Negative Control Contract (N01)
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01
+
+## Frozen N01 contract (ACT §24)
+
+> After production delegation, a compiling semantic mutation of
+> `BootstrapCalcPadding` MUST alter at least one production fixture.
+
+## Required causal chain
+
+```text
+mutated PolyC source
+  → mutated component object (BootstrapCalcPadding.M)
+  → mutated production parser/compiler
+  → production fixture execution
+  → deterministic output divergence
+```
+
+## Mutation rules
+
+The mutation MUST:
+
+* compile cleanly (no warnings that become errors)
+* link cleanly
+* run without crashing
+* produce a deterministic output that differs from the pristine
+  output for at least one fixture
+
+A crash alone does NOT satisfy N01.
+A build failure does NOT satisfy N01.
+A link failure does NOT satisfy N01.
+
+## Recommended mutation
+
+```text
+return pristine_padding + 1;
+```
+
+For one non-zero unaligned case. The PolyC subject computes:
+
+```c
+I64 BootstrapCalcPadding(I64 offset, I64 size) {
+    if (size == 0) return 0;
+    I64 rem = offset % size;
+    if (rem == 0) return 0;
+    return size - rem;
+}
+```
+
+The mutation replaces the last `return size - rem;` with
+`return size - rem + 1;`. This is observable at every
+`CalcPadding` call where `size > 0 && offset % size != 0`.
+
+## Implementation path at C3
+
+1. Take `build/parser-padding-subject.o` (built from pristine source).
+2. Make a temporary mutated copy in `build/parser-padding-subject.M.o`
+   by recompiling the subject source with the mutation applied.
+3. Compute SHA-256 of pristine and mutated subject objects. They
+   MUST differ.
+4. Compute SHA-256 of the production hcc binary built from pristine
+   subject, and a separate production hcc built from mutated subject.
+   They MUST differ.
+5. Execute every C1 fixture with pristine and mutated binaries.
+6. At least one fixture's canonical output MUST differ.
+
+## Negative witness rejection
+
+A forged/incomplete N01 record is rejected. Specifically:
+
+* Missing `MUTATED_PRODUCTION_BINARY_SHA256` -> REJECT
+* `MUTATED_PRODUCTION_DIVERGENCE_DETECTED=YES` but no actual fixture
+  diff -> REJECT
+* Build failure represented as divergence -> REJECT
+* Crash without output divergence -> REJECT
+
+## Required final tokens (post-C3)
+
+```text
+MUTATED_COMPONENT_BUILD=PASS
+MUTATED_PRODUCTION_LINK=PASS
+MUTATED_PRODUCTION_RUN=PASS
+MUTATED_PRODUCTION_DIVERGENCE_DETECTED=YES
+PRISTINE_REVERIFY=PASS
+N01_COMPLETE_CAUSAL_CHAIN=YES
+N01_INCOMPLETE_WITNESS_REJECTED=YES
+```
+
+## Halt semantics if N01 fails
+
+If `MUTATED_COMPONENT_BUILD != PASS`: HALT_N01_BUILD_FAILED
+If `MUTATED_PRODUCTION_LINK != PASS`: HALT_N01_LINK_FAILED
+If `MUTATED_PRODUCTION_RUN != PASS`: HALT_N01_RUN_FAILED
+If `MUTATED_PRODUCTION_DIVERGENCE_DETECTED != YES`: HALT_N01_NO_SEMANTIC_DIVERGENCE
+If any required SHA evidence missing: HALT_N01_WITNESS_INCOMPLETE
+If forged record accepted: HALT_N01_INCOMPLETE_WITNESS_REJECTED

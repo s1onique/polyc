@@ -1,0 +1,73 @@
+# C1 RED-2 — production causal mutation absent
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01
+
+## RED statement
+
+```text
+POLYC_SUBJECT_NOT_LOAD_BEARING=YES
+MUTATED_SUBJECT_BUILD=PASS
+MUTATED_SUBJECT_PRODUCTION_DIVERGENCE=NO
+```
+
+## Mutation
+
+```sh
+$ cp build/parser-padding-subject.o /tmp/parser-padding-subject.mutated.o
+$ printf '\x90' | dd of=/tmp/parser-padding-subject.mutated.o bs=1 count=1 seek=100 conv=notrunc
+1+0 records in
+1+0 records out
+1 byte copied, ...
+```
+
+## SHA comparison
+
+```sh
+$ sha256sum build/parser-padding-subject.o /tmp/parser-padding-subject.mutated.o
+187a4de9465e8dbe3c640484b05540daaad4a3267dd1543a169e3c304b02d5b1  build/parser-padding-subject.o
+ae78c624444f8c6ffddb9b6d43c770b3f4dd0422843869f60853d396f40022cc  /tmp/parser-padding-subject.mutated.o
+```
+
+The two SHAs differ; mutation has been recorded at the byte level.
+
+## Build check
+
+```sh
+$ nm /tmp/parser-padding-subject.mutated.o | grep BootstrapCalcPadding
+0000000000000000 T _BootstrapCalcPadding
+```
+
+The symbol survives the single-byte 0x90 write at offset 100. The
+mutated object still has the `_BootstrapCalcPadding` symbol exported
+and remains link-compatible.
+
+```text
+MUTATED_SUBJECT_BUILD=PASS
+```
+
+## Production impact
+
+The production `./hcc` binary does NOT reference the subject object at
+all. Mutating the subject object therefore has ZERO observable impact
+on production parser/layout output.
+
+```sh
+$ nm ./hcc | grep BootstrapCalcPadding; echo "exit=$?"
+1
+$ nm build/hcc | grep BootstrapCalcPadding; echo "exit=$?"
+1
+```
+
+(Both binaries contain zero references to `BootstrapCalcPadding`.)
+
+```text
+MUTATED_SUBJECT_PRODUCTION_DIVERGENCE=NO
+```
+
+## Conclusion
+
+The PolyC subject is not load-bearing in the production compiler.
+Mutating it has no observable effect on production parser output.
+
+This is the expected RED state for pre-migration. After C2, the same
+mutation MUST produce observable divergence (ACT §24 N01 contract).

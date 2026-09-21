@@ -1,0 +1,80 @@
+# C1 Baseline Conservation Contract
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01
+
+## Frozen baseline authority
+
+```text
+docs/factory/LEXER07-BASELINE-AUTHORITY.tsv
+PROSPECTIVE_LEXER07_BASELINE_SHA256=00c54408bf29237cf526aeed097f6b097f22ae682683675a0bf5ab9f9c202b9a
+KNOWN_FAILURE_SET_STABLE=YES
+```
+
+## Required C3 final tokens (ACT §27)
+
+```text
+NEW_LEXER07_FAILURE_IDENTITIES=0
+REMOVED_LEXER07_PASS_IDENTITIES=0
+NEW_LEXER07_DIVERGENCES=0
+NEW_LEXER07_PASS_MISMATCHES=0
+```
+
+This ACT MUST NOT:
+
+* reinterpret known baseline failures (ACT §27)
+* regenerate the LEXER07 baseline (ACT §5)
+* change the known failure classification
+
+Known baseline failures may remain known failures. The act is
+conservation only.
+
+## Lexer conservation scope
+
+```text
+LEXER01_CONSERVATION=PASS
+LEXER02_CONSERVATION=PASS
+LEXER03_CONSERVATION=PASS
+LEXER04_CONSERVATION=PASS
+```
+
+Each conservation runs the canonical fixture suite for the
+corresponding lexer ACT. The test command for each is:
+
+```sh
+make lexer07-correction02-all
+```
+
+(or the equivalent canonical target for each lexer ACT, identified
+at C3 from the existing selfhost-component-test gate graph.)
+
+## Parser conservation scope
+
+```text
+PARSER_LAYOUT_NEW_FAILURES=0
+PARSER_NEW_FAILURES=0
+```
+
+The canonical parser layout tests are:
+
+```text
+src/tests/06_class_defs.HC
+src/tests/07_recursive_classdef.HC
+src/tests/24_union.HC
+src/tests/42_class_u0_tail.HC
+src/tests/46_alignof.HC
+src/tests/47_struct_abi.HC
+src/tests/65_class_inheritance.HC
+```
+
+`PARSER_NEW_FAILURES=0` requires that all canonical parser tests
+listed in the entry baseline remain green.
+
+## Halt semantics
+
+Any deviation from a frozen baseline identity triggers a halt:
+
+* `HALT_LEXER07_FORWARD_BASELINE_REGRESSION` if NEW_LEXER07_*
+  tokens are non-zero
+* `HALT_LEXER_CONSERVATION` if any LEXER0*_CONSERVATION != PASS
+* `HALT_PARSER_LAYOUT_REGRESSION` if PARSER_LAYOUT_NEW_FAILURES > 0
+* `HALT_PARSER_REGRESSION` if PARSER_NEW_FAILURES > 0

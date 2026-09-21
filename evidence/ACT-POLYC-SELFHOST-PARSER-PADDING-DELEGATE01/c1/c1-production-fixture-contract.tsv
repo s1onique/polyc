@@ -1,0 +1,24 @@
+fixture_id	source_path	call_site_class	legacy_expected_status	observable
+FIXTURE_ALIGNOF	/tmp/fixture_alignof.HC	ALL_FIVE_AT_ONCE	pass	sizeof+alignof values for 10 classes (Color, Rectangle, Mixed, S2, S3, S5, Inner, Outer, Has8, OuterH)
+FIXTURE_U0_TAIL	/tmp/fixture_u0_tail.HC	tail-aligned-empty; tail-aligned-class	pass	sizeof(Hdr)=8; sizeof(HdrMixed)=16; body offsets 8 and 9
+FIXTURE_INHERITANCE	/tmp/fixture_inheritance.HC	tail-aligned-empty; tail-aligned-class; tail-aligned-union; anonymous-pre-align	pass	sizeof(BaseClass)=16; sizeof(SuperClass)=32; sizeof(Empty)=16; sizeof(Cat)=8; field reads
+FIXTURE_LEXER07_BROAD_CORPUS	./build/correction02-lexer07-baseline-a/corpus-matrix.tsv	ALL_FIVE_VIA_LEXER07	pass	broad corpus semantic output (binding per docs/factory/LEXER07-BASELINE-AUTHORITY.tsv)
+FIXTURE_CLASS_DEFS_TEST	src/tests/06_class_defs.HC	ALL_FIVE_AT_ONCE	pass	6/6 PASSED
+FIXTURE_CLASS_U0_TAIL_TEST	src/tests/42_class_u0_tail.HC	tail-aligned-empty; tail-aligned-class	pass	3/3 PASSED
+FIXTURE_UNION_TEST	src/tests/24_union.HC	ALL_FIVE_AT_ONCE	pass	4/4 PASSED
+FIXTURE_INHERITANCE_TEST	src/tests/65_class_inheritance.HC	tail-aligned-empty; tail-aligned-class	pass	round-trip inheritance layouts
+FIXTURE_STRUCT_ABI_TEST	src/tests/47_struct_abi.HC	ALL_FIVE_AT_ONCE	pass	struct ABI / HFA / by-value / by-reference
+FIXTURE_ALIGNOF_TEST	src/tests/46_alignof.HC	ALL_FIVE_AT_ONCE	pass	5/5 PASSED
+
+# Total: 10 fixtures spanning 5 call-site classes
+# CALC_PADDING_CALL_SITE_CLASS_COVERAGE=100%  (5/5 classes exercised)
+#
+# Required observables (canonical):
+#   sizeof(<class>)           -- integer
+#   alignof(<class>)          -- integer
+#   <field>->offset           -- integer (via &h->field - h(U8 *))
+#   field reads               -- integer (BaseClass.base, etc.)
+#   layout byte-for-byte      -- via assembly object inspection
+#
+# Avoid: pointer addresses, nondeterministic diagnostics, build labels,
+#        nondeterministic timestamps.

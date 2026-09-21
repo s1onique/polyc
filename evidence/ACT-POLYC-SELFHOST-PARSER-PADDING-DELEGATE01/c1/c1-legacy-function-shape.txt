@@ -1,0 +1,113 @@
+# C1 Legacy Function Shape
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01
+
+## CalcPadding definition
+
+```c
+// src/parser.c lines 430-438
+int CalcPadding(int offset, int size) {
+    if (size == 0) return 0;
+    return offset % size == 0 ? 0 : size - offset % size;
+}
+```
+
+## Storage/linkage
+
+```sh
+$ nm build/hcc | grep -E ' [Tt] _CalcPadding'
+000000010003ac18 T _CalcPadding
+```
+
+Static-linkage `T` (global text symbol). Internal linkage is **not**
+present — the symbol is exported. Not `static`. External ABI: C int(int, int).
+
+## All direct callers
+
+```sh
+$ grep -n 'CalcPadding(' src/parser.c | grep -v 'ParserLegacyCalcPaddingOracle'
+482:        *aligned_size = offset + CalcPadding(offset, max_align);
+512:            offset += CalcPadding(offset, fa);
+525:            offset += CalcPadding(offset, fa);
+538:        *aligned_size = offset + CalcPadding(offset, max_align);
+570:    *real_size = max_size + CalcPadding(max_size, max_align);
+```
+
+5 production call-sites, all in src/parser.c.
+
+The `ParserLegacyCalcPaddingOracle` is an ABI adapter used solely by
+`tools/quality/parser-padding-oracle-impl.c` to reach the actual legacy
+algorithm during the component differential; it is NOT a production path.
+
+## Address-taking references
+
+None. CalcPadding is never assigned to a function pointer or referenced
+by `&CalcPadding`. Confirmed by:
+
+```sh
+$ grep -rn '&CalcPadding\b' src/ tools/
+(no output)
+```
+
+## Macro aliases
+
+None. Confirmed by:
+
+```sh
+$ grep -rn '#define.*CalcPadding' src/
+(no output)
+```
+
+## Migration design choice
+
+The legacy function `CalcPadding` is exported (non-static) and is
+referenced at 5 distinct call sites, all in src/parser.c. There are
+no macro aliases and no function-pointer references.
+
+This ACT chooses **D-C — existing stage-selection seam**, using the
+established `HCC_USE_SELFHOST_COMPONENTS` mechanism:
+
+* src/parser.c::CalcPadding body becomes a delegating wrapper that
+  forwards to `BootstrapCalcPadding` when `HCC_USE_SELFHOST_COMPONENTS`
+  is defined at compile time.
+* The legacy algorithm body is removed from src/parser.c (no dual
+  authority retained).
+* `BootstrapCalcPadding` is linked into the production `./build/hcc`
+  binary via the existing component-build + CMake mechanism.
+* Stage0 evidence (the `parser-padding-legacy.o` and the component
+  differential) continues to compile a fresh `src/parser.c` *without*
+  `HCC_USE_SELFHOST_COMPONENTS` so the differential still has the
+  legacy algorithm available as oracle ground truth.
+
+Rationale:
+
+1. The existing `HCC_USE_SELFHOST_COMPONENTS` macro is already the
+   canonical selector for PolyC component delegation (see
+   src/lexer.c::lexIdentifier and src/lexer_bridge.h). Inventing
+   a new macro would create a divergent seam.
+
+2. The legacy algorithm body is small and unchanged; removing it
+   in src/parser.c is safe because the stage0 evidence path compiles
+   src/parser.c *without* the macro and gets the legacy body back via
+   a fallback. (Implementation detail: see c1-delegation-design.txt.)
+
+3. D-B (direct-call replacement) was considered but rejected because
+   it would require modifying 5 call sites in src/parser.c. D-A
+   (delegating wrapper) was rejected as redundant with D-C.
+
+## Migration shape (post-C2)
+
+```c
+int CalcPadding(int offset, int size) {
+#ifdef HCC_USE_SELFHOST_COMPONENTS
+    return (int)BootstrapCalcPadding((I64)offset, (I64)size);
+#else
+    /* Stage0 evidence path: pure legacy C algorithm. */
+    if (size == 0) return 0;
+    return offset % size == 0 ? 0 : size - offset % size;
+#endif
+}
+```
+
+The exact macro condition and declaration are refined at C2 with the
+real source. The conceptual shape above is the delegation contract.
