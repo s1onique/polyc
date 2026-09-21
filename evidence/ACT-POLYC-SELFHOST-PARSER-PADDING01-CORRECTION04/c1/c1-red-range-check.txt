@@ -1,0 +1,59 @@
+# RED-2: Predecessor CORRECTION03 fails factory-v2-range-check.sh
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION04
+PHASE=C1 (body label) / ACT-Phase trailer=EVIDENCE
+
+## Predicate
+
+Run the LIVE factory-v2-range-check.sh against CORRECTION03 terminal
+commit (17eeb85).  Reproduce the supersession-trailer defect.
+
+## Reproduction
+
+```
+$ bash scripts/quality/factory-v2-range-check.sh \
+     ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION03 \
+     17eeb85
+STATUS=FAIL
+REASON=commit 8d87083b7de1495ac9765321e11c7cc94e3775f7 in range carries supersession trailers; only CLOSE may
+exit=1
+```
+
+## Identification of the offending commit
+
+The validator walks the FIRST..CLOSE range.  It reports the first
+non-CLOSE commit that carries supersession trailers:
+
+```
+$ git log --reverse --format=%H 8d87083~1..17eeb85 --first-parent 2>/dev/null | head -10
+or:
+$ git --no-pager log 17eeb85 --not 3b38d69^ --first-parent --format=%H 2>/dev/null
+17eeb85befbcd3cac645d58fbe374dd7b0ab65da ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION03 C4: CLOSE
+c0845e2ef9da428e2b9221e5bb72b5c6c665d244 ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION03 C3: VERIFY
+1c5226dbed965f6431979958bc943b4677685b10 ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION03 C2: IMPL
+0c3163ebbc87cee3f2c64f1ddae7219ab2c3d743 ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION03 C1: RECON/RED
+8d87083b7de1495ac9765321e11c7cc94e3775f7 ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION03 C0: AUTH
+3b38d6910c7a117b0a98a98d84ab5114da70cb83 ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION02 C4: CLOSE
+```
+
+Inspecting trailer placement on each CORRECTION03 commit:
+
+```
+--- 8d87083 ---
+ACT-Supersedes: ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION02|ACT-Corrected-Verdict: HALT_FALSE_GREEN
+--- 0c3163e ---
+
+--- 1c5226d ---
+
+--- c0845e2 ---
+
+--- 17eeb85 ---
+ACT-Supersedes: ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION02|ACT-Corrected-Verdict: HALT_FALSE_GREEN
+```
+
+C0 (8d87083) carries both trailers -> DEFECT confirmed.
+CLOSE (17eeb85) also carries them -> CLOSE is allowed; C0 is not.
+
+## AC ledger
+
+AC06 D2_RANGE_CHECK_RED_REPRODUCED=PASS

@@ -1,0 +1,36 @@
+# C1 Required Result
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION04
+PHASE=C1 (body label) / ACT-Phase trailer=EVIDENCE
+
+## AC ledger updates from C1
+
+```
+AC05 D1_F14_RED_REPRODUCED=YES                  PASS
+AC06 D2_RANGE_CHECK_RED_REPRODUCED=YES          PASS
+AC07 D3_SIX_COMMIT_RED_REPRODUCED=YES           PASS
+AC08 D4_POST_C4_MODEL_RED_REPRODUCED=YES        PASS
+AC34 C4_TRAILER_SCHEMA_FROZEN_FROM_LIVE_VALIDATOR=YES  PASS
+```
+
+Not yet evaluated (deferred):
+
+```
+AC09..AC11  -> DEFERRED_TO_C2   (F14 restoration)
+AC12..AC29  -> DEFERRED_TO_C3   (baseline + conservation + factory gates)
+AC30..AC33  -> DEFERRED_TO_C3   (C0..C3 trailer validation)
+AC35, AC36  -> DEFERRED_TO_C3/C4
+AC37..AC40  -> DEFERRED_TO_C4 / DEFERRED_TO_EXTERNAL
+```
+
+## Phase exit gate
+
+```
+AC05..AC08 PASS  ✓
+AC34 PASS        ✓  (live validator contract frozen; C4 trailer block verified)
+WORKTREE contains only authorized C1 artifacts
+No source / parser / baseline / closed-evidence mutations
+```
+
+C1 is evidence-only. The transition to C2 (RESTORE F14 + FREEZE
+BASELINE AUTHORITY) is authorized by this ledger.

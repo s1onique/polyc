@@ -1,0 +1,118 @@
+# C1 Live Validator Contract
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION04
+PHASE=C1 (body label) / ACT-Phase trailer=EVIDENCE
+
+This file captures the LIVE validator contract by empirical
+fixture-test, not by guessing. The exact trailer placement for C0..C4
+is derived here.
+
+## Source of truth
+
+- `scripts/quality/factory-v2-commit-msg-check.sh`
+- `scripts/quality/factory-v2-range-check.sh`
+- `docs/factory/GIT-METADATA.md` §2 (canonical grammar)
+
+## Phase enum (literal, validator-enforced)
+
+```
+RED | IMPL | EVIDENCE | CLOSE
+```
+
+Custom labels like `C0`, `C1`, `AUTH`, `IMPL-RESTORE`, etc. are
+rejected with `STATUS=FAIL: ACT-Phase 'XXX' not in {RED,IMPL,EVIDENCE,CLOSE}`.
+
+Empirical fixtures (file paths under `/tmp/c1-fixtures/`):
+
+| Fixture                                                | Phase declared | Verdict      | Result |
+|--------------------------------------------------------|----------------|--------------|--------|
+| `good-red.txt`                                         | RED            | (none)       | PASS   |
+| `good-close-pass.txt`                                  | CLOSE          | PASS         | PASS   |
+| `good-close-pass-fancy.txt`                            | CLOSE          | PASS_FORWARD_BASELINE_GOVERNANCE_REQUALIFIED | PASS |
+| `good-close-halt.txt`                                  | CLOSE          | HALT_FALSE_GREEN | PASS |
+| `good-close-correction.txt`                            | CLOSE          | PASS (+Supersedes+HALT_FALSE_GREEN) | PASS |
+| `good-close-pending.txt`                               | CLOSE          | PASS_PENDING_EXTERNAL_TERMINALITY (+Supersedes+HALT_FALSE_GREEN) | PASS |
+| `bad-red-with-verdict.txt`                             | RED            | PASS         | FAIL (phase RED forbids ACT-Verdict) |
+| `bad-close-no-verdict.txt`                             | CLOSE          | (none)       | FAIL (phase CLOSE requires exactly one ACT-Verdict) |
+| `bad-c0.txt`                                           | C0             | OPEN         | FAIL (ACT-Phase 'C0' not in {RED,IMPL,EVIDENCE,CLOSE}) |
+| `bad-c2.txt`                                           | C2             | (none)       | FAIL (ACT-Phase 'C2' not in {RED,IMPL,EVIDENCE,CLOSE}) |
+| `nc3-illegal-c0-with-supersession.txt`                 | RED + Supersedes | HALT_FALSE_GREEN | (commit-msg-checker says PASS) |
+
+## Position rules (range-checker-enforced)
+
+`factory-v2-range-check.sh` lines 216-222:
+
+> "If the commit is not CLOSE, ACT-Supersedes / ACT-Corrected-Verdict
+> trailers MUST be absent."
+
+Empirical:
+
+| Range                                                  | Result |
+|--------------------------------------------------------|--------|
+| `CORRECTION03` at `17eeb85`                            | STATUS=FAIL (reason: 8d87083 carries supersession trailers) |
+| `CORRECTION03` at `9ea5bc4` (post-fixup)               | STATUS=FAIL (reason: 9ea5bc4 doesn't carry ACT: id) |
+
+## Verdict regex
+
+`grep -Eq '^(PASS(_[A-Z0-9_]+)*|HALT_[A-Z0-9_]+)$'`
+
+`PASS_PENDING_EXTERNAL_TERMINALITY` passes (one token, no spaces).
+`HALT_FALSE_GREEN` passes as a corrected verdict.
+
+## Cardinality (live-validator)
+
+```
+ACT:                     exactly 1 (RED/IMPL/EVIDENCE/CLOSE)
+ACT-Phase:               exactly 1
+ACT-Verdict:             exactly 0 on RED/IMPL/EVIDENCE
+                         exactly 1 on CLOSE
+ACT-Supersedes:          0 or 1, CLOSE-only (per range-checker)
+ACT-Corrected-Verdict:   0 or 1, CLOSE-only, requires ACT-Supersedes,
+                         value matches verdict regex
+```
+
+## CORRECTION04 mapping (body label -> trailer ACT-Phase)
+
+The body label is for human reading; the trailer is the literal
+validator enum:
+
+```
+C0 AUTH      -> ACT-Phase: RED
+C1 RECON/RED -> ACT-Phase: EVIDENCE
+C2 RESTORE   -> ACT-Phase: IMPL
+C3 VERIFY    -> ACT-Phase: EVIDENCE
+C4 CLOSE     -> ACT-Phase: CLOSE
+```
+
+This mapping matches the historical CORRECTION03 commit-message
+trailer pattern (`8d87083` was `ACT-Phase: RED`, `1c5226d` was
+`ACT-Phase: IMPL`, etc.). The C3 `EVIDENCE` phase also matches the
+historical pattern (`c0845e2` was `ACT-Phase: EVIDENCE`).
+
+## C4 trailer block (frozen from live validator)
+
+Literal fixture `good-close-pending.txt` demonstrates acceptance.
+The exact trailer block for the CORRECTION04 C4 commit is:
+
+```
+ACT: ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION04
+ACT-Phase: CLOSE
+ACT-Verdict: PASS_PENDING_EXTERNAL_TERMINALITY
+ACT-Supersedes: ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION03
+ACT-Corrected-Verdict: HALT_FALSE_GREEN
+```
+
+`factory-v2-commit-msg-check.sh` returns `STATUS=PASS` for this exact
+block (verified empirically against a synthetic commit-message fixture;
+no commit history was created).
+
+## AC ledger
+
+```
+AC34 C4_TRAILER_SCHEMA_FROZEN_FROM_LIVE_VALIDATOR=YES
+```
+
+`HALT_VALIDATOR_CONTRACT_AMBIGUOUS` is NOT triggered: the live
+checker is consistent with the ACT body's intent (the body labels
+C0..C4 are the ACT-internal vocabulary; the validator-enum is the
+literal trailer value).

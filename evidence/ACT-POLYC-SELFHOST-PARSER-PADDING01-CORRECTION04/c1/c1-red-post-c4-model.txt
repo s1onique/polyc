@@ -1,0 +1,41 @@
+# RED-4: POST_C4_COMMIT_COUNT=0 cannot be self-proven by C4
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION04
+PHASE=C1 (body label) / ACT-Phase trailer=EVIDENCE
+
+## The contradiction
+
+A C4 commit exists at time T.  After T, additional commits MAY
+or MAY NOT be created.  Only an observation AFTER T can confirm
+POST_C4_COMMIT_COUNT = 0.
+
+Any attempt to commit that observation creates a new commit, which
+contradicts the value it claims to record.
+
+CORRECTION03 used:
+  git rev-list --count HEAD..HEAD = 0
+which is true at every commit (an empty range trivially yields 0).
+It is not a load-bearing post-C4 external witness.
+
+## CORRECTION04 model
+
+Two-layer closure:
+
+Layer 1 (in C4 evidence):
+  PRE_C4_TIP = C3
+  ENTRY..PRE_C4_TIP = 4 commits
+  PRE_C4_TIP is parent of C4
+  -> C4_IS_THE_5TH_ACT_COMMIT=YES (in-repository topology claim)
+
+Layer 2 (external, after C4 exists, no commit):
+  bash scripts/quality/factory-v2-range-check.sh ACT  HEAD  -> STATUS=PASS
+  git rev-list --count 9ea5bc4..HEAD                    -> COMMITS=5
+  -> EXTERNAL_TERMINALITY_GATE=PASS (post-C4 terminality claim)
+
+The HANDOFF at C4 records PASS_PENDING_EXTERNAL_TERMINALITY
+(honest about not yet knowing the external result).
+Only the external gate promotes to PASS_FORWARD_BASELINE_GOVERNANCE_REQUALIFIED.
+
+## AC ledger
+
+AC08 D4_POST_C4_MODEL_RED_REPRODUCED=PASS
