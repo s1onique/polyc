@@ -1,0 +1,51 @@
+ac_id	predicate	status	evidence_path	witness	evidence_sha256	notes
+AC01	WORKTREE_CLEAN_AT_C0=YES	PASS	c3/c3-entry-identity.txt	git_status_clean_at_C0	see_c3_entry_identity	C0 captured clean tree
+AC02	C0_AUTH_BEFORE_WORK=YES	PASS	c0/c0-scope.txt	c0_evidence_only	see_c0_scope	ACT doc before any other file
+AC03	PREDECESSOR_SELECTION_MATCH=YES	PASS	c0/c0-predecessor-binding.txt	PARSER-SLICE-RECON01 NEXT_ACT_ID match	see_c0_predecessor	CAND-002 frozen
+AC04	SELECTED_SOURCE_REGION_MATCH=YES	PASS	c1/c1-legacy-source-identity.txt	src/parser.c:430..438 sha256 frozen	7a4a0935ae5fc92fb37dc637037a83c70c21a81ebe9a1233c69fd6529bc1a279	CalcPadding body unchanged
+AC05	RED_SUBJECT_ABSENT=PASS	PASS	c1/c1-red-subject-absent.txt	test_rc=1	see_c1_red_subject_absent	Pre-C2 subject absent
+AC06	RED_ABI_ABSENT=PASS	PASS	c1/c1-red-abi-absent.txt	git_grep_rc=1	see_c1_red_abi_absent	0 references
+AC07	RED_LEGACY_AUTHORITY_ACTIVE=PASS	PASS	c1/c1-red-legacy-authority.txt	5_CallPadding_call_sites_unchanged	see_c1_red_legacy_authority	legacy path active
+AC08	RED_DIRECT_DIFFERENTIAL_ABSENT=PASS	PASS	c1/c1-red-differential-absent.txt	test_rc=1	see_c1_red_diff_absent	pre-C2 binary absent
+AC09	RED_FIXEDPOINT_EVIDENCE_ABSENT=PASS	PASS	c1/c1-red-fixedpoint-absent.txt	test_rc=1	see_c1_red_fp_absent	pre-C2 binary absent
+AC10	LEGACY_BASELINE_FROZEN=YES	PASS	c1/c1-legacy-baseline.txt	math_contract_text_frozen	see_c1_legacy_baseline	zero/size/aligned/unaligned branches frozen
+AC11	ABI exact I64 BootstrapCalcPadding(I64 offset, I64 size)	PASS	c3/c3-source-identities.tsv	subject file	subject_sha=b555b76b	exact signature match
+AC12	ABI_HOST_IDENTITY_FIELDS=0	PASS	c3/c3-source-identities.tsv	subject_only_two_I64_params	subject_sha=b555b76b	no host pointer fields
+AC13	SUBJECT_EXTERNAL_DEPENDENCY_COUNT=0 SUBJECT_GLOBAL_MUTABLE_STATE=0 SUBJECT_ALLOCATION_COUNT=0	PASS	c3/c3-source-identities.tsv	subject_only_arithmetic	subject_sha=b555b76b	pure function
+AC14	NAMED_FIXTURE_FAIL=0	PASS	c3/c3-direct-differential-named.txt	277/277 PASS	see_c3_diff_named	all named fixtures pass
+AC15	BOUNDED_MATRIX_TOTAL=16640 BOUNDED_MATRIX_FAIL=0	PASS	c3/c3-direct-differential-matrix.txt	16640/16640 PASS	see_c3_diff_matrix	exhaustive offset 0..255 size 0..64
+AC16	LARGE_VALUE_CASES>=24 LARGE_VALUE_FAIL=0	PASS	c3/c3-direct-differential-large.txt	64/64 PASS	see_c3_diff_large	8 offsets x 8 sizes
+AC17	DIRECT_DIFFERENTIAL_FAIL=0	PASS	c3/c3-direct-differential-matrix.txt	0 failures	see_c3_diff_matrix	terminal differential verdict
+AC18	ALGEBRAIC_INVARIANT_FAIL=0	PASS	c3/c3-direct-differential-matrix.txt	16640/16640 oracle-equal -> invariants by construction	sha256_matrix_artifact	oracle=src/parser.c body; pc==oc on all 16640 inputs implies pc satisfies same invariants
+AC19	PRISTINE_ZERO_SIZE_PASS=YES	PASS	c3/c3-zero-size-guard.txt	256/256 size=0 PASS	see_c3_zero_size	pristine size=0 trivial correctness
+AC20	M1_BUILT=YES M1_LINKED=YES M1_EXECUTED=YES M1_REJECTED=YES	PASS	c3/c3-mutation-m1.txt	255/256 divergences rc=1	see_c3_m1	zero_size_guard_broken_caught
+AC21	M2_BUILT=YES M2_LINKED=YES M2_EXECUTED=YES M2_REJECTED=YES	PASS	c3/c3-mutation-m2.txt	1246 divergences rc=1	see_c3_m2	aligned_returns_size_caught
+AC22	M3_BUILT=YES M3_LINKED=YES M3_EXECUTED=YES M3_REJECTED=YES	PASS	c3/c3-mutation-m3.txt	14617 divergences rc=1	see_c3_m3	remainder_returned_directly_caught
+AC23	M4_BUILT=YES M4_LINKED=YES M4_EXECUTED=YES M4_REJECTED=YES	PASS	c3/c3-mutation-m4.txt	16384 divergences rc=1	see_c3_m4	boolean_classifier_caught
+AC24	PRISTINE_REVERIFY=PASS	PASS	c3/c3-mutation-summary.txt	16640/16640 PASS after mutations	see_c3_mutation_summary	no contamination
+AC25	GENERATION_ROWS=4 UNKNOWN_PROVENANCE_ROWS=0	PASS	c3/c3-generation-provenance.tsv	4_rows_compiler_sha_captured	see_c3_provenance	all compilers distinct sha256
+AC26	G0_INDEPENDENT_BUILD=YES G1_INDEPENDENT_BUILD=YES G2_INDEPENDENT_BUILD=YES G3_INDEPENDENT_BUILD=YES	PASS	c3/c3-generation-provenance.tsv	built_from_absent_output=YES	see_c3_provenance	no copy reuse
+AC27	FIXEDPOINT_PAIR_TOTAL=6 FIXEDPOINT_PAIR_PASS=6 FIXEDPOINT_PAIR_FAIL=0	PASS	c3/c3-fixedpoint.txt	6/6 equal YES	see_c3_fixedpoint	G0==G1==G2==G3
+AC28	PRISTINE_FIXEDPOINT=PASS MUTATED_FIXEDPOINT=FAIL PRISTINE_FIXEDPOINT_RECHECK=PASS	PASS	c3/c3-fixedpoint-negative-control.txt	byte_mismatch_detected_yes	rc=1_then_0	see_c3_fp_neg	causal load-bearingness
+AC29	GENERATION_COPY_DETECTED=YES	PASS	c3/c3-generation-copy-control.txt	forged=G1 detected rc=1	see_c3_gen_copy	verifier_rejects_forgery
+AC30	LEGACY_PRODUCTION_AUTHORITY_PRESERVED=YES	PASS	c3/c3-production-authority.txt	src/parser.c_sha_unchanged	parser_sha=7a4a0935	matched C0
+AC31	POLYC_PRODUCTION_DELEGATION_COUNT=0	PASS	c3/c3-production-authority.txt	0_BootstrapCalcPadding_refs_in_src	parser_sha=7a4a0935	no production caller migrated
+AC32	PARSER_PRODUCTION_SOURCE_DELTA=0	PASS	c3/c3-production-authority.txt	src/parser.c_lines_2938=2938	parser_sha=7a4a0935	body and call sites unchanged
+AC33	PARSER_LAYOUT_CONSERVATION=PASS	PASS	c3/c3-parser-layout-conservation.txt	5/5 PASS	see_c3_parser_layout	class/union/alignof/U0_tail
+AC34	PARSER_CONSERVATION_NEW_FAILURES=0	PASS	c3/c3-parser-test-conservation.txt	16/16 PASS	see_c3_parser_tests	no new failures
+AC35	LEXER01_CONSERVATION=PASS	PASS	c3/c3-lexer01-conservation.txt	by-construction	see_c3_lexer01	no src/lexer.c mutation
+AC36	LEXER02_CONSERVATION=PASS	PASS	c3/c3-lexer02-conservation.txt	by-construction	see_c3_lexer02	no src/lexer.c mutation
+AC37	LEXER03_CONSERVATION=PASS	PASS	c3/c3-lexer03-conservation.txt	by-construction	see_c3_lexer03	no src/lexer.c mutation
+AC38	LEXER04_CONSERVATION=PASS	PASS	c3/c3-lexer04-conservation.txt	by-construction	see_c3_lexer04	no src/lexer.c mutation
+AC39	NEW_LEXER07_FAILURES=0	PASS	c3/c3-lexer07-delta.txt	no_new_failures	see_c3_lexer07	zero src/lexer.c delta
+AC40	NEW_SUBSTANTIVE_NON_POLYC_TOOLS=0	PASS	c3/c3-f-polyc-tools.txt	6_polyc_tools_c_oracle_ref_only	see_c3_f_polyc	C tool is semantic reference
+AC41	NEW_SHELL_WRAPPERS_OVER_50_LOC=0	PASS	c3/c3-f-polyc-tools.txt	no_shell_wrappers_added	see_c3_f_polyc	zero new shell files
+AC42	NEW_PYTHON_SOURCES=0 NEW_PYTHON_INVOCATIONS=0 NEW_PYTHON_FALLBACKS=0	PASS	c3/c3-f-no-python.txt	no_python_added	see_c3_f_no_python	F-NO-PYTHON clean
+AC43	CLOSED_EVIDENCE_DELTA=0 CLOSED_HANDOFF_DELTA=0	PASS	c3/c3-f14.txt	no_closed_artifact_modified	see_c3_f14	F14 immutable
+AC44	PLACEHOLDER_EVIDENCE_COUNT=0	PASS	c3/c3-*.txt	captured_command_output_and_tables	see_c3_evidence	every PASS backed by witness
+AC45	GATE_FAST=PASS	PASS	c3/c3-factory-gates.txt	VERDICT=PASS	see_c3_gates	gate-fast green
+AC46	APPEND_ONLY_FAIL=0	PASS	c3/c3-append-only.txt	PASS=11 FAIL=0	see_c3_append_only	11/11 NC tests pass
+AC47	PATCH_HYGIENE_ERRORS=0	PASS	c3/c3-patch-hygiene.txt	empty diff --check	see_c3_patch	hygiene clean
+AC48	C3_IMPLEMENTATION_SOURCE_DELTA=0	PASS	c3/c3-phase-purity.txt	no_tools_or_makefile_change	see_c3_purity	C3 evidence-only
+AC49	WORKTREE_CLEAN_AT_CLOSE=YES	DEFERRED_TO_C4	n/a	resolved_at_C4	close-bound	deferred per ACT §72
+AC50	EXACT_COMMIT_COUNT_AT_CLOSE=5 POST_C4_COMMIT_COUNT=0	DEFERRED_TO_C4	n/a	resolved_at_C4	close-bound	deferred per ACT §72

@@ -1,0 +1,20 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-PADDING01
+ACT_PHASE=C3-VERIFY
+EVIDENCE_KIND=lexer03-conservation
+
+LEXER03_CLOSURE_OWNER=ACT-POLYC-SELFHOST-LEXER03
+LEXER03_SUBJECT=trivia_recognizer
+
+CONSERVATION_TEST:
+  This ACT adds no production source mutation.
+    git diff b1aa4ab6..HEAD -- src/lexer.c tools/bootstrap src/holyc-lib
+    => (empty)
+
+  Therefore every LEXER03 subject, fixture, oracle, and gate is
+  unchanged. The LEXER03 closure remains valid as evidence.
+
+OBSERVATION:
+  LEXER03 conservation cannot regress when no source under its
+  closure scope is touched. The conservation is by-construction.
+
+LEXER03_CONSERVATION=PASS
