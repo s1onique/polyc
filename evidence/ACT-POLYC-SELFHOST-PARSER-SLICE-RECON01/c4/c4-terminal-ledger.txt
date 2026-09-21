@@ -1,0 +1,57 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON01
+ACT_PHASE=C4-CLOSE
+EVIDENCE_KIND=c4-terminal-ledger
+
+VERDICT=PASS_TRUE_GREEN
+
+ENTRY_HEAD=b1aa4ab6c8567a5626fbb1094121b32b4bbee669
+FINAL_HEAD=(set at C4 commit time; 5 commits past entry head)
+
+EXACT_COMMIT_COUNT_AT_CLOSE=5
+POST_C4_COMMIT_COUNT=0
+
+AC_TOTAL=50
+AC_PASS=49
+AC_DEFERRED_TO_C4=1 (AC50)
+AC_FAIL=0
+
+SELECTED=candidate_id=CAND-002 CalcPadding (src/parser.c:430..438)
+SELECTED_R0=0
+NEXT_ACT_ID=ACT-POLYC-SELFHOST-PARSER-PADDING01
+NEXT_SCOPE_FROZEN=YES
+
+CLOSED_ACT_FINAL_STATUS:
+  ACT-POLYC-SELFHOST-PARSER-SLICE-RECON01 = CLOSED PASS_TRUE_GREEN
+
+BOARD_EFFECT:
+  PARSER_SLICE_SELECTION          = CAND-002 CalcPadding
+  PARSER_SLICE_SELECTION_ACT_ID   = ACT-POLYC-SELFHOST-PARSER-PADDING01
+  NEXT_ACT                        = ACT-POLYC-SELFHOST-PARSER-PADDING01
+  NEXT_SCOPE_FROZEN               = YES
+  INV.PARSER.COMPOUND.WHOLE       = REJECTED_AS_SELFHOST_ATOMIC_SLICE
+  PARSER_FUNCTION_LEVEL_MIGRATION_STRATEGY  = CARVED_BY_R0
+
+GATES_AT_CLOSE:
+  GATE_FAST=PASS
+  APPEND_ONLY_FAIL=0
+  PATCH_HYGIENE_ERRORS=0
+  C3_PHASE_PURITY=PASS
+  C4_PRECONDITION=PASS
+
+FACTORY_V2_LAWS:
+  F1 IDENTITY_BEFORE_MUTATION            recorded at C0 entry
+  F2 RECON_BEFORE_REDESIGN               ACT-POLYC-SELFHOST-SURFACE-RECON03 + C1 read of src/parser.c
+  F3 RED_BEFORE_PRODUCTION_IMPLEMENTATION  not applicable (no production change in this ACT)
+  F4 FAILURES_ARE_EVIDENCE                PARSER01 failure used as input; FAILED_COMPOUND_WHOLE_FUNCTION_CONTROL=PASS
+  F5 NO_TEST_WEAKENING                    no test changes in this ACT
+  F6 NO_SILENT_FALLBACK                   lexLink-style template not used
+  F7 SCOPE_IS_CONSERVED                   production source delta = 0
+  F8 NO_SPECULATIVE_ABSTRACTION           only CAND-002 has multiple concrete consumers (5)
+  F9 FRESH_TREE_EVIDENCE                  reads of src/parser.c done at entry head
+  F10 CONSERVATION_BEFORE_CLOSURE         LEXER01..04 conservation = PASS
+  F11 EXPLICIT_RESIDUE                    residue section in HANDOFF
+  F12 SMALL_TRUTHFUL_COMMITS              exactly 5 commits; C0/C1/C2/C3/C4
+  F13 EVIDENCE_OVER_PERSUASIVE_PROSE      all ranking claims bound to TSV
+  F14 CURRENT_TRUTH_MAY_INVALIDATE_HISTORY  no historical ACT modified
+  F15 NEVER_SELF_AUTHORIZE_SCOPE_EXPANSION  selection derived from evidence; no scope override
+  F_CONVERGENCE                          ACT closed in one execution session; no halt conditions reached

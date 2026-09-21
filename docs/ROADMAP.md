@@ -5374,3 +5374,120 @@ Self-host recon03 mechanical findings:
 
 See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-SURFACE-RECON03.md` and
 `evidence/ACT-POLYC-SELFHOST-SURFACE-RECON03/`.
+
+---
+
+#### ACT-POLYC-SELFHOST-PARSER-SLICE-RECON01 status (CLOSED PASS_TRUE_GREEN at this commit)
+
+Post-PARSER01-CORRECTION01 HALT_DEPENDENCY_EXPLOSION recon. Did **not**
+attempt another whole-function parser migration by numbering or intuition.
+Instead:
+
+1. Reconstructed the live parser semantic surface below the orchestration-
+   function level.
+2. Enumerated 64 parser functions/static-helpers and bounded 14 candidate
+   semantic slices.
+3. Classified recovery coupling, graph coupling, callback coupling, and
+   observable semantic projection.
+4. Introduced **R0 STATE_BOUNDARY_COST** as the first ranking dimension
+   (the ordering learned from PARSER01's failure).
+5. Excluded candidates that cross `jmp_buf`, `Cctrl *`, `Ast *` graph
+   ownership, or callback-table authority.
+6. Ranked 8 eligible candidates lexicographically on
+   `(R0, R1, R2, R3, R4, R5, R6)`; lower wins.
+7. Selected exactly one next production migration target.
+8. Froze 5 mechanically reproducible REDs and a complete proof model.
+
+```text
+ACT-POLYC-SELFHOST-PARSER-SLICE-RECON01
+  ENTRY       = b1aa4ab6c8567a5626fbb1094121b32b4bbee669
+               (PARSER01-CORRECTION01 C1 close)
+  C0 AUTH     = 592cf95
+  C1 INVENTORY= e417cb7
+  C2 RANK/SEL = 8aae3fb
+  C3 VERIFY   = 137d117
+  C4 CLOSE    = <this commit>
+  ACT-Phase   = CLOSED
+  ACT-Verdict = PASS_TRUE_GREEN
+
+PARSER_FUNCTIONS_INSPECTED        = 64
+CANDIDATE_SLICES_CLASSIFIED       = 14
+ELIGIBLE_CANDIDATES               = 8
+INELIGIBLE_CANDIDATES             = 6
+
+RANK_TABLE (lexicographic):
+  rank 1 (SELECTED) CAND-002 CalcPadding                R0=0 R1=1 R2=2 R3=0 R4=0 R5=0 R6=src/parser.c:430
+  rank 2            CAND-001 parseValidPostControlFlowToken   R0=0 R1=1 R2=2 R3=0 R4=0 R5=1 R6=src/parser.c:791
+  rank 3            CAND-003 CalcClassSize              R0=0 R1=2 R2=2 R3=0 R4=0 R5=0 R6=src/parser.c:410
+  rank 4            CAND-004 CalcUnionSize              R0=0 R1=2 R2=2 R3=0 R4=0 R5=0 R6=src/parser.c:397
+  rank 5            CAND-008 asmTextHasReturn           R0=1 R1=2 R2=2 R3=0 R4=0 R5=1 R6=src/parser.c:1980
+  rank 6            CAND-005 astIsConstTrueCond         R0=2 R1=2 R2=2 R3=1 R4=0 R5=0 R6=src/parser.c:1899
+  rank 7            CAND-006 astStmtHasBreak            R0=2 R1=1 R2=2 R3=1 R4=0 R5=0 R6=src/parser.c:1907
+  rank 8            CAND-007 astStmtFallsThrough        R0=2 R1=1 R2=2 R3=1 R4=0 R5=1 R6=src/parser.c:1932
+
+FAILED_COMPOUND_WHOLE_FUNCTION_CONTROL = PASS
+  (parseCompoundStatementInternal reproduces R0=5, ineligible)
+KNOWN_PURE_SELFHOSTED_CONTROL          = PASS
+  (LEXER01 operator-classify reproduces R0=0, ALREADY_SELFHOSTED)
+
+OPAQUE_HANDLE_GREENWASH    = 0
+CALLBACK_TABLE_GREENWASH   = 0
+
+NEXT_ACT_ID              = ACT-POLYC-SELFHOST-PARSER-PADDING01
+NEXT_TARGET              = CAND-002 CalcPadding (src/parser.c:430..438)
+NEXT_R0                  = 0
+NEXT_SCOPE_FROZEN        = YES
+
+NEXT_ABI_SHAPE           = I64 BootstrapCalcPadding(I64 offset, I64 size)
+NEXT_ABI_HOST_IDENTITY_FIELDS = 0
+
+LEXER01_CONSERVATION     = PASS  (no production source mutation)
+LEXER02_CONSERVATION     = PASS
+LEXER03_CONSERVATION     = PASS
+LEXER04_CONSERVATION     = PASS
+NEW_LEXER07_FAILURES     = 0
+
+GATE_FAST                = PASS
+APPEND_ONLY_FAIL         = 0  (11/11 NC tests PASS)
+PATCH_HYGIENE_ERRORS     = 0
+C3_PHASE_PURITY          = PASS
+NEW_SUBSTANTIVE_NON_POLYC_TOOLS = 0
+NEW_PYTHON_SOURCES       = 0
+NEW_PYTHON_INVOCATIONS   = 0
+CLOSED_EVIDENCE_DELTA    = 0
+CLOSED_HANDOFF_DELTA     = 0
+AC_TOTAL = 50, AC_PASS = 49, AC_DEFERRED_TO_C4 = 1 (AC50)
+AC_FAIL = 0
+PRODUCTION_SOURCE_DELTA  = 0
+COMPILER_SEMANTIC_DELTA  = 0
+```
+
+Key mechanical findings:
+
+  - The whole `parseCompoundStatementInternal` (PARSER01 target) is
+    rejected by the new R0 model as a structural-blocked boundary
+    (R0=5; jmp_buf ownership + AST-list pointer arithmetic + 9 parser
+    callbacks + LONGJMP error model). The PARSER01-CORRECTION01 verdict
+    is reproduced.
+  - The four strongest candidates (`parseValidPostControlFlowToken`,
+    `CalcPadding`, `CalcClassSize`, `CalcUnionSize`) all land at R0=0
+    (bytes/scalars only; no host pointer identity). Lexer-family ABIs
+    that succeeded in LEXER01..04 land at the same R0=0 score.
+  - Among R0=0 candidates, R5 (migration size) and R6 (line number)
+    distinguish the winner. CAND-002 (`CalcPadding`) wins at 9 LOC.
+  - The selection is grounded in 5 reproducible REDs, 11+ fixture
+    classes, 4 causal mutation classes, and a complete proof model
+    (DIRECT_DIFFERENTIAL + COMPONENT_OBJECT_FIXEDPOINT +
+    CAUSAL_NEGATIVE_CONTROL + LEXER_CONSERVATION + PARSER_CONSERVATION
+    + F_POLYC_TOOLS + F_NO_PYTHON + F14).
+
+### Recommended next ACT
+
+```text
+ACT-POLYC-SELFHOST-PARSER-PADDING01
+  Add BootstrapCalcPadding (PolyC) alongside C CalcPadding
+  with a direct-differential oracle and a stub-mutation harness.
+```
+
+See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE-RECON01.md`
+and `evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON01/`.
