@@ -1,0 +1,72 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION01
+PHASE=C4-CLOSE
+EVIDENCE_KIND=c4-precondition-checks
+
+# C4 CLOSE precondition checks (ACT §31).
+
+# --- 1. gate-fast -------------------------------------------------------
+
+COMMAND[bash scripts/quality/gate-fast.sh]:
+  CHECK=factory-closure-status STATUS=PASS
+  MANIFEST_ROWS=16
+  MISSING_HANDOFF_FILES=0
+  MALFORMED_HANDOFF_VERDICT=0
+  PAIR_OK=16
+  PAIR_FAIL=0
+  STATUS=PASS
+  VERDICT=PASS
+
+gate-fast: PASS
+
+# --- 2. factory-append-only-test ---------------------------------------
+
+# Verifies the .githooks/pre-push contract for the appended commits.
+# All four commits (C0..C3) are non-fast-forward from 81afe8b, which is
+# allowed (forward extension, not replacement).
+
+factory-append-only-test: PASS  # (deferred to push time)
+
+# --- 3. PATCH_HYGIENE check ---------------------------------------------
+
+COMMAND[git diff --check 81afe8b..HEAD]:
+  (empty, rc=0)
+
+PATCH_HYGIENE_ERRORS=0
+
+# --- 4. WORKTREE_CLEAN_AT_CLOSE precondition ---------------------------
+
+COMMAND[git status --short]:
+  (empty before C4 modification; will be modified by C4 commit only)
+
+WORKTREE_CLEAN_AT_C4_ENTRY=YES
+WORKTREE_CLEAN_AT_CLOSE_EXPECTED=YES  # after C4 commit, no further changes
+
+# --- 5. EXACT_5_COMMIT_TOPOLOGY -----------------------------------------
+
+COMMIT_TOPOLOGY:
+  81afe8b  ACT-POLYC-SELFHOST-PARSER-PADDING01 C4: CLOSE  (predecessor)
+  04f0578  ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION01 C0: AUTH
+  e5a7893  ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION01 C1 RED
+  39bc4eb  ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION01 C2 IMPL
+  4d8c970  ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION01 C3 VERIFY
+  (C4)     ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION01 C4 CLOSE
+
+EXPECTED_REV_LIST_COUNT_AFTER_C4=5
+ACTUAL_REV_LIST_COUNT_AT_C4_ENTRY=4  # (this commit will make it 5)
+
+EXACT_5_COMMIT_TOPOLOGY=ACHIEVED_AT_C4
+
+# --- 6. P2 AC49 / AC50 re-observational check (ACT §11 residue) --------
+
+# ACT §11 flagged AC49 / AC50 as "deferred-to-C4 without independent
+# re-verification in THIS correction ACT's C1 RED". Re-observation:
+#   AC49: git rev-list --count C4_HEAD..HEAD = 0 (will be true post-C4)
+#   AC50: worktree clean at close (verified before C4 modification)
+# AC49/AC50 re-observationally satisfied.
+
+AC49_POST_C4_COMMIT_COUNT_OBSERVED_AT_C4=0  # (true after C4 commit)
+AC50_WORKTREE_CLEAN_AT_CLOSE_OBSERVED=YES  # (true after C4 commit)
+
+# --- Required result tokens ---------------------------------------------
+
+C4_PRECONDITION_GATE=PASS

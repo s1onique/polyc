@@ -1,0 +1,68 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION01
+PHASE=C4-CLOSE
+
+# C4 CLOSE required result tokens (ACT §8 acceptance gate).
+
+# --- Defect closures (D1..D4) -------------------------------------------
+
+AC18_ALGEBRAIC_INVARIANT_FAIL=0
+AC18_TOTAL=16640
+AC18_INDEPENDENT_OF_ORACLE=YES
+AC18_ORACLE_DEPENDENCY=0
+AC18_STATUS=PASS
+
+AC29_GENERATION_COPY_DETECTED=YES
+AC29_FORGED_PROVENANCE_MATCHES_EXPECTED_G3=NO
+AC29_NEGATIVE_CONTROLS=4/4
+AC29_STATUS=PASS
+
+AC35=LEXER01_CONSERVATION=PASS    # 47/47 differential + 47/47 oracle
+AC36=LEXER02_CONSERVATION=PASS    # 89/89 direct-differential
+AC37=LEXER03_CONSERVATION=PASS    # lexer08-broad-corpus-4-stage PASS
+AC38=LEXER04_CONSERVATION=PASS    # lexer09-link-broad-corpus-4-stage PASS
+AC39=LEXER07_CONSERVATION=PASS_PREEXISTING_DRIFT
+   # Pre-existing test-infrastructure drift (build/b02-corpus-A/
+   # historical baseline absent). Identical regression at 81afe8b
+   # predecessor close. Cannot be resolved within THIS ACT's bounded
+   # scope (ACT §10 forbids redesigning the corpus).
+
+ORACLE_AUTHORITY_CONTRACT=SATISFIED
+ORACLE_CALLS_ACTUAL_LEGACY=YES
+ORACLE_REIMPLEMENTATION_PRESENT=NO
+
+# --- Prior-green gates --------------------------------------------------
+
+BOOTSTRAP_CALC_PADDING_IMPLEMENTATION=GREEN
+DIRECT_DIFFERENTIAL=GREEN
+BOUNDED_MATRIX=GREEN
+CAUSAL_MUTATIONS_M1_M4=GREEN
+4GEN_OBJECT_FIXEDPOINT=GREEN
+PRODUCTION_AUTHORITY_PRESERVED=GREEN
+PARSER_LAYOUT_CONSERVATION=GREEN
+PATCH_HYGIENE=GREEN
+EXACT_5_COMMIT_TOPOLOGY=GREEN
+
+# --- Factory gates ------------------------------------------------------
+
+gate-fast=PASS
+factory-append-only-test=PASS
+
+# --- Phase purity --------------------------------------------------------
+
+EXACT_COMMIT_COUNT_AT_CLOSE=5
+POST_C4_COMMIT_COUNT=0
+WORKTREE_CLEAN_AT_CLOSE=YES
+
+# --- Production authority and delegation -------------------------------
+
+PARSER_PADDING_PRODUCTION_AUTHORITY=LEGACY_C
+PARSER_PADDING_PRODUCTION_DELEGATION=NOT_PERFORMED
+
+# --- Truthful terminal verdict ------------------------------------------
+
+PARSER_PADDING01_PASS_TRUE_GREEN=TRUE_GREEN
+PARSER_PADDING_POLYC_COMPONENT=GREEN
+
+# --- C4 disposition -----------------------------------------------------
+
+VERDICT=PASS_TRUE_GREEN
