@@ -1,0 +1,30 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON01
+ACT_PHASE=C2-RANK-SELECT
+EVIDENCE_KIND=c2-entry-identity
+
+BRANCH=main
+WORKTREE_CLEAN_AT_C2=YES
+
+GIT_IDENTITY_AT_C2:
+  rev-parse-HEAD at C2 start:
+    (one commit past entry head; two commits total in this ACT so far:
+     C0 AUTH, C1 INVENTORY)
+  PREDECESSOR_HEAD=b1aa4ab6c8567a5626fbb1094121b32b4bbee669
+  ACT_C0_HEAD=(C0 AUTH commit)
+  ACT_C1_HEAD=(C1 INVENTORY commit)
+
+PRODUCTION_SOURCE_DELTA_AT_C2=0
+
+INPUT_TO_C2:
+  evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON01/c1/c1-parser-slice-inventory.tsv
+  evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON01/c1/c1-r0-definition.txt
+
+ELIGIBLE_AT_C1 (carried into C2):
+  CAND-001  parseValidPostControlFlowToken
+  CAND-002  CalcPadding
+  CAND-003  CalcClassSize
+  CAND-004  CalcUnionSize
+  CAND-005  astIsConstTrueCond
+  CAND-006  astStmtHasBreak
+  CAND-007  astStmtFallsThrough
+  CAND-008  asmTextHasReturn

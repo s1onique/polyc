@@ -1,0 +1,64 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON01
+ACT_PHASE=C2-RANK-SELECT
+EVIDENCE_KIND=callback-table-negative-control
+
+PURPOSE
+  Verify that reclassifying semantic callbacks into a callback table
+  does NOT transform a state-coupled candidate into a pure one.
+
+CONTROL CANDIDATE
+  CAND-014 parseCompoundStatementInternal (currently rejected for
+  STATE_BOUNDARY_COST_TOO_HIGH, RECOVERY + GRAPH + CALLBACK couplings)
+
+PERTURBATION
+  Conceptually refactor every C parser call into a function-pointer
+  table held inside a host-side dispatcher. Specifically, introduce:
+    struct ParseDispatch {
+        Ast *(*parseDeclSpec)(void *cc);
+        AstType *(*parsePointerType)(void *cc, AstType *base);
+        ...
+    };
+  and have parseCompoundStatementInternal call through this table.
+  Preserve the SEMANTIC CALLBACK COUNT at 9.
+
+ELIGIBILITY_PREDICATE_AFTER_RECLASSIFICATION:
+  r0_state_boundary_cost   = 5     (FAIL: > 2; the jmp_buf + AST
+                                     mutation + body->stms->prev/next
+                                     are unchanged)
+  owns_setjmp              = YES   (FAIL)
+  writes_current_recovery  = YES   (FAIL)
+  requires_nonlocal_recovery=YES  (FAIL)
+  host_graph_writes        = 5     (FAIL: > 0)
+  pointer_identity_ops     = 9     (FAIL: > 0)
+  parser_callback_count    = 9     (FAIL: > 0; the table indirection
+                                     is still 9 parser callbacks)
+  semantic_callback_count  = 9     (FAIL: > 0; the dispatch table
+                                     now ALSO counts as a semantic
+                                     callback authority, by ACT
+                                     SECT_27's rule)
+  deterministic_projection = NO    (FAIL)
+  candidate_kind           = ORCHESTRATOR
+
+  ELIGIBLE = NO
+  EXCLUSION_REASON = MULTIPLE (RECOVERY + GRAPH + CALLBACK_TABLE)
+
+OBSERVATION
+  Refactoring parser calls into a callback table does NOT change the
+  underlying coupling. The function still mutates the host AST graph
+  by identity, still owns a jmp_buf, and still depends on 9 parser
+  callbacks for its semantics. The callback table is a syntactic
+  refactor; the authority it routes through is unchanged.
+
+  Worse, the callback table introduces a NEW failure mode: the
+  selected PolyC component would still need to call back into C for
+  every semantic decision. The "self-hosted" bar (G1..G3 authority)
+  would not be meaningful.
+
+CONCLUSION
+  CALLBACK_TABLE_RECLASSIFICATION_REJECTED = YES
+
+  A callback-table reclassification cannot make a state-coupled
+  candidate eligible. The eligibility predicate's host-graph /
+  pointer-identity / parser-callback gates still trip.
+
+  CALLBACK_TABLE_GREENWASH = 0

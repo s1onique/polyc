@@ -1,0 +1,55 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON01
+ACT_PHASE=C2-RANK-SELECT
+EVIDENCE_KIND=selected-scope
+
+NEXT_ACT_ID=ACT-POLYC-SELFHOST-PARSER-PADDING01
+
+SCOPE_FREEZE (binding for the successor ACT):
+
+  IN_SCOPE:
+    1. BootstrapCalcPadding component in PolyC
+       file: tools/bootstrap/selfhost-parser-padding.HC  (new file)
+       ABI:  I64 BootstrapCalcPadding(I64 offset, I64 size)
+       return: pad bytes (0..size-1; 0 if size==0)
+    2. A direct-differential oracle binary that runs the C CalcPadding
+       and the PolyC BootstrapCalcPadding on the same input pairs and
+       reports mismatches (rc != 0 on mismatch).
+    3. Component fixedpoint: build the PolyC component independently
+       (no linkage to the parser translator) and exercise its ABI
+       from a small HC driver.
+    4. Stub mutation negative control: inject a known-wrong variant
+       (e.g. returns `size - offset % size` always, ignoring the
+       zero-size guard) and require the oracle to flag every input.
+
+  OUT_OF_SCOPE:
+    a. modifying src/parser.c (CalcPadding stays in C for this ACT's
+       successor; the successor only ADDS the PolyC component and a
+       differential oracle).
+    b. any change to src/parser.c, src/cctrl.c, src/ast.c, src/lexer.c,
+       or src/prslib.c.
+    c. any change to parseClassOffsets, parseUnionOffsets, or any
+       parser caller of CalcPadding.
+    d. any change to the ABI of CalcPadding's callers.
+    e. any opaque-handle or callback-table scheme.
+    f. any change to Ast/Cctrl/Map/List representation.
+
+  FORBIDDEN_PRODUCTION_FILES:
+    src/parser.c (CalcPadding line region stays as-is in this ACT)
+    src/parser.h
+    src/cctrl.c, src/cctrl.h
+    src/ast.c, src/ast.h
+    src/lexer.c, src/lexer.h
+    src/prslib.c, src/prslib.h
+    src/list.h, src/map.h
+
+  ALLOWED_PRODUCTION_FILES:
+    tools/bootstrap/selfhost-parser-padding.HC  (new)
+    tools/bootstrap/selfhost-parser-padding-driver.HC  (new, optional)
+    build/ artifacts (generated, not source-tracked)
+
+SEMANTIC_DELTA_BINDING=0
+COMPILER_BEHAVIOR_DELTA_BINDING=0
+
+PROOF_MODEL_GATE_AT_C2:
+  The successor ACT's C3 must reproduce DIRECT_DIFFERENTIAL or
+  COMPONENT_FIXEDPOINT as REQUIRED proofs (see c2-selected-proof-model.tsv).

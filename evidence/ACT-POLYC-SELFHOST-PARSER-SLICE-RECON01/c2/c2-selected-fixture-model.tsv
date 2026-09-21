@@ -1,0 +1,30 @@
+ACT_ID	ACT-POLYC-SELFHOST-PARSER-SLICE-RECON01
+ACT_Phase	C2-RANK-SELECT
+evidence_kind	selected-fixture-model
+target	CAND-002 CalcPadding
+
+fixture_class	kind	inputs	expected	output	min_count	rationale
+ALIGNED-1	positive	offset=0 size=1	0	1	trivial alignment
+ALIGNED-2	positive	offset=4 size=4	0	1	aligned at size boundary
+ALIGNED-4	positive	offset=8 size=8	0	1	aligned at 8-byte boundary
+ALIGNED-3	positive	offset=12 size=4	0	1	aligned multiple of 4
+UNALIGNED-2	positive	offset=1 size=2	1	1	off by 1
+UNALIGNED-4	positive	offset=5 size=4	3	1	needs 3 bytes of pad
+UNALIGNED-8	positive	offset=7 size=8	1	1	needs 1 byte of pad
+UNALIGNED-N	positive	offset=13 size=8	3	1	needs 3 bytes of pad
+ZERO-SIZE-GUARD	positive	offset=42 size=0	0	1	zero-size field; must return 0 (NOT divide by zero)
+ZERO-SIZE-NEGATIVE	negative-positive	offset=0 size=0	0	1	zero size, zero offset; must return 0
+ZERO-SIZE-MAX	negative-positive	offset=LARGE size=0	0	1	zero size, large offset; must return 0
+OFFSET-ZERO	positive	offset=0 size=7	0	1	offset=0 always aligned
+SIZE-LARGE	positive	offset=15 size=64	49	1	large size, large pad
+PARTITION-COVERAGE	positive	programmatic (offset, size) partition	exact match	>=64	mechanically enumerate the boundary condition at every (offset%size) residue
+
+total_minimum_fixture_count	74
+positive_classes	11
+negative_or_error_classes	1 (zero-size guard)
+mutation_sensitive_class	CAUSAL_MUTATION_CLASS_A (returns size - offset%size even when size==0)
+mutation_sensitive_class	CAUSAL_MUTATION_CLASS_B (omits size==0 guard)
+mutation_sensitive_class	CAUSAL_MUTATION_CLASS_C (returns bool instead of pad bytes)
+mutation_sensitive_class	CAUSAL_MUTATION_CLASS_D (returns offset%size instead of size-offset%size)
+
+FIXTURE_MODEL_COMPLETE=YES

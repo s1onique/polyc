@@ -1,0 +1,75 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON01
+ACT_PHASE=C2-RANK-SELECT
+EVIDENCE_KIND=selected-abi-sketch
+
+NEXT_ABI_SKETCH (frozen input to the successor ACT):
+
+  // tools/bootstrap/selfhost-parser-padding.HC
+  //
+  // Frozen ABI (must match c2-selected-target.txt input/output schemas).
+  //
+  //   I64 BootstrapCalcPadding(I64 offset, I64 size);
+  //
+  // Returns the number of padding bytes (0..size-1) needed to align
+  // the next field at `offset` to a `size`-byte boundary.
+  //
+  // Special cases:
+  //   - size == 0  -> return 0   (zero-size fields need no padding;
+  //                                guards against `% 0` UB)
+  //   - offset % size == 0 -> return 0
+  //   - otherwise         -> return size - (offset % size)
+  //
+  // Inputs are pure scalar integers; no pointers, no host identity.
+
+ABI_INSIGNIA:
+  ABI shape                INTEGER_TO_INTEGER
+  Inputs                   I64 offset, I64 size   (both pure scalars)
+  Outputs                  I64 pad_bytes          (pure scalar)
+  Side effects             NONE
+  Allocates                NO
+  Reads host graph         NO
+  Writes host graph        NO
+  Calls cctrl              NO
+  Calls lexeme/cctrl APIs  NO
+  Longjmp reachable        NO
+  setjmp/longjmp ownership NO
+  Thread-local state       NO
+  Determinism              DETERMINISTIC (pure function of two ints)
+
+FORBIDDEN_ABI_FIELDS_VERIFICATION (ACT SECT_46):
+  Cctrl *        NOT PRESENT
+  Ast *          NOT PRESENT
+  Map *          NOT PRESENT
+  List *         NOT PRESENT
+  jmp_buf *      NOT PRESENT
+  function-pointer callback table  NOT PRESENT
+  void * host context              NOT PRESENT
+  opaque integer encoding host ptr NOT PRESENT
+
+SELECTED_ABI_HOST_IDENTITY_FIELDS=0
+
+EQUIVALENCE_PROOF:
+  BootstrapCalcPadding is byte-equivalent to the C implementation
+  src/parser.c lines 430..438 (the body that the corpus-matrix.tsv
+  compares against). Equivalence is observable by running the
+  direct-differential oracle on a bounded set of (offset, size) pairs.
+
+LEGACY_ORACLE_OBSERVABLE=YES
+  Returned int 0..size-1 is the oracle.
+
+PRODUCTION_SEAM_FEASIBLE=YES
+  Existing parseClassOffsets and parseUnionOffsets call sites remain
+  bound to the C CalcPadding (no production change in this ACT's
+  successor). The PolyC component is exercised by the oracle and the
+  stub mutation harness; production delegation is the next phase.
+
+COMPONENT_OBJECT_FIXEDPOINT_FEASIBLE=YES
+  BootstrapCalcPadding takes only two scalars. The component can be
+  compiled and linked as a standalone translation unit with a tiny
+  HC driver that loops over (offset, size) inputs.
+
+CAUSAL_MUTATION_CLASS_DEFINED=YES
+  A mutation that returns `size - offset % size` even when size==0
+  must be detected by every input with size==0 (oracle rc != 0).
+  A mutation that omits the `if (size == 0) return 0;` guard must
+  also be detected (off-by-one on the first call).

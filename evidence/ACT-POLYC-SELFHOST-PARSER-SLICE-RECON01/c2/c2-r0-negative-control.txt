@@ -1,0 +1,51 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON01
+ACT_PHASE=C2-RANK-SELECT
+EVIDENCE_KIND=r0-negative-control
+
+PURPOSE
+  Verify that R0 alone cannot green an ineligible candidate. PARSER01
+  taught that high semantic leverage can mask unbridgeable state; this
+  control confirms R0 is not the sole gate.
+
+CONTROL CANDIDATE
+  CAND-014 parseCompoundStatementInternal
+
+PERTURBATION
+  Temporarily change CAND-014's R0 from 5 to 0.
+  Leave every other classification unchanged:
+    owns_setjmp               = YES
+    writes_current_recovery   = YES
+    host_graph_writes         = 5
+    pointer_identity_ops      = 9
+    parser_callback_count     = 9
+    deterministic_projection  = NO
+    candidate_kind            = ORCHESTRATOR
+
+ELIGIBILITY_PREDICATE_AFTER_PERTURBATION:
+  r0_state_boundary_cost   = 0     (PASS artificially)
+  owns_setjmp              = YES   (FAIL)
+  writes_current_recovery  = YES   (FAIL)
+  requires_nonlocal_recovery=YES  (FAIL)
+  host_graph_writes        = 5     (FAIL: > 0)
+  pointer_identity_ops     = 9     (FAIL: > 0)
+  parser_callback_count    = 9     (FAIL: > 0)
+  semantic_callback_count  = 0     (PASS but moot)
+  deterministic_projection = NO    (FAIL)
+  candidate_kind           = ORCHESTRATOR
+
+  ELIGIBLE = NO
+  EXCLUSION_REASON = MULTIPLE (STATE_BOUNDARY_COST_TOO_HIGH + RECOVERY + GRAPH + CALLBACK)
+
+CONCLUSION
+  R0_ALONE_CANNOT_GREEN_INELIGIBLE_CANDIDATE = YES
+
+  Setting CAND-014's R0 to 0 does not make it eligible; the
+  conjunction of the eligibility predicate (ACT SECT_33) is
+  unsatisfied because the recovery / graph / callback gates
+  independently reject it.
+
+  This is the negative-control analog of LEXER01..04's
+  "lexLink" lesson: R0 alone is not a sufficient criterion;
+  the conjunction of recovery / graph / callback is also
+  required. PARSER01's whole-function failure would still be
+  rejected even under the new R0=0 score.

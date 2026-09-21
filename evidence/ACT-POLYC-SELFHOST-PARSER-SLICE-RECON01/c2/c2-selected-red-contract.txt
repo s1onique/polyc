@@ -1,0 +1,66 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON01
+ACT_PHASE=C2-RANK-SELECT
+EVIDENCE_KIND=selected-red-contract
+
+FROZEN RED MODEL FOR THE SUCCESSOR ACT (ACT-POLYC-SELFHOST-PARSER-PADDING01)
+
+RED-1 (subject absent)
+  State:    tools/bootstrap/selfhost-parser-padding.HC does not exist.
+  Witness:  [ ! -f tools/bootstrap/selfhost-parser-padding.HC ]
+  Frozen at C2 close; the successor's C1 records this state in
+  evidence/.../c1/c1-red-subject-absent.txt.
+
+RED-2 (bridge/API absent)
+  State:    no call site references BootstrapCalcPadding.
+  Witness:  git grep -n 'BootstrapCalcPadding' tools/bootstrap src
+            returns only the ABI declaration in the (absent) component
+            and nothing else; the symbol is unexported from any
+            translation unit. Frozen at C2 close.
+
+RED-3 (legacy authority still production-active)
+  State:    parseClassOffsets and parseUnionOffsets continue to call
+            C CalcPadding at the existing lines (470, 500, 513, 526,
+            558); the PolyC component is dormant.
+  Witness:  src/parser.c lines 430..438 (C CalcPadding) and lines
+            470, 500, 513, 526 (parseClassOffsets callers), 558
+            (parseUnionOffsets caller) all unchanged.
+
+RED-4 (no direct differential target exists)
+  State:    no oracle compares C CalcPadding to any PolyC implementation.
+  Witness:  [ ! -x ./build/parser-padding-oracle ] at C2 close.
+
+RED-5 (no independent fixedpoint evidence exists)
+  State:    no standalone HC driver exercises BootstrapCalcPadding.
+  Witness:  [ ! -x ./build/parser-padding-driver ] at C2 close.
+
+NEXT_RED_COUNT=5
+NEXT_RED_MECHANICALLY_REPRODUCIBLE=YES
+  Every RED is a one-line shell test against the C2-close tree.
+
+RED_REPRODUCIBILITY_TRACE (how successor C1 will run each RED):
+
+  RED-1   test -f tools/bootstrap/selfhost-parser-padding.HC
+          expected rc = 1
+  RED-2   git grep -n 'BootstrapCalcPadding' tools/bootstrap src \
+            | grep -v 'selfhost-parser-padding.HC'
+          expected rc = 1 (only the component's own declaration
+          should match, and the component is absent under RED-1)
+  RED-3   git diff "$ENTRY_HEAD"..HEAD -- src/parser.c
+          expected: empty (no production change)
+          + awk check that lines 470, 500, 513, 526, 558 still
+            contain the literal string "CalcPadding("
+  RED-4   test -x ./build/parser-padding-oracle
+          expected rc = 1
+  RED-5   test -x ./build/parser-padding-driver
+          expected rc = 1
+
+CAUSAL_MUTATION_CLASS_DEFINED=YES
+  Class A: returns size - offset%size even when size==0
+           expected: oracle rc != 0 on every (offset, size=0)
+  Class B: omits the size==0 guard
+           expected: oracle rc != 0 on (offset=0, size=0)
+  Class C: returns (offset % size == 0) as a bool (0/1)
+           expected: oracle rc != 0 on (offset=1, size=2)
+  Class D: returns offset%size instead of size-offset%size
+           expected: oracle rc != 0 on (offset=1, size=2)
+  Build failure is NOT a valid mutation (this ACT forbids that).

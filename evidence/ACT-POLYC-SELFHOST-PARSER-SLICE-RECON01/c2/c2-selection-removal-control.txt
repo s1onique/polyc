@@ -1,0 +1,37 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON01
+ACT_PHASE=C2-RANK-SELECT
+EVIDENCE_KIND=selection-removal-control
+
+PURPOSE
+  Verify that the selection actually depends on CAND-002 by removing
+  it from the candidate set and confirming the next-ranked candidate
+  changes.
+
+REMOVAL
+  Drop CAND-002 from c2-eligibility-recompute.tsv and from the
+  ranking table. Recompute.
+
+TEMPORARY_RANKING (after CAND-002 removed):
+
+  rank candidate_id  R0 R1 R2 R3 R4 R5 R6                notes
+  1    CAND-001      0  1  2  0  0  1  src/parser.c:791  was rank 2
+  2    CAND-003      0  2  2  0  0  0  src/parser.c:410  was rank 3
+  3    CAND-004      0  2  2  0  0  0  src/parser.c:397  was rank 4
+  4    CAND-008      1  2  2  0  0  1  src/parser.c:1980 was rank 5
+  5    CAND-005      2  2  2  1  0  0  src/parser.c:1899 was rank 6
+  6    CAND-006      2  1  2  1  0  0  src/parser.c:1907 was rank 7
+  7    CAND-007      2  1  2  1  0  1  src/parser.c:1932 was rank 8
+
+OBSERVATION
+  CAND-002's removal promotes CAND-001 from rank 2 to rank 1.
+
+  SELECTED_REMOVED_FROM_RANKING = YES
+  NEXT_RANKED_CANDIDATE_CHANGES = YES
+  (CAND-001 becomes rank 1; in a hypothetical ACT it would be the
+  selected target. This ACT's actual selection is unchanged because
+  CAND-002 is present in the authoritative ranking.)
+
+CONCLUSION
+  The selection is not a fixed point: removing the selected
+  candidate genuinely changes the rank-1 entry. This is mechanical
+  evidence that the selection is sensitive to the candidate set.

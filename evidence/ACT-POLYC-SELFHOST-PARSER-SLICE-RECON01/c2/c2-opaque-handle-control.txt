@@ -1,0 +1,60 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON01
+ACT_PHASE=C2-RANK-SELECT
+EVIDENCE_KIND=opaque-handle-negative-control
+
+PURPOSE
+  Verify that reclassifying pointer fields as opaque handles does NOT
+  transform a state-coupled candidate into a pure one.
+
+CONTROL CANDIDATE
+  CAND-013 parseFoldInitElement (currently rejected for
+  REQUIRES_HOST_GRAPH_IDENTITY)
+
+PERTURBATION
+  Conceptually replace Ast* / AstType* inputs with opaque U64 handles
+  without changing the actual host-state dependency classification.
+  Specifically, replace:
+    Ast *init, AstType *dst
+  with:
+    U64 init_handle, U64 dst_handle
+  in the ABI sketch. The function still mutates host state on behalf
+  of the caller (it folds a constant expression and rebinds the host
+  Ast node's `type` field to a freshly-copied AstType).
+
+ELIGIBILITY_PREDICATE_AFTER_RECLASSIFICATION:
+  r0_state_boundary_cost   = 3     (FAIL: > 2)
+  owns_setjmp              = NO    (PASS)
+  writes_current_recovery  = NO    (PASS)
+  requires_nonlocal_recovery=NO   (PASS)
+  host_graph_writes        = 0     (PASS under this reclassification,
+                                     but only because the host writes
+                                     happen behind the opaque handle)
+  pointer_identity_ops     = 1     (FAIL: > 0; the rebind is identity-
+                                     critical because the caller's
+                                     ast->type field must point at the
+                                     SAME AstType* the rest of the
+                                     parser sees)
+  parser_callback_count    = 0     (PASS)
+  semantic_callback_count  = 0     (PASS)
+  deterministic_projection = YES   (PASS)
+  candidate_kind           = TOKEN_CLASSIFIER
+
+  ELIGIBLE = NO
+  EXCLUSION_REASON = POINTER_IDENTITY_OPS>0 (the rebind semantics
+    depend on the caller's view of the AstType* identity)
+
+OBSERVATION
+  Even if every C pointer is replaced with an opaque U64, the rebind
+  operation is structurally identity-dependent: the caller continues
+  to hold the original Ast* and expects ast->type to point at the new
+  AstType*. The opaque handle does not change the coupling; it only
+  hides it.
+
+CONCLUSION
+  OPAQUE_HANDLE_RECLASSIFICATION_REJECTED = YES
+
+  Opaque handles do not remove state coupling. They merely hide the
+  host graph behind a number. The eligibility predicate's
+  POINTER_IDENTITY_OPS>0 / HOST_GRAPH_WRITES>0 checks still trip.
+
+  OPAQUE_HANDLE_GREENWASH = 0

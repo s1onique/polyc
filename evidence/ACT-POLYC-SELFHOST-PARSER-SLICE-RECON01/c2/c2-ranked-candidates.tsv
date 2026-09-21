@@ -1,0 +1,35 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON01
+# ACT_PHASE=C2-RANK-SELECT
+# EVIDENCE_KIND=ranked-candidates
+# Lexicographic ranking on (R0, R1, R2, R3, R4, R5, R6); lower wins; R6 is
+# tie-break by file (lexical) then line_start ascending.
+#
+# R0 STATE_BOUNDARY_COST         per ACT SECT_15
+# R1 SELFHOST_STAGE_LEVERAGE     per ACT SECT_36
+# R2 SEMANTIC_CENTRALITY         per ACT SECT_37
+# R3 PROOF_OBSERVABILITY         per ACT SECT_38
+# R4 DEPENDENCY_COUPLING_COST    per ACT SECT_39
+# R5 MIGRATION_SIZE              per ACT SECT_40
+# R6 SOURCE_ORDER                file lexical asc, then line_start asc
+
+rank	candidate_id	R0	R1	R2	R3	R4	R5	R6	eligible	proposed_abi_shape	proposed_next_act_id	selection_status	notes
+1	CAND-002	0	1	2	0	0	0	src/parser.c:430	YES	INTEGER_TO_INTEGER	ACT-POLYC-SELFHOST-PARSER-PADDING01	SELECTED	CalcPadding; lexicographic winner; smallest R0=0; 9 LOC
+2	CAND-001	0	1	2	0	0	1	src/parser.c:791	YES	TOKEN_RECORD_TO_VALUE	(unselected)	unselected	parseValidPostControlFlowToken; R5=1 (33 LOC)
+3	CAND-003	0	2	2	0	0	0	src/parser.c:410	YES	BOUNDED_WINDOW_TO_VALUE	(unselected)	unselected	CalcClassSize; 19 LOC; single-caller
+4	CAND-004	0	2	2	0	0	0	src/parser.c:397	YES	BOUNDED_WINDOW_TO_VALUE	(unselected)	unselected	CalcUnionSize; 12 LOC; single-caller
+5	CAND-008	1	2	2	0	0	1	src/parser.c:1980	YES	VALUE_RECORD_TO_VALUE	(unselected)	unselected	asmTextHasReturn; R0=1; 32 LOC
+6	CAND-005	2	2	2	1	0	0	src/parser.c:1899	YES	AST_PROJECTION_TO_VALUE	(unselected)	unselected	astIsConstTrueCond; 5 LOC; R3=1
+7	CAND-006	2	1	2	1	0	0	src/parser.c:1907	YES	AST_PROJECTION_TO_VALUE	(unselected)	unselected	astStmtHasBreak; 24 LOC
+8	CAND-007	2	1	2	1	0	1	src/parser.c:1932	YES	AST_PROJECTION_TO_VALUE	(unselected)	unselected	astStmtFallsThrough; 41 LOC; R5=1
+
+SELECTED_COUNT=1
+SELECTED=candidate_id=CAND-002 CalcPadding
+SELECTED_R0=0
+SELECTED_R1=1
+SELECTED_R2=2
+SELECTED_R3=0
+SELECTED_R4=0
+SELECTED_R5=0
+SELECTED_R6=src/parser.c:430
+SELECTED_PROPOSED_ABI=INTEGER_TO_INTEGER
+SELECTED_PROPOSED_NEXT_ACT_ID=ACT-POLYC-SELFHOST-PARSER-PADDING01
