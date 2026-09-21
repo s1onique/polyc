@@ -437,6 +437,18 @@ int CalcPadding(int offset, int size) {
     return offset % size == 0 ? 0 : size - offset % size;
 }
 
+/* ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION01 C2 IMPL: tiny ABI
+ * wrapper adjacent to CalcPadding. Forwards to the actual legacy
+ * CalcPadding (whose body is unchanged above). Used by
+ * tools/quality/parser-padding-oracle-impl.c so the quality oracle
+ * reaches the actual legacy authority instead of duplicating the
+ * formula. Adds zero new logic; does not modify CalcPadding or any
+ * existing production caller. */
+long long ParserLegacyCalcPaddingOracle(long long offset, long long size)
+{
+    return (long long)CalcPadding((int)offset, (int)size);
+}
+
 Map *parseClassOffsets(Cctrl *cc,
                        int *aligned_size,
                        int *out_align,

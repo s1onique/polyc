@@ -12,7 +12,7 @@ HCC_ENABLE_LLVM ?= OFF
 
 default: all
 
-.PHONY: all formal-dafny gate-fast gate-push install-hooks static-function-linkage-test factory-closure-status-test factory-closure-status-test-binary llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test selfhost-component-binary selfhost-component-build selfhost-component-test selfhost-component-selftest selfhost-registry-validate factory-halt-classification-binary factory-halt-classification-selftest bootstrap06-component-build bootstrap06-operator-classify-oracle bootstrap06-direct-differential bootstrap06-component-stage1 bootstrap06-component-stage2 bootstrap06-component-stage3 bootstrap06-lexer-seam-stage1 lexer07-component-build lexer07-scalar-literal-oracle lexer07-direct-differential lexer07-component-stage1 lexer07-component-stage2 lexer07-component-stage3 lexer07-lexer-seam-stage0 lexer07-lexer-seam-stage1 lexer07-lexer-seam-stage2 lexer07-lexer-seam-stage3 lexer07-lexer-seam-stage2-from-objs lexer07-lexer-seam-stage3-from-objs lexer07-lexer-seam-all-stages lexer07-fixture-inventory lexer07-broad-corpus-4-stage lexer07-correction02-all lexer08-component-build lexer08-trivia-oracle lexer08-direct-differential lexer08-fixture-inventory lexer08-broad-corpus-4-stage lexer08-lexer-seam-stage0 lexer08-lexer-seam-stage1 lexer08-lexer-seam-all-stages lexer08-trivia-fixedpoint-g0 lexer08-trivia-fixedpoint-g1 lexer08-trivia-fixedpoint-g2 lexer08-trivia-fixedpoint-g3 lexer08-trivia-fixedpoint-build lexer08-trivia-fixedpoint-verify lexer08-trivia-fixedpoint lexer09-link-component-build lexer09-link-oracle-build lexer09-direct-differential lexer09-lexer-seam-stage0 lexer09-lexer-seam-stage1 lexer09-lexer-seam-all-stages lexer09-link-fixedpoint-g0 lexer09-link-fixedpoint-g1 lexer09-link-fixedpoint-g2 lexer09-link-fixedpoint-g3 lexer09-link-fixedpoint-build lexer09-link-fixedpoint-verify lexer09-link-fixedpoint lexer09-link-negative-control lexer09-link-determinism lexer09-link-broad-corpus-4-stage lib-tos runtime-contract-test libtos-n02-isolate parser-padding-component parser-padding-oracle parser-padding-differential parser-padding-gen-matrix-fixture parser-padding-gen-large-fixture parser-padding-fixedpoint-g0 parser-padding-fixedpoint-g1 parser-padding-fixedpoint-g2 parser-padding-fixedpoint-g3 parser-padding-fixedpoint-build parser-padding-fixedpoint-verify parser-padding-fixedpoint parser-padding-fixedpoint-negative-control parser-padding-mutation-m1 parser-padding-mutation-m2 parser-padding-mutation-m3 parser-padding-mutation-m4 parser-padding-mutation-test parser-padding-test
+.PHONY: all formal-dafny gate-fast gate-push install-hooks static-function-linkage-test factory-closure-status-test factory-closure-status-test-binary llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test selfhost-component-binary selfhost-component-build selfhost-component-test selfhost-component-selftest selfhost-registry-validate factory-halt-classification-binary factory-halt-classification-selftest bootstrap06-component-build bootstrap06-operator-classify-oracle bootstrap06-direct-differential bootstrap06-component-stage1 bootstrap06-component-stage2 bootstrap06-component-stage3 bootstrap06-lexer-seam-stage1 lexer07-component-build lexer07-scalar-literal-oracle lexer07-direct-differential lexer07-component-stage1 lexer07-component-stage2 lexer07-component-stage3 lexer07-lexer-seam-stage0 lexer07-lexer-seam-stage1 lexer07-lexer-seam-stage2 lexer07-lexer-seam-stage3 lexer07-lexer-seam-stage2-from-objs lexer07-lexer-seam-stage3-from-objs lexer07-lexer-seam-all-stages lexer07-fixture-inventory lexer07-broad-corpus-4-stage lexer07-correction02-all lexer08-component-build lexer08-trivia-oracle lexer08-direct-differential lexer08-fixture-inventory lexer08-broad-corpus-4-stage lexer08-lexer-seam-stage0 lexer08-lexer-seam-stage1 lexer08-lexer-seam-all-stages lexer08-trivia-fixedpoint-g0 lexer08-trivia-fixedpoint-g1 lexer08-trivia-fixedpoint-g2 lexer08-trivia-fixedpoint-g3 lexer08-trivia-fixedpoint-build lexer08-trivia-fixedpoint-verify lexer08-trivia-fixedpoint lexer09-link-component-build lexer09-link-oracle-build lexer09-direct-differential lexer09-lexer-seam-stage0 lexer09-lexer-seam-stage1 lexer09-lexer-seam-all-stages lexer09-link-fixedpoint-g0 lexer09-link-fixedpoint-g1 lexer09-link-fixedpoint-g2 lexer09-link-fixedpoint-g3 lexer09-link-fixedpoint-build lexer09-link-fixedpoint-verify lexer09-link-fixedpoint lexer09-link-negative-control lexer09-link-determinism lexer09-link-broad-corpus-4-stage lib-tos runtime-contract-test libtos-n02-isolate parser-padding-component parser-padding-oracle parser-padding-differential parser-padding-gen-matrix-fixture parser-padding-gen-large-fixture parser-padding-fixedpoint-g0 parser-padding-fixedpoint-g1 parser-padding-fixedpoint-g2 parser-padding-fixedpoint-g3 parser-padding-fixedpoint-build parser-padding-fixedpoint-verify parser-padding-fixedpoint parser-padding-fixedpoint-negative-control parser-padding-mutation-m1 parser-padding-mutation-m2 parser-padding-mutation-m3 parser-padding-mutation-m4 parser-padding-mutation-test parser-padding-test parser-padding-algebraic-invariants parser-padding-is-terminal-stub parser-padding-legacy parser-padding-legacy-server parser-padding-legacy-verify
 
 # To add sqlite3 support add -DHCC_LINK_SQLITE3=1 to the below like so:
 #```
@@ -2311,13 +2311,75 @@ build/parser-padding-oracle.o: tools/quality/parser-padding-oracle-impl.c
 parser-padding-oracle: build/parser-padding-oracle.o
 	@echo "PARSER_PADDING_ORACLE=BUILD"
 
+# ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION01 C2 IMPL.
+# Tiny stub defining `is_terminal = 0` so that the parser-padding
+# differential can link against the actual compiled src/parser.c
+# (which transitively references is_terminal via aostr/cli/containers)
+# without dragging in src/main.c (which defines is_terminal as a
+# runtime-initialized global). The differential is non-interactive.
+build/parser-padding-is-terminal-stub.o: tools/quality/parser-padding-is-terminal-stub.c
+	@rm -f $@
+	cc -std=c99 -O2 -Wall -Wextra -c -o $@ $<
+
+# Freshly compile the actual src/parser.c so the differential links
+# against the real CalcPadding + ParserLegacyCalcPaddingOracle symbols.
+build/parser-padding-legacy.o: src/parser.c
+	@rm -f $@
+	cc -std=c99 -O2 -Wall -Wextra -Isrc -c -o $@ $<
+
+# Other transitive parser deps (aostr, ast, cctrl, cli, ...) compiled
+# as part of test-prefix-install. main.c is intentionally excluded
+# (provides is_terminal init + main symbol that would clash).
+PARSER_PADDING_TRANSITIVE_OBJS = $(filter-out $(HCC_OBJ_DIR)/main.c.o $(HCC_OBJ_DIR)/parser.c.o, \
+    $(wildcard $(HCC_OBJ_DIR)/*.c.o $(HCC_OBJ_DIR)/linenoise/*.c.o))
+
 build/parser-padding-differential.o: tools/quality/parser-padding-differential.HC ./hcc | test-prefix-install
 	./hcc --install-dir=$(TEST_PREFIX) -c tools/quality/parser-padding-differential.HC -o $@
 	@nm $@ | grep -q '_main' \
 		|| { echo "parser-padding-differential.o: main missing" >&2; exit 1; }
 
-build/parser-padding-differential: build/parser-padding-differential.o $(PARSER_PADDING_OBJ) build/parser-padding-oracle.o | test-prefix-install
-	cc -o $@ build/parser-padding-differential.o $(PARSER_PADDING_OBJ) build/parser-padding-oracle.o -L$(TEST_PREFIX)/lib -ltos
+# ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION01 C2 IMPL.
+# Independent PolyC algebraic-invariant verifier (AC18 repair).
+# Calls BootstrapCalcPadding directly; never reads the C oracle.
+build/parser-padding-algebraic-invariants.o: tools/quality/parser-padding-algebraic-invariants.HC $(PARSER_PADDING_OBJ) ./hcc | test-prefix-install
+	./hcc --install-dir=$(TEST_PREFIX) -c tools/quality/parser-padding-algebraic-invariants.HC -o $@
+	@nm $@ | grep -q '_main' \
+		|| { echo "parser-padding-algebraic-invariants.o: main missing" >&2; exit 1; }
+
+build/parser-padding-algebraic-invariants: build/parser-padding-algebraic-invariants.o $(PARSER_PADDING_OBJ) | test-prefix-install
+	cc -o $@ build/parser-padding-algebraic-invariants.o $(PARSER_PADDING_OBJ) -L$(TEST_PREFIX)/lib -ltos
+	@ls -la $@
+
+parser-padding-algebraic-invariants: build/parser-padding-algebraic-invariants
+	@echo "PARSER_PADDING_ALGEBRAIC_INVARIANTS=BUILD"
+
+# ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION01 C2 IMPL.
+# PolyC generation-provenance verifier (AC29 repair). Splits the byte
+# fixed-point verdict from the provenance verdict; the latter binds
+# compiler/source/command/object/fresh_build_record SHAs per generation.
+build/parser-padding-generation-provenance-verify: tools/quality/parser-padding-generation-provenance-verify.HC build/lexer07-sha256 ./hcc | test-prefix-install
+	./hcc --install-dir=$(TEST_PREFIX) tools/quality/parser-padding-generation-provenance-verify.HC -o $@
+	@ls -la $@
+
+parser-padding-generation-provenance-verify: build/parser-padding-generation-provenance-verify
+	@echo "PARSER_PADDING_GENERATION_PROVENANCE_VERIFY=BUILD"
+
+# Driver script for AC29 authoritative run (byte fixedpoint +
+# generation-provenance + generation-copy + identity mutation controls).
+parser-padding-generation-provenance-run: parser-padding-fixedpoint-build parser-padding-generation-provenance-verify
+	@echo "PARSER_PADDING_GENERATION_PROVENANCE_RUN=BEGIN"
+	sh scripts/quality/parser-padding-generation-provenance-verify.sh
+	@echo "PARSER_PADDING_GENERATION_PROVENANCE_RUN=END"
+
+# ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION01 C2 IMPL.
+# The differential links against the ACTUAL compiled legacy CalcPadding
+# (via the fresh build/parser-padding-legacy.o from src/parser.c),
+# forwarding through the ParserLegacyCalcPaddingOracle wrapper that
+# the quality oracle invokes. -Wl,-undefined,dynamic_lookup absorbs
+# the few remaining libc/libsys symbols that the parser transitive
+# graph references but are not statically needed by the differential.
+build/parser-padding-differential: build/parser-padding-differential.o $(PARSER_PADDING_OBJ) build/parser-padding-oracle.o build/parser-padding-legacy.o build/parser-padding-is-terminal-stub.o $(PARSER_PADDING_TRANSITIVE_OBJS) | test-prefix-install
+	cc -o $@ build/parser-padding-differential.o $(PARSER_PADDING_OBJ) build/parser-padding-oracle.o build/parser-padding-legacy.o build/parser-padding-is-terminal-stub.o $(PARSER_PADDING_TRANSITIVE_OBJS) $(TASM_LIB) -L$(TEST_PREFIX)/lib -ltos -Wl,-undefined,dynamic_lookup
 	@ls -la $@
 
 parser-padding-differential: build/parser-padding-differential
@@ -2427,17 +2489,17 @@ parser-padding-mutation-m2: build/parser-padding-m2.o
 parser-padding-mutation-m3: build/parser-padding-m3.o
 parser-padding-mutation-m4: build/parser-padding-m4.o
 
-build/parser-padding-differential-m1: build/parser-padding-differential.o build/parser-padding-m1.o build/parser-padding-oracle.o | test-prefix-install
-	cc -o $@ build/parser-padding-differential.o build/parser-padding-m1.o build/parser-padding-oracle.o -L$(TEST_PREFIX)/lib -ltos
+build/parser-padding-differential-m1: build/parser-padding-differential.o build/parser-padding-m1.o build/parser-padding-oracle.o build/parser-padding-legacy.o build/parser-padding-is-terminal-stub.o $(PARSER_PADDING_TRANSITIVE_OBJS) | test-prefix-install
+	cc -o $@ build/parser-padding-differential.o build/parser-padding-m1.o build/parser-padding-oracle.o build/parser-padding-legacy.o build/parser-padding-is-terminal-stub.o $(PARSER_PADDING_TRANSITIVE_OBJS) $(TASM_LIB) -L$(TEST_PREFIX)/lib -ltos -Wl,-undefined,dynamic_lookup
 
-build/parser-padding-differential-m2: build/parser-padding-differential.o build/parser-padding-m2.o build/parser-padding-oracle.o | test-prefix-install
-	cc -o $@ build/parser-padding-differential.o build/parser-padding-m2.o build/parser-padding-oracle.o -L$(TEST_PREFIX)/lib -ltos
+build/parser-padding-differential-m2: build/parser-padding-differential.o build/parser-padding-m2.o build/parser-padding-oracle.o build/parser-padding-legacy.o build/parser-padding-is-terminal-stub.o $(PARSER_PADDING_TRANSITIVE_OBJS) | test-prefix-install
+	cc -o $@ build/parser-padding-differential.o build/parser-padding-m2.o build/parser-padding-oracle.o build/parser-padding-legacy.o build/parser-padding-is-terminal-stub.o $(PARSER_PADDING_TRANSITIVE_OBJS) $(TASM_LIB) -L$(TEST_PREFIX)/lib -ltos -Wl,-undefined,dynamic_lookup
 
-build/parser-padding-differential-m3: build/parser-padding-differential.o build/parser-padding-m3.o build/parser-padding-oracle.o | test-prefix-install
-	cc -o $@ build/parser-padding-differential.o build/parser-padding-m3.o build/parser-padding-oracle.o -L$(TEST_PREFIX)/lib -ltos
+build/parser-padding-differential-m3: build/parser-padding-differential.o build/parser-padding-m3.o build/parser-padding-oracle.o build/parser-padding-legacy.o build/parser-padding-is-terminal-stub.o $(PARSER_PADDING_TRANSITIVE_OBJS) | test-prefix-install
+	cc -o $@ build/parser-padding-differential.o build/parser-padding-m3.o build/parser-padding-oracle.o build/parser-padding-legacy.o build/parser-padding-is-terminal-stub.o $(PARSER_PADDING_TRANSITIVE_OBJS) $(TASM_LIB) -L$(TEST_PREFIX)/lib -ltos -Wl,-undefined,dynamic_lookup
 
-build/parser-padding-differential-m4: build/parser-padding-differential.o build/parser-padding-m4.o build/parser-padding-oracle.o | test-prefix-install
-	cc -o $@ build/parser-padding-differential.o build/parser-padding-m4.o build/parser-padding-oracle.o -L$(TEST_PREFIX)/lib -ltos
+build/parser-padding-differential-m4: build/parser-padding-differential.o build/parser-padding-m4.o build/parser-padding-oracle.o build/parser-padding-legacy.o build/parser-padding-is-terminal-stub.o $(PARSER_PADDING_TRANSITIVE_OBJS) | test-prefix-install
+	cc -o $@ build/parser-padding-differential.o build/parser-padding-m4.o build/parser-padding-oracle.o build/parser-padding-legacy.o build/parser-padding-is-terminal-stub.o $(PARSER_PADDING_TRANSITIVE_OBJS) $(TASM_LIB) -L$(TEST_PREFIX)/lib -ltos -Wl,-undefined,dynamic_lookup
 
 parser-padding-mutation-test: build/parser-padding-gen-matrix-fixture build/parser-padding-differential-m1 build/parser-padding-differential-m2 build/parser-padding-differential-m3 build/parser-padding-differential-m4 build/parser-padding-differential
 	@./build/parser-padding-gen-matrix-fixture > /tmp/parser-padding-matrix.tsv

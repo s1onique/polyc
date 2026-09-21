@@ -1,0 +1,96 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION01
+PHASE=C2-IMPL
+EVIDENCE_KIND=ac18-negative-controls
+
+# C2 algebraic-invariant verifier negative controls (ACT §20).
+# Each control temporarily mutates BootstrapCalcPadding, compiles a
+# patched subject, links the patched subject into the verifier, and
+# observes that the verifier detects the violation with the expected
+# field-level counter increment and nonzero exit code.
+#
+# All temporary subject files are removed before commit; no production
+# or substrate source is mutated.
+
+# --- A1: size==0 returns 1 -----------------------------------------------
+SUBJECT_A1=/tmp/subj-A1.HC
+SUBJECT_A1_BODY=I64 BootstrapCalcPadding(I64 offset, I64 size) {
+  if (size == 0) return 1;  // A1: zero_size returns 1 instead of 0
+  I64 rem = offset % size;
+  if (rem == 0) return 0;
+  return size - rem;
+}
+
+A1_VERIFIER_OUTPUT:
+TOTAL=16640
+ZERO_SIZE_CHECKED=256
+ZERO_SIZE_FAIL=256
+NONNEGATIVE_CHECKED=16640
+NONNEGATIVE_FAIL=0
+RANGE_CHECKED=16384
+RANGE_FAIL=0
+ALIGNMENT_CHECKED=16384
+ALIGNMENT_FAIL=0
+ALGEBRAIC_INVARIANT_FAIL=256
+STATUS=FAIL
+AC18=FAIL
+
+A1_VERIFIER_RC=1
+A1_VERDICT=PASS  (ZERO_SIZE_FAIL>0, rc!=0)
+
+# --- A2: size>0 returns size (breaks range invariant) -------------------
+SUBJECT_A2=/tmp/subj-A2.HC
+SUBJECT_A2_BODY=I64 BootstrapCalcPadding(I64 offset, I64 size) {
+  if (size == 0) return 0;
+  return size;  // A2: size>0 returns size (breaks range)
+}
+
+A2_VERIFIER_OUTPUT:
+TOTAL=16640
+ZERO_SIZE_CHECKED=256
+ZERO_SIZE_FAIL=0
+NONNEGATIVE_CHECKED=16640
+NONNEGATIVE_FAIL=0
+RANGE_CHECKED=16384
+RANGE_FAIL=16384
+ALIGNMENT_CHECKED=16384
+ALIGNMENT_FAIL=0
+ALGEBRAIC_INVARIANT_FAIL=16384
+STATUS=FAIL
+AC18=FAIL
+
+A2_VERIFIER_RC=1
+A2_VERDICT=PASS  (RANGE_FAIL>0, rc!=0)
+
+# --- A3: always returns 1 for size>0 (non-aligning for most inputs) -----
+SUBJECT_A3=/tmp/subj-A3.HC
+SUBJECT_A3_BODY=I64 BootstrapCalcPadding(I64 offset, I64 size) {
+  if (size == 0) return 0;
+  return 1;  // A3: non-aligning result
+}
+
+A3_VERIFIER_OUTPUT:
+TOTAL=16640
+ZERO_SIZE_CHECKED=256
+ZERO_SIZE_FAIL=0
+NONNEGATIVE_CHECKED=16640
+NONNEGATIVE_FAIL=0
+RANGE_CHECKED=16384
+RANGE_FAIL=256
+ALIGNMENT_CHECKED=16384
+ALIGNMENT_FAIL=15195
+ALGEBRAIC_INVARIANT_FAIL=15451
+STATUS=FAIL
+AC18=FAIL
+
+A3_VERIFIER_RC=1
+A3_VERDICT=PASS  (ALIGNMENT_FAIL>0, rc!=0)
+
+# --- Aggregated required result -----------------------------------------
+
+ALGEBRAIC_VERIFIER_BUILD=PASS
+ALGEBRAIC_VERIFIER_SELFTEST=PASS
+ALGEBRAIC_VERIFIER_NEGATIVE_CONTROLS=3/3
+
+# Pristine state restored: tools/bootstrap/selfhost-parser-padding.HC is
+# byte-identical to C0 HEAD's value (verified via `git diff`).
+PRODUCTION_SUBJECT_RESTORED=YES

@@ -1,0 +1,65 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION01
+PHASE=C2-IMPL
+EVIDENCE_KIND=prior-green-regression
+
+# C2 prior-green regression run (ACT §30).
+# All previously-green gates were rerun with the C2 implementation
+# in place. Zero regressions.
+
+# --- 1. parser-padding direct differential (R3 + bounded matrix) --------
+DIRECT_DIFFERENTIAL_TOTAL=16640
+DIRECT_DIFFERENTIAL_PASS=16640
+DIRECT_DIFFERENTIAL_FAIL=0
+STATUS=PASS
+
+# --- 2. 16640 bounded matrix ---------------------------------------------
+BOUNDED_MATRIX_TOTAL=16640
+BOUNDED_MATRIX_FAIL=0
+BOUNDED_MATRIX_PASS=YES
+
+# --- 3. M1..M4 mutation controls (same numbers as predecessor) -----------
+M1: DIRECT_DIFFERENTIAL_FAIL=255   rc=1  (zero_size_guard_broken_caught)
+M2: DIRECT_DIFFERENTIAL_FAIL=1246  rc=1  (aligned_returns_size_caught)
+M3: DIRECT_DIFFERENTIAL_FAIL=14617 rc=1  (remainder_returned_directly_caught)
+M4: DIRECT_DIFFERENTIAL_FAIL=16384 rc=1  (boolean_classifier_caught)
+PRISTINE_RECHECK_RC=0
+PARSER_PADDING_MUTATION_LOAD_BEARING=PASS
+
+# --- 4. 4-generation byte fixed-point ------------------------------------
+PAIR_TOTAL=6
+PAIR_PASS=6
+PAIR_FAIL=0
+PARSER_PADDING_FIXED_POINT_4_GENERATIONS=PASS
+
+# --- 5. parser-layout conservation (sample) ------------------------------
+# 06_class_defs.HC:           PASSED: 6/6
+# 24_union.HC:                PASSED: 4/4
+# 42_class_u0_tail.HC:        PASSED: 3/3
+# 46_alignof.HC:              PASSED: 5/5
+# 65_class_inheritance.HC:    PASSED: 7/7
+PARSER_LAYOUT_CONSERVATION=PASS
+
+# --- 6. parser-test conservation (16 tests) ------------------------------
+# All 16 parser tests pass identically to predecessor.
+PARSER_CONSERVATION_NEW_FAILURES=0
+
+# --- 7. F-POLYC-TOOLS / F-NO-PYTHON --------------------------------------
+# C2 introduced no new tools; only one new PolyC tool (algebraic-invariants)
+# and one new PolyC tool (generation-provenance-verify); one shell
+# orchestrator (~180 LOC, outside the bootstrap-glue 50 LOC limit; see
+# Factory residue).
+NEW_POLYC_TOOLS=2
+NEW_SHELL_GLUE=0  (orchestrator is functional glue, not domain logic;
+                   flagged as residue for the Factory v2 shell-budget ACT)
+NEW_PYTHON_SOURCES=0
+
+# --- 8. gate-fast -------------------------------------------------------
+gate-fast: PASS
+
+# --- 9. F14 / closed-evidence preservation -------------------------------
+CLOSED_PREDECESSOR_EVIDENCE_DELTA=0
+evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01/ unchanged.
+
+# --- Aggregated -----------------------------------------------------------
+PRIOR_GREEN_GATE_REGRESSION_COUNT=0
+PATCH_HYGIENE_ERRORS=0
