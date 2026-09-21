@@ -1,0 +1,42 @@
+# C3 F-POLYC-TOOLS
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01
+
+## Result
+
+```text
+F_POLYC_TOOLS=PASS
+NEW_PYC_TOOLS_INTRODUCED=0
+NEW_SHELL_DISPATCH_GLUE_LOC=0
+```
+
+## Source-of-truth
+
+This ACT introduced:
+
+* 0 new tools
+* 0 new shell dispatch glue
+
+The two files modified are:
+
+* `src/parser.c` (semantic delegation in `CalcPadding`)
+* `src/CMakeLists.txt` (CMake wiring for the parser-padding component)
+
+Neither is a new tool. The semantic delegation uses the existing
+compiler invocation path (`./hcc` -> parser -> PolyC `BootstrapCalcPadding`).
+
+## Tools referenced (unchanged, all PolyC)
+
+* `tools/quality/parser-padding-algebraic-invariants.HC` (PolyC, unchanged)
+* `tools/quality/parser-padding-fixedpoint-verify.HC` (PolyC, unchanged)
+* `tools/quality/parser-padding-generation-provenance-verify.HC`
+  (PolyC, unchanged)
+* `tools/quality/parser-padding-differential.HC` (PolyC, unchanged)
+* `tools/quality/parser-padding-gen-matrix-fixture.HC` (PolyC, unchanged)
+
+No C verifiers own a terminal verdict for this ACT.
+
+## Halt semantics
+
+Any new substantive tool introduced in C or Python (rather than PolyC)
+would trigger `HALT_F_POLYC_TOOLS`. None was introduced.

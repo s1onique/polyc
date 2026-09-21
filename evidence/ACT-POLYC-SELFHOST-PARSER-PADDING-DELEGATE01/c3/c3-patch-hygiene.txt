@@ -1,0 +1,48 @@
+# C3 Patch Hygiene
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01
+
+## Result
+
+```text
+PATCH_HYGIENE_ERRORS=0
+```
+
+## Source-of-truth
+
+```sh
+$ git diff --check 9c6cda6..HEAD
+(empty)
+```
+
+```sh
+$ git diff --check HEAD
+(empty)
+```
+
+```sh
+$ git diff --check
+(empty)
+```
+
+All three patch-hygiene checks pass.
+
+## What was checked
+
+The C2 implementation modified two source files:
+
+* `src/parser.c` -- added the `#ifdef HCC_USE_SELFHOST_PARSER_PADDING`
+  delegation in `CalcPadding`. The block boundaries are clean and the
+  file passes `git diff --check`.
+* `src/CMakeLists.txt` -- added the `option()` and `if()` block for
+  the parser-padding delegation. CMake lists files are not subject
+  to git's newline-at-EOF check by default; their content is purely
+  CMake syntax.
+
+The C3 ACT body file `docs/acts/ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01.md`
+had its trailing blank line removed to satisfy `git diff --check`.
+The committed version is clean.
+
+## Halt semantics
+
+`PATCH_HYGIENE_ERRORS != 0` would trigger `HALT_PATCH_HYGIENE`.

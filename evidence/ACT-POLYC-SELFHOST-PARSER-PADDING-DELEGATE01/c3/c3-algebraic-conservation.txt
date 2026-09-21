@@ -1,0 +1,45 @@
+# C3 Algebraic Invariant Conservation
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01
+
+## Result
+
+```text
+ALGEBRAIC_INVARIANT_FAIL=0
+STATUS=PASS
+AC18=PASS
+ORACLE_DEPENDENCY=0
+```
+
+## Evidence
+
+```sh
+$ build/parser-padding-algebraic-invariants 2>&1 | head -15
+TOTAL=16640
+ZERO_SIZE_CHECKED=256
+ZERO_SIZE_FAIL=0
+NONNEGATIVE_CHECKED=16640
+NONNEGATIVE_FAIL=0
+RANGE_CHECKED=16384
+RANGE_FAIL=0
+ALIGNMENT_CHECKED=16384
+ALIGNMENT_FAIL=0
+ALGEBRAIC_INVARIANT_FAIL=0
+STATUS=PASS
+AC18=PASS
+ORACLE_DEPENDENCY=0
+```
+
+Algebraic invariants verified independently of any oracle:
+
+* ZERO_SIZE: 256 cases checked, 0 failures (covers `size == 0` branch)
+* NONNEGATIVE: 16640 cases checked, 0 failures (output >= 0)
+* RANGE: 16384 cases checked, 0 failures (`output < size`)
+* ALIGNMENT: 16384 cases checked, 0 failures (`(offset + output) % size == 0`)
+
+`ORACLE_DEPENDENCY=0` confirms the verifier never reads the C oracle.
+
+## Halt semantics
+
+`ALGEBRAIC_INVARIANT_FAIL != 0` would trigger
+`HALT_COMPONENT_FIXEDPOINT_REGRESSION`.

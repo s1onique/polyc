@@ -1,0 +1,57 @@
+# C3 Parser General Conservation
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01
+
+## Result
+
+```text
+PARSER_NEW_FAILURES=0
+```
+
+## Evidence (pristine build/hcc, with PolyC delegation)
+
+```text
+06_class_defs.HC                PASSED 6/6
+07_recursive_classdef.HC        PASSED 5/5
+24_union.HC                     PASSED 4/4
+40_class_self_ref.HC            PASSED
+42_class_u0_tail.HC             PASSED 3/3
+46_alignof.HC                   PASSED 5/5
+47_struct_abi.HC                PASSED 4/4
+55_uppercase_l_globals.HC       PASSED
+56_global_struct_arg.HC         PASSED
+57_struct_field_by_value.HC     PASSED
+58_struct_return.HC             PASSED
+59_ptr_struct_index.HC          PASSED
+60_leaf_param_arith.HC          PASSED
+62_typeof.HC                    PASSED
+64_sret_x8.HC                   PRE_EXISTING_FAILURE (uses ../../hcc path; runs from src/tests/ as ./test_64, and the embedded `System("printf ... && cc ...")` invokes "../../hcc" which is not on PATH from /tmp/test_64's invocation directory -- this is an env-specific test harness bug, not a parser regression)
+65_class_inheritance.HC         PASSED 7/7
+```
+
+## Pre-existing failure analysis
+
+`64_sret_x8.HC` was already failing under the entry `./hcc` (the
+stage0 baseline). It uses `../../hcc` as a relative path from the
+test's `cd src/tests/` working directory, but when invoked from /tmp
+the relative path resolves differently. This is a test-harness
+limitation not caused by the parser-padding migration.
+
+```sh
+$ ./hcc --install-dir=$(pwd)/build/test-prefix src/tests/64_sret_x8.HC -o /tmp/t64
+sh: ../../hcc: No such file or directory
+Test - indirect struct return C interop: FAILED: 1/3
+```
+
+The failure is identical between `./hcc` (legacy C) and `build/hcc`
+(PolyC delegation). It is therefore NOT a `PARSER_NEW_FAILURE`
+attributable to this ACT.
+
+```text
+PARSER_NEW_FAILURES=0
+```
+
+## Halt semantics
+
+A genuine new parser failure (one that passes under `./hcc` but fails
+under `build/hcc`) would trigger `HALT_PARSER_REGRESSION`.

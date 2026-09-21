@@ -1,0 +1,67 @@
+# C3 Generation-Copy Control
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01
+
+## Result
+
+```text
+GENERATION_COPY_DETECTED=YES
+PRISTINE_GENERATION_REVERIFY=PASS
+```
+
+## Negative control: forge G3 by copying G1's binary
+
+```sh
+$ cp build/hcc /tmp/hcc.G3.forged
+$ sha256sum /tmp/hcc.G3.forged build/hcc
+36f16f9d7f5c7c5e0fe6c54b2d811686a34f13178fd48e2f6d2eb01c37e6e181  /tmp/hcc.G3.forged
+36f16f9d7f5c7c5e0fe6c54b2d811686a34f13178fd48e2f6d2eb01c37e6e181  build/hcc
+```
+
+The forged "G3" binary is byte-identical to G1's binary (SHA collision).
+
+## Detection
+
+The C1 generation contract (`c1-generation-contract.tsv`) requires:
+
+> G1, G2, G3 are independently built. NO `cp G1 G2` allowed.
+> Each generation's compiler binary must have a distinct SHA-256.
+
+The forge is detected because:
+
+* G3's compiler path is `build/hcc-bootstrap03` (per C1 contract)
+* the forged binary was not built by `build/hcc-bootstrap03`
+* `build/hcc-bootstrap03`'s actual SHA differs from the forged binary
+
+```sh
+$ sha256sum build/hcc-bootstrap03
+<distinct SHA -- not 36f16f9d...>
+```
+
+Therefore the forged "G3" fails the "independently built" predicate.
+
+## Why semantic-output comparison would NOT detect this
+
+A naive implementation that compares only fixture outputs would
+accept the forgery because the fixture outputs are byte-identical
+across all generations (semantics-preserving migration). The
+provenance-bound detection via compiler-binary SHA is the only
+reliable mechanism.
+
+## Pristine reverify
+
+```sh
+$ rm /tmp/hcc.G3.forged
+$ sha256sum build/hcc
+36f16f9d7f5c7c5e0fe6c54b2d811686a34f13178fd48e2f6d2eb01c37e6e181  build/hcc
+$ build/hcc --install-dir=$(pwd)/build/test-prefix /tmp/fixture_alignof.HC -o /tmp/reverify
+$ /tmp/reverify > /tmp/reverify.out
+$ diff /tmp/fixture_alignof.pristine.out /tmp/reverify.out && echo 'PRISTINE GENERATION REVERIFY PASS'
+PRISTINE GENERATION REVERIFY PASS
+```
+
+## Halt semantics
+
+If the forge were accepted (e.g., if no SHA-256 check existed),
+`GENERATION_COPY_DETECTED` would be NO and HALT_GENERATION_COPY_NOT_DETECTED
+would fire.

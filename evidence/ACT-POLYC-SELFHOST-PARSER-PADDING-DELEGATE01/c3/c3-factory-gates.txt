@@ -1,0 +1,66 @@
+# C3 Factory Gates
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01
+
+## Result
+
+```text
+GATE_FAST=PASS
+APPEND_ONLY_FAIL=0
+```
+
+## gate-fast
+
+```sh
+$ make gate-fast 2>&1 | tail -25
+./scripts/quality/gate-fast.sh
+POLYC_GATE=fast
+CHECK=diff-check STATUS=PASS
+CHECK=shell-syntax STATUS=PASS
+CHECK=doc-invariants STATUS=PASS
+CHECK=large-file-guard STATUS=PASS
+BUILD_RUN=NO
+POLYC_GATE=factory-closure-status
+MANIFEST_ROWS=19
+MISSING_HANDOFF_FILES=0
+MALFORMED_HANDOFF_VERDICT=0
+PAIR_OK=19
+PAIR_FAIL=0
+STATUS=PASS
+VERDICT=PASS
+CHECK=factory-closure-status STATUS=PASS
+VERDICT=PASS
+```
+
+All gate-fast checks pass.
+
+## append-only
+
+```sh
+$ bash scripts/quality/factory-append-only-test.sh 2>&1 | tail -20
+POLYC_GATE=factory-append-only-tests
+  PASS  NC1  rc=0
+  PASS  NC2  rc=1
+  PASS  NC3  rc=1
+  PASS  NC4  rc=0
+  PASS  NC5  rc=1
+Deleted replace ref 'f7efe8b29127f192d5e7a6fe544d2a94cf642446'
+  PASS  NC6  rc=0
+  PASS  NC7  rc=0
+  PASS  NC8  rc=1
+  PASS  NC9  rc=1
+  PASS  NC10  rc=1
+  PASS  NC11  rc=0
+
+--- summary ---
+PASS=11
+FAIL=0
+STATUS=PASS
+```
+
+All 11 append-only tests pass.
+
+## Halt semantics
+
+`GATE_FAST != PASS` would trigger `HALT_FACTORY_GATE`.
+`APPEND_ONLY_FAIL != 0` would also trigger `HALT_FACTORY_GATE`.

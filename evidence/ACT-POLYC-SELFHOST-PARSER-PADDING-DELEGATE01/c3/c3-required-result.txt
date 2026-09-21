@@ -1,0 +1,88 @@
+# C3 Required Result
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01
+
+## Pre-C4 final tokens (per ACT §69)
+
+```text
+PARSER_PADDING_PRODUCTION_AUTHORITY=POLYC                PASS
+LEGACY_SEMANTIC_AUTHORITY_COUNT=0                       PASS
+
+DIRECT_DIFFERENTIAL_FAIL=0                              PASS
+ALGEBRAIC_INVARIANT_FAIL=0                              PASS
+
+PRODUCTION_SEMANTIC_PAIR_PASS=6                         PASS
+PRODUCTION_SEMANTIC_PAIR_FAIL=0                         PASS
+MIGRATION_DELTA=0                                       PASS
+
+N01_COMPLETE_CAUSAL_CHAIN=YES                           PASS
+MUTATED_PRODUCTION_DIVERGENCE_DETECTED=YES              PASS
+N01_INCOMPLETE_WITNESS_REJECTED=YES                     PASS
+PRISTINE_PRODUCTION_REVERIFY=PASS                       PASS
+
+GENERATION_PROVENANCE_FAIL=0                            PASS
+GENERATION_COPY_DETECTED=YES                            PASS
+
+PARSER_LAYOUT_NEW_FAILURES=0                            PASS
+PARSER_NEW_FAILURES=0                                   PASS
+
+LEXER01_CONSERVATION=PASS                               PASS
+LEXER02_CONSERVATION=PASS                               PASS
+LEXER03_CONSERVATION=PASS                               PASS
+LEXER04_CONSERVATION=PASS                               PASS
+
+NEW_LEXER07_FAILURE_IDENTITIES=0                        PASS
+REMOVED_LEXER07_PASS_IDENTITIES=0                       PASS
+NEW_LEXER07_DIVERGENCES=0                               PASS
+NEW_LEXER07_PASS_MISMATCHES=0                           PASS
+
+COMPONENT_FIXEDPOINT_PAIR_PASS=6                        PASS
+COMPONENT_FIXEDPOINT_PAIR_FAIL=0                        PASS
+
+F_POLYC_TOOLS=PASS                                      PASS
+F_NO_PYTHON=PASS                                        PASS
+F14=PASS                                                PASS
+PATCH_HYGIENE_ERRORS=0                                  PASS
+GATE_FAST=PASS                                          PASS
+APPEND_ONLY_FAIL=0                                      PASS
+
+C2_TO_C3_IMPLEMENTATION_DRIFT=0                         PASS
+```
+
+## C3 commit
+
+```text
+ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01 C3: VERIFY
+```
+
+## C3 ledger summary
+
+Per ACT §68:
+
+```text
+AC01..AC52 = PASS
+AC53       = PASS        (PRE_C4_ACT_COMMIT_COUNT = 4 expected after C3; ACT_COMMIT_COUNT = 5 after C4)
+AC54       = DEFERRED_TO_C4
+AC55       = DEFERRED_TO_EXTERNAL
+AC56       = DEFERRED_TO_EXTERNAL
+```
+
+## Halt taxonomy verification
+
+All halts are checkable from C3 evidence files. See:
+
+* `c3-n01-production-causal-control.txt` for HALT_N01_*
+* `c3-production-authority.txt` for HALT_POLYC_NOT_LOAD_BEARING
+* `c3-production-semantic-verify.txt` for HALT_PRODUCTION_SEMANTIC_REGRESSION
+* `c3-parser-layout-conservation.txt` for HALT_PARSER_LAYOUT_REGRESSION
+* `c3-parser-conservation.txt` for HALT_PARSER_REGRESSION
+* `c3-lexer*-conservation.txt` for HALT_LEXER_CONSERVATION
+* `c3-lexer07-forward-baseline.txt` for HALT_LEXER07_FORWARD_BASELINE_REGRESSION
+* `c3-component-fixedpoint.txt` for HALT_COMPONENT_FIXEDPOINT_REGRESSION
+* `c3-f-polyc-tools.txt` for HALT_F_POLYC_TOOLS
+* `c3-f-no-python.txt` for HALT_F_NO_PYTHON
+* `c3-f14.txt` for HALT_F14
+* `c3-patch-hygiene.txt` for HALT_PATCH_HYGIENE
+* `c3-factory-gates.txt` for HALT_FACTORY_GATE
+* `c3-phase-purity.txt` for HALT_C2_DEFECT_FOUND_DURING_C3
+* `c3-required-result.txt` for HALT_MANDATORY_AC_NOT_GREEN

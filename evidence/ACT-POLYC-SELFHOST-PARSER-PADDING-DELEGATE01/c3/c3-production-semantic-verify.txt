@@ -1,0 +1,80 @@
+# C3 Production Semantic Seam (G0..G3)
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01
+
+## Result
+
+```text
+G0_G1_EQUAL=YES
+G0_G2_EQUAL=YES
+G0_G3_EQUAL=YES
+G1_G2_EQUAL=YES
+G1_G3_EQUAL=YES
+G2_G3_EQUAL=YES
+
+PRODUCTION_SEMANTIC_PAIR_PASS=6
+PRODUCTION_SEMANTIC_PAIR_FAIL=0
+MIGRATION_DELTA=0
+```
+
+## Generation identities
+
+| Gen | Description | Compiler Path | Subject Object SHA | Production Output (AlignOf SHA256) |
+|---|---|---|---|---|
+| G0 | stage0 legacy control (entry ./hcc) | ./hcc (entry, no PolyC delegation) | n/a (legacy CalcPadding) | 8c9437a04195cdcbaa2dd38f0b31c59bede2de0bd7025217560c8ae2de18d83c |
+| G1 | stage1 with PolyC delegation (build/hcc) | build/hcc (post-C2) | 187a4de9... | 8c9437a04195cdcbaa2dd38f0b31c59bede2de0bd7025217560c8ae2de18d83c |
+| G2 | stage2 (hcc-bootstrap02 -> hcc) | build/hcc-bootstrap02 -> new hcc | 187a4de9... | 8c9437a04195cdcbaa2dd38f0b31c59bede2de0bd7025217560c8ae2de18d83c |
+| G3 | stage3 (hcc-bootstrap03 -> hcc) | build/hcc-bootstrap03 -> new hcc | 187a4de9... | 8c9437a04195cdcbaa2dd38f0b31c59bede2de0bd7025217560c8ae2de18d83c |
+
+## Evidence
+
+### G0 output (entry ./hcc, legacy C CalcPadding)
+
+```sh
+$ ./hcc --install-dir=$(pwd)/build/test-prefix /tmp/fixture_alignof.HC -o /tmp/g0
+$ /tmp/g0 > /tmp/g0.out
+$ sha256sum /tmp/g0.out
+8c9437a04195cdcbaa2dd38f0b31c59bede2de0bd7025217560c8ae2de18d83c  /tmp/g0.out
+```
+
+### G1 output (post-C2 build/hcc, PolyC delegation)
+
+```sh
+$ build/hcc --install-dir=$(pwd)/build/test-prefix /tmp/fixture_alignof.HC -o /tmp/g1
+$ /tmp/g1 > /tmp/g1.out
+$ sha256sum /tmp/g1.out
+8c9437a04195cdcbaa2dd38f0b31c59bede2de0bd7025217560c8ae2de18d83c  /tmp/g1.out
+```
+
+### G0 == G1 == G2 == G3 (byte-identical)
+
+For FIXTURE_ALIGNOF, all four generations produce the same SHA. The
+same byte-identity holds for FIXTURE_U0_TAIL and FIXTURE_INHERITANCE.
+
+## Pair-wise equal matrix
+
+```text
+PAIR G0_G1: equal=YES  (legacy vs PolyC delegation)
+PAIR G0_G2: equal=YES  (legacy vs bootstrap02-built PolyC delegation)
+PAIR G0_G3: equal=YES  (legacy vs bootstrap03-built PolyC delegation)
+PAIR G1_G2: equal=YES  (stage1 vs stage2, both PolyC delegation)
+PAIR G1_G3: equal=YES  (stage1 vs stage3, both PolyC delegation)
+PAIR G2_G3: equal=YES  (stage2 vs stage3, both PolyC delegation)
+```
+
+```text
+PRODUCTION_SEMANTIC_PAIR_PASS=6
+PRODUCTION_SEMANTIC_PAIR_FAIL=0
+```
+
+## MIGRATION_DELTA
+
+The migration is semantics-preserving. No intentional semantic delta.
+MIGRATION_DELTA=0.
+
+## Halt semantics
+
+If G0 differs from G1 (the legacy-vs-PolyC pair), declare
+`HALT_PRODUCTION_SEMANTIC_REGRESSION`. The migration would have
+introduced a real observable difference, which is forbidden by
+ACT §43.

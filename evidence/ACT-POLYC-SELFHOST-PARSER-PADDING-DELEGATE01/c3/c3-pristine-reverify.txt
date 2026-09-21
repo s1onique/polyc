@@ -1,0 +1,74 @@
+# C3 Pristine Reverify
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01
+
+## Result
+
+```text
+PRISTINE_SUBJECT_RESTORED=YES
+PRISTINE_PRODUCTION_REBUILD=PASS
+PRISTINE_PRODUCTION_REVERIFY=PASS
+```
+
+## Source restoration
+
+```sh
+$ sha256sum tools/bootstrap/selfhost-parser-padding.HC
+b555b76b484edda5830abba46dbda803a12ec1834f9ab0a64763f5899f2452f3  tools/bootstrap/selfhost-parser-padding.HC
+```
+
+The PolyC subject source SHA matches the C0 freeze SHA. No mutation
+remains in the canonical source.
+
+## Subject object restoration
+
+```sh
+$ sha256sum build/parser-padding-subject.o
+187a4de9465e8dbe3c640484b05540daaad4a3267dd1543a169e3c304b02d5b1  build/parser-padding-subject.o
+```
+
+Subject object SHA matches the C0 entry SHA. No mutation artifact
+remains in canonical build paths.
+
+## Production binary restoration
+
+```sh
+$ sha256sum build/hcc
+36f16f9d7f5c7c5e0fe6c54b2d811686a34f13178fd48e2f6d2eb01c37e6e181  build/hcc
+```
+
+Production binary SHA matches the post-C2 pristine SHA. No mutation
+artifact remains.
+
+## Fixture reverify
+
+```sh
+$ build/hcc --install-dir=$(pwd)/build/test-prefix /tmp/fixture_alignof.HC -o /tmp/fixture_alignof.pristine_reverify 2>&1 | tail -1
+$ diff /tmp/fixture_alignof.pristine.out /tmp/fixture_alignof.pristine_reverify.out && echo 'PRISTINE REVERIFY PASS'
+PRISTINE REVERIFY PASS
+
+$ build/hcc --install-dir=$(pwd)/build/test-prefix /tmp/fixture_u0_tail.HC -o /tmp/fixture_u0_tail.pristine_reverify 2>&1 | tail -1
+$ diff /tmp/fixture_u0_tail.pristine.out /tmp/fixture_u0_tail.pristine_reverify.out && echo 'PRISTINE REVERIFY PASS'
+PRISTINE REVERIFY PASS
+
+$ build/hcc --install-dir=$(pwd)/build/test-prefix /tmp/fixture_inheritance.HC -o /tmp/fixture_inheritance.pristine_reverify 2>&1 | tail -1
+$ diff /tmp/fixture_inheritance.pristine.out /tmp/fixture_inheritance.pristine_reverify.out && echo 'PRISTINE REVERIFY PASS'
+PRISTINE REVERIFY PASS
+```
+
+All three fixtures are byte-identical to the C1 entry baseline.
+
+## Canonical parser layout tests reverify
+
+```text
+src/tests/06_class_defs.HC        PASSED 6/6
+src/tests/07_recursive_classdef.HC PASSED 5/5
+src/tests/24_union.HC             PASSED 4/4
+src/tests/42_class_u0_tail.HC     PASSED 3/3
+src/tests/46_alignof.HC           PASSED 5/5
+src/tests/47_struct_abi.HC        PASSED 4/4
+src/tests/65_class_inheritance.HC PASSED 7/7
+```
+
+All canonical parser layout tests pass with the pristine production
+binary. The migration is semantically transparent.

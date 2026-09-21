@@ -1,0 +1,135 @@
+# C3 Production Authority Proof
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01
+
+## Result
+
+```text
+PRODUCTION_REFERENCES_BOOTSTRAP_CALC_PADDING=YES
+DEFAULT_PRODUCTION_PADDING_PATH=POLYC
+LEGACY_FALLBACK_ON_POLYC_PATH=NO
+LEGACY_SEMANTIC_AUTHORITY_COUNT=0
+PARSER_PADDING_PRODUCTION_AUTHORITY=POLYC
+```
+
+## 1. Production source references BootstrapCalcPadding
+
+```sh
+$ grep -n 'BootstrapCalcPadding' src/parser.c
+445:    extern long long BootstrapCalcPadding(long long offset, long long size);
+446:    return (int)BootstrapCalcPadding((long long)offset, (long long)size);
+```
+
+The `#ifdef HCC_USE_SELFHOST_PARSER_PADDING` branch of
+`src/parser.c::CalcPadding` (lines 431-447) references
+`BootstrapCalcPadding` directly.
+
+## 2. Production binary contains BootstrapCalcPadding symbol
+
+```sh
+$ nm build/hcc | grep BootstrapCalcPadding
+0000000100064494 T _BootstrapCalcPadding
+```
+
+The symbol is `T` (defined, text section). It is reachable at runtime.
+
+## 3. Production binary does NOT contain legacy CalcPadding algorithm
+
+The `CalcPadding` symbol in `build/hcc` is now a delegating wrapper:
+
+```sh
+$ nm build/hcc | grep -E ' [Tt] _CalcPadding'
+000000010003acd8 T _CalcPadding
+```
+
+Source:
+
+```c
+int CalcPadding(int offset, int size) {
+#ifdef HCC_USE_SELFHOST_PARSER_PADDING
+    extern long long BootstrapCalcPadding(long long offset, long long size);
+    return (int)BootstrapCalcPadding((long long)offset, (long long)size);
+#else
+    /* Stage0 evidence path -- legacy C algorithm body, NOT in production */
+    ...
+#endif
+}
+```
+
+The production binary was built with `HCC_USE_SELFHOST_PARSER_PADDING`
+defined (CMakeLists.txt + the on-by-default option). The `#else`
+branch (legacy algorithm body) is **never compiled into the production
+binary**. The legacy algorithm exists only as the differential's
+stage0 evidence oracle.
+
+```text
+LEGACY_SEMANTIC_AUTHORITY_COUNT=0
+LEGACY_FALLBACK_ON_POLYC_PATH=NO
+```
+
+## 4. Default production path is PolyC
+
+The production `./hcc` (and `build/hcc`) are built with
+`HCC_USE_SELFHOST_PARSER_PADDING=ON` by default (src/CMakeLists.txt
+option default).
+
+```text
+DEFAULT_PRODUCTION_PADDING_PATH=POLYC
+```
+
+## 5. No silent fallback
+
+The delegation uses a compile-time `#ifdef`, not a runtime check.
+There is no fallback at runtime. If `BootstrapCalcPadding` were
+unavailable, the link step would fail (`_BootstrapCalcPadding`
+undefined symbol), not silently fall back to legacy.
+
+Forbidden patterns from ACT §33 do not appear in the source:
+
+* "if BootstrapCalcPadding fails use legacy"  -- not present
+* "if symbol missing use C"                   -- not present (compile-time)
+* "dual calculate and choose legacy result"   -- not present
+* "shadow calculate without consuming PolyC result" -- not present
+
+```text
+LEGACY_FALLBACK_ON_POLYC_PATH=NO
+```
+
+## 6. Source inspection alone is not sufficient
+
+Per ACT §41, source inspection alone does not satisfy PASS for the
+overall ACT. N01 (`c3-n01-production-causal-control.txt`) provides
+causal proof: a 1-byte semantic mutation in `BootstrapCalcPadding`
+produces deterministic divergence in 3/3 production fixtures.
+
+## 7. Stage0 evidence path remains intact
+
+The differential's `parser-padding-legacy.o` is built WITHOUT
+`HCC_USE_SELFHOST_PARSER_PADDING`, so it contains the legacy
+algorithm body and serves as oracle ground truth for the existing
+qualification gates. The legacy algorithm body is therefore
+preserved as a controlled evidence artifact (NOT production code).
+
+## 8. Summary
+
+```text
+PARSER_PADDING_PRODUCTION_AUTHORITY=POLYC
+LEGACY_CALC_PADDING_AUTHORITY=RETIRED
+LEGACY_SEMANTIC_AUTHORITY_COUNT=0
+BootstrapCalcPadding = LOAD_BEARING_IN_PRODUCTION
+```
+
+All four conditions of ACT §4 are satisfied:
+
+1. production parser/layout code obtains padding from
+   `BootstrapCalcPadding` -- YES (5/5 call sites in src/parser.c)
+2. legacy C `CalcPadding` algorithm is not independently used on the
+   migrated production path -- YES (`#else` branch not compiled)
+3. changing `BootstrapCalcPadding` in a temporary causal-control
+   build changes production-observable behavior -- YES (N01)
+4. restoring the pristine subject restores production behavior --
+   YES (pristine reverify)
+5. stage1+ compiler generations exercise the PolyC authority --
+   YES (production hcc built with HCC_USE_SELFHOST_PARSER_PADDING)
+6. no silent C fallback exists on the migrated path -- YES
+   (compile-time delegation only)

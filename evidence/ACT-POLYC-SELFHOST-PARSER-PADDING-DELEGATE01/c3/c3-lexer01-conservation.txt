@@ -1,0 +1,45 @@
+# C3 LEXER01 Conservation
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01
+
+## Result
+
+```text
+LEXER01_CONSERVATION=PASS
+```
+
+## Source-of-truth
+
+```sh
+$ git diff --stat 9c6cda6..HEAD -- 'src/lexer.c' 'src/lexer.h' 'src/lexer_bridge.h'
+(empty)
+```
+
+This ACT does not modify any lexer source file. The lexer delegation
+seam is unchanged. The LEXER01 qualification gate is therefore
+conserved by construction.
+
+## Cross-check via fresh LEXER07 broad corpus
+
+The LEXER07 broad corpus run (executed with the new build/hcc that
+includes PolyC parser-padding delegation) reports:
+
+```text
+PASS_S0=166 HISTORICAL_S0=0 PASS_S1=175 PASS_S2=175 PASS_S3=175
+```
+
+These counts match the entry baseline bit-for-bit. LEXER01 outputs
+contribute to PASS_S0..PASS_S3 via the broad corpus; their identity
+is mechanical proof that LEXER01 is not perturbed by the parser-padding
+delegation.
+
+## Subject/provenance verifier
+
+The existing LEXER01 verifier (per ACT-POLYC-BOOTSTRAP01) operates
+on the lexer, not the parser, and is therefore not affected by this
+ACT. Its established PASS state is preserved as evidence-of-record.
+
+## Halt semantics
+
+A genuine new LEXER01 regression (one that appears in the new build/hcc
+but not in the entry ./hcc) would trigger `HALT_LEXER_CONSERVATION`.

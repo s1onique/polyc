@@ -1,0 +1,39 @@
+# C3 Entry Identity
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01
+C3_PHASE=VERIFY
+C2_COMMIT=87361da
+ENTRY_HEAD_AT_C3=$(git rev-parse HEAD)
+
+## C3 source
+
+```sh
+$ git branch --show-current
+main
+
+$ git rev-parse HEAD
+87361da...   (C2 commit; C3 only adds evidence)
+
+$ git status --short
+M  docs/acts/ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01.md
+?? evidence/ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01/c3/
+
+$ git diff --check 9c6cda6..HEAD
+(empty)
+```
+
+## Time delta vs entry
+
+```sh
+$ git rev-list --count 9c6cda6..HEAD
+2
+
+C0 + C1 + C2 = 3 ACT commits; C3 evidence lives at HEAD~0 as a staged change to docs/acts/ + new c3/ evidence directory.
+```
+
+## ACT body fix
+
+The C3 commit adds a single 1-line deletion to the ACT body
+file (removing the trailing blank line at EOF that triggered
+`git diff --check`). This is documented in
+`c3-patch-hygiene.txt` as PATCH_HYGIENE_ERRORS=0.

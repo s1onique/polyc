@@ -1,0 +1,35 @@
+# C3 Direct Differential Conservation
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01
+
+## Result
+
+```text
+DIRECT_DIFFERENTIAL_FAIL=0
+STATUS=PASS
+```
+
+## Evidence
+
+```sh
+$ build/parser-padding-gen-matrix-fixture > /tmp/parser-padding-matrix.tsv 2>&1
+$ wc -l /tmp/parser-padding-matrix.tsv
+16641 /tmp/parser-padding-matrix.tsv
+
+$ build/parser-padding-differential /tmp/parser-padding-matrix.tsv 2>&1 | head -5
+DIRECT_DIFFERENTIAL_TOTAL=16640
+DIRECT_DIFFERENTIAL_PASS=16640
+DIRECT_DIFFERENTIAL_FAIL=0
+STATUS=PASS
+```
+
+16640 input matrix rows, all passing the differential between the
+PolyC `BootstrapCalcPadding` subject and the legacy oracle (which
+forwards through `ParserLegacyCalcPaddingOracle` to the still-active
+`#else` branch of `src/parser.c::CalcPadding` when compiled without
+`HCC_USE_SELFHOST_PARSER_PADDING`).
+
+## Halt semantics
+
+`DIRECT_DIFFERENTIAL_FAIL != 0` would trigger `HALT_COMPONENT_FIXEDPOINT_REGRESSION`
+(this is conservation, not new qualification).

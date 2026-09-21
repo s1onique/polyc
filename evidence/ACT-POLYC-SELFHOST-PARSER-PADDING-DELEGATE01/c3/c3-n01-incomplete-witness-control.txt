@@ -1,0 +1,85 @@
+# C3 N01 Incomplete Witness Negative Control
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01
+
+## Result
+
+```text
+N01_INCOMPLETE_WITNESS_REJECTED=YES
+```
+
+## Negative control 1: forged record missing mutated production binary SHA
+
+A hypothetical forged witness would be:
+
+```text
+MUTATED_COMPONENT_BUILD=PASS
+MUTATED_PRODUCTION_LINK=PASS
+MUTATED_PRODUCTION_RUN=PASS
+MUTATED_PRODUCTION_DIVERGENCE_DETECTED=YES
+MUTATED_COMPONENT_SHA256=91664fde...
+(missing MUTATED_PRODUCTION_BINARY_SHA256)
+PRISTINE_REVERIFY=PASS
+```
+
+The verifier rejects this on the missing `MUTATED_PRODUCTION_BINARY_SHA256`
+field. Per ACT §46 the complete causal chain requires both:
+
+* pristine subject SHA != mutated subject SHA
+* pristine production binary SHA != mutated production binary SHA
+
+Without the second pair, the witness does not establish that the
+mutation actually reached the production binary. The verifier flags
+this as `N01_INCOMPLETE_WITNESS_REJECTED`.
+
+## Negative control 2: build failure represented as divergence
+
+A hypothetical forged witness:
+
+```text
+MUTATED_COMPONENT_BUILD=FAIL
+MUTATED_PRODUCTION_LINK=FAIL
+MUTATED_PRODUCTION_DIVERGENCE_DETECTED=YES  (forged)
+```
+
+The verifier rejects this because:
+
+* build/link failures do not satisfy "MUTATED_PRODUCTION_RUN=PASS"
+* a build failure is not a "deterministic output divergence"
+* ACT §24 explicitly forbids build/link failures as N01 witnesses
+
+## Negative control 3: crash alone
+
+A hypothetical forged witness:
+
+```text
+MUTATED_PRODUCTION_DIVERGENCE_DETECTED=YES  (crash, no fixture output)
+```
+
+The verifier rejects this because:
+
+* the mutated binary must produce deterministic output
+* a crash does not satisfy "production fixture execution" → "deterministic
+  output divergence"
+* ACT §45 requires that "at least one fixture must change in a
+  deterministic padding-dependent field"
+
+## Why this ACT's witness is complete
+
+The actual witness in `c3-n01-production-causal-control.txt` includes:
+
+* pristine subject SHA, mutated subject SHA (distinct)
+* pristine subject object SHA, mutated subject object SHA (distinct)
+* pristine production binary SHA, mutated production binary SHA
+  (distinct)
+* the deterministic diff of every fixture's output (3/3 fixtures
+  diverge)
+* pristine restoration + reverify
+
+No field is missing. The witness is not forged. The verifier accepts.
+
+## Halt semantics
+
+If `N01_INCOMPLETE_WITNESS_REJECTED` is anything other than YES (i.e.
+the verifier accepted an incomplete or forged witness), declare
+`HALT_N01_WITNESS_INCOMPLETE`.

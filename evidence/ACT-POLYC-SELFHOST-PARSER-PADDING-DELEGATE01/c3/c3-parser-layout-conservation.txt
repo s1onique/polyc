@@ -1,0 +1,51 @@
+# C3 Parser Layout Conservation
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01
+
+## Result
+
+```text
+PARSER_LAYOUT_NEW_FAILURES=0
+```
+
+## Evidence (pristine build/hcc, with PolyC delegation)
+
+All canonical parser layout tests pass identically to the C1 entry
+baseline (which used legacy C `CalcPadding`):
+
+```text
+src/tests/06_class_defs.HC                PASSED 6/6
+src/tests/07_recursive_classdef.HC        PASSED 5/5
+src/tests/24_union.HC                     PASSED 4/4
+src/tests/42_class_u0_tail.HC             PASSED 3/3
+src/tests/46_alignof.HC                   PASSED 5/5
+src/tests/47_struct_abi.HC                PASSED 4/4
+src/tests/65_class_inheritance.HC         PASSED 7/7
+```
+
+The migration introduces zero new parser layout failures. All
+sizeof/alignof values, field offsets, class sizes, and union sizes
+match the legacy-C baseline.
+
+## Cross-fixture byte-identity
+
+```sh
+$ for src in /tmp/fixture_alignof.HC /tmp/fixture_u0_tail.HC /tmp/fixture_inheritance.HC; do
+    build/hcc --install-dir=$(pwd)/build/test-prefix $src -o /tmp/check.out
+    /tmp/check.out > /tmp/check.out.txt
+    name=$(basename $src .HC)
+    expected=/tmp/${name}.pristine.out
+    if diff -q $expected /tmp/check.out.txt > /dev/null; then
+      echo "$name: BYTE-IDENTICAL to entry baseline"
+    else
+      echo "$name: DIVERGENT"
+    fi
+  done
+fixture_alignof: BYTE-IDENTICAL to entry baseline
+fixture_u0_tail: BYTE-IDENTICAL to entry baseline
+fixture_inheritance: BYTE-IDENTICAL to entry baseline
+```
+
+## Halt semantics
+
+`PARSER_LAYOUT_NEW_FAILURES != 0` would trigger `HALT_PARSER_LAYOUT_REGRESSION`.

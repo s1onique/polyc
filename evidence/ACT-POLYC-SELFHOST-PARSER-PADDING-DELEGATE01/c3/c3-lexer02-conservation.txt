@@ -1,0 +1,39 @@
+# C3 LEXER02 Conservation
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01
+
+## Result
+
+```text
+LEXER02_CONSERVATION=PASS
+```
+
+## Source-of-truth
+
+```sh
+$ git diff --stat 9c6cda6..HEAD -- 'src/lexer.c' 'src/lexer.h' 'src/lexer_bridge.h'
+(empty)
+```
+
+This ACT does not modify any lexer source file. LEXER02 is unchanged.
+
+## Cross-check via LEXER07 broad corpus
+
+The fresh LEXER07 broad corpus run reports:
+
+```text
+PASS_S0=166 HISTORICAL_S0=0 PASS_S1=175 PASS_S2=175 PASS_S3=175
+```
+
+These counts match the entry baseline. The scalar_literal_scanner
+component (LEXER02) drives the numeric/char tokenizer; its output
+is part of PASS_S1..S3 of the broad corpus and is unchanged.
+
+## Subject/provenance verifier
+
+The LEXER02 qualification state is unchanged. No new tools, no new
+production references, no new fallbacks introduced.
+
+## Halt semantics
+
+Same as LEXER01.

@@ -1,0 +1,107 @@
+# C3 LEXER07 Forward Baseline Conservation
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01
+
+## Result
+
+```text
+NEW_LEXER07_FAILURE_IDENTITIES=0
+REMOVED_LEXER07_PASS_IDENTITIES=0
+NEW_LEXER07_DIVERGENCES=0
+NEW_LEXER07_PASS_MISMATCHES=0
+LEXER07_FORWARD_BASELINE_AUTHORITY=AVAILABLE
+```
+
+## Forward baseline authority
+
+```text
+docs/factory/LEXER07-BASELINE-AUTHORITY.tsv
+
+PROSPECTIVE_LEXER07_BASELINE_SHA256=00c54408bf29237cf526aeed097f6b097f22ae682683675a0bf5ab9f9c202b9a
+KNOWN_FAILURE_SET_STABLE=YES
+```
+
+File is APPEND-ONLY. The prospective baseline SHA is unchanged.
+
+## Fresh delegated baseline (with PolyC parser-padding delegation)
+
+A fresh LEXER07 broad-corpus run was executed using the new `build/hcc`
+(which includes the parser-padding PolyC delegation):
+
+```sh
+$ scripts/quality/lexer07-broad-corpus-4-stage.sh \
+    evidence/ACT-POLYC-SELFHOST-LEXER01/c2/corpus-inventory.txt \
+    build/delegated-baseline2
+...
+PASS_S0=166 HISTORICAL_S0=0 PASS_S1=175 PASS_S2=175 PASS_S3=175
+FAIL_S0=15 FAIL_S1=6 FAIL_S2=6 FAIL_S3=6
+BOTH_FAIL_4=6
+REGRESSION=6
+DIVERGED=6
+PASS_MISMATCH=9
+HISTORICAL_S0_FALLBACKS_USED=0
+BYTE_IDENTICAL_4=160
+BYTE_IDENTICAL_PAIRS=160/181 160/181 160/181 175/181 175/181 175/181
+PROVENANCE_SCHEMA_VALID=1
+FAILURE_SCHEMA_VALID=1
+STATUS=FAIL
+```
+
+## Token-by-token comparison vs entry baseline
+
+| Token | Entry (RUN_A) | C3 delegated | Delta |
+|---|---|---|---|
+| PASS_S0 | 166 | 166 | 0 |
+| HISTORICAL_S0 | 0 | 0 | 0 |
+| PASS_S1 | 175 | 175 | 0 |
+| PASS_S2 | 175 | 175 | 0 |
+| PASS_S3 | 175 | 175 | 0 |
+| FAIL_S0 | 15 | 15 | 0 |
+| FAIL_S1 | 6 | 6 | 0 |
+| FAIL_S2 | 6 | 6 | 0 |
+| FAIL_S3 | 6 | 6 | 0 |
+| BOTH_FAIL_4 | 6 | 6 | 0 |
+| REGRESSION | 6 | 6 | 0 |
+| DIVERGED | 6 | 6 | 0 |
+| PASS_MISMATCH | 9 | 9 | 0 |
+| HISTORICAL_S0_FALLBACKS_USED | 0 | 0 | 0 |
+| BYTE_IDENTICAL_4 | 160 | 160 | 0 |
+
+All 15 token values are identical. The 21 known failures remain
+known failures (NEW_LEXER07_FAILURE_IDENTITIES=0). The 175 passes
+remain passes (REMOVED_LEXER07_PASS_IDENTITIES=0). The 6 divergences
+remain the same 6 divergences (NEW_LEXER07_DIVERGENCES=0). The 9 pass
+mismatches remain the same 9 (NEW_LEXER07_PASS_MISMATCHES=0).
+
+## Output matrix and failures byte-identity
+
+```sh
+$ diff build/correction02-lexer07-baseline-a/corpus-matrix.tsv build/delegated-baseline2/corpus-matrix.tsv
+(empty)
+
+$ diff build/correction02-lexer07-baseline-a/corpus-failures.tsv build/delegated-baseline2/corpus-failures.tsv
+(empty)
+
+$ sha256sum build/correction02-lexer07-baseline-a/corpus-matrix.tsv build/delegated-baseline2/corpus-matrix.tsv
+ee83e375032cf3f39ad8d95838bdd5e4f601fdac3244b7298cf2f68083d3c4fd  build/correction02-lexer07-baseline-a/corpus-matrix.tsv
+ee83e375032cf3f39ad8d95838bdd5e4f601fdac3244b7298cf2f68083d3c4fd  build/delegated-baseline2/corpus-matrix.tsv
+```
+
+The corpus-matrix.tsv and corpus-failures.tsv are byte-identical
+between the entry baseline and the fresh delegated baseline. Only
+the corpus-object-provenance.tsv differs (because it records the
+compiler binary SHA, which intentionally changed between runs).
+
+## Halt semantics
+
+Any non-zero NEW_LEXER07_* token would trigger
+`HALT_LEXER07_FORWARD_BASELINE_REGRESSION`.
+
+## Note
+
+The 21 known failures are pre-existing and recorded in
+`docs/factory/LEXER07-BASELINE-AUTHORITY.tsv` as
+`PROSPECTIVE_BASELINE_RUN_A_FAILURE_COUNT=21`. This ACT does not
+require them to be fixed (per ACT §5, "regenerate the LEXER07
+baseline" and "change known LEXER07 failure classification" are
+non-goals).

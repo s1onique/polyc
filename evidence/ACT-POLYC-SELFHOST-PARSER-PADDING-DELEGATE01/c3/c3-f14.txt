@@ -1,0 +1,44 @@
+# C3 F14 — Closed Evidence/HANDOFF Immutability
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01
+
+## Result
+
+```text
+F14=PASS
+CLOSED_EVIDENCE_DELTA=0
+CLOSED_HANDOFF_DELTA=0
+```
+
+## Source-of-truth
+
+```sh
+$ git diff --name-only 9c6cda6..HEAD | grep -E '^docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-PADDING01'
+(empty)
+
+$ git diff --name-only 9c6cda6..HEAD | grep -E '^evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01'
+(empty)
+```
+
+No closed ACT HANDOFF or evidence directory was modified by this
+ACT. The PADDING01* series is historical and untouched.
+
+## Files modified by this ACT
+
+```sh
+$ git diff --name-only 9c6cda6..HEAD
+docs/acts/ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01.md
+evidence/ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01/c0/...
+evidence/ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01/c1/...
+evidence/ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01/c2/...
+src/parser.c
+src/CMakeLists.txt
+```
+
+Only the current ACT's evidence directory and the two production
+source files in scope. No closed ACT files.
+
+## Halt semantics
+
+Any non-zero CLOSED_EVIDENCE_DELTA or CLOSED_HANDOFF_DELTA would
+trigger `HALT_F14`. Both are zero.

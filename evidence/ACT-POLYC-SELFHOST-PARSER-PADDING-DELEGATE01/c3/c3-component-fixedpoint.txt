@@ -1,0 +1,45 @@
+# C3 Component Fixed-Point Conservation
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01
+
+## Result
+
+```text
+COMPONENT_FIXEDPOINT_PAIR_PASS=6
+COMPONENT_FIXEDPOINT_PAIR_FAIL=0
+COMPONENT_FIXEDPOINT=PASS
+```
+
+## Evidence
+
+```sh
+$ make parser-padding-fixedpoint 2>&1 | tail -20
+PARSER_PADDING_FIXEDPOINT_BUILD=PASS
+FILE[0] path=build/parser-padding-fixedpoint/parser-padding.g0.o size=744 sha256=187a4de9465e8dbe3c640484b05540daaad4a3267dd1543a169e3c304b02d5b1
+FILE[1] path=build/parser-padding-fixedpoint/parser-padding.g1.o size=744 sha256=187a4de9465e8dbe3c640484b05540daaad4a3267dd1543a169e3c304b02d5b1
+FILE[2] path=build/parser-padding-fixedpoint/parser-padding.g2.o size=744 sha256=187a4de9465e8dbe3c640484b05540daaad4a3267dd1543a169e3c304b02d5b1
+FILE[3] path=build/parser-padding-fixedpoint/parser-padding.g3.o size=744 sha256=187a4de9465e8dbe3c640484b05540daaad4a3267dd1543a169e3c304b02d5b1
+PAIR G0_G1 file_i=0 file_j=1 size_a=744 size_b=744 equal=YES
+PAIR G0_G2 file_i=0 file_j=2 size_a=744 size_b=744 equal=YES
+PAIR G0_G3 file_i=0 file_j=3 size_a=744 size_b=744 equal=YES
+PAIR G1_G2 file_i=1 file_j=2 size_a=744 size_b=744 equal=YES
+PAIR G1_G3 file_i=1 file_j=3 size_a=744 size_b=744 equal=YES
+PAIR G2_G3 file_i=2 file_j=3 size_a=744 size_b=744 equal=YES
+PAIR_TOTAL=6
+PAIR_PASS=6
+PAIR_FAIL=0
+STATUS=PASS
+PARSER_PADDING_FIXED_POINT_4_GENERATIONS=PASS
+PARSER_PADDING_NEGATIVE_CONTROL=PASS
+PARSER_PADDING_4GEN_FIXEDPOINT=PASS
+```
+
+4 independently-built generations (G0 via ./hcc, G1 via ./build/hcc-bootstrap02,
+G2 via ./build/hcc-bootstrap03, G3 via ./build/hcc-bootstrap04) all
+produce byte-identical `parser-padding.gN.o` files.
+
+## Conservation vs qualification
+
+The 4-generation fixed-point was qualified by the prior CORRECTION01..04
+ACTs and is verified here as conservation only. The migration is
+semantics-preserving, so the fixed point remains intact.

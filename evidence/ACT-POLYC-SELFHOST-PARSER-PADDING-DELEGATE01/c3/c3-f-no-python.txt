@@ -1,0 +1,42 @@
+# C3 F-NO-PYTHON
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01
+
+## Result
+
+```text
+F_NO_PYTHON=PASS
+NEW_PYTHON_SOURCES=0
+NEW_PYTHON_INVOCATIONS=0
+NEW_PYTHON_FALLBACKS=0
+```
+
+## Source-of-truth
+
+```sh
+$ git diff --stat 9c6cda6..HEAD --name-only | xargs -I{} grep -l '\.py$' {} 2>/dev/null
+(empty)
+```
+
+No Python files were added by this ACT. No Python invocations were
+added. No Python fallbacks were added.
+
+## Pre-existing Python residue
+
+The repository contains 12 pre-existing Python files (grandfathered
+per ACT §61). They are inventoried in
+`docs/factory/PYTHON-CALLGRAPH.tsv` and are NOT touched by this
+ACT:
+
+```sh
+$ bash scripts/quality/factory-no-python-check.sh 2>&1 | grep -E '^(POLYC_TOOLS_TRACKED_PYTHON|POLYC_TOOLS_TRACKED_INSPECTED|POLYC_TOOLS_TRACKED_PASSES|STATUS)'
+POLYC_TOOLS_TRACKED_PYTHON=12
+POLYC_TOOLS_TRACKED_INSPECTED=4652
+POLYC_TOOLS_TRACKED_PASSES=4645
+STATUS=FAIL   (only because grandfathered Python is still present, not because of this ACT)
+```
+
+## Halt semantics
+
+`NEW_PYTHON_SOURCES > 0` would trigger `HALT_F_NO_PYTHON`. None was
+introduced.

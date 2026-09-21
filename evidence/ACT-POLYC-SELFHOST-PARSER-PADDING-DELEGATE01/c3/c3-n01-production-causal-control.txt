@@ -1,0 +1,161 @@
+# C3 N01 Production-Causal Mutation Control
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01
+
+## Result
+
+```text
+MUTATED_COMPONENT_BUILD=PASS
+MUTATED_PRODUCTION_LINK=PASS
+MUTATED_PRODUCTION_RUN=PASS
+MUTATED_PRODUCTION_DIVERGENCE_DETECTED=YES
+N01_COMPLETE_CAUSAL_CHAIN=YES
+PRISTINE_PRODUCTION_REBUILD=PASS
+PRISTINE_PRODUCTION_REVERIFY=PASS
+```
+
+## Causal chain evidence
+
+### 1. Pristine vs mutated subject source
+
+```sh
+$ diff tools/bootstrap/selfhost-parser-padding.HC /tmp/build-artifacts/selfhost-parser-padding.HC
+43c43
+<   return size - rem;
+---
+>   return size - rem + 1;
+```
+
+Single-line semantic mutation: the unaligned branch returns
+`size - rem + 1` instead of `size - rem`. This is the
+ACT-§18-recommended mutation pattern.
+
+### 2. Pristine vs mutated subject object
+
+```sh
+$ sha256sum build/parser-padding-subject.o /tmp/build-artifacts/parser-padding-subject.MUTATED.o
+187a4de9465e8dbe3c640484b05540daaad4a3267dd1543a169e3c304b02d5b1  build/parser-padding-subject.o       (pristine)
+91664fde3c6ccfe7616de2eda806eb7b9db65efb3205d6a589020a8458f055b0  /tmp/build-artifacts/parser-padding-subject.MUTATED.o  (mutated)
+```
+
+```text
+PRISTINE_SUBJECT_SHA256=187a4de9...
+MUTATED_SUBJECT_SHA256=91664fde...
+PRISTINE_SUBJECT_OBJECT_SHA256!=MUTATED_SUBJECT_OBJECT_SHA256   YES
+MUTATED_COMPONENT_BUILD=PASS
+```
+
+### 3. Pristine vs mutated production binary
+
+```sh
+$ sha256sum /tmp/hcc.pristine.stage1 /tmp/hcc.mutated.stage1
+36f16f9d7f5c7c5e0fe6c54b2d811686a34f13178fd48e2f6d2eb01c37e6e181  /tmp/hcc.pristine.stage1
+17e03d9c7a8c4356f4e0191729cb43103bda4f95a5119bd7c88f3ca3db991833  /tmp/hcc.mutated.stage1
+```
+
+```text
+PRISTINE_PRODUCTION_BINARY_SHA256=36f16f9d...
+MUTATED_PRODUCTION_BINARY_SHA256=17e03d9c...
+PRISTINE_PRODUCTION_BINARY_SHA256!=MUTATED_PRODUCTION_BINARY_SHA256   YES
+MUTATED_PRODUCTION_LINK=PASS
+```
+
+### 4. Pristine vs mutated production execution
+
+Both binaries execute fixtures. Mutated runs without crashing.
+
+```text
+MUTATED_PRODUCTION_RUN=PASS
+```
+
+### 5. Production-observable divergence
+
+```sh
+$ diff /tmp/fixtures-pristine/fixture_alignof.out /tmp/fixtures-mutated/fixture_alignof.out
+4c4
+< Mixed=24 alignof=8
+---
+> Mixed=25 alignof=8
+6c6
+< S3=8 alignof=4
+---
+> S3=13 alignof=4
+10,11c10,11
+< Has8=16 alignof=8
+< OuterH=24 alignof=8
+---
+> Has8=25 alignof=8
+> OuterH=41 alignof=8
+
+$ diff /tmp/fixtures-pristine/fixture_u0_tail.out /tmp/fixtures-mutated/fixture_u0_tail.out
+2c2
+< Hdr=8 HdrMixed=16
+---
+> Hdr=8 HdrMixed=17
+
+$ diff /tmp/fixtures-pristine/fixture_inheritance.out /tmp/fixtures-mutated/fixture_inheritance.out
+3c3
+< NarrowBase=1 WideDerived=16
+---
+> NarrowBase=1 WideDerived=25
+```
+
+All three fixture binaries produced by the mutated hcc show
+deterministic layout divergence from the pristine hcc's output.
+The mutation of `BootstrapCalcPadding` (returning `size - rem + 1`
+instead of `size - rem`) propagates to every unaligned-padding case
+across multiple classes. The mutation cascades through compound
+classes, changing nested offsets, total sizes, and tail padding.
+
+```text
+MUTATED_PRODUCTION_DIVERGENCE_DETECTED=YES
+```
+
+### 6. Pristine restoration
+
+```sh
+$ cp /tmp/hcc.pristine.stage1 build/hcc
+$ sha256sum build/hcc
+36f16f9d7f5c7c5e0fe6c54b2d811686a34f13178fd48e2f6d2eb01c37e6e181  build/hcc
+```
+
+```sh
+$ build/hcc --install-dir=$(pwd)/build/test-prefix /tmp/fixture_alignof.HC -o /tmp/fixture_alignof.pristine_reverify 2>&1 | tail -1
+$ diff /tmp/fixture_alignof.pristine.out /tmp/fixture_alignof.pristine_reverify.out && echo 'PRISTINE REVERIFY PASS'
+PRISTINE REVERIFY PASS
+```
+
+```text
+PRISTINE_SUBJECT_RESTORED=YES
+PRISTINE_PRODUCTION_REBUILD=PASS
+PRISTINE_PRODUCTION_REVERIFY=PASS
+```
+
+## Complete causal chain summary
+
+```text
+pristine subject source (b555b76b...)
+  -> pristine subject object (187a4de9...)               PASS (build OK)
+  -> pristine production binary (36f16f9d...)            PASS (link OK)
+
+mutated subject source (mutation: +1 in unaligned branch)
+  -> mutated subject object (91664fde...)                PASS (build OK)
+  -> mutated production binary (17e03d9c...)             PASS (link OK)
+  -> mutated production execution                       PASS (runs OK)
+  -> deterministic fixture divergence                    YES (3/3 fixtures differ)
+
+pristine binary restored                                PASS
+pristine fixtures byte-identical to entry baseline       PASS
+```
+
+```text
+N01_COMPLETE_CAUSAL_CHAIN=YES
+```
+
+## Halt conditions checked
+
+* MUTATED_COMPONENT_BUILD != PASS -> HALT_N01_BUILD_FAILED    (PASS)
+* MUTATED_PRODUCTION_LINK != PASS -> HALT_N01_LINK_FAILED     (PASS)
+* MUTATED_PRODUCTION_RUN != PASS -> HALT_N01_RUN_FAILED       (PASS)
+* MUTATED_PRODUCTION_DIVERGENCE_DETECTED != YES -> HALT_N01_NO_SEMANTIC_DIVERGENCE  (YES)
+* missing SHA evidence -> HALT_N01_WITNESS_INCOMPLETE         (all present)

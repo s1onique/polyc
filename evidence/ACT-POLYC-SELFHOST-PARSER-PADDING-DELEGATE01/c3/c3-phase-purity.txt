@@ -1,0 +1,47 @@
+# C3 Phase Purity (C2 -> C3 drift check)
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01
+
+## Result
+
+```text
+C2_TO_C3_IMPLEMENTATION_DRIFT=0
+```
+
+## Source-of-truth
+
+```sh
+$ git diff --stat 87361da..HEAD -- src/parser.c src/CMakeLists.txt
+(empty)
+```
+
+The committed SHA of the C2 implementation surface
+(`src/parser.c` and `src/CMakeLists.txt`) is unchanged between C2
+and C3. C3 is evidence-only; no further implementation mutation is
+present.
+
+## C2 implementation commit
+
+```sh
+$ git log -1 --format='%H %s' 87361da
+87361da... ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01 C2: IMPL
+```
+
+The C2 commit introduced:
+
+* `src/parser.c` -- the `CalcPadding` delegating wrapper
+* `src/CMakeLists.txt` -- the parser-padding delegation option
+
+## C3 changes
+
+C3 only adds evidence files under
+`evidence/ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01/c3/` and the
+trailing-blank fix in `docs/acts/ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01.md`
+(see `c3-patch-hygiene.txt`).
+
+No production source files are touched.
+
+## Halt semantics
+
+`C2_TO_C3_IMPLEMENTATION_DRIFT != 0` would trigger
+`HALT_C2_DEFECT_FOUND_DURING_C3`.
