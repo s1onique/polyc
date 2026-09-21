@@ -1,0 +1,79 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER01-CORRECTION01
+ACT_PHASE=C0-AUTH
+
+SCOPE_BINDING=INHERITED_BY_REFERENCE_FROM_PARSER01
+
+INHERITED_HEAD=69a7794
+INHERITED_BODY=docs/acts/ACT-POLYC-SELFHOST-PARSER01.md
+
+SURFACE                        = INV.PARSER.COMPOUND
+ATOMIC_SLICE                   = parseCompoundStatementInternal
+LEGACY_AUTHORITY               = src/parser.c::parseCompoundStatementInternal
+LEGACY_REGION                  = src/parser.c ~1752..2012
+ABI                            = ABI 7
+ABI_FUNCTION                   = BootstrapParseCompoundStatementInternal
+INTENDED_LANGUAGE_DELTA        = 0
+EXPECTED_MIGRATION_DELTA       = LEGACY_C_AUTHORITY -> POLYC
+
+ALLOWED_PRODUCTION_FILES:
+  src/parser.c
+  src/parser_bridge.h
+  src/CMakeLists.txt
+  Makefile
+  tools/bootstrap/selfhost-parser-compound-statement-internal.HC
+
+ALLOWED_TEST_TOOL_FILES:
+  tools/quality/parser10-*.HC
+  tools/quality/parser10-compound-oracle.c
+  tools/quality/parser10-compound-oracle-impl.c
+  scripts/quality/parser10-*.sh
+
+FORBIDDEN_PRODUCTION_FILES:
+  src/lexer.c
+  src/lexer_bridge.h
+  src/ast.c
+  src/cctrl.c
+  src/prslib.c
+  src/prsutil.c
+  src/prsasm.c
+  src/ir.c
+  src/ir-*.c
+  src/ir-optimise.c
+  src/ir-types.c
+  src/ir-regalloc.c
+  src/ir-eval.c
+  src/ir-debug.c
+  src/x86.c
+  src/x86_64.c
+  src/aarch64.c
+  src/llvm-backend.c
+  src/x86_64-jit.c
+  src/aarch64-jit.c
+  src/jit-common.c
+  src/main.c
+  src/cli.c
+  src/compile.c
+  src/repl.c
+  src/lsp.c
+  src/transpiler.c
+  src/holyc-lib/**
+  src/asm/**
+  tools/bootstrap/selfhost-lexer-*.HC
+  tools/bootstrap/bootstrap02-ident.HC
+
+DEFERRED_PARSER_SURFACES:
+  INV.PARSER.STMT
+  INV.PARSER.TOPLEVEL
+  INV.PARSER.DECL
+  INV.PARSER.EXPR
+  INV.PREPROC.PP
+
+F14_PROTECTED_EVIDENCE:
+  evidence/ACT-POLYC-SELFHOST-LEXER01/**
+  evidence/ACT-POLYC-SELFHOST-LEXER02/**
+  evidence/ACT-POLYC-SELFHOST-LEXER03/**
+  evidence/ACT-POLYC-SELFHOST-LEXER04/**
+  evidence/ACT-POLYC-SELFHOST-SURFACE-RECON03/**
+  evidence/ACT-POLYC-SELFHOST-PARSER01/**
+
+EXPECTED_TERMINAL_VERDICT=PASS_TRUE_GREEN
