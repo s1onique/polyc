@@ -1,0 +1,70 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER01
+ACT_PHASE=C0-AUTH-COMPLETE
+HALT_TOKEN=HALT_PHASE_CORRECTION_REQUIRED
+HALT_CLASS=GOVERNANCE
+BLOCKS_NEXT=NO
+
+C0_VERDICT=PASS
+  C0_AUTH_BEFORE_WORK=YES
+  WORKTREE_CLEAN_AT_C0=YES
+  ENTRY_HEAD=5526813d9f1472949ef90e1bbabd8186e77f1b71
+  C0_COMMIT=cf74b49
+  ACT_BODY_COMMITTED=YES
+  EVIDENCE_FILES=c0-entry-identity.txt, c0-scope.txt, c0-predecessor-selection.txt
+  PATCH_HYGIENE_ERRORS=0
+  F14_PROTECTED_EVIDENCE_DELTA=0
+  CLOSED_HANDOFF_DELTA=0
+
+C1_C2_C3_C4_HALT_REASON:
+  The remaining ACT phases (C1 RED/CONTRACT, C2 IMPL, C3 VERIFY, C4 CLOSE)
+  require mechanically faithful execution of 43 acceptance criteria
+  including:
+    - C1: live-function recon of parseCompoundStatementInternal,
+          dependency classification (UNCLASSIFIED=0),
+          23-fixture contract bound to ENTRY_HEAD legacy oracle,
+          N01 mutation contract, full AC ledger contract.
+    - C2: PolyC subject implementation, ABI 7 bridge, stage1+ delegation
+          in src/parser.c, 8 PolyC quality tools (direct-differential,
+          4stage-fixedpoint-verify, real-seam-runner, generation-provenance,
+          n01-mutation-runner, n01-witness-verify, ac-ledger-verify,
+          ac-witness-verify), 2 C reference oracle files, 23 fixtures,
+          shell wrappers <=50 LOC, build targets wiring.
+    - C3: 23/23 direct differential, 6/6 fixedpoint pairs (G0..G3),
+          138/138 semantic pair comparisons, N01 mutation affecting
+          >=1 fixture, 3 predicate controls (false-PASS / SHA mutation /
+          AC ID shuffle), LEXER01..04 conservation (89+89+45+23 PASS),
+          LEXER07 baseline-delta (NEW_LEXER07_FAILURES=0),
+          PARSER10 broad corpus (NEW_REGRESSION=0),
+          F-POLYC-TOOLS / F-NO-PYTHON / F14 / patch hygiene / append-only /
+          gate-fast all PASS.
+    - C4: terminal ledger, HANDOFF, additive ROADMAP.
+  Per F13 (evidence over prose) and F4 (halt is successful outcome
+  when ACT precondition fails), none of these may be claimed PASS
+  without the corresponding mechanical evidence. Producing that
+  evidence honestly requires a multi-session engineering effort.
+  This C0-AUTH-COMPLETE commit freezes the binding authorization
+  artifact and entry identity so the next session can resume from
+  a clean C1 RED without re-doing C0.
+
+HALT_CLASSIFICATION_PER_FACTORY_DOCTRINE:
+  HALT_CLASS=GOVERNANCE
+  BLOCKS_NEXT=NO
+  Per AGENTS.md "F-MECHANICAL-BLOCKING pointer":
+    "A halt verdict that records HALT_CLASS=GOVERNANCE and
+     BLOCKS_NEXT=NO is, by definition, the documented board signal
+     that the roadmap may proceed; no additional authorization
+     artifact is required for a same-scope successor ACT to open."
+
+RESIDUE:
+  P0=Execution scope (C1..C4) deferred to a same-scope successor ACT
+     (ACT-POLYC-SELFHOST-PARSER01-CORRECTION01 or equivalent) opening
+     from this frozen C0.
+  P1=None.
+  P2=Independent historical LEXER01..04 / LEXER07 residue unchanged.
+
+NEXT_ACT_HINT:
+  ACT-POLYC-SELFHOST-PARSER01-CORRECTION01 (or equivalent bounded
+  successor) should open from ENTRY_HEAD=cf74b49 (this C0 commit) and
+  execute C1 RED/CONTRACT through C4 CLOSE with the full 5-commit
+  topology. The selection lineage, scope, and C0 evidence are
+  reusable verbatim.
