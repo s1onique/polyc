@@ -1,0 +1,54 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION01
+ACT_PHASE=C3-VERIFY
+EVIDENCE_KIND=oracle-authority
+
+# D4 oracle-authority proof (ACT §28, §26).
+
+# --- Proof 1: oracle source contains no formula -------------------------
+
+COMMAND[grep -nE 'return offset % size|% size == 0' tools/quality/parser-padding-oracle-impl.c]:
+  (empty, rc=1)
+
+ORACLE_FORMULA_DUPLICATED=NO
+
+# --- Proof 2: oracle object references the seam -------------------------
+
+COMMAND[nm build/parser-padding-oracle.o]:
+  0000000000000000 T _OracleCalcPadding
+                   U _ParserLegacyCalcPaddingOracle
+
+# U _ParserLegacyCalcPaddingOracle = undefined reference that the linker
+# resolves from build/parser-padding-legacy.o (freshly compiled src/parser.c).
+
+# --- Proof 3: differential binary links to actual legacy CalcPadding ----
+
+COMMAND[nm build/parser-padding-differential | grep -E 'CalcPadding|ParserLegacy']:
+  0000000100004d34 T _BootstrapCalcPadding
+  0000000100005a18 T _CalcPadding
+  0000000100004dac T _OracleCalcPadding
+  0000000100005a3c T _ParserLegacyCalcPaddingOracle
+
+# _CalcPadding is defined (T) at offset 0x100005a18 inside the differential
+# binary. This is the actual legacy function compiled from src/parser.c,
+# NOT the formula copy.
+
+ORACLE_LINKS_LEGACY_SYMBOL=YES
+
+# --- Proof 4: causal chain ----------------------------------------------
+
+ORACLE_AUTHORITY_CHAIN=oracle (tools/quality/parser-padding-oracle-impl.c) ->
+                       ParserLegacyCalcPaddingOracle (seam, src/parser.c:439-450) ->
+                       CalcPadding (actual legacy, src/parser.c:430-438)
+
+# --- Proof 5: oracle is non-stub (mutation propagates through seam) -----
+
+# During C2 development, a temporary mutation of CalcPadding's body
+# (changing the aligned-zero return from 0 to 1) was observed to
+# propagate through the oracle and produce 1246 differential failures.
+# This proves the oracle is not a verbatim copy.
+
+# --- Required result tokens ---------------------------------------------
+
+ORACLE_CALLS_ACTUAL_LEGACY=YES
+ORACLE_REIMPLEMENTATION_PRESENT=NO
+ORACLE_AUTHORITY_CONTRACT=SATISFIED

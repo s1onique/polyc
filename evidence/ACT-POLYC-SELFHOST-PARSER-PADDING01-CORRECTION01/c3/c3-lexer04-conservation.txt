@@ -1,0 +1,19 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION01
+ACT_PHASE=C3-VERIFY
+EVIDENCE_KIND=lexer04-conservation
+
+# LEXER04 actual corpus rerun against C2 commit (39bc4eb).
+# LEXER04 closure ACT uses lexer09-link-broad-corpus-4-stage as its
+# canonical broad corpus conservation command.
+
+COMMAND[make lexer09-link-broad-corpus-4-stage]:
+  LEXER09_LINK_BROAD_CORPUS_4_STAGE=PASS
+
+# This Makefile target runs the 4-stage lexer-seam (stage0..3) and
+# the 4-stage semantic seam, then verifies that:
+#   * all 4 stages preserve link_libs=lib-complex_1.0
+#   * stage0 baseline regression (link_libs=lib-complex_1co) is intact
+
+LEXER04_CONSERVATION=PASS
+AC38=ACTUAL_RERUN
+LEXER04_BROAD_CORPUS_4_STAGE=PASS

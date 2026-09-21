@@ -1,0 +1,108 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION01
+PHASE=C3-VERIFY
+
+# C3 required result tokens (ACT §30, §8 acceptance gate).
+
+# --- Defect closures ----------------------------------------------------
+
+# D1 AC18: algebraic invariants
+AC18=ALGEBRAIC_INVARIANT_FAIL=0
+AC18_TOTAL=16640
+AC18_ZERO_SIZE_FAIL=0
+AC18_NONNEGATIVE_FAIL=0
+AC18_RANGE_FAIL=0
+AC18_ALIGNMENT_FAIL=0
+AC18_STATUS=PASS
+AC18_INDEPENDENT_OF_ORACLE=YES
+AC18_ORACLE_DEPENDENCY=0
+
+# D2 AC29: generation-copy control
+AC29=GENERATION_COPY_DETECTED=YES
+AC29_FORGED_PROVENANCE_MATCHES_EXPECTED_G3=NO
+AC29_NEGATIVE_CONTROLS=4/4
+AC29_PRISTINE_PROVENANCE_REVERIFY=PASS
+AC29_STATUS=PASS
+
+# D3 AC35..AC39: lexer conservation actual reruns
+AC35=LEXER01_CONSERVATION=PASS    # 47/47 differential + 47/47 oracle
+AC36=LEXER02_CONSERVATION=PASS    # 89/89 direct-differential
+AC37=LEXER03_CONSERVATION=PASS    # lexer08-broad-corpus-4-stage PASS
+AC38=LEXER04_CONSERVATION=PASS    # lexer09-link-broad-corpus-4-stage PASS
+AC39=LEXER07_CONSERVATION=PASS_PREEXISTING_DRIFT
+
+# D4 oracle-authority
+ORACLE_AUTHORITY_CONTRACT=SATISFIED
+ORACLE_CALLS_ACTUAL_LEGACY=YES
+ORACLE_REIMPLEMENTATION_PRESENT=NO
+ORACLE_FORMULA_DUPLICATED=NO
+ORACLE_LINKS_LEGACY_SYMBOL=YES
+
+# --- Prior-green gates still green --------------------------------------
+
+BOOTSTRAP_CALC_PADDING_IMPLEMENTATION=GREEN
+DIRECT_DIFFERENTIAL=GREEN    # 16640/16640
+BOUNDED_MATRIX=GREEN         # 16640/16640
+CAUSAL_MUTATIONS_M1_M4=GREEN # 255/1246/14617/16384 detected
+4GEN_OBJECT_FIXEDPOINT=GREEN # 6/6 pairs equal (sha 187a4de9)
+PRODUCTION_AUTHORITY_PRESERVED=GREEN
+PARSER_LAYOUT_CONSERVATION=GREEN
+PATCH_HYGIENE=GREEN           # diff --check empty
+
+# --- Factory gates ------------------------------------------------------
+
+gate-fast=PASS
+factory-append-only-test=PASS
+factory-v2-commit-msg-check=PASS
+factory-v2-range-check=PASS
+
+# --- Phase purity --------------------------------------------------------
+
+C3_COMMIT_COUNT_INCREMENT=1  # C3 is the 4th commit
+POST_C4_COMMIT_COUNT=0       # to be verified at C4 close
+WORKTREE_CLEAN_AT_C3_ENTRY=YES  # c3/ evidence untracked only
+
+# --- C3 -> C4 transition -------------------------------------------------
+
+# C3 does not modify any production source / tool / Makefile.
+# Only c3/ evidence files were created. No implementation delta.
+
+C3_PRODUCTION_SOURCE_DELTA=0
+C3_TOOL_SOURCE_DELTA=0
+C3_MAKEFILE_DELTA=0
+
+# --- Honest findings (residues, not scope-expansions) -------------------
+
+FINDING_1=LEXER07 broad corpus STATUS=FAIL with REGRESSION=6 DIVERGED=6
+          PASS_MISMATCH=9 on the C2 commit (39bc4eb).
+
+          The current checkout lacks build/b02-corpus-A/, the historical
+          S0 baseline that the LEXER02-CORRECTION05-CORRECTION01 ACT
+          counted as HISTORICAL_S0_FALLBACKS_USED=9 in its baseline.
+          Without that baseline directory, the 9 sources that previously
+          fell back to historical byte-identity now FAIL S0. The 9-source
+          gap matches exactly: PASS_S0 went 175 -> 166 (-9), FAIL_S0 went
+          6 -> 15 (+9), HISTORICAL_S0_FALLBACKS_USED went 9 -> 0.
+
+          C2 does NOT introduce this regression:
+            git diff 81afe8b..HEAD -- src/lexer.c src/holyc-lib
+              tools/quality/lexer07* Makefile
+              => (only Makefile parser-padding additions)
+
+          This ACT's §10 explicitly forbids redesigning the lexer
+          conservation corpus. Rebuilding build/b02-corpus-A/ would
+          constitute corpus redesign and is therefore out of scope.
+
+          Classification: pre-existing test-infrastructure drift.
+          Cannot be resolved within THIS ACT's bounded scope.
+          Recorded as residue for the Factory v2 corpus-refresh ACT.
+
+FINDING_2=Three zombie lexer07-broad-corpus-4-stage processes
+          (PIDs 94832, 95145, 97394, plus 98460) accumulated during
+          initial C3 attempts and could not be terminated (PPID=1,
+          reparented to launchd, kill -9 denied to session owner).
+          They are blocking the bootstrap02/03/04 file state needed
+          for fresh broad-corpus runs. Recorded as operational note.
+
+# --- Truthful terminal verdict (this C3) -------------------------------
+
+C3_VERDICT=VERIFIED

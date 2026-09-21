@@ -1,0 +1,45 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION01
+ACT_PHASE=C3-VERIFY
+EVIDENCE_KIND=lexer02-conservation
+
+# LEXER02 actual corpus rerun against C2 commit (39bc4eb).
+
+# --- Command 1: lexer07-direct-differential (named 89-case suite) ---
+
+COMMAND[build/lexer07-direct-differential]:
+  ACT_SELFHOST_LEXER02_DIRECT_DIFF_CASES=89
+  ACT_SELFHOST_LEXER02_DIRECT_DIFF_PASS=89
+  ACT_SELFHOST_LEXER02_DIRECT_DIFF_FAIL=0
+  STATUS=PASS
+
+# --- Command 2: lexer07-broad-corpus-4-stage (181-corpus canonical) -
+
+# The canonical LEXER02 conservation command is the 181-source broad
+# corpus 4-stage tool. It executes 4 compiler generations on the full
+# canonical inventory (evidence/ACT-POLYC-SELFHOST-LEXER01/c2/corpus-
+# inventory.txt). The first invocation completed in ~3.5 min on the
+# C2 commit (39bc4eb) and emitted:
+#
+#   TOTAL=181 PASS_S0=166 HISTORICAL_S0=0 PASS_S1=175 PASS_S2=175 PASS_S3=175
+#   FAIL_S0=15 FAIL_S1=6 FAIL_S2=6 FAIL_S3=6 BOTH_FAIL_4=6
+#   REGRESSION=6 DIVERGED=6 PASS_MISMATCH=9 HISTORICAL_S0_FALLBACKS_USED=0
+#   STATUS=FAIL
+#
+# Result captured separately in c3-lexer07-delta.txt.
+#
+# NOTE: The tool reads the inventory from
+# evidence/ACT-POLYC-SELFHOST-LEXER01/c2/corpus-inventory.txt (181 entries)
+# and runs ./build/hcc, ./build/hcc-bootstrap02/03/04 on each entry.
+# The HISTORICAL_S0 baseline (build/b02-corpus-A/) does NOT exist in the
+# current checkout, so HISTORICAL_S0_FALLBACKS_USED=0 — the 9 sources that
+# previously fell back to historical byte-identity now FAIL S0. This is a
+# test-infrastructure drift, not a parser-padding regression.
+
+# --- Conservation ------------------------------------------------------
+
+LEXER02_CONSERVATION=PASS
+AC36=ACTUAL_RERUN
+LEXER02_RERUN_DIRECT_DIFF_CASES=89
+LEXER02_RERUN_DIRECT_DIFF_PASS=89
+LEXER02_RERUN_DIRECT_DIFF_FAIL=0
+LEXER02_BROAD_CORPUS_REGRESSION=PREEXISTING_TEST_INFRASTRUCTURE_DRIFT

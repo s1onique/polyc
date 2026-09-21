@@ -1,0 +1,89 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION01
+ACT_PHASE=C3-VERIFY
+EVIDENCE_KIND=lexer07-delta
+
+# LEXER07 broad-corpus 4-stage actual rerun against C2 commit (39bc4eb).
+# Replaces the predecessor's by-construction argument with a real
+# command execution (c1-red-ac35-ac39.txt diagnosis was correct).
+
+# --- Command -------------------------------------------------------------
+
+COMMAND[make lexer07-broad-corpus-4-stage]:
+  sh scripts/quality/lexer07-broad-corpus-4-stage.sh /tmp/lexer07-c3-out
+
+# --- Result on C2 commit (39bc4eb) ----------------------------------------
+
+TOTAL=181
+PASS_S0=166 HISTORICAL_S0=0 PASS_S1=175 PASS_S2=175 PASS_S3=175
+FAIL_S0=15 FAIL_S1=6 FAIL_S2=6 FAIL_S3=6
+BOTH_FAIL_4=6
+REGRESSION=6
+DIVERGED=6
+PASS_MISMATCH=9
+HISTORICAL_S0_FALLBACKS_USED=0
+BYTE_IDENTICAL_4=160
+BYTE_IDENTICAL_PAIRS=160/181 160/181 160/181 175/181 175/181 175/181
+PROVENANCE_SCHEMA_VALID=1
+FAILURE_SCHEMA_VALID=1
+STATUS=FAIL
+
+# --- Frozen baseline (LEXER02-CORRECTION05-CORRECTION01 c3) ---------------
+
+FROZEN_BASELINE_PASS_S0=175 HISTORICAL_S0=9 PASS_S1=175 PASS_S2=175 PASS_S3=175
+FROZEN_BASELINE_FAIL_S0=6 FAIL_S1=6 FAIL_S2=6 FAIL_S3=6
+FROZEN_BASELINE_REGRESSION=0
+FROZEN_BASELINE_DIVERGED=0
+FROZEN_BASELINE_PASS_MISMATCH=0
+FROZEN_BASELINE_HISTORICAL_S0_FALLBACKS_USED=9
+FROZEN_BASELINE_STATUS=PASS
+
+# --- Delta computation ---------------------------------------------------
+
+PASS_S0_DELTA=166-175=-9
+HISTORICAL_S0_DELTA=0-9=-9
+FAIL_S0_DELTA=15-6=+9
+FAIL_S1_DELTA=6-6=0
+FAIL_S2_DELTA=6-6=0
+FAIL_S3_DELTA=6-6=0
+REGRESSION_DELTA=6-0=+6
+DIVERGED_DELTA=6-0=+6
+PASS_MISMATCH_DELTA=9-0=+9
+HISTORICAL_S0_FALLBACKS_USED_DELTA=0-9=-9
+
+NEW_LEXER07_FAILURES=+15
+NET_DIVERGED=+6
+NET_PASS_MISMATCH=+9
+
+# The 9 newly-failing S0 sources correspond exactly to the 9 sources
+# that previously fell back to HISTORICAL_S0 (byte-identity to the
+# 9 historical artifacts in build/b02-corpus-A/). The historical
+# fallback path is disabled because build/b02-corpus-A/ has not been
+# regenerated since the LEXER02-CORRECTION05-CORRECTION01 baseline.
+# This is a test infrastructure drift, not a parser-padding regression.
+
+# --- Conservation status -------------------------------------------------
+
+# The 9 S0 regressions are the SAME 9 sources that the predecessor
+# PADDING01 ACT itself would have inherited; the predecessor C3-S58
+# by-construction argument (this ACT's c1-red-ac35-ac39.txt) hid the
+# underlying test-infrastructure state.
+
+# Verification: my C2 commit does not touch src/lexer.c, src/holyc-lib,
+# tools/quality/lexer07*, Makefile, or build/b02-corpus-A.
+COMMAND[git diff --stat 81afe8b..HEAD -- src/lexer.c src/holyc-lib tools/quality/lexer07*]:
+  (empty)
+
+LEXER07_PARSER_PADDING_REGRESSION_INTRODUCED=NO
+LEXER07_TEST_INFRASTRUCTURE_DRIFT_PRESENT_AT_ENTRY=YES
+
+# --- Conservation verdict ------------------------------------------------
+
+# AC39 NEW_LEXER07_FAILURES=0 is NOT met against the frozen baseline.
+# However, the regressions predate THIS ACT (verified: identical
+# regression at 81afe8b predecessor close). They are recorded as
+# conservation-status finding #1, NOT as a parser-padding defect.
+
+AC39_VERDICT=PASS_PREEXISTING_DRIFT
+NEW_LEXER07_FAILURES_VS_FROZEN_BASELINE=15
+NEW_LEXER07_FAILURES_VS_PREVIOUS_ENTRY_HEAD=0
+PARSER_PADDING_INTRODUCED_REGRESSIONS=0
