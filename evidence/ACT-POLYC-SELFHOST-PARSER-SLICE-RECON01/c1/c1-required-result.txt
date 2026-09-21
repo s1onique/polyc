@@ -1,0 +1,38 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON01
+ACT_PHASE=C1-INVENTORY-DECOMPOSE
+
+PRODUCTION_SOURCE_DELTA=0
+
+INVENTORY_TOTAL=14              (>= 10 required)
+UNKNOWN_CANDIDATES=0
+
+FAILED_COMPOUND_WHOLE_FUNCTION_CONTROL=PASS   (CAND-014 reproduced ineligible)
+KNOWN_PURE_SELFHOSTED_CONTROL=PASS            (operator-classify reproduced R0=0 + ALREADY_SELFHOSTED)
+
+OPAQUE_HANDLE_GREENWASH=0
+CALLBACK_TABLE_GREENWASH=0
+
+UNCLASSIFIED_RECOVERY_COUPLING=0   (all 14 classified)
+UNCLASSIFIED_GRAPH_COUPLING=0      (all 14 classified)
+UNCLASSIFIED_CALLBACK_COUPLING=0   (all 14 classified)
+
+ELIGIBLE_CANDIDATES_AT_C1=8
+  CAND-001 parseValidPostControlFlowToken
+  CAND-002 CalcPadding
+  CAND-003 CalcClassSize
+  CAND-004 CalcUnionSize
+  CAND-005 astIsConstTrueCond
+  CAND-006 astStmtHasBreak
+  CAND-007 astStmtFallsThrough
+  CAND-008 asmTextHasReturn
+
+INELIGIBLE_CANDIDATES_AT_C1=6
+  CAND-009..014 (per inventory summary)
+
+CANDIDATE_DISPOSITION_VERIFICATION:
+  Known-negative CAND-014 retained STATE_BOUNDARY_COST_TOO_HIGH.
+  Known-positive calibration (LEXER01 operator-classify) reproduced R0=0
+    with ALREADY_SELFHOSTED exclusion.
+
+VERDICT_AT_C1=PASS
+  (No HALT condition triggered. Selection proceeds at C2.)

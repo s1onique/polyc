@@ -1,0 +1,65 @@
+CANDIDATE	ORCH	NON_SEM	ALREADY	DEAD	TOO_COUP	SUPER	NOTES
+parseToAst	YES	NO	NO	NO	YES	NO	parse driver; mutates cc throughout, owns recovery via subordinate parsers
+parseStatement	YES	NO	NO	NO	YES	NO	statement orchestrator; mutates cc->localenv, cc->tmp_locals, cc->ast_list
+parseIfStatement	NO	NO	NO	NO	YES	NO	opens child localenv; mutates cc->localenv; cctrlRaiseException
+parseForStatement	NO	NO	NO	NO	YES	NO	sets cc->tmp_loop_begin/end; mutates cc->localenv; cctrlRaiseException
+parseWhileStatement	NO	NO	NO	NO	YES	NO	sets cc->tmp_loop_begin/end; mutates cc->localenv
+parseDoWhileStatement	NO	NO	NO	NO	YES	NO	sets cc->tmp_loop_begin/end; mutates cc->localenv
+parseReturnStatement	NO	NO	NO	NO	YES	NO	reads cc->tmp_rettype/tmp_fname/tmp_func; mutates cc->tmp_rettype; cctrlWarning
+parseTryStatement	NO	NO	NO	NO	YES	NO	calls parseCompoundStatement (orchestrator); cctrlRaiseException
+parseThrowStatement	NO	NO	NO	NO	YES	NO	small body but cctrlTokenExpect chain; raises on missing close-paren
+parseCaseLabel	NO	NO	NO	NO	YES	NO	reads cc->tmp_case_list, cc->flags; mutates tmp_case_list
+parseDefaultStatement	NO	NO	NO	NO	YES	NO	mutates cc->tmp_default_case
+parseBreakStatement	NO	NO	NO	NO	YES	NO	reads cc->tmp_loop_end; cctrlRaiseException
+parseContinueStatement	NO	NO	NO	NO	YES	NO	reads cc->tmp_loop_begin; cctrlRaiseException
+parseCompoundStatement	YES	NO	NO	NO	YES	NO	6-LOC wrapper that allocates list+Ast then delegates to parseCompoundStatementInternal
+parseCompoundStatementInternal	YES	NO	NO	NO	YES	NO	KNOWN-NEGATIVE CONTROL (whole function rejected by PARSER01-CORRECTION01)
+parseVariableAssignment	NO	NO	NO	NO	YES	NO	mutates Ast* var->type; reaches parseDeclArrayInitInt; cctrlRaiseExceptionFromTo
+parseVariableInitialiser	NO	NO	NO	NO	YES	NO	small driver but reaches parseVariableAssignment
+parseDecl	NO	NO	NO	NO	YES	NO	mutates cc->localenv, cc->tmp_locals; cctrlRaiseException
+parseDeclOrStatement	NO	NO	NO	NO	YES	NO	dispatches to parseDecl/parseStatement; reads token ring
+parseRangeLoop	NO	NO	NO	NO	YES	NO	deeply coupled: parseExpr, parseCreateForRange, parseCreateBinaryOp
+parseForLoopInitialiser	NO	NO	NO	NO	YES	NO	mutates cc->localenv, cc->tmp_locals; reaches parseRangeLoop, parseVariableInitialiser
+parseOptDeclOrStmt	NO	NO	NO	NO	YES	NO	small but reaches parseDeclOrStatement
+parseOptExpr	NO	NO	NO	NO	YES	NO	reaches parseExpr; cctrlTokenExpect
+parseDesugarArrayLoop	NO	NO	NO	NO	YES	NO	mutates cc->localenv, cc->tmp_locals; ast construction
+parseFunctionDef	YES	NO	NO	NO	YES	NO	function-body orchestrator; mutates cc->localenv/tmp_locals/tmp_func/asm_blocks/global_env
+parseExternFunctionProto	NO	NO	NO	NO	YES	NO	mutates cc->localenv, cc->global_env; cctrlRaiseException
+parseFunctionOrDef	NO	NO	NO	NO	YES	NO	function-form orchestrator; mutates cc->localenv/tmp_locals
+parseAsmFunctionBinding	NO	NO	NO	NO	YES	NO	mutates cc->asm_functions, cc->localenv, cc->asm_funcs; cctrlRaiseException
+parseToplevelDef	YES	NO	NO	NO	YES	NO	top-level keyword dispatcher; mutates cc throughout
+parseClassDef	NO	NO	NO	NO	YES	NO	mutates cc->clsdefs; reaches parseClassOrUnion
+parseUnionDef	NO	NO	NO	NO	YES	NO	mutates cc->uniondefs; reaches parseClassOrUnion
+parseClassOrUnion	NO	NO	NO	NO	YES	NO	mutates cc->clsdefs/uniondefs; reaches parseBaseDeclSpec, parsePointerType, etc.
+parseClassOrUnionFields	NO	NO	NO	NO	YES	NO	mutates Map fields_dict; reaches parseBaseDeclSpec, parsePointerType, parseClassDef, parseUnionDef
+parseClassOffsets	NO	NO	NO	NO	YES	NO	mutates Map fields_dict; reaches parseFlattenAnnonymous, CalcPadding
+parseUnionOffsets	NO	NO	NO	NO	YES	NO	mutates Map fields_dict; reaches parseFlattenAnnonymous, CalcPadding
+CalcClassSize	NO	YES	NO	NO	NO	NO	pure: walks List<ClsField*>, sums size + padding offset
+CalcUnionSize	NO	YES	NO	NO	NO	NO	pure: walks List<ClsField*>, returns max(size)
+CalcPadding	NO	YES	NO	NO	NO	NO	pure: integer arithmetic; no host graph
+parseFlattenAnnonymous	NO	NO	NO	NO	YES	NO	mutates Map fields_dict (writes); iterates anon->fields; not pointer-identity-critical
+parseBaseDeclSpec	NO	NO	NO	NO	YES	NO	mutates cc->localenv indirectly via parseGetType/symbol_table; cctrlRewindUntilStrMatch
+parseDeclSpec	NO	NO	NO	NO	YES	NO	wraps parseBaseDeclSpec + parsePointerType
+parseFullType	NO	NO	NO	NO	YES	NO	wraps parseDeclSpec + parseArrayDimensions
+parseArrayDimensionsInternal	NO	NO	NO	NO	YES	NO	reaches parseExpr, cctrlTokenExpect; recursive; cctrlRaiseException
+parseArrayDimensions	NO	NO	NO	NO	YES	NO	wraps parseArrayDimensionsInternal; not host-graph-coupled
+parseDeclInternal	NO	NO	NO	NO	YES	NO	mutates cc->localenv, cc->tmp_locals
+parseRegModifier	NO	NO	NO	NO	NO	NO	reads token via cctrlTokenPeek/Get; cctrlRaiseException on error
+parseFloatingCharConst	NO	NO	NO	NO	YES	NO	cctrlGetOrSetString, vecPush, astFunctionCall; allocates
+parseFoldInitElement	NO	NO	NO	NO	NO	NO	pure transform: input Ast* + AstType* dst -> Ast*; recursive but immutable to inputs
+parseTypeCheckClassFieldInitaliser	NO	NO	NO	NO	YES	NO	cctrlWarning; diagnostic emission
+parseDeclArrayInitInt	NO	NO	NO	NO	YES	NO	mutates List initlist; reaches parseExpr, parseFoldInitElement, astArrayInit
+createFunctionLevelGotoLabel	NO	NO	NO	NO	YES	NO	allocates AoStr; reads cc->tmp_fname
+parseRaiseCaseException	NO	NO	NO	NO	YES	NO	diagnostic helper: cctrlRewindUntilStrMatch + cctrlRaiseExceptionFromTo
+parseIfClause	NO	NO	NO	NO	YES	NO	mutates cc->localenv, cc->tmp_locals; cctrlRaiseException
+parseCreateForRange	NO	NO	NO	NO	YES	NO	ast construction; reaches parseCreateBinaryOp
+parseAssertContainerHasFields	NO	NO	NO	NO	YES	NO	cctrlRaiseException
+clsFieldNew	NO	YES	NO	NO	NO	NO	pure malloc wrapper: AstType* + AoStr* -> ClsField*
+astIsConstTrueCond	NO	YES	NO	NO	NO	NO	pure: AST literal of int type with non-zero i64
+astStmtHasBreak	NO	YES	NO	NO	NO	NO	pure tree walk: returns 1 if any nested AST_BREAK escapes enclosing loop/switch
+astStmtFallsThrough	NO	YES	NO	NO	NO	NO	pure tree walk: returns 1 if control flow may run off end of statement list
+asmTextHasReturn	NO	YES	NO	NO	NO	NO	pure text scan: returns 1 if AoStr text contains a whole-word ret/eret/iret/jmp/br/b
+parseValidPostControlFlowToken	NO	NO	NO	NO	NO	NO	pure predicate: tk_type + i64 + keyword value match -> int
+getRangeLoopIdx	NO	YES	NO	NO	NO	NO	static int counter; non-deterministic across runs (FORBIDDEN for self-host)
+tokenPunctIs	NO	YES	NO	NO	NO	NO	already a pure 1-line helper (lexer); see c1-known-positive-selfhosted-control.txt
+tokenIdentIs	NO	YES	NO	NO	NO	NO	already a pure 1-line helper (lexer); non-parser domain

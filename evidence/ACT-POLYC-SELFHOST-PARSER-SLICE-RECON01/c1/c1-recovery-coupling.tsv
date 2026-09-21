@@ -1,0 +1,22 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON01
+# ACT_PHASE=C1-INVENTORY-DECOMPOSE
+# EVIDENCE_KIND=recovery-coupling
+# Schema columns: candidate_id<TAB>owns_setjmp<TAB>reads_current_recovery<TAB>writes_current_recovery<TAB>can_receive_longjmp<TAB>calls_function_that_can_raise<TAB>requires_nonlocal_recovery<TAB>notes
+# Every classification is a mechanical read of src/parser.c at entry head b1aa4ab6.
+# Calls that reach cctrlTokenExpect / cctrlRaiseException / cctrlRaiseExceptionFromTo are recorded as calls_function_that_can_raise=YES.
+
+candidate_id	owns_setjmp	reads_current_recovery	writes_current_recovery	can_receive_longjmp	calls_function_that_can_raise	requires_nonlocal_recovery	notes
+CAND-001	NO	NO	NO	NO	NO	NO	no cc access; no token-ring mutation; pure Lexeme field reads
+CAND-002	NO	NO	NO	NO	NO	NO	pure integer arithmetic; no control transfer
+CAND-003	NO	NO	NO	NO	NO	NO	walks List<ClsField*> without inserting/removing; safe under nested longjmp but does not depend on it
+CAND-004	NO	NO	NO	NO	NO	NO	walks List<ClsField*> read-only; no control transfer
+CAND-005	NO	NO	NO	NO	NO	NO	reads c->kind/c->type/c->i64; no cc access
+CAND-006	NO	NO	NO	NO	NO	NO	recursive walk over Ast* tree; reads kind+then+els+stms fields
+CAND-007	NO	NO	NO	NO	NO	NO	recursive walk over Ast* tree; reads kind+then+els+stms+forcond+whilecond fields
+CAND-008	NO	NO	NO	NO	NO	NO	text scan only; reads text->data/text->len
+CAND-009	NO	NO	NO	NO	NO	NO	malloc wrapper; no parser authority
+CAND-010	NO	NO	NO	NO	NO	NO	static counter; non-deterministic; excluded
+CAND-011	NO	NO	NO	NO	NO	NO	mutates fields_dict (Map*) and type->offset; recovery-safe but writes host graph
+CAND-012	NO	NO	NO	NO	YES	NO	calls cctrlTokenPeek (line 43), cctrlTokenGet (46-47), cctrlRaiseException (49); receives longjmp reachable from subordinate parser paths
+CAND-013	NO	NO	NO	NO	NO	NO	no cc access; calls evalIntConstExprOrErr / evalFloatExprOrErr which can longjmp via cctrlRaiseException - investigate further
+CAND-014	YES	YES	YES	YES	YES	YES	KNOWN-NEGATIVE: jmp_buf stmt_recovery (1753), setjmp (1789), recovery body (1790..1802), restore at 1876

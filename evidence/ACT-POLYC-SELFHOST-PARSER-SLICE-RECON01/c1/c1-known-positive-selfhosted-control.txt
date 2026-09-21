@@ -1,0 +1,70 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON01
+ACT_PHASE=C1-INVENTORY-DECOMPOSE
+EVIDENCE_KIND=known-positive-selfhosted-control
+
+PURPOSE
+  Calibrate the new R0 model against an existing self-hosted component
+  whose boundary purity is already proven. If R0 agrees the boundary is
+  cheap, the model has the right directionality. If R0 places an
+  already-proven-pure component at R0 > 2, the model has over-penalised
+  and the ranking will systematically miss good candidates.
+
+CONTROL SUBJECT (chosen for cross-domain calibration):
+  operator_punctuation_recognizer
+  already_selfhosted_at=tools/bootstrap/selfhost-lexer-operator-classify.HC
+  implemented_in=PolyC (HC)
+  closure_owner=ACT-POLYC-SELFHOST-LEXER01
+  ABI_signature=
+    I64 BootstrapClassifyOperator(
+        U8  *src,
+        I64  src_len,
+        I64  cursor,
+        I64  flags,
+        I64 *out_kind,
+        I64 *out_length
+    );
+
+MECHANICAL_R0_CLASSIFICATION:
+
+  r0_state_boundary_cost=0
+    (bytes-in / scalars-out; U8* + I64 scalars; no host pointer identity)
+
+  owns_setjmp              = NO
+  reads_current_recovery   = NO
+  writes_current_recovery  = NO
+  requires_nonlocal_recovery=NO
+  host_graph_reads         = 0  (the *src buffer is a bounded caller-provided input)
+  host_graph_writes        = 0  (no write into caller state)
+  pointer_identity_ops     = 0  (cursor arithmetic only; no host pointer identity)
+  parser_callback_count    = 0
+  semantic_callback_count  = 0
+  deterministic_projection = YES (kind + length)
+  token_state_class        = BOUNDED_WINDOW (the lexer-style *src + src_len +
+                              cursor window, value-only)
+
+ELIGIBILITY_PREDICATE_RESULT:
+  semantic_authority       = YES
+  already_selfhosted       = YES  (Lexer01 closed PASS)
+  r0_state_boundary_cost   = 0    (PASS)
+
+  ELIGIBLE = NO
+  EXCLUSION_REASON = ALREADY_SELFHOSTED
+
+VERDICT
+  R0 classifies the operator-classify component as R0=0 (cheap boundary)
+  while still excluding it from the parser migration path because it
+  is already self-hosted. This is the required shape: cheap boundary +
+  ALREADY_SELFHOSTED exclusion.
+
+  KNOWN_PURE_SELFHOSTED_CONTROL = PASS
+
+  R0 directionality is correct:
+    (1) it gives the same low score LEXER01 saw at closure time
+    (2) it correctly excludes already-closed subjects from re-selection
+    (3) it would have happily approved a fresh migration of this shape
+
+RANKING_CROSSCHECK (informational only):
+  The four strongest parser-eligible candidates (CAND-001..008) all
+  rank at R0 in {0, 1, 2}, i.e. they would have been admitted by the
+  same R0=0 check that admitted LEXER01's subject. Directionality is
+  consistent across lexer and parser domains.

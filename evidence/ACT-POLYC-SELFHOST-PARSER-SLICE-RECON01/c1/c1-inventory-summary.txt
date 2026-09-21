@@ -1,0 +1,63 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON01
+ACT_PHASE=C1-INVENTORY-DECOMPOSE
+EVIDENCE_KIND=c1-inventory-summary
+
+INVENTORY_TOTAL=14
+ELIGIBLE_TOTAL=8
+INELIGIBLE_TOTAL=6
+
+CANDIDATE BREAKDOWN:
+  CAND-001  parseValidPostControlFlowToken       ELIGIBLE  R0=0  parse_stmt
+  CAND-002  CalcPadding                          ELIGIBLE  R0=0  parse_decl
+  CAND-003  CalcClassSize                        ELIGIBLE  R0=0  parse_decl
+  CAND-004  CalcUnionSize                        ELIGIBLE  R0=0  parse_decl
+  CAND-005  astIsConstTrueCond                   ELIGIBLE  R0=2  parse_stmt
+  CAND-006  astStmtHasBreak                      ELIGIBLE  R0=2  parse_stmt
+  CAND-007  astStmtFallsThrough                  ELIGIBLE  R0=2  parse_stmt
+  CAND-008  asmTextHasReturn                     ELIGIBLE  R0=1  parse_decl
+  CAND-009  clsFieldNew                          REJECTED  NON_SEMANTIC
+  CAND-010  getRangeLoopIdx                      REJECTED  NON_SEMANTIC (non-deterministic)
+  CAND-011  parseFlattenAnnonymous               REJECTED  HOST_GRAPH_WRITES>0
+  CAND-012  parseRegModifier                     REJECTED  PARSER_CALLBACK_COUNT>0
+  CAND-013  parseFoldInitElement                 REJECTED  REQUIRES_HOST_GRAPH_IDENTITY
+  CAND-014  parseCompoundStatementInternal       REJECTED  STATE_BOUNDARY_COST_TOO_HIGH (KNOWN-NEGATIVE CONTROL)
+
+DISPOSITION_BY_REASON:
+  STATE_BOUNDARY_COST_TOO_HIGH        1  (whole compound function)
+  NON_SEMANTIC                        2  (allocation wrapper, static counter)
+  HOST_GRAPH_WRITES>0                 1  (parseFlattenAnnonymous)
+  PARSER_CALLBACK_COUNT>0             1  (parseRegModifier)
+  REQUIRES_HOST_GRAPH_IDENTITY        1  (parseFoldInitElement)
+
+OBSERVATIONS:
+  R0=0 candidates (CAND-001..004) are the cheapest boundary:
+    - CAND-001 takes one immutable Lexeme and returns 0/1
+    - CAND-002 takes two ints and returns one int
+    - CAND-003 takes a List<ClsField*> and returns u32
+    - CAND-004 takes a List<ClsField*> and returns u32
+  All four are mechanical classification/layout primitives with
+  no parser-side state coupling.
+
+  R0=1 candidate (CAND-008) is a text scanner over AoStr* that the
+  caller may freely copy before the call. It touches a borrowed
+  text buffer (no host identity).
+
+  R0=2 candidates (CAND-005..007) are recursive AST-tree predicates.
+  The host graph (Ast*) is read by field but never written; the
+  caller supplies the Ast node by reference. Pointer identity is
+  not required for correctness -- the projection is the int 0/1.
+
+  CAND-014's failure is mechanical and required. PARSER01-CORRECTION01
+  recorded the same verdict with the same evidence.
+
+NEXT-PHASE PLAN:
+  C2 will rank CAND-001..008 lexicographically by (R0, R1, R2, R3, R4,
+  R5, R6) and select exactly one. Given the size of CAND-007 (41 LOC)
+  and its 3-deep recursive structure, R5 (migration size) and R3
+  (proof observability) will distinguish among the strongest R0=0/2
+  candidates.
+
+REQUIRED AT C2:
+  ranking-table rows = 8 (one per eligible)
+  selection-status   = SELECTED for exactly one
+  selected-target    = the lexicographic minimum

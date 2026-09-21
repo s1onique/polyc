@@ -1,0 +1,70 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON01
+ACT_PHASE=C1-INVENTORY-DECOMPOSE
+EVIDENCE_KIND=known-negative-compound-control
+
+PURPOSE
+  Mechanically reproduce the PARSER01-CORRECTION01 HALT_DEPENDENCY_EXPLOSION
+  verdict for parseCompoundStatementInternal, using the new R0 model
+  introduced by THIS ACT.
+
+  If R0 correctly ranks the whole function as ineligible, the new model
+  has learned from PARSER01. If R0 places the whole function among the
+  eligible candidates, the model has not learned and this ACT must
+  HALT_CONTROL_FAILED.
+
+CONTROL CANDIDATE
+  CAND-014  parseCompoundStatementInternal
+  FILE=src/parser.c
+  LINE_START=1752
+  LINE_END=1880
+  LOC=129
+
+MECHANICAL_RECLASSIFICATION_UNDER_NEW_R0:
+
+  r0_state_boundary_cost=5
+    (owns jmp_buf, installs cc->current_recovery, restoration at 1876)
+    (HOST_GRAPH_WRITES > 0: body->stms->prev/next pointer arithmetic,
+     cc->localenv rebind, cc->tmp_locals truncate-on-recovery)
+    (PARSE_R_CALLBACK_COUNT > 0: 9 subordinate parser callbacks)
+    (TOKEN_STATE_CLASS = ARBITRARY_STREAM_MUTATION: calls cctrlTokenPeek/Get
+     across a 9-callback loop)
+
+  owns_setjmp=YES                    (line 1753 + setjmp at 1789)
+  reads_current_recovery=YES         (line 1770 save)
+  writes_current_recovery=YES        (line 1770 install, 1876 restore)
+  requires_nonlocal_recovery=YES     (recovery body 1790..1802)
+  host_graph_reads=11                (per c1-graph-coupling.tsv)
+  host_graph_writes=5                (per c1-graph-coupling.tsv)
+  pointer_identity_ops=9             (listAppend calls + body->stms->prev/next)
+  parser_callback_count=9            (per c1-callback-coupling.tsv)
+  semantic_callback_count=0          (all 9 are mechanical dispatch, but each
+                                      is a parser authority reach)
+  deterministic_projection=NO        (mutates 5 host-graph fields)
+  token_state_class=ARBITRARY_STREAM_MUTATION
+  error_model_class=LONGJMP
+
+ELIGIBILITY_PREDICATE_RESULT:
+  semantic_authority       = YES
+  already_selfhosted       = NO
+  r0_state_boundary_cost   = 5     (FAIL: > 2)
+  owns_setjmp              = YES   (FAIL)
+  writes_current_recovery  = YES   (FAIL)
+  requires_nonlocal_recovery=YES  (FAIL)
+  host_graph_writes        = 5     (FAIL: > 0)
+  pointer_identity_ops     = 9     (FAIL: > 0)
+  parser_callback_count    = 9     (FAIL: > 0)
+  semantic_callback_count  = 0     (PASS but moot)
+  deterministic_projection = NO    (FAIL)
+  candidate_kind           = ORCHESTRATOR
+
+  ELIGIBLE = NO
+  EXCLUSION_REASON = STATE_BOUNDARY_COST_TOO_HIGH
+
+VERDICT
+  The whole parseCompoundStatementInternal function remains ineligible
+  under the new R0 model, exactly as it was under PARSER01's verdict.
+
+  FAILED_COMPOUND_WHOLE_FUNCTION_CONTROL = PASS
+
+  This is the required outcome. The new R0 model learns from PARSER01:
+  high semantic leverage does not imply a good self-host boundary.

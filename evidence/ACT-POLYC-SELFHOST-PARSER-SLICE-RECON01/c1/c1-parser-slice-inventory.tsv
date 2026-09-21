@@ -1,0 +1,50 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON01
+# ACT_PHASE=C1-INVENTORY-DECOMPOSE
+# EVIDENCE_KIND=parser-slice-inventory
+# Schema columns (29 total, tab-separated):
+#   01 candidate_id
+#   02 candidate_kind
+#   03 surface_id
+#   04 file
+#   05 line_start
+#   06 line_end
+#   07 loc
+#   08 semantic_authority
+#   09 input_summary
+#   10 output_summary
+#   11 r0_state_boundary_cost
+#   12 owns_setjmp
+#   13 reads_current_recovery
+#   14 writes_current_recovery
+#   15 requires_nonlocal_recovery
+#   16 host_graph_reads
+#   17 host_graph_writes
+#   18 pointer_identity_ops
+#   19 parser_callback_count
+#   20 semantic_callback_count
+#   21 token_state_class
+#   22 error_model_class
+#   23 deterministic_projection
+#   24 entry_callers
+#   25 estimated_fixture_classes
+#   26 already_selfhosted
+#   27 eligible
+#   28 exclusion_reason
+#   29 notes
+# Source line ranges verified at entry head b1aa4ab6 against src/parser.c.
+
+candidate_id	candidate_kind	surface_id	file	line_start	line_end	loc	semantic_authority	input_summary	output_summary	r0_state_boundary_cost	owns_setjmp	reads_current_recovery	writes_current_recovery	requires_nonlocal_recovery	host_graph_reads	host_graph_writes	pointer_identity_ops	parser_callback_count	semantic_callback_count	token_state_class	error_model_class	deterministic_projection	entry_callers	estimated_fixture_classes	already_selfhosted	eligible	exclusion_reason	notes
+CAND-001	TOKEN_CLASSIFIER	INV.PARSER.STMT	src/parser.c	791	823	33	YES	classify whether a token may legally appear after a control-flow header (if/for/while/do-while)	Lexeme *tok (read-only: tk_type, i64, len, start) -> int 0/1	0	NO	NO	NO	NO	0	0	0	0	0	NONE	RETURN_CODE	YES	parseIfStatement (909,920), parseForStatement (1213), parseWhileStatement (1247), parseDoWhileStatement (1280)	positive: KW_DO/KW_FOR/KW_GOTO/KW_IF/KW_RETURN/KW_SWITCH/KW_WHILE/KW_BREAK/KW_CONTINUE/KW_TRY/KW_THROW/KW_ASM; positive: TK_IDENT, TK_STR, TK_PUNCT(';', '{', '*', '--', '++'); negative: any other TK_PUNCT/TK_KEYWORD/EOF	NO	YES		strong pure candidate: tk_type + i64 read, no cc access; zero callbacks
+CAND-002	TYPE_MODIFIER_PRIMITIVE	INV.PARSER.DECL	src/parser.c	430	438	9	YES	classify whether (offset, size) require trailing padding and how many bytes	(offset: int, size: int) -> int pad bytes	0	NO	NO	NO	NO	0	0	0	0	0	NONE	RETURN_CODE	YES	parseClassOffsets (470,500,513,526), parseUnionOffsets (558)	positive: aligned offsets; boundary cases (offset%size); zero-size guard	NO	YES		strong pure candidate: integer arithmetic only, no host graph; zero callbacks
+CAND-003	TYPE_MODIFIER_PRIMITIVE	INV.PARSER.DECL	src/parser.c	410	428	19	YES	compute aligned layout offsets and total class size from field list	(List<ClsField*> fields) -> u32 total_size	0	NO	NO	NO	NO	0	0	0	0	0	NONE	RETURN_CODE	YES	parseClassOrUnion (677)	positive: simple field list; aligned fields; mix of sizes (1/2/4/8); MAX_ALIGN boundary	NO	YES		pure layout primitive; pure List walk; zero host-graph mutations
+CAND-004	TYPE_MODIFIER_PRIMITIVE	INV.PARSER.DECL	src/parser.c	397	408	12	YES	compute union size = max(field size)	(List<ClsField*> fields) -> u32 max_size	0	NO	NO	NO	NO	0	0	0	0	0	NONE	RETURN_CODE	YES	parseClassOrUnion (681)	positive: union with heterogeneous fields	NO	YES		pure layout primitive; zero host-graph mutations
+CAND-005	AST_PROJECTION_PRIMITIVE	INV.PARSER.STMT	src/parser.c	1899	1903	5	YES	test whether an Ast node is an integer-literal non-zero condition	(Ast *c) -> int 0/1	2	NO	NO	NO	NO	1	0	0	0	0	NONE	RETURN_CODE	YES	astStmtFallsThrough (1952,1958)	positive: c->i64 != 0; negative: 0 literal; negative: AST_LITERAL but float kind	NO	YES		pure AST-tree predicate; reads only c->kind/c->type/c->i64; no host identity
+CAND-006	AST_PROJECTION_PRIMITIVE	INV.PARSER.STMT	src/parser.c	1907	1930	24	YES	detect whether an AST subtree contains a break that targets an enclosing loop/switch	(Ast *s) -> int 0/1	2	NO	NO	NO	NO	1	0	0	0	0	NONE	RETURN_CODE	YES	astStmtFallsThrough (1953,1959)	positive: nested break; positive: AST_COMPOUND_STMT list containing break; negative: AST_FOR body; negative: AST_WHILE body	NO	YES		pure recursive AST walk; reads s->kind and nested fields; no host identity
+CAND-007	AST_PROJECTION_PRIMITIVE	INV.PARSER.STMT	src/parser.c	1932	1972	41	YES	decide whether control flow may run off the end of a statement without returning	(Ast *s) -> int 0/1	2	NO	NO	NO	NO	1	0	0	0	0	NONE	RETURN_CODE	YES	parseFunctionDef (2314)	positive: AST_RETURN/AST_THROW/AST_JUMP; positive: AST_IF with both arms returning; positive: AST_FOR cond=NULL or astIsConstTrueCond; positive: AST_SWITCH with default	NO	YES		pure recursive AST walk; reads s->kind and s->then/s->els/s->stms; no host identity
+CAND-008	DELIMITER_PRIMITIVE	INV.PARSER.DECL	src/parser.c	1980	2011	32	YES	detect whether an asm body contains a whole-word return/exit instruction	(AoStr *text) -> int 0/1	1	NO	NO	NO	NO	0	0	0	0	0	NONE	RETURN_CODE	YES	parseFunctionDef (2152)	positive: `ret`; positive: `eret`/`iret`; positive: `jmp label`; positive: `b label`; positive: word-prefix should not match (e.g. `retaddr`); negative: empty text; negative: NULL text	NO	YES		pure text scan: reads text->data/text->len, classifies substrings
+CAND-009	STATIC_HELPER	INV.PARSER.STMT	src/parser.c	265	270	6	NO	N/A	N/A	0	NO	NO	NO	NO	0	0	0	0	0	NONE	N/A	N/A	N/A	NON_SEMANTIC	NO	NO	NON_SEMANTIC	allocation wrapper (malloc); excluded per ACT SECT_12
+CAND-010	STATIC_HELPER	INV.PARSER.STMT	src/parser.c	62	65	4	NO	N/A	N/A	0	NO	NO	NO	NO	0	0	0	0	0	NONE	N/A	N/A	N/A	NON_SEMANTIC	NO	NO	NON_SEMANTIC	static counter; non-deterministic across runs; excluded
+CAND-011	AST_PROJECTION_PRIMITIVE	INV.PARSER.STMT	src/parser.c	238	258	21	YES	flatten anonymous-class fields into a target field map	(AstType *anon, Map *fields_dict, int offset, int make_copy) -> void	3	NO	NO	NO	NO	2	1	0	0	0	NONE	RETURN_CODE	NO	parseClassOffsets (460,501), parseUnionOffsets (548)	N/A	NO	NO	HOST_GRAPH_WRITES>0	host writes Map fields_dict and copies AstTypes; writes to type->offset; not a bounded value projection
+CAND-012	TOKEN_CLASSIFIER	INV.PARSER.DECL	src/parser.c	40	60	21	YES	classify a `reg`/`noreg` register modifier and consume tokens	(Cctrl *cc, int *kind_out, AoStr **reg_out) -> void	3	NO	NO	NO	NO	1	1	0	1	0	BOUNDED_CONSUMPTION	DIAGNOSTIC_VALUE	YES	parseCompoundStatementInternal (1804)	N/A	NO	NO	PARSER_CALLBACK_COUNT>0	calls cctrlTokenPeek, cctrlTokenGet, cctrlRaiseException; touches cc-> token ring
+CAND-013	TOKEN_CLASSIFIER	INV.PARSER.DECL	src/parser.c	121	155	35	YES	fold a constant initializer element to a literal of the destination type	(Ast *init, AstType *dst) -> Ast*	3	NO	NO	NO	NO	1	0	0	0	0	NONE	RETURN_CODE	YES	parseDeclArrayInitInt (212,224)	N/A	NO	NO	REQUIRES_HOST_GRAPH_IDENTITY	takes Ast* / AstType* inputs; result carries host type pointer; rebinds host node; not a bounded value projection
+CAND-014	ORCHESTRATOR	INV.PARSER.STMT	src/parser.c	1752	1880	129	YES	parse a compound statement block (declarations + statements)	(Cctrl *cc, Ast *body) -> void	5	YES	YES	YES	YES	11	5	9	9	0	ARBITRARY_STREAM_MUTATION	LONGJMP	NO	parseCompoundStatement (1885), parseFunctionDef (2261)	N/A	NO	NO	STATE_BOUNDARY_COST_TOO_HIGH	KNOWN-NEGATIVE CONTROL (PARSER01-CORRECTION01)

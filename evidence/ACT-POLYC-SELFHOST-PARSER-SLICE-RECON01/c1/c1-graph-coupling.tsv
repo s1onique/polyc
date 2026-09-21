@@ -1,0 +1,31 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON01
+# ACT_PHASE=C1-INVENTORY-DECOMPOSE
+# EVIDENCE_KIND=graph-coupling
+# Schema columns:
+#   candidate_id
+#   raw_ast_pointer_inputs    count of raw Ast* parameters (excluding result returns)
+#   raw_cctrl_pointer_inputs  count of raw Cctrl* parameters
+#   raw_map_pointer_inputs    count of raw Map* parameters
+#   raw_list_pointer_inputs   count of raw List* parameters
+#   host_graph_reads          host graph fields read by the candidate (e.g. anon->fields iteration)
+#   host_graph_writes         host graph fields written by the candidate
+#   pointer_identity_ops      operations that depend on raw host pointer identity
+#                            (e.g. prev/next pointer arithmetic, mapAdd that depends on
+#                             a parent pointer chain)
+#   notes
+
+candidate_id	raw_ast_pointer_inputs	raw_cctrl_pointer_inputs	raw_map_pointer_inputs	raw_list_pointer_inputs	host_graph_reads	host_graph_writes	pointer_identity_ops	notes
+CAND-001	1	0	0	0	0	0	0	Lexeme *tok is read by field (tk_type, i64, len, start); no writes
+CAND-002	0	0	0	0	0	0	0	integer arithmetic only
+CAND-003	0	0	0	1	1	0	0	reads it->value (ClsField*), reads type->size; no writes
+CAND-004	0	0	0	1	1	0	0	reads it->value (ClsField*), reads type->size; no writes
+CAND-005	1	0	0	0	1	0	0	reads c->kind/c->type/c->i64
+CAND-006	1	0	0	0	1	0	0	recursive AST tree walk; reads s->kind, s->then, s->els, s->stms
+CAND-007	1	0	0	0	1	0	0	recursive AST tree walk; reads s->kind, s->then, s->els, s->stms, s->forcond, s->whilecond, s->case_default
+CAND-008	0	0	0	0	1	0	0	reads text->data and text->len
+CAND-009	0	0	0	0	0	0	0	malloc wrapper; allocation primitive
+CAND-010	0	0	0	0	0	0	0	static counter
+CAND-011	1	0	1	0	2	1	0	reads anon->fields, writes fields_dict, writes type->offset
+CAND-012	1	1	0	0	1	1	1	cc pointer, output pointers, calls cctrlTokenPeek/Get; writes via out-params
+CAND-013	2	0	0	0	1	1	1	Ast*+AstType* in, Ast* out; result carries host type pointer
+CAND-014	1	1	0	0	11	5	9	reads/writes 11 distinct Cctrl/Ast fields; mutates body->stms->prev/next (identity)

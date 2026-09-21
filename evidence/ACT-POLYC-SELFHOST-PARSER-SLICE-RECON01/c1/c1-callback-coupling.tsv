@@ -1,0 +1,27 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON01
+# ACT_PHASE=C1-INVENTORY-DECOMPOSE
+# EVIDENCE_KIND=callback-coupling
+# Schema columns:
+#   candidate_id
+#   semantic_callbacks      callback into another parser semantic function
+#   parser_callbacks        callback into any parser helper
+#   lexer_callbacks         callback into lexer
+#   allocation_callbacks    callback into allocator or string builder
+#   diagnostic_callbacks    callback into cctrl diagnostic emitter
+#   notes
+
+candidate_id	semantic_callbacks	parser_callbacks	lexer_callbacks	allocation_callbacks	diagnostic_callbacks	notes
+CAND-001	0	0	0	0	0	no callback authority at all
+CAND-002	0	0	0	0	0	pure arithmetic
+CAND-003	0	0	0	0	0	list walk via it->value
+CAND-004	0	0	0	0	0	list walk via it->value
+CAND-005	0	0	0	0	0	reads Ast* by field
+CAND-006	0	0	0	0	0	recursive AST walk
+CAND-007	0	0	0	0	0	recursive AST walk; calls astIsConstTrueCond (also pure) and astStmtHasBreak (also pure)
+CAND-008	0	0	0	0	0	text scan; no callbacks
+CAND-009	0	0	0	0	0	malloc wrapper
+CAND-010	0	0	0	0	0	static counter
+CAND-011	0	0	0	0	0	Map* iteration via mapIterInit/mapIterNext
+CAND-012	0	1	0	0	0	cctrlTokenPeek, cctrlTokenGet (parser callbacks into token ring); cctrlRaiseException is a diagnostic callback
+CAND-013	0	0	0	0	0	no callbacks but the function operates on Ast* host identity
+CAND-014	9	9	0	1	0	9 subordinate parser callbacks; reaches cc->current_recovery writes

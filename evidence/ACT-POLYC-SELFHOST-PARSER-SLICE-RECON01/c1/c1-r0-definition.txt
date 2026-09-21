@@ -1,0 +1,53 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON01
+ACT_PHASE=C1-INVENTORY-DECOMPOSE
+EVIDENCE_KIND=r0-definition
+
+R0 -- STATE_BOUNDARY_COST (definition; this ACT introduces the metric)
+
+  R0=0  bytes/scalars/enums only
+       The candidate consumes integers, characters, or bytes and produces
+       integers, characters, or bytes. No host pointers, no records
+       larger than 8 bytes. Examples: int add(int,int), int is_space(char).
+
+  R0=1  immutable copied token/value records; no host identity required
+       The candidate consumes small (PoD-like) records whose bytes are
+       copied in. The records are immutable for the duration of the call.
+       Examples: classify a Lexeme by tk_type + i64.
+
+  R0=2  bounded copied semantic record; deterministic reconstruction
+       possible; no raw host graph identity required
+       The candidate consumes a bounded record (e.g. a small AST node
+       snapshot or a flat descriptor) and produces a deterministic
+       value. No raw Cctrl*/Ast*/Map*/List* identity is required for
+       correctness; the host graph may be read by field but the host
+       graph is not mutated.
+
+  R0=3  opaque host handle needed but candidate itself does not mutate
+       referenced graph
+       The candidate must consult or interpret host graph state but only
+       through read access. Examples: read cc->localenv without writing
+       to it; iterate Map* without inserting.
+
+  R0=4  candidate mutates host-owned graph/state whose identity matters
+       The candidate writes to host graph nodes by identity (e.g.
+       appends to body->stms with prev-pointer arithmetic).
+
+  R0=5  candidate owns or depends on execution-context/recovery authority,
+       mutable callback authority, or non-local control transfer
+       The candidate installs/restores jmp_buf, owns longjmp authority,
+       mutates cc->current_recovery, holds a callback table, or routes
+       control flow through opaque host handles. PARSER01-CORRECTION01
+       placed parseCompoundStatementInternal here.
+
+Hard eligibility:
+  semantic migration candidates MUST satisfy R0 <= 2.
+
+R0 dominates every other ranking dimension (R1..R6). A higher-leverage
+candidate (R1=0) with R0=4 loses to a less-leverage candidate (R1=3)
+with R0=0.
+
+Why R0 is first:
+  PARSER01's HALT_DEPENDENCY_EXPLOSION proved that a whole-function
+  candidate can be both strategically attractive and structurally
+  unbridgeable. R0 is the formal expression of "structurally
+  unbridgeable"; it precedes semantic leverage deliberately.
