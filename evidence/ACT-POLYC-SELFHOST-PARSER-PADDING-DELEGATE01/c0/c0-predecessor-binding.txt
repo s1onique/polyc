@@ -1,0 +1,55 @@
+# C0 Predecessor Binding
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01
+ENTRY_HEAD=9c6cda6c2a5daa8a52c58baaf66f0f61bf160800
+PREDECESSOR=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION04
+
+## Expected entry ref per ACT §8
+
+```
+9c6cda6...   (the terminal C4 SHA of CORRECTION04)
+```
+
+## Actual entry ref
+
+```
+9c6cda6c2a5daa8a52c58baaf66f0f61bf160800
+```
+
+## External terminality gate reobservation
+
+```sh
+$ git rev-list --count 9ea5bc4a5919c5a37fc0be8f4f2a57dea7e41b94..9c6cda6c2a5daa8a52c58baaf66f0f61bf160800
+5
+
+$ git merge-base --is-ancestor 9c6cda6^ 9c6cda6
+$ echo $?
+0
+```
+
+## Predicate
+
+CORRECTION04_EXTERNAL_TERMINALITY_GATE=PASS
+
+The CORRECTION04 C4 commit (9c6cda6...) is:
+- 5 commits after the CORRECTION04 entry ref (9ea5bc4a...) -> EXACT_5_COMMIT_TOPOLOGY
+- Its direct parent (9c6cda6^) is a valid commit (merge-base check passes)
+- The CORRECTION04 HANDOFF recorded PASS_PENDING_EXTERNAL_TERMINALITY at that
+  C4 SHA, and the external gate observation here re-binds to that exact ref.
+
+## Forward LEXER07 baseline authority
+
+```sh
+$ sha256sum docs/factory/LEXER07-BASELINE-AUTHORITY.tsv
+...
+```
+
+File present and unchanged from CORRECTION04 C2 commit (the file is APPEND-ONLY
+at row level per its own header comment). Required bindings:
+
+```
+PROSPECTIVE_LEXER07_BASELINE_SHA256=00c54408bf29237cf526aeed097f6b097f22ae682683675a0bf5ab9f9c202b9a
+KNOWN_FAILURE_SET_STABLE=YES
+```
+
+FORWARD_LEXER07_BASELINE_AUTHORITY=AVAILABLE

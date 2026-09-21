@@ -1,0 +1,58 @@
+# C0 Entry Identity
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01
+BRANCH=main
+ENTRY_HEAD=9c6cda6c2a5daa8a52c58baaf66f0f61bf160800
+
+## Source commands
+
+```sh
+$ git branch --show-current
+main
+
+$ git rev-parse HEAD
+9c6cda6c2a5daa8a52c58baaf66f0f61bf160800
+
+$ git status --short
+(empty)
+
+$ git diff --check
+(empty)
+```
+
+## Predicates
+
+AC01 ENTRY_HEAD=9c6cda6c2a5daa8a52c58baaf66f0f61bf160800 -> MATCHES 9c6cda6...
+AC02 BRANCH=main -> MATCHES main
+AC03 WORKTREE_CLEAN_AT_C0=YES (tracked) -> MATCHES
+
+## Recent history
+
+```
+9c6cda6 ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION04 C4: CLOSE
+7ec7360 ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION04 C3: VERIFY
+53bca9d ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION04 C2: RESTORE F14 + FREEZE BASELINE AUTHORITY
+0912cae ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION04 C1: RECON/RED
+7ec5c70 ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION04 C0: AUTH
+```
+
+## Build artifacts present at entry (informational)
+
+```sh
+$ ls -la ./hcc ./build/hcc ./build/hcc-bootstrap04 2>/dev/null
+-rwxr-xr-x  1 chistyakov  staff  741008 Sep 21 19:00 ./hcc
+-rwxr-xr-x  1 chistyakov  staff  741008 ... build/hcc
+-rwxr-xr-x  1 chistyakov  staff  741008 ... build/hcc-bootstrap04
+```
+
+```sh
+$ nm build/parser-padding-subject.o | grep -i CalcPadding
+0000000000000000 T _BootstrapCalcPadding
+```
+
+Subject object present and contains `_BootstrapCalcPadding` symbol.
+
+## ACT body / HANDOFF SHA references
+
+NONE asserted in this file. SHA claims deferred to terminal commit
+observation per F-NO-SHA-OF-SELF (DOCTRINE §22).

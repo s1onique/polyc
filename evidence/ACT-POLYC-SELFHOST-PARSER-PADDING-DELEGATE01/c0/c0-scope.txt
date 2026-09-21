@@ -1,0 +1,63 @@
+# C0 Scope
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01
+
+## Permitted semantic source changes
+
+Per ACT §6:
+
+```text
+src/parser.c
+```
+
+Plus minimum bridge/header/build plumbing required to make
+BootstrapCalcPadding callable from the production parser.
+
+Potential support surfaces, only if mechanically required:
+
+```text
+src/parser_bridge.h          (may be created or existing reused)
+Makefile                     (linker/build plumbing)
+src/CMakeLists.txt           (component linking for stage1+ builds)
+tools/bootstrap/...          (existing parser bootstrap integration surface)
+```
+
+## Non-goals (ACT §5)
+
+This ACT MUST NOT:
+
+* change BootstrapCalcPadding semantics
+* redesign class layout
+* redesign union layout
+* migrate CalcClassSize
+* migrate CalcUnionSize
+* migrate parseCompoundStatementInternal
+* alter parser recovery
+* alter lexer semantics
+* regenerate the LEXER07 baseline
+* change known LEXER07 failure classification
+* repair historical Factory ACTs
+* introduce Python
+* implement unrelated parser primitives
+* remove the stage0 legacy control before evidence is complete
+
+## C1 discovery requirement
+
+C1 must discover the actual current pattern before C2 chooses exact files.
+No speculative bridge file should be created if an existing ABI mechanism
+already handles this call.
+
+## Required semantic invariant (ACT §3)
+
+```text
+padding(offset, size) =
+    0                         if size == 0
+    0                         if offset % size == 0
+    size - (offset % size)    otherwise
+```
+
+```text
+CALC_PADDING_SEMANTIC_DELTA = 0
+```
+
+This ACT does NOT authorize changing that function.

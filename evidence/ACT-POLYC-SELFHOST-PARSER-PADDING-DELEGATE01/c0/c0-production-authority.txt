@@ -1,0 +1,68 @@
+# C0 Production Authority
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01
+
+## Current production authority
+
+```sh
+$ grep -n 'int CalcPadding' src/parser.c
+430:int CalcPadding(int offset, int size) {
+
+$ grep -n 'CalcPadding' src/parser.c
+430:int CalcPadding(int offset, int size) {
+447:long long ParserLegacyCalcPaddingOracle(long long offset, long long size)
+449:    return (long long)CalcPadding((int)offset, (int)size);
+482:        *aligned_size = offset + CalcPadding(offset, max_align);
+512:            offset += CalcPadding(offset, fa);
+525:            offset += CalcPadding(offset, fa);
+538:        *aligned_size = offset + CalcPadding(offset, max_align);
+570:        *real_size = max_size + CalcPadding(max_size, max_align);
+```
+
+Five (5) production call sites in src/parser.c; all reach
+src/parser.c::CalcPadding directly. No call site references
+BootstrapCalcPadding.
+
+```sh
+$ grep -n 'BootstrapCalcPadding' src/parser.c
+(no output)
+```
+
+```sh
+$ nm build/parser-padding-subject.o | grep -i CalcPadding
+0000000000000000 T _BootstrapCalcPadding
+```
+
+The PolyC subject object exists, contains the symbol, but is NOT
+referenced by any production source file.
+
+```sh
+$ nm build/hcc | grep -i CalcPadding
+```
+
+(Production ./hcc binary at ./hcc -- contains CalcPadding symbol as part of
+src/parser.c.o link, but does NOT contain _BootstrapCalcPadding because
+the bootstrap object is not linked into the production ./hcc.)
+
+## Predicates
+
+```text
+PRODUCTION_CALC_PADDING_OWNER=LEGACY_C
+BOOTSTRAP_CALC_PADDING_PRODUCTION_CALL_COUNT=0
+```
+
+## Source-of-truth hierarchy (AGENTS.md §"Source-of-truth hierarchy")
+
+Authority for the "production uses legacy C" claim, in descending order:
+
+```text
+1. executable source + tests        = src/parser.c lines 430, 482, 512, 525, 538, 570
+2. fresh observations               = grep above
+3. active ACT contract              = ACT §4 (production-authority definition)
+4. current project docs             = SELF-HOST-COMPONENTS.tsv (no entry for padding yet)
+5. historical ACT/evidence          = CORRECTION04 HANDOFF §"Board effect at HANDOFF commit time"
+6. issue/reviewer/prompt prose      = not used
+7. agent inference                  = not used
+```
+
+PRODUCTION_AUTHORITY_AT_ENTRY=LEGACY_C
