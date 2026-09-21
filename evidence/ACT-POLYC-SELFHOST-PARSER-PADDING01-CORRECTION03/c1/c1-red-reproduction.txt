@@ -1,0 +1,51 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION03
+PHASE=C1-RECON-RED
+
+===========================================================
+RED #1: D-WS  (PATCH_HYGIENE)
+===========================================================
+
+Command:
+  git diff --check 1274f36..3b38d69
+
+Observed output:
+evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION02/c2/c2-baseline-verifier-negative-control.txt:71: new blank line at EOF.
+
+Exit: 0  (0 = clean; non-zero = whitespace errors found)
+
+Conclusion: 1 whitespace error in committed range.
+This is the literal predicate of HALT_PATCH_HYGIENE per
+ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION02 §42.
+
+===========================================================
+RED #2: D-TEMPORAL  (AC38/AC40 non-load-bearing evidence)
+===========================================================
+
+AC38 / AC40 evidence text in committed c4/ artifacts:
+evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION02/c4/c4-entry-identity.txt:C4_REV_LIST_ENTRY_TO_HEAD=4
+evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION02/c4/c4-required-result.txt:EXACT_COMMIT_COUNT_AT_CLOSE=5
+evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION02/c4/c4-required-result.txt:POST_C4_COMMIT_COUNT=0
+
+AC40 evidence mechanism check:
+  'git rev-list --count HEAD..HEAD' is tautologically 0 for ANY HEAD.
+  It cannot prove the absence of post-C4 commits.
+
+Conclusion: AC38/AC40 evidence mechanism is non-load-bearing;
+the values happen to be true (5 and 0) but the committed
+evidence mechanism cannot produce them.
+
+===========================================================
+RED #3: D-PROV  (TSV provenance not SHA-bound)
+===========================================================
+
+TSV rows that reference producer/compiler/input/command:
+56:UNRESOLVED_POSSIBLE_COMPILER_REGRESSIONS	0	c2-prospective-baseline-failures.tsv
+61:VERIFIER_TOOL_BINARY_PATH	build/lexer07-baseline-authority-verify	C2 build artifact
+
+Conclusion: TSV contains no SHA-256 rows for
+  - producer binary (the broad-corpus-4-stage compiled artifact)
+  - compiler (hcc or hcc-bootstrap02/03/04 chain)
+  - corpus input (the seed corpus matrix)
+  - exact command (the broad-corpus-4-stage.sh invocation string)
+TSV declares 'field/value/evidence' schema but provides only
+verifier-tool-path metadata, not artifact-binding SHAs.

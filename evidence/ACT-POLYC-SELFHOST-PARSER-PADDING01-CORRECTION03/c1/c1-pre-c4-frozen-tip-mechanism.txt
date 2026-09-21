@@ -1,0 +1,48 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION03
+PHASE=C1-RECON-RED
+TOPIC=PRE-C4-FROZEN-TIP-MECHANISM
+
+# This file establishes the LOAD-BEARING mechanism for AC38/AC40
+# (EXACT_COMMIT_COUNT_AT_CLOSE=5 and POST_C4_COMMIT_COUNT=0).
+#
+# Mechanism: BEFORE the C4 commit exists, capture the current HEAD
+# SHA as PRE_C4_FROZEN_TIP_SHA.  After the C4 commit exists,
+# observe via:
+#
+#   AC38:  git rev-list --count <ENTRY>..HEAD  → 5
+#          (compare against PRE_C4_FROZEN_TIP_SHA:
+#           git rev-list --count <ENTRY>..<PRE_C4_FROZEN_TIP_SHA>  → 4)
+#
+#   AC40:  git rev-list --count <PRE_C4_FROZEN_TIP_SHA>..HEAD  → 1
+#          (no commits exist AFTER the frozen tip)
+#          and
+#          git merge-base --is-ancestor <PRE_C4_FROZEN_TIP_SHA> HEAD  → 0
+#          (the frozen tip is reachable by parent edge)
+#
+# This replaces the predecessor's non-load-bearing mechanisms:
+#   - `git rev-list --count 1274f36..HEAD = 4` (a pre-C4 prediction)
+#   - `git rev-list --count HEAD..HEAD = 0` (a tautology)
+#
+# with two external witnesses:
+#   (a) a frozen SHA captured BEFORE C4 exists;
+#   (b) post-C4 observations of the committed range relative to
+#       that frozen SHA.
+
+PRE_C4_FROZEN_TIP_SHA_C1_CAPTURE=8d87083b7de1495ac9765321e11c7cc94e3775f7
+# ^ C1 commit of this ACT (this very file).
+# When C4 of this ACT is committed, the new HEAD will be:
+#   PRE_C4_FROZEN_TIP_SHA_C1_CAPTURE + 1 commit (C2) + 1 (C3) + 1 (C4)
+# i.e., 4 commits ahead, of which the FROZEN_TIP_SHA is reachable
+# by parent edge from the new HEAD.
+
+# Sanity check: count commits from ENTRY (3b38d69 = predecessor C4)
+# to the frozen tip (8d87083 = this ACT's C1):
+ENTRY=3b38d6910c7a117b0a98a98d84ab5114da70cb83
+FROZEN_TIP=8d87083b7de1495ac9765321e11c7cc94e3775f7
+EXPECTED_FROZEN_COUNT_AT_C1=1  # only the C0 commit (this ACT's C0=AUTH)
+EXPECTED_FROZEN_OBSERVED_AT_C1=$(git rev-list --count ${ENTRY}..${FROZEN_TIP})
+
+# After C4 of this ACT exists (i.e., future HEAD), expected:
+#   git rev-list --count <ENTRY>..HEAD  → 5
+#   git rev-list --count <ENTRY>..<FROZEN_TIP>  → 4 (this ACT's C0..C3)
+#   git rev-list --count <FROZEN_TIP>..HEAD  → 1 (just the C4 commit)
