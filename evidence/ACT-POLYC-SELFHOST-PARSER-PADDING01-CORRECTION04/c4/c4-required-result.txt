@@ -1,0 +1,90 @@
+# C4 Candidate Required Result (committed at C4)
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION04
+PHASE=C4 (body label) / ACT-Phase trailer=CLOSE
+
+## In-repository closure predicate (asserted at C4 commit time)
+
+```
+COMMITTED_VERDICT=PASS_PENDING_EXTERNAL_TERMINALITY
+
+PREDECESSOR_CORRECTION03_EFFECTIVE_VERDICT=HALT_FALSE_GREEN
+
+CORRECTION02_CLOSED_EVIDENCE_RESTORED=YES
+CORRECTION02_CLOSED_EVIDENCE_DELTA=0
+
+PROSPECTIVE_LEXER07_BASELINE_SHA256=00c54408bf29237cf526aeed097f6b097f22ae682683675a0bf5ab9f9c202b9a
+
+BASELINE_PROVENANCE_HASHES_UNCHANGED=YES
+PARSER_PADDING_SUBJECT_DELTA=0
+
+PATCH_HYGIENE_PROSPECTIVE=PASS
+GATE_FAST=PASS
+APPEND_ONLY_FAIL=0
+
+PRE_C4_TIP_SHA=7ec7360f7301dff8bbab445a637affa6fb65eea5
+C4_IS_CANDIDATE_5TH_COMMIT=YES
+
+EXTERNAL_TERMINALITY_GATE=PENDING
+PARSER_PADDING_DELEGATE01=BLOCKED_PENDING_EXTERNAL_GATE
+```
+
+## NOT claimed inside C4 (per Lock C)
+
+```
+POST_C4_COMMIT_COUNT=0     -- asserted by external terminality gate ONLY
+```
+
+A C4 commit cannot observe its own terminality without an external
+observer.  Committing `POST_C4_COMMIT_COUNT=0` would require another
+commit, which would invalidate the closure.
+
+## AC ledger (full)
+
+See `mandatory-ac-status-c4-candidate.tsv`.
+
+AC01..AC36 = PASS or COMMITTED.
+AC37..AC40 = DEFERRED_TO_EXTERNAL (the external terminality gate
+asserts these AFTER C4 exists, without creating a follow-up commit).
+
+## External terminality gate contract
+
+After C4 commit exists, the external gate (a pre-push hook, CI
+status check, or explicit reviewer invocation) runs:
+
+```sh
+C4_SHA="$(git rev-parse HEAD)"
+
+git rev-list --count 9ea5bc4.."$C4_SHA"           # expected: 5
+git merge-base --is-ancestor 7ec7360 "$C4_SHA"   # expected: 0 (parent check)
+bash scripts/quality/factory-v2-range-check.sh \
+    ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION04 \
+    "$C4_SHA"
+git status --short                                # expected: empty
+```
+
+Required observations:
+
+```
+CORRECTION04_RANGE_COMMIT_COUNT=5
+C4_DIRECT_PARENT_IS_C3=YES
+FACTORY_V2_RANGE_CHECK=PASS
+WORKTREE_CLEAN=YES
+LOCAL_REF_STILL_EQUALS_C4_SHA=YES
+```
+
+If the gate passes:
+
+```
+EFFECTIVE_VERDICT=PASS_FORWARD_BASELINE_GOVERNANCE_REQUALIFIED
+PARSER_PADDING_DELEGATE01=READY
+```
+
+If the gate fails:
+
+```
+EFFECTIVE_VERDICT=HALT_EXTERNAL_TERMINALITY_GATE
+PARSER_PADDING_DELEGATE01=BLOCKED
+```
+
+In both cases, no repository commit is created by the gate.
