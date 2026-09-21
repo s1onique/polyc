@@ -1,0 +1,36 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON01
+ACT_PHASE=C3-VERIFY-FALSIFY
+EVIDENCE_KIND=ranking-controls-replay
+
+PURPOSE
+  Replay the 5 ranking controls from C2 at C3, against the same
+  C1/C2 evidence (which has not been edited). If any control flips
+  its verdict at C3, the ACT must HALT_RECON_INCONSISTENCY.
+
+CONTROL_1: RANKING_RESPONDS_TO_R0_PERTURBATION
+  c2 result: YES
+  c3 result: YES (same perturbation: CAND-002 R0 0->1, CAND-001 promotes to rank 1)
+  match: YES
+
+CONTROL_2: SELECTED_REMOVED_FROM_RANKING
+  c2 result: YES
+  c3 result: YES (removing CAND-002 promotes CAND-001 to rank 1)
+  match: YES
+
+CONTROL_3: R0_ALONE_CANNOT_GREEN_INELIGIBLE_CANDIDATE
+  c2 result: YES (CAND-014 R0 5->0 still rejected by recovery+graph+callback)
+  c3 result: YES
+  match: YES
+
+CONTROL_4: OPAQUE_HANDLE_RECLASSIFICATION_REJECTED
+  c2 result: YES (CAND-013 opaque handles still rejected by POINTER_IDENTITY_OPS>0)
+  c3 result: YES
+  match: YES
+
+CONTROL_5: CALLBACK_TABLE_RECLASSIFICATION_REJECTED
+  c2 result: YES (CAND-014 callback table still rejected by recovery+graph+callback)
+  c3 result: YES
+  match: YES
+
+RANKING_CONTROLS=PASS
+ALL_CONTROLS_REPLAY_MATCH=YES

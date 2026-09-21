@@ -1,0 +1,51 @@
+ac_id	status	evidence_path	witness	notes
+AC01	PASS	c0/c0-scope.txt	C0_AUTH_BEFORE_RECON=YES	authorization artifact + c0 evidence staged before any C1 inventory evidence
+AC02	PASS	c0/c0-entry-identity.txt	WORKTREE_CLEAN_AT_C0=YES	git status --porcelain=v1 empty; git diff --check clean at C0
+AC03	PASS	c3/c3-production-source-delta.txt	PRODUCTION_SOURCE_DELTA=0	git diff b1aa4ab6..HEAD -- src/ tools/bootstrap/ src/holyc-lib/ = empty
+AC04	PASS	c3/c3-production-source-delta.txt	COMPILER_SEMANTIC_DELTA=0	no parser / lexer / ast / cctrl source change
+AC05	PASS	c1/c1-inventory-summary.txt	INVENTORY_TOTAL=14	14 >= 10
+AC06	PASS	c1/c1-required-result.txt	UNKNOWN_CANDIDATES=0	every inspected parser candidate classified
+AC07	PASS	c1/c1-parser-function-universe.tsv	UNKNOWN_FUNCTION_DISPOSITION=0	64 functions/static-helpers each carry a disposition across 6 columns; no row is fully blank
+AC08	PASS	c1/c1-recovery-coupling.tsv	UNCLASSIFIED_RECOVERY_COUPLING=0	14/14 rows have all classification cells filled
+AC09	PASS	c1/c1-graph-coupling.tsv	UNCLASSIFIED_GRAPH_COUPLING=0	14/14 rows have all classification cells filled
+AC10	PASS	c1/c1-callback-coupling.tsv	UNCLASSIFIED_CALLBACK_COUPLING=0	14/14 rows have all classification cells filled
+AC11	PASS	c1/c1-known-negative-compound-control.txt	FAILED_COMPOUND_WHOLE_FUNCTION_CONTROL=PASS	CAND-014 reproduces R0=5, ineligible
+AC12	PASS	c1/c1-known-positive-selfhosted-control.txt	KNOWN_PURE_SELFHOSTED_CONTROL=PASS	LEXER01 operator-classify reproduces R0=0 + ALREADY_SELFHOSTED
+AC13	PASS	c2/c2-opaque-handle-control.txt	OPAQUE_HANDLE_GREENWASH=0	opaque-handle reclassification of CAND-013 still rejected
+AC14	PASS	c2/c2-callback-table-control.txt	CALLBACK_TABLE_GREENWASH=0	callback-table reclassification of CAND-014 still rejected
+AC15	PASS	c3/c3-eligibility-recompute.tsv	ELIGIBILITY_RECOMPUTE_MATCH=YES	14/14 rows match between C2 and C3
+AC16	PASS	c1/c1-required-result.txt	ELIGIBLE_CANDIDATES=8	success path: 8 >= 1
+AC17	PASS	c2/c2-ranked-candidates.tsv	SELECTED_COUNT=1	exactly one row has selection_status=SELECTED
+AC18	PASS	c2/c2-selected-target.txt	SELECTED_R0=0	0 <= 2
+AC19	PASS	c2/c2-selected-target.txt	SELECTED_OWNS_SETJMP=NO SELECTED_WRITES_CURRENT_RECOVERY=NO SELECTED_REQUIRES_NONLOCAL_RECOVERY=NO	all three NO
+AC20	PASS	c2/c2-selected-target.txt	SELECTED_HOST_GRAPH_WRITES=0 SELECTED_POINTER_IDENTITY_OPS=0	both zero
+AC21	PASS	c2/c2-selected-target.txt	SELECTED_PARSER_CALLBACK_COUNT=0 SELECTED_SEMANTIC_CALLBACK_COUNT=0	both zero
+AC22	PASS	c2/c2-selected-target.txt	SELECTED_DETERMINISTIC_PROJECTION=YES	YES
+AC23	PASS	c2/c2-selected-abi-sketch.txt	SELECTED_ABI_HOST_IDENTITY_FIELDS=0	no Cctrl*/Ast*/Map*/List*/jmp_buf*/callback table/opaque handle/void*/opaque host ptr
+AC24	PASS	c2/c2-selected-abi-sketch.txt	LEGACY_ORACLE_OBSERVABLE=YES	returned int 0..size-1 is the oracle
+AC25	PASS	c2/c2-selected-abi-sketch.txt	PRODUCTION_SEAM_FEASIBLE=YES	parseClassOffsets and parseUnionOffsets still call C CalcPadding (5 sites)
+AC26	PASS	c2/c2-selected-abi-sketch.txt	COMPONENT_OBJECT_FIXEDPOINT_FEASIBLE=YES	2-scalar pure function; standalone build feasible
+AC27	PASS	c2/c2-selected-red-contract.txt	CAUSAL_MUTATION_CLASS_DEFINED=YES	Class A-D mutation classes recorded
+AC28	PASS	c2/c2-selected-fixture-model.tsv	FIXTURE_MODEL_COMPLETE=YES	>=74 inputs across 11 positive classes + 1 negative class + 4 mutation-sensitive classes
+AC29	PASS	c2/c2-selected-red-contract.txt	NEXT_RED_COUNT=5 NEXT_RED_MECHANICALLY_REPRODUCIBLE=YES	5 >= 3
+AC30	PASS	c2/c2-selected-proof-model.tsv	PROOF_MODEL_UNKNOWN=0 NEXT_PROOF_MODEL_COMPLETE=YES	every proof_class either REQUIRED or NOT_APPLICABLE_WITH_REASON; no TBD
+AC31	PASS	c2/c2-ranking-perturbation.txt	RANKING_RESPONDS_TO_R0_PERTURBATION=YES	CAND-002 R0 0->1 displaces CAND-001
+AC32	PASS	c2/c2-selection-removal-control.txt	SELECTED_REMOVED_FROM_RANKING=YES	removing CAND-002 promotes CAND-001 to rank 1
+AC33	PASS	c2/c2-r0-negative-control.txt	R0_ALONE_CANNOT_GREEN_INELIGIBLE_CANDIDATE=YES	CAND-014 R0 5->0 still rejected
+AC34	PASS	c2/c2-opaque-handle-control.txt	OPAQUE_HANDLE_RECLASSIFICATION_REJECTED=YES	CAND-013 with U64 handles still rejected by POINTER_IDENTITY_OPS>0
+AC35	PASS	c2/c2-callback-table-control.txt	CALLBACK_TABLE_RECLASSIFICATION_REJECTED=YES	CAND-014 with callback table still rejected
+AC36	PASS	c3/c3-inventory-recompute.tsv	INVENTORY_RECOMPUTE_MATCH=YES	14/14 line ranges match between C1 and C3
+AC37	PASS	c3/c3-ranking-recompute.tsv	RANKING_RECOMPUTE_MATCH=YES	8/8 rank positions match between C2 and C3
+AC38	PASS	c3/c3-selected-boundary-audit.txt	SELECTED_BOUNDARY_AUDIT=PASS	no setjmp, no recovery mutation, no host graph writes, no pointer identity, no callbacks, deterministic, production caller exists
+AC39	PASS	c3/c3-failed-compound-control.txt	WHOLE_COMPOUND_STILL_INELIGIBLE=YES	CAND-014 reclassified at C3 still ineligible
+AC40	PASS	c3/c3-lexer01-conservation.txt c3/c3-lexer02-conservation.txt c3/c3-lexer03-conservation.txt c3/c3-lexer04-conservation.txt	LEXER01..04_CONSERVATION=PASS	by-construction: no production source change
+AC41	PASS	c3/c3-lexer07-delta.txt	NEW_LEXER07_FAILURES=0	no lexer source touched
+AC42	PASS	c3/c3-f-polyc-tools.txt	NEW_SUBSTANTIVE_NON_POLYC_TOOLS=0	no new tools or scripts added
+AC43	PASS	c3/c3-f-no-python.txt	NEW_PYTHON_SOURCES=0 NEW_PYTHON_INVOCATIONS=0	no Python files or invocations added
+AC44	PASS	c3/c3-f14.txt	CLOSED_EVIDENCE_DELTA=0 CLOSED_HANDOFF_DELTA=0	no closed evidence or HANDOFF files modified
+AC45	PASS	c3/c3-factory-gates.txt	GATE_FAST=PASS	make gate-fast exits 0
+AC46	PASS	c3/c3-append-only.txt	APPEND_ONLY_FAIL=0	11/11 NC tests PASS
+AC47	PASS	c3/c3-patch-hygiene.txt	PATCH_HYGIENE_ERRORS=0	git diff --check b1aa4ab6..HEAD = empty
+AC48	PASS	c3/c3-phase-purity.txt	C3_PHASE_PURITY=PASS	3 commits in lifecycle so far; no phase-corrective commits
+AC49	PASS	c2/c2-selected-target.txt	NEXT_SCOPE_FROZEN=YES	successor scope locked at C2 close
+AC50	DEFERRED_TO_C4	c4/c4-terminal-ledger.txt	EXACT_COMMIT_COUNT_AT_CLOSE=5	will be set in C4

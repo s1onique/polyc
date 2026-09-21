@@ -1,0 +1,31 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON01
+ACT_PHASE=C3-VERIFY-FALSIFY
+EVIDENCE_KIND=selected-source-recheck
+
+SELECTED_CANDIDATE=CAND-002 CalcPadding
+SELECTED_FILE=src/parser.c
+SELECTED_LINE_START_C2=430
+SELECTED_LINE_END_C2=438
+SELECTED_LOC_C2=9
+
+C3_DIRECT_RE_READ_AT_HEAD:
+  line 430 = "int CalcPadding(int offset, int size) {"
+  line 438 = "}"
+  actual_loc=9 (430..438 inclusive)
+
+SHA256_OF_REGION_AT_HEAD:
+  cmd: sed -n '430,438p' src/parser.c | sha256sum
+  sha256=cbdb3e2ca3e5c6c94aa7eef45dd70fa2b48755b2a24ca508d8d40b553c36fba2
+
+SOURCE_REGION_STILL_MATCHES=YES
+SOURCE_SHA256_MATCHES_C2=YES
+  (the C2 entry in c2-selected-target.txt recorded line_start=430,
+   line_end=438; C3 reads the same lines at HEAD and SHA256 matches
+   the C2-recorded region content)
+
+NO_PRODUCTION_CHANGE_VERIFICATION:
+  cmd: git diff b1aa4ab6..HEAD -- src/parser.c
+  output: (empty)
+  conclusion: src/parser.c lines 430..438 are byte-identical to the
+    C2-recorded region. The selection is grounded in unmodified
+    live source.

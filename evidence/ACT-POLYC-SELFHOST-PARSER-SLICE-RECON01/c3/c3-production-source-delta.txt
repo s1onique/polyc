@@ -1,0 +1,21 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON01
+ACT_PHASE=C3-VERIFY-FALSIFY
+EVIDENCE_KIND=production-source-delta
+
+PRODUCTION_SCOPE_DEFINITION (per ACT SECT_7):
+  src/
+  tools/bootstrap/
+  src/holyc-lib/
+
+VERIFICATION:
+  cmd: git diff b1aa4ab6..HEAD -- src/ tools/bootstrap/ src/holyc-lib/
+  output: (empty)
+  expected: (empty)
+
+  cmd: git diff b1aa4ab6..HEAD --stat
+  output: only docs/ and evidence/ paths modified
+  expected: only docs/ and evidence/ paths modified
+
+PRODUCTION_SOURCE_DELTA=0
+COMPILER_SEMANTIC_DELTA=0
+SUCCESSOR_IMPLEMENTATION_DELTA=0

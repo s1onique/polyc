@@ -1,0 +1,47 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON01
+ACT_PHASE=C3-VERIFY-FALSIFY
+EVIDENCE_KIND=failed-compound-control-replay
+
+PURPOSE
+  Replay the known-negative control (CAND-014 parseCompoundStatementInternal)
+  at C3 to confirm that it remains ineligible under the new R0 model.
+  This is the same check that C1 ran; if it now returns eligible,
+  the ranking model has somehow been corrupted and the ACT must
+  HALT_RECON_INCONSISTENCY.
+
+CONTROL_CANDIDATE=CAND-014 parseCompoundStatementInternal
+
+C3_RECLASSIFICATION (read fresh from src/parser.c):
+
+  r0_state_boundary_cost=5
+  owns_setjmp              = YES   (jmp_buf stmt_recovery at 1753; setjmp at 1789)
+  reads_current_recovery   = YES   (line 1770 save)
+  writes_current_recovery  = YES   (line 1770 install; 1876 restore)
+  requires_nonlocal_recovery=YES  (recovery body 1790..1802)
+  host_graph_reads         = 11    (per c1-graph-coupling.tsv; unchanged)
+  host_graph_writes        = 5     (per c1-graph-coupling.tsv; unchanged)
+  pointer_identity_ops     = 9     (per c1-graph-coupling.tsv; unchanged)
+  parser_callback_count    = 9     (per c1-callback-coupling.tsv; unchanged)
+  semantic_callback_count  = 0
+  deterministic_projection = NO
+  candidate_kind           = ORCHESTRATOR
+
+ELIGIBILITY_PREDICATE_RESULT:
+  r0_state_boundary_cost   = 5     (FAIL: > 2)
+  owns_setjmp              = YES   (FAIL)
+  writes_current_recovery  = YES   (FAIL)
+  requires_nonlocal_recovery=YES  (FAIL)
+  host_graph_writes        = 5     (FAIL: > 0)
+  pointer_identity_ops     = 9     (FAIL: > 0)
+  parser_callback_count    = 9     (FAIL: > 0)
+  deterministic_projection = NO    (FAIL)
+  ELIGIBLE = NO
+
+WHOLE_COMPOUND_STILL_INELIGIBLE=YES
+
+CONCLUSION
+  The PARSER01-CORRECTION01 HALT_DEPENDENCY_EXPLOSION verdict holds:
+  parseCompoundStatementInternal cannot be migrated to a PolyC
+  component under any of the candidate ABIs the recon evaluated.
+  This is the required C3 outcome; no production mutation has
+  occurred.

@@ -1,0 +1,32 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON01
+ACT_PHASE=C3-VERIFY-FALSIFY
+EVIDENCE_KIND=selected-boundary-audit
+
+SELECTED_CANDIDATE=CAND-002 CalcPadding
+SELECTED_FILE=src/parser.c
+SELECTED_REGION=430..438
+
+BOUNDARY_AUDIT (against ACT SECT_67):
+
+  no setjmp/longjmp ownership       YES   function body has no setjmp/longjmp
+  no current_recovery mutation      YES   function does not touch cc->current_recovery
+  no host graph writes              YES   function does not write any Cctrl/Ast/Map/List state
+  no pointer-identity requirement   YES   inputs are pure scalars (int, int); result is a scalar
+  no semantic callback dependency   YES   function has no function calls (not even ast* helpers)
+  deterministic output projection   YES   result is a function of (offset, size) only
+  production caller exists          YES   5 callers in parseClassOffsets (lines 470,500,513,526)
+                                              and parseUnionOffsets (line 558)
+
+SELECTED_BOUNDARY_AUDIT=PASS
+
+CROSS_REFERENCE_TO_ABI_SKETCH:
+  c2-selected-abi-sketch.txt declared:
+    I64 BootstrapCalcPadding(I64 offset, I64 size) -> I64
+  C3 audit confirms the C function fits this exact shape:
+    int CalcPadding(int offset, int size) -> int
+  No host pointer identity crosses the boundary in either direction.
+
+ABI_HOST_IDENTITY_FIELDS=0
+  The ABI uses two scalar inputs (I64 offset, I64 size) and returns
+  one scalar (I64 pad_bytes). No Cctrl*/Ast*/Map*/List*/jmp_buf*,
+  no callback tables, no opaque handles, no void* host context.
