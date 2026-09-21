@@ -428,6 +428,34 @@ u32 CalcClassSize(List *fields) {
 }
 
 int CalcPadding(int offset, int size) {
+#ifdef HCC_USE_SELFHOST_PARSER_PADDING
+    /* ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01 C2 IMPL:
+     * delegate to the qualified PolyC BootstrapCalcPadding when the
+     * parser-padding delegation flag is enabled. The legacy C
+     * algorithm body below is reachable ONLY in the stage0 evidence
+     * path (the parser-padding-legacy.o build), which compiles this
+     * file without HCC_USE_SELFHOST_PARSER_PADDING. Production ./hcc
+     * is built with the macro defined (see src/CMakeLists.txt) and
+     * therefore always routes through BootstrapCalcPadding.
+     *
+     * The dedicated macro name (rather than the generic
+     * HCC_USE_SELFHOST_COMPONENTS) is required because that generic
+     * selector also activates the lexer delegations in
+     * src/lexer.c, which would require linking the lexer subjects
+     * too. The parser-padding migration is independent of the lexer
+     * migrations and is scoped to its own flag.
+     *
+     * The PolyC ABI is `I64 offset, I64 size -> I64 padding` (scalar
+     * purity per ACT §35). The legacy C wrapper is `int(int,int)`.
+     * The cast chain `(I64)int -> I64 -> I64 -> int` preserves the
+     * qualified domain (`offset >= 0`, `size >= 0`). */
+    extern long long BootstrapCalcPadding(long long offset, long long size);
+    return (int)BootstrapCalcPadding((long long)offset, (long long)size);
+#else
+    /* Stage0 evidence path: pure legacy C algorithm. Reachable only
+     * in non-HCC_USE_SELFHOST_PARSER_PADDING builds (the
+     * differential's parser-padding-legacy.o). Production never
+     * executes this branch. */
     /* Zero-size fields (e.g. trailing `U0 body;` placeholders used as
      * "rest of bytes" markers) need no padding. Guard before `% size`
      * so we don't depend on platform UB for `% 0` (x86 traps, ARM
@@ -435,6 +463,7 @@ int CalcPadding(int offset, int size) {
      * and zero out the whole class size). */
     if (size == 0) return 0;
     return offset % size == 0 ? 0 : size - offset % size;
+#endif
 }
 
 /* ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION01 C2 IMPL: tiny ABI

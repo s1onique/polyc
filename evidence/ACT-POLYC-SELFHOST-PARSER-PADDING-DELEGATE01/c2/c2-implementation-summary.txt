@@ -1,0 +1,112 @@
+# C2 Implementation Summary
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01
+
+## Scope (allowed by ACT §6, ACT §31)
+
+```text
+src/parser.c                                 (semantic delegation)
+src/CMakeLists.txt                           (build plumbing for production hcc)
+```
+
+No other files modified.
+
+## Semantic change in src/parser.c::CalcPadding
+
+```c
+int CalcPadding(int offset, int size) {
+#ifdef HCC_USE_SELFHOST_PARSER_PADDING
+    extern long long BootstrapCalcPadding(long long offset, long long size);
+    return (int)BootstrapCalcPadding((long long)offset, (long long)size);
+#else
+    /* Stage0 evidence path: legacy C algorithm */
+    if (size == 0) return 0;
+    return offset % size == 0 ? 0 : size - offset % size;
+#endif
+}
+```
+
+The legacy algorithm body is preserved inside the `#else` branch for
+the differential's stage0 oracle. The production path (with
+`HCC_USE_SELFHOST_PARSER_PADDING` defined) routes exclusively through
+`BootstrapCalcPadding`.
+
+## Build wiring in src/CMakeLists.txt
+
+A new option `HCC_USE_SELFHOST_PARSER_PADDING` (default ON) is added
+immediately after `add_executable(hcc ...)`. When ON, CMake:
+
+* defines `HCC_USE_SELFHOST_PARSER_PADDING` for the production hcc
+  target;
+* links `build/parser-padding-subject.o` into hcc.
+
+The subject object is searched at `${CMAKE_SOURCE_DIR}/../build/parser-padding-subject.o`
+(the existing convention; also the default location produced by
+`make parser-padding-component`). If the file is missing, CMake
+errors out with a clear build instruction.
+
+## Why a dedicated macro
+
+The generic `HCC_USE_SELFHOST_COMPONENTS` flag activates ALL lexer
+delegations in src/lexer.c (BootstrapScanIdent, BootstrapClassifyOperator,
+BootstrapScanScalarLiteral, BootstrapScanTrivia, BootstrapLinkDirective).
+Enabling it for production hcc would require linking all five lexer
+subject objects — out of scope for this ACT.
+
+The dedicated `HCC_USE_SELFHOST_PARSER_PADDING` flag isolates the
+parser-padding migration so it can land independently. The C3
+verification confirms this isolation is correct: production parser
+output is byte-identical to the legacy-C baseline.
+
+## Local GREEN before commit (ACT §37)
+
+Run before C2 commit:
+
+* direct parser-padding differential: PARSER_PADDING_TEST=PASS
+* independent algebraic verifier: PARSER_PADDING_ALGEBRAIC_INVARIANTS=PASS
+  (built into `make parser-padding-test`)
+* existing parser-padding mutation verifier:
+  PARSER_PADDING_MUTATION_LOAD_BEARING=PASS
+* component fixed-point verifier: PARSER_PADDING_FIXED_POINT_4_GENERATIONS=PASS
+  with PAIR_PASS=6/6
+* production fixture seam G0/G1 byte-identity verified for
+  FIXTURE_ALIGNOF, FIXTURE_U0_TAIL, FIXTURE_INHERITANCE
+* parser layout tests: 06, 07, 24, 42, 46, 47, 65 all PASS
+
+```text
+C2_LOCAL_REGRESSION_COUNT=0
+```
+
+## Subject freeze check (ACT §38)
+
+```sh
+$ sha256sum tools/bootstrap/selfhost-parser-padding.HC
+b555b76b484edda5830abba46dbda803a12ec1834f9ab0a64763f5899f2452f3  tools/bootstrap/selfhost-parser-padding.HC
+```
+
+Matches the C0 freeze (C0 captured the same SHA in
+`evidence/ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01/c0/c0-subject-freeze.tsv`).
+
+```text
+BOOTSTRAP_CALC_PADDING_SOURCE_DELTA=0
+```
+
+## Patch hygiene (ACT §63)
+
+```sh
+$ git diff --check
+(empty)
+```
+
+```text
+PATCH_HYGIENE_ERRORS=0
+```
+
+## C2 commit
+
+```text
+ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01 C2: IMPL
+```
+
+After this commit no further implementation mutation is allowed. C3
+must be evidence-only (ACT §40).

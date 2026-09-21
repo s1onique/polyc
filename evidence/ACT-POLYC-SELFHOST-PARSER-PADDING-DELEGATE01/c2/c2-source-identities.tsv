@@ -1,0 +1,18 @@
+field	value	evidence
+ACT_ID	ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01	ACT body
+C2_PHASE	IMPL	git log -1 --format=%s
+SUBJECT_FILE	tools/bootstrap/selfhost-parser-padding.HC	freeze contract
+SUBJECT_SHA256_PRE_C2	b555b76b484edda5830abba46dbda803a12ec1834f9ab0a64763f5899f2452f3	sha256sum
+SUBJECT_SHA256_POST_C2	b555b76b484edda5830abba46dbda803a12ec1834f9ab0a64763f5899f2452f3	sha256sum
+SUBJECT_SOURCE_DELTA	0	diff / git status --short
+PARSER_C_FILE	src/parser.c	ACT §6 scope
+PARSER_C_LINE_430_INT_CALCPADDING	delegating wrapper with #ifdef HCC_USE_SELFHOST_PARSER_PADDING	cat src/parser.c | head -460 | tail -40
+CMAKELISTS_FILE	src/CMakeLists.txt	ACT §6 scope
+CMAKELISTS_HOOK_OPTION	HCC_USE_SELFHOST_PARSER_PADDING	ACT §32 delegation rule
+CMAKELISTS_HOOK_DEFINE	-DHCC_USE_SELFHOST_PARSER_PADDING	cat src/CMakeLists.txt
+CMAKELISTS_HOOK_LINK	${PARSER_PADDING_OBJECT}	cat src/CMakeLists.txt
+NEW_HEADER_INTRODUCED	none (declaration in-file in src/parser.c)	c1-delegation-design.txt
+NEW_MACRO_INTRODUCED	HCC_USE_SELFHOST_PARSER_PADDING (dedicated parser-padding flag)	c1-delegation-design.txt
+NEW_BRIDGE_FILE_INTRODUCED	none	git status --short
+PRODUCTION_BINARY_REBUILT	build/hcc (with delegation)	sha256sum
+PRISTINE_PRODUCTION_BINARY	./hcc (old; preserved as entry reference)	sha256sum

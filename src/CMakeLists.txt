@@ -176,6 +176,54 @@ endif()
 
 add_executable(hcc ${SOURCES} ${HEADERS})
 
+# ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01 C2 IMPL:
+# Link the qualified PolyC BootstrapCalcPadding component into the
+# production hcc binary so the parser delegates padding calculation
+# to the PolyC implementation. The dedicated selector
+# `HCC_USE_SELFHOST_PARSER_PADDING` is defined here so the production
+# parser-padding delegation is INDEPENDENT of the generic lexer
+# `HCC_USE_SELFHOST_COMPONENTS` flag (which would also require linking
+# the lexer subjects).
+#
+# Why opt-in (not unconditional):
+#   - keeps the production build hermetic: the parser-padding
+#     component object (build/parser-padding-subject.o) must exist
+#     before hcc is linked;
+#   - mirrors the existing lexer opt-in pattern (HCC_ENABLE_BOOTSTRAP02_STAGE1)
+#     so the standard `make all` flow remains explicit about which
+#     self-hosted components are present.
+#
+# To build the production hcc with PolyC parser-padding delegation:
+#
+#   make parser-padding-component                  # builds build/parser-padding-subject.o
+#   cmake -S ./src -B ./build \
+#         -DHCC_USE_SELFHOST_PARSER_PADDING=ON \
+#         -DPARSER_PADDING_OBJECT=<abs>/build/parser-padding-subject.o \
+#         ...
+#   make -C ./build hcc
+#
+# Default: ON (the production hcc exercises the PolyC authority by
+# default; this is the whole point of the delegation ACT).
+option(HCC_USE_SELFHOST_PARSER_PADDING
+       "Link the parser-padding PolyC component into hcc and enable parser-padding delegation. ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01."
+       ON)
+
+if (HCC_USE_SELFHOST_PARSER_PADDING)
+    if (NOT PARSER_PADDING_OBJECT)
+        set(PARSER_PADDING_OBJECT "${CMAKE_SOURCE_DIR}/../build/parser-padding-subject.o")
+    endif()
+    if (NOT EXISTS "${PARSER_PADDING_OBJECT}")
+        message(FATAL_ERROR
+            "ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01: required self-host "
+            "parser-padding component missing at ${PARSER_PADDING_OBJECT}. "
+            "Build it first with stage0 hcc: "
+            "./hcc --install-dir=<prefix> -c tools/bootstrap/selfhost-parser-padding.HC -o ${PARSER_PADDING_OBJECT}")
+    endif()
+    target_compile_definitions(hcc PRIVATE HCC_USE_SELFHOST_PARSER_PADDING)
+    target_link_libraries(hcc ${PARSER_PADDING_OBJECT})
+    message(STATUS "ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01: production hcc links parser-padding PolyC component: ${PARSER_PADDING_OBJECT}")
+endif()
+
 # ACT-POLYC-BOOTSTRAP02 C2 IMPL — opt-in stage1 build that
 # links the B1 PolyC component (BootstrapScanIdent) into a
 # SEPARATE binary (hcc-bootstrap02) which uses the modified
