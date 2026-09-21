@@ -5613,3 +5613,45 @@ ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01
 
 See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-PADDING01.md`
 and `evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01/`.
+
+---
+
+#### RETRACTION (ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION01)
+
+The PARSER-PADDING01 status block above reported `PARSER_PADDING_COMPONENT_QUALIFIED = TRUE_GREEN` and `PARSER_PADDING_POLYC_COMPONENT = GREEN`. Independent factory-causal review found three binding closure defects and one P1 contract drift.
+
+```text
+PARSER_PADDING01_PASS_TRUE_GREEN = FALSE_GREEN
+
+P0-1  AC29 GENERATION_COPY_CONTROL = FAIL
+      The byte-equality control CANNOT reject a byte-identical
+      forgery. The control file itself records
+      PARSER_PADDING_NEGATIVE_CONTROL=FAIL
+      reason=verifier-accepted-mutation. The committed PASS in
+      c3/mandatory-ac-status.tsv AC29 contradicts the control file.
+
+P0-2  AC18 ALGEBRAIC_INVARIANT = NOT_PROVEN_AS_AUTHORIZED
+      The committed witness rests on pc == oc (oracle equality);
+      the ACT body forbade that argument.
+
+P0-3  AC35..AC39 LEXER_CONSERVATION = NOT_EXECUTED_AS_AUTHORIZED
+      ACT body required "run canonical current conservation";
+      committed evidence argues by-construction only.
+
+P1    ORACLE_AUTHORITY_CONTRACT = CONTRACT_DRIFT
+      Oracle re-implements CalcPadding body instead of calling
+      the actual legacy function through a seam.
+```
+
+The implementation `BootstrapCalcPadding` itself, the differential
+corpus, the bounded matrix, the four mutations, the 4-gen
+fixed-point, and production-authority discipline are NOT in dispute
+and remain GREEN. The over-claim is at the closure-ledger level.
+
+`ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01` MUST NOT open until
+`ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION01` closes with
+`PASS_TRUE_GREEN`.
+
+See
+`docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION01.md`
+and `evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION01/`.

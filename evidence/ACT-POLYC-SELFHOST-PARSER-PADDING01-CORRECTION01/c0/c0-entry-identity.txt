@@ -1,0 +1,35 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION01
+ACT_PHASE=C0-AUTH
+ACT_CLASS=CORRECTION
+
+PREDECESSOR_ACT=ACT-POLYC-SELFHOST-PARSER-PADDING01
+PREDECESSOR_VERDICT_AT_CLOSE=PASS_TRUE_GREEN
+PREDECESSOR_CLOSE_COMMIT=81afe8b102fba7300daed90c609f5bec38accbfc
+PREDECESSOR_ENTRY_HEAD=b2d750b713fc64c41db89b5adf418ddaa777944c
+
+ENTRY_HEAD=81afe8b102fba7300daed90c609f5bec38accbfc
+ENTRY_BRANCH=main
+WORKTREE_AT_OPEN=?? docs/acts/ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION01.md
+?? evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION01/
+
+# Predecessor artifacts still observable.
+PARSER_PADDING_BC_SHA_AT_CLOSE_81afe8b=187a4de9465e8dbe3c640484b05540daaad4a3267dd1543a169e3c304b02d5b1
+PARSER_PADDING_ORACLE_IMPL_SHA_AT_OPEN=d481be45b706d735df605ecaed248501a725c2b3d94469a4f77b36a6f52e2d21
+PARSER_PADDING_FIXEDPOINT_VERIFY_SHA_AT_OPEN=72e00e4a4d89e6e5e8620aff08fdb1dde8cd5a23358dbd4e62745d74f8d44b80
+
+# Defect anchors (immutable).
+AC18_DEFECT=c3/mandatory-ac-status.tsv AC18 row says PASS with witness
+            "16640/16640 oracle-equal -> invariants by construction";
+            C3-S48 forbids using pc == oc as the AC18 witness.
+AC29_DEFECT=c3/c3-generation-copy-control.txt itself records
+            PARSER_PADDING_NEGATIVE_CONTROL=FAIL reason=verifier-accepted-mutation;
+            c3/mandatory-ac-status.tsv AC29 row says PASS with witness
+            "forged=G1 detected rc=1". Direct contradiction.
+AC35_39_DEFECT=c3-lexer0*-conservation.txt and c3-lexer07-delta.txt
+               rest the entire argument on a git-diff being empty and
+               declare PASS without re-running the LEXER0* / LEXER07
+               corpus, contrary to C3-S57 / C3-S58 directives.
+ORACLE_AUTHORITY_DRIFT=tools/quality/parser-padding-oracle-impl.c
+                       contains a re-implementation of CalcPadding
+                       rather than calling the actual legacy function,
+                       contrary to C3-S31.

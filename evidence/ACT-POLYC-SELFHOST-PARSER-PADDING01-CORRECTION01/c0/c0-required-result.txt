@@ -1,0 +1,54 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION01
+ACT_PHASE=C0-AUTH
+EVIDENCE_KIND=required-result
+
+# This ACT is bounded proof-repair of three P0 defects and one P1
+# drift. The required terminal result is the reversal of the
+# HALT_FALSE_GREEN verdict at the closure ledger level, achieved by
+# producing the four artifacts ACT-POLYC-SELFHOST-PARSER-PADDING01
+# failed to produce:
+
+REQUIRED_ARTIFACT_1=tools/quality/parser-padding-algebraic-invariants.HC
+                    Stand-alone PolyC mechanical verifier for the
+                    four algebraic invariants (size=0 -> 0; rem=0 ->
+                    0; 0<rem<size -> rem; non-negative output) on
+                    the 16640 bounded matrix WITHOUT consulting the
+                    C oracle. Replaces the by-construction AC18
+                    witness.
+
+REQUIRED_ARTIFACT_2=tools/quality/parser-padding-fixedpoint-verify.HC
+                    updated to record per-generation provenance
+                    (compiler_path, compiler_sha256, command_line,
+                    object_path, object_sha256, object_size,
+                    build_mtime) AND to detect a G1-substituted-for-G3
+                    forgery on the basis that the substitute's
+                    (compiler_path, build_mtime, ...) tuple does not
+                    equal the recorded G3 tuple. The byte-equality
+                    6/6 fixed-point check is preserved as a separate,
+                    non-control witness.
+
+REQUIRED_ARTIFACT_3=tools/quality/parser-padding-oracle-impl.c
+                    updated to call the actual legacy CalcPadding
+                    through a narrow exported seam instead of
+                    re-implementing the body. ORACLE_AUTHORITY_CONTRACT
+                    becomes SATISFIED.
+
+REQUIRED_ARTIFACT_4=evidence/.../c3/c3-lexer0*-conservation.txt and
+                    c3-lexer07-delta.txt replaced with actual
+                    corpus-rerun evidence (not by-construction
+                    argument).
+
+# Non-negotiable:
+ACCEPTANCE_GATE=PARSER_PADDING01_PASS_TRUE_GREEN = TRUE_GREEN
+                with AC18, AC29, AC35..AC39 PASS, ORACLE_AUTHORITY
+                _CONTRACT = SATISFIED, all prior green gates still
+                green, factory gates pass, append-only intact.
+
+NO_PRODUCTION_CHANGE=BootstrapCalcPadding, CalcPadding ABI, the
+                     differential corpus, the bounded matrix, the
+                     four mutations, and production authority
+                     (LEGACY_C, NOT_PERFORMED) are not modified.
+
+COMMIT_TOPOLOGY=Bounded five-phase lifecycle (C0..C4). No
+                intermediate C2.x / C3.x commits. EXACT_COMMIT_COUNT
+                _AT_CLOSE of THIS ACT is bounded by 5.
