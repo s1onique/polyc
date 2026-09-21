@@ -1,0 +1,62 @@
+# C4 Required Result
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01
+
+## Pre-external terminality gate (committed verdict)
+
+```text
+COMMITTED_VERDICT                       = PASS_PENDING_EXTERNAL_TERMINALITY
+```
+
+## Post-external terminality gate (effective verdict)
+
+```text
+EFFECTIVE_VERDICT                       = PASS_TRUE_GREEN     (after external observation)
+```
+
+or:
+
+```text
+EFFECTIVE_VERDICT                       = HALT_EXTERNAL_TERMINALITY_GATE   (if external gate fails)
+```
+
+## Required final external tokens (per ACT §74)
+
+```text
+ACT_COMMIT_COUNT                        = 5
+C4_DIRECT_PARENT_IS_C3                  = YES
+FACTORY_V2_RANGE_CHECK                  = PASS
+WORKTREE_CLEAN                          = YES
+LOCAL_REF_EQUALS_C4_SHA                 = YES
+```
+
+No sixth commit. No C4-fixup commit.
+
+## C4 commit trailer
+
+```text
+ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01 C4: CLOSE
+PASS_PENDING_EXTERNAL_TERMINALITY
+```
+
+## Ledger AC53..AC56 (per ACT §68)
+
+```text
+AC53  PRE_C4_ACT_COMMIT_COUNT=4           PASS (after C3 commit, count is 4)
+AC54  C4 is direct child of C3            DEFERRED_TO_C4    (observed at C4 commit)
+AC55  external range verifier reports 5   DEFERRED_TO_EXTERNAL  (observed externally)
+AC56  worktree clean after C4             DEFERRED_TO_EXTERNAL  (observed externally)
+```
+
+## Halt semantics
+
+If external terminality gate fails:
+
+```text
+HALT_EXTERNAL_TERMINALITY_GATE
+EFFECTIVE_VERDICT=HALT_EXTERNAL_TERMINALITY_GATE
+```
+
+The HANDOFF remains at `PASS_PENDING_EXTERNAL_TERMINALITY` until
+external promotion. Per ACT §76, no subsequent commit rewrites the
+HANDOFF to insert the effective verdict.

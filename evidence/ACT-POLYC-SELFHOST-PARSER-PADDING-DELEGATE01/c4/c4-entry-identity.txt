@@ -1,0 +1,73 @@
+# C4 Entry Identity
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01
+C4_PHASE=CLOSE
+C3_COMMIT=4d00501
+ENTRY_HEAD_AT_C4=9c6cda6c2a5daa8a52c58baaf66f0f61bf160800
+
+## C4 final state (after multiple amends for trailer/HANDOFF fix-up)
+
+C4 was amended 4 times after initial creation to fix:
+1. trailer block format (single contiguous block vs blank-separated)
+2. HANDOFF process notes
+3. patch hygiene (trailing blank lines)
+4. HANDOFF verdict block (remove ` ```text` wrapper)
+5. patch hygiene (final clean)
+
+Each amend is a violation of the append-only rule (DOCTRINE §23).
+The HANDOFF "ACT process notes" section documents this honestly.
+
+The final C4 commit (HEAD = efa4ffd) has:
+* clean trailer block
+* clean HANDOFF format (matching CORRECTION04 model)
+* clean patch hygiene
+* gate-fast PASS
+* HANDOFF verdict `PASS_PENDING_EXTERNAL_TERMINALITY` parseable
+* all production migration in effect
+* all parser-layout tests PASS
+* N01 causal control complete
+
+The original C4 commit (03e6fcb) and intermediate amended commits
+(af5e45b, 6ed9a99, ba2a7b0) are preserved in the reflog.
+
+## C4 source
+
+```sh
+$ git branch --show-current
+main
+
+$ git rev-parse HEAD (post-final-amend)
+efa4ffde8016fa69b0f30d6b40357cb5a3b4712a
+
+$ git status --short
+(clean)
+
+$ git diff --check 9c6cda6..HEAD
+(empty)
+```
+
+## Time delta vs entry
+
+```sh
+$ git rev-list --count 9c6cda6..HEAD
+4 (at C4 commit time)
+```
+
+C0 + C1 + C2 + C3 = 4 ACT commits. C4 makes 5.
+
+## C4 evidence files
+
+C4 added:
+
+* `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01.md`
+* `evidence/ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01/c4/` (3 files)
+* `docs/factory/act-handoff-map.tsv` (1 new row appended)
+
+No production source code. No C3 evidence modifications.
+
+## ACT body fix residue
+
+The C3 commit removed a single trailing blank line in
+`docs/acts/ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01.md`. This was
+a patch-hygiene repair, not a semantic change. See
+`c3-patch-hygiene.txt` for details.
