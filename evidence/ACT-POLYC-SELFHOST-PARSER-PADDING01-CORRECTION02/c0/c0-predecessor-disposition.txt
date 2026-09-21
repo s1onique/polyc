@@ -1,0 +1,33 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION02
+PHASE=C0-AUTH
+
+PREDECESSOR_ACT_ID=ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION01
+PREDECESSOR_VERDICT_AS_RECORDED=PASS_TRUE_GREEN
+PREDECESSOR_EFFECTIVE_DISPOSITION=HALT_MANDATORY_AC_NOT_GREEN
+
+# Defect surface inherited at C0:
+#
+# D1: Frozen AC39 predicate (NEW_LEXER07_FAILURES=0, DIVERGED=0,
+#     REGRESSION=0, PASS_MISMATCH=0) was not literally satisfied by
+#     the predecessor C3 run. Instead, predecessor recorded
+#     AC39=LEXER07_CONSERVATION=PASS_PREEXISTING_DRIFT, which is a
+#     different predicate (PARSER_PADDING_INTRODUCED_REGRESSIONS=0
+#     rather than NEW_LEXER07_FAILURES_VS_FROZEN_BASELINE=0).
+#     Status: RED at entry.
+#
+# D2: Predecessor attributed the observed 9-source delta to absence of
+#     build/b02-corpus-A/ historical baseline. Whether that baseline
+#     can be reconstructed from committed authority is unverified.
+#     Status: UNKNOWN at entry; C1 recon must classify.
+#
+# D3: Predecessor HANDOFF recorded C3_HEAD=4d8c970615d54b6b959697daf78a5931e161aae7
+#     but the actual public C3 commit reachable on main is
+#     9c1edc90b34a3462e83fbb6706ba46747667a55a (parent of 1274f36).
+#     The two commits have the same subject and parent (39bc4eb), but
+#     their trees differ in two evidence files
+#     (c3-ac20-mutations.txt and c3-prior-green.txt); the predecessor
+#     C4 was made on top of 9c1edc9. The 4d8c970 commit is unreachable
+#     from any current ref (only present as an unreachable git object).
+#     Status: IDENTITY_DRIFT_DETECTED at entry.
+
+PARSER_PADDING_DELEGATE01_BLOCKED_AT_ENTRY=YES
