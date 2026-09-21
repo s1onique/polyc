@@ -1,0 +1,5 @@
+mutation_id	description	source_delta_causal	expect_compile	expect_link	expect_execute	expect_divergence
+M1	zero-size guard broken: compute offset%size before checking size==0, then early-return inside an `if (size==0) { return 0; }` AFTER having executed a `local = offset % size` first. Use a `goto`-style guard or precompute `rem = offset % size` then `if (size==0) return 0;` then `if (rem==0) return 0; return size - rem;`. Implementation MUST still compile/link/execute (no compile failure).	YES	YES	YES	YES
+M2	aligned case wrong: for size>0, return size (instead of 0) when offset%size==0	YES	YES	YES	YES
+M3	remainder returned directly: return offset%size (instead of size - offset%size) for unaligned input	YES	YES	YES	YES
+M4	boolean classifier: return (offset%size==0) as I64 instead of pad-byte count	YES	YES	YES	YES

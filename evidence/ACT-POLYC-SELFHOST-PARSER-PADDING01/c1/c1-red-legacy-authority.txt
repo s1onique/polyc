@@ -1,0 +1,23 @@
+RED_ID=RED-3
+RED_DESC=Legacy C CalcPadding defined in src/parser.c and used by production callers
+LEGACY_DEFINITION_LINE=src/parser.c:430
+LEGACY_DEFINITION_BODY_LINES=src/parser.c:430..438
+LEGACY_C_CALLERS=5
+LEGACY_CALLER_COUNT=5
+LEGACY_CALC_PADDING_DEFINED=YES
+POLYC_PRODUCTION_CALLER_COUNT=0
+RED_LEGACY_AUTHORITY_ACTIVE=PASS
+
+LIVE_CALLERS:
+  src/parser.c:470:        *aligned_size = offset + CalcPadding(offset, max_align);
+  src/parser.c:500:            offset += CalcPadding(offset, fa);
+  src/parser.c:513:            offset += CalcPadding(offset, fa);
+  src/parser.c:526:    *aligned_size = offset + CalcPadding(offset, max_align);
+  src/parser.c:558:    *real_size = max_size + CalcPadding(max_size, max_align);
+
+CALLER_FAMILY:
+  parseClassOffsets  # src/parser.c:470,500,513,526
+  parseUnionOffsets  # src/parser.c:558
+
+PARSER_C_SHA256=7a4a0935ae5fc92fb37dc637037a83c70c21a81ebe9a1233c69fd6529bc1a279
+PARSER_C_BYTES=2938_lines

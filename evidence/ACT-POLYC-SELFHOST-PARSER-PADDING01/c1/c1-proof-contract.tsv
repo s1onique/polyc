@@ -1,0 +1,9 @@
+proof_id	description	subject	command_or_method	pass_criterion
+PROOF-1	direct differential against legacy C oracle	for every fixture (named, matrix, large)	link_legacy_CalcPadding_and_BootstrapCalcPadding_in_one_binary_then_call_each_pair	equal==1
+PROOF-2	algebraic invariants	for every (off,sz) in matrix	size==0 -> result==0; size>0 -> 0<=result<size and (off+result)%sz==0	all invariant tests pass
+PROOF-3	zero-size causal witness	multiple size=0 cases against pristine and M1	pristine returns 0; M1 either aborts (size==0 first, but body computes rem before guard) OR returns rem which fails invariant	zero-size predicate correct under M1
+PROOF-4	four-generation component fixed-point	G0/G1/G2/G3 byte-identical objects	./build/parser-padding-fixedpoint-verify	6/6 pairs equal
+PROOF-5	generation-copy detection	replace temp G3 obj with G1 obj; run verifier; restore	./build/parser-padding-fixedpoint-verify rejects forgery, then pristine recheck passes	rejection recorded, re-passes after restore
+PROOF-6	fixedpoint mutation control	flip one byte in copied component obj; run verifier	./build/parser-padding-fixedpoint-verify rejects mutated obj, pristine passes	pristine=PASS, mutated=FAIL, recheck=PASS
+PROOF-7	parser production authority preserved	git diff src/parser.c 0 lines; git grep BootstrapCalcPadding in src/ 0 hits	diff and grep	return 0/0
+PROOF-8	parser-layout conservation	build full hcc + drive corpus	compile + class-size corpus vs C0 frozen baseline	no delta

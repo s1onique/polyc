@@ -1,0 +1,21 @@
+MATHEMATICAL_CONTRACT:
+  size == 0            => 0
+  size > 0 && aligned  => 0
+  size > 0 && unaligned => size - (offset mod size)
+
+  where: aligned iff (offset mod size) == 0
+
+QUALIFIED_DOMAIN=offset>=0,size>=0
+
+LEGACY_C99_IMPLEMENTATION_TEXT:
+  int CalcPadding(int offset, int size) {
+      /* Zero-size fields (e.g. trailing `U0 body;` placeholders used as
+       * "rest of bytes" markers) need no padding. Guard before `% size`
+       * so we don't depend on platform UB for `% 0` (x86 traps, ARM
+       * returns the dividend - which here would roll `offset` back to 0
+       * and zero out the whole class size). */
+      if (size == 0) return 0;
+      return offset % size == 0 ? 0 : size - offset % size;
+  }
+
+LEGACY_BASELINE_FROZEN=YES
