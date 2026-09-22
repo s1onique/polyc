@@ -63,6 +63,21 @@ CORRECTION01 prospectively authorizes what was already implemented,
 produces honest G2/G3 evidence, and demonstrates forward-only closure
 geometry on CORRECTION01's own C0..C4 range.
 
+## 0.1 Authorization revision lineage
+
+This ACT body has been revised twice against the reviewer verdict:
+
+| Commit       | Role                                                                |
+|--------------|---------------------------------------------------------------------|
+| `8393d4d`    | Post-mortem authorization (initial draft, two structural defects)   |
+| `b73fe6b`    | First revision (trailer + HANDOFF mutations corrected)              |
+| `<this>`     | Final pre-C0 revision (ENTRY_HEAD + SHA baselines frozen)           |
+
+The current ACT body is committed at HEAD and is the authoritative
+authorization for the next session's CORRECTION01 work. C0 begins at
+the **first new commit after this revision**; it is **not** a
+modification of any prior commit (append-only invariant).
+
 ---
 
 # 1. Terminal objective (forward-only)
@@ -83,15 +98,16 @@ JOB_2_G2_PRODUCTION_OUTPUT_SHA256_FROZEN          = YES
 JOB_2_G3_PRODUCTION_OUTPUT_SHA256_FROZEN          = YES
 JOB_2_NO_PROVENANCE_PLACEHOLDER_TEXT              = YES
 
-JOB_3_DELEGATE01_HISTORICAL_TRAILER_GEOMETRY      = IMMUTABLE_FAIL_ACK
-JOB_3_CORRECTION01_C0_TRAILER_BLOCK_PARSEABLE     = YES
-JOB_3_CORRECTION01_C1_TRAILER_BLOCK_PARSEABLE     = YES
-JOB_3_CORRECTION01_C2_TRAILER_BLOCK_PARSEABLE     = YES
-JOB_3_CORRECTION01_C3_TRAILER_BLOCK_PARSEABLE     = YES
-JOB_3_CORRECTION01_C4_TRAILER_BLOCK_PARSEABLE     = YES
-JOB_3_FACTORY_V2_RANGE_CHECK_CORRECTION01         = PASS
-JOB_3_DELEGATE01_HANDOFF_DELTA                    = 0
-JOB_3_DELEGATE01_EVIDENCE_DELTA                   = 0
+JOB_3_DELEGATE01_HISTORICAL_TRAILER_GEOMETRY          = IMMUTABLE_FAIL_ACK
+JOB_3_DELEGATE01_HANDOFF_HISTORICAL_F14_VIOLATION      = ACKNOWLEDGED
+JOB_3_DELEGATE01_HANDOFF_DELTA_SINCE_ENTRY             = 0
+JOB_3_DELEGATE01_EVIDENCE_DELTA_SINCE_ENTRY            = 0
+JOB_3_CORRECTION01_C0_TRAILER_BLOCK_PARSEABLE         = YES
+JOB_3_CORRECTION01_C1_TRAILER_BLOCK_PARSEABLE         = YES
+JOB_3_CORRECTION01_C2_TRAILER_BLOCK_PARSEABLE         = YES
+JOB_3_CORRECTION01_C3_TRAILER_BLOCK_PARSEABLE         = YES
+JOB_3_CORRECTION01_C4_TRAILER_BLOCK_PARSEABLE         = YES
+JOB_3_FACTORY_V2_RANGE_CHECK_CORRECTION01             = PASS
 
 INVARIANT_APPEND_ONLY_HISTORY_PRESERVED            = YES
 INVARIANT_PRODUCTION_MIGRATION_DELTA              = 0
@@ -133,9 +149,34 @@ DELEGATE01_LEGACY_RUNTIME_AUTHORITY       = RETIRED
 DELEGATE01_PARSER_PADDING_PRODUCTION_MIGRATION    = ENGINEERING_TRUE_GREEN
 DELEGATE01_PARSER_PADDING_COMPONENT_QUALIFICATION = TRUE_GREEN
 
-DELEGATE01_C0..C4_EVIDENCE_DELTA          = 0
-DELEGATE01_HANDOFF_DELTA                  = 0  (post-C4 frozen)
+# DELEGATE01 HANDOFF mutation history (truthful decomposition)
+DELEGATE01_HANDOFF_SHA256_AT_DELEGATE01_C4_CLOSE  = (see reflog / git show 35dc0b0:docs/factory/HANDOFF-...md)
+DELEGATE01_HANDOFF_SHA256_AT_POST_MORTEM_8393d4d = (the post-mortem added a reviewer-verdict block)
+DELEGATE01_HANDOFF_SHA256_AT_CORRECTION01_ENTRY  = 012d6054499d7e17f5c7cb450b05c36ed3f57b74e33453ae3cad2300c6ebb56d
+DELEGATE01_HANDOFF_HISTORICAL_F14_VIOLATION       = ACKNOWLEDGED
+DELEGATE01_HANDOFF_DELTA_SINCE_CORRECTION01_ENTRY = 0   (forward invariant)
+
+# DELEGATE01 evidence surface
+DELEGATE01_EVIDENCE_SHA256_SET_AT_CORRECTION01_ENTRY  = (see evidence/.../CORRECTION01/pre-c0/pre-c0-delegate01-evidence-sha-baseline.tsv)
+DELEGATE01_EVIDENCE_HISTORICAL_F14_VIOLATION          = NONE (post-C4 evidence was not mutated by 8393d4d)
+DELEGATE01_EVIDENCE_DELTA_SINCE_CORRECTION01_ENTRY    = 0
 ```
+
+NOTE on the distinction: the reviewer's binding observation is that
+"delta = 0" wording alone conflates two different facts. The two
+predicates above make them explicit:
+
+* **Historical F14 violation** -- the post-mortem commit `8393d4d`
+  mutated the closed DELEGATE01 HANDOFF. That is acknowledged and
+  **cannot** be undone (append-only invariant from `baf5dbd7`
+  forward).
+* **Forward invariant during CORRECTION01** -- no further mutation of
+  the DELEGATE01 HANDOFF or evidence trees during the CORRECTION01
+  C0..C4 sequence. This is what `*_DELTA_SINCE_CORRECTION01_ENTRY = 0`
+  measures, and it is the actionable contract.
+
+The frozen baseline values used to measure the forward invariant live
+in `evidence/ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01/pre-c0/`.
 
 The C0..C4 evidence directories are CLOSED per F14 and SHALL NOT be
 modified. The HANDOFF at
@@ -269,27 +310,31 @@ C3 verifies:
     * AC06 -- `HCC_USE_SELFHOST_PARSER_PADDING = ON (default)`
     * AC07 -- `src/parser.c` byte-identical to DELEGATE01 C2 freeze
     * AC08 -- `src/CMakeLists.txt` byte-identical to DELEGATE01 C2 freeze
-    * AC18 -- DELEGATE01 evidence directories untouched
-    * AC19 -- DELEGATE01 HANDOFF byte-identical (delta = 0)
 * **JOB 2**
     * AC09 -- G2 production binary SHA-256 frozen
     * AC10 -- G3 production binary SHA-256 frozen
     * AC11 -- G2 production output SHA-256 frozen
     * AC12 -- G3 production output SHA-256 frozen
     * AC13 -- G2/G3 build/run command transcripts recorded
-    * AC20 -- G0..G3 generation-provenance rows concrete (no placeholders)
-    * AC32 -- 4 generation provenance rows
-    * AC33 -- no generation provenance FAIL
+    * AC21 -- G0..G3 generation-provenance rows concrete (no placeholders)
 * **JOB 3**
     * AC14 -- DELEGATE01 trailer geometry = IMMUTABLE_FAIL_ACK (acknowledged)
     * AC15 -- CORRECTION01 C0..C4 trailer blocks parseable and contiguous
     * AC16 -- `factory-v2-range-check CORRECTION01` = PASS
+    * AC18 -- DELEGATE01 evidence SHA256 set delta since ENTRY_HEAD = 0
+      (verified by re-hashing the evidence tree at C4 and comparing to
+      `pre-c0/pre-c0-delegate01-evidence-sha-baseline.tsv`)
+    * AC19 -- DELEGATE01 HANDOFF delta since ENTRY_HEAD = 0
+      (verified by re-hashing the HANDOFF at C4 and comparing to
+      `pre-c0/pre-c0-delegate01-handoff-sha-baseline.txt`)
+    * AC20 -- historical post-C4 HANDOFF mutation
+      = ACKNOWLEDGED_F14_VIOLATION
 * **Invariants**
-    * AC22 -- append-only history preserved
-    * AC23 -- production migration delta = 0
-    * AC24 -- production authority at CORRECTION01 close = POLYC
-    * AC25 -- legacy runtime authority = RETIRED
-    * AC26 -- CORRECTION01 commit count = 5
+    * AC23 -- F14 closed-evidence surfaces untouched
+    * AC24 -- F-POLYC-TOOLS = PASS
+    * AC25 -- F-NO-PYTHON = PASS
+    * AC27 -- CORRECTION01 commit count = 5
+    * AC29 -- no amend / reset / rebase / force push on CORRECTION01 history
     * AC17 -- `gate-fast` = PASS
 
 ---
@@ -305,7 +350,9 @@ and appends to `docs/factory/act-handoff-map.tsv`.
 # 9. Acceptance criteria
 
 ```text
-AC01  ENTRY_HEAD = 8393d4d (post-mortem authorization)
+AC01  ENTRY_HEAD = authorization revision HEAD (b73fe6b family); C0 is
+       the first new commit after the revision commit, NOT a modification
+       of any prior commit
 AC02  branch = main
 AC03  worktree clean at CORRECTION01 C0
 AC04  predecessor verdict = HALT_MULTIPLE_BINDING_PREDICATES
@@ -322,18 +369,22 @@ AC14  DELEGATE01 trailer geometry = IMMUTABLE_FAIL_ACK (no false repair claim)
 AC15  CORRECTION01 C0..C4 trailer blocks parseable and contiguous
 AC16  factory-v2-range-check CORRECTION01 = PASS
 AC17  gate-fast = PASS
-AC18  DELEGATE01 evidence directories delta = 0
-AC19  DELEGATE01 HANDOFF delta = 0 (post-C4 frozen)
-AC20  G0..G3 generation-provenance rows concrete (no placeholders)
-AC21  patch hygiene errors = 0
-AC22  F14 closed-evidence surfaces untouched
-AC23  F-POLYC-TOOLS = PASS
-AC24  F-NO-PYTHON = PASS
-AC25  HANDOFF PASS_TRUE_GREEN with all required sections
-AC26  CORRECTION01 commit count = 5
-AC27  commit topology honors C0-before-C1 (contiguous forward sequence)
-AC28  no amend / reset / rebase / force push on CORRECTION01 history
-AC29  PREDECESSOR_EFFECTIVE_DISPOSITION = HALT_MULTIPLE_BINDING_PREDICATES
+AC18  DELEGATE01 evidence SHA256 set delta since CORRECTION01 ENTRY_HEAD = 0
+       (baseline frozen in pre-c0/pre-c0-delegate01-evidence-sha-baseline.tsv)
+AC19  DELEGATE01 HANDOFF delta since CORRECTION01 ENTRY_HEAD = 0
+       (baseline SHA256 frozen in pre-c0/pre-c0-delegate01-handoff-sha-baseline.txt)
+AC20  historical post-C4 HANDOFF mutation = ACKNOWLEDGED_F14_VIOLATION
+       (truthful record of the 8393d4d mutation; not undone)
+AC21  G0..G3 generation-provenance rows concrete (no placeholders)
+AC22  patch hygiene errors = 0
+AC23  F14 closed-evidence surfaces untouched
+AC24  F-POLYC-TOOLS = PASS
+AC25  F-NO-PYTHON = PASS
+AC26  HANDOFF PASS_TRUE_GREEN with all required sections
+AC27  CORRECTION01 commit count = 5
+AC28  commit topology honors C0-before-C1 (contiguous forward sequence)
+AC29  no amend / reset / rebase / force push on CORRECTION01 history
+AC30  PREDECESSOR_EFFECTIVE_DISPOSITION = HALT_MULTIPLE_BINDING_PREDICATES
        recorded in CORRECTION01 evidence, not in DELEGATE01 HANDOFF
 ```
 
@@ -347,8 +398,10 @@ HALT_G2_G3_BUILD_INFRASTRUCTURE_MISSING  (if hcc-bootstrap02/03 unavailable)
 HALT_APPEND_ONLY_VIOLATION                (if any amend/reset/force push detected)
 HALT_RANGE_CHECK_STILL_FAIL               (if factory-v2-range-check CORRECTION01 still FAIL)
 HALT_PRODUCTION_SOURCE_DRIFT              (if any production source diff)
-HALT_PLACEHOLDER_PROVENANCE               (if AC20 still contains placeholder text)
-HALT_CLOSED_HANDOFF_MUTATION              (if AC19 delta > 0)
+HALT_PLACEHOLDER_PROVENANCE               (if AC21 still contains placeholder text)
+HALT_FORWARD_HANDOFF_MUTATION             (if AC19 HANDOFF SHA256 != baseline at C4)
+HALT_FORWARD_EVIDENCE_MUTATION            (if AC18 evidence SHA set != baseline at C4)
+HALT_F14_FALSE_DENIAL                      (if AC20 not recorded as ACKNOWLEDGED)
 HALT_ANCESTOR_TRAILER_MUTATION_ATTEMPT    (if CORRECTION01 attempts to mutate DELEGATE01 commit messages)
 ```
 
@@ -356,21 +409,60 @@ HALT_ANCESTOR_TRAILER_MUTATION_ATTEMPT    (if CORRECTION01 attempts to mutate DE
 
 # 11. Reviewer feedback acknowledgments
 
-This ACT body was revised in response to two binding observations
-from the external Factory reviewer:
+This ACT body was revised in response to binding observations from
+the external Factory reviewer. Two rounds of corrections have been
+applied.
 
-1. **Trailer-repair geometry is structurally impossible**: A new
+## Round 1 (resolved in commit `b73fe6b`)
+
+1. **Trailer-repair geometry was structurally impossible**: a new
    commit cannot mutate ancestor commit messages. CORRECTION01
    therefore targets its own C0..C4 range, not DELEGATE01's
    historical commits. DELEGATE01 trailer geometry is acknowledged
    as `IMMUTABLE_FAIL_ACK`.
 
-2. **Closed HANDOFF mutation is F14-improper**: The C3 F14 contract
+2. **Closed HANDOFF mutation was F14-improper**: the C3 F14 contract
    treats evidence and HANDOFF surfaces as immutable post-C4. The
    reviewer verdict is recorded in CORRECTION01 evidence, not by
    mutating the closed DELEGATE01 HANDOFF.
 
-Both defects are corrected in this ACT body.
+## Round 2 (resolved in the final pre-C0 revision commit)
+
+3. **ENTRY_HEAD contradiction**: the round-1 ACT body still froze
+   `ENTRY_HEAD = 8393d4d` even though the ACT body itself lived at
+   `b73fe6b`. C0 would have started after `b73fe6b` and could not
+   have satisfied AC01 as written. Fixed by:
+
+   - AC01 now reads `ENTRY_HEAD = authorization revision HEAD;
+     C0 is the first new commit after the revision commit, NOT a
+     modification of any prior commit`.
+   - The two C0-named evidence files originally committed in
+     `b73fe6b` (created while the round-1 ACT body was still
+     incorrect) have been reclassified as **pre-C0/revision
+     snapshots** and moved into `evidence/.../CORRECTION01/pre-c0/`.
+     Real C0 evidence will be produced under the corrected ACT body.
+
+4. **HANDOFF delta ambiguity**: the round-1 wording `DELEGATE01_HANDOFF_DELTA = 0`
+   conflated two different facts (the post-mortem mutation, which
+   is historical F14 damage, and the forward invariant during
+   CORRECTION01). Fixed by:
+
+   - `DELEGATE01_HANDOFF_HISTORICAL_F14_VIOLATION = ACKNOWLEDGED`
+     (truthful record of the `8393d4d` mutation; cannot be undone
+     because append-only is enforced from `baf5dbd7` forward).
+   - `DELEGATE01_HANDOFF_SHA256_AT_CORRECTION01_ENTRY = <sha>`
+     (frozen baseline in `pre-c0/pre-c0-delegate01-handoff-sha-baseline.txt`).
+   - `DELEGATE01_HANDOFF_DELTA_SINCE_CORRECTION01_ENTRY = 0`
+     (the actionable forward invariant; verifiable by re-hashing the
+     HANDOFF at C4 and comparing to the frozen baseline).
+   - AC18 / AC19 rewritten to refer to the frozen baselines
+     rather than to the historical C4 close.
+   - AC20 added to record the historical mutation as
+     `ACKNOWLEDGED_F14_VIOLATION` (so we never falsely claim
+     "HANDOFF delta = 0 against the original C4 close").
+
+All four defects are now corrected in this ACT body. The board
+signal is: `CORRECTION01 = AUTHORIZATION_READY_FOR_C0`.
 
 ---
 
