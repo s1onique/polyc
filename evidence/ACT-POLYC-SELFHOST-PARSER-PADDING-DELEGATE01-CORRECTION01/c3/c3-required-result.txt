@@ -1,0 +1,155 @@
+# C3 Required Result
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01
+
+## Generation provenance (independently recomputed)
+
+```text
+GENERATION_ROWS=4
+G0_PROVENANCE=PASS
+G1_PROVENANCE=PASS
+G2_PROVENANCE=PASS
+G3_PROVENANCE=PASS
+
+GENERATION_PROVENANCE_FAIL=0
+GENERATION_PLACEHOLDER_COUNT=0
+```
+
+39 of 39 recorded provenance fields were RECOMPUTED from disk (or from
+the literal command string) and matched. See
+`c3-generation-provenance-verify.txt`.
+
+## Semantic equivalence (re-executed)
+
+```text
+G0_G1_EQUAL=YES
+G0_G2_EQUAL=YES
+G0_G3_EQUAL=YES
+G1_G2_EQUAL=YES
+G1_G3_EQUAL=YES
+G2_G3_EQUAL=YES
+
+PRODUCTION_SEMANTIC_PAIR_PASS=6
+PRODUCTION_SEMANTIC_PAIR_FAIL=0
+MIGRATION_DELTA=0
+```
+
+Per-fixture totals: `PER_FIXTURE_PAIR_PASS=18`, `PER_FIXTURE_PAIR_FAIL=0`
+(3 fixtures x 6 generation pairs). Output determinism confirmed: 1
+distinct output SHA-256 over 3 consecutive executions per fixture.
+
+## Production conservation
+
+```text
+HCC_USE_SELFHOST_PARSER_PADDING_DEFAULT=ON
+PRODUCTION_PADDING_AUTHORITY=POLYC
+LEGACY_RUNTIME_FALLBACK=NO
+PRODUCTION_SOURCE_DELTA=0
+BOOTSTRAP_CALC_PADDING_SOURCE_DELTA=0
+```
+
+All six frozen subjects byte-identical to C0. `git diff --exit-code
+87361da..HEAD -- src/parser.c src/CMakeLists.txt
+tools/bootstrap/selfhost-parser-padding.HC` returns 0.
+
+## F14 conservation
+
+```text
+DELEGATE01_EVIDENCE_DELTA_SINCE_ENTRY=0     (53/53 individually rehashed)
+DELEGATE01_HANDOFF_DELTA_SINCE_ENTRY=0
+HISTORICAL_F14_VIOLATION=ACKNOWLEDGED
+```
+
+## Factory gates
+
+```text
+GATE_FAST=PASS
+APPEND_ONLY_FAIL=0
+PATCH_HYGIENE_ERRORS=0
+NEW_PYTHON_SOURCES=0
+NEW_PYTHON_INVOCATIONS=0
+NEW_SUBSTANTIVE_NON_POLYC_TOOLS=0
+F_NO_PYTHON=PASS
+F_POLYC_TOOLS=PASS
+```
+
+## Commit metadata
+
+```text
+C0_TRAILERS_PARSEABLE=YES
+C1_TRAILERS_PARSEABLE=YES
+C2_TRAILERS_PARSEABLE=YES
+C3_TRAILER_CONTRACT_READY=YES
+```
+
+Phase sequence: C0=RED, C1=EVIDENCE, C2=IMPL, C3=EVIDENCE, C4=CLOSE.
+No `ACT-Verdict` before CLOSE.
+
+## AC ledger
+
+```text
+AC01..AC15  = PASS
+AC16        = FAIL_STRUCTURAL_IMMUTABLE  (see below)
+AC17..AC25  = PASS
+AC26        = DEFERRED_TO_C4
+AC27        = DEFERRED_TO_C4
+AC28..AC30  = PASS
+```
+
+## AC16 -- honest recording of a structurally unreachable predicate
+
+AC16 requires `factory-v2-range-check CORRECTION01 = PASS`. That
+predicate is NOT mechanically reachable, and this ACT does NOT claim it.
+
+The validator derives FIRST by walking parents backwards for as long as
+each parent carries `ACT: <id>`. The three pre-C0 authorization commits
+already carry the CORRECTION01 ACT id:
+
+```text
+8393d4d  ACT-Phase=POST_MORTEM_AUTHORIZATION
+b73fe6b  ACT-Phase=AUTH_REVISED
+93f85ed  ACT-Phase=AUTH_READY_FOR_C0
+```
+
+so FIRST is pinned to `8393d4d` and the check reports:
+
+```text
+STATUS=FAIL
+REASON=FIRST commit 8393d4d97d434eff38e7024266405effe13b3708 has ACT-Phase='POST_MORTEM_AUTHORIZATION', expected RED
+```
+
+Proved empirically: a scratch clone given a PERFECT C0..C4 trailer
+sequence (exactly the trailers this ACT prescribes) produces the same
+FAIL. Ancestor commit messages are immutable under the append-only
+invariant, so no forward commit can change this.
+
+Classification per DOCTRINE section 25: `HALT_CLASS=GOVERNANCE`,
+`BLOCKS_NEXT=NO`. The failure is not attributable to the production
+subject (which is ENGINEERING_TRUE_GREEN and unchanged); it is a
+bookkeeping defect in immutable ancestor commits. Per F13 this ACT
+reports the measured result rather than asserting a passing gate.
+
+Remediation is recommended as a dedicated follow-up ACT; see the C4
+residue.
+
+## C3 halt conditions -- none triggered
+
+```text
+G2_OR_G3_NOT_INDEPENDENT                NOT TRIGGERED (distinct build dirs, subject objects, binaries, executions)
+GENERATION_PROVENANCE_INCOMPLETE       NOT TRIGGERED (39/39 fields recomputed)
+PRODUCTION_OUTPUT_SHA_MISSING           NOT TRIGGERED (real captures, 64-hex)
+PRODUCTION_SEMANTIC_REGRESSION          NOT TRIGGERED (18/18 per-fixture, 6/6 pairs)
+PRODUCTION_SOURCE_CHANGED               NOT TRIGGERED (6/6 subjects byte-identical)
+F14_FORWARD_MUTATION                    NOT TRIGGERED (53/53 + HANDOFF unchanged)
+FACTORY_GATE_FAILED                     NOT TRIGGERED (gate-fast PASS, append-only 11/11)
+MANDATORY_AC_FALSE                      NOT TRIGGERED except AC16, which is a structural impossibility, not a FALSE engineering result
+```
+
+## C3 commit
+
+```text
+ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01 C3: VERIFY
+ACT-Phase: EVIDENCE
+```
+
+After C3 the ACT has four forward commits (C0, C1, C2, C3).

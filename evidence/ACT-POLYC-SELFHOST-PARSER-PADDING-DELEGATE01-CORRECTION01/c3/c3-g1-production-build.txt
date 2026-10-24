@@ -1,0 +1,51 @@
+# C2 Production Build -- generation g1
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01
+
+## Build directory (independent per generation)
+
+```text
+BUILD_DIR=build/padding-delegate-corr01/g1
+```
+
+## Subject object (PolyC production component)
+
+```sh
+$ rm -f build/padding-delegate-corr01/g1/parser-padding-subject.o
+$ ./build/hcc-bootstrap02 --install-dir=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/test-prefix -c tools/bootstrap/selfhost-parser-padding.HC -o build/padding-delegate-corr01/g1/parser-padding-subject.o
+g1_SUBJECT_BUILD_RC=0
+$ shasum -a 256 build/padding-delegate-corr01/g1/parser-padding-subject.o
+187a4de9465e8dbe3c640484b05540daaad4a3267dd1543a169e3c304b02d5b1  build/padding-delegate-corr01/g1/parser-padding-subject.o
+$ nm build/padding-delegate-corr01/g1/parser-padding-subject.o | grep _BootstrapCalcPadding
+0000000000000000 T _BootstrapCalcPadding
+```
+
+## Production binary (independently linked)
+
+```sh
+$ cmake -S src -B build/padding-delegate-corr01/g1/cmake -DHCC_USE_SELFHOST_PARSER_PADDING=ON -DPARSER_PADDING_OBJECT=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/padding-delegate-corr01/g1/parser-padding-subject.o -DHCC_ENABLE_JIT=on -DCMAKE_BUILD_TYPE=Release
+g1_CONFIGURE_RC=0
+# CMake confirmation:
+-- ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01: production hcc links parser-padding PolyC component: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/padding-delegate-corr01/g1/parser-padding-subject.o
+$ cmake --build build/padding-delegate-corr01/g1/cmake --target hcc -j4
+g1_BUILD_RC=0
+```
+
+## Production binary identity
+
+```text
+PRODUCTION_BINARY_PATH=build/padding-delegate-corr01/g1/hcc
+PRODUCTION_BINARY_SHA256=dd6d8dfef798e4739e8a64c2143c16482f2477db031403ee6249962c10c28702
+```
+
+## PolyC authority symbol in the production binary
+
+```text
+BOOTSTRAP_CALC_PADDING_SYMBOL_PRESENT=1
+```
+
+## Effective compile definitions (stage0 must NOT activate PolyC authority)
+
+```text
+HCC_USE_SELFHOST_PARSER_PADDING_IN_DEFINES=1
+```

@@ -1,0 +1,65 @@
+# C3 F14 -- DELEGATE01 Evidence Conservation
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01
+
+## Result
+
+```text
+DELEGATE01_EVIDENCE_DELTA_SINCE_ENTRY=0
+DELEGATE01_EVIDENCE_BASELINE_RECORDS=53
+DELEGATE01_EVIDENCE_BASELINE_MATCH=53
+DELEGATE01_EVIDENCE_BASELINE_MISMATCH=0
+DELEGATE01_EVIDENCE_HISTORICAL_F14_VIOLATION=NONE
+```
+
+## Verification transcript
+
+All 53 recorded SHA-256 values were individually recomputed from disk and
+compared. This is a per-file comparison, NOT a directory count.
+
+```sh
+$ cd evidence/ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01
+$ ok=0; bad=0
+$ while read -r sha rel; do
+    [ -z "$sha" ] && continue
+    if [ "$(shasum -a 256 "$rel" 2>/dev/null | cut -d' ' -f1)" = "$sha" ]; then
+      ok=$((ok+1))
+    else
+      bad=$((bad+1)); echo "MISMATCH: $rel"
+    fi
+  done < ../ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01/pre-c0/pre-c0-delegate01-evidence-sha-baseline.tsv
+MATCH=53 MISMATCH=0
+```
+
+A directory count alone would be a vacuous green: it would not detect an
+in-place content edit. The per-file comparison above is the evidence.
+
+## Independent cross-check: git tree identity
+
+The DELEGATE01 evidence subtree is also unchanged relative to the
+CORRECTION01 entry point, independently of the frozen baseline:
+
+```sh
+$ git diff --exit-code 93f85ed..HEAD -- evidence/ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01/
+RC=0
+```
+
+It is also unchanged relative to the predecessor's own C4 close, which
+shows the post-mortem commit `8393d4d` did NOT touch the evidence tree
+(it touched only the HANDOFF):
+
+```sh
+$ git diff --exit-code 35dc0b0..HEAD -- evidence/ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01/
+RC=0
+```
+
+Both checks agree: the DELEGATE01 evidence tree is byte-identical to its
+state at the CORRECTION01 entry point, and to its state at the
+predecessor's C4 close.
+
+## Scope note
+
+CORRECTION01 writes ONLY into its own evidence tree
+(`evidence/ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01/`)
+and its own HANDOFF/manifest rows. The DELEGATE01 evidence tree is a
+closed F14 surface and was not touched.

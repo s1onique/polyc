@@ -1,0 +1,64 @@
+# C3 Patch Hygiene
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01
+
+## Result
+
+```text
+PATCH_HYGIENE_ERRORS=0
+```
+
+## Verification transcript
+
+```sh
+$ git diff --check 93f85ed..HEAD
+(empty)
+
+$ git diff --cached --check
+(empty)
+```
+
+No whitespace errors, no conflict markers, no trailing-whitespace
+damage in any committed file.
+
+## Scope audit -- every changed file traces to authorized ACT scope
+
+```sh
+$ git diff --name-only 93f85ed..HEAD
+```
+
+All changed paths are under:
+
+```text
+evidence/ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01/
+```
+
+plus (at C4) the CORRECTION01 HANDOFF and one appended row in
+`docs/factory/act-handoff-map.tsv`.
+
+File-type census of everything added by C0..C3:
+
+```text
+      3 HC     (the three regenerated PolyC fixture sources)
+      7 tsv    (evidence tables)
+     25 txt    (evidence reports)
+```
+
+Zero production source files changed. Zero scripts changed. Zero
+tooling changed.
+
+## Explicitly NOT done (F7 scope conservation)
+
+```text
+production source refactor            NOT DONE
+unrelated style fixes                 NOT DONE
+neighbouring abstraction renames       NOT DONE
+anticipated future hooks              NOT DONE
+new verification shell applications    NOT DONE
+production binary committed            NOT DONE
+```
+
+The only shell scripts used during C0..C3 were untracked, ephemeral
+helpers under the git-ignored `build/` directory, used only to emit
+evidence. They are not committed, are not new tooling, and do not
+affect the repository's tool inventory.

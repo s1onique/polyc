@@ -1,0 +1,98 @@
+# C3 Design Authorization Verification (JOB 1)
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01
+
+## Result
+
+```text
+JOB_1_DESIGN_AUTHORIZED=YES
+JOB_1_AC13_PROSPECTIVE_PASS=YES
+JOB_1_DESIGN_RECONCILIATION=PASS
+```
+
+## The authorized design, verified against the live source
+
+```text
+CORRECTION01_AUTHORIZED_DESIGN=HCC_USE_SELFHOST_PARSER_PADDING
+DEDICATED_MACRO_REQUIRED=YES
+DEFAULT_PRODUCTION_VALUE=ON
+LEGACY_STAGE0_PATH=EXPLICIT
+PRODUCTION_SOURCE_CHANGE_REQUIRED=NO
+```
+
+### The dedicated option exists and defaults to ON
+
+```sh
+$ grep -n 'option(HCC_USE_SELFHOST_PARSER_PADDING' -A 3 src/CMakeLists.txt
+207:option(HCC_USE_SELFHOST_PARSER_PADDING
+208-       "Link the parser-padding PolyC component into hcc and enable parser-padding delegation. ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01."
+209-       ON)
+```
+
+### The dedicated macro selects the delegation
+
+```sh
+$ grep -n 'HCC_USE_SELFHOST_PARSER_PADDING' src/parser.c
+431:#ifdef HCC_USE_SELFHOST_PARSER_PADDING
+```
+
+### The generic flag is NOT used by the parser
+
+```sh
+$ grep -n 'HCC_USE_SELFHOST_COMPONENTS' src/parser.c
+442:     * HCC_USE_SELFHOST_COMPONENTS) is required because that generic
+```
+
+The single occurrence is inside the explanatory comment stating why the
+generic flag was NOT adopted.
+
+### The legacy stage0 path is EXPLICIT
+
+```text
+$ grep -n 'CalcPadding' -A 4 src/parser.c | sed -n '1,8p'
+430:int CalcPadding(int offset, int size) {
+431:#ifdef HCC_USE_SELFHOST_PARSER_PADDING
+...
+454:#else
+455-    /* Stage0 evidence path: pure legacy C algorithm. Reachable only
+456-     * in non-HCC_USE_SELFHOST_PARSER_PADDING builds (the
+```
+
+The legacy body lives only in the `#else` branch, compiled without the
+macro in the stage0 evidence path.
+
+## Measured effect in the four production binaries
+
+```text
+generation  _BootstrapCalcPadding symbol  macro in compile defines  authority
+G0          0                            0 (absent)               Legacy C
+G1          1                            1                         PolyC
+G2          1                            1                         PolyC
+G3          1                            1                         PolyC
+```
+
+The G0 row is decisive: the stage0 control does NOT activate the
+PolyC-padding authority, so the six-way comparison is a genuine
+legacy-vs-PolyC differential rather than a PolyC-vs-PolyC tautology.
+
+## AC13 regrade
+
+```text
+ORIGINAL_AC13=FAIL               (DELEGATE01 historical fact, preserved)
+JOB_1_AC13_PROSPECTIVE_PASS=YES  (under the CORRECTION01-authorized design)
+```
+
+The regrade is PROSPECTIVE. The dedicated seam was already implemented
+and production-active before this ACT; CORRECTION01 authorizes it
+without changing a single line of production source.
+
+## No production source change accompanied the authorization
+
+```text
+PRODUCTION_SOURCE_DELTA=0
+BOOTSTRAP_CALC_PADDING_SOURCE_DELTA=0
+```
+
+Verified by the per-file rehash in `c3-production-source-conservation.tsv`
+and by `git diff --exit-code 87361da..HEAD -- src/parser.c
+src/CMakeLists.txt tools/bootstrap/selfhost-parser-padding.HC` (RC=0).

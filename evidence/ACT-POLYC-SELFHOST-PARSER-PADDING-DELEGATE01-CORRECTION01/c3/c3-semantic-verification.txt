@@ -1,0 +1,62 @@
+# C3 Semantic Verification (re-executed)
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01
+
+## Re-comparison of the captured outputs (independent of the C2 run)
+
+```sh
+$ for f in fixture_alignof fixture_u0_tail fixture_inheritance; do
+$   for pair in g0:g1 g0:g2 g0:g3 g1:g2 g1:g3 g2:g3; do
+$     a=${pair%%:*}; b=${pair##*:}
+$     cmp -s build/padding-delegate-corr01/$a/$f.output build/padding-delegate-corr01/$b/$f.output \
+$       && echo "PASS $f ${a}_${b}" || echo "FAIL $f ${a}_${b}"
+$   done; done
+```
+
+```text
+PASS fixture_alignof g0_g1
+PASS fixture_alignof g0_g2
+PASS fixture_alignof g0_g3
+PASS fixture_alignof g1_g2
+PASS fixture_alignof g1_g3
+PASS fixture_alignof g2_g3
+PASS fixture_u0_tail g0_g1
+PASS fixture_u0_tail g0_g2
+PASS fixture_u0_tail g0_g3
+PASS fixture_u0_tail g1_g2
+PASS fixture_u0_tail g1_g3
+PASS fixture_u0_tail g2_g3
+PASS fixture_inheritance g0_g1
+PASS fixture_inheritance g0_g2
+PASS fixture_inheritance g0_g3
+PASS fixture_inheritance g1_g2
+PASS fixture_inheritance g1_g3
+PASS fixture_inheritance g2_g3
+
+PER_FIXTURE_PAIR_PASS=18
+PER_FIXTURE_PAIR_FAIL=0
+
+g0_g1_EQUAL=YES
+g0_g2_EQUAL=YES
+g0_g3_EQUAL=YES
+g1_g2_EQUAL=YES
+g1_g3_EQUAL=YES
+g2_g3_EQUAL=YES
+
+PRODUCTION_SEMANTIC_PAIR_PASS=6
+PRODUCTION_SEMANTIC_PAIR_FAIL=0
+MIGRATION_DELTA=0
+```
+
+## Determinism check (same production binary, repeated execution)
+
+```text
+fixture_alignof distinct_output_sha256_over_3_runs=1
+fixture_u0_tail distinct_output_sha256_over_3_runs=1
+fixture_inheritance distinct_output_sha256_over_3_runs=1
+```
+
+A value of 1 means the fixture output is deterministic: three
+consecutive executions of the same production binary produced the
+identical byte stream. This is what makes the six-way comparison
+a semantic comparison rather than a flaky one.

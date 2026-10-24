@@ -1,0 +1,96 @@
+# C3 F14 -- DELEGATE01 HANDOFF Conservation
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01
+
+## Result
+
+```text
+DELEGATE01_HANDOFF_DELTA_SINCE_ENTRY=0
+DELEGATE01_HANDOFF_HISTORICAL_F14_VIOLATION=ACKNOWLEDGED
+HISTORICAL_F14_VIOLATION=ACKNOWLEDGED
+```
+
+## Verification transcript
+
+```sh
+$ shasum -a 256 docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01.md
+012d6054499d7e17f5c7cb450b05c36ed3f57b74e33453ae3cad2300c6ebb56d  docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01.md
+```
+
+Frozen baseline (from `pre-c0/pre-c0-delegate01-handoff-sha-baseline.txt`):
+
+```text
+DELEGATE01_HANDOFF_SHA256_AT_CORRECTION01_ENTRY = 012d6054499d7e17f5c7cb450b05c36ed3f57b74e33453ae3cad2300c6ebb56d
+```
+
+```text
+HANDOFF_BASELINE_MATCH=YES
+DELEGATE01_HANDOFF_DELTA_SINCE_ENTRY=0
+```
+
+Independent cross-check against the CORRECTION01 ENTRY point
+(`93f85ed`), which is the baseline the frozen SHA was taken at:
+
+```sh
+$ git diff --exit-code 93f85ed..HEAD -- docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01.md
+RC=0
+```
+
+The HANDOFF is byte-identical to its state at the CORRECTION01 entry
+point. CORRECTION01 did NOT add a reviewer-verdict block to it; the
+predecessor's disposition is recorded in this ACT's evidence tree
+instead (`c0-predecessor-disposition.txt`).
+
+### The `35dc0b0` comparison is NOT zero -- and that is the point
+
+For completeness, the comparison against the predecessor's OWN C4 close
+IS non-empty:
+
+```sh
+$ git diff --exit-code 35dc0b0..HEAD -- docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01.md
+RC=1   (77 insertions, 16 deletions)
+
+$ git diff --stat 35dc0b0 8393d4d -- docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01.md
+ ... 1 file changed, 77 insertions(+), 16 deletions(-)
+```
+
+The delta is caused ENTIRELY by the post-mortem commit `8393d4d`, NOT by
+CORRECTION01. The two diffs have identical shape and size, which
+identifies `8393d4d` as the sole mutator between `35dc0b0` and the
+CORRECTION01 entry point.
+
+This is precisely why this ACT claims ONLY
+`DELEGATE01_HANDOFF_DELTA_SINCE_ENTRY = 0` (measured against the
+frozen entry baseline) and NOT "delta = 0 against the original C4
+close", which would be false.
+
+## Historical violation -- acknowledged, NOT repaired
+
+```text
+DELEGATE01_HANDOFF_HISTORICAL_F14_VIOLATION=ACKNOWLEDGED
+```
+
+The post-mortem commit `8393d4d` mutated the closed DELEGATE01 HANDOFF
+after its C4 close at `35dc0b0`. That mutation was F14-improper per the
+binding reviewer verdict `HALT_MULTIPLE_BINDING_PREDICATES`.
+
+It CANNOT be undone: the append-only invariant is enforced from
+`baf5dbd7` forward by `.githooks/pre-push`, which rejects amend, rebase,
+reset+recommit, squash merge, force push, `git replace`, and
+filter-branch/filter-repo. A forward commit cannot alter an ancestor's
+content.
+
+Per F14 the historical document remains as-is. This ACT records the
+truthful decomposition and claims ONLY the forward invariant
+(`*_DELTA_SINCE_ENTRY = 0`), which is the mechanically checkable
+contract.
+
+## The two distinct facts (not conflated)
+
+```text
+HISTORICAL FACT : the HANDOFF was mutated post-C4 by 8393d4d  -> ACKNOWLEDGED
+FORWARD INVARIANT: no further mutation during CORRECTION01     -> 0 (verified above)
+```
+
+This ACT does NOT claim "HANDOFF delta = 0 against the original C4
+close", which would be false.

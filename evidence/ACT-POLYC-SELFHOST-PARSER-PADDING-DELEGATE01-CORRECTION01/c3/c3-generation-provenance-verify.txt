@@ -1,0 +1,107 @@
+# C3 Independent Generation-Provenance Verification
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01
+
+## Method
+
+```text
+Every value recorded in c2/c2-generation-provenance.tsv is
+RECOMPUTED from disk (or from the literal command string) and
+compared field by field. The recorded value is never trusted.
+```
+
+## Per-generation field recomputation
+
+### g0 (Legacy)
+
+```text
+PROVENANCE_FIELD_MATCH label=compiler_sha256
+PROVENANCE_FIELD_MATCH label=compiler_exists
+PROVENANCE_FIELD_MATCH label=subject_source_sha256
+PROVENANCE_FIELD_GATED label=subject_object_sha256 value=NOT_APPLICABLE_LEGACY_CONTROL reason=G0_is_legacy_control_no_polyc_subject
+PROVENANCE_FIELD_MATCH label=subject_object_absent path=NOT_APPLICABLE_LEGACY_CONTROL
+PROVENANCE_FIELD_MATCH label=production_binary_sha256
+PROVENANCE_FIELD_MATCH label=production_build_command_sha256
+PROVENANCE_SYMBOL_CHECK label=production_binary path=build/padding-delegate-corr01/g0/hcc symbols=0
+PROVENANCE_DEFINES_CHECK label=production_binary path=build/padding-delegate-corr01/g0/hcc defines=0
+PROVENANCE_FIELD_MATCH label=fixture_input_sha256
+PROVENANCE_FIELD_MATCH label=fixture_command_sha256
+PROVENANCE_FIELD_MATCH label=fixture_output_sha256
+PROVENANCE_EXECUTION_CHECK label=fixture_output path=build/padding-delegate-corr01/g0/fixture_alignof.output exists=YES
+PROVENANCE_ROW_END generation=g0
+```
+
+### g1 (PolyC)
+
+```text
+PROVENANCE_FIELD_MATCH label=compiler_sha256
+PROVENANCE_FIELD_MATCH label=compiler_exists
+PROVENANCE_FIELD_MATCH label=subject_source_sha256
+PROVENANCE_FIELD_MATCH label=subject_object_sha256
+PROVENANCE_FIELD_MATCH label=subject_build_command_sha256
+PROVENANCE_SYMBOL_CHECK label=subject_object path=build/padding-delegate-corr01/g1/parser-padding-subject.o symbols=1
+PROVENANCE_FIELD_MATCH label=production_binary_sha256
+PROVENANCE_FIELD_MATCH label=production_build_command_sha256
+PROVENANCE_SYMBOL_CHECK label=production_binary path=build/padding-delegate-corr01/g1/hcc symbols=1
+PROVENANCE_DEFINES_CHECK label=production_binary path=build/padding-delegate-corr01/g1/hcc defines=1
+PROVENANCE_FIELD_MATCH label=fixture_input_sha256
+PROVENANCE_FIELD_MATCH label=fixture_command_sha256
+PROVENANCE_FIELD_MATCH label=fixture_output_sha256
+PROVENANCE_EXECUTION_CHECK label=fixture_output path=build/padding-delegate-corr01/g1/fixture_alignof.output exists=YES
+PROVENANCE_ROW_END generation=g1
+```
+
+### g2 (PolyC)
+
+```text
+PROVENANCE_FIELD_MATCH label=compiler_sha256
+PROVENANCE_FIELD_MATCH label=compiler_exists
+PROVENANCE_FIELD_MATCH label=subject_source_sha256
+PROVENANCE_FIELD_MATCH label=subject_object_sha256
+PROVENANCE_FIELD_MATCH label=subject_build_command_sha256
+PROVENANCE_SYMBOL_CHECK label=subject_object path=build/padding-delegate-corr01/g2/parser-padding-subject.o symbols=1
+PROVENANCE_FIELD_MATCH label=production_binary_sha256
+PROVENANCE_FIELD_MATCH label=production_build_command_sha256
+PROVENANCE_SYMBOL_CHECK label=production_binary path=build/padding-delegate-corr01/g2/hcc symbols=1
+PROVENANCE_DEFINES_CHECK label=production_binary path=build/padding-delegate-corr01/g2/hcc defines=1
+PROVENANCE_FIELD_MATCH label=fixture_input_sha256
+PROVENANCE_FIELD_MATCH label=fixture_command_sha256
+PROVENANCE_FIELD_MATCH label=fixture_output_sha256
+PROVENANCE_EXECUTION_CHECK label=fixture_output path=build/padding-delegate-corr01/g2/fixture_alignof.output exists=YES
+PROVENANCE_ROW_END generation=g2
+```
+
+### g3 (PolyC)
+
+```text
+PROVENANCE_FIELD_MATCH label=compiler_sha256
+PROVENANCE_FIELD_MATCH label=compiler_exists
+PROVENANCE_FIELD_MATCH label=subject_source_sha256
+PROVENANCE_FIELD_MATCH label=subject_object_sha256
+PROVENANCE_FIELD_MATCH label=subject_build_command_sha256
+PROVENANCE_SYMBOL_CHECK label=subject_object path=build/padding-delegate-corr01/g3/parser-padding-subject.o symbols=1
+PROVENANCE_FIELD_MATCH label=production_binary_sha256
+PROVENANCE_FIELD_MATCH label=production_build_command_sha256
+PROVENANCE_SYMBOL_CHECK label=production_binary path=build/padding-delegate-corr01/g3/hcc symbols=1
+PROVENANCE_DEFINES_CHECK label=production_binary path=build/padding-delegate-corr01/g3/hcc defines=1
+PROVENANCE_FIELD_MATCH label=fixture_input_sha256
+PROVENANCE_FIELD_MATCH label=fixture_command_sha256
+PROVENANCE_FIELD_MATCH label=fixture_output_sha256
+PROVENANCE_EXECUTION_CHECK label=fixture_output path=build/padding-delegate-corr01/g3/fixture_alignof.output exists=YES
+PROVENANCE_ROW_END generation=g3
+```
+
+## Totals
+
+```text
+GENERATION_ROWS=4
+GENERATION_PROVENANCE_FAIL=0
+```
+
+## Placeholder scan
+
+```text
+GENERATION_PLACEHOLDER_COUNT=0
+```
+
+PROVENANCE_VERIFY_STATUS=PASS

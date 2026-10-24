@@ -1,0 +1,98 @@
+# C3 Production Authority Conservation
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01
+
+## Result
+
+```text
+HCC_USE_SELFHOST_PARSER_PADDING_DEFAULT=ON
+PRODUCTION_PADDING_AUTHORITY=POLYC
+LEGACY_RUNTIME_FALLBACK=NO
+PRODUCTION_SOURCE_DELTA=0
+BOOTSTRAP_CALC_PADDING_SOURCE_DELTA=0
+```
+
+## Measured evidence
+
+### The dedicated option defaults to ON
+
+```sh
+$ grep -n 'option(HCC_USE_SELFHOST_PARSER_PADDING' -A 3 src/CMakeLists.txt
+207:option(HCC_USE_SELFHOST_PARSER_PADDING
+208-       "Link the parser-padding PolyC component into hcc and enable parser-padding delegation. ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01."
+209-       ON)
+```
+
+### The delegation is selected by the dedicated macro
+
+```sh
+$ grep -n 'HCC_USE_SELFHOST_PARSER_PADDING' src/parser.c
+431:#ifdef HCC_USE_SELFHOST_PARSER_PADDING
+```
+
+### Production binaries carry the PolyC authority
+
+```text
+generation  _BootstrapCalcPadding in binary  macro in compile defines  authority
+G0          0                                0 (absent)              Legacy C
+G1          1                                1                        PolyC
+G2          1                                1                        PolyC
+G3          1                                1                        PolyC
+```
+
+The G0 row proves the stage0 path does NOT activate the PolyC-padding
+authority. Therefore the six-way comparison is a real
+legacy-vs-PolyC differential.
+
+### No runtime fallback in the production path
+
+In `src/parser.c::CalcPadding`, the legacy C algorithm body exists ONLY
+inside the `#else` branch of the `#ifdef HCC_USE_SELFHOST_PARSER_PADDING`
+conditional. Production builds define the macro, so the `#else` branch is
+not compiled into the production binary. The G0 binary is the only build
+in which the legacy body is live, and it is a deliberate control.
+
+```text
+LEGACY_RUNTIME_FALLBACK=NO
+```
+
+### Source conservation
+
+All six frozen subjects are byte-identical to their C0 values
+(`c3-production-source-conservation.tsv`, delta column = 0 for all six),
+and:
+
+```sh
+$ git diff --exit-code 87361da..HEAD -- \
+    src/parser.c src/CMakeLists.txt tools/bootstrap/selfhost-parser-padding.HC
+RC=0
+```
+
+```text
+PRODUCTION_SOURCE_DELTA=0
+BOOTSTRAP_CALC_PADDING_SOURCE_DELTA=0
+```
+
+## N01 causal witness preserved
+
+The predecessor's complete causal chain (pristine subject source ->
+pristine subject object -> pristine production binary -> fixture
+outputs) was NOT re-run, because the production path it proves has not
+changed: the subject source SHA, the subject object SHA, the production
+binary behaviour, and all six frozen source SHAs are identical to the
+predecessor's recorded values. Re-running the mutation campaign would
+be redundant work on an unchanged subject, and the ACT explicitly
+states: "Do not repeat the entire prior N01 mutation campaign unless
+current results suggest the already-proven production path has changed."
+
+The original causal witness remains valid and unerased in
+`evidence/ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01/c3/c3-n01-production-causal-control.txt`
+(verified conserved by the 53-file baseline rehash).
+
+## Authority summary
+
+```text
+PARSER_PADDING_PRODUCTION_AUTHORITY=POLYC
+LEGACY_RUNTIME_AUTHORITY=RETIRED
+BOOTSTRAP_CALC_PADDING_LOAD_BEARING=YES
+```

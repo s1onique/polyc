@@ -1,0 +1,31 @@
+ac_id	predicate	status	evidence
+AC01	ENTRY_HEAD = authorization revision HEAD; C0 is the first new commit after the revision commit	PASS	c0-entry-identity.txt (ENTRY_HEAD=93f85ed, C0=first new commit after it)
+AC02	branch = main	PASS	c0-entry-identity.txt
+AC03	worktree clean at CORRECTION01 C0	PASS	c0-entry-identity.txt
+AC04	predecessor verdict = HALT_MULTIPLE_BINDING_PREDICATES	PASS	c0-predecessor-disposition.txt
+AC05	AC13 regrades to PASS under authorized design	PASS	c1-red-d1-design-contradiction.txt + c2-design-reconciliation.txt
+AC06	HCC_USE_SELFHOST_PARSER_PADDING = ON (default)	PASS	c3-production-authority-conservation.txt
+AC07	src/parser.c untouched (no diff vs DELEGATE01 C2)	PASS	c3-production-source-conservation.tsv (delta=0)
+AC08	src/CMakeLists.txt untouched (no diff vs DELEGATE01 C2)	PASS	c3-production-source-conservation.tsv (delta=0)
+AC09	G2 production binary SHA-256 frozen (real value)	PASS	c3-generation-provenance.tsv (G2 row, 64-hex real value)
+AC10	G3 production binary SHA-256 frozen (real value)	PASS	c3-generation-provenance.tsv (G3 row, 64-hex real value)
+AC11	G2 production output SHA-256 frozen	PASS	c3-generation-provenance.tsv + c3-g2-production-run.txt
+AC12	G3 production output SHA-256 frozen	PASS	c3-generation-provenance.tsv + c3-g3-production-run.txt
+AC13	G2/G3 build/run command transcripts recorded (literal commands + output capture)	PASS	c3-g2-production-build.txt + c3-g2-production-run.txt + c3-g3-production-build.txt + c3-g3-production-run.txt
+AC14	DELEGATE01 trailer geometry = IMMUTABLE_FAIL_ACK (no false repair claim)	PASS	c1-red-d3-trailer-geometry.txt
+AC15	CORRECTION01 C0..C4 trailer blocks parseable and contiguous	PASS	c3-commit-trailer-audit.txt
+AC16	factory-v2-range-check CORRECTION01 = PASS	FAIL_STRUCTURAL_IMMUTABLE	NOT_REACHABLE: the validator derives FIRST by walking parents while each carries ACT=<id>; the three pre-C0 authorization commits (8393d4d/b73fe6b/93f85ed) already carry ACT=<id> with non-canonical ACT-Phase, pinning FIRST=8393d4d (POST_MORTEM_AUTHORIZATION). Proved empirically with a PERFECT C0..C4 trailer sequence in a scratch clone. Ancestor commit messages are immutable under the append-only invariant. See c1-red-d4-pre-c0-act-trailer-collision.txt. HALT_CLASS=GOVERNANCE BLOCKS_NEXT=NO.
+AC17	gate-fast = PASS	PASS	c3-factory-gates.txt
+AC18	DELEGATE01 evidence SHA256 set delta since CORRECTION01 ENTRY_HEAD = 0	PASS	c3-f14-evidence-conservation.txt (53/53 match)
+AC19	DELEGATE01 HANDOFF delta since CORRECTION01 ENTRY_HEAD = 0	PASS	c3-f14-handoff-conservation.txt
+AC20	historical post-C4 HANDOFF mutation = ACKNOWLEDGED_F14_VIOLATION	PASS	c3-f14-handoff-conservation.txt
+AC21	G0..G3 generation-provenance rows concrete (no placeholders)	PASS	c3-generation-provenance-verify.txt (39/39 fields recomputed, 0 placeholders)
+AC22	patch hygiene errors = 0	PASS	c3-patch-hygiene.txt
+AC23	F14 closed-evidence surfaces untouched	PASS	c3-f14-evidence-conservation.txt + c3-f14-handoff-conservation.txt
+AC24	F-POLYC-TOOLS = PASS	PASS	c3-factory-gates.txt (no new tools added)
+AC25	F-NO-PYTHON = PASS	PASS	c3-factory-gates.txt (0 new python sources/invocations)
+AC26	HANDOFF PASS_TRUE_GREEN with all required sections	DEFERRED_TO_C4	The HANDOFF does not exist yet; it is created in the C4 phase. Not observable at C3.
+AC27	CORRECTION01 commit count = 5	DEFERRED_TO_C4	Only C0..C3 exist at C3 (count=3). The count becomes 5 after C4. Not observable at C3.
+AC28	commit topology honors C0-before-C1 (contiguous forward sequence)	PASS	c3-commit-trailer-audit.txt
+AC29	no amend / reset / rebase / force push on CORRECTION01 history	PASS	c3-factory-gates.txt (append-only 11/11 PASS) + git topology
+AC30	PREDECESSOR_EFFECTIVE_DISPOSITION = HALT_MULTIPLE_BINDING_PREDICATES recorded in CORRECTION01 evidence, not in DELEGATE01 HANDOFF	PASS	c0-predecessor-disposition.txt
