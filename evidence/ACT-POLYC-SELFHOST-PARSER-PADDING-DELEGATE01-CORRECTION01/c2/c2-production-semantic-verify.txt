@@ -1,0 +1,116 @@
+# C2 Six-Way Production Semantic Verification
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01
+
+## Generation-pair rollup (6 generation combinations, all fixtures)
+
+```text
+g0_g1_EQUAL=YES
+g0_g2_EQUAL=YES
+g0_g3_EQUAL=YES
+g1_g2_EQUAL=YES
+g1_g3_EQUAL=YES
+g2_g3_EQUAL=YES
+
+PRODUCTION_SEMANTIC_PAIR_PASS=6
+PRODUCTION_SEMANTIC_PAIR_FAIL=0
+MIGRATION_DELTA=0
+```
+
+## Per-fixture totals (3 fixtures x 6 generation pairs)
+
+```text
+PER_FIXTURE_PAIR_PASS=18
+PER_FIXTURE_PAIR_FAIL=0
+FIXTURE_COUNT=3
+```
+
+## Executable comparison transcript
+
+```sh
+$ for f in fixture_alignof fixture_u0_tail fixture_inheritance; do
+$   for pair in g0:g1 g0:g2 g0:g3 g1:g2 g1:g3 g2:g3; do
+$     a=${pair%%:*}; b=${pair##*:}
+$     if cmp -s build/padding-delegate-corr01/$a/$f.output \
+$                 build/padding-delegate-corr01/$b/$f.output; then
+$       echo "PASS $f ${a}_${b}"; else echo "FAIL $f ${a}_${b}"; fi
+$   done
+$ done
+fixture_alignof      g0_g1    PASS
+fixture_alignof      g0_g2    PASS
+fixture_alignof      g0_g3    PASS
+fixture_alignof      g1_g2    PASS
+fixture_alignof      g1_g3    PASS
+fixture_alignof      g2_g3    PASS
+fixture_u0_tail      g0_g1    PASS
+fixture_u0_tail      g0_g2    PASS
+fixture_u0_tail      g0_g3    PASS
+fixture_u0_tail      g1_g2    PASS
+fixture_u0_tail      g1_g3    PASS
+fixture_u0_tail      g2_g3    PASS
+fixture_inheritance  g0_g1    PASS
+fixture_inheritance  g0_g2    PASS
+fixture_inheritance  g0_g3    PASS
+fixture_inheritance  g1_g2    PASS
+fixture_inheritance  g1_g3    PASS
+fixture_inheritance  g2_g3    PASS
+```
+
+## Captured outputs (SHA-256 per generation per fixture)
+
+```text
+fixture_alignof g0       86c75cd71eacaf9121d5de93b88921ec3c129a766b8e72955c33add329fff190
+fixture_alignof g1       86c75cd71eacaf9121d5de93b88921ec3c129a766b8e72955c33add329fff190
+fixture_alignof g2       86c75cd71eacaf9121d5de93b88921ec3c129a766b8e72955c33add329fff190
+fixture_alignof g3       86c75cd71eacaf9121d5de93b88921ec3c129a766b8e72955c33add329fff190
+fixture_u0_tail g0       0e5283368a110861df70744b21c8c3f544866ec7d78cbb2c9dcf4322d9d838f0
+fixture_u0_tail g1       0e5283368a110861df70744b21c8c3f544866ec7d78cbb2c9dcf4322d9d838f0
+fixture_u0_tail g2       0e5283368a110861df70744b21c8c3f544866ec7d78cbb2c9dcf4322d9d838f0
+fixture_u0_tail g3       0e5283368a110861df70744b21c8c3f544866ec7d78cbb2c9dcf4322d9d838f0
+fixture_inheritance g0       bb266b2e37a5cde6f4e266097a03407a7fc99a5474a97a099960e399bf4891c9
+fixture_inheritance g1       bb266b2e37a5cde6f4e266097a03407a7fc99a5474a97a099960e399bf4891c9
+fixture_inheritance g2       bb266b2e37a5cde6f4e266097a03407a7fc99a5474a97a099960e399bf4891c9
+fixture_inheritance g3       bb266b2e37a5cde6f4e266097a03407a7fc99a5474a97a099960e399bf4891c9
+```
+
+## Canonical output content (identical across all four generations)
+
+### fixture_alignof
+
+```text
+FIXTURE_ALIGNOF
+Color=4 alignof=1
+Rectangle=16 alignof=4
+Mixed=24 alignof=8
+S2=4 alignof=2
+S3=8 alignof=4
+S5=3 alignof=1
+Inner=4 alignof=1
+Outer=5 alignof=1
+Has8=16 alignof=8
+OuterH=24 alignof=8
+```
+
+### fixture_u0_tail
+
+```text
+FIXTURE_U0_TAIL
+Hdr=8 HdrMixed=16
+HdrBodyOffset=8 HdrMixedBodyOffset=9
+```
+
+### fixture_inheritance
+
+```text
+FIXTURE_INHERITANCE
+BaseClass=16 SuperClass=32 Empty=16 Cat=8
+NarrowBase=1 WideDerived=16
+```
+
+## Halt semantics
+
+```text
+If any generation pair diverges on any fixture, declare
+HALT_PRODUCTION_SEMANTIC_REGRESSION. A post-hoc reclassification
+of a divergence is forbidden.
+```

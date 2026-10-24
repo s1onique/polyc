@@ -1,0 +1,92 @@
+# C2 Design Reconciliation (JOB 1)
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01
+
+## Result
+
+```text
+JOB_1_DESIGN_AUTHORIZED=YES
+JOB_1_AC13_PROSPECTIVE_PASS=YES
+JOB_1_DESIGN_RECONCILIATION=PASS
+```
+
+## The authorized design, prospectively
+
+```text
+CORRECTION01_AUTHORIZED_DESIGN=HCC_USE_SELFHOST_PARSER_PADDING
+DEDICATED_MACRO_REQUIRED=YES
+DEFAULT_PRODUCTION_VALUE=ON
+LEGACY_STAGE0_PATH=EXPLICIT
+PRODUCTION_SOURCE_CHANGE_REQUIRED=NO
+```
+
+## Measured confirmation that the implementation already matches
+
+```sh
+$ grep -n 'option(HCC_USE_SELFHOST_PARSER_PADDING' -A 3 src/CMakeLists.txt
+207:option(HCC_USE_SELFHOST_PARSER_PADDING
+208-       "Link the parser-padding PolyC component into hcc and enable parser-padding delegation. ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01."
+209-       ON)
+```
+
+The default is `ON` -- the production compiler exercises the PolyC
+authority by default.
+
+```sh
+$ grep -n 'HCC_USE_SELFHOST_PARSER_PADDING' src/parser.c
+431:#ifdef HCC_USE_SELFHOST_PARSER_PADDING
+```
+
+The delegation is selected by the dedicated macro only.
+
+## Measured consequence in the four production binaries
+
+Each generation's build directory records the effective compile
+definitions and the presence of the PolyC authority symbol:
+
+| Generation | `HCC_USE_SELFHOST_PARSER_PADDING` in defines | `_BootstrapCalcPadding` in binary | Authority |
+|---|---|---|---|
+| G0 | 0 (absent) | 0 (absent) | Legacy C |
+| G1 | 1 | 1 | PolyC |
+| G2 | 1 | 1 | PolyC |
+| G3 | 1 | 1 | PolyC |
+
+The G0 row is the decisive one: the stage0 control does NOT activate the
+PolyC-padding authority, so the six-way comparison is a real
+legacy-vs-PolyC differential, not a PolyC-vs-PolyC tautology.
+
+## Legacy stage0 path is EXPLICIT and still reachable
+
+The legacy C algorithm body survives only inside the `#else` branch of
+`src/parser.c::CalcPadding`, compiled without the macro in the stage0
+evidence path. In the G0 production binary:
+
+```text
+$ nm build/padding-delegate-corr01/g0/hcc | grep -i CalcPadding
+000000010003acd8 T _CalcPadding
+000000010003acfc T _ParserLegacyCalcPaddingOracle
+```
+
+Both the legacy `CalcPadding` and the oracle wrapper are present in G0
+and are the load-bearing implementation there.
+
+## AC13 regrade
+
+```text
+ORIGINAL_AC13=FAIL                        (historical, preserved)
+JOB_1_AC13_PROSPECTIVE_PASS=YES           (under CORRECTION01-authorized design)
+```
+
+The regrade is PROSPECTIVE: the dedicated seam was already implemented
+and production-active before this ACT, and CORRECTION01 authorizes it
+without changing a single line of production source.
+
+## Production source conservation
+
+```text
+PRODUCTION_SOURCE_DELTA=0
+BOOTSTRAP_CALC_PADDING_SOURCE_DELTA=0
+```
+
+Verified against the C0 freeze in `c0-production-source-freeze.tsv` and
+re-verified mechanically at C3.

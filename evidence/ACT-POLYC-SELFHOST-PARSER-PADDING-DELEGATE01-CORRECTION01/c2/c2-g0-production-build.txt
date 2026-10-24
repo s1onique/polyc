@@ -1,0 +1,46 @@
+# C2 Production Build -- generation g0
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01
+
+## Build directory (independent per generation)
+
+```text
+BUILD_DIR=build/padding-delegate-corr01/g0
+```
+
+## Subject object (PolyC production component)
+
+```sh
+$ # G0 is the LEGACY C control: it links NO PolyC padding subject.
+$ # src/parser.c is compiled WITHOUT HCC_USE_SELFHOST_PARSER_PADDING,
+$ # so CalcPadding executes the legacy C algorithm body.
+G0_SUBJECT_OBJECT_EXISTS=NO
+```
+
+## Production binary (independently linked)
+
+```sh
+$ cmake -S src -B build/padding-delegate-corr01/g0/cmake -DHCC_USE_SELFHOST_PARSER_PADDING=OFF -DHCC_ENABLE_JIT=on -DCMAKE_BUILD_TYPE=Release
+G0_CONFIGURE_RC=0
+$ cmake --build build/padding-delegate-corr01/g0/cmake --target hcc -j4
+G0_BUILD_RC=0
+```
+
+## Production binary identity
+
+```text
+PRODUCTION_BINARY_PATH=build/padding-delegate-corr01/g0/hcc
+PRODUCTION_BINARY_SHA256=831d353e6f12e74568c080058cbd2e6108867e883ac5d08d32045aaef737d3ac
+```
+
+## PolyC authority symbol in the production binary
+
+```text
+BOOTSTRAP_CALC_PADDING_SYMBOL_PRESENT=0
+```
+
+## Effective compile definitions (stage0 must NOT activate PolyC authority)
+
+```text
+HCC_USE_SELFHOST_PARSER_PADDING_IN_DEFINES=0
+```

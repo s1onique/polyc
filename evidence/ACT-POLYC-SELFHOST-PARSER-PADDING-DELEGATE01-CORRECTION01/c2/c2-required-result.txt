@@ -1,0 +1,105 @@
+# C2 Required Result
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01
+
+## JOB 1 -- dedicated macro seam authorization
+
+```text
+JOB_1_DESIGN_AUTHORIZED=YES
+JOB_1_AC13_PROSPECTIVE_PASS=YES
+JOB_1_DESIGN_RECONCILIATION=PASS
+```
+
+## JOB 2 -- independent G0/G1/G2/G3 production generation qualification
+
+```text
+JOB_2_G2_BUILD=PASS
+JOB_2_G3_BUILD=PASS
+JOB_2_G2_RUN=PASS
+JOB_2_G3_RUN=PASS
+
+JOB_2_G0_G1_G2_G3_INDEPENDENT_RUNS=4
+JOB_2_PROVENANCE_ROWS=4
+JOB_2_PROVENANCE_PLACEHOLDERS=0
+
+PRODUCTION_SEMANTIC_PAIR_PASS=6
+PRODUCTION_SEMANTIC_PAIR_FAIL=0
+MIGRATION_DELTA=0
+```
+
+Per-fixture totals (3 fixtures x 6 generation pairs = 18 comparisons):
+
+```text
+PER_FIXTURE_PAIR_PASS=18
+PER_FIXTURE_PAIR_FAIL=0
+```
+
+## Production source conservation
+
+```text
+PRODUCTION_SOURCE_DELTA=0
+BOOTSTRAP_CALC_PADDING_SOURCE_DELTA=0
+```
+
+All six frozen production/verification subjects are byte-identical to
+their C0 values. `git diff --exit-code 87361da..HEAD -- src/parser.c
+src/CMakeLists.txt tools/bootstrap/selfhost-parser-padding.HC` returns 0.
+
+## Real measured identities (no placeholders)
+
+```text
+G0 production binary SHA256 = 831d353e6f12e74568c080058cbd2e6108867e883ac5d08d32045aaef737d3ac
+G1 production binary SHA256 = dd6d8dfef798e4739e8a64c2143c16482f2477db031403ee6249962c10c28702
+G2 production binary SHA256 = dd6d8dfef798e4739e8a64c2143c16482f2477db031403ee6249962c10c28702
+G3 production binary SHA256 = dd6d8dfef798e4739e8a64c2143c16482f2477db031403ee6249962c10c28702
+
+G1 subject object SHA256   = 187a4de9465e8dbe3c640484b05540daaad4a3267dd1543a169e3c304b02d5b1
+G2 subject object SHA256   = 187a4de9465e8dbe3c640484b05540daaad4a3267dd1543a169e3c304b02d5b1
+G3 subject object SHA256   = 187a4de9465e8dbe3c640484b05540daaad4a3267dd1543a169e3c304b02d5b1
+
+G0 fixture_alignof output SHA256   = 86c75cd71eacaf9121d5de93b88921ec3c129a766b8e72955c33add329fff190
+G2 fixture_alignof output SHA256   = 86c75cd71eacaf9121d5de93b88921ec3c129a766b8e72955c33add329fff190
+G3 fixture_alignof output SHA256   = 86c75cd71eacaf9121d5de93b88921ec3c129a766b8e72955c33add329fff190
+G0 fixture_u0_tail output SHA256   = 0e5283368a110861df70744b21c8c3f544866ec7d78cbb2c9dcf4322d9d838f0
+G2 fixture_u0_tail output SHA256   = 0e5283368a110861df70744b21c8c3f544866ec7d78cbb2c9dcf4322d9d838f0
+G3 fixture_u0_tail output SHA256   = 0e5283368a110861df70744b21c8c3f544866ec7d78cbb2c9dcf4322d9d838f0
+G0 fixture_inheritance output SHA256 = bb266b2e37a5cde6f4e266097a03407a7fc99a5474a97a099960e399bf4891c9
+G2 fixture_inheritance output SHA256 = bb266b2e37a5cde6f4e266097a03407a7fc99a5474a97a099960e399bf4891c9
+G3 fixture_inheritance output SHA256 = bb266b2e37a5cde6f4e266097a03407a7fc99a5474a97a099960e399bf4891c9
+```
+
+### Why G1/G2/G3 share a production-binary SHA
+
+The build is deterministic: the same source tree, the same flags, and a
+byte-identical subject object produce a byte-identical production
+binary. The three generations are still INDEPENDENT:
+
+```text
+distinct subject object paths   g1/ g2/ g3/parser-padding-subject.o
+distinct CMake build dirs       g1/cmake g2/cmake g3/cmake
+distinct PARSER_PADDING_OBJECT  verified in each CMakeCache.txt
+distinct production binaries     g1/hcc g2/hcc g3/hcc
+distinct fixture executables    g1/*.bin g2/*.bin g3/*.bin
+distinct compile+run invocations per generation (see c2-*-production-run.txt)
+```
+
+Identical hashes do NOT prove independent execution; the separate build
+directories, separate subject objects, separate binary paths, separate
+fixture executables, and separate execution transcripts do.
+
+## G0 is a genuine legacy control
+
+```text
+G0 BootstrapCalcPadding symbol present = 0
+G0 HCC_USE_SELFHOST_PARSER_PADDING in defines = 0
+G0 binary differs from G1/G2/G3 = YES
+```
+
+## C2 commit
+
+```text
+ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01 C2: INDEPENDENT PRODUCTION GENERATION QUALIFICATION
+ACT-Phase: IMPL
+```
+
+No C2 follow-up implementation commit.
