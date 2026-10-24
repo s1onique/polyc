@@ -1,0 +1,126 @@
+# C1 Closure Geometry Contract (JOB 3)
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01
+
+## Frozen
+
+```text
+DELEGATE01_HISTORICAL_TRAILER_GEOMETRY=IMMUTABLE_FAIL_ACK
+CORRECTION01_TRAILER_GEOMETRY=NEW_FORWARD_RANGE
+```
+
+## Trailer block format (frozen)
+
+Every CORRECTION01 commit uses native `git commit --trailer`, producing a
+SINGLE contiguous trailer block:
+
+```text
+<subject line>
+<blank>
+ACT: ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01
+ACT-Phase: <RED|EVIDENCE|IMPL|EVIDENCE|CLOSE>
+[ACT-Verdict: ...]                 -- C4 ONLY
+[ACT-Supersedes: ...]              -- C4 ONLY
+[ACT-Corrected-Verdict: ...]       -- C4 ONLY
+```
+
+Verified at C0 (the actual committed C0 message):
+
+```text
+ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01 C0: AUTH
+<blank>
+ACT: ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01
+ACT-Phase: RED
+```
+
+## Phase sequence (frozen)
+
+```text
+C0 = RED       (AUTH / entry evidence)                -- committed
+C1 = EVIDENCE  (RED reproduction + contract freeze)
+C2 = IMPL      (independent G2/G3 production qualification)
+C3 = EVIDENCE  (verification)
+C4 = CLOSE     (HANDOFF + manifest registration)
+```
+
+Total forward commits from the authorization revision: 5.
+
+## Trailer cardinality rules (frozen)
+
+```text
+ACT:                   exactly 1 on every C0..C4 commit
+ACT-Phase:             exactly 1 on every C0..C4 commit
+ACT-Verdict:           exactly 0 on C0..C3; exactly 1 on C4
+ACT-Supersedes:        exactly 0 on C0..C3; exactly 1 on C4 (if used)
+ACT-Corrected-Verdict: exactly 0 on C0..C3; exactly 1 on C4 (if used)
+```
+
+`ACT-Corrected-Verdict` requires `ACT-Supersedes` to be present.
+
+## Prohibited mechanisms (frozen)
+
+```text
+git commit --amend   FORBIDDEN
+git reset            FORBIDDEN
+git rebase           FORBIDDEN
+git push --force     FORBIDDEN
+git filter-branch    FORBIDDEN
+git filter-repo      FORBIDDEN
+git replace          FORBIDDEN
+squash merge         FORBIDDEN
+ancestor commit message mutation  FORBIDDEN
+```
+
+The append-only invariant is enforced from `baf5dbd7` forward by
+`.githooks/pre-push`.
+
+## Verification method (frozen)
+
+Trailers MUST be parsed with Git, not grepped out of unstructured prose:
+
+```sh
+git log -1 --format='%(trailers)'
+git log -1 --format='%(trailers:key=ACT)'
+git log -1 --format='%(trailers:key=ACT-Phase)'
+sh scripts/quality/factory-v2-commit-msg-check.sh <commit-message-file>
+bash scripts/quality/factory-v2-range-check.sh <ACT-ID> <CLOSE-SHA>
+```
+
+## KNOWN LIMITATION (measured, see c1-red-d4-pre-c0-act-trailer-collision.txt)
+
+The `factory-v2-range-check.sh` FIRST-derivation walks parents backwards
+for as long as each parent carries `ACT: <id>`. The three pre-C0
+authorization commits (`8393d4d`, `b73fe6b`, `93f85ed`) ALREADY carry
+`ACT: ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01` with
+non-canonical `ACT-Phase` values. Therefore FIRST is pinned to `8393d4d`
+(`POST_MORTEM_AUTHORIZATION`) and the CORRECTION01 range check reports:
+
+```text
+STATUS=FAIL
+REASON=FIRST commit 8393d4d97d434eff38e7024266405effe13b3708 has ACT-Phase='POST_MORTEM_AUTHORIZATION', expected RED
+```
+
+This was proved empirically with a PERFECT C0..C4 trailer sequence in a
+scratch clone. It is a governance/bookkeeping defect in immutable
+ancestor commits, classified `HALT_CLASS=GOVERNANCE`,
+`BLOCKS_NEXT=NO` per DOCTRINE section 25.
+
+The CORRECTION01 range-check result MUST be reported as measured. This
+ACT MUST NOT assert `FACTORY_V2_RANGE_CHECK=PASS` for its own range.
+
+## Geometry obligations that ARE within this ACT's reach (frozen)
+
+```text
+CORRECTION01_COMMIT_COUNT=5
+CORRECTION01_FIRST_COMMIT_ACT_PHASE=RED
+ALL_CORRECTION01_TRAILER_BLOCKS_PARSEABLE=YES
+C4_IS_DIRECT_CHILD_OF_C3=YES
+C4_IS_SINGLE_CLOSE=YES
+ACT_VERDICT_ONLY_ON_C4=YES
+ALL_FIVE_COMMITS_SAME_ACT_ID=YES
+NO_ANCESTOR_TRAILER_MUTATION=YES
+```
+
+These are the forward-only geometry predicates this ACT owns and can
+prove. They are distinct from the range validator's FIRST-derivation,
+which reaches back into immutable pre-C0 history.

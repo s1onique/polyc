@@ -1,0 +1,129 @@
+# C1 RED-D2 -- Missing G2/G3 Production Generation Provenance
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01
+
+## Result
+
+```text
+G2_REAL_PRODUCTION_BINARY_PROVENANCE=NOT_PROVEN
+G3_REAL_PRODUCTION_BINARY_PROVENANCE=NOT_PROVEN
+G2_G3_INDEPENDENT_PRODUCTION_EXECUTION=NOT_PROVEN
+```
+
+## RED witness 1 -- the predecessor's provenance TSV contains placeholder text
+
+The predecessor's committed evidence is
+`evidence/ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01/c3/c3-generation-provenance.tsv`.
+
+```sh
+$ awk -F'\t' 'NR>=2 && NF>=5 && $1 ~ /^G/ { if ($5 ~ /^[0-9a-f]{64}$/) print $1": VALID 64-hex"; else print $1": NOT-64-HEX -> ["$5"]" }' \
+    evidence/ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01/c3/c3-generation-provenance.tsv
+G0: VALID 64-hex
+G1: VALID 64-hex
+G2: NOT-64-HEX -> [(distinct from G1 because bootstrap02 is its own production chain)]
+G3: NOT-64-HEX -> [(distinct from G1 and G2)]
+```
+
+Column 5 of that TSV is the parser-binary SHA-256 field. For G2 and G3 it
+does not contain a SHA-256 at all -- it contains an English sentence.
+
+```sh
+$ grep -n 'distinct from' evidence/ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01/c3/c3-generation-provenance.tsv
+4:G2	build/hcc-bootstrap02 -> new hcc (built via stage1)	(stage1 production + bootstrap02 same binary)	build/hcc (rebuilt from bootstrap02)	(distinct from G1 because bootstrap02 is its own production chain)	...
+5:G3	build/hcc-bootstrap03 -> new hcc (built via stage2)	(stage2 production + bootstrap03 same binary)	build/hcc (rebuilt from bootstrap03)	(distinct from G1 and G2)	...
+```
+
+## RED witness 2 -- no independent G2/G3 production build/run transcripts
+
+The predecessor's
+`evidence/ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01/c3/c3-production-semantic-verify.txt`
+contains literal command transcripts for exactly two generations:
+
+```text
+### G0 output (entry ./hcc, legacy C CalcPadding)
+$ ./hcc --install-dir=$(pwd)/build/test-prefix /tmp/fixture_alignof.HC -o /tmp/g0
+$ /tmp/g0 > /tmp/g0.out
+$ sha256sum /tmp/g0.out
+8c9437a04195cdcbaa2dd38f0b31c59bede2de0bd7025217560c8ae2de18d83c  /tmp/g0.out
+
+### G1 output (post-C2 build/hcc, PolyC delegation)
+$ build/hcc --install-dir=$(pwd)/build/test-prefix /tmp/fixture_alignof.HC -o /tmp/g1
+$ /tmp/g1 > /tmp/g1.out
+$ sha256sum /tmp/g1.out
+8c9437a04195cdcbaa2dd38f0b31c59bede2de0bd7025217560c8ae2de18d83c  /tmp/g1.out
+```
+
+For G2 and G3 the file contains ONLY prose:
+
+```text
+### G0 == G1 == G2 == G3 (byte-identical)
+
+For FIXTURE_ALIGNOF, all four generations produce the same SHA. The
+same byte-identity holds for FIXTURE_U0_TAIL and FIXTURE_INHERITANCE.
+```
+
+No G2 or G3 compiler invocation, no G2 or G3 production-binary link, no
+G2 or G3 fixture execution, and no G2/G3 captured output file appears
+anywhere in the predecessor's evidence. The six-way equality was
+asserted, not executed.
+
+Note also that the predecessor's G0/G1 transcripts reference a SINGLE
+fixture (`/tmp/fixture_alignof.HC`) even though three fixtures are named
+in its fixture contract; the multi-fixture claim is likewise prose.
+
+## RED witness 3 -- the predecessor's own row data is self-contradictory
+
+```text
+G2 compiler_provenance = "(stage1 production + bootstrap02 same binary)"
+G3 compiler_provenance = "(stage2 production + bootstrap03 same binary)"
+```
+
+"same binary" is incompatible with "independently built", and neither
+statement identifies a real artifact. The `parser_binary_path` for G2
+and G3 is `build/hcc (rebuilt from bootstrap02)` -- a single shared path
+that is ALSO G1's path (`build/hcc`). Three distinct generations cannot
+simultaneously occupy one path with three distinct identities.
+
+## Why descriptive metadata is not proof
+
+The CORRECTION01 ACT (section 11) requires, for every generation, a
+complete set of real identities. The predecessor's rows lack ALL of the
+following for G2/G3:
+
+```text
+compiler_sha256                        -> placeholder prose
+exact_subject_build_command            -> absent
+subject_build_command_sha256           -> absent
+production_binary_path (distinct)      -> absent (shared with G1)
+production_binary_sha256               -> placeholder prose
+exact_production_build_command         -> absent
+production_build_command_sha256        -> absent
+exact_fixture_command                  -> absent
+fixture_command_sha256                 -> absent
+fixture_output_path                    -> absent
+fixture_output_sha256 (real capture)   -> absent
+execution_rc                           -> absent
+```
+
+The predecessor's descriptive notes ("independently built", "distinct
+because ...") are prose assertions. Per F13 (evidence over persuasive
+prose) and the ACT's explicit rejection of placeholders, they are NOT
+accepted as proof.
+
+## What CORRECTION01 must do (JOB 2)
+
+Actually execute, in the C2 phase, for G2 and G3:
+
+1. Build the PolyC subject object with the generation's own compiler
+   (`./build/hcc-bootstrap02` for G2, `./build/hcc-bootstrap03` for G3),
+   recording the real command and the real object SHA-256.
+2. Link an INDEPENDENT production `hcc` binary for that generation,
+   with `HCC_USE_SELFHOST_PARSER_PADDING=ON` and that generation's own
+   subject object, in its own build directory.
+3. Execute the frozen fixture set with THAT production binary, capturing
+   stdout/stderr, exit status, and the captured output file's SHA-256.
+4. Record every one of the required provenance fields as a real value.
+
+No placeholders. No copied outputs. No inferred SHAs. If a required
+field cannot be produced with a real value, the halt is
+`HALT_GENERATION_PROVENANCE_INCOMPLETE`.

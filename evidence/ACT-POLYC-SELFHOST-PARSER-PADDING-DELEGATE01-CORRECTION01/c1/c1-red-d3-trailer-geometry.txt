@@ -1,0 +1,137 @@
+# C1 RED-D3 -- Malformed Historical DELEGATE01 Trailer Geometry
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01
+
+## Result
+
+```text
+DELEGATE01_HISTORICAL_TRAILER_GEOMETRY=IMMUTABLE_FAIL_ACK
+CORRECTION01_TRAILER_GEOMETRY=NEW_FORWARD_RANGE
+```
+
+## RED witness -- the historical range check fails, and here is the actual reason
+
+```sh
+$ bash scripts/quality/factory-v2-range-check.sh \
+    ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01 \
+    35dc0b0
+STATUS=FAIL
+REASON=FIRST commit 35dc0b00d177b51b308d18658fad584ca3357ad6 has ACT-Phase='CLOSE', expected RED
+RC=1
+```
+
+### Why FIRST resolves to the CLOSE commit
+
+`factory-v2-range-check.sh` derives FIRST by walking parents backwards
+from CLOSE for as long as each parent carries `ACT: <id>`. For
+DELEGATE01, only the CLOSE commit `35dc0b0` carries a parseable `ACT:`
+trailer. The C0..C3 commits do not:
+
+```sh
+$ for s in 883f2bd 90d1219 87361da 4d00501 35dc0b0; do
+    printf '%s -> ' $s
+    git log -1 --format='%(trailers:key=ACT,key=ACT-Phase,key=ACT-Verdict,separator=@@@)' $s | tr '@@@' '|'
+    echo
+  done
+883f2bd -> ACT-Verdict: AUTHORIZATION
+90d1219 -> ACT-Verdict: RED
+87361da -> ACT-Verdict: IMPL
+4d00501 -> ACT-Verdict: VERIFY
+35dc0b0 -> ACT: ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01|||ACT-Phase: CLOSE|||ACT-Verdict: PASS_PENDING_EXTERNAL_TERMINALITY
+```
+
+The C0..C3 messages have their trailers separated by blank lines, so Git
+parses only the LAST trailer block (the `ACT-Verdict:` line). The `ACT:`
+and `ACT-Phase:` lines are inside a paragraph and are therefore not
+trailers at all.
+
+### The raw messages (blank-line separation visible)
+
+```sh
+$ git log -1 --format='%B' 883f2bd | cat -A | sed 's/\$$/<NL>/'
+ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01 C0: AUTH<NL>
+<NL>
+ACT: ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01<NL>
+<NL>
+ACT-Phase: RED<NL>
+<NL>
+ACT-Verdict: AUTHORIZATION<NL>
+<NL>
+```
+
+Because the walk stops immediately at `35dc0b0`'s parent (which carries no
+parseable `ACT:` trailer), FIRST == CLOSE, and the validator reports the
+observed reason: FIRST has `ACT-Phase='CLOSE'`, expected `RED`.
+
+### The commit-msg validator agrees
+
+```sh
+$ git log -1 --format='%B' 883f2bd > /tmp/m.txt
+$ sh scripts/quality/factory-v2-commit-msg-check.sh /tmp/m.txt
+MODE=ACT
+STATUS=FAIL
+REASON=ACT trailer count=0, expected 1
+```
+
+## Why this is IMMUTABLE
+
+The DELEGATE01 commits are ancestors of the current HEAD. Their commit
+messages are content-addressed Git objects. A forward commit cannot
+rewrite an ancestor's message: `git commit --amend` would replace the
+ancestor, and the append-only invariant (enforced by
+`.githooks/pre-push` since `baf5dbd7`) forbids amend / rebase / reset /
+force-push / squash on `refs/heads/main`.
+
+Therefore:
+
+```text
+DELEGATE01_HISTORICAL_TRAILER_GEOMETRY=IMMUTABLE_FAIL_ACK
+```
+
+The defect is acknowledged, not repaired. No claim is made that any
+DELEGATE01 trailer is "fixed". The halt token for any attempt to mutate
+ancestor commit messages is `HALT_ANCESTOR_TRAILER_MUTATION_ATTEMPT`.
+
+## CORRECTION01's own geometry (forward-only)
+
+CORRECTION01's C0..C4 commits use native `git commit --trailer`, which
+produces a SINGLE contiguous trailer block:
+
+```sh
+$ git log -1 --format='%B' | cat -A | sed 's/\$$/<NL>/'
+ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01 C0: AUTH<NL>
+<NL>
+ACT: ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01<NL>
+ACT-Phase: RED<NL>
+<NL>
+```
+
+Both trailers are parseable by Git:
+
+```sh
+$ git log -1 --format='%(trailers:key=ACT)'
+ACT: ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01
+
+$ git log -1 --format='%(trailers:key=ACT-Phase)'
+ACT-Phase: RED
+```
+
+and the live commit-message validator accepts it:
+
+```sh
+$ sh scripts/quality/factory-v2-commit-msg-check.sh /tmp/c0msg.txt
+MODE=ACT
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01
+PHASE=RED
+STATUS=PASS
+```
+
+## Frozen contract
+
+```text
+DELEGATE01_HISTORICAL_TRAILER_GEOMETRY=IMMUTABLE_FAIL_ACK
+CORRECTION01_TRAILER_GEOMETRY=NEW_FORWARD_RANGE
+CORRECTION01_COMMIT_PHASES=C0:RED,C1:EVIDENCE,C2:IMPL,C3:EVIDENCE,C4:CLOSE
+CORRECTION01_ACT_VERDICT_ONLY_ON=C4
+CORRECTION01_SUPERSESSION_TRAILERS_ONLY_ON=C4
+```

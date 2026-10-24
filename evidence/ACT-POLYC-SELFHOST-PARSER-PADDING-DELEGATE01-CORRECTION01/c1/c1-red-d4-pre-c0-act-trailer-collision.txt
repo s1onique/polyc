@@ -1,0 +1,226 @@
+# C1 RED-D4 -- Pre-C0 Authorization Commits Already Carry the CORRECTION01 ACT Id
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01
+
+## Result
+
+```text
+CORRECTION01_RANGE_CHECK_REACHABLE=NO
+CORRECTION01_FIRST_PINNED_TO=8393d4d97d434eff38e7024266405effe13b3708
+CORRECTION01_FIRST_PHASE=POST_MORTEM_AUTHORIZATION
+```
+
+This is a NEW defect discovered during C1 recon. It was not among the
+three defects enumerated by the reviewer, and it is NOT one of the three
+defects this ACT was written to close. It is recorded honestly here
+rather than papered over.
+
+## The finding
+
+The CORRECTION01 ACT id was ALREADY attached to three commits that
+precede C0:
+
+```sh
+$ for s in 8393d4d b73fe6b 93f85ed; do
+    printf '%s phase=[%s] verdict=[%s]\n' "$s" \
+      "$(git log -1 --format='%(trailers:key=ACT-Phase,valueonly)' $s | tr -d '\n')" \
+      "$(git log -1 --format='%(trailers:key=ACT-Verdict,valueonly)' $s | tr -d '\n')"
+  done
+8393d4d phase=[POST_MORTEM_AUTHORIZATION] verdict=[HALT_MULTIPLE_BINDING_PREDICATES_PROMOTED_TO_CORRECTION01]
+b73fe6b phase=[AUTH_REVISED] verdict=[AUTHORIZATION_DRAFT_NEEDS_ONE_FIX]
+93f85ed phase=[AUTH_READY_FOR_C0] verdict=[AUTHORIZATION_READY_FOR_C0]
+```
+
+All three carry `ACT: ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01`,
+and all three carry an `ACT-Phase` value that is NOT in the canonical
+phase enum:
+
+```sh
+$ for s in 8393d4d b73fe6b 93f85ed; do
+    git log -1 --format='%B' $s > /tmp/pm.txt
+    printf '%s -> ' $s
+    sh scripts/quality/factory-v2-commit-msg-check.sh /tmp/pm.txt | grep -E 'REASON' | tr -d '\n'
+    echo
+  done
+8393d4d -> REASON=ACT-Phase 'POST_MORTEM_AUTHORIZATION' not in {RED,IMPL,EVIDENCE,CLOSE}
+b73fe6b -> REASON=ACT-Phase 'AUTH_REVISED' not in {RED,IMPL,EVIDENCE,CLOSE}
+93f85ed -> REASON=ACT-Phase 'AUTH_READY_FOR_C0' not in {RED,IMPL,EVIDENCE,CLOSE}
+```
+
+## Consequence -- the CORRECTION01 range check cannot PASS
+
+`scripts/quality/factory-v2-range-check.sh` derives FIRST by walking
+parents backwards from CLOSE for as long as each parent carries
+`ACT: <id>`:
+
+```sh
+    parent_act_count=$(printf '%s' "$parent_act" | tr '@@@' '\n' \
+        | grep -Ec "^ACT:[[:space:]]+${ACT_ID}\$" || true)
+    if [ "$parent_act_count" -ne 1 ]; then
+        printf '%s\n' "$cur" >> "$tmp_matches"
+        break
+    fi
+```
+
+The walk therefore always continues through `93f85ed`, `b73fe6b` and
+`8393d4d`, and FIRST is pinned to `8393d4d` with phase
+`POST_MORTEM_AUTHORIZATION`, which is not `RED`.
+
+### Empirical proof (executed, not reasoned)
+
+A scratch clone of this repository (`/tmp/sim`, cloned with
+`--shared --no-hardlinks`, then `git reset --hard 93f85ed`) was given a
+PERFECT C0..C4 sequence with exactly the trailers the ACT prescribes:
+
+```sh
+git commit -m "SIM C0: AUTH" --trailer "ACT: ...CORRECTION01" --trailer "ACT-Phase: RED"
+git commit -m "SIM C1"       --trailer "ACT: ...CORRECTION01" --trailer "ACT-Phase: EVIDENCE"
+git commit -m "SIM C2"       --trailer "ACT: ...CORRECTION01" --trailer "ACT-Phase: IMPL"
+git commit -m "SIM C3"       --trailer "ACT: ...CORRECTION01" --trailer "ACT-Phase: EVIDENCE"
+git commit -m "SIM C4: CLOSE" --trailer "ACT: ...CORRECTION01" --trailer "ACT-Phase: CLOSE" \
+  --trailer "ACT-Verdict: PASS_TRUE_GREEN" \
+  --trailer "ACT-Supersedes: ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01" \
+  --trailer "ACT-Corrected-Verdict: HALT_MULTIPLE_BINDING_PREDICATES"
+```
+
+Result:
+
+```text
+STATUS=FAIL
+REASON=FIRST commit 8393d4d97d434eff38e7024266405effe13b3708 has ACT-Phase='POST_MORTEM_AUTHORIZATION', expected RED
+RC=1
+```
+
+Perfect trailers on C0..C4 do NOT make the range check pass. The failure
+is caused entirely by the pre-C0 ancestors.
+
+### Why it is structurally unfixable from a forward commit
+
+The three pre-C0 commits are ancestors of HEAD. Their commit messages are
+content-addressed Git objects. A forward commit cannot change an
+ancestor's message. The available mechanisms are all forbidden here:
+
+```text
+git commit --amend     -> replaces an ancestor; forbidden (append-only
+                          invariant, enforced by .githooks/pre-push
+                          since baf5dbd7)
+git rebase              -> forbidden
+git reset + recommit    -> forbidden
+git replace             -> forbidden (the pre-push hook rejects any
+                          non-empty `git replace -l`)
+git filter-branch/repo  -> forbidden
+```
+
+There is NO validator escape hatch: the FIRST walk terminates only when a
+parent does NOT carry `ACT: <id>`. The three pre-C0 commits all carry
+it, so the walk always reaches `8393d4d`.
+
+## The working precedent in this repository
+
+`ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION04` has a PASSING range
+check. Its C0 commit carries `ACT:` + `ACT-Phase: RED`, and its PARENT
+carries NO `ACT:` trailer:
+
+```sh
+$ git log -1 --format='%H %s|ACT=[%(trailers:key=ACT,valueonly)]|PHASE=[%(trailers:key=ACT-Phase,valueonly)]' 7ec5c70
+7ec5c707f586f8fb1ee3d13fa37c9447ddd02b99 ... C0: AUTH|ACT=[ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION04]|PHASE=[RED]
+
+$ git rev-list --parents -n 1 7ec5c70
+7ec5c707f586f8fb1ee3d13fa37c9447ddd02b99 9ea5bc4a5919c5a37fc0be8f4f2a57dea7e41b94
+
+$ git log -1 --format='ACT=[%(trailers:key=ACT,valueonly)]' 9ea5bc4
+ACT=[]
+```
+
+The ACT id is introduced at the first EXECUTION commit, not at the
+authorization commit. That is the pattern that makes the range check
+PASS.
+
+`ACT-POLYC-FACTORY-CLOSURE-ORACLE-EXTENSIBLE01-CORRECTION05` follows the
+same pattern: its C0 commit carries no `ACT:` trailer at all
+(`ACT=[] PHASE=[]`).
+
+## Classification per F-MECHANICAL-BLOCKING (DOCTRINE section 25)
+
+```text
+HALT_CLASS   = GOVERNANCE
+BLOCKS_NEXT  = NO
+```
+
+### Why this is NOT a B1-B5 blocking predicate
+
+```text
+B1 executable gate fails on the relevant subject
+   -> The range checker fails. BUT the failure is NOT attributable to
+      the subject of this ACT (the production parser-padding migration);
+      it is caused by pre-existing ancestor commit messages that predate
+      this ACT and are immutable under the append-only invariant.
+      Analogous to "failed environmental gates proven unrelated to the
+      changed production subject" (explicitly NON-BLOCKING).
+
+B2 reproducible semantic/runtime/compiler defect in production
+   -> NO. The production migration is ENGINEERING_TRUE_GREEN and is
+      untouched by this ACT.
+
+B3 safety / integrity / corruption / destructive-operation invariant
+   -> NO. Nothing is corrupted; history is preserved exactly.
+
+B4 implementation requires production changes outside authorized scope
+   -> NO. No production change is needed or requested.
+
+B5 required predecessor capability absent
+   -> NO. The required predecessor capabilities (the PolyC subject, the
+      bootstrap compilers, the delegated production binary) are all
+      present and verified.
+```
+
+Per F-MECHANICAL-BLOCKING's NON-BLOCKING list, "metadata / bookkeeping
+residue" and "closure-packet defects" are NON-BLOCKING by default. The
+defect is a governance/bookkeeping defect in the AUTHORIZATION
+commit's trailer, not a defect in the production subject that this ACT
+exists to qualify.
+
+## Honest consequence for this ACT's own terminal predicate
+
+The ACT's terminal objective lists:
+
+```text
+JOB_3_FACTORY_V2_RANGE_CHECK_CORRECTION01 = PASS
+```
+
+That predicate is NOT mechanically reachable from CORRECTION01's own
+C0..C4 range, for the reason proved above. Per F13 (evidence over
+persuasive prose) and F14 (current truth may invalidate history), this
+ACT MUST NOT claim `FACTORY_V2_RANGE_CHECK=PASS` for the CORRECTION01
+range. The range-check result is reported as measured, whatever it is.
+
+This is recorded as an ACCEPTED DEFECT with its proof, not silently
+dropped and not falsely asserted.
+
+## Remediation options (NOT executed by this ACT)
+
+1. **Leave it acknowledged** (this ACT's path). The correction's own
+   range check is reported as FAIL with the exact reason. The defect is
+   governance residue. Precedent exists in this repository:
+   `docs/ROADMAP.md` records the analogous acknowledged range-check
+   limitation for `ACT-POLYC-LLVM-BYTE-MEMORY01-RESUME01-CORRECTION01`.
+
+2. **Open a bounded correction to the range validator** so that FIRST is
+   derived from the contiguous run of commits whose `ACT-Phase` is
+   canonical (RED/IMPL/EVIDENCE/CLOSE), rather than from the raw
+   presence of `ACT: <id>`. This is a script change to
+   `scripts/quality/factory-v2-range-check.sh` plus a matching doctrine
+   edit and a regression test. It is OUT OF SCOPE for CORRECTION01
+   (which forbids new tooling and forbids touching the Factory
+   validators) and requires its own ACT.
+
+3. **Open a new ACT id** for the correction execution, so the ACT id is
+   introduced at the first execution commit (the PADDING01-CORRECTION04
+   pattern). This is also out of scope for CORRECTION01: the ACT id
+   `ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01` is already
+   bound to the authorization artifact and to the committed evidence
+   tree, and re-opening under a different id would orphan the C0
+   evidence produced under the authorized id.
+
+Option 1 is this ACT's path. Option 2 is recommended as a dedicated
+follow-up ACT (see the C4 residue).

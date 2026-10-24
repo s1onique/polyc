@@ -1,0 +1,146 @@
+# C1 RED-D1 -- Dedicated Macro Seam Contradiction
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01
+
+## Result
+
+```text
+ORIGINAL_C1_DESIGN=HCC_USE_SELFHOST_COMPONENTS
+ORIGINAL_C1_NO_NEW_MACRO=YES
+
+ACTUAL_IMPLEMENTATION=HCC_USE_SELFHOST_PARSER_PADDING
+
+ORIGINAL_AC13=FAIL
+```
+
+## RED witness -- the contradiction, reproduced mechanically
+
+### 1. The predecessor's frozen C1 design
+
+`evidence/ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01/c1/c1-delegation-design.txt`
+(the C1 contract frozen by DELEGATE01) states verbatim:
+
+```text
+**D-C — existing stage-selection seam (`HCC_USE_SELFHOST_COMPONENTS`).**
+```
+
+```text
+DELEGATION_DESIGN_FROZEN=YES
+DEFAULT_PRODUCTION_PADDING_PATH=POLYC
+STAGE0_LEGACY_CONTROL=PRESERVED
+NO_NEW_MACRO=YES
+NO_NEW_BRIDGE_HEADER=YES
+```
+
+and it declares the halt trigger:
+
+```text
+If C2 introduces a new macro, declare
+`HALT_DELEGATION_DESIGN_AMBIGUOUS` and stop; F-CONVERGENCE only
+permits continuing within an authorized design, not re-authorizing
+one.
+```
+
+### 2. The implementation that actually landed
+
+```sh
+$ grep -n 'option(HCC_USE_SELFHOST_PARSER_PADDING' -A 3 src/CMakeLists.txt
+207:option(HCC_USE_SELFHOST_PARSER_PADDING
+208-       "Link the parser-padding PolyC component into hcc and enable parser-padding delegation. ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01."
+209-       ON)
+```
+
+```sh
+$ grep -n 'HCC_USE_SELFHOST_PARSER_PADDING' src/parser.c
+431:#ifdef HCC_USE_SELFHOST_PARSER_PADDING
+437:     * file without HCC_USE_SELFHOST_PARSER_PADDING. Production ./hcc
+456:     * in non-HCC_USE_SELFHOST_PARSER_PADDING builds (the
+```
+
+```sh
+$ grep -n 'HCC_USE_SELFHOST_PARSER_PADDING' src/CMakeLists.txt
+183:# `HCC_USE_SELFHOST_PARSER_PADDING` is defined here so the production
+200:#         -DHCC_USE_SELFHOST_PARSER_PADDING=ON \\
+207:option(HCC_USE_SELFHOST_PARSER_PADDING
+211:if (HCC_USE_SELFHOST_PARSER_PADDING)
+222:    target_compile_definitions(hcc PRIVATE HCC_USE_SELFHOST_PARSER_PADDING)
+```
+
+### 3. The generic flag was NOT adopted for the parser
+
+```sh
+$ grep -n 'HCC_USE_SELFHOST_COMPONENTS' src/parser.c
+442:     * HCC_USE_SELFHOST_COMPONENTS) is required because that generic
+```
+
+The ONLY occurrence of the generic flag in `src/parser.c` is inside a
+comment explaining why it was NOT used. The `#ifdef` that actually
+selects the delegation is the dedicated macro. This is a mechanical
+proof that the implementation uses the dedicated seam, not the generic one.
+
+## Why the generic seam was unusable (engineering rationale, verified)
+
+`src/CMakeLists.txt` binds the generic flag to the lexer stage binaries:
+
+```sh
+$ grep -n 'HCC_USE_SELFHOST_COMPONENTS' src/CMakeLists.txt
+185:# `HCC_USE_SELFHOST_COMPONENTS` flag (which would also require linking
+279:    # is HCC_USE_SELFHOST_COMPONENTS. The legacy macro
+283:        HCC_USE_SELFHOST_COMPONENTS
+292:    # object is now a HARD prerequisite: HCC_USE_SELFHOST_COMPONENTS
+311:    # HCC_USE_SELFHOST_COMPONENTS is enabled.
+429:        HCC_USE_SELFHOST_COMPONENTS
+567:        HCC_USE_SELFHOST_COMPONENTS
+```
+
+Those sites are the `hcc-bootstrap02` / `hcc-bootstrap03` / `hcc-bootstrap04`
+lexer-stage targets. Adopting the generic flag for the production `hcc`
+target would have required linking all five lexer PolyC subject objects
+(`BootstrapScanIdent`, `BootstrapClassifyOperator`,
+`BootstrapScanScalarLiteral`, `BootstrapScanTrivia`,
+`BootstrapLinkDirective`) -- five artifacts that are outside the
+parser-padding slice's authorized scope. The dedicated flag isolates the
+parser-padding migration so it can land independently.
+
+This is a deliberate architectural choice, not a temporary workaround.
+
+## Prospective authorization (JOB 1)
+
+```text
+CORRECTION01_AUTHORIZED_DESIGN=HCC_USE_SELFHOST_PARSER_PADDING
+DEDICATED_MACRO_REQUIRED=YES
+DEFAULT_PRODUCTION_VALUE=ON
+LEGACY_STAGE0_PATH=EXPLICIT
+PRODUCTION_SOURCE_CHANGE_REQUIRED=NO
+```
+
+### Why `PRODUCTION_SOURCE_CHANGE_REQUIRED=NO`
+
+The dedicated seam is ALREADY implemented and ALREADY production-active.
+`src/CMakeLists.txt` declares `option(HCC_USE_SELFHOST_PARSER_PADDING ... ON)`
+-- default ON -- and `src/parser.c::CalcPadding` already delegates to
+`BootstrapCalcPadding` under that macro. CORRECTION01 therefore performs
+NO production source mutation: it prospectively authorizes the existing
+implementation and re-freezes AC13 under the authorized design.
+
+### Legacy stage0 path stays EXPLICIT
+
+The legacy C algorithm survives only inside the `#else` branch of
+`src/parser.c::CalcPadding`, reachable solely from the stage0 evidence
+path (`build/parser-padding-legacy.o`, compiled WITHOUT the macro). It is
+never compiled into the production binary. `LEGACY_STAGE0_PATH=EXPLICIT`.
+
+## AC13 regrade
+
+```text
+JOB_1_AC13_PROSPECTIVE_PASS=YES
+```
+
+AC13 was mechanically FAIL under the DELEGATE01 C1 contract because that
+contract forbade a new macro. Under the CORRECTION01-authorized design
+(the dedicated seam, prospectively authorized before C2), AC13 regrades to
+PASS. The historical violation remains a historical fact and is NOT
+erased: `ORIGINAL_AC13=FAIL` is recorded above and in
+`c0-predecessor-disposition.txt`.
+
+No production source change accompanies this regrade.

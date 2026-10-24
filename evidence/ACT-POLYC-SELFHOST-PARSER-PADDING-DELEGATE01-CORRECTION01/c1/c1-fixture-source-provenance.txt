@@ -1,0 +1,155 @@
+# C1 Fixture Source Provenance
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01
+
+## Problem (measured)
+
+The predecessor DELEGATE01 fixture contract named three ephemeral paths:
+
+```sh
+$ grep -n '/tmp/fixture' evidence/ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01/c1/c1-production-fixture-contract.tsv
+2:FIXTURE_ALIGNOF	/tmp/fixture_alignof.HC	ALL_FIVE_AT_ONCE	pass	sizeof+alignof values for 10 classes (Color, Rectangle, Mixed, S2, S3, S5, Inner, Outer, Has8, OuterH)
+3:FIXTURE_U0_TAIL	/tmp/fixture_u0_tail.HC	tail-aligned-empty; tail-aligned-class	pass	sizeof(Hdr)=8; sizeof(HdrMixed)=16; body offsets 8 and 9
+4:FIXTURE_INHERITANCE	/tmp/fixture_inheritance.HC	tail-aligned-empty; tail-aligned-class; tail-aligned-union; anonymous-pre-align	pass	sizeof(BaseClass)=16; sizeof(SuperClass)=32; sizeof(Empty)=16; sizeof(Cat)=8; field reads
+```
+
+Those files were never committed, and they did not survive the previous
+session:
+
+```sh
+$ ls -la /tmp/fixture_alignof.HC /tmp/fixture_u0_tail.HC /tmp/fixture_inheritance.HC
+ls: cannot access '/tmp/fixture_alignof.HC': No such file or directory
+ls: cannot access '/tmp/fixture_u0_tail.HC': No such file or directory
+ls: cannot access '/tmp/fixture_inheritance.HC': No such file or directory
+
+$ git log --all --oneline --diff-filter=A -- '*/fixture_alignof.HC' '*/fixture_u0_tail.HC' '*/fixture_inheritance.HC'
+(empty -- they were never committed)
+```
+
+## Resolution: deterministic REGENERATION from committed sources
+
+Per ACT section 14, C1 MUST identify the real source or the regeneration
+procedure. The regeneration procedure is used here. The regenerated
+fixtures are COMMITTED under this ACT's evidence tree so that every
+generation in C2 uses a byte-identical, immutable, version-controlled
+fixture source:
+
+```text
+evidence/ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01/fixtures/fixture_alignof.HC
+evidence/ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01/fixtures/fixture_u0_tail.HC
+evidence/ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01/fixtures/fixture_inheritance.HC
+```
+
+### Two independent pinned-value sources
+
+The regenerated fixtures are NOT invented. Their VALUES are pinned by two
+independent committed sources, and their CLASS DEFINITIONS are taken
+verbatim from canonical committed parser-layout tests.
+
+**Source A -- the predecessor's fixture contract**
+`evidence/.../DELEGATE01/c1/c1-production-fixture-contract.tsv` states the
+exact observables (class names, expected sizes, expected offsets).
+
+**Source B -- the predecessor's N01 causal-control diff**
+`evidence/.../DELEGATE01/c3/c3-n01-production-causal-control.txt` records
+the EXACT output line format AND the exact values, because it shows the
+pristine-vs-mutated diff of the real captured outputs:
+
+```text
+$ diff /tmp/fixtures-pristine/fixture_alignof.out /tmp/fixtures-mutated/fixture_alignof.out
+4c4
+< Mixed=24 alignof=8
+---
+> Mixed=25 alignof=8
+6c6
+< S3=8 alignof=4
+---
+> S3=13 alignof=4
+10,11c10,11
+< Has8=16 alignof=8
+< OuterH=24 alignof=8
+
+$ diff /tmp/fixtures-pristine/fixture_u0_tail.out /tmp/fixtures-mutated/fixture_u0_tail.out
+2c2
+< Hdr=8 HdrMixed=16
+
+$ diff /tmp/fixtures-pristine/fixture_inheritance.out /tmp/fixtures-mutated/fixture_inheritance.out
+3c3
+< NarrowBase=1 WideDerived=16
+```
+
+**Source C -- the canonical committed parser-layout tests**
+The class bodies are taken verbatim from the repository's own canonical
+tests, so the fixtures exercise real production layouts rather than
+invented ones:
+
+```text
+src/tests/46_alignof.HC   -> Color Rectangle Mixed S2 S3 S5 Inner Outer Has8 OuterH
+src/tests/42_class_u0_tail.HC -> Hdr { I64 size; U0 body; } / HdrMixed
+src/tests/24_union.HC     -> BaseClass, SuperClass:BaseClass, union Cat
+src/tests/65_class_inheritance.HC -> class Empty:Base, NarrowBase/WideDerived
+```
+
+### Value-by-value verification (measured)
+
+The regenerated fixture outputs were compared against the predecessor's
+pinned values, line by line:
+
+| Pinned value (predecessor evidence) | Regenerated output | Match |
+|---|---|---|
+| `Mixed=24 alignof=8` (N01 diff L76) | `Mixed=24 alignof=8` | YES |
+| `S3=8 alignof=4` (N01 diff L80) | `S3=8 alignof=4` | YES |
+| `Has8=16 alignof=8` (N01 diff L84) | `Has8=16 alignof=8` | YES |
+| `OuterH=24 alignof=8` (N01 diff L85) | `OuterH=24 alignof=8` | YES |
+| `Hdr=8 HdrMixed=16` (N01 diff L92) | `Hdr=8 HdrMixed=16` | YES |
+| `NarrowBase=1 WideDerived=16` (N01 diff L98) | `NarrowBase=1 WideDerived=16` | YES |
+| `sizeof(BaseClass)=16` (contract) | `BaseClass=16` | YES |
+| `sizeof(SuperClass)=32` (contract) | `SuperClass=32` | YES |
+| `sizeof(Empty)=16` (contract) | `Empty=16` | YES |
+| `sizeof(Cat)=8` (contract / call-site coverage) | `Cat=8` | YES |
+| `body offsets 8 and 9` (contract) | `HdrBodyOffset=8 HdrMixedBodyOffset=9` | YES |
+
+Every value the predecessor recorded is reproduced exactly, by the
+regenerated fixture, under BOTH the legacy C control and the PolyC
+delegation path (see `c1-fixture-source-provenance.tsv`:
+`semantic_equal=YES` for all three).
+
+### Honest disclosure about the historical output SHA
+
+The predecessor's recorded FIXTURE_ALIGNOF output SHA-256 was
+`8c9437a04195cdcbaa2dd38f0b31c59bede2de0bd7025217560c8ae2de18d83c`.
+The regenerated fixture's output SHA-256 is
+`86c75cd71eacaf9121d5de93b88921ec3c129a766b8e72955c33add329fff190`.
+
+These DIFFER. The difference is NOT a semantic divergence: every value
+the predecessor pinned is reproduced exactly (table above). The
+difference is in the byte-level FRAMING of the output file -- the exact
+header line and any trailing summary lines that the ephemeral
+`/tmp/fixture_alignof.HC` emitted are not recoverable from the committed
+record, because the file itself was never committed.
+
+This was investigated rather than assumed. A systematic search over
+plausible header/footer/suffix framings (7200 candidate byte streams
+covering 12 line formats x 12 header forms x 25 suffix forms x trailing
+newline variants) was executed against the historical SHA and found NO
+match. The framing is therefore treated as unrecoverable historical
+detail.
+
+Consequences, stated plainly:
+
+1. The CORRECTION01 six-way semantic comparison is performed over the
+   REGENERATED fixture set, whose source is committed, immutable, and
+   shared byte-identically by all four generations. That comparison is
+   therefore fully reproducible and auditable by any future reader.
+
+2. The predecessor's historical output SHA is NOT claimed to be
+   reproduced. It is not a CORRECTION01 acceptance predicate (AC11/AC12
+   concern the G2/G3 output SHAs, which are frozen from REAL captures in
+   C2). The historical SHA is recorded here as historical context.
+
+3. Because the regenerated fixture reproduces every pinned value, the
+   migration-semantics conclusion (MIGRATION_DELTA=0) is unaffected.
+
+This is recorded rather than hidden. See the C4 residue for the
+recommendation that future production fixtures be committed rather than
+written to `/tmp`.

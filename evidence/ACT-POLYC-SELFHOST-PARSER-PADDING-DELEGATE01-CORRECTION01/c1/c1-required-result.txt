@@ -1,0 +1,98 @@
+# C1 Required Result
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01
+
+## RED defects reproduced (JOB 1 / JOB 2 / JOB 3)
+
+```text
+ORIGINAL_C1_DESIGN=HCC_USE_SELFHOST_COMPONENTS
+ORIGINAL_C1_NO_NEW_MACRO=YES
+ACTUAL_IMPLEMENTATION=HCC_USE_SELFHOST_PARSER_PADDING
+ORIGINAL_AC13=FAIL
+
+G2_REAL_PRODUCTION_BINARY_PROVENANCE=NOT_PROVEN
+G3_REAL_PRODUCTION_BINARY_PROVENANCE=NOT_PROVEN
+G2_G3_INDEPENDENT_PRODUCTION_EXECUTION=NOT_PROVEN
+
+DELEGATE01_HISTORICAL_TRAILER_GEOMETRY=IMMUTABLE_FAIL_ACK
+```
+
+## Newly discovered defect (RED-D4) -- recorded, not hidden
+
+```text
+CORRECTION01_RANGE_CHECK_REACHABLE=NO
+CORRECTION01_FIRST_PINNED_TO=8393d4d97d434eff38e7024266405effe13b3708
+CORRECTION01_FIRST_PHASE=POST_MORTEM_AUTHORIZATION
+HALT_CLASS=GOVERNANCE
+BLOCKS_NEXT=NO
+```
+
+The three pre-C0 authorization commits already carry the CORRECTION01 ACT
+id with non-canonical `ACT-Phase` values, so the range validator's
+FIRST-derivation walks past CORRECTION01's own C0 and pins FIRST to
+`8393d4d`. Proved empirically with a PERFECT C0..C4 trailer sequence in
+a scratch clone. See `c1-red-d4-pre-c0-act-trailer-collision.txt`.
+
+## Frozen contracts
+
+```text
+CORRECTION01_AUTHORIZED_DESIGN=HCC_USE_SELFHOST_PARSER_PADDING
+DEDICATED_MACRO_REQUIRED=YES
+DEFAULT_PRODUCTION_VALUE=ON
+LEGACY_STAGE0_PATH=EXPLICIT
+PRODUCTION_SOURCE_CHANGE_REQUIRED=NO
+
+JOB_1_DESIGN_AUTHORIZED=YES
+JOB_1_AC13_PROSPECTIVE_PASS=YES
+JOB_1_DESIGN_RECONCILIATION=PASS
+
+CORRECTION01_TRAILER_GEOMETRY=NEW_FORWARD_RANGE
+CORRECTION01_COMMIT_PHASES=C0:RED,C1:EVIDENCE,C2:IMPL,C3:EVIDENCE,C4:CLOSE
+```
+
+## Fixture set frozen (committed, immutable, shared byte-identically)
+
+```text
+FIXTURE_ALIGNOF      evidence/.../CORRECTION01/fixtures/fixture_alignof.HC
+FIXTURE_U0_TAIL      evidence/.../CORRECTION01/fixtures/fixture_u0_tail.HC
+FIXTURE_INHERITANCE  evidence/.../CORRECTION01/fixtures/fixture_inheritance.HC
+```
+
+The predecessor's ephemeral `/tmp/fixture_*.HC` paths did not survive and
+were never committed. They are deterministically REGENERATED from the
+predecessor's pinned observable values and the canonical committed
+parser-layout tests (`src/tests/46_alignof.HC`, `42_class_u0_tail.HC`,
+`24_union.HC`, `65_class_inheritance.HC`). Every value the predecessor
+recorded is reproduced exactly. The historical output SHA's byte-level
+framing is unrecoverable and is disclosed in
+`c1-fixture-source-provenance.txt`.
+
+## Generation contract frozen
+
+Four production generations, each with its own build directory, its own
+subject object, its own production binary, and its own captured fixture
+outputs. Required provenance fields are enumerated in
+`c1-generation-independent-run-contract.tsv` (22 fields per row). No
+`N/A`, no `same as previous`, no abbreviated SHA, no explanatory text in
+any required hash field.
+
+## Semantic contract frozen
+
+6 generation pairs x 3 fixtures = 18 per-fixture byte comparisons, each
+performed with an executable comparison that MUST fail on mismatch.
+
+```text
+PRODUCTION_SEMANTIC_PAIR_PASS=6
+PRODUCTION_SEMANTIC_PAIR_FAIL=0
+MIGRATION_DELTA=0
+```
+
+(The `6` refers to the six GENERATION combinations. The per-fixture
+totals are reported separately at C3.)
+
+## C1 commit
+
+```text
+ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01 C1: RED/CONTRACT
+ACT-Phase: EVIDENCE
+```
