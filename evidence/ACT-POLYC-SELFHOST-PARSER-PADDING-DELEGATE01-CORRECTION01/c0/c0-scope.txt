@@ -1,0 +1,86 @@
+# C0 Scope
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01
+
+## Authorized scope (IN)
+
+```text
+1. Documentation of the binding reviewer verdict and its rationale in
+   evidence/ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01/
+   (NEW tree; DELEGATE01 evidence untouched).
+2. G2 and G3 production binary SHA-256 freeze plus full independent
+   build/run transcripts recorded under C1/C3 evidence (real SHA-256,
+   no placeholder text).
+3. Re-execution of the external terminality gate against the CORRECTION01
+   range (forward only; the DELEGATE01 range remains acknowledged as
+   IMMUTABLE_FAIL_ACK).
+4. Five forward commits (C0..C4) with contiguous trailer blocks, produced
+   via native `git commit --trailer ...`; no amend, no reset, no rebase,
+   no force push.
+```
+
+## Explicitly OUT of scope (FORBIDDEN)
+
+```text
+PRODUCTION_SOURCE_MUTATION       = FORBIDDEN
+  src/parser.c                    = FROZEN
+  src/CMakeLists.txt              = FROZEN
+  tools/bootstrap/selfhost-parser-padding.HC        = FROZEN
+  tools/quality/parser-padding-algebraic-invariants.HC = FROZEN
+  tools/quality/parser-padding-generation-provenance-verify.HC = FROZEN
+  tools/quality/parser-padding-oracle-impl.c        = FROZEN
+
+DELEGATE01_EVIDENCE_MUTATION      = FORBIDDEN
+DELEGATE01_HANDOFF_MUTATION       = FORBIDDEN
+DELEGATE01_COMMIT_MESSAGE_MUTATION = FORBIDDEN
+DELEGATE01_ACT_BODY_MUTATION      = FORBIDDEN
+
+NEW_ACT_OPENING                    = FORBIDDEN (the successor
+  ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02 is NOT opened by this ACT;
+  it is the RECOMMENDED next ACT recorded in the C4 HANDOFF)
+```
+
+## Production source mutation counter
+
+```text
+C0_PRODUCTION_MUTATION=0
+```
+
+## Phase commit topology (exactly five forward commits)
+
+```text
+C0 = RED       (AUTH / entry evidence)
+C1 = EVIDENCE  (RED reproduction + contract freeze)
+C2 = IMPL      (independent G2/G3 production qualification)
+C3 = EVIDENCE  (verification)
+C4 = CLOSE     (HANDOFF + manifest registration + verdict trailer)
+```
+
+No amend. No reset. No rebase. No force push. No sixth commit.
+
+## C0 stale-artifact reclassification (recorded, not hidden)
+
+At the final pre-C0 revision commit `93f85ed`, two files created under
+the round-1 (incorrect) ACT body were reclassified into
+`evidence/.../CORRECTION01/pre-c0/`:
+
+```text
+c0/c0-entry-identity.txt          -> pre-c0/pre-c0-entry-identity-snapshot.txt
+c0/c0-defect-decomposition.md     -> pre-c0/pre-c0-defect-decomposition-snapshot.md
+```
+
+`c0/c0-defect-decomposition.md` was left behind in `c0/` as a
+byte-identical duplicate of its `pre-c0/` copy (verified: `diff` reports
+IDENTICAL). A stale file inside the C0 evidence directory would be a
+false claim that C0 produced a defect decomposition that it did not
+produce under the corrected ACT body. It is therefore removed in the C0
+commit. Its content is preserved verbatim in `pre-c0/` and is
+traceable via git history (`b73fe6b`).
+
+`c0/c0-entry-identity.txt` is REPLACED (not preserved in place) by the
+real C0 entry-identity evidence produced under the corrected ACT body.
+The round-1 snapshot (which froze the incorrect `ENTRY_HEAD = 8393d4d`)
+remains in `pre-c0/pre-c0-entry-identity-snapshot.txt` with its REVISION
+NOTE.
+
+No DELEGATE01 artifact is touched by this reclassification.

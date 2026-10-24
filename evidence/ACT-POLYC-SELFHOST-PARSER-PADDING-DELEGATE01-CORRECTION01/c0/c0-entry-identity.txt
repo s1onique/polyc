@@ -1,68 +1,54 @@
-# CORRECTION01 C0 ENTRY IDENTITY
+# C0 Entry Identity
 
-Date: 2026-09-22
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01
+CAPTURED_UTC=2026-10-24T14:20:01Z
 
-```text
-GIT_BRANCH                          = main
-GIT_HEAD                            = 8393d4d97d434eff38e7024266405effe13b3708
-WORKTREE_CLEAN                      = YES
-PREDECESSOR_ACT                     = ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01
-PREDECESSOR_HEAD                    = 35dc0b00d177b51b308d18658fad584ca3357ad6
-PREDECESSOR_EFFECTIVE_DISPOSITION   = HALT_MULTIPLE_BINDING_PREDICATES
-
-PARSER_PADDING_COMPONENT_QUALIFICATION        = TRUE_GREEN
-PARSER_PADDING_PRODUCTION_MIGRATION           = ENGINEERING_TRUE_GREEN
-PARSER_PADDING_PRODUCTION_AUTHORITY           = POLYC
-N01_PRODUCTION_CAUSALITY                      = TRUE_GREEN
-LEGACY_RUNTIME_AUTHORITY                      = RETIRED
-
-CORRECTION01_PHASE                    = RED
-CORRECTION01_BOUNDED_OBJECTIVE       = close DELEGATE01 binding-predicate
-                                        defects without rewriting history
-CORRECTION01_REVIEWED_AND_REVISED    = YES  (post-reviewer)
-```
-
-# Defect decomposition (preserved verbatim from DELEGATE01 C3)
+## F1 identity gate (measured)
 
 ```text
-P0-1 / AC13 FAIL:
-  C1 froze NO_NEW_MACRO=YES with HCC_USE_SELFHOST_COMPONENTS seam;
-  C2 introduced the dedicated HCC_USE_SELFHOST_PARSER_PADDING flag
-  with sound engineering rationale but C1 contract violation.
-
-P0-2 / AC20 + AC32 + AC33 NOT_PROVEN:
-  C3 generation-provenance TSV has placeholder text for G2/G3 SHAs
-  ((distinct from G1 because...)). G2/G3 independent production
-  execution was asserted in prose, not mechanically recorded.
-
-P0-3 / external terminality FAIL:
-  FACTORY_V2_RANGE_CHECK reports FAIL because C0..C3 commits have
-  blank-line-separated trailers. The DELEGATE01 trailer geometry
-  is structurally IMMUTABLE; CORRECTION01 cannot mutate ancestor
-  commit messages from a child commit (per Git semantics).
-
-POST_MORTEM_AUTHORIZATION_COMMIT      = 8393d4d
-DELEGATE01_HEAD_AT_POST_MORTEM_CLOSE  = 35dc0b0
-DELEGATE01_EVIDENCE_DELTA_AT_POST_MORTEM = 0 (closed per F14)
-DELEGATE01_HANDOFF_DELTA_AT_POST_MORTEM   = REVIEWER_NOTE: the post-mortem
-                                            commit (8393d4d) mutated the
-                                            DELEGATE01 HANDOFF to record
-                                            the reviewer verdict. This
-                                            is acknowledged as an F14-
-                                            improper mutation by the
-                                            reviewer. CORRECTION01 will
-                                            NOT add to or rely on that
-                                            mutation; future record
-                                            lives in this CORRECTION01
-                                            evidence tree only.
+GIT_BRANCH_SHOW_CURRENT   = main
+GIT_REV_PARSE_HEAD        = 93f85ed9e6144a79a3398cd02067ec3f66d202ea
+GIT_STATUS_PORCELAIN      = (empty)
+WORKTREE_CLEAN            = YES
+GIT_VERSION               = git version 2.54.0
+GIT_DIFF_CHECK            = (empty)
+PATCH_HYGIENE_ERRORS      = 0
+REMOTE                    = git@github.com:s1onique/polyc.git
 ```
 
-# F1 identity gate
+Command transcript:
+
+```sh
+$ git branch --show-current
+main
+$ git rev-parse HEAD
+93f85ed9e6144a79a3398cd02067ec3f66d202ea
+$ git status --porcelain
+(empty)
+$ git diff --check
+(empty)
+```
+
+## Ancestry (measured)
 
 ```text
-GIT_BRANCH --show-current  = main
-GIT_STATUS --short         = (clean)
-GIT_REV_PARSE HEAD         = 8393d4d97d434eff38e7024266405effe13b3708
+ENTRY_HEAD                       = 93f85ed9e6144a79a3398cd02067ec3f66d202ea
+ENTRY_SUBJECT                    = CORRECTION01 final pre-C0 revision: ENTRY_HEAD + SHA baselines frozen
+CORRECTION01_COMMITS_AT_ENTRY   = 0
+PREDECESSOR_ACT                  = ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01
+PREDECESSOR_CLOSE                = 35dc0b00d177b51b308d18658fad584ca3357ad6
+PREDECESSOR_EFFECTIVE_DISPOSITION = HALT_MULTIPLE_BINDING_PREDICATES
+APPEND_ONLY_START_POINT          = baf5dbd77cf89330699685dffd932c54031c815c
 ```
 
-ENTRY VERIFIED.
+## C0 acceptance tokens
+
+```text
+C0_AUTHORIZATION_EXISTS=YES
+ENTRY_HEAD_MATCH=YES
+WORKTREE_CLEAN_AT_ENTRY=YES
+PRODUCTION_SOURCE_FROZEN=YES
+PREDECESSOR_DISPOSITION_RECORDED=YES
+F14_FORWARD_BASELINE_FROZEN=YES
+C0_PRODUCTION_MUTATION=0
+```

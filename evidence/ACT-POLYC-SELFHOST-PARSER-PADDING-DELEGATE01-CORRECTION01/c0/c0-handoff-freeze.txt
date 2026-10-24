@@ -1,0 +1,46 @@
+# C0 Predecessor HANDOFF Freeze
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01
+
+## Frozen baseline (measured at CORRECTION01 entry)
+
+DELEGATE01_HANDOFF_PATH                          = docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01.md
+DELEGATE01_HANDOFF_SHA256_AT_CORRECTION01_ENTRY  = 012d6054499d7e17f5c7cb450b05c36ed3f57b74e33453ae3cad2300c6ebb56d
+
+## Verification transcript
+
+```sh
+$ shasum -a 256 docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01.md
+012d6054499d7e17f5c7cb450b05c36ed3f57b74e33453ae3cad2300c6ebb56d  docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01.md
+```
+
+The value matches the frozen baseline recorded in
+`evidence/ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01/pre-c0/pre-c0-delegate01-handoff-sha-baseline.txt`
+byte-for-byte.
+
+## Forward invariant (the actionable contract)
+
+```text
+DELEGATE01_HANDOFF_DELTA_SINCE_ENTRY=0
+```
+
+This is re-verified at C3 and C4 by re-hashing the HANDOFF and comparing
+against the value above.
+
+## Historical F14 violation -- ACKNOWLEDGED, NOT REPAIRED
+
+```text
+DELEGATE01_HANDOFF_HISTORICAL_F14_VIOLATION=ACKNOWLEDGED
+```
+
+The post-mortem commit `8393d4d` mutated the closed DELEGATE01 HANDOFF
+after its C4 close at `35dc0b0`. That mutation was F14-improper per the
+binding reviewer verdict `HALT_MULTIPLE_BINDING_PREDICATES`. It cannot be
+undone: append-only history is enforced from `baf5dbd7` forward, so a
+forward commit CANNOT alter an ancestor commit's content. Per F14 the
+historical document remains as-is; the reviewer verdict is recorded in the
+CORRECTION01 evidence tree instead of by re-editing the closed HANDOFF.
+
+This ACT therefore does NOT claim `DELEGATE01_HANDOFF_DELTA = 0` against
+the original C4 close. It claims only the forward invariant
+`*_DELTA_SINCE_ENTRY = 0`, which is the mechanically checkable contract.

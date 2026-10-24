@@ -1,0 +1,84 @@
+# C0 Predecessor Disposition
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01
+
+## Predecessor
+
+```text
+PREDECESSOR_ACT                   = ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01
+PREDECESSOR_CLOSE_COMMIT          = 35dc0b00d177b51b308d18658fad584ca3357ad6
+PREDECESSOR_EFFECTIVE_DISPOSITION = HALT_MULTIPLE_BINDING_PREDICATES
+```
+
+The predecessor's own CLOSE commit carries
+`ACT-Verdict: PASS_PENDING_EXTERNAL_TERMINALITY`. The binding reviewer
+verdict, recorded post-close, is `HALT_MULTIPLE_BINDING_PREDICATES`. The
+reviewer verdict is binding and supersedes the committed
+`PASS_PENDING_EXTERNAL_TERMINALITY`. This file is the ACT-mandated
+location for that disposition (ACT AC30); the closed DELEGATE01 HANDOFF is
+NOT edited to record it.
+
+## Substantive engineering results RETAINED (not reverted, not reimplemented)
+
+```text
+PARSER_PADDING_COMPONENT_QUALIFICATION = TRUE_GREEN
+PARSER_PADDING_PRODUCTION_MIGRATION    = ENGINEERING_TRUE_GREEN
+PARSER_PADDING_PRODUCTION_AUTHORITY    = POLYC
+BOOTSTRAP_CALC_PADDING_LOAD_BEARING    = YES
+LEGACY_RUNTIME_AUTHORITY               = RETIRED
+N01_PRODUCTION_CAUSALITY               = TRUE_GREEN
+```
+
+The production migration is real, landed, and preserved intact.
+
+## The three binding-predicate defects this ACT must close
+
+### D1 -- Original delegation design violated (AC13)
+
+DELEGATE01 C1 froze `D-C = HCC_USE_SELFHOST_COMPONENTS` with
+`NO_NEW_MACRO=YES` and a halt trigger `HALT_DELEGATION_DESIGN_AMBIGUOUS`
+for any new macro. DELEGATE01 C2 introduced the dedicated
+`HCC_USE_SELFHOST_PARSER_PADDING` flag. The engineering rationale is
+sound (the generic flag also activates the lexer self-host components),
+but the frozen C1 contract was violated, so AC13 was mechanically FAIL.
+
+**CORRECTION01 remediation:** prospectively authorize the dedicated seam
+exactly as implemented. The historical violation remains a historical fact.
+RED reproduction and prospective authorization happen in C1.
+
+### D2 -- G2/G3 production provenance incomplete (AC20/AC32/AC33)
+
+The DELEGATE01 C3 generation-provenance TSV contains placeholder text for
+the G2/G3 production parser-binary SHA-256 values
+(`(distinct from G1 because...)`), and the production-semantic-verify.txt
+contains actual build/run transcripts only for G0 and G1. The six-way
+production-semantic equality was asserted in prose, not mechanically
+recorded.
+
+**CORRECTION01 remediation:** actually build and execute G2 and G3
+production artifacts independently, recording real SHA-256 values for
+compiler, subject object, production binary, command strings, and captured
+fixture outputs. No placeholders.
+
+### D3 -- Factory-v2 trailer geometry failed (external terminality)
+
+The DELEGATE01 C0..C3 commits carry blank-line-separated trailers, so only
+`ACT-Verdict:` is parseable on the parent's backward walk. The DELEGATE01
+trailer geometry is structurally IMMUTABLE: a child commit cannot alter an
+ancestor commit's message (Git object model).
+
+**CORRECTION01 remediation:** acknowledge DELEGATE01 historical trailer
+geometry as `IMMUTABLE_FAIL_ACK`, and demonstrate forward-only closure
+geometry on CORRECTION01's own C0..C4 range. Historical commits are left
+byte-identical.
+
+## Historical defects explicitly NOT rewritten
+
+```text
+DELEGATE01_HISTORICAL_TRAILER_GEOMETRY = IMMUTABLE_FAIL_ACK
+DELEGATE01_HANDOFF_HISTORICAL_F14_VIOLATION = ACKNOWLEDGED
+```
+
+No attempt is made to mutate any DELEGATE01 commit message, evidence file,
+or HANDOFF. `HALT_ANCESTOR_TRAILER_MUTATION_ATTEMPT` is the halt token if
+such an attempt is detected.

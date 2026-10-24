@@ -1,0 +1,48 @@
+# C0 Predecessor Evidence Freeze
+
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01
+
+## Frozen baseline
+
+DELEGATE01_EVIDENCE_ROOT       = evidence/ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01
+DELEGATE01_EVIDENCE_BASELINE   = evidence/ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01/pre-c0/pre-c0-delegate01-evidence-sha-baseline.tsv
+DELEGATE01_EVIDENCE_BASELINE_RECORD_COUNT = 53
+
+## Verification transcript (all 53 files individually rehashed)
+
+```sh
+$ cd evidence/ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01
+$ ok=0; bad=0
+$ while read -r sha rel; do
+    [ -z "$sha" ] && continue
+    if [ "$(shasum -a 256 "$rel" 2>/dev/null | cut -d' ' -f1)" = "$sha" ]; then
+      ok=$((ok+1))
+    else
+      bad=$((bad+1)); echo "MISMATCH: $rel"
+    fi
+  done < ../ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01/pre-c0/pre-c0-delegate01-evidence-sha-baseline.tsv
+MATCH=53 MISMATCH=0 TOTAL=53
+```
+
+Every one of the 53 recorded SHA-256 values was recomputed from disk and
+compared individually. This is NOT a directory count -- the per-file
+comparison above is the actual evidence. A directory count alone would be a
+vacuous green (it would not detect an in-place content edit).
+
+## Forward invariant
+
+```text
+DELEGATE01_EVIDENCE_DELTA_SINCE_ENTRY=0
+```
+
+Re-verified at C3 and C4 by re-running the same per-file comparison.
+
+## Historical status
+
+```text
+DELEGATE01_EVIDENCE_HISTORICAL_F14_VIOLATION=NONE
+```
+
+The post-mortem commit `8393d4d` did NOT mutate the DELEGATE01 evidence
+tree (only the HANDOFF). The evidence tree is intact since the DELEGATE01
+C4 close. It is closed per F14 and is not modified by CORRECTION01.
