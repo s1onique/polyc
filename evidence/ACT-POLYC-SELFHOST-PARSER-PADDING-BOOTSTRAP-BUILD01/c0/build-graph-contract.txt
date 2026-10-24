@@ -1,0 +1,112 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01
+PHASE=C0
+SUBJECT=Frozen build-graph contract (the shape the C1 design must satisfy)
+
+--- TARGET GRAPH (acyclic, single direction, no back edges) ---
+
+  host-cc
+      |
+      v
+  stage0-legacy-hcc            (HCC_USE_SELFHOST_PARSER_PADDING=OFF)
+      |
+      v
+  bootstrap-prefix             (header-only prefix; NO libtos needed)
+      |
+      v
+  parser-padding-subject.o     (from tools/bootstrap/selfhost-parser-padding.HC)
+      |
+      v
+  production-hcc               (HCC_USE_SELFHOST_PARSER_PADDING=ON)
+      |
+      v
+  bootstrap02/03/04            (where the existing chain requires them)
+      |
+      v
+  canonical runtime install
+      |
+      v
+  AOT / JIT / LSP / LLVM / PUSH gates
+
+--- REQUIRED EDGE CLASSES (each edge MUST be one of these) ---
+
+  FILE_DEPENDENCY      target output file exists and is newer than inputs
+  TARGET_DEPENDENCY    explicit Make/CMake target ordering
+  CONFIG_PRECONDITION  configuration-time assertion of a required input
+  NEVER_ACCIDENTAL     an edge that exists only because of a warm working tree
+
+--- INVARIANTS ---
+
+  I1  The graph MUST be acyclic. A cycle is a hard failure.
+  I2  No edge may depend on an untracked/gitignored artifact being present
+      in the developer's working tree.
+  I3  Stage0 MUST be built with delegation OFF so it never needs the
+      padding object it is being used to produce.
+  I4  The padding object MUST be produced by stage0 from the CURRENT tree.
+  I5  Production hcc MUST have a REAL dependency on the padding object
+      (not merely an if(EXISTS) probe).
+  I6  A missing required object MUST fail closed, never silently degrade to
+      the legacy implementation.
+  I7  Compiler-only configuration MUST NOT require runtime-install
+      prerequisites.
+  I8  Runtime install MUST still validate its producer identity.
+  I9  The produced object architecture MUST match the production target
+      architecture.
+  I10 The design MUST be reproducible: same tree + same toolchain => same
+      artifacts, and unchanged inputs MUST NOT force unnecessary rebuilds.
+
+--- ENTRY POINTS THAT MUST CONTINUE TO WORK ---
+
+  make
+  make all
+  make llvm-all
+  make parser-padding-component
+  make test-prefix-install
+  make gate-push
+
+  Direct standalone CMake with delegation ON must either participate in the
+  generated-object graph or fail explicitly with an actionable prerequisite.
+  It MUST NEVER silently link the legacy implementation.
+
+--- MEASURED ENTRY-TREE FACTS (see c1/ for full witnesses) ---
+
+  F1  src/CMakeLists.txt:9  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ../)
+      -> runtime binaries land in the PARENT of the CMake binary dir.
+         A build at build/ emits ./hcc (repo root). A build at
+         build/stage0probe emits build/hcc. This output-path behaviour MUST
+         be handled explicitly; it must not be assumed override-able by a
+         cache variable because the assignment is an unconditional normal
+         variable set().
+
+  F2  src/CMakeLists.txt:211-225 (HCC_USE_SELFHOST_PARSER_PADDING)
+      -> if(EXISTS) probe at CONFIGURE time, then target_link_libraries.
+         The probe is the ONLY current scheduling mechanism for the object.
+         configure-time EXISTS does not create a build-graph edge.
+
+  F3  src/CMakeLists.txt:666-678 (HCC_BOOTSTRAP)
+      -> configure-time FATAL_ERROR when build/hcc-bootstrap04 is absent.
+         This is the B2 blocker: compiler-only configuration is blocked by a
+         RUNTIME-INSTALL producer.
+
+  F4  Makefile:2309-2318 (parser-padding-component)
+      -> $(PARSER_PADDING_OBJ): $(PARSER_PADDING_SRC) ./hcc | test-prefix-install
+         The padding object depends on ./hcc AND on test-prefix-install.
+
+  F5  Makefile:123-146 (test-prefix-install)
+      -> runs a separate cmake configure+install, which trips F3, and
+         requires ./hcc (running 'make all' if absent).
+
+  F6  Makefile:27-38 (all)
+      -> single cmake configure+build; no bootstrap stages; no padding
+         object. It relies on the padding object already existing because
+         HCC_USE_SELFHOST_PARSER_PADDING defaults ON.
+
+  => CYCLE: Makefile::all -> cmake configure -> [needs padding object]
+             Makefile::parser-padding-component -> [needs ./hcc and
+             test-prefix-install] -> cmake configure -> [needs bootstrap04]
+             src/CMakeLists.txt::HCC_BOOTSTRAP -> [needs build/hcc-bootstrap04]
+             build/hcc-bootstrap04 -> bootstrap04-stage3 -> ... ->
+             bootstrap02-stage1 -> test-prefix-install -> cmake configure
+             -> [needs build/hcc-bootstrap04]
+
+  F7  Measured: build/hcc-bootstrap04 is NOT reproducible from the current
+      tree by the current chain. See c1/ for the measured evidence.

@@ -1,0 +1,38 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01
+PHASE=C0
+SUBJECT=Authorized scope at C0
+
+IN_SCOPE
+  Makefile                       build graph orchestration
+  src/CMakeLists.txt             compiled targets + declared object deps
+  .github/workflows/release.yml  bootstrap ordering + target-arch object
+  narrowly necessary Make/CMake build-graph definitions
+  new PolyC-native build qualification tests, if required
+  existing canonical parser-padding and compiler tests (execution only)
+  isolated clean-checkout / build controls
+  new ACT, evidence and HANDOFF artifacts
+
+OUT_OF_SCOPE
+  src/parser.c::CalcPadding                 FORBIDDEN
+  tools/bootstrap/selfhost-parser-padding.HC FORBIDDEN
+  parser-padding algebraic algorithm         FORBIDDEN
+  LEXER self-host implementations            FORBIDDEN
+  compiler parser or code generator semantics FORBIDDEN
+  Factory-v2 range-check implementation      FORBIDDEN
+  scripts/quality/gate-push.sh               FORBIDDEN
+  .githooks/pre-push                         FORBIDDEN
+  scripts/quality/gate-fast.sh               FORBIDDEN
+  old ACTs, closed evidence or HANDOFFs      FORBIDDEN
+
+PROHIBITIONS
+  Do NOT change Factory policy to obtain a PASS.
+  Do NOT add Python (F-NO-PYTHON).
+  Do NOT add substantive shell tooling (F-POLYC-TOOLS); new substantive
+      verifier logic must be PolyC. Shell is bounded bootstrap/dispatch glue.
+  Do NOT weaken any existing gate or test to obtain PASS (F5).
+  Do NOT rewrite history; append-only from
+      baf5dbd77cf89330699685dffd932c54031c815c.
+
+MUTATION_CONTROLS_AT_C0
+  Production changes in C0: NONE.
+  C0 commits only: this ACT document + c0/ evidence.
