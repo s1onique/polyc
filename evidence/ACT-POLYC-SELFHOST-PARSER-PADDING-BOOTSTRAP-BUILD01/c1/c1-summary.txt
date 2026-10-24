@@ -1,0 +1,96 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01
+PHASE=C1
+SUBJECT=Summary of the C1 RED reproduction, dependency graph and frozen design
+
+REQUIRED C1 WITNESSES (ACT §5.2) -- ALL PRESENT
+  RED-1  c1-red1-clean-build.txt
+         RED_CLEAN_BUILD_REPRODUCED=YES
+         ENTRY_CLEAN_BUILD_RC_NONZERO=YES
+  RED-2  c1-red2-dependency-graph.txt
+         LEGACY_STAGE0_AVAILABLE_FROM_CLEAN_TREE=NO
+         PADDING_OBJECT_REQUIRES_EXISTING_HCC=YES
+         PRODUCTION_HCC_REQUIRES_PADDING_OBJECT=YES
+         BOOTSTRAP_GRAPH_CYCLE_DETECTED=YES
+  RED-3  c1-red3-compiler-only-config.txt
+         COMPILER_ONLY_CONFIG_REQUIRES_BOOTSTRAP04=YES
+  RED-4  c1-red4-gate-push.txt
+         ENTRY_GATE_PUSH=FAIL
+         FIRST_FAILURE=GPUSH-1 build -- cmake configure fails at
+                    src/CMakeLists.txt:216 (missing build/parser-padding-subject.o)
+         BYPASS_USED=NO
+  RED-5  c1-red5-release-matrix.txt
+         SEPARATE disposition per platform; COMPILER_BLOCKED_AT_ENTRY (B1)
+         for all four legs; B4 cross-arch defect recorded for the
+         macOS x86_64 leg; Linux runtime-port limitation carried as
+         SEPARATE, PRE-EXISTING residue.
+
+FROZEN DESIGN
+  c1-frozen-design.txt   -- D1..D6, the acyclic target graph, and the
+                            C1 RESOLUTION of the provenance mechanism.
+  c1-provenance-mechanism.txt
+                         -- MEASUREMENT 1..9: how the pinned runtime
+                            producer identity is actually determined, and
+                            why a detached git worktree at the pinned
+                            commit is the ONLY mechanism that reproduces
+                            it.
+
+DECISIVE MEASUREMENTS TAKEN AT C1
+  M1  A clean clone at ffee58b, driven by that tree's OWN Makefile chain,
+      reproduces the pinned producer identity EXACTLY:
+        build/hcc-bootstrap04 sha256 =
+          3b4474213efabcda30eb2d0c0610c6e23793f876896c8e21c5e18024b1ab40f6
+        == the frozen LIBTOS_BOOTSTRAP_EXPECTED_SHA.      (M3_MATCH=YES)
+  M2  That tree's stage0 sha256 =
+        e1bb1cb5b8e9090d6c8822c196b882036e49133373c78ac2f6e4343c39ca125c
+      == the Factory-recorded G0 baseline.
+  M3  The compiler embeds its own git hash into the binary's bytes
+      (src/CMakeLists.txt:29-36), so the producer's tree MUST be a real
+      checkout AT the pinned commit. `git archive` is INFEASIBLE.
+  M4  The pinned chain's own `test-prefix-install` dependency is a cycle
+      that the C2 graph must break with an explicit producer.
+  M5  The `@@N` asm-local-label defect is present in the PINNED tree's
+      stage0 too (20 measured occurrences). Pre-existing, out of scope.
+  M6  The current-tree stage0 DOES produce the parser-padding object,
+      and the object is byte-reproducible:
+        187a4de9465e8dbe3c640484b05540daaad4a3267dd1543a169e3c304b02d5b1
+      == the value recorded in the closed predecessor HANDOFF
+      (docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-PADDING01.md:247).
+      Measured over 3 consecutive compilations: identical every time.
+  M7  The padding object CAN be produced for a foreign target architecture:
+        ./hcc --target=x86_64-apple-darwin ... -> Mach-O 64-bit object x86_64
+        ./hcc (native, aarch64)                -> Mach-O 64-bit object arm64
+      This is what makes the release cross leg (B4) repairable.
+
+C2 IMPLEMENTATION CONTRACT (derived from the frozen design)
+  1. Build an ISOLATED legacy stage0 with delegation OFF, into
+     build/host-stage0/, WITHOUT overwriting ./hcc.
+  2. Construct a header-only bootstrap prefix containing ONLY
+     include/tos.HH. No runtime archive. No global fallback.
+  3. Compile the parser-padding object from the CURRENT tree's
+     tools/bootstrap/selfhost-parser-padding.HC into
+     build/parser-padding-subject.o, and verify the exported symbol
+     _BootstrapCalcPadding and the object architecture.
+  4. Configure/link the production hcc with delegation ON and a REAL
+     object dependency (add_custom_command OUTPUT/DEPENDS), not an
+     if(EXISTS) probe.
+  5. Move the bootstrap04 configure-time FATAL_ERROR to install time
+     WITHOUT weakening the SHA check.
+  6. Materialize the pinned producer tree, drive it, verify its SHA
+     against the FROZEN constant, and install it as
+     build/hcc-bootstrap04.
+  7. Make the release workflow produce a TARGET-ARCHITECTURE padding
+     object for the cross leg.
+
+RESIDUE RECORDED (NOT silently fixed)
+  R1  The `@@N` asm-local-label defect in the compiler source. Present in
+      BOTH the current tree and the pinned tree's stage0. PRE-EXISTING,
+      separately-owned, named in src/CMakeLists.txt:655-657. It is why the
+      runtime producer must be the pinned producer.
+  R2  The Linux runtime port limitation
+      (src/CMakeLists.txt:789-797: "Tooling runtime host is macOS-only").
+      PRE-EXISTING, owned by ACT-POLYC-TOOLING-LINUX-PORT01. The release
+      workflow's linux legs do not use the cmake install seam, so they are
+      not blocked by it.
+  R3  CORRECTION01's historical Factory-v2 range-check FAIL. A
+      governance defect, explicitly NOT repaired or reclassified by this
+      ACT (ACT §2).

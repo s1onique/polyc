@@ -1,0 +1,102 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01
+PHASE=C1
+REDD_ID=RED-2
+SUBJECT=Live dependency-graph edges at the entry tree (fda4a62)
+
+EDGES (source -> target), with edge CLASS per the C0 contract.
+
+E1  Makefile::all (Makefile:27-38)
+      -> cmake -S ./src -B ./build          CONFIG_PRECONDITION
+    A single cmake configure + build. It declares NO bootstrap stage and NO
+    dependency on build/parser-padding-subject.o. It nevertheless REQUIRES
+    that object to exist, because src/CMakeLists.txt defaults
+    HCC_USE_SELFHOST_PARSER_PADDING to ON and then hard-fails at configure
+    time if the object is missing (E2). The edge is therefore REAL but
+    UNDECLARED.
+
+E2  src/CMakeLists.txt:211-225 :: HCC_USE_SELFHOST_PARSER_PADDING
+      -> if(NOT EXISTS "${PARSER_PADDING_OBJECT}") FATAL_ERROR   CONFIG_PRECONDITION
+      -> target_link_libraries(hcc ${PARSER_PADDING_OBJECT})     TARGET_DEPENDENCY
+    Default PARSER_PADDING_OBJECT = ${CMAKE_SOURCE_DIR}/../build/parser-padding-subject.o
+    Edge class: CONFIG_PRECONDITION + link dependency. There is NO
+    add_custom_command(OUTPUT ...) and NO DEPENDS clause, so the object is
+    NEVER SCHEDULED by the build. It is an ACCIDENTAL WARM-TREE ASSUMPTION:
+    the build assumes a human previously ran `make parser-padding-component`.
+
+E3  Makefile::parser-padding-component (Makefile:2309-2318)
+      build/parser-padding-subject.o: tools/bootstrap/selfhost-parser-padding.HC ./hcc | test-prefix-install
+    FILE_DEPENDENCY on the subject source AND on ./hcc.
+    Order-only prerequisite on test-prefix-install.
+    ./hcc is a TRACKED-NONE / GITIGNORED artifact (gitignore line `hcc`).
+    On a clean tree ./hcc does not exist, so this rule can never fire until
+    `make all` has succeeded -- but `make all` cannot succeed because of E2.
+
+E4  Makefile::test-prefix-install (Makefile:123-146)
+      -> cmake -S ./src -B ./build/test-prefix-install-build  CONFIG_PRECONDITION
+      -> $(MAKE) -C ./build/test-prefix-install-build install
+      -> requires ./hcc (runs `make all` if absent)
+    The inner cmake configure hits E5.
+
+E5  src/CMakeLists.txt:666-678 :: HCC_BOOTSTRAP
+      -> if(EXISTS "${HCC_BOOTSTRAP}") else() message(FATAL_ERROR ...)  CONFIG_PRECONDITION
+    HCC_BOOTSTRAP = ${CMAKE_SOURCE_DIR}/../build/hcc-bootstrap04
+    A RUNTIME-INSTALL producer is required at GLOBAL CONFIGURE time. This
+    blocks EVERY cmake configuration, including compiler-only ones.
+
+E6  Makefile::bootstrap02-stage1 (Makefile:588)
+      : bootstrap02-component-build test-prefix-install
+    -> via E4 -> E5 -> requires build/hcc-bootstrap04.
+
+E7  Makefile::bootstrap03-stage2 (Makefile:766)
+      : bootstrap03-component-build test-prefix-install      -> same E4/E5.
+
+E8  Makefile::bootstrap04-stage3 (Makefile:965)
+      : bootstrap04-component-build test-prefix-install      -> same E4/E5.
+
+E9  build/hcc-bootstrap04 producer (Makefile:965 -> bootstrap04-stage3)
+      -> bootstrap04-component-build -> bootstrap03-stage2 -> bootstrap02-stage1
+      -> bootstrap02-component-build -> test-prefix-install -> E4 -> E5
+      -> requires build/hcc-bootstrap04.
+
+  => The graph CONTAINS A CYCLE:
+       build/hcc-bootstrap04
+         -> ... -> test-prefix-install
+         -> cmake configure
+         -> HCC_BOOTSTRAP requires build/hcc-bootstrap04
+     This is a genuine cycle, not a modelling artefact.
+
+  => And a SECOND cycle (the one that blocks the canonical user command):
+       make all
+         -> cmake configure
+         -> HCC_USE_SELFHOST_PARSER_PADDING requires build/parser-padding-subject.o
+       build/parser-padding-subject.o
+         -> requires ./hcc
+       ./hcc
+         -> is produced by `make all`
+     Another genuine cycle.
+
+REQUIRED WITNESSES (measured)
+  LEGACY_STAGE0_AVAILABLE_FROM_CLEAN_TREE=NO
+      Measured: on the isolated clean checkout, ./hcc is ABSENT before any
+      build. `make clean` removes ./build and ./hcc. git ls-files confirms
+      `hcc` is NOT tracked and .gitignore contains the `hcc` rule.
+      There is NO other host-C-compiled stage0 in the tracked tree.
+
+  PADDING_OBJECT_REQUIRES_EXISTING_HCC=YES
+      Measured: Makefile:2313 lists `./hcc` as a normal prerequisite of
+      build/parser-padding-subject.o, and the recipe invokes `./hcc`.
+
+  PRODUCTION_HCC_REQUIRES_PADDING_OBJECT=YES
+      Measured: src/CMakeLists.txt:207-225, option default ON, hard FATAL_ERROR
+      when the object is missing, target_link_libraries binds it.
+
+  BOOTSTRAP_GRAPH_CYCLE_DETECTED=YES
+      Measured: two distinct cycles, E9 (bootstrap04 -> test-prefix-install ->
+      HCC_BOOTSTRAP -> bootstrap04) and the make-all cycle
+      (make all -> padding object -> ./hcc -> make all).
+
+GRAPH MODEL CORRECTION
+  The C0 contract predicted a cycle. The recon confirms TWO cycles, not one.
+  The second (make-all <-> padding-object <-> ./hcc) is the one that blocks
+  the canonical user command and is the PRIMARY repair target. The first
+  (bootstrap04) blocks the runtime-install path and is the SECONDARY target.

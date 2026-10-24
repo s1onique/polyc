@@ -1,0 +1,52 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01
+PHASE=C1
+REDD_ID=RED-4
+SUBJECT=Unmodified gate-push fails against the ENTRY tree
+
+COMMAND
+  cd /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc
+  ./scripts/quality/gate-push.sh HEAD
+
+THE GATE WAS NOT MODIFIED
+  scripts/quality/gate-push.sh sha256 (unchanged from C0 freeze)
+    d6ab3273538f617bf48e4745855f095dd22ae8f284c2a6c5ce4747df8de3f81b
+  The gate created its own isolated detached worktree at HEAD and ran the
+  full local native gate inside it. The caller's working tree was not used.
+  BYPASS_USED=NO  (no --no-verify, no hook replacement, no environment trick)
+
+CHECKS EXECUTED (in order) AND THEIR RESULTS
+  GPUSH-1 "build"  sh -c "make clean && HCC_ENABLE_LLVM=ON make INSTALL_PREFIX='$gate_prefix'"
+    -> FAILED. Verbatim tail:
+         -- The CXX compiler identification is AppleClang 15.0.0.15000040
+         ...
+         -- LLVM 22 C-API: /run/current-system/sw/bin/llvm-config (22.1.8)
+         CMake Error at CMakeLists.txt:216 (message):
+           ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01: required self-host
+           parser-padding component missing at
+           /private/var/folders/.../polyc-gate.VTik8L/src/../build/parser-padding-subject.o.
+           Build it first with stage0 hcc: ./hcc --install-dir=<prefix> -c
+           tools/bootstrap/selfhost-parser-padding.HC -o
+           /private/var/folders/.../polyc-gate.VTik8L/src/../build/parser-padding-subject.o
+
+         -- Configuring incomplete, errors occurred!
+         make: *** [all] Error 1
+         CHECK=build STATUS=FAIL
+         REASON=build exited with status 2
+         VERDICT=FAIL
+  GPUSH-2..GPUSH-6 (install, gep01, aot, jit, lsp, diff-check)
+    -> NOT REACHED. gate-push exits immediately on the first FAIL.
+
+EXIT CODE
+  GATEPUSH_RC=1
+
+OBSERVED VERDICT
+  ENTRY_GATE_PUSH=FAIL
+  FIRST_FAILURE=GPUSH-1 build -- cmake configure fails at src/CMakeLists.txt:216
+              (missing build/parser-padding-subject.o) during
+              "make clean && HCC_ENABLE_LLVM=ON make INSTALL_PREFIX=<prefix>"
+  BYPASS_USED=NO
+
+NOTE
+  LLVM 22 (llvm-config 22.1.8) WAS available on this host and the gate
+  reached the LLVM configure branch, so the failure is NOT a toolchain
+  availability issue. The failure is purely the missing padding object.

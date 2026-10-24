@@ -1,0 +1,83 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01
+PHASE=C1
+REDD_ID=RED-5
+SUBJECT=Release matrix inspection at the entry tree (.github/workflows/release.yml)
+
+MATRIX AS DECLARED IN THE WORKFLOW (unchanged by this ACT)
+  runner            os_name  arch      triple                     cross
+  ubuntu-22.04      linux    x86_64    x86_64-unknown-linux-gnu   false
+  ubuntu-22.04-arm  linux    aarch64   aarch64-unknown-linux-gnu  false
+  macos-15          macos    aarch64   aarch64-apple-darwin       false
+  macos-15          macos    x86_64    x86_64-apple-darwin        true
+
+STEP SEQUENCE IN THE WORKFLOW
+  1 actions/checkout@v4          -> a CLEAN tree. NO ignored binaries survive.
+  2 Install build dependencies
+  3 Resolve version
+  4 "Build native hcc":  make C_COMPILER=cc BUILD_TYPE=Release INSTALL_PREFIX=/usr/local
+  5 "Build hcc for target" (cross leg only): a second cmake -S ./src -B ./build-x86_64
+  6 "Build libtos": uses ./hcc-native to compile src/holyc-lib/all.HC into tos.s
+  7 "Stage package": copies ./hcc
+  8 "Smoke test" (non-cross legs): installs the package into a scratch prefix,
+    compiles + runs a hello program through AOT and JIT
+  9 "Create zip"
+ 10 "Attach to release" / "Upload artifact"
+
+PER-PLATFORM DISPOSITION AT THE ENTRY TREE
+
+  Linux x86_64 (ubuntu-22.04)
+    COMPILER_CONSTRUCTION = BLOCKED
+      Step 4 `make` fails at src/CMakeLists.txt:216 for the SAME reason as
+      RED-1 (missing build/parser-padding-subject.o). This is a compiler
+      bootstrap failure, NOT a libtos platform-port failure.
+    RUNTIME_PORT           = SEPARATE_PRE_EXISTING_LIMITATION
+      src/CMakeLists.txt:789-797 hard-errors on non-APPLE:
+        "Tooling runtime host is macOS-only in this build. Linux support is
+         ACT-POLYC-TOOLING-LINUX-PORT01."
+      NOTE: the release workflow does NOT use the cmake install seam for
+      libtos; it compiles all.HC directly with ./hcc-native and links the
+      resulting tos.o with cc. So the linux release leg is not blocked by
+      the CMake macOS-only guard, but it IS blocked by the missing padding
+      object at step 4, and the runtime it ships is the plain linux libtos.
+    DISPOSITION = COMPILER_BLOCKED_AT_ENTRY (B1); runtime port limitation is
+                   a SEPARATE, PRE-EXISTING, independently-classified item.
+
+  Linux aarch64 (ubuntu-22.04-arm)
+    COMPILER_CONSTRUCTION = BLOCKED (identical mechanism to linux x86_64)
+    RUNTIME_PORT           = SEPARATE_PRE_EXISTING_LIMITATION (same as above)
+    DISPOSITION = COMPILER_BLOCKED_AT_ENTRY (B1); runtime port limitation is
+                   a SEPARATE, PRE-EXISTING, independently-classified item.
+
+  macOS aarch64 (macos-15) -- PRIMARY QUALIFICATION HOST
+    COMPILER_CONSTRUCTION = BLOCKED
+      Step 4 `make` fails at src/CMakeLists.txt:216 (B1).
+    RUNTIME               = BLOCKED transitively (step 6 needs ./hcc-native,
+      which step 4 never produced).
+    SMOKE_TEST            = BLOCKED transitively.
+    DISPOSITION = COMPILER_BLOCKED_AT_ENTRY (B1).
+
+  macOS x86_64 cross (macos-15, -DCMAKE_OSX_ARCHITECTURES=x86_64)
+    COMPILER_CONSTRUCTION = BLOCKED
+      Step 4 `make` fails at src/CMakeLists.txt:216 (B1) before step 5 runs.
+    CROSS_OBJECT           = ADDITIONAL DEFECT (B4)
+      Even once B1 is repaired, step 5 configures a SECOND cmake tree with
+      -DCMAKE_OSX_ARCHITECTURES=x86_64. The production hcc there will link
+      build/parser-padding-subject.o, which the native step 4 produced for
+      arm64. Linking an arm64 Mach-O object into an x86_64 binary FAILS at
+      link time. The cross leg therefore needs a TARGET-ARCHITECTURE padding
+      object, and the workflow must build it with the cross compiler.
+      Additionally, src/CMakeLists.txt:9 sets CMAKE_RUNTIME_OUTPUT_DIRECTORY
+      to `../`, so the cross cmake tree at build-x86_64 writes its binary to
+      the REPOSITORY ROOT, overwriting ./hcc. The workflow already works
+      around this by copying ./hcc to ./hcc-native FIRST (release.yml:83),
+      and step 7 stages ./hcc (the x86_64 one). That ordering is correct and
+      must be preserved.
+    DISPOSITION = COMPILER_BLOCKED_AT_ENTRY (B1) + CROSS_ARCH_DEFECT (B4).
+
+  CROSS-CHECK: a compiler-bootstrap failure MUST NOT be conflated with a
+  libtos platform-port failure. The linux legs have BOTH: the B1 compiler
+  bootstrap failure (this ACT's target) AND the pre-existing Linux runtime
+  port limitation (out of this ACT's scope, carried as explicit residue).
+
+FROZEN BASELINE OBSERVED AT ENTRY (measured on this host, macOS ARM64)
+  The macOS aarch64 leg's compiler construction is the one this ACT targets.

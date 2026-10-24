@@ -1,0 +1,62 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01
+PHASE=C1
+REDD_ID=RED-1
+SUBJECT=Original cold-build failure reproduced from an ISOLATED clean checkout at the frozen ENTRY
+
+ISOLATION_METHOD
+  git worktree add --detach /tmp/polyc-red1 fda4a62add5c2f268d1904f9243731727ae5d00b
+  -> a fresh detached worktree; the developer's working tree was NOT touched.
+
+COMMAND
+  cd /tmp/polyc-red1
+  make clean
+  make C_COMPILER=cc BUILD_TYPE=Release
+
+EXIT_CODE
+  RED1_RC=2
+
+KEY STDOUT/STDERR (verbatim excerpt)
+  rm -rf ./build ./hcc
+  cmake -S ./src \
+        -B ./build \
+        -G 'Unix Makefiles' \
+        -DCMAKE_C_COMPILER=cc \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/usr/local \
+        -DCMAKE_C_FLAGS='-Wextra -Wall -Wpedantic' \
+        -DCMAKE_EXPORT_COMPILE_COMMANDS=on \
+        -DHCC_ENABLE_JIT=on \
+        -DHCC_ENABLE_LLVM=OFF \
+        && /Library/Developer/CommandLineTools/usr/bin/make -C ./build -j2
+  -- The C compiler identification is AppleClang 15.0.0.15000040
+  ...
+  CMake Error at CMakeLists.txt:216 (message):
+    ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01: required self-host
+    parser-padding component missing at
+    /tmp/polyc-red1/src/../build/parser-padding-subject.o.  Build it first with
+    stage0 hcc: ./hcc --install-dir=<prefix> -c
+    tools/bootstrap/selfhost-parser-padding.HC -o
+    /tmp/polyc-red1/src/../build/parser-padding-subject.o
+
+  -- Configuring incomplete, errors occurred!
+  make: *** [all] Error 1
+
+EXACT FAILING CMAKE CHECK
+  src/CMakeLists.txt:216  --  the if(NOT EXISTS "${PARSER_PADDING_OBJECT}")
+  inside the `if (HCC_USE_SELFHOST_PARSER_PADDING)` block, whose default is ON.
+
+ARTIFACT PRESENCE AT FAILURE
+  ./hcc                        ABSENT
+  ./build/parser-padding-subject.o   ABSENT
+  ./build/hcc-bootstrap04      ABSENT
+
+OBSERVED VERDICT
+  RED_CLEAN_BUILD_REPRODUCED=YES
+  ENTRY_CLEAN_BUILD_RC_NONZERO=YES
+
+NOTE (independence, per ACT §8)
+  The bootstrap04 configuration check (RED-3) did NOT fire first in this
+  invocation: CMake aborts at line 216 (padding object) before it reaches
+  line 672 (bootstrap04). Both blockers are real and are captured
+  INDEPENDENTLY in c1-red3-compiler-only-config.txt. The claim is therefore
+  NOT "the padding object is the only blocker".

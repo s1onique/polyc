@@ -1,0 +1,56 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01
+PHASE=C1
+REDD_ID=RED-3
+SUBJECT=Compiler-only CMake configuration is blocked by the bootstrap04 runtime producer
+
+ISOLATION
+  cd /tmp/polyc-red1   (detached clean worktree at fda4a62)
+  rm -rf build build-stage0
+  # NOTE: build/hcc-bootstrap04 was ABSENT in this tree at this point; the
+  # only build/ contents were created by the probe itself.
+
+COMMAND
+  cmake -S ./src -B ./build-stage0 -G 'Unix Makefiles' \
+    -DCMAKE_C_COMPILER=cc -DCMAKE_BUILD_TYPE=Release \
+    -DHCC_USE_SELFHOST_PARSER_PADDING=OFF
+
+EXIT_CODE
+  RED3_RC=1
+
+VERBATIM ERROR (the tail of the configure output)
+  -- Check for working CXX compiler: /usr/bin/c++ - skipped
+  -- Detecting CXX compile features - done
+  -- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+  -- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+  -- Found Threads: TRUE
+  CMake Error at CMakeLists.txt:672 (message):
+    libtos install seam: build/hcc-bootstrap04 not found at
+    /tmp/polyc-red1/src/../build/hcc-bootstrap04. The current ./hcc at HEAD
+    regressed on ARM64 inline-asm mnemonics and cannot produce a complete
+    all.o.  Build the bootstrap chain first via 'make
+    bootstrap04-component-build', then re-run cmake.
+
+  -- Configuring incomplete, errors occurred!
+
+EXACT FAILING CMAKE CHECK
+  src/CMakeLists.txt:666-678  --  set(HCC_BOOTSTRAP ...) ; if(EXISTS ...) else()
+  message(FATAL_ERROR ...). The check runs at GLOBAL CONFIGURE time,
+  unconditionally, regardless of whether the caller intends to install a
+  runtime.
+
+WHY THIS IS A BOOTSTRAP-GRAPH DEFECT (not a runtime defect)
+  The producer build/hcc-bootstrap04 is itself produced by the chain
+  bootstrap04-stage3 -> bootstrap03-stage2 -> bootstrap02-stage1 ->
+  bootstrap02-component-build -> test-prefix-install -> cmake configure ->
+  HCC_BOOTSTRAP. The configure-time gate therefore forbids the very chain
+  that is supposed to produce the gate's input. The check must MOVE from
+  global configure time to the point where the runtime producer is actually
+  required (the install step).
+
+OBSERVED VERDICT
+  COMPILER_ONLY_CONFIG_REQUIRES_BOOTSTRAP04=YES
+
+REQUIRED REPAIR DIRECTION
+  Separate compiler construction from provenance-strict runtime installation.
+  The strict producer check MUST NOT disappear; it must be enforced at the
+  point where the runtime is actually produced.

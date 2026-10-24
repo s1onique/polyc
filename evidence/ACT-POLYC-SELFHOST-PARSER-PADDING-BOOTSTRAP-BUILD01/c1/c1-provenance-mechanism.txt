@@ -1,0 +1,183 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01
+PHASE=C1
+SUBJECT=How the pinned runtime producer identity is actually determined (measured)
+
+QUESTION
+  The Makefile pins
+    LIBTOS_BOOTSTRAP_EXPECTED_SHA := 3b4474213efabcda30eb2d0c0610c6e23793f876896c8e21c5e18024b1ab40f6
+  Can a clean tree reproduce that binary?
+
+MEASUREMENT 1 -- the chain reproduces the pinned SHA from a clean clone
+  git clone --shared --no-checkout <repo> /tmp/prod-tree
+  git -C /tmp/prod-tree checkout --detach ffee58b81ae42a4ff094618fcaa965223a40b848
+  make all                      (in that tree)
+  <stage0 components -> stage1 -> stage2 -> stage3>
+  RESULT: build/hcc-bootstrap04 sha256 =
+    3b4474213efabcda30eb2d0c0610c6e23793f876896c8e21c5e18024b1ab40f6
+  This EQUALS the pinned constant and the warm-tree artifact at ENTRY.
+  => The pin is REPRODUCIBLE, not arbitrary.
+
+MEASUREMENT 2 -- the CURRENT tree cannot reproduce the pinned SHA
+  The same chain in the current tree (fda4a62) produced:
+    build/hcc-bootstrap02 sha256 = 8cd99ae758cd4bd7fcf8528d703ed2271ab91630dc4cc1ef7c8cd69c5ab18885
+    build/hcc-bootstrap03 sha256 = 586a62c8c178ffc823b91634e2f0b611bf822dfed496bad04b018fca44a71db2
+    build/hcc-bootstrap04 sha256 = 95d0b7a7a76e6fdd3f296fd5b2e5f838975b1762a0d2846ce0ae7c9829557eb1
+  The warm-tree values are 3b1e2cd1..., b8a9781a..., 3b447421....
+  => The current tree's COMPILER SOURCES differ from the pinned producer's
+     sources. The current tree CANNOT reproduce the pinned identity.
+
+MEASUREMENT 3 -- WHICH difference matters
+  The compiler embeds its own git hash via
+    src/CMakeLists.txt:29-36  execute_process(git rev-parse HEAD) -> HCC_GIT_HASH
+  Observed embedded 40-hex strings:
+    warm build/hcc-bootstrap02  -> a09104d08e8e90c20e15fbea38d514a9c9619189
+    rebuilt (ffee58b tree)     -> ffee58b81ae42a4ff094618fcaa965223a40b848
+    warm build/hcc-bootstrap03  -> ffee58b81ae42a4ff094618fcaa965223a40b848
+    rebuilt build/hcc-bootstrap03 -> ffee58b81ae42a4ff094618fcaa965223a40b848
+  => stage2 and stage3 embed the SAME hash in both the warm tree and the
+     ffee58b rebuild, and their SHAs are byte-identical. stage1 differs
+     ONLY because the warm artifact was built from a tree whose HEAD was
+     a09104d (an ancestor of ffee58b) rather than ffee58b itself.
+  => The pinned producer identity is a function of (source tree, embedded
+     git hash, toolchain, build flags). It is reproducible when those are
+     held fixed.
+
+MEASUREMENT 4 -- the pinned producer is VALID against the current runtime
+  The ffee58b-chain build/hcc-bootstrap04, run against the CURRENT tree's
+  src/holyc-lib/all.HC, produced all.o containing all 5 required symbols
+  (_FREE, _STRNCMP, _MEMSET, _STRLEN_FAST, _SpawnAndCapture) with ZERO
+  asm errors.
+  => The pinned producer is a legitimate runtime producer for the current
+     tree. The provenance pin does not need to be re-derived from the
+     current tree.
+
+MEASUREMENT 5 -- the current tree's stage0 cannot produce the runtime
+  A compiler built from the current tree fails on the current runtime
+  source with 20 "asm: unexpected token at start of line" errors.
+  HCC_DUMP_ASM isolates the cause: the current tree re-renders the asm
+  block's `@@N` LOCAL LABELS as bare `N`, so libtasm rejects the next
+  instruction line. The pinned producer renders `@@N` correctly.
+  A stage1+ binary built from the current tree renders `@@N` correctly.
+  => The defect is confined to the CURRENT tree's stage0 configuration and
+     is a PRE-EXISTING defect (named in src/CMakeLists.txt:655-657 as the
+     "ARM64 inline-asm regression"). It is NOT introduced by this ACT and
+     NOT in this ACT's mutation scope.
+
+CONSEQUENCE FOR THE DESIGN (D5)
+  The runtime producer MUST be produced from a source tree that (a) can
+  compile the runtime, and (b) reproduces the pinned identity.
+  The ffee58b tree satisfies both. The build graph must therefore be able
+  to produce a QUALIFIED producer on a clean tree, where "qualified" means
+  the pinned SHA, VERIFIED AGAINST THE PINNED CONSTANT (never recomputed
+  from the substituted producer -- that is an explicitly FORBIDDEN fallback).
+
+  Two implementation options were considered:
+
+  OPTION A -- materialise the pinned producer's SOURCE TREE inside the
+  build (e.g. `git archive <pinned-commit> | tar -x`) and build the chain
+  there.
+    + The pinned identity is reproducible.
+    + The pinned producer is provably valid against the current runtime.
+    - Requires the pinned commit to be present in the clone's object
+      database. In a normal `git clone` (not --shallow, not --single-branch
+      with a truncated history) it is.
+    - `git archive` of that commit lacks a .git directory, so the embedded
+      HCC_GIT_HASH would be EMPTY, which would change the binary's bytes
+      and BREAK the pinned SHA.
+
+  OPTION B -- build the chain in a git worktree/clone checked out AT the
+  pinned commit, so the embedded git hash is exactly the pinned commit.
+    + Reproduces the pinned SHA byte-for-byte (MEASUREMENT 1 + 3).
+    + Uses only git plumbing that is already present in a normal clone.
+    - Requires a checkout of the pinned commit (a read-only detached
+      worktree), which the build graph can create under build/.
+
+  => OPTION B is the FROZEN mechanism for D5. C2 implements it and measures
+     the produced SHA against the pinned constant.
+
+MEASUREMENT 6 -- the pinned producer's tree MUST be checked out AT the
+pinned commit; the embedded git hash is part of the binary's bytes
+  The pinned producer embeds its own git hash via
+    src/CMakeLists.txt:29-36  execute_process(git rev-parse HEAD)
+                            -> add_compile_definitions(HCC_GIT_HASH="...")
+  Measured (MEASUREMENT 3): stage2 and stage3 of the pinned chain embed
+    ffee58b81ae42a4ff094618fcaa965223a40b848
+  which is the pinned commit itself. Therefore:
+    - a `git archive <pinned> | tar -x` export (no .git) would embed an
+      EMPTY hash and produce DIFFERENT bytes -> the pinned SHA would NOT
+      be reproduced. OPTION A is therefore INFEASIBLE, not merely
+      inconvenient.
+    - the producer's tree MUST be a real git checkout whose HEAD is the
+      pinned commit. A detached git worktree satisfies this exactly:
+        git worktree add --detach <dir> ffee58b...
+      and `git rev-parse HEAD` inside it returns the pinned commit.
+  => OPTION B is not merely preferred; it is the ONLY mechanism that can
+     reproduce the pinned identity.
+
+MEASUREMENT 7 -- the pinned tree's own chain reproduces the pinned SHA
+  A clean clone checked out at ffee58b, driven by that tree's OWN
+  Makefile targets, produced:
+    stage0 ./hcc                      sha256 =
+      e1bb1cb5b8e9090d6c8822c196b882036e49133373c78ac2f6e4343c39ca125c
+    build/hcc-bootstrap04             sha256 =
+      3b4474213efabcda30eb2d0c0610c6e23793f876896c8e21c5e18024b1ab40f6
+  The stage0 value EQUALS the Factory-recorded G0 baseline
+  (docs/ROADMAP.md:4855 and
+   evidence/ACT-POLYC-SELFHOST-LEXER04/c3/c3-compiler-identities.tsv:2),
+  i.e. the pinned tree's stage0 is the canonical stage0.
+  => The pinned identity is reproducible from a clean checkout using the
+     pinned tree's own build graph. C2 needs only to MATERIALIZE that
+     tree and DRIVE it; it does not need to re-derive the chain.
+
+MEASUREMENT 8 -- the pinned chain's runtime-install dependency is the
+cycle that must be broken
+  In the pinned tree, `bootstrap02-stage1` depends on `test-prefix-install`,
+  and `test-prefix-install` runs a cmake configure+install. The pinned
+  tree's src/CMakeLists.txt:601 sets HCC_PATH to
+  ${CMAKE_INSTALL_PREFIX}/bin/hcc, and the install(CODE) block at
+  src/CMakeLists.txt:688-690 runs that installed hcc to build libtos.
+  The install seam therefore needs a WORKING hcc, and building the
+  chain needs the install seam -> cycle.
+  Measured: the pinned tree's `make bootstrap04-stage3` from a clean
+  checkout FAILS at `test-prefix-install` with
+    "libtos install seam: ... did not produce all.o ... cannot continue"
+  or, with the install step suppressed, at the stage1 configure with
+  "required self-host scalar literal component missing".
+  => The pinned chain is NOT self-hosting on its own from a clean tree;
+     it depends on the runtime install seam. The C2 build graph must
+     therefore break this cycle by driving the pinned tree's chain with
+     the install seam SATISFIED BY A SEPARATE, EXPLICIT RUNTIME PRODUCER
+     (the pinned producer itself), never by silently skipping it.
+
+MEASUREMENT 9 -- the `@@N` asm defect is present in the PINNED tree's
+stage0 too
+  Measured directly: driving the pinned tree's own chain from a clean
+  checkout produced, in /tmp/e1-b04.log, 20 occurrences of
+    "error: .../src/holyc-lib/memory.HC:146: error: asm: unexpected
+     token at start of line"
+    "error: .../src/holyc-lib/strings.HC:299: error: asm: unexpected
+     token at start of line"
+  i.e. the PINNED tree's stage0 fails to compile the runtime in exactly
+  the same way the current tree's stage0 does. The defect lives in the
+  compiler SOURCE (the `@@N` local-label rendering), not in the tree.
+  A stage1+ binary built from either tree renders `@@N` correctly.
+  => The `@@N` defect belongs to the compiler SOURCE at ffee58b and to the
+     current tree alike. It is a PRE-EXISTING, SEPARATELY-OWNED defect
+     (named in src/CMakeLists.txt:655-657). It is NOT introduced by this
+     ACT and is NOT in this ACT's mutation scope. It is the reason the
+     RUNTIME producer must come from the pinned tree rather than from a
+     freshly built current-tree compiler.
+  => The asm defect belongs to the compiler SOURCE at ffee58b and to the
+     current tree alike. It is a PRE-EXISTING, SEPARATELY-OWNED defect
+     (named in src/CMakeLists.txt:655-657). It is NOT introduced by this
+     ACT and is NOT in this ACT's mutation scope. It is the reason the
+     RUNTIME producer must come from the pinned tree rather than from a
+     freshly built current-tree compiler.
+
+  SCOPE NOTE (important)
+  The pinned producer identity is a CLOSED PREDECESSOR's frozen contract
+  (ACT-POLYC-LIBTOS-SYMBOL-GAPS01-CORRECTION03 froze the constant; the
+  Makefile still carries it). This ACT does NOT re-pin the constant, does
+  NOT weaken the check, and does NOT "recompute the expected SHA from a
+  substituted producer". It only makes the producer REPRODUCIBLE from a
+  clean tree so the existing check can actually be satisfied.

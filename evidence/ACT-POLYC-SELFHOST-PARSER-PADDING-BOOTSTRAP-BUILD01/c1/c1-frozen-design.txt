@@ -1,0 +1,263 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01
+PHASE=C1
+SUBJECT=FROZEN DESIGN (D1..D6) -- the acyclic build graph C2 must implement
+
+PREFERRED APPROACH ADOPTED (per ACT §13)
+  Make orchestrates the bootstrap stages.
+  CMake owns the compiled targets and their declared object dependencies.
+
+=== MEASURED FACTS THAT CONSTRAIN THE DESIGN =================================
+
+F-A  The pinned runtime producer is REPRODUCIBLE from a clean tree.
+     Measured: a clean `git clone` of the repository at commit
+     ffee58b81ae42a4ff094618fcaa965223a40b848, followed by the full
+     stage0->stage1->stage2->stage3 chain, produced
+       build/hcc-bootstrap04 sha256 =
+         3b4474213efabcda30eb2d0c0610c6e23793f876896c8e21c5e18024b1ab40f6
+     which EQUALS the frozen LIBTOS_BOOTSTRAP_EXPECTED_SHA in the Makefile
+     and the sha256 of the warm-tree build/hcc-bootstrap04 at ENTRY.
+     The same chain in the SAME clean clone also produced
+       build/hcc-bootstrap03 sha256 =
+         b8a9781a7ef68e3da05427d03bc04f4250b76a967fd761147c6ef7100b9acdca
+     which EQUALS the warm-tree value.
+     => The provenance pin is REPRODUCIBLE, not a magic constant. This is
+        the foundation of the D5 repair.
+
+F-B  The producer is toolchain-sensitive.
+     The SAME chain run in the CURRENT tree (fda4a62) produced
+       build/hcc-bootstrap02 sha256 = 8cd99ae7...   (differs from warm 3b1e2cd1...)
+       build/hcc-bootstrap03 sha256 = 586a62c8...   (differs from warm b8a9781a...)
+       build/hcc-bootstrap04 sha256 = 95d0b7a7...   (differs from warm 3b447421...)
+     => The current tree's compiler sources differ from the pinned
+        producer's sources, so the CURRENT tree CANNOT reproduce the pinned
+        SHA. A future ACT may re-pin the producer identity to the current
+        tree's reproducible value. This ACT does NOT re-pin it (the pin is a
+        closed predecessor's frozen contract and is OUT OF SCOPE to change),
+        and it does NOT "recompute the expected SHA from a substituted
+        producer" (an explicitly FORBIDDEN silent fallback).
+
+F-C  The pinned producer WORKS on the current tree's runtime source.
+     Measured: the ffee58b-chain build/hcc-bootstrap04, run against the
+     CURRENT tree's src/holyc-lib/all.HC, produced all.o with all 5
+     required runtime symbols (_FREE, _STRNCMP, _MEMSET, _STRLEN_FAST,
+     _SpawnAndCapture), with ZERO "asm: unexpected token at start of line"
+     errors.
+     => The pinned producer is a VALID runtime producer for the current
+        tree. The runtime producer does not need to be rebuilt from the
+        current tree; it needs to be REPRODUCIBLE from a clean tree.
+
+F-D  A compiler built from the CURRENT tree CANNOT produce the runtime.
+     Measured: a compiler built from the current tree (fda4a62) fails to
+     compile src/holyc-lib/all.HC with
+       error: ./memory.HC:146: error: asm: unexpected token at start of line
+            146 |        LDP    X29, X30, [SP], 16
+     The ROOT CAUSE was isolated with HCC_DUMP_ASM: the current tree
+     re-renders the asm block's `@@1` LOCAL LABELS as bare `1`, so libtasm
+     rejects the following instruction line. The pinned producer renders
+     them correctly as `@@1`.
+     A stage1+ binary built from the current tree (hcc-bootstrap02) renders
+     `@@1` correctly, so the defect is confined to the stage0 configuration.
+     => THE STAGE0 BUILT FROM THE CURRENT TREE CANNOT PRODUCE THE RUNTIME.
+        The runtime producer MUST come from a source tree whose compiler
+        handles the asm local labels correctly. The ffee58b tree does.
+        THIS IS A PRE-EXISTING, SEPARATELY-OWNED DEFECT (the "ARM64
+        inline-asm regression" named in src/CMakeLists.txt:655-657). It is
+        NOT introduced by this ACT and is NOT in this ACT's mutation scope.
+
+F-E  The padding object IS reproducible from the current tree.
+     Measured: the current-tree stage0 compiled
+     tools/bootstrap/selfhost-parser-padding.HC to
+       build/parser-padding-subject.o sha256 =
+         187a4de9465e8dbe3c640484b05540daaad4a3267dd1543a169e3c304b02d5b1
+     which EQUALS the canonical value recorded in the closed predecessor
+     HANDOFF (docs/factory/HANDOFF-...PARSER-PADDING01.md). The subject
+     contains no asm, so F-D does not affect it.
+
+=== THE FROZEN DESIGN =======================================================
+
+D1  ISOLATED STAGE0 BINARY
+    The stage0 compiler MUST be built with
+      HCC_USE_SELFHOST_PARSER_PADDING=OFF
+    and MUST live at a SEPARATE location from the production binary:
+      build/host-stage0/hcc
+    Because src/CMakeLists.txt:9 sets CMAKE_RUNTIME_OUTPUT_DIRECTORY to
+    `../` (an unconditional normal-variable set(), NOT a cache variable),
+    a build rooted at build/host-stage0 emits its binary at
+    build/host-stage0/../hcc = build/hcc. To obtain a truly isolated
+    location the implementation MUST set the output directory per-target
+    (set_target_properties(hcc PROPERTIES RUNTIME_OUTPUT_DIRECTORY ...))
+    or configure a dedicated tree whose parent is the desired directory.
+    It MUST NOT assume that passing -DCMAKE_RUNTIME_OUTPUT_DIRECTORY
+    overrides the unconditional set().
+    IT MUST NOT overwrite ./hcc while generating stage0.
+
+D2  MINIMAL BOOTSTRAP PREFIX
+    A bootstrap input prefix is constructed containing ONLY the canonical
+    header(s) required to compile a PolyC component:
+      build/host-stage0/prefix/include/tos.HH   <- from src/holyc-lib/tos.HH
+    No libtos archive or dylib is required to compile a component.
+    No fake or empty runtime archives are permitted.
+    No silent fallback to globally installed headers or libraries is
+    permitted.
+    Measured (F-E): the current-tree stage0 compiled the padding subject
+    against a prefix containing ONLY include/tos.HH, with rc=0.
+
+D3  OBJECT PRODUCTION
+    stage0 compiles tools/bootstrap/selfhost-parser-padding.HC and produces
+      build/parser-padding-subject.o
+    The exported symbol _BootstrapCalcPadding MUST be verified.
+    The object MUST be generated from the CURRENT source tree (not copied
+    from an older build).
+    The production object path MUST be the same one the production CMake
+    tree consumes, so the dependency edge is real.
+
+D4  PRODUCTION LINK
+    The production compiler is configured with
+      HCC_USE_SELFHOST_PARSER_PADDING=ON
+      PARSER_PADDING_OBJECT=<the verified generated object>
+    and MUST declare a REAL dependency on the generated object.
+    add_custom_command(OUTPUT ... DEPENDS ...) or an equivalent explicit
+    Make target dependency is acceptable.
+    if(EXISTS) MUST NOT be the ONLY mechanism for scheduling artifact
+    production.
+    The default (HCC_USE_SELFHOST_PARSER_PADDING=ON) is PRESERVED.
+
+D5  INSTALL / RUNTIME PROVENANCE
+    The strict bootstrap04 runtime producer contract MUST remain enforceable.
+    COMPILER-ONLY configuration MUST NOT require runtime-install
+    prerequisites: the src/CMakeLists.txt:666-678 configure-time
+    FATAL_ERROR moves to the point where the runtime producer is actually
+    required (the install step).
+    ACTUAL runtime installation MUST still validate its producer and MUST
+    fail if the required compiler identity or runtime artifact is missing.
+    THE PINNED IDENTITY IS NOT REPLACED. The pinned
+    LIBTOS_BOOTSTRAP_EXPECTED_SHA (3b447421...) stays as the authorized
+    producer identity. Because F-A proves it is reproducible from a clean
+    tree at ffee58b, the build graph can produce a QUALIFIED producer.
+    If the qualified producer cannot be produced on the target host, the
+    install step fails closed with a provenance error. A self-measured or
+    arbitrary compiler is NEVER substituted.
+
+    FROZEN MECHANISM (see the C1 RESOLUTION section at the end of this
+    file for the measurements that fix it):
+      - The producer's source tree is materialized as a detached git
+        worktree at build/pinned-producer, checked out AT the pinned
+        commit ffee58b81ae42a4ff094618fcaa965223a40b848. This is REQUIRED
+        because the compiler embeds its own git hash into the binary's
+        bytes (src/CMakeLists.txt:29-36); only a real checkout at that
+        commit reproduces the pinned identity.
+      - The pinned tree's OWN build graph is driven to produce the
+        producer. The current tree does NOT re-derive the chain.
+      - The produced producer's sha256 is measured and compared against
+        the FROZEN constant. A mismatch FAILS CLOSED. The expected value
+        is NEVER recomputed from the produced artifact.
+      - The QUALIFIED producer is installed at build/hcc-bootstrap04 and
+        is the ONLY producer the runtime install seam may use.
+    FORBIDDEN (explicitly, per ACT §5.3):
+      - recomputing the expected SHA from a substituted producer;
+      - substituting any producer that is not the pinned one;
+      - weakening or skipping the SHA comparison;
+      - failing OPEN when the producer cannot be produced.
+
+D6  SUPPORTED ENTRY POINTS
+    The required behaviour is frozen for:
+      make
+      make all
+      make llvm-all
+      make parser-padding-component
+      make test-prefix-install
+      make gate-push
+    Existing public entry points MUST continue working.
+    Direct standalone CMake builds with delegation ON MUST either
+    participate in the generated-object graph or fail explicitly with an
+    actionable prerequisite. They MUST NEVER silently link the legacy
+    implementation.
+    SELECTED POLICY: PARTICIPATE. A standalone cmake configure with
+    HCC_USE_SELFHOST_PARSER_PADDING=ON will (a) schedule the padding-object
+    production through an add_custom_command whose producer is the
+    repository's stage0, and (b) fail with an actionable, explicit message
+    if the stage0 producer is unavailable. It will NEVER silently link the
+    legacy implementation.
+
+=== THE TARGET GRAPH (acyclic) ==============================================
+
+  host-cc
+     |
+     v
+  stage0  (build/host-stage0/hcc, HCC_USE_SELFHOST_PARSER_PADDING=OFF)
+     |
+     v
+  bootstrap prefix (build/host-stage0/prefix/include/tos.HH)
+     |
+     v
+  build/parser-padding-subject.o   (from tools/bootstrap/selfhost-parser-padding.HC)
+     |
+     v
+  production hcc  (HCC_USE_SELFHOST_PARSER_PADDING=ON)
+     |
+     v
+  bootstrap02 / 03 / 04   (chain, for the stages the runtime producer needs)
+     |
+     v
+  canonical runtime install
+     |
+     v
+  AOT / JIT / LSP / LLVM / PUSH gates
+
+=== OPEN DESIGN ITEM (RESOLVED IN C1 BY MEASUREMENT) =======================
+  Where does the QUALIFIED runtime producer come from on a clean tree?
+
+  Candidate 1: build the chain from the CURRENT tree.
+    REJECTED by F-D: the current tree's stage0 cannot compile the runtime.
+
+  Candidate 2: build the chain from the PINNED producer source tree
+    (ffee58b) inside the current tree's build graph.
+    SUPPORTED by F-A (the chain reproduces the pinned SHA exactly) and F-C
+    (the pinned producer works on the current tree's runtime source).
+    This keeps the pinned identity AUTHORITATIVE and REPRODUCIBLE.
+
+  Candidate 3: keep requiring a pre-existing build/hcc-bootstrap04.
+    REJECTED: that is the B2 blocker this ACT exists to remove.
+
+  => Candidate 2 is the FROZEN design for D5. C2 implements it and measures
+     the result.
+
+=== C1 RESOLUTION OF THE PROVENANCE MECHANISM (D5) =========================
+  Full detail: c1-provenance-mechanism.txt. Summary of the DECISIVE
+  measurements that fix the mechanism:
+
+  M1  A clean clone checked out AT ffee58b, driven by that tree's OWN
+      Makefile targets, reproduces the pinned identity exactly:
+        build/hcc-bootstrap04 sha256 =
+          3b4474213efabcda30eb2d0c0610c6e23793f876896c8e21c5e18024b1ab40f6
+        == the frozen LIBTOS_BOOTSTRAP_EXPECTED_SHA.  (M3_MATCH=YES)
+  M2  The pinned tree's stage0 sha256 =
+        e1bb1cb5b8e9090d6c8822c196b882036e49133373c78ac2f6e4343c39ca125c
+      == the Factory-recorded G0 baseline (docs/ROADMAP.md:4855,
+      evidence/ACT-POLYC-SELFHOST-LEXER04/c3/c3-compiler-identities.tsv:2).
+  M3  The compiler embeds its OWN git hash into the binary's bytes
+      (src/CMakeLists.txt:29-36). Therefore the producer's tree MUST be a
+      real git checkout whose HEAD IS the pinned commit. A `git archive`
+      export (no .git) embeds an EMPTY hash and CANNOT reproduce the
+      pinned SHA. => a detached git WORKTREE is the required mechanism.
+  M4  The pinned tree's own chain depends on `test-prefix-install`, which
+      runs a cmake install; that install needs a WORKING hcc, and the
+      chain needs the install seam => a cycle that the C2 graph must
+      break by satisfying the install seam with an EXPLICIT producer.
+  M5  The `@@N` asm-local-label defect is present in the PINNED tree's
+      stage0 as well (20 measured occurrences in /tmp/e1-b04.log). It is a
+      PRE-EXISTING, separately-owned compiler defect, NOT in this ACT's
+      mutation scope. It is precisely why the runtime producer must be
+      the pinned producer and not a freshly built current-tree compiler.
+
+  => FROZEN D5 MECHANISM:
+       1. Materialize the pinned producer's tree as a detached git
+          worktree at build/pinned-producer, checked out AT the pinned
+          commit. (M3)
+       2. Drive that tree's OWN build graph to produce the producer. (M1)
+       3. Measure the produced producer's sha256 against the FROZEN
+          constant LIBTOS_BOOTSTRAP_EXPECTED_SHA and FAIL CLOSED on
+          mismatch. The expected value is NEVER recomputed from the
+          produced artifact.
+       4. Install the QUALIFIED producer as build/hcc-bootstrap04 for
+          the runtime install seam.
