@@ -7,6 +7,35 @@ HALT_GATE_PUSH_NOT_GREEN
   HALT_CLASS = GOVERNANCE
   BLOCKS_NEXT = NO
 
+  CORRECTION NOTICE (ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01-
+  CORRECTION01)
+
+  This HANDOFF's VERDICT section was CORRECTED by
+  ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01-CORRECTION01, which
+  records the corrected disposition of this ACT in its own artifacts and
+  in the ROADMAP. The correction changed NOTHING about this ACT's
+  engineering result, its evidence, or its measured values; it repaired
+  this ACT's CLOSE TOPOLOGY.
+
+  THE TOPOLOGY DEFECT: a commit carrying this ACT's id was made AFTER
+  this ACT's C4 CLOSE commit, in order to record the external terminality
+  observations. docs/factory/GIT-METADATA.md section 3, rule 7 forbids
+  that: "No commit after CLOSE may carry `ACT: <id>`." Because the
+  history is append-only, the offending commit could not be removed, so
+  the Factory's correction mechanism was used instead: a new ACT id with
+  its own contiguous C0..C4 range, whose CLOSE records the external
+  terminality observations INSIDE the range.
+
+  The mechanical range check confirms the predecessor's range is now
+  well-formed:
+    $ bash scripts/quality/factory-v2-range-check.sh \
+        ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01 290d917
+    (the range ending at this ACT's own CLOSE passes rules 1..7)
+
+  The predecessor's EVIDENCE is untouched (F14). Only this VERDICT
+  section, which by the Factory's own rule owns the terminal verdict,
+  is corrected.
+
   WHY THIS VERDICT, AND NOT PASS
   ------------------------------
   ACT section 40 lists `GATE_PUSH_UNMODIFIED=PASS` among the

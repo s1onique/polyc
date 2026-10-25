@@ -1,0 +1,50 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01-CORRECTION01
+PHASE=C1
+SUBJECT=The bounded, acyclic topology repair this ACT implements
+
+THE REQUIREMENT (docs/factory/GIT-METADATA.md section 3)
+  1. Resolve <CLOSE-COMMIT>.
+  2. CLOSE has exactly one ACT:<id>, one ACT-Phase:CLOSE, one ACT-Verdict.
+  3. Walk parents backwards while each commit carries ACT:<id>.
+  4. FIRST must have ACT-Phase: RED.
+  5. FIRST..CLOSE contains exactly one CLOSE, and CLOSE is the last
+     commit in the range.
+  6. Every commit in FIRST..CLOSE carries ACT:<id> with a valid phase.
+  7. No commit after CLOSE may carry ACT:<id>.
+
+THE REPAIR
+  A NEW ACT id (this one) owns a NEW contiguous C0..C4 range:
+
+    01c0822  C0  ACT-Phase: RED        <- FIRST (rule 4)
+    <C1>     C1  ACT-Phase: EVIDENCE
+    <C2>     C2  ACT-Phase: IMPL
+    <C3>     C3  ACT-Phase: EVIDENCE
+    <C4>     C4  ACT-Phase: CLOSE      <- LAST (rule 5)
+
+  Every commit in that range carries ONLY this ACT's id, so the
+  predecessor's id does not continue past the predecessor's CLOSE
+  (rule 7 for the predecessor is restored by the fact that this range
+  is a different id), and this ACT's own range ends at its CLOSE
+  (rule 5 for this ACT).
+
+  The external terminality observations that the predecessor recorded in
+  its post-CLOSE commit are recorded HERE, INSIDE the range, in C3. The
+  content is preserved; only its position changes.
+
+WHY A CORRECTION ACT RATHER THAN A REWRITE
+  The history is append-only from baf5dbd77cf89330699685dffd932c54031c815c
+  (AGENTS.md). The offending commit a1b1f20 cannot be removed, and the
+  predecessor's range cannot be rewritten. The Factory's correction
+  mechanism (GIT-METADATA.md section 2.3) is the established remedy for
+  exactly this situation: a NEW act id, ACT-Supersedes pointing at the
+  predecessor, and ACT-Corrected-Verdict recording the predecessor's
+  corrected verdict.
+
+  The predecessor's own HANDOFF and evidence are NOT rewritten (F14);
+  the corrected verdict is recorded in THIS ACT's artifacts.
+
+WHAT IS NOT CHANGED
+  No production file. The predecessor's C4 tree is byte-identical to this
+  ACT's tree except for documentation and evidence.
+
+TOPOLOGY_REPAIR=BOUNDED_AND_ACYCLIC
