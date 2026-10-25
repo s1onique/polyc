@@ -5727,3 +5727,47 @@ P2  The two Linux release legs were NOT executed (no Linux host, no CI
 See
 `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01.md`
 and `evidence/ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01/`.
+
+#### ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01-CORRECTION01 status (CLOSED PASS)
+
+```text
+ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01-CORRECTION01
+  SUPERSEDES  = ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01
+  C0 AUTH     = 01c0822  (authorization + the RED witness)
+  C1 EVIDENCE = caf5cf9  (the topology repair contract)
+  C2 IMPL     = (this ACT's documentation/manifest/roadmap repair)
+  C3 EVIDENCE = (the external terminality observations)
+  C4 CLOSE    = (this section)
+  VERDICT     = PASS
+  PRODUCTION DELTA = NONE
+```
+
+The predecessor's engineering result is preserved exactly. This ACT
+repairs the predecessor's CLOSE TOPOLOGY: a commit carrying the
+predecessor's `ACT:` trailer had been made after its C4 CLOSE commit,
+which `docs/factory/GIT-METADATA.md` section 3 rule 7 forbids
+("No commit after CLOSE may carry `ACT: <id>`"). The history is
+append-only, so the Factory's correction mechanism was used: this ACT
+owns a new, contiguous, well-formed C0..C4 range whose CLOSE records the
+external terminality observations INSIDE the range.
+
+```text
+PARSER_PADDING_COMPONENT            = TRUE_GREEN
+PARSER_PADDING_PRODUCTION_DELEGATION = TRUE_GREEN
+PARSER_PADDING_CLEAN_BUILD          = TRUE_GREEN
+PARSER_PADDING_BUILD_GRAPH          = ACYCLIC
+CLOSURE_TOPOLOGY                    = REPAIRED
+```
+
+A SECOND, INDEPENDENT, PRE-EXISTING defect was measured while
+diagnosing the first: Git 2.54.0's trailer parser drops the ENTIRE
+trailer block when any key contains an UNDERSCORE, so the Factory-v2
+range check cannot read a conforming HALT_* CLOSE commit (which must
+carry `HALT_CLASS` and `BLOCKS_NEXT`). The Factory's own precedent
+commit 505b007 fails the identical check for the identical reason. NOT
+repaired here: the range-check implementation is out of scope. It is
+recorded as residue.
+
+See
+`docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01-CORRECTION01.md`
+and `evidence/ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01-CORRECTION01/`.
