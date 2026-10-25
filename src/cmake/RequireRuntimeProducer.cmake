@@ -30,11 +30,11 @@ function(hcc_require_runtime_producer)
 
     if (NOT EXISTS "${HCC_BOOTSTRAP}")
         message(FATAL_ERROR
-            "libtos install seam: build/hcc-bootstrap04 not found at "
+            "libtos install seam: the qualified runtime producer was not found at "
             "${HCC_BOOTSTRAP}. The current ./hcc at HEAD regressed on "
             "ARM64 inline-asm mnemonics and cannot produce a complete "
-            "all.o. Build the bootstrap chain first via "
-            "'make bootstrap04-component-build', then re-run cmake.")
+            "all.o. Build the qualified producer first via "
+            "'make runtime-producer', then re-run cmake.")
     endif()
 
     if (HCC_BOOTSTRAP_EXPECTED_SHA)

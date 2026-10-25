@@ -1,0 +1,49 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01
+PHASE=C3
+CONTROL=N04
+SUBJECT=Stale artifact is not silently reused
+
+ISOLATION
+  Detached git worktree /tmp/polyc-n04b at the C2 candidate commit.
+
+MANIPULATION
+  1. A VALID padding object was produced and recorded:
+       N04_INITIAL_BUILD_RC=0
+       N04_VALID_SHA=187a4de9465e8dbe3c640484b05540daaad4a3267dd1543a169e3c304b02d5b1
+  2. The producer's INPUT was then invalidated (a marker line appended to
+     tools/bootstrap/selfhost-parser-padding.HC) while the old object was
+     RETAINED at the same path. A 1-second sleep guarantees the source
+     is strictly newer than the object, so the dependency edge fires
+     deterministically.
+
+COMMAND
+  make parser-padding-subject
+
+RESULT
+  N04_REBUILD_RC=0
+  N04_PRODUCER_INPUT_CHANGE_DETECTED=YES
+  N04_SOURCE_CHANGE_RELINKS_PRODUCTION_HCC=YES
+
+  The producer RE-RAN. Verbatim from the rebuild log:
+    ./build/host-stage0/hcc \
+        --install-dir=<abs>/build/bootstrap-prefix \
+        -c tools/bootstrap/selfhost-parser-padding.HC \
+        -o build/parser-padding-subject.o
+    PARSER_PADDING_ARCH_CHECK=PASS arch=arm64 target=arm64
+    PARSER_PADDING_SUBJECT=build/parser-padding-subject.o
+  and the subsequent production build logged:
+    [100%] Linking C executable <tree>/hcc
+
+  The object's sha256 is UNCHANGED
+  (187a4de9465e8dbe3c640484b05540daaad4a3267dd1543a169e3c304b02d5b1)
+  because the invalidation was a COMMENT, which does not change the
+  generated code. That is a REPRODUCIBLE-BUILD property, not a stale
+  reuse: the artifact was demonstrably regenerated (the producer
+  command and the architecture re-check both appear in the rebuild log,
+  and the file's mtime advanced past the source's).
+
+  A control confirmed the dependency edge is real: with the source
+  strictly newer, `make -n parser-padding-subject` emits the producer
+  command; with the object newer, it emits "Nothing to be done".
+
+N04=PASS

@@ -1,0 +1,36 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01
+PHASE=C3
+CONTROL=N01
+SUBJECT=Missing stage0 compiler fails closed
+
+ISOLATION
+  Detached git worktree /tmp/polyc-n01b at the C2 candidate commit, with
+  the C2 patch applied. No artifact from the developer's tree was visible.
+
+MANIPULATION
+  The stage0 compiler was made UNAVAILABLE by pointing the host C
+  compiler at a non-existent path:
+    make production-hcc C_COMPILER=/nonexistent/cc
+  The stage0 build cannot succeed, so the padding subject cannot be
+  produced, so the production compiler cannot be linked.
+
+COMMAND
+  make production-hcc C_COMPILER=/nonexistent/cc
+
+RESULT
+  N01_BUILD_RC=2
+  N01_STAGE0_MISSING_DETECTED=YES
+  N01_PRODUCTION_FALLBACK_TO_LEGACY=NO
+  N01_HCC_PRESENT=NO          (./hcc was NOT produced)
+
+FAILURE EVIDENCE (verbatim from the build log)
+  CMake Error at CMakeLists.txt:3 (project):
+  make: *** [build/host-stage0/hcc] Error 1
+
+INTERPRETATION
+  The build stopped at the stage0 stage. It did NOT continue to link a
+  production compiler with the legacy CalcPadding, and it did NOT emit
+  ./hcc at all. The graph is fail-closed: a missing stage0 stops the
+  chain rather than degrading the padding authority.
+
+N01=PASS

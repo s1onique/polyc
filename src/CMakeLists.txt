@@ -791,7 +791,7 @@ endif()
 #
 #   A configuration that merely BUILDS the compiler never needs the
 #   producer and is therefore no longer blocked by it.
-set(HCC_BOOTSTRAP "${CMAKE_SOURCE_DIR}/../build/hcc-bootstrap04")
+set(HCC_BOOTSTRAP "${CMAKE_SOURCE_DIR}/../build/runtime-producer/hcc-bootstrap04")
 
 # Fail-closed verification of the runtime producer, factored out so that
 # the unit-test target and the install seam use the SAME check.

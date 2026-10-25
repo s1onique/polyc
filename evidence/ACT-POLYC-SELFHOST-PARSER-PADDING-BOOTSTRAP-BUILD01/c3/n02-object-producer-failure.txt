@@ -1,0 +1,40 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01
+PHASE=C3
+CONTROL=N02
+SUBJECT=Failed object producer cannot reuse stale output
+
+ISOLATION
+  Detached git worktree /tmp/polyc-n02 at the C2 candidate commit.
+
+MANIPULATION
+  The stage0 compiler was replaced by a script that always fails:
+    #!/bin/sh
+    echo "simulated producer failure" >&2
+    exit 3
+  It was then timestamped so that the stage0 rule did not fire, so the
+  padding-subject rule was the one that had to run the producer.
+  The padding object was NOT pre-created: there was no stale output to
+  reuse.
+
+COMMAND
+  make production-hcc
+
+RESULT
+  N02_BUILD_RC=2
+  N02_PADDING_OBJECT_PRODUCER_FAILED=YES
+  N02_PRODUCTION_HCC_LINKED=NO
+  N02_HCC_PRESENT=NO
+
+FAILURE EVIDENCE (verbatim from the build log)
+  simulated producer failure
+  make: *** [build/parser-padding-subject.o] Error 3
+
+INTERPRETATION
+  The producer's non-zero exit propagated as a hard build failure. The
+  rule does not continue to the link step, and it does not accept any
+  pre-existing object. No ./hcc was produced.
+
+  This also proves the "failed object compilation -> continue linking"
+  silent fallback named in ACT section 17 is NOT implemented.
+
+N02=PASS

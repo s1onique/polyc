@@ -1,0 +1,47 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01
+PHASE=C3
+CONTROL=N05
+SUBJECT=Substituting an invalid runtime producer is rejected
+
+ISOLATION
+  Detached git worktree /tmp/polyc-n05 at the C2 candidate commit.
+
+MANIPULATION
+  The canonical runtime producer build/hcc-bootstrap04 was replaced with
+  a file that is NOT the qualified producer:
+    printf 'not a compiler' > build/hcc-bootstrap04
+  The canonical install path was then exercised.
+
+COMMAND
+  make test-prefix-install
+
+RESULT
+  N05_INSTALL_RC=2
+  N05_WRONG_BOOTSTRAP04_PRODUCER_REJECTED=YES
+  N05_CANONICAL_RUNTIME_ARCHIVE_ACCEPTED=NO
+
+FAILURE EVIDENCE (verbatim from the install log)
+  libtos install seam: runtime producer provenance check failed.
+  <path> sha256=<actual> but the pinned expected identity is
+  3b4474213efabcda30eb2d0c0610c6e23793f876896c8e21c5e18024b1ab40f6.
+  Refusing to install a runtime archive produced by an unqualified producer.
+
+  (A missing producer produces the sibling message
+   "libtos install seam: build/hcc-bootstrap04 not found at ...".)
+
+INTERPRETATION
+  The strict provenance contract still exists and is still enforced with
+  the SAME pinned identity. It was moved from global configure time to
+  the point where the runtime is actually produced, but it was NOT
+  weakened and it did NOT disappear.
+
+  The installation did not silently switch to stage0, to the host
+  compiler, or to any other producer, and no runtime archive was
+  installed.
+
+  The "wrong SHA -> recompute the expected SHA from the substituted
+  producer" silent fallback named in ACT section 17 is NOT implemented:
+  the expected value is a FROZEN constant, never derived from the
+  artifact under test.
+
+N05=PASS

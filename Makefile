@@ -143,13 +143,17 @@ bootstrap-prefix: $(BOOTSTRAP_PREFIX_INC)/tos.HH
 #   3. Measure the produced producer's sha256 against the FROZEN constant
 #      and FAIL CLOSED on mismatch. The expected value is NEVER
 #      recomputed from the produced artifact.
-#   4. Install the QUALIFIED producer as build/hcc-bootstrap04 for the
-#      runtime install seam.
+#   4. Install the QUALIFIED producer at its own path
+#      (build/runtime-producer/hcc-bootstrap04) for the runtime install
+#      seam. It is deliberately NOT the current tree's
+#      build/hcc-bootstrap04, which is a different artifact with a
+#      different identity.
 #
 # This chain does NOT depend on the current tree's test-prefix-install,
 # so the graph stays acyclic:
 #
-#   runtime-producer -> pinned tree (own sources) -> build/hcc-bootstrap04
+#   runtime-producer -> pinned tree (own sources)
+#                       -> build/runtime-producer/hcc-bootstrap04
 #   test-prefix-install -> runtime-producer
 #   production-hcc -> (independent of the runtime producer)
 LIBTOS_BOOTSTRAP_PINNED_COMMIT := ffee58b81ae42a4ff094618fcaa965223a40b848
@@ -313,13 +317,40 @@ $(PINNED_PRODUCER_BUILD)/hcc-bootstrap04: $(PINNED_PRODUCER_BUILD)/hcc-bootstrap
 		exit 1; \
 	fi
 
-# The QUALIFIED runtime producer, installed at the canonical path.
+# ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01 C2 IMPL.
+#
+# The QUALIFIED runtime producer lives at its OWN path.
+#
+# PATH OWNERSHIP (this is the point of the distinct path):
+#   build/hcc-bootstrap04              the CURRENT tree's stage3 compiler.
+#                                     Produced by `bootstrap04-stage3`.
+#                                     It is a LEXER self-hosting artifact
+#                                     used by the four-generation fixed
+#                                     points. It is NOT the runtime
+#                                     producer: its sha256 does not match
+#                                     the pinned provenance identity.
+#   build/runtime-producer/hcc-bootstrap04
+#                                     the QUALIFIED runtime producer.
+#                                     Reproduced from the pinned source
+#                                     tree and verified against the FROZEN
+#                                     provenance identity. This is the only
+#                                     artifact the runtime install seam may
+#                                     use.
+#
+# Keeping the two paths distinct removes an ambiguity that would
+# otherwise let one artifact silently overwrite the other, and it keeps
+# the existing lexer fixed-point contracts untouched.
+RUNTIME_PRODUCER_PATH = ./build/runtime-producer/hcc-bootstrap04
+
+# The QUALIFIED runtime producer, produced from the pinned tree and
+# verified against the FROZEN constant.
 #
 # The provenance check is FAIL CLOSED: the produced producer's sha256 is
 # compared against the FROZEN constant LIBTOS_BOOTSTRAP_EXPECTED_SHA.
 # The expected value is NEVER recomputed from the produced artifact, and
 # a mismatch does not install anything.
-build/hcc-bootstrap04: $(PINNED_PRODUCER_BUILD)/hcc-bootstrap04
+$(RUNTIME_PRODUCER_PATH): $(PINNED_PRODUCER_BUILD)/hcc-bootstrap04
+	@mkdir -p $(dir $@)
 	@_actual=$$(shasum -a 256 $< | cut -d' ' -f1); \
 	if [ "$$_actual" != "$(LIBTOS_BOOTSTRAP_EXPECTED_SHA)" ]; then \
 		echo "runtime-producer: FAIL: producer identity mismatch" >&2; \
@@ -329,11 +360,19 @@ build/hcc-bootstrap04: $(PINNED_PRODUCER_BUILD)/hcc-bootstrap04
 		exit 1; \
 	fi; \
 	cp $< $@; \
-	echo "RUNTIME_PRODUCER=./build/hcc-bootstrap04"; \
+	echo "RUNTIME_PRODUCER=$(RUNTIME_PRODUCER_PATH)"; \
 	echo "RUNTIME_PRODUCER_PROVENANCE_SHA=$$_actual"; \
 	echo "RUNTIME_PRODUCER_PROVENANCE=PASS"
 
-runtime-producer: build/hcc-bootstrap04
+runtime-producer: $(RUNTIME_PRODUCER_PATH)
+
+# The current tree's bootstrap stage binaries are FILE artifacts for the
+# purposes of the four-generation fixed points, which consume them as
+# normal prerequisites. The phony stage targets already produce them;
+# these rules give make the file-level edge it was missing.
+build/hcc-bootstrap02: bootstrap02-stage1
+build/hcc-bootstrap03: bootstrap03-stage2
+build/hcc-bootstrap04: bootstrap04-stage3
 
 # The architecture check for the padding subject. It compares the
 # object's OWN architecture metadata against the requested target
@@ -659,7 +698,7 @@ llvm-gep01-test: test-prefix-install
 #
 # The expected SHA is the SHA-256 of ./build/hcc-bootstrap04
 # built by ACT-POLYC-BOOTSTRAP04 (see .../bootstrap04-test).
-override LIBTOS_HCC := ./build/hcc-bootstrap04
+override LIBTOS_HCC := ./build/runtime-producer/hcc-bootstrap04
 LIBTOS_BOOTSTRAP_EXPECTED_SHA := 3b4474213efabcda30eb2d0c0610c6e23793f876896c8e21c5e18024b1ab40f6
 LIBTOS_BOOTSTRAP_SHA := $(shell shasum -a 256 $(LIBTOS_HCC) 2>/dev/null | cut -d' ' -f1)
 LIBTOS_REQUIRED_SYMBOLS := _FREE _STRNCMP _MEMSET _STRLEN_FAST _SpawnAndCapture

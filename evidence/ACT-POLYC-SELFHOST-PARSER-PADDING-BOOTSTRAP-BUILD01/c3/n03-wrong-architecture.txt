@@ -1,0 +1,45 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01
+PHASE=C3
+CONTROL=N03
+SUBJECT=Wrong-architecture object is rejected
+
+ISOLATION
+  Detached git worktree /tmp/polyc-n03 at the C2 candidate commit.
+
+MANIPULATION
+  A REAL x86_64 parser-padding subject was produced with the compiler's
+  cross-target backend (not a hand-forged file):
+    ./hcc --target=x86_64-apple-darwin --install-dir=<prefix> \
+        -c tools/bootstrap/selfhost-parser-padding.HC -o build/wrong-arch.o
+  Measured:
+    N03_GEN_RC=0
+    file -b build/wrong-arch.o  ->  Mach-O 64-bit object x86_64
+  That x86_64 object was then placed at the canonical path
+  build/parser-padding-subject.o, so the production build would consume
+  it while targeting arm64.
+
+COMMAND
+  make production-hcc
+
+RESULT
+  N03_BUILD_RC=2
+  N03_WRONG_ARCH_OBJECT_DETECTED=YES
+  N03_SILENT_LEGACY_FALLBACK=NO
+
+FAILURE EVIDENCE (verbatim from the build log)
+  parser-padding-subject: architecture mismatch for build/parser-padding-subject.o
+  parser-padding-subject:   object architecture = x86_64
+  parser-padding-subject:   target architecture = arm64
+  parser-padding-subject: refusing to link a wrong-architecture object
+
+INTERPRETATION
+  The check compares the object's OWN Mach-O header metadata (via `file`),
+  never the file name. The build stopped; the linker's diagnostics were
+  NOT weakened to permit an incompatible object, and the production
+  compiler did not silently fall back to the legacy implementation.
+
+  The same check also rejects a fat/universal object outright, and
+  rejects an object whose architecture cannot be determined at all
+  (an unknown architecture is never accepted).
+
+N03=PASS
