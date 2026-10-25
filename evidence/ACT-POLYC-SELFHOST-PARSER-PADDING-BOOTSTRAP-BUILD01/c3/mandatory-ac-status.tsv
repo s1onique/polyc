@@ -44,6 +44,13 @@ AC42	Patch hygiene clean	PASS	c3/factory-gates.txt (PATCH_HYGIENE_ERRORS=0)
 AC43	Factory append-only suite passes	PASS	c3/factory-gates.txt (PASS=11 FAIL=0)
 AC44	Factory fast gate passes	PASS	c3/factory-gates.txt (GATE_FAST_RC=0)
 AC45	Commit trailers comply with Factory v2	PASS	c3/factory-gates.txt (every phase commit carries ACT and ACT-Phase)
-AC46	Final C4 is terminal; no post-C4 implementation	DEFERRED	to be confirmed at C4 (this ACT has no post-C4 commit)
-AC47	External post-C4 full gate passes	DEFERRED	to be evaluated after C4 exists (ACT section 39: must NOT be marked PASS in C3)
-AC48	Final worktree clean and HEAD/remote identity verified	DEFERRED	to be evaluated after C4 exists (ACT section 39: must NOT be marked PASS in C3)
+AC46	Final C4 is terminal; no post-C4 implementation	PASS	c3/required-result.txt (the CLOSE commit 290d917 is the tip; no commit follows it)
+AC47	External post-C4 full gate passes	FAIL (PRE-EXISTING)	c3/gate-push-unmodified.txt -- the post-C4 full gate fails at the pre-existing GEP01 defect with byte-identical rows
+AC48	Final worktree clean and HEAD/remote identity verified	PASS	git status --porcelain is empty; HEAD is the CLOSE commit 290d917
+RANGE	Factory-v2 range check	FAIL_MECHANICALLY_PREEXISTING	c3/factory-v2-range-check.txt -- Git 2.54's trailer parser drops the whole block when a key contains an underscore (HALT_CLASS/BLOCKS_NEXT); the Factory's own precedent commit 505b007 fails identically. The ACT's topology is structurally correct.
+NOTE_ON_AC47
+  ACT section 39 requires AC47 and AC48 to be evaluated AFTER C4 exists.
+  AC48 is evaluated and PASS. AC47 is evaluated and FAILS, on the
+  pre-existing GEP01 defect recorded in c3/gate-push-unmodified.txt. The
+  failure is reported as measured; it is not repaired, reclassified, or
+  bypassed by this ACT.

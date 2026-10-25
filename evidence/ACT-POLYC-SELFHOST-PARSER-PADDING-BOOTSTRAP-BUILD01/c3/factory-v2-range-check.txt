@@ -1,0 +1,109 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01
+PHASE=C3
+SUBJECT=External terminality -- the Factory-v2 range check
+
+COMMAND
+  bash scripts/quality/factory-v2-range-check.sh \
+      ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01 HEAD
+
+RESULT
+  STATUS=FAIL
+  REASON=CLOSE 290d9170555d0b071db5ac4ab163d1176c71aa00 does not carry
+         exactly one ACT: ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01
+         (count=0)
+
+ROOT CAUSE (measured, and PRE-EXISTING)
+  The range check reads the CLOSE commit's trailers with
+    git log -1 --format='%(trailers:key=ACT,...)'
+  and Git 2.54.0's TRAILER PARSER REJECTS THE ENTIRE TRAILER BLOCK when
+  it contains a key with an UNDERSCORE in it. Measured:
+
+    $ printf 'x\n\nACT: A\nACT-Phase: CLOSE\n' | git interpret-trailers --parse
+    ACT: A
+    ACT-Phase: CLOSE
+    -> PARSES
+
+    $ printf 'x\n\nACT: A\nACT-Phase: CLOSE\nHALT_CLASS: G\n' | git interpret-trailers --parse
+    -> EMPTY (the whole block is dropped)
+
+    $ for k in HALT_CLASS BLOCKS_NEXT HALT_X HALTCLASS halt_class; do
+          printf "x\n\nACT: A\n$k: G\n" | git interpret-trailers --parse | tr '\n' ' '
+          echo "  <- key=$k"; done
+      (nothing)  <- key=HALT_CLASS
+      (nothing)  <- key=BLOCKS_NEXT
+      (nothing)  <- key=HALT_X
+      ACT: A HALTCLASS: G   <- key=HALTCLASS
+      (nothing)  <- key=halt_class
+
+    => Every trailer key containing an underscore makes Git drop the
+       whole trailer block, so %(trailers) yields nothing at all.
+
+  The CLOSE commit legitimately carries HALT_CLASS and BLOCKS_NEXT
+  because ACT section 42 REQUIRES them for a HALT_* verdict.
+
+THIS IS THE PRE-EXISTING GOVERNANCE DEFECT (R4), NOT A DEFECT OF THIS ACT
+  The Factory's own established precedent fails the IDENTICAL check with
+  the IDENTICAL reason:
+
+    $ bash scripts/quality/factory-v2-range-check.sh \
+        ACT-POLYC-AOT-PIC-EXTERNAL-REFS01-CORRECTION01 505b007
+    STATUS=FAIL
+    REASON=CLOSE 505b007... does not carry exactly one ACT:
+           ACT-POLYC-AOT-PIC-EXTERNAL-REFS01-CORRECTION01 (count=0)
+
+  That commit's trailer block is:
+    ACT: ...
+    ACT-Phase: CLOSE
+    ACT-Verdict: PASS
+    ACT-Corrected-Verdict: HALT_GATE_PUSH_FAILED
+    HALT_CLASS: GOVERNANCE
+    BLOCKS_NEXT: NO
+  i.e. the same underscore-keyed trailers, with the same parse failure.
+
+  This ACT explicitly does NOT repair or reclassify that defect
+  (ACT section 2 and section 4, and the R4 residue entry).
+
+THE ACT'S OWN TOPOLOGY IS CORRECT (verified independently)
+  The range check's own predicates are:
+    * FIRST commit in the range must have ACT-Phase=RED
+    * the CLOSE commit must carry exactly one ACT, one ACT-Phase:CLOSE,
+      and one ACT-Verdict
+    * every commit in the range must carry the ACT id and a valid phase
+
+  Measured over the ACT's range (git rev-list --reverse fda4a62..HEAD):
+
+    85c6e29  ACT-Phase: RED        <- FIRST, as required
+    63fdac1  ACT-Phase: EVIDENCE   <- C1
+    255d49e  ACT-Phase: IMPL       <- C2 (the first of nine authorized
+    99c5351  ACT-Phase: IMPL          IMPL commits)
+    61d31fb  ACT-Phase: IMPL
+    f9d8669  ACT-Phase: IMPL
+    865c9b2  ACT-Phase: IMPL
+    f13a794  ACT-Phase: IMPL
+    f238fb9  ACT-Phase: IMPL
+    286d8ef  ACT-Phase: IMPL
+    b34be9f  ACT-Phase: IMPL
+    c979c3b  ACT-Phase: IMPL
+    f05a84e  ACT-Phase: EVIDENCE   <- C3
+    290d917  (C4 CLOSE)
+
+  The CLOSE commit's trailer text is exactly what the check requires.
+  Its counts, computed from the raw message because Git's parser drops
+  the block:
+    $ git log -1 --format='%B' HEAD | grep -E '^ACT(-Phase|-Verdict)?:' \
+        | grep -Ec "^ACT:[[:space:]]+ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01$"
+    1
+    $ ... | grep -Ec '^ACT-Phase:[[:space:]]+CLOSE$'
+    1
+    $ ... | grep -Ec '^ACT-Verdict:'
+    1
+
+  All three counts are 1, exactly as the check requires. The check's
+  ONLY obstacle is that Git 2.54 cannot hand it the parsed trailers.
+
+  The C0 and C3 commits were positively identified: 85c6e29 (the first
+  commit of the range, ACT-Phase=RED) and f05a84e (ACT-Phase=EVIDENCE),
+  and the CLOSE commit 290d917 is a DIRECT DESCENDANT of the C3 commit
+  on a linear, append-only history with no merges.
+
+RANGE_CHECK=PASS_STRUCTURALLY / FAIL_MECHANICALLY_PREEXISTING

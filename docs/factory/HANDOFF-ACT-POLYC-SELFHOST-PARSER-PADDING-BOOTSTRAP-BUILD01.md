@@ -385,6 +385,33 @@ R4 (P2, PRE-EXISTING, separately owned)
    CORRECTION01's historical Factory-v2 range-check FAIL. A governance
    defect, explicitly not repaired or reclassified by this ACT.
 
+   MEASURED ROOT CAUSE (new, for the next owner): the range check reads
+   the CLOSE commit's trailers with git's %(trailers) formatter, and
+   Git 2.54.0's TRAILER PARSER REJECTS THE ENTIRE TRAILER BLOCK when any
+   trailer key contains an UNDERSCORE. Measured:
+
+     printf 'x\n\nACT: A\nACT-Phase: CLOSE\n' | git interpret-trailers --parse
+       -> ACT: A / ACT-Phase: CLOSE            (parses)
+     printf 'x\n\nACT: A\nACT-Phase: CLOSE\nHALT_CLASS: G\n' | git interpret-trailers --parse
+       -> (empty; the whole block is dropped)
+
+   Every underscore-bearing key (HALT_CLASS, BLOCKS_NEXT, HALT_X) drops
+   the block; HALTCLASS does not. ACT section 42 REQUIRES HALT_CLASS and
+   BLOCKS_NEXT on a HALT_* CLOSE, so a conforming HALT commit cannot be
+   read by the current range check.
+
+   THE SAME DEFECT ALREADY AFFECTS THE FACTORY'S OWN PRECEDENT: the
+   established precedent commit 505b007 (ACT-POLYC-AOT-PIC-EXTERNAL-
+   REFS01-CORRECTION01) fails the identical check with the identical
+   reason.
+
+   This ACT's own topology is correct: FIRST is the C0 commit
+   (85c6e29, ACT-Phase=RED), the C3 commit is f05a84e
+   (ACT-Phase=EVIDENCE), the CLOSE commit 290d917 is a direct
+   descendant on a linear append-only history, and the CLOSE message
+   contains exactly one ACT, one ACT-Phase: CLOSE and one ACT-Verdict.
+   See c3/factory-v2-range-check.txt for the full transcript.
+
 R5 (P2, QUALIFICATION, not a defect)
    The Linux release legs were not executed: this environment has no
    Linux host and no CI observation. They are reported as unqualified.
@@ -429,5 +456,6 @@ c3/  cold-build-before-after.txt, cold-build-command-transcripts.txt,
      lexer-conservation.txt, gate-push-unmodified.txt,
      runtime-install.txt, release-matrix.tsv,
      production-source-freeze-check.txt, f14-conservation.txt,
-     factory-gates.txt, mandatory-ac-status.tsv, required-result.txt
+     factory-gates.txt, factory-v2-range-check.txt,
+     mandatory-ac-status.tsv, required-result.txt
 ```
