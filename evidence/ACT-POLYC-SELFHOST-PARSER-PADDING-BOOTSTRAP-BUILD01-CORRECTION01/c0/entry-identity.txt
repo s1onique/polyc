@@ -1,0 +1,38 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01-CORRECTION01
+PHASE=C0
+SUBJECT=Entry identity
+
+BRANCH
+  $ git branch --show-current
+  main
+
+HEAD AT AUTHORIZATION
+  $ git rev-parse HEAD
+  a1b1f2095a6ca0d34f204af842c3ae06bdaf6324
+
+WORKTREE
+  $ git status --porcelain
+  (empty at the time of the C0 measurement, apart from this ACT's own
+   new artifacts)
+
+PREDECESSOR ACT
+  ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01
+  C4 CLOSE commit = 290d9170555d0b071db5ac4ab163d1176c71aa00
+  post-CLOSE commit that violates GIT-METADATA.md rule 7 =
+    a1b1f2095a6ca0d34f204af842c3ae06bdaf6324
+
+AUTHORIZED ENTRY (the predecessor's authorized entry, retained)
+  fda4a62add5c2f268d1904f9243731727ae5d00b
+
+ANCESTRY
+  $ git merge-base --is-ancestor fda4a62add5c2f268d1904f9243731727ae5d00b HEAD
+  (exit 0)
+
+HISTORY INTEGRITY
+  The history is append-only from baf5dbd77cf89330699685dffd932c54031c815c.
+  This ACT used `git commit` only: no amend, rebase, filter-branch,
+  filter-repo, git replace, reset+recommit, squash merge, or force push.
+
+TOOLCHAIN
+  cmake 4.1.6, AppleClang 15.0.0 (arm64-apple-darwin23.6.0),
+  LLVM 22.1.8, git 2.54.0, GNU make, nm, ar, shasum

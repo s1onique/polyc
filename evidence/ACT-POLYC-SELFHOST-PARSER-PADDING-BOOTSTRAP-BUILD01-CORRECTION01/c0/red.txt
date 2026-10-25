@@ -1,0 +1,59 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01-CORRECTION01
+PHASE=C0
+SUBJECT=RED -- the predecessor's range fails the mechanical topology check
+
+COMMAND
+  $ bash scripts/quality/factory-v2-range-check.sh \
+      ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01 HEAD
+RESULT
+  STATUS=FAIL
+  REASON=CLOSE a1b1f2095a6ca0d34f204af842c3ae06bdaf6324 does not carry
+         exactly one ACT-Phase: CLOSE (count=0)
+
+  The check resolved the LAST commit carrying the predecessor's ACT id
+  (a1b1f20, the post-CLOSE commit) as the CLOSE, and that commit
+  carries ACT-Phase: EVIDENCE rather than CLOSE.
+
+WHY
+  docs/factory/GIT-METADATA.md section 3, rule 7:
+    "No commit after CLOSE may carry `ACT: <id>`."
+
+  The predecessor's a1b1f20 commit carries
+    ACT: ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01
+    ACT-Phase: EVIDENCE
+  and follows the CLOSE commit 290d917.
+
+THE PREDECESSOR'S OWN TOPOLOGY IS OTHERWISE CORRECT
+  $ for c in $(git rev-list --reverse fda4a62..290d917); do
+        git log -1 --format='%B' $c | git interpret-trailers --parse \
+          | grep '^ACT-Phase:'; done
+  85c6e29  ACT-Phase: RED        <- FIRST, as rule 4 requires
+  63fdac1  ACT-Phase: EVIDENCE
+  255d49e .. c979c3b  ACT-Phase: IMPL  (nine authorized IMPL commits)
+  f05a84e  ACT-Phase: EVIDENCE
+  290d917  ACT-Phase: CLOSE      <- LAST, as rule 5 requires
+  Every commit in the range carries the ACT id and a valid phase, as
+  rule 6 requires.
+
+SECOND MEASURED DEFECT (PRE-EXISTING, not repaired here)
+  The range check reads trailers with git's %(trailers) formatter, and
+  Git 2.54.0's trailer parser drops the WHOLE trailer block when any
+  key contains an underscore:
+    printf 'x\n\nACT: A\nACT-Phase: CLOSE\n' | git interpret-trailers --parse
+      -> ACT: A / ACT-Phase: CLOSE
+    printf 'x\n\nACT: A\nACT-Phase: CLOSE\nHALT_CLASS: G\n' | git interpret-trailers --parse
+      -> (empty)
+  So a conforming HALT_* CLOSE commit -- which the Factory REQUIRES to
+  carry HALT_CLASS and BLOCKS_NEXT -- cannot be read by the range check.
+  The Factory's own precedent commit 505b007 fails identically:
+    $ bash scripts/quality/factory-v2-range-check.sh \
+        ACT-POLYC-AOT-PIC-EXTERNAL-REFS01-CORRECTION01 505b007
+    STATUS=FAIL
+    REASON=CLOSE 505b007... does not carry exactly one ACT:
+           ACT-POLYC-AOT-PIC-EXTERNAL-REFS01-CORRECTION01 (count=0)
+
+  This ACT does NOT repair that implementation (out of scope), and its
+  own CLOSE therefore uses a PASS-form verdict, which is both
+  mechanically parseable and truthful for a topology-only subject.
+
+RED_TOPOLOGY_VIOLATION_REPRODUCED=YES

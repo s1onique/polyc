@@ -1,0 +1,42 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01-CORRECTION01
+PHASE=C0
+SUBJECT=Scope
+
+IN SCOPE
+  docs/acts/ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01-CORRECTION01.md
+  docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01-CORRECTION01.md
+  evidence/ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01-CORRECTION01/**
+  docs/factory/act-handoff-map.tsv   (one appended row)
+  docs/ROADMAP.md                     (one appended status block)
+  docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01.md
+    (its VERDICT section only, corrected to point at this ACT)
+
+OUT OF SCOPE (and unchanged)
+  Makefile
+  src/CMakeLists.txt
+  src/cmake/RequireRuntimeProducer.cmake
+  src/cmake/VerifyParserPaddingObject.cmake
+  .github/workflows/release.yml
+  .gitignore
+  src/parser.c
+  tools/bootstrap/selfhost-parser-padding.HC
+  scripts/quality/gate-push.sh
+  scripts/quality/gate-fast.sh
+  scripts/quality/factory-v2-range-check.sh
+  .githooks/pre-push
+  any closed predecessor's evidence directory
+
+PRODUCTION DELTA OF THIS ACT
+  NONE. This ACT changes no production file. It repairs closure
+  topology only.
+
+FACTORY INVARIANTS HONOURED
+  F-NO-PYTHON:   no Python introduced (none added at all)
+  F-POLYC-TOOLS: no new tool introduced
+  F5:           no test or gate weakened
+  F14:          no closed predecessor's evidence or HANDOFF rewritten;
+                 the predecessor's HANDOFF VERDICT section is CORRECTED
+                 in place, which the Factory's correction mechanism
+                 explicitly permits for the HANDOFF that carries the
+                 verdict, and its historical evidence is untouched
+  append-only:  no history rewrite
