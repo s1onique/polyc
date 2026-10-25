@@ -3073,7 +3073,16 @@ parser-padding-fixedpoint-build: parser-padding-fixedpoint-g0 parser-padding-fix
 	@echo "PARSER_PADDING_FIXEDPOINT_BUILD_OBJECTS=$(PARSER_PADDING_FIXEDPOINT_OUTDIR)/parser-padding.g{0,1,2,3}.o"
 
 # Fixed-point verifier (PolyC).
-build/parser-padding-fixedpoint-verify: tools/quality/parser-padding-fixedpoint-verify.HC ./hcc | test-prefix-install
+# ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01 C2 IMPL:
+# The fixed-point verifier invokes the PolyC-built SHA-256 helper at
+# runtime (tools/quality/parser-padding-fixedpoint-verify.HC,
+# #define SHA256_BIN "./build/lexer07-sha256"). That helper was a warm
+# tree artifact with no declared dependency, so on a clean tree the
+# verifier aborted with
+#   PARSER_PADDING_FIXEDPOINT_RC=4 reason=sha256-error
+# The helper is now a DECLARED prerequisite. Its producer rule and its
+# self-test contract are unchanged.
+build/parser-padding-fixedpoint-verify: tools/quality/parser-padding-fixedpoint-verify.HC ./hcc build/lexer07-sha256 | test-prefix-install
 	./hcc --install-dir=$(TEST_PREFIX) tools/quality/parser-padding-fixedpoint-verify.HC -o $@
 	@ls -la $@
 
