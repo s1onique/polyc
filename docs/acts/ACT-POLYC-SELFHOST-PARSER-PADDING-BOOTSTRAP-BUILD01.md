@@ -356,3 +356,47 @@ On successful closure:
 ```text
 NEXT_ACT=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02
 ```
+
+---
+
+# 10. Closure record (written at C4)
+
+The closure precondition of section 40 is evaluated against the
+measured evidence in `evidence/.../c3/`. Every engineering predicate is
+met, EXCEPT `GATE_PUSH_UNMODIFIED=PASS`.
+
+```text
+COLD_BUILD=PASS
+PRODUCTION_PADDING_AUTHORITY=POLYC
+BOOTSTRAP_GRAPH_ACYCLIC=YES
+STALE_OBJECT_REUSE=NO
+WRONG_ARCH_REJECTED=YES
+WRONG_BOOTSTRAP_REJECTED=YES
+PARSER_PADDING_CONSERVATION=PASS
+LEXER_CONSERVATION=PASS
+GATE_PUSH_UNMODIFIED=FAIL     (PRE-EXISTING GEP01 defect)
+GATE_PUSH_BYPASS_USED=NO
+F14=PASS
+PATCH_HYGIENE_ERRORS=0
+```
+
+The gate failure is the pre-existing LLVM GEP01 cap-verifier defect.
+Its failing rows are BYTE-IDENTICAL to the baseline recorded before this
+ACT, and it is recorded as pre-existing in the Factory's own ROADMAP.
+
+Section 33 governs this case: "If gate-push fails for a separate
+pre-existing defect, classify that defect with its own evidence. Do not
+claim full gate qualification." The defect IS classified, with its own
+evidence (`c3/gate-push-unmodified.txt`), and full gate qualification is
+NOT claimed.
+
+The verdict is therefore `HALT_GATE_PUSH_NOT_GREEN` with
+`HALT_CLASS=GOVERNANCE` and `BLOCKS_NEXT=NO`. A PASS verdict is not
+available: the mechanical classifier REJECTS `HALT_CLASS` on a PASS
+verdict, and the gate is not green. The verdict was validated against
+`tools/factory/factory-halt-classification.HC`, which reports
+`STATUS=PASS` for exactly this trailer set.
+
+The HANDOFF is at
+`docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01.md`
+and the pair is registered in `docs/factory/act-handoff-map.tsv`.

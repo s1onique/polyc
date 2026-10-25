@@ -5655,3 +5655,75 @@ and remain GREEN. The over-claim is at the closure-ledger level.
 See
 `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION01.md`
 and `evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION01/`.
+
+#### ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01 status (CLOSED HALT_GATE_PUSH_NOT_GREEN)
+
+```text
+ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01
+  ENTRY       = fda4a62add5c2f268d1904f9243731727ae5d00b
+  C0 AUTH     = 85c6e29   (authorization + c0/ evidence)
+  C1 RED      = 63fdac1   (RED witnesses + frozen bootstrap design)
+  C2 IMPL     = 255d49e .. c979c3b  (the repaired build graph)
+  C3 EVIDENCE = f05a84e   (the verified evidence)
+  C4 CLOSE    = (this section)
+  VERDICT     = HALT_GATE_PUSH_NOT_GREEN
+                HALT_CLASS = GOVERNANCE
+                BLOCKS_NEXT = NO
+  NEXT_ACT    = ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02
+```
+
+The clean-checkout build blocker is REPAIRED. `make clean && make` now
+works from a fresh Git checkout, with no ignored or hand-placed binary
+anywhere in the path.
+
+```text
+PARSER_PADDING_COMPONENT            = TRUE_GREEN
+PARSER_PADDING_PRODUCTION_DELEGATION = TRUE_GREEN
+PARSER_PADDING_CLEAN_BUILD          = TRUE_GREEN
+PARSER_PADDING_BUILD_GRAPH          = ACYCLIC
+PARSER_PADDING_PUSH_GATE            = QUALIFIED_EXCEPT_PREEXISTING_GEP01
+```
+
+The two build blockers were: the parser-padding object was never
+SCHEDULED by the build (a configure-time `if(NOT EXISTS)` probe), and
+the runtime producer was demanded at GLOBAL CONFIGURE time. Both
+historical bootstrap cycles are broken. The production compiler now
+builds from an isolated legacy stage0, through a header-only bootstrap
+prefix, into a PolyC-produced padding subject whose sha256 is
+byte-identical to the qualified predecessor's frozen value.
+
+The provenance-strict runtime producer is now REPRODUCIBLE from a clean
+checkout (its sha256 equals the FROZEN constant) instead of having to
+be hand-placed, and the strict check itself was moved -- not weakened --
+from global configure time to the point where the runtime is actually
+produced.
+
+RESIDUE (PRE-EXISTING, separately owned, NOT repaired here)
+
+```text
+P1  The LLVM GEP01 cap-verifier defect. The unmodified full push gate
+    still fails at its `gep01` check. The failing rows are
+    BYTE-IDENTICAL to the baseline recorded before this ACT
+    (GEP01_PASS=26 / GEP01_FAIL=4) and are recorded as pre-existing in
+    this document. No bypass was used. Every other gate-push check
+    passes: build, install, AOT (0 failures), JIT (0 failures),
+    LSP (43/43).
+
+P1  The Linux runtime port remains macOS-only
+    (ACT-POLYC-TOOLING-LINUX-PORT01).
+
+P1  The compiler's `@@N` asm local-label rendering regression is
+    pre-existing and is why the runtime producer comes from the pinned
+    source tree.
+
+P2  CORRECTION01's historical Factory-v2 range-check FAIL is a
+    governance defect that this ACT neither repairs nor reclassifies.
+
+P2  The two Linux release legs were NOT executed (no Linux host, no CI
+    observation in this environment) and are reported as UNQUALIFIED.
+    No four-platform release PASS is inferred from a one-host test.
+```
+
+See
+`docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01.md`
+and `evidence/ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01/`.

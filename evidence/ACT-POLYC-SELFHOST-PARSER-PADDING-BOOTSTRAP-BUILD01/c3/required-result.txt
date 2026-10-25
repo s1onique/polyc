@@ -72,18 +72,27 @@ SUBJECT=Required results -- each mapped to its establishing witness
   NOTE ON THE CLOSURE PRECONDITION LIST
   ACT section 40 lists "GATE_PUSH_UNMODIFIED=PASS" as a closure
   precondition. That precondition is NOT met, because a pre-existing
-  defect fails the gate. ACT section 33 provides the governing rule:
-  "If gate-push fails for a separate pre-existing defect, classify that
-  defect with its own evidence. Do not claim full gate qualification."
+  defect fails the gate. ACT section 42 is explicit about the
+  consequence: "If a binding mandatory predicate fails, use the
+  appropriate honest HALT_* verdict and the Factory-required HALT_CLASS
+  and BLOCKS_NEXT trailers."
 
-  The C4 verdict therefore CANNOT be PASS_TRUE_GREEN: that verdict
-  would assert a fully green gate. The honest verdict is a HALT that
-  records the measured state and the pre-existing residue, with
-  HALT_CLASS=GOVERNANCE / BLOCKS_NEXT=NO per the F-MECHANICAL-BLOCKING
-  grammar -- the engineering objective of this ACT (a clean-checkout
-  build that produces its own PolyC padding object) IS met and IS
-  measured, but the full pre-push gate is not green for a reason that
-  predates this ACT.
+  The C4 verdict is therefore HALT_GATE_PUSH_NOT_GREEN, with
+  HALT_CLASS=GOVERNANCE and BLOCKS_NEXT=NO. It is NOT
+  PASS_TRUE_GREEN, and it is not a PASS-with-residue either: the
+  mechanical classifier (tools/factory/factory-halt-classification.HC)
+  REJECTS HALT_CLASS on a PASS verdict, so a PASS token is not
+  available. The verdict was validated against that classifier:
+
+    MODE=ACT
+    STATUS=PASS
+    VERDICT=HALT_GATE_PUSH_NOT_GREEN
+    HALT_CLASS=GOVERNANCE
+    BLOCKS_NEXT=NO
+
+  Every ENGINEERING predicate of ACT section 40 IS met and measured.
+  The one unmet predicate is the full gate, and it is unmet for a
+  reason that predates this ACT.
 
   See c3/mandatory-ac-status.tsv (AC34 = FAIL (PRE-EXISTING)).
 
