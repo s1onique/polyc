@@ -407,6 +407,22 @@ build/lexer07-scalar-literal.o: lexer07-component-build
 build/lexer08-trivia.o: lexer08-component-build
 build/lexer09-link.o: lexer09-link-component-build
 
+# The per-generation component objects. Each generation's objects are
+# produced by the previous generation's compiler, and each generation's
+# build demands them as LINK inputs at cmake-configure time. The
+# producers are the existing, already-qualified phony stage targets.
+build/bootstrap03-ident.stage1.o: bootstrap03-component-build
+build/bootstrap06-operator-classify.stage1.o: bootstrap06-component-stage1
+build/lexer07-scalar-literal.stage1.o: lexer07-component-stage1
+build/lexer08-trivia.stage1.o: lexer08-component-stage1
+build/lexer09-link.stage1.o: lexer09-link-component-stage1
+
+build/bootstrap04-ident.stage2.o: bootstrap04-component-build
+build/bootstrap06-operator-classify.stage2.o: bootstrap06-component-stage2
+build/lexer07-scalar-literal.stage2.o: lexer07-component-stage2
+build/lexer08-trivia.stage2.o: lexer08-component-stage2
+build/lexer09-link.stage2.o: lexer09-link-component-stage2
+
 # The architecture check for the padding subject. It compares the
 # object's OWN architecture metadata against the requested target
 # architecture. It is a fail-closed check: an architecture mismatch is a
@@ -1309,7 +1325,11 @@ bootstrap03-component-build: bootstrap02-stage1 test-prefix-install
 # be the one built by bootstrap03-component-build above. The
 # distinct path (build/bootstrap03-ident.stage1.o vs
 # build/bootstrap02-ident.o) makes accidental reuse impossible.
-bootstrap03-stage2: bootstrap03-component-build test-prefix-install
+bootstrap03-stage2: bootstrap03-component-build test-prefix-install \
+	build/bootstrap06-operator-classify.stage1.o \
+	build/lexer07-scalar-literal.stage1.o \
+	build/lexer08-trivia.stage1.o \
+	build/lexer09-link.stage1.o
 	@if [ ! -f ./build/bootstrap03-ident.stage1.o ]; then \
 		echo "bootstrap03-stage2: ./build/bootstrap03-ident.stage1.o missing. Run: make bootstrap03-component-build" >&2; \
 		exit 1; \
@@ -1508,7 +1528,11 @@ bootstrap04-component-build: bootstrap03-stage2 test-prefix-install
 # Per ACT §19: the existing HCC_BOOTSTRAP02_STAGE1 macro gates
 # the lexIdentifier delegation; HCC_BOOTSTRAP04_STAGE3 exists
 # purely for build-graph distinctness (mirrors B2's pattern).
-bootstrap04-stage3: bootstrap04-component-build test-prefix-install
+bootstrap04-stage3: bootstrap04-component-build test-prefix-install \
+	build/bootstrap06-operator-classify.stage2.o \
+	build/lexer07-scalar-literal.stage2.o \
+	build/lexer08-trivia.stage2.o \
+	build/lexer09-link.stage2.o
 	@if [ ! -f ./build/bootstrap04-ident.stage2.o ]; then \
 		echo "bootstrap04-stage3: ./build/bootstrap04-ident.stage2.o missing. Run: make bootstrap04-component-build" >&2; \
 		exit 1; \
@@ -3007,7 +3031,7 @@ $(PARSER_PADDING_FIXEDPOINT_OUTDIR)/parser-padding.g2.o: $(PARSER_PADDING_SRC) .
 
 parser-padding-fixedpoint-g3: $(PARSER_PADDING_FIXEDPOINT_OUTDIR)/parser-padding.g3.o
 
-$(PARSER_PADDING_FIXEDPOINT_OUTDIR)/parser-padding.g3.o: $(PARSER_PADDING_SRC) ./build/hcc-bootstrap04 runtime-producer | $(PARSER_PADDING_FIXEDPOINT_OUTDIR)
+$(PARSER_PADDING_FIXEDPOINT_OUTDIR)/parser-padding.g3.o: $(PARSER_PADDING_SRC) ./build/hcc-bootstrap04 bootstrap04-stage3 | $(PARSER_PADDING_FIXEDPOINT_OUTDIR)
 	@rm -f $@
 	./build/hcc-bootstrap04 --install-dir=$(TEST_PREFIX) -c $(PARSER_PADDING_SRC) -o $@
 	@echo "PARSER_PADDING_FIXEDPOINT_G3=$@"
