@@ -1116,7 +1116,22 @@ bootstrap02-test: bootstrap02-component-build bootstrap02-oracle
 # into the modified hcc source tree (with HCC_ENABLE_BOOTSTRAP02_STAGE1=ON).
 # The production ./hcc binary is NOT touched; this is a
 # separate stage1 artifact.
-bootstrap02-stage1: bootstrap02-component-build test-prefix-install
+# ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01 C2 IMPL:
+# The stage1 build's cmake configure consumes the LEXER component objects
+# as LINK inputs and demands they already exist. Those objects were
+# produced only by the warm tree; there was no declared dependency, so
+# the configure aborted on a clean tree with
+#   "required self-host operator component missing at
+#    build/bootstrap06-operator-classify.o"
+#
+# The component objects are now DECLARED prerequisites of the stage
+# builds. The component producers themselves are the existing,
+# already-qualified phony targets, so no recipe logic is duplicated.
+bootstrap02-stage1: bootstrap02-component-build test-prefix-install \
+	build/bootstrap06-operator-classify.o \
+	build/lexer07-scalar-literal.o \
+	build/lexer08-trivia.o \
+	build/lexer09-link.o
 	@rm -rf ./build/hcc-bootstrap02-build
 	@mkdir -p ./build/hcc-bootstrap02-build
 	cmake -S ./src -B ./build/hcc-bootstrap02-build -G 'Unix Makefiles' \
