@@ -157,7 +157,18 @@ bootstrap-prefix: $(BOOTSTRAP_PREFIX_INC)/tos.HH
 #   test-prefix-install -> runtime-producer
 #   production-hcc -> (independent of the runtime producer)
 LIBTOS_BOOTSTRAP_PINNED_COMMIT := ffee58b81ae42a4ff094618fcaa965223a40b848
-PINNED_PRODUCER_TREE   = ./build/pinned-producer/tree
+
+# The pinned producer's tree lives OUTSIDE ./build, in a sibling
+# directory of the repository.
+#
+# PLACEMENT IS A SAFETY REQUIREMENT, NOT A STYLE CHOICE: `make clean`
+# deletes ./build recursively. A git worktree nested under ./build would
+# therefore be deleted as part of an ordinary clean, and removing it
+# would take the enclosing repository's working tree with it when that
+# enclosing tree happens to live under ./build. Keeping the pinned tree
+# outside ./build makes `make clean` a purely local operation.
+PINNED_PRODUCER_DIR    = ./build-pinned-producer
+PINNED_PRODUCER_TREE   = $(PINNED_PRODUCER_DIR)/tree
 PINNED_PRODUCER_BUILD  = $(PINNED_PRODUCER_TREE)/build
 PINNED_PRODUCER_PREFIX = $(PINNED_PRODUCER_BUILD)/prefix
 PINNED_PRODUCER_INC    = $(PINNED_PRODUCER_PREFIX)/include
@@ -188,8 +199,8 @@ PP_PRODUCER_STAGE2_OBJS = \
 
 # The pinned producer's stage0 compiler (the legacy control).
 $(PINNED_PRODUCER_BUILD)/hcc:
-	@rm -rf $(PINNED_PRODUCER_TREE)
-	@mkdir -p $(PINNED_PRODUCER_TREE)
+	@rm -rf $(PINNED_PRODUCER_DIR)
+	@mkdir -p $(PINNED_PRODUCER_DIR)
 	git worktree prune
 	git worktree add --detach $(PINNED_PRODUCER_TREE) $(LIBTOS_BOOTSTRAP_PINNED_COMMIT)
 	@mkdir -p $(PINNED_PRODUCER_BUILD)/stage0
@@ -927,18 +938,30 @@ harness-evidence-isolation-test:
 	./scripts/quality/harness-evidence-isolation-test.sh
 
 clean:
-	rm -rf ./build ./hcc
 	@# ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01 C2 IMPL:
-	@# The pinned producer is materialized as a detached git worktree.
-	@# `make clean` must remove it so the tree is genuinely clean and the
-	@# next build materializes it afresh.
-	git worktree prune
-	@for t in $$(git worktree list --porcelain | grep '^worktree ' | sed -e 's/^worktree //'); do \
+	@# The pinned producer is materialized as a detached git worktree
+	@# under ./build-pinned-producer/tree. `make clean` must remove it so
+	@# the tree is genuinely clean and the next build materializes it
+	@# afresh.
+	@#
+	@# SAFETY: the worktree is removed BEFORE its parent directory is
+	@# deleted, and only when it is a strict DESCENDANT of this
+	@# repository's build-pinned-producer directory. Removing a worktree
+	@# that contains the current working directory would delete the tree
+	@# the user is standing in, so that case is explicitly excluded.
+	@_here=$$(pwd); \
+	_candidate="$$_here/build-pinned-producer/tree"; \
+	for t in $$(git worktree list --porcelain | grep '^worktree ' | sed -e 's/^worktree //'); do \
 		case "$$t" in \
-			*"/build/pinned-producer/tree") git worktree remove --force "$$t" >/dev/null 2>&1 || true ;; \
+			"$$_candidate") \
+				case "$$t" in \
+					"$$_here"|"$$_here"/*) ;; \
+					*) git worktree remove --force "$$t" >/dev/null 2>&1 || true ;; \
+				esac ;; \
 		esac; \
-	done
+	done; \
 	git worktree prune
+	rm -rf ./build ./build-pinned-producer ./hcc
 
 # Convenience surfaces only. Gate logic lives in the scripts.
 # See scripts/quality/gate-fast.sh and scripts/quality/gate-push.sh.

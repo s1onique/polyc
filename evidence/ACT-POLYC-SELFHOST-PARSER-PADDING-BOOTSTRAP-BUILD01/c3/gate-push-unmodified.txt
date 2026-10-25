@@ -1,0 +1,107 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01
+PHASE=C3
+SUBJECT=P07 -- the unmodified full push gate
+
+COMMAND
+  ./scripts/quality/gate-push.sh HEAD
+
+THE SCRIPT WAS NOT MODIFIED BY THIS ACT
+  git diff --name-only fda4a62..HEAD -- scripts/quality/gate-push.sh
+  -> (empty)
+  The gate creates its own isolated detached worktree, runs a clean
+  build, then the install and test gates. That architecture was NOT
+  replaced with a warm-tree invocation.
+
+MEASURED RESULT
+  POLYC_GATE=push
+  SUBJECT=<the C2 candidate commit>
+  CHECK=build   STATUS=PASS
+  CHECK=install STATUS=PASS
+  CHECK=gep01   STATUS=FAIL
+  VERDICT=FAIL
+
+THE BUILD AND INSTALL CHECKS NOW PASS
+  At the frozen ENTRY the gate failed at its FIRST check:
+    FIRST_FAILURE=GPUSH-1 build -- cmake configure fails at
+                src/CMakeLists.txt:216 (missing build/parser-padding-subject.o)
+  (see c1/c1-red4-gate-push.txt)
+  After the C2 repair the gate passes both the build and the install
+  check and proceeds to the third check. That is the decisive movement:
+  the two blockers this ACT was opened for (B1 padding object, B2
+  bootstrap04 configure gate) are resolved in the gate itself.
+
+THE REMAINING FAILURE IS PRE-EXISTING AND BYTE-IDENTICAL
+  The failing check is `gep01`, which runs the LLVM GEP01 qualification
+  harness. Its 4 failing rows are:
+
+    FAIL  readat.HC: SHAPE_DEPENDENT counter = ? (expected >= 1): shape_dependent marker not found in stderr
+    FAIL  IR_GEP = REJECTED (sibling opcode still rejected): could not read cap verifier output
+    FAIL  IR_LEA = REJECTED (sibling opcode still rejected): could not read cap verifier output
+    FAIL  IR_IADD = SUPPORTED (preserved, GEP01 is per-shape subset): could not read cap verifier output
+
+  These are BYTE-IDENTICAL to the rows recorded BEFORE this ACT, in
+  evidence/ACT-POLYC-INTEGRATION-PREBOOTSTRAP-GATES01-CORRECTION01/
+  c3/gate-push-correction01.log:
+
+    $ grep -E '^FAIL ' <historical log> | sort > /tmp/hist-fails.txt
+    $ grep -E '^FAIL ' <this run>      | sort > /tmp/mine-fails.txt
+    $ diff /tmp/hist-fails.txt /tmp/mine-fails.txt
+    (no output)
+    GATE_PUSH_GEP01_FAILURES_BYTE_IDENTICAL_TO_PREEXISTING=YES
+
+  The Factory's own ROADMAP records the same defect as PRE-EXISTING
+  (docs/ROADMAP.md:988):
+    "RESIDUE = P1: llvm-gep01-test cap-verifier
+     (scripts/quality/llvm-cap-table-verifier.py). Pre-existing gap;
+     identical GEP01_PASS=26 / GEP01_FAIL=4 was already captured in
+     evidence/ACT-POLYC-INTEGRATION-PREBOOTSTRAP-GATES01-CORRECTION01/
+     c3/gate-push-correction01.log. Out of scope for this ACT (the
+     cap-verifier is not touched by src/aarch64.c). Blocks gate-push
+     only."
+
+  Both runs report GEP01_PASS=26 / GEP01_FAIL=4 -- the same counts, not
+  merely the same rows.
+
+ROOT CAUSE OF THE PRE-EXISTING FAILURE (measured, for the record)
+  The cap verifier is a PYTHON tool
+  (scripts/quality/llvm-cap-table-verifier.py) that shells out to
+  `hcc --print-cap-table`. Measured on the developer's warm tree:
+    $ ./hcc --print-cap-table ; echo $?
+    139            <- SIGSEGV
+  i.e. the warm, non-LLVM build SEGFAULTS on that flag, so the verifier
+  cannot load the capability table and reports
+    "FAIL  could not load capability table from hcc --print-cap-table"
+  which the harness surfaces as "could not read cap verifier output".
+
+  Measured on the LLVM-enabled build produced by this ACT:
+    $ ./hcc --print-cap-table ; echo $?
+    0
+    56 capability rows emitted
+  So the Python verifier and the cap table are NOT the cause of the 4
+  rows; the rows are the harness's SHAPE_DEPENDENT counter and the
+  three sibling-opcode rows, which the pre-existing evidence already
+  recorded identically.
+
+  Note for the record: the cap verifier is a PYTHON tool, which is in
+  tension with F-NO-PYTHON (docs/factory/DOCTRINE.md §26). It is
+  PRE-EXISTING and separately owned; this ACT neither introduced nor
+  touched it. It is recorded as residue.
+
+CLASSIFICATION (ACT section 33)
+  "If gate-push fails for a separate pre-existing defect, classify that
+   defect with its own evidence. Do not claim full gate qualification."
+
+  CLASSIFICATION = PRE-EXISTING, SEPARATELY OWNED, BYTE-IDENTICAL TO THE
+  RECORDED BASELINE.
+
+  GPUSH_BUILD=PASS
+  GPUSH_INSTALL=PASS
+  GPUSH_GEP01=FAIL (pre-existing; see above)
+  GATE_PUSH_VERDICT=FAIL
+  GATE_PUSH_BYPASS_USED=NO
+
+  NO bypass was used: no environment trick, no hook replacement, no
+  --no-verify, no temporary edit of the gate script, no weakening of the
+  GEP01 harness, and no removal of any check. The gate was executed
+  unmodified against the committed candidate, and its failure is
+  reported as it occurred.
