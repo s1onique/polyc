@@ -2879,21 +2879,36 @@ $(PARSER_PADDING_FIXEDPOINT_OUTDIR)/parser-padding.g0.o: $(PARSER_PADDING_SRC) .
 
 parser-padding-fixedpoint-g1: $(PARSER_PADDING_FIXEDPOINT_OUTDIR)/parser-padding.g1.o
 
-$(PARSER_PADDING_FIXEDPOINT_OUTDIR)/parser-padding.g1.o: $(PARSER_PADDING_SRC) ./build/hcc-bootstrap02 | $(PARSER_PADDING_FIXEDPOINT_OUTDIR)
+# ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01 C2 IMPL:
+# The four-generation fixed point uses FOUR DIFFERENT compilers to
+# compile the same subject: the production compiler (g0) and the three
+# bootstrap generations (g1, g2, g3).
+#
+# The g1/g2/g3 rules depended on ./build/hcc-bootstrap02/03/04 WITHOUT
+# declaring how those binaries come into existence -- there was no rule
+# for them. On a warm tree they were simply present; on a clean tree the
+# qualification target failed with "No rule to make target
+# build/hcc-bootstrap02". That is the same class of warm-tree
+# assumption this ACT exists to remove, so the dependency is now
+# DECLARED.
+#
+# The bootstrap stage targets are the existing, already-qualified ones.
+# They build the stage binaries from the current source tree.
+$(PARSER_PADDING_FIXEDPOINT_OUTDIR)/parser-padding.g1.o: $(PARSER_PADDING_SRC) ./build/hcc-bootstrap02 bootstrap02-stage1 | $(PARSER_PADDING_FIXEDPOINT_OUTDIR)
 	@rm -f $@
 	./build/hcc-bootstrap02 --install-dir=$(TEST_PREFIX) -c $(PARSER_PADDING_SRC) -o $@
 	@echo "PARSER_PADDING_FIXEDPOINT_G1=$@"
 
 parser-padding-fixedpoint-g2: $(PARSER_PADDING_FIXEDPOINT_OUTDIR)/parser-padding.g2.o
 
-$(PARSER_PADDING_FIXEDPOINT_OUTDIR)/parser-padding.g2.o: $(PARSER_PADDING_SRC) ./build/hcc-bootstrap03 | $(PARSER_PADDING_FIXEDPOINT_OUTDIR)
+$(PARSER_PADDING_FIXEDPOINT_OUTDIR)/parser-padding.g2.o: $(PARSER_PADDING_SRC) ./build/hcc-bootstrap03 bootstrap03-stage2 | $(PARSER_PADDING_FIXEDPOINT_OUTDIR)
 	@rm -f $@
 	./build/hcc-bootstrap03 --install-dir=$(TEST_PREFIX) -c $(PARSER_PADDING_SRC) -o $@
 	@echo "PARSER_PADDING_FIXEDPOINT_G2=$@"
 
 parser-padding-fixedpoint-g3: $(PARSER_PADDING_FIXEDPOINT_OUTDIR)/parser-padding.g3.o
 
-$(PARSER_PADDING_FIXEDPOINT_OUTDIR)/parser-padding.g3.o: $(PARSER_PADDING_SRC) ./build/hcc-bootstrap04 | $(PARSER_PADDING_FIXEDPOINT_OUTDIR)
+$(PARSER_PADDING_FIXEDPOINT_OUTDIR)/parser-padding.g3.o: $(PARSER_PADDING_SRC) ./build/hcc-bootstrap04 runtime-producer | $(PARSER_PADDING_FIXEDPOINT_OUTDIR)
 	@rm -f $@
 	./build/hcc-bootstrap04 --install-dir=$(TEST_PREFIX) -c $(PARSER_PADDING_SRC) -o $@
 	@echo "PARSER_PADDING_FIXEDPOINT_G3=$@"
