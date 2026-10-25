@@ -1,0 +1,39 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01
+PHASE=C2
+SUBJECT=Production compiler link and delegation authority (D4)
+
+MEASURED (clean checkout, /tmp/polyc-p01v2)
+  PRODUCTION_HCC_BUILD_RC=0
+  PRODUCTION_HCC=./hcc
+  PRODUCTION_PADDING_AUTHORITY=POLYC
+
+LINKED SYMBOLS (nm ./hcc)
+  0000000100064494 T _BootstrapCalcPadding
+  000000010003ac94 T _CalcPadding
+  000000010003acb0 T _ParserLegacyCalcPaddingOracle
+
+  INTERPRETATION
+    _BootstrapCalcPadding is PRESENT and is the object produced by the
+    stage0 compiler from tools/bootstrap/selfhost-parser-padding.HC.
+    _CalcPadding and _ParserLegacyCalcPaddingOracle remain present
+    because src/parser.c keeps the legacy body as the explicit
+    stage0/differential control; the delegation gate
+    HCC_USE_SELFHOST_PARSER_PADDING routes production padding
+    computation through the PolyC component. This is the frozen
+    predecessor's contract, unchanged.
+
+THE LINK IS A DECLARED DEPENDENCY, NOT A PROBE
+  src/CMakeLists.txt now schedules the object's production through
+    add_custom_command(OUTPUT ${PARSER_PADDING_OBJECT}
+                       COMMAND <producer> -c <source> -o <object>
+                       DEPENDS "${PARSER_PADDING_SOURCE}" "${PARSER_PADDING_PRODUCER}")
+    add_custom_target(hcc-parser-padding-subject DEPENDS <object>.verified)
+    add_dependencies(hcc hcc-parser-padding-subject)
+  and the object is then linked with
+    target_link_libraries(hcc ${PARSER_PADDING_OBJECT})
+
+  The previous mechanism was a configure-time `if(NOT EXISTS)` probe
+  that could only ever observe a hand-placed artifact. The new mechanism
+  is a REAL dependency edge in the build graph.
+
+PRODUCTION_HCC_FROM_CLEAN_TREE=PASS

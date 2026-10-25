@@ -1,0 +1,81 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01
+PHASE=C2
+SUBJECT=Makefile -- the repaired bootstrap graph
+
+NEW TARGETS (all FILE based, none permanently phony)
+  bootstrap-stage0       -> build/host-stage0/hcc
+  bootstrap-prefix       -> build/bootstrap-prefix/include/tos.HH
+  parser-padding-subject -> build/parser-padding-subject.o
+  production-hcc         -> ./hcc
+  runtime-producer       -> build/hcc-bootstrap04
+
+CHANGED TARGETS
+  all          -> now `all: production-hcc`
+  llvm-all     -> now builds in its OWN cmake tree (build/llvm) so the
+                  LLVM-enabled and default trees cannot fight over the
+                  CMake cache
+  test-prefix-install -> now depends on `production-hcc runtime-producer`
+                  (this is what breaks the historical cycle)
+  parser-padding-component -> now depends on the new
+                  `parser-padding-subject` rule (the legacy rule
+                  depended on ./hcc and on test-prefix-install, which was
+                  the primary cycle)
+  clean        -> additionally removes the pinned-producer git worktree
+
+FILE-BASED DEPENDENCIES (the "no unnecessary rebuild" contract)
+  build/host-stage0/hcc            <- src/**/*.c src/**/*.h
+  build/bootstrap-prefix/.../tos.HH<- src/holyc-lib/tos.HH
+  build/parser-padding-subject.o   <- the PolyC subject, the stage0
+                                     compiler, the bootstrap prefix
+  ./hcc                            <- the padding subject, src/**/*.c,
+                                     src/**/*.h, the CMakeLists, and
+                                     src/cmake/*.cmake
+
+  Measured: a second `make` on an unchanged tree performed 0 compile
+  steps and rebuilt neither the padding object nor ./hcc.
+
+FAIL-CLOSED BEHAVIOUR (no silent fallbacks -- ACT section 17)
+  missing object            -> configure error (object is required)     NO
+  missing object            -> compile legacy CalcPadding instead      NO
+  failed compiler           -> accept cached object                     NO
+  missing bootstrap         -> use random system hcc                    NO
+  wrong SHA                 -> recompute the expected SHA              NO
+  failed object compilation -> continue linking                         NO
+  Each of these was exercised as a negative control; see c3/.
+
+THE PINNED RUNTIME PRODUCER (D5)
+  The runtime producer's identity is a frozen contract of a closed
+  predecessor. Rather than weaken the check or re-pin it, the C2
+  implementation makes the producer REPRODUCIBLE from a clean tree:
+    1. materialize the pinned commit as a detached git worktree
+    2. drive the pinned tree's OWN build graph with a header-only prefix
+    3. compare the produced sha256 against the FROZEN constant
+    4. fail closed on mismatch; install only on a match
+  Measured: the produced producer's sha256 EQUALS the frozen constant
+  exactly (3b4474213efabcda30eb2d0c0610c6e23793f876896c8e21c5e18024b1ab40f6).
+
+  The pinned tree is used because the CURRENT tree's stage0 has a
+  PRE-EXISTING compiler defect (the `@@N` asm local-label rendering
+  regression) that prevents it from producing the runtime archive. That
+  defect is PRE-EXISTING and separately owned; it is NOT in this ACT's
+  mutation scope. See c1/c1-provenance-mechanism.txt measurements 5 and 9.
+
+  The producer graph does NOT depend on the current tree's
+  test-prefix-install, so the graph stays acyclic.
+
+SUPPORTED ENTRY POINTS (D6)
+  make                      -> production-hcc
+  make all                  -> production-hcc
+  make llvm-all             -> LLVM-enabled build in build/llvm
+  make parser-padding-component -> the PolyC padding subject
+  make test-prefix-install  -> the canonical runtime install
+  make gate-push            -> unchanged; see the gate-push script
+
+CMAKE POLICY SELECTED (D6)
+  The "PARTICIPATE IN THE GENERATED-OBJECT GRAPH" policy is selected.
+  A direct standalone cmake configure with delegation ON and
+  -DPARSER_PADDING_PRODUCER=<stage0 hcc> participates in the
+  generated-object graph: `make -C <build> hcc` produces the object
+  itself. A standalone configure WITHOUT a producer and WITHOUT a
+  pre-existing object fails explicitly with an actionable prerequisite
+  message. It NEVER silently links the legacy implementation.

@@ -1,0 +1,47 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01
+PHASE=C2
+SUBJECT=.github/workflows/release.yml -- corrected bootstrap ordering
+
+WHAT CHANGED
+  1. "Build native hcc" is unchanged in its COMMAND
+       make C_COMPILER=cc BUILD_TYPE=Release INSTALL_PREFIX=/usr/local
+     but it now performs the FULL acyclic bootstrap chain, because the
+     Makefile's `all` target drives stage0 -> prefix -> padding subject
+     -> production hcc. The workflow therefore no longer depends on any
+     ignored binary surviving actions/checkout: a fresh checkout has no
+     ./hcc, no build/ and no bootstrap artifacts, and `make` produces
+     all of them.
+
+  2. "Build hcc for target" (the macOS x86_64 cross leg) now:
+       a. produces its OWN x86_64 parser-padding subject from the SAME
+          PolyC source, using the native compiler's cross-target backend
+          (--target=x86_64-apple-darwin), and
+       b. configures the x86_64 compiler with
+            -DHCC_USE_SELFHOST_PARSER_PADDING=ON
+            -DPARSER_PADDING_OBJECT=<the x86_64 subject>
+            -DPARSER_PADDING_SOURCE=<the PolyC subject>
+            -DPARSER_PADDING_PREFIX=<a header-only prefix>
+       c. ASSERTS the object's architecture:
+            file ./build/parser-padding-subject.x86_64.o | grep -q x86_64
+     The native ARM64 subject is NOT reused for the cross leg: it is
+     architecture-incompatible, and reusing it would be a silently
+     wrong artifact.
+
+  3. No existing release job, smoke test, architecture leg, or
+     archive-generation check was disabled, removed, or weakened. The
+     matrix (linux x86_64, linux aarch64, macos aarch64, macos x86_64
+     cross) and the packaging contract are unchanged.
+
+WHY THE CROSS LEG NEEDS ITS OWN SUBJECT (B4)
+  The production compiler links the parser-padding object. A Mach-O
+  object of the wrong architecture cannot be linked into the target
+  binary; and re-deriving it from the native ARM64 subject would be
+  wrong even if the link succeeded. The subject is therefore produced
+  FOR the target architecture from the same PolyC source.
+
+LIMITATION CARRIED (NOT a new defect)
+  The Linux legs do not use the cmake install seam, so they are not
+  blocked by the pre-existing macOS-only runtime port
+  (src/CMakeLists.txt: "Tooling runtime host is macOS-only in this
+  build."; owned by ACT-POLYC-TOOLING-LINUX-PORT01). That limitation is
+  classified SEPARATELY and is not declared resolved by this ACT.

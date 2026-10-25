@@ -1,0 +1,66 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01
+PHASE=C2
+SUBJECT=src/CMakeLists.txt -- the repaired build seams
+
+CHANGE 1 -- parser-padding object becomes a DECLARED build artifact
+  BEFORE: configure-time `if(NOT EXISTS ${PARSER_PADDING_OBJECT}) FATAL_ERROR`.
+          Nothing in the graph ever scheduled the object's production, so
+          on a clean checkout the configure always aborted.
+  AFTER:  two explicit policies, selected by PARSER_PADDING_PRODUCER:
+            * PARSER_PADDING_PRODUCER set
+              -> add_custom_command(OUTPUT/DEPENDS) schedules production
+                 from the current source tree; add_custom_target +
+                 add_dependencies(hcc ...) makes it a real edge of the
+                 hcc target's dependency graph.
+            * PARSER_PADDING_PRODUCER unset
+              -> the historical contract: the object must already exist.
+  In BOTH policies the object is REQUIRED. There is no configuration in
+  which the production compiler links the legacy CalcPadding.
+  A missing producer is a hard configure error naming `make bootstrap-stage0`.
+
+CHANGE 2 -- the object is VERIFIED, not merely produced
+  src/cmake/VerifyParserPaddingObject.cmake is invoked as a build step. It
+  checks the object exists, is non-empty, and exports
+  _BootstrapCalcPadding (via the platform nm). Any failure is a hard
+  build error. A missing nm is itself a hard error, never a pass.
+
+CHANGE 3 -- the strict runtime-producer check MOVED to the point of use
+  BEFORE: src/CMakeLists.txt:666-678 aborted EVERY configuration,
+          including compiler-only ones, when build/hcc-bootstrap04 was
+          absent. The producer is itself produced by a chain that runs a
+          cmake configure, so the gate forbade the chain that produces
+          the gate's input.
+  AFTER:  the check lives in src/cmake/RequireRuntimeProducer.cmake and
+          is invoked from BOTH consumers of the runtime producer:
+            * the `unit-test` custom target
+            * the libtos install seam (install(CODE ...))
+          The check is UNCHANGED in strength: the producer must exist and
+          must match the pinned identity HCC_BOOTSTRAP_EXPECTED_SHA. Only
+          its TRIGGER moved. A configuration that merely builds the
+          compiler no longer needs the producer.
+  Measured: installing without a qualified producer aborts with
+    "libtos install seam: runtime producer provenance check failed."
+  and no runtime archive is installed (see c3/n05-wrong-producer.txt).
+
+CHANGE 4 -- overridable runtime output directory
+  BEFORE: set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ../)  -- unconditional
+          normal variable; every runtime artifact went to the repo root,
+          which made an isolated stage0 build impossible.
+  AFTER:  HCC_RUNTIME_OUTPUT_DIRECTORY, if defined and non-empty, selects
+          the output directory; otherwise the default stays ../ so every
+          existing consumer is unaffected.
+  NOTE: the cache value is read explicitly. A plain
+  -DHCC_RUNTIME_OUTPUT_DIRECTORY=... on the command line would be a CACHE
+  variable and the unconditional normal `set(...)` would win -- exactly
+  the failure mode the C1 design warned about.
+
+PRESERVED
+  * the default production delegation is ON (HCC_USE_SELFHOST_PARSER_PADDING
+    default ON), unchanged;
+  * the Linux runtime port is still explicitly unsupported
+    ("Tooling runtime host is macOS-only in this build."), unchanged;
+  * the install seam's fresh-output invariant (removal of stale all.o
+    before the producer runs) is unchanged;
+  * no new dependency, no Python, no non-PolyC tooling.
+
+COMPILER_ONLY_CONFIG_REQUIRES_BOOTSTRAP04=NO  (measured; see c3)

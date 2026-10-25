@@ -1,0 +1,51 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01
+PHASE=C2
+SUBJECT=PolyC parser-padding object production (D3)
+
+COMMAND (from a clean checkout)
+  make C_COMPILER=cc BUILD_TYPE=Release
+
+PRODUCER INVOCATION (verbatim from the build log)
+  ./build/host-stage0/hcc \
+      --install-dir=<abs>/build/bootstrap-prefix \
+      -c tools/bootstrap/selfhost-parser-padding.HC \
+      -o build/parser-padding-subject.o
+
+MEASURED RESULT
+  PADDING_OBJECT_BUILD_RC=0
+  path   = build/parser-padding-subject.o
+  size   = 744 bytes
+  arch   = Mach-O 64-bit object arm64
+  sha256 = 187a4de9465e8dbe3c640484b05540daaad4a3267dd1543a169e3c304b02d5b1
+
+GENERATION PROVENANCE
+  The sha256 above is IDENTICAL to the value frozen by the closed
+  predecessor ACT-POLYC-SELFHOST-PARSER-PADDING01 and recorded in
+  docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-PADDING01.md:247.
+  This confirms the object is produced from the CURRENT source tree and
+  that the production artifact is byte-identical to the qualified one.
+
+  It also proves the object was NOT copied from an older build: the
+  clean checkout contained no build/ directory at all
+  (BUILD_DIR_ABSENT / HCC_ABSENT measured before the build), and the
+  object was produced by the stage0 compiler in this very run.
+
+SYMBOL VERIFICATION
+  $ nm build/parser-padding-subject.o | grep _BootstrapCalcPadding
+    0000000000000000 T _BootstrapCalcPadding
+  PARSER_PADDING_SYMBOL=_BootstrapCalcPadding present=yes
+
+ARCHITECTURE VERIFICATION
+  PARSER_PADDING_ARCH_CHECK=PASS arch=arm64 target=arm64
+  The comparison is made against the object's OWN Mach-O header metadata
+  (via `file`), never against the file name. A fat/universal object is
+  rejected outright, and an object whose architecture cannot be
+  determined is rejected rather than accepted.
+
+FAIL-CLOSED PRODUCTION
+  The production compiler ALSO verifies the object at link time through
+  src/cmake/VerifyParserPaddingObject.cmake, which checks that the object
+  exists, is non-empty, and exports _BootstrapCalcPadding. A missing,
+  empty, or symbol-less object aborts the build.
+
+PADDING_OBJECT_FROM_CURRENT_SOURCE=PASS

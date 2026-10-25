@@ -6,7 +6,31 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_C_STANDARD_REQUIRED True)
 set(CMAKE_C_STANDARD 11)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ../)
+
+# ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01 C2 IMPL:
+# The runtime output directory is now OVERRIDABLE.
+#
+# The historical behaviour was an unconditional
+#     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ../)
+# which sent EVERY runtime artifact (hcc, hcc-bootstrap02/03/04) to the
+# repository root. That made an isolated stage0 build impossible: the
+# stage0 compiler would overwrite the production ./hcc.
+#
+# The default is UNCHANGED (../), so every existing consumer -- including
+# the release workflow, which copies ./hcc -- keeps working exactly as
+# before. A build that wants an isolated output directory now sets
+# HCC_RUNTIME_OUTPUT_DIRECTORY instead of fighting the normal variable.
+#
+# NOTE: a plain -DHCC_RUNTIME_OUTPUT_DIRECTORY=... on the command line
+# would be a CACHE variable, and the unconditional `set(...)` below is a
+# NORMAL variable, so the normal variable would win. We therefore read
+# the cache value explicitly below. This is the failure mode the C1
+# design warned about.
+if (DEFINED HCC_RUNTIME_OUTPUT_DIRECTORY AND NOT "${HCC_RUNTIME_OUTPUT_DIRECTORY}" STREQUAL "")
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${HCC_RUNTIME_OUTPUT_DIRECTORY}")
+else()
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ../)
+endif()
 
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build (Debug or Release)" FORCE)
@@ -212,12 +236,92 @@ if (HCC_USE_SELFHOST_PARSER_PADDING)
     if (NOT PARSER_PADDING_OBJECT)
         set(PARSER_PADDING_OBJECT "${CMAKE_SOURCE_DIR}/../build/parser-padding-subject.o")
     endif()
-    if (NOT EXISTS "${PARSER_PADDING_OBJECT}")
+    # ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01 C2 IMPL:
+    # The padding object is now a DECLARED build artifact of the hcc
+    # target, not an accidental warm-tree assumption.
+    #
+    # The previous contract was a configure-time `if(NOT EXISTS)` probe.
+    # That check could only ever observe an object a human had produced
+    # by hand, because nothing in the build graph ever SCHEDULED the
+    # object's production. On a clean checkout the configure therefore
+    # aborted before the compiler could ever be built -- the cycle the
+    # ACT was opened to remove.
+    #
+    # The repair keeps the fail-closed property and moves the failure
+    # from "the object does not exist yet" to "the object could not be
+    # produced". The two cases are distinguished by an explicit
+    # PARSER_PADDING_PRODUCER variable:
+    #
+    #   * PARSER_PADDING_PRODUCER set -> CMake schedules production of
+    #     the object itself via add_custom_command(OUTPUT ... DEPENDS ...),
+    #     so `make -C build hcc` builds it from the current source tree.
+    #     A missing producer is a hard configure error, never a silent
+    #     fallback to the legacy C implementation.
+    #
+    #   * PARSER_PADDING_PRODUCER unset -> the object must already
+    #     exist (the historical contract). A missing object is a hard
+    #     configure error naming the exact command to run.
+    #
+    # In BOTH cases the object is REQUIRED. There is no path on which
+    # the production compiler silently links the legacy CalcPadding.
+    if (PARSER_PADDING_PRODUCER)
+        # The producer is the stage0 compiler that will compile the
+        # PolyC padding subject. It must exist before we can schedule.
+        if (NOT EXISTS "${PARSER_PADDING_PRODUCER}")
+            message(FATAL_ERROR
+                "ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01: "
+                "PARSER_PADDING_PRODUCER=${PARSER_PADDING_PRODUCER} does not exist. "
+                "The parser-padding object cannot be produced without it. "
+                "Run 'make bootstrap-stage0' first.")
+        endif()
+        if (NOT EXISTS "${PARSER_PADDING_SOURCE}")
+            message(FATAL_ERROR
+                "ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01: "
+                "PARSER_PADDING_SOURCE=${PARSER_PADDING_SOURCE} does not exist. "
+                "The parser-padding object cannot be produced from a missing subject.")
+        endif()
+        get_filename_component(_pp_source_dir "${PARSER_PADDING_SOURCE}" DIRECTORY)
+        get_filename_component(_pp_source_name "${PARSER_PADDING_SOURCE}" NAME)
+        get_filename_component(_pp_object_dir "${PARSER_PADDING_OBJECT}" DIRECTORY)
+        # The bootstrap prefix holds the canonical headers the stage0
+        # compiler resolves against. It is header-only: no runtime
+        # archive is required to compile the padding subject.
+        add_custom_command(
+            OUTPUT "${PARSER_PADDING_OBJECT}"
+            COMMAND "${CMAKE_COMMAND}" -E make_directory "${_pp_object_dir}"
+            COMMAND "${PARSER_PADDING_PRODUCER}"
+                    --install-dir=${PARSER_PADDING_PREFIX}
+                    -c "${PARSER_PADDING_SOURCE}"
+                    -o "${PARSER_PADDING_OBJECT}"
+            DEPENDS "${PARSER_PADDING_SOURCE}" "${PARSER_PADDING_PRODUCER}"
+            WORKING_DIRECTORY "${_pp_source_dir}"
+            COMMENT "ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01: producing parser-padding subject ${PARSER_PADDING_OBJECT}"
+            VERBATIM)
+        # Fail closed if the producer could not write the object: a
+        # successful exit from the producer with a missing output, an
+        # empty output, or an output without the exported symbol is a
+        # hard error, never a silent legacy fallback.
+        add_custom_command(
+            OUTPUT "${PARSER_PADDING_OBJECT}.verified"
+            COMMAND "${CMAKE_COMMAND}"
+                    -DPARSER_PADDING_OBJECT=${PARSER_PADDING_OBJECT}
+                    -P "${CMAKE_SOURCE_DIR}/cmake/VerifyParserPaddingObject.cmake"
+            COMMAND "${CMAKE_COMMAND}" -E touch "${PARSER_PADDING_OBJECT}.verified"
+            DEPENDS "${PARSER_PADDING_OBJECT}"
+            COMMENT "ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01: verifying parser-padding subject"
+            VERBATIM)
+        add_custom_target(hcc-parser-padding-subject
+            DEPENDS "${PARSER_PADDING_OBJECT}.verified")
+        add_dependencies(hcc hcc-parser-padding-subject)
+        message(STATUS "ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01: production hcc SCHEDULES parser-padding subject production: ${PARSER_PADDING_OBJECT}")
+    elseif (NOT EXISTS "${PARSER_PADDING_OBJECT}")
         message(FATAL_ERROR
             "ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01: required self-host "
             "parser-padding component missing at ${PARSER_PADDING_OBJECT}. "
             "Build it first with stage0 hcc: "
-            "./hcc --install-dir=<prefix> -c tools/bootstrap/selfhost-parser-padding.HC -o ${PARSER_PADDING_OBJECT}")
+            "./hcc --install-dir=<prefix> -c tools/bootstrap/selfhost-parser-padding.HC -o ${PARSER_PADDING_OBJECT}. "
+            "Or configure with -DPARSER_PADDING_PRODUCER=<stage0 hcc> to have the "
+            "build graph produce it.")
     endif()
     target_compile_definitions(hcc PRIVATE HCC_USE_SELFHOST_PARSER_PADDING)
     target_link_libraries(hcc ${PARSER_PADDING_OBJECT})
@@ -663,23 +767,48 @@ endif()
 # This is the cmake analogue of the Makefile lib-tos provenance
 # contract (see Makefile lines around LIBTOS_HCC). Both seams use
 # the same bootstrap-or-fail policy.
+# ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01 C2 IMPL:
+# The strict runtime-producer check has MOVED from global configure time
+# to the points where the runtime producer is actually REQUIRED.
+#
+# Why it had to move (the B2 blocker):
+#   The producer build/hcc-bootstrap04 is itself produced by the chain
+#       bootstrap04-stage3 -> bootstrap03-stage2 -> bootstrap02-stage1
+#                          -> bootstrap02-component-build
+#                          -> test-prefix-install -> cmake configure
+#   and the configure-time gate demanded the very artifact that the
+#   chain was supposed to produce. A compiler-only configuration was
+#   therefore impossible from a clean tree, which is a bootstrap-graph
+#   defect, not a runtime defect.
+#
+# What did NOT change (F5 -- the check must not disappear):
+#   The provenance contract is still fail-closed and is still enforced
+#   with the SAME pinned identity. There are exactly two consumers of
+#   the runtime producer, and BOTH now verify it at the moment of use:
+#
+#     * the `unit-test` custom target  (test harness compilation)
+#     * the libtos install seam         (runtime archive production)
+#
+#   A configuration that merely BUILDS the compiler never needs the
+#   producer and is therefore no longer blocked by it.
 set(HCC_BOOTSTRAP "${CMAKE_SOURCE_DIR}/../build/hcc-bootstrap04")
-if (EXISTS "${HCC_BOOTSTRAP}")
-    set(HCC_PATH "${HCC_BOOTSTRAP}")
-else()
-    # Provenance-strict: refuse to fall through to the broken fresh hcc.
-    # Operators must build the bootstrap chain before installing.
-    message(FATAL_ERROR
-        "libtos install seam: build/hcc-bootstrap04 not found at "
-        "${HCC_BOOTSTRAP}. The current ./hcc at HEAD regressed on "
-        "ARM64 inline-asm mnemonics and cannot produce a complete "
-        "all.o. Build the bootstrap chain first via "
-        "'make bootstrap04-component-build', then re-run cmake.")
-endif()
+
+# Fail-closed verification of the runtime producer, factored out so that
+# the unit-test target and the install seam use the SAME check.
+include(${CMAKE_SOURCE_DIR}/cmake/RequireRuntimeProducer.cmake)
+
+# The producer is only resolved at the point of use. The path is still
+# recorded so the install seam and the unit-test target address the
+# SAME artifact.
+set(HCC_PATH "${HCC_BOOTSTRAP}")
 
 # Command for unit tests
 add_custom_target(unit-test
     COMMAND ${CMAKE_COMMAND} -E echo "Running unit tests..."
+    COMMAND ${CMAKE_COMMAND}
+            -DHCC_BOOTSTRAP=${HCC_BOOTSTRAP}
+            -DHCC_BOOTSTRAP_EXPECTED_SHA=${HCC_BOOTSTRAP_EXPECTED_SHA}
+            -P ${CMAKE_SOURCE_DIR}/cmake/RequireRuntimeProducer.cmake
     COMMAND ${HCC_PATH} -o test-runner ${CMAKE_SOURCE_DIR}/tests/run.HC
     COMMAND ${CMAKE_SOURCE_DIR}/tests/test-runner
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/tests
@@ -741,6 +870,21 @@ install(FILES ${CMAKE_SOURCE_DIR}/holyc-lib/tos.HH DESTINATION ${CMAKE_INSTALL_P
 if (APPLE)
     set(LIBTOS_BUILD_DIR "${CMAKE_BINARY_DIR}/libtos-build")
     file(MAKE_DIRECTORY "${LIBTOS_BUILD_DIR}")
+    # ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01 C2 IMPL:
+    # The provenance-strict runtime producer check now runs AT THE POINT
+    # WHERE THE RUNTIME IS ACTUALLY PRODUCED, not at global configure
+    # time. The check itself is UNCHANGED in strength: the producer must
+    # exist and must match the pinned identity. Only its TRIGGER moved.
+    #
+    # If the install step executes without a qualified bootstrap04, this
+    # FATAL_ERROR aborts the install. It never falls back to stage0, to
+    # the host compiler, or to any other producer.
+    install(CODE "
+        set(HCC_BOOTSTRAP \"${HCC_BOOTSTRAP}\")
+        set(HCC_BOOTSTRAP_EXPECTED_SHA \"${HCC_BOOTSTRAP_EXPECTED_SHA}\")
+        include(\"${CMAKE_SOURCE_DIR}/cmake/RequireRuntimeProducer.cmake\")
+        hcc_require_runtime_producer()
+    ")
     # CORRECTION05: Fresh-output invariant.
     # The producer (hcc -lib) is allowed to exit non-zero (its own dylib
     # link attempt fails on _Errno pre-shim); the install step then

@@ -1,0 +1,89 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01
+PHASE=C2
+SUBJECT=Dependency graph AFTER the C2 repair (measured, not asserted)
+
+=== THE GRAPH (acyclic) ======================================================
+  host C compiler
+       |
+       v
+  [S0] bootstrap-stage0            build/host-stage0/hcc
+       |   produced by: cmake -S src -B build/host-stage0/build
+       |   HCC_USE_SELFHOST_PARSER_PADDING=OFF   (LEGACY control)
+       |   HCC_RUNTIME_OUTPUT_DIRECTORY=build/host-stage0  (ISOLATED)
+       |   PREV: (nothing)  -- the only root
+       v
+  [P]  bootstrap-prefix            build/bootstrap-prefix/include/tos.HH
+       |   produced by: cp src/holyc-lib/tos.HH
+       |   header-only. NO runtime archive. NO global fallback.
+       |   PREV: src/holyc-lib/tos.HH
+       v
+  [PP] parser-padding-subject      build/parser-padding-subject.o
+       |   produced by: build/host-stage0/hcc -c <src> -o <obj>
+       |   verified: symbol _BootstrapCalcPadding present
+       |   verified: object architecture == target architecture
+       |   PREV: tools/bootstrap/selfhost-parser-padding.HC
+       |         build/host-stage0/hcc
+       |         build/bootstrap-prefix/include/tos.HH
+       v
+  [H]  production hcc              ./hcc
+       |   CMake: HCC_USE_SELFHOST_PARSER_PADDING=ON
+       |   CMake schedules PP production via add_custom_command(OUTPUT/DEPENDS)
+       |   PREV: build/parser-padding-subject.o, src/**.c, src/**.h,
+       |         src/CMakeLists.txt, src/cmake/*.cmake
+       v
+  [RP] runtime-producer            build/hcc-bootstrap04
+       |   produced by: pinned-producer chain (see below)
+       |   verified: sha256 == FROZEN LIBTOS_BOOTSTRAP_EXPECTED_SHA
+       |   PREV: (independent of the current tree's build graph)
+       v
+  [I]  canonical runtime install   build/test-prefix/lib/libtos.{a,dylib}
+       |   PREV: production hcc, runtime-producer
+
+=== THE RUNTIME-PRODUCER SUBGRAPH (independent) ============================
+  git worktree add --detach build/pinned-producer/tree <PINNED_COMMIT>
+       |
+       v
+  pinned stage0 -> stage1 -> stage2 -> stage3 (hcc-bootstrap04)
+       |
+       v
+  sha256 check against FROZEN constant -> build/hcc-bootstrap04
+
+  MEASURED: the pinned chain reproduces the pinned identity EXACTLY:
+    build/hcc-bootstrap04 sha256 =
+      3b4474213efabcda30eb2d0c0610c6e23793f876896c8e21c5e18024b1ab40f6
+    == LIBTOS_BOOTSTRAP_EXPECTED_SHA.   (RUNTIME_PRODUCER_PROVENANCE=PASS)
+
+=== CYCLES REMOVED ==========================================================
+  CYCLE-1 (the primary blocker):
+    make all -> cmake configure -> HCC_USE_SELFHOST_PARSER_PADDING requires
+      build/parser-padding-subject.o
+    build/parser-padding-subject.o -> requires ./hcc
+    ./hcc -> produced by `make all`
+    => RESOLVED. PP is produced by the ISOLATED stage0 (S0), which does not
+       depend on PP. S0 -> P -> PP -> H is a strict order.
+
+  CYCLE-2 (the runtime-install blocker):
+    build/hcc-bootstrap04 -> ... -> test-prefix-install -> cmake configure
+      -> HCC_BOOTSTRAP requires build/hcc-bootstrap04
+    => RESOLVED. The strict producer check MOVED from global configure time
+       to the point of use (install seam + unit-test target). The producer
+       itself is now materialized from the pinned tree, independently of the
+       current tree's build graph.
+
+BOOTSTRAP_GRAPH_ACYCLIC=YES
+  Measured by: `make -n all` emits the stages in strict order
+  (prefix -> padding subject -> production cmake configure) with no target
+  appearing as both a producer and a consumer of itself.
+
+=== MEASURED BUILD-GRAPH EVIDENCE ==========================================
+  $ make -n all            (from a clean tree)
+    rm -rf ./build/bootstrap-prefix
+    mkdir -p ./build/bootstrap-prefix/include
+    cp src/holyc-lib/tos.HH ./build/bootstrap-prefix/include/tos.HH
+    rm -f build/parser-padding-subject.o
+    ./build/host-stage0/hcc --install-dir=.../build/bootstrap-prefix \
+        -c tools/bootstrap/selfhost-parser-padding.HC -o build/parser-padding-subject.o
+    <symbol check> <architecture check>
+    cmake -S ./src -B ./build ... -DHCC_USE_SELFHOST_PARSER_PADDING=ON
+        -DPARSER_PADDING_PRODUCER=.../build/host-stage0/hcc ...
+    make -C ./build -j2

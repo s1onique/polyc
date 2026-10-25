@@ -1,0 +1,44 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01
+PHASE=C2
+SUBJECT=Isolated legacy stage0 compiler (D1)
+
+ISOLATION
+  A detached git worktree at /tmp/polyc-p01v2, created from the repository
+  with the C2 patch applied. No artifact from the developer's working tree
+  was visible to the build.
+
+COMMAND
+  make clean
+  make C_COMPILER=cc BUILD_TYPE=Release
+
+RESULT
+  STAGE0_BUILD_RC=0
+  BOOTSTRAP_STAGE0_BINARY=./build/host-stage0/hcc
+
+MEASURED ARTIFACT
+  path   = build/host-stage0/hcc
+  size   = 741008 bytes
+  arch   = Mach-O 64-bit executable arm64
+  sha256 = (recorded in architecture-provenance.tsv)
+
+ISOLATION PROOF (AC09)
+  The stage0 compiler is built with
+    -DHCC_USE_SELFHOST_PARSER_PADDING=OFF      (legacy control)
+    -DHCC_RUNTIME_OUTPUT_DIRECTORY=<abs>/build/host-stage0
+  and the production binary is built by a SEPARATE cmake tree whose
+  runtime output directory is the repository root.
+
+  Measured after a full build:
+    build/host-stage0/hcc   exists, 741008 bytes
+    ./hcc                   exists, 741248 bytes
+  The two are DISTINCT files with different sizes, so the stage0 build
+  did NOT overwrite the production binary.
+
+  Measured symbol separation:
+    nm build/host-stage0/hcc | grep _BootstrapCalcPadding   -> 0 matches
+    nm ./hcc                 | grep _BootstrapCalcPadding   -> 1 match
+  The stage0 compiler carries the LEGACY CalcPadding and does NOT carry
+  the PolyC one. That is exactly the frozen D1 requirement: stage0 is
+  the explicit legacy control, never the production authority.
+
+STAGE0_FROM_CLEAN_TREE=PASS

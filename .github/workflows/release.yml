@@ -77,6 +77,13 @@ jobs:
 
       # A native hcc is always needed: it is the compiler that has to
       # RUN to turn holyc-lib/*.HC into target assembly.
+      #
+      # ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01 C2 IMPL:
+      # `make` now drives the full acyclic bootstrap chain (stage0 ->
+      # bootstrap prefix -> parser-padding subject -> production hcc), so
+      # the production compiler is built with the PolyC parser-padding
+      # authority from a clean checkout, with no ignored binary assumed
+      # to be present after actions/checkout.
       - name: Build native hcc
         run: |
           make C_COMPILER=cc BUILD_TYPE=Release INSTALL_PREFIX=/usr/local
@@ -85,15 +92,38 @@ jobs:
       # For the cross leg the shipped binary is a second, x86_64 build.
       # CMAKE_RUNTIME_OUTPUT_DIRECTORY writes to the repo root, so this
       # overwrites ./hcc - hence the ./hcc-native copy above.
+      #
+      # ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01 C2 IMPL:
+      # The cross build MUST link an x86_64 parser-padding subject. The
+      # native ARM64 subject is NOT architecture-compatible, so the cross
+      # leg produces its OWN x86_64 subject from the same PolyC source
+      # and links that. Reusing the native subject would produce a
+      # link failure (fail-closed) rather than a silently wrong binary.
       - name: Build hcc for target
         if: matrix.cross
         run: |
+          # Produce an x86_64 parser-padding subject with the native
+          # compiler's cross-target backend, then build the x86_64
+          # compiler against it.
+          mkdir -p ./build/x86_64-padding-prefix/include
+          cp ./src/holyc-lib/tos.HH ./build/x86_64-padding-prefix/include/tos.HH
+          ./hcc-native \
+            --target=${{ matrix.triple }} \
+            --install-dir="$PWD/build/x86_64-padding-prefix" \
+            -c ./tools/bootstrap/selfhost-parser-padding.HC \
+            -o ./build/parser-padding-subject.x86_64.o
+          test -f ./build/parser-padding-subject.x86_64.o
+          file ./build/parser-padding-subject.x86_64.o | grep -q x86_64
           cmake -S ./src -B ./build-x86_64 -G 'Unix Makefiles' \
             -DCMAKE_C_COMPILER=cc \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_PREFIX=/usr/local \
             -DCMAKE_OSX_ARCHITECTURES=x86_64 \
-            -DHCC_ENABLE_JIT=on
+            -DHCC_ENABLE_JIT=on \
+            -DHCC_USE_SELFHOST_PARSER_PADDING=ON \
+            -DPARSER_PADDING_OBJECT="$PWD/build/parser-padding-subject.x86_64.o" \
+            -DPARSER_PADDING_SOURCE="$PWD/tools/bootstrap/selfhost-parser-padding.HC" \
+            -DPARSER_PADDING_PREFIX="$PWD/build/x86_64-padding-prefix"
           make -C ./build-x86_64 -j3
 
       # Deliberately NOT `hcc -lib tos`: hccLibInit picks the library

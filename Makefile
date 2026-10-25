@@ -12,7 +12,7 @@ HCC_ENABLE_LLVM ?= OFF
 
 default: all
 
-.PHONY: all formal-dafny gate-fast gate-push install-hooks static-function-linkage-test factory-closure-status-test factory-closure-status-test-binary llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test selfhost-component-binary selfhost-component-build selfhost-component-test selfhost-component-selftest selfhost-registry-validate factory-halt-classification-binary factory-halt-classification-selftest bootstrap06-component-build bootstrap06-operator-classify-oracle bootstrap06-direct-differential bootstrap06-component-stage1 bootstrap06-component-stage2 bootstrap06-component-stage3 bootstrap06-lexer-seam-stage1 lexer07-component-build lexer07-scalar-literal-oracle lexer07-direct-differential lexer07-component-stage1 lexer07-component-stage2 lexer07-component-stage3 lexer07-lexer-seam-stage0 lexer07-lexer-seam-stage1 lexer07-lexer-seam-stage2 lexer07-lexer-seam-stage3 lexer07-lexer-seam-stage2-from-objs lexer07-lexer-seam-stage3-from-objs lexer07-lexer-seam-all-stages lexer07-fixture-inventory lexer07-broad-corpus-4-stage lexer07-correction02-all lexer07-baseline-authority-verify lexer08-component-build lexer08-trivia-oracle lexer08-direct-differential lexer08-fixture-inventory lexer08-broad-corpus-4-stage lexer08-lexer-seam-stage0 lexer08-lexer-seam-stage1 lexer08-lexer-seam-all-stages lexer08-trivia-fixedpoint-g0 lexer08-trivia-fixedpoint-g1 lexer08-trivia-fixedpoint-g2 lexer08-trivia-fixedpoint-g3 lexer08-trivia-fixedpoint-build lexer08-trivia-fixedpoint-verify lexer08-trivia-fixedpoint lexer09-link-component-build lexer09-link-oracle-build lexer09-direct-differential lexer09-lexer-seam-stage0 lexer09-lexer-seam-stage1 lexer09-lexer-seam-all-stages lexer09-link-fixedpoint-g0 lexer09-link-fixedpoint-g1 lexer09-link-fixedpoint-g2 lexer09-link-fixedpoint-g3 lexer09-link-fixedpoint-build lexer09-link-fixedpoint-verify lexer09-link-fixedpoint lexer09-link-negative-control lexer09-link-determinism lexer09-link-broad-corpus-4-stage lib-tos runtime-contract-test libtos-n02-isolate parser-padding-component parser-padding-oracle parser-padding-differential parser-padding-gen-matrix-fixture parser-padding-gen-large-fixture parser-padding-fixedpoint-g0 parser-padding-fixedpoint-g1 parser-padding-fixedpoint-g2 parser-padding-fixedpoint-g3 parser-padding-fixedpoint-build parser-padding-fixedpoint-verify parser-padding-fixedpoint parser-padding-fixedpoint-negative-control parser-padding-mutation-m1 parser-padding-mutation-m2 parser-padding-mutation-m3 parser-padding-mutation-m4 parser-padding-mutation-test parser-padding-test parser-padding-algebraic-invariants parser-padding-is-terminal-stub parser-padding-legacy parser-padding-legacy-server parser-padding-legacy-verify
+.PHONY: all formal-dafny gate-fast gate-push install-hooks static-function-linkage-test factory-closure-status-test factory-closure-status-test-binary llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap-stage0 bootstrap-prefix parser-padding-subject production-hcc runtime-producer bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test selfhost-component-binary selfhost-component-build selfhost-component-test selfhost-component-selftest selfhost-registry-validate factory-halt-classification-binary factory-halt-classification-selftest bootstrap06-component-build bootstrap06-operator-classify-oracle bootstrap06-direct-differential bootstrap06-component-stage1 bootstrap06-component-stage2 bootstrap06-component-stage3 bootstrap06-lexer-seam-stage1 lexer07-component-build lexer07-scalar-literal-oracle lexer07-direct-differential lexer07-component-stage1 lexer07-component-stage2 lexer07-component-stage3 lexer07-lexer-seam-stage0 lexer07-lexer-seam-stage1 lexer07-lexer-seam-stage2 lexer07-lexer-seam-stage3 lexer07-lexer-seam-stage2-from-objs lexer07-lexer-seam-stage3-from-objs lexer07-lexer-seam-all-stages lexer07-fixture-inventory lexer07-broad-corpus-4-stage lexer07-correction02-all lexer07-baseline-authority-verify lexer08-component-build lexer08-trivia-oracle lexer08-direct-differential lexer08-fixture-inventory lexer08-broad-corpus-4-stage lexer08-lexer-seam-stage0 lexer08-lexer-seam-stage1 lexer08-lexer-seam-all-stages lexer08-trivia-fixedpoint-g0 lexer08-trivia-fixedpoint-g1 lexer08-trivia-fixedpoint-g2 lexer08-trivia-fixedpoint-g3 lexer08-trivia-fixedpoint-build lexer08-trivia-fixedpoint-verify lexer08-trivia-fixedpoint lexer09-link-component-build lexer09-link-oracle-build lexer09-direct-differential lexer09-lexer-seam-stage0 lexer09-lexer-seam-stage1 lexer09-lexer-seam-all-stages lexer09-link-fixedpoint-g0 lexer09-link-fixedpoint-g1 lexer09-link-fixedpoint-g2 lexer09-link-fixedpoint-g3 lexer09-link-fixedpoint-build lexer09-link-fixedpoint-verify lexer09-link-fixedpoint lexer09-link-negative-control lexer09-link-determinism lexer09-link-broad-corpus-4-stage lib-tos runtime-contract-test libtos-n02-isolate parser-padding-component parser-padding-oracle parser-padding-differential parser-padding-gen-matrix-fixture parser-padding-gen-large-fixture parser-padding-fixedpoint-g0 parser-padding-fixedpoint-g1 parser-padding-fixedpoint-g2 parser-padding-fixedpoint-g3 parser-padding-fixedpoint-build parser-padding-fixedpoint-verify parser-padding-fixedpoint parser-padding-fixedpoint-negative-control parser-padding-mutation-m1 parser-padding-mutation-m2 parser-padding-mutation-m3 parser-padding-mutation-m4 parser-padding-mutation-test parser-padding-test parser-padding-algebraic-invariants parser-padding-is-terminal-stub parser-padding-legacy parser-padding-legacy-server parser-padding-legacy-verify
 
 # To add sqlite3 support add -DHCC_LINK_SQLITE3=1 to the below like so:
 #```
@@ -24,7 +24,400 @@ default: all
 #		&& $(MAKE) -C ./build -j2
 #```
 
-all:
+# ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01 C2 IMPL.
+#
+# The canonical production build is now an ACYCLIC bootstrap chain:
+#
+#   host C compiler
+#        |
+#        v
+#   bootstrap-stage0          build/host-stage0/hcc
+#                             (legacy CalcPadding; delegation OFF)
+#        |
+#        v
+#   bootstrap-prefix          build/bootstrap-prefix/{include/tos.HH}
+#                             (header-only; NO runtime archive)
+#        |
+#        v
+#   parser-padding-subject    build/parser-padding-subject.o
+#                             (compiled from tools/bootstrap/selfhost-parser-padding.HC)
+#        |
+#        v
+#   production hcc             ./hcc
+#                             (HCC_USE_SELFHOST_PARSER_PADDING=ON)
+#
+# Every edge below is a FILE dependency, so an unchanged input does not
+# force an unnecessary rebuild. No stage is permanently phony.
+#
+# The stage0 compiler is ISOLATED in build/host-stage0/ so that building
+# it can never overwrite the production ./hcc.
+#
+# NO manual prerequisite command is required for `make all`.
+# NO ignored binary is assumed to be present.
+
+# The stage0 compiler: the legacy (C) implementation of CalcPadding.
+# Parser-padding delegation is OFF here, exactly as the frozen design
+# requires. It is built with the host C compiler only.
+BOOTSTRAP_STAGE0_DIR   = ./build/host-stage0
+BOOTSTRAP_STAGE0_BUILD = $(BOOTSTRAP_STAGE0_DIR)/build
+BOOTSTRAP_STAGE0_HCC   = $(BOOTSTRAP_STAGE0_DIR)/hcc
+
+# The header-only bootstrap prefix. It contains ONLY the canonical
+# headers the stage0 compiler resolves against. It deliberately does NOT
+# contain a runtime archive: compiling the padding subject does not need
+# one, and requiring a completed libtos installation here would
+# reintroduce the very cycle this ACT removes.
+BOOTSTRAP_PREFIX_DIR    = ./build/bootstrap-prefix
+BOOTSTRAP_PREFIX_INC    = $(BOOTSTRAP_PREFIX_DIR)/include
+
+# The parser-padding subject and its PolyC source.
+PARSER_PADDING_SRC      = tools/bootstrap/selfhost-parser-padding.HC
+PARSER_PADDING_OBJ      = ./build/parser-padding-subject.o
+
+# The stage0 compiler's own sources. A change to any of them must
+# invalidate the stage0 compiler, which in turn invalidates the
+# padding subject.
+BOOTSTRAP_STAGE0_SOURCES = $(wildcard src/*.c src/asm/*.c) $(wildcard src/*.h src/asm/*.h)
+
+all: production-hcc
+
+# The isolated legacy stage0 compiler.
+#
+# HCC_USE_SELFHOST_PARSER_PADDING=OFF is mandatory here: the stage0
+# compiler is the LEGACY control that produces the PolyC padding object.
+# It must not itself require a PolyC padding object, or the graph would
+# cycle.
+#
+# HCC_RUNTIME_OUTPUT_DIRECTORY keeps the artifact inside
+# build/host-stage0/ so the production ./hcc is never overwritten.
+$(BOOTSTRAP_STAGE0_HCC): $(BOOTSTRAP_STAGE0_SOURCES)
+	@rm -rf $(BOOTSTRAP_STAGE0_BUILD)
+	@mkdir -p $(BOOTSTRAP_STAGE0_BUILD)
+	cmake -S ./src \
+		-B $(BOOTSTRAP_STAGE0_BUILD) \
+		-G 'Unix Makefiles' \
+		-DCMAKE_C_COMPILER=$(C_COMPILER) \
+		-DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
+		-DHCC_ENABLE_JIT=on \
+		-DHCC_ENABLE_LLVM=OFF \
+		-DHCC_USE_SELFHOST_PARSER_PADDING=OFF \
+		-DHCC_RUNTIME_OUTPUT_DIRECTORY=$(CURDIR)/$(BOOTSTRAP_STAGE0_DIR)
+	$(MAKE) -C $(BOOTSTRAP_STAGE0_BUILD) hcc -j2
+	@if [ ! -x "$(BOOTSTRAP_STAGE0_HCC)" ]; then \
+		echo "bootstrap-stage0: $(BOOTSTRAP_STAGE0_HCC) not produced" >&2; \
+		exit 1; \
+	fi
+	@echo "BOOTSTRAP_STAGE0_BINARY=$(BOOTSTRAP_STAGE0_HCC)"
+
+bootstrap-stage0: $(BOOTSTRAP_STAGE0_HCC)
+
+# The header-only bootstrap prefix.
+$(BOOTSTRAP_PREFIX_INC)/tos.HH: src/holyc-lib/tos.HH
+	@rm -rf $(BOOTSTRAP_PREFIX_DIR)
+	@mkdir -p $(BOOTSTRAP_PREFIX_INC)
+	cp src/holyc-lib/tos.HH $(BOOTSTRAP_PREFIX_INC)/tos.HH
+	@echo "BOOTSTRAP_PREFIX=$(BOOTSTRAP_PREFIX_DIR)"
+
+bootstrap-prefix: $(BOOTSTRAP_PREFIX_INC)/tos.HH
+
+# ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01 C2 IMPL.
+#
+# The provenance-strict RUNTIME PRODUCER.
+#
+# The canonical runtime archive (libtos) is produced by
+# build/hcc-bootstrap04, whose identity is pinned by
+# LIBTOS_BOOTSTRAP_EXPECTED_SHA (frozen by a closed predecessor). The
+# producer must be REPRODUCIBLE from a clean tree; otherwise the install
+# seam can only be satisfied by a hand-placed binary, which is exactly
+# the warm-tree assumption this ACT removes.
+#
+# Mechanism (frozen at C1; the reproduction was MEASURED, not assumed):
+#   1. Materialize the pinned producer's source tree as a detached git
+#      worktree at build/pinned-producer/tree, checked out AT the pinned
+#      commit. The compiler embeds its own git hash into the binary's
+#      bytes (src/CMakeLists.txt), so the producer's tree MUST be a real
+#      checkout whose HEAD IS the pinned commit.
+#   2. Drive that tree's OWN build graph with a HEADER-ONLY bootstrap
+#      prefix (canonical headers only, NO runtime archive) to produce the
+#      stage chain.
+#   3. Measure the produced producer's sha256 against the FROZEN constant
+#      and FAIL CLOSED on mismatch. The expected value is NEVER
+#      recomputed from the produced artifact.
+#   4. Install the QUALIFIED producer as build/hcc-bootstrap04 for the
+#      runtime install seam.
+#
+# This chain does NOT depend on the current tree's test-prefix-install,
+# so the graph stays acyclic:
+#
+#   runtime-producer -> pinned tree (own sources) -> build/hcc-bootstrap04
+#   test-prefix-install -> runtime-producer
+#   production-hcc -> (independent of the runtime producer)
+LIBTOS_BOOTSTRAP_PINNED_COMMIT := ffee58b81ae42a4ff094618fcaa965223a40b848
+PINNED_PRODUCER_TREE   = ./build/pinned-producer/tree
+PINNED_PRODUCER_BUILD  = $(PINNED_PRODUCER_TREE)/build
+PINNED_PRODUCER_PREFIX = $(PINNED_PRODUCER_BUILD)/prefix
+PINNED_PRODUCER_INC    = $(PINNED_PRODUCER_PREFIX)/include
+
+# The component objects each stage produces for the next stage.
+# Each entry is "<source-basename>:<object-basename>". The source lives
+# in the pinned tree's tools/bootstrap/ directory.
+PP_PRODUCER_STAGE0_OBJS = \
+	bootstrap02-ident:bootstrap02-ident.o \
+	selfhost-lexer-operator-classify:bootstrap06-operator-classify.o \
+	selfhost-lexer-scalar-literal:lexer07-scalar-literal.o \
+	selfhost-lexer-trivia:lexer08-trivia.o \
+	selfhost-lexer-link:lexer09-link.o
+
+PP_PRODUCER_STAGE1_OBJS = \
+	bootstrap02-ident:bootstrap03-ident.stage1.o \
+	selfhost-lexer-operator-classify:bootstrap06-operator-classify.stage1.o \
+	selfhost-lexer-scalar-literal:lexer07-scalar-literal.stage1.o \
+	selfhost-lexer-trivia:lexer08-trivia.stage1.o \
+	selfhost-lexer-link:lexer09-link.stage1.o
+
+PP_PRODUCER_STAGE2_OBJS = \
+	bootstrap02-ident:bootstrap04-ident.stage2.o \
+	selfhost-lexer-operator-classify:bootstrap06-operator-classify.stage2.o \
+	selfhost-lexer-scalar-literal:lexer07-scalar-literal.stage2.o \
+	selfhost-lexer-trivia:lexer08-trivia.stage2.o \
+	selfhost-lexer-link:lexer09-link.stage2.o
+
+# The pinned producer's stage0 compiler (the legacy control).
+$(PINNED_PRODUCER_BUILD)/hcc:
+	@rm -rf $(PINNED_PRODUCER_TREE)
+	@mkdir -p $(PINNED_PRODUCER_TREE)
+	git worktree prune
+	git worktree add --detach $(PINNED_PRODUCER_TREE) $(LIBTOS_BOOTSTRAP_PINNED_COMMIT)
+	@mkdir -p $(PINNED_PRODUCER_BUILD)/stage0
+	cmake -S $(PINNED_PRODUCER_TREE)/src \
+		-B $(PINNED_PRODUCER_BUILD)/stage0 \
+		-G 'Unix Makefiles' \
+		-DCMAKE_C_COMPILER=/usr/bin/cc \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_INSTALL_PREFIX=/usr/local \
+		-DHCC_ENABLE_JIT=on \
+		-DHCC_ENABLE_LLVM=OFF
+	$(MAKE) -C $(PINNED_PRODUCER_BUILD)/stage0 hcc -j2
+	@if [ ! -x "$(PINNED_PRODUCER_BUILD)/hcc" ]; then \
+		echo "runtime-producer: pinned stage0 not produced" >&2; \
+		exit 1; \
+	fi
+	@echo "RUNTIME_PRODUCER_PINNED_COMMIT=$(LIBTOS_BOOTSTRAP_PINNED_COMMIT)"
+
+# The header-only prefix for the pinned producer's chain. It contains
+# ONLY the canonical headers. NO runtime archive is required: the chain
+# compiles PolyC component objects, which do not link against libtos.
+$(PINNED_PRODUCER_INC)/tos.HH: $(PINNED_PRODUCER_BUILD)/hcc
+	@mkdir -p $(PINNED_PRODUCER_INC)
+	cp $(PINNED_PRODUCER_TREE)/src/holyc-lib/tos.HH $(PINNED_PRODUCER_INC)/tos.HH
+
+# The pinned producer's stage1 compiler.
+$(PINNED_PRODUCER_BUILD)/hcc-bootstrap02: $(PINNED_PRODUCER_INC)/tos.HH
+	@for pair in $(PP_PRODUCER_STAGE0_OBJS); do \
+		src=$${pair%%:*}; obj=$${pair##*:}; \
+		$(PINNED_PRODUCER_BUILD)/hcc --install-dir=$(PINNED_PRODUCER_PREFIX) \
+			-c $(PINNED_PRODUCER_TREE)/tools/bootstrap/$$src.HC \
+			-o $(PINNED_PRODUCER_BUILD)/$$obj || exit 1; \
+	done
+	cmake -S $(PINNED_PRODUCER_TREE)/src \
+		-B $(PINNED_PRODUCER_BUILD)/hcc-bootstrap02-build \
+		-G 'Unix Makefiles' \
+		-DCMAKE_C_COMPILER=/usr/bin/cc \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_INSTALL_PREFIX=/usr/local \
+		-DHCC_ENABLE_JIT=on \
+		-DHCC_ENABLE_LLVM=OFF \
+		-DHCC_ENABLE_BOOTSTRAP02_STAGE1=ON \
+		-DBOOTSTRAP02_IDENT_OBJECT=$(CURDIR)/$(PINNED_PRODUCER_BUILD)/bootstrap02-ident.o \
+		-DBOOTSTRAP06_OPERATOR_OBJECT=$(CURDIR)/$(PINNED_PRODUCER_BUILD)/bootstrap06-operator-classify.o \
+		-DLEXER07_SCALAR_OBJECT=$(CURDIR)/$(PINNED_PRODUCER_BUILD)/lexer07-scalar-literal.o \
+		-DLEXER08_TRIVIA_OBJECT=$(CURDIR)/$(PINNED_PRODUCER_BUILD)/lexer08-trivia.o \
+		-DLEXER09_LINK_OBJECT=$(CURDIR)/$(PINNED_PRODUCER_BUILD)/lexer09-link.o
+	$(MAKE) -C $(PINNED_PRODUCER_BUILD)/hcc-bootstrap02-build hcc-bootstrap02 -j2
+	@if [ ! -x "$(PINNED_PRODUCER_BUILD)/hcc-bootstrap02" ]; then \
+		echo "runtime-producer: pinned stage1 not produced" >&2; \
+		exit 1; \
+	fi
+
+# The pinned producer's stage2 compiler.
+$(PINNED_PRODUCER_BUILD)/hcc-bootstrap03: $(PINNED_PRODUCER_BUILD)/hcc-bootstrap02
+	@for pair in $(PP_PRODUCER_STAGE1_OBJS); do \
+		src=$${pair%%:*}; obj=$${pair##*:}; \
+		$(PINNED_PRODUCER_BUILD)/hcc-bootstrap02 --install-dir=$(PINNED_PRODUCER_PREFIX) \
+			-c $(PINNED_PRODUCER_TREE)/tools/bootstrap/$$src.HC \
+			-o $(PINNED_PRODUCER_BUILD)/$$obj || exit 1; \
+	done
+	cmake -S $(PINNED_PRODUCER_TREE)/src \
+		-B $(PINNED_PRODUCER_BUILD)/hcc-bootstrap03-build \
+		-G 'Unix Makefiles' \
+		-DCMAKE_C_COMPILER=/usr/bin/cc \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_INSTALL_PREFIX=/usr/local \
+		-DHCC_ENABLE_JIT=on \
+		-DHCC_ENABLE_LLVM=OFF \
+		-DHCC_ENABLE_BOOTSTRAP02_STAGE1=ON \
+		-DHCC_ENABLE_BOOTSTRAP03_STAGE2=ON \
+		-DBOOTSTRAP02_IDENT_OBJECT=$(CURDIR)/$(PINNED_PRODUCER_BUILD)/bootstrap02-ident.o \
+		-DBOOTSTRAP03_IDENT_OBJECT=$(CURDIR)/$(PINNED_PRODUCER_BUILD)/bootstrap03-ident.stage1.o \
+		-DBOOTSTRAP06_OPERATOR_OBJECT=$(CURDIR)/$(PINNED_PRODUCER_BUILD)/bootstrap06-operator-classify.o \
+		-DBOOTSTRAP06_OPERATOR_OBJECT_STAGE1=$(CURDIR)/$(PINNED_PRODUCER_BUILD)/bootstrap06-operator-classify.stage1.o \
+		-DLEXER07_SCALAR_OBJECT=$(CURDIR)/$(PINNED_PRODUCER_BUILD)/lexer07-scalar-literal.o \
+		-DLEXER07_SCALAR_OBJECT_STAGE1=$(CURDIR)/$(PINNED_PRODUCER_BUILD)/lexer07-scalar-literal.stage1.o \
+		-DLEXER08_TRIVIA_OBJECT=$(CURDIR)/$(PINNED_PRODUCER_BUILD)/lexer08-trivia.o \
+		-DLEXER08_TRIVIA_OBJECT_STAGE1=$(CURDIR)/$(PINNED_PRODUCER_BUILD)/lexer08-trivia.stage1.o \
+		-DLEXER09_LINK_OBJECT=$(CURDIR)/$(PINNED_PRODUCER_BUILD)/lexer09-link.o \
+		-DLEXER09_LINK_OBJECT_STAGE1=$(CURDIR)/$(PINNED_PRODUCER_BUILD)/lexer09-link.stage1.o
+	$(MAKE) -C $(PINNED_PRODUCER_BUILD)/hcc-bootstrap03-build hcc-bootstrap03 -j2
+	@if [ ! -x "$(PINNED_PRODUCER_BUILD)/hcc-bootstrap03" ]; then \
+		echo "runtime-producer: pinned stage2 not produced" >&2; \
+		exit 1; \
+	fi
+
+# The pinned producer's stage3 compiler -- the RUNTIME PRODUCER itself.
+$(PINNED_PRODUCER_BUILD)/hcc-bootstrap04: $(PINNED_PRODUCER_BUILD)/hcc-bootstrap03
+	@for pair in $(PP_PRODUCER_STAGE2_OBJS); do \
+		src=$${pair%%:*}; obj=$${pair##*:}; \
+		$(PINNED_PRODUCER_BUILD)/hcc-bootstrap03 --install-dir=$(PINNED_PRODUCER_PREFIX) \
+			-c $(PINNED_PRODUCER_TREE)/tools/bootstrap/$$src.HC \
+			-o $(PINNED_PRODUCER_BUILD)/$$obj || exit 1; \
+	done
+	cmake -S $(PINNED_PRODUCER_TREE)/src \
+		-B $(PINNED_PRODUCER_BUILD)/hcc-bootstrap04-build \
+		-G 'Unix Makefiles' \
+		-DCMAKE_C_COMPILER=/usr/bin/cc \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_INSTALL_PREFIX=/usr/local \
+		-DHCC_ENABLE_JIT=on \
+		-DHCC_ENABLE_LLVM=OFF \
+		-DHCC_ENABLE_BOOTSTRAP02_STAGE1=ON \
+		-DHCC_ENABLE_BOOTSTRAP03_STAGE2=ON \
+		-DHCC_ENABLE_BOOTSTRAP04_STAGE3=ON \
+		-DBOOTSTRAP02_IDENT_OBJECT=$(CURDIR)/$(PINNED_PRODUCER_BUILD)/bootstrap02-ident.o \
+		-DBOOTSTRAP03_IDENT_OBJECT=$(CURDIR)/$(PINNED_PRODUCER_BUILD)/bootstrap03-ident.stage1.o \
+		-DBOOTSTRAP04_IDENT_OBJECT=$(CURDIR)/$(PINNED_PRODUCER_BUILD)/bootstrap04-ident.stage2.o \
+		-DBOOTSTRAP06_OPERATOR_OBJECT=$(CURDIR)/$(PINNED_PRODUCER_BUILD)/bootstrap06-operator-classify.o \
+		-DBOOTSTRAP06_OPERATOR_OBJECT_STAGE1=$(CURDIR)/$(PINNED_PRODUCER_BUILD)/bootstrap06-operator-classify.stage1.o \
+		-DBOOTSTRAP06_OPERATOR_OBJECT_STAGE2=$(CURDIR)/$(PINNED_PRODUCER_BUILD)/bootstrap06-operator-classify.stage2.o \
+		-DLEXER07_SCALAR_OBJECT=$(CURDIR)/$(PINNED_PRODUCER_BUILD)/lexer07-scalar-literal.o \
+		-DLEXER07_SCALAR_OBJECT_STAGE1=$(CURDIR)/$(PINNED_PRODUCER_BUILD)/lexer07-scalar-literal.stage1.o \
+		-DLEXER07_SCALAR_OBJECT_STAGE2=$(CURDIR)/$(PINNED_PRODUCER_BUILD)/lexer07-scalar-literal.stage2.o \
+		-DLEXER08_TRIVIA_OBJECT=$(CURDIR)/$(PINNED_PRODUCER_BUILD)/lexer08-trivia.o \
+		-DLEXER08_TRIVIA_OBJECT_STAGE1=$(CURDIR)/$(PINNED_PRODUCER_BUILD)/lexer08-trivia.stage1.o \
+		-DLEXER08_TRIVIA_OBJECT_STAGE2=$(CURDIR)/$(PINNED_PRODUCER_BUILD)/lexer08-trivia.stage2.o \
+		-DLEXER09_LINK_OBJECT=$(CURDIR)/$(PINNED_PRODUCER_BUILD)/lexer09-link.o \
+		-DLEXER09_LINK_OBJECT_STAGE1=$(CURDIR)/$(PINNED_PRODUCER_BUILD)/lexer09-link.stage1.o \
+		-DLEXER09_LINK_OBJECT_STAGE2=$(CURDIR)/$(PINNED_PRODUCER_BUILD)/lexer09-link.stage2.o
+	$(MAKE) -C $(PINNED_PRODUCER_BUILD)/hcc-bootstrap04-build hcc-bootstrap04 -j2
+	@if [ ! -x "$(PINNED_PRODUCER_BUILD)/hcc-bootstrap04" ]; then \
+		echo "runtime-producer: pinned stage3 not produced" >&2; \
+		exit 1; \
+	fi
+
+# The QUALIFIED runtime producer, installed at the canonical path.
+#
+# The provenance check is FAIL CLOSED: the produced producer's sha256 is
+# compared against the FROZEN constant LIBTOS_BOOTSTRAP_EXPECTED_SHA.
+# The expected value is NEVER recomputed from the produced artifact, and
+# a mismatch does not install anything.
+build/hcc-bootstrap04: $(PINNED_PRODUCER_BUILD)/hcc-bootstrap04
+	@_actual=$$(shasum -a 256 $< | cut -d' ' -f1); \
+	if [ "$$_actual" != "$(LIBTOS_BOOTSTRAP_EXPECTED_SHA)" ]; then \
+		echo "runtime-producer: FAIL: producer identity mismatch" >&2; \
+		echo "runtime-producer:   produced sha256 = $$_actual" >&2; \
+		echo "runtime-producer:   expected sha256 = $(LIBTOS_BOOTSTRAP_EXPECTED_SHA)" >&2; \
+		echo "runtime-producer: refusing to install an unqualified producer" >&2; \
+		exit 1; \
+	fi; \
+	cp $< $@; \
+	echo "RUNTIME_PRODUCER=./build/hcc-bootstrap04"; \
+	echo "RUNTIME_PRODUCER_PROVENANCE_SHA=$$_actual"; \
+	echo "RUNTIME_PRODUCER_PROVENANCE=PASS"
+
+runtime-producer: build/hcc-bootstrap04
+
+# The architecture check for the padding subject. It compares the
+# object's OWN architecture metadata against the requested target
+# architecture. It is a fail-closed check: an architecture mismatch is a
+# hard error, never a warning and never a silent legacy fallback.
+#
+# The comparison is done on the object file's real Mach-O / ELF header
+# via `file`, not on the file NAME. A fat/universal object is rejected
+# outright: the production link is single-architecture.
+#
+# This is inline build-graph logic, deliberately not a separate tool.
+define PARSER_PADDING_ARCH_VERIFY
+	@_pp_arch=$$(file -b "$@" | grep -o -E '(x86_64|x86-64|aarch64|arm64|i386|i686)' | head -1); \
+	_pp_want=$$(printf '%s' "$(PARSER_PADDING_TARGET_ARCH)" | sed -e 's/aarch64/arm64/' -e 's/x86-64/x86_64/'); \
+	if printf '%s' "$$(file -b "$@")" | grep -q 'universal binary'; then \
+		echo "parser-padding-subject: $@ is a fat/universal object" >&2; \
+		echo "parser-padding-subject: the production link requires a single-architecture object" >&2; \
+		exit 1; \
+	fi; \
+	if [ -z "$$_pp_arch" ]; then \
+		echo "parser-padding-subject: could not determine the architecture of $@" >&2; \
+		echo "parser-padding-subject: refusing to link an object of unknown architecture" >&2; \
+		exit 1; \
+	fi; \
+	if [ "$$_pp_arch" != "$$_pp_want" ]; then \
+		echo "parser-padding-subject: architecture mismatch for $@" >&2; \
+		echo "parser-padding-subject:   object architecture = $$_pp_arch" >&2; \
+		echo "parser-padding-subject:   target architecture = $$_pp_want" >&2; \
+		echo "parser-padding-subject: refusing to link a wrong-architecture object" >&2; \
+		exit 1; \
+	fi; \
+	echo "PARSER_PADDING_ARCH_CHECK=PASS arch=$$_pp_arch target=$$_pp_want"
+endef
+
+# The architecture the production compiler targets. Native builds use the
+# host architecture. A cross build overrides this explicitly.
+PARSER_PADDING_TARGET_ARCH ?= $(shell uname -m)
+
+# The PolyC parser-padding subject, produced by the stage0 compiler from
+# the CURRENT source tree.
+#
+# The object is verified for its exported symbol AND its architecture.
+# A wrong-architecture object is REJECTED, never linked.
+$(PARSER_PADDING_OBJ): $(PARSER_PADDING_SRC) $(BOOTSTRAP_STAGE0_HCC) $(BOOTSTRAP_PREFIX_INC)/tos.HH
+	@rm -f $@
+	$(BOOTSTRAP_STAGE0_HCC) \
+		--install-dir=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-c $(PARSER_PADDING_SRC) \
+		-o $@
+	@if [ ! -f "$@" ]; then \
+		echo "parser-padding-subject: $@ not produced by the stage0 compiler" >&2; \
+		exit 1; \
+	fi
+	@nm $@ | grep -q '_BootstrapCalcPadding' \
+		|| { echo "parser-padding-subject: symbol _BootstrapCalcPadding not found in $@" >&2; exit 1; }
+	@$(PARSER_PADDING_ARCH_VERIFY)
+	@echo "PARSER_PADDING_SUBJECT=$@"
+	@echo "PARSER_PADDING_SUBJECT_ARCH=$$(file -b "$@" | sed -e 's/.*object //')"
+
+parser-padding-subject: $(PARSER_PADDING_OBJ)
+
+# The production compiler.
+#
+# The CMake configure is handed the DECLARED producer of the padding
+# object, so CMake schedules its production as part of the hcc target's
+# dependency graph. It is NOT an if(EXISTS) probe.
+#
+# The target is FILE based: the production binary is the artifact, and
+# the configure+build only runs when that artifact is missing or older
+# than its inputs. This matters for two reasons:
+#
+#   * an unchanged tree does not re-run the configure on every build
+#     (the "no-op rebuild" contract), and
+#   * a reconfigure with a different C compiler does not silently reset
+#     unrelated cached options such as HCC_ENABLE_JIT, which is what
+#     previously produced a link failure against a missing libtasm.a.
+PRODUCTION_HCC = ./hcc
+PRODUCTION_HCC_INPUTS = $(PARSER_PADDING_OBJ) \
+	$(wildcard src/*.c src/asm/*.c) \
+	$(wildcard src/*.h src/asm/*.h) \
+	$(wildcard src/CMakeLists.txt src/asm/CMakeLists.txt) \
+	$(wildcard src/cmake/*.cmake)
+
+$(PRODUCTION_HCC): $(PRODUCTION_HCC_INPUTS)
 	cmake -S ./src \
 		-B ./build \
 		-G 'Unix Makefiles' \
@@ -35,14 +428,37 @@ all:
 		-DCMAKE_EXPORT_COMPILE_COMMANDS=on \
 		-DHCC_ENABLE_JIT=on \
 		-DHCC_ENABLE_LLVM=$(HCC_ENABLE_LLVM) \
-		&& $(MAKE) -C ./build -j2
+		-DHCC_USE_SELFHOST_PARSER_PADDING=ON \
+		-DPARSER_PADDING_OBJECT=$(CURDIR)/$(PARSER_PADDING_OBJ) \
+		-DPARSER_PADDING_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DPARSER_PADDING_SOURCE=$(CURDIR)/$(PARSER_PADDING_SRC) \
+		-DPARSER_PADDING_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_BOOTSTRAP_EXPECTED_SHA=$(LIBTOS_BOOTSTRAP_EXPECTED_SHA)
+	$(MAKE) -C ./build -j2
+	@if [ ! -x ./hcc ]; then \
+		echo "production-hcc: ./hcc not produced" >&2; \
+		exit 1; \
+	fi
+	@nm ./hcc | grep -q '_BootstrapCalcPadding' \
+		|| { echo "production-hcc: symbol _BootstrapCalcPadding not linked into ./hcc" >&2; exit 1; }
+	@echo "PRODUCTION_HCC=./hcc"
+	@echo "PRODUCTION_PADDING_AUTHORITY=POLYC"
+
+production-hcc: $(PRODUCTION_HCC)
 
 # ACT-POLYC-LLVM-SPIKE01-RESUME01: build hcc with the LLVM 22 C-API
 # backend linked in. Requires llvm-config on PATH; the CMake configure
 # step enforces major version 22.
-llvm-all:
+#
+# The bootstrap chain is IDENTICAL to `make all`; only the LLVM switch
+# differs. The LLVM-enabled compiler is built in its OWN cmake tree
+# (build/llvm) so it cannot fight the default tree over the CMake cache.
+# Both trees link the SAME verified parser-padding subject, so the
+# LLVM-enabled and LLVM-disabled builds cannot disagree about the
+# padding authority.
+llvm-all: $(PARSER_PADDING_OBJ)
 	cmake -S ./src \
-		-B ./build \
+		-B ./build/llvm \
 		-G 'Unix Makefiles' \
 		-DCMAKE_C_COMPILER=$(C_COMPILER) \
 		-DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
@@ -51,7 +467,21 @@ llvm-all:
 		-DCMAKE_EXPORT_COMPILE_COMMANDS=on \
 		-DHCC_ENABLE_JIT=on \
 		-DHCC_ENABLE_LLVM=ON \
-		&& $(MAKE) -C ./build -j2
+		-DHCC_USE_SELFHOST_PARSER_PADDING=ON \
+		-DPARSER_PADDING_OBJECT=$(CURDIR)/$(PARSER_PADDING_OBJ) \
+		-DPARSER_PADDING_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DPARSER_PADDING_SOURCE=$(CURDIR)/$(PARSER_PADDING_SRC) \
+		-DPARSER_PADDING_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_BOOTSTRAP_EXPECTED_SHA=$(LIBTOS_BOOTSTRAP_EXPECTED_SHA)
+	$(MAKE) -C ./build/llvm -j2
+	@if [ ! -x ./hcc ]; then \
+		echo "llvm-all: ./hcc not produced" >&2; \
+		exit 1; \
+	fi
+	@nm ./hcc | grep -q '_BootstrapCalcPadding' \
+		|| { echo "llvm-all: symbol _BootstrapCalcPadding not linked into ./hcc" >&2; exit 1; }
+	@echo "PRODUCTION_HCC=./hcc"
+	@echo "PRODUCTION_PADDING_AUTHORITY=POLYC"
 
 install:
 	$(MAKE) -C ./build install
@@ -120,7 +550,7 @@ lsp-test: test-prefix-install
 # hermetic prefix. This is a hermetic-prefix-local measure; the
 # production install at `make install` is untouched.
 TEST_PREFIX ?= $(CURDIR)/build/test-prefix
-test-prefix-install:
+test-prefix-install: production-hcc runtime-producer
 	@if [ ! -x ./hcc ]; then \
 		echo "test-prefix-install: ./hcc not found; running 'make all' first" >&2; \
 		$(MAKE) all; \
@@ -136,7 +566,13 @@ test-prefix-install:
 		-DCMAKE_INSTALL_PREFIX=$(TEST_PREFIX) \
 		-DCMAKE_C_FLAGS=$(CFLAGS) \
 		-DHCC_ENABLE_JIT=on \
-		-DHCC_ENABLE_LLVM=$(HCC_ENABLE_LLVM)
+		-DHCC_ENABLE_LLVM=$(HCC_ENABLE_LLVM) \
+		-DHCC_USE_SELFHOST_PARSER_PADDING=ON \
+		-DPARSER_PADDING_OBJECT=$(CURDIR)/$(PARSER_PADDING_OBJ) \
+		-DPARSER_PADDING_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DPARSER_PADDING_SOURCE=$(CURDIR)/$(PARSER_PADDING_SRC) \
+		-DPARSER_PADDING_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_BOOTSTRAP_EXPECTED_SHA=$(LIBTOS_BOOTSTRAP_EXPECTED_SHA)
 	$(MAKE) -C ./build/test-prefix-install-build install
 	@if [ ! -f $(TEST_PREFIX)/lib/libtos.a ] || \
 	    [ ! -f $(TEST_PREFIX)/lib/libtos.0.0.1.dylib ] || \
@@ -431,6 +867,17 @@ harness-evidence-isolation-test:
 
 clean:
 	rm -rf ./build ./hcc
+	@# ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01 C2 IMPL:
+	@# The pinned producer is materialized as a detached git worktree.
+	@# `make clean` must remove it so the tree is genuinely clean and the
+	@# next build materializes it afresh.
+	git worktree prune
+	@for t in $$(git worktree list --porcelain | grep '^worktree ' | sed -e 's/^worktree //'); do \
+		case "$$t" in \
+			*"/build/pinned-producer/tree") git worktree remove --force "$$t" >/dev/null 2>&1 || true ;; \
+		esac; \
+	done
+	git worktree prune
 
 # Convenience surfaces only. Gate logic lives in the scripts.
 # See scripts/quality/gate-fast.sh and scripts/quality/gate-push.sh.
@@ -2303,19 +2750,25 @@ selfhost-registry-validate:
 #   parser-padding-mutation-test      -> runs M1..M4 through the differential
 #   parser-padding-test               -> aggregate qualification gate
 
-PARSER_PADDING_SRC = tools/bootstrap/selfhost-parser-padding.HC
-PARSER_PADDING_OBJ = build/parser-padding-subject.o
-
+# ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01 C2 IMPL:
+# PARSER_PADDING_SRC and PARSER_PADDING_OBJ are defined ONCE, in the
+# bootstrap-graph section at the top of this Makefile, together with the
+# rule that produces the object from the stage0 compiler. Redefining them
+# here would silently override the bootstrap graph's paths.
+# The parser-padding component is now produced by the acyclic bootstrap
+# chain (stage0 -> prefix -> subject), not by the production ./hcc.
+#
+# The historical rule depended on ./hcc and on `test-prefix-install`,
+# which is the cycle this ACT removes: `make all` could not run because
+# the padding object was missing, and the padding object could not be
+# built because `make all` had not run.
+#
+# The subject is produced by the ISOLATED stage0 compiler, which is
+# exactly the legacy control the differential qualification compares
+# against.
 parser-padding-component: $(PARSER_PADDING_OBJ)
 	@echo "PARSER_PADDING_COMPONENT=BUILD source=$(PARSER_PADDING_SRC)"
 	@echo "PARSER_PADDING_COMPONENT_OBJECT=$(PARSER_PADDING_OBJ)"
-
-$(PARSER_PADDING_OBJ): $(PARSER_PADDING_SRC) ./hcc | test-prefix-install
-	@rm -f $@
-	./hcc --install-dir=$(TEST_PREFIX) -c $(PARSER_PADDING_SRC) -o $@
-	@nm $@ | grep -q '_BootstrapCalcPadding' \
-		|| { echo "parser-padding-component: symbol missing" >&2; exit 1; }
-	@echo "PARSER_PADDING_SYMBOL=_BootstrapCalcPadding present=yes"
 
 build/parser-padding-oracle.o: tools/quality/parser-padding-oracle-impl.c
 	@rm -f $@

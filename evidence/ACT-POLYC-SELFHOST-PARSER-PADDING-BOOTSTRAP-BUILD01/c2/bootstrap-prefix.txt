@@ -1,0 +1,41 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01
+PHASE=C2
+SUBJECT=Minimal bootstrap header prefix (D2)
+
+REQUIREMENT
+  A bootstrap input prefix containing the required canonical headers,
+  constructed WITHOUT a completed libtos installation, with no fake or
+  empty runtime archives and no silent fallback to globally installed
+  headers or libraries.
+
+IMPLEMENTATION
+  Makefile target `bootstrap-prefix`, file rule:
+    build/bootstrap-prefix/include/tos.HH: src/holyc-lib/tos.HH
+        rm -rf build/bootstrap-prefix
+        mkdir -p build/bootstrap-prefix/include
+        cp src/holyc-lib/tos.HH build/bootstrap-prefix/include/tos.HH
+
+MEASURED CONTENTS OF THE PREFIX AFTER A CLEAN BUILD
+  build/bootstrap-prefix/include/tos.HH   (56333 bytes)
+  -> the file count in the prefix is 1: exactly the canonical header.
+  -> there is NO lib/ directory, therefore NO runtime archive of any
+     kind (real, fake, or empty) is present.
+
+PROOF THAT NO COMPLETED LIBTOS WAS REQUIRED
+  The prefix is produced by the `bootstrap-prefix` rule, whose only
+  prerequisite is src/holyc-lib/tos.HH. The rule does NOT depend on
+  `test-prefix-install`, on `runtime-producer`, or on any archive.
+
+  Measured: in the clean-checkout build (/tmp/polyc-p01v2), the padding
+  subject was produced and the production compiler was linked and built
+  BEFORE the runtime producer was ever materialized. The prefix was
+  complete and sufficient at that point.
+
+NO GLOBAL FALLBACK
+  The stage0 compiler is invoked with an EXPLICIT
+    --install-dir=<abs>/build/bootstrap-prefix
+  so it resolves the canonical header from the prefix, not from a
+  system-wide installation. No /usr/local include path is consulted by
+  the padding-subject production step.
+
+BOOTSTRAP_PREFIX=./build/bootstrap-prefix
