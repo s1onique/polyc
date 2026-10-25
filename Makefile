@@ -414,13 +414,42 @@ build/lexer09-link.o: lexer09-link-component-build
 build/bootstrap03-ident.stage1.o: bootstrap03-component-build
 build/bootstrap06-operator-classify.stage1.o: bootstrap06-component-stage1
 build/lexer07-scalar-literal.stage1.o: lexer07-component-stage1
-build/lexer08-trivia.stage1.o: lexer08-component-stage1
 build/lexer09-link.stage1.o: lexer09-link-component-stage1
+
+# ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01 C2 IMPL:
+# LEXER08 (the trivia component) has no dedicated component-stage target:
+# its per-generation objects were produced only by the warm tree, and
+# the stage2 build demands build/lexer08-trivia.stage1.o as a LINK input
+# at cmake-configure time.
+#
+# The rule below mirrors the established pattern of the sibling
+# components exactly: the PREVIOUS generation's compiler compiles the
+# PolyC subject. The subject and the symbol contract are unchanged.
+build/lexer08-trivia.stage1.o: ./build/hcc-bootstrap02 build/lexer08-trivia.o
+	@rm -f $@
+	./build/hcc-bootstrap02 --install-dir=$(TEST_PREFIX) \
+		-c tools/bootstrap/selfhost-lexer-trivia.HC -o $@
+	@if [ ! -f "$@" ]; then \
+		echo "lexer08-trivia.stage1.o: not produced" >&2; exit 1; \
+	fi
+	@nm $@ | grep -q '_BootstrapScanTrivia' \
+		|| { echo "lexer08-trivia.stage1.o: symbol missing" >&2; exit 1; }
+	@echo "LEXER08_STAGE1_TRIVIA_OBJECT=$@"
 
 build/bootstrap04-ident.stage2.o: bootstrap04-component-build
 build/bootstrap06-operator-classify.stage2.o: bootstrap06-component-stage2
 build/lexer07-scalar-literal.stage2.o: lexer07-component-stage2
-build/lexer08-trivia.stage2.o: lexer08-component-stage2
+build/lexer08-trivia.stage2.o: ./build/hcc-bootstrap03 build/lexer08-trivia.stage1.o
+	@rm -f $@
+	./build/hcc-bootstrap03 --install-dir=$(TEST_PREFIX) \
+		-c tools/bootstrap/selfhost-lexer-trivia.HC -o $@
+	@if [ ! -f "$@" ]; then \
+		echo "lexer08-trivia.stage2.o: not produced" >&2; exit 1; \
+	fi
+	@nm $@ | grep -q '_BootstrapScanTrivia' \
+		|| { echo "lexer08-trivia.stage2.o: symbol missing" >&2; exit 1; }
+	@echo "LEXER08_STAGE2_TRIVIA_OBJECT=$@"
+
 build/lexer09-link.stage2.o: lexer09-link-component-stage2
 
 # The architecture check for the padding subject. It compares the
