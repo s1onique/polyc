@@ -105,3 +105,43 @@ CLASSIFICATION (ACT section 33)
   GEP01 harness, and no removal of any check. The gate was executed
   unmodified against the committed candidate, and its failure is
   reported as it occurred.
+
+=== THE REMAINING GATE-PUSH CHECKS, EXECUTED SEPARATELY ===================
+  gate-push exits at its FIRST failing check, so the AOT / JIT / LSP
+  checks that come after `gep01` were executed separately, with exactly
+  the same hermetic prefix discipline the gate itself uses
+  (INSTALL_PREFIX == TEST_PREFIX == the gate prefix), in a detached
+  clean worktree at the same candidate commit:
+
+    HCC_ENABLE_LLVM=ON make INSTALL_PREFIX=<prefix>
+    HCC_ENABLE_LLVM=ON make test-prefix-install INSTALL_PREFIX=<prefix> TEST_PREFIX=<prefix>
+    make unit-test
+    make jit-unit-test
+    make lsp-test
+
+  MEASURED
+    RG2_BUILD_RC=0
+    RG2_INSTALL_RC=0
+    AOT_RC=0   failures matching the gate's own marker set ('FAILED: |Failed to compile|Failed to run') = 0
+    JIT_RC=0   failures = 0
+    LSP_RC=0   failures = 0
+    lsp: 43/43 passed
+
+  (The first attempt at this measurement used the default
+  INSTALL_PREFIX=/usr/local, which made every test report
+  "Failed to open file: /usr/local/include/tos.HH" because the
+  compiler's compiled-in default install dir is /usr/local while
+  test-prefix-install installs into build/test-prefix. gate-push avoids
+  this by compiling with INSTALL_PREFIX=<the hermetic prefix>. With
+  that discipline -- which is the gate's own discipline -- every check
+  passes.)
+
+  THEREFORE, of gate-push's mandatory checks:
+    GPUSH_BUILD=PASS
+    GPUSH_INSTALL=PASS
+    GPUSH_GEP01=FAIL (pre-existing; byte-identical rows, see above)
+    GPUSH_AOT=PASS
+    GPUSH_JIT=PASS
+    GPUSH_LSP=PASS
+    GPUSH_DIFF_CHECK=PASS  (the gate's own diff-hygiene check ran and
+                           reported no findings; see the gate output)

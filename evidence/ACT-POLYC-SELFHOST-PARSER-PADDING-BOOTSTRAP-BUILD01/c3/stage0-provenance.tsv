@@ -1,0 +1,12 @@
+metric	value	method
+STAGE0_PRODUCER_COMMAND	cmake -S ./src -B ./build/host-stage0/build -DHCC_USE_SELFHOST_PARSER_PADDING=OFF -DHCC_RUNTIME_OUTPUT_DIRECTORY=<abs>/build/host-stage0	make -n all
+STAGE0_BINARY_PATH	./build/host-stage0/hcc	Makefile BOOTSTRAP_STAGE0_HCC
+STAGE0_BINARY_SIZE	741008	stat
+STAGE0_BINARY_SHA256	e0a8bc403f4379de19735a3ca7759c9236d9b6729d03e7bd928b6a2dc23d0309	shasum -a 256
+STAGE0_BINARY_ARCH	Mach-O 64-bit executable arm64	file -b
+STAGE0_DELEGATION	OFF	-HCC_USE_SELFHOST_PARSER_PADDING=OFF
+STAGE0_PADDING_SYMBOL_COUNT	0	nm build/host-stage0/hcc | grep -c _BootstrapCalcPadding
+PRODUCTION_PADDING_SYMBOL_COUNT	1	nm ./hcc | grep -c _BootstrapCalcPadding
+STAGE0_OVERWRITES_PRODUCTION_HCC	NO	the two binaries are distinct files of different sizes (741008 vs 741248)
+BOOTSTRAP_PREFIX_FILES	1 (include/tos.HH, 56333 bytes)	find build/bootstrap-prefix
+BOOTSTRAP_PREFIX_RUNTIME_ARCHIVE	ABSENT	the prefix has no lib/ directory

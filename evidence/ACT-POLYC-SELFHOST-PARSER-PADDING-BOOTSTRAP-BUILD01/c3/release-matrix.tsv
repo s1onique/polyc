@@ -1,0 +1,5 @@
+platform	leg	compiler_build	runtime_result	smoke_test	observed_status	evidence_note
+macos	aarch64 (native)	PASS from a clean checkout	QUALIFIED via the qualified producer	NOT RUN LOCALLY (CI-only step)	COMPILER+PADDING_AUTHORITY_GREEN	host is macOS ARM64; the full native build, the canonical runtime install and the smoke path were exercised locally except the CI-only packaging step
+macos	x86_64 (cross)	PASS -- an x86_64 Mach-O compiler was produced and linked against an x86_64 padding subject	N/A (cross leg does not install)	N/A by design (the workflow skips it for cross)	CROSS_ARCH_GREEN	measured locally: the x86_64 padding object is 'Mach-O 64-bit object x86_64' and the linked compiler is 'Mach-O 64-bit executable x86_64' with _BootstrapCalcPadding present
+linux	x86_64	NOT EXECUTED on this host	N/A	N/A	UNQUALIFIED -- NO CI OBSERVATION	no Linux host and no CI run are available in this environment; this leg is NOT claimed green
+linux	aarch64	NOT EXECUTED on this host	N/A	N/A	UNQUALIFIED -- NO CI OBSERVATION	no Linux host and no CI run are available in this environment; this leg is NOT claimed green

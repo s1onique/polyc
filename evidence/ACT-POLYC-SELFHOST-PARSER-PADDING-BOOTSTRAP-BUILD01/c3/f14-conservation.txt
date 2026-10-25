@@ -1,0 +1,40 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01
+PHASE=C3
+SUBJECT=F14 -- closed evidence and HANDOFF immutability
+
+COMMANDS
+  $ git diff --name-only fda4a62..HEAD -- evidence/ docs/factory/ \
+      | grep -v 'BOOTSTRAP-BUILD01'
+  (no output)
+
+  $ git diff --name-only fda4a62..HEAD -- evidence/ | grep -v 'BOOTSTRAP-BUILD01'
+  (no output)
+
+  $ git log --oneline fda4a62..HEAD -- \
+      'evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01/*' \
+      'docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-PADDING01.md'
+  (no output)
+
+RESULT
+  CLOSED_EVIDENCE_MUTATIONS=0
+  CLOSED_HANDOFF_MUTATIONS=0
+  HISTORICAL_COMMIT_REWRITES=0
+
+  Every file this ACT touched under evidence/ and docs/factory/ is under
+  evidence/ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01/ (this
+  ACT's own new evidence directory) or is a NEW file. No closed
+  predecessor's evidence directory and no HANDOFF was modified, and no
+  ADDENDUM block was appended to any of them.
+
+HISTORY INTEGRITY
+  The append-only invariant is enforced mechanically by the local
+  pre-push hook and is covered by the permanent regression suite
+  scripts/quality/factory-append-only-test.sh (NC1..NC11). Measured:
+    PASS=11
+    FAIL=0
+    STATUS=PASS
+  The implementation used only `git commit` on a linear forward history.
+  No amend, rebase, filter-branch, filter-repo, git replace, reset +
+  recommit, squash merge, or force push was performed.
+
+F14=PASS

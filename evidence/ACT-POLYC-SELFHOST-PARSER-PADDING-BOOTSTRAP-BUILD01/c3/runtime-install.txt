@@ -1,0 +1,59 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01
+PHASE=C3
+SUBJECT=P03 -- cold runtime installation from a clean build
+
+ISOLATION
+  Detached git worktree at the C2 candidate commit. The canonical
+  installation path was exercised with no pre-existing libtos archive.
+
+COMMAND
+  make runtime-producer
+  make test-prefix-install
+
+RESULT
+  RUNTIME_INSTALL_FROM_COLD_BUILD=PASS
+  BOOTSTRAP_PRODUCER_PROVENANCE=PASS
+  LIBTOS_REQUIRED_SYMBOLS=PASS
+
+PRODUCER PROVENANCE (verbatim)
+  RUNTIME_PRODUCER=./build/runtime-producer/hcc-bootstrap04
+  RUNTIME_PRODUCER_PROVENANCE_SHA=3b4474213efabcda30eb2d0c0610c6e23793f876896c8e21c5e18024b1ab40f6
+  RUNTIME_PRODUCER_PROVENANCE=PASS
+  -- ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01: runtime producer
+     provenance VERIFIED sha256=3b4474213efabcda30eb2d0c0610c6e23793f876896c8e21c5e18024b1ab40f6
+
+  The expected identity is the FROZEN constant
+  LIBTOS_BOOTSTRAP_EXPECTED_SHA, never recomputed from the artifact.
+
+INSTALLED RUNTIME ARTIFACTS
+  build/test-prefix/lib/libtos.0.0.1.dylib
+  build/test-prefix/lib/libtos.a
+  build/test-prefix/lib/libtos.dylib -> libtos.0.0.1.dylib
+  build/test-prefix/bin/hcc            (the installed compiler)
+
+REQUIRED ARCHIVE SYMBOLS (nm build/test-prefix/lib/libtos.a)
+  SYMBOL _FREE=OK
+  SYMBOL _STRNCMP=OK
+  SYMBOL _MEMSET=OK
+  SYMBOL _STRLEN_FAST=OK
+  SYMBOL _SpawnAndCapture=OK
+
+  All 5 required symbols are present, as declared by
+  LIBTOS_REQUIRED_SYMBOLS in the Makefile.
+
+THE ARCHIVE WAS BUILT BY THE QUALIFIED PRODUCER, NOT A STALE ONE
+  The install seam's fresh-output invariant is unchanged: the candidate
+  outputs are removed before the producer runs, so "all.o exists" really
+  means "this producer invocation produced all.o". The installed
+  libtos.a was therefore produced in THIS run by the qualified producer.
+
+PRODUCER PATH OWNERSHIP
+  The qualified producer lives at
+    build/runtime-producer/hcc-bootstrap04
+  and is DISTINCT from
+    build/hcc-bootstrap04
+  which is the current tree's stage3 compiler (a LEXER self-hosting
+  artifact with a different identity). The distinct paths remove the
+  ambiguity that would otherwise let one silently overwrite the other.
+
+P03=PASS

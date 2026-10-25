@@ -1,0 +1,36 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01
+PHASE=C3
+SUBJECT=Production parser-padding sources are UNCHANGED by this ACT
+
+COMMAND
+  $ git diff --name-only fda4a62..HEAD -- src/parser.c \
+      tools/bootstrap/selfhost-parser-padding.HC
+  (no output)
+
+RESULT
+  BOOTSTRAP_CALC_PADDING_SOURCE_DELTA=0
+
+  src/parser.c::CalcPadding is byte-identical to the frozen entry
+  version. The delegation is still driven by the pre-existing
+  HCC_USE_SELFHOST_PARSER_PADDING compile definition, which this ACT
+  did not change.
+
+  tools/bootstrap/selfhost-parser-padding.HC is byte-identical to the
+  frozen entry version. The padding ALGORITHM is untouched.
+
+  The frozen engineering invariants of the binding predecessors are
+  therefore preserved:
+    BOOTSTRAP_CALC_PADDING_SOURCE_DELTA=0   (measured above)
+    CALC_PADDING_PRODUCTION_DELEGATION=POLYC (c3/cold-build-before-after.txt)
+    HCC_USE_SELFHOST_PARSER_PADDING_DEFAULT=ON (src/CMakeLists.txt, unchanged default)
+    LEGACY_RUNTIME_AUTHORITY=RETIRED         (the runtime producer is
+                                               now a REPRODUCIBLE artifact
+                                               with a pinned identity, not a
+                                               hand-placed binary)
+    N01_PRODUCTION_CAUSALITY=PRESERVED       (c3/n01-stage0-missing.txt)
+
+  Also unchanged: the parser-padding ALGEBRAIC ALGORITHM, the LEXER
+  self-host implementations, and the compiler's parser and code
+  generator semantics. This ACT changed the BUILD GRAPH only.
+
+PRODUCTION_SOURCE_FREEZE=PRESERVED

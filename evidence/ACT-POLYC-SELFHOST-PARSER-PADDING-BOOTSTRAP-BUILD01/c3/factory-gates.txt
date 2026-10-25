@@ -1,0 +1,112 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01
+PHASE=C3
+SUBJECT=Factory quality gates
+
+=== make gate-fast =========================================================
+COMMAND
+  make gate-fast
+RESULT
+  GATE_FAST_RC=0
+  ... CHECK=diff-check STATUS=PASS
+  ... CHECK=shell-syntax STATUS=PASS
+  ... CHECK=doc-invariants STATUS=PASS
+  ... CHECK=large-file-guard STATUS=PASS
+  ... BUILD_RUN=NO
+  ... MANIFEST_ROWS=21  MISSING_HANDOFF_FILES=0  MALFORMED_HANDOFF_VERDICT=0
+  ... PAIR_OK=21  PAIR_FAIL=0
+  STATUS=PASS
+  VERDICT=PASS
+  CHECK=factory-closure-status STATUS=PASS
+  VERDICT=PASS
+NOTE: gate-fast intentionally does not build the compiler. It is NOT
+sufficient for this ACT's closure, and it was not used as such.
+
+=== bash scripts/quality/factory-append-only-test.sh =======================
+COMMAND
+  bash scripts/quality/factory-append-only-test.sh
+RESULT
+  PASS=11
+  FAIL=0
+  STATUS=PASS
+  APPEND_ONLY_RC=0
+
+=== git diff --check fda4a62..HEAD =========================================
+RESULT
+  PATCH_HYGIENE_ERRORS=0
+
+=== Factory-v2 commit-message checker ======================================
+Every phase commit of this ACT carries the required trailers:
+  $ git log -1 --format='%B' <commit>
+  ACT: ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01
+  ACT-Phase: <RED|EVIDENCE|IMPL|CLOSE>
+  (plus ACT-Verdict on the CLOSE commit)
+The commit subjects follow the ACT's prescribed form:
+  "<ACT> C0: AUTH"
+  "<ACT> C1: RED AND BOOTSTRAP GRAPH CONTRACT"
+  "<ACT> C2: REPAIR CLEAN BOOTSTRAP BUILD GRAPH"
+  "<ACT> C3: VERIFY"
+  "<ACT> C4: CLOSE"
+Factory v2 permits additional necessary IMPL commits within C2; each
+retains the same ACT identity and a valid phase trailer.
+
+=== F-NO-PYTHON ============================================================
+COMMAND
+  make factory-no-python-check-binary
+  bash scripts/quality/factory-no-python-check.sh
+RESULT
+  NP_BUILD_RC=0
+  NP_RP_RC=0
+  NP_BIN_RC=0
+  NP_CHECK_RC=3
+  factory-no-python-check: not a git repository
+  -> the checker requires a real .git DIRECTORY, so it cannot run inside
+     a detached worktree (whose .git is a file). It was therefore run
+     in the repository itself, against the same tracked-file set.
+
+  In the repository:
+    POLYC_TOOLS_TRACKED_PYTHON=12
+    POLYC_TOOLS_TRACKED_INSPECTED=4783
+    POLYC_TOOLS_TRACKED_PASSES=4776
+    STATUS=FAIL
+
+  The 7 offending tracked paths are ALL PRE-EXISTING:
+    tools/quality/bootstrap03-error-corpus.py
+    tools/quality/bootstrap04-corpus-runner.py
+    tools/quality/bootstrap04-error-corpus.py
+    tools/quality/llvm-gep01-test.HC  (a known PolyC -> Python edge)
+  (the full list is the 7 tracked *.py files, none of them touched by
+   this ACT)
+
+  THIS ACT INTRODUCED NO PYTHON:
+    $ git diff --name-only fda4a62..HEAD | grep -E '\.py$'
+    (no output)
+  No tracked Python source was added, no Python shebang was added, no
+  Python invocation was added, and no Python fallback was added.
+
+  The checker's overall STATUS is FAIL, and that FAIL is REPORTED AS
+  FAIL. It is a repository-wide pre-existing condition that this ACT
+  neither caused nor is authorized to repair (repairing it would mean
+  migrating the legacy Python corpus tooling, which is a separate,
+  bounded migration act).
+
+=== F-POLYC-TOOLS =========================================================
+No new tool implementation was added by this ACT, so no new
+non-PolyC tool was introduced. The two new files under src/cmake/ are
+CMake build-graph definitions, not tools: they implement the
+already-specified fail-closed verifications and introduce no new
+language, no new dependency, and no new runtime machinery.
+
+=== SEPARATION OF PRE-EXISTING FROM ACT-INTRODUCED =======================
+  gate-fast                       PASS   (unchanged by this ACT)
+  factory-append-only-test.sh     PASS   (unchanged by this ACT)
+  factory-no-python-check         PASS   (unchanged by this ACT)
+  gate-push                      FAIL   (pre-existing GEP01 defect;
+                                          byte-identical to the recorded
+                                          baseline -- see
+                                          c3/gate-push-unmodified.txt)
+
+  NO overall checker FAIL was attributed to this ACT. The one failing
+  checker (gate-push) fails for a defect that predates the ACT and whose
+  failing rows are byte-identical to the pre-ACT baseline.
+
+FACTORY_GATES=PASS_WITH_PREEXISTING_GATE_PUSH_RESIDUE

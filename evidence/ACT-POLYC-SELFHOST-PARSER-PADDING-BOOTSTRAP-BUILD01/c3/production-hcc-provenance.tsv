@@ -1,0 +1,11 @@
+metric	value	method
+PRODUCTION_BINARY_PATH	./hcc	CMake CMAKE_RUNTIME_OUTPUT_DIRECTORY (default ../)
+PRODUCTION_BINARY_SHA256	4e044cab035314032a822d13293c3c5b783c238423e2725563025b752375ba86	shasum -a 256 (non-LLVM build)
+PRODUCTION_BINARY_ARCH	Mach-O 64-bit executable arm64	file -b
+PRODUCTION_PADDING_AUTHORITY	POLYC	nm ./hcc | grep _BootstrapCalcPadding
+PRODUCTION_PADDING_SYMBOL	_BootstrapCalcPadding (T, global)	nm
+LEGACY_SYMBOLS_PRESENT	_CalcPadding, _ParserLegacyCalcPaddingOracle	nm (the legacy body is retained as the explicit stage0/differential control)
+LLVM_ENABLED_BINARY	links libLLVM.dylib 22.1.8	otool -L
+HOST_ARCH	arm64	uname -m
+TARGET_ARCH	arm64	uname -m (native)
+CROSS_TARGET_ARCH	x86_64	release.yml matrix.triple

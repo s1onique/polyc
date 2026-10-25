@@ -1,0 +1,56 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01
+PHASE=C3
+SUBJECT=P05 -- canonical parser-padding qualification gates
+
+COMMAND
+  make parser-padding-test
+  (from a detached clean worktree at the C2 candidate commit, with no
+   build/ directory and no ./hcc present beforehand)
+
+RESULT
+  FV4_PARSER_PADDING_TEST_RC=0
+  PARSER_PADDING_TEST=PASS
+
+CANONICAL GATES EXERCISED (verbatim markers from the build log)
+  PARSER_PADDING_COMPONENT=BUILD source=tools/bootstrap/selfhost-parser-padding.HC
+  PARSER_PADDING_COMPONENT_OBJECT=./build/parser-padding-subject.o
+  PARSER_PADDING_DIFF=BUILD
+  PARSER_PADDING_GEN_MATRIX=BUILD
+  PARSER_PADDING_GEN_LARGE=BUILD
+  PARSER_PADDING_FIXEDPOINT_G0=build/parser-padding-fixedpoint/parser-padding.g0.o
+  PARSER_PADDING_FIXEDPOINT_G1=build/parser-padding-fixedpoint/parser-padding.g1.o
+  PARSER_PADDING_FIXEDPOINT_G2=build/parser-padding-fixedpoint/parser-padding.g2.o
+  PARSER_PADDING_FIXEDPOINT_G3=build/parser-padding-fixedpoint/parser-padding.g3.o
+  PARSER_PADDING_FIXEDPOINT_BUILD_OBJECTS=build/parser-padding-fixedpoint/parser-padding.g{0,1,2,3}.o
+  PARSER_PADDING_FIXEDPOINT_RC=1 verdict=NEGATIVE_CONTROL_DETECTED_MISMATCH
+  MUTATION=m1 exit_code=1 DIRECT_DIFFERENTIAL_FAIL=255
+  MUTATION=m2 exit_code=1 DIRECT_DIFFERENTIAL_FAIL=1246
+  MUTATION=m3 exit_code=1 DIRECT_DIFFERENTIAL_FAIL=14617
+  MUTATION=m4 exit_code=1 DIRECT_DIFFERENTIAL_FAIL=16384
+  PARSER_PADDING_MUTATION_LOAD_BEARING=PASS
+  PRISTINE_RECHECK_RC=0
+  PARSER_PADDING_TEST=PASS
+
+  NOTE on the fixed-point negative control: the aggregate target runs the
+  fixed-point verifier in its NEGATIVE-CONTROL mode as well, and that
+  control's expected outcome is a DETECTED MISMATCH (rc=1). That is the
+  control working, not a failure. The four fixed-point generations g0..g3
+  were all produced and the aggregate target exits 0.
+
+THE PRODUCTION IMPLEMENTATION REMAINS LOAD-BEARING
+  The mutation control M1..M4 mutates the PolyC padding subject and
+  requires the direct differential to FAIL each time. All four
+  mutations were detected (each exit_code=1 with a non-zero
+  DIRECT_DIFFERENTIAL_FAIL count), and the pristine re-check passed
+  (PRISTINE_RECHECK_RC=0). If the production implementation were not
+  load-bearing, a mutated subject could not change the differential's
+  verdict.
+
+GENERATION PROVENANCE
+  The subject's sha256 is
+    187a4de9465e8dbe3c640484b05540daaad4a3267dd1543a169e3c304b02d5b1
+  which equals the value frozen by the closed predecessor
+  ACT-POLYC-SELFHOST-PARSER-PADDING01 and recorded in
+  docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-PADDING01.md:247.
+
+PARSER_PADDING_CONSERVATION=PASS

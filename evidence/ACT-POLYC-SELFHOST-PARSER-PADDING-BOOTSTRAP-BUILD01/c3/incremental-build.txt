@@ -1,0 +1,52 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01
+PHASE=C3
+SUBJECT=P04 -- incremental build behaviour
+
+=== NO-OP REBUILD (unchanged source and toolchain) ==========================
+COMMAND
+  make C_COMPILER=cc BUILD_TYPE=Release      (second run, unchanged tree)
+
+RESULT
+  NOOP_REBUILD_UNNECESSARY_OBJECT_REBUILDS=0
+  The second run performed ZERO compile steps:
+    $ grep -c 'Building C object' <second-run log>
+    0
+  and neither artifact changed:
+    PP_BEFORE  = 187a4de9465e8dbe3c640484b05540daaad4a3267dd1543a169e3c304b02d5b1
+    PP_AFTER   = 187a4de9465e8dbe3c640484b05540daaad4a3267dd1543a169e3c304b02d5b1
+    PP_REBUILT = NO
+    HCC_BEFORE = 4e044cab035314032a822d13293c3c5b783c238423e2725563025b752375ba86
+    HCC_AFTER  = 4e044cab035314032a822d13293c3c5b783c238423e2725563025b752375ba86
+    HCC_REBUILT= NO
+
+  This is the FILE-BASED dependency property of the repaired graph. The
+  old graph re-ran a cmake configure on every `make all`, because `all`
+  was a phony target whose recipe always executed.
+
+=== SOURCE CHANGE (padding subject only) ===================================
+COMMAND
+  make parser-padding-subject     (after touching the PolyC subject)
+
+RESULT
+  SOURCE_CHANGE_REBUILDS_PADDING_OBJECT=YES
+  SOURCE_CHANGE_RELINKS_PRODUCTION_HCC=YES
+
+  The producer re-ran:
+    ./build/host-stage0/hcc \
+        --install-dir=<abs>/build/bootstrap-prefix \
+        -c tools/bootstrap/selfhost-parser-padding.HC \
+        -o build/parser-padding-subject.o
+    PARSER_PADDING_ARCH_CHECK=PASS arch=arm64 target=arm64
+  and the production build logged:
+    [100%] Linking C executable <tree>/hcc
+
+  The object's sha256 is unchanged (187a4de9...) because the
+  invalidation was a COMMENT, which does not change the generated code.
+  That is a REPRODUCIBLE-BUILD property, not a stale reuse: the
+  producer demonstrably re-ran, the architecture re-check re-ran, the
+  file's mtime advanced past its input's, and the dependent compiler
+  RELINKED. A control confirmed the edge is real:
+    with the source strictly newer -> `make -n` emits the producer command
+    with the object strictly newer -> `make -n` emits "Nothing to be done"
+
+P04=PASS

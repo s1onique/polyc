@@ -1,0 +1,96 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01
+PHASE=C3
+SUBJECT=Required results -- each mapped to its establishing witness
+
+=== THE REPAIR =============================================================
+  CLEAN_CHECKOUT=YES                     c3/cold-build-before-after.txt
+  PREEXISTING_IGNORED_BINARIES=0         c3/cold-build-before-after.txt
+  CLEAN_BUILD_RC=0                       c3/cold-build-before-after.txt
+  STAGE0_BUILT=YES                       c3/cold-build-before-after.txt
+  PADDING_OBJECT_BUILT=YES               c3/cold-build-before-after.txt
+  PRODUCTION_HCC_BUILT=YES               c3/cold-build-before-after.txt
+  PRODUCTION_PADDING_AUTHORITY=POLYC     c3/cold-build-before-after.txt
+  BOOTSTRAP_GRAPH_ACYCLIC=YES            c2/dependency-graph-after.txt
+  STALE_OBJECT_REUSE=NO                  c3/n04-stale-object.txt
+  WRONG_ARCH_REJECTED=YES                c3/n03-wrong-architecture.txt
+  WRONG_BOOTSTRAP_REJECTED=YES           c3/n05-wrong-producer.txt
+  PARSER_PADDING_CONSERVATION=PASS       c3/parser-padding-conservation.txt
+  LEXER_CONSERVATION=PASS                c3/lexer-conservation.txt
+  F14=PASS                               c3/f14-conservation.txt
+  PATCH_HYGIENE_ERRORS=0                 c3/factory-gates.txt
+
+=== LLVM-ENABLED BUILD ====================================================
+  LLVM_ENABLED_CLEAN_BUILD=PASS          c3/cold-build-command-transcripts.txt
+  PARSER_PADDING_PRODUCTION_AUTHORITY=POLYC
+                                          c3/cold-build-command-transcripts.txt
+  (LLVM 22.1.8 present and linked; the LLVM-22 requirement is met.)
+
+=== RUNTIME ===============================================================
+  RUNTIME_INSTALL_FROM_COLD_BUILD=PASS   c3/runtime-install.txt
+  BOOTSTRAP_PRODUCER_PROVENANCE=PASS     c3/runtime-install.txt
+  LIBTOS_REQUIRED_SYMBOLS=PASS           c3/runtime-install.txt
+
+=== INCREMENTAL ==========================================================
+  NOOP_REBUILD_UNNECESSARY_OBJECT_REBUILDS=0
+                                          c3/incremental-build.txt
+  SOURCE_CHANGE_REBUILDS_PADDING_OBJECT=YES
+                                          c3/incremental-build.txt
+  SOURCE_CHANGE_RELINKS_PRODUCTION_HCC=YES
+                                          c3/incremental-build.txt
+
+=== NEGATIVE CONTROLS =====================================================
+  STAGE0_MISSING_DETECTED=YES            c3/n01-stage0-missing.txt
+  BUILD_RC_NONZERO=YES                   c3/n01-stage0-missing.txt
+  PRODUCTION_FALLBACK_TO_LEGACY=NO       c3/n01-stage0-missing.txt
+  PADDING_OBJECT_PRODUCER_FAILED=YES     c3/n02-object-producer-failure.txt
+  BUILD_RC_NONZERO=YES                   c3/n02-object-producer-failure.txt
+  STALE_OBJECT_ACCEPTED=NO               c3/n02-object-producer-failure.txt
+  PRODUCTION_HCC_LINKED=NO               c3/n02-object-producer-failure.txt
+  WRONG_ARCH_OBJECT_DETECTED=YES         c3/n03-wrong-architecture.txt
+  PRODUCTION_LINK_RC_NONZERO=YES         c3/n03-wrong-architecture.txt
+  SILENT_LEGACY_FALLBACK=NO              c3/n03-wrong-architecture.txt
+  STALE_OBJECT_REUSED=NO                 c3/n04-stale-object.txt
+  PRODUCER_INPUT_CHANGE_DETECTED=YES    c3/n04-stale-object.txt
+  WRONG_BOOTSTRAP04_PRODUCER_REJECTED=YES
+                                          c3/n05-wrong-producer.txt
+  CANONICAL_RUNTIME_ARCHIVE_ACCEPTED=NO  c3/n05-wrong-producer.txt
+
+  NEGATIVE_CONTROLS_PASS=5
+  NEGATIVE_CONTROLS_FAIL=0
+
+=== GATES ================================================================
+  GATE_FAST=PASS                        c3/factory-gates.txt
+  GATE_PUSH_UNMODIFIED=FAIL              c3/gate-push-unmodified.txt
+  GATE_PUSH_BYPASS_USED=NO              c3/gate-push-unmodified.txt
+  APPEND_ONLY=PASS                      c3/factory-gates.txt
+
+  The single gate-push failure is the PRE-EXISTING GEP01 cap-verifier
+  defect, whose failing rows are byte-identical to the baseline recorded
+  before this ACT. It is NOT introduced by this ACT and it is NOT
+  repaired by this ACT (it is out of scope).
+
+  NOTE ON THE CLOSURE PRECONDITION LIST
+  ACT section 40 lists "GATE_PUSH_UNMODIFIED=PASS" as a closure
+  precondition. That precondition is NOT met, because a pre-existing
+  defect fails the gate. ACT section 33 provides the governing rule:
+  "If gate-push fails for a separate pre-existing defect, classify that
+  defect with its own evidence. Do not claim full gate qualification."
+
+  The C4 verdict therefore CANNOT be PASS_TRUE_GREEN: that verdict
+  would assert a fully green gate. The honest verdict is a HALT that
+  records the measured state and the pre-existing residue, with
+  HALT_CLASS=GOVERNANCE / BLOCKS_NEXT=NO per the F-MECHANICAL-BLOCKING
+  grammar -- the engineering objective of this ACT (a clean-checkout
+  build that produces its own PolyC padding object) IS met and IS
+  measured, but the full pre-push gate is not green for a reason that
+  predates this ACT.
+
+  See c3/mandatory-ac-status.tsv (AC34 = FAIL (PRE-EXISTING)).
+
+=== RELEASE ===============================================================
+  RELEASE_MACOS_ARM64=COMPILER+PADDING_AUTHORITY_GREEN (CI packaging/smoke leg not executed locally)
+  RELEASE_MACOS_X86_64_CROSS=CROSS_ARCH_GREEN
+  RELEASE_LINUX_X86_64=UNQUALIFIED (no host, no CI observation)
+  RELEASE_LINUX_AARCH64=UNQUALIFIED (no host, no CI observation)
+  See c3/release-matrix.tsv. No four-platform release PASS is inferred
+  from a one-host test.
