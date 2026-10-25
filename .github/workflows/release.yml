@@ -121,10 +121,15 @@ jobs:
             -DCMAKE_OSX_ARCHITECTURES=x86_64 \
             -DHCC_ENABLE_JIT=on \
             -DHCC_USE_SELFHOST_PARSER_PADDING=ON \
+            -DHCC_RUNTIME_OUTPUT_DIRECTORY="$PWD/build-x86_64" \
             -DPARSER_PADDING_OBJECT="$PWD/build/parser-padding-subject.x86_64.o" \
             -DPARSER_PADDING_SOURCE="$PWD/tools/bootstrap/selfhost-parser-padding.HC" \
             -DPARSER_PADDING_PREFIX="$PWD/build/x86_64-padding-prefix"
           make -C ./build-x86_64 -j3
+          # The x86_64 compiler is written to build-x86_64/ so it cannot
+          # clobber the native ./hcc that the libtos step uses.
+          test -x ./build-x86_64/hcc
+          file ./build-x86_64/hcc | grep -q x86_64
 
       # Deliberately NOT `hcc -lib tos`: hccLibInit picks the library
       # naming and link commands from a build-time `#if IS_BSD` /
@@ -180,7 +185,15 @@ jobs:
           PKG: ${{ steps.version.outputs.pkg }}
         run: |
           set -eux
-          cp ./hcc "./$PKG/hcc"
+          # ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01 C2 IMPL:
+          # The cross leg's compiler is written to build-x86_64/ (the
+          # isolated runtime output directory), so the package must take
+          # it from there. The native legs keep using the repo-root ./hcc.
+          if [ "${{ matrix.cross }}" = "true" ]; then
+            cp ./build-x86_64/hcc "./$PKG/hcc"
+          else
+            cp ./hcc "./$PKG/hcc"
+          fi
           cp ./packaging/install.sh "./$PKG/install.sh"
           chmod +x "./$PKG/hcc" "./$PKG/install.sh"
           ls -la "./$PKG" "./$PKG/lib" "./$PKG/include"
