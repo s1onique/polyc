@@ -1,0 +1,56 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01
+PHASE=C3
+SUBJECT=P01 -- pristine build from a clean checkout
+
+ISOLATION
+  Detached git worktree at the C2 candidate commit. The worktree had NO
+  build/ directory and NO ./hcc before the build:
+    BUILD_DIR_ABSENT
+    HCC_ABSENT
+  => PREEXISTING_IGNORED_BINARIES=0
+
+COMMAND
+  make clean
+  make C_COMPILER=cc BUILD_TYPE=Release
+
+RESULT
+  CLEAN_CHECKOUT=YES
+  PREEXISTING_IGNORED_BINARIES=0
+  CLEAN_BUILD_RC=0
+  STAGE0_BUILT=YES
+  PADDING_OBJECT_BUILT=YES
+  PRODUCTION_HCC_BUILT=YES
+  PRODUCTION_PADDING_AUTHORITY=POLYC
+
+BUILD-LOG MARKERS (verbatim)
+  BOOTSTRAP_STAGE0_BINARY=./build/host-stage0/hcc
+  BOOTSTRAP_PREFIX=./build/bootstrap-prefix
+  PARSER_PADDING_ARCH_CHECK=PASS arch=arm64 target=arm64
+  PARSER_PADDING_SUBJECT=build/parser-padding-subject.o
+  PRODUCTION_HCC=./hcc
+  PRODUCTION_PADDING_AUTHORITY=POLYC
+
+MEASURED ARTIFACTS
+  ./hcc                          Mach-O 64-bit executable arm64
+  build/host-stage0/hcc          Mach-O 64-bit executable arm64
+  build/parser-padding-subject.o Mach-O 64-bit object arm64
+  build/parser-padding-subject.o sha256 =
+    187a4de9465e8dbe3c640484b05540daaad4a3267dd1543a169e3c304b02d5b1
+    (identical to the closed predecessor's frozen value)
+
+THE BUILD DID NOT READ THE DEVELOPER'S build/ DIRECTORY
+  The worktree's build/ directory did not exist before the run, and every
+  artifact above was produced inside it. The padding object's sha256
+  equals the predecessor's frozen value, and the stage0 compiler is a
+  distinct binary from the production compiler, which is only possible if
+  the stage0 build really ran in this tree.
+
+BEFORE (at the frozen ENTRY fda4a62), for contrast
+  RED_CLEAN_BUILD_REPRODUCED=YES
+  ENTRY_CLEAN_BUILD_RC_NONZERO=YES
+  CMake Error at CMakeLists.txt:216 (message):
+    ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01: required self-host
+    parser-padding component missing at .../build/parser-padding-subject.o.
+  (see c1/c1-red1-clean-build.txt)
+
+P01=PASS

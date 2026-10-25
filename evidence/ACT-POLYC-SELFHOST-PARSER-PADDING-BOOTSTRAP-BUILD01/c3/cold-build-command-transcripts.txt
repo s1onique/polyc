@@ -1,0 +1,79 @@
+ACT=ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01
+PHASE=C3
+SUBJECT=Command transcripts for the cold-build controls
+
+=== P01 -- pristine build ===================================================
+$ git worktree add --detach /tmp/polyc-final <C2-commit>
+$ cd /tmp/polyc-final
+$ ls build 2>/dev/null || echo BUILD_DIR_ABSENT
+BUILD_DIR_ABSENT
+$ ls hcc 2>/dev/null || echo HCC_ABSENT
+HCC_ABSENT
+$ make clean
+rm -rf ./build ./hcc
+git worktree prune
+git worktree prune
+$ make C_COMPILER=cc BUILD_TYPE=Release
+  ... cmake -S ./src -B ./build ... -DHCC_USE_SELFHOST_PARSER_PADDING=ON
+      -DPARSER_PADDING_PRODUCER=.../build/host-stage0/hcc ...
+  BOOTSTRAP_STAGE0_BINARY=./build/host-stage0/hcc
+  BOOTSTRAP_PREFIX=./build/bootstrap-prefix
+  PARSER_PADDING_ARCH_CHECK=PASS arch=arm64 target=arm64
+  PARSER_PADDING_SUBJECT=build/parser-padding-subject.o
+  [100%] Linking C executable /tmp/polyc-final/hcc
+  PRODUCTION_HCC=./hcc
+  PRODUCTION_PADDING_AUTHORITY=POLYC
+$ echo $?
+0
+
+=== P02 -- LLVM-enabled clean build ========================================
+$ make clean
+$ HCC_ENABLE_LLVM=ON make INSTALL_PREFIX=/tmp/polyc-final/gate-prefix
+  PARSER_PADDING_ARCH_CHECK=PASS arch=arm64 target=arm64
+  PRODUCTION_HCC=./hcc
+  PRODUCTION_PADDING_AUTHORITY=POLYC
+$ echo $?
+0
+$ otool -L ./hcc | grep -i llvm
+  /nix/store/...-llvm-22.1.8-lib/lib/libLLVM.dylib (compatibility version 1.0.0, current version 22.1.8)
+$ llvm-config --version
+22.1.8
+$ nm ./hcc | grep -q _BootstrapCalcPadding && echo POLYC
+POLYC
+
+=== P03 -- cold install ====================================================
+$ make runtime-producer
+  RUNTIME_PRODUCER=./build/runtime-producer/hcc-bootstrap04
+  RUNTIME_PRODUCER_PROVENANCE_SHA=3b4474213efabcda30eb2d0c0610c6e23793f876896c8e21c5e18024b1ab40f6
+  RUNTIME_PRODUCER_PROVENANCE=PASS
+$ make test-prefix-install
+  -- ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01: runtime producer
+     provenance VERIFIED sha256=3b4474213efabcda30eb2d0c0610c6e23793f876896c8e21c5e18024b1ab40f6
+  -- Installing: .../build/test-prefix/lib/libtos.a
+  -- Installing: .../build/test-prefix/lib/libtos.0.0.1.dylib
+$ echo $?
+0
+$ ls build/test-prefix/lib/
+libtos.0.0.1.dylib
+libtos.a
+libtos.dylib -> libtos.0.0.1.dylib
+$ for s in _FREE _STRNCMP _MEMSET _STRLEN_FAST _SpawnAndCapture; do
+      nm build/test-prefix/lib/libtos.a | grep -q "T $s$" && echo "$s OK"; done
+SYMBOL _FREE=OK
+SYMBOL _STRNCMP=OK
+SYMBOL _MEMSET=OK
+SYMBOL _STRLEN_FAST=OK
+SYMBOL _SpawnAndCapture=OK
+$ ls build/test-prefix/bin/
+hcc
+
+=== P04 -- incremental build ===============================================
+$ make C_COMPILER=cc BUILD_TYPE=Release      # second run, unchanged tree
+  (no compile steps; 0 "Building C object" lines)
+$ shasum -a 256 build/parser-padding-subject.o   # before
+187a4de9465e8dbe3c640484b05540daaad4a3267dd1543a169e3c304b02d5b1
+$ shasum -a 256 hcc                            # before
+4e044cab035314032a822d13293c3c5b783c238423e2725563025b752375ba86
+  ... after the second run: both values UNCHANGED ...
+$ grep -c 'Building C object' <second-run log>
+0

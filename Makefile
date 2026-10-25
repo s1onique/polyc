@@ -366,13 +366,35 @@ $(RUNTIME_PRODUCER_PATH): $(PINNED_PRODUCER_BUILD)/hcc-bootstrap04
 
 runtime-producer: $(RUNTIME_PRODUCER_PATH)
 
-# The current tree's bootstrap stage binaries are FILE artifacts for the
-# purposes of the four-generation fixed points, which consume them as
-# normal prerequisites. The phony stage targets already produce them;
-# these rules give make the file-level edge it was missing.
+# ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01 C2 IMPL:
+# The bootstrap stage targets are PHONY: they re-run their recipe every
+# time they are invoked. The stage BINARIES they produce are real files,
+# and the four-generation fixed points consume those files as normal
+# prerequisites. Without a file-level rule, make reports
+#   "No rule to make target `build/hcc-bootstrap02'"
+# on a clean tree, because the phony target does not create a make-visible
+# file edge.
+#
+# These rules give make the missing file-level edge. They delegate to the
+# existing, already-qualified phony stage targets, so no recipe logic is
+# duplicated and no existing contract changes.
 build/hcc-bootstrap02: bootstrap02-stage1
 build/hcc-bootstrap03: bootstrap03-stage2
 build/hcc-bootstrap04: bootstrap04-stage3
+
+# The LEXER self-host component objects consumed by the bootstrap stage
+# builds. Each has an existing, already-qualified phony producer; these
+# rules give make the file-level edge so the stage builds are reachable
+# from a clean tree instead of requiring a warm build/ directory.
+#
+# Without them, `make bootstrap02-stage1` on a clean tree aborts at the
+# cmake configure with "required self-host operator component missing at
+# build/bootstrap06-operator-classify.o" -- the same class of warm-tree
+# assumption this ACT exists to remove.
+build/bootstrap06-operator-classify.o: bootstrap06-component-build
+build/lexer07-scalar-literal.o: lexer07-component-build
+build/lexer08-trivia.o: lexer08-component-build
+build/lexer09-link.o: lexer09-link-component-build
 
 # The architecture check for the padding subject. It compares the
 # object's OWN architecture metadata against the requested target
