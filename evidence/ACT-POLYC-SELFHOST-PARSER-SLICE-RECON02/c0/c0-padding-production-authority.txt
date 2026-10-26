@@ -1,0 +1,55 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02
+ACT_PHASE=C0-AUTHORIZATION
+EVIDENCE_KIND=padding-production-authority
+
+# The ACT body requires VERIFICATION IN PRODUCTION SOURCE, not acceptance
+# of the documented status.  Each mandatory observation is checked
+# against the LIVE tree at entry head.
+
+OBSERVATION_1=CMake option default
+COMMAND_1=grep -n 'option(HCC_USE_SELFHOST_PARSER_PADDING' -A 3 src/CMakeLists.txt
+COMMAND_1_OUTPUT=
+231:option(HCC_USE_SELFHOST_PARSER_PADDING
+232-       "Link the parser-padding PolyC component into hcc and enable parser-padding delegation. ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01."
+233-       ON)
+COMMAND_1_RESULT=HCC_USE_SELFHOST_PARSER_PADDING=ON_BY_DEFAULT
+
+OBSERVATION_2=LIVE configure cache (not just the source default)
+COMMAND_2=grep -n 'HCC_USE_SELFHOST_PARSER_PADDING' build/CMakeCache.txt
+COMMAND_2_OUTPUT=242:HCC_USE_SELFHOST_PARSER_PADDING:BOOL=ON
+COMMAND_2_RESULT=HCC_USE_SELFHOST_PARSER_PADDING=ON_BY_DEFAULT (live build config)
+
+OBSERVATION_3=delegation is selected by the macro in production source
+COMMAND_3=grep -n 'HCC_USE_SELFHOST_PARSER_PADDING' src/parser.c
+COMMAND_3_OUTPUT=431:#ifdef HCC_USE_SELFHOST_PARSER_PADDING
+COMMAND_3_RESULT=CalcPadding_DELEGATES_TO_BootstrapCalcPadding=YES
+
+OBSERVATION_4=production linkage actually carries the PolyC object
+COMMAND_4=grep -n 'target_compile_definitions(hcc PRIVATE HCC_USE_SELFHOST_PARSER_PADDING)' src/CMakeLists.txt
+COMMAND_4_OUTPUT=326:    target_compile_definitions(hcc PRIVATE HCC_USE_SELFHOST_PARSER_PADDING)
+COMMAND_4_TARGET_LINK=327:    target_link_libraries(hcc ${PARSER_PADDING_OBJECT})
+COMMAND_4_RESULT=PRODUCTION_LINKAGE=PARSE_PADDING_OBJECT
+
+OBSERVATION_5=the production binary really exports the PolyC symbol
+COMMAND_5=nm build/hcc | grep -c '_BootstrapCalcPadding'
+COMMAND_5_OUTPUT=1
+COMMAND_5_RESULT=BOOTSTRAP_CALCPADDING_IN_PRODUCTION_BINARY=YES
+
+OBSERVATION_6=the legacy C body is in the #else branch only
+COMMAND_6=sed -n '430,470p' src/parser.c
+COMMAND_6_RESULT=LEGACY_C_CALC_PADDING_PRODUCTION_PATH=INACTIVE
+  The legacy algorithm body exists only inside the `#else` branch of
+  `#ifdef HCC_USE_SELFHOST_PARSER_PADDING`.  Production defines the
+  macro (src/CMakeLists.txt:326), so the legacy branch is not compiled
+  into the production binary.  No runtime fallback exists.
+
+# Reuse of already-qualified load-bearing evidence (per ACT SECT_6:
+# "Reuse already qualified load-bearing evidence and execute an
+# existing production smoke where available").
+LOAD_BEARING_EVIDENCE=evidence/ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01/c3/c3-production-authority-conservation.txt
+LOAD_BEARING_EVIDENCE_CLAIM=PARSER_PADDING_PRODUCTION_AUTHORITY=POLYC; LEGACY_RUNTIME_AUTHORITY=RETIRED
+LOAD_BEARING_EVIDENCE_CONSERVATION=evidence/ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01-CORRECTION01/c3/c3-production-source-conservation.tsv
+
+PARSER_PADDING_PRODUCTION_AUTHORITY=POLYC
+LEGACY_C_CALC_PADDING_PRODUCTION_PATH=INACTIVE
+CAND-002_ALREADY_SELFHOSTED=YES

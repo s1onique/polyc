@@ -1,0 +1,35 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02
+ACT_PHASE=C0-AUTHORIZATION
+EVIDENCE_KIND=baseline-authority
+
+# --- Production smoke on the live production compiler -------------------
+# Confirms the production hcc is functional at the entry head, so that
+# later conservation runs are measuring a working compiler.
+COMMAND_COMPILE=./hcc --install-dir=build/test-prefix build/slice-recon02-smoke/smoke.HC -o build/slice-recon02-smoke/smoke
+COMPILE_RC=0
+COMMAND_RUN=./build/slice-recon02-smoke/smoke
+RUN_RC=0
+RUN_STDOUT=
+PRODUCTION_SMOKE=PASS
+SMOKE_ARTIFACT_DIR=build/slice-recon02-smoke (ignored build dir; not tracked)
+
+# --- Prospective LEXER07 baseline registry freeze -----------------------
+LEXER07_REGISTRY_PATH=docs/factory/LEXER07-BASELINE-AUTHORITY.tsv
+LEXER07_REGISTRY_GIT_BLOB=d8db92a9d3529949c5b0ad9324fe3d50c2cef73b
+LEXER07_REGISTRY_WORKTREE_BLOB=d8db92a9d3529949c5b0ad9324fe3d50c2cef73b
+LEXER07_REGISTRY_SHA256=040fb7354dd62f2001f167e2dd083be3f5bcb013e97c1cf3e16468c7ae8678bb
+LEXER07_REGISTRY_WORKTREE_EQUALS_HEAD=YES
+LEXER07_REGISTRY_FROZEN=YES
+
+# Canonical baseline identity recorded IN the registry (not re-derived here).
+LEXER07_CANONICAL_BASELINE_SHA256=00c54408bf29237cf526aeed097f6b097f22ae682683675a0bf5ab9f9c202b9a
+LEXER07_CANONICAL_FAILURE_COUNT=21
+LEXER07_CANONICAL_COUNTER_TEXT=PASS_S0=166 HISTORICAL_S0=0 PASS_S1=175 PASS_S2=175 PASS_S3=175
+
+# --- Factory metadata rules read at C0 ---------------------------------
+FACTORY_METADATA_RULES=docs/factory/GIT-METADATA.md
+FACTORY_DOCTRINE=docs/factory/DOCTRINE.md
+TRAILER_GRAMMAR_READ=YES (ACT:, ACT-Phase:, ACT-Verdict: per GIT-METADATA.md 2.1)
+HALT_CLASSIFICATION_TRAILERS_READ=YES (HALT_CLASS / BLOCKS_NEXT per GIT-METADATA.md 2.4)
+APPEND_ONLY_START_POINT=baf5dbd77cf89330699685dffd932c54031c815c
+APPEND_ONLY_PRESERVED=YES (no amend/rebase/reset/force-push performed)
