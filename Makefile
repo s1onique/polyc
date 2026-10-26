@@ -12,7 +12,7 @@ HCC_ENABLE_LLVM ?= OFF
 
 default: all
 
-.PHONY: all formal-dafny gate-fast gate-push install-hooks static-function-linkage-test factory-closure-status-test factory-closure-status-test-binary llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap-stage0 bootstrap-prefix parser-padding-subject production-hcc runtime-producer bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test selfhost-component-binary selfhost-component-build selfhost-component-test selfhost-component-selftest selfhost-registry-validate factory-halt-classification-binary factory-halt-classification-selftest bootstrap06-component-build bootstrap06-operator-classify-oracle bootstrap06-direct-differential bootstrap06-component-stage1 bootstrap06-component-stage2 bootstrap06-component-stage3 bootstrap06-lexer-seam-stage1 lexer07-component-build lexer07-scalar-literal-oracle lexer07-direct-differential lexer07-component-stage1 lexer07-component-stage2 lexer07-component-stage3 lexer07-lexer-seam-stage0 lexer07-lexer-seam-stage1 lexer07-lexer-seam-stage2 lexer07-lexer-seam-stage3 lexer07-lexer-seam-stage2-from-objs lexer07-lexer-seam-stage3-from-objs lexer07-lexer-seam-all-stages lexer07-fixture-inventory lexer07-broad-corpus-4-stage lexer07-correction02-all lexer07-baseline-authority-verify lexer08-component-build lexer08-trivia-oracle lexer08-direct-differential lexer08-fixture-inventory lexer08-broad-corpus-4-stage lexer08-lexer-seam-stage0 lexer08-lexer-seam-stage1 lexer08-lexer-seam-all-stages lexer08-trivia-fixedpoint-g0 lexer08-trivia-fixedpoint-g1 lexer08-trivia-fixedpoint-g2 lexer08-trivia-fixedpoint-g3 lexer08-trivia-fixedpoint-build lexer08-trivia-fixedpoint-verify lexer08-trivia-fixedpoint lexer09-link-component-build lexer09-link-oracle-build lexer09-direct-differential lexer09-lexer-seam-stage0 lexer09-lexer-seam-stage1 lexer09-lexer-seam-all-stages lexer09-link-fixedpoint-g0 lexer09-link-fixedpoint-g1 lexer09-link-fixedpoint-g2 lexer09-link-fixedpoint-g3 lexer09-link-fixedpoint-build lexer09-link-fixedpoint-verify lexer09-link-fixedpoint lexer09-link-negative-control lexer09-link-determinism lexer09-link-broad-corpus-4-stage lib-tos runtime-contract-test libtos-n02-isolate parser-padding-component parser-padding-oracle parser-padding-differential parser-padding-gen-matrix-fixture parser-padding-gen-large-fixture parser-padding-fixedpoint-g0 parser-padding-fixedpoint-g1 parser-padding-fixedpoint-g2 parser-padding-fixedpoint-g3 parser-padding-fixedpoint-build parser-padding-fixedpoint-verify parser-padding-fixedpoint parser-padding-fixedpoint-negative-control parser-padding-mutation-m1 parser-padding-mutation-m2 parser-padding-mutation-m3 parser-padding-mutation-m4 parser-padding-mutation-test parser-padding-test parser-padding-algebraic-invariants parser-padding-is-terminal-stub parser-padding-legacy parser-padding-legacy-server parser-padding-legacy-verify parser-control-flow-token-component parser-control-flow-token-differential parser-control-flow-token-int-bounds parser-control-flow-token-harden-test
+.PHONY: all formal-dafny gate-fast gate-push install-hooks static-function-linkage-test factory-closure-status-test factory-closure-status-test-binary llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap-stage0 bootstrap-prefix parser-padding-subject production-hcc runtime-producer bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test selfhost-component-binary selfhost-component-build selfhost-component-test selfhost-component-selftest selfhost-registry-validate factory-halt-classification-binary factory-halt-classification-selftest bootstrap06-component-build bootstrap06-operator-classify-oracle bootstrap06-direct-differential bootstrap06-component-stage1 bootstrap06-component-stage2 bootstrap06-component-stage3 bootstrap06-lexer-seam-stage1 lexer07-component-build lexer07-scalar-literal-oracle lexer07-direct-differential lexer07-component-stage1 lexer07-component-stage2 lexer07-component-stage3 lexer07-lexer-seam-stage0 lexer07-lexer-seam-stage1 lexer07-lexer-seam-stage2 lexer07-lexer-seam-stage3 lexer07-lexer-seam-stage2-from-objs lexer07-lexer-seam-stage3-from-objs lexer07-lexer-seam-all-stages lexer07-fixture-inventory lexer07-broad-corpus-4-stage lexer07-correction02-all lexer07-baseline-authority-verify lexer08-component-build lexer08-trivia-oracle lexer08-direct-differential lexer08-fixture-inventory lexer08-broad-corpus-4-stage lexer08-lexer-seam-stage0 lexer08-lexer-seam-stage1 lexer08-lexer-seam-all-stages lexer08-trivia-fixedpoint-g0 lexer08-trivia-fixedpoint-g1 lexer08-trivia-fixedpoint-g2 lexer08-trivia-fixedpoint-g3 lexer08-trivia-fixedpoint-build lexer08-trivia-fixedpoint-verify lexer08-trivia-fixedpoint lexer09-link-component-build lexer09-link-oracle-build lexer09-direct-differential lexer09-lexer-seam-stage0 lexer09-lexer-seam-stage1 lexer09-lexer-seam-all-stages lexer09-link-fixedpoint-g0 lexer09-link-fixedpoint-g1 lexer09-link-fixedpoint-g2 lexer09-link-fixedpoint-g3 lexer09-link-fixedpoint-build lexer09-link-fixedpoint-verify lexer09-link-fixedpoint lexer09-link-negative-control lexer09-link-determinism lexer09-link-broad-corpus-4-stage lib-tos runtime-contract-test libtos-n02-isolate parser-padding-component parser-padding-oracle parser-padding-differential parser-padding-gen-matrix-fixture parser-padding-gen-large-fixture parser-padding-fixedpoint-g0 parser-padding-fixedpoint-g1 parser-padding-fixedpoint-g2 parser-padding-fixedpoint-g3 parser-padding-fixedpoint-build parser-padding-fixedpoint-verify parser-padding-fixedpoint parser-padding-fixedpoint-negative-control parser-padding-mutation-m1 parser-padding-mutation-m2 parser-padding-mutation-m3 parser-padding-mutation-m4 parser-padding-mutation-test parser-padding-test parser-padding-algebraic-invariants parser-padding-is-terminal-stub parser-padding-legacy parser-padding-legacy-server parser-padding-legacy-verify parser-control-flow-token-component parser-control-flow-token-differential parser-control-flow-token-int-bounds parser-control-flow-token-harden-test parser-control-flow-token-negative-controls
 
 # To add sqlite3 support add -DHCC_LINK_SQLITE3=1 to the below like so:
 #```
@@ -3153,6 +3153,43 @@ parser-control-flow-token-harden-test: parser-control-flow-token-int-bounds pars
 	@echo "SLICE02_HARDEN_FIXTURE_CONTRACT=RUN"
 	@echo "SLICE02_HARDEN_FIXTURE=evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01/c1/c1-corrected-fixture-model.tsv"
 	./build/parser-control-flow-token-differential evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01/c1/c1-corrected-fixture-model.tsv
+
+#
+# ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION01
+#
+#   parser-control-flow-token-negative-controls -> the PolyC
+#       negative-control DRIVER for the direct differential.
+#
+# The predecessor ACT froze the control NC-D12 ("a fixture id that is
+# not F###, e.g. X001" -> FAIL / FIXTURE_ID_UNKNOWN) in its C1
+# contract but never executed it in C3. NC-D12 was exactly the
+# control that would have exposed the row-reader bypass: the row
+# reader skipped every row that did not start with 'F' followed by a
+# digit BEFORE the unknown-ID ledger ran, so an unknown fixture id
+# was invisible and the differential returned STATUS=PASS.
+#
+# The driver is PolyC (F-POLYC-TOOLS). It MECHANICALLY derives each
+# mutated fixture from the canonical fixture and then runs the REAL
+# differential binary on it, asserting the real exit status and the
+# real REASON token. The driver is not the subject under test.
+#
+SLICE02_CFT_NEGCTRL_SRC = tools/quality/parser-control-flow-token-negative-controls.HC
+SLICE02_CFT_FIXTURE    = evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01/c1/c1-corrected-fixture-model.tsv
+
+build/parser-control-flow-token-negative-controls: $(SLICE02_CFT_NEGCTRL_SRC) ./hcc | test-prefix-install
+	./hcc --install-dir=$(TEST_PREFIX) $(SLICE02_CFT_NEGCTRL_SRC) -o $@
+	@if [ ! -x $@ ]; then \
+		echo "parser-control-flow-token-negative-controls: build failed" >&2; \
+		exit 1; \
+	fi
+
+parser-control-flow-token-negative-controls: build/parser-control-flow-token-negative-controls parser-control-flow-token-differential
+	@echo "SLICE02_NEGCTRL=BUILD"
+	@mkdir -p build/slice02-negctrl
+	./build/parser-control-flow-token-negative-controls \
+		./build/parser-control-flow-token-differential \
+		$(SLICE02_CFT_FIXTURE) \
+		build/slice02-negctrl
 
 
 # Fixture generators (PolyC).

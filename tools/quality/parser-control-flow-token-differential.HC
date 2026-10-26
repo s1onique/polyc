@@ -52,6 +52,26 @@
 //
 // A row that cannot be parsed is a FAILURE, never a silent skip.
 //
+// D5 -- THE ROW READER NO LONGER SKIPS UNRECOGNIZED ROWS.
+//
+// The D3 implementation decided whether a line was a fixture row with
+// a NEGATIVE test:
+//
+//     if (line[0] != 'F') continue;
+//     if (line[1] < '0' || line[1] > '9') continue;
+//
+// Every line that failed that test was skipped BEFORE the unknown-ID
+// ledger ran. An unknown fixture id such as "X001" was therefore
+// INVISIBLE: it never incremented `unknown_ids`, never incremented
+// `total`, and a fixture holding the 42 canonical rows PLUS that
+// unknown row returned STATUS=PASS.
+//
+// The row reader is now POSITIVE: a line is skipped only when it is
+// an explicitly recognized comment ('#') or metadata (KEY=VALUE or an
+// indented continuation) row. Every other line is a DATA row and is
+// validated, so an unknown id is counted as a failure and reported
+// with the reason token FIXTURE_ID_UNKNOWN.
+//
 // D4 -- THE SIGNED INTEGER PARSER NO LONGER OVERFLOWS.
 //
 // The original accumulator was
@@ -221,6 +241,67 @@ I64 field_len(U8 *p)
   return n;
 }
 
+// ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION01.
+//
+// Is this line a RECOGNIZED non-data row that may be skipped?
+//
+// The classification is POSITIVE: a line is skippable only if it is
+// EXPLICITLY a comment or a metadata line. Every other line is a DATA
+// row and MUST be validated.
+//
+// This is the repair of the predecessor's P0 bypass. The predecessor
+// used the NEGATIVE test
+//
+//     if (line[0] != 'F') continue;
+//     if (line[1] < '0' || line[1] > '9') continue;
+//
+// which skipped any row whose ID did not start with 'F' followed by a
+// digit BEFORE the unknown-ID ledger could run. An unknown fixture ID
+// such as "X001" was therefore invisible: it never incremented
+// `unknown_ids`, never incremented `total`, and the differential
+// returned STATUS=PASS. The frozen contract requires an unknown ID to
+// be REJECTED, and the predecessor's own C1 control NC-D12 specified
+// exactly that case but was never executed.
+//
+// The two recognized skippable forms are:
+//
+//   1. COMMENT: the line begins with '#'.
+//   2. METADATA: the line begins with an '=' at some position > 0
+//      (a KEY=VALUE line), OR the line begins with a SPACE or TAB
+//      (an indented continuation line of the metadata block).
+//
+// The '=' test is scoped to the FIRST FIELD only, i.e. it must occur
+// before the first TAB. A data row's rationale field may legitimately
+// contain '=' (for example "tok == NULL returns 0; ..."), so scanning
+// the whole line would wrongly classify a data row as metadata.
+//
+// A data row always begins with a non-whitespace, non-'#' character and
+// carries the fixture id in its first field, so neither recognized
+// skippable form can swallow a data row.
+I64 is_skippable_row(U8 *line, I64 linelen)
+{
+  if (linelen == 0) return 1;              // blank line
+
+  // 1. comment
+  if (line[0] == '#') return 1;
+
+  // 2a. indented continuation of the metadata block
+  if (line[0] == ' ' || line[0] == '\t') return 1;
+
+  // 2b. KEY=VALUE metadata line: an '=' in the FIRST field, i.e. at a
+  // position > 0 and before the first TAB.
+  I64 i = 1;
+  while (i < linelen && line[i] != '\t') {
+    if (line[i] == '=') return 1;
+    i = i + 1;
+  }
+
+  // Not a recognized comment or metadata row: this is a DATA row and
+  // MUST be validated. Falling through here is what makes an unknown
+  // fixture ID visible.
+  return 0;
+}
+
 // Is the field at *pp exactly the canonical fixture id for `index`
 // (1-based)? The canonical id is "F" followed by the index in DECIMAL
 // with no leading zeros, e.g. index 1 -> "F001", index 42 -> "F042".
@@ -259,6 +340,12 @@ I64 main(I64 argc, U8 **argv)
   I64 fail = 0;
   I64 total = 0;
   I64 parse_errors = 0;
+  // The subset of parse errors that come from a FIELD that does not
+  // parse. This is the SCHEMA-failure counter: a field that does not
+  // parse is a schema failure, whereas the aggregate parse_errors also
+  // counts a missing id and a duplicate id, neither of which is a
+  // schema failure.
+  I64 field_parse_errors = 0;
   I64 oracle_vs_expected_mismatch = 0;
   I64 first_fail_present = 0;
   I64 first_fail_kind = 0;
@@ -296,10 +383,16 @@ I64 main(I64 argc, U8 **argv)
     line[j] = 0;
     I64 linelen = j;
 
-    // Skip comment lines and the trailing counter block. Only a line
-    // that starts with 'F' followed by a digit is a fixture row.
-    if (line[0] != 'F') continue;
-    if (line[1] < '0' || line[1] > '9') continue;
+    // Skip ONLY the explicitly recognized comment and metadata rows.
+    // Every other line is a DATA row and is validated below.
+    //
+    // ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION01: the
+    // predecessor skipped any line that did not start with 'F' followed
+    // by a digit. That made an unknown fixture ID (e.g. "X001")
+    // invisible to the unknown-ID ledger, so a 42-row fixture plus an
+    // unknown row returned STATUS=PASS. The test is now POSITIVE: a row
+    // is skipped only when it is a recognized comment or metadata line.
+    if (is_skippable_row(line, linelen)) continue;
 
     total = total + 1;
 
@@ -346,19 +439,19 @@ I64 main(I64 argc, U8 **argv)
     skip_field(&p);
     // present
     I64 present = 0;
-    if (parse_int(&p, &present)) { parse_errors = parse_errors + 1; continue; }
+    if (parse_int(&p, &present)) { parse_errors = parse_errors + 1; field_parse_errors = field_parse_errors + 1; continue; }
     skip_field(&p);
     // kind
     I64 kind = 0;
-    if (parse_int(&p, &kind)) { parse_errors = parse_errors + 1; continue; }
+    if (parse_int(&p, &kind)) { parse_errors = parse_errors + 1; field_parse_errors = field_parse_errors + 1; continue; }
     skip_field(&p);
     // value
     I64 value = 0;
-    if (parse_int(&p, &value)) { parse_errors = parse_errors + 1; continue; }
+    if (parse_int(&p, &value)) { parse_errors = parse_errors + 1; field_parse_errors = field_parse_errors + 1; continue; }
     skip_field(&p);
     // expected
     I64 expected = 0;
-    if (parse_int(&p, &expected)) { parse_errors = parse_errors + 1; continue; }
+    if (parse_int(&p, &expected)) { parse_errors = parse_errors + 1; field_parse_errors = field_parse_errors + 1; continue; }
 
     I64 pc = BootstrapValidPostControlFlowToken(present, kind, value);
     I64 oc = OracleValidPostControlFlowToken(present, kind, value);
@@ -407,6 +500,7 @@ I64 main(I64 argc, U8 **argv)
   "SLICE02_DIFFERENTIAL_UNKNOWN_IDS=%d\n", unknown_ids;
   "SLICE02_DIFFERENTIAL_TRUNCATED_ROWS=%d\n", truncated_rows;
   "SLICE02_DIFFERENTIAL_MALFORMED_ROWS=%d\n", malformed_rows;
+  "SLICE02_DIFFERENTIAL_FIELD_PARSE_ERRORS=%d\n", field_parse_errors;
   "SLICE02_DIFFERENTIAL_FIXTURE_IDS_COMPLETE=%d\n", missing_ids == 0;
   "SLICE02_DIFFERENTIAL_FIXTURE_IDS_UNIQUE=%d\n", duplicate_ids == 0;
   "SLICE02_DIFFERENTIAL_FIXTURE_SCHEMA_VALID=%d\n", truncated_rows == 0 && malformed_rows == 0 && unknown_ids == 0;
@@ -426,10 +520,35 @@ I64 main(I64 argc, U8 **argv)
       || total != EXPECTED_FIXTURE_COUNT) {
     if (total == 0) {
       "REASON=FIXTURE_SET_EMPTY\n";
-    } else if (missing_ids || duplicate_ids || unknown_ids) {
-      "REASON=FIXTURE_ID_SET_INCOMPLETE\n";
-    } else if (truncated_rows || malformed_rows) {
+    } else if (unknown_ids) {
+      // ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION01.
+      //
+      // An unknown fixture id is its OWN reason token. The predecessor
+      // reported it as FIXTURE_ID_SET_INCOMPLETE together with a missing
+      // or duplicate id, but the C1 contract for NC-D12 requires the
+      // specific token FIXTURE_ID_UNKNOWN. This branch is only
+      // REACHABLE now that the row reader validates every data row
+      // instead of skipping rows that do not start with 'F'.
+      "REASON=FIXTURE_ID_UNKNOWN\n";
+    } else if (truncated_rows || malformed_rows || field_parse_errors) {
+      // A schema-invalid row is reported as a SCHEMA failure, even
+      // though it may also leave the id set incomplete (the invalid row
+      // never reaches the id ledger, so its id is reported missing).
+      //
+      // The predecessor reported FIXTURE_ID_SET_INCOMPLETE for a
+      // truncated row and FIXTURE_COUNT_MISMATCH for a row whose
+      // integer field fails to parse. Both contradicted its own C1
+      // contract, where NC-D6b and NC-D7 both specify
+      // FIXTURE_SCHEMA_INVALID. A row whose field does not parse is a
+      // schema failure, and the schema failure is the more specific
+      // diagnosis, so it is reported first.
+      //
+      // The condition is `field_parse_errors`, NOT the aggregate
+      // `parse_errors`: the aggregate also counts a duplicate id and a
+      // missing id, and a duplicate id is NOT a schema failure.
       "REASON=FIXTURE_SCHEMA_INVALID\n";
+    } else if (missing_ids || duplicate_ids) {
+      "REASON=FIXTURE_ID_SET_INCOMPLETE\n";
     } else if (oracle_vs_expected_mismatch) {
       "REASON=ORACLE_VS_EXPECTED_MISMATCH\n";
     } else if (fail) {
