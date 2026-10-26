@@ -1,0 +1,31 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03
+# ACT_PHASE=C1-INVENTORY
+# EVIDENCE_KIND=production-call-sites
+#
+# The ACTUAL call graph of each ELIGIBLE candidate, in the form
+#
+#   production caller -> legacy authority function -> candidate semantic
+#   sub-operation -> observable compiler result
+#
+# The observable compiler result is the point at which the decision
+# changes a COMPILED PROGRAM, not merely an internal AST field.
+#
+# Schema: candidate_id <TAB> direct_call_sites <TAB> call_site_count <TAB> production_caller_chain <TAB> observable_compiler_result <TAB> delegation_seam
+
+candidate_id	direct_call_sites	call_site_count	production_caller_chain	observable_compiler_result	delegation_seam
+CAND-017	src/prslib.c:1363	1	parseExpr (src/prslib.c:1343) -> parseGetPriority -> the precedence value -> next_prec (:1430,:1435) -> the right-recursion depth of the expression parser -> THE SHAPE OF EVERY BINARY AND UNARY EXPRESSION AST in every compiled program; and therefore the operator grouping, the short-circuit structure of && and ||, and the assignment associativity	ORDINARY CALL SITE (a direct static call, no callback contract, no diagnostic seam, no recovery): the C wrapper stays C-owned and forwards the scalar
+CAND-018	src/prslib.c:1421	1	parseExpr (src/prslib.c:1343) -> parseCompoundAssign -> the deconstructed AstBinOp -> the compound-assignment desugaring (:1458-:1459) -> THE AST OF EVERY COMPOUND-ASSIGNMENT EXPRESSION in every compiled program	ORDINARY CALL SITE (a direct static call).  The out-param is a caller stack local, so the ABI is (I64 tk_type,I64 punct) -> (I64 valid,I64 binop)
+CAND-019	src/prslib.c:1468	1	parseExpr (src/prslib.c:1343) -> astBinOpFromToken -> the AstBinOp -> parseCreateBinaryOp (:1475) -> astBinaryOp -> THE AST OPERATOR AND RESULT TYPE of every binary expression in every compiled program	ORDINARY CALL SITE (a direct call across a translation unit).  The out-param is a caller stack local
+CAND-020	src/prslib.c:1391,src/prslib.c:1698	2	parseExpr (:1391) and parseUnaryExpr (:1698) -> astUnaryOpFromToken -> the AstUnOp -> astUnaryOperator -> THE AST OPERATOR of every unary expression in every compiled program	ORDINARY CALL SITE (a direct call across a translation unit).  The out-param is a caller stack local
+CAND-021	src/prslib.c:1328	1	parseCreateBinaryOp (src/prslib.c:1318) -> astBinOpToTokenPunct -> op_tok -> the BINARY-OPERATOR DIAGNOSTIC message (:1440,:1446) -> THE DIAGNOSTIC TEXT of every invalid binary-operator error	ORDINARY CALL SITE (a direct static call).  The result is diagnostic-only, not an AST field
+CAND-022	src/prslib.c:871	1	parsePrintfFormatCheck (src/prslib.c:852) -> parseCountPrintfFormatSpecs -> the expected argument count -> the format/argument-count DIAGNOSTIC (:884,:891) -> WHETHER A PRINTF CALL WITH A MISMATCHED ARGUMENT COUNT IS ACCEPTED OR REJECTED	ORDINARY CALL SITE (a direct static call).  The input is a byte buffer with an explicit length
+CAND-023	src/prslib.c:864,src/prslib.c:916	2	parsePrintfFormatCheck (:864) and parseFunctionArguments (:916) -> parseFormatArgIdx -> the format argument index -> WHICH ARGUMENT IS TREATED AS THE FORMAT STRING -> WHETHER A PRINTF-STYLE CALL IS FORMAT-CHECKED AT ALL, AND WHICH ARGUMENT IS CHECKED	ORDINARY CALL SITE (a direct static call).  The input is a byte buffer with an explicit length
+CAND-025	src/transpiler.c:485	1	transpiler.c:485 -> astIsAssignment -> the assignment predicate -> the TRANSPILER rewrite decision -> WHETHER AN EXPRESSION IS REWRITTEN BY THE TRANSPILER	ORDINARY CALL SITE (a direct call across a translation unit).  NOTE: this decision is observable in TRANSPILER OUTPUT, not in the emitted machine code
+CAND-026	src/ast.c:981	1	astTypeCheck (src/ast.c:~950) -> astIsValidPointerOp -> the pointer-comparison predicate -> the TYPE-CHECK OUTCOME -> WHETHER AN ARITHMETIC OPERATION ON POINTERS IS ACCEPTED OR REJECTED BY THE COMPILER	ORDINARY CALL SITE (a direct call within one translation unit)
+CAND-030	src/parser.c:537,src/parser.c:585,src/prslib.c:1225	3	parseClassOffsets (:537), parseUnionOffsets (:585) and parseGetClassField (:1225) -> parseIsClassOrUnion -> the class-or-union predicate -> the FIELD LAYOUT BRANCH and the CLASS-FIELD ACCESS PATH -> THE LAYOUT OF EVERY CLASS AND UNION AND THE RESOLUTION OF EVERY CLASS-FIELD ACCESS	ORDINARY CALL SITE (a direct call across translation units).  The input is a single int
+
+TOTAL_DIRECT_CALL_SITES=14
+ALL_CANDIDATES_HAVE_AT_LEAST_ONE_LIVE_PRODUCTION_CALL_SITE=YES
+CALLBACK_SEAMS_AMONG_ELIGIBLE_CANDIDATES=0
+RECOVERY_SEAMS_AMONG_ELIGIBLE_CANDIDATES=0
+DIAGNOSTIC_SEAMS_AMONG_ELIGIBLE_CANDIDATES=1 (CAND-021, CAND-022, CAND-023 produce diagnostic text; the diagnostic OWNER stays C-owned)

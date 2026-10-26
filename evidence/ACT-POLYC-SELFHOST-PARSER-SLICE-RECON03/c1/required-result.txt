@@ -1,0 +1,60 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03
+ACT_PHASE=C1-INVENTORY
+EVIDENCE_KIND=required-result
+
+CURRENT_PARSER_INVENTORY=COMPLETE
+LEGACY_AUTHORITY_INVENTORY=COMPLETE
+HISTORICAL_CANDIDATES_ACCOUNTED_FOR=ALL
+NEW_CANDIDATES_ACCOUNTED_FOR=ALL
+UNKNOWN_CANDIDATES=0
+UNCLASSIFIED_STATE_DEPENDENCIES=0
+NEW_ATOMIC_SLICES_CLASSIFIED=YES
+
+CANDIDATE_INVENTORY_TOTAL=35
+HISTORICAL_RECON02_CANDIDATES_REVISITED=17
+NEW_CANDIDATES_FOUND=19
+ELIGIBLE_CANDIDATES=10
+
+ALREADY_SELFHOSTED_CANDIDATES=2 (CAND-001, CAND-002)
+RECOVERY_COUPLED_CANDIDATES=1 (CAND-014)
+
+FIXTURE_METADATA_BYPASS=REPRODUCED
+QUALIFICATION_RESIDUE=P1
+
+--- artifact index ---
+  c1/function-inventory.tsv           f6b48d43e2a1787c5ce0c37e16a7ac33728cc50c75180cc18b353a794a695759
+  c1/candidate-inventory.tsv          e51dce01310d2257d2a326cdc576bf702cf1b155fdaedf674fadc67d655f03ca
+  c1/historical-to-current-map.tsv    d78935385e222d1912b7ff14257599b8d6d1a43c55457c02a3cede1b053beb17
+  c1/newly-discovered-slices.tsv      a43145c92282aacfc0c3ecafa88e79a40d88807860f1927f9f502b788fd9be9a
+  c1/state-read-write.tsv             8b2c554a078c6bffb909fc99d901f99f4b43d3de3662a2b799e968949074635f
+  c1/ast-coupling.tsv                 c4d94332161f41b093b03a0ada6be025577b7cdcc9dcdf4cc4f8dc71ba4b03d7
+  c1/cctrl-coupling.tsv               128acd0ea0a73c177be97b8846f4c5c62e42a0a1db9cbb20e30998eb949485c1
+  c1/recovery-coupling.tsv            d61987f3ecba63d21f88ae009bd7ebac4f2e1338f4a805fd021fdacb95e879bf
+  c1/callback-coupling.tsv            9fdd17ba4422ef2729c477a90b23aee06150f734a4d72269d0235156918d656a
+  c1/production-call-sites.tsv        12ff581e175bfabbe843fd39f208fb6ffbfe5ba4619551592978db75d8a3125d
+  c1/semantic-projections.tsv         f4fdf3a416a6248b44f363289cf53fe1fdd6256895b8bced7db4084a2ec825eb
+  c1/boundedness-analysis.tsv         0b0eaba9f634225fcaee3ce3ef3db6a35f84a838e14e90649e5f2d418d733e8b
+  c1/candidate-eligibility-facts.tsv  fc311e004a451c9554e354c62172c79cc5e8c3126f0e2f403b4eb17823003a5a
+  c1/metadata-parser-residue.txt      908167c444ff75103dd784a22e75cb593c0f0df4bc5c1f82464cbd7f0d772a1f
+
+--- reproduction commands ---
+  Eligibility:
+    ./build/parser-slice-recon03-eligibility \
+      evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03/c1/candidate-eligibility-facts.tsv
+  Eligibility negative controls:
+    sh scripts/quality/parser-slice-recon03-eligibility-controls.sh
+  Ranking:
+    ./build/parser-slice-recon03-ranking
+  Metadata residue probe:
+    ./build/parser-control-flow-token-differential <probe-fixture>
+
+--- tool sources (tracked, PolyC-native) ---
+  tools/quality/parser-slice-recon03-eligibility.HC
+  tools/quality/parser-slice-recon03-ranking.HC
+  scripts/quality/parser-slice-recon03-eligibility-controls.sh  (50 LOC shell bootstrap glue)
+
+NOTE: the two PolyC tools are built from source by:
+  ./hcc --install-dir=$PWD/build/test-prefix \
+    tools/quality/parser-slice-recon03-eligibility.HC -o ./build/parser-slice-recon03-eligibility
+  ./hcc --install-dir=$PWD/build/test-prefix \
+    tools/quality/parser-slice-recon03-ranking.HC -o ./build/parser-slice-recon03-ranking

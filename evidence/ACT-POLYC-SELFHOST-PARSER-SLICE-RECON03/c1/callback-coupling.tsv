@@ -1,0 +1,62 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03
+# ACT_PHASE=C1-INVENTORY
+# EVIDENCE_KIND=callback-coupling
+#
+# Callback coupling per candidate: the number of PARSER callbacks
+# (functions called back through a function pointer) and the number of
+# SEMANTIC callbacks (calls that reach another semantic authority).
+#
+# The only function-pointer callback in the parser surface is the
+# `computeSize` parameter of parseClassOrUnionFields / parseClassOrUnion:
+#   src/parser.c:273   u32 (*computeSize)(List *), u32 *_size)
+#   src/parser.c:605   u32 (*computeSize)(List *),
+#   src/parser.c:718   parseClassOrUnion(cc,cc->clsdefs,1,CalcClassSize,is_intrinsic)
+#   src/parser.c:722   parseClassOrUnion(cc,cc->uniondefs,0,CalcUnionSize,0)
+# Its two callees are CAND-003 and CAND-004 respectively.  No other
+# parser-surface function is invoked through a function pointer.
+#
+# Schema: candidate_id <TAB> parser_callback_count <TAB> semantic_callback_count <TAB> callback_detail
+
+candidate_id	parser_callback_count	semantic_callback_count	callback_detail
+CAND-001	0	0	NONE
+CAND-002	0	0	NONE
+CAND-003	0	0	NONE (it IS the computeSize callback target, it does not itself call one)
+CAND-003S	0	0	NONE
+CAND-004	0	0	NONE (it IS the computeSize callback target, it does not itself call one)
+CAND-005	0	1	calls astStmtHasBreak? NO -- calls no helper; called BY astStmtFallsThrough
+CAND-006	0	1	calls astStmtHasBreak recursively (self-recursion is not a subordinate semantic callback)
+CAND-007	0	2	calls astIsConstTrueCond and astStmtHasBreak
+CAND-008	0	0	NONE
+CAND-009	0	0	NONE
+CAND-010	0	0	NONE
+CAND-011	0	0	NONE
+CAND-012	0	1	cctrlRaiseException (diagnostic, not a semantic callback)
+CAND-013	0	1	calls astMakeClassField / astArrayInit
+CAND-014	0	1	calls parseStatement and the other statement parsers
+CAND-015	0	1	cctrlRaiseException (diagnostic, not a semantic callback)
+CAND-016	0	1	cctrlRaiseExceptionFromTo (diagnostic, not a semantic callback)
+CAND-017	0	0	NONE
+CAND-018	0	0	NONE
+CAND-019	0	0	NONE
+CAND-020	0	0	NONE
+CAND-021	0	0	NONE
+CAND-022	0	0	NONE
+CAND-023	0	1	strncmp (libc, not a semantic callback)
+CAND-024	0	1	calls astTypeAlign recursively
+CAND-025	0	0	NONE
+CAND-026	0	0	NONE
+CAND-027	0	0	NONE
+CAND-028	0	0	NONE
+CAND-029	0	0	NONE
+CAND-030	0	0	NONE
+CAND-031	0	0	NONE
+CAND-032	0	1	calls astCast and astIsFloatType
+CAND-033	0	1	calls astCast, astIsFloatType, astIsIntType
+CAND-034	0	1	calls astJumpTableSort recursively
+CAND-035	0	0	NONE
+
+PARSER_CALLBACKS_IN_THE_PARSER_SURFACE=1 (the computeSize function pointer)
+CANDIDATES_REACHING_THROUGH_A_PARSER_CALLBACK=2 (CAND-003, CAND-004 -- they ARE the callback targets)
+NOTE: a semantic callback count of 1 or 2 above means the candidate CALLS
+# other helpers.  For a candidate to be ELIGIBLE under clause 10 it must have
+# semantic_callback_count == 0, i.e. it must be a self-contained decision.

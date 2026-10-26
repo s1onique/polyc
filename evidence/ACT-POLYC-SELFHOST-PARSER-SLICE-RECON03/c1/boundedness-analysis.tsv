@@ -1,0 +1,36 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03
+# ACT_PHASE=C1-INVENTORY
+# EVIDENCE_KIND=boundedness-analysis
+#
+# BOUNDED_DATA_REPRESENTATION analysis for the eligible candidates.
+#
+# ACT §5.2: "For a bounded copied sequence, document maximum size,
+# overflow behavior, ownership, allocation, and what happens when the
+# bound is exceeded.  An arbitrary array-size limit that changes
+# previously accepted programs is forbidden."
+#
+# NONE of the ten eligible candidates has a sequence input at all, so the
+# sequence-bound clause is vacuous for every one of them.  The two
+# candidates with a BYTE-BUFFER input (CAND-022, CAND-023) already
+# receive an explicit LENGTH from the caller, so the bound is the
+# caller-supplied length and NOT an arbitrary limit: no previously
+# accepted program is rejected because of a new size cap.
+#
+# Schema: candidate_id <TAB> input_shape <TAB> sequence_input <TAB> max_size <TAB> overflow_behavior <TAB> ownership <TAB> allocation <TAB> bound_exceeded_behavior <TAB> arbitrary_limit_introduced
+
+candidate_id	input_shape	sequence_input	max_size	overflow_behavior	ownership	allocation	bound_exceeded_behavior	arbitrary_limit_introduced
+CAND-017	ONE I64 scalar	NO	N/A (a scalar has no length)	N/A: the value domain is the punct-value domain of the lexer	NONE	NONE	N/A	NO
+CAND-018	TWO I64 scalars	NO	N/A	N/A	NONE	NONE	N/A	NO
+CAND-019	TWO I64 scalars (in, out)	NO	N/A	N/A	NONE	NONE	N/A	NO
+CAND-020	TWO I64 scalars (in, out)	NO	N/A	N/A	NONE	NONE	N/A	NO
+CAND-021	ONE I64 scalar	NO	N/A	N/A	NONE	NONE	N/A	NO
+CAND-022	AN EXPLICIT-LENGTH BYTE BUFFER	YES, but the length is CALLER-SUPPLIED, not a cap	N/A: the caller supplies len	The scan is bounded by the supplied len; the count saturates at the number of specs in the buffer and returns -1 on a malformed trailing spec	THE BUFFER IS BORROWED READ-ONLY for the duration of the call	NONE	N/A: there is no cap to exceed; a buffer longer than any internal limit is scanned in full	NO
+CAND-023	AN EXPLICIT-LENGTH BYTE BUFFER	YES, but the length is CALLER-SUPPLIED, not a cap	N/A: the caller supplies len	The comparison is bounded by the supplied len	THE BUFFER IS BORROWED READ-ONLY for the duration of the call	NONE	N/A: there is no cap to exceed	NO
+CAND-025	ONE I64 scalar	NO	N/A	N/A	NONE	NONE	N/A	NO
+CAND-026	ONE I64 scalar	NO	N/A	N/A	NONE	NONE	N/A	NO
+CAND-030	ONE I64 scalar	NO	N/A	N/A	NONE	NONE	N/A	NO
+
+ARBITRARY_SIZE_LIMITS_INTRODUCED=0
+SEQUENCE_INPUTS_WITH_CALLER_SUPPLIED_LENGTH=2 (CAND-022, CAND-023)
+ALLOCATION_IN_ELIGIBLE_CANDIDATES=0
+OWNERSHIP_IS_BORROWED_READ_ONLY=2 (CAND-022, CAND-023)

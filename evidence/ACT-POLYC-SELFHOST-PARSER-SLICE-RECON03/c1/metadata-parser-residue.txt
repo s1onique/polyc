@@ -1,0 +1,71 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03
+ACT_PHASE=C1-INVENTORY
+EVIDENCE_KIND=metadata-parser-residue
+
+FIXTURE_METADATA_BYPASS=REPRODUCED
+QUALIFICATION_RESIDUE=P1
+
+--- what the probe did (READ-ONLY; the old parser was NOT edited) ---
+Base fixture (42 canonical rows):
+  evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01/c1/c1-corrected-fixture-model.tsv
+Tool: build/parser-control-flow-token-differential (the CLOSED predecessor tool)
+
+--- PROBE 0: baseline, the 42 canonical rows, unmodified ---
+  SLICE02_DIFFERENTIAL_OBSERVED_FIXTURE_COUNT=42
+  SLICE02_DIFFERENTIAL_UNKNOWN_IDS=0
+  STATUS=PASS
+
+--- PROBE A: + one INDENTED unknown fixture row "  X001 ..." ---
+  SLICE02_DIFFERENTIAL_OBSERVED_FIXTURE_COUNT=42   <-- the added row is NOT counted
+  SLICE02_DIFFERENTIAL_UNKNOWN_IDS=0               <-- the unknown id is NOT detected
+  STATUS=PASS                                       <-- BYPASS
+
+--- PROBE B: + one arbitrary KEY=VALUE metadata row ---
+  SLICE02_DIFFERENTIAL_OBSERVED_FIXTURE_COUNT=42
+  SLICE02_DIFFERENTIAL_UNKNOWN_IDS=0
+  STATUS=PASS       (the metadata row is skipped, as intended)
+
+--- PROBE C (CONTROL): + one NON-INDENTED unknown fixture row "X001 ..." ---
+  SLICE02_DIFFERENTIAL_OBSERVED_FIXTURE_COUNT=43   <-- the added row IS counted
+  SLICE02_DIFFERENTIAL_UNKNOWN_IDS=0
+  STATUS=FAIL      <-- correctly rejected
+
+--- PROBE D: + KEY=VALUE metadata row THEN an indented unknown row ---
+  SLICE02_DIFFERENTIAL_OBSERVED_FIXTURE_COUNT=42
+  SLICE02_DIFFERENTIAL_UNKNOWN_IDS=0
+  STATUS=PASS       <-- BYPASS
+
+--- CHARACTERISATION ---
+The bypass is specific to an INDENTED unknown fixture row.  PROBE C shows
+that a non-indented unknown row IS detected and correctly fails the
+differential.  The defect is therefore in the interaction between the
+indented-continuation rule and the unknown-id ledger: an indented row is
+classified as a metadata continuation (or as non-data) and is dropped
+BEFORE the unknown-id ledger ever sees it, so the ledger cannot report it.
+
+This is a residue of the CLOSED predecessor ACT-POLYC-SELFHOST-PARSER-
+SLICE02-HARDEN01-CORRECTION02.  Its OWN negative control NC-D18
+(indented unknown id) is reported as passing by that ACT, so the
+predecessor and this probe DISAGREE.  This ACT does not resolve the
+disagreement: the predecessor closed evidence is immutable under F14, and
+this ACT is forbidden from editing the old parser (§2.3).
+
+--- CONSEQUENCE FOR THE SUCCESSOR CONTRACT ---
+The successor MUST NOT use this parser alone as the proof authority for
+adversarial fixture completeness.  The successor contract (c2/) therefore
+requires an INDEPENDENT fixture-ID and row-count witness:
+  EXPECTED_FIXTURE_IDS
+  EXPECTED_FIXTURE_COUNT
+  FIXTURE_SCHEMA
+  FIXTURE_SOURCE_SHA256
+plus an independent executed-row witness that is NOT produced by the
+row-classification path under test.
+
+--- RESIDUE CLASSIFICATION ---
+Priority: P1
+Owner: a future bounded correction of the control-flow-token qualification
+  tool (NOT this ACT -- §2.3 forbids editing the old parser and its
+  tools are closed-evidence-bearing).
+Blocks the next decision: NO.  The concern does not affect the
+  parser-semantic reconnaissance, the eligibility results, the ranking
+  or the selection.

@@ -1,0 +1,56 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03
+# ACT_PHASE=C1-INVENTORY
+# EVIDENCE_KIND=candidate-eligibility-facts
+#
+# CANONICAL FACT INPUT for the 13-clause eligibility checker
+# (tools/quality/parser-slice-recon03-eligibility.HC).
+#
+# There is deliberately NO "eligible" column: eligibility is COMPUTED by the
+# checker from these facts and cannot be hand-authored (ACT §8.1).
+#
+# Schema (tab-separated):
+#  01 candidate_id        02 function_name        03 source_file
+#  04 source_start       05 source_end          06 candidate_kind
+#  07 semantic_authority 08 already_selfhosted  09 r0
+#  10 owns_setjmp        11 writes_current_recovery  12 requires_nonlocal_recovery
+#  13 host_graph_writes 14 pointer_identity_operations 15 parser_callback_count
+#  16 semantic_callback_count 17 deterministic_projection 18 production_delegation_feasible
+#  19 production_reachable  20 exclusion_reason
+
+candidate_id	function_name	source_file	source_start	source_end	candidate_kind	semantic_authority	already_selfhosted	r0	owns_setjmp	writes_current_recovery	requires_nonlocal_recovery	host_graph_writes	pointer_identity_operations	parser_callback_count	semantic_callback_count	deterministic_projection	production_delegation_feasible	production_reachable	exclusion_reason
+CAND-001	parseValidPostControlFlowToken	src/parser.c	832	864	TOKEN_CLASSIFIER	YES	YES	0	NO	NO	NO	0	0	0	0	YES	YES	YES	ALREADY_SELFHOSTED (BootstrapValidPostControlFlowToken, production-authoritative)
+CAND-002	CalcPadding	src/parser.c	430	467	TYPE_MODIFIER_PRIMITIVE	YES	YES	0	NO	NO	NO	0	0	0	0	YES	YES	YES	ALREADY_SELFHOSTED (BootstrapCalcPadding, production-authoritative)
+CAND-003	CalcClassSize	src/parser.c	410	428	TYPE_MODIFIER_PRIMITIVE	YES	NO	4	NO	NO	NO	1	0	0	0	NO	NO	YES	R0=4 host-graph write type->offset; offset is unconditionally overwritten by parseClassOffsets (:521/:555); return value discarded
+CAND-003S	CalcClassSizePureSizeSum	src/parser.c	410	428	TYPE_MODIFIER_PRIMITIVE	NO	NO	2	NO	NO	NO	0	0	0	0	NO	NO	NO	NOT A REAL LEGACY OPERATION: no size-only sub-function exists; the size walk is interleaved with the offset write and the result is discarded
+CAND-004	CalcUnionSize	src/parser.c	397	408	TYPE_MODIFIER_PRIMITIVE	NO	NO	0	NO	NO	NO	0	1	0	0	NO	NO	NO	DEAD COMPUTATION: returns max(field sizes) but the result is written to class_size at :672 and NEVER READ; walks List<ClsField*> by pointer identity
+CAND-005	astIsConstTrueCond	src/parser.c	1982	1986	AST_PROJECTION_PRIMITIVE	YES	NO	2	NO	NO	NO	0	0	0	1	YES	NO	YES	Reads c->kind, c->type->kind, c->i64 across three pointer hops (AST node -> AstType -> kind); projection to a bounded record is possible but the record is not bounded in size
+CAND-006	astStmtHasBreak	src/parser.c	1990	2013	AST_PROJECTION_PRIMITIVE	YES	NO	2	NO	NO	NO	0	0	0	1	NO	NO	YES	Recursive AST walk; depth unbounded by the AST shape; no bounded projection
+CAND-007	astStmtFallsThrough	src/parser.c	2015	2055	AST_PROJECTION_PRIMITIVE	YES	NO	2	NO	NO	NO	0	0	0	1	NO	NO	YES	Recursive AST walk over an unbounded statement tree; depends on CAND-005 and CAND-006
+CAND-008	asmTextHasReturn	src/parser.c	2063	2094	DELIMITER_PRIMITIVE	YES	NO	1	NO	NO	NO	0	0	0	0	YES	NO	YES	Reads AoStr->data (unbounded byte buffer) and AoStr->len; the byte buffer has no bounded capacity at the ABI boundary
+CAND-009	clsFieldNew	src/parser.c	265	270	STATIC_HELPER	NO	NO	3	NO	NO	NO	0	0	0	0	NO	NO	YES	malloc wrapper returning a host pointer; not runtime semantic authority
+CAND-010	getRangeLoopIdx	src/parser.c	62	65	STATIC_HELPER	NO	NO	0	NO	NO	NO	0	0	0	0	NO	NO	YES	Non-deterministic: static counter mutated per call; forbidden for self-hosting
+CAND-011	parseFlattenAnnonymous	src/parser.c	238	258	AST_PROJECTION_PRIMITIVE	YES	NO	4	NO	NO	NO	1	1	0	0	NO	NO	YES	Mutates type->offset on host-owned AstType nodes and inserts into a host Map
+CAND-012	parseRegModifier	src/parser.c	40	60	TOKEN_CLASSIFIER	YES	NO	4	NO	NO	NO	0	1	0	1	NO	NO	YES	Reads Cctrl token stream and writes cc->kind_out/cc->reg_out; cctrlRaiseException on error
+CAND-013	parseFoldInitElement	src/parser.c	121	155	TOKEN_CLASSIFIER	YES	NO	4	NO	NO	NO	1	1	0	0	NO	NO	YES	Builds a new Ast node carrying a host AstType pointer
+CAND-014	parseCompoundStatementInternal	src/parser.c	1835	1963	ORCHESTRATOR	YES	NO	5	YES	YES	YES	1	0	1	1	NO	NO	YES	Owns the recovery point (setjmp at :1853, cc->current_recovery at :1854/:1959) and restores cc->localenv
+CAND-015	parseIfClause	src/parser.c	914	959	TOKEN_CLASSIFIER	YES	NO	4	NO	NO	NO	0	1	0	1	NO	NO	YES	Mutates cc->localenv; cctrlRaiseException on error
+CAND-016	parseRaiseCaseException	src/parser.c	1472	1478	DIAGNOSTIC_HELPER	NO	NO	5	NO	YES	YES	0	0	0	0	NO	NO	YES	cctrlRewindUntilStrMatch + cctrlRaiseExceptionFromTo: diagnostic emission with nonlocal recovery transfer
+CAND-017	parseGetPriority	src/prslib.c	1139	1207	OPERATOR_PRECEDENCE_TABLE	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-018	parseCompoundAssign	src/prslib.c	1269	1289	OPERATOR_CLASSIFIER	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-019	astBinOpFromToken	src/ast.c	206	236	OPERATOR_CLASSIFIER	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-020	astUnaryOpFromToken	src/ast.c	238	254	OPERATOR_CLASSIFIER	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-021	astBinOpToTokenPunct	src/prslib.c	1293	1316	OPERATOR_CLASSIFIER	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-022	parseCountPrintfFormatSpecs	src/prslib.c	760	792	FORMAT_SPEC_COUNTER	YES	NO	1	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-023	parseFormatArgIdx	src/prslib.c	798	810	FORMAT_FUNCTION_TABLE	YES	NO	1	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-024	astTypeAlign	src/ast.c	1310	1328	ALIGNMENT_CALCULATION	YES	NO	2	NO	NO	NO	0	0	0	0	NO	NO	YES	Recurses into type->ptr for arrays; the AstType graph depth is unbounded
+CAND-025	astIsAssignment	src/ast.c	845	866	OPERATOR_CLASSIFIER	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-026	astIsValidPointerOp	src/ast.c	876	892	OPERATOR_CLASSIFIER	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-027	astTypeIsPtr	src/ast.c	868	870	AST_PROJECTION_PRIMITIVE	YES	NO	2	NO	NO	NO	0	0	0	0	YES	NO	YES	Reads type->kind through a host pointer; the projection is one scalar but the input is a host pointer
+CAND-028	astTypeIsArray	src/ast.c	872	874	AST_PROJECTION_PRIMITIVE	YES	NO	2	NO	NO	NO	0	0	0	0	YES	NO	YES	Reads type->kind through a host pointer; the projection is one scalar but the input is a host pointer
+CAND-029	astIsIntType	src/ast.c	1330	1340	AST_PROJECTION_PRIMITIVE	YES	NO	2	NO	NO	NO	0	0	0	0	YES	NO	YES	Reads type->kind through a host pointer; the projection is one scalar but the input is a host pointer
+CAND-030	parseIsClassOrUnion	src/prsutil.c	22	25	AST_PROJECTION_PRIMITIVE	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-031	align	src/prsutil.c	9	15	ALIGNMENT_CALCULATION	NO	NO	0	NO	NO	NO	0	0	0	0	NO	NO	NO	Generic numerical helper with no production call site in the parser surface
+CAND-032	parsePromoteVarargFloats	src/prslib.c	571	582	ARGUMENT_PROMOTION	YES	NO	4	NO	NO	NO	1	1	0	0	NO	NO	YES	Rewrites argv->entries[i] with a new Ast node; host graph mutation
+CAND-033	parseCoerceArgs	src/prslib.c	584	623	ARGUMENT_COERCION	YES	NO	4	NO	NO	NO	1	1	0	0	NO	NO	YES	Rewrites argv->entries[i] with a new Ast node; host graph mutation
+CAND-034	astJumpTableSort	src/ast.c	468	485	ARRAY_SORT	YES	NO	2	NO	NO	NO	1	1	0	0	NO	NO	YES	Quicksort over an Ast** array; mutates the array and dereferences Ast nodes for the comparison key
+CAND-035	astCasesCompress	src/ast.c	489	502	ARRAY_COMPRESS	YES	NO	2	NO	NO	NO	1	1	0	0	NO	NO	YES	Rewrites case_label pointers across an Ast** array; host graph mutation

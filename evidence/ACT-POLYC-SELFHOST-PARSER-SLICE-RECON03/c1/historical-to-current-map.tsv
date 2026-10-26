@@ -1,0 +1,35 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03
+# ACT_PHASE=C1-INVENTORY
+# EVIDENCE_KIND=historical-to-current-map
+#
+# Every RECON02 candidate mapped to its CURRENT location and current
+# classification.  RECON02 recorded line numbers against the tree of
+# that day; the current tree has moved, so the current line numbers
+# are the ones that bind.  The source_sha256 column of
+# candidate-inventory.tsv binds each row to bytes.
+#
+# Schema: candidate_id <TAB> recon02_line <TAB> current_line <TAB> delta <TAB> recon02_r0 <TAB> current_r0 <TAB> recon02_eligibility <TAB> current_eligibility <TAB> change_reason
+
+candidate_id	recon02_line	current_line	delta	recon02_r0	current_r0	recon02_eligibility	current_eligibility	change_reason
+CAND-001	832..864	832..914	+50	NONE	NONE	SELECTED (migrated)	EXCLUDED	ALREADY_SELFHOSTED: the line range grew because the PolyC delegation wrapper and its comment block were added to the function
+CAND-002	430..467	430..467	0	0	0	SELECTED (migrated)	EXCLUDED	ALREADY_SELFHOSTED: the source range did not move; the delegation is inside the existing #ifdef
+CAND-003	410..428	410..428	0	0	4	EXCLUDED	EXCLUDED	R0=4 (host-graph write) confirmed; the RECON02 reclassification is preserved
+CAND-003S	410..428	410..428	0	2	2	EXCLUDED	EXCLUDED	still not a real legacy operation; additionally the returned size is DISCARDED, which is a stronger reason than RECON02 recorded
+CAND-004	397..408	397..408	0	0	0	EXCLUDED	EXCLUDED	R0=0 preserved as a fact, but the candidate is now EXCLUDED on a NEW ground: the returned size is DISCARDED (written to class_size at :672 and never read), so it is a DEAD COMPUTATION and has no observable semantic authority
+CAND-005	1940..1944	1982..1986	+42	2	2	EXCLUDED	EXCLUDED	unchanged classification; the line range moved with the surrounding file
+CAND-006	1948..1971	1990..2013	+42	2	2	EXCLUDED	EXCLUDED	unchanged classification
+CAND-007	1973..2013	2015..2055	+42	2	2	EXCLUDED	EXCLUDED	unchanged classification
+CAND-008	2021..2052	2063..2094	+42	1	1	EXCLUDED	EXCLUDED	unchanged classification
+CAND-009	265..270	265..270	0	3	3	EXCLUDED	EXCLUDED	unchanged classification
+CAND-010	62..65	62..65	0	0	0	EXCLUDED	EXCLUDED	unchanged classification
+CAND-011	238..258	238..258	0	4	4	EXCLUDED	EXCLUDED	unchanged classification
+CAND-012	40..60	40..60	0	4	4	EXCLUDED	EXCLUDED	unchanged classification
+CAND-013	121..155	121..155	0	4	4	EXCLUDED	EXCLUDED	unchanged classification
+CAND-014	1793..1921	1835..1963	+42	5	5	EXCLUDED	EXCLUDED	unchanged classification
+CAND-015	914..959	914..959	0	4	4	EXCLUDED	EXCLUDED	unchanged classification
+CAND-016	1430..1436	1472..1478	+42	5	5	EXCLUDED	EXCLUDED	unchanged classification
+
+HISTORICAL_CANDIDATES_ACCOUNTED_FOR=17
+HISTORICAL_CANDIDATES_MISSING=0
+RECLASSIFICATIONS=1 (CAND-004: from "R0=0 but excluded on the callback seam" to "R0=0 but excluded because the result is DISCARDED -- a stronger, source-anchored ground)
+ALL_OTHER_CLASSIFICATIONS_PRESERVED=YES

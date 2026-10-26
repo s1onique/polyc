@@ -1,0 +1,50 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03
+# ACT_PHASE=C1-INVENTORY
+# EVIDENCE_KIND=ast-coupling
+#
+# AST graph coupling per candidate: what AST nodes are read, what is
+# written, and whether the AST identity (pointer) influences the result.
+#
+# Schema: candidate_id <TAB> ast_nodes_read <TAB> ast_nodes_written <TAB> ast_identity_dependent <TAB> coupling_class
+
+candidate_id	ast_nodes_read	ast_nodes_written	ast_identity_dependent	coupling_class
+CAND-001	NONE	NONE	NO	NONE
+CAND-002	NONE	NONE	NO	NONE
+CAND-003	AstType.size	AstType.offset	NO	HOST_GRAPH_WRITE
+CAND-003S	AstType.size	AstType.offset	NO	HOST_GRAPH_WRITE
+CAND-004	AstType.size	NONE	YES (the List<ClsField*> walk dereferences each node)	POINTER_TRAVERSAL
+CAND-005	Ast.kind,AstType.kind,Ast.i64	NONE	NO	SCALAR_PROJECTION
+CAND-006	Ast.kind,Ast.then,Ast.els,Ast.stms	NO	YES (the recursion follows node pointers)	RECURSIVE_TRAVERSAL
+CAND-007	Ast.kind,Ast.then,Ast.els,Ast.forcond,Ast.whilecond,Ast.case_default,Ast.stms	NONE	YES (the recursion follows node pointers)	RECURSIVE_TRAVERSAL
+CAND-008	NONE	NONE	NO	NONE
+CAND-009	NONE	NONE	NO	NONE
+CAND-010	NONE	NONE	NO	NONE
+CAND-011	AstType.fields (Map),AstType.offset	AstType.offset	YES	HOST_GRAPH_WRITE
+CAND-012	NONE	NONE	NO	NONE
+CAND-013	Ast operand,AstType dst	NEW Ast node	YES	HOST_GRAPH_WRITE
+CAND-014	Ast subtree	Ast subtree	NONE	RECURSIVE_TRAVERSAL
+CAND-015	NONE	NONE	NO	NONE
+CAND-016	NONE	NONE	NO	NONE
+CAND-017	NONE	NONE	NO	NONE
+CAND-018	NONE	NONE	NO	NONE
+CAND-019	NONE	NONE	NO	NONE
+CAND-020	NONE	NONE	NO	NONE
+CAND-021	NONE	NONE	NO	NONE
+CAND-022	NONE	NONE	NO	NONE
+CAND-023	NONE	NONE	NO	NONE
+CAND-024	AstType.kind,AstType.size,AstType.alignment,AstType.ptr	NONE	YES (recurses into type->ptr)	RECURSIVE_TRAVERSAL
+CAND-025	NONE	NONE	NO	NONE
+CAND-026	NONE	NONE	NO	NONE
+CAND-027	AstType.kind	NONE	YES (host pointer dereference)	HOST_POINTER_INPUT
+CAND-028	AstType.kind	NONE	YES (host pointer dereference)	HOST_POINTER_INPUT
+CAND-029	AstType.kind	NONE	YES (host pointer dereference)	HOST_POINTER_INPUT
+CAND-030	NONE	NONE	NO	NONE
+CAND-031	NONE	NONE	NO	NONE
+CAND-032	Arg.kind,Arg.type	argv->entries[i]	YES	HOST_GRAPH_WRITE
+CAND-033	Param.kind,Arg.kind,Arg.type	argv->entries[i]	YES	HOST_GRAPH_WRITE
+CAND-034	Ast.case_begin	Ast** array order	YES	HOST_GRAPH_WRITE
+CAND-035	Ast.case_label,_ast.case_asts	Ast.case_label	YES	HOST_GRAPH_WRITE
+
+AST_COUPLING_CLASSES=NONE,SCALAR_PROJECTION,RECURSIVE_TRAVERSAL,POINTER_TRAVERSAL,HOST_POINTER_INPUT,HOST_GRAPH_WRITE
+CANDIDATES_WITH_AST_GRAPH_WRITE=9
+  (CAND-003, CAND-003S, CAND-011, CAND-013, CAND-032, CAND-033, CAND-034, CAND-035 and CAND-014 which traverses and mutates the AST subtree)

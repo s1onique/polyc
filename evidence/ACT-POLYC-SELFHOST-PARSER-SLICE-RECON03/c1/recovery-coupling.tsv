@@ -1,0 +1,58 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03
+# ACT_PHASE=C1-INVENTORY
+# EVIDENCE_KIND=recovery-coupling
+#
+# Recovery coupling per candidate.  setjmp/longjmp ownership and any
+# dependency on a nonlocal control transfer.
+#
+# The setjmp/longjmp inventory for the whole parser surface is:
+#   src/cctrl.h:4      #include <setjmp.h>   (declaration only)
+#   src/cctrl.c:965    longjmp(*cc->current_recovery, 1)
+#   src/parser.c:1853  jmp_buf *outer_recovery = cc->current_recovery;
+#   src/parser.c:1854  cc->current_recovery = &stmt_recovery;
+#   src/parser.c:1959  cc->current_recovery = outer_recovery;
+#   src/parser.c:2955-3020  the toplevel recovery frame
+# No other parser-surface function installs or triggers a recovery point.
+#
+# Schema: candidate_id <TAB> owns_setjmp <TAB> writes_current_recovery <TAB> requires_nonlocal_recovery <TAB> coupling_class
+
+candidate_id	owns_setjmp	writes_current_recovery	requires_nonlocal_recovery	coupling_class
+CAND-001	NO	NO	NO	NONE
+CAND-002	NO	NO	NO	NONE
+CAND-003	NO	NO	NO	NONE
+CAND-003S	NO	NO	NO	NONE
+CAND-004	NO	NO	NO	NONE
+CAND-005	NO	NO	NO	NONE
+CAND-006	NO	NO	NO	NONE
+CAND-007	NO	NO	NO	NONE
+CAND-008	NO	NO	NO	NONE
+CAND-009	NO	NO	NO	NONE
+CAND-010	NO	NO	NO	NONE
+CAND-011	NO	NO	NO	NONE
+CAND-012	NO	NO	NO	NONE
+CAND-013	NO	NO	NO	NONE
+CAND-014	YES	YES	YES	RECOVERY_OWNER
+CAND-015	NO	NO	NO	NONE
+CAND-016	NO	NO	YES	DIAGNOSTIC_NONLOCAL_TRANSFER
+CAND-017	NO	NO	NO	NONE
+CAND-018	NO	NO	NO	NONE
+CAND-019	NO	NO	NO	NONE
+CAND-020	NO	NO	NO	NONE
+CAND-021	NO	NO	NO	NONE
+CAND-022	NO	NO	NO	NONE
+CAND-023	NO	NO	NO	NONE
+CAND-024	NO	NO	NO	NONE
+CAND-025	NO	NO	NO	NONE
+CAND-026	NO	NO	NO	NONE
+CAND-027	NO	NO	NO	NONE
+CAND-028	NO	NO	NO	NONE
+CAND-029	NO	NO	NO	NONE
+CAND-030	NO	NO	NO	NONE
+CAND-031	NO	NO	NO	NONE
+CAND-032	NO	NO	NO	NONE
+CAND-033	NO	NO	NO	NONE
+CAND-034	NO	NO	NO	NONE
+CAND-035	NO	NO	NO	NONE
+
+RECOVERY_OWNERS=1 (CAND-014)
+NONLOCAL_RECOVERY_DEPENDENTS=2 (CAND-014, CAND-016)

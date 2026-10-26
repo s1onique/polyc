@@ -1,0 +1,46 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03
+# ACT_PHASE=C1-INVENTORY
+# EVIDENCE_KIND=newly-discovered-slices
+#
+# The NEW semantic sub-slices discovered by the RECON03 fresh search of
+# the current parser, beyond the RECON02 inventory.
+#
+# The search covered the three files that carry the parser semantic
+# authority (src/parser.c, src/prslib.c, src/prsutil.c) plus the
+# parser-facing semantic primitives of src/ast.c.  It looked for the
+# ACT §3.3 patterns: pure scalar classifications, token-kind and keyword
+# predicates, bounded size/alignment calculations, integer-domain
+# decisions, small immutable AST-property projections and bounded local
+# control-flow classifications.
+#
+# Schema: candidate_id <TAB> function_name <TAB> source_file <TAB> source_line <TAB> discovery_pattern <TAB> real_legacy_operation <TAB> production_call_path_exists <TAB> input_projection_complete <TAB> output_projection_complete <TAB> bounded_data_representation <TAB> host_identity_required <TAB> host_graph_mutation <TAB> nonlocal_recovery <TAB> semantic_callback <TAB> polyc_production_delegation_feasible <TAB> verdict
+
+candidate_id	function_name	source_file	source_line	discovery_pattern	real_legacy_operation	production_call_path_exists	input_projection_complete	output_projection_complete	bounded_data_representation	host_identity_required	host_graph_mutation	nonlocal_recovery	semantic_callback	polyc_production_delegation_feasible	verdict
+CAND-017	parseGetPriority	src/prslib.c	1139..1207	integer-domain decision (the operator precedence table)	YES	YES	YES	YES	YES	NO	NO	NO	NO	YES	ELIGIBLE
+CAND-018	parseCompoundAssign	src/prslib.c	1269..1289	token-kind / integer-domain decision	YES	YES	YES	YES	YES	NO	NO	NO	NO	YES	ELIGIBLE
+CAND-019	astBinOpFromToken	src/ast.c	206..236	integer-domain decision	YES	YES	YES	YES	YES	NO	NO	NO	NO	YES	ELIGIBLE
+CAND-020	astUnaryOpFromToken	src/ast.c	238..254	integer-domain decision	YES	YES	YES	YES	YES	NO	NO	NO	NO	YES	ELIGIBLE
+CAND-021	astBinOpToTokenPunct	src/prslib.c	1293..1316	integer-domain decision	YES	YES	YES	YES	YES	NO	NO	NO	NO	YES	ELIGIBLE
+CAND-022	parseCountPrintfFormatSpecs	src/prslib.c	760..792	bounded byte-buffer classification	YES	YES	YES	YES	YES	NO	NO	NO	NO	YES	ELIGIBLE
+CAND-023	parseFormatArgIdx	src/prslib.c	798..810	bounded byte-buffer classification	YES	YES	YES	YES	YES	NO	NO	NO	NO	YES	ELIGIBLE
+CAND-024	astTypeAlign	src/ast.c	1310..1328	bounded size/alignment calculation	YES	YES	NO	YES	NO	YES	NO	NO	NO	NO	EXCLUDED
+CAND-025	astIsAssignment	src/ast.c	845..866	integer-domain decision	YES	YES	YES	YES	YES	NO	NO	NO	NO	YES	ELIGIBLE
+CAND-026	astIsValidPointerOp	src/ast.c	876..892	integer-domain decision	YES	YES	YES	YES	YES	NO	NO	NO	NO	YES	ELIGIBLE
+CAND-027	astTypeIsPtr	src/ast.c	868..870	small immutable AST-property projection	YES	YES	YES	YES	YES	YES	NO	NO	NO	NO	EXCLUDED
+CAND-028	astTypeIsArray	src/ast.c	872..874	small immutable AST-property projection	YES	YES	YES	YES	YES	YES	NO	NO	NO	NO	EXCLUDED
+CAND-029	astIsIntType	src/ast.c	1330..1340	small immutable AST-property projection	YES	YES	YES	YES	YES	YES	NO	NO	NO	NO	EXCLUDED
+CAND-030	parseIsClassOrUnion	src/prsutil.c	22..25	small immutable AST-property projection	YES	YES	YES	YES	YES	NO	NO	NO	NO	YES	ELIGIBLE
+CAND-031	align	src/prsutil.c	9..15	bounded size/alignment calculation	YES	NO	YES	YES	YES	NO	NO	NO	NO	NO	EXCLUDED
+CAND-032	parsePromoteVarargFloats	src/prslib.c	571..582	bounded local classification	YES	YES	NO	NO	NO	YES	YES	NO	YES	NO	EXCLUDED
+CAND-033	parseCoerceArgs	src/prslib.c	584..623	bounded local classification	YES	YES	NO	NO	NO	YES	YES	NO	YES	NO	EXCLUDED
+CAND-034	astJumpTableSort	src/ast.c	468..485	bounded local classification	YES	YES	NO	NO	NO	YES	YES	NO	NO	NO	EXCLUDED
+CAND-035	astCasesCompress	src/ast.c	489..502	bounded local classification	YES	YES	NO	NO	NO	YES	YES	NO	NO	NO	EXCLUDED
+
+NEW_SLICES_DISCOVERED=19
+NEW_SLICES_MEETING_ACT_5_2=10
+NEW_SLICES_FAILING_ACT_5_2=9
+  CAND-024 (unbounded recursion), CAND-027/CAND-028/CAND-029 (host pointer identity in the ABI),
+  CAND-031 (no production call path), CAND-032/CAND-033/CAND-034/CAND-035 (host graph mutation)
+NOTE: a sub-slice is NOT eligible merely because its proposed signature accepts
+# scalar values (ACT §5.1).  The nine excluded rows above each fail a
+# clause of the ACT §5.2 checklist, and the failing clause is named.

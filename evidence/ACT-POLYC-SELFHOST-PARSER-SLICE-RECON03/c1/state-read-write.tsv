@@ -1,0 +1,52 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03
+# ACT_PHASE=C1-INVENTORY
+# EVIDENCE_KIND=state-read-write
+#
+# State dependency matrix.  Every dependency class required by ACT §7.2 is
+# listed here for EVERY candidate.  A cell that does not apply is written
+# NONE; a dependency that could not be resolved would be written
+# UNRESOLVED.  There are no UNRESOLVED cells.
+#
+# Schema: candidate_id <TAB> cctrl_rw <TAB> ast_rw <TAB> lexeme_rw <TAB> list_map_vec <TAB> pointer_identity <TAB> arena_ownership <TAB> setjmp_longjmp <TAB> diagnostic_ownership <TAB> subordinate_semantic_callbacks <TAB> global_static_state
+
+candidate_id	cctrl_rw	ast_rw	lexeme_rw	list_map_vec	pointer_identity	arena_ownership	setjmp_longjmp	diagnostic_ownership	subordinate_semantic_callbacks	global_static_state
+CAND-001	NONE	NONE	READ tk_type,READ i64	NONE	NONE	NONE	NONE	NONE	NONE
+CAND-002	NONE	NONE	NONE	NONE	NONE	NONE	NONE	NONE	NONE	NONE
+CAND-003	NONE	WRITE AstType.offset	READ AstType.size	READ List<ClsField*>	NONE	NONE	NONE	NONE	NONE	NONE
+CAND-003S	NONE	WRITE AstType.offset	READ AstType.size	READ List<ClsField*>	NONE	NONE	NONE	NONE	NONE	NONE
+CAND-004	NONE	NONE	READ AstType.size	READ List<ClsField*>	YES (cls_field pointer walk)	NONE	NONE	NONE	NONE	NONE
+CAND-005	NONE	READ Ast.kind,READ AstType.kind,READ Ast.i64	NONE	NONE	NONE	NONE	NONE	NONE	NONE
+CAND-006	NONE	READ Ast.kind,READ Ast.then,READ Ast.els,READ Ast.stms	NONE	READ List<Ast*>	NONE	NONE	NONE	NONE	NONE
+CAND-007	NONE	READ Ast.kind,READ Ast.then,READ Ast.els,READ Ast.forcond,READ Ast.whilecond,READ Ast.case_default,READ Ast.stms	NONE	READ List<Ast*>	NONE	NONE	NONE	NONE	NONE
+CAND-008	NONE	NONE	NONE	READ AoStr byte buffer	NONE	NONE	NONE	NONE	NONE	NONE
+CAND-009	NONE	NONE	NONE	NONE	NONE	YES (malloc result escapes)	NONE	NONE	NONE	NONE
+CAND-010	NONE	NONE	NONE	NONE	NONE	NONE	NONE	NONE	NONE	YES (static counter mutated)
+CAND-011	NONE	WRITE AstType.offset	NONE	READ Map,WRITE Map	YES (AstType pointer)	YES (astTypeCopy may allocate)	NONE	NONE	NONE	NONE
+CAND-012	READ token stream,WRITE cc->kind_out,WRITE cc->reg_out	NONE	READ token	NONE	NONE	YES	NONE	YES (cctrlRaiseException)	NONE	NONE
+CAND-013	NONE	READ Ast,READ AstType,WRITE new Ast	NONE	NONE	YES (new Ast)	NONE	NONE	NONE	NONE
+CAND-014	READ cc->current_recovery,READ cc->localenv,WRITE cc->current_recovery,WRITE cc->localenv,READ token stream	READ/WRITE AST subtree	NONE	READ List<Ast*>	NONE	NONE	YES (setjmp at :1853, restore at :1959)	YES (cctrlRaiseException)	YES (parseStatement and friends)	NONE
+CAND-015	READ token stream,WRITE cc->localenv	NONE	READ token	NONE	NONE	NONE	NONE	YES (cctrlRaiseException)	NONE	NONE
+CAND-016	READ cc->rewind state,READ token	NONE	NONE	NONE	NONE	NONE	YES (cctrlRaiseExceptionFromTo longjmps)	YES	NONE	NONE
+CAND-017	NONE	NONE	READ tok->i64 (ONE field)	NONE	NONE	NONE	NONE	NONE	NONE	NONE
+CAND-018	NONE	NONE	READ tok->tk_type,READ tok->i64	NONE	NONE	NONE	NONE	NONE	NONE	NONE
+CAND-019	NONE	NONE	NONE	NONE	NONE	NONE	NONE	NONE	NONE	NONE
+CAND-020	NONE	NONE	NONE	NONE	NONE	NONE	NONE	NONE	NONE	NONE
+CAND-021	NONE	NONE	NONE	NONE	NONE	NONE	NONE	NONE	NONE	NONE
+CAND-022	NONE	NONE	NONE	READ bounded byte buffer	NONE	NONE	NONE	NONE	NONE	NONE
+CAND-023	NONE	NONE	NONE	READ bounded byte buffer	NONE	NONE	NONE	NONE	NONE	NONE
+CAND-024	NONE	READ AstType.kind,READ AstType.size,READ AstType.alignment,READ AstType.ptr	NONE	NONE	NONE	NONE	NONE	NONE
+CAND-025	NONE	NONE	NONE	NONE	NONE	NONE	NONE	NONE	NONE	NONE
+CAND-026	NONE	NONE	NONE	NONE	NONE	NONE	NONE	NONE	NONE	NONE
+CAND-027	NONE	READ AstType.kind	NONE	NONE	YES (host pointer dereference)	NONE	NONE	NONE	NONE	NONE
+CAND-028	NONE	READ AstType.kind	NONE	NONE	YES (host pointer dereference)	NONE	NONE	NONE	NONE	NONE
+CAND-029	NONE	READ AstType.kind	NONE	NONE	YES (host pointer dereference)	NONE	NONE	NONE	NONE	NONE
+CAND-030	NONE	NONE	NONE	NONE	NONE	NONE	NONE	NONE	NONE	NONE
+CAND-031	NONE	NONE	NONE	NONE	NONE	NONE	NONE	NONE	NONE	NONE
+CAND-032	NONE	READ Arg.kind,READ Arg.type,WRITE argv->entries[i]	READ Vec<Ast*>	NONE	NONE	NONE	NONE	NONE	NONE
+CAND-033	NONE	READ Param.kind,READ Arg.kind,READ Arg.type,WRITE argv->entries[i]	READ Vec<Ast*>	NONE	NONE	NONE	NONE	NONE	NONE
+CAND-034	NONE	READ Ast.case_begin,WRITE Ast** array order	NONE	READ/WRITE Ast** array	YES (Ast pointer dereference)	NONE	NONE	NONE	NONE	NONE
+CAND-035	NONE	READ Ast.case_label,READ Ast.case_asts,WRITE Ast.case_label	NONE	READ/WRITE Ast** array	YES (Ast pointer dereference)	NONE	NONE	NONE	NONE	NONE
+
+UNCLASSIFIED_STATE_DEPENDENCIES=0
+DEPENDENCY_CLASSES_PER_CANDIDATE=10 (all ten ACT §7.2 classes are present in every row)
+ROWS_WITH_UNRESOLVED=0

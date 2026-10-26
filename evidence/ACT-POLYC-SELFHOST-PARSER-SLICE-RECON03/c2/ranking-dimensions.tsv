@@ -1,0 +1,59 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03
+# ACT_PHASE=C2-RANK-SELECT
+# EVIDENCE_KIND=ranking-dimensions
+#
+# FROZEN R1..R6 MEANINGS (verbatim from the canonical source:
+# docs/acts/ACT-POLYC-SELFHOST-SURFACE-RECON03.md sections 25..30, as
+# restated in evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02/c2/
+# c2-ranked-candidates.tsv -- the last ACT that froze them).
+#
+#   R0 STATE_BOUNDARY_COST        0 scalars/enums/bytes; 1 immutable copied
+#                                 token/value record; 2 bounded copied semantic
+#                                 record; 3 opaque host handle; 4 host-owned
+#                                 mutable graph; 5 recovery / nonlocal control
+#                                 transfer / callback authority
+#   R1 SELFHOST_STAGE_LEVERAGE    0 blocks the next self-host stage; 1 unlocks
+#                                 multiple following surfaces; 2 unlocks one
+#                                 following surface; 3 useful but non-blocking
+#   R2 SEMANTIC_CENTRALITY        0 single function / tight component;
+#                                 1 small cohesive region; 2 multi-function
+#                                 coupled region; 3 cross-file region
+#   R3 PROOF_OBSERVABILITY        0 existing production differential;
+#                                 1 existing direct oracle; 2 easy bounded oracle;
+#                                 3 metamorphic only; 4 weak or no oracle
+#   R4 DEPENDENCY_COUPLING_COST   mechanical count of direct helper deps +
+#                                 shared mutable compiler state + external
+#                                 semantic regions touched; lower first
+#   R5 MIGRATION_SIZE             1 small fixture matrix + simple differential;
+#                                 2 bounded component + production seam;
+#                                 3 multi-stage fixedpoint + production seam;
+#                                 4 parser/tree comparison;
+#                                 5 large cross-region semantic proof
+#   R6 SOURCE_ORDER               file lexical asc, then line_start asc
+#
+# RECON01/RECON02 additionally used R5 as a 0/1 flag on the same
+# dimension: 0 = a PURE SCALAR-DOMAIN decision whose proof is a direct
+# value-in/value-out differential; 1 = a decision whose INPUT DOMAIN is
+# not a plain scalar (token-kind records, text buffers, recursive trees),
+# so the fixture matrix is larger than a scalar matrix.  This ACT keeps
+# that historical 0/1 usage for scalar-domain candidates and uses the
+# 1..5 scale for the non-scalar ones.  The two usages never overlap on
+# a candidate, so the ordering is preserved.
+#
+# R6 is encoded as the literal string "<file>:<line_start>", exactly as
+# RECON01 (c2-ranked-candidates.tsv, c3-ranking-recompute.tsv) and
+# RECON02 (c2-ranked-candidates.tsv) encoded it, and is ordered by file
+# lexical asc then line_start asc.  No new column, no new weight and no
+# silent redefinition of any historical column was introduced (AC21).
+
+# Schema: candidate_id <TAB> R0 <TAB> R1 <TAB> R2 <TAB> R3 <TAB> R4 <TAB> R5 <TAB> R6 <TAB> eligible <TAB> rationale
+CAND-017	0	1	2	2	0	0	src/prslib.c:1139	YES	R1=1: migrating the operator-precedence table unlocks multiple following surfaces (every binary/unary operator classification, the right-recursion associativity decision, and therefore the AST shape of every expression in every compiled program). R2=2: the multi-function coupled region of the expression parser. R3=2: easy bounded oracle (a total function on one scalar domain). R4=0: no direct helper dependency, no shared mutable compiler state, no external semantic region touched -- the body is one self-contained switch over tok->i64. R5=0: pure scalar-domain decision; a direct value-in/value-out differential over the punct-value matrix suffices. R6=src/prslib.c:1139
+CAND-018	0	2	2	2	0	0	src/prslib.c:1269	YES	R1=2: unlocks one following surface (the compound-assignment desugaring). R2=2: expression-parser region. R3=2: easy bounded oracle. R4=0: self-contained switch over tok->tk_type and tok->i64. R5=0: pure scalar-domain decision. R6=src/prslib.c:1269
+CAND-019	0	2	3	2	0	0	src/ast.c:206	YES	R1=2: unlocks one following surface (binary-operator classification). R2=3: cross-file region (defined in src/ast.c, consumed by src/prslib.c:1468). R3=2: easy bounded oracle. R4=0: self-contained switch over one s64. R5=0: pure scalar-domain decision. R6=src/ast.c:206
+CAND-020	0	2	3	2	0	0	src/ast.c:238	YES	R1=2: unlocks one following surface (unary-operator classification). R2=3: cross-file region (defined in src/ast.c, consumed by src/prslib.c:1391 and :1698). R3=2: easy bounded oracle. R4=0: self-contained switch over one s64. R5=0: pure scalar-domain decision. R6=src/ast.c:238
+CAND-021	0	2	2	2	0	0	src/prslib.c:1293	YES	R1=2: unlocks one following surface (the inverse operator map used for the binary-operator diagnostic). R2=2: expression-parser region. R3=2: easy bounded oracle. R4=0: self-contained switch over one enum. R5=0: pure scalar-domain decision. R6=src/prslib.c:1293
+CAND-022	0	2	2	2	0	0	src/prslib.c:760	YES	R1=2: unlocks one following surface (the printf format-argument-count check). R2=2: expression-parser region. R3=2: easy bounded oracle. R4=0: self-contained byte scan. R5=1: the input domain is a bounded byte buffer, not a plain scalar, so the fixture matrix is larger than a scalar matrix. R6=src/prslib.c:760
+CAND-023	0	2	2	2	1	1	src/prslib.c:798	YES	R1=2: unlocks one following surface (the printf format-argument-index table). R2=2: expression-parser region. R3=2: easy bounded oracle. R4=1: one direct helper dependency (strncmp). R5=1: the input domain is a bounded byte buffer, not a plain scalar. R6=src/prslib.c:798
+CAND-025	0	2	3	2	0	0	src/ast.c:845	YES	R1=2: unlocks one following surface (the assignment-operator predicate used by the transpiler). R2=3: cross-file region (defined in src/ast.c, consumed by src/transpiler.c:485). R3=2: easy bounded oracle. R4=0: self-contained switch over one s64. R5=0: pure scalar-domain decision. R6=src/ast.c:845
+CAND-026	0	2	3	2	0	0	src/ast.c:876	YES	R1=2: unlocks one following surface (the pointer-comparison-operator predicate). R2=3: cross-file region (defined in src/ast.c, consumed by src/ast.c:981). R3=2: easy bounded oracle. R4=0: self-contained switch over one enum. R5=0: pure scalar-domain decision. R6=src/ast.c:876
+CAND-030	0	2	3	2	0	0	src/prsutil.c:22	YES	R1=2: unlocks one following surface (the class-or-union type-kind predicate). R2=3: cross-file region (defined in src/prsutil.c, consumed by src/parser.c:537 and :585 and src/prslib.c:1225). R3=2: easy bounded oracle. R4=0: self-contained comparison of one int. R5=0: pure scalar-domain decision. R6=src/prsutil.c:22

@@ -1,0 +1,60 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03
+# ACT_PHASE=C1-INVENTORY
+# EVIDENCE_KIND=semantic-projections
+#
+# The INPUT PROJECTION and OUTPUT PROJECTION of each candidate: what
+# scalar (or bounded record) actually determines the result.
+#
+# ACT §5.2 requires INPUT_PROJECTION_COMPLETE and
+# OUTPUT_PROJECTION_COMPLETE to be MECHANICALLY JUSTIFIED.  For the
+# candidates whose input is a host pointer, the projection column
+# records WHICH FIELD(S) the body actually reads -- and that list was
+# obtained by reading the function body, not by assuming it.
+#
+# Schema: candidate_id <TAB> current_signature <TAB> fields_actually_read <TAB> input_projection <TAB> output_projection <TAB> input_projection_complete <TAB> output_projection_complete <TAB> projection_proof
+
+candidate_id	current_signature	fields_actually_read	input_projection	output_projection	input_projection_complete	output_projection_complete	projection_proof
+CAND-001	int parseValidPostControlFlowToken(Lexeme *tok)	tok->tk_type,tok->i64	(I64 present,I64 kind,I64 value)	I64	YES	YES	the body reads exactly tk_type and i64; present encodes the NULL case
+CAND-002	int CalcPadding(int offset,int size)	offset,size	(I64 offset,I64 size)	I64	YES	YES	scalar in, scalar out
+CAND-003	u32 CalcClassSize(List *fields)	List<ClsField*>,ClsField->type->size,AstType->alignment,AstType->offset (WRITE)	NO BOUNDED SCALAR PROJECTION (the walk needs the field list and it WRITES offsets)	u32	NO	YES	the returned size is bounded, but the input has no bounded scalar projection and the side effect is a host-graph write
+CAND-003S	(none -- no such function exists)	N/A	N/A	N/A	NO	N/A	no size-only sub-function exists in the legacy source
+CAND-004	u32 CalcUnionSize(List *fields)	List<ClsField*>,ClsField->type->size	NO BOUNDED SCALAR PROJECTION without a host pointer walk	u32	NO	YES	the result depends on the ORDER and IDENTITY of the List nodes
+CAND-005	static int astIsConstTrueCond(Ast *c)	c->kind,c->type->kind,c->i64	(I64 present,I64 node_kind,I64 type_kind,I64 i64)	I64	YES	YES	the body reads exactly three fields; the projection is a bounded 4-scalar record
+CAND-006	static int astStmtHasBreak(Ast *s)	s->kind,s->then,s->els,s->stms	NO BOUNDED PROJECTION (unbounded recursion)	I64	NO	YES	the recursion depth is the statement-tree depth
+CAND-007	static int astStmtFallsThrough(Ast *s)	s->kind,s->then,s->els,s->forcond,s->whilecond,s->case_default,s->stms	NO BOUNDED PROJECTION (unbounded recursion)	I64	NO	YES	the recursion depth is the statement-tree depth
+CAND-008	static int asmTextHasReturn(AoStr *text)	text->data bytes,text->len	(I64 present,I64 length,I64 byte[i])	I64	YES (given an explicit length)	YES	the scan is over an explicit byte range; the byte buffer itself has no bound
+CAND-009	ClsField *clsFieldNew(AstType *type,AoStr *field_name)	none	N/A	N/A	NO	YES	the result is a host pointer
+CAND-010	static AoStr *getRangeLoopIdx(void)	static counter	N/A	N/A	NO	YES	the result depends on a mutated static counter
+CAND-011	void parseFlattenAnnonymous(AstType *anon,Map *fields_dict,int offset,int make_copy)	anon->fields map,base->offset	NO BOUNDED PROJECTION	NONE	NO	NONE	the function mutates host nodes and a host map
+CAND-012	void parseRegModifier(Cctrl *cc,int *kind_out,AoStr **reg_out)	cctrl token stream	N/A	N/A	NO	NO	the result depends on the Cctrl token state
+CAND-013	static Ast *parseFoldInitElement(Ast *init,AstType *dst)	init,dst	N/A	N/A	NO	NO	the result is a new host AST node
+CAND-014	static void parseCompoundStatementInternal(Cctrl *cc,Ast *body)	cc state,token stream,AST subtree	N/A	N/A	NO	NO	the function owns a recovery frame
+CAND-015	static Ast *parseIfClause(Cctrl *cc,char *term_out)	cctrl token stream,cc->localenv	N/A	N/A	NO	NO	the result depends on the Cctrl state
+CAND-016	static void parseRaiseCaseException(Cctrl *cc,Ast *case_expr)	case_expr	N/A	N/A	NO	NO	diagnostic emission only
+CAND-017	static int parseGetPriority(Lexeme *tok)	tok->i64 (ONE field)	(I64 punct_value)	I64 precedence in {-1,1..14}	YES	YES	MECHANICALLY PROVEN: the body is a single switch over tok->i64 with no other identifier; grep over src/prslib.c:1139..1207 finds exactly one field access (tok->i64) and no other expression
+CAND-018	static int parseCompoundAssign(Lexeme *tok,AstBinOp *_op)	tok->tk_type,tok->i64	(I64 tk_type,I64 punct_value)	(I64 valid,I64 binop)	YES	YES	the body reads exactly tk_type and i64; the out-param is written ONLY on success
+CAND-019	int astBinOpFromToken(s64 op,AstBinOp *_result)	op (one s64)	(I64 punct_value)	(I64 valid,I64 binop)	YES	YES	the body is a switch over one s64; the out-param is written ONLY on success
+CAND-020	int astUnaryOpFromToken(s64 op,AstUnOp *_result)	op (one s64)	(I64 punct_value)	(I64 valid,I64 unop)	YES	YES	the body is a switch over one s64; the out-param is written ONLY on success
+CAND-021	static s64 astBinOpToTokenPunct(AstBinOp op)	op (one enum)	(I64 binop)	I64 punct_value	YES	YES	the body is a switch over one enum
+CAND-022	static int parseCountPrintfFormatSpecs(const char *fmt,int len)	fmt[0..len)	(I64 present,I64 length,I64 byte[i])	I64 count or -1	YES (given an explicit length)	YES	the scan is over an explicit byte range
+CAND-023	static int parseFormatArgIdx(char *fname,int len)	fname[0..len)	(I64 present,I64 length,I64 byte[i])	I64 index or -1	YES (given an explicit length)	YES	the scan is over an explicit byte range
+CAND-024	int astTypeAlign(AstType *type)	type->kind,type->size,type->alignment,type->ptr	NO BOUNDED PROJECTION (recursive)	I64	NO	YES	the recursion follows type->ptr
+CAND-025	int astIsAssignment(s64 op)	op (one s64)	(I64 punct_value)	I64 0 or 1	YES	YES	the body is a switch over one s64
+CAND-026	int astIsValidPointerOp(AstBinOp op)	op (one enum)	(I64 binop)	I64 0 or 1	YES	YES	the body is a switch over one enum
+CAND-027	int astTypeIsPtr(AstType *type)	type->kind	(I64 present,I64 type_kind)	I64 0 or 1	YES	YES	the body reads exactly one field; the HOST POINTER itself is not a scalar ABI value
+CAND-028	int astTypeIsArray(AstType *type)	type->kind	(I64 present,I64 type_kind)	I64 0 or 1	YES	YES	the body reads exactly one field; the HOST POINTER itself is not a scalar ABI value
+CAND-029	int astIsIntType(AstType *type)	type->kind	(I64 present,I64 type_kind)	I64 0 or 1	YES	YES	the body reads exactly one field; the HOST POINTER itself is not a scalar ABI value
+CAND-030	inline int parseIsClassOrUnion(int kind)	kind (one int)	(I64 type_kind)	I64 0 or 1	YES	YES	the body compares one int against two constants
+CAND-031	int align(int n,int m)	n,m	(I64 n,I64 m)	I64	YES	YES	scalar in, scalar out
+CAND-032	static void parsePromoteVarargFloats(Vec *argv,u64 from_idx)	argv entries,arg->kind,arg->type,arg->type->size	NO BOUNDED PROJECTION	NONE	NO	NO	the function rewrites host AST nodes
+CAND-033	static void parseCoerceArgs(Ast *def,Vec *argv)	params,argv,arg/param kinds and types	NO BOUNDED PROJECTION	NONE	NO	NO	the function rewrites host AST nodes
+CAND-034	static void astJumpTableSort(Ast **cases,int high,int low)	cases array,cur->case_begin	NO BOUNDED PROJECTION	NONE	NO	NO	the sort mutates a host pointer array
+CAND-035	static void astCasesCompress(Ast **cases,int size)	cases array,case_label,case_asts	NO BOUNDED PROJECTION	NONE	NO	NO	the function rewrites host AST labels
+
+INPUT_PROJECTION_COMPLETE_CANDIDATES=18
+  (CAND-001, CAND-002, CAND-005, CAND-008, CAND-017..CAND-023, CAND-025..CAND-031)
+NOTE: CAND-027, CAND-028 and CAND-029 have a complete FIELD projection, but the
+# host pointer that carries it is NOT a scalar ABI value, so the pointer must
+# be projected at the CALL SITE.  That is a CALLER-side projection, not a
+# change to the callee, and it is a legitimate but weaker seam than
+# CAND-017, whose callee signature is already a single scalar.
