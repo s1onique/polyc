@@ -16,7 +16,7 @@ COMMAND=git diff --check 4113123f..HEAD
   (empty)
 PATCH_HYGIENE_ERRORS=0
 
-COMMAND=sh scripts/quality/factory-v2-range-check.sh ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION01 HEAD
+COMMAND=sh scripts/quality/factory-v2-range-check.sh ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION01 <the CLOSE commit>
   ACT=ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION01
   ENTRY=4113123fbc766d966244d0d22d5d088247d79a48
   FIRST=86cb80a23135dfd30447152b357eaeef44bc1a08
@@ -25,6 +25,16 @@ COMMAND=sh scripts/quality/factory-v2-range-check.sh ACT-POLYC-SELFHOST-PARSER-S
   VERDICT=PASS
   STATUS=PASS
 FACTORY_V2_RANGE_CHECK=PASS
+
+# NOTE ON THE ARGUMENT: the range check MUST be invoked with the CLOSE
+# commit, not with HEAD. Invoked with HEAD it correctly refuses, because
+# HEAD carries the descriptive terminality artifact commit, which has no
+# Factory trailer block of its own:
+#
+#   REASON=CLOSE <sha> carries no parseable Factory trailer block
+#
+# That refusal is the check working as intended, not a defect: the check
+# resolves the CLOSE of an ACT from the argument it is given.
 
 COMMAND=git log -1 --format='%B' | git interpret-trailers --parse
   ACT: ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION01
@@ -37,6 +47,12 @@ COMMAND=git log --all --format='%H %(trailers:key=ACT,valueonly)' | grep -c 'ACT
   6
 # The six are C0 (RED), C1 (IMPL), C2 (EVIDENCE), C3 (EVIDENCE),
 # C3 (EVIDENCE) and C4 (CLOSE). The CLOSE is the last of them.
+#
+# The descriptive commit that carries THIS terminality artifact
+# deliberately carries NO ACT trailer. An ACT-carrying commit after the
+# CLOSE would be an ACT continuation, which the Factory-v2 range check
+# rejects by design. The artifact is descriptive evidence; the verdict
+# authority remains the ACT-Verdict trailer on the CLOSE commit.
 POST_CLOSE_CONTINUATION=NO
 
 # ---- the append-only invariant still holds ------------------------
