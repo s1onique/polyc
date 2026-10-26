@@ -6005,7 +6005,7 @@ ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01
     eligibility checker itself (13/13 clauses), and the rank input is
     joined from that checker's output
 
-  GATE_FAST      = PASS (RC=0; manifest PAIR_OK=26 PAIR_FAIL=0)
+  GATE_FAST      = PASS (RC=0; manifest PAIR_OK=27 PAIR_FAIL=0)
   FACTORY_V2     = PASS (53/0)
   APPEND_ONLY    = PASS (11/0)
   PATCH_HYGIENE  = PASS (over the COMMITTED correction range)
@@ -6051,3 +6051,66 @@ See
 `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01.md`
 and
 `evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01/`.
+
+---
+
+#### ACT-POLYC-SELFHOST-PARSER-SLICE02 status (CLOSED PASS at this commit)
+
+```text
+ACT-POLYC-SELFHOST-PARSER-SLICE02
+  ENTRY       = 4fa6c8f (ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01 C4: CLOSE)
+  C0 AUTH     = (this ACT's authorization + entry freeze)
+  C1 RED      = (the subject, the oracle and the direct differential)
+  C2 IMPL     = (the production delegation and the causal control)
+  C3 EVIDENCE = (the AC ledger and the conservation gates)
+
+  CLASS = SELFHOST / PRODUCTION-AUTHORITY-MIGRATION
+
+  COMPONENT       = tools/bootstrap/selfhost-parser-control-flow-token.HC
+  COMPONENT_SYMBOL = _BootstrapValidPostControlFlowToken
+  COMPONENT_ABI   = I64 BootstrapValidPostControlFlowToken(
+                       I64 present, I64 kind, I64 value) -> I64
+  ABI_HOST_IDENTITY_FIELDS = 0
+  COMPONENT_BUILT_BY = the STAGE-0 compiler
+
+  CONTROL_FLOW_TOKEN_PRODUCTION_AUTHORITY = POLYC
+  LEGACY_PARSE_VALID_POST_CONTROL_FLOW_TOKEN_AUTHORITY = RETIRED
+
+  DIRECT_DIFFERENTIAL_TOTAL = 42
+  DIRECT_DIFFERENTIAL_PASS  = 42
+  DIRECT_DIFFERENTIAL_FAIL  = 0
+  ORACLE_CROSS_CHECK        = 326/326 identical to the REAL production object
+  MUTATIONS_DETECTED        = 4/4
+  CAUSAL_CONTROL            = YES (a mutated subject changes the
+                               production parser's diagnostic)
+  NO_SILENT_C_FALLBACK      = YES (fail-closed configure + symbol verify)
+  CONTROL_FLOW_TOKEN_SEMANTIC_DELTA = 0
+
+  PRODUCTION_CALL_SITES = 5
+
+  GATE_FAST      = PASS (RC=0; manifest PAIR_OK=27 PAIR_FAIL=0)
+  FACTORY_V2     = PASS (53/0)
+  APPEND_ONLY    = PASS (11/0)
+  PATCH_HYGIENE  = PASS (over the COMMITTED range)
+  SIBLING_PARSER_PADDING_DIFFERENTIAL = PASS (16640/16640)
+  STATIC_FUNCTION_LINKAGE_TEST = PASS
+  AC_LEDGER      = 12 PASS / 0 DEFERRED / 0 FAIL
+```
+
+The first production parser slice is now PolyC. The component is
+compiled by the stage-0 compiler, proved against the **real** production
+function (the oracle carries `src/parser.c`'s body verbatim and is
+cross-checked against the actual production object, 326/326 identical),
+and the production compiler genuinely executes it: the disassembly of
+the production `parseValidPostControlFlowToken` contains a real branch to
+`_BootstrapValidPostControlFlowToken`, and mutating the subject changes
+the production parser's own diagnostic.
+
+The decision's semantics are unchanged. The aliasing the predecessor
+ACT recorded is honoured: `TK_SUPERSCRIPT` and `TK_STR` are both
+`0x301`, the kind is bound **by number**, and kind `0x301` is `TK_STR`
+and is accepted.
+
+See
+`docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE02.md` and
+`evidence/ACT-POLYC-SELFHOST-PARSER-SLICE02/`.
