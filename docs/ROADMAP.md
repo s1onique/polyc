@@ -990,6 +990,23 @@ AOT-PIC-EXTERNAL-REFS01  ACT-POLYC-AOT-PIC-EXTERNAL-REFS01
              GATES01-CORRECTION01/c3/gate-push-correction01.log.
              Out of scope for this ACT (the cap-verifier is not
              touched by src/aarch64.c). Blocks gate-push only.
+
+             RESOLVED by ACT-POLYC-TOOLING-GEP01-GATE-REPAIR01.
+             The 26/4 aggregate was TWO independent defects behind one
+             generic message:
+               (A) src/holyc-lib/io_defs.HH declared FileWrite's 4th
+                   parameter as `Bool append=FALSE` while io.HC and
+                   tos.HH both declare `I64 flags=O_CREAT|O_RDWR`, so
+                   every defaulted call issued open(path, 0, 420)
+                   WITHOUT O_CREAT and silently wrote nothing;
+               (B) scripts/quality/llvm-cap-table-verifier.py hardcoded
+                   `HCC = REPO_ROOT / "hcc"` and therefore queried a
+                   DIFFERENT binary than the harness's --hcc=<path>;
+                   on a non-LLVM build `hcc --print-cap-table` is
+                   unhandled and dies on SIGSEGV.
+             Both are repaired. The gate now reports
+             GEP01_PASS=30 / GEP01_FAIL=0 and the unmodified gate-push
+             reaches VERDICT=PASS.
 ```
 
 See `evidence/ACT-POLYC-AOT-PIC-EXTERNAL-REFS01/c4/` for the full
@@ -5771,3 +5788,77 @@ recorded as residue.
 See
 `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01-CORRECTION01.md`
 and `evidence/ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01-CORRECTION01/`.
+
+#### ACT-POLYC-TOOLING-GEP01-GATE-REPAIR01 status
+   (CLOSED PASS at C4)
+
+```text
+ACT-POLYC-TOOLING-GEP01-GATE-REPAIR01
+  ENTRY      = c734c9c  (ACT-POLYC-FACTORY-V2-HALT-TRAILER-PARSER01
+                 CLOSE, PASS_TRUE_GREEN; left intact -- its push was
+                 blocked solely by the GEP01 gate this ACT repairs)
+  C1 RED     = the reproduced GEP01_PASS=26 / GEP01_FAIL=4 and the
+               isolation of TWO independent root causes behind the four
+               rows (c1/)
+  C2 IMPL    = io_defs.HH FileWrite declaration; verifier compiler-path
+               plumbing; harness stderr surfacing (3 files, +106/-23)
+  C3 EVID    = AC01..AC11 measured, NC-A and NC-B captured, unmodified
+               gate-push VERDICT=PASS (c3/)
+  C4 CLOSE   = (this section)
+  VERDICT    = PASS
+  PRODUCTION DELTA = NONE
+               (no production compiler source, no oracle row, no
+                predicate, no gate script, no build-switch wiring)
+```
+
+The LLVM GEP01 qualification harness reached 30/30 for the first time.
+The four failing rows that had been recorded as a single pre-existing
+P1 residue by three predecessor ACTs were, in fact, TWO independent
+defects hiding behind one generic message:
+
+```text
+(A) src/holyc-lib/io_defs.HH declared FileWrite's 4th parameter as
+    `Bool append=FALSE` while src/holyc-lib/io.HC and the canonical
+    public header src/holyc-lib/tos.HH both declare
+    `I64 flags=O_CREAT|O_RDWR`. The harness includes the
+    declaration-only header, so a defaulted 4th argument was lowered
+    as the boolean FALSE (0); the library issued open(path, 0, 420)
+    WITHOUT O_CREAT and every write silently failed. readat.err and
+    cap-verifier.txt were therefore never created.
+
+(B) scripts/quality/llvm-cap-table-verifier.py hardcoded
+    `HCC = REPO_ROOT / "hcc"`, so it silently queried a DIFFERENT
+    binary than the harness's `--hcc=<path>`. On a non-LLVM build
+    `hcc --print-cap-table` is unhandled (the dispatch is inside
+    `#ifdef HCC_ENABLE_LLVM` in src/main.c) and the process dies on
+    SIGSEGV (exit 139).
+```
+
+Both are repaired, and the repair is proven SENSITIVE to each defect by
+negative control (reverting only the header restores the exact 26/4
+RED; pointing only the verifier at the SIGSEGV binary fails with the
+exit status named).
+
+```text
+GEP01_QUALIFICATION      = 30/30 PASS
+GATE_PUSH_GEP01         = PASS  (was FAIL)
+GATE_PUSH_VERDICT       = PASS  (unmodified scripts/quality/gate-push.sh)
+GATE_FAST               = PASS
+FACTORY_V2_TEST         = 53/0
+FACTORY_APPEND_ONLY     = 11/0
+UNIT / JIT / LSP        = PASS / PASS / PASS (43/43)
+```
+
+Residue carried forward (see
+`evidence/ACT-POLYC-TOOLING-GEP01-GATE-REPAIR01/c4/residue.txt`):
+
+* **P1** — `src/main.c`: `--print-cap-table` on a NON-LLVM build falls
+  through to the normal compile path and dies on SIGSEGV instead of
+  failing loudly. Repairing it requires editing production compiler
+  source, which this ACT forbids. Recorded, not fixed.
+* **P1** — the cap-table verifier remains a Python tool, in tension with
+  F-NO-PYTHON. Pre-existing and separately owned; repaired in place,
+  not migrated.
+
+See `docs/acts/ACT-POLYC-TOOLING-GEP01-GATE-REPAIR01.md` and
+`evidence/ACT-POLYC-TOOLING-GEP01-GATE-REPAIR01/`.

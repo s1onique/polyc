@@ -1,0 +1,87 @@
+ACT-POLYC-TOOLING-GEP01-GATE-REPAIR01 -- Residue
+=================================================
+
+P0 = none. Nothing blocks the push of the linear history.
+
+P1 -- src/main.c: --print-cap-table on a NON-LLVM build SIGSEGVs
+---------------------------------------------------------------
+  `hcc --print-cap-table` is handled only inside
+  `#ifdef HCC_ENABLE_LLVM` (src/main.c:437). On a build without the
+  LLVM backend the flag is still parsed (src/cli.c:523 sets
+  args->print_cap_table = 1) but nothing consumes it. The compiler
+  then falls through to the normal compile path with NO input file
+  and dies on SIGSEGV.
+
+  Measured:
+    ./hcc --print-cap-table ; echo $?   -> 139   (stdout 0 bytes)
+
+  A compiler should reject an unsupported flag with a diagnostic, not
+  crash. This is a genuine production-compiler robustness defect.
+
+  NOT repaired by this ACT: the fix requires editing
+  src/main.c, which this ACT's scope explicitly forbids
+  ("Production semantic changes: FORBIDDEN").
+
+  It is no longer the cause of the GEP01 gate failure -- after this
+  ACT the harness and the verifier are pointed at the SAME compiler --
+  but it remains a latent crash for anyone who invokes the flag on a
+  non-LLVM build.
+
+  Recommended: a separate bounded production-compiler ACT that adds an
+  else-branch rejecting `--print-cap-table` when HCC_ENABLE_LLVM is
+  not defined.
+
+P1 -- the cap-table verifier is a Python tool
+----------------------------------------------
+  scripts/quality/llvm-cap-table-verifier.py is Python, in tension
+  with F-NO-PYTHON (docs/factory/DOCTRINE.md §26). It is pre-existing
+  and separately owned; it is recorded in
+  docs/factory/PYTHON-CALLGRAPH.tsv as the one
+  polyc_harness_to_python edge in the repository.
+
+  This ACT repaired the tool in place (compiler-path plumbing plus a
+  diagnosable non-zero-exit message). It did NOT migrate it.
+
+  Recommended: the existing F-NO-PYTHON migration backlog owns this.
+
+P2 -- python interpreter selection is environment-dependent
+-----------------------------------------------------------
+  The harness resolves `python3` from PATH through its own
+  `ResolveTool` helper, so an unrelated project's `.venv` can shadow
+  the interpreter and change which python3 runs the verifier. The
+  interpreter SELECTION remains the caller's environment
+  responsibility.
+
+  This is a documentation-level residue: the harness resolves the
+  name deterministically, but it cannot know which python3 the caller
+  intends.
+
+P2 -- the legacy shell harness is superseded
+--------------------------------------------
+  scripts/quality/llvm-gep01-test.sh is a tracked legacy tool
+  (docs/factory/LEGACY-NON-POLYC-TOOLS.tsv) superseded by the
+  PolyC-native tools/quality/llvm-gep01-test.HC. It was not modified
+  by this ACT. Its frozen PASS rows remain the AC02 baseline.
+
+P2 -- the legacy shell scripts need HCC_INSTALL_DIR
+-----------------------------------------------------
+  scripts/quality/llvm-intops01-test.sh and
+  scripts/quality/llvm-byte-memory01-test.sh default
+  HCC_INSTALL_DIR to /tmp/polyc-install, which does not exist on this
+  host. Without it they fail with
+  "Failed to open file: /tmp/polyc-install/include/tos.HH".
+  With HCC_INSTALL_DIR pointed at the canonical test prefix both
+  PASS (intops01 4/0, byte-memory01 37/0).
+
+  Pre-existing environment property of the legacy scripts, unrelated
+  to this ACT. Both scripts are tracked legacy tools.
+
+P2 -- a stale CMake cache in the warm tree can break `make test-prefix-install`
+---------------------------------------------------------------------------
+  `make jit-unit-test` / `make lsp-test` failed once with
+  "CMakeDetermineCXXCompiler ... configure_file: No such file or
+  directory" from build/test-prefix-install-build. Removing that
+  stale directory makes both pass. No file this ACT touches
+  participates in CXX compiler detection. Pre-existing warm-tree
+  hazard; the canonical gate-push builds in an isolated detached
+  worktree and is unaffected.

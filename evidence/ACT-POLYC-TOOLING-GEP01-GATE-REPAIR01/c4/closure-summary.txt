@@ -1,0 +1,86 @@
+ACT-POLYC-TOOLING-GEP01-GATE-REPAIR01 -- Closure Summary
+========================================================
+
+VERDICT = PASS
+
+IDENTITY
+  ENTRY_HEAD  = c734c9c31b3e3a53d6878e67b76809470ac9e1e0
+                (ACT-POLYC-FACTORY-V2-HALT-TRAILER-PARSER01 CLOSE,
+                 PASS_TRUE_GREEN; left intact)
+  RED commit  = 81168dd
+  IMPL commit = 4ee3398
+  EVID commit = 4e22703
+  CLOSE commit= (this commit)
+  BRANCH      = main
+
+ROOT CAUSE / FINDING
+  The four GEP01 failing rows were TWO independent defects hiding
+  behind one generic harness message, not one pre-existing residue:
+
+  (A) src/holyc-lib/io_defs.HH declared FileWrite's 4th parameter as
+      `Bool append=FALSE` while io.HC and tos.HH both declare
+      `I64 flags=O_CREAT|O_RDWR`. The harness includes the
+      declaration-only header, so the defaulted argument was lowered
+      as the boolean FALSE (0); the library issued
+      open(path, 0, 420) WITHOUT O_CREAT and wrote nothing.
+      -> readat.err and cap-verifier.txt were never created.
+
+  (B) scripts/quality/llvm-cap-table-verifier.py hardcoded
+      `HCC = REPO_ROOT / "hcc"`, so it queried a DIFFERENT binary
+      than the harness's --hcc=<path>. On a non-LLVM build
+      `hcc --print-cap-table` is unhandled and dies on SIGSEGV (139).
+
+RED
+  Reproduced: GEP01_PASS=26 / GEP01_FAIL=4, byte-identical to the
+  rows recorded by ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01
+  and ACT-POLYC-AOT-PIC-EXTERNAL-REFS01. Isolated by two PolyC probes
+  (c1/).
+
+IMPLEMENTATION
+  3 files, +106/-23: io_defs.HH (declaration), the verifier
+  (compiler-path plumbing + diagnosable exit), the harness (passes
+  --hcc through; surfaces the verifier's stderr).
+
+GATES
+  BUILD          = PASS  (gate-push CHECK=build)
+  INSTALL        = PASS  (gate-push CHECK=install)
+  GEP01          = PASS  (gate-push CHECK=gep01; GEP01_PASS=30/0)
+  AOT            = PASS
+  JIT            = PASS
+  LSP            = PASS  (43/43)
+  DIFF_CHECK     = PASS
+  GATE_PUSH      = PASS  (unmodified; VERDICT=PASS, rc=0)
+  GATE_FAST      = PASS  (rc=0)
+  FACTORY_V2     = PASS  (53/0)
+  APPEND_ONLY    = PASS  (11/0)
+  UNIT / JIT / LSP = PASS / PASS / PASS
+  LEGACY LLVM CALLERS = PASS (intops01 4/0, byte-memory01 37/0)
+
+SCOPE
+  FILES_CHANGED              = src/holyc-lib/io_defs.HH,
+                               scripts/quality/llvm-cap-table-verifier.py,
+                               tools/quality/llvm-gep01-test.HC,
+                               docs/ROADMAP.md,
+                               this ACT + evidence
+  PRODUCTION_SEMANTICS_CHANGED = NO
+  LLVM_CHANGED               = NO
+  ABI_REPAIR_CHANGED         = NO
+  ORACLE_OR_PREDICATE_CHANGED = NO
+  GATE_OR_HOOK_CHANGED       = NO
+  BUILD_SWITCH_WIRING_CHANGED = NO
+
+RESIDUE
+  P0 = none
+  P1 = src/main.c --print-cap-table SIGSEGVs on a non-LLVM build
+       (production-compiler robustness; forbidden scope, not fixed)
+  P1 = the cap-table verifier remains a Python tool (F-NO-PYTHON;
+       pre-existing, separately owned)
+  P2 = python interpreter selection is environment-dependent
+  P2 = the legacy shell harness is superseded
+  P2 = the legacy shell scripts need HCC_INSTALL_DIR
+  P2 = a stale CMake cache in the warm tree can break test-prefix-install
+
+NEXT ACT
+  None required for this scope. The push of the linear history
+  c734c9c..HEAD may now proceed normally: the gep01 gate step passes
+  and the append-only pre-push hook is unmodified.
