@@ -1,0 +1,35 @@
+=== ACT-POLYC-FACTORY-V2-HALT-TRAILER-PARSER01 C1 REQUIRED RESULT ===
+
+RED_HALT_TRAILER_PARSE_DEFECT_REPRODUCED=YES
+RED_FAIL_OPEN_CONFIRMED=YES
+RED_SPLIT_BLOCK_CONFIRMED=YES
+RED_POST_CLOSE_CONTINUATION_ESCAPE_CONFIRMED=YES
+HISTORICAL_POST_CLOSE_VIOLATION=PRESERVED
+PRODUCTION_COMPILER_DELTA=0
+C1_VERDICT=RED_REPRODUCED_CONTRACT_FROZEN
+
+--- RED-1 (valid HALT rejected by both validators) ---
+commit-msg check: MODE=NON_ACT STATUS=PASS rc=0   (WRONG: expected MODE=ACT)
+range check:     STATUS=FAIL count=0 ACT        (WRONG: expected PASS)
+git interpret-trailers --parse of the same CLOSE: EMPTY
+
+--- RED-2 (fail-open) ---
+syntactically complete Factory HALT footer -> MODE=NON_ACT STATUS=PASS rc=0
+FAIL_OPEN_RULE=scripts/quality/factory-v2-commit-msg-check.sh lines 72-77
+
+--- RED-3 (split ACT trailer block) ---
+git interpret-trailers --parse yields ONLY "ACT-Verdict: PASS"
+commit-msg check: MODE=NON_ACT STATUS=PASS rc=0   (WRONG: must be REJECT)
+
+--- RED-4 (post-CLOSE continuation) ---
+direct child continuation:            REJECTED (rc=1) - correct
+continuation behind ordinary commit:  ACCEPTED (rc=0) - DEFECT
+  (demonstrated with a parsable PASS verdict, because the HALT
+   variant currently fails earlier at CLOSE-parsing for an
+   unrelated reason)
+
+--- CONTRACT ---
+FROZEN=evidence/ACT-POLYC-FACTORY-V2-HALT-TRAILER-PARSER01/c1/c1-contract-freeze.txt
+
+--- NO PRODUCTION MUTATION ---
+git diff --stat 7166e5e5a48be3d37948692bf47c2404bd1b495f..HEAD -- src/ tools/ -> (empty)

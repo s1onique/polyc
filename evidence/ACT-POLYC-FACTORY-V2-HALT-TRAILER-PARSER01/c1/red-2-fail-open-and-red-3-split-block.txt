@@ -1,0 +1,45 @@
+=== RED-2: syntactically complete Factory HALT footer ===
+s
+
+b
+
+ACT: ACT-POLYC-TEST01
+ACT-Phase: CLOSE
+ACT-Verdict: HALT_X
+HALT_CLASS: GOVERNANCE
+BLOCKS_NEXT: NO
+--- commit-msg check ---
+MODE=NON_ACT
+STATUS=PASS
+rc=0
+
+=== RED-3: split ACT trailer block ===
+s
+
+b
+
+ACT: ACT-POLYC-TEST01
+
+ACT-Phase: CLOSE
+
+ACT-Verdict: PASS
+--- git interpret-trailers --parse ---
+ACT-Verdict: PASS
+(end parse)
+--- commit-msg check ---
+MODE=NON_ACT
+STATUS=PASS
+rc=0
+
+=== CONTROL: literal ACT: in ordinary prose ===
+s
+
+b
+
+this commit mentions ACT: in prose only
+--- git interpret-trailers --parse ---
+(end parse)
+--- commit-msg check ---
+MODE=NON_ACT
+STATUS=PASS
+rc=0

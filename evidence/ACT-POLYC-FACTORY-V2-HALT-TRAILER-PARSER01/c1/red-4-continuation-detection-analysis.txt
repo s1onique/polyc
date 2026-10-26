@@ -1,0 +1,33 @@
+=== RED-4 CONTINUATION DETECTION ANALYSIS ===
+
+The existing range-check "no commit after CLOSE may carry ACT:<id>" rule
+enumerates ONLY THE DIRECT CHILDREN of CLOSE:
+
+  git rev-list --children --all | awk -v c=$CLOSE '$1 == c { for (i=2;i<=NF;i++) print $i }'
+
+--- t49p (CLOSE -> same-ACT IMPL directly) ---
+66804440d15cbb76f1704db37a364267e4cf800c
+-> direct child found => REJECTED (correct)
+
+--- t50p (CLOSE -> ordinary -> same-ACT IMPL) ---
+86e009d0130473f7a5e492c51af1ba4506719786
+-> direct child is the ORDINARY commit (no ACT trailer) => ESCAPES
+
+--- t50p full history ---
+ba51de314371af798a41093c56750b3bbb292e25 synth CONT
+86e009d0130473f7a5e492c51af1ba4506719786 ordinary unrelated commit
+df9d0988a9a388306202a3b72fecb3a76b185bdb synth CLOSE
+26d39a8e2ba148876a42b1fd884b24be14b0bdd4 synth RED
+e1e48bf88f6c7212850e4d31178ac10b35e37763 seed commit
+
+--- t50p: does the grandchild carry the ACT id? ---
+ACT: ACT-POLYC-T50P
+ACT-Phase: IMPL
+
+
+CONCLUSION: the continuation detector only inspects direct children of CLOSE.
+An intervening ordinary commit on the descendant path hides a same-ACT
+continuation. This is a SEPARATE defect from the trailer-parse defect,
+and it is INSIDE this ACT scope (ACT section 8 Work package C:
+"Reject a same-ACT continuation after CLOSE, including cases with
+intervening ordinary commits on a relevant descendant path").

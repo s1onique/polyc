@@ -1,0 +1,155 @@
+=== ACT-POLYC-FACTORY-V2-HALT-TRAILER-PARSER01 C1 CONTRACT FREEZE ===
+
+FROZEN_AT=C1
+TREE_UNDER_TEST=C0 tree (commit 7166e5e5a48be3d37948692bf47c2404bd1b495f)
+
+--- C1.1 THE PARSING CONTRACT ---
+
+P1. The canonical Factory trailer keys are UNCHANGED:
+      HALT_CLASS, BLOCKS_NEXT
+    (ACT section D1; docs/factory/GIT-METADATA.md section 2.4.)
+
+P2. A compatibility normalization layer is the ONLY permitted mechanism.
+    It maps, for PARSING ONLY:
+      HALT_CLASS:  -> HALT-CLASS:
+      BLOCKS_NEXT: -> BLOCKS-NEXT:
+    No other key is normalized. Unknown keys are left untouched.
+
+P3. The raw commit message bytes are NEVER mutated. The normalization
+    operates on a temporary in-memory / temporary-file copy.
+
+P4. The normalization preserves, for every canonical key:
+      - the field VALUE verbatim (no whitespace rewriting)
+      - the field ORDER
+      - DUPLICATE detection (exact cardinality)
+      - the valid trailer-block boundary
+
+P5. After parsing, the normalized keys are mapped BACK to the canonical
+    names before the values are exposed to any validator. A validator
+    never observes "HALT-CLASS" or "BLOCKS-NEXT".
+
+P6. Cardinality is exact and observable:
+      ACT_COUNT, ACT_PHASE_COUNT, ACT_VERDICT_COUNT,
+      HALT_CLASS_COUNT, BLOCKS_NEXT_COUNT
+
+P7. The HALT classification rules are unchanged (GIT-METADATA 2.4):
+      HALT_CLASS in {GOVERNANCE,PRODUCTION,SAFETY,AUTHORIZATION,DEPENDENCY}
+      BLOCKS_NEXT in {YES,NO}
+      GOVERNANCE->NO, PRODUCTION->YES, SAFETY->YES,
+      AUTHORIZATION->YES, DEPENDENCY->{YES,NO}
+      HALT_* verdict => HALT_CLASS count==1 AND BLOCKS_NEXT count==1
+      PASS(_...)*  => HALT_CLASS count==0 AND BLOCKS_NEXT count==0
+
+P8. A malformed lookalike is REJECTED, never silently corrected:
+      e.g. "HALT_CLASS :GOV" (space before colon) is not HALT_CLASS;
+           "HALT-CLASS:" in a raw message is NOT a canonical HALT_CLASS
+           and must not be counted as one.
+
+--- C1.2 THE NON_ACT / FAIL-CLOSED CONTRACT ---
+
+P9. NON_ACT is returned ONLY when the complete message has been
+    classified as a genuine non-ACT message:
+      - Git parsed NO trailer block, AND
+      - the raw message contains no ACT-like trailer key at all.
+    "No ACT-like trailer key at all" means: no line matching
+      ^ACT:[ \t]+<value>  and no line matching
+      ^ACT-Phase:[ \t]+<value>, ^ACT-Verdict:[ \t]+<value>,
+      ^HALT_CLASS:[ \t]+<value>, ^BLOCKS_NEXT:[ \t]+<value>
+    within the message's trailing trailer region.
+
+P10. A commit whose message DOES contain ACT-like trailer metadata but
+     whose trailer block cannot be parsed faithfully MUST return
+     MODE=ACT STATUS=FAIL (rc=1). It MUST NOT return MODE=NON_ACT.
+
+P11. A literal "ACT:" occurring in ordinary message PROSE (not as a
+     trailer key in the trailing region) is NOT ACT metadata and MUST
+     still classify as NON_ACT PASS.
+
+P12. A SPLIT trailer block (ACT / ACT-Phase / ACT-Verdict separated by
+     blank lines) is MALFORMED and MUST be rejected, not partially
+     accepted. Git itself parses only the LAST such fragment
+     (measured: "ACT-Verdict: PASS"), which would otherwise yield a
+     verdict with no ACT.
+
+--- C1.3 THE RANGE CONTRACT ---
+
+P13. FIRST / ENTRY / CLOSE derivation is UNCHANGED:
+      FIRST = first commit of the contiguous backwards run carrying ACT:<id>
+      ENTRY = FIRST^
+      CLOSE = the resolved CLOSE-COMMIT argument
+      RANGE = ENTRY..CLOSE
+
+P14. The range check consumes the SAME normalized interpretation as the
+     commit-message check. It must NOT use git's %(trailers) formatter
+     as the source of truth for Factory trailer fields.
+
+P15. Every commit in FIRST..CLOSE is validated (ACT id, phase, and
+     supersession trailers only on CLOSE).
+
+P16. The post-CLOSE continuation rule covers the whole RELEVANT
+     DESCENDANT PATH, not only the direct children of CLOSE:
+       "No commit after CLOSE may carry ACT:<id>"
+     A same-ACT continuation is rejected even when an ordinary commit
+     (carrying no ACT trailer) intervenes between CLOSE and it.
+     (Measured RED-4b: with a parsable PASS verdict the CURRENT
+     implementation returns rc=0 / STATUS=PASS for
+     CLOSE -> ordinary -> same-ACT IMPL. That is the defect.)
+
+P17. Historical invalidity is NOT repaired by a parser fix. A historical
+     post-CLOSE continuation remains a violation; a historical
+     HALT_GATE_PUSH_NOT_GREEN remains a HALT.
+
+P18. A new correction ACT does NOT confer validity on its predecessor's
+     historical topology.
+
+--- C1.4 THE CHOSEN IMPLEMENTATION (smallest that fixes the defects) ---
+
+P19. ONE shared, bounded compatibility mechanism is introduced. It is
+     consumed by BOTH the commit-message check and the range check.
+     The existing PolyC classifier
+     (tools/factory/factory-halt-classification.HC) already parses the
+     underscore keys correctly and MUST NOT be given a second parser;
+     it is preserved and its behavior is verified to AGREE with the
+     two validators.
+
+P20. The classifier is not modified unless it disagrees with the
+     validators (ACT section 8 Work package D).
+
+--- C1.5 FROZEN EXPECTED OBSERVABLES ---
+
+O1. Valid HALT footer ->
+      MODE=ACT, ACT=<id>, PHASE=CLOSE, VERDICT=HALT_*, STATUS=PASS, rc=0
+O2. Invalid HALT footer (missing/duplicate/bad-enum/bad-combination) ->
+      MODE=ACT, STATUS=FAIL, REASON=<reason>, rc=1
+O3. Ordinary commit with no trailers -> MODE=NON_ACT, STATUS=PASS, rc=0
+O4. Ordinary prose containing a literal "ACT:" -> MODE=NON_ACT, rc=0
+O5. ACT-like footer that Git cannot parse -> MODE=ACT, STATUS=FAIL, rc=1
+O6. Split ACT trailer block -> MODE=ACT, STATUS=FAIL, rc=1
+O7. Valid HALT lifecycle range -> STATUS=PASS, VERDICT=HALT_*, rc=0
+O8. Same-ACT continuation after CLOSE (direct or with intervening
+    ordinary commits) -> STATUS=FAIL, rc=1
+
+--- C1.6 EXPECTED TEST MATRIX EXTENSION ---
+
+T35 valid HALT_CLASS=GOVERNANCE + BLOCKS_NEXT=NO          -> PASS
+T36 valid HALT_CLASS=PRODUCTION + BLOCKS_NEXT=YES          -> PASS
+T37 HALT without HALT_CLASS                                -> REJECT
+T38 HALT without BLOCKS_NEXT                               -> REJECT
+T39 duplicate HALT_CLASS                                    -> REJECT
+T40 duplicate BLOCKS_NEXT                                   -> REJECT
+T41 invalid HALT_CLASS enum                                -> REJECT
+T42 GOVERNANCE with BLOCKS_NEXT=YES                        -> REJECT
+T43 PASS CLOSE carrying HALT-only fields                   -> REJECT
+T44 ACT-like footer parse failure must not be NON_ACT       -> REJECT
+T45 ordinary non-ACT commit                                 -> PASS
+T46 literal "ACT:" in ordinary prose                       -> PASS (NON_ACT)
+T47 split ACT trailer block                                 -> REJECT
+T48 valid HALT lifecycle range                              -> PASS
+T49 HALT CLOSE then same-ACT continuation                   -> REJECT
+T50 HALT CLOSE, ordinary commit, same-ACT continuation      -> REJECT
+T51 historical invalid topology remains invalid             -> REJECT
+T52 existing valid PASS lifecycle                           -> PASS
+
+No existing test may be removed or weakened. Each negative test asserts
+the nonzero rc AND a MODE=ACT/STATUS=FAIL classification, so that an
+intentionally malformed fixture cannot pass via a different setup error.
