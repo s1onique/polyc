@@ -1,0 +1,93 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION01
+ACT_PHASE=C3-VERIFY
+EVIDENCE_KIND=required-result
+
+# ===================================================================
+# THE REQUIRED OUTCOME, AS MEASURED
+# ===================================================================
+
+OBJECT_VERIFICATION              = FAIL_CLOSED (unchanged; the object
+                                   verifier is not in this ACT's scope
+                                   and gate-push reports
+                                   CONTROL_FLOW_TOKEN_OBJECT_STATUS=PASS)
+OBJECT_PRODUCER_MODES           = VERIFIED (unchanged)
+SYMBOL_FORMATS                  = MACH_O_AND_ELF (unchanged)
+DIFFERENTIAL_FIXTURE_AUTHORITY   = COMPLETE
+   -- the fixture set is now authoritative in the STRICT sense: an
+      unrecognized fixture row is a FAILURE, not a silent skip.
+INTEGER_PARSER_BOUNDARIES       = SAFE (unchanged; the parse_int
+                                   verbatim copy is untouched)
+NEGATIVE_CONTROLS               = PASS (16 controls, 0 broken)
+PRODUCTION_AUTHORITY            = POLYC
+PRODUCTION_SEMANTIC_DELTA       = 0
+PARSER_CONSERVATION             = PASS_AGAINST_ENTRY
+LEXER07_CONSERVATION             = PASS_AGAINST_BASELINE
+   -- the broad corpus was EXECUTED; the observed failure identities
+      match the canonical baseline registry source by source.
+FACTORY_GATES                   = PASS
+NEXT_ACT                        = ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03
+
+# ===================================================================
+# THE TWO REVIEW FINDINGS, DISCHARGED
+# ===================================================================
+
+FINDING_P0_UNKNOWN_FIXTURE_ROW_BYPASS=DISCHARGED
+   The direct differential now rejects a fixture that is the 42
+   canonical rows PLUS an unknown-ID row. Measured: STATUS=FAIL,
+   REASON=FIXTURE_ID_UNKNOWN, UNKNOWN_IDS=1, rc=1. The control the
+   predecessor froze as NC-D12 and never executed is now executed.
+
+FINDING_P1_LEXER07_BROAD_CORPUS_NOT_REPLAYED=DISCHARGED
+   The canonical LEXER07 four-generation broad corpus was executed
+   against the current tree, and the baseline failure set and the
+   observed failure set were both recorded and compared source by
+   source. NEW_FAILURE_IDENTITIES=0, REMOVED_PASS_IDENTITIES=0, and no
+   historical failure was relabeled PASS.
+
+# ===================================================================
+# WHAT WAS NOT TOUCHED
+# ===================================================================
+
+PRODUCTION_PARSER_MUTATION=NONE
+PRODUCTION_POLYC_COMPONENT_MUTATION=NONE
+PARSER_SEMANTICS_MUTATION=NONE
+LEXER_SEMANTICS_MUTATION=NONE
+LLVM_BACKEND_MUTATION=NONE
+AST_REPRESENTATION_MUTATION=NONE
+PREDECESSOR_HISTORY_REOPEN=NO
+PREDECESSOR_EVIDENCE_MUTATION=NO
+AUTHORITY_REGISTRY_MUTATION=NO
+
+COMMAND=git diff --name-only 4113123f..HEAD -- src/ tools/bootstrap/ docs/factory/LEXER07-BASELINE-AUTHORITY.tsv evidence/ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01/
+  (empty)
+
+# ===================================================================
+# THE RESIDUE
+# ===================================================================
+
+RESIDUE_COUNT=2
+RESIDUE_R1=the predecessor's C1 REJECT_WEAK_SYMBOL versus its C3
+           REJECT_SYMBOL_NAME_MISMATCH wording drift. The safety
+           property holds; repairing the wording would require mutating
+           the CLOSED predecessor's frozen contract (F14).
+RESIDUE_R2=the `make lexer07-broad-corpus-4-stage` target rebuilds the
+           stage compilers and then runs the corpus, so a run launched
+           through it can observe a compiler mid-rewrite. The cause is
+           that hcc writes its assembly to the FIXED path
+           /tmp/holyc-asm.s. The recorded P1 measurement was taken by
+           invoking the same PolyC tool with the same canonical
+           inventory on a stable tree.
+
+# ===================================================================
+# THE FINAL IDENTIFICATION OF THIS ACT
+# ===================================================================
+
+COMMAND=git log --oneline 4113123f..HEAD
+  a1b0016 C3: EVIDENCE -- the gates are green and the closure is complete
+  b63de22 C2: EVIDENCE -- both review findings are now established against the real seams
+  dd60c7a C1: IMPL -- the differential can no longer be fooled by an unrecognized fixture row
+  86cb80a C0: AUTH / RED -- the unknown-fixture-ID bypass and the wrong conservation population are real
+  4113123f (the predecessor's CLOSE commit; the ENTRY_HEAD)
+
+COMMIT_COUNT=4
+CONTIGUOUS=YES
