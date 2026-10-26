@@ -1,0 +1,17 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03
+ACT_PHASE=C3-VERIFY
+EVIDENCE_KIND=patch-hygiene
+
+--- the check is over the COMMITTED range, not the working tree ---
+$ git diff --check 4e001cc5..HEAD
+RC=0
+PATCH_HYGIENE_ERRORS=0
+
+NOTE: `git diff --check HEAD` sees only TRACKED files, so a NEW file with a
+trailing blank line at EOF would not be reported by it.  Every new file
+was therefore normalised (a single trailing newline, no trailing blank
+line) before staging, and the committed-range check above is the
+authoritative one.
+
+--- every new file ends with exactly one newline ---
+TRAILING_BLANK_LINE_FILES=0

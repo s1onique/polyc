@@ -1,0 +1,46 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03
+ACT_PHASE=C3-VERIFY
+EVIDENCE_KIND=causal-contract-verify
+
+--- the causal mutation was EXECUTED, not merely proposed ---
+The full transcript is c2/causal-mutation-verification.txt.  The summary:
+
+MUTATION_LOCATION=the precedence-4 arm of the PolyC component
+MUTATION_KIND=SEMANTIC_CONSTANT_CHANGE (the star operator moves from
+                 precedence 4 to precedence 6)
+MUTATED_BUILD_LINKED=YES
+MUTATION_SYNTAX_VALID=YES
+MUTATION_ABI_SHAPE_UNCHANGED=YES
+MUTATION_INPUT_DOMAIN_UNCHANGED=YES
+
+EXPECTED_AFFECTED_FIXTURE=the P4 fixture row for the star operator (0x2A)
+EXPECTED_PRODUCTION_OBSERVABLE=the grouping of a mixed-precedence
+                          expression changes
+EXPECTED_PRISTINE_RESULT=62
+EXPECTED_MUTATED_RESULT=162
+
+PRISTINE_OUTPUT=62
+MUTATED_OUTPUT=162
+RESTORED_OUTPUT=62
+OUTPUTS_DIFFER=YES
+RESTORED_EQUALS_PRISTINE=YES
+
+--- the mutation is the MINIMAL one that flips the grouping ---
+The derivation from the parseExpr recursion is recorded in
+c2/causal-mutation-contract.md section 2: the grouping flips exactly when
+the mutated precedence exceeds 5, so moving the star operator from 4 to
+5 does NOT flip it and moving it to 6 DOES.  The choice is therefore
+derived from the source, not guessed.
+
+--- the observation is a COMPILED PROGRAM, not a shadow verifier ---
+The observation program is build/recon03-probe/group.HC; its OUTPUT is
+what differs (62 vs 162).  The compiled program therefore executed with a
+different AST, which is the production-causal requirement.
+
+--- the tracked source was never modified ---
+$ git diff --stat -- src/ tools/bootstrap/
+(empty)
+PRODUCTION_SEMANTIC_DELTA=0
+
+CAUSAL_PROOF_FEASIBLE=YES
+CAUSAL_PROOF_VERIFIED=YES

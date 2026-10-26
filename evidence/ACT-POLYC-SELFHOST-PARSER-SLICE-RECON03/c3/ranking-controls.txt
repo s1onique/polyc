@@ -1,0 +1,37 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03
+ACT_PHASE=C3-VERIFY
+EVIDENCE_KIND=ranking-controls
+
+--- ALL C2 negative controls were RE-RUN at C3 (ACT 13.3) ---
+
+$ ./build/parser-slice-recon03-ranking <dimension table>
+SELECTED=CAND-017
+NC-05_ineligible_perfect_rank_rejected=YES
+NC-05_winner=CAND-017
+NC-06_shuffled_inventory_winner_unchanged=YES
+NC-06_winner=CAND-017
+NC-07_winner_removed_remaining=9
+NC-07_new_winner=CAND-022
+NC-09_rival_eligible_candidates=9
+NC-09_r0_perturbation_changed_leader=YES
+NC-09_new_leader=CAND-022
+
+$ sh scripts/quality/parser-slice-recon03-eligibility-controls.sh
+NC-01 candidate=CAND-002 field=8 value=YES expect=EXCLUDED got=NO result=YES
+NC-02 candidate=CAND-001 field=8 value=YES expect=EXCLUDED got=NO result=YES
+NC-03 candidate=CAND-014 field=11 value=YES expect=EXCLUDED got=NO result=YES
+NC-04 candidate=CAND-003 field=13 value=1 expect=EXCLUDED got=NO result=YES
+NC-08 baseline_unmutated_verdict=YES
+NC-08 candidate=CAND-017 field=8 value=YES expect=EXCLUDED got=NO result=YES
+NC-11 candidate=CAND-017 field=16 value=1 expect=EXCLUDED got=NO result=YES
+NC-12 candidate=CAND-017 field=14 value=1 expect=EXCLUDED got=NO result=YES
+NC-13 candidate=CAND-017 field=19 value=NO expect=EXCLUDED got=NO result=YES
+NC-10 candidate=CTRL-SYNTHETIC-ELIGIBLE expect=ELIGIBLE got=YES result=YES
+ELIGIBILITY_CONTROLS_FAIL=0
+STATUS=PASS
+
+RANKING_CONTROLS_RE_RUN=4/4 PASS
+ELIGIBILITY_CONTROLS_RE_RUN=9/9 PASS
+TOTAL_CONTROLS_RE_RUN=13/13 PASS
+RANKING_RECOMPUTE_MATCH=YES
+SELECTED_TARGET_MATCHES_RECOMPUTED_RANK1=YES

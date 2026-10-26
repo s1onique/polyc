@@ -1,0 +1,131 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03
+ACT_PHASE=C3-VERIFY
+EVIDENCE_KIND=parser-conservation
+
+NEW_PARSER_FAILURE_IDENTITIES=0
+NEW_PARSER_SEMANTIC_REGRESSIONS=0
+
+--- THE DECISIVE CONSERVATION ARGUMENT ---
+The src/ tree and the src/tests/ tree are BYTE-IDENTICAL between the
+entry commit and HEAD:
+  $ git diff --stat 4e001cc5..HEAD -- src/ src/tests/
+  (empty)
+This ACT changed ZERO production source, so the parser semantics are
+PROVABLY unchanged; the measurements below confirm it empirically.
+
+--- the canonical parser test run (the cross-target branch) ---
+The host-arch branch of src/tests/run.HC invokes hcc WITHOUT --install-dir,
+so hcc falls back to its compile-time prefix /usr/local, which does not
+exist on this host.  That is the PRE-EXISTING P1 residue documented by
+ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02 (its HANDOFF section 8).  The
+cross-target branch (run.HC:16-18) DOES pass --install-dir, so it is the
+branch that can measure the parser semantics on this host.
+
+$ cd src/tests && ../../hcc --install-dir=$PWD/../../build/test-prefix ./run.HC -o /tmp/test-runner
+$ cd src/tests && /tmp/test-runner --target=aarch64-apple-darwin
+TESTS_PASSED=87
+TESTS_FAILED=0
+COMPILE_FAILURES=0
+RUN_FAILURES=0
+UNIT_TEST_RC=0
+
+--- the per-test identities that PASSED ---
+  Test Assigning pointer to a pointer from a class, with brackets PASSED: 1/1
+  Test Assigning pointer to a pointer from a class, no brackets PASSED: 1/1
+  Juggling an array MAlloc(I64 * 10) PASSED: 4/4
+  Pointer to a pointer from a class PASSED: 1/1
+  Taking the address of a local PASSED: 1/1
+  class definition PASSED: 6/6
+  Linked list recusive definition class PASSED: 5/5
+  'break' and 'continue' inside while and for loops PASSED: 4/4
+  Default function parameters PASSED: 1/1
+  qsort, recursion and default function params PASSED: 1/1
+  = test PASSED: 2/2
+  += test PASSED: 2/2
+  -= test PASSED: 2/2
+  *= test PASSED: 2/2
+  /= test PASSED: 2/2
+  %= test PASSED: 2/2
+  &= test PASSED: 2/2
+  |= test PASSED: 2/2
+  ^= test PASSED: 2/2
+  >>= test PASSED: 2/2
+  <<= test PASSED: 2/2
+  Function pointers PASSED: 5/5
+  PASSED: 1/1
+  Subtraction -  PASSED: 7/7
+  Multiplication *  PASSED: 5/5
+  Modulo %  PASSED: 5/5
+  Addition +  PASSED: 5/5
+  Division /  PASSED: 3/3
+  MATHS_SHL <<  PASSED: 3/3
+  MATHS_SHR >>  PASSED: 3/3
+  Xor ^ PASSED: 3/3
+  Or | PASSED: 3/3
+  And & PASSED: 3/3
+  Not ~ PASSED: 3/3
+  MemCpy, MemSet PASSED: 4/4
+  comma separated declarators & types PASSED: 3/3
+  Variable arguments PASSED: 15/15
+  PASSED: 9/9
+  Switch statement PASSED: 7/7
+  Testing For Loop PASSED: 2/2
+  Testing while loop PASSED: 1/1
+  Testing do-while loop PASSED: 1/1
+  Testing GOTO PASSED: 2/2
+  Addressing PASSED: 2/2
+  PASSED: 10/10
+  PASSED: 2/2
+  Test PASSED: 4/4
+  Test Scripting PASSED: 4/4
+  PASSED: 6/6
+  auto keyword PASSED: 2/2
+  Arrays & multi dimensional PASSED: 5/5
+  Preprocessor PASSED: 6/6
+  FzF fuzzy finding PASSED: 7/7
+  PASSED: 10/10
+  PASSED: 3/3
+  PASSED: 2/2
+  basic io PASSED: 4/4
+  PASSED: 7/7
+  PASSED: 8/8
+  try/catch/throw PASSED: 8/8
+  Class self-reference (no forward decl) PASSED: 2/2
+  Pointer relational comparisons PASSED: 3/3
+  Trailing U0 placeholder fields PASSED: 3/3
+  TempleOS LZW compress/decompress PASSED: 2/2
+  PASSED: 8/8
+  PASSED: 3/3
+  PASSED: 5/5
+  PASSED: 4/4
+  PASSED: 6/6
+  PASSED: 9/9
+  PASSED: 6/6
+  PASSED: 7/7
+  PASSED: 6/6
+  PASSED: 4/4
+  PASSED: 6/6
+  PASSED: 4/4
+  PASSED: 3/3
+  PASSED: 3/3
+  PASSED: 4/4
+  PASSED: 7/7
+  PASSED: 4/4
+  PASSED: 5/5
+  #ifjit / #ifaot PASSED: 3/3
+  typeof PASSED: 8/8
+  big stack frames PASSED: 10/10
+  class inheritance (empty derived, layout, upcast) PASSED: 7/7
+  Repro 171 (Default function pointer arguments) PASSED: 1/1
+
+--- the host-arch branch, for the record (PRE-EXISTING failure) ---
+$ cd src/tests && /tmp/test-runner
+COMPILE_FAILURES=67
+REASON=every test is compiled by the harness as "../../hcc <file>" WITHOUT
+       --install-dir, so hcc falls back to /usr/local/include/tos.HH
+       which does not exist on this host:
+         $ ../../hcc 09_default_function_parameters.HC
+         ERROR: Failed to open file: /usr/local/include/tos.HH
+       The SAME command WITH --install-dir compiles and runs cleanly.
+PRE_EXISTING=YES  (recorded by ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02, HANDOFF section 8, P1 residue)
+NEW_FAILURES_INTRODUCED_BY_THIS_ACT=0

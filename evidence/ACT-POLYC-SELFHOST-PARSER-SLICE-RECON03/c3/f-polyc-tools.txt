@@ -1,0 +1,44 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03
+ACT_PHASE=C3-VERIFY
+EVIDENCE_KIND=f-polyc-tools
+
+=== THE F-POLYC-TOOLS CHECKER DOES NOT EXIST YET ===
+
+$ ls tools/factory/factory-polyc-tools-check.HC
+ls: cannot access 'tools/factory/factory-polyc-tools-check.HC': No such file or directory
+
+AGENTS.md records this precisely: "F-POLYC-TOOLS ... Authoritative
+enforcement at tools/factory/factory-polyc-tools-check.HC (NOT YET LANDED -- see
+C2.9 of the bound correction ACT)."
+
+So there is no checker to run.  The nearest LIVE enforcement of the same
+rule is the shell-LOC ratchet, which this ACT satisfies:
+
+$ sh scripts/quality/shell-loc-gate.sh
+FAIL  GROW  scripts/quality/factory-v2-commit-msg-check.sh  base=218 cur=344
+FAIL  GROW  scripts/quality/factory-closure-status-check.sh  base=352 cur=372
+FAIL  GROW  scripts/quality/factory-v2-test.sh  base=465 cur=831
+FAIL  GROW  scripts/quality/factory-v2-range-check.sh  base=249 cur=333
+FAIL  NEW   scripts/quality/parser-padding-generation-provenance-verify.sh  cur=242 > 50
+RC=1
+
+=== THE FAILURES ARE PRE-EXISTING AND IN FILES THIS ACT DID NOT TOUCH ===
+
+  $ git diff --name-only 4e001cc5..HEAD -- scripts/quality/
+scripts/quality/parser-slice-recon03-eligibility-controls.sh
+  (only this ACT's own new script)
+
+This ACT's own script is EXACTLY at the 50 LOC limit and PASSES the ratchet:
+  $ wc -l scripts/quality/parser-slice-recon03-eligibility-controls.sh
+50 scripts/quality/parser-slice-recon03-eligibility-controls.sh
+  and the gate output contains NO line for it.
+
+=== THE SUBSTANTIVE TOOLS ARE PolyC-NATIVE (F-POLYC-TOOLS) ===
+  tools/quality/parser-slice-recon03-eligibility.HC   (the 13-clause checker)
+  tools/quality/parser-slice-recon03-ranking.HC        (the lexicographic ranker)
+Both are PolyC sources; the only shell is the 50-LOC bootstrap driver that
+mutates one fact field and calls the PolyC checker.
+
+NEW_F_POLYC_TOOLS_VIOLATIONS=0
+PRE_EXISTING_SHELL_LOC_VIOLATIONS=5 (in files this ACT did not touch)
+AUTHORITATIVE_CHECKER_PRESENT=NO (NOT YET LANDED -- the C2.9 residue)

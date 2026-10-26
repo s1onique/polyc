@@ -1,0 +1,46 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03
+ACT_PHASE=C3-VERIFY
+EVIDENCE_KIND=selected-target-verify
+
+--- the selected target EXISTS in the live source, at the frozen location ---
+$ sed -n "1139,1207p" src/prslib.c | shasum -a 256
+236867b6cfcb28bb975a3ded7e2322296407cfc00719143592fd748cf7cab663  -
+PUBLISHED_SHA256=236867b6cfcb28bb975a3ded7e2322296407cfc00719143592fd748cf7cab663
+MATCH=YES
+
+--- the function is still the legacy C authority (not yet migrated) ---
+$ grep -n "parseGetPriority" src/prslib.c
+1139:static int parseGetPriority(Lexeme *tok) {
+1363:        prec2 = parseGetPriority(tok);
+NO_POLYC_DELEGATION_YET=YES   (RED-3 holds)
+NO_POLYC_COMPONENT_YET=YES   (RED-2 holds)
+
+--- the input projection is COMPLETE on ONE scalar ---
+$ sed -n "1139,1207p" src/prslib.c | grep -n "tok->"
+2:    switch (tok->i64) {
+FIELD_ACCESS_COUNT=1
+THE_FIELD=tk->i64
+INPUT_PROJECTION_COMPLETE=YES
+
+--- the production call site exists ---
+$ sed -n "1363p" src/prslib.c
+        prec2 = parseGetPriority(tok);
+
+--- the production call graph reach ---
+$ grep -c "parseExpr(" src/parser.c src/prslib.c src/lexer.c
+src/parser.c:23
+src/prslib.c:8
+src/lexer.c:2
+TOTAL_PARSEEXPR_CALL_SITES=32
+
+--- the precedence table is the SEMANTIC AUTHORITY: it decides the AST shape ---
+$ sed -n "1364p;1430p;1431p;1435p" src/prslib.c
+        if (prec2 < 0 || prec <= prec2) {
+        next_prec = prec2;
+        if (tok->i64 == '=') {
+        RHS = parseExpr(cc,next_prec);
+OBSERVABLE_COMPILER_RESULT=THE AST SHAPE OF EVERY BINARY AND UNARY EXPRESSION
+
+SELECTED_TARGET_VERIFIED=YES
+SELECTED_TARGET=parseGetPriority
+SELECTED_SOURCE=src/prslib.c:1139..1207

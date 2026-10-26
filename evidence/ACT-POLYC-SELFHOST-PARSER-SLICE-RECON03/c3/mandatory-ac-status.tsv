@@ -1,0 +1,77 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03
+# ACT_PHASE=C3-VERIFY
+# EVIDENCE_KIND=mandatory-ac-status
+#
+# The mandatory acceptance-criteria ledger.  Every AC is measured and
+# reported with its ACTUAL status.  No deferred, missing or unproven AC is
+# promoted to PASS (ACT section 14).
+#
+# Schema: ac_id <TAB> predicate <TAB> status <TAB> evidence
+
+ac_id	predicate	status	evidence
+AC01	Entry identity established from live HEAD	PASS	c0/entry-identity.txt
+AC02	Worktree clean before authorization	PASS	c0/entry-identity.txt (git status --porcelain=v1 was empty)
+AC03	Predecessor closure reachable	PASS	c0/predecessor-binding.txt (git merge-base --is-ancestor 4e001cc5 HEAD -> exit 0)
+AC04	Both existing parser PolyC authorities verified	PASS	c0/production-authority.tsv (the production object carries U _BootstrapCalcPadding and U _BootstrapValidPostControlFlowToken)
+AC05	Both migrated candidates excluded	PASS	c2/eligibility-results.tsv (CAND-001 and CAND-002 both fail clause 02)
+AC06	All historical RECON02 candidates accounted for	PASS	c1/historical-to-current-map.tsv (17 of 17)
+AC07	Current parser helper inventory complete	PASS	c1/function-inventory.tsv (118 functions across the four parser-surface files)
+AC08	Newly discovered semantic sub-slices inventoried	PASS	c1/newly-discovered-slices.tsv (19 new slices)
+AC09	All candidate source identities frozen	PASS	c3/inventory-recomputed.tsv (36 of 36 SHA-256 recomputed and matched)
+AC10	State reads/writes classified	PASS	c1/state-read-write.tsv (10 dependency classes for every candidate)
+AC11	AST graph coupling classified	PASS	c1/ast-coupling.tsv
+AC12	Cctrl/recovery coupling classified	PASS	c1/cctrl-coupling.tsv and c1/recovery-coupling.tsv
+AC13	Callback dependencies classified	PASS	c1/callback-coupling.tsv (one parser callback in the whole surface: the computeSize function pointer)
+AC14	Host identity dependencies classified	PASS	c1/state-read-write.tsv (pointer_identity column)
+AC15	R0 computed from real boundary rather than return type	PASS	c1/candidate-inventory.tsv (CAND-003 keeps R0=4 for its host-graph write even though it returns u32)
+AC16	Sub-slice candidates are real legacy-C operations	PASS	c1/newly-discovered-slices.tsv (the 9 excluded rows each name the failing clause)
+AC17	Sub-slice delegation is genuinely production-reachable	PASS	c1/production-call-sites.tsv (14 live call sites over the 10 eligible candidates)
+AC18	Thirteen eligibility clauses applied mechanically	PASS	c2/eligibility-results.tsv (computed by the PolyC checker)
+AC19	Eligibility flags cannot be hand-overridden	PASS	c2/eligibility-results.tsv and c2/ranking-negative-controls.txt (the checker input has no eligible column)
+AC20	R0 remains the leading ranking dimension	PASS	c2/ranking-dimensions.tsv (the comparator evaluates R0 first)
+AC21	R1..R6 historical semantics unchanged	PASS	c2/ranking-dimensions.tsv (the frozen meanings are restated with their provenance)
+AC22	Ineligible-favorable-rank control rejected	PASS	c2/ranking-negative-controls.txt (NC-05)
+AC23	Synthetic eligibility control genuinely falsifiable	PASS	c2/ranking-negative-controls.txt (NC-10)
+AC24	Inventory row-order perturbation does not alter selection	PASS	c2/ranking-negative-controls.txt (NC-06)
+AC25	Removal of winner handled correctly	PASS	c2/ranking-negative-controls.txt (NC-07)
+AC26	Exactly one eligible winner selected	PASS	c2/selected-candidate.txt (SELECTED_CANDIDATE_COUNT=1)
+AC27	Winner has no recovery ownership	PASS	c1/recovery-coupling.tsv (CAND-017 owns no setjmp and needs no nonlocal recovery)
+AC28	Winner has no host graph writes or identity dependence	PASS	c1/state-read-write.tsv and c1/ast-coupling.tsv
+AC29	Winner has no semantic callback authority	PASS	c1/callback-coupling.tsv (CAND-017 semantic_callback_count=0)
+AC30	Winner has deterministic bounded projection	PASS	c1/semantic-projections.tsv (one I64 in, one I64 out)
+AC31	Winner's production callers identified	PASS	c1/production-call-sites.tsv (src/prslib.c:1363, inside parseExpr with 32 call sites)
+AC32	Winner's ABI contract complete	PASS	c2/selected-abi-contract.md and c3/abi-contract-verify.txt (14 of 14 required ABI fields)
+AC33	Real legacy-C oracle strategy frozen	PASS	c2/legacy-oracle-contract.md (the adapter strategy is frozen for a static function)
+AC34	Successor fixture model complete	PASS	c2/fixture-partitions.tsv (19 partitions, 91 minimum rows, plus the independent-witness requirement)
+AC35	Successor RED model reproducible	PASS	c3/red-contract-verify.txt (all five REDs reproduce against the live tree)
+AC36	Production-causal mutation plan feasible	PASS	c2/causal-mutation-verification.txt (the mutation was EXECUTED: pristine 62, mutated 162, restored 62)
+AC37	Four-generation proof contract frozen	PASS	c2/successor-proof-contract.md
+AC38	Generation provenance and copy-forgery controls required	PASS	c2/successor-proof-contract.md sections 4 and 5
+AC39	Parser conservation run, zero new failures	PASS	c3/parser-conservation.txt (87 tests pass, 0 fail; the src/ tree is byte-identical to the entry commit)
+AC40	LEXER01..04 conservation run	PASS	c3/lexer-conservation.txt (lexer07/08/09 direct differentials: 89/45/23 rows, 0 failures)
+AC41	LEXER07 prospective baseline comparison run	PASS	c3/lexer07-baseline-comparison.txt (the failure identity sets are IDENTICAL to the baseline)
+AC42	Existing production compiler source unchanged	PASS	c3/f14-conservation.txt (git diff --stat 4e001cc5..HEAD -- src/ is empty)
+AC43	No newly introduced F-NO-PYTHON violations	PASS	c3/f-no-python.txt (0 new; the tracked Python count is 7 at entry and at HEAD)
+AC44	No newly introduced F-POLYC-TOOLS violations	PASS	c3/f-polyc-tools.txt (0 new; this ACT's own shell is 50 LOC and passes the ratchet; the substantive tools are PolyC)
+AC45	F14 closed surfaces unchanged	PASS	c3/f14-conservation.txt (the predecessor evidence tree hash is identical)
+AC46	gate-fast passes	PASS	c3/gate-fast.txt (RC=0)
+AC47	gate-push passes	FAIL_PRE_EXISTING_HOST_ISSUE	c3/gate-push.txt (the only failing check is CHECK=aot, which is `make unit-test`; its per-test compile omits --install-dir and the host has no /usr/local/include.  src/ is byte-identical to the entry commit, so the failure is pre-existing.  The same test PASSES when the prefix is supplied)
+AC48	Factory-v2 and append-only tests pass	PASS	c3/factory-v2.txt (53/0) and c3/append-only.txt (11/0)
+AC49	Committed-range patch hygiene clean	PASS	c3/patch-hygiene.txt (git diff --check over the committed range -> RC=0)
+AC50	HANDOFF and managed registry valid	DEFERRED	(the HANDOFF and the registry row are created in the C4 closure phase)
+AC51	Exactly one successor ACT identity frozen	PASS	c2/selected-candidate.txt (NEXT_ACT=ACT-POLYC-SELFHOST-PARSER-SLICE03)
+AC52	External terminality verified after CLOSE	DEFERRED	(established by the post-CLOSE read-only step, which requires the CLOSE commit to exist)
+
+AC_TOTAL=52
+AC_PASS=49
+AC_FAIL_PRE_EXISTING=1  (AC47: a pre-existing HOST issue, not a regression; recorded with its proof)
+AC_DEFERRED=2  (AC50 and AC52, which require the CLOSE commit)
+AC_UNPROVEN=0
+
+NOTE ON AC47: the ACT text says "gate-push passes".  It does NOT pass on
+this host, for a reason that is PROVABLY PRE-EXISTING and unrelated to
+this ACT (the src/ tree is byte-identical to the entry commit and the
+failing check is a host prefix issue).  The honest status is recorded
+rather than a manufactured PASS.  The AGENTS.md instruction "Do not
+promote a deferred, missing, or unproven AC to PASS" and the
+ACT section 14 rule both require this.

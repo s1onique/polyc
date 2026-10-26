@@ -1,0 +1,61 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03
+# ACT_PHASE=C3-VERIFY
+# EVIDENCE_KIND=inventory-recomputed
+#
+# The C3 INDEPENDENT recomputation of the C1 inventory, using the frozen
+# inputs and the UNCHANGED live parser source.
+#
+# Every source_sha256 in this file was RECOMPUTED from the live source
+# at C3 time and compared with the C1 publication: 36 of 36 matched, 0 mismatched.
+#
+# Schema: candidate_id <TAB> function_name <TAB> source_file <TAB> source_start <TAB> source_end <TAB> source_sha256 <TAB> r0 <TAB> in_c1_inventory <TAB> c2_eligibility <TAB> c3_recompute_match
+
+candidate_id	function_name	source_file	source_start	source_end	source_sha256	r0	in_c1_inventory	c2_eligibility	c3_recompute_match
+CAND-001	parseValidPostControlFlowToken	src/parser.c	832	914	e85e795ae13f2d5b12ca0338bc9ccad3a1ec030772f1fdae96b8c6f32c8f439a	0	YES	ALREADY_SELFHOSTED: BootstrapValidPostControlFlowToken is the production authority	YES
+CAND-002	CalcPadding	src/parser.c	430	467	c2f1bf585362eb104ad21c18da92b22bb46b8e5f9045ee8cc2aa46568c79e846	0	YES	ALREADY_SELFHOSTED: BootstrapCalcPadding is the production authority	YES
+CAND-003	CalcClassSize	src/parser.c	410	428	8392e959a538446389f9f9c67550c208d095be50dfe0e60ea6b55f0518b1f063	4	YES	R0=4: writes type->offset on a host-owned AstType node; the offset is unconditionally overwritten by parseClassOffsets (:521/:555) and the returned size is discarded	YES
+CAND-003S	CalcClassSizePureSizeSum	src/parser.c	410	428	8392e959a538446389f9f9c67550c208d095be50dfe0e60ea6b55f0518b1f063	2	YES	EXCLUDED|NOT A REAL LEGACY OPERATION: no size-only sub-function exists; the size walk is interleaved with the offset write, and the result is discarded, so a separate production seam cannot be created	YES
+CAND-004	CalcUnionSize	src/parser.c	397	408	26c43ac078ee4e49ae78e54378b161d1dc1b0f43200f84a372053c042ed3053d	0	YES	DEAD COMPUTATION: returns max(field sizes), but the result is written to class_size at :672 and NEVER READ; the real union size comes from parseUnionOffsets (:599)	YES
+CAND-005	astIsConstTrueCond	src/parser.c	1982	1986	01fbdebf079d47654ef1318fa4b16c319e3aa7c168cd055b5154db1255745e2d	2	YES	Reachable only through astStmtFallsThrough; the projection spans three pointer hops (Ast node -> AstType -> kind) and is not a bounded record	YES
+CAND-006	astStmtHasBreak	src/parser.c	1990	2013	3cbd246ebf8d0bd8c76c13e028a5aadc2580c55da128f8b619665c7a81295ad1	2	YES	Recursive AST walk; the recursion depth is unbounded by the AST shape, so no bounded projection exists	YES
+CAND-007	astStmtFallsThrough	src/parser.c	2015	2055	6667290397e15e4cf81885a8efcfe47a21bf719fba6fe497465651847c0f0fec	2	YES	Recursive AST walk over an unbounded statement tree; depends on CAND-005 and CAND-006	YES
+CAND-008	asmTextHasReturn	src/parser.c	2063	2094	9bf4fcbccf3f9b87135cedc1e054caf5f22c8350409e0724afed2e7b893b4d91	1	YES	The AoStr byte buffer has no bounded capacity at the ABI boundary; a truncated projection would change previously accepted programs	YES
+CAND-009	clsFieldNew	src/parser.c	265	270	8a2feaefcafd9f120d7c19465d8ad6c1e5bde254f28adc5f4d899f05e3fac3e1	3	YES	Not runtime semantic authority: a malloc wrapper that returns a host pointer	YES
+CAND-010	getRangeLoopIdx	src/parser.c	62	65	b35d08cfc033174d681a48f1f639c00828202b06e5c00defdd10e8180ae8517d	0	YES	Not runtime semantic authority AND non-deterministic: a static counter mutated per call, which is forbidden for self-hosting	YES
+CAND-011	parseFlattenAnnonymous	src/parser.c	238	258	8f888e715f50f3faf5bcd55bec5d8c80c7c6f89aeaed5a8ad5e93ebf18033407	4	YES	R0=4: mutates type->offset on host-owned AstType nodes and inserts into a host Map	YES
+CAND-012	parseRegModifier	src/parser.c	40	60	06612778ea827af139eb18c2eb3378f77beb289a93ffd06973ac8b43e2ad90b2	4	YES	R0=4: mutates cc state and reaches cctrlRaiseException	YES
+CAND-013	parseFoldInitElement	src/parser.c	121	155	8410a474e881e749ca8c59136e5c79e5305b1f0113e1367ceb9bf3968dd3c657	4	YES	R0=4: builds a new Ast node carrying a host AstType pointer	YES
+CAND-014	parseCompoundStatementInternal	src/parser.c	1835	1963	3649fe53261b8724345e1000b7b1a301aa7e7c15e3973025b22aa6edfdbfcfe3	5	YES	R0=5: owns the recovery point (setjmp at :1853) and restores cc->localenv	YES
+CAND-015	parseIfClause	src/parser.c	914	959	4e6c5ecd1198aa4f58c63ae357299481eb8da131ccf87f110a921dcb537259e2	4	YES	R0=4: mutates cc->localenv; cctrlRaiseException on error	YES
+CAND-016	parseRaiseCaseException	src/parser.c	1472	1478	4477e5db26e9793bd3ffedaa92d5f1ea960d29d6af6c0e1f2700a84d31728c68	5	YES	R0=5: cctrlRewindUntilStrMatch + cctrlRaiseExceptionFromTo perform a nonlocal diagnostic transfer	YES
+CAND-017	parseGetPriority	src/prslib.c	1139	1207	236867b6cfcb28bb975a3ded7e2322296407cfc00719143592fd748cf7cab663	0	YES	-	YES
+CAND-018	parseCompoundAssign	src/prslib.c	1269	1289	4d941407ee054e207586b3a4fb645caf8917e6b43fa467b79d50a75e1b54bb43	0	YES	-	YES
+CAND-019	astBinOpFromToken	src/ast.c	206	236	2f6adf3b77e5ee0e6d95e0acb932eb015f54d2039f7f708df6eda1ec77b9048b	0	YES	-	YES
+CAND-020	astUnaryOpFromToken	src/ast.c	238	254	f418cd46f6989492ce88bc765e61becc0520486cf52844066997bae6dff266d4	0	YES	-	YES
+CAND-021	astBinOpToTokenPunct	src/prslib.c	1293	1316	db92f0700f3c9dcb4e6e5360ca084ad5bdda03f2029f24510bf3ea473af6edb6	0	YES	-	YES
+CAND-022	parseCountPrintfFormatSpecs	src/prslib.c	760	792	c914b0badfb9f9bd462380c5b8ae7a8bec1de82914190310472b95c67241f960	1	YES	-	YES
+CAND-023	parseFormatArgIdx	src/prslib.c	798	810	109637a97948ce65dd27315f88d68511529ddb3db1b9af95bf43754c56ec8ab1	1	YES	-	YES
+CAND-024	astTypeAlign	src/ast.c	1310	1328	e33442dc52c2a87b76984b406cbe26e2e8111f296fe7489577de1858f6d83ad7	2	YES	Recurses into type->ptr for arrays; the AstType graph depth is unbounded	YES
+CAND-025	astIsAssignment	src/ast.c	845	866	eb91d5f28f19292c3d7f7a79fbf00e5cba5d690e8b2007c1b0ffbea34b180b67	0	YES	-	YES
+CAND-026	astIsValidPointerOp	src/ast.c	876	892	bc06b0d757538f6c00ce0e96003cf5613823e98f4c48288c727cf9ac1dd82ac5	0	YES	-	YES
+CAND-027	astTypeIsPtr	src/ast.c	868	870	dde81d41116f14b88dbda2e30115082643f80a573e61f17cf436a7cfef79494e	2	YES	The input is a host pointer; the projection is one scalar but the pointer itself is not a scalar ABI value	YES
+CAND-028	astTypeIsArray	src/ast.c	872	874	40a022807255b3cb875068c57750506be4615fe9845c230f757bf4e03db3b905	2	YES	The input is a host pointer; the projection is one scalar but the pointer itself is not a scalar ABI value	YES
+CAND-029	astIsIntType	src/ast.c	1330	1340	20a6a01a5dd647915d494d804d1590cd63dd0d07e9e231aed95abbda20b7e832	2	YES	The input is a host pointer; the projection is one scalar but the pointer itself is not a scalar ABI value	YES
+CAND-030	parseIsClassOrUnion	src/prsutil.c	22	25	58957ad620fa63bf90f55f86b2d802f18de5471ef82a061c310adaa427edd839	0	YES	-	YES
+CAND-031	align	src/prsutil.c	9	15	14f261f9be3cef89e8ca22e104e88f6331969b6c67c0051e2d7a41d3b39021cd	0	YES	Not runtime semantic authority: a generic numerical helper with no production call site	YES
+CAND-032	parsePromoteVarargFloats	src/prslib.c	571	582	04c7ddd6b2409a2fca1c33f84b4ad65652441f0c9dbc8738af63c719b0738c9d	4	YES	R0=4: rewrites argv->entries[i] with a new Ast node	YES
+CAND-033	parseCoerceArgs	src/prslib.c	584	623	28ded4336f7bf8193a9be30de96d1c57e1110912b61765f2212a820e4c1fd7f9	4	YES	R0=4: rewrites argv->entries[i] with a new Ast node	YES
+CAND-034	astJumpTableSort	src/ast.c	468	485	fb29587ea3a73bd1796400506bfc9efae1b0f9adbc1c9dafb4fd0d2646080bcf	2	YES	Quicksort over an Ast** array; mutates the array and dereferences Ast nodes for the comparison key	YES
+CAND-035	astCasesCompress	src/ast.c	489	502	c34721c517c50441d4b647946143e4cf7824f91b64594251bbd9c38e32861035	2	YES	Rewrites case_label pointers across an Ast** array; host graph mutation	YES
+
+HISTORICAL_CANDIDATES_ACCOUNTED_FOR=ALL
+NEW_CANDIDATES_ACCOUNTED_FOR=ALL
+UNKNOWN_CANDIDATES=0
+UNCLASSIFIED_STATE_DEPENDENCIES=0
+ALREADY_SELFHOSTED_SELECTED=0
+RECOVERY_COUPLED_SELECTED=0
+CANDIDATE_COUNT_C1=35
+CANDIDATE_COUNT_C3=35
+COUNT_MATCH=YES
+SOURCE_SHA256_RECOMPUTED_MATCH=36/36
+SOURCE_SHA256_RECOMPUTED_MISMATCH=0

@@ -1,0 +1,64 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03
+ACT_PHASE=C3-VERIFY
+EVIDENCE_KIND=lexer-conservation
+
+NEW_LEXER_FAILURES=0
+
+--- the LEXER01..04 applicable qualification targets ---
+The lexer qualification targets in the Makefile are lexer07 / lexer08 /
+lexer09 (there is no separate lexer01..lexer04 target set: those ACTs were
+closed on the lexer07/08/09 machinery that remains).  Each target was
+INSPECTED before being run (ACT 13.5).
+
+$ make lexer07-direct-differential
+ACT_SELFHOST_LEXER02_DIRECT_DIFF_PASS=89
+ACT_SELFHOST_LEXER02_DIRECT_DIFF_FAIL=0
+STATUS=PASS
+RC=0
+
+$ make lexer07-fixture-inventory
+TOTAL=89 is_numeric=42 is_char=33 is_negative=16 is_edge=3
+FIXTURE_INVENTORY_FLOORS=PASS
+STATUS=PASS
+RC=0
+
+$ make lexer08-direct-differential
+DIRECT_DIFFERENTIAL_TOTAL=45
+DIRECT_DIFFERENTIAL_PASS=45
+DIRECT_DIFFERENTIAL_FAIL=0
+STATUS=PASS
+RC=0
+
+$ make lexer09-direct-differential
+DIRECT_DIFFERENTIAL_TOTAL=23
+DIRECT_DIFFERENTIAL_PASS=23
+DIRECT_DIFFERENTIAL_FAIL=0
+STATUS=PASS
+RC=0
+
+--- the two parser differentials (the migrated components) ---
+$ ./build/parser-padding-differential build/padding-matrix.tsv
+DIRECT_DIFFERENTIAL_TOTAL=16640
+DIRECT_DIFFERENTIAL_PASS=16640
+DIRECT_DIFFERENTIAL_FAIL=0
+STATUS=PASS
+
+$ ./build/parser-control-flow-token-differential <the 42-row canonical fixture>
+SLICE02_DIFFERENTIAL_FIXTURE_IDS_COMPLETE=1
+SLICE02_DIFFERENTIAL_FIXTURE_IDS_UNIQUE=1
+SLICE02_DIFFERENTIAL_FIXTURE_SCHEMA_VALID=1
+SLICE02_DIFFERENTIAL_UNKNOWN_IDS=0
+STATUS=PASS
+
+--- the production authority of both migrated components is UNCHANGED ---
+$ nm -u build/CMakeFiles/hcc.dir/parser.c.o | grep -i bootstrap
+_BootstrapCalcPadding
+_BootstrapValidPostControlFlowToken
+$ nm ./hcc | grep -E "_BootstrapCalcPadding|_BootstrapValidPostControlFlowToken"
+000000010006428c T _BootstrapCalcPadding
+0000000100064304 T _BootstrapValidPostControlFlowToken
+
+--- the new precedence component is NOT yet implemented (as this ACT requires) ---
+$ nm -u build/CMakeFiles/hcc.dir/prslib.c.o | grep -i Bootstrap
+(no output: the precedence component does not exist yet)
+SUCCESSOR_IMPLEMENTATION_DELTA=0

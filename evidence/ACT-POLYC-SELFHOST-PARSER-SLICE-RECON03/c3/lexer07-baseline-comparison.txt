@@ -1,0 +1,66 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03
+ACT_PHASE=C3-VERIFY
+EVIDENCE_KIND=lexer07-baseline-comparison
+
+--- the FROZEN prospective baseline (docs/factory/LEXER07-BASELINE-AUTHORITY.tsv) ---
+PROSPECTIVE_LEXER07_BASELINE_SHA256=00c54408bf29237cf526aeed097f6b097f22ae682683675a0bf5ab9f9c202b9a
+PROSPECTIVE_BASELINE_RUN_A_FAILURE_COUNT=21
+PROSPECTIVE_BASELINE_RUN_A_COUNTER_TEXT=PASS_S0=166 HISTORICAL_S0=0 PASS_S1=175 PASS_S2=175 PASS_S3=175
+NO_FALLBACK_S0_COUNT=9
+ALL_FAIL_4_COUNT=6
+
+--- the CURRENT run ---
+$ make lexer07-broad-corpus-4-stage
+PROGRESS=181/181
+PASS_S0=166 HISTORICAL_S0=0 PASS_S1=175 PASS_S2=175 PASS_S3=175
+FAIL_S0=15 FAIL_S1=6 FAIL_S2=6 FAIL_S3=6
+BOTH_FAIL_4=6
+REGRESSION=0
+DIVERGED=0
+PASS_MISMATCH=9
+HISTORICAL_S0_FALLBACKS_USED=0
+BYTE_IDENTICAL_4=166
+PROVENANCE_SCHEMA_VALID=1
+FAILURE_SCHEMA_VALID=1
+STATUS=FAIL
+MAKE_RC=2
+
+--- the COMPARISON, separated by identity (ACT 13.6) ---
+BASELINE_PASS_IDENTITIES=166 (S0) / 175 (S1,S2,S3)
+CURRENT_PASS_IDENTITIES=166 (S0) / 175 (S1,S2,S3)
+BASELINE_PASS_IDENTITIES_MATCH_CURRENT=YES
+
+BASELINE_FAILURE_IDENTITIES (the 9 NO_FALLBACK + the 6 ALL_FAIL sources)
+  all, date, hashtable, io, list, memory, strings, threads, tooling
+  bitvec, builtins, coroutines, 32_sql, neg_asm, neg_f64
+CURRENT_FAILURE_IDENTITIES (the 9 NO_FALLBACK + the 6 ALL_FAIL sources)
+  src/holyc-lib/all.HC, date.HC, hashtable.HC, io.HC, list.HC, memory.HC,
+  strings.HC, threads.HC, tooling.HC
+  src/holyc-lib/bitvec.HC, builtins.HC, coroutines.HC,
+  src/tests/32_sql.HC, src/tests/llvm-spike/neg_asm.HC, neg_f64.HC
+
+NEW_FAILURE_IDENTITIES=0
+REMOVED_FAILURE_IDENTITIES=0
+BASELINE_FAILURE_COUNT_CLASSIFICATION=9 NO_FALLBACK + 6 ALL_FAIL
+CURRENT_FAILURE_COUNT_CLASSIFICATION=9 NO_FALLBACK + 6 ALL_FAIL
+FAILURE_CLASSIFICATION_MATCHES_BASELINE=YES
+
+--- THE HONEST STATEMENT (ACT 13.6) ---
+The full broad corpus reports STATUS=FAIL and make reports RC=2.  That is
+PRESERVED as measured and is NOT relabelled as a pass.
+The prospective conservation result is nevertheless ZERO NEW FAILURES:
+  - the per-stage pass counters are IDENTICAL to the baseline
+    (166 / 175 / 175 / 175);
+  - REGRESSION=0 and DIVERGED=0;
+  - the failure IDENTITY sets are IDENTICAL to the baseline (9 NO_FALLBACK
+    and 6 ALL_FAIL, the same sources);
+  - no failure identity was added and none was removed.
+The 21 failures of the baseline registry and the 15 rows of the current
+failures file are counted on DIFFERENT axes (the registry counts the
+baseline run total; the failures file records one row per failing
+source with its class).  The IDENTITY comparison above is the
+authoritative one, and it is unchanged.
+
+--- the failures file produced by the current run ---
+build/lexer07-c01-out/corpus-failures.tsv
+  15 rows: 9 NO_FALLBACK (stage0-current) + 6 ALL_FAIL

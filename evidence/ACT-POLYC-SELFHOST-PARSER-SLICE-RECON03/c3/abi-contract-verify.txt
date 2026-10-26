@@ -1,0 +1,61 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03
+ACT_PHASE=C3-VERIFY
+EVIDENCE_KIND=abi-contract-verify
+
+--- every ABI field the ACT requires is present in the frozen contract ---
+$ grep -E "^(POLYC_SYMBOL|INPUT_COUNT|INPUT_TYPES|OUTPUT_COUNT|OUTPUT_TYPES|INTEGER_WIDTHS|SIGNEDNESS|NULL_AND_EMPTY_BEHAVIOR|INVALID_INPUT_BEHAVIOR|BUFFER_OWNERSHIP|BUFFER_CAPACITY|ALLOCATION_OWNERSHIP|ERROR_REPORTING_OWNER|RECOVERY_OWNER)" c2/selected-abi-contract.md
+POLYC_SYMBOL         = BootstrapOperatorPrecedence
+INPUT_COUNT          = 1
+INPUT_TYPES          = I64 punct_value
+OUTPUT_COUNT         = 1
+OUTPUT_TYPES         = I64 precedence
+INTEGER_WIDTHS       = 64
+SIGNEDNESS           = SIGNED (I64)
+NULL_AND_EMPTY_BEHAVIOR
+INVALID_INPUT_BEHAVIOR
+BUFFER_OWNERSHIP     = NOT APPLICABLE (no buffer).
+BUFFER_CAPACITY      = NOT APPLICABLE (no buffer).
+ALLOCATION_OWNERSHIP  = NONE.  The component performs no allocation.
+ERROR_REPORTING_OWNER = The C CALLER.  The legacy C decision site
+RECOVERY_OWNER       = The C CALLER.  The component owns no recovery
+
+ABI_FIELDS_PRESENT=14/14
+
+--- the ABI exposes NO unchecked C host-graph identity ---
+ABI_HOST_IDENTITY_FIELDS=0
+ABI_ALLOCATION_SITES=0
+The only parameter is one I64 (the punct value) and the only result is one
+I64 (the precedence).  No pointer, no length and no buffer crosses the
+boundary, so the null/empty and buffer questions are vacuous and are
+recorded as NOT APPLICABLE rather than left unstated.
+
+--- the constant bindings in the contract are the LIVE lexer.h values ---
+src/lexer.h SHA256=6bc46f3be938c6fae99095d8cf0b1f07104bbf9fc1dfb248aaa3cd5dd721c5f9
+#define TK_PLUS_PLUS    0x305
+#define TK_MINUS_MINUS  0x306
+#define TK_SHL          0x309
+#define TK_SHR          0x30A
+#define TK_EQU_EQU      0x30B
+#define TK_NOT_EQU      0x30C
+#define TK_LESS_EQU     0x30D
+#define TK_GREATER_EQU  0x30E
+#define TK_AND_AND      0x30F
+#define TK_OR_OR        0x310
+#define TK_SHL_EQU      0x312
+#define TK_SHR_EQU      0x313
+#define TK_MUL_EQU      0x314
+#define TK_DIV_EQU      0x315
+#define TK_AND_EQU      0x316
+#define TK_OR_EQU       0x317
+#define TK_XOR_EQU      0x318
+#define TK_ADD_EQU      0x319
+#define TK_SUB_EQU      0x31A
+#define TK_MOD_EQU      0x322
+#define TK_ARROW        0x328
+#define TK_PRE_PLUS_PLUS 0x330
+#define TK_PRE_MINUS_MINUS 0x331
+ALL_CONSTANTS_VERIFIED_AGAINST_THE_LIVE_HEADER=YES
+
+ABI_CONTRACT_COMPLETE=YES
+ABI_BOUNDED=YES
+ABI_EXPOSES_HOST_IDENTITY=NO

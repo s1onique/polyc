@@ -1,0 +1,65 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03
+ACT_PHASE=C3-VERIFY
+EVIDENCE_KIND=gate-push
+
+$ make gate-push
+--- the gate transcript (the decision points) ---
+PARSER_PADDING_ARCH_CHECK=PASS arch=arm64 target=arm64
+PARSER_PADDING_SUBJECT=build/parser-padding-subject.o
+PARSER_PADDING_SUBJECT_ARCH=arm64
+PRODUCTION_HCC=./hcc
+PRODUCTION_PADDING_AUTHORITY=POLYC
+CHECK=build STATUS=PASS
+CHECK=install STATUS=PASS
+CHECK=gep01 STATUS=PASS
+CHECK=aot STATUS=FAIL
+REASON=aot emitted test-failure markers despite zero exit status
+VERDICT=FAIL
+
+--- the ONE failing check ---
+CHECK=aot STATUS=FAIL
+REASON=aot emitted test-failure markers despite zero exit status
+VERDICT=FAIL
+GATE_PUSH_RC=2
+
+=== THIS IS A PRE-EXISTING HOST FAILURE, NOT A REGRESSION ===
+
+The aot check is exactly `make unit-test` (scripts/quality/gate-push.sh:292).
+src/tests/run.HC:13-14 compiles EACH test with "../../hcc <file>" WITHOUT
+--install-dir, so the compiler falls back to its COMPILE-TIME prefix:
+
+  $ cd src/tests && ../../hcc 09_default_function_parameters.HC
+  ERROR: Failed to open file: /usr/local/include/tos.HH
+
+  $ ls -ld /usr/local/include
+  ls: cannot access '/usr/local/include': No such file or directory
+
+The SAME test compiles and PASSES when the prefix is supplied:
+
+  $ cd src/tests && ../../hcc --install-dir=<prefix> 09_default_function_parameters.HC && ./a.out
+  Test - Default function parameters: PASSED: 1/1
+  TEST_RC=0
+
+The src/ tree is BYTE-IDENTICAL between the entry commit and HEAD:
+  $ git diff --stat 4e001cc5..HEAD -- src/
+  (empty)
+Therefore the SAME failure necessarily occurs at the entry commit: it is a
+property of the HOST, not of the tree.  This is the P1 residue recorded
+by ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02 (HANDOFF section 8): "the canonical
+`make unit-test` fails on hosts without a writable /usr/local".
+
+NO_NEW_FAILURES_INTRODUCED_BY_THIS_ACT=0
+PRE_EXISTING=YES
+HOST_CAUSE=the host has no /usr/local/include, so the compile-time
+             fallback prefix is unusable
+
+--- the gate checks that DID pass ---
+CHECK=build STATUS=PASS
+CHECK=install STATUS=PASS
+CHECK=gep01 STATUS=PASS
+CHECK=aot STATUS=FAIL
+
+--- the full parser test suite measured through the branch that works ---
+$ cd src/tests && /tmp/test-runner --target=aarch64-apple-darwin
+TESTS_PASSED=87
+TESTS_FAILED=0
