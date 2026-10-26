@@ -1,0 +1,46 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02
+# ACT_PHASE=C1-INVENTORY
+# EVIDENCE_KIND=observable-projections
+# Observable behaviour of every candidate (ACT SECT_7.3).
+#
+# Schema:
+#   01 candidate_id
+#   02 input_domain
+#   03 observable_output
+#   04 return_value_semantics
+#   05 side_effects
+#   06 exceptional_or_malformed_behaviour
+#   07 legacy_c_reference_oracle_usable
+#   08 reference_oracle_basis
+#   09 deterministic_projection
+#   10 fixture_partition_candidates
+
+candidate_id	input_domain	observable_output	return_value_semantics	side_effects	exceptional_or_malformed_behaviour	legacy_c_reference_oracle_usable	reference_oracle_basis	deterministic_projection	fixture_partition_candidates
+CAND-001	(a) token_present = 0 (NULL Lexeme); (b) token_present = 1 with token_kind = TK_IDENT / TK_STR / TK_PUNCT / TK_KEYWORD / any other kind; (c) token_value = the TK_PUNCT or TK_KEYWORD payload; the payload domain is the full s64 range but only specific values are accepted	0 or 1 (int)	1 = the token MAY begin a statement after a control-flow header; 0 = it may not. The value is used ONLY in a boolean context (`if (!parseValidPostControlFlowToken(peek))`) at all 5 production sites.	NONE. The function reads tok->tk_type and tok->i64 and returns. It does not mutate the token, the Cctrl, the AST, or any global.	NO EXCEPTIONS. A NULL token returns 0 (the comment says "EOF - caller raises"; the CALLER owns the diagnostic). An unknown token kind returns 0. A structurally valid but semantically rejected kind/value combination returns 0. No path raises, longjmps, allocates, or reads uninitialised memory.	YES	The legacy C function IS the reference oracle. The successor must call the actual C implementation (not a handwritten substitute) as the reference side of the differential. The C function is already reachable and side-effect-free, so a harness can call it directly.	YES	NULL/EOF; TK_IDENT; TK_STR; TK_PUNCT accepted ({ ; * -- ++); TK_PUNCT rejected (all others); TK_KEYWORD accepted (KW_DO KW_FOR KW_GOTO KW_IF KW_RETURN KW_SWITCH KW_WHILE KW_BREAK KW_CONTINUE KW_TRY KW_THROW KW_ASM); TK_KEYWORD rejected (all others); unknown token kinds (TK_I64, TK_F64, TK_CHAR_CONST, TK_EOF, TK_COMMENT, TK_SUPERSCRIPT, ...); unknown numeric payloads; kind/value combinations that are structurally valid but semantically rejected (e.g. TK_PUNCT with a keyword value)
+CAND-002	offset (int, >= 0), size (int, >= 0)	int pad bytes	0 if size == 0 or offset % size == 0, else size - offset%size	NONE	NO EXCEPTIONS	ALREADY_MIGRATED	BootstrapCalcPadding is the production authority; the legacy C body survives only in the stage0 evidence build.	YES	(already qualified)	(already qualified)
+CAND-003	List of ClsField*	 u32 total class size	SUM of aligned field sizes	NONE on the return value, BUT the function WRITES type->offset on every visited field (src/parser.c:424) -- a host-graph mutation	NO EXCEPTIONS, but the side effect is the disqualifier	YES (as an oracle), but it cannot serve as a PURE oracle because of the offset write.	NO	NOT APPLICABLE -- the candidate is ineligible on R0 grounds (host-graph write). A differential harness could observe the write, but the ABI would carry host graph identity.
+CAND-003S	List of ClsField* (hypothetical)	u32 total size (hypothetical)	same as CAND-003 without the write	NONE (hypothetical)	NO EXCEPTIONS	NO	There is no production call site to compare against, and the legacy C function does not expose a size-only entry point.	YES (hypothetical)	NOT APPLICABLE -- no production seam.
+CAND-004	List of ClsField*	u32 max field size	0 for an EMPTY list (the local `int max` starts at 0 and the loop body never runs); otherwise the maximum of the field sizes. NOTE the promotion detail: `max` is a signed `int`, and `AstType.size` is ALSO declared `int` (src/ast.h:158), so `max < type->size` is a signed/signed comparison with NO unsigned promotion. The `return max;` converts the signed int to the u32 return type, so a negative size would wrap to a large u32.	READS cls_field->type->size only. Writes only to the local `int max`. No host-graph write.	NO EXCEPTIONS. An empty list returns 0. A NULL list would crash, but the sole production call site always passes a live list.	YES	The legacy C function IS the reference oracle. It is side-effect-free, so a harness can call it directly with a constructed field list.	YES	empty list; single field; heterogeneous sizes (1/2/4/8); MAX_ALIGN boundary; a field whose size is 0 (U0 body) -- note max stays 0 only if ALL fields are 0; signedness/promotion boundary (signed int max converted to u32 on return)
+CAND-005	Ast* c (may be NULL)	0 or 1	1 iff c is non-NULL, c->kind == AST_LITERAL, c->type is non-NULL with c->type->kind == AST_TYPE_INT, and c->i64 != 0	NONE	NULL-safe (returns 0). Reads only c->kind, c->type->kind, c->i64.	YES (as an oracle), but only reachable via CAND-007's AST walk.	YES	(depends on CAND-007 migration)
+CAND-006	Ast* s (may be NULL)	0 or 1	1 iff the subtree contains an AST_BREAK that is not captured by a nested loop/switch	NONE	NULL-safe. Reads s->kind, s->stms, s->then, s->els.	YES (as an oracle), but only reachable via CAND-007's AST walk.	YES	(depends on CAND-007 migration)
+CAND-007	Ast* s (may be NULL)	0 or 1	1 iff control flow may run off the end of s	NONE	NULL-safe. Reads s->kind, s->stms, s->then, s->els, s->forcond, s->forbody, s->whilecond, s->whilebody, s->case_default.	YES (as an oracle). It is reachable from parseFunctionDef:2355 with a live Ast* body.	YES	(depends on an unbounded AST projection)
+CAND-008	AoStr* text (may be NULL)	0 or 1	1 iff the text contains a whole-word (case-insensitive) ret/eret/iret/jmp/br/b	NONE	NULL-safe (returns 0 for NULL text or NULL data). Reads text->data and text->len only.	YES (as an oracle).	YES	(depends on an unbounded text copy)
+CAND-009	AstType*, AoStr*	ClsField*	pointer to a fresh malloc'd record	N/A -- allocates.	NO EXCEPTIONS observed, but a malloc failure would be a NULL deref.	NO -- NON_SEMANTIC	There is no semantic decision to oracle.	N/A	NOT APPLICABLE
+CAND-010	none	AoStr*	a fresh "___tmpN___" string with an incrementing counter	N/A -- mutates a static counter, so the output differs between calls.	NO EXCEPTIONS.	NO -- NON_SEMANTIC, and NON-REPRODUCIBLE across runs.	There is no stable expected output.	N/A	NOT APPLICABLE
+CAND-011	AstType*, Map*, int offset, int make_copy	void (mutates fields_dict)	N/A	WRITES type->offset += offset and mapAdd(fields_dict, ...)	N/A -- mutates the host AST type graph and the host Map.	NO EXCEPTIONS observed.	NO	Not a bounded value projection.	N/A	NOT APPLICABLE
+CAND-012	Cctrl* and the token stream	void	N/A	Consumes tokens; writes *kind_out and *reg_out; raises a diagnostic on a malformed `reg` clause.	YES -- cctrlRaiseException on "`reg` must be followed by a register name". The diagnostic is owned by the C side.	NO	Diagnostic ownership is not migratable.	N/A	NOT APPLICABLE
+CAND-013	Ast* init, AstType* dst	Ast*	N/A	Rebinds the host AST node and embeds a host AstType* in the result.	NO EXCEPTIONS observed.	NO	The result carries host identity.	N/A	NOT APPLICABLE
+CAND-014	Cctrl* cc, Ast* body	void	N/A	Owns jmp_buf; mutates cc->current_recovery, cc->localenv, cc->tmp_locals; appends to body->stms.	YES -- longjmp-based per-statement recovery.	NO	Recovery authority is not migratable.	N/A	NOT APPLICABLE
+CAND-015	Cctrl* cc, char* term_out	Ast*	N/A	Consumes tokens; mutates cc->localenv; raises a diagnostic.	YES -- cctrlRaiseException on a malformed if-clause.	NO	Diagnostic ownership is not migratable.	N/A	NOT APPLICABLE
+CAND-016	Cctrl* cc, Ast* case_expr	void	N/A	Rewinds the token stream; raises a diagnostic.	YES -- cctrlRaiseExceptionFromTo.	NO	Diagnostic ownership is not migratable.	N/A	NOT APPLICABLE
+
+DETERMINISTIC_PROJECTION_YES=8
+  CAND-001, CAND-002, CAND-003S, CAND-004, CAND-005, CAND-006, CAND-007, CAND-008
+DETERMINISTIC_PROJECTION_NO=2
+  CAND-003 (writes the host AST graph), CAND-011 (writes the host AST graph)
+NON_SEMANTIC=3
+  CAND-009, CAND-010, CAND-016
+LEGACY_C_REFERENCE_ORACLE_USABLE=7
+  CAND-001, CAND-002, CAND-004, CAND-005, CAND-006, CAND-007, CAND-008
+  (CAND-003 is excluded: its legacy C form is not a PURE oracle because of
+   the type->offset write; CAND-003S has no production call site)

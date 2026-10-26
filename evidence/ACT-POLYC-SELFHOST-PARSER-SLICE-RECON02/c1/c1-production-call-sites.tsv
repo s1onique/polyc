@@ -1,0 +1,48 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02
+# ACT_PHASE=C1-INVENTORY
+# EVIDENCE_KIND=production-call-sites
+# Every production call site of every candidate, enumerated by grep over
+# the current src/ tree.  "live" means the call executes on a normal
+# production compile path (not inside a #if 0, a comment, or a test-only
+# branch).
+#
+# Schema:
+#   01 candidate_id
+#   02 call_site_count
+#   03 call_sites
+#   04 calling_functions
+#   05 live_production_call_sites
+#   06 production_delegation_feasible
+#   07 delegation_feasibility_basis
+
+candidate_id	call_site_count	call_sites	calling_functions	live_production_call_sites	production_delegation_feasible	delegation_feasibility_basis
+CAND-001	5	src/parser.c:950, 961, 1254, 1288, 1321	parseIfStatement (if-body, else-body), parseForStatement, parseWhileStatement, parseDoWhileStatement	5	YES	All 5 sites are ordinary `if (!parseValidPostControlFlowToken(peek))` guards on the production control-flow body paths. The callee takes ONE argument and returns an int used only in a boolean context. A scalar PolyC delegate with signature (I64 present, I64 kind, I64 value) -> I64 can be substituted at each site without moving any parser state machine.
+CAND-002	5	src/parser.c:511, 541, 554, 567, 599	parseClassOffsets (4), parseUnionOffsets (1)	5	ALREADY_DONE	Production already delegates to BootstrapCalcPadding under HCC_USE_SELFHOST_PARSER_PADDING (src/parser.c:431-453). ALREADY_SELFHOSTED => CAND-002_SELECTED_AGAIN=FORBIDDEN.
+CAND-003	1	src/parser.c:718	parseClassDef -> parseClassOrUnion (passed as the `computeSize` function pointer)	1	NO	The single call site is a FUNCTION-POINTER argument (u32 (*computeSize)(List *)). Migrating it would require changing the callback contract of parseClassOrUnion and would have to carry the `type->offset` side effect across the boundary, which is a host-graph WRITE (R0=4). Not bridgeable.
+CAND-003S	0	-	-	0	NO	No production call site exists for a size-only sub-slice. To create one would require a new callback contract in parseClassOrUnion (a production API change) and would duplicate the alignment walk. Not bridgeable in the successor's scope.
+CAND-004	1	src/parser.c:722	parseUnionDef -> parseClassOrUnion (passed as the `computeSize` function pointer)	1	POSSIBLE_BUT_NARROW	The single call site is a function-pointer argument with the signature u32 (*computeSize)(List *). The function body is read-only, so a bounded PolyC delegate over a copied (size) sequence is conceivable, BUT the callback ABI carries a List* and the host would have to materialise the copied sequence on every call. The delegation requires changing a production callback contract. R0=0 but the production seam is narrower than CAND-001's.
+CAND-005	2	src/parser.c:1993, 1999	astStmtFallsThrough	2	NO	Only reachable from astStmtFallsThrough (CAND-007), which is itself a static helper of parseFunctionDef. Migrating CAND-005 alone would require migrating CAND-007 too, and CAND-007 walks a live Ast* graph (R0=2).
+CAND-006	2	src/parser.c:1994, 2000	astStmtFallsThrough	2	NO	Same as CAND-005: only reachable via CAND-007's AST walk. (CAND-006 additionally has 2 recursive self-calls at :1962 and :1967, which are internal, not production call sites.)
+CAND-007	1	src/parser.c:2355	parseFunctionDef (non-void falls-off-the-end warning)	1	POSSIBLE_BUT_NARROW	The call site takes a live Ast* function body. A PolyC delegate would need a bounded copied AST projection across the whole function body, which is unbounded in size. R0=2 but the ABI is not bounded. (CAND-007 additionally has 3 recursive self-calls at :1983, :1990, :1991, which are internal.)
+CAND-008	1	src/parser.c:2193	parseFunctionDef (naked-asm missing-RET warning)	1	POSSIBLE_BUT_NARROW	The call site passes an AoStr* whose length is unbounded at the ABI level. A bounded ABI would need a length-capped copy, changing semantics for large asm bodies.
+CAND-009	3	src/parser.c:313, 319, 373	parseClassOrUnionFields	3	NO	NON_SEMANTIC (malloc wrapper). No semantic decision to migrate.
+CAND-010	2	src/parser.c:1005, 1073	parseDesugarArrayLoop, parseCreateForRange	2	NO	NON_SEMANTIC (non-deterministic static counter).
+CAND-011	3	src/parser.c:460, 501, 548	parseClassOffsets (2), parseUnionOffsets (1)	3	NO	Host-graph WRITER (type->offset += offset, mapAdd). R0=4.
+CAND-012	1	src/parser.c:1851	parseCompoundStatementInternal	1	NO	Consumes the token stream and raises diagnostics. PARSER_CALLBACK_COUNT>0.
+CAND-013	2	src/parser.c:212, 224	parseDeclArrayInitInt	2	NO	Result embeds a host AstType* pointer. POINTER_IDENTITY_OPS>0.
+CAND-014	2	src/parser.c:1926, 2302	parseCompoundStatement, parseFunctionDef	2	NO	Owns jmp_buf recovery. R0=5. KNOWN-NEGATIVE CONTROL.
+CAND-015	1	src/parser.c:931	parseIfStatement	1	NO	Mutates cc->localenv; PARSER_CALLBACK_COUNT=5. R0=3.
+CAND-016	1	src/parser.c:1464	parseCaseLabel	1	NO	Diagnostic-only helper; owns diagnostic emission and rewinds the token stream.
+
+CANDIDATES_WITH_LIVE_PRODUCTION_CALL_SITES=15
+CANDIDATES_WITH_ZERO_LIVE_PRODUCTION_CALL_SITES=1
+  CAND-003S (the hypothetical size-only sub-slice has no production call site)
+PRODUCTION_DELEGATION_FEASIBLE=YES  (1 candidate)
+  CAND-001
+PRODUCTION_DELEGATION_ALREADY_DONE=1
+  CAND-002
+PRODUCTION_DELEGATION_NARROW_BUT_CONCEIVABLE=3
+  CAND-004, CAND-007, CAND-008
+PRODUCTION_DELEGATION_NOT_FEASIBLE=11
+  CAND-003, CAND-003S, CAND-005, CAND-006, CAND-009, CAND-010,
+  CAND-011, CAND-012, CAND-013, CAND-014, CAND-015, CAND-016

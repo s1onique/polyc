@@ -1,0 +1,121 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02
+# ACT_PHASE=C1-INVENTORY
+# EVIDENCE_KIND=function-inventory
+# Live enumeration of the current parser semantic surface.
+#
+# Historical baseline: 64 parser helpers inspected by
+# ACT-POLYC-SELFHOST-PARSER-SLICE-RECON01
+# (evidence/.../c1/c1-parser-function-universe.tsv).
+#
+# Every one of the 64 historical helpers is mapped below.  56 still live
+# in src/parser.c; 6 moved to src/prslib.c; 2 are lexer-owned in
+# src/lexer.h.  2 NEW parser functions exist that the historical survey
+# did not list.  The current count is NOT required to equal 64.
+
+# Schema:
+#   01 function_name
+#   02 source_file
+#   03 source_start
+#   04 source_end
+#   05 loc
+#   06 hist_recon01_entry  (Y/N: was in the historical 64-helper survey)
+#   07 historical_class    (ORCH | NON_SEM | ALREADY | DEAD | TOO_COUP | SUPER | NEW)
+#   08 current_class       (same vocabulary, re-derived from CURRENT source)
+#   09 delta               (UNCHANGED | RELOCATED | ADDED | BEHAVIOUR_CHANGED)
+#   10 notes
+
+function_name	source_file	source_start	source_end	loc	hist_recon01_entry	historical_class	current_class	delta	notes
+parseToAst	src/parser.c	2892	2979	88	Y	ORCH	ORCH	UNCHANGED	parse driver; mutates cc throughout; owns recovery via subordinate parsers
+parseStatement	src/parser.c	1619	1781	163	Y	ORCH	ORCH	UNCHANGED	statement orchestrator; mutates cc->localenv, cc->tmp_locals, cc->ast_list
+parseIfStatement	src/parser.c	919	980	62	Y	TOO_COUP	TOO_COUP	UNCHANGED	opens child localenv; mutates cc->localenv; cctrlRaiseException
+parseForStatement	src/parser.c	1212	1264	53	Y	TOO_COUP	TOO_COUP	UNCHANGED	sets cc->tmp_loop_begin/end; mutates cc->localenv; cctrlRaiseException
+parseWhileStatement	src/parser.c	1266	1298	33	Y	TOO_COUP	TOO_COUP	UNCHANGED	sets cc->tmp_loop_begin/end; mutates cc->localenv
+parseDoWhileStatement	src/parser.c	1300	1344	45	Y	TOO_COUP	TOO_COUP	UNCHANGED	sets cc->tmp_loop_begin/end; mutates cc->localenv
+parseReturnStatement	src/parser.c	1364	1398	35	Y	TOO_COUP	TOO_COUP	UNCHANGED	reads cc->tmp_rettype/tmp_fname/tmp_func; mutates cc->tmp_rettype; cctrlWarning
+parseTryStatement	src/parser.c	1400	1420	21	Y	TOO_COUP	TOO_COUP	UNCHANGED	calls parseCompoundStatement (orchestrator); cctrlRaiseException
+parseThrowStatement	src/parser.c	1422	1428	7	Y	TOO_COUP	TOO_COUP	UNCHANGED	small body but cctrlTokenExpect chain; raises on missing close-paren
+parseCaseLabel	src/parser.c	1438	1522	85	Y	TOO_COUP	TOO_COUP	UNCHANGED	reads cc->tmp_case_list, cc->flags; mutates tmp_case_list
+parseDefaultStatement	src/parser.c	1524	1547	24	Y	TOO_COUP	TOO_COUP	UNCHANGED	mutates cc->tmp_default_case
+parseBreakStatement	src/parser.c	1346	1353	8	Y	TOO_COUP	TOO_COUP	UNCHANGED	reads cc->tmp_loop_end; cctrlRaiseException
+parseContinueStatement	src/parser.c	1355	1362	8	Y	TOO_COUP	TOO_COUP	UNCHANGED	reads cc->tmp_loop_begin; cctrlRaiseException
+parseSwitchStatement	src/parser.c	1549	1611	63	Y	-	TOO_COUP	ADDED	NEW since the historical survey; reads cc->tmp_case_list/tmp_default_case; mutates them; cctrlRaiseException
+parseCompoundStatement	src/parser.c	1923	1938	16	Y	ORCH	ORCH	UNCHANGED	wrapper that allocates list+Ast then delegates to parseCompoundStatementInternal
+parseCompoundStatementInternal	src/parser.c	1793	1921	129	Y	TOO_COUP	TOO_COUP	UNCHANGED	KNOWN-NEGATIVE CONTROL (whole function rejected by PARSER01-CORRECTION01)
+parseVariableAssignment	src/parser.c	727	787	61	Y	TOO_COUP	TOO_COUP	UNCHANGED	mutates Ast* var->type; reaches parseDeclArrayInitInt; cctrlRaiseExceptionFromTo
+parseVariableInitialiser	src/parser.c	789	802	14	Y	TOO_COUP	TOO_COUP	UNCHANGED	small driver but reaches parseVariableAssignment
+parseDecl	src/parser.c	804	830	27	Y	TOO_COUP	TOO_COUP	UNCHANGED	mutates cc->localenv, cc->tmp_locals; cctrlRaiseException
+parseDeclOrStatement	src/parser.c	1782	1791	10	Y	TOO_COUP	TOO_COUP	UNCHANGED	dispatches to parseDecl/parseStatement; reads token ring
+parseRangeLoop	src/parser.c	1099	1161	63	Y	TOO_COUP	TOO_COUP	UNCHANGED	deeply coupled: parseExpr, parseCreateForRange, parseCreateBinaryOp
+parseForLoopInitialiser	src/parser.c	1163	1210	48	Y	TOO_COUP	TOO_COUP	UNCHANGED	mutates cc->localenv, cc->tmp_locals; reaches parseRangeLoop, parseVariableInitialiser
+parseOptDeclOrStmt	src/parser.c	982	989	8	Y	TOO_COUP	TOO_COUP	UNCHANGED	small but reaches parseDeclOrStatement
+parseOptExpr	src/parser.c	991	1001	11	Y	TOO_COUP	TOO_COUP	UNCHANGED	reaches parseExpr; cctrlTokenExpect
+parseDesugarArrayLoop	src/parser.c	1003	1042	40	Y	TOO_COUP	TOO_COUP	UNCHANGED	mutates cc->localenv, cc->tmp_locals; ast construction
+parseFunctionDef	src/parser.c	2054	2370	317	Y	ORCH	ORCH	UNCHANGED	function-body orchestrator; mutates cc->localenv/tmp_locals/tmp_func/asm_blocks/global_env
+parseExternFunctionProto	src/parser.c	2372	2391	20	Y	TOO_COUP	TOO_COUP	UNCHANGED	mutates cc->localenv, cc->global_env; cctrlRaiseException
+parseFunctionOrDef	src/parser.c	2393	2453	61	Y	ORCH	ORCH	UNCHANGED	function-form orchestrator; mutates cc->localenv/tmp_locals
+parseAsmFunctionBinding	src/parser.c	2455	2517	63	Y	TOO_COUP	TOO_COUP	UNCHANGED	mutates cc->asm_functions, cc->localenv, cc->asm_funcs; cctrlRaiseException
+parseToplevelDef	src/parser.c	2519	2890	372	Y	ORCH	ORCH	UNCHANGED	top-level keyword dispatcher; mutates cc throughout
+parseClassDef	src/parser.c	717	719	3	Y	TOO_COUP	TOO_COUP	UNCHANGED	mutates cc->clsdefs; reaches parseClassOrUnion
+parseUnionDef	src/parser.c	721	725	5	Y	TOO_COUP	TOO_COUP	UNCHANGED	mutates cc->uniondefs; reaches parseClassOrUnion
+parseClassOrUnion	src/parser.c	603	715	113	Y	TOO_COUP	TOO_COUP	UNCHANGED	mutates cc->clsdefs/uniondefs; reaches parseBaseDeclSpec, parsePointerType
+parseClassOrUnionFields	src/parser.c	272	395	124	Y	TOO_COUP	TOO_COUP	UNCHANGED	mutates Map fields_dict; reaches parseBaseDeclSpec, parsePointerType, parseClassDef, parseUnionDef
+parseClassOffsets	src/parser.c	481	569	89	Y	TOO_COUP	TOO_COUP	UNCHANGED	mutates Map fields_dict; reaches parseFlattenAnnonymous, CalcPadding
+parseUnionOffsets	src/parser.c	571	601	31	Y	TOO_COUP	TOO_COUP	UNCHANGED	mutates Map fields_dict; reaches parseFlattenAnnonymous, CalcPadding
+CalcClassSize	src/parser.c	410	428	19	Y	SUPER	SUPER	BEHAVIOUR_CHANGED	RECLASSIFIED: writes type->offset (host-graph mutation); historical R0=0 was WRONG (ACT H2)
+CalcUnionSize	src/parser.c	397	408	12	Y	SUPER	SUPER	UNCHANGED	walks List<ClsField*>; returns max(size); no host-graph mutation
+CalcPadding	src/parser.c	430	467	38	Y	SUPER	ALREADY	BEHAVIOUR_CHANGED	ALREADY_SELFHOSTED: production delegates to BootstrapCalcPadding under HCC_USE_SELFHOST_PARSER_PADDING
+ParserLegacyCalcPaddingOracle	src/parser.c	476	479	4	Y	-	ALREADY	ADDED	NEW since the historical survey; stage0 evidence wrapper forwarding to the legacy C CalcPadding
+parseFlattenAnnonymous	src/parser.c	238	258	21	Y	TOO_COUP	TOO_COUP	UNCHANGED	mutates Map fields_dict (writes); iterates anon->fields; also writes type->offset
+parseBaseDeclSpec	src/prslib.c	279	298	20	Y	TOO_COUP	TOO_COUP	RELOCATED	RELOCATED out of src/parser.c into src/prslib.c; mutates cc->localenv indirectly
+parseDeclSpec	src/prslib.c	300	310	11	Y	TOO_COUP	TOO_COUP	RELOCATED	RELOCATED out of src/parser.c into src/prslib.c; wraps parseBaseDeclSpec + parsePointerType
+parseFullType	src/prslib.c	396	399	4	Y	TOO_COUP	TOO_COUP	RELOCATED	RELOCATED out of src/parser.c into src/prslib.c; wraps parseDeclSpec + parseArrayDimensions
+parseArrayDimensionsInternal	src/prslib.c	312	385	74	Y	TOO_COUP	TOO_COUP	RELOCATED	RELOCATED out of src/parser.c into src/prslib.c; reaches parseExpr; cctrlRaiseException
+parseArrayDimensions	src/prslib.c	387	394	8	Y	TOO_COUP	TOO_COUP	RELOCATED	RELOCATED out of src/parser.c into src/prslib.c; wraps parseArrayDimensionsInternal
+parseDeclInternal	src/prslib.c	401	-	-	Y	TOO_COUP	TOO_COUP	RELOCATED	RELOCATED out of src/parser.c into src/prslib.c; mutates cc->localenv, cc->tmp_locals
+parseRegModifier	src/parser.c	40	60	21	Y	SUPER	SUPER	UNCHANGED	reads token via cctrlTokenPeek/Get; cctrlRaiseException on error
+parseFloatingCharConst	src/parser.c	68	97	30	Y	TOO_COUP	TOO_COUP	UNCHANGED	cctrlGetOrSetString, vecPush, astFunctionCall; allocates
+parseFoldInitElement	src/parser.c	121	155	35	Y	SUPER	SUPER	UNCHANGED	pure transform: input Ast* + AstType* dst -> Ast*; result carries host type pointer
+parseTypeCheckClassFieldInitaliser	src/parser.c	99	119	21	Y	TOO_COUP	TOO_COUP	UNCHANGED	cctrlWarning; diagnostic emission
+parseDeclArrayInitInt	src/parser.c	157	236	80	Y	TOO_COUP	TOO_COUP	UNCHANGED	mutates List initlist; reaches parseExpr, parseFoldInitElement, astArrayInit
+createFunctionLevelGotoLabel	src/parser.c	1613	1617	5	Y	TOO_COUP	TOO_COUP	UNCHANGED	allocates AoStr; reads cc->tmp_fname
+parseRaiseCaseException	src/parser.c	1430	1436	7	Y	TOO_COUP	TOO_COUP	UNCHANGED	diagnostic helper: cctrlRewindUntilStrMatch + cctrlRaiseExceptionFromTo
+parseIfClause	src/parser.c	872	917	46	Y	-	TOO_COUP	ADDED	NEW since the historical survey; mutates cc->localenv; cctrlRaiseException
+parseAssertContainerHasFields	src/parser.c	1044	1068	25	Y	TOO_COUP	TOO_COUP	UNCHANGED	cctrlRaiseException
+parseCreateForRange	src/parser.c	1070	1097	28	Y	TOO_COUP	TOO_COUP	UNCHANGED	ast construction; reaches parseCreateBinaryOp
+clsFieldNew	src/parser.c	265	270	6	Y	NON_SEM	NON_SEM	UNCHANGED	pure malloc wrapper: AstType* + AoStr* -> ClsField*
+astIsConstTrueCond	src/parser.c	1940	1944	5	Y	SUPER	SUPER	UNCHANGED	pure: AST literal of int type with non-zero i64
+astStmtHasBreak	src/parser.c	1948	1971	24	Y	SUPER	SUPER	UNCHANGED	pure tree walk: returns 1 if any nested AST_BREAK escapes enclosing loop/switch
+astStmtFallsThrough	src/parser.c	1973	2013	41	Y	SUPER	SUPER	UNCHANGED	pure tree walk: returns 1 if control flow may run off end of statement list
+asmTextHasReturn	src/parser.c	2021	2052	32	Y	SUPER	SUPER	UNCHANGED	pure text scan: returns 1 if AoStr text contains a whole-word ret/eret/iret/jmp/br/b
+parseValidPostControlFlowToken	src/parser.c	832	864	33	Y	SUPER	SUPER	UNCHANGED	pure predicate: tk_type + i64 + keyword value match -> int
+getRangeLoopIdx	src/parser.c	62	65	4	Y	NON_SEM	NON_SEM	UNCHANGED	static int counter; non-deterministic across runs (FORBIDDEN for self-host)
+tokenPunctIs	src/lexer.h	272	272	-	Y	SUPER	SUPER	RELOCATED	LEXER-OWNED (not a parser function); already a pure 1-line helper
+tokenIdentIs	src/lexer.h	273	273	-	Y	SUPER	SUPER	RELOCATED	LEXER-OWNED (not a parser function); non-parser domain
+
+HIST64_MAPPED=64
+HIST64_RESIDUAL_UNMAPPED=0
+MAPPING_ROWS_TOTAL=66
+  = 64 historical helpers (ALL mapped) + 2 functions new since the survey
+NEW_FUNCTIONS_SINCE_RECON01=2
+  parseSwitchStatement            (src/parser.c:1549..1611) switch statement orchestrator
+  ParserLegacyCalcPaddingOracle   (src/parser.c:476..479)  stage0 legacy-oracle wrapper
+DELTA_BREAKDOWN (66 rows)
+  UNCHANGED=53
+  RELOCATED=8
+    -> src/prslib.c : parseBaseDeclSpec, parseDeclSpec, parseFullType,
+                      parseArrayDimensionsInternal, parseArrayDimensions,
+                      parseDeclInternal
+    -> src/lexer.h : tokenPunctIs, tokenIdentIs (LEXER-OWNED, not parser code)
+  BEHAVIOUR_CHANGED=2
+    CalcClassSize : historical R0=0 was WRONG (writes type->offset) -- ACT H2
+    CalcPadding   : ALREADY_SELFHOSTED (production delegates to
+                    BootstrapCalcPadding under HCC_USE_SELFHOST_PARSER_PADDING)
+  ADDED=2
+    parseSwitchStatement, ParserLegacyCalcPaddingOracle
+
+# Note: parseIfClause (src/parser.c:872) WAS present in the historical
+# 64-helper survey (the RECON01 universe table lists it), so it is not
+# a new function; the survey simply classified it TOO_COUP rather than
+# naming it as a candidate slice.
+HIST64_UNMAPPED_RESIDUE=0
+UNKNOWN_CANDIDATES=0

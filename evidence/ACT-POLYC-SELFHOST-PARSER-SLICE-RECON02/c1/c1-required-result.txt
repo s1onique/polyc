@@ -1,0 +1,100 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02
+ACT_PHASE=C1-INVENTORY
+EVIDENCE_KIND=c1-required-result
+
+# --- Inventory completeness ---------------------------------------------
+UNKNOWN_CANDIDATES=0
+HISTORICAL_CANDIDATES_REVISITED=14
+HISTORICAL_CANDIDATES_MISSING=0
+HIST64_MAPPED=64
+HIST64_RESIDUAL_UNMAPPED=0
+NEW_CANDIDATES_FOUND=2
+  parseSwitchStatement (src/parser.c:1549) -- added to the FUNCTION universe
+  ParserLegacyCalcPaddingOracle (src/parser.c:476) -- added to the FUNCTION universe
+NEW_CANDIDATE_SLICES=2
+  parseIfClause (CAND-015), parseRaiseCaseException (CAND-016)
+HYPOTHETICAL_SUB_SLICES_CONSIDERED=1
+  CAND-003S (CalcClassSize pure-size sub-slice) -- REJECTED on its own merits
+CANDIDATE_INVENTORY_ROWS=16
+
+# --- Classification completeness ----------------------------------------
+UNCLASSIFIED_STATE_DEPENDENCIES=0
+RECOVERY_UNCLASSIFIED=0
+CALLBACK_UNCLASSIFIED=0
+UNKNOWN_DEPENDENCIES_TOTAL=0
+
+# --- Hypotheses tested ---------------------------------------------------
+H1_PARSE_VALID_POST_CONTROL_FLOW_TOKEN=CONFIRMED
+  src/parser.c:832..864
+  Reads tok->tk_type and tok->i64 ONLY (verified by extracting every
+  `tok->` field access from the function body: exactly {tk_type, i64}).
+  ZERO writes to the token, ZERO cc-> accesses, ZERO setjmp/longjmp,
+  ZERO callbacks, ZERO allocations.
+  5 live production call sites: :950, :961, :1254, :1288, :1321.
+  R0=0 is justified DESPITE the legacy C signature accepting `Lexeme *`,
+  because the pointer is used purely as a container of immutable scalar
+  values and the decision never depends on WHICH Lexeme it is.
+  USES_RAW_LEXEME_IDENTITY=NO
+  MUTATES_TOKEN=NO
+  MUTATES_CCTRL=NO
+  USES_NONLOCAL_RECOVERY=NO
+  CALLBACK_COUNT=0
+  DETERMINISTIC_SCALAR_PROJECTION=YES
+
+H2_CALC_CLASS_SIZE_UNDERCLASSIFIED=CONFIRMED
+  The historical R0=0 classification was WRONG.
+  src/parser.c:424 writes `type->offset = offset;` on a host-owned
+  AstType node inside the same loop that accumulates the size.
+  Whole-function current R0=4 (host-owned mutable graph whose identity
+  matters), NOT 0.  The historical classification used the SCALAR
+  RETURN VALUE as the criterion; the ACT forbids that.
+  The whole function is therefore INELIGIBLE.
+
+H3_CALC_UNION_SIZE=CONFIRMED_ELIGIBLE_ON_STATE_BOUNDARY
+  src/parser.c:397..408.  Reads cls_field->type->size only; writes only
+  the local `int max`; NO host-graph write.  R0=0 confirmed.
+  Integer-promotion details preserved for the C2/C3 analysis:
+    - `int max = 0;` (signed int)
+    - `AstType.size` is declared `int` (src/ast.h:158), so
+      `if (max < type->size)` is a SIGNED int vs SIGNED int comparison --
+      there is no unsigned promotion and no usual-arithmetic-conversion
+      hazard here.  Both operands are int, so the comparison is exact for
+      the full int range.
+    - `return max;` with a `u32` return type: the signed int is converted
+      to u32.  A NEGATIVE `max` (possible only if a field carried a
+      negative size) would convert to a large u32.  The C side therefore
+      has a signedness edge that a naive `max()` over u64 sizes would
+      silently lose.
+    - EMPTY LIST => returns 0 (the loop body never runs).
+    - A field of size 0 (e.g. a `U0 body` placeholder) does not change
+      `max` because `0 < 0` is false.
+  Its production seam is a FUNCTION-POINTER argument
+  (u32 (*computeSize)(List *)) at src/parser.c:722, which is narrower
+  than CAND-001's ordinary call sites.
+
+H4_OTHER_HISTORICAL_CANDIDATES=REVISITED
+  CAND-005 astIsConstTrueCond  R0=2 unchanged
+  CAND-006 astStmtHasBreak     R0=2 unchanged
+  CAND-007 astStmtFallsThrough R0=2 unchanged
+  CAND-008 asmTextHasReturn    R0=1 unchanged
+  All four remain ELIGIBLE ON THE STATE-BOUNDARY CRITERION but their
+  production delegation seams are not bridgeable within the successor's
+  scope (unbounded AST/text projections, or a callback contract change).
+
+# --- Already-selfhosted control -----------------------------------------
+CAND-002_ALREADY_SELFHOSTED=YES
+PARSER_PADDING_PRODUCTION_AUTHORITY=POLYC
+LEGACY_C_CALC_PADDING_PRODUCTION_PATH=INACTIVE
+VERIFIED_AGAINST=LIVE CMakeCache + src/parser.c + src/CMakeLists.txt + build/hcc
+
+# --- C2 precondition outcome --------------------------------------------
+C1_PRECONDITION_PASS_COUNT=1
+C1_PRECONDITION_PASS_CANDIDATES=CAND-001
+C1_PRECONDITION_FAIL_COUNT=15
+
+NO_HALT_TRIGGERED=YES
+  HALT_INVENTORY_INCOMPLETE  -> NOT triggered (UNKNOWN_CANDIDATES=0)
+  HALT_UNCLASSIFIED_COUPLING -> NOT triggered (all dependencies classified)
+
+PRODUCTION_SOURCE_DELTA=0
+TRACKED_COMPILER_CHANGE=0

@@ -1,0 +1,51 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02
+# ACT_PHASE=C1-INVENTORY
+# EVIDENCE_KIND=candidate-delta-vs-recon01
+# Every RECON01 candidate, compared against the CURRENT live source.
+#
+# Schema:
+#   01 candidate_id
+#   02 function_name
+#   03 recon01_line_start
+#   04 current_line_start
+#   05 line_delta
+#   06 recon01_loc
+#   07 current_loc
+#   08 recon01_r0
+#   09 current_r0
+#   10 recon01_eligible
+#   11 current_eligible_precondition
+#   12 delta_class
+#   13 delta_reason
+
+candidate_id	function_name	recon01_line_start	current_line_start	line_delta	recon01_loc	current_loc	recon01_r0	current_r0	recon01_eligible	current_eligible_precondition	delta_class	delta_reason
+CAND-001	parseValidPostControlFlowToken	791	832	+41	33	33	0	0	YES	PASS	UNCHANGED	Same pure predicate; only the file grew above it. Reads tok->tk_type and tok->i64 only; 5 live production call sites.
+CAND-002	CalcPadding	430	430	0	9	38	0	0	YES	FAIL	ALREADY_SELFHOSTED	Production now delegates to BootstrapCalcPadding under HCC_USE_SELFHOST_PARSER_PADDING. The function grew by 29 lines (the delegation wrapper + the legacy #else branch) but its SEMANTIC AUTHORITY is no longer in C. CAND-002_SELECTED_AGAIN=FORBIDDEN.
+CAND-003	CalcClassSize	410	410	0	19	19	0	4	YES	FAIL	RECLASSIFIED	ACT H2 CONFIRMED. The historical R0=0 was WRONG: src/parser.c:424 writes `type->offset = offset;` on a host-owned AstType node inside the same loop. This is a host-graph WRITE => R0=4. The historical classification was based on the SCALAR RETURN VALUE, which is not the criterion.
+CAND-004	CalcUnionSize	397	397	0	12	12	0	0	YES	PASS	UNCHANGED	Read-only; writes only a local int max. R0=0 confirmed against the current source.
+CAND-005	astIsConstTrueCond	1899	1940	+41	5	5	2	2	YES	PASS	UNCHANGED	Same predicate; only the file grew above it.
+CAND-006	astStmtHasBreak	1907	1948	+41	24	24	2	2	YES	PASS	UNCHANGED	Same recursive read-only walk.
+CAND-007	astStmtFallsThrough	1932	1973	+41	41	41	2	2	YES	PASS	UNCHANGED	Same recursive read-only walk.
+CAND-008	asmTextHasReturn	1980	2021	+41	32	32	1	1	YES	PASS	UNCHANGED	Same byte scan.
+CAND-009	clsFieldNew	265	265	0	6	6	0	0	NO	FAIL	UNCHANGED	NON_SEMANTIC malloc wrapper.
+CAND-010	getRangeLoopIdx	62	62	0	4	4	0	0	NO	FAIL	UNCHANGED	NON_SEMANTIC static counter.
+CAND-011	parseFlattenAnonymous	238	238	0	21	21	3	4	NO	FAIL	RECLASSIFIED	RECLASSIFIED UP. The historical R0=3 ("opaque host handle needed but candidate does not mutate the referenced graph") understated it: src/parser.c:254 writes `type->offset += offset;` AND the function mapAdd()s into the host Map fields_dict. That is a host-graph mutation => R0=4.
+CAND-012	parseRegModifier	40	40	0	21	21	3	3	NO	FAIL	UNCHANGED	PARSER_CALLBACK_COUNT>0 (cctrlTokenPeek, cctrlTokenGet, cctrlRaiseException).
+CAND-013	parseFoldInitElement	121	121	0	35	35	3	3	NO	FAIL	UNCHANGED	POINTER_IDENTITY_OPS>0: the result embeds a host AstType*.
+CAND-014	parseCompoundStatementInternal	1752	1793	+41	129	129	5	5	NO	FAIL	UNCHANGED	KNOWN-NEGATIVE CONTROL. jmp_buf at :1810, cc->current_recovery install at :1812, setjmp at :1830, 9 subordinate-parser callbacks.
+CAND-015	parseIfClause	-	872	-	-	46	-	3	-	FAIL	NEW_CANDIDATE	NEW candidate found by the C1 fresh search. Was present in the RECON01 64-helper universe table but was NOT nominated as a candidate slice there.
+CAND-016	parseRaiseCaseException	-	1430	-	-	7	-	3	-	FAIL	NEW_CANDIDATE	NEW candidate found by the C1 fresh search. Was present in the RECON01 64-helper universe table but was NOT nominated as a candidate slice there.
+CAND-003S	CalcClassSizePureSizeSum (hypothetical)	-	-	-	-	-	-	2	-	FAIL	NEW_SUB_SLICE	Considered and REJECTED on its own merits (ACT H2). The offset side effect is interleaved in the SAME loop as the size accumulation, so a pure size-only sub-slice would have to duplicate the alignment walk, would have no production call site, and would need a new callback contract in parseClassOrUnion. Not independently nominable.
+
+HISTORICAL_CANDIDATES_REVISITED=14
+HISTORICAL_CANDIDATES_UNCHANGED=9
+HISTORICAL_CANDIDATES_RECLASSIFIED=2
+  CAND-003 (R0 0 -> 4), CAND-011 (R0 3 -> 4)
+HISTORICAL_CANDIDATES_ALREADY_SELFHOSTED=1
+  CAND-002
+HISTORICAL_CANDIDATES_UNCHANGED_BUT_STILL_ELIGIBLE=6
+  CAND-001, CAND-004, CAND-005, CAND-006, CAND-007, CAND-008
+NEW_CANDIDATES=2
+  CAND-015, CAND-016
+HYPOTHETICAL_SUB_SLICES_CONSIDERED=1
+  CAND-003S (rejected)

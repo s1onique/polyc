@@ -1,0 +1,49 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02
+# ACT_PHASE=C1-INVENTORY
+# EVIDENCE_KIND=state-read-write
+# Fine-grained host-state read/write classification (ACT SECT_7.2).
+#
+# The critical distinction the ACT requires: "a function that reads a
+# pointer as a container of immutable values" vs "a function whose
+# behavior depends on pointer identity".  Column 07 records that verdict.
+#
+# Schema:
+#   01 candidate_id
+#   02 reads_global_state
+#   03 writes_global_state
+#   04 reads_cctrl
+#   05 writes_cctrl
+#   06 reads_ast_graph
+#   07 writes_ast_graph
+#   08 pointer_identity_operations
+#   09 identity_sensitive
+#   10 reads_through_pointer_as_immutable_container
+#   11 mutates_referenced_graph
+#   12 allocation_or_deallocation
+#   13 host_state_dependencies_classified
+#   14 detail
+
+candidate_id	reads_global_state	writes_global_state	reads_cctrl	writes_cctrl	reads_ast_graph	writes_ast_graph	pointer_identity_operations	identity_sensitive	reads_through_pointer_as_immutable_container	mutates_referenced_graph	allocation_or_deallocation	host_state_dependencies_classified	detail
+CAND-001	NO	NO	NO	NO	NO	NO	NO	NO	NO	NO	NO	YES	Reads only tok->tk_type and tok->i64 (2 scalar fields). The Lexeme POINTER is a container of immutable values; the decision never depends on WHICH Lexeme it is.
+CAND-002	NO	NO	NO	NO	NO	NO	NO	NO	NO	NO	NO	YES	Production body delegates to BootstrapCalcPadding; the legacy C body is confined to the #else branch.
+CAND-003	NO	NO	NO	NO	YES	YES	YES	YES	NO	YES	NO	YES	READ: cls_field->type->size. WRITE: `type->offset = offset;` at src/parser.c:424 -- mutates a host-owned AstType node in place. The write is what makes the function identity-sensitive.
+CAND-003S	NO	NO	NO	NO	YES	NO	NO	NO	YES	NO	NO	YES	Hypothetical size-only sub-slice. Would read type->size only. But the offset side effect is interleaved in the SAME loop, so extracting a pure sub-slice would duplicate the alignment walk and could not be delegated without the offset it must not compute. No production call site.
+CAND-004	NO	NO	NO	NO	YES	NO	NO	NO	YES	NO	NO	YES	Reads cls_field->type->size through the List as an immutable container. Writes only to a LOCAL `int max`. No host-graph mutation whatsoever.
+CAND-005	NO	NO	NO	NO	YES	NO	NO	NO	YES	NO	NO	YES	Reads c->kind, c->type->kind, c->i64. NULL-safe. No writes.
+CAND-006	NO	NO	NO	NO	YES	NO	NO	NO	YES	NO	NO	YES	Recursive read-only walk of s->kind, s->stms, s->then, s->els.
+CAND-007	NO	NO	NO	NO	YES	NO	NO	NO	YES	NO	NO	YES	Recursive read-only walk; also reads s->forcond, s->forbody, s->whilecond, s->whilebody, s->case_default.
+CAND-008	NO	NO	NO	NO	NO	NO	NO	NO	YES	NO	NO	YES	Reads text->data and text->len. The bytes are immutable for the duration of the call.
+CAND-009	NO	NO	NO	NO	NO	NO	NO	NO	NO	NO	YES	YES	malloc(sizeof(ClsField)); stores the two host pointers into the fresh record.
+CAND-010	YES	YES	NO	NO	NO	NO	NO	NO	NO	NO	YES	YES	static int id; incremented per call. This IS identity/state sensitive across calls: NOT reproducible.
+CAND-011	NO	NO	NO	NO	YES	YES	YES	YES	NO	YES	NO	YES	READ: anon->fields map iteration; base->offset. WRITE: `type->offset += offset;` and mapAdd(fields_dict, ...). Mutates both the AstType graph and the host Map.
+CAND-012	NO	NO	YES	NO	NO	NO	NO	NO	NO	NO	NO	YES	Mutates the cc token ring via cctrlTokenGet; writes *kind_out and *reg_out.
+CAND-013	NO	NO	NO	NO	YES	NO	YES	YES	NO	NO	YES	YES	Result node carries `lit->type = astTypeCopy(dst)` -- a host AstType pointer is embedded in the returned AST, so the result is not a bounded value projection.
+CAND-014	NO	NO	YES	YES	YES	YES	YES	YES	NO	YES	YES	YES	Owns jmp_buf; installs into cc->current_recovery; appends to body->stms; mutates cc->localenv / cc->tmp_locals / cc->tmp_case_list.
+CAND-015	NO	NO	YES	YES	NO	NO	NO	NO	NO	NO	YES	YES	Mutates cc->localenv (registers the declared variable); consumes the token ring.
+CAND-016	NO	NO	YES	YES	NO	NO	NO	NO	NO	NO	NO	YES	Rewinds the token stream (cctrlRewindUntilStrMatch); owns the diagnostic raise.
+
+HOST_STATE_DEPENDENCIES_UNCLASSIFIED=0
+IDENTITY_SENSITIVE_HOST_GRAPH_CANDIDATES=3
+  CAND-003 (writes type->offset)
+  CAND-011 (writes type->offset and the host Map)
+  CAND-013 (embeds a host AstType* in the result)

@@ -1,0 +1,54 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02
+# ACT_PHASE=C1-INVENTORY
+# EVIDENCE_KIND=candidate-inventory
+# Live candidate inventory derived from CURRENT production source.
+#
+# All 14 RECON01 candidates are revisited (ACT SECT_7.1).  Two genuinely
+# new bounded candidates are added (CAND-015, CAND-016) after a fresh
+# search of the current parser for previously missed bounded semantic
+# primitives.  The historical "8 eligible" count is an inventory
+# BASELINE, not a mandatory final count.
+#
+# Schema (tab-separated):
+#   01 candidate_id
+#   02 function_name
+#   03 source_file
+#   04 source_start
+#   05 source_end
+#   06 loc
+#   07 candidate_kind
+#   08 semantic_authority
+#   09 already_selfhosted
+#   10 production_call_sites
+#   11 r0_state_boundary_cost
+#   12 recon01_r0
+#   13 r0_delta
+#   14 notes
+
+candidate_id	function_name	source_file	source_start	source_end	loc	candidate_kind	semantic_authority	already_selfhosted	production_call_sites	r0_state_boundary_cost	recon01_r0	r0_delta	notes
+CAND-001	parseValidPostControlFlowToken	src/parser.c	832	864	33	TOKEN_CLASSIFIER	YES	NO	src/parser.c:950 (parseIfStatement if-body); :961 (parseIfStatement else-body); :1254 (parseForStatement body); :1288 (parseWhileStatement body); :1321 (parseDoWhileStatement body)	0	0	UNCHANGED	5 live production call sites; reads only tok->tk_type and tok->i64; NULL-safe
+CAND-002	CalcPadding	src/parser.c	430	467	38	TYPE_MODIFIER_PRIMITIVE	YES	YES	src/parser.c:511,541,554,567 (parseClassOffsets); :599 (parseUnionOffsets)	0	0	UNCHANGED	ALREADY_SELFHOSTED -- production delegates to BootstrapCalcPadding under HCC_USE_SELFHOST_PARSER_PADDING (src/parser.c:431); CAND-002_SELECTED_AGAIN=FORBIDDEN
+CAND-003	CalcClassSize	src/parser.c	410	428	19	TYPE_MODIFIER_PRIMITIVE	YES	NO	src/parser.c:718 (parseClassDef -> parseClassOrUnion, as the computeSize callback)	4	0	RECLASSIFIED_UP	RECLASSIFIED per ACT H2: the loop body writes `type->offset = offset;` on a host-owned AstType node. Host-graph WRITE => R0=4 (host-owned mutable graph whose identity matters). The historical R0=0 was WRONG. Whole function is INELIGIBLE.
+CAND-003S	CalcClassSizePureSizeSum (hypothetical sub-slice)	src/parser.c	410	428	19	TYPE_MODIFIER_PRIMITIVE	NO	NO	(none -- no production call site exists for a size-only sub-slice)	2	-	NEW_SUB_SLICE	NOT independently nominated. A size-only sub-slice would have to be CARVED OUT of CalcClassSize, but the offset side effect is interleaved in the SAME loop, so a pure sub-slice would require duplicating the alignment walk and would then disagree with the offset it must not compute. Its production delegation would require a second callback contract in parseClassOrUnion. No production delegation path exists => candidate_kind DEAD_OR_NONRUNTIME for migration purposes. NOT ELIGIBLE.
+CAND-004	CalcUnionSize	src/parser.c	397	408	12	TYPE_MODIFIER_PRIMITIVE	YES	NO	src/parser.c:722 (parseUnionDef -> parseClassOrUnion, as the computeSize callback)	0	0	UNCHANGED	walks List<ClsField*>; reads cls_field->type->size only; NO host-graph write; returns u32 max
+CAND-005	astIsConstTrueCond	src/parser.c	1940	1944	5	AST_PROJECTION_PRIMITIVE	YES	NO	src/parser.c:1993 (astStmtFallsThrough AST_FOR case); :1999 (astStmtFallsThrough AST_WHILE/AST_DO_WHILE case)	2	2	UNCHANGED	static; reads c->kind, c->type->kind, c->i64; NULL-safe
+CAND-006	astStmtHasBreak	src/parser.c	1948	1971	24	AST_PROJECTION_PRIMITIVE	YES	NO	src/parser.c:1994 (astStmtFallsThrough AST_FOR case); :2000 (astStmtFallsThrough AST_WHILE/AST_DO_WHILE case)	2	2	UNCHANGED	static; recursive read-only AST walk
+CAND-007	astStmtFallsThrough	src/parser.c	1973	2013	41	AST_PROJECTION_PRIMITIVE	YES	NO	src/parser.c:2355 (parseFunctionDef: non-void falls-off-the-end warning)	2	2	UNCHANGED	static; recursive read-only AST walk; depends on CAND-005 and CAND-006
+CAND-008	asmTextHasReturn	src/parser.c	2021	2052	32	DELIMITER_PRIMITIVE	YES	NO	src/parser.c:2193 (parseFunctionDef: naked-asm missing-RET warning)	1	1	UNCHANGED	static; byte scan over AoStr->data; no host identity
+CAND-009	clsFieldNew	src/parser.c	265	270	6	STATIC_HELPER	NO	NO	src/parser.c:313,319,373 (parseClassOrUnionFields)	0	0	UNCHANGED	NON_SEMANTIC: malloc wrapper; no semantic decision
+CAND-010	getRangeLoopIdx	src/parser.c	62	65	4	STATIC_HELPER	NO	NO	src/parser.c:1005,1073 (parseDesugarArrayLoop, parseCreateForRange)	0	0	UNCHANGED	NON_SEMANTIC: static counter; non-deterministic across runs; FORBIDDEN for self-host
+CAND-011	parseFlattenAnnonymous	src/parser.c	238	258	21	AST_PROJECTION_PRIMITIVE	YES	NO	src/parser.c:460,501 (parseClassOffsets); :548 (parseUnionOffsets)	4	3	RECLASSIFIED_UP	RECLASSIFIED: historical R0=3 understated it. The function writes `type->offset += offset;` on a host AstType AND inserts into the host Map fields_dict. Host-graph WRITE => R0=4.
+CAND-012	parseRegModifier	src/parser.c	40	60	21	TOKEN_CLASSIFIER	YES	NO	src/parser.c:1851 (parseCompoundStatementInternal)	3	3	UNCHANGED	PARSER_CALLBACK_COUNT>0: cctrlTokenPeek, cctrlTokenGet, cctrlRaiseException; mutates the cc token ring; cctrlRaiseException is diagnostic ownership
+CAND-013	parseFoldInitElement	src/parser.c	121	155	35	TOKEN_CLASSIFIER	YES	NO	src/parser.c:212,224 (parseDeclArrayInitInt)	3	3	UNCHANGED	POINTER_IDENTITY_OPS>0: result carries a host AstType* pointer (`lit->type = astTypeCopy(dst)`) and rebinds a host AST node
+CAND-014	parseCompoundStatementInternal	src/parser.c	1793	1921	129	ORCHESTRATOR	YES	NO	src/parser.c:1926 (parseCompoundStatement); :2302 (parseFunctionDef)	5	5	UNCHANGED	KNOWN-NEGATIVE CONTROL: owns jmp_buf stmt_recovery (line 1810), installs into cc->current_recovery (line 1812), setjmp at :1830, 9 subordinate-parser callbacks, 5 host-graph writes, 9 pointer-identity ops
+CAND-015	parseIfClause	src/parser.c	872	917	46	TOKEN_CLASSIFIER	YES	NO	src/parser.c:931 (parseIfStatement: `if (init; cond)` declaration clause)	3	-	NEW_CANDIDATE	NEW candidate found by the C1 fresh search. Mutates cc->localenv (registers the declared variable); calls cctrlTokenPeek/Get/Expect and cctrlRaiseException; PARSER_CALLBACK_COUNT>0. R0=3 => INELIGIBLE.
+CAND-016	parseRaiseCaseException	src/parser.c	1430	1436	7	DIAGNOSTIC_HELPER	NO	NO	src/parser.c:1464 (parseCaseLabel)	3	-	NEW_CANDIDATE	NEW candidate found by the C1 fresh search. Diagnostic-only: cctrlRewindUntilStrMatch + cctrlRaiseExceptionFromTo. It carries no semantic decision of its own (it only re-raises), it mutates the token stream (rewind), and it owns diagnostic emission. NON_SEMANTIC for migration purposes.
+
+INVENTORY_TOTAL=16
+  14 historical RECON01 candidates (ALL revisited)
+  + 1 independently-considered hypothetical sub-slice (CAND-003S, rejected on its own merits)
+  + 2 genuinely new candidates found by the fresh search (CAND-015, CAND-016)
+HISTORICAL_CANDIDATES_REVISITED=14
+HISTORICAL_CANDIDATES_MISSING=0
+NEW_CANDIDATES_FOUND=2
+UNKNOWN_CANDIDATES=0

@@ -1,0 +1,68 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02
+# ACT_PHASE=C1-INVENTORY
+# EVIDENCE_KIND=dependency-map
+# Full dependency classification for every candidate (ACT SECT_7.2).
+#
+# Schema:
+#   01 candidate_id
+#   02 reads_global_state
+#   03 writes_global_state
+#   04 reads_cctrl
+#   05 writes_cctrl
+#   06 reads_ast_graph
+#   07 writes_ast_graph
+#   08 pointer_identity_operations
+#   09 allocation_or_deallocation
+#   10 owns_setjmp
+#   11 writes_current_recovery
+#   12 requires_nonlocal_recovery
+#   13 parser_callback_count
+#   14 semantic_callback_count
+#   15 external_semantic_dependencies
+#   16 unknown_dependencies
+#
+# "reads_ast_graph" = reads Ast*/AstType* fields.  Whether the READ is
+# identity-dependent is captured separately in pointer_identity_operations
+# and in the state-read-write.tsv detail columns.
+#
+# parser_callback_count / semantic_callback_count count DISTINCT callee
+# functions, verified by extracting callee names from each candidate's own
+# source range:
+#   CAND-012: cctrlTokenPeek, cctrlTokenGet, cctrlRaiseException          = 3
+#   CAND-014: parseArrayDimensions, parseAssignAuto, parseBaseDeclSpec,
+#             parseCompoundStatementInternal, parseFunctionPointer,
+#             parsePointerType, parseRegModifier, parseStatement,
+#             parseVariableInitialiser                                     = 9
+#   CAND-015: cctrlIsKeyword, cctrlRaiseException, cctrlTokenGet,
+#             cctrlTokenPeek, cctrlTokenRewind                              = 5
+#   CAND-016: cctrlRaiseExceptionFromTo, cctrlRewindUntilStrMatch          = 2
+#
+# semantic_callback_count counts the DISTINCT callees that carry SEMANTIC
+# authority (diagnostic emission or a semantic decision on the host's
+# behalf), as opposed to pure token-stream plumbing.  Every candidate with
+# parser_callback_count > 0 also has semantic_callback_count >= 1 because
+# it owns a diagnostic call (cctrlRaiseException /
+# cctrlRaiseExceptionFromTo); diagnostic ownership may not cross into
+# PolyC (ACT SECT_9).
+
+candidate_id	reads_global_state	writes_global_state	reads_cctrl	writes_cctrl	reads_ast_graph	writes_ast_graph	pointer_identity_operations	allocation_or_deallocation	owns_setjmp	writes_current_recovery	requires_nonlocal_recovery	parser_callback_count	semantic_callback_count	external_semantic_dependencies	unknown_dependencies
+CAND-001	NO	NO	NO	NO	NO	NO	NO	NO	NO	NO	NO	0	0	none	0
+CAND-002	NO	NO	NO	NO	NO	NO	NO	NO	NO	NO	NO	0	0	none (production authority already PolyC)	0
+CAND-003	NO	NO	NO	NO	YES	YES	YES	NO	NO	NO	NO	0	0	none	0
+CAND-003S	NO	NO	NO	NO	YES	NO	NO	NO	NO	NO	NO	0	0	none	0
+CAND-004	NO	NO	NO	NO	YES	NO	NO	NO	NO	NO	NO	0	0	none	0
+CAND-005	NO	NO	NO	NO	YES	NO	NO	NO	NO	NO	NO	0	0	none	0
+CAND-006	NO	NO	NO	NO	YES	NO	NO	NO	NO	NO	NO	0	0	none	0
+CAND-007	NO	NO	NO	NO	YES	NO	NO	NO	NO	NO	NO	0	0	none	0
+CAND-008	NO	NO	NO	NO	NO	NO	NO	NO	NO	NO	NO	0	0	none	0
+CAND-009	NO	NO	NO	NO	NO	NO	NO	YES	NO	NO	NO	0	0	malloc	0
+CAND-010	YES	YES	NO	NO	NO	NO	NO	YES	NO	NO	NO	0	0	static counter	0
+CAND-011	NO	NO	NO	NO	YES	YES	YES	NO	NO	NO	NO	0	0	none	0
+CAND-012	NO	NO	YES	NO	NO	NO	NO	NO	NO	NO	NO	3	1	cctrlTokenPeek,cctrlTokenGet,cctrlRaiseException	0
+CAND-013	NO	NO	NO	NO	YES	NO	YES	YES	NO	NO	NO	0	0	astTypeCopy, astI64Type, astF64Type, evalIntConstExprOrErr, evalFloatExprOrErr	0
+CAND-014	NO	NO	YES	YES	YES	YES	YES	YES	YES	YES	YES	9	0	parseDecl*/parseStatement/parseExpr subordinates, cctrlToken*, cctrlRaiseException	0
+CAND-015	NO	NO	YES	YES	NO	NO	NO	YES	NO	NO	NO	5	1	cctrlIsKeyword,cctrlRaiseException,cctrlTokenGet,cctrlTokenPeek,cctrlTokenRewind	0
+CAND-016	NO	NO	YES	YES	NO	NO	NO	NO	NO	NO	NO	2	1	cctrlRewindUntilStrMatch,cctrlRaiseExceptionFromTo	0
+
+UNKNOWN_DEPENDENCIES_TOTAL=0
+UNCLASSIFIED_STATE_DEPENDENCIES=0

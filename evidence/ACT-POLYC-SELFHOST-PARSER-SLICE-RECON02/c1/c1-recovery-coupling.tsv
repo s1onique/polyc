@@ -1,0 +1,39 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02
+# ACT_PHASE=C1-INVENTORY
+# EVIDENCE_KIND=recovery-coupling
+# Recovery-ownership classification for every candidate (ACT SECT_7.2).
+#
+# Schema:
+#   01 candidate_id
+#   02 owns_setjmp
+#   03 writes_current_recovery
+#   04 requires_nonlocal_recovery
+#   05 longjmp_authority
+#   06 recovery_evidence
+#   07 recovery_coupled
+#
+# recovery_coupled == YES iff any of owns_setjmp / writes_current_recovery
+# / requires_nonlocal_recovery is YES.
+
+candidate_id	owns_setjmp	writes_current_recovery	requires_nonlocal_recovery	longjmp_authority	recovery_evidence	recovery_coupled
+CAND-001	NO	NO	NO	NO	none: the body contains no setjmp, no longjmp, and no cc->current_reference	NO
+CAND-002	NO	NO	NO	NO	none	NO
+CAND-003	NO	NO	NO	NO	none	NO
+CAND-003S	NO	NO	NO	NO	none	NO
+CAND-004	NO	NO	NO	NO	none	NO
+CAND-005	NO	NO	NO	NO	none	NO
+CAND-006	NO	NO	NO	NO	none	NO
+CAND-007	NO	NO	NO	NO	none	NO
+CAND-008	NO	NO	NO	NO	none	NO
+CAND-009	NO	NO	NO	NO	none	NO
+CAND-010	NO	NO	NO	NO	none	NO
+CAND-011	NO	NO	NO	NO	none	NO
+CAND-012	NO	NO	NO	NO	none: raises a diagnostic but does not install or restore a jmp_buf	NO
+CAND-013	NO	NO	NO	NO	none	NO
+CAND-014	YES	YES	YES	YES	src/parser.c:1810 `jmp_buf stmt_recovery;` / :1812 `cc->current_recovery = &stmt_recovery;` / :1830 `if (setjmp(stmt_recovery) != 0)` -- the function OWNS the per-statement recovery point and reinstates the outer one on return	YES
+CAND-015	NO	NO	NO	NO	none	NO
+CAND-016	NO	NO	NO	NO	none	NO
+
+RECOVERY_COUPLED_COUNT=1
+RECOVERY_COUPLED_CANDIDATES=CAND-014
+RECOVERY_UNCLASSIFIED=0

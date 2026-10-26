@@ -1,0 +1,46 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02
+# ACT_PHASE=C1-INVENTORY
+# EVIDENCE_KIND=eligibility-preconditions
+# The C1-measured preconditions of the C2 hard-eligibility conjunction.
+# C2 applies the conjunction; C1 only measures.
+#
+# Schema:
+#   01 candidate_id
+#   02 semantic_authority
+#   03 already_selfhosted
+#   04 r0_state_boundary_cost
+#   05 owns_setjmp
+#   06 writes_current_recovery
+#   07 requires_nonlocal_recovery
+#   08 host_graph_writes
+#   09 pointer_identity_ops
+#   10 parser_callback_count
+#   11 semantic_callback_count
+#   12 deterministic_projection
+#   13 production_delegation_feasible
+#   14 candidate_kind
+#   15 failing_predicates
+#   16 c1_precondition_verdict
+
+candidate_id	semantic_authority	already_selfhosted	r0_state_boundary_cost	owns_setjmp	writes_current_recovery	requires_nonlocal_recovery	host_graph_writes	pointer_identity_ops	parser_callback_count	semantic_callback_count	deterministic_projection	production_delegation_feasible	candidate_kind	failing_predicates	c1_precondition_verdict
+CAND-001	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	TOKEN_CLASSIFIER	-	PASS
+CAND-002	YES	YES	0	NO	NO	NO	0	0	0	0	YES	ALREADY_DONE	TYPE_MODIFIER_PRIMITIVE	already_selfhosted == YES	PASS
+CAND-003	YES	NO	4	NO	NO	NO	1	1	0	0	NO	NO	TYPE_MODIFIER_PRIMITIVE	r0_state_boundary_cost <= 2; host_graph_writes == 0; pointer_identity_ops == 0; deterministic_projection == YES; production_delegation_feasible == YES	FAIL
+CAND-003S	NO	NO	2	NO	NO	NO	0	0	0	0	YES	NO	TYPE_MODIFIER_PRIMITIVE	semantic_authority == YES; production_delegation_feasible == YES	FAIL
+CAND-004	YES	NO	0	NO	NO	NO	0	0	0	0	YES	POSSIBLE_BUT_NARROW	TYPE_MODIFIER_PRIMITIVE	production_delegation_feasible == YES (POSSIBLE_BUT_NARROW != YES)	FAIL
+CAND-005	YES	NO	2	NO	NO	NO	0	0	0	0	YES	NO	AST_PROJECTION_PRIMITIVE	production_delegation_feasible == YES	FAIL
+CAND-006	YES	NO	2	NO	NO	NO	0	0	0	0	YES	NO	AST_PROJECTION_PRIMITIVE	production_delegation_feasible == YES	FAIL
+CAND-007	YES	NO	2	NO	NO	NO	0	0	0	0	YES	POSSIBLE_BUT_NARROW	AST_PROJECTION_PRIMITIVE	production_delegation_feasible == YES (POSSIBLE_BUT_NARROW != YES)	FAIL
+CAND-008	YES	NO	1	NO	NO	NO	0	0	0	0	YES	POSSIBLE_BUT_NARROW	DELIMITER_PRIMITIVE	production_delegation_feasible == YES (POSSIBLE_BUT_NARROW != YES)	FAIL
+CAND-009	NO	NO	0	NO	NO	NO	0	0	0	0	N/A	NO	STATIC_HELPER	semantic_authority == YES; candidate_kind != NON_SEMANTIC	FAIL
+CAND-010	NO	NO	0	NO	NO	NO	0	0	0	0	N/A	NO	STATIC_HELPER	semantic_authority == YES; candidate_kind != NON_SEMANTIC	FAIL
+CAND-011	YES	NO	4	NO	NO	NO	1	1	0	0	NO	NO	AST_PROJECTION_PRIMITIVE	r0_state_boundary_cost <= 2; host_graph_writes == 0; pointer_identity_ops == 0; deterministic_projection == YES; production_delegation_feasible == YES	FAIL
+CAND-012	YES	NO	3	NO	NO	NO	0	0	3	1	YES	NO	TOKEN_CLASSIFIER	r0_state_boundary_cost <= 2; parser_callback_count == 0; semantic_callback_count == 0; production_delegation_feasible == YES	FAIL
+CAND-013	YES	NO	3	NO	NO	NO	0	1	0	0	YES	NO	TOKEN_CLASSIFIER	r0_state_boundary_cost <= 2; pointer_identity_ops == 0; production_delegation_feasible == YES	FAIL
+CAND-014	YES	NO	5	YES	YES	YES	5	9	9	0	NO	NO	ORCHESTRATOR	r0_state_boundary_cost <= 2; owns_setjmp == NO; writes_current_recovery == NO; requires_nonlocal_recovery == NO; host_graph_writes == 0; pointer_identity_ops == 0; parser_callback_count == 0; deterministic_projection == YES; production_delegation_feasible == YES	FAIL
+CAND-015	YES	NO	3	NO	NO	NO	0	0	5	1	YES	NO	TOKEN_CLASSIFIER	r0_state_boundary_cost <= 2; parser_callback_count == 0; semantic_callback_count == 0; production_delegation_feasible == YES	FAIL
+CAND-016	NO	NO	3	NO	NO	NO	0	0	2	1	YES	NO	DIAGNOSTIC_HELPER	semantic_authority == YES; r0_state_boundary_cost <= 2; parser_callback_count == 0; semantic_callback_count == 0; production_delegation_feasible == YES	FAIL
+
+C1_PRECONDITION_PASS_COUNT=1
+C1_PRECONDITION_PASS_CANDIDATES=CAND-001
+C1_PRECONDITION_FAIL_COUNT=15
