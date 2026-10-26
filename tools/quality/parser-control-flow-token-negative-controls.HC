@@ -289,17 +289,39 @@ U0 EditInsertLine(I64 line_start, U8 *text)
 }
 
 // Set the edit to "append `text` as a new line at the end of the file".
+//
+// ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION02: the
+// appended row MUST be SEPARATE from the last existing row. The
+// previous form appended at g_src_len without a separating newline,
+// so on a source whose last line is not newline-terminated the
+// appended text JOINED that line, producing a single merged row.
+//
+// The separator is emitted only when the source does not already end
+// with a newline, so a well-formed source is byte-identical to what
+// the previous form produced.
 U0 EditAppendLine(U8 *text)
 {
   g_cut_a = g_src_len;
   g_cut_b = g_src_len;
   I64 tl = StrLen(text);
-  g_repl_len = tl + 1;
+
+  // Does the source already end with a newline?
+  I64 need_sep = 1;
+  if (g_src_len > 0 && g_src[g_src_len - 1] == '\n') need_sep = 0;
+
+  I64 sep = 0;
+  if (need_sep) sep = 1;
+
+  g_repl_len = tl + sep + 1;
   Free(g_repl);
   g_repl = MAlloc(g_repl_len + 1);
-  CopyStr(g_repl, text);
-  g_repl[tl] = '\n';
-  g_repl[tl + 1] = 0;
+  // The SEPARATOR terminates the PREVIOUS, unterminated line, so it
+  // comes FIRST, before the appended row's text. The appended row's
+  // own terminator comes last.
+  if (need_sep) g_repl[0] = '\n';
+  CopyStr(g_repl + sep, text);
+  g_repl[sep + tl] = '\n';
+  g_repl[sep + tl + 1] = 0;
   BuildOutput();
 }
 
@@ -477,6 +499,26 @@ U0 CheckControl(U8 *id, I64 expect_status, U8 *expect_reason)
 #define ROW_Z999 "Z999\tUNKNOWN\t1\t1\t1\t1\tnc-d13\tnc-d13"
 #define ROW_F043 "F043\tUNKNOWN\t1\t1\t1\t1\tnc-d4\tnc-d4"
 #define ROW_F01  "F01\tUNKNOWN\t1\t1\t1\t1\tnc-d15\tnc-d15"
+
+// ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION02.
+//
+// An unknown fixture id that is INDENTED. The predecessor's row
+// recognizer accepted ANY indented line as a metadata continuation,
+// without requiring that a metadata block was in scope, so these rows
+// were invisible to the unknown-ID ledger and the differential returned
+// STATUS=PASS.
+//
+// The SPACE-indented form has the canonical 8 fields, so it is an
+// unknown-ID failure. The TAB-indented form carries a leading TAB,
+// which makes its first field empty and yields 9 fields, so it is a
+// SCHEMA failure. Both are rejections; the token follows the row's
+// own schema.
+#define ROW_IND_SPACE "  X001\tUNKNOWN\t1\t1\t1\t1\tnc-d18\tnc-d18"
+#define ROW_IND_TAB   "\tX001\tUNKNOWN\t1\t1\t1\t1\tnc-d19\tnc-d19"
+
+// The same unknown id, indented, but with the canonical field count
+// (the leading TAB is the indent, so the row carries 7 real fields).
+#define ROW_IND_TAB7  "\tX001\tUNKNOWN\t1\t1\t1\t1\tnc-d20"
 
 I32 Main(I32 argc, U8 **argv)
 {
@@ -833,6 +875,120 @@ I32 Main(I32 argc, U8 **argv)
   {
     EditAppendLine("SOME_METADATA_KEY=some value");
     CheckControl("NC-D17-metadata-row-skipped", 0, NULL);
+  }
+
+  // ===================================================================
+  // ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION02
+  // ===================================================================
+  //
+  // The predecessor's row recognizer accepted ANY indented line as a
+  // metadata continuation, without requiring that a metadata block was
+  // in scope. An indented unknown fixture id was therefore invisible to
+  // the unknown-ID ledger and the differential returned STATUS=PASS.
+
+  // ---- NC-D18: an INDENTED unknown id in the middle --------------
+  //
+  // The row is inserted between F020 and F021, i.e. in the DATA
+  // region, where no metadata block is in scope. It must be rejected.
+  {
+    I64 s = DataRowStart(20);           // F021
+    if (s < 0) { printf("ERROR: F021 not found\n"); return 2; }
+    EditInsertLine(s, ROW_IND_SPACE);
+    CheckControl("NC-D18-indented-unknown-in-middle", 1, "FIXTURE_ID_UNKNOWN");
+  }
+
+  // ---- NC-D19: a TAB-indented unknown id -------------------------
+  //
+  // The leading TAB makes the first field empty, so the row carries 9
+  // fields and is a SCHEMA failure. It must still be REJECTED.
+  {
+    I64 s = DataRowStart(20);           // F021
+    if (s < 0) { printf("ERROR: F021 not found\n"); return 2; }
+    EditInsertLine(s, ROW_IND_TAB);
+    CheckControl("NC-D19-tab-indented-unknown", 1, "FIXTURE_SCHEMA_INVALID");
+  }
+
+  // ---- NC-D20: a TAB-indented unknown id with 8 fields -----------
+  //
+  // The canonical field count, so the failure is an unknown-ID
+  // failure rather than a schema failure.
+  {
+    I64 s = DataRowStart(20);           // F021
+    if (s < 0) { printf("ERROR: F021 not found\n"); return 2; }
+    EditInsertLine(s, ROW_IND_TAB7);
+    CheckControl("NC-D20-tab-indented-unknown-8-fields", 1, "FIXTURE_ID_UNKNOWN");
+  }
+
+  // ---- NC-D21: an appended row is SEPARATE from the last row -----
+  //
+  // The source's LAST LINE is not newline-terminated, so the appended
+  // text would JOIN it if the driver did not emit a separating
+  // newline. With the separator, the appended row is its own row, and
+  // the fixture holds 43 data rows of which one is unknown.
+  //
+  // The driver models every edit as a range replacement over the
+  // ORIGINAL buffer (g_src), so this control is expressed as ONE
+  // edit: the range that holds the final newline is replaced by the
+  // appended row, and the separator logic decides whether a newline
+  // is emitted between the last existing line and that row.
+  {
+    // The canonical file's last line is a trailing comment line, NOT
+    // a data row. The final '\n' is the byte to be replaced.
+    if (g_src_len < 2 || g_src[g_src_len - 1] != '\n') {
+      printf("ERROR: canonical fixture does not end with a newline\n");
+      return 2;
+    }
+    // Replace the final '\n' with the appended row. EditAppendLine
+    // appends at g_src_len, so the range is set explicitly here and
+    // the replacement is built the same way EditAppendLine builds
+    // it: a separating newline is emitted ONLY when the source does
+    // not already end with one.
+    //
+    // The source DOES end with a newline here, so no separator is
+    // emitted and the appended row lands on its own line. To make the
+    // control load-bearing for the separator, the final newline is
+    // REMOVED from the source first, and the row is then appended to
+    // the unterminated source.
+    I64 tail_start = g_src_len - 2;
+    while (tail_start > 0
+           && g_src[tail_start] != '\n'
+           && g_src[tail_start] != '\r') tail_start = tail_start - 1;
+    I64 last_line_start = tail_start + 1;
+    if (last_line_start >= g_src_len - 1) { printf("ERROR: no last line\n"); return 2; }
+
+    // Step 1: replace the final newline with nothing, so that the
+    // source's last line is unterminated. This edit is expressed as
+    // a range replacement over g_src, exactly like every other edit.
+    g_cut_a = g_src_len - 1;
+    g_cut_b = g_src_len;
+    g_repl_len = 0;
+    Free(g_repl);
+    g_repl = MAlloc(1);
+    g_repl[0] = 0;
+    BuildOutput();
+
+    // Step 2: append the unknown row to the unterminated source.
+    //
+    // The buffer that step 1 produced is g_out. It becomes the new
+    // g_src for this step, but it must be a FRESH COPY: BuildOutput
+    // frees g_out before it rebuilds it, so aliasing g_src to g_out
+    // would leave g_src dangling.
+    U8 *unterminated = MAlloc(g_out_len + 1);
+    CopyStr(unterminated, g_out);
+    Free(g_out);
+    g_out = NULL;
+    Free(g_src);
+    g_src = unterminated;
+    g_src_len = g_out_len;
+
+    EditAppendLine(ROW_X001);
+    CheckControl("NC-D21-appended-row-not-joined", 1, "FIXTURE_ID_UNKNOWN");
+
+    // restore the pristine source for any following control
+    Free(g_src);
+    g_src = FileRead(argv[2], &g_src_len);
+    if (g_src == NULL) { printf("ERROR: cannot re-read fixture\n"); return 2; }
+    EditNone();
   }
 
   printf("NEGATIVE_CONTROLS_TOTAL=%d\n", g_controls);

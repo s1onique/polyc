@@ -275,30 +275,69 @@ I64 field_len(U8 *p)
 // contain '=' (for example "tok == NULL returns 0; ..."), so scanning
 // the whole line would wrongly classify a data row as metadata.
 //
-// A data row always begins with a non-whitespace, non-'#' character and
-// carries the fixture id in its first field, so neither recognized
-// skippable form can swallow a data row.
-I64 is_skippable_row(U8 *line, I64 linelen)
+// ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION02.
+//
+// The metadata clause above was still too permissive: it accepted ANY
+// indented line as a metadata continuation, without requiring that a
+// metadata block was actually in scope. An indented unknown fixture row
+// was therefore still invisible to the unknown-ID ledger, and the
+// differential returned STATUS=PASS for a fixture holding an unknown
+// id. Measured against the real binary:
+//
+//     SLICE02_DIFFERENTIAL_OBSERVED_FIXTURE_COUNT=42
+//     SLICE02_DIFFERENTIAL_UNKNOWN_IDS=0
+//     STATUS=PASS
+//
+// The repair is to make the indented-continuation recognition
+// CONTEXTUAL: an indented line is skippable only while a metadata
+// block is ACTIVE.
+//
+// The metadata block is a simple state machine over the lines:
+//
+//   * a recognized KEY=VALUE row OPENS (or continues) the metadata
+//     block;
+//   * an indented row CONTINUES the block, and is skippable only
+//     while the block is open;
+//   * a blank row or a comment row leaves the block state alone;
+//   * any other row CLOSES the block, and is a DATA row.
+//
+// `*in_metadata_block` carries that state in and out of the call.
+I64 is_skippable_row(U8 *line, I64 linelen, I64 *in_metadata_block)
 {
   if (linelen == 0) return 1;              // blank line
 
   // 1. comment
   if (line[0] == '#') return 1;
 
-  // 2a. indented continuation of the metadata block
-  if (line[0] == ' ' || line[0] == '\t') return 1;
+  // 2a. indented continuation of the metadata block.
+  //
+  // This is skippable ONLY while a metadata block is active. An
+  // indented line that does not continue a metadata block is a DATA
+  // row and MUST be validated, so that an indented unknown fixture id
+  // reaches the unknown-ID ledger.
+  if (line[0] == ' ' || line[0] == '\t') {
+    if (*in_metadata_block) return 1;
+    return 0;
+  }
 
   // 2b. KEY=VALUE metadata line: an '=' in the FIRST field, i.e. at a
   // position > 0 and before the first TAB.
   I64 i = 1;
   while (i < linelen && line[i] != '\t') {
-    if (line[i] == '=') return 1;
+    if (line[i] == '=') {
+      *in_metadata_block = 1;
+      return 1;
+    }
     i = i + 1;
   }
 
   // Not a recognized comment or metadata row: this is a DATA row and
   // MUST be validated. Falling through here is what makes an unknown
   // fixture ID visible.
+  //
+  // A DATA row also CLOSES the metadata block: the indented lines
+  // that follow it are no longer continuations of a metadata row.
+  *in_metadata_block = 0;
   return 0;
 }
 
@@ -367,6 +406,11 @@ I64 main(I64 argc, U8 **argv)
   I64 out_of_range_ids = 0;
 
   I64 lineno = 0;
+  // ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION02: the
+  // metadata-block context of the row reader. It is OPEN while a
+  // recognized KEY=VALUE metadata row is in scope, and CLOSED by any
+  // data row. An indented line is skippable only while it is open.
+  I64 in_metadata_block = 0;
   while (lineno < fsz) {
     // skip empty lines
     while (lineno < fsz && (ftxt[lineno] == '\n' || ftxt[lineno] == '\r')) lineno = lineno + 1;
@@ -392,7 +436,14 @@ I64 main(I64 argc, U8 **argv)
     // invisible to the unknown-ID ledger, so a 42-row fixture plus an
     // unknown row returned STATUS=PASS. The test is now POSITIVE: a row
     // is skipped only when it is a recognized comment or metadata line.
-    if (is_skippable_row(line, linelen)) continue;
+    //
+    // ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION02: the
+    // indented-continuation clause is now CONTEXTUAL. `in_metadata_block`
+    // is open only while a recognized KEY=VALUE metadata row is in
+    // scope, so an indented line that does not continue a metadata
+    // block is a DATA row and is validated. An indented unknown fixture
+    // ID therefore reaches the unknown-ID ledger instead of vanishing.
+    if (is_skippable_row(line, linelen, &in_metadata_block)) continue;
 
     total = total + 1;
 
