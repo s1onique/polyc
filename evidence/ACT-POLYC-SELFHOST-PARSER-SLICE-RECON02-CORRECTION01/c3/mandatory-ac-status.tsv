@@ -1,0 +1,44 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01
+# ACT_PHASE=C3-VERIFY
+# EVIDENCE_KIND=mandatory-ac-status
+# The AC LEDGER.  Each predicate is linked to the ACTUAL establishing
+# evidence artifact and to a concrete re-runnable command.
+#
+# Schema:
+#   01 ac_id
+#   02 predicate
+#   03 status
+#   04 establishing_evidence
+#   05 command
+#   06 deferred
+
+AC01	F041 defect reproduced against the REAL production C function	PASS	c1/c1-f041-red.txt + c1/c1-fixture-oracle.txt -- the production function returns 1 for tk_type==0x301; the predecessor matrix stated 0. The harness is committed (c1/c1-oracle-harness.c) and the build/link/run commands are recorded, so the witness is reproducible	sh scripts/quality/factory-v2-... ; see c3-required-result.txt COMMAND_3A  =>  ROWS=42 ACCEPT=23 REJECT=19 DISAGREE=1, exit 1	NO
+AC02	Corrected fixture matrix agrees with the real C oracle on EVERY row	PASS	c1/c1-fixture-oracle.txt RUN B -- recorded transcript is an EXACT (byte-identical) match of the live oracle output	see c3-required-result.txt COMMAND_3B  =>  ROWS=42 ACCEPT=23 REJECT=19 DISAGREE=0, exit 0	NO
+AC03	Corrected accept/reject counts are 23 / 19 AND the group breakdown is derived from the rows	PASS	c1/c1-corrected-fixture-model.tsv -- EXPECTED_ACCEPT_COUNT=23, EXPECTED_REJECT_COUNT=19; REJECT_BREAKDOWN = 1 NULL_EOF + 6 PUNCT + 6 KEYWORD + 6 UNKNOWN_KIND = 19; PARTITION_SUM = 1+3+3+11+18+6 = 42. All three are derived by COMMAND_1C from the matrix rows	awk COMMAND_1C (c1-fixture-oracle.txt) over the corrected matrix  =>  rows=42 accept=23 reject=19	NO
+AC04	The predecessor's frozen matrix is NOT modified	PASS	c1/c1-f14-conservation.txt COMMAND_1/2	git diff --name-only HEAD -- evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02  =>  EMPTY	NO
+AC05	Ranking CONTROL 5 operates on the FULL eligibility predicate	PASS	c1/c1-corrected-ranking-controls.txt CONTROL_5 -- FORM A: the real set, whose membership is re-derived by elig.sh; FORM B: a second candidate whose eligibility is ADMITTED by elig.sh (13/13 clauses), the rank input JOINED from the checker's output, showing R0 is load-bearing	sh build/slice-recon02-rank/elig.sh <c1 dir> | awk -F'\t' '$3=="ELIGIBLE"{print $1}'  =>  leader changes only when a second eligibility-admitted candidate exists	NO
+AC06	Ranking CONTROL 6 operates on the FULL eligibility predicate	PASS	c1/c1-corrected-ranking-controls.txt CONTROL_6 -- FORM A: the real set yields ZERO ranked rows; FORM B: the eligibility-admitted successor is promoted	sh build/slice-recon02-rank/rank.sh <input>  =>  0 rows against the real set	NO
+AC07	The candidate the predecessor's CONTROL 6 claimed (CAND-004) is INELIGIBLE	PASS	c1/c1-corrected-ranking-controls.txt CONTROL_6 (c) -- elig.sh re-derives CAND-004 as INELIGIBLE (clause 12 fails); the predecessor recorded production_delegation_feasible=POSSIBLE_BUT_NARROW	sh build/slice-recon02-rank/elig.sh <c1 dir> | grep '^CAND-004'  =>  INELIGIBLE	NO
+AC08	Inventory total reconciled to 17	PASS	c1/c1-inventory-reconciliation.txt -- 17 candidate rows; the predecessor's own breakdown (14+1+2) sums to 17	grep -c '^CAND-' <predecessor c1-candidate-inventory.tsv>  =>  17	NO
+AC09	LEXER07 baseline failure count (21) separated from the current count (15)	PASS	c1/c1-lexer07-count-separation.txt -- the 6 S0_DIVERGED sources now pass all four stages and are not current failures	awk on build/c3-lexer07-corpus/corpus-failures.tsv  =>  9 NO_FALLBACK + 6 ALL_FAIL = 15	NO
+AC10	The selection is UNCHANGED by the correction	PASS	c1/c1-required-result.txt, c2/c2-corrected-contract.tsv -- CAND-001 remains the unique survivor; the ABI, the conjunction and the scoring are unchanged	grep CAND-001 <corrected contract>  =>  changed=NO	NO
+AC11	Production source, tooling and script deltas are 0	PASS	c1/c1-f14-conservation.txt COMMAND_7/8/9	git diff --name-only HEAD -- src/ tools/ scripts/  =>  all EMPTY	NO
+AC12	The predecessor's ACT document and HANDOFF are NOT modified	PASS	c1/c1-f14-conservation.txt COMMAND_3/4/5/6	git status --porcelain=v1 -- <predecessor ACT doc> <predecessor HANDOFF>  =>  EMPTY	NO
+AC13	Factory gates green, patch hygiene clean (over the COMMITTED correction range, including new files)	PASS	c3/c3-required-result.txt -- gate-fast RC=0, factory-v2 PASS=53 FAIL=0, append-only PASS=11 FAIL=0, and git diff --check over the committed range is clean. The patch-hygiene check now covers the NEW files too (git add -N), which the earlier working-tree-only form did not	see c3-required-result.txt COMMAND_3C/3D	NO
+AC14	The predecessor's verdict is corrected forward-only, without rewriting history	DEFERRED	Not yet established at the C3 snapshot. A validated PROPOSED commit message is not an actual committed CLOSE. The correction CLOSE commit does not exist yet, so the ACT-Supersedes / ACT-Corrected-Verdict trailers are not yet carried by any commit and the range check cannot be run against a CLOSE that is not there. Established in the post-CLOSE read-only step (see c3-required-result.txt COMMAND_3F)	sh scripts/quality/factory-v2-range-check.sh ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01 <CLOSE sha>  =>  (runs after the CLOSE commit exists)	YES
+
+AC_TOTAL=14
+AC_PASS=13
+AC_DEFERRED=1
+AC_FAIL=0
+DEFERRED_AC_IDS=AC14
+DEFERRED_REASON=AC14 asserts that the predecessor's verdict has been corrected through
+  the ACT-Supersedes / ACT-Corrected-Verdict trailers.  Those trailers become
+  true only when the correction's CLOSE commit EXISTS.  At the C3 snapshot
+  the correction is not yet committed, so AC14 cannot be PASS.  It is
+  established in the CLOSE phase by running the range check against the
+  actual CLOSE commit.
+MANDATORY_AC_NOT_GREEN=NO
+  (No AC FAILS.  The single DEFERRED AC is one that depends on a commit that
+   does not exist yet, and it is explicitly re-verified in the CLOSE phase.
+   No PASS is claimed for it before its witness exists.)

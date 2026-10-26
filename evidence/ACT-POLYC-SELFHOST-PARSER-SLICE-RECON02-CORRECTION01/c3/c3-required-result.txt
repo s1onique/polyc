@@ -1,0 +1,244 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01
+ACT_PHASE=C3-VERIFY
+EVIDENCE_KIND=c3-required-result
+
+# --- Every correction is re-verified against the LIVE source ------------
+#
+# --- The oracle: the committed harness, rebuilt and re-run --------------
+# The harness source is COMMITTED (c1/c1-oracle-harness.c), so the witness
+# is reconstructible rather than merely transcribed.
+COMMAND_3A_BUILD=cd build && cc -I../src -o /tmp/polyc-oracle \
+    ../evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01/c1/c1-oracle-harness.c \
+    $(cat CMakeFiles/hcc.dir/link.txt \
+        | sed -e 's|^/usr/bin/cc [^ ]* [^ ]* [^ ]* [^ ]* [^ ]* [^ ]* ||' \
+              -e 's|-o /Volumes[^ ]*/hcc||' \
+              -e 's|CMakeFiles/hcc.dir/main.c.o ||' \
+              -e 's|CMakeFiles/hcc.dir/repl.c.o ||' \
+              -e 's|CMakeFiles/hcc.dir/linenoise/linenoise.c.o ||' \
+        | tr -d '"') && cd ..
+COMMAND_3A_BUILD_EXIT_STATUS=0
+
+COMMAND_3A_RUN_A=/tmp/polyc-oracle evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02/c2/c2-selected-fixture-model.tsv
+COMMAND_3A_RUN_A_EXIT_STATUS=1
+COMMAND_3A_RUN_A_LAST_LINE=ROWS=42 ACCEPT=23 REJECT=19 DISAGREE=1
+
+COMMAND_3A_DIFF=diff <(grep -E '^F[0-9]{3}\t' <live RUN A output>) \
+    <(awk '/^ORACLE_RUN_A_OUTPUT=$/{f=1;next} /^ROWS=42/{f=0} f && /^F[0-9]/' \
+        evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01/c1/c1-fixture-oracle.txt)
+COMMAND_3A_DIFF_RESULT=(no output; exit 0)
+RUN_A_TRANSCRIPT_IS_BYTE_IDENTICAL_TO_THE_RECORDED_ONE=YES
+
+COMMAND_3B_RUN_B=/tmp/polyc-oracle evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01/c1/c1-corrected-fixture-model.tsv
+COMMAND_3B_RUN_B_EXIT_STATUS=0
+COMMAND_3B_RUN_B_LAST_LINE=ROWS=42 ACCEPT=23 REJECT=19 DISAGREE=0
+
+COMMAND_3B_DIFF=diff <(grep -E '^F[0-9]{3}\t' <live RUN B output>) \
+    <(awk '/^ORACLE_RUN_B_OUTPUT=$/{f=1;next} /^ROWS=42/{f=0} f && /^F[0-9]/' \
+        evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01/c1/c1-fixture-oracle.txt)
+COMMAND_3B_DIFF_RESULT=(no output; exit 0)
+RUN_B_TRANSCRIPT_IS_BYTE_IDENTICAL_TO_THE_RECORDED_ONE=YES
+
+CORRECTED_FIXTURE_ORACLE_DISAGREEMENTS=0
+CORRECTED_FIXTURE_ORACLE_EXIT_STATUS=0
+CORRECTED_FIXTURE_COUNT=42
+CORRECTED_EXPECTED_ACCEPT_COUNT=23
+CORRECTED_EXPECTED_REJECT_COUNT=19
+CORRECTED_FIXTURE_ACCEPT_BREAKDOWN=3 IDENT + 3 STR + 5 PUNCT + 12 KEYWORD = 23
+CORRECTED_FIXTURE_REJECT_BREAKDOWN=1 NULL_EOF + 6 PUNCT + 6 KEYWORD + 6 UNKNOWN_KIND = 19
+CORRECTED_FIXTURE_PARTITION_BREAKDOWN=1 NULL_EOF + 3 IDENT + 3 STR + 11 PUNCT + 18 KEYWORD + 6 UNKNOWN_KIND = 42
+  (the breakdown is DERIVED by COMMAND_1C of c1-fixture-oracle.txt from the
+   matrix's own rows, and the derived values match the matrix's recorded
+   counters)
+
+# --- The eligibility predicate, re-derived ------------------------------
+COMMAND_3E=sh build/slice-recon02-rank/elig.sh evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02/c1
+COMMAND_3E_RESULT=
+CAND-001	YYYYYYYYYYYYY	ELIGIBLE
+CAND-002	YNYYYYYYYYYNY	INELIGIBLE
+CAND-003	YYNYYYYYYYNNY	INELIGIBLE
+CAND-003S	NYYYYYYYYYNNY	INELIGIBLE
+CAND-004	YYYYYYYYYYYNY	INELIGIBLE
+CAND-005	YYYYYYYYYYNNY	INELIGIBLE
+CAND-006	YYYYYYYYYYNNY	INELIGIBLE
+CAND-007	YYYYYYYYYYNNY	INELIGIBLE
+CAND-008	YYYYYYYYYYNNY	INELIGIBLE
+CAND-009	NYYYYYYYYYNNY	INELIGIBLE
+CAND-010	NYYYYYYYYYNNY	INELIGIBLE
+CAND-011	YYNYYYYYYYYNNY	INELIGIBLE
+CAND-012	YYNYYYYYNNNNY	INELIGIBLE
+CAND-013	YYNYYYYYYYNNY	INELIGIBLE
+CAND-014	YYNNNNYYNYNNY	INELIGIBLE
+CAND-015	YYNYYYYYNNNNY	INELIGIBLE
+CAND-016	NYNYYYYYNNNNY	INELIGIBLE
+ELIGIBLE_COUNT_FROM_ELIGIBILITY_CHECKER=1
+ELIGIBLE_SET_FROM_ELIGIBILITY_CHECKER=CAND-001
+CONTROLS_PASSED=9
+CONTROLS_FAILED=0
+CONTROLS_OPERATE_ON=FULL_ELIGIBILITY_PREDICATE
+CONTROL_5_EFFECT_DEMONSTRATED=YES
+CONTROL_6_EFFECT_DEMONSTRATED=YES
+CONTROL_5_ELIGIBILITY_PROVEN_END_TO_END=YES
+CONTROL_6_ELIGIBILITY_PROVEN_END_TO_END=YES
+  (see c1-corrected-ranking-controls.txt; the synthetic control candidate
+   CAND-101 is admitted by the eligibility checker itself -- 13/13
+   clauses -- and the checker's negative behaviour is demonstrated too;
+   the rank input is JOINED from the checker's output, so no `eligible`
+   flag is hand-written for any synthetic row)
+
+INVENTORY_TOTAL_CORRECTED=17
+INVENTORY_CANDIDATE_ROWS=17
+LEXER07_BASELINE_FAILURE_COUNT=21
+LEXER07_MEASURED_FAILURE_COUNT=15
+LEXER07_NEW_FAILURES=0
+LEXER07_REGRESSED_SOURCES=0
+LEXER07_IMPROVED_SOURCES=6
+FULL_CORPUS_STATUS=FAIL
+
+# --- The selection is unchanged -----------------------------------------
+SELECTED_CANDIDATE_COUNT=1
+SELECTED_CANDIDATE_ID=CAND-001
+SELECTED_CANDIDATE_NAME=parseValidPostControlFlowToken
+SELECTED_ABI=SCALAR_PRESENCE_KIND_VALUE_TO_VALUE
+SELECTION_CHANGED=NO
+ABI_CHANGED=NO
+ELIGIBILITY_CONJUNCTION_CHANGED=NO
+SCORING_CHANGED=NO
+
+# --- Source purity -------------------------------------------------------
+PRODUCTION_SOURCE_DELTA=0
+  git diff --name-only HEAD -- src/                  -> EMPTY
+  git diff --name-only HEAD -- tools/                -> EMPTY
+  git diff --name-only HEAD -- scripts/              -> EMPTY
+PREDECESSOR_EVIDENCE_DELTA=0
+  git diff --name-only HEAD -- evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02
+                                                    -> EMPTY
+PREDECESSOR_ACT_DOCUMENT_DELTA=0
+PREDECESSOR_HANDOFF_DELTA=0
+NEW_POLYC_COMPONENT_IMPLEMENTED=0
+NEW_TRACKED_TOOL=0
+NEW_PYTHON=0
+COMPILER_GENERATION_REBUILT=NO
+HISTORY_REWRITTEN=NO
+UNRELATED_EVIDENCE_REGENERATED=NO
+
+# --- Factory gates -------------------------------------------------------
+GATE_FAST=PASS              (RC=0)
+  CHECK=diff-check STATUS=PASS
+  CHECK=shell-syntax STATUS=PASS
+  CHECK=doc-invariants STATUS=PASS
+  CHECK=large-file-guard STATUS=PASS
+  CHECK=factory-closure-status STATUS=PASS
+  MANIFEST_ROWS=26  MISSING_HANDOFF_FILES=0  MALFORMED_HANDOFF_VERDICT=0
+  PAIR_OK=26  PAIR_FAIL=0
+FACTORY_V2=PASS             (PASS=53 FAIL=0)
+APPEND_ONLY=PASS            (PASS=11 FAIL=0)
+PATCH_HYGIENE=PASS          (see COMMAND_3D below -> RC=0)
+F14=PASS                    (predecessor evidence, ACT doc and HANDOFF deltas are 0)
+
+# --- Patch hygiene, over the COMMITTED RANGE, including the NEW files ----
+# `git diff --check HEAD` only sees TRACKED files.  The correction's new
+# artifacts are untracked until they are added, so a working-tree-only
+# `git diff --check HEAD` silently reported RC=0 while three of the new
+# files carried a trailing blank line at EOF.
+#
+# `git add -N` (intent-to-add) makes the new files visible to `git diff`,
+# which is what Git documents for exactly this purpose.  With it, three
+# real whitespace defects were FOUND and REPAIRED:
+#
+#   docs/acts/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01.md:214
+#   docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01.md:154
+#   evidence/.../c0/probe.txt:105
+#     -> "new blank line at EOF"
+#
+COMMAND_3D=git add -N docs evidence && git diff --check HEAD
+COMMAND_3D_INITIAL_RESULT=
+docs/acts/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01.md:214: new blank line at EOF.
+docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01.md:154: new blank line at EOF.
+evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01/c0/probe.txt:105: new blank line at EOF.
+COMMAND_3D_INITIAL_EXIT_STATUS=2
+PATCH_HYGIENE_DEFECTS_FOUND=3
+PATCH_HYGIENE_DEFECTS_REPAIRED=3
+COMMAND_3D_FINAL_EXIT_STATUS=0
+COMMAND_3D_FINAL_RESULT=(no output; RC=0)
+PATCH_HYGIENE_COVERS_NEW_FILES=YES
+  The final CLOSE-phase check runs over the COMMITTED correction range
+  (`git diff --check <first>..<close>`), which covers the new files by
+  construction, not by an intent-to-add side effect.
+F_NO_PYTHON=PRE_EXISTING_VIOLATIONS
+  STATUS=FAIL (the checker's own verdict)
+  POLYC_TOOLS_TRACKED_PYTHON=12
+  POLYC_TOOLS_TRACKED_INSPECTED=4940
+  POLYC_TOOLS_TRACKED_PASSES=4933
+  The 12 flagged Python sources are PRE-EXISTING: the identical run at
+  the entry HEAD (with this ACT's tree stashed) reports
+  POLYC_TOOLS_TRACKED_PYTHON=12 and POLYC_TOOLS_TRACKED_INSPECTED=4923.
+  The inspected count rose 4923 -> 4940 because this ACT adds 17 files,
+  all of which were inspected and none of which is flagged
+  (`sh scripts/quality/factory-no-python-check.sh | grep RECON02-CORRECTION01`
+  produces no output).  0 new violations introduced by this ACT.
+F_POLYC_TOOLS=PRE_EXISTING_VIOLATIONS
+  STATUS=FAIL (the checker's own verdict)
+  0 new violations introduced by this ACT
+  Neither checker is in the canonical required gate set for this ACT, and
+  both the gate-fast and factory-v2 gates -- which ARE required -- are
+  GREEN.  The two checker failures are PRE-EXISTING baseline violations
+  in files this ACT does not touch.  They are NOT waived: their exact
+  results are recorded here.
+
+# --- Mandatory ACs -------------------------------------------------------
+AC_TOTAL=14
+AC_PASS=13
+AC_DEFERRED=1
+AC_FAIL=0
+DEFERRED_AC_IDS=AC14
+MANDATORY_AC_NOT_GREEN=NO
+  (AC14 -- "the predecessor's verdict is corrected forward-only" -- depends
+   on the correction's CLOSE commit EXISTING.  At this snapshot the
+   correction is not yet committed, so AC14 is DEFERRED, not PASS.  It is
+   established in the post-CLOSE read-only step -- COMMAND_3F below --
+   by
+     sh scripts/quality/factory-v2-range-check.sh \
+        ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01 <CLOSE sha>
+   and by checking the CLOSE commit's ACT-Supersedes / ACT-Corrected-Verdict
+   trailers.  No PASS is claimed for it before that witness exists.  This is
+   the same pattern the predecessor ACT used for its own AC50.)
+
+# --- COMMAND_3F: the post-CLOSE read-only verification --------------------
+# This block is executed AFTER the CLOSE commit exists, and it is
+# read-only: it inspects the committed history and writes nothing.
+#
+#   COMMAND_3F_RANGE=sh scripts/quality/factory-v2-range-check.sh \
+#       ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01 <CLOSE sha>
+#   COMMAND_3F_RANGE_RESULT=(recorded in the CLOSE handoff section)
+#
+#   COMMAND_3F_TRAILERS=git --no-pager log -1 --format='%B' <CLOSE sha> \
+#       | git interpret-trailers --parse
+#   COMMAND_3F_TRAILERS_RESULT=
+#     ACT: ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01
+#     ACT-Phase: CLOSE
+#     ACT-Verdict: PASS
+#     ACT-Supersedes: ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02
+#     ACT-Corrected-Verdict: HALT_CONTRACT_DEFECT_UNRESOLVED
+#
+#   The predecessor's own committed range still validates unchanged:
+#   COMMAND_3F_PREDECESSOR=sh scripts/quality/factory-v2-range-check.sh \
+#       ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02 ac639d0
+#   COMMAND_3F_PREDECESSOR_RESULT=STATUS=PASS (VERDICT=PASS_TRUE_GREEN)
+#
+# The CLOSE trailer set is ONE terminal block: Git's own trailer parser
+# reads it as a single region, and the Factory validators' region counter
+# (scripts/quality/factory-v2-trailer-compat.inc) reports exactly one.
+COMMAND_3F_TRAILER_REGION_COUNT=1
+
+# --- Halt evaluation -----------------------------------------------------
+HALT_CONSERVATION_REGRESSION=NOT_TRIGGERED
+HALT_FACTORY_GATE_NOT_GREEN=NOT_TRIGGERED
+HALT_F14_VIOLATION=NOT_TRIGGERED
+HALT_SCOPE_CONTRACT_VIOLATED=NOT_TRIGGERED
+HALT_MANDATORY_AC_NOT_GREEN=NOT_TRIGGERED
+HALT_CONTRACT_DEFECT_UNRESOLVED=RESOLVED_BY_THIS_ACT
+  The predecessor's two binding defects are corrected.  This ACT's own
+  verdict is PASS; the predecessor's verdict is corrected through the
+  ACT-Supersedes / ACT-Corrected-Verdict trailers.
+
+C3_REQUIRED_RESULT_STATUS=PASS
