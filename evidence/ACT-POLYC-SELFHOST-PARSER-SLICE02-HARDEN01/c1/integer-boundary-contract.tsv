@@ -1,0 +1,15 @@
+case_id	input	expected_outcome	expected_value	reason	original_behaviour
+IB-01	9223372036854775807	ACCEPT	9223372036854775807	I64_MAX	WRONG (parses to -1)
+IB-02	-9223372036854775808	ACCEPT	-9223372036854775808	I64_MIN	WRONG (parses to 0)
+IB-03	9223372036854775808	REJECT	(none)	positive overflow	WRONG (ACCEPTED)
+IB-04	-9223372036854775809	REJECT	(none)	negative overflow	WRONG (ACCEPTED)
+IB-05	0x7fffffffffffffff	ACCEPT	9223372036854775807	hex I64_MAX	WRONG (parses to -1)
+IB-06	-0x8000000000000000	ACCEPT	-9223372036854775808	hex I64_MIN	WRONG (parses to 0)
+IB-07	0x8000000000000000	REJECT	(none)	hex overflow	WRONG (ACCEPTED)
+IB-08	0x10000000000000000	REJECT	(none)	hex overflow by one limb	WRONG (ACCEPTED)
+IB-09	123abc	REJECT	(none)	trailing garbage	detected only by the CALLER, not the parser
+IB-10	abc	REJECT	(none)	no digits	REJECTED (digits==0) -- must stay rejected
+IB-11	0x	REJECT	(none)	hex prefix with no digits	REJECTED (digits==0) -- must stay rejected
+IB-12	+9223372036854775807	ACCEPT	9223372036854775807	explicit plus sign	UNTESTED in the original
+IB-13	+9223372036854775808	REJECT	(none)	positive overflow with plus sign	UNTESTED in the original
+IB-14	0	ACCEPT	0	zero	UNTESTED in the original

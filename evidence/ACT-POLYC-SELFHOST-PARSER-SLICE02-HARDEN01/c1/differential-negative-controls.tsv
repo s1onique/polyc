@@ -1,0 +1,14 @@
+control_id	mutation	expected_outcome	expected_reason	original_behaviour	reproduces_against_original	observed_witness
+NC-D1	remove the F041 row	FAIL	FIXTURE_ID_MISSING	PASS (41/41)	YES	c0/red-reproduction.txt D3 PROOF 3
+NC-D2	remove a different fixture row (F007)	FAIL	FIXTURE_ID_MISSING	PASS (41/41)	YES	same mechanism as NC-D1
+NC-D3	duplicate F041 while omitting F042	FAIL	FIXTURE_ID_DUPLICATE+FIXTURE_ID_MISSING	PASS (41 rows)	YES	same mechanism as NC-D1
+NC-D4	replace F041 with an unknown id F043	FAIL	FIXTURE_ID_UNKNOWN+FIXTURE_ID_MISSING	PASS (41 rows)	YES	same mechanism as NC-D1
+NC-D5	empty fixture file	FAIL	FIXTURE_SET_EMPTY	PASS (0 rows)	YES	c0/red-reproduction.txt D3 PROOF 2
+NC-D6a	a non-numeric integer field ("NOTANUMBER")	FAIL	FIXTURE_SCHEMA_INVALID	FAIL, but only via PARSE_ERRORS=1 and TOTAL dropped to 41	PARTIAL -- the row is SILENTLY DROPPED, not rejected	measured this session
+NC-D6b	an integer field with TRAILING GARBAGE ("12abc")	FAIL	FIXTURE_SCHEMA_INVALID	PASS (42/42, 0 parse errors)	YES	measured this session
+NC-D7	a truncated row (rationale and source_line fields dropped)	FAIL	FIXTURE_SCHEMA_INVALID	PASS (42/42, 0 parse errors)	YES	measured this session
+NC-D8	valid 42-row fixture in SHUFFLED order	PASS	(none)	PASS	N/A (must stay PASS -- order independence)	-
+NC-D9	predecessor matrix with F041 expected 0	FAIL	ORACLE_VS_EXPECTED_MISMATCH	FAIL (1 mismatch)	NO -- already detected; MUST STAY detected	SLICE02 c1 evidence
+NC-D10	deliberately change the PolyC subject	FAIL	SUBJECT_VS_ORACLE_MISMATCH	FAIL	NO -- already detected; MUST STAY detected (M1..M4)	SLICE02 c1 evidence
+NC-D11	zero candidate rows (file with no fixture rows at all)	FAIL	FIXTURE_SET_EMPTY	PASS (0 rows)	YES	c0/red-reproduction.txt D3 PROOF 2
+NC-D12	a fixture id that is not F### (e.g. X001)	FAIL	FIXTURE_ID_UNKNOWN	PASS (the row is ignored entirely)	YES	same mechanism as NC-D1

@@ -1,0 +1,70 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01
+ACT_PHASE=C1-CONTRACT
+EVIDENCE_KIND=conservation-baseline
+
+# The FROZEN entry-state baseline. Everything here is measured at the
+# entry HEAD da4ab7db9e9f4382f53514db7678b86ca6c6416f, BEFORE any
+# implementation change. C3 must reproduce these EXACTLY.
+
+# ---- Canonical parser suite (the ACT section 10 reference) ----------
+COMMAND=cd src/tests && ./test-runner --target=aarch64-apple-darwin
+TEST_FILES_IN_DIR=72
+TEST_FILES_EXERCISED=67
+ASSERTIONS_TOTAL=363
+ASSERTIONS_PASSED=350
+ASSERTIONS_FAILED=13
+COMPILE_FAILURES=0
+RUN_FAILURES=0
+
+# The 13 failing assertions are ALL the SAME pre-existing environmental
+# limitation. They are NOT a compiler defect and NOT a regression:
+#   every one of them is reported as
+#     ERROR: Failed to open file: /usr/local/include/tos.HH
+# and every one of them originates in a test file that invokes the
+# compiler WITHOUT --install-dir:
+PRE_EXISTING_FAILURE_SOURCE_FILES=3
+PRE_EXISTING_FAILURE_FILE	src/tests/39_arg_count.HC
+PRE_EXISTING_FAILURE_FILE	src/tests/60_link.HC
+PRE_EXISTING_FAILURE_FILE	src/tests/64_sret_x8.HC
+
+PROOF_1=/usr/local/include does not exist on this host:
+  $ ls -ld /usr/local/include
+  ls: cannot access '/usr/local/include': No such file or directory
+PROOF_2=the ONLY test files that shell out to the compiler are these 3
+  $ grep -ln 'System(' src/tests/*.HC
+  39_arg_count.HC / 60_link.HC / 64_sret_x8.HC (+ the 2 harness drivers)
+PROOF_3=each invokes "../../hcc" with NO --install-dir:
+  39_arg_count.HC:24  System("../../hcc " ARG_COUNT_TEST_FILE ...)
+  60_link.HC:24      System("../../hcc /tmp/hcc-60-link-path.HC ...)
+  64_sret_x8.HC:48   System("../../hcc /tmp/hcc-64-sret.HC ...)
+PROOF_4=the failure reproduces with NO harness at all:
+  $ cd src/tests && ../../hcc 60_link.HC -o /tmp/t60b
+    ERROR: Failed to open file: /usr/local/include/tos.HH
+PROOF_5=the same file compiles cleanly when the prefix IS supplied:
+  $ cd src/tests && ../../hcc --install-dir=../../build/test-prefix 60_link.HC -o /tmp/t60c
+    RC=0, no error
+  => the compiler is correct; only the harness prefix resolution is
+     broken on this host.
+PROOF_6=this ACT changes NONE of those files:
+  src/tests/run.HC, 39_arg_count.HC, 60_link.HC and 64_sret_x8.HC are
+  OUT OF SCOPE (the ACT forbids changing src/tests/run.HC).
+
+NEW_FAILURES_AT_ENTRY=0
+PRE_EXISTING_FAILURES_AT_ENTRY=13
+
+# ---- Parser-padding differential --------------------------------
+COMMAND=./build/parser-padding-differential build/padding-matrix.tsv
+DIRECT_DIFFERENTIAL_TOTAL=16640
+DIRECT_DIFFERENTIAL_PASS=16640
+DIRECT_DIFFERENTIAL_FAIL=0
+STATUS=PASS
+
+# ---- The control-flow-token differential (entry state) -----------
+COMMAND=./build/parser-control-flow-token-differential <corrected fixture>
+STATUS=PASS over 42 rows (but WITHOUT the fixture-completeness
+  requirement -- that is defect D3)
+
+# ---- The frozen production hashes --------------------------------
+see c0/source-freeze.tsv (frozen at C0)
+
+ENTRY_BASELINE_FROZEN=YES

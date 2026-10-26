@@ -1,0 +1,25 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01
+ACT_PHASE=C1-CONTRACT
+EVIDENCE_KIND=object-negative-controls
+
+# The negative controls for the object-symbol verifier.
+#
+# "reproduces_against_original" is the OBSERVED behaviour of the
+# original SLICE02 verifier, measured -- not an assumption.
+#
+# The "expected_reason" column is the concrete reason token the hardened
+# verifier MUST emit when it rejects.
+
+control_id	defect	control	expected_outcome	expected_reason	original_behaviour	reproduces_against_original	note
+NC-O1	D1	object with ONLY an undefined reference (U) to the symbol	REJECT	REJECT_UNDEFINED_SYMBOL	ACCEPTED (reported VERIFIED)	YES	-
+NC-O2	D1	object whose only near-match is a SUFFIX extension	REJECT	REJECT_SYMBOL_NAME_MISMATCH	ACCEPTED (reported VERIFIED)	YES	-
+NC-O3	D1	object with a LOCAL (lowercase t) text symbol	REJECT	REJECT_LOCAL_SYMBOL	ACCEPTED (reported VERIFIED)	YES	-
+NC-O4	D1	object with a WEAK definition of the symbol	REJECT	REJECT_WEAK_SYMBOL	ACCEPTED (reported VERIFIED)	YES	a weak definition LINKS (measured), so accepting it admits an object with no strong production authority
+NC-O5	D1	two matching definitions in one symbol table	REJECT	REJECT_DUPLICATE_DEFINITION	ACCEPTED (reported VERIFIED)	YES	not reachable via normal compilation -- the linker refuses duplicate globals (measured: "duplicate symbol"). Retained as a defensive check against malformed/hand-crafted objects.
+NC-O6	D1	EMPTY object file	REJECT	REJECT_INVALID_OBJECT	REJECTED (by the size check, not the symbol check)	YES (already rejected)	-
+NC-O7	D1	INVALID object file (not an object)	REJECT	REJECT_INVALID_OBJECT	REJECTED (by the nm exit code)	YES (already rejected)	-
+NC-O8	D1	object with NO symbol table entry for the target	REJECT	REJECT_SYMBOL_NAME_MISMATCH	REJECTED	YES (already rejected)	-
+NC-O9	D1	MISSING object file	REJECT	REJECT_INVALID_OBJECT	REJECTED	YES (already rejected)	-
+NC-O10	D1-A	VALID ELF object exposing the UNPREFIXED symbol	ACCEPT	(none)	REJECTED -- a platform-only rejection of a CORRECT object	YES	REPRODUCED NATIVELY ON LINUX/ELF/x86_64
+NC-O11	D1-A	VALID Mach-O object exposing the UNDERSCORE-prefixed symbol	ACCEPT	(none)	ACCEPTED	YES (already correct)	-
+NC-O12	D1-A	an object whose format the target nm cannot read	REJECT	REJECT_UNSUPPORTED_OBJECT_FORMAT	REJECTED (by the nm exit code, but WITHOUT a specific reason token)	YES (already rejected)	-

@@ -1,0 +1,28 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01
+ACT_PHASE=C1-CONTRACT
+EVIDENCE_KIND=platform-matrix
+
+# The platform matrix, with the RUNNER ACTUALLY AVAILABLE, measured.
+# No container runtime and no CI service is introduced by this ACT
+# (ACT section 9 forbids that without separately authorized scope).
+
+platform	os	arch	object_format	symbol_spelling	runner	status	native
+Darwin	macOS 23.6.0	arm64	Mach-O	_BootstrapValidPostControlFlowToken	local host	REQUIRED	NATIVE
+Linux	Ubuntu 24.04 LTS	x86_64	ELF	BootstrapValidPostControlFlowToken	192.168.244.202 (existing ssh runner)	REQUIRED	NATIVE
+
+# The Linux runner is an EXISTING compatible execution environment
+# that was already configured in the operator ssh config; it was NOT
+# created, provisioned as infrastructure, or added as a dependency by
+# this ACT. The toolchain (gcc, binutils/nm, cmake, make) was installed
+# with the runner's OWN pre-existing passwordless sudo, which is the
+# operator's machine, not a service this ACT depends on.
+
+# D1-A WAS REPRODUCED NATIVELY ON LINUX:
+#   a VALID ELF object exposing "T BootstrapValidPostControlFlowToken"
+#   is REJECTED by the original verifier, which demands the Mach-O
+#   spelling. Witness: c1/platform-matrix.txt and the Linux block
+#   below.
+
+PLATFORM_MATRIX_DEFINED=YES
+BOTH_TARGET_PLATFORMS_HAVE_A_NATIVE_RUNNER=YES
+NO_NEW_INFRASTRUCTURE_DEPENDENCY=YES

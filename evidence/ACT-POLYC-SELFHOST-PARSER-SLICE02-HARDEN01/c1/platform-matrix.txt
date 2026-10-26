@@ -1,0 +1,114 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01
+ACT_PHASE=C1-CONTRACT
+EVIDENCE_KIND=platform-matrix-measurements
+
+# ================================================================
+# PLATFORM 1 of 2: Darwin / Mach-O / arm64   (the local host)
+# ================================================================
+PLATFORM=Darwin/machOS/arm64/Mach-O
+RUNNER=local host
+OS=macOS 23.6.0 (Darwin Kernel Version 23.6.0)
+ARCH=arm64
+CC=Apple clang 15.0.0.15000040
+NM=/usr/bin/nm (Apple llvm-nm)
+CMAKE=/run/current-system/sw/bin/cmake
+
+--- the native object format (measured) ---
+COMMAND=file build/parser-control-flow-token-subject.o
+  build/parser-control-flow-token-subject.o: Mach-O 64-bit object arm64
+
+--- the symbol spelling on Mach-O (measured) ---
+COMMAND=nm --format=posix --no-weak build/parser-control-flow-token-subject.o | grep Bootstrap
+  _BootstrapValidPostControlFlowToken T 0 0
+MACH_O_SPELLING=_BootstrapValidPostControlFlowToken
+
+--- the four symbol kinds on Mach-O (measured) ---
+[strong global]
+  _BootstrapValidPostControlFlowTokenExtra T 0 0
+[weak  -- FILTERED by --no-weak]
+[undefined]
+  _BootstrapValidPostControlFlowToken U 0 0
+[local]
+  _BootstrapValidPostControlFlowToken t 20 0
+
+CRITICAL_MACH_O_FINDING=
+  The DEFAULT nm on Mach-O reports a WEAK definition with the SAME
+  type letter "T" as a strong definition. The type letter alone
+  therefore CANNOT reject a weak symbol on Mach-O. The --no-weak
+  filter removes the weak record entirely, which CAN.
+
+--- a weak definition LINKS (measured) ---
+COMMAND=cc -o weaktest.bin weaktest.o weak.o
+  LINK_RC=0
+  => a weak definition SATISFIES the production reference, so a
+     verifier that accepts it would admit an object with no
+     strong production authority.
+
+
+# ================================================================
+# PLATFORM 2 of 2: Linux / ELF / x86_64   (an existing runner)
+# ================================================================
+PLATFORM=Linux/Ubuntu 24.04 LTS/x86_64/ELF
+RUNNER=192.168.244.202 (an EXISTING ssh runner already present in
+       the operator ssh config; NOT created or provisioned by this
+       ACT, and NOT a container runtime or CI service)
+OS=Linux 6.8.0-124-generic x86_64, Ubuntu 24.04 LTS
+ARCH=x86_64
+CC=gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+NM=GNU nm (GNU Binutils for Ubuntu) 2.42
+CMAKE=cmake version 3.28.3
+
+--- the native object format (measured) ---
+COMMAND=file good.o
+  good.o: ELF 64-bit LSB relocatable, x86-64, version 1 (SYSV), not stripped
+
+--- the symbol spelling on ELF (measured) ---
+COMMAND=nm --format=posix --no-weak good.o
+  BootstrapValidPostControlFlowToken T 0 20
+ELF_SPELLING=BootstrapValidPostControlFlowToken   (NO leading underscore)
+
+--- D1-A REPRODUCED NATIVELY ON LINUX ---------------------------
+A VALID ELF object is REJECTED by the ORIGINAL verifier:
+COMMAND=cmake -DCONTROL_FLOW_TOKEN_OBJECT=<abs>/good.o -P src/cmake/VerifyControlFlowTokenObject.cmake
+  CMake Error at src/cmake/VerifyControlFlowTokenObject.cmake:71 (message):
+    ACT-POLYC-SELFHOST-PARSER-SLICE02: symbol
+    _BootstrapValidPostControlFlowToken not found in
+    /home/chistyakov/polyc-harden01/build/harden01/nc/good.o.  Refusing to link
+    the production compiler without a verified PolyC control-flow-token
+    authority.
+  ORIGINAL_VERIFIER_RC=1
+
+D1_A_REPRODUCED_ON_NATIVE_LINUX=YES
+  The defect is NOT hypothetical and NOT macOS-specific: on a real
+  Linux/ELF/x86_64 runner the production build wiring cannot accept
+  the production component at all.
+
+--- the four symbol kinds on ELF (measured) ---
+[strong global]
+  BootstrapValidPostControlFlowToken T 0 20
+[weak  -- FILTERED by --no-weak]
+  (no record -- the weak definition is omitted)
+[undefined]
+  BootstrapValidPostControlFlowToken U
+[local]
+  BootstrapValidPostControlFlowToken t 0 20
+
+--- the portable mechanism, verified IDENTICAL on both platforms ---
+COMMAND=nm --format=posix --no-weak <object>
+
+  Both Apple nm and GNU nm implement --format=posix and --no-weak
+  with the SAME meaning. The type letters agree across the two:
+
+  kind           Mach-O     ELF
+  strong global  T          T
+  weak           omitted    omitted
+  undefined      U          U
+  local text     t          t
+
+  GNU nm does NOT accept the Mach-O-only "-m" flag (measured:
+  "nm: invalid option -- m"), which is why the verifier uses the
+  two-portable-flag form and not -m.
+
+PLATFORM_1_DARWIN_MACH_O_ARM64=MEASURED
+PLATFORM_2_LINUX_ELF_X86_64=MEASURED
+BOTH_PLATFORMS_NATIVE=YES

@@ -1,0 +1,74 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01
+ACT_PHASE=C1-CONTRACT
+EVIDENCE_KIND=c1-required-result
+
+# ---- The contracts are frozen BEFORE implementation ----------------
+OBJECT_SYMBOL_CONTRACT=evidence/.../c1/object-symbol-contract.tsv
+OBJECT_NEGATIVE_CONTROLS=evidence/.../c1/object-negative-controls.tsv
+DIFFERENTIAL_NEGATIVE_CONTROLS=evidence/.../c1/differential-negative-controls.tsv
+INTEGER_BOUNDARY_CONTRACT=evidence/.../c1/integer-boundary-contract.tsv
+PLATFORM_MATRIX=evidence/.../c1/platform-matrix.tsv
+CONSERVATION_BASELINE=evidence/.../c1/conservation-baseline.tsv
+CONTRACTS_FROZEN_BEFORE_IMPLEMENTATION=YES
+
+# ---- Which controls REPRODUCE against the original implementation ---
+OBJECT_NC_REPRODUCED=6 of 12
+  NC-O1 undefined symbol ACCEPTED        YES
+  NC-O2 suffix prefix collision ACCEPTED YES
+  NC-O3 local text symbol ACCEPTED       YES
+  NC-O4 weak definition ACCEPTED         YES
+  NC-O5 (see note)                       -- a duplicate GLOBAL definition
+       cannot be produced by the linker at all, so it is covered by
+       the verifier logic and by a synthetic nm-input control instead
+  NC-O6 empty object                     ALREADY REJECTED (size check)
+  NC-O7 invalid object                   ALREADY REJECTED (nm exit)
+  NC-O8 no symbol for the target         ALREADY REJECTED
+  NC-O9 missing object                   ALREADY REJECTED
+  NC-O10 valid ELF object                REJECTED ON NATIVE LINUX -- the
+       platform-only rejection of a CORRECT object (D1-A)
+  NC-O11 valid Mach-O object             ACCEPTED (correct)
+
+DIFFERENTIAL_NC_REPRODUCED=10 of 12
+  NC-D1, NC-D2, NC-D3, NC-D4   YES (missing/duplicate/unknown id)
+  NC-D5, NC-D11                YES (empty / zero rows)
+  NC-D6a                      PARTIAL (detected, but the row is
+                              SILENTLY DROPPED rather than rejected)
+  NC-D6b                      YES (trailing garbage -> false PASS)
+  NC-D7                       YES (truncated row -> false PASS)
+  NC-D8                       N/A -- must REMAIN PASS (order independence)
+  NC-D9                       NO -- already detected; MUST STAY detected
+  NC-D10                      NO -- already detected; MUST STAY detected (M1..M4)
+  NC-D12                      YES (a non-F### id is ignored entirely)
+
+INTEGER_BOUNDARY_REPRODUCED=9 of 14
+  IB-01, IB-02, IB-05, IB-06  YES (WRONG value)
+  IB-03, IB-04, IB-07, IB-08  YES (out of range ACCEPTED)
+  IB-09                      YES (garbage detected only by the CALLER)
+  IB-10, IB-11               already REJECTED -- must stay rejected
+  IB-12, IB-13, IB-14        UNTESTED in the original
+
+# ---- The portable mechanism, measured on BOTH platforms ------------
+NM_INVOCATION=nm --format=posix --no-weak <object>
+NM_FLAGS_SUPPORTED_BY_BOTH_APPLE_NM_AND_GNU_NM=YES
+NM_FLAG_-m_SUPPORTED_BY_GNU_NM=NO  (measured: "nm: invalid option -- m")
+MACH_O_WEAK_SYMBOL_TYPE_LETTER=T (SAME as strong -- the letter alone is insufficient)
+ELF_WEAK_SYMBOL_TYPE_LETTER=W
+WEAK_SYMBOL_IS_LINKABLE=YES  (measured: a weak definition satisfies the reference)
+
+# ---- Platform qualification plan --------------------------------
+DARWIN_MACH_O_ARM64_RUNNER=AVAILABLE (local host)
+LINUX_ELF_X86_64_RUNNER=AVAILABLE (existing ssh runner 192.168.244.202)
+D1_A_REPRODUCED_ON_NATIVE_LINUX=YES
+NO_NEW_INFRASTRUCTURE_DEPENDENCY=YES
+
+# ---- The entry conservation baseline is frozen -------------------
+PARSER_ASSERTIONS_TOTAL=363
+PARSER_ASSERTIONS_PASSED=350
+PARSER_ASSERTIONS_FAILED=13   (all PRE-EXISTING, all the same /usr/local/include/tos.HH cause)
+PARSER_COMPILE_FAILURES=0
+PARSER_RUN_FAILURES=0
+PARSER_PADDING_DIFFERENTIAL=16640/16640 PASS
+NEW_FAILURES_AT_ENTRY=0
+
+C1_CONTRACT_FROZEN=YES
+HALT_NEGATIVE_CONTROL_NOT_LOAD_BEARING=NOT_TRIGGERED

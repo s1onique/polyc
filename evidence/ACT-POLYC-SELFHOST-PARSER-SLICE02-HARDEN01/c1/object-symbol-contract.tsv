@@ -1,0 +1,74 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01
+ACT_PHASE=C1-CONTRACT
+EVIDENCE_KIND=object-symbol-contract
+
+# The contract the verifier MUST establish, and the tool-independent
+# mechanism by which each predicate is decided.
+
+The canonical LOGICAL symbol is:
+  BootstrapValidPostControlFlowToken
+
+Its OBJECT-FORMAT SPELLING is resolved from the target object format:
+  Mach-O  -> _BootstrapValidPostControlFlowToken   (leading underscore)
+  ELF    ->  BootstrapValidPostControlFlowToken   (no prefix)
+
+The spelling is NEVER guessed from the host. It is passed explicitly
+from src/CMakeLists.txt as CONTROL_FLOW_TOKEN_TARGET_OBJECT_FORMAT
+
+---- The tool-independent symbol-identity mechanism ------------------
+# Both Apple nm and GNU nm support the SAME two flags with the SAME
+# meaning, which is what makes the check portable:
+#
+#   nm --format=posix --no-weak <object>
+#
+# --format=posix  -> "<name> <type> <value> <size>" with an
+#                    UNAMBIGUOUS type letter, one record per symbol.
+# --no-weak       -> weak definitions are OMITTED entirely.
+#
+# Observed type letters (measured on BOTH platforms, see below):
+#   global strong text   T
+#   weak text            W      (removed by --no-weak)
+#   undefined            U
+#   local text           t
+#   common               C      (removed by --no-weak)
+#
+# WHY --no-weak IS LOAD-BEARING (measured, not assumed):
+#   On ELF, GNU nm reports a weak definition as "W" and the plain
+#   type letter alone would reject it.
+#   On Mach-O, the DEFAULT nm reports a weak definition as "T" -- the
+#   SAME letter as a strong definition. The type letter alone is
+#   therefore NOT sufficient on Mach-O.
+#   With --no-weak, the weak Mach-O definition is filtered out and the
+#   symbol disappears from the output entirely, so it can be
+#   distinguished from a strong definition.
+#
+# A weak definition is not a harmless near-miss: it LINKS. Measured:
+#   an object whose only definition of the symbol is weak satisfies a
+#   reference to it at link time (LINK_RC=0). So a verifier that
+#   accepts it would admit an object with no strong production
+#   authority.
+
+---- The predicates ---------------------------------------------
+SYMBOL_NAME_EXACT         = YES   the record name equals the target-format spelling EXACTLY
+SYMBOL_IS_DEFINED        = YES   the type is a DEFINITION (T), not U
+SYMBOL_IS_GLOBAL         = YES   the type letter is UPPERCASE (global), not lowercase (local)
+SYMBOL_IS_CODE           = YES   the type letter is T (text/code), not D/B/R/S/N etc.
+SYMBOL_IS_STRONG         = YES   the record survived --no-weak, i.e. it is not weak/common
+SYMBOL_DEFINITION_COUNT  = 1    exactly one matching definition record
+OBJECT_NONEMPTY          = YES   the file has a nonzero size
+NM_EXECUTION_SUCCESSFUL  = YES   nm exited 0
+
+---- The reason tokens -----------------------------------------
+REJECT_UNDEFINED_SYMBOL          the only match is type U
+REJECT_LOCAL_SYMBOL              the only match is a lowercase (local) type
+REJECT_SYMBOL_NAME_MISMATCH      no record with the EXACT target-format name
+REJECT_DUPLICATE_DEFINITION      more than one matching definition
+REJECT_INVALID_OBJECT            the file is missing, empty, or not a readable object
+REJECT_UNSUPPORTED_OBJECT_FORMAT the target object format is neither Mach-O nor ELF
+REJECT_NM_FAILURE                nm was missing or exited nonzero
+REJECT_WEAK_SYMBOL               the only match was a weak/common definition
+
+---- The required success output --------------------------------
+CONTROL_FLOW_TOKEN_OBJECT_STATUS=PASS
+EXPECTED_SYMBOL=BootstrapValidPostControlFlowToken
+DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1
