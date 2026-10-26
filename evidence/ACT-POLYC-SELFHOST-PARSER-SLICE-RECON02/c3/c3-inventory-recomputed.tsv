@@ -1,0 +1,61 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02
+# ACT_PHASE=C3-VERIFY
+# EVIDENCE_KIND=inventory-recomputed
+# Independent recomputation of the C1 inventory from the FROZEN C1
+# artifacts and the CURRENT, UNCHANGED production source.
+#
+# Schema:
+#   01 candidate_id
+#   02 c1_candidate_inventory_has_row
+#   03 c1_dependency_map_has_row
+#   04 c1_state_read_write_has_row
+#   05 c1_recovery_coupling_has_row
+#   06 c1_callback_coupling_has_row
+#   07 c1_production_call_sites_has_row
+#   08 c1_observable_projections_has_row
+#   09 c1_eligibility_preconditions_has_row
+#   10 c1_candidate_delta_has_row
+#   11 source_still_at_frozen_location
+#   12 recompute_verdict
+
+candidate_id	inventory	dependency_map	state_read_write	recovery_coupling	callback_coupling	production_call_sites	observable_projections	eligibility_preconditions	candidate_delta	source_location_verified	verdict
+CAND-001	Y	Y	Y	Y	Y	Y	Y	Y	Y	Y	PASS
+CAND-002	Y	Y	Y	Y	Y	Y	Y	Y	Y	Y	PASS
+CAND-003	Y	Y	Y	Y	Y	Y	Y	Y	Y	Y	PASS
+CAND-003S	Y	Y	Y	Y	Y	Y	Y	Y	Y	Y	PASS
+CAND-004	Y	Y	Y	Y	Y	Y	Y	Y	Y	Y	PASS
+CAND-005	Y	Y	Y	Y	Y	Y	Y	Y	Y	Y	PASS
+CAND-006	Y	Y	Y	Y	Y	Y	Y	Y	Y	Y	PASS
+CAND-007	Y	Y	Y	Y	Y	Y	Y	Y	Y	Y	PASS
+CAND-008	Y	Y	Y	Y	Y	Y	Y	Y	Y	Y	PASS
+CAND-009	Y	Y	Y	Y	Y	Y	Y	Y	Y	Y	PASS
+CAND-010	Y	Y	Y	Y	Y	Y	Y	Y	Y	Y	PASS
+CAND-011	Y	Y	Y	Y	Y	Y	Y	Y	Y	Y	PASS
+CAND-012	Y	Y	Y	Y	Y	Y	Y	Y	Y	Y	PASS
+CAND-013	Y	Y	Y	Y	Y	G	Y	Y	Y	PASS
+CAND-014	Y	Y	Y	Y	Y	Y	Y	Y	Y	Y	PASS
+CAND-015	Y	Y	Y	Y	Y	Y	Y	Y	Y	Y	PASS
+CAND-016	Y	Y	Y	Y	Y	Y	Y	Y	Y	Y	PASS
+
+UNKNOWN_CANDIDATES=0
+UNCLASSIFIED_STATE_DEPENDENCIES=0
+INVENTORY_ROWS=17
+ALL_ARTIFACTS_CARRY_THE_IDENTICAL_CANDIDATE_ID_SET=YES
+  (verified by extracting and sorting the candidate_id column of each of
+  the nine C1 candidate TSVs and comparing the resulting sets)
+
+# --- The 64 historical helpers are still all mapped ----------------------
+HIST64_MAPPED=64
+HIST64_RESIDUAL_UNMAPPED=0
+HIST64_VERIFICATION_COMMAND=
+  comm -13 <(sort historical 64) <(sort current 66)  ->  only the 2 NEW ones
+  comm -23 <(sort historical 64) <(sort current 66)  ->  EMPTY
+
+# --- The production source is UNCHANGED since the C0 freeze --------------
+PRODUCTION_SOURCE_CHANGED_SINCE_C0=NO
+SOURCE_IDENTITY_RECHECK=
+  $ sha256sum src/parser.c
+  993bae4427d52a10b4513f3b4315206bbee009c5f3d0cc3f7d648abc7c3ebe5c  src/parser.c
+  $ sha256sum src/lexer.h
+  6bc46f3be938c6fae99095d8cf0b1f07104bbf9fc1dfb248aaa3cd5dd721c5f9  src/lexer.h
+  (identical to the c0-parser-source-identities.tsv values)

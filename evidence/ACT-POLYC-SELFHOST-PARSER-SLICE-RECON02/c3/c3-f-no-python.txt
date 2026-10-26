@@ -1,0 +1,80 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02
+# ACT_PHASE=C3-VERIFY
+# EVIDENCE_KIND=f-no-python
+
+COMMAND=bash scripts/quality/factory-no-python-check.sh
+RC=1
+
+STATUS=FAIL
+
+--- This checker reports PRE-EXISTING baseline violations. ---
+--- NONE of them is introduced by this ACT. ---
+
+The checker scans TRACKED FILES.  Every file this ACT added is
+under docs/ or evidence/ -- none is a script, a tool, or a source:
+
+  ADDED docs/acts/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02.md
+  ADDED evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02/c0/c0-baseline-authority.txt
+  ADDED evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02/c0/c0-entry-identity.txt
+  ADDED evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02/c0/c0-padding-production-authority.txt
+  ADDED evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02/c0/c0-parser-source-identities.tsv
+  ADDED evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02/c0/c0-predecessor-binding.txt
+  ADDED evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02/c0/c0-scope.txt
+  ADDED evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02/c1/c1-callback-coupling.tsv
+  ADDED evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02/c1/c1-candidate-delta-vs-recon01.tsv
+  ADDED evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02/c1/c1-candidate-inventory.tsv
+  ADDED evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02/c1/c1-dependency-map.tsv
+  ADDED evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02/c1/c1-eligibility-preconditions.tsv
+  ADDED evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02/c1/c1-function-inventory.tsv
+  ADDED evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02/c1/c1-observable-projections.tsv
+  ADDED evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02/c1/c1-production-call-sites.tsv
+  ADDED evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02/c1/c1-recovery-coupling.tsv
+  ADDED evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02/c1/c1-required-result.txt
+  ADDED evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02/c1/c1-state-read-write.tsv
+  ADDED evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02/c2/c2-eligibility-results.tsv
+  ADDED evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02/c2/c2-ranked-candidates.tsv
+  ADDED evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02/c2/c2-ranking-controls.txt
+  ADDED evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02/c2/c2-required-result.txt
+  ADDED evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02/c2/c2-selected-abi-contract.md
+  ADDED evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02/c2/c2-selected-candidate.txt
+  ADDED evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02/c2/c2-selected-fixture-model.tsv
+  ADDED evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02/c2/c2-selected-production-seam.md
+  ADDED evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02/c2/c2-selected-proof-contract.md
+  ADDED evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02/c2/c2-selected-red-model.md
+  ADDED evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02/c2/c2-selected-source-freeze.tsv
+
+  (0 files under scripts/, tools/, or src/)
+
+--- The reported violations ---
+FAIL  scripts/quality/llvm-byte-memory01-test.sh  forbidden Python invocation
+FAIL  scripts/quality/llvm-cap-table-verifier.py  forbidden Python source suffix
+FAIL  scripts/quality/llvm-intops01-test.sh  forbidden Python invocation
+FAIL  scripts/quality/llvm-memory01-red-test.sh  forbidden Python invocation
+FAIL  scripts/quality/llvm-spike-test.sh  forbidden Python invocation
+FAIL  tools/quality/bootstrap02-corpus-runner.py  forbidden Python source suffix
+FAIL  tools/quality/bootstrap02-error-corpus.py  forbidden Python source suffix
+FAIL  tools/quality/bootstrap03-corpus-runner.py  forbidden Python source suffix
+FAIL  tools/quality/bootstrap03-error-corpus.py  forbidden Python source suffix
+FAIL  tools/quality/bootstrap04-corpus-runner.py  forbidden Python source suffix
+FAIL  tools/quality/bootstrap04-error-corpus.py  forbidden Python source suffix
+FAIL  tools/quality/llvm-gep01-test.HC  known PolyC -> Python execution edge (callgraph inventory)
+
+FAIL_COUNT=12
+NEW_VIOLATIONS_INTRODUCED_BY_THIS_ACT=0
+
+Provenance of the violations: the Python tools listed above were
+introduced by earlier ACTs and are recorded in
+docs/factory/LEGACY-NON-POLYC-TOOLS.tsv and
+docs/factory/PYTHON-CALLGRAPH.tsv.  The F-NO-PYTHON pointer in
+AGENTS.md records that the checker is NOT yet wired into gate-fast
+and that the authoritative enforcement text lives in
+docs/factory/DOCTRINE.md section 26.
+
+The llvm-gep01-test.HC finding is the known PolyC -> Python execution
+edge recorded by the predecessor ACT-POLYC-TOOLING-GEP01-GATE-REPAIR01
+(its own ROADMAP residue entry: "the cap-table verifier remains a
+Python tool, in tension with F-NO-PYTHON. Pre-existing and separately
+owned; repaired in place, not migrated.").
+
+DISPOSITION=PRE_EXISTING_BASELINE_VIOLATIONS
+NOT_NEWLY_INTRODUCED=YES

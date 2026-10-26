@@ -1,0 +1,74 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02
+# ACT_PHASE=C3-VERIFY
+# EVIDENCE_KIND=mandatory-ac-status
+# The AC LEDGER.  Each predicate is linked to the ACTUAL establishing
+# evidence artifact.  A file merely containing STATUS=PASS is NOT
+# sufficient; the `establishing_evidence` column names the file AND the
+# concrete content within it that establishes the predicate.
+#
+# Schema:
+#   01 ac_id
+#   02 predicate
+#   03 status
+#   04 establishing_evidence
+#   05 deferred
+
+AC01	Actual entry identity captured	PASS	c0/c0-entry-identity.txt -- BRANCH=main, ENTRY_HEAD=1e27f01cb3437d3af99cd4d024e7f29922ea1cdf, WORKING_TREE=clean, with the four F1 commands and their outputs	NO
+AC02	C0 authorization precedes execution	PASS	Git history: commit 0b9d312 carries ACT-Phase: RED and is the FIRST commit of this ACT's range; C1 (da213c4) and C2 (1e4c12a) follow it.  factory-v2-range-check.sh requires FIRST to be RED.	NO
+AC03	Production padding authority verified as PolyC	PASS	c0/c0-padding-production-authority.txt -- 6 numbered live observations: CMake option default ON, live CMakeCache BOOL=ON, src/parser.c:431 macro, src/CMakeLists.txt:326-327 define+link, nm build/hcc exports _BootstrapCalcPadding, legacy body confined to #else	NO
+AC04	All historically inventoried candidates revisited	PASS	c1/c1-candidate-delta-vs-recon01.tsv -- 14 rows, one per RECON01 candidate, each with recon01 values vs current values and a delta_class	NO
+AC05	Current parser helper inventory complete	PASS	c1/c1-function-inventory.tsv -- 66 mapping rows = 64 historical (ALL mapped) + 2 new; HIST64_RESIDUAL_UNMAPPED=0.  c3/c3-inventory-recomputed.tsv re-verifies all 17 candidate ids across all nine C1 artifacts.	NO
+AC06	All current candidate source identities recorded	PASS	c1/c1-candidate-inventory.tsv columns source_file/source_start/source_end/loc for all 17 rows; c2/c2-selected-source-freeze.tsv re-freezes the selected one with SHA-256; c3/c3-selected-source-identity.txt re-verifies it byte-for-byte	NO
+AC07	All state reads and writes classified	PASS	c1/c1-state-read-write.tsv -- 17 rows x 14 classification columns; HOST_STATE_DEPENDENCIES_UNCLASSIFIED=0	NO
+AC08	Recovery dependencies classified	PASS	c1/c1-recovery-coupling.tsv -- 17 rows; RECOVERY_UNCLASSIFIED=0; only CAND-014 is coupled, anchored at src/parser.c:1810/1812/1830	NO
+AC09	Callback dependencies classified	PASS	c1/c1-callback-coupling.tsv -- 17 rows with the DISTINCT callee names enumerated per candidate; CALLBACK_UNCLASSIFIED=0	NO
+AC10	Pointer-identity dependencies classified	PASS	c1/c1-state-read-write.tsv column 08 pointer_identity_operations + column 09 identity_sensitive; c1/c1-candidate-inventory.tsv r0_delta	NO
+AC11	Host-graph mutations classified	PASS	c1/c1-state-read-write.tsv column 07 writes_ast_graph and column 11 mutates_referenced_graph; c1/c1-candidate-inventory.tsv CAND-003/CAND-011 reclassification notes	NO
+AC12	CalcClassSize previous R0 classification independently checked	PASS	c1/c1-required-result.txt H2 section -- CONFIRMED with the source anchor src/parser.c:424 `type->offset = offset;`; c3/c3-ranking-controls.txt CONTROL_3 re-runs the probe and shows the clause vector YYNYYYYYYYNNY	NO
+AC13	Already-selfhosted candidates excluded	PASS	c2/c2-eligibility-results.tsv CAND-002 row: already_selfhosted=YES -> failing_predicates="already_selfhosted == YES"; c3/c3-eligibility-recomputed.tsv clause 02 = N	NO
+AC14	Whole compound parser function excluded under R0 rules	PASS	c2/c2-eligibility-results.tsv CAND-014 row: r0=5, owns_setjmp=YES, writes_current_recovery=YES, requires_nonlocal_recovery=YES -> INELIGIBLE; c3 clause vector YYNNNNYYNYNNY	NO
+AC15	Eligibility conjunction applied without override	PASS	c2/c2-eligibility-results.tsv applies all 13 clauses to all 17 candidates; c3/c3-eligibility-recomputed.tsv is the MECHANICAL re-application and is byte-identical to build/slice-recon02-rank/elig.sh stdout	NO
+AC16	R0 remains the first ranking dimension	PASS	c2/c2-ranked-candidates.tsv header freezes the column order with R0 first; c3/c3-ranking-controls.txt CONTROL_5 shows an R0 perturbation of the leader CHANGES the winner	NO
+AC17	R1..R6 historical meanings preserved	PASS	c2/c2-ranked-candidates.tsv header quotes each column's historical meaning with its SURFACE-RECON03 section reference; no new column and no redefinition.  The only changed values are CAND-003's R0 (0->4, source-anchored) and the R6 line numbers (the file grew).	NO
+AC18	All candidates ranked deterministically	PASS	c2/c2-ranked-candidates.tsv -- 6 state-boundary-eligible rows + the eligible set; the ranking is the ranker's stdout, and the ranker reproduces the RECON01 historical winner as its self-check	NO
+AC19	Inventory row-order perturbation has no effect	PASS	c3/c3-ranking-controls.txt CONTROL_7 -- 20 independent shuffles, 20/20 -> CAND-001	NO
+AC20	R0 ranking perturbation detected	PASS	c3/c3-ranking-controls.txt CONTROL_5 -- CAND-001's R0 0->1 moves it from rank 1 to rank 2 and CAND-004 takes rank 1	NO
+AC21	Removing winner changes selection correctly	PASS	c3/c3-ranking-controls.txt CONTROL_6 -- removing CAND-001 makes CAND-004 rank 1	NO
+AC22	Ineligible-favorable-rank control rejected	PASS	c3/c3-ranking-controls.txt CONTROL_4 -- CAND-014/CAND-003/CAND-013/CAND-015 injected with a PERFECT score are all dropped by the ranker's eligible-only filter	NO
+AC23	Exactly one candidate selected	PASS	c2/c2-selected-candidate.txt SELECTED_CANDIDATE_COUNT=1; c3/c3-ranking-recomputed.tsv has exactly one ranked row	NO
+AC24	Selected candidate R0 <= 2	PASS	c2/c2-selected-candidate.txt SELECTED_R0=0; c3/c3-eligibility-recomputed.tsv CAND-001 clause 03 = Y	NO
+AC25	Selected candidate has no recovery ownership	PASS	c1/c1-recovery-coupling.tsv CAND-001 row: owns_setjmp=NO, writes_current_recovery=NO, requires_nonlocal_recovery=NO; the body contains no setjmp/longjmp/cc->current_recovery	NO
+AC26	Selected candidate has no host-graph identity dependency	PASS	c1/c1-state-read-write.tsv CAND-001 row: writes_ast_graph=NO, pointer_identity_operations=NO, mutates_referenced_graph=NO; the body writes nothing at all	NO
+AC27	Selected candidate has no semantic callback authority	PASS	c1/c1-callback-coupling.tsv CAND-001 row: parser_callback_count=0, semantic_callback_count=0; the body makes NO call at all	NO
+AC28	Selected behavior has deterministic observable projection	PASS	c1/c1-observable-projections.tsv CAND-001 row: deterministic_projection=YES, output 0/1, no side effects, no exceptions; c3/c3-selected-source-identity.txt COMMAND_5 shows 0 writes/cc/alloc and COMMAND_6 shows 0 calls	NO
+AC29	Selected production callers identified	PASS	c1/c1-production-call-sites.tsv CAND-001 row: 5 live sites at src/parser.c:950, 961, 1254, 1288, 1321; c3/c3-selected-source-identity.txt COMMAND_2 re-lists them	NO
+AC30	Selected PolyC ABI shape complete	PASS	c2/c2-selected-abi-contract.md -- symbol, 3 I64 inputs, 1 I64 output, null/empty semantics, integer widths, signedness, value ranges, allocation/pointer ownership, error semantics; all nine forbidden ABI fields marked NOT PRESENT	NO
+AC31	Selected legacy C oracle identified	PASS	c2/c2-selected-candidate.txt SELECTED_LEGACY_C_ORACLE=src/parser.c::parseValidPostControlFlowToken, with the purity argument; c2/c2-selected-proof-contract.md dimension 1 requires the ACTUAL C function	NO
+AC32	Selected RED model mechanically reproducible	PASS	c2/c2-selected-red-model.md RED-1..RED-5, each with a re-runnable command; c3/c3-selected-red-check.txt RE-RAN all five at C3 (grep count 0, nm count 0, ls count 0)	NO
+AC33	Production delegation is demonstrably feasible	PASS	c2/c2-selected-production-seam.md -- 5 ORDINARY call sites (not function-pointer callbacks), no production callback contract changes, no diagnostic ownership moves, no host pointer crosses; the padding migration is the worked precedent	NO
+AC34	Causal mutation plan is load-bearing	PASS	c2/c2-selected-red-model.md RED-5 -- 6 frozen mutation classes with affected fixtures and the production-level observable (the existing "while parsing if body" diagnostic); M1 is primary and cannot be masked by a compile/link error	NO
+AC35	Four-generation qualification model complete	PASS	c2/c2-selected-proof-contract.md dimension 4 -- 4 generations and all 6 pairwise comparisons, with the explicit statement that fixed-point equality proves reproducibility not correctness	NO
+AC36	Generation provenance and copy-forgery controls required	PASS	c2/c2-selected-proof-contract.md dimensions 5 and 6 -- real SHA-256 identities for compiler/input/object/output, plus a control proving the verifier REJECTS forged provenance for byte-equal objects	NO
+AC37	Current parser conservation actually run	PASS	c3/c3-parser-conservation.txt -- the live Makefile targets were inspected (Makefile:620 unit-test, :623 jit-unit-test); the canonical suite was EXECUTED: 67 files, 363 assertions, 0 compile failures, 0 run failures.  The 7 residual failures are in one pre-existing file (src/tests/39_arg_count.HC, unchanged since 2023) that invokes hcc without --install-dir; the root cause is documented and the pre-existing status is proven by 5 independent checks.	NO
+AC38	Current lexer conservation actually run	PASS	c3/c3-lexer-conservation.txt -- LSP target (Makefile:636) EXECUTED: 43/43 passed, 0 failures; the lexer is also exercised by the 363-assertion AOT and JIT suites	NO
+AC39	LEXER07 prospective baseline comparison executed	PASS	c3/c3-lexer07-baseline-comparison.txt -- the corpus WAS run (181 rows); the counter text matches the registry EXACTLY; both failure-source sets match EXACTLY (9 NO_FALLBACK, 6 ALL_FAIL_4); the registered verifier reports BASELINE_MATCH=YES; 6 sources IMPROVED; NEW_LEXER07_FAILURES=0.  The full corpus is recorded as STATUS=FAIL (exit 1), NOT relabelled as PASS.	NO
+AC40	Full required Factory gates run	PASS	c3/c3-gate-fast.txt (RC=0), c3/c3-gate-push.txt (VERDICT=PASS, 8/8 checks), c3/c3-factory-v2.txt (PASS=53 FAIL=0), c3/c3-append-only.txt (PASS=11 FAIL=0), c3/c3-f-no-python.txt (RC=1, 12 PRE-EXISTING violations, 0 new), c3/c3-f-polyc-tools.txt (RC=1, PRE-EXISTING, 0 new)	NO
+AC41	Production semantic source delta = 0	PASS	c3/c3-f14-conservation.txt and the source-purity checks: git diff --name-only <ENTRY>..HEAD -- src/ is EMPTY; -- tools/bootstrap/ is EMPTY; -- src/CMakeLists.txt is EMPTY.  All eight frozen source SHA-256 values are unchanged.	NO
+AC42	New non-PolyC substantive tooling = 0	PASS	c3/c3-f-polyc-tools.txt -- 0 files added under scripts/, tools/ or src/; the ranker and eligibility checker live in the IGNORED build/ directory and are not tracked (git ls-files build/ returns 0)	NO
+AC43	New Python sources/invocations = 0	PASS	c3/c3-f-no-python.txt -- every file this ACT added is under docs/ or evidence/; 0 new Python sources, 0 new Python shebangs, 0 new Python invocations	NO
+AC44	Closed evidence and HANDOFF delta = 0	PASS	c3/c3-f14-conservation.txt -- git diff --name-only <ENTRY>..HEAD -- evidence/ shows NO closed evidence directory changed; -- docs/factory/ shows no existing HANDOFF changed; -- docs/acts/ shows only this ACT's own new document	NO
+AC45	Patch hygiene clean	PASS	c3/c3-patch-hygiene.txt -- git diff --check <ENTRY>..HEAD returns RC=0 with zero errors; gate-fast's diff-check also PASSed on every staged commit	NO
+AC46	Append-only history preserved	PASS	c3/c3-append-only.txt -- factory-append-only-test.sh PASS=11 FAIL=0; no amend, rebase, reset, force-push, filter-branch, filter-repo or git replace was performed in this ACT; every commit in this ACT's range is a new append-only commit	NO
+AC47	Single successor ACT identity recorded	PASS	c2/c2-selected-candidate.txt NEXT_ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE02 (fixed ONCE at C2, per the ACT's own instruction); c2/c2-required-result.txt records the same value; c2/c2-selected-proof-contract.md header records the same value	NO
+AC48	HANDOFF does not claim containing commit SHA	DEFERRED	The HANDOFF is created at C4.  The C3 evidence contains no SHA-of-self claim: c0/c0-entry-identity.txt records the ENTRY head (a PAST commit), never a predicted future one.  Verified at C4 by inspecting the HANDOFF for FINAL_HEAD / predicted-CLOSE-SHA patterns.	YES
+AC49	Closure verdict agrees with actual evidence	DEFERRED	The verdict is carried by the C4 CLOSE commit's ACT-Verdict trailer, which is created after this ledger.  The C3 ledger records the evidence that the verdict MUST reflect; the agreement is established when the C4 commit is made and then re-verified by factory-v2-range-check.sh.	YES
+AC50	External terminality check runs after CLOSE	DEFERRED	By the ACT's own text: "AC50 must remain deferred until a committed CLOSE exists."  It is executed at C4 after the CLOSE commit, as the read-only set: factory-v2-range-check.sh, git status --porcelain=v1, git diff --check, git rev-list --count.	YES
+
+AC_TOTAL=50
+AC_PASS=47
+AC_DEFERRED=3
+AC_FAIL=0
+DEFERRED_AC_IDS=AC48, AC49, AC50
+DEFERRED_AC_RULE=An AC whose establishing evidence is the C4 CLOSE commit (or the HANDOFF it creates) CANNOT be established at C3.  Per the ACT: "Do not promote a deferred or unproven AC to PASS in C3."  These three are resolved at C4 and are reported in the C4 ledger.
+
+MANDATORY_AC_NOT_GREEN=NO

@@ -1,0 +1,33 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02
+# ACT_PHASE=C3-VERIFY
+# EVIDENCE_KIND=f14-conservation
+
+F14 forbids mutating any closed ACT's evidence directory, and
+forbids appending ADDENDUM blocks to existing closed files.
+
+--- Closed evidence directories, compared to the entry head ---
+$ git diff --name-only 1e27f01cb3437d3af99cd4d024e7f29922ea1cdf..HEAD -- evidence/
+  (no CHANGED lines above = no closed evidence touched)
+
+CLOSED_EVIDENCE_DELTA=0
+
+--- Closed HANDOFFs, compared to the entry head ---
+$ git diff --name-only 1e27f01cb3437d3af99cd4d024e7f29922ea1cdf..HEAD -- docs/factory/
+  (no CHANGED lines above = no existing HANDOFF touched)
+
+CLOSED_HANDOFF_DELTA=0
+
+--- Closed ACT documents ---
+$ git diff --name-only 1e27f01cb3437d3af99cd4d024e7f29922ea1cdf..HEAD -- docs/acts/
+  CHANGED: docs/acts/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02.md
+  (only this ACT's own new document)
+
+HISTORICAL_ACT_MODIFIED=0
+HISTORICAL_EVIDENCE_MODIFIED=0
+HISTORICAL_HANDOFF_MODIFIED=0
+
+NOTE: docs/factory/act-handoff-map.tsv is a MANAGED REGISTRY, not a
+closed evidence artifact.  This ACT appends exactly one row for
+its own ACT/HANDOFF pair, which is required by the current Factory
+oracle (gate-fast's factory-closure-status check reports MANIFEST_ROWS
+and PAIR_OK/PAIR_FAIL against it).

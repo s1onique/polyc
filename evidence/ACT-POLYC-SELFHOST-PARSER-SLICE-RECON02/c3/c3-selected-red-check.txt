@@ -1,0 +1,75 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02
+ACT_PHASE=C3-VERIFY
+EVIDENCE_KIND=selected-red-check
+
+# Each RED witness of the C2 RED model is RE-RUN at C3 against the
+# CURRENT tree, and must still hold.
+
+# --- RED-1: legacy authority exists -------------------------------------
+COMMAND_1=sed -n '832,864p' src/parser.c
+COMMAND_1_RESULT=the full C decision body is present (verified
+  byte-for-byte in c3-selected-source-identity.txt)
+COMMAND_2=grep -n 'parseValidPostControlFlowToken' src/parser.c
+COMMAND_2_RESULT=1 definition at :832 + 5 live call sites at
+  :950, :961, :1254, :1288, :1321
+RED_1_LEGACY_AUTHORITY_EXISTS=YES
+
+# --- RED-2: PolyC authority absent --------------------------------------
+COMMAND_3=grep -rn 'BootstrapValidPostControlFlowToken' src/ tools/
+COMMAND_3_RESULT=(no output)
+COMMAND_3_COUNT=0
+RED_2_POLYC_AUTHORITY_ABSENT=YES
+  Existing unrelated PolyC helpers do not satisfy this RED:
+    BootstrapScanIdent, BootstrapClassifyOperator,
+    BootstrapScanScalarLiteral, BootstrapScanTrivia,
+    BootstrapLinkDirective, BootstrapCalcPadding
+  -- none implements the control-flow-token decision and none is
+  reachable from parseValidPostControlFlowToken.
+
+# --- RED-3: production delegation absent --------------------------------
+COMMAND_4=nm build/hcc | grep -c '_BootstrapValidPostControlFlowToken'
+COMMAND_4_RESULT=0
+RED_3_PRODUCTION_DELEGATION_ABSENT=YES
+  The symbol does not exist in the production binary at all, so this is
+  not a dead linked object and not a shadow test.  (For contrast, the
+  already-migrated padding component IS present:
+    $ nm build/hcc | grep -c '_BootstrapCalcPadding'
+    1 )
+
+# --- RED-4: no qualified successor proof --------------------------------
+COMMAND_5=ls tools/bootstrap/ | grep -i 'control-flow\|controlflow\|validpost'
+COMMAND_5_RESULT=(no output)
+COMMAND_6=ls build/ | grep -i 'control-flow\|controlflow\|validpost'
+COMMAND_6_RESULT=(no output)
+RED_4_NO_QUALIFIED_SUCCESSOR_PROOF=YES
+  The five missing proof dimensions are enumerated in
+  c2-selected-red-model.md section RED-4.  Concretely: no component
+  source, no direct differential harness, no generation objects, no
+  provenance records, no production delegation, no mutation campaign.
+
+# --- RED-5: observable causal sensitivity ------------------------------
+MUTATION_CLASSES_FROZEN=6
+  M1 drop TK_IDENT acceptance      -> F002, F003, F004
+  M2 drop TK_STR acceptance        -> F005, F006
+  M3 drop the '*' punct case       -> F011
+  M4 drop the KW_ASM keyword case  -> F029
+  M5 accept TK_PUNCT with any payload -> F012..F017
+  M6 accept token_present == 0     -> F001
+PRIMARY_CAUSAL_CLASS=M1
+  M1 changes the decision on the most common production input (an
+  identifier starting a control-flow body) while leaving the component
+  type-correct, linkable and ABI-compatible.  It therefore cannot be
+  masked by a compile error or a link error.
+PRODUCTION_OBSERVABILITY_PATH=
+  With M1 mutated, the production binary REJECTS a control-flow body
+  beginning with an identifier and emits the EXISTING diagnostic
+  "Unexpected Identifier `y` while parsing if body"
+  (src/parser.c:951-952).  With the pristine subject the same input
+  compiles successfully.  The successor must capture both outputs.
+MUTATION_SUBJECT_IMPLEMENTED_AT_C3=NO
+  (correct: the reconnaissance ACT does not implement the subject)
+RED_5_OBSERVABLE_CAUSAL_SENSITIVITY=YES
+
+RED_MODEL_COMPLETE=YES
+RED_MODEL_REPRODUCIBLE=YES
+PRODUCTION_AUTHORITY_LEGACY_C=YES

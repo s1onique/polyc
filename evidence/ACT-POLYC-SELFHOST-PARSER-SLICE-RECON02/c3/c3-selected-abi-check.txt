@@ -1,0 +1,98 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02
+ACT_PHASE=C3-VERIFY
+EVIDENCE_KIND=selected-abi-check
+
+# The C2 ABI contract is re-verified against the CURRENT source.
+
+ABI_SYMBOL_NAME=BootstrapValidPostControlFlowToken
+ABI_INPUT_FIELD_COUNT=3
+ABI_INPUT_FIELD_TYPES=I64, I64, I64
+ABI_OUTPUT_FIELD_COUNT=1
+ABI_OUTPUT_FIELD_TYPES=I64
+ABI_HOST_IDENTITY_FIELDS=0
+
+# --- Every bound constant is re-read from the live header ---------------
+COMMAND=for k in TK_IDENT TK_STR TK_PUNCT TK_KEYWORD TK_PLUS_PLUS TK_MINUS_MINUS; do \
+          grep -E "^#define $k " src/lexer.h; done
+COMMAND_RESULT=
+#define TK_IDENT        0x300    (src/lexer.h:18)
+#define TK_STR          0x301    (src/lexer.h:19)
+#define TK_PUNCT        0x329    (src/lexer.h:59)
+#define TK_KEYWORD      0x332    (src/lexer.h:62)
+#define TK_PLUS_PLUS    0x305    (src/lexer.h:23)
+#define TK_MINUS_MINUS  0x306    (src/lexer.h:24)
+
+COMMAND_2=for k in KW_DO KW_FOR KW_GOTO KW_IF KW_RETURN KW_SWITCH KW_WHILE \
+             KW_BREAK KW_CONTINUE KW_TRY KW_THROW KW_ASM; do \
+             grep -E "^#define $k " src/lexer.h; done
+COMMAND_2_RESULT=
+#define KW_RETURN       18   (src/lexer.h:85)
+#define KW_SWITCH       20   (src/lexer.h:86)
+#define KW_BREAK        24   (src/lexer.h:88)
+#define KW_CONTINUE     26   (src/lexer.h:89)
+#define KW_ASM          28   (src/lexer.h:90)
+#define KW_FOR          38   (src/lexer.h:95)
+#define KW_WHILE        40   (src/lexer.h:96)
+#define KW_GOTO         44   (src/lexer.h:98)
+#define KW_IF           46   (src/lexer.h:99)
+#define KW_DO           66   (src/lexer.h:109)
+#define KW_TRY          80   (src/lexer.h:124)
+#define KW_THROW        82   (src/lexer.h:126)
+
+COMMAND_3=printf '{' | od -An -tu1 ; printf ';' | od -An -tu1 ; printf '*' | od -An -tu1
+COMMAND_3_RESULT=123 / 59 / 42
+  ('{' = 123, ';' = 59, '*' = 42 -- verified by od, not by assertion)
+
+ALL_CONSTANTS_BOUND_TO_LIVE_HEADER=YES
+CONSTANT_GUESSING=NO
+
+# --- The kind-value aliasing the contract calls out ----------------------
+COMMAND_4=grep -n '0x301' src/lexer.h
+COMMAND_4_RESULT=
+15:#define TK_SUPERSCRIPT  0x301
+19:#define TK_STR          0x301
+ALIASING_TK_SUPERSCRIPT_EQ_TK_STR=CONFIRMED
+  The ABI contract requires the kind to be bound by NUMERIC value, so
+  0x301 is TK_STR and is ACCEPTED.  A successor that assumed a distinct
+  "superscript" kind would produce a different result and FAIL the
+  differential.  The contract states this explicitly and fixture F041
+  pins it.
+
+# --- The fixture matrix is re-counted and re-derived ---------------------
+COMMAND_5=awk -F'\t' 'NR>1 && $1~/^F[0-9]/ {n++; c[$6]++} END {print "rows="n" accept="c[1]" reject="c[0]}' \
+          evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02/c2/c2-selected-fixture-model.tsv
+COMMAND_5_RESULT=rows=42 accept=22 reject=20
+FIXTURE_COUNT=42
+EXPECTED_ACCEPT_COUNT=22
+EXPECTED_REJECT_COUNT=20
+# (the accept/reject breakdown was re-derived from the ABI decision
+#  table: 3 IDENT + 2 STR + 5 PUNCT + 12 KEYWORD = 22 accept;
+#  1 NULL + 6 PUNCT + 4 KEYWORD + 7 UNKNOWN_KIND = 20 reject)
+
+# --- Every fixture row's expectation is re-derived from the source ------
+COMMAND_6=for each fixture row, the expectation was derived by reading
+          src/parser.c:832..864 directly (see the legacy_source_line
+          column of c2-selected-fixture-model.tsv, which points at the
+          exact source line that decides the row).
+FIXTURE_EXPECTATIONS_SOURCE_ANCHORED=YES
+
+# --- The forbidden ABI fields are absent -------------------------------
+Cctrl*_ABSENT=YES
+Ast*_ABSENT=YES
+Map*_ABSENT=YES
+List*_ABSENT=YES
+Lexeme*_ABSENT=YES
+jmp_buf*_ABSENT=YES
+CALLBACK_TABLE_ABSENT=YES
+void*_HOST_CONTEXT_ABSENT=YES
+OPAQUE_INTEGER_ENCODING_HOST_PTR_ABSENT=YES
+
+# --- Diagnostic ownership did not move ---------------------------------
+DIAGNOSTIC_OWNERSHIP_REMAINS_C=YES
+  The C caller still owns every cctrlRaiseException; the component
+  returns 0 and the caller raises.
+ERROR_SEMANTICS_IN_COMPONENT=NONE
+ALLOCATION_OWNERSHIP=NONE (component allocates nothing)
+POINTER_OWNERSHIP=NONE (no pointer crosses the boundary)
+
+ABI_CHECK=PASS

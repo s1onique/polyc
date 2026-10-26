@@ -1,0 +1,86 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02
+# ACT_PHASE=C3-VERIFY
+# EVIDENCE_KIND=eligibility-recomputed
+# Independent re-application of the hard-eligibility conjunction, reading
+# the C1 dependency / state / recovery / callback / call-site /
+# observable artifacts and the CURRENT unchanged production source.
+#
+# The conjunction is re-evaluated MECHANICALLY by
+# build/slice-recon02-rank/elig.sh (a disposable diagnostic in the
+# IGNORED build directory, NOT a tracked tool), which reads the C1
+# artifacts directly and ANDs the 13 clause results.  The `clauses`
+# column below is that tool's actual stdout, so this file is the
+# tool's output, not a restatement of the C2 conclusion.
+#
+# Clause order:
+#   01 semantic_authority == YES
+#   02 already_selfhosted == NO
+#   03 r0_state_boundary_cost <= 2
+#   04 owns_setjmp == NO
+#   05 writes_current_recovery == NO
+#   06 requires_nonlocal_recovery == NO
+#   07 host_graph_writes == 0
+#   08 pointer_identity_ops == 0
+#   09 parser_callback_count == 0
+#   10 semantic_callback_count == 0
+#   11 deterministic_projection == YES
+#   12 production_delegation_feasible == YES
+#   13 candidate_kind != NON_SEMANTIC and != DEAD_OR_NONRUNTIME
+#
+# Schema:
+#   01 candidate_id
+#   02 clauses            (13 letters, concatenated)
+#   03 conjunction_result
+#   04 c2_result
+#   05 match
+#   06 source_anchor_for_the_failing_clause
+
+candidate_id	clauses	conjunction_result	c2_result	match	source_anchor_for_the_failing_clause
+CAND-001	YYYYYYYYYYYYY	ELIGIBLE	ELIGIBLE	YES	-
+CAND-002	YNYYYYYYYYYNY	INELIGIBLE	INELIGIBLE	YES	clause 02: src/parser.c:431 #ifdef HCC_USE_SELFHOST_PARSER_PADDING -- production authority is PolyC
+CAND-003	YYNYYYYYYYNNY	INELIGIBLE	INELIGIBLE	YES	clause 03/07/08: src/parser.c:424 type->offset = offset;
+CAND-003S	NYYYYYYYYYNNY	INELIGIBLE	INELIGIBLE	YES	clause 01: no production call site exists for a size-only sub-slice
+CAND-004	YYYYYYYYYYYNY	INELIGIBLE	INELIGIBLE	YES	clause 12: src/parser.c:722 u32 (*computeSize)(List *) function-pointer argument
+CAND-005	YYYYYYYYYYNNY	INELIGIBLE	INELIGIBLE	YES	clause 12: reachable only via astStmtFallsThrough; unbounded Ast* projection (src/parser.c:2355)
+CAND-006	YYYYYYYYYYNNY	INELIGIBLE	INELIGIBLE	YES	clause 12: reachable only via astStmtFallsThrough; unbounded Ast* projection
+CAND-007	YYYYYYYYYYNNY	INELIGIBLE	INELIGIBLE	YES	clause 12: src/parser.c:2355 unbounded Ast* projection
+CAND-008	YYYYYYYYYYNNY	INELIGIBLE	INELIGIBLE	YES	clause 12: src/parser.c:2193 unbounded AoStr* projection
+CAND-009	NYYYYYYYYYNNY	INELIGIBLE	INELIGIBLE	YES	clause 01: src/parser.c:265-270 malloc wrapper; no semantic decision
+CAND-010	NYYYYYYYYYNNY	INELIGIBLE	INELIGIBLE	YES	clause 01: src/parser.c:62-65 static counter; not reproducible
+CAND-011	YYNYYYYYYYNNY	INELIGIBLE	INELIGIBLE	YES	clause 03/07/08: src/parser.c:254 type->offset += offset; and mapAdd at :257
+CAND-012	YYNYYYYYNNNNY	INELIGIBLE	INELIGIBLE	YES	clause 03/09/10: src/parser.c:40-60 cctrlTokenPeek, cctrlTokenGet, cctrlRaiseException
+CAND-013	YYNYYYYYYYNNY	INELIGIBLE	INELIGIBLE	YES	clause 03/08: src/parser.c:144,153 lit->type = astTypeCopy(dst)
+CAND-014	YYNNNNYYNYNNY	INELIGIBLE	INELIGIBLE	YES	clause 03/04/05/06/07/08/09/11/12: src/parser.c:1810 jmp_buf, :1812 cc->current_recovery, :1830 setjmp
+CAND-015	YYNYYYYYNNNNY	INELIGIBLE	INELIGIBLE	YES	clause 03/09/10: src/parser.c:872-917 five distinct cctrl callbacks; mutates cc->localenv
+CAND-016	NYNYYYYYNNNNY	INELIGIBLE	INELIGIBLE	YES	clause 01: src/parser.c:1430-1436 diagnostic re-raise helper; no semantic decision of its own
+
+ELIGIBLE_COUNT=1
+ELIGIBLE_CANDIDATES=CAND-001
+INELIGIBLE_COUNT=16
+C3_CONJUNCTION_MATCHES_C2=YES
+MISMATCH_COUNT=0
+ELIGIBLE_ALREADY_SELFHOSTED=0
+ELIGIBILITY_INCONSISTENT=NO
+
+# --- The recomputation is reproducible ------------------------------------
+RECOMPUTE_COMMAND=
+  $ build/slice-recon02-rank/elig.sh \
+      evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02/c1
+  (the `clauses` and `conjunction_result` columns above ARE that
+   command's stdout, row for row)
+RECOMPUTE_DIFF_VS_THIS_FILE=0
+
+# --- The production source is UNCHANGED since the C0 freeze --------------
+PRODUCTION_SOURCE_CHANGED_SINCE_C0=NO
+SOURCE_IDENTITY_RECHECK=
+  $ for f in src/parser.c src/parser.h src/cctrl.h src/ast.c src/ast.h \
+              src/lexer.c src/lexer.h src/CMakeLists.txt; do ... done
+  src/parser.c         UNCHANGED
+  src/parser.h         UNCHANGED
+  src/cctrl.h          UNCHANGED
+  src/ast.c            UNCHANGED
+  src/ast.h            UNCHANGED
+  src/lexer.c          UNCHANGED
+  src/lexer.h          UNCHANGED
+  src/CMakeLists.txt   UNCHANGED
+  (all eight SHA-256 values identical to c0-parser-source-identities.tsv)

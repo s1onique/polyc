@@ -1,0 +1,75 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02
+# ACT_PHASE=C3-VERIFY
+# EVIDENCE_KIND=ranking-recomputed
+# Independent lexicographic recomputation on (R0,R1,R2,R3,R4,R5,R6).
+# Lower wins; R6 is file lexical asc then line_start asc.
+#
+# The ranking input is DERIVED from the C3 eligibility recomputation, not
+# from the C2 ranking table: only a candidate whose conjunction_result is
+# ELIGIBLE in c3-eligibility-recomputed.tsv may enter the ranking.
+#
+# Schema:
+#   01 rank
+#   02 candidate_id
+#   03 R0
+#   04 R1
+#   05 R2
+#   06 R3
+#   07 R4
+#   08 R5
+#   09 R6
+#   10 c3_rank
+#   11 c2_rank
+#   12 match
+#   13 current_source_location
+
+rank	candidate_id	R0	R1	R2	R3	R4	R5	R6	c3_rank	c2_rank	match	current_source_location
+1	CAND-001	0	1	2	0	0	1	src/parser.c:832	1	1	YES	src/parser.c:832..864
+
+SELECTED_CANDIDATE=CAND-001 parseValidPostControlFlowToken
+SELECTED_AT_RANK=1
+RANKING_RECOMPUTE_MATCH=YES
+RANKING_INCONSISTENCIES=0
+
+# --- The full state-boundary-eligible ranking, recomputed at C3 ----------
+# The C2 published the ranking of the six state-boundary-eligible
+# candidates.  C3 re-derives that ranking from the frozen C2 score
+# vector (whose per-candidate R1..R6 values are the FROZEN historical
+# values) and confirms the order is identical.
+#
+# rank	candidate_id	R0	R1	R2	R3	R4	R5	R6	c3_rank	c2_rank	match
+# 1	CAND-001	0	1	2	0	0	1	src/parser.c:832	1	1	YES
+# 2	CAND-004	0	2	2	0	0	0	src/parser.c:397	2	2	YES
+# 3	CAND-008	1	2	2	0	0	1	src/parser.c:1980	3	3	YES
+# 4	CAND-006	2	1	2	1	0	0	src/parser.c:1907	4	4	YES
+# 5	CAND-007	2	1	2	1	0	1	src/parser.c:1932	5	5	YES
+# 6	CAND-005	2	2	2	1	0	0	src/parser.c:1899	6	6	YES
+#
+# RECOMPUTE_COMMAND=
+#   $ build/slice-recon02-rank/rank.sh \
+#       build/slice-recon02-rank/rank-input-full.tsv
+#   1  CAND-001  0 1 2 0 0 1  src/parser.c:832  YES
+#   2  CAND-004  0 2 2 0 0 0  src/parser.c:397  YES
+#   3  CAND-008  1 2 2 0 0 1  src/parser.c:1980  YES
+#   4  CAND-006  2 1 2 1 0 0  src/parser.c:1907  YES
+#   5  CAND-007  2 1 2 1 0 1  src/parser.c:1932  YES
+#   6  CAND-005  2 2 2 1 0 0  src/parser.c:1899  YES
+#
+# RANKER_SELF_CHECK_AT_C3=
+#   $ build/slice-recon02-rank/rank.sh \
+#       build/slice-recon02-rank/recon01-input.tsv | head -1
+#   1  CAND-002  0 1 2 0 0 0  src/parser.c:430  YES
+#   The ranker still reproduces the RECON01 historical winner.
+
+# --- R6 tie-break note (re-verified, immaterial) ------------------------
+# The ranker places CAND-004 (src/parser.c:397) before CAND-003
+# (src/parser.c:410) because R6 breaks the tie on the smaller line_start.
+# RECON01's own C3 note (c3-ranking-recompute.tsv, NOTES_ON_R6_TIE_BREAK)
+# agrees with the ranker ("CAND-004 wins on R6 (line_start smaller)"),
+# while RECON01's published tables list CAND-003 first.  The published
+# RECON01 order is preserved as history under F14 and is NOT rewritten.
+# IMMATERIALITY: the disagreement does not change the RECON01 winner
+# (CAND-002 under both), and in this ACT CAND-003 is excluded by the
+# conjunction (R0=4) while CAND-004 is excluded on
+# production_delegation_feasible -- so neither can affect the selection.
+R6_TIE_BREAK_DISAGREEMENT_IMMATERIAL=YES

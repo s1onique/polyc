@@ -1,0 +1,56 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02
+# ACT_PHASE=C3-VERIFY
+# EVIDENCE_KIND=f-polyc-tools
+
+COMMAND=bash scripts/quality/shell-budget-gate.sh
+RC=1
+
+STATUS=FAIL
+
+--- This checker reports PRE-EXISTING baseline violations. ---
+--- NONE of them is introduced by this ACT. ---
+
+This ACT adds NO substantive tool of any kind.  The ranker and the
+eligibility checker used at C2/C3 live in the IGNORED build directory
+(build/slice-recon02-rank/) and are NOT tracked:
+
+  (build/ is not tracked at all)
+
+Tracked-file additions by this ACT, by area:
+  scripts/  0
+  tools/    0
+  src/      0
+  docs/     1 (the ACT document)
+  evidence/ 28 (evidence artifacts, all .txt/.tsv/.md)
+
+--- The reported violations ---
+B4 unbudgeted path=evidence/ACT-POLYC-SELFHOST-SURFACE01-CORRECTION01/c2.3/cmp-all.sh
+B4 unbudgeted path=evidence/ACT-POLYC2-CODIUM-HARNESS-UPSTREAM-RESYNC01/correction01/extract-signature.sh
+B4 unbudgeted path=scripts/quality/factory-no-python-check.sh
+B4 unbudgeted path=scripts/quality/lexer07-broad-corpus-4-stage.sh
+B4 unbudgeted path=scripts/quality/lexer07-c01-ac05.sh
+B4 unbudgeted path=scripts/quality/lexer07-c01-ac06.sh
+B4 unbudgeted path=scripts/quality/lexer07-c01-ac07.sh
+B4 unbudgeted path=scripts/quality/lexer07-fixture-inventory.sh
+B4 unbudgeted path=scripts/quality/lexer08-trivia-fixedpoint.sh
+B4 unbudgeted path=scripts/quality/lexer09-generation-provenance-verify.sh
+B4 unbudgeted path=scripts/quality/lexer09-n02-mutation-runner.sh
+B4 unbudgeted path=scripts/quality/libtos-n02-harness.sh
+B4 unbudgeted path=scripts/quality/parser-padding-generation-provenance-verify.sh
+B4 unbudgeted path=scripts/quality/selfhost-component-registry.sh
+B4 unbudgeted path=tools/selfhost/selfhost-component.sh
+B1 GRANDFATHERED over budget path=scripts/quality/factory-closure-status-check.sh cur=372 budget=352
+B1 GRANDFATHERED over budget path=scripts/quality/factory-v2-commit-msg-check.sh cur=344 budget=218
+B1 GRANDFATHERED over budget path=scripts/quality/factory-v2-range-check.sh cur=333 budget=249
+B1 GRANDFATHERED over budget path=scripts/quality/factory-v2-test.sh cur=831 budget=465
+B-TINY TINY over per-file budget path=scripts/quality/static-function-linkage-test.sh cur=48 budget=44
+
+The SHELL-BUDGET.tsv registry is byte-identical to the entry head:
+  $ git show <ENTRY>:docs/factory/SHELL-BUDGET.tsv | diff - docs/factory/SHELL-BUDGET.tsv
+  (no differences)
+so every over-budget and unbudgeted path listed above was already in
+that state before this ACT began.
+
+DISPOSITION=PRE_EXISTING_BASELINE_VIOLATIONS
+NEW_SUBSTANTIVE_NON_POLYC_TOOLS=0
+NOT_NEWLY_INTRODUCED=YES

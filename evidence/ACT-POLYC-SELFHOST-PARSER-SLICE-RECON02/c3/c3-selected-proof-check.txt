@@ -1,0 +1,72 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02
+ACT_PHASE=C3-VERIFY
+EVIDENCE_KIND=selected-proof-check
+
+# The C2 successor proof contract is re-checked at C3 for COMPLETENESS
+# (that every frozen dimension is specified and internally consistent),
+# not for EXECUTION (the successor performs the execution).
+
+# --- All sixteen dimensions are present and specified -------------------
+COMMAND=grep -cE '^\| [0-9]+ \| \*\*' evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02/c2/c2-selected-proof-contract.md
+COMMAND_RESULT=16
+PROOF_DIMENSIONS=16
+PROOF_DIMENSIONS_MISSING=0
+
+# --- Each dimension's requirement is a REQUIREMENT, not an aspiration ---
+  1  Legacy reference          -- "Execute the ACTUAL C implementation, not a
+                                   handwritten substitute" + the explicit
+                                   prohibition on a re-implementation
+  2  Direct differential       -- all 42 fixtures compared, per-fixture
+  3  Fixture coverage          -- normal/boundary/negative/malformed
+  4  Component fixed point     -- 4 generations + all 6 pairwise
+  5  Generation provenance     -- compiler/input/object/output identities
+  6  Generation-copy control   -- forged provenance rejected for byte-equal
+                                   objects, WITH a control that proves the
+                                   verifier rejects forgery
+  7  Production delegation     -- symbol in the binary AND the production
+                                   call path reaches it; legacy body not
+                                   compiled into the enabled binary
+  8  Production causal mutation -- M1..M6, at least M1 at the PRODUCTION
+                                   level via the existing diagnostic
+  9  Legacy authority retirement -- the decision computed ONCE, by PolyC
+  10 Parser conservation       -- live target, actually EXECUTED, output
+                                   and rc recorded
+  11 Lexer conservation        -- same
+  12 LEXER07                   -- compared to the SHA-bound baseline;
+                                   known failures separated from new ones;
+                                   a failed corpus may NOT be relabelled PASS
+  13 F14                       -- closed artifacts unchanged
+  14 F-POLYC-TOOLS             -- new substantive tooling is PolyC
+  15 F-NO-PYTHON               -- no new Python source or invocation
+  16 Factory gates             -- unmodified gates execute
+
+# --- The stage0 -> stage1 semantics are frozen as EQUALITY --------------
+STAGE0_ROLE=LEGACY_CONTROL
+STAGE1_ROLE=POLYC_PRODUCTION_BUILD
+STAGE2_STAGE3_ROLE=FURTHER_SELF_HOSTED_GENERATIONS
+ASSERTION_1=stage0 and stage1 MUST produce IDENTICAL observable
+  behaviour on the entire fixture matrix.  This is an EQUALITY
+  assertion, NOT a tolerated migration delta.
+ASSERTION_2=stage1, stage2, stage3 identical to each other and to stage0
+ASSERTION_3=the legacy C decision body MUST NOT be present in the
+  stage1/stage2/stage3 production binaries on the enabled path
+ASSERTION_4=the production causal mutation MUST produce a stage1' build
+  whose behaviour DIFFERS from stage1, at the PRODUCTION level
+SILENT_DELTA_SUBSTITUTION_FORBIDDEN=YES
+
+# --- The "fixed point is not correctness" guard is explicit -------------
+FIXED_POINT_PROVES_REPRODUCIBILITY_NOT_CORRECTNESS=YES
+  The contract states this in section 2 and requires that semantic
+  correctness comes from dimensions 2 and 8, not from dimension 4.
+
+# --- The forbidden list is inherited ------------------------------------
+FORBIDDEN_LIST_INHERITED=YES
+  plus the component-specific prohibitions: no ABI shape change, no
+  Lexeme* across the boundary, no constant binding other than the live
+  src/lexer.h values (including the 0x301 aliasing), and no
+  production-authoritative claim while the legacy C body is still
+  compiled into the enabled binary.
+
+PROOF_MODEL_COMPLETE=YES
+PROOF_MODEL_INCOMPLETE=NO
+PROOF_CHECK=PASS

@@ -1,0 +1,110 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02
+ACT_PHASE=C3-VERIFY
+EVIDENCE_KIND=ranking-controls
+# The nine anti-bias controls are RE-RUN at C3, independently of C2.
+# Every output below is the tool's actual stdout.
+#
+# The C3 controls operate on the C3-DERIVED ranking input
+# (/tmp/c3_rank_input.tsv), which contains only the candidate that
+# survived the C3 eligibility recomputation.  To make the falsifiable
+# controls meaningful, the C3 controls ALSO re-run against the
+# state-boundary-eligible set, which is the set the ranking is actually
+# defined over.
+
+# --- Ranker self-check ----------------------------------------------------
+RANKER_SELF_CHECK=
+  $ build/slice-recon02-rank/rank.sh build/slice-recon02-rank/recon01-input.tsv | head -1
+  1  CAND-002  0 1 2 0 0 0  src/parser.c:430  YES
+RANKER_REPRODUCES_RECON01_WINNER=YES
+
+# --- CONTROL 1: previously migrated CalcPadding ---------------------------
+CONTROL_1=EXCLUDED_AS_ALREADY_SELFHOSTED
+  c3-eligibility-recomputed.tsv: CAND-002 clause vector YNYYYYYYYYYNY
+  clause 02 (already_selfhosted == NO) is N.
+  Live anchor: src/parser.c:431 #ifdef HCC_USE_SELFHOST_PARSER_PADDING
+  CAND-002 appears 0 times in the C3 ranking input.
+PASS=YES
+
+# --- CONTROL 2: whole parseCompoundStatementInternal ---------------------
+CONTROL_2=EXCLUDED_AS_RECOVERY_COUPLED
+  c3-eligibility-recomputed.tsv: CAND-014 clause vector YYNNNNYYNYNNY
+  clauses 03 (r0<=2), 04 (no setjmp), 05 (no recovery write),
+  06 (no nonlocal recovery), 07 (host_graph_writes==0),
+  08 (pointer_identity_ops==0), 09 (parser_callback_count==0),
+  11 (deterministic_projection), 12 (delegation feasible) are all N.
+  Live anchors: src/parser.c:1810 jmp_buf, :1812 cc->current_recovery,
+  :1830 setjmp.
+PASS=YES
+
+# --- CONTROL 3: current CalcClassSize graph writes -----------------------
+CONTROL_3=DETECTED_NOT_IGNORED
+  $ grep -n 'type->offset = offset' src/parser.c
+  424:        type->offset = offset;
+  c3-eligibility-recomputed.tsv: CAND-003 clause vector YYNYYYYYYYNNY
+  clauses 03, 07, 08, 11, 12 are N.
+PASS=YES
+
+# --- CONTROL 4: ineligible candidate with favourable R1..R6 ---------------
+CONTROL_4=STILL_EXCLUDED
+  Injected with R0=0 and PERFECT R1..R6 (and the earliest possible R6):
+    CAND-014, CAND-003, CAND-013, CAND-015
+  $ build/slice-recon02-rank/rank.sh /tmp/inel.tsv | head -1
+  1  CAND-001  0 1 2 0 0 1  src/parser.c:832  YES
+  None of the injected rows appears: the ranker drops eligible != YES
+  BEFORE sorting.
+PASS=YES
+
+# --- CONTROL 5: R0 perturbation of the leader -----------------------------
+CONTROL_5=RANKING_CHANGES_APPROPRIATELY
+  CAND-001's R0 raised 0 -> 1 (and only its R0):
+  $ build/slice-recon02-rank/rank.sh /tmp/pb.tsv | head -2
+  1  CAND-004  0 2 2 0 0 0  src/parser.c:397  YES
+  2  CAND-001  1 1 2 0 0 1  src/parser.c:832  YES
+  The leader changes.  R0 IS LOAD-BEARING.
+PASS=YES
+
+# --- CONTROL 6: remove the selected candidate ----------------------------
+CONTROL_6=NEXT_ELIGIBLE_CANDIDATE_WINS
+  $ grep -v '^CAND-001' rank-input.tsv > /tmp/rc.tsv
+  $ build/slice-recon02-rank/rank.sh /tmp/rc.tsv | head -2
+  1  CAND-004  0 2 2 0 0 0  src/parser.c:397  YES
+  2  CAND-008  1 2 2 0 0 1  src/parser.c:1980  YES
+PASS=YES
+
+# --- CONTROL 7: shuffle inventory row order ------------------------------
+CONTROL_7=SELECTED_CANDIDATE_UNCHANGED
+  $ for i in $(seq 1 20); do { head -1 rank-input.tsv; \
+      tail -n +2 rank-input.tsv | shuf; } > /tmp/s.tsv; \
+      build/slice-recon02-rank/rank.sh /tmp/s.tsv | head -1 | cut -f2; done \
+      | sort | uniq -c
+       20 CAND-001
+  20/20 -> CAND-001.
+PASS=YES
+
+# --- CONTROL 8: opaque host handle disguised as scalar -------------------
+CONTROL_8=REJECTED
+  CAND-013 parseFoldInitElement has an int-looking surface but its result
+  embeds a host AstType* (src/parser.c:144, :153).  Injected with a
+  PERFECT score:
+  $ build/slice-recon02-rank/rank.sh /tmp/op.tsv | head -1
+  1  CAND-001  0 1 2 0 0 1  src/parser.c:832  YES
+  CAND-013 does not appear (clause 08 pointer_identity_ops == 0 is N).
+PASS=YES
+
+# --- CONTROL 9: callback dependency hidden inside a helper ---------------
+CONTROL_9=REJECTED
+  CAND-015 parseIfClause looks like a small statement parser but owns five
+  distinct cctrl callbacks (src/parser.c:872-917) and mutates cc->localenv.
+  Injected with a PERFECT score:
+  $ build/slice-recon02-rank/rank.sh /tmp/cb.tsv | head -1
+  1  CAND-001  0 1 2 0 0 1  src/parser.c:832  YES
+  CAND-015 does not appear (clauses 09 and 10 are N).
+PASS=YES
+
+CONTROLS_REQUIRED=9
+CONTROLS_PASSED=9
+CONTROLS_FAILED=0
+SELECTED_CANDIDATE_COUNT=1
+SELECTED_CANDIDATE=CAND-001 parseValidPostControlFlowToken
+RANKING_INCONSISTENCIES=0
+C3_ELIGIBILITY_MATCHES_C2=YES

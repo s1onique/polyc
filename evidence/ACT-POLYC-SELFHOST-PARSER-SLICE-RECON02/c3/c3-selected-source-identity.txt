@@ -1,0 +1,87 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02
+ACT_PHASE=C3-VERIFY
+EVIDENCE_KIND=selected-source-identity
+
+# The C2 source freeze is re-verified against the CURRENT, UNCHANGED
+# production source at C3.
+
+COMMAND_1=sed -n '832,864p' src/parser.c
+COMMAND_1_RESULT=
+832	int parseValidPostControlFlowToken(Lexeme *tok) {
+833	    if (tok == NULL) return 0; /* EOF - caller raises */
+834	    if (tok->tk_type == TK_IDENT) return 1;
+835	    if (tok->tk_type == TK_STR) return 1;
+836	    if (tok->tk_type == TK_PUNCT) {
+837	        switch (tok->i64) {
+838	            case TK_MINUS_MINUS:
+839	            case TK_PLUS_PLUS:
+840	            case '{':
+841	            case ';':
+842	            case '*':
+843	                return 1;
+844	        }
+845	    }
+846	    if (tok->tk_type == TK_KEYWORD) {
+847	        switch (tok->i64) {
+848	            case KW_DO:
+849	            case KW_FOR:
+850	            case KW_GOTO:
+851	            case KW_IF:
+852	            case KW_RETURN:
+853	            case KW_SWITCH:
+854	            case KW_WHILE:
+855	            case KW_BREAK:
+856	            case KW_CONTINUE:
+857	            case KW_TRY:
+858	            case KW_THROW:
+859	            case KW_ASM:
+860	                return 1;
+861	        }
+862	    }
+863	    return 0;
+864	}
+COMMAND_1_MATCHES_C2_FREEZE=YES
+
+COMMAND_2=grep -n 'parseValidPostControlFlowToken' src/parser.c
+COMMAND_2_RESULT=
+832:int parseValidPostControlFlowToken(Lexeme *tok) {
+950:    if (!parseValidPostControlFlowToken(peek)) {
+961:        if (!parseValidPostControlFlowToken(epeek)) {
+1254:    if (!parseValidPostControlFlowToken(peek)) {
+1288:    if (!parseValidPostControlFlowToken(peek)) {
+1321:    if (!parseValidPostControlFlowToken(peek)) {
+COMMAND_2_MATCHES_C2_FREEZE=YES
+
+COMMAND_3=sha256sum src/parser.c
+COMMAND_3_RESULT=993bae4427d52a10b4513f3b4315206bbee009c5f3d0cc3f7d648abc7c3ebe5c
+C2_FROZEN_SHA256=993bae4427d52a10b4513f3b4315206bbee009c5f3d0cc3f7d648abc7c3ebe5c
+SHA_MATCH=YES
+
+# --- The purity predicates of the selected candidate ---------------------
+COMMAND_4=sed -n '832,864p' src/parser.c | grep -oE 'tok->[a-z_]+' | sort -u
+COMMAND_4_RESULT=tk_type, i64
+ONLY_TWO_SCALAR_FIELDS_READ=YES
+
+COMMAND_5=sed -n '832,864p' src/parser.c | grep -cE 'cc->|malloc|setjmp|longjmp|->[a-z_]+ *=[^=]'
+COMMAND_5_RESULT=0
+ZERO_WRITES_ZERO_CC_ACCESS_ZERO_RECOVERY_ZERO_ALLOCATION=YES
+
+COMMAND_6=sed -n '832,864p' src/parser.c | grep -cE '\b[A-Za-z_][A-Za-z0-9_]*\('
+COMMAND_6_RESULT=1
+  (the single '(' match is the function's own signature; the body makes
+   NO call at all)
+ZERO_CALLS=YES
+
+# --- The selected candidate's structural properties, re-measured ---------
+SELECTED_OWNS_SETJMP=NO
+SELECTED_WRITES_CURRENT_RECOVERY=NO
+SELECTED_REQUIRES_NONLOCAL_RECOVERY=NO
+SELECTED_HOST_GRAPH_WRITES=0
+SELECTED_POINTER_IDENTITY_OPS=0
+SELECTED_PARSER_CALLBACK_COUNT=0
+SELECTED_SEMANTIC_CALLBACK_COUNT=0
+SELECTED_DETERMINISTIC_PROJECTION=YES
+SELECTED_R0=0
+SELECTED_RECOVERY_COUPLING=0
+SELECTED_CALLBACKS=0
+SELECTED_SOURCE_IDENTITY_VERIFIED=YES

@@ -1,0 +1,88 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02
+ACT_PHASE=C3-VERIFY
+EVIDENCE_KIND=c3-required-result
+
+# --- Structural checks (ACT SECT_12) -----------------------------------
+UNKNOWN_CANDIDATES=0
+UNCLASSIFIED_STATE_DEPENDENCIES=0
+RANKING_INCONSISTENCIES=0
+ELIGIBLE_ALREADY_SELFHOSTED=0
+
+SELECTED_CANDIDATE_COUNT=1
+SELECTED_R0<=2            (selected R0 = 0)
+
+SELECTED_RECOVERY_COUPLING=0
+SELECTED_HOST_GRAPH_WRITES=0
+SELECTED_CALLBACKS=0
+
+# --- Ranking checks -----------------------------------------------------
+RANKING_RECOMPUTE_MATCH=YES
+RANKING_CONTROLS_PASSED=9
+RANKING_CONTROLS_FAILED=0
+SELECTED_IS_UNIQUE_AUTHORIZED_WINNER=YES
+
+# --- Source purity ------------------------------------------------------
+PRODUCTION_SOURCE_DELTA=0
+  git diff --name-only <ENTRY>..HEAD -- src/                  -> EMPTY
+  git diff --name-only <ENTRY>..HEAD -- tools/bootstrap/      -> EMPTY
+  git diff --name-only <ENTRY>..HEAD -- src/CMakeLists.txt    -> EMPTY
+TOOLS_BOOTSTRAP_DELTA=0
+CMAKE_DELTA=0
+ALL_EIGHT_FROZEN_SOURCE_SHA256_UNCHANGED=YES
+
+# --- Conservation -------------------------------------------------------
+PARSER_CONSERVATION=PASS
+  (live Makefile targets inspected and EXECUTED; 67 files, 363
+   assertions, 0 compile failures, 0 run failures; 7 pre-existing
+   failures isolated to src/tests/39_arg_count.HC with the root cause
+   and pre-existence proven)
+LEXER_CONSERVATION=PASS
+  (LSP 43/43; plus the 363-assertion AOT and JIT suites)
+LEXER07_BASELINE_COMPARISON=CONSISTENT
+NEW_LEXER07_FAILURES=0
+REGRESSED_LEXER07_SOURCES=0
+IMPROVED_LEXER07_SOURCES=6
+FULL_CORPUS_STATUS=FAIL      (recorded as FAIL; NOT relabelled as PASS)
+
+# --- Factory gates ------------------------------------------------------
+GATE_FAST=PASS              (RC=0)
+GATE_PUSH=PASS              (VERDICT=PASS, 8/8 checks)
+FACTORY_V2=PASS             (PASS=53 FAIL=0)
+APPEND_ONLY=PASS            (PASS=11 FAIL=0)
+F_NO_PYTHON=PRE_EXISTING_VIOLATIONS  (RC=1, 12 violations, 0 new)
+F_POLYC_TOOLS=PRE_EXISTING_VIOLATIONS (RC=1, 0 new)
+F14=PASS                    (closed evidence delta 0, closed HANDOFF delta 0)
+PATCH_HYGIENE=PASS          (git diff --check RC=0)
+
+# --- Mandatory ACs ------------------------------------------------------
+AC_TOTAL=50
+AC_PASS=47
+AC_DEFERRED=3    (AC48, AC49, AC50 -- each requires the C4 CLOSE commit)
+AC_FAIL=0
+MANDATORY_AC_NOT_GREEN=NO
+
+# --- Halt evaluation ----------------------------------------------------
+HALT_CONSERVATION_REGRESSION=NOT_TRIGGERED (0 new failures, 0 regressions)
+HALT_FACTORY_GATE_NOT_GREEN=NOT_TRIGGERED (gate-fast and gate-push both PASS)
+HALT_F14_VIOLATION=NOT_TRIGGERED
+HALT_SCOPE_CONTRACT_VIOLATED=NOT_TRIGGERED
+HALT_MANDATORY_AC_NOT_GREEN=NOT_TRIGGERED
+
+# The two checker failures (F-NO-PYTHON, F-POLYC-TOOLS) are PRE-EXISTING
+# baseline violations in files this ACT did not touch, introduced by
+# earlier ACTs.  They are NOT waived: their exact results are recorded
+# in c3-f-no-python.txt and c3-f-polyc-tools.txt with the pre-existence
+# proof.  Per the ACT's own instruction, "If a gate fails, preserve its
+# exact result and classify it.  Do not silently waive it."  Neither
+# checker is in the canonical required gate set for this ACT (AGENTS.md
+# records that the no-Python checker is NOT yet wired into gate-fast),
+# and both the gate-fast and gate-push gates -- which ARE required --
+# are GREEN.
+
+# --- Scope --------------------------------------------------------------
+NEW_POLYC_COMPONENT_IMPLEMENTED=0
+NEW_TRACKED_TOOL=0
+NEW_PYTHON_SOURCE=0
+NEW_PYTHON_INVOCATION=0
+CLOSED_EVIDENCE_DELTA=0
+CLOSED_HANDOFF_DELTA=0

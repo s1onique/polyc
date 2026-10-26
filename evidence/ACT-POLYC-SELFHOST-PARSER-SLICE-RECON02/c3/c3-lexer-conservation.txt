@@ -1,0 +1,56 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02
+ACT_PHASE=C3-VERIFY
+EVIDENCE_KIND=lexer-conservation
+
+# --- Which live targets are the canonical lexer tests? ------------------
+# Inspected in the Makefile (not taken from a historical command name):
+#   Makefile:636   lsp-test: test-prefix-install
+#   Makefile:1274  bootstrap02-lexer-seam-test
+#   Makefile:1901  lexer07-lexer-seam-stage0
+#   Makefile:2105  lexer07-broad-corpus-4-stage
+#   Makefile:2120  lexer07-correction02-all
+# The canonical LEXER07 corpus gate is the 4-stage broad corpus; it is
+# reported separately in c3-lexer07-baseline-comparison.txt.  The
+# canonical LSP gate exercises the lexer through the language server.
+
+COMMAND_LSP=cd src/tests/lsp && ../../../hcc --install-dir=../../../build/test-prefix \
+              ./run_lsp_tests.HC -o lsp-test-runner && ./lsp-test-runner
+COMMAND_LSP_RC=0
+LSP_ASSERTIONS=43
+LSP_ASSERTIONS_PASSED=43
+LSP_FAILURES=0
+LSP_STATUS=PASS
+
+# --- The lexer self-host seam gates --------------------------------------
+# The lexer components (BootstrapScanIdent, BootstrapClassifyOperator,
+# BootstrapScanScalarLiteral, BootstrapScanTrivia, BootstrapLinkDirective)
+# are exercised by the LEXER07 4-stage corpus; see
+# c3-lexer07-baseline-comparison.txt for the full result and the
+# baseline comparison.
+#
+# The lexer is ALSO exercised by the canonical unit/jit suites, which
+# compile 67 source files through the full front end:
+#   Lexer assertions passed (AOT): 363
+#   Lexer assertions passed (JIT):  363
+#   Compile failures: 0
+#   Run failures: 0
+LEXER_CONSERVATION=PASS
+
+# --- Source purity for the lexer ----------------------------------------
+LEXER_SOURCE_DELTA=0
+  $ git diff --name-only <ENTRY>..HEAD -- src/lexer.c
+  (empty)
+  $ git diff --name-only <ENTRY>..HEAD -- src/lexer.h
+  (empty)
+  $ git diff --name-only <ENTRY>..HEAD -- tools/bootstrap/
+  (empty)
+
+# --- The self-hosted component registry is unchanged ---------------------
+SELF_HOST_COMPONENTS_REGISTRY_DELTA=0
+  $ git diff --name-only <ENTRY>..HEAD -- docs/factory/SELF-HOST-COMPONENTS.tsv
+  (empty)
+  The registry still lists exactly the five lexer components plus the
+  padding component's subject; this ACT adds no component.
+
+PRODUCTION_SOURCE_DELTA=0
+COMPILER_SEMANTIC_DELTA=0
