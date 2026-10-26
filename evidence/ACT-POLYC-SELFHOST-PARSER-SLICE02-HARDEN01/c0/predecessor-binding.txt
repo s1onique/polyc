@@ -1,0 +1,41 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01
+ACT_PHASE=C0-AUTH-RED
+EVIDENCE_KIND=predecessor-binding
+
+PREDECESSOR_ACT=ACT-POLYC-SELFHOST-PARSER-SLICE02
+PREDECESSOR_VERDICT=PASS
+PREDECESSOR_CLOSE=da4ab7db9e9f4382f53514db7678b86ca6c6416f
+PREDECESSOR_RANGE_BASE=ac639d06d8e0a24ff01d09e90c68290add0231d0
+
+COMMAND=git merge-base --is-ancestor da4ab7db9e9f4382f53514db7678b86ca6c6416f HEAD
+RESULT=PREDECESSOR_CLOSE_REACHABLE_FROM_ENTRY
+
+COMMAND=git log --format="%H %s" ac639d06d8e0a24ff01d09e90c68290add0231d0..da4ab7db9e9f4382f53514db7678b86ca6c6416f
+  da4ab7db9e9f4382f53514db7678b86ca6c6416f ACT-POLYC-SELFHOST-PARSER-SLICE02 C4: CLOSE -- the first production parser slice is now PolyC
+  8328d7d6f7bf9fc69972b93da7caaa042cb3ba25 ACT-POLYC-SELFHOST-PARSER-SLICE02 C2/C3: EVIDENCE -- the production delegation and its causal control
+  9c6274e165f48ce124a4d256eeee862be7ed79ce ACT-POLYC-SELFHOST-PARSER-SLICE02 C1: RED -- the PolyC control-flow-token subject and its direct differential
+  4fa6c8f05e6e8e379d81c4340da59c722ec1f7e3 ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01 C4: CLOSE -- the corrected successor-facing contract
+  43f2dcd359971a64a19e0740ac624c87592ae151 ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01 C2/C3: EVIDENCE -- the corrected contract and its independent re-verification
+  7937d3a41e6cb638d41f3d06329a76774fd017ea ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01 C1: RED -- the F041 defect, reproduced against the real production C function
+
+INTERVENING_COMMITS=6
+  (RECON02-CORRECTION01 C1/C2-C3/C4, then SLICE02 C1/C2-C3/C4)
+UNREVIEWED_PRODUCTION_CHANGES_BETWEEN_PREDECESSOR_AND_ENTRY=NO
+  The only intervening commits are the SLICE02 ACT itself and the
+  RECON02-CORRECTION01 ACT that produced the corrected fixture.
+  Every one of them is an ACT-POLYC-SELFHOST-* commit with a full
+  RED/IMPL/VERIFY/CLOSE trail; none is an unreviewed production change.
+
+COMMAND=git diff --stat ac639d06d8e0a24ff01d09e90c68290add0231d0..da4ab7db9e9f4382f53514db7678b86ca6c6416f -- src/parser.c src/lexer.h tools/bootstrap/
+   src/parser.c                                       |  42 ++++++++
+   .../selfhost-parser-control-flow-token.HC          | 115 +++++++++++++++++++++
+   2 files changed, 157 insertions(+)
+  (src/parser.c changed ONLY by the SLICE02 delegation switch)
+
+ACTIVE_CONFLICTING_FACTORY_ACT=NONE
+  No other ACT-POLYC-* commit is open at the entry HEAD: the entry HEAD
+  IS the SLICE02 CLOSE commit, and the successor ACT
+  (ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03) is not opened by this ACT.
+
+ENTRY_HEAD=da4ab7db9e9f4382f53514db7678b86ca6c6416f
+ENTRY_MATCHES_PREDECESSOR_CLOSE=YES

@@ -1,0 +1,200 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01
+ACT_PHASE=C0-AUTH-RED
+EVIDENCE_KIND=red-reproduction
+
+ALL RESULTS BELOW ARE OBSERVED AGAINST THE ORIGINAL SLICE02 IMPLEMENTATION
+(entry HEAD da4ab7db9e9f4382f53514db7678b86ca6c6416f)
+
+=======================================================================
+# D1 -- THE SYMBOL VERIFIER IS FAIL-OPEN
+=======================================================================
+
+The verifier under test:
+  src/cmake/VerifyControlFlowTokenObject.cmake (unmodified at entry)
+Its symbol test is:
+  string(REGEX MATCH "(^|[ 	])\${CONTROL_FLOW_TOKEN_EXPECTED_SYMBOL}" ... nm_output)
+with the default
+  CONTROL_FLOW_TOKEN_EXPECTED_SYMBOL="_BootstrapValidPostControlFlowToken"
+
+--- D1-B: an object with ONLY an undefined reference is ACCEPTED ---
+COMMAND=cc -c undef3.c -o undef3.o   # int probe(a,b,c){return BootstrapValidPostControlFlowToken(a,b,c);}
+NM_OUTPUT:
+                   U _BootstrapValidPostControlFlowToken
+  0000000000000000 T _probe
+  0000000000000000 t ltmp0
+  0000000000000038 s ltmp1
+VERIFY_COMMAND=cmake -DCONTROL_FLOW_TOKEN_OBJECT=<abs>/build/harden01/nc/undef3.o -P src/cmake/VerifyControlFlowTokenObject.cmake
+VERIFY_OUTPUT:
+  -- ACT-POLYC-SELFHOST-PARSER-SLICE02: control-flow-token subject VERIFIED symbol=_BootstrapValidPostControlFlowToken size=616
+VERIFY_RC=0
+
+D1_B_UNDEFINED_SYMBOL_ACCEPTED=YES   <-- RED
+D1_B_EXPECTED=REJECT (REJECT_UNDEFINED_SYMBOL)
+
+--- D1-C: a PREFIX COLLISION is ACCEPTED ---
+COMMAND=cc -c near.c -o near.o   # int BootstrapValidPostControlFlowTokenExtra(...)
+NM_OUTPUT:
+  0000000000000000 T _BootstrapValidPostControlFlowTokenExtra
+  0000000000000000 t ltmp0
+  0000000000000030 s ltmp1
+VERIFY_OUTPUT:
+  -- ACT-POLYC-SELFHOST-PARSER-SLICE02: control-flow-token subject VERIFIED symbol=_BootstrapValidPostControlFlowToken size=584
+VERIFY_RC=0
+
+D1_C_PREFIX_COLLISION_ACCEPTED=YES   <-- RED
+D1_C_EXPECTED=REJECT (REJECT_SYMBOL_NAME_MISMATCH)
+
+--- D1 (local symbol variant): a LOCAL text symbol is ACCEPTED ---
+COMMAND=cc -c local.c -o local.o   # static int BootstrapValidPostControlFlowToken(...)
+NM_OUTPUT:
+  0000000000000020 t _BootstrapValidPostControlFlowToken
+  0000000000000000 T _use
+  0000000000000000 t ltmp0
+  0000000000000050 s ltmp1
+VERIFY_OUTPUT:
+  -- ACT-POLYC-SELFHOST-PARSER-SLICE02: control-flow-token subject VERIFIED symbol=_BootstrapValidPostControlFlowToken size=680
+VERIFY_RC=0
+
+D1_LOCAL_SYMBOL_ACCEPTED=YES   <-- RED
+D1_LOCAL_EXPECTED=REJECT (REJECT_LOCAL_SYMBOL)
+
+=======================================================================
+# D1-A: PLATFORM-DEPENDENT SYMBOL SPELLING
+=======================================================================
+
+The default expected symbol is hard-coded to the Mach-O spelling:
+  "_BootstrapValidPostControlFlowToken"
+An ELF object produced by the SAME C source exposes the SAME C symbol
+as "BootstrapValidPostControlFlowToken" (no leading underscore).
+Consequence: a perfectly valid ELF object is REJECTED on its platform
+alone, and the verifier has no way to accept the ELF spelling.
+
+D1_A_PLATFORM_DEPENDENT_SPELLING=YES   <-- RED (structural, in source)
+D1_A_EXPECTED=RESOLVE THE SPELLING FROM THE TARGET OBJECT FORMAT
+
+=======================================================================
+# D2 -- VERIFICATION DEPENDS ON THE PRODUCER CONFIGURATION
+=======================================================================
+
+Mode B (pre-existing CONTROL_FLOW_TOKEN_OBJECT) in src/CMakeLists.txt
+performs ONLY an EXISTS check at configure time:
+  elseif (NOT EXISTS "${CONTROL_FLOW_TOKEN_OBJECT}")  -> FATAL_ERROR
+  target_link_libraries(hcc ${CONTROL_FLOW_TOKEN_OBJECT})
+There is NO invocation of VerifyControlFlowTokenObject.cmake in Mode B.
+
+--- D2 PROOF 1: an object with an UNDEFINED symbol configures SUCCESSFULLY ---
+COMMAND=cmake -S ./src -B build/harden01/cmb-prebuilt -G "Unix Makefiles"
+          -DHCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN=ON
+          -DCONTROL_FLOW_TOKEN_OBJECT=<abs>/build/harden01/nc/undef3.o
+  -- ACT-POLYC-SELFHOST-PARSER-SLICE02: production hcc links control-flow-token PolyC component: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/harden01/nc/undef3.o
+  -- Configuring done (0.1s)
+CONFIGURE_RC=0   <-- the fail-closed verifier was NEVER invoked
+
+D2_PREBUILT_MODE_NO_VERIFICATION=YES   <-- RED
+D2_EXPECTED=Mode B invokes the SAME strict verifier before linking
+
+--- D2 PROOF 2: the build fails only at the LINKER, not at the gate ---
+COMMAND=cmake --build build/harden01/cmb-prebuilt --target hcc
+  ld: Undefined symbols:
+    _BootstrapValidPostControlFlowToken, referenced from:
+  clang: error: linker command failed with exit code 1 (use -v to see invocation)
+  make[3]: *** [/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/harden01/hcc] Error 1
+  make[2]: *** [CMakeFiles/hcc.dir/all] Error 2
+  make[1]: *** [CMakeFiles/hcc.dir/rule] Error 2
+
+D2_FAILURE_IS_LINKER_ERROR_NOT_QUALIFICATION_GATE=YES
+
+=======================================================================
+# D3 -- THE DIFFERENTIAL PASSES ON INCOMPLETE FIXTURES
+=======================================================================
+
+The acceptance predicate in tools/quality/parser-control-flow-token-differential.HC is:
+  if (fail || parse_errors || oracle_vs_expected_mismatch) -> FAIL
+There is NO requirement on the fixture COUNT or on the fixture ID SET.
+
+--- D3 PROOF 1: a SINGLE-ROW fixture PASSES ---
+COMMAND=./build/parser-control-flow-token-differential build/harden01/fx/single.tsv
+  SLICE02_DIFFERENTIAL_TOTAL=1
+  SLICE02_DIFFERENTIAL_PASS=1
+  SLICE02_DIFFERENTIAL_FAIL=0
+  SLICE02_DIFFERENTIAL_PARSE_ERRORS=0
+  SLICE02_DIFFERENTIAL_ORACLE_VS_EXPECTED_MISMATCH=0
+  STATUS=PASS
+  EXIT_STATUS=0
+
+D3_SINGLE_ROW_FALSE_PASS=YES   <-- RED
+
+--- D3 PROOF 2: an EMPTY fixture PASSES ---
+COMMAND=./build/parser-control-flow-token-differential build/harden01/fx/empty.tsv
+  SLICE02_DIFFERENTIAL_TOTAL=0
+  SLICE02_DIFFERENTIAL_PASS=0
+  SLICE02_DIFFERENTIAL_FAIL=0
+  SLICE02_DIFFERENTIAL_PARSE_ERRORS=0
+  SLICE02_DIFFERENTIAL_ORACLE_VS_EXPECTED_MISMATCH=0
+  STATUS=PASS
+  EXIT_STATUS=0
+
+D3_EMPTY_FIXTURE_FALSE_PASS=YES   <-- RED
+
+--- D3 PROOF 3: the set MISSING F041 (41 rows) PASSES ---
+COMMAND=./build/parser-control-flow-token-differential build/harden01/fx/no41.tsv
+  SLICE02_DIFFERENTIAL_TOTAL=41
+  SLICE02_DIFFERENTIAL_PASS=41
+  SLICE02_DIFFERENTIAL_FAIL=0
+  SLICE02_DIFFERENTIAL_PARSE_ERRORS=0
+  SLICE02_DIFFERENTIAL_ORACLE_VS_EXPECTED_MISMATCH=0
+  STATUS=PASS
+  EXIT_STATUS=0
+
+D3_MISSING_ID_FALSE_PASS=YES   <-- RED (loss of the aliasing control is concealed)
+
+=======================================================================
+# D4 -- THE SIGNED INTEGER PARSER OVERFLOWS
+=======================================================================
+
+The parser under test is the VERBATIM parse_int of
+tools/quality/parser-control-flow-token-differential.HC. The probe below
+extracts that function MECHANICALLY (sed -n 48,86p) -- it is not a
+hand-written paraphrase -- and calls it directly.
+
+PROBE_SOURCE=build/harden01/int/d4probe.HC
+PROBE_EXTRACTION=sed -n 48,86p tools/quality/parser-control-flow-token-differential.HC
+PROBE_BINARY=build/harden01/int/d4probe.bin
+PROBE_RUN_COMMAND=./build/harden01/int/d4probe.bin
+PROBE_OUTPUT:
+  CASE=INT64_MAX input=9223372036854775807
+    rc=0 value=-1
+  CASE=INT64_MIN input=-9223372036854775808
+    rc=0 value=0
+  CASE=POSITIVE_OVERFLOW input=9223372036854775808
+    rc=0 value=0
+  CASE=NEGATIVE_OVERFLOW input=-9223372036854775809
+    rc=0 value=-1
+  CASE=HEX_MAX input=0x7fffffffffffffff
+    rc=0 value=-1
+  CASE=HEX_MIN input=-0x8000000000000000
+    rc=0 value=0
+  CASE=HEX_OVERFLOW input=0x8000000000000000
+    rc=0 value=0
+  CASE=TRAILING_GARBAGE input=123abc
+    rc=2 value=123
+  CASE=NO_DIGITS input=abc
+    rc=1 value=123
+
+Reading the output:
+  * INT64_MAX  9223372036854775807  -> value=-1   (WRONG: must be 9223372036854775807)
+  * INT64_MIN -9223372036854775808  -> value=0    (WRONG: must be -9223372036854775808)
+  * 9223372036854775808            -> rc=0       (WRONG: out of range must be REJECTED)
+  * -9223372036854775809           -> rc=0       (WRONG: out of range must be REJECTED)
+  * 0x7fffffffffffffff             -> value=-1   (WRONG: must be 9223372036854775807)
+  * 0x8000000000000000             -> rc=0       (WRONG: out of range must be REJECTED)
+  * 123abc                         -> rc=2       (OK: trailing garbage detected by the CALLER)
+  * abc                            -> rc=1       (OK: no digits)
+
+The cause is the signed accumulator: v = v*10 + digit overflows the
+I64 range before the negation, so the value silently wraps and an
+out-of-range magnitude is ACCEPTED rather than rejected.
+
+D4_SIGNED_OVERFLOW_WRAPS=YES   <-- RED
+D4_OUT_OF_RANGE_ACCEPTED=YES   <-- RED
+D4_EXPECTED=checked accumulation with an unsigned magnitude; reject out-of-range

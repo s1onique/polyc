@@ -1,0 +1,47 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01
+ACT_PHASE=C0-AUTH-RED
+EVIDENCE_KIND=scope
+
+# The authorized write scope, frozen BEFORE implementation (AC02).
+
+## Allowed production and qualification files
+src/cmake/VerifyControlFlowTokenObject.cmake
+src/CMakeLists.txt
+tools/quality/parser-control-flow-token-differential.HC
+Makefile
+
+## Allowed new small directly-related fixtures / PolyC-native quality tools
+  (permitted by ACT section 2; each must be justified in the evidence)
+
+## Allowed evidence and lifecycle artifacts
+docs/acts/ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01.md
+docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01.md
+evidence/ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01/**
+docs/factory/act-handoff-map.tsv
+docs/ROADMAP.md
+
+## Read-only surfaces (MUST NOT change)
+src/parser.c
+src/lexer.h
+tools/bootstrap/selfhost-parser-control-flow-token.HC
+tools/quality/parser-slice02-oracle.c
+tools/quality/parser-slice02-oracle.h
+tools/quality/parser-control-flow-token-oracle-impl.c
+tools/bootstrap/selfhost-parser-padding.HC
+docs/factory/LEXER07-BASELINE-AUTHORITY.tsv
+
+## Forbidden (explicit)
+BootstrapValidPostControlFlowToken semantics
+the frozen ABI
+the 42 canonical fixture expectations
+historical SLICE02 evidence or HANDOFF
+replacing the real legacy-C oracle with a mocked oracle
+disabling or weakening any existing negative control
+adding Python
+substantive C or shell quality tooling contrary to F-POLYC-TOOLS
+the LLVM backend, lexer authority, parser recovery semantics, AST representation
+Factory gate scripts, trailer validators, hooks
+claiming Linux production qualification from a macOS-only test
+
+## The production subject and the frozen ABI are OUT OF SCOPE for mutation.
+The correction affects only INPUT PARSING and BUILD VERIFICATION.

@@ -1,0 +1,21 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01
+ACT_PHASE=C0-AUTH-RED
+EVIDENCE_KIND=source-freeze
+
+# The SHA of every file whose content must NOT change during this ACT.
+# (production subject, frozen ABI, read-only oracle surfaces)
+
+role	path	sha256
+FROZEN	tools/bootstrap/selfhost-parser-control-flow-token.HC	77199636db559024365fffc168cd191c1281593452682aab80005151e6baf196
+FROZEN	src/parser.c	23d59cc56c3b1e7281fb7e050047cef3297313c6bbf7f55b9ea1146013a153ab
+FROZEN	src/lexer.h	6bc46f3be938c6fae99095d8cf0b1f07104bbf9fc1dfb248aaa3cd5dd721c5f9
+FROZEN	tools/quality/parser-slice02-oracle.c	49f259a48610ed56a2becfd45ccc684a8e2008ac507412892c87874cdb444ced
+FROZEN	tools/quality/parser-slice02-oracle.h	ee932cedfa9b8f7df32c93cec4c84246acb30f45f0377d524719c726199ca32e
+FROZEN	tools/quality/parser-control-flow-token-oracle-impl.c	f993927a6b3b6185667016d0b9665052f853c184c20704be728e9fc2d9f620af
+FROZEN	tools/bootstrap/selfhost-parser-padding.HC	b555b76b484edda5830abba46dbda803a12ec1834f9ab0a64763f5899f2452f3
+
+# The ABI of the production PolyC component (frozen).
+ABI=I64 BootstrapValidPostControlFlowToken(I64 present, I64 kind, I64 value) -> I64
+
+# The canonical fixture (read-only input to the differential).
+READONLY	evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01/c1/c1-corrected-fixture-model.tsv	1101721b1665521da8d56701f731f8d1359399cfbef239e41392960acbf8dc6a
