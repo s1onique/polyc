@@ -1,0 +1,95 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION01
+ACT_PHASE=C0-AUTH
+EVIDENCE_KIND=scope
+
+# ---- WHY THIS ACT EXISTS -------------------------------------------
+#
+# The review of ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01 identified
+# two bounded gaps. Both are reproduced below against the REAL seam,
+# not asserted.
+
+# ---- P0: THE FIXTURE-ROW BYPASS -----------------------------------
+#
+# Source of truth: tools/quality/parser-control-flow-token-differential.HC
+# The row reader (the committed source at entry HEAD):
+#
+#     if (line[0] != 'F') continue;
+#     if (line[1] < '0' || line[1] > '9') continue;
+#
+# Any row failing this test is skipped BEFORE the unknown-ID
+# accounting. The unknown-ID accounting (unknown_ids) is therefore
+# UNREACHABLE for a row whose ID does not start with F+digit.
+
+DEFECT_P0_SOURCE=tools/quality/parser-control-flow-token-differential.HC
+DEFECT_P0_LINES=301-302
+DEFECT_P0_CLASS=SOURCE_LEVEL_FALSE_PASS
+
+# ---- P1: THE WRONG CONSERVATION TEST POPULATION --------------------
+#
+# The predecessor's c3/lexer07-conservation.txt records an LSP-suite
+# witness (43/43) as the LEXER07 conservation evidence. The canonical
+# LEXER07 broad corpus is governed by
+# docs/factory/LEXER07-BASELINE-AUTHORITY.tsv, which records 21 known
+# baseline failures. The two populations are different.
+
+DEFECT_P1_EVIDENCE=evidence/ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01/c3/lexer07-conservation.txt
+DEFECT_P1_REGISTRY=docs/factory/LEXER07-BASELINE-AUTHORITY.tsv
+DEFECT_P1_BASELINE_FAILURE_COUNT=21
+DEFECT_P1_CLASS=WRONG_TEST_POPULATION
+
+# ---- SCOPE ----------------------------------------------------------
+#
+# Allowed production and qualification files:
+#   tools/quality/parser-control-flow-token-differential.HC
+#
+# Allowed test/tooling files:
+#   tools/quality/parser-control-flow-token-negative-controls.HC  (NEW)
+#   Makefile                                                     (target)
+#
+# Allowed evidence and lifecycle files:
+#   docs/acts/ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION01.md
+#   docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION01.md
+#   evidence/ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION01/**
+#
+# Read-only (explicitly NOT modified by this ACT):
+#   src/parser.c
+#   src/lexer.h
+#   tools/bootstrap/selfhost-parser-control-flow-token.HC
+#   tools/bootstrap/selfhost-parser-padding.HC
+#   tools/quality/parser-slice02-oracle.c
+#   tools/quality/parser-slice02-oracle.h
+#   tools/quality/parser-control-flow-token-oracle-impl.c
+#   tools/quality/lexer07-broad-corpus-4-stage.HC
+#   tools/quality/lexer07-baseline-authority-verify.HC
+#   docs/factory/LEXER07-BASELINE-AUTHORITY.tsv
+#   evidence/ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01/**
+#   evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01/**
+
+PRODUCTION_PARSER_MUTATION=NONE
+PRODUCTION_POLYC_COMPONENT_MUTATION=NONE
+PARSER_SEMANTICS_MUTATION=FORBIDDEN
+LEXER_SEMANTICS_MUTATION=FORBIDDEN
+LLVM_BACKEND_MUTATION=FORBIDDEN
+AST_REPRESENTATION_MUTATION=FORBIDDEN
+
+# The predecessor's five-commit history is NOT reopened and its
+# evidence directory is NOT mutated (F14).
+PREDECESSOR_HISTORY_REOPEN=FORBIDDEN
+PREDECESSOR_EVIDENCE_MUTATION=FORBIDDEN
+
+# ---- RESIDUE ACCEPTED FROM THE PREDECESSOR -------------------------
+#
+# The reviewer noted a smaller contract discrepancy: C1 specifies
+# REJECT_WEAK_SYMBOL for the weak-definition control, while C3 reports
+# REJECT_SYMBOL_NAME_MISMATCH. The weak object IS correctly rejected,
+# so the safety property holds; only the reason-token wording drifted.
+# This ACT records that as an ACCEPTED, NON-BLOCKING RESIDUE. It is
+# NOT repaired here because repairing it would require mutating the
+# CLOSED predecessor's frozen C1 contract, which F14 forbids, and
+# because the review explicitly declined to spend effort on the
+# predecessor's historical prose.
+
+RESIDUE_R1_REASON_TOKEN_DRIFT=ACCEPTED_NONBLOCKING
+RESIDUE_R1_DESCRIPTION=C1 says REJECT_WEAK_SYMBOL; C3 reports REJECT_SYMBOL_NAME_MISMATCH. The weak object is correctly rejected; the safety property holds.
+RESIDUE_R1_DISPOSITION=RECORDED_NOT_REPAIRED
+RESIDUE_R1_RATIONALE=F14 forbids mutating the closed predecessor's frozen contract; the safety property (weak definitions are rejected) is verified by the predecessor's own negative-control evidence.
