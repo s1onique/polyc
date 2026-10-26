@@ -1,0 +1,115 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01
+# ACT_PHASE=C1-CONTRACT-CORRECTION
+# EVIDENCE_KIND=corrected-fixture-model
+# The CORRECTED fixture matrix the successor MUST use for the direct
+# differential.  This file supersedes (does not modify) the frozen
+# matrix in the predecessor's c2-selected-fixture-model.tsv.
+#
+# Exactly ONE expectation is corrected relative to the predecessor:
+# F041 (UNKNOWN_KIND_SUPERSCRIPT) expected_result 0 -> 1, because the
+# REAL production C function returns 1 for tk_type == 0x301.  See
+# c1-f041-red.txt for the oracle witness and c1-fixture-oracle.txt for
+# the full 42-row oracle run.
+#
+# Each row is a (token_present, token_kind, token_value) triple plus the
+# EXPECTED result, derived by reading the legacy C body
+# (src/parser.c:832..864) -- NOT by running it (the successor runs the
+# real C function; this table is the independently-derived expectation
+# that the differential then CHECKS).
+#
+# Schema:
+#   01 fixture_id
+#   02 partition
+#   03 token_present
+#   04 token_kind
+#   05 token_value
+#   06 expected_result
+#   07 rationale
+#   08 legacy_source_line
+
+F001	NULL_EOF	0	0	0	0	tok == NULL returns 0; the CALLER raises the diagnostic, not the component	:833
+F002	IDENT	1	0x300	0	1	TK_IDENT is accepted regardless of payload	:834
+F003	IDENT_PAYLOAD_IGNORED	1	0x300	66	1	TK_IDENT returns 1 BEFORE the payload is examined; a keyword constant in the payload slot does not change the result	:834
+F004	IDENT_PAYLOAD_NEGATIVE	1	0x300	-1	1	TK_IDENT returns 1 regardless of payload, including a negative one	:834
+F005	STR	1	0x301	0	1	TK_STR is accepted regardless of payload	:835
+F006	STR_PAYLOAD_IGNORED	1	0x301	999999	1	TK_STR returns 1 regardless of payload	:835
+F007	PUNCT_MINUS_MINUS	1	0x329	0x306	1	TK_MINUS_MINUS is an accepted punctuation payload	:838
+F008	PUNCT_PLUS_PLUS	1	0x329	0x305	1	TK_PLUS_PLUS is an accepted punctuation payload	:839
+F009	PUNCT_LBRACE	1	0x329	123	1	'{' is an accepted punctuation payload	:840
+F010	PUNCT_SEMI	1	0x329	59	1	';' is an accepted punctuation payload	:841
+F011	PUNCT_STAR	1	0x329	42	1	'*' is an accepted punctuation payload	:842
+F012	PUNCT_REJECTED_OTHER	1	0x329	40	0	a TK_PUNCT whose payload is not in the accepted set falls through to return 0	:843
+F013	PUNCT_REJECTED_ZERO	1	0x329	0	0	payload 0 is not an accepted punctuation	:843
+F014	PUNCT_REJECTED_NEGATIVE	1	0x329	-1	0	a negative payload matches no case (the switch is exact signed equality)	:843
+F015	PUNCT_REJECTED_KEYWORD_CONST	1	0x329	66	0	a keyword constant in the punctuation payload slot is structurally valid but semantically rejected	:843
+F016	PUNCT_REJECTED_INT64_MIN	1	0x329	-9223372036854775808	0	the most negative payload matches no case	:843
+F017	PUNCT_REJECTED_INT64_MAX	1	0x329	9223372036854775807	0	the most positive payload matches no case	:843
+F018	KEYWORD_DO	1	0x332	66	1	KW_DO is an accepted keyword	:847
+F019	KEYWORD_FOR	1	0x332	38	1	KW_FOR is an accepted keyword	:848
+F020	KEYWORD_GOTO	1	0x332	44	1	KW_GOTO is an accepted keyword	:849
+F021	KEYWORD_IF	1	0x332	46	1	KW_IF is an accepted keyword	:850
+F022	KEYWORD_RETURN	1	0x332	18	1	KW_RETURN is an accepted keyword	:851
+F023	KEYWORD_SWITCH	1	0x332	20	1	KW_SWITCH is an accepted keyword	:852
+F024	KEYWORD_WHILE	1	0x332	40	1	KW_WHILE is an accepted keyword	:853
+F025	KEYWORD_BREAK	1	0x332	24	1	KW_BREAK is an accepted keyword	:854
+F026	KEYWORD_CONTINUE	1	0x332	26	1	KW_CONTINUE is an accepted keyword	:855
+F027	KEYWORD_TRY	1	0x332	80	1	KW_TRY is an accepted keyword	:856
+F028	KEYWORD_THROW	1	0x332	82	1	KW_THROW is an accepted keyword	:857
+F029	KEYWORD_ASM	1	0x332	28	1	KW_ASM is an accepted keyword	:858
+
+F030	KEYWORD_REJECTED_OTHER	1	0x332	6	0	a TK_KEYWORD whose payload is not in the accepted set falls through to return 0 (KW_PUBLIC is 6)	:859
+F031	KEYWORD_REJECTED_ZERO	1	0x332	0	0	payload 0 is not an accepted keyword	:859
+F032	KEYWORD_REJECTED_NEGATIVE	1	0x332	-1	0	a negative payload matches no keyword case	:859
+F033	KEYWORD_REJECTED_PUNCT_CONST	1	0x332	123	0	a punctuation constant in the keyword payload slot is structurally valid but semantically rejected	:859
+F034	KEYWORD_REJECTED_INT64_MIN	1	0x332	-9223372036854775808	0	the most negative payload matches no case	:859
+F035	KEYWORD_REJECTED_INT64_MAX	1	0x332	9223372036854775807	0	the most positive payload matches no case	:859
+F036	UNKNOWN_KIND_I64	1	0x302	42	0	TK_I64 is not a kind the function accepts	:859
+F037	UNKNOWN_KIND_F64	1	0x304	42	0	TK_F64 is not a kind the function accepts	:859
+F038	UNKNOWN_KIND_CHAR_CONST	1	0x303	42	0	TK_CHAR_CONST is not a kind the function accepts	:859
+F039	UNKNOWN_KIND_EOF	1	0	42	0	TK_EOF as a kind is not accepted	:859
+F040	UNKNOWN_KIND_COMMENT	1	0x333	42	0	TK_COMMENT is not a kind the function accepts	:859
+F041	UNKNOWN_KIND_SUPERSCRIPT	1	0x301	42	1	NOTE: TK_SUPERSCRIPT shares the numeric value 0x301 with TK_STR (src/lexer.h:15 and :19). At the ABI level the kind is the NUMBER, so 0x301 is TK_STR and is ACCEPTED. This fixture documents the aliasing: a distinct "superscript" kind is NOT distinguishable at the ABI level. The successor MUST record this aliasing in its constant binding, because guessing a distinct value would change the result. CORRECTED in ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01: expected_result 0 -> 1, proven by calling the REAL production C function (see c1-f041-red.txt and c1-fixture-oracle.txt).	:835
+F042	UNKNOWN_KIND_ARBITRARY	1	123456	42	0	an arbitrary unknown kind is rejected	:859
+
+# The counts below are DERIVED FROM THE ROWS ABOVE, not entered by hand.
+# The derivation command is recorded in c1-fixture-oracle.txt as
+# COMMAND_1C and re-run by c3-required-result.txt.
+#
+# Group membership rule (by fixture_id):
+#   NULL_EOF    = F001
+#   IDENT       = F002..F004
+#   STR         = F005..F006 and F041 (F041 is a TK_STR alias, not a
+#                 distinct kind: TK_SUPERSCRIPT == TK_STR == 0x301)
+#   PUNCT       = F007..F017
+#   KEYWORD     = F018..F035
+#   UNKNOWN_KIND= F036..F040 and F042
+FIXTURE_COUNT=42
+PARTITION_COUNT=6
+  NULL_EOF (1)
+  IDENT (3)
+  STR (3: F005, F006, F041 -- F041 is a TK_STR alias, not a distinct kind)
+  PUNCT (11: 5 accepted + 6 rejected)
+  KEYWORD (18: 12 accepted + 6 rejected)
+  UNKNOWN_KIND (6)
+EXPECTED_ACCEPT_COUNT=23
+EXPECTED_REJECT_COUNT=19
+ACCEPT_BREAKDOWN=23
+  IDENT 3 (F002, F003, F004)
+  STR   3 (F005, F006, F041)
+  PUNCT 5 (F007..F011)
+  KEYWORD 12 (F018..F029)
+REJECT_BREAKDOWN=19
+  NULL_EOF 1 (F001)
+  PUNCT 6 (F012..F017)
+  KEYWORD 6 (F030..F035)
+  UNKNOWN_KIND 6 (F036..F040, F042)
+REJECT_BREAKDOWN_SUM=1+6+6+6=19
+REJECT_BREAKDOWN_MATCHES_EXPECTED_REJECT_COUNT=YES
+ACCEPT_BREAKDOWN_SUM=3+3+5+12=23
+ACCEPT_BREAKDOWN_MATCHES_EXPECTED_ACCEPT_COUNT=YES
+PARTITION_SUM=1+3+3+11+18+6=42
+PARTITION_SUM_MATCHES_FIXTURE_COUNT=YES
+FIXTURE_COVERAGE_COMPLETE=YES
+  Every row of the ABI decision table (c2-selected-abi-contract.md section 6)
+  is represented, plus the unknown-kind, unknown-payload, negative-payload
+  and structurally-valid-but-rejected classes the ACT requires.

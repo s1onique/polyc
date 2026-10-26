@@ -1,0 +1,118 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01
+ACT_PHASE=C0-AUTH
+EVIDENCE_KIND=predecessor-verdict-correction
+
+# This artifact is the predecessor-verdict-correction record.
+#
+# The predecessor's committed verdict is corrected through the Factory v2
+# commit-trailer mechanism (docs/factory/GIT-METADATA.md section 2.3):
+#
+#   ACT-Supersedes: ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02
+#   ACT-Corrected-Verdict: <token>
+#
+# The predecessor's OWN history is NOT rewritten (F14): its CLOSE commit
+# keeps PASS_TRUE_GREEN, and this ACT's CLOSE carries the corrected
+# verdict as a trailer.  "no HANDOFF rewrite is needed" (GIT-METADATA.md).
+
+PREDECESSOR_ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02
+PREDECESSOR_COMMITTED_VERDICT=PASS_TRUE_GREEN
+PREDECESSOR_VERDICT_CORRECTED_TO=HALT_CONTRACT_DEFECT_UNRESOLVED
+CORRECTION_ACT_OWN_VERDICT=PASS
+PREDECESSOR_HISTORY_REWRITTEN=NO
+PREDECESSOR_HANDOFF_REWRITTEN=NO
+PREDECESSOR_EVIDENCE_MUTATED=NO
+
+# --- The intended CLOSE trailer set --------------------------------------
+# The correction's own verdict is PASS, so it MUST NOT carry HALT_CLASS or
+# BLOCKS_NEXT: tools/factory/factory-halt-classification.HC fails a PASS
+# verdict that carries HALT_CLASS ("PASS verdict forbids HALT_CLASS").
+# The canonical example in docs/factory/GIT-METADATA.md section 2.3 is
+# exactly this shape.
+#
+# NOTE ON WHAT THIS DOES AND DOES NOT ESTABLISH.
+# A trailer set that VALIDATES is not the same thing as a trailer set that
+# is CARRIED BY A COMMIT.  The correction of the predecessor's verdict
+# becomes true only when this ACT's CLOSE commit EXISTS and carries the
+# ACT-Supersedes / ACT-Corrected-Verdict trailers.  That is why AC14 is
+# DEFERRED in the C3 ledger and established in the CLOSE phase.
+#
+# The validation below shows that the INTENDED message is well-formed
+# under the Factory v2 grammar (one terminal trailer block, correct
+# cardinality, PASS forbids HALT_CLASS / BLOCKS_NEXT).  It is a
+# well-formedness witness, NOT a closure witness.
+INTENDED_CLOSE_TRAILER_BLOCK=
+ACT: ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01
+ACT-Phase: CLOSE
+ACT-Verdict: PASS
+ACT-Supersedes: ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02
+ACT-Corrected-Verdict: HALT_CONTRACT_DEFECT_UNRESOLVED
+
+COMMAND_1=sh scripts/quality/factory-v2-commit-msg-check.sh <the CLOSE message>
+COMMAND_1_RESULT=
+MODE=ACT
+ACT=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01
+PHASE=CLOSE
+VERDICT=PASS
+SUPERSEDES=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02
+CORRECTED_VERDICT=HALT_CONTRACT_DEFECT_UNRESOLVED
+HALT_CLASS=
+BLOCKS_NEXT=
+STATUS=PASS
+COMMAND_1_EXIT_STATUS=0
+COMMAND_1_ESTABLISHES=that the intended CLOSE trailer block is WELL-FORMED
+COMMAND_1_DOES_NOT_ESTABLISH=that any commit carries it yet
+
+# The predecessor's own range still validates unchanged:
+COMMAND_2=sh scripts/quality/factory-v2-range-check.sh ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02 ac639d0
+COMMAND_2_RESULT=
+ACT=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02
+ENTRY=1e27f01cb3437d3af99cd4d024e7f29922ea1cdf
+FIRST=0b9d312b53d36054ccb73b43890be28676964a83
+CLOSE=ac639d06d8e0a24ff01d09e90c68290add0231d0
+COMMITS=5
+VERDICT=PASS_TRUE_GREEN
+STATUS=PASS
+COMMAND_2_EXIT_STATUS=0
+COMMAND_2_ESTABLISHES=that the predecessor's own committed range is untouched
+
+# --- Why the predecessor's verdict cannot stand --------------------------
+# Two of the five defects are BINDING: they make the predecessor's own
+# committed claims false against the predecessor's own committed evidence.
+#
+# P0-1  The predecessor's frozen fixture matrix (F041 expected_result = 0)
+#       contradicts the predecessor's own ABI contract decision table
+#       ("| 1 | TK_STR (0x301) | (any) | **1** | :835 |") AND contradicts
+#       the REAL production C function, which returns 1.  A successor that
+#       satisfies the frozen matrix and the legacy-C oracle at the same
+#       time is IMPOSSIBLE: the two requirements conflict.
+#
+# P0-2  The predecessor's ranking CONTROL 6 claims "NEXT_ELIGIBLE_CANDIDATE_
+#       WINS" and reports CAND-004, but CAND-004 is INELIGIBLE under the
+#       predecessor's own hard-eligibility conjunction
+#       (production_delegation_feasible = POSSIBLE_BUT_NARROW).  The
+#       control was run over a broader set than the predicate it claims
+#       to test, so the claimed selection change is not demonstrated.
+#
+# The committed PASS_TRUE_GREEN verdict therefore asserts a green state
+# that its own evidence contradicts.  Under the Factory v2 verdict grammar
+# (PASS(_[A-Z0-9_]+)* | HALT_[A-Z0-9_]+), the honest verdict for the
+# predecessor is a HALT, not a PASS.
+
+P0_1_BINDING_DEFECT=YES
+P0_1_CONFLICTS_WITH_SUCCESSOR_REQUIREMENT=YES
+P0_2_BINDING_DEFECT=YES
+P0_2_CLAIM_NOT_DEMONSTRATED=YES
+P1_1_BOOKKEEPING_DEFECT=YES
+P1_2_BOOKKEEPING_DEFECT=YES
+P1_3_NARRATION_DEFECT=YES
+
+# --- What the correction does and does not change ------------------------
+# The SELECTION is not changed: CAND-001 parseValidPostControlFlowToken
+# remains the unique eligible candidate, and the proposed PolyC ABI is
+# unchanged.  Only the DEFECTIVE CLAIMS are corrected.
+SELECTION_CHANGED=NO
+ABI_CHANGED=NO
+ELIGIBILITY_CONJUNCTION_CHANGED=NO
+SCORING_CHANGED=NO
+SUCCESSOR_ACT_ID_CHANGED=NO
+SUCCESSOR_ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE02

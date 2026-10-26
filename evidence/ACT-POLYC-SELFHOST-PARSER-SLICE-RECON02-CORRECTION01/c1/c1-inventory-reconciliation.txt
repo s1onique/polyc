@@ -1,0 +1,58 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01
+ACT_PHASE=C1-CONTRACT-CORRECTION
+EVIDENCE_KIND=inventory-reconciliation
+
+# The predecessor C1 inventory declared INVENTORY_TOTAL=16 while the very
+# file carried 17 candidate rows.  The count is reconciled here WITHOUT
+# modifying the predecessor file (F14).
+
+COMMAND_1=grep -c "^CAND-" evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02/c1/c1-candidate-inventory.tsv
+COMMAND_1_RESULT=
+17
+
+COMMAND_2=grep "^CAND-" evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02/c1/c1-candidate-inventory.tsv | cut -f1
+COMMAND_2_RESULT=
+CAND-001 CAND-002 CAND-003 CAND-003S CAND-004 CAND-005 CAND-006 CAND-007 CAND-008 CAND-009 CAND-010 CAND-011 CAND-012 CAND-013 CAND-014 CAND-015 CAND-016
+
+# The predecessor C3 recomputation agrees with 17:
+COMMAND_3=grep -c "^CAND-" evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02/c3/c3-inventory-recomputed.tsv
+COMMAND_3_RESULT=
+17
+C3_ALL_ARTIFACTS_CARRY_THE_IDENTICAL_CANDIDATE_ID_SET=YES
+
+# --- The reconciliation -------------------------------------------------
+PREDECESSOR_DECLARED_INVENTORY_TOTAL=16
+ACTUAL_CANDIDATE_ROWS_IN_THE_INVENTORY=17
+CORRECTED_INVENTORY_TOTAL=17
+
+CANDIDATE_COUNT_RECONCILED=YES
+  14 historical RECON01 candidates (CAND-001..CAND-014, all revisited)
+  + 1 independently-considered hypothetical sub-slice (CAND-003S)
+  + 2 genuinely new candidates found by the fresh search (CAND-015, CAND-016)
+  = 17
+
+# The predecessor breakdown text says "14 historical + 1 hypothetical + 2 new"
+# which sums to 17, so the breakdown was right and only the TOTAL line
+# was wrong.
+PREDECESSOR_BREAKDOWN_WAS_ARITHMETICALLY_CORRECT=YES
+PREDECESSOR_TOTAL_LINE_WAS_WRONG=YES
+
+# --- Consequence for eligibility ----------------------------------------
+# The conjunction was applied to all 17 rows in c2-eligibility-results.tsv
+# (17 data rows, ELIGIBLE_COUNT=1, INELIGIBLE_COUNT=16).  The corrected
+# total is therefore 17, and the ineligible count of 16 is CORRECT.
+CORRECTED_INVENTORY_TOTAL=17
+CORRECTED_ELIGIBLE_COUNT=1
+CORRECTED_INELIGIBLE_COUNT=16
+ELIGIBLE_SET_UNCHANGED=YES
+SELECTED_CANDIDATE_UNCHANGED=YES
+  (CAND-001 remains the unique survivor; the count defect is bookkeeping
+   only and does not change any selection.)
+
+# --- The C3 counter that carried the wrong number ------------------------
+PREDECESSOR_C3_COUNTER=c2-eligibility-results.tsv INELIGIBLE_COUNT=16 (of 17 rows)
+CORRECTED_C3_COUNTER=INELIGIBLE_COUNT=16 of 17 rows (unchanged; the 16 was
+  the count of INELIGIBLE rows, which was never wrong)
+PREDECESSOR_C1_COUNTER=INVENTORY_TOTAL=16 (of 17 rows) -- WRONG
+
+INVENTORY_RECONCILIATION_STATUS=PASS

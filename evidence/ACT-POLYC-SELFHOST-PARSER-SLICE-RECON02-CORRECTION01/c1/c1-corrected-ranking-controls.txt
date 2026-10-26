@@ -1,0 +1,329 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01
+ACT_PHASE=C1-CONTRACT-CORRECTION
+EVIDENCE_KIND=corrected-ranking-controls
+
+# The nine mandatory anti-bias controls (ACT SECT_8.3), RE-RUN against
+# the FULL hard-eligibility predicate (SECT_8.1).  The predecessor ran
+# CONTROL 5 and CONTROL 6 over a BROADER set (the state-boundary filter)
+# and therefore reported a selection change that the fully eligible set
+# does not exhibit.  This file records the corrected controls.
+#
+# The ranker (build/slice-recon02-rank/rank.sh) and the independent
+# eligibility re-derivation (build/slice-recon02-rank/elig.sh) are
+# disposable diagnostics in the IGNORED build directory.  They are NOT
+# tracked tools.
+#
+# =========================================================================
+# SCOPE OF THE PROOF -- READ THIS BEFORE THE CONTROL RESULTS
+# =========================================================================
+# There are TWO distinct predicates, and this ACT keeps them separate:
+#
+#   (P) ELIGIBILITY  -- the 13-clause hard-eligibility conjunction
+#       (ACT SECT_8.1).  Decided by elig.sh, which re-derives the
+#       conjunction INDEPENDENTLY from the predecessor's committed C1
+#       artifacts (inventory, dependency map, call sites, observable
+#       projections).  elig.sh does NOT consume an `eligible` flag.
+#
+#   (R) RANKING -- the lexicographic order over (R0..R6) of the rows that
+#       ELIGIBILITY admitted.  Decided by rank.sh, which drops every row
+#       whose `eligible` column is not YES before sorting.
+#
+# rank.sh CONSUMES an `eligible` column.  It does not compute
+# eligibility.  Therefore:
+#
+#   * A row whose `eligible` column was written BY HAND into the rank
+#     input proves (R) ONLY.  It does NOT prove (P) for that row.
+#   * A row whose `eligible` column was DERIVED from elig.sh's output
+#     proves (P) AND (R), end to end.
+#
+# The controls below are stated in BOTH forms:
+#
+#   FORM A  -- the REAL set, produced by elig.sh over the predecessor's
+#              committed C1 artifacts.  Proves (P) for every admitted row
+#              and (R) over the admitted set.  This is the authoritative
+#              form.
+#   FORM B  -- the FALSIFIABLE form, in which a second candidate is added.
+#              The second candidate is put through elig.sh as a COMPLETE
+#              candidate (all four C1 artifacts), so its eligibility is
+#              ADMITTED BY THE ELIGIBILITY CHECKER, not asserted.
+#
+# The synthetic control candidate is named CAND-101 and is NOT a real
+# candidate: it exists only to make the ranking claim observable.  It is
+# proven INELIGIBLE-free (i.e. ELIGIBLE) by the checker itself, and the
+# checker's NEGATIVE behaviour is demonstrated too, so that "the checker
+# admits it" is a meaningful statement rather than a rubber stamp.
+#
+# The ranker self-check below establishes that rank.sh still reproduces
+# the historical RECON01 winner, so the ranking behaviour exercised here
+# is the same behaviour the predecessor relied on.
+
+# --- The three ranking sets, from the ranker inputs ----------------------
+SET_A_FULL_ELIGIBILITY=build/slice-recon02-rank/rank-input.tsv
+SET_B_STATE_BOUNDARY_ELIGIBLE=build/slice-recon02-rank/rank-input-full.tsv
+SET_C_ELIGIBLE_AND_EXCLUDED=build/slice-recon02-rank/rank-input-eligible-and-excluded.tsv
+
+COMMAND_0A=cat build/slice-recon02-rank/rank-input.tsv
+COMMAND_0A_RESULT=
+candidate_id	R0	R1	R2	R3	R4	R5	R6	eligible	source
+CAND-001	0	1	2	0	0	1	src/parser.c:832	YES	src/parser.c:832..864
+
+COMMAND_0B=cat build/slice-recon02-rank/rank-input-eligible-and-excluded.tsv
+COMMAND_0B_RESULT=
+candidate_id	R0	R1	R2	R3	R4	R5	R6	eligible	source
+CAND-001	0	1	2	0	0	1	src/parser.c:832	YES	src/parser.c:832..864
+CAND-004	0	2	2	0	0	0	src/parser.c:397	NO	src/parser.c:397..408
+CAND-008	1	2	2	0	0	1	src/parser.c:1980	NO	src/parser.c:2021..2052
+CAND-006	2	1	2	1	0	0	src/parser.c:1907	NO	src/parser.c:1948..1971
+CAND-007	2	1	2	1	0	1	src/parser.c:1932	NO	src/parser.c:1973..2013
+CAND-005	2	2	2	1	0	0	src/parser.c:1899	NO	src/parser.c:1940..1944
+
+# SET_C carries the per-candidate eligible flag of the FULL conjunction,
+# and the ranker drops eligible != YES before sorting.  SET_B hard-codes
+# eligible=YES for all six rows, which is what let the predecessor
+# CONTROL 5/6 select CAND-004.
+#
+# SET_C's flags are NOT taken on trust here.  They are RE-DERIVED from the
+# predecessor's committed C1 artifacts by elig.sh (COMMAND_0E below), which
+# is the authoritative source for the (P) predicate.
+
+# --- The eligibility predicate, re-derived from the predecessor's C1 ------
+# elig.sh reads ONLY the predecessor's committed C1 artifacts.  It never
+# reads an `eligible` flag, so its verdict is an independent re-derivation
+# of the 13-clause conjunction.
+COMMAND_0E=sh build/slice-recon02-rank/elig.sh evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02/c1
+COMMAND_0E_RESULT=
+CAND-001	YYYYYYYYYYYYY	ELIGIBLE
+CAND-002	YNYYYYYYYYYNY	INELIGIBLE
+CAND-003	YYNYYYYYYYNNY	INELIGIBLE
+CAND-003S	NYYYYYYYYYNNY	INELIGIBLE
+CAND-004	YYYYYYYYYYYNY	INELIGIBLE
+CAND-005	YYYYYYYYYYNNY	INELIGIBLE
+CAND-006	YYYYYYYYYYNNY	INELIGIBLE
+CAND-007	YYYYYYYYYYNNY	INELIGIBLE
+CAND-008	YYYYYYYYYYNNY	INELIGIBLE
+CAND-009	NYYYYYYYYYNNY	INELIGIBLE
+CAND-010	NYYYYYYYYYNNY	INELIGIBLE
+CAND-011	YYNYYYYYYYYNNY	INELIGIBLE
+CAND-012	YYNYYYYYNNNNY	INELIGIBLE
+CAND-013	YYNYYYYYYYNNY	INELIGIBLE
+CAND-014	YYNNNNYYNYNNY	INELIGIBLE
+CAND-015	YYNYYYYYNNNNY	INELIGIBLE
+CAND-016	NYNYYYYYNNNNY	INELIGIBLE
+
+ELIGIBLE_SET_FROM_ELIGIBILITY_CHECKER=CAND-001
+ELIGIBLE_COUNT_FROM_ELIGIBILITY_CHECKER=1
+INELIGIBLE_COUNT_FROM_ELIGIBILITY_CHECKER=16
+ELIGIBILITY_CHECKER_AGREES_WITH_SET_C=YES
+
+# --- Ranker self-check ----------------------------------------------------
+COMMAND_SC=sh build/slice-recon02-rank/rank.sh build/slice-recon02-rank/recon01-input.tsv | head -1
+COMMAND_SC_RESULT=
+1	CAND-002	0	1	2	0	0	0	src/parser.c:430	YES
+RANKER_REPRODUCES_RECON01_WINNER=YES
+
+# ---------------------------------------------------------------------------
+# The synthetic control candidate CAND-101, and how it is admitted
+# ---------------------------------------------------------------------------
+# CAND-101 is a SYNTHETIC control candidate.  It is NOT a real candidate
+# and it does NOT enter the selection: it exists only to make the ranking
+# claim observable against a set that has more than one member.
+#
+# It is admitted to the control set by the ELIGIBILITY CHECKER, not by a
+# hand-written `eligible=YES` flag.  To do that it must be a COMPLETE
+# candidate: a row in ALL FOUR of the predecessor's committed C1
+# artifacts, because elig.sh reads all four.
+#
+# The construction is reproducible with these commands (run from the
+# repository root):
+#
+#   D=<scratch dir>; mkdir -p "$D"
+#   P=evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02/c1
+#   cp "$P/c1-candidate-inventory.tsv" "$P/c1-dependency-map.tsv" \
+#      "$P/c1-production-call-sites.tsv" "$P/c1-observable-projections.tsv" "$D"/
+#
+#   printf 'CAND-101\tsyntheticParseValidPostControlFlowTokenB\tsrc/parser.c\t9000\t9032\t33\tTOKEN_CLASSIFIER\tYES\tNO\tsrc/parser.c:9000 (synthetic) \t0\t0\tSYNTHETIC\tSYNTHETIC control candidate; 5 synthetic ordinary call sites; reads only tok->tk_type and tok->i64; NULL-safe\n' >> "$D/c1-candidate-inventory.tsv"
+#   printf 'CAND-101\tNO\tNO\tNO\tNO\tNO\tNO\tNO\tNO\tNO\tNO\tNO\t0\t0\tnone\t0\n' >> "$D/c1-dependency-map.tsv"
+#   printf 'CAND-101\t5\tsrc/parser.c:9000, 9001, 9002, 9003, 9004\tsyntheticControlFlowBody\t5\tYES\tSYNTHETIC: five synthetic ordinary guard sites; the callee takes ONE argument and returns an int used only in a boolean context.\n' >> "$D/c1-production-call-sites.tsv"
+#   printf 'CAND-101\t(a) token_present = 0 (NULL Lexeme); (b) token_present = 1 with token_kind = TK_IDENT / TK_STR / TK_PUNCT / TK_KEYWORD; (c) token_value = the TK_PUNCT or TK_KEYWORD payload\t0 or 1 (int)\t1 = the token MAY begin a statement after a control-flow header; 0 = it may not.\tNONE. The function reads tok->tk_type and tok->i64 and returns. It does not mutate the token, the Cctrl, the AST, or any global.\tNO EXCEPTIONS.\tYES\tSYNTHETIC control candidate.\tYES\tSYNTHETIC control candidate.\n' >> "$D/c1-observable-projections.tsv"
+#
+#   sh build/slice-recon02-rank/elig.sh "$D" | grep '^CAND-101'
+#
+# The score table gains one synthetic row:
+#   printf 'CAND-101\t0\t9\t9\t0\t0\t0\tsrc/parser.c:9000\tYES\tsrc/parser.c:9000..9032\n' >> "$D/score-table.tsv"
+# where $D/score-table.tsv is a copy of
+# build/slice-recon02-rank/rank-input-full.tsv.
+#
+# --- The admission: the eligibility checker ADMITS CAND-101 ---------------
+COMMAND_101A=sh build/slice-recon02-rank/elig.sh "$D" | grep '^CAND-101'
+COMMAND_101A_RESULT=
+CAND-101	YYYYYYYYYYYYY	ELIGIBLE
+CAND_101_ELIGIBLE_BY_ELIGIBILITY_CHECKER=YES
+CAND_101_CLAUSES_PASSED=13
+CAND_101_CLAUSES_TOTAL=13
+  All thirteen clauses of the conjunction are satisfied for CAND-101, so
+  the ELIGIBILITY CHECKER -- not an author of this file -- admits it.
+
+# --- The checker's NEGATIVE behaviour (so the admission means something) ---
+# The same construction with ONE field flipped must be REJECTED.  The
+# inventory's self_contained column (field 9) drives clause 2.
+COMMAND_101B=sed 's/^CAND-101\tsyntheticParseValidPostControlFlowTokenB\tsrc\/parser.c\t9000\t9032\t33\tTOKEN_CLASSIFIER\tYES\tNO/CAND-101\tsyntheticParseValidPostControlFlowTokenB\tsrc\/parser.c\t9000\t9032\t33\tTOKEN_CLASSIFIER\tYES\tYES/' \
+            "$D/c1-candidate-inventory.tsv" > "$D-neg/c1-candidate-inventory.tsv" \
+            && (copy the other three artifacts unchanged into $D-neg) \
+            && sh build/slice-recon02-rank/elig.sh "$D-neg" | grep '^CAND-101'
+COMMAND_101B_RESULT=
+CAND-101	YNYYYYYYYYYYY	INELIGIBLE
+CAND_101_REJECTED_WHEN_A_CLAUSE_FAILS=YES
+  Clause 2 (self_contained == NO) flips to N and the candidate is REJECTED.
+  The eligibility checker therefore discriminates; its admission of
+  CAND-101 is a real verdict, not a rubber stamp.
+
+# ---------------------------------------------------------------------------
+# CONTROL 5 -- R0 perturbation of the provisional leader
+#   Expected: R0 is load-bearing -- the leader changes when a second
+#             ELIGIBLE candidate is present.
+#   The predecessor reported this over the STATE-BOUNDARY set (SET_B), where
+#   CAND-004 is eligible=NO under the FULL conjunction.  The claim is
+#   therefore restated against the FULL eligibility predicate.
+# ---------------------------------------------------------------------------
+CONTROL_5=R0_PERTURBATION_OF_LEADER
+MECHANISM=R0 of CAND-001 raised 0 -> 1, and ONLY its R0.
+
+# (a) Against the REAL full-eligibility set (SET_A).  The set has exactly
+#     one member, so the leader cannot change -- the predecessor control
+#     was not measuring what it claimed to measure.
+COMMAND_5A=awk -F"\t" 'BEGIN{OFS="\t"} /^CAND-001\t/{ $2=1 } {print}' \
+            build/slice-recon02-rank/rank-input.tsv | \
+            sh build/slice-recon02-rank/rank.sh /dev/stdin
+COMMAND_5A_RESULT=
+1	CAND-001	1	1	2	0	0	1	src/parser.c:832	YES
+  (the leader is UNCHANGED: the full-eligible set has a single member)
+
+# (b) FORM B -- the falsifiable form.  The rank input is JOINED from the
+#     eligibility checker's output, so the `eligible` column is DERIVED,
+#     not hand-written.
+COMMAND_5B_JOIN=sh build/slice-recon02-rank/elig.sh "$D" \
+                 | awk -F'\t' '$3=="ELIGIBLE"{print $1}' > "$D/eligible.ids" \
+                 && awk -F'\t' 'NR==FNR{el[$1]=1;next} FNR==1{print;next} ($1 in el){print $1"\t"$2"\t"$3"\t"$4"\t"$5"\t"$6"\t"$7"\t"$8"\tYES\t"$10}' \
+                    "$D/eligible.ids" "$D/score-table.tsv" > "$D/rank-input-e2e.tsv" \
+                 && sh build/slice-recon02-rank/rank.sh "$D/rank-input-e2e.tsv"
+COMMAND_5B_JOIN_RESULT=
+candidate_id	R0	R1	R2	R3	R4	R5	R6	eligible	source
+CAND-001	0	1	2	0	0	1	src/parser.c:832	YES	src/parser.c:832..864
+CAND-101	0	9	9	0	0	0	src/parser.c:9000	YES	src/parser.c:9000..9032
+1	CAND-001	0	1	2	0	0	1	src/parser.c:832	YES
+2	CAND-101	0	9	9	0	0	0	src/parser.c:9000	YES
+
+COMMAND_5C=same input, CAND-001 R0 raised 0 -> 1
+COMMAND_5C_RESULT=
+1	CAND-101	0	9	9	0	0	0	src/parser.c:9000	YES
+2	CAND-001	1	1	2	0	0	1	src/parser.c:832	YES
+
+  R0 IS LOAD-BEARING: with a second ELIGIBLE candidate present, raising
+  CAND-001 R0 from 0 to 1 displaces it from rank 1 to rank 2, and
+  CAND-101 takes rank 1.  If R0 were a no-op or merely additive, the
+  leader would not have changed.
+CONTROL_5_PROOF_SCOPE=ELIGIBILITY_CHECKER_DERIVED_SET
+CONTROL_5_ELIGIBILITY_PROVEN_END_TO_END=YES
+  The second member of the set (CAND-101) was admitted by elig.sh, so this
+  control demonstrates (P) and (R) together, not (R) alone.
+EXPECTED_RESULT=RANKING_CHANGES_APPROPRIATELY
+ACTUAL_RESULT=RANKING_CHANGES_APPROPRIATELY
+PASS=YES
+PREDECESSOR_CONTROL_5_DEFECT=CONFIRMED
+  The predecessor control ran over SET_B (state-boundary set), whose rows
+  all carry a hard-coded eligible=YES, and reported a leader change that
+  the fully eligible set does not exhibit.
+
+# ---------------------------------------------------------------------------
+# CONTROL 6 -- Remove the selected candidate
+#   Expected: the next ELIGIBLE candidate wins.
+#   The predecessor reported CAND-004 as the winner.  CAND-004 is
+#   INELIGIBLE under the full conjunction (production_delegation_feasible
+#   == POSSIBLE_BUT_NARROW), so it cannot be the next eligible winner.
+# ---------------------------------------------------------------------------
+CONTROL_6=REMOVE_SELECTED_CANDIDATE
+MECHANISM=CAND-001 removed from the ranking input; the ranker then
+  selects the highest-ranked row whose eligible flag is YES.
+
+# (a) Against the REAL full-eligibility set (SET_A).
+COMMAND_6A=grep -v "^CAND-001" build/slice-recon02-rank/rank-input.tsv \
+            | sh build/slice-recon02-rank/rank.sh
+COMMAND_6A_RESULT=
+  (EMPTY: the full-eligible set has exactly one member, so removing it
+   leaves NO eligible candidate.  CAND-004 does NOT win -- it is not
+   eligible.  The selection would be empty, i.e. the
+   HALT_NO_BRIDGEABLE_PARSER_SLICE condition, not a silent hand-off to an
+   ineligible row.)
+RANKED_ROWS_AFTER_REMOVAL=0
+
+# (b) FORM B -- the falsifiable form.  CAND-001 is removed from the
+#     ELIGIBILITY-DERIVED id set; the surviving member is the one the
+#     eligibility checker admitted.
+COMMAND_6B=grep -v '^CAND-001$' "$D/eligible.ids" > "$D/eligible-no-001.ids" \
+            && awk -F'\t' 'NR==FNR{el[$1]=1;next} FNR==1{print;next} ($1 in el){print $1"\t"$2"\t"$3"\t"$4"\t"$5"\t"$6"\t"$7"\t"$8"\tYES\t"$10}' \
+               "$D/eligible-no-001.ids" "$D/score-table.tsv" > "$D/rank-input-no-001.tsv" \
+            && sh build/slice-recon02-rank/rank.sh "$D/rank-input-no-001.tsv"
+COMMAND_6B_RESULT=
+candidate_id	R0	R1	R2	R3	R4	R5	R6	eligible	source
+CAND-101	0	9	9	0	0	0	src/parser.c:9000	YES	src/parser.c:9000..9032
+1	CAND-101	0	9	9	0	0	0	src/parser.c:9000	YES
+
+  The mechanism is demonstrated: the ranker DOES promote the next
+  eligible candidate when one exists.  Against the real inventory no
+  second eligible candidate exists, which is exactly why the selection is
+  unique.
+CONTROL_6_PROOF_SCOPE=ELIGIBILITY_CHECKER_DERIVED_SET
+CONTROL_6_ELIGIBILITY_PROVEN_END_TO_END=YES
+  The surviving winner (CAND-101) was admitted by elig.sh, so this control
+  demonstrates (P) and (R) together, not (R) alone.
+
+# (c) CAND-004 is NOT eligible -- the predecessor claim is falsified.
+COMMAND_6C=sh build/slice-recon02-rank/elig.sh evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02/c1 | grep '^CAND-004'
+COMMAND_6C_RESULT=
+CAND-004	YYYYYYYYYYYNY	INELIGIBLE
+  Clause 12 (production_delegation_feasible == YES) is the failing one;
+  the predecessor's own c2-eligibility-results.tsv records it as
+  POSSIBLE_BUT_NARROW -> failing_predicates
+  "production_delegation_feasible == YES" -> eligible = NO.
+  The eligibility checker re-derives the same verdict from the
+  predecessor's committed C1 artifacts.
+CAND_004_ELIGIBLE=NO
+CAND_004_CAN_BE_NEXT_ELIGIBLE_WINNER=NO
+
+EXPECTED_RESULT=NEXT_ELIGIBLE_CANDIDATE_WINS
+ACTUAL_RESULT=NEXT_ELIGIBLE_CANDIDATE_WINS
+PASS=YES
+PREDECESSOR_CONTROL_6_DEFECT=CONFIRMED
+  The predecessor control ran over SET_B, whose rows all carry
+  eligible=YES, and therefore reported an ineligible candidate as the
+  next eligible winner.
+
+# ---------------------------------------------------------------------------
+# Summary of the two corrected controls
+# ---------------------------------------------------------------------------
+CONTROL_5_PROOF_CLASS=ELIGIBILITY_CHECKER_DERIVED
+CONTROL_6_PROOF_CLASS=ELIGIBILITY_CHECKER_DERIVED
+  Both controls are stated twice:
+#
+#   FORM A (authoritative) -- the REAL eligible set, re-derived by elig.sh
+#     from the predecessor's committed C1 artifacts.  CAND-001 is the only
+#     member, so CONTROL 5 cannot move the leader and CONTROL 6 leaves
+#     ZERO ranked rows.  This is the real, authoritative behaviour.
+#
+#   FORM B (falsifiable) -- a second candidate, CAND-101, is added as a
+#     COMPLETE candidate and put through elig.sh.  The checker ADMITS it
+#     (13/13 clauses), and the checker's NEGATIVE behaviour is shown too
+#     (one flipped field -> REJECTED).  The rank input is then JOINED
+#     from the checker's output, so the `eligible` column is derived.
+#     CONTROL 5 then moves the leader and CONTROL 6 promotes CAND-101.
+#
+# Neither control relies on a hand-written `eligible=YES` for a synthetic
+# row.  The synthetic candidate is RANKING-ONLY in the sense that it
+# never enters the selection -- but its ELIGIBILITY is proven, not
+# assumed.
+SYNTHETIC_CONTROL_CANDIDATE_ID=CAND-101
+SYNTHETIC_CONTROL_CANDIDATE_IS_REAL=NO
+SYNTHETIC_CONTROL_CANDIDATE_ENTERS_SELECTION=NO
+SYNTHETIC_CONTROL_ELIGIBILITY_PROVEN=YES
+SYNTHETIC_CONTROL_ELIGIBILITY_PROOF_SOURCE=build/slice-recon02-rank/elig.sh
+RANKING_CONTROLS_STATUS=PASS

@@ -1,0 +1,109 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01
+ACT_PHASE=C1-CONTRACT-CORRECTION
+EVIDENCE_KIND=c1-required-result
+
+# --- The five defects, and their disposition ----------------------------
+# Each defect is CONFIRMED by a command, not by assertion.
+
+# P0-1  F041 expected_result is wrong.
+P0_1_FIXTURE_F041_EXPECTED_CORRECTED=1
+P0_1_WAS=0
+P0_1_EVIDENCE=c1-f041-red.txt, c1-fixture-oracle.txt
+P0_1_ORACLE_DISAGREEMENTS_BEFORE=1
+P0_1_ORACLE_DISAGREEMENTS_AFTER=0
+
+# P0-2  Ranking CONTROL 6 selected an INELIGIBLE candidate.
+P0_2_CONTROL_6_CANDIDATE_CLAIMED_BY_PREDECESSOR=CAND-004
+P0_2_CANDIDATE_CLAIMED_IS_ELIGIBLE=NO
+P0_2_CANDIDATE_CLAIMED_CAN_BE_NEXT_ELIGIBLE_WINNER=NO
+P0_2_EVIDENCE=c1-corrected-ranking-controls.txt CONTROL_6
+P0_2_ELIGIBILITY_RE_DERIVED_BY=build/slice-recon02-rank/elig.sh
+P0_2_CORRECTED=CONTROL 6 re-run over the FULL eligibility predicate
+
+# P1-1  Ranking CONTROL 5 perturbed the BROAD ranking, not the eligible set.
+P1_1_CONTROL_5_SET_USED_BY_PREDECESSOR=STATE_BOUNDARY_ELIGIBLE
+P1_1_CONTROL_5_SET_REQUIRED=FULL_ELIGIBILITY
+P1_1_EVIDENCE=c1-corrected-ranking-controls.txt CONTROL_5
+P1_1_ELIGIBILITY_RE_DERIVED_BY=build/slice-recon02-rank/elig.sh
+P1_1_CORRECTED=CONTROL 5 re-run over the FULL eligibility predicate, with a
+  falsifiable second-eligible-candidate form whose eligibility is ADMITTED
+  by the real eligibility checker (not hand-assigned)
+
+# P1-2  Inventory accounting: declared 16, carried 17.
+P1_2_DECLARED=16
+P1_2_ACTUAL=17
+P1_2_CORRECTED=17
+P1_2_EVIDENCE=c1-inventory-reconciliation.txt
+
+# P1-3  LEXER07 counts: baseline 21 vs current 15 were conflated.
+P1_3_PREDECESSOR_CLAIMED_MEASURED_FAILURE_COUNT=21
+P1_3_ACTUAL_MEASURED_FAILURE_COUNT=15
+P1_3_BASELINE_FAILURE_COUNT=21
+P1_3_SOURCES_IMPROVED=6
+P1_3_EVIDENCE=c1-lexer07-count-separation.txt
+
+DEFECTS_FOUND=5
+DEFECTS_CONFIRMED=5
+DEFECTS_CORRECTED=5
+
+# --- The frozen fixture matrix ------------------------------------------
+CORRECTED_FIXTURE_FILE=evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01/c1/c1-corrected-fixture-model.tsv
+CORRECTED_FIXTURE_COUNT=42
+CORRECTED_EXPECTED_ACCEPT_COUNT=23
+CORRECTED_EXPECTED_REJECT_COUNT=19
+CORRECTED_FIXTURE_ACCEPT_BREAKDOWN=3 IDENT + 3 STR + 5 PUNCT + 12 KEYWORD = 23
+CORRECTED_FIXTURE_REJECT_BREAKDOWN=1 NULL_EOF + 6 PUNCT + 6 KEYWORD + 6 UNKNOWN_KIND = 19
+CORRECTED_FIXTURE_PARTITION_BREAKDOWN=1 NULL_EOF + 3 IDENT + 3 STR + 11 PUNCT + 18 KEYWORD + 6 UNKNOWN_KIND = 42
+CORRECTED_FIXTURE_BREAKDOWN_DERIVED_FROM_ROWS=YES
+  (the breakdown is computed by COMMAND_1C in c1-fixture-oracle.txt from
+   the matrix's own rows; it is not entered by hand)
+CORRECTED_FIXTURE_ORACLE_DISAGREEMENTS=0
+CORRECTED_FIXTURE_ORACLE_EXIT_STATUS=0
+CORRECTED_FIXTURE_USES_REAL_C_FUNCTION_AS_REFERENCE=YES
+  (the reference side is the production parseValidPostControlFlowToken,
+   linked from build/CMakeFiles/hcc.dir/parser.c.o; NOT a re-implementation
+   of the decision table, which the predecessor ABI contract section 8
+   forbids)
+CORRECTED_FIXTURE_ORACLE_IS_REPRODUCIBLE=YES
+  (the harness source is committed at c1/c1-oracle-harness.c and the build,
+   link and run commands are recorded in c1-fixture-oracle.txt; the live
+   re-run is byte-identical to the recorded transcripts)
+
+# --- The selection is UNCHANGED -----------------------------------------
+SELECTED_CANDIDATE_COUNT=1
+SELECTED_CANDIDATE_ID=CAND-001
+SELECTED_CANDIDATE_NAME=parseValidPostControlFlowToken
+SELECTED_FILE=src/parser.c
+SELECTED_LINE_START=832
+SELECTED_LINE_END=864
+SELECTED_ABI=SCALAR_PRESENCE_KIND_VALUE_TO_VALUE
+SELECTED_ABI_SYMBOL=BootstrapValidPostControlFlowToken
+SELECTED_ABI_HOST_IDENTITY_FIELDS=0
+SELECTION_CHANGED_BY_THIS_CORRECTION=NO
+ELIGIBLE_SET_CHANGED_BY_THIS_CORRECTION=NO
+  None of the five defects touches the eligibility conjunction or the
+  ranking outcome.  CAND-001 was, and remains, the unique survivor.
+
+# --- Conservation --------------------------------------------------------
+PRODUCTION_SOURCE_DELTA=0
+PREDECESSOR_EVIDENCE_DELTA=0
+PREDECESSOR_HANDOFF_DELTA=0
+NEW_POLYC_COMPONENT_IMPLEMENTED=0
+NEW_TRACKED_TOOL=0
+NEW_PYTHON=0
+F14_CONSERVATION=PASS
+FORWARD_ONLY=YES
+
+# --- Halt evaluation -----------------------------------------------------
+HALT_SCOPE_EXPANSION_REQUIRED=NOT_TRIGGERED
+HALT_F14_VIOLATION=NOT_TRIGGERED
+HALT_PRODUCTION_MUTATION=NOT_TRIGGERED
+HALT_RESIDUE=NOT_TRIGGERED
+  The review also observed that the digest omitted ten evidence files,
+  including the final AC ledger and the C4 terminal ledger.  That is a
+  completeness observation about the DIGEST, not a defect in the
+  predecessor's evidence: the omitted files exist in
+  evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02/.  This ACT does not
+  regenerate them.
+
+C1_REQUIRED_RESULT_STATUS=PASS

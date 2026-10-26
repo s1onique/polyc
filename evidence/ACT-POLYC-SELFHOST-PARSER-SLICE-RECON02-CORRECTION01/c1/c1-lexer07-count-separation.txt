@@ -1,0 +1,61 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01
+ACT_PHASE=C1-CONTRACT-CORRECTION
+EVIDENCE_KIND=lexer07-count-separation
+
+# The predecessor C3 LEXER07 comparison conflated the BASELINE failure
+# count with the CURRENT failure count.  The two are separated here.
+# The predecessor file is NOT modified (F14).
+
+# --- The BASELINE failure set (captured at baseline-capture time) --------
+COMMAND_1=grep -v '^#' evidence/ACT-POLYC-SELFHOST-PARSER-PADDING01-CORRECTION02/c2/c2-prospective-baseline-failures.tsv | awk -F'\t' 'NF>=3 && $3!="" && $3!="classification" {c[$3]++} END {for (k in c) print c[k], k}' | sort
+COMMAND_1_RESULT=
+6 ALL_FAIL_4
+6 S0_DIVERGED_FROM_S1_S2_S3
+9 NO_FALLBACK_S0
+BASELINE_FAILURE_COUNT=21
+  9 NO_FALLBACK_S0 + 6 S0_DIVERGED_FROM_S1_S2_S3 + 6 ALL_FAIL_4
+
+# --- The CURRENT failure set (measured at the predecessor C3) ------------
+COMMAND_2=grep -v '^#' build/c3-lexer07-corpus/corpus-failures.tsv | awk -F'\t' 'NR>1 {c[$4]++} END {for (k in c) print c[k], k}' | sort
+COMMAND_2_RESULT=
+6 ALL_FAIL
+9 NO_FALLBACK
+MEASURED_CURRENT_FAILURE_COUNT=15
+  9 NO_FALLBACK + 6 ALL_FAIL
+
+# --- The difference ------------------------------------------------------
+BASELINE_FAILURE_COUNT=21
+MEASURED_FAILURE_COUNT=15
+  (the predecessor recorded MEASURED_FAILURE_COUNT=21 -- that is the
+   BASELINE number, not the measured one)
+SOURCES_IMPROVED_SINCE_BASELINE=6
+  fzf, json, net, set, sqllite, stat
+  These were S0_DIVERGED_FROM_S1_S2_S3 at baseline-capture time and now
+  return rc=0 in ALL FOUR stages (classified BYTE_IDENTICAL_4).  They are
+  NOT current failures and MUST NOT be counted as such.
+ARITHMETIC=21 baseline - 6 improved = 15 current
+
+# --- What the predecessor actually said -----------------------------------
+PREDECESSOR_CLAIM="The full corpus exits non-zero because 21 sources fail";
+  "(9 stage0-only + 6 all-4 + 6 resolved-since-baseline)"
+PREDECESSOR_CLAIM_DEFECT=CONFIRMED
+  The parenthetical sums to 21, but the third term (6 resolved-since-
+  baseline) is NOT a current failure.  The current failing count is 15.
+
+# --- Consequence for the conservation verdict ----------------------------
+NEW_LEXER07_FAILURES=0
+REGRESSED_LEXER07_SOURCES=0
+IMPROVED_LEXER07_SOURCES=6
+FULL_CORPUS_STATUS=FAIL
+FULL_CORPUS_EXIT_STATUS=1
+  The full corpus still exits non-zero (15 sources fail).  The status is
+  NOT relabelled as PASS.
+LEXER07_BASELINE_COMPARISON=CONSISTENT
+LEXER07_NEW_REGRESSION=NO
+
+# The CONSERVATION VERDICT IS UNCHANGED -- only the arithmetic narration
+# of the failure count was wrong.  The registry counter text, both named
+# failure-source sets, the drift count, the known-defect count, the
+# unresolved count and the BYTE_IDENTICAL delta all still match EXACTLY.
+CONSERVATION_VERDICT_CHANGE=NONE
+LEXER07_COUNT_SEPARATION_STATUS=PASS

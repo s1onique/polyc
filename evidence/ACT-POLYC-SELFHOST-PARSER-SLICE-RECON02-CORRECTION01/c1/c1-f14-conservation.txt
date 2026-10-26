@@ -1,0 +1,57 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01
+ACT_PHASE=C1-CONTRACT-CORRECTION
+EVIDENCE_KIND=f14-conservation
+
+# F14 (AGENTS.md): "F14 forbids mutating any closed ACT's evidence
+# directory, including appending 'ADDENDUM' blocks to existing files.
+# Corrections live in new <original-id>-CORRECTION<N+1>/ directories."
+#
+# This ACT therefore MUTATES NOTHING in the predecessor's closed evidence,
+# its ACT document, or its HANDOFF.  Every correction is a NEW artifact in
+# the CORRECTION01 evidence directory.
+
+# --- The predecessor's closed evidence is untouched -----------------------
+COMMAND_1=git diff --name-only HEAD -- evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02
+COMMAND_1_RESULT=(EMPTY)
+COMMAND_2=git status --porcelain=v1 -- evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02
+COMMAND_2_RESULT=(EMPTY)
+
+# --- The predecessor's ACT document is untouched ------------------------
+COMMAND_3=git diff --name-only HEAD -- docs/acts/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02.md
+COMMAND_3_RESULT=(EMPTY)
+COMMAND_4=git status --porcelain=v1 -- docs/acts/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02.md
+COMMAND_4_RESULT=(EMPTY)
+
+# --- The predecessor's HANDOFF is untouched -----------------------------
+COMMAND_5=git diff --name-only HEAD -- docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02.md
+COMMAND_5_RESULT=(EMPTY)
+COMMAND_6=git status --porcelain=v1 -- docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02.md
+COMMAND_6_RESULT=(EMPTY)
+
+# --- No production, tooling or script mutation --------------------------
+COMMAND_7=git diff --name-only HEAD -- src/
+COMMAND_7_RESULT=(EMPTY)
+COMMAND_8=git diff --name-only HEAD -- tools/
+COMMAND_8_RESULT=(EMPTY)
+COMMAND_9=git diff --name-only HEAD -- scripts/
+COMMAND_9_RESULT=(EMPTY)
+
+PREDECESSOR_EVIDENCE_DELTA=0
+PREDECESSOR_ACT_DOCUMENT_DELTA=0
+PREDECESSOR_HANDOFF_DELTA=0
+PRODUCTION_SOURCE_DELTA=0
+TOOLS_DELTA=0
+SCRIPTS_DELTA=0
+NEW_POLYC_COMPONENT_IMPLEMENTED=0
+NEW_TRACKED_TOOL=0
+COMPILER_GENERATION_REBUILT=NO
+HISTORY_REWRITTEN=NO
+UNRELATED_EVIDENCE_REGENERATED=NO
+
+# --- The correction lives in NEW artifacts ------------------------------
+CORRECTION_EVIDENCE_DIR=evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01/
+CORRECTION_ACT_DOCUMENT=docs/acts/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01.md
+CORRECTION_HANDOFF=docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01.md
+FORWARD_ONLY=YES
+
+F14_CONSERVATION=PASS

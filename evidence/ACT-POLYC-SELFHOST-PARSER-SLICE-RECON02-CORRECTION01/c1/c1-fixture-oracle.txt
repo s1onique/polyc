@@ -1,0 +1,240 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01
+ACT_PHASE=C1-CONTRACT-CORRECTION
+EVIDENCE_KIND=fixture-oracle
+
+# The 42-row fixture matrix, checked against the REAL production C
+# function parseValidPostControlFlowToken, linked from the production
+# object build/CMakeFiles/hcc.dir/parser.c.o (compiled from src/parser.c).
+#
+# The reference side is the production function itself, NOT a
+# re-implementation of the decision table -- the predecessor's ABI
+# contract section 8 requires the real C function as the oracle.
+#
+# The harness constructs a Lexeme with the REAL src/lexer.h layout and
+# calls the production function; for token_present=0 it passes NULL.
+
+# =========================================================================
+# HOW TO REPRODUCE THIS ENTIRELY
+# =========================================================================
+# Every command below is runnable from the repository root and needs
+# nothing but the repository itself (a C compiler and the existing
+# build/ tree).  The harness source is COMMITTED, not described:
+#
+#   evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01/c1/
+#     c1-oracle-harness.c
+#
+# --- STEP 1: the link line ------------------------------------------------
+# The production object set is taken from the production CMake link line
+# (build/CMakeFiles/hcc.dir/link.txt).  main.c.o, repl.c.o and
+# linenoise.c.o are dropped: main.c.o defines its own main() (the harness
+# supplies it) and the other two are only needed by the interactive
+# front-end.  parser-padding-subject.o (the PolyC
+# BootstrapCalcPadding component the production parser links against) is
+# kept.
+#
+# COMMAND_0=
+#   cd build
+#   cc -I../src -o /tmp/polyc-oracle \
+#      ../evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01/c1/c1-oracle-harness.c \
+#      $(cat CMakeFiles/hcc.dir/link.txt \
+#          | sed -e 's|^/usr/bin/cc [^ ]* [^ ]* [^ ]* [^ ]* [^ ]* [^ ]* ||' \
+#                -e 's|-o /Volumes[^ ]*/hcc||' \
+#                -e 's|CMakeFiles/hcc.dir/main.c.o ||' \
+#                -e 's|CMakeFiles/hcc.dir/repl.c.o ||' \
+#                -e 's|CMakeFiles/hcc.dir/linenoise/linenoise.c.o ||' \
+#          | tr -d '"')
+#   cd ..
+#
+# COMMAND_0_RESULT=(linked; /tmp/polyc-oracle)
+# COMMAND_0_EXIT_STATUS=0
+#
+# The ONLY symbol the harness supplies itself is `is_terminal`, a UI
+# global that lives in src/main.c (which also defines main()).  It is
+# declared in the harness and never read by the oracle.  Every other
+# symbol -- including parseValidPostControlFlowToken -- comes from the
+# production objects.
+#
+# --- STEP 2: RUN A -- the PREDECESSOR matrix (read-only, NOT modified) ----
+# COMMAND_1A=/tmp/polyc-oracle \
+#             evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02/c2/c2-selected-fixture-model.tsv
+# COMMAND_1A_EXIT_STATUS=1
+#   (exit 1 = at least one disagreement with the predecessor matrix)
+#
+# --- STEP 3: RUN B -- the CORRECTED matrix -------------------------------
+# COMMAND_1B=/tmp/polyc-oracle \
+#             evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01/c1/c1-corrected-fixture-model.tsv
+# COMMAND_1B_EXIT_STATUS=0
+#   (exit 0 = the corrected matrix agrees with the production function on
+#    every row)
+#
+# --- STEP 4: the fixture counts, DERIVED from the corrected matrix -------
+# The accept/reject totals and the group breakdown are computed from the
+# ROWS of the corrected matrix, not entered by hand.
+COMMAND_1C=awk -F'\t' '
+function grp(id) {
+  if (id == "F001") return "NULL_EOF"
+  if (id == "F002" || id == "F003" || id == "F004") return "IDENT"
+  if (id == "F005" || id == "F006" || id == "F041") return "STR"
+  if (id >= "F007" && id <= "F017") return "PUNCT"
+  if (id >= "F018" && id <= "F035") return "KEYWORD"
+  return "UNKNOWN_KIND"
+}
+NR>1 && $1 ~ /^F[0-9]/ {
+  n++
+  g = grp($1)
+  tot[g]++
+  if ($6 == 1) { acc++; accg[g]++ } else { rej++; rejg[g]++ }
+}
+END {
+  print "rows=" n
+  print "accept=" acc " reject=" rej
+  for (g in tot) print "group " g " total=" tot[g] " accept=" accg[g]+0 " reject=" rejg[g]+0
+}' evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01/c1/c1-corrected-fixture-model.tsv
+COMMAND_1C_RESULT=
+rows=42
+accept=23 reject=19
+group IDENT total=3 accept=3 reject=0
+group KEYWORD total=18 accept=12 reject=6
+group NULL_EOF total=1 accept=0 reject=1
+group PUNCT total=11 accept=5 reject=6
+group STR total=3 accept=3 reject=0
+group UNKNOWN_KIND total=6 accept=0 reject=6
+FIXTURE_COUNT=42
+EXPECTED_ACCEPT_COUNT=23
+EXPECTED_REJECT_COUNT=19
+ACCEPT_BREAKDOWN=3 IDENT + 3 STR + 5 PUNCT + 12 KEYWORD = 23
+REJECT_BREAKDOWN=1 NULL_EOF + 6 PUNCT + 6 KEYWORD + 6 UNKNOWN_KIND = 19
+PARTITION_BREAKDOWN=1 NULL_EOF + 3 IDENT + 3 STR + 11 PUNCT + 18 KEYWORD + 6 UNKNOWN_KIND = 42
+PARTITION_SUM_MATCHES_FIXTURE_COUNT=YES
+ACCEPT_BREAKDOWN_MATCHES_EXPECTED_ACCEPT_COUNT=YES
+REJECT_BREAKDOWN_MATCHES_EXPECTED_REJECT_COUNT=YES
+
+# --- RUN A: the PREDECESSOR matrix (read-only, NOT modified) --------------
+# The output below is the VERBATIM output of COMMAND_1A.  It is
+# byte-identical to the live re-run (verified by diff, see c3).
+ORACLE_RUN_A=PREDECESSOR_MATRIX
+ORACLE_RUN_A_FILE=evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02/c2/c2-selected-fixture-model.tsv
+ORACLE_RUN_A_OUTPUT=
+F001	present=0	kind=0	value=0	stated=0	oracle=0	AGREE
+F002	present=1	kind=0x300	value=0	stated=1	oracle=1	AGREE
+F003	present=1	kind=0x300	value=66	stated=1	oracle=1	AGREE
+F004	present=1	kind=0x300	value=-1	stated=1	oracle=1	AGREE
+F005	present=1	kind=0x301	value=0	stated=1	oracle=1	AGREE
+F006	present=1	kind=0x301	value=999999	stated=1	oracle=1	AGREE
+F007	present=1	kind=0x329	value=774	stated=1	oracle=1	AGREE
+F008	present=1	kind=0x329	value=773	stated=1	oracle=1	AGREE
+F009	present=1	kind=0x329	value=123	stated=1	oracle=1	AGREE
+F010	present=1	kind=0x329	value=59	stated=1	oracle=1	AGREE
+F011	present=1	kind=0x329	value=42	stated=1	oracle=1	AGREE
+F012	present=1	kind=0x329	value=40	stated=0	oracle=0	AGREE
+F013	present=1	kind=0x329	value=0	stated=0	oracle=0	AGREE
+F014	present=1	kind=0x329	value=-1	stated=0	oracle=0	AGREE
+F015	present=1	kind=0x329	value=66	stated=0	oracle=0	AGREE
+F016	present=1	kind=0x329	value=-9223372036854775808	stated=0	oracle=0	AGREE
+F017	present=1	kind=0x329	value=9223372036854775807	stated=0	oracle=0	AGREE
+F018	present=1	kind=0x332	value=66	stated=1	oracle=1	AGREE
+F019	present=1	kind=0x332	value=38	stated=1	oracle=1	AGREE
+F020	present=1	kind=0x332	value=44	stated=1	oracle=1	AGREE
+F021	present=1	kind=0x332	value=46	stated=1	oracle=1	AGREE
+F022	present=1	kind=0x332	value=18	stated=1	oracle=1	AGREE
+F023	present=1	kind=0x332	value=20	stated=1	oracle=1	AGREE
+F024	present=1	kind=0x332	value=40	stated=1	oracle=1	AGREE
+F025	present=1	kind=0x332	value=24	stated=1	oracle=1	AGREE
+F026	present=1	kind=0x332	value=26	stated=1	oracle=1	AGREE
+F027	present=1	kind=0x332	value=80	stated=1	oracle=1	AGREE
+F028	present=1	kind=0x332	value=82	stated=1	oracle=1	AGREE
+F029	present=1	kind=0x332	value=28	stated=1	oracle=1	AGREE
+F030	present=1	kind=0x332	value=6	stated=0	oracle=0	AGREE
+F031	present=1	kind=0x332	value=0	stated=0	oracle=0	AGREE
+F032	present=1	kind=0x332	value=-1	stated=0	oracle=0	AGREE
+F033	present=1	kind=0x332	value=123	stated=0	oracle=0	AGREE
+F034	present=1	kind=0x332	value=-9223372036854775808	stated=0	oracle=0	AGREE
+F035	present=1	kind=0x332	value=9223372036854775807	stated=0	oracle=0	AGREE
+F036	present=1	kind=0x302	value=42	stated=0	oracle=0	AGREE
+F037	present=1	kind=0x304	value=42	stated=0	oracle=0	AGREE
+F038	present=1	kind=0x303	value=42	stated=0	oracle=0	AGREE
+F039	present=1	kind=0	value=42	stated=0	oracle=0	AGREE
+F040	present=1	kind=0x333	value=42	stated=0	oracle=0	AGREE
+F041	present=1	kind=0x301	value=42	stated=0	oracle=1	*** DISAGREE ***
+F042	present=1	kind=123456	value=42	stated=0	oracle=0	AGREE
+
+ROWS=42 ACCEPT=23 REJECT=19 DISAGREE=1
+ORACLE_RUN_A_EXIT_STATUS=1
+  (exit 1 = at least one disagreement with the predecessor matrix)
+
+# --- RUN B: the CORRECTED matrix -------------------------------------------
+# The output below is the VERBATIM output of COMMAND_1B.  It is
+# byte-identical to the live re-run (verified by diff, see c3).
+ORACLE_RUN_B=CORRECTED_MATRIX
+ORACLE_RUN_B_FILE=evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01/c1/c1-corrected-fixture-model.tsv
+ORACLE_RUN_B_OUTPUT=
+F001	present=0	kind=0	value=0	stated=0	oracle=0	AGREE
+F002	present=1	kind=0x300	value=0	stated=1	oracle=1	AGREE
+F003	present=1	kind=0x300	value=66	stated=1	oracle=1	AGREE
+F004	present=1	kind=0x300	value=-1	stated=1	oracle=1	AGREE
+F005	present=1	kind=0x301	value=0	stated=1	oracle=1	AGREE
+F006	present=1	kind=0x301	value=999999	stated=1	oracle=1	AGREE
+F007	present=1	kind=0x329	value=774	stated=1	oracle=1	AGREE
+F008	present=1	kind=0x329	value=773	stated=1	oracle=1	AGREE
+F009	present=1	kind=0x329	value=123	stated=1	oracle=1	AGREE
+F010	present=1	kind=0x329	value=59	stated=1	oracle=1	AGREE
+F011	present=1	kind=0x329	value=42	stated=1	oracle=1	AGREE
+F012	present=1	kind=0x329	value=40	stated=0	oracle=0	AGREE
+F013	present=1	kind=0x329	value=0	stated=0	oracle=0	AGREE
+F014	present=1	kind=0x329	value=-1	stated=0	oracle=0	AGREE
+F015	present=1	kind=0x329	value=66	stated=0	oracle=0	AGREE
+F016	present=1	kind=0x329	value=-9223372036854775808	stated=0	oracle=0	AGREE
+F017	present=1	kind=0x329	value=9223372036854775807	stated=0	oracle=0	AGREE
+F018	present=1	kind=0x332	value=66	stated=1	oracle=1	AGREE
+F019	present=1	kind=0x332	value=38	stated=1	oracle=1	AGREE
+F020	present=1	kind=0x332	value=44	stated=1	oracle=1	AGREE
+F021	present=1	kind=0x332	value=46	stated=1	oracle=1	AGREE
+F022	present=1	kind=0x332	value=18	stated=1	oracle=1	AGREE
+F023	present=1	kind=0x332	value=20	stated=1	oracle=1	AGREE
+F024	present=1	kind=0x332	value=40	stated=1	oracle=1	AGREE
+F025	present=1	kind=0x332	value=24	stated=1	oracle=1	AGREE
+F026	present=1	kind=0x332	value=26	stated=1	oracle=1	AGREE
+F027	present=1	kind=0x332	value=80	stated=1	oracle=1	AGREE
+F028	present=1	kind=0x332	value=82	stated=1	oracle=1	AGREE
+F029	present=1	kind=0x332	value=28	stated=1	oracle=1	AGREE
+F030	present=1	kind=0x332	value=6	stated=0	oracle=0	AGREE
+F031	present=1	kind=0x332	value=0	stated=0	oracle=0	AGREE
+F032	present=1	kind=0x332	value=-1	stated=0	oracle=0	AGREE
+F033	present=1	kind=0x332	value=123	stated=0	oracle=0	AGREE
+F034	present=1	kind=0x332	value=-9223372036854775808	stated=0	oracle=0	AGREE
+F035	present=1	kind=0x332	value=9223372036854775807	stated=0	oracle=0	AGREE
+F036	present=1	kind=0x302	value=42	stated=0	oracle=0	AGREE
+F037	present=1	kind=0x304	value=42	stated=0	oracle=0	AGREE
+F038	present=1	kind=0x303	value=42	stated=0	oracle=0	AGREE
+F039	present=1	kind=0	value=42	stated=0	oracle=0	AGREE
+F040	present=1	kind=0x333	value=42	stated=0	oracle=0	AGREE
+F041	present=1	kind=0x301	value=42	stated=1	oracle=1	AGREE
+F042	present=1	kind=123456	value=42	stated=0	oracle=0	AGREE
+ROWS=42 ACCEPT=23 REJECT=19 DISAGREE=0
+ORACLE_RUN_B_EXIT_STATUS=0
+  (exit 0 = the corrected matrix agrees with the production function on
+   every row)
+
+PREDECESSOR_MATRIX_DISAGREEMENTS=1
+PREDECESSOR_DISAGREEING_ROW=F041 (stated 0, oracle 1)
+CORRECTED_MATRIX_DISAGREEMENTS=0
+CORRECTED_FIXTURE_COUNT=42
+CORRECTED_EXPECTED_ACCEPT_COUNT=23
+CORRECTED_EXPECTED_REJECT_COUNT=19
+CORRECTED_ACCEPT_BREAKDOWN=3 IDENT + 3 STR + 5 PUNCT + 12 KEYWORD = 23
+CORRECTED_REJECT_BREAKDOWN=1 NULL_EOF + 6 PUNCT + 6 KEYWORD + 6 UNKNOWN_KIND = 19
+CORRECTED_PARTITION_BREAKDOWN=1 NULL_EOF + 3 IDENT + 3 STR + 11 PUNCT + 18 KEYWORD + 6 UNKNOWN_KIND = 42
+
+# --- Reproducibility ------------------------------------------------------
+# The two transcripts above are not merely assertions: they are the
+# VERBATIM output of the COMMITTED harness, and the live re-run is
+# BYTE-IDENTICAL to them.  The diff commands that prove this are in
+# c3-required-result.txt (COMMAND_3A / COMMAND_3B).
+ORACLE_HARNESS_SOURCE=evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01/c1/c1-oracle-harness.c
+ORACLE_HARNESS_IS_COMMITTED=YES
+ORACLE_REFERENCE_SIDE=the REAL production parseValidPostControlFlowToken
+ORACLE_REFERENCE_IS_REIMPLEMENTED=NO
+ORACLE_RUN_A_REPRODUCIBLE=YES
+ORACLE_RUN_B_REPRODUCIBLE=YES
+
+FIXTURE_ORACLE_STATUS=PASS

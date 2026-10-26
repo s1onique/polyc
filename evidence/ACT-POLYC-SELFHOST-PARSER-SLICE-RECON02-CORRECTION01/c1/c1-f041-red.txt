@@ -1,0 +1,58 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01
+ACT_PHASE=C1-CONTRACT-CORRECTION
+EVIDENCE_KIND=f041-red
+
+# --- The defect, reproduced -------------------------------------------------
+# F041 in the predecessor frozen matrix states expected_result = 0.
+# The REAL production C function returns 1 for the same input.
+#
+# The witness is the production function itself, linked from the production
+# object build/CMakeFiles/hcc.dir/parser.c.o (compiled from src/parser.c).
+# No re-implementation of the decision table is used as the reference -- the
+# ABI contract (section 8) forbids that.
+
+COMMAND_1=grep -n 0x301 src/lexer.h
+COMMAND_1_RESULT=
+15:#define TK_SUPERSCRIPT  0x301
+19:#define TK_STR          0x301
+
+COMMAND_2=sed -n 832,836p src/parser.c
+COMMAND_2_RESULT=
+int parseValidPostControlFlowToken(Lexeme *tok) {
+    if (tok == NULL) return 0; /* EOF - caller raises */
+    if (tok->tk_type == TK_IDENT) return 1;
+    if (tok->tk_type == TK_STR) return 1;
+    if (tok->tk_type == TK_PUNCT) {
+
+
+# --- The single disagreement -----------------------------------------------
+# The full 42-row oracle transcript is in c1-fixture-oracle.txt.
+# It reports exactly ONE disagreement, on F041.
+
+DISAGREEING_FIXTURES=1
+DISAGREEING_FIXTURE_ID=F041
+F041_STATED_EXPECTED=0
+F041_REAL_C_FUNCTION_RESULT=1
+ORACLE_SUMMARY_ROWS=42
+ORACLE_SUMMARY_ACCEPT=23
+ORACLE_SUMMARY_REJECT=19
+ORACLE_SUMMARY_DISAGREE=1
+ORACLE_EXIT_STATUS=1
+
+# --- Interpretation --------------------------------------------------------
+# TK_SUPERSCRIPT and TK_STR are the SAME NUMERIC VALUE (0x301).  The
+# legacy C body compares the kind by NUMBER (tok->tk_type == TK_STR), so
+# kind 0x301 is TK_STR and is ACCEPTED, independent of the payload.
+# The predecessor matrix F041 row contradicted its own rationale text
+# (which says "0x301 is TK_STR and is ACCEPTED") and contradicted the
+# predecessor's own ABI contract decision table, which lists
+# | 1 | TK_STR (0x301) | (any) | **1** | :835 |.
+#
+# The C2 phase therefore contradicted ITSELF.  The ABI contract and the
+# F041 rationale text are correct; the F041 expected_result column was wrong.
+
+F041_EXPECTED_CORRECTED=1
+F041_CORRECTION_IS_FORWARD_ONLY=YES
+  (the predecessor matrix is NOT modified -- see c1-f14-conservation.txt)
+
+RED_STATUS=REPRODUCED
