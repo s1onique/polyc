@@ -1,0 +1,38 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03
+# ACT_PHASE=C0-AUTH
+# EVIDENCE_KIND=production-authority
+#
+# Live production authority of the two already-migrated PolyC parser components.
+# Verified against the LIVE CMake configuration and the ACTUAL production object
+# linkage -- not against source comments and not merely an exported symbol.
+#
+# Schema: component <TAB> authority <TAB> legacy_c_function <TAB> legacy_source_file <TAB> legacy_source_line <TAB> polyc_symbol <TAB> polyc_subject_object <TAB> cmake_option <TAB> cmake_option_value <TAB> delegation_macro <TAB> production_obj_undefined_symbol <TAB> production_call_sites <TAB> evidence
+
+component	authority	legacy_c_function	legacy_source_file	legacy_source_line	polyc_symbol	polyc_subject_object	cmake_option	cmake_option_value	delegation_macro	production_obj_undefined_symbol	production_call_sites	evidence
+BootstrapCalcPadding	POLYC	CalcPadding	src/parser.c	430	_BootstrapCalcPadding	build/parser-padding-subject.o	HCC_USE_SELFHOST_PARSER_PADDING	ON	HCC_USE_SELFHOST_PARSER_PADDING	U _BootstrapCalcPadding	src/parser.c:511,541,554,567 (parseClassOffsets); :599 (parseUnionOffsets)	nm build/CMakeFiles/hcc.dir/parser.c.o; build/CMakeCache.txt
+BootstrapValidPostControlFlowToken	POLYC	parseValidPostControlFlowToken	src/parser.c	832	_BootstrapValidPostControlFlowToken	build/parser-control-flow-token-subject.o	HCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN	ON	HCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN	U _BootstrapValidPostControlFlowToken	src/parser.c:992,1003,1296,1330,1363 (5 live production call sites)	nm build/CMakeFiles/hcc.dir/parser.c.o; build/CMakeCache.txt
+
+# --- verbatim verification transcript ---
+$ grep -i HCC_USE_SELFHOST build/CMakeCache.txt
+HCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN:BOOL=ON
+HCC_USE_SELFHOST_PARSER_PADDING:BOOL=ON
+$ nm -u build/CMakeFiles/hcc.dir/parser.c.o | grep -i Bootstrap
+_BootstrapCalcPadding
+_BootstrapValidPostControlFlowToken
+$ nm build/parser-padding-subject.o | grep -i Bootstrap
+0000000000000000 T _BootstrapCalcPadding
+$ nm build/parser-control-flow-token-subject.o | grep -i Bootstrap
+0000000000000000 T _BootstrapValidPostControlFlowToken
+$ nm build/hcc | grep -E "_BootstrapCalcPadding|_BootstrapValidPostControlFlowToken"
+00000001000641cc T _BootstrapCalcPadding
+0000000100064244 T _BootstrapValidPostControlFlowToken
+
+# NOTE (F13 -- evidence over prose): the presence of the undefined symbol U
+# _BootstrapXxx in the PRODUCTION object build/CMakeFiles/hcc.dir/parser.c.o is
+# the strong form of the authority claim: the legacy C ALGORITHM body is inside
+# the #else branch and is therefore NOT COMPILED into the production object.
+# The C symbols _CalcPadding and _parseValidPostControlFlowToken still exist in
+# the production object, but they are thin forwarding ADAPTERS (src/parser.c:452-453
+# and :861-869), not the semantic authority.
+# This is stronger than nm on the final binary alone and is NOT claimed as a
+# new causal proof; the causal proofs live in the predecessor ACTs.
