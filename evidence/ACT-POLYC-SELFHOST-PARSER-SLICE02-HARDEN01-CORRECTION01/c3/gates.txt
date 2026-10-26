@@ -1,0 +1,97 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION01
+ACT_PHASE=C3-VERIFY
+EVIDENCE_KIND=gates
+
+# ---- gate-fast ----------------------------------------------------
+COMMAND=make gate-fast
+GATE_FAST_RC=0
+  CHECK=large-file-guard STATUS=PASS
+  BUILD_RUN=NO
+  POLYC_GATE=factory-closure-status
+  MANIFEST_ROWS=28
+  MISSING_HANDOFF_FILES=0
+  MALFORMED_HANDOFF_VERDICT=0
+  PAIR_OK=28
+  PAIR_FAIL=0
+  STATUS=PASS
+  VERDICT=PASS
+  CHECK=factory-closure-status STATUS=PASS
+  VERDICT=PASS
+GATE_FAST_STATUS=PASS
+
+# ---- gate-push ----------------------------------------------------
+#
+# NOTE ON TMPDIR: the gate places its worktree under TMPDIR. When
+# TMPDIR points into an ephemeral directory that the environment
+# reclaims during a long run, the gate's own scratch file disappears
+# mid-run and the install check fails with "No such file or
+# directory". That was MEASURED on the first attempt:
+#
+#   grep: .../polyc-gate-out.3CpROQ: No such file or directory
+#   cat:  .../polyc-gate-out.3CpROQ: No such file or directory
+#   CHECK=install STATUS=FAIL
+#   REASON=install exited with status 2
+#
+# The run below was made with TMPDIR pointing at a directory that
+# survives the run. This is an ENVIRONMENT property of the run, not a
+# change to the gate and not a weakening of it: the gate script was
+# not modified, and every check it performs was executed.
+COMMAND=TMPDIR=/tmp/polyc-gate-tmp make gate-push
+GATE_PUSH_RC=0
+  PARSER_PADDING_ARCH_CHECK=PASS arch=arm64 target=arm64
+  CHECK=build STATUS=PASS
+  CHECK=install STATUS=PASS
+  CHECK=gep01 STATUS=PASS
+  CHECK=aot STATUS=PASS
+  CHECK=jit STATUS=PASS
+  lsp: 43/43 passed
+  CHECK=lsp STATUS=PASS
+  CHECK=diff-check STATUS=PASS
+  VERDICT=PASS
+GATE_PUSH_STATUS=PASS
+
+# ---- the object verification still passes -------------------------
+#
+# The predecessor's object verifier is unaffected by this ACT (the
+# verifier and its CMake driver are not in this ACT's scope), and the
+# gate reports it green:
+-- ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01: CONTROL_FLOW_TOKEN_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapValidPostControlFlowToken TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapValidPostControlFlowToken DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=1744
+CONTROL_FLOW_TOKEN_OBJECT_STATUS=PASS
+
+# ---- the targeted qualification gates ----------------------------
+COMMAND=make parser-control-flow-token-negative-controls
+  NEGATIVE_CONTROLS_TOTAL=16
+  NEGATIVE_CONTROLS_BROKEN=0
+  STATUS=PASS
+TARGETED_NEGATIVE_CONTROLS=PASS
+
+COMMAND=make parser-control-flow-token-harden-test
+  SLICE02_INT_BOUNDS=RUN
+  SLICE02_HARDEN_INT_BOUNDS=RUN
+  SLICE02_HARDEN_FIXTURE_CONTRACT=RUN
+  SLICE02_HARDEN_FIXTURE=evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01/c1/c1-corrected-fixture-model.tsv
+  (the differential returns STATUS=PASS on the canonical fixture)
+TARGETED_HARDEN_TEST=PASS
+
+COMMAND=./build/lexer07-broad-corpus-4-stage
+  (181 sources x 4 stages; see
+   c2/p1-lexer07-broad-corpus-conservation.txt)
+TARGETED_LEXER07_BROAD_CORPUS=EXECUTED
+
+# ---- patch hygiene ------------------------------------------------
+COMMAND=git diff --check 4113123f..HEAD
+  (empty)
+PATCH_HYGIENE_ERRORS=0
+
+# ---- the authority registry is unchanged --------------------------
+COMMAND=shasum -a 256 docs/factory/LEXER07-BASELINE-AUTHORITY.tsv
+  040fb7354dd62f2001f167e2dd083be3f5bcb013e97c1cf3e16468c7ae8678bb
+REGISTRY_UNCHANGED=YES
+
+# ---- F-NO-PYTHON and F-POLYC-TOOLS --------------------------------
+COMMAND=git diff --name-only 4113123f..HEAD | grep -c '\.py$'
+  0
+NEW_PYTHON_SOURCES=0
+COMMAND=git diff --name-only 4113123f..HEAD | grep -c '\.sh$'
+  0
+NEW_SHELL_SCRIPTS=0
