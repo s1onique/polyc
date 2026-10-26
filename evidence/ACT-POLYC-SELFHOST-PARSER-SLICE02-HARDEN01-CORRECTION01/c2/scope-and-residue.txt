@@ -1,0 +1,121 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION01
+ACT_PHASE=C2-IMPL
+EVIDENCE_KIND=scope-and-residue
+
+# ---- THE FILES THIS ACT CHANGED ----------------------------------
+COMMAND=git diff --name-only 4113123f..HEAD
+  Makefile
+  docs/acts/ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION01.md
+  evidence/ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION01/**
+  tools/quality/parser-control-flow-token-differential.HC
+  tools/quality/parser-control-flow-token-negative-controls.HC
+
+# Every one of these is inside the ACT's authorized scope:
+#   - the differential (the P0 repair)
+#   - the new PolyC negative-control driver (the P0 executable control)
+#   - the Makefile target for that driver
+#   - this ACT's own authorization and evidence artifacts
+AUTHORIZED_SCOPE_RESpected=YES
+
+# ---- THE PRODUCTION SURFACES ARE UNTOUCHED ------------------------
+COMMAND=git diff --name-only 4113123f..HEAD -- src/ tools/bootstrap/
+  (empty)
+PRODUCTION_SOURCE_UNCHANGED=YES
+BOOTSTRAP_SOURCE_UNCHANGED=YES
+PARSER_SEMANTICS_UNCHANGED=YES
+LEXER_SEMANTICS_UNCHANGED=YES
+LLVM_BACKEND_UNCHANGED=YES
+AST_REPRESENTATION_UNCHANGED=YES
+
+# The production PolyC component and its delegation are untouched, so
+# the predecessor's production-authority result still holds:
+#   CONTROL_FLOW_TOKEN_PRODUCTION_AUTHORITY = POLYC
+#   LEGACY_C_PRODUCTION_AUTHORITY           = RETIRED
+#   BootstrapValidPostControlFlowToken     = LOAD_BEARING
+PRODUCTION_AUTHORITY=POLYC
+
+# ---- THE PREDECESSOR'S EVIDENCE IS NOT MUTATED (F14) -------------
+COMMAND=git diff --name-only 4113123f..HEAD -- evidence/ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01/
+  (empty -- the predecessor's evidence directory is untouched)
+PREDECESSOR_EVIDENCE_UNCHANGED=YES
+
+# ---- THE READ-ONLY AUTHORITY REGISTRY IS UNCHANGED ----------------
+COMMAND=git diff --name-only 4113123f..HEAD -- docs/factory/LEXER07-BASELINE-AUTHORITY.tsv
+  (empty)
+REGISTRY_UNCHANGED=YES
+
+# ---- F-NO-PYTHON --------------------------------------------------
+COMMAND=git diff --name-only 4113123f..HEAD | grep '\.py$'
+  (empty)
+NEW_PYTHON_SOURCES=0
+COMMAND=git diff 4113123f..HEAD | grep -c 'python'
+  0
+NEW_PYTHON_INVOCATIONS=0
+
+# ---- F-POLYC-TOOLS ------------------------------------------------
+#
+# The one new tool implementation is PolyC:
+#   tools/quality/parser-control-flow-token-negative-controls.HC
+#
+# No new shell script was added. The existing
+# scripts/quality/lexer07-broad-corpus-4-stage.sh is unchanged.
+COMMAND=git diff --name-only 4113123f..HEAD | grep '\.sh$'
+  (empty)
+NEW_SHELL_SCRIPTS=0
+NEW_TOOL_IMPLEMENTATIONS=1
+NEW_TOOL_IMPLEMENTATION_LANGUAGE=PolyC
+
+# ---- RESIDUE ------------------------------------------------------
+#
+# RESIDUE_R1 -- the reason-token drift the reviewer noted.
+#
+# The review observed that the predecessor's C1 specifies
+# REJECT_WEAK_SYMBOL for its weak-definition control, while C3 reports
+# REJECT_SYMBOL_NAME_MISMATCH instead. The weak object IS correctly
+# rejected, so the safety property holds; only the reason-token
+# wording drifted.
+#
+# This ACT does NOT repair it, for two reasons:
+#   1. repairing it would require mutating the CLOSED predecessor's
+#      frozen C1 contract, which F14 forbids; and
+#   2. the review explicitly declined to spend effort on the
+#      predecessor's historical prose.
+#
+# The property itself is verified by the predecessor's own recorded
+# negative-control evidence, which this ACT did not weaken.
+RESIDUE_R1_REASON_TOKEN_DRIFT=ACCEPTED_NONBLOCKING
+RESIDUE_R1_SAFETY_PROPERTY_HOLDS=YES
+RESIDUE_R1_DISPOSITION=RECORDED_NOT_REPAIRED
+
+# RESIDUE_R2 -- the LEXER07 broad corpus cannot be run from the
+# Makefile target on a stable tree.
+#
+# The canonical target `make lexer07-broad-corpus-4-stage` rebuilds
+# the four stage compilers and then runs the corpus. Running the
+# corpus WHILE those compilers are being rewritten yields a corrupted
+# measurement (measured: FAIL_S0=181 and FAIL_S0=43 on two such runs,
+# neither of which reproduced on a stable tree). The cause is that the
+# hcc compiler writes its assembly to the FIXED path /tmp/holyc-asm.s
+# (src/main.c:35).
+#
+# This ACT therefore executed the SAME PolyC tool with the SAME
+# canonical corpus inventory directly, which the ACT permits. This is
+# a REPRODUCIBILITY DEFECT in the target, not in the corpus contract.
+#
+# It is a P2 residue for a future ACT: the target should build the
+# stage compilers FIRST and run the corpus in a separate step, so that
+# the measurement can never observe a compiler mid-rewrite. This ACT
+# does not repair it, because changing the target's build ordering is
+# outside the authorized scope of a correction that is bounded to the
+# two review findings.
+RESIDUE_R2_CORPUS_TARGET_BUILD_ORDERING=P2_DEFERRED
+RESIDUE_R2_SAFETY_PROPERTY_HOLDS=YES
+RESIDUE_R2_DISPOSITION=RECORDED_NOT_REPAIRED
+RESIDUE_R2_RATIONALE=The scope of this ACT is the two review findings. The target's build ordering is a separate reproducibility defect that affects any consumer of the target, not only this ACT.
+
+# ---- P0 / P1 STATUS -----------------------------------------------
+P0_UNKNOWN_FIXTURE_ID_BYPASS=CLOSED
+P0_NC_D12_EXECUTED=YES
+P1_LEXER07_BROAD_CORPUS_EXECUTED=YES
+P1_BASELINE_AND_OBSERVED_FAILURE_SETS_RECORDED=YES
+P1_HISTORICAL_FAILURES_RELABELLED_AS_PASS=NO

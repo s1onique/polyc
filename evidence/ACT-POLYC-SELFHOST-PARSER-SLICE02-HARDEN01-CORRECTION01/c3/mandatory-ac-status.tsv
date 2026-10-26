@@ -1,0 +1,25 @@
+AC01	The differential MUST reject a fixture that is the 42 canonical rows PLUS an unknown-ID row X001	PASS	c2/p0-fixture-integrity.txt	./build/parser-control-flow-token-differential /tmp/nc_d12.tsv  =>  UNKNOWN_IDS=1 REASON=FIXTURE_ID_UNKNOWN STATUS=FAIL rc=1	NO
+AC02	The rejection MUST be reported as a FIXTURE-INTEGRITY failure, NOT a subject/oracle mismatch	PASS	c2/p0-fixture-integrity.txt	REASON=FIXTURE_ID_UNKNOWN with ORACLE_VS_EXPECTED_MISMATCH=0 and FAIL=0	NO
+AC03	NC-D12 MUST be executed and recorded, with its reason token	PASS	c2/p0-fixture-integrity.txt	NC-D12-unknown-X001: OK (rc=1 reason=FIXTURE_ID_UNKNOWN)	NO
+AC04	The 42-row canonical fixture MUST still return STATUS=PASS	PASS	c2/p0-fixture-integrity.txt	./build/parser-control-flow-token-differential <canonical>  =>  TOTAL=42 PASS=42 STATUS=PASS rc=0	NO
+AC05	A valid 42-row fixture in SHUFFLED order MUST still return STATUS=PASS (NC-D8)	PASS	c2/p0-fixture-integrity.txt	NC-D8-shuffled: OK (rc=0 reason=<none>)	NO
+AC06	Only EXPLICITLY RECOGNIZED comment and metadata rows may be skipped	PASS	c2/p0-fixture-integrity.txt	NC-D16-comment-row-skipped: OK (rc=0); NC-D17-metadata-row-skipped: OK (rc=0); source: is_skippable_row	NO
+AC07	Every other row MUST be validated; malformed/unknown rows MUST be counted as failures	PASS	c2/p0-fixture-integrity.txt	NC-D12/13/14/15 all reach the unknown-ID ledger (UNKNOWN_IDS=1)	NO
+AC08	All predecessor negative controls (NC-D1..NC-D11) MUST still FAIL as specified	PASS	c2/p0-fixture-integrity.txt	16/16 controls OK; NC-D1, NC-D2, NC-D3, NC-D4, NC-D5, NC-D6b, NC-D7, NC-D11 all FAIL with the expected reason	NO
+AC09	The production PolyC component and its delegation MUST be UNCHANGED	PASS	c2/scope-and-residue.txt	git diff --name-only 4113123f..HEAD -- src/ tools/bootstrap/  =>  empty	NO
+AC10	The integer-boundary tool MUST still pass (the parse_int verbatim copy is untouched)	PASS	c2/p0-fixture-integrity.txt	./build/parser-control-flow-token-int-bounds  =>  STATUS=PASS (the BEGIN/END VERBATIM COPY block is unchanged)	NO
+AC11	The canonical LEXER07 broad-corpus target MUST be EXECUTED, not merely referenced	PASS	c2/p1-lexer07-broad-corpus-conservation.txt	./build/lexer07-broad-corpus-4-stage  =>  181 sources x 4 stages, STATUS=FAIL RC=1	NO
+AC12	The observed failure identities MUST be compared against the prospective baseline registry	PASS	c2/p1-lexer07-broad-corpus-conservation.txt	NEW_FAILURE_IDENTITIES=0 REMOVED_PASS_IDENTITIES=0	NO
+AC13	The baseline failure set and the observed failure set MUST BOTH be recorded	PASS	c2/p1-lexer07-broad-corpus-conservation.txt	BASELINE_* and OBSERVED_* identity lists are both present	NO
+AC14	Historical baseline failures MUST NOT be relabeled as PASS	PASS	c2/p1-lexer07-broad-corpus-conservation.txt	HISTORICAL_FAILURES_RELABELLED_AS_PASS=NO; the 15 observed failures are reported as failures	NO
+AC15	NEW failure identities relative to the registry MUST be 0	PASS	c2/p1-lexer07-broad-corpus-conservation.txt	NEW_FAILURE_IDENTITIES=0	NO
+AC16	REMOVED pass identities relative to the registry MUST be 0	PASS	c2/p1-lexer07-broad-corpus-conservation.txt	REMOVED_PASS_IDENTITIES=0	NO
+AC17	The registry MUST be byte-identical before and after (read-only)	PASS	c2/p1-lexer07-broad-corpus-conservation.txt	REGISTRY_SHA256=040fb7354dd62f2001f167e2dd083be3f5bcb013e97c1cf3e16468c7ae8678bb	NO
+AC18	make gate-fast MUST pass	PASS	c3/gate-fast.txt	GATE_FAST_RC=0	NO
+AC19	make gate-push MUST pass	PASS	c3/gate-push.txt	GATE_PUSH_RC=0	NO
+AC20	F14 conservation: no tracked file outside the C1 scope changed	PASS	c2/scope-and-residue.txt	git diff --name-only 4113123f..HEAD  =>  only the authorized files	NO
+AC21	F-NO-PYTHON: no new Python sources or invocations	PASS	c2/scope-and-residue.txt	NEW_PYTHON_SOURCES=0 NEW_PYTHON_INVOCATIONS=0	NO
+AC22	F-POLYC-TOOLS: new tools are PolyC, shell only as <=50-LOC dispatch glue	PASS	c2/scope-and-residue.txt	NEW_SHELL_SCRIPTS=0 NEW_TOOL_IMPLEMENTATIONS=1 (PolyC)	NO
+AC23	Committed-range patch hygiene clean	PASS	c3/patch-hygiene.txt	git diff --check 4113123f..HEAD  =>  empty	NO
+AC24	HANDOFF present and valid	DEFERRED_TO_C4	(the HANDOFF is written at C4)	(deferred)	NO
+AC25	External terminality verified after CLOSE	DEFERRED_TO_C4	(verified at C4, after the CLOSE commit exists)	(deferred)	NO
