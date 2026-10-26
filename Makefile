@@ -12,7 +12,7 @@ HCC_ENABLE_LLVM ?= OFF
 
 default: all
 
-.PHONY: all formal-dafny gate-fast gate-push install-hooks static-function-linkage-test factory-closure-status-test factory-closure-status-test-binary llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap-stage0 bootstrap-prefix parser-padding-subject production-hcc runtime-producer bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test selfhost-component-binary selfhost-component-build selfhost-component-test selfhost-component-selftest selfhost-registry-validate factory-halt-classification-binary factory-halt-classification-selftest bootstrap06-component-build bootstrap06-operator-classify-oracle bootstrap06-direct-differential bootstrap06-component-stage1 bootstrap06-component-stage2 bootstrap06-component-stage3 bootstrap06-lexer-seam-stage1 lexer07-component-build lexer07-scalar-literal-oracle lexer07-direct-differential lexer07-component-stage1 lexer07-component-stage2 lexer07-component-stage3 lexer07-lexer-seam-stage0 lexer07-lexer-seam-stage1 lexer07-lexer-seam-stage2 lexer07-lexer-seam-stage3 lexer07-lexer-seam-stage2-from-objs lexer07-lexer-seam-stage3-from-objs lexer07-lexer-seam-all-stages lexer07-fixture-inventory lexer07-broad-corpus-4-stage lexer07-correction02-all lexer07-baseline-authority-verify lexer08-component-build lexer08-trivia-oracle lexer08-direct-differential lexer08-fixture-inventory lexer08-broad-corpus-4-stage lexer08-lexer-seam-stage0 lexer08-lexer-seam-stage1 lexer08-lexer-seam-all-stages lexer08-trivia-fixedpoint-g0 lexer08-trivia-fixedpoint-g1 lexer08-trivia-fixedpoint-g2 lexer08-trivia-fixedpoint-g3 lexer08-trivia-fixedpoint-build lexer08-trivia-fixedpoint-verify lexer08-trivia-fixedpoint lexer09-link-component-build lexer09-link-oracle-build lexer09-direct-differential lexer09-lexer-seam-stage0 lexer09-lexer-seam-stage1 lexer09-lexer-seam-all-stages lexer09-link-fixedpoint-g0 lexer09-link-fixedpoint-g1 lexer09-link-fixedpoint-g2 lexer09-link-fixedpoint-g3 lexer09-link-fixedpoint-build lexer09-link-fixedpoint-verify lexer09-link-fixedpoint lexer09-link-negative-control lexer09-link-determinism lexer09-link-broad-corpus-4-stage lib-tos runtime-contract-test libtos-n02-isolate parser-padding-component parser-padding-oracle parser-padding-differential parser-padding-gen-matrix-fixture parser-padding-gen-large-fixture parser-padding-fixedpoint-g0 parser-padding-fixedpoint-g1 parser-padding-fixedpoint-g2 parser-padding-fixedpoint-g3 parser-padding-fixedpoint-build parser-padding-fixedpoint-verify parser-padding-fixedpoint parser-padding-fixedpoint-negative-control parser-padding-mutation-m1 parser-padding-mutation-m2 parser-padding-mutation-m3 parser-padding-mutation-m4 parser-padding-mutation-test parser-padding-test parser-padding-algebraic-invariants parser-padding-is-terminal-stub parser-padding-legacy parser-padding-legacy-server parser-padding-legacy-verify
+.PHONY: all formal-dafny gate-fast gate-push install-hooks static-function-linkage-test factory-closure-status-test factory-closure-status-test-binary llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap-stage0 bootstrap-prefix parser-padding-subject production-hcc runtime-producer bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test selfhost-component-binary selfhost-component-build selfhost-component-test selfhost-component-selftest selfhost-registry-validate factory-halt-classification-binary factory-halt-classification-selftest bootstrap06-component-build bootstrap06-operator-classify-oracle bootstrap06-direct-differential bootstrap06-component-stage1 bootstrap06-component-stage2 bootstrap06-component-stage3 bootstrap06-lexer-seam-stage1 lexer07-component-build lexer07-scalar-literal-oracle lexer07-direct-differential lexer07-component-stage1 lexer07-component-stage2 lexer07-component-stage3 lexer07-lexer-seam-stage0 lexer07-lexer-seam-stage1 lexer07-lexer-seam-stage2 lexer07-lexer-seam-stage3 lexer07-lexer-seam-stage2-from-objs lexer07-lexer-seam-stage3-from-objs lexer07-lexer-seam-all-stages lexer07-fixture-inventory lexer07-broad-corpus-4-stage lexer07-correction02-all lexer07-baseline-authority-verify lexer08-component-build lexer08-trivia-oracle lexer08-direct-differential lexer08-fixture-inventory lexer08-broad-corpus-4-stage lexer08-lexer-seam-stage0 lexer08-lexer-seam-stage1 lexer08-lexer-seam-all-stages lexer08-trivia-fixedpoint-g0 lexer08-trivia-fixedpoint-g1 lexer08-trivia-fixedpoint-g2 lexer08-trivia-fixedpoint-g3 lexer08-trivia-fixedpoint-build lexer08-trivia-fixedpoint-verify lexer08-trivia-fixedpoint lexer09-link-component-build lexer09-link-oracle-build lexer09-direct-differential lexer09-lexer-seam-stage0 lexer09-lexer-seam-stage1 lexer09-lexer-seam-all-stages lexer09-link-fixedpoint-g0 lexer09-link-fixedpoint-g1 lexer09-link-fixedpoint-g2 lexer09-link-fixedpoint-g3 lexer09-link-fixedpoint-build lexer09-link-fixedpoint-verify lexer09-link-fixedpoint lexer09-link-negative-control lexer09-link-determinism lexer09-link-broad-corpus-4-stage lib-tos runtime-contract-test libtos-n02-isolate parser-padding-component parser-padding-oracle parser-padding-differential parser-padding-gen-matrix-fixture parser-padding-gen-large-fixture parser-padding-fixedpoint-g0 parser-padding-fixedpoint-g1 parser-padding-fixedpoint-g2 parser-padding-fixedpoint-g3 parser-padding-fixedpoint-build parser-padding-fixedpoint-verify parser-padding-fixedpoint parser-padding-fixedpoint-negative-control parser-padding-mutation-m1 parser-padding-mutation-m2 parser-padding-mutation-m3 parser-padding-mutation-m4 parser-padding-mutation-test parser-padding-test parser-padding-algebraic-invariants parser-padding-is-terminal-stub parser-padding-legacy parser-padding-legacy-server parser-padding-legacy-verify parser-control-flow-token-component parser-control-flow-token-differential
 
 # To add sqlite3 support add -DHCC_LINK_SQLITE3=1 to the below like so:
 #```
@@ -74,6 +74,12 @@ BOOTSTRAP_PREFIX_INC    = $(BOOTSTRAP_PREFIX_DIR)/include
 PARSER_PADDING_SRC      = tools/bootstrap/selfhost-parser-padding.HC
 PARSER_PADDING_OBJ      = ./build/parser-padding-subject.o
 
+# ACT-POLYC-SELFHOST-PARSER-SLICE02. The control-flow-token subject and
+# its PolyC source. Defined here (with the other build-artifact
+# variables) because the production-hcc rule below references them.
+SLICE02_CFT_SRC  = tools/bootstrap/selfhost-parser-control-flow-token.HC
+SLICE02_CFT_OBJ  = ./build/parser-control-flow-token-subject.o
+
 # The stage0 compiler's own sources. A change to any of them must
 # invalidate the stage0 compiler, which in turn invalidates the
 # padding subject.
@@ -101,6 +107,7 @@ $(BOOTSTRAP_STAGE0_HCC): $(BOOTSTRAP_STAGE0_SOURCES)
 		-DHCC_ENABLE_JIT=on \
 		-DHCC_ENABLE_LLVM=OFF \
 		-DHCC_USE_SELFHOST_PARSER_PADDING=OFF \
+		-DHCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN=OFF \
 		-DHCC_RUNTIME_OUTPUT_DIRECTORY=$(CURDIR)/$(BOOTSTRAP_STAGE0_DIR)
 	$(MAKE) -C $(BOOTSTRAP_STAGE0_BUILD) hcc -j2
 	@if [ ! -x "$(BOOTSTRAP_STAGE0_HCC)" ]; then \
@@ -528,7 +535,7 @@ parser-padding-subject: $(PARSER_PADDING_OBJ)
 #     unrelated cached options such as HCC_ENABLE_JIT, which is what
 #     previously produced a link failure against a missing libtasm.a.
 PRODUCTION_HCC = ./hcc
-PRODUCTION_HCC_INPUTS = $(PARSER_PADDING_OBJ) \
+PRODUCTION_HCC_INPUTS = $(PARSER_PADDING_OBJ) $(SLICE02_CFT_OBJ) \
 	$(wildcard src/*.c src/asm/*.c) \
 	$(wildcard src/*.h src/asm/*.h) \
 	$(wildcard src/CMakeLists.txt src/asm/CMakeLists.txt) \
@@ -550,6 +557,11 @@ $(PRODUCTION_HCC): $(PRODUCTION_HCC_INPUTS)
 		-DPARSER_PADDING_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
 		-DPARSER_PADDING_SOURCE=$(CURDIR)/$(PARSER_PADDING_SRC) \
 		-DPARSER_PADDING_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN=ON \
+		-DCONTROL_FLOW_TOKEN_OBJECT=$(CURDIR)/$(SLICE02_CFT_OBJ) \
+		-DCONTROL_FLOW_TOKEN_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DCONTROL_FLOW_TOKEN_SOURCE=$(CURDIR)/$(SLICE02_CFT_SRC) \
+		-DCONTROL_FLOW_TOKEN_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
 		-DHCC_BOOTSTRAP_EXPECTED_SHA=$(LIBTOS_BOOTSTRAP_EXPECTED_SHA)
 	$(MAKE) -C ./build -j2
 	@if [ ! -x ./hcc ]; then \
@@ -558,6 +570,8 @@ $(PRODUCTION_HCC): $(PRODUCTION_HCC_INPUTS)
 	fi
 	@nm ./hcc | grep -q '_BootstrapCalcPadding' \
 		|| { echo "production-hcc: symbol _BootstrapCalcPadding not linked into ./hcc" >&2; exit 1; }
+	@nm ./hcc | grep -q '_BootstrapValidPostControlFlowToken' \
+		|| { echo "production-hcc: symbol _BootstrapValidPostControlFlowToken not linked into ./hcc" >&2; exit 1; }
 	@echo "PRODUCTION_HCC=./hcc"
 	@echo "PRODUCTION_PADDING_AUTHORITY=POLYC"
 
@@ -589,6 +603,11 @@ llvm-all: $(PARSER_PADDING_OBJ)
 		-DPARSER_PADDING_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
 		-DPARSER_PADDING_SOURCE=$(CURDIR)/$(PARSER_PADDING_SRC) \
 		-DPARSER_PADDING_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN=ON \
+		-DCONTROL_FLOW_TOKEN_OBJECT=$(CURDIR)/$(SLICE02_CFT_OBJ) \
+		-DCONTROL_FLOW_TOKEN_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DCONTROL_FLOW_TOKEN_SOURCE=$(CURDIR)/$(SLICE02_CFT_SRC) \
+		-DCONTROL_FLOW_TOKEN_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
 		-DHCC_BOOTSTRAP_EXPECTED_SHA=$(LIBTOS_BOOTSTRAP_EXPECTED_SHA)
 	$(MAKE) -C ./build/llvm -j2
 	@if [ ! -x ./hcc ]; then \
@@ -597,6 +616,8 @@ llvm-all: $(PARSER_PADDING_OBJ)
 	fi
 	@nm ./hcc | grep -q '_BootstrapCalcPadding' \
 		|| { echo "llvm-all: symbol _BootstrapCalcPadding not linked into ./hcc" >&2; exit 1; }
+	@nm ./hcc | grep -q '_BootstrapValidPostControlFlowToken' \
+		|| { echo "llvm-all: symbol _BootstrapValidPostControlFlowToken not linked into ./hcc" >&2; exit 1; }
 	@echo "PRODUCTION_HCC=./hcc"
 	@echo "PRODUCTION_PADDING_AUTHORITY=POLYC"
 
@@ -689,6 +710,11 @@ test-prefix-install: production-hcc runtime-producer
 		-DPARSER_PADDING_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
 		-DPARSER_PADDING_SOURCE=$(CURDIR)/$(PARSER_PADDING_SRC) \
 		-DPARSER_PADDING_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN=ON \
+		-DCONTROL_FLOW_TOKEN_OBJECT=$(CURDIR)/$(SLICE02_CFT_OBJ) \
+		-DCONTROL_FLOW_TOKEN_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DCONTROL_FLOW_TOKEN_SOURCE=$(CURDIR)/$(SLICE02_CFT_SRC) \
+		-DCONTROL_FLOW_TOKEN_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
 		-DHCC_BOOTSTRAP_EXPECTED_SHA=$(LIBTOS_BOOTSTRAP_EXPECTED_SHA)
 	$(MAKE) -C ./build/test-prefix-install-build install
 	@if [ ! -f $(TEST_PREFIX)/lib/libtos.a ] || \
@@ -3003,6 +3029,72 @@ build/parser-padding-differential: build/parser-padding-differential.o $(PARSER_
 
 parser-padding-differential: build/parser-padding-differential
 	@echo "PARSER_PADDING_DIFF=BUILD"
+
+# =========================================================================
+# ACT-POLYC-SELFHOST-PARSER-SLICE02
+#
+#   parser-control-flow-token-component -> the PolyC subject
+#       (tools/bootstrap/selfhost-parser-control-flow-token.HC)
+#   parser-control-flow-token-differential -> the PolyC direct
+#       differential (subject vs the verbatim production oracle)
+#
+# The subject is compiled by the STAGE-0 compiler, exactly like the
+# parser-padding subject, so that the component does not depend on the
+# production compiler that it is about to serve.
+#
+# SLICE02_CFT_SRC and SLICE02_CFT_OBJ are defined ONCE, near the top of
+# this Makefile, with the other build-artifact variables.
+# =========================================================================
+build/parser-control-flow-token-subject.o: $(SLICE02_CFT_SRC) $(BOOTSTRAP_STAGE0_HCC) $(BOOTSTRAP_PREFIX_INC)/tos.HH
+	@rm -f $@
+	$(BOOTSTRAP_STAGE0_HCC) \
+		--install-dir=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-c $(SLICE02_CFT_SRC) \
+		-o $@
+	@if [ ! -f "$@" ]; then \
+		echo "parser-control-flow-token-subject: $@ not produced by the stage0 compiler" >&2; \
+		exit 1; \
+	fi
+	@nm $@ | grep -q '_BootstrapValidPostControlFlowToken' \
+		|| { echo "parser-control-flow-token-subject: symbol _BootstrapValidPostControlFlowToken not found in $@" >&2; exit 1; }
+	@echo "SLICE02_SUBJECT=$@"
+	@echo "SLICE02_SUBJECT_ARCH=$$(file -b "$@" | sed -e 's/.*object //')"
+
+parser-control-flow-token-component: $(SLICE02_CFT_OBJ)
+	@echo "SLICE02_COMPONENT=BUILD source=$(SLICE02_CFT_SRC)"
+	@echo "SLICE02_COMPONENT_OBJECT=$(SLICE02_CFT_OBJ)"
+
+# The legacy C oracle: the VERBATIM production body from src/parser.c,
+# bound to the LIVE src/lexer.h, plus the exported oracle entry point.
+build/slice02-oracle.o: tools/quality/parser-slice02-oracle.c tools/quality/parser-slice02-oracle.h src/lexer.h
+	@rm -f $@
+	cc -std=c99 -O2 -Wall -Wextra -Isrc -Itools/quality -c -o $@ $<
+	@nm $@ | grep -q '_Slice02OracleParseValidPostControlFlowToken' \
+		|| { echo "slice02-oracle.o: oracle symbol missing" >&2; exit 1; }
+
+build/slice02-oracle-impl.o: tools/quality/parser-control-flow-token-oracle-impl.c tools/quality/parser-slice02-oracle.h
+	@rm -f $@
+	cc -std=c99 -O2 -Wall -Wextra -Isrc -Itools/quality -c -o $@ $<
+	@nm $@ | grep -q '_OracleValidPostControlFlowToken' \
+		|| { echo "slice02-oracle-impl.o: oracle entry point missing" >&2; exit 1; }
+
+# The is_terminal stub (see the file's own comment).
+build/slice02-is-terminal-stub.o: tools/quality/slice02-is-terminal-stub.c
+	@rm -f $@
+	cc -std=c99 -O2 -Wall -Wextra -c -o $@ $<
+
+# The PolyC comparison layer (terminal authority).
+build/parser-control-flow-token-differential.o: tools/quality/parser-control-flow-token-differential.HC ./hcc | test-prefix-install
+	./hcc --install-dir=$(TEST_PREFIX) -c tools/quality/parser-control-flow-token-differential.HC -o $@
+	@nm $@ | grep -q '_main' \
+		|| { echo "parser-control-flow-token-differential.o: main missing" >&2; exit 1; }
+
+build/parser-control-flow-token-differential: build/parser-control-flow-token-differential.o $(SLICE02_CFT_OBJ) build/slice02-oracle.o build/slice02-oracle-impl.o build/slice02-is-terminal-stub.o $(PARSER_PADDING_TRANSITIVE_OBJS) | test-prefix-install
+	cc -o $@ build/parser-control-flow-token-differential.o $(SLICE02_CFT_OBJ) build/slice02-oracle.o build/slice02-oracle-impl.o build/slice02-is-terminal-stub.o $(PARSER_PADDING_TRANSITIVE_OBJS) $(TASM_LIB) -L$(TEST_PREFIX)/lib -ltos -Wl,-undefined,dynamic_lookup
+	@ls -la $@
+
+parser-control-flow-token-differential: build/parser-control-flow-token-differential
+	@echo "SLICE02_DIFF=BUILD"
 
 # Fixture generators (PolyC).
 build/parser-padding-gen-matrix-fixture: tools/quality/parser-padding-gen-matrix-fixture.HC ./hcc | test-prefix-install

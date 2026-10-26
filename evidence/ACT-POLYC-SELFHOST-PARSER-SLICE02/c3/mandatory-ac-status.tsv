@@ -1,0 +1,33 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE02
+# ACT_PHASE=C3-VERIFY
+# EVIDENCE_KIND=mandatory-ac-status
+# The AC LEDGER.  Each predicate is linked to the ACTUAL establishing
+# evidence artifact and to a concrete re-runnable command.
+#
+# Schema:
+#   01 ac_id
+#   02 predicate
+#   03 status
+#   04 establishing_evidence
+#   05 command
+#   06 deferred
+#
+AC01	The RED is real: the PolyC subject and the production delegation are ABSENT at the entry HEAD	PASS	c1/c1-red-and-differential.txt -- the subject file did not exist, src/parser.c had no delegation, and the production ./hcc did not link the symbol	git show 4fa6c8f:tools/bootstrap/selfhost-parser-control-flow-token.HC  =>  (absent); nm <hcc at 4fa6c8f> | grep -c BootstrapValidPostControlFlowToken  =>  0	NO
+AC02	The PolyC subject compiles with the STAGE-0 compiler and exports the frozen ABI symbol	PASS	c1/c1-red-and-differential.txt COMMAND_1/2 -- stage0 produces build/parser-control-flow-token-subject.o exporting _BootstrapValidPostControlFlowToken	make parser-control-flow-token-component && nm build/parser-control-flow-token-subject.o | grep BootstrapValidPostControlFlowToken  =>  T _BootstrapValidPostControlFlowToken	NO
+AC03	The oracle IS the real production function, not a paraphrase	PASS	c1/c1-red-and-differential.txt COMMAND_3 -- the copied body is linked alongside the REAL production object and compared over 326 cases: 326 same, 0 different	./build/slice02-cross  =>  CROSS_ROWS=326 CROSS_SAME=326 CROSS_DIFF=0	NO
+AC04	The direct differential over the corrected 42-row matrix is GREEN (PolyC subject vs the production oracle)	PASS	c1/c1-red-and-differential.txt COMMAND_5 -- 42/42, 0 fail, 0 parse errors, 0 oracle-vs-expected mismatches	./build/parser-control-flow-token-differential evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01/c1/c1-corrected-fixture-model.tsv  =>  TOTAL=42 PASS=42 FAIL=0 STATUS=PASS	NO
+AC05	The differential DETECTS a wrong fixture	PASS	c1/c1-red-and-differential.txt NC1 -- the predecessor's frozen matrix (F041 stated 0) is rejected: ORACLE_VS_EXPECTED_MISMATCH=1, STATUS=FAIL, exit 1	./build/parser-control-flow-token-differential evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02/c2/c2-selected-fixture-model.tsv  =>  STATUS=FAIL	NO
+AC06	The differential DETECTS a wrong subject (mutation controls)	PASS	c1/c1-red-and-differential.txt NC2..NC5 -- four mutations, all four detected: M1 39/3, M2 41/1, M3 41/1, M4 41/1; the subject is restored pristine afterwards	(mutate the subject, rebuild, re-run)  =>  4/4 detected	NO
+AC07	PRODUCTION AUTHORITY: the production compiler actually calls the PolyC component	PASS	c2/c2-production-delegation.txt COMMAND_1/2/3 -- the delegation flag is compiled in, the symbol is linked, and the disassembly of the production parseValidPostControlFlowToken shows a real branch to it	objdump -d --no-show-raw-insn ./hcc | sed -n '/<_parseValidPostControlFlowToken>:/,/^$/p' | grep BootstrapValidPostControlFlowToken  =>  bl 0x100064304 <_BootstrapValidPostControlFlowToken>	NO
+AC08	CAUSAL: mutating the PolyC subject changes PRODUCTION-OBSERVABLE behavior, and restoring it restores behavior	PASS	c2/c2-production-delegation.txt COMMAND_4/4B/5 -- with the mutant the production parser raises "Unexpected character `*` while parsing else body" and "... for loop body"; with the pristine subject the same cases compile	./hcc --install-dir=... -c <else-deref case>  =>  mutant: production diagnostic; pristine: compiles	NO
+AC09	NO SILENT C FALLBACK on the migrated path	PASS	c2/c2-production-delegation.txt COMMAND_7 -- configuring without a producer and with the component absent is a hard FATAL_ERROR (configure exit 1); with a producer the component is produced AND its exported symbol is verified before the link	cmake -S ./src -B <fresh dir> -DHCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN=ON  =>  exit 1, FATAL_ERROR	NO
+AC10	The SEMANTIC DELTA is zero and the ABI is the frozen one	PASS	c1 + c2 evidence -- the ABI is I64 BootstrapValidPostControlFlowToken(I64 present, I64 kind, I64 value) -> I64 with ABI_HOST_IDENTITY_FIELDS=0; the differential shows the PolyC component IS the production decision on all 42 rows, and the oracle IS the production function (326/326)	grep -A3 'Frozen ABI' docs/acts/ACT-POLYC-SELFHOST-PARSER-SLICE02.md  =>  the frozen ABI	NO
+AC11	Factory gates green and patch hygiene clean over the COMMITTED range	PASS	c3/c3-required-result.txt -- gate-fast RC=0, factory-v2 PASS=53 FAIL=0, append-only PASS=11 FAIL=0, git diff --check over the committed range RC=0	make gate-fast && sh scripts/quality/factory-v2-test.sh && sh scripts/quality/factory-append-only-test.sh	NO
+AC12	NO REGRESSION: the sibling parser-padding delegation and the production linkage test still pass	PASS	c3/c3-required-result.txt -- the parser-padding differential still passes 16640/16640 and the static-function-linkage test reports PASS	./build/parser-padding-differential build/padding-matrix.tsv  =>  TOTAL=16640 PASS=16640 FAIL=0; sh scripts/quality/static-function-linkage-test.sh  =>  STATIC_FUNCTION_LINKAGE_TEST=PASS	NO
+#
+AC_TOTAL=12
+AC_PASS=12
+AC_DEFERRED=0
+AC_FAIL=0
+DEFERRED_AC_IDS=(none)
+MANDATORY_AC_NOT_GREEN=NO

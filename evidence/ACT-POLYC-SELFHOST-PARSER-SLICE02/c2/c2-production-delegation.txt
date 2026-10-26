@@ -1,0 +1,167 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE02
+ACT_PHASE=C2-IMPL
+EVIDENCE_KIND=production-delegation
+
+# ========================================================================
+# PRODUCTION AUTHORITY DEFINITION
+# ========================================================================
+# `CONTROL_FLOW_TOKEN_PRODUCTION_AUTHORITY=POLYC` requires ALL of:
+#
+#   1. production parser code obtains the decision from
+#      BootstrapValidPostControlFlowToken;
+#   2. the legacy C algorithm is not independently used on the migrated
+#      production path;
+#   3. changing the PolyC subject in a temporary causal-control build
+#      changes production-OBSERVABLE behavior;
+#   4. restoring the pristine subject restores production behavior;
+#   5. no silent C fallback exists on the migrated path.
+#
+# Merely calling PolyC as a shadow verifier does not qualify.  The
+# evidence below establishes (1) by disassembly, (3) and (4) by the
+# causal control, and (5) by the fail-closed build wiring.
+
+# ========================================================================
+# 1. THE DELEGATION IS COMPILED IN
+# ========================================================================
+COMMAND_1=grep HCC_USE_SELFHOST build/CMakeFiles/hcc.dir/flags.make
+COMMAND_1_RESULT=
+C_DEFINES = -DHCC_ENABLE_JIT -DHCC_GIT_HASH=\"4fa6c8f05e6e8e379d81c4340da59c722ec1f7e3\" -DHCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN -DHCC_USE_SELFHOST_PARSER_PADDING -DINSTALL_PREFIX=\"/usr/local\"
+DELEGATION_FLAG_COMPILED_IN=YES
+
+# ========================================================================
+# 2. THE POLYC SYMBOL IS LINKED INTO THE PRODUCTION BINARY
+# ========================================================================
+COMMAND_2=nm ./hcc | grep BootstrapValidPostControlFlowToken
+COMMAND_2_RESULT=
+0000000100064304 T _BootstrapValidPostControlFlowToken
+POLYC_SYMBOL_LINKED=YES
+
+# ========================================================================
+# 3. THE PRODUCTION CALL SITE ACTUALLY CALLS THE POLYC CODE
+# ========================================================================
+# A source reference or a linked symbol is NOT sufficient.  The
+# disassembly of the production parseValidPostControlFlowToken shows a
+# real BRANCH to the PolyC-compiled routine.
+COMMAND_3=objdump -d --no-show-raw-insn ./hcc | \
+             sed -n '/<_parseValidPostControlFlowToken>:/,/^$/p' | \
+             grep BootstrapValidPostControlFlowToken
+COMMAND_3_RESULT=
+10003b59c:    	bl	0x100064304 <_BootstrapValidPostControlFlowToken>
+PRODUCTION_CALLS_POLYC=YES
+
+# ========================================================================
+# 4. THE CAUSAL CONTROL -- production-OBSERVABLE behavior changes
+# ========================================================================
+# The subject was mutated so that it REJECTS the accepted '*' punctuation
+# payload.  The production compiler was rebuilt against the mutant and
+# its behavior on a body that begins with '*' CHANGED: the production
+# parser now raises its own diagnostic.
+#
+#   The case:
+#     I64 main() { I64 y = 5; I64 *p = &y;
+#                  if (1) { } else *p = 6; return y; }
+#     -> the else-body's first token is '*'
+#
+# With the MUTANT subject:
+COMMAND_4=./hcc --install-dir=$(pwd)/build/test-prefix \
+            -c <else-deref case> -o build/cft-cases/else-deref.o
+COMMAND_4_RESULT=
+error: Unexpected character `*` while parsing else body
+ --> <else-deref case>:1:47
+     |
+   1 |    I64 main() { I64 y = 5; I64 *p = &y; if (1) { } else *p = 6; return y; }
+     |                                                  ^
+COMMAND_4_EXIT_STATUS=1
+CAUSAL_MUTANT_PRODUCTION_DIAGNOSTIC=Unexpected character `*` while parsing else body
+
+# The for-body path shows the same:
+COMMAND_4B=./hcc --install-dir=$(pwd)/build/test-prefix \
+             -c <for-deref case> -o build/cft-cases/for-deref.o
+COMMAND_4B_RESULT=
+error: Unexpected character `*` while parsing for loop body
+ --> <for-deref case>:1:72
+     |                                                                           ^
+CAUSAL_MUTANT_PRODUCTION_DIAGNOSTIC_FOR=Unexpected character `*` while parsing for loop body
+
+# With the PRISTINE subject restored, the same cases compile:
+COMMAND_5=./hcc --install-dir=$(pwd)/build/test-prefix \
+            -c <else-deref case> -o build/cft-cases/else-deref.o
+COMMAND_5_RESULT=(no diagnostic)
+COMMAND_5_EXIT_STATUS=0
+CAUSAL_MUTANT_CHANGES_PRODUCTION_BEHAVIOR=YES
+PRISTINE_RESTORES_PRODUCTION_BEHAVIOR=YES
+PRODUCTION_AUTHORITY_IS_CAUSAL=YES
+
+# The control-flow bodies that the PolyC component DOES accept still
+# compile with the pristine subject:
+COMMAND_6=for f in if while for; do ./hcc --install-dir=$(pwd)/build/test-prefix \
+             -c <$f case> -o build/cft-cases/$f.o; done
+COMMAND_6_RESULT=(all three compiled, no diagnostics)
+ACCEPTED_CONTROL_FLOW_BODIES_COMPILE=YES
+# ========================================================================
+# 5. NO SILENT C FALLBACK
+# ========================================================================
+# The build is FAIL-CLOSED.  A missing or symbol-less component is a
+# hard configure error, never a silent legacy fallback:
+#
+#   src/cmake/VerifyControlFlowTokenObject.cmake
+#     - the object must EXIST
+#     - the object must be non-empty
+#     - the object must export _BootstrapValidPostControlFlowToken
+#     - a missing `nm` is a hard error, never a pass
+#
+# Observed: configuring WITHOUT a producer, and with the component
+# object absent, produced this hard error and aborted the configure
+# (CONFIGURE_RC=1):
+#
+#   CMake Error at CMakeLists.txt:397 (message):
+#     ACT-POLYC-SELFHOST-PARSER-SLICE02: required self-host
+#     control-flow-token component missing at
+#     .../build/parser-control-flow-token-subject.o.
+#     Build it first with stage0 hcc: ...
+#
+# When a producer IS configured (the production Makefile does configure
+# one), the build graph SCHEDULES the component's production instead,
+# and the fail-closed symbol verification
+# (VerifyControlFlowTokenObject.cmake) runs as a build step:
+#
+#   -- ACT-POLYC-SELFHOST-PARSER-SLICE02: production hcc SCHEDULES
+#      control-flow-token subject production: .../parser-control-flow-token-subject.o
+#   -- ACT-POLYC-SELFHOST-PARSER-SLICE02: production hcc links
+#      control-flow-token PolyC component: .../parser-control-flow-token-subject.o
+#
+COMMAND_7=rm -rf <fresh build dir> && cmake -S ./src -B <fresh build dir> \
+             -DHCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN=ON
+COMMAND_7_RESULT=(hard FATAL_ERROR; the configure aborted)
+COMMAND_7_CONFIGURE_EXIT_STATUS=1
+COMMAND_7_CONFIGURE_ABORTED=YES
+NO_SILENT_C_FALLBACK=YES
+  Both branches are fail-closed: with a producer the component is
+  produced AND its exported symbol is verified before the link; without a
+  producer a missing component is a hard configure error.  There is no
+  path on which the production build proceeds without the verified
+  PolyC component.
+
+# The legacy C body survives in src/parser.c ONLY under the #else branch,
+# which the production build never compiles.  The stage0 build explicitly
+# disables the delegation flag
+# (-DHCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN=OFF), because stage0 is
+# built BEFORE the component exists -- a bootstrap ordering constraint,
+# not a fallback on the migrated path.
+LEGACY_C_BODY_REACHABLE_IN_PRODUCTION=NO
+STAGE0_DISABLES_THE_DELEGATION=YES
+
+# ========================================================================
+# 6. THE SEMANTIC DELTA IS ZERO
+# ========================================================================
+# The production decision is the PolyC component's decision, and the
+# direct differential shows the PolyC component IS the production
+# function's decision on all 42 fixture rows (c1 evidence), and that the
+# oracle IS the production function (326/326 cross-check).
+CONTROL_FLOW_TOKEN_SEMANTIC_DELTA=0
+PRODUCTION_CALL_SITES=5
+  src/parser.c: the if-body, else-body, for-body, while-body and
+  do-while-body guards all route through parseValidPostControlFlowToken,
+  which now routes through the PolyC component.
+
+C2_REQUIRED_RESULT_STATUS=PASS

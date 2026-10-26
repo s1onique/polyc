@@ -830,6 +830,47 @@ Ast *parseDecl(Cctrl *cc) {
 }
 
 int parseValidPostControlFlowToken(Lexeme *tok) {
+#ifdef HCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN
+    /* ACT-POLYC-SELFHOST-PARSER-SLICE02 C2 IMPL:
+     * delegate to the qualified PolyC
+     * BootstrapValidPostControlFlowToken when the control-flow-token
+     * delegation flag is enabled. The legacy C algorithm body below is
+     * reachable ONLY in the stage0 evidence path (a build that compiles
+     * this file without HCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN).
+     * Production ./hcc is built with the macro defined (see
+     * src/CMakeLists.txt) and therefore always routes through the PolyC
+     * component.
+     *
+     * The dedicated macro name (rather than the generic
+     * HCC_USE_SELFHOST_COMPONENTS) is required because that generic
+     * selector also activates the lexer delegations in src/lexer.c.
+     * The control-flow-token migration is independent of the lexer
+     * migrations and is scoped to its own flag.
+     *
+     * The PolyC ABI is
+     *   I64 present, I64 kind, I64 value -> I64
+     * (scalar purity per ACT §6; ABI_HOST_IDENTITY_FIELDS = 0). The
+     * legacy C wrapper takes a `Lexeme *`. The adapter below reads the
+     * two fields the production body reads -- tk_type and i64 -- and
+     * passes `present = 0` for the NULL token, which the component
+     * maps to the same result the legacy body returns for NULL.
+     *
+     * The cast chain `(I64)int -> I64 -> I64 -> int` is exact for the
+     * frozen domains: tk_type is a small non-negative token kind and
+     * i64 is already a 64-bit signed payload. */
+    extern long long BootstrapValidPostControlFlowToken(long long present,
+                                                        long long kind,
+                                                        long long value);
+    if (tok == NULL) {
+        return (int)BootstrapValidPostControlFlowToken(0, 0, 0);
+    }
+    return (int)BootstrapValidPostControlFlowToken(1,
+                                                   (long long)tok->tk_type,
+                                                   (long long)tok->i64);
+#else
+    /* Stage0 evidence path: pure legacy C algorithm. Reachable only
+     * in non-HCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN builds.
+     * Production never executes this branch. */
     if (tok == NULL) return 0; /* EOF - caller raises */
     if (tok->tk_type == TK_IDENT) return 1;
     if (tok->tk_type == TK_STR) return 1;
@@ -861,6 +902,7 @@ int parseValidPostControlFlowToken(Lexeme *tok) {
         }
     }
     return 0;
+#endif
 }
 
 /* Parse one clause inside an `if (...)` header - either a declaration

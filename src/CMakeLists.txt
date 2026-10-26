@@ -328,6 +328,85 @@ if (HCC_USE_SELFHOST_PARSER_PADDING)
     message(STATUS "ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01: production hcc links parser-padding PolyC component: ${PARSER_PADDING_OBJECT}")
 endif()
 
+# ACT-POLYC-SELFHOST-PARSER-SLICE02 C2 IMPL:
+# Link the qualified PolyC BootstrapValidPostControlFlowToken component
+# into the production hcc binary and enable the control-flow-token
+# delegation. The dedicated selector
+# `HCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN` is defined here so the
+# production control-flow-token delegation is INDEPENDENT of the parser-
+# padding selector and of the generic lexer
+# `HCC_USE_SELFHOST_COMPONENTS` flag (which would also require linking
+# the lexer subjects).
+#
+# The same fail-closed discipline as the parser-padding component
+# applies: if the producer is configured, the build graph SCHEDULES the
+# component's production and verifies the exported symbol; if it is not,
+# a missing component is a hard configure error, never a silent legacy
+# fallback.
+option(HCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN
+       "Link the control-flow-token PolyC component into hcc and enable control-flow-token delegation. ACT-POLYC-SELFHOST-PARSER-SLICE02."
+       ON)
+
+if (HCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN)
+    if (NOT CONTROL_FLOW_TOKEN_OBJECT)
+        set(CONTROL_FLOW_TOKEN_OBJECT "${CMAKE_SOURCE_DIR}/../build/parser-control-flow-token-subject.o")
+    endif()
+    if (CONTROL_FLOW_TOKEN_PRODUCER)
+        if (NOT EXISTS "${CONTROL_FLOW_TOKEN_PRODUCER}")
+            message(FATAL_ERROR
+                "ACT-POLYC-SELFHOST-PARSER-SLICE02: CONTROL_FLOW_TOKEN_PRODUCER=${CONTROL_FLOW_TOKEN_PRODUCER} does not exist. "
+                "The control-flow-token component cannot be produced without it.")
+        endif()
+        if (NOT EXISTS "${CONTROL_FLOW_TOKEN_SOURCE}")
+            message(FATAL_ERROR
+                "ACT-POLYC-SELFHOST-PARSER-SLICE02: CONTROL_FLOW_TOKEN_SOURCE=${CONTROL_FLOW_TOKEN_SOURCE} does not exist. "
+                "The control-flow-token component cannot be produced from a missing subject.")
+        endif()
+        get_filename_component(_cft_source_dir "${CONTROL_FLOW_TOKEN_SOURCE}" DIRECTORY)
+        get_filename_component(_cft_source_name "${CONTROL_FLOW_TOKEN_SOURCE}" NAME)
+        get_filename_component(_cft_object_dir "${CONTROL_FLOW_TOKEN_OBJECT}" DIRECTORY)
+        get_filename_component(_cft_object_name "${CONTROL_FLOW_TOKEN_OBJECT}" NAME)
+        add_custom_command(
+            OUTPUT "${CONTROL_FLOW_TOKEN_OBJECT}"
+            COMMAND "${CONTROL_FLOW_TOKEN_PRODUCER}"
+                    --install-dir=${CONTROL_FLOW_TOKEN_PREFIX}
+                    -c "${CONTROL_FLOW_TOKEN_SOURCE}"
+                    -o "${CONTROL_FLOW_TOKEN_OBJECT}"
+            DEPENDS "${CONTROL_FLOW_TOKEN_SOURCE}" "${CONTROL_FLOW_TOKEN_PRODUCER}"
+            WORKING_DIRECTORY "${_cft_source_dir}"
+            COMMENT "ACT-POLYC-SELFHOST-PARSER-SLICE02: producing control-flow-token subject ${CONTROL_FLOW_TOKEN_OBJECT}"
+            VERBATIM)
+        # Fail closed if the producer could not write the object: a
+        # successful exit from the producer with a missing output, an
+        # empty output, or an output without the exported symbol is a
+        # hard error, never a silent legacy fallback.
+        add_custom_command(
+            OUTPUT "${CONTROL_FLOW_TOKEN_OBJECT}.verified"
+            COMMAND "${CMAKE_COMMAND}"
+                    -DCONTROL_FLOW_TOKEN_OBJECT=${CONTROL_FLOW_TOKEN_OBJECT}
+                    -P "${CMAKE_SOURCE_DIR}/cmake/VerifyControlFlowTokenObject.cmake"
+            COMMAND "${CMAKE_COMMAND}" -E touch "${CONTROL_FLOW_TOKEN_OBJECT}.verified"
+            DEPENDS "${CONTROL_FLOW_TOKEN_OBJECT}"
+            COMMENT "ACT-POLYC-SELFHOST-PARSER-SLICE02: verifying control-flow-token subject"
+            VERBATIM)
+        add_custom_target(hcc-control-flow-token-subject
+            DEPENDS "${CONTROL_FLOW_TOKEN_OBJECT}.verified")
+        add_dependencies(hcc hcc-control-flow-token-subject)
+        message(STATUS "ACT-POLYC-SELFHOST-PARSER-SLICE02: production hcc SCHEDULES control-flow-token subject production: ${CONTROL_FLOW_TOKEN_OBJECT}")
+    elseif (NOT EXISTS "${CONTROL_FLOW_TOKEN_OBJECT}")
+        message(FATAL_ERROR
+            "ACT-POLYC-SELFHOST-PARSER-SLICE02: required self-host "
+            "control-flow-token component missing at ${CONTROL_FLOW_TOKEN_OBJECT}. "
+            "Build it first with stage0 hcc: "
+            "./hcc --install-dir=<prefix> -c tools/bootstrap/selfhost-parser-control-flow-token.HC -o ${CONTROL_FLOW_TOKEN_OBJECT}. "
+            "Or configure with -DCONTROL_FLOW_TOKEN_PRODUCER=<stage0 hcc> to have the "
+            "build graph produce it.")
+    endif()
+    target_compile_definitions(hcc PRIVATE HCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN)
+    target_link_libraries(hcc ${CONTROL_FLOW_TOKEN_OBJECT})
+    message(STATUS "ACT-POLYC-SELFHOST-PARSER-SLICE02: production hcc links control-flow-token PolyC component: ${CONTROL_FLOW_TOKEN_OBJECT}")
+endif()
+
 # ACT-POLYC-BOOTSTRAP02 C2 IMPL — opt-in stage1 build that
 # links the B1 PolyC component (BootstrapScanIdent) into a
 # SEPARATE binary (hcc-bootstrap02) which uses the modified

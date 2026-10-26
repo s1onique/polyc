@@ -1,0 +1,101 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE02
+ACT_PHASE=C3-VERIFY
+EVIDENCE_KIND=c3-required-result
+
+# --- The component -------------------------------------------------------
+COMPONENT_SOURCE=tools/bootstrap/selfhost-parser-control-flow-token.HC
+COMPONENT_COMPILED_BY=build/host-stage0/hcc (the STAGE-0 compiler)
+COMPONENT_OBJECT=build/parser-control-flow-token-subject.o
+COMPONENT_SYMBOL=_BootstrapValidPostControlFlowToken
+COMPONENT_ABI=I64 BootstrapValidPostControlFlowToken(I64 present, I64 kind, I64 value) -> I64
+ABI_HOST_IDENTITY_FIELDS=0
+COMPONENT_ALLOCATES=NO
+COMPONENT_HAS_GLOBAL_MUTABLE_STATE=NO
+COMPONENT_HAS_HOST_DEPENDENCY=NO
+
+# --- The direct differential --------------------------------------------
+DIRECT_DIFFERENTIAL_TOTAL=42
+DIRECT_DIFFERENTIAL_PASS=42
+DIRECT_DIFFERENTIAL_FAIL=0
+DIRECT_DIFFERENTIAL_PARSE_ERRORS=0
+DIRECT_DIFFERENTIAL_ORACLE_VS_EXPECTED_MISMATCH=0
+DIRECT_DIFFERENTIAL_STATUS=PASS
+ORACLE_CROSS_CHECK_ROWS=326
+ORACLE_CROSS_CHECK_SAME=326
+ORACLE_CROSS_CHECK_DIFF=0
+
+# --- The negative controls ----------------------------------------------
+NEGATIVE_CONTROL_WRONG_FIXTURE_DETECTED=YES  (predecessor matrix -> STATUS=FAIL)
+MUTATIONS_APPLIED=4
+MUTATIONS_DETECTED=4
+MUTATION_DETECTION_RATE=4/4
+
+# --- Production authority ------------------------------------------------
+PRODUCTION_DELEGATION_FLAG_COMPILED_IN=YES
+PRODUCTION_POLYC_SYMBOL_LINKED=YES
+PRODUCTION_CALLS_POLYC=YES
+  (the disassembly of the production parseValidPostControlFlowToken
+   contains `bl 0x100064304 <_BootstrapValidPostControlFlowToken>`)
+CAUSAL_MUTANT_CHANGES_PRODUCTION_BEHAVIOR=YES
+PRISTINE_RESTORES_PRODUCTION_BEHAVIOR=YES
+NO_SILENT_C_FALLBACK=YES
+LEGACY_C_BODY_REACHABLE_IN_PRODUCTION=NO
+PRODUCTION_CALL_SITES=5
+CONTROL_FLOW_TOKEN_SEMANTIC_DELTA=0
+
+# --- The gates -----------------------------------------------------------
+GATE_FAST=PASS              (RC=0)
+  CHECK=diff-check STATUS=PASS
+  CHECK=shell-syntax STATUS=PASS
+  CHECK=doc-invariants STATUS=PASS
+  CHECK=large-file-guard STATUS=PASS
+  CHECK=factory-closure-status STATUS=PASS
+  MANIFEST_ROWS=27  MISSING_HANDOFF_FILES=0  MALFORMED_HANDOFF_VERDICT=0
+  PAIR_OK=27  PAIR_FAIL=0
+FACTORY_V2=PASS             (PASS=53 FAIL=0)
+APPEND_ONLY=PASS            (PASS=11 FAIL=0)
+PATCH_HYGIENE=PASS          (git diff --check over the COMMITTED range -> RC=0)
+SIBLING_PARSER_PADDING_DIFFERENTIAL=PASS   (16640/16640)
+STATIC_FUNCTION_LINKAGE_TEST=PASS
+
+# --- Conservation --------------------------------------------------------
+PREDECESSOR_EVIDENCE_DELTA=0
+PREDECESSOR_ACT_DOCUMENT_DELTA=0
+PREDECESSOR_HANDOFF_DELTA=0
+PREDECESSOR_CORRECTED_CONTRACT_DELTA=0
+PRODUCTION_DELTA_SCOPE=src/parser.c (the delegation only), src/CMakeLists.txt,
+  src/cmake/VerifyControlFlowTokenObject.cmake, Makefile (the build wiring),
+  tools/bootstrap/ and tools/quality/ (the new component and its harnesses)
+HISTORY_REWRITTEN=NO
+UNRELATED_EVIDENCE_REGENERATED=NO
+
+# --- The checkers with pre-existing baseline violations ------------------
+F_NO_PYTHON=PRE_EXISTING_VIOLATIONS
+  STATUS=FAIL (the checker's own verdict)
+  The 12 flagged Python sources are PRE-EXISTING; none is touched by this
+  ACT, and none of this ACT's files is flagged.
+F_POLYC_TOOLS=PRE_EXISTING_VIOLATIONS
+  STATUS=FAIL (the checker's own verdict)
+  0 new violations introduced by this ACT.
+  Neither checker is in the canonical required gate set for this ACT, and
+  both the gate-fast and factory-v2 gates -- which ARE required -- are
+  GREEN.  The two checker failures are PRE-EXISTING baseline violations
+  in files this ACT does not touch.  They are NOT waived.
+
+# --- Mandatory ACs -------------------------------------------------------
+AC_TOTAL=12
+AC_PASS=12
+AC_DEFERRED=0
+AC_FAIL=0
+MANDATORY_AC_NOT_GREEN=NO
+
+# --- Halt evaluation -----------------------------------------------------
+HALT_SCOPE_EXPANSION_REQUIRED=NOT_TRIGGERED
+HALT_F14_VIOLATION=NOT_TRIGGERED
+HALT_PRODUCTION_MUTATION=NOT_TRIGGERED
+HALT_MANDATORY_AC_NOT_GREEN=NOT_TRIGGERED
+HALT_SEMANTIC_DELTA_NONZERO=NOT_TRIGGERED
+  (the direct differential is 42/42 against the real production oracle,
+   and the oracle is the real production function 326/326)
+
+C3_REQUIRED_RESULT_STATUS=PASS
