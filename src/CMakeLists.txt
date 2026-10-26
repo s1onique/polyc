@@ -351,6 +351,67 @@ if (HCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN)
     if (NOT CONTROL_FLOW_TOKEN_OBJECT)
         set(CONTROL_FLOW_TOKEN_OBJECT "${CMAKE_SOURCE_DIR}/../build/parser-control-flow-token-subject.o")
     endif()
+
+    # ---------------------------------------------------------------------
+    # ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01 C2 IMPL (D1-A, D2):
+    #
+    # The TARGET OBJECT FORMAT and the TOOLCHAIN nm are resolved here and
+    # passed EXPLICITLY to the verifier.
+    #
+    # The format must NOT be guessed from the host: during a cross-compile
+    # the host's format is not the target's format. The SLICE02 verifier
+    # hard-coded the Mach-O spelling "_X", so a valid ELF object -- which
+    # spells the same C symbol "X" -- was rejected on Linux purely
+    # because of its platform. That was reproduced natively on
+    # Linux/ELF/x86_64 (see the ACT evidence).
+    #
+    # CMAKE_NM is the CONFIGURED TOOLCHAIN's nm, so the target object is
+    # inspected by a tool that understands the target format. If it is not
+    # available the build fails loudly instead of silently substituting a
+    # host nm.
+    # ---------------------------------------------------------------------
+    if (NOT CONTROL_FLOW_TOKEN_TARGET_OBJECT_FORMAT)
+        if (APPLE)
+            set(CONTROL_FLOW_TOKEN_TARGET_OBJECT_FORMAT "Mach-O")
+        elseif (UNIX AND NOT APPLE)
+            set(CONTROL_FLOW_TOKEN_TARGET_OBJECT_FORMAT "ELF")
+        else()
+            message(FATAL_ERROR
+                "ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01: "
+                "cannot determine the target object format for this platform. "
+                "Configure with -DCONTROL_FLOW_TOKEN_TARGET_OBJECT_FORMAT=<Mach-O|ELF> "
+                "so the control-flow-token symbol spelling can be resolved "
+                "for the target rather than guessed from the host.")
+        endif()
+    endif()
+
+    if (NOT CONTROL_FLOW_TOKEN_NM)
+        set(CONTROL_FLOW_TOKEN_NM "${CMAKE_NM}")
+    endif()
+    if (NOT CONTROL_FLOW_TOKEN_NM)
+        message(FATAL_ERROR
+            "ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01: "
+            "REJECT_NM_FAILURE the configured toolchain provides no nm "
+            "(CMAKE_NM is empty), so the control-flow-token subject cannot "
+            "be verified. Configure with -DCONTROL_FLOW_TOKEN_NM=<path to nm> "
+            "to inspect the target object with a tool that understands the "
+            "target format. Refusing to link the production compiler.")
+    endif()
+
+    # ---------------------------------------------------------------------
+    # D2: BOTH producer mode and prebuilt-object mode converge on the
+    # SAME strict verifier, and the verification runs BEFORE the link.
+    #
+    # The old SLICE02 wiring verified only in producer mode and used a
+    # ".verified" stamp file whose staleness could turn an altered object
+    # into an accepted one. Here the verifier is invoked from a custom
+    # command that re-runs whenever the object is newer than the stamp,
+    # and the stamp is CONTENT-ADDRESSED: it records the object's SHA, so
+    # replacing the object with different content invalidates it even if
+    # the timestamp is preserved (AC15).
+    # ---------------------------------------------------------------------
+    set(_cft_stamp "${CONTROL_FLOW_TOKEN_OBJECT}.verified")
+
     if (CONTROL_FLOW_TOKEN_PRODUCER)
         if (NOT EXISTS "${CONTROL_FLOW_TOKEN_PRODUCER}")
             message(FATAL_ERROR
@@ -376,22 +437,6 @@ if (HCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN)
             WORKING_DIRECTORY "${_cft_source_dir}"
             COMMENT "ACT-POLYC-SELFHOST-PARSER-SLICE02: producing control-flow-token subject ${CONTROL_FLOW_TOKEN_OBJECT}"
             VERBATIM)
-        # Fail closed if the producer could not write the object: a
-        # successful exit from the producer with a missing output, an
-        # empty output, or an output without the exported symbol is a
-        # hard error, never a silent legacy fallback.
-        add_custom_command(
-            OUTPUT "${CONTROL_FLOW_TOKEN_OBJECT}.verified"
-            COMMAND "${CMAKE_COMMAND}"
-                    -DCONTROL_FLOW_TOKEN_OBJECT=${CONTROL_FLOW_TOKEN_OBJECT}
-                    -P "${CMAKE_SOURCE_DIR}/cmake/VerifyControlFlowTokenObject.cmake"
-            COMMAND "${CMAKE_COMMAND}" -E touch "${CONTROL_FLOW_TOKEN_OBJECT}.verified"
-            DEPENDS "${CONTROL_FLOW_TOKEN_OBJECT}"
-            COMMENT "ACT-POLYC-SELFHOST-PARSER-SLICE02: verifying control-flow-token subject"
-            VERBATIM)
-        add_custom_target(hcc-control-flow-token-subject
-            DEPENDS "${CONTROL_FLOW_TOKEN_OBJECT}.verified")
-        add_dependencies(hcc hcc-control-flow-token-subject)
         message(STATUS "ACT-POLYC-SELFHOST-PARSER-SLICE02: production hcc SCHEDULES control-flow-token subject production: ${CONTROL_FLOW_TOKEN_OBJECT}")
     elseif (NOT EXISTS "${CONTROL_FLOW_TOKEN_OBJECT}")
         message(FATAL_ERROR
@@ -401,10 +446,63 @@ if (HCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN)
             "./hcc --install-dir=<prefix> -c tools/bootstrap/selfhost-parser-control-flow-token.HC -o ${CONTROL_FLOW_TOKEN_OBJECT}. "
             "Or configure with -DCONTROL_FLOW_TOKEN_PRODUCER=<stage0 hcc> to have the "
             "build graph produce it.")
+    else()
+        message(STATUS "ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01: production hcc uses a PREBUILT control-flow-token subject: ${CONTROL_FLOW_TOKEN_OBJECT}")
     endif()
+
+    # ---------------------------------------------------------------------
+    # The single strict verification gate, shared by BOTH modes.
+    #
+    # The verification is a custom TARGET, not an OUTPUT-producing custom
+    # command. A custom command with an OUTPUT file is considered
+    # up-to-date whenever that file exists and is newer than its
+    # dependencies -- which is exactly the stale-stamp hazard. The
+    # pre-existing tree demonstrates the hazard concretely: a 0-byte
+    # "build/parser-control-flow-token-subject.o.verified" left by an
+    # earlier build made CMake report "Built target
+    # hcc-control-flow-token-subject" WITHOUT running the verifier at
+    # all, so an altered object would have been linked unverified.
+    #
+    # A custom target's command ALWAYS runs, so the verifier executes on
+    # every relevant production build and the object content is checked
+    # every time. The stamp file is still written, but it is a RECORD of
+    # the verification (it records the object's SHA), never the thing that
+    # decides whether the verification happens (AC15).
+    #
+    # The stamp is additionally validated against the object's SHA when
+    # it exists, so a stamp left behind by a DIFFERENT object content is
+    # detected and reported rather than silently trusted.
+    # ---------------------------------------------------------------------
+    add_custom_target(hcc-control-flow-token-verify
+        COMMAND "${CMAKE_COMMAND}"
+                -DCONTROL_FLOW_TOKEN_OBJECT=${CONTROL_FLOW_TOKEN_OBJECT}
+                -DCONTROL_FLOW_TOKEN_EXPECTED_SYMBOL=BootstrapValidPostControlFlowToken
+                -DCONTROL_FLOW_TOKEN_TARGET_OBJECT_FORMAT=${CONTROL_FLOW_TOKEN_TARGET_OBJECT_FORMAT}
+                -DCONTROL_FLOW_TOKEN_NM=${CONTROL_FLOW_TOKEN_NM}
+                -P "${CMAKE_SOURCE_DIR}/cmake/VerifyControlFlowTokenObject.cmake"
+        COMMAND "${CMAKE_COMMAND}"
+                -DCONTROL_FLOW_TOKEN_OBJECT=${CONTROL_FLOW_TOKEN_OBJECT}
+                -DCONTROL_FLOW_TOKEN_STAMP=${_cft_stamp}
+                -P "${CMAKE_SOURCE_DIR}/cmake/WriteControlFlowTokenObjectStamp.cmake"
+        DEPENDS "${CONTROL_FLOW_TOKEN_OBJECT}"
+        COMMENT "ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01: verifying control-flow-token subject ${CONTROL_FLOW_TOKEN_OBJECT}"
+        VERBATIM
+        USES_TERMINAL)
+
+    # The verification gates the link: the production compiler is never
+    # linked without a verified PolyC control-flow-token authority.
+    add_dependencies(hcc hcc-control-flow-token-verify)
+
+    # The link itself must ALSO depend on the object, so the object is
+    # re-read by the linker whenever it changes.
+    set_property(TARGET hcc APPEND PROPERTY
+        LINK_DEPENDS "${CONTROL_FLOW_TOKEN_OBJECT}")
+
     target_compile_definitions(hcc PRIVATE HCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN)
     target_link_libraries(hcc ${CONTROL_FLOW_TOKEN_OBJECT})
     message(STATUS "ACT-POLYC-SELFHOST-PARSER-SLICE02: production hcc links control-flow-token PolyC component: ${CONTROL_FLOW_TOKEN_OBJECT}")
+    message(STATUS "ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01: production hcc VERIFIES the control-flow-token subject (both producer and prebuilt modes); "
+                   "target format=${CONTROL_FLOW_TOKEN_TARGET_OBJECT_FORMAT}; nm=${CONTROL_FLOW_TOKEN_NM}")
 endif()
 
 # ACT-POLYC-BOOTSTRAP02 C2 IMPL — opt-in stage1 build that

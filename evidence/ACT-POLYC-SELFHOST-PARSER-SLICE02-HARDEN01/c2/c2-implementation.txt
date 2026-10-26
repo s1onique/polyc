@@ -1,0 +1,61 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01
+ACT_PHASE=C2-IMPL
+EVIDENCE_KIND=c2-implementation-summary
+
+# ---- The files changed by C2 --------------------------------------
+src/cmake/VerifyControlFlowTokenObject.cmake      (rewritten: strict symbol identity)
+src/cmake/WriteControlFlowTokenObjectStamp.cmake   (NEW: content-addressed stamp)
+src/CMakeLists.txt                                (both producer and prebuilt modes converge on the verifier)
+tools/quality/parser-control-flow-token-differential.HC  (fixture-integrity contract + checked integer parser)
+tools/quality/parser-control-flow-token-int-bounds.HC  (NEW: integer-boundary qualification tool)
+Makefile                                          (new build/qualification targets)
+
+# ---- D1: the symbol verifier -------------------------------------
+SYMBOL_NAME_EXACT=YES
+SYMBOL_IS_DEFINED=YES
+SYMBOL_IS_GLOBAL=YES
+SYMBOL_IS_CODE=YES
+SYMBOL_IS_STRONG=YES  (via nm --no-weak)
+SYMBOL_DEFINITION_COUNT=1
+OBJECT_NONEMPTY=YES
+NM_EXECUTION_SUCCESSFUL=YES
+NM_INVOCATION=nm --format=posix --no-weak <object>
+TARGET_FORMAT_FROM=src/CMakeLists.txt (explicit; never guessed from the host)
+NM_FROM=CMAKE_NM (the configured toolchain nm)
+
+# ---- D2: both producer and prebuilt modes verify ---------------
+PRODUCER_MODE_VERIFY=YES
+PREBUILT_MODE_VERIFY=YES
+STALE_STAMP_CANNOT_BYPASS=YES  (the verification is a custom TARGET, whose command ALWAYS runs)
+STAMP_IS_CONTENT_ADDRESSED=YES (the stamp records the object SHA)
+
+# ---- D3: the fixture-integrity contract -------------------------
+EXPECTED_FIXTURE_COUNT=42
+FIXTURE_IDS_COMPLETE=YES
+FIXTURE_IDS_UNIQUE=YES
+FIXTURE_SCHEMA_VALID=YES
+A_MALFORMED_ROW_IS_A_FAILURE_NEVER_A_SKIP=YES
+
+# ---- D4: the integer parser -------------------------------------
+SIGNED_BOUNDARY_MIN=PASS
+SIGNED_BOUNDARY_MAX=PASS
+POSITIVE_OVERFLOW_REJECTED=YES
+NEGATIVE_OVERFLOW_REJECTED=YES
+HEX_BOUNDARY=PASS
+TRAILING_GARBAGE_REJECTED=YES
+NO_DIGITS_REJECTED=YES
+
+# ---- The production subject and the frozen ABI are untouched ----
+BootstrapValidPostControlFlowToken_SOURCE_SHA_DELTA=0
+SUBJECT_SHA256=77199636db559024365fffc168cd191c1281593452682aab80005151e6baf196
+SUBJECT_SHA256_AT_C0=77199636db559024365fffc168cd191c1281593452682aab80005151e6baf196
+ABI=I64 BootstrapValidPostControlFlowToken(I64 present, I64 kind, I64 value) -> I64
+ABI_DELTA=0
+
+# ---- The M1..M4 subject mutation controls still fire ------------
+M1_DETECTED=YES (3 mismatching rows)
+M2_DETECTED=YES (1 mismatching row)
+M3_DETECTED=YES (3 mismatching rows)
+M4_DETECTED=YES (1 mismatching row)
+MUTATIONS_APPLIED=4
+MUTATIONS_DETECTED=4
