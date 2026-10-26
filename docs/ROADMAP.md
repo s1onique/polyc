@@ -5954,3 +5954,100 @@ diagnostic ownership into PolyC.
 
 See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02.md`
 and `evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02/`.
+
+---
+
+#### ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01 status (CLOSED PASS at this commit)
+
+```text
+ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01
+  ENTRY       = ac639d0 (ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02 C4: CLOSE)
+  C0 AUTH     = (this ACT's authorization + entry freeze)
+  C1 EVIDENCE = (the five defects, reproduced and corrected)
+  C2 EVIDENCE = (the corrected successor-facing contract)
+  C3 EVIDENCE = (independent re-verification of every correction)
+  C4 CLOSE    = (this section)
+
+  CLASS                 = GOVERNANCE / CORRECTION / CONTRACT
+  PRODUCTION_SEMANTIC_DELTA = 0
+  PREDECESSOR_EVIDENCE_DELTA = 0
+  PREDECESSOR_HANDOFF_DELTA  = 0
+  NEW_POLYC_COMPONENT_IMPLEMENTED = 0
+  NEW_TRACKED_TOOL = 0
+  COMPILER_GENERATION_REBUILT = NO
+  HISTORY_REWRITTEN = NO
+
+  SELECTED_CANDIDATE_COUNT = 1
+  SELECTED_CANDIDATE       = CAND-001 parseValidPostControlFlowToken
+                              (src/parser.c:832..864)   -- UNCHANGED
+  SELECTED_ABI             = I64 BootstrapValidPostControlFlowToken(
+                                I64 present, I64 kind, I64 value) -> I64
+  SELECTED_ABI_HOST_IDENTITY_FIELDS = 0
+
+  DEFECTS_FOUND     = 5  (2 P0, 3 P1)
+  DEFECTS_CONFIRMED = 5
+  DEFECTS_CORRECTED = 5
+
+  CORRECTED_FIXTURE_COUNT = 42
+  CORRECTED_FIXTURE_ACCEPT = 23
+  CORRECTED_FIXTURE_REJECT = 19
+  CORRECTED_FIXTURE_ORACLE_DISAGREEMENTS = 0
+  CORRECTED_FIXTURE_BREAKDOWN =
+      1 NULL_EOF + 3 IDENT + 3 STR + 11 PUNCT + 18 KEYWORD + 6 UNKNOWN_KIND
+    = 42 rows; rejects 1 NULL_EOF + 6 PUNCT + 6 KEYWORD + 6 UNKNOWN_KIND = 19
+    (derived from the matrix rows, not entered by hand)
+  CORRECTED_CONTRACT_ITEMS = 42  (11 changed, 31 unchanged)
+  INVENTORY_TOTAL_CORRECTED = 17
+  LEXER07_BASELINE_FAILURE_COUNT = 21
+  LEXER07_CURRENT_FAILURE_COUNT  = 15
+  CONTROLS_PASSED = 9 / 9, over the FULL eligibility predicate;
+    the synthetic control candidate's eligibility is ADMITTED by the
+    eligibility checker itself (13/13 clauses), and the rank input is
+    joined from that checker's output
+
+  GATE_FAST      = PASS (RC=0; manifest PAIR_OK=26 PAIR_FAIL=0)
+  FACTORY_V2     = PASS (53/0)
+  APPEND_ONLY    = PASS (11/0)
+  PATCH_HYGIENE  = PASS (over the COMMITTED correction range)
+  F14            = PASS
+  AC_LEDGER      = 13 PASS / 1 DEFERRED (AC14) / 0 FAIL
+
+  PREDECESSOR_VERDICT_CORRECTED_TO = HALT_CONTRACT_DEFECT_UNRESOLVED
+  NEXT_ACT = ACT-POLYC-SELFHOST-PARSER-SLICE02
+             (descriptive title:
+              ACT-POLYC-SELFHOST-PARSER-CONTROL-FLOW-TOKEN01)
+```
+
+An independent review of the RECON02 closure found five binding
+contract defects. The most important is that the frozen fixture
+matrix contradicted the **real** production C function: `TK_SUPERSCRIPT`
+and `TK_STR` are both `0x301` (`src/lexer.h:15` and `:19`), and
+`src/parser.c:835` compares the kind **by number**, so `0x301` is
+`TK_STR` and is **accepted**. Calling the production function over the
+whole matrix returned 23 accept / 19 reject and disagreed with exactly
+one row, F041. The predecessor's own ABI contract already said so;
+only the matrix was wrong. Under the predecessor's matrix the
+successor's two obligations — satisfy the frozen fixtures AND satisfy
+the legacy-C oracle — **conflicted**, so the successor could not have
+been implemented correctly.
+
+The two ranking controls (CONTROL 5, CONTROL 6) were re-stated over
+the **full** hard-eligibility predicate rather than the broader
+state-boundary set: against the real eligible set, removing CAND-001
+leaves **zero** ranked rows, because CAND-004 is ineligible
+(`production_delegation_feasible = POSSIBLE_BUT_NARROW`). Both
+controls are now re-run in a falsifiable form so the claimed effect is
+actually observable.
+
+**The selection is unchanged.** CAND-001
+`parseValidPostControlFlowToken` remains the unique eligible
+candidate, the proposed PolyC ABI is unchanged, and the successor ACT
+is unchanged. Only the defective claims were corrected. The
+predecessor's history is not rewritten: its CLOSE keeps
+`PASS_TRUE_GREEN` and this ACT's CLOSE carries the
+`ACT-Supersedes` / `ACT-Corrected-Verdict` trailers.
+
+See
+`docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01.md`
+and
+`evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01/`.
