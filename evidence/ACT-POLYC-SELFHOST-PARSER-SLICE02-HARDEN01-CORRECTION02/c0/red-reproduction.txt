@@ -1,0 +1,254 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION02
+ACT_PHASE=C0-AUTH/RED
+EVIDENCE_KIND=red-reproduction
+
+# ===================================================================
+# RED A -- THE INDENTED-ROW RECOGNITION BYPASS
+# ===================================================================
+#
+# Reproduced against the REAL differential binary, built from the
+# committed tree by the production compiler. No mock, no simulation.
+#
+# The predecessor ACT replaced the NEGATIVE row test
+#
+#     if (line[0] != 'F') continue;
+#     if (line[1] < '0' || line[1] > '9') continue;
+#
+# with a POSITIVE recognition test in is_skippable_row(). Its
+# metadata clause is:
+#
+#     if (line[0] == ' ' || line[0] == '\t') return 1;
+#
+# which accepts ANY indented line as a metadata continuation without
+# confirming that a metadata block is in scope. An indented unknown
+# fixture row is therefore still skipped BEFORE the unknown-ID ledger
+# runs.
+
+FIXTURE=evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01/c1/c1-corrected-fixture-model.tsv
+
+# ---- RED A.1: SPACE-indented unknown row --------------------------
+COMMAND=awk 'BEGIN{while((getline l < "<FIXTURE>")>0){ if(l ~ /^F021\t/ && !done){print "  X001\tUNKNOWN\t1\t1\t1\t1\tind\tind"; done=1} print l}}' <FIXTURE> > /tmp/red_ind_space.tsv
+COMMAND=./build/parser-control-flow-token-differential /tmp/red_ind_space.tsv
+  SLICE02_DIFFERENTIAL_TOTAL=42
+  SLICE02_DIFFERENTIAL_PASS=42
+  SLICE02_DIFFERENTIAL_FAIL=0
+  SLICE02_DIFFERENTIAL_PARSE_ERRORS=0
+  SLICE02_DIFFERENTIAL_EXPECTED_FIXTURE_COUNT=42
+  SLICE02_DIFFERENTIAL_OBSERVED_FIXTURE_COUNT=42
+  SLICE02_DIFFERENTIAL_MISSING_IDS=0
+  SLICE02_DIFFERENTIAL_DUPLICATE_IDS=0
+  SLICE02_DIFFERENTIAL_UNKNOWN_IDS=0
+  SLICE02_DIFFERENTIAL_TRUNCATED_ROWS=0
+  SLICE02_DIFFERENTIAL_MALFORMED_ROWS=0
+  SLICE02_DIFFERENTIAL_FIXTURE_IDS_COMPLETE=1
+  SLICE02_DIFFERENTIAL_FIXTURE_IDS_UNIQUE=1
+  SLICE02_DIFFERENTIAL_FIXTURE_SCHEMA_VALID=1
+  STATUS=PASS
+RC=0
+
+RED_A1_OBSERVED_STATUS=PASS
+RED_A1_OBSERVED_UNKNOWN_IDS=0
+RED_A1_OBSERVED_OBSERVED_FIXTURE_COUNT=42
+RED_A1_EXPECTED_STATUS=FAIL
+RED_A1_EXPECTED_REASON=FIXTURE_ID_UNKNOWN
+RED_A1_REPRODUCED=YES
+
+# ---- RED A.2: TAB-indented unknown row ----------------------------
+COMMAND=awk 'BEGIN{while((getline l < "<FIXTURE>")>0){ if(l ~ /^F021\t/ && !done){print "\tX001\tUNKNOWN\t1\t1\t1\t1\tind\tind"; done=1} print l}}' <FIXTURE> > /tmp/red_ind_tab.tsv
+COMMAND=./build/parser-control-flow-token-differential /tmp/red_ind_tab.tsv
+  SLICE02_DIFFERENTIAL_TOTAL=42
+  SLICE02_DIFFERENTIAL_PASS=42
+  SLICE02_DIFFERENTIAL_FAIL=0
+  SLICE02_DIFFERENTIAL_PARSE_ERRORS=0
+  SLICE02_DIFFERENTIAL_EXPECTED_FIXTURE_COUNT=42
+  SLICE02_DIFFERENTIAL_OBSERVED_FIXTURE_COUNT=42
+  SLICE02_DIFFERENTIAL_MISSING_IDS=0
+  SLICE02_DIFFERENTIAL_DUPLICATE_IDS=0
+  SLICE02_DIFFERENTIAL_UNKNOWN_IDS=0
+  SLICE02_DIFFERENTIAL_TRUNCATED_ROWS=0
+  SLICE02_DIFFERENTIAL_MALFORMED_ROWS=0
+  SLICE02_DIFFERENTIAL_FIXTURE_IDS_COMPLETE=1
+  SLICE02_DIFFERENTIAL_FIXTURE_IDS_UNIQUE=1
+  SLICE02_DIFFERENTIAL_FIXTURE_SCHEMA_VALID=1
+  STATUS=PASS
+RC=0
+
+RED_A2_OBSERVED_STATUS=PASS
+RED_A2_OBSERVED_UNKNOWN_IDS=0
+RED_A2_EXPECTED_STATUS=FAIL
+RED_A2_EXPECTED_REASON=FIXTURE_ID_UNKNOWN
+RED_A2_REPRODUCED=YES
+
+# The fixture that carries the RED holds the 42 canonical rows PLUS
+# one unknown-id row. The differential observes 42 rows and reports
+# ZERO unknown ids, i.e. the unknown row is invisible to it.
+#
+# RED A is the SAME defect class the predecessor ACT was opened to
+# repair, narrowed from "any unrecognized row" to "any indented
+# unrecognized row".
+
+# ---- RED A.3: stability (3 consecutive runs) ---------------------
+COMMAND=for i in 1 2 3; do ./build/parser-control-flow-token-differential /tmp/red_ind_space.tsv; done
+  run 1: STATUS=PASS UNKNOWN_IDS=0
+  run 2: STATUS=PASS UNKNOWN_IDS=0
+  run 3: STATUS=PASS UNKNOWN_IDS=0
+RED_A_STABLE=YES
+
+# ===================================================================
+# RED B -- THE F14 / TERMINALITY VIOLATION
+# ===================================================================
+#
+# The predecessor ACT's CLOSE commit is fb85cff. Two commits follow it.
+# Both add to, or rewrite, a file inside the CLOSED evidence directory.
+
+COMMAND=git log --oneline fb85cff..HEAD --format='%H %s'
+  638e2e0c4a3ca2b6af951d8b146049406aa00055 Correct the terminality artifact: the range check takes the CLOSE commit
+  bc1d2d3847ad2555ac2672bd461275dd41dcd2df Record the external terminality check for ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION01
+
+COMMAND=git show --stat bc1d2d3 | grep '|'
+   .../c3/terminality.txt                             | 90 ++++++++++++++++++++++
+COMMAND=git show --stat 638e2e0 | grep '|'
+   .../c3/terminality.txt                             | 18 ++++++++++++++++++-
+                                           1 file changed, 17 insertions(+), 1 deletion(-)
+
+# ---- the decisive mechanical witness ------------------------------
+COMMAND=git diff --name-status fb85cff..HEAD -- evidence/ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION01/
+A	evidence/ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION01/c3/terminality.txt
+
+RED_B_DIFF_NAME_STATUS_EXIT=0
+RED_B_POST_CLOSE_EVIDENCE_ADDITION=YES
+RED_B_POST_CLOSE_EVIDENCE_REWRITE=YES
+RED_B_REPRODUCED=YES
+
+# The file "c3/terminality.txt" declares itself C3 evidence
+# ("ACT_PHASE=C3-VERIFY (the external terminality check, recorded
+# before the CLOSE commit)") and carries the known C4 SHA and
+# post-CLOSE observations, yet it was introduced into the closed
+# evidence directory AFTER the CLOSE commit.
+#
+# The absence of an ACT: trailer on those two commits does NOT make
+# the later evidence additions disappear. Git trailer parsing
+# establishes only whether a commit message carries recognizable
+# trailers; it does not establish whether a closed evidence tree was
+# modified. The question asked here is answered by the diff above.
+#
+# This ACT does NOT amend, revert or rewrite those commits. They are
+# historical evidence. The violation is RECORDED in this ACT's own
+# evidence namespace.
+
+# ===================================================================
+# RED C -- THE DRIVER'S ROW-SEPARATION RISK
+# ===================================================================
+#
+# EditAppendLine() in tools/quality/parser-control-flow-token-
+# negative-controls.HC appends at g_src_len and does not insert a
+# separating newline:
+#
+#     U0 EditAppendLine(U8 *text)
+#     {
+#       g_cut_a = g_src_len;
+#       g_cut_b = g_src_len;
+#       ...
+#       g_repl[tl] = '\n';
+#
+# On a source that does not end with a newline, the appended row JOINS
+# the last existing row.
+
+COMMAND=printf 'F001\tNULL_EOF\t0\t0\t0\t0\tr\t:1' > /tmp/nonl.tsv
+COMMAND={ cat /tmp/nonl.tsv; printf 'X001\tUNKNOWN\t1\t1\t1\t1\tnc\tnc\n'; } > /tmp/joined.tsv
+COMMAND=cat -A /tmp/joined.tsv
+  F001^INULL_EOF^I0^I0^I0^I0^Ir^I:1X001^IUNKNOWN^I1^I1^I1^I1^Inc^Inc$
+
+COMMAND=./build/parser-control-flow-token-differential /tmp/joined.tsv
+  SLICE02_DIFFERENTIAL_TOTAL=1
+  SLICE02_DIFFERENTIAL_OBSERVED_FIXTURE_COUNT=1
+  SLICE02_DIFFERENTIAL_MISSING_IDS=42
+
+RED_C_JOINED_ROW_OBSERVED=YES
+RED_C_REPRODUCED=YES
+
+# The canonical fixture DOES end with a newline (0x0a), so the
+# predecessor's controls are NOT affected today. The risk is
+# source-level and is repaired by this ACT so that the control driver
+# cannot silently produce a merged row.
+COMMAND=tail -c 1 <FIXTURE> | xxd
+  00000000: 0a                                       .
+CANONICAL_FIXTURE_ENDS_WITH_NEWLINE=YES
+
+# ===================================================================
+# RED D -- THE RECORDED NC-D12 BLOCK DOES NOT MATCH ITS OWN COMMAND
+# ===================================================================
+#
+# The predecessor's closed evidence
+# evidence/ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION01/
+#   c2/p0-fixture-integrity.txt
+# records, for NC-D12:
+#
+#   COMMAND={ cat $FIXTURE_CANONICAL; printf 'X001\t...\n'; } > /tmp/nc_d12.tsv
+#   COMMAND=./build/parser-control-flow-token-differential /tmp/nc_d12.tsv
+#     SLICE02_DIFFERENTIAL_TOTAL=42
+#     SLICE02_DIFFERENTIAL_PASS=41
+#     SLICE02_DIFFERENTIAL_MISSING_IDS=1
+#     SLICE02_DIFFERENTIAL_UNKNOWN_IDS=1
+#     SLICE02_DIFFERENTIAL_FIXTURE_IDS_COMPLETE=0
+#
+# Run against the CANONICAL fixture, that command produces TOTAL=43,
+# PASS=42, MISSING_IDS=0, FIXTURE_IDS_COMPLETE=1. The recorded
+# output has a DIFFERENT signature.
+
+# ---- the recorded command, run against the canonical fixture -----
+COMMAND={ cat <FIXTURE>; printf 'X001\tUNKNOWN\t1\t1\t1\t1\tnc-d12\tnc-d12\n'; } > /tmp/nc_d12.tsv
+COMMAND=./build/parser-control-flow-token-differential /tmp/nc_d12.tsv
+  SLICE02_DIFFERENTIAL_TOTAL=43
+  SLICE02_DIFFERENTIAL_PASS=42
+  SLICE02_DIFFERENTIAL_MISSING_IDS=0
+  SLICE02_DIFFERENTIAL_UNKNOWN_IDS=1
+  SLICE02_DIFFERENTIAL_FIXTURE_IDS_COMPLETE=1
+  REASON=FIXTURE_ID_UNKNOWN
+  STATUS=FAIL
+RC=1
+
+RECORDED_NC_D12_TOTAL=42
+RECORDED_NC_D12_PASS=41
+RECORDED_NC_D12_MISSING_IDS=1
+RECORDED_NC_D12_IDS_COMPLETE=0
+ACTUAL_NC_D12_TOTAL=43
+ACTUAL_NC_D12_PASS=42
+ACTUAL_NC_D12_MISSING_IDS=0
+ACTUAL_NC_D12_IDS_COMPLETE=1
+RECORDED_BLOCK_MATCHES_ITS_OWN_COMMAND=NO
+
+# ---- the recorded output IS reproducible from a 41-row base ------
+# i.e. a base that is ALREADY missing one canonical id (F042).
+COMMAND=grep '^F[0-9][0-9][0-9]' <FIXTURE> | grep -v '^F042' > /tmp/base41.tsv
+COMMAND={ cat /tmp/base41.tsv; printf 'X001\tUNKNOWN\t1\t1\t1\t1\tnc-d12\tnc-d12\n'; } > /tmp/hyp.tsv
+COMMAND=./build/parser-control-flow-token-differential /tmp/hyp.tsv
+  SLICE02_DIFFERENTIAL_TOTAL=42
+  SLICE02_DIFFERENTIAL_PASS=41
+  SLICE02_DIFFERENTIAL_PARSE_ERRORS=1
+  SLICE02_DIFFERENTIAL_MISSING_IDS=1
+  SLICE02_DIFFERENTIAL_UNKNOWN_IDS=1
+  SLICE02_DIFFERENTIAL_FIXTURE_IDS_COMPLETE=0
+  SLICE02_DIFFERENTIAL_FIXTURE_SCHEMA_VALID=0
+  REASON=FIXTURE_ID_UNKNOWN
+  STATUS=FAIL
+RC=1
+
+RECORDED_BLOCK_REPRODUCIBLE_FROM_41_ROW_BASE=YES
+RECORDED_BLOCK_BASE_MISSING_ID=F042
+# The reviewer's hypothesis (the appended text joined the last row) is
+# NOT the cause: the recorded output has a well-formed 43rd data row
+# and reports UNKNOWN_IDS=1. The cause is that the recorded block was
+# measured against a base fixture that was already missing F042.
+#
+# This is an evidence-truth defect in the predecessor's C2 block. The
+# predecessor's CONCLUSION (the unknown-id bypass is repaired) still
+# holds and is re-measured in this ACT's C2 phase. The predecessor's
+# file is closed evidence and is NOT modified.
+
+# ===================================================================
+RED_A_REPRODUCED=YES
+RED_B_REPRODUCED=YES
+RED_C_REPRODUCED=YES
+RED_D_REPRODUCED=YES
+RED_NOT_REPRODUCED=NONE
