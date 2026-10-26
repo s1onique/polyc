@@ -1,0 +1,78 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02
+ACT_PHASE=C4-CLOSE
+EVIDENCE_KIND=terminal-ledger
+
+# --- The ACT's own outcome ----------------------------------------------
+VERDICT=PASS_TRUE_GREEN
+
+# --- The nine required HANDOFF contents (ACT SECT_15) -------------------
+HANDOFF_1_CURRENT_PARSER_AUTHORITY_INVENTORY=PRESENT (section 1)
+HANDOFF_2_HISTORICAL_VS_CURRENT_DIFFERENCES=PRESENT (section 2)
+HANDOFF_3_ELIGIBILITY_AND_RANKING=PRESENT (section 3)
+HANDOFF_4_EXACTLY_ONE_SELECTED_TARGET=PRESENT (section 4)
+HANDOFF_5_ABI_PROPOSAL_AND_EVIDENCE=PRESENT (section 5)
+HANDOFF_6_FROZEN_RED_AND_PROOF_MODEL=PRESENT (section 6)
+HANDOFF_7_CONSERVATION_AND_GATES=PRESENT (section 7)
+HANDOFF_8_EXPLICIT_RESIDUE=PRESENT (section 8)
+HANDOFF_9_NEXT_ACT=PRESENT (section 9)
+
+# --- Forbidden HANDOFF fields (Factory v2) ------------------------------
+Status:_ABSENT=YES
+VERDICT: (colon form)_ABSENT=YES
+FINAL_HEAD:_ABSENT=YES
+CLOSURE_HEAD:_ABSENT=YES
+DOCS_HEAD:_ABSENT=YES
+IMPLEMENTATION_HEAD:_ABSENT=YES
+worktree=clean_ABSENT=YES
+SHA_OF_SELF_CLAIM_ABSENT=YES
+  (the HANDOFF contains no 40-hex Git object id; it cites OTHER
+   commits' SHAs, which is permitted -- the prohibition is on claiming
+   the SHA of the commit that CONTAINS the artifact)
+HANDOFF_VERDICT_TOKEN=PASS_TRUE_GREEN
+  (extracted by the same awk the factory-closure-status-check.sh uses)
+
+# --- Managed-universe registration ---------------------------------------
+MANAGED_MAP_ROW_APPENDED=YES
+  docs/acts/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02.md
+  docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02.md
+MANIFEST_ROWS_BEFORE=24
+MANIFEST_ROWS_AFTER=25
+
+# --- Roadmap ------------------------------------------------------------
+ROADMAP_UPDATED=YES
+ROADMAP_SECTION=#### ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02 status
+  (CLOSED PASS_TRUE_GREEN at this commit)
+ROADMAP_RECORDS_SELECTED_CANDIDATE=YES
+ROADMAP_RECORDS_SUCCESSOR_ID=YES
+
+# --- The three deferred ACs, resolved at C4 -----------------------------
+AC48_HANDOFF_DOES_NOT_CLAIM_CONTAINING_COMMIT_SHA=PASS
+  (verified above: SHA_OF_SELF_CLAIM_ABSENT=YES)
+AC49_CLOSURE_VERDICT_AGREES_WITH_ACTUAL_EVIDENCE=PASS
+  The verdict PASS_TRUE_GREEN is carried by this CLOSE commit's
+  ACT-Verdict trailer, and it agrees with the evidence:
+    - 47 ACs PASS, 3 DEFERRED (each requiring this commit), 0 FAIL;
+    - the three deferred ACs are resolved here;
+    - every gate the ACT names as required is GREEN
+      (gate-fast, gate-push, factory-v2, append-only, patch hygiene);
+    - the two checker failures are PRE-EXISTING, classified and not
+      waived;
+    - production semantic delta = 0.
+  Nothing in the evidence contradicts PASS_TRUE_GREEN.
+AC50_EXTERNAL_TERMINALITY_CHECK=DEFERRED_TO_POST_CLOSE
+  By the ACT's own text it runs AFTER the CLOSE commit exists.  It is
+  executed in the post-C4 read-only step and recorded there.
+
+# --- Scope --------------------------------------------------------------
+PRODUCTION_SOURCE_DELTA=0
+SUCCESSOR_IMPLEMENTATION_DELTA=0
+NEW_POLYC_COMPONENT_IMPLEMENTED=0
+NEW_TRACKED_TOOL=0
+NEW_PYTHON=0
+CLOSED_EVIDENCE_DELTA=0
+CLOSED_HANDOFF_DELTA=0
+
+# --- Successor ----------------------------------------------------------
+NEXT_ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE02
+NEXT_ACT_DESCRIPTIVE_TITLE=ACT-POLYC-SELFHOST-PARSER-CONTROL-FLOW-TOKEN01
+NEXT_ACT_ID_UNCHANGED_FROM_C2=YES

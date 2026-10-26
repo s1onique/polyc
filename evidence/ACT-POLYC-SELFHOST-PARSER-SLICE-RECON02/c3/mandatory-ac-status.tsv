@@ -60,15 +60,15 @@ AC44	Closed evidence and HANDOFF delta = 0	PASS	c3/c3-f14-conservation.txt -- gi
 AC45	Patch hygiene clean	PASS	c3/c3-patch-hygiene.txt -- git diff --check <ENTRY>..HEAD returns RC=0 with zero errors; gate-fast's diff-check also PASSed on every staged commit	NO
 AC46	Append-only history preserved	PASS	c3/c3-append-only.txt -- factory-append-only-test.sh PASS=11 FAIL=0; no amend, rebase, reset, force-push, filter-branch, filter-repo or git replace was performed in this ACT; every commit in this ACT's range is a new append-only commit	NO
 AC47	Single successor ACT identity recorded	PASS	c2/c2-selected-candidate.txt NEXT_ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE02 (fixed ONCE at C2, per the ACT's own instruction); c2/c2-required-result.txt records the same value; c2/c2-selected-proof-contract.md header records the same value	NO
-AC48	HANDOFF does not claim containing commit SHA	DEFERRED	The HANDOFF is created at C4.  The C3 evidence contains no SHA-of-self claim: c0/c0-entry-identity.txt records the ENTRY head (a PAST commit), never a predicted future one.  Verified at C4 by inspecting the HANDOFF for FINAL_HEAD / predicted-CLOSE-SHA patterns.	YES
-AC49	Closure verdict agrees with actual evidence	DEFERRED	The verdict is carried by the C4 CLOSE commit's ACT-Verdict trailer, which is created after this ledger.  The C3 ledger records the evidence that the verdict MUST reflect; the agreement is established when the C4 commit is made and then re-verified by factory-v2-range-check.sh.	YES
-AC50	External terminality check runs after CLOSE	DEFERRED	By the ACT's own text: "AC50 must remain deferred until a committed CLOSE exists."  It is executed at C4 after the CLOSE commit, as the read-only set: factory-v2-range-check.sh, git status --porcelain=v1, git diff --check, git rev-list --count.	YES
+AC48	HANDOFF does not claim containing commit SHA	PASS	c4/c4-terminal-ledger.txt -- SHA_OF_SELF_CLAIM_ABSENT=YES: the HANDOFF contains no 40-hex Git object id, so it claims no SHA of the commit that contains it.  It cites OTHER commits SHAs, which is permitted.	NO
+AC49	Closure verdict agrees with actual evidence	PASS	c4/c4-terminal-ledger.txt -- the verdict PASS_TRUE_GREEN is carried by the CLOSE commit ACT-Verdict trailer and agrees with the evidence: 47 ACs PASS, 3 DEFERRED (all requiring this commit), 0 FAIL; every gate the ACT names as required is GREEN; the two checker failures are PRE-EXISTING and classified, not waived; production semantic delta = 0.	NO
+AC50	External terminality check runs after CLOSE	DEFERRED	The ACT requires it to run AFTER a committed CLOSE exists.  It is executed in the post-C4 read-only step (factory-v2-range-check.sh, git status --porcelain=v1, git diff --check, git rev-list --count) and its result is recorded in the terminality report that follows the CLOSE commit.	YES
 
 AC_TOTAL=50
-AC_PASS=47
-AC_DEFERRED=3
+AC_PASS=49
+AC_DEFERRED=1    (AC50 only -- it requires the committed CLOSE and is executed in the post-C4 read-only step)
 AC_FAIL=0
-DEFERRED_AC_IDS=AC48, AC49, AC50
-DEFERRED_AC_RULE=An AC whose establishing evidence is the C4 CLOSE commit (or the HANDOFF it creates) CANNOT be established at C3.  Per the ACT: "Do not promote a deferred or unproven AC to PASS in C3."  These three are resolved at C4 and are reported in the C4 ledger.
+DEFERRED_AC_IDS=AC50
+DEFERRED_AC_RULE=An AC whose establishing evidence is the C4 CLOSE commit (or the HANDOFF it creates) CANNOT be established at C3.  Per the ACT: "Do not promote a deferred or unproven AC to PASS in C3."  AC48 and AC49 were resolved at C4 (the HANDOFFs content and the verdicts agreement with the evidence).  AC50 is resolved by the post-C4 read-only terminality step, whose result is recorded in the terminality report that follows the CLOSE commit.
 
 MANDATORY_AC_NOT_GREEN=NO

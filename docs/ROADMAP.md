@@ -5862,3 +5862,95 @@ Residue carried forward (see
 
 See `docs/acts/ACT-POLYC-TOOLING-GEP01-GATE-REPAIR01.md` and
 `evidence/ACT-POLYC-TOOLING-GEP01-GATE-REPAIR01/`.
+
+---
+
+#### ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02 status (CLOSED PASS_TRUE_GREEN at this commit)
+
+```text
+ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02
+  ENTRY       = 1e27f01 (ACT-POLYC-TOOLING-GEP01-GATE-REPAIR01 C4: CLOSE)
+  C0 AUTH     = 0b9d312  (authorization + entry freeze; Factory-v2 RED)
+  C1 EVIDENCE = da213c4  (live parser inventory)
+  C2 EVIDENCE = 1e4c12a  (eligibility, ranking and selection)
+  C3 EVIDENCE = 98dd8c9  (independent verification)
+  C4 CLOSE    = (this section)
+
+  PARSER_PADDING_PRODUCTION_AUTHORITY = POLYC
+  PARSER_SLICE_RECON02_INVENTORY      = COMPLETE
+  PARSER_SLICE_RECON02_ELIGIBILITY    = COMPLETE
+
+  SELECTED_CANDIDATE_COUNT = 1
+  SELECTED_CANDIDATE       = CAND-001 parseValidPostControlFlowToken
+                              (src/parser.c:832..864)
+  SELECTED_R0              = 0
+  SELECTED_R1..R6          = 1 2 0 0 1 src/parser.c:832
+  SELECTED_ABI             = I64 BootstrapValidPostControlFlowToken(
+                                I64 present, I64 kind, I64 value) -> I64
+  SELECTED_ABI_HOST_IDENTITY_FIELDS = 0
+  SELECTED_CALL_SITES      = 5 (src/parser.c:950, 961, 1254, 1288, 1321)
+
+  SELECTED_ABI_CONTRACT    = FROZEN
+  SELECTED_RED_MODEL       = REPRODUCIBLE
+  SELECTED_PROOF_MODEL     = COMPLETE
+  SELECTED_PRODUCTION_SEAM = FEASIBLE
+
+  PRODUCTION_SEMANTIC_DELTA      = 0
+  SUCCESSOR_IMPLEMENTATION_DELTA = 0
+
+  NEXT_ACT = ACT-POLYC-SELFHOST-PARSER-SLICE02
+             (descriptive title:
+              ACT-POLYC-SELFHOST-PARSER-CONTROL-FLOW-TOKEN01)
+```
+
+This ACT re-derived the parser candidate inventory from the CURRENT
+production source instead of carrying the historical classifications
+forward, and that re-derivation CORRECTED two of them:
+
+```text
+CAND-003 CalcClassSize         R0 0 -> 4
+  src/parser.c:424  type->offset = offset;
+  The historical R0=0 came from the scalar RETURN VALUE, not from the
+  state boundary.  The write to a host-owned AstType node is the
+  disqualifier.
+
+CAND-011 parseFlattenAnonymous  R0 3 -> 4
+  src/parser.c:254  type->offset += offset;   (+ mapAdd at :257)
+```
+
+`CalcPadding` (CAND-002) is excluded as ALREADY_SELFHOSTED, verified
+against the live configuration rather than documentation
+(`src/CMakeLists.txt:231-233` ON by default, `build/CMakeCache.txt:242`
+`BOOL=ON`, `src/parser.c:431` macro, `src/CMakeLists.txt:326-327`
+define+link, and `nm build/hcc` exports `_BootstrapCalcPadding`).
+
+The selection was COMPUTED, not asserted: the ranker reproduces the
+RECON01 historical winner when fed the RECON01 historical input, and all
+nine mandatory anti-bias controls were executed at C2 and re-run at C3.
+Exactly one candidate survives the hard-eligibility conjunction.
+
+```text
+GATE_FAST            = PASS
+GATE_PUSH            = PASS (8/8 checks)
+FACTORY_V2           = PASS (53/0)
+APPEND_ONLY          = PASS (11/0)
+PARSER_CONSERVATION  = PASS (67 files, 363 assertions, 0 compile
+                         failures, 0 run failures, 0 regressions)
+LEXER_CONSERVATION   = PASS (LSP 43/43)
+LEXER07              = CONSISTENT (counter text and both failure-source
+                         sets match the registry EXACTLY; 6 sources
+                         IMPROVED since the baseline was captured;
+                         NEW_LEXER07_FAILURES=0; the full corpus is
+                         recorded as STATUS=FAIL, not relabelled PASS)
+AC_LEDGER            = 47 PASS / 3 DEFERRED (AC48, AC49, AC50 -- each
+                         requires the CLOSE commit) / 0 FAIL
+```
+
+The next production-authoritative parser component to migrate is the
+control-flow-body token classifier. Its production seam is five
+ORDINARY call sites, not a function-pointer callback contract, so the
+delegation requires no production callback-contract change and moves no
+diagnostic ownership into PolyC.
+
+See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02.md`
+and `evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02/`.
