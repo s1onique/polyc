@@ -66,10 +66,57 @@ if [ ! -f "$MSG_FILE" ]; then
     exit 2
 fi
 
-# Parse trailers using Git's own parser.
-parsed=$(git interpret-trailers --parse < "$MSG_FILE" 2>/dev/null) || parsed=""
+# ACT-POLYC-FACTORY-V2-HALT-TRAILER-PARSER01 C2.
+#
+# The canonical Factory trailer keys HALT_CLASS and BLOCKS_NEXT contain
+# underscores. Git's standard trailer parser (git 2.54.0) REJECTS A WHOLE
+# TRAILER BLOCK when ANY key in it contains an underscore, so the entire
+# ACT footer -- including ACT:, ACT-Phase: and ACT-Verdict: -- was
+# silently dropped. The validator then saw no ACT trailer and took the
+# fail-open path (MODE=NON_ACT / STATUS=PASS).
+#
+# The shared compatibility normalization lives in
+# scripts/quality/factory-v2-trailer-compat.inc, which this validator
+# and the range validator BOTH source. It rewrites ONLY the two known
+# underscore-bearing keys into Git-compatible temporary keys, for the
+# purpose of parsing ONLY, and maps them back to their canonical names.
+# The raw commit message is never mutated.
+#
+# See docs/factory/GIT-METADATA.md section 2.5 for the binding contract.
 
-# If no `ACT:` trailer, this is an ordinary commit. Pass.
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+. "$SCRIPT_DIR/factory-v2-trailer-compat.inc"
+
+TMP_NORM=$(mktemp -t polyc-v2-norm.XXXXXX)
+trap 'rm -f "$TMP_NORM"' EXIT
+
+# Parse the message with the shared normalized interpretation.
+parsed=$(factory_trailer_parse_file "$MSG_FILE") || parsed=""
+
+RAW_ACT_LIKE=$(factory_trailer_act_like_count "$MSG_FILE")
+RAW_ACT_REGIONS=$(factory_trailer_act_region_count "$MSG_FILE")
+
+# FAIL CLOSED (D3): the raw message carries ACT-like trailer keys but
+# the parse did not yield a usable ACT trailer. This is either a
+# malformed/split trailer block, or a key shape git cannot parse. Either
+# way it MUST NOT be classified as an ordinary non-ACT commit.
+if [ "$RAW_ACT_LIKE" -gt 0 ] && ! printf '%s\n' "$parsed" | grep -Eq '^ACT:[[:space:]]+.+'; then
+    echo "MODE=ACT"
+    echo "STATUS=FAIL"
+    echo "REASON=ACT-like trailer metadata present (count=${RAW_ACT_LIKE}) but no parseable ACT trailer; footer is malformed or unparseable"
+    exit 1
+fi
+
+# FAIL CLOSED: ACT metadata split across more than one trailer region is
+# a malformed footer. Do not accept a partial trailer block.
+if [ "$RAW_ACT_REGIONS" -gt 1 ]; then
+    echo "MODE=ACT"
+    echo "STATUS=FAIL"
+    echo "REASON=ACT trailer metadata is split across ${RAW_ACT_REGIONS} separate trailer regions; footer is malformed"
+    exit 1
+fi
+
+# If no ACT trailer, this is an ordinary commit. Pass.
 if ! printf '%s\n' "$parsed" | grep -Eq '^ACT:[[:space:]]+.+'; then
     echo "MODE=NON_ACT"
     echo "STATUS=PASS"
@@ -112,12 +159,16 @@ ACT_PHASE_RAW=$(trailer_value ACT-Phase)
 ACT_VERDICT_RAW=$(trailer_value ACT-Verdict)
 ACT_SUPERSEDES_RAW=$(trailer_value ACT-Supersedes)
 ACT_CORR_VERDICT_RAW=$(trailer_value ACT-Corrected-Verdict)
+HALT_CLASS_RAW=$(trailer_value HALT_CLASS)
+BLOCKS_NEXT_RAW=$(trailer_value BLOCKS_NEXT)
 
 ACT_COUNT=$(count_trailer ACT)
 PHASE_COUNT=$(count_trailer ACT-Phase)
 VERDICT_COUNT=$(count_trailer ACT-Verdict)
 SUPERSEDES_COUNT=$(count_trailer ACT-Supersedes)
 CORR_VERDICT_COUNT=$(count_trailer ACT-Corrected-Verdict)
+HALT_CLASS_COUNT=$(count_trailer HALT_CLASS)
+BLOCKS_NEXT_COUNT=$(count_trailer BLOCKS_NEXT)
 
 # Card 1: exactly one ACT
 if [ "$ACT_COUNT" -ne 1 ]; then
@@ -182,6 +233,79 @@ case "$ACT_PHASE_RAW" in
         ;;
 esac
 
+# ACT-POLYC-FACTORY-V2-HALT-TRAILER-PARSER01 C2 (Work package B).
+#
+# HALT classification trailers (docs/factory/GIT-METADATA.md section 2.4).
+# These are only meaningful on a CLOSE commit. The semantics are the
+# ones implemented by the authoritative PolyC classifier
+# (tools/factory/factory-halt-classification.HC); they are reproduced
+# here so that the two shell validators and the classifier agree.
+#
+#   HALT_CLASS  = GOVERNANCE | PRODUCTION | SAFETY |
+#                 AUTHORIZATION | DEPENDENCY
+#   BLOCKS_NEXT = YES | NO
+#
+#   HALT_CLASS      | BLOCKS_NEXT
+#   ----------------|--------------
+#   GOVERNANCE      | NO
+#   PRODUCTION      | YES
+#   SAFETY          | YES
+#   AUTHORIZATION   | YES
+#   DEPENDENCY      | YES or NO
+#
+# A HALT_* verdict requires exactly one HALT_CLASS and exactly one
+# BLOCKS_NEXT. A PASS(_...)* verdict forbids both.
+if [ "$ACT_PHASE_RAW" = "CLOSE" ]; then
+    case "$ACT_VERDICT_RAW" in
+        HALT_*)
+            if [ "$HALT_CLASS_COUNT" -ne 1 ]; then
+                fail "HALT_CLASS count=${HALT_CLASS_COUNT}, expected 1 for HALT verdict"
+            fi
+            if [ "$BLOCKS_NEXT_COUNT" -ne 1 ]; then
+                fail "BLOCKS_NEXT count=${BLOCKS_NEXT_COUNT}, expected 1 for HALT verdict"
+            fi
+            case "$HALT_CLASS_RAW" in
+                GOVERNANCE|PRODUCTION|SAFETY|AUTHORIZATION|DEPENDENCY)
+                    ;;
+                *)
+                    fail "HALT_CLASS '$HALT_CLASS_RAW' not in enum {GOVERNANCE,PRODUCTION,SAFETY,AUTHORIZATION,DEPENDENCY}"
+                    ;;
+            esac
+            case "$BLOCKS_NEXT_RAW" in
+                YES|NO)
+                    ;;
+                *)
+                    fail "BLOCKS_NEXT '$BLOCKS_NEXT_RAW' not in {YES, NO}"
+                    ;;
+            esac
+            case "$HALT_CLASS_RAW" in
+                GOVERNANCE)
+                    required_blocks_next=NO
+                    ;;
+                PRODUCTION|SAFETY|AUTHORIZATION)
+                    required_blocks_next=YES
+                    ;;
+                *)
+                    # DEPENDENCY allows either.
+                    required_blocks_next=""
+                    ;;
+            esac
+            if [ -n "$required_blocks_next" ] \
+                && [ "$BLOCKS_NEXT_RAW" != "$required_blocks_next" ]; then
+                fail "HALT_CLASS $HALT_CLASS_RAW requires BLOCKS_NEXT=$required_blocks_next"
+            fi
+            ;;
+        PASS|PASS_*)
+            if [ "$HALT_CLASS_COUNT" -ne 0 ]; then
+                fail "PASS verdict forbids HALT_CLASS (count=${HALT_CLASS_COUNT})"
+            fi
+            if [ "$BLOCKS_NEXT_COUNT" -ne 0 ]; then
+                fail "PASS verdict forbids BLOCKS_NEXT (count=${BLOCKS_NEXT_COUNT})"
+            fi
+            ;;
+    esac
+fi
+
 # ACT-Supersedes optionality: 0 or 1.
 if [ "$SUPERSEDES_COUNT" -gt 1 ]; then
     fail "ACT-Supersedes trailer count=${SUPERSEDES_COUNT}, expected 0 or 1"
@@ -214,5 +338,7 @@ echo "PHASE=$ACT_PHASE_RAW"
 echo "VERDICT=$ACT_VERDICT_RAW"
 echo "SUPERSEDES=$ACT_SUPERSEDES_RAW"
 echo "CORRECTED_VERDICT=$ACT_CORR_VERDICT_RAW"
+echo "HALT_CLASS=$HALT_CLASS_RAW"
+echo "BLOCKS_NEXT=$BLOCKS_NEXT_RAW"
 echo "STATUS=PASS"
 exit 0

@@ -169,20 +169,95 @@ next same-scope ACT from opening.
 The `HALT_CLASS` and `BLOCKS_NEXT` keys contain
 underscores. `git interpret-trailers --parse` (as of
 git 2.54.0) does NOT accept underscores in trailer
-keys and silently drops such trailers. The bounded
-verifier at
-`scripts/quality/factory-halt-classification-check.sh`
-therefore parses trailers directly with `grep -E`
-against the documented `<KEY>:[[:space:]]+<VALUE>`
-shape, instead of delegating to
-`git interpret-trailers --parse`.
+keys. Measured:
 
-This implementation choice is a v1 simplification. If
-a future git version accepts underscores in trailer
-keys, the verifier MAY delegate to
-`git interpret-trailers --parse` and the parsing note
-MUST be updated to record the new behavior. The
-trailer semantics are unchanged.
+```text
+$ printf 'x\n\nACT: A\nACT-Phase: CLOSE\n' \
+    | git interpret-trailers --parse
+ACT: A
+ACT-Phase: CLOSE
+
+$ printf 'x\n\nACT: A\nACT-Phase: CLOSE\nHALT_CLASS: G\n' \
+    | git interpret-trailers --parse
+(empty)
+```
+
+Git does not merely drop the offending trailer: it REJECTS THE WHOLE
+TRAILER BLOCK. Because `HALT_CLASS` and `BLOCKS_NEXT` are mandatory on
+every `HALT_*` CLOSE, a conforming `HALT_*` CLOSE commit lost its
+`ACT:`, `ACT-Phase:` and `ACT-Verdict:` trailers as well.
+
+#### 2.5.1 Compatibility normalization (binding)
+
+Per `ACT-POLYC-FACTORY-V2-HALT-TRAILER-PARSER01`, the Factory-v2
+validators MUST NOT delegate Factory trailer parsing to git's raw
+output.
+
+A validator that parses Factory trailer metadata MUST:
+
+1. read the raw commit message (never mutating it);
+2. produce a TEMPORARY copy in which ONLY the two known
+   underscore-bearing keys are rewritten to Git-compatible temporary
+   keys:
+
+   ```text
+   HALT_CLASS:  -> HALT-CLASS:
+   BLOCKS_NEXT: -> BLOCKS-NEXT:
+   ```
+
+3. parse that temporary copy with `git interpret-trailers --parse`;
+4. map the temporary keys back to their canonical names before
+   exposing any field to a caller.
+
+The normalization MUST preserve field values, field ordering, duplicate
+detection, required cardinalities and valid trailer-block boundaries.
+No other key may be normalized. A malformed lookalike (for example
+`HALT CLASS:` with a space before the colon) MUST be rejected, not
+silently corrected into a valid key.
+
+The raw commit message bytes are never changed.
+
+#### 2.5.2 Fail-closed classification (binding)
+
+A validator MUST NOT classify a commit as `NON_ACT` merely because git's
+parser returned no `ACT:` trailer.
+
+`NON_ACT` is valid ONLY when the complete message has been classified
+as a genuine non-ACT message, i.e. when the raw message carries NO
+ACT-like trailer key at all. The ACT-like keys are:
+
+```text
+ACT
+ACT-Phase
+ACT-Verdict
+ACT-Supersedes
+ACT-Corrected-Verdict
+HALT_CLASS
+BLOCKS_NEXT
+```
+
+A key counts only when it starts a line and is followed by a colon and
+whitespace. A literal `ACT:` occurring in ordinary message prose is
+NOT ACT metadata.
+
+If the raw message carries ACT-like trailer metadata but no ACT trailer
+can be parsed from it, the validator MUST return a nonzero status and
+MUST NOT report `NON_ACT`. This covers a malformed or split trailer
+block, in which the ACT metadata is spread across more than one trailer
+region.
+
+#### 2.5.3 Shared interpretation
+
+The commit-message validator, the range validator and the HALT
+classifier MUST agree on the canonical trailer field values. The
+authoritative HALT classification semantics are implemented by
+`tools/factory/factory-halt-classification.HC`; the shell validators
+reproduce them and are verified against it.
+
+If a future git version accepts underscores in trailer keys, the
+verification MUST still record that the normalization is applied and
+that the validators agree with the classifier. The trailer semantics
+are unchanged.
 
 ---
 

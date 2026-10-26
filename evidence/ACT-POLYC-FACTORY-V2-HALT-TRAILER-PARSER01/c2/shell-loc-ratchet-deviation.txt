@@ -1,0 +1,54 @@
+=== ACT-POLYC-FACTORY-V2-HALT-TRAILER-PARSER01 C2 SHELL LOC RATCHET DEVIATION ===
+
+CLASSIFICATION=NON_BLOCKING_GOVERNANCE_RESIDUE (docs/factory/DOCTRINE.md section 25)
+BLOCKS_NEXT=NO
+
+--- BASELINE STATE (measured at the C0 commit) ---
+$ sh scripts/quality/shell-loc-gate.sh
+FAIL  GROW  scripts/quality/factory-closure-status-check.sh  base=352 cur=372
+FAIL  NEW   scripts/quality/parser-padding-generation-provenance-verify.sh  cur=242 > 50
+=> The ratchet ALREADY FAILED with 2 violations before this ACT.
+
+--- CURRENT STATE (after this ACT) ---
+FAIL  GROW  scripts/quality/factory-v2-commit-msg-check.sh  base=218 cur=344
+FAIL  GROW  scripts/quality/factory-closure-status-check.sh  base=352 cur=372
+FAIL  GROW  scripts/quality/factory-v2-test.sh  base=465 cur=831
+FAIL  GROW  scripts/quality/factory-v2-range-check.sh  base=249 cur=333
+FAIL  NEW   scripts/quality/parser-padding-generation-provenance-verify.sh  cur=242 > 50
+
+This ACT adds 3 GROW entries for the three grandfathered legacy
+validators it is explicitly authorized to repair.
+
+--- WHY THE BASELINE WAS NOT UPDATED ---
+The baseline (evidence/ACT-POLYC-TOOLING-SHELL-INVENTORY01/c1/baseline.txt)
+is the FROZEN artifact of the closed ACT ACT-POLYC-TOOLING-SHELL-INVENTORY01.
+F14 forbids mutating a closed ACT's evidence tree. Updating the baseline
+from this ACT would be exactly that.
+
+--- WHY THIS IS NOT A BLOCKER ---
+1. scripts/quality/shell-loc-gate.sh is NOT wired into gate-fast or
+   gate-push (verified by grep over the gate graph). It is a standalone
+   ratchet.
+2. The gate was already failing at the entry commit with 2 pre-existing
+   violations (see BASELINE STATE above).
+3. The ratchet's PURPOSE is to push shell tooling toward PolyC. The
+   Factory-v2 validators are grandfathered LEGACY tools (recorded in
+   docs/factory/LEGACY-NON-POLYC-TOOLS.tsv as pre-SHELL-INVENTORY01), and
+   this ACT is explicitly authorized to maintain them:
+     "Existing shell validator maintenance is permitted"
+   (ACT section 5, OUT OF SCOPE note).
+4. The growth is bounded and mechanical:
+     factory-v2-commit-msg-check.sh  218 -> 344  (+126)
+     factory-v2-range-check.sh       249 -> 333  (+84)
+     factory-v2-test.sh              465 -> 831  (+366)
+   The shared normalization was deliberately factored into ONE sourced
+   library (scripts/quality/factory-v2-trailer-compat.inc, 119 LOC) so
+   that the two validators do not each carry a second copy of the
+   trailer grammar. That library is a sourced include, not an executable
+   tool, and is therefore outside the "new shell tool" rule of
+   F-POLYC-TOOLS section 27.
+
+--- RESIDUE OWNER ---
+The proper long-term resolution is to migrate the Factory-v2 validators
+to PolyC, which is downstream work under the shell-budget programme.
+This ACT does not claim that work.

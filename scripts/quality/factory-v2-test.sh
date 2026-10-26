@@ -57,6 +57,31 @@
 #   T33  range-check: ACT id arg single-char rejected  FAIL
 #   T34  range-check: CLOSE with verdict
 #        PASS_X-bad rejected                           FAIL
+#
+# ACT-POLYC-FACTORY-V2-HALT-TRAILER-PARSER01 additions:
+#
+#   T35  valid HALT_CLASS=GOVERNANCE + BLOCKS_NEXT=NO PASS
+#   T36  valid HALT_CLASS=PRODUCTION + BLOCKS_NEXT=YES PASS
+#   T37  HALT without HALT_CLASS                      FAIL
+#   T38  HALT without BLOCKS_NEXT                     FAIL
+#   T39  duplicate HALT_CLASS                         FAIL
+#   T40  duplicate BLOCKS_NEXT                        FAIL
+#   T41  invalid HALT_CLASS enum                      FAIL
+#   T42  GOVERNANCE with BLOCKS_NEXT=YES              FAIL
+#   T43  PASS CLOSE carrying HALT-only fields         FAIL
+#   T44  ACT footer git cannot parse -> NOT NON_ACT   FAIL
+#   T45  ordinary non-ACT commit                      PASS
+#   T46  literal "ACT:" in ordinary prose             PASS (NON_ACT)
+#   T47  split ACT trailer block                      FAIL
+#   T48  valid HALT lifecycle range                   PASS
+#   T49  HALT CLOSE then same-ACT continuation        FAIL
+#   T50  HALT CLOSE, ordinary commit, same-ACT cont.  FAIL
+#   T51  historical invalid topology stays invalid    FAIL
+#   T52  existing valid PASS lifecycle                PASS
+#
+# Every negative case asserts the nonzero return code AND the
+# MODE=ACT / STATUS=FAIL classification, so an intentionally malformed
+# fixture cannot pass because of an unrelated setup error.
 
 set -eu
 
@@ -111,6 +136,96 @@ expect_fail() {
         echo "  FAIL  $name  expected reject, got rc=0 out=$out"
         FAIL_COUNT=$((FAIL_COUNT+1))
     fi
+}
+
+# ACT-POLYC-FACTORY-V2-HALT-TRAILER-PARSER01 C2.
+#
+# Strict rejection assertion: the message must be REJECTED (nonzero rc)
+# AND classified as MODE=ACT / STATUS=FAIL. A mere nonzero rc is not
+# enough -- the validator must have recognised the message as ACT
+# metadata and rejected it on the ACT grammar, not on some unrelated
+# setup error.
+#
+# Usage: expect_act_fail <name> [expected-reason-substring]
+expect_act_fail() {
+    name="$1"; want_reason="$2"
+    set +e
+    out=$(sh "$MSG_CHECK" "$TMPROOT/msg-$name.txt" 2>&1); rc=$?
+    set -e
+    if [ "$rc" = "0" ]; then
+        echo "  FAIL  $name  expected reject, got rc=0 out=$out"
+        FAIL_COUNT=$((FAIL_COUNT+1))
+        return
+    fi
+    if ! printf '%s\n' "$out" | grep -q '^MODE=ACT$'; then
+        echo "  FAIL  $name  rejected but not MODE=ACT: out=$out"
+        FAIL_COUNT=$((FAIL_COUNT+1))
+        return
+    fi
+    if ! printf '%s\n' "$out" | grep -q '^STATUS=FAIL$'; then
+        echo "  FAIL  $name  rejected but not STATUS=FAIL: out=$out"
+        FAIL_COUNT=$((FAIL_COUNT+1))
+        return
+    fi
+    if [ -n "$want_reason" ] \
+        && ! printf '%s\n' "$out" | grep -qF "$want_reason"; then
+        echo "  FAIL  $name  wrong reason; wanted '$want_reason': out=$out"
+        FAIL_COUNT=$((FAIL_COUNT+1))
+        return
+    fi
+    echo "  PASS  $name  (rejected as expected)"
+    PASS_COUNT=$((PASS_COUNT+1))
+}
+
+# Strict acceptance assertion for the commit-message validator: rc=0
+# AND MODE=ACT AND STATUS=PASS.
+expect_act_pass() {
+    name="$1"; want="$2"
+    set +e
+    out=$(sh "$MSG_CHECK" "$TMPROOT/msg-$name.txt" 2>&1); rc=$?
+    set -e
+    if [ "$rc" != "0" ]; then
+        echo "  FAIL  $name  expected pass, got rc=$rc out=$out"
+        FAIL_COUNT=$((FAIL_COUNT+1))
+        return
+    fi
+    if ! printf '%s\n' "$out" | grep -q '^MODE=ACT$'; then
+        echo "  FAIL  $name  expected MODE=ACT: out=$out"
+        FAIL_COUNT=$((FAIL_COUNT+1))
+        return
+    fi
+    if ! printf '%s\n' "$out" | grep -q '^STATUS=PASS$'; then
+        echo "  FAIL  $name  expected STATUS=PASS: out=$out"
+        FAIL_COUNT=$((FAIL_COUNT+1))
+        return
+    fi
+    if [ -n "$want" ] && ! printf '%s\n' "$out" | grep -qF "$want"; then
+        echo "  FAIL  $name  expected field '$want': out=$out"
+        FAIL_COUNT=$((FAIL_COUNT+1))
+        return
+    fi
+    echo "  PASS  $name"
+    PASS_COUNT=$((PASS_COUNT+1))
+}
+
+# Strict NON_ACT acceptance assertion: rc=0 AND MODE=NON_ACT.
+expect_non_act_pass() {
+    name="$1"
+    set +e
+    out=$(sh "$MSG_CHECK" "$TMPROOT/msg-$name.txt" 2>&1); rc=$?
+    set -e
+    if [ "$rc" != "0" ]; then
+        echo "  FAIL  $name  expected pass, got rc=$rc out=$out"
+        FAIL_COUNT=$((FAIL_COUNT+1))
+        return
+    fi
+    if ! printf '%s\n' "$out" | grep -q '^MODE=NON_ACT$'; then
+        echo "  FAIL  $name  expected MODE=NON_ACT: out=$out"
+        FAIL_COUNT=$((FAIL_COUNT+1))
+        return
+    fi
+    echo "  PASS  $name"
+    PASS_COUNT=$((PASS_COUNT+1))
 }
 
 expect_range_pass() {
@@ -200,6 +315,47 @@ MSG
     fi
 }
 
+# ACT-POLYC-FACTORY-V2-HALT-TRAILER-PARSER01 C2.
+#
+# Build an ACT commit whose footer carries extra trailer lines
+# (e.g. HALT_CLASS / BLOCKS_NEXT). `extra` is appended verbatim to the
+# trailer block.
+synth_act_commit_with_trailers() {
+    id="$1"; phase="$2"; verdict="$3"; label="$4"; extra="$5"
+    cd "$SYNTH/$id"
+    echo "$label" > "$label.txt"
+    git add "$label.txt"
+    if [ "$phase" = "CLOSE" ] && [ -n "$verdict" ]; then
+        git -c core.hooksPath=/dev/null commit -q -m "$(cat <<MSG
+$label: $phase
+
+ACT: $id
+ACT-Phase: $phase
+ACT-Verdict: $verdict
+$extra
+MSG
+)"
+    else
+        git -c core.hooksPath=/dev/null commit -q -m "$(cat <<MSG
+$label: $phase
+
+ACT: $id
+ACT-Phase: $phase
+$extra
+MSG
+)"
+    fi
+}
+
+# Build a plain (non-ACT) commit with no ACT trailer at all.
+synth_ordinary_commit() {
+    id="$1"; label="$2"
+    cd "$SYNTH/$id"
+    echo "$label" > "$label.txt"
+    git add "$label.txt"
+    git -c core.hooksPath=/dev/null commit -q -m "$label"
+}
+
 # Build a plain (non-ACT) commit used as a context separator
 # for T16.
 synth_plain_commit() {
@@ -256,10 +412,22 @@ ACT-Phase: CLOSE
 ACT-Verdict: PASS_WITH_NEXT_ACT_DECISION"
 expect_pass T6
 
+# ACT-POLYC-FACTORY-V2-HALT-TRAILER-PARSER01 C2.
+#
+# T7 is a CONFORMING HALT_* CLOSE. docs/factory/GIT-METADATA.md
+# section 2.4 requires exactly one HALT_CLASS and exactly one BLOCKS_NEXT
+# on every HALT_* CLOSE commit, so the fixture carries them. The
+# authoritative PolyC classifier
+# (tools/factory/factory-halt-classification.HC) rejects a HALT_* CLOSE
+# without them (REASON=HALT_CLASS count=0, expected 1 for HALT verdict),
+# and the two shell validators now agree with it. The REJECT case for a
+# HALT_* CLOSE without HALT_CLASS is covered separately as T37.
 mkmsg T7 "docs(polyc): halt" "valid HALT closure" \
          "ACT: ACT-POLYC-TEST01
 ACT-Phase: CLOSE
-ACT-Verdict: HALT_RED_NOT_REPRODUCED"
+ACT-Verdict: HALT_RED_NOT_REPRODUCED
+HALT_CLASS: GOVERNANCE
+BLOCKS_NEXT: NO"
 expect_pass T7
 
 mkmsg T8 "feat: two ACT trailers" "duplicate ACT" \
@@ -383,10 +551,16 @@ ACT-Phase: CLOSE
 ACT-Verdict: PASS_WITH_NEXT_ACT_DECISION"
 expect_pass T31
 
+# ACT-POLYC-FACTORY-V2-HALT-TRAILER-PARSER01 C2: a conforming HALT_*
+# CLOSE carries the mandatory HALT_CLASS / BLOCKS_NEXT trailers
+# (docs/factory/GIT-METADATA.md section 2.4). The authoritative PolyC
+# classifier rejects the non-conforming form; see T7's note.
 mkmsg T32 "docs: close halt" "HALT verdict" \
          "ACT: ACT-POLYC-GRAMMAR-CHECK
 ACT-Phase: CLOSE
-ACT-Verdict: HALT_RED_NOT_REPRODUCED"
+ACT-Verdict: HALT_RED_NOT_REPRODUCED
+HALT_CLASS: GOVERNANCE
+BLOCKS_NEXT: NO"
 expect_pass T32
 
 echo
@@ -451,6 +625,198 @@ synth_act_commit ACT-POLYC-RANGE-T34 RED  "" a
 synth_act_commit ACT-POLYC-RANGE-T34 IMPL "" b
 synth_act_commit ACT-POLYC-RANGE-T34 CLOSE PASS_X-bad c
 expect_range_fail T34 ACT-POLYC-RANGE-T34 "$(git -C $SYNTH/ACT-POLYC-RANGE-T34 rev-parse HEAD)"
+
+echo
+echo "--- T35-T47 ACT-POLYC-FACTORY-V2-HALT-TRAILER-PARSER01 commit-msg matrix ---"
+
+# T35: valid HALT_CLASS=GOVERNANCE + BLOCKS_NEXT=NO
+mkmsg T35 "docs: close governance halt" "valid HALT closure" \
+         "ACT: ACT-POLYC-HALTCLASS01
+ACT-Phase: CLOSE
+ACT-Verdict: HALT_GOVERNANCE_HALT
+HALT_CLASS: GOVERNANCE
+BLOCKS_NEXT: NO"
+expect_act_pass T35 "HALT_CLASS=GOVERNANCE"
+
+# T36: valid HALT_CLASS=PRODUCTION + BLOCKS_NEXT=YES
+mkmsg T36 "docs: close production halt" "valid HALT closure" \
+         "ACT: ACT-POLYC-HALTCLASS01
+ACT-Phase: CLOSE
+ACT-Verdict: HALT_PRODUCTION_DEFECT
+HALT_CLASS: PRODUCTION
+BLOCKS_NEXT: YES"
+expect_act_pass T36 "BLOCKS_NEXT=YES"
+
+# T37: HALT without HALT_CLASS
+mkmsg T37 "docs: halt missing class" "HALT needs HALT_CLASS" \
+         "ACT: ACT-POLYC-HALTCLASS01
+ACT-Phase: CLOSE
+ACT-Verdict: HALT_RED_NOT_REPRODUCED
+BLOCKS_NEXT: NO"
+expect_act_fail T37 "HALT_CLASS count=0"
+
+# T38: HALT without BLOCKS_NEXT
+mkmsg T38 "docs: halt missing blocks" "HALT needs BLOCKS_NEXT" \
+         "ACT: ACT-POLYC-HALTCLASS01
+ACT-Phase: CLOSE
+ACT-Verdict: HALT_RED_NOT_REPRODUCED
+HALT_CLASS: GOVERNANCE"
+expect_act_fail T38 "BLOCKS_NEXT count=0"
+
+# T39: duplicate HALT_CLASS
+mkmsg T39 "docs: dup class" "duplicate HALT_CLASS" \
+         "ACT: ACT-POLYC-HALTCLASS01
+ACT-Phase: CLOSE
+ACT-Verdict: HALT_RED_NOT_REPRODUCED
+HALT_CLASS: GOVERNANCE
+HALT_CLASS: PRODUCTION
+BLOCKS_NEXT: NO"
+expect_act_fail T39 "HALT_CLASS count=2"
+
+# T40: duplicate BLOCKS_NEXT
+mkmsg T40 "docs: dup blocks" "duplicate BLOCKS_NEXT" \
+         "ACT: ACT-POLYC-HALTCLASS01
+ACT-Phase: CLOSE
+ACT-Verdict: HALT_RED_NOT_REPRODUCED
+HALT_CLASS: GOVERNANCE
+BLOCKS_NEXT: NO
+BLOCKS_NEXT: YES"
+expect_act_fail T40 "BLOCKS_NEXT count=2"
+
+# T41: invalid classification enum
+mkmsg T41 "docs: bad class" "invalid HALT_CLASS enum" \
+         "ACT: ACT-POLYC-HALTCLASS01
+ACT-Phase: CLOSE
+ACT-Verdict: HALT_RED_NOT_REPRODUCED
+HALT_CLASS: BOGUS
+BLOCKS_NEXT: NO"
+expect_act_fail T41 "not in enum"
+
+# T42: GOVERNANCE with BLOCKS_NEXT=YES
+mkmsg T42 "docs: bad combination" "GOVERNANCE requires NO" \
+         "ACT: ACT-POLYC-HALTCLASS01
+ACT-Phase: CLOSE
+ACT-Verdict: HALT_RED_NOT_REPRODUCED
+HALT_CLASS: GOVERNANCE
+BLOCKS_NEXT: YES"
+expect_act_fail T42 "requires BLOCKS_NEXT=NO"
+
+# T43: PASS CLOSE carrying HALT-only fields
+mkmsg T43 "docs: pass with halt fields" "PASS forbids HALT fields" \
+         "ACT: ACT-POLYC-HALTCLASS01
+ACT-Phase: CLOSE
+ACT-Verdict: PASS
+HALT_CLASS: GOVERNANCE
+BLOCKS_NEXT: NO"
+expect_act_fail T43 "PASS verdict forbids HALT_CLASS"
+
+# T44: an ACT-like footer that git cannot parse must NOT be NON_ACT.
+# This is the fail-open control. The footer below carries ACT metadata
+# and HALT classification trailers whose KEYS ARE MALFORMED ("HALT CLASS"
+# and "BLOCKS NEXT" -- a space before the colon). git therefore drops the
+# ENTIRE trailer block, so a parser that trusts git's output sees no ACT
+# trailer at all. Before the repair that produced MODE=NON_ACT
+# STATUS=PASS. The validator must now classify the message as ACT and
+# REJECT it, and it must NOT silently correct the malformed lookalike
+# into a valid HALT_CLASS (C1 contract P8).
+mkmsg T44 "docs: unparseable halt footer" "fail-open control" \
+         "ACT: ACT-POLYC-HALTCLASS01
+ACT-Phase: CLOSE
+ACT-Verdict: HALT_RED_NOT_REPRODUCED
+HALT CLASS: GOVERNANCE
+BLOCKS NEXT: NO"
+expect_act_fail T44 "no parseable ACT trailer"
+
+# T45: ordinary non-ACT commit
+mkmsg T45 "feat: ordinary work" "no factory trailers" "Reviewed-by: Someone"
+expect_non_act_pass T45
+
+# T46: a literal "ACT:" in ordinary message PROSE is not ACT metadata.
+mkmsg T46 "docs: prose mention" "literal ACT in prose" \
+         "This commit discusses the ACT: trailer format in prose.
+It is not a trailer and must not classify the commit as an ACT."
+expect_non_act_pass T46
+
+# T47: split ACT trailer block (ACT / ACT-Phase / ACT-Verdict separated
+# by blank lines) is malformed and must be rejected, not partially
+# accepted. git itself parses only the LAST fragment, which would yield
+# a verdict with no ACT.
+{
+    printf 'docs: split footer\n\nbody\n\n'
+    printf 'ACT: ACT-POLYC-HALTCLASS01\n\n'
+    printf 'ACT-Phase: CLOSE\n\n'
+    printf 'ACT-Verdict: PASS\n'
+} > "$TMPROOT/msg-T47.txt"
+expect_act_fail T47 "malformed"
+
+# T52: an existing valid PASS lifecycle still passes.
+mkmsg T52 "docs: close pass" "valid PASS closure" \
+         "ACT: ACT-POLYC-HALTCLASS01
+ACT-Phase: CLOSE
+ACT-Verdict: PASS"
+expect_act_pass T52 "VERDICT=PASS"
+
+echo
+echo "--- T48-T51 ACT-POLYC-FACTORY-V2-HALT-TRAILER-PARSER01 range matrix ---"
+
+# T48: a valid HALT lifecycle range is accepted.
+mk_synth_repo ACT-POLYC-RANGE-T48
+synth_act_commit ACT-POLYC-RANGE-T48 RED "" a
+synth_act_commit ACT-POLYC-RANGE-T48 EVIDENCE "" b
+synth_act_commit_with_trailers ACT-POLYC-RANGE-T48 CLOSE \
+    HALT_MANDATORY_AC_NOT_GREEN c \
+    "HALT_CLASS: GOVERNANCE
+BLOCKS_NEXT: NO"
+expect_range_pass T48 ACT-POLYC-RANGE-T48 \
+    "$(git -C $SYNTH/ACT-POLYC-RANGE-T48 rev-parse HEAD)"
+
+# T49: a HALT CLOSE followed by a same-ACT continuation is rejected.
+mk_synth_repo ACT-POLYC-RANGE-T49
+synth_act_commit ACT-POLYC-RANGE-T49 RED "" a
+synth_act_commit_with_trailers ACT-POLYC-RANGE-T49 CLOSE \
+    HALT_MANDATORY_AC_NOT_GREEN b \
+    "HALT_CLASS: GOVERNANCE
+BLOCKS_NEXT: NO"
+T49_CLOSE=$(git -C $SYNTH/ACT-POLYC-RANGE-T49 rev-parse HEAD)
+synth_act_commit ACT-POLYC-RANGE-T49 IMPL "" c
+expect_range_fail T49 ACT-POLYC-RANGE-T49 "$T49_CLOSE"
+
+# T50: a HALT CLOSE, an ORDINARY commit, then a same-ACT continuation.
+# The intervening ordinary commit must NOT hide the continuation.
+mk_synth_repo ACT-POLYC-RANGE-T50
+synth_act_commit ACT-POLYC-RANGE-T50 RED "" a
+synth_act_commit_with_trailers ACT-POLYC-RANGE-T50 CLOSE \
+    HALT_MANDATORY_AC_NOT_GREEN b \
+    "HALT_CLASS: GOVERNANCE
+BLOCKS_NEXT: NO"
+T50_CLOSE=$(git -C $SYNTH/ACT-POLYC-RANGE-T50 rev-parse HEAD)
+synth_ordinary_commit ACT-POLYC-RANGE-T50 unrelated
+synth_act_commit ACT-POLYC-RANGE-T50 IMPL "" c
+expect_range_fail T50 ACT-POLYC-RANGE-T50 "$T50_CLOSE"
+
+# T51: a historical invalid topology stays invalid. The predecessor
+# BOOTSTRAP-BUILD01 committed a same-ACT EVIDENCE commit AFTER its C4
+# CLOSE. That historical violation must remain rejected; a newly
+# working parser must not retroactively legitimise it.
+if [ -d "$REPO_ROOT/.git" ]; then
+    cd "$REPO_ROOT"
+    set +e
+    out=$(sh "$RANGE_CHECK" \
+        ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01 \
+        290d9170555d0b071db5ac4ab163d1176c71aa00 2>&1); rc=$?
+    set -e
+    if [ "$rc" != "0" ] \
+        && printf '%s\n' "$out" | grep -q 'must not continue past CLOSE'; then
+        echo "  PASS  T51  (historical invalid topology still rejected)"
+        PASS_COUNT=$((PASS_COUNT+1))
+    else
+        echo "  FAIL  T51  expected historical rejection, got rc=$rc out=$out"
+        FAIL_COUNT=$((FAIL_COUNT+1))
+    fi
+else
+    echo "  FAIL  T51  repository not found for the historical control"
+    FAIL_COUNT=$((FAIL_COUNT+1))
+fi
 
 echo
 echo "--- summary ---"

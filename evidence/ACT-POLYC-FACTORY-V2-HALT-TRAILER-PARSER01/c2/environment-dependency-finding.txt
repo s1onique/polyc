@@ -1,0 +1,67 @@
+=== ACT-POLYC-FACTORY-V2-HALT-TRAILER-PARSER01 C2 ENVIRONMENT DEPENDENCY FINDING ===
+
+CLASSIFICATION=ENVIRONMENT_DEPENDENCY + UNRELATED_BASELINE_FAILURE
+OWNER=src/asm/asm.c (OUT OF SCOPE for this ACT)
+ATTRIBUTABLE_TO_THIS_ACT=NO
+
+--- SYMPTOM ---
+$ make factory-halt-classification-binary
+error: src/holyc-lib/memory.HC:146: error: asm: unexpected token at start of line
+  ... (9-11 such errors)
+
+--- PRE-EXISTING? (isolated worktree at the C0 commit) ---
+A detached worktree at 7166e5e5a48be3d37948692bf47c2404bd1b495f (the C0 commit)
+reproduces the SAME 11 asm errors. => NOT caused by this ACT.
+
+--- ISOLATED ROOT CAUSE ---
+The compiler inline-asm parser (src/asm/asm.c) rejects the "local label"
+syntax "@@N". Isolated by bisecting the asm construct:
+
+  $ printf "I32 Main(I32 argc, U8 **argv)
+{
+  asm {
+    LDP    X29, X30, [SP], 16   // restore FP/LR
+    RET
+  }
+}
+" > t.HC
+  $ ./hcc -c t.HC            -> COMPILES (no error)
+
+  $ printf "... asm {
+    CBZ    X0, @@1
+    SUB    X0, X0, 8
+@@1:
+    RET
+  }
+}
+" > t.HC
+  $ ./hcc -c t.HC            -> ERROR: asm: unexpected token at start of line
+
+CONCLUSION: "@@N" local labels are unsupported by src/asm/asm.c.
+src/holyc-lib/memory.HC uses @@1/@@2 labels in its aarch64 asm block,
+so ANY .HC file that includes src/holyc-lib/memory.HC (directly or via
+strings.HC / tooling.HC) cannot be compiled on this host today.
+
+AFFECTED_HEADERS_LOCAL_LABEL_COUNT
+src/holyc-lib/memory.HC:27
+src/holyc-lib/strings.HC:84
+
+--- COMPILER VARIANTS TRIED (all fail identically) ---
+  ./hcc                              (commit-hash 865c9b2)  FAIL
+  build/host-stage0/hcc               (commit-hash 865c9b2)  FAIL
+  build-pinned-producer/tree/build/hcc (commit-hash ffee58b) FAIL
+  build/runtime-producer/hcc-bootstrap04                  FAIL
+  build-pinned-producer/tree/build/hcc-bootstrap02/03/04  FAIL
+
+--- CONSEQUENCE FOR THIS ACT ---
+The PolyC authoritative classifier (tools/factory/factory-halt-classification.HC)
+CANNOT be rebuilt in this environment. Therefore this ACT MUST NOT depend on
+rebuilding it. The repair is implemented in the EXISTING grandfathered shell
+validators (authorized by ACT section 5: "Existing shell validator maintenance
+is permitted"), and the classifier is preserved unchanged as the authoritative
+REFERENCE whose EXISTING binary (sha-verified identical source) is used to
+verify that the shell implementation AGREES with it (ACT section 8 Work
+package D).
+
+NO_SILENT_FALLBACK_CLAIM: the shell implementation is the DELIVERABLE; the
+classifier is not bypassed, it is used as the cross-check oracle.
