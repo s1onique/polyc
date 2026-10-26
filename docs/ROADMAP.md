@@ -6114,3 +6114,104 @@ and is accepted.
 See
 `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE02.md` and
 `evidence/ACT-POLYC-SELFHOST-PARSER-SLICE02/`.
+
+#### ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01 status (CLOSED PASS at this commit)
+
+```text
+ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01
+  ENTRY       = da4ab7d (ACT-POLYC-SELFHOST-PARSER-SLICE02 C4: CLOSE)
+  C0 AUTH/RED = (the entry freeze and the four reproduced defects)
+  C1 RED      = (the qualification contract and the negative controls)
+  C2 IMPL     = (the strict verifier, the fixture contract, the parser)
+  C3 EVIDENCE = (every control executed; the conservation gates)
+
+  CLASS = SELFHOST / PARSER / PRODUCTION-QUALIFICATION-HARDENING
+
+  OBJECT_VERIFICATION            = FAIL_CLOSED
+  OBJECT_PRODUCER_MODES         = VERIFIED (both modes, before the link)
+  SYMBOL_FORMATS                = MACH_O_AND_ELF
+  DIFFERENTIAL_FIXTURE_AUTHORITY = COMPLETE (F001..F042, exactly once)
+  INTEGER_PARSER_BOUNDARIES     = SAFE
+  NEGATIVE_CONTROLS             = PASS (11 object + 9 differential + 4 mutations)
+  PRODUCTION_AUTHORITY          = POLYC
+  PRODUCTION_SEMANTIC_DELTA     = 0
+  PARSER_CONSERVATION           = PASS_AGAINST_ENTRY
+
+  SUBJECT_SHA256        = 77199636db559024365fffc168cd191c1281593452682aab80005151e6baf196
+                           (identical to the C0 freeze -- the subject and the
+                            frozen ABI are untouched)
+  SYMBOL_CHECK         = nm --format=posix --no-weak
+                           (exact name, defined, global, code, strong, count=1)
+  TARGET_FORMAT        = resolved EXPLICITLY from the target object format,
+                          never guessed from the host
+  NM_SOURCE            = the configured toolchain's CMAKE_NM
+
+  DIRECT_DIFFERENTIAL_TOTAL = 42
+  DIRECT_DIFFERENTIAL_PASS  = 42
+  DIRECT_DIFFERENTIAL_FAIL  = 0
+  ORACLE_CROSS_CHECK        = 326/326
+  MUTATIONS_DETECTED        = 4/4
+  CAUSAL_CONTROL            = YES (a mutated subject changes the production
+                               diagnostic; the pristine restores it)
+  STALE_STAMP_CANNOT_BYPASS = YES (the verification is a custom target; the
+                               stamp is content-addressed by SHA)
+  INTEGER_BOUNDARY_CASES    = 25/25
+
+  PLATFORM_DARWIN_MACH_O_ARM64 = MEASURED
+  PLATFORM_LINUX_ELF_X86_64   = MEASURED (native; the object-verification
+                               layer is qualified, the FULL compiler build on
+                               Linux remains blocked by the pre-existing
+                               project gate at src/CMakeLists.txt:1117)
+
+  GATE_FAST      = PASS (RC=0; manifest PAIR_OK=28 PAIR_FAIL=0)
+  GATE_PUSH      = PASS (RC=0; build/install/gep01/aot/jit/lsp all PASS)
+  FACTORY_V2     = PASS (53/0)
+  APPEND_ONLY    = PASS (11/0)
+  PATCH_HYGIENE  = PASS (over the COMMITTED range)
+  SIBLING_PARSER_PADDING_DIFFERENTIAL = PASS (16640/16640)
+  STATIC_FUNCTION_LINKAGE_TEST = PASS
+  AC_LEDGER      = 39 PASS / 2 DEFERRED (AC40, AC41) / 0 FAIL
+
+  NEXT_ACT = ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03
+```
+
+The qualification machinery around the migrated control-flow-token slice
+can no longer accept an invalid object or an incomplete differential as
+green.
+
+Four defects were reproduced against the original implementation with
+executable witnesses and then repaired. The symbol verifier now
+requires an exact, defined, global, strong text definition of the
+target-format spelling — measured with `nm --format=posix --no-weak`,
+which both Apple `nm` and GNU `nm` implement identically — and it
+rejects the undefined reference, the near match, the local symbol and
+the weak definition that the old prefix-regex search accepted. The
+**same valid ELF object** that the old verifier rejected on Linux is now
+accepted: the spelling is resolved from the target object format, which
+is passed explicitly and never guessed from the host.
+
+Both producer modes now converge on one strict gate that runs before the
+link, so the prebuilt mode can no longer configure cleanly with an
+object that has no implementation. The stale-stamp hazard was
+demonstrated concretely — the pre-existing tree carried a 0-byte
+`.verified` file that made CMake skip the verifier entirely — so the
+verification is now a custom target whose command always runs, and the
+stamp is content-addressed by the object's SHA.
+
+The differential now requires the exact canonical ID set `F001..F042`,
+each exactly once, with every row schema-valid; a row that cannot be
+parsed is a failure, never a silent skip. The integer parser no longer
+overflows: the magnitude is accumulated in the negative domain, which
+is the only domain in which this PolyC's arithmetic is exact above
+`2^63` — measured, not assumed.
+
+**The production decision is unchanged.** The subject's SHA256 is
+identical to the C0 freeze, the ABI is unchanged, all seven frozen
+surfaces are byte-identical, the production binary still branches to the
+PolyC symbol, and the canonical parser suite shows exactly the entry
+counts (363 assertions, 350 passed, 13 pre-existing failures in three
+files that shell out to the compiler without `--install-dir`).
+
+See
+`docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01.md` and
+`evidence/ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01/`.
