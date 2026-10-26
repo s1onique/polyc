@@ -1,0 +1,38 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01
+ACT_PHASE=C3-VERIFY
+EVIDENCE_KIND=oracle-crosscheck
+
+# The LEGACY ORACLE CONSERVATION.
+#
+# The oracle is NOT a handwritten decision table. It carries the
+# VERBATIM production body from src/parser.c and is bound to the LIVE
+# src/lexer.h, so it is the REAL production function that is compared.
+
+COMMAND=grep -n "src/lexer.h" tools/quality/parser-slice02-oracle.c
+  28:#include "../../src/lexer.h"
+  (the LIVE header, not a copy of the constants)
+COMMAND=grep -n "BEGIN VERBATIM COPY of src/parser.c" tools/quality/parser-slice02-oracle.c
+  30:/* ---- BEGIN VERBATIM COPY of src/parser.c:832..864 ----------------------
+
+# ---- the cross-check against the REAL production function --------
+COMMAND=./build/slice02-cross
+  CROSS_ROWS=326 CROSS_SAME=326 CROSS_DIFF=0
+EXIT_STATUS=0
+
+CROSS_ROWS=326
+CROSS_SAME=326
+CROSS_DIFF=0
+ORACLE_CROSS_CHECK=CONSERVED (identical to the SLICE02 reference)
+
+# ---- the oracle sources are UNCHANGED ---------------------------
+  UNCHANGED  tools/quality/parser-slice02-oracle.c
+  UNCHANGED  tools/quality/parser-slice02-oracle.h
+  UNCHANGED  tools/quality/parser-control-flow-token-oracle-impl.c
+
+# ---- the corrected F041 expectation is retained ----------------
+COMMAND=grep "^F041" evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01/c1/c1-corrected-fixture-model.tsv | cut -f1-6
+  F041	UNKNOWN_KIND_SUPERSCRIPT	1	0x301	42	1
+  => kind=0x301, value=42, expected=1  (the CORRECTED expectation)
+
+# The fixture was NOT altered to accommodate any implementation.
+FIXTURE_ALTERED=NO

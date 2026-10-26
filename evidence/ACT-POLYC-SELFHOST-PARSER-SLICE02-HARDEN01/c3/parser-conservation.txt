@@ -1,0 +1,103 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01
+ACT_PHASE=C3-VERIFY
+EVIDENCE_KIND=parser-conservation
+
+# The CANONICAL parser suite, executed against the actual
+# post-hardening production compiler.
+#
+# The live Makefile targets were inspected first (not taken from a
+# historical command name):
+#   Makefile:641  unit-test: test-prefix-install
+#   Makefile:644  jit-unit-test: test-prefix-install
+#   Makefile:657  lsp-test: test-prefix-install
+# The canonical corpus is src/tests/*.HC (72 files), driven by
+# src/tests/run.HC and src/tests/run_jit.HC.
+
+# ---- the effective invocation -----------------------------------
+# The host-arch branch of the harness does not pass --install-dir, so
+# it cannot find the runtime prefix on this host. The harness's own
+# supported --target mechanism is used, exactly as the predecessor
+# RECON02 ACT did, with the prefix staged at build/aarch64-apple-darwin/.
+COMMAND=cd src/tests && ./test-runner --target=aarch64-apple-darwin
+EXIT_STATUS=0
+
+TEST_FILES_IN_DIR=72
+TEST_FILES_EXERCISED=67
+ASSERTIONS_TOTAL=363
+ASSERTIONS_PASSED=350
+ASSERTIONS_FAILED=13
+COMPILE_FAILURES=0
+RUN_FAILURES=0
+
+# ---- the comparison against the FROZEN entry baseline ----------
+                     ENTRY (C0)   POST-HARDENING (C3)   DELTA
+ASSERTIONS_TOTAL         363          363                0
+ASSERTIONS_PASSED        350          350                0
+ASSERTIONS_FAILED         13           13                0
+COMPILE_FAILURES           0            0                0
+RUN_FAILURES              0            0                0
+TEST_FILES_EXERCISED      67           67                0
+
+NEW_FAILURES=0
+REGRESSIONS=0
+PARSER_CONSERVATION=PASS_AGAINST_ENTRY
+
+# ---- the failing groups, and WHY they are pre-existing --------
+FAILED_ASSERTIONS=13
+FAILED_ASSERTIONS_ALL_IN_THREE_KNOWN_FILES=YES
+  src/tests/39_arg_count.HC   (TestOverArgs, TestUnderArgs, TestOverDefaultArgs,
+                             TestUnderDefaultArgs, TestMidDefaultMissingRequiredArg,
+                             TestUnderVarArgs, TestUnderFunctionPointerArgs)
+  src/tests/60_link.HC       (the #link directive AOT group)
+  src/tests/64_sret_x8.HC    (the indirect struct return C interop group)
+
+PRE_EXISTING_CAUSE=
+  Every one of the 13 is reported as
+    ERROR: Failed to open file: /usr/local/include/tos.HH
+  and every one originates in a test file that invokes the compiler
+  WITHOUT --install-dir. The compiler is correct; the harness prefix
+  resolution is broken on this host.
+PROOF_1=/usr/local/include does not exist on this host:
+  $ ls -ld /usr/local/include
+  ls: cannot access /usr/local/include: No such file or directory
+PROOF_2=the ONLY test files that shell out to the compiler are these 3:
+  $ grep -ln "System(" src/tests/*.HC
+  39_arg_count.HC  60_link.HC  64_sret_x8.HC  (+ the 2 harness drivers)
+PROOF_3=each invokes "../../hcc" with NO --install-dir:
+  39_arg_count.HC:24  System("../../hcc " ARG_COUNT_TEST_FILE ...)
+  60_link.HC:24      System("../../hcc /tmp/hcc-60-link-path.HC ...)
+  64_sret_x8.HC:48   System("../../hcc /tmp/hcc-64-sret.HC ...)
+PROOF_4=the failure reproduces with NO harness at all:
+  $ cd src/tests && ../../hcc 60_link.HC -o /tmp/t60b
+    ERROR: Failed to open file: /usr/local/include/tos.HH
+PROOF_5=the same file compiles cleanly when the prefix IS supplied:
+  $ cd src/tests && ../../hcc --install-dir=../../build/test-prefix 60_link.HC -o /tmp/t60c
+    EXIT_STATUS=0, no error
+PROOF_6=this ACT changes NONE of those files, and src/tests/run.HC is
+  explicitly out of scope for this ACT:
+  $ git diff --name-only <ENTRY>..HEAD -- src/tests/
+    (empty)
+
+# ---- the JIT variant ------------------------------------------
+COMMAND=cd src/tests && ./test-runner-jit --target=aarch64-apple-darwin
+JIT_EXIT_STATUS=0
+JIT_ASSERTIONS_TOTAL=363
+JIT_ASSERTIONS_PASSED=350
+JIT_ASSERTIONS_FAILED=13   (the SAME three pre-existing files)
+JIT_NEW_FAILURES=0
+JIT_CONSERVATION=PASS_AGAINST_ENTRY
+
+# ---- the committed range of this ACT is INSIDE the scope --------
+COMMAND=git diff --name-only da4ab7db9e9f4382f53514db7678b86ca6c6416f..HEAD
+  Makefile                                                    (authorized)
+  src/CMakeLists.txt                                         (authorized)
+  src/cmake/VerifyControlFlowTokenObject.cmake               (authorized)
+  src/cmake/WriteControlFlowTokenObjectStamp.cmake            (new, directly related)
+  tools/quality/parser-control-flow-token-differential.HC   (authorized)
+  tools/quality/parser-control-flow-token-int-bounds.HC     (new, directly related)
+  docs/acts/ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01.md    (lifecycle artifact)
+  evidence/ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01/**    (lifecycle artifact)
+  (nothing else -- in particular NOTHING under src/tests/ and
+   NOTHING under src/parser.c, src/lexer.h, tools/bootstrap/, and
+   NOTHING under the historical SLICE02 evidence)
+SCOPE_VIOLATIONS=0

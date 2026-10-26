@@ -1,0 +1,56 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01
+ACT_PHASE=C3-VERIFY
+EVIDENCE_KIND=production-authority
+
+# The PRODUCTION AUTHORITY is unchanged by the hardening.
+
+# ---- the delegation is compiled in -------------------------------
+COMMAND=grep HCC_USE_SELFHOST build/CMakeFiles/hcc.dir/flags.make
+  C_DEFINES = ... -DHCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN -DHCC_USE_SELFHOST_PARSER_PADDING ...
+DELEGATION_FLAG_COMPILED_IN=YES
+
+# ---- the PolyC symbol is linked into the production binary -------
+COMMAND=nm ./hcc | grep BootstrapValidPostControlFlowToken
+  0000000100064304 T _BootstrapValidPostControlFlowToken
+POLYC_SYMBOL_LINKED=YES
+
+# ---- the production call site really branches to it --------------
+COMMAND=objdump -d --no-show-raw-insn ./hcc | sed -n "/<_parseValidPostControlFlowToken>:/,/^\$/p" | grep BootstrapValidPostControlFlowToken
+  10003b59c:    bl	0x100064304 <_BootstrapValidPostControlFlowToken>
+PRODUCTION_CALLS_POLYC=YES
+
+# ---- the production subject and the frozen ABI are UNCHANGED ----
+COMMAND=shasum -a 256 tools/bootstrap/selfhost-parser-control-flow-token.HC
+  77199636db559024365fffc168cd191c1281593452682aab80005151e6baf196
+SHA_AT_C0=77199636db559024365fffc168cd191c1281593452682aab80005151e6baf196
+BootstrapValidPostControlFlowToken_SOURCE_SHA_DELTA=0
+ABI=I64 BootstrapValidPostControlFlowToken(I64 present, I64 kind, I64 value) -> I64
+ABI_DELTA=0
+
+# ---- every frozen surface is UNCHANGED --------------------------
+COMMAND=compare the current sha256 of each frozen file against c0/source-freeze.tsv
+  UNCHANGED  src/lexer.h
+  UNCHANGED  tools/quality/parser-slice02-oracle.c
+  UNCHANGED  tools/quality/parser-slice02-oracle.h
+  UNCHANGED  tools/quality/parser-control-flow-token-oracle-impl.c
+  UNCHANGED  tools/bootstrap/selfhost-parser-padding.HC
+  UNCHANGED  src/parser.c
+  UNCHANGED  tools/bootstrap/selfhost-parser-control-flow-token.HC
+FROZEN_SURFACES_UNCHANGED=YES
+
+# ---- the legacy C body is NOT reachable on the migrated path -----
+  (the production parser obtains the decision from the PolyC
+   component; the legacy body survives only in the oracle adapter,
+   which is a QUALIFICATION artifact, not a production path)
+LEGACY_C_PRODUCTION_AUTHORITY=RETIRED
+CONTROL_FLOW_TOKEN_PRODUCTION_AUTHORITY=POLYC
+
+# ---- the semantic delta is ZERO --------------------------------
+  The hardened differential compares the PolyC subject against the
+  REAL production C oracle over the canonical 42-row matrix:
+    ORACLE_VS_EXPECTED_MISMATCH=0
+    SUBJECT_VS_ORACLE_MISMATCH=0
+  and the legacy cross-check over 326 cases:
+    CROSS_ROWS=326 CROSS_SAME=326 CROSS_DIFF=0
+  The hardening changed the QUALIFIER, not the DECISION.
+PRODUCTION_SEMANTIC_DELTA=0

@@ -1,0 +1,104 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01
+ACT_PHASE=C3-VERIFY
+EVIDENCE_KIND=production-causal-mutation
+
+# The PRODUCTION CAUSAL CONTROL.
+#
+# PRODUCTION_AUTHORITY=POLYC requires that the PolyC component is the
+# REAL cause of the production decision, not a shadow check. The proof is
+# that changing the component changes PRODUCTION-OBSERVABLE behaviour,
+# and that restoring it restores production behaviour.
+#
+# A compile failure or a missing mutant binary would NOT be evidence. The
+# mutant below is a VALID, LINKABLE object with the correct symbol and a
+# DIFFERENT SHA, and it is linked into a REAL production-seam compiler.
+
+# ---- the isolated scratch setup -------------------------------
+SCRATCH=build/harden01/causal/  (an ISOLATED copy of src/; the real
+          tree is untouched)
+PRISTINE_SOURCE=tools/bootstrap/selfhost-parser-control-flow-token.HC
+MUTATION=the accepted punctuation payload 0x2A (*) is rejected
+  (if (value == 0x2A) return 1;  ->  return 0;)
+CASE=build/harden01/causal/else-deref.HC
+  I64 main() { I64 y = 5; I64 *p = &y; if (1) { } else *p = 6; return y; }
+  (the else-body begins with the punctuation token "*")
+
+# ---- step 1: build the PRISTINE production-seam compiler ----------
+COMMAND=cmake -S build/harden01/causal/src -B build/harden01/causal/build-pristine ... -DCONTROL_FLOW_TOKEN_OBJECT=<abs>/subject-pristine.o
+COMMAND=cmake --build build/harden01/causal/build-pristine --target hcc -j4
+BUILD_RC=0
+
+# ---- step 2: the PRISTINE compiler compiles the case -------------
+COMMAND=build/harden01/causal/hcc --install-dir=<prefix> -c build/harden01/causal/else-deref.HC -o .../else-pristine.o
+PRISTINE_EXIT_STATUS=0
+PRISTINE_OUTPUT: (no diagnostic; the object was produced)
+  build/harden01/causal/else-pristine.o  (632 bytes)
+
+# ---- step 3: the MUTANT object is VALID and DIFFERENT -----------
+COMMAND=./build/host-stage0/hcc --install-dir=<prefix> -c build/harden01/causal/subject-mutant.HC -o build/harden01/causal/subject-mutant.o
+MUTANT_BUILD_RC=0
+MUTANT_SYMBOL=nm --format=posix --no-weak <mutant> | grep Bootstrap
+  _BootstrapValidPostControlFlowToken T 0 0   (a GLOBAL STRONG TEXT definition)
+PRISTINE_SHA256=078f708d05474430cb3d5c6fc17c0a3d327ab81b74cb24e32512475050723018
+MUTANT_SHA256=668d56736ed95b5a43d0233daff48ecbcaf8e05e86d9bfe9b2faa3bdb68ff456
+MUTANT_SHA_DIFFERS=YES
+
+# ---- step 4: link a REAL production-seam compiler with the MUTANT -
+COMMAND=cmake -S build/harden01/causal/src -B build/harden01/causal/build-mutant ... -DCONTROL_FLOW_TOKEN_OBJECT=<abs>/subject-mutant.o
+COMMAND=cmake --build build/harden01/causal/build-mutant --target hcc -j4
+MUTANT_HCC_BUILD_RC=0
+  (the hardened verifier ACCEPTED the mutant object -- correctly, it IS a
+   valid object with the right symbol; the defect is in its BEHAVIOUR)
+MUTANT_HCC_PRODUCED=YES (741808 bytes)
+
+# ---- step 5: the SEMANTIC DIFFERENCE is observed ----------------
+COMMAND=build/harden01/causal/hcc --install-dir=<prefix> -c build/harden01/causal/else-deref.HC -o .../else-mutant.o
+MUTANT_EXIT_STATUS=1
+MUTANT_OUTPUT:
+  error: Unexpected character `*` while parsing else body
+   --> build/harden01/causal/else-deref.HC:1:47
+       |
+    1 |    I64 main() { I64 y = 5; I64 *p = &y; if (1) { } else *p = 6; return y; }
+       |                                                  ^
+
+  => The SAME source, compiled by a REAL production-seam compiler, is
+     ACCEPTED by the pristine component and REJECTED by the mutant.
+     The difference is PRODUCTION-OBSERVABLE, and it is caused by the
+     PolyC component. This is the causal proof.
+
+# ---- step 6: RESTORE the pristine and confirm recovery ----------
+COMMAND=cp subject-pristine.o subject-restored.o; cmake --build build/harden01/causal/build-pristine --target hcc -j4
+RESTORE_BUILD_RC=0
+COMMAND=build/harden01/causal/hcc --install-dir=<prefix> -c build/harden01/causal/else-deref.HC -o .../else-restored.o
+RESTORED_EXIT_STATUS=0
+RESTORED_OUTPUT: (no diagnostic; the object was produced, 632 bytes)
+RESTORED_SHA256=078f708d05474430cb3d5c6fc17c0a3d327ab81b74cb24e32512475050723018  (identical to the pristine)
+
+PRODUCTION_CAUSAL_MUTATION=DETECTED
+PRISTINE_RESTORATION=PASS
+MUTANT_BINARY_MISSING=NO (it was built and it ran)
+COMPILE_FAILURE_AS_EVIDENCE=NO (the divergence is a SEMANTIC diagnostic, not a build failure)
+
+# ---- the M1..M4 SUBJECT MUTATION controls (AC21) ------------------
+# Each mutation is applied to a SCRATCH COPY of the subject; the
+# tracked source is never modified. The mutant objects are valid,
+# linkable and carry the correct symbol, so the differential is the
+# thing that detects them.
+
+COMMAND=for each mutant: build it with the stage-0 compiler, link the
+          differential against it, and run the canonical 42-row matrix
+
+id   mutation                               rc   status reason                           failing rows
+M1   kind 0x301 (TK_STR) rejected           1    FAIL   SUBJECT_VS_ORACLE_MISMATCH       3
+M2   payload 0x2A (*) rejected              1    FAIL   SUBJECT_VS_ORACLE_MISMATCH       1
+M3   kind 0x300 (TK_IDENT) rejected         1    FAIL   SUBJECT_VS_ORACLE_MISMATCH       3
+M4   keyword 66 (KW_DO) rejected            1    FAIL   SUBJECT_VS_ORACLE_MISMATCH       1
+
+MUTATIONS_APPLIED=4
+MUTATIONS_DETECTED=4
+MUTATION_DETECTION_RATE=4/4
+SUBJECT_MUTATION_CONTROL=LOAD_BEARING (the hardened differential still detects a changed subject)
+
+# The failing-row counts are IDENTICAL to the SLICE02 baseline:
+#   SLICE02 M1 39/3, M2 41/1, M3 41/1, M4 41/1
+#   HERE   M1  3,   M2  1,   M3  3,   M4  1

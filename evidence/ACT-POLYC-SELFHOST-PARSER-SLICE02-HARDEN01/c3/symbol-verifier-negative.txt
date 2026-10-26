@@ -1,0 +1,47 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01
+ACT_PHASE=C3-VERIFY
+EVIDENCE_KIND=symbol-verifier-negative
+
+# Every negative control, executed against the HARDENED verifier
+# on the PLATFORM NAMED. The objects are genuinely compiled native
+# objects on that platform.
+
+# -------------------------------------------------------------------
+# PLATFORM 1: Darwin / Mach-O / arm64   (the local host)
+# -------------------------------------------------------------------
+PLATFORM=Darwin/machOS/arm64/Mach-O
+NM=/usr/bin/nm (Apple)
+FORMAT_ARG=Mach-O
+
+control  expected                           observed
+NC-undef3 REJECT_UNDEFINED_SYMBOL            REJECT_UNDEFINED_SYMBOL (rc=1)
+NC-near  REJECT_SYMBOL_NAME_MISMATCH        REJECT_SYMBOL_NAME_MISMATCH (rc=1)
+NC-local REJECT_LOCAL_SYMBOL                REJECT_LOCAL_SYMBOL (rc=1)
+NC-weak  REJECT_SYMBOL_NAME_MISMATCH        REJECT_SYMBOL_NAME_MISMATCH (rc=1)
+
+--- the remaining Darwin controls ---
+control    expected                           observed
+NC-empty   REJECT_INVALID_OBJECT              REJECT_INVALID_OBJECT
+NC-garbage REJECT_INVALID_OBJECT              REJECT_INVALID_OBJECT
+NC-missing REJECT_INVALID_OBJECT              REJECT_INVALID_OBJECT
+NC-wrongfmt REJECT_SYMBOL_NAME_MISMATCH        REJECT_SYMBOL_NAME_MISMATCH (a Mach-O object inspected with the ELF spelling)
+
+# -------------------------------------------------------------------
+# PLATFORM 2: Linux / ELF / x86_64   (native runner 192.168.244.202)
+# -------------------------------------------------------------------
+PLATFORM=Linux/Ubuntu 24.04 LTS/x86_64/ELF
+NM=/usr/bin/nm (GNU Binutils 2.42)
+FORMAT_ARG=ELF
+RUNNER=192.168.244.202 (an existing ssh runner)
+
+The objects below are NATIVE ELF objects compiled on that host with
+gcc 13.3.0. They are NOT synthetic nm outputs.
+
+control    expected                           observed
+NC-undef   REJECT_UNDEFINED_SYMBOL            REJECT_UNDEFINED_SYMBOL (rc=1)
+NC-near    REJECT_SYMBOL_NAME_MISMATCH        REJECT_SYMBOL_NAME_MISMATCH (rc=1)
+NC-local   REJECT_LOCAL_SYMBOL                REJECT_LOCAL_SYMBOL (rc=1)
+NC-weak    REJECT_SYMBOL_NAME_MISMATCH        REJECT_SYMBOL_NAME_MISMATCH (rc=1)
+NC-empty   REJECT_INVALID_OBJECT              REJECT_INVALID_OBJECT (rc=1)
+NC-garbage REJECT_INVALID_OBJECT              REJECT_INVALID_OBJECT (rc=1)
+NC-missing REJECT_INVALID_OBJECT              REJECT_INVALID_OBJECT (rc=1)

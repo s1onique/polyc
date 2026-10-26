@@ -1,0 +1,55 @@
+# The MANDATORY acceptance criteria ledger.
+#
+# Every PASS entry names the ESTABLISHING WITNESS. A PASS without a
+# witness is not a PASS.
+#
+AC	predicate	status	witness
+AC01	Clean entry and predecessor identity	PASS	c0/entry-identity.txt + c0/predecessor-binding.txt -- branch main, ENTRY_HEAD=da4ab7db9e9f4382f53514db7678b86ca6c6416f, clean tree, no replace refs, predecessor CLOSE reachable
+AC02	Authorized scope frozen before implementation	PASS	c0/scope.txt + c0/source-freeze.tsv -- frozen at C0, before C2
+AC03	D1 original fail-open behavior reproduced	PASS	c0/red-reproduction.txt D1 -- undefined / near-match / local / weak objects were all ACCEPTED by the original verifier
+AC04	D2 prebuilt-object verification gap reproduced	PASS	c0/red-reproduction.txt D2 -- the prebuilt mode CONFIGURED SUCCESSFULLY with an undefined-symbol object; the verifier was never invoked
+AC05	D3 incomplete-fixture false PASS reproduced	PASS	c0/red-reproduction.txt D3 -- a 1-row fixture, an EMPTY fixture and the 41-row set (F041 removed) all produced STATUS=PASS
+AC06	D4 integer boundary issue reproduced or its risk mechanically resolved	PASS	c0/red-reproduction.txt D4 -- INT64_MAX parsed to -1, INT64_MIN to 0, and both out-of-range magnitudes were ACCEPTED
+AC07	Exact symbol name checked	PASS	c3/symbol-verifier-negative.txt -- NC-near REJECT_SYMBOL_NAME_MISMATCH on both platforms
+AC08	Undefined, local, weak and near-match symbols rejected	PASS	c3/symbol-verifier-negative.txt -- REJECT_UNDEFINED_SYMBOL / REJECT_LOCAL_SYMBOL / REJECT_SYMBOL_NAME_MISMATCH (weak) on both platforms
+AC09	One global strong text definition required	PASS	c3/symbol-verifier-positive.txt -- DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1; nm --no-weak + type T
+AC10	Invalid, missing, empty objects rejected	PASS	c3/symbol-verifier-negative.txt -- REJECT_INVALID_OBJECT for empty / garbage / missing on both platforms
+AC11	Target-format-aware name selection	PASS	c3/symbol-verifier-positive.txt -- the ELF spelling is ACCEPTED and the Mach-O spelling is ACCEPTED, each on its own platform
+AC12	Correct toolchain nm used	PASS	c3/producer-mode.txt -- nm=/usr/bin/nm (the configured CMAKE_NM); the Linux run used /usr/bin/nm (GNU binutils 2.42)
+AC13	Producer mode invokes verifier	PASS	c3/producer-mode.txt -- the hcc-control-flow-token-verify target runs the gate and reports STATUS=PASS
+AC14	Prebuilt mode invokes verifier	PASS	c3/prebuilt-mode.txt -- BUILD_RC=2 with REJECT_UNDEFINED_SYMBOL and NO hcc produced
+AC15	Stale verification stamp cannot bypass checking	PASS	c3/prebuilt-mode.txt -- the object was swapped for an invalid one while a VALID stamp was present; the gate still ran and REJECTED it
+AC16	All canonical 42 fixture IDs required	PASS	c3/fixture-integrity.txt -- EXPECTED_FIXTURE_COUNT=42, OBSERVED_FIXTURE_COUNT=42
+AC17	Duplicate and missing fixture IDs rejected	PASS	c3/differential-negative.txt -- NC-D3 (duplicate+missing) and NC-D1/D2/D4 FAIL
+AC18	All malformed TSV controls detected	PASS	c3/differential-negative.txt -- NC-D5, NC-D6b, NC-D7, NC-D11 all FAIL
+AC19	Predecessor incorrect F041 matrix rejected	PASS	c3/differential-negative.txt NC-D9 -- REASON=ORACLE_VS_EXPECTED_MISMATCH
+AC20	Corrected fixture matrix 42/42 PASS	PASS	c3/differential-positive.txt -- 42/42, 0 fail, 0 parse errors, STATUS=PASS
+AC21	Existing four subject mutations still detected	PASS	c3/production-causal-mutation.txt + the M1..M4 run -- all four detected with REASON=SUBJECT_VS_ORACLE_MISMATCH
+AC22	Signed I64 bounds handled correctly	PASS	c3/integer-boundaries.txt -- 9223372036854775807 -> 7fffffffffffffff, -9223372036854775808 -> 8000000000000000
+AC23	Overflowing and malformed integers rejected	PASS	c3/integer-boundaries.txt -- 9223372036854775808, -9223372036854775809, 0x8000000000000000, 123abc, abc, 0x all rejected
+AC24	Legacy oracle cross-check conserved	PASS	c3/oracle-crosscheck.txt -- CROSS_ROWS=326 CROSS_SAME=326 CROSS_DIFF=0, with the oracle bound to the LIVE src/lexer.h
+AC25	PolyC component source and frozen ABI unchanged	PASS	c3/production-authority.txt -- the subject sha256 is IDENTICAL to the C0 freeze; the ABI is unchanged; all 7 frozen surfaces are UNCHANGED
+AC26	Production compiler still delegates to PolyC	PASS	c3/production-authority.txt -- the disassembly shows bl to _BootstrapValidPostControlFlowToken
+AC27	Production causal mutation detected and pristine restored	PASS	c3/production-causal-mutation.txt -- the mutant changes the production diagnostic and the restored pristine compiles again
+AC28	Platform matrix honestly satisfied	PASS	c3/platform-matrix.txt -- Darwin/Mach-O/arm64 and Linux/ELF/x86_64, each MEASURED natively; the pre-existing Linux full-compiler gate is recorded honestly
+AC29	Canonical parser suite executed	PASS	c3/parser-conservation.txt -- 363 assertions over 67 files, executed against the post-hardening compiler
+AC30	No new parser or lexer failures	PASS	c3/parser-conservation.txt -- 13 failures at entry and 13 after hardening, all in the SAME 3 pre-existing files; NEW_FAILURES=0
+AC31	Parser-padding differential conserved	PASS	c3/parser-padding-conservation.txt -- 16640/16640 PASS
+AC32	Factory-v2 suite passes	PASS	c3/factory-v2.txt -- PASS=53 FAIL=0
+AC33	Append-only suite passes	PASS	c3/append-only.txt -- PASS=11 FAIL=0
+AC34	gate-fast passes	PASS	c3/gate-fast.txt -- GATE_FAST_RC=0, all checks PASS
+AC35	Unmodified gate-push passes	PASS	c3/gate-push.txt -- GATE_PUSH_RC=0, build/install/gep01/aot/jit/lsp all PASS
+AC36	No new F-NO-PYTHON violations	PASS	c3/f-no-python.txt -- the 12 violations are the pre-existing set; NONE is in a file this ACT touched
+AC37	No new F-POLYC-TOOLS violations	PASS	c3/f-polyc-tools.txt -- the new qualification logic is PolyC and the new build logic is CMake; no new shell or Python
+AC38	F14 closed surfaces untouched	PASS	c3/f14-conservation.txt -- all 7 frozen surfaces UNCHANGED; the historical SLICE02 evidence and HANDOFF are untouched
+AC39	Committed-range patch hygiene clean	PASS	c3/patch-hygiene.txt -- git diff --check over the committed range, 0 errors
+AC40	C4 HANDOFF and managed registry valid	DEFERRED	established at C4
+AC41	External terminality verified after CLOSE	DEFERRED	established after the CLOSE commit exists
+
+#
+AC_TOTAL=41
+AC_PASS=39
+AC_DEFERRED=2
+AC_FAIL=0
+DEFERRED_AC_IDS=(AC40 AC41)
+MANDATORY_AC_NOT_GREEN=NO

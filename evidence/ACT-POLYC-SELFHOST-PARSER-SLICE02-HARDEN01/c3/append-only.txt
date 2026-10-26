@@ -1,0 +1,23 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01
+ACT_PHASE=C3-VERIFY
+EVIDENCE_KIND=append-only
+
+COMMAND=sh scripts/quality/factory-append-only-test.sh
+APPEND_ONLY_RC=0
+
+    PASS  NC9  rc=1
+    PASS  NC10  rc=1
+    PASS  NC11  rc=0
+
+  --- summary ---
+  PASS=11
+  FAIL=0
+  STATUS=PASS
+
+APPEND_ONLY=PASS (PASS=11 FAIL=0)
+
+# The ACT's own history is append-only: the range
+# da4ab7d..HEAD contains only FORWARD commits, and no amend/rebase/
+# force-push/reset was performed at any point in this ACT.
+APPEND_ONLY_RANGE_CHECK=da4ab7db9e9f4382f53514db7678b86ca6c6416f..HEAD
+COMMITS_IN_RANGE=3

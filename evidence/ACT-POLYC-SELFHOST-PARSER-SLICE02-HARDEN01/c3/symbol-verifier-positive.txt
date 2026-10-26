@@ -1,0 +1,53 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01
+ACT_PHASE=C3-VERIFY
+EVIDENCE_KIND=symbol-verifier-positive
+
+# The POSITIVE controls: a genuine, valid, natively compiled object
+# carrying the production entry point MUST be accepted, on both
+# platforms.
+
+# -------------------------------------------------------------------
+# PLATFORM 1: Darwin / Mach-O / arm64
+# -------------------------------------------------------------------
+PLATFORM=Darwin/machOS/arm64/Mach-O
+OBJECT=build/parser-control-flow-token-subject.o
+  (the REAL PolyC production component, compiled by the stage-0
+   compiler -- the same object the production hcc links)
+OBJECT_FORMAT_MEASURED:
+  Mach-O 64-bit object arm64
+SYMBOL_RECORD_MEASURED:
+  _BootstrapValidPostControlFlowToken T 0 0
+
+COMMAND=cmake -DCONTROL_FLOW_TOKEN_OBJECT=<obj> -DCONTROL_FLOW_TOKEN_TARGET_OBJECT_FORMAT=Mach-O -P src/cmake/VerifyControlFlowTokenObject.cmake
+  -- ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01: CONTROL_FLOW_TOKEN_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapValidPostControlFlowToken TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapValidPostControlFlowToken DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=1744
+  EXIT_STATUS=0
+
+CONTROL_FLOW_TOKEN_OBJECT_STATUS=PASS
+EXPECTED_SYMBOL=BootstrapValidPostControlFlowToken
+DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1
+
+# -------------------------------------------------------------------
+# PLATFORM 2: Linux / ELF / x86_64
+# -------------------------------------------------------------------
+PLATFORM=Linux/Ubuntu 24.04 LTS/x86_64/ELF
+RUNNER=192.168.244.202
+OBJECT=build/harden01/subject/comp.o  (a NATIVE ELF object compiled there
+  with gcc 13.3.0, carrying the production entry point)
+OBJECT_FORMAT_MEASURED:
+  ELF 64-bit LSB relocatable, x86-64, version 1
+SYMBOL_RECORD_MEASURED:
+  BootstrapValidPostControlFlowToken T 0 4b
+
+COMMAND=cmake -DCONTROL_FLOW_TOKEN_OBJECT=<obj> -DCONTROL_FLOW_TOKEN_TARGET_OBJECT_FORMAT=ELF -DCONTROL_FLOW_TOKEN_NM=/usr/bin/nm -P src/cmake/VerifyControlFlowTokenObject.cmake
+  -- ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01: CONTROL_FLOW_TOKEN_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapValidPostControlFlowToken TARGET_OBJECT_FORMAT=ELF TARGET_SYMBOL=BootstrapValidPostControlFlowToken DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=1320
+  EXIT_STATUS=0
+
+CONTROL_FLOW_TOKEN_OBJECT_STATUS=PASS
+EXPECTED_SYMBOL=BootstrapValidPostControlFlowToken
+DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1
+
+# THIS IS THE D1-A REPAIR, MEASURED: the SAME valid object was
+# REJECTED by the original verifier on Linux (the original demanded
+# the Mach-O "_X" spelling). It is now ACCEPTED.
+ORIGINAL_VERIFIER_ON_ELF=REJECTED (see c0 and c1 evidence)
+HARDENED_VERIFIER_ON_ELF=ACCEPTED

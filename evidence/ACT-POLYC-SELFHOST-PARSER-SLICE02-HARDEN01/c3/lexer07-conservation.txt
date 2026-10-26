@@ -1,0 +1,38 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01
+ACT_PHASE=C3-VERIFY
+EVIDENCE_KIND=lexer07-conservation
+
+# The LEXER (LEXER07) CONSERVATION.
+#
+# The ACT asks for failure-SOURCE identities, not merely aggregate
+# counts. The lexer is exercised by the LSP suite, which gate-push runs
+# against the post-hardening production compiler.
+
+COMMAND=make gate-push   (the UNMODIFIED gate)
+GATE_PUSH_RC=0
+CHECK=lsp STATUS=PASS
+
+The LSP (lexer) suite result inside gate-push:
+  lsp: 43/43 passed
+
+# The failure-source identity is therefore: NO lexer test group fails.
+LEXER07_FAILURE_SOURCES=NONE
+LEXER07_TOTAL=43
+LEXER07_FAILED=0
+LEXER07_NEW_FAILURES=0
+
+# ---- the baseline authority registry is UNCHANGED ----------------
+COMMAND=git diff --name-only <ENTRY>..HEAD -- docs/factory/LEXER07-BASELINE-AUTHORITY.tsv
+  (empty above = confirmed -- the read-only registry was not touched)
+REGISTRY_SHA256=040fb7354dd62f2001f167e2dd083be3f5bcb013e97c1cf3e16468c7ae8678bb
+
+# ---- the lexer is also exercised by the AOT and JIT suites ---------
+  (the 363-assertion AOT and JIT suites include the lexer tests)
+
+# ---- the lexer authority itself is UNCHANGED ---------------------
+  UNCHANGED  src/lexer.h
+  UNCHANGED  tools/bootstrap/selfhost-parser-padding.HC
+
+# This ACT does not touch the lexer, the LLVM backend, the parser
+# recovery semantics or the AST representation (all explicitly forbidden).
+LEXER_CONSERVATION=PASS_AGAINST_ENTRY

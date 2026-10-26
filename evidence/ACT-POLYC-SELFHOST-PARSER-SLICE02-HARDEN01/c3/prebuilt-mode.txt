@@ -1,0 +1,50 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01
+ACT_PHASE=C3-VERIFY
+EVIDENCE_KIND=prebuilt-mode
+
+# D2 -- THE PREBUILT-OBJECT MODE NOW VERIFIES.
+
+# BEFORE (the SLICE02 wiring): Mode B checked only that the object
+# EXISTED at configure time. The strict verifier was never invoked.
+# AFTER: Mode B routes through the SAME strict verification gate, and
+# the gate runs BEFORE the link.
+
+# --- the negative control: an object with only an undefined ref ---
+OBJECT=build/harden01/nc/undef3.o  (nm shows "U _BootstrapValidPostControlFlowToken")
+COMMAND=cmake -S ./src -B build/harden01/cmb-prebuilt2 -G "Unix Makefiles" \
+          -DHCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN=ON \
+          -DCONTROL_FLOW_TOKEN_OBJECT=<abs>/build/harden01/nc/undef3.o
+CONFIGURE_RC=0   (the configure SUCCEEDS; the gate is a BUILD gate)
+
+COMMAND=cmake --build build/harden01/cmb-prebuilt2 --target hcc
+OUTPUT:
+  [  8%] ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01: verifying control-flow-token subject <abs>/build/harden01/nc/undef3.o
+  CMake Error at <abs>/src/cmake/VerifyControlFlowTokenObject.cmake:257 (message):
+    ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01: REJECT_UNDEFINED_SYMBOL the
+    to link the production compiler without a verified PolyC control-flow-token
+  make[3]: *** [<abs>/build/harden01/nc/undef3.o.verified] Error 1
+  make[2]: *** [CMakeFiles/hcc-control-flow-token-subject.dir/all] Error 2
+  make[1]: *** [CMakeFiles/hcc.dir/rule] Error 2
+  make: *** [hcc] Error 2
+BUILD_RC=2
+
+CMAKE_CONFIGURE_OR_BUILD=FAIL
+PRODUCTION_HCC_LINKED=NO   (ls: cannot access build/harden01/hcc: No such file or directory)
+FALLBACK_TO_LEGACY_C=NO    (no legacy C implementation was compiled to replace the failed object)
+REJECTION_SITE=THE_QUALIFICATION_GATE (not the linker)
+
+# --- the positive control: the REAL production component ---
+OBJECT=build/parser-control-flow-token-subject.o
+COMMAND=cmake -S ./src -B build/harden01/cmb-prebuilt3 -G "Unix Makefiles" \
+          -DHCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN=ON \
+          -DCONTROL_FLOW_TOKEN_OBJECT=<abs>/build/parser-control-flow-token-subject.o
+CONFIGURE_RC=0
+COMMAND=cmake --build build/harden01/cmb-prebuilt3 --target hcc
+OUTPUT:
+  [  2%] ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01: verifying control-flow-token subject <abs>/build/parser-control-flow-token-subject.o
+  -- ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01: CONTROL_FLOW_TOKEN_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapValidPostControlFlowToken TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapValidPostControlFlowToken DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=1744
+BUILD_RC=0
+PRODUCTION_HCC_LINKED=YES  (build/harden01/hcc produced, 741808 bytes)
+
+VALID_OBJECT=ACCEPTED
+PREBUILT_MODE_VERIFY=YES

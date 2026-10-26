@@ -1,0 +1,148 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01
+ACT_PHASE=C3-VERIFY
+EVIDENCE_KIND=c3-required-result
+
+# ---- The ACT success predicates --------------------------------
+OBJECT_VERIFICATION              = FAIL_CLOSED
+OBJECT_PRODUCER_MODES           = VERIFIED
+SYMBOL_FORMATS                  = MACH_O_AND_ELF
+DIFFERENTIAL_FIXTURE_AUTHORITY   = COMPLETE
+INTEGER_PARSER_BOUNDARIES       = SAFE
+NEGATIVE_CONTROLS               = PASS
+PRODUCTION_AUTHORITY            = POLYC
+PRODUCTION_SEMANTIC_DELTA       = 0
+PARSER_CONSERVATION             = PASS_AGAINST_ENTRY
+FACTORY_GATES                   = PASS
+NEXT_ACT                        = ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03
+
+# ---- D1 --------------------------------------------------------
+SYMBOL_NAME_EXACT=YES
+SYMBOL_IS_DEFINED=YES
+SYMBOL_IS_GLOBAL=YES
+SYMBOL_IS_CODE=YES
+SYMBOL_IS_STRONG=YES
+SYMBOL_DEFINITION_COUNT=1
+OBJECT_NONEMPTY=YES
+NM_EXECUTION_SUCCESSFUL=YES
+NM_INVOCATION=nm --format=posix --no-weak <object>
+TARGET_FORMAT_FROM=src/CMakeLists.txt (explicit; never guessed from the host)
+NM_FROM=CMAKE_NM (the configured toolchain nm)
+NEGATIVE_CONTROLS_D1=11 of 11 PASS (7 Darwin, 7 Linux, plus the ELF positive)
+
+# ---- D2 --------------------------------------------------------
+PRODUCER_MODE_VERIFY=YES
+PREBUILT_MODE_VERIFY=YES
+STALE_STAMP_CANNOT_BYPASS=YES
+STAMP_IS_CONTENT_ADDRESSED=YES
+MISSING_OBJECT=REJECTED
+EMPTY_OBJECT=REJECTED
+WRONG_SYMBOL=REJECTED
+UNDEFINED_SYMBOL=REJECTED
+VALID_OBJECT=ACCEPTED
+
+# ---- D3 --------------------------------------------------------
+EXPECTED_FIXTURE_COUNT=42
+OBSERVED_FIXTURE_COUNT=42
+FIXTURE_IDS_UNIQUE=YES
+FIXTURE_IDS_COMPLETE=YES
+FIXTURE_SCHEMA_VALID=YES
+ORACLE_VS_EXPECTED_MISMATCH=0
+SUBJECT_VS_ORACLE_MISMATCH=0
+PARSE_ERRORS=0
+STATUS=PASS
+NEGATIVE_CONTROLS_D3=9 of 9 PASS (NC-D1..D7, D9, D11)
+
+# ---- D4 --------------------------------------------------------
+SIGNED_BOUNDARY_MIN=PASS
+SIGNED_BOUNDARY_MAX=PASS
+POSITIVE_OVERFLOW_REJECTED=YES
+NEGATIVE_OVERFLOW_REJECTED=YES
+HEX_BOUNDARY=PASS
+TRAILING_GARBAGE_REJECTED=YES
+NO_DIGITS_REJECTED=YES
+INTEGER_BOUNDARY_CASES=25 of 25 PASS
+
+# ---- Conservation ------------------------------------------------
+BootstrapValidPostControlFlowToken_SOURCE_SHA_DELTA=0
+CONTROL_FLOW_TOKEN_PRODUCTION_AUTHORITY=POLYC
+LEGACY_C_PRODUCTION_AUTHORITY=RETIRED
+PRODUCTION_DELEGATION=YES
+PRODUCTION_CAUSAL_MUTATION=DETECTED
+PRISTINE_RESTORATION=PASS
+CROSS_ROWS=326
+CROSS_SAME=326
+CROSS_DIFF=0
+PARSER_FILES=67
+PARSER_ASSERTIONS=363
+PARSER_COMPILE_FAILURES=0
+PARSER_RUN_FAILURES=0
+PARSER_NEW_FAILURES=0
+PARSER_PADDING_DIFFERENTIAL=16640/16640
+LSP=43/43
+
+# ---- The gates ---------------------------------------------------
+GATE_FAST=PASS              (RC=0)
+GATE_PUSH=PASS             (RC=0; build/install/gep01/aot/jit/lsp all PASS)
+FACTORY_V2=PASS            (PASS=53 FAIL=0)
+APPEND_ONLY=PASS           (PASS=11 FAIL=0)
+PATCH_HYGIENE=PASS         (git diff --check over the COMMITTED range -> RC=0)
+STATIC_FUNCTION_LINKAGE_TEST=PASS
+
+# ---- The checkers with pre-existing baseline violations ----------
+F_NO_PYTHON=PRE_EXISTING_VIOLATIONS
+  STATUS=FAIL (the checker own verdict)
+  The 12 flagged Python sources are PRE-EXISTING; none of them is
+  touched by this ACT, and none of this ACT files is flagged.
+  NEW_F_NO_PYTHON_VIOLATIONS=0
+F_POLYC_TOOLS=PRE_EXISTING_VIOLATIONS
+  The authoritative checker is NOT YET LANDED (a documented C2.9
+  residue). This ACT files comply directly: the new substantive
+  qualification logic is PolyC, the new build logic is CMake, and no
+  new shell or Python was added.
+  NEW_F_POLYC_TOOLS_VIOLATIONS=0
+
+# ---- Scope ------------------------------------------------------
+SCOPE_VIOLATIONS=0
+F14_VIOLATIONS=0
+HISTORY_REWRITTEN=NO
+UNRELATED_EVIDENCE_REGENERATED=NO
+
+# ---- Mandatory ACs -----------------------------------------------
+AC_TOTAL=41
+AC_PASS=39
+AC_DEFERRED=2
+AC_FAIL=0
+DEFERRED_AC_IDS=(AC40 AC41)
+MANDATORY_AC_NOT_GREEN=NO
+
+# ---- Halt evaluation ---------------------------------------------
+HALT_OBJECT_VERIFIER_NOT_FAIL_CLOSED=NOT_TRIGGERED
+HALT_UNDEFINED_SYMBOL_ACCEPTED=NOT_TRIGGERED
+HALT_PREBUILT_MODE_UNVERIFIED=NOT_TRIGGERED
+HALT_DIFFERENTIAL_ACCEPTS_INCOMPLETE_FIXTURES=NOT_TRIGGERED
+HALT_INTEGER_OVERFLOW_UNRESOLVED=NOT_TRIGGERED
+HALT_NEGATIVE_CONTROL_NOT_LOAD_BEARING=NOT_TRIGGERED
+HALT_PRODUCTION_AUTHORITY_REGRESSION=NOT_TRIGGERED
+HALT_PRODUCTION_CAUSAL_CONTROL_FAILED=NOT_TRIGGERED
+HALT_CONSERVATION_REGRESSION=NOT_TRIGGERED
+HALT_FACTORY_GATE_NOT_GREEN=NOT_TRIGGERED
+HALT_F14_VIOLATION=NOT_TRIGGERED
+HALT_MANDATORY_AC_NOT_GREEN=NOT_TRIGGERED
+HALT_SCOPE_EXPANSION_REQUIRED=NOT_TRIGGERED
+
+# ---- Residue (recorded, NOT silently fixed) ----------------------
+RESIDUE_1=P1  the stage-0 compiler cannot write to an ABSOLUTE -o path
+  (it prefixes the path with its own ./). Reproduced against the
+  ORIGINAL SLICE02 CMakeLists too, so it is PRE-EXISTING. It affects
+  the producer path only; the real production build path (the
+  Makefile) builds the subject itself and hands CMake a PREBUILT
+  object, which is unaffected.
+RESIDUE_2=P1  the full PolyC compiler cannot be built on Linux: the project
+  itself refuses it at src/CMakeLists.txt:1117 (ACT-POLYC-TOOLING-LINUX-PORT01).
+  PRE-EXISTING and DELIBERATE. The object-verification layer, which is
+  what this ACT hardens, IS qualified natively on Linux.
+RESIDUE_3=P2  the F-POLYC-TOOLS checker is still NOT LANDED (C2.9).
+  PRE-EXISTING.
+RESIDUE_4=P2  13 parser assertions fail because three test files shell
+  out to the compiler without --install-dir. PRE-EXISTING; src/tests is
+  out of scope for this ACT.

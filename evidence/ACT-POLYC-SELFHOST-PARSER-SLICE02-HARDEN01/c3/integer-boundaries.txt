@@ -1,0 +1,69 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01
+ACT_PHASE=C3-VERIFY
+EVIDENCE_KIND=integer-boundaries
+
+# The D4 integer-boundary qualification.
+
+COMMAND=make parser-control-flow-token-int-bounds && ./build/parser-control-flow-token-int-bounds
+OUTPUT:
+  PASS 9223372036854775807 = 7fffffffffffffff
+  PASS -9223372036854775808 = 8000000000000000
+  PASS +9223372036854775807 = 7fffffffffffffff
+  PASS 9223372036854775808 rejected
+  PASS -9223372036854775809 rejected
+  PASS 9223372036854775809 rejected
+  PASS 18446744073709551616 rejected
+  PASS 99999999999999999999 rejected
+  PASS +9223372036854775808 rejected
+  PASS 0x7fffffffffffffff = 7fffffffffffffff
+  PASS -0x8000000000000000 = 8000000000000000
+  PASS 0x0 = 0000000000000000
+  PASS 0x8000000000000000 rejected
+  PASS -0x8000000000000001 rejected
+  PASS 0x10000000000000000 rejected
+  PASS 123abc rejected
+  PASS abc rejected
+  PASS 0x rejected
+  PASS - rejected
+  PASS + rejected
+  PASS 0 = 0000000000000000
+  PASS 42 = 000000000000002a
+  PASS -42 = ffffffffffffffd6
+  PASS 0x301 = 0000000000000301
+  PASS -1 = ffffffffffffffff
+  INT_BOUNDARY_FAILURES=0
+  STATUS=PASS
+EXIT_STATUS=0
+
+# ---- the required tokens ----------------------------------------
+SIGNED_BOUNDARY_MIN=PASS       (-9223372036854775808 -> 8000000000000000)
+SIGNED_BOUNDARY_MAX=PASS       ( 9223372036854775807 -> 7fffffffffffffff)
+POSITIVE_OVERFLOW_REJECTED=YES ( 9223372036854775808 rejected)
+NEGATIVE_OVERFLOW_REJECTED=YES (-9223372036854775809 rejected)
+HEX_BOUNDARY=PASS              (0x7fffffffffffffff accepted, -0x8000000000000000 accepted, 0x8000000000000000 rejected)
+TRAILING_GARBAGE_REJECTED=YES  (123abc rejected)
+NO_DIGITS_REJECTED=YES         (abc, 0x, -, + rejected)
+
+# ---- the function under test is the SAME function -------------
+# The tool is ASSEMBLED from the parse_int function mechanically
+# EXTRACTED from the differential source, so the function under test
+# and the function under qualification cannot drift apart.
+COMMAND=awk "/^\/\/ BEGIN VERBATIM COPY of parse_int/,/^\/\/ END VERBATIM COPY of parse_int/" tools/quality/parser-control-flow-token-differential.HC > /tmp/frag_expected.txt
+COMMAND=awk "/^\/\/ BEGIN VERBATIM COPY of parse_int/,/^\/\/ END VERBATIM COPY of parse_int/" build/slice02-parse-int-fragment.HC > /tmp/frag_actual.txt
+COMMAND=diff /tmp/frag_expected.txt /tmp/frag_actual.txt
+  (no differences)
+PARSE_INT_FRAGMENT_IDENTICAL=YES
+FRAGMENT_SHA256=9eeeac0f7be605f81b048f1fb7b3309b97304c52f50032c38d8c1637bb99db0b
+
+# ---- WHY THE MAGNITUDE IS ACCUMULATED IN THE NEGATIVE DOMAIN ---
+# This was MEASURED, not assumed. In this PolyC:
+#   * a U64 literal at or above 2^63 is parsed wrong: the literal
+#     9223372036854775808 evaluates to 7fffffffffffffff (the lexer
+#     saturates at I64_MAX), while (1 << 63) is correct;
+#   * U64 shift-right, division and comparison SIGN-EXTEND at 2^63;
+#   * U64 multiply/add WRAP in the signed domain: accumulating
+#     9223372036854775808 into a U64 yields efd39c2bce007000.
+# The signed-negative domain is the only one in which the arithmetic
+# is exact, and it makes the magnitude 2^63 (needed by INT64_MIN)
+# representable.
+UNSIGNED_ACCUMULATION_REJECTED_BECAUSE_MEASURED_UNSOUND=YES

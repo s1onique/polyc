@@ -1,0 +1,29 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01
+ACT_PHASE=C3-VERIFY
+EVIDENCE_KIND=f14-conservation
+
+# F14 -- THE CLOSED SURFACES ARE UNTOUCHED.
+#
+# Every file that this ACT declared READ-ONLY, plus every historical
+# SLICE02 evidence and HANDOFF, is byte-identical to its state at the
+# C0 freeze. This ACT adds new evidence; it never edits old evidence.
+
+COMMAND=for each frozen file, compare the current sha256 against c0/source-freeze.tsv
+  UNCHANGED  src/parser.c
+  UNCHANGED  src/lexer.h
+  UNCHANGED  tools/bootstrap/selfhost-parser-control-flow-token.HC
+  UNCHANGED  tools/quality/parser-slice02-oracle.c
+  UNCHANGED  tools/quality/parser-slice02-oracle.h
+  UNCHANGED  tools/quality/parser-control-flow-token-oracle-impl.c
+  UNCHANGED  tools/bootstrap/selfhost-parser-padding.HC
+
+# the historical SLICE02 evidence and HANDOFF are untouched:
+COMMAND=git diff --name-only da4ab7db9e9f4382f53514db7678b86ca6c6416f..HEAD -- evidence/ACT-POLYC-SELFHOST-PARSER-SLICE02/ docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE02.md
+  (empty above = confirmed)
+
+# the canonical fixture is untouched:
+COMMAND=shasum -a 256 evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01/c1/c1-corrected-fixture-model.tsv
+  1101721b1665521da8d56701f731f8d1359399cfbef239e41392960acbf8dc6a  evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01/c1/c1-corrected-fixture-model.tsv
+  (identical to the C0 freeze: 1101721b1665521da8d56701f731f8d1359399cfbef239e41392960acbf8dc6a)
+
+F14_VIOLATIONS=0

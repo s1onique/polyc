@@ -1,0 +1,22 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01
+ACT_PHASE=C3-VERIFY
+EVIDENCE_KIND=differential-negative
+
+# Every differential negative control, executed against the HARDENED
+# differential. The exit status and the reason token are recorded.
+
+COMMAND=./build/parser-control-flow-token-differential <fixture>
+
+control  mutation                         rc   status reason
+NC-D1    remove F041                      1    FAIL   FIXTURE_ID_SET_INCOMPLETE
+NC-D2    remove F007                      1    FAIL   FIXTURE_ID_SET_INCOMPLETE
+NC-D3    duplicate F041, omit F042        1    FAIL   FIXTURE_ID_SET_INCOMPLETE
+NC-D4    F041 -> F043 (unknown id)        1    FAIL   FIXTURE_ID_SET_INCOMPLETE
+NC-D5    empty fixture file               1    FAIL   FIXTURE_SET_EMPTY
+NC-D6b   trailing garbage "12abc"         1    FAIL   FIXTURE_COUNT_MISMATCH
+NC-D7    truncated row                    1    FAIL   FIXTURE_ID_SET_INCOMPLETE
+NC-D11   zero candidate rows              1    FAIL   FIXTURE_SET_EMPTY
+NC-D9    predecessor matrix (F041 exp 0)  1    FAIL   ORACLE_VS_EXPECTED_MISMATCH
+
+# The subject-mutation control (NC-D10 / M1..M4) is recorded in
+# production-causal-mutation.txt, where the mutated subject is used.

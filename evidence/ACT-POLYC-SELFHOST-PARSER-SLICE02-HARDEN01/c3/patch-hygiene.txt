@@ -1,0 +1,14 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01
+ACT_PHASE=C3-VERIFY
+EVIDENCE_KIND=patch-hygiene
+
+COMMAND=git diff --check da4ab7db9e9f4382f53514db7678b86ca6c6416f..HEAD
+EXIT_STATUS=0
+
+# The committed range introduces NO whitespace error, NO conflict
+# marker and NO stray artefact.
+COMMAND=git diff --name-only da4ab7db9e9f4382f53514db7678b86ca6c6416f..HEAD | grep -E "\.(orig|rej|bak|pyc)$"
+  (empty above = confirmed)
+
+PATCH_HYGIENE_ERRORS=0
+PATCH_HYGIENE=PASS

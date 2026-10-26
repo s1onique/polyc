@@ -1,0 +1,57 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01
+ACT_PHASE=C3-VERIFY
+EVIDENCE_KIND=producer-mode
+
+# D2 -- THE PRODUCER MODE ALSO VERIFIES.
+
+# The producer mode and the prebuilt mode now converge on the SAME
+# verification gate. The gate is a custom TARGET whose command ALWAYS
+# runs, so it is not skippable by a stale stamp.
+
+# --- the producer is scheduled and the gate runs on it ---
+COMMAND=cmake -S ./src -B build/harden01/cmb-real -G "Unix Makefiles" \
+          -DHCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN=ON \
+          -DCONTROL_FLOW_TOKEN_OBJECT=<abs>/build/parser-control-flow-token-subject.o \
+          -DCONTROL_FLOW_TOKEN_PRODUCER=<abs>/build/host-stage0/hcc \
+          -DCONTROL_FLOW_TOKEN_SOURCE=<abs>/tools/bootstrap/selfhost-parser-control-flow-token.HC \
+          -DCONTROL_FLOW_TOKEN_PREFIX=<abs>/build/bootstrap-prefix
+CONFIGURE_RC=0
+CONFIGURE_OUTPUT:
+  -- ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01: production hcc VERIFIES the control-flow-token subject (both producer and prebuilt modes); target format=Mach-O; nm=/usr/bin/nm
+
+COMMAND=cmake --build build/harden01/cmb-real --target hcc-control-flow-token-verify
+OUTPUT:
+  [ 50%] ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01: verifying control-flow-token subject <abs>/build/parser-control-flow-token-subject.o
+  -- ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01: CONTROL_FLOW_TOKEN_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapValidPostControlFlowToken TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapValidPostControlFlowToken DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=1744
+EXIT_STATUS=0
+PRODUCER_MODE_VERIFY=YES
+
+# --- the producer mode REJECTS a bad object too ---
+COMMAND=cmake --build build/harden01/cmb-producer --target hcc-control-flow-token-verify   (with an undefined-symbol object)
+OUTPUT:
+  [ 50%] ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01: verifying control-flow-token subject <obj>
+  CMake Error at <abs>/src/cmake/VerifyControlFlowTokenObject.cmake:128 (message):
+    ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01: REJECT_INVALID_OBJECT
+BUILD_RC=2
+
+# --- the FULL production build succeeds with the gate active ---
+COMMAND=cmake --build build/harden01/cmb-full --target hcc -j4
+BUILD_RC=0
+OUTPUT:
+  [  6%] ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01: verifying control-flow-token subject <abs>/build/parser-control-flow-token-subject.o
+  -- ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01: CONTROL_FLOW_TOKEN_OBJECT_STATUS=PASS ... DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=1744
+PRODUCTION_HCC=build/harden01/hcc (741808 bytes)
+
+# -------------------------------------------------------------------
+# A PRE-EXISTING DEFECT, FOUND AND NOT MASKED (residue)
+# -------------------------------------------------------------------
+# The PRODUCER ITSELF (the stage-0 compiler) cannot write to an
+# ABSOLUTE output path: it prefixes the path with its own "./", so
+#   cc -c ... -o .//Volumes/.../subject.o  ->  "No such file or directory"
+# This was reproduced against the ORIGINAL SLICE02 CMakeLists too, so it
+# is PRE-EXISTING and not introduced by this ACT. It affects the
+# producer path only; the real production build path (the Makefile)
+# builds the subject itself and hands CMake a PREBUILT object, which is
+# unaffected.
+# RESIDUE_CLASS=P1 (the producer output path is not absolute-safe)
+RESIDUE_IN_THIS_ACT=NO

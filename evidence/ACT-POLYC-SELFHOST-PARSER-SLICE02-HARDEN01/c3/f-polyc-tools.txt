@@ -1,0 +1,36 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01
+ACT_PHASE=C3-VERIFY
+EVIDENCE_KIND=f-polyc-tools
+
+# F-POLYC-TOOLS -- the substantive new qualification logic is POLYC.
+#
+# The authoritative checker tools/factory/factory-polyc-tools-check.HC
+# is NOT YET LANDED. AGENTS.md records that state explicitly:
+#   "tools/factory/factory-polyc-tools-check.HC (NOT YET LANDED -- see
+#    C2.9 of the bound correction ACT)."
+# That is a PRE-EXISTING, documented residue, not a defect of this ACT.
+# The contract is therefore checked DIRECTLY against this ACT's own files.
+
+# ---- the new substantive qualification logic is PolyC --------------
+  tools/quality/parser-control-flow-token-int-bounds.HC   (PolyC: I64 main)
+  tools/quality/parser-control-flow-token-differential.HC (PolyC: I64 main)
+    -> the integer-boundary qualification tool and the fixture-integrity
+       contract are written in PolyC, not in C and not in shell.
+
+# ---- the new build logic is CMake --------------------------------
+  src/cmake/VerifyControlFlowTokenObject.cmake
+  src/cmake/WriteControlFlowTokenObjectStamp.cmake
+    -> CMake, which the ACT explicitly permits: "CMake may be used
+       for native build validation."
+
+# ---- NO new shell tooling and NO new Python ---------------------
+COMMAND=git diff --name-only <ENTRY>..HEAD | grep -E "\.sh$|\.py$"
+  (empty above = confirmed)
+
+# ---- the LEGACY shell tooling is untouched -----------------------
+COMMAND=git diff --name-only <ENTRY>..HEAD -- scripts/
+  (empty above = confirmed -- no Factory gate script, trailer
+   validator or hook was altered)
+
+NEW_F_POLYC_TOOLS_VIOLATIONS=0
+THE_FACTORY_GATE_SCRIPTS_WERE_NOT_ALTERED=YES
