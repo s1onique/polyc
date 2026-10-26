@@ -1,0 +1,66 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03
+ACT_PHASE=C2-RANK-SELECT
+EVIDENCE_KIND=selected-candidate
+
+SELECTED_CANDIDATE_ID=CAND-017
+SELECTED_FUNCTION=parseGetPriority
+SELECTED_SOURCE_FILE=src/prslib.c
+SELECTED_SOURCE_RANGE=1139..1207
+SELECTED_SOURCE_SHA256=236867b6cfcb28bb975a3ded7e2322296407cfc00719143592fd748cf7cab663
+SELECTED_KIND=OPERATOR_PRECEDENCE_TABLE
+SELECTED_R0=0
+SELECTED_R1=1
+SELECTED_R2=2
+SELECTED_R3=2
+SELECTED_R4=0
+SELECTED_R5=0
+SELECTED_R6=src/prslib.c:1139
+SELECTED_RANK=1
+
+SELECTED_CANDIDATE_COUNT=1
+SELECTED_CANDIDATE_ELIGIBLE=YES
+SELECTED_CANDIDATE_R0_LE_2=YES
+SELECTED_PRODUCTION_REACHABLE=YES
+SELECTED_DELEGATION_FEASIBLE=YES
+SELECTED_ABI_BOUNDED=YES
+SELECTED_ORACLE_EXECUTABLE=YES
+SELECTED_CAUSAL_MUTATION_FEASIBLE=YES
+
+--- what the function is ---
+parseGetPriority maps a PUNCT TOKEN VALUE to the operator
+precedence level used by the recursive-descent expression parser.
+It is the operator precedence table of the whole compiler.
+
+--- the production call path ---
+src/lexer.c:2202,2362 (macro preprocessor)
+src/parser.c:203,759,937,947,1039,1143,1288,1323,1379,1407,1466,1500,1518,1613,1818,2709,2732,2756,2765,2777 (and more)
+src/prslib.c:117,329,664,1210,1435,1691,1717
+  -> parseExpr (src/prslib.c:1343)
+    -> parseGetPriority (src/prslib.c:1363)
+      -> prec2
+        -> next_prec (:1430) -> next_prec++ for assignment (:1431)
+          -> parseExpr(cc,next_prec) (:1435)
+            -> THE AST SHAPE OF EVERY BINARY AND UNARY EXPRESSION
+
+--- why it is the right target ---
+1. The input projection is MECHANICALLY COMPLETE on ONE scalar.
+   The body of src/prslib.c:1139..1207 is a single switch over
+   tok->i64 and references no other field and no other identifier.
+   A grep over the range finds exactly one field access (tok->i64).
+2. There is NO host state: no Cctrl, no AST, no List/Map/Vec traversal, no
+   pointer identity, no allocation, no callback, no recovery, no global
+   or static state, and no diagnostic ownership.
+3. It is MAXIMALLY production-reachable: the single decision site sits
+   inside parseExpr, which has 32 production call sites across three
+   files, including the macro preprocessor.
+4. It is SEMANTICALLY CENTRAL: the precedence value decides the AST
+   shape of every expression in every compiled program, so the
+   production-causal mutation is guaranteed to be observable.
+5. It UNLOCKS MULTIPLE FOLLOWING SURFACES (R1=1): the precedence table
+   gates every operator classification, the associativity decision
+   and the short-circuit structure of && and ||.
+
+--- what it is NOT ---
+It is NOT a generic numerical helper: it is a semantic table whose
+entries are the C operator precedence classes, and whose result
+changes the compiled program.

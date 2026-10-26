@@ -1,0 +1,30 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03
+# ACT_PHASE=C2-RANK-SELECT
+# EVIDENCE_KIND=selected-source-freeze
+#
+# The frozen source identity of the SELECTED target and of every
+# source the successor is allowed to change.
+#
+# Schema: role <TAB> path <TAB> start <TAB> end <TAB> sha256 <TAB> successor_may_modify
+
+role	path	start	end	sha256	successor_may_modify
+SELECTED_TARGET	src/prslib.c	1139	1207	236867b6cfcb28bb975a3ded7e2322296407cfc00719143592fd748cf7cab663	YES (the delegation branch and the adapter only; the legacy body moves behind #else unchanged)
+CALL_SITE	src/prslib.c	1363	1363	7f83a2fe44c33b56c7f0239051f9e0811529636db44221e989e7af3139dc1cc4	YES (the delegation branch)
+CONSTANT_SOURCE	src/lexer.h	1	280	6bc46f3be938c6fae99095d8cf0b1f07104bbf9fc1dfb248aaa3cd5dd721c5f9	NO (read only; the component binds the constants BY NUMBER)
+CONSTANT_SOURCE	src/lexer.h	15	15	447b696f0005f7e3eeee27a11a122596f615dfa1df095bbed803f5fb8e83b277	NO (the TK_SUPERSCRIPT / TK_STR aliasing row; neither value is in the precedence table and the component must NOT distinguish them)
+CONSTANT_SOURCE	src/lexer.h	19	19	767a906ce14a6e010f24c99fd6c0e74de543dc0ec7915268b8f99e50c360a485	NO (the TK_STR row)
+BUILD_CONFIG	src/CMakeLists.txt	1	1119	95df84f47e2af0e921bb5a5ddfdf0cd553b641f0cfc87cb303aaf9ec63302896	YES (the dedicated delegation option, following the shape of the two existing parser flags)
+
+--- verbatim ---
+$ sed -n "1139,1207p" src/prslib.c | shasum -a 256
+236867b6cfcb28bb975a3ded7e2322296407cfc00719143592fd748cf7cab663  -
+$ sed -n "1363p" src/prslib.c | shasum -a 256
+7f83a2fe44c33b56c7f0239051f9e0811529636db44221e989e7af3139dc1cc4  -
+$ shasum -a 256 src/lexer.h src/CMakeLists.txt
+6bc46f3be938c6fae99095d8cf0b1f07104bbf9fc1dfb248aaa3cd5dd721c5f9  src/lexer.h
+95df84f47e2af0e921bb5a5ddfdf0cd553b641f0cfc87cb303aaf9ec63302896  src/CMakeLists.txt
+
+SELECTED_SOURCE_SHA256=236867b6cfcb28bb975a3ded7e2322296407cfc00719143592fd748cf7cab663
+SELECTED_SOURCE_FILE=src/prslib.c
+SELECTED_SOURCE_RANGE=1139..1207
+SELECTED_SOURCE_LOC=69

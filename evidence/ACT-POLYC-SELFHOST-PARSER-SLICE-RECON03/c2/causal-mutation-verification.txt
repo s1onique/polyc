@@ -1,0 +1,89 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03
+ACT_PHASE=C2-RANK-SELECT
+EVIDENCE_KIND=causal-mutation-verification
+
+CAUSAL_MUTATION_FEASIBLE=YES
+CAUSAL_MUTATION_VERIFIED=YES
+
+The mutation described in causal-mutation-contract.md was APPLIED to a
+THROWAWAY COPY of the source tree and the divergence was OBSERVED in a
+COMPILED PROGRAM.  This is the feasibility evidence for the successor's
+RED-5.
+
+--- 0. the observation program ---
+build/recon03-probe/group.HC:
+    #include "tos.HH"
+    I64 main() {
+      I64 a = 6; I64 b = 7; I64 c = 20;
+      I64 r = a * b + c;
+      printf("%d\n", r);
+      return 0;
+    }
+
+--- 1. PRISTINE: the production compiler ---
+$ ./hcc --install-dir=$PWD/build/test-prefix build/recon03-probe/group.HC -o build/recon03-probe/g_pristine
+$ ./build/recon03-probe/g_pristine
+62
+OUTPUT_SHA256=606b7d0891b4db74edb21c241c302f298bf6ca4a6158deca6b58c15c950ab5f2
+INTERPRETATION=((6*7)+20) = 42+20 = 62   -> the grouping is (a*b)+c
+
+--- 2. the mutant source (a THROWAWAY copy; src/ was NEVER modified) ---
+$ cp -R src build/recon03-mutant-src
+$ perl -0777 -pi -e "s/case '*': case '/': case '%':\n        return 4;/..." build/recon03-mutant-src/prslib.c
+$ diff -r src build/recon03-mutant-src
+diff -r src build/recon03-mutant-src/prslib.c
+1157c1157,1159
+<     case '*': case '/': case '%':
+---
+>     case '*':
+>         return 6;
+>     case '/': case '%':
+ONLY_DIFFERENCE_LINES=3   (the mutation is bounded to ONE operator)
+
+--- 3. the mutant compiler builds and LINKS ---
+$ cmake -S build/recon03-mutant-src -B build/recon03-mutant-build -G "Unix Makefiles" \
+      -DCMAKE_C_COMPILER=clang -DCMAKE_BUILD_TYPE=Release \
+      -DHCC_RUNTIME_OUTPUT_DIRECTORY=$PWD/build/recon03-mutant-out \
+      -DHCC_ENABLE_JIT=on \
+      -DPARSER_PADDING_OBJECT=$PWD/build/parser-padding-subject.o \
+      -DCONTROL_FLOW_TOKEN_OBJECT=$PWD/build/parser-control-flow-token-subject.o
+$ make -C build/recon03-mutant-build hcc -j4
+BUILD_RC=0     (the mutation LINKS SUCCESSFULLY)
+MUTANT_BINARY_SIZE=741968   (identical to the pristine binary size: the
+                             mutation is a same-size constant change)
+
+--- 4. MUTATED: the mutant compiler ---
+$ ./build/recon03-mutant-out/hcc --install-dir=$PWD/build/test-prefix build/recon03-probe/group.HC -o build/recon03-probe/g_mutant
+$ ./build/recon03-probe/g_mutant
+162
+OUTPUT_SHA256=fe8a828c249caec301b343481e1f1adc16d2e81668a84eb4022977339e4e5924
+INTERPRETATION=(6*(7+20)) = 6*27 = 162  -> the grouping is a*(b+c)
+
+--- 5. RESTORE and REVERIFY ---
+$ rm -rf build/recon03-mutant-src build/recon03-mutant-build build/recon03-mutant-out
+$ make -C build hcc -j4
+$ ./hcc --install-dir=$PWD/build/test-prefix build/recon03-probe/group.HC -o build/recon03-probe/g_restored
+$ ./build/recon03-probe/g_restored
+62
+OUTPUT_SHA256=606b7d0891b4db74edb21c241c302f298bf6ca4a6158deca6b58c15c950ab5f2
+RESTORED_EQUALS_PRISTINE=YES   (identical SHA-256)
+
+--- 6. the divergence ---
+PRISTINE_OUTPUT=62
+MUTATED_OUTPUT=162
+OUTPUTS_DIFFER=YES
+RESTORED_OUTPUT=62
+RESTORED_EQUALS_PRISTINE=YES
+
+--- 7. the production compiler is intact ---
+$ nm -u build/CMakeFiles/hcc.dir/parser.c.o | grep -i bootstrap
+_BootstrapCalcPadding
+_BootstrapValidPostControlFlowToken
+$ nm ./hcc | grep -E "_BootstrapCalcPadding|_BootstrapValidPostControlFlowToken"
+000000010006428c T _BootstrapCalcPadding
+0000000100064304 T _BootstrapValidPostControlFlowToken
+
+--- 8. the tracked source was NEVER modified ---
+$ git diff --stat -- src/ tools/
+(empty)
+PRODUCTION_SEMANTIC_DELTA=0

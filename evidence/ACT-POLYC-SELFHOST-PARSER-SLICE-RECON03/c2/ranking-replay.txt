@@ -1,0 +1,33 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03
+ACT_PHASE=C2-RANK-SELECT
+EVIDENCE_KIND=ranking-replay
+
+--- the ranking tool is DETERMINISTIC: three consecutive runs ---
+$ ./build/parser-slice-recon03-ranking <dimension table>
+  RUN 1: SELECTED=CAND-017
+  RUN 2: SELECTED=CAND-017
+  RUN 3: SELECTED=CAND-017
+
+--- the eligible set comes from the ELIGIBILITY CHECKER, not from a hand-authored column ---
+$ ./build/parser-slice-recon03-eligibility <facts>   (keep the rows whose verdict is YES)
+CAND-017 CAND-018 CAND-019 CAND-020 CAND-021 CAND-022 CAND-023 CAND-025 CAND-026 CAND-030
+
+--- the eligible column of the dimension table is that same set ---
+$ awk -F"\t" <select the eligible column> c2/ranking-dimensions.tsv | cut -f1
+CAND-017 CAND-018 CAND-019 CAND-020 CAND-021 CAND-022 CAND-023 CAND-025 CAND-026 CAND-030
+
+--- rank 1 is the UNIQUE lexicographic minimum ---
+The minimum of (R0,R1,R2,R3,R4,R5,R6) over the eligible set is
+  (0,1,2,2,0,0,src/prslib.c:1139)
+and exactly ONE eligible candidate carries it: CAND-017.
+Every other eligible candidate has R1=2 (or R5=1 / R4=1 / R2=3), so the
+minimum is UNIQUE.  No tie-break was needed and none was invented.
+
+--- R0 remains the LEADING dimension ---
+The comparator evaluates R0 first.  Every eligible candidate has R0=0, so
+R0 does not discriminate WITHIN the eligible set here; the discriminator
+that actually decides the winner is R1.  The ACT requires R0 to remain the
+leading dimension, not to be the sole discriminator.
+
+--- NC-07: the winner removed reranks to the NEXT candidate ---
+  NEXT=CAND-022 parseCountPrintfFormatSpecs (0,2,2,2,0,0,src/prslib.c:760)

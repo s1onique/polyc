@@ -1,0 +1,80 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03
+ACT_PHASE=C2-RANK-SELECT
+EVIDENCE_KIND=ranking-negative-controls
+
+The ACT §8.3 control table mixes RANKING controls and ELIGIBILITY
+controls.  The two families are kept DISTINCT here, as the ACT
+requires: the RANKING controls are executed by the PolyC ranker
+over the eligible set, and the ELIGIBILITY controls are executed by the
+PolyC eligibility checker over mutated FACT tables.
+
+=================================================================
+RANKING CONTROLS (executed by tools/quality/parser-slice-recon03-ranking.HC)
+=================================================================
+
+$ ./build/parser-slice-recon03-ranking <dimension table>
+SELECTED=CAND-017
+NC-05_ineligible_perfect_rank_rejected=YES
+NC-05_winner=CAND-017
+NC-06_shuffled_inventory_winner_unchanged=YES
+NC-06_winner=CAND-017
+NC-07_winner_removed_remaining=9
+NC-07_new_winner=CAND-022
+NC-09_rival_eligible_candidates=9
+NC-09_r0_perturbation_changed_leader=YES
+NC-09_new_leader=CAND-022
+
+CONTROL | EXPECTED | ACTUAL | VERDICT
+--------|----------|--------|--------
+NC-05 ineligible candidate with an artificially perfect ranking | Rejected | The synthetic CTRL-INELIGIBLE-PERFECT row (R0=0,R1=0,R2=0,R3=0,R4=0,R5=0,R6=src/aaa.c:1) is INELIGIBLE and is dropped before the sort; the winner is unchanged | PASS
+NC-06 shuffled inventory | Winner unchanged | A fixed-seed Fisher-Yates permutation of the eligible rows does not change the winner | PASS
+NC-07 winner removed | Remaining eligible candidates reranked; NONE if none remain | 9 eligible candidates remain and CAND-022 becomes the new winner | PASS
+NC-09 R0 perturbation | Ranking changes when competing eligible candidates make that possible | 9 rival eligible candidates exist and raising the winner R0 changes the leader to CAND-022 | PASS
+
+NOTE ON NC-09: the control REPORTS the number of rival eligible
+candidates.  When there is no rival the control prints
+NOT_APPLICABLE_NO_RIVAL rather than claiming a vacuous pass.  Here there
+are 9 rivals, so the effect is observable and is observed.
+
+=================================================================
+ELIGIBILITY CONTROLS (executed by the REAL PolyC checker over mutated facts)
+=================================================================
+
+$ sh scripts/quality/parser-slice-recon03-eligibility-controls.sh
+NC-01 candidate=CAND-002 field=8 value=YES expect=EXCLUDED got=NO result=YES
+NC-02 candidate=CAND-001 field=8 value=YES expect=EXCLUDED got=NO result=YES
+NC-03 candidate=CAND-014 field=11 value=YES expect=EXCLUDED got=NO result=YES
+NC-04 candidate=CAND-003 field=13 value=1 expect=EXCLUDED got=NO result=YES
+NC-08 baseline_unmutated_verdict=YES
+NC-08 candidate=CAND-017 field=8 value=YES expect=EXCLUDED got=NO result=YES
+NC-11 candidate=CAND-017 field=16 value=1 expect=EXCLUDED got=NO result=YES
+NC-12 candidate=CAND-017 field=14 value=1 expect=EXCLUDED got=NO result=YES
+NC-13 candidate=CAND-017 field=19 value=NO expect=EXCLUDED got=NO result=YES
+NC-10 candidate=CTRL-SYNTHETIC-ELIGIBLE expect=ELIGIBLE got=YES result=YES
+ELIGIBILITY_CONTROLS_FAIL=0
+STATUS=PASS
+
+CONTROL | EXPECTED | ACTUAL | VERDICT
+--------|----------|--------|--------
+NC-01 existing PolyC CalcPadding | Excluded | The real checker returns NO for CAND-002 | PASS
+NC-02 existing PolyC parseValidPostControlFlowToken | Excluded | The real checker returns NO for CAND-001 | PASS
+NC-03 whole recovery-coupled compound parser | Excluded | The real checker returns NO for CAND-014 | PASS
+NC-04 CalcClassSize graph mutation | Detected | The real checker returns NO for CAND-003 (clause 07 fails: host_graph_writes=1) | PASS
+NC-08 eligibility-field mutation | Eligibility changes when the relevant clause changes | The unmutated verdict is YES and the mutated verdict (already_selfhosted=YES) is NO | PASS
+NC-10 synthetic second eligible candidate | Must pass the real eligibility checker | CTRL-SYNTHETIC-ELIGIBLE is evaluated by the real checker and returns YES, so it MAY enter the ranking | PASS
+NC-11 hidden callback dependency | Rejected | Injecting semantic_callback_count=1 flips CAND-017 from YES to NO | PASS
+NC-12 host pointer disguised as scalar | Rejected | Injecting pointer_identity_operations=1 flips CAND-017 from YES to NO | PASS
+NC-13 pure but production-unreachable helper | Rejected | Injecting production_reachable=NO flips CAND-017 from YES to NO | PASS
+
+ELIGIBILITY_CONTROLS_FAIL=0
+RANKING_CONTROLS_FAIL=0
+TOTAL_CONTROLS=13
+CONTROLS_PASSED=13
+
+--- the controls are genuinely falsifiable ---
+Each control MUTATES one field of one candidate and re-runs the SAME
+checker that produces the published verdict.  A control cannot pass
+without the predicate reacting to the mutation: NC-08/NC-11/NC-12/NC-13
+all assert that the verdict FLIPS, and the driver prints the
+baseline verdict so a control that passed for the wrong reason would be
+visible in this record.
