@@ -6215,3 +6215,83 @@ files that shell out to the compiler without `--install-dir`).
 See
 `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01.md` and
 `evidence/ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01/`.
+
+#### ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION01 status (CLOSED PASS at this commit)
+
+```text
+ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION01
+  ENTRY       = 4113123f (ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01 C4: CLOSE)
+  C0 AUTH/RED = (the two review findings, reproduced against the real seams)
+  C1 IMPL     = (the positive row recognition; the PolyC control driver)
+  C2 EVIDENCE = (both findings established; the executed broad corpus)
+  C3 EVIDENCE = (the gates; the required result)
+
+  CLASS = CORRECTION / QUALIFICATION-HARDENING
+
+  DIFFERENTIAL_FIXTURE_AUTHORITY = COMPLETE (and now FAIL-CLOSED for
+                              UNRECOGNIZED rows, not only for missing
+                              and duplicate ids)
+  NEGATIVE_CONTROLS             = PASS (16 differential controls, 0 broken)
+  LEXER07_CONSERVATION           = PASS_AGAINST_BASELINE
+  PRODUCTION_AUTHORITY          = POLYC
+  PRODUCTION_SEMANTIC_DELTA     = 0
+
+  FINDING_P0_UNKNOWN_FIXTURE_ROW_BYPASS = DISCHARGED
+  FINDING_P1_LEXER07_BROAD_CORPUS_NOT_REPLAYED = DISCHARGED
+
+  DIRECT_DIFFERENTIAL_TOTAL = 42
+  DIRECT_DIFFERENTIAL_PASS  = 42
+  DIRECT_DIFFERENTIAL_FAIL  = 0
+  NC_D12_UNKNOWN_X001       = FAIL (REASON=FIXTURE_ID_UNKNOWN, UNKNOWN_IDS=1)
+
+  LEXER07_CORPUS_SOURCES    = 181 x 4 stages
+  LEXER07_OBSERVED_PASS_S0  = 166
+  LEXER07_OBSERVED_PASS_S1  = 175
+  LEXER07_OBSERVED_PASS_S2  = 175
+  LEXER07_OBSERVED_PASS_S3  = 175
+  LEXER07_OBSERVED_ALL_FAIL = 6 (bitvec builtins coroutines 32_sql neg_asm neg_f64)
+  LEXER07_OBSERVED_NO_FALLBACK = 9 (all date hashtable io list memory strings
+                                   threads tooling)
+  LEXER07_NEW_FAILURE_IDENTITIES   = 0
+  LEXER07_REMOVED_PASS_IDENTITIES  = 0
+  LEXER07_NEW_DIVERGENCES          = 0
+  LEXER07_REGISTRY_SHA256 = 040fb7354dd62f2001f167e2dd083be3f5bcb013e97c1cf3e16468c7ae8678bb
+
+  GATE_FAST      = PASS (RC=0; manifest PAIR_OK=29 PAIR_FAIL=0)
+  GATE_PUSH      = PASS (RC=0; build/install/gep01/aot/jit/lsp/diff-check all PASS)
+  PATCH_HYGIENE  = PASS (over the COMMITTED range)
+  AC_LEDGER      = 23 PASS / 2 DEFERRED (AC24, AC25) / 0 FAIL
+
+  RESIDUE = 2 (both P2; see the HANDOFF)
+  NEXT_ACT = ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03
+```
+
+**The review's two findings are discharged.** The direct differential's row
+reader used to decide whether a line was a fixture row with a *negative*
+test, so an unknown fixture ID was invisible to the ledger and a fixture
+holding the 42 canonical rows **plus** an unknown row was accepted as
+green. The reader now uses a *positive* recognition test: only an
+explicitly recognized comment or metadata row may be skipped, every other
+line is a data row and is validated, and an unknown ID is reported with
+the reason token `FIXTURE_ID_UNKNOWN`. The control the predecessor froze
+in its C1 contract as `NC-D12` and never executed is now executed against
+the real differential.
+
+The LEXER07 conservation claim now rests on an executed corpus. The
+predecessor's evidence was the LSP suite; the canonical LEXER07
+four-generation broad corpus is a different population, with 21 known
+baseline failures, and it had not been replayed. It was replayed, and the
+observed failure identities match the canonical registry's baseline
+**source by source** — the same six `ALL_FAIL` sources and the same nine
+`NO_FALLBACK` sources, with zero new failure identities and zero removed
+pass identities. No historical failure was relabeled PASS.
+
+The production decision is unchanged. The committed range touches no file
+under `src/` or `tools/bootstrap/`: the production compiler, the parser,
+the lexer, the LLVM backend, the AST representation and the whole
+bootstrap chain are untouched, the predecessor's evidence directory is
+byte-identical, and the authority registry is byte-identical.
+
+See
+`docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION01.md`
+and `evidence/ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION01/`.
