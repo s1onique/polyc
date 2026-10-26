@@ -6383,3 +6383,102 @@ file under `src/` or `tools/bootstrap/`.
 See
 `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION02.md`
 and `evidence/ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION02/`.
+
+#### ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03 status (CLOSED PASS at this commit)
+
+The third production-authoritative PolyC parser component has been
+**selected and its contract frozen**.  This ACT implemented NO compiler
+component and changed NO production source.
+
+```text
+ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03
+  ENTRY       = 4e001cc5 (ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION02 C4: CLOSE)
+  PREDECESSOR = ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION02
+
+PARSER_PADDING_AUTHORITY           = POLYC
+PARSER_CONTROL_FLOW_TOKEN_AUTHORITY = POLYC
+
+CANDIDATE_INVENTORY_TOTAL = 35
+ELIGIBLE_CANDIDATES       = 10
+EXCLUDED_CANDIDATES       = 25
+NEW_ATOMIC_SLICES_FOUND   = 19
+UNCLASSIFIED_DEPENDENCIES = 0
+ELIGIBILITY_CONTROLS      = 13/13 PASS
+
+SELECTED_CANDIDATE_COUNT = 1
+SELECTED_CANDIDATE_ID    = CAND-017
+SELECTED_CANDIDATE       = parseGetPriority   src/prslib.c:1139..1207
+SELECTED_R0              = 0
+SELECTED_R1..R6          = 1, 2, 2, 0, 0, src/prslib.c:1139
+SELECTED_ABI             = I64 BootstrapOperatorPrecedence(I64 punct_value) -> I64 precedence
+SELECTED_PRODUCTION_SEAM = src/prslib.c:1363, inside parseExpr (32 production call sites)
+```
+
+`parseGetPriority` is the **operator precedence table** of the whole
+compiler.  Its input projection is mechanically complete on ONE scalar:
+the body of `src/prslib.c:1139..1207` is a single `switch` over
+`tok->i64` and references no other field and no other identifier.  It
+owns no Cctrl state, no AST state, no List/Map/Vec traversal, no pointer
+identity, no allocation, no callback, no recovery and no global state.
+The precedence value decides the AST shape of every binary and unary
+expression in every compiled program.
+
+Two findings changed the historical picture:
+
+- `CalcUnionSize` is a **DEAD COMPUTATION**: it returns the maximum
+  field size, but the result is written to `class_size` at
+  `src/parser.c:672` and **never read**; the real union size comes from
+  `parseUnionOffsets` at `:599`.
+- `CalcClassSize` writes `type->offset`, which `parseClassOffsets`
+  unconditionally overwrites at `:521` and `:555` for the same field
+  set.  Neither size callback has an observable semantic effect.
+
+The causal proof was **executed, not merely proposed**: a throwaway copy
+of the tree was mutated so that `*` moves from precedence 4 to 6, the
+mutant compiler was built and LINKED, and the divergence was observed in
+a compiled program (pristine 62, mutated 162, restored 62).  The
+mutation is the minimal single-operator change that flips the grouping,
+and the derivation from the `parseExpr` recursion is recorded so the
+choice is falsifiable.
+
+```text
+PRODUCTION_SEMANTIC_DELTA = 0
+SUCCESSOR_IMPLEMENTATION_DELTA = 0
+
+NEW_PARSER_FAILURE_IDENTITIES = 0
+NEW_LEXER_FAILURES            = 0
+NEW_LEXER07_FAILURE_IDENTITIES = 0
+
+GATE_FAST    = PASS
+FACTORY_V2   = PASS (53/0)
+APPEND_ONLY  = PASS (11/0)
+F14          = PASS
+PATCH_HYGIENE = PASS
+```
+
+The LEXER07 broad corpus reports `STATUS=FAIL` and `make` reports RC=2;
+that is preserved as measured.  The prospective conservation result is
+zero new failures: the per-stage pass counters are identical to the
+baseline (166/175/175/175), `REGRESSION=0`, `DIVERGED=0`, and the
+failure identity sets are unchanged.
+
+**AC47 (gate-push passes) is recorded as `FAIL_PRE_EXISTING_HOST_ISSUE`,
+not as PASS.**  The only failing check is `CHECK=aot`, which is
+`make unit-test`; its per-test compile omits `--install-dir`, so the
+compiler falls back to its compile-time prefix `/usr/local`, which does
+not exist on this host.  The same test compiles and PASSES when the
+prefix is supplied, and the `src/` tree is byte-identical to the entry
+commit, so the failure necessarily occurs there too.  No AC is promoted
+to PASS without proof.
+
+**Next milestone:** one more production-authoritative PolyC parser
+component.
+
+```text
+NEXT_ACT_ID = ACT-POLYC-SELFHOST-PARSER-SLICE03
+NEXT_TARGET = CAND-017 parseGetPriority (src/prslib.c:1139..1207)
+```
+
+See
+`docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03.md` and
+`evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03/`.
