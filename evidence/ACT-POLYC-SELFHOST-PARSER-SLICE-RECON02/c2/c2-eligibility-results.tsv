@@ -1,0 +1,65 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02
+# ACT_PHASE=C2-RANK-SELECT
+# EVIDENCE_KIND=eligibility-results
+# The hard-eligibility conjunction (ACT SECT_8.1) applied to EVERY
+# candidate, with each exclusion reason anchored to the current source.
+#
+# The conjunction (no human override):
+#   semantic_authority == YES
+#   AND already_selfhosted == NO
+#   AND r0_state_boundary_cost <= 2
+#   AND owns_setjmp == NO
+#   AND writes_current_recovery == NO
+#   AND requires_nonlocal_recovery == NO
+#   AND host_graph_writes == 0
+#   AND pointer_identity_ops == 0
+#   AND parser_callback_count == 0
+#   AND semantic_callback_count == 0
+#   AND deterministic_projection == YES
+#   AND production_delegation_feasible == YES
+#   AND candidate_kind != NON_SEMANTIC
+#   AND candidate_kind != DEAD_OR_NONRUNTIME
+#
+# Schema:
+#   01 candidate_id
+#   02 semantic_authority
+#   03 already_selfhosted
+#   04 r0
+#   05 owns_setjmp
+#   06 writes_current_recovery
+#   07 requires_nonlocal_recovery
+#   08 host_graph_writes
+#   09 pointer_identity_ops
+#   10 parser_callback_count
+#   11 semantic_callback_count
+#   12 deterministic_projection
+#   13 production_delegation_feasible
+#   14 candidate_kind
+#   15 failing_predicates
+#   16 eligible
+#   17 exclusion_reason_anchored_to_source
+
+candidate_id	semantic_authority	already_selfhosted	r0	owns_setjmp	writes_current_recovery	requires_nonlocal_recovery	host_graph_writes	pointer_identity_ops	parser_callback_count	semantic_callback_count	deterministic_projection	production_delegation_feasible	candidate_kind	failing_predicates	eligible	exclusion_reason_anchored_to_source
+CAND-001	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	TOKEN_CLASSIFIER	-	YES	-
+CAND-002	YES	YES	0	NO	NO	NO	0	0	0	0	YES	ALREADY_DONE	TYPE_MODIFIER_PRIMITIVE	already_selfhosted == YES	NO	Production authority moved to BootstrapCalcPadding: src/parser.c:431 `#ifdef HCC_USE_SELFHOST_PARSER_PADDING` routes CalcPadding to the PolyC component (src/parser.c:452-453); the legacy C body survives only in the #else branch, which production does not compile (src/CMakeLists.txt:326 defines the macro). CAND-002_SELECTED_AGAIN=FORBIDDEN.
+CAND-003	YES	NO	4	NO	NO	NO	1	1	0	0	NO	NO	TYPE_MODIFIER_PRIMITIVE	r0_state_boundary_cost <= 2; host_graph_writes == 0; pointer_identity_ops == 0; deterministic_projection == YES; production_delegation_feasible == YES	NO	src/parser.c:424 `type->offset = offset;` writes a host-owned AstType node. The write IS the host-graph mutation, and the write target is reached by identity through the ClsField*. The only production call site (src/parser.c:718) passes CalcClassSize as a u32(*)(List *) callback, so the ABI would have to carry host graph identity.
+CAND-003S	NO	NO	2	NO	NO	NO	0	0	0	0	YES	NO	TYPE_MODIFIER_PRIMITIVE	semantic_authority == YES; production_delegation_feasible == YES	NO	No production call site exists for a size-only sub-slice. The offset write (src/parser.c:424) is interleaved with the size accumulation in the SAME loop, so a pure sub-slice would have to duplicate the alignment walk and would then have to be wired through a NEW callback contract in parseClassOrUnion. Not independently nominable.
+CAND-004	YES	NO	0	NO	NO	NO	0	0	0	0	YES	POSSIBLE_BUT_NARROW	TYPE_MODIFIER_PRIMITIVE	production_delegation_feasible == YES	NO	The only production call site (src/parser.c:722) passes CalcUnionSize as a u32 (*computeSize)(List *) FUNCTION POINTER into parseClassOrUnion. Delegating it would require changing that callback contract in production source and materialising a bounded copied size sequence at every call. The state boundary is clean (R0=0) but the production seam is a callback contract, not an ordinary call site. NOT FEASIBLE under the ACT's successor scope.
+CAND-005	YES	NO	2	NO	NO	NO	0	0	0	0	YES	NO	AST_PROJECTION_PRIMITIVE	production_delegation_feasible == YES	NO	Reachable only from astStmtFallsThrough (src/parser.c:1993, :1999), which is itself a static helper of parseFunctionDef. Its single production path (src/parser.c:2355) requires a bounded copied AST projection of an entire function body, which is unbounded in size. No bounded ABI exists.
+CAND-006	YES	NO	2	NO	NO	NO	0	0	0	0	YES	NO	AST_PROJECTION_PRIMITIVE	production_delegation_feasible == YES	NO	Reachable only from astStmtFallsThrough (src/parser.c:1994, :2000). Same unbounded-AST-projection problem as CAND-005.
+CAND-007	YES	NO	2	NO	NO	NO	0	0	0	0	YES	POSSIBLE_BUT_NARROW	AST_PROJECTION_PRIMITIVE	production_delegation_feasible == YES	NO	The single production call site (src/parser.c:2355) passes a live Ast* function body whose size is unbounded. A bounded copied AST projection would have to be materialised per function body, changing the production call contract. Not bridgeable within the successor's scope.
+CAND-008	YES	NO	1	NO	NO	NO	0	0	0	0	YES	POSSIBLE_BUT_NARROW	DELIMITER_PRIMITIVE	production_delegation_feasible == YES	NO	The single production call site (src/parser.c:2193) passes an AoStr* whose length is unbounded at the ABI level. A bounded ABI would require a length-capped copy, which changes the semantics for large asm bodies.
+CAND-009	NO	NO	0	NO	NO	NO	0	0	0	0	N/A	NO	STATIC_HELPER	semantic_authority == YES; candidate_kind != NON_SEMANTIC	NO	src/parser.c:265-270 is a malloc wrapper (malloc + two pointer stores). It makes no semantic decision.
+CAND-010	NO	NO	0	NO	NO	NO	0	0	0	0	N/A	NO	STATIC_HELPER	semantic_authority == YES; candidate_kind != NON_SEMANTIC	NO	src/parser.c:62-65 increments a static counter. Its output differs between calls, so it is not reproducible and carries no semantic authority.
+CAND-011	YES	NO	4	NO	NO	NO	1	1	0	0	NO	NO	AST_PROJECTION_PRIMITIVE	r0_state_boundary_cost <= 2; host_graph_writes == 0; pointer_identity_ops == 0; deterministic_projection == YES; production_delegation_feasible == YES	NO	src/parser.c:254 `type->offset += offset;` writes a host-owned AstType node AND the function mapAdd()s into the host Map fields_dict (src/parser.c:257). Two host-graph mutations. The historical R0=3 was understated.
+CAND-012	YES	NO	3	NO	NO	NO	0	0	3	1	YES	NO	TOKEN_CLASSIFIER	r0_state_boundary_cost <= 2; parser_callback_count == 0; semantic_callback_count == 0; production_delegation_feasible == YES	NO	src/parser.c:40-60 consumes the token stream (cctrlTokenPeek, cctrlTokenGet) and owns a diagnostic raise (cctrlRaiseException at :50). Diagnostic and token-stream ownership may not cross into PolyC.
+CAND-013	YES	NO	3	NO	NO	NO	0	1	0	0	YES	NO	TOKEN_CLASSIFIER	r0_state_boundary_cost <= 2; pointer_identity_ops == 0; production_delegation_feasible == YES	NO	src/parser.c:144 and :153 embed a host AstType* into the returned AST node (`lit->type = astTypeCopy(dst)`). The result carries host type identity, so it is not a bounded value projection.
+CAND-014	YES	NO	5	YES	YES	YES	5	9	9	0	NO	NO	ORCHESTRATOR	r0_state_boundary_cost <= 2; owns_setjmp == NO; writes_current_recovery == NO; requires_nonlocal_recovery == NO; host_graph_writes == 0; pointer_identity_ops == 0; parser_callback_count == 0; deterministic_projection == YES; production_delegation_feasible == YES	NO	src/parser.c:1810 `jmp_buf stmt_recovery;`, :1812 `cc->current_recovery = &stmt_recovery;`, :1830 `setjmp(stmt_recovery)`. The function OWNS the per-statement recovery point and reinstates the outer one. 9 subordinate-parser callbacks. KNOWN-NEGATIVE CONTROL (PARSER01-CORRECTION01).
+CAND-015	YES	NO	3	NO	NO	NO	0	0	5	1	YES	NO	TOKEN_CLASSIFIER	r0_state_boundary_cost <= 2; parser_callback_count == 0; semantic_callback_count == 0; production_delegation_feasible == YES	NO	src/parser.c:872-917 mutates cc->localenv (registers the declared variable) and owns 5 distinct callbacks (cctrlIsKeyword, cctrlRaiseException, cctrlTokenGet, cctrlTokenPeek, cctrlTokenRewind).
+CAND-016	NO	NO	3	NO	NO	NO	0	0	2	1	YES	NO	DIAGNOSTIC_HELPER	semantic_authority == YES; r0_state_boundary_cost <= 2; parser_callback_count == 0; semantic_callback_count == 0; production_delegation_feasible == YES	NO	src/parser.c:1430-1436 is a diagnostic re-raise helper (cctrlRewindUntilStrMatch + cctrlRaiseExceptionFromTo). It carries no semantic decision of its own and owns diagnostic emission.
+
+ELIGIBLE_COUNT=1
+ELIGIBLE_CANDIDATES=CAND-001
+INELIGIBLE_COUNT=16
+ELIGIBLE_ALREADY_SELFHOSTED=0
+UNKNOWN_CANDIDATES=0

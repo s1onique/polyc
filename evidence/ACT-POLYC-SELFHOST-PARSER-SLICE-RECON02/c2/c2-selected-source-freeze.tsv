@@ -1,0 +1,42 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02
+# ACT_PHASE=C2-RANK-SELECT
+# EVIDENCE_KIND=selected-source-freeze
+# The exact source the successor ACT will migrate, frozen at the C2
+# boundary.  The successor MUST re-verify these identities before
+# editing; if any of them moved, the successor MUST re-derive the
+# selection rather than assume it.
+#
+# Schema:
+#   01 role
+#   02 path
+#   03 line_start
+#   04 line_end
+#   05 sha256_of_file
+#   06 identity_at_c2
+
+role	path	line_start	line_end	sha256_of_file	identity_at_c2
+SELECTED_FUNCTION_BODY	src/parser.c	832	864	993bae4427d52a10b4513f3b4315206bbee009c5f3d0cc3f7d648abc7c3ebe5c	int parseValidPostControlFlowToken(Lexeme *tok)
+LEGACY_ORACLE_FILE	src/parser.c	-	-	993bae4427d52a10b4513f3b4315206bbee009c5f3d0cc3f7d648abc7c3ebe5c	(same file)
+TOKEN_TAG_HEADER	src/lexer.h	14	63	6bc46f3be938c6fae99095d8cf0b1f07104bbf9fc1dfb248aaa3cd5dd721c5f9	TK_* token kind tags
+KEYWORD_HEADER	src/lexer.h	65	178	6bc46f3be938c6fae99095d8cf0b1f07104bbf9fc1dfb248aaa3cd5dd721c5f9	KW_* keyword constants
+LEXEME_LAYOUT	src/lexer.h	170	187	6bc46f3be938c6fae99095d8cf0b1f07104bbf9fc1dfb248aaa3cd5dd721c5f9	typedef struct Lexeme { ... int tk_type; ... union { s64 i64; double f64; }; }
+CCTRL_HEADER	src/cctrl.h	-	-	8d96aa3a16bd5a42a25ebbe9439b402d83127693c0f490defb81665e56775aa3	Cctrl definition (for the successor's reference only)
+AST_HEADER	src/ast.h	-	-	140a1a144eea594e7232bc4ed5a43c336c5ada3efd96c791e0deae58e019f9fe	Ast / AstType definitions (reference only)
+BUILD_SYSTEM	src/CMakeLists.txt	-	-	43fa95a6b73a62a41c31729a0257a3fcdca90a43e08045eb1148284bc4af8e6f	the successor's delegation seam
+
+# --- Call sites the successor will bind to the PolyC delegate ------------
+# Schema: role \t path \t line \t calling_function \t current_form
+call_site_1	src/parser.c	950	parseIfStatement	if (!parseValidPostControlFlowToken(peek)) { ... cctrlRaiseException(cc,"Unexpected %s `%.*s` while parsing if body", ...); }
+call_site_2	src/parser.c	961	parseIfStatement	if (!parseValidPostControlFlowToken(epeek)) { ... cctrlRaiseException(cc,"Unexpected %s `%.*s` while parsing else body", ...); }
+call_site_3	src/parser.c	1254	parseForStatement	if (!parseValidPostControlFlowToken(peek)) { ... cctrlRaiseException(cc,"Unexpected %s `%.*s` while parsing for loop body", ...); }
+call_site_4	src/parser.c	1288	parseWhileStatement	if (!parseValidPostControlFlowToken(peek)) { ... cctrlRaiseException(cc,"Unexpected %s `%.*s` while parsing while loop body", ...); }
+call_site_5	src/parser.c	1321	parseDoWhileStatement	if (!parseValidPostControlFlowToken(peek)) { ... cctrlRaiseException(cc,"Unexpected %s `%.*s` while parsing do while loop body", ...); }
+
+# The diagnostic ownership that MUST remain in C at every call site:
+DIAGNOSTIC_OWNER_REMAINS_C=YES
+DIAGNOSTIC_SITES=
+  src/parser.c:951-952  (if body: cctrlRaiseException)
+  src/parser.c:962-965  (else body: cctrlTokenRewind x2 + cctrlRaiseException)
+  src/parser.c:1255-1256 (for loop body: cctrlRaiseException)
+  src/parser.c:1289-1290 (while loop body: cctrlRaiseException)
+  src/parser.c:1322-1324 (do while loop body: cctrlRewindUntilStrMatch + cctrlRaiseException)

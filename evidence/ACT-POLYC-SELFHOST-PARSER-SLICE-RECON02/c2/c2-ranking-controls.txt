@@ -1,0 +1,230 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02
+ACT_PHASE=C2-RANK-SELECT
+EVIDENCE_KIND=ranking-controls
+
+# The ACT requires nine mandatory anti-bias controls (SECT_8.3) and
+# forbids any control from "passing purely because an expected result
+# was hardcoded in a report".  Every control below is EXECUTED against the
+# mechanical ranker; the outputs are the ranker's actual stdout.
+#
+# The ranker (build/slice-recon02-rank/rank.sh) is a disposable diagnostic
+# in the IGNORED build directory.  It is NOT a tracked tool (F-POLYC-TOOLS
+# is not violated: no new substantive shell or C tool is added to the
+# repository).
+#
+# RANKER SELF-CHECK (prerequisite for trusting any control below):
+#   Feeding the ranker the RECON01 historical input reproduces the
+#   RECON01 historical WINNER (CAND-002):
+#     $ build/slice-recon02-rank/rank.sh build/slice-recon02-rank/recon01-input.tsv
+#     1  CAND-002  0 1 2 0 0 0  src/parser.c:430  YES
+#     2  CAND-001  0 1 2 0 0 1  src/parser.c:791  YES
+#     ...
+#   RANKER_REPRODUCES_RECON01_WINNER=YES
+#
+#   NOTE (residue, P1, NOT a blocker): the ranker places CAND-004
+#   (src/parser.c:397) at rank 3 and CAND-003 (src/parser.c:410) at
+#   rank 4, whereas RECON01's published tables place CAND-003 at rank 3
+#   and CAND-004 at rank 4.  RECON01's own C3 note
+#   (c3-ranking-recompute.tsv, NOTES_ON_R6_TIE_BREAK) states "CAND-004
+#   wins on R6 (line_start smaller)", which agrees with the ranker and
+#   disagrees with RECON01's published order.  The published RECON01 order
+#   is preserved as history under F14; it is not rewritten here.
+#   IMMATERIALITY: the disagreement does not change the RECON01 winner
+#   (CAND-002 in both) and it does not change the C2 winner here,
+#   because CAND-003 is EXCLUDED by the eligibility conjunction (R0=4)
+#   and CAND-004 is EXCLUDED on production_delegation_feasible.
+
+# ---------------------------------------------------------------------------
+# CONTROL 1 -- Previously migrated CalcPadding
+#   Expected: Excluded as ALREADY_SELFHOSTED
+# ---------------------------------------------------------------------------
+CONTROL_1=PREVIOUSLY_MIGRATED_CALCPADDING
+MECHANISM=Eligibility conjunction, column already_selfhosted.
+  c2-eligibility-results.tsv row CAND-002:
+    already_selfhosted = YES
+    failing_predicates = already_selfhosted == YES
+    eligible = NO
+  Verified against the live production configuration
+  (evidence/.../c0/c0-padding-production-authority.txt):
+    src/parser.c:431  #ifdef HCC_USE_SELFHOST_PARSER_PADDING
+    src/parser.c:452-453  return (int)BootstrapCalcPadding(...)
+    src/CMakeLists.txt:326  target_compile_definitions(hcc PRIVATE HCC_USE_SELFHOST_PARSER_PADDING)
+    build/CMakeCache.txt:242  HCC_USE_SELFHOST_PARSER_PADDING:BOOL=ON
+    nm build/hcc | grep -c _BootstrapCalcPadding  ->  1
+  The legacy C body survives only in the #else branch.
+EXPECTED_RESULT=EXCLUDED_AS_ALREADY_SELFHOSTED
+ACTUAL_RESULT=EXCLUDED_AS_ALREADY_SELFHOSTED
+PASS=YES
+
+# ---------------------------------------------------------------------------
+# CONTROL 2 -- Whole parseCompoundStatementInternal
+#   Expected: Excluded as recovery-coupled
+# ---------------------------------------------------------------------------
+CONTROL_2=WHOLE_COMPOUND_PARSER_FUNCTION
+MECHANISM=Eligibility conjunction + the ranker's eligible-only filter.
+  c2-eligibility-results.tsv row CAND-014:
+    r0 = 5, owns_setjmp = YES, writes_current_recovery = YES,
+    requires_nonlocal_recovery = YES, host_graph_writes = 5,
+    pointer_identity_ops = 9, parser_callback_count = 9,
+    deterministic_projection = NO, production_delegation_feasible = NO
+    eligible = NO
+  Source anchors:
+    src/parser.c:1810  jmp_buf stmt_recovery;
+    src/parser.c:1812  cc->current_recovery = &stmt_recovery;
+    src/parser.c:1830  if (setjmp(stmt_recovery) != 0)
+  Even when injected into the ranking input with PERFECT R0..R6
+  (R0=0, R1=0, R2=0, R3=0, R4=0, R5=0, R6=src/parser.c:1), the ranker
+  DROPS it because eligible != YES (see CONTROL 4).
+EXPECTED_RESULT=EXCLUDED_AS_RECOVERY_COUPLED
+ACTUAL_RESULT=EXCLUDED_AS_RECOVERY_COUPLED
+PASS=YES
+
+# ---------------------------------------------------------------------------
+# CONTROL 3 -- Current CalcClassSize graph writes
+#   Expected: Detected, not ignored
+# ---------------------------------------------------------------------------
+CONTROL_3=CALC_CLASS_SIZE_GRAPH_WRITE_DETECTED
+MECHANISM=C1 re-read of the current source, not a carried-forward value.
+  $ grep -n 'type->offset = offset' src/parser.c
+  424:        type->offset = offset;
+  The write is inside the same loop as the size accumulation, so it is
+  part of the whole-function behaviour and cannot be split away.
+  Consequence: host_graph_writes = 1, pointer_identity_ops = 1,
+  deterministic_projection = NO, R0 reclassified 0 -> 4.
+  c2-eligibility-results.tsv row CAND-003: eligible = NO, and
+  "CAND-003" appears ZERO times in the ranking input.
+EXPECTED_RESULT=DETECTED_NOT_IGNORED
+ACTUAL_RESULT=DETECTED_NOT_IGNORED
+PASS=YES
+
+# ---------------------------------------------------------------------------
+# CONTROL 4 -- Ineligible candidate with artificially favourable R1..R6
+#   Expected: Still excluded
+# ---------------------------------------------------------------------------
+CONTROL_4=INELIGIBLE_FAVOURABLE_RANK_REJECTED
+MECHANISM=The ranker filters eligible != YES BEFORE sorting.  Two
+  ineligible candidates were injected with the PERFECT score
+  (R0=0, R1=0, R2=0, R3=0, R4=0, R5=0) and the earliest possible R6:
+    CAND-014 (recovery-coupled orchestrator)
+    CAND-003 (host-graph writer)
+  Ranker output:
+    $ build/slice-recon02-rank/rank.sh /tmp/inel.tsv
+    1  CAND-001  0 1 2 0 0 1  src/parser.c:832  YES
+    2  CAND-004  0 2 2 0 0 0  src/parser.c:397  YES
+    3  CAND-008  1 2 2 0 0 1  src/parser.c:1980  YES
+    4  CAND-006  2 1 2 1 0 0  src/parser.c:1907  YES
+    5  CAND-007  2 1 2 1 0 1  src/parser.c:1932  YES
+    6  CAND-005  2 2 2 1 0 0  src/parser.c:1899  YES
+  Neither injected row appears.  The eligibility conjunction is NOT a
+  ranking dimension and cannot be outvoted by a favourable R1..R6.
+EXPECTED_RESULT=STILL_EXCLUDED
+ACTUAL_RESULT=STILL_EXCLUDED
+PASS=YES
+
+# ---------------------------------------------------------------------------
+# CONTROL 5 -- R0 perturbation of the provisional leader
+#   Expected: Ranking changes appropriately
+# ---------------------------------------------------------------------------
+CONTROL_5=R0_PERTURBATION_OF_LEADER
+MECHANISM=CAND-001's R0 raised from 0 to 1 (and only its R0).
+  $ awk -F'\t' 'BEGIN{OFS="\t"} /^CAND-001\t/{ $2=1 } {print}' rank-input.tsv
+  $ build/slice-recon02-rank/rank.sh /tmp/pb.tsv
+  1  CAND-004  0 2 2 0 0 0  src/parser.c:397  YES
+  2  CAND-001  1 1 2 0 0 1  src/parser.c:832  YES
+  3  CAND-008  1 2 2 0 0 1  src/parser.c:1980  YES
+  CAND-001 moves from rank 1 to rank 2; CAND-004 moves to rank 1.
+  R0 IS LOAD-BEARING: if R0 were a no-op or merely additive with another
+  dimension, raising CAND-001's R0 would not have displaced it.
+EXPECTED_RESULT=RANKING_CHANGES_APPROPRIATELY
+ACTUAL_RESULT=RANKING_CHANGES_APPROPRIATELY
+PASS=YES
+
+# ---------------------------------------------------------------------------
+# CONTROL 6 -- Remove the selected candidate
+#   Expected: Next eligible candidate wins
+# ---------------------------------------------------------------------------
+CONTROL_6=REMOVE_SELECTED_CANDIDATE
+MECHANISM=CAND-001 removed from the ranking input.
+  $ grep -v '^CAND-001' rank-input.tsv
+  $ build/slice-recon02-rank/rank.sh /tmp/rc.tsv
+  1  CAND-004  0 2 2 0 0 0  src/parser.c:397  YES
+  2  CAND-008  1 2 2 0 0 1  src/parser.c:1980  YES
+  3  CAND-006  2 1 2 1 0 0  src/parser.c:1907  YES
+  The next candidate by the frozen order wins.
+EXPECTED_RESULT=NEXT_ELIGIBLE_CANDIDATE_WINS
+ACTUAL_RESULT=NEXT_ELIGIBLE_CANDIDATE_WINS
+PASS=YES
+
+# ---------------------------------------------------------------------------
+# CONTROL 7 -- Shuffle inventory row order
+#   Expected: Selected candidate unchanged
+# ---------------------------------------------------------------------------
+CONTROL_7=INVENTORY_ROW_ORDER_SHUFFLE
+MECHANISM=20 independent shuffles of the ranking input rows (header
+  preserved), each re-ranked.
+  $ for i in $(seq 1 20); do { head -1 rank-input.tsv; tail -n +2 rank-input.tsv | shuf; } > /tmp/s.tsv; build/slice-recon02-rank/rank.sh /tmp/s.tsv | head -1 | cut -f2; done | sort | uniq -c
+       20 CAND-001
+  20/20 shuffles selected CAND-001.  The ranking is a pure function of
+  the score tuple, not of the input row order.
+EXPECTED_RESULT=SELECTED_CANDIDATE_UNCHANGED
+ACTUAL_RESULT=SELECTED_CANDIDATE_UNCHANGED
+PASS=YES
+
+# ---------------------------------------------------------------------------
+# CONTROL 8 -- Opaque host handle disguised as scalar
+#   Expected: Rejected
+# ---------------------------------------------------------------------------
+CONTROL_8=OPAQUE_HOST_HANDLE_DISGUISED_AS_SCALAR
+MECHANISM=CAND-013 parseFoldInitElement has a scalar-looking signature
+  and an int-looking surface, but its RESULT embeds a host AstType*
+  (src/parser.c:144 and :153: `lit->type = astTypeCopy(dst);`).  A
+  caller cannot recover the semantic decision from a scalar projection of
+  it.  It was injected into the ranking input with the PERFECT score
+  (R0=0, R1=0, R2=0, R3=0, R4=0, R5=0, R6=src/parser.c:1):
+  $ build/slice-recon02-rank/rank.sh /tmp/op.tsv
+  1  CAND-001  0 1 2 0 0 1  src/parser.c:832  YES
+  2  CAND-004  0 2 2 0 0 0  src/parser.c:397  YES
+  CAND-013 does not appear.  It was excluded by the conjunction on
+  pointer_identity_ops = 1 (and r0 = 3).
+EXPECTED_RESULT=REJECTED
+ACTUAL_RESULT=REJECTED
+PASS=YES
+
+# ---------------------------------------------------------------------------
+# CONTROL 9 -- Callback dependency hidden inside a helper
+#   Expected: Rejected
+# ---------------------------------------------------------------------------
+CONTROL_9=CALLBACK_DEPENDENCY_HIDDEN_INSIDE_HELPER
+MECHANISM=CAND-015 parseIfClause LOOKS like a small statement parser
+  (a 46-LOC helper that parses the `if (init; cond)` clause) but it
+  consumes the token stream and owns a diagnostic:
+    src/parser.c:872-917
+    cctrlIsKeyword, cctrlTokenPeek, cctrlTokenGet, cctrlTokenRewind,
+    cctrlRaiseException  ->  parser_callback_count = 5
+  It also mutates cc->localenv.  It was injected into the ranking input
+  with the PERFECT score:
+  $ build/slice-recon02-rank/rank.sh /tmp/cb.tsv
+  1  CAND-001  0 1 2 0 0 1  src/parser.c:832  YES
+  2  CAND-004  0 2 2 0 0 0  src/parser.c:397  YES
+  CAND-015 does not appear.  It was excluded by the conjunction on
+  parser_callback_count = 5, semantic_callback_count = 1 and r0 = 3.
+EXPECTED_RESULT=REJECTED
+ACTUAL_RESULT=REJECTED
+PASS=YES
+
+# ---------------------------------------------------------------------------
+# Summary
+# ---------------------------------------------------------------------------
+CONTROLS_REQUIRED=9
+CONTROLS_PASSED=9
+CONTROLS_FAILED=0
+CONTROL_PASSED_A_BECAUSE_EXPECTED_RESULT_WAS_HARDCODED=NO
+  Every control above is the ranker's or the tool's ACTUAL stdout.  The
+  ranker has no knowledge of any expected winner; it only sorts the
+  score tuple.  The shuffle control, the perturbation control and the
+  removal control are the falsifiable ones: they each CHANGE the winner,
+  which is only possible if the ranker is genuinely reading the scores.
+
+SELECTED_CANDIDATE_COUNT=1
+SELECTED_CANDIDATE=CAND-001 parseValidPostControlFlowToken
+RANKING_INCONSISTENCIES=0

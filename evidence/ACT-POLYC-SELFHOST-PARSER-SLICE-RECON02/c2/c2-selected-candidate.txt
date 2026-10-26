@@ -1,0 +1,120 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02
+ACT_PHASE=C2-RANK-SELECT
+EVIDENCE_KIND=selected-candidate
+
+SELECTED_CANDIDATE_COUNT=1
+
+SELECTED_CANDIDATE_ID=CAND-001
+SELECTED_CANDIDATE_NAME=parseValidPostControlFlowToken
+SELECTED_CANDIDATE_KIND=TOKEN_CLASSIFIER
+SELECTED_FILE=src/parser.c
+SELECTED_LINE_START=832
+SELECTED_LINE_END=864
+SELECTED_LOC=33
+SELECTED_SIGNATURE=int parseValidPostControlFlowToken(Lexeme *tok)
+
+# --- Ranking vector (frozen historical meanings, computed) ----------------
+SELECTED_R0=0
+SELECTED_R1=1
+SELECTED_R2=2
+SELECTED_R3=0
+SELECTED_R4=0
+SELECTED_R5=1
+SELECTED_R6=src/parser.c:832
+SELECTED_RANK_FULL=1
+SELECTED_RANK_ELIGIBLE_SET=1
+
+# --- Eligibility conjunction (every clause satisfied) ----------------------
+SELECTED_SEMANTIC_AUTHORITY=YES
+SELECTED_ALREADY_SELFHOSTED=NO
+SELECTED_OWNS_SETJMP=NO
+SELECTED_WRITES_CURRENT_RECOVERY=NO
+SELECTED_REQUIRES_NONLOCAL_RECOVERY=NO
+SELECTED_HOST_GRAPH_WRITES=0
+SELECTED_POINTER_IDENTITY_OPS=0
+SELECTED_PARSER_CALLBACK_COUNT=0
+SELECTED_SEMANTIC_CALLBACK_COUNT=0
+SELECTED_DETERMINISTIC_PROJECTION=YES
+SELECTED_PRODUCTION_DELEGATION_FEASIBLE=YES
+SELECTED_CANDIDATE_KIND_IS_NON_SEMANTIC=NO
+SELECTED_CANDIDATE_KIND_IS_DEAD_OR_NONRUNTIME=NO
+
+# --- Source anchors -------------------------------------------------------
+SELECTED_SOURCE_READS=tok->tk_type, tok->i64   (the ONLY two fields read)
+SELECTED_SOURCE_WRITES=(none)
+SELECTED_SOURCE_CC_ACCESS=(none)
+SELECTED_SOURCE_SETJMP_LONGJMP=(none)
+SELECTED_SOURCE_ALLOCATIONS=(none)
+SELECTED_SOURCE_CALLS=(none)
+
+# --- Live production call sites (5) ---------------------------------------
+SELECTED_CALL_SITE_1=src/parser.c:950  parseIfStatement   -- `if` body
+SELECTED_CALL_SITE_2=src/parser.c:961  parseIfStatement   -- `else` body
+SELECTED_CALL_SITE_3=src/parser.c:1254 parseForStatement  -- `for` body
+SELECTED_CALL_SITE_4=src/parser.c:1288 parseWhileStatement -- `while` body
+SELECTED_CALL_SITE_5=src/parser.c:1321 parseDoWhileStatement -- `do/while` body
+SELECTED_CALL_SITE_COUNT=5
+SELECTED_CALL_SITES_ARE_ORDINARY_CALLS=YES
+  Every call site has the shape `if (!parseValidPostControlFlowToken(peek))`
+  or `if (!parseValidPostControlFlowToken(epeek))` -- an ordinary call
+  whose integer result is used only as a boolean.  None of them is a
+  function-pointer argument, so no production callback contract changes.
+
+# --- Legacy C oracle ------------------------------------------------------
+SELECTED_LEGACY_C_ORACLE=src/parser.c::parseValidPostControlFlowToken
+SELECTED_LEGACY_C_ORACLE_IS_PURE=YES
+  The oracle has no side effects, so the successor's differential harness
+  may call the ACTUAL C function directly as the reference side.  A
+  handwritten substitute is NOT acceptable (ACT SECT_11).
+SELECTED_ORACLE_OBSERVABLE=the returned int (0 or 1)
+
+# --- Successor ACT identity (fixed ONCE here, repeated unchanged at CLOSE) --
+NEXT_ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE02
+NEXT_ACT_DESCRIPTIVE_TITLE=ACT-POLYC-SELFHOST-PARSER-CONTROL-FLOW-TOKEN01
+  (The descriptive title names the selected component.  The canonical ID
+   is the single source of truth and is fixed here.)
+
+# --- Why this candidate, mechanically -------------------------------------
+SELECTION_RATIONALE=
+  CAND-001 is the lexicographic minimum of the FULL state-boundary-eligible
+  ranking (R0=0, R1=1, R2=2, R3=0, R4=0, R5=1, R6=src/parser.c:832) and
+  the ONLY survivor of the full hard-eligibility conjunction.
+
+  R0=0  The function's entire observable input is two scalar fields
+        (tk_type, i64) plus a presence flag.  The `Lexeme *` parameter is
+        used purely as a container of immutable values; the decision never
+        depends on WHICH Lexeme it is.  A scalar projection is exact.
+  R1=1  It is consumed by FOUR distinct production parser functions
+        (if, else, for, while, do/while), so migrating it unlocks multiple
+        following surfaces rather than one.
+  R2=2  It sits in the statement-control-flow region, which is a coupled
+        multi-function region (if/for/while/do-while all consume it).
+  R3=0  The observable is a scalar 0/1 return code used only as a
+        boolean -- the strongest possible oracle shape.
+  R4=0  Zero direct helper dependencies, zero shared mutable compiler
+        state, zero external semantic regions touched.
+  R5=1  33 LOC and a simple fixture-matrix differential.
+  R6=src/parser.c:832  (earliest source location among the tied set).
+
+  It is also the only candidate whose production seam is an ORDINARY call
+  site rather than a function-pointer callback contract.  CAND-004
+  (CalcUnionSize, also R0=0) is passed as a u32 (*computeSize)(List *)
+  argument at src/parser.c:722, so delegating it would change a
+  production callback contract; CAND-008 and CAND-005..007 would require
+  unbounded text/AST projections across the boundary.
+
+# --- Explicitly NOT selected (and why) ------------------------------------
+NOT_SELECTED_CAND-002=ALREADY_SELFHOSTED (production authority is PolyC)
+NOT_SELECTED_CAND-004=production_delegation_feasible == NO (callback contract)
+NOT_SELECTED_CAND-008=production_delegation_feasible == NO (unbounded AoStr)
+NOT_SELECTED_CAND-005=production_delegation_feasible == NO (unbounded AST)
+NOT_SELECTED_CAND-006=production_delegation_feasible == NO (unbounded AST)
+NOT_SELECTED_CAND-007=production_delegation_feasible == NO (unbounded AST)
+NOT_SELECTED_CAND-003=R0=4 (host-graph write at src/parser.c:424)
+NOT_SELECTED_CAND-011=R0=4 (host-graph write at src/parser.c:254)
+NOT_SELECTED_CAND-014=R0=5 (recovery ownership)
+
+NO_BRIDGEABLE_PARSER_SLICE_HALT=NOT_TRIGGERED
+SELECTION_IS_A_LEGACY_C_SEMANTIC_AUTHORITY=YES
+  parseValidPostControlFlowToken IS the production C function that makes
+  the decision.  It is not a test helper and not a convenience function.

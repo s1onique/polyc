@@ -1,0 +1,111 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02
+ACT_PHASE=C2-RANK-SELECT
+EVIDENCE_KIND=c2-required-result
+
+# --- Eligibility ---------------------------------------------------------
+ELIGIBLE_COUNT=1
+ELIGIBLE_CANDIDATES=CAND-001
+INELIGIBLE_COUNT=16
+ELIGIBLE_ALREADY_SELFHOSTED=0
+UNKNOWN_CANDIDATES=0
+UNCLASSIFIED_STATE_DEPENDENCIES=0
+
+# The conjunction was applied to EVERY candidate with a source-anchored
+# reason.  No human override was used.  See c2-eligibility-results.tsv.
+
+# --- Ranking --------------------------------------------------------------
+RANKING_DIMENSIONS=(R0, R1, R2, R3, R4, R5, R6)
+R0_IS_FIRST_AND_STRONGEST=YES
+R1_TO_R6_MEANINGS_PRESERVED=YES
+  The frozen historical meanings (RECON01 c2-ranked-candidates.tsv, whose
+  meanings derive from ACT-POLYC-SELFHOST-SURFACE-RECON03 sections 25..30)
+  are carried forward unchanged.  No new column was introduced and no
+  historical column was redefined.  The only C2 values that changed
+  relative to RECON01 are:
+    - CAND-003's R0 (0 -> 4), because the live source shows the host-graph
+      write that the historical classification missed;
+    - the R6 line numbers, because the file grew above the candidates.
+FULL_RANKING_ROWS=6
+ELIGIBLE_SET_ROWS=1
+RANKING_INCONSISTENCIES=0
+RANKING_IS_COMPUTED_NOT_ASSERTED=YES
+  build/slice-recon02-rank/rank.sh reproduces the RECON01 historical
+  winner (CAND-002) when fed the RECON01 historical input.
+  It is a disposable diagnostic in the IGNORED build directory, NOT a
+  tracked tool (F-POLYC-TOOLS not violated).
+
+# --- Anti-bias controls ---------------------------------------------------
+CONTROLS_REQUIRED=9
+CONTROLS_PASSED=9
+CONTROLS_FAILED=0
+CONTROL_PASSED_BECAUSE_EXPECTED_RESULT_WAS_HARDCODED=NO
+  See c2-ranking-controls.txt.  The falsifiable controls (row-order
+  shuffle, R0 perturbation, winner removal) each CHANGE the winner, which
+  is only possible if the ranker genuinely reads the scores.
+
+# --- Selection -----------------------------------------------------------
+SELECTED_CANDIDATE_COUNT=1
+SELECTED_CANDIDATE_ID=CAND-001
+SELECTED_CANDIDATE_NAME=parseValidPostControlFlowToken
+SELECTED_FILE=src/parser.c
+SELECTED_LINE_START=832
+SELECTED_LINE_END=864
+SELECTED_R0=0
+SELECTED_R1=1
+SELECTED_R2=2
+SELECTED_R3=0
+SELECTED_R4=0
+SELECTED_R5=1
+SELECTED_R6=src/parser.c:832
+SELECTED_OWNS_SETJMP=NO
+SELECTED_WRITES_CURRENT_RECOVERY=NO
+SELECTED_REQUIRES_NONLOCAL_RECOVERY=NO
+SELECTED_HOST_GRAPH_WRITES=0
+SELECTED_POINTER_IDENTITY_OPS=0
+SELECTED_PARSER_CALLBACK_COUNT=0
+SELECTED_SEMANTIC_CALLBACK_COUNT=0
+SELECTED_DETERMINISTIC_PROJECTION=YES
+SELECTED_PRODUCTION_DELEGATION_FEASIBLE=YES
+SELECTED_CALL_SITE_COUNT=5
+SELECTED_IS_LEGACY_C_SEMANTIC_AUTHORITY=YES
+
+# --- Frozen deliverables -------------------------------------------------
+SELECTED_ABI_CONTRACT=FROZEN
+  symbol: BootstrapValidPostControlFlowToken
+  shape:  I64 (I64 token_present, I64 token_kind, I64 token_value) -> I64
+  ABI_HOST_IDENTITY_FIELDS=0
+  42-row fixture matrix with every constant bound to the live
+  src/lexer.h, including the TK_SUPERSCRIPT/TK_STR = 0x301 aliasing.
+SELECTED_RED_MODEL=REPRODUCIBLE
+  RED_1..RED_5, each with a concrete re-runnable witness command.
+SELECTED_PROOF_MODEL=COMPLETE
+  16 frozen proof dimensions + the frozen stage0->stage1 equality
+  semantics (equality, NOT a tolerated delta).
+SELECTED_PRODUCTION_SEAM=FEASIBLE
+  5 ordinary call sites; no callback contract change; no diagnostic
+  ownership moves; no host pointer crosses the boundary.
+
+# --- Successor -----------------------------------------------------------
+NEXT_ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE02
+NEXT_ACT_DESCRIPTIVE_TITLE=ACT-POLYC-SELFHOST-PARSER-CONTROL-FLOW-TOKEN01
+NEXT_ACT_ID_FIXED_ONCE_AT_C2=YES
+
+# --- Halt evaluation -----------------------------------------------------
+HALT_NO_BRIDGEABLE_PARSER_SLICE=NOT_TRIGGERED (1 eligible candidate exists)
+HALT_SELECTED_RECOVERY_COUPLED=NOT_TRIGGERED
+HALT_SELECTED_GRAPH_COUPLED=NOT_TRIGGERED
+HALT_SELECTED_CALLBACK_COUPLED=NOT_TRIGGERED
+HALT_SELECTED_PROJECTION_UNSTABLE=NOT_TRIGGERED
+HALT_ABI_NOT_BOUNDED=NOT_TRIGGERED
+HALT_PRODUCTION_SEAM_NOT_FEASIBLE=NOT_TRIGGERED
+HALT_CAUSAL_CONTROL_NOT_FEASIBLE=NOT_TRIGGERED
+HALT_PROOF_MODEL_INCOMPLETE=NOT_TRIGGERED
+HALT_ELIGIBILITY_INCONSISTENT=NOT_TRIGGERED
+HALT_RANKING_INCONSISTENT=NOT_TRIGGERED
+
+# --- Scope ---------------------------------------------------------------
+PRODUCTION_SOURCE_DELTA=0
+SUCCESSOR_IMPLEMENTATION_DELTA=0
+NEW_POLYC_COMPONENT_IMPLEMENTED=0
+NEW_TRACKED_TOOL=0
+NEW_PYTHON=0

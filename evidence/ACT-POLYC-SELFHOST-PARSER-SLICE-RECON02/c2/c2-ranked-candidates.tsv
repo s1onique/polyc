@@ -1,0 +1,95 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02
+# ACT_PHASE=C2-RANK-SELECT
+# EVIDENCE_KIND=ranked-candidates
+# Lexicographic ranking on (R0, R1, R2, R3, R4, R5, R6); lower wins.
+#
+# The frozen historical column meanings are preserved (RECON01 c2-ranked-
+# candidates.tsv, whose meanings derive from ACT-POLYC-SELFHOST-SURFACE-
+# RECON03 sections 25..30):
+#   R0 STATE_BOUNDARY_COST        0 scalars/enums/bytes; 1 immutable copied
+#                                 token/value record; 2 bounded copied semantic
+#                                 record; 3 opaque host handle; 4 host-owned
+#                                 mutable graph; 5 recovery / nonlocal control
+#                                 transfer / callback authority
+#   R1 SELFHOST_STAGE_LEVERAGE    0 blocks the next self-host stage; 1 unlocks
+#                                 multiple following surfaces; 2 unlocks one
+#                                 following surface; 3 useful but non-blocking
+#   R2 SEMANTIC_CENTRALITY        0 single function / tight component;
+#                                 1 small cohesive region; 2 multi-function
+#                                 coupled region; 3 cross-file region
+#   R3 PROOF_OBSERVABILITY        0 existing production differential;
+#                                 1 existing direct oracle; 2 easy bounded oracle;
+#                                 3 metamorphic only; 4 weak or no oracle
+#   R4 DEPENDENCY_COUPLING_COST   mechanical count of direct helper deps +
+#                                 shared mutable compiler state + external
+#                                 semantic regions touched; lower first
+#   R5 MIGRATION_SIZE             1 small fixture matrix + simple differential;
+#                                 2 bounded component + production seam;
+#                                 3 multi-stage fixedpoint + production seam;
+#                                 4 parser/tree comparison;
+#                                 5 large cross-region semantic proof
+#   R6 SOURCE_ORDER               file lexical asc, then line_start asc
+#
+# R0 remains the FIRST and strongest dimension.  No new column, no new
+# weight, and no silent redefinition of any historical column was
+# introduced: every R1..R6 value below is the FROZEN historical value for
+# that candidate, carried forward because the property that produced it
+# has not changed in the current source.
+#
+# The ranking is COMPUTED, not asserted.  The ranker
+# (build/slice-recon02-rank/rank.sh -- a disposable diagnostic in the
+# IGNORED build directory, NOT a tracked tool, per F-POLYC-TOOLS) reproduces
+# the RECON01 historical winner CAND-002 when fed the RECON01 historical
+# input.  That is the ranker self-check.
+#
+# TWO RANKING SETS ARE PUBLISHED:
+#   (a) FULL RANKING  -- every candidate that passes the STATE-BOUNDARY
+#       filter (R0<=2, pure, no recovery, no callbacks).  This is the
+#       ranking the historical model produced (RECON01 ranked 8).
+#   (b) ELIGIBLE SET -- the survivors of the FULL hard-eligibility
+#       conjunction (ACT SECT_8.1), which additionally requires
+#       production_delegation_feasible == YES.
+#
+# Schema:
+#   01 rank_full
+#   02 candidate_id
+#   03 R0
+#   04 R1
+#   05 R2
+#   06 R3
+#   07 R4
+#   08 R5
+#   09 R6
+#   10 current_source_location
+#   11 passes_state_boundary_filter
+#   12 passes_full_eligibility_conjunction
+#   13 selection_status
+#   14 notes
+rank_full	candidate_id	R0	R1	R2	R3	R4	R5	R6	current_source_location	passes_state_boundary_filter	passes_full_eligibility_conjunction	selection_status	notes
+1	CAND-001	0	1	2	0	0	1	src/parser.c:832	src/parser.c:832	YES	YES	SELECTED	parseValidPostControlFlowToken; lexicographic winner in BOTH sets; R0=0; 5 live production call sites; ordinary call sites (no callback contract)
+2	CAND-004	0	2	2	0	0	0	src/parser.c:397	src/parser.c:397	YES	NO	unselected	CalcUnionSize; R0=0 but EXCLUDED by the conjunction on production_delegation_feasible (its only call site is a u32(*)(List*) function-pointer argument at src/parser.c:722)
+3	CAND-008	1	2	2	0	0	1	src/parser.c:1980	src/parser.c:1980	YES	NO	unselected	asmTextHasReturn; R0=1; EXCLUDED on production_delegation_feasible (unbounded AoStr text at src/parser.c:2193)
+4	CAND-006	2	1	2	1	0	0	src/parser.c:1907	src/parser.c:1907	YES	NO	unselected	astStmtHasBreak; R0=2; EXCLUDED on production_delegation_feasible (unbounded AST projection)
+5	CAND-007	2	1	2	1	0	1	src/parser.c:1932	src/parser.c:1932	YES	NO	unselected	astStmtFallsThrough; R0=2; EXCLUDED on production_delegation_feasible (unbounded AST projection at src/parser.c:2355)
+6	CAND-005	2	2	2	1	0	0	src/parser.c:1899	src/parser.c:1899	YES	NO	unselected	astIsConstTrueCond; R0=2; EXCLUDED on production_delegation_feasible (reachable only via astStmtFallsThrough)
+
+# --- (b) ELIGIBLE SET (survives the FULL hard-eligibility conjunction) ---
+SELECTED_CANDIDATE_COUNT=1
+SELECTED=candidate_id=CAND-001 parseValidPostControlFlowToken
+SELECTED_R0=0
+SELECTED_R1=1
+SELECTED_R2=2
+SELECTED_R3=0
+SELECTED_R4=0
+SELECTED_R5=1
+SELECTED_R6=src/parser.c:832
+SELECTED_SOURCE=src/parser.c:832..864
+SELECTED_PROPOSED_ABI=SCALAR_PRESENCE_KIND_VALUE_TO_VALUE
+
+FULL_RANKING_ROWS=6
+ELIGIBLE_SET_ROWS=1
+CANDIDATES_EXCLUDED_BY_STATE_BOUNDARY_FILTER=11
+  CAND-002 (already_selfhosted), CAND-003 (R0=4), CAND-003S (no seam),
+  CAND-009/CAND-010/CAND-016 (NON_SEMANTIC), CAND-011 (R0=4),
+  CAND-012/CAND-015 (R0=3, callbacks), CAND-013 (R0=3, pointer identity),
+  CAND-014 (R0=5, recovery)
