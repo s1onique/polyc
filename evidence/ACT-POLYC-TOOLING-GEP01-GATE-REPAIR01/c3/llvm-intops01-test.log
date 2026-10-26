@@ -1,0 +1,35 @@
+
+=== toolchain ===
+PASS  toolchain: hcc LLVM-enabled; llvm-as and opt available
+
+=== authorized-set echo ===
+AUTHORIZED_IMPLEMENT=0
+AUTHORIZED_DEFER=12
+AUTHORIZED_DEFER_BYTEMEMORY01=3
+AUTHORIZED_ALREADY_SUPPORTED=11
+PASS  authorized-set.txt present (frozen at recon close)
+
+=== positive matrix (B0-shape probe fixtures) ===
+PASS  B0-shape single-token recognizer  llvm-as OK, opt verify OK
+PASS  B0-shape digit accumulation  llvm-as OK, opt verify OK
+
+=== structural purity (no alloca / GEP / pointer casts / float in positive .ll) ===
+PASS  b0_digit_accum: structural purity
+PASS  b0_lexer_shape_probe: structural purity
+
+=== counter attribution ===
+PASS  cap verifier: dispatch <-> capability <-> harness bound
+
+=== determinism ===
+PASS  probe .ll byte-identical across two runs
+
+=== historical-evidence conservation ===
+PASS  evidence/llvm-memory01/spike present (predecessor SPIKE evidence intact)
+PASS  evidence/llvm-memory01/impl present (predecessor MEMORY01 evidence intact)
+PASS  evidence/llvm-float01/impl present (predecessor FLOAT01 evidence intact)
+
+=== summary ===
+INTOPS01 PASS=4 FAIL=0
+STATUS=PASS
+INTOPS01_PASS=4
+INTOPS01_FAIL=0

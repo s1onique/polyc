@@ -1,0 +1,24 @@
+=== NC-B: the cap-table verifier queries a NON-LLVM compiler ===
+
+--- (a) via the positional argument ---
+=== llvm-cap-table-verifier (CORE03-CORRECTION01) ===
+PASS  parsed 56 IrOp enum entries (IR_NOP=0 .. IR_ASM=55)
+FAIL  hcc --print-cap-table exited non-zero (rc=-11) for /private/tmp/hcc.nonllvm.bak: <no output>
+FAIL  hcc --print-cap-table was killed by a signal or crashed (rc=-11); a non-LLVM build does not implement --print-cap-table (the dispatch is inside #ifdef HCC_ENABLE_LLVM in src/main.c)
+FAIL  could not load capability table from hcc --print-cap-table
+rc=1
+
+--- (b) via the POLYC_HCC environment variable ---
+=== llvm-cap-table-verifier (CORE03-CORRECTION01) ===
+PASS  parsed 56 IrOp enum entries (IR_NOP=0 .. IR_ASM=55)
+FAIL  hcc --print-cap-table exited non-zero (rc=-11) for /private/tmp/hcc.nonllvm.bak: <no output>
+FAIL  hcc --print-cap-table was killed by a signal or crashed (rc=-11); a non-LLVM build does not implement --print-cap-table (the dispatch is inside #ifdef HCC_ENABLE_LLVM in src/main.c)
+FAIL  could not load capability table from hcc --print-cap-table
+rc=1
+
+--- (c) default (no argument, no env) -> REPO_ROOT/hcc, the LLVM build ---
+
+======================================
+PASS: dispatch <-> capability <-> harness bound
+======================================
+rc=

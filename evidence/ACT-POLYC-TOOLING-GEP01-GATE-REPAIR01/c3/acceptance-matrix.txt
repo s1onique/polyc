@@ -1,0 +1,96 @@
+ACT-POLYC-TOOLING-GEP01-GATE-REPAIR01 -- C3 ACCEPTANCE MATRIX
+===============================================================
+
+AC01  make llvm-gep01-test HCC_ENABLE_LLVM=ON -> GEP01_PASS=30, GEP01_FAIL=0
+      MEASURED: PASS. Inside the unmodified gate-push the gep01 check
+      reports "CHECK=gep01 STATUS=PASS" with "GEP01_PASS=30 / GEP01_FAIL=0"
+      (gate-push-full.log). Direct harness run: gep01-green-run.txt.
+      EVIDENCE: gep01-green-run.txt, gate-push-full.log
+
+AC02  the harness's 30 rows are the frozen oracle's 30 rows, unmodified
+      MEASURED: PASS. ROW SETS IDENTICAL (as sets) = YES, 30/30, 0 FAIL.
+      Compared against the legacy Bash harness's own frozen PASS rows
+      (evidence/ACT-POLYC-TOOLING-MIGRATE-GEP01/c1/legacy.stdout.txt).
+      The only difference is the ORDER of two interleaved groups, and
+      that ordering is PRE-EXISTING (identical in the C1 RED run).
+      No assertion was removed, renamed, or weakened.
+      EVIDENCE: ac02-oracle-preservation.txt
+
+AC03  the verifier still defaults to REPO_ROOT/"hcc" with no argument
+      MEASURED: PASS. With no positional argument and no POLYC_HCC set,
+      the verifier resolves REPO_ROOT/"hcc" and succeeds against the
+      LLVM build. The two legacy shell callers (which pass no argument)
+      are unaffected and both PASS:
+        llvm-intops01-test.sh      INTOPS01 PASS=4  FAIL=0  (rc=0)
+        llvm-byte-memory01-test.sh  BYTE_MEMORY01 PASS=37 FAIL=0 (rc=0)
+      EVIDENCE: nc-b-verifier-wrong-compiler.txt (c) section,
+                llvm-intops01-test.log, llvm-byte-memory01-test.log
+
+AC04  NC-A -- reverting only io_defs.HH's FileWrite declaration makes
+      the SHAPE_DEPENDENT row fail again
+      MEASURED: PASS. With the declaration reverted to
+      "Bool append=FALSE" the harness reports GEP01_PASS=26 / GEP01_FAIL=4
+      with the SAME failure messages as the C1 RED, including
+      "readat.HC: SHAPE_DEPENDENT counter = ? (expected >= 1): shape_dependent
+      marker not found in stderr". Restoring the declaration restores
+      30/0. The repair is therefore provably sensitive to Defect A.
+      EVIDENCE: nc-a-filewrite-reverted.txt
+
+AC05  NC-B -- pointing the verifier at the non-LLVM SIGSEGV compiler
+      makes the capability rows fail again
+      MEASURED: PASS. Via BOTH the positional argument and the POLYC_HCC
+      environment variable, the verifier reports rc=1 with
+      "hcc --print-cap-table exited non-zero (rc=-11) for <path>: <no output>"
+      and "hcc --print-cap-table was killed by a signal or crashed (rc=-11);
+      a non-LLVM build does not implement --print-cap-table". The default
+      path still succeeds.
+      EVIDENCE: nc-b-verifier-wrong-compiler.txt
+
+AC06  the harness surfaces the verifier's captured stderr
+      MEASURED: PASS. The capability rows now read
+      "cap-table verifier failed (rc=0, compiler=./hcc); verifier stderr: "
+      instead of the former "could not read cap verifier output". The
+      queried compiler and the exit status are named.
+      EVIDENCE: ac06-stderr-surfaced.txt
+
+AC07  make unit-test / jit-unit-test / lsp-test remain PASS
+      MEASURED: PASS.
+        make unit-test        rc=0
+        make jit-unit-test    rc=0
+        make lsp-test         rc=0   ("lsp: 43/43 passed")
+      EVIDENCE: unit-test.log, jit-unit-test.log, lsp-test.log
+
+AC08  scripts/quality/gate-fast.sh -> STATUS=PASS
+      MEASURED: PASS (rc=0). VERDICT=PASS.
+      EVIDENCE: gate-fast.log
+
+AC09  the UNMODIFIED scripts/quality/gate-push.sh HEAD -> VERDICT=PASS
+      MEASURED: PASS (rc=0).
+        POLYC_GATE=push
+        CHECK=build      STATUS=PASS
+        CHECK=install    STATUS=PASS
+        CHECK=gep01      STATUS=PASS   <- was FAIL before this ACT
+        CHECK=aot        STATUS=PASS
+        CHECK=jit        STATUS=PASS
+        CHECK=lsp        STATUS=PASS
+        CHECK=diff-check STATUS=PASS
+        VERDICT=PASS
+      The gate script was NOT modified:
+        git diff --name-only c734c9c..HEAD -- scripts/quality/gate-push.sh
+        -> (empty)
+      EVIDENCE: gate-push-full.log
+
+AC10  factory-v2-test.sh and factory-append-only-test.sh remain PASS
+      MEASURED: PASS.
+        factory-v2-test.sh           PASS=53 FAIL=0 STATUS=PASS (rc=0)
+        factory-append-only-test.sh  PASS=11 FAIL=0 STATUS=PASS (rc=0)
+      EVIDENCE: factory-v2-test.log, factory-append-only-test.log
+
+AC11  factory-v2-range-check.sh <ACT-ID> HEAD -> STATUS=PASS
+      MEASURED: PENDING at C3. The range check requires a CLOSE commit;
+      the C3 commit is not the CLOSE. It is re-measured after the CLOSE
+      commit and recorded in c4/.
+      (At C3 the check correctly reports:
+        STATUS=FAIL
+        REASON=CLOSE 4ee3398... does not carry exactly one ACT-Phase: CLOSE
+      which is the expected behaviour before a CLOSE exists.)

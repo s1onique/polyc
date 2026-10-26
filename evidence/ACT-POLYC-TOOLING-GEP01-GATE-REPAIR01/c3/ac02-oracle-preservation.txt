@@ -1,0 +1,57 @@
+=== AC02: harness row set vs the FROZEN legacy 30-row oracle ===
+
+baseline : evidence/ACT-POLYC-TOOLING-MIGRATE-GEP01/c1/legacy.stdout.txt
+           (the legacy Bash harness's own PASS rows, frozen at the
+            ACT-POLYC-TOOLING-MIGRATE-GEP01 C1 close)
+subject  : c3/gep01-green-run.txt
+
+baseline PASS rows = 30
+subject  PASS rows = 30
+
+ROW SETS IDENTICAL (as sets)      = YES
+ROW SETS IDENTICAL (order-sensitive) = NO
+
+All 30 assertions are present, byte-identical, and none was
+removed, renamed, or weakened.
+
+ORDERING NOTE (pre-existing, NOT introduced by this ACT):
+The only difference from the legacy baseline is the ORDER of two
+interleaved groups. The legacy Bash harness emitted all four
+'zero ptrtoint/inttoptr' rows, then all four
+'zero getelementptr inbounds' rows. The PolyC harness emits
+them per fixture (read0 ptrtoint, read0 inbounds, read2 ...).
+This ordering was ALREADY the case before this ACT: the C1 RED
+run (c1/gep01-red-run.txt) has exactly the same order. The
+assertion SET is unchanged.
+
+--- the 30 rows (subject) ---
+PASS  toolchain: hcc + llvm-as + opt available
+PASS  read0.HC: load i8, ptr
+PASS  read2.HC: getelementptr i8 + load i8
+PASS  readat.HC: getelementptr i8 with runtime index + load i8
+PASS  readat.HC: SHAPE_DEPENDENT counter = N (>= 1)
+PASS  twodigits.HC: N load i8 + N getelementptr i8 (>=2 distinct reads, >=1 GEP for non-zero index)
+PASS  ReadAt emitted getelementptr i8, ptr %base, i64 %index
+PASS  GEP result used as load address (load i8, ptr %gep_i8)
+PASS  read0.ll: llvm-as accepted
+PASS  read2.ll: llvm-as accepted
+PASS  read-at.ll: llvm-as accepted
+PASS  b0-multiread.ll: llvm-as accepted
+PASS  read0.bc: opt --passes=verify accepted
+PASS  read2.bc: opt --passes=verify accepted
+PASS  read-at.bc: opt --passes=verify accepted
+PASS  b0-multiread.bc: opt --passes=verify accepted
+PASS  read0.ll: zero ptrtoint/inttoptr
+PASS  read0.ll: zero getelementptr inbounds
+PASS  read2.ll: zero ptrtoint/inttoptr
+PASS  read2.ll: zero getelementptr inbounds
+PASS  read-at.ll: zero ptrtoint/inttoptr
+PASS  read-at.ll: zero getelementptr inbounds
+PASS  b0-multiread.ll: zero ptrtoint/inttoptr
+PASS  b0-multiread.ll: zero getelementptr inbounds
+PASS  i64idx.HC: rejected with LLVM_BACKEND_UNSUPPORTED_POINTER (scale=8)
+PASS  IR_GEP = REJECTED (sibling opcode still rejected)
+PASS  IR_LEA = REJECTED (sibling opcode still rejected)
+PASS  IR_IADD = SUPPORTED (preserved, GEP01 is per-shape subset)
+PASS  readat: byte-identical across two runs
+PASS  twodigits: byte-identical across two runs
