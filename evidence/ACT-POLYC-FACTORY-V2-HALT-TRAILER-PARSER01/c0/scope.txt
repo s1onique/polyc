@@ -1,0 +1,38 @@
+=== ACT-POLYC-FACTORY-V2-HALT-TRAILER-PARSER01 C0 SCOPE ===
+
+IN_SCOPE
+  scripts/quality/factory-v2-commit-msg-check.sh
+  scripts/quality/factory-v2-range-check.sh
+  scripts/quality/factory-v2-test.sh
+  scripts/quality/factory-halt-classification-check.sh
+  docs/factory/GIT-METADATA.md
+  bounded shared trailer-compatibility helper (only if necessary)
+  Makefile test registration (only if necessary)
+  new ACT / evidence / HANDOFF / manifest artifacts
+  forward-only F14 HANDOFF restoration (ACT section 12)
+
+OUT_OF_SCOPE
+  src/**
+  tools/bootstrap/**
+  Makefile compiler/bootstrap targets
+  src/CMakeLists.txt
+  .github/workflows/release.yml
+  scripts/quality/gate-push.sh
+  .githooks/pre-push
+  LEXER / PARSER production semantics
+  LLVM GEP01 implementation
+  any history rewrite / amend / reset+recommit / rebase / replace / force-push
+  any production compiler mutation
+  any Python
+
+FROZEN_BASELINE_PREDICATES (C0; first two demonstrated at C1)
+  VALID_HALT_RANGE_ACCEPTED=NO
+  INVALID_ACT_CAN_BE_NON_ACT=YES
+  HISTORICAL_POST_CLOSE_VIOLATION=PRESERVED
+  PRODUCTION_COMPILER_DELTA=0
+
+MEASURED_AT_C0 (evidence/historical-failures.txt)
+  VALID_HALT_RANGE_ACCEPTED=NO            (confirmed by direct measurement)
+  INVALID_ACT_CAN_BE_NON_ACT=YES         (confirmed by direct measurement)
+  HISTORICAL_POST_CLOSE_VIOLATION=PRESERVED (confirmed by direct measurement)
+  PRODUCTION_COMPILER_DELTA=0             (confirmed: no src/ change at entry)

@@ -1,0 +1,95 @@
+=== ACT-POLYC-FACTORY-V2-HALT-TRAILER-PARSER01 C0 HISTORICAL FAILURES ===
+
+Environment: git version 2.54.0 (macOS/darwin, aarch64)
+
+--- MECHANISM: git trailer parser drops a WHOLE block on one underscore key ---
+
+$ printf 's\n\nb\n\nACT: A\nACT-Phase: CLOSE\nACT-Verdict: HALT_X\n' \
+    | git interpret-trailers --parse
+ACT: A
+ACT-Phase: CLOSE
+ACT-Verdict: HALT_X
+
+$ printf 's\n\nb\n\nACT: A\nACT-Phase: CLOSE\nHALT_CLASS: G\n' \
+    | git interpret-trailers --parse
+(empty output)
+
+$ printf 's\n\nb\n\nACT-Phase: CLOSE\nHALT_CLASS: G\n' \
+    | git interpret-trailers --parse
+(empty output)
+
+MECHANISM_CONFIRMED=YES
+IMPACT=every conforming HALT_* CLOSE loses ACT:, ACT-Phase: AND ACT-Verdict: together
+
+--- RED-1 CONTROL: valid HALT footer vs. factory-v2-commit-msg-check.sh ---
+
+$ cat /tmp/tlr/halt.txt
+subject line
+
+body text
+
+ACT: ACT-POLYC-TEST01
+ACT-Phase: CLOSE
+ACT-Verdict: HALT_MANDATORY_AC_NOT_GREEN
+HALT_CLASS: GOVERNANCE
+BLOCKS_NEXT: NO
+
+$ sh scripts/quality/factory-v2-commit-msg-check.sh /tmp/tlr/halt.txt
+MODE=NON_ACT
+STATUS=PASS
+rc=0
+
+VALID_HALT_ACCEPTED_BY_COMMIT_MSG_CHECK=NO
+
+--- RED-2 CONTROL: fail-open ---
+
+$ sh scripts/quality/factory-v2-commit-msg-check.sh /tmp/tlr/halt2.txt
+MODE=NON_ACT
+STATUS=PASS
+rc=0
+
+INVALID_ACT_CAN_BE_NON_ACT=YES
+FAIL_OPEN_RULE=scripts/quality/factory-v2-commit-msg-check.sh lines 72-77
+
+--- RED-1 CONTROL: valid HALT CLOSE vs. factory-v2-range-check.sh (real repo) ---
+
+$ sh scripts/quality/factory-v2-range-check.sh \
+      ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01 290d9170555d0b071db5ac4ab163d1176c71aa00
+STATUS=FAIL
+REASON=CLOSE 290d9170555d0b071db5ac4ab163d1176c71aa00 does not carry exactly one ACT: ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01 (count=0)
+rc=1
+
+VALID_HALT_RANGE_ACCEPTED=NO
+
+NOTE: the CLOSE commit at 290d917 IS a conforming Factory HALT_* CLOSE.
+Its full trailer set is:
+  ACT: ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01
+  ACT-Phase: CLOSE
+  ACT-Verdict: HALT_GATE_PUSH_NOT_GREEN
+  HALT_CLASS: GOVERNANCE
+  BLOCKS_NEXT: NO
+The range check cannot SEE it because %(trailers) drops the whole block.
+
+--- HISTORICAL_POST_CLOSE_VIOLATION (must stay PRESERVED) ---
+
+The predecessor BOOTSTRAP-BUILD01 committed a same-ACT commit AFTER its
+C4 CLOSE (see a1b1f2095a6ca0d34f204af842c3ae06bdaf6324, subject
+"ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01 C3: EXTERNAL
+TERMINALITY EVIDENCE", which carries ACT: ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01
+and ACT-Phase: EVIDENCE, while 290d9170555d0b071db5ac4ab163d1176c71aa00
+is that ACT's CLOSE).
+
+That is a docs/factory/GIT-METADATA.md section 3 rule 7 violation
+("No commit after CLOSE may carry ACT: <id>").
+
+HISTORICAL_POST_CLOSE_VIOLATION=PRESERVED
+HISTORICAL_HALT_GATE_PUSH_NOT_GREEN=PRESERVED (a HALT, never retroactively promoted)
+
+--- PREDECESSOR C3 evidence file (untracked) content ---
+
+STATUS=FAIL
+REASON=CLOSE 290d9170555d0b071db5ac4ab163d1176c71aa00 does not carry exactly one ACT: ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01 (count=0)
+
+This FAIL is the DEFECT itself, not a new failure. It must become a
+PASS after C2 for the RANGE, while the historical post-CLOSE
+continuation must still be REJECTED.
