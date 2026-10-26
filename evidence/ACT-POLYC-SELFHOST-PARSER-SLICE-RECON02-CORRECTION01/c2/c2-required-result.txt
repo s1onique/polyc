@@ -1,0 +1,116 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01
+ACT_PHASE=C2-CORRECTED-CONTRACT
+EVIDENCE_KIND=c2-required-result
+
+# --- The corrected successor-facing contract -----------------------------
+CORRECTED_CONTRACT_FILE=evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01/c2/c2-corrected-contract.tsv
+
+# The three counters are DERIVED from the contract TSV's own rows, never
+# entered independently.  A contract row is one whose `changed` column is
+# exactly YES or NO; the counter lines at the foot of the TSV carry no
+# such column and are therefore not counted.
+COMMAND_2=awk -F'\t' '$4=="YES" {ch++} $4=="NO" {un++} END {print "items="ch+un+0" changed="ch+0" unchanged="un+0" sum="ch+un+0}' \
+            evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01/c2/c2-corrected-contract.tsv
+COMMAND_2_RESULT=
+items=42 changed=11 unchanged=31 sum=42
+CONTRACT_ITEM_COUNT=42
+CONTRACT_ITEM_CHANGED=11
+CONTRACT_ITEM_UNCHANGED=31
+CONTRACT_ITEM_COUNT_EQUALS_CHANGED_PLUS_UNCHANGED=YES
+CORRECTED_CONTRACT_STATUS=FROZEN
+
+# The predecessor's contract files are SUPERSEDED for successor purposes
+# and are NOT modified:
+#   c2-selected-abi-contract.md      -> superseded, UNCHANGED on disk
+#   c2-selected-fixture-model.tsv    -> superseded, UNCHANGED on disk
+#   c2-ranked-candidates.tsv          -> superseded, UNCHANGED on disk
+#   c2-ranking-controls.txt           -> superseded, UNCHANGED on disk
+PREDECESSOR_CONTRACT_FILES_MODIFIED=0
+
+# --- The frozen fixture matrix ------------------------------------------
+CORRECTED_FIXTURE_FILE=evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01/c1/c1-corrected-fixture-model.tsv
+CORRECTED_FIXTURE_COUNT=42
+CORRECTED_EXPECTED_ACCEPT_COUNT=23
+CORRECTED_EXPECTED_REJECT_COUNT=19
+CORRECTED_FIXTURE_ORACLE_DISAGREEMENTS=0
+CORRECTED_FIXTURE_ORACLE_EXIT_STATUS=0
+CORRECTED_FIXTURE_ORACLE_REFERENCE=the REAL production
+  parseValidPostControlFlowToken, linked from
+  build/CMakeFiles/hcc.dir/parser.c.o (compiled from src/parser.c)
+
+# --- The ranking controls ------------------------------------------------
+CONTROLS_REQUIRED=9
+CONTROLS_PASSED=9
+CONTROLS_FAILED=0
+CONTROL_PASSED_BECAUSE_EXPECTED_RESULT_WAS_HARDCODED=NO
+  CONTROL 5 and CONTROL 6 are re-stated over the FULL hard-eligibility
+  predicate, and both are re-run in a FALSIFIABLE form (a second ELIGIBLE
+  candidate is injected) so that the claimed effect is actually
+  observable.  The predecessor's forms were not falsifiable against the
+  set they claimed to test.
+CONTROLS_OPERATE_ON=FULL_ELIGIBILITY_PREDICATE
+CONTROL_5_EFFECT_DEMONSTRATED=YES
+CONTROL_6_EFFECT_DEMONSTRATED=YES
+CONTROL_6_CANDIDATE_CLAIMED_BY_PREDECESSOR_IS_ELIGIBLE=NO
+CONTROL_ELIGIBILITY_PROOF_SOURCE=build/slice-recon02-rank/elig.sh
+CONTROL_5_ELIGIBILITY_PROVEN_END_TO_END=YES
+CONTROL_6_ELIGIBILITY_PROVEN_END_TO_END=YES
+  The synthetic control candidate CAND-101 is put through the REAL
+  eligibility checker as a COMPLETE candidate (a row in all four of the
+  predecessor's committed C1 artifacts) and is ADMITTED by that checker
+  (13/13 clauses).  The rank input is then JOINED from the checker's
+  output, so the `eligible` column is derived rather than hand-written.
+  The checker's NEGATIVE behaviour is demonstrated too: flipping one
+  inventory field flips clause 2 and the candidate is REJECTED.
+  See c1-corrected-ranking-controls.txt.
+
+# --- The selection -------------------------------------------------------
+SELECTED_CANDIDATE_COUNT=1
+SELECTED_CANDIDATE_ID=CAND-001
+SELECTED_CANDIDATE_NAME=parseValidPostControlFlowToken
+SELECTED_FILE=src/parser.c
+SELECTED_LINE_START=832
+SELECTED_LINE_END=864
+SELECTED_ABI=SCALAR_PRESENCE_KIND_VALUE_TO_VALUE
+SELECTED_ABI_SYMBOL=BootstrapValidPostControlFlowToken
+SELECTED_ABI_HOST_IDENTITY_FIELDS=0
+SELECTED_CALL_SITE_COUNT=5
+SELECTED_R0=0
+SELECTION_CHANGED_BY_THIS_CORRECTION=NO
+ELIGIBLE_SET_CHANGED_BY_THIS_CORRECTION=NO
+INVENTORY_TOTAL_CORRECTED=17
+ELIGIBLE_COUNT=1
+INELIGIBLE_COUNT=16
+
+# --- Successor -----------------------------------------------------------
+NEXT_ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE02
+NEXT_ACT_DESCRIPTIVE_TITLE=ACT-POLYC-SELFHOST-PARSER-CONTROL-FLOW-TOKEN01
+NEXT_ACT_ID_UNCHANGED_FROM_C2=YES
+NEXT_ACT_UNCHANGED_BY_THIS_CORRECTION=YES
+  The successor is NOT blocked by the corrected fixture matrix: the
+  corrected matrix agrees with the real C oracle on every row, so the
+  successor's differential is now SATISFIABLE.  Under the predecessor's
+  matrix it was not.
+
+# --- Conservation --------------------------------------------------------
+PRODUCTION_SOURCE_DELTA=0
+PREDECESSOR_EVIDENCE_DELTA=0
+PREDECESSOR_HANDOFF_DELTA=0
+NEW_POLYC_COMPONENT_IMPLEMENTED=0
+NEW_TRACKED_TOOL=0
+NEW_PYTHON=0
+COMPILER_GENERATION_REBUILT=NO
+HISTORY_REWRITTEN=NO
+F14_CONSERVATION=PASS
+
+# --- Halt evaluation -----------------------------------------------------
+HALT_SCOPE_EXPANSION_REQUIRED=NOT_TRIGGERED
+HALT_F14_VIOLATION=NOT_TRIGGERED
+HALT_PRODUCTION_MUTATION=NOT_TRIGGERED
+HALT_CONTRACT_DEFECT_UNRESOLVED=RESOLVED_BY_THIS_ACT
+  The predecessor's two binding defects are corrected here.  This ACT's
+  own verdict is PASS; the predecessor's verdict is corrected through the
+  ACT-Supersedes / ACT-Corrected-Verdict trailers (see
+  c0/probe.txt (EVIDENCE_KIND=predecessor-verdict-correction)).
+
+C2_REQUIRED_RESULT_STATUS=PASS

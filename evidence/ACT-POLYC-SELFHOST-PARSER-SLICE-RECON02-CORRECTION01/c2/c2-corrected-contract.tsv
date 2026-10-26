@@ -1,0 +1,97 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01
+# ACT_PHASE=C2-CORRECTED-CONTRACT
+# EVIDENCE_KIND=corrected-contract
+# The corrected successor-facing contract.  This file SUPERSedes the
+# predecessor's c2-selected-abi-contract.md, c2-selected-fixture-model.tsv,
+# c2-ranked-candidates.tsv and c2-ranking-controls.txt for the purpose of
+# the successor ACT.  It does not modify them.
+#
+# Only FOUR things change relative to the predecessor's C2 contract:
+#
+#   1. The frozen fixture matrix: F041 expected_result 0 -> 1, and the
+#      accept/reject counts 22/20 -> 23/19.
+#   2. The ranking controls: CONTROL 5 and CONTROL 6 are re-stated over
+#      the FULL hard-eligibility predicate (SECT_8.1) instead of the
+#      broader state-boundary set.
+#   3. The inventory total: 16 -> 17.
+#   4. The LEXER07 failure-count narration: baseline 21 vs current 15
+#      are separated.
+#
+# EVERYTHING ELSE IS CARRIED FORWARD UNCHANGED.  In particular:
+#
+#   * the ABI shape, the field semantics, the bound constants, the
+#     decision table and the forbidden-ABI-field list are UNCHANGED --
+#     the predecessor's ABI contract was CORRECT and internally
+#     consistent; only the fixture MATRIX contradicted it;
+#   * the selected candidate, the eligibility conjunction, the score
+#     tuple and its historical column meanings are UNCHANGED;
+#   * the RED model, the proof model, the production seam and the
+#     successor ACT identity are UNCHANGED.
+#
+# Schema:
+#   01 contract_item
+#   02 predecessor_value
+#   03 corrected_value
+#   04 changed
+#   05 evidence
+
+symbol_name	BootstrapValidPostControlFlowToken	BootstrapValidPostControlFlowToken	NO	predecessor c2-selected-abi-contract.md
+input_field_count	3	3	NO	predecessor c2-selected-abi-contract.md
+input_field_types	I64, I64, I64	I64, I64, I64	NO	predecessor c2-selected-abi-contract.md
+output_field_count	1	1	NO	predecessor c2-selected-abi-contract.md
+output_field_types	I64	I64	NO	predecessor c2-selected-abi-contract.md
+abi_host_identity_fields	0	0	NO	predecessor c2-selected-abi-contract.md
+decision_table_row_tk_str_0x301	1	1	NO	predecessor c2-selected-abi-contract.md section 6
+bound_constant_tk_str	0x301 (src/lexer.h:19)	0x301 (src/lexer.h:19)	NO	predecessor c2-selected-abi-contract.md section 5
+bound_constant_tk_superscript	0x301 (src/lexer.h:15)	0x301 (src/lexer.h:15)	NO	predecessor c2-selected-abi-contract.md section 5
+forbidden_abi_fields	9 absent	9 absent	NO	predecessor c2-selected-abi-contract.md section 7
+error_semantics	NONE	NONE	NO	predecessor c2-selected-abi-contract.md section 7
+diagnostic_ownership_remains_c	YES	YES	NO	predecessor c2-selected-abi-contract.md section 3
+legacy_c_oracle	src/parser.c:832..864	src/parser.c:832..864	NO	predecessor c2-selected-abi-contract.md section 8
+fixture_count	42	42	NO	c1-corrected-fixture-model.tsv
+fixture_f041_expected_result	0	1	YES	c1-f041-red.txt, c1-fixture-oracle.txt
+fixture_expected_accept_count	22	23	YES	c1-corrected-fixture-model.tsv
+fixture_expected_reject_count	20	19	YES	c1-corrected-fixture-model.tsv
+fixture_accept_breakdown	3 IDENT + 2 STR + 5 PUNCT + 12 KEYWORD = 22	3 IDENT + 3 STR + 5 PUNCT + 12 KEYWORD = 23	YES	c1-corrected-fixture-model.tsv
+fixture_reject_breakdown	1 NULL + 6 PUNCT + 6 KEYWORD + 6 UNKNOWN = 19	1 NULL + 6 PUNCT + 6 KEYWORD + 6 UNKNOWN = 19	YES	c1-corrected-fixture-model.tsv
+fixture_oracle_disagreements	1 (F041)	0	YES	c1-fixture-oracle.txt
+selected_candidate_id	CAND-001	CAND-001	NO	c1-required-result.txt
+selected_candidate_name	parseValidPostControlFlowToken	parseValidPostControlFlowToken	NO	c1-required-result.txt
+selected_source_range	src/parser.c:832..864	src/parser.c:832..864	NO	c1-required-result.txt
+eligible_count	1	1	NO	c1-inventory-reconciliation.txt
+inventory_total	16	17	YES	c1-inventory-reconciliation.txt
+ranking_dimensions	(R0, R1, R2, R3, R4, R5, R6)	(R0, R1, R2, R3, R4, R5, R6)	NO	predecessor c2-ranked-candidates.tsv
+r0_is_first_and_strongest	YES	YES	NO	predecessor c2-ranked-candidates.tsv
+control_5_set	STATE_BOUNDARY_ELIGIBLE	FULL_ELIGIBILITY	YES	c1-corrected-ranking-controls.txt CONTROL_5
+control_6_set	STATE_BOUNDARY_ELIGIBLE	FULL_ELIGIBILITY	YES	c1-corrected-ranking-controls.txt CONTROL_6
+control_6_claimed_next_winner	CAND-004 (ineligible)	(no eligible successor exists)	YES	c1-corrected-ranking-controls.txt CONTROL_6
+controls_required	9	9	NO	c1-corrected-ranking-controls.txt
+lexer07_baseline_failure_count	21	21	NO	c1-lexer07-count-separation.txt
+lexer07_measured_failure_count	21	15	YES	c1-lexer07-count-separation.txt
+lexer07_sources_improved	6	6	NO	c1-lexer07-count-separation.txt
+lexer07_new_failures	0	0	NO	c1-lexer07-count-separation.txt
+lexer07_regressed_sources	0	0	NO	c1-lexer07-count-separation.txt
+full_corpus_status	FAIL	FAIL	NO	c1-lexer07-count-separation.txt
+red_model	REPRODUCIBLE (RED-1..RED-5)	REPRODUCIBLE (RED-1..RED-5)	NO	predecessor c2-selected-red-model.md
+proof_model	COMPLETE (16 dimensions)	COMPLETE (16 dimensions)	NO	predecessor c2-selected-proof-contract.md
+production_seam	FEASIBLE (5 ordinary call sites)	FEASIBLE (5 ordinary call sites)	NO	predecessor c2-selected-production-seam.md
+next_act_id	ACT-POLYC-SELFHOST-PARSER-SLICE02	ACT-POLYC-SELFHOST-PARSER-SLICE02	NO	predecessor c2-required-result.txt
+next_act_descriptive_title	ACT-POLYC-SELFHOST-PARSER-CONTROL-FLOW-TOKEN01	ACT-POLYC-SELFHOST-PARSER-CONTROL-FLOW-TOKEN01	NO	predecessor c2-required-result.txt
+
+# The three counters below are DERIVED FROM THE ROWS ABOVE, not entered by
+# hand.  The derivation command is recorded in c2-required-result.txt as
+# COMMAND_2 and re-run by c3-required-result.txt.
+#
+#   CONTRACT_ITEM_COUNT      = number of contract rows (rows whose `changed`
+#                              column is exactly YES or NO)
+#   CONTRACT_ITEM_CHANGED    = number of rows whose changed column == YES
+#   CONTRACT_ITEM_UNCHANGED  = number of rows whose changed column == NO
+#   CONTRACT_ITEM_COUNT == CONTRACT_ITEM_CHANGED + CONTRACT_ITEM_UNCHANGED
+#
+# The counter lines below are themselves NOT contract rows: they carry no
+# `changed` column, so the derivation counts exactly the contract items.
+CONTRACT_ITEM_COUNT=42
+CONTRACT_ITEM_CHANGED=11
+CONTRACT_ITEM_UNCHANGED=31
+CONTRACT_ITEM_COUNT_EQUALS_CHANGED_PLUS_UNCHANGED=YES
+CORRECTED_CONTRACT_STATUS=FROZEN
