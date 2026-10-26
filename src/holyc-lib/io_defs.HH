@@ -44,9 +44,20 @@ extern "c" I32 isatty(I32 fd);
 #define SEEK_END 2
 
 // Public API (mirror io.HC signatures verbatim).
+//
+// ACT-POLYC-TOOLING-GEP01-GATE-REPAIR01: the FileWrite 4th parameter
+// was previously declared here as `Bool append=FALSE` while io.HC and
+// the canonical public header tos.HH both declare it as
+// `I64 flags=O_CREAT|O_RDWR`. A caller compiled against this header
+// therefore passed the boolean FALSE (0) as the flags value, so the
+// library issued open(path, 0, 420) WITHOUT O_CREAT and every write
+// silently failed. The declaration now mirrors io.HC verbatim. Keep
+// this header and io.HC in lockstep: a defaulted parameter's TYPE
+// decides the value the caller passes, so a mismatch here is a
+// silent write failure, not a compile error.
 public U8 *FileRead(U8 *path, I64 *_size);
 public Bool FileWrite(U8 *filename, U8 *buf, I64 size,
-                      Bool append=FALSE);
+                      I64 flags=O_CREAT|O_RDWR);
 public I32 Cd(U8 *path);
 public U8 *Pwd(U8 *buf, U64 buf_size);
 public I32 Stat(Fstat *fst, U8 *pathname);

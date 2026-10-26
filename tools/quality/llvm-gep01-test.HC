@@ -57,7 +57,16 @@
 // For --mode=fail, the readat dynamic-index assertion is
 // forced to fail so the harness exit-channel can be
 // inspected for the seeded-failure gate (C3 §22).
-
+//
+// ACT-POLYC-TOOLING-GEP01-GATE-REPAIR01:
+//   The --hcc=<path> compiler is now ALSO the compiler the
+//   cap-table verifier queries. Previously the verifier
+//   hardcoded REPO_ROOT/"hcc" and silently queried a
+//   different binary, which on a non-LLVM build died on
+//   SIGSEGV and surfaced as three identical generic rows.
+//   The verifier's captured stderr is no longer discarded:
+//   it is included in the capability-row diagnostics.
+//
 #include "../../src/holyc-lib/memory_defs.HH"
 #include "../../src/holyc-lib/tooling_defs.HH"
 #include "../../src/holyc-lib/io_defs.HH"
@@ -782,26 +791,54 @@ U0 RunNegative(TestVerdict *v, U8 *hcc_path, U8 *install_dir,
 // Section: capability status (rows 26..28)
 // ------------------------------------------------------------
 
-U0 RunCapability(TestVerdict *v, U8 *python, U8 *scratch)
+U0 RunCapability(TestVerdict *v, U8 *python, U8 *hcc_path, U8 *scratch)
 {
   U8 *out = NULL, *err = NULL;
   U8 *cap_path = StrPrint(NULL, "%s/cap-verifier.txt", scratch);
-  U8 *args[3];
+  // ACT-POLYC-TOOLING-GEP01-GATE-REPAIR01: the verifier is now told
+  // WHICH compiler to query. It used to hardcode REPO_ROOT/"hcc", so
+  // it silently queried a different binary than the one this harness
+  // was given via --hcc=<path>. On a non-LLVM build that binary does
+  // not implement --print-cap-table and dies on SIGSEGV, which
+  // surfaced here as three identical "could not read cap verifier
+  // output" rows.
+  U8 *args[4];
   args[0] = python;
   args[1] = StrPrint(NULL, "scripts/quality/llvm-cap-table-verifier.py");
-  args[2] = NULL;
+  args[2] = hcc_path;
+  args[3] = NULL;
   I64 rc = SpawnAndCapture(python, args, &out, &err);
   if (out) FileWrite(cap_path, out, StrLen(out));
-  BytewiseFree(out); BytewiseFree(err);
+  // ACT-POLYC-TOOLING-GEP01-GATE-REPAIR01: the verifier's captured
+  // stderr was freed without ever being read. It is now surfaced in
+  // the failure diagnostics below so a regression is diagnosable from
+  // the harness output alone.
+  U8 *verr = NULL;
+  if (err) verr = StrPrint(NULL, "%s", err);
+  BytewiseFree(out);
+  BytewiseFree(err);
   Free(args[1]);
 
+  // ACT-POLYC-TOOLING-GEP01-GATE-REPAIR01: the failure diagnostics now
+  // carry the verifier's actual output instead of a generic sentence.
+  // The three capability rows still share one root cause, but the
+  // operator can now see WHICH compiler was queried and WHAT the
+  // verifier said about it.
+  U8 *diag;
+  if (verr) {
+    diag = StrPrint(NULL,
+      "cap-table verifier failed (rc=%d, compiler=%s); verifier stderr: %s",
+      rc, hcc_path, verr);
+  } else {
+    diag = StrPrint(NULL,
+      "cap-table verifier failed (rc=%d, compiler=%s); verifier stderr: <empty>",
+      rc, hcc_path);
+  }
   if (rc != 0 && !FileExists(cap_path)) {
-    VerdictFail(v, "IR_GEP = REJECTED (sibling opcode still rejected)",
-                "cap-table verifier invocation failed");
-    VerdictFail(v, "IR_LEA = REJECTED (sibling opcode still rejected)",
-                "cap-table verifier invocation failed");
-    VerdictFail(v, "IR_IADD = SUPPORTED (preserved, GEP01 is per-shape subset)",
-                "cap-table verifier invocation failed");
+    VerdictFail(v, "IR_GEP = REJECTED (sibling opcode still rejected)", diag);
+    VerdictFail(v, "IR_LEA = REJECTED (sibling opcode still rejected)", diag);
+    VerdictFail(v, "IR_IADD = SUPPORTED (preserved, GEP01 is per-shape subset)", diag);
+    Free(diag);
     Free(cap_path);
     return;
   }
@@ -809,15 +846,14 @@ U0 RunCapability(TestVerdict *v, U8 *python, U8 *scratch)
   I64 sz = 0;
   U8 *cap_txt = SlurpFile(cap_path, &sz);
   if (!cap_txt) {
-    VerdictFail(v, "IR_GEP = REJECTED (sibling opcode still rejected)",
-                "could not read cap verifier output");
-    VerdictFail(v, "IR_LEA = REJECTED (sibling opcode still rejected)",
-                "could not read cap verifier output");
-    VerdictFail(v, "IR_IADD = SUPPORTED (preserved, GEP01 is per-shape subset)",
-                "could not read cap verifier output");
+    VerdictFail(v, "IR_GEP = REJECTED (sibling opcode still rejected)", diag);
+    VerdictFail(v, "IR_LEA = REJECTED (sibling opcode still rejected)", diag);
+    VerdictFail(v, "IR_IADD = SUPPORTED (preserved, GEP01 is per-shape subset)", diag);
+    Free(diag);
     Free(cap_path);
     return;
   }
+  Free(diag);
 
   // Rows 26 / 27 / 28: the legacy Bash semantics required
   // the (REJECTED) / (SUPPORTED) marker to be on the SAME
@@ -1318,7 +1354,7 @@ public I32 Main(I32 argc, U8 **argv)
     RunLlvmAsOpt(v, llvm_as, llvm_opt, scratch_child);
     RunFences(v, scratch_child);
     RunNegative(v, hcc_path, install_dir, scratch_child);
-    RunCapability(v, python, scratch_child);
+    RunCapability(v, python, hcc_path, scratch_child);
     RunDeterminism(v, hcc_path, install_dir, scratch_child);
   }
 

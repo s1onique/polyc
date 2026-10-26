@@ -52,7 +52,31 @@ SRC_CAP_HEADER = REPO_ROOT / "src" / "llvm-backend-cap.h"
 SRC_IR_TYPES = REPO_ROOT / "src" / "ir-types.h"
 SRC_MAIN = REPO_ROOT / "src" / "main.c"
 HARNESS = REPO_ROOT / "scripts" / "quality" / "llvm-spike-contract-check.sh"
-HCC = REPO_ROOT / "hcc"
+
+# ACT-POLYC-TOOLING-GEP01-GATE-REPAIR01: the compiler binary this
+# verifier queries was hardcoded as REPO_ROOT/"hcc". The PolyC GEP01
+# harness is parameterised by --hcc=<path>, but it had no way to tell
+# this verifier which compiler to use, so the verifier silently queried
+# a DIFFERENT binary than the one the harness was testing. When that
+# binary was not LLVM-enabled, `hcc --print-cap-table` was unhandled
+# (the dispatch is inside #ifdef HCC_ENABLE_LLVM in src/main.c) and the
+# compiler died on SIGSEGV.
+#
+# The compiler path is now an explicit input:
+#   1. first positional argument, if given;
+#   2. otherwise the POLYC_HCC environment variable, if set;
+#   3. otherwise REPO_ROOT/"hcc" (the historical default, preserved for
+#      the existing legacy shell callers, which pass no argument).
+def _resolve_hcc():
+    if len(sys.argv) > 1 and sys.argv[1]:
+        return Path(sys.argv[1]).resolve()
+    env = os.environ.get("POLYC_HCC")
+    if env:
+        return Path(env).resolve()
+    return REPO_ROOT / "hcc"
+
+
+HCC = _resolve_hcc()
 
 # LLVMBackendCapability class ordinals (must match src/llvm-backend-cap.h).
 LLVMBC_SUPPORTED = 0
@@ -167,11 +191,23 @@ def get_cap_table_via_hcc():
             env=env, stderr=subprocess.STDOUT, timeout=30,
         )
     except subprocess.CalledProcessError as e:
-        fail("hcc --print-cap-table exited non-zero: "
-             + e.output.decode("utf-8", "replace"))
+        # ACT-POLYC-TOOLING-GEP01-GATE-REPAIR01: report the exit status
+        # and the queried binary explicitly. The previous message was
+        # "hcc --print-cap-table exited non-zero: " with an EMPTY tail
+        # when the child produced no output -- which is exactly what a
+        # SIGSEGV looks like, and it made the failure undiagnosable
+        # from the harness output alone.
+        detail = e.output.decode("utf-8", "replace")
+        fail("hcc --print-cap-table exited non-zero (rc=%d) for %s: %s"
+             % (e.returncode, str(HCC), detail if detail else "<no output>"))
+        if e.returncode < 0 or e.returncode > 128:
+            fail("hcc --print-cap-table was killed by a signal or crashed "
+                 "(rc=%d); a non-LLVM build does not implement "
+                 "--print-cap-table (the dispatch is inside "
+                 "#ifdef HCC_ENABLE_LLVM in src/main.c)" % e.returncode)
         return {}
     except Exception as e:
-        fail("hcc --print-cap-table failed: " + str(e))
+        fail("hcc --print-cap-table failed for " + str(HCC) + ": " + str(e))
         return {}
 
     # out is bytes. Drive the parser off the lengths, not off
