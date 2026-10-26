@@ -1,0 +1,167 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION02
+ACT_PHASE=C2-EVIDENCE
+EVIDENCE_KIND=acceptance-criteria
+
+# ===================================================================
+# THE ACCEPTANCE CRITERIA, MEASURED
+# ===================================================================
+#
+# FIXTURE=evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01/c1/c1-corrected-fixture-model.tsv
+# BUILD=make parser-control-flow-token-differential (production compiler, current tree)
+
+# ---- AC01: an indented unknown row is REJECTED -------------------
+COMMAND=./build/parser-control-flow-token-differential /tmp/red_ind_space.tsv
+  SLICE02_DIFFERENTIAL_TOTAL=43
+  SLICE02_DIFFERENTIAL_PASS=42
+  SLICE02_DIFFERENTIAL_FAIL=0
+  SLICE02_DIFFERENTIAL_PARSE_ERRORS=1
+  SLICE02_DIFFERENTIAL_ORACLE_VS_EXPECTED_MISMATCH=0
+  SLICE02_DIFFERENTIAL_EXPECTED_FIXTURE_COUNT=42
+  SLICE02_DIFFERENTIAL_OBSERVED_FIXTURE_COUNT=43
+  SLICE02_DIFFERENTIAL_MISSING_IDS=0
+  SLICE02_DIFFERENTIAL_DUPLICATE_IDS=0
+  SLICE02_DIFFERENTIAL_UNKNOWN_IDS=1
+  SLICE02_DIFFERENTIAL_TRUNCATED_ROWS=0
+  SLICE02_DIFFERENTIAL_MALFORMED_ROWS=0
+  SLICE02_DIFFERENTIAL_FIELD_PARSE_ERRORS=0
+  SLICE02_DIFFERENTIAL_FIXTURE_IDS_COMPLETE=1
+  SLICE02_DIFFERENTIAL_FIXTURE_IDS_UNIQUE=1
+  SLICE02_DIFFERENTIAL_FIXTURE_SCHEMA_VALID=0
+  REASON=FIXTURE_ID_UNKNOWN
+  STATUS=FAIL
+RC=1
+
+AC01_EXPECTED=FAIL with REASON=FIXTURE_ID_UNKNOWN
+AC01_OBSERVED=FAIL with REASON=FIXTURE_ID_UNKNOWN
+AC01_OBSERVED_FIXTURE_COUNT=43
+AC01_UNKNOWN_IDS=1
+AC01_STATUS=PASS
+
+# ---- AC02: a TAB-indented unknown row is REJECTED ---------------
+COMMAND=./build/parser-control-flow-token-differential /tmp/red_ind_tab.tsv
+  SLICE02_DIFFERENTIAL_TOTAL=43
+  SLICE02_DIFFERENTIAL_PASS=42
+  SLICE02_DIFFERENTIAL_FAIL=0
+  SLICE02_DIFFERENTIAL_PARSE_ERRORS=1
+  SLICE02_DIFFERENTIAL_ORACLE_VS_EXPECTED_MISMATCH=0
+  SLICE02_DIFFERENTIAL_EXPECTED_FIXTURE_COUNT=42
+  SLICE02_DIFFERENTIAL_OBSERVED_FIXTURE_COUNT=43
+  SLICE02_DIFFERENTIAL_MISSING_IDS=0
+  SLICE02_DIFFERENTIAL_DUPLICATE_IDS=0
+  SLICE02_DIFFERENTIAL_UNKNOWN_IDS=0
+  SLICE02_DIFFERENTIAL_TRUNCATED_ROWS=0
+  SLICE02_DIFFERENTIAL_MALFORMED_ROWS=1
+  SLICE02_DIFFERENTIAL_FIELD_PARSE_ERRORS=0
+  SLICE02_DIFFERENTIAL_FIXTURE_IDS_COMPLETE=1
+  SLICE02_DIFFERENTIAL_FIXTURE_IDS_UNIQUE=1
+  SLICE02_DIFFERENTIAL_FIXTURE_SCHEMA_VALID=0
+  REASON=FIXTURE_SCHEMA_INVALID
+  STATUS=FAIL
+RC=1
+
+AC02_EXPECTED=FAIL (rejected; the token follows the row schema)
+AC02_OBSERVED=FAIL with REASON=FIXTURE_SCHEMA_INVALID
+AC02_MALFORMED_ROWS=1
+# The leading TAB makes the row's first field empty, so the row carries 9
+# fields against the canonical 8. The schema clause fires first, which is
+# the correct reason for that row. The companion control NC-D20 uses
+# the canonical 8-field shape and yields FIXTURE_ID_UNKNOWN.
+AC02_STATUS=PASS
+
+# ---- AC03: the canonical fixture still PASSES -------------------
+COMMAND=./build/parser-control-flow-token-differential <FIXTURE>
+  SLICE02_DIFFERENTIAL_TOTAL=42
+  SLICE02_DIFFERENTIAL_PASS=42
+  SLICE02_DIFFERENTIAL_FAIL=0
+  SLICE02_DIFFERENTIAL_PARSE_ERRORS=0
+  SLICE02_DIFFERENTIAL_ORACLE_VS_EXPECTED_MISMATCH=0
+  SLICE02_DIFFERENTIAL_EXPECTED_FIXTURE_COUNT=42
+  SLICE02_DIFFERENTIAL_OBSERVED_FIXTURE_COUNT=42
+  SLICE02_DIFFERENTIAL_MISSING_IDS=0
+  SLICE02_DIFFERENTIAL_DUPLICATE_IDS=0
+  SLICE02_DIFFERENTIAL_UNKNOWN_IDS=0
+  SLICE02_DIFFERENTIAL_TRUNCATED_ROWS=0
+  SLICE02_DIFFERENTIAL_MALFORMED_ROWS=0
+  SLICE02_DIFFERENTIAL_FIELD_PARSE_ERRORS=0
+  SLICE02_DIFFERENTIAL_FIXTURE_IDS_COMPLETE=1
+  SLICE02_DIFFERENTIAL_FIXTURE_IDS_UNIQUE=1
+  SLICE02_DIFFERENTIAL_FIXTURE_SCHEMA_VALID=1
+  STATUS=PASS
+RC=0
+
+AC03_EXPECTED=STATUS=PASS with 42 rows
+AC03_OBSERVED=STATUS=PASS with 42 rows
+AC03_STATUS=PASS
+
+# ---- AC04: the shuffled fixture still PASSES (NC-D8) -----------
+COMMAND=make parser-control-flow-token-negative-controls   (NC-D8-shuffled)
+  NC NC-D8-shuffled: OK (rc=0 reason=<none>)
+AC04_EXPECTED=STATUS=PASS
+AC04_OBSERVED=STATUS=PASS
+AC04_STATUS=PASS
+
+# ---- AC05: the canonical metadata continuations are recognized -
+# The canonical fixture carries 17 indented lines, all of which are
+# continuations of a KEY=VALUE metadata row (FIXTURE_COUNT=42,
+# PARTITION_COUNT=6, ACCEPT_BREAKDOWN=23, REJECT_BREAKDOWN=19,
+# FIXTURE_COVERAGE_COMPLETE=YES). AC03 is the witness: if any of
+# them had stopped being recognized, the differential would have
+# counted them as data rows and reported OBSERVED_FIXTURE_COUNT > 42.
+COMMAND=grep -c "^[ 	]" <FIXTURE>
+  17
+CANONICAL_INDENTED_LINES=17
+AC05_OBSERVED_FIXTURE_COUNT=42
+AC05_EXPECTED_FIXTURE_COUNT=42
+AC05_STATUS=PASS
+
+# ---- AC06: all 16 predecessor controls still behave ------------
+COMMAND=make parser-control-flow-token-negative-controls
+  NEGATIVE_CONTROLS_TOTAL=20   (16 predecessor + 4 new)
+  NEGATIVE_CONTROLS_BROKEN=0
+  STATUS=PASS
+AC06_EXPECTED=0 broken
+AC06_OBSERVED=0 broken
+AC06_STATUS=PASS
+
+# ---- AC07: the NEW indented-row control fires ------------------
+COMMAND=make parser-control-flow-token-negative-controls
+  NC NC-D18-indented-unknown-in-middle: OK (rc=1 reason=FIXTURE_ID_UNKNOWN)
+  NC NC-D19-tab-indented-unknown: OK (rc=1 reason=FIXTURE_SCHEMA_INVALID)
+  NC NC-D20-tab-indented-unknown-8-fields: OK (rc=1 reason=FIXTURE_ID_UNKNOWN)
+AC07_EXPECTED=the indented row is rejected
+AC07_OBSERVED=rejected
+AC07_STATUS=PASS
+
+# ---- AC08: the NEW row-separation control fires ----------------
+COMMAND=make parser-control-flow-token-negative-controls
+  NC NC-D21-appended-row-not-joined: OK (rc=1 reason=FIXTURE_ID_UNKNOWN)
+# The retained fixture shows the appended row on its OWN line:
+COMMAND=tail -2 build/slice02-negctrl/fixture-NC-D21-appended-row-not-joined.tsv | cat -A
+    and structurally-valid-but-rejected classes the ACT requires.$
+  X001^IUNKNOWN^I1^I1^I1^I1^Inc-d12^Inc-d12$
+
+# NC-D21 WAS PROVED LOAD-BEARING: with the separator removed from
+# EditAppendLine, the control reports BROKEN and the fixture shows
+# the two rows merged.
+COMMAND=(separator removed) make parser-control-flow-token-negative-controls
+  NC NC-D21-appended-row-not-joined: BROKEN (expected rc=1 reason=FIXTURE_ID_UNKNOWN; observed rc=0 reason=<none>)
+  NEGATIVE_CONTROLS_BROKEN=1
+  STATUS=FAIL
+#   and the fixture tail showed:
+#     ...ACT requires.X001^IUNKNOWN^I1^I1^I1^I1^Inc-d12^Inc-d12$
+NC_D21_LOAD_BEARING=YES
+AC08_STATUS=PASS
+
+# ---- AC09: the integer-boundary tool still passes -------------
+COMMAND=make parser-control-flow-token-int-bounds
+  SLICE02_INT_BOUNDS=BUILD
+  (the verbatim parse_int copy is untouched by this ACT)
+AC09_STATUS=PASS
+
+# ---- AC10: the production authority is UNCHANGED ---------------
+COMMAND=git diff --stat <ENTRY>..HEAD -- src/ tools/bootstrap/
+  (empty = the production compiler, parser, lexer, AST and the whole
+   bootstrap chain are untouched)
+PRODUCTION_SEMANTIC_DELTA=0
+PRODUCTION_AUTHORITY=POLYC
+AC10_STATUS=PASS

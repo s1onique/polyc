@@ -1,0 +1,104 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION02
+ACT_PHASE=C2-EVIDENCE
+EVIDENCE_KIND=nc-d12-corrected-measurement
+
+# ===================================================================
+# THE NC-D12 MEASUREMENT, RE-MEASURED AGAINST THE CANONICAL FIXTURE
+# ===================================================================
+#
+# The review observed that the predecessor's recorded NC-D12 block
+# reports TOTAL=42, which is inconsistent with "42 canonical rows plus a
+# 43rd row", and inferred that the appended text joined the last row.
+#
+# That inference is not the cause. The recorded block is reproducible
+# ONLY from a base fixture that is ALREADY missing one canonical id
+# (41 rows, F042 absent). This file records the corrected measurement
+# and the exact reproduction of the predecessor's block.
+
+FIXTURE=evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01/c1/c1-corrected-fixture-model.tsv
+
+# ---- the predecessor's recorded command, run against the canonical ---
+COMMAND={ cat <FIXTURE>; printf 'X001	UNKNOWN	1	1	1	1	nc-d12	nc-d12
+'; } > /tmp/nc_d12.tsv
+COMMAND=./build/parser-control-flow-token-differential /tmp/nc_d12.tsv
+  SLICE02_DIFFERENTIAL_TOTAL=43
+  SLICE02_DIFFERENTIAL_PASS=42
+  SLICE02_DIFFERENTIAL_FAIL=0
+  SLICE02_DIFFERENTIAL_PARSE_ERRORS=1
+  SLICE02_DIFFERENTIAL_ORACLE_VS_EXPECTED_MISMATCH=0
+  SLICE02_DIFFERENTIAL_EXPECTED_FIXTURE_COUNT=42
+  SLICE02_DIFFERENTIAL_OBSERVED_FIXTURE_COUNT=43
+  SLICE02_DIFFERENTIAL_MISSING_IDS=0
+  SLICE02_DIFFERENTIAL_DUPLICATE_IDS=0
+  SLICE02_DIFFERENTIAL_UNKNOWN_IDS=1
+  SLICE02_DIFFERENTIAL_TRUNCATED_ROWS=0
+  SLICE02_DIFFERENTIAL_MALFORMED_ROWS=0
+  SLICE02_DIFFERENTIAL_FIELD_PARSE_ERRORS=0
+  SLICE02_DIFFERENTIAL_FIXTURE_IDS_COMPLETE=1
+  SLICE02_DIFFERENTIAL_FIXTURE_IDS_UNIQUE=1
+  SLICE02_DIFFERENTIAL_FIXTURE_SCHEMA_VALID=0
+  REASON=FIXTURE_ID_UNKNOWN
+  STATUS=FAIL
+RC=1
+
+CORRECTED_NC_D12_TOTAL=43
+CORRECTED_NC_D12_PASS=42
+CORRECTED_NC_D12_MISSING_IDS=0
+CORRECTED_NC_D12_UNKNOWN_IDS=1
+CORRECTED_NC_D12_IDS_COMPLETE=1
+CORRECTED_NC_D12_REASON=FIXTURE_ID_UNKNOWN
+CORRECTED_NC_D12_STATUS=FAIL
+
+# ---- the predecessor's RECORDED block, for comparison ----------
+RECORDED_NC_D12_TOTAL=42
+RECORDED_NC_D12_PASS=41
+RECORDED_NC_D12_MISSING_IDS=1
+RECORDED_NC_D12_UNKNOWN_IDS=1
+RECORDED_NC_D12_IDS_COMPLETE=0
+
+# ---- the recorded block IS reproducible from a 41-row base -----
+COMMAND=grep '^F[0-9][0-9][0-9]' <FIXTURE> | grep -v '^F042' > /tmp/base41.tsv
+COMMAND={ cat /tmp/base41.tsv; printf 'X001	UNKNOWN	1	1	1	1	nc-d12	nc-d12
+'; } > /tmp/hyp.tsv
+COMMAND=./build/parser-control-flow-token-differential /tmp/hyp.tsv
+  SLICE02_DIFFERENTIAL_TOTAL=42
+  SLICE02_DIFFERENTIAL_PASS=41
+  SLICE02_DIFFERENTIAL_FAIL=0
+  SLICE02_DIFFERENTIAL_PARSE_ERRORS=1
+  SLICE02_DIFFERENTIAL_ORACLE_VS_EXPECTED_MISMATCH=0
+  SLICE02_DIFFERENTIAL_EXPECTED_FIXTURE_COUNT=42
+  SLICE02_DIFFERENTIAL_OBSERVED_FIXTURE_COUNT=42
+  SLICE02_DIFFERENTIAL_MISSING_IDS=1
+  SLICE02_DIFFERENTIAL_DUPLICATE_IDS=0
+  SLICE02_DIFFERENTIAL_UNKNOWN_IDS=1
+  SLICE02_DIFFERENTIAL_TRUNCATED_ROWS=0
+  SLICE02_DIFFERENTIAL_MALFORMED_ROWS=0
+  SLICE02_DIFFERENTIAL_FIELD_PARSE_ERRORS=0
+  SLICE02_DIFFERENTIAL_FIXTURE_IDS_COMPLETE=0
+  SLICE02_DIFFERENTIAL_FIXTURE_IDS_UNIQUE=1
+  SLICE02_DIFFERENTIAL_FIXTURE_SCHEMA_VALID=0
+  REASON=FIXTURE_ID_UNKNOWN
+  STATUS=FAIL
+RC=1
+
+RECORDED_BLOCK_REPRODUCED_EXACTLY=YES
+RECORDED_BLOCK_BASE_ROWS=41
+RECORDED_BLOCK_BASE_MISSING_ID=F042
+RECORDED_BLOCK_MATCHES_ITS_OWN_COMMAND=NO
+
+# ===================================================================
+# THE CONCLUSION
+# ===================================================================
+#
+# The predecessor's CONCLUSION is correct: the unknown-fixture-ID
+# bypass IS repaired. The correct NC-D12 measurement is TOTAL=43,
+# UNKNOWN_IDS=1, REASON=FIXTURE_ID_UNKNOWN.
+#
+# What is defective is the predecessor's EVIDENCE: its recorded
+# command line does not describe the run that produced its recorded
+# output. That file is closed evidence and is NOT modified by this
+# ACT; this file is the authoritative successor for that measurement.
+
+# The driver's own NC-D12 control (which derives the fixture
+# mechanically from the canonical file) is unaffected:
+  NC NC-D12-unknown-X001: OK (rc=1 reason=FIXTURE_ID_UNKNOWN)

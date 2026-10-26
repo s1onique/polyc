@@ -1,0 +1,124 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION02
+ACT_PHASE=C2-EVIDENCE
+EVIDENCE_KIND=f14-violation-record
+
+# ===================================================================
+# THE F14 VIOLATION IN THE PREDECESSOR'S CLOSURE
+# ===================================================================
+#
+# This file RECORDS a violation. It does not repair it by mutation.
+# The two offending commits are historical evidence under F14 and are
+# NOT amended, NOT reverted, NOT rewritten by this ACT.
+#
+# The correction geometry is the strict one: the historical erroneous
+# evidence is immutable, and this correction packet is the
+# authoritative successor (docs/factory/DOCTRINE.md section 22,
+# "Strict F14 reading for corrections").
+
+# ---- the predecessor's committed history -------------------------
+COMMAND=git log --oneline fb85cff..HEAD --format='%H %s'   (at C0 entry)
+  638e2e0c4a3ca2b6af951d8b146049406aa00055 Correct the terminality artifact: the range check takes the CLOSE commit
+  bc1d2d3847ad2555ac2672bd461275dd41dcd2df Record the external terminality check for ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION01
+
+  fb85cff6450e00ac49f5c3ef50d4a0134d8c9692 <-- the predecessor's CLOSE
+  86cb80a23135dfd30447152b357eaeef44bc1a08 <-- its C0 RED
+  dd60c7ade55d93a8abcc773892411980f3de83a1 <-- its C1 IMPL
+  b63de22bc8ec8bc5fb9f0bd96324765aabe38a3b <-- its C2 EVIDENCE
+  a1b001692af9fc3bf0ce233c14384f9363b4e61b <-- its C3 EVIDENCE
+  1f27ec3077afc74ce3886364e340412d39dcbd29 <-- its C3 EVIDENCE
+
+# ---- what the two trailing commits did ---------------------------
+COMMAND=git show --stat bc1d2d3
+  .../c3/terminality.txt                             | 90 ++++++++++++++++++++++
+  1 file changed, 90 insertions(+)
+
+COMMAND=git show --stat 638e2e0
+  .../c3/terminality.txt                             | 18 ++++++++++++++++++-
+  1 file changed, 17 insertions(+), 1 deletion(-)
+
+# ---- THE DECISIVE MECHANICAL WITNESS -----------------------------
+#
+# The question is: was the CLOSED evidence tree modified after the
+# CLOSE commit? The answer is established by a diff, not by trailer
+# parsing.
+COMMAND=git diff --name-status fb85cff..HEAD -- evidence/ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION01/
+A	evidence/ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION01/c3/terminality.txt
+
+F14_POST_CLOSE_EVIDENCE_ADDITION=YES
+F14_POST_CLOSE_EVIDENCE_REWRITE=YES
+
+# ---- the conflict with the predecessor ACT's own contract ---------
+#
+# The predecessor ACT (section 7) says:
+#
+#   "Do not append a post-CLOSE metadata or whitespace fixup commit."
+#
+# Both trailing commits are post-CLOSE commits that append to the
+# predecessor's evidence. The prohibition is explicit and the two
+# commits are exactly what it names.
+#
+# The strict F14 reading (docs/factory/DOCTRINE.md section 22) says:
+#
+#   "The historical-evidence rule (F14) forbids mutating any artifact
+#    in a closed ACT'"'"'s evidence directory."
+#
+# The file c3/terminality.txt declares itself C3 evidence:
+#
+#   ACT_PHASE=C3-VERIFY (the external terminality check, recorded
+#   before the CLOSE commit)
+#
+# and carries the known C4 SHA plus post-CLOSE observations. It was
+# nonetheless introduced into the closed evidence directory AFTER the
+# CLOSE commit, by the two commits above.
+#
+# The absence of an ACT: trailer on those two commits does NOT make
+# the later evidence additions disappear. Git trailer parsing
+# establishes only whether a commit MESSAGE carries recognizable
+# trailers; it does not establish whether a closed evidence TREE was
+# modified. The question asked here is answered by the diff above.
+#
+# The validator's behaviour is a separate matter, and the
+# predecessor's artifact is right about it: the Factory-v2 range
+# check resolves an ACT's CLOSE from the commit it is GIVEN, so
+# invoking it with HEAD correctly refuses. That refusal is the check
+# working as designed. The violation is the post-CLOSE mutation of
+# the closed evidence tree, which the range check does not and cannot
+# police.
+
+# ---- WHAT THIS ACT DID NOT DO ------------------------------------
+#
+# It did NOT amend, revert, rewrite or delete either commit.
+# It did NOT touch the predecessor's evidence directory:
+COMMAND=git diff --name-status 638e2e0..HEAD -- evidence/ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION01/
+  (empty)
+
+COMMAND=git rev-parse 638e2e0:evidence/ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION01
+  3606f07439313124020971a472110d9c1fb4944b
+COMMAND=git rev-parse HEAD:evidence/ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION01
+  3606f07439313124020971a472110d9c1fb4944b
+
+# The two tree hashes are IDENTICAL, which is a byte-for-byte proof
+# that this ACT did not modify the predecessor's closed evidence.
+PREDECESSOR_EVIDENCE_TREE_AT_ENTRY=3606f07439313124020971a472110d9c1fb4944b
+PREDECESSOR_EVIDENCE_TREE_AT_HEAD=3606f07439313124020971a472110d9c1fb4944b
+PREDECESSOR_EVIDENCE_UNCHANGED=YES
+
+# ===================================================================
+# THE CORRECT TERMINALITY GEOMETRY, APPLIED TO THIS ACT
+# ===================================================================
+#
+# This ACT observes the geometry the predecessor's artifact describes
+# but does not follow:
+#
+#   * the CLOSE commit is the LAST commit of the ACT's contiguous
+#     range;
+#   * NO commit after the CLOSE carries this ACT's ACT: trailer;
+#   * NO file is added to this ACT's own evidence directory after the
+#     CLOSE commit.
+#
+# The terminality evidence for THIS ACT is therefore recorded in the
+# C3 phase, BEFORE the CLOSE commit, and the CLOSE commit is the last
+# commit. The range check is run against this ACT's own CLOSE commit,
+# which is also HEAD at the moment of the check.
+#
+# The verification of that geometry is in c3/terminality.txt.
