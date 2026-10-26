@@ -1,0 +1,39 @@
+=== HALT CLASSIFICATION CONSISTENCY (ACT-POLYC-FACTORY-V2-HALT-TRAILER-PARSER01 C3) ===
+
+The authoritative PolyC classifier is tools/factory/factory-halt-classification.HC.
+Its source is UNCHANGED by this ACT:
+  sha256 at entry = 04be5c7121814b090e905c0010e9d4fb107b3a6e087c583b6e0aad1943ad2cb4
+  sha256 now      = 04be5c7121814b090e905c0010e9d4fb107b3a6e087c583b6e0aad1943ad2cb4
+
+The binary used as the oracle was built from that EXACT source
+(sha256 verified identical), so it is a valid oracle.
+
+NOTE: the PolyC tool cannot be REBUILT in this environment because
+src/asm/asm.c does not support "@@N" local labels, which
+src/holyc-lib/memory.HC uses. That is a PRE-EXISTING defect, OUT OF
+SCOPE for this ACT, and reproducible at the C0 commit. See
+c2/environment-dependency-finding.txt. The classifier SOURCE is
+unchanged and its EXISTING binary is the oracle, so no silent fallback
+occurs: the shell validators are checked AGAINST the classifier, not
+instead of it.
+
+--- 10-case agreement matrix ---
+
+CASE                   SHELL              CLASSIFIER         AGREE
+no-haltclass           FAIL(rc=1)         FAIL(rc=1)         YES
+no-blocksnext          FAIL(rc=1)         FAIL(rc=1)         YES
+dup-haltclass          FAIL(rc=1)         FAIL(rc=1)         YES
+dup-blocksnext         FAIL(rc=1)         FAIL(rc=1)         YES
+bad-enum               FAIL(rc=1)         FAIL(rc=1)         YES
+gov-yes                FAIL(rc=1)         FAIL(rc=1)         YES
+pass-with-halt         FAIL(rc=1)         FAIL(rc=1)         YES
+prod-yes               PASS(rc=0)         PASS(rc=0)         YES
+dep-yes                PASS(rc=0)         PASS(rc=0)         YES
+dep-no                 PASS(rc=0)         PASS(rc=0)         YES
+
+--- the five cases named in ACT section 8 Work package D ---
+HALT + GOVERNANCE + NO       shell=FAIL       classifier=FAIL       AGREE=YES
+HALT + PRODUCTION + YES      shell=PASS       classifier=PASS       AGREE=YES
+HALT + DEPENDENCY + YES      shell=PASS       classifier=PASS       AGREE=YES
+HALT + DEPENDENCY + NO       shell=PASS       classifier=PASS       AGREE=YES
+PASS + no HALT fields        shell=FAIL       classifier=FAIL       AGREE=YES

@@ -1,0 +1,34 @@
+=== POST-CLOSE CONTINUATION CONTROL (ACT-POLYC-FACTORY-V2-HALT-TRAILER-PARSER01 C3) ===
+
+RULE (docs/factory/GIT-METADATA.md section 3, rule 7):
+  No commit after CLOSE may carry ACT:<id>.
+
+--- case 1: CLOSE -> same-ACT IMPL (direct) ---
+040f6133b5b2153393e7ad6ff91bd7bb9eae8773 synth CONT
+cc52b0bf988502bc25618f41c003d8d9a08f2ff0 synth CLOSE
+15f367da615d14565d7288076bac196c5300202c synth RED
+c60aadd8b60ee384274d0515cec06dd97bb3b049 seed commit
+STATUS=FAIL
+REASON=commit 040f6133b5b2153393e7ad6ff91bd7bb9eae8773 after CLOSE still carries ACT: ACT-POLYC-T49; ACT must not continue past CLOSE
+rc=1
+
+--- case 2: CLOSE -> ordinary commit -> same-ACT IMPL ---
+The intervening ordinary commit carries NO ACT trailer.
+c97fbc1bbf6d637e806962e9a954e9993491b4ca synth CONT
+5c7cfa2f0150f84f4878e419b3ff56dd381d5b12 ordinary unrelated commit
+99f8bd955b03f8947e3ce53e7dd484c317a4efb1 synth CLOSE
+d6710986756ba00363b3fce62b2917f2326f2dc1 synth RED
+c60aadd8b60ee384274d0515cec06dd97bb3b049 seed commit
+STATUS=FAIL
+REASON=commit c97fbc1bbf6d637e806962e9a954e9993491b4ca after CLOSE still carries ACT: ACT-POLYC-T50; ACT must not continue past CLOSE
+rc=1
+
+--- case 3: the REAL historical violation (must stay rejected) ---
+ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01 committed a
+same-ACT EVIDENCE commit (a1b1f20) AFTER its C4 CLOSE (290d917).
+STATUS=FAIL
+REASON=commit a1b1f2095a6ca0d34f204af842c3ae06bdaf6324 after CLOSE still carries ACT: ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01; ACT must not continue past CLOSE
+rc=1
+
+HISTORICAL_POST_CLOSE_VIOLATION=PRESERVED
+HISTORICAL_HALT_GATE_PUSH_NOT_GREEN=PRESERVED (still a HALT)

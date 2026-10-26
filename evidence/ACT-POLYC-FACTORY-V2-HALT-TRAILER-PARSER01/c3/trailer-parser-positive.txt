@@ -1,0 +1,29 @@
+=== TRAILER PARSER POSITIVE (ACT-POLYC-FACTORY-V2-HALT-TRAILER-PARSER01 C3) ===
+
+--- git RAW parse of the valid HALT CLOSE (the defect) ---
+$ git interpret-trailers --parse < valid-halt-close.txt
+(EMPTY above = git dropped the whole block)
+
+--- shared NORMALIZED parse (the repair) ---
+$ factory_trailer_parse_file valid-halt-close.txt
+ACT: ACT-POLYC-FACTORY-V2-TEST01
+ACT-Phase: CLOSE
+ACT-Verdict: HALT_MANDATORY_AC_NOT_GREEN
+HALT_CLASS: GOVERNANCE
+BLOCKS_NEXT: NO
+
+--- commit-msg validator ---
+MODE=ACT
+ACT=ACT-POLYC-FACTORY-V2-TEST01
+PHASE=CLOSE
+VERDICT=HALT_MANDATORY_AC_NOT_GREEN
+SUPERSEDES=
+CORRECTED_VERDICT=
+HALT_CLASS=GOVERNANCE
+BLOCKS_NEXT=NO
+STATUS=PASS
+rc=0
+
+--- raw message bytes unchanged by the normalization ---
+raw sha256    = 4d4928731a9dfedb72cbff2086c719b64d665695b4049f883576ed74e7f2097a
+normalized out = (temporary copy, discarded)

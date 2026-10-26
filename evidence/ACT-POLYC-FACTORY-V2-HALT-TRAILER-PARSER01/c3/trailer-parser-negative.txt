@@ -1,0 +1,64 @@
+=== TRAILER PARSER NEGATIVE (ACT-POLYC-FACTORY-V2-HALT-TRAILER-PARSER01 C3) ===
+
+--- split-act-block ---
+s
+
+b
+
+ACT: ACT-POLYC-TEST01
+
+ACT-Phase: CLOSE
+
+ACT-Verdict: PASS
+$ sh scripts/quality/factory-v2-commit-msg-check.sh
+MODE=ACT
+STATUS=FAIL
+REASON=ACT-like trailer metadata present (count=3) but no parseable ACT trailer; footer is malformed or unparseable
+rc=1
+
+--- malformed-lookalike ---
+docs: malformed lookalike
+
+body
+
+ACT: ACT-POLYC-HALTCLASS01
+ACT-Phase: CLOSE
+ACT-Verdict: HALT_X
+HALT CLASS: GOVERNANCE
+BLOCKS NEXT: NO
+$ sh scripts/quality/factory-v2-commit-msg-check.sh
+MODE=ACT
+STATUS=FAIL
+REASON=ACT-like trailer metadata present (count=3) but no parseable ACT trailer; footer is malformed or unparseable
+rc=1
+
+--- CONTROL: literal ACT: in ordinary prose must stay NON_ACT ---
+s
+
+b
+
+this commit mentions ACT: in prose only
+MODE=NON_ACT
+STATUS=PASS
+rc=0
+
+--- CONTROL: a complete conforming HALT footer is ACCEPTED ---
+s
+
+b
+
+ACT: ACT-POLYC-TEST01
+ACT-Phase: CLOSE
+ACT-Verdict: HALT_X
+HALT_CLASS: GOVERNANCE
+BLOCKS_NEXT: NO
+MODE=ACT
+ACT=ACT-POLYC-TEST01
+PHASE=CLOSE
+VERDICT=HALT_X
+SUPERSEDES=
+CORRECTED_VERDICT=
+HALT_CLASS=GOVERNANCE
+BLOCKS_NEXT=NO
+STATUS=PASS
+rc=0

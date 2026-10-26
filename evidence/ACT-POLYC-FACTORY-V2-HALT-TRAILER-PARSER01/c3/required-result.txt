@@ -1,0 +1,57 @@
+=== ACT-POLYC-FACTORY-V2-HALT-TRAILER-PARSER01 C3 REQUIRED RESULT ===
+
+FACTORY_V2_TRAILER_PARSER=REPAIRED
+FACTORY_V2_FAIL_OPEN=ELIMINATED
+HALT_CLASSIFICATION=CONSISTENT
+FACTORY_V2_POST_CLOSE_CONTINUATION_DETECTOR=REPAIRED
+F14_HANDOFF=RESTORED_BYTE_IDENTICAL
+
+HISTORICAL_BOOTSTRAP_TOPOLOGY=UNCHANGED
+HISTORICAL_BOOTSTRAP_GATE_PUSH=FAIL
+PARSER_PADDING_PRODUCTION_AUTHORITY=POLYC
+
+--- MEASURED GATES ---
+factory-v2-test          = 53 PASS / 0 FAIL  (rc=0)
+factory-append-only-test = 11 PASS / 0 FAIL  (rc=0)
+gate-fast                = STATUS=PASS (rc=0)
+
+--- THE DEFECT, BEFORE AND AFTER ---
+BEFORE: git interpret-trailers --parse returned EMPTY for every
+        conforming HALT_* CLOSE, because the mandatory HALT_CLASS /
+        BLOCKS_NEXT keys made git reject the WHOLE trailer block.
+        The commit-message validator therefore reported
+        MODE=NON_ACT STATUS=PASS (fail-open), and the range validator
+        reported count=0.
+AFTER:  the shared normalization (scripts/quality/factory-v2-trailer-compat.inc)
+        recovers all five trailers of the real historical HALT CLOSE
+        at 290d917, and the validators enforce the HALT grammar.
+
+--- WHAT WAS NOT CHANGED ---
+PRODUCTION_COMPILER_DELTA=0        (no file under src/ or tools/ changed)
+PYTHON_DELTA=0
+CLASSIFIER_SOURCE_DELTA=0          (the PolyC classifier is untouched)
+HISTORICAL_POST_CLOSE_VIOLATION=PRESERVED
+HISTORICAL_HALT_GATE_PUSH_NOT_GREEN=PRESERVED
+GEP01_PREEXISTING_FAILURE=UNRESOLVED (independently owned)
+FULL_PUSH_GATE=NOT_CLAIMED_GREEN
+
+--- RESIDUE ---
+1. src/asm/asm.c does not support "@@N" local labels, so no .HC file
+   that includes src/holyc-lib/memory.HC can be compiled on this host.
+   PRE-EXISTING (reproduced at the C0 commit), OUT OF SCOPE.
+   CLASSIFICATION=UNRELATED_BASELINE_FAILURE. It does not block this
+   ACT because the classifier SOURCE is unchanged and its existing
+   binary (sha-verified against that source) served as the oracle.
+   See c2/environment-dependency-finding.txt.
+2. scripts/quality/shell-loc-gate.sh now reports 3 GROW entries for the
+   three grandfathered legacy validators this ACT was authorized to
+   repair. The gate already failed at entry with 2 pre-existing
+   violations and is NOT wired into gate-fast or gate-push.
+   CLASSIFICATION=NON_BLOCKING_GOVERNANCE_RESIDUE. See
+   c2/shell-loc-ratchet-deviation.txt.
+3. The pre-existing LLVM GEP01 cap-verifier failure remains FAIL and
+   retains its own owner. This ACT neither disables GEP01 nor claims the
+   full push gate is green.
+
+C3_VERDICT=ALL_MANDATORY_CRITERIA_GREEN
+VERDICT_TARGET=PASS_TRUE_GREEN

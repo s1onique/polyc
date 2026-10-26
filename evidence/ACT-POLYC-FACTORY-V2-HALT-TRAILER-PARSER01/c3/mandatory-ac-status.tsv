@@ -1,0 +1,29 @@
+ac_id	status	measured_evidence
+AC01	PASS	C0 AUTH commit 7166e5e precedes the C2 implementation commit 87b4f0d
+AC02	PASS	c0/entry-identity.txt: ENTRY_HEAD=baf3e16ef8941333ef4b343864468fc2ba64d252 branch=main
+AC03	PASS	c1/red-1-valid-halt-rejected.txt, c1/red-2-fail-open-and-red-3-split-block.txt, c1/red-4-post-close-continuation.txt
+AC04	PASS	c3/trailer-parser-positive.txt: valid HALT footer -> MODE=ACT HALT_CLASS=GOVERNANCE BLOCKS_NEXT=NO rc=0
+AC05	PASS	c3/trailer-parser-negative.txt: missing/duplicate/bad-enum/bad-combination all rc=1
+AC06	PASS	c3/commit-msg-fail-open-control.txt: 3 fail-open vectors -> FAIL_OPEN_ELIMINATED
+AC07	PASS	c3/commit-msg-fail-open-control.txt case 4 and T45/T46: MODE=NON_ACT STATUS=PASS rc=0
+AC08	PASS	T39 HALT_CLASS count=2 rc=1; T40 BLOCKS_NEXT count=2 rc=1
+AC09	PASS	T42 HALT_CLASS GOVERNANCE requires BLOCKS_NEXT=NO rc=1
+AC10	PASS	T43 PASS verdict forbids HALT_CLASS (count=1) rc=1
+AC11	PASS	T5 T6 T52 and all 35 pre-existing cases still PASS
+AC12	PASS	c3/range-check-halt-control.txt: valid HALT lifecycle range STATUS=PASS rc=0
+AC13	PASS	c3/post-close-continuation-control.txt case 1 rc=1
+AC14	PASS	c3/post-close-continuation-control.txt case 2 rc=1
+AC15	PASS	c3/post-close-continuation-control.txt case 3 rc=1 (historical violation preserved)
+AC16	PASS	c3/existing-factory-v2-regression.txt: 53 PASS 0 FAIL
+AC17	PASS	c3/existing-factory-v2-regression.txt: T35-T52 all PASS
+AC18	PASS	c3/halt-classification-consistency.txt: 15/15 comparisons AGREE=YES
+AC19	PASS	c3/production-conservation.txt: git diff ENTRY..HEAD -- src/ tools/ is EMPTY
+AC20	PASS	c3/append-only-conservation.txt: git replace -l empty; 4 forward commits only
+AC21	PASS	c3/f14-conservation.txt: no tracked predecessor evidence file changed
+AC22	PASS	c3/f14-conservation.txt: F14_HANDOFF_RESTORED=YES BYTE_EQUALITY=CONFIRMED
+AC23	PASS	c3/production-conservation.txt PYTHON_DELTA=0; new file is a sourced .inc library not a new tool
+AC24	PASS	c3/patch-hygiene.txt: git diff --check rc=0; all shell files pass sh -n
+AC25	PASS	c3/append-only-conservation.txt: factory-append-only-test 11/11 PASS
+AC26	PASS	make gate-fast STATUS=PASS rc=0
+AC27	PASS	c3/required-result.txt: verdict matches the measured evidence
+AC28	EXTERNAL	evaluated after C4; not pre-marked here

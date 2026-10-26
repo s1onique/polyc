@@ -92,7 +92,8 @@ factory_trailer_raw_commit() {
 # fail CLOSED.
 # Usage: factory_trailer_act_like_count <message-file>
 factory_trailer_act_like_count() {
-    grep -Ec "$FACTORY_ACT_KEYS_RE" "$1" 2>/dev/null || echo 0
+    _n=$(grep -Ec "$FACTORY_ACT_KEYS_RE" "$1" 2>/dev/null) || _n=0
+    printf '%s\n' "$_n" | head -n 1
 }
 
 # Count how many separate trailer REGIONS in the raw message carry
@@ -101,7 +102,7 @@ factory_trailer_act_like_count() {
 # partially accepted.
 # Usage: factory_trailer_act_region_count <message-file>
 factory_trailer_act_region_count() {
-    awk '
+    _r=$(awk '
         /^(ACT|ACT-Phase|ACT-Verdict|ACT-Supersedes|ACT-Corrected-Verdict|HALT_CLASS|BLOCKS_NEXT):[[:space:]]+/ {
             factory = 1
         }
@@ -115,5 +116,6 @@ factory_trailer_act_region_count() {
             }
         }
         END { if (factory) regions++; print regions + 0 }
-    ' "$1" 2>/dev/null || echo 0
+    ' "$1" 2>/dev/null) || _r=0
+    printf '%s\n' "$_r" | head -n 1
 }
