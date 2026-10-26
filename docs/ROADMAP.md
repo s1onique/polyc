@@ -6295,3 +6295,91 @@ byte-identical, and the authority registry is byte-identical.
 See
 `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION01.md`
 and `evidence/ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION01/`.
+
+#### ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION02 status (CLOSED PASS at this commit)
+
+```text
+ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION02
+  ENTRY       = 638e2e0 (the two post-CLOSE commits that followed the
+               predecessor's CLOSE; see below)
+  C0 AUTH/RED = (the indented-row bypass; the F14 closure violation;
+               the NC-D12 block that its own command does not produce)
+  C1 IMPL     = (the metadata-block context; the driver's row separator)
+  C2 EVIDENCE = (both findings established; the corrected NC-D12
+               measurement; the F14 violation recorded)
+  C3 EVIDENCE = (the gates; the required result; the terminality)
+
+  CLASS = CORRECTION / QUALIFICATION-HARDENING
+
+  DIFFERENTIAL_FIXTURE_AUTHORITY = COMPLETE (and now FAIL-CLOSED for
+                              unrecognized rows in ANY shape, indented
+                              or not)
+  NEGATIVE_CONTROLS             = PASS (20 differential controls, 0 broken)
+  PRODUCTION_AUTHORITY          = POLYC
+  PRODUCTION_SEMANTIC_DELTA     = 0
+
+  FINDING_P0_POST_CLOSE_EVIDENCE_MUTATION = CONFIRMED_AND_RECORDED
+  FINDING_P1_NC_D12_BLOCK_MISMATCH       = CONFIRMED
+  FINDING_P1_INDENTED_ROW_BYPASS          = REPAIRED
+  FINDING_P1_DRIVER_ROW_SEPARATION        = REPAIRED
+
+  DIRECT_DIFFERENTIAL_TOTAL = 42
+  DIRECT_DIFFERENTIAL_PASS  = 42
+  DIRECT_DIFFERENTIAL_FAIL  = 0
+  INDENTED_UNKNOWN_ROW      = FAIL (REASON=FIXTURE_ID_UNKNOWN, UNKNOWN_IDS=1)
+
+  GATE_FAST      = PASS (RC=0; manifest PAIR_OK=30 PAIR_FAIL=0)
+  GATE_PUSH      = PASS (RC=0; build/install/gep01/aot/jit/lsp/diff-check all PASS)
+  PATCH_HYGIENE  = PASS (over the COMMITTED range)
+
+  RESIDUE = 3 (one P1, two P2; see the HANDOFF)
+  NEXT_ACT = ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03
+```
+
+**The last row-recognition hole is closed.** The predecessor's repaired
+reader used a *positive* recognition test, but its metadata clause
+accepted **any** indented line as a metadata continuation, without
+requiring that a metadata block was in scope. An indented unknown
+fixture ID was therefore still invisible to the unknown-ID ledger, and
+the differential returned `STATUS=PASS` with `UNKNOWN_IDS=0` for a
+fixture holding an unknown ID — the same defect class the predecessor
+was opened to repair, narrowed from "any unrecognized row" to "any
+indented unrecognized row". The reader now tracks a metadata-block
+context: a recognized `KEY=VALUE` row opens the block, an indented row
+continues it and is skippable only while it is open, and a data row
+closes it. The comment recognition and the `KEY=VALUE` first-field
+recognition are unchanged, and no existing rejection reason is weakened.
+Four new negative controls were added and executed against the real
+differential; the row-separation control was proved load-bearing by
+removing the fix and observing it report `BROKEN`.
+
+**The predecessor's closure defect is recorded, not erased.** Its two
+post-CLOSE commits added `c3/terminality.txt` to the *closed* evidence
+directory, which conflicts with that ACT's own "no post-CLOSE fixup
+commit" clause and with the strict F14 reading. The violation is
+established mechanically by
+`git diff --name-status fb85cff..HEAD -- evidence/ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION01/`.
+Those commits are historical evidence: they are **not** amended,
+reverted or rewritten, and this ACT did not touch the predecessor's
+evidence directory — both tree hashes are
+`3606f07439313124020971a472110d9c1fb4944b`. This ACT applies the
+geometry the predecessor did not: its terminality evidence is recorded
+**before** the CLOSE commit, and the CLOSE commit is the last commit of
+its range.
+
+**One predecessor evidence block does not match its own command.** The
+review observed that the recorded `NC-D12` block reports `TOTAL=42`,
+which is inconsistent with "42 canonical rows plus a 43rd row". The
+recorded block is reproducible **exactly**, but only from a base fixture
+that is already missing `F042` (41 rows). The predecessor's recorded
+command line therefore does not describe the run that produced its
+recorded output. Its *conclusion* still holds: the corrected
+measurement is `TOTAL=43`, `UNKNOWN_IDS=1`,
+`REASON=FIXTURE_ID_UNKNOWN`.
+
+The production decision is unchanged: the committed range touches no
+file under `src/` or `tools/bootstrap/`.
+
+See
+`docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION02.md`
+and `evidence/ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01-CORRECTION02/`.
