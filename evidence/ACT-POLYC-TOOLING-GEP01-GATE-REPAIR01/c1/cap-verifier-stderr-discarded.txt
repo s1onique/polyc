@@ -1,0 +1,45 @@
+=== ACT-POLYC-TOOLING-GEP01-GATE-REPAIR01 :: C1 RED
+=== The harness DISCARDS the cap-table verifier's captured stderr
+===
+
+SOURCE (tools/quality/llvm-gep01-test.HC, RunCapability):
+
+    I64 rc = SpawnAndCapture(python, args, &out, &err);
+    if (out) FileWrite(cap_path, out, StrLen(out));
+    BytewiseFree(out); BytewiseFree(err);     <-- `err` is freed, never read
+
+The verifier's own diagnostics are emitted on STDOUT (its stderr is
+empty -- measured below), so the stdout file DOES contain them. But:
+
+  * the harness reduces three distinct capability rows (IR_GEP, IR_LEA,
+    IR_IADD) to ONE generic message "could not read cap verifier output",
+    so the operator cannot tell WHICH capability assertion failed or why;
+  * the stderr channel is discarded entirely, so any diagnostic the
+    verifier writes there is unreachable from the harness output.
+
+MEASURED (Defect B probe, non-LLVM ./hcc):
+
+    SpawnAndCapture(rc)      = 1
+    captured stdout length   = 223
+    captured stderr length   = 0
+
+    --- captured stdout (what the harness writes to cap-verifier.txt) ---
+    === llvm-cap-table-verifier (CORE03-CORRECTION01) ===
+    PASS  parsed 56 IrOp enum entries (IR_NOP=0 .. IR_ASM=55)
+    FAIL  hcc --print-cap-table exited non-zero:
+    FAIL  could not load capability table from hcc --print-cap-table
+
+    --- captured stderr (what the harness DISCARDS) ---
+    --- end stderr ---
+
+MEASURED (harness rows produced by that verifier output):
+
+    FAIL  IR_GEP = REJECTED (sibling opcode still rejected): could not read cap verifier output
+    FAIL  IR_LEA = REJECTED (sibling opcode still rejected): could not read cap verifier output
+    FAIL  IR_IADD = SUPPORTED (preserved, GEP01 is per-shape subset): could not read cap verifier output
+
+Note the shape of the diagnostic: "hcc --print-cap-table exited non-zero:"
+is followed by NOTHING, because the verifier merges the child's stderr
+into stdout (subprocess.check_output(..., stderr=subprocess.STDOUT))
+and the child produced no output -- it died on SIGSEGV before writing
+anything. The empty diagnostic is itself the signature of the crash.

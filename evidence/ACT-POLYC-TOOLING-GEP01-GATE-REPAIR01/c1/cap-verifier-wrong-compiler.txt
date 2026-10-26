@@ -1,0 +1,28 @@
+=== Defect B probe :: STATE 1 (non-LLVM ./hcc -> SIGSEGV) ===
+=== ACT-POLYC-TOOLING-GEP01-GATE-REPAIR01 :: Defect B probe ===
+python = /run/current-system/sw/bin/python3
+
+SpawnAndCapture(rc)      = 1
+captured stdout length   = 223
+captured stderr length   = 0
+
+--- captured stdout (what the harness writes to cap-verifier.txt) ---
+=== llvm-cap-table-verifier (CORE03-CORRECTION01) ===
+PASS  parsed 56 IrOp enum entries (IR_NOP=0 .. IR_ASM=55)
+FAIL  hcc --print-cap-table exited non-zero:
+FAIL  could not load capability table from hcc --print-cap-table
+
+--- captured stderr (what the harness DISCARDS) ---
+--- end stderr ---
+wrote cap-verifier.txt   = 223 bytes
+
+=== INTERPRETATION ===
+The verifier's diagnostic is on stdout, so the harness DOES see it --
+but only as a generic 'could not read cap verifier output' row,
+because the three capability rows all collapse onto one message and
+the stderr channel is thrown away entirely.
+--- direct SIGSEGV measurement ---
+$ ./hcc --print-cap-table ; echo $?
+139
+$ strings hcc | grep -c CAPABILITY_COUNTERS
+0

@@ -1,0 +1,14 @@
+=== ACT-POLYC-TOOLING-GEP01-GATE-REPAIR01 :: Defect A probe ===
+io_defs.HH FileWrite 4th parameter default is used by the harness.
+
+FileWrite(default)                    = 0
+FileWrite(explicit O_CREAT|O_RDWR)    = 1
+FileWrite(explicit 0x202)             = 1
+FileWrite(explicit ...|O_TRUNC)       = 1
+direct open(O_CREAT|O_RDWR, 420)      = fd 3, wrote 5 bytes
+
+=== INTERPRETATION ===
+If FileWrite(default) == 0 while the explicit-flag calls == 1, the
+call site is being lowered against a 4th parameter that is NOT the
+library's I64 flags parameter. The defaulted value arrives as the
+boolean FALSE (0), so open() is issued without O_CREAT and fails.
