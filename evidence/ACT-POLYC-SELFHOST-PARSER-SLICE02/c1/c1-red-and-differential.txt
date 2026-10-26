@@ -1,0 +1,149 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE02
+ACT_PHASE=C1-RED
+EVIDENCE_KIND=red-and-direct-differential
+
+# ========================================================================
+# THE RED
+# ========================================================================
+# The RED is the ABSENCE of the PolyC subject and of the production
+# delegation.  At the entry HEAD:
+#
+#   tools/bootstrap/selfhost-parser-control-flow-token.HC
+#       -> ABSENT (the file did not exist)
+#   src/parser.c: parseValidPostControlFlowToken had no delegation
+#       -> the legacy C body was the only implementation
+#   production ./hcc
+#       -> did NOT link _BootstrapValidPostControlFlowToken
+#
+# The seam is real: the legacy C function and the real production
+# binary.  No synthetic mock is involved anywhere in this ACT.
+#
+# COMMAND_0=ls tools/bootstrap/selfhost-parser-control-flow-token.HC
+# COMMAND_0_RESULT=(No such file or directory)
+# COMMAND_0B=grep -c BootstrapValidPostControlFlowToken src/parser.c
+# COMMAND_0B_RESULT=0
+# COMMAND_0C=nm ./hcc | grep -c BootstrapValidPostControlFlowToken
+# COMMAND_0C_RESULT=0
+
+RED_STATUS=REPRODUCED
+
+# ========================================================================
+# THE COMPONENT
+# ========================================================================
+# The subject is compiled by the STAGE-0 compiler, so the component does
+# not depend on the production compiler it is about to serve.
+COMMAND_1=make parser-control-flow-token-component
+COMMAND_1_RESULT=
+SLICE02_SUBJECT=build/parser-control-flow-token-subject.o
+SLICE02_SUBJECT_ARCH=arm64
+SLICE02_COMPONENT=BUILD source=tools/bootstrap/selfhost-parser-control-flow-token.HC
+SLICE02_COMPONENT_OBJECT=./build/parser-control-flow-token-subject.o
+COMMAND_1_EXIT_STATUS=0
+
+COMMAND_2=nm build/parser-control-flow-token-subject.o | grep BootstrapValidPostControlFlowToken
+COMMAND_2_RESULT=
+0000000000000000 T _BootstrapValidPostControlFlowToken
+COMPONENT_SYMBOL_PRESENT=YES
+COMPONENT_BUILT_BY_STAGE0=YES
+
+# ========================================================================
+# THE ORACLE IS THE REAL PRODUCTION FUNCTION
+# ========================================================================
+# The oracle carries the production body of src/parser.c VERBATIM (only
+# the function name differs, so that the copied oracle and the real
+# production function can be linked into the SAME cross-check binary).
+# It includes the LIVE src/lexer.h, so the kind and keyword constants
+# are bound to production values, not to a copy of them.
+#
+# The equivalence of the copied body with the REAL production object is
+# established by a cross-check that links BOTH and compares them over a
+# broad sweep: 12 kinds x 27 payloads, plus the two absent-token cases.
+COMMAND_3=cc -std=c99 -O2 -I src -I tools/quality -o build/slice02-cross \
+            <cross-check>.c build/slice02-oracle-impl.o build/slice02-oracle.o \
+            <production objects> build/parser-padding-subject.o build/asm/libtasm.a -lm
+COMMAND_3_RESULT=(linked)
+COMMAND_3_RUN=./build/slice02-cross
+COMMAND_3_RUN_RESULT=
+CROSS_ROWS=326 CROSS_SAME=326 CROSS_DIFF=0
+CROSS_EXIT_STATUS=0
+ORACLE_IS_EQUIVALENT_TO_THE_REAL_PRODUCTION_OBJECT=YES
+  326 comparisons, 326 identical, 0 different.  The oracle is the
+  production semantics, not a paraphrase of them.
+
+# ========================================================================
+# THE DIRECT DIFFERENTIAL
+# ========================================================================
+# The comparison layer is PolyC (terminal authority).  It calls the PolyC
+# subject and the C oracle on EVERY fixture row, and ALSO checks the
+# fixture's own `expected` column against the oracle, so a disagreement
+# between the subject and the oracle cannot be masked by an equally wrong
+# fixture.
+COMMAND_4=make parser-control-flow-token-differential
+COMMAND_4_RESULT=
+SLICE02_DIFF=BUILD
+COMMAND_4_EXIT_STATUS=0
+
+COMMAND_5=./build/parser-control-flow-token-differential \
+            evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02-CORRECTION01/c1/c1-corrected-fixture-model.tsv
+COMMAND_5_RESULT=
+SLICE02_DIFFERENTIAL_TOTAL=42
+SLICE02_DIFFERENTIAL_PASS=42
+SLICE02_DIFFERENTIAL_FAIL=0
+SLICE02_DIFFERENTIAL_PARSE_ERRORS=0
+SLICE02_DIFFERENTIAL_ORACLE_VS_EXPECTED_MISMATCH=0
+STATUS=PASS
+COMMAND_5_EXIT_STATUS=0
+# ========================================================================
+# THE NEGATIVE CONTROLS -- the differential must FAIL when it should
+# ========================================================================
+# NC1: the PREDECESSOR's frozen matrix (F041 stated 0) must be rejected,
+#      because the production oracle returns 1 for that row.  This proves
+#      the differential does not merely echo the fixture.
+COMMAND_NC1=./build/parser-control-flow-token-differential \
+             evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON02/c2/c2-selected-fixture-model.tsv
+COMMAND_NC1_RESULT=
+SLICE02_DIFFERENTIAL_TOTAL=42
+SLICE02_DIFFERENTIAL_PASS=42
+SLICE02_DIFFERENTIAL_FAIL=0
+SLICE02_DIFFERENTIAL_PARSE_ERRORS=0
+SLICE02_DIFFERENTIAL_ORACLE_VS_EXPECTED_MISMATCH=1
+STATUS=FAIL
+COMMAND_NC1_EXIT_STATUS=1
+NC1_DETECTS_A_WRONG_FIXTURE=YES
+
+# NC2..NC5: MUTATIONS of the PolyC subject.  Each must be caught.
+#
+#   M1  reject kind 0x301   (breaks the TK_SUPERSCRIPT aliasing)
+#       -> 39 pass / 3 fail  (the three STR-group rows F005, F006, F041)
+#   M2  accept the absent token (drops the NULL guard)
+#       -> 41 pass / 1 fail  (the NULL/EOF row F001)
+#   M3  reject the '*' punctuation payload
+#       -> 41 pass / 1 fail
+#   M4  reject the KW_TRY keyword payload
+#       -> 41 pass / 1 fail
+#
+# Each mutation is applied to a COPY of the subject, the differential is
+# rebuilt against it, and the subject is then restored to pristine.
+MUTATION_M1_FAILS_DETECTED=3
+MUTATION_M2_FAILS_DETECTED=1
+MUTATION_M3_FAILS_DETECTED=1
+MUTATION_M4_FAILS_DETECTED=1
+MUTATIONS_APPLIED=4
+MUTATIONS_DETECTED=4
+MUTATION_DETECTION_RATE=4/4
+DIFFERENTIAL_DETECTS_A_WRONG_SUBJECT=YES
+
+# The subject is PRISTINE after the mutation controls:
+COMMAND_PRISTINE=grep -c 'MUTANT' tools/bootstrap/selfhost-parser-control-flow-token.HC
+COMMAND_PRISTINE_RESULT=0
+SUBJECT_IS_PRISTINE=YES
+
+C1_REQUIRED_RESULT_STATUS=PASS
+
+
+DIRECT_DIFFERENTIAL_TOTAL=42
+DIRECT_DIFFERENTIAL_PASS=42
+DIRECT_DIFFERENTIAL_FAIL=0
+DIRECT_DIFFERENTIAL_PARSE_ERRORS=0
+DIRECT_DIFFERENTIAL_ORACLE_VS_EXPECTED_MISMATCH=0
+DIRECT_DIFFERENTIAL_STATUS=PASS
