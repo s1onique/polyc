@@ -6482,3 +6482,108 @@ NEXT_TARGET = CAND-017 parseGetPriority (src/prslib.c:1139..1207)
 See
 `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03.md` and
 `evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03/`.
+
+#### ACT-POLYC-SELFHOST-PARSER-SLICE03 status (CLOSED PASS at this commit)
+
+The compiler's **operator precedence table** is now implemented in PolyC
+and the production compiler actually consumes it.
+
+```text
+ACT-POLYC-SELFHOST-PARSER-SLICE03
+  ENTRY       = 50cabc1141f66e6d43d2f65524f1fd4d9933a3bc (RECON03 C4: CLOSE)
+  PREDECESSOR = ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03
+
+PARSER_PADDING_AUTHORITY            = POLYC
+PARSER_CONTROL_FLOW_TOKEN_AUTHORITY  = POLYC
+PARSER_OPERATOR_PRECEDENCE_AUTHORITY = POLYC
+```
+
+**The predecessor's closure was `HALT_ACKNOWLEDGED`, and its contract
+was requalified before anything was implemented.**  RECON03's own AC
+ledger records AC47 as `FAIL_PRE_EXISTING_HOST_ISSUE`, so this ACT
+re-derived the contract independently instead of inheriting it.
+
+Two defects in the inherited fixture contract were found by a tool and
+corrected:
+
+- **The 91-versus-99 count contradiction.**  The predecessor declared
+  `TOTAL_MIN_ROWS=91` while its own rows sum to **99**.  The cause is
+  mechanical: its `P18` row has 4 tab-separated fields where every
+  other row has 5, so its declared `min_rows` (8) sits in the
+  `expected_output` position and is not readable by field position.
+  The **corrected** count is **98**, not 99, because correcting the
+  second defect removes one reject row from P15.
+- **The `TK_SHR` defect.**  The predecessor's P15 row listed `0x30B-1`
+  among the values that MUST return `-1`.  `0x30B - 1` **is** `0x30A`,
+  which is `TK_SHR`: a recognised operator with precedence 6.  The
+  expectation was semantically false.  The legacy semantics were
+  correct and were **not** changed.
+
+The precedence table itself was re-derived from the live
+`src/prslib.c` and the live `src/lexer.h` -- 39 operators, 0
+unresolved labels, and the `-1` sentinel read out of the live `default`
+arm -- and it agrees with the predecessor's prose table on every
+precedence class.  The requalification **confirms** the predecessor's
+precedence semantics; it corrects only the fixture contract.
+
+```text
+CORRECTED_FIXTURE_COUNT=98
+REAL_C_ORACLE_DIFFERENTIAL=PASS    (98/98 rows, 0 disagreements)
+FIXTURE_INTEGRITY=PASS             (4/4 negative controls fire)
+G0_G1_G2_G3=QUALIFIED              (457 semantic points, 0 mismatches)
+PRODUCTION_CAUSAL_PROOF=PASS       (62 -> 162 -> 62, restore SHA identical)
+```
+
+The oracle is the **real** legacy C function: `src/prslib.c` compiled
+*without* the delegation macro, so the byte-identical legacy body is
+what executes.  The production delegation is fail-closed, and the
+strong form of the evidence is:
+
+```text
+$ nm -u build/CMakeFiles/hcc.dir/prslib.c.o | grep -i bootstrap
+_BootstrapOperatorPrecedence
+```
+
+`parseGetPriority` is **not** in the production object: the legacy
+algorithm body lives in the `#else` branch and is not compiled into
+the production binary.
+
+Conservation was measured against a compiler built from the **entry
+tree**, not against the previous ACT's report:
+
+```text
+BASELINE_PASSED=87  BASELINE_FAILED=3
+CURRENT_PASSED=87   CURRENT_FAILED=3     (identical failure identities)
+
+NEW_PARSER_FAILURE_IDENTITIES=0
+NEW_PARSER_SEMANTIC_REGRESSIONS=0
+NEW_LEXER_FAILURES=0
+NEW_LEXER07_FAILURE_IDENTITIES=0
+```
+
+The three parser failures are the pre-existing
+`/usr/local/include/tos.HH` host issue; they are recorded as measured,
+not relabelled.  The F-NO-PYTHON and shell-LOC violations are likewise
+pre-existing with 0 new.
+
+```text
+GATE_FAST    = PASS
+GATE_PUSH    = PASS   (fresh, hermetic, clean tree; CHECK=aot PASS)
+FACTORY_V2   = PASS (53/0)
+APPEND_ONLY  = PASS (11/0)
+F14          = PASS
+PATCH_HYGIENE= PASS
+
+MANDATORY_AC_ROWS=62  PASS=62  FAIL=0  DEFERRED=0  UNPROVEN=0
+
+OPERATOR_PRECEDENCE_SEMANTIC_DELTA=0
+PRODUCTION_SEMANTIC_DELTA=0
+```
+
+**Next milestone:** the remaining eligible candidates stay available as
+later targets; `CAND-019` / `CAND-020` are the natural companions to
+the precedence table.
+
+See
+`docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE03.md` and
+`evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03/`.
