@@ -1,0 +1,29 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE03
+ACT_PHASE=C0-AUTH-RED
+EVIDENCE_KIND=entry-identity
+
+COMMAND=git branch --show-current
+OUTPUT=main
+
+COMMAND=git rev-parse HEAD
+OUTPUT=50cabc1141f66e6d43d2f65524f1fd4d9933a3bc
+
+COMMAND=git status --porcelain=v1
+OUTPUT=(empty -- clean at the moment of the identity capture, before
+       the authorization artifact was written)
+
+COMMAND=git replace -l | wc -l
+OUTPUT=0
+
+COMMAND=git merge-base --is-ancestor 50cabc1141f66e6d43d2f65524f1fd4d9933a3bc HEAD
+OUTPUT=(exit 0)
+
+BRANCH=main
+ENTRY_HEAD=50cabc1141f66e6d43d2f65524f1fd4d9933a3bc
+WORKTREE_CLEAN=YES
+GIT_REPLACE_REFS=0
+PREDECESSOR_REACHABLE=YES
+
+NOTE: the entry HEAD is the RECON03 CLOSE commit.  It was NOT
+hard-coded from a historical document; it was read from the live tree
+at the moment this ACT was opened.

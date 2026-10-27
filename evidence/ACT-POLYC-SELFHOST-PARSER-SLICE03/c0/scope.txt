@@ -1,0 +1,48 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE03
+ACT_PHASE=C0-AUTH-RED
+EVIDENCE_KIND=scope
+
+AUTHORIZED_TRACKED_MUTATIONS
+  docs/acts/ACT-POLYC-SELFHOST-PARSER-SLICE03.md
+  docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE03.md
+  docs/factory/act-handoff-map.tsv
+  docs/ROADMAP.md
+  evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03/**
+  src/prslib.c            (delegation guard + zero-logic oracle adapter ONLY)
+  src/CMakeLists.txt      (fail-closed component linkage ONLY)
+  tools/bootstrap/selfhost-parser-operator-precedence.HC
+  tools/quality/parser-slice03-*.HC
+  tools/quality/parser-slice03-*.c
+  tools/quality/parser-slice03-*.h
+  Makefile
+
+FORBIDDEN_TRACKED_MUTATIONS
+  docs/acts/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03.md
+  evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03/**
+  docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03.md
+  src/parser.c
+  src/lexer.c
+  src/ast.c
+  src/cctrl.c
+  src/prsutil.c
+  existing closed qualification tools
+  existing Factory validators
+  pre-push hooks
+
+FORBIDDEN_SEMANTIC_CHANGES
+  the precedence VALUES
+  the -1 sentinel
+  any tk_type check
+  the constant binding away from the live src/lexer.h values
+  parseExpr, the recursion, or the AST
+  changing the legacy precedence semantics merely to make fixtures pass
+  a silent C fallback on the migrated path
+
+F14_BINDING=YES
+  RECON03's ACT, evidence tree and HANDOFF are closed evidence.  The
+  historical two-tool scope violation is RECORDED in this ACT's own
+  evidence, not repaired by editing them.
+
+TOOL_POLICY=F-POLYC-TOOLS
+  Every new tool implementation SHALL be PolyC.  Shell is permitted
+  only as <= 50 LOC of bootstrap glue.

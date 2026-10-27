@@ -1,0 +1,66 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE03
+ACT_PHASE=C0-AUTH-RED
+EVIDENCE_KIND=baseline-authority
+
+The C0 baseline is the live tree at ENTRY_HEAD.  Nothing under src/ or
+tools/bootstrap/ is changed by C0.
+
+--- THE REAL SEAM --------------------------------------------------
+
+COMMAND=sed -n '1139,1207p' src/prslib.c
+OBSERVATION: a single `switch (tok->i64)` over 69 lines.  The body
+reads exactly ONE field of its argument and references no other
+identifier.
+
+COMMAND=sed -n '1139,1207p' src/prslib.c | grep -n 'tok->'
+OUTPUT:
+  2:    switch (tok->i64) {
+
+Therefore the complete input projection is the single scalar
+`punct_value = tok->i64`, and the caller-side adapter is
+
+  int parseGetPriority(Lexeme *tok) {
+      return (int)BootstrapOperatorPrecedence((long long)tok->i64);
+  }
+
+No Lexeme* crosses the component boundary; no host pointer identity is
+exposed; no zero-copy projection is used.
+
+--- THE DECISION SITE ----------------------------------------------
+
+COMMAND=grep -n 'parseGetPriority' src/prslib.c
+OUTPUT:
+  1139:static int parseGetPriority(Lexeme *tok) {
+  1363:    prec2 = parseGetPriority(tok);
+
+The decision site is src/prslib.c:1363, inside parseExpr.
+
+--- THE PRODUCTION REACHABILITY ------------------------------------
+
+COMMAND=grep -rn 'parseExpr(' src/parser.c src/prslib.c src/lexer.c
+OBSERVATION: 32 production call sites of parseExpr, including the macro
+preprocessor (src/lexer.c:2202 for #if and :2362 for #elif).
+
+The precedence value therefore decides the AST shape of every binary
+and unary expression in every compiled program.
+
+--- THE EXISTING POLYC PARSER AUTHORITIES -------------------------
+
+COMMAND=nm -u build/CMakeFiles/hcc.dir/parser.c.o | grep -i bootstrap
+OUTPUT:
+  _BootstrapCalcPadding
+  _BootstrapValidPostControlFlowToken
+
+COMMAND=nm -u build/CMakeFiles/hcc.dir/prslib.c.o | grep -i bootstrap
+OUTPUT:
+  (none)
+
+COMMAND=grep -n 'parseValidPostControlFlowToken(' src/parser.c
+OUTPUT: 832 (definition), 992, 1003, 1296, 1330, 1363 (five call sites)
+
+COMMAND=grep -n 'CalcPadding(' src/parser.c
+OUTPUT: 430 (definition), 476 (oracle adapter), plus the five
+       production call sites in the class-offset code.
+
+PRODUCTION_SEMANTIC_DELTA=0
+SUCCESSOR_IMPLEMENTATION_DELTA=0
