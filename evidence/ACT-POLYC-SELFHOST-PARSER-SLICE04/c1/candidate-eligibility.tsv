@@ -1,0 +1,87 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE04
+ACT_PHASE=C1-EVIDENCE
+EVIDENCE_KIND=candidate-eligibility
+#
+# THE ELIGIBILITY CHECKER'S OUTPUT.
+#
+# Produced by tools/quality/parser-slice-recon03-eligibility.HC (the
+# EXISTING, CLOSED RECON03 checker) run against
+# c1/candidate-eligibility-facts.tsv.
+#
+# COMMAND=make parser-slice04-eligibility
+#
+# The clause bit-string is the checker's own output: bit k is 1 when
+# clause k holds.  The clauses are:
+#
+#   01 semantic_authority == YES
+#   02 already_selfhosted == NO
+#   03 r0 <= 2
+#   04 owns_setjmp == NO
+#   05 writes_current_recovery == NO
+#   06 requires_nonlocal_recovery == NO
+#   07 host_graph_writes == 0
+#   08 pointer_identity_operations == 0
+#   09 parser_callback_count == 0
+#   10 semantic_callback_count == 0
+#   11 deterministic_projection == YES
+#   12 production_delegation_feasible == YES
+#   13 candidate_kind is runtime semantic authority
+#   and production_reachable == YES
+#
+# Schema: candidate_id <TAB> eligible <TAB> clause01..clause13 <TAB> failed
+candidate_id	eligible	clause01..clause13	failed
+CAND-019	YES	1111111111111	0
+CAND-020	YES	1111111111111	0
+
+TOTAL=2
+ELIGIBLE=2
+MALFORMED=0
+STATUS=PASS
+
+THE BRIDGEABILITY FACTS (ACT SECTION 6.2)
+=========================================
+For BOTH candidates, prove or disprove:
+
+  LEGACY_AUTHORITY=YES
+  ALREADY_SELFHOSTED=NO
+
+  SCALAR_INPUT_COMPLETE=YES
+  OUTPUT_RESULT_BOUNDED=YES
+
+  HOST_POINTER_IDENTITY_REQUIRED=NO
+  HOST_GRAPH_MUTATION=NO
+  SEMANTIC_CALLBACKS=0
+  NONLOCAL_RECOVERY=NO
+
+  PRODUCTION_CALL_PATH=YES
+  PRODUCTION_DELEGATION_FEASIBLE=YES
+
+THE CLASSIFICATION OF THE OUTPUT-POINTER WRITE
+----------------------------------------------
+The one write through `_result` is classified as **ABI OUTPUT STORAGE**,
+not as host AST graph mutation.  It writes an enum-sized integer into a
+caller-provided slot; it transfers no host pointer into PolyC, mutates
+no AST node, and touches no arena, map or list.  The PolyC component
+never receives the pointer: the adapter keeps it.
+
+  OUTPUT_WRITE_CLASSIFICATION=ABI_OUTPUT_STORAGE
+  HOST_AST_POINTER_TRANSFERRED_TO_POLYC=NO
+  HOST_ALLOCATION_AUTHORITY_TRANSFERRED_TO_POLYC=NO
+
+NEITHER CANDIDATE REQUIRES AN ARBITRARY AST POINTER OR HOST
+ALLOCATION AUTHORITY IN POLYC, so neither is ineligible on that
+ground.
+
+WHY BOTH CANDIDATES ARE ELIGIBLE BUT ONLY ONE IS SELECTED
+==========================================================
+Eligibility says "this candidate MAY be migrated".  It does not say
+"this candidate should be migrated FIRST".  The lexicographic ranking
+on the frozen (R0..R6) dimensions decides the order, and the ranking
+selected CAND-019.
+
+  ELIGIBLE_CANDIDATE_COUNT=2
+  SELECTED_CANDIDATE_COUNT=1
+  SELECTED_CANDIDATE_ID=CAND-019
+  UNSELECTED_CANDIDATE_ID=CAND-020
+  UNSELECTED_CANDIDATE_AUTHORITY=LEGACY_C
+  UNSELECTED_CANDIDATE_SEMANTICS=UNCHANGED

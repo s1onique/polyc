@@ -4189,3 +4189,130 @@ parser-slice03-production-semantic-pairs: $(SLICE03_PRODGEN_DIR)/p0 $(SLICE03_PR
 	   fi; \
 	 done
 	@echo "SLICE03_PRODUCTION_SEMANTIC_PAIRS=6/6 EQUIVALENT"
+
+# =========================================================================
+# ACT-POLYC-SELFHOST-PARSER-SLICE04
+#
+#   parser-slice04-eligibility -> the RECON03 eligibility checker, run
+#       against SLICE04's own candidate facts.
+#   parser-slice04-ranking     -> the RECON03 lexicographic ranker, run
+#       against SLICE04's own ranking dimensions.
+#   parser-slice04-ranking-controls -> the ranking/eligibility negative
+#       controls required by ACT section 6.3.
+#
+# Both tools are the EXISTING, CLOSED RECON03 PolyC tools.  SLICE04 does
+# not author a new ranker and does not change the R0..R6 dimensions; it
+# supplies its own INPUT tables.
+# =========================================================================
+SLICE04_ELIG_SRC = tools/quality/parser-slice-recon03-eligibility.HC
+SLICE04_RANK_SRC = tools/quality/parser-slice-recon03-ranking.HC
+SLICE04_FACTS    = evidence/ACT-POLYC-SELFHOST-PARSER-SLICE04/c1/candidate-eligibility-facts.tsv
+SLICE04_DIMS     = evidence/ACT-POLYC-SELFHOST-PARSER-SLICE04/c1/candidate-ranking.tsv
+
+build/parser-slice04-eligibility: $(SLICE04_ELIG_SRC) ./hcc | test-prefix-install
+	./hcc --install-dir=$(TEST_PREFIX) $(SLICE04_ELIG_SRC) -o $@
+	@if [ ! -x $@ ]; then \
+		echo "parser-slice04-eligibility: build failed" >&2; \
+		exit 1; \
+	fi
+
+build/parser-slice04-ranking: $(SLICE04_RANK_SRC) ./hcc | test-prefix-install
+	./hcc --install-dir=$(TEST_PREFIX) $(SLICE04_RANK_SRC) -o $@
+	@if [ ! -x $@ ]; then \
+		echo "parser-slice04-ranking: build failed" >&2; \
+		exit 1; \
+	fi
+
+parser-slice04-tools: build/parser-slice04-eligibility build/parser-slice04-ranking
+	@echo "SLICE04_TOOLS=BUILD"
+
+parser-slice04-eligibility: build/parser-slice04-eligibility
+	./build/parser-slice04-eligibility $(SLICE04_FACTS)
+
+parser-slice04-ranking: build/parser-slice04-ranking
+	./build/parser-slice04-ranking $(SLICE04_DIMS)
+
+# The SLICE04 ranking/eligibility control driver (PolyC).
+build/parser-slice04-ranking-controls: tools/quality/parser-slice04-ranking-controls.HC ./hcc | test-prefix-install
+	./hcc --install-dir=$(TEST_PREFIX) tools/quality/parser-slice04-ranking-controls.HC -o $@
+	@if [ ! -x $@ ]; then \
+		echo "parser-slice04-ranking-controls: build failed" >&2; \
+		exit 1; \
+	fi
+
+# The real closed RECON03 ranker's SELECTED id, captured so that the
+# control driver can prove its own comparator agrees with it.
+parser-slice04-ranking-controls: build/parser-slice04-ranking-controls build/parser-slice04-ranking
+	@./build/parser-slice04-ranking-controls \
+		$(SLICE04_FACTS) $(SLICE04_DIMS) \
+		"$$(./build/parser-slice04-ranking $(SLICE04_DIMS) | awk -F= '/^SELECTED=/ {print $$2}')"
+
+# =========================================================================
+# ACT-POLYC-SELFHOST-PARSER-SLICE04
+#
+#   build/slice04-ast-legacy.o -> the REAL legacy C oracle object.
+#
+# src/ast.c compiled WITHOUT HCC_USE_SELFHOST_PARSER_AST_BINOP, so the
+# legacy token-to-enum switch -- the byte-identical legacy source -- is
+# the code that executes.  The build FAILS if the object references the
+# PolyC component, which would mean the delegation was NOT off.
+# =========================================================================
+SLICE04_AST_LEGACY_OBJ = ./build/slice04-ast-legacy.o
+SLICE04_ORACLE_STUB   = ./build/slice04-is-terminal-stub.o
+SLICE04_ORACLE_DRIVER = ./build/slice04-oracle-driver
+
+# The transitive production objects the oracle driver links against.
+# main.c, parser.c and ast.c are EXCLUDED: main.c defines main() and the
+# runtime-initialized is_terminal global, parser.c drags in the whole
+# assembly backend, and ast.c is REPLACED by the legacy oracle object
+# (the whole point: the ORACLE must be the legacy ast.c, so the
+# production ast.c.o would be a duplicate-symbol conflict AND would
+# defeat the oracle).  This mirrors the SLICE03 differential's
+# transitive-object selection, which likewise excludes the file whose
+# legacy form is the oracle.
+SLICE04_ORACLE_TRANSITIVE_OBJS = $(filter-out $(HCC_OBJ_DIR)/main.c.o $(HCC_OBJ_DIR)/parser.c.o $(HCC_OBJ_DIR)/ast.c.o, \
+    $(wildcard $(HCC_OBJ_DIR)/*.c.o $(HCC_OBJ_DIR)/linenoise/*.c.o))
+
+build/slice04-ast-legacy.o: src/ast.c src/ast.h src/lexer.h
+	@rm -f $@
+	cc -std=c99 -O2 -Isrc -c -o $@ src/ast.c
+	@nm $@ | grep -q '_astBinOpFromToken' \
+		|| { echo "slice04-ast-legacy.o: the legacy classifier is missing" >&2; exit 1; }
+	@if nm $@ | grep -q '_BootstrapAstBinOpFromToken'; then \
+		echo "slice04-ast-legacy.o: the object references the PolyC component; the delegation flag is NOT off" >&2; \
+		exit 1; \
+	fi
+	@echo "SLICE04_LEGACY_ORACLE=$@ (delegation OFF: the real legacy body is executed)"
+
+build/slice04-is-terminal-stub.o: tools/quality/parser-slice04-oracle-stub.c
+	@rm -f $@
+	cc -std=c99 -O2 -c -o $@ $<
+
+build/slice04-oracle-driver: tools/quality/parser-slice04-oracle-driver.c build/slice04-ast-legacy.o build/slice04-is-terminal-stub.o
+	@rm -f $@
+	cc -std=c99 -O2 -Isrc -o $@ tools/quality/parser-slice04-oracle-driver.c \
+		build/slice04-ast-legacy.o build/slice04-is-terminal-stub.o \
+		$(SLICE04_ORACLE_TRANSITIVE_OBJS) \
+		$(PARSER_PADDING_OBJ) $(SLICE02_CFT_OBJ) $(SLICE03_OP_OBJ) \
+		-Wl,-undefined,dynamic_lookup
+	@ls -la $@
+
+# =========================================================================
+# ACT-POLYC-SELFHOST-PARSER-SLICE04
+#
+#   parser-slice04-fixture -> the canonical fixture producer.
+# =========================================================================
+SLICE04_FIXTURE_SRC   = tools/quality/parser-slice04-fixture-producer.HC
+SLICE04_FIXTURE       = evidence/ACT-POLYC-SELFHOST-PARSER-SLICE04/c1/fixture.tsv
+SLICE04_FIXTURE_COUNT = 0
+
+build/parser-slice04-fixture: $(SLICE04_FIXTURE_SRC) ./hcc | test-prefix-install
+	./hcc --install-dir=$(TEST_PREFIX) $(SLICE04_FIXTURE_SRC) -o $@
+	@if [ ! -x $@ ]; then \
+		echo "parser-slice04-fixture: build failed" >&2; \
+		exit 1; \
+	fi
+
+parser-slice04-fixture: build/parser-slice04-fixture
+	@mkdir -p $(dir $(SLICE04_FIXTURE))
+	./build/parser-slice04-fixture $(SLICE04_FIXTURE)

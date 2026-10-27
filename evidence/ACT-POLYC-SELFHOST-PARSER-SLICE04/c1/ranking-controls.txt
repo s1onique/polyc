@@ -1,0 +1,147 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE04
+ACT_PHASE=C1-EVIDENCE
+EVIDENCE_KIND=ranking-controls
+#
+# THE MECHANICAL SELECTION, AS EXECUTED.
+#
+# Both decisions were made by the EXISTING, CLOSED RECON03 PolyC tools.
+# SLICE04 did not author a new ranker and did not change the R0..R6
+# dimension definitions.
+#
+#   tools/quality/parser-slice-recon03-eligibility.HC
+#   tools/quality/parser-slice-recon03-ranking.HC
+#
+# The control driver is tools/quality/parser-slice04-ranking-controls.HC
+# (PolyC, per F-POLYC-TOOLS).
+#
+# ---------------------------------------------------------------------------
+# STEP 1 -- THE ELIGIBILITY CHECKER
+# ---------------------------------------------------------------------------
+COMMAND=make parser-slice04-eligibility
+CAND-019	YES	1111111111111	0
+CAND-020	YES	1111111111111	0
+TOTAL=2
+ELIGIBLE=2
+MALFORMED=0
+STATUS=PASS
+
+READING: both candidates satisfy ALL THIRTEEN eligibility clauses (the
+clause bit-string is 1111111111111 and the failed count is 0 for both),
+and the checker reports MALFORMED=0, so no row was skipped.
+
+  CAND-019_ELIGIBLE=YES
+  CAND-020_ELIGIBLE=YES
+  ELIGIBLE_COUNT=2
+
+THE `eligible` COLUMN IS NOT OPERATOR-AUTHORED
+----------------------------------------------
+The eligibility checker has NO `eligible` column in its INPUT schema.
+It computes the flag from the fact columns.  The `eligible` column that
+the RANKER reads is the checker's OUTPUT, which is how the ranking
+input table below was produced.  NC-04 and NC-05 in the control block
+prove the linkage mechanically.
+
+# ---------------------------------------------------------------------------
+# STEP 2 -- THE RANKER
+# ---------------------------------------------------------------------------
+COMMAND=make parser-slice04-ranking
+TOTAL=2
+ELIGIBLE=2
+RANKED=2
+SELECTED=CAND-019
+NC-05_ineligible_perfect_rank_rejected=YES
+NC-05_winner=CAND-019
+NC-06_shuffled_inventory_winner_unchanged=YES
+NC-06_winner=CAND-019
+NC-07_winner_removed_remaining=1
+NC-07_new_winner=CAND-020
+NC-09_rival_eligible_candidates=1
+NC-09_r0_perturbation_changed_leader=YES
+NC-09_new_leader=CAND-020
+STATUS=PASS
+
+READING: the ranker reports RANKED:1 CAND-019 and SELECTED=CAND-019.
+
+  SELECTED_CANDIDATE_ID=CAND-019
+  SELECTED_FUNCTION=astBinOpFromToken
+
+THE SCORES ARE THE RECON03 SCORES, UNCHANGED
+---------------------------------------------
+Both candidates carry the IDENTICAL R0..R5 vector (0, 2, 3, 2, 0, 0).
+The winner is therefore decided by the R6 SOURCE-ORDER dimension alone:
+src/ast.c:206 sorts before src/ast.c:238.  No score was adjusted to
+prefer binary over unary, and the ranking table is a verbatim copy of
+the RECON03 rows (see candidate-ranking.tsv).
+
+  TIE_BROKEN_BY=R6_SOURCE_ORDER
+  R6_WINNER=src/ast.c:206
+  R6_RUNNER_UP=src/ast.c:238
+
+# ---------------------------------------------------------------------------
+# STEP 3 -- THE CONTROL DRIVER
+# ---------------------------------------------------------------------------
+COMMAND=make parser-slice04-ranking-controls
+SLICE04_CONTROLS_FACTS_ROWS=2
+SLICE04_CONTROLS_RANKING_ROWS=2
+SLICE04_CONTROLS_CANONICAL_WINNER=CAND-019
+NC-00_local_comparator_agrees_with_closed_ranker=YES real_ranker=CAND-019 local=CAND-019
+NC-01_reversed_row_order_winner_unchanged=YES canonical=CAND-019 reversed=CAND-019
+NC-02_winner_removed_reranks_remaining=YES remaining=1 new_winner=CAND-020
+NC-03_ineligible_synthetic_with_ideal_rank_rejected=YES winner=CAND-019
+NC-04_eligibility_fact_change_flips_outcome=YES before=1 after=0 mutated_field=host_graph_writes
+NC-05_ranker_cannot_select_checker_excluded_candidate=YES checker_verdict=0 winner=CAND-020
+NC-06_winner_is_unique_lexicographic_minimum=YES ranked=2 vector_dominance=YES
+SLICE04_CONTROLS_FAIL=0
+STATUS=PASS
+
+READING: every control reports YES and SLICE04_CONTROLS_FAIL=0.
+
+  NC-00  the control driver's own comparator agrees with the CLOSED
+         ranker's SELECTED output.  Without this control the driver's
+         own comparison would be unfalsifiable.
+  NC-01  reversing the candidate row order does not change the winner.
+  NC-02  removing the winner reranks the remaining candidate (CAND-020).
+  NC-03  an INELIGIBLE synthetic candidate with the PERFECT score
+         vector is rejected: the ranker drops an ineligible row BEFORE
+         the sort.
+  NC-04  changing a relevant eligibility fact (host_graph_writes 0 -> 1)
+         flips the computed eligibility outcome from eligible to
+         ineligible.
+  NC-05  the ranker CANNOT select a candidate the checker excludes: the
+         checker's own verdict overrides the ranking table's
+         hand-authored `eligible` column, and the winner changes.
+  NC-06  the winner is the UNIQUE lexicographic minimum: its score
+         vector is <= the runner-up's in every dimension and strictly <
+         in at least one (R6).
+
+  RANKING_CONTROLS=7/7 PASS
+  ELIGIBILITY_CONTROLS_MECHANICALLY_APPLIED=YES
+
+THE RECON03 RANKER'S OWN EMBEDDED CONTROLS ALSO RAN
+----------------------------------------------------
+The closed ranker prints its own NC-05/NC-06/NC-07/NC-09 controls, and
+they are visible in the STEP 2 output above:
+  NC-05_ineligible_perfect_rank_rejected=YES
+  NC-06_shuffled_inventory_winner_unchanged=YES
+  NC-07_winner_removed_remaining=1  NC-07_new_winner=CAND-020
+  NC-09_rival_eligible_candidates=1
+  NC-09_r0_perturbation_changed_leader=YES  NC-09_new_leader=CAND-020
+
+These are additional, independent controls: NC-09 shows that raising
+the winner's R0 changes the leader, which proves the comparator is
+sensitive to the scores rather than to the row order alone.
+
+STEP3_OUTPUT_BEGIN
+SLICE04_CONTROLS_FACTS_ROWS=2
+SLICE04_CONTROLS_RANKING_ROWS=2
+SLICE04_CONTROLS_CANONICAL_WINNER=CAND-019
+NC-00_local_comparator_agrees_with_closed_ranker=YES real_ranker=CAND-019 local=CAND-019
+NC-01_reversed_row_order_winner_unchanged=YES canonical=CAND-019 reversed=CAND-019
+NC-02_winner_removed_reranks_remaining=YES remaining=1 new_winner=CAND-020
+NC-03_ineligible_synthetic_with_ideal_rank_rejected=YES winner=CAND-019
+NC-04_eligibility_fact_change_flips_outcome=YES before=1 after=0 mutated_field=host_graph_writes
+NC-05_ranker_cannot_select_checker_excluded_candidate=YES checker_verdict=0 winner=CAND-020
+NC-06_winner_is_unique_lexicographic_minimum=YES ranked=2 vector_dominance=YES
+SLICE04_CONTROLS_FAIL=0
+STATUS=PASS
+STEP3_OUTPUT_END

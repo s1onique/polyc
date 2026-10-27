@@ -1,0 +1,78 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE04
+ACT_PHASE=C1-EVIDENCE
+EVIDENCE_KIND=enum-values
+#
+# The AstBinOp / AstUnOp NUMERIC VALUES, extracted by COMPILING the live
+# src/ast.h -- not by guessing ordinal positions.
+#
+# COMMAND:
+#   cc -std=c99 -O2 -Isrc -o /tmp/enum_probe /tmp/enum_probe.c
+#   /tmp/enum_probe
+#
+# The probe includes the live src/ast.h and prints each enumerator's
+# numeric value, so the numbers below are the values the COMPILER
+# assigns to the live header.
+#
+# enum_type<TAB>enumerator<TAB>numeric_value
+enum_type	enumerator	numeric_value
+AstBinOp	AST_BIN_OP_MUL	0
+AstBinOp	AST_BIN_OP_DIV	1
+AstBinOp	AST_BIN_OP_MOD	2
+AstBinOp	AST_BIN_OP_ADD	3
+AstBinOp	AST_BIN_OP_SUB	4
+AstBinOp	AST_BIN_OP_SHL	5
+AstBinOp	AST_BIN_OP_SHR	6
+AstBinOp	AST_BIN_OP_LT	7
+AstBinOp	AST_BIN_OP_LE	8
+AstBinOp	AST_BIN_OP_GT	9
+AstBinOp	AST_BIN_OP_GE	10
+AstBinOp	AST_BIN_OP_EQ	11
+AstBinOp	AST_BIN_OP_NE	12
+AstBinOp	AST_BIN_OP_BIT_AND	13
+AstBinOp	AST_BIN_OP_BIT_XOR	14
+AstBinOp	AST_BIN_OP_BIT_OR	15
+AstBinOp	AST_BIN_OP_LOG_AND	16
+AstBinOp	AST_BIN_OP_LOG_OR	17
+AstBinOp	AST_BIN_OP_ASSIGN	18
+AstBinOp	AST_BIN_OP_ADD_ASSIGN	19
+AstBinOp	AST_BIN_OP_SUB_ASSIGN	20
+AstBinOp	AST_BIN_OP_MUL_ASSIGN	21
+AstBinOp	AST_BIN_OP_DIV_ASSIGN	22
+AstBinOp	AST_BIN_OP_MOD_ASSIGN	23
+AstBinOp	AST_BIN_OP_SHL_ASSIGN	24
+AstBinOp	AST_BIN_OP_SHR_ASSIGN	25
+AstBinOp	AST_BIN_OP_AND_ASSIGN	26
+AstBinOp	AST_BIN_OP_XOR_ASSIGN	27
+AstBinOp	AST_BIN_OP_OR_ASSIGN	28
+AstUnOp	AST_UN_OP_POST_INC	0
+AstUnOp	AST_UN_OP_POST_DEC	1
+AstUnOp	AST_UN_OP_PRE_INC	2
+AstUnOp	AST_UN_OP_PRE_DEC	3
+AstUnOp	AST_UN_OP_PLUS	4
+AstUnOp	AST_UN_OP_MINUS	5
+AstUnOp	AST_UN_OP_LOG_NOT	6
+AstUnOp	AST_UN_OP_BIT_NOT	7
+AstUnOp	AST_UN_OP_ADDR_OF	8
+AstUnOp	AST_UN_OP_DEREF	9
+AstUnOp	AST_UN_OP_SIZEOF	10
+AstUnOp	AST_UN_OP_ALIGNOF	11
+AstUnOp	AST_UN_OP_CAST	12
+
+THE SENTINEL COLLISION TEST
+===========================
+
+  AstBinOp spans 0..28.  AstUnOp spans 0..12.
+  The proposed failure sentinel is -1.
+
+  ENUM_VALUES_BOUND_TO_LIVE_HEADER=YES
+  BINOP_ENUM_MIN=0
+  BINOP_ENUM_MAX=28
+  UNOP_ENUM_MIN=0
+  UNOP_ENUM_MAX=12
+  SENTINEL=-1
+  SENTINEL_COLLISION=NONE
+  SENTINEL_IS_A_VALID_ENUM_VALUE=NO
+
+Therefore EVERY successful mapping corresponds to a NONNEGATIVE enum
+value, and -1 can never be a valid mapped enum.  The scalar/sentinel
+ABI of ACT section 4.1 is therefore SAFE for the selected candidate.

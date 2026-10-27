@@ -1,0 +1,120 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE04
+ACT_PHASE=C1-EVIDENCE
+EVIDENCE_KIND=mutation-contract
+
+THE FROZEN PRODUCTION-CAUSAL MUTATION
+=====================================
+
+ACT section 10.1: the mutation and the observation MUST be frozen in C1
+using a compiled program known to exercise the chosen path.  The
+illustrative mutation in the ACT ("mapping + to the legacy enum for
+subtraction") is NOT assumed to be safe: it was CHECKED against the
+live implementation and the live language semantics, and the check is
+recorded below.
+
+THE SELECTED CANDIDATE
+-----------------------
+  CANDIDATE=CAND-019 (astBinOpFromToken)
+  THE MUTATION IS THEREFORE ON A BINARY OPERATOR.
+
+THE MUTATION
+------------
+  MUTATED_TOKEN=43 ('+')
+  PRISTINE_MAPPING=AST_BIN_OP_ADD (3)
+  MUTATED_MAPPING=AST_BIN_OP_SUB (4)
+
+In the PolyC subject, the single line
+
+    if (token_value == 43) return 3;   // AST_BIN_OP_ADD
+
+becomes
+
+    if (token_value == 43) return 4;   // MUTANT: AST_BIN_OP_SUB
+
+This is a ONE-LINE, BOUNDED mutation of a WELL-SUPPORTED binary
+operator.  Every other mapping is left exactly as it is, so the mutant
+differs from the pristine component in exactly one mapping.
+
+THE OBSERVATION PROGRAM
+------------------------
+  SOURCE=build/slice04-obs/observe.HC (a generated build artifact; the
+         generation rule is frozen in the Makefile)
+
+    #include "../../src/holyc-lib/tos.HH"
+    I64 main() {
+      I64 a = 6; I64 b = 7;
+      I64 r = a + b;
+      printf("%d\n", r);
+      return 0;
+    }
+
+  BUILD_COMMAND=<generation compiler> --install-dir=<prefix> \
+      build/slice04-obs/observe.HC -o build/slice04-obs/observe-<gen>
+
+WHY THIS PROGRAM EXERCISES THE CHOSEN PATH
+-------------------------------------------
+The expression `a + b` is parsed by parseExpr's binary loop.  The
+loop's punct token is '+' (43), so parseExpr calls
+astBinOpFromToken(43, &binop) -- the EXACT production call site
+src/prslib.c:1527.  The mapped operator then becomes the AST node's
+operator, which determines the emitted code.
+
+The program was MEASURED at C1 against the CURRENT production compiler:
+
+  COMMAND=./hcc --install-dir=<prefix> build/slice04-obs/observe.HC \
+              -o build/slice04-obs/observe
+  OUTPUT=13
+  EXIT_CODE=0
+
+  13 is 6 + 7.  The path is live and the observation is sensitive to
+  the '+' mapping.
+
+THE EXPECTED MUTANT BEHAVIOUR
+------------------------------
+With '+' mapped to AST_BIN_OP_SUB, the same program computes 6 - 7,
+which is -1.  The observation program's OUTPUT MUST CHANGE from 13 to
+-1.
+
+  PRISTINE_OUTPUT=13
+  MUTANT_OUTPUT_EXPECTED=-1
+  B_OUTPUT_DIFFERS_FROM_A=YES (to be MEASURED at C2)
+
+WHY THE MUTATION IS SAFE TO PERFORM
+------------------------------------
+  * it is a one-line change to a build artifact, never to the tracked
+    subject: ACT section 10.2 requires "isolated scratch workspaces so
+    the tracked PolyC subject is never mutated";
+  * the mutant BUILD must SUCCEED (B_BUILD_RC=0): the mutation changes
+    only a returned enum value, so the component still compiles and
+    still satisfies its ABI;
+  * the mutant must be observable through the PRODUCTION compiler, not
+    through a synthetic harness: the observation program is compiled
+    and run by the production compiler that links the mutated object.
+
+THE THREE-STEP SEQUENCE (ACT SECTION 10.2)
+-------------------------------------------
+  A. Pristine component   -> build -> link -> compile observation -> execute
+  B. Mutated  component   -> build -> link -> compile SAME observation -> execute
+  C. Restored pristine    -> build -> link -> compile SAME observation -> execute
+
+REQUIRED:
+  A_BUILD_RC=0  A_EXEC_RC=0
+  B_BUILD_RC=0  B_EXEC_RC=0  B_OUTPUT_DIFFERS_FROM_A=YES
+  C_BUILD_RC=0  C_EXEC_RC=0
+  C_OUTPUT_EQUALS_A=YES  C_COMPONENT_SHA_EQUALS_A=YES
+
+"A failed mutant build is not a successful causal control."  The
+mutant is therefore built with the SAME compiler and the SAME command
+as the pristine one, and the build's exit code is recorded.
+
+THE MUTATION DOES NOT CHANGE THE OTHER CANDIDATE
+------------------------------------------------
+CAND-020 (astUnaryOpFromToken) remains legacy C and is not touched by
+the mutation in any way.
+
+THE MUTATION IS NOT A FIXTURE
+------------------------------
+The mutation is applied to the COMPONENT in an isolated scratch
+workspace.  The fixture, the oracle and the differential are
+unaffected by it; the mutation is a separate, additional proof that
+the production compiler's output depends on the PolyC component.

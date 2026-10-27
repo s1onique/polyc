@@ -1,0 +1,91 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE04
+ACT_PHASE=C1-EVIDENCE
+EVIDENCE_KIND=fixture-contract
+#
+# THE FROZEN FIXTURE CONTRACT.
+#
+# The fixture itself is c1/fixture.tsv.  It is produced by
+# tools/quality/parser-slice04-fixture-producer.HC from the FROZEN
+# accepted token values and the FROZEN enum mapping.
+#
+# The row count is DERIVED from the frozen values, not chosen in
+# advance: the producer reports the count it wrote.
+#
+# Schema of the fixture:
+#   fixture_id <TAB> partition <TAB> token_value <TAB> expected_success
+#              <TAB> expected_output <TAB> initial_output <TAB> rationale
+#
+# partition <TAB> rows <TAB> requirement <TAB> derivation
+partition	rows	requirement	derivation
+M01_ACCEPTED_TOKEN	19	every accepted token mapped to its exact enum	one row per frozen accepted token value (19 frozen values)
+M02_REPEATED_INITIAL_OUTPUT	19	every accepted mapping repeated with a different initial output value	one row per frozen accepted token value, initial output INIT_B (54321) instead of INIT_A (12345)
+M03_UNRECOGNIZED_ASCII	84	unrecognized ASCII token values	every printable ASCII value 32..126 that is NOT an accepted token
+M04_NEIGHBOUR	38	neighboring values around every accepted token constant	the immediate predecessor and successor of each of the 19 accepted token values
+M05_LEXER_ALIAS	3	relevant lexer aliases	the three numeric values that the live src/lexer.h defines under two names (769, 770, 771)
+M06_SIGNED_EXTREMES	6	signed-I64 extremes and their neighbors	INT64_MIN, INT64_MIN+1, INT64_MIN+2, INT64_MAX-2, INT64_MAX-1, INT64_MAX
+M07_AMBIGUOUS_SPELLING	6	duplicate/ambiguous source spellings	the three aliased values, plus the three accepted tokens whose spelling could be confused with a neighbour (61, 38, 124)
+M08_INVALID_INPUT	27	invalid input values that are not recognized operators	the remaining lexer token constants plus two control-character values
+M09_OUTPUT_UNCHANGED_ON_FAILURE	120	output storage unchanged on every failure	one row per DISTINCT invalid token value, with the SECOND distinct initial output value
+TOTAL	322	the complete canonical fixture	the sum of the derived partition row counts
+
+THE TWO DISTINCT INITIAL OUTPUT VALUES
+=====================================
+  INIT_A=12345
+  INIT_B=54321
+
+Both are OUTSIDE the live AstBinOp range 0..28, so neither can be a
+real mapped enum, and they are different from each other.  Every
+invalid token therefore appears at least twice, with two different
+initial output values, so a failure that overwrote the output with a
+hard-coded default would be visible: the two rows would end with the
+same value, and the differential would report a mismatch against the
+initial value.
+
+THE M10 PARTITION (THE REAL PRODUCTION PARSER CALL PATH)
+========================================================
+M10 is NOT a separate set of fixture rows.  The ACT's table lists M10
+as "Selected function exercised from a real production parser call
+path".
+
+Every M01 and M02 row exercises the SELECTED FUNCTION through its
+real production call path, because:
+
+  * the differential calls the REAL legacy function
+    (astBinOpFromToken) -- the same function the production parser
+    calls at src/prslib.c:1527;
+
+  * the M01 rows use the 19 token values that the production parser
+    actually feeds to that call site: the ASCII punct characters and
+    the multi-character punct constants;
+
+  * and the CAUSAL MUTATION (c1/mutation-contract.txt) exercises the
+    SAME function through the REAL production compiler on a compiled
+    program whose '+' token reaches that exact call site.  The mutation
+    is the proof that the production parser's decision depends on the
+    migrated function.
+
+  M10_PRODUCTION_CALL_PATH=src/prslib.c:1527
+  M10_EXERCISED_BY=M01_ROWS_AND_M02_ROWS_AND_THE_CAUSAL_MUTATION
+
+THE EXACT DECIMAL SIGNED-I64 FORMATTING
+=======================================
+Every numeric column is written with snprintf("%lld"), an EXACT
+64-bit conversion.  The runtime's "%d" is a 32-bit conversion and
+would print INT64_MIN as 0 and INT64_MAX as -1; the M06 rows carry the
+extremes verbatim, which is the direct proof that the 32-bit
+formatter was NOT used.
+
+  64_BIT_FORMATTER=snprintf %lld
+  32_BIT_FORMATTER_USED=NO
+  INT64_MIN_IN_FIXTURE=-9223372036854775808
+  INT64_MAX_IN_FIXTURE=9223372036854775807
+
+THE FIXTURE ID SPACE
+=====================
+The ids are F001..F322: a literal 'F' followed by exactly three
+zero-padded decimal digits.  The canonical id set is therefore
+F001..F322, each id occurs exactly once, and the count is derived
+from the rows the producer actually wrote.
+
+  FIXTURE_ID_RANGE=F001..F322
+  FIXTURE_ID_COUNT=322

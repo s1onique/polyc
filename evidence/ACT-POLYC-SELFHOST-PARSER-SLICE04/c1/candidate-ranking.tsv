@@ -1,0 +1,26 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE04
+ACT_PHASE=C1-EVIDENCE
+EVIDENCE_KIND=candidate-ranking
+#
+# SLICE04's RANKING INPUT for the RECON03 lexicographic ranker
+# (tools/quality/parser-slice-recon03-ranking.HC).
+#
+# THE SCORES ARE THE RECON03 SCORES, VERBATIM AND UNCHANGED.
+#
+# The two rows below are copied from
+# evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03/c2/ranking-dimensions.tsv
+# (the canonical frozen ranking), field for field, including the
+# rationales.  NOT ONE SCORE WAS CHANGED FOR SLICE04.  In particular
+# the two candidates carry IDENTICAL R0..R5 scores, so the winner is
+# decided by the R6 SOURCE-ORDER dimension alone -- exactly as the
+# frozen contract specifies.  No score was adjusted to prefer binary
+# over unary or vice versa.
+#
+# The `eligible` column below is the OUTPUT of the eligibility checker
+# (tools/quality/parser-slice-recon03-eligibility.HC) run against
+# SLICE04's own candidate facts.  The ranker drops an ineligible row
+# BEFORE the sort, so the column cannot be hand-authored into a win.
+#
+# Schema: candidate_id <TAB> R0 <TAB> R1 <TAB> R2 <TAB> R3 <TAB> R4 <TAB> R5 <TAB> R6 <TAB> eligible <TAB> rationale
+CAND-019	0	2	3	2	0	0	src/ast.c:206	YES	R1=2: unlocks one following surface (binary-operator classification). R2=3: cross-file region (defined in src/ast.c, consumed by src/prslib.c:1468). R3=2: easy bounded oracle. R4=0: self-contained switch over one s64. R5=0: pure scalar-domain decision. R6=src/ast.c:206
+CAND-020	0	2	3	2	0	0	src/ast.c:238	YES	R1=2: unlocks one following surface (unary-operator classification). R2=3: cross-file region (defined in src/ast.c, consumed by src/prslib.c:1391 and :1698). R3=2: easy bounded oracle. R4=0: self-contained switch over one s64. R5=0: pure scalar-domain decision. R6=src/ast.c:238

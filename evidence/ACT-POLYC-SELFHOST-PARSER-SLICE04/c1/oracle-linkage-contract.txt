@@ -1,0 +1,132 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE04
+ACT_PHASE=C1-EVIDENCE
+EVIDENCE_KIND=oracle-linkage-contract
+
+THE REAL LEGACY C ORACLE
+========================
+
+The oracle is the ACTUAL legacy function, compiled from the LIVE
+src/ast.c with the PolyC delegation OFF.  It is NOT a hand-written
+duplicate switch: the driver contains no mapping table at all.
+
+THE ORACLE OBJECT
+-----------------
+
+COMMAND=make build/slice04-ast-legacy.o
+RULE=cc -std=c99 -O2 -Isrc -c -o build/slice04-ast-legacy.o src/ast.c
+
+  ORACLE_OBJECT=build/slice04-ast-legacy.o
+  ORACLE_OBJECT_SHA256=144c9836ba79125bd973f9faefe05b259e9efaa1e8bc7babc5c44de007de7253
+  ORACLE_SOURCE=src/ast.c
+  ORACLE_SOURCE_SHA256=0c1198736054223bf934726d9d50e35e16bd33fb8cc6c052461315d73fc09142
+
+THE ORACLE OBJECT IS THE SAME BYTES AS THE PRODUCTION ast.c OBJECT
+-------------------------------------------------------------------
+
+COMMAND=shasum -a 256 /tmp/slice04-red-build/CMakeFiles/hcc.dir/ast.c.o
+OUTPUT=144c9836ba79125bd973f9faefe05b259e9efaa1e8bc7babc5c44de007de7253
+
+The freshly built production ast.c object and the oracle object have
+the IDENTICAL sha256.  This is the strongest possible statement that
+the oracle executes the SAME CODE as the production build did at
+entry: the legacy token-to-enum switch is byte-identical, not a
+reimplementation and not a paraphrase.
+
+THE ORACLE OBJECT DOES NOT DEPEND ON THE POLYC SYMBOL
+-------------------------------------------------------
+
+COMMAND=nm build/slice04-ast-legacy.o | grep -c BootstrapAstBinOpFromToken
+OUTPUT=0
+
+COMMAND=nm build/slice04-ast-legacy.o | grep -E '_astBinOpFromToken|_astUnaryOpFromToken'
+OUTPUT:
+  00000000000006a0 T _astBinOpFromToken
+  000000000000078c T _astUnaryOpFromToken
+
+  ORACLE_REFERENCES_POLYC_SYMBOL=NO
+  ORACLE_DEFINES_LEGACY_CLASSIFIER=YES
+
+The build rule ENFORCES this: the rule fails the build if the object
+references _BootstrapAstBinOpFromToken, because that would mean the
+delegation flag was NOT off and the "oracle" would be the PolyC
+component compared against itself.
+
+THE DRIVER
+----------
+
+  DRIVER_SOURCE=tools/quality/parser-slice04-oracle-driver.c
+  DRIVER_BINARY=build/slice04-oracle-driver
+
+The driver:
+  * calls the REAL `int astBinOpFromToken(s64 op, AstBinOp *result)`;
+  * preinitialises the caller's output storage to the DISTINGUISHED
+    value 12345, which is OUTSIDE the live AstBinOp range 0..28, so
+    that "the output was overwritten" is unambiguous;
+  * prints `<token_value> <success> <output_after_call>`.
+
+It contains NO mapping table.  The mapping table is the live
+src/ast.c's.
+
+  DRIVER_CONTAINS_A_MAPPING_TABLE=NO
+
+THE ORACLE EXECUTES AND ANSWERS
+--------------------------------
+
+COMMAND=./build/slice04-oracle-driver 43 45 42 47 37 61 60 62 782 781 779 780 783 784 94 38 124 777 778
+OUTPUT:
+  43	1	3
+  45	1	4
+  42	1	0
+  47	1	1
+  37	1	2
+  61	1	18
+  60	1	7
+  62	1	9
+  782	1	10
+  781	1	8
+  779	1	11
+  780	1	12
+  783	1	16
+  784	1	17
+  94	1	14
+  38	1	13
+  124	1	15
+  777	1	5
+  778	1	6
+
+COMMAND=./build/slice04-oracle-driver 65 0 1 1000
+OUTPUT:
+  65	0	12345
+  0	0	12345
+  1	0	12345
+  1000	0	12345
+
+The 19 accepted tokens map to their exact enum values.  The rejected
+tokens return success=0 and the output is UNCHANGED at the 12345
+sentinel: the "output unchanged on failure" property is directly
+observable.
+
+  ORACLE_EXECUTES=YES
+  ACCEPTED_COUNT=19
+  FAILURE_PRESERVES_OUTPUT=YES
+
+THE ORACLE IS THE G0 GENERATION
+-------------------------------
+
+This oracle object is the G0 generation of the four-generation
+qualification (ACT section 9.1): "G0  real legacy C mapping".  Its
+producer is the host C compiler, resolved and hashed from the ACTUAL
+invoked command at C3.
+
+THE IS_TERMINAL STUB
+--------------------
+
+  STUB_SOURCE=tools/quality/parser-slice04-oracle-stub.c
+
+The stub defines `int is_terminal = 0;` so that the oracle can link
+against the production objects without dragging in main.c (which also
+defines main()).  It follows the SLICE03 precedent
+(tools/quality/slice03-is-terminal-stub.c) and contains no mapping
+logic whatsoever.
+
+  STUB_CONTAINS_MAPPING_LOGIC=NO

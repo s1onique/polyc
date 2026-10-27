@@ -1,0 +1,88 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE04
+ACT_PHASE=C1-EVIDENCE
+EVIDENCE_KIND=production-seam
+
+THE PRODUCTION SEAM FOR THE SELECTED CANDIDATE
+==============================================
+
+THE CALL SITE
+-------------
+The selected candidate has exactly ONE production call site:
+
+  src/prslib.c:1527
+      AstBinOp binop;
+      if (!astBinOpFromToken(tok->i64,&binop)) {
+          cctrlRaiseException(cc,"Invalid binary operator %c => %d",
+                              (char)tok->i64, tok->i64);
+      }
+      ...
+      LHS = parseCreateBinaryOp(cc,binop,LHS,RHS);
+
+This is inside the binary-expression loop of parseExpr.  The call site
+is UNCHANGED by this ACT: src/prslib.c is a FORBIDDEN mutation.  The
+delegation therefore happens INSIDE src/ast.c, in the candidate's own
+function body, so every existing caller keeps its exact call.
+
+  SELECTED_PRODUCTION_CALLER_COUNT=1
+  CALL_SITE_FILE=src/prslib.c
+  CALL_SITE_LINE=1527
+  CALL_SITE_UNCHANGED=YES
+
+THE DECISION IS LOAD-BEARING
+----------------------------
+The mapped operator is not cosmetic: `binop` becomes the operator of
+the AST node that parseCreateBinaryOp builds, and that AST node
+determines the emitted code.  A different mapping produces different
+machine code.
+
+THIS IS PROVEN AT C2 BY THE CAUSAL MUTATION (ACT section 10): the
+pristine / mutated / restored sequence must show the observation
+program's OUTPUT changing when the PolyC component is mutated.  A
+mapping differential alone is NOT sufficient.
+
+THE ADAPTER'S POSITION
+-----------------------
+The delegation is INSIDE the function whose name the call site uses.
+The function keeps its C signature, so:
+
+  * no call site changes;
+  * no header changes (src/ast.h is a FORBIDDEN mutation);
+  * the C ABI -- boolean success, conditional output storage -- is
+    preserved exactly.
+
+THE DELEGATION SELECTOR
+-----------------------
+  SELECTOR_MACRO=HCC_USE_SELFHOST_PARSER_AST_BINOP
+
+  PRODUCTION_BUILD_DEFAULT=ON
+  LEGACY_STAGE0_ORACLE_BUILD=OFF
+
+The macro is defined ONLY by the production build.  The stage0 build
+and the oracle build do NOT define it, so the legacy switch is what
+executes there.  That is what makes the G0 generation a genuine
+legacy reference.
+
+THE THREE EXISTING POLYC AUTHORITIES ARE NOT TOUCHED
+-----------------------------------------------------
+  BootstrapCalcPadding               (src/parser.c's CalcPadding)
+  BootstrapValidPostControlFlowToken (src/parser.c's post-control-flow check)
+  BootstrapOperatorPrecedence         (src/prslib.c's parseGetPriority)
+
+None of them is affected by this ACT.  src/parser.c and src/prslib.c
+are FORBIDDEN mutations, and the three qualified PolyC subjects are
+unchanged.  Their production delegation remains active, and ACT
+section 11.3 requires zero source-hash changes to them.
+
+THE AST ENUM DEFINITIONS ARE NOT TOUCHED
+-----------------------------------------
+src/ast.h is a FORBIDDEN mutation.  The AstBinOp enum values are
+therefore exactly the values measured in c1/enum-values.tsv, and the
+PolyC component returns those same numbers.
+
+WHAT IS NOT IN THE SEAM
+-----------------------
+  AST_ALLOCATION=redesign is FORBIDDEN and is not performed
+  PARSER_RECURSION=redesign is FORBIDDEN and is not performed
+  DIAGNOSTICS=unchanged (the cctrlRaiseException call site is untouched)
+  EXCEPTION_HANDLING=redesign is FORBIDDEN and is not performed
+  BACKEND=redesign is FORBIDDEN and is not performed

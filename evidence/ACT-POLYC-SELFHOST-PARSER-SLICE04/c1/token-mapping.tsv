@@ -1,0 +1,85 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE04
+ACT_PHASE=C1-EVIDENCE
+EVIDENCE_KIND=token-mapping
+#
+# THE COMPLETE ACTUAL TOKEN -> ENUM MAPPING FOR THE SELECTED CANDIDATE.
+#
+# SELECTED_CANDIDATE_ID=CAND-019
+# SELECTED_FUNCTION=astBinOpFromToken
+#
+# HOW THIS TABLE WAS DERIVED
+# =========================
+#
+# The `enum_value` column is the value the REAL legacy function
+# produced, observed by EXECUTING it.  The oracle is
+# build/slice04-ast-legacy.o: src/ast.c compiled WITHOUT
+# HCC_USE_SELFHOST_PARSER_AST_BINOP, so the legacy C switch is the code
+# that runs.  The driver (tools/quality/parser-slice04-oracle-driver.c)
+# contains NO mapping table; it calls the real function and reports
+# what it did.
+#
+# COMMAND:
+#   make build/slice04-oracle-driver
+#   ./build/slice04-oracle-driver 43 45 42 47 37 61 60 62 782 781 \
+#       779 780 783 784 94 38 124 777 778
+#
+# The `token_spelling` column names the live src/lexer.h constant (or the
+# ASCII character) whose numeric value is the token_value column.  The
+# numeric values were resolved by COMPILING the live src/lexer.h.
+#
+# The `enumerator` column is the AST_BIN_OP_* name that the live
+# src/ast.c legacy switch assigns in the same source order.
+#
+# Schema: token_spelling <TAB> token_value <TAB> enumerator <TAB> enum_value <TAB> legacy_success <TAB> legacy_output
+token_spelling	token_value	enumerator	enum_value	legacy_success	legacy_output
+'+'	43	AST_BIN_OP_ADD	3	1	3
+'-'	45	AST_BIN_OP_SUB	4	1	4
+'*'	42	AST_BIN_OP_MUL	0	1	0
+'/'	47	AST_BIN_OP_DIV	1	1	1
+'%'	37	AST_BIN_OP_MOD	2	1	2
+'='	61	AST_BIN_OP_ASSIGN	18	1	18
+'<'	60	AST_BIN_OP_LT	7	1	7
+'>'	62	AST_BIN_OP_GT	9	1	9
+TK_GREATER_EQU	782	AST_BIN_OP_GE	10	1	10
+TK_LESS_EQU	781	AST_BIN_OP_LE	8	1	8
+TK_EQU_EQU	779	AST_BIN_OP_EQ	11	1	11
+TK_NOT_EQU	780	AST_BIN_OP_NE	12	1	12
+TK_AND_AND	783	AST_BIN_OP_LOG_AND	16	1	16
+TK_OR_OR	784	AST_BIN_OP_LOG_OR	17	1	17
+'^'	94	AST_BIN_OP_BIT_XOR	14	1	14
+'&'	38	AST_BIN_OP_BIT_AND	13	1	13
+'|'	124	AST_BIN_OP_BIT_OR	15	1	15
+TK_SHL	777	AST_BIN_OP_SHL	5	1	5
+TK_SHR	778	AST_BIN_OP_SHR	6	1	6
+
+THE MAPPING CONTRACT
+====================
+
+  MAPPING_COUNT_EXACT=YES
+  ACCEPTED_MAPPING_COUNT=19
+  ENUM_VALUES_BOUND_TO_LIVE_HEADER=YES
+  UNRECOGNIZED_TOKEN_RESULT=FAILURE
+  OUTPUT_UNCHANGED_ON_FAILURE=YES
+
+The ACT's section 6.4 note says "The known source currently contains 19
+binary mappings and 10 unary mappings".  The 19 was RE-DERIVED from the
+actual entry tree: the live src/ast.c body of astBinOpFromToken has
+exactly 19 `case` labels, and the oracle accepted exactly those 19 token
+values.  The count is therefore MEASURED, not copied.
+
+THE 10 UNARY MAPPINGS (CAND-020, NOT SELECTED) remain legacy C.  They
+are inventoried but are NOT migrated by this ACT.
+
+THE ALIAS ACCOUNTING
+====================
+
+src/lexer.h defines several pairs of names for the SAME numeric value
+(for example TK_SUPERSCRIPT and TK_STR are both 0x301).  The legacy
+switch is written on the NUMERIC token value, so two spellings of the
+same number are ONE case, not two.  This table therefore records one
+row per DISTINCT NUMERIC token value.
+
+None of the accepted token values (43, 45, 42, 47, 37, 61, 60, 62, 782,
+781, 779, 780, 783, 784, 94, 38, 124, 777, 778) coincides with an
+aliased pair, and no distinction has been invented between aliased
+numeric tokens: the mapping is defined on the numeric value alone.
