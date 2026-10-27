@@ -1,0 +1,83 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE05
+ACT_PHASE=C0-RED
+EVIDENCE_KIND=real-call-graph
+
+THE REAL PRODUCTION CALL GRAPH OF astUnaryOpFromToken
+===================================================
+
+THE SOURCE-LEVEL CALL SITES (reconfirmed against ENTRY_HEAD)
+------------------------------------------------------
+COMMAND=grep -n astUnaryOpFromToken src/*.c src/*.h
+src/ast.c:287:int astUnaryOpFromToken(s64 op, AstUnOp *_result) {
+src/prslib.c:1450:            if (!astUnaryOpFromToken(tok->i64, &op)) {
+src/prslib.c:1757:        if (!astUnaryOpFromToken(tok->i64, &unary_op)) {
+src/ast.h:644:int astUnaryOpFromToken(s64 op, AstUnOp *_result);
+
+  src/ast.c:287   the DEFINITION
+  src/ast.h:644   the DECLARATION
+  src/prslib.c:1450  the POSTFIX ++/-- caller
+  src/prslib.c:1757  the PREFIX unary caller
+
+CALL SITE 1 -- src/prslib.c:1450 (postfix increment/decrement)
+---------------------------------------------------------
+        if (tokenPunctIs(tok, TK_PLUS_PLUS) || tokenPunctIs(tok, TK_MINUS_MINUS)) {
+            if (!assertLValue(LHS)) {
+                char *ast_str = astLValueToString(LHS,0);
+                cctrlRaiseException(cc,"Expected an L-Value however got a %s - `%s`",
+                        astKindToHumanReadable(LHS), ast_str);
+            }
+            AstUnOp op;
+            if (!astUnaryOpFromToken(tok->i64, &op)) {
+                /* This should be impossible to hit as we've already pre-validated */
+                loggerPanic("Invalid token for unary operator; %c\n", (char)tok->i64);
+            }
+            LHS = astUnaryOperator(LHS->type, op, LHS);
+            continue;
+
+CALL SITE 2 -- src/prslib.c:1757 (prefix unary operators)
+------------------------------------------------------
+    if (tok->tk_type == TK_PUNCT) {
+        AstUnOp unary_op;
+        if (!astUnaryOpFromToken(tok->i64, &unary_op)) {
+            cctrlTokenRewind(cc);
+            return parsePostFixExpr(cc);
+        }
+
+        if (unary_op == AST_UN_OP_POST_INC) {
+            unary_op = AST_UN_OP_PRE_INC;
+        } else if (unary_op == AST_UN_OP_POST_DEC) {
+            unary_op = AST_UN_OP_PRE_DEC;
+        }
+
+        Lexeme *peek = cctrlTokenPeekBy(cc,1);
+
+THE MACHINE-LEVEL PROOF (fresh entry-tree build)
+------------------------------------------------
+COMMAND=llvm-objdump -d --reloc /tmp/slice05-baseline/build/CMakeFiles/hcc.dir/prslib.c.o | grep -B2 -A2 astUnaryOpFromToken
+     814: 9100f3e1     	add	x1, sp, #0x3c
+     818: 94000000     	bl	0x818 <_parseExpr+0x108>
+		0000000000000818:  ARM64_RELOC_BRANCH26	_astUnaryOpFromToken
+     81c: 34000f60     	cbz	w0, 0xa08 <_parseExpr+0x2f8>
+     820: f9400a80     	ldr	x0, [x20, #0x10]
+--
+    276c: 910073e1     	add	x1, sp, #0x1c
+    2770: 94000000     	bl	0x2770 <_parseUnaryExpr+0x108>
+		0000000000002770:  ARM64_RELOC_BRANCH26	_astUnaryOpFromToken
+    2774: 34000360     	cbz	w0, 0x27e0 <_parseUnaryExpr+0x178>
+    2778: b9401fe8     	ldr	w8, [sp, #0x1c]
+
+COMMAND=nm /tmp/slice05-baseline/build/CMakeFiles/hcc.dir/prslib.c.o | grep astUnaryOpFromToken
+                 U _astUnaryOpFromToken
+
+THE CALL-GRAPH VERDICT
+------------------------
+  PRODUCTION_CALL_SITE_COUNT=2
+  PRODUCTION_CALL_SITES=src/prslib.c:1450,src/prslib.c:1757
+  CALLERS_ARE_PRODUCTION_CODE=YES
+    Both call sites are in the real parser (src/prslib.c), not in a test
+    harness, and both are compiled into the production prslib.c.o.
+  CALLER_FUNCTIONS=_parseExpr (postfix ++/--), _parseUnaryExpr (prefix unary)
+
+  THE CALL GRAPH MATCHES THE PREDECESSOR'S RECONNAISSANCE RECORD
+  (src/prslib.c:1450 and src/prslib.c:1757), reconfirmed at ENTRY_HEAD
+  by MACHINE CODE rather than by grep alone.

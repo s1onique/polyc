@@ -1,0 +1,31 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE05
+ACT_PHASE=C0-RED
+EVIDENCE_KIND=red-component-absent
+
+THE RED: NO POLYC UNARY COMPONENT EXISTS
+===========================================
+
+COMMAND=ls tools/bootstrap/selfhost-parser-slice05.HC
+ls: cannot access 'tools/bootstrap/selfhost-parser-slice05.HC': No such file or directory
+
+COMMAND=ls tools/quality/parser-slice05-*
+
+COMMAND=ls src/cmake/VerifyAstUnaryTokenMapObject.cmake src/cmake/WriteAstUnaryTokenMapObjectStamp.cmake
+ls: cannot access 'src/cmake/VerifyAstUnaryTokenMapObject.cmake': No such file or directory
+ls: cannot access 'src/cmake/WriteAstUnaryTokenMapObjectStamp.cmake': No such file or directory
+
+COMMAND=grep -rn "BootstrapAstUnaryOpFromToken" src/ tools/ 2>/dev/null
+(no output above means the symbol does not exist anywhere in the tree)
+
+COMMAND=grep -rn "HCC_USE_SELFHOST_PARSER_AST_UNARY" src/ 2>/dev/null
+(no output above means the production switch does not exist)
+
+COMMAND=grep -c "HCC_USE_SELFHOST_PARSER_AST_BINOP" src/ast.c
+2
+  -> the BINARY selector exists (the predecessor's migration is present).
+
+THE RED PREDICATES
+------------------
+  POLYC_UNARY_COMPONENT_EXISTS=NO
+  UNARY_PRODUCTION_DELEGATION=NO
+  COMPONENT_ABSENT=YES

@@ -1,0 +1,51 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE05
+ACT_PHASE=C0-RED
+EVIDENCE_KIND=production-authority
+
+THE PRODUCTION AUTHORITY AT THE ENTRY HEAD
+===========================================
+
+The production compiler at the entry HEAD links these PolyC components.
+Each authority is established by the SYMBOL in the LINKED PRODUCTION
+BINARY, not by a grep of the source tree.
+
+THE ENTRY-TREE PRODUCTION BUILD
+------------------------------
+BUILD=/tmp/slice05-baseline/build (configured from the ENTRY tree)
+
+NOTE: the isolated entry-tree build above was configured with the four
+self-hosted parser selectors OFF, because the entry tree's CMake
+requires the prebuilt subject objects as inputs.  The authority below is
+therefore measured on the REAL production build of the working tree, which
+has every selector ON.
+
+THE REAL PRODUCTION BUILD (working tree, all selectors ON)
+------------------------------------------------------
+COMMAND=nm ./hcc | grep -E "BootstrapCalcPadding|BootstrapValidPostControlFlowToken|BootstrapOperatorPrecedence|BootstrapAstBinOpFromToken|BootstrapAstUnaryOpFromToken"
+000000010006442c T _BootstrapAstBinOpFromToken
+0000000100063dac T _BootstrapCalcPadding
+000000010006405c T _BootstrapOperatorPrecedence
+0000000100063e24 T _BootstrapValidPostControlFlowToken
+
+THE AUTHORITY TABLE
+------------------
+component<TAB>polyc_symbol<TAB>authority
+CalcPadding	BootstrapCalcPadding	POLYC
+parseValidPostControlFlowToken	BootstrapValidPostControlFlowToken	POLYC
+parseGetPriority	BootstrapOperatorPrecedence	POLYC
+astBinOpFromToken	BootstrapAstBinOpFromToken	POLYC
+astUnaryOpFromToken	-	LEGACY_C
+
+THE RED PREDICATES
+------------------
+  BINARY_PRODUCTION_AUTHORITY=POLYC
+  PADDING_PRODUCTION_AUTHORITY=POLYC
+  CONTROL_FLOW_PRODUCTION_AUTHORITY=POLYC
+  PRECEDENCE_PRODUCTION_AUTHORITY=POLYC
+  UNARY_LEGACY_AUTHORITY=YES
+  UNARY_PRODUCTION_DELEGATION=NO
+  POLYC_UNARY_COMPONENT_EXISTS=NO
+
+  Each PolyC authority above is proven by the SYMBOL PRESENT IN THE
+  LINKED PRODUCTION BINARY, which is the only authority that matters: a
+  component that is not linked cannot decide anything.

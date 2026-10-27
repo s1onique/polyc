@@ -1,0 +1,64 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE05
+ACT_PHASE=C0-RED
+EVIDENCE_KIND=entry-identity
+
+THE ENTRY IDENTITY (ACT section 1)
+=========================================
+
+COMMAND=git branch --show-current
+OUTPUT:
+main
+
+COMMAND=git rev-parse HEAD
+OUTPUT:
+b7634f9afb6b530f7bac987317754ab35b8dbead
+
+COMMAND=git status --porcelain=v1
+OUTPUT:
+?? docs/acts/ACT-POLYC-SELFHOST-PARSER-SLICE05.md
+?? evidence/ACT-POLYC-SELFHOST-PARSER-SLICE05/
+(The two untracked paths above are THIS ACT's own authorization artifact and
+ its own evidence tree, created by this ACT after the entry check.  No
+ TRACKED file was modified.)
+
+COMMAND=git status --porcelain=v1 --untracked-files=no
+OUTPUT:
+(empty output -- the TRACKED worktree was clean at the entry check)
+
+COMMAND=git diff HEAD --stat
+OUTPUT:
+(empty output -- no tracked file differs from the entry HEAD)
+
+COMMAND=git replace -l
+OUTPUT:
+(empty output above means there are no replace refs)
+
+COMMAND=git log -1 --format=%B | git interpret-trailers --parse
+OUTPUT:
+ACT: ACT-POLYC-SELFHOST-PARSER-SLICE04
+ACT-Phase: CLOSE
+ACT-Verdict: PASS
+
+COMMAND=git log -5 --format=%H %s
+OUTPUT:
+b7634f9afb6b530f7bac987317754ab35b8dbead ACT-POLYC-SELFHOST-PARSER-SLICE04 C4: CLOSE -- the AST binary-operator classification is PolyC-owned
+1545c99d7e15259a2d66dcd222ec30fd37b0caf4 ACT-POLYC-SELFHOST-PARSER-SLICE04 C3: four-generation qualification, causal mutation and conservation
+23bf3cc4d8a976e4350176df740614a00898907c ACT-POLYC-SELFHOST-PARSER-SLICE04 C2: the PolyC AST-operator component and the production delegation
+6b87036c428c0ea0a791555274ff4a2f170c2b80 ACT-POLYC-SELFHOST-PARSER-SLICE04 C1: mechanical candidate selection and the frozen proof contract
+fe02e6c29ee476f3bcf990409ef3720a04ba200a ACT-POLYC-SELFHOST-PARSER-SLICE04 C0: AUTH, entry identity and the real production RED
+
+THE ENTRY IDENTITY VERDICT
+===========================
+
+  BRANCH=main
+  ENTRY_HEAD=b7634f9afb6b530f7bac987317754ab35b8dbead
+  WORKTREE_CLEAN=YES
+  GIT_REPLACE_REFS=0
+
+  EXPECTED_ENTRY_HEAD_MATCH=YES
+    The observed HEAD is EXACTLY the ACT's declared Expected ENTRY_HEAD
+    b7634f9afb6b530f7bac987317754ab35b8dbead.  There was therefore NO
+    intervening commit to inventory: the entry tree IS the predecessor's
+    CLOSE tree.
+
+  ENTRY_IDENTITY_INVALID=NO

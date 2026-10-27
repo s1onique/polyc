@@ -1,0 +1,145 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE05
+ACT_PHASE=C0-RED
+EVIDENCE_KIND=predecessor-identity
+
+THE PREDECESSOR BINDING (ACT section 1)
+===========================================
+
+COMMAND=git log --format=%H -1 b7634f9afb6b530f7bac987317754ab35b8dbead
+OUTPUT:
+b7634f9afb6b530f7bac987317754ab35b8dbead
+
+COMMAND=git merge-base --is-ancestor b7634f9afb6b530f7bac987317754ab35b8dbead HEAD; echo $?
+OUTPUT: 0 (the predecessor CLOSE is an ancestor of HEAD)
+
+COMMAND=git log -1 --format=%(trailers:key=ACT-Verdict) b7634f9afb6b530f7bac987317754ab35b8dbead
+OUTPUT:
+ACT-Verdict: PASS
+
+
+THE FULL PREDECESSOR CLOSE COMMIT
+-------------------------------
+b7634f9afb6b530f7bac987317754ab35b8dbead
+ACT-POLYC-SELFHOST-PARSER-SLICE04 C4: CLOSE -- the AST binary-operator classification is PolyC-owned
+
+The binary-operator classification of the PolyC parser is now owned by
+the qualified PolyC component BootstrapAstBinOpFromToken, and the
+legacy C decision has been retired from the production path.
+
+THE SELECTION
+  CAND-019 astBinOpFromToken was selected MECHANICALLY: both
+  candidates passed all thirteen eligibility clauses under the
+  existing, closed RECON03 checker, both carried the IDENTICAL
+  RECON03 R0..R5 vector (0, 2, 3, 2, 0, 0), and the existing, closed
+  RECON03 ranker decided the winner by the R6 source-order dimension
+  alone.  No score was changed and neither tool was rewritten.
+  Controls: 7/7 plus the closed ranker's own 4/4.
+
+THE PRODUCTION DELEGATION
+  src/ast.c's astBinOpFromToken now delegates under the dedicated
+  selector HCC_USE_SELFHOST_PARSER_AST_BINOP, keeping its exact C ABI.
+  The production object's disassembly is now call / test / conditionally
+  store / return, with NO jump table and NO enum immediate: the C
+  decision left the production path.  The unselected
+  astUnaryOpFromToken is byte-identical and still the legacy C
+  authority.
+
+THE DELEGATION IS CAUSALLY LOAD-BEARING
+  p0_OUTPUT=13 (pristine 6+7), p1_OUTPUT=-1 (mutated 6-7),
+  p2_OUTPUT=13 (restored 6+7).  The mutant BUILD SUCCEEDED and the
+  restored component is a REBUILD with the SAME sha as the pristine
+  one.  The tracked subject was never mutated.
+
+THE PROVENANCE IS SINGLE-VALUED AND EXECUTION-LINKED
+  Because G1/G2/G3 produce byte-identical objects, a finished object
+  could be substituted for another without changing the output bytes.
+  Each generation therefore also produced a witness bound to an actual
+  EXECUTION, and all five provenance negative controls are rejected
+  with a concrete reason.  The G0 producer is the host C compiler,
+  resolved and hashed from the actual invoked command.
+
+A FRESH-TREE DEFECT WAS FOUND AND REPAIRED IN THE C2 PHASE
+===========================================================
+
+The qualification tool's link line listed the three existing PolyC
+subject objects twice, so the differential could not be linked from a
+pristine clone.  The defect was MASKED by a warm build state and
+became visible only after the libtos archive was rebuilt; it is
+exactly what F9's fresh-tree requirement exists to catch.
+
+It was repaired in the C2 phase -- the phase that introduced it, and
+the phase ACT section 16 authorizes for such a repair -- and every C3
+result was then re-measured from the corrected tree.  It affected NO
+production artifact and NO evidence claim.
+
+  DEFECT_SCOPE=QUALIFICATION_TOOL_LINK_ONLY
+  PRODUCTION_AFFECTED=NO
+  EVIDENCE_AFFECTED=NO
+
+THE CONSERVATION
+  The parser suite was run against a compiler built from the ENTRY
+  tree and against this tree: 87 passed / 3 failed on BOTH, with
+  byte-identical failure identities.  The LEXER02/07/08/09
+  differentials report 89/45/23 rows with 0 failures, and the LEXER07
+  broad corpus is identical to the canonical baseline registry
+  (REGRESSION=0, DIVERGED=0) with its historical STATUS=FAIL preserved.
+  The three previous PolyC parser authorities are conserved with zero
+  source-hash changes.
+
+THE GATES
+  gate-fast PASS, gate-push PASS, factory-v2 PASS (53/0), append-only
+  PASS (11/0), F14 PASS, patch hygiene PASS, closure-status PASS.
+  The F-NO-PYTHON checker's 12 findings are pre-existing and none is
+  in this ACT's diff.
+
+THE EXTERNAL TERMINALITY
+========================
+
+  FACTORY_V2_RANGE_CHECK=PASS   (COMMITS=5)
+  WORKTREE_CLEAN=YES
+  PATCH_HYGIENE_ERRORS=0
+  CLOSE_IS_ACT_TIP=YES
+  POST_CLOSE_CONTINUATION=NO
+
+The whole qualification suite was also re-run from a PRISTINE CLONE of
+the committed tree, and every target passed there; the details are in
+c3/terminality.txt.
+
+THE ACCEPTANCE LEDGER
+  50 rows, produced by an EXACT ACCEPTANCE-ID JOIN against the frozen
+  C1 contract: AC_PASS=50, AC_FAIL=0, AC_UNPROVEN=0.  AC50's
+  post-CLOSE satisfaction is established by the external terminality
+  checks of ACT section 17, recorded in c3/terminality.txt.
+
+THE REMAINING UNMIGRATED AST MAPPING
+  astUnaryOpFromToken (CAND-020) remains LEGACY_C and is the natural
+  candidate for a later ACT-POLYC-SELFHOST-PARSER-SLICE05.
+
+ACT: ACT-POLYC-SELFHOST-PARSER-SLICE04
+ACT-Phase: CLOSE
+ACT-Verdict: PASS
+
+
+THE FROZEN PREDECESSOR FILE HASHES (F14 protection)
+---------------------------------------------------
+COMMAND=shasum -a 256 docs/acts/ACT-POLYC-SELFHOST-PARSER-SLICE04.md \
+        docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE04.md
+e410e334a5e7f18ca9d15c5121dd2eb93550cbcc867e49c081fd9a67b11e763a  docs/acts/ACT-POLYC-SELFHOST-PARSER-SLICE04.md
+bf0c14f2e1c108c3ba61fcafac4f08b57ebcbfc70eb3978e0352da1e81c9c100  docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE04.md
+
+THE FROZEN PREDECESSOR EVIDENCE TREE (aggregate hash)
+----------------------------------------------------
+COMMAND=find evidence/ACT-POLYC-SELFHOST-PARSER-SLICE04 -type f | sort \
+        | xargs shasum -a 256 | shasum -a 256
+ced6b33db7bdeb8b31fd3dbea1fdb3559e40caad3d28abc82a78c117686d1b41  -
+
+THE PREDECESSOR BINDING VERDICT
+-------------------------------
+  PREDECESSOR_CLOSE_REACHABLE=YES
+  PREDECESSOR_ACT=ACT-POLYC-SELFHOST-PARSER-SLICE04
+  PREDECESSOR_VERDICT=PASS
+  PREDECESSOR_IDENTITY_UNBOUND=NO
+
+  NOTE: the full predecessor CLOSE SHA was RESOLVED THROUGH LOCAL GIT
+  HISTORY (git log -1 <abbrev>).  No full SHA was fabricated from the
+  abbreviated form in the ACT text.

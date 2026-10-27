@@ -1,0 +1,140 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE05
+ACT_PHASE=C0-RED
+EVIDENCE_KIND=red-legacy-authority
+
+THE RED: THE LEGACY C UNARY CLASSIFIER IS THE PRODUCTION AUTHORITY
+========================================================================
+
+THE FRESH ENTRY-TREE BUILD
+---------------------------
+COMMAND=git archive b7634f9afb6b530f7bac987317754ab35b8dbead | tar -x -C /tmp/slice05-baseline
+COMMAND=cmake -S ./src -B ./build -G "Unix Makefiles" -DCMAKE_C_COMPILER=cc \
+          -DCMAKE_BUILD_TYPE=Release -DHCC_ENABLE_JIT=on -DHCC_ENABLE_LLVM=OFF \
+          -DHCC_USE_SELFHOST_PARSER_PADDING=OFF \
+          -DHCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN=OFF \
+          -DHCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE=OFF \
+          -DHCC_USE_SELFHOST_PARSER_AST_BINOP=OFF
+BUILD_EXIT_CODE=0
+
+  (The entry tree has NO AST-operator delegation switch at all, so the
+   UNARY delegation flag does not exist in it yet.  The build above is the
+   pure entry tree: the legacy C astUnaryOpFromToken is the classifier.)
+
+THE PRODUCTION OBJECT UNDER TEST
+-------------------------------
+OBJECT=/tmp/slice05-baseline/build/CMakeFiles/hcc.dir/ast.c.o
+COMMAND=nm $(OBJECT) | grep -i 'unary\|binop'
+00000000000006a0 T _astBinOpFromToken
+0000000000005964 T _astBinOpKindToString
+000000000000305c T _astIsBinOp
+0000000000003098 T _astIsBinOpCmp
+0000000000003070 T _astIsBinOpKind
+0000000000005b1c T _astUnaryArgToString
+000000000000078c T _astUnaryOpFromToken
+00000000000039ec T _astUnaryOpToString
+00000000000005d8 T _astUnaryOperator
+0000000000008348 s l_switch.table.astBinOpKindToString
+
+THE SYMBOLS PRESENT
+-------------------
+  _astUnaryOpFromToken  IS PRESENT  (the legacy C classifier)
+  _BootstrapAstUnaryOpFromToken IS ABSENT (the PolyC component does not exist)
+
+COMMAND=nm /tmp/slice05-baseline/build/CMakeFiles/hcc.dir/ast.c.o | grep -c BootstrapAstUnaryOpFromToken
+0
+0
+  -> 0 references to the PolyC unary symbol in the production ast.c object.
+
+THE DISASSEMBLY OF THE LEGACY UNARY MAPPING
+-------------------------------------------
+COMMAND=otool -tV /tmp/slice05-baseline/build/CMakeFiles/hcc.dir/ast.c.o
+OUTPUT (the _astUnaryOpFromToken symbol, verbatim):
+
+_astUnaryOpFromToken:
+000000000000078c	mov	x8, x0
+0000000000000790	mov	w0, #0x0
+0000000000000794	cmp	x8, #0x7d
+0000000000000798	b.gt	0x7c8
+000000000000079c	sub	x8, x8, #0x21
+00000000000007a0	cmp	x8, #0xc
+00000000000007a4	b.hi	0x844
+00000000000007a8	adrp	x9, 0 ; 0x0
+00000000000007ac	add	x9, x9, #0x0
+00000000000007b0	adr	x10, #0x10
+00000000000007b4	ldrb	w11, [x9, x8]
+00000000000007b8	add	x10, x10, x11, lsl #2
+00000000000007bc	br	x10
+00000000000007c0	mov	w8, #0x6
+00000000000007c4	b	0x83c
+00000000000007c8	cmp	x8, #0x305
+00000000000007cc	b.le	0x7f0
+00000000000007d0	cmp	x8, #0x306
+00000000000007d4	b.eq	0x828
+00000000000007d8	cmp	x8, #0x330
+00000000000007dc	b.eq	0x830
+00000000000007e0	cmp	x8, #0x331
+00000000000007e4	b.ne	0x844
+00000000000007e8	mov	w8, #0x3
+00000000000007ec	b	0x83c
+00000000000007f0	cmp	x8, #0x7e
+00000000000007f4	b.eq	0x838
+00000000000007f8	cmp	x8, #0x305
+00000000000007fc	b.ne	0x844
+0000000000000800	mov	w8, #0x0
+0000000000000804	b	0x83c
+0000000000000808	mov	w8, #0x8
+000000000000080c	b	0x83c
+0000000000000810	mov	w8, #0x9
+0000000000000814	b	0x83c
+0000000000000818	mov	w8, #0x4
+000000000000081c	b	0x83c
+0000000000000820	mov	w8, #0x5
+0000000000000824	b	0x83c
+0000000000000828	mov	w8, #0x1
+000000000000082c	b	0x83c
+0000000000000830	mov	w8, #0x2
+0000000000000834	b	0x83c
+0000000000000838	mov	w8, #0x7
+000000000000083c	str	w8, [x1]
+0000000000000840	mov	w0, #0x1
+0000000000000844	ret
+_astBinaryOp:
+
+READING THE DISASSEMBLY
+----------------------
+  The function is a JUMP TABLE over the ASCII range 0x21..0x7d, plus
+  four explicit comparisons against the lexer token constants
+  0x305 (TK_PLUS_PLUS), 0x306 (TK_MINUS_MINUS), 0x330 (TK_PRE_PLUS_PLUS)
+  and 0x331 (TK_PRE_MINUS_MINUS).
+
+  The enum results stored through the output pointer are:
+    w8 = 0x6  (AST_UN_OP_LOG_NOT)   <- the '!' case
+    w8 = 0x8  (AST_UN_OP_ADDR_OF)   <- the '&' case
+    w8 = 0x9  (AST_UN_OP_DEREF)     <- the '*' case
+    w8 = 0x4  (AST_UN_OP_PLUS)      <- the '+' case
+    w8 = 0x5  (AST_UN_OP_MINUS)     <- the '-' case
+    w8 = 0x1  (AST_UN_OP_POST_DEC)  <- TK_MINUS_MINUS (0x306)
+    w8 = 0x2  (AST_UN_OP_PRE_DEC)   <- TK_PRE_MINUS_MINUS (0x331)
+    w8 = 0x0  (AST_UN_OP_POST_INC)  <- TK_PLUS_PLUS (0x305)
+    w8 = 0x3  (AST_UN_OP_PRE_INC)   <- TK_PRE_PLUS_PLUS (0x330)
+    w8 = 0x7  (AST_UN_OP_BIT_NOT)   <- the '~' case
+
+  The store is `str w8, [x1]` -- the output-pointer write -- followed by
+  `mov w0, #0x1` (return 1).  The default path at 0x844 returns with w0 = 0
+  and does NOT store, which is the "output unchanged on failure" property
+  visible in the machine code itself.
+
+  IMPORTANT: the enum VALUES above are read off the COMPILED machine code
+  of the ENTRY tree, not inferred from the enum names.  C1 rederives them
+  independently by compiling the live src/ast.h.
+
+THE RED PREDICATES
+------------------
+  UNARY_LEGACY_AUTHORITY=YES
+    The production ast.c object contains the legacy C classifier as the
+    decision procedure, and references no PolyC unary symbol.
+  UNARY_PRODUCTION_DELEGATION=NO
+    There is no HCC_USE_SELFHOST_PARSER_AST_UNARY switch in the entry tree.
+  POLYC_UNARY_COMPONENT_EXISTS=NO
+    tools/bootstrap/selfhost-parser-slice05.HC does not exist.
+  RED_REPRODUCED=YES

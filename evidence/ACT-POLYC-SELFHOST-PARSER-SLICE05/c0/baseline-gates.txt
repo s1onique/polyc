@@ -1,0 +1,93 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE05
+ACT_PHASE=C0-RED
+EVIDENCE_KIND=baseline-gates
+
+THE BASELINE GATES AT THE ENTRY HEAD
+========================================
+
+GATE-FAST
+---------
+COMMAND=make gate-fast
+OUTPUT:
+  ./scripts/quality/gate-fast.sh
+  POLYC_GATE=fast
+  CHECK=diff-check STATUS=PASS
+  CHECK=shell-syntax STATUS=PASS
+  CHECK=doc-invariants STATUS=PASS
+  CHECK=large-file-guard STATUS=PASS
+  BUILD_RUN=NO
+  POLYC_GATE=factory-closure-status
+  MANIFEST_ROWS=34
+  MISSING_HANDOFF_FILES=0
+  MALFORMED_HANDOFF_VERDICT=0
+  PAIR_OK=34
+  PAIR_FAIL=0
+  STATUS=PASS
+  VERDICT=PASS
+  CHECK=factory-closure-status STATUS=PASS
+  VERDICT=PASS
+  GATE_FAST_RC=0
+
+  GATE_FAST=PASS
+  GATE_FAST_EXIT_CODE=0
+
+THE GATE-FAST CHECKS THAT RAN
+------------------------------
+  CHECK=diff-check STATUS=PASS   (staged diff whitespace hygiene)
+  CHECK=shell-syntax STATUS=PASS (shell script syntax)
+  CHECK=doc-invariants STATUS=PASS
+  CHECK=large-file-guard STATUS=PASS
+  CHECK=factory-closure-status STATUS=PASS
+    MANIFEST_ROWS=34 MISSING_HANDOFF_FILES=0 MALFORMED_HANDOFF_VERDICT=0
+    PAIR_OK=34 PAIR_FAIL=0
+
+  BUILD_RUN=NO -- the fast gate is a latency contract and does not build
+  the compiler.  The compiler build is measured separately below.
+
+THE FRESH ENTRY-TREE COMPILER BUILD
+-----------------------------------
+COMMAND=git archive b7634f9afb6b530f7bac987317754ab35b8dbead | tar -x -C /tmp/slice05-baseline
+COMMAND=cmake -S ./src -B ./build2 -G "Unix Makefiles" -DCMAKE_C_COMPILER=cc \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX=/tmp/slice05-baseline/prefix \
+          -DHCC_ENABLE_JIT=on -DHCC_ENABLE_LLVM=OFF \
+          -DHCC_USE_SELFHOST_PARSER_PADDING=ON \
+          -DHCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN=ON \
+          -DHCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE=ON \
+          -DHCC_USE_SELFHOST_PARSER_AST_BINOP=ON
+BUILD_EXIT_CODE=0
+COMPILER_PATH=/tmp/slice05-baseline/prefix/bin/hcc
+COMPILER_SHA256=b4e8eb18380564e3332dfa96e45c65759c164852d7af257c34d57ba0b49f9040
+
+  (The four prebuilt subject objects passed to the entry-tree build are the
+   SAME objects the entry tree itself uses: they are the entry tree's
+   qualified PolyC subjects, unchanged since SLICE04 closed.)
+
+  The compiler that produced this binary is the PRODUCTION configuration:
+  every self-hosted parser selector is ON.
+
+  The install step additionally reported a pre-existing, UNRELATED
+  environment condition:
+
+    CMake Error at src/cmake/RequireRuntimeProducer.cmake:32 (message):
+      libtos install seam: the qualified runtime producer was not found at
+      .../build/runtime-producer/hcc-bootstrap04.
+
+  This is the entry tree's own fail-closed install seam refusing to
+  install because the RUNTIME PRODUCER was not built in the isolated
+  /tmp tree.  It is NOT caused by SLICE05, it is NOT a parser regression,
+  and it does NOT affect the measurement: the compiler binary and the
+  tos.HH header were installed BEFORE the seam fired, and the parser
+  suite below was executed with those.  The working tree's canonical
+  `make test-prefix-install` (which builds the qualified producer first)
+  is the seam used for the C2/C3 measurements.
+
+THE CMAKE VERIFIER GATES THAT RAN DURING THAT BUILD
+----------------------------------------------------
+  AST_TOKEN_MAP_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapAstBinOpFromToken
+  CONTROL_FLOW_TOKEN_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapValidPostControlFlowToken
+  OPERATOR_PRECEDENCE_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapOperatorPrecedence
+  PARSER_PADDING_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapCalcPadding
+
+  NOTE: there is NO unary verifier at the entry HEAD, because there is no
+  unary subject at the entry HEAD.  The unary verifier is created by C2.

@@ -1,0 +1,172 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE05
+ACT_PHASE=C0-RED
+EVIDENCE_KIND=predecessor-provenance-findings
+
+THE TWO UNRESOLVED SLICE04 NEGATIVE-CONTROL DEFECTS
+====================================================
+
+This file records the C0 reading of the CLOSED SLICE04 provenance
+negative-control evidence.  It is a READING, not a modification: the
+SLICE04 evidence tree, ACT document and HANDOFF are closed evidence
+under F14 and are NOT touched by SLICE05.
+
+THE CLOSED SLICE04 EVIDENCE BEING READ
+---------------------------------------
+
+  evidence/ACT-POLYC-SELFHOST-PARSER-SLICE04/c3/copy-forgery-negative-controls.txt
+
+Its recorded CASE-1 and CASE-2 dispositions are:
+
+  SLICE04_FORGERY=CASE-1 G1's witness substituted for G3's
+  SLICE04_FORGERY=CASE-1 PROVENANCE_VERDICT=REJECTED
+    REJECT_STAGE_LABELS the witness carries 3 generations, expected 4
+
+  SLICE04_FORGERY=CASE-2 G3's compiler execution receipt omitted
+  SLICE04_FORGERY=CASE-2 PROVENANCE_VERDICT=REJECTED
+    REJECT_OMITTED_EXECUTION_RECEIPT g0 has no PROBE_EXECUTION_OUTPUT
+
+
+D-PROV-01 -- G1 WITNESS SUBSTITUTED FOR G3
+==========================================
+
+THE HISTORICAL OBSERVATION
+---------------------------
+
+  CLAIM:
+    G1 witness substituted for G3
+
+  OBSERVED REJECTION:
+    REJECT_STAGE_LABELS
+    witness carries 3 generations, expected 4
+
+WHAT THE OBSERVATION ACTUALLY PROVES
+------------------------------------
+
+  The rejection reason is a ROW-COUNT / STAGE-LABEL rejection.  The
+  verifier rejected the witness because it carried THREE generation
+  rows where FOUR were required.  It did NOT reject the witness because
+  the G3 row contained the G1 payload.
+
+  Therefore the historical control proves:
+
+    "a witness with a missing generation row is rejected"
+
+  It does NOT prove:
+
+    "a COMPLETE four-generation witness whose G3 row carries the G1
+     payload is rejected"
+
+  Those are DIFFERENT predicates.  The defect is that the mutation was
+  constructed so that it ALSO broke the row count, so the row-count
+  detector fired first and the intended substitution detector was never
+  exercised.
+
+  THE HISTORICAL CONTROL IS THEREFORE NOT A WITNESS OF THE INTENDED
+  DETECTOR.  The SLICE04 claim of "5/5 substitutions rejected" remains
+  a historical fact about what the verifier printed; the PROOF
+  IMPLICATION that CASE-1 demonstrates G3-payload substitution detection
+  is NOT established by that evidence.
+
+  This does not retroactively invalidate the SLICE04 closure verdict
+  (F14: historical documents are not rewritten because later evidence
+  supersedes them).  It is a defect in SLICE04's PROOF that SLICE05
+  must not repeat.
+
+
+D-PROV-02 -- G3 RECEIPT OMISSION
+=================================
+
+THE HISTORICAL OBSERVATION
+---------------------------
+
+  CLAIM:
+    G3 compiler execution receipt omitted
+
+  OBSERVED REJECTION:
+    g0 has no PROBE_EXECUTION_OUTPUT
+
+WHAT THE OBSERVATION ACTUALLY PROVES
+------------------------------------
+
+  The rejection names G0, not G3.  The verifier reported that the G0
+  row has no execution receipt.  That is an omission in the FIRST
+  generation's row, not in the third.
+
+  Therefore the historical control proves:
+
+    "a witness whose FIRST generation row is missing its execution
+     receipt is rejected"
+
+  It does NOT prove:
+
+    "a COMPLETE four-generation witness whose G3 execution receipt --
+     and only its G3 receipt -- has been removed is rejected"
+
+  Again the mutation was constructed so that it broke an EARLIER,
+  UNRELATED field, and the earlier field's detector fired first.
+
+
+THE COMMON ROOT CAUSE
+=====================
+
+  Both historical controls were built by MUTATING THE WITNESS IN A WAY
+  THAT ALSO DEGRADED ITS STRUCTURE.  The verifier's checks are ordered,
+  and the structural check (row count / label set) fired before the
+  intended per-generation check.
+
+  In a verifier, the FIRST failing check short-circuits (the SLICE04
+  verifier does `continue` after each per-generation rejection, and
+  reports only the first reason per generation).  So a control that
+  breaks several things at once can only ever demonstrate the FIRST
+  broken thing.
+
+
+THE SLICE05 CORRECTION
+======================
+
+  ACT section 3 requires, for BOTH corrected controls:
+
+  1. START from a complete, valid four-generation witness.
+  2. Preserve GENERATION_ROWS=4, STAGE_LABELS=G0,G1,G2,G3 and
+     ALL_REQUIRED_RECEIPTS_PRESENT=YES.
+  3. Mutate EXACTLY ONE THING: the G3 payload (D-PROV-01) or the G3
+     execution receipt (D-PROV-02).
+  4. Leave every other row byte-for-byte unchanged.
+  5. Run the REAL provenance verifier and record ALL of its parsing
+     and structural diagnostics, not just its exit code.
+  6. Require a G3-SPECIFIC rejection reason:
+       NC_G3_SUBSTITUTION_REJECTION_REASON=G3_BINDING_MISMATCH
+       NC_G3_OMISSION_REJECTION_REASON=G3_EXECUTION_RECEIPT_MISSING
+  7. Re-check the pristine witness after each control:
+       PRISTINE_MANIFEST_VALID=YES
+       PRISTINE_PROVENANCE_VERDICT=PASS
+
+  The SLICE04 verifier CANNOT satisfy requirement 6: it has no
+  per-generation BINDING field to compare and no generation-scoped
+  omission reason.  Its reasons are generic
+  (REJECT_STAGE_LABELS / REJECT_OMITTED_EXECUTION_RECEIPT), and its
+  receipt check names whichever generation happens to fail first.
+
+  ACCORDINGLY: SLICE05 implements its OWN provenance verifier,
+  tools/quality/parser-slice05-provenance-verifier.HC, which adds an
+  explicit per-generation BINDING field (the generation's expected
+  stage identity and run binding id) and generation-scoped rejection
+  reasons.  The SLICE04 verifier is NOT modified (it is closed
+  evidence and is listed in ACT section 4.5 as FORBIDDEN).
+
+
+THE HONEST SECURITY BOUNDARY
+=============================
+
+  Byte-identical G1/G2/G3 objects do not carry their own build
+  identity.  A locally recorded compiler SHA, execution receipt and
+  object SHA can prove CONSISTENCY WITH INDEPENDENTLY RETAINED BUILD
+  OBSERVATIONS.  It cannot prove resistance to an adversary who can
+  rewrite the entire evidence store, because such an adversary can
+  rewrite the recorded SHAs along with everything else.
+
+  SLICE05 therefore claims exactly what its controls demonstrate:
+
+    DETECTION OF THE SPECIFIED WITNESS SUBSTITUTIONS AND OMISSIONS
+    = DEMONSTRATED
+    RESISTANCE TO A TOTAL EVIDENCE-STORE REWRITE = NOT CLAIMED

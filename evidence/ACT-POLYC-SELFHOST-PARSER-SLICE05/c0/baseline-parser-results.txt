@@ -1,0 +1,72 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE05
+ACT_PHASE=C0-RED
+EVIDENCE_KIND=baseline-parser-results
+
+THE PARSER SUITE BASELINE
+========================
+
+THE BASELINE IS THE ENTRY TREE, NOT A HISTORICAL CLAIM
+------------------------------------------------------
+ACT section 5 requires the baseline to be MEASURED on the frozen entry
+tree.  The predecessor's PASSED=87 / FAILED=3 was an expectation for
+reconnaissance, not a substitute for a fresh entry measurement.
+
+THE TWO COMPILERS
+------------------
+  ENTRY   = /tmp/slice05-baseline/prefix3/bin/hcc
+           sha256=747639324e09f503fe2223f970149579d5e78c543b77fa933d4def5d36732b36
+           (built from the git-archived entry tree, all four self-hosted
+            parser selectors ON)
+  CURRENT = /tmp/slice05-current/prefix/bin/hcc
+           sha256=9cf79d3c4995606541d1464296f47bbffbd2819f7a892709151ebfeadc43a2a1
+           (built from the working tree, all four self-hosted parser
+            selectors ON)
+
+BOTH compilers were built with the SAME CMake configuration, differing
+only in the source tree they were built from.  Both were configured with
+-DCMAKE_INSTALL_PREFIX=<their own prefix> so that the compile-time
+INSTALL_PREFIX matches the runtime prefix (the hermetic pattern used by
+scripts/quality/gate-push.sh).  Without that, the host has no
+/usr/local and every test fails with "Failed to open file:
+/usr/local/include/tos.HH" -- an ENVIRONMENT condition, not a parser
+result.  That failure mode was observed and is NOT reported as a
+parser failure identity.
+
+THE IDENTICAL SUITE WAS RUN AGAINST BOTH
+------------------------------------------
+COMMAND=cd <tests-dir> && ../../hcc --install-dir=<prefix> ./run.HC -o test-runner
+COMMAND=cd <tests-dir> && ./test-runner
+
+  ENTRY   ASSERTIONS_PASSED=376 ASSERTIONS_TOTAL=376 TESTFILES_PASSED=90 FAILED=0
+  CURRENT ASSERTIONS_PASSED=376 ASSERTIONS_TOTAL=376 TESTFILES_PASSED=90 FAILED=0
+
+THE FAILING-IDENTITY SETS
+---------------------------
+  ENTRY_FAILED_IDENTITIES=(none)
+  CURRENT_FAILED_IDENTITIES=(none)
+  NEW_PARSER_FAILURE_IDENTITIES=0
+  NEW_PARSER_SEMANTIC_REGRESSIONS=0
+
+THE ASSERTION-SEQUENCE IDENTITY CHECK
+---------------------------------------
+COMMAND=grep -o "PASSED: [0-9]*/[0-9]*" <log> | md5 -q   (per suite)
+  ENTRY   md5=b6f117eb1386ca80f81bc06226e2a741
+  CURRENT md5=b6f117eb1386ca80f81bc06226e2a741
+
+  The two suites produced BYTE-IDENTICAL assertion sequences, so the
+  per-test identity sets are equal, not merely equal in COUNT.
+
+THE CROSS-TARGET RUN (HISTORICAL ENVIRONMENT CONDITION)
+---------------------------------------------------
+COMMAND=./test-runner --target=aarch64-apple-darwin
+  Every test failed with "Failed to open file:
+  /usr/local/include/tos.HH".  This is the HISTORICAL
+  INSTALLATION-PREFIX FAILURE the predecessor recorded: the
+  cross-target install prefix (../../build/<triple>) has no installed
+  PolyC runtime, so the cross-compiled test binaries cannot be
+  produced.  It is an ENVIRONMENT condition, identical on the entry
+  tree and on the current tree, and it is PRESERVED HONESTLY rather
+  than relabelled PASS.  It is not a new failure identity.
+
+  The HOST-ARCH run is the meaningful parser-suite measurement on this
+  host, and it is clean on both trees.
