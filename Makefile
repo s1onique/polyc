@@ -4411,7 +4411,6 @@ build/slice04-oracle-adapter.o: tools/quality/parser-slice04-oracle-adapter.c sr
 # because the production prslib.c object references it.
 SLICE04_DIFF_OBJS = build/parser-slice04-differential.o $(SLICE04_AST_BINOP_OBJ) \
 	$(SLICE04_AST_LEGACY_OBJ) build/slice04-oracle-adapter.o $(SLICE04_ORACLE_STUB) \
-	$(SLICE03_OP_OBJ) $(PARSER_PADDING_OBJ) $(SLICE02_CFT_OBJ) \
 	$(SLICE04_ORACLE_TRANSITIVE_OBJS)
 
 
