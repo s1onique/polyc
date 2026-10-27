@@ -1137,6 +1137,41 @@ static Ast *parsePrimary(Cctrl *cc) {
 }
 
 static int parseGetPriority(Lexeme *tok) {
+#ifdef HCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE
+    /* ACT-POLYC-SELFHOST-PARSER-SLICE03 C2 IMPL:
+     * delegate to the qualified PolyC BootstrapOperatorPrecedence when
+     * the operator-precedence delegation flag is enabled.  The legacy C
+     * algorithm body below is reachable ONLY in the stage0 evidence
+     * path (a build that compiles this file without
+     * HCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE).  Production ./hcc
+     * is built with the macro defined (see src/CMakeLists.txt) and
+     * therefore always routes through the PolyC component.
+     *
+     * The dedicated macro name (rather than the generic
+     * HCC_USE_SELFHOST_COMPONENTS) is required because that generic
+     * selector also activates the lexer delegations in src/lexer.c,
+     * which would require linking the lexer subjects too.  The
+     * operator-precedence migration is independent of the lexer
+     * migrations and is scoped to its own flag.
+     *
+     * The PolyC ABI is `I64 punct_value -> I64 precedence` (scalar
+     * purity per ACT section 5.2; ABI_HOST_IDENTITY_FIELDS = 0).  The
+     * legacy C wrapper takes a `Lexeme *`.  The adapter below reads
+     * the ONE field the production body reads -- i64 -- and passes it
+     * as the scalar.  The legacy body is a single switch over
+     * tok->i64 and references no other field and no other identifier,
+     * so the projection is mechanically complete.
+     *
+     * The cast chain `(I64)int -> I64 -> I64 -> int` is exact for the
+     * frozen domain: tok->i64 is already a 64-bit signed payload, and
+     * every precedence the table produces is in {1..14} together with
+     * the -1 sentinel, all of which fit in an int without loss. */
+    extern long long BootstrapOperatorPrecedence(long long punct_value);
+    return (int)BootstrapOperatorPrecedence((long long)tok->i64);
+#else
+    /* Stage0 evidence path: pure legacy C algorithm.  Reachable only
+     * in non-HCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE builds.
+     * Production never executes this branch. */
     switch (tok->i64) {
     case TK_ARROW: 
     case '.':
@@ -1204,6 +1239,30 @@ static int parseGetPriority(Lexeme *tok) {
     default:
         return -1;
     }
+#endif
+}
+
+/* ACT-POLYC-SELFHOST-PARSER-SLICE03 C2 IMPL: tiny ABI wrapper
+ * adjacent to parseGetPriority.  Forwards to the actual legacy
+ * parseGetPriority (whose body is unchanged above).  Used by
+ * tools/quality/parser-slice03-oracle-impl.c so the quality oracle
+ * reaches the actual legacy authority instead of duplicating the
+ * precedence table.  Adds zero new logic; does not modify
+ * parseGetPriority or any existing production caller.
+ *
+ * The oracle MUST come from a build in which the delegation flag is
+ * OFF, so the legacy body is the one being executed.  A differential
+ * run against the delegated build would compare the PolyC component
+ * against itself and would be vacuous. */
+long long ParserLegacyOperatorPrecedenceOracle(long long punct_value)
+{
+    /* The real function takes a Lexeme*.  The oracle seam constructs a
+     * lexeme whose ONLY relevant field is i64, because the real body
+     * reads only tok->i64. */
+    Lexeme lx;
+    memset(&lx, 0, sizeof(lx));
+    lx.i64 = (s64)punct_value;
+    return (long long)parseGetPriority(&lx);
 }
 
 Ast *parseSubscriptExpr(Cctrl *cc, Ast *ast) {

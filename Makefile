@@ -12,7 +12,7 @@ HCC_ENABLE_LLVM ?= OFF
 
 default: all
 
-.PHONY: all formal-dafny gate-fast gate-push install-hooks static-function-linkage-test factory-closure-status-test factory-closure-status-test-binary llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap-stage0 bootstrap-prefix parser-padding-subject production-hcc runtime-producer bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test selfhost-component-binary selfhost-component-build selfhost-component-test selfhost-component-selftest selfhost-registry-validate factory-halt-classification-binary factory-halt-classification-selftest bootstrap06-component-build bootstrap06-operator-classify-oracle bootstrap06-direct-differential bootstrap06-component-stage1 bootstrap06-component-stage2 bootstrap06-component-stage3 bootstrap06-lexer-seam-stage1 lexer07-component-build lexer07-scalar-literal-oracle lexer07-direct-differential lexer07-component-stage1 lexer07-component-stage2 lexer07-component-stage3 lexer07-lexer-seam-stage0 lexer07-lexer-seam-stage1 lexer07-lexer-seam-stage2 lexer07-lexer-seam-stage3 lexer07-lexer-seam-stage2-from-objs lexer07-lexer-seam-stage3-from-objs lexer07-lexer-seam-all-stages lexer07-fixture-inventory lexer07-broad-corpus-4-stage lexer07-correction02-all lexer07-baseline-authority-verify lexer08-component-build lexer08-trivia-oracle lexer08-direct-differential lexer08-fixture-inventory lexer08-broad-corpus-4-stage lexer08-lexer-seam-stage0 lexer08-lexer-seam-stage1 lexer08-lexer-seam-all-stages lexer08-trivia-fixedpoint-g0 lexer08-trivia-fixedpoint-g1 lexer08-trivia-fixedpoint-g2 lexer08-trivia-fixedpoint-g3 lexer08-trivia-fixedpoint-build lexer08-trivia-fixedpoint-verify lexer08-trivia-fixedpoint lexer09-link-component-build lexer09-link-oracle-build lexer09-direct-differential lexer09-lexer-seam-stage0 lexer09-lexer-seam-stage1 lexer09-lexer-seam-all-stages lexer09-link-fixedpoint-g0 lexer09-link-fixedpoint-g1 lexer09-link-fixedpoint-g2 lexer09-link-fixedpoint-g3 lexer09-link-fixedpoint-build lexer09-link-fixedpoint-verify lexer09-link-fixedpoint lexer09-link-negative-control lexer09-link-determinism lexer09-link-broad-corpus-4-stage lib-tos runtime-contract-test libtos-n02-isolate parser-padding-component parser-padding-oracle parser-padding-differential parser-padding-gen-matrix-fixture parser-padding-gen-large-fixture parser-padding-fixedpoint-g0 parser-padding-fixedpoint-g1 parser-padding-fixedpoint-g2 parser-padding-fixedpoint-g3 parser-padding-fixedpoint-build parser-padding-fixedpoint-verify parser-padding-fixedpoint parser-padding-fixedpoint-negative-control parser-padding-mutation-m1 parser-padding-mutation-m2 parser-padding-mutation-m3 parser-padding-mutation-m4 parser-padding-mutation-test parser-padding-test parser-padding-algebraic-invariants parser-padding-is-terminal-stub parser-padding-legacy parser-padding-legacy-server parser-padding-legacy-verify parser-control-flow-token-component parser-control-flow-token-differential parser-control-flow-token-int-bounds parser-control-flow-token-harden-test parser-control-flow-token-negative-controls parser-slice-recon03-tools parser-slice-recon03-eligibility parser-slice-recon03-eligibility-controls parser-slice-recon03-ranking parser-slice03-contract-requalify parser-slice03-fixture-integrity parser-slice03-fixture-integrity-controls
+.PHONY: all formal-dafny gate-fast gate-push install-hooks static-function-linkage-test factory-closure-status-test factory-closure-status-test-binary llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap-stage0 bootstrap-prefix parser-padding-subject production-hcc runtime-producer bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test selfhost-component-binary selfhost-component-build selfhost-component-test selfhost-component-selftest selfhost-registry-validate factory-halt-classification-binary factory-halt-classification-selftest bootstrap06-component-build bootstrap06-operator-classify-oracle bootstrap06-direct-differential bootstrap06-component-stage1 bootstrap06-component-stage2 bootstrap06-component-stage3 bootstrap06-lexer-seam-stage1 lexer07-component-build lexer07-scalar-literal-oracle lexer07-direct-differential lexer07-component-stage1 lexer07-component-stage2 lexer07-component-stage3 lexer07-lexer-seam-stage0 lexer07-lexer-seam-stage1 lexer07-lexer-seam-stage2 lexer07-lexer-seam-stage3 lexer07-lexer-seam-stage2-from-objs lexer07-lexer-seam-stage3-from-objs lexer07-lexer-seam-all-stages lexer07-fixture-inventory lexer07-broad-corpus-4-stage lexer07-correction02-all lexer07-baseline-authority-verify lexer08-component-build lexer08-trivia-oracle lexer08-direct-differential lexer08-fixture-inventory lexer08-broad-corpus-4-stage lexer08-lexer-seam-stage0 lexer08-lexer-seam-stage1 lexer08-lexer-seam-all-stages lexer08-trivia-fixedpoint-g0 lexer08-trivia-fixedpoint-g1 lexer08-trivia-fixedpoint-g2 lexer08-trivia-fixedpoint-g3 lexer08-trivia-fixedpoint-build lexer08-trivia-fixedpoint-verify lexer08-trivia-fixedpoint lexer09-link-component-build lexer09-link-oracle-build lexer09-direct-differential lexer09-lexer-seam-stage0 lexer09-lexer-seam-stage1 lexer09-lexer-seam-all-stages lexer09-link-fixedpoint-g0 lexer09-link-fixedpoint-g1 lexer09-link-fixedpoint-g2 lexer09-link-fixedpoint-g3 lexer09-link-fixedpoint-build lexer09-link-fixedpoint-verify lexer09-link-fixedpoint lexer09-link-negative-control lexer09-link-determinism lexer09-link-broad-corpus-4-stage lib-tos runtime-contract-test libtos-n02-isolate parser-padding-component parser-padding-oracle parser-padding-differential parser-padding-gen-matrix-fixture parser-padding-gen-large-fixture parser-padding-fixedpoint-g0 parser-padding-fixedpoint-g1 parser-padding-fixedpoint-g2 parser-padding-fixedpoint-g3 parser-padding-fixedpoint-build parser-padding-fixedpoint-verify parser-padding-fixedpoint parser-padding-fixedpoint-negative-control parser-padding-mutation-m1 parser-padding-mutation-m2 parser-padding-mutation-m3 parser-padding-mutation-m4 parser-padding-mutation-test parser-padding-test parser-padding-algebraic-invariants parser-padding-is-terminal-stub parser-padding-legacy parser-padding-legacy-server parser-padding-legacy-verify parser-control-flow-token-component parser-control-flow-token-differential parser-control-flow-token-int-bounds parser-control-flow-token-harden-test parser-control-flow-token-negative-controls parser-slice-recon03-tools parser-slice-recon03-eligibility parser-slice-recon03-eligibility-controls parser-slice-recon03-ranking parser-slice03-contract-requalify parser-slice03-fixture-integrity parser-slice03-fixture-integrity-controls parser-slice03-differential parser-slice03-differential-negative-control parser-operator-precedence-component
 
 # To add sqlite3 support add -DHCC_LINK_SQLITE3=1 to the below like so:
 #```
@@ -79,6 +79,10 @@ PARSER_PADDING_OBJ      = ./build/parser-padding-subject.o
 # variables) because the production-hcc rule below references them.
 SLICE02_CFT_SRC  = tools/bootstrap/selfhost-parser-control-flow-token.HC
 SLICE02_CFT_OBJ  = ./build/parser-control-flow-token-subject.o
+
+# ACT-POLYC-SELFHOST-PARSER-SLICE03: the operator-precedence subject.
+SLICE03_OP_SRC   = tools/bootstrap/selfhost-parser-operator-precedence.HC
+SLICE03_OP_OBJ   = ./build/parser-operator-precedence-subject.o
 
 # The stage0 compiler's own sources. A change to any of them must
 # invalidate the stage0 compiler, which in turn invalidates the
@@ -535,7 +539,7 @@ parser-padding-subject: $(PARSER_PADDING_OBJ)
 #     unrelated cached options such as HCC_ENABLE_JIT, which is what
 #     previously produced a link failure against a missing libtasm.a.
 PRODUCTION_HCC = ./hcc
-PRODUCTION_HCC_INPUTS = $(PARSER_PADDING_OBJ) $(SLICE02_CFT_OBJ) \
+PRODUCTION_HCC_INPUTS = $(PARSER_PADDING_OBJ) $(SLICE02_CFT_OBJ) $(SLICE03_OP_OBJ) \
 	$(wildcard src/*.c src/asm/*.c) \
 	$(wildcard src/*.h src/asm/*.h) \
 	$(wildcard src/CMakeLists.txt src/asm/CMakeLists.txt) \
@@ -562,6 +566,11 @@ $(PRODUCTION_HCC): $(PRODUCTION_HCC_INPUTS)
 		-DCONTROL_FLOW_TOKEN_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
 		-DCONTROL_FLOW_TOKEN_SOURCE=$(CURDIR)/$(SLICE02_CFT_SRC) \
 		-DCONTROL_FLOW_TOKEN_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE=ON \
+		-DOPERATOR_PRECEDENCE_OBJECT=$(CURDIR)/$(SLICE03_OP_OBJ) \
+		-DOPERATOR_PRECEDENCE_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DOPERATOR_PRECEDENCE_SOURCE=$(CURDIR)/$(SLICE03_OP_SRC) \
+		-DOPERATOR_PRECEDENCE_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
 		-DHCC_BOOTSTRAP_EXPECTED_SHA=$(LIBTOS_BOOTSTRAP_EXPECTED_SHA)
 	$(MAKE) -C ./build -j2
 	@if [ ! -x ./hcc ]; then \
@@ -572,6 +581,8 @@ $(PRODUCTION_HCC): $(PRODUCTION_HCC_INPUTS)
 		|| { echo "production-hcc: symbol _BootstrapCalcPadding not linked into ./hcc" >&2; exit 1; }
 	@nm ./hcc | grep -q '_BootstrapValidPostControlFlowToken' \
 		|| { echo "production-hcc: symbol _BootstrapValidPostControlFlowToken not linked into ./hcc" >&2; exit 1; }
+	@nm ./hcc | grep -q '_BootstrapOperatorPrecedence' \
+		|| { echo "production-hcc: symbol _BootstrapOperatorPrecedence not linked into ./hcc" >&2; exit 1; }
 	@echo "PRODUCTION_HCC=./hcc"
 	@echo "PRODUCTION_PADDING_AUTHORITY=POLYC"
 
@@ -608,6 +619,11 @@ llvm-all: $(PARSER_PADDING_OBJ)
 		-DCONTROL_FLOW_TOKEN_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
 		-DCONTROL_FLOW_TOKEN_SOURCE=$(CURDIR)/$(SLICE02_CFT_SRC) \
 		-DCONTROL_FLOW_TOKEN_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE=ON \
+		-DOPERATOR_PRECEDENCE_OBJECT=$(CURDIR)/$(SLICE03_OP_OBJ) \
+		-DOPERATOR_PRECEDENCE_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DOPERATOR_PRECEDENCE_SOURCE=$(CURDIR)/$(SLICE03_OP_SRC) \
+		-DOPERATOR_PRECEDENCE_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
 		-DHCC_BOOTSTRAP_EXPECTED_SHA=$(LIBTOS_BOOTSTRAP_EXPECTED_SHA)
 	$(MAKE) -C ./build/llvm -j2
 	@if [ ! -x ./hcc ]; then \
@@ -715,6 +731,11 @@ test-prefix-install: production-hcc runtime-producer
 		-DCONTROL_FLOW_TOKEN_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
 		-DCONTROL_FLOW_TOKEN_SOURCE=$(CURDIR)/$(SLICE02_CFT_SRC) \
 		-DCONTROL_FLOW_TOKEN_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE=ON \
+		-DOPERATOR_PRECEDENCE_OBJECT=$(CURDIR)/$(SLICE03_OP_OBJ) \
+		-DOPERATOR_PRECEDENCE_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DOPERATOR_PRECEDENCE_SOURCE=$(CURDIR)/$(SLICE03_OP_SRC) \
+		-DOPERATOR_PRECEDENCE_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
 		-DHCC_BOOTSTRAP_EXPECTED_SHA=$(LIBTOS_BOOTSTRAP_EXPECTED_SHA)
 	$(MAKE) -C ./build/test-prefix-install-build install
 	@if [ ! -f $(TEST_PREFIX)/lib/libtos.a ] || \
@@ -3507,3 +3528,94 @@ parser-slice03-fixture-integrity-controls: build/parser-slice03-fixture-integrit
 		echo "SLICE03_FIXTURE_INTEGRITY_NC=4 FAIL (an indented unknown row was accepted)" >&2; exit 1; \
 	else echo "SLICE03_FIXTURE_INTEGRITY_NC=4 PASS (rejected)"; fi
 	@echo "SLICE03_FIXTURE_INTEGRITY_NEGATIVE_CONTROLS=4/4 PASS"
+
+# =========================================================================
+# ACT-POLYC-SELFHOST-PARSER-SLICE03
+#
+#   parser-operator-precedence-component -> the PolyC subject
+#       (tools/bootstrap/selfhost-parser-operator-precedence.HC)
+#
+# The subject is compiled by the STAGE-0 compiler, exactly like the
+# parser-padding and control-flow-token subjects, so that the component
+# does not depend on the production compiler that it is about to serve.
+# =========================================================================
+build/parser-operator-precedence-subject.o: $(SLICE03_OP_SRC) $(BOOTSTRAP_STAGE0_HCC) $(BOOTSTRAP_PREFIX_INC)/tos.HH
+	@rm -f $@
+	$(BOOTSTRAP_STAGE0_HCC) \
+		--install-dir=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-c $(SLICE03_OP_SRC) \
+		-o $@
+	@if [ ! -f "$@" ]; then \
+		echo "parser-operator-precedence-subject: $@ not produced by the stage0 compiler" >&2; \
+		exit 1; \
+	fi
+	@nm $@ | grep -q '_BootstrapOperatorPrecedence' \
+		|| { echo "parser-operator-precedence-subject: symbol _BootstrapOperatorPrecedence not found in $@" >&2; exit 1; }
+	@echo "SLICE03_SUBJECT=$@"
+	@echo "SLICE03_SUBJECT_ARCH=$$(file -b "$@" | sed -e 's/.*object //')"
+
+parser-operator-precedence-component: $(SLICE03_OP_OBJ)
+	@echo "SLICE03_COMPONENT=BUILD source=$(SLICE03_OP_SRC)"
+	@echo "SLICE03_COMPONENT_OBJECT=$(SLICE03_OP_OBJ)"
+
+# =========================================================================
+# ACT-POLYC-SELFHOST-PARSER-SLICE03
+#
+#   parser-slice03-differential -> the PolyC direct differential
+#       (the PolyC subject vs the REAL legacy C function)
+#
+# The oracle object is src/prslib.c compiled WITHOUT
+# HCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE, so the REAL legacy
+# parseGetPriority body is the one that executes.  A differential run
+# against the DELEGATED build would compare the PolyC component
+# against itself and would be vacuous.
+#
+# The production prslib.c.o is EXCLUDED from the transitive objects
+# because the legacy oracle object replaces it.
+# =========================================================================
+SLICE03_DIFF_SRC  = tools/quality/parser-slice03-differential.HC
+SLICE03_OP_LEGACY_OBJ = ./build/slice03-prslib-legacy.o
+SLICE03_OP_STUB_OBJ   = ./build/slice03-is-terminal-stub.o
+SLICE03_OP_TRANSITIVE_OBJS = $(filter-out $(HCC_OBJ_DIR)/main.c.o $(HCC_OBJ_DIR)/parser.c.o $(HCC_OBJ_DIR)/prslib.c.o, \
+    $(wildcard $(HCC_OBJ_DIR)/*.c.o $(HCC_OBJ_DIR)/linenoise/*.c.o))
+
+# The LEGACY oracle object: src/prslib.c WITHOUT the delegation macro.
+build/slice03-prslib-legacy.o: src/prslib.c
+	@rm -f $@
+	cc -std=c99 -O2 -Isrc -c -o $@ $<
+	@nm $@ | grep -q '_ParserLegacyOperatorPrecedenceOracle' \
+		|| { echo "slice03-prslib-legacy.o: the oracle entry point is missing" >&2; exit 1; }
+	@if nm $@ | grep -q '_BootstrapOperatorPrecedence'; then \
+		echo "slice03-prslib-legacy.o: the object references the PolyC component; the delegation flag is NOT off" >&2; \
+		exit 1; \
+	fi
+	@echo "SLICE03_LEGACY_ORACLE=$@ (delegation OFF: the real legacy body is executed)"
+
+build/slice03-is-terminal-stub.o: tools/quality/slice03-is-terminal-stub.c
+	@rm -f $@
+	cc -std=c99 -O2 -c -o $@ $<
+
+build/parser-slice03-differential.o: $(SLICE03_DIFF_SRC) ./hcc | test-prefix-install
+	./hcc --install-dir=$(TEST_PREFIX) -c $(SLICE03_DIFF_SRC) -o $@
+	@nm $@ | grep -q '_main' \
+		|| { echo "parser-slice03-differential.o: main missing" >&2; exit 1; }
+
+build/parser-slice03-differential: build/parser-slice03-differential.o $(SLICE03_OP_OBJ) $(SLICE03_OP_LEGACY_OBJ) $(SLICE03_OP_STUB_OBJ) $(SLICE03_OP_TRANSITIVE_OBJS) | test-prefix-install
+	cc -o $@ build/parser-slice03-differential.o $(SLICE03_OP_OBJ) $(SLICE03_OP_LEGACY_OBJ) $(SLICE03_OP_STUB_OBJ) $(SLICE03_OP_TRANSITIVE_OBJS) $(TASM_LIB) -L$(TEST_PREFIX)/lib -ltos -Wl,-undefined,dynamic_lookup
+	@ls -la $@
+
+parser-slice03-differential: build/parser-slice03-differential
+	@echo "SLICE03_DIFF=RUN"
+	./build/parser-slice03-differential $(SLICE03_FIXTURE_MODEL)
+
+# The differential's negative control: a deliberately altered fixture
+# expectation MUST produce a reported disagreement, not a silent pass.
+parser-slice03-differential-negative-control: build/parser-slice03-differential
+	@mkdir -p $(SLICE03_REQUALIFY_OUT)/nc
+	@awk -F'\t' 'BEGIN{OFS="\t"} $$1=="F001" { $$4 = 9 } { print }' \
+		$(SLICE03_FIXTURE_MODEL) > $(SLICE03_REQUALIFY_OUT)/nc/altered-expectation.tsv
+	@if ./build/parser-slice03-differential $(SLICE03_REQUALIFY_OUT)/nc/altered-expectation.tsv > $(SLICE03_REQUALIFY_OUT)/nc/altered-expectation.txt 2>&1; then \
+		echo "SLICE03_DIFF_NEGATIVE_CONTROL=FAIL (an altered expectation was accepted)" >&2; exit 1; \
+	else echo "SLICE03_DIFF_NEGATIVE_CONTROL=PASS (the disagreement was reported)"; \
+		grep 'ORACLE_VS_EXPECTED_MISMATCH\|STATUS=' $(SLICE03_REQUALIFY_OUT)/nc/altered-expectation.txt; \
+	fi

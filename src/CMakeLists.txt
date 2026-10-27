@@ -505,6 +505,147 @@ if (HCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN)
                    "target format=${CONTROL_FLOW_TOKEN_TARGET_OBJECT_FORMAT}; nm=${CONTROL_FLOW_TOKEN_NM}")
 endif()
 
+# ACT-POLYC-SELFHOST-PARSER-SLICE03 C2 IMPL:
+# Link the qualified PolyC BootstrapOperatorPrecedence component into
+# the production hcc binary and enable the operator-precedence
+# delegation. The dedicated selector
+# `HCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE` is defined here so the
+# production operator-precedence delegation is INDEPENDENT of the
+# parser-padding selector, of the control-flow-token selector and of
+# the generic lexer `HCC_USE_SELFHOST_COMPONENTS` flag (which would
+# also require linking the lexer subjects).
+#
+# The same fail-closed discipline as the parser-padding and
+# control-flow-token components applies: if the producer is configured,
+# the build graph SCHEDULES the component's production and verifies the
+# exported symbol; if it is not, a missing component is a hard
+# configure error, never a silent legacy fallback.
+option(HCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE
+       "Link the operator-precedence PolyC component into hcc and enable operator-precedence delegation. ACT-POLYC-SELFHOST-PARSER-SLICE03."
+       ON)
+
+if (HCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE)
+    if (NOT OPERATOR_PRECEDENCE_OBJECT)
+        set(OPERATOR_PRECEDENCE_OBJECT "${CMAKE_SOURCE_DIR}/../build/parser-operator-precedence-subject.o")
+    endif()
+
+    # ---------------------------------------------------------------------
+    # The TARGET OBJECT FORMAT and the TOOLCHAIN nm are resolved here and
+    # passed EXPLICITLY to the verifier.
+    #
+    # The format must NOT be guessed from the host: during a cross-compile
+    # the host's format is not the target's format.  CMAKE_NM is the
+    # CONFIGURED TOOLCHAIN's nm, so the target object is inspected by a
+    # tool that understands the target format.  If it is not available the
+    # build fails loudly instead of silently substituting a host nm.
+    # ---------------------------------------------------------------------
+    if (NOT OPERATOR_PRECEDENCE_TARGET_OBJECT_FORMAT)
+        if (APPLE)
+            set(OPERATOR_PRECEDENCE_TARGET_OBJECT_FORMAT "Mach-O")
+        elseif (UNIX AND NOT APPLE)
+            set(OPERATOR_PRECEDENCE_TARGET_OBJECT_FORMAT "ELF")
+        else()
+            message(FATAL_ERROR
+                "ACT-POLYC-SELFHOST-PARSER-SLICE03: "
+                "cannot determine the target object format for this platform. "
+                "Configure with -DOPERATOR_PRECEDENCE_TARGET_OBJECT_FORMAT=<Mach-O|ELF> "
+                "so the operator-precedence symbol spelling can be resolved "
+                "for the target rather than guessed from the host.")
+        endif()
+    endif()
+
+    if (NOT OPERATOR_PRECEDENCE_NM)
+        set(OPERATOR_PRECEDENCE_NM "${CMAKE_NM}")
+    endif()
+    if (NOT OPERATOR_PRECEDENCE_NM)
+        message(FATAL_ERROR
+            "ACT-POLYC-SELFHOST-PARSER-SLICE03: "
+            "REJECT_NM_FAILURE the configured toolchain provides no nm "
+            "(CMAKE_NM is empty), so the operator-precedence subject cannot "
+            "be verified. Configure with -DOPERATOR_PRECEDENCE_NM=<path to nm> "
+            "to inspect the target object with a tool that understands the "
+            "target format. Refusing to link the production compiler.")
+    endif()
+
+    # ---------------------------------------------------------------------
+    # The producer mode: when a stage0 producer is configured, the build
+    # graph SCHEDULES the component's production.  The object is produced
+    # by the stage-0 compiler, so the component does not depend on the
+    # production compiler it is about to serve.
+    # ---------------------------------------------------------------------
+    set(_op_stamp "${OPERATOR_PRECEDENCE_OBJECT}.verified")
+
+    if (OPERATOR_PRECEDENCE_PRODUCER)
+        add_custom_command(
+            OUTPUT "${OPERATOR_PRECEDENCE_OBJECT}"
+            COMMAND "${CMAKE_COMMAND}" -E rm -f "${OPERATOR_PRECEDENCE_OBJECT}"
+            COMMAND "${OPERATOR_PRECEDENCE_PRODUCER}"
+                    --install-dir=${CMAKE_SOURCE_DIR}/../build/bootstrap-prefix
+                    -c "${OPERATOR_PRECEDENCE_SOURCE}"
+                    -o "${OPERATOR_PRECEDENCE_OBJECT}"
+            DEPENDS "${OPERATOR_PRECEDENCE_SOURCE}"
+            COMMENT "ACT-POLYC-SELFHOST-PARSER-SLICE03: producing operator-precedence subject ${OPERATOR_PRECEDENCE_OBJECT}"
+            VERBATIM)
+        message(STATUS "ACT-POLYC-SELFHOST-PARSER-SLICE03: production hcc SCHEDULES operator-precedence subject production: ${OPERATOR_PRECEDENCE_OBJECT}")
+    elseif (NOT EXISTS "${OPERATOR_PRECEDENCE_OBJECT}")
+        message(FATAL_ERROR
+            "ACT-POLYC-SELFHOST-PARSER-SLICE03: "
+            "REJECT_MISSING_OBJECT the operator-precedence subject "
+            "${OPERATOR_PRECEDENCE_OBJECT} does not exist and no producer is "
+            "configured. Build it first with the stage0 compiler: "
+            "./hcc --install-dir=<prefix> -c tools/bootstrap/selfhost-parser-operator-precedence.HC -o ${OPERATOR_PRECEDENCE_OBJECT}. "
+            "Or configure with -DOPERATOR_PRECEDENCE_PRODUCER=<stage0 hcc> to have the "
+            "build graph produce it.")
+    else()
+        message(STATUS "ACT-POLYC-SELFHOST-PARSER-SLICE03: production hcc uses a PREBUILT operator-precedence subject: ${OPERATOR_PRECEDENCE_OBJECT}")
+    endif()
+
+    # ---------------------------------------------------------------------
+    # The single strict verification gate, shared by BOTH modes.
+    #
+    # The verification is a custom TARGET, not an OUTPUT-producing custom
+    # command.  A custom command with an OUTPUT file is considered
+    # up-to-date whenever that file exists and is newer than its
+    # dependencies -- which is exactly the stale-stamp hazard the
+    # control-flow-token ACT documented.  A custom target's command ALWAYS
+    # runs, so the verifier executes on every relevant production build
+    # and the object content is checked every time.  The stamp file is
+    # still written, but it is a RECORD of the verification (it records
+    # the object's SHA), never the thing that decides whether the
+    # verification happens.
+    # ---------------------------------------------------------------------
+    add_custom_target(hcc-operator-precedence-verify
+        COMMAND "${CMAKE_COMMAND}"
+                -DOPERATOR_PRECEDENCE_OBJECT=${OPERATOR_PRECEDENCE_OBJECT}
+                -DOPERATOR_PRECEDENCE_EXPECTED_SYMBOL=BootstrapOperatorPrecedence
+                -DOPERATOR_PRECEDENCE_TARGET_OBJECT_FORMAT=${OPERATOR_PRECEDENCE_TARGET_OBJECT_FORMAT}
+                -DOPERATOR_PRECEDENCE_NM=${OPERATOR_PRECEDENCE_NM}
+                -P "${CMAKE_SOURCE_DIR}/cmake/VerifyOperatorPrecedenceObject.cmake"
+        COMMAND "${CMAKE_COMMAND}"
+                -DOPERATOR_PRECEDENCE_OBJECT=${OPERATOR_PRECEDENCE_OBJECT}
+                -DOPERATOR_PRECEDENCE_STAMP=${_op_stamp}
+                -P "${CMAKE_SOURCE_DIR}/cmake/WriteOperatorPrecedenceObjectStamp.cmake"
+        DEPENDS "${OPERATOR_PRECEDENCE_OBJECT}"
+        COMMENT "ACT-POLYC-SELFHOST-PARSER-SLICE03: verifying operator-precedence subject ${OPERATOR_PRECEDENCE_OBJECT}"
+        VERBATIM
+        USES_TERMINAL)
+
+    # The verification gates the link: the production compiler is never
+    # linked without a verified PolyC operator-precedence authority.
+    add_dependencies(hcc hcc-operator-precedence-verify)
+
+    # The link itself must ALSO depend on the object, so the object is
+    # re-read by the linker whenever it changes.
+    set_property(TARGET hcc APPEND PROPERTY
+        LINK_DEPENDS "${OPERATOR_PRECEDENCE_OBJECT}")
+
+    target_compile_definitions(hcc PRIVATE HCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE)
+    target_link_libraries(hcc ${OPERATOR_PRECEDENCE_OBJECT})
+    message(STATUS "ACT-POLYC-SELFHOST-PARSER-SLICE03: production hcc links operator-precedence PolyC component: ${OPERATOR_PRECEDENCE_OBJECT}")
+    message(STATUS "ACT-POLYC-SELFHOST-PARSER-SLICE03: production hcc VERIFIES the operator-precedence subject (both producer and prebuilt modes); "
+                   "target format=${OPERATOR_PRECEDENCE_TARGET_OBJECT_FORMAT}; nm=${OPERATOR_PRECEDENCE_NM}")
+endif()
+
 # ACT-POLYC-BOOTSTRAP02 C2 IMPL — opt-in stage1 build that
 # links the B1 PolyC component (BootstrapScanIdent) into a
 # SEPARATE binary (hcc-bootstrap02) which uses the modified
