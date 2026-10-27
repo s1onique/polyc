@@ -12,7 +12,7 @@ HCC_ENABLE_LLVM ?= OFF
 
 default: all
 
-.PHONY: all formal-dafny gate-fast gate-push install-hooks static-function-linkage-test factory-closure-status-test factory-closure-status-test-binary llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap-stage0 bootstrap-prefix parser-padding-subject production-hcc runtime-producer bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test selfhost-component-binary selfhost-component-build selfhost-component-test selfhost-component-selftest selfhost-registry-validate factory-halt-classification-binary factory-halt-classification-selftest bootstrap06-component-build bootstrap06-operator-classify-oracle bootstrap06-direct-differential bootstrap06-component-stage1 bootstrap06-component-stage2 bootstrap06-component-stage3 bootstrap06-lexer-seam-stage1 lexer07-component-build lexer07-scalar-literal-oracle lexer07-direct-differential lexer07-component-stage1 lexer07-component-stage2 lexer07-component-stage3 lexer07-lexer-seam-stage0 lexer07-lexer-seam-stage1 lexer07-lexer-seam-stage2 lexer07-lexer-seam-stage3 lexer07-lexer-seam-stage2-from-objs lexer07-lexer-seam-stage3-from-objs lexer07-lexer-seam-all-stages lexer07-fixture-inventory lexer07-broad-corpus-4-stage lexer07-correction02-all lexer07-baseline-authority-verify lexer08-component-build lexer08-trivia-oracle lexer08-direct-differential lexer08-fixture-inventory lexer08-broad-corpus-4-stage lexer08-lexer-seam-stage0 lexer08-lexer-seam-stage1 lexer08-lexer-seam-all-stages lexer08-trivia-fixedpoint-g0 lexer08-trivia-fixedpoint-g1 lexer08-trivia-fixedpoint-g2 lexer08-trivia-fixedpoint-g3 lexer08-trivia-fixedpoint-build lexer08-trivia-fixedpoint-verify lexer08-trivia-fixedpoint lexer09-link-component-build lexer09-link-oracle-build lexer09-direct-differential lexer09-lexer-seam-stage0 lexer09-lexer-seam-stage1 lexer09-lexer-seam-all-stages lexer09-link-fixedpoint-g0 lexer09-link-fixedpoint-g1 lexer09-link-fixedpoint-g2 lexer09-link-fixedpoint-g3 lexer09-link-fixedpoint-build lexer09-link-fixedpoint-verify lexer09-link-fixedpoint lexer09-link-negative-control lexer09-link-determinism lexer09-link-broad-corpus-4-stage lib-tos runtime-contract-test libtos-n02-isolate parser-padding-component parser-padding-oracle parser-padding-differential parser-padding-gen-matrix-fixture parser-padding-gen-large-fixture parser-padding-fixedpoint-g0 parser-padding-fixedpoint-g1 parser-padding-fixedpoint-g2 parser-padding-fixedpoint-g3 parser-padding-fixedpoint-build parser-padding-fixedpoint-verify parser-padding-fixedpoint parser-padding-fixedpoint-negative-control parser-padding-mutation-m1 parser-padding-mutation-m2 parser-padding-mutation-m3 parser-padding-mutation-m4 parser-padding-mutation-test parser-padding-test parser-padding-algebraic-invariants parser-padding-is-terminal-stub parser-padding-legacy parser-padding-legacy-server parser-padding-legacy-verify parser-control-flow-token-component parser-control-flow-token-differential parser-control-flow-token-int-bounds parser-control-flow-token-harden-test parser-control-flow-token-negative-controls parser-slice-recon03-tools parser-slice-recon03-eligibility parser-slice-recon03-eligibility-controls parser-slice-recon03-ranking parser-slice03-contract-requalify parser-slice03-fixture-integrity parser-slice03-fixture-integrity-controls parser-slice03-differential parser-slice03-differential-negative-control parser-operator-precedence-component
+.PHONY: all formal-dafny gate-fast gate-push install-hooks static-function-linkage-test factory-closure-status-test factory-closure-status-test-binary llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap-stage0 bootstrap-prefix parser-padding-subject production-hcc runtime-producer bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test selfhost-component-binary selfhost-component-build selfhost-component-test selfhost-component-selftest selfhost-registry-validate factory-halt-classification-binary factory-halt-classification-selftest bootstrap06-component-build bootstrap06-operator-classify-oracle bootstrap06-direct-differential bootstrap06-component-stage1 bootstrap06-component-stage2 bootstrap06-component-stage3 bootstrap06-lexer-seam-stage1 lexer07-component-build lexer07-scalar-literal-oracle lexer07-direct-differential lexer07-component-stage1 lexer07-component-stage2 lexer07-component-stage3 lexer07-lexer-seam-stage0 lexer07-lexer-seam-stage1 lexer07-lexer-seam-stage2 lexer07-lexer-seam-stage3 lexer07-lexer-seam-stage2-from-objs lexer07-lexer-seam-stage3-from-objs lexer07-lexer-seam-all-stages lexer07-fixture-inventory lexer07-broad-corpus-4-stage lexer07-correction02-all lexer07-baseline-authority-verify lexer08-component-build lexer08-trivia-oracle lexer08-direct-differential lexer08-fixture-inventory lexer08-broad-corpus-4-stage lexer08-lexer-seam-stage0 lexer08-lexer-seam-stage1 lexer08-lexer-seam-all-stages lexer08-trivia-fixedpoint-g0 lexer08-trivia-fixedpoint-g1 lexer08-trivia-fixedpoint-g2 lexer08-trivia-fixedpoint-g3 lexer08-trivia-fixedpoint-build lexer08-trivia-fixedpoint-verify lexer08-trivia-fixedpoint lexer09-link-component-build lexer09-link-oracle-build lexer09-direct-differential lexer09-lexer-seam-stage0 lexer09-lexer-seam-stage1 lexer09-lexer-seam-all-stages lexer09-link-fixedpoint-g0 lexer09-link-fixedpoint-g1 lexer09-link-fixedpoint-g2 lexer09-link-fixedpoint-g3 lexer09-link-fixedpoint-build lexer09-link-fixedpoint-verify lexer09-link-fixedpoint lexer09-link-negative-control lexer09-link-determinism lexer09-link-broad-corpus-4-stage lib-tos runtime-contract-test libtos-n02-isolate parser-padding-component parser-padding-oracle parser-padding-differential parser-padding-gen-matrix-fixture parser-padding-gen-large-fixture parser-padding-fixedpoint-g0 parser-padding-fixedpoint-g1 parser-padding-fixedpoint-g2 parser-padding-fixedpoint-g3 parser-padding-fixedpoint-build parser-padding-fixedpoint-verify parser-padding-fixedpoint parser-padding-fixedpoint-negative-control parser-padding-mutation-m1 parser-padding-mutation-m2 parser-padding-mutation-m3 parser-padding-mutation-m4 parser-padding-mutation-test parser-padding-test parser-padding-algebraic-invariants parser-padding-is-terminal-stub parser-padding-legacy parser-padding-legacy-server parser-padding-legacy-verify parser-control-flow-token-component parser-control-flow-token-differential parser-control-flow-token-int-bounds parser-control-flow-token-harden-test parser-control-flow-token-negative-controls parser-slice-recon03-tools parser-slice-recon03-eligibility parser-slice-recon03-eligibility-controls parser-slice-recon03-ranking parser-slice03-contract-requalify parser-slice03-fixture-integrity parser-slice03-fixture-integrity-controls parser-slice03-differential parser-slice03-differential-negative-control parser-operator-precedence-component parser-slice03-generations parser-slice03-generation-pairs parser-slice03-copy-forgery-control parser-slice03-production-generations parser-slice03-production-semantic-pairs
 
 # To add sqlite3 support add -DHCC_LINK_SQLITE3=1 to the below like so:
 #```
@@ -112,6 +112,7 @@ $(BOOTSTRAP_STAGE0_HCC): $(BOOTSTRAP_STAGE0_SOURCES)
 		-DHCC_ENABLE_LLVM=OFF \
 		-DHCC_USE_SELFHOST_PARSER_PADDING=OFF \
 		-DHCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN=OFF \
+		-DHCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE=OFF \
 		-DHCC_RUNTIME_OUTPUT_DIRECTORY=$(CURDIR)/$(BOOTSTRAP_STAGE0_DIR)
 	$(MAKE) -C $(BOOTSTRAP_STAGE0_BUILD) hcc -j2
 	@if [ ! -x "$(BOOTSTRAP_STAGE0_HCC)" ]; then \
@@ -3619,3 +3620,346 @@ parser-slice03-differential-negative-control: build/parser-slice03-differential
 	else echo "SLICE03_DIFF_NEGATIVE_CONTROL=PASS (the disagreement was reported)"; \
 		grep 'ORACLE_VS_EXPECTED_MISMATCH\|STATUS=' $(SLICE03_REQUALIFY_OUT)/nc/altered-expectation.txt; \
 	fi
+
+# =========================================================================
+# ACT-POLYC-SELFHOST-PARSER-SLICE03
+#
+#   parser-slice03-generations -> the four-generation qualification
+#
+# The four generations are DISTINCT BUILDS:
+#
+#   G0  the LEGACY reference: src/prslib.c compiled WITHOUT the
+#       delegation macro.  Its component object is the legacy C
+#       implementation.  G0 is an INTENTIONAL LEGACY REFERENCE: it is
+#       built from C, not from PolyC, so byte-identity with G1/G2/G3
+#       is NOT expected and the permitted G0-versus-PolyC comparison
+#       contract is SEMANTIC (the oracle differential).
+#
+#   G1  the stage-1 PolyC production path: the component is built by
+#       the production compiler and linked into the production binary.
+#
+#   G2  an INDEPENDENTLY built stage2: the component is built by the
+#       stage-2 compiler (build/hcc-bootstrap02).
+#
+#   G3  an INDEPENDENTLY built stage3: the component is built by the
+#       stage-3 compiler (build/hcc-bootstrap03).
+#
+# Each generation's COMPILER identity, build command and source
+# identities are recorded, and the six pairwise comparisons are
+# performed and recorded.
+#
+# The COPY-FORGERY control substitutes a byte-identical object for
+# another generation and requires the provenance check to REJECT it.
+# =========================================================================
+SLICE03_GEN_DIR   = build/slice03-gen
+SLICE03_GEN_SRC   = tools/bootstrap/selfhost-parser-operator-precedence.HC
+SLICE03_G0_SRC    = tools/quality/slice03-gen/g0-legacy-reference.c
+
+# G0: the legacy reference component object, built from C.
+$(SLICE03_GEN_DIR)/g0.o: $(SLICE03_G0_SRC) src/lexer.h
+	@mkdir -p $(SLICE03_GEN_DIR)
+	@rm -f $@
+	cc -std=c99 -O2 -Isrc -c -o $@ $(SLICE03_G0_SRC)
+	@nm $@ | grep -q '_Slice03LegacyOperatorPrecedence' \
+		|| { echo "slice03-gen/g0.o: the legacy reference symbol is missing" >&2; exit 1; }
+
+# G1: the stage-1 PolyC component, built by the PRODUCTION compiler.
+$(SLICE03_GEN_DIR)/g1.o: $(SLICE03_GEN_SRC) ./hcc
+	@mkdir -p $(SLICE03_GEN_DIR)
+	@rm -f $@
+	./hcc --install-dir=$(TEST_PREFIX) -c $(SLICE03_GEN_SRC) -o $@
+	@nm $@ | grep -q '_BootstrapOperatorPrecedence' \
+		|| { echo "slice03-gen/g1.o: the PolyC symbol is missing" >&2; exit 1; }
+
+# G2: an INDEPENDENTLY built stage2.
+$(SLICE03_GEN_DIR)/g2.o: $(SLICE03_GEN_SRC) ./build/hcc-bootstrap02
+	@mkdir -p $(SLICE03_GEN_DIR)
+	@rm -f $@
+	./build/hcc-bootstrap02 --install-dir=$(TEST_PREFIX) -c $(SLICE03_GEN_SRC) -o $@
+	@nm $@ | grep -q '_BootstrapOperatorPrecedence' \
+		|| { echo "slice03-gen/g2.o: the PolyC symbol is missing" >&2; exit 1; }
+
+# G3: an INDEPENDENTLY built stage3.
+$(SLICE03_GEN_DIR)/g3.o: $(SLICE03_GEN_SRC) ./build/hcc-bootstrap03
+	@mkdir -p $(SLICE03_GEN_DIR)
+	@rm -f $@
+	./build/hcc-bootstrap03 --install-dir=$(TEST_PREFIX) -c $(SLICE03_GEN_SRC) -o $@
+	@nm $@ | grep -q '_BootstrapOperatorPrecedence' \
+		|| { echo "slice03-gen/g3.o: the PolyC symbol is missing" >&2; exit 1; }
+
+# The G0-vs-G1 semantic comparison harness.
+$(SLICE03_GEN_DIR)/pairs: tools/quality/slice03-gen/generation-pairs.c $(SLICE03_GEN_DIR)/g1.o $(SLICE03_GEN_DIR)/g0.o
+	cc -o $@ tools/quality/slice03-gen/generation-pairs.c $(SLICE03_GEN_DIR)/g1.o $(SLICE03_GEN_DIR)/g0.o
+
+parser-slice03-generations: $(SLICE03_GEN_DIR)/g0.o $(SLICE03_GEN_DIR)/g1.o $(SLICE03_GEN_DIR)/g2.o $(SLICE03_GEN_DIR)/g3.o $(SLICE03_GEN_DIR)/pairs
+	@echo "SLICE03_GEN=G0"
+	@echo "  COMPILER=the legacy C reference (src/prslib.c without the delegation macro)"
+	@echo "  BUILD_COMMAND=cc -std=c99 -O2 -Isrc -c -o $(SLICE03_GEN_DIR)/g0.o $(SLICE03_G0_SRC)"
+	@echo "  COMPONENT_OBJECT=$(SLICE03_GEN_DIR)/g0.o"
+	@echo "  COMPONENT_OBJECT_SHA256=$$(shasum -a 256 $(SLICE03_GEN_DIR)/g0.o | cut -d' ' -f1)"
+	@echo "  COMPILER_SHA256=$$(shasum -a 256 ./hcc | cut -d' ' -f1)"
+	@echo "  CLASS=LEGACY_REFERENCE"
+	@echo "SLICE03_GEN=G1"
+	@echo "  COMPILER=./hcc (the stage-1 production compiler)"
+	@echo "  BUILD_COMMAND=./hcc --install-dir=\$$(pwd)/$(TEST_PREFIX) -c $(SLICE03_GEN_SRC) -o $(SLICE03_GEN_DIR)/g1.o"
+	@echo "  COMPONENT_OBJECT=$(SLICE03_GEN_DIR)/g1.o"
+	@echo "  COMPONENT_OBJECT_SHA256=$$(shasum -a 256 $(SLICE03_GEN_DIR)/g1.o | cut -d' ' -f1)"
+	@echo "  COMPILER_SHA256=$$(shasum -a 256 ./hcc | cut -d' ' -f1)"
+	@echo "  CLASS=POLYC_STAGE1"
+	@echo "SLICE03_GEN=G2"
+	@echo "  COMPILER=./build/hcc-bootstrap02 (an INDEPENDENT stage-2 build)"
+	@echo "  BUILD_COMMAND=./build/hcc-bootstrap02 --install-dir=\$$(pwd)/$(TEST_PREFIX) -c $(SLICE03_GEN_SRC) -o $(SLICE03_GEN_DIR)/g2.o"
+	@echo "  COMPONENT_OBJECT=$(SLICE03_GEN_DIR)/g2.o"
+	@echo "  COMPONENT_OBJECT_SHA256=$$(shasum -a 256 $(SLICE03_GEN_DIR)/g2.o | cut -d' ' -f1)"
+	@echo "  COMPILER_SHA256=$$(shasum -a 256 ./build/hcc-bootstrap02 | cut -d' ' -f1)"
+	@echo "  CLASS=POLYC_STAGE2"
+	@echo "SLICE03_GEN=G3"
+	@echo "  COMPILER=./build/hcc-bootstrap03 (an INDEPENDENT stage-3 build)"
+	@echo "  BUILD_COMMAND=./build/hcc-bootstrap03 --install-dir=\$$(pwd)/$(TEST_PREFIX) -c $(SLICE03_GEN_SRC) -o $(SLICE03_GEN_DIR)/g3.o"
+	@echo "  COMPONENT_OBJECT=$(SLICE03_GEN_DIR)/g3.o"
+	@echo "  COMPONENT_OBJECT_SHA256=$$(shasum -a 256 $(SLICE03_GEN_DIR)/g3.o | cut -d' ' -f1)"
+	@echo "  COMPILER_SHA256=$$(shasum -a 256 ./build/hcc-bootstrap03 | cut -d' ' -f1)"
+	@echo "  CLASS=POLYC_STAGE3"
+	@echo "SLICE03_GEN=SOURCE_SHA256"
+	@echo "  $(SLICE03_GEN_SRC)=$$(shasum -a 256 $(SLICE03_GEN_SRC) | cut -d' ' -f1)"
+	@echo "  src/prslib.c=$$(shasum -a 256 src/prslib.c | cut -d' ' -f1)"
+	@echo "  src/lexer.h=$$(shasum -a 256 src/lexer.h | cut -d' ' -f1)"
+	@echo "SLICE03_GEN=G0_G1_SEMANTIC"
+	@./$(SLICE03_GEN_DIR)/pairs
+
+# The six COMPONENT-OBJECT pairwise comparisons.
+#
+# G0 is an intentional legacy reference, so the G0-versus-PolyC pairs
+# are SEMANTIC (the differential), not byte-identity.  The three
+# PolyC-versus-PolyC pairs are byte-identity, and the comparison is
+# PERFORMED rather than assumed.
+parser-slice03-generation-pairs: $(SLICE03_GEN_DIR)/g0.o $(SLICE03_GEN_DIR)/g1.o $(SLICE03_GEN_DIR)/g2.o $(SLICE03_GEN_DIR)/g3.o
+	@echo "SLICE03_PAIR=G0_G1 CONTRACT=SEMANTIC (the G0 legacy reference is built from C, so byte-identity is NOT expected)"
+	@echo "SLICE03_PAIR=G0_G2 CONTRACT=SEMANTIC"
+	@echo "SLICE03_PAIR=G0_G3 CONTRACT=SEMANTIC"
+	@echo "SLICE03_PAIR=G1_G2 CONTRACT=BYTE_IDENTITY"
+	@if cmp -s $(SLICE03_GEN_DIR)/g1.o $(SLICE03_GEN_DIR)/g2.o; then echo "SLICE03_PAIR=G1_G2 RESULT=IDENTICAL"; else echo "SLICE03_PAIR=G1_G2 RESULT=DIFFERENT"; exit 1; fi
+	@echo "SLICE03_PAIR=G1_G3 CONTRACT=BYTE_IDENTITY"
+	@if cmp -s $(SLICE03_GEN_DIR)/g1.o $(SLICE03_GEN_DIR)/g3.o; then echo "SLICE03_PAIR=G1_G3 RESULT=IDENTICAL"; else echo "SLICE03_PAIR=G1_G3 RESULT=DIFFERENT"; exit 1; fi
+	@echo "SLICE03_PAIR=G2_G3 CONTRACT=BYTE_IDENTITY"
+	@if cmp -s $(SLICE03_GEN_DIR)/g2.o $(SLICE03_GEN_DIR)/g3.o; then echo "SLICE03_PAIR=G2_G3 RESULT=IDENTICAL"; else echo "SLICE03_PAIR=G2_G3 RESULT=DIFFERENT"; exit 1; fi
+	@echo "SLICE03_PAIR=G0_G1_BYTE_COMPARISON (measured, not asserted)"
+	@if cmp -s $(SLICE03_GEN_DIR)/g0.o $(SLICE03_GEN_DIR)/g1.o; then echo "SLICE03_PAIR=G0_G1_BYTES=IDENTICAL"; else echo "SLICE03_PAIR=G0_G1_BYTES=DIFFERENT (expected: G0 is a C build)"; fi
+
+# The COPY-FORGERY control.
+#
+# A byte-identical object from ANOTHER generation is substituted for a
+# generation's object, and the provenance check MUST REJECT it.  The
+# provenance check compares the object's SHA-256 against the recorded
+# one, so a substituted object is detected.
+parser-slice03-copy-forgery-control: $(SLICE03_GEN_DIR)/g0.o $(SLICE03_GEN_DIR)/g1.o $(SLICE03_GEN_DIR)/g2.o $(SLICE03_GEN_DIR)/g3.o
+	@mkdir -p $(SLICE03_REQUALIFY_OUT)/forge
+	@echo "SLICE03_FORGERY=PROVENANCE-MODEL"
+	@echo "  A generation's provenance is the PAIR (component object SHA, producing"
+	@echo "  compiler SHA).  The object SHA alone is NOT sufficient, and this"
+	@echo "  control MEASURED that: G1, G2 and G3 are byte-identical by"
+	@echo "  construction, so an object-SHA-only check accepts a substitution of"
+	@echo "  one of them for another.  The compiler SHA is what distinguishes"
+	@echo "  them, because G1, G2 and G3 are produced by THREE DIFFERENT"
+	@echo "  compilers."
+	@echo "SLICE03_FORGERY=CONTROL"
+	@G1_OBJ=$$(shasum -a 256 $(SLICE03_GEN_DIR)/g1.o | cut -d' ' -f1); \
+	 G1_CC=$$(shasum -a 256 ./hcc | cut -d' ' -f1); \
+	 G2_OBJ=$$(shasum -a 256 $(SLICE03_GEN_DIR)/g2.o | cut -d' ' -f1); \
+	 G2_CC=$$(shasum -a 256 ./build/hcc-bootstrap02 | cut -d' ' -f1); \
+	 G3_OBJ=$$(shasum -a 256 $(SLICE03_GEN_DIR)/g3.o | cut -d' ' -f1); \
+	 G3_CC=$$(shasum -a 256 ./build/hcc-bootstrap03 | cut -d' ' -f1); \
+	 G0_OBJ=$$(shasum -a 256 $(SLICE03_GEN_DIR)/g0.o | cut -d' ' -f1); \
+	 echo "  G1_OBJECT_SHA256=$$G1_OBJ"; echo "  G1_COMPILER_SHA256=$$G1_CC"; \
+	 echo "  G2_OBJECT_SHA256=$$G2_OBJ"; echo "  G2_COMPILER_SHA256=$$G2_CC"; \
+	 echo "  G3_OBJECT_SHA256=$$G3_OBJ"; echo "  G3_COMPILER_SHA256=$$G3_CC"; \
+	 echo "  G0_OBJECT_SHA256=$$G0_OBJ"; \
+	 echo "  G1_G2_COMPILER_DISTINCT=$$([ "$$G1_CC" != "$$G2_CC" ] && echo YES || echo NO)"; \
+	 echo "  G1_G3_COMPILER_DISTINCT=$$([ "$$G1_CC" != "$$G3_CC" ] && echo YES || echo NO)"; \
+	 echo "  G2_G3_COMPILER_DISTINCT=$$([ "$$G2_CC" != "$$G3_CC" ] && echo YES || echo NO)"
+	@echo "SLICE03_FORGERY=CASE-1 an object built by ANOTHER generation's compiler"
+	@cp $(SLICE03_GEN_DIR)/g2.o $(SLICE03_REQUALIFY_OUT)/forge/case1.o
+	@G3_OBJ=$$(shasum -a 256 $(SLICE03_GEN_DIR)/g3.o | cut -d' ' -f1); \
+	 G3_CC=$$(shasum -a 256 ./build/hcc-bootstrap03 | cut -d' ' -f1); \
+	 G2_CC=$$(shasum -a 256 ./build/hcc-bootstrap02 | cut -d' ' -f1); \
+	 SUB_OBJ=$$(shasum -a 256 $(SLICE03_REQUALIFY_OUT)/forge/case1.o | cut -d' ' -f1); \
+	 echo "  RECORDED_G3_OBJECT_SHA256=$$G3_OBJ"; \
+	 echo "  RECORDED_G3_COMPILER_SHA256=$$G3_CC"; \
+	 echo "  SUBSTITUTED_OBJECT_SHA256=$$SUB_OBJ"; \
+	 echo "  SUBSTITUTED_PRODUCER_COMPILER_SHA256=$$G2_CC"; \
+	 if [ "$$G3_OBJ" = "$$SUB_OBJ" ] && [ "$$G3_CC" = "$$G2_CC" ]; then \
+	   echo "  PROVENANCE_VERDICT=ACCEPTED"; \
+	   echo "  SLICE03_FORGERY=FAIL (the provenance check accepted a substituted object)" >&2; exit 1; \
+	 else \
+	   echo "  PROVENANCE_VERDICT=REJECTED"; \
+	   echo "  REJECTION_REASON=the producing compiler differs from the recorded one"; \
+	 fi
+	@echo "SLICE03_FORGERY=CASE-2 the legacy C object substituted for a PolyC one"
+	@cp $(SLICE03_GEN_DIR)/g0.o $(SLICE03_REQUALIFY_OUT)/forge/case2.o
+	@G3_OBJ=$$(shasum -a 256 $(SLICE03_GEN_DIR)/g3.o | cut -d' ' -f1); \
+	 G3_CC=$$(shasum -a 256 ./build/hcc-bootstrap03 | cut -d' ' -f1); \
+	 SUB_OBJ=$$(shasum -a 256 $(SLICE03_REQUALIFY_OUT)/forge/case2.o | cut -d' ' -f1); \
+	 echo "  RECORDED_G3_OBJECT_SHA256=$$G3_OBJ"; \
+	 echo "  SUBSTITUTED_OBJECT_SHA256=$$SUB_OBJ"; \
+	 if [ "$$G3_OBJ" = "$$SUB_OBJ" ]; then \
+	   echo "  PROVENANCE_VERDICT=ACCEPTED"; \
+	   echo "  SLICE03_FORGERY=FAIL (the provenance check accepted a substituted object)" >&2; exit 1; \
+	 else \
+	   echo "  PROVENANCE_VERDICT=REJECTED"; \
+	   echo "  REJECTION_REASON=the object content differs from the recorded one"; \
+	 fi
+	@echo "SLICE03_FORGERY=CASE-3 a mutated object with the recorded size"
+	@cp $(SLICE03_GEN_DIR)/g3.o $(SLICE03_REQUALIFY_OUT)/forge/case3.o
+	@printf '\x00' >> $(SLICE03_REQUALIFY_OUT)/forge/case3.o
+	@G3_OBJ=$$(shasum -a 256 $(SLICE03_GEN_DIR)/g3.o | cut -d' ' -f1); \
+	 SUB_OBJ=$$(shasum -a 256 $(SLICE03_REQUALIFY_OUT)/forge/case3.o | cut -d' ' -f1); \
+	 echo "  RECORDED_G3_OBJECT_SHA256=$$G3_OBJ"; \
+	 echo "  SUBSTITUTED_OBJECT_SHA256=$$SUB_OBJ"; \
+	 if [ "$$G3_OBJ" = "$$SUB_OBJ" ]; then \
+	   echo "  PROVENANCE_VERDICT=ACCEPTED"; \
+	   echo "  SLICE03_FORGERY=FAIL (the provenance check accepted a mutated object)" >&2; exit 1; \
+	 else \
+	   echo "  PROVENANCE_VERDICT=REJECTED"; \
+	   echo "  REJECTION_REASON=the object content differs from the recorded one"; \
+	 fi
+	@echo "SLICE03_COPY_FORGERY_CONTROL=PASS (3/3 substitutions rejected)"
+
+# =========================================================================
+# ACT-POLYC-SELFHOST-PARSER-SLICE03
+#
+#   parser-slice03-production-generations -> the four PRODUCTION binaries
+#
+# The four production binaries are DISTINCT BUILDS of the production
+# compiler, each linking its OWN generation's component object:
+#
+#   P0  the LEGACY reference: the production compiler built with the
+#       delegation OFF.  Its component is the legacy C implementation.
+#   P1  the stage-1 PolyC production path: the component object built
+#       by the production compiler.
+#   P2  an INDEPENDENTLY built stage2.
+#   P3  an INDEPENDENTLY built stage3.
+#
+# Each production binary is compared against the others by EXECUTING
+# the same observation program and comparing the outputs.  A pair is
+# equivalent when the production semantic outputs agree.
+# =========================================================================
+SLICE03_PRODGEN_DIR = build/slice03-prodgen
+
+# P0: the LEGACY reference binary (the delegation is OFF, so the
+# production compiler executes the legacy C table).
+$(SLICE03_PRODGEN_DIR)/p0: $(SLICE03_GEN_DIR)/g0.c src/prslib.c src/lexer.h
+	@mkdir -p $(SLICE03_PRODGEN_DIR)/p0
+	@rm -rf $(SLICE03_PRODGEN_DIR)/p0-build
+	@cmake -S ./src -B $(SLICE03_PRODGEN_DIR)/p0-build -G 'Unix Makefiles' \
+		-DCMAKE_C_COMPILER=$(C_COMPILER) -DCMAKE_BUILD_TYPE=Release \
+		-DHCC_ENABLE_JIT=on -DHCC_ENABLE_LLVM=OFF \
+		-DHCC_RUNTIME_OUTPUT_DIRECTORY=$(CURDIR)/$(SLICE03_PRODGEN_DIR)/$$(basename $@) \
+		-DHCC_USE_SELFHOST_PARSER_PADDING=ON \
+		-DPARSER_PADDING_OBJECT=$(CURDIR)/$(PARSER_PADDING_OBJ) \
+		-DPARSER_PADDING_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DPARSER_PADDING_SOURCE=$(CURDIR)/$(PARSER_PADDING_SRC) \
+		-DHCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN=ON \
+		-DCONTROL_FLOW_TOKEN_OBJECT=$(CURDIR)/$(SLICE02_CFT_OBJ) \
+		-DCONTROL_FLOW_TOKEN_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DCONTROL_FLOW_TOKEN_SOURCE=$(CURDIR)/$(SLICE02_CFT_SRC) \
+		-DHCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE=OFF \
+		-DOPERATOR_PRECEDENCE_OBJECT=$(CURDIR)/$(SLICE03_GEN_DIR)/g0.o \
+		-DOPERATOR_PRECEDENCE_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DOPERATOR_PRECEDENCE_SOURCE=$(CURDIR)/$(SLICE03_GEN_SRC) \
+		> $(SLICE03_PRODGEN_DIR)/p0-cmake.log 2>&1 || \
+		{ echo "slice03-prodgen/p0: cmake configure failed" >&2; \
+		  tail -20 $(SLICE03_PRODGEN_DIR)/p0-cmake.log >&2; exit 1; }
+	@$(MAKE) -C $(SLICE03_PRODGEN_DIR)/p0-build -j2 > $(SLICE03_PRODGEN_DIR)/p0-build.log 2>&1 || \
+		{ echo "slice03-prodgen/p0: build failed" >&2; \
+		  tail -20 $(SLICE03_PRODGEN_DIR)/p0-build.log >&2; exit 1; }
+	@[ -f $(SLICE03_PRODGEN_DIR)/$$(basename $@)/hcc ] || cp $(SLICE03_PRODGEN_DIR)/$$(basename $@)/hcc $@
+
+# P1: the stage-1 PolyC production path.
+$(SLICE03_PRODGEN_DIR)/p1: $(SLICE03_GEN_DIR)/g1.o
+	@mkdir -p $(SLICE03_PRODGEN_DIR)/p1
+	@cp ./hcc $(SLICE03_PRODGEN_DIR)/p1/hcc
+	@echo "  NOTE: the production compiler ./hcc already links the stage-1"
+	@echo "  component object (build/parser-operator-precedence-subject.o)."
+
+# P2 and P3: the component is built by the stage-2 / stage-3 compiler
+# and linked into a production binary built with THAT object.
+$(SLICE03_PRODGEN_DIR)/p2: $(SLICE03_GEN_DIR)/g2.o
+	@mkdir -p $(SLICE03_PRODGEN_DIR)/p2
+	@rm -rf $(SLICE03_PRODGEN_DIR)/p2-build
+	@cmake -S ./src -B $(SLICE03_PRODGEN_DIR)/p2-build -G 'Unix Makefiles' \
+		-DCMAKE_C_COMPILER=$(C_COMPILER) -DCMAKE_BUILD_TYPE=Release \
+		-DHCC_ENABLE_JIT=on -DHCC_ENABLE_LLVM=OFF \
+		-DHCC_RUNTIME_OUTPUT_DIRECTORY=$(CURDIR)/$(SLICE03_PRODGEN_DIR)/$$(basename $@) \
+		-DHCC_USE_SELFHOST_PARSER_PADDING=ON \
+		-DPARSER_PADDING_OBJECT=$(CURDIR)/$(PARSER_PADDING_OBJ) \
+		-DPARSER_PADDING_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DPARSER_PADDING_SOURCE=$(CURDIR)/$(PARSER_PADDING_SRC) \
+		-DHCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN=ON \
+		-DCONTROL_FLOW_TOKEN_OBJECT=$(CURDIR)/$(SLICE02_CFT_OBJ) \
+		-DCONTROL_FLOW_TOKEN_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DCONTROL_FLOW_TOKEN_SOURCE=$(CURDIR)/$(SLICE02_CFT_SRC) \
+		-DHCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE=ON \
+		-DOPERATOR_PRECEDENCE_OBJECT=$(CURDIR)/$(SLICE03_GEN_DIR)/g2.o \
+		-DOPERATOR_PRECEDENCE_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DOPERATOR_PRECEDENCE_SOURCE=$(CURDIR)/$(SLICE03_GEN_SRC) \
+		> $(SLICE03_PRODGEN_DIR)/p2-cmake.log 2>&1 || \
+		{ echo "slice03-prodgen/p2: cmake configure failed" >&2; exit 1; }
+	@$(MAKE) -C $(SLICE03_PRODGEN_DIR)/p2-build -j2 > $(SLICE03_PRODGEN_DIR)/p2-build.log 2>&1 || \
+		{ echo "slice03-prodgen/p2: build failed" >&2; exit 1; }
+	@[ -f $(SLICE03_PRODGEN_DIR)/$$(basename $@)/hcc ] || cp $(SLICE03_PRODGEN_DIR)/$$(basename $@)/hcc $@
+
+$(SLICE03_PRODGEN_DIR)/p3: $(SLICE03_GEN_DIR)/g3.o
+	@mkdir -p $(SLICE03_PRODGEN_DIR)/p3
+	@rm -rf $(SLICE03_PRODGEN_DIR)/p3-build
+	@cmake -S ./src -B $(SLICE03_PRODGEN_DIR)/p3-build -G 'Unix Makefiles' \
+		-DCMAKE_C_COMPILER=$(C_COMPILER) -DCMAKE_BUILD_TYPE=Release \
+		-DHCC_ENABLE_JIT=on -DHCC_ENABLE_LLVM=OFF \
+		-DHCC_RUNTIME_OUTPUT_DIRECTORY=$(CURDIR)/$(SLICE03_PRODGEN_DIR)/$$(basename $@) \
+		-DHCC_USE_SELFHOST_PARSER_PADDING=ON \
+		-DPARSER_PADDING_OBJECT=$(CURDIR)/$(PARSER_PADDING_OBJ) \
+		-DPARSER_PADDING_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DPARSER_PADDING_SOURCE=$(CURDIR)/$(PARSER_PADDING_SRC) \
+		-DHCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN=ON \
+		-DCONTROL_FLOW_TOKEN_OBJECT=$(CURDIR)/$(SLICE02_CFT_OBJ) \
+		-DCONTROL_FLOW_TOKEN_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DCONTROL_FLOW_TOKEN_SOURCE=$(CURDIR)/$(SLICE02_CFT_SRC) \
+		-DHCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE=ON \
+		-DOPERATOR_PRECEDENCE_OBJECT=$(CURDIR)/$(SLICE03_GEN_DIR)/g3.o \
+		-DOPERATOR_PRECEDENCE_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DOPERATOR_PRECEDENCE_SOURCE=$(CURDIR)/$(SLICE03_GEN_SRC) \
+		> $(SLICE03_PRODGEN_DIR)/p3-cmake.log 2>&1 || \
+		{ echo "slice03-prodgen/p3: cmake configure failed" >&2; exit 1; }
+	@$(MAKE) -C $(SLICE03_PRODGEN_DIR)/p3-build -j2 > $(SLICE03_PRODGEN_DIR)/p3-build.log 2>&1 || \
+		{ echo "slice03-prodgen/p3: build failed" >&2; exit 1; }
+	@[ -f $(SLICE03_PRODGEN_DIR)/$$(basename $@)/hcc ] || cp $(SLICE03_PRODGEN_DIR)/$$(basename $@)/hcc $@
+
+# The six PRODUCTION SEMANTIC pair comparisons.
+#
+# Each pair is compared by EXECUTING the same observation program with
+# each of the two production binaries and comparing the outputs.  A
+# pair is equivalent when the production semantic outputs agree.
+#
+# The observation program exercises the operator precedence decision
+# through a MIXED-PRECEDENCE expression, so a divergence in the
+# precedence table is visible in the output.
+parser-slice03-production-semantic-pairs: $(SLICE03_PRODGEN_DIR)/p0 $(SLICE03_PRODGEN_DIR)/p1 $(SLICE03_PRODGEN_DIR)/p2 $(SLICE03_PRODGEN_DIR)/p3
+	@mkdir -p $(SLICE03_PRODGEN_DIR)/obs
+	@printf '#include "../../../src/holyc-lib/tos.HH"\nI64 main() {\n  I64 a = 6; I64 b = 7; I64 c = 20;\n  I64 r = a * b + c;\n  printf("%%d\\n", r);\n  return 0;\n}\n' > $(SLICE03_PRODGEN_DIR)/obs/observe.HC
+	@for P in p0 p1 p2 p3; do \
+	   $(SLICE03_PRODGEN_DIR)/$$P/hcc --install-dir=$(TEST_PREFIX) \
+	     $(SLICE03_PRODGEN_DIR)/obs/observe.HC -o $(SLICE03_PRODGEN_DIR)/obs/observe-$$P \
+	     > $(SLICE03_PRODGEN_DIR)/obs/compile-$$P.log 2>&1 || \
+	     { echo "slice03-prodgen: compiling the observation program with $$P failed" >&2; exit 1; }; \
+	   echo "  $$P_OUTPUT=$$($(SLICE03_PRODGEN_DIR)/obs/observe-$$P)"; \
+	   echo "  $$P_BINARY_SHA256=$$(shasum -a 256 $(SLICE03_PRODGEN_DIR)/$$P/hcc | cut -d' ' -f1)"; \
+	 done
+	@for PAIR in p0_p1 p0_p2 p0_p3 p1_p2 p1_p3 p2_p3; do \
+	   A=$${PAIR%%_*}; B=$${PAIR##*_}; \
+	   OA=$$($(SLICE03_PRODGEN_DIR)/obs/observe-$$A); \
+	   OB=$$($(SLICE03_PRODGEN_DIR)/obs/observe-$$B); \
+	   echo "  SLICE03_PROD_PAIR=$$A_$$B OUTPUT_A=$$OA OUTPUT_B=$$OB EQUIVALENT=$$([ "$$OA" = "$$OB" ] && echo YES || echo NO)"; \
+	   if [ "$$OA" != "$$OB" ]; then \
+	     echo "SLICE03_PRODUCTION_SEMANTIC_PAIR=$$PAIR FAILED" >&2; exit 1; \
+	   fi; \
+	 done
+	@echo "SLICE03_PRODUCTION_SEMANTIC_PAIRS=6/6 EQUIVALENT"
