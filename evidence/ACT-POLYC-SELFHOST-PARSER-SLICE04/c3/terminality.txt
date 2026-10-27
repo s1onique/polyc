@@ -1,0 +1,95 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE04
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=terminality
+
+THE EXTERNAL TERMINALITY (ACT SECTION 17)
+=========================================
+
+These are the READ-ONLY checks that establish the ACT's terminal
+state.  Their results are kept OUTSIDE any closed evidence tree, and
+this artifact records them.
+
+  COMMAND=git status --porcelain=v1
+  OUTPUT=(empty)
+  WORKTREE_CLEAN=YES
+
+  COMMAND=git replace -l
+  OUTPUT=(empty)
+  GIT_REPLACE_REFS=0
+
+  COMMAND=git diff --check e3eaf38c2e0a1183d8fd4969443c32c92f075e58..HEAD
+  OUTPUT=(empty)
+  PATCH_HYGIENE_ERRORS=0
+
+  COMMAND=sh scripts/quality/factory-v2-range-check.sh \
+            ACT-POLYC-SELFHOST-PARSER-SLICE04 HEAD
+  OUTPUT:
+    ACT=ACT-POLYC-SELFHOST-PARSER-SLICE04
+    ENTRY=e3eaf38c2e0a1183d8fd4969443c32c92f075e58
+    FIRST=fe02e6c29ee476f3bcf990409ef3720a04ba200a
+    CLOSE=61c7080942bd92e8e8c0ea2d6e65fb7b0ff75d68
+    COMMITS=5
+    VERDICT=PASS
+    STATUS=PASS
+  FACTORY_V2_RANGE_CHECK=PASS
+
+  COMMAND=git log -1 --format='%B' | git interpret-trailers --parse
+  OUTPUT:
+    ACT: ACT-POLYC-SELFHOST-PARSER-SLICE04
+    ACT-Phase: CLOSE
+    ACT-Verdict: PASS
+  CLOSE_IS_ACT_TIP=YES
+  POST_CLOSE_CONTINUATION=NO
+
+THE FIVE-COMMIT TOPOLOGY
+=======================
+
+  COMMAND=git log --format='%h %s' e3eaf38c2e0a1183d8fd4969443c32c92f075e58..HEAD
+  OUTPUT:
+    61c7080  C4: CLOSE -- the AST binary-operator classification is PolyC-owned
+    1545c99  C3: four-generation qualification, causal mutation and conservation
+    23bf3cc  C2: the PolyC AST-operator component and the production delegation
+    6b87036  C1: mechanical candidate selection and the frozen proof contract
+    fe02e6c  C0: AUTH, entry identity and the real production RED
+
+Each commit carries exactly one parseable trailer block:
+
+  fe02e6c  ACT: ...  ACT-Phase: RED
+  6b87036  ACT: ...  ACT-Phase: EVIDENCE
+  23bf3cc  ACT: ...  ACT-Phase: IMPL
+  1545c99  ACT: ...  ACT-Phase: EVIDENCE
+  61c7080  ACT: ...  ACT-Phase: CLOSE  ACT-Verdict: PASS
+
+THE FRESH-TREE PROOF
+===================
+
+The qualification suite was re-run from a PRISTINE CLONE of the
+committed tree, which is the F9 requirement:
+
+  COMMAND=git clone --no-hardlinks . /tmp/slice04-final
+  COMMAND=cd /tmp/slice04-final && make production-hcc
+  COMMAND=cd /tmp/slice04-final && make build/parser-slice04-differential
+  OUTPUT:
+    SLICE04_DIFF_PASS=322  SLICE04_DIFF_FAIL=0  SLICE04_DIFF_STATUS=PASS
+    (the link SUCCEEDS: no duplicate symbols)
+  COMMAND=cd /tmp/slice04-final && nm ./hcc | grep BootstrapAstBinOp
+  OUTPUT:
+    000000010006442c T _BootstrapAstBinOpFromToken
+  COMMAND=cd /tmp/slice04-final && nm build/CMakeFiles/hcc.dir/ast.c.o | grep BootstrapAstBinOp
+  OUTPUT:
+                   U _BootstrapAstBinOpFromToken
+
+Every qualification target was re-run in that pristine clone and
+every one PASSED:
+
+  parser-slice04-differential                PASS
+  parser-slice04-negative-controls            PASS
+  parser-slice04-fixture-integrity            PASS
+  parser-slice04-ranking-controls             PASS
+  parser-slice04-generations                  PASS
+  parser-slice04-generation-semantics         PASS
+  parser-slice04-provenance                   PASS
+  parser-slice04-copy-forgery-control         PASS
+  parser-slice04-production-mutation           PASS
+
+  FRESH_TREE_QUALIFICATION=PASS

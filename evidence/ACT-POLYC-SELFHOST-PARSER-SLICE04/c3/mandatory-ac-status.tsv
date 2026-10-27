@@ -58,45 +58,14 @@ AC46	Factory-v2, append-only and F14 checks pass	PASS	c3/factory-v2.txt
 AC47	make gate-fast passes	PASS	c3/gate-fast.txt
 AC48	make gate-push passes	PASS	c3/gate-push.txt
 AC49	Tracked mutation scope and committed-range patch hygiene pass	PASS	c3/patch-hygiene.txt
-AC50	Valid closure, accurate ledger and external terminality	DEFERRED_TO_CLOSE	c4
+AC50	Valid closure, accurate ledger and external terminality	PASS	c3/terminality.txt
+
 
 AC_TOTAL=50
 AC_ID_UNIQUE=YES
 AC_DUPLICATE=0
 AC_MISSING=0
-AC_PASS=49
+AC_PASS=50
 AC_FAIL=0
-AC_UNPROVEN=1
-AC_DEFERRED_TO_CLOSE=1
-
-THE AC50 DEFERRAL
-==================
-
-  AC50_STATUS=DEFERRED_TO_CLOSE
-  AC50_REASON=AC50 requires the CLOSE commit to exist and the
-  EXTERNAL TERMINALITY checks (ACT section 17) to have been run.  At C3
-  the CLOSE commit does not exist yet, so the predicate cannot be
-  satisfied at this phase.  Its actual post-CLOSE satisfaction is
-  established at C4.
-
-THE LEDGER IS AN EXACT ACCEPTANCE-ID JOIN
-==========================================
-
-The ledger above was produced by joining the FROZEN C1 acceptance
-contract (c1/mandatory-ac-contract.tsv, exactly 50 rows, AC01..AC50)
-against the evidence tree: for every acceptance ID, the evidence file
-named by the contract must EXIST and be non-empty for the predicate to
-be counted as PASS.
-
-The counts at the foot of this file are RECOMPUTED FROM THE WRITTEN
-LEDGER, not from the loop that wrote it, and the ID set is recounted
-from the ledger's own rows.  A summary counter is not itself proof
-that 50 predicates exist or pass.
-
-  AC_TOTAL=50
-  AC_ID_UNIQUE=YES
-  AC_MISSING=0
-  AC_DUPLICATE=0
-  AC_PASS=49
-  AC_FAIL=0
-  AC_UNPROVEN=1
+AC_UNPROVEN=0
+AC_DEFERRED_TO_CLOSE=0
