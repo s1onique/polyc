@@ -1,0 +1,62 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE03
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=parser-conservation
+
+THE BASELINE IS THE ENTRY COMMIT, NOT THE PREVIOUS ACT
+===================================================
+
+A baseline compiler was built from the ENTRY tree
+(50cabc1, the RECON03 CLOSE commit) and the IDENTICAL test suite
+was run against it and against this ACT's tree.
+
+COMMAND (baseline):
+  git archive 50cabc1 src | tar -x -C build/slice03-baseline
+  cmake -S build/slice03-baseline/src -B build/slice03-baseline/build ...
+  make -C build/slice03-baseline/build -j4
+  cd build/slice03-baseline/src/tests && ../../../slice03-baseline/tests-run --target=aarch64-apple-darwin
+
+  BASELINE_BINARY_SHA256=d246f7956ca45aad6ead421540799dd48a79c25a920528db5c1b97627cba8f28
+
+  (the baseline binary carries NO _BootstrapOperatorPrecedence symbol: it
+   predates the migration, which is what makes it a baseline)
+
+COMMAND (current):
+  ./hcc --install-dir=build/test-prefix -c src/tests/run.HC -o build/slice03-tests-run
+  cd src/tests && ../../build/slice03-tests-run --target=aarch64-apple-darwin
+
+THE RESULT
+===========
+
+  BASELINE_PASSED=87
+  BASELINE_FAILED=3
+  CURRENT_PASSED=87
+  CURRENT_FAILED=3
+
+The failure identity sets are BYTE IDENTICAL:
+
+  FAILED: 0/7
+  Test - #link directive (AOT): FAILED: 1/3
+  Test - indirect struct return C interop: FAILED: 1/3
+
+  diff baseline-failures current-failures  ->  no difference
+
+NEW_PARSER_FAILURE_IDENTITIES=0
+NEW_PARSER_SEMANTIC_REGRESSIONS=0
+REMOVED_PARSER_FAILURE_IDENTITIES=0
+
+THE THREE FAILURES ARE PRE-EXISTING AND UNRELATED
+===============================================
+
+All three are caused by the absence of /usr/local/include/tos.HH on
+this host:
+
+  ERROR: Failed to open file: /usr/local/include/tos.HH
+
+which is the SAME pre-existing host issue that RECON03 recorded as
+its AC47 FAIL_PRE_EXISTING_HOST_ISSUE: the test harness compiles each
+test without --install-dir, so the compiler falls back to its
+compile-time prefix /usr/local, which does not exist here.
+
+This ACT did NOT repair that harness, because the repair is OUT OF
+SCOPE and because a fresh gate-push on this host passes without it.
+The failures are RECORDED AS MEASURED, not relabelled PASS.

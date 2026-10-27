@@ -1,0 +1,56 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE03
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=gate-push
+
+THIS IS A FRESH RUN AGAINST THIS ACT'S OWN TREE
+===============================================
+
+COMMAND=make gate-push
+RC=0
+
+OUTPUT:
+  POLYC_GATE=push
+  SUBJECT=b7075296b0e3
+  PARSER_PADDING_ARCH_CHECK=PASS arch=arm64 target=arm64
+  PARSER_PADDING_SUBJECT=build/parser-padding-subject.o
+  SLICE02_SUBJECT=build/parser-control-flow-token-subject.o
+  SLICE03_SUBJECT=build/parser-operator-precedence-subject.o
+  CHECK=build STATUS=PASS
+  CHECK=install STATUS=PASS
+  CHECK=gep01 STATUS=PASS
+  CHECK=aot STATUS=PASS
+  CHECK=jit STATUS=PASS
+  CHECK=lsp STATUS=PASS
+  CHECK=diff-check STATUS=PASS
+  VERDICT=PASS
+
+THE AOT CHECK PASSES
+====================
+
+RECON03's AC47 was "gate-push passes", and it was recorded as
+FAIL_PRE_EXISTING_HOST_ISSUE because the aot check (make unit-test)
+failed on a host with no writable /usr/local.  On THIS host the aot
+check PASSES:
+
+  CHECK=aot STATUS=PASS
+
+This is a FRESH measurement against THIS ACT's tree.  It does NOT
+retroactively change RECON03's recorded AC47, and this ACT does not
+claim that it does.  What it does establish is that the current
+tree passes the gate WITHOUT a harness repair, which is why this ACT
+introduced none.
+
+THE GATE ALSO VERIFIED THE NEW COMPONENT
+============================================
+
+  ACT-POLYC-SELFHOST-PARSER-SLICE03: OPERATOR_PRECEDENCE_OBJECT_STATUS=PASS
+    EXPECTED_SYMBOL=BootstrapOperatorPrecedence
+    TARGET_OBJECT_FORMAT=Mach-O
+    TARGET_SYMBOL=_BootstrapOperatorPrecedence
+    DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1
+    OBJECT_SIZE=2608
+
+The fail-closed verifier ran inside the gate's own hermetic build,
+in a fresh temporary worktree, on a CLEAN tree.
+
+GATE_PUSH=PASS

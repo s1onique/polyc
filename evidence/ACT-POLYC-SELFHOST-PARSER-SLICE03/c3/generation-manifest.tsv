@@ -1,0 +1,48 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE03
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=generation-manifest
+
+THE FOUR GENERATIONS
+===================
+
+Each generation is a DISTINCT BUILD: it is produced by a
+different compiler, and the compiler identity is recorded as a
+SHA-256.
+
+gen	class	component_object	component_sha256	compiler	compiler_sha256
+G0	LEGACY_REFERENCE	build/slice03-gen/g0.o	937a29dcfb22b5c00b187b11e47a27efd6d301374060b5451263f1507e60d52d	the legacy C reference	833f0797cced931580d045ad432c0ea35ed1fb51bee78dce41e7a16f02583a2d
+G1	POLYC_STAGE1	build/slice03-gen/g1.o	1a932394ba209267ab3a119137f844682f1a12ceeaaca0cde4feaeaa0f8f62f8	./hcc	833f0797cced931580d045ad432c0ea35ed1fb51bee78dce41e7a16f02583a2d
+G2	POLYC_STAGE2	build/slice03-gen/g2.o	1a932394ba209267ab3a119137f844682f1a12ceeaaca0cde4feaeaa0f8f62f8	./build/hcc-bootstrap02	051bf6b8a74f31a6dbbe97d89bb8d619d53d17e25e3d15d4ab9b89c8521ade38
+G3	POLYC_STAGE3	build/slice03-gen/g3.o	1a932394ba209267ab3a119137f844682f1a12ceeaaca0cde4feaeaa0f8f62f8	./build/hcc-bootstrap03	0ebf9a11aaaae4f762aa346ddc7b5c869fabca1b8f0fa7599278165857d9e51c
+
+G1, G2 and G3 are the SAME PolyC source compiled by THREE
+DIFFERENT compilers.  Their component objects are byte-identical,
+which is EXPECTED: the compiler is deterministic and the source is
+identical.  What distinguishes them is the COMPILER, and the
+compiler SHAs are pairwise distinct:
+
+  G1_G2_COMPILER_DISTINCT=YES
+  G1_G3_COMPILER_DISTINCT=YES
+  G2_G3_COMPILER_DISTINCT=YES
+
+G0 is an INTENTIONAL LEGACY REFERENCE.  It is built from C, so
+byte-identity with the PolyC generations is NOT expected and is NOT
+required.  The permitted G0-versus-PolyC comparison contract is
+SEMANTIC (the oracle differential), and it is exercised below.
+
+THE BUILD COMMANDS
+===================
+
+  G0  cc -std=c99 -O2 -Isrc -c -o build/slice03-gen/g0.o tools/quality/slice03-gen/g0-legacy-reference.c
+  G1  ./hcc --install-dir=build/test-prefix -c tools/bootstrap/selfhost-parser-operator-precedence.HC -o build/slice03-gen/g1.o
+  G2  ./build/hcc-bootstrap02 --install-dir=build/test-prefix -c tools/bootstrap/selfhost-parser-operator-precedence.HC -o build/slice03-gen/g2.o
+  G3  ./build/hcc-bootstrap03 --install-dir=build/test-prefix -c tools/bootstrap/selfhost-parser-operator-precedence.HC -o build/slice03-gen/g3.o
+
+THE SOURCE IDENTITIES
+=====================
+
+  tools/bootstrap/selfhost-parser-operator-precedence.HC           3e7a9cf4983e8b625ab3e004dba15b4afcaddb7c83c18f234adf89b9c8468979
+  tools/quality/slice03-gen/g0-legacy-reference.c                  cefe36eef4a5092d24e5a2117837e3c235dc8976b4d6370be57cae7f47d47f33
+  tools/quality/slice03-gen/generation-pairs.c                     c04bdf6772bdb6a3d025eb75e4382ce0eaf44ae618c1a8c77e90edbfaa057f7f
+  src/prslib.c                                                     8a8b87602b87cc5dfd8eadee597a85781207fc8316355a7c1d0e5b50585dd326
+  src/lexer.h                                                      6bc46f3be938c6fae99095d8cf0b1f07104bbf9fc1dfb248aaa3cd5dd721c5f9

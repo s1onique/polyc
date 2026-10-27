@@ -1,0 +1,54 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE03
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=copy-forgery-control
+
+STATUS=PASS (3/3 substitutions REJECTED)
+
+THE PROVENANCE MODEL
+=====================
+
+A generation's provenance is the PAIR (component object SHA-256,
+producing compiler SHA-256).
+
+The object SHA alone is NOT sufficient, and this control MEASURED
+that: G1, G2 and G3 are byte-identical by construction, so an
+object-SHA-only check ACCEPTS a substitution of one of them for
+another.  The compiler SHA is what distinguishes them, because G1, G2
+and G3 are produced by THREE DIFFERENT compilers.
+
+COMMAND=make parser-slice03-copy-forgery-control
+OUTPUT:
+  SLICE03_FORGERY=CONTROL
+    G1_OBJECT_SHA256=1a932394ba209267ab3a119137f844682f1a12ceeaaca0cde4feaeaa0f8f62f8
+    G1_COMPILER_SHA256=833f0797cced931580d045ad432c0ea35ed1fb51bee78dce41e7a16f02583a2d
+    G2_OBJECT_SHA256=1a932394ba209267ab3a119137f844682f1a12ceeaaca0cde4feaeaa0f8f62f8
+    G2_COMPILER_SHA256=051bf6b8a74f31a6dbbe97d89bb8d619d53d17e25e3d15d4ab9b89c8521ade38
+    G3_OBJECT_SHA256=1a932394ba209267ab3a119137f844682f1a12ceeaaca0cde4feaeaa0f8f62f8
+    G3_COMPILER_SHA256=0ebf9a11aaaae4f762aa346ddc7b5c869fabca1b8f0fa7599278165857d9e51c
+    G0_OBJECT_SHA256=937a29dcfb22b5c00b187b11e47a27efd6d301374060b5451263f1507e60d52d
+    G1_G2_COMPILER_DISTINCT=YES
+    G1_G3_COMPILER_DISTINCT=YES
+    G2_G3_COMPILER_DISTINCT=YES
+
+  SLICE03_FORGERY=CASE-1 an object built by ANOTHER generation's compiler
+    RECORDED_G3_OBJECT_SHA256=1a932394...
+    RECORDED_G3_COMPILER_SHA256=0ebf9a11...
+    SUBSTITUTED_OBJECT_SHA256=1a932394...
+    SUBSTITUTED_PRODUCER_COMPILER_SHA256=051bf6b8...
+    PROVENANCE_VERDICT=REJECTED
+    REJECTION_REASON=the producing compiler differs from the recorded one
+
+  SLICE03_FORGERY=CASE-2 the legacy C object substituted for a PolyC one
+    SUBSTITUTED_OBJECT_SHA256=937a29dc...
+    PROVENANCE_VERDICT=REJECTED
+    REJECTION_REASON=the object content differs from the recorded one
+
+  SLICE03_FORGERY=CASE-3 a mutated object with the recorded size
+    SUBSTITUTED_OBJECT_SHA256=27e99e20...
+    PROVENANCE_VERDICT=REJECTED
+    REJECTION_REASON=the object content differs from the recorded one
+
+  SLICE03_COPY_FORGERY_CONTROL=PASS (3/3 substitutions rejected)
+
+Without such a control, a provenance check that accepts anything
+would report a pass.

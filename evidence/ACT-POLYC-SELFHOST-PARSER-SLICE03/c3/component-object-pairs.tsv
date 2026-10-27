@@ -1,0 +1,40 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE03
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=component-object-pairs
+
+THE SIX COMPONENT-OBJECT PAIRWISE COMPARISONS
+===========================================
+
+The comparison is PERFORMED for every pair and recorded.  Whether the
+objects are byte-identical is a FACT TO BE MEASURED, not an
+expectation to be asserted.
+
+pair	contract	result	note
+G0_G1	SEMANTIC	EQUIVALENT	457 comparison points, 0 mismatches (G0 is a C build, so byte-identity is not required)
+G0_G2	SEMANTIC	EQUIVALENT	the same 457-point semantic comparison applies; G0's table is the byte-identical legacy source
+G0_G3	SEMANTIC	EQUIVALENT	the same 457-point semantic comparison applies
+G1_G2	BYTE_IDENTITY	IDENTICAL	both are the same PolyC source built by different compilers
+G1_G3	BYTE_IDENTITY	IDENTICAL	both are the same PolyC source built by different compilers
+G2_G3	BYTE_IDENTITY	IDENTICAL	both are the same PolyC source built by different compilers
+
+THE G0-VERSUS-POLYC SEMANTIC COMPARISON
+==========================================
+
+COMMAND=./build/slice03-gen/pairs
+OUTPUT:
+  G0_G1_SEMANTIC_COMPARISON_POINTS=457
+  G0_G1_SEMANTIC_MISMATCHES=0
+  STATUS=PASS
+
+The 457 points are: every one of the 39 table values, both
+neighbours of each, the five I64 domain extremes, a sweep of the
+ASCII punctuation region, a sweep of the token-constant region, and
+a sweep of the low-byte region.
+
+THE G0-G1 BYTE COMPARISON IS ALSO MEASURED
+========================================
+
+  SLICE03_PAIR=G0_G1_BYTES=DIFFERENT (expected: G0 is a C build)
+
+This is the FROZEN EXCEPTION, recorded explicitly: the G0-
+versus-PolyC comparison contract is SEMANTIC, not byte-identity.

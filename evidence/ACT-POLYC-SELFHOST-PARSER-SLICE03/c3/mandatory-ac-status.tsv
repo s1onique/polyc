@@ -1,0 +1,63 @@
+id	predicate	status	evidence
+AC01	Entry identity established from live HEAD	PASS	c0/entry-identity.txt
+AC02	Worktree clean before authorization	PASS	c0/entry-identity.txt
+AC03	Predecessor closure reachable	PASS	c0/predecessor-binding.txt
+AC04	RECON03 closure recorded as HALT_ACKNOWLEDGED without modifying it	PASS	c0/predecessor-binding.txt
+AC05	RECON03 engineering selection inherited (CAND-017, R0=0, ABI frozen)	PASS	c0/production-authority.tsv
+AC06	Precedence table independently re-derived from live src/prslib.c + src/lexer.h	PASS	c1/precedence-table-derived.tsv
+AC07	The derivation is tool-computed and checkable against the live source	PASS	c1/precedence-derivation-check.txt
+AC08	Every table entry bound to a live src/lexer.h numeric value	PASS	c1/precedence-table-derived.tsv
+AC09	The -1 sentinel confirmed against the live source	PASS	c1/precedence-derivation-check.txt
+AC10	Fixture-count contradiction resolved with explicit arithmetic	PASS	c1/fixture-count-arithmetic.txt
+AC11	The corrected fixture count is tool-computed from the partition table	PASS	c1/required-result.txt
+AC12	Every partition row audited for accept/reject membership correctness	PASS	c1/fixture-partitions-audit.tsv
+AC13	The TK_SHR defect confirmed against the live source and corrected	PASS	c1/tk-shr-defect.txt
+AC14	The legacy precedence semantics are UNCHANGED by the contract correction	PASS	c1/precedence-derivation-check.txt
+AC15	The historical two-tool scope violation recorded with commit identity	PASS	c1/predecessor-scope-violation.txt
+AC16	RECON03 ACT, evidence tree and HANDOFF unmodified (F14)	PASS	c3/f14-conservation.txt
+AC17	The fixture-integrity witness is executable	PASS	c1/fixture-integrity-witness.md
+AC18	The witness counts executed rows by an independent path	PASS	c1/fixture-integrity-witness.md
+AC19	The witness rejects an unknown/additional fixture row	PASS	c1/fixture-integrity-witness.md
+AC20	The witness has a recorded negative control that fires	PASS	c1/fixture-integrity-witness.md
+AC21	The PolyC subject exists and implements the frozen ABI exactly	PASS	c2/build-receipt.txt
+AC22	The subject is compiled by the stage-0 compiler	PASS	c2/build-receipt.txt
+AC23	The real legacy-C oracle is linked and used, not a reimplementation	PASS	c2/oracle-run.txt
+AC24	The oracle comes from a build with the delegation flag OFF	PASS	c2/oracle-run.txt
+AC25	The fixture expected column is checked against the oracle	PASS	c2/differential-run.txt
+AC26	The differential has a negative control that reports a disagreement	PASS	c2/differential-negative-control.txt
+AC27	The differential covers every mandatory fixture row	PASS	c2/differential-run.txt
+AC28	The independent fixture-integrity witness passes on the executed fixture	PASS	c2/fixture-integrity-run.txt
+AC29	G0, G1, G2, G3 all produced, distinct and independently executed	PASS	c3/generation-manifest.tsv
+AC30	Each generation identity, build command and source identities recorded	PASS	c3/generation-manifest.tsv
+AC31	Six component-object pairwise comparisons recorded	PASS	c3/component-object-pairs.tsv
+AC32	Six production semantic pair comparisons recorded	PASS	c3/production-semantic-pairs.tsv
+AC33	Generation provenance checking performed	PASS	c3/generation-manifest.tsv
+AC34	Copy-forgery rejection demonstrated, byte-identical substitution included	PASS	c3/copy-forgery-control.txt
+AC35	Copied-seam-output negative control demonstrated	PASS	c3/seam-copy-negative-control.txt
+AC36	The G0-versus-PolyC semantic exception frozen explicitly	PASS	c3/component-object-pairs.tsv
+AC37	Production delegation compiles under HCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE	PASS	c2/build-receipt.txt
+AC38	The legacy body is NOT compiled into the production object	PASS	c3/production-authority.txt
+AC39	U _BootstrapOperatorPrecedence present in the production object	PASS	c3/production-authority.txt
+AC40	U _BootstrapCalcPadding and _BootstrapValidPostControlFlowToken unchanged	PASS	c3/production-authority.txt
+AC41	Both existing PolyC parser components keep their five live call sites	PASS	c3/production-authority.txt
+AC42	The causal mutation executed: pristine 62, mutated 162, restored 62	PASS	c3/causal-mutation-run.txt
+AC43	The mutation built and LINKED successfully, not a build failure	PASS	c3/causal-mutation-run.txt
+AC44	The restore-and-reverify step performed with output SHA-256s recorded	PASS	c3/causal-mutation-run.txt
+AC45	The mutation is not used to satisfy normal-generation equivalence	PASS	c3/production-semantic-pairs.tsv
+AC46	The precedence values are unchanged (OPERATOR_PRECEDENCE_SEMANTIC_DELTA = 0)	PASS	c2/implementation-notes.md
+AC47	The -1 sentinel is unchanged	PASS	c2/implementation-notes.md
+AC48	No tk_type check was added	PASS	c2/implementation-notes.md
+AC49	The TK_STR/TK_SUPERSCRIPT aliasing is honoured	PASS	c2/implementation-notes.md
+AC50	The parser conservation suite shows zero new failure identities	PASS	c3/parser-conservation.txt
+AC51	The lexer conservation suite shows zero new failure identities	PASS	c3/lexer-conservation.txt
+AC52	The LEXER07 broad corpus shows zero new failure identities	PASS	c3/lexer07-baseline-comparison.txt
+AC53	make gate-fast -> RC=0	PASS	c3/gate-fast.txt
+AC54	make gate-push -> fresh run against this ACT tree, result recorded as measured	PASS	c3/gate-push.txt
+AC55	factory-v2-test.sh -> PASS	PASS	c3/factory-v2.txt
+AC56	factory-append-only-test.sh -> PASS	PASS	c3/append-only.txt
+AC57	git diff --check <ENTRY_HEAD>..HEAD -> RC=0	PASS	c3/patch-hygiene.txt
+AC58	F-NO-PYTHON and F-POLYC-TOOLS results recorded as measured	PASS	c3/f-no-python.txt
+AC59	The F-POLYC-TOOLS constraint satisfied for any new tool	PASS	c3/f-polyc-tools.txt
+AC60	The fail-closed build wiring rejects a missing/symbol-less component	PASS	c3/gate-push.txt
+AC61	The legacy C adapter adds no logic	PASS	c2/oracle-run.txt
+AC62	The fixture schema, ID set, count and source SHA-256 are frozen	PASS	c1/fixture-contract-freeze.tsv

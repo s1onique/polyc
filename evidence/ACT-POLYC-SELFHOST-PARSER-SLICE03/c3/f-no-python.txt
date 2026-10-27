@@ -1,0 +1,30 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE03
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=f-no-python
+
+COMMAND=sh scripts/quality/factory-no-python-check.sh
+RC=1
+
+OUTPUT:
+  --- summary ---
+  POLYC_TOOLS_TRACKED_PYTHON=12
+  POLYC_TOOLS_TRACKED_INSPECTED=5106
+  POLYC_TOOLS_TRACKED_PASSES=5099
+  STATUS=FAIL
+
+F_NO_PYTHON=PRE-EXISTING (12 tracked Python sources; 0 NEW)
+
+This is the PRE-EXISTING baseline violation that RECON03 recorded and
+that AGENTS.md records.  This ACT added NO Python source:
+
+COMMAND=git diff --stat 50cabc1 -- '*.py'
+OUTPUT:
+  (empty)
+
+The four tools this ACT added are PolyC (and one 18-line C stub):
+
+  tools/quality/parser-slice03-contract-requalify.HC   (PolyC)
+  tools/quality/parser-slice03-fixture-integrity.HC    (PolyC)
+  tools/quality/parser-slice03-differential.HC          (PolyC)
+  tools/bootstrap/selfhost-parser-operator-precedence.HC (PolyC)
+  tools/quality/slice03-is-terminal-stub.c           (C stub, 18 lines)

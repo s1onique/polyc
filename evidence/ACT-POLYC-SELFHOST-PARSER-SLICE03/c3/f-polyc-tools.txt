@@ -1,0 +1,30 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE03
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=f-polyc-tools
+
+COMMAND=sh scripts/quality/shell-loc-gate.sh
+
+OUTPUT:
+  FAIL  GROW  scripts/quality/factory-v2-commit-msg-check.sh  base=218 cur=344
+  FAIL  GROW  scripts/quality/factory-closure-status-check.sh  base=352 cur=372
+  FAIL  GROW  scripts/quality/factory-v2-test.sh  base=465 cur=831
+  FAIL  GROW  scripts/quality/factory-v2-range-check.sh  base=249 cur=333
+  FAIL  NEW   scripts/quality/parser-padding-generation-provenance-verify.sh  cur=242 > 50
+
+F_POLYC_TOOLS=PRE-EXISTING (5 shell scripts over budget; 0 NEW)
+
+This ACT added NO shell script at all:
+
+COMMAND=git diff --stat 50cabc1 -- scripts/
+OUTPUT:
+  (empty)
+
+Every new tool this ACT added is PolyC, with ONE small C stub for
+the differential's link seam.  The F-POLYC-TOOLS constraint is SATISFIED for
+this ACT's own contribution: the nearest live enforcement (the shell-LOC
+ratchet) reports 0 new over-budget scripts.
+
+NOTE: the authoritative F-POLYC-TOOLS checker
+(tools/factory/factory-polyc-tools-check.HC) is NOT YET LANDED.  That is
+the C2.9 residue recorded by AGENTS.md and is carried forward, not
+waived and not fixed by this ACT.

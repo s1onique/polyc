@@ -1,0 +1,80 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE03
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=causal-mutation-run
+
+STATUS=PASS
+
+THE FROZEN MUTATION
+================
+
+  MUTATION_LOCATION = the precedence-4 arm of the PolyC component
+    PRISTINE:  if (punct_value == 0x2A)  return 4;   // '*'
+    MUTATED:   if (punct_value == 0x2A)  return 6;   // '*'
+
+  MUTATION_KIND = SEMANTIC_CONSTANT_CHANGE (one precedence class moves)
+
+  EXPECTED_AFFECTED_FIXTURE = the P4 fixture row for '*' (0x2A);
+                              its expected precedence changes from 4 to 6
+
+  EXPECTED_PRISTINE_RESULT = 62   (a=6, b=7, c=20: 42 + 20)
+  EXPECTED_MUTATED_RESULT  = 162  (a=6, b=7, c=20: 6 * 27)
+
+ONLY ONE OPERATOR CHANGES: the mutation is a SINGLE LINE, and the
+diff of the component source is exactly one line.
+
+THE EXECUTION SEQUENCE
+====================
+
+  pristine component -> build -> link -> execute -> capture output A
+  mutated component  -> build -> link -> execute -> capture output B
+  assert A != B
+  restore pristine  -> build -> link -> execute -> capture output C
+  assert C == A
+
+COMMAND=make production-hcc && ./hcc --install-dir=build/test-prefix build/slice03-obs/observe.HC -o build/slice03-obs/observe && ./build/slice03-obs/observe
+
+OUTPUT:
+  STEP 1 (PRISTINE)
+    PRISTINE_OUTPUT=62
+    PRISTINE_SHA256=606b7d0891b4db74edb21c241c302f298bf6ca4a6158deca6b58c15c950ab5f2
+
+  STEP 2 (MUTATED)
+    BUILD_RC=0            (the mutant BUILDS and LINKS)
+    MUTATED_OUTPUT=162
+    MUTATED_SHA256=fe8a828c249caec301b343481e1f1adc16d2e81668a84eb4022977339e4e5924
+
+  STEP 3 (RESTORED)
+    BUILD_RC=0
+    RESTORED_OUTPUT=62
+    RESTORED_SHA256=606b7d0891b4db74edb21c241c302f298bf6ca4a6158deca6b58c15c950ab5f2
+
+  PRISTINE_OUTPUT=62
+  MUTATED_OUTPUT=162
+  RESTORED_OUTPUT=62
+  A != B            -> the mutation is PRODUCTION-CAUSAL
+  C == A (identical SHA-256) -> the restore is complete
+
+THE TRACKED SOURCE WAS NEVER MUTATED
+==================================
+
+The mutation was applied to a COPY under build/ and the tracked
+source was restored afterwards:
+
+  git diff --stat tools/bootstrap/selfhost-parser-operator-precedence.HC
+  (empty)
+
+A MUTATION-SPECIFIC SEMANTIC DELTA DOES NOT COUNT AS
+NORMAL-GENERATION EQUIVALENCE.  This run is a SEPARATE
+obligation from the six production semantic pair comparisons.
+
+THE OBSERVATION IS THE OUTPUT OF A COMPILED PROGRAM
+============================================
+
+  I64 main() {
+    I64 a = 6; I64 b = 7; I64 c = 20;
+    I64 r = a * b + c;
+    printf("%d\n", r);
+    return 0;
+  }
+
+It is NOT an internal AST dump and NOT a shadow verifier.
