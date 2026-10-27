@@ -1,0 +1,81 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE03
+ACT_PHASE=C1-CONTRACT-REQUALIFICATION
+EVIDENCE_KIND=predecessor-scope-violation
+
+STATUS=RECORDED
+
+THE VIOLATION
+=============
+The predecessor ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03 authorized, in
+its scope section (section 2.2), the addition of
+
+  "one bounded PolyC-native quality tool"
+
+under the path prefix
+
+  tools/quality/parser-slice-recon03-*.HC
+
+The predecessor's C1 commit added TWO tools under that prefix:
+
+  tools/quality/parser-slice-recon03-eligibility.HC
+  tools/quality/parser-slice-recon03-ranking.HC
+
+COMMAND=git log -1 --format='%H' --diff-filter=A -- \
+          tools/quality/parser-slice-recon03-eligibility.HC
+OUTPUT=3a0f792ee17da12247cc3c3046be973601f5aac7
+
+COMMAND=git log -1 --format='%H' --diff-filter=A -- \
+          tools/quality/parser-slice-recon03-ranking.HC
+OUTPUT=3a0f792ee17da12247cc3c3046be973601f5aac7
+
+COMMAND=git show --stat 3a0f792ee17da12247cc3c3046be973601f5aac7 -- tools/
+OUTPUT:
+ tools/quality/parser-slice-recon03-eligibility.HC | 269 ++++++++++++++
+ tools/quality/parser-slice-recon03-ranking.HC     | 427 ++++++++++++++++++++++
+ 2 files changed, 696 insertions(+)
+
+Both tools were added in the SAME commit, so the excess is
+established mechanically rather than by inference.
+
+The predecessor's own commit message describes this as "Two PolyC-native
+tools are added (F-POLYC-TOOLS)", which is an accurate description
+and is therefore NOT a concealment.
+
+CLASSIFICATION
+==============
+  SCOPE_VIOLATION = TOOL_COUNT_EXCEEDED
+  SCOPE           = tools/quality/parser-slice-recon03-*.HC
+  AUTHORIZED      = 1
+  ADDED           = 2
+  DELTA           = 1
+
+IMPACT ASSESSMENT
+=================
+  The two tools do REAL work and their outputs are sound: the
+  eligibility verdict is COMPUTED from the fact fields (the input
+  schema has no `eligible` column, so a flag cannot be hand-authored),
+  and the ranking is COMPUTED by the ranker over the frozen
+  (R0..R6) dimensions.  Neither tool is a redundant reformatting
+  tool, and neither was added "simply to produce more evidence
+  prose", which the predecessor's scope section forbids.
+
+  The violation is therefore a SCOPE-BOUNDARY violation, not a
+  QUALITY violation.  It does not invalidate the selection of
+  CAND-017, the derived eligibility, the derived ranking, or the
+  frozen ABI.  It is recorded because the contract said ONE.
+
+WHAT THIS ACT DOES
+==================
+  * RECON03's ACT document, evidence tree and HANDOFF are NOT
+    modified.  They are closed evidence under F14.
+  * The violation is NOT repaired by editing the predecessor.
+  * Git commit trailers (`ACT:`, `ACT-Phase:`, `ACT-Verdict:`) are
+    commit metadata; they are NOT a mechanism for retroactively
+    repairing closed ACT evidence, and they are not used as one.
+  * This ACT adds its OWN tool under its OWN prefix:
+      tools/quality/parser-slice03-contract-requalify.HC
+    The predecessor's scope section bound THAT prefix to ONE tool and
+    this ACT adds exactly ONE tool under it, so this ACT does not
+    repeat the violation it records.
+
+F14=PASS

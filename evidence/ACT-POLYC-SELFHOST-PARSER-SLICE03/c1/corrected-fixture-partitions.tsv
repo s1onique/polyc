@@ -1,0 +1,106 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE03
+ACT_PHASE=C1-CONTRACT-REQUALIFICATION
+EVIDENCE_KIND=corrected-fixture-partitions
+#
+# THE CORRECTED FIXTURE-PARTITION CONTRACT.
+#
+# This file SUPERSEDES (does not modify) the frozen partition table in
+#   evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03/c2/fixture-partitions.tsv
+#
+# TWO defects in the predecessor table are corrected here.  Neither
+# correction changes the LEGACY PRECEDENCE SEMANTICS: the legacy table is
+# correct and is reproduced verbatim in precedence-table-derived.tsv,
+# which was derived mechanically from the live src/prslib.c and
+# src/lexer.h.
+#
+# DEFECT 1 -- THE P18 ROW IS ONE FIELD SHORT.
+#   The predecessor P18 row has 4 tab-separated fields where every
+#   other data row has 5.  Its declared min_rows (8) therefore sits in
+#   the expected_output position and is not readable by field position.
+#   A sum that reads min_rows by field position therefore drops those
+#   8 rows, which is exactly why the predecessor declared 91 while the
+#   declared rows sum to 99.  CORRECTED: the P18 row is given the
+#   missing field so that it has the schema's 5 fields.
+#
+# DEFECT 2 -- THE P15 ROW LISTS A RECOGNISED OPERATOR AS A REJECT.
+#   The predecessor P15 row lists 0x30B-1 among the values that MUST
+#   return -1.  0x30B-1 IS 0x30A, which is TK_SHR: a RECOGNISED
+#   operator with precedence 6.  The expectation is therefore false.
+#   CORRECTED: 0x30B-1 is removed from the reject set.  TK_SHR remains
+#   in the P6_ACCEPTED_PRECEDENCE_6 partition, where its expected
+#   output is 6.
+#
+# SCHEMA (5 tab-separated fields):
+#   01 partition_id
+#   02 value_list        (the punct values the partition covers)
+#   03 value_count       (the number of listed values)
+#   04 expected_output   (the precedence, or -1 for a non-operator)
+#   05 min_rows          (the mandatory number of fixture rows)
+#
+# NOTE ON THE PREDECESSOR'S HEADER: the predecessor's header row declares
+#   partition / description / input_domain / expected_output / min_rows
+# but its data rows use the layout above: for the ACCEPT partitions
+# the values are in the description column and the count is in the
+# input_domain column, while for the REJECT partitions the values are
+# in the input_domain column.  The layout above is UNIFORM.
+#
+partition	value_list	value_count	expected_output	min_rows
+P1_ACCEPTED_PRECEDENCE_1	TK_ARROW(0x328), '.'(0x2E), '('(0x28)	3	1	3
+P2_ACCEPTED_PRECEDENCE_2	'['(0x5B)	1	2	1
+P3_ACCEPTED_PRECEDENCE_3	'!'(0x21), '~'(0x7E), TK_PLUS_PLUS(0x305), TK_MINUS_MINUS(0x306), TK_PRE_PLUS_PLUS(0x330), TK_PRE_MINUS_MINUS(0x331)	6	3	6
+P4_ACCEPTED_PRECEDENCE_4	'*'(0x2A), '/'(0x2F), '%'(0x25)	3	4	3
+P5_ACCEPTED_PRECEDENCE_5	'-'(0x2D), '+'(0x2B)	2	5	2
+P6_ACCEPTED_PRECEDENCE_6	TK_SHL(0x309), TK_SHR(0x30A)	2	6	2
+P7_ACCEPTED_PRECEDENCE_7	TK_LESS_EQU(0x30D), TK_GREATER_EQU(0x30E), '<'(0x3C), '>'(0x3E)	4	7	4
+P8_ACCEPTED_PRECEDENCE_8	TK_EQU_EQU(0x30B), TK_NOT_EQU(0x30C)	2	8	2
+P9_ACCEPTED_PRECEDENCE_9	'^'(0x5E)	1	9	1
+P10_ACCEPTED_PRECEDENCE_10	'&'(0x26)	1	10	1
+P11_ACCEPTED_PRECEDENCE_11	'|'(0x7C)	1	11	1
+P12_ACCEPTED_PRECEDENCE_12	TK_AND_AND(0x30F)	1	12	1
+P13_ACCEPTED_PRECEDENCE_13	TK_OR_OR(0x310)	1	13	1
+P14_ACCEPTED_PRECEDENCE_14	'='(0x3D), TK_ADD_EQU(0x319), TK_SUB_EQU(0x31A), TK_MUL_EQU(0x314), TK_DIV_EQU(0x315), TK_MOD_EQU(0x322), TK_AND_EQU(0x316), TK_OR_EQU(0x317), TK_XOR_EQU(0x318), TK_SHL_EQU(0x312), TK_SHR_EQU(0x313)	11	14	11
+P15_REJECTED_NOT_AN_OPERATOR	0x00, 0x01, 0x2B+1, 0x301, 0x400, 0x7F, 0x1000, -1, -1000	9	-1	9
+P16_BOUNDARY_INTEGERS	INT64_MIN, INT64_MIN+1, INT64_MAX-1, INT64_MAX, 0, -1, 1, and (each table value -1) and (each table value +1)	0	-1	40
+P17_ALIASING_SENSITIVE	0x301	1	-1	1
+P18_SIGN_AND_WIDTH_BOUNDARIES	0x7F, 0x80, 0xFF, 0x100, 0x7FFF, 0x8000, 0xFFFF, 0x10000	8	-1	8
+P19_PRODUCTION_OBSERVABLE	see the causal-mutation contract	0	-1	1
+#
+# THE CORRECTED COUNT
+# ===================
+#
+# TOTAL_MIN_ROWS=98
+# EXPECTED_FIXTURE_COUNT=98
+# PARTITION_COUNT=19
+#
+# The predecessor declared 91.  The TRUE sum of the predecessor's
+# declared rows is 99, because its P18 row is one field short and its
+# declared min_rows (8) is therefore not readable by field position.
+#
+# The corrected count is 98, and the arithmetic is:
+#
+#     99  the predecessor's declared rows, read with the dropped
+#         P18 min_rows added back
+#   - 1  the P15 reject value removed by the TK_SHR correction
+#         (0x30B-1 was a REJECT row that is really an operator, so it
+#          is not a reject row at all; the P15 min_rows therefore
+#          falls from 10 to 9)
+#   ----
+#     98  the corrected mandatory row count
+#
+# The corrected count is MECHANICALLY CONFIRMED by the requalification
+# tool, which reads the min_rows of every partition of THIS table and
+# sums them:
+#
+#   SUM_MIN_ROWS_WELLFORMED=98
+#   SUM_MIN_ROWS_ALL_DECLARED=98
+#
+# and which generates a fixture model with exactly that many rows:
+#
+#   FIXTURE_MODEL_ROWS=98
+#
+# FIXTURE_SCHEMA (the fixture model's own schema):
+#   01 fixture_id       F001..F098
+#   02 partition
+#   03 punct_value
+#   04 expected         the precedence the DERIVED TABLE gives the value
+#   05 rationale

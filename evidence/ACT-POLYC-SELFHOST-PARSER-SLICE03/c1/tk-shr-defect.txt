@@ -1,0 +1,74 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE03
+ACT_PHASE=C1-CONTRACT-REQUALIFICATION
+EVIDENCE_KIND=tk-shr-defect
+
+STATUS=CONFIRMED
+
+THE DEFECT
+==========
+The predecessor's frozen fixture-partition table
+  evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03/c2/fixture-partitions.tsv
+lists, in the P15_REJECTED_NOT_AN_OPERATOR row, the value 0x30B-1
+among the values that MUST return -1.
+
+  0x30B - 1  ==  0x30A  ==  TK_SHR
+
+TK_SHR is a RECOGNISED OPERATOR.  The predecessor's own ABI contract
+(evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03/c2/selected-abi-contract.md,
+section 3) lists it at precedence 6:
+
+  precedence  6 : TK_SHL (0x309), TK_SHR (0x30A)
+
+So the P15 row states a semantically FALSE expectation: it says that
+TK_SHR is not a binary operator, when the legacy table gives it
+precedence 6.
+
+THE MECHANICAL PROOF
+====================
+The defect is established by a TOOL, not by prose.  The tool
+  tools/quality/parser-slice03-contract-requalify.HC
+re-derives the precedence table from the live src/prslib.c and the
+live src/lexer.h, and then audits the predecessor's partition table
+against that derived table.
+
+COMMAND=./build/slice03-requalify src/prslib.c src/lexer.h \
+          evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03/c2/fixture-partitions.tsv \
+          build/slice03-out
+OUTPUT (the defect line):
+  DEFECT value=778 (0x30A) table_precedence=6 partition_expects=-1
+
+The three numbers in that line are:
+  778   = 0x30A, the numeric punct value of TK_SHR
+  6     = the precedence the LIVE src/prslib.c gives TK_SHR
+  -1    = the precedence the predecessor's P15 row asserts for it
+
+SUPPORTING OBSERVATIONS
+=======================
+COMMAND=grep -n 'TK_SHR' src/lexer.h
+OUTPUT:
+  28:#define TK_SHR          0x30A
+
+COMMAND=grep -n 'TK_SHR' src/prslib.c
+OUTPUT:
+  1165:    case TK_SHR:
+  1201:    case TK_SHR_EQU:
+
+COMMAND=sed -n '1163,1167p' src/prslib.c
+OUTPUT:
+      case TK_SHL:
+      case TK_SHR:
+          return 6;
+
+THE CORRECTION
+==============
+The defect is a defect of the PREDECESSOR'S CONTRACT, NOT of the
+legacy semantics.  The legacy table is correct and is NOT changed.
+
+The correction is in this ACT's own contract:
+  evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03/c1/corrected-fixture-partitions.tsv
+
+The P15 row no longer lists 0x30B-1 among the rejected values.  The
+value 0x30A stays in the P6_ACCEPTED_PRECEDENCE_6 partition, where its
+expected output is 6.
+
+LEGACY_PRECEDENCE_SEMANTIC_DELTA=0

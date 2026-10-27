@@ -12,7 +12,7 @@ HCC_ENABLE_LLVM ?= OFF
 
 default: all
 
-.PHONY: all formal-dafny gate-fast gate-push install-hooks static-function-linkage-test factory-closure-status-test factory-closure-status-test-binary llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap-stage0 bootstrap-prefix parser-padding-subject production-hcc runtime-producer bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test selfhost-component-binary selfhost-component-build selfhost-component-test selfhost-component-selftest selfhost-registry-validate factory-halt-classification-binary factory-halt-classification-selftest bootstrap06-component-build bootstrap06-operator-classify-oracle bootstrap06-direct-differential bootstrap06-component-stage1 bootstrap06-component-stage2 bootstrap06-component-stage3 bootstrap06-lexer-seam-stage1 lexer07-component-build lexer07-scalar-literal-oracle lexer07-direct-differential lexer07-component-stage1 lexer07-component-stage2 lexer07-component-stage3 lexer07-lexer-seam-stage0 lexer07-lexer-seam-stage1 lexer07-lexer-seam-stage2 lexer07-lexer-seam-stage3 lexer07-lexer-seam-stage2-from-objs lexer07-lexer-seam-stage3-from-objs lexer07-lexer-seam-all-stages lexer07-fixture-inventory lexer07-broad-corpus-4-stage lexer07-correction02-all lexer07-baseline-authority-verify lexer08-component-build lexer08-trivia-oracle lexer08-direct-differential lexer08-fixture-inventory lexer08-broad-corpus-4-stage lexer08-lexer-seam-stage0 lexer08-lexer-seam-stage1 lexer08-lexer-seam-all-stages lexer08-trivia-fixedpoint-g0 lexer08-trivia-fixedpoint-g1 lexer08-trivia-fixedpoint-g2 lexer08-trivia-fixedpoint-g3 lexer08-trivia-fixedpoint-build lexer08-trivia-fixedpoint-verify lexer08-trivia-fixedpoint lexer09-link-component-build lexer09-link-oracle-build lexer09-direct-differential lexer09-lexer-seam-stage0 lexer09-lexer-seam-stage1 lexer09-lexer-seam-all-stages lexer09-link-fixedpoint-g0 lexer09-link-fixedpoint-g1 lexer09-link-fixedpoint-g2 lexer09-link-fixedpoint-g3 lexer09-link-fixedpoint-build lexer09-link-fixedpoint-verify lexer09-link-fixedpoint lexer09-link-negative-control lexer09-link-determinism lexer09-link-broad-corpus-4-stage lib-tos runtime-contract-test libtos-n02-isolate parser-padding-component parser-padding-oracle parser-padding-differential parser-padding-gen-matrix-fixture parser-padding-gen-large-fixture parser-padding-fixedpoint-g0 parser-padding-fixedpoint-g1 parser-padding-fixedpoint-g2 parser-padding-fixedpoint-g3 parser-padding-fixedpoint-build parser-padding-fixedpoint-verify parser-padding-fixedpoint parser-padding-fixedpoint-negative-control parser-padding-mutation-m1 parser-padding-mutation-m2 parser-padding-mutation-m3 parser-padding-mutation-m4 parser-padding-mutation-test parser-padding-test parser-padding-algebraic-invariants parser-padding-is-terminal-stub parser-padding-legacy parser-padding-legacy-server parser-padding-legacy-verify parser-control-flow-token-component parser-control-flow-token-differential parser-control-flow-token-int-bounds parser-control-flow-token-harden-test parser-control-flow-token-negative-controls parser-slice-recon03-tools parser-slice-recon03-eligibility parser-slice-recon03-eligibility-controls parser-slice-recon03-ranking
+.PHONY: all formal-dafny gate-fast gate-push install-hooks static-function-linkage-test factory-closure-status-test factory-closure-status-test-binary llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap-stage0 bootstrap-prefix parser-padding-subject production-hcc runtime-producer bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test selfhost-component-binary selfhost-component-build selfhost-component-test selfhost-component-selftest selfhost-registry-validate factory-halt-classification-binary factory-halt-classification-selftest bootstrap06-component-build bootstrap06-operator-classify-oracle bootstrap06-direct-differential bootstrap06-component-stage1 bootstrap06-component-stage2 bootstrap06-component-stage3 bootstrap06-lexer-seam-stage1 lexer07-component-build lexer07-scalar-literal-oracle lexer07-direct-differential lexer07-component-stage1 lexer07-component-stage2 lexer07-component-stage3 lexer07-lexer-seam-stage0 lexer07-lexer-seam-stage1 lexer07-lexer-seam-stage2 lexer07-lexer-seam-stage3 lexer07-lexer-seam-stage2-from-objs lexer07-lexer-seam-stage3-from-objs lexer07-lexer-seam-all-stages lexer07-fixture-inventory lexer07-broad-corpus-4-stage lexer07-correction02-all lexer07-baseline-authority-verify lexer08-component-build lexer08-trivia-oracle lexer08-direct-differential lexer08-fixture-inventory lexer08-broad-corpus-4-stage lexer08-lexer-seam-stage0 lexer08-lexer-seam-stage1 lexer08-lexer-seam-all-stages lexer08-trivia-fixedpoint-g0 lexer08-trivia-fixedpoint-g1 lexer08-trivia-fixedpoint-g2 lexer08-trivia-fixedpoint-g3 lexer08-trivia-fixedpoint-build lexer08-trivia-fixedpoint-verify lexer08-trivia-fixedpoint lexer09-link-component-build lexer09-link-oracle-build lexer09-direct-differential lexer09-lexer-seam-stage0 lexer09-lexer-seam-stage1 lexer09-lexer-seam-all-stages lexer09-link-fixedpoint-g0 lexer09-link-fixedpoint-g1 lexer09-link-fixedpoint-g2 lexer09-link-fixedpoint-g3 lexer09-link-fixedpoint-build lexer09-link-fixedpoint-verify lexer09-link-fixedpoint lexer09-link-negative-control lexer09-link-determinism lexer09-link-broad-corpus-4-stage lib-tos runtime-contract-test libtos-n02-isolate parser-padding-component parser-padding-oracle parser-padding-differential parser-padding-gen-matrix-fixture parser-padding-gen-large-fixture parser-padding-fixedpoint-g0 parser-padding-fixedpoint-g1 parser-padding-fixedpoint-g2 parser-padding-fixedpoint-g3 parser-padding-fixedpoint-build parser-padding-fixedpoint-verify parser-padding-fixedpoint parser-padding-fixedpoint-negative-control parser-padding-mutation-m1 parser-padding-mutation-m2 parser-padding-mutation-m3 parser-padding-mutation-m4 parser-padding-mutation-test parser-padding-test parser-padding-algebraic-invariants parser-padding-is-terminal-stub parser-padding-legacy parser-padding-legacy-server parser-padding-legacy-verify parser-control-flow-token-component parser-control-flow-token-differential parser-control-flow-token-int-bounds parser-control-flow-token-harden-test parser-control-flow-token-negative-controls parser-slice-recon03-tools parser-slice-recon03-eligibility parser-slice-recon03-eligibility-controls parser-slice-recon03-ranking parser-slice03-contract-requalify parser-slice03-fixture-integrity parser-slice03-fixture-integrity-controls
 
 # To add sqlite3 support add -DHCC_LINK_SQLITE3=1 to the below like so:
 #```
@@ -3395,3 +3395,115 @@ parser-padding-mutation-test: build/parser-padding-gen-matrix-fixture build/pars
 # Aggregator.
 parser-padding-test: parser-padding-component parser-padding-oracle parser-padding-differential parser-padding-gen-matrix-fixture parser-padding-gen-large-fixture parser-padding-fixedpoint parser-padding-fixedpoint-negative-control parser-padding-mutation-test
 	@echo "PARSER_PADDING_TEST=PASS"
+
+# =========================================================================
+# ACT-POLYC-SELFHOST-PARSER-SLICE03
+#
+#   parser-slice03-contract-requalify -> the PolyC contract
+#       requalification tool.  It re-derives the operator precedence
+#       table DIRECTLY from the live src/prslib.c and the live
+#       src/lexer.h, audits the fixture-partition contract against that
+#       derived table, and computes the corrected mandatory row count.
+#
+# The tool is a PolyC implementation (F-POLYC-TOOLS).  There is no
+# shell glue: the whole decision is made by the PolyC tool, and the
+# tool's EXIT CODE is its verdict.
+#
+# The two invocations below are the two halves of the requalification:
+#
+#   PREDECESSOR  the predecessor's frozen partition table, which is
+#                expected to FAIL the audit (that failure IS the
+#                finding);
+#   CORRECTED    this ACT's corrected partition table, which must PASS.
+#
+# A negative control: the predecessor table MUST fail.  If it passed,
+# the audit would not be able to detect the defects and would be
+# vacuous.
+# =========================================================================
+SLICE03_REQUALIFY_SRC  = tools/quality/parser-slice03-contract-requalify.HC
+SLICE03_REQUALIFY_OUT  = build/slice03-requalify-out
+SLICE03_RECON03_PARTS  = evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03/c2/fixture-partitions.tsv
+SLICE03_CORRECTED_PARTS = evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03/c1/corrected-fixture-partitions.tsv
+
+build/parser-slice03-contract-requalify: $(SLICE03_REQUALIFY_SRC) ./hcc | test-prefix-install
+	./hcc --install-dir=$(TEST_PREFIX) $(SLICE03_REQUALIFY_SRC) -o $@
+	@if [ ! -x "$@" ]; then \
+		echo "parser-slice03-contract-requalify: build failed" >&2; \
+		exit 1; \
+	fi
+
+# The requalification.  The predecessor's table MUST fail the audit;
+# the corrected table MUST pass it.
+parser-slice03-contract-requalify: build/parser-slice03-contract-requalify
+	@mkdir -p $(SLICE03_REQUALIFY_OUT)/predecessor $(SLICE03_REQUALIFY_OUT)/corrected
+	@echo "SLICE03_REQUALIFY=PREDECESSOR-TABLE (must FAIL the audit)"
+	@if ./build/parser-slice03-contract-requalify \
+		src/prslib.c src/lexer.h $(SLICE03_RECON03_PARTS) \
+		$(SLICE03_REQUALIFY_OUT)/predecessor > $(SLICE03_REQUALIFY_OUT)/predecessor/run.txt 2>&1; then \
+		echo "SLICE03_REQUALIFY_NEGATIVE_CONTROL=FAIL (the predecessor table passed the audit; the audit cannot detect the defects)" >&2; \
+		exit 1; \
+	else \
+		echo "SLICE03_REQUALIFY_NEGATIVE_CONTROL=PASS (the predecessor table failed the audit as required)"; \
+		cat $(SLICE03_REQUALIFY_OUT)/predecessor/run.txt; \
+	fi
+	@echo "SLICE03_REQUALIFY=CORRECTED-TABLE (must PASS the audit)"
+	./build/parser-slice03-contract-requalify \
+		src/prslib.c src/lexer.h $(SLICE03_CORRECTED_PARTS) \
+		$(SLICE03_REQUALIFY_OUT)/corrected
+	@echo "SLICE03_REQUALIFY=PASS"
+
+# The INDEPENDENT FIXTURE-INTEGRITY WITNESS.
+#
+#   parser-slice03-fixture-integrity -> the PolyC witness
+#   parser-slice03-fixture-integrity-controls -> the negative controls
+#
+# The witness counts the executed fixture rows by a WHOLE-FILE BYTE
+# SCAN that shares no code and no decision with the differential's
+# contextual row-classification state machine.  It REJECTS an unknown or
+# additional row rather than skipping it.
+#
+# The negative controls are part of the gate: a witness that cannot
+# fail is not a witness.
+SLICE03_FIXINTEGITY_SRC = tools/quality/parser-slice03-fixture-integrity.HC
+SLICE03_FIXTURE_MODEL  = evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03/c1/fixture-model.tsv
+SLICE03_FIXTURE_COUNT  = 98
+
+build/parser-slice03-fixture-integrity: $(SLICE03_FIXINTEGITY_SRC) ./hcc | test-prefix-install
+	./hcc --install-dir=$(TEST_PREFIX) $(SLICE03_FIXINTEGITY_SRC) -o $@
+	@if [ ! -x "$@" ]; then \
+		echo "parser-slice03-fixture-integrity: build failed" >&2; \
+		exit 1; \
+	fi
+
+parser-slice03-fixture-integrity: build/parser-slice03-fixture-integrity
+	@echo "SLICE03_FIXTURE_INTEGRITY=RUN"
+	./build/parser-slice03-fixture-integrity $(SLICE03_FIXTURE_MODEL) $(SLICE03_FIXTURE_COUNT)
+
+# The negative controls.  Each MUST fail; a control that passes would
+# mean the witness cannot detect the defect it is meant to detect.
+parser-slice03-fixture-integrity-controls: build/parser-slice03-fixture-integrity
+	@mkdir -p $(SLICE03_REQUALIFY_OUT)/nc
+	@echo "SLICE03_FIXTURE_INTEGRITY_NC=1 unknown id X001"
+	@cat $(SLICE03_FIXTURE_MODEL) > $(SLICE03_REQUALIFY_OUT)/nc/unknown-id.tsv
+	@printf 'X001\tP15_REJECTED_NOT_AN_OPERATOR\t99999\t-1\tan unknown id\n' >> $(SLICE03_REQUALIFY_OUT)/nc/unknown-id.tsv
+	@if ./build/parser-slice03-fixture-integrity $(SLICE03_REQUALIFY_OUT)/nc/unknown-id.tsv $(SLICE03_FIXTURE_COUNT) > $(SLICE03_REQUALIFY_OUT)/nc/unknown-id.txt 2>&1; then \
+		echo "SLICE03_FIXTURE_INTEGRITY_NC=1 FAIL (an unknown id was accepted)" >&2; exit 1; \
+	else echo "SLICE03_FIXTURE_INTEGRITY_NC=1 PASS (rejected)"; fi
+	@echo "SLICE03_FIXTURE_INTEGRITY_NC=2 additional out-of-range id F099"
+	@cat $(SLICE03_FIXTURE_MODEL) > $(SLICE03_REQUALIFY_OUT)/nc/extra-id.tsv
+	@printf 'F099\tP15_REJECTED_NOT_AN_OPERATOR\t99999\t-1\tan additional row\n' >> $(SLICE03_REQUALIFY_OUT)/nc/extra-id.tsv
+	@if ./build/parser-slice03-fixture-integrity $(SLICE03_REQUALIFY_OUT)/nc/extra-id.tsv $(SLICE03_FIXTURE_COUNT) > $(SLICE03_REQUALIFY_OUT)/nc/extra-id.txt 2>&1; then \
+		echo "SLICE03_FIXTURE_INTEGRITY_NC=2 FAIL (an additional id was accepted)" >&2; exit 1; \
+	else echo "SLICE03_FIXTURE_INTEGRITY_NC=2 PASS (rejected)"; fi
+	@echo "SLICE03_FIXTURE_INTEGRITY_NC=3 a dropped row"
+	@grep -v '^F050' $(SLICE03_FIXTURE_MODEL) > $(SLICE03_REQUALIFY_OUT)/nc/missing-row.tsv
+	@if ./build/parser-slice03-fixture-integrity $(SLICE03_REQUALIFY_OUT)/nc/missing-row.tsv $(SLICE03_FIXTURE_COUNT) > $(SLICE03_REQUALIFY_OUT)/nc/missing-row.txt 2>&1; then \
+		echo "SLICE03_FIXTURE_INTEGRITY_NC=3 FAIL (a dropped row was accepted)" >&2; exit 1; \
+	else echo "SLICE03_FIXTURE_INTEGRITY_NC=3 PASS (detected)"; fi
+	@echo "SLICE03_FIXTURE_INTEGRITY_NC=4 an INDENTED unknown row (the RECON03 bypass class)"
+	@cat $(SLICE03_FIXTURE_MODEL) > $(SLICE03_REQUALIFY_OUT)/nc/indented-row.tsv
+	@printf '  X002\tP15_REJECTED_NOT_AN_OPERATOR\t99999\t-1\tan indented unknown row\n' >> $(SLICE03_REQUALIFY_OUT)/nc/indented-row.tsv
+	@if ./build/parser-slice03-fixture-integrity $(SLICE03_REQUALIFY_OUT)/nc/indented-row.tsv $(SLICE03_FIXTURE_COUNT) > $(SLICE03_REQUALIFY_OUT)/nc/indented-row.txt 2>&1; then \
+		echo "SLICE03_FIXTURE_INTEGRITY_NC=4 FAIL (an indented unknown row was accepted)" >&2; exit 1; \
+	else echo "SLICE03_FIXTURE_INTEGRITY_NC=4 PASS (rejected)"; fi
+	@echo "SLICE03_FIXTURE_INTEGRITY_NEGATIVE_CONTROLS=4/4 PASS"

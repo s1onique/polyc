@@ -306,6 +306,17 @@ column, so it has 4 tab-separated fields where every other partition
 row has 5.  A field-position-5 parse reads the wrong cell for that row
 and silently drops it from the sum.  The true sum is 91 **+ 8 = 99**.
 
+**MEASURED (C1).** The requalification tool confirms this: reading
+the `min_rows` of every partition of the predecessor's table **by field
+position** gives `SUM_MIN_ROWS_WELLFORMED=91`, and adding back the
+malformed row's own declared value gives
+`SUM_MIN_ROWS_ALL_DECLARED=99`.  The discrepancy is exactly the 8 rows
+of P18.
+
+The CORRECTED count is **98**, not 99: correcting the `TK_SHR` defect
+(§4.3) removes one reject row from P15, so P15's `min_rows` falls from
+10 to 9 and the total falls by one.
+
 C0–C1 MUST compute the corrected total mechanically from the partition
 table and MUST record both the defective arithmetic and the corrected
 arithmetic.
@@ -333,6 +344,17 @@ C0–C1 MUST also audit **every** partition row for the same class of
 error: each listed reject value MUST actually be absent from the
 precedence table, and each listed accept value MUST actually be
 present with the stated precedence.  The audit MUST be mechanical.
+
+**MEASURED (C1).** The audit reports
+`AUDIT_INCONSISTENT_PARTITIONS=1` and names the offending value:
+
+```text
+DEFECT value=778 (0x30A) table_precedence=6 partition_expects=-1
+```
+
+The 14 ACCEPT partitions and the three other REJECT partitions are
+CONSISTENT with the derived table.  The `TK_SHR` defect is the only
+value-level inconsistency in the whole predecessor contract.
 
 ### 4.4 The historical two-tool scope violation must be recorded
 
