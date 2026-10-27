@@ -6587,3 +6587,98 @@ the precedence table.
 See
 `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE03.md` and
 `evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03/`.
+
+#### ACT-POLYC-SELFHOST-PARSER-SLICE03-CORRECTION01 status (CLOSED PASS at this commit)
+
+The **production migration** performed by SLICE03 is sound and is **not**
+undone.  What was unsound was its **qualification surface**, and this
+correction repairs that surface **prospectively**.
+
+Seven historical defects were reproduced mechanically, not asserted:
+
+```text
+D1  the P16 signed-I64 extremes were ABSENT (0/4 present)
+D2  five files were added outside SLICE03's authorized mutation list
+D3  G0 recorded the POLYC compiler SHA instead of the C compiler SHA
+D4  the C1 evidence carried a stale fixture-count observation of 99
+D5  the historical range has SIX commits, not the specified five
+D6  the literal P16 enumeration cannot fit within the frozen 40 rows
+D7  P16's nominal expected_output=-1 does not describe its mixed values
+```
+
+The D1 mechanism was measured, not assumed: the predecessor's `app_i`
+helper formatted values with `snprintf "%d"`, a **32-bit** conversion,
+so `INT64_MIN` rendered as `0` and `INT64_MAX` as `-1`.  The PolyC
+`I64` arithmetic and the `I64_MIN`/`I64_MAX` hex constants are **not**
+defective, and the production precedence semantics are unchanged.
+
+The corrected fixture contract carries **123** rows -- 65 P16 rows plus
+58 rows from the other partitions -- and **all 19 partitions** are
+preserved.  The predecessor's 98-row total is **not** preserved: it was
+the incorrect one.
+
+```text
+P16_REQUIRED_VALUES_COMPLETE        = YES
+P16_SIGNED_EXTREMES_PRESENT         = 4/4
+P16_ALL_OPERATOR_NEIGHBORS_PRESENT  = YES
+P16_FALSE_SYMBOLIC_NUMERICS         = 0
+FIXTURE_COVERAGE_VERIFIER           = PASS
+FIXTURE_NEGATIVE_CONTROLS           = PASS (5/5 + 1/1)
+REAL_C_ORACLE_DIFFERENTIAL          = PASS (123/123 rows, 0 disagreements)
+G0_COMPILER_IDENTITY                = CORRECT
+G0_G3_PROVENANCE                    = PASS
+```
+
+The qualifier is **independent** of the producer: the producer derives
+the precedence table by reading the live source TEXT, and the verifier
+derives it by **executing** the live source CODE through the real
+legacy-C oracle.  A defect that made the producer mis-read the source
+would have to be reproduced in the C compiler to escape the verifier.
+
+The G0 compiler identity is now the **actual** C compiler:
+
+```text
+COMPILER_INVOCATION  = cc
+COMPILER_RESOLVED    = /usr/bin/cc
+COMPILER_SHA256      = 9b11ead1ca76a03d61108ad5bf2c913d6aa8daa7deb9fd28893e847e3680e5e7
+COMPILER_VERSION     = Apple clang version 15.0.0 (clang-1500.0.40.1)
+```
+
+Conservation was measured against a compiler built from the **correction
+entry tree** (`3dd44a6`), not against the previous ACT's report:
+
+```text
+BASELINE_PASSED=87  BASELINE_FAILED=3
+CURRENT_PASSED=87   CURRENT_FAILED=3     (identical failure identities)
+
+NEW_PARSER_FAILURE_IDENTITIES=0
+NEW_LEXER_FAILURE_IDENTITIES=0
+NEW_LEXER07_FAILURE_IDENTITIES=0
+```
+
+```text
+GATE_FAST    = PASS
+GATE_PUSH    = PASS   (fresh, hermetic, clean tree)
+FACTORY_V2   = PASS (53/0)
+APPEND_ONLY  = PASS (11/0)
+F14          = PASS
+PATCH_HYGIENE= PASS
+
+MANDATORY_PREDICATES_PROVEN=25  UNPROVEN=0
+
+PRODUCTION_SEMANTIC_DELTA=0
+```
+
+The historical scope violation and the historical six-commit range are
+**ACKNOWLEDGED**, not repaired in place.  The predecessor's evidence,
+HANDOFF and `PASS` trailer are untouched.
+
+**Next milestone:** `ACT-POLYC-SELFHOST-PARSER-SLICE04` over the
+`CAND-019` / `CAND-020` shortlist.  Exactly one candidate is selected
+through the successor's binding eligibility and ranking contract; no
+winner is preselected here by prose.
+
+See
+`docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE03-CORRECTION01.md`
+and
+`evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03-CORRECTION01/`.

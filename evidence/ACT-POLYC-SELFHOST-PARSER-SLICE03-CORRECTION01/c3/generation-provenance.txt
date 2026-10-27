@@ -1,0 +1,83 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE03-CORRECTION01
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=generation-provenance
+
+THE FOUR GENERATIONS, REBUILT
+==============================
+
+COMMAND=make parser-slice03-generations
+OUTPUT (the generation lines only):
+  SLICE03_GEN=G0
+    COMPILER=the legacy C reference (src/prslib.c without the delegation macro)
+    BUILD_COMMAND=cc -std=c99 -O2 -Isrc -c -o build/slice03-gen/g0.o tools/quality/slice03-gen/g0-legacy-reference.c
+    COMPONENT_OBJECT=build/slice03-gen/g0.o
+    COMPONENT_OBJECT_SHA256=937a29dcfb22b5c00b187b11e47a27efd6d301374060b5451263f1507e60d52d
+    COMPILER_SHA256=2ee3beb5cba44ce47d5f0ccb00fcae7b936b27e2c2db2b67fd2060bfe1bb85f3
+    CLASS=LEGACY_REFERENCE
+  SLICE03_GEN=G1
+    COMPILER=./hcc (the stage-1 production compiler)
+    BUILD_COMMAND=./hcc --install-dir=$(pwd)//Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/test-prefix -c tools/bootstrap/selfhost-parser-operator-precedence.HC -o build/slice03-gen/g1.o
+    COMPONENT_OBJECT=build/slice03-gen/g1.o
+    COMPONENT_OBJECT_SHA256=1a932394ba209267ab3a119137f844682f1a12ceeaaca0cde4feaeaa0f8f62f8
+    COMPILER_SHA256=2ee3beb5cba44ce47d5f0ccb00fcae7b936b27e2c2db2b67fd2060bfe1bb85f3
+    CLASS=POLYC_STAGE1
+  SLICE03_GEN=G2
+    COMPILER=./build/hcc-bootstrap02 (an INDEPENDENT stage-2 build)
+    BUILD_COMMAND=./build/hcc-bootstrap02 --install-dir=$(pwd)//Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/test-prefix -c tools/bootstrap/selfhost-parser-operator-precedence.HC -o build/slice03-gen/g2.o
+    COMPONENT_OBJECT=build/slice03-gen/g2.o
+    COMPONENT_OBJECT_SHA256=1a932394ba209267ab3a119137f844682f1a12ceeaaca0cde4feaeaa0f8f62f8
+    COMPILER_SHA256=af0455e1b38babeef28a7725fccc9fcbd27c4eaba85fe564cd3670598128cdcd
+    CLASS=POLYC_STAGE2
+  SLICE03_GEN=G3
+    COMPILER=./build/hcc-bootstrap03 (an INDEPENDENT stage-3 build)
+    BUILD_COMMAND=./build/hcc-bootstrap03 --install-dir=$(pwd)//Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/test-prefix -c tools/bootstrap/selfhost-parser-operator-precedence.HC -o build/slice03-gen/g3.o
+    COMPONENT_OBJECT=build/slice03-gen/g3.o
+    COMPONENT_OBJECT_SHA256=1a932394ba209267ab3a119137f844682f1a12ceeaaca0cde4feaeaa0f8f62f8
+    COMPILER_SHA256=fa43574a7a4a086e9dc06145eb6fcab30b332b81ffca20aeb014e55b573efa42
+    CLASS=POLYC_STAGE3
+  SLICE03_GEN=SOURCE_SHA256
+  SLICE03_GEN=G0_G1_SEMANTIC
+  G0_G1_SEMANTIC_COMPARISON_POINTS=457
+  G0_G1_SEMANTIC_MISMATCHES=0
+  STATUS=PASS
+
+THE G0 ROW IS THE C REFERENCE
+-----------------------------
+
+The predecessor manifest recorded the G0 compiler SHA as the POLYC
+compiler SHA.  The CORRECTED reading is:
+
+  G0  the legacy C reference:
+      COMPILER      = cc (the C compiler)
+      COMPILER_SHA256 = 9b11ead1ca76a03d61108ad5bf2c913d6aa8daa7deb9fd28893e847e3680e5e7
+      BUILD_COMMAND = cc -std=c99 -O2 -Isrc -c -o build/slice03-gen/g0.o tools/quality/slice03-gen/g0-legacy-reference.c
+      SOURCE       = tools/quality/slice03-gen/g0-legacy-reference.c
+
+  G1  the stage-1 PolyC production path:
+      COMPILER      = ./hcc
+  G2  an INDEPENDENT stage-2 build:
+      COMPILER      = ./build/hcc-bootstrap02
+  G3  an INDEPENDENT stage-3 build:
+      COMPILER      = ./build/hcc-bootstrap03
+
+G1, G2 and G3 are the SAME PolyC source compiled by THREE DIFFERENT
+compilers.  Their component objects are byte-identical by
+construction, so the COMPILER SHA is what distinguishes them.
+
+  G1_G2_COMPILER_DISTINCT=YES
+  G1_G3_COMPILER_DISTINCT=YES
+  G2_G3_COMPILER_DISTINCT=YES
+
+G0 is an INTENTIONAL LEGACY REFERENCE.  It is built from C, so
+byte-identity with the PolyC generations is NOT expected and is NOT
+required.  The permitted G0-versus-PolyC comparison contract is
+SEMANTIC (the oracle differential), and it is exercised below.
+
+THE G0-VERSUS-POLYC SEMANTIC COMPARISON
+====================================
+
+  G0_G1_SEMANTIC_COMPARISON_POINTS=457
+  G0_G1_SEMANTIC_MISMATCHES=0
+  STATUS=PASS
+
+G0_G3_PROVENANCE = PASS

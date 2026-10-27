@@ -1,0 +1,52 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE03-CORRECTION01
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=production-authority
+
+STATUS=PASS
+
+THE STRONG FORM OF THE EVIDENCE
+===============================
+
+COMMAND=nm -u build/CMakeFiles/hcc.dir/prslib.c.o | grep -i bootstrap
+  _BootstrapOperatorPrecedence
+
+The production object carries the PolyC component as an UNDEFINED
+reference, so the decision is routed to the PolyC component.
+
+COMMAND=nm build/CMakeFiles/hcc.dir/prslib.c.o | grep parseGetPriority
+  (nothing: parseGetPriority is NOT in the production object at all)
+
+The legacy algorithm body lives in the #else branch and is therefore NOT
+COMPILED into the production binary.  This is the fail-closed shape.
+
+COMMAND=nm ./hcc | grep BootstrapOperatorPrecedence
+  00000001000641fc T _BootstrapOperatorPrecedence
+
+THE OTHER TWO POLYC PARSER AUTHORITIES ARE UNCHANGED
+===================================================
+
+COMMAND=nm -u build/CMakeFiles/hcc.dir/parser.c.o | grep -i bootstrap
+  _BootstrapCalcPadding
+  _BootstrapValidPostControlFlowToken
+
+COMMAND=grep -c "parseValidPostControlFlowToken(" src/parser.c
+  6
+  (the definition plus FIVE live production call sites)
+
+COMMAND=grep -c "CalcPadding(" src/parser.c
+  9
+  (the definition plus its live call sites)
+
+PARSER_PRECEDENCE_PRODUCTION_AUTHORITY = POLYC
+LEGACY_PARSE_GET_PRIORITY_AUTHORITY       = RETIRED
+BootstrapOperatorPrecedence                = LOAD_BEARING_IN_PRODUCTION
+
+THE PRODUCTION SURFACE IS UNCHANGED BY THIS ACT
+==============================================
+
+COMMAND=git diff --stat 3dd44a6..HEAD -- src/ tools/bootstrap/
+  (empty: ZERO tracked production-source changes relative to the correction entry)
+
+  PRODUCTION_SUBJECT_SHA_DELTA = 0
+  TRACKED_PRODUCTION_SOURCE_CHANGES = 0
+  PRODUCTION_SEMANTIC_DELTA = 0

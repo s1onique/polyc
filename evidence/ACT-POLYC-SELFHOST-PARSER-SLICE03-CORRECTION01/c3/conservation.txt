@@ -1,0 +1,83 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE03-CORRECTION01
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=conservation
+
+THE PARSER AND LEXER CONSERVATION
+==============================
+
+THE BASELINE IS THE CORRECTION ENTRY COMMIT, NOT A REPORT
+--------------------------------------------------------
+
+A baseline compiler was built from the CORRECTION ENTRY tree
+(3dd44a6b66746394ae9852cb57e951c2389abf5f) and the IDENTICAL test
+suite was run against it and against this ACT's tree.
+
+COMMAND (baseline):
+  git archive 3dd44a6 src src/asm | tar -x -C build/corr01/baseline
+  cmake -S build/corr01/baseline/src -B build/corr01/baseline/build ... -DHCC_ENABLE_JIT=on ...
+  make -C build/corr01/baseline/build -j4
+  cd build/corr01/baseline/src/tests && ../../tests-run --target=aarch64-apple-darwin
+
+COMMAND (current):
+  cd src/tests && ../../build/slice03-tests-run --target=aarch64-apple-darwin
+
+THE RESULT
+==========
+
+  BASELINE_PASSED=87  BASELINE_FAILED=3
+  CURRENT_PASSED=87   CURRENT_FAILED=3
+
+The failure identity sets are BYTE IDENTICAL:
+
+  FAILED: 0/7
+  Test - #link directive (AOT): FAILED: 1/3
+  Test - indirect struct return C interop: FAILED: 1/3
+
+  $ diff baseline-testids.txt current-testids.txt
+  (no output: the test identity sets are IDENTICAL)
+
+  NEW_PARSER_FAILURE_IDENTITIES = 0
+  NEW_PARSER_SEMANTIC_REGRESSIONS = 0
+
+The two failures are the PRE-EXISTING /usr/local/include/tos.HH host
+issue.  They are recorded as measured, not relabelled PASS.
+
+THE LEXER CONSERVATION SUITES
+=============================
+
+COMMAND=make lexer07-direct-differential lexer08-direct-differential lexer09-direct-differential
+OUTPUT:
+  ACT_SELFHOST_LEXER02_DIRECT_DIFF_PASS=89
+  ACT_SELFHOST_LEXER02_DIRECT_DIFF_FAIL=0
+  STATUS=PASS
+  LEXER07_DIRECT_DIFFERENTIAL=PASS
+  DIRECT_DIFFERENTIAL_TOTAL=45
+  DIRECT_DIFFERENTIAL_PASS=45
+  DIRECT_DIFFERENTIAL_FAIL=0
+  STATUS=PASS
+  LEXER08_DIRECT_DIFFERENTIAL=PASS
+  DIRECT_DIFFERENTIAL_TOTAL=23
+  DIRECT_DIFFERENTIAL_PASS=23
+  DIRECT_DIFFERENTIAL_FAIL=0
+  STATUS=PASS
+
+The row counts are IDENTICAL to the recorded baseline: 89 / 45 / 23 rows, 0 fail.
+
+  NEW_LEXER_FAILURE_IDENTITIES = 0
+  NEW_LEXER07_FAILURE_IDENTITIES = 0
+
+THE LEXER07 BROAD CORPUS
+=======================
+
+COMMAND=make lexer07-broad-corpus-4-stage
+OUTPUT:
+  PASS_S0=166 HISTORICAL_S0=0 PASS_S1=175 PASS_S2=175 PASS_S3=175
+  FAIL_S0=15 FAIL_S1=6 FAIL_S2=6 FAIL_S3=6
+  BOTH_FAIL_4=6
+  PASS_MISMATCH=9
+  REGRESSION=0
+  DIVERGED=0
+
+The counters are IDENTICAL to the canonical baseline registry
+(docs/factory/LEXER07-BASELINE-AUTHORITY.tsv).  REGRESSION=0 and
+DIVERGED=0 are the load-bearing numbers.

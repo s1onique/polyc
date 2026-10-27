@@ -1,0 +1,46 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE03-CORRECTION01
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=fixture-negative-controls
+
+THE SIX NEGATIVE CONTROLS
+=======================
+
+Each control MUST FAIL: a control that passes would mean the verifier
+cannot detect the defect it is meant to detect.
+
+COMMAND=make parser-slice03-corr01-controls parser-slice03-corr01-producer-control
+OUTPUT:
+  -- ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01: CONTROL_FLOW_TOKEN_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapValidPostControlFlowToken TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapValidPostControlFlowToken DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=1744
+  -- ACT-POLYC-SELFHOST-PARSER-SLICE03: OPERATOR_PRECEDENCE_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapOperatorPrecedence TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapOperatorPrecedence DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=2608
+  CORR01_NC=1 a missing signed-I64 extreme
+  CORR01_NC=1 PASS (rejected)
+  P16_REQUIRED_VALUES_MISSING=1
+  P16_SIGNED_EXTREMES_PRESENT=3/4
+  STATUS=FAIL
+  CORR01_NC=2 a duplicated row replacing a required value
+  CORR01_NC=2 PASS (rejected)
+  P16_REQUIRED_VALUES_MISSING=2
+  DUPLICATE_IDS=1
+  STATUS=FAIL
+  CORR01_NC=3 an unknown row
+  CORR01_NC=3 PASS (rejected)
+  UNKNOWN_IDS=1
+  STATUS=FAIL
+  CORR01_NC=4 an overflowed input
+  CORR01_NC=4 PASS (rejected)
+  PARSE_ERRORS=1
+  FIELD_PARSE_ERRORS=0
+  STATUS=FAIL
+  CORR01_NC=5 the correct row count but the wrong coverage
+  CORR01_NC=5 PASS (rejected)
+  P16_REQUIRED_VALUES_MISSING=1
+  P16_VALUE_MEMBERSHIP_ERRORS=0
+  STATUS=FAIL
+  CORR01_NEGATIVE_CONTROLS=5/5 PASS
+  CORR01_PRODUCER_NC=1 an unresolvable case label
+  CORR01_PRODUCER_NC=1 PASS (refused)
+  DERIVED_UNRESOLVED_LABELS=1
+  CORR01_FIXTURE_ERROR: the precedence table could not be derived cleanly
+  CORR01_PRODUCER_NEGATIVE_CONTROLS=1/1 PASS
+
+FIXTURE_NEGATIVE_CONTROLS = PASS (5/5 coverage controls + 1/1 producer control)
