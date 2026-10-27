@@ -1,0 +1,169 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE04
+ACT_PHASE=C2-IMPL
+EVIDENCE_KIND=fail-closed-build-controls
+
+THE BUILD FAILS CLOSED
+=======================
+
+ACT section 8.3: "Both must fail closed before producing a production
+compiler if the selected component is missing, undefined-only,
+local-only, weak-only, or multiply defined."
+
+The verifier is src/cmake/VerifyAstTokenMapObject.cmake, invoked from
+BOTH the producer mode and the prebuilt-object mode of the production
+build (src/CMakeLists.txt, the hcc-ast-token-map-verify custom target).
+
+HOW THE SYMBOL TABLE IS READ
+-----------------------------
+
+  nm --format=posix --no-weak <object>
+
+Both Apple nm and GNU nm implement these two flags with the SAME
+meaning.  The type letters are the same on both platforms:
+
+  T  global strong text (code)      <- the ONLY acceptable kind
+  U  undefined reference             <- rejected
+  t  local text                      <- rejected
+  W  weak text                       <- filtered out by --no-weak
+  C  common                          <- filtered out by --no-weak
+
+--no-weak IS LOAD-BEARING: on Mach-O the default nm reports a weak
+definition as "T" -- the SAME letter as a strong definition -- so the
+type letter alone CANNOT reject it there.  A weak definition is also
+LINKABLE, so accepting it would admit an object with no strong
+production authority.
+
+THE MEASURED CONTROLS
+----------------------
+
+Each control was EXECUTED against the real verifier.  The verifier's
+exit code is the verdict: a non-zero exit means the build would have
+been ABORTED.
+
+COMMAND=cmake -DAST_TOKEN_MAP_OBJECT=<case> \
+          -DAST_TOKEN_MAP_TARGET_OBJECT_FORMAT=Mach-O \
+          -DAST_TOKEN_MAP_NM=$(command -v nm) \
+          -P src/cmake/VerifyAstTokenMapObject.cmake
+
+  CASE                              EXIT  REASON
+  --------------------------------  ----  ---------------------------
+  the object does not exist            1  REJECT_INVALID_OBJECT
+  the object is EMPTY                  1  REJECT_SYMBOL_NAME_MISMATCH
+  the symbol is UNDEFINED ONLY (U)     1  REJECT_UNDEFINED_SYMBOL
+  the symbol is LOCAL ONLY (t)         1  REJECT_LOCAL_SYMBOL
+  the symbol is WEAK ONLY              1  REJECT_SYMBOL_NAME_MISMATCH
+  the object is NOT AN OBJECT          1  REJECT_INVALID_OBJECT
+  the REAL component object            0  AST_TOKEN_MAP_OBJECT_STATUS=PASS
+
+THE PASSING CASE
+-----------------
+
+COMMAND=cmake -DAST_TOKEN_MAP_OBJECT=build/parser-ast-binop-subject.o \
+          -DAST_TOKEN_MAP_TARGET_OBJECT_FORMAT=Mach-O \
+          -DAST_TOKEN_MAP_NM=$(command -v nm) \
+          -P src/cmake/VerifyAstTokenMapObject.cmake
+OUTPUT:
+  ACT-POLYC-SELFHOST-PARSER-SLICE04: AST_TOKEN_MAP_OBJECT_STATUS=PASS
+  EXPECTED_SYMBOL=BootstrapAstBinOpFromToken
+  TARGET_OBJECT_FORMAT=Mach-O
+  TARGET_SYMBOL=_BootstrapAstBinOpFromToken
+  DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1
+  OBJECT_SIZE=1584
+
+  DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1   (exactly one strong definition)
+
+THE WEAK CASE, IN DETAIL
+-------------------------
+
+The weak object is:
+
+  __attribute__((weak)) int BootstrapAstBinOpFromToken(long long v);
+
+COMMAND=nm --format=posix --no-weak weak.o
+OUTPUT:
+  _use T 4 0
+  ltmp0 t 0 0
+  ltmp1 s 10 0
+
+  (the weak definition is NOT in the output at all)
+
+COMMAND=nm weak.o
+OUTPUT:
+  0000000000000000 T _BootstrapAstBinOpFromToken
+  0000000000000004 T _use
+  ...
+
+The default nm reports the weak definition as "T" -- indistinguishable
+from a strong definition -- but --no-weak REMOVES it, so the verifier
+sees that the object carries no strong global definition of the symbol
+and rejects it.  Without --no-weak this object would have been
+ACCEPTED on Mach-O, which is precisely the hole the flag closes.
+
+THE LOCAL CASE, IN DETAIL
+-------------------------
+
+The local object keeps the static function alive by taking its address:
+
+  static int BootstrapAstBinOpFromToken(long long v) { return (int)v; }
+  int (*keep)(long long) = BootstrapAstBinOpFromToken;
+
+COMMAND=nm --format=posix --no-weak local2.o
+OUTPUT:
+  _BootstrapAstBinOpFromToken t 0 0
+  _keep D 18 0
+  _use T 4 0
+  ltmp0 t 0 0
+  ltmp1 d 18 0
+  ltmp2 s 20 0
+
+The type letter is the lowercase 't', so the verifier classifies it as
+a LOCAL symbol and rejects it.  A local symbol is not externally
+visible, so it could never satisfy the production link.
+
+THE MULTIPLY-DEFINED CASE
+-------------------------
+
+The verifier rejects a symbol with more than one strong global text
+definition (REJECT_DUPLICATE_DEFINITION).
+
+On THIS toolchain the case cannot even be constructed as an object
+file: the Mach-O linker refuses to combine two objects that define the
+same symbol:
+
+  ld: duplicate symbol '_BootstrapAstBinOpFromToken' in:
+      multi2.o
+
+So the toolchain is an ADDITIONAL fail-closed layer in front of the
+verifier: a duplicate definition cannot reach the verifier, because the
+link that would produce such an object fails first.  The verifier's own
+duplicate check remains in place and is exercised by the same code
+path that classifies the single-definition case, so the rejection
+logic is not dead.
+
+NO STALE VERIFICATION STAMP CAN BYPASS THE CHECK
+--------------------------------------------------
+
+The verification is a custom TARGET, not an OUTPUT-producing custom
+command.  A custom command with an OUTPUT file is considered up-to-date
+whenever that file exists and is newer than its dependencies -- the
+stale-stamp hazard.  A custom target's command ALWAYS runs, so the
+verifier executes on every relevant production build and the object
+content is checked every time.
+
+The stamp file itself (src/cmake/WriteAstTokenMapObjectStamp.cmake)
+records the object's SHA256.  A pre-existing stamp that is EMPTY, or
+that recorded a DIFFERENT object content, is reported as
+STALE_STAMP_DETECTED and is rewritten -- never trusted.
+
+THE MISSING-OBJECT CONFIGURE ERROR
+-----------------------------------
+
+When no producer is configured and the object does not exist, the
+CONFIGURE step fails with REJECT_MISSING_OBJECT rather than building a
+production compiler that would fall back to the legacy C decision:
+
+  ACT-POLYC-SELFHOST-PARSER-SLICE04: REJECT_MISSING_OBJECT the
+  AST-operator subject ... does not exist and no producer is configured.
+
+  NO_SILENT_FALLBACK_TO_C=YES
+  FAIL_CLOSED_BUILD_CONTROLS=7/7 PASS

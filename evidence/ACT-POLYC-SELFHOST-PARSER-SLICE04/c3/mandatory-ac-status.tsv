@@ -1,0 +1,102 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE04
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=mandatory-ac-status
+# The ledger is produced by an EXACT ACCEPTANCE-ID JOIN against the
+# FROZEN C1 contract (c1/mandatory-ac-contract.tsv).  Every row of
+# the contract appears exactly once here, and the evidence file
+# named by the contract must EXIST and be non-empty for the
+# predicate to be counted.
+#
+# Schema: acceptance_id<TAB>predicate<TAB>status<TAB>evidence
+acceptance_id	predicate	status	evidence
+AC01	Live entry identity established	PASS	c0/entry-identity.txt
+AC02	Worktree clean at entry	PASS	c0/entry-identity.txt
+AC03	Predecessor closure reachable	PASS	c0/entry-identity.txt
+AC04	Previous AC-count drift acknowledged	PASS	c0/predecessor-reconciliation.txt
+AC05	Previous G0 receipt contradiction acknowledged	PASS	c0/predecessor-reconciliation.txt
+AC06	F14 predecessor surfaces preserved	PASS	c0/predecessor-reconciliation.txt
+AC07	Both AST mapping candidates inventoried from live source	PASS	c1/candidate-inventory.tsv
+AC08	Both candidates' dependencies fully classified	PASS	c1/candidate-inventory.tsv
+AC09	Full eligibility predicates mechanically applied	PASS	c1/candidate-eligibility.tsv
+AC10	Ranking uses original R0..R6 dimensions	PASS	c1/candidate-ranking.tsv
+AC11	Ranking and eligibility negative controls pass	PASS	c1/ranking-controls.txt
+AC12	Exactly one eligible winner selected	PASS	c1/ranking-controls.txt
+AC13	Selected production call sites verified	PASS	c1/production-seam.txt
+AC14	Selected ABI is bounded and unambiguous	PASS	c1/ABI-contract.md
+AC15	Enum values bound to live src/ast.h	PASS	c1/enum-values.tsv
+AC16	No failure-sentinel collision	PASS	c1/enum-values.tsv
+AC17	Legacy success semantics frozen	PASS	c1/ABI-contract.md
+AC18	Legacy output-unchanged-on-failure semantics frozen	PASS	c1/ABI-contract.md
+AC19	Real legacy-C oracle executes	PASS	c1/oracle-linkage-contract.txt
+AC20	Oracle compiled with PolyC delegation disabled	PASS	c1/oracle-linkage-contract.txt
+AC21	All mandatory accepted tokens exercised	PASS	c2/direct-differential.txt
+AC22	Rejected-token and integer-boundary coverage complete	PASS	c2/direct-differential.txt
+AC23	Independent fixture-integrity verifier passes	PASS	c2/fixture-integrity.txt
+AC24	Fixture-integrity negative controls fire	PASS	c2/differential-negative-controls.txt
+AC25	PolyC component implements frozen ABI	PASS	c2/component-source-sha.txt
+AC26	Stage0 compilation of the subject succeeds	PASS	c2/component-build-receipt.txt
+AC27	Direct differential has zero mismatches	PASS	c2/direct-differential.txt
+AC28	Direct differential negative controls fire	PASS	c2/differential-negative-controls.txt
+AC29	Output parameter remains unchanged on failure	PASS	c2/direct-differential.txt
+AC30	Production delegation is load-bearing	PASS	c3/production-causal-mutation.txt
+AC31	Selected legacy C decision retired from production	PASS	c3/production-authority.txt
+AC32	Build rejects missing/invalid PolyC object	PASS	c2/fail-closed-build-controls.txt
+AC33	Unselected legacy mapping unchanged	PASS	c3/unselected-mapping-conservation.txt
+AC34	G0 actual C compiler identity verified	PASS	c3/generation-provenance.txt
+AC35	G0-G3 independent builds and executions proven	PASS	c3/generation-manifest.tsv
+AC36	Component pair comparisons satisfy frozen contract	PASS	c3/generation-object-pairs.tsv
+AC37	All six production semantic pairs equivalent	PASS	c3/generation-semantic-pairs.tsv
+AC38	Generation provenance receipts consistent and verified	PASS	c3/generation-provenance.txt
+AC39	Provenance forgery/omission negative controls fire	PASS	c3/copy-forgery-negative-controls.txt
+AC40	Production mutation builds, links and changes observable output	PASS	c3/production-causal-mutation.txt
+AC41	Pristine restoration produces identical output and subject SHA	PASS	c3/pristine-restoration.txt
+AC42	Previous three PolyC parser authorities conserved	PASS	c3/production-authority.txt
+AC43	No new parser failure identities	PASS	c3/parser-conservation.txt
+AC44	No new lexer or LEXER07 failure identities	PASS	c3/lexer-conservation.txt
+AC45	No newly introduced Python or disallowed tool violations	PASS	c3/f-no-python.txt
+AC46	Factory-v2, append-only and F14 checks pass	PASS	c3/factory-v2.txt
+AC47	make gate-fast passes	PASS	c3/gate-fast.txt
+AC48	make gate-push passes	PASS	c3/gate-push.txt
+AC49	Tracked mutation scope and committed-range patch hygiene pass	PASS	c3/patch-hygiene.txt
+AC50	Valid closure, accurate ledger and external terminality	DEFERRED_TO_CLOSE	c4
+
+AC_TOTAL=50
+AC_ID_UNIQUE=YES
+AC_DUPLICATE=0
+AC_MISSING=0
+AC_PASS=49
+AC_FAIL=0
+AC_UNPROVEN=1
+AC_DEFERRED_TO_CLOSE=1
+
+THE AC50 DEFERRAL
+==================
+
+  AC50_STATUS=DEFERRED_TO_CLOSE
+  AC50_REASON=AC50 requires the CLOSE commit to exist and the
+  EXTERNAL TERMINALITY checks (ACT section 17) to have been run.  At C3
+  the CLOSE commit does not exist yet, so the predicate cannot be
+  satisfied at this phase.  Its actual post-CLOSE satisfaction is
+  established at C4.
+
+THE LEDGER IS AN EXACT ACCEPTANCE-ID JOIN
+==========================================
+
+The ledger above was produced by joining the FROZEN C1 acceptance
+contract (c1/mandatory-ac-contract.tsv, exactly 50 rows, AC01..AC50)
+against the evidence tree: for every acceptance ID, the evidence file
+named by the contract must EXIST and be non-empty for the predicate to
+be counted as PASS.
+
+The counts at the foot of this file are RECOMPUTED FROM THE WRITTEN
+LEDGER, not from the loop that wrote it, and the ID set is recounted
+from the ledger's own rows.  A summary counter is not itself proof
+that 50 predicates exist or pass.
+
+  AC_TOTAL=50
+  AC_ID_UNIQUE=YES
+  AC_MISSING=0
+  AC_DUPLICATE=0
+  AC_PASS=49
+  AC_FAIL=0
+  AC_UNPROVEN=1

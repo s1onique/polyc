@@ -1,0 +1,110 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE04
+ACT_PHASE=C2-IMPL
+EVIDENCE_KIND=real-oracle-build
+
+THE REAL LEGACY C ORACLE, REBUILT AND RE-EXECUTED
+==================================================
+
+COMMAND=make build/slice04-oracle-driver
+OUTPUT:
+  SLICE04_LEGACY_ORACLE=build/slice04-ast-legacy.o (delegation OFF: the real legacy body is executed)
+
+THE ORACLE OBJECT
+-----------------
+
+  ORACLE_OBJECT=build/slice04-ast-legacy.o
+  ORACLE_OBJECT_SHA256=144c9836ba79125bd973f9faefe05b259e9efaa1e8bc7babc5c44de007de7253
+
+  ORACLE_BUILD_COMMAND=cc -std=c99 -O2 -Isrc -c -o build/slice04-ast-legacy.o src/ast.c
+  ORACLE_COMPILER=/usr/bin/cc
+  ORACLE_COMPILER_SHA256=9b11ead1ca76a03d61108ad5bf2c913d6aa8daa7deb9fd28893e847e3680e5e7
+
+THE ORACLE OBJECT IS BYTE-IDENTICAL TO THE ENTRY PRODUCTION OBJECT
+-------------------------------------------------------------------
+
+The C0 entry recorded the freshly built production ast.c object as
+sha 144c9836ba79125bd973f9faefe05b259e9efaa1e8bc7babc5c44de007de7253
+(c0/baseline-conservation.txt).  The oracle object built now has the
+SAME sha.  The oracle therefore executes the EXACT legacy code the
+production build executed before the migration -- not a copy of it,
+not a paraphrase of it, not a reimplementation.
+
+  ORACLE_IS_BYTE_IDENTICAL_TO_THE_ENTRY_PRODUCTION_OBJECT=YES
+
+THE ORACLE DOES NOT DEPEND ON THE POLYC SYMBOL
+------------------------------------------------
+
+COMMAND=nm build/slice04-ast-legacy.o | grep -c BootstrapAstBinOpFromToken
+OUTPUT=0
+
+  ORACLE_REFERENCES_POLYC_SYMBOL=NO
+
+The build rule ENFORCES this: it fails the build if the object
+references _BootstrapAstBinOpFromToken, because that would mean the
+delegation flag was NOT off and the "oracle" would be the PolyC
+component compared against itself.
+
+THE ORACLE EXECUTED
+-------------------
+
+COMMAND=./build/slice04-oracle-driver 43 45 42 47 37 61 60 62 782 781 779 780 783 784 94 38 124 777 778
+OUTPUT:
+  43	1	3
+  45	1	4
+  42	1	0
+  47	1	1
+  37	1	2
+  61	1	18
+  60	1	7
+  62	1	9
+  782	1	10
+  781	1	8
+  779	1	11
+  780	1	12
+  783	1	16
+  784	1	17
+  94	1	14
+  38	1	13
+  124	1	15
+  777	1	5
+  778	1	6
+
+COMMAND=./build/slice04-oracle-driver 65 0 1 1000
+OUTPUT:
+  65	0	12345
+  0	0	12345
+  1	0	12345
+  1000	0	12345
+
+  ORACLE_EXECUTES=YES
+  ACCEPTED_COUNT=19
+  FAILURE_PRESERVES_OUTPUT=YES
+
+THE DRIVER CONTAINS NO MAPPING TABLE
+-------------------------------------
+
+  DRIVER=tools/quality/parser-slice04-oracle-driver.c
+  DRIVER_ADAPTER=tools/quality/parser-slice04-oracle-adapter.c
+
+The driver calls the real function with a PREINITIALISED output slot
+(the distinguished value 12345, outside the live AstBinOp range 0..28)
+and reports the observed success flag and the final enum value.  The
+adapter (Slice04LegacyBinOpOracle) is the same shape, for the
+differential.
+
+Neither file contains a mapping table: the mapping is the live
+src/ast.c's.
+
+  DRIVER_CONTAINS_A_MAPPING_TABLE=NO
+  ADAPTER_CONTAINS_A_MAPPING_TABLE=NO
+
+THE STUB
+--------
+
+  STUB=tools/quality/parser-slice04-oracle-stub.c
+
+The stub defines `int is_terminal = 0;` so the oracle can link against
+the production objects without main.c.  It follows the SLICE03
+precedent and contains no mapping logic.
+
+  STUB_CONTAINS_MAPPING_LOGIC=NO

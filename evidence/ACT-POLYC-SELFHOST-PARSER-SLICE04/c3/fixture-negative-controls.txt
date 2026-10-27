@@ -1,0 +1,84 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE04
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=fixture-negative-controls
+
+THE FIXTURE-INTEGRITY NEGATIVE CONTROLS
+========================================
+
+ACT section 7.3 requires eight negative controls that "genuinely
+execute and fail, not merely assert that an integrity check exists".
+
+COMMAND=make parser-slice04-negative-controls
+OUTPUT:
+  SLICE04_NEGATIVE_CONTROLS=RUN
+  SLICE04_NC_01=verifier=integrity   exit_code=nonzero result=PASS
+    FIXTURE_INTEGRITY_OBSERVED_ROWS=321
+    FIXTURE_INTEGRITY_MISSING_IDS=1
+  SLICE04_NC_02=verifier=integrity   exit_code=nonzero result=PASS
+    FIXTURE_INTEGRITY_DUPLICATE_IDS=1
+  SLICE04_NC_03=verifier=integrity   exit_code=nonzero result=PASS
+    FIXTURE_INTEGRITY_UNKNOWN_IDS=1
+  SLICE04_NC_04=verifier=integrity   exit_code=nonzero result=PASS
+    FIXTURE_INTEGRITY_UNKNOWN_ROWS=1
+  SLICE04_NC_05=verifier=differential exit_code=nonzero result=PASS
+    SLICE04_DIFF_FIELD_PARSE_ERRORS=12
+    SLICE04_DIFF_STATUS=FAIL
+  SLICE04_NC_06=verifier=differential exit_code=nonzero result=PASS
+    SLICE04_DIFF_FIELD_PARSE_ERRORS=12
+    SLICE04_DIFF_STATUS=FAIL
+  SLICE04_NC_07=verifier=differential exit_code=nonzero result=PASS
+    SLICE04_DIFF_ORACLE_VS_EXPECTED_MISMATCH=1
+    SLICE04_DIFF_STATUS=FAIL
+  SLICE04_NC_08=verifier=differential exit_code=nonzero result=PASS
+    SLICE04_DIFF_ORACLE_VS_EXPECTED_MISMATCH=1
+    SLICE04_DIFF_STATUS=FAIL
+  SLICE04_NEGATIVE_CONTROLS=8/8 PASS
+
+THE EIGHT CONTROLS, AND THE VERIFIER THAT OWNS EACH
+===================================================
+
+  NC-01  a MISSING accepted token (the row F001 is DROPPED from a COPY)
+         -> the INDEPENDENT fixture-integrity witness must report one
+            fewer observed row and one missing id.
+  NC-02  a DUPLICATE fixture id (the row F001 is APPENDED a second time)
+         -> the integrity witness must report a duplicate id.
+  NC-03  an UNKNOWN fixture id (a row with the id F999 is APPENDED)
+         -> the integrity witness must report an unknown id.
+  NC-04  an INDENTED unknown row (a row whose id is "  X002")
+         -> the integrity witness must report an unknown row.  This is
+            the bypass class that
+            ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03 reproduced in a
+            closed tool.
+  NC-05  an OUT-OF-RANGE signed integer (the INT64_MIN row's token
+         value becomes 9223372036854775808)
+         -> the differential must report a field parse error.
+  NC-06  a MISSING semantic value (the INT64_MAX row's expected-output
+         field and every field after it are dropped; the ROW COUNT is
+         still correct)
+         -> the differential must report a field parse error.
+  NC-07  an INCORRECTLY OVERWRITTEN output (an M09 invalid-token row's
+         expected output is replaced with a hard-coded default)
+         -> the differential must report an oracle-versus-expected
+            mismatch.
+  NC-08  a CHANGED expected enum value (the first accepted-token row's
+         expected enum changes from 3 to 99)
+         -> the differential must report an oracle-versus-expected
+            mismatch.
+
+THE VERDICT IS THE VERIFIER'S EXIT CODE
+========================================
+
+Each control RUNS the real PolyC verifier binary against the mutated
+fixture and requires a NON-ZERO exit code.  The control therefore
+fails if the verifier ACCEPTS a fixture it must reject.  A control
+that merely asserted that a check exists would be vacuous; these
+controls execute the check, and the verifier's own diagnostic line is
+quoted above for each control.
+
+The mutated copies live under build/slice04-nc/.  The tracked
+canonical fixture is NEVER modified: the mutation is applied to a
+COPY.
+
+  FIXTURE_NEGATIVE_CONTROLS=PASS
+  FIXTURE_NEGATIVE_CONTROLS=8/8
+  CONTROLS_THAT_MERELY_ASSERT_EXISTENCE=0

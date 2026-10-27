@@ -1,0 +1,57 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE04
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=f-no-python
+
+THE F-NO-PYTHON CHECK
+====================
+
+COMMAND=sh scripts/quality/factory-no-python-check.sh
+OUTPUT:
+  FAIL  scripts/quality/llvm-byte-memory01-test.sh  forbidden Python invocation
+  FAIL  scripts/quality/llvm-cap-table-verifier.py  forbidden Python source suffix
+  FAIL  scripts/quality/llvm-intops01-test.sh  forbidden Python invocation
+  FAIL  scripts/quality/llvm-memory01-red-test.sh  forbidden Python invocation
+  FAIL  scripts/quality/llvm-spike-test.sh  forbidden Python invocation
+  FAIL  tools/quality/bootstrap02-corpus-runner.py  forbidden Python source suffix
+  FAIL  tools/quality/bootstrap02-error-corpus.py  forbidden Python source suffix
+  FAIL  tools/quality/bootstrap03-corpus-runner.py  forbidden Python source suffix
+  FAIL  tools/quality/bootstrap03-error-corpus.py  forbidden Python source suffix
+  FAIL  tools/quality/bootstrap04-corpus-runner.py  forbidden Python source suffix
+  FAIL  tools/quality/bootstrap04-error-corpus.py  forbidden Python source suffix
+  FAIL  tools/quality/llvm-gep01-test.HC  known PolyC -> Python execution edge (callgraph inventory)
+  --- summary ---
+  POLYC_TOOLS_TRACKED_PYTHON=12
+  POLYC_TOOLS_TRACKED_INSPECTED=5217
+  POLYC_TOOLS_TRACKED_PASSES=5210
+  STATUS=FAIL
+
+THE FINDINGS ARE ALL PRE-EXISTING
+==================================
+
+ACT section 12 requires that baseline violations be recorded
+SEPARATELY from newly introduced violations.  Every one of the twelve
+findings is in a file that SLICE04 does NOT touch:
+
+COMMAND=git status --porcelain=v1 | sed 's/^...//' | sort > changed.txt
+COMMAND=for f in <each of the twelve findings>; do grep -qx "$f" changed.txt; done
+OUTPUT=(no file is reported: NONE of the twelve is in SLICE04's diff)
+
+The six `.py` files also exist at the ENTRY commit:
+
+COMMAND=git ls-tree --name-only e3eaf38c2e0a1183d8fd4969443c32c92f075e58 tools/quality/ | grep -c '\.py$'
+OUTPUT=6
+
+  BASELINE_PYTHON_VIOLATIONS=12
+  NEW_PYTHON_VIOLATIONS=0
+  PYTHON_ADDED_BY_SLICE04=0
+  NO_PYTHON_ADDED=YES
+
+THE CHECKER'S OWN STATUS IS PRESERVED HONESTLY
+==============================================
+
+The checker's overall result is STATUS=FAIL, and it is recorded as
+FAIL.  The pre-existing findings are not relabelled PASS and the
+violations are not suppressed.
+
+  F_NO_PYTHON_OVERALL_STATUS=FAIL (pre-existing, unchanged)
+  NEW_VIOLATIONS=0

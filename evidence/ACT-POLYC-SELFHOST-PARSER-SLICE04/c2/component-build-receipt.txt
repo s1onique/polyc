@@ -1,0 +1,67 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE04
+ACT_PHASE=C2-IMPL
+EVIDENCE_KIND=component-build-receipt
+
+THE POLYC SUBJECT'S BUILD RECEIPT
+==================================
+
+COMMAND=make parser-ast-binop-component
+OUTPUT:
+  SLICE04_SUBJECT=build/parser-ast-binop-subject.o
+  SLICE04_SUBJECT_ARCH=arm64
+  SLICE04_COMPONENT=BUILD source=tools/bootstrap/selfhost-parser-slice04.HC
+  SLICE04_COMPONENT_OBJECT=./build/parser-ast-binop-subject.o
+
+THE SUBJECT IS COMPILED BY THE STAGE-0 COMPILER
+-----------------------------------------------
+
+  SOURCE=tools/bootstrap/selfhost-parser-slice04.HC
+  SOURCE_SHA256=43f3b95933a6d87aca9824b0337d416abeddc24bfb25743413554be922c8f63d
+  PRODUCER=build/host-stage0/hcc
+  PRODUCER_SHA256=268ba62412988470eb6c0b3c87b3882206928c82d1f72194f417cd4df548a519
+  BUILD_COMMAND=build/host-stage0/hcc --install-dir=./build/bootstrap-prefix \
+                 -c tools/bootstrap/selfhost-parser-slice04.HC \
+                 -o build/parser-ast-binop-subject.o
+  OUTPUT_OBJECT=build/parser-ast-binop-subject.o
+  OUTPUT_OBJECT_SHA256=6d598bc7f0b00ac47642ec06b8cceba641d55a8cfe5498e0a6a995c40f2e054d
+  OBJECT_SIZE=1584
+  BUILD_EXIT_CODE=0
+
+THE SYMBOL IS PRESENT AND IS A STRONG GLOBAL DEFINITION
+--------------------------------------------------------
+
+COMMAND=nm build/parser-ast-binop-subject.o | grep -i bootstrap
+OUTPUT:
+  0000000000000000 T _BootstrapAstBinOpFromToken
+
+  SYMBOL_TYPE=T   (global strong text)
+  STAGE0_COMPILATION_OF_THE_SUBJECT_SUCCEEDS=YES
+
+THE SUBJECT DOES NOT DEPEND ON THE PRODUCTION COMPILER
+--------------------------------------------------------
+
+The subject is compiled by the STAGE-0 compiler, exactly like the
+parser-padding, control-flow-token and operator-precedence subjects, so
+the component does not depend on the production compiler that it is
+about to serve.  The bootstrap chain stays acyclic (see
+implementation-scope.txt).
+
+THE SUBJECT'S PURITY PROPERTIES (ACT SECTION 8.1)
+--------------------------------------------------
+
+  NO_HOST_AST_POINTERS=YES   the function takes and returns one I64
+  NO_ALLOCATION=YES          the body has no allocation call
+  NO_GLOBAL_STATE=YES        the body reads no global
+  NO_CALLBACKS=YES           the body calls nothing
+  NO_RECOVERY_DEPENDENCY=YES the body has no setjmp/longjmp
+  PURE_DETERMINISTIC_MAPPING=YES
+
+The body is nineteen `if (token_value == N) return M;` tests followed
+by `return -1;`.  Every input in the I64 domain has a defined output.
+
+THE SUBJECT'S SCOPE
+-------------------
+
+The subject implements ONLY the selected mapping.  It does not
+implement the unary mapping, the precedence table, the padding
+computation or the control-flow-token check.

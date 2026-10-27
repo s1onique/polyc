@@ -204,6 +204,54 @@ Ast *astUnaryOperator(AstType *type, AstUnOp operation, Ast *operand) {
 
 /* Returns `1` on successful conversion and `0` on failure */
 int astBinOpFromToken(s64 op, AstBinOp *_result) {
+#ifdef HCC_USE_SELFHOST_PARSER_AST_BINOP
+    /* ACT-POLYC-SELFHOST-PARSER-SLICE04 C2 IMPL:
+     * delegate the binary-operator classification to the qualified PolyC
+     * component BootstrapAstBinOpFromToken.
+     *
+     * The dedicated macro name (rather than the generic
+     * HCC_USE_SELFHOST_COMPONENTS) is required because that generic
+     * selector also activates the lexer delegations in src/lexer.c,
+     * which would require linking the lexer subjects too.  The AST
+     * operator migration is independent of the lexer migrations and is
+     * scoped to its own flag.
+     *
+     * The PolyC ABI is `I64 token_value -> I64 mapped_operator_or_-1`
+     * (scalar purity per ACT section 4.1; the sentinel is unambiguous
+     * because the live AstBinOp enum spans 0..28, so -1 cannot be a
+     * valid mapped enum).
+     *
+     * This adapter does NOT own semantic classification: the
+     * token-to-operator DECISION is made by the PolyC component.  The
+     * adapter owns only the three mechanical duties the original C ABI
+     * requires:
+     *
+     *   1. argument projection  (s64 op -> I64 token_value);
+     *   2. success conversion    (the -1 sentinel -> the boolean return);
+     *   3. conditional output storage (the write through `_result`).
+     *
+     * The legacy switch is NOT called before, after or alongside the
+     * delegation, and there is no shadow call and no fallback to C.
+     *
+     * The cast chain `(s64) -> (long long) -> (long long) -> int` is
+     * exact for the frozen domain: `op` is already a 64-bit signed
+     * scalar, and every mapped operator is in {0..18} together with the
+     * -1 sentinel, all of which fit in an int without loss. */
+    extern long long BootstrapAstBinOpFromToken(long long token_value);
+    long long mapped = BootstrapAstBinOpFromToken((long long)op);
+    if (mapped < 0)
+        return 0;
+
+    *_result = (AstBinOp)mapped;
+    return 1;
+#else
+    /* Stage0 evidence path: the pure legacy C algorithm.  Reachable
+     * only in a build that does NOT define
+     * HCC_USE_SELFHOST_PARSER_AST_BINOP.  The production compiler
+     * always defines it (see src/CMakeLists.txt), so the legacy switch
+     * never executes in a production build.  It is retained so that the
+     * G0 generation and the differential oracle are the REAL legacy
+     * code rather than a reimplementation of it. */
     switch (op) {
         case '+': *_result = AST_BIN_OP_ADD;     break;
         case '-': *_result = AST_BIN_OP_SUB;     break;
@@ -233,6 +281,7 @@ int astBinOpFromToken(s64 op, AstBinOp *_result) {
             return 0;
     }
     return 1;
+#endif
 }
 
 int astUnaryOpFromToken(s64 op, AstUnOp *_result) {

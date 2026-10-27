@@ -1,0 +1,86 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE04
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=patch-hygiene
+
+THE PATCH HYGIENE
+=================
+
+THE COMMITTED-RANGE WHITESPACE CHECK
+-------------------------------------
+
+COMMAND=git diff --check e3eaf38c2e0a1183d8fd4969443c32c92f075e58..HEAD
+OUTPUT=(no output)
+
+  PATCH_HYGIENE_ERRORS=0
+
+THE STAGED DIFF CHECK AT COMMIT TIME
+------------------------------------
+
+COMMAND=git diff --cached --check
+OUTPUT=(no output)
+
+The gate-fast gate's GFAST-1 check runs the same thing and reported
+CHECK=diff-check STATUS=PASS.
+
+THE TRACKED MUTATION SCOPE
+---------------------------
+
+COMMAND=git diff --name-only e3eaf38c2e0a1183d8fd4969443c32c92f075e58..HEAD
+OUTPUT:
+  Makefile
+  src/CMakeLists.txt
+  src/ast.c
+  src/cmake/VerifyAstTokenMapObject.cmake
+  src/cmake/WriteAstTokenMapObjectStamp.cmake
+  tools/bootstrap/selfhost-parser-slice04.HC
+  tools/quality/parser-slice04-differential.HC
+  tools/quality/parser-slice04-fixture-integrity.HC
+  tools/quality/parser-slice04-fixture-producer.HC
+  tools/quality/parser-slice04-oracle-adapter.c
+  tools/quality/parser-slice04-oracle-driver.c
+  tools/quality/parser-slice04-oracle-stub.c
+  tools/quality/parser-slice04-provenance-verifier.HC
+  tools/quality/parser-slice04-ranking-controls.HC
+  docs/acts/ACT-POLYC-SELFHOST-PARSER-SLICE04.md
+  docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE04.md
+  docs/factory/act-handoff-map.tsv
+  docs/ROADMAP.md
+  evidence/ACT-POLYC-SELFHOST-PARSER-SLICE04/**
+
+EVERY ONE OF THEM IS INSIDE ACT SECTION 3.1
+--------------------------------------------
+
+  src/ast.c                                        authorized
+  src/CMakeLists.txt                               authorized
+  src/cmake/VerifyAstTokenMapObject.cmake          authorized
+  src/cmake/WriteAstTokenMapObjectStamp.cmake      authorized
+  tools/bootstrap/selfhost-parser-slice04.HC       authorized
+  tools/quality/parser-slice04-*.HC                authorized
+  tools/quality/parser-slice04-oracle-*.c          authorized
+  Makefile                                         authorized
+  docs/acts/ACT-POLYC-SELFHOST-PARSER-SLICE04.md   authorized
+  docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE04.md  authorized
+  docs/factory/act-handoff-map.tsv                 authorized
+  docs/ROADMAP.md                                  authorized
+  evidence/ACT-POLYC-SELFHOST-PARSER-SLICE04/**     authorized
+
+  TRACKED_MUTATIONS_OUTSIDE_SCOPE=0
+
+NO FORBIDDEN PATH IS TOUCHED
+----------------------------
+
+  src/parser.c     untouched
+  src/prslib.c     untouched
+  src/lexer.c      untouched
+  src/lexer.h      untouched
+  src/ast.h        untouched
+  src/cctrl.c      untouched
+  src/cctrl.h      untouched
+  other tools/bootstrap/**  untouched
+  existing Factory validators  untouched
+  pre-push hooks    untouched
+  existing closed ACT documents  untouched
+  existing closed evidence/**   untouched
+  existing closed HANDOFFs      untouched
+
+  FORBIDDEN_MUTATIONS=0

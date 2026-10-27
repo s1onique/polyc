@@ -646,6 +646,153 @@ if (HCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE)
                    "target format=${OPERATOR_PRECEDENCE_TARGET_OBJECT_FORMAT}; nm=${OPERATOR_PRECEDENCE_NM}")
 endif()
 
+# ACT-POLYC-SELFHOST-PARSER-SLICE04 C2 IMPL:
+# Link the qualified PolyC BootstrapAstBinOpFromToken component into the
+# production hcc binary and enable the AST binary-operator delegation.
+# The dedicated selector `HCC_USE_SELFHOST_PARSER_AST_BINOP` is defined
+# here so the production AST-operator delegation is INDEPENDENT of the
+# parser-padding selector, of the control-flow-token selector, of the
+# operator-precedence selector and of the generic lexer
+# `HCC_USE_SELFHOST_COMPONENTS` flag (which would also require linking
+# the lexer subjects).
+#
+# The same fail-closed discipline as the parser-padding, control-flow-token
+# and operator-precedence components applies: if the producer is
+# configured, the build graph SCHEDULES the component's production and
+# verifies the exported symbol; if it is not, a missing component is a
+# hard configure error, never a silent legacy fallback.
+#
+# ACT section 8.3: BOTH producer mode and prebuilt-object mode must fail
+# closed before producing a production compiler if the selected component
+# is missing, undefined-only, local-only, weak-only, or multiply defined.
+# The verification is a custom TARGET (not an OUTPUT-producing custom
+# command), so the verification command ALWAYS runs and a stale stamp can
+# never decide that the verification is unnecessary.
+option(HCC_USE_SELFHOST_PARSER_AST_BINOP
+       "Link the AST binary-operator PolyC component into hcc and enable AST binary-operator delegation. ACT-POLYC-SELFHOST-PARSER-SLICE04."
+       ON)
+
+if (HCC_USE_SELFHOST_PARSER_AST_BINOP)
+    if (NOT AST_TOKEN_MAP_OBJECT)
+        set(AST_TOKEN_MAP_OBJECT "${CMAKE_SOURCE_DIR}/../build/parser-ast-binop-subject.o")
+    endif()
+
+    # ---------------------------------------------------------------------
+    # The TARGET OBJECT FORMAT and the TOOLCHAIN nm are resolved here and
+    # passed EXPLICITLY to the verifier.
+    #
+    # The format must NOT be guessed from the host: during a cross-compile
+    # the host's format is not the target's format.  CMAKE_NM is the
+    # CONFIGURED TOOLCHAIN's nm, so the target object is inspected by a
+    # tool that understands the target format.  If it is not available the
+    # build fails loudly instead of silently substituting a host nm.
+    # ---------------------------------------------------------------------
+    if (NOT AST_TOKEN_MAP_TARGET_OBJECT_FORMAT)
+        if (APPLE)
+            set(AST_TOKEN_MAP_TARGET_OBJECT_FORMAT "Mach-O")
+        elseif (UNIX AND NOT APPLE)
+            set(AST_TOKEN_MAP_TARGET_OBJECT_FORMAT "ELF")
+        else()
+            message(FATAL_ERROR
+                "ACT-POLYC-SELFHOST-PARSER-SLICE04: "
+                "cannot determine the target object format for this platform. "
+                "Configure with -DAST_TOKEN_MAP_TARGET_OBJECT_FORMAT=<Mach-O|ELF> "
+                "so the AST-operator symbol spelling can be resolved "
+                "for the target rather than guessed from the host.")
+        endif()
+    endif()
+
+    if (NOT AST_TOKEN_MAP_NM)
+        set(AST_TOKEN_MAP_NM "${CMAKE_NM}")
+    endif()
+    if (NOT AST_TOKEN_MAP_NM)
+        message(FATAL_ERROR
+            "ACT-POLYC-SELFHOST-PARSER-SLICE04: "
+            "REJECT_NM_FAILURE the configured toolchain provides no nm "
+            "(CMAKE_NM is empty), so the AST-operator subject cannot "
+            "be verified. Configure with -DAST_TOKEN_MAP_NM=<path to nm> "
+            "to inspect the target object with a tool that understands the "
+            "target format. Refusing to link the production compiler.")
+    endif()
+
+    # ---------------------------------------------------------------------
+    # The producer mode: when a stage0 producer is configured, the build
+    # graph SCHEDULES the component's production.  The object is produced
+    # by the stage-0 compiler, so the component does not depend on the
+    # production compiler it is about to serve.
+    # ---------------------------------------------------------------------
+    set(_am_stamp "${AST_TOKEN_MAP_OBJECT}.verified")
+
+    if (AST_TOKEN_MAP_PRODUCER)
+        add_custom_command(
+            OUTPUT "${AST_TOKEN_MAP_OBJECT}"
+            COMMAND "${CMAKE_COMMAND}" -E rm -f "${AST_TOKEN_MAP_OBJECT}"
+            COMMAND "${AST_TOKEN_MAP_PRODUCER}"
+                    --install-dir=${CMAKE_SOURCE_DIR}/../build/bootstrap-prefix
+                    -c "${AST_TOKEN_MAP_SOURCE}"
+                    -o "${AST_TOKEN_MAP_OBJECT}"
+            DEPENDS "${AST_TOKEN_MAP_SOURCE}"
+            COMMENT "ACT-POLYC-SELFHOST-PARSER-SLICE04: producing AST-operator subject ${AST_TOKEN_MAP_OBJECT}"
+            VERBATIM)
+        message(STATUS "ACT-POLYC-SELFHOST-PARSER-SLICE04: production hcc SCHEDULES AST-operator subject production: ${AST_TOKEN_MAP_OBJECT}")
+    elseif (NOT EXISTS "${AST_TOKEN_MAP_OBJECT}")
+        message(FATAL_ERROR
+            "ACT-POLYC-SELFHOST-PARSER-SLICE04: "
+            "REJECT_MISSING_OBJECT the AST-operator subject "
+            "${AST_TOKEN_MAP_OBJECT} does not exist and no producer is "
+            "configured. Build it first with the stage0 compiler: "
+            "./hcc --install-dir=<prefix> -c tools/bootstrap/selfhost-parser-slice04.HC -o ${AST_TOKEN_MAP_OBJECT}. "
+            "Or configure with -DAST_TOKEN_MAP_PRODUCER=<stage0 hcc> to have the "
+            "build graph produce it.")
+    else()
+        message(STATUS "ACT-POLYC-SELFHOST-PARSER-SLICE04: production hcc uses a PREBUILT AST-operator subject: ${AST_TOKEN_MAP_OBJECT}")
+    endif()
+
+    # ---------------------------------------------------------------------
+    # The single strict verification gate, shared by BOTH modes.
+    #
+    # The verification is a custom TARGET, not an OUTPUT-producing custom
+    # command.  A custom command with an OUTPUT file is considered
+    # up-to-date whenever that file exists and is newer than its
+    # dependencies -- which is exactly the stale-stamp hazard.  A custom
+    # target's command ALWAYS runs, so the verifier executes on every
+    # relevant production build and the object content is checked every
+    # time.  The stamp file is still written, but it is a RECORD of the
+    # verification (it records the object's SHA), never the thing that
+    # decides whether the verification happens.
+    # ---------------------------------------------------------------------
+    add_custom_target(hcc-ast-token-map-verify
+        COMMAND "${CMAKE_COMMAND}"
+                -DAST_TOKEN_MAP_OBJECT=${AST_TOKEN_MAP_OBJECT}
+                -DAST_TOKEN_MAP_EXPECTED_SYMBOL=BootstrapAstBinOpFromToken
+                -DAST_TOKEN_MAP_TARGET_OBJECT_FORMAT=${AST_TOKEN_MAP_TARGET_OBJECT_FORMAT}
+                -DAST_TOKEN_MAP_NM=${AST_TOKEN_MAP_NM}
+                -P "${CMAKE_SOURCE_DIR}/cmake/VerifyAstTokenMapObject.cmake"
+        COMMAND "${CMAKE_COMMAND}"
+                -DAST_TOKEN_MAP_OBJECT=${AST_TOKEN_MAP_OBJECT}
+                -DAST_TOKEN_MAP_STAMP=${_am_stamp}
+                -P "${CMAKE_SOURCE_DIR}/cmake/WriteAstTokenMapObjectStamp.cmake"
+        DEPENDS "${AST_TOKEN_MAP_OBJECT}"
+        COMMENT "ACT-POLYC-SELFHOST-PARSER-SLICE04: verifying AST-operator subject ${AST_TOKEN_MAP_OBJECT}"
+        VERBATIM
+        USES_TERMINAL)
+
+    # The verification gates the link: the production compiler is never
+    # linked without a verified PolyC AST-operator authority.
+    add_dependencies(hcc hcc-ast-token-map-verify)
+
+    # The link itself must ALSO depend on the object, so the object is
+    # re-read by the linker whenever it changes.
+    set_property(TARGET hcc APPEND PROPERTY
+        LINK_DEPENDS "${AST_TOKEN_MAP_OBJECT}")
+
+    target_compile_definitions(hcc PRIVATE HCC_USE_SELFHOST_PARSER_AST_BINOP)
+    target_link_libraries(hcc ${AST_TOKEN_MAP_OBJECT})
+    message(STATUS "ACT-POLYC-SELFHOST-PARSER-SLICE04: production hcc links AST-operator PolyC component: ${AST_TOKEN_MAP_OBJECT}")
+    message(STATUS "ACT-POLYC-SELFHOST-PARSER-SLICE04: production hcc VERIFIES the AST-operator subject (both producer and prebuilt modes); "
+                   "target format=${AST_TOKEN_MAP_TARGET_OBJECT_FORMAT}; nm=${AST_TOKEN_MAP_NM}")
+endif()
+
 # ACT-POLYC-BOOTSTRAP02 C2 IMPL — opt-in stage1 build that
 # links the B1 PolyC component (BootstrapScanIdent) into a
 # SEPARATE binary (hcc-bootstrap02) which uses the modified

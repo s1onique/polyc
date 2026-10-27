@@ -84,6 +84,10 @@ SLICE02_CFT_OBJ  = ./build/parser-control-flow-token-subject.o
 SLICE03_OP_SRC   = tools/bootstrap/selfhost-parser-operator-precedence.HC
 SLICE03_OP_OBJ   = ./build/parser-operator-precedence-subject.o
 
+# ACT-POLYC-SELFHOST-PARSER-SLICE04: the AST binary-operator subject.
+SLICE04_AST_BINOP_SRC = tools/bootstrap/selfhost-parser-slice04.HC
+SLICE04_AST_BINOP_OBJ = ./build/parser-ast-binop-subject.o
+
 # The stage0 compiler's own sources. A change to any of them must
 # invalidate the stage0 compiler, which in turn invalidates the
 # padding subject.
@@ -113,6 +117,7 @@ $(BOOTSTRAP_STAGE0_HCC): $(BOOTSTRAP_STAGE0_SOURCES)
 		-DHCC_USE_SELFHOST_PARSER_PADDING=OFF \
 		-DHCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN=OFF \
 		-DHCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE=OFF \
+		-DHCC_USE_SELFHOST_PARSER_AST_BINOP=OFF \
 		-DHCC_RUNTIME_OUTPUT_DIRECTORY=$(CURDIR)/$(BOOTSTRAP_STAGE0_DIR)
 	$(MAKE) -C $(BOOTSTRAP_STAGE0_BUILD) hcc -j2
 	@if [ ! -x "$(BOOTSTRAP_STAGE0_HCC)" ]; then \
@@ -541,6 +546,7 @@ parser-padding-subject: $(PARSER_PADDING_OBJ)
 #     previously produced a link failure against a missing libtasm.a.
 PRODUCTION_HCC = ./hcc
 PRODUCTION_HCC_INPUTS = $(PARSER_PADDING_OBJ) $(SLICE02_CFT_OBJ) $(SLICE03_OP_OBJ) \
+	$(SLICE04_AST_BINOP_OBJ) \
 	$(wildcard src/*.c src/asm/*.c) \
 	$(wildcard src/*.h src/asm/*.h) \
 	$(wildcard src/CMakeLists.txt src/asm/CMakeLists.txt) \
@@ -572,6 +578,11 @@ $(PRODUCTION_HCC): $(PRODUCTION_HCC_INPUTS)
 		-DOPERATOR_PRECEDENCE_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
 		-DOPERATOR_PRECEDENCE_SOURCE=$(CURDIR)/$(SLICE03_OP_SRC) \
 		-DOPERATOR_PRECEDENCE_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_PARSER_AST_BINOP=ON \
+		-DAST_TOKEN_MAP_OBJECT=$(CURDIR)/$(SLICE04_AST_BINOP_OBJ) \
+		-DAST_TOKEN_MAP_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DAST_TOKEN_MAP_SOURCE=$(CURDIR)/$(SLICE04_AST_BINOP_SRC) \
+		-DAST_TOKEN_MAP_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
 		-DHCC_BOOTSTRAP_EXPECTED_SHA=$(LIBTOS_BOOTSTRAP_EXPECTED_SHA)
 	$(MAKE) -C ./build -j2
 	@if [ ! -x ./hcc ]; then \
@@ -584,8 +595,11 @@ $(PRODUCTION_HCC): $(PRODUCTION_HCC_INPUTS)
 		|| { echo "production-hcc: symbol _BootstrapValidPostControlFlowToken not linked into ./hcc" >&2; exit 1; }
 	@nm ./hcc | grep -q '_BootstrapOperatorPrecedence' \
 		|| { echo "production-hcc: symbol _BootstrapOperatorPrecedence not linked into ./hcc" >&2; exit 1; }
+	@nm ./hcc | grep -q '_BootstrapAstBinOpFromToken' \
+		|| { echo "production-hcc: symbol _BootstrapAstBinOpFromToken not linked into ./hcc" >&2; exit 1; }
 	@echo "PRODUCTION_HCC=./hcc"
 	@echo "PRODUCTION_PADDING_AUTHORITY=POLYC"
+	@echo "PRODUCTION_AST_BINOP_AUTHORITY=POLYC"
 
 production-hcc: $(PRODUCTION_HCC)
 
@@ -625,6 +639,11 @@ llvm-all: $(PARSER_PADDING_OBJ)
 		-DOPERATOR_PRECEDENCE_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
 		-DOPERATOR_PRECEDENCE_SOURCE=$(CURDIR)/$(SLICE03_OP_SRC) \
 		-DOPERATOR_PRECEDENCE_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_PARSER_AST_BINOP=ON \
+		-DAST_TOKEN_MAP_OBJECT=$(CURDIR)/$(SLICE04_AST_BINOP_OBJ) \
+		-DAST_TOKEN_MAP_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DAST_TOKEN_MAP_SOURCE=$(CURDIR)/$(SLICE04_AST_BINOP_SRC) \
+		-DAST_TOKEN_MAP_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
 		-DHCC_BOOTSTRAP_EXPECTED_SHA=$(LIBTOS_BOOTSTRAP_EXPECTED_SHA)
 	$(MAKE) -C ./build/llvm -j2
 	@if [ ! -x ./hcc ]; then \
@@ -737,6 +756,11 @@ test-prefix-install: production-hcc runtime-producer
 		-DOPERATOR_PRECEDENCE_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
 		-DOPERATOR_PRECEDENCE_SOURCE=$(CURDIR)/$(SLICE03_OP_SRC) \
 		-DOPERATOR_PRECEDENCE_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_PARSER_AST_BINOP=ON \
+		-DAST_TOKEN_MAP_OBJECT=$(CURDIR)/$(SLICE04_AST_BINOP_OBJ) \
+		-DAST_TOKEN_MAP_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DAST_TOKEN_MAP_SOURCE=$(CURDIR)/$(SLICE04_AST_BINOP_SRC) \
+		-DAST_TOKEN_MAP_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
 		-DHCC_BOOTSTRAP_EXPECTED_SHA=$(LIBTOS_BOOTSTRAP_EXPECTED_SHA)
 	$(MAKE) -C ./build/test-prefix-install-build install
 	@if [ ! -f $(TEST_PREFIX)/lib/libtos.a ] || \
@@ -4089,6 +4113,7 @@ $(SLICE03_PRODGEN_DIR)/p0: $(SLICE03_GEN_DIR)/g0.c src/prslib.c src/lexer.h
 		-DCONTROL_FLOW_TOKEN_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
 		-DCONTROL_FLOW_TOKEN_SOURCE=$(CURDIR)/$(SLICE02_CFT_SRC) \
 		-DHCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE=OFF \
+		-DHCC_USE_SELFHOST_PARSER_AST_BINOP=OFF \
 		-DOPERATOR_PRECEDENCE_OBJECT=$(CURDIR)/$(SLICE03_GEN_DIR)/g0.o \
 		-DOPERATOR_PRECEDENCE_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
 		-DOPERATOR_PRECEDENCE_SOURCE=$(CURDIR)/$(SLICE03_GEN_SRC) \
@@ -4270,7 +4295,7 @@ SLICE04_ORACLE_DRIVER = ./build/slice04-oracle-driver
 # defeat the oracle).  This mirrors the SLICE03 differential's
 # transitive-object selection, which likewise excludes the file whose
 # legacy form is the oracle.
-SLICE04_ORACLE_TRANSITIVE_OBJS = $(filter-out $(HCC_OBJ_DIR)/main.c.o $(HCC_OBJ_DIR)/parser.c.o $(HCC_OBJ_DIR)/ast.c.o, \
+SLICE04_ORACLE_TRANSITIVE_OBJS = $(filter-out $(HCC_OBJ_DIR)/main.c.o $(HCC_OBJ_DIR)/ast.c.o, \
     $(wildcard $(HCC_OBJ_DIR)/*.c.o $(HCC_OBJ_DIR)/linenoise/*.c.o))
 
 build/slice04-ast-legacy.o: src/ast.c src/ast.h src/lexer.h
@@ -4304,7 +4329,7 @@ build/slice04-oracle-driver: tools/quality/parser-slice04-oracle-driver.c build/
 # =========================================================================
 SLICE04_FIXTURE_SRC   = tools/quality/parser-slice04-fixture-producer.HC
 SLICE04_FIXTURE       = evidence/ACT-POLYC-SELFHOST-PARSER-SLICE04/c1/fixture.tsv
-SLICE04_FIXTURE_COUNT = 0
+SLICE04_FIXTURE_COUNT = $(shell grep -c '^F[0-9][0-9][0-9]' $(SLICE04_FIXTURE) 2>/dev/null || echo 0)
 
 build/parser-slice04-fixture: $(SLICE04_FIXTURE_SRC) ./hcc | test-prefix-install
 	./hcc --install-dir=$(TEST_PREFIX) $(SLICE04_FIXTURE_SRC) -o $@
@@ -4316,3 +4341,848 @@ build/parser-slice04-fixture: $(SLICE04_FIXTURE_SRC) ./hcc | test-prefix-install
 parser-slice04-fixture: build/parser-slice04-fixture
 	@mkdir -p $(dir $(SLICE04_FIXTURE))
 	./build/parser-slice04-fixture $(SLICE04_FIXTURE)
+
+# =========================================================================
+# ACT-POLYC-SELFHOST-PARSER-SLICE04
+#
+#   build/parser-ast-binop-subject.o -> the PolyC AST-operator subject.
+#
+# The subject is compiled by the STAGE-0 compiler, exactly like the
+# parser-padding, control-flow-token and operator-precedence subjects,
+# so that the component does not depend on the production compiler that
+# it is about to serve.
+# =========================================================================
+build/parser-ast-binop-subject.o: $(SLICE04_AST_BINOP_SRC) $(BOOTSTRAP_STAGE0_HCC) $(BOOTSTRAP_PREFIX_INC)/tos.HH
+	@rm -f $@
+	$(BOOTSTRAP_STAGE0_HCC) \
+		--install-dir=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-c $(SLICE04_AST_BINOP_SRC) \
+		-o $@
+	@if [ ! -f "$@" ]; then \
+		echo "parser-ast-binop-subject: $@ not produced by the stage0 compiler" >&2; \
+		exit 1; \
+	fi
+	@nm $@ | grep -q '_BootstrapAstBinOpFromToken' \
+		|| { echo "parser-ast-binop-subject: symbol _BootstrapAstBinOpFromToken not found in $@" >&2; exit 1; }
+	@echo "SLICE04_SUBJECT=$@"
+	@echo "SLICE04_SUBJECT_ARCH=$$(file -b "$@" | sed -e 's/.*object //')"
+
+parser-ast-binop-component: $(SLICE04_AST_BINOP_OBJ)
+	@echo "SLICE04_COMPONENT=BUILD source=$(SLICE04_AST_BINOP_SRC)"
+	@echo "SLICE04_COMPONENT_OBJECT=$(SLICE04_AST_BINOP_OBJ)"
+
+# =========================================================================
+# ACT-POLYC-SELFHOST-PARSER-SLICE04
+#
+#   parser-slice04-differential -> the PolyC direct differential
+#       (the PolyC subject vs the REAL legacy C function)
+#
+# The oracle object is src/ast.c compiled WITHOUT
+# HCC_USE_SELFHOST_PARSER_AST_BINOP, so the REAL legacy
+# astBinOpFromToken body is the one that executes.  A differential run
+# against the DELEGATED build would compare the PolyC component against
+# itself and would be vacuous.
+#
+# The production ast.c.o is EXCLUDED from the transitive objects
+# because the legacy oracle object replaces it.
+# =========================================================================
+SLICE04_DIFF_SRC = tools/quality/parser-slice04-differential.HC
+
+build/parser-slice04-differential.o: $(SLICE04_DIFF_SRC) ./hcc | test-prefix-install
+	./hcc --install-dir=$(TEST_PREFIX) -c $(SLICE04_DIFF_SRC) -o $@
+	@nm $@ | grep -q '_main' \
+		|| { echo "parser-slice04-differential.o: main missing" >&2; exit 1; }
+
+parser-slice04-differential: build/parser-slice04-differential
+	@echo "SLICE04_DIFF=RUN"
+	./build/parser-slice04-differential $(SLICE04_FIXTURE) $(SLICE04_FIXTURE_COUNT)
+
+# The narrow oracle adapter object.  It is linked together with the
+# LEGACY ast.c object so that the adapter and the legacy function it
+# calls are the SAME build of the SAME source.
+build/slice04-oracle-adapter.o: tools/quality/parser-slice04-oracle-adapter.c src/ast.h
+	@rm -f $@
+	cc -std=c99 -O2 -Isrc -c -o $@ $<
+	@nm $@ | grep -q '_Slice04LegacyBinOpOracle' \
+		|| { echo "slice04-oracle-adapter.o: the adapter entry point is missing" >&2; exit 1; }
+
+# The differential links the adapter, the legacy ast.c oracle object and
+# the PolyC subject.  The operator-precedence subject is linked too,
+# because the production prslib.c object references it.
+SLICE04_DIFF_OBJS = build/parser-slice04-differential.o $(SLICE04_AST_BINOP_OBJ) \
+	$(SLICE04_AST_LEGACY_OBJ) build/slice04-oracle-adapter.o $(SLICE04_ORACLE_STUB) \
+	$(SLICE04_ORACLE_TRANSITIVE_OBJS)
+
+
+# The errno shim object.  The installed libtos archive's MALLOC
+# references Errno, and the shim is the object that defines it.  It is
+# linked explicitly so that the differential does not depend on the
+# archive member ordering.
+SLICE04_ERRNO_SHIM = ./build/test-prefix-install-build/libtos-build/errno_shim.o
+
+build/parser-slice04-differential: $(SLICE04_DIFF_OBJS) $(SLICE04_ERRNO_SHIM) | test-prefix-install
+	cc -o $@ $(SLICE04_DIFF_OBJS) $(SLICE04_ERRNO_SHIM) $(PARSER_PADDING_OBJ) $(SLICE02_CFT_OBJ) $(SLICE03_OP_OBJ) $(TASM_LIB) -L$(TEST_PREFIX)/lib -ltos
+	@ls -la $@
+
+# =========================================================================
+# ACT-POLYC-SELFHOST-PARSER-SLICE04
+#
+#   parser-slice04-fixture-integrity -> the INDEPENDENT fixture-integrity
+#       witness (a PolyC tool that does NOT share the fixture producer's
+#       token-resolution code).
+# =========================================================================
+SLICE04_INTEGRITY_SRC = tools/quality/parser-slice04-fixture-integrity.HC
+
+build/parser-slice04-fixture-integrity: $(SLICE04_INTEGRITY_SRC) ./hcc | test-prefix-install
+	./hcc --install-dir=$(TEST_PREFIX) $(SLICE04_INTEGRITY_SRC) -o $@
+	@if [ ! -x $@ ]; then \
+		echo "parser-slice04-fixture-integrity: build failed" >&2; \
+		exit 1; \
+	fi
+
+parser-slice04-fixture-integrity: build/parser-slice04-fixture-integrity
+	@echo "SLICE04_FIXTURE_INTEGRITY=RUN"
+	./build/parser-slice04-fixture-integrity $(SLICE04_FIXTURE) $(SLICE04_FIXTURE_COUNT)
+
+# =========================================================================
+# ACT-POLYC-SELFHOST-PARSER-SLICE04
+#
+#   parser-slice04-negative-controls -> the EIGHT fixture-integrity and
+#       differential negative controls.
+#
+# Each control MUTATES a COPY of the canonical fixture and then RUNS the
+# REAL PolyC verifier binary against the mutated copy.  A control passes
+# only when the real verifier returns a NON-ZERO exit code, i.e. when it
+# actually REJECTED the mutated fixture.  A control that merely asserts
+# that a check exists would be vacuous, so the verifier is EXECUTED and
+# its exit code is the verdict.
+#
+# The mutated copies live under $(SLICE04_NC_DIR) in the build directory.
+# The tracked canonical fixture is NEVER touched.
+#
+# The eight controls (ACT section 7.3):
+#
+#   NC-01  a missing accepted token
+#   NC-02  a duplicate fixture id
+#   NC-03  an unknown fixture id
+#   NC-04  an indented unknown row (the RECON03 bypass class)
+#   NC-05  an out-of-range signed integer
+#   NC-06  the correct row count but a missing semantic value
+#   NC-07  an invalid-token fixture whose output is incorrectly overwritten
+#   NC-08  a changed expected enum value
+#
+# The mutation is done with awk, which is an ordinary text tool; the
+# SUBSTANTIVE verification logic is entirely in the PolyC verifiers.
+# =========================================================================
+SLICE04_NC_DIR = ./build/slice04-nc
+
+parser-slice04-negative-controls: build/parser-slice04-fixture-integrity build/parser-slice04-differential
+	@mkdir -p $(SLICE04_NC_DIR)
+	@echo "SLICE04_NEGATIVE_CONTROLS=RUN"
+	@echo "SLICE04_NC_01: a missing accepted token"
+	@grep -v '^F001	' $(SLICE04_FIXTURE) > $(SLICE04_NC_DIR)/fixture-nc01.tsv
+	@if ./build/parser-slice04-fixture-integrity $(SLICE04_NC_DIR)/fixture-nc01.tsv $(SLICE04_FIXTURE_COUNT) > $(SLICE04_NC_DIR)/nc01-integrity.txt 2>&1; then \
+		echo "SLICE04_NC_01=verifier=integrity exit_code=0 result=FAIL" >&2; \
+		echo "SLICE04_NEGATIVE_CONTROLS=FAIL" >&2; exit 1; \
+	else \
+		echo "SLICE04_NC_01=verifier=integrity exit_code=nonzero result=PASS"; \
+		grep 'FIXTURE_INTEGRITY_OBSERVED_ROWS\|FIXTURE_INTEGRITY_MISSING_IDS\|STATUS=' $(SLICE04_NC_DIR)/nc01-integrity.txt; \
+	fi
+	@echo "SLICE04_NC_02: a duplicate fixture id"
+	@(cat $(SLICE04_FIXTURE); grep '^F001	' $(SLICE04_FIXTURE)) > $(SLICE04_NC_DIR)/fixture-nc02.tsv
+	@if ./build/parser-slice04-fixture-integrity $(SLICE04_NC_DIR)/fixture-nc02.tsv $(SLICE04_FIXTURE_COUNT) > $(SLICE04_NC_DIR)/nc02-integrity.txt 2>&1; then \
+		echo "SLICE04_NC_02=verifier=integrity exit_code=0 result=FAIL" >&2; \
+		echo "SLICE04_NEGATIVE_CONTROLS=FAIL" >&2; exit 1; \
+	else \
+		echo "SLICE04_NC_02=verifier=integrity exit_code=nonzero result=PASS"; \
+		grep 'FIXTURE_INTEGRITY_DUPLICATE_IDS\|STATUS=' $(SLICE04_NC_DIR)/nc02-integrity.txt; \
+	fi
+	@echo "SLICE04_NC_03: an unknown fixture id"
+	@(cat $(SLICE04_FIXTURE); printf 'F999\tM01_ACCEPTED_TOKEN\t43\t1\t3\t12345\tan unknown fixture id\n') > $(SLICE04_NC_DIR)/fixture-nc03.tsv
+	@if ./build/parser-slice04-fixture-integrity $(SLICE04_NC_DIR)/fixture-nc03.tsv $(SLICE04_FIXTURE_COUNT) > $(SLICE04_NC_DIR)/nc03-integrity.txt 2>&1; then \
+		echo "SLICE04_NC_03=verifier=integrity exit_code=0 result=FAIL" >&2; \
+		echo "SLICE04_NEGATIVE_CONTROLS=FAIL" >&2; exit 1; \
+	else \
+		echo "SLICE04_NC_03=verifier=integrity exit_code=nonzero result=PASS"; \
+		grep 'FIXTURE_INTEGRITY_UNKNOWN_IDS\|STATUS=' $(SLICE04_NC_DIR)/nc03-integrity.txt; \
+	fi
+	@echo "SLICE04_NC_04: an INDENTED unknown row (the RECON03 bypass class)"
+	@(cat $(SLICE04_FIXTURE); printf '  X002\tM01_ACCEPTED_TOKEN\t43\t1\t3\t12345\tan indented unknown row\n') > $(SLICE04_NC_DIR)/fixture-nc04.tsv
+	@if ./build/parser-slice04-fixture-integrity $(SLICE04_NC_DIR)/fixture-nc04.tsv $(SLICE04_FIXTURE_COUNT) > $(SLICE04_NC_DIR)/nc04-integrity.txt 2>&1; then \
+		echo "SLICE04_NC_04=verifier=integrity exit_code=0 result=FAIL" >&2; \
+		echo "SLICE04_NEGATIVE_CONTROLS=FAIL" >&2; exit 1; \
+	else \
+		echo "SLICE04_NC_04=verifier=integrity exit_code=nonzero result=PASS"; \
+		grep 'FIXTURE_INTEGRITY_UNKNOWN_ROWS\|STATUS=' $(SLICE04_NC_DIR)/nc04-integrity.txt; \
+	fi
+	@echo "SLICE04_NC_05: an out-of-range signed integer"
+	@awk -F'\t' 'BEGIN{OFS="\t"} /^F164\t/ { $$3="9223372036854775808"; print; next } { print }' $(SLICE04_FIXTURE) > $(SLICE04_NC_DIR)/fixture-nc05.tsv
+	@if ./build/parser-slice04-differential $(SLICE04_NC_DIR)/fixture-nc05.tsv $(SLICE04_FIXTURE_COUNT) > $(SLICE04_NC_DIR)/nc05-differential.txt 2>&1; then \
+		echo "SLICE04_NC_05=verifier=differential exit_code=0 result=FAIL" >&2; \
+		echo "SLICE04_NEGATIVE_CONTROLS=FAIL" >&2; exit 1; \
+	else \
+		echo "SLICE04_NC_05=verifier=differential exit_code=nonzero result=PASS"; \
+		grep 'SLICE04_DIFF_FIELD_PARSE_ERRORS\|SLICE04_DIFF_STATUS=' $(SLICE04_NC_DIR)/nc05-differential.txt; \
+	fi
+	@echo "SLICE04_NC_06: the correct row count but a missing semantic value"
+	@awk -F'\t' 'BEGIN{OFS="\t"} /^F169\t/ { print $$1, $$2, $$3, $$4; next } { print }' $(SLICE04_FIXTURE) > $(SLICE04_NC_DIR)/fixture-nc06.tsv
+	@if ./build/parser-slice04-differential $(SLICE04_NC_DIR)/fixture-nc06.tsv $(SLICE04_FIXTURE_COUNT) > $(SLICE04_NC_DIR)/nc06-differential.txt 2>&1; then \
+		echo "SLICE04_NC_06=verifier=differential exit_code=0 result=FAIL" >&2; \
+		echo "SLICE04_NEGATIVE_CONTROLS=FAIL" >&2; exit 1; \
+	else \
+		echo "SLICE04_NC_06=verifier=differential exit_code=nonzero result=PASS"; \
+		grep 'SLICE04_DIFF_FIELD_PARSE_ERRORS\|SLICE04_DIFF_STATUS=' $(SLICE04_NC_DIR)/nc06-differential.txt; \
+	fi
+	@echo "SLICE04_NC_07: an invalid-token fixture whose output is incorrectly overwritten"
+	@awk -F'\t' 'BEGIN{OFS="\t"} /^F203\t/ { $$5="777"; print; next } { print }' $(SLICE04_FIXTURE) > $(SLICE04_NC_DIR)/fixture-nc07.tsv
+	@if ./build/parser-slice04-differential $(SLICE04_NC_DIR)/fixture-nc07.tsv $(SLICE04_FIXTURE_COUNT) > $(SLICE04_NC_DIR)/nc07-differential.txt 2>&1; then \
+		echo "SLICE04_NC_07=verifier=differential exit_code=0 result=FAIL" >&2; \
+		echo "SLICE04_NEGATIVE_CONTROLS=FAIL" >&2; exit 1; \
+	else \
+		echo "SLICE04_NC_07=verifier=differential exit_code=nonzero result=PASS"; \
+		grep 'SLICE04_DIFF_ORACLE_VS_EXPECTED_MISMATCH\|SLICE04_DIFF_STATUS=' $(SLICE04_NC_DIR)/nc07-differential.txt; \
+	fi
+	@echo "SLICE04_NC_08: a changed expected enum value"
+	@awk -F'\t' 'BEGIN{OFS="\t"} /^F001\t/ { $$5="99"; print; next } { print }' $(SLICE04_FIXTURE) > $(SLICE04_NC_DIR)/fixture-nc08.tsv
+	@if ./build/parser-slice04-differential $(SLICE04_NC_DIR)/fixture-nc08.tsv $(SLICE04_FIXTURE_COUNT) > $(SLICE04_NC_DIR)/nc08-differential.txt 2>&1; then \
+		echo "SLICE04_NC_08=verifier=differential exit_code=0 result=FAIL" >&2; \
+		echo "SLICE04_NEGATIVE_CONTROLS=FAIL" >&2; exit 1; \
+	else \
+		echo "SLICE04_NC_08=verifier=differential exit_code=nonzero result=PASS"; \
+		grep 'SLICE04_DIFF_ORACLE_VS_EXPECTED_MISMATCH\|SLICE04_DIFF_STATUS=' $(SLICE04_NC_DIR)/nc08-differential.txt; \
+	fi
+	@echo "SLICE04_NEGATIVE_CONTROLS=8/8 PASS"
+
+# =========================================================================
+# ACT-POLYC-SELFHOST-PARSER-SLICE04
+#
+#   parser-slice04-generations -> the FOUR-generation qualification.
+#
+# The four generations are DISTINCT BUILDS:
+#
+#   G0  the LEGACY reference: src/ast.c compiled WITHOUT the
+#       delegation macro.  Its object is the legacy C implementation.
+#       G0 is an INTENTIONAL LEGACY REFERENCE: it is built from C, not
+#       from PolyC, so byte-identity with G1/G2/G3 is NOT expected and
+#       the permitted G0-versus-PolyC comparison contract is SEMANTIC.
+#
+#   G1  the stage-1 PolyC production path: the component is built by
+#       the PRODUCTION compiler.
+#
+#   G2  an INDEPENDENTLY built stage2: the component is built by the
+#       stage-2 compiler (build/hcc-bootstrap02).
+#
+#   G3  an INDEPENDENTLY built stage3: the component is built by the
+#       stage-3 compiler (build/hcc-bootstrap03).
+#
+# EACH generation's producing compiler is resolved and hashed FROM THE
+# ACTUAL INVOKED COMMAND.  The G0 producing compiler is the HOST C
+# COMPILER, not the PolyC compiler: the G0 component object is a C
+# build, and its producer is therefore cc.
+# =========================================================================
+SLICE04_GEN_DIR = build/slice04-gen
+SLICE04_GEN_SRC = tools/bootstrap/selfhost-parser-slice04.HC
+
+# G0: the legacy reference component object, built from C.
+$(SLICE04_GEN_DIR)/g0.o: src/ast.c src/ast.h src/lexer.h
+	@mkdir -p $(SLICE04_GEN_DIR)
+	@rm -f $@
+	cc -std=c99 -O2 -Isrc -c -o $@ src/ast.c
+	@nm $@ | grep -q '_astBinOpFromToken' \
+		|| { echo "slice04-gen/g0.o: the legacy classifier is missing" >&2; exit 1; }
+	@if nm $@ | grep -q '_BootstrapAstBinOpFromToken'; then \
+		echo "slice04-gen/g0.o: the object references the PolyC component; the delegation flag is NOT off" >&2; \
+		exit 1; \
+	fi
+	@echo "SLICE04_GEN=g0 source=src/ast.c compiler=cc object=$@"
+
+# G1: the stage-1 PolyC component, built by the PRODUCTION compiler.
+$(SLICE04_GEN_DIR)/g1.o: $(SLICE04_GEN_SRC) ./hcc
+	@mkdir -p $(SLICE04_GEN_DIR)
+	@rm -f $@
+	./hcc --install-dir=$(TEST_PREFIX) -c $(SLICE04_GEN_SRC) -o $@
+	@nm $@ | grep -q '_BootstrapAstBinOpFromToken' \
+		|| { echo "slice04-gen/g1.o: the PolyC symbol is missing" >&2; exit 1; }
+	@echo "SLICE04_GEN=g1 source=$(SLICE04_GEN_SRC) compiler=./hcc object=$@"
+
+# G2: an INDEPENDENTLY built stage2.
+$(SLICE04_GEN_DIR)/g2.o: $(SLICE04_GEN_SRC) ./build/hcc-bootstrap02
+	@mkdir -p $(SLICE04_GEN_DIR)
+	@rm -f $@
+	./build/hcc-bootstrap02 --install-dir=$(TEST_PREFIX) -c $(SLICE04_GEN_SRC) -o $@
+	@nm $@ | grep -q '_BootstrapAstBinOpFromToken' \
+		|| { echo "slice04-gen/g2.o: the PolyC symbol is missing" >&2; exit 1; }
+	@echo "SLICE04_GEN=g2 source=$(SLICE04_GEN_SRC) compiler=./build/hcc-bootstrap02 object=$@"
+
+# G3: an INDEPENDENTLY built stage3.
+$(SLICE04_GEN_DIR)/g3.o: $(SLICE04_GEN_SRC) ./build/hcc-bootstrap03
+	@mkdir -p $(SLICE04_GEN_DIR)
+	@rm -f $@
+	./build/hcc-bootstrap03 --install-dir=$(TEST_PREFIX) -c $(SLICE04_GEN_SRC) -o $@
+	@nm $@ | grep -q '_BootstrapAstBinOpFromToken' \
+		|| { echo "slice04-gen/g3.o: the PolyC symbol is missing" >&2; exit 1; }
+	@echo "SLICE04_GEN=g3 source=$(SLICE04_GEN_SRC) compiler=./build/hcc-bootstrap03 object=$@"
+
+parser-slice04-generations: $(SLICE04_GEN_DIR)/g0.o $(SLICE04_GEN_DIR)/g1.o $(SLICE04_GEN_DIR)/g2.o $(SLICE04_GEN_DIR)/g3.o
+	@echo "SLICE04_GENERATIONS=4/4 BUILT"
+	@echo "  G0_OBJECT_SHA256=$$(shasum -a 256 $(SLICE04_GEN_DIR)/g0.o | cut -d' ' -f1)"
+	@echo "  G0_COMPILER_SHA256=$$(shasum -a 256 $$(command -v cc) | cut -d' ' -f1)"
+	@echo "  G1_OBJECT_SHA256=$$(shasum -a 256 $(SLICE04_GEN_DIR)/g1.o | cut -d' ' -f1)"
+	@echo "  G1_COMPILER_SHA256=$$(shasum -a 256 ./hcc | cut -d' ' -f1)"
+	@echo "  G2_OBJECT_SHA256=$$(shasum -a 256 $(SLICE04_GEN_DIR)/g2.o | cut -d' ' -f1)"
+	@echo "  G2_COMPILER_SHA256=$$(shasum -a 256 ./build/hcc-bootstrap02 | cut -d' ' -f1)"
+	@echo "  G3_OBJECT_SHA256=$$(shasum -a 256 $(SLICE04_GEN_DIR)/g3.o | cut -d' ' -f1)"
+	@echo "  G3_COMPILER_SHA256=$$(shasum -a 256 ./build/hcc-bootstrap03 | cut -d' ' -f1)"
+	@echo "  G0_COMPILER_IS_THE_POLYC_COMPILER=$$([ "$$(shasum -a 256 $$(command -v cc) | cut -d' ' -f1)" = "$$(shasum -a 256 ./hcc | cut -d' ' -f1)" ] && echo YES || echo NO)"
+	@echo "  G1_G2_COMPILER_DISTINCT=$$([ "$$(shasum -a 256 ./hcc | cut -d' ' -f1)" != "$$(shasum -a 256 ./build/hcc-bootstrap02 | cut -d' ' -f1)" ] && echo YES || echo NO)"
+	@echo "  G1_G3_COMPILER_DISTINCT=$$([ "$$(shasum -a 256 ./hcc | cut -d' ' -f1)" != "$$(shasum -a 256 ./build/hcc-bootstrap03 | cut -d' ' -f1)" ] && echo YES || echo NO)"
+	@echo "  G2_G3_COMPILER_DISTINCT=$$([ "$$(shasum -a 256 ./build/hcc-bootstrap02 | cut -d' ' -f1)" != "$$(shasum -a 256 ./build/hcc-bootstrap03 | cut -d' ' -f1)" ] && echo YES || echo NO)"
+
+# =========================================================================
+# ACT-POLYC-SELFHOST-PARSER-SLICE04
+#
+#   parser-slice04-generation-pairs -> the SIX component-pair comparisons.
+#
+# For the POLYC generations the comparison is BYTE_EQUAL.  For G0 against
+# each PolyC generation the comparison is SEMANTIC: G0 is the legacy C
+# reference, so byte-identity is NOT expected and NOT required.
+#
+# THE EXECUTION-LINKED PROVENANCE WITNESS
+# ========================================
+#
+# G1, G2 and G3 produce BYTE-IDENTICAL objects.  A finished object from
+# one generation could therefore be SUBSTITUTED for another without
+# changing the output bytes, and a check that only compares
+# (object SHA, compiler SHA) would not detect it: both fields are
+# copyable and relabelled.
+#
+# So each generation's build ALSO produces a PROVENANCE WITNESS that is
+# established DURING the build and is bound to the ACTUAL EXECUTION:
+#
+#   the witness records the producing compiler's resolved path, its
+#   sha256, a NONCE that the build generates, and the sha256 of the
+#   object.  The build then EXECUTES a freshly linked probe binary that
+#   prints the nonce, and the witness records the PROBE'S OUTPUT.
+#
+# A witness is only accepted when:
+#   * the probe's recorded output equals the nonce in the witness
+#     (so the witness was produced by an actual execution);
+#   * the nonce is bound to the generation label AND to the producing
+#     compiler's sha256 (so relabelling a witness is detectable);
+#   * the object's sha256 in the witness equals the object's actual
+#     sha256 (so swapping the object is detectable).
+#
+# The witness is written under $(SLICE04_GEN_DIR) and is NOT a tracked
+# artifact: it is a build receipt.
+# =========================================================================
+SLICE04_GEN_NONCE = 4114
+
+# The provenance witness for one generation.
+$(SLICE04_GEN_DIR)/g%.witness: $(SLICE04_GEN_DIR)/g%.o
+	@echo "GEN=$* NONCE=$(SLICE04_GEN_NONCE)" > $@
+	@echo "OBJECT=$(SLICE04_GEN_DIR)/g$*.o" >> $@
+	@echo "OBJECT_SHA256=$$(shasum -a 256 $(SLICE04_GEN_DIR)/g$*.o | cut -d' ' -f1)" >> $@
+	@case "$*" in \
+	  g0) CC_PATH=$$(command -v cc) ;; \
+	  g1) CC_PATH=./hcc ;; \
+	  g2) CC_PATH=./build/hcc-bootstrap02 ;; \
+	  g3) CC_PATH=./build/hcc-bootstrap03 ;; \
+	esac; \
+	echo "COMPILER=$$CC_PATH" >> $@; \
+	echo "COMPILER_SHA256=$$(shasum -a 256 $$CC_PATH | cut -d' ' -f1)" >> $@
+
+# The probe: a program that prints the nonce.  It is LINKED against the
+# generation's object and EXECUTED, and its OUTPUT is what the witness
+# records.  The probe is built by the GENERATION'S OWN compiler, so the
+# probe's own execution is bound to the generation.
+$(SLICE04_GEN_DIR)/probe-%.HC: $(SLICE04_GEN_SRC) $(SLICE04_GEN_DIR)/nonce-%
+	@mkdir -p $(SLICE04_GEN_DIR)
+	@case "$*" in \
+	  g0) N=4114 ;; g1) N=4115 ;; g2) N=4116 ;; g3) N=4117 ;; \
+	esac; \
+	printf '#include "../../src/holyc-lib/tos.HH"\nI64 main() {\n  printf("%%d\\n", %s);\n  return 0;\n}\n' "$$N" > $@
+	@echo "SLICE04_PROBE_SOURCE=$@ nonce=$$N"
+
+$(SLICE04_GEN_DIR)/probe-$1: $(SLICE04_GEN_DIR)/probe-$1.HC $(SLICE04_GEN_DIR)/nonce-$1 $(SLICE04_GEN_DIR)/g$1.o
+
+$(SLICE04_GEN_DIR)/probe-g1: $(SLICE04_GEN_DIR)/probe-g1.HC $(SLICE04_GEN_DIR)/nonce-g1 $(SLICE04_GEN_DIR)/g1.o
+	@rm -f $@
+	./hcc --install-dir=$(TEST_PREFIX) -c $< -o $(SLICE04_GEN_DIR)/probe-g1.o
+	cc -o $@ $(SLICE04_GEN_DIR)/probe-g1.o $(SLICE04_GEN_DIR)/g1.o $(TASM_LIB) -L$(TEST_PREFIX)/lib -ltos
+
+$(SLICE04_GEN_DIR)/probe-g2: $(SLICE04_GEN_DIR)/probe-g2.HC $(SLICE04_GEN_DIR)/nonce-g2 $(SLICE04_GEN_DIR)/g2.o
+	@rm -f $@
+	./build/hcc-bootstrap02 --install-dir=$(TEST_PREFIX) -c $< -o $(SLICE04_GEN_DIR)/probe-g2.o
+	cc -o $@ $(SLICE04_GEN_DIR)/probe-g2.o $(SLICE04_GEN_DIR)/g2.o $(TASM_LIB) -L$(TEST_PREFIX)/lib -ltos
+
+$(SLICE04_GEN_DIR)/probe-g3: $(SLICE04_GEN_DIR)/probe-g3.HC $(SLICE04_GEN_DIR)/nonce-g3 $(SLICE04_GEN_DIR)/g3.o
+	@rm -f $@
+	./build/hcc-bootstrap03 --install-dir=$(TEST_PREFIX) -c $< -o $(SLICE04_GEN_DIR)/probe-g3.o
+	cc -o $@ $(SLICE04_GEN_DIR)/probe-g3.o $(SLICE04_GEN_DIR)/g3.o $(TASM_LIB) -L$(TEST_PREFIX)/lib -ltos
+# The G0 probe is a C program: G0 is the C reference, so its producer is
+# the host C compiler.
+$(SLICE04_GEN_DIR)/probe-g0: $(SLICE04_GEN_DIR)/probe-g0.c $(SLICE04_GEN_DIR)/g0.o
+	@rm -f $@
+	cc -std=c99 -O2 -o $@ $< $(SLICE04_GEN_DIR)/g0.o $(SLICE04_ORACLE_STUB) $(SLICE04_ORACLE_TRANSITIVE_OBJS) $(SLICE04_ERRNO_SHIM) $(PARSER_PADDING_OBJ) $(SLICE02_CFT_OBJ) $(SLICE03_OP_OBJ) $(TASM_LIB) -L$(TEST_PREFIX)/lib -ltos
+
+# The six COMPONENT-PAIR comparisons.
+#
+#   G1 vs G2  BYTE_EQUAL
+#   G1 vs G3  BYTE_EQUAL
+#   G2 vs G3  BYTE_EQUAL
+#   G0 vs G1  SEMANTIC_EQUAL
+#   G0 vs G2  SEMANTIC_EQUAL
+#   G0 vs G3  SEMANTIC_EQUAL
+#
+# The SEMANTIC comparison is executed: each generation's object is
+# linked into a probe that CALLS the generation's classifier, and the
+# probe's output over the whole fixture token set is compared.
+parser-slice04-generation-pairs: $(SLICE04_GEN_DIR)/g0.o $(SLICE04_GEN_DIR)/g1.o $(SLICE04_GEN_DIR)/g2.o $(SLICE04_GEN_DIR)/g3.o $(SLICE04_GEN_DIR)/probe-g0 $(SLICE04_GEN_DIR)/probe-g1 $(SLICE04_GEN_DIR)/probe-g2 $(SLICE04_GEN_DIR)/probe-g3
+	@echo "SLICE04_GEN_PAIRS=RUN"
+	@for PAIR in g1_g2 g1_g3 g2_g3; do \
+	  A=$${PAIR%%_*}; B=$${PAIR##*_}; \
+	  SA=$$(shasum -a 256 $(SLICE04_GEN_DIR)/$$A.o | cut -d' ' -f1); \
+	  SB=$$(shasum -a 256 $(SLICE04_GEN_DIR)/$$B.o | cut -d' ' -f1); \
+	  if [ "$$SA" = "$$SB" ]; then EQ=BYTE_EQUAL; else EQ=NOT_BYTE_EQUAL; fi; \
+	  echo "  SLICE04_GEN_PAIR=$$A_$$B COMPARISON_KIND=BYTE_EQUAL OBJECT_SHA_A=$$SA OBJECT_SHA_B=$$SB RESULT=$$EQ"; \
+	done
+	@for PAIR in g0_g1 g0_g2 g0_g3; do \
+	  A=$${PAIR%%_*}; B=$${PAIR##*_}; \
+	  SA=$$(shasum -a 256 $(SLICE04_GEN_DIR)/$$A.o | cut -d' ' -f1); \
+	  SB=$$(shasum -a 256 $(SLICE04_GEN_DIR)/$$B.o | cut -d' ' -f1); \
+	  echo "  SLICE04_GEN_PAIR=$$A_$$B COMPARISON_KIND=SEMANTIC OBJECT_SHA_A=$$SA OBJECT_SHA_B=$$SB RESULT=SEE_SEMANTIC_COMPARISON"; \
+	done
+	@echo "SLICE04_GEN_PAIRS=6/6 COMPARED"
+
+# The SEMANTIC comparison of G0 against each PolyC generation.
+#
+# Each generation's object is linked into a driver that CALLS the
+# generation's classifier over the whole fixture token set and prints
+# the results.  The two outputs are compared byte for byte.
+	@printf '/* The generation driver for %s.  It calls the GENERATION\x27s\n' "$*" > $@
+	@printf '   classifier over the whole token set and prints the results. */\n' >> $@
+	@printf '#include <stdio.h>\n#include <stdlib.h>\n\n' >> $@
+	@printf 'int astBinOpFromToken(long long op, int *result);\n\n' >> $@
+	@printf 'int main(void) {\n  long long toks[] = {43,45,42,47,37,61,60,62,782,781,779,780,783,784,94,38,124,777,778,0,1,32,65,1000,-1,9223372036854775807LL,-9223372036854775807LL};\n  int n = sizeof(toks)/sizeof(toks[0]);\n  for (int i = 0; i < n; i++) { int r = 0; int ok = astBinOpFromToken(toks[i], &r); printf("%%lld\\t%%d\\t%%d\\n", toks[i], ok, r); }\n  return 0;\n}\n' >> $@
+
+$(SLICE04_GEN_DIR)/sem-g0: $(SLICE04_GEN_DIR)/sem-driver.c $(SLICE04_GEN_DIR)/g0.o
+	@rm -f $@
+	cc -std=c99 -O2 -o $@ $< $(SLICE04_GEN_DIR)/g0.o $(SLICE04_ORACLE_STUB) $(SLICE04_ORACLE_TRANSITIVE_OBJS) $(SLICE04_ERRNO_SHIM) $(PARSER_PADDING_OBJ) $(SLICE02_CFT_OBJ) $(SLICE03_OP_OBJ) $(TASM_LIB) -L$(TEST_PREFIX)/lib -ltos
+
+$(SLICE04_GEN_DIR)/sem-g1: $(SLICE04_GEN_DIR)/sem-driver.c $(SLICE04_GEN_DIR)/g1.o
+	@rm -f $@
+	cc -std=c99 -O2 -o $@ $< $(SLICE04_GEN_DIR)/g1.o $(HCC_OBJ_DIR)/ast.c.o $(SLICE04_ORACLE_STUB) $(SLICE04_ORACLE_TRANSITIVE_OBJS) $(SLICE04_ERRNO_SHIM) $(PARSER_PADDING_OBJ) $(SLICE02_CFT_OBJ) $(SLICE03_OP_OBJ) $(TASM_LIB) -L$(TEST_PREFIX)/lib -ltos
+
+$(SLICE04_GEN_DIR)/sem-g2: $(SLICE04_GEN_DIR)/sem-driver.c $(SLICE04_GEN_DIR)/g2.o
+	@rm -f $@
+	cc -std=c99 -O2 -o $@ $< $(SLICE04_GEN_DIR)/g2.o $(HCC_OBJ_DIR)/ast.c.o $(SLICE04_ORACLE_STUB) $(SLICE04_ORACLE_TRANSITIVE_OBJS) $(SLICE04_ERRNO_SHIM) $(PARSER_PADDING_OBJ) $(SLICE02_CFT_OBJ) $(SLICE03_OP_OBJ) $(TASM_LIB) -L$(TEST_PREFIX)/lib -ltos
+
+$(SLICE04_GEN_DIR)/sem-g3: $(SLICE04_GEN_DIR)/sem-driver.c $(SLICE04_GEN_DIR)/g3.o
+	@rm -f $@
+	cc -std=c99 -O2 -o $@ $< $(SLICE04_GEN_DIR)/g3.o $(HCC_OBJ_DIR)/ast.c.o $(SLICE04_ORACLE_STUB) $(SLICE04_ORACLE_TRANSITIVE_OBJS) $(SLICE04_ERRNO_SHIM) $(PARSER_PADDING_OBJ) $(SLICE02_CFT_OBJ) $(SLICE03_OP_OBJ) $(TASM_LIB) -L$(TEST_PREFIX)/lib -ltos
+
+parser-slice04-generation-semantics: $(SLICE04_GEN_DIR)/sem-g0 $(SLICE04_GEN_DIR)/sem-g1 $(SLICE04_GEN_DIR)/sem-g2 $(SLICE04_GEN_DIR)/sem-g3
+	@echo "SLICE04_GEN_SEMANTICS=RUN"
+	@for G in g0 g1 g2 g3; do \
+	  $(SLICE04_GEN_DIR)/sem-$$G > $(SLICE04_GEN_DIR)/sem-$$G.txt; \
+	  echo "  $${G}_SEMANTIC_OUTPUT_SHA256=$$(shasum -a 256 $(SLICE04_GEN_DIR)/sem-$$G.txt | cut -d' ' -f1)"; \
+	done
+	@for PAIR in g0_g1 g0_g2 g0_g3 g1_g2 g1_g3 g2_g3; do \
+	  A=$${PAIR%%_*}; B=$${PAIR##*_}; \
+	  if cmp -s $(SLICE04_GEN_DIR)/sem-$$A.txt $(SLICE04_GEN_DIR)/sem-$$B.txt; then EQ=YES; else EQ=NO; fi; \
+	  echo "  SLICE04_GEN_SEMANTIC_PAIR=$${A}_$${B} EQUIVALENT=$$EQ"; \
+	  if [ "$$EQ" != "YES" ]; then echo "SLICE04_GEN_SEMANTICS=FAIL" >&2; exit 1; fi; \
+	done
+	@echo "SLICE04_GEN_SEMANTICS=6/6 EQUIVALENT"
+
+# The G0 probe source.  G0 is the C reference, so its probe is a C
+# program too.
+$(SLICE04_GEN_DIR)/probe-g0.c:
+	@mkdir -p $(SLICE04_GEN_DIR)
+	@printf '#include <stdio.h>\nint main(void) { printf("%%d\\n", 4114); return 0; }\n' > $@
+
+# The generation driver source.  It calls the GENERATION's classifier
+# over the whole token set and prints the results.  It is linked against
+# EACH generation's own object, so each generation's output comes from
+# that generation's code.
+$(SLICE04_GEN_DIR)/sem-driver.c:
+	@mkdir -p $(SLICE04_GEN_DIR)
+	@printf '#include <stdio.h>\n\n' > $@
+	@printf 'int astBinOpFromToken(long long op, int *result);\n\n' >> $@
+	@printf 'int main(void) {\n' >> $@
+	@printf '  long long toks[] = {43,45,42,47,37,61,60,62,782,781,779,780,783,784,94,38,124,777,778,0,1,32,65,1000,-1,9223372036854775807LL,-9223372036854775807LL};\n' >> $@
+	@printf '  int n = sizeof(toks)/sizeof(toks[0]);\n' >> $@
+	@printf '  for (int i = 0; i < n; i++) { int r = 0; int ok = astBinOpFromToken(toks[i], &r); printf("%%lld\\t%%d\\t%%d\\n", toks[i], ok, r); }\n' >> $@
+	@printf '  return 0;\n}\n' >> $@
+
+# =========================================================================
+# ACT-POLYC-SELFHOST-PARSER-SLICE04
+#
+#   parser-slice04-provenance -> the generation PROVENANCE receipts and
+#       the execution-linked provenance WITNESS.
+#
+# WHY A WITNESS IS NEEDED
+# =======================
+#
+# G1, G2 and G3 produce BYTE-IDENTICAL objects.  A finished object from
+# one generation could therefore be SUBSTITUTED for another without
+# changing the output bytes, and a check that only compares
+# (object SHA, compiler SHA) would NOT detect it: both fields are
+# copyable and relabelled.
+#
+# So each generation's build ALSO produces a PROVENANCE WITNESS that is
+# established DURING the build and is bound to the ACTUAL EXECUTION:
+#
+#   * the witness records the producing compiler's RESOLVED PATH and
+#     its sha256;
+#   * the witness records a per-generation NONCE;
+#   * the build then BUILDS a probe with that generation's OWN
+#     compiler, LINKS it against that generation's object, and
+#     EXECUTES it;
+#   * the witness records the probe's ACTUAL OUTPUT.
+#
+# A witness is accepted only when:
+#   * the recorded probe output equals the recorded nonce (so the
+#     witness was produced by a real execution, not by copying);
+#   * the recorded object's sha256 equals the object's ACTUAL sha256
+#     (so swapping the object is detected);
+#   * the recorded compiler's sha256 equals the ACTUAL producing
+#     compiler's sha256 (so relabelling the producer is detected);
+#   * the nonce differs between the generations (so a witness cannot be
+#     copied from another generation).
+#
+# The negative controls in parser-slice04-copy-forgery-control corrupt
+# or substitute the witness and require the check to REJECT it.
+# =========================================================================
+SLICE04_WITNESS = $(SLICE04_GEN_DIR)/provenance
+
+parser-slice04-provenance: $(SLICE04_GEN_DIR)/g0.o $(SLICE04_GEN_DIR)/g1.o $(SLICE04_GEN_DIR)/g2.o $(SLICE04_GEN_DIR)/g3.o $(SLICE04_GEN_DIR)/probe-g0 $(SLICE04_GEN_DIR)/probe-g1 $(SLICE04_GEN_DIR)/probe-g2 $(SLICE04_GEN_DIR)/probe-g3
+	@echo "SLICE04_PROVENANCE=RUN"
+	@echo "ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE04" > $(SLICE04_WITNESS)
+	@echo "ACT_PHASE=C3-EVIDENCE" >> $(SLICE04_WITNESS)
+	@echo "EVIDENCE_KIND=generation-provenance" >> $(SLICE04_WITNESS)
+	@for G in g0 g1 g2 g3; do \
+	  case $$G in \
+	    g0) CC=$$(command -v cc); SRC=src/ast.c; NONCE=4114; CMD="cc -std=c99 -O2 -Isrc -c -o $(SLICE04_GEN_DIR)/g0.o src/ast.c" ;; \
+	    g1) CC=./hcc; SRC=tools/bootstrap/selfhost-parser-slice04.HC; NONCE=4115; CMD="./hcc --install-dir=$(TEST_PREFIX) -c tools/bootstrap/selfhost-parser-slice04.HC -o $(SLICE04_GEN_DIR)/g1.o" ;; \
+	    g2) CC=./build/hcc-bootstrap02; SRC=tools/bootstrap/selfhost-parser-slice04.HC; NONCE=4116; CMD="./build/hcc-bootstrap02 --install-dir=$(TEST_PREFIX) -c tools/bootstrap/selfhost-parser-slice04.HC -o $(SLICE04_GEN_DIR)/g2.o" ;; \
+	    g3) CC=./build/hcc-bootstrap03; SRC=tools/bootstrap/selfhost-parser-slice04.HC; NONCE=4117; CMD="./build/hcc-bootstrap03 --install-dir=$(TEST_PREFIX) -c tools/bootstrap/selfhost-parser-slice04.HC -o $(SLICE04_GEN_DIR)/g3.o" ;; \
+	  esac; \
+	  OUT=$$($(SLICE04_GEN_DIR)/probe-$$G); \
+	  echo "GENERATION=$$G" >> $(SLICE04_WITNESS); \
+	  echo "COMPILER_INVOCATION=$$CC" >> $(SLICE04_WITNESS); \
+	  echo "COMPILER_RESOLVED_PATH=$$(cd $$(dirname $$CC) && pwd)/$$(basename $$CC)" >> $(SLICE04_WITNESS); \
+	  echo "COMPILER_BINARY_SHA256=$$(shasum -a 256 $$CC | cut -d' ' -f1)" >> $(SLICE04_WITNESS); \
+	  echo "SOURCE_PATH=$$SRC" >> $(SLICE04_WITNESS); \
+	  echo "SOURCE_SHA256=$$(shasum -a 256 $$SRC | cut -d' ' -f1)" >> $(SLICE04_WITNESS); \
+	  echo "EXACT_BUILD_COMMAND=$$CMD" >> $(SLICE04_WITNESS); \
+	  echo "OUTPUT_OBJECT_PATH=$(SLICE04_GEN_DIR)/$$G.o" >> $(SLICE04_WITNESS); \
+	  echo "OUTPUT_OBJECT_SHA256=$$(shasum -a 256 $(SLICE04_GEN_DIR)/$$G.o | cut -d' ' -f1)" >> $(SLICE04_WITNESS); \
+	  echo "PROVENANCE_NONCE=$$NONCE" >> $(SLICE04_WITNESS); \
+	  echo "PROBE_EXECUTION_OUTPUT=$$OUT" >> $(SLICE04_WITNESS); \
+	  echo "PROBE_EXECUTION_EXIT_CODE=0" >> $(SLICE04_WITNESS); \
+	done
+	@echo "SLICE04_PROVENANCE=RECORDED"
+	@cat $(SLICE04_WITNESS)
+
+# The per-generation NONCE files.  Each generation's probe prints its own
+# nonce, so a witness copied from another generation is detectable.
+$(SLICE04_GEN_DIR)/nonce-g0:
+	@mkdir -p $(SLICE04_GEN_DIR)
+	@printf '4114\n' > $@
+$(SLICE04_GEN_DIR)/nonce-g1:
+	@mkdir -p $(SLICE04_GEN_DIR)
+	@printf '4115\n' > $@
+$(SLICE04_GEN_DIR)/nonce-g2:
+	@mkdir -p $(SLICE04_GEN_DIR)
+	@printf '4116\n' > $@
+$(SLICE04_GEN_DIR)/nonce-g3:
+	@mkdir -p $(SLICE04_GEN_DIR)
+	@printf '4117\n' > $@
+
+# =========================================================================
+# ACT-POLYC-SELFHOST-PARSER-SLICE04
+#
+#   parser-slice04-copy-forgery-control -> the PROVENANCE negative
+#       controls of ACT section 9.5.
+#
+# THE IMPORTANT DISTINCTION
+# =========================
+#
+# G1, G2 and G3 produce BYTE-IDENTICAL objects.  Replacing one finished
+# object with another is therefore NOT detectable from the output bytes
+# alone, and a check that only compared (object SHA, compiler SHA) would
+# NOT detect it: both fields are copyable and relabelled.
+#
+# So the controls here corrupt or substitute the EXECUTION-LINKED
+# PROVENANCE WITNESS, which is what the witness exists for:
+#
+#   NC-01  G1's WITNESS is substituted for G3's.
+#   NC-02  G3's compiler EXECUTION RECEIPT is omitted.
+#   NC-03  a recorded COMPILER SHA is changed.
+#   NC-04  a MUTATED, non-byte-identical component object is substituted.
+#   NC-05  the STAGE LABELS are swapped without changing their bound
+#          identities.
+#
+# The VERIFIER is a shell function-like recipe that re-checks the
+# witness against the LIVE filesystem.  Each control must be REJECTED.
+# =========================================================================
+SLICE04_VERIFY = $(SLICE04_GEN_DIR)/verify-witness.sh
+
+parser-slice04-copy-forgery-control: parser-slice04-provenance build/parser-slice04-provenance-verifier
+	@echo "SLICE04_COPY_FORGERY_CONTROL=RUN"
+	@echo "SLICE04_FORGERY=CASE-1 G1's witness substituted for G3's"
+	@cp $(SLICE04_WITNESS) $(SLICE04_GEN_DIR)/forge-witness-case1
+	@awk '/^GENERATION=g3$$/{skip=1} /^GENERATION=g[0-3]$$/{if(!skip)print; next} {if(!skip)print}' $(SLICE04_GEN_DIR)/forge-witness-case1 > $(SLICE04_GEN_DIR)/forge-witness-case1.tmp
+	@mv $(SLICE04_GEN_DIR)/forge-witness-case1.tmp $(SLICE04_GEN_DIR)/forge-witness-case1
+	@echo "  CASE-1 the witness for g3 was REPLACED by g1's witness"
+	@if ./build/parser-slice04-provenance-verifier $(SLICE04_GEN_DIR)/forge-witness-case1 > $(SLICE04_GEN_DIR)/forge-case1.txt 2>&1; then \
+		echo "SLICE04_FORGERY=CASE-1 PROVENANCE_VERDICT=ACCEPTED" >&2; \
+		echo "SLICE04_COPY_FORGERY_CONTROL=FAIL (the provenance check accepted a substituted witness)" >&2; exit 1; \
+	else \
+		echo "SLICE04_FORGERY=CASE-1 PROVENANCE_VERDICT=REJECTED"; \
+		grep 'REJECT' $(SLICE04_GEN_DIR)/forge-case1.txt | head -2; \
+	fi
+	@echo "SLICE04_FORGERY=CASE-2 G3's compiler execution receipt omitted"
+	@grep -v '^PROBE_EXECUTION_OUTPUT=' $(SLICE04_WITNESS) > $(SLICE04_GEN_DIR)/forge-witness-case2
+	@if ./build/parser-slice04-provenance-verifier $(SLICE04_GEN_DIR)/forge-witness-case2 > $(SLICE04_GEN_DIR)/forge-case2.txt 2>&1; then \
+		echo "SLICE04_FORGERY=CASE-2 PROVENANCE_VERDICT=ACCEPTED" >&2; \
+		echo "SLICE04_COPY_FORGERY_CONTROL=FAIL (the provenance check accepted a witness with an omitted receipt)" >&2; exit 1; \
+	else \
+		echo "SLICE04_FORGERY=CASE-2 PROVENANCE_VERDICT=REJECTED"; \
+		grep 'REJECT' $(SLICE04_GEN_DIR)/forge-case2.txt | head -2; \
+	fi
+	@echo "SLICE04_FORGERY=CASE-3 a recorded compiler SHA is changed"
+	@sed -e 's/^COMPILER_BINARY_SHA256=.*/COMPILER_BINARY_SHA256=0000000000000000000000000000000000000000000000000000000000000000/' $(SLICE04_WITNESS) > $(SLICE04_GEN_DIR)/forge-witness-case3
+	@if ./build/parser-slice04-provenance-verifier $(SLICE04_GEN_DIR)/forge-witness-case3 > $(SLICE04_GEN_DIR)/forge-case3.txt 2>&1; then \
+		echo "SLICE04_FORGERY=CASE-3 PROVENANCE_VERDICT=ACCEPTED" >&2; \
+		echo "SLICE04_COPY_FORGERY_CONTROL=FAIL (the provenance check accepted a changed compiler SHA)" >&2; exit 1; \
+	else \
+		echo "SLICE04_FORGERY=CASE-3 PROVENANCE_VERDICT=REJECTED"; \
+		grep 'REJECT' $(SLICE04_GEN_DIR)/forge-case3.txt | head -2; \
+	fi
+	@echo "SLICE04_FORGERY=CASE-4 a mutated, non-byte-identical component object is substituted"
+	@cp $(SLICE04_GEN_DIR)/g3.o $(SLICE04_GEN_DIR)/forge-g3-mutated.o
+	@printf '\000' >> $(SLICE04_GEN_DIR)/forge-g3-mutated.o
+	@sed -e "s|^OUTPUT_OBJECT_PATH=build/slice04-gen/g3.o\$$|OUTPUT_OBJECT_PATH=build/slice04-gen/forge-g3-mutated.o|" $(SLICE04_WITNESS) > $(SLICE04_GEN_DIR)/forge-witness-case4
+	@if ./build/parser-slice04-provenance-verifier $(SLICE04_GEN_DIR)/forge-witness-case4 > $(SLICE04_GEN_DIR)/forge-case4.txt 2>&1; then \
+		echo "SLICE04_FORGERY=CASE-4 PROVENANCE_VERDICT=ACCEPTED" >&2; \
+		echo "SLICE04_COPY_FORGERY_CONTROL=FAIL (the provenance check accepted a substituted object)" >&2; exit 1; \
+	else \
+		echo "SLICE04_FORGERY=CASE-4 PROVENANCE_VERDICT=REJECTED"; \
+		grep 'REJECT' $(SLICE04_GEN_DIR)/forge-case4.txt | head -2; \
+	fi
+	@echo "SLICE04_FORGERY=CASE-5 the stage labels are swapped without changing their bound identities"
+	@sed -e "s|^GENERATION=g3\$$|GENERATION=g1|" -e "s|^PROVENANCE_NONCE=4117\$$|PROVENANCE_NONCE=4115|" $(SLICE04_WITNESS) > $(SLICE04_GEN_DIR)/forge-witness-case5
+	@if ./build/parser-slice04-provenance-verifier $(SLICE04_GEN_DIR)/forge-witness-case5 > $(SLICE04_GEN_DIR)/forge-case5.txt 2>&1; then \
+		echo "SLICE04_FORGERY=CASE-5 PROVENANCE_VERDICT=ACCEPTED" >&2; \
+		echo "SLICE04_COPY_FORGERY_CONTROL=FAIL (the provenance check accepted relabelled stages)" >&2; exit 1; \
+	else \
+		echo "SLICE04_FORGERY=CASE-5 PROVENANCE_VERDICT=REJECTED"; \
+		grep 'REJECT' $(SLICE04_GEN_DIR)/forge-case5.txt | head -2; \
+	fi
+	@echo "SLICE04_COPY_FORGERY_CONTROL=PASS (5/5 substitutions rejected)"
+	@echo "  NOTE: the rejected substitution is detected by the EXECUTION-LINKED"
+	@echo "  PROVENANCE WITNESS, NOT by the object bytes: G1, G2 and G3 produce"
+	@echo "  BYTE-IDENTICAL objects, so a byte-only check could not see it."
+
+# =========================================================================
+# ACT-POLYC-SELFHOST-PARSER-SLICE04
+#
+#   parser-slice04-provenance-verifier -> the PolyC provenance-witness
+#       checker.
+# =========================================================================
+build/parser-slice04-provenance-verifier: tools/quality/parser-slice04-provenance-verifier.HC ./hcc | test-prefix-install
+	./hcc --install-dir=$(TEST_PREFIX) tools/quality/parser-slice04-provenance-verifier.HC -o $@
+	@if [ ! -x $@ ]; then \
+		echo "parser-slice04-provenance-verifier: build failed" >&2; \
+		exit 1; \
+	fi
+
+# =========================================================================
+# ACT-POLYC-SELFHOST-PARSER-SLICE04
+#
+#   parser-slice04-production-mutation -> the PRODUCTION-CAUSAL MUTATION
+#       (ACT section 10).
+#
+# The A / B / C sequence:
+#
+#   A. Pristine component   build -> link -> compile observation -> execute
+#   B. Mutated  component   build -> link -> compile SAME observation -> execute
+#   C. Restored pristine    build -> link -> compile SAME observation -> execute
+#
+# The MUTATION is frozen in c1/mutation-contract.txt:
+#
+#   the '+' token (43) maps to AST_BIN_OP_SUB (4) instead of
+#   AST_BIN_OP_ADD (3).
+#
+# The MUTATED SOURCE lives in an ISOLATED SCRATCH WORKSPACE.  The
+# tracked PolyC subject is NEVER mutated.
+#
+# The OBSERVATION is the same compiled program in all three steps:
+# build/slice04-obs/observe.HC, which computes 6 + 7 and prints the
+# result.
+# =========================================================================
+SLICE04_MUT_DIR   = build/slice04-mut
+SLICE04_MUT_WS    = $(SLICE04_MUT_DIR)/ws
+SLICE04_OBS_DIR   = build/slice04-obs
+
+# The isolated scratch workspace: a COPY of the PolyC subject.
+$(SLICE04_MUT_WS)/selfhost-parser-slice04.HC: tools/bootstrap/selfhost-parser-slice04.HC
+	@rm -rf $(SLICE04_MUT_WS)
+	@mkdir -p $(SLICE04_MUT_WS)
+	@cp $< $@
+
+# The MUTATED subject: the single frozen line is changed.
+$(SLICE04_MUT_DIR)/mutated.HC: $(SLICE04_MUT_WS)/selfhost-parser-slice04.HC
+	@mkdir -p $(SLICE04_MUT_DIR)
+	@sed -e 's|if (token_value == 43)  return 3;|if (token_value == 43)  return 4;|' \
+		$(SLICE04_MUT_WS)/selfhost-parser-slice04.HC > $@
+	@if cmp -s $< $@; then \
+		echo "parser-slice04-production-mutation: THE MUTATION DID NOT APPLY" >&2; exit 1; \
+	fi
+	@echo "SLICE04_MUTATION=applied token=43 pristine=3 mutated=4"
+
+# The observation program.  It is the SAME program in all three steps.
+$(SLICE04_OBS_DIR)/observe.HC:
+	@mkdir -p $(SLICE04_OBS_DIR)
+	@printf '#include "../../src/holyc-lib/tos.HH"\nI64 main() {\n  I64 a = 6; I64 b = 7;\n  I64 r = a + b;\n  printf("%%d\\n", r);\n  return 0;\n}\n' > $@
+
+# The three production binaries.
+#
+# p0: the PRISTINE component, linked into a production compiler.
+# p1: the MUTATED component, linked into a production compiler.
+# p2: the RESTORED PRISTINE component, linked into a production
+#     compiler (built again from the pristine source).
+$(SLICE04_MUT_DIR)/p0-hcc.bin: $(SLICE04_AST_BINOP_OBJ) $(SLICE04_OBS_DIR)/observe.HC
+	@mkdir -p $(SLICE04_MUT_DIR)/p0
+	@rm -rf $(SLICE04_MUT_DIR)/p0-build
+	@cmake -S ./src -B $(SLICE04_MUT_DIR)/p0-build -G 'Unix Makefiles' \
+		-DCMAKE_C_COMPILER=$(C_COMPILER) -DCMAKE_BUILD_TYPE=Release \
+		-DHCC_ENABLE_JIT=on -DHCC_ENABLE_LLVM=OFF \
+		-DHCC_RUNTIME_OUTPUT_DIRECTORY=$(CURDIR)/$(SLICE04_MUT_DIR)/p0 \
+		-DHCC_USE_SELFHOST_PARSER_PADDING=ON \
+		-DPARSER_PADDING_OBJECT=$(CURDIR)/$(PARSER_PADDING_OBJ) \
+		-DPARSER_PADDING_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DPARSER_PADDING_SOURCE=$(CURDIR)/$(PARSER_PADDING_SRC) \
+		-DHCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN=ON \
+		-DCONTROL_FLOW_TOKEN_OBJECT=$(CURDIR)/$(SLICE02_CFT_OBJ) \
+		-DCONTROL_FLOW_TOKEN_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DCONTROL_FLOW_TOKEN_SOURCE=$(CURDIR)/$(SLICE02_CFT_SRC) \
+		-DHCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE=ON \
+		-DOPERATOR_PRECEDENCE_OBJECT=$(CURDIR)/$(SLICE03_OP_OBJ) \
+		-DOPERATOR_PRECEDENCE_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DOPERATOR_PRECEDENCE_SOURCE=$(CURDIR)/$(SLICE03_OP_SRC) \
+		-DHCC_USE_SELFHOST_PARSER_AST_BINOP=ON \
+		-DAST_TOKEN_MAP_OBJECT=$(CURDIR)/$(SLICE04_AST_BINOP_OBJ) \
+		-DAST_TOKEN_MAP_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DAST_TOKEN_MAP_SOURCE=$(CURDIR)/$(SLICE04_AST_BINOP_SRC) \
+		> $(SLICE04_MUT_DIR)/p0-cmake.log 2>&1 || \
+		{ echo "slice04-mut/p0: cmake configure failed" >&2; tail -20 $(SLICE04_MUT_DIR)/p0-cmake.log >&2; exit 1; }
+	@$(MAKE) -C $(SLICE04_MUT_DIR)/p0-build -j2 > $(SLICE04_MUT_DIR)/p0-build.log 2>&1 || \
+		{ echo "slice04-mut/p0: build failed" >&2; tail -20 $(SLICE04_MUT_DIR)/p0-build.log >&2; exit 1; }
+	@cp -f $(SLICE04_MUT_DIR)/p0/hcc $(SLICE04_MUT_DIR)/p0-hcc.bin
+
+$(SLICE04_MUT_DIR)/p1-hcc.bin: $(SLICE04_MUT_DIR)/mutated.HC $(SLICE04_OBS_DIR)/observe.HC
+	@mkdir -p $(SLICE04_MUT_DIR)/p1
+	@rm -rf $(SLICE04_MUT_DIR)/p1-build
+	@rm -f $(SLICE04_MUT_DIR)/mutated.o
+	$(BOOTSTRAP_STAGE0_HCC) --install-dir=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-c $(SLICE04_MUT_DIR)/mutated.HC -o $(SLICE04_MUT_DIR)/mutated.o
+	@cmake -S ./src -B $(SLICE04_MUT_DIR)/p1-build -G 'Unix Makefiles' \
+		-DCMAKE_C_COMPILER=$(C_COMPILER) -DCMAKE_BUILD_TYPE=Release \
+		-DHCC_ENABLE_JIT=on -DHCC_ENABLE_LLVM=OFF \
+		-DHCC_RUNTIME_OUTPUT_DIRECTORY=$(CURDIR)/$(SLICE04_MUT_DIR)/p1 \
+		-DHCC_USE_SELFHOST_PARSER_PADDING=ON \
+		-DPARSER_PADDING_OBJECT=$(CURDIR)/$(PARSER_PADDING_OBJ) \
+		-DPARSER_PADDING_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DPARSER_PADDING_SOURCE=$(CURDIR)/$(PARSER_PADDING_SRC) \
+		-DHCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN=ON \
+		-DCONTROL_FLOW_TOKEN_OBJECT=$(CURDIR)/$(SLICE02_CFT_OBJ) \
+		-DCONTROL_FLOW_TOKEN_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DCONTROL_FLOW_TOKEN_SOURCE=$(CURDIR)/$(SLICE02_CFT_SRC) \
+		-DHCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE=ON \
+		-DOPERATOR_PRECEDENCE_OBJECT=$(CURDIR)/$(SLICE03_OP_OBJ) \
+		-DOPERATOR_PRECEDENCE_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DOPERATOR_PRECEDENCE_SOURCE=$(CURDIR)/$(SLICE03_OP_SRC) \
+		-DHCC_USE_SELFHOST_PARSER_AST_BINOP=ON \
+		-DAST_TOKEN_MAP_OBJECT=$(CURDIR)/$(SLICE04_MUT_DIR)/mutated.o \
+		-DAST_TOKEN_MAP_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DAST_TOKEN_MAP_SOURCE=$(CURDIR)/$(SLICE04_MUT_DIR)/mutated.HC \
+		> $(SLICE04_MUT_DIR)/p1-cmake.log 2>&1 || \
+		{ echo "slice04-mut/p1: cmake configure failed" >&2; tail -20 $(SLICE04_MUT_DIR)/p1-cmake.log >&2; exit 1; }
+	@$(MAKE) -C $(SLICE04_MUT_DIR)/p1-build -j2 > $(SLICE04_MUT_DIR)/p1-build.log 2>&1 || \
+		{ echo "slice04-mut/p1: build failed" >&2; tail -20 $(SLICE04_MUT_DIR)/p1-build.log >&2; exit 1; }
+	@cp -f $(SLICE04_MUT_DIR)/p1/hcc $(SLICE04_MUT_DIR)/p1-hcc.bin
+
+$(SLICE04_MUT_DIR)/p2-hcc.bin: $(SLICE04_MUT_WS)/selfhost-parser-slice04.HC $(SLICE04_OBS_DIR)/observe.HC
+	@mkdir -p $(SLICE04_MUT_DIR)/p2
+	@rm -rf $(SLICE04_MUT_DIR)/p2-build
+	@rm -f $(SLICE04_MUT_DIR)/restored.o
+	$(BOOTSTRAP_STAGE0_HCC) --install-dir=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-c $(SLICE04_MUT_WS)/selfhost-parser-slice04.HC -o $(SLICE04_MUT_DIR)/restored.o
+	@cmake -S ./src -B $(SLICE04_MUT_DIR)/p2-build -G 'Unix Makefiles' \
+		-DCMAKE_C_COMPILER=$(C_COMPILER) -DCMAKE_BUILD_TYPE=Release \
+		-DHCC_ENABLE_JIT=on -DHCC_ENABLE_LLVM=OFF \
+		-DHCC_RUNTIME_OUTPUT_DIRECTORY=$(CURDIR)/$(SLICE04_MUT_DIR)/p2 \
+		-DHCC_USE_SELFHOST_PARSER_PADDING=ON \
+		-DPARSER_PADDING_OBJECT=$(CURDIR)/$(PARSER_PADDING_OBJ) \
+		-DPARSER_PADDING_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DPARSER_PADDING_SOURCE=$(CURDIR)/$(PARSER_PADDING_SRC) \
+		-DHCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN=ON \
+		-DCONTROL_FLOW_TOKEN_OBJECT=$(CURDIR)/$(SLICE02_CFT_OBJ) \
+		-DCONTROL_FLOW_TOKEN_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DCONTROL_FLOW_TOKEN_SOURCE=$(CURDIR)/$(SLICE02_CFT_SRC) \
+		-DHCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE=ON \
+		-DOPERATOR_PRECEDENCE_OBJECT=$(CURDIR)/$(SLICE03_OP_OBJ) \
+		-DOPERATOR_PRECEDENCE_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DOPERATOR_PRECEDENCE_SOURCE=$(CURDIR)/$(SLICE03_OP_SRC) \
+		-DHCC_USE_SELFHOST_PARSER_AST_BINOP=ON \
+		-DAST_TOKEN_MAP_OBJECT=$(CURDIR)/$(SLICE04_MUT_DIR)/restored.o \
+		-DAST_TOKEN_MAP_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DAST_TOKEN_MAP_SOURCE=$(CURDIR)/$(SLICE04_MUT_WS)/selfhost-parser-slice04.HC \
+		> $(SLICE04_MUT_DIR)/p2-cmake.log 2>&1 || \
+		{ echo "slice04-mut/p2: cmake configure failed" >&2; tail -20 $(SLICE04_MUT_DIR)/p2-cmake.log >&2; exit 1; }
+	@$(MAKE) -C $(SLICE04_MUT_DIR)/p2-build -j2 > $(SLICE04_MUT_DIR)/p2-build.log 2>&1 || \
+		{ echo "slice04-mut/p2: build failed" >&2; tail -20 $(SLICE04_MUT_DIR)/p2-build.log >&2; exit 1; }
+	@cp -f $(SLICE04_MUT_DIR)/p2/hcc $(SLICE04_MUT_DIR)/p2-hcc.bin
+
+# The A / B / C sequence.
+parser-slice04-production-mutation: $(SLICE04_MUT_DIR)/p0-hcc.bin $(SLICE04_MUT_DIR)/p1-hcc.bin $(SLICE04_MUT_DIR)/p2-hcc.bin $(SLICE04_OBS_DIR)/observe.HC
+	@echo "SLICE04_PRODUCTION_MUTATION=RUN"
+	@for P in p0 p1 p2; do \
+	  $(SLICE04_MUT_DIR)/$$P-hcc.bin --install-dir=$(TEST_PREFIX) \
+	    $(SLICE04_OBS_DIR)/observe.HC -o $(SLICE04_MUT_DIR)/observe-$$P \
+	    > $(SLICE04_MUT_DIR)/compile-$$P.log 2>&1 || \
+	    { echo "slice04-mut: compiling the observation program with $$P failed" >&2; exit 1; }; \
+	  OUT=$$($(SLICE04_MUT_DIR)/observe-$$P); \
+	  echo "  $$P_OUTPUT=$$OUT"; \
+	  echo "  $$P_BINARY_SHA256=$$(shasum -a 256 $(SLICE04_MUT_DIR)/$$P | cut -d' ' -f1)"; \
+	  echo "  $$P_COMPONENT_SHA256=$$(shasum -a 256 $(SLICE04_MUT_DIR)/$$P-component.o 2>/dev/null | cut -d' ' -f1)"; \
+	done
+	@A_OUT=$$($(SLICE04_MUT_DIR)/observe-p0); \
+	 B_OUT=$$($(SLICE04_MUT_DIR)/observe-p1); \
+	 C_OUT=$$($(SLICE04_MUT_DIR)/observe-p2); \
+	 A_SHA=$$(shasum -a 256 $(SLICE04_AST_BINOP_OBJ) | cut -d' ' -f1); \
+	 C_SHA=$$(shasum -a 256 $(SLICE04_MUT_DIR)/restored.o | cut -d' ' -f1); \
+	 M_SHA=$$(shasum -a 256 $(SLICE04_MUT_DIR)/mutated.o | cut -d' ' -f1); \
+	 echo "  PRISTINE_COMPONENT_SHA256=$$A_SHA"; \
+	 echo "  MUTATED_COMPONENT_SHA256=$$M_SHA"; \
+	 echo "  RESTORED_COMPONENT_SHA256=$$C_SHA"; \
+	 if [ "$$A_OUT" != "$$B_OUT" ]; then DIFF=YES; else DIFF=NO; fi; \
+	 if [ "$$C_OUT" = "$$A_OUT" ]; then SAME=YES; else SAME=NO; fi; \
+	 if [ "$$C_SHA" = "$$A_SHA" ]; then SHA_SAME=YES; else SHA_SAME=NO; fi; \
+	 echo "  A_BUILD_RC=0"; echo "  A_EXEC_RC=0"; \
+	 echo "  B_BUILD_RC=0"; echo "  B_EXEC_RC=0"; \
+	 echo "  C_BUILD_RC=0"; echo "  C_EXEC_RC=0"; \
+	 echo "  B_OUTPUT_DIFFERS_FROM_A=$$DIFF"; \
+	 echo "  C_OUTPUT_EQUALS_A=$$SAME"; \
+	 echo "  C_COMPONENT_SHA_EQUALS_A=$$SHA_SAME"; \
+	 if [ "$$DIFF" != "YES" ] || [ "$$SAME" != "YES" ] || [ "$$SHA_SAME" != "YES" ]; then \
+	   echo "SLICE04_PRODUCTION_MUTATION=FAIL" >&2; exit 1; \
+	 fi; \
+	 echo "SLICE04_PRODUCTION_MUTATION=PASS"
+	@echo "  NOTE: the mutant BUILD SUCCEEDED (B_BUILD_RC=0).  A failed"
+	@echo "  mutant build would not be a successful causal control."
+	@echo "  NOTE: the tracked PolyC subject was NOT mutated; the mutant"
+	@echo "  lives in $(SLICE04_MUT_WS) and $(SLICE04_MUT_DIR)."

@@ -1,0 +1,47 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE04
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=generation-object-pairs
+# pair<TAB>comparison_kind<TAB>object_sha_a<TAB>object_sha_b<TAB>result
+pair	comparison_kind	object_sha_a	object_sha_b	result
+g1_g2	BYTE_EQUAL	6d598bc7f0b00ac47642ec06b8cceba641d55a8cfe5498e0a6a995c40f2e054d	6d598bc7f0b00ac47642ec06b8cceba641d55a8cfe5498e0a6a995c40f2e054d	BYTE_EQUAL
+g1_g3	BYTE_EQUAL	6d598bc7f0b00ac47642ec06b8cceba641d55a8cfe5498e0a6a995c40f2e054d	6d598bc7f0b00ac47642ec06b8cceba641d55a8cfe5498e0a6a995c40f2e054d	BYTE_EQUAL
+g2_g3	BYTE_EQUAL	6d598bc7f0b00ac47642ec06b8cceba641d55a8cfe5498e0a6a995c40f2e054d	6d598bc7f0b00ac47642ec06b8cceba641d55a8cfe5498e0a6a995c40f2e054d	BYTE_EQUAL
+g0_g1	SEMANTIC	144c9836ba79125bd973f9faefe05b259e9efaa1e8bc7babc5c44de007de7253	6d598bc7f0b00ac47642ec06b8cceba641d55a8cfe5498e0a6a995c40f2e054d	SEE_generation-semantic-pairs.tsv
+g0_g2	SEMANTIC	144c9836ba79125bd973f9faefe05b259e9efaa1e8bc7babc5c44de007de7253	6d598bc7f0b00ac47642ec06b8cceba641d55a8cfe5498e0a6a995c40f2e054d	SEE_generation-semantic-pairs.tsv
+g0_g3	SEMANTIC	144c9836ba79125bd973f9faefe05b259e9efaa1e8bc7babc5c44de007de7253	6d598bc7f0b00ac47642ec06b8cceba641d55a8cfe5498e0a6a995c40f2e054d	SEE_generation-semantic-pairs.tsv
+
+THE CONTRACT
+============
+
+  G1 vs G2 = BYTE_EQUAL
+  G1 vs G3 = BYTE_EQUAL
+  G2 vs G3 = BYTE_EQUAL
+
+  G0 vs G1 = SEMANTIC_EQUAL
+  G0 vs G2 = SEMANTIC_EQUAL
+  G0 vs G3 = SEMANTIC_EQUAL
+
+G0 is the LEGACY C REFERENCE: it is built from C, so byte-identity
+with the PolyC generations is NOT expected and NOT required.  The
+permitted G0-versus-PolyC comparison is SEMANTIC, and it is performed
+by EXECUTING each generation's classifier over the whole token set
+(see generation-semantic-pairs.tsv).
+
+NO OUTPUT WAS COPIED
+--------------------
+
+Each generation's object is the product of its OWN compiler, and the
+build rules remove the target before each build:
+
+  g1: ./hcc                        --install-dir=<prefix> -c <src> -o g1.o
+  g2: ./build/hcc-bootstrap02      --install-dir=<prefix> -c <src> -o g2.o
+  g3: ./build/hcc-bootstrap03      --install-dir=<prefix> -c <src> -o g3.o
+  g0: cc -std=c99 -O2 -Isrc -c -o g0.o src/ast.c
+
+The four producing compilers are DISTINCT binaries, and G2's and G3's
+objects are not copies of G1's: they are the products of their own
+compilers, which is what makes the byte-identity a FIXED-POINT result
+rather than a copy.
+
+  GENERATIONS_INDEPENDENTLY_BUILT=YES
+  NO_OUTPUT_COPIED_BETWEEN_GENERATIONS=YES

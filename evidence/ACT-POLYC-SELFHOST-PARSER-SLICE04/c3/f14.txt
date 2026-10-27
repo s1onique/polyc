@@ -1,0 +1,60 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE04
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=f14
+
+THE F14 CONSERVATION
+====================
+
+ACT section 12 requires that F14 conservation be checked against the
+closed ACT, HANDOFF and evidence surfaces.  F14 forbids mutating any
+closed ACT's evidence directory, including appending an "ADDENDUM"
+block to an existing file.  Corrections live in NEW directories.
+
+THE PREDECESSOR'S CLOSED SURFACES ARE UNTOUCHED
+================================================
+
+COMMAND=git diff --stat e3eaf38c2e0a1183d8fd4969443c32c92f075e58..HEAD \
+          -- evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03-CORRECTION01 \
+          -- docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE03-CORRECTION01.md \
+          -- docs/acts/ACT-POLYC-SELFHOST-PARSER-SLICE03-CORRECTION01.md \
+          -- docs/acts/ACT-POLYC-SELFHOST-PARSER-SLICE03.md \
+          -- docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE03.md
+OUTPUT=(empty)
+
+  PREDECESSOR_EVIDENCE_DELTA=0
+  PREDECESSOR_HANDOFF_DELTA=0
+  PREDECESSOR_ACT_DELTA=0
+
+ONLY THIS ACT'S OWN EVIDENCE DIRECTORY IS TOUCHED
+==================================================
+
+COMMAND=git diff --name-only e3eaf38c2e0a1183d8fd4969443c32c92f075e58..HEAD \
+          | grep -E '^evidence/' | grep -v 'ACT-POLYC-SELFHOST-PARSER-SLICE04'
+OUTPUT=(empty)
+
+  OTHER_CLOSED_EVIDENCE_DELTA=0
+  NO_ADDENDUM_BLOCK_APPENDED=YES
+
+THE PREDECESSOR'S LEDGER WAS NOT RE-LABELLED
+==============================================
+
+ACT section 2 (D-PREV-01) required SLICE04 to acknowledge the
+predecessor's 24-versus-25 ledger-count drift WITHOUT editing the
+predecessor's closed ledger, re-labelling a row, or claiming that the
+historical 25/25 was mechanically correct.
+
+The predecessor's acceptance TSV is byte-identical to its committed
+version, and the drift is ACKNOWLEDGED in
+c0/predecessor-reconciliation.txt:
+
+  PREDECESSOR_ACTUAL_AC_COUNT=24
+  PREDECESSOR_REPORTED_AC_COUNT=25
+  PREDECESSOR_LEDGER_COUNT_DRIFT=ACKNOWLEDGED
+
+SLICE04's OWN ledger is derived from SLICE04's OWN frozen acceptance
+rows and is audited by an exact acceptance-ID join.
+
+  PREDECESSOR_LEDGER_EDITED=NO
+  SLICE04_LEDGER_DERIVED_FROM_ITS_OWN_FROZEN_ROWS=YES
+
+  F14=PASS

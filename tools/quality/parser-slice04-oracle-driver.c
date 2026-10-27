@@ -49,6 +49,25 @@ int astBinOpFromToken(s64 op, AstBinOp *result);
  * so that "the output was overwritten" is unambiguous. */
 #define AST_BIN_OP_SENTINEL_INIT 12345
 
+/* The NARROW ORACLE ADAPTER used by the PolyC differential.
+ *
+ * It takes the token value and the caller's INITIAL output value, calls
+ * the REAL legacy function, and reports:
+ *   - the observed success flag (the function's return value), and
+ *   - the FINAL value of the caller's output slot.
+ *
+ * It contains NO mapping table and NO decision logic: the decision is
+ * the real astBinOpFromToken's. */
+long long Slice04LegacyBinOpOracle(long long token_value,
+                                    long long initial_output,
+                                    long long *out_after_call)
+{
+    AstBinOp out = (AstBinOp)initial_output;
+    int ok = astBinOpFromToken((s64)token_value, &out);
+    if (out_after_call) *out_after_call = (long long)(int)out;
+    return (long long)ok;
+}
+
 int main(int argc, char **argv)
 {
     if (argc < 2) {

@@ -1,0 +1,83 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE04
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=production-causal-mutation
+
+THE PRODUCTION-CAUSAL MUTATION
+===============================
+
+A mapping differential alone is NOT sufficient.  The selected PolyC
+function must be proven LOAD-BEARING in the REAL PRODUCTION COMPILER.
+
+THE MUTATION (frozen in c1/mutation-contract.txt)
+--------------------------------------------------
+
+  MUTATED_TOKEN=43 ('+')
+  PRISTINE_MAPPING=AST_BIN_OP_ADD (3)
+  MUTATED_MAPPING=AST_BIN_OP_SUB (4)
+
+ONE line of the PolyC subject changes, in an ISOLATED SCRATCH
+WORKSPACE:
+
+  if (token_value == 43)  return 3;   ->   if (token_value == 43)  return 4;
+
+The tracked subject is NEVER mutated: the mutant lives in
+build/slice04-mut/ws/ and build/slice04-mut/mutated.HC.
+
+COMMAND=make parser-slice04-production-mutation
+OUTPUT:
+  SLICE04_PRODUCTION_MUTATION=RUN
+  SLICE04_MUTATION=applied token=43 pristine=3 mutated=4
+  PRISTINE_COMPONENT_SHA256=6d598bc7f0b00ac47642ec06b8cceba641d55a8cfe5498e0a6a995c40f2e054d
+  MUTATED_COMPONENT_SHA256=94892446b6036bcc540166c5dc91714f69fae7602d3a31fd6acb70b4729634de
+  RESTORED_COMPONENT_SHA256=6d598bc7f0b00ac47642ec06b8cceba641d55a8cfe5498e0a6a995c40f2e054d
+  A_BUILD_RC=0
+  A_EXEC_RC=0
+  B_BUILD_RC=0
+  B_EXEC_RC=0
+  C_BUILD_RC=0
+  C_EXEC_RC=0
+  B_OUTPUT_DIFFERS_FROM_A=YES
+  C_OUTPUT_EQUALS_A=YES
+  C_COMPONENT_SHA_EQUALS_A=YES
+  SLICE04_PRODUCTION_MUTATION=PASS
+
+THE OBSERVATION OUTPUTS
+------------------------
+
+  p0_OUTPUT=13      (pristine: 6 + 7)
+  p1_OUTPUT=-1      (mutated:  6 - 7, because '+' now maps to SUB)
+  p2_OUTPUT=13      (restored: 6 + 7)
+
+The SAME compiled observation program (build/slice04-obs/observe.HC)
+was compiled by each of the three production compilers and executed.
+The output changed exactly when the PolyC component was mutated, and
+changed back when it was restored.
+
+THE MUTANT BUILD SUCCEEDED
+---------------------------
+
+  B_BUILD_RC=0
+
+A failed mutant build is not a successful causal control.  The mutant
+compiles, links into a full production compiler, compiles the
+observation program, and runs.
+
+THE PRODUCTION COMPILER IS THE ONE UNDER TEST
+---------------------------------------------
+
+Each of the three binaries is a FULL production compiler built by the
+production CMake graph with HCC_USE_SELFHOST_PARSER_AST_BINOP=ON, and
+it links that step's own component object:
+
+  p0  the pristine component
+  p1  the mutated component
+  p2  the restored pristine component
+
+The observation program is compiled BY each of them, so the changed
+output is the PRODUCTION COMPILER's changed decision.
+
+  PRODUCTION_DELEGATION=LOAD_BEARING
+  PRODUCTION_CAUSAL_MUTATION=PASS
+  MUTATION_IS_CAUSAL=YES
+  MUTATION_IS_NOT_A_FIXTURE=YES
+  TRACKED_SUBJECT_MUTATED=NO
