@@ -1,0 +1,168 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE03-CORRECTION01
+ACT_PHASE=C0-AUTH-RED
+EVIDENCE_KIND=p16-required-value-enumeration
+
+THE P16 REQUIRED VALUE SET, ENUMERATED INDEPENDENTLY
+=======================================================
+
+SOURCE OF TRUTH
+---------------
+
+The 39 live precedence-table entries were re-derived from the LIVE
+src/prslib.c and the LIVE src/lexer.h by the CLOSED requalification
+tool (which is not modified by this ACT):
+
+$ ./build/parser-slice03-contract-requalify src/prslib.c src/lexer.h PARTITIONS OUT
+  (the derived table is written to OUT/precedence-table-derived.tsv)
+
+  DERIVED_TABLE_ENTRIES = 39
+  DERIVED_UNRESOLVED_LABELS = 0
+  DERIVED_SENTINEL = -1
+
+THE DERIVATION
+-------------
+
+For each of the 39 table values v, the required neighbours are v-1 and
+v+1.  The required set is the UNION of:
+
+  { v-1 : v in table }  UNION  { v+1 : v in table }
+  UNION { INT64_MIN, INT64_MIN+1, INT64_MAX-1, INT64_MAX }
+  UNION { 0, -1, 1 }
+
+THE MEASURED RESULT
+-------------------
+
+  DISTINCT_OPERATOR_NEIGHBOUR_VALUES = 58
+  SIGNED_I64_EXTREMES                = 4
+  ADDITIONAL_BASE_VALUES             = 3   (0, -1, 1)
+  DISTINCT_P16_VALUES                = 65
+
+  EXPECTED_DISTINCT_OPERATOR_NEIGHBOUR_VALUES = 58
+  EXPECTED_SIGNED_I64_EXTREMES                = 4
+  EXPECTED_ADDITIONAL_BASE_VALUES             = 3
+  EXPECTED_DISTINCT_P16_VALUES                = 65
+
+  P16_REQUIRED_VALUES_COMPLETE = YES
+  P16_SIGNED_EXTREMES_PRESENT  = 4/4
+  P16_ALL_OPERATOR_NEIGHBORS_PRESENT = YES
+
+THE CANONICAL ORDERED SET AND ITS SHA-256
+---------------------------------------------
+
+The canonical ordered set is the 65 distinct values in ASCENDING
+NUMERIC order, one per line, decimal signed.  Its SHA-256 is:
+
+  P16_REQUIRED_VALUE_SET_SHA256 = e16bd5d9d6334baddd556735c249da9e781d304ca40fc90c8b4866e025446df9
+
+The frozen set (65 lines):
+
+  -9223372036854775808
+  -9223372036854775807
+  -1
+  0
+  1
+  32
+  34
+  36
+  37
+  38
+  39
+  41
+  42
+  43
+  44
+  45
+  46
+  47
+  48
+  59
+  60
+  61
+  62
+  63
+  90
+  92
+  93
+  95
+  123
+  125
+  127
+  772
+  773
+  774
+  775
+  776
+  777
+  778
+  779
+  780
+  781
+  782
+  783
+  784
+  785
+  786
+  787
+  788
+  789
+  790
+  791
+  792
+  793
+  794
+  795
+  801
+  803
+  807
+  809
+  815
+  816
+  817
+  818
+  9223372036854775806
+  9223372036854775807
+
+THE FALSE-SYMBOLIC-NUMERIC CHECK
+------------------------------
+
+The predecessor generator SCANNED NUMERIC FRAGMENTS OUT OF SYMBOLIC
+IDENTIFIERS.  The P16 value list is:
+
+  INT64_MIN, INT64_MIN+1, INT64_MAX-1, INT64_MAX, 0, -1, 1, and
+  (each table value -1) and (each table value +1)
+
+The digit "64" inside "INT64_MIN" / "INT64_MAX" was harvested as the
+number 64.  The predecessor P16 rows F049..F059 carry the values:
+
+  F049  value=64
+  F050  value=64
+  F051  value=1
+  F052  value=64
+  F053  value=-1
+  F054  value=64
+  F055  value=0
+  F056  value=-1
+  F057  value=1
+  F058  value=-1
+  F059  value=1
+
+The value 64 appears FOUR times -- once for each symbolic identifier
+that contains the digits "64".  These are FALSE SYMBOLIC NUMERICS:
+they are fragments of a name, not values of the boundary domain.
+
+P16_FALSE_SYMBOLIC_NUMERICS = 4
+P16_FALSE_SYMBOLIC_NUMERIC_VALUES = {64}
+P16_FALSE_SYMBOLIC_NUMERIC_ROW_IDS = {F049, F050, F052, F054}
+
+THE CORRECTED CONTRACT MUST NOT SCAN NUMERIC FRAGMENTS.
+Symbolic boundary constants are resolved EXPLICITLY (INT64_MIN,
+INT64_MIN+1, INT64_MAX-1, INT64_MAX) or REJECTED.  The producer
+fails rather than emitting a fixture with a false symbolic numeric.
+
+--- THE P16 VALUE SET IS FROZEN AS ---
+
+  FIXTURE_ROWS_EXPECTED = 123
+    P16_BOUNDARY_INTEGERS   = 65
+    all other partitions    = 58
+
+  P16_REQUIRED_VALUE_SET_SHA256 = e16bd5d9d6334baddd556735c249da9e781d304ca40fc90c8b4866e025446df9

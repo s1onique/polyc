@@ -1,0 +1,351 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE03-CORRECTION01
+ACT_PHASE=C0-AUTH-RED
+EVIDENCE_KIND=historical-defects
+
+THE SEVEN BINDING HISTORICAL DEFECTS, REPRODUCED MECHANICALLY
+===============================================================
+
+Each defect below is reproduced by a COMMAND against the LIVE tree
+or against the CLOSED predecessor artifacts.  None is asserted from prose.
+
+These are defects of the PREDECESSOR QUALIFICATION SURFACE.  They are
+NOT newly discovered production compiler regressions: the production
+migration performed by SLICE03 is sound and is NOT undone by this ACT.
+
+--- D1: the P16 SIGNED-I64 EXTREMES ARE ABSENT FROM THE PREDECESSOR FIXTURE ---
+
+The predecessor fixture claims four "I64 domain extreme" rows.  Their
+spelled values are 0, 1, -1 and -2 -- NOT the signed-I64 extremes.
+
+$ grep "I64 domain extreme" evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03/c1/fixture-model.tsv
+  F069	P16_BOUNDARY_INTEGERS	0	-1	I64 domain extreme; expected from the derived table
+  F070	P16_BOUNDARY_INTEGERS	1	-1	I64 domain extreme; expected from the derived table
+  F071	P16_BOUNDARY_INTEGERS	-1	-1	I64 domain extreme; expected from the derived table
+  F072	P16_BOUNDARY_INTEGERS	-2	-1	I64 domain extreme; expected from the derived table
+
+The four extremes the partition REQUIRES:
+  INT64_MIN   = -9223372036854775808
+  INT64_MIN+1 = -9223372036854775807
+  INT64_MAX-1 =  9223372036854775806
+  INT64_MAX   =  9223372036854775807
+
+$ awk -F"	" (search each required extreme in the P16 value column)
+  ABSENT  -9223372036854775807
+  ABSENT  -9223372036854775808
+  ABSENT  9223372036854775806
+  ABSENT  9223372036854775807
+
+P16_SIGNED_EXTREMES_PRESENT_IN_PREDECESSOR = 0/4
+D1_REPRODUCED = YES
+
+D1 ROOT CAUSE: THE 32-BIT OUTPUT FORMATTER
+============================================
+
+The predecessor tool computed the extremes CORRECTLY and destroyed
+them on OUTPUT.  Its app_i helper formats with snprintf "%d":
+
+  tools/quality/parser-slice03-contract-requalify.HC:79
+    I64 m = snprintf(dst + n, cap - n, "%d\n", v);
+
+"%d" is a 32-bit conversion.  The four computed extremes therefore
+rendered as 0, 1, -1 and -2 -- exactly the observed F069..F072.
+
+The VALUES THEMSELVES ARE CORRECT.  A C-side "%lld" printer shows
+the full 64-bit value.  Measured with a PolyC probe linked against
+a C printf helper (the probe is not a tracked artifact):
+
+  I64 e0 = -9223372036854775807 - 1;   // INT64_MIN
+  I64 e1 = -9223372036854775807;       // INT64_MIN+1
+  I64 e2 =  9223372036854775807;       // INT64_MAX
+  I64 e3 =  9223372036854775806;       // INT64_MAX-1
+
+  e0=-9223372036854775808
+  e1=-9223372036854775807
+  e2=9223372036854775807
+  e3=9223372036854775806
+
+  snprintf(buf, 64, "%d\n",   e0) -> 0
+  snprintf(buf, 64, "%lld\n", e0) -> -9223372036854775808
+
+CONCLUSION: the defect is in the OUTPUT FORMAT of the producer, not
+in the PolyC I64 arithmetic and not in the production precedence
+semantics.  The correction uses a 64-bit format.
+
+POLYC_I64_ARITHMETIC_DEFECT = NO
+PRODUCTION_PRECEDENCE_DEFECT = NO
+
+--- D2: SLICE03 ADDED FIVE FILES OUTSIDE ITS AUTHORIZED MUTATION LIST ---
+
+The predecessor ACT section 3.2 authorized these tracked mutations:
+  docs/acts/ACT-POLYC-SELFHOST-PARSER-SLICE03.md
+  docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE03.md
+  docs/factory/act-handoff-map.tsv
+  docs/ROADMAP.md
+  evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03/**
+  src/prslib.c
+  src/CMakeLists.txt
+  tools/bootstrap/selfhost-parser-operator-precedence.HC
+  tools/quality/parser-slice03-*.HC
+  tools/quality/parser-slice03-*.c
+  tools/quality/parser-slice03-*.h
+  Makefile
+
+$ git diff --name-status fa67a90..3dd44a6 (the whole SLICE03 range)
+  A	docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE03.md
+  A	evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03/c1/corrected-fixture-partitions.tsv
+  A	evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03/c1/fixture-contract-freeze.tsv
+  A	evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03/c1/fixture-count-arithmetic.txt
+  A	evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03/c1/fixture-integrity-witness.md
+  A	evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03/c1/fixture-model.tsv
+  A	evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03/c1/fixture-partitions-audit.tsv
+  A	evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03/c1/precedence-derivation-check.txt
+  A	evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03/c1/precedence-table-derived.tsv
+  A	evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03/c1/predecessor-scope-violation.txt
+  A	evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03/c1/required-result.txt
+  A	evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03/c1/tk-shr-defect.txt
+  A	evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03/c2/build-receipt.txt
+  A	evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03/c2/differential-fixture.tsv
+  A	evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03/c2/differential-negative-control.txt
+  A	evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03/c2/differential-run.txt
+  A	evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03/c2/fixture-integrity-negative-control.txt
+  A	evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03/c2/fixture-integrity-run.txt
+  A	evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03/c2/implementation-notes.md
+  A	evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03/c2/oracle-run.txt
+  A	evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03/c2/required-result.txt
+  A	evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03/c3/append-only.txt
+  A	evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03/c3/causal-mutation-run.txt
+  A	evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03/c3/component-object-pairs.tsv
+  A	evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03/c3/copy-forgery-control.txt
+  A	evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03/c3/f-no-python.txt
+  A	evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03/c3/f-polyc-tools.txt
+  A	evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03/c3/f14-conservation.txt
+  A	evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03/c3/factory-v2.txt
+  A	evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03/c3/gate-fast.txt
+  A	evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03/c3/gate-push.txt
+  A	evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03/c3/generation-manifest.tsv
+  A	evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03/c3/lexer-conservation.txt
+  A	evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03/c3/lexer07-baseline-comparison.txt
+  A	evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03/c3/mandatory-ac-status.tsv
+  A	evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03/c3/parser-conservation.txt
+  A	evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03/c3/patch-hygiene.txt
+  A	evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03/c3/production-authority.txt
+  A	evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03/c3/production-semantic-pairs.tsv
+  A	evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03/c3/required-result.txt
+  A	evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03/c3/seam-copy-negative-control.txt
+  A	src/cmake/VerifyOperatorPrecedenceObject.cmake
+  A	src/cmake/WriteOperatorPrecedenceObjectStamp.cmake
+  A	tools/bootstrap/selfhost-parser-operator-precedence.HC
+  A	tools/quality/parser-slice03-contract-requalify.HC
+  A	tools/quality/parser-slice03-differential.HC
+  A	tools/quality/parser-slice03-fixture-integrity.HC
+  A	tools/quality/slice03-gen/g0-legacy-reference.c
+  A	tools/quality/slice03-gen/generation-pairs.c
+  A	tools/quality/slice03-is-terminal-stub.c
+
+The FIVE ADDED FILES THAT ARE OUTSIDE the authorized list:
+  src/cmake/VerifyOperatorPrecedenceObject.cmake      <- src/cmake/ is NOT authorized
+  src/cmake/WriteOperatorPrecedenceObjectStamp.cmake  <- src/cmake/ is NOT authorized
+  tools/quality/slice03-gen/g0-legacy-reference.c     <- tools/quality/parser-slice03-*.c DOES NOT MATCH (subdirectory)
+  tools/quality/slice03-gen/generation-pairs.c         <- tools/quality/parser-slice03-*.c DOES NOT MATCH (subdirectory)
+  tools/quality/slice03-is-terminal-stub.c            <- tools/quality/parser-slice03-*.c DOES NOT MATCH (name)
+
+HISTORICAL_SCOPE_VIOLATION = ACKNOWLEDGED
+HISTORICAL_SCOPE_VIOLATION_FILE_COUNT = 5
+D2_REPRODUCED = YES
+RETROACTIVE_REPAIR_CLAIM = FALSE
+
+These five files are LOAD-BEARING for the production migration and
+are used PROSPECTIVELY under this ACT.  They are NOT deleted and are
+NOT retrospectively declared compliant.
+
+--- D3: G0 RECORDED THE WRONG PRODUCING-COMPILER SHA ---
+
+The predecessor C3 generation manifest records G0 as:
+
+  G0	LEGACY_REFERENCE	build/slice03-gen/g0.o	937a29dcfb22b5c00b187b11e47a27efd6d301374060b5451263f1507e60d52d	the legacy C reference	833f0797cced931580d045ad432c0ea35ed1fb51bee78dce41e7a16f02583a2d
+  G0 is an INTENTIONAL LEGACY REFERENCE.  It is built from C, so
+
+i.e. the G0 compiler SHA is 833f0797cced931580d045ad432c0ea35ed1fb51bee78dce41e7a16f02583a2d,
+which is IDENTICAL to the G1 row -- the PolyC production compiler.
+
+But G0 is NOT built by the PolyC compiler.  The Makefile builds it with cc:
+
+  Makefile:3697:	@echo "  BUILD_COMMAND=cc -std=c99 -O2 -Isrc -c -o $(SLICE03_GEN_DIR)/g0.o $(SLICE03_G0_SRC)"
+
+The ACTUAL C compiler identity on this host:
+
+  $ which cc
+    /usr/bin/cc
+  $ cc --version | head -1
+    Apple clang version 15.0.0 (clang-1500.0.40.1)
+  $ shasum -a 256 $(which cc)
+    9b11ead1ca76a03d61108ad5bf2c913d6aa8daa7deb9fd28893e847e3680e5e7
+
+  $ shasum -a 256 ./hcc   (the PolyC compiler, for contrast)
+    833f0797cced931580d045ad432c0ea35ed1fb51bee78dce41e7a16f02583a2d
+
+The predecessor manifest instead printed:
+
+  Makefile:3700:  @echo "  COMPILER_SHA256=$$(shasum -a 256 ./hcc | cut -d' '-f1)"
+
+i.e. the G0 REPORTING rule hashed ./hcc, while the G0 BUILD rule
+(Makefile:3659-3664) compiles with cc.  The G0 compiler SHA was therefore
+the POLYC compiler SHA, not the C compiler SHA.
+
+G0_RECORDED_COMPILER_SHA = 833f0797cced931580d045ad432c0ea35ed1fb51bee78dce41e7a16f02583a2d
+G0_RECORDED_COMPILER_IS  = ./hcc (the PolyC compiler)
+G0_ACTUAL_COMPILER_SHA    = 9b11ead1ca76a03d61108ad5bf2c913d6aa8daa7deb9fd28893e847e3680e5e7
+G0_ACTUAL_COMPILER_IS     = /usr/bin/cc (C)
+G0_COMPILER_IDENTITY      = WRONG
+D3_REPRODUCED = YES
+
+--- D4: C1 EVIDENCE CONTAINS A STALE FIXTURE-COUNT OBSERVATION OF 99 ---
+
+The predecessor C1 derivation-check evidence records:
+
+  32:  SUM_MIN_ROWS_WELLFORMED=99
+  33:  SUM_MIN_ROWS_ALL_DECLARED=99
+
+But the SAME phase corrected-partition table sums to 98, and the
+SAME phase own fixture-count-arithmetic.txt records:
+
+  SUM_MIN_ROWS_WELLFORMED=98
+  SUM_MIN_ROWS_ALL_DECLARED=98
+
+The 99 in the derivation-check file is the PREDECESSOR arithmetically
+corrected total; it was never re-measured after the P15 TK_SHR
+correction removed one row.  The file is a STALE OBSERVATION.
+
+$ ./build/parser-slice03-contract-requalify src/prslib.c src/lexer.h PARTITIONS OUT
+  AUDIT_MALFORMED_PARTITIONS=0
+  AUDIT_INCONSISTENT_PARTITIONS=0
+  SUM_MIN_ROWS_WELLFORMED=98
+  SUM_MIN_ROWS_ALL_DECLARED=98
+  (exit code 0)
+
+STALE_COUNT_IN_C1_EVIDENCE = 99
+ACTUAL_CORRECTED_COUNT       = 98
+D4_REPRODUCED = YES
+
+--- D5: THE HISTORICAL ACT RANGE CONTAINS SIX COMMITS, NOT FIVE ---
+
+The predecessor ACT section 8 specifies a FIVE-commit topology:
+  1. C0 RED  2. C1 EVIDENCE  3. C2 IMPL  4. C3 EVIDENCE  5. C4 CLOSE
+
+The ACTUAL range (entry 50cabc1 exclusive .. CLOSE 3dd44a6) contains
+SIX commits:
+
+       1	  fa67a90  ACT-POLYC-SELFHOST-PARSER-SLICE03 C0: AUTH / RED -- the third parser slice is authorized and the baseline is frozen
+       2	  830426b  ACT-POLYC-SELFHOST-PARSER-SLICE03 C1: EVIDENCE -- the contract is requalified, the two defects are corrected, and the fixture-integrity witness is frozen
+       3	  851552f  ACT-POLYC-SELFHOST-PARSER-SLICE03 C2: IMPL -- the operator precedence table is PolyC, and production routes through it
+       4	  b707529  ACT-POLYC-SELFHOST-PARSER-SLICE03: disable the operator-precedence delegation in the stage0 build
+       5	  e64f8b9  ACT-POLYC-SELFHOST-PARSER-SLICE03 C3: EVIDENCE -- the four generations agree, the mutation is production-causal, and nothing regressed
+       6	  3dd44a6  ACT-POLYC-SELFHOST-PARSER-SLICE03 C4: CLOSE -- the operator precedence table is PolyC, and the legacy authority is retired
+
+$ git rev-list --count 50cabc1..3dd44a6
+  6
+
+The SIXTH commit is b707529, a stage-0 build change that is NOT one
+of the five specified phases.  It touches the Makefile only:
+
+    b707529 ACT-POLYC-SELFHOST-PARSER-SLICE03: disable the operator-precedence delegation in the stage0 build
+
+   Makefile | 346 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-
+   1 file changed, 345 insertions(+), 1 deletion(-)
+
+It carries NO ACT-Phase trailer, so it is not one of the five phases.
+
+HISTORICAL_SIX_COMMIT_RANGE = ACKNOWLEDGED
+HISTORICAL_RANGE_COMMIT_COUNT = 6
+SPECIFIED_RANGE_COMMIT_COUNT = 5
+D5_REPRODUCED = YES
+
+--- D6: THE LITERAL P16 ENUMERATION CANNOT FIT WITHIN THE 40-ROW PARTITION ---
+
+The frozen P16 partition row declares:
+
+  P16_BOUNDARY_INTEGERS	INT64_MIN, INT64_MIN+1, INT64_MAX-1, INT64_MAX, 0, -1, 1, and (each table value -1) and (each table value +1)	0	-1	40
+
+  value_list     = INT64_MIN, INT64_MIN+1, INT64_MAX-1, INT64_MAX, 0, -1, 1,
+                  and (each table value -1) and (each table value +1)
+  value_count   = 0
+  min_rows       = 40
+
+The literal enumeration REQUIRES:
+    4 extremes + 3 base values + 39 table values -1 + 39 table values +1
+  = 4 + 3 + 39 + 39 = 86 entries before de-duplication.
+
+The DISTINCT value set derived from the live 39-entry table is:
+    58 distinct operator-neighbour values
+    4 signed-I64 extremes
+    3 additional base values (0, -1, 1)
+    --
+    65 distinct P16 values
+
+65 > 40, so the literal enumeration CANNOT fit inside the frozen
+40-row partition.  The predecessor resolved the contradiction by
+TOPPING THE PARTITION UP TO 40 and truncating the neighbour sweep,
+which silently dropped 25 of the 58 required neighbours AND all four
+signed-I64 extremes (D1).
+
+$ grep -c "neighbour of a table value" .../c1/fixture-model.tsv
+  25
+
+  required distinct neighbours = 58
+  neighbours actually emitted  = 25
+P16_REQUIRED_VALUES_CANNOT_FIT_40 = YES
+D6_REPRODUCED = YES
+
+--- D7: P16 NOMINAL expected_output=-1 DOES NOT DESCRIBE ITS MIXED VALUES ---
+
+The frozen P16 partition row declares expected_output = -1:
+
+  field 4 (expected_output) = -1
+
+But the ACTUAL expected values in the predecessor P16 rows are MIXED:
+
+  expected=-1  count=32
+  expected=1  count=1
+  expected=3  count=4
+  expected=4  count=1
+  expected=5  count=2
+
+The partition therefore has FOUR distinct expected values, not the one
+declared -1.  A verifier that took the partition declaration as the
+expected value would reject 8 of the 40 rows (the 8 rows whose
+neighbour happens to be a table entry).
+
+P16_NOMINAL_EXPECTED = -1
+P16_ACTUAL_EXPECTED_SET = {-1, 1, 3, 4, 5}
+P16_NOMINAL_DESCRIBES_ACTUAL = NO
+D7_REPRODUCED = YES
+
+===============================================================
+SUMMARY
+===============================================================
+
+D1_REPRODUCED = YES   (P16 signed-I64 extremes absent: 0/4 present)
+D2_REPRODUCED = YES   (5 files outside the authorized mutation list)
+D3_REPRODUCED = YES   (G0 compiler SHA is the PolyC compiler SHA)
+D4_REPRODUCED = YES   (C1 evidence records a stale count of 99)
+D5_REPRODUCED = YES   (the historical range has 6 commits, not 5)
+D6_REPRODUCED = YES   (65 required P16 values cannot fit in 40 rows)
+D7_REPRODUCED = YES   (P16 nominal expected -1 vs actual mixed set)
+
+HISTORICAL_DEFECTS_REPRODUCED = 7/7
+
+WHAT THESE DEFECTS DO NOT MEAN
+---------------------------------
+
+  PRODUCTION_PRECEDENCE_SEMANTIC_DEFECT = NO
+  POLYC_COMPONENT_DEFECT               = NO
+  PRODUCTION_AUTHORITY_DEFECT           = NO
+  OPERATOR_PRECEDENCE_SEMANTIC_DELTA    = 0
+
+The migration itself is sound.  What was unsound was the QUALIFICATION
+SURFACE: the fixture did not carry the values it claimed to carry,
+the G0 provenance recorded the wrong compiler, and the C1 evidence
+carried a stale observation.  This ACT repairs the qualification
+surface PROSPECTIVELY and does NOT undo the production migration.
+
+RETROACTIVE_REPAIR_CLAIM = FALSE
