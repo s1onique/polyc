@@ -1,0 +1,123 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE04
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=generation-provenance
+
+THE GENERATION PROVENANCE
+=========================
+
+THE RAW RECEIPT
+----------------
+
+The raw receipt is build/slice04-gen/provenance.  It is the SINGLE
+source of every field in the machine-readable manifest
+(generation-manifest.tsv) and of this human-readable summary, so the
+three representations cannot disagree.
+
+  RAW_RECEIPT=build/slice04-gen/provenance
+
+THE VERIFIED WITNESS
+--------------------
+
+COMMAND=./build/parser-slice04-provenance-verifier build/slice04-gen/provenance
+OUTPUT:
+  GENERATIONS_VERIFIED=4
+  PROVENANCE_VERDICT=ACCEPTED
+
+The verifier is a POLYC tool
+(tools/quality/parser-slice04-provenance-verifier.HC).  The only
+non-PolyC part is the `shasum` invocation, which is an
+INDISPENSABLE EXTERNAL TOOLCHAIN ADAPTER: the PolyC runtime has no
+SHA-256 primitive.  Every VERIFICATION DECISION is made in PolyC.
+
+WHAT THE WITNESS BINDS
+----------------------
+
+For each generation the witness records, and the verifier re-checks
+against the LIVE filesystem:
+
+  GENERATION                 the stage label
+  COMPILER_INVOCATION        the compiler the build rule actually invoked
+  COMPILER_RESOLVED_PATH     that compiler's RESOLVED path
+  COMPILER_BINARY_SHA256     that compiler's sha256
+  SOURCE_PATH                the source that was compiled
+  SOURCE_SHA256              that source's sha256
+  EXACT_BUILD_COMMAND        the command that was run
+  OUTPUT_OBJECT_PATH         the object that was produced
+  OUTPUT_OBJECT_SHA256       that object's sha256
+  PROVENANCE_NONCE           a per-generation nonce
+  PROBE_EXECUTION_OUTPUT     the ACTUAL output of a probe that was
+                             BUILT by that generation's own compiler,
+                             LINKED against that generation's object,
+                             and EXECUTED
+
+THE EXECUTION-LINKED WITNESS IS NECESSARY
+==========================================
+
+G1, G2 and G3 produce BYTE-IDENTICAL objects
+----------------------------------------------
+
+  g1.o sha256=6d598bc7f0b00ac47642ec06b8cceba641d55a8cfe5498e0a6a995c40f2e054d
+  g2.o sha256=6d598bc7f0b00ac47642ec06b8cceba641d55a8cfe5498e0a6a995c40f2e054d
+  g3.o sha256=6d598bc7f0b00ac47642ec06b8cceba641d55a8cfe5498e0a6a995c40f2e054d
+
+A finished object from one generation could therefore be SUBSTITUTED
+for another WITHOUT changing the output bytes, and a check that only
+compared (object SHA, compiler SHA) would NOT detect it: both fields
+are copyable and relabelled.
+
+The witness is what detects it, because the probe's OUTPUT is the
+product of an ACTUAL EXECUTION of a binary that was BUILT by that
+generation's OWN compiler and LINKED against that generation's OWN
+object, and the recorded output must equal the recorded nonce.
+
+  BYTE_ONLY_SUBSTITUTION_DETECTION_CLAIMED=NO
+  EXECUTION_LINKED_WITNESS=YES
+
+THE G0 PROVENANCE
+------------------
+
+  G0_COMPILER_INVOCATION=cc
+  G0_COMPILER_RESOLVED_PATH=/usr/bin/cc
+  G0_COMPILER_BINARY_SHA256=9b11ead1ca76a03d61108ad5bf2c913d6aa8daa7deb9fd28893e847e3680e5e7
+  G0_COMPILER_VERSION=Apple clang version 15.0.0 (clang-1500.0.40.1)
+  G0_SOURCE_PATH=src/ast.c
+  G0_SOURCE_SHA256=65ea53392b0882070ed4688c2470a98c84befff689902ea1caa60c01130f5633
+  G0_EXACT_BUILD_COMMAND=cc -std=c99 -O2 -Isrc -c -o build/slice04-gen/g0.o src/ast.c
+  G0_OUTPUT_OBJECT_PATH=build/slice04-gen/g0.o
+  G0_OUTPUT_OBJECT_SHA256=144c9836ba79125bd973f9faefe05b259e9efaa1e8bc7babc5c44de007de7253
+  G0_PROVENANCE_NONCE=4114
+  G0_PROBE_EXECUTION_OUTPUT=4114
+
+The G0 producing compiler is resolved and hashed FROM THE ACTUAL
+INVOKED COMMAND: the G0 build rule invokes `cc`, and the recorder
+resolves `cc` through the PATH lookup and hashes the RESOLVED
+executable.
+
+  G0_PRODUCER_FROM_ACTUAL_COMMAND=YES
+  G0_COMPILER_SHA_MATCHES_LIVE_BINARY=YES
+  G0_COMPILER_IS_THE_POLYC_COMPILER=NO
+
+THE FOUR COMPILING BINARIES ARE DISTINCT
+========================================
+
+  G1_COMPILER=/Volumes/.../hcc              sha256=222ef8f7e26518d18e99a3d6a5fe503b9a08899066514ec45e899324463f73fb
+  G2_COMPILER=/Volumes/.../hcc-bootstrap02  sha256=04e47f3bd42f39813b621819974314d7d82153c16bca3178da3c3a658cc0ff50
+  G3_COMPILER=/Volumes/.../hcc-bootstrap03  sha256=2663f24e7857b1daf83207253f148fb00af4f024643b8a66ad156ad8078df99a
+  G0_COMPILER=/usr/bin/cc                   sha256=9b11ead1ca76a03d61108ad5bf2c913d6aa8daa7deb9fd28893e847e3680e5e7
+
+  G1_G2_COMPILER_DISTINCT=YES
+  G1_G3_COMPILER_DISTINCT=YES
+  G2_G3_COMPILER_DISTINCT=YES
+  G0_COMPILER_DISTINCT_FROM_EVERY_POLYC_GENERATION=YES
+
+THE RECEIPTS AGREE
+==================
+
+  G0_RAW_RECEIPT_MATCHES_MANIFEST=YES
+  G0_RAW_RECEIPT_MATCHES_SUMMARY=YES
+  SLICE04_PROVENANCE_SINGLE_VALUED=YES
+
+The predecessor's raw generations transcript was INCONSISTENT with
+its own independent G0 receipt.  SLICE04 does not repeat that: the
+raw receipt IS the source of the manifest and of this summary, so
+they are single-valued by construction.

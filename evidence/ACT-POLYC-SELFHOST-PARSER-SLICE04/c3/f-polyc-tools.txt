@@ -1,0 +1,60 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE04
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=f-polyc-tools
+
+THE F-POLYC-TOOLS CHECK
+=======================
+
+The authoritative checker for F-POLYC-TOOLS is
+tools/factory/factory-polyc-tools-check.HC.
+
+COMMAND=ls tools/factory/factory-polyc-tools-check.HC
+OUTPUT=ls: cannot access 'tools/factory/factory-polyc-tools-check.HC': No such file or directory
+
+  F_POLYC_TOOLS_CHECKER_PRESENT=NO
+
+THE CHECKER IS NOT YET LANDED
+=============================
+
+This is the KNOWN, PRE-EXISTING residue that
+AGENTS.md records as "C2.9 residue of the bound correction ACT": the
+checker exists as a requirement but has not been implemented.  It is
+NOT a defect introduced by SLICE04, and landing it is out of this
+ACT's scope.
+
+THE NO-PYTHON CHECKER IS THE AVAILABLE ENFORCEMENT
+==================================================
+
+The companion F-NO-PYTHON checker
+(scripts/quality/factory-no-python-check.sh -> the PolyC checker
+tools/factory/factory-no-python-check.HC) IS present and WAS run for
+this ACT.  Its result is recorded in f-no-python.txt: twelve
+pre-existing findings, zero newly introduced.
+
+THE SUBSTANTIVE F-POLYC-TOOLS REQUIREMENT IS MET BY CONSTRUCTION
+================================================================
+
+Every tool implementation SLICE04 introduces is PolyC:
+
+  tools/quality/parser-slice04-fixture-producer.HC        PolyC
+  tools/quality/parser-slice04-fixture-integrity.HC       PolyC
+  tools/quality/parser-slice04-differential.HC            PolyC
+  tools/quality/parser-slice04-ranking-controls.HC        PolyC
+  tools/quality/parser-slice04-provenance-verifier.HC     PolyC
+  tools/bootstrap/selfhost-parser-slice04.HC              PolyC
+
+The only non-PolyC files SLICE04 adds are the NARROW C ORACLE
+ADAPTERS, which ACT section 3.1 explicitly permits:
+
+  tools/quality/parser-slice04-oracle-driver.c   a narrow adapter /
+                                                   executable driver
+  tools/quality/parser-slice04-oracle-adapter.c  a narrow adapter
+  tools/quality/parser-slice04-oracle-stub.c     a one-line stub
+
+Neither adapter reimplements the operator mapping: the mapping is the
+live src/ast.c's, and the adapters only call it.
+
+  NEW_TOOL_IMPLEMENTATIONS_ARE_POLYC=YES
+  NEW_C_FILES_ARE_ORACLE_ADAPTERS_ONLY=YES
+  NEW_C_FILES_REIMPLEMENT_THE_MAPPING=NO
+  F_POLYC_TOOLS_CHECKER_MISSING=YES (pre-existing residue)

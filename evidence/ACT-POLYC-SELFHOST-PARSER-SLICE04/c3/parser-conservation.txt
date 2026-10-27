@@ -1,0 +1,74 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE04
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=parser-conservation
+
+THE PARSER SUITE CONSERVATION
+=============================
+
+THE BASELINE IS THE ENTRY TREE
+-------------------------------
+
+ACT section 11: the conservation baseline is the ACT's ENTRY HEAD, not
+a historical HANDOFF's claimed result.  For SLICE04 the entry head is
+e3eaf38c2e0a1183d8fd4969443c32c92f075e58.
+
+COMMAND=git archive e3eaf38c2e0a1183d8fd4969443c32c92f075e58 src src/asm \
+          | tar -x -C /tmp/slice04-baseline
+COMMAND=cmake -S /tmp/slice04-baseline/src -B /tmp/slice04-baseline/build \
+          -G 'Unix Makefiles' -DCMAKE_C_COMPILER=cc -DCMAKE_BUILD_TYPE=Release \
+          -DHCC_ENABLE_JIT=on -DHCC_ENABLE_LLVM=OFF \
+          -DHCC_RUNTIME_OUTPUT_DIRECTORY=/tmp/slice04-baseline/out \
+          -DHCC_USE_SELFHOST_PARSER_PADDING=ON \
+          -DPARSER_PADDING_OBJECT=<repo>/build/parser-padding-subject.o \
+          -DHCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN=ON \
+          -DCONTROL_FLOW_TOKEN_OBJECT=<repo>/build/parser-control-flow-token-subject.o \
+          -DHCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE=ON \
+          -DOPERATOR_PRECEDENCE_OBJECT=<repo>/build/parser-operator-precedence-subject.o
+COMMAND=make -C /tmp/slice04-baseline/build -j4
+
+  BASELINE_COMPILER_BUILT_FROM=ENTRY_HEAD
+  BASELINE_COMPILER_SHA256=47bdc6abe1269ee5cb944b017bc5245f6a05820caa4f95ef5868d1ce85ae4e78
+
+The baseline tree is the ENTRY tree, so it contains the LEGACY C
+astBinOpFromToken: the entry tree has no AST-operator delegation at
+all.
+
+THE IDENTICAL SUITE WAS RUN AGAINST BOTH
+---------------------------------------
+
+COMMAND (baseline): cd /tmp/slice04-baseline/src/tests \
+                      && ./test-runner --target=aarch64-apple-darwin
+COMMAND (current):  cd src/tests \
+                      && ./test-runner --target=aarch64-apple-darwin
+
+  BASELINE_PASSED=87  BASELINE_FAILED=3
+  CURRENT_PASSED=87   CURRENT_FAILED=3
+
+THE FAILURE IDENTITIES ARE BYTE IDENTICAL
+-----------------------------------------
+
+  FAILED: 0/7
+  Test - #link directive (AOT): FAILED: 1/3
+  Test - indirect struct return C interop: FAILED: 1/3
+
+COMMAND=grep -oE '^Test - .*|FAILED: [0-9]+/[0-9]+' baseline.txt > b.txt
+COMMAND=grep -oE '^Test - .*|FAILED: [0-9]+/[0-9]+' current.txt  > c.txt
+COMMAND=diff b.txt c.txt
+OUTPUT=(no output: the test identity sets are IDENTICAL)
+
+  NEW_PARSER_FAILURE_IDENTITIES=0
+  NEW_PARSER_SEMANTIC_REGRESSIONS=0
+  REMOVED_PARSER_FAILURE_IDENTITIES=0
+
+THE THREE FAILURES ARE PRE-EXISTING
+-----------------------------------
+
+They are the pre-existing /usr/local/include/tos.HH installation-prefix
+issue.  They are present in the BASELINE (the entry tree) as well as in
+the current tree, and they are recorded as MEASURED, not relabelled
+PASS.  A pre-existing failure is never suppressed and never used to
+excuse a new one.
+
+  BASELINE_FAILURE_IDENTITIES=3 (the three above)
+  CURRENT_FAILURE_IDENTITIES=3  (the same three)
+  NEW_FAILURE_IDENTITIES=0

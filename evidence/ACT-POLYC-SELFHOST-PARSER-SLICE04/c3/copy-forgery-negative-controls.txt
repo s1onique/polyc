@@ -1,0 +1,49 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE04
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=copy-forgery-negative-controls
+
+THE PROVENANCE NEGATIVE CONTROLS
+=================================
+
+ACT section 9.5 requires five negative controls.  Each one corrupts or
+substitutes the EXECUTION-LINKED PROVENANCE WITNESS and requires the
+verifier to REJECT it.
+
+COMMAND=make parser-slice04-copy-forgery-control
+OUTPUT:
+  SLICE04_COPY_FORGERY_CONTROL=RUN
+  SLICE04_FORGERY=CASE-1 G1's witness substituted for G3's
+  SLICE04_FORGERY=CASE-1 PROVENANCE_VERDICT=REJECTED
+    REJECT_STAGE_LABELS the witness carries 3 generations, expected 4
+  SLICE04_FORGERY=CASE-2 G3's compiler execution receipt omitted
+  SLICE04_FORGERY=CASE-2 PROVENANCE_VERDICT=REJECTED
+    REJECT_OMITTED_EXECUTION_RECEIPT g0 has no PROBE_EXECUTION_OUTPUT
+  SLICE04_FORGERY=CASE-3 a recorded compiler SHA is changed
+  SLICE04_FORGERY=CASE-3 PROVENANCE_VERDICT=REJECTED
+    REJECT_COMPILER_SHA_MISMATCH g0 recorded compiler sha [0000...0000] but the live compiler hashes to [9b11ead1...]
+  SLICE04_FORGERY=CASE-4 a mutated, non-byte-identical component object is substituted
+  SLICE04_FORGERY=CASE-4 PROVENANCE_VERDICT=REJECTED
+    REJECT_OBJECT_SHA_MISMATCH g3 recorded object sha [6d598bc7...] but the live object hashes to [34abe07b...]
+  SLICE04_FORGERY=CASE-5 the stage labels are swapped without changing their bound identities
+  SLICE04_FORGERY=CASE-5 PROVENANCE_VERDICT=REJECTED
+    REJECT_EXECUTION_RECEIPT_MISMATCH g1 recorded probe output [4117] but its nonce is [4115]
+    REJECT_DUPLICATE_NONCE the witness carries the same nonce for two generations
+  SLICE04_COPY_FORGERY_CONTROL=PASS (5/5 substitutions rejected)
+
+WHY THE WITNESS IS THE RIGHT DETECTOR
+=====================================
+
+G1, G2 and G3 produce BYTE-IDENTICAL objects.  Substituting one
+finished object for another is therefore NOT detectable from the output
+bytes alone, and a check that compared only (object SHA, compiler SHA)
+would NOT detect it, because both fields are copyable and relabelled.
+
+These controls therefore corrupt or substitute the EXECUTION-LINKED
+WITNESS, and the witness's probe output is the product of an ACTUAL
+EXECUTION of a binary built by that generation's OWN compiler and
+linked against that generation's OWN object.  That is what makes the
+substitution detectable, and the controls demonstrate it.
+
+  PROVENANCE_CONTROLS=5/5 PASS
+  BYTE_ONLY_SUBSTITUTION_DETECTION_CLAIMED=NO
+  EXECUTION_LINKED_SUBSTITUTION_DETECTION=DEMONSTRATED

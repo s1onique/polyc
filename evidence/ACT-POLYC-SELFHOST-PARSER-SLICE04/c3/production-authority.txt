@@ -1,0 +1,97 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE04
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=production-authority
+
+THE PRODUCTION AUTHORITY IS POLYC
+=================================
+
+THE PRODUCTION ast.c OBJECT REFERENCES THE POLYC SYMBOL
+---------------------------------------------------------
+
+COMMAND=nm build/CMakeFiles/hcc.dir/ast.c.o | grep -i BootstrapAstBinOp
+OUTPUT:
+                 U _BootstrapAstBinOpFromToken
+
+  PRODUCTION_OBJECT_REFERENCES_POLYC_SYMBOL=YES
+  PRODUCTION_OBJECT_DEFINES_POLYC_SYMBOL=NO
+
+THE FINAL COMPILER PROVIDES A STRONG DEFINITION
+-------------------------------------------------
+
+COMMAND=nm ./hcc | grep -i BootstrapAstBinOp
+OUTPUT:
+  000000010006442c T _BootstrapAstBinOpFromToken
+
+The type letter T is a global STRONG text definition.  The build's own
+verifier confirms it:
+
+  -- ACT-POLYC-SELFHOST-PARSER-SLICE04: AST_TOKEN_MAP_OBJECT_STATUS=PASS
+    EXPECTED_SYMBOL=BootstrapAstBinOpFromToken
+    TARGET_SYMBOL=_BootstrapAstBinOpFromToken
+    DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1
+
+  PRODUCTION_COMPILER_STRONG_DEFINITION=YES
+
+THE LEGACY SELECTED MAPPING BODY IS ABSENT FROM THE PRODUCTION PATH
+---------------------------------------------------------------------
+
+COMMAND=otool -tvV build/CMakeFiles/hcc.dir/ast.c.o \
+          | awk '/_astBinOpFromToken:/,/^_astUnaryOpFromToken:/'
+
+  _astBinOpFromToken:
+  00000000000006a0	stp	x20, x19, [sp, #-0x20]!
+  00000000000006a4	stp	x29, x30, [sp, #0x10]!
+  00000000000006a8	add	x29, sp, #0x10
+  00000000000006ac	mov	x19, x1
+  00000000000006b0	bl	0x6b0
+  00000000000006b4	tbnz	x0, #0x3f, 0x6c4
+  00000000000006b8	str	w0, [x19]
+  00000000000006bc	mov	w0, #0x1
+  00000000000006c0	b	0x6c8
+  00000000000006c4	mov	w0, #0x0
+  00000000000006c8	ldp	x29, x30, [sp], #0x20
+  00000000000006cc	ldp	x20, x19, [sp], #0x20
+  00000000000006d0	ret
+  _astUnaryOpFromToken:
+
+There is NO jump table, NO switch and NO enum immediate in
+_astBinOpFromToken.  The legacy token-to-enum switch is NOT in the
+production-compiled conditional path.  The retained C ABI wrapper does
+argument projection, success conversion and conditional output
+storage, and nothing else.
+
+  LEGACY_SELECTED_MAPPING_IN_PRODUCTION=NO
+
+THE RETAINED C ADAPTER IS THE WHOLE OF THE LEGACY SURFACE
+----------------------------------------------------------
+
+The legacy switch survives ONLY inside the #else branch, which is
+compiled ONLY when HCC_USE_SELFHOST_PARSER_AST_BINOP is NOT defined.
+The production build defines it; the stage0 build and the oracle
+build do not.
+
+  PRODUCTION_BUILD_DEFINES_THE_SELECTOR=YES
+  STAGE0_BUILD_DEFINES_THE_SELECTOR=NO
+  ORACLE_BUILD_DEFINES_THE_SELECTOR=NO
+
+THE PREVIOUS THREE POLYC AUTHORITIES REMAIN ACTIVE
+----------------------------------------------------
+
+COMMAND=nm ./hcc | grep -E 'BootstrapCalcPadding|BootstrapValidPostControlFlowToken|BootstrapOperatorPrecedence'
+OUTPUT: (all three present as strong global definitions)
+
+  BootstrapCalcPadding                ACTIVE
+  BootstrapValidPostControlFlowToken  ACTIVE
+  BootstrapOperatorPrecedence          ACTIVE
+  BootstrapAstBinOpFromToken           ACTIVE
+
+  EXISTING_PARSER_POLYC_COMPONENTS=CONSERVED
+
+THE UNSELECTED CLASSIFIER IS UNCHANGED
+--------------------------------------
+
+COMMAND=git diff src/ast.c | grep -ci unary
+OUTPUT=0
+
+  UNSELECTED_CLASSIFIER_BYTE_IDENTICAL=YES
+  UNSELECTED_CLASSIFIER_AUTHORITY=LEGACY_C

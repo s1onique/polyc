@@ -1,0 +1,47 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE04
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=pristine-restoration
+
+THE PRISTINE RESTORATION
+========================
+
+ACT section 10.2 requires the third step of the causal sequence to
+restore the pristine component EXACTLY: the same output, and the same
+subject SHA.
+
+COMMAND=make parser-slice04-production-mutation
+OUTPUT:
+  PRISTINE_COMPONENT_SHA256=6d598bc7f0b00ac47642ec06b8cceba641d55a8cfe5498e0a6a995c40f2e054d
+  MUTATED_COMPONENT_SHA256=94892446b6036bcc540166c5dc91714f69fae7602d3a31fd6acb70b4729634de
+  RESTORED_COMPONENT_SHA256=6d598bc7f0b00ac47642ec06b8cceba641d55a8cfe5498e0a6a995c40f2e054d
+  C_OUTPUT_EQUALS_A=YES
+  C_COMPONENT_SHA_EQUALS_A=YES
+
+THE RESTORED COMPONENT IS A REBUILD, NOT A COPY
+------------------------------------------------
+
+The step-C component is built AGAIN from the pristine source, by the
+SAME stage0 compiler, with the SAME command:
+
+  build/host-stage0/hcc --install-dir=<prefix> \
+      -c build/slice04-mut/ws/selfhost-parser-slice04.HC \
+      -o build/slice04-mut/restored.o
+
+and it hashes to the SAME sha as the step-A component:
+
+  C_COMPONENT_SHA_EQUALS_A=YES
+
+So the restoration is a REPRODUCIBLE BUILD of the pristine source, not
+a copy of the earlier object.  The tracked subject was never mutated
+in any of the three steps.
+
+THE OUTPUT IS IDENTICAL
+-----------------------
+
+  p0_OUTPUT=13
+  p2_OUTPUT=13
+
+  C_OUTPUT_EQUALS_A=YES
+
+  PRISTINE_RESTORATION=PASS
+  TRACKED_SUBJECT_MUTATED=NO

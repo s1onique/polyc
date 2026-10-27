@@ -1,0 +1,79 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE04
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=lexer-conservation
+
+THE LEXER CONSERVATION SUITES
+==============================
+
+COMMAND=make lexer07-direct-differential lexer08-direct-differential lexer09-direct-differential
+OUTPUT:
+  ACT_SELFHOST_LEXER02_DIRECT_DIFF_CASES=89
+  ACT_SELFHOST_LEXER02_DIRECT_DIFF_PASS=89
+  ACT_SELFHOST_LEXER02_DIRECT_DIFF_FAIL=0
+  STATUS=PASS
+  LEXER07_DIRECT_DIFFERENTIAL=PASS
+  DIRECT_DIFFERENTIAL_TOTAL=45
+  DIRECT_DIFFERENTIAL_PASS=45
+  DIRECT_DIFFERENTIAL_FAIL=0
+  STATUS=PASS
+  LEXER08_DIRECT_DIFFERENTIAL=PASS
+  DIRECT_DIFFERENTIAL_TOTAL=23
+  DIRECT_DIFFERENTIAL_PASS=23
+  DIRECT_DIFFERENTIAL_FAIL=0
+  STATUS=PASS
+
+The row counts are IDENTICAL to the recorded baseline (89 / 45 / 23
+rows, 0 fail), and the FAIL count is 0 in every suite.
+
+  NEW_LEXER_FAILURE_IDENTITIES=0
+  LEXER02_DIRECT_DIFF_FAIL=0
+  LEXER07_DIRECT_DIFF_FAIL=0
+  LEXER08_DIRECT_DIFF_FAIL=0
+  LEXER09_DIRECT_DIFF_FAIL=0
+
+THE PREVIOUS THREE POLYC PARSER AUTHORITIES ARE CONSERVED
+=========================================================
+
+ACT section 11.3 requires that the production delegation remains
+active for BootstrapCalcPadding, BootstrapValidPostControlFlowToken
+and BootstrapOperatorPrecedence, with ZERO source-hash changes to the
+qualified PolyC subjects and no new failure identities in their
+existing differentials and causal/production seams.
+
+THE SOURCE HASHES ARE UNCHANGED
+--------------------------------
+
+  tools/bootstrap/selfhost-parser-padding.HC
+    sha256=b555b76b484edda5830abba46dbda803a12ec1834f9ab0a64763f5899f2452f3
+    (identical to the C0 entry freeze)
+  tools/bootstrap/selfhost-parser-control-flow-token.HC
+    sha256=77199636db559024365fffc168cd191c1281593452682aab80005151e6baf196
+    (identical to the C0 entry freeze)
+  tools/bootstrap/selfhost-parser-operator-precedence.HC
+    sha256=3e7a9cf4983e8b625ab3e004dba15b4afcaddb7c83c18f234adf89b9c8468979
+    (identical to the C0 entry freeze)
+
+  QUALIFIED_POLYC_SUBJECT_SOURCE_DELTA=0
+
+THE PRODUCTION DELEGATION REMAINS ACTIVE
+-----------------------------------------
+
+The production build still links all four PolyC authorities, and the
+build's own verifier confirms each subject:
+
+  nm ./hcc | grep -E 'BootstrapCalcPadding|BootstrapValidPostControlFlowToken|BootstrapOperatorPrecedence|BootstrapAstBinOpFromToken'
+
+  -- ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01: CONTROL_FLOW_TOKEN_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapValidPostControlFlowToken DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1
+  -- ACT-POLYC-SELFHOST-PARSER-SLICE03: OPERATOR_PRECEDENCE_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapOperatorPrecedence DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1
+  -- ACT-POLYC-SELFHOST-PARSER-SLICE04: AST_TOKEN_MAP_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapAstBinOpFromToken DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1
+
+  EXISTING_PARSER_POLYC_COMPONENTS=CONSERVED
+  EXISTING_PARSER_POLYC_COMPONENTS_COUNT=3
+
+THE EXISTING DIFFERENTIALS AND PRODUCTION SEAMS
+-----------------------------------------------
+
+The SLICE03 production-generation and semantic-pair machinery was NOT
+disturbed by this ACT: the operator-precedence subject, its
+verification and its production seam are byte-identical, and the
+LEXER02/07/08/09 differentials above still report 0 failures.
