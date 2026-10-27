@@ -1,0 +1,119 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE04
+ACT_PHASE=C0-RED
+EVIDENCE_KIND=candidate-scope
+
+THE TWO CANDIDATES ARE THE ONLY SHORTLIST
+=========================================
+
+ACT section 0 fixes the shortlist.  Neither candidate is preselected.
+
+CAND-019  astBinOpFromToken
+          src/ast.c:206..236
+CAND-020  astUnaryOpFromToken
+          src/ast.c:238..254
+
+Both anchors were verified to be the LIVE locations at entry:
+
+COMMAND=grep -n 'int astBinOpFromToken\|int astUnaryOpFromToken' src/ast.c
+OUTPUT:
+  206:int astBinOpFromToken(s64 op, AstBinOp *_result) {
+  238:int astUnaryOpFromToken(s64 op, AstUnOp *_result) {
+
+The ACT states that "Historical line numbers are anchors, not source
+identities."  The C1 selection therefore re-derives every fact from
+the live source and does not rely on the anchor numbers.  The anchor
+agreement above is a convenience observation, not a selection input.
+
+THE SELECTION IS NOT MADE AT C0
+================================
+
+C0 establishes the RED and the baseline.  It does NOT name a winner.
+The mechanical selection happens at C1 using the binding eligibility
+checker and the RECON03 lexicographic ranker:
+
+  tools/quality/parser-slice-recon03-eligibility.HC   (13 clauses)
+  tools/quality/parser-slice-recon03-ranking.HC       (R0..R6)
+
+Both are existing, closed, PolyC tools.  SLICE04 reuses them against
+SLICE04's own candidate inventory; it does not author a new ranker and
+does not change the R0..R6 dimension definitions.
+
+The ranker consumes an ELIGIBILITY-VERIFIED input: its `eligible`
+column is the OUTPUT of the eligibility checker, so an ineligible
+candidate with artificially perfect ranking scores can never win.
+
+THE TWO CANDIDATES' SEMANTIC SHAPES AT ENTRY
+=============================================
+
+Both candidates have the identical API shape:
+
+  int astBinOpFromToken(s64 op, AstBinOp *_result);
+  int astUnaryOpFromToken(s64 op, AstUnOp *_result);
+
+Both:
+  1. return 1 when the token maps to an AST operator;
+  2. return 0 otherwise;
+  3. write the enum value through `result` only on success;
+  4. leave the caller's existing result value unchanged on failure.
+
+All four properties are binding for the replacement.
+
+THE SCOPE OF THE MIGRATION IS EXACTLY ONE FUNCTION
+===================================================
+
+The selected candidate's C decision leaves the production path.  The
+NON-SELECTED candidate stays legacy C and must remain byte-identical
+unless build-conditional wrapping absolutely requires a shared
+formatting change, which would need prospective C1 authorization and
+an exact semantic conservation witness.
+
+At entry both functions live in the same file and the same #ifdef
+style used by the three qualified predecessors.  Whether a shared
+formatting change is needed is determined at C1 and recorded in
+c1/implementation-scope.txt before any production edit.
+
+THE AUTHORIZED MUTATION SURFACE
+===============================
+
+Tracked paths this ACT may modify (ACT section 3.1):
+
+  docs/acts/ACT-POLYC-SELFHOST-PARSER-SLICE04.md
+  docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE04.md
+  docs/factory/act-handoff-map.tsv
+  docs/ROADMAP.md
+  evidence/ACT-POLYC-SELFHOST-PARSER-SLICE04/**
+  src/ast.c
+  src/CMakeLists.txt
+  src/cmake/VerifyAstTokenMapObject.cmake
+  src/cmake/WriteAstTokenMapObjectStamp.cmake
+  tools/bootstrap/selfhost-parser-slice04.HC
+  tools/quality/parser-slice04-*.HC
+  tools/quality/parser-slice04-oracle-*.c
+  tools/quality/parser-slice04-oracle-*.h
+  Makefile
+
+Tracked paths this ACT must NOT modify (ACT section 3.2):
+
+  existing closed ACT documents
+  existing closed evidence/**
+  existing closed HANDOFFs
+  src/parser.c
+  src/prslib.c
+  src/lexer.c
+  src/lexer.h
+  src/ast.h
+  src/cctrl.c
+  src/cctrl.h
+  other tools/bootstrap/**
+  existing Factory validators
+  pre-push hooks
+
+Note that src/prslib.c, which CALLS both candidates, is FORBIDDEN.
+The production delegation must therefore happen INSIDE src/ast.c:
+the candidate's own function body is replaced by an adapter that
+delegates to PolyC, so the prslib.c call sites are unchanged.
+
+NO NEW PYTHON.  NO NEW UNRELATED SHELL TOOLING.
+
+NO BACKEND, LEXER, PARSER-LAYOUT, EXCEPTION-HANDLING OR AST-ALLOCATION
+REDESIGN.

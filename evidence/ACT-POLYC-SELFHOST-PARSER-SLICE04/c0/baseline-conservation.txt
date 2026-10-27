@@ -1,0 +1,181 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE04
+ACT_PHASE=C0-RED
+EVIDENCE_KIND=baseline-conservation
+
+THE BASELINE IS THE ENTRY TREE
+==============================
+
+ACT section 11 requires that the conservation baseline is the ACT's
+ENTRY HEAD, not a historical HANDOFF's claimed result.  For SLICE04 the
+entry head is e3eaf38c2e0a1183d8fd4969443c32c92f075e58, which is also
+the predecessor's CLOSE commit.
+
+  CONSERVATION_BASELINE_COMMIT=e3eaf38c2e0a1183d8fd4969443c32c92f075e58
+  CONSERVATION_BASELINE_TREE=src/ast.c, src/ast.h, src/prslib.c,
+    src/parser.c, src/lexer.h, src/CMakeLists.txt and the three
+    qualified PolyC subjects, exactly as hashed in source-freeze.tsv
+
+THE PRODUCTION COMPILER AT ENTRY
+================================
+
+The production compiler at entry was built from the entry tree and is
+the object the conservation comparison is measured against.
+
+  ./hcc (entry build)
+  SHA256=2ee3beb5cba44ce47d5f0ccb00fcae7b936b27e2c2db2b67fd2060bfe1bb85f3
+  VERSION=hcc v0.0.15-beta
+  COMMIT_HASH=0b7fb65f45bca57825e9d0f5e8a1c7e70782a434
+  ARCH=aarch64-apple-darwin
+  BUILD=Release
+
+THE FRESH-TREE PROOF (F9)
+=========================
+
+F9 requires fresh-tree evidence for closure-critical compiler gates.
+The C0 RED was therefore measured against a FRESH build tree, not
+against the repository's ignored build/ directory:
+
+COMMAND=rm -rf /tmp/slice04-red-build
+COMMAND=cmake -S ./src -B /tmp/slice04-red-build -G 'Unix Makefiles' \
+          -DCMAKE_C_COMPILER=cc -DCMAKE_BUILD_TYPE=Release \
+          -DHCC_ENABLE_JIT=on -DHCC_ENABLE_LLVM=OFF
+COMMAND=make -C /tmp/slice04-red-build -j4
+OUTPUT=BUILD=OK
+
+The freshly built production object:
+
+  /tmp/slice04-red-build/CMakeFiles/hcc.dir/ast.c.o
+  SHA256=144c9836ba79125bd973f9faefe05b259e9efaa1e8bc7babc5c44de007de7253
+
+This object was produced by the command above, so its contents cannot
+be a stale artifact carried over from a previous build.
+
+THE STALE-ARTIFACT HAZARD IS EXPLICITLY EXCLUDED
+==================================================
+
+build/ is listed in .gitignore, so objects under it are untracked and
+can survive from an unrelated build.  Two independent mechanisms
+exclude them from the RED and from every later conservation claim:
+
+  (1) The RED was measured on /tmp/slice04-red-build, a directory
+      created by the command above in this session and containing
+      only objects built from the entry tree.
+
+  (2) The C2 build integration (ACT section 8.3) makes the object
+      VERIFICATION a custom TARGET rather than an OUTPUT-producing
+      custom command, so the verification command ALWAYS runs and a
+      stale stamp file can never decide that the verification is
+      unnecessary.  This is the SLICE03 discipline, inherited here.
+
+The RED additionally cannot be produced by a missing component that
+some other object happens to satisfy: the C0 RED asserts the ABSENCE
+of a PolyC symbol across the whole fresh build, and the C2 fail-closed
+build gate requires a STRONG GLOBAL definition of exactly the one
+expected symbol in exactly the selected object.
+
+THE PRE-EXISTING FAILURES AT ENTRY
+==================================
+
+The predecessor's conservation record (measured at ITS entry) states:
+
+  BASELINE_PASSED=87  BASELINE_FAILED=3
+  FAILED: 0/7
+  Test - #link directive (AOT): FAILED: 1/3
+  Test - indirect struct return C interop: FAILED: 1/3
+
+These are the pre-existing /usr/local/include/tos.HH installation-prefix
+failures.  SLICE04 re-measures the suite against its OWN entry tree
+and against its post-implementation tree, and compares the two
+IDENTITIES.  A pre-existing failure is recorded as a pre-existing
+failure; it is never relabelled PASS, and it is never used to excuse
+a NEW failure.
+
+  ENTRY_FAILURE_IDENTITIES_TO_PRESERVE=/usr/local/include/tos.HH
+    (re-measured in C3 against the entry tree, not copied from prose)
+
+
+THE C0 RED, MEASURED ON THAT FRESH TREE
+========================================
+
+The four RED predicates required by ACT section 5 are demonstrated
+against the ACTUAL production function, not a synthetic stand-in.
+
+RED-1 -- SELECTED_COMPONENT_EXISTS=NO
+-------------------------------------
+COMMAND=ls tools/bootstrap/selfhost-parser-slice04.HC
+OUTPUT=ls: cannot access 'tools/bootstrap/selfhost-parser-slice04.HC': No such file or directory
+
+No PolyC AST-operator component exists at entry.
+
+RED-2 -- SELECTED_PRODUCTION_DELEGATION=NO
+-----------------------------------------
+COMMAND=grep -c 'HCC_USE_SELFHOST_PARSER_AST' src/ast.c
+OUTPUT=0
+
+The production source has no delegation selector for the AST operator
+mapping.  src/ast.c is byte-identical to the entry hash recorded in
+source-freeze.tsv.
+
+RED-3 -- SELECTED_POLYC_AUTHORITY=NO
+------------------------------------
+COMMAND=find /tmp/slice04-red-build -name '*.o' | xargs nm 2>/dev/null \
+          | grep -i 'BootstrapAstBinOp\|BootstrapAstUnaryOp\|BootstrapAstOp'
+OUTPUT=(empty)
+
+No PolyC AST-operator symbol exists anywhere in the freshly built
+production tree.  The production compiler therefore cannot be
+delegating any AST-operator decision to PolyC.
+
+RED-4 -- LEGACY_AST_MAPPING_AUTHORITY=YES
+------------------------------------------
+COMMAND=nm /tmp/slice04-red-build/CMakeFiles/hcc.dir/ast.c.o | grep astOpFromToken
+OUTPUT:
+  00000000000006a0 T _astBinOpFromToken
+  000000000000078c T _astUnaryOpFromToken
+
+The legacy C classifiers are present as STRONG GLOBAL DEFINITIONS in
+the freshly built production object: the production compiler links
+them and calls them.
+
+THE DISASSEMBLY PROVES THE DECISION IS STILL IN C
+-------------------------------------------------
+
+The presence of the symbol alone would not prove that C still owns the
+DECISION.  The disassembly of the freshly built production object
+does prove it:
+
+COMMAND=otool -tvV /tmp/slice04-red-build/CMakeFiles/hcc.dir/ast.c.o \
+          | awk '/_astBinOpFromToken:/,/^$/'
+
+The body is a two-level jump table over the token value:
+  sub  x9, x8, #0x25       ; token - 0x25 ('%')
+  cmp  x9, #0x57           ; the ASCII window
+  b.hi ...
+  ldrb w12, [x10, x9]      ; jump-table byte
+  br   x11                 ; dispatch
+  ...
+  sub  x8, x8, #0x309      ; TK_SHL .. TK_SHR window
+  ...
+  mov  w8, #0x2            ; AST_BIN_OP_ADD
+  mov  w8, #0x5            ; AST_BIN_OP_SUB
+  mov  w8, #0x0            ; AST_BIN_OP_MUL
+  ...
+  mov  w8, #0x10           ; AST_BIN_OP_SHL
+  mov  w8, #0x11           ; AST_BIN_OP_SHR
+  str  w8, [x1]            ; write the enum through the output pointer
+  mov  w0, #0x1            ; return 1
+  ret
+
+Every enum value is MATERIALISED AS AN IMMEDIATE IN THE PRODUCTION
+OBJECT.  The token-to-operator classification is therefore executed
+by C in the production build.  This is the real defect the ACT
+retires, observed on the real production seam.
+
+  SELECTED_COMPONENT_EXISTS=NO
+  SELECTED_PRODUCTION_DELEGATION=NO
+  SELECTED_POLYC_AUTHORITY=NO
+  LEGACY_AST_MAPPING_AUTHORITY=YES
+
+(These four predicates are recorded for BOTH candidates; the RED does
+not presuppose which candidate will be selected.  See
+candidate-scope.txt.)

@@ -1,0 +1,141 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE04
+ACT_PHASE=C0-RED
+EVIDENCE_KIND=predecessor-reconciliation
+
+PREDECESSOR=ACT-POLYC-SELFHOST-PARSER-SLICE03-CORRECTION01
+PREDECESSOR_CLOSURE_COMMIT=e3eaf38c2e0a1183d8fd4969443c32c92f075e58
+
+THE TWO BOOKKEEPING DEFECTS ARE ACKNOWLEDGED, NOT REPAIRED
+==========================================================
+
+ACT section 2 requires SLICE04 to acknowledge two non-production
+bookkeeping defects in the predecessor BEFORE freezing its own proof
+contract.  Neither is repaired here: the predecessor's closed ledger
+is not edited, no row is re-labelled, and the historical 25/25 is
+NOT claimed to have been mechanically correct.
+
+
+D-PREV-01 -- THE ACCEPTANCE-COUNT DRIFT
+----------------------------------------
+
+The predecessor's acceptance TSV is
+evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03-CORRECTION01/c3/mandatory-acceptance.tsv
+
+Its own aggregate counters say:
+
+  MANDATORY_PREDICATES_TOTAL=25
+  MANDATORY_PREDICATES_PROVEN=25
+  MANDATORY_PREDICATES_UNPROVEN=0
+
+The actual number of PREDICATE ROWS in that file is 24.  The count
+was measured by counting the data rows that are predicate rows -- the
+rows that carry a predicate name, a value and an evidence binding --
+and excluding the metadata header rows (ACT_ID=, ACT_PHASE=,
+EVIDENCE_KIND=) and the three MANDATORY_* counter rows:
+
+COMMAND=grep -v '^#' evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03-CORRECTION01/c3/mandatory-acceptance.tsv \
+          | grep -v '^ACT_ID=' | grep -v '^ACT_PHASE=' | grep -v '^EVIDENCE_KIND=' \
+          | grep -v '^MANDATORY_' | grep -c .
+OUTPUT=24
+
+COMMAND=grep '^MANDATORY_PREDICATES_TOTAL' evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03-CORRECTION01/c3/mandatory-acceptance.tsv
+OUTPUT=MANDATORY_PREDICATES_TOTAL	25
+
+THEREFORE:
+
+  PREDECESSOR_ACTUAL_AC_COUNT=24
+  PREDECESSOR_REPORTED_AC_COUNT=25
+  PREDECESSOR_LEDGER_COUNT_DRIFT=ACKNOWLEDGED
+
+CONSEQUENCE FOR SLICE04.  The predecessor's counter is NOT used as
+SLICE04's model.  SLICE04 derives its own total from the ACTUAL
+frozen acceptance rows, and SLICE04's C3 ledger is generated and
+independently audited by exact acceptance-ID JOIN -- never by reading
+a summary counter (ACT section 14, "Ledger requirements").
+
+The predecessor's ACT document, its evidence tree, its HANDOFF and
+its PASS trailer are UNTOUCHED by this ACT (F14).
+
+
+D-PREV-02 -- THE G0 COMPILER PROVENANCE CONTRADICTION
+------------------------------------------------------
+
+The predecessor holds two conflicting representations of the G0
+compiler identity.
+
+REPRESENTATION A -- the independent G0 receipt
+(evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03-CORRECTION01/c3/g0-compiler-identity.txt):
+
+  COMPILER_INVOCATION=cc
+  COMPILER_RESOLVED=/usr/bin/cc
+  COMPILER_SHA256=9b11ead1ca76a03d61108ad5bf2c913d6aa8daa7deb9fd28893e847e3680e5e7
+  COMPILER_VERSION=Apple clang version 15.0.0 (clang-1500.0.40.1)
+  G0_COMPILER_IS_THE_POLYC_COMPILER=NO
+
+REPRESENTATION B -- the raw generations transcript
+(evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03-CORRECTION01/c3/generation-provenance.txt)
+records the G0 compiler SHA as the SHA of the PolyC compiler ./hcc,
+i.e. the same value as the G1 compiler.
+
+REPRESENTATION A IS THE CORRECTED OBSERVATION.  REPRESENTATION B IS
+THE HISTORICALLY INCONSISTENT RAW GENERATION OUTPUT.
+
+The live tree corroborates representation A: the host C compiler is
+/usr/bin/cc with sha
+9b11ead1ca76a03d61108ad5bf2c913d6aa8daa7deb9fd28893e847e3680e5e7,
+and the PolyC compiler ./hcc has a DIFFERENT sha
+(2ee3beb5cba44ce47d5f0ccb00fcae7b936b27e2c2db2b67fd2060bfe1bb85f3).
+A G0 component object built by `cc` cannot have been produced by
+./hcc.
+
+THEREFORE:
+
+  PREDECESSOR_G0_REPORT_DRIFT=ACKNOWLEDGED
+
+SLICE04 IMPLEMENTS ONE CANONICAL PROVENANCE PATH
+--------------------------------------------------
+
+ACT section 2 requires SLICE04 to implement ONE canonical provenance
+path in which the producing executable is resolved and hashed FROM
+THE ACTUAL INVOKED COMMAND.  SLICE04's rule:
+
+  The G0 build command string names the compiler.  The provenance
+  recorder resolves THAT name through the same PATH LOOKUP the build
+  uses, hashes the RESOLVED executable, and records the resolved path,
+  the sha and the version -- in the raw receipt, in the machine
+  readable manifest AND in the human readable summary.  All three
+  representations are generated from ONE recording, so they cannot
+  disagree.
+
+  A newer explanatory paragraph can never override a contradictory raw
+  receipt while simultaneously calling the receipts consistent.
+
+THEREFORE:
+
+  SLICE04_G0_COMPILER_IDENTITY=LIVE_AND_BOUND
+  SLICE04_PROVENANCE_SINGLE_VALUED=YES
+
+No claim is made here that the predecessor's raw transcript is
+consistent.  It is not.  The single-valued path above is what
+SLICE04 freezes in C1 and executes in C3.
+
+
+THE PREDECESSOR CONSERVATION LOCK
+==================================
+
+ACT section 2 requires that the predecessor's three closed surfaces
+are preserved exactly.
+
+COMMAND=git diff --stat e3eaf38c2e0a1183d8fd4969443c32c92f075e58..HEAD \
+          -- evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03-CORRECTION01 \
+          -- docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE03-CORRECTION01.md \
+          -- docs/acts/ACT-POLYC-SELFHOST-PARSER-SLICE03-CORRECTION01.md
+OUTPUT=(empty at the C0 RED commit)
+
+  PREDECESSOR_EVIDENCE_DELTA=0
+  PREDECESSOR_HANDOFF_DELTA=0
+  PREDECESSOR_ACT_DELTA=0
+
+No separate historical correction ACT is authorized or opened here.
+The two defects above are acknowledged in this ACT's own evidence and
+are NOT re-litigated against the predecessor's closed ledger.

@@ -1,0 +1,119 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE04
+ACT_PHASE=C0-RED
+EVIDENCE_KIND=entry-identity
+
+THE ENTRY IDENTITY
+==================
+
+COMMAND=git branch --show-current
+OUTPUT=main
+
+COMMAND=git rev-parse HEAD
+OUTPUT=e3eaf38c2e0a1183d8fd4969443c32c92f075e58
+
+COMMAND=git status --porcelain=v1
+OUTPUT=(empty)
+
+COMMAND=git replace -l
+OUTPUT=(empty)
+
+COMMAND=git merge-base --is-ancestor e3eaf38c2e0a1183d8fd4969443c32c92f075e58 HEAD
+EXIT_CODE=0
+
+BRANCH=main
+WORKTREE_CLEAN=YES
+PREDECESSOR_REACHABLE=YES
+GIT_REPLACE_REFS=0
+
+THE EXPECTED ENTRY_HEAD
+------------------------
+
+The ACT names e3eaf38c2e0a1183d8fd4969443c32c92f075e58 as the
+Expected ENTRY_HEAD.  The observed HEAD is EXACTLY that commit, so
+the entry tree is the ACT's declared entry tree and no intervening
+commit has to be inventoried (the "If HEAD has advanced" branch of
+ACT section 1 is not taken).
+
+  EXPECTED_ENTRY_HEAD=e3eaf38c2e0a1183d8fd4969443c32c92f075e58
+  OBSERVED_ENTRY_HEAD=e3eaf38c2e0a1183d8fd4969443c32c92f075e58
+  ENTRY_HEAD_MATCHES=YES
+
+THE CANDIDATES' LIVE LOCATIONS AT ENTRY
+----------------------------------------
+
+COMMAND=grep -n 'int astBinOpFromToken\|int astUnaryOpFromToken' src/ast.c
+OUTPUT:
+  206:int astBinOpFromToken(s64 op, AstBinOp *_result) {
+  238:int astUnaryOpFromToken(s64 op, AstUnOp *_result) {
+
+Both historical anchors in the ACT (src/ast.c:206..236 and
+src/ast.c:238..254) are EXACTLY the live locations at entry.  The
+anchors are therefore usable as source identities at this entry,
+although the C1 selection still re-derives every fact from the live
+source rather than trusting the anchor.
+
+THE PRODUCTION COMPILER IDENTITY AT ENTRY
+-----------------------------------------
+
+COMMAND=./hcc --version
+OUTPUT:
+  hcc v0.0.15-beta
+  binary: /usr/local/hcc
+  commit-hash: 0b7fb65f45bca57825e9d0f5e8a1c7e70782a434
+  arch: aarch64-apple-darwin
+  build: Release
+
+COMMAND=shasum -a 256 ./hcc
+OUTPUT=2ee3beb5cba44ce47d5f0ccb00fcae7b936b27e2c2db2b67fd2060bfe1bb85f3
+
+THE STAGE-0 COMPILER IDENTITY AT ENTRY
+---------------------------------------
+
+COMMAND=shasum -a 256 build/host-stage0/hcc
+OUTPUT=268ba62412988470eb6c0b3c87b3882206928c82d1f72194f417cd4df548a519
+
+(The stage-0 compiler is build/host-stage0/hcc: the legacy-C
+implementation of CalcPadding, built with the host C compiler and the
+parser-padding delegation OFF.  It is the compiler that produces the
+PolyC subjects.  Its SHA is re-measured at C2 against the file that
+actually produces the subject; the value above is the entry reading.)
+
+THE HOST C COMPILER IDENTITY AT ENTRY
+-------------------------------------
+
+COMMAND=command -v cc
+OUTPUT=/usr/bin/cc
+
+COMMAND=shasum -a 256 /usr/bin/cc
+OUTPUT=9b11ead1ca76a03d61108ad5bf2c913d6aa8daa7deb9fd28893e847e3680e5e7
+
+COMMAND=cc --version | head -1
+OUTPUT=Apple clang version 15.0.0 (clang-1500.0.40.1)
+
+This is the SAME compiler binary that the predecessor's corrected
+independent G0 receipt names (sha 9b11ead1...).  It is the compiler
+that the ACT section 9.2 requires to be resolved and hashed from the
+ACTUAL INVOKED COMMAND.
+
+THE CURRENT TEST CONFIGURATION
+-------------------------------
+
+The canonical parser suite is src/tests/ (84 tracked entries) driven by
+the tests-run harness.  The canonical lexer qualification targets are
+lexer07-direct-differential, lexer08-direct-differential and
+lexer09-direct-differential, plus the lexer07-broad-corpus-4-stage
+corpus whose authority registry is
+docs/factory/LEXER07-BASELINE-AUTHORITY.tsv.
+
+The four-generation qualification compilers are present at entry:
+  build/hcc-bootstrap02   (stage2)
+  build/hcc-bootstrap03   (stage3)
+  build/hcc-bootstrap04   (stage4)
+
+THE STAGE-0 COMPILER IS THE LEGACY-BEHAVIOUR BASELINE
+-------------------------------------------------------
+
+The stage-0 compiler is what makes the legacy C behaviour reachable
+as a REAL executable seam: the stage-0 build has the parser-padding
+delegation OFF, and the same OFF-build discipline is applied to the
+selected AST operator mapping by the C1 oracle contract.
