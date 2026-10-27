@@ -1,0 +1,118 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE04
+ACT_PHASE=C2-IMPL
+EVIDENCE_KIND=implementation-scope
+
+THE TRACKED MUTATIONS IN THIS PHASE
+===================================
+
+  src/ast.c                                        MODIFIED
+  src/CMakeLists.txt                               MODIFIED
+  src/cmake/VerifyAstTokenMapObject.cmake          NEW
+  src/cmake/WriteAstTokenMapObjectStamp.cmake      NEW
+  tools/bootstrap/selfhost-parser-slice04.HC       NEW
+  tools/quality/parser-slice04-differential.HC     NEW
+  tools/quality/parser-slice04-fixture-integrity.HC NEW
+  tools/quality/parser-slice04-fixture-producer.HC NEW
+  tools/quality/parser-slice04-oracle-driver.c     NEW
+  tools/quality/parser-slice04-oracle-adapter.c    NEW
+  tools/quality/parser-slice04-oracle-stub.c       NEW
+  tools/quality/parser-slice04-ranking-controls.HC NEW
+  Makefile                                         MODIFIED
+
+EVERY ONE OF THEM IS WITHIN ACT SECTION 3.1:
+  src/ast.c, src/CMakeLists.txt,
+  src/cmake/VerifyAstTokenMapObject.cmake,
+  src/cmake/WriteAstTokenMapObjectStamp.cmake,
+  tools/bootstrap/selfhost-parser-slice04.HC,
+  tools/quality/parser-slice04-*.HC,
+  tools/quality/parser-slice04-oracle-*.c,
+  Makefile.
+
+  TRACKED_MUTATIONS_OUTSIDE_SCOPE=0
+
+WHAT src/ast.c CHANGED, EXACTLY
+===============================
+
+ONLY the body of astBinOpFromToken changed.  It now selects between
+the PolyC delegation (HCC_USE_SELFHOST_PARSER_AST_BINOP) and the
+retained legacy switch (the #else branch).
+
+COMMAND=git diff src/ast.c | grep -i unary
+OUTPUT=(empty)
+
+  UNSELECTED_FUNCTION_BYTE_IDENTICAL=YES
+
+No shared-formatting exception was needed, so no prospective C1
+authorization was required and no semantic conservation witness for
+the unary function is owed.
+
+THE OTHER AST OPERATOR MAPPING IS UNCHANGED
+============================================
+
+astUnaryOpFromToken remains the legacy C authority, and its production
+disassembly still shows the C switch:
+
+  _astUnaryOpFromToken:
+  00000000000006d4	mov	x8, x0
+  00000000000006d8	mov	w0, #0x0
+  00000000000006dc	cmp	x8, #0x7d
+  00000000000006e0	b.gt	0x710
+  00000000000006e4	sub	x8, x8, #0x21
+
+WHAT WAS NOT TOUCHED
+====================
+
+  src/parser.c      untouched
+  src/prslib.c      untouched  (the production call site is unchanged)
+  src/lexer.c       untouched
+  src/lexer.h       untouched
+  src/ast.h         untouched  (the enum definitions are unchanged)
+  src/cctrl.c       untouched
+  src/cctrl.h       untouched
+  other tools/bootstrap/**  untouched
+  existing Factory validators  untouched
+  pre-push hooks    untouched
+
+  NO_PYTHON_ADDED=YES
+  NO_NEW_UNRELATED_SHELL_TOOLING=YES
+  NO_BACKEND_REDESIGN=YES
+  NO_LEXER_REDESIGN=YES
+  NO_PARSER_LAYOUT_REDESIGN=YES
+  NO_EXCEPTION_HANDLING_REDESIGN=YES
+  NO_AST_ALLOCATION_REDESIGN=YES
+
+THE THREE QUALIFIED POLYC SUBJECTS ARE UNCHANGED
+==================================================
+
+  tools/bootstrap/selfhost-parser-padding.HC
+    sha256=b555b76b484edda5830abba46dbda803a12ec1834f9ab0a64763f5899f2452f3  (unchanged)
+  tools/bootstrap/selfhost-parser-control-flow-token.HC
+    sha256=77199636db559024365fffc168cd191c1281593452682aab80005151e6baf196  (unchanged)
+  tools/bootstrap/selfhost-parser-operator-precedence.HC
+    sha256=3e7a9cf4983e8b625ab3e004dba15b4afcaddb7c83c18f234adf89b9c8468979  (unchanged)
+
+THE STAGE0 BUILD IS NOT CYCLIC
+==============================
+
+The stage0 compiler builds with EVERY delegation OFF, including the
+new one:
+
+  -DHCC_USE_SELFHOST_PARSER_AST_BINOP=OFF
+
+so the stage0 compiler does not require the PolyC subject that the
+subject's own build needs to produce it.  The bootstrap chain stays
+acyclic:
+
+  host C compiler
+        |
+        v
+  bootstrap-stage0            build/host-stage0/hcc
+        |                      (every delegation OFF)
+        v
+  parser-ast-binop-subject    build/parser-ast-binop-subject.o
+        |                      (compiled by the stage0 compiler)
+        v
+  production hcc               ./hcc
+                               (HCC_USE_SELFHOST_PARSER_AST_BINOP=ON)
+
+  BOOTSTRAP_CYCLE=NO

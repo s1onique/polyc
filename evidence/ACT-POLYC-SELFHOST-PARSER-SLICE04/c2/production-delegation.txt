@@ -1,0 +1,109 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE04
+ACT_PHASE=C2-IMPL
+EVIDENCE_KIND=production-delegation
+
+THE PRODUCTION DELEGATION IS LOAD-BEARING
+=========================================
+
+THE ADAPTER
+-----------
+src/ast.c's astBinOpFromToken now reads:
+
+  int astBinOpFromToken(s64 op, AstBinOp *_result) {
+  #ifdef HCC_USE_SELFHOST_PARSER_AST_BINOP
+      extern long long BootstrapAstBinOpFromToken(long long token_value);
+      long long mapped = BootstrapAstBinOpFromToken((long long)op);
+      if (mapped < 0)
+          return 0;
+
+      *_result = (AstBinOp)mapped;
+      return 1;
+  #else
+      ... the legacy switch ...
+  #endif
+  }
+
+The adapter owns ONLY argument projection, success conversion and
+conditional output storage.  The token-to-operator DECISION is made by
+the PolyC component.
+
+THE DISASSEMBLY PROVES THE C DECISION IS GONE
+---------------------------------------------
+
+COMMAND=otool -tvV build/CMakeFiles/hcc.dir/ast.c.o \
+          | awk '/_astBinOpFromToken:/,/^$/'
+
+  _astBinOpFromToken:
+  00000000000006a0	stp	x20, x19, [sp, #-0x20]!
+  00000000000006a4	stp	x29, x30, [sp, #0x10]!
+  00000000000006a8	add	x29, sp, #0x10
+  00000000000006ac	mov	x19, x1
+  00000000000006b0	bl	0x6b0                      <- the PolyC CALL
+  00000000000006b4	tbnz	x0, #0x3f, 0x6c4          <- the sentinel test
+  00000000000006b8	str	w0, [x19]                 <- the write, on SUCCESS only
+  00000000000006bc	mov	w0, #0x1                  <- return 1
+  00000000000006c0	b	0x6c8
+  00000000000006c4	mov	w0, #0x0                  <- return 0
+  00000000000006c8	ldp	x29, x30, [sp], #0x20
+  00000000000006cc	ldp	x20, x19, [sp], #0x20
+  00000000000006d0	ret
+
+THERE IS NO JUMP TABLE, NO SWITCH AND NO ENUM IMMEDIATE IN THIS
+FUNCTION.  The body is: call, test, conditionally store, return.  The
+classification decision is NOT in this object any more.
+
+At the C0 entry the SAME function's disassembly contained the two-level
+jump table and the enum immediates (`mov w8, #0x2`, `mov w8, #0x5`, ...
+`mov w8, #0x11`), which is recorded in
+c0/baseline-conservation.txt.  The comparison between the two
+disassemblies is the direct proof that the legacy C decision left the
+production path.
+
+THE ADAPTER'S CONTROL FLOW MATCHES THE ORIGINAL C ABI
+------------------------------------------------------
+
+  the original returned 1 and wrote the enum on a recognised token
+  the original returned 0 and wrote NOTHING on an unrecognised token
+
+The adapter does exactly that:
+  * `tbnz x0, #0x3f` branches to the `return 0` path when the PolyC
+    component reported the -1 sentinel, so the `str w0, [x19]` store is
+    REACHED ONLY ON SUCCESS;
+  * the caller's output slot is therefore UNCHANGED on failure.
+
+THE UNSELECTED CLASSIFIER IS STILL A C SWITCH
+----------------------------------------------
+
+COMMAND=otool -tvV build/CMakeFiles/hcc.dir/ast.c.o \
+          | awk '/_astUnaryOpFromToken:/,/^$/'
+
+  _astUnaryOpFromToken:
+  00000000000006d4	mov	x8, x0
+  00000000000006d8	mov	w0, #0x0
+  00000000000006dc	cmp	x8, #0x7d
+  00000000000006e0	b.gt	0x710
+  00000000000006e4	sub	x8, x8, #0x21
+  ...
+
+The unselected classifier still has its C switch and its jump table, so
+it remains the legacy C authority, exactly as the ACT requires.
+
+THERE IS NO SHADOW CALL AND NO FALLBACK
+----------------------------------------
+
+The adapter's body contains exactly ONE call, and it is the call to the
+PolyC component.  There is no second call to the legacy switch, no
+"compute both and compare" shadow, and no "if the component is missing
+use C" fallback: the component is a LINK-TIME requirement, and the
+build FAILS CLOSED when it is absent (see fail-closed-build-controls).
+
+THE PRODUCTION COMPILER'S OBSERVABLE BEHAVIOUR IS UNCHANGED
+------------------------------------------------------------
+
+COMMAND=./hcc --install-dir=<prefix> build/slice04-obs/observe.HC \
+          -o build/slice04-obs/observe
+COMMAND=./build/slice04-obs/observe
+OUTPUT=13
+
+The observation program computes 6 + 7 and prints 13, which is the
+SAME value it printed at the C1 measurement of the entry tree.
