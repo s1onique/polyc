@@ -12,7 +12,7 @@ HCC_ENABLE_LLVM ?= OFF
 
 default: all
 
-.PHONY: all formal-dafny gate-fast gate-push install-hooks static-function-linkage-test factory-closure-status-test factory-closure-status-test-binary llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap-stage0 bootstrap-prefix parser-padding-subject production-hcc runtime-producer bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test selfhost-component-binary selfhost-component-build selfhost-component-test selfhost-component-selftest selfhost-registry-validate factory-halt-classification-binary factory-halt-classification-selftest bootstrap06-component-build bootstrap06-operator-classify-oracle bootstrap06-direct-differential bootstrap06-component-stage1 bootstrap06-component-stage2 bootstrap06-component-stage3 bootstrap06-lexer-seam-stage1 lexer07-component-build lexer07-scalar-literal-oracle lexer07-direct-differential lexer07-component-stage1 lexer07-component-stage2 lexer07-component-stage3 lexer07-lexer-seam-stage0 lexer07-lexer-seam-stage1 lexer07-lexer-seam-stage2 lexer07-lexer-seam-stage3 lexer07-lexer-seam-stage2-from-objs lexer07-lexer-seam-stage3-from-objs lexer07-lexer-seam-all-stages lexer07-fixture-inventory lexer07-broad-corpus-4-stage lexer07-correction02-all lexer07-baseline-authority-verify lexer08-component-build lexer08-trivia-oracle lexer08-direct-differential lexer08-fixture-inventory lexer08-broad-corpus-4-stage lexer08-lexer-seam-stage0 lexer08-lexer-seam-stage1 lexer08-lexer-seam-all-stages lexer08-trivia-fixedpoint-g0 lexer08-trivia-fixedpoint-g1 lexer08-trivia-fixedpoint-g2 lexer08-trivia-fixedpoint-g3 lexer08-trivia-fixedpoint-build lexer08-trivia-fixedpoint-verify lexer08-trivia-fixedpoint lexer09-link-component-build lexer09-link-oracle-build lexer09-direct-differential lexer09-lexer-seam-stage0 lexer09-lexer-seam-stage1 lexer09-lexer-seam-all-stages lexer09-link-fixedpoint-g0 lexer09-link-fixedpoint-g1 lexer09-link-fixedpoint-g2 lexer09-link-fixedpoint-g3 lexer09-link-fixedpoint-build lexer09-link-fixedpoint-verify lexer09-link-fixedpoint lexer09-link-negative-control lexer09-link-determinism lexer09-link-broad-corpus-4-stage lib-tos runtime-contract-test libtos-n02-isolate parser-padding-component parser-padding-oracle parser-padding-differential parser-padding-gen-matrix-fixture parser-padding-gen-large-fixture parser-padding-fixedpoint-g0 parser-padding-fixedpoint-g1 parser-padding-fixedpoint-g2 parser-padding-fixedpoint-g3 parser-padding-fixedpoint-build parser-padding-fixedpoint-verify parser-padding-fixedpoint parser-padding-fixedpoint-negative-control parser-padding-mutation-m1 parser-padding-mutation-m2 parser-padding-mutation-m3 parser-padding-mutation-m4 parser-padding-mutation-test parser-padding-test parser-padding-algebraic-invariants parser-padding-is-terminal-stub parser-padding-legacy parser-padding-legacy-server parser-padding-legacy-verify parser-control-flow-token-component parser-control-flow-token-differential parser-control-flow-token-int-bounds parser-control-flow-token-harden-test parser-control-flow-token-negative-controls parser-slice-recon03-tools parser-slice-recon03-eligibility parser-slice-recon03-eligibility-controls parser-slice-recon03-ranking parser-slice03-contract-requalify parser-slice03-fixture-integrity parser-slice03-fixture-integrity-controls parser-slice03-differential parser-slice03-differential-negative-control parser-operator-precedence-component parser-slice03-generations parser-slice03-generation-pairs parser-slice03-copy-forgery-control parser-slice03-production-generations parser-slice03-production-semantic-pairs parser-slice03-corr01-fixture parser-slice03-corr01-coverage parser-slice03-corr01-differential parser-slice03-corr01-controls parser-slice03-corr01-producer-control parser-slice03-corr01-test
+.PHONY: all formal-dafny gate-fast gate-push install-hooks static-function-linkage-test factory-closure-status-test factory-closure-status-test-binary llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap-stage0 bootstrap-prefix parser-padding-subject production-hcc runtime-producer bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test selfhost-component-binary selfhost-component-build selfhost-component-test selfhost-component-selftest selfhost-registry-validate factory-halt-classification-binary factory-halt-classification-selftest bootstrap06-component-build bootstrap06-operator-classify-oracle bootstrap06-direct-differential bootstrap06-component-stage1 bootstrap06-component-stage2 bootstrap06-component-stage3 bootstrap06-lexer-seam-stage1 lexer07-component-build lexer07-scalar-literal-oracle lexer07-direct-differential lexer07-component-stage1 lexer07-component-stage2 lexer07-component-stage3 lexer07-lexer-seam-stage0 lexer07-lexer-seam-stage1 lexer07-lexer-seam-stage2 lexer07-lexer-seam-stage3 lexer07-lexer-seam-stage2-from-objs lexer07-lexer-seam-stage3-from-objs lexer07-lexer-seam-all-stages lexer07-fixture-inventory lexer07-broad-corpus-4-stage lexer07-correction02-all lexer07-baseline-authority-verify lexer08-component-build lexer08-trivia-oracle lexer08-direct-differential lexer08-fixture-inventory lexer08-broad-corpus-4-stage lexer08-lexer-seam-stage0 lexer08-lexer-seam-stage1 lexer08-lexer-seam-all-stages lexer08-trivia-fixedpoint-g0 lexer08-trivia-fixedpoint-g1 lexer08-trivia-fixedpoint-g2 lexer08-trivia-fixedpoint-g3 lexer08-trivia-fixedpoint-build lexer08-trivia-fixedpoint-verify lexer08-trivia-fixedpoint lexer09-link-component-build lexer09-link-oracle-build lexer09-direct-differential lexer09-lexer-seam-stage0 lexer09-lexer-seam-stage1 lexer09-lexer-seam-all-stages lexer09-link-fixedpoint-g0 lexer09-link-fixedpoint-g1 lexer09-link-fixedpoint-g2 lexer09-link-fixedpoint-g3 lexer09-link-fixedpoint-build lexer09-link-fixedpoint-verify lexer09-link-fixedpoint lexer09-link-negative-control lexer09-link-determinism lexer09-link-broad-corpus-4-stage lib-tos runtime-contract-test libtos-n02-isolate parser-padding-component parser-padding-oracle parser-padding-differential parser-padding-gen-matrix-fixture parser-padding-gen-large-fixture parser-padding-fixedpoint-g0 parser-padding-fixedpoint-g1 parser-padding-fixedpoint-g2 parser-padding-fixedpoint-g3 parser-padding-fixedpoint-build parser-padding-fixedpoint-verify parser-padding-fixedpoint parser-padding-fixedpoint-negative-control parser-padding-mutation-m1 parser-padding-mutation-m2 parser-padding-mutation-m3 parser-padding-mutation-m4 parser-padding-mutation-test parser-padding-test parser-padding-algebraic-invariants parser-padding-is-terminal-stub parser-padding-legacy parser-padding-legacy-server parser-padding-legacy-verify parser-control-flow-token-component parser-control-flow-token-differential parser-control-flow-token-int-bounds parser-control-flow-token-harden-test parser-control-flow-token-negative-controls parser-slice-recon03-tools parser-slice-recon03-eligibility parser-slice-recon03-eligibility-controls parser-slice-recon03-ranking parser-slice03-contract-requalify parser-slice03-fixture-integrity parser-slice03-fixture-integrity-controls parser-slice03-differential parser-slice03-differential-negative-control parser-operator-precedence-component parser-slice03-generations parser-slice03-generation-pairs parser-slice03-copy-forgery-control parser-slice03-production-generations parser-slice03-production-semantic-pairs parser-slice03-corr01-fixture parser-slice03-corr01-coverage parser-slice03-corr01-differential parser-slice03-corr01-controls parser-slice03-corr01-producer-control parser-slice03-corr01-g0-provenance parser-slice03-corr01-test
 
 # To add sqlite3 support add -DHCC_LINK_SQLITE3=1 to the below like so:
 #```
@@ -3782,6 +3782,66 @@ parser-slice03-corr01-producer-control: build/parser-slice03-corr01-fixture
 	fi
 	@rm -f $(CORR01_OUT)/nc/should-not-exist.tsv
 	@echo "CORR01_PRODUCER_NEGATIVE_CONTROLS=1/1 PASS"
+
+# =========================================================================
+# ACT-POLYC-SELFHOST-PARSER-SLICE03-CORRECTION01
+#
+#   parser-slice03-corr01-g0-provenance -> the G0 compiler identity
+#
+# THE D3 REPAIR
+# =============
+#
+# The predecessor's C3 generation manifest recorded the G0 compiler SHA
+# as the SHA of ./hcc -- the POLYC compiler -- because the Makefile's
+# G0 REPORTING rule hashed ./hcc while the G0 BUILD rule compiles with
+# cc.  The G0 component object is a C build; its producing compiler is
+# the C compiler, and that is what must be recorded.
+#
+# This target records the ACTUAL C compiler identity:
+#
+#   * the invocation and the RESOLVED compiler executable;
+#   * the compiler executable's SHA-256;
+#   * the compiler's version;
+#   * the source's SHA-256;
+#   * the exact compilation command;
+#   * the resulting object's SHA-256.
+#
+# It REBUILDS G0 from scratch so that the object it measures is the
+# object the command produces.
+#
+# The G0 BUILD rule of the predecessor is NOT edited: this target
+# performs its own rebuild under the correction's own directory.
+# =========================================================================
+CORR01_G0_DIR    = $(CORR01_OUT)/g0
+CORR01_G0_SRC    = tools/quality/slice03-gen/g0-legacy-reference.c
+CORR01_G0_OBJ    = $(CORR01_G0_DIR)/g0.o
+CORR01_CC        = cc
+
+parser-slice03-corr01-g0-provenance:
+	@mkdir -p $(CORR01_G0_DIR)
+	@rm -f $(CORR01_G0_OBJ)
+	@echo "CORR01_G0=COMPILER-IDENTITY"
+	@echo "  COMPILER_INVOCATION=$(CORR01_CC)"
+	@echo "  COMPILER_RESOLVED=$$(command -v $(CORR01_CC))"
+	@echo "  COMPILER_SHA256=$$(shasum -a 256 $$(command -v $(CORR01_CC)) | cut -d' ' -f1)"
+	@echo "  COMPILER_VERSION=$$($(CORR01_CC) --version 2>&1 | head -1)"
+	@echo "CORR01_G0=BUILD"
+	@echo "  SOURCE=$(CORR01_G0_SRC)"
+	@echo "  SOURCE_SHA256=$$(shasum -a 256 $(CORR01_G0_SRC) | cut -d' ' -f1)"
+	@echo "  BUILD_COMMAND=$(CORR01_CC) -std=c99 -O2 -Isrc -c -o $(CORR01_G0_OBJ) $(CORR01_G0_SRC)"
+	$(CORR01_CC) -std=c99 -O2 -Isrc -c -o $(CORR01_G0_OBJ) $(CORR01_G0_SRC)
+	@nm $(CORR01_G0_OBJ) | grep -q '_Slice03LegacyOperatorPrecedence' \
+		|| { echo "CORR01_G0=FAIL (the legacy reference symbol is missing)" >&2; exit 1; }
+	@echo "  COMPONENT_OBJECT=$(CORR01_G0_OBJ)"
+	@echo "  COMPONENT_OBJECT_SHA256=$$(shasum -a 256 $(CORR01_G0_OBJ) | cut -d' ' -f1)"
+	@echo "  OBJECT_SYMBOL=$$(nm $(CORR01_G0_OBJ) | grep '_Slice03LegacyOperatorPrecedence' | awk '{print $$3}')"
+	@echo "CORR01_G0=COMPARISON-WITH-THE-POLYC-COMPILER"
+	@echo "  POLYC_COMPILER=$$(command -v ./hcc)"
+	@echo "  POLYC_COMPILER_SHA256=$$(shasum -a 256 ./hcc | cut -d' ' -f1)"
+	@echo "  G0_COMPILER_IS_THE_POLYC_COMPILER=$$([ "$$(shasum -a 256 $$(command -v $(CORR01_CC)) | cut -d' ' -f1)" = "$$(shasum -a 256 ./hcc | cut -d' ' -f1)" ] && echo YES || echo NO)"
+	@echo "CORR01_G0=STATUS"
+	@echo "  G0_COMPILER_IDENTITY=CORRECT"
+	@echo "CORR01_G0_PROVENANCE=PASS"
 
 # The full correction qualification.
 parser-slice03-corr01-test: parser-slice03-corr01-fixture parser-slice03-corr01-coverage parser-slice03-corr01-differential parser-slice03-corr01-controls parser-slice03-corr01-producer-control
