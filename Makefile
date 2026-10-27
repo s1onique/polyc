@@ -12,7 +12,7 @@ HCC_ENABLE_LLVM ?= OFF
 
 default: all
 
-.PHONY: all formal-dafny gate-fast gate-push install-hooks static-function-linkage-test factory-closure-status-test factory-closure-status-test-binary llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap-stage0 bootstrap-prefix parser-padding-subject production-hcc runtime-producer bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test selfhost-component-binary selfhost-component-build selfhost-component-test selfhost-component-selftest selfhost-registry-validate factory-halt-classification-binary factory-halt-classification-selftest bootstrap06-component-build bootstrap06-operator-classify-oracle bootstrap06-direct-differential bootstrap06-component-stage1 bootstrap06-component-stage2 bootstrap06-component-stage3 bootstrap06-lexer-seam-stage1 lexer07-component-build lexer07-scalar-literal-oracle lexer07-direct-differential lexer07-component-stage1 lexer07-component-stage2 lexer07-component-stage3 lexer07-lexer-seam-stage0 lexer07-lexer-seam-stage1 lexer07-lexer-seam-stage2 lexer07-lexer-seam-stage3 lexer07-lexer-seam-stage2-from-objs lexer07-lexer-seam-stage3-from-objs lexer07-lexer-seam-all-stages lexer07-fixture-inventory lexer07-broad-corpus-4-stage lexer07-correction02-all lexer07-baseline-authority-verify lexer08-component-build lexer08-trivia-oracle lexer08-direct-differential lexer08-fixture-inventory lexer08-broad-corpus-4-stage lexer08-lexer-seam-stage0 lexer08-lexer-seam-stage1 lexer08-lexer-seam-all-stages lexer08-trivia-fixedpoint-g0 lexer08-trivia-fixedpoint-g1 lexer08-trivia-fixedpoint-g2 lexer08-trivia-fixedpoint-g3 lexer08-trivia-fixedpoint-build lexer08-trivia-fixedpoint-verify lexer08-trivia-fixedpoint lexer09-link-component-build lexer09-link-oracle-build lexer09-direct-differential lexer09-lexer-seam-stage0 lexer09-lexer-seam-stage1 lexer09-lexer-seam-all-stages lexer09-link-fixedpoint-g0 lexer09-link-fixedpoint-g1 lexer09-link-fixedpoint-g2 lexer09-link-fixedpoint-g3 lexer09-link-fixedpoint-build lexer09-link-fixedpoint-verify lexer09-link-fixedpoint lexer09-link-negative-control lexer09-link-determinism lexer09-link-broad-corpus-4-stage lib-tos runtime-contract-test libtos-n02-isolate parser-padding-component parser-padding-oracle parser-padding-differential parser-padding-gen-matrix-fixture parser-padding-gen-large-fixture parser-padding-fixedpoint-g0 parser-padding-fixedpoint-g1 parser-padding-fixedpoint-g2 parser-padding-fixedpoint-g3 parser-padding-fixedpoint-build parser-padding-fixedpoint-verify parser-padding-fixedpoint parser-padding-fixedpoint-negative-control parser-padding-mutation-m1 parser-padding-mutation-m2 parser-padding-mutation-m3 parser-padding-mutation-m4 parser-padding-mutation-test parser-padding-test parser-padding-algebraic-invariants parser-padding-is-terminal-stub parser-padding-legacy parser-padding-legacy-server parser-padding-legacy-verify parser-control-flow-token-component parser-control-flow-token-differential parser-control-flow-token-int-bounds parser-control-flow-token-harden-test parser-control-flow-token-negative-controls parser-slice-recon03-tools parser-slice-recon03-eligibility parser-slice-recon03-eligibility-controls parser-slice-recon03-ranking parser-slice03-contract-requalify parser-slice03-fixture-integrity parser-slice03-fixture-integrity-controls parser-slice03-differential parser-slice03-differential-negative-control parser-operator-precedence-component parser-slice03-generations parser-slice03-generation-pairs parser-slice03-copy-forgery-control parser-slice03-production-generations parser-slice03-production-semantic-pairs
+.PHONY: all formal-dafny gate-fast gate-push install-hooks static-function-linkage-test factory-closure-status-test factory-closure-status-test-binary llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap-stage0 bootstrap-prefix parser-padding-subject production-hcc runtime-producer bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test selfhost-component-binary selfhost-component-build selfhost-component-test selfhost-component-selftest selfhost-registry-validate factory-halt-classification-binary factory-halt-classification-selftest bootstrap06-component-build bootstrap06-operator-classify-oracle bootstrap06-direct-differential bootstrap06-component-stage1 bootstrap06-component-stage2 bootstrap06-component-stage3 bootstrap06-lexer-seam-stage1 lexer07-component-build lexer07-scalar-literal-oracle lexer07-direct-differential lexer07-component-stage1 lexer07-component-stage2 lexer07-component-stage3 lexer07-lexer-seam-stage0 lexer07-lexer-seam-stage1 lexer07-lexer-seam-stage2 lexer07-lexer-seam-stage3 lexer07-lexer-seam-stage2-from-objs lexer07-lexer-seam-stage3-from-objs lexer07-lexer-seam-all-stages lexer07-fixture-inventory lexer07-broad-corpus-4-stage lexer07-correction02-all lexer07-baseline-authority-verify lexer08-component-build lexer08-trivia-oracle lexer08-direct-differential lexer08-fixture-inventory lexer08-broad-corpus-4-stage lexer08-lexer-seam-stage0 lexer08-lexer-seam-stage1 lexer08-lexer-seam-all-stages lexer08-trivia-fixedpoint-g0 lexer08-trivia-fixedpoint-g1 lexer08-trivia-fixedpoint-g2 lexer08-trivia-fixedpoint-g3 lexer08-trivia-fixedpoint-build lexer08-trivia-fixedpoint-verify lexer08-trivia-fixedpoint lexer09-link-component-build lexer09-link-oracle-build lexer09-direct-differential lexer09-lexer-seam-stage0 lexer09-lexer-seam-stage1 lexer09-lexer-seam-all-stages lexer09-link-fixedpoint-g0 lexer09-link-fixedpoint-g1 lexer09-link-fixedpoint-g2 lexer09-link-fixedpoint-g3 lexer09-link-fixedpoint-build lexer09-link-fixedpoint-verify lexer09-link-fixedpoint lexer09-link-negative-control lexer09-link-determinism lexer09-link-broad-corpus-4-stage lib-tos runtime-contract-test libtos-n02-isolate parser-padding-component parser-padding-oracle parser-padding-differential parser-padding-gen-matrix-fixture parser-padding-gen-large-fixture parser-padding-fixedpoint-g0 parser-padding-fixedpoint-g1 parser-padding-fixedpoint-g2 parser-padding-fixedpoint-g3 parser-padding-fixedpoint-build parser-padding-fixedpoint-verify parser-padding-fixedpoint parser-padding-fixedpoint-negative-control parser-padding-mutation-m1 parser-padding-mutation-m2 parser-padding-mutation-m3 parser-padding-mutation-m4 parser-padding-mutation-test parser-padding-test parser-padding-algebraic-invariants parser-padding-is-terminal-stub parser-padding-legacy parser-padding-legacy-server parser-padding-legacy-verify parser-control-flow-token-component parser-control-flow-token-differential parser-control-flow-token-int-bounds parser-control-flow-token-harden-test parser-control-flow-token-negative-controls parser-slice-recon03-tools parser-slice-recon03-eligibility parser-slice-recon03-eligibility-controls parser-slice-recon03-ranking parser-slice03-contract-requalify parser-slice03-fixture-integrity parser-slice03-fixture-integrity-controls parser-slice03-differential parser-slice03-differential-negative-control parser-operator-precedence-component parser-slice03-generations parser-slice03-generation-pairs parser-slice03-copy-forgery-control parser-slice03-production-generations parser-slice03-production-semantic-pairs parser-slice03-corr01-fixture parser-slice03-corr01-coverage parser-slice03-corr01-differential parser-slice03-corr01-controls parser-slice03-corr01-producer-control parser-slice03-corr01-test
 
 # To add sqlite3 support add -DHCC_LINK_SQLITE3=1 to the below like so:
 #```
@@ -3620,6 +3620,172 @@ parser-slice03-differential-negative-control: build/parser-slice03-differential
 	else echo "SLICE03_DIFF_NEGATIVE_CONTROL=PASS (the disagreement was reported)"; \
 		grep 'ORACLE_VS_EXPECTED_MISMATCH\|STATUS=' $(SLICE03_REQUALIFY_OUT)/nc/altered-expectation.txt; \
 	fi
+
+# =========================================================================
+# ACT-POLYC-SELFHOST-PARSER-SLICE03-CORRECTION01
+#
+#   parser-slice03-corr01-fixture      -> the corrected fixture producer
+#   parser-slice03-corr01-coverage     -> the independent semantic coverage
+#                                         verifier
+#   parser-slice03-corr01-differential -> the corrected-fixture differential
+#                                         against the REAL legacy-C oracle
+#                                         and the PolyC subject
+#   parser-slice03-corr01-controls     -> the negative controls
+#
+# WHY A NEW DIFFERENTIAL
+# ======================
+#
+# The closed differential (build/parser-slice03-differential) has
+# EXPECTED_FIXTURE_COUNT 98 compiled into it.  The corrected fixture
+# carries 123 rows.  The closed differential's frozen contract is NOT
+# edited and NOT weakened: a NEW correction-owned differential is
+# provided instead.
+#
+# The corrected differential links the SAME real objects as the closed
+# one:
+#
+#   build/parser-operator-precedence-subject.o  the PolyC subject
+#   build/slice03-prslib-legacy.o                 src/prslib.c compiled
+#                                                WITHOUT the delegation
+#                                                macro, so the REAL
+#                                                legacy parseGetPriority
+#                                                body executes
+#   build/slice03-is-terminal-stub.o              the is_terminal stub
+#
+# The producer and the coverage verifier are INDEPENDENT of each other:
+# the producer derives the table by reading the live source TEXT, and
+# the verifier derives it by EXECUTING the live source CODE through the
+# oracle.
+# =========================================================================
+CORR01_OUT        = build/corr01
+CORR01_FIXTURE_SRC = tools/quality/parser-slice03-corr01-fixture.HC
+CORR01_COVERAGE_SRC = tools/quality/parser-slice03-corr01-coverage.HC
+CORR01_FIXTURE    = $(CORR01_OUT)/corrected-fixture.tsv
+CORR01_FIXTURE_COUNT = 123
+
+build/parser-slice03-corr01-fixture: $(CORR01_FIXTURE_SRC) ./hcc | test-prefix-install
+	./hcc --install-dir=$(TEST_PREFIX) $(CORR01_FIXTURE_SRC) -o $@
+	@if [ ! -x "$@" ]; then \
+		echo "parser-slice03-corr01-fixture: build failed" >&2; \
+		exit 1; \
+	fi
+
+# The producer.  It exits non-zero when a mandatory semantic value is
+# missing: a producer that emitted a superficially complete fixture
+# would restore the very defect this ACT repairs.
+parser-slice03-corr01-fixture: build/parser-slice03-corr01-fixture
+	@mkdir -p $(CORR01_OUT)
+	./build/parser-slice03-corr01-fixture src/prslib.c src/lexer.h $(CORR01_FIXTURE)
+
+build/parser-slice03-corr01-coverage.o: $(CORR01_COVERAGE_SRC) ./hcc | test-prefix-install
+	./hcc --install-dir=$(TEST_PREFIX) -c $(CORR01_COVERAGE_SRC) -o $@
+	@nm $@ | grep -q '_main' \
+		|| { echo "parser-slice03-corr01-coverage.o: main missing" >&2; exit 1; }
+
+build/parser-slice03-corr01-coverage: build/parser-slice03-corr01-coverage.o $(SLICE03_OP_OBJ) $(SLICE03_OP_LEGACY_OBJ) $(SLICE03_OP_STUB_OBJ) $(SLICE03_OP_TRANSITIVE_OBJS) | test-prefix-install
+	cc -o $@ build/parser-slice03-corr01-coverage.o $(SLICE03_OP_OBJ) $(SLICE03_OP_LEGACY_OBJ) $(SLICE03_OP_STUB_OBJ) $(SLICE03_OP_TRANSITIVE_OBJS) $(TASM_LIB) -L$(TEST_PREFIX)/lib -ltos -Wl,-undefined,dynamic_lookup
+
+# The independent semantic coverage verifier.
+#
+# It checks the SEMANTIC contract, not a row count: a fixture with the
+# right number of rows and the wrong coverage FAILS.
+parser-slice03-corr01-coverage: build/parser-slice03-corr01-coverage $(CORR01_FIXTURE)
+	./build/parser-slice03-corr01-coverage $(CORR01_FIXTURE) src/prslib.c src/lexer.h
+
+# The corrected differential: every corrected row must agree with BOTH
+# its expected result and the actual oracle output.
+#
+# The tool is the SAME shape as the closed differential but with the
+# corrected row count and the corrected fixture.  It is a NEW tool: the
+# closed differential is not edited.
+build/parser-slice03-corr01-differential.o: $(CORR01_COVERAGE_SRC) ./hcc | test-prefix-install
+	./hcc --install-dir=$(TEST_PREFIX) -c $(CORR01_COVERAGE_SRC) -o $@
+
+build/parser-slice03-corr01-differential: build/parser-slice03-corr01-differential.o $(SLICE03_OP_OBJ) $(SLICE03_OP_LEGACY_OBJ) $(SLICE03_OP_STUB_OBJ) $(SLICE03_OP_TRANSITIVE_OBJS) | test-prefix-install
+	cc -o $@ build/parser-slice03-corr01-differential.o $(SLICE03_OP_OBJ) $(SLICE03_OP_LEGACY_OBJ) $(SLICE03_OP_STUB_OBJ) $(SLICE03_OP_TRANSITIVE_OBJS) $(TASM_LIB) -L$(TEST_PREFIX)/lib -ltos -Wl,-undefined,dynamic_lookup
+
+parser-slice03-corr01-differential: build/parser-slice03-corr01-differential $(CORR01_FIXTURE)
+	@echo "CORR01_DIFF=RUN"
+	./build/parser-slice03-corr01-differential $(CORR01_FIXTURE) src/prslib.c src/lexer.h
+
+# The negative controls.
+#
+# Each MUST fail: a control that passes would mean the verifier cannot
+# detect the defect it is meant to detect.  The five controls are the
+# ones the ACT names:
+#
+#   NC-1  a missing signed-I64 extreme
+#   NC-2  a duplicated row REPLACING a required value
+#   NC-3  an unknown row
+#   NC-4  an overflowed input
+#   NC-5  a fixture with the correct row count but incorrect coverage
+parser-slice03-corr01-controls: build/parser-slice03-corr01-coverage
+	@mkdir -p $(CORR01_OUT)/nc
+	@echo "CORR01_NC=1 a missing signed-I64 extreme"
+	@grep -v -- '-9223372036854775808' $(CORR01_FIXTURE) > $(CORR01_OUT)/nc/missing-extreme.tsv
+	@if ./build/parser-slice03-corr01-coverage $(CORR01_OUT)/nc/missing-extreme.tsv src/prslib.c src/lexer.h > $(CORR01_OUT)/nc/missing-extreme.txt 2>&1; then \
+		echo "CORR01_NC=1 FAIL (a missing extreme was accepted)" >&2; exit 1; \
+	else echo "CORR01_NC=1 PASS (rejected)"; \
+		grep 'P16_REQUIRED_VALUES_MISSING\|P16_SIGNED_EXTREMES_PRESENT\|STATUS=' $(CORR01_OUT)/nc/missing-extreme.txt; \
+	fi
+	@echo "CORR01_NC=2 a duplicated row replacing a required value"
+	@awk -F'\t' 'BEGIN{OFS="\t"} $$1=="F049" { $$1="F050"; $$3="0" } { print }' \
+		$(CORR01_FIXTURE) > $(CORR01_OUT)/nc/duplicated-row.tsv
+	@if ./build/parser-slice03-corr01-coverage $(CORR01_OUT)/nc/duplicated-row.tsv src/prslib.c src/lexer.h > $(CORR01_OUT)/nc/duplicated-row.txt 2>&1; then \
+		echo "CORR01_NC=2 FAIL (a duplicated row replacing a required value was accepted)" >&2; exit 1; \
+	else echo "CORR01_NC=2 PASS (rejected)"; \
+		grep 'P16_REQUIRED_VALUES_MISSING\|DUPLICATE_IDS\|STATUS=' $(CORR01_OUT)/nc/duplicated-row.txt; \
+	fi
+	@echo "CORR01_NC=3 an unknown row"
+	@cat $(CORR01_FIXTURE) > $(CORR01_OUT)/nc/unknown-row.tsv
+	@printf 'F999\tP16_BOUNDARY_INTEGERS\t12345\t-1\tan unknown row\n' >> $(CORR01_OUT)/nc/unknown-row.tsv
+	@if ./build/parser-slice03-corr01-coverage $(CORR01_OUT)/nc/unknown-row.tsv src/prslib.c src/lexer.h > $(CORR01_OUT)/nc/unknown-row.txt 2>&1; then \
+		echo "CORR01_NC=3 FAIL (an unknown row was accepted)" >&2; exit 1; \
+	else echo "CORR01_NC=3 PASS (rejected)"; \
+		grep 'UNKNOWN_IDS\|OUT_OF_RANGE_IDS\|STATUS=' $(CORR01_OUT)/nc/unknown-row.txt; \
+	fi
+	@echo "CORR01_NC=4 an overflowed input"
+	@cat $(CORR01_FIXTURE) > $(CORR01_OUT)/nc/overflowed-input.tsv
+	@printf 'F999\tP16_BOUNDARY_INTEGERS\t9223372036854775808\t-1\tan overflowed input\n' >> $(CORR01_OUT)/nc/overflowed-input.tsv
+	@if ./build/parser-slice03-corr01-coverage $(CORR01_OUT)/nc/overflowed-input.tsv src/prslib.c src/lexer.h > $(CORR01_OUT)/nc/overflowed-input.txt 2>&1; then \
+		echo "CORR01_NC=4 FAIL (an overflowed input was accepted)" >&2; exit 1; \
+	else echo "CORR01_NC=4 PASS (rejected)"; \
+		grep 'FIELD_PARSE_ERRORS\|PARSE_ERRORS\|STATUS=' $(CORR01_OUT)/nc/overflowed-input.txt; \
+	fi
+	@echo "CORR01_NC=5 the correct row count but the wrong coverage"
+	@awk -F'\t' 'BEGIN{OFS="\t"} $$1=="F049" { $$3="777" } { print }' \
+		$(CORR01_FIXTURE) > $(CORR01_OUT)/nc/wrong-coverage.tsv
+	@if ./build/parser-slice03-corr01-coverage $(CORR01_OUT)/nc/wrong-coverage.tsv src/prslib.c src/lexer.h > $(CORR01_OUT)/nc/wrong-coverage.txt 2>&1; then \
+		echo "CORR01_NC=5 FAIL (a fixture with the correct row count but the wrong coverage was accepted)" >&2; exit 1; \
+	else echo "CORR01_NC=5 PASS (rejected)"; \
+		grep 'P16_REQUIRED_VALUES_MISSING\|P16_VALUE_MEMBERSHIP_ERRORS\|STATUS=' $(CORR01_OUT)/nc/wrong-coverage.txt; \
+	fi
+	@echo "CORR01_NEGATIVE_CONTROLS=5/5 PASS"
+
+# The PRODUCER's own negative control.
+#
+# The producer MUST fail rather than emit a superficially complete
+# fixture when a mandatory semantic value cannot be derived.  The
+# control renames ONE case label in a COPY of the live source so that
+# the label cannot be resolved, and requires the producer to refuse.
+#
+# The COPY is written under $(CORR01_OUT); the live src/prslib.c is not
+# touched.
+parser-slice03-corr01-producer-control: build/parser-slice03-corr01-fixture
+	@mkdir -p $(CORR01_OUT)/nc
+	@echo "CORR01_PRODUCER_NC=1 an unresolvable case label"
+	@perl -pe 's/case TK_SHR:/case TK_SHR_UNRESOLVABLE:/' src/prslib.c > $(CORR01_OUT)/nc/prslib-unresolvable.c
+	@if ./build/parser-slice03-corr01-fixture $(CORR01_OUT)/nc/prslib-unresolvable.c src/lexer.h $(CORR01_OUT)/nc/should-not-exist.tsv > $(CORR01_OUT)/nc/producer-unresolvable.txt 2>&1; then \
+		echo "CORR01_PRODUCER_NC=1 FAIL (the producer emitted a fixture from an underivable table)" >&2; exit 1; \
+	else echo "CORR01_PRODUCER_NC=1 PASS (refused)"; \
+		grep 'DERIVED_UNRESOLVED_LABELS\|CORR01_FIXTURE_ERROR\|STATUS=' $(CORR01_OUT)/nc/producer-unresolvable.txt; \
+	fi
+	@rm -f $(CORR01_OUT)/nc/should-not-exist.tsv
+	@echo "CORR01_PRODUCER_NEGATIVE_CONTROLS=1/1 PASS"
+
+# The full correction qualification.
+parser-slice03-corr01-test: parser-slice03-corr01-fixture parser-slice03-corr01-coverage parser-slice03-corr01-differential parser-slice03-corr01-controls parser-slice03-corr01-producer-control
+	@echo "CORR01_TEST=PASS"
 
 # =========================================================================
 # ACT-POLYC-SELFHOST-PARSER-SLICE03
