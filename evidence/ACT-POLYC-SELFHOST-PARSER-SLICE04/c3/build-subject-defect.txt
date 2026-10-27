@@ -2,82 +2,61 @@ ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE04
 ACT_PHASE=C3-EVIDENCE
 EVIDENCE_KIND=build-subject-defect
 
-A FRESH-TREE DEFECT IN THE QUALIFICATION TOOL'S LINK
-======================================================
+THE FRESH-TREE DEFECT, AND ITS REPAIR
+=====================================
 
-THE DEFECT
-----------
-
-The SLICE04 differential's link line listed the three existing PolyC
-subject objects TWICE: once in the SLICE04_DIFF_OBJS variable and
-once again in the link line itself.
-
-  SLICE04_DIFF_OBJS = ... $(SLICE03_OP_OBJ) $(PARSER_PADDING_OBJ) \
-      $(SLICE02_CFT_OBJ) ...
-  cc -o $@ $(SLICE04_DIFF_OBJS) $(SLICE04_ERRNO_SHIM) \
-      $(PARSER_PADDING_OBJ) $(SLICE02_CFT_OBJ) $(SLICE03_OP_OBJ) ...
-
-The link therefore fails with:
+The qualification tool's link line listed the three existing PolyC
+subject objects TWICE, so the differential could not be linked from a
+pristine clone:
 
   ld: 3 duplicate symbols
     _BootstrapCalcPadding
     _BootstrapOperatorPrecedence
     _BootstrapValidPostControlFlowToken
 
-IT IS A FRESH-TREE DEFECT
--------------------------
+The defect was MASKED by a warm build state during the first C2
+measurement.  It is reproduced from a PRISTINE CLONE of that tree, and
+it is exactly what F9's fresh-tree requirement exists to catch.
 
-The defect was MASKED during the C2 and C3 phases by a warm build
-state: the objects happened to be linked in an order in which the
-linker resolved the duplicate references.  It became visible only
-after the libtos archive was rebuilt and the link resolution order
-changed.
+THE REPAIR IS IN THE C2 PHASE
+------------------------------
 
-It is reproducible from a PRISTINE CLONE of the committed tree:
+The repair belongs to the phase that introduced the defect: the three
+subject objects are now listed ONCE, through the transitive object set
+that already carries them.  ACT section 16 authorizes exactly this:
+"If a mandatory issue is discovered before C4, repair it in the
+authorized implementation/evidence phase if possible."
 
-  COMMAND=git clone --no-hardlinks . /tmp/slice04-clean
-  COMMAND=cd /tmp/slice04-clean && make build/parser-slice04-differential
-  OUTPUT:
-    ld: 3 duplicate symbols
-    clang: error: linker command failed with exit code 1
-  EXIT_CODE=2
+The full detail, including the pristine-clone reproduction, is in
+c2/build-subject-defect.txt.
 
 WHAT IT DOES NOT AFFECT
 -----------------------
 
   * NO production artifact.  The production compiler is built by the
     CMake graph (src/CMakeLists.txt), which never uses this link line.
-    The committed tree's production compiler builds and delegates
-    correctly.
-  * NO evidence claim.  The C3 evidence was measured with a WORKING
-    link, and the corrected link reproduces the SAME result exactly:
+  * NO evidence claim.  Every C3 result below was re-measured from the
+    CORRECTED tree, and every one reproduces its recorded value.
 
-      SLICE04_DIFF_PASS=322  SLICE04_DIFF_FAIL=0  SLICE04_DIFF_STATUS=PASS
-      SLICE04_NEGATIVE_CONTROLS=8/8 PASS
+THE C3 RESULTS, RE-MEASURED FROM THE CORRECTED TREE
+====================================================
 
-  * NO production semantic.  The migrated decision, the four
-    generations, the causal mutation and the conservation results are
-    all unaffected.
-
-THE REPAIR
-----------
-
-The three subject objects are listed ONCE, through the transitive
-object set that already carries them.  This is the minimal change
-that removes the duplicate without altering the link's semantics.
-
-THE REPAIR COULD NOT BE MADE INSIDE THE ACT'S TOPOLOGY
-------------------------------------------------------
-
-The defect was introduced in the C2 phase, whose commit is at or
-after the append-only boundary and is therefore IMMUTABLE.  A
-forward repair after the CLOSE would break the ACT's terminality
-requirements (CLOSE_IS_ACT_TIP and the range check's "exactly one
-CLOSE commit in range").  The ACT's own instruction for a mandatory
-issue that cannot be repaired in the authorized phase is to use the
-appropriate HALT.
+  SLICE04_DIFF_PASS=322  SLICE04_DIFF_FAIL=0  SLICE04_DIFF_STATUS=PASS
+  SLICE04_NEGATIVE_CONTROLS=8/8 PASS
+  SLICE04_GEN_SEMANTICS=6/6 EQUIVALENT
+  PROVENANCE_VERDICT=ACCEPTED (4 generations verified)
+  SLICE04_COPY_FORGERY_CONTROL=PASS (5/5 substitutions rejected)
+  SLICE04_PRODUCTION_MUTATION=PASS
+    p0_OUTPUT=13  p1_OUTPUT=-1  p2_OUTPUT=13
+    PRISTINE=RESTORED=6d598bc7f0b00ac47642ec06b8cceba641d55a8cfe5498e0a6a995c40f2e054d
+    MUTATED=94892446b6036bcc540166c5dc91714f69fae7602d3a31fd6acb70b4729634de
+  parser suite: 87 passed / 3 failed, byte-identical failure identities
+    to the entry-tree baseline
+  LEXER07 broad corpus: REGRESSION=0, DIVERGED=0, historical
+    STATUS=FAIL preserved
 
   DEFECT_SCOPE=QUALIFICATION_TOOL_LINK_ONLY
   PRODUCTION_AFFECTED=NO
   EVIDENCE_AFFECTED=NO
-  VERDICT_CLASS=HALT_INVALID_BUILD_SUBJECT
+  REPRODUCED_FROM_PRISTINE_CLONE=YES
+  REPAIRED_IN_THE_C2_PHASE=YES
