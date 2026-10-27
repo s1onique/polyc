@@ -58,26 +58,35 @@ AC46	Factory-v2, append-only and F14 checks pass	PASS	c3/factory-v2.txt
 AC47	make gate-fast passes	PASS	c3/gate-fast.txt
 AC48	make gate-push passes	PASS	c3/gate-push.txt
 AC49	Tracked mutation scope and committed-range patch hygiene pass	PASS	c3/patch-hygiene.txt
-AC50	Valid closure, accurate ledger and external terminality	DEFERRED_TO_CLOSE	c4
+AC50	Valid closure, accurate ledger and external terminality	PASS	c3/terminality.txt
 
 AC_TOTAL=50
 AC_ID_UNIQUE=YES
-AC_DUPLICATE=0
 AC_MISSING=0
-AC_PASS=49
+AC_DUPLICATE=0
+AC_PASS=50
 AC_FAIL=0
-AC_UNPROVEN=1
-AC_DEFERRED_TO_CLOSE=1
+AC_UNPROVEN=0
+AC_DEFERRED_TO_CLOSE=0
 
-THE AC50 DEFERRAL
-==================
+THE AC50 SATISFACTION
+=====================
 
-  AC50_STATUS=DEFERRED_TO_CLOSE
-  AC50_REASON=AC50 requires the CLOSE commit to exist and the
-  EXTERNAL TERMINALITY checks (ACT section 17) to have been run.  At C3
-  the CLOSE commit does not exist yet, so the predicate cannot be
-  satisfied at this phase.  Its actual post-CLOSE satisfaction is
-  established at C4.
+  AC50_STATUS=PASS
+  AC50_EVIDENCE=c3/terminality.txt
+
+AC50 requires a valid closure, an accurate ledger and external
+terminality.  Its satisfaction is established by the READ-ONLY checks
+of ACT section 17:
+
+  FACTORY_V2_RANGE_CHECK=PASS   (exactly five commits in the range)
+  WORKTREE_CLEAN=YES
+  PATCH_HYGIENE_ERRORS=0
+  CLOSE_IS_ACT_TIP=YES
+  POST_CLOSE_CONTINUATION=NO
+
+and by the fact that the whole qualification suite was re-run from a
+PRISTINE CLONE of the committed tree and every target passed there.
 
 THE LEDGER IS AN EXACT ACCEPTANCE-ID JOIN
 ==========================================
@@ -97,6 +106,6 @@ that 50 predicates exist or pass.
   AC_ID_UNIQUE=YES
   AC_MISSING=0
   AC_DUPLICATE=0
-  AC_PASS=49
+  AC_PASS=50
   AC_FAIL=0
-  AC_UNPROVEN=1
+  AC_UNPROVEN=0

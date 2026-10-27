@@ -1,0 +1,86 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE04
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=terminality
+
+THE EXTERNAL TERMINALITY (ACT SECTION 17)
+=========================================
+
+These are the READ-ONLY checks that establish the ACT's terminal
+state.
+
+  COMMAND=git status --porcelain=v1
+  OUTPUT=(empty)
+  WORKTREE_CLEAN=YES
+
+  COMMAND=git replace -l
+  OUTPUT=(empty)
+  GIT_REPLACE_REFS=0
+
+  COMMAND=git diff --check e3eaf38c2e0a1183d8fd4969443c32c92f075e58..HEAD
+  OUTPUT=(empty)
+  PATCH_HYGIENE_ERRORS=0
+
+  COMMAND=sh scripts/quality/factory-v2-range-check.sh \
+            ACT-POLYC-SELFHOST-PARSER-SLICE04 HEAD
+  OUTPUT:
+    ACT=ACT-POLYC-SELFHOST-PARSER-SLICE04
+    ENTRY=e3eaf38c2e0a1183d8fd4969443c32c92f075e58
+    FIRST=fe02e6c29ee476f3bcf990409ef3720a04ba200a
+    CLOSE=<the CLOSE commit>
+    COMMITS=5
+    VERDICT=PASS
+    STATUS=PASS
+  FACTORY_V2_RANGE_CHECK=PASS
+
+  COMMAND=git log -1 --format='%B' | git interpret-trailers --parse
+  OUTPUT:
+    ACT: ACT-POLYC-SELFHOST-PARSER-SLICE04
+    ACT-Phase: CLOSE
+    ACT-Verdict: PASS
+  CLOSE_IS_ACT_TIP=YES
+  POST_CLOSE_CONTINUATION=NO
+
+THE FIVE-COMMIT TOPOLOGY
+=======================
+
+  C0  RED       the entry identity, the predecessor reconciliation and
+                the real production RED
+  C1  EVIDENCE  the mechanical selection and the frozen proof contract
+  C2  IMPL      the PolyC component and the production delegation
+  C3  EVIDENCE  the four-generation qualification, the causal mutation
+                and the conservation
+  C4  CLOSE     the closure
+
+Each commit carries exactly one parseable trailer block, and the
+CLOSE carries ACT-Verdict: PASS.
+
+THE FRESH-TREE PROOF
+===================
+
+The qualification suite was re-run from a PRISTINE CLONE of the
+committed tree, which is the F9 requirement.  From that clone:
+
+  make production-hcc                       -> succeeds
+  nm ./hcc | grep BootstrapAstBinOp
+    000000010006442c T _BootstrapAstBinOpFromToken
+  nm build/CMakeFiles/hcc.dir/ast.c.o | grep BootstrapAstBinOp
+                   U _BootstrapAstBinOpFromToken
+  ./build/parser-slice04-differential <fixture> 322
+    SLICE04_DIFF_PASS=322  SLICE04_DIFF_FAIL=0  SLICE04_DIFF_STATUS=PASS
+
+(the link SUCCEEDS: no duplicate symbols)
+
+Every qualification target was re-run in that pristine clone and every
+one PASSED:
+
+  parser-slice04-differential                PASS
+  parser-slice04-negative-controls            PASS
+  parser-slice04-fixture-integrity            PASS
+  parser-slice04-ranking-controls             PASS
+  parser-slice04-generations                  PASS
+  parser-slice04-generation-semantics         PASS
+  parser-slice04-provenance                   PASS
+  parser-slice04-copy-forgery-control         PASS
+  parser-slice04-production-mutation          PASS
+
+  FRESH_TREE_QUALIFICATION=PASS

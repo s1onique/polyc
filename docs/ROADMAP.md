@@ -6682,3 +6682,133 @@ See
 `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE03-CORRECTION01.md`
 and
 `evidence/ACT-POLYC-SELFHOST-PARSER-SLICE03-CORRECTION01/`.
+
+---
+
+#### ACT-POLYC-SELFHOST-PARSER-SLICE04 status (CLOSED PASS at this commit)
+
+```text
+ACT_ID               = ACT-POLYC-SELFHOST-PARSER-SLICE04
+CLASS                = SELFHOST / PARSER / AST-OPERATOR / PRODUCTION-AUTHORITY-MIGRATION
+ENTRY_HEAD           = e3eaf38c2e0a1183d8fd4969443c32c92f075e58
+PREV_ACT_ID          = ACT-POLYC-SELFHOST-PARSER-SLICE03-CORRECTION01
+SELECTED_CANDIDATE   = CAND-019  astBinOpFromToken
+UNSELECTED_CANDIDATE = CAND-020  astUnaryOpFromToken  (remains LEGACY_C)
+POLYC_SYMBOL         = BootstrapAstBinOpFromToken
+SELECTED_ABI         = I64 BootstrapAstBinOpFromToken(I64) -> I64   (sentinel -1)
+DELEGATION_MACRO     = HCC_USE_SELFHOST_PARSER_AST_BINOP
+PRODUCTION_CALL_SITE = src/prslib.c:1527
+```
+
+**The selection was MECHANICAL.**  Both candidates passed all thirteen
+eligibility clauses under the existing, closed RECON03 eligibility
+checker.  Both carried the **identical** RECON03 R0..R5 vector
+`(0, 2, 3, 2, 0, 0)`, so the existing, closed RECON03 ranker decided
+the winner by the R6 **source-order** dimension alone
+(`src/ast.c:206` before `src/ast.c:238`).  No score was changed, and
+neither the ranker nor the checker was rewritten.  Controls: 7/7 for
+the SLICE04 driver plus the closed ranker's own 4/4.
+
+**The C decision left the production path.**  The production object's
+disassembly is now call / test / conditionally store / return: **no jump
+table, no enum immediate**.  The unselected `astUnaryOpFromToken` still
+carries its C switch and is byte-identical to the entry version.
+
+**The delegation is causally load-bearing.**  A mapping differential
+alone was not accepted as sufficient:
+
+```text
+p0_OUTPUT=13      pristine:  6 + 7
+p1_OUTPUT=-1      mutated:   6 - 7
+p2_OUTPUT=13      restored:  6 + 7
+
+B_OUTPUT_DIFFERS_FROM_A=YES
+C_OUTPUT_EQUALS_A=YES
+C_COMPONENT_SHA_EQUALS_A=YES
+```
+
+The mutation was a **one-line** change to the `'+'` mapping, applied
+in an isolated scratch workspace; the tracked subject was never
+mutated, and the mutant **build succeeded**.
+
+**The provenance is single-valued and execution-linked.**  Because
+G1, G2 and G3 produce byte-identical objects, a finished object could
+be substituted for another without changing the output bytes.  Each
+generation therefore also produced a witness bound to an **actual
+execution**: a probe built by that generation's own compiler, linked
+against that generation's own object, and run.  All five provenance
+negative controls corrupt or substitute that witness and each is
+**rejected** with a concrete reason.  The G0 producer is the **host C
+compiler** (`/usr/bin/cc`), resolved and hashed **from the actual
+invoked command**.
+
+**The fixture is derived, not chosen**, and the differential's integer
+parser is exact over the whole signed 64-bit domain, so the
+`INT64_MIN` / `INT64_MAX` extremes are exercised rather than wrapped.
+
+```text
+DIRECT_DIFFERENTIAL=PASS   (322/322 rows, 0 mismatches)
+FIXTURE_INTEGRITY=PASS     (independent witness)
+FIXTURE_NEGATIVE_CONTROLS=PASS  (8/8, each genuinely rejected)
+FAIL_CLOSED_BUILD_CONTROLS=PASS (7/7)
+RANKING_CONTROLS=PASS      (7/7 plus 4/4)
+PROVENANCE_CONTROLS=PASS   (5/5)
+```
+
+Conservation was measured against a compiler built from the **entry
+tree**, not against a historical report:
+
+```text
+BASELINE_PASSED=87  BASELINE_FAILED=3
+CURRENT_PASSED=87   CURRENT_FAILED=3     (identical failure identities)
+
+NEW_PARSER_FAILURE_IDENTITIES=0
+NEW_LEXER_FAILURE_IDENTITIES=0
+NEW_LEXER07_FAILURE_IDENTITIES=0
+PRODUCTION_SEMANTIC_DELTA=0
+```
+
+```text
+GATE_FAST    = PASS
+GATE_PUSH    = PASS   (fresh, hermetic, clean tree)
+FACTORY_V2   = PASS (53/0)
+APPEND_ONLY  = PASS (11/0)
+F14          = PASS
+PATCH_HYGIENE= PASS
+
+MANDATORY_AC_TOTAL=50  PASS=50  FAIL=0  UNPROVEN=0
+```
+
+The F-NO-PYTHON checker's 12 findings are **pre-existing** (none is
+in this ACT's diff) and are recorded as measured.
+
+**A fresh-tree defect was found and repaired in the C2 phase.**  The
+qualification tool's link line listed the three existing PolyC subject
+objects twice, so the differential could not be linked from a pristine
+clone (`ld: 3 duplicate symbols`).  The defect was masked by a warm
+build state during the first C2 measurement and became visible only
+after the libtos archive was rebuilt and the link resolution order
+changed.  It is exactly what F9's fresh-tree requirement exists to
+catch.
+
+It was repaired in the phase that introduced it, and every C3 result
+was then re-measured from the corrected tree.  It affected **no
+production artifact** (the production compiler is built by the CMake
+graph) and **no evidence claim**.
+
+```text
+DEFECT_SCOPE=QUALIFICATION_TOOL_LINK_ONLY
+PRODUCTION_AFFECTED=NO
+EVIDENCE_AFFECTED=NO
+REPRODUCED_FROM_PRISTINE_CLONE=YES
+REPAIRED_IN_THE_C2_PHASE=YES
+```
+
+**Next milestone:** `ACT-POLYC-SELFHOST-PARSER-SLICE05` over
+`CAND-020 astUnaryOpFromToken`, the one remaining unmigrated AST
+operator classifier.  After SLICE05 the AST operator classification
+family would be entirely PolyC-owned.
+
+See
+`docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE04.md` and
+`evidence/ACT-POLYC-SELFHOST-PARSER-SLICE04/`.

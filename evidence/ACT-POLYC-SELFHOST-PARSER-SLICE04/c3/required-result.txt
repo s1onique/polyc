@@ -42,9 +42,9 @@ WHAT IS MEASURED
   PRODUCTION_SEMANTIC_DELTA=0
 
   MANDATORY_AC_TOTAL=50
-  MANDATORY_AC_PASS=49
+  MANDATORY_AC_PASS=50
   MANDATORY_AC_FAIL=0
-  MANDATORY_AC_UNPROVEN=1  (AC50, DEFERRED_TO_CLOSE)
+  MANDATORY_AC_UNPROVEN=0
 
   GATE_FAST=PASS
   GATE_PUSH=PASS
@@ -56,11 +56,29 @@ WHAT IS MEASURED
 WHAT IS NOT YET ESTABLISHED
 ----------------------------
 
-  POST_CLOSE_CONTINUATION=NOT_YET_ESTABLISHED
+  POST_CLOSE_CONTINUATION=NO
+  CLOSE_IS_ACT_TIP=YES
+  FACTORY_V2_RANGE_CHECK=PASS
 
-AC50 is DEFERRED_TO_CLOSE at this phase, exactly as ACT section 14
-permits, and its actual post-CLOSE satisfaction is established at C4
-by the external terminality checks of ACT section 17.
+AC50's post-CLOSE satisfaction is established by the external
+terminality checks of ACT section 17, recorded in c3/terminality.txt:
+the worktree is clean, the replace namespace is empty, the committed
+range has no whitespace errors, the range check passes with exactly
+five commits, and the CLOSE is the range tip.
+
+The whole qualification suite was also re-run from a PRISTINE CLONE
+of the committed tree, and every target passed there:
+  parser-slice04-differential              PASS
+  parser-slice04-negative-controls          PASS
+  parser-slice04-fixture-integrity          PASS
+  parser-slice04-ranking-controls           PASS
+  parser-slice04-generations                PASS
+  parser-slice04-generation-semantics       PASS
+  parser-slice04-provenance                 PASS
+  parser-slice04-copy-forgery-control       PASS
+  parser-slice04-production-mutation         PASS
+
+  FRESH_TREE_QUALIFICATION=PASS
 
 THE ONE REMAINING UNMIGRATED AST MAPPING
 =========================================
