@@ -84,6 +84,10 @@ SLICE02_CFT_OBJ  = ./build/parser-control-flow-token-subject.o
 SLICE03_OP_SRC   = tools/bootstrap/selfhost-parser-operator-precedence.HC
 SLICE03_OP_OBJ   = ./build/parser-operator-precedence-subject.o
 
+# ACT-POLYC-SELFHOST-PARSER-SLICE04: the AST binary-operator subject.
+SLICE04_AST_BINOP_SRC = tools/bootstrap/selfhost-parser-slice04.HC
+SLICE04_AST_BINOP_OBJ = ./build/parser-ast-binop-subject.o
+
 # The stage0 compiler's own sources. A change to any of them must
 # invalidate the stage0 compiler, which in turn invalidates the
 # padding subject.
@@ -113,6 +117,7 @@ $(BOOTSTRAP_STAGE0_HCC): $(BOOTSTRAP_STAGE0_SOURCES)
 		-DHCC_USE_SELFHOST_PARSER_PADDING=OFF \
 		-DHCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN=OFF \
 		-DHCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE=OFF \
+		-DHCC_USE_SELFHOST_PARSER_AST_BINOP=OFF \
 		-DHCC_RUNTIME_OUTPUT_DIRECTORY=$(CURDIR)/$(BOOTSTRAP_STAGE0_DIR)
 	$(MAKE) -C $(BOOTSTRAP_STAGE0_BUILD) hcc -j2
 	@if [ ! -x "$(BOOTSTRAP_STAGE0_HCC)" ]; then \
@@ -541,6 +546,7 @@ parser-padding-subject: $(PARSER_PADDING_OBJ)
 #     previously produced a link failure against a missing libtasm.a.
 PRODUCTION_HCC = ./hcc
 PRODUCTION_HCC_INPUTS = $(PARSER_PADDING_OBJ) $(SLICE02_CFT_OBJ) $(SLICE03_OP_OBJ) \
+	$(SLICE04_AST_BINOP_OBJ) \
 	$(wildcard src/*.c src/asm/*.c) \
 	$(wildcard src/*.h src/asm/*.h) \
 	$(wildcard src/CMakeLists.txt src/asm/CMakeLists.txt) \
@@ -572,6 +578,11 @@ $(PRODUCTION_HCC): $(PRODUCTION_HCC_INPUTS)
 		-DOPERATOR_PRECEDENCE_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
 		-DOPERATOR_PRECEDENCE_SOURCE=$(CURDIR)/$(SLICE03_OP_SRC) \
 		-DOPERATOR_PRECEDENCE_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_PARSER_AST_BINOP=ON \
+		-DAST_TOKEN_MAP_OBJECT=$(CURDIR)/$(SLICE04_AST_BINOP_OBJ) \
+		-DAST_TOKEN_MAP_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DAST_TOKEN_MAP_SOURCE=$(CURDIR)/$(SLICE04_AST_BINOP_SRC) \
+		-DAST_TOKEN_MAP_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
 		-DHCC_BOOTSTRAP_EXPECTED_SHA=$(LIBTOS_BOOTSTRAP_EXPECTED_SHA)
 	$(MAKE) -C ./build -j2
 	@if [ ! -x ./hcc ]; then \
@@ -584,8 +595,11 @@ $(PRODUCTION_HCC): $(PRODUCTION_HCC_INPUTS)
 		|| { echo "production-hcc: symbol _BootstrapValidPostControlFlowToken not linked into ./hcc" >&2; exit 1; }
 	@nm ./hcc | grep -q '_BootstrapOperatorPrecedence' \
 		|| { echo "production-hcc: symbol _BootstrapOperatorPrecedence not linked into ./hcc" >&2; exit 1; }
+	@nm ./hcc | grep -q '_BootstrapAstBinOpFromToken' \
+		|| { echo "production-hcc: symbol _BootstrapAstBinOpFromToken not linked into ./hcc" >&2; exit 1; }
 	@echo "PRODUCTION_HCC=./hcc"
 	@echo "PRODUCTION_PADDING_AUTHORITY=POLYC"
+	@echo "PRODUCTION_AST_BINOP_AUTHORITY=POLYC"
 
 production-hcc: $(PRODUCTION_HCC)
 
@@ -625,6 +639,11 @@ llvm-all: $(PARSER_PADDING_OBJ)
 		-DOPERATOR_PRECEDENCE_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
 		-DOPERATOR_PRECEDENCE_SOURCE=$(CURDIR)/$(SLICE03_OP_SRC) \
 		-DOPERATOR_PRECEDENCE_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_PARSER_AST_BINOP=ON \
+		-DAST_TOKEN_MAP_OBJECT=$(CURDIR)/$(SLICE04_AST_BINOP_OBJ) \
+		-DAST_TOKEN_MAP_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DAST_TOKEN_MAP_SOURCE=$(CURDIR)/$(SLICE04_AST_BINOP_SRC) \
+		-DAST_TOKEN_MAP_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
 		-DHCC_BOOTSTRAP_EXPECTED_SHA=$(LIBTOS_BOOTSTRAP_EXPECTED_SHA)
 	$(MAKE) -C ./build/llvm -j2
 	@if [ ! -x ./hcc ]; then \
@@ -737,6 +756,11 @@ test-prefix-install: production-hcc runtime-producer
 		-DOPERATOR_PRECEDENCE_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
 		-DOPERATOR_PRECEDENCE_SOURCE=$(CURDIR)/$(SLICE03_OP_SRC) \
 		-DOPERATOR_PRECEDENCE_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_PARSER_AST_BINOP=ON \
+		-DAST_TOKEN_MAP_OBJECT=$(CURDIR)/$(SLICE04_AST_BINOP_OBJ) \
+		-DAST_TOKEN_MAP_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DAST_TOKEN_MAP_SOURCE=$(CURDIR)/$(SLICE04_AST_BINOP_SRC) \
+		-DAST_TOKEN_MAP_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
 		-DHCC_BOOTSTRAP_EXPECTED_SHA=$(LIBTOS_BOOTSTRAP_EXPECTED_SHA)
 	$(MAKE) -C ./build/test-prefix-install-build install
 	@if [ ! -f $(TEST_PREFIX)/lib/libtos.a ] || \
@@ -4089,6 +4113,7 @@ $(SLICE03_PRODGEN_DIR)/p0: $(SLICE03_GEN_DIR)/g0.c src/prslib.c src/lexer.h
 		-DCONTROL_FLOW_TOKEN_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
 		-DCONTROL_FLOW_TOKEN_SOURCE=$(CURDIR)/$(SLICE02_CFT_SRC) \
 		-DHCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE=OFF \
+		-DHCC_USE_SELFHOST_PARSER_AST_BINOP=OFF \
 		-DOPERATOR_PRECEDENCE_OBJECT=$(CURDIR)/$(SLICE03_GEN_DIR)/g0.o \
 		-DOPERATOR_PRECEDENCE_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
 		-DOPERATOR_PRECEDENCE_SOURCE=$(CURDIR)/$(SLICE03_GEN_SRC) \
@@ -4270,7 +4295,7 @@ SLICE04_ORACLE_DRIVER = ./build/slice04-oracle-driver
 # defeat the oracle).  This mirrors the SLICE03 differential's
 # transitive-object selection, which likewise excludes the file whose
 # legacy form is the oracle.
-SLICE04_ORACLE_TRANSITIVE_OBJS = $(filter-out $(HCC_OBJ_DIR)/main.c.o $(HCC_OBJ_DIR)/parser.c.o $(HCC_OBJ_DIR)/ast.c.o, \
+SLICE04_ORACLE_TRANSITIVE_OBJS = $(filter-out $(HCC_OBJ_DIR)/main.c.o $(HCC_OBJ_DIR)/ast.c.o, \
     $(wildcard $(HCC_OBJ_DIR)/*.c.o $(HCC_OBJ_DIR)/linenoise/*.c.o))
 
 build/slice04-ast-legacy.o: src/ast.c src/ast.h src/lexer.h
@@ -4304,7 +4329,7 @@ build/slice04-oracle-driver: tools/quality/parser-slice04-oracle-driver.c build/
 # =========================================================================
 SLICE04_FIXTURE_SRC   = tools/quality/parser-slice04-fixture-producer.HC
 SLICE04_FIXTURE       = evidence/ACT-POLYC-SELFHOST-PARSER-SLICE04/c1/fixture.tsv
-SLICE04_FIXTURE_COUNT = 0
+SLICE04_FIXTURE_COUNT = $(shell grep -c '^F[0-9][0-9][0-9]' $(SLICE04_FIXTURE) 2>/dev/null || echo 0)
 
 build/parser-slice04-fixture: $(SLICE04_FIXTURE_SRC) ./hcc | test-prefix-install
 	./hcc --install-dir=$(TEST_PREFIX) $(SLICE04_FIXTURE_SRC) -o $@
@@ -4316,3 +4341,222 @@ build/parser-slice04-fixture: $(SLICE04_FIXTURE_SRC) ./hcc | test-prefix-install
 parser-slice04-fixture: build/parser-slice04-fixture
 	@mkdir -p $(dir $(SLICE04_FIXTURE))
 	./build/parser-slice04-fixture $(SLICE04_FIXTURE)
+
+# =========================================================================
+# ACT-POLYC-SELFHOST-PARSER-SLICE04
+#
+#   build/parser-ast-binop-subject.o -> the PolyC AST-operator subject.
+#
+# The subject is compiled by the STAGE-0 compiler, exactly like the
+# parser-padding, control-flow-token and operator-precedence subjects,
+# so that the component does not depend on the production compiler that
+# it is about to serve.
+# =========================================================================
+build/parser-ast-binop-subject.o: $(SLICE04_AST_BINOP_SRC) $(BOOTSTRAP_STAGE0_HCC) $(BOOTSTRAP_PREFIX_INC)/tos.HH
+	@rm -f $@
+	$(BOOTSTRAP_STAGE0_HCC) \
+		--install-dir=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-c $(SLICE04_AST_BINOP_SRC) \
+		-o $@
+	@if [ ! -f "$@" ]; then \
+		echo "parser-ast-binop-subject: $@ not produced by the stage0 compiler" >&2; \
+		exit 1; \
+	fi
+	@nm $@ | grep -q '_BootstrapAstBinOpFromToken' \
+		|| { echo "parser-ast-binop-subject: symbol _BootstrapAstBinOpFromToken not found in $@" >&2; exit 1; }
+	@echo "SLICE04_SUBJECT=$@"
+	@echo "SLICE04_SUBJECT_ARCH=$$(file -b "$@" | sed -e 's/.*object //')"
+
+parser-ast-binop-component: $(SLICE04_AST_BINOP_OBJ)
+	@echo "SLICE04_COMPONENT=BUILD source=$(SLICE04_AST_BINOP_SRC)"
+	@echo "SLICE04_COMPONENT_OBJECT=$(SLICE04_AST_BINOP_OBJ)"
+
+# =========================================================================
+# ACT-POLYC-SELFHOST-PARSER-SLICE04
+#
+#   parser-slice04-differential -> the PolyC direct differential
+#       (the PolyC subject vs the REAL legacy C function)
+#
+# The oracle object is src/ast.c compiled WITHOUT
+# HCC_USE_SELFHOST_PARSER_AST_BINOP, so the REAL legacy
+# astBinOpFromToken body is the one that executes.  A differential run
+# against the DELEGATED build would compare the PolyC component against
+# itself and would be vacuous.
+#
+# The production ast.c.o is EXCLUDED from the transitive objects
+# because the legacy oracle object replaces it.
+# =========================================================================
+SLICE04_DIFF_SRC = tools/quality/parser-slice04-differential.HC
+
+build/parser-slice04-differential.o: $(SLICE04_DIFF_SRC) ./hcc | test-prefix-install
+	./hcc --install-dir=$(TEST_PREFIX) -c $(SLICE04_DIFF_SRC) -o $@
+	@nm $@ | grep -q '_main' \
+		|| { echo "parser-slice04-differential.o: main missing" >&2; exit 1; }
+
+build/parser-slice04-differential: build/parser-slice04-differential.o $(SLICE04_AST_BINOP_OBJ) $(SLICE04_AST_LEGACY_OBJ) $(SLICE04_ORACLE_STUB) $(SLICE04_ORACLE_TRANSITIVE_OBJS) | test-prefix-install
+	cc -o $@ build/parser-slice04-differential.o $(SLICE04_AST_BINOP_OBJ) $(SLICE04_AST_LEGACY_OBJ) $(SLICE04_ORACLE_STUB) $(SLICE04_ORACLE_TRANSITIVE_OBJS) $(TASM_LIB) -L$(TEST_PREFIX)/lib -ltos -Wl,-undefined,dynamic_lookup
+	@ls -la $@
+
+parser-slice04-differential: build/parser-slice04-differential
+	@echo "SLICE04_DIFF=RUN"
+	./build/parser-slice04-differential $(SLICE04_FIXTURE) $(SLICE04_FIXTURE_COUNT)
+
+# The narrow oracle adapter object.  It is linked together with the
+# LEGACY ast.c object so that the adapter and the legacy function it
+# calls are the SAME build of the SAME source.
+build/slice04-oracle-adapter.o: tools/quality/parser-slice04-oracle-adapter.c src/ast.h
+	@rm -f $@
+	cc -std=c99 -O2 -Isrc -c -o $@ $<
+	@nm $@ | grep -q '_Slice04LegacyBinOpOracle' \
+		|| { echo "slice04-oracle-adapter.o: the adapter entry point is missing" >&2; exit 1; }
+
+# The differential links the adapter, the legacy ast.c oracle object and
+# the PolyC subject.  The operator-precedence subject is linked too,
+# because the production prslib.c object references it.
+SLICE04_DIFF_OBJS = build/parser-slice04-differential.o $(SLICE04_AST_BINOP_OBJ) \
+	$(SLICE04_AST_LEGACY_OBJ) build/slice04-oracle-adapter.o $(SLICE04_ORACLE_STUB) \
+	$(SLICE03_OP_OBJ) $(PARSER_PADDING_OBJ) $(SLICE02_CFT_OBJ) \
+	$(SLICE04_ORACLE_TRANSITIVE_OBJS)
+
+build/parser-slice04-differential: $(SLICE04_DIFF_OBJS) | test-prefix-install
+	cc -o $@ $(SLICE04_DIFF_OBJS) $(TASM_LIB) -L$(TEST_PREFIX)/lib -ltos
+	@ls -la $@
+
+# The errno shim object.  The installed libtos archive's MALLOC
+# references Errno, and the shim is the object that defines it.  It is
+# linked explicitly so that the differential does not depend on the
+# archive member ordering.
+SLICE04_ERRNO_SHIM = ./build/test-prefix-install-build/libtos-build/errno_shim.o
+
+build/parser-slice04-differential: $(SLICE04_DIFF_OBJS) $(SLICE04_ERRNO_SHIM) | test-prefix-install
+	cc -o $@ $(SLICE04_DIFF_OBJS) $(SLICE04_ERRNO_SHIM) $(TASM_LIB) -L$(TEST_PREFIX)/lib -ltos
+	@ls -la $@
+
+# =========================================================================
+# ACT-POLYC-SELFHOST-PARSER-SLICE04
+#
+#   parser-slice04-fixture-integrity -> the INDEPENDENT fixture-integrity
+#       witness (a PolyC tool that does NOT share the fixture producer's
+#       token-resolution code).
+# =========================================================================
+SLICE04_INTEGRITY_SRC = tools/quality/parser-slice04-fixture-integrity.HC
+
+build/parser-slice04-fixture-integrity: $(SLICE04_INTEGRITY_SRC) ./hcc | test-prefix-install
+	./hcc --install-dir=$(TEST_PREFIX) $(SLICE04_INTEGRITY_SRC) -o $@
+	@if [ ! -x $@ ]; then \
+		echo "parser-slice04-fixture-integrity: build failed" >&2; \
+		exit 1; \
+	fi
+
+parser-slice04-fixture-integrity: build/parser-slice04-fixture-integrity
+	@echo "SLICE04_FIXTURE_INTEGRITY=RUN"
+	./build/parser-slice04-fixture-integrity $(SLICE04_FIXTURE) $(SLICE04_FIXTURE_COUNT)
+
+# =========================================================================
+# ACT-POLYC-SELFHOST-PARSER-SLICE04
+#
+#   parser-slice04-negative-controls -> the EIGHT fixture-integrity and
+#       differential negative controls.
+#
+# Each control MUTATES a COPY of the canonical fixture and then RUNS the
+# REAL PolyC verifier binary against the mutated copy.  A control passes
+# only when the real verifier returns a NON-ZERO exit code, i.e. when it
+# actually REJECTED the mutated fixture.  A control that merely asserts
+# that a check exists would be vacuous, so the verifier is EXECUTED and
+# its exit code is the verdict.
+#
+# The mutated copies live under $(SLICE04_NC_DIR) in the build directory.
+# The tracked canonical fixture is NEVER touched.
+#
+# The eight controls (ACT section 7.3):
+#
+#   NC-01  a missing accepted token
+#   NC-02  a duplicate fixture id
+#   NC-03  an unknown fixture id
+#   NC-04  an indented unknown row (the RECON03 bypass class)
+#   NC-05  an out-of-range signed integer
+#   NC-06  the correct row count but a missing semantic value
+#   NC-07  an invalid-token fixture whose output is incorrectly overwritten
+#   NC-08  a changed expected enum value
+#
+# The mutation is done with awk, which is an ordinary text tool; the
+# SUBSTANTIVE verification logic is entirely in the PolyC verifiers.
+# =========================================================================
+SLICE04_NC_DIR = ./build/slice04-nc
+
+parser-slice04-negative-controls: build/parser-slice04-fixture-integrity build/parser-slice04-differential
+	@mkdir -p $(SLICE04_NC_DIR)
+	@echo "SLICE04_NEGATIVE_CONTROLS=RUN"
+	@echo "SLICE04_NC_01: a missing accepted token"
+	@grep -v '^F001	' $(SLICE04_FIXTURE) > $(SLICE04_NC_DIR)/fixture-nc01.tsv
+	@if ./build/parser-slice04-fixture-integrity $(SLICE04_NC_DIR)/fixture-nc01.tsv $(SLICE04_FIXTURE_COUNT) > $(SLICE04_NC_DIR)/nc01-integrity.txt 2>&1; then \
+		echo "SLICE04_NC_01=verifier=integrity exit_code=0 result=FAIL" >&2; \
+		echo "SLICE04_NEGATIVE_CONTROLS=FAIL" >&2; exit 1; \
+	else \
+		echo "SLICE04_NC_01=verifier=integrity exit_code=nonzero result=PASS"; \
+		grep 'FIXTURE_INTEGRITY_OBSERVED_ROWS\|FIXTURE_INTEGRITY_MISSING_IDS\|STATUS=' $(SLICE04_NC_DIR)/nc01-integrity.txt; \
+	fi
+	@echo "SLICE04_NC_02: a duplicate fixture id"
+	@(cat $(SLICE04_FIXTURE); grep '^F001	' $(SLICE04_FIXTURE)) > $(SLICE04_NC_DIR)/fixture-nc02.tsv
+	@if ./build/parser-slice04-fixture-integrity $(SLICE04_NC_DIR)/fixture-nc02.tsv $(SLICE04_FIXTURE_COUNT) > $(SLICE04_NC_DIR)/nc02-integrity.txt 2>&1; then \
+		echo "SLICE04_NC_02=verifier=integrity exit_code=0 result=FAIL" >&2; \
+		echo "SLICE04_NEGATIVE_CONTROLS=FAIL" >&2; exit 1; \
+	else \
+		echo "SLICE04_NC_02=verifier=integrity exit_code=nonzero result=PASS"; \
+		grep 'FIXTURE_INTEGRITY_DUPLICATE_IDS\|STATUS=' $(SLICE04_NC_DIR)/nc02-integrity.txt; \
+	fi
+	@echo "SLICE04_NC_03: an unknown fixture id"
+	@(cat $(SLICE04_FIXTURE); printf 'F999\tM01_ACCEPTED_TOKEN\t43\t1\t3\t12345\tan unknown fixture id\n') > $(SLICE04_NC_DIR)/fixture-nc03.tsv
+	@if ./build/parser-slice04-fixture-integrity $(SLICE04_NC_DIR)/fixture-nc03.tsv $(SLICE04_FIXTURE_COUNT) > $(SLICE04_NC_DIR)/nc03-integrity.txt 2>&1; then \
+		echo "SLICE04_NC_03=verifier=integrity exit_code=0 result=FAIL" >&2; \
+		echo "SLICE04_NEGATIVE_CONTROLS=FAIL" >&2; exit 1; \
+	else \
+		echo "SLICE04_NC_03=verifier=integrity exit_code=nonzero result=PASS"; \
+		grep 'FIXTURE_INTEGRITY_UNKNOWN_IDS\|STATUS=' $(SLICE04_NC_DIR)/nc03-integrity.txt; \
+	fi
+	@echo "SLICE04_NC_04: an INDENTED unknown row (the RECON03 bypass class)"
+	@(cat $(SLICE04_FIXTURE); printf '  X002\tM01_ACCEPTED_TOKEN\t43\t1\t3\t12345\tan indented unknown row\n') > $(SLICE04_NC_DIR)/fixture-nc04.tsv
+	@if ./build/parser-slice04-fixture-integrity $(SLICE04_NC_DIR)/fixture-nc04.tsv $(SLICE04_FIXTURE_COUNT) > $(SLICE04_NC_DIR)/nc04-integrity.txt 2>&1; then \
+		echo "SLICE04_NC_04=verifier=integrity exit_code=0 result=FAIL" >&2; \
+		echo "SLICE04_NEGATIVE_CONTROLS=FAIL" >&2; exit 1; \
+	else \
+		echo "SLICE04_NC_04=verifier=integrity exit_code=nonzero result=PASS"; \
+		grep 'FIXTURE_INTEGRITY_UNKNOWN_ROWS\|STATUS=' $(SLICE04_NC_DIR)/nc04-integrity.txt; \
+	fi
+	@echo "SLICE04_NC_05: an out-of-range signed integer"
+	@awk -F'\t' 'BEGIN{OFS="\t"} /^F164\t/ { $$3="9223372036854775808"; print; next } { print }' $(SLICE04_FIXTURE) > $(SLICE04_NC_DIR)/fixture-nc05.tsv
+	@if ./build/parser-slice04-differential $(SLICE04_NC_DIR)/fixture-nc05.tsv $(SLICE04_FIXTURE_COUNT) > $(SLICE04_NC_DIR)/nc05-differential.txt 2>&1; then \
+		echo "SLICE04_NC_05=verifier=differential exit_code=0 result=FAIL" >&2; \
+		echo "SLICE04_NEGATIVE_CONTROLS=FAIL" >&2; exit 1; \
+	else \
+		echo "SLICE04_NC_05=verifier=differential exit_code=nonzero result=PASS"; \
+		grep 'SLICE04_DIFF_FIELD_PARSE_ERRORS\|SLICE04_DIFF_STATUS=' $(SLICE04_NC_DIR)/nc05-differential.txt; \
+	fi
+	@echo "SLICE04_NC_06: the correct row count but a missing semantic value"
+	@awk -F'\t' 'BEGIN{OFS="\t"} /^F169\t/ { print $$1, $$2, $$3, $$4; next } { print }' $(SLICE04_FIXTURE) > $(SLICE04_NC_DIR)/fixture-nc06.tsv
+	@if ./build/parser-slice04-differential $(SLICE04_NC_DIR)/fixture-nc06.tsv $(SLICE04_FIXTURE_COUNT) > $(SLICE04_NC_DIR)/nc06-differential.txt 2>&1; then \
+		echo "SLICE04_NC_06=verifier=differential exit_code=0 result=FAIL" >&2; \
+		echo "SLICE04_NEGATIVE_CONTROLS=FAIL" >&2; exit 1; \
+	else \
+		echo "SLICE04_NC_06=verifier=differential exit_code=nonzero result=PASS"; \
+		grep 'SLICE04_DIFF_FIELD_PARSE_ERRORS\|SLICE04_DIFF_STATUS=' $(SLICE04_NC_DIR)/nc06-differential.txt; \
+	fi
+	@echo "SLICE04_NC_07: an invalid-token fixture whose output is incorrectly overwritten"
+	@awk -F'\t' 'BEGIN{OFS="\t"} /^F203\t/ { $$5="777"; print; next } { print }' $(SLICE04_FIXTURE) > $(SLICE04_NC_DIR)/fixture-nc07.tsv
+	@if ./build/parser-slice04-differential $(SLICE04_NC_DIR)/fixture-nc07.tsv $(SLICE04_FIXTURE_COUNT) > $(SLICE04_NC_DIR)/nc07-differential.txt 2>&1; then \
+		echo "SLICE04_NC_07=verifier=differential exit_code=0 result=FAIL" >&2; \
+		echo "SLICE04_NEGATIVE_CONTROLS=FAIL" >&2; exit 1; \
+	else \
+		echo "SLICE04_NC_07=verifier=differential exit_code=nonzero result=PASS"; \
+		grep 'SLICE04_DIFF_ORACLE_VS_EXPECTED_MISMATCH\|SLICE04_DIFF_STATUS=' $(SLICE04_NC_DIR)/nc07-differential.txt; \
+	fi
+	@echo "SLICE04_NC_08: a changed expected enum value"
+	@awk -F'\t' 'BEGIN{OFS="\t"} /^F001\t/ { $$5="99"; print; next } { print }' $(SLICE04_FIXTURE) > $(SLICE04_NC_DIR)/fixture-nc08.tsv
+	@if ./build/parser-slice04-differential $(SLICE04_NC_DIR)/fixture-nc08.tsv $(SLICE04_FIXTURE_COUNT) > $(SLICE04_NC_DIR)/nc08-differential.txt 2>&1; then \
+		echo "SLICE04_NC_08=verifier=differential exit_code=0 result=FAIL" >&2; \
+		echo "SLICE04_NEGATIVE_CONTROLS=FAIL" >&2; exit 1; \
+	else \
+		echo "SLICE04_NC_08=verifier=differential exit_code=nonzero result=PASS"; \
+		grep 'SLICE04_DIFF_ORACLE_VS_EXPECTED_MISMATCH\|SLICE04_DIFF_STATUS=' $(SLICE04_NC_DIR)/nc08-differential.txt; \
+	fi
+	@echo "SLICE04_NEGATIVE_CONTROLS=8/8 PASS"
