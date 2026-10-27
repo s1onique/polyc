@@ -6685,7 +6685,7 @@ and
 
 ---
 
-#### ACT-POLYC-SELFHOST-PARSER-SLICE04 status (CLOSED PASS at this commit)
+#### ACT-POLYC-SELFHOST-PARSER-SLICE04 status (CLOSED HALT_INVALID_BUILD_SUBJECT at this commit)
 
 ```text
 ACT_ID               = ACT-POLYC-SELFHOST-PARSER-SLICE04
@@ -6781,6 +6781,25 @@ MANDATORY_AC_TOTAL=50  PASS=50  FAIL=0  UNPROVEN=0
 
 The F-NO-PYTHON checker's 12 findings are **pre-existing** (none is
 in this ACT's diff) and are recorded as measured.
+
+**The closure is a HALT, and the halt is about a BUILD SUBJECT.**
+The C4 terminality checks found a FRESH-TREE defect in the committed
+tree: the qualification tool's link line listed the three existing
+PolyC subject objects TWICE, so the differential could not be linked
+from a pristine clone ().  The defect was
+masked during the C2 and C3 phases by a warm build state.
+
+It affects **no production artifact** (the production compiler is
+built by the CMake graph) and **no evidence claim** (the corrected
+link reproduces every recorded result exactly).  It was introduced in
+the C2 phase, whose commit is immutable, so the repair could not be
+made inside the ACT's five-commit topology.  Per the ACT's own
+instruction, the appropriate HALT is used.
+
+
+
+The migrated production authority stands, and the remedy is a bounded
+correction of the C2 phase's Makefile content.
 
 **Next milestone:** `ACT-POLYC-SELFHOST-PARSER-SLICE05` over
 `CAND-020 astUnaryOpFromToken`, the one remaining unmigrated AST

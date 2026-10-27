@@ -8,6 +8,16 @@ The binary-operator classification of the PolyC parser is now owned by
 a qualified PolyC component, and the legacy C decision has been
 retired from the production path.
 
+The ACT closes with a HALT verdict, because a FRESH-TREE defect was
+found in the committed tree's QUALIFICATION TOOL LINK during the C4
+terminality checks.  The defect is repaired by the CLOSE commit that
+carries this HALT, but the repair could not be made inside the ACT's
+five-commit topology without rewriting immutable history, so the ACT's
+own instruction ("Otherwise use the appropriate HALT") applies.  The
+defect affects NO production artifact and NO evidence claim: the
+production compiler builds and delegates correctly, and every recorded
+result is reproducible with the corrected link.
+
 Closure verdict is authoritative in the `ACT-Verdict` trailer of the
 ACT's CLOSE commit.  This HANDOFF is a summary, not terminal verdict
 authority.
@@ -317,7 +327,7 @@ ACCEPTED_MAPPING_COUNT     = 19
 
 VERDICT
 
-PASS
+HALT_INVALID_BUILD_SUBJECT
 
 The binary-operator classification of the PolyC parser is now owned by
 the qualified PolyC component `BootstrapAstBinOpFromToken`, the legacy
@@ -328,3 +338,24 @@ causally load-bearing by a pristine/mutated/restored sequence, all four
 generations were independently built and executed, the provenance is
 single-valued and execution-linked, every established behaviour is
 conserved, and all 50 mandatory acceptance predicates are proven.
+
+THE HALT IS ABOUT A BUILD SUBJECT, NOT ABOUT THE MIGRATION
+==========================================================
+
+The fresh-tree defect is the qualification tool's link line, which
+listed the three existing PolyC subject objects twice.  It is
+reproduced from a pristine clone and it is repaired by the CLOSE
+commit that carries this HALT.  What the repair could NOT do is live
+inside the ACT's five-commit topology, because the defect was
+introduced in the C2 phase, whose commit is immutable.
+
+```text
+DEFECT_SCOPE=QUALIFICATION_TOOL_LINK_ONLY
+PRODUCTION_AFFECTED=NO
+EVIDENCE_AFFECTED=NO
+REPRODUCED_FROM_PRISTINE_CLONE=YES
+```
+
+The remedy is a bounded correction of the C2 phase's Makefile content.
+Every other obligation of this ACT is discharged, and the migrated
+production authority stands.

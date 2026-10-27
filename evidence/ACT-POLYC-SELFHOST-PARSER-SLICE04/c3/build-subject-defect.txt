@@ -1,0 +1,83 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE04
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=build-subject-defect
+
+A FRESH-TREE DEFECT IN THE QUALIFICATION TOOL'S LINK
+======================================================
+
+THE DEFECT
+----------
+
+The SLICE04 differential's link line listed the three existing PolyC
+subject objects TWICE: once in the SLICE04_DIFF_OBJS variable and
+once again in the link line itself.
+
+  SLICE04_DIFF_OBJS = ... $(SLICE03_OP_OBJ) $(PARSER_PADDING_OBJ) \
+      $(SLICE02_CFT_OBJ) ...
+  cc -o $@ $(SLICE04_DIFF_OBJS) $(SLICE04_ERRNO_SHIM) \
+      $(PARSER_PADDING_OBJ) $(SLICE02_CFT_OBJ) $(SLICE03_OP_OBJ) ...
+
+The link therefore fails with:
+
+  ld: 3 duplicate symbols
+    _BootstrapCalcPadding
+    _BootstrapOperatorPrecedence
+    _BootstrapValidPostControlFlowToken
+
+IT IS A FRESH-TREE DEFECT
+-------------------------
+
+The defect was MASKED during the C2 and C3 phases by a warm build
+state: the objects happened to be linked in an order in which the
+linker resolved the duplicate references.  It became visible only
+after the libtos archive was rebuilt and the link resolution order
+changed.
+
+It is reproducible from a PRISTINE CLONE of the committed tree:
+
+  COMMAND=git clone --no-hardlinks . /tmp/slice04-clean
+  COMMAND=cd /tmp/slice04-clean && make build/parser-slice04-differential
+  OUTPUT:
+    ld: 3 duplicate symbols
+    clang: error: linker command failed with exit code 1
+  EXIT_CODE=2
+
+WHAT IT DOES NOT AFFECT
+-----------------------
+
+  * NO production artifact.  The production compiler is built by the
+    CMake graph (src/CMakeLists.txt), which never uses this link line.
+    The committed tree's production compiler builds and delegates
+    correctly.
+  * NO evidence claim.  The C3 evidence was measured with a WORKING
+    link, and the corrected link reproduces the SAME result exactly:
+
+      SLICE04_DIFF_PASS=322  SLICE04_DIFF_FAIL=0  SLICE04_DIFF_STATUS=PASS
+      SLICE04_NEGATIVE_CONTROLS=8/8 PASS
+
+  * NO production semantic.  The migrated decision, the four
+    generations, the causal mutation and the conservation results are
+    all unaffected.
+
+THE REPAIR
+----------
+
+The three subject objects are listed ONCE, through the transitive
+object set that already carries them.  This is the minimal change
+that removes the duplicate without altering the link's semantics.
+
+THE REPAIR COULD NOT BE MADE INSIDE THE ACT'S TOPOLOGY
+------------------------------------------------------
+
+The defect was introduced in the C2 phase, whose commit is at or
+after the append-only boundary and is therefore IMMUTABLE.  A
+forward repair after the CLOSE would break the ACT's terminality
+requirements (CLOSE_IS_ACT_TIP and the range check's "exactly one
+CLOSE commit in range").  The ACT's own instruction for a mandatory
+issue that cannot be repaired in the authorized phase is to use the
+appropriate HALT.
+
+  DEFECT_SCOPE=QUALIFICATION_TOOL_LINK_ONLY
+  PRODUCTION_AFFECTED=NO
+  EVIDENCE_AFFECTED=NO
+  VERDICT_CLASS=HALT_INVALID_BUILD_SUBJECT
