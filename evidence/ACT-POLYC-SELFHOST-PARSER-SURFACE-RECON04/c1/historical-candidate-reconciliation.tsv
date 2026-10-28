@@ -1,0 +1,53 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04
+# ACT_PHASE=C1-INVENTORY
+# EVIDENCE_KIND=historical-candidate-reconciliation
+#
+# THE RECON03 TEN ELIGIBLE CANDIDATES, REEVALUATED AGAINST THE LIVE
+# SOURCE.
+#
+# HISTORICAL IDS ARE PRESERVED.  A historical ID is never reused for a
+# different semantic slice.  The NEW candidate IDs (CAND-036..CAND-040)
+# come from the next unallocated canonical range AFTER reconciling the
+# live registry: the live registry's highest pre-existing ID was
+# CAND-035 (the RECON03 rejected-slice list), and CAND-036..CAND-040
+# are the next five free IDs.
+#
+# Schema:
+#   historical_id <TAB> function <TAB> historical_source
+#   <TAB> current_source <TAB> current_start <TAB> current_end
+#   <TAB> SOURCE_STILL_EXISTS <TAB> BODY_SEMANTICS_CHANGED
+#   <TAB> PRODUCTION_REACHABILITY_CHANGED <TAB> DEPENDENCIES_CHANGED
+#   <TAB> CURRENT_AUTHORITY <TAB> CURRENT_ELIGIBILITY <TAB> note
+#
+CAND-017	parseGetPriority	src/prslib.c	src/prslib.c	1139	1207	YES	YES	YES	YES	SELFHOSTED_TRUE_GREEN	NOT_ELIGIBLE	MIGRATED by ACT-POLYC-SELFHOST-PARSER-SLICE03; the legacy C body is compiled out of the production object
+CAND-018	parseCompoundAssign	src/prslib.c	src/prslib.c	1328	1348	YES	NO	NO	NO	LEGACY_C_AUTHORITY	ELIGIBLE	The body is byte-identical to the RECON03 observation; the call site (src/prslib.c:1480) and the dependency set are unchanged
+CAND-019	astBinOpFromToken	src/ast.c	src/ast.c	206	236	YES	YES	YES	YES	SELFHOSTED_TRUE_GREEN	NOT_ELIGIBLE	MIGRATED by ACT-POLYC-SELFHOST-PARSER-SLICE04; the legacy C body is compiled out of the production object
+CAND-020	astUnaryOpFromToken	src/ast.c	src/ast.c	287	354	YES	YES	YES	YES	SELFHOSTED_TRUE_GREEN	NOT_ELIGIBLE	MIGRATED by ACT-POLYC-SELFHOST-PARSER-SLICE05; the legacy C body is compiled out of the production object
+CAND-021	astBinOpToTokenPunct	src/prslib.c	src/prslib.c	1352	1375	YES	NO	NO	NO	LEGACY_C_AUTHORITY	ELIGIBLE	The body is byte-identical; the call site (src/prslib.c:1387) and the dependency set are unchanged
+CAND-022	parseCountPrintfFormatSpecs	src/prslib.c	src/prslib.c	760	792	YES	NO	NO	NO	LEGACY_C_AUTHORITY	ELIGIBLE	The body is byte-identical; the call site and the dependency set are unchanged
+CAND-023	parseFormatArgIdx	src/prslib.c	src/prslib.c	798	810	YES	NO	NO	NO	LEGACY_C_AUTHORITY	ELIGIBLE	The body is byte-identical; the call site and the dependency set are unchanged
+CAND-025	astIsAssignment	src/ast.c	src/ast.c	943	964	YES	NO	NO	NO	LEGACY_C_AUTHORITY	ELIGIBLE	The body is byte-identical; the call site (src/transpiler.c:485) and the dependency set are unchanged
+CAND-026	astIsValidPointerOp	src/ast.c	src/ast.c	974	990	YES	NO	NO	NO	LEGACY_C_AUTHORITY	ELIGIBLE	The body is byte-identical; the call site (src/ast.c:1079) and the dependency set are unchanged
+CAND-030	parseIsClassOrUnion	src/prsutil.c	src/prsutil.c	22	25	YES	NO	NO	NO	LEGACY_C_AUTHORITY	ELIGIBLE	The body is byte-identical; the three call sites (src/prslib.c:1284, src/parser.c:537, src/parser.c:585) and the dependency set are unchanged
+#
+# THE SEVEN HISTORICALLY ELIGIBLE CANDIDATES THAT REMAIN:
+HISTORICAL_ELIGIBLE_REMAINING=7
+HISTORICAL_ELIGIBLE_MIGRATED=3
+HISTORICAL_CANDIDATES_RECONCILED=YES
+#
+# NEW CANDIDATE IDS (next unallocated canonical range):
+#   CAND-036 astIsBinCmp
+#   CAND-037 astIsRangeOperator
+#   CAND-038 astNormaliseFunctionName
+#   CAND-039 createFunctionLevelGotoLabel
+#   CAND-040 asmTextHasReturn
+#
+# THE NEW STRUCTURAL CANDIDATE IDS (separate namespace, because a
+# structural sub-slice is NOT a whole function):
+#   SUB-001 parseCaseLabel   switch-arm termination decision
+#   SUB-002 parseDefaultStatement default-arm termination decision
+#   SUB-003 parseCompoundStatementInternal compound-block statement routing
+#   SUB-004 parseStatement   statement keyword dispatch
+#   SUB-005 parseDeclOrStatement declaration-versus-statement routing
+#
+NEW_CANDIDATE_IDS_ALLOCATED=9

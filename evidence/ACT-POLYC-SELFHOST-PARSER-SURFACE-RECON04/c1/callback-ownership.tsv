@@ -1,0 +1,52 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04
+# ACT_PHASE=C1-INVENTORY
+# EVIDENCE_KIND=callback-ownership
+#
+# EVERY CALLBACK EDGE (a subordinate parser or an arbitrary semantic
+# function invoked by a candidate-bearing function).
+#
+# The ACT section 6.4 invariant is: no candidate may invoke a
+# subordinate parser through an ABI, and no undocumented callback
+# table may cross an ABI.
+#
+# Schema:
+#   caller <TAB> callee <TAB> source_file <TAB> call_line
+#   <TAB> callback_kind <TAB> may_recover <TAB> crosses_abi
+#   <TAB> candidate_affected
+#
+parseCompoundStatementInternal	parseBaseDeclSpec	src/parser.c	1888	SUBORDINATE_PARSER	YES	NO	SUB-007
+parseCompoundStatementInternal	parsePointerType	src/parser.c	1890	SUBORDINATE_PARSER	YES	NO	SUB-007
+parseCompoundStatementInternal	parseRegModifier	src/parser.c	1893	SUBORDINATE_PARSER	NO	NO	SUB-007
+parseCompoundStatementInternal	parseArrayDimensions	src/parser.c	1905	SUBORDINATE_PARSER	YES	NO	SUB-007
+parseCompoundStatementInternal	parseFunctionPointer	src/parser.c	1918	SUBORDINATE_PARSER	YES	NO	SUB-007
+parseCompoundStatementInternal	parseVariableInitialiser	src/parser.c	1926	SUBORDINATE_PARSER	YES	NO	SUB-007
+parseCompoundStatementInternal	parseAssignAuto	src/parser.c	1928	SUBORDINATE_PARSER	NO	NO	SUB-007
+parseCompoundStatementInternal	parseStatement	src/parser.c	1947	SUBORDINATE_PARSER	YES	NO	SUB-003,SUB-007
+parseStatement	parseIfStatement	src/parser.c	1674	SUBORDINATE_PARSER	YES	NO	SUB-004,SUB-008
+parseStatement	parseForStatement	src/parser.c	1675	SUBORDINATE_PARSER	YES	NO	SUB-004,SUB-008
+parseStatement	parseWhileStatement	src/parser.c	1676	SUBORDINATE_PARSER	YES	NO	SUB-004,SUB-008
+parseStatement	parseDoWhileStatement	src/parser.c	1677	SUBORDINATE_PARSER	YES	NO	SUB-004,SUB-008
+parseStatement	parseReturnStatement	src/parser.c	1678	SUBORDINATE_PARSER	YES	NO	SUB-004,SUB-008
+parseStatement	parseTryStatement	src/parser.c	1679	SUBORDINATE_PARSER	YES	NO	SUB-004,SUB-008
+parseStatement	parseThrowStatement	src/parser.c	1680	SUBORDINATE_PARSER	YES	NO	SUB-004,SUB-008
+parseStatement	parseSwitchStatement	src/parser.c	1681	SUBORDINATE_PARSER	YES	NO	SUB-004,SUB-008
+parseStatement	parseCaseLabel	src/parser.c	1682	SUBORDINATE_PARSER	YES	NO	SUB-001,SUB-004,SUB-008
+parseStatement	parseDefaultStatement	src/parser.c	1683	SUBORDINATE_PARSER	YES	NO	SUB-002,SUB-004,SUB-008
+parseStatement	parseBreakStatement	src/parser.c	1684	SUBORDINATE_PARSER	YES	NO	SUB-004,SUB-008
+parseStatement	parseContinueStatement	src/parser.c	1685	SUBORDINATE_PARSER	YES	NO	SUB-004,SUB-008
+parseStatement	prsAsm	src/parser.c	1697	SUBORDINATE_PARSER	YES	NO	SUB-004,SUB-008
+parseStatement	parseFullType	src/parser.c	1705	SUBORDINATE_PARSER	YES	NO	SUB-004,SUB-008
+parseStatement	parseVariableInitialiser	src/parser.c	1719	SUBORDINATE_PARSER	YES	NO	SUB-004,SUB-008
+parseStatement	parseExpr	src/parser.c	1818	SUBORDINATE_PARSER	YES	NO	SUB-004,SUB-008
+parseDeclOrStatement	parseDecl	src/parser.c	1830	SUBORDINATE_PARSER	YES	NO	SUB-005
+parseDeclOrStatement	parseStatement	src/parser.c	1832	SUBORDINATE_PARSER	YES	NO	SUB-005
+parseCaseLabel	parseStatement	src/parser.c	1547	SUBORDINATE_PARSER	YES	NO	SUB-001
+parseDefaultStatement	parseStatement	src/parser.c	1578	SUBORDINATE_PARSER	YES	NO	SUB-002
+parseExpr	parseUnaryExpr	src/prslib.c	1407	SUBORDINATE_PARSER	YES	NO	SUB-009
+parseExpr	parseGetClassField	src/prslib.c	1429	SUBORDINATE_PARSER	YES	NO	SUB-009
+parseExpr	parseDeclSpec	src/prslib.c	1437	SUBORDINATE_PARSER	YES	NO	SUB-009
+parseExpr	parseSubscriptExpr	src/prslib.c	1464	SUBORDINATE_PARSER	YES	NO	SUB-009
+parseExpr	parseExpr	src/prslib.c	1494	SUBORDINATE_PARSER	YES	NO	SUB-009
+parseExpr	parseCreateBinaryOp	src/prslib.c	1517	SUBORDINATE_PARSER	YES	NO	SUB-009
+parseUnaryExpr	parsePostFixExpr	src/prslib.c	1855	SUBORDINATE_PARSER	YES	NO	-
+parsePostFixExpr	parsePrimary	src/prslib.c	1637	SUBORDINATE_PARSER	YES	NO	-

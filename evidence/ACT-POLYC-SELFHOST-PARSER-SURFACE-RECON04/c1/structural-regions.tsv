@@ -1,0 +1,23 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04
+# ACT_PHASE=C1-INVENTORY
+# EVIDENCE_KIND=structural-regions
+#
+# THE SIX STRUCTURAL REGIONS THE ACT REQUIRES BE REVISITED, AND THEIR
+# LIVE STATE BOUNDARIES.
+#
+# Every region is bound to the live source range and to the real
+# functions that implement it.
+#
+# Schema:
+#   region_id <TAB> region <TAB> enclosing_functions <TAB> source_file
+#   <TAB> source_start <TAB> source_end <TAB> state_boundary_summary
+#   <TAB> recovery_owned_by <TAB> graph_owned_by <TAB> symbol_table_owned_by
+#   <TAB> token_stream_owned_by <TAB> diagnostic_owned_by
+#   <TAB> bounded_decision_extractable
+#
+REG-A	Compound-statement orchestration	parseCompoundStatementInternal,parseCompoundStatement	srcrc/parser.c	1835	1970	Per-statement setjmp checkpoint; block scope map; AST-list tail rollback via prev/next pointer surgery; cc->tmp_locals snapshot rollback; per-declaration temporary locals	C	C	C	C	C	NO
+REG-B	Statement dispatch	parseStatement,parseDeclOrStatement	srcrc/parser.c	1661	1833	Keyword switch over tok->i64 routing to 12 statement parsers; declaration-versus-statement routing via cctrlIsKeyword on the peeked token; static-declaration scope swap (cc->localenv=NULL then restored); asm-block list append	C	C	C	C	C	NO
+REG-C	Expression parser	parseExpr,parseUnaryExpr,parsePostFixExpr,parseSubscriptExpr,parseGetClassField,parseCompoundAssign	srcrc/prslib.c	1268	1916	Operator precedence table (already PolyC-owned); unary/binary token classification (already PolyC-owned); type-kind eligibility checks for subscript/arrow/cast; compound-assignment token classification; L-value assertions	C	C	C	C	C	NO
+REG-D	Declarations and types	parseDecl,parseDeclInternal,parseDeclSpec,parsePointerType,parseArrayDimensions	srcrc/parser.c,src/prslib.c	804	830	Base-type resolution through the host type table; pointer-level allocation; array-dimension recursion and constant evaluation; macro-defines substitution in the dimension	C	C	C	C	C	NO
+REG-E	AST construction and validation	astBinaryOp,astUnaryOperator,astIsAssignment,astIsValidPointerOp	srcrc/ast.c	193	990	Node allocation for every AST node; type-compatibility checks over the host AstType graph; operator validity predicates over the host AstBinOp enum	C	C	C	C	C	NO
+REG-F	Statement/flow analysis	astIsConstTrueCond,astStmtHasBreak,astStmtFallsThrough,asmTextHasReturn	srcrc/parser.c	1982	2094	Recursive walks over the unbounded host statement tree; a three-hop Ast/AstType pointer read; an unbounded byte scan over the asm text	C	C	C	C	C	NO

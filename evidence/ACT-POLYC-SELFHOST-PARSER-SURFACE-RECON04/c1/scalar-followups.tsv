@@ -1,0 +1,34 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04
+# ACT_PHASE=C1-INVENTORY
+# EVIDENCE_KIND=scalar-followups
+#
+# THE CLASS-2 (SCALAR_FOLLOWUP) SURFACES: bounded scalar decisions that
+# do NOT materially affect AST_SHAPE, PARSER_ACCEPTANCE,
+# PARSER_ROUTING, STATEMENT_SEQUENCE, CONTROL_FLOW_CLASSIFICATION or
+# RECOVERY_RESYNCHRONIZATION_CHOICE.
+#
+# These are the ELIGIBLE scalar-class migration surfaces, plus the
+# already-selfhosted and the structurally-rejected ones, so that the
+# C2 ranker sees the complete class-2 population.
+#
+# Schema:
+#   candidate_id <TAB> function <TAB> source_file <TAB> source_start
+#   <TAB> source_end <TAB> decision <TAB> input_domain <TAB> output_domain
+#   <TAB> historical_candidate_id <TAB> already_selfhosted
+#   <TAB> candidate_class <TAB> note
+#
+CAND-018	parseCompoundAssign	src/prslib.c	1328	1348	Classify a compound-assignment token into a binary operator	Lexeme token (tk_type + i64)	AstBinOp + found flag	-	NO	SCALAR_FOLLOWUP	Classifies a token; the desugaring that follows is in parseExpr
+CAND-021	astBinOpToTokenPunct	src/prslib.c	1352	1375	Inverse operator map used only for the binary-operator diagnostic	AstBinOp	s64 punct value	-	NO	SCALAR_FOLLOWUP	Diagnostic-only inverse map; the diagnostic text does not change the compiled program
+CAND-022	parseCountPrintfFormatSpecs	src/prslib.c	760	792	Count the format specifiers in a printf-style format string	const char fmt + int len	int spec count	-	NO	SCALAR_FOLLOWUP	Feeds a diagnostic; the argument count itself is checked elsewhere
+CAND-023	parseFormatArgIdx	src/prslib.c	798	810	Locate the format argument index of a known printf-style function	char fname + int len	int format arg index	-	NO	SCALAR_FOLLOWUP	Feeds a diagnostic
+CAND-025	astIsAssignment	src/ast.c	943	964	Classify a token value into the assignment-operator family	s64 op	int is-assignment	-	NO	SCALAR_FOLLOWUP	Used by the transpiler to decide a comparison rewrite
+CAND-026	astIsValidPointerOp	src/ast.c	974	990	Classify a binary operator as valid on pointers	AstBinOp	int is-valid-pointer-op	-	NO	SCALAR_FOLLOWUP	Feeds the pointer-arithmetic type check
+CAND-030	parseIsClassOrUnion	src/prsutil.c	22	25	Classify an AstType kind as class-or-union	int kind	int is-class-or-union	-	NO	SCALAR_FOLLOWUP	Feeds the class-field lookup paths
+CAND-036	astIsBinCmp	src/ast.c	992	1017	Classify a token value into the comparison-operator family	s64 op	int is-bin-cmp	-	NO	SCALAR_FOLLOWUP	Feeds the transpiler's comparison rewrite
+CAND-037	astIsRangeOperator	src/ast.c	2348	2358	Classify a binary operator as a range operator	AstBinOp	int is-range-op	-	NO	SCALAR_FOLLOWUP	Consumed by src/ir.c:507 and src/x86.c:1357 to recognise a range loop
+CAND-038	astNormaliseFunctionName	src/ast.c	931	941	Normalise a function name	AoStr name	AoStr	-	NO	SCALAR_FOLLOWUP	Consumed by src/transpiler.c:1512; string normalisation with no AST-shape effect
+CAND-039	createFunctionLevelGotoLabel	src/parser.c	1655	1659	Compose a function-level goto label	Lexeme token	AoStr label	-	NO	SCALAR_FOLLOWUP	String composition over a bounded host value
+CAND-040	asmTextHasReturn	src/parser.c	2063	2094	Scan an asm body for a whole-word control transfer	AoStr asm text	int has-return	-	NO	SCALAR_FOLLOWUP	Feeds a warning; the asm body is opaque
+CAND-017	parseGetPriority	src/prslib.c	1139	1207	Operator precedence table	s64 punct value	int precedence	CAND-017	YES	ALREADY_SELFHOSTED	Production-authoritative BootstrapOperatorPrecedence
+CAND-019	astBinOpFromToken	src/ast.c	206	236	Binary-operator token classification	s64 token value	AstBinOp + found flag	CAND-019	YES	ALREADY_SELFHOSTED	Production-authoritative BootstrapAstBinOpFromToken
+CAND-020	astUnaryOpFromToken	src/ast.c	287	354	Unary-operator token classification	s64 token value	AstUnOp + found flag	CAND-020	YES	ALREADY_SELFHOSTED	Production-authoritative BootstrapAstUnaryOpFromToken

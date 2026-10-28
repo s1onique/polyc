@@ -1,0 +1,49 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04
+# ACT_PHASE=C1-INVENTORY
+# EVIDENCE_KIND=state-read-write
+#
+# EVERY GLOBAL (Cctrl / process-wide) STATE FIELD READ OR WRITTEN BY
+# THE CANDIDATE-BEARING FUNCTIONS.
+#
+# The ACT section 6.1 category for a process-wide mutable field is
+# GLOBAL_AUTHORITY.  Every row is classified; none is left blank.
+#
+# Schema:
+#   owner_function <TAB> source_file <TAB> source_start <TAB> source_end
+#   <TAB> state_field <TAB> struct <TAB> op <TAB> state_category
+#   <TAB> candidate_affected
+#
+parseCompoundStatementInternal	src/parser.c	1835	1963	cc->current_recovery	Cctrl	READ_WRITE	GLOBAL_AUTHORITY	SUB-006,SUB-007
+parseCompoundStatementInternal	src/parser.c	1835	1963	cc->localenv	Cctrl	READ_WRITE	GLOBAL_AUTHORITY	SUB-003,SUB-007
+parseCompoundStatementInternal	src/parser.c	1835	1963	cc->tmp_locals	Cctrl	READ_WRITE	GLOBAL_AUTHORITY	SUB-007
+parseCompoundStatementInternal	src/parser.c	1835	1963	stmt_recovery (jmp_buf)	stack	READ_WRITE	RECOVERY	SUB-006,SUB-007
+parseCompoundStatementInternal	src/parser.c	1835	1963	block_scope (Map)	heap	READ_WRITE	HOST_GRAPH_READ,HOST_GRAPH_WRITE	SUB-007
+parseCompoundStatementInternal	src/parser.c	1835	1963	body_tail (List node)	heap	READ_WRITE	HOST_GRAPH_READ,HOST_GRAPH_WRITE	SUB-006,SUB-007
+parseCompoundStatementInternal	src/parser.c	1835	1963	locals_tail (List node)	heap	READ_WRITE	HOST_GRAPH_READ,HOST_GRAPH_WRITE	SUB-006,SUB-007
+parseCompoundStatementInternal	src/parser.c	1835	1963	stmt->kind	Ast	READ	HOST_GRAPH_READ	SUB-003
+parseCompoundStatementInternal	src/parser.c	1835	1963	stmt->declvar->kind	Ast	READ	HOST_GRAPH_READ	SUB-003
+parseCaseLabel	src/parser.c	1480	1564	cc->tmp_case_list	Cctrl	READ_WRITE	GLOBAL_AUTHORITY	SUB-001
+parseCaseLabel	src/parser.c	1480	1564	stmt->kind	Ast	READ	HOST_GRAPH_READ	SUB-001
+parseDefaultStatement	src/parser.c	1566	1589	cc->tmp_default_case	Cctrl	READ_WRITE	GLOBAL_AUTHORITY	SUB-002
+parseDefaultStatement	src/parser.c	1566	1589	stmt->kind	Ast	READ	HOST_GRAPH_READ	SUB-002
+parseStatement	src/parser.c	1661	1822	cc->localenv	Cctrl	READ_WRITE	GLOBAL_AUTHORITY	SUB-004,SUB-008
+parseStatement	src/parser.c	1661	1822	cc->ast_list	Cctrl	WRITE	GLOBAL_AUTHORITY	SUB-004,SUB-008
+parseStatement	src/parser.c	1661	1822	cc->asm_blocks	Cctrl	WRITE	GLOBAL_AUTHORITY	SUB-004,SUB-008
+parseStatement	src/parser.c	1661	1822	tok->tk_type / tok->i64	Lexeme	READ	HOST_GRAPH_READ	SUB-004
+parseDeclOrStatement	src/parser.c	1824	1833	cc->symbol_table	Cctrl	READ	GLOBAL_AUTHORITY	SUB-005
+parseDeclOrStatement	src/parser.c	1824	1833	cc->clsdefs	Cctrl	READ	GLOBAL_AUTHORITY	SUB-005
+parseDeclOrStatement	src/parser.c	1824	1833	cc->uniondefs	Cctrl	READ	GLOBAL_AUTHORITY	SUB-005
+parseDeclOrStatement	src/parser.c	1824	1833	tok->start / tok->len	Lexeme	READ	HOST_GRAPH_READ	SUB-005
+parseExpr	src/prslib.c	1402	1537	tok->tk_type / tok->i64	Lexeme	READ	HOST_GRAPH_READ	SUB-009
+parseExpr	src/prslib.c	1402	1537	LHS->type->kind	AstType	READ	HOST_GRAPH_READ	SUB-009
+parseGetPriority	src/prslib.c	1139	1207	tok->i64	Lexeme	READ	HOST_GRAPH_READ	-
+parseCompoundAssign	src/prslib.c	1328	1348	tok->tk_type / tok->i64	Lexeme	READ	HOST_GRAPH_READ	-
+astBinOpToTokenPunct	src/prslib.c	1352	1375	op (scalar)	NONE	READ	SCALAR_VALUE	-
+parseCountPrintfFormatSpecs	src/prslib.c	760	792	fmt (bounded byte buffer)	NONE	READ	BOUNDED_COPY	-
+parseFormatArgIdx	src/prslib.c	798	810	fname (bounded byte buffer)	NONE	READ	BOUNDED_COPY	-
+astIsAssignment	src/ast.c	943	964	op (scalar)	NONE	READ	SCALAR_VALUE	-
+astIsValidPointerOp	src/ast.c	974	990	op (AstBinOp scalar)	NONE	READ	SCALAR_VALUE	-
+parseIsClassOrUnion	src/prsutil.c	22	25	kind (scalar)	NONE	READ	SCALAR_VALUE	-
+astIsConstTrueCond	src/parser.c	1982	1986	c->kind / c->type->kind / c->i64	Ast	READ	HOST_GRAPH_READ	SUB-012
+astStmtHasBreak	src/parser.c	1990	2013	s->kind / s->then / s->els / s->stms	Ast	READ	HOST_GRAPH_READ	SUB-011
+astStmtFallsThrough	src/parser.c	2015	2055	s->kind / s->forcond / s->forbody / s->case_default	Ast	READ	HOST_GRAPH_READ	SUB-010

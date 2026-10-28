@@ -1,0 +1,42 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04
+# ACT_PHASE=C1-INVENTORY
+# EVIDENCE_KIND=host-graph-ownership
+#
+# EVERY HOST GRAPH READ AND WRITE IN THE CENSUS SURFACE.
+#
+# The ACT section 6.4 invariant is: AST_GRAPH_OWNER=C and
+# SYMBOL_TABLE_OWNER=C.  No candidate may move a host pointer graph
+# across an ABI, and no opaque void* may be smuggled across as a
+# "scalar".
+#
+# Schema:
+#   owner_function <TAB> source_file <TAB> source_start <TAB> source_end
+#   <TAB> host_object <TAB> access <TAB> fields <TAB> owner
+#   <TAB> crosses_abi <TAB> candidate_affected
+#
+parseCompoundStatementInternal	src/parser.c	1835	1963	body->stms (Ast compound statement list)	READ_WRITE	prev,next,value	C	NO	SUB-003,SUB-007
+parseCompoundStatementInternal	src/parser.c	1835	1963	cc->tmp_locals (List of Ast)	READ_WRITE	prev,next,value	C	NO	SUB-007
+parseCompoundStatementInternal	src/parser.c	1835	1963	cc->localenv (Map scope)	READ_WRITE	parent,entries	C	NO	SUB-003,SUB-007
+parseCompoundStatementInternal	src/parser.c	1835	1963	stmt->kind / stmt->declvar->kind (Ast)	READ	kind,declvar	C	NO	SUB-003
+parseCaseLabel	src/parser.c	1480	1564	cc->tmp_case_list (Vec of Ast)	READ_WRITE	entries,size	C	NO	SUB-001
+parseCaseLabel	src/parser.c	1480	1564	stmts (List of Ast, the arm body)	WRITE	prev,next,value	C	NO	SUB-001
+parseCaseLabel	src/parser.c	1480	1564	case_expr->kind (Ast)	READ	kind	C	NO	SUB-001
+parseDefaultStatement	src/parser.c	1566	1589	cc->tmp_default_case (Ast)	READ_WRITE	kind	C	NO	SUB-002
+parseDefaultStatement	src/parser.c	1566	1589	stmts (List of Ast, the arm body)	WRITE	prev,next,value	C	NO	SUB-002
+parseStatement	src/parser.c	1661	1822	cc->localenv (Map scope)	READ_WRITE	parent,entries	C	NO	SUB-004,SUB-008
+parseStatement	src/parser.c	1661	1822	cc->ast_list (List of Ast)	WRITE	prev,next,value	C	NO	SUB-004,SUB-008
+parseStatement	src/parser.c	1661	1822	cc->asm_blocks (List of Ast)	WRITE	prev,next,value	C	NO	SUB-004,SUB-008
+parseStatement	src/parser.c	1661	1822	tok->kind (Lexeme)	READ	tk_type,i64	C	NO	SUB-004
+parseDeclOrStatement	src/parser.c	1824	1833	cc->symbol_table / cc->clsdefs / cc->uniondefs (Map)	READ	entries	C	NO	SUB-005
+parseDeclOrStatement	src/parser.c	1824	1833	tok->start / tok->len (Lexeme)	READ	start,len	C	NO	SUB-005
+parseExpr	src/prslib.c	1402	1537	LHS->type / RHS->type (AstType)	READ	kind,ptr,size	C	NO	SUB-009
+parseExpr	src/prslib.c	1402	1537	stmt->kind / left->kind / right->kind (Ast)	READ	kind	C	NO	SUB-009
+parseUnaryExpr	src/prslib.c	1714	1916	operand->type->kind (AstType)	READ	kind,ptr	C	NO	-
+parsePostFixExpr	src/prslib.c	1630	1712	ast->type->kind / ast->field (Ast)	READ	kind,type,field	C	NO	-
+astIsConstTrueCond	src/parser.c	1982	1986	c->kind / c->type->kind / c->i64 (Ast + AstType)	READ	kind,type,i64	C	NO	SUB-012
+astStmtHasBreak	src/parser.c	1990	2013	s->kind / s->then / s->els / s->stms (Ast)	READ	kind,then,els,stms	C	NO	SUB-011
+astStmtFallsThrough	src/parser.c	2015	2055	s->kind / s->forcond / s->forbody / s->whilecond / s->whilebody / s->case_default (Ast)	READ	kind,forcond,forbody,whilecond,whilebody,case_default,then,els	C	NO	SUB-010
+astIsAssignment	src/ast.c	943	964	op (scalar)	NONE	-	C	NO	-
+astIsValidPointerOp	src/ast.c	974	990	op (AstBinOp scalar)	NONE	-	C	NO	-
+parseIsClassOrUnion	src/prsutil.c	22	25	kind (scalar)	NONE	-	C	NO	-
+astTypeAlign	src/ast.c	1408	1420	type->kind / type->ptr (AstType)	READ	kind,ptr	C	NO	-

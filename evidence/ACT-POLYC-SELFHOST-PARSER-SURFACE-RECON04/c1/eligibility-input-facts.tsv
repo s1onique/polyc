@@ -1,0 +1,59 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04
+# ACT_PHASE=C1-INVENTORY
+# EVIDENCE_KIND=eligibility-input-facts
+#
+# THE CANONICAL FACT INPUT for the 13-clause eligibility checker
+# (tools/quality/parser-slice-recon03-eligibility.HC), executed
+# UNMODIFIED.
+#
+# There is deliberately NO "eligible" column: eligibility is COMPUTED by
+# the checker from these facts and cannot be hand-authored.
+#
+# The 13 clauses (from the committed checker source):
+#   01 semantic_authority == YES
+#   02 already_selfhosted == NO
+#   03 r0 <= 2
+#   04 owns_setjmp == NO
+#   05 writes_current_recovery == NO
+#   06 requires_nonlocal_recovery == NO
+#   07 host_graph_writes == 0
+#   08 pointer_identity_operations == 0
+#   09 parser_callback_count == 0
+#   10 semantic_callback_count == 0
+#   11 deterministic_projection == YES
+#   12 production_delegation_feasible == YES
+#   13 candidate_kind is a runtime semantic authority
+# plus production_reachable == YES.
+#
+# IMPORTANT: for a STRUCTURAL SUB-SLICE the facts describe the
+# SUB-SLICE's own bounded decision, NOT the enclosing function's whole
+# state.  The enclosing function's stateful dependencies REMAIN on the
+# C side of the seam (ACT section 8.3).  The enclosing function's own
+# eligibility is recorded separately in
+# c1/structural-subslices.tsv and in c1/structural-regions.tsv.
+#
+# Schema (20 tab-separated fields, matching the committed checker):
+#  01 candidate_id        02 function_name        03 source_file
+#  04 source_start       05 source_end          06 candidate_kind
+#  07 semantic_authority 08 already_selfhosted  09 r0
+#  10 owns_setjmp       11 writes_current_recovery  12 requires_nonlocal_recovery
+#  13 host_graph_writes 14 pointer_identity_operations 15 parser_callback_count
+#  16 semantic_callback_count 17 deterministic_projection 18 production_delegation_feasible
+#  19 production_reachable  20 exclusion_reason
+#
+CAND-018	parseCompoundAssign	src/prslib.c	1328	1348	OPERATOR_CLASSIFIER	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-021	astBinOpToTokenPunct	src/prslib.c	1352	1375	OPERATOR_CLASSIFIER	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-022	parseCountPrintfFormatSpecs	src/prslib.c	760	792	FORMAT_SPEC_COUNTER	YES	NO	1	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-023	parseFormatArgIdx	src/prslib.c	798	810	FORMAT_FUNCTION_TABLE	YES	NO	1	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-025	astIsAssignment	src/ast.c	943	964	OPERATOR_CLASSIFIER	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-026	astIsValidPointerOp	src/ast.c	974	990	OPERATOR_CLASSIFIER	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-030	parseIsClassOrUnion	src/prsutil.c	22	25	TYPE_MODIFIER_PRIMITIVE	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-036	astIsBinCmp	src/ast.c	992	1017	OPERATOR_CLASSIFIER	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-037	astIsRangeOperator	src/ast.c	2348	2358	OPERATOR_CLASSIFIER	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-038	astNormaliseFunctionName	src/ast.c	931	941	AST_PROJECTION_PRIMITIVE	YES	NO	2	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-039	createFunctionLevelGotoLabel	src/parser.c	1655	1659	AST_PROJECTION_PRIMITIVE	YES	NO	2	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-040	asmTextHasReturn	src/parser.c	2063	2094	DELIMITER_PRIMITIVE	YES	NO	2	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+SUB-001	parseCaseLabel	src/parser.c	1551	1553	AST_PROJECTION_PRIMITIVE	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+SUB-002	parseDefaultStatement	src/parser.c	1582	1583	AST_PROJECTION_PRIMITIVE	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+SUB-003	parseCompoundStatementInternal	src/parser.c	1948	1948	AST_PROJECTION_PRIMITIVE	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+SUB-004	parseStatement	src/parser.c	1672	1685	TOKEN_CLASSIFIER	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-

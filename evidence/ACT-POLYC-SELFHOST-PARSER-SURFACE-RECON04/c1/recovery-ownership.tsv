@@ -1,0 +1,24 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04
+# ACT_PHASE=C1-INVENTORY
+# EVIDENCE_KIND=recovery-ownership
+#
+# EVERY RECOVERY EDGE IN THE CENSUS SURFACE, AND WHO OWNS IT.
+#
+# The ACT section 6.4 invariant is: RECOVERY_OWNER=C.  No PolyC
+# component may own a jmp_buf, and no candidate may move one across an
+# ABI.
+#
+# Schema:
+#   owner_function <TAB> source_file <TAB> source_start <TAB> source_end
+#   <TAB> recovery_construct <TAB> recovery_kind <TAB> longjmp_source
+#   <TAB> owner <TAB> crosses_abi <TAB> candidate_affected
+#
+parseCompoundStatementInternal	src/parser.c	1835	1963	jmp_buf stmt_recovery	SETJMP_LOCAL	cc->current_recovery (installed at :1854, restored at :1959)	C	NO	SUB-006,SUB-007
+parseCompoundStatementInternal	src/parser.c	1835	1963	cc->current_recovery	CCTRL_RECOVERY_POINTER	cctrlRaiseException via any subordinate parser	C	NO	SUB-006,SUB-007
+parseCompoundStatementInternal	src/parser.c	1835	1963	cctrlSyncStatement	RECOVERY_RESYNC	cctrlRaiseException longjmp target	C	NO	SUB-006,SUB-007
+parseRaiseCaseException	src/parser.c	1472	1478	cctrlRaiseExceptionFromTo	NONLOCAL_DIAGNOSTIC_TRANSFER	cc->current_recovery	C	NO	-
+parseIfClause	src/parser.c	914	959	cctrlRaiseException	NONLOCAL_DIAGNOSTIC_TRANSFER	cc->current_recovery	C	NO	-
+parseBaseDeclSpec	src/prslib.c	279	298	cctrlRaiseException	NONLOCAL_DIAGNOSTIC_TRANSFER	cc->current_recovery	C	NO	-
+parseFunctionArgumentCheck	src/prslib.c	450	525	cctrlWarning / cctrlRaiseException	NONLOCAL_DIAGNOSTIC_TRANSFER	cc->current_recovery	C	NO	-
+assertTokenIsTerminator	src/prsutil.c	97	140	cctrlRaiseException	NONLOCAL_DIAGNOSTIC_TRANSFER	cc->current_recovery	C	NO	-
+assertTokenIsTerminatorWithMsg	src/prsutil.c	142	168	cctrlRaiseException	NONLOCAL_DIAGNOSTIC_TRANSFER	cc->current_recovery	C	NO	-

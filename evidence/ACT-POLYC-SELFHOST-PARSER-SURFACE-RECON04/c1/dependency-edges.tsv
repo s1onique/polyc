@@ -1,0 +1,74 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04
+# ACT_PHASE=C1-INVENTORY
+# EVIDENCE_KIND=dependency-edges
+#
+# THE DEPENDENCY EDGES FROM THE CENSUS SURFACE INTO THE CONSUMER AND
+# DEPENDENCY SURFACES (src/cctrl.c, src/lexer.c, src/ast.h,
+# src/transpiler.c, src/main.c) AND BACK INTO THE CENSUS SURFACE.
+#
+# Every edge is classified with the ACT section 6.1 state category.
+#
+# Schema:
+#   from_function <TAB> from_file <TAB> to_symbol <TAB> to_file
+#   <TAB> edge_kind <TAB> state_category <TAB> crosses_candidate_abi
+#
+parseStatement	src/parser.c	cctrlTokenGet	src/cctrl.c	TOKEN_STREAM	HOST_GRAPH_READ	NO
+parseStatement	src/parser.c	cctrlTokenPeek	src/cctrl.c	TOKEN_STREAM	HOST_GRAPH_READ	NO
+parseStatement	src/parser.c	cctrlTokenRewind	src/cctrl.c	TOKEN_STREAM	HOST_GRAPH_READ	NO
+parseStatement	src/parser.c	cctrlTokenExpect	src/cctrl.c	TOKEN_STREAM	HOST_GRAPH_READ	NO
+parseStatement	src/parser.c	cctrlRaiseException	src/cctrl.c	DIAGNOSTIC	RECOVERY	NO
+parseStatement	src/parser.c	cctrlRaiseSuggestion	src/cctrl.c	DIAGNOSTIC	RECOVERY	NO
+parseStatement	src/parser.c	cctrlRaiseExceptionFromTo	src/cctrl.c	DIAGNOSTIC	RECOVERY	NO
+parseStatement	src/parser.c	cctrlRewindUntilStrMatch	src/cctrl.c	DIAGNOSTIC	RECOVERY	NO
+parseStatement	src/parser.c	cctrlRewindUntilPunctMatch	src/cctrl.c	DIAGNOSTIC	RECOVERY	NO
+parseStatement	src/parser.c	cctrlWarning	src/cctrl.c	DIAGNOSTIC	DIAGNOSTIC	NO
+parseStatement	src/parser.c	cctrlWarningAt	src/cctrl.c	DIAGNOSTIC	DIAGNOSTIC	NO
+parseStatement	src/parser.c	cctrlSyncStatement	src/cctrl.c	RECOVERY	RECOVERY	NO
+parseStatement	src/parser.c	cctrlCreateAstMap	src/cctrl.c	SYMBOL_TABLE	HOST_GRAPH_READ	NO
+parseStatement	src/parser.c	cctrlIsKeyword	src/cctrl.c	SYMBOL_TABLE	GLOBAL_AUTHORITY	NO
+parseStatement	src/parser.c	tokenPunctIs	src/lexer.c	TOKEN_STREAM	SCALAR_VALUE	NO
+parseStatement	src/parser.c	lexemeTypeToString	src/lexer.c	DIAGNOSTIC	DIAGNOSTIC	NO
+parseStatement	src/parser.c	lexemePunctToString	src/lexer.c	DIAGNOSTIC	DIAGNOSTIC	NO
+parseStatement	src/parser.c	lexemeToString	src/lexer.c	DIAGNOSTIC	DIAGNOSTIC	NO
+parseStatement	src/parser.c	lexemePrint	src/lexer.c	DIAGNOSTIC	DIAGNOSTIC	NO
+parseCompoundStatementInternal	src/parser.c	cctrlCreateAstMap	src/cctrl.c	SYMBOL_TABLE	HOST_GRAPH_READ	NO
+parseCompoundStatementInternal	src/parser.c	cctrlSyncStatement	src/cctrl.c	RECOVERY	RECOVERY	NO
+parseCompoundStatementInternal	src/parser.c	cctrlIsKeyword	src/cctrl.c	SYMBOL_TABLE	GLOBAL_AUTHORITY	NO
+parseCompoundStatementInternal	src/parser.c	mapAdd	src/containers.h	SYMBOL_TABLE	HOST_GRAPH_WRITE	NO
+parseCompoundStatementInternal	src/parser.c	mapAddOrErr	src/containers.h	SYMBOL_TABLE	HOST_GRAPH_WRITE	NO
+parseCompoundStatementInternal	src/parser.c	listAppend	src/list.h	AST_GRAPH	HOST_GRAPH_WRITE	NO
+parseCompoundStatementInternal	src/parser.c	assertTokenIsTerminator	src/prsutil.c	DIAGNOSTIC	RECOVERY	NO
+parseCaseLabel	src/parser.c	cctrlTokenPeek	src/cctrl.c	TOKEN_STREAM	HOST_GRAPH_READ	NO
+parseCaseLabel	src/parser.c	cctrlRaiseException	src/cctrl.c	DIAGNOSTIC	RECOVERY	NO
+parseCaseLabel	src/parser.c	cctrlRewindUntilStrMatch	src/cctrl.c	DIAGNOSTIC	RECOVERY	NO
+parseCaseLabel	src/parser.c	assertUniqueSwitchCaseLabels	src/prsutil.c	DIAGNOSTIC	DIAGNOSTIC	NO
+parseDefaultStatement	src/parser.c	cctrlTokenExpect	src/cctrl.c	TOKEN_STREAM	HOST_GRAPH_READ	NO
+parseDefaultStatement	src/parser.c	cctrlRaiseException	src/cctrl.c	DIAGNOSTIC	RECOVERY	NO
+parseDeclOrStatement	src/parser.c	cctrlTokenPeek	src/cctrl.c	TOKEN_STREAM	HOST_GRAPH_READ	NO
+parseDeclOrStatement	src/parser.c	cctrlIsKeyword	src/cctrl.c	SYMBOL_TABLE	GLOBAL_AUTHORITY	NO
+parseExpr	src/prslib.c	parseGetPriority	src/prslib.c	PARSER_PRECEDENCE	SCALAR_VALUE	NO
+parseExpr	src/prslib.c	astBinOpFromToken	src/ast.c	AST_OPERATOR	SCALAR_VALUE	NO
+parseExpr	src/prslib.c	astUnaryOpFromToken	src/ast.c	AST_OPERATOR	SCALAR_VALUE	NO
+parseExpr	src/prslib.c	parseCompoundAssign	src/prslib.c	PARSER_OPERATOR	SCALAR_VALUE	NO
+parseExpr	src/prslib.c	astBinOpToTokenPunct	src/prslib.c	AST_OPERATOR	SCALAR_VALUE	NO
+parseExpr	src/prslib.c	assertLValue	src/prsutil.c	AST_PREDICATE	HOST_GRAPH_READ	NO
+parseExpr	src/prslib.c	typeCheckWarn	src/prsutil.c	DIAGNOSTIC	DIAGNOSTIC	NO
+parsePostFixExpr	src/prslib.c	astUnaryOpFromToken	src/ast.c	AST_OPERATOR	SCALAR_VALUE	NO
+parsePostFixExpr	src/prslib.c	parseIsFunctionCall	src/prsutil.c	AST_PREDICATE	HOST_GRAPH_READ	NO
+parseUnaryExpr	src/prslib.c	astUnaryOpFromToken	src/ast.c	AST_OPERATOR	SCALAR_VALUE	NO
+parseUnaryExpr	src/prslib.c	parseIsFunction	src/prsutil.c	AST_PREDICATE	HOST_GRAPH_READ	NO
+parseGetClassField	src/prslib.c	parseIsClassOrUnion	src/prsutil.c	TYPE_PREDICATE	SCALAR_VALUE	NO
+parseGetClassField	src/prslib.c	mapGetLen	src/containers.h	SYMBOL_TABLE	HOST_GRAPH_READ	NO
+parseCompoundAssign	src/prslib.c	tok->tk_type / tok->i64	src/lexer.h	TOKEN_STREAM	SCALAR_VALUE	NO
+astIsAssignment	src/ast.c	op (scalar)	src/lexer.h	TOKEN_STREAM	SCALAR_VALUE	NO
+astIsValidPointerOp	src/ast.c	op (AstBinOp)	src/ast.h	AST_OPERATOR	SCALAR_VALUE	NO
+parseIsClassOrUnion	src/prsutil.c	kind (scalar)	src/ast.h	TYPE_KIND	SCALAR_VALUE	NO
+parseCountPrintfFormatSpecs	src/prslib.c	fmt (bounded byte buffer)	NONE	FORMAT_BUFFER	BOUNDED_COPY	NO
+parseFormatArgIdx	src/prslib.c	fname (bounded byte buffer)	NONE	FORMAT_BUFFER	BOUNDED_COPY	NO
+astStmtFallsThrough	src/parser.c	astIsConstTrueCond	src/parser.c	FLOW_ANALYSIS	HOST_GRAPH_READ	NO
+astStmtFallsThrough	src/parser.c	astStmtHasBreak	src/parser.c	FLOW_ANALYSIS	HOST_GRAPH_READ	NO
+parseFunctionDef	src/parser.c	astStmtFallsThrough	src/parser.c	FLOW_ANALYSIS	HOST_GRAPH_READ	NO
+transpiler.c	src/transpiler.c	astIsAssignment	src/ast.c	AST_OPERATOR	SCALAR_VALUE	NO
+transpiler.c	src/transpiler.c	astIsBinCmp	src/ast.c	AST_OPERATOR	SCALAR_VALUE	NO
+main.c	src/main.c	parseToAst	src/parser.c	PARSER_TOPLEVEL	CALLBACK	NO
+main.c	src/main.c	parseToplevelDef	src/parser.c	PARSER_TOPLEVEL	CALLBACK	NO

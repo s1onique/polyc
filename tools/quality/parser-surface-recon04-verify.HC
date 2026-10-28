@@ -657,7 +657,7 @@ static I64 ModeVerify(U8 *inv_path, U8 *files[], I64 nfiles)
   I64 hash_bad = 0;
   I64 range_bad = 0;
   I64 p = 0;
-  U8 *f[10];
+  U8 *f[16];
   while (p < inv_len) {
     I64 ls = p;
     while (p < inv_len && inv[p] != '\n') p = p + 1;
@@ -668,26 +668,44 @@ static I64 ModeVerify(U8 *inv_path, U8 *files[], I64 nfiles)
     for (I64 z = 0; z < len; z = z + 1) line[z] = inv[ls + z];
     line[len] = 0;
     if (line[0] == '#') { Free(line); continue; }
-    I64 nf = SplitTabs(line, f, 10);
+    I64 nf = SplitTabs(line, f, 12);
     if (nf < 5) { Free(line); continue; }
     rows = rows + 1;
-    // f[0]=path f[1]=name f[2]=start f[3]=end f[4]=sha
+    // Two accepted layouts:
+    //   LAYOUT_CENSUS   : path <TAB> name <TAB> start <TAB> end <TAB> sha ...
+    //   LAYOUT_INVENTORY: surface_id <TAB> name <TAB> path <TAB> start
+    //                     <TAB> end <TAB> sha ...
+    // The layout is detected from the row itself: if field 0 ends in
+    // ".c" it is the path.
+    U8 *fpath;
+    U8 *fstart;
+    U8 *fend;
+    U8 *fsha;
+    I64 slen = 0;
+    while (f[0][slen] != 0) slen = slen + 1;
+    I64 is_path = 0;
+    if (slen > 2 && f[0][slen-1] == 'c' && f[0][slen-2] == '.') is_path = 1;
+    if (is_path) {
+      fpath = f[0]; fstart = f[2]; fend = f[3]; fsha = f[4];
+    } else {
+      fpath = f[2]; fstart = f[3]; fend = f[4]; fsha = f[5];
+    }
     I64 fi = -1;
-    for (I64 z = 0; z < nfiles; z = z + 1) if (StrEq(files[z], f[0])) fi = z;
+    for (I64 z = 0; z < nfiles; z = z + 1) if (StrEq(files[z], fpath)) fi = z;
     if (fi < 0) { range_bad = range_bad + 1; Free(line); continue; }
-    I64 start = ParseI64(f[2]);
-    I64 end = ParseI64(f[3]);
+    I64 start = ParseI64(fstart);
+    I64 end = ParseI64(fend);
     I64 boff = OffsetOfLine(srcs[fi], lens[fi], start);
     if (boff >= lens[fi]) { range_bad = range_bad + 1; Free(line); continue; }
     // Recompute the SHA-256 of [start, end] lines.
     I64 eoff = OffsetOfLine(srcs[fi], lens[fi], end + 1);
     if (eoff > lens[fi]) eoff = lens[fi];
     U8 dig[32];
-  U8 hex[65];
+    U8 hex[65];
     Sha256(srcs[fi] + boff, eoff - boff, dig);
     HexOfBytes(dig, 32, hex);
     checked = checked + 1;
-    if (StrEq(hex, f[4])) hash_ok = hash_ok + 1;
+    if (StrEq(hex, fsha)) hash_ok = hash_ok + 1;
     else hash_bad = hash_bad + 1;
     Free(line);
   }
@@ -779,6 +797,55 @@ static I64 ModeAuthority(U8 *flags_path, U8 *nm_path, U8 *syms[], I64 nsyms)
 }
 
 // ------------------------------------------------------------------
+// MODE=RANGE
+//
+//   argv: MODE RANGE <file.c> <start_line> <end_line> [<file.c> ...]
+//
+// Emits the SHA-256 of the source byte range [start_line .. end_line]
+// inclusive, using the SAME byte-range convention as MODE=CENSUS and
+// MODE=VERIFY.  This binds an ARBITRARY source range (for example a
+// structural sub-slice that is not a whole function) to a content
+// digest, mechanically and reproducibly.
+//
+// Output per range:
+//   RANGE <file> <start> <end> <sha256>
+// and a final RANGE_TOTAL=<n> / STATUS=PASS.
+// ------------------------------------------------------------------
+
+static I64 ModeRange(U8 *files[], I64 nfiles, I64 nspecs, I64 *starts, I64 *ends)
+{
+  I64 total = 0;
+  I64 fail = 0;
+  for (I64 s = 0; s < nspecs; s++) {
+    U8 *path = files[s];
+    I64 len = 0;
+    U8 *src = FileRead(path, &len);
+    if (src == NULL) {
+      "STATUS=FAIL\nREASON=CANNOT_READ_SOURCE\nFILE=%s\n", path;
+      return 1;
+    }
+    I64 boff = OffsetOfLine(src, len, starts[s]);
+    I64 eoff = OffsetOfLine(src, len, ends[s] + 1);
+    if (eoff > len) eoff = len;
+    if (boff >= len) { fail = fail + 1; Free(src); continue; }
+    I64 rlen = eoff - boff;
+    if (rlen < 0) rlen = 0;
+    U8 dig[32];
+    U8 hex[65];
+    Sha256(src + boff, rlen, dig);
+    HexOfBytes(dig, 32, hex);
+    "RANGE\t%s\t%d\t%d\t%s\n", path, starts[s], ends[s], hex;
+    total = total + 1;
+    Free(src);
+  }
+  "RANGE_TOTAL=%d\n", total;
+  "RANGE_FAILURES=%d\n", fail;
+  if (fail == 0) { "STATUS=PASS\n"; return 0; }
+  "STATUS=FAIL\n";
+  return 1;
+}
+
+// ------------------------------------------------------------------
 // MODE=CENSUS (driver)
 //
 //   argv: MODE CENSUS <out.tsv> <file.c> ...
@@ -830,6 +897,21 @@ I32 Main(I32 argc, U8 **argv)
   if (StrEq(argv[1], "VERIFY")) {
     if (argc < 4) { "STATUS=FAIL\nREASON=ARGC\n"; return 2; }
     return ModeVerify(argv[2], &argv[3], argc - 3);
+  }
+  if (StrEq(argv[1], "RANGE")) {
+    // RANGE <file.c> <start> <end> [<file.c> <start> <end> ...]
+    if (argc < 5) { "STATUS=FAIL\nREASON=ARGC\n"; return 2; }
+    if (((argc - 2) % 3) != 0) { "STATUS=FAIL\nREASON=ARGC\n"; return 2; }
+    I64 nspecs = (argc - 2) / 3;
+    U8 *files[MAX_FILES];
+    I64 starts[MAX_FILES];
+    I64 ends[MAX_FILES];
+    for (I64 i = 0; i < nspecs; i++) {
+      files[i] = argv[2 + i*3];
+      starts[i] = ParseI64(argv[3 + i*3]);
+      ends[i] = ParseI64(argv[4 + i*3]);
+    }
+    return ModeRange(files, nspecs, nspecs, starts, ends);
   }
   "STATUS=FAIL\nREASON=UNKNOWN_MODE\nMODE=%s\n", argv[1];
   return 2;

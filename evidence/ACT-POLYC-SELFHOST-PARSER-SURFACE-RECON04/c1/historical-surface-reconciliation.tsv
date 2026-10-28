@@ -1,0 +1,54 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04
+# ACT_PHASE=C1-INVENTORY
+# EVIDENCE_KIND=historical-surface-reconciliation
+#
+# THE CONSERVATION IDENTITY BETWEEN THE RECON03 INVENTORY AND THE
+# CURRENT LIVE CENSUS.
+#
+# The RECON03 inventory was 121 rows:
+#   src/parser.c    58
+#   src/prslib.c    40
+#   src/prsutil.c   11
+#   src/ast.c       12   <- a SELECTED SUBSET of src/ast.c
+#
+# The current census is 268 rows:
+#   src/parser.c    58
+#   src/prslib.c    41
+#   src/prsutil.c   27
+#   src/ast.c      142
+#
+# EVERY delta below is explained by an exact source or production-
+# authority difference.  NO delta is inferred by arithmetic.
+#
+# Schema:
+#   file <TAB> recon03_rows <TAB> recon04_rows <TAB> delta
+#   <TAB> change_kind <TAB> explanation
+#
+src/parser.c	58	58	0	UNCHANGED	The parser.c function set is byte-identical between the RECON03 baseline and this entry tree
+src/prslib.c	40	41	+1	ADDED	parseGetPriority is now a DELEGATION ADAPTER (the RECON03 census recorded it as one function too), and ParserLegacyOperatorPrecedenceOracle was ADDED by ACT-POLYC-SELFHOST-PARSER-SLICE03 as the stage0 evidence oracle for the migrated precedence table
+src/prsutil.c	11	27	+16	ADDED	RECON03 inventoried only 11 of the 27 live functions of src/prsutil.c.  The 16 additional rows are the LIVE functions RECON03 did not enumerate: assertIsFloatOrInt, assertionTerminatorMessage, assertTokenIsTerminatorWithMsg, parseGetType, parseIsKeyword, evalClassRef, astIsArithmetic, astCanEval, evalFloatExprOrErr, evalFloatExpr, evalIntArithmeticOrErr, evalOneIntExprOrErr, evalIntConstExprOrErr, evalIntConstExpr, assertLValue, assertUniqueSwitchCaseLabels
+src/ast.c	12	142	+130	ADDED	RECON03 inventoried only the 12 PARSER-FACING PRIMITIVES of src/ast.c (astBinOpFromToken, astCasesCompress, astIsAssignment, astIsFloatType, astIsIntType, astIsValidPointerOp, astJumpTableSort, astTypeAlign, astTypeCopy, astTypeIsArray, astTypeIsPtr, astUnaryOpFromToken).  ACT section 4 requires the ACTUAL functions of src/ast.c, so the remaining 130 live functions are ADDED to the census
+#
+# The conservation identity:
+#
+OLD_SURFACES=268
+NEW_SURFACES=268
+REMOVED_SURFACES=0
+RENAMED_SURFACES=0
+MIGRATED_SURFACES=0
+SPLIT_SURFACES=0
+MERGED_SURFACES=0
+#
+# MIGRATED_SURFACES=0 at the FUNCTION level is correct and is NOT a
+# claim that no authority migrated: five AUTHORITIES migrated (the
+# padding, the control-flow-token validity, the operator precedence and
+# the two AST operator classifiers), but in each case the legacy C
+# function SURVIVES as a thin forwarding adapter, so the function SET
+# is unchanged.  The five migrated authorities are recorded as
+# SELFHOSTED_TRUE_GREEN in c1/semantic-authority.tsv and are verified
+# live in c0/selfhosted-authority-baseline.tsv.
+#
+# NO_SOURCE_FUNCTION_WAS_REMOVED=YES
+# NO_SOURCE_FUNCTION_WAS_RENAMED=YES
+# NO_SOURCE_FUNCTION_WAS_SPLIT=YES
+# NO_SOURCE_FUNCTION_WAS_MERGED=YES

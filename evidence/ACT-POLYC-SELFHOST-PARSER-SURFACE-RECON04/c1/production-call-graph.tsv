@@ -1,0 +1,31 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04
+# ACT_PHASE=C1-INVENTORY
+# EVIDENCE_KIND=production-call-graph
+#
+# THE PRODUCTION CONSUMERS OF EVERY CANDIDATE-BEARING SURFACE.
+#
+# A candidate is production-reachable only if it appears here with a
+# caller that is itself reachable from the compiler entry point
+# (src/main.c -> parseToAst -> ...).
+#
+# Schema:
+#   candidate_or_surface <TAB> caller <TAB> caller_file <TAB> call_line
+#   <TAB> reachable_from_entry <TAB> observation
+#
+SUB-001	parseStatement	src/parser.c	1682	YES	The switch-case arm constructor is reached from parseStatement, which is reached from parseCompoundStatementInternal and parseCaseLabel
+SUB-002	parseStatement	src/parser.c	1683	YES	The default-arm constructor is reached from parseStatement, which is reached from parseCompoundStatementInternal and parseDefaultStatement
+SUB-003	parseCompoundStatementInternal	src/parser.c	1947	YES	The compound-statement body loop is reached from parseCompoundStatement, which is reached from parseStatement and parseFunctionDef
+SUB-004	parseStatement	src/parser.c	1673	YES	The keyword dispatch switch is the entry of every keyword statement
+SUB-005	parseDeclOrStatement	src/parser.c	2561	YES	parseDeclOrStatement is reached from parseToplevelDef
+CAND-018	parseExpr	src/prslib.c	1480	YES	The compound-assignment classifier is reached from the expression loop
+CAND-021	parseCreateBinaryOp	src/prslib.c	1387	YES	The inverse operator map is reached from the binary-operator diagnostic
+CAND-022	parsePrintfFormatCheck	src/prslib.c	852	YES	The format-spec counter is reached from the printf format check
+CAND-023	parsePrintfFormatCheck	src/prslib.c	852	YES	The format-argument index table is reached from the printf format check
+CAND-025	transpiler.c	src/transpiler.c	485	YES	The assignment-operator predicate is reached from the transpiler's comparison rewrite
+CAND-026	astTypeCheck	src/ast.c	1079	YES	The pointer-operator predicate is reached from the pointer-arithmetic type check
+CAND-030	parseGetClassField	src/prslib.c	1284	YES	The class-or-union predicate is reached from the class-field lookup, and from src/parser.c:537 and :585
+CAND-036	transpiler.c	src/transpiler.c	485	YES	The comparison-operator predicate is reached from the transpiler's comparison rewrite
+CAND-037	ir.c	 src/ir.c	507	YES	The range-operator predicate is reached from the IR range-loop construction (src/ir.c:507,509) and from the x86 backend (src/x86.c:1357,1359)
+CAND-038	transpiler.c	 src/transpiler.c	1512	YES	The function-name normalisation is reached from the transpiler (src/transpiler.c:1512)
+CAND-039	parseStatement	src/parser.c	1769	YES	The goto-label composition is reached from the KW_GOTO arm of parseStatement
+CAND-040	parseFunctionDef	src/parser.c	2096	YES	The asm return scan is reached from the function-definition parser
