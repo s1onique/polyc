@@ -1,0 +1,50 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE06
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=mandatory-ac-contract
+#
+# THE FROZEN 1:1 ACCEPTANCE LEDGER.
+#
+# Every ID below is checked EXACTLY ONCE, against a named, independently
+# re-runnable observation.  An AC that is not proven is reported as
+# UNPROVEN, never as PASS.
+#
+# schema: ac_id <TAB> predicate <TAB> evidence_artifact
+#
+AC01	entry branch=main, full HEAD=1ccf28d58fec9c856c12ad1f71bab9a2ca6e18e0, tree=a8532b8027607e15dd8f4b9f6d683194bc577f82, clean status, 0 replace refs	c0/entry-identity.txt
+AC02	RECON04 CLOSE commit 1ccf28d58fec9c856c12ad1f71bab9a2ca6e18e0 is the DIRECT predecessor; 5-commit range; no intervening commit	c0/entry-identity.txt
+AC03	every closed RECON04 evidence path and the RECON04 HANDOFF are byte-unchanged	c0/predecessor-freeze.tsv
+AC04	SUB-001 source range src/parser.c:1551..1553 sha256=31dc9ae8f87d26be429a565356820d8913c9a7cbc0e37d64470049c3b5948707; the projection reads exactly stmt->kind as I64	c0/red-reproduction.txt c1/state-projection.txt
+AC05	the five previous PolyC parser authorities are production-authoritative in the live objects (U references, not definitions)	c0/production-authority.txt
+AC06	RED-1..RED-5 all reproduced against the real entry tree	c0/red-reproduction.txt
+AC07	G0 oracle compiles the ACTUAL production src/parser.c translation unit with the delegation DISABLED	c1/real-oracle.txt
+AC08	the frozen C-extracted oracle agrees with the object-level G0 over the whole fixture, and the frozen source bytes match the live range	c1/real-oracle.txt
+AC09	fixture rows and partitions are INDEPENDENTLY derived from the live src/ast.h enum, not hard-coded	c1/fixture.txt
+AC10	fixture semantic partitions and integrity are verified by an INDEPENDENT implementation that does not reuse the producer's coverage algorithm	c1/fixture-integrity.txt
+AC11	every frozen negative control (FC-01..FC-08, PD-01..PD-04, PS-01..PS-03) fails for its INTENDED reason	c1/negative-controls.txt
+AC12	the ABI takes exactly one I64 and returns exactly one I64 in {0,1}; no pointer, no void *, no callback, no jmp_buf crosses	c1/state-projection.txt
+AC13	the PolyC implementation returns the exact legacy decision over the ENTIRE derived domain	c2/component-semantics.txt
+AC14	the source selector and the actual OBJECT-LEVEL production PolyC delegation are proved (undefined reference in the production object)	c2/production-delegation.txt
+AC15	the legacy C decision is ABSENT as the active production authority (compiled out of the production object)	c2/production-delegation.txt
+AC16	C retains AST graph, allocation, diagnostics, recovery, symbol table, token stream authority	c2/ownership.txt
+AC17	G0 has valid source/object/compiler provenance and is NOT the PolyC compiler	c3/generation-manifest.tsv
+AC18	G1 was independently compiled by the stage0 compiler	c3/generation-manifest.tsv
+AC19	G2 was independently compiled by the G1 compiler	c3/generation-manifest.tsv
+AC20	G3 was independently compiled by the G2 compiler	c3/generation-manifest.tsv
+AC21	all four stages' fixture outputs are compared BY ID, with no missing and no extra rows	c3/generation-semantic-pairs.tsv
+AC22	the independent generation/substitution/omission controls are sensitive for their intended reasons	c3/provenance-negative-controls.txt
+AC23	the production compiled-program PRISTINE witness is observed	c3/pristine-restoration.txt
+AC24	mutating the POLYC decision causes a CHANGED compiled-program witness with a SUCCESSFUL build	c3/pristine-restoration.txt
+AC25	byte-identical restoration of the PolyC source causes the ORIGINAL compiled-program output	c3/pristine-restoration.txt
+AC26	new parser failure identities = 0 and the prior parser assertions are conserved	c3/parser-conservation.txt
+AC27	new lexer differential failure identities = 0	c3/lexer-conservation.txt
+AC28	the LEXER07 broad-corpus failure identity SET is unchanged; the historical nonzero status is recorded honestly	c3/lexer07-delta.txt
+AC29	the cross-target install-prefix environment condition is classified truthfully; no new failure identities	c3/cross-target.txt
+AC30	`make gate-fast` ACTUALLY ran and exited 0 with PASS	c3/gate-fast.txt
+AC31	`make gate-push` ACTUALLY ran and exited 0 with PASS	c3/gate-push.txt
+AC32	the Factory-v2, append-only, F14, closure-status and patch-hygiene checks ACTUALLY ran and PASS	c3/factory-invariants.txt
+AC33	no new Python and no unauthorized tooling violation; the F-POLYC-TOOLS checker availability is honest	c3/f-no-python.txt c3/f-polyc-tools.txt
+AC34	the scope is restricted to SUB-001; no ranking, no mutable-graph change, no recovery change	c3/scope-verify.txt
+AC35	every mandatory frozen AC is joined by its EXACT id, with no missing and no unknown	c3/mandatory-ac-status.tsv
+AC36	C4 is a single valid terminal CLOSE with the exact Factory trailers, and the external terminality checks hold	c4/terminality.txt
+#
+MANDATORY_AC_TOTAL=36

@@ -1,0 +1,114 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE06
+ACT_PHASE=C0-RED
+EVIDENCE_KIND=scope-contract
+
+THE C0 SCOPE CONTRACT (FROZEN BEFORE IMPLEMENTATION)
+=====================================================
+
+TARGET
+------
+  SELECTED_CANDIDATE=SUB-001
+  SELECTED_CANDIDATE_CLASS=STRUCTURAL_BOUNDARY
+  SELECTED_ENCLOSING_FUNCTION=parseCaseLabel
+  SELECTED_SOURCE_RANGE=src/parser.c:1551..1553
+  SELECTED_SOURCE_SHA256=31dc9ae8f87d26be429a565356820d8913c9a7cbc0e37d64470049c3b5948707
+  SELECTED_ABI=I64 BootstrapSwitchArmTerminates(I64 ast_kind) -> I64
+  SELECTED_BOUNDARY_CLASS=SCALAR_TO_SCALAR
+
+The selection is INHERITED from the frozen predecessor contract
+(recon04/c2/selection-result.tsv and recon04/c2/successor-authorization.md).
+This ACT does NOT re-run the ranking and does NOT choose a different
+target.
+
+IN SCOPE
+--------
+  1. The PolyC component implementing the frozen ABI.
+  2. The dedicated delegation selector HCC_USE_SELFHOST_PARSER_SWITCH_ARM
+     and the subject link, following the pattern of the five already
+     migrated authorities.
+  3. EXACTLY ONE condition in src/parser.c -- the `if` at
+     src/parser.c:1551..1553 -- replaced by a call to the PolyC
+     component.
+  4. The four independently compiled generations (G0 legacy C from the
+     real production object, G1/G2/G3 PolyC) and their comparisons.
+  5. The direct differential against the REAL legacy oracle over the
+     derived fixture matrix.
+  6. The production causal experiment with the POLYC decision mutated,
+     and the restoration.
+  7. The parser and lexer conservation suites and the required Factory
+     gates.
+  8. The bounded quality tooling needed to execute the above.
+
+OUT OF SCOPE
+------------
+  NO_CHANGE_TO=src/ast.h                (the AstKind enum values are FROZEN)
+  NO_CHANGE_TO=any other parser function
+  NO_CHANGE_TO=src/lexer.c, src/lexer.h
+  NO_CHANGE_TO=src/ast.c, src/ast.h, src/prslib.c, src/prsutil.c
+  NO_CHANGE_TO=src/cctrl.c, src/cctrl.h
+  NO_CHANGE_TO=src/transpiler.c, src/main.c
+  NO_CHANGE_TO=the recovery protocol
+  NO_CHANGE_TO=the diagnostic texts
+  NO_CHANGE_TO=the arm-loop structure
+  NO_CHANGE_TO=the other three structural sub-slices (SUB-002, SUB-003, SUB-004)
+  NO_CHANGE_TO=the seven historical scalar candidates
+  NO_CHANGE_TO=the AstKind enum values
+  NO_CHANGE_TO=tools/quality/parser-slice-recon03-*.HC
+  NO_CHANGE_TO=the closed evidence trees
+  NO_CHANGE_TO=the hook policy
+  NO_CHANGE_TO=compiler feature flags or dependency versions
+  NO_NEW_PYTHON
+  NO_REOPEN_OF=the ranking
+
+THE OWNERSHIP THAT MUST BE PRESERVED
+------------------------------------
+  RECOVERY_OWNER=C
+  AST_GRAPH_OWNER=C
+  SYMBOL_TABLE_OWNER=C
+  TOKEN_STREAM_OWNER=C
+  DIAGNOSTIC_OWNER=C
+  LONGJMP_TARGET_OWNER=C
+  ERROR_MESSAGE_OWNER=C
+  TOKEN_REWIND_OWNER=C
+  ALLOCATION_OWNER=C
+
+This ACT changes ONE boolean decision.  Everything else about the
+parser's ownership of mutable state stays exactly as it is.
+
+THE FROZEN STATE PROJECTION
+----------------------------
+  PROJECTION_FIELD_COUNT=1
+  PROJECTION_FIELD=stmt->kind
+  PROJECTION_ACCESS=READ
+  PROJECTION_SCALAR_TYPE=I64
+  PROJECTION_RESULT_TYPE=I64
+  PROJECTION_BOUNDED=YES
+  PROJECTION_POINTER_CROSSING=NONE
+  PROJECTION_CALLBACK_CROSSING=NONE
+  PROJECTION_JMP_BUF_CROSSING=NONE
+
+The C-side adapter reads exactly ONE host field -- stmt->kind -- and
+passes it as the scalar.  It then executes the `break` itself when the
+PolyC result is 1.  NO other host graph field, callback, pointer,
+diagnostic or recovery state crosses the ABI.
+
+THE HALT CONDITIONS
+-------------------
+  HALT_ENTRY_IDENTITY
+  HALT_PREDECESSOR_CONTRACT_MISMATCH
+  HALT_SOURCE_SHA_CHANGED
+  HALT_SCOPE_EXPANSION
+  HALT_MISSING_REAL_C_ORACLE
+  HALT_UNBOUNDED_ABI
+  HALT_PRODUCTION_DELEGATION_NOT_LOAD_BEARING
+  HALT_LEGACY_C_STILL_AUTHORITATIVE
+  HALT_FIXTURE_INCOMPLETE
+  HALT_NEGATIVE_CONTROL_INSENSITIVE
+  HALT_STAGE_PROVENANCE_UNPROVEN
+  HALT_CAUSAL_MUTATION_NOT_OBSERVED
+  HALT_NEW_FAILURE_IDENTITY
+  HALT_GATE_FAST
+  HALT_GATE_PUSH
+  HALT_FACTORY_INVARIANT
+  HALT_MANDATORY_AC
+  HALT_TERMINALITY

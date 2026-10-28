@@ -1,0 +1,91 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE06
+ACT_PHASE=C0-RED
+EVIDENCE_KIND=production-authority
+
+THE FIVE EXISTING PolyC PARSER AUTHORITIES, AT THE ENTRY
+========================================================
+
+The five authorities are re-verified against the LIVE PRODUCTION
+OBJECTS, not against source comments and not merely against an
+exported symbol in the final binary.  The STRONG form of the evidence
+is that the live production objects carry the PolyC symbols as
+UNDEFINED references (U) and do NOT define them, so the legacy C
+algorithm bodies are compiled out and C does not still own the
+decisions.
+
+THE PRODUCTION COMPILER
+-----------------------
+BUILD=/tmp/slice06-baseline/build (configured from the ENTRY tree)
+COMMAND=cd /tmp/slice06-baseline && make production-hcc INSTALL_PREFIX=/tmp/slice06-baseline/prefix
+  (exit 0)
+
+COMMAND=shasum -a 256 /tmp/slice06-baseline/hcc
+  b054a83e65f33519cfe99db5308bc5c2d8c7edcb38411b59d4997d55a422a345
+
+COMMAND=/tmp/slice06-baseline/hcc --version
+  hcc v0.0.15-beta
+  binary: /tmp/slice06-baseline/prefix/hcc
+  commit-hash: 1ccf28d58fec9c856c12ad1f71bab9a2ca6e18e0
+
+THE FIVE SYMBOLS ARE DEFINED IN THE LINKED COMPILER
+----------------------------------------------------
+COMMAND=nm /tmp/slice06-baseline/hcc | grep -E '_Bootstrap(CalcPadding|ValidPostControlFlowToken|OperatorPrecedence|AstBinOpFromToken|AstUnaryOpFromToken)$'
+  00000001000642e4 T _BootstrapAstBinOpFromToken
+  00000001000644d4 T _BootstrapAstUnaryOpFromToken
+  0000000100063c64 T _BootstrapCalcPadding
+  0000000100063f14 T _BootstrapOperatorPrecedence
+  0000000100063cdc T _BootstrapValidPostControlFlowToken
+
+THE STRONG FORM: THE PRODUCTION OBJECTS REFERENCE, THEY DO NOT DEFINE
+----------------------------------------------------------------------
+COMMAND=nm /tmp/slice06-baseline/build/CMakeFiles/hcc.dir/parser.c.o | grep ' U _Bootstrap'
+                 U _BootstrapCalcPadding
+                 U _BootstrapValidPostControlFlowToken
+
+COMMAND=nm /tmp/slice06-baseline/build/CMakeFiles/hcc.dir/prslib.c.o | grep ' U _Bootstrap'
+                 U _BootstrapOperatorPrecedence
+
+COMMAND=nm /tmp/slice06-baseline/build/CMakeFiles/hcc.dir/ast.c.o | grep ' U _Bootstrap'
+                 U _BootstrapAstBinOpFromToken
+                 U _BootstrapAstUnaryOpFromToken
+
+No production object DEFINES any of the five symbols (no 'T'/'t'/'D'
+entry for them), so the legacy C algorithm bodies are compiled OUT and
+the PolyC components are the real production authorities.
+
+THE FIVE AUTHORITIES
+--------------------
+  1. BootstrapCalcPadding
+     production object = src/parser.c.o
+     authority         = POLYC
+  2. BootstrapValidPostControlFlowToken
+     production object = src/parser.c.o
+     authority         = POLYC
+  3. BootstrapOperatorPrecedence
+     production object = src/prslib.c.o
+     authority         = POLYC
+  4. BootstrapAstBinOpFromToken
+     production object = src/ast.c.o
+     authority         = POLYC
+  5. BootstrapAstUnaryOpFromToken
+     production object = src/ast.c.o
+     authority         = POLYC
+
+THE SIXTH AUTHORITY (SUB-001) IS NOT YET MIGRATED
+----------------------------------------------------
+COMMAND=nm /tmp/slice06-baseline/build/CMakeFiles/hcc.dir/parser.c.o | grep -c BootstrapSwitchArmTerminates
+  0
+
+The production object neither defines nor imports the PolyC switch-arm
+symbol, and the legacy C condition at src/parser.c:1551..1553 is the
+LIVE production condition.  The sixth authority is C-OWNED at the
+entry, which is exactly the RED this ACT must close.
+
+  PADDING_PRODUCTION_AUTHORITY=POLYC
+  CONTROL_FLOW_PRODUCTION_AUTHORITY=POLYC
+  PRECEDENCE_PRODUCTION_AUTHORITY=POLYC
+  AST_BINOP_PRODUCTION_AUTHORITY=POLYC
+  AST_UNARY_PRODUCTION_AUTHORITY=POLYC
+  SWITCH_ARM_PRODUCTION_AUTHORITY=C
+  PREVIOUS_FIVE_AUTHORITIES_CONSERVED=YES
+  DUPLICATE_BOOTSTRAP_SYMBOLS=0

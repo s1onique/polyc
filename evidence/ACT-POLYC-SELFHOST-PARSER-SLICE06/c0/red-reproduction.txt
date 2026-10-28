@@ -1,0 +1,122 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE06
+ACT_PHASE=C0-RED
+EVIDENCE_KIND=red-reproduction
+
+THE REDs, REPRODUCED INDEPENDENTLY AT THE SLICE06 ENTRY
+======================================================
+
+Every command below was EXECUTED at THIS ACT's own entry tree
+(1ccf28d58fec9c856c12ad1f71bab9a2ca6e18e0), against the REAL
+production artifacts, and the observed result is recorded verbatim.
+
+The frozen predecessor contract
+(c2/selected-red-contract.md section 2) requires the successor to
+reproduce RED-1, RED-2, RED-3 and RED-4 with the SAME commands and to
+observe the SAME results.
+
+RED-1  the selected PolyC component is absent
+---------------------------------------------
+COMMAND=ls tools/bootstrap/selfhost-parser-switch-arm.HC
+  ls: cannot access 'tools/bootstrap/selfhost-parser-switch-arm.HC': No such file or directory
+
+COMMAND=grep -rn 'BootstrapSwitchArmTerminates' src/ tools/
+  (no output -- no match in the whole production tree)
+
+  RED_1_REPRODUCED=YES
+  POLYC_COMPONENT_EXISTS=NO
+
+RED-2  the production delegation is absent
+------------------------------------------
+COMMAND=grep -c 'HCC_USE_SELFHOST_PARSER_SWITCH_ARM' src/CMakeLists.txt src/parser.c
+  src/CMakeLists.txt:0
+  src/parser.c:0
+
+  RED_2_REPRODUCED=YES
+  PRODUCTION_DELEGATION=NO
+
+RED-3  the legacy C decision still owns the production semantics
+----------------------------------------------------------------
+COMMAND=sed -n '1551,1553p' src/parser.c
+          if (stmt->kind == AST_COMPOUND_STMT || stmt->kind == AST_CASE ||
+                  stmt->kind == AST_DEFAULT || stmt->kind == AST_BREAK || stmt->kind == AST_RETURN
+                  || stmt->kind == AST_GOTO) break;
+
+The condition is the LIVE production condition.  There is no #ifdef
+around it and there is no delegation.
+
+COMMAND=sed -n '1551,1553p' src/parser.c | shasum -a 256
+  31dc9ae8f87d26be429a565356820d8913c9a7cbc0e37d64470049c3b5948707
+
+That digest is EXACTLY the frozen
+SELECTED_SOURCE_SHA256=31dc9ae8f87d26be429a565356820d8913c9a7cbc0e37d64470049c3b5948707
+from c2/selected-abi-contract.md.  The frozen source contract is
+VALID against the live entry tree.
+
+  RED_3_REPRODUCED=YES
+  LEGACY_C_AUTHORITY=YES
+  SELECTED_SOURCE_SHA256=31dc9ae8f87d26be429a565356820d8913c9a7cbc0e37d64470049c3b5948707
+
+RED-4  the expected ABI/bridge is not yet available
+----------------------------------------------------
+COMMAND=nm /tmp/slice06-baseline/build/CMakeFiles/hcc.dir/parser.c.o | grep -c BootstrapSwitchArmTerminates
+  0
+
+The production object neither DEFINES nor IMPORTS the PolyC symbol, so
+the bridge does not exist.  The object was built from THIS entry tree
+(a real `make production-hcc` in a detached git worktree at the entry
+commit), so this is a REAL production artifact, not a simulated one.
+
+  RED_4_REPRODUCED=YES
+  PRODUCTION_OBJECT_POLYC_REFERENCE=NO
+
+RED-5  the mutation-sensitive legacy oracle is established
+-----------------------------------------------------------
+This RED is the predecessor's GREEN precondition: the mutation-sensitive
+behaviour MUST be established on the LEGACY oracle before the PolyC
+component is allowed to replace it.
+
+COMMAND=cc -std=c99 -O1 -I src -o build/slice06-oracle/legacy-sub001-oracle \
+    evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04/c2/probes/legacy-sub001-oracle.c
+  (exit 0)
+
+COMMAND=build/slice06-oracle/legacy-sub001-oracle
+  51 rows
+
+COMMAND=build/slice06-oracle/legacy-sub001-oracle | awk '$2==1{printf "%s ", $1} END{print ""}'
+  258 270 274 280 287 293
+
+The terminating kinds are EXACTLY the six values the live
+src/parser.c:1551..1553 names, and no others.  This is the historical
+RECON04 result, reproduced independently at this entry tree.
+
+THE MUTANT ORACLE (the same mutation, isolated)
+------------------------------------------------
+COMMAND=cc -std=c99 -O1 -I src -o build/slice06-oracle/mutant-sub001-oracle \
+    evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04/c2/probes/mutant-sub001-oracle.c
+  (exit 0)
+
+COMMAND=diff <pristine.tsv> <mutant.tsv>
+  16c16
+  < 274	1
+  ---
+  > 274	0
+
+The mutation is confined to EXACTLY ONE row: the AST_COMPOUND_STMT
+classification flips from 1 to 0.  The oracle is therefore genuinely
+mutation-sensitive on the terminating set.
+
+  RED_5_ESTABLISHED=YES
+  ORACLE_ROWS=51
+  ORACLE_TERMINATING_KINDS=258 270 274 280 287 293
+  ORACLE_MUTATION_CONFINED_TO_ONE_ROW=YES
+
+THE RED SUMMARY
+---------------
+  RED_1_REPRODUCED=YES
+  RED_2_REPRODUCED=YES
+  RED_3_REPRODUCED=YES
+  RED_4_REPRODUCED=YES
+  RED_5_ESTABLISHED=YES
+  ALL_REDS_REPRODUCED=YES
+  C0_PRODUCTION_IMPLEMENTATION_PRESENT=NO
+  C0_RED_COMPLETE=YES
