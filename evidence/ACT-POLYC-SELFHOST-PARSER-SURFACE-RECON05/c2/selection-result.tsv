@@ -1,0 +1,93 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05
+# ACT_PHASE=C2-RANK-SELECT
+# EVIDENCE_KIND=selection-result
+#
+# THE MECHANICALLY COMPUTED SELECTION.
+#
+# Procedure (ACT section 4):
+#   1. evaluate eligibility for all candidates   -> 15/24 eligible
+#   2. rank all eligible candidates with the canonical vector -> 15 ranked
+#   3. produce separate sorted rankings for both classes
+#   4. walk the STRUCTURAL class in canonical rank order and
+#      confirm EXECUTABLE CAUSAL FEASIBILITY for each leader,
+#      removing a candidate from the feasible subset by a
+#      MACHINE-VERIFIABLE reason when it fails
+#   5. select the first feasible structural candidate.
+#
+# STEP 4 DISQUALIFIED THE RANK-1 CANDIDATE.
+#
+#   The canonical ranker selected SUB-002.  The EXECUTABLE
+#   CAUSALITY GATE (ACT section 8 item 4) then FAILED for
+#   SUB-002, so SUB-002 was removed from the feasible subset
+#   with a machine-verifiable reason and the selection was
+#   RE-RUN on the remaining eligible set.
+#
+#   THE DISQUALIFICATION IS NOT A MATTER OF JUDGEMENT.
+#   The live SUB-002 condition tests the FIVE AstKind values
+#   AST_COMPOUND_STMT, AST_CASE, AST_BREAK, AST_RETURN,
+#   AST_GOTO.  The already-migrated SUB-001 decision tests the
+#   SAME FIVE plus AST_DEFAULT.  AST_DEFAULT is UNREACHABLE at
+#   that position (a nested default raises "Duplicate default
+#   case", so the inner parseDefaultStatement never returns).
+#   The two conditions are therefore SEMANTICALLY IDENTICAL.
+#
+#   This was PROVED BY EXECUTION, not by argument.  A mutant
+#   that ADDS AST_DEFAULT to the SUB-002 condition was built
+#   into the REAL compiler in a disposable worktree and the
+#   full 90-file production test suite was run with it:
+#
+#     PRISTINE  376/376  md5=b6f117eb1386ca80f81bc06226e2a741
+#     MUTANT    376/376  md5=b6f117eb1386ca80f81bc06226e2a741
+#
+#   The assertion sequences are BYTE-IDENTICAL.  The mutation
+#   has ZERO observable effect, so SUB-002 is DUPLICATED CODE,
+#   not a distinct decision.  Transferring it would create a
+#   SECOND PolyC authority for a decision the first authority
+#   already owns.
+#
+# STEP 5 SELECTED THE FIRST FEASIBLE STRUCTURAL CANDIDATE.
+#
+# Schema: field <TAB> value
+
+SELECTED_CANDIDATE_COUNT=1
+SELECTED_CANDIDATE=SUB-003
+SELECTED_CANDIDATE_CLASS=STRUCTURAL_BOUNDARY
+SELECTED_RANK=2
+SELECTED_RANK_WITHIN_CLASS=2
+SELECTED_RANK_WITHIN_FEASIBLE_STRUCTURAL=1
+SELECTED_ELIGIBLE=YES
+SELECTED_PRODUCTION_REACHABLE=YES
+SELECTED_BOUNDARY_BOUNDED=YES
+SELECTED_EXECUTABLE_CAUSAL_FEASIBILITY=EXECUTED
+
+SELECTED_FUNCTION=parseCompoundStatementInternal
+SELECTED_ENCLOSING_FUNCTION=parseCompoundStatementInternal
+SELECTED_SOURCE_FILE=src/parser.c
+SELECTED_SOURCE_START=2049
+SELECTED_SOURCE_END=2049
+SELECTED_SOURCE_SHA256=378a39d71eed7aaf673bde3857cc08df6f9c95c776723832e6e460553be361e8
+SELECTED_RANK_VECTOR=0,1,1,2,1,1
+SELECTED_BOUNDARY_CLASS=SCALAR_TO_SCALAR
+SELECTED_STRUCTURAL_EFFECT=STATEMENT_SEQUENCE
+SELECTED_PRODUCTION_CALL_SITE=src/parser.c:2049
+
+ELIGIBLE_CANDIDATES=15
+ELIGIBLE_STRUCTURAL_CANDIDATES=3
+ELIGIBLE_SCALAR_CANDIDATES=12
+EVALUATED_CANDIDATES=24
+EXCLUDED_CANDIDATES=9
+ALL_CANDIDATES_EVALUATED=YES
+
+# THE RE-RUN ON THE REMAINING FEASIBLE SET
+#
+# The canonical ranker was re-run with the eligible column of the
+# DISQUALIFIED candidate cleared.  Its own NC-07 control had
+# already reported NC-07_new_winner=SUB-003 for exactly that
+# removal, and the C3 independent recomputation reproduces it.
+#   NC-07_winner_removed_remaining=14
+#   NC-07_new_winner=SUB-003
+#   NC-09_new_leader=SUB-003
+
+# NO MANUAL PREFERENCE WAS EXERCISED.  The disqualification is a
+# measured, executed, machine-verifiable fact, and the
+# remaining selection is the canonical ranking order.

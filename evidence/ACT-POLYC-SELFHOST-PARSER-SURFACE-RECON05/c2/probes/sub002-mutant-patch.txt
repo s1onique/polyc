@@ -1,0 +1,30 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05
+# ACT_PHASE=C2-PROBE
+# EVIDENCE_KIND=sub002-mutant-patch
+#
+# THE EXACT MUTATION APPLIED TO src/parser.c IN THE DISPOSABLE
+# WORKTREE FOR THE SUB-002 CAUSAL PROOF.
+#
+# ONE line changed: AST_DEFAULT is ADDED to the SUB-002
+# default-arm termination condition, making it EXACTLY the
+# already-migrated SUB-001 condition.
+#
+COMMAND=diff -u src/parser.c <mutant>
+
+--- src/parser.c	2026-10-28 14:55:14
++++ /tmp/recon05-proof/parser-mutant.c	2026-10-28 16:33:57
+@@ -1680,7 +1680,7 @@
+         if (stmt && stmt->kind != AST_CASE) {
+             listAppend(stmts,stmt);
+         }
+-        if (stmt->kind == AST_COMPOUND_STMT || stmt->kind == AST_CASE || stmt->kind == AST_BREAK || stmt->kind == AST_RETURN
++        if (stmt->kind == AST_COMPOUND_STMT || stmt->kind == AST_CASE || stmt->kind == AST_DEFAULT || stmt->kind == AST_BREAK || stmt->kind == AST_RETURN
+                 || stmt->kind == AST_GOTO) break;
+         peek = cctrlTokenPeek(cc);
+         if (tokenPunctIs(peek,'}')) break;
+
+# The mutation was applied ONLY inside the disposable detached
+# worktree /tmp/recon05-wt.  The tracked main worktree src/parser.c
+# was NEVER modified; its SHA-256 is unchanged:
+#   27281d56b4abf2e9fcdd1ecd43f3d349336be114fb1c4d14fcd1ffeae8bd9d35
+# PATCH_REVERSIBLE=YES

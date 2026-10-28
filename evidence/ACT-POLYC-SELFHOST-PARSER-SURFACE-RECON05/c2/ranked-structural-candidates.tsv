@@ -1,0 +1,15 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05
+# ACT_PHASE=C2-RANK-SELECT
+# EVIDENCE_KIND=ranked-structural-candidates
+#
+# THE ELIGIBLE STRUCTURAL CLASS, IN CANONICAL RANK ORDER.
+#
+# Schema: rank <TAB> candidate_id <TAB> R0..R5 <TAB> R6 <TAB> feasible <TAB> feasible_reason
+
+1	SUB-002	0	1	1	2	1	1	src/parser.c:1683	NO	EXECUTABLE CAUSALITY FAILS: the decision is SEMANTICALLY IDENTICAL to the already-migrated SUB-001 decision.  The live condition tests five AstKind values (AST_COMPOUND_STMT, AST_CASE, AST_BREAK, AST_RETURN, AST_GOTO); the migrated SUB-001 decision tests the SAME five plus AST_DEFAULT.  AST_DEFAULT is UNREACHABLE in that position because a nested default raises "Duplicate default case" and the inner parseDefaultStatement never returns.  An EXECUTED mutation that ADDS AST_DEFAULT to the SUB-002 condition produced a BYTE-IDENTICAL 376/376 assertion sequence with the SAME MD5 b6f117eb1386ca80f81bc06226e2a741, i.e. ZERO observable effect.  See c2/selected-causal-contract.md and c2/probes/.
+2	SUB-003	0	1	1	2	1	1	src/parser.c:2049	YES	EXECUTABLE CAUSALITY CONFIRMED: the decision is DISTINCT from every migrated authority, and an EXECUTED mutation that REMOVES the skip makes two existing production tests (33_static.HC and 34_global_array.HC) FAIL with "Mapping exists for 1 -> %l11 array local", changing the assertion-sequence MD5 to dc2f36f1bd63bca22fc7ea57359a770d and the assertion count from 376 to 371.
+3	SUB-004	0	2	1	2	2	2	src/parser.c:1773	YES	EXECUTABLE CAUSALITY CONFIRMED: an EXECUTED mutation that routes KW_WHILE to parseDoWhileStatement makes the REAL compiler fail to parse every while loop ("Unexpected character `(` while parsing do while loop body").  The decision is DISTINCT and causally load-bearing.
+
+# ELIGIBLE_STRUCTURAL=3
+# STRUCTURAL_FEASIBLE=2   (SUB-003, SUB-004)
+# STRUCTURAL_DISQUALIFIED_BY_EXECUTABLE_CAUSALITY=1   (SUB-002)

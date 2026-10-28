@@ -1,0 +1,40 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05
+# ACT_PHASE=C2-RANK-SELECT
+# EVIDENCE_KIND=selected-state-and-ownership
+#
+# THE COMPLETE STATE PROJECTION AND THE C-RETAINED OWNERSHIP.
+#
+# Schema: field <TAB> value
+
+STATE_READS_BY_THE_POLYC_COMPONENT=stmt_kind (I64), declvar_kind (I64)
+STATE_WRITES_BY_THE_POLYC_COMPONENT=NONE
+STATE_READS_BY_THE_C_SIDE=stmt->kind, stmt->declvar->kind (copied out as int)
+STATE_WRITES_BY_THE_C_SIDE=cc->tmp_locals, cc->localenv, cc->current_recovery, body->stms, cc->token cursor
+POINTER_IDENTITY_OPERATIONS=0
+HOST_GRAPH_WRITES_TRANSFERRED=0
+HOST_ALLOCATION_TRANSFERRED=0
+PARSER_CALLBACKS_TRANSFERRED=0
+SEMANTIC_CALLBACKS_TRANSFERRED=0
+RECOVERY_OWNERSHIP_TRANSFERRED=0
+DIAGNOSTIC_OWNERSHIP_TRANSFERRED=0
+TOKEN_STREAM_OWNERSHIP_TRANSFERRED=0
+SCOPE_OR_SYMBOL_TABLE_OWNERSHIP_TRANSFERRED=0
+DETERMINISTIC_PROJECTION=YES
+COPY_ONLY=YES
+UNALIASED=YES
+BOUNDED_INPUTS=2
+BOUNDED_OUTPUTS=1
+
+# THE C SIDE RETAINS, IN FULL
+#   - the AST graph and the listAppend of the statement
+#   - the `continue` that implements the SKIP action
+#   - the token cursor advance (cctrlTokenPeek)
+#   - the block scope map (cc->localenv)
+#   - the recovery point (cc->current_recovery) and the setjmp
+#   - the diagnostics
+#   - every allocation.
+#
+# THE POLYC COMPONENT OWNS, EXACTLY
+#   - the ANSWER to "is this statement a global-variable
+#     declaration, and therefore skipped?".
+#   Nothing else.

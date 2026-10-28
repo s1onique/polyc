@@ -1,0 +1,26 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05
+# ACT_PHASE=C2-RANK-SELECT
+# EVIDENCE_KIND=eligibility-rejections
+#
+# EVERY REJECTION, WITH THE FAILING CLAUSE AND THE LIVE
+# SOURCE EVIDENCE FOR IT.
+#
+# Schema: candidate_id <TAB> failed_clauses <TAB> failing_clause <TAB> live_evidence
+
+SUB-001	2	already_selfhosted	THE DECISION IS ALREADY OWNED BY POLYC.  The production object build/CMakeFiles/hcc.dir/parser.c.o carries U _BootstrapSwitchArmTerminates and does NOT define it (c0/current-production-authorities.tsv).  The C function parseSwitchArmTerminates is a DELEGATION ADAPTER, not a legacy C authority.
+SUB-005	1,12,13	semantic_authority, production_delegation_feasible, runtime_semantic_authority	cctrlGetKeyWord (src/cctrl.c:1290..1304) consults the MUTABLE cc->symbol_table, cc->clsdefs and cc->uniondefs.  The routing decision is therefore NOT a bounded scalar decision over copied inputs, so it carries no runtime semantic authority over a bounded projection and cannot be delegated with a scalar ABI.  CONFIRMED live by the DEPENDS mode of the RECON05 verifier.
+SUB-006	1,4,5,7,12,13	owns_setjmp, writes_current_recovery, host_graph_writes	The region OWNS the setjmp checkpoint (src/parser.c:1973) and writes cc->current_recovery and the host AST-list tail.  A recovery protocol has no bounded scalar output.
+SUB-007	1,7,12,13	host_graph_writes	The compound body loop APPENDS to the host AST statement list (src/parser.c:2053).  The decision owns host graph mutation.
+SUB-008	1,4,5,7,12,13	owns_setjmp, writes_current_recovery, host_graph_writes	The whole statement parser builds the host AST, owns the recovery point and consumes the token stream.  Its whole-function ABI is unbounded.
+SUB-009	1,7,12,13	host_graph_writes	The whole expression loop builds the host AST and owns the precedence loop.  Its whole-function ABI is unbounded.
+SUB-010	1,8,12,13	pointer_identity_operations	astStmtFallsThrough RECURSES over the unbounded host statement tree (src/parser.c:2126, src/parser.c:2133).  The projection is one boolean per node but only through recursion.
+SUB-011	1,8,12,13	pointer_identity_operations	astStmtHasBreak RECURSES over the unbounded host statement tree (src/parser.c:2105, src/parser.c:2110).  The projection is one boolean per node but only through recursion.
+SUB-012	1,8,12,13	pointer_identity_operations	astIsConstTrueCond follows a THREE-HOP host Ast/AstType pointer chain (src/parser.c:2083..2090).  The projection is one scalar but the input is an unbounded host pointer.
+
+# ELIGIBLE=15
+# INELIGIBLE=9
+# ELIGIBLE_STRUCTURAL=3   (SUB-002, SUB-003, SUB-004)
+# ELIGIBLE_SCALAR=12
+# INELIGIBLE_STRUCTURAL=8  (SUB-005..SUB-012)
+# INELIGIBLE_ALREADY_SELFHOSTED=1  (SUB-001)
+# EVERY_REJECTION_HAS_LIVE_EVIDENCE=YES
