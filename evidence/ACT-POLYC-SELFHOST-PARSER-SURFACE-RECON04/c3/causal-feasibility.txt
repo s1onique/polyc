@@ -1,0 +1,99 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04
+ACT_PHASE=C3-VERIFY
+EVIDENCE_KIND=causal-feasibility
+#
+# THE CAUSAL FEASIBILITY EXPERIMENT, EXECUTED.
+#
+# This is NOT a weaker "plan".  The ACT section 13 preferred experiment
+# was performed against a REAL production compiler built from a REAL
+# source tree, and the observations below are the ACTUAL outputs.
+#
+# THE ISOLATED TREE
+#
+COMMAND=git worktree add --detach /tmp/recon04-causal HEAD
+#   HEAD is now at 5438fb3 ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04 C2
+#
+# The tracked production source in the MAIN repository was NOT modified.
+# The mutation was applied only inside the isolated worktree and was
+# reverted there with `git checkout -- src/parser.c`.
+#
+# THE THREE COMPILERS
+#
+COMMAND=(cd /tmp/recon04-causal && make all)              # pristine
+COMMAND=(cd /tmp/recon04-causal && make all)              # after the mutation
+COMMAND=(cd /tmp/recon04-causal && make all)              # after the restore
+#
+#   PRISTINE_BUILD=PASS
+#   MUTANT_BUILD=PASS
+#   RESTORED_BUILD=PASS
+#
+# The MUTANT COMPILER BUILDS SUCCESSFULLY.  It is not a crash and not a
+# link failure: it is a working compiler whose compiled program output
+# differs.
+#
+# THE MUTATION
+#
+#   -        if (stmt->kind == AST_COMPOUND_STMT || stmt->kind == AST_CASE ||
+#   +        if (stmt->kind == AST_CASE ||
+#
+# One disjunct removed from the terminating set.
+#
+# THE WITNESS
+#
+COMMAND=cd /tmp/recon04-causal && ./hcc --install-dir=PREFIX witness-sub001.HC -o witness-pristine
+COMMAND=cd /tmp/recon04-causal && ./hcc --install-dir=PREFIX witness-sub001.HC -o witness-mutant
+COMMAND=cd /tmp/recon04-causal && ./hcc --install-dir=PREFIX witness-sub001.HC -o witness-restored
+#
+# THE THREE OBSERVATIONS
+#
+#   PRISTINE_OBSERVATION:
+#     SUB001:ARM2_MARKER
+#     SUB001:x=1
+#
+#   MUTATED_OBSERVATION:
+#     SUB001:ARM1_MARKER
+#     SUB001:ARM2_MARKER
+#     SUB001:x=1
+#
+#   RESTORED_OBSERVATION:
+#     SUB001:ARM2_MARKER
+#     SUB001:x=1
+#
+# THE COMPARISONS
+#
+COMMAND=./witness-pristine > obs-p.txt; ./witness-mutant > obs-m.txt; ./witness-restored > obs-r.txt
+COMMAND=cmp -s obs-p.txt obs-r.txt
+#   identical
+COMMAND=cmp -s obs-p.txt obs-m.txt
+#   differ
+#
+# THE WITNESS BINARY IDENTITIES
+#
+#   witness-pristine  sha256=a2dfb931453f9808fe03cee32e7e61af7907d530f4401c037c40e1911623e105
+#   witness-mutant    sha256=26c23086b21d8d93c86ce31368a69a60bc7a81187bb5ab32eb2fcad1227b4168
+#   witness-restored  sha256=b6d392eed423dad04e7a146b4c843b82bbc9ecc1e6109178a88dca612a6eb2c1
+#
+# The restored binary is NOT byte-identical to the pristine one (the
+# compiler embeds a build-time hash), but its OUTPUT is byte-identical,
+# which is the observation that matters.
+#
+# THE ORACLE-LEVEL CONTROL
+#
+COMMAND=cc -std=c99 -O1 -I src -o build/recon04-oracle/mutant-sub001-oracle c2/probes/mutant-sub001-oracle.c
+#   pristine: 274 -> 1
+#   mutant:   274 -> 0
+#
+# THE CLASSIFICATION
+#
+# This is an EXECUTED_CAUSAL_CONTROL: the strongest class the ACT
+# defines.  It is NOT a weaker "executable causal proof strategy".
+#
+CAUSAL_CLASS=EXECUTED_CAUSAL_CONTROL
+PRISTINE_BUILD=PASS
+MUTANT_BUILD=PASS
+RESTORED_BUILD=PASS
+MUTATED_OUTPUT_DIFFERS=YES
+RESTORED_OUTPUT_EQUALS_PRISTINE=YES
+PRODUCTION_OBSERVABLE=compiled program output
+SELECTED_CAUSAL_PROOF_FEASIBLE=YES
+STATUS=PASS

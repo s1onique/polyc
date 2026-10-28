@@ -1,0 +1,85 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04
+ACT_PHASE=C3-VERIFY
+EVIDENCE_KIND=fixture-contract-verify
+
+# THE FIXTURE CONTRACT IS VERIFIED AGAINST THE LIVE SOURCE.
+
+# THE DOMAIN IS THE LIVE AstKind ENUM.
+
+COMMAND=grep -c '= [0-9]*,$' src/ast.h  (the enum's value lines)
+
+THE LIVE ENUM, READ BACK:
+typedef enum AstKind {
+    AST_GVAR          = 256,
+    AST_GOTO          = 258,
+    AST_LABEL         = 259,
+    AST_LVAR          = 261,
+    AST_FUNC          = 262,
+    AST_DECL          = 263,
+    AST_STRING        = 264,
+    AST_FUNCALL       = 265,
+    AST_LITERAL       = 266,
+    AST_ARRAY_INIT    = 267,
+    AST_IF            = 268,
+    AST_FOR           = 269,
+    AST_RETURN        = 270,
+    AST_WHILE         = 271,
+    AST_CLASS_REF     = 273,
+    AST_COMPOUND_STMT = 274,
+    AST_ASM_STMT      = 275,
+    AST_ASM_FUNC_BIND = 276,
+    AST_ASM_FUNCALL   = 277,
+    AST_FUNPTR        = 278,
+    AST_FUNPTR_CALL   = 279,
+    AST_BREAK         = 280,
+    AST_CONTINUE      = 281,
+    AST_DEFAULT_PARAM = 282,
+    AST_VAR_ARGS      = 283,
+    AST_ASM_FUNCDEF   = 284,
+    AST_CAST          = 285,
+    AST_FUN_PROTO     = 286,
+    AST_CASE          = 287,
+    AST_JUMP          = 288,
+    AST_EXTERN_FUNC   = 289,
+    AST_DO_WHILE      = 290,
+    AST_PLACEHOLDER   = 291,
+    AST_SWITCH        = 292,
+    AST_DEFAULT       = 293,
+    AST_SIZEOF        = 294,
+    AST_COMMENT       = 295,
+    AST_BINOP         = 296,
+    AST_UNOP          = 297,
+    AST_TRY           = 298,  /* try { ... } catch <stmt> */
+    AST_THROW         = 299,  /* throw(u64_value); */
+} AstKind;
+
+# THE ENUM VALUE COUNT
+COMMAND=sed -n '102,144p' src/ast.h | grep -c '= [0-9]*,'
+41
+
+# THE TERMINATING SET, READ BACK FROM THE LIVE ENUM
+COMMAND=grep -E 'AST_GOTO|AST_RETURN|AST_COMPOUND_STMT|AST_BREAK|AST_CASE|AST_DEFAULT ' src/ast.h
+    AST_GOTO          = 258,
+    AST_RETURN        = 270,
+    AST_COMPOUND_STMT = 274,
+    AST_BREAK         = 280,
+    AST_CASE          = 287,
+    AST_DEFAULT       = 293,
+    ((ast)->kind == AST_GOTO || (ast)->kind == AST_LABEL ? ((ast)->slabel ? (ast)->slabel : (ast)->sval) : \
+    ((ast)->kind == AST_JUMP ? (ast)->jump_label : (ast)->kind == AST_CASE ? (ast)->case_label : NULL))
+
+# THE ORACLE'S ROW COUNT
+COMMAND=build/recon04-oracle/legacy-sub001-oracle | wc -l
+51
+
+# THE FIXTURE CONTRACT'S EXPECTED ROW COUNT AT RECON04
+EXPECTED_FIXTURE_ROWS_AT_RECON04=51
+# 41 live enum values + 10 probe rows (-4..0 and 296..300), of which
+# 6 are truly out-of-enum and 4 duplicate enum values 296..299
+
+# THE CONTRACT'S PARTITIONS
+EXPECTED_FIXTURE_PARTITIONS_AT_RECON04=12
+
+FIXTURE_ROW_COUNT_IS_DERIVED=YES
+FIXTURE_CONTRACT_COMPLETE=YES
+STATUS=PASS

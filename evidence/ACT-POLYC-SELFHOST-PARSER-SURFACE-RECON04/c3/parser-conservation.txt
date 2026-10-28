@@ -1,0 +1,57 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04
+ACT_PHASE=C3-VERIFY
+EVIDENCE_KIND=parser-conservation
+#
+# THE HOST-ARCHITECTURE PARSER SUITE AT C3, COMPARED WITH THE C0
+# BASELINE.
+#
+# The C3 run used a FRESH hermetic compiler built from the C3 tree:
+#
+COMMAND=rm -rf /tmp/recon04-c3-parser && mkdir -p /tmp/recon04-c3-parser/prefix
+COMMAND=INSTALL_PREFIX=/tmp/recon04-c3-parser/prefix make all
+COMMAND=INSTALL_PREFIX=/tmp/recon04-c3-parser/prefix TEST_PREFIX=/tmp/recon04-c3-parser/prefix make test-prefix-install
+COMMAND=cd src/tests && ../../hcc --install-dir=/tmp/recon04-c3-parser/prefix ./run.HC -o /tmp/recon04-c3-parser/test-runner
+COMMAND=cd src/tests && ./test-runner-recon04-c3
+#
+#   ASSERTIONS_PASSED=376
+#   ASSERTIONS_TOTAL=376
+#   TESTFILES_PASSED=90
+#   FAILED=0
+#
+COMMAND=grep -o "PASSED: [0-9]*/[0-9]*" SUITE_LOG | md5 -q
+#   md5=b6f117eb1386ca80f81bc06226e2a741
+#
+# THE COMPARISON WITH THE C0 BASELINE
+#
+#   counter                    C0      C3     delta
+#   ASSERTIONS_PASSED          376     376     0
+#   ASSERTIONS_TOTAL            376     376     0
+#   TESTFILES_PASSED             90      90     0
+#   FAILED                        0       0     0
+#   ASSERTION_SEQUENCE_MD5   b6f117eb1386ca80f81bc06226e2a741
+#                        b6f117eb1386ca80f81bc06226e2a741   0
+#
+# The assertion sequence is BYTE-IDENTICAL, so the per-test identity
+# sets are equal, not merely equal in COUNT.
+#
+# THE CROSS-TARGET RUN
+#
+COMMAND=cd src/tests && ./test-runner-recon04-c3 --target=aarch64-apple-darwin
+#
+#   FAILED_TO_OPEN_FILE=67
+#   PASSED=0
+#
+# IDENTICAL to the C0 baseline: the cross-target install prefix has no
+# installed PolyC runtime on this host.  This is the HISTORICAL
+# ENVIRONMENT condition, preserved HONESTLY rather than relabelled
+# PASS, and it is NOT a new failure identity.
+#
+PARSER_HOST_ARCH_ASSERTIONS=376/376
+PARSER_HOST_ARCH_TESTFILES=90
+PARSER_HOST_ARCH_FAILURE_IDENTITIES=0
+PARSER_HOST_ARCH_ASSERTION_SEQUENCE_MD5=b6f117eb1386ca80f81bc06226e2a741
+PARSER_CROSS_TARGET_STATUS=FAIL_ENVIRONMENT_PREFIX
+PARSER_CROSS_TARGET_FAILURE_IDENTITIES=0
+NEW_PARSER_FAILURE_IDENTITIES=0
+NEW_PARSER_SEMANTIC_REGRESSIONS=0
+STATUS=PASS

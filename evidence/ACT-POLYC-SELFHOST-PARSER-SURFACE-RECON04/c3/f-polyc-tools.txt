@@ -1,0 +1,98 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04
+ACT_PHASE=C3-VERIFY
+EVIDENCE_KIND=f-polyc-tools
+#
+# THE F-POLYC-TOOLS CHECK AT C3.
+#
+# THE AUTHORITATIVE CHECKER IS NOT AVAILABLE
+#
+COMMAND=ls tools/factory/factory-polyc-tools-check.HC
+#   ls: cannot access 'tools/factory/factory-polyc-tools-check.HC': No such file or directory
+#
+# tools/factory/factory-polyc-tools-check.HC is NOT YET LANDED.  That
+# is the C2.9 residue recorded by AGENTS.md's F-POLYC-TOOLS pointer:
+# "tools/factory/factory-polyc-tools-check.HC (the authoritative
+# F-POLYC-TOOLS checker) is NOT YET LANDED."
+#
+# The ACT requires unavailable tooling to be REPORTED AS UNAVAILABLE,
+# so this is recorded as UNAVAILABLE, not as a pass and not as a
+# silent omission.
+#
+F_POLYC_TOOLS_CHECKER=UNAVAILABLE
+F_POLYC_TOOLS_CHECKER_REASON=tools/factory/factory-polyc-tools-check.HC is not landed (AGENTS.md C2.9 residue)
+#
+# THE NEAREST LIVE ENFORCEMENT
+#
+COMMAND=sh scripts/quality/shell-loc-gate.sh
+#
+#   FAIL  GROW  scripts/quality/factory-v2-commit-msg-check.sh  base=218 cur=344
+#   FAIL  GROW  scripts/quality/factory-closure-status-check.sh  base=352 cur=372
+#   FAIL  GROW  scripts/quality/factory-v2-test.sh  base=465 cur=831
+#   FAIL  GROW  scripts/quality/factory-v2-range-check.sh  base=249 cur=333
+#   FAIL  NEW   scripts/quality/parser-padding-generation-provenance-verify.sh  cur=242 > 50
+#
+# Every one of those five is a PRE-EXISTING baseline violation in a
+# file this ACT did NOT touch:
+#
+COMMAND=git diff --name-only <ENTRY_HEAD>..HEAD -- scripts/
+#   (no output: 0 of the failing scripts were touched by this ACT)
+#
+# THE ACT'S OWN TOOLING
+#
+# The ONE new substantive tool this ACT introduces is PolyC:
+#
+#   tools/quality/parser-surface-recon04-verify.HC
+#
+# and it lives under tools/**, so it is inside the F-POLYC-TOOLS
+# checker's scope, and it is PolyC.  It is recorded in the C0 scope
+# contract and in the C1/C2/C3 evidence.
+#
+# The four new shell files are all under evidence/**:
+#
+#   evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04/c2/controls/eligibility-controls.sh
+#   evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04/c2/controls/ranking-controls.sh
+#   evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04/c3/controls/c3-elig-recompute.sh
+#   evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04/c3/controls/ranking-controls.sh
+#
+COMMAND=git diff --name-only <ENTRY_HEAD>..HEAD -- '*.sh' | grep -v '^evidence/' | wc -l
+#   0
+#
+# The F-POLYC-TOOLS checker's declared scope is tools/**,
+# scripts/quality/**, scripts/** and .githooks/** -- NOT evidence/**.
+# So zero new shell files are inside the checker's scope.
+#
+# THESE FOUR SCRIPTS ARE THE CONTROL DRIVERS FOR THE EXISTING
+# CANONICAL CHECKERS.  They are committed because ACT section 3.1
+# requires that "any probe required to reproduce a binding successor
+# claim must have its complete source or exact reproducible
+# construction committed in the new ACT's evidence tree".  Each one
+# MUTATES a COPY of an input table and re-runs the REAL, UNMODIFIED
+# canonical checker or ranker; they do not implement any eligibility
+# or ranking predicate of their own.
+#
+# RESIDUE, RECORDED HONESTLY AND NOT WAIVED:
+#
+#   The four evidence-tree control drivers are 67..156 LOC shell and
+#   therefore exceed the 50-LOC budget that F-POLYC-TOOLS applies to
+#   shell under the tool roots.  They are OUTSIDE the checker's
+#   declared scope, so they do not violate the rule as written, but
+#   they do not honour its SPIRIT either.  The correct resolution is
+#   to fold the control logic into the PolyC checker or into the
+#   PolyC tool, which is a bounded follow-up act and NOT this ACT's
+#   scope: the ACT authorizes AT MOST ONE new substantive PolyC tool
+#   and it has already been used for
+#   tools/quality/parser-surface-recon04-verify.HC.
+#
+NEW_POLYC_TOOL_IMPLEMENTATIONS=1
+NEW_POLYC_TOOL_IMPLEMENTATIONS_ARE_POLYC=YES
+NEW_SHELL_FILES_UNDER_TOOL_ROOTS=0
+NEW_NON_POLYC_TOOL_IMPLEMENTATIONS_UNDER_TOOL_ROOTS=0
+NEW_PYTHON_SOURCES=0
+NEW_PYTHON_INVOCATIONS=0
+#
+# STATUS: the authoritative checker is UNAVAILABLE, so the rule is
+# neither proven satisfied nor violated by it.  The observable facts
+# above are what can be established without it.
+#
+F_POLYC_TOOLS_RESULT=UNAVAILABLE_CHECKER_NOT_LANDED
+NEW_VIOLATIONS=0

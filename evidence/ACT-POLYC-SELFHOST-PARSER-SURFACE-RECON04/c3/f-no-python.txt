@@ -1,0 +1,54 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04
+ACT_PHASE=C3-VERIFY
+EVIDENCE_KIND=f-no-python
+#
+# THE F-NO-PYTHON CHECK AT C3.
+#
+COMMAND=make factory-no-python-check-binary
+COMMAND=sh scripts/quality/factory-no-python-check.sh
+#
+#   FAIL  scripts/quality/llvm-byte-memory01-test.sh  forbidden Python invocation
+#   FAIL  scripts/quality/llvm-cap-table-verifier.py  forbidden Python source suffix
+#   FAIL  scripts/quality/llvm-intops01-test.sh  forbidden Python invocation
+#   FAIL  scripts/quality/llvm-memory01-red-test.sh  forbidden Python invocation
+#   FAIL  scripts/quality/llvm-spike-test.sh  forbidden Python invocation
+#   FAIL  tools/quality/bootstrap02-corpus-runner.py  forbidden Python source suffix
+#   FAIL  tools/quality/bootstrap02-error-corpus.py  forbidden Python source suffix
+#   FAIL  tools/quality/bootstrap03-corpus-runner.py  forbidden Python source suffix
+#   FAIL  tools/quality/bootstrap03-error-corpus.py  forbidden Python source suffix
+#   FAIL  tools/quality/bootstrap04-corpus-runner.py  forbidden Python source suffix
+#   FAIL  tools/quality/bootstrap04-error-corpus.py  forbidden Python source suffix
+#   FAIL  tools/quality/llvm-gep01-test.HC  known PolyC -> Python execution edge (callgraph inventory)
+#
+#   --- summary ---
+#   POLYC_TOOLS_TRACKED_PYTHON=12
+#   POLYC_TOOLS_TRACKED_INSPECTED=5388
+#   POLYC_TOOLS_TRACKED_PASSES=5381
+#   STATUS=FAIL
+#
+# THE CHECKER ITSELF REPORTS FAIL.  That is the PRE-EXISTING baseline
+# violation, recorded by
+# ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03 (HANDOFF section 9, residue
+# P1): "The F-NO-PYTHON checker reports 12 tracked Python sources".
+#
+# WHAT THIS ACT CHANGED
+#
+COMMAND=git diff --name-only <ENTRY_HEAD>..HEAD | grep -E '\.py$|llvm-gep01-test\.HC|llvm-byte-memory01-test\.sh|llvm-cap-table-verifier\.py|llvm-intops01-test\.sh|llvm-memory01-red-test\.sh|llvm-spike-test\.sh|bootstrap0[234]-'
+#   (no output: 0 of the failing paths were touched by this ACT)
+#
+# Every one of the twelve failing paths was ALREADY failing at the entry
+# tree.  This ACT introduced NO new Python source, NO new Python
+# invocation and NO new PolyC-to-Python execution edge.
+#
+NEW_PYTHON_SOURCES=0
+NEW_PYTHON_INVOCATIONS=0
+NEW_POLYC_TO_PYTHON_EDGES=0
+PRE_EXISTING_PYTHON_VIOLATIONS=12
+F_NO_PYTHON_NEW_VIOLATIONS=0
+#
+# The violation is RECORDED, not waived and not fixed: repairing it is
+# outside this ACT's scope, and fixing it would require touching
+# files this ACT is forbidden to touch.
+#
+STATUS=FAIL_PRE_EXISTING_BASELINE
+NEW_VIOLATIONS=0

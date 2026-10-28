@@ -1,0 +1,59 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04
+ACT_PHASE=C3-VERIFY
+EVIDENCE_KIND=oracle-feasibility-verify
+#
+# THE REAL LEGACY ORACLE, REBUILT AND RE-RUN AT C3.
+#
+COMMAND=cc -std=c99 -O1 -I src -o build/recon04-oracle/legacy-sub001-oracle c2/probes/legacy-sub001-oracle.c
+#   (success)
+#
+COMMAND=build/recon04-oracle/legacy-sub001-oracle
+#   51 rows: one "<kind>\t<terminates>" line per probed AstKind value
+#
+# THE TERMINATING KINDS, READ BACK FROM THE ORACLE OUTPUT
+#
+COMMAND=build/recon04-oracle/legacy-sub001-oracle | awk -F'\t' '$2==1{print $1}'
+#   258
+#   270
+#   274
+#   280
+#   287
+#   293
+#
+# THE ORACLE'S TERMINATING SET EQUALS THE SET THE LIVE SOURCE NAMES
+#
+ORACLE_TERMINATING_SET=258,270,274,280,287,293
+CONTRACT_TERMINATING_SET=258,270,274,280,287,293
+ORACLE_MATCHES_CONTRACT=YES
+#
+# THE ORACLE IS A SOURCE-BOUND EXTRACTION, NOT A LOOKALIKE
+#
+# The oracle's decision body is the three live source lines with the
+# single substitution `stmt->kind` -> `kind`.  The six AstKind values
+# are NOT hard-coded in the oracle: the oracle includes the live
+# src/ast.h and names the enum members, so it cannot drift from the
+# live enum.
+#
+COMMAND=grep -c 'AST_COMPOUND_STMT\|AST_CASE\|AST_DEFAULT\|AST_BREAK\|AST_RETURN\|AST_GOTO' c2/probes/legacy-sub001-oracle.c
+#   8
+#   (the count is 8 because the six enum members appear twice: once in
+#    the decision and once in the probe list)
+#
+COMMAND=grep -c '#include "ast.h"' c2/probes/legacy-sub001-oracle.c
+#   1
+#
+# THE ORACLE SOURCE IS COMMITTED, SO THE ORACLE IS REPRODUCIBLE
+#
+COMMAND=git ls-files evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04/c2/probes/
+#   evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04/c2/probes/legacy-sub001-oracle.c
+#   evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04/c2/probes/mutant-sub001-oracle.c
+#   evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04/c2/probes/witness-sub001.HC
+#
+# THE OBJECT-LEVEL STRENGTHENING IS THE SUCCESSOR'S OBLIGATION, AND IS
+# RECORDED AS SUCH IN c2/selected-oracle-contract.md section 4.
+#
+ORACLE_STRATEGY=extract a contiguous legacy decision with source-bound mechanical verification
+ORACLE_ROWS=51
+REAL_C_ORACLE_IDENTIFIED=YES
+ORACLE_REPRODUCIBLE=YES
+STATUS=PASS
