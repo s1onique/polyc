@@ -7261,3 +7261,121 @@ not create that ACT and does not implement it.
 See
 `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05.md` and
 `evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05/`.
+
+---
+
+## ACT-POLYC-SELFHOST-PARSER-SLICE07 -- CLOSE
+
+**Status:** CLOSED with `ACT-Verdict: PASS`.
+
+The compound-block statement APPEND/SKIP routing in the PolyC parser is
+now owned by a qualified PolyC component, and the legacy C decision has
+been retired from the production path.  This is the SEVENTH
+production-authoritative PolyC parser decision, and the SECOND migrated
+bounded structural sub-slice.
+
+```text
+COMPOUND_BLOCK_APPEND_AUTHORITY = POLYC
+LEGACY_COMPOUND_BLOCK_C_AUTHORITY = RETIRED
+SEVENTH_POLYC_PARSER_AUTHORITY = ESTABLISHED
+
+SELECTED_CANDIDATE = SUB-003
+ORIGINAL_SOURCE_RANGE = src/parser.c:2049..2049
+ORIGINAL_SOURCE_SHA256 = 378a39d71eed7aaf673bde3857cc08df6f9c95c776723832e6e460553be361e8
+POLYC_SYMBOL = BootstrapCompoundBlockAppendsStatement
+POLYC_ABI = I64 BootstrapCompoundBlockAppendsStatement(I64 stmt_kind, I64 declvar_kind) -> I64
+PRODUCTION_SELECTOR = HCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND
+```
+
+**The delegation is load-bearing and the legacy decision is RETIRED.**
+The production parser object IMPORTS the PolyC symbol as an undefined
+reference and the function-scoped disassembly of
+`_parseCompoundStatementInternal` contains a `bl` to the component at
+0x3a68 and ZERO comparisons against 256 (AST_GVAR).  The only remaining
+AST_DECL comparison is the AUTHORIZED projection guard, and it guards a
+dereference; it does not feed the SKIP/APPEND branch, which is fed only
+by the `cbz` that tests the component's return value.
+
+**The conditional host projection is preserved.**  The two-argument ABI
+does not make both host reads unconditional: an instrumented read-count
+harness observes ZERO `declvar` reads and no trap for a non-declaration,
+and EXACTLY ONE read for a declaration.  Removing the guard moves the
+read count 0 -> 1 and the trap 0 -> 1, so the detector is sensitive.
+
+**The oracle is object-level.**  The G0 reference is the ACTUAL
+production `src/parser.c` translation unit compiled WITHOUT the
+delegation macro, with the production flags; it carries no reference to
+the PolyC symbol, and the build fails if it ever does.
+
+**The fixture is derived.**  1753 rows over 10 partitions, derived from
+the live `src/ast.h` enum, with the expected value computed from the
+frozen rule.  An INDEPENDENT PolyC witness re-derives the constants by
+parsing the live source bytes and recomputes every row.
+
+**The four generations are independent.**  Four distinct producers, and
+all four agree on all 1753 rows; all TWELVE ordered pairs are
+identical when compared row by row.
+
+**The causal link is proven on the real production compiler.**  Mutating
+ONLY the PolyC source predicate still produces a SUCCESSFULLY BUILT
+mutant compiler, which then rejects the static witness the pristine
+compiler accepts.  The observation class is reported honestly as
+`COMPILER_ACCEPTANCE_CHANGED`, which is the channel and the diagnostic
+shape the predecessor recorded.  A byte-identical restoration recovers
+the pristine behaviour.
+
+```text
+G0_ROWS=1753 G1_ROWS=1753 G2_ROWS=1753 G3_ROWS=1753
+DIFFERING_ROWS_ACROSS_ALL_TWELVE_ORDERED_PAIRS=0
+G0_SKIP_ROWS=3 G1_SKIP_ROWS=3 G2_SKIP_ROWS=3 G3_SKIP_ROWS=3
+ORACLE_VS_EXPECTED_MISMATCH=0
+POLYC_VS_EXPECTED_MISMATCH=0
+ORACLE_VS_POLYC_MISMATCH=0
+DERIVED_FIXTURE_ROWS=1753
+DERIVED_FIXTURE_PARTITIONS=10
+G0_ORACLE_OBSERVED_SKIP_PAIR=263 256
+
+PRODUCTION_DELEGATION=LOAD_BEARING
+LEGACY_AST_GVAR_COMPARISONS_IN_PRODUCTION_FUNCTION=0
+PRISTINE_OUTPUT =WITNESS_OUTPUT=13 15 2 (exit 0)
+MUTATED_OUTPUT  =ERROR: Mapping exists for 1 -> %l14 i64 local
+RESTORED_OUTPUT =WITNESS_OUTPUT=13 15 2 (exit 0)
+
+INHERITED_CONTROL_COUNT=10  INHERITED_CONTROL_PASS=10
+NEW_CONTROL_COUNT=18       NEW_CONTROL_PASS=18
+NEGATIVE_CONTROLS_UNPROVEN=0
+
+PARSER_HOST_ARCH_ASSERTIONS   = 376/376 over 90 test files
+PARSER_ASSERTION_SEQUENCE_MD5 = b6f117eb1386ca80f81bc06226e2a741
+NEW_PARSER_FAILURE_IDENTITIES = 0
+NEW_LEXER_FAILURE_IDENTITIES  = 0
+LEXER07_FAILURE_IDENTITY_MD5  = 7ee761440de83552e751e3c3976c1683
+LEXER07_STATUS                = FAIL_KNOWN_BASELINE (15 identities)
+CROSS_TARGET_STATUS           = FAIL_ENVIRONMENT_PREFIX (67 in BOTH trees)
+F_NO_PYTHON                    = FAIL_KNOWN_BASELINE (exactly 12, zero new)
+F_POLYC_TOOLS                  = UNAVAILABLE (its checker is not landed)
+
+GATE_FAST = PASS
+GATE_PUSH = PASS
+APPEND_ONLY = PASS (11/11)
+F14 = PASS
+MANDATORY_AC_TOTAL = 50
+MANDATORY_AC_PASS = 50
+```
+
+**A bounded residue.**  The SLICE06 CMake producer branch in
+`src/CMakeLists.txt` passes an absolute `--install-dir` to a compiler
+that appends the header path to it, so the header path is malformed.
+It was observed at C3 while investigating this ACT's own producer path.
+It is a PRE-EXISTING defect in a closed predecessor's wiring, it is
+NOT on this ACT's production path, and it is NOT repaired here.
+
+**What remains blocked.**  `parseCompoundStatementInternal`,
+`parseStatement` and `parseExpr` as whole functions, the recursive
+flow-analysis walks, and the declaration-versus-statement routing
+decision.  This ACT does NOT claim whole-parser self-hosting, and it
+preselects no successor.
+
+See
+`docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE07.md` and
+`evidence/ACT-POLYC-SELFHOST-PARSER-SLICE07/`.

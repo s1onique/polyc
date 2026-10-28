@@ -1,0 +1,45 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE07
+# ACT_PHASE=C3-VERIFY
+# EVIDENCE_KIND=gate-push
+#
+# THE HERMETIC PUSH GATE, ACTUALLY RUN AGAINST THE COMMITTED TREE.
+#
+# COMMAND=make gate-push
+#
+# The gate creates a temporary detached Git worktree at the subject
+# commit and runs the whole hermetic sequence INSIDE it.
+#
+#   CHECK=build STATUS=PASS
+#   CHECK=install STATUS=PASS
+#   CHECK=gep01 STATUS=PASS
+#   CHECK=aot STATUS=PASS
+#   CHECK=jit STATUS=PASS
+#   CHECK=lsp STATUS=PASS
+#   CHECK=diff-check STATUS=PASS
+#   VERDICT=PASS
+#   EXIT=0
+#
+# The build step reported the PolyC production authorities:
+#
+#   PRODUCTION_PADDING_AUTHORITY=POLYC
+#   PRODUCTION_AST_BINOP_AUTHORITY=POLYC
+#   PRODUCTION_SWITCH_ARM_AUTHORITY=POLYC
+#
+# The GEP01 regression and the LSP suite:
+#
+#   GEP01_PASS=30
+#   GEP01_FAIL=0
+#   [0;32mlsp: 43/43 passed[0;0m
+#
+# GATE_PUSH=PASS
+#
+# THE SERIALIZATION DISCIPLINE
+#
+# The gate-push was run AFTER the unit-test baseline and AFTER
+# the lexer differentials, never concurrently with them.  The
+# gate creates its OWN temporary worktree and its OWN temporary
+# prefix, so it does not share the authoritative tree's build
+# directory with any other invocation.
+#
+# OVERLAPPING_GATE_OR_BUILD_RUNS=0
+# SHARED_ASSEMBLY_TEMP_WRITER_CONFLICTS=0
