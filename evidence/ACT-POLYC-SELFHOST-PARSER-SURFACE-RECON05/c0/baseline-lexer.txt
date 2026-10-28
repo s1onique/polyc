@@ -1,0 +1,56 @@
+COMMAND=make lexer07-direct-differential
+OK   err_two_dots2 kind=4/4 end=0/0 i64=0x0/0x0 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=1/1 slen=0/0
+OK   err_trailing_dot kind=2/2 end=2/2 i64=0x0/0x0 f64=0x3ff0000000000000/0x3ff0000000000000 ishex=0/0 err=0/0 slen=2/2
+OK   err_lone_dot kind=2/2 end=1/1 i64=0x0/0x0 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=1/1
+OK   err_two_e_letters2 kind=4/4 end=0/0 i64=0x0/0x0 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=1/1 slen=0/0
+OK   err_e_no_digits kind=1/1 end=2/2 i64=0x1/0x1 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=2/2
+OK   err_e_trailing_minus kind=1/1 end=2/2 i64=0x1/0x1 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=2/2
+OK   err_char_unterm kind=3/3 end=5/5 i64=0x636261/0x636261 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=2/2 slen=3/3
+OK   err_char_overflow kind=3/3 end=12/12 i64=0x6867666564636261/0x6867666564636261 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=3/3 slen=10/10
+OK   err_char_8slots_overflow kind=3/3 end=11/11 i64=0x6867666564636261/0x6867666564636261 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=3/3 slen=9/9
+OK   err_char_unterm_eof kind=3/3 end=3/3 i64=0x61/0x61 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=2/2 slen=1/1
+OK   err_cur_on_letter kind=0/0 end=0/0 i64=0x0/0x0 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=0/0
+OK   err_cur_on_op kind=0/0 end=0/0 i64=0x0/0x0 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=0/0
+OK   err_cur_at_eof kind=0/0 end=2/2 i64=0x0/0x0 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=0/0
+OK   cur_past_end kind=0/0 end=5/5 i64=0x0/0x0 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=0/0
+OK   cur_negative kind=0/0 end=-1/-1 i64=0x0/0x0 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=0/0
+OK   cur_at_boundary kind=0/0 end=1/1 i64=0x0/0x0 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=0/0
+ACT_SELFHOST_LEXER02_DIRECT_DIFF_PASS=89
+ACT_SELFHOST_LEXER02_DIRECT_DIFF_FAIL=0
+STATUS=PASS
+LEXER07_DIRECT_DIFFERENTIAL=PASS
+EXIT_CODE=0
+COMMAND=make lexer08-direct-differential
+		-o ./build/lexer08-trivia.o
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+LEXER08_STAGE0_TRIVIA_OBJECT=./build/lexer08-trivia.o
+cc -std=c99 -O2 -Wno-comment -o ./build/lexer08-direct-differential \
+		tools/quality/lexer08-direct-differential.c \
+		tools/quality/lexer08-trivia-oracle-impl.c \
+		./build/lexer08-trivia.o
+./build/lexer08-direct-differential ./build/lexer08-trivia.o
+DIRECT_DIFFERENTIAL_TOTAL=45
+DIRECT_DIFFERENTIAL_PASS=45
+DIRECT_DIFFERENTIAL_FAIL=0
+STATUS=PASS
+LEXER08_DIRECT_DIFFERENTIAL=PASS
+EXIT_CODE=0
+COMMAND=make lexer09-direct-differential
+           ^
+1 warning generated.
+cc -std=c99 -O2 -Wall -Wextra -o ./build/lexer09-direct-differential \
+		tools/quality/lexer09-direct-differential.c \
+		tools/quality/lexer09-link-oracle-impl.c \
+		./build/lexer09-link.o -lm
+tools/quality/lexer09-link-oracle-impl.c:37:12: warning: unused function 'oracle_lex' [-Wunused-function]
+static int oracle_lex(const char *src, I64 src_len, I64 *cursor,
+           ^
+1 warning generated.
+./build/lexer09-direct-differential
+DIRECT_DIFFERENTIAL_TOTAL=23
+DIRECT_DIFFERENTIAL_PASS=23
+DIRECT_DIFFERENTIAL_FAIL=0
+STATUS=PASS
+EXIT_CODE=0

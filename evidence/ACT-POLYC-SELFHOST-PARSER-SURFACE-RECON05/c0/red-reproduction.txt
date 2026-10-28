@@ -1,0 +1,60 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05
+# ACT_PHASE=C0-ENTRY
+# EVIDENCE_KIND=red-reproduction
+#
+# THE SIX DELIBERATE REDs.  Each RED must fail for its OWN reason
+# against the REAL entry state, never against an artificial stub.
+#
+# RED-01  UNBOUND MISSING SOURCE-RANGE DIGEST
+#   The live source range src/parser.c:2049..2049 (SUB-003) has a
+#   measured SHA-256.  Deleting that digest from the identity table
+#   leaves the row with no digest, and the verifier cannot certify the
+#   row.  Detector: SOURCE_HASH_MISMATCH (absent digest).
+#
+# RED-02  MISSING CURRENT-FUNCTION CENSUS
+#   The live census is measured from the source bytes.  Removing the
+#   SUB-003 row from the census leaves the candidate with no live
+#   function to bind to.  Detector: MISSING_FUNCTION.
+#
+# RED-03  MISSING ORIGINAL CANDIDATE DISPOSITION
+#   Every historical candidate (SUB-001..SUB-012, CAND-018..CAND-040)
+#   must have exactly ONE current classification.  An unclassified
+#   historical candidate is a census gap, not an omission.
+#
+# RED-04  MISSING INDEPENDENT ELIGIBILITY AND RANKING
+#   The 13-clause eligibility checker consumes a facts table with NO
+#   hand-authored eligible column.  Without the C2 checker run there
+#   is no eligibility verdict at all, and without the C3 independent
+#   recomputation there is no ranking.
+#
+# RED-05  MISSING SELECTED-C-OBJECT ORACLE
+#   The G0 oracle must be the REAL production C translation-unit
+#   object with the proposed delegation DISABLED, and that object
+#   must NOT reference the proposed PolyC symbol.  Without it there is
+#   no object-level oracle.
+#
+# RED-06  MISSING SEMANTIC CAUSAL MUTATION
+#   The causal gate requires the real compiler to be rebuilt in a
+#   disposable worktree with the prospective C decision mutated, and
+#   the compiled witness to change in the intended direction.  Without
+#   that execution there is no causal witness.
+#
+# THE RED REPRODUCTIONS ACTUALLY EXECUTED IN THIS ACT ARE
+# RECORDED IN c2/eligibility-and-ranking-controls.txt and
+# c3/causal-mutation-and-restoration.txt.  The rows below record the
+# FROZEN RED CONTRACT (ACT section 6 item 6): the contract is frozen
+# BEFORE the corresponding measurement, and no observed outcome is
+# backfilled into it.
+#
+# Schema: red_id <TAB> subject <TAB> expected_failure_class <TAB> detector <TAB> status_at_c0
+
+RED-01	identity-table-digest	UNBOUND_SOURCE_IDENTITY	SOURCE_HASH_MISMATCH	FROZEN_NOT_YET_EXECUTED
+RED-02	live-function-census	MISSING_CENSUS_FUNCTION	MISSING_FUNCTION	FROZEN_NOT_YET_EXECUTED
+RED-03	historical-candidate-disposition	UNCLASSIFIED_CANDIDATE	MISSING_CLASSIFICATION	FROZEN_NOT_YET_EXECUTED
+RED-04	eligibility-and-ranking	MISSING_INDEPENDENT_COMPUTATION	NO_ELIGIBILITY_VERDICT	FROZEN_NOT_YET_EXECUTED
+RED-05	selected-c-object-oracle	MISSING_OBJECT_LEVEL_ORACLE	NO_G0_ORACLE	FROZEN_NOT_YET_EXECUTED
+RED-06	semantic-causal-mutation	MISSING_CAUSAL_WITNESS	NO_CAUSAL_WITNESS	FROZEN_NOT_YET_EXECUTED
+
+RED_TOTAL=6
+RED_EXECUTED_AT_C0=0
+RED_BACKFILLED=0
