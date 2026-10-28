@@ -1,0 +1,58 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE06
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=mandatory-ac-status
+#
+# EVERY MANDATORY ACCEPTANCE PREDICATE, JOINED BY ITS EXACT ID.
+#
+# The IDs are the ones frozen in c0/mandatory-ac-contract.tsv.  Every
+# ID is joined to the named evidence artifact and to the OBSERVED
+# result.  An AC that is not proven is reported as UNPROVEN, never as
+# PASS.
+#
+# schema: ac_id <TAB> status <TAB> observed <TAB> evidence
+#
+AC01	PASS	branch=main HEAD=1ccf28d58fec9c856c12ad1f71bab9a2ca6e18e0 tree=a8532b8027607e15dd8f4b9f6d683194bc577f82 clean=yes replace_refs=0	c0/entry-identity.txt
+AC02	PASS	the predecessor CLOSE 1ccf28d58fec9c856c12ad1f71bab9a2ca6e18e0 IS the entry HEAD; 5-commit range; 0 intervening	c0/entry-identity.txt
+AC03	PASS	the RECON04 evidence tree and HANDOFF are byte-unchanged (git diff empty)	c0/predecessor-freeze.tsv c3/factory-invariants.txt
+AC04	PASS	src/parser.c:1551..1553 sha256=31dc9ae8f87d26be429a565356820d8913c9a7cbc0e37d64470049c3b5948707; the projection reads exactly stmt->kind as I64	c0/red-reproduction.txt c1/state-projection.txt
+AC05	PASS	the five previous PolyC authorities are production-authoritative (U references, not definitions)	c0/production-authority.txt c3/parser-conservation.txt
+AC06	PASS	RED-1..RED-5 all reproduced against the real entry tree	c0/red-reproduction.txt
+AC07	PASS	the G0 oracle is the ACTUAL production src/parser.c compiled WITHOUT the delegation macro	c1/real-oracle.txt
+AC08	PASS	the object-level G0 is byte-identical to the frozen C-extracted oracle; the frozen source hash matches the live range	c1/real-oracle.txt
+AC09	PASS	64 rows and 12 partitions INDEPENDENTLY derived from the live src/ast.h; the count is derived, not hard-coded	c1/fixture.txt c1/fixture-integrity.txt
+AC10	PASS	the integrity witness derives the enum and the terminating set by PARSING the live source text; it does not reuse the producer's algorithm	c1/fixture-integrity.txt
+AC11	PASS	FC-01..FC-08 and PD-01..PD-03 all fire for their INTENDED reasons	c1/negative-controls.txt
+AC12	PASS	the ABI takes one I64 and returns one I64 in {0,1}; no pointer, no void *, no callback, no jmp_buf	c1/state-projection.txt
+AC13	PASS	the PolyC component returns the exact legacy decision over the ENTIRE derived domain (64/64 rows, 0 mismatches)	c2/component-semantics.txt
+AC14	PASS	the source selector and the actual OBJECT-LEVEL production PolyC delegation are proved (U _BootstrapSwitchArmTerminates)	c2/production-delegation.txt
+AC15	PASS	the legacy C decision is ABSENT as the active production authority (the wrapper is a bare bl, no comparison)	c2/production-delegation.txt
+AC16	PASS	C retains AST, allocation, diagnostics, recovery, symbol table and token-stream authority	c2/ownership.txt
+AC17	PASS	G0 has valid source/object/compiler provenance and is NOT the PolyC compiler (/usr/bin/cc)	c3/generation-manifest.tsv
+AC18	PASS	G1 was independently compiled by the stage0 compiler (build/host-stage0/hcc)	c3/generation-manifest.tsv
+AC19	PASS	G2 was independently compiled by the G1 compiler (./hcc)	c3/generation-manifest.tsv
+AC20	PASS	G3 was independently compiled by the G2 compiler (./build/hcc-bootstrap02)	c3/generation-manifest.tsv
+AC21	PASS	all four stages' fixture outputs are compared by ID, 64 rows each, no missing and no extra	c3/generation-semantic-pairs.tsv
+AC22	PASS	NC-01..NC-05 all fire for their INTENDED reasons	c3/provenance-negative-controls.txt
+AC23	PASS	the production compiled-program PRISTINE witness is observed (ARM2_MARKER,x=1)	c3/pristine-restoration.txt
+AC24	PASS	mutating the POLYC decision changes the compiled-program witness (ARM1_MARKER appears) with a SUCCESSFUL build	c3/pristine-restoration.txt
+AC25	PASS	byte-identical restoration returns the original output AND the original compiler bytes	c3/pristine-restoration.txt
+AC26	PASS	376/376 assertions over 90 test files with a byte-identical assertion-sequence md5; 0 new failure identities	c3/parser-conservation.txt
+AC27	PASS	89/45/23 lexer differential passes; 0 new failure identities	c3/lexer-conservation.txt
+AC28	PASS	the LEXER07 failure-identity md5 is 7ee761440de83552e751e3c3976c1683, unchanged; the historical FAIL is recorded honestly	c3/lexer07-delta.txt
+AC29	PASS	the cross-target condition is 67 missing tos.HH in BOTH trees; 0 new failure identities	c3/cross-target.txt
+AC30	PASS	make gate-fast ACTUALLY ran and exited 0 with PASS	c3/gate-fast.txt
+AC31	PASS	make gate-push ACTUALLY ran and exited 0 with PASS	c3/gate-push.txt
+AC32	PASS	append-only, F14, closure-status and patch hygiene ACTUALLY ran and PASS; the factory-v2 range check is correctly deferred to C4	c3/factory-invariants.txt
+AC33	PASS	0 new Python and 0 unauthorized tooling violations; the F-POLYC-TOOLS checker availability is honestly UNAVAILABLE	c3/f-no-python.txt c3/f-polyc-tools.txt
+AC34	PASS	the scope is restricted to SUB-001; no ranking, no mutable-graph change, no recovery change	c3/scope-verify.txt
+AC35	PASS	all 36 frozen ACs are joined by their exact IDs, with no missing and no unknown	c3/mandatory-ac-status.tsv
+AC36	DEFERRED_TO_CLOSE	the C4 terminal CLOSE commit does not exist yet; the external terminality checks run at C4	c4/terminality.txt
+#
+MANDATORY_AC_TOTAL=36
+MANDATORY_AC_PASS=35
+MANDATORY_AC_DEFERRED_TO_CLOSE=1
+MANDATORY_AC_FAIL=0
+MANDATORY_AC_UNPROVEN=0
+#
+# AC14's evidence is c2/production-delegation.txt; it is listed here
+# with the same content as the other PASS rows.

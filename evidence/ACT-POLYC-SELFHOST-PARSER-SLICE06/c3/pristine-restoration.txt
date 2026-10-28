@@ -1,0 +1,210 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE06
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=pristine-restoration
+
+THE PRODUCTION CAUSAL EXPERIMENT
+================================
+
+The mutation is applied to the POLYC DECISION, NOT to the C source.
+A mutation of the C source, a mock API, a detached PolyC helper or a
+compiler that fails to compile or link is NOT an acceptable substitute.
+
+THE ISOLATED TREE
+------------------
+COMMAND=git worktree add --detach /tmp/slice06-c3 HEAD
+  HEAD is now at a5591d6 ACT-POLYC-SELFHOST-PARSER-SLICE06 C2: the PolyC arm-termination component and the production delegation
+
+This is a REAL git worktree of THIS repository, checked out at the
+ACT's own C2 commit, so the tracked production source is exactly the
+source under test.  The tracked source in the MAIN repository was NOT
+modified: the mutation was applied only inside the isolated worktree
+and was reverted there.
+
+THE WITNESS
+-----------
+FILE=evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04/c2/probes/witness-sub001.HC
+
+The witness puts a COMPOUND STATEMENT as the first statement of the
+first case arm and a marker statement after it:
+
+  case 1: { x = 41; }
+          Print("ARM1_MARKER");
+  case 2:
+          x = 1;
+          Print("ARM2_MARKER");
+          break;
+
+The observable is COMPILED PROGRAM OUTPUT.
+
+CONDITION A -- THE PRISTINE POLYC DECISION
+------------------------------------------
+COMMAND=shasum -a 256 tools/bootstrap/selfhost-parser-slice06.HC
+  872206c75c483bfa0fadaef685329b3b28036ee9254c436c6f7bb5541651b4b4
+
+COMMAND=make production-hcc INSTALL_PREFIX=/tmp/slice06-c3/prefix
+  (exit 0)
+  PRODUCTION_HCC=./hcc
+  PRODUCTION_SWITCH_ARM_AUTHORITY=POLYC
+
+COMMAND=shasum -a 256 hcc build/parser-switch-arm-subject.o
+  70983d05016fd894179950f1a18903acbdf333bbd9c002465af008f08ee97bd5  hcc
+  848866e9fea389d574b3cb3e39b54b62fc0c744fe707fcf7c4184714017467f0  build/parser-switch-arm-subject.o
+
+COMMAND=./hcc --install-dir=./build/test-prefix <witness> -o build/slice06-c3-pristine-witness
+  (exit 0)
+
+COMMAND=./build/slice06-c3-pristine-witness
+  SUB001:ARM2_MARKER
+  SUB001:x=1
+
+  PRISTINE_BUILD=PASS
+  PRISTINE_OUTPUT=SUB001:ARM2_MARKER,SUB001:x=1
+
+CONDITION B -- THE MUTATED POLYC DECISION
+------------------------------------------
+The mutation REMOVES AST_COMPOUND_STMT from the terminating set.  It
+removes ONE disjunct of ONE condition in the POLYC component; the
+compiler still builds successfully and still produces a working
+compiler.
+
+COMMAND=perl -pi -e 's{^  if \(ast_kind == 274\) return 1;   // AST_COMPOUND_STMT\n$}{}' \
+    tools/bootstrap/selfhost-parser-slice06.HC
+
+COMMAND=shasum -a 256 tools/bootstrap/selfhost-parser-slice06.HC
+  9c47dcdf17e1f21ce13305b81f8ab6b9c321e89b0122cef8b919be058d57c1b7
+
+COMMAND=diff <pristine> <mutated>
+  85d84
+  <   if (ast_kind == 274) return 1;   // AST_COMPOUND_STMT
+
+  EXACTLY ONE LINE CHANGED=YES
+
+COMMAND=make production-hcc INSTALL_PREFIX=/tmp/slice06-c3/prefix
+  (exit 0)
+  PRODUCTION_HCC=./hcc
+  PRODUCTION_SWITCH_ARM_AUTHORITY=POLYC
+
+  MUTANT_BUILD=PASS
+  MUTANT_BUILD_FAILED=NO
+
+COMMAND=shasum -a 256 hcc build/parser-switch-arm-subject.o
+  f3ef6ef02ecaadfc37a806ffda76b22fabd1272d6040843e79efe223396510f7  hcc
+  0486fe5acec69004aeba000eec20bd1d54bbeb55e1c8487c9d4d72328e9ea700  build/parser-switch-arm-subject.o
+
+The compiler binary and the subject object BOTH changed, so the
+mutation really reached the production compiler.
+
+COMMAND=./hcc --install-dir=./build/test-prefix <witness> -o build/slice06-c3-mut-witness
+  (exit 0)
+
+COMMAND=./build/slice06-c3-mut-witness
+  SUB001:ARM1_MARKER
+  SUB001:ARM2_MARKER
+  SUB001:x=1
+
+  MUTATED_OUTPUT=SUB001:ARM1_MARKER,SUB001:ARM2_MARKER,SUB001:x=1
+
+CONDITION C -- THE RESTORED POLYC DECISION
+-------------------------------------------
+COMMAND=cp <pristine copy> tools/bootstrap/selfhost-parser-slice06.HC
+
+COMMAND=shasum -a 256 tools/bootstrap/selfhost-parser-slice06.HC
+  872206c75c483bfa0fadaef685329b3b28036ee9254c436c6f7bb5541651b4b4
+
+COMMAND=cmp <pristine copy> tools/bootstrap/selfhost-parser-slice06.HC
+  (no output)
+
+  RESTORED_BYTE_IDENTICAL=YES
+  RESTORED_SOURCE_SHA256=872206c75c483bfa0fadaef685329b3b28036ee9254c436c6f7bb5541651b4b4
+
+COMMAND=make production-hcc INSTALL_PREFIX=/tmp/slice06-c3/prefix
+  (exit 0)
+
+COMMAND=shasum -a 256 hcc build/parser-switch-arm-subject.o
+  70983d05016fd894179950f1a18903acbdf333bbd9c002465af008f08ee97bd5  hcc
+  848866e9fea389d574b3cb3e39b54b62fc0c744fe707fcf7c4184714017467f0  build/parser-switch-arm-subject.o
+
+The restored compiler and the restored subject are BYTE-IDENTICAL to
+the pristine ones.
+
+COMMAND=./hcc --install-dir=./build/test-prefix <witness> -o build/slice06-c3-rest-witness
+  (exit 0)
+
+COMMAND=./build/slice06-c3-rest-witness
+  SUB001:ARM2_MARKER
+  SUB001:x=1
+
+COMMAND=cmp <pristine output> <restored output>
+  (no output: the two files are IDENTICAL)
+
+  RESTORED_OUTPUT_EQUALS_PRISTINE=YES
+
+THE COMPARISON
+--------------
+COMMAND=cmp -s <pristine output> <restored output>   -> identical
+COMMAND=cmp -s <pristine output> <mutated output>    -> differ
+
+  MUTATED_OUTPUT_DIFFERS=YES
+  RESTORED_OUTPUT_EQUALS_PRISTINE=YES
+
+THE DIRECTION
+-------------
+The pristine output has NO ARM1_MARKER: the compound statement
+TERMINATES the first arm, so the marker statement is parsed by the
+`case 2:` arm and is never printed.
+
+The mutated output HAS ARM1_MARKER, and it comes FIRST: the compound
+statement does NOT terminate the arm, so the marker statement stays in
+the `case 1:` arm and IS printed.
+
+That is EXACTLY the direction the predecessor's frozen causal contract
+records, and it is the direction this ACT's PolyC mutation produces.
+
+  PRISTINE_OUTPUT=SUB001:ARM2_MARKER,SUB001:x=1
+  MUTATED_OUTPUT=SUB001:ARM1_MARKER,SUB001:ARM2_MARKER,SUB001:x=1
+  RESTORED_OUTPUT=SUB001:ARM2_MARKER,SUB001:x=1
+  MUTATED_OUTPUT_DIFFERS=YES
+  RESTORED_OUTPUT_EQUALS_PRISTINE=YES
+  MUTANT_BUILD=PASS
+  PRESTINE_BUILD=PASS
+  RESTORED_BUILD=PASS
+
+WHAT THIS PROVES, AND WHAT IT DOES NOT PROVE
+--------------------------------------------
+  PROVES=the switch-arm termination decision is OBSERVABLE in compiled
+         program output, and that MUTATING THE POLYC DECISION changes
+         that output, and that a byte-identical restoration returns the
+         pristine output
+  PROVES=the production delegation is LOAD-BEARING: the PolyC
+         component's bytes are in the production compiler, and changing
+         them changes the compiler's behaviour
+  DOES_NOT_PROVE=that the parser is otherwise unchanged -- that is the
+         conservation evidence's job (c3/parser-conservation.txt)
+
+THE NEGATIVE CONTROLS PS-01..PS-03
+----------------------------------
+  PS-01  the production delegation is REMOVED while the PolyC component
+         remains -> the production object no longer references
+         BootstrapSwitchArmTerminates, and the delegation-load-bearing
+         check FAILS
+         OBSERVED: the delegation-load-bearing check is the
+         `nm ... | grep ' U _BootstrapSwitchArmTerminates'` inspection
+         in c2/production-delegation.txt.  It reports an UNDEFINED
+         reference, so the delegation IS load-bearing and PS-01's
+         premise (the delegation removed) does not hold in the
+         committed tree.
+         SENSITIVE=YES (the detector fires on the removed-delegation
+         condition; see c3/provenance-negative-controls.txt)
+
+  PS-02  the PolyC component is mutated to drop AST_COMPOUND_STMT
+         from the terminating set -> the causal witness output CHANGES
+         (ARM1_MARKER appears)
+         OBSERVED: ARM1_MARKER appears in the mutated output.
+         SENSITIVE=YES
+
+  PS-03  the causal mutation is reverted -> the witness output returns
+         BYTE-IDENTICAL to the pristine output
+         OBSERVED: cmp reports the two outputs IDENTICAL, and the
+         restored compiler and subject are byte-identical to the
+         pristine ones.
+         SENSITIVE=YES

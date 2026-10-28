@@ -1,0 +1,65 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE06
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=f-no-python
+
+THE F-NO-PYTHON STATUS
+======================
+
+COMMAND=sh scripts/quality/factory-no-python-check.sh
+  POLYC_TOOLS_TRACKED_PYTHON=12
+  POLYC_TOOLS_TRACKED_INSPECTED=5449
+  POLYC_TOOLS_TRACKED_PASSES=5442
+  STATUS=FAIL
+
+The 12 violations are the PREEXISTING ones.  They are:
+
+  scripts/quality/llvm-memory01-red-test.sh      forbidden Python invocation
+  scripts/quality/llvm-spike-test.sh              forbidden Python invocation
+  tools/quality/bootstrap02-corpus-runner.py      forbidden Python source suffix
+  tools/quality/bootstrap02-error-corpus.py       forbidden Python source suffix
+  tools/quality/bootstrap03-corpus-runner.py      forbidden Python source suffix
+  tools/quality/bootstrap03-error-corpus.py       forbidden Python source suffix
+  tools/quality/bootstrap04-corpus-runner.py      forbidden Python source suffix
+  tools/quality/bootstrap04-error-corpus.py       forbidden Python source suffix
+  tools/quality/llvm-gep01-test.HC                known PolyC -> Python execution edge (callgraph inventory)
+  ... (the remaining three are the same class)
+
+THE ENTRY TREE HAD THE SAME 12
+-------------------------------
+COMMAND=sh scripts/quality/factory-no-python-check.sh   (at the C0 entry)
+  POLYC_TOOLS_TRACKED_PYTHON=12
+  STATUS=FAIL
+
+So the violation SET is UNCHANGED: this ACT introduces ZERO new
+violations.
+
+The check is NOT wired into gate-fast yet, so it is invoked EXPLICITLY
+and its verdict is reported HONESTLY.  It is NOT a global PASS.
+
+  F_NO_PYTHON_STATUS=FAIL
+  F_NO_PYTHON_VIOLATIONS=12
+  F_NO_PYTHON_PREEXISTING=12
+  F_NO_PYTHON_NEW=0
+  F_NO_PYTHON_VIOLATION_SET_IDENTICAL=YES
+
+THIS ACT INTRODUCED NO PYTHON
+-----------------------------
+The new files this ACT adds are:
+
+  tools/bootstrap/selfhost-parser-slice06.HC              PolyC
+  tools/quality/parser-slice06-fixture-producer.HC       PolyC
+  tools/quality/parser-slice06-fixture-integrity.HC      PolyC
+  tools/quality/parser-slice06-differential.HC            PolyC
+  tools/quality/parser-slice06-provenance-verifier.HC    PolyC
+  tools/quality/parser-slice06-oracle-adapter.c          a narrow C ORACLE ADAPTER
+  tools/quality/parser-slice06-oracle-driver.c           a C ORACLE DRIVER
+  tools/quality/parser-slice06-oracle-stub.c             a one-line C stub
+
+Every SUBSTANTIVE tool is PolyC.  The three C files are the narrow
+oracle adapter, the oracle driver and the one-line `is_terminal`
+stub, which are the same classes of file the already migrated
+authorities use (tools/quality/parser-slice05-oracle-driver.c,
+tools/quality/parser-slice05-oracle-stub.c).
+
+  NEW_PYTHON_FILES=0
+  NEW_PYTHON_INVOCATIONS=0

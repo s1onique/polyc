@@ -1,0 +1,95 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE06
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=factory-invariants
+
+THE FACTORY INVARIANTS, ACTUALLY CHECKED
+=========================================
+
+THE APPEND-ONLY INVARIANT
+-------------------------
+COMMAND=git replace -l
+  (empty output)
+  GIT_REPLACE_REFS=0
+
+COMMAND=git rev-list --count baf5dbd77cf89330699685dffd932c54031c815c..HEAD
+  1014
+
+The range from the frozen append-only boundary is FORWARD-ONLY.  This
+ACT's three commits are ordinary forward commits on top of it.  There
+was NO amend, NO rebase, NO reset and NO force-push.
+
+COMMAND=git log --format='%H %s' baf5dbd77cf89330699685dffd932c54031c815c..HEAD | head -3
+  a5591d6be4fe037a3ac15a9c1d313d26d5ff581a ACT-POLYC-SELFHOST-PARSER-SLICE06 C2: the PolyC arm-termination component and the production delegation
+  94f9086b187aa958a1ff10d5fc79327e44084231 ACT-POLYC-SELFHOST-PARSER-SLICE06 C1: the real oracle, the fixture and the controls
+  fafcf49f9d94f905c4c84bdd6fe6ce7dd223d15b ACT-POLYC-SELFHOST-PARSER-SLICE06 C0: AUTH, entry identity and the RED
+
+  APPEND_ONLY=PASS
+
+F14 -- THE CLOSED PREDECESSOR EVIDENCE IS UNCHANGED
+---------------------------------------------------
+COMMAND=git diff --stat 1ccf28d58fec9c856c12ad1f71bab9a2ca6e18e0..HEAD \
+    -- evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04 \
+       docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04.md
+  (empty output -- the two trees are IDENTICAL over those paths)
+
+The RECON04 evidence tree and its HANDOFF are BYTE-UNCHANGED.  Nothing
+in a closed evidence directory was modified, and no ADDENDUM block was
+appended to any of it.
+
+  F14=PASS
+
+THE CLOSURE-STATUS RECONCILIATION
+----------------------------------
+COMMAND=sh scripts/quality/factory-closure-status-check.sh
+  MANIFEST_ROWS=36
+  MISSING_HANDOFF_FILES=0
+  MALFORMED_HANDOFF_VERDICT=0
+  PAIR_OK=36
+  PAIR_FAIL=0
+  STATUS=PASS
+
+This check is also run INSIDE gate-fast, and it PASSED there.
+
+  CLOSURE_STATUS=PASS
+
+THE FACTORY-V2 COMMIT-MESSAGE CHECK
+------------------------------------
+The pre-push hook runs scripts/quality/factory-v2-commit-msg-check.sh
+on every commit this ACT made.  Each of the three commits was
+ACCEPTED by it, with the trailer block the hook reports:
+
+  MODE=ACT
+  ACT=ACT-POLYC-SELFHOST-PARSER-SLICE06
+  PHASE=RED
+  ...
+  STATUS=PASS
+
+  (C1) MODE=ACT ACT=ACT-POLYC-SELFHOST-PARSER-SLICE06 PHASE=EVIDENCE STATUS=PASS
+  (C2) MODE=ACT ACT=ACT-POLYC-SELFHOST-PARSER-SLICE06 PHASE=EVIDENCE STATUS=PASS
+
+THE FACTORY-V2 RANGE CHECK
+---------------------------
+COMMAND=sh scripts/quality/factory-v2-range-check.sh
+  STATUS=ERROR
+  REASON=usage: factory-v2-range-check.sh <ACT-ID> <CLOSE-COMMIT>
+
+The range check needs the CLOSE COMMIT, which does not exist yet at
+C3.  It correctly REFUSES to certify an unclosed range.  This is
+DEFERRED_TO_CLOSE and is run at C4 against the real CLOSE commit.
+
+  FACTORY_V2_RANGE_CHECK=DEFERRED_TO_CLOSE
+
+THE PATCH HYGIENE
+------------------
+COMMAND=git diff --check 1ccf28d58fec9c856c12ad1f71bab9a2ca6e18e0..HEAD
+  (no output)
+  PATCH_HYGIENE=PASS
+
+THE SUMMARY
+-----------
+  APPEND_ONLY=PASS
+  F14=PASS
+  CLOSURE_STATUS=PASS
+  FACTORY_V2_COMMIT_MSG=PASS
+  FACTORY_V2_RANGE_CHECK=DEFERRED_TO_CLOSE
+  PATCH_HYGIENE=PASS

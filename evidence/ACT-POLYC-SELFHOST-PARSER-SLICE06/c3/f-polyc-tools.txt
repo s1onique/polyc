@@ -1,0 +1,49 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE06
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=f-polyc-tools
+
+THE F-POLYC-TOOLS CHECKER AVAILABILITY
+=======================================
+
+COMMAND=ls tools/factory/factory-polyc-tools-check.HC
+  ls: cannot access 'tools/factory/factory-polyc-tools-check.HC': No such file or directory
+
+COMMAND=ls tools/factory/
+  factory-halt-classification.HC
+  factory-no-python-check.HC
+
+The F-POLYC-TOOLS checker is STILL NOT LANDED, exactly as the frozen
+predecessor recorded.  It is reported as UNAVAILABLE: it is not
+invented, not waived, and not replaced by a weaker stand-in.
+
+  F_POLYC_TOOLS_CHECKER=UNAVAILABLE
+
+THE CONTRACT THIS ACT MEETS ANYWAY
+-----------------------------------
+The AGENTS.md pointer records the contract that every new tool
+implementation SHALL be PolyC, with Shell permitted only as <=50-LOC
+bootstrap glue.
+
+This ACT's tools satisfy that contract IN FACT:
+
+  tools/bootstrap/selfhost-parser-slice06.HC             PolyC
+  tools/quality/parser-slice06-fixture-producer.HC      PolyC
+  tools/quality/parser-slice06-fixture-integrity.HC     PolyC
+  tools/quality/parser-slice06-differential.HC           PolyC
+  tools/quality/parser-slice06-provenance-verifier.HC   PolyC
+
+  NEW_TOOL_IMPLEMENTATIONS=5
+  NEW_TOOL_IMPLEMENTATIONS_IN_POLYC=5
+  NEW_TOOL_IMPLEMENTATIONS_IN_SHELL=0
+  NEW_SHELL_GLUE_LOC=0
+
+The three C files are the narrow oracle adapter, the oracle driver and
+the one-line `is_terminal` stub.  They are the same classes of file the
+already migrated authorities use, and the ACT's oracle contract
+explicitly permits them: "The optional C oracle files are permitted
+only as narrow adapters or executable drivers.  They must not
+reimplement the operator mapping."
+
+  NO_NEW_SHELL_TOOL=YES
+  NO_NEW_PYTHON=YES
+  TOOL_IMPLEMENTATIONS_ARE_POLYC=YES

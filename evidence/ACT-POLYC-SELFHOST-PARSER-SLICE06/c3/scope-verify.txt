@@ -1,0 +1,92 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE06
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=scope-verify
+
+THE SCOPE IS RESTRICTED TO SUB-001
+==================================
+
+THE COMPLETE CHANGE SET SINCE THE ENTRY
+----------------------------------------
+COMMAND=git diff --name-status 1ccf28d58fec9c856c12ad1f71bab9a2ca6e18e0..HEAD
+  M	Makefile
+  M	src/CMakeLists.txt
+  M	src/parser.c
+  A	tools/bootstrap/selfhost-parser-slice06.HC
+  A	tools/quality/parser-slice06-differential.HC
+  A	tools/quality/parser-slice06-fixture-integrity.HC
+  A	tools/quality/parser-slice06-fixture-producer.HC
+  A	tools/quality/parser-slice06-oracle-adapter.c
+  A	tools/quality/parser-slice06-oracle-driver.c
+  A	tools/quality/parser-slice06-oracle-stub.c
+  (plus this ACT's own evidence tree under
+   evidence/ACT-POLYC-SELFHOST-PARSER-SLICE06/)
+
+COMMAND=git diff --stat 1ccf28d58fec9c856c12ad1f71bab9a2ca6e18e0..HEAD -- src/
+   src/CMakeLists.txt | 146 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+   src/parser.c       | 107 +++++++++++++++++++++++++++++++++++++--
+   2 files changed, 250 insertions(+), 3 deletions(-)
+
+THE PRODUCTION SURFACE
+----------------------
+  src/parser.c       the decision function, the legacy oracle wrapper
+                     and ONE call-site condition.  NOTHING ELSE.
+  src/CMakeLists.txt the dedicated selector, the subject link and the
+                     verification target.
+
+  NO_CHANGE_TO=src/ast.h
+  NO_CHANGE_TO=src/lexer.c
+  NO_CHANGE_TO=src/lexer.h
+  NO_CHANGE_TO=src/ast.c
+  NO_CHANGE_TO=src/prslib.c
+  NO_CHANGE_TO=src/prsutil.c
+  NO_CHANGE_TO=src/cctrl.c
+  NO_CHANGE_TO=src/cctrl.h
+  NO_CHANGE_TO=src/transpiler.c
+  NO_CHANGE_TO=src/main.c
+  NO_CHANGE_TO=the recovery protocol
+  NO_CHANGE_TO=the diagnostic texts
+  NO_CHANGE_TO=the arm-loop structure
+
+THE SCOPE ASSERTIONS
+--------------------
+  NO_CHANGE_TO=the other three structural sub-slices (SUB-002, SUB-003, SUB-004)
+  NO_CHANGE_TO=the seven historical scalar candidates
+  NO_CHANGE_TO=the closed evidence trees
+  NO_CHANGE_TO=the hook policy
+  NO_CHANGE_TO=compiler feature flags or dependency versions
+  NO_NEW_PYTHON
+
+THE RANKING WAS NOT RE-OPENED
+-----------------------------
+The ranking is CLOSED.  This ACT implements EXACTLY the candidate the
+predecessor selected, and it did NOT re-run the ranking or choose a
+different target.  The three structural-boundary negative controls
+(SB-01..SB-03) belong to the predecessor's ranking and were
+deliberately NOT re-executed here, because re-running them would
+re-open the ranking.
+
+  RANKING_REOPENED=NO
+  SELECTED_CANDIDATE=SUB-001
+  ONLY_AUTHORITY_TRANSFERRED=the switch-case arm termination decision
+
+THE MUTABLE GRAPH AND THE RECOVERY DID NOT MOVE
+------------------------------------------------
+  AST_GRAPH_OWNER=C
+  RECOVERY_OWNER=C
+  SYMBOL_TABLE_OWNER=C
+  TOKEN_STREAM_OWNER=C
+  DIAGNOSTIC_OWNER=C
+  ALLOCATION_OWNER=C
+
+The decision reads ONE host field and returns ONE bounded boolean.  It
+makes no host-graph write, no allocation, no callback, no recovery
+transfer and no diagnostic.
+
+THE EVIDENCE-TREE SHELL CONTROLS
+--------------------------------
+The predecessor's evidence tree contains shell control scripts.  They
+are CLOSED evidence under F14 and were NOT edited.  They remain
+policy debt, and this ACT does not treat them as a reason to modify a
+closed predecessor.
+
+  CLOSED_EVIDENCE_UNTOUCHED=YES

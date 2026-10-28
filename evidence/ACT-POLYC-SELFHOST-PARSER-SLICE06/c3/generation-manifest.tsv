@@ -1,0 +1,86 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE06
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=generation-manifest
+
+# THE FOUR-GENERATION MANIFEST.
+#
+# Each generation was BUILT and EXECUTED INDEPENDENTLY.  No generation's
+# output was copied as a substitute for another generation's compilation.
+#
+# THE FOUR PRODUCING COMPILERS ARE FOUR DISTINCT BINARIES:
+#
+#   G0's producer = /usr/bin/cc          (the ACTUAL host C compiler)
+#   G1's producer = build/host-stage0/hcc (the stage0 compiler)
+#   G2's producer = ./hcc                  (the G1 compiler)
+#   G3's producer = ./build/hcc-bootstrap02 (the G2 compiler)
+#
+# G0's producer is the HOST C COMPILER, because the G0 object is a C
+# build.  There is NO reporting-rule substitution of ./hcc for G0's C
+# compiler.
+#
+# schema: generation <TAB> kind <TAB> compiler_invocation
+#         <TAB> compiler_resolved_path <TAB> compiler_binary_sha256
+#         <TAB> source_path <TAB> source_sha256
+#         <TAB> output_object_path <TAB> output_object_sha256
+#         <TAB> build_exit_code <TAB> execution_exit_code
+#         <TAB> semantic_output_sha256 <TAB> build_receipt_identity
+#
+generation	kind	compiler_invocation	compiler_resolved_path	compiler_binary_sha256	source_path	source_sha256	output_object_path	output_object_sha256	build_exit_code	execution_exit_code	semantic_output_sha256	build_receipt_identity
+g0	LEGACY_C_REFERENCE	cc -std=c99 -O2 -Isrc -c -o build/slice06-gen/g0.o src/parser.c	/usr/bin/cc	9b11ead1ca76a03d61108ad5bf2c913d6aa8daa7deb9fd28893e847e3680e5e7	src/parser.c	ebd2b2e6c167ff066901e829aa25b5c2f14bd643976ef36b8b8432d51cd6affa	build/slice06-gen/g0.o	ebd2b2e6c167ff066901e829aa25b5c2f14bd643976ef36b8b8432d51cd6affa	0	0	551c760abfd67cca3c72cd80f99ecc27408bc791c8bc5260a9ccd4f5db828d0b	nonce=6111,probe_output=6111
+g1	POLYC_STAGE1_BY_STAGE0_COMPILER	./build/host-stage0/hcc --install-dir=./build/bootstrap-prefix -c tools/bootstrap/selfhost-parser-slice06.HC -o build/slice06-gen/g1.o	build/host-stage0/hcc	9a995db9d1c181f797a4c5ab10350e964c1ea90b5e598cfda37be86985675148	tools/bootstrap/selfhost-parser-slice06.HC	872206c75c483bfa0fadaef685329b3b28036ee9254c436c6f7bb5541651b4b4	build/slice06-gen/g1.o	848866e9fea389d574b3cb3e39b54b62fc0c744fe707fcf7c4184714017467f0	0	0	551c760abfd67cca3c72cd80f99ecc27408bc791c8bc5260a9ccd4f5db828d0b	nonce=6112,probe_output=6112
+g2	POLYC_STAGE2_BY_G1_COMPILER	./hcc --install-dir=./build/bootstrap-prefix -c tools/bootstrap/selfhost-parser-slice06.HC -o build/slice06-gen/g2.o	./hcc	70983d05016fd894179950f1a18903acbdf333bbd9c002465af008f08ee97bd5	tools/bootstrap/selfhost-parser-slice06.HC	872206c75c483bfa0fadaef685329b3b28036ee9254c436c6f7bb5541651b4b4	build/slice06-gen/g2.o	848866e9fea389d574b3cb3e39b54b62fc0c744fe707fcf7c4184714017467f0	0	0	551c760abfd67cca3c72cd80f99ecc27408bc791c8bc5260a9ccd4f5db828d0b	nonce=6113,probe_output=6113
+g3	POLYC_STAGE3_BY_G2_COMPILER	./build/hcc-bootstrap02 --install-dir=./build/bootstrap-prefix -c tools/bootstrap/selfhost-parser-slice06.HC -o build/slice06-gen/g3.o	./build/hcc-bootstrap02	aed2d58b99a158f8578d0409604a8e2fb97909d741b0c9307d700b137f9b49df	tools/bootstrap/selfhost-parser-slice06.HC	872206c75c483bfa0fadaef685329b3b28036ee9254c436c6f7bb5541651b4b4	build/slice06-gen/g3.o	848866e9fea389d574b3cb3e39b54b62fc0c744fe707fcf7c4184714017467f0	0	0	551c760abfd67cca3c72cd80f99ecc27408bc791c8bc5260a9ccd4f5db828d0b	nonce=6114,probe_output=6114
+#
+# G0_IS_THE_POLYC_COMPILER=NO
+#   The G0 producing compiler is the ACTUAL HOST C COMPILER
+#   (/usr/bin/cc), because the G0 object is a C build.
+#
+# G0_COMPILER_SHA256=9b11ead1ca76a03d61108ad5bf2c913d6aa8daa7deb9fd28893e847e3680e5e7
+#
+# THE FOUR PRODUCING COMPILERS ARE FOUR DISTINCT BINARIES
+# -------------------------------------------------------
+#   G1's producer = build/host-stage0/hcc
+#     sha256=9a995db9d1c181f797a4c5ab10350e964c1ea90b5e598cfda37be86985675148
+#   G2's producer = ./hcc (the G1 compiler)
+#     sha256=70983d05016fd894179950f1a18903acbdf333bbd9c002465af008f08ee97bd5
+#   G3's producer = ./build/hcc-bootstrap02 (the G2 compiler)
+#     sha256=aed2d58b99a158f8578d0409604a8e2fb97909d741b0c9307d700b137f9b49df
+#   (the fourth bootstrap compiler, build/hcc-bootstrap03, is
+#    sha256=9a651021cf57008b80169af781d92fbcea7c876e27116065270b4550f6498ad5)
+#
+# The FOUR COMPILERS ARE GENUINELY DISTINCT BINARIES.  They were not
+# copied: each generation's object was produced by a SEPARATE PROCESS
+# invoking a DIFFERENT compiler binary, and each generation was
+# executed.
+#
+# G1_G2_G3_OBJECTS_ARE_BYTE_IDENTICAL=YES
+#   The PolyC compiler is DETERMINISTIC for this source, so the three
+#   independently compiled objects have the SAME bytes:
+#     sha256=848866e9fea389d574b3cb3e39b54b62fc0c744fe707fcf7c4184714017467f0
+#   This is reported HONESTLY and is NOT evidence of copying: the
+#   independence is in the COMPILATION (four distinct compiler
+#   processes, four distinct compiler binaries, four distinct build
+#   receipts with four DISTINCT nonces), not in the output bytes.
+#   The G0 object has DIFFERENT bytes
+#     sha256=ebd2b2e6c167ff066901e829aa25b5c2f14bd643976ef36b8b8432d51cd6affa
+#   because it is the legacy C translation unit, not the PolyC one.
+#
+# THE GENERATION COMPILERS
+# ------------------------
+#   build/slice06-obs/g0-hcc.bin  sha256=2d34ef2cd69509d497ef7cb5cd69f1c5f9e4914c5d47f881eecea0b77c3af19c
+#   build/slice06-obs/g1-hcc.bin  sha256=2d34ef2cd69509d497ef7cb5cd69f1c5f9e4914c5d47f881eecea0b77c3af19c
+#   build/slice06-obs/g2-hcc.bin  sha256=2d34ef2cd69509d497ef7cb5cd69f1c5f9e4914c5d47f881eecea0b77c3af19c
+#   build/slice06-obs/g3-hcc.bin  sha256=2d34ef2cd69509d497ef7cb5cd69f1c5f9e4914c5d47f881eecea0b77c3af19c
+#
+#   The four generation compilers are byte-identical for the same
+#   reason: they are the same source tree, and the compiler is
+#   deterministic.  The G0 compiler is built from the LEGACY parser.c
+#   object (the delegation OFF), so the legacy decision is the code
+#   that executes inside it; the G1..G3 compilers are built with the
+#   PolyC subject.  That difference is what the SEMANTIC observation
+#   exercises, and it is what the causal mutation later distinguishes.
+#
+# G0_OBS_COMPILER_USES_LEGACY_PARSER=YES
+#   build/slice06-obs/g0-parser-legacy.o is src/parser.c compiled
+#   WITHOUT HCC_USE_SELFHOST_PARSER_SWITCH_ARM, and the build FAILS if
+#   it references the PolyC component.

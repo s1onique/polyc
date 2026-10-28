@@ -1,0 +1,66 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE06
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=parser-conservation
+
+THE PARSER SUITE CONSERVATION
+=============================
+
+THE BASELINE IS THE ENTRY TREE, NOT A HISTORICAL CLAIM
+-------------------------------------------------------
+The conservation baseline is the ACT's ENTRY HEAD, not a predecessor's
+claimed result.  Both numbers below were MEASURED, on the entry tree
+and on the C3 tree, in the SAME way.
+
+THE TWO COMPILERS
+------------------
+  ENTRY = /tmp/slice06-baseline/hcc
+         built from a detached git worktree at the entry commit
+         1ccf28d58fec9c856c12ad1f71bab9a2ca6e18e0
+  C3    = /tmp/slice06-c3/hcc
+         built from a detached git worktree at the C2 commit
+         a5591d6be4fe037a3ac15a9c1d313d26d5ff581a
+
+  Both were configured with -DCMAKE_INSTALL_PREFIX=<their own prefix>,
+  so the compile-time INSTALL_PREFIX matches the runtime prefix.
+  Without that, this host has no /usr/local and every test fails with
+  "Failed to open file: /usr/local/include/tos.HH" -- an ENVIRONMENT
+  condition, not a parser result.
+
+THE IDENTICAL SUITE WAS RUN AGAINST BOTH
+------------------------------------------
+COMMAND=cd <tests-dir> && ../../hcc ./run.HC -o test-runner
+COMMAND=cd <tests-dir> && ./test-runner
+
+  ENTRY   ASSERTIONS_PASSED=376 ASSERTIONS_TOTAL=376 TESTFILES=90 FAILED=0
+  C3      ASSERTIONS_PASSED=376 ASSERTIONS_TOTAL=376 TESTFILES=90 FAILED=0
+
+THE ASSERTION-SEQUENCE IDENTITY CHECK
+--------------------------------------
+COMMAND=grep -o "PASSED: [0-9]*/[0-9]*" <log> | md5 -q   (per suite)
+  ENTRY   md5=b6f117eb1386ca80f81bc06226e2a741
+  C3      md5=b6f117eb1386ca80f81bc06226e2a741
+
+The two suites produced BYTE-IDENTICAL assertion sequences, so the
+per-test identity sets are equal, not merely equal in COUNT.  The
+failing-identity sets are both EMPTY.
+
+  PARSER_HOST_ARCH_ASSERTIONS=376/376
+  PARSER_HOST_ARCH_TESTFILES=90
+  PARSER_HOST_ARCH_FAILURE_IDENTITIES=0
+  PARSER_HOST_ARCH_ASSERTION_SEQUENCE_MD5=b6f117eb1386ca80f81bc06226e2a741
+  NEW_PARSER_FAILURE_IDENTITIES=0
+  NEW_PARSER_SEMANTIC_REGRESSIONS=0
+
+THE SIX POLYC AUTHORITIES IN THE C3 COMPILER
+---------------------------------------------
+COMMAND=nm /tmp/slice06-c3/hcc | grep -E '_Bootstrap(CalcPadding|ValidPostControlFlowToken|OperatorPrecedence|AstBinOpFromToken|AstUnaryOpFromToken|SwitchArmTerminates)$'
+  0000000100064220 T _BootstrapAstBinOpFromToken
+  0000000100064410 T _BootstrapAstUnaryOpFromToken
+  0000000100063ba0 T _BootstrapCalcPadding
+  0000000100063e50 T _BootstrapOperatorPrecedence
+  0000000100064528 T _BootstrapSwitchArmTerminates
+  0000000100063c18 T _BootstrapValidPostControlFlowToken
+
+  SIX_POLYC_AUTHORITIES_LINKED=YES
+  DUPLICATE_BOOTSTRAP_SYMBOLS=0
+  PREVIOUS_FIVE_AUTHORITIES_CONSERVED=YES

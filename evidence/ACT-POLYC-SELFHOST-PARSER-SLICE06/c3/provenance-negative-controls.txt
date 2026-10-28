@@ -1,0 +1,103 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE06
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=provenance-negative-controls
+
+THE PROVENANCE NEGATIVE CONTROLS
+=================================
+
+The provenance verifier is the PolyC tool
+tools/quality/parser-slice06-provenance-verifier.HC.  It checks, for
+EVERY generation and WITHOUT short-circuiting:
+
+  * that the generation is present;
+  * that its GENERATION_BINDING matches the EXPECTED binding for its
+    stage;
+  * that its RUN_BINDING matches too;
+  * that its EXECUTION RECEIPT is present and carries its NONCE;
+  * that its PROBE OUTPUT is present;
+  * that its recorded COMPILER, OBJECT and SOURCE identities equal the
+    LIVE identities of the named files;
+  * that the four nonces are DISTINCT.
+
+The NO-SHORT-CIRCUIT rule is the point: a control that breaks several
+things at once cannot be satisfied by the first unrelated failure, and
+every diagnostic is reported.
+
+THE PRISTINE WITNESS
+--------------------
+COMMAND=./build/parser-slice06-provenance-verifier build/slice06-gen/witness.txt
+  SLICE06_PROV_GENERATIONS=4
+  SLICE06_PROV_MISSING_GENERATIONS=0
+  SLICE06_PROV_MISSING_BINDING=0
+  SLICE06_PROV_BINDING_MISMATCHES=0
+  SLICE06_PROV_RUN_BINDING_MISMATCHES=0
+  SLICE06_PROV_MISSING_RECEIPT=0
+  SLICE06_PROV_RECEIPT_MISMATCHES=0
+  SLICE06_PROV_MISSING_NONCE=0
+  SLICE06_PROV_DUPLICATE_NONCES=0
+  SLICE06_PROV_MISSING_PROBE_OUTPUT=0
+  SLICE06_PROV_MISSING_COMPILER=0
+  SLICE06_PROV_COMPILER_IDENTITY_MISMATCHES=0
+  SLICE06_PROV_MISSING_OBJECT=0
+  SLICE06_PROV_OBJECT_IDENTITY_MISMATCHES=0
+  SLICE06_PROV_MISSING_SOURCE=0
+  SLICE06_PROV_SOURCE_IDENTITY_MISMATCHES=0
+  SLICE06_PROV_STATUS=PASS
+
+THE CONTROLS
+-------------
+Each control MUTATES the witness and re-runs the verifier.  A control
+counts only when the INTENDED detector fires.
+
+  NC-01  the G3 slot carries the G1 payload (a SUBSTITUTION)
+         INTENDED: G3_BINDING_MISMATCH
+         OBSERVED: SLICE06_PROV_BINDING_MISMATCH=g3
+                   SLICE06_PROV_RECEIPT_MISMATCH=g3
+                   SLICE06_PROV_DUPLICATE_NONCE=g0,g3
+                   SLICE06_PROV_STATUS=FAIL
+         SENSITIVE=YES
+
+  NC-02  the G3 execution receipt is REMOVED (an OMISSION)
+         INTENDED: G3_EXECUTION_RECEIPT_MISSING
+         OBSERVED: SLICE06_PROV_MISSING_RECEIPT=g3
+                   SLICE06_PROV_STATUS=FAIL
+         SENSITIVE=YES
+
+  NC-03  the recorded COMPILER identity is wrong
+         INTENDED: COMPILER_IDENTITY_MISMATCH
+         OBSERVED: SLICE06_PROV_COMPILER_IDENTITY_MISMATCH=g1
+                   SLICE06_PROV_STATUS=FAIL
+         SENSITIVE=YES
+
+  NC-04  the recorded OBJECT identity is wrong
+         INTENDED: OBJECT_IDENTITY_MISMATCH
+         OBSERVED: SLICE06_PROV_OBJECT_IDENTITY_MISMATCH=g1
+                   SLICE06_PROV_STATUS=FAIL
+         SENSITIVE=YES
+
+  NC-05  the STAGE is swapped (G2 carries the G3 binding)
+         INTENDED: STAGE_IDENTITY_MISMATCH
+         OBSERVED: SLICE06_PROV_BINDING_MISMATCH=g2
+                   SLICE06_PROV_STATUS=FAIL
+         SENSITIVE=YES
+
+THE SUMMARY
+-----------
+  NC_01_SENSITIVE=YES
+  NC_02_SENSITIVE=YES
+  NC_03_SENSITIVE=YES
+  NC_04_SENSITIVE=YES
+  NC_05_SENSITIVE=YES
+  PROVENANCE_NEGATIVE_CONTROLS=PASS
+
+THE OBSERVER IS SEPARATE FROM THE PRODUCER
+------------------------------------------
+The verifier is a SEPARATE PolyC program from the Makefile rules that
+PRODUCE the generations.  It reads the witness file that the producer
+side wrote and it re-derives every identity by hashing the LIVE files
+itself; it does not trust the recorded digests.  A producer that
+recorded a digest which did not match the live file would be caught.
+
+  OBSERVER_IS_SEPARATE_FROM_PRODUCER=YES
+  OBSERVER_REHASHES_THE_LIVE_FILES=YES
+  OBSERVER_TRUSTS_RECORDED_DIGESTS=NO

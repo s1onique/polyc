@@ -5411,8 +5411,207 @@ parser-slice05-differential: build/parser-slice05-differential
 # ACT-POLYC-SELFHOST-PARSER-SLICE06
 #
 #   build/slice06-parser-legacy.o -> the REAL legacy C oracle object.
+
+# =========================================================================
+# ACT-POLYC-SELFHOST-PARSER-SLICE06
 #
+#   build/slice06-gen/g{0,1,2,3}.o -> the FOUR INDEPENDENT generations.
+#
+# G0 = the REAL legacy C authority: src/parser.c compiled WITHOUT
+#      HCC_USE_SELFHOST_PARSER_SWITCH_ARM, so the legacy condition is
+#      the code that executes.
+# G1 = the PolyC component compiled by the STAGE0 compiler (the legacy
+#      C control), so the component does not depend on the production
+#      compiler it is about to serve.
+# G2 = the PolyC component compiled by the G1 compiler (./hcc, the
+#      production compiler).
+# G3 = the PolyC component compiled by the G2 compiler
+#      (./build/hcc-bootstrap02).
+#
+# Each generation is BUILT and EXECUTED INDEPENDENTLY.  No generation's
+# output is copied as a substitute for another generation's compilation.
+# =========================================================================
+SLICE06_GEN_DIR = build/slice06-gen
+SLICE06_GEN_SRC = tools/bootstrap/selfhost-parser-slice06.HC
+
+# G0: the legacy reference component object, built from C.
+$(SLICE06_GEN_DIR)/g0.o: src/parser.c src/parser.h src/ast.h
+	@mkdir -p $(SLICE06_GEN_DIR)
+	@rm -f $@
+	cc -std=c99 -O2 -Isrc -c -o $@ src/parser.c
+	@nm $@ | grep -q '_ParserLegacySwitchArmTerminatesOracle' \
+		|| { echo "slice06-gen/g0.o: the legacy decision wrapper is missing" >&2; exit 1; }
+	@if nm $@ | grep -q '_BootstrapSwitchArmTerminates'; then \
+		echo "slice06-gen/g0.o: the object references the PolyC component; the delegation flag is NOT off" >&2; \
+		exit 1; \
+	fi
+	@echo "SLICE06_GEN=g0 source=src/parser.c compiler=cc object=$@"
+
+# G1: the stage-1 PolyC component, built by the STAGE0 compiler.
+$(SLICE06_GEN_DIR)/g1.o: $(SLICE06_GEN_SRC) $(BOOTSTRAP_STAGE0_HCC) $(BOOTSTRAP_PREFIX_INC)/tos.HH
+	@mkdir -p $(SLICE06_GEN_DIR)
+	@rm -f $@
+	$(BOOTSTRAP_STAGE0_HCC) --install-dir=$(BOOTSTRAP_PREFIX_DIR) -c $(SLICE06_GEN_SRC) -o $@
+	@nm $@ | grep -q '_BootstrapSwitchArmTerminates' \
+		|| { echo "slice06-gen/g1.o: the PolyC symbol is missing" >&2; exit 1; }
+	@echo "SLICE06_GEN=g1 source=$(SLICE06_GEN_SRC) compiler=$(BOOTSTRAP_STAGE0_HCC) object=$@"
+
+# G2: an INDEPENDENTLY built stage2, compiled by the G1 compiler.
+$(SLICE06_GEN_DIR)/g2.o: $(SLICE06_GEN_SRC) ./hcc
+	@mkdir -p $(SLICE06_GEN_DIR)
+	@rm -f $@
+	./hcc --install-dir=$(BOOTSTRAP_PREFIX_DIR) -c $(SLICE06_GEN_SRC) -o $@
+	@nm $@ | grep -q '_BootstrapSwitchArmTerminates' \
+		|| { echo "slice06-gen/g2.o: the PolyC symbol is missing" >&2; exit 1; }
+	@echo "SLICE06_GEN=g2 source=$(SLICE06_GEN_SRC) compiler=./hcc object=$@"
+
+# G3: an INDEPENDENTLY built stage3, compiled by the G2 compiler.
+$(SLICE06_GEN_DIR)/g3.o: $(SLICE06_GEN_SRC) ./build/hcc-bootstrap02
+	@mkdir -p $(SLICE06_GEN_DIR)
+	@rm -f $@
+	./build/hcc-bootstrap02 --install-dir=$(BOOTSTRAP_PREFIX_DIR) -c $(SLICE06_GEN_SRC) -o $@
+	@nm $@ | grep -q '_BootstrapSwitchArmTerminates' \
+		|| { echo "slice06-gen/g3.o: the PolyC symbol is missing" >&2; exit 1; }
+	@echo "SLICE06_GEN=g3 source=$(SLICE06_GEN_SRC) compiler=./build/hcc-bootstrap02 object=$@"
+#
+
+# =========================================================================
+# ACT-POLYC-SELFHOST-PARSER-SLICE06
+#
+#   build/slice06-obs/g{0,1,2,3}-hcc.bin -> the FOUR GENERATION COMPILERS.
+#
+# Each generation's component is linked into its OWN production
+# compiler, that compiler compiles the SAME frozen observation program,
+# and the program is EXECUTED.  The observable is the COMPILED PROGRAM
+# OUTPUT, not a direct call into the component.
+#
+# G0's compiler is built from the LEGACY parser.c object (the delegation
+# OFF), so G0 is the REAL legacy authority.
+# =========================================================================
+SLICE06_OBS_DIR = build/slice06-obs
+SLICE06_OBS_SRC = evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04/c2/probes/witness-sub001.HC
+
+# The shared CMake configuration for a generation compiler.  The only
+# thing that differs between the generations is the SWITCH-ARM subject
+# object: G1 uses g1.o, G2 uses g2.o, G3 uses g3.o.
+define SLICE06_OBS_CMAKE
+	@mkdir -p $(SLICE06_OBS_DIR)
+	@rm -rf $(SLICE06_OBS_DIR)/$1-build
+	cmake -S ./src -B $(SLICE06_OBS_DIR)/$1-build -G 'Unix Makefiles' \
+		-DCMAKE_C_COMPILER=$(C_COMPILER) -DCMAKE_BUILD_TYPE=Release \
+		-DHCC_ENABLE_JIT=on -DHCC_ENABLE_LLVM=OFF \
+		-DHCC_RUNTIME_OUTPUT_DIRECTORY=$(CURDIR)/$(SLICE06_OBS_DIR)/$1 \
+		-DHCC_USE_SELFHOST_PARSER_PADDING=ON \
+		-DPARSER_PADDING_OBJECT=$(CURDIR)/$(PARSER_PADDING_OBJ) \
+		-DPARSER_PADDING_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DPARSER_PADDING_SOURCE=$(CURDIR)/$(PARSER_PADDING_SRC) \
+		-DPARSER_PADDING_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN=ON \
+		-DCONTROL_FLOW_TOKEN_OBJECT=$(CURDIR)/$(SLICE02_CFT_OBJ) \
+		-DCONTROL_FLOW_TOKEN_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DCONTROL_FLOW_TOKEN_SOURCE=$(CURDIR)/$(SLICE02_CFT_SRC) \
+		-DCONTROL_FLOW_TOKEN_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE=ON \
+		-DOPERATOR_PRECEDENCE_OBJECT=$(CURDIR)/$(SLICE03_OP_OBJ) \
+		-DOPERATOR_PRECEDENCE_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DOPERATOR_PRECEDENCE_SOURCE=$(CURDIR)/$(SLICE03_OP_SRC) \
+		-DOPERATOR_PRECEDENCE_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_PARSER_AST_BINOP=ON \
+		-DAST_TOKEN_MAP_OBJECT=$(CURDIR)/$(SLICE04_AST_BINOP_OBJ) \
+		-DAST_TOKEN_MAP_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DAST_TOKEN_MAP_SOURCE=$(CURDIR)/$(SLICE04_AST_BINOP_SRC) \
+		-DAST_TOKEN_MAP_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_PARSER_AST_UNARY=ON \
+		-DAST_UNARY_TOKEN_MAP_OBJECT=$(CURDIR)/$(SLICE05_AST_UNARY_OBJ) \
+		-DAST_UNARY_TOKEN_MAP_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DAST_UNARY_TOKEN_MAP_SOURCE=$(CURDIR)/$(SLICE05_AST_UNARY_SRC) \
+		-DAST_UNARY_TOKEN_MAP_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_PARSER_SWITCH_ARM=ON \
+		-DSWITCH_ARM_TOKEN_MAP_OBJECT=$(CURDIR)/$(SLICE06_GEN_DIR)/$2 \
+		-DSWITCH_ARM_TOKEN_MAP_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DSWITCH_ARM_TOKEN_MAP_SOURCE=$(CURDIR)/$(SLICE06_GEN_SRC) \
+		-DSWITCH_ARM_TOKEN_MAP_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DAST_UNARY_TOKEN_MAP_TARGET_OBJECT_FORMAT=Mach-O \
+		> $(SLICE06_OBS_DIR)/$1-cmake.log 2>&1 || \
+		{ echo "slice06-obs/$1: cmake configure failed" >&2; tail -20 $(SLICE06_OBS_DIR)/$1-cmake.log >&2; exit 1; }
+	$(MAKE) -C $(SLICE06_OBS_DIR)/$1-build -j2 hcc > $(SLICE06_OBS_DIR)/$1-build.log 2>&1 || \
+		{ echo "slice06-obs/$1: build failed" >&2; tail -20 $(SLICE06_OBS_DIR)/$1-build.log >&2; exit 1; }
+	@cp -f $(SLICE06_OBS_DIR)/$1/hcc $(SLICE06_OBS_DIR)/$1-hcc.bin
+endef
+
+$(SLICE06_OBS_DIR)/g1-hcc.bin: $(SLICE06_GEN_DIR)/g1.o
+	$(call SLICE06_OBS_CMAKE,g1,g1.o)
+$(SLICE06_OBS_DIR)/g2-hcc.bin: $(SLICE06_GEN_DIR)/g2.o
+	$(call SLICE06_OBS_CMAKE,g2,g2.o)
+$(SLICE06_OBS_DIR)/g3-hcc.bin: $(SLICE06_GEN_DIR)/g3.o
+	$(call SLICE06_OBS_CMAKE,g3,g3.o)
 # src/parser.c compiled WITHOUT HCC_USE_SELFHOST_PARSER_SWITCH_ARM, so
+
+# G0: the generation compiler built from the LEGACY parser.c object.
+#
+# The difference from G1..G3 is that the PRODUCTION PARSER OBJECT is
+# the legacy one (the delegation OFF), so the legacy decision is the
+# code that executes inside the generation compiler.  The SWITCH-ARM
+# SELECTOR IS STILL DEFINED, because the source references the PolyC
+# symbol in the delegated branch; the legacy parser object simply does
+# not take that branch.
+#
+# The legacy parser object is compiled here, with the delegation OFF,
+# and the build FAILS if it references the PolyC component.
+$(SLICE06_OBS_DIR)/g0-parser-legacy.o: src/parser.c src/parser.h src/ast.h
+	@mkdir -p $(SLICE06_OBS_DIR)
+	@rm -f $@
+	cc -std=c99 -O2 -Isrc -c -o $@ src/parser.c
+	@if nm $@ | grep -q '_BootstrapSwitchArmTerminates'; then \
+		echo "slice06-obs/g0-parser-legacy.o: the object references the PolyC component; the delegation flag is NOT off" >&2; \
+		exit 1; \
+	fi
+	@echo "SLICE06_G0_LEGACY_PARSER=$@"
+
+$(SLICE06_OBS_DIR)/g0-hcc.bin: $(SLICE06_OBS_DIR)/g0-parser-legacy.o $(SLICE06_GEN_DIR)/g1.o
+	@mkdir -p $(SLICE06_OBS_DIR)
+	@rm -rf $(SLICE06_OBS_DIR)/g0-build
+	cmake -S ./src -B $(SLICE06_OBS_DIR)/g0-build -G 'Unix Makefiles' \
+		-DCMAKE_C_COMPILER=$(C_COMPILER) -DCMAKE_BUILD_TYPE=Release \
+		-DHCC_ENABLE_JIT=on -DHCC_ENABLE_LLVM=OFF \
+		-DHCC_RUNTIME_OUTPUT_DIRECTORY=$(CURDIR)/$(SLICE06_OBS_DIR)/g0 \
+		-DHCC_USE_SELFHOST_PARSER_PADDING=ON \
+		-DPARSER_PADDING_OBJECT=$(CURDIR)/$(PARSER_PADDING_OBJ) \
+		-DPARSER_PADDING_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DPARSER_PADDING_SOURCE=$(CURDIR)/$(PARSER_PADDING_SRC) \
+		-DPARSER_PADDING_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN=ON \
+		-DCONTROL_FLOW_TOKEN_OBJECT=$(CURDIR)/$(SLICE02_CFT_OBJ) \
+		-DCONTROL_FLOW_TOKEN_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DCONTROL_FLOW_TOKEN_SOURCE=$(CURDIR)/$(SLICE02_CFT_SRC) \
+		-DCONTROL_FLOW_TOKEN_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE=ON \
+		-DOPERATOR_PRECEDENCE_OBJECT=$(CURDIR)/$(SLICE03_OP_OBJ) \
+		-DOPERATOR_PRECEDENCE_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DOPERATOR_PRECEDENCE_SOURCE=$(CURDIR)/$(SLICE03_OP_SRC) \
+		-DOPERATOR_PRECEDENCE_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_PARSER_AST_BINOP=ON \
+		-DAST_TOKEN_MAP_OBJECT=$(CURDIR)/$(SLICE04_AST_BINOP_OBJ) \
+		-DAST_TOKEN_MAP_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DAST_TOKEN_MAP_SOURCE=$(CURDIR)/$(SLICE04_AST_BINOP_SRC) \
+		-DAST_TOKEN_MAP_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_PARSER_AST_UNARY=ON \
+		-DAST_UNARY_TOKEN_MAP_OBJECT=$(CURDIR)/$(SLICE05_AST_UNARY_OBJ) \
+		-DAST_UNARY_TOKEN_MAP_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DAST_UNARY_TOKEN_MAP_SOURCE=$(CURDIR)/$(SLICE05_AST_UNARY_SRC) \
+		-DAST_UNARY_TOKEN_MAP_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_PARSER_SWITCH_ARM=ON \
+		-DSWITCH_ARM_TOKEN_MAP_OBJECT=$(CURDIR)/$(SLICE06_GEN_DIR)/g1.o \
+		-DSWITCH_ARM_TOKEN_MAP_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DSWITCH_ARM_TOKEN_MAP_SOURCE=$(CURDIR)/$(SLICE06_GEN_SRC) \
+		-DSWITCH_ARM_TOKEN_MAP_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DAST_UNARY_TOKEN_MAP_TARGET_OBJECT_FORMAT=Mach-O \
+		> $(SLICE06_OBS_DIR)/g0-cmake.log 2>&1 || \
+		{ echo "slice06-obs/g0: cmake configure failed" >&2; tail -20 $(SLICE06_OBS_DIR)/g0-cmake.log >&2; exit 1; }
+	$(MAKE) -C $(SLICE06_OBS_DIR)/g0-build -j2 hcc > $(SLICE06_OBS_DIR)/g0-build.log 2>&1 || \
+		{ echo "slice06-obs/g0: build failed" >&2; tail -20 $(SLICE06_OBS_DIR)/g0-build.log >&2; exit 1; }
+	@cp -f $(SLICE06_OBS_DIR)/g0/hcc $(SLICE06_OBS_DIR)/g0-hcc.bin
+	@echo "SLICE06_OBS=g0 compiler=$(SLICE06_OBS_DIR)/g0-hcc.bin legacy_parser=$(SLICE06_OBS_DIR)/g0-parser-legacy.o"
 # the legacy arm-termination condition -- the byte-identical legacy
 # source -- is the code that executes.  The build FAILS if the object
 # references the PolyC component, which would mean the delegation was
