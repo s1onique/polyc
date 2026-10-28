@@ -1,0 +1,147 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE07
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=g0-production-object
+#
+# THE REAL, OBJECT-LEVEL G0 LEGACY ORACLE.
+#
+# THE REQUIREMENT (the frozen RECON05 c2/selected-legacy-oracle.md)
+#
+#   "A source-extracted standalone C condition alone is NOT an
+#    acceptable G0 oracle: compile the actual production C translation
+#    unit with the proposed delegation DISABLED, and prove that object
+#    does not reference the proposed PolyC symbol."
+#
+# ---------------------------------------------------------------------------
+# THE G0 OBJECT, BUILT WITH THE PRODUCTION FLAGS
+# ---------------------------------------------------------------------------
+#
+# COMMAND=/usr/bin/cc \
+#   -DHCC_ENABLE_JIT \
+#   -DHCC_USE_SELFHOST_PARSER_AST_BINOP \
+#   -DHCC_USE_SELFHOST_PARSER_AST_UNARY \
+#   -DHCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN \
+#   -DHCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE \
+#   -DHCC_USE_SELFHOST_PARSER_PADDING \
+#   -DHCC_USE_SELFHOST_PARSER_SWITCH_ARM \
+#   -DINSTALL_PREFIX=".../build/test-prefix" \
+#   -I src/asm \
+#   -Wextra -Wall -Wpedantic -O3 -DNDEBUG -O2 -std=gnu11 -arch arm64 \
+#   -c -o build/slice07/g0-parser-production.o src/parser.c
+#
+# The flags are the PRODUCTION flags, copied from
+# build/CMakeFiles/hcc.dir/flags.make, MINUS the SLICE07 selector (which
+# does not exist yet at C1).
+#
+# The SLICE07 selector HCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND is
+# NOT DEFINED, so the delegation branch is COMPILED OUT and the
+# byte-identical legacy condition is the code that executes.
+#
+# G0_REAL_PRODUCTION_C_OBJECT=build/slice07/g0-parser-production.o
+# G0_PROVENANCE=compiled by /usr/bin/cc from the live src/parser.c with
+#               the production flags
+# G0_FLAGS=-Wextra -Wall -Wpedantic -O3 -DNDEBUG -O2 -std=gnu11 -arch arm64
+# G0_TARGET_OBJECT_FORMAT=Mach-O
+# G0_TOOLCHAIN_NM=/usr/bin/nm
+# COMMAND=file build/slice07/g0-parser-production.o
+#   build/slice07/g0-parser-production.o: Mach-O 64-bit object arm64
+#
+# ---------------------------------------------------------------------------
+# THE PROPOSED SYMBOL IS ABSENT FROM THE G0 OBJECT
+# ---------------------------------------------------------------------------
+#
+# COMMAND=nm build/slice07/g0-parser-production.o | grep BootstrapCompoundBlock
+#   (no output)
+#
+# G0_ORACLE_POLYC_REFERENCE=ABSENT
+#
+# The object carries NO undefined reference to the proposed PolyC
+# symbol, so the object-level oracle is INDEPENDENT of the proposed
+# PolyC target: it cannot be contaminated by it.
+#
+# ---------------------------------------------------------------------------
+# THE OBJECT IS THE GENUINE PRODUCTION TU
+# ---------------------------------------------------------------------------
+#
+# COMMAND=nm build/slice07/g0-parser-production.o | grep " U _Bootstrap"
+#   U _BootstrapCalcPadding
+#   U _BootstrapSwitchArmTerminates
+#   U _BootstrapValidPostControlFlowToken
+#
+# The object imports the SIX already-migrated PolyC authorities as
+# UNDEFINED references and does NOT define them.  That is the strong
+# form of "this is the live production object", and it also proves the
+# object is NOT a hand-written stand-in.
+#
+# COMMAND=nm build/slice07/g0-parser-production.o | grep ParserLegacyCompoundBlockAppendsOracle
+#   0000000000003734 T _ParserLegacyCompoundBlockAppendsOracle
+#
+# The oracle wrapper is DEFINED in the object, so the oracle reaches the
+# REAL legacy decision and not a copy of it.
+
+
+# ---------------------------------------------------------------------------
+# THE ORACLE ADAPTER
+# ---------------------------------------------------------------------------
+#
+# The adapter (tools/quality/parser-slice07-oracle-adapter.c) contains
+# NO decision table and NO decision logic.  It forwards to the real
+# legacy decision through the wrapper that src/parser.c itself exposes
+# adjacent to that decision:
+#
+#   long long Slice07LegacyCompoundBlockOracle(long long stmt_kind,
+#                                               long long declvar_kind)
+#       -> ParserLegacyCompoundBlockAppendsOracle(stmt_kind, declvar_kind)
+#          -> parseCompoundBlockAppendsStatement((int)stmt_kind,
+#                                                (int)declvar_kind)
+#
+# ---------------------------------------------------------------------------
+# THE ORACLE DRIVER AND ITS OBSERVED OUTPUT
+# ---------------------------------------------------------------------------
+#
+# COMMAND=build/slice07-oracle-driver > c1/g0-oracle-output.tsv
+#
+# G0_ORACLE_ROW_COUNT=1858
+# G0_ORACLE_DISTINCT_INPUT_PAIRS=1733
+#
+# The driver probes the full live AstKind domain crossed with the full
+# live AstKind domain, plus the out-of-enum, negative and extreme
+# probes for both inputs.
+#
+# THE OBSERVED SKIP ROW.  The oracle returns 0 for EXACTLY ONE input
+# pair in the whole probed domain:
+#
+#   263	256	0
+#
+#   i.e. stmt_kind == AST_DECL (263) AND declvar_kind == AST_GVAR (256).
+#
+# Every other probed pair returns 1.  This IS the frozen rule, measured
+# by the REAL production translation unit with the delegation off.
+#
+# G0_ORACLE_SKIP_ROW_COUNT=1
+# G0_ORACLE_SKIP_PAIR=263 256
+# G0_ORACLE_APPEND_ROW_COUNT=1857
+#
+# ---------------------------------------------------------------------------
+# THE FIXTURE AND THE ORACLE AGREE
+# ---------------------------------------------------------------------------
+#
+# The fixture's expected values and the G0 oracle's observed values were
+# joined on the (stmt_kind, declvar_kind) pair over every pair the two
+# share:
+#
+#   FIXTURE_DISTINCT_PAIRS=1736
+#   ORACLE_PAIRS=1733
+#   SEMANTIC_MISMATCHES=0
+#
+# The nine fixture-only pairs and the six oracle-only pairs are the
+# CHOICE of which non-declaration stmt_kind is paired with the
+# out-of-enum declvar probes (the fixture uses AST_LVAR 261, the driver
+# uses AST_RETURN 270).  Both are non-declarations, so the results are
+# equal by the frozen rule.  The mismatch count is zero, so no pair
+# disagrees.
+#
+# G0_ORACLE_HAND_WRITTEN=NO
+# G0_ORACLE_IS_REAL_PRODUCTION_TU=YES
+# G0_ORACLE_KIND=OBJECT_LEVEL
+# G0_ORACLE_POLYC_REFERENCE=ABSENT
+# G0_ORACLE_VERIFIED=YES

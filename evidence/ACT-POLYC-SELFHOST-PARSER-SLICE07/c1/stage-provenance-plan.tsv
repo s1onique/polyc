@@ -1,0 +1,105 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE07
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=stage-provenance-plan
+#
+# THE STAGE-PROVENANCE PLAN AND ITS PRECONDITIONS.
+#
+# THE REQUIREMENT (ACT section 5 item 7)
+#
+#   "Establish C1 stage-provenance preconditions: G0 real C TU object
+#    is independent of new PolyC symbol; G1/G2/G3 compiler executables
+#    each have their own independent provenance identity, input tree and
+#    command.  If the stage compiler binaries cannot be distinguished
+#    by path+digest+build chain, HALT rather than relabel one
+#    executable three ways."
+#
+# ---------------------------------------------------------------------------
+# THE PRODUCERS ARE AVAILABLE AND PAIRWISE DISTINCT
+# ---------------------------------------------------------------------------
+#
+# The digests below were MEASURED at C1 with /usr/bin/shasum -a 256.
+#
+#   PRODUCER_STAGE0=build/host-stage0/hcc
+#   PRODUCER_STAGE1=build/hcc-bootstrap02
+#   PRODUCER_STAGE2=build/hcc-bootstrap03
+#   PRODUCER_STAGE3=build/hcc-bootstrap04
+#   PRODUCER_PRODUCTION=./hcc
+#
+#   01c6fdee247ff5b8b3c4c3a02a11f7bfbae9e833ed96cc7d3eb308cef54ee234  build/host-stage0/hcc
+#   ac0aa7ea17cb9b628ddd5806448df0d10dd19b606a583d930233f869a435bedd  build/hcc-bootstrap02
+#   2ea56a5f8084d03d2ad0cf5a5ac1fb01a6499de19c25a7be5845a329a266df44  build/hcc-bootstrap03
+#   a30b55457ce5bd6cf19f4f47c66dc649664d21908fc1f11f332f70db17190b83  build/hcc-bootstrap04
+#   e31dad87ad7a1cd1b96b88ac760b8e3bc717fd4e67411adf0fe9b414250b4e66  ./hcc
+#
+#   PRODUCER_DIGESTS_DISTINCT=YES
+#   PRODUCER_COUNT=5
+#   STAGE_PROVENANCE_NOT_INDEPENDENT=HALT_NOT_TRIGGERED
+#
+# ---------------------------------------------------------------------------
+# THE FOUR GENERATIONS
+# ---------------------------------------------------------------------------
+#
+# Schema: generation <TAB> role <TAB> producer <TAB> subject <TAB> command
+#
+# G0	THE LEGACY C AUTHORITY (the reference oracle)	/usr/bin/cc with the production flags	build/slice07/g0-parser-production.o	/usr/bin/cc <production flags> -c -o build/slice07/g0-parser-production.o src/parser.c
+# G1	THE STAGE-0 PolyC producer	build/host-stage0/hcc	build/slice07-gen/g1.o	build/host-stage0/hcc --install-dir=build/bootstrap-prefix -c tools/bootstrap/selfhost-parser-slice07.HC -o build/slice07-gen/g1.o
+# G2	THE PRODUCTION PolyC producer	./hcc	build/slice07-gen/g2.o	./hcc --install-dir=build/test-prefix -c tools/bootstrap/selfhost-parser-slice07.HC -o build/slice07-gen/g2.o
+# G3	THE STAGE-2 PolyC producer	build/hcc-bootstrap02	build/slice07-gen/g3.o	build/hcc-bootstrap02 --install-dir=build/bootstrap-prefix -c tools/bootstrap/selfhost-parser-slice07.HC -o build/slice07-gen/g3.o
+#
+# G0 IS INDEPENDENT OF THE TARGET
+#
+#   G0_OBJECT_POLYC_REFERENCE=ABSENT
+#   G0_OBJECT_IS_REAL_PRODUCTION_TU=YES
+#
+# The G0 object is compiled from the live src/parser.c WITHOUT the
+# SLICE07 selector, so the byte-identical legacy condition is the code
+# that executes, and the object carries NO undefined reference to
+# BootstrapCompoundBlockAppendsStatement.  It therefore cannot be
+# contaminated by the subject under test.
+#
+# G1/G2/G3 ARE THREE DISTINCT EXECUTABLES
+#
+#   G1_COMPILER=build/host-stage0/hcc
+#   G1_COMPILER_SHA256=01c6fdee247ff5b8b3c4c3a02a11f7bfbae9e833ed96cc7d3eb308cef54ee234
+#   G2_COMPILER=./hcc
+#   G2_COMPILER_SHA256=e31dad87ad7a1cd1b96b88ac760b8e3bc717fd4e67411adf0fe9b414250b4e66
+#   G3_COMPILER=build/hcc-bootstrap02
+#   G3_COMPILER_SHA256=ac0aa7ea17cb9b628ddd5806448df0d10dd19b606a583d930233f869a435bedd
+#
+#   PRODUCER_BINARIES_DISTINCT=YES
+#   G1_G2_G3_ARE_THREE_LABELS_OVER_ONE_EXECUTABLE=NO
+#
+# The independence of G1/G2/G3 rests in WHO COMPILED THE OBJECT, not in
+# the objects' byte digests: a deterministic compiler may well produce
+# byte-identical objects from the same source.  The provenance table at
+# C3 records the producer path, the producer digest, the subject
+# digest, the object digest and the exact command for each generation,
+# so a relabelled single executable would be visible.
+#
+# THE ADVERSE CONTROL S7-PV-01 (relabel one binary as G2 or G3) is
+# therefore SENSITIVE BY CONSTRUCTION: the provenance verifier compares
+# the producer digests pairwise, and three distinct digests cannot be
+# produced by one binary.
+#
+# ---------------------------------------------------------------------------
+# THE ARCHITECTURE
+# ---------------------------------------------------------------------------
+#
+#   TARGET_ARCHITECTURE=arm64
+#   TARGET_OBJECT_FORMAT=Mach-O
+#   TARGET_TRIPLE=arm64-apple-darwin
+#   HOST_C_COMPILER=/usr/bin/cc
+#
+# ---------------------------------------------------------------------------
+# THE SUBJECT SOURCE
+# ---------------------------------------------------------------------------
+#
+#   SUBJECT_SOURCE=tools/bootstrap/selfhost-parser-slice07.HC
+#   SUBJECT_SYMBOL=BootstrapCompoundBlockAppendsStatement
+#   SUBJECT_ABI=I64 BootstrapCompoundBlockAppendsStatement(I64 stmt_kind, I64 declvar_kind) -> I64
+#
+# The subject source is ONE file.  Every generation compiles that SAME
+# current file, so the four-generation differential compares the SAME
+# source under four independent producers.
+#
+# STAGE_PROVENANCE_PLAN_COMPLETE=YES

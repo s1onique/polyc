@@ -1,0 +1,177 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE07
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=negative-control-red
+#
+# THE C1 NEGATIVE-CONTROL PREPARATION AND THE MEASURED RED STATE.
+#
+# The C1 phase prepares the controls and MEASURES the pre-state in
+# which they must fire.  A control that is sensitive only on pristine
+# evidence is UNPROVEN; each control below records the RED state that
+# the C2/C3 mutation will attack.
+#
+# ---------------------------------------------------------------------------
+# THE FIXTURE-INTEGRITY CONTROLS (executed at C1)
+# ---------------------------------------------------------------------------
+#
+# S7-FC-01  DELETE one fixture row.
+#   MUTATION=the fixture row 0001 is removed.
+#   DETECTOR=MISSING EXACT FIXTURE ID
+#   MEASURED=FIXTURE_INTEGRITY_MISSING_ID=1  STATUS=FAIL
+#   VERDICT=SENSITIVE
+#
+# S7-FC-02  DUPLICATE one fixture id.
+#   MUTATION=the fixture row 0001 is emitted twice.
+#   DETECTOR=DUPLICATE ID
+#   MEASURED=FIXTURE_INTEGRITY_DUPLICATE_ID=1  STATUS=FAIL
+#   VERDICT=SENSITIVE
+#
+# S7-FC-03  ADD an unknown fixture id.
+#   MUTATION=an extra row with the id 9999 is appended.
+#   DETECTOR=UNKNOWN ID with no false missing/duplicate explanation
+#   MEASURED=FIXTURE_INTEGRITY_MAX_ID=9999, DUPLICATE_IDS=0,
+#             MISSING_IDS=8245, STATUS=FAIL
+#   VERDICT=SENSITIVE
+#
+# S7-FC-04  FLIP one expected outcome.
+#   MUTATION=the row 0001's expected value is changed from 0 to 1.
+#   DETECTOR=EXACT INPUT ID AND SEMANTIC MISMATCH
+#   MEASURED=FIXTURE_INTEGRITY_WRONG_ROW_ID=1 STMT_KIND=263
+#             DECLVAR_KIND=256 EXPECTED=1 RECOMPUTED=0  STATUS=FAIL
+#   VERDICT=SENSITIVE
+#
+# S7-FC-05  SWAP one live enum value.
+#   MUTATION=src/ast.h's AST_GVAR is changed from 256 to 257.
+#   DETECTOR=SOURCE IDENTITY / ENUM MISMATCH
+#   MEASURED=FIXTURE_INTEGRITY_SOURCE_AST_GVAR=257,
+#             WRONG_EXPECTED=3, STATUS=FAIL
+#   VERDICT=SENSITIVE
+#
+# ---------------------------------------------------------------------------
+# THE PROJECTION ANTI-CONTROL (executed at C1)
+# ---------------------------------------------------------------------------
+#
+# S7-PR-01  EAGERLY read stmt->declvar->kind on non-AST_DECL.
+#   MUTATION=the projection guard's condition is replaced by `if (1)`.
+#   DETECTOR=HOST SHORT-CIRCUIT PROJECTION VIOLATION, ACTUALLY OBSERVED
+#             IN INSTRUMENTATION
+#   PRISTINE=CASE1_NONDECL_ABSENT_DECLVAR result=1 reads=0 trapped=0
+#   MUTATED =CASE1_NONDECL_ABSENT_DECLVAR result=1 reads=1 trapped=1
+#   VERDICT=SENSITIVE
+#
+# S7-PR-02  DISABLE the needed AST_DECL projection read.
+#   MUTATION=the projection guard is replaced by an unconditional
+#             `projected_declvar_kind = 0;` (the declvar is never read).
+#   DETECTOR=THE WRONG AST_DECL/AST_GVAR SEMANTIC OR THE READ-COUNT
+#             DETECTOR
+#   EXPECTED=the declaration rows (stmt_kind == AST_DECL) would then
+#             never observe AST_GVAR, so the decision would APPEND the
+#             global declaration instead of SKIPping it, and the G0
+#             differential would report the mismatch on the
+#             (263, 256) pair.
+#   STATUS=PREPARED; EXECUTED AT C3 AGAINST THE PRODUCTION OBJECT
+
+
+# ---------------------------------------------------------------------------
+# THE PRODUCTION / PROVENANCE CONTROLS (PREPARED, EXECUTED AT C2/C3)
+# ---------------------------------------------------------------------------
+#
+# S7-PR-03  Return the opposite result for AST_DECL/AST_GVAR.
+#   MUTATION=the PolyC subject's AST_GVAR branch returns 1 instead of 0.
+#   DETECTOR=THE G0 DIFFERENTIAL AND THE REAL PRODUCTION WITNESS
+#           FAILURE
+#   STATUS=PREPARED
+#
+# S7-PR-04  Keep an active legacy C AST_GVAR comparison despite the
+#           enabled selector.
+#   MUTATION=the legacy `if (stmt_kind == AST_DECL &&
+#           declvar_kind == AST_GVAR) return 0;` is left ACTIVE beside
+#           the delegation.
+#   DETECTOR=THE FUNCTION-SCOPED DUPLICATE-AUTHORITY DETECTOR FAILS
+#   STATUS=PREPARED
+#
+# S7-PR-05  Link the PolyC symbol without actually calling it from
+#           production.
+#   MUTATION=the adapter's call is removed but the subject is still
+#           linked.
+#   DETECTOR=THE LOAD-BEARING OBJECT/CALL-SITE DETECTOR FAILS
+#   STATUS=PREPARED
+#
+# S7-PR-06  Disable the delegation while leaving the PolyC object
+#           available.
+#   MUTATION=the selector is turned OFF but the subject object is still
+#           linked.
+#   DETECTOR=THE MISSING PRODUCTION DELEGATION DETECTOR FAILS
+#   STATUS=PREPARED
+#
+# S7-PV-01  Relabel the same compiler binary as G2 or G3.
+#   MUTATION=the G2 or G3 provenance row names a producer digest that
+#           belongs to another row.
+#   DETECTOR=THE PRODUCER IDENTITY/ANCESTRY DETECTOR FAILS
+#   PRECONDITION=the five producer digests are pairwise distinct (C1).
+#   STATUS=PREPARED
+#
+# S7-PV-02  Substitute a G0 object that references the PolyC subject.
+#   MUTATION=the G0 object is rebuilt WITH the SLICE07 selector.
+#   DETECTOR=THE G0 INDEPENDENCE DETECTOR FAILS
+#   PRECONDITION=the G0 object carries NO reference to
+#                 BootstrapCompoundBlockAppendsStatement (C1).
+#   STATUS=PREPARED
+#
+# S7-PV-03  Remove the PolyC subject object or its symbol export.
+#   MUTATION=the subject object is deleted, or is built from a source
+#           that does not export the symbol.
+#   DETECTOR=THE REAL PRODUCTION BUILD/LINK FAILS FOR THE INTENDED
+#           REASON
+#   STATUS=PREPARED
+#
+# S7-PV-04  Substitute disassembly with an unrelated cmp/tst outside
+#           the selected function.
+#   MUTATION=the authority witness is taken from a different function's
+#           disassembly.
+#   DETECTOR=THE FUNCTION/OBJECT-SCOPED AUTHORITY DETECTOR REJECTS IT
+#   STATUS=PREPARED
+#
+# S7-PV-05  Corrupt a stage/fixture result or delete a generation row.
+#   MUTATION=one generation's fixture output is altered or dropped.
+#   DETECTOR=THE EXACT GENERATION/ROW JOIN DETECTS THE MISMATCH OR THE
+#           MISSING ID
+#   STATUS=PREPARED
+#
+# S7-CC-01  Change the PolyC predicate to admit/skip the wrong semantic
+#           class.
+#   MUTATION=the real .HC component's predicate is altered.
+#   DETECTOR=A SUCCESSFULLY REBUILT MUTANT PRODUCTION hcc CHANGES REAL
+#           COMPILATION BEHAVIOUR, AND THE SOURCE IS RESTORED
+#   STATUS=PREPARED; EXECUTED AT C3 IN A DISPOSABLE DETACHED WORKTREE
+#
+# S7-CC-02  Fail to restore one PolyC source byte.
+#   MUTATION=the restoration leaves one byte changed.
+#   DETECTOR=THE RESTORATION HASH CHECK FAILS
+#   STATUS=PREPARED
+#
+# ---------------------------------------------------------------------------
+# THE INHERITED CONTROLS
+# ---------------------------------------------------------------------------
+#
+# The ten inherited controls N-01..N-10 (RECON05
+# c2/selected-negative-controls.md) are recorded, UNCHANGED, in
+# c0/negative-control-contract.tsv.  They are executed at C2/C3 against
+# the PolyC subject; N-06's subject-specific analogue is the PolyC
+# source mutation and its result is reported under BOTH N-06 and
+# S7-CC-01.
+#
+# ---------------------------------------------------------------------------
+# THE SUMMARY
+# ---------------------------------------------------------------------------
+#
+# CONTROLS_EXECUTED_AT_C1=6
+# CONTROLS_SENSITIVE_AT_C1=6
+# CONTROLS_PREPARED_FOR_C2_C3=14
+# CONTROLS_INHERITED_UNCHANGED=10
+# CONTROL_COUNT_TOTAL=30
+#   (6 executed at C1 + 14 prepared + 10 inherited)
+#
+# The counts are: 5 fixture-integrity controls + 1 projection
+# anti-control executed at C1; 2 projection controls, 4 production
+# controls, 5 provenance controls and 2 causal controls prepared for
+# C2/C3; and the 10 inherited controls N-01..N-10.

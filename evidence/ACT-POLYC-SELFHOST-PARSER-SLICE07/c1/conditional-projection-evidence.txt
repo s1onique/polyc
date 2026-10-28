@@ -1,0 +1,144 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE07
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=conditional-projection-evidence
+#
+# THE CONDITIONAL HOST PROJECTION, PROVEN BY A READ-COUNT HARNESS.
+#
+# THE REQUIREMENT (ACT section 2)
+#
+#   The two-argument ABI does not make both host reads unconditional.
+#   The C side MUST retain exactly ONE projection guard, and the
+#   non-AST_DECL path MUST NOT touch stmt->declvar at all.
+#
+# ---------------------------------------------------------------------------
+# THE GUARD IN THE LIVE PRODUCTION SOURCE
+# ---------------------------------------------------------------------------
+#
+# COMMAND=grep -n -A 6 'int projected_stmt_kind = stmt->kind;' src/parser.c
+#
+#                 int projected_stmt_kind = stmt->kind;
+#                 int projected_declvar_kind = 0;
+#                 if (projected_stmt_kind == AST_DECL) {
+#                     projected_declvar_kind = stmt->declvar->kind;
+#                 }
+#                 if (!parseCompoundBlockAppendsStatement(projected_stmt_kind,
+#                                                        projected_declvar_kind)) {
+#                     tok = cctrlTokenPeek(cc);
+#                     continue;
+#                 }
+#                 listAppend(body->stms,stmt);
+#
+# The guard compares ONLY against AST_DECL.  It does NOT compare against
+# AST_GVAR, it does NOT compute an append/skip boolean, and it does NOT
+# override the PolyC component's result.  The `continue` and the
+# `listAppend` are unchanged.
+#
+# ---------------------------------------------------------------------------
+# THE INSTRUMENTED READ-COUNT HARNESS
+# ---------------------------------------------------------------------------
+#
+# The harness (tools/quality/parser-slice07-projection-harness.c) uses
+# an INSTRUMENTED host node whose `declvar` field access is a counted
+# FUNCTION CALL.  It therefore OBSERVES whether the projection read the
+# field WITHOUT ever invoking undefined behaviour: for the
+# non-declaration case the instrumented accessor is never called, so no
+# absent field is ever dereferenced and no trap is ever provoked.
+#
+# The harness replicates the EXACT guard shape of the production source:
+#
+#     int projected_stmt_kind = stmt->kind;
+#     int projected_declvar_kind = 0;
+#     if (projected_stmt_kind == ast_decl_value) {
+#         projected_declvar_kind = instrumented_declvar_kind(stmt);
+#     }
+#
+# COMMAND=cc -std=c99 -O2 -Wall -Wextra -o build/slice07/projection-harness \
+#           tools/quality/parser-slice07-projection-harness.c
+# COMMAND=./build/slice07/projection-harness
+#
+#   CASE1_NONDECL_ABSENT_DECLVAR result=1 reads=0 trapped=0
+#   CASE2_NONDECL_GLOBAL_DECLVAR result=1 reads=0 trapped=0
+#   CASE3_DECL_GLOBAL result=0 reads=1 trapped=0
+#   CASE4_DECL_LOCAL result=1 reads=1 trapped=0
+#
+# THE READING OF EACH CASE
+#
+#   CASE1  a NON-declaration (AST_RETURN) whose declvar field is ABSENT
+#          and whose read would TRAP.  The projection performed ZERO
+#          reads and NO trap occurred: the C side never touched
+#          stmt->declvar.  The result is APPEND (1).
+#
+#   CASE2  a NON-declaration whose declvar IS present with the global
+#          value.  The projection performed ZERO reads: the legacy `&&`
+#          short-circuit is preserved and the declvar value is NOT
+#          consulted.  The result is APPEND (1).
+#
+#   CASE3  a DECLARATION whose declvar IS a global.  The projection
+#          performed EXACTLY ONE read, and the decision is SKIP (0).
+#
+
+# ---------------------------------------------------------------------------
+# THE ANTI-CONTROL: REMOVING THE GUARD MUST FAIL
+# ---------------------------------------------------------------------------
+#
+# The anti-control removes the guard, so the declvar is read
+# unconditionally.  The harness is then rebuilt with the SAME
+# instrumented node, and the CASE1 result MUST change: the read count
+# becomes 1 and the trap fires.
+#
+# COMMAND=sed 's/if (projected_stmt_kind == ast_decl_value) {/if (1) {/' \
+#           tools/quality/parser-slice07-projection-harness.c > /tmp/s07-proj-noguard.c
+# COMMAND=cc -std=c99 -O2 -o build/slice07/projection-harness-noguard /tmp/s07-proj-noguard.c
+# COMMAND=./build/slice07/projection-harness-noguard
+#
+#   CASE1_NONDECL_ABSENT_DECLVAR result=1 reads=1 trapped=1
+#   CASE2_NONDECL_GLOBAL_DECLVAR result=1 reads=1 trapped=0
+#   CASE3_DECL_GLOBAL result=0 reads=1 trapped=0
+#   CASE4_DECL_LOCAL result=1 reads=1 trapped=0
+#
+# The CASE1 read count moves from 0 to 1 and the trap moves from 0 to 1.
+# The detector is SENSITIVE: removing the guard is OBSERVED.
+#
+# (The anti-control's CASE1 result value stays 1 because the frozen
+# rule APPENDS a non-declaration regardless; the DETECTOR is the READ
+# COUNT and the TRAP, not the result value.  That is the whole point of
+# the projection: the result is the same, but the HOST STATE ACCESS is
+# different, and the host state access is what must be conserved.)
+#
+# ANTICONTROL_NOGUARD_READS=1
+# ANTICONTROL_NOGUARD_TRAPPED=1
+# ANTICONTROL_SENSITIVE=YES
+#
+# ---------------------------------------------------------------------------
+# THE DISASSEMBLY WITNESS (the real production object)
+# ---------------------------------------------------------------------------
+#
+# The C0 measurement already showed the short-circuit structure in the
+# REAL production object (c0/red-reproduction.txt):
+#
+#   3a20: b9400008     ldr  w8, [x0]        ; stmt->kind
+#   3a24: 71041d1f     cmp  w8, #263        ; == AST_DECL
+#   3a28: 540000a1     b.ne 0x3a3c         ; SHORT-CIRCUIT: skip the declvar load
+#   3a2c: f9401828     ldr  x8, [x1, #48]   ; stmt->declvar
+#   3a30: b9400108     ldr  w8, [x8]        ; stmt->declvar->kind
+#   3a34: 7104011f     cmp  w8, #256        ; == AST_GVAR
+#   3a38: 54ffed20     b.eq 0x37dc         ; -> SKIP (continue)
+#
+# The `b.ne` at 0x3a28 skips the `ldr` at 0x3a2c: the declvar load is
+# NOT reached unless stmt->kind == AST_DECL.  That is the machine-level
+# form of the same short-circuit the harness exercises.
+#
+# C_PROJECTION_NEVER_READS_DECLVAR_FOR_NON_DECL=YES
+# C_PROJECTION_READS_DECLVAR_EXACTLY_ONCE_FOR_DECL=YES
+# C_PROJECTION_ADDS_NULL_SEMANTICS=NO
+# C_PROJECTION_ADDS_AN_ERROR_SENTINEL=NO
+# C_PROJECTION_COMPUTES_THE_DECISION=NO
+# C_PROJECTION_ANTICONTROL_SENSITIVE=YES
+
+#   CASE4  a DECLARATION whose declvar is a local.  The projection
+#          performed EXACTLY ONE read, and the decision is APPEND (1).
+#
+#   NON_DECL_DECLVAR_READS=0
+#   NON_DECL_TRAPS=0
+#   DECL_DECLVAR_READS=1
+#   DECL_READS_ARE_EXACTLY_ONE=YES

@@ -1,0 +1,106 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE07
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=legacy-source-and-abi
+#
+# THE LEGACY SOURCE AND THE FROZEN ABI.
+#
+# --- THE SELECTED SOURCE, RE-MEASURED ---
+#
+# THE LINE MOVED.  The ACT section 5 item 1 requires the line movement
+# to be RECORDED before the migration, and it is recorded here.
+#
+# At the entry tree the decision was ONE source line at
+# src/parser.c:2049, and its SHA-256 was the frozen
+# 378a39d71eed7aaf673bde3857cc08df6f9c95c776723832e6e460553be361e8.
+#
+# At C1 the decision is FACTORED OUT into the small static function
+# parseCompoundBlockAppendsStatement, so that the REAL legacy decision
+# can be reached by an OBJECT-LEVEL oracle without re-implementing it.
+# This is EXACTLY the SLICE06 precedent, which factored the
+# switch-arm decision into static int parseSwitchArmTerminates(int
+# kind) with the byte-identical legacy body preserved in the
+# non-delegated branch.
+#
+# The decision TEXT is unchanged except for the DOCUMENTED single
+# substitution that the frozen SLICE06 pattern uses: the host field
+# expressions become the function's scalar parameters.
+#
+#   frozen:  if (stmt->kind == AST_DECL && stmt->declvar->kind == AST_GVAR) {
+#   live:    if (stmt_kind == AST_DECL && declvar_kind == AST_GVAR) return 0;
+#
+# The substitution is exactly:
+#   stmt->kind        -> stmt_kind
+#   stmt->declvar->kind -> declvar_kind
+#
+# COMMAND=sed 's/stmt->kind/stmt_kind/; s/stmt->declvar->kind/declvar_kind/' <frozen decision>
+#   if (stmt_kind == AST_DECL && declvar_kind == AST_GVAR) {
+#
+# COMMAND=grep -n 'if (stmt_kind == AST_DECL && declvar_kind == AST_GVAR) return 0;' src/parser.c
+#   2002:    if (stmt_kind == AST_DECL && declvar_kind == AST_GVAR) return 0;
+#
+# COMMAND=grep -n 'stmt->kind == AST_DECL && stmt->declvar->kind == AST_GVAR' src/parser.c
+#   1945: *     if (stmt->kind == AST_DECL && stmt->declvar->kind == AST_GVAR) {
+#   2146: *     stmt->kind == AST_DECL && stmt->declvar->kind == AST_GVAR
+#
+#   The two remaining occurrences are COMMENTS (the transcription
+#   reference in the function's own doc comment and the projection
+#   guard's doc comment), NOT live code.
+#
+# The decision's SEMANTICS are unchanged and are PROVEN by the G0
+# object-level oracle (c1/g0-production-object.txt): the oracle built
+# from the delegation-OFF production translation unit returns 0 for
+# exactly one input pair, (263, 256), and 1 for every other probed
+# pair.  That is the frozen rule.
+#
+# SELECTED_SOURCE_FILE=src/parser.c
+# ORIGINAL_SOURCE_RANGE=2049..2049
+# ORIGINAL_SOURCE_SHA256=378a39d71eed7aaf673bde3857cc08df6f9c95c776723832e6e460553be361e8
+# CURRENT_DECISION_LINE=2002
+# CURRENT_DECISION_FUNCTION=parseCompoundBlockAppendsStatement
+# LINE_MOVEMENT_RECORDED=YES
+# DECISION_TEXT_CHANGE=THE DOCUMENTED PARAMETER SUBSTITUTION ONLY
+# DECISION_SEMANTICS_UNCHANGED=YES
+# DECISION_SEMANTICS_PROVEN_BY_G0_ORACLE=YES
+# SELECTED_ENCLOSING_FUNCTION=parseCompoundStatementInternal
+# SELECTED_PRODUCTION_CALL_SITE=src/parser.c (the call site inside parseCompoundStatementInternal)
+
+# --- THE ABI, AS FROZEN ---
+SELECTED_ABI=I64 BootstrapCompoundBlockAppendsStatement(I64 stmt_kind, I64 declvar_kind) -> I64
+SELECTED_INPUT_1=stmt->kind
+SELECTED_INPUT_2=stmt->declvar->kind
+SELECTED_OUTPUT_1=APPEND the statement to the block statement list
+SELECTED_OUTPUT_0=SKIP the statement
+SELECTED_BOUNDARY_CLASS=SCALAR_TO_SCALAR
+SELECTED_STATE_READS_BY_POLYC=stmt_kind (I64), declvar_kind (I64)
+SELECTED_STATE_WRITES_BY_POLYC=NONE
+SELECTED_POINTER_IDENTITY_OPERATIONS=0
+SELECTED_HOST_GRAPH_WRITES_TRANSFERRED=0
+SELECTED_ALLOCATION_TRANSFERRED=0
+SELECTED_CALLBACKS_TRANSFERRED=0
+SELECTED_RECOVERY_OWNERSHIP_TRANSFERRED=0
+SELECTED_DIAGNOSTIC_OWNERSHIP_TRANSFERRED=0
+SELECTED_TOKEN_STREAM_OWNERSHIP_TRANSFERRED=0
+SELECTED_SCOPE_OR_SYMBOL_TABLE_OWNERSHIP_TRANSFERRED=0
+
+# --- THE C-SIDE PROJECTION, AS IMPLEMENTED ---
+# The C side reads stmt->kind ALWAYS and stmt->declvar->kind ONLY
+# when stmt->kind == AST_DECL.  The guard authorises ONE field
+# read; it does NOT compute the append/skip result.
+C_PROJECTION_GUARD_CONDITION=projected_stmt_kind == AST_DECL
+C_PROJECTION_READS_DECLVAR_ONLY_UNDER_AST_DECL=YES
+C_PROJECTION_READS_AST_GVAR=NO
+C_PROJECTION_COMPUTES_THE_DECISION=NO
+C_PROJECTION_RETURNS_THE_ONLY_INPUT_TO_THE_ACTION=YES
+C_PROJECTION_ADDS_NULL_SEMANTICS=NO
+C_PROJECTION_ADDS_AN_ERROR_SENTINEL=NO
+
+# --- THE SEMANTIC RULE, AS FROZEN ---
+#   appends = !(stmt_kind == AST_DECL && declvar_kind == AST_GVAR)
+# i.e. SKIP exactly when the statement is a DECL whose declvar is
+# a GVAR; APPEND otherwise.  The second input is irrelevant to
+# non-AST_DECL cases.
+SEMANTIC_RULE_SOURCE=RECON05 c2/selected-abi.md section 3
+SEMANTIC_RULE_POLARITY_CONFIRMED_AGAINST_LIVE_C=YES
+SEMANTIC_RULE_CONFIRMED_BY_G0_ORACLE=YES
+G0_ORACLE_SKIP_ROWS=1
+G0_ORACLE_SKIP_PAIR=263 256

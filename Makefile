@@ -5785,6 +5785,148 @@ parser-slice06-negative-control-pd02: build/slice06-nc/pd02.o
 	$(call SLICE06_PD_CONTROL,pd02)
 parser-slice06-negative-control-pd03: build/slice06-nc/pd03.o
 	$(call SLICE06_PD_CONTROL,pd03)
+# =========================================================================
+# ACT-POLYC-SELFHOST-PARSER-SLICE07
+#
+#   the compound-block statement append/skip routing (SUB-003).
+#
+#   build/slice07/oracle-driver -> the REAL legacy C oracle.
+#   build/slice07-parser-legacy.o -> src/parser.c compiled WITHOUT
+#                                      HCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND,
+#                                      so the byte-identical legacy
+#                                      condition is the code that executes.
+#   build/parser-slice07-fixture-producer -> the PolyC fixture producer.
+#   build/parser-slice07-fixture-integrity -> the INDEPENDENT PolyC witness.
+#   build/parser-slice07-differential -> the PolyC differential.
+#
+# G0 = the REAL legacy C authority: src/parser.c compiled WITHOUT
+#      HCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND.
+# G1 = the PolyC component compiled by the STAGE0 compiler.
+# G2 = the PolyC component compiled by the PRODUCTION compiler (./hcc).
+# G3 = the PolyC component compiled by the stage-2 compiler
+#      (./build/hcc-bootstrap02).
+#
+# Each generation is BUILT and EXECUTED INDEPENDENTLY.  No generation's
+# output is copied as a substitute for another generation's compilation.
+# =========================================================================
+SLICE07_COMPOUND_BLOCK_SRC   = tools/bootstrap/selfhost-parser-slice07.HC
+SLICE07_COMPOUND_BLOCK_OBJ   = ./build/parser-compound-block-subject.o
+SLICE07_PARSER_LEGACY_OBJ    = ./build/slice07-parser-legacy.o
+SLICE07_ORACLE_ADAPTER       = ./build/slice07-oracle-adapter.o
+SLICE07_ORACLE_STUB          = ./build/slice07-is-terminal-stub.o
+SLICE07_ORACLE_DRIVER        = ./build/slice07-oracle-driver
+SLICE07_FIXTURE_SRC          = tools/quality/parser-slice07-fixture-producer.HC
+SLICE07_FIXTURE_PRODUCER     = ./build/parser-slice07-fixture-producer
+SLICE07_FIXTURE_INTEGRITY_SRC= tools/quality/parser-slice07-fixture-integrity.HC
+SLICE07_FIXTURE_INTEGRITY    = ./build/parser-slice07-fixture-integrity
+SLICE07_FIXTURE              = evidence/ACT-POLYC-SELFHOST-PARSER-SLICE07/c1/fixture.tsv
+SLICE07_DIFF_SRC             = tools/quality/parser-slice07-differential.HC
+SLICE07_DIFF_OBJ             = ./build/parser-slice07-differential.o
+
+# The legacy oracle object: the REAL production src/parser.c translation
+# unit with the delegation OFF.  The build FAILS if the object references
+# the PolyC component, which would mean the delegation was NOT off.
+build/slice07-parser-legacy.o: src/parser.c src/parser.h src/ast.h
+	@mkdir -p build/slice07
+	@rm -f $@
+	cc -std=c99 -O2 -Isrc -c -o $@ src/parser.c
+	@nm $@ | grep -q '_ParserLegacyCompoundBlockAppendsOracle' \
+		|| { echo "slice07-parser-legacy.o: the legacy decision wrapper is missing" >&2; exit 1; }
+	@if nm $@ | grep -q '_BootstrapCompoundBlockAppendsStatement'; then \
+		echo "slice07-parser-legacy.o: the object references the PolyC component; the delegation flag is NOT off" >&2; \
+		exit 1; \
+	fi
+	@echo "SLICE07_LEGACY_ORACLE=$@ (delegation OFF: the real legacy body is executed)"
+
+build/slice07-is-terminal-stub.o: tools/quality/parser-slice07-oracle-stub.c
+	@rm -f $@
+	cc -std=c99 -O2 -c -o $@ $<
+
+build/slice07-oracle-adapter.o: tools/quality/parser-slice07-oracle-adapter.c
+	@rm -f $@
+	cc -std=c99 -O2 -Isrc -c -o $@ $<
+	@nm $@ | grep -q '_Slice07LegacyCompoundBlockOracle' \
+		|| { echo "slice07-oracle-adapter.o: the adapter entry point is missing" >&2; exit 1; }
+
+# The transitive production objects the oracle links against.
+#
+# main.c is EXCLUDED: it defines main() and the runtime-initialized
+# is_terminal global.  parser.c is EXCLUDED too: it is REPLACED by the
+# legacy oracle object, which is the whole point -- the ORACLE must be
+# the legacy parser.c, so the production parser.c.o would be a
+# duplicate-symbol conflict AND would defeat the oracle.
+SLICE07_ORACLE_TRANSITIVE_OBJS = $(filter-out $(HCC_OBJ_DIR)/main.c.o $(HCC_OBJ_DIR)/parser.c.o, \
+    $(wildcard $(HCC_OBJ_DIR)/*.c.o $(HCC_OBJ_DIR)/linenoise/*.c.o))
+
+# The oracle DRIVER: it prints the REAL legacy decision for every probed
+# input pair, so the G0 reference can be compared against the fixture and
+# against the PolyC component pair by pair.
+build/slice07-oracle-driver: tools/quality/parser-slice07-oracle-driver.c \
+    build/slice07-parser-legacy.o build/slice07-oracle-adapter.o \
+    build/slice07-is-terminal-stub.o
+	@rm -f $@
+	cc -std=c99 -O2 -Isrc -o $@ tools/quality/parser-slice07-oracle-driver.c \
+		build/slice07-parser-legacy.o build/slice07-oracle-adapter.o \
+		build/slice07-is-terminal-stub.o \
+		$(SLICE07_ORACLE_TRANSITIVE_OBJS) \
+		$(PARSER_PADDING_OBJ) $(SLICE02_CFT_OBJ) $(SLICE03_OP_OBJ) \
+		$(SLICE04_AST_BINOP_OBJ) $(SLICE05_AST_UNARY_OBJ) \
+		$(TASM_LIB) -lm -lpthread -ldl \
+		-Wl,-undefined,dynamic_lookup
+	@ls -la $@
+
+# The FIXTURE producer (PolyC).
+build/parser-slice07-fixture-producer: $(SLICE07_FIXTURE_SRC) ./hcc | test-prefix-install
+	./hcc --install-dir=$(TEST_PREFIX) $(SLICE07_FIXTURE_SRC) -o $@
+
+# The INDEPENDENT fixture-integrity witness (PolyC).
+build/parser-slice07-fixture-integrity: $(SLICE07_FIXTURE_INTEGRITY_SRC) ./hcc | test-prefix-install
+	./hcc --install-dir=$(TEST_PREFIX) $(SLICE07_FIXTURE_INTEGRITY_SRC) -o $@
+
+# The DIRECT DIFFERENTIAL: the PolyC component against the REAL legacy
+# oracle, over the whole fixture matrix.
+build/parser-slice07-differential.o: $(SLICE07_DIFF_SRC) ./hcc | test-prefix-install
+	./hcc --install-dir=$(TEST_PREFIX) -c $(SLICE07_DIFF_SRC) -o $@
+	@if [ ! -f $@ ]; then \
+		echo "parser-slice07-differential.o: build failed" >&2; \
+		exit 1; \
+	fi
+
+SLICE07_DIFF_OBJS = $(SLICE07_DIFF_OBJ) $(SLICE07_COMPOUND_BLOCK_OBJ) \
+	$(SLICE07_PARSER_LEGACY_OBJ) $(SLICE07_ORACLE_ADAPTER) $(SLICE07_ORACLE_STUB) \
+	$(SLICE07_ORACLE_TRANSITIVE_OBJS)
+
+build/parser-slice07-differential: $(SLICE07_DIFF_OBJS) | test-prefix-install
+	cc -o $@ $(SLICE07_DIFF_OBJS) \
+		$(PARSER_PADDING_OBJ) $(SLICE02_CFT_OBJ) $(SLICE03_OP_OBJ) \
+		$(SLICE04_AST_BINOP_OBJ) $(SLICE05_AST_UNARY_OBJ) \
+		$(TASM_LIB) -L$(TEST_PREFIX)/lib -ltos -lm -lpthread -ldl \
+		-Wl,-undefined,dynamic_lookup
+	@ls -la $@
+
+parser-slice07-fixture: build/parser-slice07-fixture-producer
+	@mkdir -p evidence/ACT-POLYC-SELFHOST-PARSER-SLICE07/c1
+	./build/parser-slice07-fixture-producer $(SLICE07_FIXTURE)
+	@echo "SLICE07_FIXTURE=$(SLICE07_FIXTURE)"
+	@echo "SLICE07_FIXTURE_COUNT=$$(grep -c '^[0-9][0-9][0-9][0-9]' $(SLICE07_FIXTURE))"
+
+parser-slice07-fixture-integrity: build/parser-slice07-fixture-integrity
+	./build/parser-slice07-fixture-integrity $(SLICE07_FIXTURE) src/ast.h src/parser.c
+	@echo "SLICE07_FIXTURE_INTEGRITY=PASS"
+
+# The G0 legacy oracle driver: the REAL legacy decision over the whole
+# probed domain.
+parser-slice07-oracle: build/slice07-oracle-driver
+	./build/slice07-oracle-driver
+	@echo "SLICE07_ORACLE=RUN"
+
+# The DIRECT DIFFERENTIAL: the PolyC component against the REAL legacy
+# oracle, over the whole fixture matrix.
+parser-slice07-differential: build/parser-slice07-differential
+	@echo "SLICE07_DIFFERENTIAL=RUN"
+	./build/parser-slice07-differential $(SLICE07_FIXTURE) `grep -c '^[0-9][0-9][0-9][0-9]' $(SLICE07_FIXTURE)`
+
+
 # ACT-POLYC-SELFHOST-PARSER-SLICE05
 #
 #   parser-slice05-generations -> the FOUR INDEPENDENT generation builds.

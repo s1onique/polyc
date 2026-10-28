@@ -1933,6 +1933,96 @@ Ast *parseDeclOrStatement(Cctrl *cc) {
     return parseStatement(cc);
 }
 
+/* ACT-POLYC-SELFHOST-PARSER-SLICE07 C1 EVIDENCE:
+ *
+ * the compound-block statement append/skip decision, factored out of
+ * parseCompoundStatementInternal so that the REAL legacy decision can
+ * be reached by an OBJECT-LEVEL oracle without re-implementing it.
+ *
+ * The decision is EXACTLY the condition that was at
+ * src/parser.c:2049:
+ *
+ *     if (stmt->kind == AST_DECL && stmt->declvar->kind == AST_GVAR) {
+ *         tok = cctrlTokenPeek(cc);
+ *         continue;
+ *     }
+ *     listAppend(body->stms,stmt);
+ *
+ * rewritten with the single substitution `stmt->kind` -> `stmt_kind`
+ * and `stmt->declvar->kind` -> `declvar_kind`:
+ *
+ *     if (stmt_kind == AST_DECL && declvar_kind == AST_GVAR) return 0;
+ *     return 1;
+ *
+ * The `&&` short-circuit is PRESERVED: in the legacy branch the
+ * `declvar_kind` parameter is only consulted when `stmt_kind` is
+ * already AST_DECL, exactly as the original source did.
+ *
+ * The call site performs the SAME short-circuiting projection before
+ * the call, so the C side NEVER reads `stmt->declvar` for a
+ * non-declaration statement.  See parseCompoundStatementInternal below.
+ *
+ * The dedicated macro name (rather than the generic
+ * HCC_USE_SELFHOST_COMPONENTS) is required because that generic
+ * selector also activates the lexer delegations in src/lexer.c, which
+ * would require linking the lexer subjects too.  This migration is
+ * independent of the lexer migrations and is scoped to its own flag.
+ *
+ * The PolyC ABI is `I64 stmt_kind, I64 declvar_kind -> I64 appends`.
+ * The legacy C wrapper is `int(int, int)`.  The cast chain
+ * `(int) -> (long long) -> (long long) -> int` is exact: the AstKind
+ * values are small non-negative integers and the result is a boolean,
+ * all of which fit in an int without loss. */
+static int parseCompoundBlockAppendsStatement(int stmt_kind, int declvar_kind)
+{
+#ifdef HCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND
+    /* ACT-POLYC-SELFHOST-PARSER-SLICE07 C2 IMPL:
+     * delegate the compound-block statement append/skip decision to the
+     * qualified PolyC component BootstrapCompoundBlockAppendsStatement.
+     *
+     * This adapter does NOT own the decision: the append/skip DECISION
+     * is made by the PolyC component.  The adapter owns only the
+     * mechanical duties the original C ABI requires:
+     *
+     *   1. argument projection  (int -> I64);
+     *   2. result conversion     (I64 -> the legacy boolean).
+     *
+     * The legacy condition is NOT evaluated before, after or alongside
+     * the delegation, and there is no shadow call and no fallback to
+     * C. */
+    extern long long BootstrapCompoundBlockAppendsStatement(long long stmt_kind,
+                                                             long long declvar_kind);
+    return (int)BootstrapCompoundBlockAppendsStatement((long long)stmt_kind,
+                                                       (long long)declvar_kind);
+#else
+    /* Stage0 evidence path: the byte-identical legacy condition.
+     * Reachable only in non-HCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND
+     * builds (the differential's slice07-parser-legacy.o).  Production
+     * never executes this branch. */
+    if (stmt_kind == AST_DECL && declvar_kind == AST_GVAR) return 0;
+    return 1;
+#endif
+}
+
+/* ACT-POLYC-SELFHOST-PARSER-SLICE07 C1 EVIDENCE: tiny ABI wrapper
+ * adjacent to the compound-block append/skip decision.  Forwards to
+ * the actual legacy decision (whose body is unchanged above).  Used by
+ * tools/quality/parser-slice07-oracle-adapter.c so the quality oracle
+ * reaches the actual legacy authority instead of duplicating the
+ * condition.  Adds zero new logic; does not modify the decision or any
+ * existing production caller.
+ *
+ * The oracle MUST come from a build in which the delegation flag is
+ * OFF, so the legacy body is the one being executed.  A differential
+ * run against the delegated build would compare the PolyC component
+ * against itself and would be vacuous. */
+long long ParserLegacyCompoundBlockAppendsOracle(long long stmt_kind,
+                                                  long long declvar_kind)
+{
+    return (long long)parseCompoundBlockAppendsStatement((int)stmt_kind,
+                                                          (int)declvar_kind);
+}
+
 void parseCompoundStatementInternal(Cctrl *cc, Ast *body) {
     Ast *stmt = NULL;
     Ast *var = NULL;
@@ -2046,7 +2136,46 @@ void parseCompoundStatementInternal(Cctrl *cc, Ast *body) {
             }
         } else { 
             if ((stmt = parseStatement(cc)) != NULL) {
-                if (stmt->kind == AST_DECL && stmt->declvar->kind == AST_GVAR) {
+                /* ACT-POLYC-SELFHOST-PARSER-SLICE07 C2 IMPL:
+                 * delegate the compound-block statement append/skip
+                 * decision to the qualified PolyC component.
+                 *
+                 * THE SHORT-CIRCUIT IS PRESERVED HERE, IN C, ON THE C
+                 * SIDE.  The original condition was
+                 *
+                 *     stmt->kind == AST_DECL && stmt->declvar->kind == AST_GVAR
+                 *
+                 * whose `&&` read `stmt->declvar->kind` ONLY when
+                 * `stmt->kind == AST_DECL`.  A naive call
+                 *
+                 *     BootstrapCompoundBlockAppendsStatement(stmt->kind,
+                 *                                                    stmt->declvar->kind);
+                 *
+                 * would evaluate BOTH arguments before the call and
+                 * would therefore dereference `stmt->declvar` for EVERY
+                 * statement, including the non-declaration ones whose
+                 * declvar field is absent or invalid.  That would be a
+                 * NEW invalid host-state read, i.e. a change of the
+                 * original source's behaviour.
+                 *
+                 * The guard below authorises exactly ONE field read, the
+                 * `stmt->declvar->kind` read, and ONLY under
+                 * `stmt->kind == AST_DECL`.  It does NOT compute the
+                 * append/skip result: the DECISION is the PolyC
+                 * component's, and its return value is the ONLY input to
+                 * the SKIP/APPEND action below.
+                 *
+                 * `declvar_kind` is 0 for the non-AST_DECL case; that
+                 * value is not consulted by the decision, and it is NOT
+                 * an error sentinel -- it is simply an irrelevant
+                 * projection of a field the C side did not read. */
+                int projected_stmt_kind = stmt->kind;
+                int projected_declvar_kind = 0;
+                if (projected_stmt_kind == AST_DECL) {
+                    projected_declvar_kind = stmt->declvar->kind;
+                }
+                if (!parseCompoundBlockAppendsStatement(projected_stmt_kind,
+                                                       projected_declvar_kind)) {
                     tok = cctrlTokenPeek(cc);
                     continue;
                 }
