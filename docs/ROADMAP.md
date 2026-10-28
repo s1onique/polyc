@@ -7172,3 +7172,92 @@ SUB-002.
 See
 `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE06-AC11-CORRECTION01.md`
 and `evidence/ACT-POLYC-SELFHOST-PARSER-SLICE06-AC11-CORRECTION01/`.
+
+## ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05 -- CLOSE
+
+**Disposition:** `PASS`.
+
+The parser surface has been re-inventoried from the LIVE source after
+six parser semantic authorities migrated into production-authoritative
+PolyC, and exactly ONE next migration target has been computed,
+mechanically verified, proven causally feasible and frozen.
+
+```text
+PARSER_POLYC_AUTHORITIES=6
+LIVE_FUNCTIONS=270
+RECON04_FUNCTIONS_ADDED=2
+RECON04_FUNCTIONS_REMOVED=0
+RECON04_FUNCTIONS_CHANGED=22
+RECON04_FUNCTIONS_UNCHANGED=246
+CLASSIFIED_FUNCTIONS=270
+UNCLASSIFIED_FUNCTIONS=0
+UNCLASSIFIED_SUBSLICES=0
+UNCLASSIFIED_DEPENDENCIES=0
+ELIGIBLE_CANDIDATES=15
+ELIGIBLE_STRUCTURAL_CANDIDATES=3
+ELIGIBLE_SCALAR_CANDIDATES=12
+SELECTED_CANDIDATE_COUNT=1
+SELECTED_CANDIDATE=SUB-003
+SELECTED_CLASS=STRUCTURAL_BOUNDARY
+SELECTED_SOURCE=src/parser.c:2049..2049
+SELECTED_ABI=I64 BootstrapCompoundBlockAppendsStatement(I64 stmt_kind, I64 declvar_kind) -> I64
+SELECTED_LEGACY_C_ORACLE=OBJECT_LEVEL
+SELECTED_CAUSAL_FEASIBILITY=EXECUTED
+SELECTED_SUCCESSOR_CONTRACT=FROZEN
+PRODUCTION_SEMANTIC_DELTA=0
+SUCCESSOR_IMPLEMENTATION_DELTA=0
+NEGATIVE_CONTROLS_TOTAL=19
+NEGATIVE_CONTROLS_INTENDED_PASS=19
+NEGATIVE_CONTROLS_UNPROVEN=0
+MANDATORY_AC_TOTAL=50
+MANDATORY_AC_PASS=50
+MANDATORY_AC_FAIL=0
+MANDATORY_AC_UNPROVEN=0
+```
+
+The census is derived from the live source bytes by the ACT's own PolyC
+tool and is CROSS-VALIDATED byte-identically against the CLOSED
+RECON04 verifier, which was used read-only and not modified.  The
+historical 268 becomes 270 by exactly two SLICE06 support surfaces (a
+delegation adapter and a G0 oracle), neither of which is a remaining
+legacy C semantic authority.
+
+The canonical 13-clause eligibility checker and the canonical R0..R6
+ranker were executed UNMODIFIED, and the C3 independent PolyC
+recomputer reproduced every eligibility clause and the COMPLETE ordered
+rank list with zero mismatches.
+
+**THE RANK-1 CANDIDATE WAS DISQUALIFIED BY AN EXECUTED CAUSAL
+EXPERIMENT.**  `SUB-002`'s live condition tests the SAME five
+`AstKind` values as the already-migrated `SUB-001` decision, and
+`AST_DEFAULT` is unreachable at that position.  A mutant that adds
+`AST_DEFAULT` to `SUB-002` produces a BYTE-IDENTICAL 376/376 assertion
+sequence (the same MD5), so `SUB-002` is duplicated code rather than a
+distinct decision.  The selected candidate `SUB-003` was proven
+causally load-bearing in the opposite direction: removing its decision
+makes the REAL compiler fail to compile a program the pristine compiler
+accepts, and drops the 90-file suite from 376 to 371 assertions.
+
+Three verifier gaps were found and closed during the reconnaissance
+rather than papered over: a per-row checker cannot see a DELETED row,
+the canonical checker has no UNKNOWN-ID concept, and a dependence
+search over the candidate's own bytes cannot see a TRANSITIVE
+dependence.
+
+The conservation is unchanged: 376/376 parser assertions with the
+identical assertion-sequence MD5, the identical LEXER07 failure
+identity MD5, the historical cross-target prefix condition reported
+honestly, gate-fast and gate-push PASS, and the twelve PRE-EXISTING
+F-NO-PYTHON violations reported rather than waived.  The authoritative
+F-POLYC-TOOLS checker is still NOT LANDED and is reported UNAVAILABLE.
+
+**Next milestone (CONDITIONAL, NOT YET AUTHORIZED):**
+`ACT-POLYC-SELFHOST-PARSER-SLICE07`, whose single target is
+`SUB-003`.  The authorization is active only after this ACT's C4 CLOSE
+has been executed and the external post-CLOSE terminality check has
+passed; until then the proposed successor is INACTIVE.  This ACT does
+not create that ACT and does not implement it.
+
+See
+`docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05.md` and
+`evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05/`.
