@@ -1,0 +1,49 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05
+# ACT_PHASE=C3-VERIFY
+# EVIDENCE_KIND=ranking-recompute
+#
+# THE ENTIRE R0..R6 RANKING, RECOMPUTED INDEPENDENTLY.
+#
+# The recomputer reads the RAW C1 facts and the dimension facts.
+# It does NOT read the C2 ranked list or the C2 winner as an
+# oracle: it re-derives the ORDER with its own comparator and
+# then JOINS the result against the C2 table by exact ID and by
+# the COMPLETE ORDERED SEQUENCE.
+#
+COMMAND=./build/recon05/parser-surface-recon05-independent c1/eligibility-input-facts.tsv c2/ranking-dimensions.tsv c2/eligibility-results.tsv c2/ranked-all-candidates.tsv <out>
+#
+#   INDEPENDENT_RANKED=15
+#   RANK_JOINED=15
+#   RANK_MISSING=0
+#   RANK_NOT_RANKED_INELIGIBLE=9
+#   RANK_EXTRA=0
+#   RANK_ORDER_MISMATCH=0
+#   RANK_COMPLETE_ORDER_MISMATCH=0
+#   INDEPENDENT_SELECTED=SUB-002
+#
+# The independent selection is SUB-002 -- the canonical RANK-1
+# candidate -- exactly as the canonical ranker selected it.  The
+# EXECUTABLE CAUSALITY gate then removed SUB-002 from the
+# feasible subset, which is what makes SUB-003 the selected
+# candidate.  That removal is recorded in
+# c2/selection-result.tsv and c2/ranked-structural-candidates.tsv.
+#
+# THE COMPLETE ORDERED SEQUENCE, JOINED BY ID
+#
+# rank <TAB> candidate_id <TAB> independent_rank <TAB> c2_rank <TAB> agree
+
+1	SUB-002	1	1	YES
+2	SUB-003	2	2	YES
+3	SUB-004	3	3	YES
+4	CAND-018	4	4	YES
+5	CAND-021	5	5	YES
+6	CAND-025	6	6	YES
+7	CAND-026	7	7	YES
+8	CAND-036	8	8	YES
+9	CAND-037	9	9	YES
+10	CAND-030	10	10	YES
+11	CAND-022	11	11	YES
+12	CAND-023	12	12	YES
+13	CAND-038	13	13	YES
+14	CAND-039	14	14	YES
+15	CAND-040	15	15	YES

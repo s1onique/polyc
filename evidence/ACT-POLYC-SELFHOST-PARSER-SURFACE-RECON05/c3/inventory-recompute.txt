@@ -1,0 +1,33 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05
+# ACT_PHASE=C3-VERIFY
+# EVIDENCE_KIND=inventory-recompute
+#
+# THE CENSUS, RE-RUN ON THE CURRENT SAME SOURCE TREE.
+#
+COMMAND=./build/recon05/parser-surface-recon05-verify CENSUS <out> src/parser.c src/prslib.c src/prsutil.c src/ast.c
+#
+#   CENSUS_FILES=4
+#   CENSUS_FUNCTIONS=270
+#
+# The C1 census and the C3 recompute are over the SAME source
+# tree and are BYTE-IDENTICAL:
+#
+COMMAND=grep -vE '^#|^CENSUS_|^src/|^CROSS_' c1/live-function-inventory.tsv | cmp - <c3 census>
+#   IDENTICAL=YES (270 rows)
+#
+# The census count 270 is MEASURED, not assumed.  The
+# historical RECON04 count was 268, and the difference is exactly
+# the two SLICE06 support surfaces (see c1/recon04-function-difference.tsv).
+#
+#   CENSUS_FUNCTIONS=270
+#   RECON04_FUNCTIONS=268
+#   RECON04_FUNCTIONS_ADDED=2
+#   RECON04_FUNCTIONS_REMOVED=0
+#   RECON04_FUNCTIONS_CHANGED=22
+#   RECON04_FUNCTIONS_UNCHANGED=246
+#   CENSUS_DELTA_EXPLAINED=YES
+#   CLASSIFIED_FUNCTIONS=270
+#   UNCLASSIFIED_FUNCTIONS=0
+#   DUPLICATE_FUNCTIONS=0
+#   INVALID_RANGES=0
+#   SOURCE_HASH_MISMATCHES=0

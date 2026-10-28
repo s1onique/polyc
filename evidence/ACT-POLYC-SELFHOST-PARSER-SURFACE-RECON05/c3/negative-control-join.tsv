@@ -1,0 +1,48 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05
+# ACT_PHASE=C3-VERIFY
+# EVIDENCE_KIND=negative-control-join
+#
+# THE NINETEEN NEGATIVE CONTROLS, JOINED BY ID.
+#
+# Each control is checked for: an EXECUTED subject-specific
+# mutation, the INTENDED detector, the CORRECT exit status, and a
+# RESTORED pristine outcome.  A summary-only PASS, a harmless
+# input change and a vacuous no-mutation control are REJECTED.
+#
+# Schema: control_id <TAB> subject_specific_mutation <TAB> intended_detector <TAB> actual_detector <TAB> exit_code <TAB> restored <TAB> verdict
+
+IC-01	YES (the SUB-003 census row is deleted)	MISSING_FUNCTION	MISSING_FUNCTION	1	YES	SENSITIVE
+IC-02	YES (the SUB-003 candidate ID is duplicated)	DUPLICATE_ID	DUPLICATE_ID	1	YES	SENSITIVE
+IC-03	YES (the frozen digest of SUB-003 is changed)	SOURCE_HASH_MISMATCH	SOURCE_HASH_MISMATCH	1	YES	SENSITIVE
+IC-04	YES (the SUB-003 identity range is reversed)	INVALID_RANGE	INVALID_RANGE	1	YES	SENSITIVE
+EC-01	YES (the migrated SUB-001 is re-marked eligible)	ALREADY_SELFHOSTED	ALREADY_SELFHOSTED	1	YES	SENSITIVE
+EC-02	YES (SUB-003 is marked as owning setjmp)	OWNS_SETJMP	OWNS_SETJMP	1	YES	SENSITIVE
+EC-03	YES (SUB-003 is given nonzero host-graph writes)	HOST_GRAPH_WRITES	HOST_GRAPH_WRITES	1	YES	SENSITIVE
+EC-04	YES (SUB-003 is given a callback dependency)	CALLBACK	CALLBACK	1	YES	SENSITIVE
+EC-05	YES (SUB-005 is marked as an eligible bounded projection)	MUTABLE_HOST_STATE_DEPENDENCE	MUTABLE_HOST_STATE_DEPENDENCE	1	YES	SENSITIVE
+EC-06	YES (an unknown candidate ID is added)	UNKNOWN_ID	UNKNOWN_ID	1	YES	SENSITIVE
+RC-01	YES (an order-dependent reported ranking is substituted)	RANK_ORDER_MISMATCH	RANK_ORDER_MISMATCH	1	YES	SENSITIVE
+RC-02	YES (the ineligible SUB-001 is given a perfect rank)	INELIGIBLE_EXCLUDED	INELIGIBLE_EXCLUDED	0	YES	SENSITIVE
+RC-03	YES (the computed winner is removed from the eligible set)	NEW_WINNER_OR_NONE	NEW_WINNER=SUB-003	0	YES	SENSITIVE
+RC-04	YES (the winner R0 is perturbed)	CONTROLLED_ORDER_CHANGE	NEW LEADER=SUB-003	0	YES	SENSITIVE
+RC-05	YES (a stale source range is substituted for SUB-003)	SOURCE_BINDING_MISMATCH	SOURCE_HASH_MISMATCH	1	YES	SENSITIVE
+CC-01	YES (the selected C decision is mutated and the real compiler is rebuilt)	CAUSAL_DIRECTION_CHANGE	CAUSAL_DIRECTION_CHANGE	0	YES	SENSITIVE
+CC-02	YES (the oracle provenance is checked against the real production TU)	ORACLE_PROVENANCE_VIOLATION	ORACLE_PROVENANCE_VIOLATION	0	YES	SENSITIVE
+CC-03	YES (one fixture expected semantic outcome is flipped)	FIXTURE_SEMANTIC_MISMATCH	FIXTURE_SEMANTIC_MISMATCH	1	YES	SENSITIVE
+CC-04	YES (an unrelated cmp/tst outside the selected function is supplied)	FUNCTION_SCOPED_CODE_CLAIM_REJECTED	FUNCTION_SCOPED_CODE_CLAIM_REJECTED	0	YES	SENSITIVE
+
+CONTROL_TOTAL=19
+CONTROL_EXECUTED=19
+CONTROL_SENSITIVE=19
+CONTROL_VACUOUS=0
+CONTROL_HARMLESS=0
+CONTROL_SUMMARY_ONLY=0
+CONTROL_NOT_RESTORED=0
+
+# CC-04 IS SCOPED TO THE FUNCTION AND THE PRODUCER OBJECT.
+# The producer object build/CMakeFiles/hcc.dir/parser.c.o carries
+# 175 cmp/tst instructions IN TOTAL, but only 5 inside
+# parseCompoundStatementInternal, of which exactly 2 are the
+# SUB-003 comparison pair (cmp w8,#263 = AST_DECL and cmp w8,#256
+# = AST_GVAR).  A file-wide cmp/tst count would therefore be a
+# FABRICATED in-function authority claim.
