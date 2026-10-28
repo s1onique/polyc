@@ -1,0 +1,119 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE07
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=subject-source-and-symbol
+#
+# THE ONE NEW POLYC COMPONENT AND ITS EXPORTED SYMBOL.
+#
+# ---------------------------------------------------------------------------
+# THE SOURCE
+# ---------------------------------------------------------------------------
+#
+# SOURCE=tools/bootstrap/selfhost-parser-slice07.HC
+# SOURCE_LINES=104
+#
+# The component is ONE file and exports EXACTLY ONE symbol:
+#
+#   I64 BootstrapCompoundBlockAppendsStatement(I64 stmt_kind,
+#                                               I64 declvar_kind) -> I64;
+#
+# That is the FROZEN ABI from RECON05 c2/selected-abi.md, unchanged.
+#
+# ---------------------------------------------------------------------------
+# THE BODY
+# ---------------------------------------------------------------------------
+#
+#   I64 BootstrapCompoundBlockAppendsStatement(I64 stmt_kind, I64 declvar_kind)
+#   {
+#     // The one and only semantic decision.  The short-circuit is
+#     // preserved: the second comparison happens ONLY when the first
+#     // matches.
+#     if (stmt_kind == 263) {   // AST_DECL
+#       if (declvar_kind == 256) {   // AST_GVAR
+#         return 0;   // SKIP: a global-variable declaration inside a block
+#       }
+#     }
+#
+#     // Every other value -- including every out-of-enum probe, every
+#     // negative probe and every extreme I64 -- APPENDS.
+#     return 1;
+#   }
+#
+# The constants 263 and 256 are the LIVE src/ast.h values, resolved by
+# COMPILING the header (c1/live-ast-enums.tsv) and confirmed by the
+# real G0 oracle's observed skip pair (263, 256).
+#
+# ---------------------------------------------------------------------------
+# THE PURITY CONSTRAINTS
+# ---------------------------------------------------------------------------
+#
+#   - no host AST pointers            YES
+#   - no allocation                    YES
+#   - no global mutable state          YES
+#   - no callbacks                     YES
+#   - no recovery dependency           YES
+#   - the function is TOTAL over I64   YES
+#   - no enum range check              YES  (the legacy condition does not
+#                                            range-check, so adding one
+#                                            would CHANGE the result for
+#                                            the out-of-enum probes)
+#   - no failure sentinel              YES  (the legacy condition is a
+#                                            BOOLEAN: there is no "not
+#                                            found" case)
+#   - no third output value            YES  (exactly 0 and 1)
+#
+# ---------------------------------------------------------------------------
+# THE COMPILED OBJECT
+# ---------------------------------------------------------------------------
+#
+# COMMAND=make ./build/parser-compound-block-subject.o
+#   SLICE07_COMPOUND_BLOCK_OBJECT=build/parser-compound-block-subject.o
+#
+# The Makefile rule FAILS CLOSED: it verifies the object was produced and
+# that the expected symbol is exported.
+#
+# COMMAND=nm build/parser-compound-block-subject.o | grep BootstrapCompoundBlock
+#   0000000000000000 T _BootstrapCompoundBlockAppendsStatement
+#
+# The subject exports EXACTLY ONE global text symbol.  There is no
+# unexpected extra exported text.
+#
+# SUBJECT_EXPORTED_GLOBAL_TEXT_SYMBOL_COUNT=1
+# SUBJECT_SYMBOL=_BootstrapCompoundBlockAppendsStatement
+# SUBJECT_OBJECT_FORMAT=Mach-O 64-bit object arm64
+#
+# ---------------------------------------------------------------------------
+# THE CMAKE VERIFIER
+# ---------------------------------------------------------------------------
+#
+# The SLICE04 GENERIC verifier is reused READ-ONLY, with the expected
+# symbol and the target object format passed EXPLICITLY.  There is no
+# second, weaker verifier to drift.
+#
+#   COMMAND=${CMAKE_COMMAND}
+#             -DAST_TOKEN_MAP_OBJECT=<the subject>
+#             -DAST_TOKEN_MAP_EXPECTED_SYMBOL=BootstrapCompoundBlockAppendsStatement
+#             -DAST_TOKEN_MAP_TARGET_OBJECT_FORMAT=Mach-O
+#             -DAST_TOKEN_MAP_NM=/usr/bin/nm
+#             -P src/cmake/VerifyAstTokenMapObject.cmake
+#
+# The measured verification line from the production build:
+#
+#   -- ACT-POLYC-SELFHOST-PARSER-SLICE04: AST_TOKEN_MAP_OBJECT_STATUS=PASS
+#      EXPECTED_SYMBOL=BootstrapCompoundBlockAppendsStatement
+#      TARGET_OBJECT_FORMAT=Mach-O
+#      TARGET_SYMBOL=_BootstrapCompoundBlockAppendsStatement
+#      DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1
+#      OBJECT_SIZE=688
+#
+# SUBJECT_VERIFIED_BY_THE_CANONICAL_VERIFIER=YES
+# WEAKER_SECOND_VERIFIER_ADDED=NO
+#
+# ---------------------------------------------------------------------------
+# THE VERDICT
+# ---------------------------------------------------------------------------
+#
+# SUBJECT_SOURCE=tools/bootstrap/selfhost-parser-slice07.HC
+# SUBJECT_ABI=I64 BootstrapCompoundBlockAppendsStatement(I64 stmt_kind, I64 declvar_kind) -> I64
+# SUBJECT_MATCHES_THE_FROZEN_ABI=YES
+# SUBJECT_EXPORTS_EXACTLY_ONE_SYMBOL=YES
+# SUBJECT_OWNS_NO_HOST_STATE=YES

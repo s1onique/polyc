@@ -128,6 +128,7 @@ $(BOOTSTRAP_STAGE0_HCC): $(BOOTSTRAP_STAGE0_SOURCES)
 		-DHCC_USE_SELFHOST_PARSER_AST_BINOP=OFF \
 		-DHCC_USE_SELFHOST_PARSER_AST_UNARY=OFF \
 		-DHCC_USE_SELFHOST_PARSER_SWITCH_ARM=OFF \
+		-DHCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND=OFF \
 		-DHCC_RUNTIME_OUTPUT_DIRECTORY=$(CURDIR)/$(BOOTSTRAP_STAGE0_DIR)
 	$(MAKE) -C $(BOOTSTRAP_STAGE0_BUILD) hcc -j2
 	@if [ ! -x "$(BOOTSTRAP_STAGE0_HCC)" ]; then \
@@ -557,6 +558,7 @@ parser-padding-subject: $(PARSER_PADDING_OBJ)
 PRODUCTION_HCC = ./hcc
 PRODUCTION_HCC_INPUTS = $(PARSER_PADDING_OBJ) $(SLICE02_CFT_OBJ) $(SLICE03_OP_OBJ) \
 	$(SLICE04_AST_BINOP_OBJ) $(SLICE05_AST_UNARY_OBJ) $(SLICE06_SWITCH_ARM_OBJ) \
+	$(SLICE07_COMPOUND_BLOCK_OBJ) \
 	$(wildcard src/*.c src/asm/*.c) \
 	$(wildcard src/*.h src/asm/*.h) \
 	$(wildcard src/CMakeLists.txt src/asm/CMakeLists.txt) \
@@ -603,6 +605,9 @@ $(PRODUCTION_HCC): $(PRODUCTION_HCC_INPUTS)
 		-DSWITCH_ARM_TOKEN_MAP_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
 		-DSWITCH_ARM_TOKEN_MAP_SOURCE=$(CURDIR)/$(SLICE06_SWITCH_ARM_SRC) \
 		-DSWITCH_ARM_TOKEN_MAP_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND=ON \
+		-DCOMPOUND_BLOCK_TOKEN_MAP_OBJECT=$(CURDIR)/$(SLICE07_COMPOUND_BLOCK_OBJ) \
+		-DCOMPOUND_BLOCK_TOKEN_MAP_SOURCE=$(CURDIR)/$(SLICE07_COMPOUND_BLOCK_SRC) \
 		-DHCC_BOOTSTRAP_EXPECTED_SHA=$(LIBTOS_BOOTSTRAP_EXPECTED_SHA)
 	$(MAKE) -C ./build -j2
 	@if [ ! -x ./hcc ]; then \
@@ -679,6 +684,8 @@ llvm-all: $(PARSER_PADDING_OBJ)
 		-DSWITCH_ARM_TOKEN_MAP_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
 		-DSWITCH_ARM_TOKEN_MAP_SOURCE=$(CURDIR)/$(SLICE06_SWITCH_ARM_SRC) \
 		-DSWITCH_ARM_TOKEN_MAP_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND=ON \
+		-DCOMPOUND_BLOCK_TOKEN_MAP_OBJECT=$(CURDIR)/$(SLICE07_COMPOUND_BLOCK_OBJ) \
 		-DHCC_BOOTSTRAP_EXPECTED_SHA=$(LIBTOS_BOOTSTRAP_EXPECTED_SHA)
 	$(MAKE) -C ./build/llvm -j2
 	@if [ ! -x ./hcc ]; then \
@@ -806,7 +813,9 @@ test-prefix-install: production-hcc runtime-producer
 		-DSWITCH_ARM_TOKEN_MAP_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
 		-DSWITCH_ARM_TOKEN_MAP_SOURCE=$(CURDIR)/$(SLICE06_SWITCH_ARM_SRC) \
 		-DSWITCH_ARM_TOKEN_MAP_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
-		-DHCC_BOOTSTRAP_EXPECTED_SHA=$(LIBTOS_BOOTSTRAP_EXPECTED_SHA)
+		-DHCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND=ON \
+		-DCOMPOUND_BLOCK_TOKEN_MAP_OBJECT=$(CURDIR)/$(SLICE07_COMPOUND_BLOCK_OBJ) \
+		-DCOMPOUND_BLOCK_TOKEN_MAP_SOURCE=$(CURDIR)/$(SLICE07_COMPOUND_BLOCK_SRC)
 	$(MAKE) -C ./build/test-prefix-install-build install
 	@if [ ! -f $(TEST_PREFIX)/lib/libtos.a ] || \
 	    [ ! -f $(TEST_PREFIX)/lib/libtos.0.0.1.dylib ] || \
@@ -5256,6 +5265,35 @@ $(SLICE05_AST_UNARY_OBJ): $(SLICE05_AST_UNARY_SRC) $(BOOTSTRAP_STAGE0_HCC) $(BOO
 	@echo "SLICE05_AST_UNARY_OBJECT=$@"
 
 # =========================================================================
+# ACT-POLYC-SELFHOST-PARSER-SLICE07
+#
+#   build/parser-compound-block-subject.o -> the qualified PolyC subject.
+#
+# The subject is compiled by the STAGE0 compiler (the legacy C control),
+# so that the component does not depend on the production compiler that
+# it is about to serve.
+#
+# The VARIABLES are defined HERE, above the rule that uses them: make
+# expands a rule's PREREQUISITES when the rule is read, so a variable
+# that is defined later in the file would be EMPTY at that point.
+# =========================================================================
+SLICE07_COMPOUND_BLOCK_SRC   = tools/bootstrap/selfhost-parser-slice07.HC
+SLICE07_COMPOUND_BLOCK_OBJ   = ./build/parser-compound-block-subject.o
+
+$(SLICE07_COMPOUND_BLOCK_OBJ): $(SLICE07_COMPOUND_BLOCK_SRC) $(BOOTSTRAP_STAGE0_HCC) $(BOOTSTRAP_PREFIX_INC)/tos.HH
+	@rm -f $@
+	$(BOOTSTRAP_STAGE0_HCC) \
+		--install-dir=$(BOOTSTRAP_PREFIX_DIR) \
+		-c $(SLICE07_COMPOUND_BLOCK_SRC) \
+		-o $@
+	@if [ ! -f $@ ]; then \
+		echo "parser-compound-block-subject: object not produced" >&2; exit 1; \
+	fi
+	@nm $@ | grep -q '_BootstrapCompoundBlockAppendsStatement' \
+		|| { echo "parser-compound-block-subject: symbol _BootstrapCompoundBlockAppendsStatement not found in object" >&2; exit 1; }
+	@echo "SLICE07_COMPOUND_BLOCK_OBJECT=$@"
+
+# =========================================================================
 # ACT-POLYC-SELFHOST-PARSER-SLICE06
 #
 #   build/parser-switch-arm-subject.o -> the qualified PolyC subject.
@@ -5809,8 +5847,6 @@ parser-slice06-negative-control-pd03: build/slice06-nc/pd03.o
 # Each generation is BUILT and EXECUTED INDEPENDENTLY.  No generation's
 # output is copied as a substitute for another generation's compilation.
 # =========================================================================
-SLICE07_COMPOUND_BLOCK_SRC   = tools/bootstrap/selfhost-parser-slice07.HC
-SLICE07_COMPOUND_BLOCK_OBJ   = ./build/parser-compound-block-subject.o
 SLICE07_PARSER_LEGACY_OBJ    = ./build/slice07-parser-legacy.o
 SLICE07_ORACLE_ADAPTER       = ./build/slice07-oracle-adapter.o
 SLICE07_ORACLE_STUB          = ./build/slice07-is-terminal-stub.o

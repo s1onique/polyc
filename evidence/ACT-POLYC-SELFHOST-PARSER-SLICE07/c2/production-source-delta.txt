@@ -1,0 +1,56 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE07
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=production-source-delta
+#
+# THE PRODUCTION SOURCE DELTA.
+#
+# COMMAND=git diff cc1d828..806f7ee -- src/parser.c
+#
+# TWO EDITS, BOTH INSIDE THE SUB-003 BOUNDARY:
+#
+# (1) THE DECISION IS FACTORED OUT into
+#     static int parseCompoundBlockAppendsStatement(int stmt_kind,
+#                                                int declvar_kind)
+#     with the byte-identical legacy body preserved in the
+#     non-delegated branch and a tiny ABI wrapper
+#     ParserLegacyCompoundBlockAppendsOracle beside it, so the
+#     REAL legacy decision can be reached by an object-level oracle
+#     without re-implementing it.  This is the SLICE06 precedent.
+#
+# (2) THE CALL SITE now performs the C-ONLY PROJECTION and
+#     delegates:
+#
+#     int projected_stmt_kind = stmt->kind;
+#     int projected_declvar_kind = 0;
+#     if (projected_stmt_kind == AST_DECL) {
+#         projected_declvar_kind = stmt->declvar->kind;
+#     }
+#     if (!parseCompoundBlockAppendsStatement(projected_stmt_kind,
+#                                            projected_declvar_kind)) {
+#         tok = cctrlTokenPeek(cc);
+#         continue;
+#     }
+#     listAppend(body->stms,stmt);
+#
+# --- WHAT THE C SIDE STILL OWNS, VERIFIABLE IN THE DIFF ---
+#
+#   the `continue` that implements the SKIP      UNCHANGED
+#   the listAppend(body->stms,stmt)              UNCHANGED
+#   the tok = cctrlTokenPeek(cc) cursor advance   UNCHANGED
+#   the AST graph                                 UNCHANGED
+#   the recovery point and the setjmp             UNCHANGED
+#   the scope maps                                UNCHANGED
+#   the diagnostics                               UNCHANGED
+#   every allocation                              UNCHANGED
+#   the parseStatement dispatch                   UNCHANGED
+#
+# AST_LIST_OPERATIONS_C_OWNED=YES
+# RECOVERY_C_OWNED=YES
+# DIAGNOSTICS_C_OWNED=YES
+# TOKEN_STREAM_C_OWNED=YES
+# ALLOCATION_C_OWNED=YES
+# CALLBACKS_C_OWNED=YES
+# SYMBOL_TABLE_C_OWNED=YES
+# NO_AST_NODE_OR_LIST_MOVED_TO_POLYC=YES
+# NO_ADDITIONAL_PRODUCTION_DECISION=YES
+# PARSER_STATEMENT_DISPATCH_UNCHANGED=YES

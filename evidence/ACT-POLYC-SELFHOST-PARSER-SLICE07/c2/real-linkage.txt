@@ -1,0 +1,92 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE07
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=real-linkage
+#
+# THE REAL LINKAGE: THREE INDEPENDENT PROOFS.
+#
+# The ACT forbids passing a migration on a symbol's mere EXISTENCE.
+# The three proofs below are the three SEPARATE links in the chain, and
+# each was measured on the REAL artifacts.
+#
+# ---------------------------------------------------------------------------
+# PROOF 1: THE PRODUCTION PARSER OBJECT IMPORTS THE SYMBOL
+# ---------------------------------------------------------------------------
+#
+# COMMAND=nm build/CMakeFiles/hcc.dir/parser.c.o | grep BootstrapCompoundBlock
+#   U _BootstrapCompoundBlockAppendsStatement
+#
+# The `U` is the UNDEFINED-reference marker: the production parser
+# object does NOT define the symbol, it REQUIRES it.  This is the
+# strong form of "the delegation is load-bearing": the production
+# object cannot link without the component.
+#
+# PRODUCTION_PARSER_OBJECT_IMPORTS_THE_SYMBOL=YES
+# PRODUCTION_PARSER_OBJECT_DEFINES_THE_SYMBOL=NO
+#
+# ---------------------------------------------------------------------------
+# PROOF 2: THE SUBJECT OBJECT DEFINES THE SYMBOL
+# ---------------------------------------------------------------------------
+#
+# COMMAND=nm build/parser-compound-block-subject.o | grep BootstrapCompoundBlock
+#   0000000000000000 T _BootstrapCompoundBlockAppendsStatement
+#
+# The `T` is the global TEXT marker: the subject EXPORTS the symbol.
+#
+# SUBJECT_OBJECT_DEFINES_THE_SYMBOL=YES
+# SUBJECT_EXPORTED_GLOBAL_TEXT_SYMBOL_COUNT=1
+#
+# The subject's ONLY exported global text symbol is the component's.
+# There is no unexpected extra exported text.
+#
+# ---------------------------------------------------------------------------
+# PROOF 3: THE PRODUCTION BINARY LINKS THE SYMBOL
+# ---------------------------------------------------------------------------
+#
+# COMMAND=nm ./hcc | grep BootstrapCompoundBlock
+#   0000000100064504 T _BootstrapCompoundBlockAppendsStatement
+#
+# The symbol is present in the FINAL production executable.  Together
+# with the relocation witness in c2/production-object-disassembly.txt
+# (a `bl` at 0x3a68 whose ARM64_RELOC_BRANCH26 names the symbol),
+# this proves the production compiler REALLY CALLS the component, not
+# merely that the symbol exists in the binary.
+#
+# PRODUCTION_BINARY_LINKS_THE_SYMBOL=YES
+#
+# ---------------------------------------------------------------------------
+# ALL SEVEN POLYC PARSER AUTHORITIES ARE LIVE
+# ---------------------------------------------------------------------------
+#
+# COMMAND=nm ./hcc | grep -E ' T _Bootstrap(...)$'
+#
+#   0000000100064208 T _BootstrapAstBinOpFromToken
+#   00000001000643f8 T _BootstrapAstUnaryOpFromToken
+#   0000000100063b88 T _BootstrapCalcPadding
+#   0000000100064504 T _BootstrapCompoundBlockAppendsStatement
+#   0000000100063e38 T _BootstrapOperatorPrecedence
+#   0000000100064510 T _BootstrapSwitchArmTerminates
+#   0000000100063c00 T _BootstrapValidPostControlFlowToken
+#
+# COMMAND=nm build/CMakeFiles/hcc.dir/parser.c.o | grep ' U _Bootstrap'
+#
+#   U _BootstrapCalcPadding
+#   U _BootstrapCompoundBlockAppendsStatement
+#   U _BootstrapSwitchArmTerminates
+#   U _BootstrapValidPostControlFlowToken
+#
+# The SIX preceding authorities are conserved and the SEVENTH is
+# established.
+#
+# SIX_PRECEDING_AUTHORITIES_CONSERVED=YES
+# SEVENTH_POLYC_PARSER_AUTHORITY=ESTABLISHED
+# POLYC_PARSER_AUTHORITY_COUNT=7
+#
+# ---------------------------------------------------------------------------
+# THE VERDICT
+# ---------------------------------------------------------------------------
+#
+# PRODUCTION_AUTHORITY=POLYC
+# LEGACY_COMPOUND_BLOCK_C_AUTHORITY=RETIRED
+# LINKAGE_PROOF_COUNT=3
+# LINKAGE_PROOF_ALL_PASS=YES
+# SYMBOL_EXISTENCE_ALONE_RELIED_UPON=NO

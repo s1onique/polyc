@@ -1,0 +1,120 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE07
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=production-object-disassembly
+#
+# THE PRODUCTION OBJECT DISASSEMBLY: THE AUTHORITY TRANSFER, PROVEN.
+#
+# THE REQUIREMENT (ACT section 8)
+#
+#   "A CMake option or nm entry proving only that a symbol exists, not
+#    that production calls it."  is NOT an acceptable PASS.
+#
+# The evidence below is the FUNCTION-SCOPED DISASSEMBLY of the REAL
+# production parser object, in which the legacy decision's disassembly
+# is GONE and a PURE CALL to the PolyC component is PRESENT.
+#
+# ---------------------------------------------------------------------------
+# THE PRODUCTION OBJECT
+# ---------------------------------------------------------------------------
+#
+# OBJECT=build/CMakeFiles/hcc.dir/parser.c.o
+# ARCHIVE_FORMAT=Mach-O 64-bit object arm64
+# ENCLOSING_FUNCTION=_parseCompoundStatementInternal
+#
+# COMMAND=objdump -d build/CMakeFiles/hcc.dir/parser.c.o \
+#         | sed -n '/<_parseCompoundStatementInternal>:/,/^$/p'
+#
+# ---------------------------------------------------------------------------
+# THE DELEGATED DECISION, IN MACHINE CODE
+# ---------------------------------------------------------------------------
+#
+#     3a40: b9800000     ldrsw  x0, [x0]         ; stmt->kind
+#     3a44: aa0003e8     mov   x8, x0
+#     3a48: 71041c1f     cmp   w0, #263         ; == AST_DECL  (the AUTHORIZED projection guard)
+#     3a4c: 54000081     b.ne  0x3a5c          ; SHORT-CIRCUIT: skip the declvar load
+#     3a50: f9401ac8     ldr   x8, [x22, #48]   ; stmt->declvar
+#     3a54: b9400101     ldr   w1, [x8]         ; stmt->declvar->kind
+#     3a58: 14000002     b     0x3a60
+#     3a5c: 52800001     mov   w1, #0           ; the non-AST_DECL projection value
+#     3a60: aa0103e8     mov   x8, x1
+#     3a64: 93407d01     sxtw  x1, w8           ; the I64 cast of the projected scalar
+#     3a68: 94000000     bl    0x3a68           ; CALL BootstrapCompoundBlockAppendsStatement
+#     3a6c: aa0003e8     mov   x8, x0
+#     3a70: 34ffec60     cbz   w0, 0x37fc       ; the PolyC result drives SKIP/APPEND
+#     3a74: f9401e80     ldr   x0, [x20, #56]   ; listAppend(body->stms, stmt)
+#     3a78: aa1603e1     mov   x1, x22
+#     3a7c: 94000000     bl    0x3a7c           ; the listAppend call
+#
+# THE THREE PROPERTIES OF THIS WITNESS
+#
+# 1. THE POLYC CALL IS PRESENT AND IS LOAD-BEARING.
+#    The `bl` at 0x3a68 is a real branch to the component, and the
+#    component's RETURN VALUE is what the `cbz w0` at 0x3a70 tests to
+#    choose the SKIP path.  The result is acted on EXACTLY ONCE.
+#
+#    COMMAND=objdump -r build/CMakeFiles/hcc.dir/parser.c.o | grep BootstrapCompound
+#      0000000000003a68 ARM64_RELOC_BRANCH26  _BootstrapCompoundBlockAppendsStatement
+#      0000000000003744 ARM64_RELOC_BRANCH26  _BootstrapCompoundBlockAppendsStatement
+#
+#    The relocation at 0x3a68 is the PRODUCTION call site.  The one at
+#    0x3744 is inside the oracle wrapper
+#    _ParserLegacyCompoundBlockAppendsOracle, which exists ONLY so the
+#    C1/C3 quality oracle can reach the legacy decision; it is NOT on
+#    the production path.
+#
+# 2. THE LEGACY SEMANTIC DECISION IS RETIRED.
+#
+#    COMMAND=objdump -d ... | sed -n '/<_parseCompoundStatementInternal>:/,/^$/p' \
+#             | grep -cE 'cmp.*#256'
+#      0
+#
+#    There is NO comparison against 256 (AST_GVAR) ANYWHERE in the
+#    production function.  The C side no longer knows what "a global
+#    variable" is; it only knows what "a declaration" is, and only in
+#    order to PROTECT THE DEREFERENCE.
+#
+#    COMMAND=... | grep -oE 'cmp\s+w[0-9]+, #[0-9]+' | sort -u
+#      cmp	w0, #263
+#      cmp	w8, #11
+#      cmp	w8, #768
+#
+#    The ONLY new comparison is #263, the AUTHORIZED projection guard.
+#    The #11 and #768 comparisons are PRE-EXISTING and unrelated to
+#    SUB-003.
+#
+# 3. THE SHORT-CIRCUIT IS PRESERVED.
+#
+#    The `b.ne` at 0x3a4c branches OVER the `ldr` at 0x3a50, so the
+#    declvar load is NOT reached unless stmt->kind == AST_DECL.  The
+#    `mov w1, #0` at 0x3a5c is the non-declaration projection value.
+#    This is the SAME structure the C1 read-count harness exercised.
+#
+# ---------------------------------------------------------------------------
+# THE C0 PRE-STATE, FOR THE COMPARISON
+# ---------------------------------------------------------------------------
+#
+# At C0 the SAME function carried the legacy decision:
+#
+#     3a20: b9400008     ldr  w8, [x0]        ; stmt->kind
+#     3a24: 71041d1f     cmp  w8, #263        ; == AST_DECL
+#     3a28: 540000a1     b.ne 0x3a3c         ; short-circuit
+#     3a2c: f9401828     ldr  x8, [x1, #48]   ; stmt->declvar
+#     3a30: b9400108     ldr  w8, [x8]        ; stmt->declvar->kind
+#     3a34: 7104011f     cmp  w8, #256        ; == AST_GVAR   <-- THE LEGACY DECISION
+#     3a38: 54ffed20     b.eq 0x37dc         ; -> SKIP (continue)
+#
+# The C2 witness has NO `cmp #256` at all.  The decision moved from the
+# C function into the PolyC component.
+#
+# ---------------------------------------------------------------------------
+# THE VERDICT
+# ---------------------------------------------------------------------------
+#
+# PRODUCTION_CALL_PRESENT=YES
+# PRODUCTION_CALL_RELOCATION_OFFSET=0x3a68
+# PRODUCTION_RESULT_ACTED_ON=EXACTLY_ONCE
+# LEGACY_AST_GVAR_COMPARISONS_IN_PRODUCTION_FUNCTION=0
+# AUTHORIZED_AST_DECL_PROJECTION_COMPARISONS=1
+# LEGACY_C_AUTHORITY_RETIRED=YES
+# PRODUCTION_AUTHORITY=POLYC
+# AUTHORITY_TRANSFER_PROVEN_BY_FUNCTION_SCOPED_DISASSEMBLY=YES

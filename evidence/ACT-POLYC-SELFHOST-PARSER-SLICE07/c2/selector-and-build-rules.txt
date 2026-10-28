@@ -1,0 +1,143 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE07
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=selector-and-build-rules
+#
+# THE DEDICATED PRODUCTION SELECTOR AND THE BUILD RULES.
+#
+# ---------------------------------------------------------------------------
+# THE SELECTOR
+# ---------------------------------------------------------------------------
+#
+# SELECTOR=HCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND
+# SELECTOR_DEFAULT=ON
+# SELECTOR_DECLARED_IN=src/CMakeLists.txt
+#
+# The selector is DEDICATED: it is independent of the parser-padding,
+# control-flow-token, operator-precedence, AST binary-operator, AST
+# unary-operator and switch-arm selectors, and of the generic
+# HCC_USE_SELFHOST_COMPONENTS flag (which would also require linking the
+# lexer subjects).
+#
+# The selector is DEFINED for the production target:
+#
+# COMMAND=grep -o 'HCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND' \
+#           build/CMakeFiles/hcc.dir/flags.make
+#   HCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND
+#
+# The stage0 control build has it OFF, so the legacy C control is the
+# legacy C control:
+#
+# COMMAND=grep -n 'HCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND=OFF' Makefile
+#   131:  -DHCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND=OFF \
+#
+# ---------------------------------------------------------------------------
+# THE ENABLED PATH
+# ---------------------------------------------------------------------------
+#
+# The production build DEFINES the macro and LINKS the subject:
+#
+#   target_compile_definitions(hcc PRIVATE HCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND)
+#   target_link_libraries(hcc ${COMPOUND_BLOCK_TOKEN_MAP_OBJECT})
+#
+# The measured production build output:
+#
+#   -- ACT-POLYC-SELFHOST-PARSER-SLICE07: production hcc uses a PREBUILT
+#      compound-block subject: .../build/parser-compound-block-subject.o
+#   -- ACT-POLYC-SELFHOST-PARSER-SLICE07: production hcc links
+#      compound-block PolyC component: .../build/parser-compound-block-subject.o
+#   -- ACT-POLYC-SELFHOST-PARSER-SLICE07: production hcc VERIFIES the
+#      compound-block subject (both producer and prebuilt modes);
+#      target format=Mach-O; nm=/usr/bin/nm
+#
+# ---------------------------------------------------------------------------
+# THE DISABLED PATH
+# ---------------------------------------------------------------------------
+#
+# With the selector OFF, the delegation branch is COMPILED OUT and the
+# byte-identical legacy condition is the code that executes.  This is
+# the G0 oracle path, and it was MEASURED at C1:
+#
+# COMMAND=nm build/slice07/g0-parser-production.o | grep BootstrapCompoundBlock
+#   (no output)
+#
+# The G0 object carries NO reference to the proposed PolyC symbol, so
+# the disabled path is a TRUE legacy C-only path with no import of the
+# target symbol.
+#
+# The Makefile rule for the legacy oracle object FAILS CLOSED if that
+# is not true:
+#
+#   @if nm $@ | grep -q '_BootstrapCompoundBlockAppendsStatement'; then \
+#       echo "slice07-parser-legacy.o: the object references the PolyC component; \
+#             the delegation flag is NOT off" >&2; exit 1; fi
+#
+# DISABLED_SELECTOR_IMPORTS_THE_TARGET_SYMBOL=NO
+# DISABLED_SELECTOR_BUILD_IS_FAIL_CLOSED=YES
+#
+# ---------------------------------------------------------------------------
+# THE FAIL-CLOSED DISCIPLINE
+# ---------------------------------------------------------------------------
+#
+# If the producer is configured, the build graph SCHEDULES the subject's
+# production and verifies the exported symbol.  If it is not configured
+# and the subject does not exist, the CONFIGURE FAILS -- it never falls
+# back silently to the legacy C body:
+#
+#   elseif (NOT EXISTS "${COMPOUND_BLOCK_TOKEN_MAP_OBJECT}")
+#       message(FATAL_ERROR
+#           "ACT-POLYC-SELFHOST-PARSER-SLICE07: "
+#           "the compound-block subject ${COMPOUND_BLOCK_TOKEN_MAP_OBJECT} does not "
+#           "exist and no producer is configured. ...")
+#
+# The VERIFICATION is a custom TARGET, not an OUTPUT-producing custom
+# command, so the verification command ALWAYS runs and a stale stamp can
+# never decide that the verification is unnecessary:
+#
+#   add_custom_target(hcc-compound-block-token-map-verify ...)
+#   add_dependencies(hcc hcc-compound-block-token-map-verify)
+#
+# The link ALSO depends on the object, so the object is re-read by the
+# linker whenever it changes:
+#
+#   set_property(TARGET hcc APPEND PROPERTY LINK_DEPENDS "${COMPOUND_BLOCK_TOKEN_MAP_OBJECT}")
+
+
+# ---------------------------------------------------------------------------
+# THE ADVERSE CONTROLS ON THE BUILD RULES
+# ---------------------------------------------------------------------------
+#
+# S7-PV-03  REMOVE THE SUBJECT OBJECT.
+#   The build rule FAILS: "parser-compound-block-subject: object not
+#   produced", and the configure FAILS with the FATAL_ERROR above when
+#   the object is absent and no producer is configured.  The build fails
+#   FOR THE INTENDED REASON.
+#
+# S7-PV-03b WRONG-SYMBOL EXPORT.
+#   The canonical verifier FAILS with
+#   AST_TOKEN_MAP_OBJECT_STATUS=FAIL when the expected symbol is
+#   absent from the subject, because it is driven by the EXPLICIT
+#   -DAST_TOKEN_MAP_EXPECTED_SYMBOL parameter.
+#
+# S7-PV-03c STALE OR WRONG-ARCHITECTURE OBJECT.
+#   The verifier is driven by the EXPLICIT
+#   -DAST_TOKEN_MAP_TARGET_OBJECT_FORMAT parameter, so a subject in the
+#   wrong format is inspected with the wrong symbol spelling and fails.
+#
+# The verifier's parameters are:
+#
+#   -DAST_TOKEN_MAP_OBJECT=${COMPOUND_BLOCK_TOKEN_MAP_OBJECT}
+#   -DAST_TOKEN_MAP_EXPECTED_SYMBOL=BootstrapCompoundBlockAppendsStatement
+#   -DAST_TOKEN_MAP_TARGET_OBJECT_FORMAT=${COMPOUND_BLOCK_TOKEN_MAP_TARGET_OBJECT_FORMAT}
+#   -DAST_TOKEN_MAP_NM=${COMPOUND_BLOCK_TOKEN_MAP_NM}
+#
+# ---------------------------------------------------------------------------
+# THE VERDICT
+# ---------------------------------------------------------------------------
+#
+# SELECTOR=HCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND
+# SELECTOR_HAS_A_REAL_ENABLED_PATH=YES
+# SELECTOR_HAS_A_REAL_DISABLED_PATH=YES
+# SELECTOR_IS_FAIL_CLOSED=YES
+# SELECTOR_USES_THE_CANONICAL_VERIFIER=YES
+# NO_NEW_DEPENDENCY=YES
+# NO_PYTHON=YES

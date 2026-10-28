@@ -1106,6 +1106,177 @@ if (HCC_USE_SELFHOST_PARSER_SWITCH_ARM)
 endif()
 
 
+# ACT-POLYC-SELFHOST-PARSER-SLICE07 C2 IMPL:
+# Link the qualified PolyC BootstrapCompoundBlockAppendsStatement
+# component into the production hcc binary and enable the compound-block
+# statement append/skip delegation.
+#
+# The dedicated selector `HCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND`
+# is defined here so the production compound-block delegation is
+# INDEPENDENT of the parser-padding selector, of the control-flow-token
+# selector, of the operator-precedence selector, of the AST
+# BINARY-operator selector, of the AST UNARY-operator selector, of the
+# switch-arm selector and of the generic lexer
+# `HCC_USE_SELFHOST_COMPONENTS` flag (which would also require linking
+# the lexer subjects).
+#
+# The same fail-closed discipline as the parser-padding,
+# control-flow-token, operator-precedence, AST binary-operator, AST
+# unary-operator and switch-arm components applies: if the producer is
+# configured, the build graph SCHEDULES the component's production and
+# verifies the exported symbol; if it is not, a missing component is a
+# hard configure error, never a silent legacy fallback.
+#
+# THE VERIFIER IS THE SLICE04 GENERIC ONE, REUSED READ-ONLY.
+#
+# src/cmake/VerifyAstTokenMapObject.cmake is already fully
+# PARAMETERIZED: it takes the object, the expected symbol, the target
+# object format and the nm tool as inputs, and every check is driven
+# from those parameters.  Reusing it means the compound-block subject
+# is checked by exactly the same discipline as the other subjects --
+# there is no second, weaker verifier to drift.
+#
+# Mach-O naming is NOT hard-coded into the verification: the expected
+# symbol's object-format spelling is derived from the TARGET OBJECT
+# FORMAT, which is passed in explicitly.
+option(HCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND
+       "Link the compound-block statement append/skip PolyC component into hcc and enable compound-block delegation. ACT-POLYC-SELFHOST-PARSER-SLICE07."
+       ON)
+
+if (HCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND)
+    if (NOT COMPOUND_BLOCK_TOKEN_MAP_OBJECT)
+        set(COMPOUND_BLOCK_TOKEN_MAP_OBJECT "${CMAKE_SOURCE_DIR}/../build/parser-compound-block-subject.o")
+    endif()
+
+    # ---------------------------------------------------------------------
+    # The TARGET OBJECT FORMAT and the TOOLCHAIN nm are resolved here and
+    # passed EXPLICITLY to the verifier.
+    #
+    # The format must NOT be guessed from the host: during a cross-compile
+    # the host's format is not the target's format.  CMAKE_NM is the
+    # CONFIGURED TOOLCHAIN's nm, so the target object is inspected by a
+    # tool that understands the target format.  If it is not available the
+    # build fails loudly instead of silently substituting a host nm.
+    # ---------------------------------------------------------------------
+    if (NOT COMPOUND_BLOCK_TOKEN_MAP_TARGET_OBJECT_FORMAT)
+        if (APPLE)
+            set(COMPOUND_BLOCK_TOKEN_MAP_TARGET_OBJECT_FORMAT "Mach-O")
+        elseif (UNIX AND NOT APPLE)
+            set(COMPOUND_BLOCK_TOKEN_MAP_TARGET_OBJECT_FORMAT "ELF")
+        else()
+            message(FATAL_ERROR
+                "ACT-POLYC-SELFHOST-PARSER-SLICE07: "
+                "cannot determine the target object format for this platform. "
+                "Configure with -DCOMPOUND_BLOCK_TOKEN_MAP_TARGET_OBJECT_FORMAT=<Mach-O|ELF> "
+                "so the compound-block symbol spelling can be resolved "
+                "correctly. Refusing to link the production compiler "
+                "without a verified PolyC compound-block authority.")
+        endif()
+    endif()
+
+    if (NOT COMPOUND_BLOCK_TOKEN_MAP_NM)
+        if (NOT CMAKE_NM)
+            message(FATAL_ERROR
+                "ACT-POLYC-SELFHOST-PARSER-SLICE07: "
+                "no nm tool is available for the configured toolchain, so the "
+                "compound-block subject cannot be verified. "
+                "Configure with -DCOMPOUND_BLOCK_TOKEN_MAP_NM=<path to nm> "
+                "and make sure the PolyC compound-block symbol has been "
+                "verified. Refusing to link the production compiler "
+                "without a verified PolyC compound-block authority.")
+        endif()
+        set(COMPOUND_BLOCK_TOKEN_MAP_NM "${CMAKE_NM}")
+    endif()
+
+    # ---------------------------------------------------------------------
+    # The subject PRODUCTION.
+    #
+    # If a producer is configured, the build graph PRODUCES the subject
+    # from the PolyC source and then verifies the exported symbol.  If
+    # no producer is configured, a PREBUILT subject is accepted only
+    # when it already exists; a missing subject is a hard configure
+    # error, never a silent fallback to the legacy C body.
+    # ---------------------------------------------------------------------
+    set(_saw_stamp "${COMPOUND_BLOCK_TOKEN_MAP_OBJECT}.verified")
+
+    # The bootstrap prefix holds the canonical headers the stage0
+    # compiler resolves against.  It is header-only: no runtime archive
+    # is required to compile the compound-block subject.
+    #
+    # The prefix is spelled ${CMAKE_SOURCE_DIR}/../build/bootstrap-prefix
+    # (and NOT $(CURDIR)/./build/bootstrap-prefix) because the compiler
+    # resolves the header path by APPENDING to the prefix string, and a
+    # prefix containing a "./" segment produces a malformed header path.
+    # This is the same spelling the SLICE04 and SLICE06 producers use.
+    if (NOT COMPOUND_BLOCK_TOKEN_MAP_PREFIX)
+        set(COMPOUND_BLOCK_TOKEN_MAP_PREFIX "${CMAKE_SOURCE_DIR}/../build/bootstrap-prefix")
+    endif()
+
+    if (COMPOUND_BLOCK_TOKEN_MAP_PRODUCER)
+        add_custom_command(
+            OUTPUT "${COMPOUND_BLOCK_TOKEN_MAP_OBJECT}"
+            COMMAND "${CMAKE_COMMAND}" -E rm -f "${COMPOUND_BLOCK_TOKEN_MAP_OBJECT}"
+            COMMAND "${COMPOUND_BLOCK_TOKEN_MAP_PRODUCER}"
+                    --install-dir=${COMPOUND_BLOCK_TOKEN_MAP_PREFIX}
+                    -c "${COMPOUND_BLOCK_TOKEN_MAP_SOURCE}"
+                    -o "${COMPOUND_BLOCK_TOKEN_MAP_OBJECT}"
+            DEPENDS "${COMPOUND_BLOCK_TOKEN_MAP_SOURCE}"
+            COMMENT "ACT-POLYC-SELFHOST-PARSER-SLICE07: producing compound-block subject ${COMPOUND_BLOCK_TOKEN_MAP_OBJECT}"
+            VERBATIM
+            USES_TERMINAL)
+        message(STATUS "ACT-POLYC-SELFHOST-PARSER-SLICE07: production hcc SCHEDULES compound-block subject production: ${COMPOUND_BLOCK_TOKEN_MAP_OBJECT}")
+    elseif (NOT EXISTS "${COMPOUND_BLOCK_TOKEN_MAP_OBJECT}")
+        message(FATAL_ERROR
+            "ACT-POLYC-SELFHOST-PARSER-SLICE07: "
+            "the compound-block subject ${COMPOUND_BLOCK_TOKEN_MAP_OBJECT} does not "
+            "exist and no producer is configured. Produce it with "
+            "./hcc --install-dir=<prefix> -c tools/bootstrap/selfhost-parser-slice07.HC -o ${COMPOUND_BLOCK_TOKEN_MAP_OBJECT}. "
+            "Or configure with -DCOMPOUND_BLOCK_TOKEN_MAP_PRODUCER=<stage0 hcc> to have the "
+            "build graph produce it.")
+    else()
+        message(STATUS "ACT-POLYC-SELFHOST-PARSER-SLICE07: production hcc uses a PREBUILT compound-block subject: ${COMPOUND_BLOCK_TOKEN_MAP_OBJECT}")
+    endif()
+
+    # ---------------------------------------------------------------------
+    # The VERIFICATION is a custom TARGET, not an OUTPUT-producing custom
+    # command, so the verification command ALWAYS runs and a stale stamp
+    # can never decide that the verification is unnecessary.
+    # ---------------------------------------------------------------------
+    add_custom_target(hcc-compound-block-token-map-verify
+        COMMAND "${CMAKE_COMMAND}"
+                -DAST_TOKEN_MAP_OBJECT=${COMPOUND_BLOCK_TOKEN_MAP_OBJECT}
+                -DAST_TOKEN_MAP_EXPECTED_SYMBOL=BootstrapCompoundBlockAppendsStatement
+                -DAST_TOKEN_MAP_TARGET_OBJECT_FORMAT=${COMPOUND_BLOCK_TOKEN_MAP_TARGET_OBJECT_FORMAT}
+                -DAST_TOKEN_MAP_NM=${COMPOUND_BLOCK_TOKEN_MAP_NM}
+                -P "${CMAKE_SOURCE_DIR}/cmake/VerifyAstTokenMapObject.cmake"
+        COMMAND "${CMAKE_COMMAND}"
+                -DAST_TOKEN_MAP_OBJECT=${COMPOUND_BLOCK_TOKEN_MAP_OBJECT}
+                -DAST_TOKEN_MAP_STAMP=${_saw_stamp}
+                -P "${CMAKE_SOURCE_DIR}/cmake/WriteAstTokenMapObjectStamp.cmake"
+        DEPENDS "${COMPOUND_BLOCK_TOKEN_MAP_OBJECT}"
+        COMMENT "ACT-POLYC-SELFHOST-PARSER-SLICE07: verifying compound-block subject ${COMPOUND_BLOCK_TOKEN_MAP_OBJECT}"
+        VERBATIM
+        USES_TERMINAL)
+
+    # The verification gates the link: the production compiler is never
+    # linked without a verified PolyC compound-block authority.
+    add_dependencies(hcc hcc-compound-block-token-map-verify)
+
+    # The link itself must ALSO depend on the object, so the object is
+    # re-read by the linker whenever it changes.
+    set_property(TARGET hcc APPEND PROPERTY
+        LINK_DEPENDS "${COMPOUND_BLOCK_TOKEN_MAP_OBJECT}")
+
+    target_compile_definitions(hcc PRIVATE HCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND)
+    target_link_libraries(hcc ${COMPOUND_BLOCK_TOKEN_MAP_OBJECT})
+    message(STATUS "ACT-POLYC-SELFHOST-PARSER-SLICE07: production hcc links compound-block PolyC component: ${COMPOUND_BLOCK_TOKEN_MAP_OBJECT}")
+    message(STATUS "ACT-POLYC-SELFHOST-PARSER-SLICE07: production hcc VERIFIES the compound-block subject (both producer and prebuilt modes); "
+                   "target format=${COMPOUND_BLOCK_TOKEN_MAP_TARGET_OBJECT_FORMAT}; nm=${COMPOUND_BLOCK_TOKEN_MAP_NM}")
+endif()
+
+
+
+
 # ACT-POLYC-BOOTSTRAP02 C2 IMPL — opt-in stage1 build that
 # links the B1 PolyC component (BootstrapScanIdent) into a
 # SEPARATE binary (hcc-bootstrap02) which uses the modified

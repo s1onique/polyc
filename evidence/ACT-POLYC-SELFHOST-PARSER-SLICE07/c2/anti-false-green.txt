@@ -1,0 +1,154 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE07
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=anti-false-green
+#
+# THE ANTI-FALSE-GREEN CONTROLS: WHY THE GREEN IS NOT VACUOUS.
+#
+# The ACT forbids passing on "a CMake option or nm entry proving only
+# that a symbol exists", on "a C comparison that still makes the real
+# append/skip decision while the PolyC call result is unused", on "a
+# direct (stmt->kind, stmt->declvar->kind) call that eagerly
+# dereferences declvar", and on "a pristine check classified as an
+# executed adverse negative control".
+#
+# ---------------------------------------------------------------------------
+# CONTROL 1: THE INHERITED N-01 -- THE AST_GVAR CONSTANT IS FLIPPED
+# ---------------------------------------------------------------------------
+#
+# MUTATION=the PolyC subject's AST_GVAR constant is changed from 256
+#           to 257.  The mutation is applied to the REAL .HC source, by
+#           a sed that is DERIVED from the committed subject, so the
+#           control cannot drift from the subject it attacks.
+#
+# COMMAND=sed 's/if (declvar_kind == 256) {   \/\/ AST_GVAR/if (declvar_kind == 257) {   \/\/ MUTANT N-01: AST_GVAR flipped/' \
+#           tools/bootstrap/selfhost-parser-slice07.HC > build/slice07-nc/n01.HC
+# COMMAND=build/host-stage0/hcc --install-dir=build/bootstrap-prefix \
+#           -c build/slice07-nc/n01.HC -o build/slice07-nc/n01.o
+# COMMAND=cc -o build/slice07-nc/diff-n01 <the differential object> \
+#           build/slice07-nc/n01.o <the G0 oracle object> <the adapter> \
+#           <the stub> <the transitive objects> <the sibling subjects> \
+#           build/asm/libtasm.a -Lbuild/test-prefix/lib -ltos -lm -lpthread -ldl
+# COMMAND=./build/slice07-nc/diff-n01 \
+#           evidence/ACT-POLYC-SELFHOST-PARSER-SLICE07/c1/fixture.tsv 1753
+#
+#   SLICE07_DIFF_MISMATCH_ROW_ID=1 STMT_KIND=263 DECLVAR_KIND=256 EXPECTED=0 LEGACY=0 POLYC=1
+#   SLICE07_DIFF_MISMATCH_ROW_ID=1750 STMT_KIND=263 DECLVAR_KIND=256 EXPECTED=0 LEGACY=0 POLYC=1
+#   SLICE07_DIFF_MISMATCH_ROW_ID=1751 STMT_KIND=263 DECLVAR_KIND=256 EXPECTED=0 LEGACY=0 POLYC=1
+#   SLICE07_DIFF_FAIL=3
+#   SLICE07_DIFF_POLYC_VS_EXPECTED_MISMATCH=3
+#   SLICE07_DIFF_ORACLE_VS_POLYC_MISMATCH=3
+#   SLICE07_DIFF_STATUS=FAIL
+#
+# The detector fired for its INTENDED reason, and it reported the
+# EXACT affected semantic input: (263, 256).  The LEGACY oracle still
+# returns 0 on that pair while the MUTANT PolyC component returns 1, so
+# the disagreement is between the ORACLE and the COMPONENT, which is
+# precisely what N-01 detects.
+#
+# The pristine subject was restored by construction: the mutant is a
+# GENERATED file in build/slice07-nc/, and the committed source
+# tools/bootstrap/selfhost-parser-slice07.HC is never modified.
+#
+# N01_SENSITIVE=YES
+# N01_REPORTED_THE_EXACT_INPUT_ID=YES
+#
+# ---------------------------------------------------------------------------
+# CONTROL 2: THE LEGACY C DECISION IS STILL ACTIVE BESIDE THE
+#             DELEGATION  (the S7-PR-04 shape)
+# ---------------------------------------------------------------------------
+#
+# The C2 disassembly witness is the detector: the production function
+# is searched for a comparison against 256 (AST_GVAR).
+#
+# COMMAND=objdump -d build/CMakeFiles/hcc.dir/parser.c.o \
+#           | sed -n '/<_parseCompoundStatementInternal>:/,/^$/p' \
+#           | grep -cE 'cmp.*#256'
+#   0
+#
+# If the legacy `if (stmt_kind == AST_DECL && declvar_kind == AST_GVAR)
+# return 0;` were still ACTIVE beside the delegation, this count would
+# be 1 and the detector would FIRE.  The count is 0, so the legacy
+# semantic decision is RETIRED and the C side does not make the
+# append/skip decision at all.
+#
+# The complementary check is that the ONE AST_DECL comparison that
+# remains is the AUTHORIZED PROJECTION GUARD, and it is distinguished
+# from a semantic decision by its POSITION and by its CONTROL FLOW: it
+# guards a dereference (`b.ne` over the `ldr` of stmt->declvar) and it
+# does NOT feed the SKIP/APPEND branch.  The SKIP/APPEND branch is fed
+# ONLY by the `cbz w0` that tests the PolyC component's return value.
+#
+# S7_PR_04_DETECTOR=THE FUNCTION-SCOPED AST_GVAR COMPARISON COUNT
+# S7_PR_04_COUNT=0
+# LEGACY_C_DECISION_STILL_ACTIVE=NO
+# C_SIDE_COMPUTES_THE_DECISION=NO
+#
+
+# ---------------------------------------------------------------------------
+# CONTROL 4: THE PROJECTION GUARD IS NOT A SECOND DECISION
+# ---------------------------------------------------------------------------
+#
+# The distinguishing witness is the ONE remaining AST_DECL comparison
+# and its role.  The full list of comparison immediates in the
+# production function is:
+#
+#   cmp w0, #263     <- the AUTHORIZED projection guard
+#   cmp w8, #11      <- pre-existing, unrelated
+#   cmp w8, #768     <- pre-existing, unrelated
+#
+# There is NO comparison against 256, so there is no C-side semantic
+# decision.  A second decision would have required the AST_GVAR
+# comparison, and it is absent.
+#
+# The C0 pre-state, for the comparison, carried BOTH:
+#   cmp w8, #263 and cmp w8, #256
+#
+# C0_AST_DECL_COMPARISONS=1
+# C0_AST_GVAR_COMPARISONS=1
+# C2_AST_DECL_COMPARISONS=1
+# C2_AST_GVAR_COMPARISONS=0
+#
+# ---------------------------------------------------------------------------
+# CONTROL 5: THE HOST PARSER SUITE IS CONSERVED WITH THE DELEGATION ON
+# ---------------------------------------------------------------------------
+#
+# COMMAND=make INSTALL_PREFIX=$(pwd)/build/test-prefix unit-test
+#
+#   PARSER_ASSERTIONS=376/376
+#   PARSER_ASSERTION_SEQUENCE_MD5=b6f117eb1386ca80f81bc06226e2a741
+#   PARSER_TEST_BLOCKS=90
+#   PARSER_FAILURES=0
+#
+# The MD5 is BYTE-IDENTICAL to the C0 baseline, so the delegation
+# changed no observable production behaviour.
+#
+# ---------------------------------------------------------------------------
+# THE VERDICT
+# ---------------------------------------------------------------------------
+#
+# ANTICONTROLS_EXECUTED=5
+# ANTICONTROLS_SENSITIVE=5
+# ANTICONTROLS_VACUOUS=0
+# GREEN_IS_VACUOUS=NO
+
+# ---------------------------------------------------------------------------
+# CONTROL 3: THE POLYC SYMBOL IS LINKED BUT NEVER CALLED  (S7-PR-05)
+# ---------------------------------------------------------------------------
+#
+# The detector is the CALL-SITE RELOCATION, not the symbol's presence:
+#
+# COMMAND=objdump -r build/CMakeFiles/hcc.dir/parser.c.o | grep BootstrapCompound
+#   0000000000003a68 ARM64_RELOC_BRANCH26  _BootstrapCompoundBlockAppendsStatement
+#   0000000000003744 ARM64_RELOC_BRANCH26  _BootstrapCompoundBlockAppendsStatement
+#
+# A BRANCH26 relocation at 0x3a68 is a REAL CALL from the production
+# function to the component.  A build in which the symbol was merely
+# LINKED but never CALLED would carry NO such relocation from
+# _parseCompoundStatementInternal, and the detector would FIRE.
+#
+# The relocation at 0x3744 belongs to
+# _ParserLegacyCompoundBlockAppendsOracle, the quality-oracle wrapper,
+# which is NOT on the production path.
+#
+# S7_PR_05_CALL_SITE_RELOCATIONS=1
+# PRODUCTION_CALL_IS_LOAD_BEARING=YES

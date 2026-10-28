@@ -1,0 +1,25 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE07
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=producer-identity
+#
+# THE IDENTITY OF THE PRODUCER THAT BUILT THE SUBJECT.
+#
+# COMMAND=shasum -a 256 build/host-stage0/hcc
+PRODUCER_PATH=build/host-stage0/hcc
+PRODUCER_SHA256=ded25f0d9d30ab3dc555326b8ef2264b7113c686b5d0e4f81cc978762fe0f08b
+PRODUCER_KIND=THE STAGE0 (LEGACY C CONTROL) COMPILER
+
+# The subject is compiled by the STAGE0 compiler, NOT by the
+# production compiler it is about to serve, so the component does
+# not depend on the compiler that will host it.
+
+COMMAND=make ./build/parser-compound-block-subject.o
+COMMAND_LINE=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/host-stage0/hcc --install-dir=./build/bootstrap-prefix -c tools/bootstrap/selfhost-parser-slice07.HC -o ./build/parser-compound-block-subject.o
+OUTPUT=build/parser-compound-block-subject.o
+
+SUBJECT_SOURCE=tools/bootstrap/selfhost-parser-slice07.HC
+SUBJECT_SOURCE_SHA256=45295e0e2f435c29b94d0a9368f4cf253245273cdd47eafc31cca21a474d5c02
+SUBJECT_OBJECT=build/parser-compound-block-subject.o
+SUBJECT_OBJECT_SHA256=e2dfbcfcb78261957fb9188916705dcc86d589e82a9d9e169f6ae8118237487c
+SUBJECT_OBJECT_FORMAT=Mach-O 64-bit object arm64
+PRODUCER_IS_NOT_THE_PRODUCTION_COMPILER=YES
