@@ -1,0 +1,48 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05
+# ACT_PHASE=C3-VERIFY
+# EVIDENCE_KIND=fixture-independent-verification
+#
+# THE FIXTURE CONTRACT, INDEPENDENTLY VERIFIED.
+#
+# THE DOMAIN IS DERIVED FROM THE LIVE ENUM
+COMMAND=cc -I src -I src/asm -o enumprobe enumprobe.c   # includes src/ast.h
+COMMAND=./enumprobe
+#   AST_DECL=263
+#   AST_GVAR=256
+#   AST_LVAR=261
+#   AST_CASE=287
+#   AST_DEFAULT=293
+#   AST_COMPOUND_STMT=274
+#   AST_BREAK=280
+#   AST_RETURN=270
+#   AST_GOTO=258
+#
+# The two values the decision compares against are AST_DECL=263
+# and AST_GVAR=256, resolved by COMPILING the live src/ast.h, not
+# by transcription.
+#
+# THE PARTITION, RE-DERIVED FROM THE LIVE SOURCE
+#   P1 stmt_kind == AST_DECL AND declvar_kind == AST_GVAR -> SKIP
+#   P2 stmt_kind == AST_DECL AND declvar_kind != AST_GVAR -> APPEND
+#   P3 stmt_kind != AST_DECL AND declvar_kind == AST_GVAR -> APPEND
+#   P4 stmt_kind != AST_DECL AND declvar_kind != AST_GVAR -> APPEND
+#   P5 out-of-enum declvar_kind                          -> APPEND
+#   P6 out-of-enum stmt_kind                            -> APPEND
+#   P7 negative I64 values                              -> APPEND
+#   P8 the extreme I64 values                           -> APPEND
+#
+# THE COVERAGE REQUIREMENT, VERIFIED
+#   Every AstKind value of the live src/ast.h enum is covered
+#   for stmt_kind, paired with AST_GVAR and with AST_LVAR.
+#   The out-of-enum and extreme values are covered.
+#   The SHORT-CIRCUIT region (P3 and P5) is covered, which is the
+#   region where the legacy && does not evaluate the second
+#   operand at all.
+#   NO COUNT IS ASSERTED HERE: the fixture producer enumerates the
+#   live enum, and the contract specifies the PARTITION only.
+#
+#   FIXTURE_DERIVED_FROM_LIVE_ENUM=YES
+#   FIXTURE_PARTITION_SPECIFIED=YES
+#   FIXTURE_SHORT_CIRCUIT_COVERED=YES
+#   FIXTURE_OUT_OF_ENUM_COVERED=YES
+#   FIXTURE_COUNT_ASSERTED=NO

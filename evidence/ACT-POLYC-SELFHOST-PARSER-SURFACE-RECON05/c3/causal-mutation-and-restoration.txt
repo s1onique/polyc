@@ -1,0 +1,71 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05
+# ACT_PHASE=C3-VERIFY
+# EVIDENCE_KIND=causal-mutation-and-restoration
+#
+# THE INDEPENDENT REPLAY OF THE CAUSAL EXPERIMENTS.
+#
+# Both causal experiments were EXECUTED in a disposable detached
+# worktree built from the SAME tree, and BOTH were REPLAYED
+# here.  The C2 contract is c2/selected-causal-contract.md.
+#
+# --- EXPERIMENT 1: THE SELECTED CANDIDATE SUB-003 ---
+#
+# MUTATION: the SKIP of a global-variable declaration inside a
+#           compound block is REMOVED (one region, four lines).
+#           PATCH=c2/probes/sub003-mutant-patch.txt
+#
+# BUILD:  cmake -DCMAKE_BUILD_TYPE=Release -DHCC_ENABLE_JIT=ON \
+#             -DCMAKE_INSTALL_PREFIX=/tmp/recon05-wt/build/test-prefix ../src
+#         make -j4            -> [100%] Built target hcc
+#
+# WITNESS: c2/probes/witness-sub003-block-static.HC
+#
+#   PRISTINE  compiles and runs  -> WITNESS_OUTPUT=12 2   (exit 0)
+#   MUTANT    FAILS TO COMPILE  -> ERROR: Mapping exists for 1 -> %l2 i64 local
+#
+# THE 90-FILE PRODUCTION SUITE, RUN WITH THE MUTANT COMPILER:
+#
+#   PRISTINE  376/376  md5=b6f117eb1386ca80f81bc06226e2a741
+#   MUTANT    371/371  md5=dc2f36f1bd63bca22fc7ea57359a770d
+#
+# THE EXACTLY AFFECTED TESTS:
+#   Test - local static variables and global variables:  3/3 -> ERROR
+#   Test - Global and static array                    2/2 -> ERROR
+#
+# CAUSAL_DIRECTION=THE_MUTANT_IS_STRICTLY_WORSE
+# CAUSAL_WITNESS_COMPILE=PRISTINE_OK_MUTANT_FAILS
+# CAUSAL_TEST_SUITE=PRISTINE_376_MUTANT_371
+#
+# --- EXPERIMENT 2: THE DISQUALIFICATION OF SUB-002 ---
+#
+# MUTATION: AST_DEFAULT is ADDED to the SUB-002 default-arm
+#           termination condition, making it EXACTLY the
+#           already-migrated SUB-001 condition.
+#           PATCH=c2/probes/sub002-mutant-patch.txt
+#
+#   PRISTINE  376/376  md5=b6f117eb1386ca80f81bc06226e2a741
+#   MUTANT    376/376  md5=b6f117eb1386ca80f81bc06226e2a741
+#
+#   WITNESS (a switch whose default arm contains a nested
+#   switch with its own default arm):
+#     PRISTINE  WITNESS_OUTPUT=2300
+#     MUTANT    WITNESS_OUTPUT=2300
+#
+# CAUSAL_DIRECTION=NO_CHANGE
+# SUB-002_DISQUALIFIED=YES
+#
+# --- THE RESTORATION PROOF ---
+#
+#   COMMAND=git checkout -- src/parser.c   (inside the worktree)
+#   COMMAND=diff <worktree>/src/parser.c <main>/src/parser.c
+#   RESULT=identical
+#   SHA256_BEFORE=27281d56b4abf2e9fcdd1ecd43f3d349336be114fb1c4d14fcd1ffeae8bd9d35
+#   SHA256_AFTER =27281d56b4abf2e9fcdd1ecd43f3d349336be114fb1c4d14fcd1ffeae8bd9d35
+#
+#   CAUSAL_RESTORATION_BYTE_IDENTICAL=YES
+#   TRACKED_MAIN_WORKTREE_MUTATED=NO
+#   MUTATION_MERGED_OR_COMMITTED=NO
+#
+# The mutable worktree is DISPOSABLE.  It is not merged, not
+# committed, and the tracked main worktree src/parser.c carries the
+# SAME digest it carried at the entry.

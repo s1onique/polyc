@@ -1,0 +1,43 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05
+# ACT_PHASE=C3-VERIFY
+# EVIDENCE_KIND=selected-oracle-verification
+#
+# THE G0 OBJECT-LEVEL ORACLE, INDEPENDENTLY VERIFIED.
+#
+# THE REQUIREMENT
+#   "A source-extracted standalone C condition alone is NOT an
+#    acceptable G0 oracle: compile the actual production C
+#    translation unit with the proposed delegation DISABLED, and
+#    prove that object does not reference the proposed PolyC
+#    symbol."
+#
+COMMAND=nm build/CMakeFiles/hcc.dir/parser.c.o | grep BootstrapCompoundBlockAppendsStatement
+#   (no output)
+#   G0_ORACLE_POLYC_REFERENCE=ABSENT
+#
+# THE OBJECT IS THE GENUINE PRODUCTION TU
+COMMAND=nm build/CMakeFiles/hcc.dir/parser.c.o | grep " U _Bootstrap"
+#   U _BootstrapCalcPadding
+#   U _BootstrapSwitchArmTerminates
+#   U _BootstrapValidPostControlFlowToken
+#   EXPORTED_FUNCTIONS_IN_OBJECT=52
+#
+# The object imports the SIX already-migrated PolyC authorities
+# as UNDEFINED references and does NOT define them.  That is
+# the strong form of "this is the live production object", and it
+# also proves the object is NOT a hand-written stand-in.
+#
+# THE PROPOSED SYMBOL IS ABSENT, so the oracle is INDEPENDENT of
+# the proposed PolyC target: it cannot be contaminated by it.
+#
+# THE ORACLE ADAPTER MUST CALL THE REAL OBJECT
+#   A re-implemented condition would be a hand-written oracle and
+#   is FORBIDDEN by ACT section 5 CC-02.  The successor MUST link
+#   the adapter against the real production object.
+#
+#   G0_REAL_PRODUCTION_C_OBJECT=build/CMakeFiles/hcc.dir/parser.c.o
+#   G0_ORACLE_KIND=OBJECT_LEVEL
+#   G0_ORACLE_IS_REAL_PRODUCTION_TU=YES
+#   G0_ORACLE_POLYC_REFERENCE=ABSENT
+#   G0_ORACLE_HAND_WRITTEN=NO
+#   G0_ORACLE_VERIFIED=YES

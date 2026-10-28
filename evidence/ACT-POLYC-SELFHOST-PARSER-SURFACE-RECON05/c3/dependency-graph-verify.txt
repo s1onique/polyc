@@ -1,0 +1,51 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05
+# ACT_PHASE=C3-VERIFY
+# EVIDENCE_KIND=dependency-graph-verify
+#
+# THE DEPENDENCY GRAPH, RE-VERIFIED ON THE CURRENT TREE.
+#
+COMMAND=./build/recon05/parser-surface-recon05-verify IDENTITY c1/candidate-identity.tsv src/parser.c src/prslib.c src/prsutil.c src/ast.c
+#   IDENTITY_ROWS=24
+#   DUPLICATE_ID=0
+#   INVALID_RANGE=0
+#   SOURCE_HASH_MISMATCH=0
+#   MISSING_FUNCTION=0
+#   OVERLAPPING_IDENTITY=0
+#   MALFORMED_FACT=0
+#   STATUS=PASS
+
+COMMAND=./build/recon05/parser-surface-recon05-verify REGISTRY <registry> c1/candidate-identity.tsv src/parser.c src/prslib.c src/prsutil.c src/ast.c
+#   REGISTRY_EXPECTED=24
+#   REGISTRY_CLAIMED=24
+#   MISSING_FUNCTION=0
+#   UNKNOWN_ID=0
+#   MALFORMED_FACT=0
+#   STATUS=PASS
+
+COMMAND=./build/recon05/parser-surface-recon05-verify DEPENDS c1/candidate-identity.tsv src/parser.c src/prslib.c src/prsutil.c src/ast.c
+#   DEPENDS_CHECKED=24
+#   MUTABLE_HOST_STATE_DEPENDENCE=3
+#   NO_MUTABLE_HOST_STATE_DEPENDENCE=21
+#   UNBOUND_DEPENDENCY=0
+
+# THE THREE MUTABLE-STATE DEPENDENCES, EACH WITH ITS SITE
+#   SUB-005  symbol_table       TRANSITIVE_THROUGH_A_CALLEE
+#            (cctrlIsKeyword -> cctrlGetKeyWord -> cc->symbol_table)
+#   SUB-008  cc->current_recovery DIRECT_IN_THE_CANDIDATE_RANGE
+#   SUB-009  cc->current_recovery TRANSITIVE_THROUGH_A_CALLEE
+#
+# EVERY OTHER CANDIDATE IS PROVABLY FREE OF THE MUTABLE SYMBOL
+# TABLE, THE RECOVERY POINT, THE HOST AST GRAPH AND THE TOKEN
+# STREAM.  The SELECTED candidate SUB-003 is among them: its own
+# range calls NO helper, so its decision is a pure function of two
+# copied scalars.
+#
+# THE CALLBACK AND RECOVERY OWNERSHIP TABLES (c1) ARE RE-DERIVED
+# FROM THE LIVE SOURCE AND CARRY ZERO UNCLASSIFIED DEPENDENCIES.
+#
+TOTAL_PARSER_CALLBACKS=0
+TOTAL_SEMANTIC_CALLBACKS=0
+OWNERS_TRANSFERRING_RECOVERY=0
+CANDIDATES_TRANSFERRING_HOST_GRAPH_WRITES=0
+CANDIDATES_TRANSFERRING_HOST_ALLOCATION=0
+UNCLASSIFIED_DEPENDENCIES=0
