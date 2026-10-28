@@ -1,0 +1,81 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON06
+# ACT_PHASE=C0-ENTRY
+# EVIDENCE_KIND=entry-identity
+#
+# THE ENTRY IDENTITY, MEASURED AT C0.
+#
+# F1 -- identity before mutation.  Every command below was run at the
+# pre-ACT boundary, BEFORE any tracked file was created or modified.
+#
+# ------------------------------------------------------------------
+# THE MEASURED IDENTITY
+# ------------------------------------------------------------------
+COMMAND=git rev-parse HEAD
+#   2bafd875a60fc8347c4f17ca24350d682fd63355
+ENTRY_HEAD=2bafd875a60fc8347c4f17ca24350d682fd63355
+ENTRY_HEAD_MATCHES_EXPECTED=YES
+#
+COMMAND=git rev-parse HEAD^{tree}
+#   76f6908ecb9730a0b20becd289bee54974d27b17
+ENTRY_TREE=76f6908ecb9730a0b20becd289bee54974d27b17
+ENTRY_TREE_MATCHES_EXPECTED=YES
+#
+COMMAND=git branch --show-current
+#   main
+BRANCH=main
+BRANCH_MATCHES_EXPECTED=YES
+#
+COMMAND=git status --porcelain=v1
+#   (no output)
+WORKTREE_CLEAN=YES
+WORKTREE_UNTRACKED_FILES=0
+#
+COMMAND=git replace -l
+#   (no output)
+GIT_REPLACE_REFS=0
+#
+# ------------------------------------------------------------------
+# THE MEASURED IDENTITY, AS FROZEN
+# ------------------------------------------------------------------
+ENTRY_HEAD=2bafd875a60fc8347c4f17ca24350d682fd63355
+ENTRY_TREE=76f6908ecb9730a0b20becd289bee54974d27b17
+BRANCH=main
+WORKTREE_CLEAN=YES
+GIT_REPLACE_REFS=0
+#
+# ------------------------------------------------------------------
+# THE HEAD COMMIT, VERIFIED
+# ------------------------------------------------------------------
+COMMAND=git log -1 --format='%H%n%B' HEAD
+#   2bafd875a60fc8347c4f17ca24350d682fd63355
+#   ACT-POLYC-SELFHOST-PARSER-SLICE07 C4: CLOSE -- the compound-block
+#   statement routing is PolyC-owned
+#
+# The entry HEAD IS the predecessor's CLOSE commit.  The predecessor
+# is therefore closed and reachable at the exact entry boundary.
+ENTRY_HEAD_IS_PREDECESSOR_CLOSE=YES
+#
+# ------------------------------------------------------------------
+# THE FIVE-COMMIT HISTORY AT ENTRY
+# ------------------------------------------------------------------
+COMMAND=git log --format='%H|%s' -5 HEAD
+#   2bafd875a60fc8347c4f17ca24350d682fd63355|ACT-POLYC-SELFHOST-PARSER-SLICE07 C4: CLOSE -- the compound-block statement routing is PolyC-owned
+#   5f8a99261829d9d9cf7cff8b0f090b6e759cb17a|ACT-POLYC-SELFHOST-PARSER-SLICE07 C3: EVIDENCE -- the four generations, the causal mutation and the conservation
+#   885a2a6f58d5d8565af7f9a655ea2924a35c7686|ACT-POLYC-SELFHOST-PARSER-SLICE07 C2: IMPL -- the PolyC component and the production delegation
+#   806f7ee189bb9e3fc213e8734d22f90b9c6d6eba|ACT-POLYC-SELFHOST-PARSER-SLICE07 C1: EVIDENCE -- the object-level legacy oracle, the live enums and the fixture
+#   cc1d828a79bcb29fe89425ab7515b0f9c696b845|ACT-POLYC-SELFHOST-PARSER-SLICE07 C0: RED -- the entry, the frozen contract and the independent baseline
+#
+ENTRY_HEAD_IS_THE_FIFTH_AND_LAST_SLICE07_COMMIT=YES
+#
+# ------------------------------------------------------------------
+# NO MUTATION WAS PERFORMED BEFORE THIS MEASUREMENT
+# ------------------------------------------------------------------
+PRE_ACT_MUTATIONS=0
+PRE_ACT_TRACKED_FILE_WRITES=0
+#
+# The ONLY directories created before this measurement were the
+# untracked, empty evidence tree of THIS ACT and an untracked
+# temporary log directory under /tmp.  Neither is a tracked change
+# and neither is inside src/** or tools/**.
+#
+ENTRY_IDENTITY_VERIFIED=YES

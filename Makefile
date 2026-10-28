@@ -3348,6 +3348,32 @@ parser-slice-recon03-ranking: build/parser-slice-recon03-ranking
 	./build/parser-slice-recon03-ranking $(RECON03_DIMS)
 
 
+# ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON06 -- the RECON06 C0 audit
+# verifier (PolyC source; F-POLYC-TOOLS compliant).
+#
+# The tool's entry point is `I32 Main(I32 argc, U8 **argv)`, so it is
+# compiled with `-c` and linked against the runtime prefix, exactly as
+# tools/factory/factory-halt-classification.HC is.  A direct
+# `./hcc ... -o <exe>` link does NOT make `Main` the process entry
+# point, because the C runtime already defines `main`.
+RECON06_AUDIT_SRC  = tools/quality/parser-surface-recon06-audit.HC
+RECON06_AUDIT_OBJ  = build/parser-surface-recon06-audit.o
+RECON06_AUDIT_EXE  = build/parser-surface-recon06-audit
+
+build/parser-surface-recon06-audit.o: $(RECON06_AUDIT_SRC) ./hcc | test-prefix-install
+	./hcc --install-dir=$(TEST_PREFIX) -c $(RECON06_AUDIT_SRC) -o $@
+
+build/parser-surface-recon06-audit: $(RECON06_AUDIT_OBJ)
+	cc $(RECON06_AUDIT_OBJ) -L$(TEST_PREFIX)/lib -ltos -o $@
+	@if [ ! -x $@ ]; then \
+		echo "parser-surface-recon06-audit: link failed" >&2; \
+		exit 1; \
+	fi
+
+parser-surface-recon06-audit-selftest: build/parser-surface-recon06-audit
+	./build/parser-surface-recon06-audit --selftest
+
+
 # Fixture generators (PolyC).
 build/parser-padding-gen-matrix-fixture: tools/quality/parser-padding-gen-matrix-fixture.HC ./hcc | test-prefix-install
 	./hcc --install-dir=$(TEST_PREFIX) tools/quality/parser-padding-gen-matrix-fixture.HC -o $@

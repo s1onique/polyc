@@ -1,0 +1,49 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON06
+# ACT_PHASE=C0-ENTRY
+# EVIDENCE_KIND=n06-literal-control-audit
+#
+# THE INDEPENDENT, READ-ONLY AUDIT OF THE FROZEN INHERITED CONTROL N-06.
+#
+# This is a BOUNDED EVIDENCE AUDIT of ALREADY-COMMITTED artifacts.
+# It performs NO mutation, builds NO mutant compiler, and creates NO
+# new C-mutation experiment.  Every "observed_*" field below is
+# transcribed from an ACTUAL COMMITTED ARTIFACT, quoted with its path.
+#
+# THE FROZEN OBLIGATION (RECON05 c2/selected-negative-controls.md,
+# lines 66-76, SHA-256 f468a9e35d3e31fd0b325b7f44ca459443927da61d705dfed75000005680f325):
+#
+#   ## N-06 -- the causal direction is not observed
+#
+#   MUTATION=Mutate ONLY the selected C decision in a disposable
+#             worktree, rebuild the real compiler, and run the witness.
+#   DETECTOR=CAUSAL_DIRECTION_CHANGE
+#   REASON=The EXECUTED experiment in this ACT observed exactly this
+#           direction; see c2/selected-causal-contract.md section 3.
+#
+# Schema (one row per audit field group, as required by ACT section
+# 1.1): control_id, frozen_subject, frozen_mutation, frozen_detector,
+# observed_subject, observed_mutation, execution_identity,
+# entry_source_or_object, build_command_and_exit, witness_command_and_exit,
+# observed_detector, restoration, same_execution_as_s7_cc01,
+# literal_satisfied, explicitly_permitted_equivalence, disposition,
+# evidence_path
+#
+# ------------------------------------------------------------------
+control_id	N-06
+frozen_subject	the selected C decision (src/parser.c, SUB-003, the compound-block statement append/skip routing)
+frozen_mutation	Mutate ONLY the selected C decision in a disposable worktree, rebuild the real compiler, and run the witness.
+frozen_detector	CAUSAL_DIRECTION_CHANGE
+observed_subject	the PolyC source (tools/bootstrap/selfhost-parser-slice07.HC) -- NOT the selected C decision
+observed_mutation	"-      return 0;   // SKIP: a global-variable declaration inside a block" / "+      return 1;   // MUTANT S7-CC-01: the polarity is flipped"
+execution_identity	SLICE07 C3, detached worktree /tmp/slice07-wt, base 885a2a6f58d5d8565af7f9a655ea2924a35c7686
+entry_source_or_object	evidence/ACT-POLYC-SELFHOST-PARSER-SLICE07/c3/causal-polyc-mutation-restoration.txt -- records MUTATION_SCOPE=tools/bootstrap/selfhost-parser-slice07.HC ONLY and MUTATION_IS_IN_SRC_PARSER_C=NO
+build_command_and_exit	COMMAND=make ./build/parser-compound-block   ->  EXIT=0  (the mutant production compiler BUILT SUCCESSFULLY)
+witness_command_and_exit	COMMAND=./hcc --install-dir=/tmp/slice07-wt/build/test-prefix witness-sub003.HC -o <mutant>  ->  COMPILE_EXIT=1  (the mutant REJECTED the witness); the PRISTINE compiler COMPILE_EXIT=0 and the witness RUN_EXIT=0 with WITNESS_OUTPUT=13 15 2
+observed_detector	CAUSAL_DIRECTION_CHANGE -- the mutant production compiler BUILDS and REJECTS the static witness with "ERROR: Mapping exists for 1 -> %l14 i64 local"; the pristine and restored compilers compile and run it
+restoration	CAUSAL_RESTORATION_BYTE_IDENTICAL=YES -- SHA256_BEFORE=45295e0e2f435c29b94d0a9368f4cf253245273cdd47eafc31cca21a474d5c02, SHA256_AFTER=45295e0e2f435c29b94d0a9368f4cf253245273cdd47eafc31cca21a474d5c02, diff produced no output
+same_execution_as_s7_cc01	YES -- ONE experiment reported under TWO ids.  The predecessor states this explicitly: evidence/ACT-POLYC-SELFHOST-PARSER-SLICE07/c1/negative-control-red.txt lines 156-161: "N-06's subject-specific analogue is the PolyC source mutation and its result is reported under BOTH N-06 and S7-CC-01."  Both the N-06 row of c3/inherited-controls-join.tsv and the S7-CC-01 row of c3/new-controls-join.tsv cite the SAME evidence file and the SAME diagnostic.
+literal_satisfied	NO
+explicitly_permitted_equivalence	NO
+disposition	N06_UNPROVEN
+evidence_path	evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON06/c0/n06-literal-control-audit.md
+#

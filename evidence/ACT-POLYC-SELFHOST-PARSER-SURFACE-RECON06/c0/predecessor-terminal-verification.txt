@@ -1,0 +1,163 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON06
+# ACT_PHASE=C0-ENTRY
+# EVIDENCE_KIND=predecessor-terminal-verification
+#
+# THE PREDECESSOR (SLICE07) TERMINAL VERIFICATION, MEASURED AT C0.
+#
+# The ACT requires a valid SLICE07 C0..C4 five-commit range whose
+# CLOSE trailers exactly bind ACT/phase/verdict, plus the external
+# terminality receipt.
+#
+# ------------------------------------------------------------------
+# THE FIVE-COMMIT RANGE
+# ------------------------------------------------------------------
+COMMAND=git log --format='%H|%s' -5 2bafd875a60fc8347c4f17ca24350d682fd63355
+#
+#   cc1d828a79bcb29fe89425ab7515b0f9c696b845  C0  RED
+#   806f7ee189bb9e3fc213e8734d22f90b9c6d6eba  C1  EVIDENCE
+#   885a2a6f58d5d8565af7f9a655ea2924a35c7686  C2  IMPL
+#   5f8a99261829d9d9cf7cff8b0f090b6e759cb17a  C3  EVIDENCE
+#   2bafd875a60fc8347c4f17ca24350d682fd63355  C4  CLOSE
+#
+SLICE07_COMMIT_COUNT=5
+SLICE07_PHASE_SEQUENCE=RED,EVIDENCE,IMPL,EVIDENCE,CLOSE
+SLICE07_PHASE_SEQUENCE_VALID=YES
+#
+# ------------------------------------------------------------------
+# THE TRAILERS, PARSED FROM THE ACTUAL COMMIT MESSAGES
+# ------------------------------------------------------------------
+COMMAND=for c in <the five commits>; do git log -1 --format='%B' $c \
+#            | grep -E '^(ACT|ACT-Phase|ACT-Verdict):'; done
+#
+#   == cc1d828a79bcb29fe89425ab7515b0f9c696b845
+#      ACT: ACT-POLYC-SELFHOST-PARSER-SLICE07
+#      ACT-Phase: RED
+#   == 806f7ee189bb9e3fc213e8734d22f90b9c6d6eba
+#      ACT: ACT-POLYC-SELFHOST-PARSER-SLICE07
+#      ACT-Phase: EVIDENCE
+#   == 885a2a6f58d5d8565af7f9a655ea2924a35c7686
+#      ACT: ACT-POLYC-SELFHOST-PARSER-SLICE07
+#      ACT-Phase: IMPL
+#   == 5f8a99261829d9d9cf7cff8b0f090b6e759cb17a
+#      ACT: ACT-POLYC-SELFHOST-PARSER-SLICE07
+#      ACT-Phase: EVIDENCE
+#   == 2bafd875a60fc8347c4f17ca24350d682fd63355
+#      ACT: ACT-POLYC-SELFHOST-PARSER-SLICE07
+#      ACT-Phase: CLOSE
+#      ACT-Verdict: PASS
+#
+# The ACT ID is IDENTICAL on all five commits; the phase is CORRECT
+# for each; the verdict appears ONLY on the CLOSE and is exactly
+# "PASS"; NO HALT_CLASS / BLOCKS_NEXT appears on a PASS verdict.
+#
+SLICE07_TRAILER_ACT_ID_CONSISTENT=YES
+SLICE07_TRAILER_PHASE_CORRECT_PER_COMMIT=YES
+SLICE07_TRAILER_VERDICT=EXACTLY_ONE_ON_CLOSE
+SLICE07_TRAILER_VERDICT_VALUE=PASS
+SLICE07_TRAILER_HALT_CLASS_ABSENT=YES
+SLICE07_TRAILER_BLOCKS_NEXT_ABSENT=YES
+#
+# ------------------------------------------------------------------
+# THE CANONICAL RANGE CHECKER
+# ------------------------------------------------------------------
+COMMAND=sh scripts/quality/factory-v2-range-check.sh \
+#           ACT-POLYC-SELFHOST-PARSER-SLICE07 \
+#           2bafd875a60fc8347c4f17ca24350d682fd63355
+#   ACT=ACT-POLYC-SELFHOST-PARSER-SLICE07
+#   ENTRY=1a3d2d520306f02ca08adb29c62688748e33eab8
+#   FIRST=cc1d828a79bcb29fe89425ab7515b0f9c696b845
+#   CLOSE=2bafd875a60fc8347c4f17ca24350d682fd63355
+#   COMMITS=5
+#   VERDICT=PASS
+#   STATUS=PASS
+#   EXIT=0
+#
+# NOTE ON THE ENTRY LINE: the checker prints the ACT's own recorded
+# entry, which identifies SLICE07's PREDECESSOR (RECON05's CLOSE),
+# not SLICE07's first commit.  FIRST and CLOSE are the SLICE07 range
+# bounds and COMMITS=5, which is the value this ACT verifies.
+#
+FACTORY_V2_RANGE_CHECK=PASS
+FACTORY_V2_RANGE_CHECK_EXIT=0
+#
+# ------------------------------------------------------------------
+# THE EXTERNAL TERMINALITY RECEIPT
+# ------------------------------------------------------------------
+# The ACT states: "External terminality receipts are independently
+# identified as external, not invented tracked objects."
+#
+# The RECEIPT TEXT is a TRACKED object:
+#   evidence/ACT-POLYC-SELFHOST-PARSER-SLICE07/c4/terminality.txt
+# and it RECORDS the results of the read-only EXTERNAL post-CLOSE
+# verification that could not itself be committed (the CLOSE must be
+# the last tracked change).
+#
+# The receipt asserts, and this ACT re-verified each item directly
+# against the live repository where it is independently checkable:
+#
+#   - the exact commit range and count (5)      [RE-VERIFIED above]
+#   - the commit phases RED/EVIDENCE/IMPL/
+#     EVIDENCE/CLOSE                            [RE-VERIFIED above]
+#   - the trailer parsing of the CLOSE          [RE-VERIFIED above]
+#   - the old artifact SHA-256 set (237 paths,
+#     all unchanged)                            [RE-VERIFIED: see
+#                                                 c0/predecessor-freeze.tsv]
+#   - the worktree cleanliness (clean)         [RE-VERIFIED above]
+#   - zero Git replace refs (0)                [RE-VERIFIED above]
+#   - the Factory-v2 range check (PASS)        [RE-VERIFIED above]
+#   - the append-only invariant (11/11 PASS)   [RE-VERIFIED at C0]
+#   - F14 (PASS)                               [RE-VERIFIED at C0]
+#   - the F-POLYC-TOOLS availability truth
+#     (UNAVAILABLE)                             [RE-VERIFIED at C0]
+#   - the patch hygiene (PASS)                 [RE-VERIFIED at C0]
+#   - zero post-close commits (0)              [RE-VERIFIED below]
+#   - the exact C4 AC50 disposition             [as recorded]
+#
+# RECEIPT_PATH=evidence/ACT-POLYC-SELFHOST-PARSER-SLICE07/c4/terminality.txt
+# RECEIPT_IS_TRACKED=YES
+# RECEIPT_RECORDED_BY=ACT-POLYC-SELFHOST-PARSER-SLICE07 (C4)
+# EXTERNAL_VERIFICATION_IS_AN_EXTERNAL_ACT=YES
+#
+COMMAND=git log --format='%H' 2bafd875a60fc8347c4f17ca24350d682fd63355..HEAD
+#   (no output)
+POST_SLICE07_CLOSE_COMMITS=0
+#
+# ------------------------------------------------------------------
+# THE PREDECESSOR'S PRODUCTION RESULT, AS RECORDED
+# ------------------------------------------------------------------
+# These are the predecessor's OWN recorded observations.  They are
+# NOT this ACT's observations and are NOT counted as such; this ACT
+# re-verifies the authority facts independently at C0 (see
+# c0/existing-production-authorities.tsv).
+#
+#   COMPOUND_BLOCK_APPEND_AUTHORITY=POLYC
+#   LEGACY_COMPOUND_BLOCK_C_AUTHORITY=RETIRED
+#   SEVENTH_POLYC_PARSER_AUTHORITY=ESTABLISHED
+#   LEGACY_AST_GVAR_COMPARISONS_IN_PRODUCTION_FUNCTION=0
+#   SIX_PRECEDING_AUTHORITIES_CONSERVED=YES
+#
+# ------------------------------------------------------------------
+# THE VERDICT
+# ------------------------------------------------------------------
+PREDECESSOR_SLICE07_CLOSE_VERIFIED=YES
+PREDECESSOR_SLICE07_COMMIT_COUNT=5
+PREDECESSOR_SLICE07_TRAILERS_VALID=YES
+PREDECESSOR_SLICE07_TERMINALITY_RECEIPT_PRESENT=YES
+PREDECESSOR_SLICE07_ZERO_POST_CLOSE_COMMITS=YES
+#
+# NOTE -- THE SEPARATE N-06 DISPOSITION
+# The predecessor's CLOSE and terminality are VERIFIED above.  That
+# is a statement about the COMMIT GRAPH and the TRAILER GRAMMAR.  It
+# is NOT a statement that every frozen control obligation inside the
+# predecessor's evidence was discharged as literally written.
+#
+# The independent, read-only N-06 audit of the predecessor's frozen
+# inherited negative control is recorded SEPARATELY in
+# c0/n06-literal-control-audit.tsv, and it reaches a DIFFERENT
+# conclusion from the predecessor's own join.  That audit is a
+# RECON06-owned observation about a CLOSED artifact; it does NOT
+# rewrite, reopen or invalidate the predecessor's historical CLOSE
+# (F14), and this ACT does not claim that it does.
+#
+PREDECESSOR_CLOSE_GRAPH_VERIFIED=YES
+PREDECESSOR_FROZEN_CONTROL_OBLIGATIONS_VERIFIED=NO   # see the N-06 audit

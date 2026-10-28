@@ -1,0 +1,75 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON06
+# ACT_PHASE=C0-ENTRY
+# EVIDENCE_KIND=frozen-negative-controls
+#
+# THE TWENTY FROZEN NEGATIVE CONTROLS, FROZEN AT C0.
+#
+# Frozen VERBATIM from ACT section 6 BEFORE any adverse outcome was
+# executed.  A control is NEVER renamed post hoc.  If a control cannot
+# be expressed against the actual source, the ACT is a HALT.
+#
+# Schema: control_id <TAB> adverse_action <TAB> required_sensitivity
+#
+# --- THE INVENTORY CONTROLS ---
+IC-01	Delete one live inventory function	Missing exact source/function ID
+IC-02	Duplicate one candidate/function ID	Duplicate exact ID
+IC-03	Alter one source-range SHA-256	Source hash mismatch at exact range
+IC-04	Provide invalid/out-of-file/overlapping identity range	Invalid range/overlap, not generic parse error
+# --- THE ELIGIBILITY CONTROLS ---
+EC-01	Mark SUB-001 or SUB-003 as eligible legacy authority	Already-self-hosted exclusion
+EC-02	Falsely remove a transitive mutable-host-state dependence (e.g. SUB-005)	Source/call-graph dependency detector
+EC-03	Add nonzero host AST graph write	Host-graph-write gate
+EC-04	Add callback or setjmp/recovery ownership	Relevant separate clause rejection
+EC-05	Add an unreachable candidate with perfect rank	Reachability exclusion
+EC-06	Add unknown ID / remove required eligibility fact	Unknown-ID / missing-fact detector, not accidental other failure
+# --- THE RANKING CONTROLS ---
+RC-01	Shuffle facts; substitute an order-dependent false output	Authentic ranker invariant; independent comparator rejects false order
+RC-02	Give excluded candidate lowest numeric rank	Still excluded, no promotion
+RC-03	Remove the computed leading feasible candidate	New deterministic selection or explicit NONE; old winner must disappear
+RC-04	Change one controlled ranking dimension	Canonical ranker reports predicted full-order change
+RC-05	Keep ID but substitute stale source range/call site	Source identity/reachability binding rejects it
+# --- THE CAUSALITY / ORACLE CONTROLS ---
+CC-01	Mutate selected C decision, rebuild real compiler	Candidate-specific changed witness/acceptance with successful compiler build
+CC-02	Substitute hand-written/PolyC-dependent G0 oracle object	Production-object provenance rejection
+CC-03	Flip one fixture expected outcome	Exact semantic input ID mismatch
+CC-04	Feed cmp/tst from unrelated function/object	Function-scoped authority detector rejects it
+# --- THE PROVENANCE CONTROL ---
+PV-01	Re-label one compiler binary as another bootstrap producer	Identity/provenance rejection
+#
+# --- THE EXECUTION OBLIGATIONS ---
+#
+# Negative controls MUST be executed, not inferred from a pristine PASS.
+# For each control the ACT requires the exact subject, the adverse
+# edit, the rebuilt artifacts, the command, the exit, the observed
+# failure class, the restoration bytes and the post-restore result.
+#
+# For CC-01 the pristine, mutated and restored results are recorded
+# EXPLICITLY.
+# For RC-01 the positive invariance of the REAL ranker on shuffled
+# inputs AND the negative rejection of the forged order are recorded.
+# For EC-02 the ACT requires that ACTUAL transitive call edges are
+# checked, not candidate-local string matching.
+#
+# CONTROLS_THAT_REQUIRE_A_CHOSEN_CANDIDATE=CC-01, CC-02, CC-03, CC-04
+#   For those, the mechanically ranked PROVISIONAL leader is bound
+#   first and the adverse experiment is run against it; after any
+#   documented disqualification the ACTUAL selected candidate is bound
+#   and the control is re-run against it.  A control always joins its
+#   exact subject and can never silently change meaning.
+#
+# --- THE JOIN REQUIREMENTS ---
+#
+# All twenty control IDs must join by exact ID to a command, an
+# output and an expected detector.
+#
+CONTROL_COUNT=20
+CONTROL_IDS=IC-01,IC-02,IC-03,IC-04,EC-01,EC-02,EC-03,EC-04,EC-05,EC-06,RC-01,RC-02,RC-03,RC-04,RC-05,CC-01,CC-02,CC-03,CC-04,PV-01
+CONTROL_NAMESPACE_DISJOINT_FROM_PREDECESSORS=YES
+CONTROL_IDS_RENAMED=NO
+CONTROL_IDS_OMITTED=NO
+CONTROL_FROZEN_BEFORE_OUTCOMES=YES
+REQUIRED_MISSING=0
+REQUIRED_DUPLICATE=0
+REQUIRED_UNPROVEN=0
+REQUIRED_VACUOUS=0
+REQUIRED_UNRESTORED=0

@@ -1,0 +1,80 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON06
+# ACT_PHASE=C0-ENTRY
+# EVIDENCE_KIND=baseline-parser
+#
+# THE HOST-ARCHITECTURE PARSER BASELINE.  MEASURED at C0, SERIALIZED.
+#
+# The build, the unit-test run and every gate run in this ACT were
+# executed ONE AT A TIME.  The shared assembly temporary
+# /tmp/holyc-asm.s is a known race risk (a separate, out-of-scope
+# defect); no two build/JIT/test/gate runs overlapped here.
+#
+# ------------------------------------------------------------------
+COMMAND=make unit-test
+#   (the target is: cd ./src/tests && ../../hcc --install-dir=$(TEST_PREFIX)
+#    ./run.HC -o test-runner && ./test-runner && cd ../../)
+#
+#   UNIT_TEST_EXIT=0
+#
+COMMAND=grep -o 'PASSED: [0-9]*/[0-9]*' <log> | md5 -q
+#   b6f117eb1386ca80f81bc06226e2a741
+#
+COMMAND=grep -o 'PASSED: [0-9]*/[0-9]*' <log> \
+#          | awk -F'[/ ]' '{p+=$2; t+=$3} END {print "PASSED="p, "TOTAL="t}'
+#   PASSED=376 TOTAL=376
+#
+COMMAND=grep -o 'PASSED: [0-9]*/[0-9]*' <log> | wc -l
+#   90
+#
+COMMAND=grep -c 'FAILED: [0-9]*/[0-9]*' <log>
+#   0
+#
+# ------------------------------------------------------------------
+# THE IDENTITIES
+# ------------------------------------------------------------------
+PARSER_HOST_ARCH_ASSERTIONS=376/376
+PARSER_HOST_ARCH_TESTFILES=90
+PARSER_HOST_ARCH_FAILURE_IDENTITIES=(none)
+PARSER_HOST_ARCH_ASSERTION_SEQUENCE_MD5=b6f117eb1386ca80f81bc06226e2a741
+PARSER_HOST_ARCH_MD5_MATCHES_HISTORICAL=YES
+#
+# The MD5 is IDENTICAL to SLICE07's recorded
+# (c0/baseline-parser.txt), RECON05's and RECON04's.  The suite produced
+# a BYTE-IDENTICAL assertion sequence: the per-test identity sets are
+# equal, not merely equal in COUNT.
+#
+# ------------------------------------------------------------------
+# AN EXPECTED, DOCUMENTED, NON-FATAL DIAGNOSTIC
+# ------------------------------------------------------------------
+# The install step of the runtime prefix emits:
+#
+#   ld: Undefined symbols:
+#     _Errno, referenced from:
+#         _MALLOC in all.o
+#   clang: error: linker command failed with exit code 1
+#   ERROR: Failed to execute command: 'cc -dynamiclib ... libtos.0.0.1.dylib ...'
+#   CMake Warning at cmake_install.cmake:100 (message):
+#     hcc -lib exited with code 1; this is expected when all.o references
+#     _Errno.  Continuing.
+#
+# This is the DOCUMENTED, EXPECTED condition of the shared-library
+# build: src/CMakeLists.txt:1871-1873 explicitly continues when
+# `hcc -lib` exits nonzero because `all.o` references `_Errno`.  The
+# static archive libtos.a IS produced and installed, and the suite then
+# runs to completion.
+#
+# It is NOT a test failure:
+#   - there are ZERO 'FAILED: n/n' assertion lines in the log;
+#   - the unit-test target's exit code is 0;
+#   - the assertion sequence MD5 equals the historical identity.
+#
+# It is recorded here so that a reader who greps the raw log for
+# "error" is not misled, and so that the diagnostic is not mistaken
+# for a NEW regression.  It is present in the historical baselines too.
+#
+EXPECTED_NON_FATAL_RUNTIME_PREFIX_DIAGNOSTIC=YES
+EXPECTED_NON_FATAL_DIAGNOSTIC_SOURCE=src/CMakeLists.txt:1872
+NEW_PARSER_FAILURE_IDENTITIES=0
+#
+# ------------------------------------------------------------------
+BASELINE_PARSER_STATUS=PASS

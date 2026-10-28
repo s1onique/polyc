@@ -1,0 +1,198 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON06
+# ACT_PHASE=C0-ENTRY
+# EVIDENCE_KIND=red-reproduction
+#
+# THE C0 REDS.  GENUINELY FAILING, NO NO-OP WITNESSES.
+#
+# F3 requires that the principal RED exists BEFORE the principal fix.
+# For a reconnaissance ACT the "fix" is a SELECTION; so the REDs here
+# are the facts whose ABSENCE would make a selection unsound, and each
+# is shown FAILING against the live tree, not merely asserted.
+#
+# Each RED below is executed.  A RED that passes on the pristine tree
+# is NOT a RED and is reported as such.
+#
+# ------------------------------------------------------------------
+# RED-01  The N-06 frozen control's literal subject is NOT the subject
+#         that SLICE07 actually mutated.
+#
+# EXPECTED (a RED):  the executed N-06 experiment mutated the selected
+#                    C decision in src/parser.c.
+# ACTUAL:            the executed N-06 experiment mutated the PolyC
+#                    source tools/bootstrap/selfhost-parser-slice07.HC.
+#
+# COMMAND=./build/parser-surface-recon06-audit N06 \
+#           evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05 \
+#           evidence/ACT-POLYC-SELFHOST-PARSER-SLICE07
+#   N06_C3_MUTATION_SCOPE_IS_POLYC_ONLY=1
+#   N06_C3_MUTATION_NOT_IN_SRC_PARSER_C=1
+#   N06_C3_MUTATION_IS_IN_POLYC_SOURCE=1
+#   N06_Q_A_C_DECISION_MUTANT_EXECUTED=0
+#   N06_DISPOSITION=N06_UNPROVEN
+#   STATUS=FAIL
+#   EXIT=1
+#
+# RED_01_REPRODUCED=YES
+# RED_01_IS_A_NO_OP=NO
+#
+# ------------------------------------------------------------------
+# RED-02  No frozen RECON05 binding rule authorises the subject
+#         substitution that SLICE07 performed.
+#
+# EXPECTED (a RED):  a frozen clause authorises a successor-authority
+#                    analogue, so the audit can conclude
+#                    N06_EQUIVALENCE_PERMITTED_AND_PROVEN.
+# ACTUAL:            the whole frozen c2/ corpus contains ZERO such
+#                    clause, and the frozen RED-05 successor-state
+#                    column affirmatively REQUIRES the C decision to be
+#                    DELEGATED.
+#
+# COMMAND=./build/parser-surface-recon06-audit N06 <recon05> <slice07>
+#   N06_FROZEN_CORPUS_ANALOGUE_CLAUSES=0
+#   N06_FROZEN_RED05_REQUIRES_C_DELEGATED=1
+#   N06_Q_B_EQUIVALENCE_EXPLICITLY_PERMITTED=0
+#   N06_DISPOSITION=N06_UNPROVEN
+#   EXIT=1
+#
+# COMMAND=grep -rniE 'analog|analogue|substitut|successor.?authority|polyc subject|subject-specific' \
+#           evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05/c2/ \
+#           docs/acts/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05.md \
+#           docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05.md
+#   only RC-01b, RC-05 and CC-02 -- none concerns N-06's subject
+#
+# RED_02_REPRODUCED=YES
+# RED_02_IS_A_NO_OP=NO
+#
+# ------------------------------------------------------------------
+# RED-03  The historical RECON05 C-mutation evidence CANNOT discharge a
+#         SLICE07-run obligation.
+#
+# EXPECTED (a RED):  the RECON05 C-mutation record is eligible to
+#                    discharge N-06 in SLICE07.
+# ACTUAL:            RECON05's own ACT section 8 item 7 says the
+#                    mutation is performed "mutate ONLY the prospective C
+#                    decision (the PolyC successor does not yet exist)",
+#                    i.e. against a PRE-MIGRATION authority state that
+#                    did not exist at SLICE07's C3.
+#
+# COMMAND=./build/parser-surface-recon06-audit N06 <recon05> <slice07>
+#   N06_RECON05_C_MUTATION_DOCUMENTED=1
+#   N06_Q_C_RECON05_EVIDENCE_ELIGIBLE_AS_DISCHARGE=0
+#   EXIT=1
+#
+# COMMAND=grep -n 'the PolyC successor does not yet exist' \
+#           docs/acts/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05.md
+#   461:> same tree, compile a witness, mutate ONLY the prospective C decision
+#   462:> (the PolyC successor does not yet exist), successfully rebuild and run
+#
+# RED_03_REPRODUCED=YES
+# RED_03_IS_A_NO_OP=NO
+#
+# ------------------------------------------------------------------
+# RED-04  N-06 and S7-CC-01 are ONE experiment reported under TWO ids,
+#         so N-06 has no evidence of its own.
+#
+# EXPECTED (a RED):  two independent experiments, each with its own
+#                    subject-specific mutation and its own detector
+#                    firing.
+# ACTUAL:            the predecessor states the double reporting in
+#                    its own words, and the two joined rows carry the
+#                    SAME diagnostic string.
+#
+# COMMAND=./build/parser-surface-recon06-audit N06 <recon05> <slice07>
+#   N06_C3_N06_ROW_SHARES_THE_S7CC01_DIAGNOSTIC=1
+#   N06_C3_S7CC01_ROW_SHARES_THE_N06_DIAGNOSTIC=1
+#   N06_Q_D_N06_AND_S7CC01_INDEPENDENT=0
+#   EXIT=1
+#
+# COMMAND=grep -n 'reported under BOTH N-06 and' \
+#           evidence/ACT-POLYC-SELFHOST-PARSER-SLICE07/c1/negative-control-red.txt
+#   160:# source mutation and its result is reported under BOTH N-06 and
+#   161:# S7-CC-01.
+#
+# RED_04_REPRODUCED=YES
+# RED_04_IS_A_NO_OP=NO
+#
+# ------------------------------------------------------------------
+# RED-05  The real compiler rebuild and witness outcome DID occur -- on
+#         the PolyC subject, so the detector fired on the WRONG subject.
+#
+# This RED is recorded so that the finding is not overclaimed: the
+# experiment was REAL and the restoration WAS byte-identical.  What
+# failed is the SUBJECT BINDING, not the experiment.
+#
+# COMMAND=./build/parser-surface-recon06-audit N06 <recon05> <slice07>
+#   N06_C3_MUTANT_PRODUCTION_BUILD_SUCCESS=1
+#   N06_C3_RESTORATION_BYTE_IDENTICAL=1
+#   N06_C3_AUTHORITATIVE_MAIN_NOT_MUTATED=1
+#   N06_Q_E_REAL_COMPILER_REBUILD_AND_WITNESS=1
+#   N06_Q_A_C_DECISION_MUTANT_EXECUTED=0
+#
+# RED_05_SUBJECT_BINDING_REPRODUCED=YES
+# RED_05_EXPERIMENT_ITSELF_WAS_REAL=YES
+# RED_05_IS_A_NO_OP=NO
+#
+# ------------------------------------------------------------------
+# RED-06  The RECON06 audit verifier itself is not a no-op: it
+#         discriminates.
+#
+# The tool's own SHA-256 known-answer vectors are the discrimination
+# witness for the hashing path; the N06 mode's derived disposition is
+# the discrimination witness for the audit path; and the VERIFY mode
+# detects a deliberately altered digest.  A tool that always answered
+# "PASS" would fail its own selftest and would fail the tampered
+# manifest.
+#
+# COMMAND=./build/parser-surface-recon06-audit --selftest
+#   SELFTEST_PASS=9
+#   SELFTEST_FAIL=0
+#   STATUS=PASS
+#
+# COMMAND=./build/parser-surface-recon06-audit VERIFY <a manifest with two
+#           deliberately altered digests>
+#   MISMATCH	docs/acts/ACT-POLYC-SELFHOST-PARSER-SLICE06-AC11-CORRECTION01.md
+#   MISMATCH	docs/acts/ACT-POLYC-SELFHOST-PARSER-SLICE06.md
+#   VERIFY_OK=0
+#   VERIFY_MISMATCH=2
+#   VERIFY_MISSING=0
+#   STATUS=FAIL
+#   EXIT=1
+#
+# RED_06_REPRODUCED=YES
+# RED_06_IS_A_NO_OP=NO
+#
+# ------------------------------------------------------------------
+# THE REDS THAT THE ACT'S SECTION 7 STEP 5 ALSO NAMES, AND THEIR
+# DISPOSITION AT THIS ENTRY
+#
+# The ACT section 7 step 5 names six REDs:
+#
+#   "missing post-SLICE07 census"            -> NOT REPRODUCED AT C0,
+#        because the census is a C1 deliverable and this ACT has not
+#        reached C1.  It is a FORWARD obligation, discharged at C1.
+#   "incomplete classification"              -> NOT REPRODUCED AT C0
+#        (forward obligation, C1).
+#   "disallowed already-migrated candidate"   -> NOT REPRODUCED AT C0
+#        (forward obligation, C1/C2).
+#   "absent independent ranking"             -> NOT REPRODUCED AT C0
+#        (forward obligation, C2).
+#   "absent object-level G0 oracle"          -> NOT REPRODUCED AT C0
+#        (forward obligation, C2).
+#   "absent causal selection proof"          -> NOT REPRODUCED AT C0
+#        (forward obligation, C2).
+#
+# None of these six is claimed as reproduced.  They are FORWARD
+# obligations of phases C1 and C2, which this ACT does not reach,
+# because the section 1.1 N-06 audit is a PREREQUISITE that HALTS at
+# C0.
+#
+# ------------------------------------------------------------------
+# THE SUMMARY
+#
+RED_COUNT_REPRODUCED=5
+RED_COUNT_FORWARD_OBLIGATIONS_NOT_REPRODUCED=6
+RED_NO_OP_WITNESSES=0
+RED_PRINCIPAL_RED=RED-01 (the N-06 subject binding)
+RED_PRINCIPAL_RED_DISPOSITION=FAIL
+RED_REPRODUCED_BEFORE_ANY_PRODUCTION_CHANGE=YES
+PRODUCTION_MUTATIONS_PERFORMED_BY_THIS_ACT=0

@@ -1,0 +1,129 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON06
+# ACT_PHASE=C0-ENTRY
+# EVIDENCE_KIND=existing-production-authorities
+#
+# THE SEVEN PRODUCTION POLYC PARSER AUTHORITIES, RE-VERIFIED
+# INDEPENDENTLY AT C0 FROM THE LIVE BUILD.
+#
+# This is a RECON06-owned observation.  It is NOT copied from the
+# predecessor's evidence.  Every field below is derived from the live
+# production objects, the live subject objects, the live executable and
+# the live source.
+#
+# Schema:
+#   authority_id  polyc_symbol  selector  selector_state
+#   subject_source  subject_object  subject_object_sha256
+#   subject_defines_symbol  caller_object  caller_imports_symbol
+#   executable_links_symbol  production_call_path
+#   legacy_c_decision_status
+#
+authority_id	POLYC_SYMBOL	SELECTOR	SELECTOR_STATE	SUBJECT_SOURCE	SUBJECT_OBJECT	SUBJECT_OBJECT_SHA256	SUBJECT_DEFINES_SYMBOL	CALLER_OBJECT	CALLER_IMPORTS_SYMBOL	EXECUTABLE_LINKS_SYMBOL	PRODUCTION_CALL_PATH	LEGACY_C_DECISION_STATUS
+POLYC-AUTHORITY-01	BootstrapCalcPadding	HCC_USE_SELFHOST_PARSER_PADDING	ON	tools/bootstrap/selfhost-parser-padding.HC	build/parser-padding-subject.o	187a4de9465e8dbe3c640484b05540daaad4a3267dd1543a169e3c304b02d5b1	YES	build/CMakeFiles/hcc.dir/parser.c.o	YES	YES	parser.c -> padding projection	RETIRED
+POLYC-AUTHORITY-02	BootstrapValidPostControlFlowToken	HCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN	ON	tools/bootstrap/selfhost-parser-control-flow-token.HC	build/parser-control-flow-token-subject.o	078f708d05474430cb3d5c6fc17c0a3d327ab81b74cb24e32512475050723018	YES	build/CMakeFiles/hcc.dir/parser.c.o	YES	YES	parser.c -> control-flow-token validity check (6 call sites)	RETIRED
+POLYC-AUTHORITY-03	BootstrapOperatorPrecedence	HCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE	ON	tools/bootstrap/selfhost-parser-operator-precedence.HC	build/parser-operator-precedence-subject.o	1a932394ba209267ab3a119137f844682f1a12ceeaaca0cde4feaeaa0f8f62f8	YES	build/CMakeFiles/hcc.dir/prslib.c.o	YES	YES	prslib.c -> operator precedence resolution	RETIRED
+POLYC-AUTHORITY-04	BootstrapAstBinOpFromToken	HCC_USE_SELFHOST_PARSER_AST_BINOP	ON	tools/bootstrap/selfhost-parser-slice04.HC	build/parser-ast-binop-subject.o	6d598bc7f0b00ac47642ec06b8cceba641d55a8cfe5498e0a6a995c40f2e054d	YES	build/CMakeFiles/hcc.dir/ast.c.o	YES	YES	ast.c -> binary-operator classification from a token	RETIRED
+POLYC-AUTHORITY-05	BootstrapAstUnaryOpFromToken	HCC_USE_SELFHOST_PARSER_AST_UNARY	ON	tools/bootstrap/selfhost-parser-slice05.HC	build/parser-ast-unary-subject.o	27075194e1d3ff94703b51459cc3e5c8ea472747ea1f255a451a97f44b416e72	YES	build/CMakeFiles/hcc.dir/ast.c.o	YES	YES	ast.c -> unary-operator classification from a token	RETIRED
+POLYC-AUTHORITY-06	BootstrapSwitchArmTerminates	HCC_USE_SELFHOST_PARSER_SWITCH_ARM	ON	tools/bootstrap/selfhost-parser-slice06.HC	build/parser-switch-arm-subject.o	848866e9fea389d574b3cb3e39b54b62fc0c744fe707fcf7c4184714017467f0	YES	build/CMakeFiles/hcc.dir/parser.c.o	YES	YES	parser.c -> switch-arm termination decision (2 call sites)	RETIRED
+POLYC-AUTHORITY-07	BootstrapCompoundBlockAppendsStatement	HCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND	ON	tools/bootstrap/selfhost-parser-slice07.HC	build/parser-compound-block-subject.o	e2dfbcfcb78261957fb9188916705dcc86d589e82a9d9e169f6ae8118237487c	YES	build/CMakeFiles/hcc.dir/parser.c.o	YES	YES	parser.c -> _parseCompoundStatementInternal -> parseCompoundBlockAppendsStatement -> BootstrapCompoundBlockAppendsStatement	RETIRED
+# ---------------------------------------------------------------------------
+#
+# THE MEASURED COMMANDS
+#
+# COMMAND=grep -E '^HCC_USE_SELFHOST' build/CMakeCache.txt
+#   HCC_USE_SELFHOST_PARSER_AST_BINOP:BOOL=ON
+#   HCC_USE_SELFHOST_PARSER_AST_UNARY:BOOL=ON
+#   HCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND:BOOL=ON
+#   HCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN:BOOL=ON
+#   HCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE:BOOL=ON
+#   HCC_USE_SELFHOST_PARSER_PADDING:BOOL=ON
+#   HCC_USE_SELFHOST_PARSER_SWITCH_ARM:BOOL=ON
+#
+# COMMAND=nm build/CMakeFiles/hcc.dir/parser.c.o | grep ' U _Bootstrap'
+#   U _BootstrapCalcPadding
+#   U _BootstrapCompoundBlockAppendsStatement
+#   U _BootstrapSwitchArmTerminates
+#   U _BootstrapValidPostControlFlowToken
+#
+# COMMAND=nm ./hcc | grep ' T _Bootstrap' | sort
+#   0000000100063ac8 T _BootstrapCalcPadding
+#   0000000100063b40 T _BootstrapValidPostControlFlowToken
+#   0000000100063d78 T _BootstrapOperatorPrecedence
+#   0000000100064148 T _BootstrapAstBinOpFromToken
+#   0000000100064338 T _BootstrapAstUnaryOpFromToken
+#   0000000100064450 T _BootstrapSwitchArmTerminates
+#   0000000100064504 T _BootstrapCompoundBlockAppendsStatement
+#
+# COMMAND=for s in <the seven symbols>; do for o in build/CMakeFiles/hcc.dir/*.c.o; do nm $o | grep -q "U _$s\$" && echo "$s <- $(basename $o)"; done; done
+#   BootstrapCalcPadding                   <- parser.c.o
+#   BootstrapValidPostControlFlowToken     <- parser.c.o
+#   BootstrapOperatorPrecedence            <- prslib.c.o
+#   BootstrapAstBinOpFromToken             <- ast.c.o
+#   BootstrapAstUnaryOpFromToken           <- ast.c.o
+#   BootstrapSwitchArmTerminates           <- parser.c.o
+#   BootstrapCompoundBlockAppendsStatement <- parser.c.o
+#
+# COMMAND=for o in <the seven subject objects>; do nm $o | grep -c "T _Bootstrap<sym>"; done
+#   1 for every one of the seven
+#
+# COMMAND=objdump -r build/CMakeFiles/hcc.dir/parser.c.o | grep -i bootstrap
+#   0000000000003a68 ARM64_RELOC_BRANCH26  _BootstrapCompoundBlockAppendsStatement
+#   0000000000003744 ARM64_RELOC_BRANCH26  _BootstrapCompoundBlockAppendsStatement
+#   00000000000033ec ARM64_RELOC_BRANCH26  _BootstrapSwitchArmTerminates
+#   0000000000003208 ARM64_RELOC_BRANCH26  _BootstrapSwitchArmTerminates
+#   0000000000002d84 ARM64_RELOC_BRANCH26  _BootstrapValidPostControlFlowToken
+#   0000000000002ca0 ARM64_RELOC_BRANCH26  _BootstrapValidPostControlFlowToken
+#   0000000000002b88 ARM64_RELOC_BRANCH26  _BootstrapValidPostControlFlowToken
+#   0000000000001a04 ARM64_RELOC_BRANCH26  _BootstrapValidPostControlFlowToken
+#   000000000000196c ARM64_RELOC_BRANCH26  _BootstrapValidPostControlFlowToken
+#   0000000000001918 ARM64_RELOC_BRANCH26  _BootstrapValidPostControlFlowToken
+#
+# --- THE RETIRED C DECISION, MEASURED IN THE PRODUCTION OBJECT ---
+#
+# COMMAND=objdump -d build/CMakeFiles/hcc.dir/parser.c.o \
+#            | awk '/<_parseCompoundStatementInternal>:/,/^$/' | grep -E 'cmp'
+#   396c: 710c011f   cmp w8, #768
+#   39ec: 71002d1f   cmp w8, #11
+#   3a48: 71041c1f   cmp w0, #263          <- AST_DECL: the AUTHORIZED projection guard
+#   3ac0: eb08013f   cmp x9, x8
+#
+# COMMAND=... | grep -cE 'cmp.*#0x100|cmp.*#256'
+#   0
+#
+# The ONLY AST-kind comparison left in the production function is the
+# single `cmp w0, #263` (AST_DECL) at 0x3a48, which is the AUTHORIZED
+# field-read guard that protects the `stmt->declvar` dereference.  It
+# does NOT feed an append/skip decision.  There is ZERO comparison
+# against 256 (AST_GVAR) anywhere in the function, so the legacy C
+# decision is COMPILED OUT of the active production path.
+#
+# The delegation is LOAD-BEARING: the relocation at 0x3a68 is a
+# BRANCH26 to _BootstrapCompoundBlockAppendsStatement from inside
+# _parseCompoundStatementInternal.
+#
+SLICE07_PROJECTION_GUARD_IS_A_STMT_KIND_AST_DECL_FIELD_READ_GUARD=YES
+SLICE07_PROJECTION_GUARD_COMPARES_AST_GVAR=NO
+SLICE07_LEGACY_AST_GVAR_COMPARISONS_IN_PRODUCTION_FUNCTION=0
+SLICE07_DELEGATION_IS_LOAD_BEARING=YES
+#
+# --- THE OBJECT AND EXECUTABLE IDENTITIES ---
+#
+PRODUCTION_PARSER_OBJECT=build/CMakeFiles/hcc.dir/parser.c.o
+PRODUCTION_PARSER_OBJECT_SHA256=253d2404625c5bb2e5f0482465dae809c7d66c7360b1bb31e760f7f44c402246
+PRODUCTION_PRSLIB_OBJECT=build/CMakeFiles/hcc.dir/prslib.c.o
+PRODUCTION_PRSLIB_OBJECT_SHA256=b8172eda93c7001d5df9029c1c6a66c5c1f8db9a12acf596d407d6439f5bca99
+PRODUCTION_AST_OBJECT=build/CMakeFiles/hcc.dir/ast.c.o
+PRODUCTION_AST_OBJECT_SHA256=64776d8ba33bb860e320cdcd9ac6550593592565221f24c1d8f3815e3e51ec8c
+PRODUCTION_EXECUTABLE=./hcc
+PRODUCTION_EXECUTABLE_SHA256=0d8904073be9779aa13d0e858fd8146ab097608e74e1460ad954de27364a7f5a
+#
+# NOTE: the production object and executable digests are IDENTICAL to
+# the ones SLICE07 recorded at C3.  The build is reproducible and the
+# production authority set has not drifted.
+#
+CURRENT_POLYC_PARSER_AUTHORITIES=7
+AUTHORITIES_WITH_SELECTOR_ON=7
+AUTHORITIES_SUBJECT_DEFINES_SYMBOL=7
+AUTHORITIES_CALLER_IMPORTS_SYMBOL=7
+AUTHORITIES_LINKED_IN_EXECUTABLE=7
+AUTHORITIES_WITH_RETIRED_C_DECISION=7
+#

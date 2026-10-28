@@ -7379,3 +7379,75 @@ preselects no successor.
 See
 `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE07.md` and
 `evidence/ACT-POLYC-SELFHOST-PARSER-SLICE07/`.
+
+---
+
+## ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON06 -- HALT (governance, non-blocking)
+
+`ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON06` closed with
+`ACT-Verdict: HALT_N06_FROZEN_OBLIGATION_UNPROVEN`,
+`HALT_CLASS=GOVERNANCE`, `BLOCKS_NEXT=NO`.
+
+**No candidate was selected and no eighth PolyC parser authority is
+authorized.**  The ACT halted at its C0 entry audit, before the
+candidate census, because the predecessor's frozen inherited negative
+control `N-06` was not discharged as written.
+
+The frozen RECON05 control obliges the successor to *"Mutate ONLY the
+selected **C** decision in a disposable worktree, rebuild the real
+compiler, and run the witness."*  The committed SLICE07 C3 evidence
+records the executed mutation as
+`MUTATION_SCOPE=tools/bootstrap/selfhost-parser-slice07.HC ONLY` and
+`MUTATION_IS_IN_SRC_PARSER_C=NO`, and the predecessor's own C1 file
+states that the single experiment's result *"is reported under BOTH N-06
+and S7-CC-01"*.  No frozen RECON05 artifact authorises that subject
+substitution -- the whole frozen `c2/` corpus contains zero such clause
+-- and the frozen `selected-red-contract.md` RED-05 successor-state
+column affirmatively requires *"the C decision is delegated"*, leaving
+no active C decision to mutate.
+
+```text
+N06_DISPOSITION = N06_UNPROVEN
+CURRENT_POLYC_PARSER_AUTHORITIES = 7   (all independently object-verified)
+PRODUCTION_SEMANTIC_DELTA = 0
+NEW_PARSER_FAILURE_IDENTITIES = 0
+NEW_LEXER_FAILURE_IDENTITIES  = 0
+
+PARSER_HOST_ARCH_ASSERTIONS   = 376/376 over 90 test files
+PARSER_ASSERTION_SEQUENCE_MD5 = b6f117eb1386ca80f81bc06226e2a741
+LEXER07_FAILURE_IDENTITY_MD5  = 7ee761440de83552e751e3c3976c1683
+LEXER07_STATUS                = FAIL_KNOWN_BASELINE (15 identities)
+CROSS_TARGET_STATUS           = FAIL_ENVIRONMENT_PREFIX (67)
+F_NO_PYTHON                    = FAIL_KNOWN_BASELINE (exactly 12, zero new)
+F_POLYC_TOOLS                  = UNAVAILABLE (its checker is not landed)
+
+GATE_FAST = PASS
+GATE_PUSH = PASS
+APPEND_ONLY = PASS (11/11)
+F14 = PASS
+FROZEN_PREDECESSOR_PATHS = 298 (0 mismatches, 0 missing)
+```
+
+**What this halt does NOT say.**  The seven PolyC parser authorities
+are real and conserved: every selector is ON, every subject object
+defines its symbol, every caller object imports it, the production
+binary links it, and the legacy C comparison is compiled out of the
+active production path (zero comparisons against `AST_GVAR` in
+`_parseCompoundStatementInternal`).  The SUB-003 migration is a fact
+about the built compiler, not a conclusion drawn from `N-06`.
+SLICE07's historical CLOSE is **not** rewritten or reopened (F14).
+
+**The required correction** is a separate, append-only,
+evidence-hygiene ACT -- `ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01`
+(proposed, `ACTIVE`).  It must either execute the literal N-06 C
+mutation as N-06's own evidence, or record an explicit pre-declared
+frozen amendment authorising the successor-authority analogue, and it
+must disambiguate the N-06 / S7-CC-01 double reporting.  **No
+production source change is required, and none is proposed.**
+
+**SLICE08 is NOT authorized.**  It requires an ACT whose own selection
+and terminality succeed; this ACT's selection did not happen.
+
+See
+`docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON06.md` and
+`evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON06/`.
