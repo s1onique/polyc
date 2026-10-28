@@ -1,0 +1,191 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE07
+# ACT_PHASE=C0-ENTRY
+# EVIDENCE_KIND=successor-activation
+#
+# THE SUCCESSOR ACTIVATION AND THE PREDECESSOR QUALIFICATION.
+#
+# ---------------------------------------------------------------------------
+# 1. THE PREDECESSOR C4 CLOSE IDENTITY
+# ---------------------------------------------------------------------------
+#
+# COMMAND=git rev-parse HEAD
+#   1a3d2d520306f02ca08adb29c62688748e33eab8
+#
+# COMMAND=git log --format='%H %s' 005790c..1a3d2d5
+#   1a3d2d520306f02ca08adb29c62688748e33eab8 ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05 C4: CLOSE -- ...
+#   cfc981bfbd4909fd9c541fd1691ae52146d8c6e3 ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05 C3: ...
+#   062a68fcf98937510f78368d16bb51552ca22377 ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05 C2: ...
+#   517f722be469b252343dc17ec54fb4ca5e2882cb ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05 C1: ...
+#   b48eab6f058d49ce9604201447f278c6962fbd8b ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05 C0: ...
+#
+# COMMAND=git log -1 --format='%B' <sha> | git interpret-trailers --parse
+#   C0 -> ACT: ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05 / ACT-Phase: RED
+#   C1 -> ACT: ... / ACT-Phase: EVIDENCE
+#   C2 -> ACT: ... / ACT-Phase: IMPL
+#   C3 -> ACT: ... / ACT-Phase: EVIDENCE
+#   C4 -> ACT: ... / ACT-Phase: CLOSE / ACT-Verdict: PASS
+#
+# RECON05_COMMIT_COUNT=5
+# RECON05_PHASES=RED,EVIDENCE,IMPL,EVIDENCE,CLOSE
+# RECON05_CLOSE_VERDICT=PASS
+#
+# COMMAND=sh scripts/quality/factory-v2-range-check.sh \
+#           ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05 1a3d2d520306f02ca08adb29c62688748e33eab8
+#   ACT=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05
+#   ENTRY=005790c53bb4e4798d58809940548552f0993d47
+#   FIRST=b48eab6f058d49ce9604201447f278c6962fbd8b
+#   CLOSE=1a3d2d520306f02ca08adb29c62688748e33eab8
+#   COMMITS=5
+#   VERDICT=PASS
+#   STATUS=PASS
+#
+# PREDECESSOR_CLOSE_VERIFIED=YES
+#
+# ---------------------------------------------------------------------------
+# 2. THE EXTERNAL POST-CLOSE TERMINALITY
+# ---------------------------------------------------------------------------
+#
+# The successor authorization (RECON05 c2/successor-authorization.md)
+# is CONDITIONAL on four conditions:
+#
+#   CONDITION_1=This ACT's C3 must have demonstrated AC01..AC49.
+#   CONDITION_2=Exactly ONE complete frozen selected-candidate contract
+#               must exist.  It does.
+#   CONDITION_3=This ACT's C4 CLOSE must have been executed with valid
+#               Factory trailers.
+#   CONDITION_4=The EXTERNAL post-CLOSE terminality check must have
+#               passed.
+#
+# All four are satisfied:
+#
+#   CONDITION_1 -> RECON05 c3/mandatory-ac-status.tsv records AC01..AC49
+#                  as PASS and AC50 as DEFERRED_TO_CLOSE.
+#   CONDITION_2 -> exactly one frozen selected contract exists under
+#                  RECON05 c2/ (selected-id-and-source.tsv,
+#                  selected-abi.md, selected-production-seam.md,
+#                  selected-state-and-ownership.tsv,
+#                  selected-legacy-oracle.md, selected-fixture-contract.tsv,
+#                  selected-red-contract.md, selected-causal-contract.md,
+#                  selected-negative-controls.md,
+#                  selected-provenance-contract.md,
+#                  selected-conservation-contract.md,
+#                  selected-out-of-scope.md).
+#   CONDITION_3 -> the C4 CLOSE exists with valid Factory trailers
+#                  (measured above).
+#   CONDITION_4 -> the external post-CLOSE terminality receipt is
+#                  recorded in RECON05 c4/terminality.txt, which states
+#                  that the external read-only verification confirmed
+#                  the commit range (5), the phases, the trailer
+#                  parsing, the 156 unchanged artifact digests, the
+#                  clean worktree, zero replace refs, the Factory-v2
+#                  range check (PASS), the append-only invariant
+#                  (11/11 PASS), F14 (PASS), the F-POLYC-TOOLS
+#                  availability truth (UNAVAILABLE), the patch hygiene
+#                  (PASS) and zero post-close commits.
+#
+#   RECON05 c4/terminality.txt records:
+#     MANDATORY_AC_TOTAL=50
+#     MANDATORY_AC_PASS=50
+#     MANDATORY_AC_DEFERRED_TO_CLOSE=0
+#     MANDATORY_AC_FAIL=0
+#     MANDATORY_AC_UNPROVEN=0
+#     PROPOSED_NEXT_ACT=ACT-POLYC-SELFHOST-PARSER-SLICE07
+#     PROPOSED_NEXT_ACT_TARGET=SUB-003
+#     PROPOSED_NEXT_ACT_STATUS=ACTIVE
+#
+# POST_CLOSE_CONTINUATION=0
+# COMMAND=git log --format='%H' 1a3d2d5..HEAD | wc -l
+#   0
+#
+# PREDECESSOR_TERMINALITY_VERIFIED=YES
+# SUCCESSOR_STATUS=ACTIVE
+# SUCCESSOR_NOT_ACTIVE_HALT=NOT_TRIGGERED
+
+
+# ---------------------------------------------------------------------------
+# 3. THE AC42 PREDECESSOR QUALIFICATION (ACT section 1.2)
+# ---------------------------------------------------------------------------
+#
+# The predecessor's executed SUB-003 causal experiment successfully
+# REBUILT the compiler, then the mutant FAILED TO COMPILE a witness
+# that the pristine compiler ACCEPTED AND RAN.  The frozen AC42
+# wording also uses the phrase "compiled witness changes".
+#
+# THE PRECISE WITNESSED OUTPUT CHANNEL, CLASSIFIED FROM THE ACTUAL
+# COMMITTED c2/selected-causal-contract.md AND c3/causal-mutation-and-restoration.txt:
+#
+#   CHANNEL=COMPILER_ACCEPTANCE_AND_DIAGNOSTIC
+#
+# The evidence, verbatim from the committed artifacts:
+#
+#   c2/selected-causal-contract.md section 3.4:
+#
+#     | Build                       | Witness compile | Witness run |
+#     | PRISTINE (unmutated)        | succeeds        | WITNESS_OUTPUT=12 2, exit 0 |
+#     | MUTANT (SUB-003 gone)       | FAILS           | no executable produced |
+#
+#     The mutant's diagnostic is:
+#       ERROR: Mapping exists for 1 -> %l2 i64 local
+#
+#   c3/causal-mutation-and-restoration.txt:
+#
+#     PRISTINE  compiles and runs  -> WITNESS_OUTPUT=12 2   (exit 0)
+#     MUTANT    FAILS TO COMPILE  -> ERROR: Mapping exists for 1 -> %l2 i64 local
+#
+#     THE 90-FILE PRODUCTION SUITE, RUN WITH THE MUTANT COMPILER:
+#     PRISTINE  376/376  md5=b6f117eb1386ca80f81bc06226e2a741
+#     MUTANT    371/371  md5=dc2f36f1bd63bca22fc7ea57359a770d
+#
+#     CAUSAL_DIRECTION=THE_MUTANT_IS_STRICTLY_WORSE
+#     CAUSAL_WITNESS_COMPILE=PRISTINE_OK_MUTANT_FAILS
+#
+# THE CLASSIFICATION IS EXACT AND IS NOT RESTATED:
+#
+#   * The channel is COMPILER ACCEPTANCE / DIAGNOSTIC.  The mutant
+#     compiler REJECTED the source at compile time with a diagnostic.
+#   * It is NOT an AST/IR output change.
+#   * It is NOT a compiled-program RUNTIME output change, because no
+#     mutant executable was produced for the witness.
+#
+# WHY THIS DOES NOT TRIGGER HALT_PREDECESSOR_CAUSAL_CONTRACT_CONFLICT:
+#
+# The frozen successor contract (RECON05 c2/selected-causal-contract.md
+# section 3.4, and c2/selected-red-contract.md RED-05) requires, for
+# the MUTATED direction:
+#
+#   "the pristine compiler compiles and runs the witness, and the
+#    mutant compiler FAILS TO COMPILE it"
+#
+# That is EXACTLY the channel that was observed and recorded by the
+# predecessor.  The frozen successor contract therefore REQUIRES the
+# compiler-acceptance channel, NOT a both-sides-compiles runtime
+# output differential.  There is no conflict to report.
+#
+# The SLICE07 ACT section 7.3 additionally requires that, where the
+# mutant REJECTS compilation, the observation be classified HONESTLY as
+# COMPILER_ACCEPTANCE_CHANGED rather than as a changed runtime output.
+# This ACT adopts that classification discipline and will report the
+# observed channel exactly as it is.
+#
+# SCOPE NOTE FOR THE C3 EXPERIMENT: because the predecessor
+# established that REMOVING the SUB-003 decision makes the compiler
+# REJECT a block-scope `static` declaration, a PolyC-source mutant
+# that flips the predicate polarity is expected to produce a COMPILER
+# ACCEPTANCE change of the same shape.  The C3 experiment will MEASURE
+# the actual channel and will report it truthfully; it will NOT assert
+# a runtime output change that was not observed.
+#
+# PRECEDESSOR_CAUSAL_CHANNEL_CLASSIFIED=COMPILER_ACCEPTANCE_AND_DIAGNOSTIC
+# PRECEDESSOR_CAUSAL_WITNESS_COMPILE=PRISTINE_OK_MUTANT_FAILS
+# HALT_PREDECESSOR_CAUSAL_CONTRACT_CONFLICT=NOT_TRIGGERED
+#
+# ---------------------------------------------------------------------------
+# 4. THE VERDICT
+# ---------------------------------------------------------------------------
+#
+# PREDECESSOR_CLOSE_VERIFIED=YES
+# PREDECESSOR_TERMINALITY_VERIFIED=YES
+# SUCCESSOR_STATUS=ACTIVE
+# SUCCESSOR_AUTHORIZED_TO_EXECUTE=YES
+# SELECTED_CANDIDATE_ID=SUB-003
+# SELECTED_CANDIDATE_ONLY=YES

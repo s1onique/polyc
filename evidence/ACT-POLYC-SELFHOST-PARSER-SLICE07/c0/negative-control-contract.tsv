@@ -1,0 +1,122 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE07
+# ACT_PHASE=C0-ENTRY
+# EVIDENCE_KIND=negative-control-contract
+#
+# THE FROZEN NEGATIVE-CONTROL CONTRACT.
+#
+# ---------------------------------------------------------------------------
+# THE AUTHORITATIVE INHERITED CONTROL COUNT
+# ---------------------------------------------------------------------------
+#
+# The predecessor's HANDOFF prose (line 438) says the frozen contract
+# has "twenty-nine negative controls".  The DIGEST does NOT contain a
+# 29-ID list, so the count and the IDs are derived from the ACTUAL
+# committed artifacts, never invented from prose.
+#
+# COMMAND=grep -o '^## N-[0-9]*' \
+#           evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05/c2/selected-negative-controls.md
+#   ## N-01 ... ## N-10
+#
+# COMMAND=grep -oE '^[A-Z]{2}-[0-9]+' \
+#           evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05/c3/negative-control-join.tsv | sort -u
+#   CC-01 CC-02 CC-03 CC-04
+#   EC-01 EC-02 EC-03 EC-04 EC-05 EC-06
+#   IC-01 IC-02 IC-03 IC-04
+#   RC-01 RC-02 RC-03 RC-04 RC-05
+#   (19 ids)
+#
+# RECONCILIATION:  19 (the reconnaissance controls RECON05 itself
+# executed and joined at C3) + 10 (the FROZEN SUCCESSOR controls
+# N-01..N-10 that this ACT inherits) = 29.  The "twenty-nine" is
+# therefore EXPLAINED, not contradicted.
+#
+# The 19 reconnaissance controls are RECON05's OWN evidence and are
+# NOT re-run by this ACT; they are already executed and joined.
+#
+# The 10 N-xx controls are the INHERITED SET.  This ACT MUST run every
+# one of them, with their IDs, mutations and intended detectors
+# UNCHANGED.
+#
+# INHERITED_CONTROL_COUNT=10
+# INHERITED_CONTROL_IDS=N-01,N-02,N-03,N-04,N-05,N-06,N-07,N-08,N-09,N-10
+# INHERITED_CONTROL_NAMESPACE=RECON05_c2_selected-negative-controls.md
+# INHERITED_CONTROL_IDS_RENUMBERED=NO
+# INHERITED_CONTROL_IDS_OMITTED=NO
+# INHERITED_CONTROL_DETECTORS_REINTERPRETED=NO
+#
+# ---------------------------------------------------------------------------
+# THE INHERITED CONTROLS, VERBATIM FROM THE FROZEN FILE
+# ---------------------------------------------------------------------------
+#
+# Schema: control_id <TAB> mutation <TAB> intended_detector <TAB> source
+#
+N-01	Flip the component's AST_GVAR constant (256 -> 257).	FIXTURE_SEMANTIC_MISMATCH	RECON05 c2/selected-negative-controls.md
+N-02	Add an out-of-enum range check to the component.	FIXTURE_SEMANTIC_MISMATCH	RECON05 c2/selected-negative-controls.md
+N-03	Always evaluate stmt->declvar->kind, even when stmt_kind is not AST_DECL.	FIXTURE_SEMANTIC_MISMATCH or a CRASH at the seam	RECON05 c2/selected-negative-controls.md
+N-04	Leave the legacy C comparison in the delegated branch and ALSO call the component.	FUNCTION_SCOPED_CODE_CLAIM_REJECTED	RECON05 c2/selected-negative-controls.md
+N-05	Build the legacy oracle from a source-extracted condition instead of from the REAL production translation unit, or link it against the PolyC component.	ORACLE_PROVENANCE_VIOLATION	RECON05 c2/selected-negative-controls.md
+N-06	Mutate ONLY the selected C decision in a disposable worktree, rebuild the real compiler, and run the witness.	CAUSAL_DIRECTION_CHANGE	RECON05 c2/selected-negative-controls.md
+N-07	Delete one fixture row, or emit it twice.	FIXTURE_SEMANTIC_MISMATCH	RECON05 c2/selected-negative-controls.md
+N-08	Flip exactly one fixture row's expected outcome.	FIXTURE_SEMANTIC_MISMATCH	RECON05 c2/selected-negative-controls.md
+N-09	Introduce a "not found" sentinel into the component.	FIXTURE_SEMANTIC_MISMATCH	RECON05 c2/selected-negative-controls.md
+N-10	Pass the host Ast POINTER to the component instead of the two copied scalars.	ABI_CONTRACT_VIOLATION	RECON05 c2/selected-negative-controls.md
+#
+# NOTE ON N-06: the frozen mutation text says "mutate ONLY the selected C
+# decision".  In THIS ACT the production authority IS the PolyC
+
+# ---------------------------------------------------------------------------
+# THE SLICE07-OWNED CONTROLS (A SEPARATE, NON-COLLIDING NAMESPACE)
+# ---------------------------------------------------------------------------
+#
+# These are the MINIMUM subject-specific obligations of the SLICE07
+# ACT section 7.2.  They are ADDITIVE and do NOT replace or renumber
+# the inherited set.  Their IDs are in the S7-* namespace, which does
+# not collide with N-01..N-10.
+#
+# Schema: control_id <TAB> mutation <TAB> intended_detector
+#
+S7-FC-01	Delete one fixture row.	Missing exact fixture ID
+S7-FC-02	Duplicate one fixture ID.	Duplicate ID
+S7-FC-03	Add an unknown fixture ID.	Unknown ID with no false missing/duplicate explanation
+S7-FC-04	Flip one expected outcome.	Exact input ID and semantic mismatch
+S7-FC-05	Swap one live enum value or range digest.	Source identity/enum mismatch
+S7-PR-01	Eagerly read stmt->declvar->kind on non-AST_DECL.	Host short-circuit projection violation, actually observed in instrumentation
+S7-PR-02	Disable needed AST_DECL projection read.	Wrong AST_DECL/AST_GVAR semantic or read-count detector
+S7-PR-03	Return the opposite result for AST_DECL/AST_GVAR.	G0 differential and real production witness failure
+S7-PR-04	Keep an active legacy C AST_GVAR comparison despite enabled selector.	Function-scoped duplicate-authority detector fails
+S7-PR-05	Link PolyC symbol without actually calling it from production.	Load-bearing object/call-site detector fails
+S7-PR-06	Disable delegation while leaving PolyC object available.	Missing production delegation detector fails
+S7-PV-01	Relabel same compiler binary as G2 or G3.	Producer identity/ancestry detector fails
+S7-PV-02	Substitute G0 object referencing the PolyC subject.	G0 independence detector fails
+S7-PV-03	Remove the PolyC subject object or wrong-symbol export.	Real production build/link fails for intended reason
+S7-PV-04	Substitute disassembly with unrelated cmp/tst outside selected function.	Function/object-scoped authority detector rejects it
+S7-PV-05	Corrupt a stage/fixture result or delete a generation row.	Exact generation/row join detects mismatch or missing ID
+S7-CC-01	Change PolyC predicate to admit/skip the wrong semantic class.	Successfully rebuilt mutant production hcc changes real compilation behavior, source restored
+S7-CC-02	Fail to restore one PolyC source byte.	Restoration hash check fails
+#
+# NEW_CONTROL_COUNT=18
+# NEW_CONTROL_NAMESPACE=S7
+# NEW_CONTROL_IDS_COLLIDE_WITH_INHERITED=NO
+#
+# ---------------------------------------------------------------------------
+# THE TOTAL
+# ---------------------------------------------------------------------------
+#
+# TOTAL_CONTROL_COUNT=28
+# TOTAL_CONTROL_NAMESPACE_DISJOINT=YES
+# CONTROL_COUNT_ARITHMETIC=10 inherited + 18 new = 28
+#
+# EVERY CONTROL MUST RECORD: ID, subject, provenance, pristine
+# command/result, adverse edit, rebuilt artifacts, command/result,
+# expected detector, actual detector, exact exit/failure class,
+# restoration bytes, and post-restore result.  A control passing only
+# on pristine evidence is UNPROVEN.
+
+# component, so the subject-specific analogue of N-06 is the PolyC
+# source mutation.  The DETECTOR class (CAUSAL_DIRECTION_CHANGE) and
+# the REASON (the executed experiment observed exactly this direction)
+# are preserved exactly; the subject is the PolyC source, which is
+# what the SLICE07 ACT section 7.2/7.3 additionally requires
+# (S7-CC-01).  The detector is NOT reinterpreted and the control is
+# NOT omitted: it is executed against the PolyC subject and its
+# result is reported under BOTH N-06 and S7-CC-01.

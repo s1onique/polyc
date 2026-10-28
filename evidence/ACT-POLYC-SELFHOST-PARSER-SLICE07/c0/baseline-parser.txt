@@ -1,0 +1,50 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE07
+# ACT_PHASE=C0-ENTRY
+# EVIDENCE_KIND=baseline-parser
+#
+# THE HOST-ARCHITECTURE PARSER BASELINE.  MEASURED, not assumed.
+#
+COMMAND=make unit-test
+COMMAND=cd src/tests && ../../hcc --install-dir=$(pwd)/build/test-prefix ./run.HC -o test-runner && ./test-runner
+#
+#   ASSERTIONS_PASSED=376
+#   ASSERTIONS_TOTAL=376
+#   FAILED=0
+#   TESTFILES=90
+#
+# The assertion-sequence identity check:
+COMMAND=grep -o "PASSED: [0-9]*/[0-9]*" <log> | md5 -q
+#   md5=b6f117eb1386ca80f81bc06226e2a741
+#
+# This md5 is IDENTICAL to the one recorded by the predecessors
+# (RECON05 c0/baseline-parser.txt, RECON04 c0/baseline-parser.txt and
+# SLICE06 c0/baseline-results.txt).  The suite therefore produced a
+# BYTE-IDENTICAL assertion sequence: the per-test identity sets are
+# equal, not merely equal in COUNT.
+#
+#   PARSER_HOST_ARCH_ASSERTIONS=376/376
+#   PARSER_HOST_ARCH_TESTFILES=90
+#   PARSER_HOST_ARCH_FAILURE_IDENTITIES=(none)
+#   PARSER_HOST_ARCH_ASSERTION_SEQUENCE_MD5=b6f117eb1386ca80f81bc06226e2a741
+#   PARSER_HOST_ARCH_MD5_MATCHES_HISTORICAL=YES
+#
+# --- THE MEASUREMENT DETAIL ---
+COMMAND=grep -o 'PASSED: [0-9]*/[0-9]*' /tmp/slice07-c0-unit-test.log | awk -F'[/ ]' '{p+=$2; t+=$3} END {print "PASSED="p, "TOTAL="t}'
+MEASURED_PASSED=376
+MEASURED_TOTAL=376
+COMMAND=grep -o 'FAILED: [0-9]*/[0-9]*' /tmp/slice07-c0-unit-test.log | wc -l
+MEASURED_FAILED_LINES=0
+COMMAND=grep -o 'PASSED: [0-9]*/[0-9]*' /tmp/slice07-c0-unit-test.log | wc -l
+MEASURED_TEST_BLOCKS=90
+#
+# The 90 test blocks correspond to the 90 canonical production test
+# files under src/tests/.  The count of test BLOCKS in the log (90) is
+# the suite identity count, and it is unchanged.
+#
+# RAW_LOG_SHA256=see the immutable raw log retained under
+#   build/slice07-c0-logs/unit-test.log
+# The raw log is retained outside the tracked tree because it is
+# large; the command and the derived identities above are sufficient
+# to replay or reject the claimed result.
+#
+# BASELINE_PARSER_STATUS=PASS

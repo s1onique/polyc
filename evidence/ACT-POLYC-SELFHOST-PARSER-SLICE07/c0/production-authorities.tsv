@@ -1,0 +1,50 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE07
+# ACT_PHASE=C0-ENTRY
+# EVIDENCE_KIND=production-authorities
+#
+# THE SIX EXISTING POLYC PARSER AUTHORITIES, REVALIDATED AS PRODUCTION-ACTIVE.
+#
+# Each authority is (a) ENABLED by its own dedicated macro in the PRODUCTION
+# compile flags, (b) IMPORTED as an UNDEFINED reference by the PRODUCTION
+# parser object, (c) DEFINED in its own PolyC subject object, and (d) LINKED
+# into the PRODUCTION ./hcc binary as a global text symbol.
+#
+COMMAND=grep -o "HCC_USE_SELFHOST[A-Z_]*" build/CMakeFiles/hcc.dir/flags.make | sort -u
+PRODUCTION_FLAG=HCC_USE_SELFHOST_PARSER_AST_BINOP
+PRODUCTION_FLAG=HCC_USE_SELFHOST_PARSER_AST_UNARY
+PRODUCTION_FLAG=HCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN
+PRODUCTION_FLAG=HCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE
+PRODUCTION_FLAG=HCC_USE_SELFHOST_PARSER_PADDING
+PRODUCTION_FLAG=HCC_USE_SELFHOST_PARSER_SWITCH_ARM
+
+COMMAND=nm build/CMakeFiles/hcc.dir/parser.c.o | grep " U _Bootstrap"
+PRODUCTION_PARSER_OBJECT_IMPORT=U _BootstrapCalcPadding
+PRODUCTION_PARSER_OBJECT_IMPORT=U _BootstrapSwitchArmTerminates
+PRODUCTION_PARSER_OBJECT_IMPORT=U _BootstrapValidPostControlFlowToken
+
+COMMAND=nm ./hcc | grep " T _Bootstrap..."
+PRODUCTION_BINARY_DEFINES=T _BootstrapAstBinOpFromToken
+PRODUCTION_BINARY_DEFINES=T _BootstrapAstUnaryOpFromToken
+PRODUCTION_BINARY_DEFINES=T _BootstrapCalcPadding
+PRODUCTION_BINARY_DEFINES=T _BootstrapOperatorPrecedence
+PRODUCTION_BINARY_DEFINES=T _BootstrapSwitchArmTerminates
+PRODUCTION_BINARY_DEFINES=T _BootstrapValidPostControlFlowToken
+
+# --- THE SUBJECT OBJECTS THAT DEFINE THEM ---
+SUBJECT_OBJECT=build/parser-padding-subject.o SYMBOL=BootstrapCalcPadding
+SUBJECT_OBJECT=build/parser-control-flow-token-subject.o SYMBOL=BootstrapValidPostControlFlowToken
+SUBJECT_OBJECT=build/parser-operator-precedence-subject.o SYMBOL=BootstrapOperatorPrecedence
+SUBJECT_OBJECT=build/parser-ast-binop-subject.o SYMBOL=BootstrapAstBinOpFromToken
+SUBJECT_OBJECT=build/parser-ast-unary-subject.o SYMBOL=BootstrapAstUnaryOpFromToken
+SUBJECT_OBJECT=build/parser-switch-arm-subject.o SYMBOL=BootstrapSwitchArmTerminates
+
+BootstrapCalcPadding                 MACRO=YES  U=YES  T=NO
+BootstrapValidPostControlFlowToken   MACRO=YES  U=YES  T=NO
+BootstrapOperatorPrecedence           MACRO=YES  U=YES  T=NO
+BootstrapAstBinOpFromToken            MACRO=YES  U=YES  T=NO
+BootstrapAstUnaryOpFromToken          MACRO=YES  U=YES  T=NO
+BootstrapSwitchArmTerminates          MACRO=YES  U=YES  T=NO
+
+SIX_EXISTING_AUTHORITIES_PRODUCTION_ACTIVE=YES
+SIX_EXISTING_AUTHORITIES_COUNT=6
+NEW_POLYC_AUTHORITIES_COUNT_AT_ENTRY=6

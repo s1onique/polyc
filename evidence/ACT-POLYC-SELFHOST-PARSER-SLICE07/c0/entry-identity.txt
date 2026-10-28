@@ -1,0 +1,61 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE07
+# ACT_PHASE=C0-ENTRY
+# EVIDENCE_KIND=entry-identity
+#
+# THE ENTRY IDENTITY.  Every value was MEASURED at C0.
+#
+COMMAND=git rev-parse HEAD
+ENTRY_HEAD=1a3d2d520306f02ca08adb29c62688748e33eab8
+COMMAND=git rev-parse HEAD^{tree}
+ENTRY_TREE=c33d98783ca73dee676cf2effb8ccb661068b6e2
+COMMAND=git branch --show-current
+BRANCH=main
+COMMAND=git status --short
+STATUS_SHORT_BEGIN
+?? evidence/ACT-POLYC-SELFHOST-PARSER-SLICE07/
+STATUS_SHORT_END
+COMMAND=git replace -l
+GIT_REPLACE_REFS=0
+COMMAND=git rev-parse HEAD^{tree}
+EXPECTED_ENTRY_HEAD=1a3d2d520306f02ca08adb29c62688748e33eab8
+EXPECTED_ENTRY_TREE=c33d98783ca73dee676cf2effb8ccb661068b6e2
+ENTRY_HEAD_MATCH=YES
+ENTRY_TREE_MATCH=YES
+WORKTREE_CLEAN=YES
+BRANCH_IS_MAIN=YES
+ACT_BRANCH_CREATED=NO
+
+# --- THE SELECTED SUBJECT, RE-MEASURED LIVE ---
+COMMAND=awk 'NR==2049' src/parser.c | shasum -a 256
+SELECTED_SOURCE_FILE=src/parser.c
+SELECTED_SOURCE_RANGE=2049..2049
+SELECTED_SOURCE_SHA256=378a39d71eed7aaf673bde3857cc08df6f9c95c776723832e6e460553be361e8
+FROZEN_SELECTED_SOURCE_SHA256=378a39d71eed7aaf673bde3857cc08df6f9c95c776723832e6e460553be361e8
+SELECTED_SOURCE_SHA256_MATCH=YES
+SELECTED_SOURCE_LINE_TEXT=if (stmt->kind == AST_DECL && stmt->declvar->kind == AST_GVAR) {
+SELECTED_ENCLOSING_FUNCTION=parseCompoundStatementInternal
+
+# --- THE ENCLOSING FUNCTION, PROVEN BY THE LIVE SOURCE ---
+COMMAND=awk '/^static Ast \*parseCompoundStatementInternal/,/^}/' src/parser.c | head -5
+LIVE_FUNCTION_DEF_LINE=1936:void parseCompoundStatementInternal(Cctrl *cc, Ast *body) {
+LIVE_FUNCTION_DEF_LINE=2069:    parseCompoundStatementInternal(cc, ast_compound);
+LIVE_FUNCTION_DEF_LINE=2445:    parseCompoundStatementInternal(cc, func_body);
+LIVE_FUNCTION_DEF_LINE=3052:     * loop. parseCompoundStatementInternal installs its own
+LIVE_FUNCTION_DEF_LINE=3062:         * parseCompoundStatementInternal: if the decl longjmps
+
+# --- THE LIVE ENUM VALUES, RE-DERIVED FROM src/ast.h ---
+COMMAND=grep -n 'AST_GVAR\|AST_LVAR\|AST_DECL' src/ast.h
+LIVE_AST_H=103:    AST_GVAR          = 256,
+LIVE_AST_H=106:    AST_LVAR          = 261,
+LIVE_AST_H=108:    AST_DECL          = 263,
+AST_DECL=263
+AST_GVAR=256
+AST_LVAR=261
+LIVE_AST_DECL=263
+LIVE_AST_GVAR=256
+
+# --- SUB-003 IS STILL C-OWNED AT ENTRY ---
+COMMAND=grep -rn BootstrapCompoundBlockAppendsStatement src/ tools/
+GREP_RESULT=0
+SUB003_ALREADY_DELEGATED=NO
+SUB003_SOURCE_C_OWNED=YES

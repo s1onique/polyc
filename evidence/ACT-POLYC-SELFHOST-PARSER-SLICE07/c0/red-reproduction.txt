@@ -1,0 +1,145 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE07
+# ACT_PHASE=C0-ENTRY
+# EVIDENCE_KIND=red-reproduction
+#
+# THE FROZEN RED CONTRACT, REPRODUCED AGAINST THE REAL ENTRY STATE.
+#
+# The predecessor's frozen RED contract is
+# evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05/c2/selected-red-contract.md.
+# Every RED below is reproduced against the REAL production object and
+# the REAL production source at the entry tree.  No RED is satisfied by
+# a no-op shell exit, an invented test runner or a string search alone.
+#
+# ---------------------------------------------------------------------------
+# RED-01 -- the PolyC component does not exist yet
+# ---------------------------------------------------------------------------
+#
+# COMMAND=ls tools/bootstrap/selfhost-parser-slice07.HC
+#   ls: cannot access 'tools/bootstrap/selfhost-parser-slice07.HC': No such file or directory
+#
+# COMMAND=find tools/bootstrap -name 'selfhost-parser-slice07.HC' | wc -l
+#   0
+#
+# REASON=The production subject does not exist.  There is no PolyC
+#         source to compile, so no PolyC authority can be in force.
+#
+# RED_01_STATE=REPRODUCED
+#
+# ---------------------------------------------------------------------------
+# RED-02 -- the delegation is not load-bearing
+# ---------------------------------------------------------------------------
+#
+# COMMAND=nm build/CMakeFiles/hcc.dir/parser.c.o | grep BootstrapCompoundBlock
+#   (no output)
+#
+# The production object carries NO undefined reference to
+# _BootstrapCompoundBlockAppendsStatement.  The symbol is ABSENT, so
+# the delegation is not load-bearing.
+#
+# RED_02_STATE=REPRODUCED
+#
+# ---------------------------------------------------------------------------
+# RED-03 -- the legacy decision is still compiled in
+# ---------------------------------------------------------------------------
+#
+# COMMAND=objdump -d build/CMakeFiles/hcc.dir/parser.c.o
+# COMMAND=objdump -d build/CMakeFiles/hcc.dir/parser.c.o \
+#         | sed -n '/<_parseCompoundStatementInternal>:/,/^$/p'
+#
+# The function is a GLOBAL symbol; its Mach-O spelling carries the
+# leading underscore:
+#
+#   COMMAND=nm build/CMakeFiles/hcc.dir/parser.c.o | grep CompoundStatementInternal
+#     0000000000003734 T _parseCompoundStatementInternal
+#
+# The EXACT legacy decision, inside that function:
+#
+#     3a20: b9400008     ldr  w8, [x0]          ; stmt->kind
+#     3a24: 71041d1f     cmp  w8, #263          ; == AST_DECL
+#     3a28: 540000a1     b.ne 0x3a3c           ; SHORT-CIRCUIT: skip the declvar load
+#     3a2c: f9401828     ldr  x8, [x1, #48]     ; stmt->declvar
+#     3a30: b9400108     ldr  w8, [x8]          ; stmt->declvar->kind
+#     3a34: 7104011f     cmp  w8, #256          ; == AST_GVAR
+#     3a38: 54ffed20     b.eq 0x37dc           ; -> SKIP (continue)
+#     3a3c: f9401e80     ldr  x0, [x20, #56]   ; listAppend(body->stms, stmt)
+#
+# The object therefore contains BOTH the AST_DECL (263) comparison and
+# the AST_GVAR (256) comparison, i.e. the legacy C decision is STILL
+# THE PRODUCTION AUTHORITY.
+#
+# THIS IS ALSO THE MEASURED SHORT-CIRCUIT EVIDENCE: the `b.ne` at
+# 0x3a28 skips the `ldr` at 0x3a2c, so stmt->declvar is read ONLY
+# when stmt->kind == AST_DECL.  The C2 delegation MUST preserve this
+# structure.
+#
+# RED_03_STATE=REPRODUCED
+#
+# ---------------------------------------------------------------------------
+# RED-04 -- the component's ABI is wrong / absent
+# ---------------------------------------------------------------------------
+#
+# The component does not exist (RED-01), so no differential against the
+# real C oracle can be run.  The fixture and the real G0 production-TU
+# oracle are themselves built at C1; at C0 there is nothing to compare.
+#
+# RED_04_STATE=REPRODUCED
+#
+# ---------------------------------------------------------------------------
+# RED-05 -- the causal direction is not established for a PolyC source
+# ---------------------------------------------------------------------------
+#
+# The predecessor's executed causal experiment (RECON05
+# c2/selected-causal-contract.md section 3) mutated src/parser.c, NOT a
+# PolyC source, because the PolyC successor did not exist yet:
+#
+#   PRISTINE  witness compiles and runs -> WITNESS_OUTPUT=12 2 (exit 0)
+#   MUTANT    witness FAILS TO COMPILE  -> ERROR: Mapping exists for 1 -> %l2 i64 local
+#
+# For THIS ACT the causal experiment must mutate the real .HC
+# component.  No .HC component exists, so a compiled-program mutation
+# control is NOT YET SATISFIABLE by a PolyC source change.
+#
+# COMMAND=find tools/bootstrap -name 'selfhost-parser-slice07.HC' | wc -l
+#   0
+#
+# RED_05_STATE=REPRODUCED
+#
+# ---------------------------------------------------------------------------
+# RED-06 -- no dedicated production selector exists
+# ---------------------------------------------------------------------------
+#
+# COMMAND=grep -c 'HCC_USE_SELFHOST_PARSER_COMPOUND' src/CMakeLists.txt Makefile
+#   src/CMakeLists.txt:0
+#   Makefile:0
+# COMMAND=grep -ci 'slice07' Makefile
+#   0
+#
+# There is no dedicated production selector, no subject build rule and
+# no link wiring for the proposed symbol.
+#
+# RED_06_STATE=REPRODUCED
+#
+# ---------------------------------------------------------------------------
+# RED-07 -- the proposed symbol does not exist anywhere in the tree
+# ---------------------------------------------------------------------------
+#
+# COMMAND=grep -rn BootstrapCompoundBlockAppendsStatement src/ tools/
+#   (no output)
+# COMMAND=nm ./hcc | grep BootstrapCompoundBlock
+#   (no output)
+#
+# RED_07_STATE=REPRODUCED
+#
+# ---------------------------------------------------------------------------
+# THE SUMMARY
+# ---------------------------------------------------------------------------
+#
+# RED_01=REPRODUCED  RED_02=REPRODUCED  RED_03=REPRODUCED
+# RED_04=REPRODUCED  RED_05=REPRODUCED  RED_06=REPRODUCED
+# RED_07=REPRODUCED
+# RED_TOTAL=7
+# RED_REPRODUCED=7
+# RED_SATISFIED_BY_NOOP=0
+# RED_SATISFIED_BY_STRING_SEARCH_ALONE=0
+#
+# ALL_FROZEN_REDS_REPRODUCED=YES

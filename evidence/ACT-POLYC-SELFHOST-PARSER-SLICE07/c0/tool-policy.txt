@@ -1,0 +1,64 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE07
+# ACT_PHASE=C0-ENTRY
+# EVIDENCE_KIND=tool-policy
+#
+# THE TOOL-POLICY BASELINE.  MEASURED at C0.
+#
+# --- F-NO-PYTHON ---
+#
+COMMAND=git ls-files -z > /tmp/slice07-c0-tracked.txt
+COMMAND=./build/factory-no-python-check /tmp/slice07-c0-tracked.txt
+EXIT=1
+#
+# POLYC_TOOLS_TRACKED_PYTHON=12
+# POLYC_TOOLS_TRACKED_INSPECTED=5580
+# POLYC_TOOLS_TRACKED_PASSES=5573
+# STATUS=FAIL
+#
+# The 12 violations are EXACTLY the 12 historical pre-existing ones:
+#
+#   scripts/quality/llvm-byte-memory01-test.sh        forbidden Python invocation
+#   scripts/quality/llvm-cap-table-verifier.py        forbidden Python source suffix
+#   scripts/quality/llvm-intops01-test.sh              forbidden Python invocation
+#   scripts/quality/llvm-memory01-red-test.sh          forbidden Python invocation
+#   scripts/quality/llvm-spike-test.sh                 forbidden Python invocation
+#   tools/quality/bootstrap02-corpus-runner.py         forbidden Python source suffix
+#   tools/quality/bootstrap02-error-corpus.py          forbidden Python source suffix
+#   tools/quality/bootstrap03-corpus-runner.py         forbidden Python source suffix
+#   tools/quality/bootstrap03-error-corpus.py          forbidden Python source suffix
+#   tools/quality/bootstrap04-corpus-runner.py         forbidden Python source suffix
+#   tools/quality/bootstrap04-error-corpus.py          forbidden Python source suffix
+#   tools/quality/llvm-gep01-test.HC                   known PolyC -> Python execution edge
+#
+#   F_NO_PYTHON_VIOLATIONS=12
+#   F_NO_PYTHON_NEW_VIOLATIONS=0
+#   F_NO_PYTHON_STATUS=FAIL_KNOWN_BASELINE
+#
+# The nonzero exit is the KNOWN baseline condition.  It is NOT a PASS.
+#
+# --- F-POLYC-TOOLS ---
+#
+COMMAND=ls tools/factory/factory-polyc-tools-check.HC
+#   ls: cannot access 'tools/factory/factory-polyc-tools-check.HC': No such file or directory
+COMMAND=grep -rn 'factory-polyc-tools-check' scripts/ Makefile
+#   (no output)
+#
+# The authoritative F-POLYC-TOOLS checker is NOT LANDED.  Per
+# AGENTS.md, this is reported UNAVAILABLE and is NEVER reported PASS.
+#
+#   F_POLYC_TOOLS_CHECKER_PRESENT=NO
+#   F_POLYC_TOOLS_STATUS=UNAVAILABLE
+#
+# The legacy inventory docs/factory/LEGACY-NON-POLYC-TOOLS.tsv exists
+# and is the recorded non-PolyC legacy list.
+#
+# --- THE APPEND-ONLY AND F14 INVARIANTS ---
+#
+COMMAND=sh scripts/quality/factory-append-only-test.sh
+COMMAND=sh scripts/quality/factory-v2-range-check.sh ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05 <close>
+#
+# The exact measured outputs are recorded in c3/factory-invariants.txt
+# at C3, against the FINAL tree.  At C0 they are measured against the
+# ENTRY tree and are reproduced in c0/baseline-gates.txt.
+#
+# TOOL_POLICY_BASELINE_COMPLETE=YES
