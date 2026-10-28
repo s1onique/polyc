@@ -1,0 +1,30 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05
+# ACT_PHASE=C0-ENTRY
+# EVIDENCE_KIND=current-production-authorities
+#
+# THE SIX PRODUCTION POLYC PARSER AUTHORITIES, VERIFIED AGAINST THE
+# LIVE PRODUCTION OBJECTS (NOT AGAINST SOURCE COMMENTS).
+#
+# For each authority:
+#   MACRO_ENABLED      the dedicated delegation selector is present in
+#                     the LIVE production compile flags
+#   OBJ_UNDEFINED_REF  the production object IMPORTS the PolyC symbol
+#   OBJ_DEFINED_HERE   the production object does NOT define it, so
+#                     the legacy C body is compiled out
+#
+# COMMANDS:
+#   grep -o HCC_USE_SELFHOST[A-Z_]* build/CMakeFiles/hcc.dir/flags.make | sort -u
+#   nm build/CMakeFiles/hcc.dir/{parser,ast,prslib}.c.o | grep Bootstrap
+#   build/recon05/parser-surface-recon05-verify AUTHORITY <flags> <nm> <macro|sym> ...
+#
+# Schema: authority <TAB> symbol <TAB> macro <TAB> macro_enabled <TAB> obj_undefined_ref <TAB> obj_defined_here <TAB> result
+
+AUTHORITY	HCC_USE_SELFHOST_PARSER_PADDING	BootstrapCalcPadding	MACRO_ENABLED=YES	OBJ_UNDEFINED_REF=YES	OBJ_DEFINED_HERE=NO	RESULT=PASS
+AUTHORITY	HCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN	BootstrapValidPostControlFlowToken	MACRO_ENABLED=YES	OBJ_UNDEFINED_REF=YES	OBJ_DEFINED_HERE=NO	RESULT=PASS
+AUTHORITY	HCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE	BootstrapOperatorPrecedence	MACRO_ENABLED=YES	OBJ_UNDEFINED_REF=YES	OBJ_DEFINED_HERE=NO	RESULT=PASS
+AUTHORITY	HCC_USE_SELFHOST_PARSER_AST_BINOP	BootstrapAstBinOpFromToken	MACRO_ENABLED=YES	OBJ_UNDEFINED_REF=YES	OBJ_DEFINED_HERE=NO	RESULT=PASS
+AUTHORITY	HCC_USE_SELFHOST_PARSER_AST_UNARY	BootstrapAstUnaryOpFromToken	MACRO_ENABLED=YES	OBJ_UNDEFINED_REF=YES	OBJ_DEFINED_HERE=NO	RESULT=PASS
+AUTHORITY	HCC_USE_SELFHOST_PARSER_SWITCH_ARM	BootstrapSwitchArmTerminates	MACRO_ENABLED=YES	OBJ_UNDEFINED_REF=YES	OBJ_DEFINED_HERE=NO	RESULT=PASS
+AUTHORITIES_EXPECTED=6
+AUTHORITIES_VERIFIED=6
+STATUS=PASS
