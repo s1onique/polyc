@@ -1,0 +1,37 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE05
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=generation-build-receipts
+
+# THE GENERATION BUILD RECEIPTS.
+#
+# Every field is a MEASURED value, not a restatement of the build
+# command.  The build receipt identity is the pair (nonce, probe
+# output), which is what the provenance witness binds.
+#
+# NOTE: the witness and these receipts are regenerated together by
+# the parser-slice05-provenance target.  During the C3 qualification
+# the hcc-bootstrap02 and hcc-bootstrap03 binaries were rebuilt, which
+# made the earlier witness STALE; the verifier DETECTED that staleness
+# (G2_COMPILER_IDENTITY_MISMATCH) and the witness was regenerated.  That
+# is the check doing its job.
+#
+# generation<TAB>kind<TAB>compiler_invocation<TAB>resolved_compiler_path<TAB>compiler_executable_sha256<TAB>compiler_version<TAB>exact_build_command<TAB>build_exit_code<TAB>object_sha256<TAB>linked_binary_sha256<TAB>execution_command<TAB>execution_exit_code<TAB>execution_output_sha256<TAB>execution_receipt_id<TAB>run_binding_id
+generation	kind	compiler_invocation	resolved_compiler_path	compiler_executable_sha256	compiler_version	exact_build_command	build_exit_code	object_sha256	linked_binary_sha256	execution_command	execution_exit_code	execution_output_sha256	execution_receipt_id	run_binding_id
+g0	LEGACY_C_REFERENCE	/usr/bin/cc	/usr/bin/cc	9b11ead1ca76a03d61108ad5bf2c913d6aa8daa7deb9fd28893e847e3680e5e7	Apple clang version 15.0.0 (clang-1500.0.40.1)	cc -std=c99 -O2 -Isrc -c -o build/slice05-gen/g0.o src/ast.c	0	144c9836ba79125bd973f9faefe05b259e9efaa1e8bc7babc5c44de007de7253	d54529f2a1afa4c5f5a0a32bce4551cdd1b8c8ecbf2fabb5d987e418d66e7e95	./build/slice05-gen/probe-g0	0	551c760abfd67cca3c72cd80f99ecc27408bc791c8bc5260a9ccd4f5db828d0b	receipt-g0-5214	STAGE0_LEGACY_C
+g1	POLYC_STAGE1_PRODUCTION	./hcc	/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/hcc	4d796c054b177acc34a583a6d94b218350f1280e1ac9ecfde3355469cb5960f9	hcc v0.0.15-beta	./hcc --install-dir=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/test-prefix -c tools/bootstrap/selfhost-parser-slice05.HC -o build/slice05-gen/g1.o	0	27075194e1d3ff94703b51459cc3e5c8ea472747ea1f255a451a97f44b416e72	26b1855b996269ea0965c54a8061852ff966928967f41c64a4889ae27a78032c	./build/slice05-gen/probe-g1	0	551c760abfd67cca3c72cd80f99ecc27408bc791c8bc5260a9ccd4f5db828d0b	receipt-g1-5215	STAGE1_POLYC
+g2	POLYC_STAGE2_INDEPENDENT	./build/hcc-bootstrap02	/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/hcc-bootstrap02	9b9d7faa47a3e255bd1276cf42c583174cfb48752a999eb25d4c283740d9fb99	hcc v0.0.15-beta	./build/hcc-bootstrap02 --install-dir=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/test-prefix -c tools/bootstrap/selfhost-parser-slice05.HC -o build/slice05-gen/g2.o	0	27075194e1d3ff94703b51459cc3e5c8ea472747ea1f255a451a97f44b416e72	36e901d90634c9294760d517e5a466d424aa1260139eb99b72f7855427384c69	./build/slice05-gen/probe-g2	0	551c760abfd67cca3c72cd80f99ecc27408bc791c8bc5260a9ccd4f5db828d0b	receipt-g2-5216	STAGE2_POLYC
+g3	POLYC_STAGE3_INDEPENDENT	./build/hcc-bootstrap03	/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/hcc-bootstrap03	699e3af69fc2e38fe3697fcb000232f78616f4720c7ca630b5400a515f520ab2	hcc v0.0.15-beta	./build/hcc-bootstrap03 --install-dir=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/test-prefix -c tools/bootstrap/selfhost-parser-slice05.HC -o build/slice05-gen/g3.o	0	27075194e1d3ff94703b51459cc3e5c8ea472747ea1f255a451a97f44b416e72	56c0ae90ecfb8d7a10496c4ec28aa60119e2de171515ffef72f9afbfa044fdc9	./build/slice05-gen/probe-g3	0	551c760abfd67cca3c72cd80f99ecc27408bc791c8bc5260a9ccd4f5db828d0b	receipt-g3-5217	STAGE3_POLYC
+
+# THE FOUR GENERATIONS ARE INDEPENDENT
+# -----------------------------------
+# G0_COMPILER_IS_THE_POLYC_COMPILER=NO
+#   The G0 producing compiler is the ACTUAL HOST C COMPILER
+#   (/usr/bin/cc), because the G0 object is a C build.  No
+#   reporting-rule substitution of ./hcc for G0's C compiler.
+# G1_G2_COMPILER_DISTINCT=YES
+# G1_G3_COMPILER_DISTINCT=YES
+# G2_G3_COMPILER_DISTINCT=YES
+#
+# EACH GENERATION WAS BUILT BY ITS OWN COMPILER AND EXECUTED.
+# NO GENERATION'S OUTPUT WAS COPIED AS A SUBSTITUTE FOR ANOTHER
+# GENERATION'S COMPILATION.

@@ -1,0 +1,32 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE05
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=patch-hygiene
+
+THE PATCH HYGIENE
+===================
+
+COMMAND=git diff --check <ENTRY_HEAD>..HEAD
+OUTPUT:
+  (empty output means no whitespace defect)
+
+  PATCH_HYGIENE_ERRORS=0
+
+COMMAND=git diff --cached --check   (at each commit)
+  The gate-fast diff-check ran at every commit and PASSED: the
+  pre-commit hook runs scripts/quality/gate-fast.sh, whose first
+  check is exactly "git diff --cached --check".
+
+THE RANGE
+---------
+COMMAND=git log --oneline b7634f9afb6b530f7bac987317754ab35b8dbead..HEAD
+  39d58c8 ACT-POLYC-SELFHOST-PARSER-SLICE05 C2: the PolyC AST-unary component and the production delegation
+  bb62009 ACT-POLYC-SELFHOST-PARSER-SLICE05 C1: the frozen unary contract, the fixture, and its verifiers
+  02d04b3 ACT-POLYC-SELFHOST-PARSER-SLICE05 C0: AUTH, entry identity and the real production RED
+
+  A DEFECT WAS FOUND AND FIXED DURING THIS ACT:
+  the first C2 attempt left a trailing-whitespace line in the
+  evidence/.../c1/unary-source-recon.txt (the verbatim copy of the
+  legacy switch's "default:" line, which carries trailing spaces in
+  the original source).  The gate's diff-check CAUGHT IT, it was fixed
+  before the commit, and the range is now clean.  The check
+  did its job.

@@ -1,0 +1,39 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE05
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=factory-v2
+
+THE FACTORY v2 RANGE CHECK
+===========================
+
+COMMAND=sh scripts/quality/factory-v2-range-check.sh \
+          ACT-POLYC-SELFHOST-PARSER-SLICE05 HEAD
+
+  AT C3 (BEFORE THE CLOSE COMMIT EXISTS) THE CHECK REPORTS:
+
+    STATUS=FAIL
+    REASON=CLOSE 39d58c807eb72eccbc900e8ebe95f9f8293716db does not carry
+           exactly one ACT-Phase: CLOSE (count=0)
+
+  THIS IS THE EXPECTED AND CORRECT BEHAVIOUR AT C3.  The check
+  requires the ACT's CLOSE commit, and by construction the CLOSE
+  commit does not exist until C4.  The check is doing its job: it
+  refuses to certify a range that has not been closed.
+
+  The SAME CHECK IS RE-RUN AFTER THE C4 COMMIT IS CREATED, and its
+  result is recorded in the CLOSE phase (see the external terminality
+  section of the HANDOFF).  The check's PASS is NOT anticipated here.
+
+  THE OTHER FACTORY CHECKS AT C3
+-----------------------------
+  COMMAND=make gate-fast
+    CHECK=factory-closure-status STATUS=PASS
+    MANIFEST_ROWS=34 MISSING_HANDOFF_FILES=0 MALFORMED_HANDOFF_VERDICT=0
+    PAIR_OK=34 PAIR_FAIL=0
+  COMMAAND=sh scripts/quality/factory-append-only-test.sh
+    PASS=11 FAIL=0 STATUS=PASS
+  COMMAAND=git replace -l
+    (empty -- no replace refs)
+
+  FACTORY_V2_RANGE_CHECK_AT_C3=DEFERRED_TO_CLOSE (by construction)
+  FACTORY_APPEND_ONLY=PASS
+  FACTORY_CLOSURE_STATUS=PASS

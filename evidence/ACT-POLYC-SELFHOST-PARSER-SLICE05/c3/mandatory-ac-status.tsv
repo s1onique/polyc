@@ -1,0 +1,78 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE05
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=mandatory-ac-status
+
+# THE MANDATORY ACCEPTANCE LEDGER.
+#
+# Each row binds an ACCEPTANCE ID to the evidence that establishes
+# it, and records the ESTABLISHING FACT.  An evidence FILE EXISTING
+# is not itself proof that its CONTENTS establish the predicate, so
+# every row records WHAT in the evidence establishes it.
+#
+# AC50 is the only row that may be DEFERRED at C3, because the
+# CLOSE commit does not yet exist.
+#
+# ac_id<TAB>status<TAB>binding_evidence<TAB>establishing_fact
+ac_id	status	binding_evidence	establishing_fact
+AC01	PASS	c0/entry-identity.txt	BRANCH=main and ENTRY_HEAD=b7634f9afb6b530f7bac987317754ab35b8dbead were measured by git branch --show-current and git rev-parse HEAD
+AC02	PASS	c0/entry-identity.txt	git status --porcelain=v1 --untracked-files=no was empty and git replace -l was empty
+AC03	PASS	c0/predecessor-identity.txt	git merge-base --is-ancestor returned 0 and git log -1 %(trailers:key=ACT-Verdict) printed "ACT-Verdict: PASS"
+AC04	PASS	c3/f14.txt	the closed SLICE04 ACT, HANDOFF and evidence-tree aggregate hash are byte-identical to the C0 freeze
+AC05	PASS	c0/production-authority.txt + c3/binary-classifier-conservation.txt	nm ./hcc shows _BootstrapAstBinOpFromToken as a strong global definition in the linked production binary
+AC06	PASS	c0/red-legacy-authority.txt + c0/red-component-absent.txt	the fresh entry-tree ast.c.o disassembly shows the ten-token jump table and references no PolyC unary symbol
+AC07	PASS	c0/real-call-graph.txt	two ARM64_RELOC_BRANCH26 relocations against _astUnaryOpFromToken in the compiled prslib.c.o, at src/prslib.c:1450 and :1757
+AC08	PASS	c1/token-to-enum.tsv	ten mappings measured by executing the real legacy astUnaryOpFromToken
+AC09	PASS	c1/compiled-enum-values.tsv	the live src/ast.h was compiled and a probe printed AST_UN_OP_POST_INC=0 .. AST_UN_OP_CAST=12
+AC10	PASS	c1/ABI-contract.md	ENUM_VALUES_NONNEGATIVE=YES and FAILURE_SENTINEL=-1 with SENTINEL_COLLISION=NO, from the compiled enum
+AC11	PASS	c1/ABI-contract.md	ABI_HOST_POINTER_FIELDS=0 and ABI_GLOBAL_STATE_FIELDS=0; the signature is one I64 in, one I64 out
+AC12	PASS	c1/oracle-contract.md	the oracle driver prints success=1 and the exact enum for each of the ten accepted tokens
+AC13	PASS	c2/direct-differential.txt	SLICE05_DIFF_OUTPUT_PRESERVATION_FAILURES=0 over 346 rows, with the failing rows leaving the initial output at 12345/54321
+AC14	PASS	c2/real-oracle-build.txt	build/slice05-ast-legacy.o was compiled from the live src/ast.c with the delegation OFF and the driver ran
+AC15	PASS	c2/real-oracle-build.txt	nm on the oracle object shows _astUnaryOpFromToken defined and NO reference to _BootstrapAstUnaryOpFromToken
+AC16	PASS	c1/fixture-contract.tsv	the producer reported FIXTURE_ROW_COUNT=346 and the partition counts sum to it
+AC17	PASS	c1/fixture-integrity-contract.md	FIXTURE_INTEGRITY_UNTESTED_ACCEPTED_TOKENS=0 with all ten accepted values in the expected set
+AC18	PASS	c1/fixture-contract.tsv	the U03, U04, U08, U09, U10 and U11 partitions cover the rejected printable ASCII, the neighbours, the aliases, the signed-64-bit boundaries and the lexer constants
+AC19	PASS	c2/fixture-integrity.txt	FIXTURE_INTEGRITY_STATUS=PASS with every counter zero
+AC20	PASS	c2/negative-controls.txt	8/8 controls rejected, each with its intended reason counter
+AC21	PASS	c0/predecessor-provenance-findings.txt	the historical CASE-1 rejection was REJECT_STAGE_LABELS, a row-count rejection, not a G3-payload-substitution rejection
+AC22	PASS	c0/predecessor-provenance-findings.txt	the historical CASE-2 rejection named g0, not g3
+AC23	PASS	c3/provenance-nc-p01-g3-substitution.txt	NC_G3_SUBSTITUTION_REJECTION_REASON=G3_BINDING_MISMATCH with the manifest complete and the other rows unchanged
+AC24	PASS	c3/provenance-nc-p02-g3-omission.txt	NC_G3_OMISSION_REJECTION_REASON=G3_EXECUTION_RECEIPT_MISSING with the g0/g1/g2 receipts preserved
+AC25	PASS	c2/component-source.txt	the component implements I64 BootstrapAstUnaryOpFromToken(I64) -> I64 with the frozen mapping and the -1 sentinel
+AC26	PASS	c2/component-build.txt	the subject was compiled by build/host-stage0/hcc, the stage0 compiler, and exports the symbol
+AC27	PASS	c2/direct-differential.txt	346/346 rows agree across the legacy oracle, the PolyC component and the frozen expectations
+AC28	PASS	c2/direct-differential.txt	SLICE05_DIFF_OUTPUT_PRESERVATION_FAILURES=0
+AC29	PASS	c3/unary-causal-mutation.txt	B_OUTPUT_DIFFERS_FROM_A=YES: the mutated production compiler produced UNARY_MINUS_RESULT=7 where the pristine produced -7
+AC30	PASS	c3/production-authority.txt	the production ast.c.o disassembly has no jump table and no switch; the legacy mapping is absent
+AC31	PASS	c3/binary-classifier-conservation.txt	git diff of src/ast.c has exactly one hunk, at the unary classifier; the SLICE04 subject hash is unchanged
+AC32	PASS	c2/fail-closed-controls.txt	FC-01..FC-08 were all rejected, and the production build failed closed when the subject was absent
+AC33	PASS	c2/fresh-tree-link.txt	the fresh-tree link carries five subjects, each once, with zero duplicates
+AC34	PASS	c2/fresh-tree-link.txt	DUPLICATE_BOOTSTRAP_SYMBOLS=0
+AC35	PASS	c3/generation-manifest.tsv	g0 COMPILER_RESOLVED_PATH=/usr/bin/cc with G0_COMPILER_IS_THE_POLYC_COMPILER=NO
+AC36	PASS	c3/generation-build-receipts.tsv + c3/generation-manifest.tsv	four objects were built by four distinct commands and four distinct compilers, each with its own receipt
+AC37	PASS	c3/generation-object-pairs.tsv	G1_EQ_G2=YES, G1_EQ_G3=YES, G2_EQ_G3=YES
+AC38	PASS	c3/generation-semantic-pairs.tsv	all twelve ordered semantic pairs are equal; the four semantic output hashes are one value
+AC39	PASS	c3/provenance-pristine.txt	PROVENANCE_VERDICT=ACCEPTED with 4 generations, 4 receipts and 0 duplicate nonces
+AC40	PASS	c3/provenance-nc-p01-g3-substitution.txt + nc-p02 + nc-p03 + nc-p04 + nc-p05	all five controls rejected with their intended generation-scoped reasons
+AC41	PASS	c3/unary-causal-mutation.txt	B_BUILD_RC=0 and B_EXEC_RC=0: the mutant production compiler built and ran
+AC42	PASS	c3/unary-causal-mutation.txt	the mutant's observation output differs from the pristine in exactly the unary-minus line
+AC43	PASS	c3/pristine-restoration.txt	C_OUTPUT_EQUALS_A=YES and C_SUBJECT_SHA_EQUALS_A=YES, and the A and C compiler SHAs are identical
+AC44	PASS	c3/parser-conservation.txt	the four previous PolyC subject hashes are identical to the C0 freeze
+AC45	PASS	c3/parser-conservation.txt + c3/lexer-conservation.txt + c3/lexer07-delta.txt	NEW_PARSER_FAILURE_IDENTITIES=0, NEW_LEXER_FAILURE_IDENTITIES=0, NEW_LEXER07_FAILURE_IDENTITIES=0
+AC46	PASS	c3/f-no-python.txt + c3/f-polyc-tools.txt	the F-NO-PYTHON findings are byte-identical to the entry tree's, and every new tool this ACT authored is PolyC except the two permitted narrow oracle adapters
+AC47	PASS	c3/gate-fast.txt + c3/factory-v2.txt + c3/append-only.txt	gate-fast PASS, the append-only suite 11/11 PASS, and the factory closure-status check PASS
+AC48	PASS	c3/gate-push.txt	all seven mandatory checks PASS with VERDICT=PASS
+AC49	PASS	c3/f14.txt + c3/patch-hygiene.txt + c3/mandatory-ac-status.tsv	F14_VIOLATION=NO, PATCH_HYGIENE_ERRORS=0, and this ledger's own counts are recomputed from its own rows
+AC50	DEFERRED_TO_CLOSE	external terminality (ACT section 14)	the CLOSE commit does not exist at C3; its satisfaction is established by the external terminality checks after C4, exactly as the ACT permits
+
+# THE LEDGER COUNTS (recomputed from the rows above)
+# -------------------------------------------------------
+# AC_TOTAL=50
+# AC_UNIQUE_IDS=50
+# AC_DUPLICATE_IDS=0
+# AC_MISSING_IDS=0
+#
+# AC_PASS=49
+# AC_DEFERRED_TO_CLOSE=1  (AC50 only)
+# AC_FAIL=0
+# AC_UNPROVEN=0

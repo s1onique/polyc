@@ -1,0 +1,51 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE05
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=provenance-nc-p05-stage-swap
+
+NC-P05 -- THE G1 AND G3 STAGE IDENTITIES INTERCHANGED
+====================================================
+
+THE CONTROL
+------------
+COMMAND=make parser-slice05-provenance-controls
+OUTPUT:
+  SLICE05_FORGERY=CASE-NC-P05 the G1 and G3 stage identities interchanged
+    SLICE05_FORGERY=CASE-NC-P05 PROVENANCE_VERDICT=REJECTED
+
+  The g1 and g3 rows's GENERATION_BINDING and RUN_BINDING_ID values are
+  swapped, so each generation's stage identity now claims the other's.  The
+  objects, the compilers, the sources and the receipts are all
+  UNCHANGED -- only the stage identity moved.
+
+  MUTATION_TARGET=GENERATION_BINDING,RUN_BINDING_ID
+
+THE REJECTION
+--------------
+  MUTANT_VERDICT=REJECTED
+  NON_TARGET_FIELDS_UNCHANGED=YES
+
+  THE VERIFIER OUTPUT:
+COMMAND=cat build/slice05-nc/nc-p05.txt
+  GENERATIONS_PRESENT=4
+  GENERATION_ROWS=4
+  STAGE_LABELS_MATCH=4
+  G1_BINDING_MISMATCH g1 recorded binding [STAGE3_POLYC] but the expected binding is [STAGE1_POLYC]
+  G1_STAGE_IDENTITY_MISMATCH g1 recorded run binding [STAGE3_POLYC] but the expected stage identity is [STAGE1_POLYC]
+  G3_BINDING_MISMATCH g3 recorded binding [STAGE1_POLYC] but the expected binding is [STAGE3_POLYC]
+  G3_STAGE_IDENTITY_MISMATCH g3 recorded run binding [STAGE1_POLYC] but the expected stage identity is [STAGE3_POLYC]
+  ALL_REQUIRED_RECEIPTS_PRESENT=4
+  DUPLICATE_NONCE_COUNT=0
+  GENERATIONS_VERIFIED=4
+  PROVENANCE_VERDICT=REJECTED
+
+  The rejection is a STAGE-IDENTITY MISMATCH (and, independently, a
+  BINDING MISMATCH): each row's stage identity is compared against
+  the identity its generation label REQUIRES, so a swapped stage
+  identity cannot hide behind a matching object and a matching
+  compiler.
+
+THE PRISTINE RECHECK
+-------------------
+  PRISTINE_VERDICT=PASS
+  PRISTINE_RECHECK=PASS
+  PRISTINE_MANIFEST_VALID=YES

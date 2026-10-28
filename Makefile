@@ -5985,3 +5985,224 @@ parser-slice05-production-mutation: $(SLICE05_MUT_DIR)/p0-hcc.bin $(SLICE05_MUT_
 	@echo "  mutant build would not be a successful causal control."
 	@echo "  NOTE: the tracked PolyC subject was NOT mutated; the mutant"
 	@echo "  lives in $(SLICE05_MUT_DIR)."
+
+# =========================================================================
+# ACT-POLYC-SELFHOST-PARSER-SLICE05
+#
+#   parser-slice05-generation-pairs -> the SIX component-pair comparisons.
+#
+# For the POLYC generations the comparison is BYTE_EQUAL.  For G0 against
+# each PolyC generation the comparison is SEMANTIC: G0 is the legacy C
+# reference, so byte-identity is NOT expected and NOT required.
+#
+# THE SEMANTIC COMPARISON IS NOT A STANDALONE CALL
+# =================================================
+#
+# Each generation's component is linked into its OWN production
+# compiler, and that compiler compiles and runs the SAME frozen
+# observation program.  The semantic output of a generation is
+# therefore the output of a REAL COMPILED PROGRAM produced by that
+# generation's compiler, not the result of calling the component
+# directly.
+#
+# The G0 generation is the legacy C authority: its production compiler
+# is the entry-tree compiler with the unary delegation OFF, which
+# executes the legacy C switch.
+# =========================================================================
+SLICE05_OBS_DIR = build/slice05-obs
+
+# The frozen observation program: the SAME source in all four steps.
+$(SLICE05_OBS_DIR)/observe.HC: evidence/ACT-POLYC-SELFHOST-PARSER-SLICE05/c1/unary-observation.HC
+	@mkdir -p $(SLICE05_OBS_DIR)
+	@cp $< $@
+	@echo "SLICE05_OBSERVATION=$@"
+
+# G0: the legacy C authority, compiled by the entry-tree compiler with
+# the unary delegation OFF.
+#
+# The G0 production compiler is built from the SAME source tree with
+# -DHCC_USE_SELFHOST_PARSER_AST_UNARY=OFF, so the legacy C switch is
+# the decision procedure.  That compiler is the G0 production
+# authority, and the G0 object is the object the host C compiler
+# produced.
+$(SLICE05_OBS_DIR)/g0-hcc.bin: $(SLICE05_OBS_DIR)/observe.HC $(SLICE05_GEN_DIR)/g0.o
+	@mkdir -p $(SLICE05_OBS_DIR)
+	@rm -rf $(SLICE05_OBS_DIR)/g0-build
+	@cmake -S ./src -B $(SLICE05_OBS_DIR)/g0-build -G 'Unix Makefiles' \
+		-DCMAKE_C_COMPILER=$(C_COMPILER) -DCMAKE_BUILD_TYPE=Release \
+		-DHCC_ENABLE_JIT=on -DHCC_ENABLE_LLVM=OFF \
+		-DHCC_RUNTIME_OUTPUT_DIRECTORY=$(CURDIR)/$(SLICE05_OBS_DIR)/g0 \
+		-DHCC_USE_SELFHOST_PARSER_PADDING=ON \
+		-DPARSER_PADDING_OBJECT=$(CURDIR)/$(PARSER_PADDING_OBJ) \
+		-DPARSER_PADDING_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DPARSER_PADDING_SOURCE=$(CURDIR)/$(PARSER_PADDING_SRC) \
+		-DPARSER_PADDING_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN=ON \
+		-DCONTROL_FLOW_TOKEN_OBJECT=$(CURDIR)/$(SLICE02_CFT_OBJ) \
+		-DCONTROL_FLOW_TOKEN_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DCONTROL_FLOW_TOKEN_SOURCE=$(CURDIR)/$(SLICE02_CFT_SRC) \
+		-DCONTROL_FLOW_TOKEN_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE=ON \
+		-DOPERATOR_PRECEDENCE_OBJECT=$(CURDIR)/$(SLICE03_OP_OBJ) \
+		-DOPERATOR_PRECEDENCE_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DOPERATOR_PRECEDENCE_SOURCE=$(CURDIR)/$(SLICE03_OP_SRC) \
+		-DOPERATOR_PRECEDENCE_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_PARSER_AST_BINOP=ON \
+		-DAST_TOKEN_MAP_OBJECT=$(CURDIR)/$(SLICE04_AST_BINOP_OBJ) \
+		-DAST_TOKEN_MAP_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DAST_TOKEN_MAP_SOURCE=$(CURDIR)/$(SLICE04_AST_BINOP_SRC) \
+		-DAST_TOKEN_MAP_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_PARSER_AST_UNARY=OFF \
+		> $(SLICE05_OBS_DIR)/g0-cmake.log 2>&1 || \
+		{ echo "slice05-obs/g0: cmake configure failed" >&2; tail -20 $(SLICE05_OBS_DIR)/g0-cmake.log >&2; exit 1; }
+	@$(MAKE) -C $(SLICE05_OBS_DIR)/g0-build -j2 > $(SLICE05_OBS_DIR)/g0-build.log 2>&1 || \
+		{ echo "slice05-obs/g0: build failed" >&2; tail -20 $(SLICE05_OBS_DIR)/g0-build.log >&2; exit 1; }
+	@cp -f $(SLICE05_OBS_DIR)/g0/hcc $(SLICE05_OBS_DIR)/g0-hcc.bin
+
+# G1: the stage-1 PolyC authority, compiled by the production compiler.
+$(SLICE05_OBS_DIR)/g1-hcc.bin: $(SLICE05_OBS_DIR)/observe.HC $(SLICE05_GEN_DIR)/g1.o
+	@mkdir -p $(SLICE05_OBS_DIR)
+	@rm -rf $(SLICE05_OBS_DIR)/g1-build
+	@cmake -S ./src -B $(SLICE05_OBS_DIR)/g1-build -G 'Unix Makefiles' \
+		-DCMAKE_C_COMPILER=$(C_COMPILER) -DCMAKE_BUILD_TYPE=Release \
+		-DHCC_ENABLE_JIT=on -DHCC_ENABLE_LLVM=OFF \
+		-DHCC_RUNTIME_OUTPUT_DIRECTORY=$(CURDIR)/$(SLICE05_OBS_DIR)/g1 \
+		-DHCC_USE_SELFHOST_PARSER_PADDING=ON \
+		-DPARSER_PADDING_OBJECT=$(CURDIR)/$(PARSER_PADDING_OBJ) \
+		-DPARSER_PADDING_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DPARSER_PADDING_SOURCE=$(CURDIR)/$(PARSER_PADDING_SRC) \
+		-DPARSER_PADDING_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN=ON \
+		-DCONTROL_FLOW_TOKEN_OBJECT=$(CURDIR)/$(SLICE02_CFT_OBJ) \
+		-DCONTROL_FLOW_TOKEN_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DCONTROL_FLOW_TOKEN_SOURCE=$(CURDIR)/$(SLICE02_CFT_SRC) \
+		-DCONTROL_FLOW_TOKEN_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE=ON \
+		-DOPERATOR_PRECEDENCE_OBJECT=$(CURDIR)/$(SLICE03_OP_OBJ) \
+		-DOPERATOR_PRECEDENCE_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DOPERATOR_PRECEDENCE_SOURCE=$(CURDIR)/$(SLICE03_OP_SRC) \
+		-DOPERATOR_PRECEDENCE_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_PARSER_AST_BINOP=ON \
+		-DAST_TOKEN_MAP_OBJECT=$(CURDIR)/$(SLICE04_AST_BINOP_OBJ) \
+		-DAST_TOKEN_MAP_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DAST_TOKEN_MAP_SOURCE=$(CURDIR)/$(SLICE04_AST_BINOP_SRC) \
+		-DAST_TOKEN_MAP_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_PARSER_AST_UNARY=ON \
+		-DAST_UNARY_TOKEN_MAP_OBJECT=$(CURDIR)/$(SLICE05_GEN_DIR)/g1.o \
+		-DAST_UNARY_TOKEN_MAP_TARGET_OBJECT_FORMAT=Mach-O \
+		> $(SLICE05_OBS_DIR)/g1-cmake.log 2>&1 || \
+		{ echo "slice05-obs/g1: cmake configure failed" >&2; tail -20 $(SLICE05_OBS_DIR)/g1-cmake.log >&2; exit 1; }
+	@$(MAKE) -C $(SLICE05_OBS_DIR)/g1-build -j2 > $(SLICE05_OBS_DIR)/g1-build.log 2>&1 || \
+		{ echo "slice05-obs/g1: build failed" >&2; tail -20 $(SLICE05_OBS_DIR)/g1-build.log >&2; exit 1; }
+	@cp -f $(SLICE05_OBS_DIR)/g1/hcc $(SLICE05_OBS_DIR)/g1-hcc.bin
+
+# G2: the stage-2 PolyC authority.
+$(SLICE05_OBS_DIR)/g2-hcc.bin: $(SLICE05_OBS_DIR)/observe.HC $(SLICE05_GEN_DIR)/g2.o
+	@mkdir -p $(SLICE05_OBS_DIR)
+	@rm -rf $(SLICE05_OBS_DIR)/g2-build
+	@cmake -S ./src -B $(SLICE05_OBS_DIR)/g2-build -G 'Unix Makefiles' \
+		-DCMAKE_C_COMPILER=$(C_COMPILER) -DCMAKE_BUILD_TYPE=Release \
+		-DHCC_ENABLE_JIT=on -DHCC_ENABLE_LLVM=OFF \
+		-DHCC_RUNTIME_OUTPUT_DIRECTORY=$(CURDIR)/$(SLICE05_OBS_DIR)/g2 \
+		-DHCC_USE_SELFHOST_PARSER_PADDING=ON \
+		-DPARSER_PADDING_OBJECT=$(CURDIR)/$(PARSER_PADDING_OBJ) \
+		-DPARSER_PADDING_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DPARSER_PADDING_SOURCE=$(CURDIR)/$(PARSER_PADDING_SRC) \
+		-DPARSER_PADDING_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN=ON \
+		-DCONTROL_FLOW_TOKEN_OBJECT=$(CURDIR)/$(SLICE02_CFT_OBJ) \
+		-DCONTROL_FLOW_TOKEN_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DCONTROL_FLOW_TOKEN_SOURCE=$(CURDIR)/$(SLICE02_CFT_SRC) \
+		-DCONTROL_FLOW_TOKEN_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE=ON \
+		-DOPERATOR_PRECEDENCE_OBJECT=$(CURDIR)/$(SLICE03_OP_OBJ) \
+		-DOPERATOR_PRECEDENCE_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DOPERATOR_PRECEDENCE_SOURCE=$(CURDIR)/$(SLICE03_OP_SRC) \
+		-DOPERATOR_PRECEDENCE_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_PARSER_AST_BINOP=ON \
+		-DAST_TOKEN_MAP_OBJECT=$(CURDIR)/$(SLICE04_AST_BINOP_OBJ) \
+		-DAST_TOKEN_MAP_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DAST_TOKEN_MAP_SOURCE=$(CURDIR)/$(SLICE04_AST_BINOP_SRC) \
+		-DAST_TOKEN_MAP_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_PARSER_AST_UNARY=ON \
+		-DAST_UNARY_TOKEN_MAP_OBJECT=$(CURDIR)/$(SLICE05_GEN_DIR)/g2.o \
+		-DAST_UNARY_TOKEN_MAP_TARGET_OBJECT_FORMAT=Mach-O \
+		> $(SLICE05_OBS_DIR)/g2-cmake.log 2>&1 || \
+		{ echo "slice05-obs/g2: cmake configure failed" >&2; tail -20 $(SLICE05_OBS_DIR)/g2-cmake.log >&2; exit 1; }
+	@$(MAKE) -C $(SLICE05_OBS_DIR)/g2-build -j2 > $(SLICE05_OBS_DIR)/g2-build.log 2>&1 || \
+		{ echo "slice05-obs/g2: build failed" >&2; tail -20 $(SLICE05_OBS_DIR)/g2-build.log >&2; exit 1; }
+	@cp -f $(SLICE05_OBS_DIR)/g2/hcc $(SLICE05_OBS_DIR)/g2-hcc.bin
+
+# G3: the stage-3 PolyC authority.
+$(SLICE05_OBS_DIR)/g3-hcc.bin: $(SLICE05_OBS_DIR)/observe.HC $(SLICE05_GEN_DIR)/g3.o
+	@mkdir -p $(SLICE05_OBS_DIR)
+	@rm -rf $(SLICE05_OBS_DIR)/g3-build
+	@cmake -S ./src -B $(SLICE05_OBS_DIR)/g3-build -G 'Unix Makefiles' \
+		-DCMAKE_C_COMPILER=$(C_COMPILER) -DCMAKE_BUILD_TYPE=Release \
+		-DHCC_ENABLE_JIT=on -DHCC_ENABLE_LLVM=OFF \
+		-DHCC_RUNTIME_OUTPUT_DIRECTORY=$(CURDIR)/$(SLICE05_OBS_DIR)/g3 \
+		-DHCC_USE_SELFHOST_PARSER_PADDING=ON \
+		-DPARSER_PADDING_OBJECT=$(CURDIR)/$(PARSER_PADDING_OBJ) \
+		-DPARSER_PADDING_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DPARSER_PADDING_SOURCE=$(CURDIR)/$(PARSER_PADDING_SRC) \
+		-DPARSER_PADDING_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN=ON \
+		-DCONTROL_FLOW_TOKEN_OBJECT=$(CURDIR)/$(SLICE02_CFT_OBJ) \
+		-DCONTROL_FLOW_TOKEN_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DCONTROL_FLOW_TOKEN_SOURCE=$(CURDIR)/$(SLICE02_CFT_SRC) \
+		-DCONTROL_FLOW_TOKEN_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE=ON \
+		-DOPERATOR_PRECEDENCE_OBJECT=$(CURDIR)/$(SLICE03_OP_OBJ) \
+		-DOPERATOR_PRECEDENCE_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DOPERATOR_PRECEDENCE_SOURCE=$(CURDIR)/$(SLICE03_OP_SRC) \
+		-DOPERATOR_PRECEDENCE_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_PARSER_AST_BINOP=ON \
+		-DAST_TOKEN_MAP_OBJECT=$(CURDIR)/$(SLICE04_AST_BINOP_OBJ) \
+		-DAST_TOKEN_MAP_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DAST_TOKEN_MAP_SOURCE=$(CURDIR)/$(SLICE04_AST_BINOP_SRC) \
+		-DAST_TOKEN_MAP_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_PARSER_AST_UNARY=ON \
+		-DAST_UNARY_TOKEN_MAP_OBJECT=$(CURDIR)/$(SLICE05_GEN_DIR)/g3.o \
+		-DAST_UNARY_TOKEN_MAP_TARGET_OBJECT_FORMAT=Mach-O \
+		> $(SLICE05_OBS_DIR)/g3-cmake.log 2>&1 || \
+		{ echo "slice05-obs/g3: cmake configure failed" >&2; tail -20 $(SLICE05_OBS_DIR)/g3-cmake.log >&2; exit 1; }
+	@$(MAKE) -C $(SLICE05_OBS_DIR)/g3-build -j2 > $(SLICE05_OBS_DIR)/g3-build.log 2>&1 || \
+		{ echo "slice05-obs/g3: build failed" >&2; tail -20 $(SLICE05_OBS_DIR)/g3-build.log >&2; exit 1; }
+	@cp -f $(SLICE05_OBS_DIR)/g3/hcc $(SLICE05_OBS_DIR)/g3-hcc.bin
+
+parser-slice05-generation-pairs: $(SLICE05_OBS_DIR)/g0-hcc.bin $(SLICE05_OBS_DIR)/g1-hcc.bin $(SLICE05_OBS_DIR)/g2-hcc.bin $(SLICE05_OBS_DIR)/g3-hcc.bin
+	@echo "SLICE05_GENERATION_PAIRS=RUN"
+	@for G in g0 g1 g2 g3; do \
+	  $(SLICE05_OBS_DIR)/$$G-hcc.bin --install-dir=$(TEST_PREFIX) $(SLICE05_OBS_DIR)/observe.HC \
+	     -o $(SLICE05_OBS_DIR)/observe-$$G > $(SLICE05_OBS_DIR)/observe-$$G.log 2>&1 \
+	     || { echo "  $$G_OBSERVE_BUILD=FAILED" >&2; tail -5 $(SLICE05_OBS_DIR)/observe-$$G.log >&2; exit 1; }; \
+	 done
+	@for G in g0 g1 g2 g3; do \
+	  ./$(SLICE05_OBS_DIR)/observe-$$G > $(SLICE05_OBS_DIR)/semantic-$$G.txt 2>&1 \
+	     || { echo "  $$G_OBSERVE_EXEC=FAILED" >&2; exit 1; }; \
+	  echo "  $$G_SEMANTIC_OUTPUT_SHA256=$$(shasum -a 256 $(SLICE05_OBS_DIR)/semantic-$$G.txt | cut -d' ' -f1)"; \
+	  echo "  $$G_PRODUCTION_COMPILER_SHA256=$$(shasum -a 256 $(SLICE05_OBS_DIR)/$$G-hcc.bin | cut -d' ' -f1)"; \
+	  echo "  $$G_OBJECT_SHA256=$$(shasum -a 256 $(SLICE05_GEN_DIR)/$$G.o | cut -d' ' -f1)"; \
+	  echo "  $$G_OBSERVATION_BINARY_SHA256=$$(shasum -a 256 $(SLICE05_OBS_DIR)/observe-$$G | cut -d' ' -f1)"; \
+	done
+	@echo "THE COMPONENT-PAIR COMPARISONS (byte equality for the PolyC generations)";
+	@G1=$$(shasum -a 256 $(SLICE05_GEN_DIR)/g1.o | cut -d' ' -f1); \
+	 G2=$$(shasum -a 256 $(SLICE05_GEN_DIR)/g2.o | cut -d' ' -f1); \
+	 G3=$$(shasum -a 256 $(SLICE05_GEN_DIR)/g3.o | cut -d' ' -f1); \
+	 if [ "$$G1" = "$$G2" ] && [ "$$G1" = "$$G3" ]; then \
+	   echo "  G1_EQ_G2=YES"; echo "  G1_EQ_G3=YES"; echo "  G2_EQ_G3=YES"; \
+	 else \
+	   echo "  G1_EQ_G2=$$([ "$$G1" = "$$G2" ] && echo YES || echo NO)"; \
+	   echo "  G1_EQ_G3=$$([ "$$G1" = "$$G3" ] && echo YES || echo NO)"; \
+	   echo "  G2_EQ_G3=$$([ "$$G2" = "$$G3" ] && echo YES || echo NO)"; \
+	 fi
+	@echo "THE SIX SEMANTIC PAIRS (the compiled program's STDOUT)";
+	@for A in g0 g1 g2 g3; do for B in g0 g1 g2 g3; do \
+	   if [ "$$A" = "$$B" ]; then continue; fi; \
+	   OA=$$(shasum -a 256 $(SLICE05_OBS_DIR)/semantic-$$A.txt | cut -d' ' -f1); \
+	   OB=$$(shasum -a 256 $(SLICE05_OBS_DIR)/semantic-$$B.txt | cut -d' ' -f1); \
+	   if [ "$$OA" = "$$OB" ]; then R=YES; else R=NO; fi; \
+	   echo "  PAIR_$${A}_$${B}=$$R"; \
+	 done; done
+	@echo "  THE FROZEN OBSERVATION OUTPUT (every generation):"; \
+	 cat $(SLICE05_OBS_DIR)/semantic-g0.txt | sed 's/^/    /'

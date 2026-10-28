@@ -1,0 +1,52 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE05
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=f-no-python
+
+THE F-NO-PYTHON CHECK
+=======================
+
+COMMAND=sh scripts/quality/factory-no-python-check.sh
+EXIT_CODE=1
+
+THE FINDINGS (the KNOWN, PRE-EXISTING ones)
+----------------------------------------------
+  FAIL  scripts/quality/llvm-byte-memory01-test.sh  forbidden Python invocation
+  FAIL  scripts/quality/llvm-cap-table-verifier.py  forbidden Python source suffix
+  FAIL  scripts/quality/llvm-intops01-test.sh  forbidden Python invocation
+  FAIL  scripts/quality/llvm-memory01-red-test.sh  forbidden Python invocation
+  FAIL  scripts/quality/llvm-spike-test.sh  forbidden Python invocation
+  FAIL  tools/quality/bootstrap02-corpus-runner.py  forbidden Python source suffix
+  FAIL  tools/quality/bootstrap02-error-corpus.py  forbidden Python source suffix
+  FAIL  tools/quality/bootstrap03-corpus-runner.py  forbidden Python source suffix
+  FAIL  tools/quality/bootstrap03-error-corpus.py  forbidden Python source suffix
+  FAIL  tools/quality/bootstrap04-corpus-runner.py  forbidden Python source suffix
+  FAIL  tools/quality/bootstrap04-error-corpus.py  forbidden Python source suffix
+  FAIL  tools/quality/llvm-gep01-test.HC  known PolyC -> Python execution edge (callgraph inventory)
+
+THE SUMMARY
+-----------
+  --- summary ---
+  POLYC_TOOLS_TRACKED_PYTHON=12
+  POLYC_TOOLS_TRACKED_INSPECTED=5296
+  POLYC_TOOLS_TRACKED_PASSES=5289
+  STATUS=FAIL
+
+THESE FINDINGS ARE PRE-EXISTING, NOT INTRODUCED BY SLICE05
+------------------------------------------------
+COMMAND=git stash -u; sh scripts/quality/factory-no-python-check.sh; git stash pop
+COMMAND=diff <entry-tree output> <SLICE05 output>
+OUTPUT:
+  18a19
+  > RC=1
+
+  The ONLY difference is the RC=1 line that THIS ACT appended
+  to its own copy of the log.  Every finding line is BYTE-IDENTICAL
+  between the entry tree and the SLICE05 tree.
+
+  NEW_PYTHON_FILES=0
+  NEW_PYTHON_INVOCATIONS=0
+
+  The 12 tracked Python findings and the 1 known PolyC -> Python
+  execution edge are the HISTORICAL ones recorded by the
+  predecessor.  They are PRESERVED VISIBLY and are NOT relabelled
+  PASS.  The check's own STATUS=FAIL is likewise preserved.

@@ -1,0 +1,82 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE05
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=parser-conservation
+
+THE PARSER SUITE CONSERVATION
+========================
+
+THE BASELINE IS THE ENTRY TREE, NOT A HISTORICAL CLAIM
+------------------------------------------------------
+ACT section 9.2: the conservation baseline is the ACT's ENTRY HEAD,
+not a predecessor's claimed result.  The predecessor's PASSED=87 /
+FAILED=3 was an expectation for reconnaissance, NOT a replacement
+for a fresh entry measurement.
+
+THE TWO COMPILERS
+------------------
+  ENTRY = /tmp/slice05-baseline/prefix3/bin/hcc
+         sha256=747639324e09f503fe2223f970149579d5e78c543b77fa933d4def5d36732b36
+         (built from the git-archived entry tree, all four
+          self-hosted parser selectors ON)
+  C2    = /tmp/slice05-c2build/prefix/bin/hcc
+         sha256=b92ec56d7a7d3ea211f9e9787a89fee9f436e4970e865113191eb54427eec26e
+         (built from the C2 implementation tree, all five
+          self-hosted parser selectors ON)
+
+  Both were configured with -DCMAKE_INSTALL_PREFIX=<their own
+  prefix>, so the compile-time INSTALL_PREFIX matches the runtime
+  prefix.  Without that, this host has no /usr/local and every
+  test fails with "Failed to open file: /usr/local/include/tos.HH" --
+  an ENVIRONMENT condition, not a parser result.
+
+THE IDENTICAL SUITE WAS RUN AGAINST BOTH
+------------------------------------------
+COMMAND=cd <tests-dir> && ../../hcc --install-dir=<prefix> ./run.HC -o test-runner
+COMMAND=cd <tests-dir> && ./test-runner
+
+  ENTRY   ASSERTIONS_PASSED=376 ASSERTIONS_TOTAL=376 TESTFILES_PASSED=90 FAILED=0
+  C2      ASSERTIONS_PASSED=376 ASSERTIONS_TOTAL=376 TESTFILES_PASSED=90 FAILED=0
+
+THE ASSERTION-SEQUENCE IDENTITY CHECK
+---------------------------------------
+COMMAND=grep -o "PASSED: [0-9]*/[0-9]*" <log> | md5 -q   (per suite)
+  ENTRY   md5=b6f117eb1386ca80f81bc06226e2a741
+  C2      md5=b6f117eb1386ca80f81bc06226e2a741
+
+  The two suites produced BYTE-IDENTICAL assertion sequences, so
+  the per-test identity sets are equal, not merely equal in COUNT.
+  The failing-identity sets are both EMPTY.
+
+  NEW_PARSER_FAILURE_IDENTITIES=0
+  NEW_PARSER_SEMANTIC_REGRESSIONS=0
+
+THE CROSS-TARGET RUN (HISTORICAL ENVIRONMENT CONDITION)
+---------------------------------------------------
+COMMAND=./test-runner --target=aarch64-apple-darwin
+  Every test failed with "Failed to open file:
+  /usr/local/include/tos.HH".  This is the HISTORICAL
+  INSTALLATION-PREFIX FAILURE: the cross-target install
+  prefix (../../build/<triple>) has no installed PolyC runtime, so
+  the cross-compiled test binaries cannot be produced.  It is an
+  ENVIRONMENT condition, IDENTICAL on the entry tree and on the C2
+  tree, and it is PRESERVED HONESTLY rather than relabelled PASS.  It
+  is not a new failure identity.
+
+  The HOST-ARCH run is the meaningful parser-suite measurement on
+  this host, and it is clean and IDENTICAL on both trees.
+
+THE FOUR PREVIOUS POLYC PARSER SUBJECTS ARE CONSERVED
+-----------------------------------------------
+COMMAND=shasum -a 256 tools/bootstrap/selfhost-parser-*.HC
+  b555b76b484edda5830abba46dbda803a12ec1834f9ab0a64763f5899f2452f3  tools/bootstrap/selfhost-parser-padding.HC
+  77199636db559024365fffc168cd191c1281593452682aab80005151e6baf196  tools/bootstrap/selfhost-parser-control-flow-token.HC
+  3e7a9cf4983e8b625ab3e004dba15b4afcaddb7c83c18f234adf89b9c8468979  tools/bootstrap/selfhost-parser-operator-precedence.HC
+  43f3b95933a6d87aca9824b0337d416abeddc24bfb25743413554be922c8f63d  tools/bootstrap/selfhost-parser-slice04.HC
+  26a9b4578d3dc6301a26df5f6d8ee3d8bb4326869aa1165949112aa9c44065fb  tools/bootstrap/selfhost-parser-slice05.HC
+
+  The first FOUR hashes are IDENTICAL to the C0 entry freeze
+  (c0/source-freeze.tsv).  Their source did not change by a single
+  byte.  The fifth is the NEW subject.
+
+  QUALIFIED_POLYC_SUBJECT_SOURCE_DELTA=0
+  PREVIOUS_PARSER_AUTHORITIES=CONSERVED

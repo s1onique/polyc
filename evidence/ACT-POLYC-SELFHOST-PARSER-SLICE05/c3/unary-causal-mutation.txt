@@ -1,0 +1,114 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE05
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=unary-causal-mutation
+
+THE PRODUCTION-CAUSAL MUTATION
+=============================
+
+THE FROZEN MUTATION
+-------------------
+  Token '-' maps to AST_UN_OP_PLUS instead of AST_UN_OP_MINUS.
+
+  Exactly ONE line of the component changes, in a SCRATCH COPY:
+
+    pristine:  if (token_value == 45)  return 5;   // '-' -> AST_UN_OP_MINUS
+    mutated:   if (token_value == 45)  return 4;   // '-' -> AST_UN_OP_PLUS
+
+THE THREE PRODUCTION COMPILERS
+---------------------------
+COMMAND=make parser-slice05-production-mutation
+OUTPUT:
+  SLICE05_PRODUCTION_MUTATION=RUN
+    TRACKED_COMPONENT_SHA256_BEFORE=26a9b4578d3dc6301a26df5f6d8ee3d8bb4326869aa1165949112aa9c44065fb
+    PRISTINE_COMPONENT_SHA256=26a9b4578d3dc6301a26df5f6d8ee3d8bb4326869aa1165949112aa9c44065fb
+    MUTATED_COMPONENT_SHA256=f9040a912a51c330e3fc174b1055db38261322f67fb0c091e38b2ee11a250386
+    RESTORED_COMPONENT_SHA256=26a9b4578d3dc6301a26df5f6d8ee3d8bb4326869aa1165949112aa9c44065fb
+    PRISTINE_OBJECT_SHA256=27075194e1d3ff94703b51459cc3e5c8ea472747ea1f255a451a97f44b416e72
+    MUTATED_OBJECT_SHA256=53bcc1ddb2e953caa3b7e702a63aab6aa9d8361dde3b705c24b9967df1897f53
+    RESTORED_OBJECT_SHA256=27075194e1d3ff94703b51459cc3e5c8ea472747ea1f255a451a97f44b416e72
+    A_COMPILER_SHA256=4d796c054b177acc34a583a6d94b218350f1280e1ac9ecfde3355469cb5960f9
+    B_COMPILER_SHA256=678efb61acf9b16869fde0a959a565bed5731ccdd5b29596cacf560f6603f3df
+    C_COMPILER_SHA256=4d796c054b177acc34a583a6d94b218350f1280e1ac9ecfde3355469cb5960f9
+    A_OUTPUT=UNARY_MINUS_RESULT=-7
+  UNARY_PLUS_RESULT=7
+  UNARY_LOG_NOT_RESULT=0
+  UNARY_BIT_NOT_RESULT=-8
+    B_OUTPUT=UNARY_MINUS_RESULT=7
+  UNARY_PLUS_RESULT=7
+  UNARY_LOG_NOT_RESULT=0
+  UNARY_BIT_NOT_RESULT=-8
+    C_OUTPUT=UNARY_MINUS_RESULT=-7
+  UNARY_PLUS_RESULT=7
+  UNARY_LOG_NOT_RESULT=0
+  UNARY_BIT_NOT_RESULT=-8
+    A_BUILD_RC=0
+    A_EXEC_RC=0
+    B_BUILD_RC=0
+    B_EXEC_RC=0
+    C_BUILD_RC=0
+    C_EXEC_RC=0
+    B_OUTPUT_DIFFERS_FROM_A=YES
+    C_OUTPUT_EQUALS_A=YES
+    C_SUBJECT_SHA_EQUALS_A=YES
+    MUTATED_SUBJECT_SHA_DIFFERS_FROM_A=YES
+    TRACKED_COMPONENT_SHA256_AFTER=26a9b4578d3dc6301a26df5f6d8ee3d8bb4326869aa1165949112aa9c44065fb
+  SLICE05_PRODUCTION_MUTATION=PASS
+    mutant build would not be a successful causal control.
+    lives in build/slice05-mut.
+  RC=0
+
+THE VERDICT
+------------
+  A_BUILD_RC=0
+  A_EXEC_RC=0
+  B_BUILD_RC=0
+  B_EXEC_RC=0
+  C_BUILD_RC=0
+  C_EXEC_RC=0
+  B_OUTPUT_DIFFERS_FROM_A=YES
+  C_OUTPUT_EQUALS_A=YES
+  C_SUBJECT_SHA_EQUALS_A=YES
+  MUTATED_SUBJECT_SHA_DIFFERS_FROM_A=YES
+  PRODUCTION_DELEGATION=LOAD_BEARING
+  PRODUCTION_CAUSAL_MUTATION=PASS
+
+WHY THIS PROVES THE DELEGATION IS LOAD-BEARING
+-------------------------------------------
+  The A, B and C compilers are THREE ACTUAL PRODUCTION COMPILERS,
+  each linking a different unary subject object.  Each compiler
+  compiled the SAME frozen observation program, and the program was
+  EXECUTED.
+
+  A produced UNARY_MINUS_RESULT=-7  (the pristine classification).
+  B produced UNARY_MINUS_RESULT=7   (the mutated classification:
+    the parser classified '-' as unary PLUS, so -x evaluated to +x).
+  C produced UNARY_MINUS_RESULT=-7  (the restored classification).
+
+  The three OTHER observations (unary plus, logical not, bitwise not)
+  are IDENTICAL in A, B and C.  The mutation is therefore SPECIFIC:
+  it changed the '-' classification and nothing else.
+
+  If the production parser had NOT consulted the PolyC component, B
+  would have produced the same output as A and
+  B_OUTPUT_DIFFERS_FROM_A would have been NO.  It is YES, so the
+  production path demonstrably depends on the PolyC decision.
+
+THE TRACKED COMPONENT WAS NOT MUTATED
+----------------------------------
+  TRACKED_COMPONENT_SHA256_BEFORE == TRACKED_COMPONENT_SHA256_AFTER
+  (both 26a9b4578d3dc6301a26df5f6d8ee3d8bb4326869aa1165949112aa9c44065fb)
+
+  The mutant lives in build/slice05-mut/.  The tracked file was never
+  written to.
+
+THE OBSERVATION CHANNEL
+----------------------
+  stdout, as plain decimal numbers.  The observation does NOT rely
+  on a process exit code: an exit status truncates a negative value on
+  many hosts, and the mutation's whole point is to turn a NEGATIVE
+  observation into a POSITIVE one.
+
+  No host-specific nondeterminism was observed or expected: the
+  program performs only integer arithmetic and writes four fixed-format
+  lines, with no address, timestamp, hash-order iteration or
+  filesystem access in the observed output.

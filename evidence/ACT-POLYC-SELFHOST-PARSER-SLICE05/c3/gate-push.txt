@@ -1,0 +1,33 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE05
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=gate-push
+
+THE PUSH GATE
+==============
+
+COMMAND=make gate-push
+EXIT_CODE=0
+OUTPUT (the mandatory checks):
+  CHECK=build STATUS=PASS
+  CHECK=install STATUS=PASS
+  CHECK=gep01 STATUS=PASS
+  CHECK=aot STATUS=PASS
+  CHECK=jit STATUS=PASS
+  CHECK=lsp STATUS=PASS
+  CHECK=diff-check STATUS=PASS
+
+  VERDICT=PASS
+
+  EVERY MANDATORY GATE PASSED:
+    build      the hermetic production build
+    install    the hermetic install into the gate prefix
+    gep01      the LLVM GEP01 regression harness
+    aot        the AOT unit-test suite
+    jit        the JIT unit-test suite
+    lsp        the LSP test suite
+    diff-check the range-aware diff hygiene check
+
+  NO INDIVIDUAL CHECK WAS SILENTLY OMITTED.  Every one of the seven
+  is present in the output above with STATUS=PASS.
+
+  GATE_PUSH=PASS

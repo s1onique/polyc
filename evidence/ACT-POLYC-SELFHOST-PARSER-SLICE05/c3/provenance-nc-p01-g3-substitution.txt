@@ -1,0 +1,93 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE05
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=provenance-nc-p01-g3-substitution
+
+NC-P01 -- THE G1 WITNESS PAYLOAD IN THE G3 SLOT
+===============================================
+
+THE CONTROL
+------------
+COMMAND=make parser-slice05-provenance-controls
+OUTPUT:
+    NC_P01_GENERATION_ROWS=4
+    NC_P01_GENERATION=g0
+    NC_P01_GENERATION=g1
+    NC_P01_GENERATION=g2
+    NC_P01_GENERATION=g3
+    NC_P01_OTHER_ROWS_UNCHANGED=YES
+  SLICE05_FORGERY=CASE-NC-P01 the G1 witness payload in the G3 slot (four generations present)
+    SLICE05_FORGERY=CASE-NC-P01 PROVENANCE_VERDICT=REJECTED
+
+  The control starts from a COMPLETE four-generation witness and
+  replaces ONLY the G3 block's payload with the G1 block's payload.
+  The G3 label is retained.
+
+THE COMPLETENESS PRECONDITIONS
+-----------------------------
+  NC_G3_SUBSTITUTION_MANIFEST_COMPLETE=YES
+    GENERATION_ROWS=4  (the mutant still carries four rows)
+    STAGE_LABELS=G0,G1,G2,G3  (all four labels are present and in
+    order; the g3 label was NOT changed)
+    ALL_REQUIRED_RECEIPTS_PRESENT=YES  (the mutant still carries four
+    PROBE_EXECUTION_OUTPUT lines, because the substituted G1 payload
+    carries the G1 receipt)
+  NC_G3_SUBSTITUTION_CHANGED_TARGET=G3
+  NC_G3_SUBSTITUTION_OTHER_ROWS_UNCHANGED=YES
+    (the g0, g1 and g2 blocks are byte-for-byte identical between
+     the pristine witness and the mutant -- verified with cmp)
+
+THE REJECTION
+--------------
+  NC_G3_SUBSTITUTION_REJECTED=YES
+  NC_G3_SUBSTITUTION_REJECTION_REASON=G3_BINDING_MISMATCH
+
+  THE VERIFIER OUTPUT:
+COMMAND=cat build/slice05-nc/nc-p01.txt
+  GENERATIONS_PRESENT=4
+  GENERATION_ROWS=4
+  STAGE_LABELS_MATCH=4
+  G3_BINDING_MISMATCH g3 recorded binding [STAGE1_POLYC] but the expected binding is [STAGE3_POLYC]
+  G3_STAGE_IDENTITY_MISMATCH g3 recorded run binding [STAGE1_POLYC] but the expected stage identity is [STAGE3_POLYC]
+  ALL_REQUIRED_RECEIPTS_PRESENT=4
+  REJECT_DUPLICATE_NONCE the witness carries the same nonce for two generations
+  DUPLICATE_NONCE_COUNT=1
+  GENERATIONS_VERIFIED=4
+  PROVENANCE_VERDICT=REJECTED
+
+  The reason is the G3-SPECIFIC BINDING mismatch: the G3 row
+  carries the G1 binding (STAGE1_POLYC) and the expected binding
+  for the G3 row is STAGE3_POLYC.
+
+  A ROW-COUNT, MISSING-GENERATION, or MALFORMED-INPUT rejection would
+  NOT have satisfied this control.  The row count is 4, the labels
+  are g0,g1,g2,g3, and the witness parses cleanly.  The ONLY
+  thing wrong is the G3 BINDING, and that is exactly what the
+  verifier names.
+
+  The DUPLICATE_NONCE diagnostic is ALSO reported, because the
+  substituted G1 payload carries the G1 nonce, so two generations
+  now share it.  The verifier does NOT SHORT-CIRCUIT: it reports
+  EVERY diagnostic it finds, which is why the intended G3-scoped
+  reason is present alongside it.
+
+THE PRISTINE RECHECK
+-------------------
+  PRISTINE_VERDICT=PASS
+  PRISTINE_RECHECK=PASS
+  PRISTINE_MANIFEST_VALID=YES
+
+THE COMPARISON WITH THE CLOSED SLICE04 CONTROL
+-------------------------------------
+  SLICE04's CASE-1 recorded:
+    REJECT_STAGE_LABELS the witness carries 3 generations, expected 4
+  which is a ROW-COUNT rejection, not a substitution rejection.
+
+  SLICE05's NC-P01 records:
+    G3_BINDING_MISMATCH g3 recorded binding [STAGE1_POLYC] but the
+    expected binding is [STAGE3_POLYC]
+  which is the G3-SPECIFIC substitution rejection.  The SLICE04
+  deficiency is CORRECTED, not repeated.
+
+  MUTATION_TARGET=G3_NONCE_PAYLOAD
+  NON_TARGET_FIELDS_UNCHANGED=YES
+  MUTANT_VERDICT=REJECTED

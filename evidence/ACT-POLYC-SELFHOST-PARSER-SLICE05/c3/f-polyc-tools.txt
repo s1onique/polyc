@@ -1,0 +1,47 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE05
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=f-polyc-tools
+
+THE F-POLYC-TOOLS CHECK
+========================
+
+COMMAND=ls tools/factory/factory-polyc-tools-check.HC
+OUTPUT:
+  ls: cannot access 'tools/factory/factory-polyc-tools-check.HC': No such file or directory
+
+  F_POLYC_TOOLS_CHECKER=UNAVAILABLE
+
+  The F-POLYC-TOOLS checker does NOT exist in this repository.
+  The AGENTS.md pointer records this exactly:
+
+    "tools/factory/factory-polyc-tools-check.HC (NOT YET LANDED --
+     see C2.9 of the bound correction ACT)"
+
+  The tools/factory directory contains only:
+    factory-halt-classification.HC
+    factory-no-python-check.HC
+
+  Its PASS RESULT IS NOT INVENTED.  Per ACT section 9.5, an
+  unavailable checker is REPORTED AS UNAVAILABLE.
+
+  WHAT CAN BE SAID ABOUT THE SLICE05 TOOLING
+---------------------------------------------
+  Every NEW tool this ACT authored is POLYC:
+    tools/quality/parser-slice05-fixture-producer.HC    PolyC
+    tools/quality/parser-slice05-fixture-integrity.HC  PolyC
+    tools/quality/parser-slice05-differential.HC      PolyC
+    tools/quality/parser-slice05-provenance-verifier.HC PolyC
+    tools/bootstrap/selfhost-parser-slice05.HC        PolyC
+
+  The ONLY C files this ACT authored are the two NARROW ORACLE
+  ADAPTERS the ACT explicitly permits:
+    tools/quality/parser-slice05-oracle-driver.c
+    tools/quality/parser-slice05-oracle-stub.c
+  The oracle driver contains NO mapping table: it declares the
+  real legacy function, defines the distinguished sentinel, calls the
+  real function and prints the observed result.
+
+  The ONLY shell additions are Makefile RECIPES (no new shell TOOLS
+  file was authored).
+
+  NEW_UNAUTHORIZED_TOOL_VIOLATIONS=0

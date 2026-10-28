@@ -1,0 +1,55 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE05
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=fresh-tree-build
+
+THE FRESH-TREE BUILD
+====================
+
+THE BUILD WAS FROM A PRISTINE MATERIALISED TREE
+---------------------------------------
+COMMAND=git archive HEAD | tar -x -C /tmp/slice05-fresh
+  The tree was materialised from the committed sources, then the C2
+  production changes and the five qualified subject objects were
+  copied in.  The compiler was then compiled FROM SOURCE there, in
+  its own CMake build tree, with its own object files.
+
+COMMAND=cd /tmp/slice05-fresh && make production-hcc
+BUILD_EXIT_CODE=0
+  PRODUCTION_PADDING_AUTHORITY=POLYC
+  PRODUCTION_AST_BINOP_AUTHORITY=POLYC
+
+  No object from the warm tree was reused for the COMPILER.  (The five
+  qualified PolyC SUBJECT objects are inputs to the link by design,
+  and their hashes are the ones the C2 commit recorded.)
+
+THE FRESH-TREE LINK
+-------------------
+COMMAND=nm /tmp/slice05-fresh/hcc | grep -E "_Bootstrap[A-Za-z]+" | sort
+  0000000100063cc4 T _BootstrapCalcPadding
+  0000000100063d3c T _BootstrapValidPostControlFlowToken
+  0000000100063f74 T _BootstrapOperatorPrecedence
+  0000000100064344 T _BootstrapAstBinOpFromToken
+  0000000100064534 T _BootstrapAstUnaryOpFromToken
+
+  EACH_PRODUCTION_SUBJECT_LINKED_ONCE=YES
+  DUPLICATE_BOOTSTRAP_SYMBOLS=0
+
+  FIVE PolyC authorities, each with exactly ONE strong global text
+  definition.  No symbol name appears more than once.
+
+THE VERIFIERS THAT RAN DURING THAT BUILD
+------------------------------------
+COMMAND=grep -o "AST_TOKEN_MAP_OBJECT_STATUS=..." <build log> | sort -u
+  AST_TOKEN_MAP_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapAstBinOpFromToken TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapAstBinOpFromToken DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=1584
+  AST_TOKEN_MAP_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapAstUnaryOpFromToken TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapAstUnaryOpFromToken DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=1128
+
+  The unary subject passes the SAME generic verifier as the binary
+  subject.
+
+THE STANDALONE DIFFERENTIAL LINK
+------------------------------
+COMMAND=make parser-slice05-differential
+  The differential links the PolyC subject, the legacy oracle object,
+  the oracle adapter and the transitive production objects into a
+  STANDALONE executable -- separate from the production compiler.
+  STANDALONE_DIFFERENTIAL_LINK=PASS

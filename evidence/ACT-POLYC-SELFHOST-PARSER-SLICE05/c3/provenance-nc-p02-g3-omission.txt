@@ -1,0 +1,74 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE05
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=provenance-nc-p02-g3-omission
+
+NC-P02 -- ONLY THE G3 EXECUTION RECEIPT REMOVED
+=================================================
+
+THE CONTROL
+------------
+COMMAND=make parser-slice05-provenance-controls
+OUTPUT:
+    NC_P02_GENERATION_ROWS=4
+    NC_P02_PRISTINE_RECEIPTS=4
+    NC_P02_MUTANT_RECEIPTS=3
+  SLICE05_FORGERY=CASE-NC-P02 only the G3 execution receipt removed
+    SLICE05_FORGERY=CASE-NC-P02 PROVENANCE_VERDICT=REJECTED
+
+  The control starts from the SAME complete valid four-generation
+  baseline and removes ONLY the G3 PROBE_EXECUTION_OUTPUT line.  The
+  G3 label is retained.
+
+THE COMPLETENESS PRECONDITIONS
+-----------------------------
+  NC_G3_OMISSION_TARGET=G3
+  GENERATION_ROWS=4  (the mutant still carries four rows)
+  STAGE_LABELS=G0,G1,G2,G3
+  NC_G0_RECEIPT_PRESERVED=YES
+  NC_G1_RECEIPT_PRESERVED=YES
+  NC_G2_RECEIPT_PRESERVED=YES
+    (the pristine witness carries 4 receipt lines and the mutant
+     carries 3; the receipts that REMAIN are the g0, g1 and g2 ones,
+     byte-for-byte)
+
+THE REJECTION
+--------------
+  NC_G3_OMISSION_REJECTED=YES
+  NC_G3_OMISSION_REJECTION_REASON=G3_EXECUTION_RECEIPT_MISSING
+
+  THE VERIFIER OUTPUT:
+COMMAND=cat build/slice05-nc/nc-p02.txt
+  GENERATIONS_PRESENT=4
+  GENERATION_ROWS=4
+  STAGE_LABELS_MATCH=4
+  G3_EXECUTION_RECEIPT_MISSING g3 has no PROBE_EXECUTION_OUTPUT
+  ALL_REQUIRED_RECEIPTS_PRESENT=3
+  DUPLICATE_NONCE_COUNT=0
+  GENERATIONS_VERIFIED=4
+  PROVENANCE_VERDICT=REJECTED
+
+  The reason names G3 SPECIFICALLY.  It is NOT the generic
+  REJECT_OMITTED_EXECUTION_RECEIPT that the SLICE04 verifier emitted,
+  and it is NOT a G0-named omission.
+
+THE PRISTINE RECHECK
+-------------------
+  PRISTINE_VERDICT=PASS
+  PRISTINE_RECHECK=PASS
+  PRISTINE_MANIFEST_VALID=YES
+
+THE COMPARISON WITH THE CLOSED SLICE04 CONTROL
+-------------------------------------
+  SLICE04's CASE-2 recorded:
+    REJECT_OMITTED_EXECUTION_RECEIPT g0 has no PROBE_EXECUTION_OUTPUT
+  which names G0, not G3: the omission was in the FIRST
+  generation's row, not the third.'s.
+
+  SLICE05's NC-P02 records:
+    G3_EXECUTION_RECEIPT_MISSING g3 has no PROBE_EXECUTION_OUTPUT
+  which names the THIRD generation.  The SLICE04 deficiency is
+  CORRECTED, not repeated.
+
+  MUTATION_TARGET=G3_EXECUTION_RECEIPT
+  NON_TARGET_FIELDS_UNCHANGED=YES
+  MUTANT_VERDICT=REJECTED

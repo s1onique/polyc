@@ -1,0 +1,50 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE05
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=provenance-nc-p03-compiler-sha
+
+NC-P03 -- ONE COMPILER SHA CHANGED
+========================================
+
+THE CONTROL
+------------
+COMMAND=make parser-slice05-provenance-controls
+OUTPUT:
+  SLICE05_FORGERY=CASE-NC-P03 one recorded compiler SHA changed
+    SLICE05_FORGERY=CASE-NC-P03 PROVENANCE_VERDICT=REJECTED
+
+  The recorded COMPILER_BINARY_SHA256 of every generation is replaced
+  with an all-zero digest.  The witnesses OWN the compiler paths and
+  the objects; only the recorded digest is wrong.
+
+  MUTATION_TARGET=COMPILER_BINARY_SHA256
+
+THE REJECTION
+--------------
+  MUTANT_VERDICT=REJECTED
+  NON_TARGET_FIELDS_UNCHANGED=YES
+
+  THE VERIFIER OUTPUT:
+COMMAND=cat build/slice05-nc/nc-p03.txt
+  GENERATIONS_PRESENT=4
+  GENERATION_ROWS=4
+  STAGE_LABELS_MATCH=4
+  G0_COMPILER_IDENTITY_MISMATCH g0 recorded compiler sha [0000000000000000000000000000000000000000000000000000000000000000] but the live compiler hashes to [9b11ead1ca76a03d61108ad5bf2c913d6aa8daa7deb9fd28893e847e3680e5e7]
+  G1_COMPILER_IDENTITY_MISMATCH g1 recorded compiler sha [0000000000000000000000000000000000000000000000000000000000000000] but the live compiler hashes to [4d796c054b177acc34a583a6d94b218350f1280e1ac9ecfde3355469cb5960f9]
+  G2_COMPILER_IDENTITY_MISMATCH g2 recorded compiler sha [0000000000000000000000000000000000000000000000000000000000000000] but the live compiler hashes to [e6ed87cf05aa2c376cbd3197c6d057dce6df22c078adea4b2c5dd117cff1d588]
+  G3_COMPILER_IDENTITY_MISMATCH g3 recorded compiler sha [0000000000000000000000000000000000000000000000000000000000000000] but the live compiler hashes to [2005c4f8004bc9a8b95a775c73ab8d6693543c3a87add9cfd1b92a009801d07e]
+  ALL_REQUIRED_RECEIPTS_PRESENT=4
+  DUPLICATE_NONCE_COUNT=0
+  GENERATIONS_VERIFIED=4
+  PROVENANCE_VERDICT=REJECTED
+
+  The rejection is an EXACT COMPILER-IDENTITY MISMATCH: the recorded
+  digest is compared against the LIVE sha256 of the compiler the
+  witness names.  The verifier does not short-circuit, so the
+  mismatch is reported for EVERY generation whose digest was
+  corrupted.
+
+THE PRISTINE RECHECK
+-------------------
+  PRISTINE_VERDICT=PASS
+  PRISTINE_RECHECK=PASS
+  PRISTINE_MANIFEST_VALID=YES

@@ -1,0 +1,60 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE05
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=production-authority
+
+THE PRODUCTION AUTHORITY
+=======================
+
+THE PRODUCTION ast.c.o
+-----------------------
+COMMAND=nm build/CMakeFiles/hcc.dir/ast.c.o | grep -i "unaryopfromtoken\|BootstrapAst"
+                 U _BootstrapAstBinOpFromToken
+                 U _BootstrapAstUnaryOpFromToken
+00000000000006d4 T _astUnaryOpFromToken
+
+  UNARY_PRODUCTION_OBJECT_REFERENCES_POLYC=YES
+  LEGACY_UNARY_MAPPING_IN_PRODUCTION=NO
+
+THE PRODUCTION ADAPTER'S DISASSEMBLY
+------------------------------
+COMMAND=otool -tV build/CMakeFiles/hcc.dir/ast.c.o
+  _astUnaryOpFromToken:
+  00000000000006d4	stp	x20, x19, [sp, #-0x20]!
+  00000000000006d8	stp	x29, x30, [sp, #0x10]
+  00000000000006dc	add	x29, sp, #0x10
+  00000000000006e0	mov	x19, x1
+  00000000000006e4	bl	0x6e4
+  00000000000006e8	tbnz	x0, #0x3f, 0x6f8
+  00000000000006ec	str	w0, [x19]
+  00000000000006f0	mov	w0, #0x1
+  00000000000006f4	b	0x6fc
+  00000000000006f8	mov	w0, #0x0
+  00000000000006fc	ldp	x29, x30, [sp, #0x10]
+  0000000000000700	ldp	x20, x19, [sp], #0x20
+  0000000000000704	ret
+
+  There is NO jump table and NO switch: the legacy mapping is not in
+  the production object.  The decision is the PolyC component's.
+
+THE LINKED PRODUCTION COMPILER
+----------------------------
+COMMAND=nm ./hcc | grep BootstrapAst
+0000000100064314 T _BootstrapAstBinOpFromToken
+0000000100064504 T _BootstrapAstUnaryOpFromToken
+
+  POLYC_UNARY_STRONG_DEFINITION_PRESENT=YES
+  (type T: a strong global text definition)
+
+THE FIVE PRODUCTION AUTHORITIES
+----------------------------
+  CalcPadding                     POLYC  _BootstrapCalcPadding
+  parseValidPostControlFlowToken  POLYC  _BootstrapValidPostControlFlowToken
+  parseGetPriority                POLYC  _BootstrapOperatorPrecedence
+  astBinOpFromToken               POLYC  _BootstrapAstBinOpFromToken
+  astUnaryOpFromToken             POLYC  _BootstrapAstUnaryOpFromToken
+
+  AST_OPERATOR_CLASSIFIER_FAMILY=SELFHOSTED_TRUE_GREEN
+  AST_BINARY_OPERATOR_AUTHORITY=POLYC
+  AST_UNARY_OPERATOR_AUTHORITY=POLYC
+  LEGACY_BINARY_C_AUTHORITY=RETIRED
+  LEGACY_UNARY_C_AUTHORITY=RETIRED
