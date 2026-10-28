@@ -1,0 +1,54 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04
+# ACT_PHASE=C2-RANK-SELECT
+# EVIDENCE_KIND=selected-fixture-contract
+#
+# THE FROZEN FIXTURE CONTRACT FOR THE SELECTED CANDIDATE.
+#
+# The row COUNT is a RESULT of coverage, not a definition of coverage.
+# The counts below are DERIVED from the live source: the domain is the
+# live AstKind enum (44 values, src/ast.h) plus the out-of-enum probes
+# that the RECON04 oracle already executes (-4..0 and 296..300), which
+# together are the 51 rows the committed oracle produced.
+#
+# The successor MUST derive its own row count from the live enum and
+# MUST report it; it MUST NOT hard-code 51.
+#
+# Schema:
+#   partition <TAB> dimension <TAB> required_coverage <TAB> derivation
+#   <TAB> expected_rows_at_recon04 <TAB> notes
+#
+P01	ACCEPTED	every AstKind value in the TERMINATING set terminates the arm	derived from the live src/ast.h enum values named in the live source condition	6	The six kinds are AST_GOTO, AST_RETURN, AST_COMPOUND_STMT, AST_BREAK, AST_CASE, AST_DEFAULT
+P02	REJECTED	every other AstKind value does NOT terminate the arm	live src/ast.h enum values minus P01	38	The remaining 38 enum values
+P03	BOUNDARY	the enum's first and last values	live src/ast.h enum bounds	2	AST_GVAR is the first enum value; AST_THROW is the last
+P04	BOUNDARY	the out-of-enum probes immediately below and above the enum	live src/ast.h enum bounds plus/minus one	7	-4..0 and 296..300; these are values no live AstKind can take
+P05	ALIASING	the same AstKind value appearing in more than one row role	every enum value appears exactly once	0	There is no aliasing in this domain: the input is a single enum value, not a record
+P06	PROJECTION_EDGE	a kind value that is NEITHER terminating nor non-terminating because it is out of the enum	the out-of-enum probes	7	Same rows as P04; they are recorded under both partitions because they probe both the projection edge AND the enum boundary
+P07	ERROR_FAILURE	the component has no failure path, so there is no error row	the ABI is a total function over the domain	0	FAILURE_SEMANTICS=NO_FAILURE_PATH
+P08	PRODUCTION_CALLER	a real switch statement whose arm behaviour depends on the decision	the witness at c2/probes/witness-sub001.HC	1	The witness is the production-caller case: a real compiled program whose output depends on the decision
+P09	MUTATION_SENSITIVE	the kind whose membership was mutated in the causal experiment	AST_COMPOUND_STMT	1	The causal mutation removed AST_COMPOUND_STMT; the fixture must detect that change
+P10	AST_SHAPE	a switch with a compound statement in an arm, and a switch without one	the witness and the RECON04 causal experiment	2	The AST-SHAPE dimension: which statements belong to which arm
+P11	STATEMENT_ORDERING	the ORDER of the arm markers changes when the decision changes	the witness	1	The ordering observable is the whole point of the witness
+P12	SCOPE_SENSITIVE	the decision is independent of any scope, so scope does not vary the result	the decision reads only stmt->kind	0	Not a meaningful dimension for this slice; recorded so that its ABSENCE is explicit
+P13	NESTED_CONTEXT	a compound statement nested inside a case arm, and a compound statement containing a switch	the witness and the RECON04 causal experiment	2	The nested-context dimension
+P14	RECOVERY_ADJACENT	the decision is made AFTER the statement has parsed, so a failed parse never reaches it	the parse of the statement happens before the decision	0	Not a meaningful dimension for this slice; recorded so that its ABSENCE is explicit
+#
+EXPECTED_FIXTURE_ROWS_AT_RECON04=51
+EXPECTED_FIXTURE_PARTITIONS_AT_RECON04=12
+EXPECTED_FIXTURE_ROWS_MUST_BE_DERIVED=YES
+#
+# FIXTURE INTEGRITY (ACT section 11.1)
+#
+EXPECTED_IDS=OBSERVED_IDS
+EXPECTED_PARTITIONS=OBSERVED_PARTITIONS
+DUPLICATE_IDS=0
+UNKNOWN_IDS=0
+MISSING_IDS=0
+MALFORMED_ROWS=0
+INVALID_INPUT_VALUES=0
+UNTESTED_SEMANTIC_BRANCHES=0
+#
+# The producer and the integrity verifier MUST NOT share their logic.
+# The producer derives the rows from the frozen enum and the frozen
+# terminating set; the verifier derives the expected partition
+# membership INDEPENDENTLY from the live src/ast.h and the live source
+# condition at src/parser.c:1551..1553.

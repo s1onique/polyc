@@ -1,0 +1,64 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04
+# ACT_PHASE=C2-RANK-SELECT
+# EVIDENCE_KIND=mandatory-ac-contract
+#
+# THE FROZEN ACCEPTANCE CONTRACT: EXACTLY 50 ROWS.
+#
+# This file is the CONTRACT.  It is frozen here, BEFORE the C3
+# verification, and the C3 ledger is joined to it BY AC ID.  The ledger
+# may not change a predicate, and it may not prove itself by counting
+# its own summary rows.
+#
+# Schema:
+#   ac_id <TAB> predicate <TAB> evidence_artifact <TAB> verification_method
+#
+AC01	Entry branch and full HEAD verified	c0/entry-identity.txt	Compare the recorded BRANCH and ENTRY_HEAD against `git branch --show-current` and `git rev-parse HEAD` at the C1/C3 tree
+AC02	Entry worktree clean	c0/entry-identity.txt	`git status --porcelain=v1` shows no tracked modification at the entry tree
+AC03	Predecessor CLOSE reachable and identified	c0/predecessor-close.txt	`git merge-base --is-ancestor <predecessor-close> HEAD` plus the trailer parse of that commit
+AC04	Zero Git replace refs	c0/entry-identity.txt	`git replace -l` is empty
+AC05	Five existing parser PolyC authorities proven live	c0/selfhosted-authority-baseline.tsv	The AUTHORITY mode of the RECON04 tool reports AUTHORITIES_VERIFIED=5 with OBJ_UNDEFINED_REF=YES and OBJ_DEFINED_HERE=NO for each
+AC06	Closed predecessor evidence and HANDOFF immutable	c0/predecessor-close.txt	`git diff --stat <entry>..HEAD -- <predecessor files>` is empty for every frozen hash
+AC07	Current parser/AST function census complete	c1/function-inventory.tsv	The census is 268 rows and the VERIFY mode of the RECON04 tool re-derives 268 live functions with 0 range errors
+AC08	Every live semantic authority classified	c1/semantic-authority.tsv	The census symbol set and the classification symbol set are identical (268 = 268, 0 difference both ways)
+AC09	No duplicate or conflicting surface identities	c1/semantic-authority.tsv	No symbol appears twice; each symbol has exactly one authority_class and one candidate_class
+AC10	Historical RECON03 inventory reconciled	c1/historical-surface-reconciliation.tsv	The measured set differences are 0 removed and 1/16/130 added, with a named explanation for each
+AC11	All seven historical remaining eligible candidates reevaluated	c1/historical-candidate-reconciliation.tsv	Each of CAND-018/021/022/023/025/026/030 has a row with the four reevaluation fields and a current eligibility
+AC12	Migrated CAND-017/019/020 excluded from legacy selection	c1/historical-candidate-reconciliation.tsv + c2/excluded-candidates.tsv	Each of the three is classified SELFHOSTED_TRUE_GREEN and appears in the excluded table with a clause-02 reason
+AC13	Compound-statement dependency graph recomputed	c1/inventory-controls.txt CTL-09	The subordinate callee set is compared name-by-name against the historical PARSER01 table: 0 added, 0 removed
+AC14	Statement-dispatch dependencies classified	c1/structural-subslices.tsv + c1/callback-ownership.tsv + c1/state-read-write.tsv	SUB-004 is classified with its state categories, its callback edges and its production consumer
+AC15	Expression-parser dependencies classified	c1/structural-subslices.tsv + c1/dependency-edges.tsv	The REG-C region is enumerated with its dependency edges and its state classifications
+AC16	Declaration/type dependencies classified	c1/structural-regions.tsv + c1/dependency-edges.tsv	REG-D is enumerated with its dependency edges and its state classifications
+AC17	AST validation/construction dependencies classified	c1/structural-regions.tsv + c1/host-graph-ownership.tsv	REG-E is enumerated with its host-graph edges and its state classifications
+AC18	All relevant recovery ownership classified	c1/recovery-ownership.tsv	Every recovery edge has an owner, and every owner is C
+AC19	All relevant callback ownership classified	c1/callback-ownership.tsv	Every callback edge names the caller, the callee and the call line
+AC20	All relevant graph reads/writes classified	c1/host-graph-ownership.tsv	Every host-graph row names the object, the access and the fields
+AC21	Structural sub-slices discovered or exhaustively rejected	c1/structural-subslices.tsv	Every one of the six required regions is covered; every rejected sub-slice has a named rejection reason
+AC22	Every candidate bound to live source and production consumers	c1/candidate-source-bindings.tsv + c1/production-call-graph.tsv	Every candidate row carries a source range, a SHA-256 and a production consumer
+AC23	No unclassified candidate dependencies	c1/state-read-write.tsv + c1/host-graph-ownership.tsv + c1/callback-ownership.tsv + c1/recovery-ownership.tsv + c1/allocation-ownership.tsv	No row in any ownership table has an empty classification column
+AC24	Existing 13-clause eligibility applied mechanically	c2/eligibility-results.tsv	The verbatim output of the UNMODIFIED canonical checker over c1/eligibility-input-facts.tsv
+AC25	Eligibility negative controls sensitive and passing	c2/eligibility-controls.txt	Every control flips the verdict AND drives its targeted clause bit to 0; ELIGIBILITY_CONTROL_FAILURES=0
+AC26	Canonical R0-R6 definitions retained	c2/ranking-dimensions.tsv	Each rationale column cites the frozen definition, and no dimension's meaning is redefined
+AC27	Canonical ranking mechanically executed	c2/ranked-all-candidates.tsv	The verbatim output of the UNMODIFIED canonical ranker over c2/ranking-dimensions.tsv
+AC28	Ranking anti-bias controls sensitive and passing	c2/ranking-controls.txt	Every control produces the expected change; RANKING_CONTROL_FAILURES=0
+AC29	Structural/scalar class policy applied exactly as authorized	c2/ranked-structural-candidates.tsv + c2/ranked-scalar-followups.tsv + c2/selection-result.tsv	CLASS_1 is non-empty and the selection is its rank-1
+AC30	Selected winner independently recomputed	c2/selection-result.tsv + c3/winner-recompute.txt	The C3 recomputation from the committed inputs reproduces the same winner
+AC31	Exactly one eligible target selected	c2/selection-result.tsv	SELECTED_CANDIDATE_COUNT=1
+AC32	Selected host-state projection complete	c2/selected-state-projection.tsv	Every host field the decision reads is listed with its copied type and its owner
+AC33	Selected ABI bounded and unambiguous	c2/selected-abi-contract.md	The ABI is SCALAR -> SCALAR with no pointer, no void* and no callback table
+AC34	Selected C semantic authority identified	c2/selected-abi-contract.md + c1/semantic-authority.tsv	The legacy C decision is identified by its live source range and its SHA-256
+AC35	Real legacy oracle strategy reproducible	c2/selected-oracle-contract.md + c2/probes/legacy-sub001-oracle.c	The oracle source is committed and its build and run commands are recorded
+AC36	Production delegation seam feasible	c2/selected-abi-contract.md + c2/selected-red-contract.md	RED-2 and RED-4 are observed at the entry tree, so the seam does not exist yet and is therefore available to the successor
+AC37	Failure/recovery semantics frozen	c2/selected-abi-contract.md	FAILURE_SEMANTICS=NO_FAILURE_PATH and every recovery owner is C
+AC38	Fixture contract covers all required semantic branches	c2/selected-fixture-contract.tsv	Every partition of the contract is populated with a derivation, not with a chosen count
+AC39	Fixture-integrity and negative-control contract complete	c2/selected-fixture-contract.tsv + c2/selected-negative-controls.md	Every integrity predicate and every required control is listed
+AC40	Component-absent RED reproducible	c2/selected-red-contract.md	RED-1 is reproduced with its exact command and observed result
+AC41	Production legacy-authority RED reproducible	c2/selected-red-contract.md	RED-3 is reproduced with its exact command and observed result
+AC42	Production causal proof feasible and correctly classified	c2/selected-causal-contract.md	The experiment was EXECUTED and is classified EXECUTED_CAUSAL_CONTROL, not as a weaker plan
+AC43	Four-generation successor proof model complete	c2/successor-scope.md section 4	G0..G3 are defined with their compilation relationship
+AC44	Successor mutation and restoration contract complete	c2/selected-causal-contract.md + c2/selected-negative-controls.md	PS-02 and PS-03 require the mutation and the restoration to be observed
+AC45	Existing parser/lexer conservation has zero new failures	c3/parser-conservation.txt + c3/lexer-conservation.txt + c3/lexer07-delta.txt	The failure-IDENTITY sets are compared, not merely the counts
+AC46	No production or successor implementation mutation	c3/scope-verify.txt	`git diff --stat <entry>..HEAD -- src/ tools/bootstrap/` is empty
+AC47	F14, scope, no-new-tool violations, and patch hygiene pass	c3/f14.txt + c3/scope-verify.txt + c3/patch-hygiene.txt	Each check is executed and reported separately
+AC48	`make gate-fast` passes	c3/gate-fast.txt	The command is run and its VERDICT is recorded
+AC49	`make gate-push` and required Factory tests pass	c3/gate-push.txt + c3/factory-v2.txt + c3/append-only.txt + c3/closure-status.txt + c3/f-no-python.txt + c3/f-polyc-tools.txt	Each command is run and its verdict is recorded; unavailable tooling is reported as unavailable
+AC50	Valid CLOSE, exact commit topology, and external terminality	external terminality checks (post-C4, read-only)	The commit count is 5, the C4 parent is C3, the worktree is clean and the range check passes

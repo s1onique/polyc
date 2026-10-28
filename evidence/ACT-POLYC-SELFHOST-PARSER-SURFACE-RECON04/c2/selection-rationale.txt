@@ -1,0 +1,125 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04
+ACT_PHASE=C2-RANK-SELECT
+EVIDENCE_KIND=selection-rationale
+
+WHY SUB-001 WON
+===============
+
+The selection is COMPUTED, not chosen.
+
+Step 1 -- eligibility.  All sixteen candidates were evaluated by the
+UNMODIFIED canonical checker
+(tools/quality/parser-slice-recon03-eligibility.HC) over
+c1/eligibility-input-facts.tsv.  All sixteen satisfy all thirteen
+clauses and are production-reachable:
+
+  TOTAL=16
+  ELIGIBLE=16
+  MALFORMED=0
+  STATUS=PASS
+
+Step 2 -- ranking.  The UNMODIFIED canonical ranker
+(tools/quality/parser-slice-recon03-ranking.HC) was run over
+c2/ranking-dimensions.tsv, whose `eligible` column is the CHECKER'S
+OUTPUT (the join between the two tables reports ZERO mismatches, so the
+ranker cannot have been fed a hand-authored eligibility flag).  The
+ranker printed:
+
+  RANKED:1  SUB-001  0 1 1 2 1 1  src/parser.c:1551
+  RANKED:2  SUB-002  0 1 1 2 1 1  src/parser.c:1582
+  RANKED:3  SUB-003  0 1 1 2 1 1  src/parser.c:1948
+  RANKED:4  SUB-004  0 2 1 2 2 2  src/parser.c:1672
+  RANKED:5  CAND-022 0 2 2 2 0 0  src/prslib.c:760
+  ... (12 further rows)
+  SELECTED=SUB-001
+
+Step 3 -- the class partition.  The ACT section 9.2 policy is applied
+ON TOP of the ranker's output.  CLASS_1 (ELIGIBLE_STRUCTURAL_BOUNDARY)
+contains SUB-001, SUB-002, SUB-003 and SUB-004, in exactly the ranker's
+own relative order (c2/ranked-structural-candidates.tsv).  CLASS_2
+contains the twelve scalar follow-ups (c2/ranked-scalar-followups.tsv).
+CLASS_1 is NON-EMPTY, so the selection is CLASS_1's rank-1.
+
+  SELECTED_CANDIDATE=SUB-001
+
+WHAT SUB-001 IS
+===============
+
+The switch-arm termination decision inside parseCaseLabel, at
+src/parser.c:1551..1553:
+
+    if (stmt->kind == AST_COMPOUND_STMT || stmt->kind == AST_CASE ||
+            stmt->kind == AST_DEFAULT || stmt->kind == AST_BREAK || stmt->kind == AST_RETURN
+            || stmt->kind == AST_GOTO) break;
+
+It decides whether the switch-case arm's statement loop terminates after
+the statement just parsed.  It materially affects STATEMENT_SEQUENCE:
+the statements that follow a terminating statement in the arm are
+attributed to the NEXT arm (or dropped), which changes the AST SHAPE of
+every switch body.
+
+WHY IT IS A STRUCTURAL BOUNDARY AND NOT A SCALAR FOLLOWUP
+==========================================================
+
+A candidate is STRUCTURAL_BOUNDARY only if it materially affects one of
+AST_SHAPE, PARSER_ACCEPTANCE, PARSER_ROUTING, STATEMENT_SEQUENCE,
+CONTROL_FLOW_CLASSIFICATION or RECOVERY_RESYNCHRONIZATION_CHOICE.
+SUB-001 affects STATEMENT_SEQUENCE directly: it decides which
+statements are appended to the arm's statement list and where the arm
+ends.  It is NOT a diagnostic formatter, an enum-to-string conversion,
+or an unrelated small helper.
+
+The same class holds for SUB-002 (the default-arm twin), SUB-003 (the
+compound-block statement routing) and SUB-004 (the statement keyword
+dispatch).  All four are bounded SCALAR -> SCALAR decisions with a
+production call path and a named observable effect.
+
+WHY THE ENCLOSING FUNCTION IS STILL INELIGIBLE
+==============================================
+
+parseCaseLabel as a WHOLE FUNCTION remains ineligible: it owns the
+host case list (cc->tmp_case_list), the arm statement list, the
+diagnostics and 20 subordinate host calls.  That is recorded in
+c1/structural-subslices.tsv as SUB-001's enclosing context and in
+c1/callback-ownership.tsv and c1/host-graph-ownership.tsv.
+
+The ACT section 8.3 rule applies: ENCLOSING_FUNCTION_ELIGIBLE=NO and
+SUBSLICE_ELIGIBLE=YES is valid ONLY because the sub-slice's narrower
+ABI and delegated semantics are independently proven.  The proof is:
+
+  * the sub-slice reads exactly ONE bounded host field (stmt->kind, an
+    AstKind enum value, copied out by the C side into an integer);
+  * the sub-slice calls NO helper;
+  * the sub-slice writes NO host state;
+  * the sub-slice performs NO recovery transfer;
+  * the sub-slice's effect on the host graph is the ONE `break` that
+    the C side would have executed anyway.
+
+The enclosing function's stateful dependencies REMAIN on the C side of
+the seam.  They do not disappear, and RECON04 does not move them.
+
+WHAT THE SUCCESSION MUST RETIRE
+===============================
+
+The successor must retire the REAL C decision, not merely duplicate
+it.  If C still evaluates the same condition after receiving the
+PolyC result, the slice is not an authority transfer and the
+successor fails its own contract.  The frozen successor contract in
+c2/successor-authorization.md states this as a hard requirement, and
+the production delegation seam is the single `if` statement at
+src/parser.c:1551..1553.
+
+THE SELECTION IS NOT A HANDPICK
+===============================
+
+The winner is recomputed from the committed input fact table by the
+unmodified ranker.  The four ranker anti-bias controls all fired:
+
+  NC-05 an ineligible candidate with perfect scores is rejected
+  NC-06 a shuffled inventory does not change the winner
+  NC-07 removing the winner reranks the remaining 15 candidates
+  NC-09 raising the winner's R0 changes the leader to SUB-002
+
+and the ACT's own nine ranking controls (NC-R01..NC-R09) are recorded
+in c2/ranking-controls.txt.  The independent recomputation in C3
+reproduces the same winner from the same committed inputs.

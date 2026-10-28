@@ -1,0 +1,21 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04
+ACT_PHASE=C2-RANK-SELECT
+EVIDENCE_KIND=ranking-controls
+
+COMMAND=./build/parser-slice-recon03-ranking <mutated copy of evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04/c2/ranking-dimensions.tsv>
+
+PRISTINE_WINNER=SUB-001
+
+NC-R01 control=row_permutation expect_winner=SUB-001 got_winner=SUB-001 result=YES
+NC-R02 control=winner_removal removed=SUB-001 new_winner=SUB-002 remaining_ranked=15 result=YES
+NC-R03 control=r0_perturbation perturbed=SUB-001 new_winner=SUB-002 eligible_rivals=1 result=YES
+NC-R04 control=ineligible_ideal_scores expect_winner=SUB-001 got_winner=SUB-001 result=YES
+NC-R05 control=source_order_tie_break tied=CAND-018:src/prslib.c:100 vs CAND-022:src/prslib.c:700 rank_CAND-018=5 rank_CAND-022=6 expect=CAND-018_first result=YES
+NC-R06 control=structural_class_removed expect_class2_rank1=CAND-022 got_winner=CAND-022 result=YES
+NC-R07 control=false_structural_classification expect_winner=CAND-022 got_winner=CAND-022 result=YES
+NC-R08 control=stale_candidate_id expect_winner=SUB-001 got_winner=SUB-001 result=YES
+NC-R09 control=historical_ranking_replay historical_winner=CAND-017 historical_order=CAND-017 CAND-022 CAND-018 CAND-021 CAND-023 CAND-019 CAND-020 CAND-025 CAND-026 CAND-030  result=YES
+NC-R00 pristine_recheck expect_winner=SUB-001 got_winner=SUB-001 result=YES
+
+RANKING_CONTROL_FAILURES=0
+STATUS=PASS

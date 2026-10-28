@@ -1,0 +1,56 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04
+# ACT_PHASE=C2-RANK-SELECT
+# EVIDENCE_KIND=excluded-candidates
+#
+# EVERY CANDIDATE THAT WAS EVALUATED AND REJECTED, WITH ITS NAMED
+# REJECTION REASON.
+#
+# NO CANDIDATE WAS LEFT UNEVALUATED.  The rejected population is:
+#
+#   1. the candidates that were DISCOVERED and are structurally
+#      ineligible (the eight INELIGIBLE_STRUCTURAL sub-slices);
+#   2. the candidates that are already PolyC-owned (the three
+#      migrated historical candidates and the two migrated
+#      authorities that were never eligible).
+#
+# Schema:
+#   candidate_id <TAB> enclosing_function <TAB> source_file
+#   <TAB> source_start <TAB> source_end <TAB> rejection_kind
+#   <TAB> failed_clause_or_reason <TAB> class
+#
+SUB-005	parseDeclOrStatement	src/parser.c	1829	1832	STRUCTURAL_INELIGIBLE	NOT A BOUNDED PROJECTION: cctrlIsKeyword consults the MUTABLE host symbol table (cc->symbol_table), the class-def map and the union-def map, so the decision depends on host symbol-table state	INELIGIBLE_STRUCTURAL
+SUB-006	parseCompoundStatementInternal	src/parser.c	1852	1885	STRUCTURAL_INELIGIBLE	OWNED BY C: the per-statement setjmp checkpoint, the cc->current_recovery swap, the body->stms tail rollback and the cc->tmp_locals rollback are the host recovery protocol itself; there is no bounded scalar decision to delegate	INELIGIBLE_STRUCTURAL
+SUB-007	parseCompoundStatementInternal	src/parser.c	1887	1945	STRUCTURAL_INELIGIBLE	WHOLE-FUNCTION ABI IS UNBOUNDED: it owns the recovery point, the scope map, the AST list and 25 subordinate host calls	INELIGIBLE_STRUCTURAL
+SUB-008	parseStatement	src/parser.c	1661	1822	STRUCTURAL_INELIGIBLE	WHOLE-FUNCTION ABI IS UNBOUNDED: it owns the scope, the global AST list and the asm-block list, and it invokes 20 subordinate parsers	INELIGIBLE_STRUCTURAL
+SUB-009	parseExpr	src/prslib.c	1402	1537	STRUCTURAL_INELIGIBLE	WHOLE-FUNCTION ABI IS UNBOUNDED: it builds the host AST through a recursive precedence loop	INELIGIBLE_STRUCTURAL
+SUB-010	astStmtFallsThrough	src/parser.c	2015	2055	STRUCTURAL_INELIGIBLE	RECURSIVE HOST-GRAPH WALK: the projection is one boolean per node, but only through a recursion over an unbounded host statement tree	INELIGIBLE_STRUCTURAL
+SUB-011	astStmtHasBreak	src/parser.c	1990	2013	STRUCTURAL_INELIGIBLE	RECURSIVE HOST-GRAPH WALK: the projection is one boolean per node, but only through a recursion over an unbounded host statement tree	INELIGIBLE_STRUCTURAL
+SUB-012	astIsConstTrueCond	src/parser.c	1982	1986	STRUCTURAL_INELIGIBLE	UNBOUNDED HOST POINTER INPUT: the decision reads a three-hop Ast/AstType pointer chain (c->kind, c->type->kind, c->i64); the projection is one scalar but the input is a host pointer	INELIGIBLE_STRUCTURAL
+CAND-001	parseValidPostControlFlowToken	src/parser.c	832	914	ALREADY_SELFHOSTED	CLAUSE 02 (already_selfhosted == NO): production-authoritative BootstrapValidPostControlFlowToken	ALREADY_SELFHOSTED
+CAND-002	CalcPadding	src/parser.c	430	467	ALREADY_SELFHOSTED	CLAUSE 02 (already_selfhosted == NO): production-authoritative BootstrapCalcPadding	ALREADY_SELFHOSTED
+CAND-017	parseGetPriority	src/prslib.c	1139	1207	ALREADY_SELFHOSTED	CLAUSE 02 (already_selfhosted == NO): production-authoritative BootstrapOperatorPrecedence	ALREADY_SELFHOSTED
+CAND-019	astBinOpFromToken	src/ast.c	206	236	ALREADY_SELFHOSTED	CLAUSE 02 (already_selfhosted == NO): production-authoritative BootstrapAstBinOpFromToken	ALREADY_SELFHOSTED
+CAND-020	astUnaryOpFromToken	src/ast.c	287	354	ALREADY_SELFHOSTED	CLAUSE 02 (already_selfhosted == NO): production-authoritative BootstrapAstUnaryOpFromToken	ALREADY_SELFHOSTED
+CAND-003	CalcClassSize	src/parser.c	410	428	STRUCTURAL_INELIGIBLE	HOST-GRAPH WRITE: overwrites type->offset; the result is discarded	INELIGIBLE_STRUCTURAL
+CAND-004	CalcUnionSize	src/parser.c	397	408	STRUCTURAL_INELIGIBLE	DEAD COMPUTATION: the result is written and never read; the walk is by pointer identity	INELIGIBLE_STRUCTURAL
+CAND-005	astIsConstTrueCond	src/parser.c	1982	1986	STRUCTURAL_INELIGIBLE	UNBOUNDED HOST POINTER INPUT: a three-hop Ast/AstType pointer chain	INELIGIBLE_STRUCTURAL
+CAND-006	astStmtHasBreak	src/parser.c	1990	2013	STRUCTURAL_INELIGIBLE	RECURSIVE HOST-GRAPH WALK over an unbounded statement tree	INELIGIBLE_STRUCTURAL
+CAND-007	astStmtFallsThrough	src/parser.c	2015	2055	STRUCTURAL_INELIGIBLE	RECURSIVE HOST-GRAPH WALK over an unbounded statement tree	INELIGIBLE_STRUCTURAL
+CAND-008	asmTextHasReturn	src/parser.c	2063	2094	STRUCTURAL_INELIGIBLE	UNBOUNDED BYTE BUFFER INPUT: the asm text has no bounded capacity at the ABI boundary	INELIGIBLE_STRUCTURAL
+CAND-009	clsFieldNew	src/parser.c	265	270	NONRUNTIME	CLAUSE 13 (candidate_kind is a runtime semantic authority): a malloc wrapper returning a host pointer	NONRUNTIME
+CAND-010	getRangeLoopIdx	src/parser.c	62	65	NONRUNTIME	NON-DETERMINISTIC: a static counter mutated per call	NONRUNTIME
+CAND-011	parseFlattenAnnonymous	src/parser.c	238	258	STRUCTURAL_INELIGIBLE	HOST-GRAPH WRITE: mutates type->offset on host AstType nodes and inserts into a host Map	INELIGIBLE_STRUCTURAL
+CAND-012	parseRegModifier	src/parser.c	40	60	STRUCTURAL_INELIGIBLE	HOST-STATE WRITE: mutates cc->kind_out and cc->reg_out and raises a Cctrl exception	INELIGIBLE_STRUCTURAL
+CAND-013	parseFoldInitElement	src/parser.c	121	155	STRUCTURAL_INELIGIBLE	HOST ALLOCATION: builds a new Ast node carrying a host AstType pointer	INELIGIBLE_STRUCTURAL
+CAND-014	parseCompoundStatementInternal	src/parser.c	1835	1963	STRUCTURAL_INELIGIBLE	CLAUSE 04/05/06 (recovery ownership) and CLAUSE 07 (host graph writes): the whole-function ABI is unbounded	INELIGIBLE_STRUCTURAL
+CAND-015	parseIfClause	src/parser.c	914	959	STRUCTURAL_INELIGIBLE	HOST-STATE WRITE: mutates cc->localenv and raises a Cctrl exception	INELIGIBLE_STRUCTURAL
+CAND-016	parseRaiseCaseException	src/parser.c	1472	1478	STRUCTURAL_INELIGIBLE	NONLOCAL RECOVERY TRANSFER: the diagnostic emission is a longjmp, not a bounded decision	INELIGIBLE_STRUCTURAL
+CAND-024	astTypeAlign	src/ast.c	1408	1426	STRUCTURAL_INELIGIBLE	RECURSIVE HOST-GRAPH WALK into type->ptr; the AstType graph depth is unbounded	INELIGIBLE_STRUCTURAL
+CAND-027	astTypeIsPtr	src/ast.c	966	968	STRUCTURAL_INELIGIBLE	UNBOUNDED HOST POINTER INPUT: reads type->kind through a host pointer	INELIGIBLE_STRUCTURAL
+CAND-028	astTypeIsArray	src/ast.c	970	972	STRUCTURAL_INELIGIBLE	UNBOUNDED HOST POINTER INPUT: reads type->kind through a host pointer	INELIGIBLE_STRUCTURAL
+CAND-029	astIsIntType	src/ast.c	1428	1438	STRUCTURAL_INELIGIBLE	UNBOUNDED HOST POINTER INPUT: reads type->kind through a host pointer	INELIGIBLE_STRUCTURAL
+CAND-031	align	src/prsutil.c	9	15	NONRUNTIME	NO PRODUCTION CALL SITE in the parser surface	NONRUNTIME
+CAND-032	parsePromoteVarargFloats	src/prslib.c	571	588	STRUCTURAL_INELIGIBLE	HOST-GRAPH WRITE: rewrites argv->entries[i] with a new Ast node	INELIGIBLE_STRUCTURAL
+CAND-033	parseCoerceArgs	src/prslib.c	584	629	STRUCTURAL_INELIGIBLE	HOST-GRAPH WRITE: rewrites argv->entries[i] with a new Ast node	INELIGIBLE_STRUCTURAL
+CAND-034	astJumpTableSort	src/ast.c	566	583	STRUCTURAL_INELIGIBLE	HOST-GRAPH WRITE: quicksorts a host Ast array and dereferences host nodes for the key	INELIGIBLE_STRUCTURAL
+CAND-035	astCasesCompress	src/ast.c	587	600	STRUCTURAL_INELIGIBLE	HOST-GRAPH WRITE: rewrites host case pointers across a host array	INELIGIBLE_STRUCTURAL

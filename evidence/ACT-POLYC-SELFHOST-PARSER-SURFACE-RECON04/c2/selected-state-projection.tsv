@@ -1,0 +1,60 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04
+# ACT_PHASE=C2-RANK-SELECT
+# EVIDENCE_KIND=selected-state-projection
+#
+# THE BOUNDED HOST-STATE PROJECTION OF THE SELECTED CANDIDATE.
+#
+# SELECTED_CANDIDATE=SUB-001
+# SELECTED_SOURCE_FILE=src/parser.c
+# SELECTED_SOURCE_START=1551
+# SELECTED_SOURCE_END=1553
+# SELECTED_SOURCE_SHA256=31dc9ae8f87d26be429a565356820d8913c9a7cbc0e37d64470049c3b5948707
+#
+# The projection is EXPLICIT: exactly ONE host field is read, and it is
+# copied into a scalar.  Nothing else crosses.
+#
+# Schema:
+#   field <TAB> host_object <TAB> access <TAB> copied_into <TAB> copied_type
+#   <TAB> bounded <TAB> owner_after_projection <TAB> note
+#
+stmt->kind	Ast (the statement just parsed by parseStatement)	READ	kind	I64	YES	C (the C side reads it and passes the integer)	The ONLY host field the decision reads; an AstKind enum value in 256..299
+#
+# NOTHING ELSE IS READ.
+#
+# The decision makes NO host-graph write, NO allocation, NO callback, NO
+# recovery transfer and NO diagnostic.  The single effect on the host is
+# the `break` that the C side executes, which the C side would have
+# executed anyway.
+#
+# The projection is therefore:
+#
+#   C-owned source values            stmt->kind (one AstKind enum value)
+#          |
+#          v
+#   explicit scalar/copy projection   stmt->kind -> I64 kind
+#          |
+#          v
+#   PolyC decision                    I64 kind -> I64 terminate (0 or 1)
+#          |
+#          v
+#   bounded result                    one bounded boolean
+#          |
+#          v
+#   C-owned mutation/orchestration    if (terminate) break;   (the C side)
+#
+# NO OPAQUE POINTER CROSSES: there is no void *, no encoded pointer and
+# no callback table.  THE JMP_BUF DOES NOT MOVE.
+#
+# Schema of the projection, one row per field:
+#
+#   (the table above is the projection)
+#
+PROJECTION_FIELD_COUNT=1
+PROJECTION_SCALAR_TYPE=I64
+PROJECTION_RESULT_TYPE=I64
+PROJECTION_BOUNDED=YES
+RECOVERY_OWNER=C
+AST_GRAPH_OWNER=C
+SYMBOL_TABLE_OWNER=C
+TOKEN_STREAM_OWNER=C
+DIAGNOSTIC_OWNER=C
