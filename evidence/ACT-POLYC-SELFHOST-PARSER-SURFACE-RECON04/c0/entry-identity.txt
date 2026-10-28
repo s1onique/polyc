@@ -1,0 +1,40 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04
+ACT_PHASE=C0-RED
+EVIDENCE_KIND=entry-identity
+
+COMMAND=git branch --show-current
+BRANCH=main
+
+COMMAND=git rev-parse HEAD
+ENTRY_HEAD=22107263561dfbc8f09df2b6dca066cf25d939c1
+
+COMMAND=git status --porcelain=v1
+WORKTREE_CLEAN=YES
+# The only pre-existing untracked path at C0 is the ACT's own authorized
+# new tool (tools/quality/parser-surface-recon04-verify.HC) and the
+# untracked test-prefix/build artifacts, which are ignored scratch.
+# The TRACKED tree at ENTRY_HEAD is clean; see git diff HEAD --stat below.
+
+COMMAND=git diff --stat HEAD
+TRACKED_DIFF_AT_ENTRY=EMPTY
+
+COMMAND=git replace -l
+GIT_REPLACE_REFS=0
+
+COMMAND=git log -1 --format='%B' | git interpret-trailers --parse
+PREDECESSOR_ACT=ACT-POLYC-SELFHOST-PARSER-SLICE05
+PREDECESSOR_PHASE=CLOSE
+PREDECESSOR_VERDICT=PASS
+
+COMMAND=git log -5 --format='%H %s'
+22107263561dfbc8f09df2b6dca066cf25d939c1 ACT-POLYC-SELFHOST-PARSER-SLICE05 C4: CLOSE -- the AST unary-operator classification is PolyC-owned
+c7842e6fb61a00768abc3630270aeb45c9897a28 ACT-POLYC-SELFHOST-PARSER-SLICE05 C3: four-generation qualification, causal mutation and conservation
+39d58c807eb72eccbc900e8ebe95f9f8293716db ACT-POLYC-SELFHOST-PARSER-SLICE05 C2: the PolyC AST-unary component and the production delegation
+bb62009fb2ef1ced0d134c5386cea16447136cfa ACT-POLYC-SELFHOST-PARSER-SLICE05 C1: the frozen unary contract, the fixture, and its verifiers
+02d04b380eb93158dfcab587f525a48fed4d0517 ACT-POLYC-SELFHOST-PARSER-SLICE05 C0: AUTH, entry identity and the real production RED
+
+ENTRY_IDENTITY_MATCHES_DECLARED=YES
+# The observed HEAD was EXACTLY the ACT's declared Expected ENTRY_HEAD, so
+# there was no intervening commit to inventory.  The entry tree IS the
+# predecessor's CLOSE tree.
+INTERVENING_COMMITS=0

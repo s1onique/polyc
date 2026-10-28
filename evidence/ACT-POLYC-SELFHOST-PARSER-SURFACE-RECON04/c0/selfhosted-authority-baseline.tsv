@@ -1,0 +1,42 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=selfhosted-authority-baseline
+#
+# THE FIVE PRODUCTION-AUTHORITATIVE POLYC PARSER AUTHORITIES, RE-VERIFIED
+# AGAINST THE LIVE PRODUCTION ARTIFACTS.
+#
+# The verification is MECHANICAL and is performed by the ACT's single
+# authorized new PolyC quality tool:
+#
+#   tools/quality/parser-surface-recon04-verify.HC  MODE=AUTHORITY
+#
+# It checks THREE facts per authority against the LIVE build:
+#
+#   MACRO_ENABLED       the dedicated delegation macro appears in the
+#                       live production compile flags
+#                       (build/CMakeFiles/hcc.dir/flags.make);
+#   OBJ_UNDEFINED_REF   the PolyC symbol is an UNDEFINED reference (U) in
+#                       the live production object, i.e. the object
+#                       IMPORTS the PolyC decision;
+#   OBJ_DEFINED_HERE    the PolyC symbol is NOT defined (T) in that same
+#
+# LIVE VERIFICATION -- tools/quality/parser-surface-recon04-verify.HC MODE=AUTHORITY
+#
+# COMMAND=build/parser-surface-recon04-verify AUTHORITY build/CMakeFiles/hcc.dir/flags.make <nm.txt> <macro|symbol> ...
+#
+# nm.txt = nm build/CMakeFiles/hcc.dir/{parser.c.o,prslib.c.o,ast.c.o}
+#
+AUTHORITY	HCC_USE_SELFHOST_PARSER_PADDING	BootstrapCalcPadding	MACRO_ENABLED=YES	OBJ_UNDEFINED_REF=YES	OBJ_DEFINED_HERE=NO	RESULT=PASS
+AUTHORITY	HCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN	BootstrapValidPostControlFlowToken	MACRO_ENABLED=YES	OBJ_UNDEFINED_REF=YES	OBJ_DEFINED_HERE=NO	RESULT=PASS
+AUTHORITY	HCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE	BootstrapOperatorPrecedence	MACRO_ENABLED=YES	OBJ_UNDEFINED_REF=YES	OBJ_DEFINED_HERE=NO	RESULT=PASS
+AUTHORITY	HCC_USE_SELFHOST_PARSER_AST_BINOP	BootstrapAstBinOpFromToken	MACRO_ENABLED=YES	OBJ_UNDEFINED_REF=YES	OBJ_DEFINED_HERE=NO	RESULT=PASS
+AUTHORITY	HCC_USE_SELFHOST_PARSER_AST_UNARY	BootstrapAstUnaryOpFromToken	MACRO_ENABLED=YES	OBJ_UNDEFINED_REF=YES	OBJ_DEFINED_HERE=NO	RESULT=PASS
+AUTHORITIES_EXPECTED=5
+AUTHORITIES_VERIFIED=5
+STATUS=PASS
+#
+PARSER_POLYC_AUTHORITIES_EXPECTED=5
+PARSER_POLYC_AUTHORITIES_VERIFIED=5
+AST_BINARY_AUTHORITY=POLYC
+AST_UNARY_AUTHORITY=POLYC
+AST_OPERATOR_CLASSIFICATION=COMPLETE

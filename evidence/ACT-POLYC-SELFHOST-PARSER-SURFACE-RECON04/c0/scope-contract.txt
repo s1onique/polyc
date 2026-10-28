@@ -1,0 +1,212 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04
+ACT_PHASE=C0-RED
+EVIDENCE_KIND=scope-contract
+#
+# THE FROZEN SEMANTIC CONTRACTS.
+#
+# This file freezes, BEFORE any inventory work, the four things that
+# would otherwise be decided ad hoc during the reconnaissance:
+#
+#   1. the AUTHORITY TAXONOMY (ACT section 4.2)
+#   2. the STRUCTURAL PREFERENCE POLICY (ACT section 9.2)
+#   3. the ELIGIBILITY SEMANTICS (ACT section 8)
+#   4. the RANKING SEMANTICS (ACT section 9.1)
+#
+# Plus the SCOPE contract itself (ACT section 3).
+#
+# =====================================================================
+# 1. AUTHORITY TAXONOMY (frozen)
+# =====================================================================
+#
+#   SELFHOSTED_TRUE_GREEN
+#       The production semantic decision is owned by a qualified PolyC
+#       component, verified in the LIVE production build (macro enabled,
+#       symbol imported as an UNDEFINED reference, legacy C body
+#       compiled out).  A C ABI forwarding wrapper around such a
+#       component is SELFHOSTED_TRUE_GREEN, NOT LEGACY_C_AUTHORITY.
+#
+#   LEGACY_C_AUTHORITY
+#       The production semantic decision is made by C code that is
+#       compiled into the production binary and still owns the result.
+#
+#   LEGACY_NON_POLYC_AUTHORITY
+#       A semantic authority owned by a non-PolyC production component
+#       outside the parser surface (e.g. the lexer, the transpiler,
+#       the backend).  Recorded for completeness; NOT a parser
+#       migration target for this ACT.
+#
+#   BUILD_ORCHESTRATION
+#       Build/link/tooling orchestration; no runtime semantic decision.
+#
+#   QUALITY_TOOLING
+#       Test, fixture, differential or verifier code; no production
+#       semantic decision.
+#
+#   UNKNOWN
+#       FORBIDDEN for a live runtime surface at C1 exit.  UNKNOWN is
+#       permitted only in the intermediate working state, never in the
+#       committed semantic-authority.tsv.
+#
+# A PolyC implementation existing SOMEWHERE in tools/bootstrap/ does
+# NOT make a legacy decision self-hosted.  The LIVE production build
+# is the only authority.
+#
+# =====================================================================
+# 2. STRUCTURAL PREFERENCE POLICY (frozen, newly authorized)
+# =====================================================================
+#
+# CLASS_1 = ELIGIBLE_STRUCTURAL_BOUNDARY
+# CLASS_2 = ELIGIBLE_SCALAR_FOLLOWUP
+#
+# The class of a candidate is assigned in C1 from the ACT section 7.2
+# significance list:
+#
+#   AST_SHAPE
+#   PARSER_ACCEPTANCE
+#   PARSER_ROUTING
+#   STATEMENT_SEQUENCE
+#   CONTROL_FLOW_CLASSIFICATION
+#   RECOVERY_RESYNCHRONIZATION_CHOICE
+#
+# A candidate that materially affects AT LEAST ONE of those six is
+# STRUCTURAL_BOUNDARY.  A purely diagnostic string formatter, an
+# enum-to-string conversion, or an unrelated small scalar helper is
+# SCALAR_FOLLOWUP.
+#
+# SELECTION ORDER (ACT section 9.2):
+#   1. if CLASS_1 is non-empty -> select CLASS_1 rank-1
+#   2. else                   -> select CLASS_2 rank-1
+#   3. else                   -> HALT with the full rejection matrix
+#
+# This is a NEW, explicitly authorized recon policy.  It is NOT a
+# retrospective redefinition of R0..R6 and does NOT change any
+# dimension's meaning.  The R0..R6 vector remains the ONLY mechanical
+# ranking instrument; the class partition is applied ON TOP of its
+# output.
+#
+# =====================================================================
+# 3. ELIGIBILITY SEMANTICS (frozen)
+# =====================================================================
+#
+# The canonical instrument is the COMMITTED, UNMODIFIED checker:
+#
+#   tools/quality/parser-slice-recon03-eligibility.HC
+#
+# Its 13 clauses (read from the committed source, not from prose):
+#
+#   01 semantic_authority == YES
+#   02 already_selfhosted == NO
+#   03 r0 <= 2
+#   04 owns_setjmp == NO
+#   05 writes_current_recovery == NO
+#   06 requires_nonlocal_recovery == NO
+#   07 host_graph_writes == 0
+#   08 pointer_identity_operations == 0
+#   09 parser_callback_count == 0
+#   10 semantic_callback_count == 0
+#   11 deterministic_projection == YES
+#   12 production_delegation_feasible == YES
+#   13 candidate_kind is a runtime semantic authority
+#
+# The runtime-semantic-authority kinds accepted by clause 13 are the
+# nine the committed checker enumerates:
+#   OPERATOR_PRECEDENCE_TABLE, OPERATOR_CLASSIFIER,
+#   FORMAT_SPEC_COUNTER, FORMAT_FUNCTION_TABLE,
+#   ALIGNMENT_CALCULATION, TOKEN_CLASSIFIER,
+#   AST_PROJECTION_PRIMITIVE, DELIMITER_PRIMITIVE,
+#   TYPE_MODIFIER_PRIMITIVE
+#
+# The input schema (20 tab-separated fields) has NO `eligible` column,
+# so an eligibility flag cannot be hand-authored anywhere in the fact
+# table.  The checker additionally requires production_reachable == YES.
+#
+# A candidate whose structural class is STRUCTURAL_BOUNDARY but whose
+# candidate_kind is not one of the nine kinds above CANNOT pass clause
+# 13 under the historical checker.  In that case:
+#
+#   - the 13-clause result is PRESERVED and REPORTED as computed; and
+#   - the structural predicate is recorded SEPARATELY in the ACT's
+#     independent structural checker, and
+#   - the candidate's candidate_kind is CHOSEN from the nine accepted
+#     kinds ONLY when the kind genuinely describes the decision.
+#
+# The old 13 clauses are NEVER weakened, skipped or replaced.
+#
+# =====================================================================
+# 4. RANKING SEMANTICS (frozen)
+# =====================================================================
+#
+# The canonical instrument is the COMMITTED, UNMODIFIED ranker:
+#
+#   tools/quality/parser-slice-recon03-ranking.HC
+#
+# The vector is (R0, R1, R2, R3, R4, R5, R6), lower wins, lexicographic:
+#
+#   R0 STATE_BOUNDARY_COST        0..5
+#   R1 SELFHOST_STAGE_LEVERAGE    0..3
+#   R2 SEMANTIC_CENTRALITY        0..3
+#   R3 PROOF_OBSERVABILITY        0..4
+#   R4 DEPENDENCY_COUPLING_COST   integer
+#   R5 MIGRATION_SIZE             integer
+#   R6 SOURCE_ORDER               file lexical asc, then line asc
+#
+# The canonical definitions are the ones frozen in
+# evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03/c2/
+# ranking-dimensions.tsv and are reproduced there verbatim.
+#
+# The ranker consumes an ELIGIBILITY-VERIFIED input: an ineligible row
+# is dropped BEFORE the sort, so an ineligible candidate with perfect
+# scores can never win.
+#
+# The ranker is executed for the WHOLE eligible set, and then the SAME
+# ranking is partitioned into CLASS_1 and CLASS_2 orderings.  The
+# partition does not re-sort; it filters an already-sorted sequence.
+#
+# =====================================================================
+# 5. SCOPE CONTRACT (frozen)
+# =====================================================================
+#
+# Authorized tracked ADDITIONS:
+#   docs/acts/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04.md
+#   docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04.md
+#   docs/factory/act-handoff-map.tsv   (one appended mapping)
+#   docs/ROADMAP.md
+#   evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04/**
+#   tools/quality/parser-surface-recon04-verify.HC   (the ONE new tool)
+#
+# Forbidden tracked MUTATIONS:
+#   src/**, tools/bootstrap/**,
+#   existing tools/quality/parser-slice*.HC,
+#   existing Factory checkers, existing shell gates, pre-push hooks,
+#   closed ACT documents, closed evidence trees, closed HANDOFF files
+#
+# PRODUCTION_SEMANTIC_DELTA=0
+# SUCCESSOR_IMPLEMENTATION_DELTA=0
+#
+# The ONE new tool's responsibility is FROZEN here:
+#
+#   tools/quality/parser-surface-recon04-verify.HC
+#
+#   MODE=CENSUS
+#       Derive the live function census of the parser surface directly
+#       from the C source BYTES of the census files.  For every
+#       function it emits: source file, identifier, declarator line,
+#       body line, SHA-256 of the source line range, and the distinct
+#       direct callees observed in the body.  No hand-authored table.
+#
+#   MODE=AUTHORITY
+#       Verify, against the LIVE production compile flags and the LIVE
+#       production object symbols, that each declared PolyC parser
+#       authority is macro-enabled, imported as an UNDEFINED
+#       reference, and NOT defined in the same object.
+#
+#   MODE=VERIFY
+#       Recompute a committed census table from the live source and
+#       check every row's source range digest and the row count.
+#
+# The tool does NOT decide eligibility, does NOT rank, and does NOT
+# weaken any historical checker.  It supplies only the mechanical
+# inventory and authority facts the ACT requires.
+#
+# NO_NEW_PYTHON=YES
+# ONE_NEW_SUBSTANTIVE_TOOL=tools/quality/parser-surface-recon04-verify.HC

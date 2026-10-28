@@ -1,0 +1,123 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04
+ACT_PHASE=C0-RED
+EVIDENCE_KIND=baseline-lexer
+#
+# THE LEXER CONSERVATION BASELINE, MEASURED ON ENTRY_HEAD.
+#
+# These suites are UNRELATED to the parser surface, but they are the
+# canonical regression detectors for the compiler's front end, so they
+# are part of the conservation baseline.
+#
+# ---------------------------------------------------------------------
+# THE DIRECT DIFFERENTIALS
+# ---------------------------------------------------------------------
+#
+COMMAND=make lexer07-direct-differential
+#   ACT_SELFHOST_LEXER02_DIRECT_DIFF_PASS=89
+#   ACT_SELFHOST_LEXER02_DIRECT_DIFF_FAIL=0
+#   STATUS=PASS
+#   LEXER07_DIRECT_DIFFERENTIAL=PASS
+#
+COMMAND=make lexer08-direct-differential
+#   DIRECT_DIFFERENTIAL_PASS=45
+#   DIRECT_DIFFERENTIAL_FAIL=0
+#   STATUS=PASS
+#   LEXER08_DIRECT_DIFFERENTIAL=PASS
+#
+COMMAND=make lexer09-direct-differential
+#   DIRECT_DIFFERENTIAL_TOTAL=23
+#   DIRECT_DIFFERENTIAL_PASS=23
+#   DIRECT_DIFFERENTIAL_FAIL=0
+#   STATUS=PASS
+#   LEXER09_DIRECT_DIFFERENTIAL=PASS
+#
+LEXER_DIRECT_DIFFERENTIAL_RESULTS=PASS
+LEXER07_DIRECT_DIFF_PASS=89
+LEXER07_DIRECT_DIFF_FAIL=0
+LEXER08_DIRECT_DIFF_PASS=45
+LEXER08_DIRECT_DIFF_FAIL=0
+LEXER09_DIRECT_DIFF_PASS=23
+LEXER09_DIRECT_DIFF_FAIL=0
+NEW_LEXER_FAILURE_IDENTITIES=0
+#
+# ---------------------------------------------------------------------
+# THE LEXER07 BROAD CORPUS (4-STAGE)
+# ---------------------------------------------------------------------
+#
+COMMAND=make lexer07-broad-corpus-4-stage
+COMMAND=./build/lexer07-broad-corpus-4-stage evidence/ACT-POLYC-SELFHOST-LEXER01/c2/corpus-inventory.txt build/recon04-lexer07-broad
+#
+#   TOTAL=181
+#   PASS_S0=166 HISTORICAL_S0=0 PASS_S1=175 PASS_S2=175 PASS_S3=175
+#   FAIL_S0=15 FAIL_S1=6 FAIL_S2=6 FAIL_S3=6
+#   BOTH_FAIL_4=6
+#   REGRESSION=0
+#   DIVERGED=0
+#   PASS_MISMATCH=9
+#   HISTORICAL_S0_FALLBACKS_USED=0
+#   BYTE_IDENTICAL_4=166
+#   BYTE_IDENTICAL_PAIRS=166/181 166/181 166/181 175/181 175/181 175/181
+#   PROVENANCE_SCHEMA_VALID=1
+#   FAILURE_SCHEMA_VALID=1
+#   STATUS=FAIL
+#
+# The command EXITS NONZERO.  That is the KNOWN baseline condition:
+# the corpus contains six sources that fail in ALL FOUR stages and
+# nine stage0-only failures that have no historical fallback.
+#
+# COMPARISON WITH THE HISTORICAL RECON03 BASELINE
+# (evidence/ACT-POLYC-SELFHOST-SURFACE-RECON03/c1/c1-broad-corpus-baseline.txt):
+#
+#   counter            RECON03   RECON04   delta
+#   TOTAL                  181       181   0
+#   PASS_S0                166       166   0
+#   PASS_S1..S3            175       175   0
+#   FAIL_S1..S3              6         6   0
+#   BOTH_FAIL_4              6         6   0
+#   REGRESSION               6         0  -6
+#   DIVERGED                 6         0  -6
+#   BYTE_IDENTICAL_4       160       166  +6
+#
+# The REGRESSION/DIVERGED counts IMPROVED (6 -> 0) because the five
+# parser migrations between RECON03 and this entry tree removed six
+# stage0 divergences.  The regression delta is therefore ZERO or
+# NEGATIVE in the improving direction; it is NEVER positive.
+#
+# THE FROZEN FAILURE-IDENTITY SET
+# (build/recon04-lexer07-broad/corpus-failures.tsv, 15 data rows):
+#
+source	stage	rc	failure_class
+src/holyc-lib/all.HC	stage0-current	1	NO_FALLBACK
+src/holyc-lib/bitvec.HC	ALL	1	ALL_FAIL
+src/holyc-lib/builtins.HC	ALL	1	ALL_FAIL
+src/holyc-lib/coroutines.HC	ALL	1	ALL_FAIL
+src/holyc-lib/date.HC	stage0-current	1	NO_FALLBACK
+src/holyc-lib/hashtable.HC	stage0-current	1	NO_FALLBACK
+src/holyc-lib/io.HC	stage0-current	1	NO_FALLBACK
+src/holyc-lib/list.HC	stage0-current	1	NO_FALLBACK
+src/holyc-lib/memory.HC	stage0-current	1	NO_FALLBACK
+src/holyc-lib/strings.HC	stage0-current	1	NO_FALLBACK
+src/holyc-lib/threads.HC	stage0-current	1	NO_FALLBACK
+src/holyc-lib/tooling.HC	stage0-current	1	NO_FALLBACK
+src/tests/32_sql.HC	ALL	1	ALL_FAIL
+src/tests/llvm-spike/neg_asm.HC	ALL	1	ALL_FAIL
+src/tests/llvm-spike/neg_f64.HC	ALL	1	ALL_FAIL
+#
+LEXER07_BROAD_CORPUS_STATUS=FAIL
+LEXER07_BROAD_CORPUS_TOTAL=181
+LEXER07_BROAD_CORPUS_PASS_S0=166
+LEXER07_BROAD_CORPUS_PASS_S1=175
+LEXER07_BROAD_CORPUS_PASS_S2=175
+LEXER07_BROAD_CORPUS_PASS_S3=175
+LEXER07_BROAD_CORPUS_FAIL_S0=15
+LEXER07_BROAD_CORPUS_FAIL_S1=6
+LEXER07_BROAD_CORPUS_FAIL_S2=6
+LEXER07_BROAD_CORPUS_FAIL_S3=6
+LEXER07_BROAD_CORPUS_BOTH_FAIL_4=6
+LEXER07_BROAD_CORPUS_REGRESSION=0
+LEXER07_BROAD_CORPUS_DIVERGED=0
+LEXER07_BROAD_CORPUS_PASS_MISMATCH=9
+LEXER07_BROAD_CORPUS_BYTE_IDENTICAL_4=166
+LEXER07_BROAD_CORPUS_FAILURE_IDENTITY_COUNT=15
+LEXER07_BROAD_CORPUS_FAILURE_IDENTITY_MD5=7ee761440de83552e751e3c3976c1683
+NEW_LEXER07_FAILURE_IDENTITIES=0

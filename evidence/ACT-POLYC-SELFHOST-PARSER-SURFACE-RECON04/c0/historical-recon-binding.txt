@@ -1,0 +1,110 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04
+ACT_PHASE=C0-RED
+EVIDENCE_KIND=historical-recon-binding
+#
+# THE HISTORICAL ARTEFACTS THIS RECONNAISSANCE IS BOUND TO.
+#
+# These are EVIDENCE and INPUT to reconciliation.  They do NOT override
+# the current source.  Every historical number they carry is RE-MEASURED
+# against the live tree in C1/C2/C3 before it is used.
+#
+# ---------------------------------------------------------------------
+# 1. THE RECON03 CANDIDATE REGISTRY (the canonical historical IDs)
+# ---------------------------------------------------------------------
+#
+# Source: evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03/c1/
+#         candidate-eligibility-facts.tsv
+#         candidate-inventory.tsv
+#         newly-discovered-slices.tsv
+#         function-inventory.tsv
+#
+# RECON03 reported TEN eligible candidates:
+#
+#   CAND-017  parseGetPriority              src/prslib.c   MIGRATED (SLICE03)
+#   CAND-018  parseCompoundAssign           src/prslib.c   REMAINING
+#   CAND-019  astBinOpFromToken             src/ast.c      MIGRATED (SLICE04)
+#   CAND-020  astUnaryOpFromToken           src/ast.c      MIGRATED (SLICE05)
+#   CAND-021  astBinOpToTokenPunct          src/prslib.c   REMAINING
+#   CAND-022  parseCountPrintfFormatSpecs   src/prslib.c   REMAINING
+#   CAND-023  parseFormatArgIdx             src/prslib.c   REMAINING
+#   CAND-025  astIsAssignment               src/ast.c      REMAINING
+#   CAND-026  astIsValidPointerOp           src/ast.c      REMAINING
+#   CAND-030  parseIsClassOrUnion           src/prsutil.c  REMAINING
+#
+# The seven REMAINING historical candidates are the RECON04 §5
+# reconciliation set.  Their historical IDs are PRESERVED.
+#
+# ---------------------------------------------------------------------
+# 2. THE RECON03 FUNCTION INVENTORY (the historical surface census)
+# ---------------------------------------------------------------------
+#
+# Source: evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03/c1/
+#         function-inventory.tsv
+#
+# RECON03's HISTORICAL COUNT WAS 121 ROWS:
+#
+#   src/parser.c    58
+#   src/prslib.c    40
+#   src/prsutil.c   11
+#   src/ast.c       12   <- SELECTED SUBSET ONLY
+#   TOTAL          121
+#
+# NOTE: the RECON03 ast.c row count of 12 is NOT the whole of src/ast.c.
+# RECON03 inventoried "the parser-facing primitives of src/ast.c", a
+# selected subset.  RECON04 section 4 requires the ACTUAL functions of
+# src/ast.c.  The apparent size increase is therefore a SCOPE CHANGE in
+# the census, NOT a source change, and is reconciled explicitly in
+# c1/historical-surface-reconciliation.tsv.
+#
+# ---------------------------------------------------------------------
+# 3. THE PARSER01 DEPENDENCY-HALT EVIDENCE (the structural blocker)
+# ---------------------------------------------------------------------
+#
+# Source: evidence/ACT-POLYC-SELFHOST-PARSER01-CORRECTION01/c1/
+#         c1-dependency-map.tsv
+#         c1-state-read-write.tsv
+#         c1-setjmp-recovery.tsv
+#         c1-subordinate-parser-deps.tsv
+#         c1-bounded-dependency-graph.tsv
+#
+# HISTORICAL SUBORDINATE_CALLS=24
+# HISTORICAL DEFERRED_SURFACES=9
+# HISTORICAL WHOLE_FUNCTION_BOUNDED=NO
+#
+# The subject was parseCompoundStatementInternal.  RECON04 §6.3
+# RE-COMPUTES all three numbers against the live source.
+#
+# ---------------------------------------------------------------------
+# 4. THE RECON03 RANKING DIMENSIONS (the frozen R0..R6 vector)
+# ---------------------------------------------------------------------
+#
+# Source: evidence/ACT-POLYC-SELFHOST-PARSER-SLICE-RECON03/c2/
+#         ranking-dimensions.tsv
+#
+# The canonical definitions live in the header of that committed file.
+# RECON04 section 9.1 REUSES them verbatim; no dimension is redefined.
+#
+# ---------------------------------------------------------------------
+# 5. THE CANONICAL MECHANICAL CHECKERS (reused READ-ONLY)
+# ---------------------------------------------------------------------
+#
+#   tools/quality/parser-slice-recon03-eligibility.HC
+#       13 clauses; the input schema has NO `eligible` column.
+#   tools/quality/parser-slice-recon03-ranking.HC
+#       lexicographic ranker on (R0..R6).
+#
+# Both are executed UNMODIFIED by RECON04.
+#
+# ---------------------------------------------------------------------
+# 6. THE SLICE05 PREDECESSOR (the most recent authority)
+# ---------------------------------------------------------------------
+#
+#   docs/acts/ACT-POLYC-SELFHOST-PARSER-SLICE05.md
+#   docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE05.md
+#   evidence/ACT-POLYC-SELFHOST-PARSER-SLICE05/c0/
+#   evidence/ACT-POLYC-SELFHOST-PARSER-SLICE05/c3/
+#
+# CLOSE commit: 22107263561dfbc8f09df2b6dca066cf25d939c1
+# Verdict:     PASS
+#
+HISTORICAL_RECON_BINDING=COMPLETE
