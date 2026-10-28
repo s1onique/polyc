@@ -1,0 +1,165 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE06
+ACT_PHASE=C2-EVIDENCE
+EVIDENCE_KIND=production-delegation
+
+THE PRODUCTION DELEGATION IS LOAD-BEARING
+=========================================
+
+Every observation below was made on a FRESH detached git worktree at
+the ACT's own C1 commit (94f9086b187aa958a1ff10d5fc79327e44084231)
+with the C2 changes applied, so the artifacts are provably built from
+this ACT's source.
+
+COMMAND=git worktree add --detach /tmp/slice06-c2build HEAD
+COMMAND=cd /tmp/slice06-c2build && make production-hcc INSTALL_PREFIX=/tmp/slice06-c2build/prefix
+  (exit 0)
+  PRODUCTION_HCC=./hcc
+  PRODUCTION_PADDING_AUTHORITY=POLYC
+  PRODUCTION_AST_BINOP_AUTHORITY=POLYC
+  PRODUCTION_SWITCH_ARM_AUTHORITY=POLYC
+
+THE POLYC COMPONENT
+-------------------
+FILE=tools/bootstrap/selfhost-parser-slice06.HC
+  sha256=872206c75c483bfa0fadaef685329b3b28036ee9254c436c6f7bb5541651b4b4
+
+FILE=build/parser-switch-arm-subject.o
+  sha256=848866e9fea389d574b3cb3e39b54b62fc0c744fe707fcf7c4184714017467f0
+
+The subject is compiled by the STAGE0 compiler (the legacy C control),
+so the component does not depend on the production compiler that it is
+about to serve.
+
+COMMAND=nm build/parser-switch-arm-subject.o | grep '_BootstrapSwitchArmTerminates'
+  0000000000000000 T _BootstrapSwitchArmTerminates
+
+THE PRODUCTION OBJECT IMPORTS THE POLYC SYMBOL
+-----------------------------------------------
+FILE=build/CMakeFiles/hcc.dir/parser.c.o
+  sha256=f7fc1a06506a03ab555073885dcfb108cb8bedbfa51963ca410259c58e17b66a
+
+COMMAND=nm build/CMakeFiles/hcc.dir/parser.c.o | grep 'BootstrapSwitchArmTerminates'
+                 U _BootstrapSwitchArmTerminates
+
+The symbol is an UNDEFINED REFERENCE: the production object IMPORTS
+the PolyC decision and does NOT define it.  This is the STRONG form of
+the evidence -- it is not merely that the symbol is present in the
+binary.
+
+THE LEGACY C DECISION IS ABSENT FROM THE ACTIVE PRODUCTION AUTHORITY
+---------------------------------------------------------------------
+COMMAND=otool -tV build/CMakeFiles/hcc.dir/parser.c.o | grep -A 7 '_ParserLegacySwitchArmTerminatesOracle:'
+  _ParserLegacySwitchArmTerminatesOracle:
+  00000000000031fc	stp	x29, x30, [sp, #-0x10]!
+  0000000000003200	mov	x29, sp
+  0000000000003204	sxtw	x0, w0
+  0000000000003208	bl	0x3208
+  000000000000320c	sxtw	x0, w0
+  0000000000003210	ldp	x29, x30, [sp], #0x10
+  0000000000003214	ret
+
+The production wrapper is a PURE CALL: there is NO comparison, NO
+branch and NO constant.  The legacy condition is compiled OUT of the
+active production authority.
+
+For comparison, the G0 legacy object (the same translation unit with
+the delegation OFF) carries the FULL decision as a bitset test:
+
+  _ParserLegacySwitchArmTerminatesOracle:
+  0000000000003254	sub	w8, w0, #0x102
+  0000000000003258	cmp	w8, #0x23
+  000000000000325c	b.hi	0x3284
+  0000000000003260	mov	w9, #0x1
+  0000000000003264	lsl	x8, x9, x8
+  0000000000003268	mov	x9, #0x1001
+  000000000000326c	movk	x9, #0x2041, lsl #16
+  0000000000003270	movk	x9, #0x8, lsl #32
+  0000000000003274	tst	x8, x9
+  0000000000003278	b.eq	0x3284
+  000000000000327c	mov	w0, #0x1
+  0000000000003280	ret
+  0000000000003284	mov	x0, #0x0
+  0000000000003288	ret
+
+  LEGACY_CONDITION_IN_PRODUCTION_OBJECT=NO
+  LEGACY_CONDITION_IN_G0_OBJECT=YES
+
+THE DELEGATION IS NOT A DUPLICATION
+------------------------------------
+At the call site, the legacy condition was:
+
+  if (stmt->kind == AST_COMPOUND_STMT || stmt->kind == AST_CASE ||
+          stmt->kind == AST_DEFAULT || stmt->kind == AST_BREAK || stmt->kind == AST_RETURN
+          || stmt->kind == AST_GOTO) break;
+
+and it now reads:
+
+  if (parseSwitchArmTerminates((int)stmt->kind)) break;
+
+The C side does NOT evaluate the same condition before, after or
+alongside the delegation.  There is no shadow call and no fallback to
+C.  The disassembly above PROVES this: the active production object
+contains no comparison at all.
+
+THE C SIDE STILL OWNS THE BREAK
+-------------------------------
+The PolyC component decides; the C side acts.  The `break` that leaves
+the arm loop is still executed by the C side, and the C side still
+owns the AST graph, the allocation, the diagnostics, the recovery point
+and the token stream.
+
+THE SIX POLYC AUTHORITIES IN THE LINKED COMPILER
+------------------------------------------------
+COMMAND=nm hcc | grep -E '_Bootstrap(CalcPadding|ValidPostControlFlowToken|OperatorPrecedence|AstBinOpFromToken|AstUnaryOpFromToken|SwitchArmTerminates)$'
+  0000000100064220 T _BootstrapAstBinOpFromToken
+  0000000100064410 T _BootstrapAstUnaryOpFromToken
+  0000000100063ba0 T _BootstrapCalcPadding
+  0000000100063e50 T _BootstrapOperatorPrecedence
+  0000000100064528 T _BootstrapSwitchArmTerminates
+  0000000100063c18 T _BootstrapValidPostControlFlowToken
+
+  SIX_POLYC_AUTHORITIES_LINKED=YES
+  DUPLICATE_BOOTSTRAP_SYMBOLS=0
+
+THE PRISTINE WITNESS, IN A REAL COMPILED PROGRAM
+-------------------------------------------------
+COMMAND=cd /tmp/slice06-c2build && ./hcc --install-dir=./build/test-prefix \
+    build/slice06-witness/witness-sub001.HC -o build/slice06-witness/witness
+  (exit 0)
+
+COMMAND=./build/slice06-witness/witness
+  SUB001:ARM2_MARKER
+  SUB001:x=1
+
+That is EXACTLY the frozen pristine observation the predecessor
+recorded (c2/selected-causal-contract.md section 2): the compound
+statement terminates the first arm, so the ARM1 marker is parsed by the
+`case 2:` arm and is never printed, and x is 1.
+
+  PRISTINE_WITNESS_OUTPUT=ARM2_MARKER,x=1
+  PRISTINE_WITNESS_MATCHES_FROZEN_RECON04=YES
+
+THE BUILD SELECTOR IS VERIFIED, NOT ASSERTED
+---------------------------------------------
+The dedicated selector HCC_USE_SELFHOST_PARSER_SWITCH_ARM is wired
+into src/CMakeLists.txt exactly as the five already migrated
+authorities are, and the SLICE04 generic verifier
+(src/cmake/VerifyAstTokenMapObject.cmake) is REUSED READ-ONLY with
+the expected symbol BootstrapSwitchArmTerminates and the target object
+format passed in EXPLICITLY.
+
+The verification is a custom TARGET, not an OUTPUT-producing custom
+command, so the verification command ALWAYS runs and a stale stamp can
+never decide that the verification is unnecessary.  The production
+compiler is never linked without a verified PolyC switch-arm
+authority.
+
+A missing component is a HARD CONFIGURE ERROR, never a silent legacy
+fallback.
+
+  SELECTOR=HCC_USE_SELFHOST_PARSER_SWITCH_ARM
+  VERIFIER=src/cmake/VerifyAstTokenMapObject.cmake (reused read-only)
+  VERIFICATION_GATES_THE_LINK=YES
+  MISSING_COMPONENT_IS_A_HARD_ERROR=YES
+  PRODUCTION_DELEGATION_IS_LOAD_BEARING=YES
+  LEGACY_C_STILL_AUTHORITATIVE=NO

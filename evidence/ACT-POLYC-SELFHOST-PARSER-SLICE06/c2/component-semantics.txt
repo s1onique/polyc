@@ -1,0 +1,87 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE06
+ACT_PHASE=C2-EVIDENCE
+EVIDENCE_KIND=component-semantics
+
+THE POLYC COMPONENT'S SEMANTICS OVER THE WHOLE DOMAIN
+======================================================
+
+The PolyC component returns the EXACT legacy decision for every value
+of the derived domain, and the direct differential proves it against
+the REAL object-level legacy oracle AND the independently derived
+fixture expectation, on every row.
+
+COMMAND=make parser-slice06-differential
+  SLICE06_DIFF_ROWS=64
+  SLICE06_DIFF_EXPECTED_ROWS=64
+  SLICE06_DIFF_PASS=64
+  SLICE06_DIFF_FAIL=0
+  SLICE06_DIFF_ORACLE_VS_EXPECTED_MISMATCH=0
+  SLICE06_DIFF_POLYC_VS_EXPECTED_MISMATCH=0
+  SLICE06_DIFF_ORACLE_VS_POLYC_MISMATCH=0
+  SLICE06_DIFF_INVALID_RESULT_VALUES=0
+  SLICE06_DIFF_STATUS=PASS
+
+THE DOMAIN IS THE WHOLE I64 SPACE
+---------------------------------
+The component is a TOTAL function: every I64 maps to exactly one of
+{0, 1}.  The fixture covers every live AstKind value (41) and the
+out-of-enum probes (-4..0 and 296..300, of which 6 are truly
+out-of-enum).
+
+THE COMPONENT HAS NO RANGE CHECK, AND MUST NOT HAVE ONE
+---------------------------------------------------------
+The legacy condition does NOT check whether the value is a valid
+AstKind: it compares the value against six constants and terminates
+the arm if any of them matches.  An out-of-enum value matches none of
+them, so the arm CONTINUES.
+
+The PolyC component reproduces this exactly.  It has NO range check,
+so every out-of-enum probe returns 0, exactly as the legacy
+object-level oracle reports.  Adding a range check would CHANGE the
+result for the out-of-enum probes and would therefore be a semantic
+change, not a hardening.
+
+  OUT_OF_ENUM_PROBE_RESULTS_MATCH_LEGACY=YES
+
+THE SIX TERMINATING VALUES
+---------------------------
+The component compares against exactly the six live src/ast.h values:
+
+  AST_COMPOUND_STMT = 274
+  AST_CASE          = 287
+  AST_DEFAULT       = 293
+  AST_BREAK         = 280
+  AST_RETURN        = 270
+  AST_GOTO          = 258
+
+  TERMINATING_COUNT=6
+  TERMINATING_SET=258 270 274 280 287 293
+
+THE VALUES ARE NOT HARDCODED FROM A STALE SOURCE
+-------------------------------------------------
+They are bound to the LIVE src/ast.h by COMPILING it (see
+c1/compiled-enum-values.tsv) and, independently, by PARSING the live
+src/parser.c condition text (see c1/fixture-integrity.txt:
+DERIVED_TERMINATING_SET=274 287 293 280 270 258, derived at line 1551
+of the live source).
+
+A change to the live enum values would therefore be DETECTED by the
+independent integrity witness rather than silently inherited.
+
+THE OUTPUT IS A BOOLEAN, NOT A CLASSIFICATION
+----------------------------------------------
+The decision is a BOOLEAN, not a classification.  There is no "not
+found" case, so there is no sentinel that could collide with a valid
+result.  The output domain is exactly {0, 1}, and the differential
+witness counts any value outside that set.
+
+  OUTPUT_DOMAIN={0,1}
+  INVALID_RESULT_VALUES=0
+  FAILURE_SEMANTICS=NO_FAILURE_PATH
+
+THE MUTATION IS CONFINEABLE
+---------------------------
+The negative control PD-02 removes ONE terminating kind from the
+PolyC component and the differential reports exactly the five rows
+that assert that kind.  The mutation is therefore confined to the
+terminating set, and the component has no other behaviour to perturb.

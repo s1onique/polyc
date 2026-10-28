@@ -1,0 +1,87 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE06
+ACT_PHASE=C2-EVIDENCE
+EVIDENCE_KIND=ownership
+
+THE OWNERSHIP THAT IS PRESERVED
+===============================
+
+This ACT changes ONE boolean decision.  Everything else about the
+parser's ownership of mutable state stays exactly as it is.
+
+  RECOVERY_OWNER=C
+  AST_GRAPH_OWNER=C
+  SYMBOL_TABLE_OWNER=C
+  TOKEN_STREAM_OWNER=C
+  DIAGNOSTIC_OWNER=C
+  LONGJMP_TARGET_OWNER=C
+  ERROR_MESSAGE_OWNER=C
+  TOKEN_REWIND_OWNER=C
+  ALLOCATION_OWNER=C
+  THE_BREAK_THAT_LEAVES_THE_ARM_LOOP=C
+  THE_ARM_TERMINATION_DECISION=PolyC
+
+WHAT DID NOT CHANGE
+-------------------
+COMMAND=git diff --stat 94f9086..<the C2 tree> -- src/
+  src/parser.c       | the decision function, the legacy wrapper and
+                     | ONE call-site condition
+  src/CMakeLists.txt | the dedicated selector, the subject link and
+                     | the verification target
+  src/ast.h         | UNCHANGED (the AstKind enum values are FROZEN)
+  src/lexer.c       | UNCHANGED
+  src/lexer.h       | UNCHANGED
+  src/ast.c         | UNCHANGED
+  src/prslib.c      | UNCHANGED
+  src/prsutil.c     | UNCHANGED
+  src/cctrl.c       | UNCHANGED
+  src/cctrl.h       | UNCHANGED
+  src/transpiler.c  | UNCHANGED
+  src/main.c        | UNCHANGED
+
+COMMAND=git diff 94f9086..<the C2 tree> -- src/parser.c
+  The ONLY behavioural change is at ONE place: the `if` condition that
+  used to compare stmt->kind against six enum values now calls
+  parseSwitchArmTerminates((int)stmt->kind).
+
+  NO_CHANGE_TO=src/ast.h
+  NO_CHANGE_TO=any other parser function
+  NO_CHANGE_TO=src/lexer.c, src/lexer.h
+  NO_CHANGE_TO=src/ast.c, src/ast.h, src/prslib.c, src/prsutil.c
+  NO_CHANGE_TO=src/cctrl.c, src/cctrl.h
+  NO_CHANGE_TO=src/transpiler.c, src/main.c
+  NO_CHANGE_TO=the recovery protocol
+  NO_CHANGE_TO=the diagnostic texts
+  NO_CHANGE_TO=the arm-loop structure
+  NO_CHANGE_TO=the other three structural sub-slices
+  NO_CHANGE_TO=the seven historical scalar candidates
+  NO_CHANGE_TO=the AstKind enum values
+  NO_CHANGE_TO=the closed evidence trees
+  NO_CHANGE_TO=the hook policy
+  NO_CHANGE_TO=compiler feature flags or dependency versions
+
+THE ENCLOSING FUNCTION IS NOT MIGRATED
+---------------------------------------
+parseCaseLabel as a WHOLE FUNCTION remains INELIGIBLE, exactly as the
+predecessor's frozen contract says.  It still owns the host case list,
+the arm statement list, the diagnostics and its subordinate host calls.
+Only the ONE `if` condition changed.
+
+THE PROJECTION IS UNCHANGED
+----------------------------
+  PROJECTION_FIELD_COUNT=1
+  PROJECTION_FIELD=stmt->kind
+  PROJECTION_ACCESS=READ
+  PROJECTION_SCALAR_TYPE=I64
+  PROJECTION_RESULT_TYPE=I64
+  PROJECTION_BOUNDED=YES
+  PROJECTION_POINTER_CROSSING=NONE
+  PROJECTION_CALLBACK_CROSSING=NONE
+  PROJECTION_JMP_BUF_CROSSING=NONE
+
+The C side reads EXACTLY ONE host field, copies it as an I64, passes it
+to the PolyC component, receives ONE I64 back, and acts on it by
+executing the `break` itself.  NO other host graph field, callback,
+pointer, diagnostic or recovery state crosses the ABI.
+
+THE DECISION MAKES NO HOST-GRAPH WRITE, NO ALLOCATION, NO CALLBACK,
+NO RECOVERY TRANSFER AND NO DIAGNOSTIC.

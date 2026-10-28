@@ -1633,9 +1633,25 @@ Ast *parseCaseLabel(Cctrl *cc, Lexeme *tok) {
         if (stmt && stmt->kind != AST_CASE && stmt->kind != AST_DEFAULT) {
             listAppend(stmts,stmt);
         }
-        if (stmt->kind == AST_COMPOUND_STMT || stmt->kind == AST_CASE ||
-                stmt->kind == AST_DEFAULT || stmt->kind == AST_BREAK || stmt->kind == AST_RETURN
-                || stmt->kind == AST_GOTO) break;
+        /* ACT-POLYC-SELFHOST-PARSER-SLICE06 C2 IMPL:
+         * delegate the switch-case ARM TERMINATION decision to the
+         * qualified PolyC component BootstrapSwitchArmTerminates.
+         *
+         * The legacy condition was:
+         *
+         *   if (stmt->kind == AST_COMPOUND_STMT || stmt->kind == AST_CASE ||
+         *           stmt->kind == AST_DEFAULT || stmt->kind == AST_BREAK || stmt->kind == AST_RETURN
+         *           || stmt->kind == AST_GOTO) break;
+         *
+         * It now lives in parseSwitchArmTerminates() above, which
+         * routes to the PolyC component in the production build.  The
+         * C side still owns the `break` itself: the PolyC component
+         * decides, the C side acts.
+         *
+         * The legacy condition is NOT evaluated here before, after or
+         * alongside the delegation, and there is no shadow call and no
+         * fallback to C. */
+        if (parseSwitchArmTerminates((int)stmt->kind)) break;
         peek = cctrlTokenPeek(cc);
    
         /* @Bug - Something is afoot, this ensures we don't go on forever

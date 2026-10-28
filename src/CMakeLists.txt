@@ -959,6 +959,152 @@ if (HCC_USE_SELFHOST_PARSER_AST_UNARY)
                    "target format=${AST_UNARY_TOKEN_MAP_TARGET_OBJECT_FORMAT}; nm=${AST_UNARY_TOKEN_MAP_NM}")
 endif()
 
+# ACT-POLYC-SELFHOST-PARSER-SLICE06 C2 IMPL:
+# Link the qualified PolyC BootstrapSwitchArmTerminates component into
+# the production hcc binary and enable the switch-arm termination
+# delegation.
+#
+# The dedicated selector `HCC_USE_SELFHOST_PARSER_SWITCH_ARM` is defined
+# here so the production switch-arm delegation is INDEPENDENT of the
+# parser-padding selector, of the control-flow-token selector, of the
+# operator-precedence selector, of the AST BINARY-operator selector, of
+# the AST UNARY-operator selector and of the generic lexer
+# `HCC_USE_SELFHOST_COMPONENTS` flag (which would also require linking
+# the lexer subjects).
+#
+# The same fail-closed discipline as the parser-padding,
+# control-flow-token, operator-precedence, AST binary-operator and AST
+# unary-operator components applies: if the producer is configured, the
+# build graph SCHEDULES the component's production and verifies the
+# exported symbol; if it is not, a missing component is a hard
+# configure error, never a silent legacy fallback.
+#
+# THE VERIFIER IS THE SLICE04 GENERIC ONE, REUSED READ-ONLY.
+#
+# src/cmake/VerifyAstTokenMapObject.cmake is already fully
+# PARAMETERIZED: it takes the object, the expected symbol, the target
+# object format and the nm tool as inputs, and every check is driven
+# from those parameters.  Reusing it means the switch-arm subject is
+# checked by exactly the same discipline as the other subjects -- there
+# is no second, weaker verifier to drift.
+#
+# Mach-O naming is NOT hard-coded into the verification: the expected
+# symbol's object-format spelling is derived from the TARGET OBJECT
+# FORMAT, which is passed in explicitly.
+option(HCC_USE_SELFHOST_PARSER_SWITCH_ARM
+       "Link the switch-arm-termination PolyC component into hcc and enable switch-arm-termination delegation. ACT-POLYC-SELFHOST-PARSER-SLICE06."
+       ON)
+
+if (HCC_USE_SELFHOST_PARSER_SWITCH_ARM)
+    if (NOT SWITCH_ARM_TOKEN_MAP_OBJECT)
+        set(SWITCH_ARM_TOKEN_MAP_OBJECT "${CMAKE_SOURCE_DIR}/../build/parser-switch-arm-subject.o")
+    endif()
+
+    # ---------------------------------------------------------------------
+    # The TARGET OBJECT FORMAT and the TOOLCHAIN nm are resolved here and
+    # passed EXPLICITLY to the verifier.
+    #
+    # The format must NOT be guessed from the host: during a cross-compile
+    # the host's format is not the target's format.  CMAKE_NM is the
+    # CONFIGURED TOOLCHAIN's nm, so the target object is inspected by a
+    # tool that understands the target format.  If it is not available the
+    # build fails loudly instead of silently substituting a host nm.
+    # ---------------------------------------------------------------------
+    if (NOT SWITCH_ARM_TOKEN_MAP_TARGET_OBJECT_FORMAT)
+        if (APPLE)
+            set(SWITCH_ARM_TOKEN_MAP_TARGET_OBJECT_FORMAT "Mach-O")
+        elseif (UNIX AND NOT APPLE)
+            set(SWITCH_ARM_TOKEN_MAP_TARGET_OBJECT_FORMAT "ELF")
+        else()
+            message(FATAL_ERROR
+                "ACT-POLYC-SELFHOST-PARSER-SLICE06: "
+                "cannot determine the target object format for this platform. "
+                "Configure with -DSWITCH_ARM_TOKEN_MAP_TARGET_OBJECT_FORMAT=<Mach-O|ELF> "
+                "so the switch-arm symbol spelling can be resolved "
+                "correctly. Refusing to link the production compiler "
+                "without a verified PolyC switch-arm authority.")
+        endif()
+    endif()
+
+    if (NOT SWITCH_ARM_TOKEN_MAP_NM)
+        if (NOT CMAKE_NM)
+            message(FATAL_ERROR
+                "ACT-POLYC-SELFHOST-PARSER-SLICE06: "
+                "REJECT_NM_FAILURE "
+                "no nm tool is available, so the switch-arm subject cannot be "
+                "verified. Configure with -DSWITCH_ARM_TOKEN_MAP_NM=<path to nm> "
+                "and re-run cmake.")
+        endif()
+        set(SWITCH_ARM_TOKEN_MAP_NM "${CMAKE_NM}")
+    endif()
+
+    set(_saw_stamp "${SWITCH_ARM_TOKEN_MAP_OBJECT}.verified")
+
+    # ---------------------------------------------------------------------
+    # PRODUCER MODE: the build graph produces the subject itself.
+    # ---------------------------------------------------------------------
+    if (SWITCH_ARM_TOKEN_MAP_PRODUCER)
+        add_custom_command(
+            OUTPUT "${SWITCH_ARM_TOKEN_MAP_OBJECT}"
+            COMMAND "${CMAKE_COMMAND}" -E rm -f "${SWITCH_ARM_TOKEN_MAP_OBJECT}"
+            COMMAND "${SWITCH_ARM_TOKEN_MAP_PRODUCER}"
+                    --install-dir="${SWITCH_ARM_TOKEN_MAP_PREFIX}"
+                    -c "${SWITCH_ARM_TOKEN_MAP_SOURCE}"
+                    -o "${SWITCH_ARM_TOKEN_MAP_OBJECT}"
+            DEPENDS "${SWITCH_ARM_TOKEN_MAP_SOURCE}"
+            COMMENT "ACT-POLYC-SELFHOST-PARSER-SLICE06: producing switch-arm subject ${SWITCH_ARM_TOKEN_MAP_OBJECT}"
+            VERBATIM
+            USES_TERMINAL)
+        message(STATUS "ACT-POLYC-SELFHOST-PARSER-SLICE06: production hcc SCHEDULES switch-arm subject production: ${SWITCH_ARM_TOKEN_MAP_OBJECT}")
+    elseif (NOT EXISTS "${SWITCH_ARM_TOKEN_MAP_OBJECT}")
+        message(FATAL_ERROR
+            "ACT-POLYC-SELFHOST-PARSER-SLICE06: "
+            "the switch-arm subject ${SWITCH_ARM_TOKEN_MAP_OBJECT} does not "
+            "exist and no producer is configured. Produce it with "
+            "./hcc --install-dir=<prefix> -c tools/bootstrap/selfhost-parser-slice06.HC -o ${SWITCH_ARM_TOKEN_MAP_OBJECT}. "
+            "Or configure with -DSWITCH_ARM_TOKEN_MAP_PRODUCER=<stage0 hcc> to have the "
+            "build graph produce it.")
+    else()
+        message(STATUS "ACT-POLYC-SELFHOST-PARSER-SLICE06: production hcc uses a PREBUILT switch-arm subject: ${SWITCH_ARM_TOKEN_MAP_OBJECT}")
+    endif()
+
+    # ---------------------------------------------------------------------
+    # The VERIFICATION is a custom TARGET, not an OUTPUT-producing custom
+    # command, so the verification command ALWAYS runs and a stale stamp
+    # can never decide that the verification is unnecessary.
+    # ---------------------------------------------------------------------
+    add_custom_target(hcc-switch-arm-token-map-verify
+        COMMAND "${CMAKE_COMMAND}"
+                -DAST_TOKEN_MAP_OBJECT=${SWITCH_ARM_TOKEN_MAP_OBJECT}
+                -DAST_TOKEN_MAP_EXPECTED_SYMBOL=BootstrapSwitchArmTerminates
+                -DAST_TOKEN_MAP_TARGET_OBJECT_FORMAT=${SWITCH_ARM_TOKEN_MAP_TARGET_OBJECT_FORMAT}
+                -DAST_TOKEN_MAP_NM=${SWITCH_ARM_TOKEN_MAP_NM}
+                -P "${CMAKE_SOURCE_DIR}/cmake/VerifyAstTokenMapObject.cmake"
+        COMMAND "${CMAKE_COMMAND}"
+                -DAST_TOKEN_MAP_OBJECT=${SWITCH_ARM_TOKEN_MAP_OBJECT}
+                -DAST_TOKEN_MAP_STAMP=${_saw_stamp}
+                -P "${CMAKE_SOURCE_DIR}/cmake/WriteAstTokenMapObjectStamp.cmake"
+        DEPENDS "${SWITCH_ARM_TOKEN_MAP_OBJECT}"
+        COMMENT "ACT-POLYC-SELFHOST-PARSER-SLICE06: verifying switch-arm subject ${SWITCH_ARM_TOKEN_MAP_OBJECT}"
+        VERBATIM
+        USES_TERMINAL)
+
+    # The verification gates the link: the production compiler is never
+    # linked without a verified PolyC switch-arm authority.
+    add_dependencies(hcc hcc-switch-arm-token-map-verify)
+
+    # The link itself must ALSO depend on the object, so the object is
+    # re-read by the linker whenever it changes.
+    set_property(TARGET hcc APPEND PROPERTY
+        LINK_DEPENDS "${SWITCH_ARM_TOKEN_MAP_OBJECT}")
+
+    target_compile_definitions(hcc PRIVATE HCC_USE_SELFHOST_PARSER_SWITCH_ARM)
+    target_link_libraries(hcc ${SWITCH_ARM_TOKEN_MAP_OBJECT})
+    message(STATUS "ACT-POLYC-SELFHOST-PARSER-SLICE06: production hcc links switch-arm PolyC component: ${SWITCH_ARM_TOKEN_MAP_OBJECT}")
+    message(STATUS "ACT-POLYC-SELFHOST-PARSER-SLICE06: production hcc VERIFIES the switch-arm subject (both producer and prebuilt modes); "
+                   "target format=${SWITCH_ARM_TOKEN_MAP_TARGET_OBJECT_FORMAT}; nm=${SWITCH_ARM_TOKEN_MAP_NM}")
+endif()
+
 
 # ACT-POLYC-BOOTSTRAP02 C2 IMPL — opt-in stage1 build that
 # links the B1 PolyC component (BootstrapScanIdent) into a

@@ -92,6 +92,10 @@ SLICE04_AST_BINOP_OBJ = ./build/parser-ast-binop-subject.o
 SLICE05_AST_UNARY_SRC = tools/bootstrap/selfhost-parser-slice05.HC
 SLICE05_AST_UNARY_OBJ = ./build/parser-ast-unary-subject.o
 
+# ACT-POLYC-SELFHOST-PARSER-SLICE06: the switch-arm-termination subject.
+SLICE06_SWITCH_ARM_SRC = tools/bootstrap/selfhost-parser-slice06.HC
+SLICE06_SWITCH_ARM_OBJ = ./build/parser-switch-arm-subject.o
+
 # The stage0 compiler's own sources. A change to any of them must
 # invalidate the stage0 compiler, which in turn invalidates the
 # padding subject.
@@ -123,6 +127,7 @@ $(BOOTSTRAP_STAGE0_HCC): $(BOOTSTRAP_STAGE0_SOURCES)
 		-DHCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE=OFF \
 		-DHCC_USE_SELFHOST_PARSER_AST_BINOP=OFF \
 		-DHCC_USE_SELFHOST_PARSER_AST_UNARY=OFF \
+		-DHCC_USE_SELFHOST_PARSER_SWITCH_ARM=OFF \
 		-DHCC_RUNTIME_OUTPUT_DIRECTORY=$(CURDIR)/$(BOOTSTRAP_STAGE0_DIR)
 	$(MAKE) -C $(BOOTSTRAP_STAGE0_BUILD) hcc -j2
 	@if [ ! -x "$(BOOTSTRAP_STAGE0_HCC)" ]; then \
@@ -551,7 +556,7 @@ parser-padding-subject: $(PARSER_PADDING_OBJ)
 #     previously produced a link failure against a missing libtasm.a.
 PRODUCTION_HCC = ./hcc
 PRODUCTION_HCC_INPUTS = $(PARSER_PADDING_OBJ) $(SLICE02_CFT_OBJ) $(SLICE03_OP_OBJ) \
-	$(SLICE04_AST_BINOP_OBJ) $(SLICE05_AST_UNARY_OBJ) \
+	$(SLICE04_AST_BINOP_OBJ) $(SLICE05_AST_UNARY_OBJ) $(SLICE06_SWITCH_ARM_OBJ) \
 	$(wildcard src/*.c src/asm/*.c) \
 	$(wildcard src/*.h src/asm/*.h) \
 	$(wildcard src/CMakeLists.txt src/asm/CMakeLists.txt) \
@@ -593,6 +598,11 @@ $(PRODUCTION_HCC): $(PRODUCTION_HCC_INPUTS)
 		-DAST_UNARY_TOKEN_MAP_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
 		-DAST_UNARY_TOKEN_MAP_SOURCE=$(CURDIR)/$(SLICE05_AST_UNARY_SRC) \
 		-DAST_UNARY_TOKEN_MAP_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_PARSER_SWITCH_ARM=ON \
+		-DSWITCH_ARM_TOKEN_MAP_OBJECT=$(CURDIR)/$(SLICE06_SWITCH_ARM_OBJ) \
+		-DSWITCH_ARM_TOKEN_MAP_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DSWITCH_ARM_TOKEN_MAP_SOURCE=$(CURDIR)/$(SLICE06_SWITCH_ARM_SRC) \
+		-DSWITCH_ARM_TOKEN_MAP_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
 		-DHCC_BOOTSTRAP_EXPECTED_SHA=$(LIBTOS_BOOTSTRAP_EXPECTED_SHA)
 	$(MAKE) -C ./build -j2
 	@if [ ! -x ./hcc ]; then \
@@ -609,9 +619,12 @@ $(PRODUCTION_HCC): $(PRODUCTION_HCC_INPUTS)
 		|| { echo "production-hcc: symbol _BootstrapAstBinOpFromToken not linked into ./hcc" >&2; exit 1; }
 	@nm ./hcc | grep -q '_BootstrapAstUnaryOpFromToken' \
 		|| { echo "production-hcc: symbol _BootstrapAstUnaryOpFromToken not linked into ./hcc" >&2; exit 1; }
+	@nm ./hcc | grep -q '_BootstrapSwitchArmTerminates' \
+		|| { echo "production-hcc: symbol _BootstrapSwitchArmTerminates not linked into ./hcc" >&2; exit 1; }
 	@echo "PRODUCTION_HCC=./hcc"
 	@echo "PRODUCTION_PADDING_AUTHORITY=POLYC"
 	@echo "PRODUCTION_AST_BINOP_AUTHORITY=POLYC"
+	@echo "PRODUCTION_SWITCH_ARM_AUTHORITY=POLYC"
 
 production-hcc: $(PRODUCTION_HCC)
 
@@ -661,6 +674,11 @@ llvm-all: $(PARSER_PADDING_OBJ)
 		-DAST_UNARY_TOKEN_MAP_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
 		-DAST_UNARY_TOKEN_MAP_SOURCE=$(CURDIR)/$(SLICE05_AST_UNARY_SRC) \
 		-DAST_UNARY_TOKEN_MAP_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_PARSER_SWITCH_ARM=ON \
+		-DSWITCH_ARM_TOKEN_MAP_OBJECT=$(CURDIR)/$(SLICE06_SWITCH_ARM_OBJ) \
+		-DSWITCH_ARM_TOKEN_MAP_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DSWITCH_ARM_TOKEN_MAP_SOURCE=$(CURDIR)/$(SLICE06_SWITCH_ARM_SRC) \
+		-DSWITCH_ARM_TOKEN_MAP_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
 		-DHCC_BOOTSTRAP_EXPECTED_SHA=$(LIBTOS_BOOTSTRAP_EXPECTED_SHA)
 	$(MAKE) -C ./build/llvm -j2
 	@if [ ! -x ./hcc ]; then \
@@ -783,6 +801,11 @@ test-prefix-install: production-hcc runtime-producer
 		-DAST_UNARY_TOKEN_MAP_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
 		-DAST_UNARY_TOKEN_MAP_SOURCE=$(CURDIR)/$(SLICE05_AST_UNARY_SRC) \
 		-DAST_UNARY_TOKEN_MAP_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_PARSER_SWITCH_ARM=ON \
+		-DSWITCH_ARM_TOKEN_MAP_OBJECT=$(CURDIR)/$(SLICE06_SWITCH_ARM_OBJ) \
+		-DSWITCH_ARM_TOKEN_MAP_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DSWITCH_ARM_TOKEN_MAP_SOURCE=$(CURDIR)/$(SLICE06_SWITCH_ARM_SRC) \
+		-DSWITCH_ARM_TOKEN_MAP_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
 		-DHCC_BOOTSTRAP_EXPECTED_SHA=$(LIBTOS_BOOTSTRAP_EXPECTED_SHA)
 	$(MAKE) -C ./build/test-prefix-install-build install
 	@if [ ! -f $(TEST_PREFIX)/lib/libtos.a ] || \
@@ -5233,6 +5256,28 @@ $(SLICE05_AST_UNARY_OBJ): $(SLICE05_AST_UNARY_SRC) $(BOOTSTRAP_STAGE0_HCC) $(BOO
 	@echo "SLICE05_AST_UNARY_OBJECT=$@"
 
 # =========================================================================
+# ACT-POLYC-SELFHOST-PARSER-SLICE06
+#
+#   build/parser-switch-arm-subject.o -> the qualified PolyC subject.
+#
+# The subject is compiled by the STAGE0 compiler (the legacy C control),
+# so that the component does not depend on the production compiler that
+# it is about to serve.
+# =========================================================================
+$(SLICE06_SWITCH_ARM_OBJ): $(SLICE06_SWITCH_ARM_SRC) $(BOOTSTRAP_STAGE0_HCC) $(BOOTSTRAP_PREFIX_INC)/tos.HH
+	@rm -f $@
+	$(BOOTSTRAP_STAGE0_HCC) \
+		--install-dir=$(BOOTSTRAP_PREFIX_DIR) \
+		-c $(SLICE06_SWITCH_ARM_SRC) \
+		-o $@
+	@if [ ! -f $@ ]; then \
+		echo "parser-switch-arm-subject: object not produced" >&2; exit 1; \
+	fi
+	@nm $@ | grep -q '_BootstrapSwitchArmTerminates' \
+		|| { echo "parser-switch-arm-subject: symbol _BootstrapSwitchArmTerminates not found in object" >&2; exit 1; }
+	@echo "SLICE06_SWITCH_ARM_OBJECT=$@"
+
+# =========================================================================
 # ACT-POLYC-SELFHOST-PARSER-SLICE05
 #
 #   build/slice05-ast-legacy.o -> the REAL legacy C oracle object.
@@ -5358,9 +5403,180 @@ build/parser-slice05-differential: $(SLICE05_DIFF_OBJS) $(SLICE05_ERRNO_SHIM) | 
 
 parser-slice05-differential: build/parser-slice05-differential
 	@echo "SLICE05_DIFFERENTIAL=RUN"
-	./build/parser-slice05-differential $(SLICE05_FIXTURE) $(SLICE05_FIXTURE_COUNT)
+	./build/parser-slice05-differential evidence/ACT-POLYC-SELFHOST-PARSER-SLICE05/c1/fixture.tsv $(SLICE05_FIXTURE_COUNT)
+
+	@echo "SLICE05_DIFFERENTIAL=RUN"
+	./build/parser-slice05-differential evidence/ACT-POLYC-SELFHOST-PARSER-SLICE05/c1/fixture.tsv $(SLICE05_FIXTURE_COUNT)
+# =========================================================================
+# ACT-POLYC-SELFHOST-PARSER-SLICE06
+#
+#   build/slice06-parser-legacy.o -> the REAL legacy C oracle object.
+#
+# src/parser.c compiled WITHOUT HCC_USE_SELFHOST_PARSER_SWITCH_ARM, so
+# the legacy arm-termination condition -- the byte-identical legacy
+# source -- is the code that executes.  The build FAILS if the object
+# references the PolyC component, which would mean the delegation was
+# NOT off.
+# =========================================================================
+SLICE06_PARSER_LEGACY_OBJ = ./build/slice06-parser-legacy.o
+SLICE06_ORACLE_ADAPTER   = ./build/slice06-oracle-adapter.o
+SLICE06_ORACLE_STUB      = ./build/slice06-is-terminal-stub.o
+SLICE06_ORACLE_DRIVER    = ./build/slice06-oracle-driver
+SLICE06_DIFF_SRC         = tools/quality/parser-slice06-differential.HC
+SLICE06_DIFF_OBJ         = ./build/parser-slice06-differential.o
+SLICE06_FIXTURE_SRC      = tools/quality/parser-slice06-fixture-producer.HC
+SLICE06_FIXTURE          = evidence/ACT-POLYC-SELFHOST-PARSER-SLICE06/c1/fixture.tsv
+SLICE06_FIXTURE_COUNT    = $(shell grep -c '^[0-9][0-9][0-9]' $(SLICE06_FIXTURE) 2>/dev/null || echo 0)
+
+build/slice06-parser-legacy.o: src/parser.c src/parser.h src/ast.h
+	@rm -f $@
+	cc -std=c99 -O2 -Isrc -c -o $@ src/parser.c
+	@nm $@ | grep -q '_ParserLegacySwitchArmTerminatesOracle' \
+		|| { echo "slice06-parser-legacy.o: the legacy decision wrapper is missing" >&2; exit 1; }
+	@if nm $@ | grep -q '_BootstrapSwitchArmTerminates'; then \
+		echo "slice06-parser-legacy.o: the object references the PolyC component; the delegation flag is NOT off" >&2; \
+		exit 1; \
+	fi
+	@echo "SLICE06_LEGACY_ORACLE=$@ (delegation OFF: the real legacy body is executed)"
+
+build/slice06-is-terminal-stub.o: tools/quality/parser-slice06-oracle-stub.c
+	@rm -f $@
+	cc -std=c99 -O2 -c -o $@ $<
+
+build/slice06-oracle-adapter.o: tools/quality/parser-slice06-oracle-adapter.c
+	@rm -f $@
+	cc -std=c99 -O2 -Isrc -c -o $@ $<
+	@nm $@ | grep -q '_Slice06LegacySwitchArmOracle' \
+		|| { echo "slice06-oracle-adapter.o: the adapter entry point is missing" >&2; exit 1; }
+
+# The transitive production objects the oracle links against.
+#
+# main.c is EXCLUDED: it defines main() and the runtime-initialized
+# is_terminal global.  parser.c is EXCLUDED too: it is REPLACED by the
+# legacy oracle object, which is the whole point -- the ORACLE must be
+# the legacy parser.c, so the production parser.c.o would be a
+# duplicate-symbol conflict AND would defeat the oracle.
+SLICE06_ORACLE_TRANSITIVE_OBJS = $(filter-out $(HCC_OBJ_DIR)/main.c.o $(HCC_OBJ_DIR)/parser.c.o, \
+    $(wildcard $(HCC_OBJ_DIR)/*.c.o $(HCC_OBJ_DIR)/linenoise/*.c.o))
+
+# The oracle DRIVER: it prints the legacy decision for every probed
+# AstKind value, so the G0 reference can be compared against the frozen
+# C-extracted oracle byte for byte.
+build/slice06-oracle-driver: tools/quality/parser-slice06-oracle-driver.c \
+    build/slice06-parser-legacy.o build/slice06-oracle-adapter.o \
+    build/slice06-is-terminal-stub.o
+	@rm -f $@
+	cc -std=c99 -O2 -Isrc -o $@ tools/quality/parser-slice06-oracle-driver.c \
+		build/slice06-parser-legacy.o build/slice06-oracle-adapter.o \
+		build/slice06-is-terminal-stub.o \
+		$(SLICE06_ORACLE_TRANSITIVE_OBJS) \
+		$(PARSER_PADDING_OBJ) $(SLICE02_CFT_OBJ) $(SLICE03_OP_OBJ) \
+		$(SLICE04_AST_BINOP_OBJ) $(SLICE05_AST_UNARY_OBJ) \
+		$(TASM_LIB) -lm -lpthread -ldl \
+		-Wl,-undefined,dynamic_lookup
+	@ls -la $@
+
+# The FIXTURE producer.
+build/parser-slice06-fixture-producer: $(SLICE06_FIXTURE_SRC) ./hcc | test-prefix-install
+	./hcc --install-dir=$(TEST_PREFIX) $(SLICE06_FIXTURE_SRC) -o $@
+
+# The INDEPENDENT fixture-integrity witness.
+build/parser-slice06-fixture-integrity: tools/quality/parser-slice06-fixture-integrity.HC ./hcc | test-prefix-install
+	./hcc --install-dir=$(TEST_PREFIX) tools/quality/parser-slice06-fixture-integrity.HC -o $@
+
+# The DIRECT DIFFERENTIAL: the PolyC component against the REAL legacy
+# oracle, over the whole fixture matrix.
+build/parser-slice06-differential.o: $(SLICE06_DIFF_SRC) ./hcc | test-prefix-install
+	./hcc --install-dir=$(TEST_PREFIX) -c $(SLICE06_DIFF_SRC) -o $@
+	@if [ ! -f $@ ]; then \
+		echo "parser-slice06-differential.o: build failed" >&2; \
+		exit 1; \
+	fi
+
+SLICE06_DIFF_OBJS = $(SLICE06_DIFF_OBJ) $(SLICE06_SWITCH_ARM_OBJ) \
+	$(SLICE06_PARSER_LEGACY_OBJ) $(SLICE06_ORACLE_ADAPTER) $(SLICE06_ORACLE_STUB) \
+	$(SLICE06_ORACLE_TRANSITIVE_OBJS)
+
+build/parser-slice06-differential: $(SLICE06_DIFF_OBJS) | test-prefix-install
+	cc -o $@ $(SLICE06_DIFF_OBJS) \
+		$(PARSER_PADDING_OBJ) $(SLICE02_CFT_OBJ) $(SLICE03_OP_OBJ) \
+		$(SLICE04_AST_BINOP_OBJ) $(SLICE05_AST_UNARY_OBJ) \
+		$(TASM_LIB) -L$(TEST_PREFIX)/lib -ltos -lm -lpthread -ldl \
+		-Wl,-undefined,dynamic_lookup
+	@ls -la $@
 
 # =========================================================================
+
+# The SLICE06 fixture: produced by the PolyC producer, then verified by
+# the INDEPENDENT PolyC integrity witness.
+parser-slice06-fixture: build/parser-slice06-fixture-producer
+	@mkdir -p evidence/ACT-POLYC-SELFHOST-PARSER-SLICE06/c1
+	./build/parser-slice06-fixture-producer $(SLICE06_FIXTURE)
+	@echo "SLICE06_FIXTURE=$(SLICE06_FIXTURE)"
+	@echo "SLICE06_FIXTURE_COUNT=$$(grep -c '^[0-9][0-9][0-9]' $(SLICE06_FIXTURE))"
+
+parser-slice06-fixture-integrity: build/parser-slice06-fixture-integrity
+	./build/parser-slice06-fixture-integrity $(SLICE06_FIXTURE) src/ast.h src/parser.c
+	@echo "SLICE06_FIXTURE_INTEGRITY=PASS"
+
+# The G0 legacy oracle driver: the REAL legacy decision over the whole
+# probed domain.
+parser-slice06-oracle: build/slice06-oracle-driver
+	./build/slice06-oracle-driver
+	@echo "SLICE06_ORACLE=RUN"
+
+# The DIRECT DIFFERENTIAL: the PolyC component against the REAL legacy
+# oracle, over the whole fixture matrix.
+parser-slice06-differential: build/parser-slice06-differential
+	@echo "SLICE06_DIFFERENTIAL=RUN"
+	./build/parser-slice06-differential $(SLICE06_FIXTURE) `grep -c '^[0-9][0-9][0-9]' $(SLICE06_FIXTURE)`
+
+# The PRODUCTION-DIFFERENTIAL negative controls PD-01..PD-03.
+#
+# Each control MUTATES the PolyC subject (never the C oracle) and
+# re-links the differential against the mutated subject.  The control
+# is sensitive only when the differential reports a mismatch against
+# the UNCHANGED legacy oracle.
+#
+# The mutant sources are GENERATED from the committed subject, so the
+# control cannot drift from the subject it is supposed to attack.
+SLICE06_NC_DIR = ./build/slice06-nc
+
+build/slice06-nc/pd01.HC: tools/bootstrap/selfhost-parser-slice06.HC
+	@mkdir -p $(SLICE06_NC_DIR)
+	@sed 's|if (ast_kind == 274) return 1;   // AST_COMPOUND_STMT|if (ast_kind == 274) return 0;   // MUTANT PD-01: inverse|' $< > $@
+build/slice06-nc/pd02.HC: tools/bootstrap/selfhost-parser-slice06.HC
+	@mkdir -p $(SLICE06_NC_DIR)
+	@sed '/if (ast_kind == 274) return 1;/d' $< > $@
+build/slice06-nc/pd03.HC: tools/bootstrap/selfhost-parser-slice06.HC
+	@mkdir -p $(SLICE06_NC_DIR)
+	@sed 's|  if (ast_kind == 258) return 1;   // AST_GOTO|  if (ast_kind == 258) return 1;   // AST_GOTO\n  if (ast_kind == 266) return 1;   // MUTANT PD-03: added|' $< > $@
+
+build/slice06-nc/pd01.o: build/slice06-nc/pd01.HC $(BOOTSTRAP_STAGE0_HCC) $(BOOTSTRAP_PREFIX_INC)/tos.HH
+	$(BOOTSTRAP_STAGE0_HCC) --install-dir=$(BOOTSTRAP_PREFIX_DIR) -c $< -o $@
+build/slice06-nc/pd02.o: build/slice06-nc/pd02.HC $(BOOTSTRAP_STAGE0_HCC) $(BOOTSTRAP_PREFIX_INC)/tos.HH
+	$(BOOTSTRAP_STAGE0_HCC) --install-dir=$(BOOTSTRAP_PREFIX_DIR) -c $< -o $@
+build/slice06-nc/pd03.o: build/slice06-nc/pd03.HC $(BOOTSTRAP_STAGE0_HCC) $(BOOTSTRAP_PREFIX_INC)/tos.HH
+	$(BOOTSTRAP_STAGE0_HCC) --install-dir=$(BOOTSTRAP_PREFIX_DIR) -c $< -o $@
+
+define SLICE06_PD_CONTROL
+	@rm -f build/slice06-nc/diff-$1
+	cc -o build/slice06-nc/diff-$1 $(SLICE06_DIFF_OBJ) build/slice06-nc/$1.o \
+		$(SLICE06_PARSER_LEGACY_OBJ) $(SLICE06_ORACLE_ADAPTER) $(SLICE06_ORACLE_STUB) \
+		$(SLICE06_ORACLE_TRANSITIVE_OBJS) \
+		$(PARSER_PADDING_OBJ) $(SLICE02_CFT_OBJ) $(SLICE03_OP_OBJ) \
+		$(SLICE04_AST_BINOP_OBJ) $(SLICE05_AST_UNARY_OBJ) \
+		$(TASM_LIB) -L$(TEST_PREFIX)/lib -ltos -lm -lpthread -ldl \
+		-Wl,-undefined,dynamic_lookup
+	@./build/slice06-nc/diff-$1 $(SLICE06_FIXTURE) `grep -c '^[0-9][0-9][0-9]' $(SLICE06_FIXTURE)`
+endef
+
+parser-slice06-negative-control-pd01: build/slice06-nc/pd01.o
+	$(call SLICE06_PD_CONTROL,pd01)
+parser-slice06-negative-control-pd02: build/slice06-nc/pd02.o
+	$(call SLICE06_PD_CONTROL,pd02)
+parser-slice06-negative-control-pd03: build/slice06-nc/pd03.o
+	$(call SLICE06_PD_CONTROL,pd03)
 # ACT-POLYC-SELFHOST-PARSER-SLICE05
 #
 #   parser-slice05-generations -> the FOUR INDEPENDENT generation builds.
