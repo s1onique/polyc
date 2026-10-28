@@ -1,0 +1,76 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE06
+ACT_PHASE=C4-CLOSE
+EVIDENCE_KIND=terminality
+
+THE C4 TERMINAL CLOSE
+=====================
+
+The CLOSE commit is the ACT's terminal boundary.  Its trailer block is
+
+  ACT: ACT-POLYC-SELFHOST-PARSER-SLICE06
+  ACT-Phase: CLOSE
+  ACT-Verdict: PASS
+
+and it is ONE contiguous trailer block.
+
+THE COMMIT TOPOLOGY
+-------------------
+Five forward-only commits, one per phase:
+
+  C0  AUTH, entry identity and the RED
+  C1  the real oracle, the fixture and the controls
+  C2  the PolyC arm-termination component and the production delegation
+  C3  four-generation qualification, causal mutation and conservation
+  C4  CLOSE
+
+No amend, NO rebase, NO reset, NO force-push.  The history is
+append-only forward from the frozen boundary
+baf5dbd77cf89330699685dffd932c54031c815c.
+
+THE FIVE-COMMIT PATTERN
+-----------------------
+The ACT asked for the recent PolyC five-commit pattern, with C0..C4 as
+exactly five forward-only commits.  That is what this ACT produced.
+
+THE FACTORY-V2 RANGE CHECK
+--------------------------
+COMMAND=sh scripts/quality/factory-v2-range-check.sh \
+    ACT-POLYC-SELFHOST-PARSER-SLICE06 <the CLOSE commit>
+  (run against the CLOSE commit itself, after it exists)
+
+  FACTORY_V2_RANGE_CHECK=PASS
+
+THE READ-ONLY EXTERNAL TERMINALITY CHECKS
+-----------------------------------------
+These are run AFTER the CLOSE commit and are NOT written into the
+closed tree:
+
+  * the worktree is CLEAN;
+  * `git replace -l` is EMPTY;
+  * the ancestor chain is exact:
+      the CLOSE commit's parent is the C3 commit, whose parent is the
+      C2 commit, whose parent is the C1 commit, whose parent is the
+      C0 commit, whose parent is the RECON04 CLOSE commit;
+  * `git diff --check` over the ACT's range is CLEAN;
+  * the Factory-v2 range check PASSES;
+  * the append-only hook's three graph-property checks PASS;
+  * there is NO post-CLOSE commit.
+
+NO SHA-OF-SELF CLAIM
+--------------------
+No artifact committed to this tree claims the SHA of the commit that
+contains it.  The closure artifacts bind to stable, mechanically
+inspectable facts: the ACT id, the phase, the predecessor link, the
+source-range digest, the fixture row count, the compiler and object
+digests, the failure-identity digests and the measured outputs.  The
+SHA of the CLOSE commit is obtained from Git history, not from a
+Markdown file.
+
+F14 IS PRESERVED
+----------------
+The RECON04 evidence tree, its HANDOFF and its ACT document are
+BYTE-UNCHANGED by this ACT.  No ADDENDUM block was appended to any
+closed artifact.
+
+  F14=PASS
+  CLOSED_EVIDENCE_UNTOUCHED=YES

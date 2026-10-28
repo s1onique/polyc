@@ -7043,3 +7043,88 @@ the conservation baseline.
 See
 `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04.md` and
 `evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04/`.
+
+---
+
+## ACT-POLYC-SELFHOST-PARSER-SLICE06 -- CLOSE
+
+**Status:** CLOSED with `ACT-Verdict: PASS`.
+
+The switch-case ARM TERMINATION decision in the PolyC parser is now
+owned by a qualified PolyC component, and the legacy C decision has
+been retired from the production path.  This is the SIXTH
+production-authoritative PolyC parser decision, and the FIRST migrated
+bounded structural sub-slice.
+
+```text
+SWITCH_ARM_TERMINATION_AUTHORITY = POLYC
+LEGACY_SWITCH_ARM_C_AUTHORITY     = RETIRED
+SIXTH_POLYC_PARSER_AUTHORITY      = ESTABLISHED
+
+SELECTED_CANDIDATE = SUB-001
+SELECTED_SOURCE_RANGE = src/parser.c:1551..1553
+SELECTED_SOURCE_SHA256 = 31dc9ae8f87d26be429a565356820d8913c9a7cbc0e37d64470049c3b5948707
+POLYC_SYMBOL = BootstrapSwitchArmTerminates
+POLYC_ABI = I64 BootstrapSwitchArmTerminates(I64 ast_kind) -> I64
+```
+
+**The delegation is load-bearing.**  The production object carries the
+PolyC symbol as an UNDEFINED reference and does NOT define it, and the
+wrapper's disassembly is a pure call with no comparison, no branch and
+no constant.  The legacy condition is compiled out of the active
+production authority.
+
+**The oracle is object-level.**  The G0 reference is the ACTUAL
+production `src/parser.c` translation unit compiled WITHOUT the
+delegation macro, and it is byte-identical to the frozen C-extracted
+oracle.  The build fails if that object ever references the PolyC
+component.
+
+**The fixture is derived.**  64 rows over 12 partitions, derived from
+the live `src/ast.h` enum and reported by the producer, verified by an
+INDEPENDENT witness that parses the LIVE SOURCE TEXT.
+
+**The four generations are independent.**  Four distinct producing
+compiler binaries, four distinct build receipts, and all four produce
+the same compiled-program output.
+
+**The causal link is proven.**  Mutating the POLYC decision changes the
+compiled program's output; a byte-identical restoration returns it.
+
+```text
+G0_ROWS=51
+G0_TERMINATING_KINDS=258 270 274 280 287 293
+DERIVED_FIXTURE_ROWS=64
+DERIVED_FIXTURE_PARTITIONS=12
+SLICE06_DIFF_PASS=64/64
+PRODUCTION_DELEGATION=LOAD_BEARING
+PRISTINE_OUTPUT =SUB001:ARM2_MARKER,SUB001:x=1
+MUTATED_OUTPUT  =SUB001:ARM1_MARKER,SUB001:ARM2_MARKER,SUB001:x=1
+RESTORED_OUTPUT =SUB001:ARM2_MARKER,SUB001:x=1
+
+PARSER_HOST_ARCH_ASSERTIONS   = 376/376 over 90 test files
+PARSER_ASSERTION_SEQUENCE_MD5 = b6f117eb1386ca80f81bc06226e2a741
+NEW_PARSER_FAILURE_IDENTITIES = 0
+NEW_LEXER_FAILURE_IDENTITIES  = 0
+LEXER07_FAILURE_IDENTITY_MD5  = 7ee761440de83552e751e3c3976c1683
+CROSS_TARGET_STATUS           = FAIL_ENVIRONMENT_PREFIX (67 in BOTH trees)
+
+GATE_FAST = PASS
+GATE_PUSH = PASS
+APPEND_ONLY = PASS
+F14 = PASS
+MANDATORY_AC_TOTAL = 36
+MANDATORY_AC_PASS = 36
+```
+
+**What remains blocked.**  `parseCompoundStatementInternal`,
+`parseStatement` and `parseExpr` as whole functions, the recursive
+flow-analysis walks, and the declaration-versus-statement routing
+decision.  The other three eligible structural sub-slices
+(`SUB-002`, `SUB-003`, `SUB-004`) and the twelve eligible scalar
+candidates remain separately unauthorized until a new evidence-backed
+selection exists.
+
+See
+`docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE06.md` and
+`evidence/ACT-POLYC-SELFHOST-PARSER-SLICE06/`.
