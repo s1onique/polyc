@@ -6812,3 +6812,117 @@ family would be entirely PolyC-owned.
 See
 `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE04.md` and
 `evidence/ACT-POLYC-SELFHOST-PARSER-SLICE04/`.
+
+---
+
+#### ACT-POLYC-SELFHOST-PARSER-SLICE05 status (CLOSED PASS at this commit)
+
+```text
+ACT_ID               = ACT-POLYC-SELFHOST-PARSER-SLICE05
+CLASS                = SELFHOST / PARSER / AST-UNARY-OPERATOR / PRODUCTION-AUTHORITY-MIGRATION
+ENTRY_HEAD           = b7634f9afb6b530f7bac987317754ab35b8dbead
+PREV_ACT_ID          = ACT-POLYC-SELFHOST-PARSER-SLICE04
+TARGET               = CAND-020  astUnaryOpFromToken
+POLYC_SYMBOL         = BootstrapAstUnaryOpFromToken
+POLYC_ABI            = I64 BootstrapAstUnaryOpFromToken(I64) -> I64   (sentinel -1)
+DELEGATION_MACRO     = HCC_USE_SELFHOST_PARSER_AST_UNARY
+PRODUCTION_CALL_SITES= src/prslib.c:1450, src/prslib.c:1757
+FIXTURE_ROW_COUNT    = 346  (13 partitions; derived, not chosen)
+ACCEPTED_MAPPINGS    = 10
+```
+
+The ten unary mappings were **re-derived**: the live `src/lexer.h` and
+`src/ast.h` were compiled and a probe printed the values the compiler
+assigned, and the mapping itself was measured by executing the REAL
+legacy `astUnaryOpFromToken`.  The live `AstUnOp` enum spans `0..12`,
+so the `-1` failure sentinel cannot collide with a successful mapping.
+
+The production `ast.c.o` now contains NO jump table and NO switch for
+the unary classifier: it is a twelve-instruction adapter that calls the
+PolyC component, tests the `-1` sentinel, and conditionally stores the
+result.  The legacy mapping is absent from the production object.
+
+**Two defects were found by MEASUREMENT, not by inspection**, and both
+were fixed before the contract was frozen:
+
+* the U04 neighbour rule emitted a *rejection* for 816, which is itself
+  an accepted token (it is the immediate predecessor of 817);
+* the direct literal `-9223372036854775808` does **not** evaluate to
+  `INT64_MIN` in this language -- constant folding wraps the
+  overflowing positive magnitude to `INT64_MIN` and the unary minus
+  wraps it back to `-9223372036854775807`.  The exact boundary is now
+  reached by the arithmetic form.
+
+A contract frozen without running its own tools against the real legacy
+function would have carried both defects into the qualification.
+
+**The two SLICE04 provenance-control deficiencies were CORRECTED, not
+repeated.**  SLICE04's historical CASE-1 rejected with a ROW-COUNT
+reason and its CASE-2 named G0 rather than G3.  SLICE05's controls
+start from a COMPLETE four-generation witness, mutate exactly one
+field, and are rejected with a GENERATION-SCOPED reason:
+`G3_BINDING_MISMATCH`, `G3_EXECUTION_RECEIPT_MISSING`,
+`COMPILER_IDENTITY_MISMATCH`, `OBJECT_IDENTITY_MISMATCH` and
+`STAGE_IDENTITY_MISMATCH`.  The SLICE05 verifier does not short-circuit,
+so it reports EVERY diagnostic rather than only the first.
+
+The production delegation is **causally load-bearing**: three ACTUAL
+production compilers (pristine, mutated, restored) were built, each
+compiled and ran the frozen observation program, and the mutated one
+produced `UNARY_MINUS_RESULT=7` where the pristine and restored ones
+produced `-7`.
+
+**Everything previous is conserved.**  The parser suite produced
+byte-identical assertion sequences on the entry tree and the C2 tree
+(376/376, 90 test files, 0 failures).  The LEXER07 broad corpus
+reproduces the canonical registry counters exactly
+(`PASS_S0=166 FAIL_S0=15 FAIL_S1=6 REGRESSION=0 DIVERGED=0`) while
+remaining honestly `STATUS=FAIL`.  The four previously migrated PolyC
+subject hashes are unchanged from the entry freeze.  The closed SLICE04
+ACT, HANDOFF and evidence tree are byte-identical to the entry freeze.
+
+```text
+GATE_FAST=PASS
+GATE_PUSH=PASS  (build, install, gep01, aot, jit, lsp, diff-check)
+APPEND_ONLY=PASS
+F14=PASS
+PATCH_HYGIENE=PASS
+MANDATORY_AC_TOTAL=50  AC_PASS=50  AC_FAIL=0  AC_UNPROVEN=0
+```
+
+The F-POLYC-TOOLS checker is **still not landed**; it is reported as
+unavailable rather than given an invented PASS.  The F-NO-PYTHON
+findings are byte-identical to the entry tree's.
+
+**The AST operator classification family is now COMPLETE.**
+
+```text
+SELFHOSTED PARSER COMPONENTS
+----------------------------
+
+CalcPadding                     POLYC
+parseValidPostControlFlowToken  POLYC
+parseGetPriority                POLYC
+astBinOpFromToken               POLYC
+astUnaryOpFromToken             POLYC
+
+AST_OPERATOR_CLASSIFICATION     COMPLETE
+PARSER_SELFHOSTING              IN_PROGRESS
+```
+
+This completes the **bounded AST token-to-operator mapping family**.  It
+does **not** imply that the parser, the AST construction subsystem, or
+the compiler is self-hosted.
+
+**Next milestone:** `ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04`.  It must
+re-inventory the remaining parser and AST semantic authorities after five
+qualified migrations and select the next bounded migration surface.  No
+next winner is preselected.  A future reconnaissance should reconsider
+the structural parser slices previously excluded because of host AST
+graph mutation, callback dependencies, or recovery coupling -- but it
+must not pretend those dependencies disappeared as a result of
+migrating operator classifiers.
+
+See
+`docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE05.md` and
+`evidence/ACT-POLYC-SELFHOST-PARSER-SLICE05/`.
