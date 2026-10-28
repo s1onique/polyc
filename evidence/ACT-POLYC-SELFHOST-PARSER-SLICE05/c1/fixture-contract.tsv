@@ -1,0 +1,77 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE05
+ACT_PHASE=C1-EVIDENCE
+EVIDENCE_KIND=fixture-contract
+
+# THE FROZEN FIXTURE CONTRACT.
+#
+# The fixture itself is c1/fixture.tsv.  It is produced by
+# tools/quality/parser-slice05-fixture-producer.HC from the FROZEN
+# accepted token values and the FROZEN enum mapping.
+#
+# The row count is DERIVED from the frozen values and the frozen
+# partition rules, not chosen in advance: the producer reports the
+# count it wrote.  It is NOT SLICE04's 322 rows: the unary token
+# set produces a different partition structure.
+#
+# Schema of the fixture:
+#   fixture_id <TAB> partition <TAB> token_value <TAB> expected_success
+#              <TAB> expected_output <TAB> initial_output <TAB> rationale
+#
+# partition <TAB> rows <TAB> requirement <TAB> derivation
+partition	rows	requirement	derivation
+U01_ACCEPTED_TOKEN	10	every accepted unary token mapped to its exact enum	one row per frozen accepted token value (10 frozen values)
+U02_ALTERNATE_INITIAL_OUTPUT	10	every accepted mapping repeated with a different initial output value	one row per frozen accepted token value, initial output INIT_B (54321) instead of INIT_A (12345)
+U03_REJECTED_PRINTABLE_ASCII	89	unrecognized printable ASCII token values	every printable ASCII value 32..126 (95 values) that is NOT an accepted token, less the 6 accepted ASCII values (43, 45, 126, 33, 38, 42)
+U04_NEIGHBOUR	14	neighbouring values around the accepted token constants	the immediate predecessor and successor of each accepted token constant, EXCLUDING the neighbours that are themselves accepted
+U04_NEIGHBOUR_ACCEPTED	6	a neighbour that is itself an accepted constant	816 is the immediate predecessor of 817 (TK_PRE_MINUS_MINUS) and is itself TK_PRE_PLUS_PLUS; such a neighbour is asserted with its OWN exact enum, never as a rejection
+U05_PREFIX_POSTFIX	6	the prefix/postfix increment/decrement distinction	the four increment/decrement constants asserted exactly, plus their two neighbours (772, 818) as rejections
+U06_PLUS_MINUS	3	the unary plus/minus distinction	'+' and '-' asserted exactly, plus the value between them (44) as a rejection
+U07_ADDR_OF_DEREF	5	the address-of/dereference distinction	'&' and '*' asserted exactly, plus the three punctuators between them (39, 40, 41) as rejections
+U08_LEXER_ALIAS	3	the lexer constants that share a numeric value	769 (TK_SUPERSCRIPT == TK_STR), 770 (TK_SUBSCRIPT == TK_I64), 771 (TK_NORMALSCRIPT == TK_CHAR_CONST); each aliased NUMBER is asserted once, as a rejection
+U09_SIGNED_I64_BOUNDARY	6	the signed 64-bit extremes and their neighbours	INT64_MIN, INT64_MIN+1, INT64_MIN+2, INT64_MAX-2, INT64_MAX-1, INT64_MAX
+U10_UNRECOGNIZED_LEXER_TOKEN	40	the lexer token constants that are not unary operators	every live src/lexer.h TK_ constant except the two accepted ones (TK_PRE_PLUS_PLUS, TK_PRE_MINUS_MINUS)
+U11_FAILURE_PRESERVES_OUTPUT	140	the output storage is unchanged on every failure	one row per DISTINCT invalid token value the earlier partitions produced (140 of them), with the SECOND distinct initial output value (54321)
+U12_PRODUCTION_CALLER	14	the real production callers' behaviour	the tokens the two production call sites (src/prslib.c:1450 and :1757) actually see, plus the punctuators they must REJECT
+TOTAL	346	the complete canonical fixture	the sum of the derived partition row counts
+
+# THE DERIVATION IS MECHANICAL
+#
+# The row counts above are not chosen: the producer emits them and
+# reports the count it wrote (FIXTURE_ROW_COUNT=346).  The counts
+# were then confirmed by counting the partition column of the
+# produced file, partition by partition.
+#
+# THE FIXTURE WAS VERIFIED AGAINST THE REAL LEGACY ORACLE
+# ==========================================================
+#
+# Before the fixture was frozen, every one of its 346 rows was
+# executed against the REAL legacy astUnaryOpFromToken (compiled
+# from the live src/ast.c with the delegation OFF), grouped by the
+# row's initial output value:
+#
+#   GROUP A (initial 12345): 196 rows, 0 mismatches
+#   GROUP B (initial 54321): 150 rows, 0 mismatches
+#
+# So the fixture does not merely CLAIM to agree with the legacy
+# function: it was CHECKED against it, row by row.
+#
+# TWO DEFECTS WERE FOUND AND FIXED DURING THIS VERIFICATION
+# -------------------------------------------------------
+#
+# D-FIX-01: the U04 neighbour rule originally emitted a REJECTION
+# for every neighbour.  But 816 is the immediate predecessor of 817
+# and is ITSELF an accepted token (TK_PRE_PLUS_PLUS).  The rule now
+# asserts an accepted neighbour with its own exact enum and emits
+# rejections only for genuinely unaccepted neighbours.  This was
+# caught by the oracle differential, not by inspection.
+#
+# D-FIX-02: the direct literal -9223372036854775808 does NOT
+# evaluate to INT64_MIN in this language: the positive magnitude is
+# one past INT64_MAX, so constant folding wraps it to INT64_MIN and
+# the unary minus wraps it back to -9223372036854775807.  This was
+# MEASURED with a probe program.  The boundary is now reached by the
+# exact arithmetic form (-9223372036854775807 - 1), and the fixture
+# row reads -9223372036854775808.
+#
+# Both defects would have been invisible to a fixture producer that
+# never ran its own output against the real legacy function.

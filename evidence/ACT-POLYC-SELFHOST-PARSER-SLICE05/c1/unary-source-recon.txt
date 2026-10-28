@@ -1,0 +1,99 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE05
+ACT_PHASE=C1-EVIDENCE
+EVIDENCE_KIND=unary-source-recon
+
+THE UNARY SOURCE RECONNAISSANCE
+==============================
+
+THE TARGET
+-----------
+COMMAND=grep -n astUnaryOpFromToken src/*.c src/*.h
+src/ast.c:287:int astUnaryOpFromToken(s64 op, AstUnOp *_result) {
+src/prslib.c:1450:            if (!astUnaryOpFromToken(tok->i64, &op)) {
+src/prslib.c:1757:        if (!astUnaryOpFromToken(tok->i64, &unary_op)) {
+src/ast.h:644:int astUnaryOpFromToken(s64 op, AstUnOp *_result);
+
+THE LIVE SOURCE BODY (src/ast.c:287..305)
+-------------------------------------------
+int astUnaryOpFromToken(s64 op, AstUnOp *_result) {
+    switch (op) {
+        case TK_PRE_PLUS_PLUS:   *_result = AST_UN_OP_PRE_INC; break;
+        case TK_PRE_MINUS_MINUS: *_result = AST_UN_OP_PRE_DEC; break;
+        case TK_PLUS_PLUS:       *_result = AST_UN_OP_POST_INC; break;
+        case TK_MINUS_MINUS:     *_result = AST_UN_OP_POST_DEC; break;
+        case '+':                *_result = AST_UN_OP_PLUS;    break;
+        case '-':                *_result = AST_UN_OP_MINUS;   break;
+        case '~':                *_result = AST_UN_OP_BIT_NOT; break;
+        case '!':                *_result = AST_UN_OP_LOG_NOT; break;
+        case '&':                *_result = AST_UN_OP_ADDR_OF; break;
+        case '*':                *_result = AST_UN_OP_DEREF;   break;
+        default:
+            return 0;
+    }
+    return 1;
+}
+
+Ast *astBinaryOp(AstBinOp operation, Ast *left, Ast *right, int *_is_err) {
+
+THE MEASURED BEHAVIOUR OF THE REAL FUNCTION
+-------------------------------------------
+COMMAND=./slice05-oracle-driver 816 817 773 774 43 45 126 33 38 42
+816	1	2
+817	1	3
+773	1	0
+774	1	1
+43	1	4
+45	1	5
+126	1	7
+33	1	6
+38	1	8
+42	1	9
+
+COMMAND=./slice05-oracle-driver 999999 32 0 -1 772 775 815 818
+999999	0	12345
+32	0	12345
+0	0	12345
+-1	0	12345
+772	0	12345
+775	0	12345
+815	0	12345
+818	0	12345
+
+  The oracle driver preinitialises the output slot to the
+  DISTINGUISHED value 12345 before every call.  Every rejected
+  token leaves it at 12345, which is the "output unchanged on
+  failure" property observed, not assumed.
+
+THE STATE AND SIDE-EFFECT BOUNDARY
+-------------------------------
+  GLOBAL_STATE_READS=0
+    The body reads only its scalar parameter `op` and the switch
+    cases.  It reads no global, no file, no environment.
+  HOST_AST_GRAPH_MUTATIONS=0
+    The only write is through the caller's output pointer.  No Ast* is
+    created, mutated or freed.
+  CALLBACK_DEPENDENCIES=0
+    The body calls nothing.
+  NONLOCAL_RECOVERY_DEPENDENCIES=0
+    The body contains no cctrlRaiseException, no loggerPanic, no
+    longjmp, no setjmp interaction.
+  HOST_POINTER_IDENTITY_REQUIRED=NO
+    The output pointer's IDENTITY is irrelevant: the function writes
+    THROUGH it, it does not compare it, store it, or return it.
+  ALLOCATION=0
+    Nothing is allocated.
+
+  The C output-pointer write is ABI STORAGE, not AST graph
+  authority.  The PolyC component therefore NEVER RECEIVES that
+  pointer: the PolyC ABI is a pure scalar in, scalar out.
+
+THE PRODUCTION CALLERS
+-------------------
+  src/prslib.c:1450  _parseExpr      -- the postfix ++/-- path
+  src/prslib.c:1757  _parseUnaryExpr -- the prefix unary path
+
+  Both are REAL production parser code (confirmed by machine code in
+  c0/real-call-graph.txt), and both consume the RETURN VALUE as a
+  success flag: a failure rewinds the token stream and falls back to
+  the postfix path.  The failure path is therefore LOAD-BEARING in
+  the parser, not merely defensive.

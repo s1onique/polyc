@@ -1,0 +1,30 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE05
+ACT_PHASE=C1-EVIDENCE
+EVIDENCE_KIND=token-to-enum
+
+# THE CANONICAL TOKEN-TO-ENUM TABLE
+#
+# Every row is MEASURED, not inferred:
+#   - the token value comes from COMPILING the live src/lexer.h
+#   - the enum value comes from COMPILING the live src/ast.h
+#   - the MAPPING comes from EXECUTING the real legacy function
+#       src/ast.c::astUnaryOpFromToken (compiled with the PolyC
+#       delegation OFF), not from reading the switch by eye.
+#
+# token_value<TAB>enum_value<TAB>token_symbol<TAB>enum_symbol<TAB>success
+token_value	enum_value	token_symbol	enum_symbol	success
+816	2	TK_PRE_PLUS_PLUS	AST_UN_OP_PRE_INC	1
+817	3	TK_PRE_MINUS_MINUS	AST_UN_OP_PRE_DEC	1
+773	0	TK_PLUS_PLUS	AST_UN_OP_POST_INC	1
+774	1	TK_MINUS_MINUS	AST_UN_OP_POST_DEC	1
+43	4	CHAR_PLUS	AST_UN_OP_PLUS	1
+45	5	CHAR_MINUS	AST_UN_OP_MINUS	1
+126	7	CHAR_TILDE	AST_UN_OP_BIT_NOT	1
+33	6	CHAR_BANG	AST_UN_OP_LOG_NOT	1
+38	8	CHAR_AMP	AST_UN_OP_ADDR_OF	1
+42	9	CHAR_STAR	AST_UN_OP_DEREF	1
+
+# ACCEPTED_MAPPING_COUNT=10
+# ACCEPTED_ENUM_VALUES_MIN=0
+# ACCEPTED_ENUM_VALUES_MAX=9
+# ALL_SUCCESS_FLAGS=1

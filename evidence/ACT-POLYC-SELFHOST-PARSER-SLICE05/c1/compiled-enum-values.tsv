@@ -1,0 +1,69 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE05
+ACT_PHASE=C1-EVIDENCE
+EVIDENCE_KIND=compiled-enum-values
+
+THE COMPILED ENUM AND TOKEN VALUES
+==================================
+
+HOW THEY WERE MEASURED
+-----------------------
+The live src/ast.h and src/lexer.h were COMPILED by the host C
+compiler, and a probe printed the values the COMPILER assigned.
+Enum values are therefore NOT inferred from names, NOT inferred
+from ordinal positions, and NOT copied from a predecessor's note.
+
+COMMAND=cc -std=c99 -O2 -Isrc -o enumdump enumdump.c   (enumdump.c
+        includes "ast.h" and "lexer.h" from the LIVE src/)
+COMMAND=./enumdump
+
+THE ASTUNOP ENUM (the LIVE src/ast.h)
+--------------------------------------
+symbol	value
+AST_UN_OP_POST_INC	0
+AST_UN_OP_POST_DEC	1
+AST_UN_OP_PRE_INC	2
+AST_UN_OP_PRE_DEC	3
+AST_UN_OP_PLUS	4
+AST_UN_OP_MINUS	5
+AST_UN_OP_LOG_NOT	6
+AST_UN_OP_BIT_NOT	7
+AST_UN_OP_ADDR_OF	8
+AST_UN_OP_DEREF	9
+AST_UN_OP_SIZEOF	10
+AST_UN_OP_ALIGNOF	11
+AST_UN_OP_CAST	12
+
+  ENUM_MIN=0
+  ENUM_MAX=12
+  ENUM_SPAN=13
+  ENUM_VALUES_NONNEGATIVE=YES
+  ENUM_VALUES_NONNEGATIVE_PROOF: every value the compiler assigned
+    is >= 0, so a negative sentinel cannot collide with any
+    successful mapping.
+
+THE TOKEN CONSTANTS (the LIVE src/lexer.h)
+---------------------------------------------
+symbol	value	note
+TK_PRE_PLUS_PLUS	816	0x330
+TK_PRE_MINUS_MINUS	817	0x331
+TK_PLUS_PLUS	773	0x305
+TK_MINUS_MINUS	774	0x306
+CHAR_PLUS	43	(+/ASCII
+CHAR_MINUS	45	(-)/ASCII
+CHAR_TILDE	126	(~)/ASCII
+CHAR_BANG	33	(!)/ASCII
+CHAR_AMP	38	(&)/ASCII
+CHAR_STAR	42	(*)/ASCII
+
+  The four TK_ values are the lexer's SPECIAL TOKEN constants (the
+  live src/lexer.h defines them with the #define spellings 0x330,
+  0x331, 0x305, 0x306).  The six ASCII values are the ordinary
+  single-character punctuators the lexer emits with tk_type ==
+  TK_PUNCT.  The legacy classifier does NOT inspect tk_type: it
+  decides on the NUMERIC value alone, so the PolyC component must do
+  the same.
+
+  THE VALUES AGREE WITH THE PREDECESSOR'S OBSERVATION
+  (816 / 817 / 773 / 774 / 43 / 45 / 126 / 33 / 38 / 42), so the
+  predecessor's note is CONFIRMED by recompilation rather than
+  merely repeated.
