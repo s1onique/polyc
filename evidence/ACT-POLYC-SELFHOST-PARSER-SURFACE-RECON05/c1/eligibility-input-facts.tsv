@@ -1,0 +1,51 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05
+# ACT_PHASE=C1-INVENTORY
+# EVIDENCE_KIND=eligibility-input-facts
+#
+# THE CANONICAL FACTS TABLE FOR THE 13-CLAUSE ELIGIBILITY CHECKER.
+#
+# There is NO `eligible` column: the eligibility flag is computed
+# by tools/quality/parser-slice-recon03-eligibility.HC and cannot be
+# hand-authored or hand-overridden.
+#
+# Every fact below was measured from the LIVE source: the range
+# and the enclosing function are source-bound, the reachable flag
+# was measured from the live call sites (c1/production-call-graph.tsv),
+# and the host-state facts were measured from the live bytes
+# (c1/state-read-write.tsv, c1/callback-ownership.tsv,
+# c1/recovery-ownership.tsv, c1/ast-graph-and-allocation.tsv).
+#
+# Schema: candidate_id <TAB> function_name <TAB> source_file <TAB>
+#   source_start <TAB> source_end <TAB> candidate_kind <TAB>
+#   semantic_authority <TAB> already_selfhosted <TAB> r0 <TAB>
+#   owns_setjmp <TAB> writes_current_recovery <TAB>
+#   requires_nonlocal_recovery <TAB> host_graph_writes <TAB>
+#   pointer_identity_operations <TAB> parser_callback_count <TAB>
+#   semantic_callback_count <TAB> deterministic_projection <TAB>
+#   production_delegation_feasible <TAB> production_reachable <TAB>
+#   exclusion_reason
+
+CAND-018	parseCompoundAssign	src/prslib.c	1328	1403	OPERATOR_CLASSIFIER	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-021	astBinOpToTokenPunct	src/prslib.c	1352	1430	OPERATOR_CLASSIFIER	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-022	parseCountPrintfFormatSpecs	src/prslib.c	760	800	FORMAT_SPEC_COUNTER	YES	NO	1	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-023	parseFormatArgIdx	src/prslib.c	798	818	FORMAT_FUNCTION_TABLE	YES	NO	1	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-025	astIsAssignment	src/ast.c	943	1041	OPERATOR_CLASSIFIER	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-026	astIsValidPointerOp	src/ast.c	974	1067	OPERATOR_CLASSIFIER	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-030	parseIsClassOrUnion	src/prsutil.c	22	25	TYPE_MODIFIER_PRIMITIVE	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-036	astIsBinCmp	src/ast.c	992	1094	OPERATOR_CLASSIFIER	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-037	astIsRangeOperator	src/ast.c	2348	2448	OPERATOR_CLASSIFIER	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-038	astNormaliseFunctionName	src/ast.c	931	1018	AST_PROJECTION_PRIMITIVE	YES	NO	2	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-039	createFunctionLevelGotoLabel	src/parser.c	1756	1871	AST_PROJECTION_PRIMITIVE	YES	NO	2	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-040	asmTextHasReturn	src/parser.c	2164	2329	DELIMITER_PRIMITIVE	YES	NO	2	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+SUB-002	parseDefaultStatement	src/parser.c	1683	1684	AST_PROJECTION_PRIMITIVE	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+SUB-003	parseCompoundStatementInternal	src/parser.c	2049	2049	AST_PROJECTION_PRIMITIVE	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+SUB-004	parseStatement	src/parser.c	1773	1786	TOKEN_CLASSIFIER	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+SUB-005	parseDeclOrStatement	src/parser.c	1930	1932	AST_PROJECTION_PRIMITIVE	NO	NO	0	NO	NO	NO	0	0	0	0	NO	NO	YES	MUTABLE_HOST_STATE_DEPENDENCE: cctrlIsKeyword consults the mutable cc->symbol_table, cc->clsdefs and cc->uniondefs
+SUB-006	parseCompoundStatementInternal	src/parser.c	1968	1986	AST_PROJECTION_PRIMITIVE	NO	NO	0	YES	YES	NO	1	0	0	0	NO	NO	YES	OWNS_SETJMP and writes the current recovery point
+SUB-007	parseCompoundStatementInternal	src/parser.c	1987	2059	AST_PROJECTION_PRIMITIVE	NO	NO	0	NO	NO	NO	1	0	0	0	NO	NO	YES	HOST_GRAPH_WRITES: appends to the host AST statement list
+SUB-008	parseStatement	src/parser.c	1762	2034	AST_PROJECTION_PRIMITIVE	NO	NO	0	YES	YES	NO	1	0	0	0	NO	NO	YES	WHOLE_FUNCTION: owns the AST graph, the recovery point and the token stream
+SUB-009	parseExpr	src/prslib.c	1402	1537	AST_PROJECTION_PRIMITIVE	NO	NO	0	NO	NO	NO	1	0	0	0	NO	NO	YES	WHOLE_FUNCTION: builds the host AST and owns the precedence loop
+SUB-010	astStmtFallsThrough	src/parser.c	2116	2181	AST_PROJECTION_PRIMITIVE	NO	NO	0	NO	NO	NO	0	1	0	0	NO	NO	YES	RECURSIVE_WALK over an unbounded host statement tree
+SUB-011	astStmtHasBreak	src/parser.c	2091	2114	AST_PROJECTION_PRIMITIVE	NO	NO	0	NO	NO	NO	0	1	0	0	NO	NO	YES	RECURSIVE_WALK over an unbounded host statement tree
+SUB-012	astIsConstTrueCond	src/parser.c	2083	2090	AST_PROJECTION_PRIMITIVE	NO	NO	0	NO	NO	NO	0	1	0	0	NO	NO	YES	Three-hop host Ast/AstType pointer chain
+SUB-001	parseSwitchArmTerminates	src/parser.c	1517	1545	AST_PROJECTION_PRIMITIVE	YES	YES	0	NO	NO	NO	0	0	0	0	YES	NO	YES	ALREADY_SELFHOSTED: the decision is owned by the PolyC component BootstrapSwitchArmTerminates
