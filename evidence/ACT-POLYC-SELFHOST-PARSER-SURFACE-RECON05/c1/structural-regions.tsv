@@ -1,0 +1,25 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05
+# ACT_PHASE=C1-INVENTORY
+# EVIDENCE_KIND=structural-regions
+#
+# THE STRUCTURAL REGIONS, FRESHLY ENUMERATED.
+#
+# Every region of the parser surface that ACT section 7 item 2
+# requires is enumerated, with the sub-slices that live inside it.
+# No region is silently omitted.
+#
+# Schema: region_id <TAB> region <TAB> file <TAB> live_range <TAB> subslices <TAB> note
+
+REG-A	Switch and default arm statement lists	src/parser.c	parseCaseLabel 1565..1756, parseDefaultStatement 1667..1801	SUB-001,SUB-002	The switch-arm and default-arm statement-sequence region.
+REG-B	Statement dispatch and compound blocks	src/parser.c	parseStatement 1762..2034, parseDeclOrStatement 1925..2051, parseCompoundStatementInternal 1936..2181	SUB-003,SUB-004,SUB-005,SUB-006,SUB-007,SUB-008	The statement router, the declaration-versus-statement router and the compound-block builder.
+REG-C	Expression construction	src/prslib.c	parseExpr 1402..1537	SUB-009	The operator-precedence expression loop.
+REG-D	Operator and AST token classification	src/ast.c,src/prslib.c	astBinOpFromToken, astUnaryOpFromToken, parseGetPriority, parseCompoundAssign, astBinOpToTokenPunct	CAND-018,CAND-021	ALREADY MIGRATED plus two eligible scalar follow-ups.
+REG-E	Format and diagnostic helpers	src/prslib.c	parseCountPrintfFormatSpecs 760..800, parseFormatArgIdx 798..818	CAND-022,CAND-023	Diagnostics-only scalar follow-ups.
+REG-F	Control-flow classification walks	src/parser.c	astStmtHasBreak 2091..2114, astStmtFallsThrough 2116..2181, astIsConstTrueCond 2083..2090	SUB-010,SUB-011,SUB-012	The three recursive/pointer-chasing control-flow classifiers.
+REG-G	Type classification helpers	src/ast.c,src/prsutil.c	astIsAssignment 943..1041, astIsValidPointerOp 974..1067, astIsBinCmp 992..1094, astIsRangeOperator 2348..2448, parseIsClassOrUnion 22..25	CAND-025,CAND-026,CAND-030,CAND-036,CAND-037	The scalar operator and type classifiers.
+REG-H	Name and label composition	src/ast.c,src/parser.c	astNormaliseFunctionName 931..1018, createFunctionLevelGotoLabel 1756..1871	CAND-038,CAND-039	The two host-string boundary candidates.
+REG-I	Asm body scanning	src/parser.c	asmTextHasReturn 2164..2329	CAND-040	The diagnostics-only asm scanner.
+
+# REGIONS_TOTAL=9
+# REGIONS_WITH_NO_SUBSLICE=0
+# UNCLASSIFIED_REGIONS=0

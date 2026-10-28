@@ -1,0 +1,36 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05
+# ACT_PHASE=C1-INVENTORY
+# EVIDENCE_KIND=recovery-ownership
+#
+# RECOVERY (jmp_buf) OWNERSHIP, PER CANDIDATE.
+#
+# Schema: candidate_id <TAB> enclosing_function <TAB> owns_setjmp <TAB> writes_current_recovery <TAB> requires_nonlocal_recovery <TAB> owner
+
+SUB-002	parseDefaultStatement	NO	NO	NO	C
+SUB-003	parseCompoundStatementInternal	NO	NO	NO	C
+SUB-004	parseStatement	NO	NO	NO	C
+SUB-005	parseDeclOrStatement	NO	NO	NO	C
+SUB-006	parseCompoundStatementInternal	YES	YES	NO	C
+SUB-007	parseCompoundStatementInternal	NO	YES	NO	C
+SUB-008	parseStatement	NO	YES	NO	C
+SUB-009	parseExpr	NO	NO	NO	C
+SUB-010	astStmtFallsThrough	NO	NO	NO	C
+SUB-011	astStmtHasBreak	NO	NO	NO	C
+SUB-012	astIsConstTrueCond	NO	NO	NO	C
+SUB-001	parseSwitchArmTerminates	NO	NO	NO	C
+CAND-018	parseCompoundAssign	NO	NO	NO	C
+CAND-021	astBinOpToTokenPunct	NO	NO	NO	C
+CAND-022	parseCountPrintfFormatSpecs	NO	NO	NO	C
+CAND-023	parseFormatArgIdx	NO	NO	NO	C
+CAND-025	astIsAssignment	NO	NO	NO	C
+CAND-026	astIsValidPointerOp	NO	NO	NO	C
+CAND-030	parseIsClassOrUnion	NO	NO	NO	C
+CAND-036	astIsBinCmp	NO	NO	NO	C
+CAND-037	astIsRangeOperator	NO	NO	NO	C
+CAND-038	astNormaliseFunctionName	NO	NO	NO	C
+CAND-039	createFunctionLevelGotoLabel	NO	NO	NO	C
+CAND-040	asmTextHasReturn	NO	NO	NO	C
+
+# The RECOVERY POINT STAYS ON THE C SIDE for every candidate.
+# No candidate transfers recovery ownership across a seam.
+#   OWNERS_TRANSFERRING_RECOVERY=0

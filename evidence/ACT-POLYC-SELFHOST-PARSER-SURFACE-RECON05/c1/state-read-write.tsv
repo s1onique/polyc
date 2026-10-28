@@ -1,0 +1,34 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05
+# ACT_PHASE=C1-INVENTORY
+# EVIDENCE_KIND=state-read-write
+#
+# HOST STATE READS AND WRITES, PER CANDIDATE.
+#
+# Schema: candidate_id <TAB> reads <TAB> writes <TAB> pointer_identity_ops <TAB> deterministic <TAB> notes
+
+SUB-002	stmt->kind (one bounded AstKind)	none	0	YES	The decision is a pure function of one copied scalar.
+SUB-003	stmt->kind AND stmt->declvar->kind (two bounded AstKind)	none	0	YES	TWO bounded scalar reads, both copied out of the host node.
+SUB-004	tok->i64 (one bounded keyword token value)	none	0	YES	Pure function of one copied scalar.
+SUB-005	tok->start/tok->len AND the mutable cc->symbol_table, cc->clsdefs, cc->uniondefs	none	0	YES	UNBOUNDED: the decision consults MUTABLE host maps.
+SUB-006	jmp_buf identity, body->stms tail, cc->tmp_locals tail	the recovery point and the host list tails	1	NO	Owns the recovery protocol itself.
+SUB-007	the token stream, the scope map, the host AST list	the host AST list	0	NO	Owns the whole loop body.
+SUB-008	the whole host parser state	the host AST graph	1	NO	Whole-function ABI is unbounded.
+SUB-009	the whole host parser state	the host AST graph	1	NO	Whole-function ABI is unbounded.
+SUB-010	the whole host statement tree	none	1	YES	Recursive walk; the projection is not bounded.
+SUB-011	the whole host statement tree	none	1	YES	Recursive walk; the projection is not bounded.
+SUB-012	the host Ast node and its AstType	none	1	YES	Three-hop host pointer chain.
+SUB-001	kind (one bounded AstKind)	none	0	YES	Already PolyC-owned.
+CAND-018	tok->tk_type, tok->i64	an out-parameter AstBinOp	0	YES	Pure function of two copied scalars.
+CAND-021	an AstBinOp enum value	none	0	YES	Pure function of one copied scalar.
+CAND-022	the caller format bytes	none	0	YES	Pure function of a bounded byte span.
+CAND-023	the caller name bytes	none	0	YES	Pure function of a bounded byte span.
+CAND-025	an s64 token value	none	0	YES	Pure function of one copied scalar.
+CAND-026	an AstBinOp enum value	none	0	YES	Pure function of one copied scalar.
+CAND-030	an AstTypeKind enum value	none	0	YES	Pure function of one copied scalar.
+CAND-036	an s64 token value	none	0	YES	Pure function of one copied scalar.
+CAND-037	an AstBinOp enum value	none	0	YES	Pure function of one copied scalar.
+CAND-038	the host name bytes	a NEW host string	0	YES	The host string and its lifetime stay on the C side.
+CAND-039	the host token bytes and the mutable scope	a NEW host string	0	YES	The host string and its lifetime stay on the C side.
+CAND-040	the opaque host asm text	none	0	YES	Pure function of a bounded text scan.
+
+# UNCLASSIFIED_DEPENDENCIES=0

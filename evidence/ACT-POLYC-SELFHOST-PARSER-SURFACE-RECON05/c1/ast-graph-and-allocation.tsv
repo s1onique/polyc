@@ -1,0 +1,36 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05
+# ACT_PHASE=C1-INVENTORY
+# EVIDENCE_KIND=ast-graph-and-allocation
+#
+# AST-GRAPH WRITE AND ALLOCATION OWNERSHIP, PER CANDIDATE.
+#
+# Schema: candidate_id <TAB> enclosing_function <TAB> host_graph_writes <TAB> host_allocations <TAB> owner <TAB> reason
+
+SUB-002	parseDefaultStatement	0	0	C	The decision reads one AstKind and the C side owns the listAppend.
+SUB-003	parseCompoundStatementInternal	0	0	C	The decision reads two AstKind values and the C side owns the listAppend.
+SUB-004	parseStatement	0	0	C	The decision selects a constructor; the C side owns the AST node.
+SUB-005	parseDeclOrStatement	0	0	C	The decision selects a parser entry point; the C side owns the AST.
+SUB-006	parseCompoundStatementInternal	1	0	C	Recovery checkpoint owns the AST list tail rollback.
+SUB-007	parseCompoundStatementInternal	1	0	C	The body loop appends to the host AST statement list.
+SUB-008	parseStatement	1	0	C	The whole statement parser builds the host AST.
+SUB-009	parseExpr	1	0	C	The whole expression loop builds the host AST.
+SUB-010	astStmtFallsThrough	0	0	C	Read-only walk over the host statement tree.
+SUB-011	astStmtHasBreak	0	0	C	Read-only walk over the host statement tree.
+SUB-012	astIsConstTrueCond	0	0	C	Read-only walk over the host AST.
+SUB-001	parseSwitchArmTerminates	0	0	C	Read-only over one AstKind; already PolyC-owned.
+CAND-018	parseCompoundAssign	0	0	C	Writes an out-parameter AstBinOp scalar only.
+CAND-021	astBinOpToTokenPunct	0	0	C	Returns a scalar.
+CAND-022	parseCountPrintfFormatSpecs	0	0	C	Returns a scalar.
+CAND-023	parseFormatArgIdx	0	0	C	Returns a scalar.
+CAND-025	astIsAssignment	0	0	C	Returns a scalar.
+CAND-026	astIsValidPointerOp	0	0	C	Returns a scalar.
+CAND-030	parseIsClassOrUnion	0	0	C	Returns a scalar.
+CAND-036	astIsBinCmp	0	0	C	Returns a scalar.
+CAND-037	astIsRangeOperator	0	0	C	Returns a scalar.
+CAND-038	astNormaliseFunctionName	0	1	C	Returns a NEW host string; the allocation stays on the C side.
+CAND-039	createFunctionLevelGotoLabel	0	1	C	Returns a NEW host string; the allocation stays on the C side.
+CAND-040	asmTextHasReturn	0	0	C	Returns a scalar.
+
+# NO CANDIDATE TRANSFERS AST-GRAPH MUTATION OR HOST ALLOCATION.
+#   CANDIDATES_TRANSFERRING_HOST_GRAPH_WRITES=0
+#   CANDIDATES_TRANSFERRING_HOST_ALLOCATION=0
