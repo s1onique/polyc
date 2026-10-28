@@ -5708,6 +5708,15 @@ build/parser-slice06-differential: $(SLICE06_DIFF_OBJS) | test-prefix-install
 
 # The SLICE06 fixture: produced by the PolyC producer, then verified by
 # the INDEPENDENT PolyC integrity witness.
+# ACT-POLYC-SELFHOST-PARSER-SLICE06-AC11-CORRECTION01: correction-owned
+# PolyC verifiers.  They do not modify historical SLICE06 tools or
+# production source.
+build/parser-slice06-ac11-correction01-control-verifier: tools/quality/parser-slice06-ac11-correction01-control-verifier.HC ./hcc | test-prefix-install
+	./hcc --install-dir=$(TEST_PREFIX) tools/quality/parser-slice06-ac11-correction01-control-verifier.HC -o $@
+
+build/parser-slice06-ac11-correction01-object-verifier: tools/quality/parser-slice06-ac11-correction01-object-verifier.HC ./hcc | test-prefix-install
+	./hcc --install-dir=$(TEST_PREFIX) tools/quality/parser-slice06-ac11-correction01-object-verifier.HC -o $@
+
 parser-slice06-fixture: build/parser-slice06-fixture-producer
 	@mkdir -p evidence/ACT-POLYC-SELFHOST-PARSER-SLICE06/c1
 	./build/parser-slice06-fixture-producer $(SLICE06_FIXTURE)
