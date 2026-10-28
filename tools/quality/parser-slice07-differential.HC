@@ -177,6 +177,7 @@ I32 Main(I32 argc, U8 **argv)
 {
   U8 *path = "evidence/ACT-POLYC-SELFHOST-PARSER-SLICE07/c1/fixture.tsv";
   I64 expected_count = 0;
+  I64 dump_rows = 0;
   I64 ai = 1;
   if (argc > ai) path = argv[ai];
   ai++;
@@ -188,6 +189,17 @@ I32 Main(I32 argc, U8 **argv)
       return 1;
     }
     expected_count = tmp;
+    ai++;
+  }
+  if (argc > ai) {
+    // The optional THIRD argument turns on the PER-ROW DUMP.
+    I64 tmp = 0;
+    if (ParseI64(argv[ai], &tmp) != 0) {
+      "SLICE07_DIFF_STATUS=FAIL\n";
+      "SLICE07_DIFF_REASON=BAD_DUMP_FLAG\n";
+      return 1;
+    }
+    dump_rows = tmp;
   }
 
   I64 fsize = 0;
@@ -289,6 +301,16 @@ I32 Main(I32 argc, U8 **argv)
                   "SLICE07_DIFF_MISMATCH_ROW_ID=%d STMT_KIND=%d DECLVAR_KIND=%d EXPECTED=%d LEGACY=%d POLYC=%d\n",
                     id, stmt_kind, declvar_kind, expected, legacy, poly;
                 }
+              }
+
+              // The PER-ROW DUMP.  It is emitted for EVERY row, so the
+              // four generations can be compared ROW BY ROW with their
+              // exact row IDs, not merely by a summary count.  The row
+              // identity, the two inputs and all three results are
+              // bound together on one line.
+              if (dump_rows == 1) {
+                "SLICE07_ROW=%d STMT_KIND=%d DECLVAR_KIND=%d EXPECTED=%d LEGACY=%d POLYC=%d\n",
+                  id, stmt_kind, declvar_kind, expected, legacy, poly;
               }
               if (legacy != expected) {
                 oracle_vs_expected_mismatch = oracle_vs_expected_mismatch + 1;

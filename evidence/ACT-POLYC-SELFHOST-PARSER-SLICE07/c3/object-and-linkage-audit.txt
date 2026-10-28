@@ -1,0 +1,85 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE07
+# ACT_PHASE=C3-VERIFY
+# EVIDENCE_KIND=object-and-linkage-audit
+#
+# THE OBJECT, COMPILER, SOURCE, LINKER AND EXECUTABLE IDENTITIES.
+#
+# --- THE PRODUCTION OBJECTS ---
+#
+COMMAND=file build/CMakeFiles/hcc.dir/parser.c.o
+#   build/CMakeFiles/hcc.dir/parser.c.o: Mach-O 64-bit object arm64
+PRODUCTION_PARSER_OBJECT=build/CMakeFiles/hcc.dir/parser.c.o
+PRODUCTION_PARSER_OBJECT_SHA256=253d2404625c5bb2e5f0482465dae809c7d66c7360b1bb31e760f7f44c402246
+PRODUCTION_PARSER_OBJECT_FORMAT=Mach-O 64-bit object arm64
+
+COMMAND=file build/parser-compound-block-subject.o
+#   build/parser-compound-block-subject.o: Mach-O 64-bit object arm64
+SUBJECT_OBJECT=build/parser-compound-block-subject.o
+SUBJECT_OBJECT_SHA256=e2dfbcfcb78261957fb9188916705dcc86d589e82a9d9e169f6ae8118237487c
+SUBJECT_OBJECT_FORMAT=Mach-O 64-bit object arm64
+
+COMMAND=file ./hcc
+#   ./hcc: Mach-O 64-bit executable arm64
+PRODUCTION_EXECUTABLE=./hcc
+PRODUCTION_EXECUTABLE_SHA256=0d8904073be9779aa13d0e858fd8146ab097608e74e1460ad954de27364a7f5a
+
+# --- THE UNDEFINED AND DEFINED SYMBOL SETS ---
+#
+COMMAND=nm build/CMakeFiles/hcc.dir/parser.c.o | grep " U _Bootstrap"
+#   U _BootstrapCalcPadding
+#   U _BootstrapCompoundBlockAppendsStatement
+#   U _BootstrapSwitchArmTerminates
+#   U _BootstrapValidPostControlFlowToken
+
+COMMAND=nm build/parser-compound-block-subject.o
+#   0000000000000048 s .L0
+#   0000000000000038 t .LIRBB0_2
+#   0000000000000030 t .LIRBB0_4
+#   0000000000000000 T _BootstrapCompoundBlockAppendsStatement
+#   0000000000000008 C argc
+#   0000000000000008 C argv
+#   0000000000000000 t ltmp0
+#   0000000000000048 s ltmp1
+
+# The subject exports EXACTLY ONE global text symbol and imports
+# NOTHING from the host: no pointer crosses the ABI.
+
+COMMAND=nm -u build/parser-compound-block-subject.o | grep -c "^_"
+SUBJECT_UNDEFINED_SYMBOL_COUNT=0
+0
+
+# --- THE LINKER ---
+#
+COMMAND=nm ./hcc | grep BootstrapCompoundBlock
+#   0000000100064504 T _BootstrapCompoundBlockAppendsStatement
+
+LINKER=the system ld (via cc) with -Wl,-undefined,dynamic_lookup for the
+       quality tools and the canonical link for the production binary
+LINKER_PRODUCTION=cc -> ld
+
+# --- THE GENERATION OBJECTS ---
+#
+GENERATION_g0_OBJECT_SHA256=670b8f70ad1ab26298d7234821b68b4dfb65427b304772baa2545458ac38376b
+GENERATION_g1_OBJECT_SHA256=e2dfbcfcb78261957fb9188916705dcc86d589e82a9d9e169f6ae8118237487c
+GENERATION_g2_OBJECT_SHA256=e2dfbcfcb78261957fb9188916705dcc86d589e82a9d9e169f6ae8118237487c
+GENERATION_g3_OBJECT_SHA256=e2dfbcfcb78261957fb9188916705dcc86d589e82a9d9e169f6ae8118237487c
+
+# --- THE FIXTURE AND THE DIFFERENTIAL ---
+
+FIXTURE=evidence/ACT-POLYC-SELFHOST-PARSER-SLICE07/c1/fixture.tsv
+FIXTURE_SHA256=69e46d6f316d50ba57d85f15edb4c1b43f161130c830c716fe8022a394091ff9
+DIFFERENTIAL_OBJECT=build/parser-slice07-differential.o
+DIFFERENTIAL_OBJECT_SHA256=cd535c42d0975bd3abb2fdc37d64a224842d630412490dac2c97677817c9917e
+DIFFERENTIAL_EXECUTABLE=build/parser-slice07-differential
+DIFFERENTIAL_EXECUTABLE_SHA256=9f17a808f16dbee445365f13b84f52432a42241b5cd24b00a9723986c4f63aca
+
+# --- THE PRODUCTION SOURCE ---
+
+PRODUCTION_SOURCE=src/parser.c
+PRODUCTION_SOURCE_SHA256=2b31a7912bfbcfe538786aff17383a8282da815f0990910a652a0119f084fe17
+SUBJECT_SOURCE=tools/bootstrap/selfhost-parser-slice07.HC
+SUBJECT_SOURCE_SHA256=45295e0e2f435c29b94d0a9368f4cf253245273cdd47eafc31cca21a474d5c02
+
+ALL_FOUR_GENERATION_IDENTITIES_CHECKED=YES
+OBJECT_FORMAT_ARCHITECTURE_AND_LINKER_CHECKED=YES
+NO_POINTER_CROSSES_THE_ABI=YES

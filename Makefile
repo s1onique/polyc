@@ -96,6 +96,17 @@ SLICE05_AST_UNARY_OBJ = ./build/parser-ast-unary-subject.o
 SLICE06_SWITCH_ARM_SRC = tools/bootstrap/selfhost-parser-slice06.HC
 SLICE06_SWITCH_ARM_OBJ = ./build/parser-switch-arm-subject.o
 
+# ACT-POLYC-SELFHOST-PARSER-SLICE07: the compound-block append/skip
+# subject.
+#
+# The VARIABLES are defined HERE, next to the SLICE06 ones, because the
+# `$(PRODUCTION_HCC)` rule's PREREQUISITE list is expanded when the rule
+# is READ, and a variable defined later in the file would be EMPTY at
+# that point -- which would silently drop the subject from the build
+# graph.
+SLICE07_COMPOUND_BLOCK_SRC = tools/bootstrap/selfhost-parser-slice07.HC
+SLICE07_COMPOUND_BLOCK_OBJ = ./build/parser-compound-block-subject.o
+
 # The stage0 compiler's own sources. A change to any of them must
 # invalidate the stage0 compiler, which in turn invalidates the
 # padding subject.
@@ -686,6 +697,7 @@ llvm-all: $(PARSER_PADDING_OBJ)
 		-DSWITCH_ARM_TOKEN_MAP_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
 		-DHCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND=ON \
 		-DCOMPOUND_BLOCK_TOKEN_MAP_OBJECT=$(CURDIR)/$(SLICE07_COMPOUND_BLOCK_OBJ) \
+		-DCOMPOUND_BLOCK_TOKEN_MAP_SOURCE=$(CURDIR)/$(SLICE07_COMPOUND_BLOCK_SRC) \
 		-DHCC_BOOTSTRAP_EXPECTED_SHA=$(LIBTOS_BOOTSTRAP_EXPECTED_SHA)
 	$(MAKE) -C ./build/llvm -j2
 	@if [ ! -x ./hcc ]; then \
@@ -5277,8 +5289,6 @@ $(SLICE05_AST_UNARY_OBJ): $(SLICE05_AST_UNARY_SRC) $(BOOTSTRAP_STAGE0_HCC) $(BOO
 # expands a rule's PREREQUISITES when the rule is read, so a variable
 # that is defined later in the file would be EMPTY at that point.
 # =========================================================================
-SLICE07_COMPOUND_BLOCK_SRC   = tools/bootstrap/selfhost-parser-slice07.HC
-SLICE07_COMPOUND_BLOCK_OBJ   = ./build/parser-compound-block-subject.o
 
 $(SLICE07_COMPOUND_BLOCK_OBJ): $(SLICE07_COMPOUND_BLOCK_SRC) $(BOOTSTRAP_STAGE0_HCC) $(BOOTSTRAP_PREFIX_INC)/tos.HH
 	@rm -f $@
@@ -5961,6 +5971,136 @@ parser-slice07-oracle: build/slice07-oracle-driver
 parser-slice07-differential: build/parser-slice07-differential
 	@echo "SLICE07_DIFFERENTIAL=RUN"
 	./build/parser-slice07-differential $(SLICE07_FIXTURE) `grep -c '^[0-9][0-9][0-9][0-9]' $(SLICE07_FIXTURE)`
+
+# =========================================================================
+# ACT-POLYC-SELFHOST-PARSER-SLICE07
+#
+#   build/slice07-gen/g{0,1,2,3}.o -> the FOUR INDEPENDENT generations.
+#
+# G0 = the REAL legacy C authority: src/parser.c compiled WITHOUT
+#      HCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND, so the
+#      byte-identical legacy condition is the code that executes.
+# G1 = the PolyC component compiled by the STAGE0 compiler (the legacy
+#      C control), so the component does not depend on the production
+#      compiler it is about to serve.
+# G2 = the PolyC component compiled by the PRODUCTION compiler (./hcc).
+# G3 = the PolyC component compiled by the STAGE-2 compiler
+#      (./build/hcc-bootstrap02).
+#
+# Each generation is BUILT and EXECUTED INDEPENDENTLY.  No generation's
+# output is copied as a substitute for another generation's compilation.
+#
+# The three PolyC producers are PAIRWISE DISTINCT executables, with
+# their SHA-256 digests recorded in
+# evidence/ACT-POLYC-SELFHOST-PARSER-SLICE07/c3/generation-provenance.tsv.
+# =========================================================================
+SLICE07_GEN_DIR = build/slice07-gen
+SLICE07_GEN_SRC = $(SLICE07_COMPOUND_BLOCK_SRC)
+
+# The G0 legacy reference: the REAL production src/parser.c with the
+# delegation OFF.  The build FAILS if the object references the PolyC
+# component, which would mean the delegation was NOT off.
+$(SLICE07_GEN_DIR)/g0.o: src/parser.c src/parser.h src/ast.h
+	@mkdir -p $(SLICE07_GEN_DIR)
+	@rm -f $@
+	cc -std=c99 -O2 -Isrc -c -o $@ src/parser.c
+	@nm $@ | grep -q '_ParserLegacyCompoundBlockAppendsOracle' \
+		|| { echo "slice07-gen/g0.o: the legacy decision wrapper is missing" >&2; exit 1; }
+	@if nm $@ | grep -q '_BootstrapCompoundBlockAppendsStatement'; then \
+		echo "slice07-gen/g0.o: the object references the PolyC component; the delegation flag is NOT off" >&2; \
+		exit 1; \
+	fi
+	@echo "SLICE07_GEN=g0 source=src/parser.c compiler=cc object=$@"
+
+# The G1 generation: the PolyC component compiled by the STAGE0
+# compiler.
+$(SLICE07_GEN_DIR)/g1.o: $(SLICE07_GEN_SRC) $(BOOTSTRAP_STAGE0_HCC) $(BOOTSTRAP_PREFIX_INC)/tos.HH
+	@mkdir -p $(SLICE07_GEN_DIR)
+	@rm -f $@
+	$(BOOTSTRAP_STAGE0_HCC) --install-dir=$(BOOTSTRAP_PREFIX_DIR) -c $(SLICE07_GEN_SRC) -o $@
+	@nm $@ | grep -q '_BootstrapCompoundBlockAppendsStatement' \
+		|| { echo "slice07-gen/g1.o: the PolyC symbol is missing" >&2; exit 1; }
+	@echo "SLICE07_GEN=g1 source=$(SLICE07_GEN_SRC) compiler=$(BOOTSTRAP_STAGE0_HCC) object=$@"
+
+# The G2 generation: the PolyC component compiled by the PRODUCTION
+# compiler.
+$(SLICE07_GEN_DIR)/g2.o: $(SLICE07_GEN_SRC) ./hcc
+	@mkdir -p $(SLICE07_GEN_DIR)
+	@rm -f $@
+	./hcc --install-dir=$(TEST_PREFIX) -c $(SLICE07_GEN_SRC) -o $@
+	@nm $@ | grep -q '_BootstrapCompoundBlockAppendsStatement' \
+		|| { echo "slice07-gen/g2.o: the PolyC symbol is missing" >&2; exit 1; }
+	@echo "SLICE07_GEN=g2 source=$(SLICE07_GEN_SRC) compiler=./hcc object=$@"
+
+# The G3 generation: the PolyC component compiled by the STAGE-2
+# compiler.
+$(SLICE07_GEN_DIR)/g3.o: $(SLICE07_GEN_SRC) ./build/hcc-bootstrap02
+	@mkdir -p $(SLICE07_GEN_DIR)
+	@rm -f $@
+	./build/hcc-bootstrap02 --install-dir=$(BOOTSTRAP_PREFIX_DIR) -c $(SLICE07_GEN_SRC) -o $@
+	@nm $@ | grep -q '_BootstrapCompoundBlockAppendsStatement' \
+		|| { echo "slice07-gen/g3.o: the PolyC symbol is missing" >&2; exit 1; }
+	@echo "SLICE07_GEN=g3 source=$(SLICE07_GEN_SRC) compiler=./build/hcc-bootstrap02 object=$@"
+
+# The FOUR GENERATION DIFFERENTIALS.
+#
+# Each generation's differential links THAT generation's object with the
+# shared comparison layer and the adapter.  The generation's OWN object
+# is the ONLY difference between them, so a difference in the results
+# can only come from the generation.
+#
+# G0 IS THE ORACLE ITSELF: its object IS the legacy production
+# src/parser.c translation unit, so it is linked INSTEAD OF the
+# separate legacy oracle object.  Linking both would be a duplicate
+# symbol conflict, which is precisely the proof that G0 really is the
+# production TU and not a copy of it.
+#
+# The G0 differential still needs the PRODUCTION PolyC subject linked
+# in, because the comparison layer calls the component under test.  The
+# component is the SAME object in every generation's differential; what
+# differs is WHICH LEGACY AUTHORITY is compared against.
+define SLICE07_GEN_DIFF
+	@rm -f $(SLICE07_GEN_DIR)/diff-$1
+	cc -o $(SLICE07_GEN_DIR)/diff-$1 $(SLICE07_DIFF_OBJ) $(SLICE07_GEN_DIR)/$1.o \
+		$(SLICE07_COMPOUND_BLOCK_OBJ) \
+		$(SLICE07_ORACLE_ADAPTER) $(SLICE07_ORACLE_STUB) \
+		$(SLICE07_ORACLE_TRANSITIVE_OBJS) \
+		$(PARSER_PADDING_OBJ) $(SLICE02_CFT_OBJ) $(SLICE03_OP_OBJ) \
+		$(SLICE04_AST_BINOP_OBJ) $(SLICE05_AST_UNARY_OBJ) \
+		$(TASM_LIB) -L$(TEST_PREFIX)/lib -ltos -lm -lpthread -ldl \
+		-Wl,-undefined,dynamic_lookup
+	@./$(SLICE07_GEN_DIR)/diff-$1 $(SLICE07_FIXTURE) `grep -c '^[0-9][0-9][0-9][0-9]' $(SLICE07_FIXTURE)`
+endef
+
+# The G1/G2/G3 differentials link the generation's PolyC object TOGETHER
+# WITH the legacy oracle object, so the differential compares the
+# generation's OWN decision against the real legacy decision.
+define SLICE07_GEN_DIFF_POLY
+	@rm -f $(SLICE07_GEN_DIR)/diff-$1
+	cc -o $(SLICE07_GEN_DIR)/diff-$1 $(SLICE07_DIFF_OBJ) $(SLICE07_GEN_DIR)/$1.o \
+		$(SLICE07_PARSER_LEGACY_OBJ) $(SLICE07_ORACLE_ADAPTER) $(SLICE07_ORACLE_STUB) \
+		$(SLICE07_ORACLE_TRANSITIVE_OBJS) \
+		$(PARSER_PADDING_OBJ) $(SLICE02_CFT_OBJ) $(SLICE03_OP_OBJ) \
+		$(SLICE04_AST_BINOP_OBJ) $(SLICE05_AST_UNARY_OBJ) \
+		$(TASM_LIB) -L$(TEST_PREFIX)/lib -ltos -lm -lpthread -ldl \
+		-Wl,-undefined,dynamic_lookup
+	@./$(SLICE07_GEN_DIR)/diff-$1 $(SLICE07_FIXTURE) `grep -c '^[0-9][0-9][0-9][0-9]' $(SLICE07_FIXTURE)`
+endef
+
+parser-slice07-generations: $(SLICE07_GEN_DIR)/g0.o $(SLICE07_GEN_DIR)/g1.o \
+                            $(SLICE07_GEN_DIR)/g2.o $(SLICE07_GEN_DIR)/g3.o
+	@echo "SLICE07_GENERATIONS=BUILT"
+
+parser-slice07-generation-differential-g0: $(SLICE07_GEN_DIR)/g0.o $(SLICE07_DIFF_OBJ)
+	$(call SLICE07_GEN_DIFF,g0)
+parser-slice07-generation-differential-g1: $(SLICE07_GEN_DIR)/g1.o $(SLICE07_DIFF_OBJ)
+	$(call SLICE07_GEN_DIFF_POLY,g1)
+parser-slice07-generation-differential-g2: $(SLICE07_GEN_DIR)/g2.o $(SLICE07_DIFF_OBJ)
+	$(call SLICE07_GEN_DIFF_POLY,g2)
+parser-slice07-generation-differential-g3: $(SLICE07_GEN_DIR)/g3.o $(SLICE07_DIFF_OBJ)
+	$(call SLICE07_GEN_DIFF_POLY,g3)
+
+
 
 
 # ACT-POLYC-SELFHOST-PARSER-SLICE05

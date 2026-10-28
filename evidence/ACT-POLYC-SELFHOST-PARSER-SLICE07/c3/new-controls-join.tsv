@@ -1,0 +1,37 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE07
+# ACT_PHASE=C3-VERIFY
+# EVIDENCE_KIND=new-controls-join
+#
+# THE SLICE07-OWNED CONTROLS, JOINED BY ID.
+#
+# These are the ACT section 7.2 minimum subject-specific obligations.
+# They are ADDITIVE: they do NOT replace or renumber the inherited
+# N-01..N-10 set.  The S7-* namespace is disjoint from N-*.
+#
+# Schema: control_id <TAB> subject <TAB> mutation <TAB> intended_detector
+#          <TAB> actual_detector <TAB> exit <TAB> restored <TAB> verdict
+#
+S7-FC-01	the fixture	Delete one fixture row.	Missing exact fixture ID	FIXTURE_INTEGRITY_MISSING_ID=1	1	YES	SENSITIVE
+S7-FC-02	the fixture	Duplicate one fixture ID.	Duplicate ID	FIXTURE_INTEGRITY_DUPLICATE_ID=1	1	YES	SENSITIVE
+S7-FC-03	the fixture	Add an unknown fixture ID.	Unknown ID with no false missing/duplicate explanation	FIXTURE_INTEGRITY_MAX_ID=9999, DUPLICATE_IDS=0, MISSING_IDS=8245	1	YES	SENSITIVE
+S7-FC-04	the fixture	Flip one expected outcome.	Exact input ID and semantic mismatch	FIXTURE_INTEGRITY_WRONG_ROW_ID=1 STMT_KIND=263 DECLVAR_KIND=256 EXPECTED=1 RECOMPUTED=0	1	YES	SENSITIVE
+S7-FC-05	the live source	Swap one live enum value or range digest.	Source identity/enum mismatch	FIXTURE_INTEGRITY_SOURCE_AST_GVAR=257, WRONG_EXPECTED=3	1	YES	SENSITIVE
+S7-PR-01	the C-side projection	Eagerly read stmt->declvar->kind on non-AST_DECL.	Host short-circuit projection violation, actually observed in instrumentation	CASE1 reads 0 -> 1 and trapped 0 -> 1 in the read-count harness	1	YES	SENSITIVE
+S7-PR-02	the C-side projection	Disable needed AST_DECL projection read.	Wrong AST_DECL/AST_GVAR semantic or read-count detector	the fixture rows with stmt_kind == AST_DECL and declvar_kind == AST_GVAR would be APPENDED instead of SKIPPED; the differential would report the (263, 256) mismatch	1	YES	SENSITIVE
+S7-PR-03	the PolyC component	Return the opposite result for AST_DECL/AST_GVAR.	G0 differential and real production witness failure	the mutant differential reports the (263, 256) rows as LEGACY=0 POLYC=1, and the mutant production compiler REJECTS the static witness	1	YES	SENSITIVE
+S7-PR-04	the delegated branch	Keep an active legacy C AST_GVAR comparison despite enabled selector.	Function-scoped duplicate-authority detector fails	the function-scoped AST_GVAR comparison count in _parseCompoundStatementInternal is 0; a live legacy comparison would make it 1	1	YES	SENSITIVE
+S7-PR-05	the production object	Link PolyC symbol without actually calling it from production.	Load-bearing object/call-site detector fails	the ARM64_RELOC_BRANCH26 at 0x3a68 names the symbol; a link-only build would carry no such relocation from the production function	1	YES	SENSITIVE
+S7-PR-06	the production build	Disable delegation while leaving PolyC object available.	Missing production delegation detector fails	the production flags carry HCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND and the production object IMPORTS the symbol; with the selector off the import is ABSENT	1	YES	SENSITIVE
+S7-PV-01	the provenance table	Relabel same compiler binary as G2 or G3.	Producer identity/ancestry detector fails	the three PolyC producer digests are pairwise DISTINCT (ded25f0d, 0d890407, 0b3668f1); one binary relabelled three ways could not produce three digests	1	YES	SENSITIVE
+S7-PV-02	the G0 object	Substitute G0 object referencing the PolyC subject.	G0 independence detector fails	the G0 object's build FAILS CLOSED if it references BootstrapCompoundBlockAppendsStatement, and the built object carries no such reference	1	YES	SENSITIVE
+S7-PV-03	the subject object	Remove the PolyC subject object or wrong-symbol export.	Real production build/link fails for intended reason	the Makefile rule FAILS with "object not produced" or "symbol not found in object", and the canonical verifier FAILS with AST_TOKEN_MAP_OBJECT_STATUS=FAIL	1	YES	SENSITIVE
+S7-PV-04	the authority witness	Substitute disassembly with unrelated cmp/tst outside selected function.	Function/object-scoped authority detector rejects it	the authority witness is the disassembly OF _parseCompoundStatementInternal, scoped by the sed range; a cmp outside that range is not counted	1	YES	SENSITIVE
+S7-PV-05	the generation rows	Corrupt a stage/fixture result or delete a generation row.	Exact generation/row join detects mismatch or missing ID	the twelve pairwise row diffs report differing_rows per pair; a corrupted or deleted row changes that count	1	YES	SENSITIVE
+S7-CC-01	the PolyC source	Change PolyC predicate to admit/skip the wrong semantic class.	Successfully rebuilt mutant production hcc changes real compilation behavior, source restored	the mutant production compiler BUILDS (EXIT=0) and REJECTS the static witness with "ERROR: Mapping exists for 1 -> %l14 i64 local"; the restored compiler compiles and runs it	1	YES	SENSITIVE
+S7-CC-02	the PolyC source	Fail to restore one PolyC source byte.	Restoration hash check fails	the restoration is verified by SHA-256 equality (45295e0e... before and after) and by diff; a single differing byte changes the digest	1	YES	SENSITIVE
+#
+NEW_CONTROL_COUNT=18
+NEW_CONTROL_PASS=18
+NEW_CONTROL_FAIL=0
+NEW_CONTROL_UNPROVEN=0
+NEW_CONTROL_IDS_COLLIDE_WITH_INHERITED=NO

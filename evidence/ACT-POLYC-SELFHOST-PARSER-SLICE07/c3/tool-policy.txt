@@ -1,0 +1,41 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE07
+# ACT_PHASE=C3-VERIFY
+# EVIDENCE_KIND=tool-policy
+#
+# THE TOOL POLICY, WITH THE DELEGATION ACTIVE.
+#
+# --- F-NO-PYTHON ---
+#
+COMMAND=git ls-files -z > /tmp/slice07-c3-tracked.txt
+COMMAND=./build/factory-no-python-check /tmp/slice07-c3-tracked.txt
+EXIT=1
+#
+# POLYC_TOOLS_TRACKED_PYTHON=12
+# POLYC_TOOLS_TRACKED_INSPECTED=5621
+# POLYC_TOOLS_TRACKED_PASSES=5614
+# STATUS=FAIL
+#
+# The 12 violations are EXACTLY the 12 historical pre-existing ones.
+# The inspected count rose from 5580 (C0) to 5621 because this ACT
+# added tracked files; the VIOLATION count did not rise.
+#
+#   F_NO_PYTHON_VIOLATIONS=12
+#   F_NO_PYTHON_NEW_VIOLATIONS=0
+#   F_NO_PYTHON_STATUS=FAIL_KNOWN_BASELINE
+#
+# --- F-POLYC-TOOLS ---
+#
+COMMAND=ls tools/factory/factory-polyc-tools-check.HC
+#   ls: cannot access 'tools/factory/factory-polyc-tools-check.HC': No such file or directory
+#
+# The authoritative F-POLYC-TOOLS checker is NOT LANDED.  Per AGENTS.md
+# this is reported UNAVAILABLE and is NEVER reported PASS.
+#
+#   F_POLYC_TOOLS_CHECKER_PRESENT=NO
+#   F_POLYC_TOOLS_STATUS=UNAVAILABLE
+#
+# The legacy inventory docs/factory/LEGACY-NON-POLYC-TOOLS.tsv exists
+# and is the recorded non-PolyC legacy list.
+#
+# NO_NEW_PYTHON=YES
+# NO_NEW_EXTERNAL_DEPENDENCY=YES

@@ -1,0 +1,110 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE07
+# ACT_PHASE=C3-VERIFY
+# EVIDENCE_KIND=factory-invariants
+#
+# THE FACTORY INVARIANTS, MEASURED AT C3.
+#
+# --- THE APPEND-ONLY INVARIANT ---
+#
+COMMAND=sh scripts/quality/factory-append-only-test.sh
+#   PASS  NC11  rc=0
+#   --- summary ---
+#   PASS=11
+#   FAIL=0
+#   STATUS=PASS
+#
+APPEND_ONLY=PASS (11/11)
+#
+# --- THE REPLACE REFS ---
+#
+COMMAND=git replace -l | wc -l
+#   0
+#
+GIT_REPLACE_REFS=0
+#
+# --- THE FACTORY-v2 RANGE CHECK (on the predecessor) ---
+#
+COMMAND=sh scripts/quality/factory-v2-range-check.sh \
+#           ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05 \
+#           1a3d2d520306f02ca08adb29c62688748e33eab8
+#   ACT=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05
+#   ENTRY=005790c53bb4e4798d58809940548552f0993d47
+#   FIRST=b48eab6f058d49ce9604201447f278c6962fbd8b
+#   CLOSE=1a3d2d520306f02ca08adb29c62688748e33eab8
+#   COMMITS=5
+#   VERDICT=PASS
+#   STATUS=PASS
+#
+FACTORY_V2_RANGE_CHECK=PASS
+#
+# --- F14 (the closed predecessors are unchanged) ---
+#
+COMMAND=see c3/immutable-predecessor-check.txt
+#   FROZEN_PATH_COUNT=237
+#   FROZEN_PATH_MISMATCHES=0
+#   FROZEN_PATH_MISSING=0
+#
+F14=PASS
+#
+# --- THE CLOSURE STATUS ---
+#
+COMMAND=make gate-fast   (the factory-closure-status check)
+#   MANIFEST_ROWS=39
+#   MISSING_HANDOFF_FILES=0
+#   MALFORMED_HANDOFF_VERDICT=0
+#   PAIR_OK=39
+#   PAIR_FAIL=0
+#   STATUS=PASS
+#
+CLOSURE_STATUS=PASS
+#
+# --- THE PATCH HYGIENE ---
+#
+# The pre-commit hook runs on every commit of this ACT and has run the
+# diff-check on every one of them:
+#
+#   CHECK=diff-check STATUS=PASS
+#   CHECK=shell-syntax STATUS=PASS
+#   CHECK=doc-invariants STATUS=PASS
+#   CHECK=large-file-guard STATUS=PASS
+#
+PATCH_HYGIENE=PASS
+#
+# --- THE COMMIT PHASES AND TRAILERS ---
+#
+# Every commit of this ACT carries the exact ACT ID and the correct
+# Factory-v2 phase trailer, and each message was validated with the
+# repository's own checker BEFORE the commit was created:
+#
+#   sh scripts/quality/factory-v2-commit-msg-check.sh <message>
+#   MODE=ACT  ACT=ACT-POLYC-SELFHOST-PARSER-SLICE07  PHASE=<phase>  STATUS=PASS
+#
+# The phases are C0 RED, C1 EVIDENCE, C2 IMPL, C3 EVIDENCE, C4 CLOSE.
+# No commit was replayed to retrofit a forgotten trailer.
+#
+COMMIT_TRAILERS_VALID=YES
+# ---------------------------------------------------------------------------
+# A BOUNDED RESIDUE FOUND DURING C3, RECORDED AND NOT FIXED IN PLACE
+# ---------------------------------------------------------------------------
+#
+# The SLICE06 CMake producer path (src/CMakeLists.txt's
+# SWITCH_ARM_TOKEN_MAP_PRODUCER branch) is STALE: it passes an ABSOLUTE
+# `--install-dir` to a compiler that APPENDS "/include/tos.HH" to the
+# prefix string, so the header path becomes
+#   ".../build/bootstrap-prefix"/include/tos.HH
+# and the header is not found.  This was OBSERVED at C3 while
+# investigating this ACT's own producer path:
+#
+#   COMMAND=cmake --build build --target hcc-switch-arm-token-map-verify
+#   ERROR: Failed to open file: ".../build/bootstrap-prefix"/include/tos.HH
+#
+# It is a PRE-EXISTING defect in a CLOSED predecessor's wiring, it is
+# NOT on this ACT's production path (the SLICE06 subject is built by
+# the Makefile rule and consumed as a PREBUILT object), and it is NOT
+# repaired here: that would be a change to a closed predecessor's
+# wiring, which is outside this ACT's scope.
+#
+# RESIDUE_CLASS=P2 (deferred improvement)
+# RESIDUE_LOCATION=src/CMakeLists.txt, the SLICE06 producer branch
+# RESIDUE_NOT_ON_THIS_ACT_PRODUCTION_PATH=YES
+# RESIDUE_FIXED_IN_THIS_ACT=NO (by design: it is a closed predecessor's wiring)

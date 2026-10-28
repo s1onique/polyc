@@ -1,0 +1,63 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE07
+# ACT_PHASE=C3-VERIFY
+# EVIDENCE_KIND=fixture-independent-recompute
+#
+# THE INDEPENDENT RECOMPUTATION OF EVERY SEMANTIC PREDICATE.
+#
+# The ACT requires "a separate PolyC program [that] recomputes all
+# semantic predicates from source-bound facts/G0 fixture/provenance,
+# without consuming C2 PASS rows as its oracle."
+#
+# The recomputer is
+#   tools/quality/parser-slice07-fixture-integrity.HC
+# which:
+#
+#   * READS the LIVE SOURCE BYTES of src/ast.h and src/parser.c;
+#   * PARSES AST_DECL and AST_GVAR out of the ast.h TEXT;
+#   * RE-DERIVES the expected value of every fixture row from those
+#     source-bound constants;
+#   * COMPARES the recomputed value against the fixture's column.
+#
+# It does NOT read the new PolyC implementation, and it does NOT
+# consume the C2 PASS rows.  Its output is INDEPENDENT of the C2
+# evidence by construction.
+#
+COMMAND=./build/parser-slice07-fixture-integrity \
+#         evidence/ACT-POLYC-SELFHOST-PARSER-SLICE07/c1/fixture.tsv \
+#         src/ast.h src/parser.c
+#
+# FIXTURE_INTEGRITY_SOURCE_AST_DECL=263
+# FIXTURE_INTEGRITY_SOURCE_AST_GVAR=256
+# FIXTURE_INTEGRITY_SOURCE_AST_LVAR=261
+# FIXTURE_INTEGRITY_PARSER_HAS_AST_DECL=1
+# FIXTURE_INTEGRITY_PARSER_HAS_AST_GVAR=1
+# FIXTURE_INTEGRITY_ROWS=1753
+# FIXTURE_INTEGRITY_NON_DATA_RECORDS=26
+# FIXTURE_INTEGRITY_UNKNOWN_RECORDS=0
+# FIXTURE_INTEGRITY_MALFORMED_ROWS=0
+# FIXTURE_INTEGRITY_TRUNCATED_ROWS=0
+# FIXTURE_INTEGRITY_FIELD_PARSE_ERRORS=0
+# FIXTURE_INTEGRITY_WRONG_EXPECTED=0
+# FIXTURE_INTEGRITY_INVALID_EXPECTED=0
+# FIXTURE_INTEGRITY_DUPLICATE_IDS=0
+# FIXTURE_INTEGRITY_MISSING_IDS=0
+# FIXTURE_INTEGRITY_OUT_OF_RANGE_IDS=0
+# FIXTURE_INTEGRITY_OUT_OF_ORDER_IDS=0
+# FIXTURE_INTEGRITY_MAX_ID=1753
+# FIXTURE_INTEGRITY_STATUS=PASS
+#
+# The recomputed AST_DECL/AST_GVAR (263/256) AGREE with the values
+# the G0 oracle OBSERVED (the oracle's single skip pair is (263,
+# 256)), so the source-bound facts and the object-level witness
+# agree.
+#
+# A SECOND independent recomputation is the four-generation
+# differential itself: each generation's differential recomputes the
+# expected value against the ORACLE and against the component on every
+# row, and all four generations agree on all 1753 rows
+# (c3/g0-g3-full-differential.tsv).
+#
+RECOMPUTER_READS_THE_C2_PASS_ROWS=NO
+RECOMPUTER_READS_THE_POLYC_IMPLEMENTATION=NO
+RECOMPUTE_MISMATCHES=0
+RECOMPUTE_STATUS=PASS

@@ -1197,20 +1197,28 @@ if (HCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND)
     # when it already exists; a missing subject is a hard configure
     # error, never a silent fallback to the legacy C body.
     # ---------------------------------------------------------------------
+    # The OUTPUT path is NORMALISED for the same reason as the prefix:
+    # the compiler prepends "./" to the output path, so an output path
+    # that already contains a "./" segment (which $(CURDIR)/./build/...
+    # has) would become malformed.
+    string(REPLACE "/./" "/" COMPOUND_BLOCK_TOKEN_MAP_OBJECT
+        "${COMPOUND_BLOCK_TOKEN_MAP_OBJECT}")
     set(_saw_stamp "${COMPOUND_BLOCK_TOKEN_MAP_OBJECT}.verified")
 
     # The bootstrap prefix holds the canonical headers the stage0
     # compiler resolves against.  It is header-only: no runtime archive
     # is required to compile the compound-block subject.
     #
-    # The prefix is spelled ${CMAKE_SOURCE_DIR}/../build/bootstrap-prefix
-    # (and NOT $(CURDIR)/./build/bootstrap-prefix) because the compiler
-    # resolves the header path by APPENDING to the prefix string, and a
-    # prefix containing a "./" segment produces a malformed header path.
-    # This is the same spelling the SLICE04 and SLICE06 producers use.
+    # The prefix is NORMALISED: the compiler resolves the header path by
+    # APPENDING to the prefix string, so a prefix containing a "./"
+    # segment (which $(CURDIR)/./build/... has) produces a malformed
+    # header path.  The "./" segments are therefore removed here, so the
+    # caller may spell the prefix either way.
     if (NOT COMPOUND_BLOCK_TOKEN_MAP_PREFIX)
         set(COMPOUND_BLOCK_TOKEN_MAP_PREFIX "${CMAKE_SOURCE_DIR}/../build/bootstrap-prefix")
     endif()
+    string(REPLACE "/./" "/" COMPOUND_BLOCK_TOKEN_MAP_PREFIX
+        "${COMPOUND_BLOCK_TOKEN_MAP_PREFIX}")
 
     if (COMPOUND_BLOCK_TOKEN_MAP_PRODUCER)
         add_custom_command(

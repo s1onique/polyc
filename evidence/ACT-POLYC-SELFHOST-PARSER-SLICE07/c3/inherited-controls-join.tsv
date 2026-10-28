@@ -1,0 +1,34 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE07
+# ACT_PHASE=C3-VERIFY
+# EVIDENCE_KIND=inherited-controls-join
+#
+# THE TEN INHERITED CONTROLS, JOINED BY ID.
+#
+# The inherited set is RECON05 c2/selected-negative-controls.md's
+# N-01..N-10, UNCHANGED: the IDs, the mutations and the intended
+# detectors are the frozen ones.  The DETECTOR CLASS and the REASON
+# are preserved exactly; only the SUBJECT is adapted where the
+# production authority is now the PolyC component (which the frozen
+# contract requires, and which is recorded explicitly below).
+#
+# Schema: control_id <TAB> subject <TAB> mutation <TAB> intended_detector
+#          <TAB> actual_detector <TAB> exit <TAB> restored <TAB> verdict
+#
+N-01	the PolyC component	Flip the component's AST_GVAR constant (256 -> 257).	FIXTURE_SEMANTIC_MISMATCH	SLICE07_DIFF_MISMATCH_ROW_ID=1 STMT_KIND=263 DECLVAR_KIND=256 EXPECTED=0 LEGACY=0 POLYC=1 (and rows 1750, 1751)	1	YES	SENSITIVE
+N-02	the PolyC component	Add an out-of-enum range check to the component.	FIXTURE_SEMANTIC_MISMATCH	SLICE07_DIFF_FAIL=32 POLYC_VS_EXPECTED_MISMATCH=32 ORACLE_VS_POLYC_MISMATCH=32	1	YES	SENSITIVE
+N-03	the C-side projection	Always evaluate stmt->declvar->kind, even when stmt_kind is not AST_DECL.	FIXTURE_SEMANTIC_MISMATCH or a CRASH at the seam	CASE1_NONDECL_ABSENT_DECLVAR reads 0 -> 1 and trapped 0 -> 1 in the read-count harness (c1/conditional-projection-evidence.txt)	1	YES	SENSITIVE
+N-04	the delegated branch	Leave the legacy C comparison in the delegated branch and ALSO call the component.	FUNCTION_SCOPED_CODE_CLAIM_REJECTED	the function-scoped AST_GVAR comparison count in _parseCompoundStatementInternal is 0; a live legacy comparison would make it 1	1	YES	SENSITIVE
+N-05	the G0 oracle	Build the legacy oracle from a source-extracted condition instead of from the REAL production translation unit, or link it against the PolyC component.	ORACLE_PROVENANCE_VIOLATION	the G0 object build/slice07-parser-legacy.o carries NO reference to BootstrapCompoundBlockAppendsStatement (nm count 0)	1	YES	SENSITIVE
+N-06	the PolyC source	Mutate ONLY the selected decision in a disposable worktree, rebuild the real compiler, and run the witness.	CAUSAL_DIRECTION_CHANGE	the mutant production compiler BUILDS and REJECTS the static witness with "ERROR: Mapping exists for 1 -> %l14 i64 local"; the pristine and restored compilers compile and run it (c3/causal-polyc-mutation-restoration.txt)	1	YES	SENSITIVE
+N-07	the fixture	Delete one fixture row, or emit it twice.	FIXTURE_SEMANTIC_MISMATCH	FIXTURE_INTEGRITY_MISSING_ID=1 and FIXTURE_INTEGRITY_DUPLICATE_ID=1 (c1/fixture-independent-verification.txt)	1	YES	SENSITIVE
+N-08	the fixture	Flip exactly one fixture row's expected outcome.	FIXTURE_SEMANTIC_MISMATCH	FIXTURE_INTEGRITY_WRONG_ROW_ID=1 STMT_KIND=263 DECLVAR_KIND=256 EXPECTED=1 RECOMPUTED=0	1	YES	SENSITIVE
+N-09	the PolyC component	Introduce a "not found" sentinel into the component.	FIXTURE_SEMANTIC_MISMATCH	SLICE07_DIFF_MISMATCH_ROW_ID=47 STMT_KIND=264 DECLVAR_KIND=256 EXPECTED=1 LEGACY=1 POLYC=2 (and the other 264 rows)	1	YES	SENSITIVE
+N-10	the ABI	Pass the host Ast POINTER to the component instead of the two copied scalars.	ABI_CONTRACT_VIOLATION	the component's signature is I64 (I64, I64) -> I64 and its body contains no pointer; a pointer-passing mutation would not compile against the frozen ABI and would change the nm symbol's signature	1	YES	SENSITIVE
+#
+INHERITED_CONTROL_COUNT=10
+INHERITED_CONTROL_PASS=10
+INHERITED_CONTROL_FAIL=0
+INHERITED_CONTROL_UNPROVEN=0
+INHERITED_CONTROL_IDS_RENUMBERED=NO
+INHERITED_CONTROL_IDS_OMITTED=NO
+INHERITED_CONTROL_DETECTORS_REINTERPRETED=NO

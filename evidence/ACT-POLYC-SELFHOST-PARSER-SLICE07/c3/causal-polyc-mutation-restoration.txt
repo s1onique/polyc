@@ -1,0 +1,220 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE07
+# ACT_PHASE=C3-VERIFY
+# EVIDENCE_KIND=causal-polyc-mutation-restoration
+#
+# THE REAL PRODUCTION CAUSALITY: THREE STATES, IN A DISPOSABLE
+# DETACHED WORKTREE.
+#
+# THE REQUIREMENT (ACT section 7.3)
+#
+#   "Use isolated detached worktrees or isolated build/output roots,
+#    serializing any shared /tmp/holyc-asm.s writer.  Never mutate
+#    authoritative main."
+#
+#   "MUTATED: ONLY the target PolyC source predicate is adversely
+#    modified; production hcc is rebuilt from the modified PolyC object
+#    and BUILD SUCCEEDS; ... classify separately: compile acceptance,
+#    diagnostics, AST/IR, emitted object, or executable runtime output"
+#
+# ---------------------------------------------------------------------------
+# THE DISPOSITION OF THE WORKTREE
+# ---------------------------------------------------------------------------
+#
+# WORKTREE_PATH=/tmp/slice07-wt
+# WORKTREE_BRANCH=detached
+# WORKTREE_BASE=885a2a6f58d5d8565af7f9a655ea2924a35c7686
+# MUTATION_SCOPE=tools/bootstrap/selfhost-parser-slice07.HC ONLY
+# TRACKED_MAIN_WORKTREE_MUTATED=NO
+# MERGED_OR_COMMITTED_THE_MUTATION=NO
+# WORKTREE_REMOVED_AFTER_THE_EXPERIMENT=YES
+#
+# The authoritative main worktree's PolyC source carried the SAME
+# digest before, during and after the experiment:
+#
+#   MAIN_TREE_POLYC_SHA256=45295e0e2f435c29b94d0a9368f4cf253245273cdd47eafc31cca21a474d5c02
+#
+# ---------------------------------------------------------------------------
+# STATE 1: PRISTINE
+# ---------------------------------------------------------------------------
+#
+# PRISTINE_POLYC_SHA256=45295e0e2f435c29b94d0a9368f4cf253245273cdd47eafc31cca21a474d5c02
+#
+# COMMAND=make INSTALL_PREFIX=/tmp/slice07-wt/build/test-prefix production-hcc
+#   PRODUCTION_HCC=./hcc
+#   PRODUCTION_PADDING_AUTHORITY=POLYC
+#   PRODUCTION_AST_BINOP_AUTHORITY=POLYC
+#   PRODUCTION_SWITCH_ARM_AUTHORITY=POLYC
+#   EXIT=0
+#
+# COMMAND=./hcc --install-dir=/tmp/slice07-wt/build/test-prefix \
+#           witness-sub003.HC -o /tmp/slice07-wt/witness-pristine
+#   (no diagnostic)
+#   COMPILE_EXIT=0
+#
+# COMMAND=/tmp/slice07-wt/witness-pristine
+#   WITNESS_OUTPUT=13 15 2
+#   RUN_EXIT=0
+#
+# PRISTINE_BUILD_EXIT=0
+# PRISTINE_WITNESS_COMPILE=SUCCESS
+# PRISTINE_WITNESS_RUN=SUCCESS
+# PRISTINE_WITNESS_OUTPUT=WITNESS_OUTPUT=13 15 2
+# PRISTINE_WITNESS_OUTPUT_SHA256=5d6f3a9ef366f5489097fbf3f465e21d53c22647237d4e687442cd0698b23cc9
+#
+# The witness is the PREDECESSOR'S OWN witness,
+# evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05/c2/probes/
+# witness-sub003-block-static.HC: a `static` declaration INSIDE a
+# compound block, which is exactly the shape the SUB-003 decision
+# routes.
+#
+# (The witness's entry point was spelled `I32 Main()` rather than
+# `I64 main()`, because the C runtime already defines `main` and the
+# PolyC `Main` is the language's entry point.  The witness's SEMANTIC
+# content is the predecessor's, unchanged.)
+#
+# ---------------------------------------------------------------------------
+# STATE 2: MUTATED
+# ---------------------------------------------------------------------------
+#
+# THE MUTATION.  ONLY the PolyC source predicate is changed.  The
+# mutation flips the DECISION POLARITY of the AST_GVAR arm, i.e. the
+# mutant ADMITS (appends) the wrong semantic class:
+#
+#   -      return 0;   // SKIP: a global-variable declaration inside a block
+#   +      return 1;   // MUTANT S7-CC-01: the polarity is flipped
+#
+# MUTATED_POLYC_SHA256=c7825240648e4b1b05babdcfd982c209fd138dfb117810bb5fd03a69693b0f93
+# MUTATION_IS_IN_THE_POLYC_SOURCE=YES
+# MUTATION_IS_IN_SRC_PARSER_C=NO
+# MUTATION_IS_IN_AN_ORACLE=NO
+# MUTATION_IS_IN_THE_FIXTURE_EXPECTED_COLUMN=NO
+#
+# THE BUILD.  The production compiler is rebuilt from the MODIFIED
+# PolyC object, and the BUILD SUCCEEDS.  This is the ACT's explicit
+# requirement: "a mutant compiler that fails to rebuild does not
+# establish S7-CC-01 causality".
+#
+# COMMAND=make ./build/parser-compound-block-subject.o
+#   SLICE07_COMPOUND_BLOCK_OBJECT=build/parser-compound-block-subject.o
+# COMMAND=make INSTALL_PREFIX=/tmp/slice07-wt/build/test-prefix production-hcc
+#   PRODUCTION_HCC=./hcc
+#   EXIT=0
+#
+# MUTANT_BUILD_EXIT=0
+# MUTANT_PRODUCTION_COMPILER_BUILT=YES
+#
+# THE EFFECTIVE FUNCTION IS REACHED.  The mutant compiler really
+# contains the mutated component:
+#
+# COMMAND=nm hcc | grep BootstrapCompoundBlock
+#   000000010006456c T _BootstrapCompoundBlockAppendsStatement
+#
+# The subject object differs from the pristine one:
+#
+#   PRISTINE_SUBJECT_SHA256=e2dfbcfcb78261957fb9188916705dcc86d589e82a9d9e169f6ae8118237487c
+#   MUTANT_SUBJECT_SHA256=540d1431d47c307536f3d498bdec9cdd32d8f1539f4fdc57a3033b1aad6694b0
+#
+# THE OBSERVATION.  The mutant compiler REJECTS the witness that the
+# pristine compiler accepts:
+#
+# COMMAND=./hcc --install-dir=/tmp/slice07-wt/build/test-prefix \
+#           witness-sub003.HC -o /tmp/slice07-wt/witness-global-mutant
+#   ERROR: Mapping exists for 1 -> %l14 i64 local
+#   (no executable produced)
+#
+# MUTANT_WITNESS_COMPILE=FAIL
+# MUTANT_WITNESS_RUN=NOT_REACHABLE (no executable was produced)
+# MUTANT_DIAGNOSTIC=ERROR: Mapping exists for 1 -> %l14 i64 local
+#
+# CAUSAL_REAL_WITNESS_OBSERVATION_CLASS=COMPILER_ACCEPTANCE_CHANGED
+#
+# The observation class is reported EXACTLY.  The mutant's change is
+# observed in the COMPILER ACCEPTANCE / DIAGNOSTIC channel.  It is NOT
+# reported as a compiled-program runtime output change, because no
+
+# ---------------------------------------------------------------------------
+# THE FIXTURE-LEVEL SEMANTIC CHANGE (the compiled PolyC program)
+# ---------------------------------------------------------------------------
+#
+# The mutated component's effect on the SEMANTICS is measured on the
+# frozen fixture, using the same differential with the mutant subject:
+#
+# COMMAND=./build/slice07-nc/diff-flip <fixture> 1753
+#   SLICE07_DIFF_MISMATCH_ROW_ID=1 STMT_KIND=263 DECLVAR_KIND=256 EXPECTED=0 LEGACY=0 POLYC=1
+#   SLICE07_DIFF_MISMATCH_ROW_ID=1750 STMT_KIND=263 DECLVAR_KIND=256 EXPECTED=0 LEGACY=0 POLYC=1
+#   SLICE07_DIFF_MISMATCH_ROW_ID=1751 STMT_KIND=263 DECLVAR_KIND=256 EXPECTED=0 LEGACY=0 POLYC=1
+#   SLICE07_DIFF_FAIL=3
+#   SLICE07_DIFF_ORACLE_VS_EXPECTED_MISMATCH=0
+#   SLICE07_DIFF_POLYC_VS_EXPECTED_MISMATCH=3
+#   SLICE07_DIFF_ORACLE_VS_POLYC_MISMATCH=3
+#   SLICE07_DIFF_STATUS=FAIL
+#
+# The mutated compiled PolyC program changes the fixture semantics on
+# EXACTLY the intended inputs -- the three (263, 256) rows -- and on no
+# other row.  The LEGACY oracle is unchanged (0 mismatches against the
+# expected column), so the disagreement is between the ORACLE and the
+# MUTATED COMPONENT, which is exactly the causal claim.
+#
+# MUTANT_FIXTURE_MISMATCH_ROWS=3
+# MUTANT_FIXTURE_MISMATCH_ROW_IDS=1,1750,1751
+# MUTANT_FIXTURE_OTHER_ROWS_UNCHANGED=1750
+#
+# ---------------------------------------------------------------------------
+# STATE 3: RESTORED
+# ---------------------------------------------------------------------------
+#
+# COMMAND=cp /tmp/s07-pristine.HC tools/bootstrap/selfhost-parser-slice07.HC
+# COMMAND=make ./build/parser-compound-block-subject.o
+# COMMAND=make INSTALL_PREFIX=/tmp/slice07-wt/build/test-prefix production-hcc
+#   PRODUCTION_HCC=./hcc
+#   EXIT=0
+# COMMAND=./hcc --install-dir=/tmp/slice07-wt/build/test-prefix \
+#           witness-sub003.HC -o /tmp/slice07-wt/witness-global-restored2
+#   COMPILE_EXIT=0
+# COMMAND=/tmp/slice07-wt/witness-global-restored2
+#   WITNESS_OUTPUT=13 15 2
+#   RUN_EXIT=0
+#
+# RESTORED_POLYC_SHA256=45295e0e2f435c29b94d0a9368f4cf253245273cdd47eafc31cca21a474d5c02
+# RESTORED_BUILD_EXIT=0
+# RESTORED_WITNESS_COMPILE=SUCCESS
+# RESTORED_WITNESS_RUN=SUCCESS
+# RESTORED_WITNESS_OUTPUT=WITNESS_OUTPUT=13 15 2
+# RESTORED_WITNESS_OUTPUT_SHA256=5d6f3a9ef366f5489097fbf3f465e21d53c22647237d4e687442cd0698b23cc9
+#
+# THE RESTORATION PROOF
+#
+# COMMAND=diff /tmp/s07-pristine.HC tools/bootstrap/selfhost-parser-slice07.HC
+#   (no output -- identical)
+#
+#   SHA256_BEFORE=45295e0e2f435c29b94d0a9368f4cf253245273cdd47eafc31cca21a474d5c02
+#   SHA256_AFTER =45295e0e2f435c29b94d0a9368f4cf253245273cdd47eafc31cca21a474d5c02
+#   CAUSAL_RESTORATION_BYTE_IDENTICAL=YES
+#
+# The PRISTINE and RESTORED witness outputs are BYTE-IDENTICAL (the same
+# SHA-256), so the restoration recovered the pristine behaviour exactly.
+#
+# ---------------------------------------------------------------------------
+# THE VERDICT
+# ---------------------------------------------------------------------------
+#
+# CAUSAL_POLYC_SOURCE_MUTATED=YES
+# CAUSAL_MUTANT_PRODUCTION_BUILD=SUCCESS
+# CAUSAL_REAL_WITNESS_OBSERVATION_CLASS=COMPILER_ACCEPTANCE_CHANGED
+# CAUSAL_PRISTINE_OUTPUT_SHA256=5d6f3a9ef366f5489097fbf3f465e21d53c22647237d4e687442cd0698b23cc9
+# CAUSAL_MUTANT_OUTPUT_SHA256=NOT_APPLICABLE (the mutant REJECTED the witness)
+# CAUSAL_RESTORED_OUTPUT_SHA256=5d6f3a9ef366f5489097fbf3f465e21d53c22647237d4e687442cd0698b23cc9
+# CAUSAL_RESTORATION_BYTE_IDENTICAL=YES
+# CAUSAL_FIXTURE_SEMANTICS_CHANGED=YES
+# CAUSAL_FIXTURE_CHANGED_ROW_IDS=1,1750,1751
+# MUTANT_BUILD_FAILURE_MISTAKEN_FOR_CAUSALITY=NO
+# AUTHORITATIVE_MAIN_MUTATED=NO
+
+# mutant executable was produced for this witness.
+#
+# This is the SAME channel and the SAME diagnostic SHAPE that the
+# predecessor observed for the same decision:
+#
+#   RECON05 c2/selected-causal-contract.md section 3.4:
+#     MUTANT (SUB-003 gone)  FAILS  no executable produced
+#     ERROR: Mapping exists for 1 -> %l2 i64 local
