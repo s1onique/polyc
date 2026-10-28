@@ -1,0 +1,72 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05
+# ACT_PHASE=C2-RANK-SELECT
+# EVIDENCE_KIND=selected-fixture-contract
+#
+# THE FIXTURE CONTRACT.  The fixture DOMAIN is derived from the LIVE
+# enum definitions, not from any historical count.
+#
+# THE ENUM VALUES, RESOLVED BY COMPILING THE LIVE src/ast.h
+#   COMMAND=cc -I src -I src/asm -o enumprobe enumprobe.c   # includes src/ast.h
+#   COMMAND=./enumprobe
+#     AST_DECL=263
+#     AST_GVAR=256
+#     AST_LVAR=261
+#     AST_CASE=287
+#     AST_DEFAULT=293
+#     AST_COMPOUND_STMT=274
+#     AST_BREAK=280
+#     AST_RETURN=270
+#     AST_GOTO=258
+#
+# THE DECISION
+#   appends = !(stmt_kind == AST_DECL && declvar_kind == AST_GVAR)
+#   i.e. SKIP exactly when the statement is a DECL whose declvar is
+#   a GVAR; APPEND otherwise.
+#
+# THE FIXTURE DOMAIN
+#   The decision is a total function of TWO bounded I64 values.
+#   The fixture must therefore cover the PARTITION of the domain
+#   that the decision distinguishes, plus the invalid and
+#   out-of-enum regions, plus the SHORT-CIRCUIT region.
+#
+# PARTITION (the exhaustive cases)
+#   P1 stmt_kind == AST_DECL(263) AND declvar_kind == AST_GVAR(256)
+#      -> SKIP   (the ONLY skipping case)
+#   P2 stmt_kind == AST_DECL(263) AND declvar_kind != AST_GVAR
+#      -> APPEND (the short-circuit second arm)
+#   P3 stmt_kind != AST_DECL AND declvar_kind == AST_GVAR(256)
+#      -> APPEND (the declvar value is NOT consulted)
+#   P4 stmt_kind != AST_DECL AND declvar_kind != AST_GVAR
+#      -> APPEND (the general case)
+#
+# THE INVALID AND OUT-OF-ENUM REGIONS
+#   P5 declvar_kind is an UNREACHABLE value (the C side never
+#      evaluates it when stmt_kind != AST_DECL): the component
+#      MUST NOT consult it, and the result MUST be APPEND.
+#   P6 stmt_kind is an out-of-enum value: the component MUST NOT
+#      range-check it, and the result MUST be APPEND.
+#   P7 negative I64 values for both inputs: MUST be APPEND.
+#   P8 the extreme I64 values: MUST be APPEND.
+#
+# THE FIXTURE MUST INCLUDE, AT MINIMUM
+#   - every AstKind value in the live src/ast.h enum, for
+#     stmt_kind, paired with AST_GVAR and with AST_LVAR
+#   - the AST_DECL x AST_GVAR pair itself
+#   - the out-of-enum and extreme values above.
+#
+# NO COUNT IS ASSERTED HERE.  The fixture producer enumerates the
+# live enum and the contract only specifies the PARTITION.
+#
+# EXPECTED SEMANTICS
+#   P1 -> 0 (SKIP)
+#   P2 -> 1 (APPEND)
+#   P3 -> 1 (APPEND)
+#   P4 -> 1 (APPEND)
+#   P5 -> 1 (APPEND)
+#   P6 -> 1 (APPEND)
+#   P7 -> 1 (APPEND)
+#   P8 -> 1 (APPEND)
+#
+# FIXTURE_DERIVED_FROM_LIVE_ENUM=YES
+# FIXTURE_PARTITION_SPECIFIED=YES
+# FIXTURE_COUNT_ASSERTED=NO

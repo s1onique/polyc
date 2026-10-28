@@ -368,6 +368,10 @@ class LiveFunc {
   I64 end;
 };
 static LiveFunc LIVEFUNC[LIVEFUNC_MAX];
+// The count is RESET EXPLICITLY at the start of every mode that
+// scans, because an uninitialized file-scope integer does NOT
+// reliably start at zero in this compiler, and a garbage count would
+// silently disable the live-census bookkeeping.
 static I64 LIVEFUNC_COUNT;
 
 // ------------------------------------------------------------------
@@ -650,8 +654,153 @@ static I64 IsWholeFunctionRow(I64 start, I64 end, U8 *func, U8 *path)
   return 0;
 }
 
+// ------------------------------------------------------------------
+// MODE=REGISTRY
+//
+//   argv: MODE REGISTRY <expected_ids.txt> <identity.tsv> <file.c> ...
+//
+// The EXPECTED-ID REGISTRY is the authoritative list of candidate IDs
+// that the current candidate population MUST contain.  The identity
+// table is the table that actually claims them.
+//
+// This mode closes the gap that MODE=IDENTITY cannot close: deleting
+// a row from the identity table makes the row INVISIBLE to a
+// row-by-row checker, so a per-row checker alone would report a
+// pristine PASS for a DELETED candidate.  Comparing the two SETS
+// makes the deletion observable and names the missing ID.
+//
+// It also rejects:
+//   UNKNOWN_ID       an identity row whose ID is NOT in the registry
+//   MALFORMED_FACT   a registry line that is not a well-formed ID
+//
+// Schema of expected_ids.txt: one candidate ID per line; `#` starts a
+// comment; blank lines are ignored.
+//
+// Exit code is 0 only when the two sets are EQUAL and every registry
+// entry is well formed.
+// ------------------------------------------------------------------
+
+static I64 ModeRegistry(U8 *reg_path, U8 *ids_path, U8 *files[], I64 nfiles)
+{
+  I64 rlen = 0;
+  U8 *regbuf = FileRead(reg_path, &rlen);
+  if (regbuf == NULL) {
+    "STATUS=FAIL\nREASON=CANNOT_READ_REGISTRY\nINPUT=%s\n", reg_path;
+    return 1;
+  }
+  I64 tlen = 0;
+  U8 *tbl = FileRead(ids_path, &tlen);
+  if (tbl == NULL) {
+    "STATUS=FAIL\nREASON=CANNOT_READ_IDENTITY_TABLE\nINPUT=%s\n", ids_path;
+    return 1;
+  }
+
+  // The registry: the EXPECTED candidate IDs.
+  U8 *expected[MAX_ROWS];
+  I64 nexp = 0;
+  I64 malformed = 0;
+  I64 p = 0;
+  while (p < rlen) {
+    I64 ls = p;
+    while (p < rlen && regbuf[p] != '\n') p = p + 1;
+    I64 len = p - ls;
+    if (p < rlen) p = p + 1;
+    if (len <= 0) continue;
+    U8 *line = MAlloc(len + 1);
+    for (I64 z = 0; z < len; z = z + 1) line[z] = regbuf[ls + z];
+    line[len] = 0;
+    // Strip a trailing CR.
+    if (len > 0 && line[len-1] == '\r') line[len-1] = 0;
+    if (line[0] == '#') { Free(line); continue; }
+    // A well-formed candidate ID is a non-empty token of the form
+    // <PREFIX>-<DIGITS> with no whitespace.
+    I64 ok = 1;
+    I64 nl = 0;
+    while (line[nl] != 0) {
+      if (IsSpaceCh(line[nl])) ok = 0;
+      nl = nl + 1;
+    }
+    if (nl == 0) ok = 0;
+    // The ID must contain a '-' followed by at least one digit.
+    I64 hasnum = 0;
+    for (I64 z = 0; z + 1 < nl; z = z + 1) {
+      if (line[z] == '-' && line[z+1] >= '0' && line[z+1] <= '9') hasnum = 1;
+    }
+    if (!hasnum) ok = 0;
+    if (!ok) {
+      "DETECTOR=MALFORMED_FACT\nREGISTRY_LINE=%s\n", line;
+      malformed = malformed + 1;
+      Free(line);
+      continue;
+    }
+    if (nexp < MAX_ROWS) {
+      expected[nexp] = DupStr(line);
+      nexp = nexp + 1;
+    }
+    Free(line);
+  }
+
+  // The identity table: the CLAIMED candidate IDs.
+  U8 *claimed[MAX_ROWS];
+  I64 nclaimed = 0;
+  I64 q = 0;
+  U8 *f[12];
+  while (q < tlen) {
+    I64 ls = q;
+    while (q < tlen && tbl[q] != '\n') q = q + 1;
+    I64 len = q - ls;
+    if (q < tlen) q = q + 1;
+    if (len <= 0) continue;
+    U8 *line = MAlloc(len + 1);
+    for (I64 z = 0; z < len; z = z + 1) line[z] = tbl[ls + z];
+    line[len] = 0;
+    if (line[0] == '#') { Free(line); continue; }
+    I64 nf = SplitTabs(line, f, 12);
+    if (nf < 6) {
+      "DETECTOR=MALFORMED_FACT\nROW=%s\n", line;
+      malformed = malformed + 1;
+      Free(line);
+      continue;
+    }
+    if (nclaimed < MAX_ROWS) {
+      claimed[nclaimed] = DupStr(f[0]);
+      nclaimed = nclaimed + 1;
+    }
+    Free(line);
+  }
+
+  I64 missing = 0;
+  I64 unknown = 0;
+  for (I64 i = 0; i < nexp; i++) {
+    I64 found = 0;
+    for (I64 j = 0; j < nclaimed; j++) if (StrEq(expected[i], claimed[j])) found = 1;
+    if (!found) {
+      "DETECTOR=MISSING_FUNCTION\nCANDIDATE_ID=%s\nREASON=THE_CANDIDATE_IS_ABSENT_FROM_THE_IDENTITY_TABLE\n", expected[i];
+      missing = missing + 1;
+    }
+  }
+  for (I64 j = 0; j < nclaimed; j++) {
+    I64 found = 0;
+    for (I64 i = 0; i < nexp; i++) if (StrEq(expected[i], claimed[j])) found = 1;
+    if (!found) {
+      "DETECTOR=UNKNOWN_ID\nCANDIDATE_ID=%s\nREASON=THE_IDENTITY_TABLE_CLAIMS_A_CANDIDATE_THAT_IS_NOT_IN_THE_REGISTRY\n", claimed[j];
+      unknown = unknown + 1;
+    }
+  }
+
+  "REGISTRY_EXPECTED=%d\n", nexp;
+  "REGISTRY_CLAIMED=%d\n", nclaimed;
+  "MISSING_FUNCTION=%d\n", missing;
+  "UNKNOWN_ID=%d\n", unknown;
+  "MALFORMED_FACT=%d\n", malformed;
+  if (missing == 0 && unknown == 0 && malformed == 0) { "STATUS=PASS\n"; return 0; }
+  "STATUS=FAIL\n";
+  return 1;
+}
+
 static I64 ModeIdentity(U8 *ids_path, U8 *files[], I64 nfiles)
 {
+  LIVEFUNC_COUNT = 0;
   I64 tlen = 0;
   U8 *tbl = FileRead(ids_path, &tlen);
   if (tbl == NULL) {
@@ -871,6 +1020,7 @@ static I64 ModeIdentity(U8 *ids_path, U8 *files[], I64 nfiles)
 
 static I64 ModeDepends(U8 *ids_path, U8 *files[], I64 nfiles)
 {
+  LIVEFUNC_COUNT = 0;
   I64 tlen = 0;
   U8 *tbl = FileRead(ids_path, &tlen);
   if (tbl == NULL) {
@@ -901,6 +1051,30 @@ static I64 ModeDepends(U8 *ids_path, U8 *files[], I64 nfiles)
     for (I64 f = 0; f < nfiles; f = f + 1) {
       ScanFile(files[f], srcs[f], lens[f], scratch, &slen);
     }
+    Free(scratch);
+  }
+
+  // The TRANSITIVE search also consults the HOST CONTROL TU, because a
+  // decision can reach the mutable host state through a callee that
+  // lives OUTSIDE the parser census set.  SUB-005 is the live example:
+  // parseDeclOrStatement calls cctrlIsKeyword, and cctrlIsKeyword
+  // reaches cc->symbol_table through cctrlGetKeyWord -- both in
+  // src/cctrl.c, which is not one of the four census files.
+  //
+  // The extra TU is APPENDED to the search set only.  It does not
+  // change the census, the identity table, or the eligibility facts.
+  U8 *searchfiles[MAX_FILES + 2];
+  I64 nsearch = nfiles;
+  for (I64 f = 0; f < nfiles; f = f + 1) searchfiles[f] = files[f];
+  U8 *hostctrl = "src/cctrl.c";
+  I64 hclen = 0;
+  U8 *hcsrc = FileRead(hostctrl, &hclen);
+  if (hcsrc != NULL) {
+    searchfiles[nsearch] = hostctrl;
+    nsearch = nsearch + 1;
+    U8 *scratch = MAlloc(8 * 1024 * 1024);
+    I64 slen = 0;
+    ScanFile(hostctrl, hcsrc, hclen, scratch, &slen);
     Free(scratch);
   }
 
@@ -980,18 +1154,18 @@ static I64 ModeDepends(U8 *ids_path, U8 *files[], I64 nfiles)
     // The match is on (file, function) together.  Matching on the
     // function name alone would widen a sub-slice to an unrelated
     // function of the same name in another file.
+    // The DIRECT search is over the candidate's OWN range: the
+    // bounded sub-decision itself.  The TRANSITIVE search then follows
+    // the functions THAT OWN RANGE CALLS DIRECTLY.
+    //
+    // Using the ENCLOSING FUNCTION's range for the transitive search
+    // would over-report: a bounded sub-decision that calls nothing
+    // (SUB-003 reads two AstKind values and calls no helper) would be
+    // reported as depending on whatever its enclosing function calls.
+    // That is a property of the enclosing function, which the ACT
+    // explicitly leaves on the C side of the seam.
     I64 lo = start;
     I64 hi = end;
-    if (!StrEq(func, "-")) {
-      for (I64 z = 0; z < nrows; z = z + 1) {
-        if (!StrEq(rows[z].func, func)) continue;
-        if (!StrEq(rows[z].path, path)) continue;
-        if (rows[z].start <= start && rows[z].end >= end) {
-          lo = rows[z].start;
-          hi = rows[z].end;
-        }
-      }
-    }
 
     // Extract the byte range and search for the token.
     I64 boff = OffsetOfLine(srcs[fi], lens[fi], lo);
@@ -1009,13 +1183,114 @@ static I64 ModeDepends(U8 *ids_path, U8 *files[], I64 nfiles)
     if (StrEq(token, "-")) toklen = 0;
 
     I64 hit = 0;
+    I64 hit_site = 0;
     if (toklen > 0) {
       for (I64 z = 0; z + toklen <= rlen; z = z + 1) {
         I64 eq = 1;
         for (I64 w = 0; w < toklen; w = w + 1) {
           if (srcs[fi][boff + z + w] != token[w]) { eq = 0; break; }
         }
-        if (eq) { hit = 1; break; }
+        if (eq) { hit = 1; hit_site = 1; break; }
+      }
+    }
+
+    // TRANSITIVE DEPENDENCE.
+    //
+    // A decision may reach the mutable host state through a CALLEE
+    // rather than through its own text.  SUB-005 is the live example:
+    // its own three lines call cctrlIsKeyword, and cctrlIsKeyword
+    // reaches cc->symbol_table through cctrlGetKeyWord -- a SECOND
+    // level.  Searching only the candidate's own bytes would
+    // therefore certify a FALSE "no dependence" claim.
+    //
+    // So the search is EXPANDED to the bodies of the functions the
+    // candidate's range CALLS, and then ONE MORE LEVEL: the functions
+    // THOSE call.  Two levels is exactly the depth at which the live
+    // dependence lives, and two levels is still a bounded expansion.
+    if (!hit && toklen > 0) {
+      // Collect the identifiers that the candidate's range calls.
+      U8 *called[MAX_TOKENS];
+      I64 ncalled = 0;
+      I64 r = boff;
+      while (r < eoff && ncalled < MAX_TOKENS) {
+        I64 rc = srcs[fi][r];
+        if (rc == '"' || rc == '\'') { r = SkipQuoted(srcs[fi], lens[fi], r, &r); continue; }
+        if (IsIdChar(rc)) {
+          U8 nm[NAME_MAX];
+          I64 nl = 0;
+          while (r < eoff && IsIdChar(srcs[fi][r])) {
+            if (nl < NAME_MAX - 1) { nm[nl] = srcs[fi][r]; nl = nl + 1; }
+            r = r + 1;
+          }
+          nm[nl] = 0;
+          I64 s = r;
+          while (s < eoff && IsSpaceCh(srcs[fi][s])) s = s + 1;
+          if (s < eoff && srcs[fi][s] == '(' && nl > 0 && !IsCKeyword(nm) && !IsTypeToken(nm)) {
+            I64 dup = 0;
+            for (I64 z = 0; z < ncalled; z++) if (StrEq(called[z], nm)) dup = 1;
+            if (!dup) { called[ncalled] = DupStr(nm); ncalled = ncalled + 1; }
+          }
+          continue;
+        }
+        r = r + 1;
+      }
+      // Search the body of each called function, and of the functions
+      // THAT calls, in the LIVE census.
+      for (I64 level = 0; level < 2 && !hit; level = level + 1) {
+        I64 nnext = 0;
+        for (I64 z = 0; z < ncalled && !hit; z = z + 1) {
+          for (I64 g = 0; g < LIVEFUNC_COUNT; g++) {
+            if (!StrEq(LIVEFUNC[g].name, called[z])) continue;
+            I64 gfi = -1;
+            for (I64 q = 0; q < nsearch; q = q + 1) if (StrEq(searchfiles[q], LIVEFUNC[g].path)) gfi = q;
+            if (gfi < 0) continue;
+            U8 *gsrc = srcs[gfi];
+            I64 glen_total = lens[gfi];
+            if (gfi >= nfiles) { gsrc = hcsrc; glen_total = hclen; }
+            I64 gb = OffsetOfLine(gsrc, glen_total, LIVEFUNC[g].start);
+            I64 ge = OffsetOfLine(gsrc, glen_total, LIVEFUNC[g].end + 1);
+            if (ge > glen_total) ge = glen_total;
+            I64 glen = ge - gb;
+            if (glen < 0) glen = 0;
+            // Search the body for the token.
+            for (I64 y = 0; y + toklen <= glen; y = y + 1) {
+              I64 eq = 1;
+              for (I64 w = 0; w < toklen; w = w + 1) {
+                if (gsrc[gb + y + w] != token[w]) { eq = 0; break; }
+              }
+              if (eq) { hit = 1; hit_site = 2; break; }
+            }
+            if (hit) break;
+            // Collect the functions THIS one calls, for the next level.
+            if (level == 0) {
+              I64 q = gb;
+              while (q < ge && nnext < MAX_TOKENS) {
+                I64 qc = gsrc[q];
+                if (qc == '"' || qc == '\'') { q = SkipQuoted(gsrc, glen_total, q, &q); continue; }
+                if (IsIdChar(qc)) {
+                  U8 nm[NAME_MAX];
+                  I64 nl = 0;
+                  while (q < ge && IsIdChar(gsrc[q])) {
+                    if (nl < NAME_MAX - 1) { nm[nl] = gsrc[q]; nl = nl + 1; }
+                    q = q + 1;
+                  }
+                  nm[nl] = 0;
+                  I64 s = q;
+                  while (s < ge && IsSpaceCh(gsrc[s])) s = s + 1;
+                  if (s < ge && gsrc[s] == '(' && nl > 0 && !IsCKeyword(nm) && !IsTypeToken(nm)) {
+                    I64 dup = 0;
+                    for (I64 w = 0; w < nnext; w++) if (StrEq(called[w], nm)) dup = 1;
+                    if (!dup) { called[nnext] = DupStr(nm); nnext = nnext + 1; }
+                  }
+                  continue;
+                }
+                q = q + 1;
+              }
+            }
+          }
+        }
+        ncalled = nnext;
+        if (ncalled == 0) break;
       }
     }
 
@@ -1024,8 +1299,10 @@ static I64 ModeDepends(U8 *ids_path, U8 *files[], I64 nfiles)
       "CANDIDATE_ID=%s\nDETECTOR=UNBOUND_DEPENDENCY\nREASON=EMPTY_MUTABLE_STATE_TOKEN\n", id;
       unbound = unbound + 1;
     } else if (hit) {
-      "CANDIDATE_ID=%s\nDETECTOR=MUTABLE_HOST_STATE_DEPENDENCE\nMUTABLE_STATE_TOKEN=%s\nFILE=%s\nENCLOSING_RANGE=%d..%d\n",
-        id, token, path, lo, hi;
+      U8 *site = "DIRECT_IN_THE_CANDIDATE_RANGE";
+      if (hit_site == 2) site = "TRANSITIVE_THROUGH_A_CALLEE";
+      "CANDIDATE_ID=%s\nDETECTOR=MUTABLE_HOST_STATE_DEPENDENCE\nMUTABLE_STATE_TOKEN=%s\nFILE=%s\nENCLOSING_RANGE=%d..%d\nDEPENDENCE_SITE=%s\n",
+        id, token, path, lo, hi, site;
       dependent = dependent + 1;
     } else {
       "CANDIDATE_ID=%s\nDETECTOR=NONE\nRESULT=NO_MUTABLE_HOST_STATE_DEPENDENCE\nMUTABLE_STATE_TOKEN=%s\nFILE=%s\nENCLOSING_RANGE=%d..%d\n",
@@ -1250,6 +1527,10 @@ I32 Main(I32 argc, U8 **argv)
   if (StrEq(argv[1], "CENSUS")) {
     if (argc < 4) { "STATUS=FAIL\nREASON=ARGC\n"; return 2; }
     return ModeCensus(argv[2], &argv[3], argc - 3);
+  }
+  if (StrEq(argv[1], "REGISTRY")) {
+    if (argc < 5) { "STATUS=FAIL\nREASON=ARGC\n"; return 2; }
+    return ModeRegistry(argv[2], argv[3], &argv[4], argc - 4);
   }
   if (StrEq(argv[1], "IDENTITY")) {
     if (argc < 4) { "STATUS=FAIL\nREASON=ARGC\n"; return 2; }
