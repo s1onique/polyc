@@ -6,9 +6,11 @@
 #
 # The row COUNT is a RESULT of coverage, not a definition of coverage.
 # The counts below are DERIVED from the live source: the domain is the
-# live AstKind enum (44 values, src/ast.h) plus the out-of-enum probes
+# live AstKind enum (41 values, src/ast.h) plus the out-of-enum probes
 # that the RECON04 oracle already executes (-4..0 and 296..300), which
-# together are the 51 rows the committed oracle produced.
+# together are the 51 rows the committed oracle produced (41 distinct enum
+# values plus the 10 probe rows, of which 6 are truly out-of-enum and 4
+# duplicate enum values 296..299).
 #
 # The successor MUST derive its own row count from the live enum and
 # MUST report it; it MUST NOT hard-code 51.
@@ -18,9 +20,9 @@
 #   <TAB> expected_rows_at_recon04 <TAB> notes
 #
 P01	ACCEPTED	every AstKind value in the TERMINATING set terminates the arm	derived from the live src/ast.h enum values named in the live source condition	6	The six kinds are AST_GOTO, AST_RETURN, AST_COMPOUND_STMT, AST_BREAK, AST_CASE, AST_DEFAULT
-P02	REJECTED	every other AstKind value does NOT terminate the arm	live src/ast.h enum values minus P01	38	The remaining 38 enum values
+P02	REJECTED	every other AstKind value does NOT terminate the arm	live src/ast.h enum values minus P01	35	The remaining 35 enum values
 P03	BOUNDARY	the enum's first and last values	live src/ast.h enum bounds	2	AST_GVAR is the first enum value; AST_THROW is the last
-P04	BOUNDARY	the out-of-enum probes immediately below and above the enum	live src/ast.h enum bounds plus/minus one	7	-4..0 and 296..300; these are values no live AstKind can take
+P04	BOUNDARY	the out-of-enum probes immediately below and above the enum	live src/ast.h enum bounds plus/minus one	10	-4..0 and 296..300; 296..299 are ALSO enum values (AST_BINOP, AST_UNOP, AST_TRY, AST_THROW), so 6 of these 10 are truly out-of-enum and 4 duplicate an enum value
 P05	ALIASING	the same AstKind value appearing in more than one row role	every enum value appears exactly once	0	There is no aliasing in this domain: the input is a single enum value, not a record
 P06	PROJECTION_EDGE	a kind value that is NEITHER terminating nor non-terminating because it is out of the enum	the out-of-enum probes	7	Same rows as P04; they are recorded under both partitions because they probe both the projection edge AND the enum boundary
 P07	ERROR_FAILURE	the component has no failure path, so there is no error row	the ABI is a total function over the domain	0	FAILURE_SEMANTICS=NO_FAILURE_PATH

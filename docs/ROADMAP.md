@@ -6926,3 +6926,120 @@ migrating operator classifiers.
 See
 `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE05.md` and
 `evidence/ACT-POLYC-SELFHOST-PARSER-SLICE05/`.
+
+#### ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04 status (CLOSED PASS at this commit)
+
+```
+ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04
+  CLASS       = SELFHOST / PARSER / STRUCTURAL-SURFACE-RECON
+  ENTRY       = 2210726 (ACT-POLYC-SELFHOST-PARSER-SLICE05 C4: CLOSE)
+  Predecessor = ACT-POLYC-SELFHOST-PARSER-SLICE05  CLOSED PASS
+  Authorization artifact: docs/acts/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04.md
+  Evidence:   evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04/
+```
+
+**What it did.**  Re-inventoried the parser/AST surface from the LIVE
+source bytes after five parser migrations, reconciled the historical
+reconnaissance by exact set difference, re-measured the PARSER01
+dependency blockers, and selected exactly ONE next migration target.
+
+**The census.**  268 live functions across `src/parser.c` (58),
+`src/prslib.c` (41), `src/prsutil.c` (27) and `src/ast.c` (142).  The
+census is DERIVED by the ACT's own PolyC tool from the source bytes,
+not transcribed; every row carries the SHA-256 of its source range,
+and every row re-verifies against the live tree with zero mismatches.
+Every symbol has exactly one authority classification; zero are
+unclassified and zero are UNKNOWN.
+
+**The reconciliation.**  RECON03's 121 rows become 268.  The measured
+set differences are zero removed in every file, with 1 / 16 / 130 added
+and a named explanation for each: the SLICE03 stage0 oracle, the
+functions of `src/prsutil.c` RECON03 did not enumerate, and the 130
+functions of `src/ast.c` RECON03 did not enumerate because it inventoried
+only that file's parser-facing primitives.
+
+**The structural discovery.**  Twelve sub-slices over the six required
+regions.  Four are bounded `STRUCTURAL_BOUNDARY` candidates:
+
+```
+SUB-001  parseCaseLabel                 the switch-arm termination decision
+SUB-002  parseDefaultStatement          the default-arm termination decision
+SUB-003  parseCompoundStatementInternal  the compound-block statement routing
+SUB-004  parseStatement                 the statement keyword dispatch
+```
+
+Eight are `INELIGIBLE_STRUCTURAL` with a NAMED reason, including the
+three whole-function ABIs, the recovery checkpoint and the recursive
+flow-analysis walks.  One candidate that LOOKED bounded was REJECTED
+after reading the live source: `cctrlIsKeyword` consults the mutable
+host symbol table, so the declaration-versus-statement routing
+decision is not bounded.
+
+**The selection.**  Computed by the UNMODIFIED canonical 13-clause
+checker and the UNMODIFIED canonical R0..R6 ranker, with the ranker's
+`eligible` column taken from the CHECKER'S output (zero mismatches on
+the join).  Fourteen eligibility controls and nine ranking controls
+were executed against the real instruments; each eligibility control
+drives its TARGETED clause bit to zero.
+
+```
+ELIGIBLE_CANDIDATES            = 16
+ELIGIBLE_STRUCTURAL_CANDIDATES = 4
+ELIGIBLE_SCALAR_CANDIDATES     = 12
+SELECTED_CANDIDATE             = SUB-001
+SELECTED_CANDIDATE_CLASS       = STRUCTURAL_BOUNDARY
+SELECTED_RANK                  = 1
+SELECTED_CANDIDATE_COUNT       = 1
+```
+
+The C3 recomputation, which re-derives the eligibility from the C1
+facts without reading the C2 eligible column, reproduces the WHOLE
+ranked order identically.
+
+**The selected target.**  The switch-arm termination decision at
+`src/parser.c:1551..1553`: given the parsed statement's `AstKind`,
+decide whether the case arm's statement loop terminates.  It is a
+pure `SCALAR -> SCALAR` decision over ONE copied enum value, it decides
+which statements belong to which arm, and it has a real production
+consumer.
+
+```
+POLYC_ABI = I64 BootstrapSwitchArmTerminates(I64 ast_kind) -> I64
+```
+
+**The causal proof was EXECUTED.**  A real git worktree of this
+repository was built, the production source was mutated there, the
+compiler was REBUILT SUCCESSFULLY, and the same witness was run
+against all three compilers.  The compiled program output CHANGED
+with the mutation and returned BYTE-IDENTICAL on restoration.  The
+tracked source in the main repository was never modified.
+
+**Conservation.**  376/376 parser assertions across 90 test files with
+a byte-identical assertion sequence; all three lexer direct
+differentials pass; the LEXER07 broad corpus failure-IDENTITY set is
+identical; gate-fast and gate-push both PASS.
+
+```
+PRODUCTION_SEMANTIC_DELTA   = 0
+SUCCESSOR_IMPLEMENTATION_DELTA = 0
+NEW_PARSER_FAILURE_IDENTITIES = 0
+NEW_LEXER_FAILURE_IDENTITIES  = 0
+```
+
+**What remains blocked.**  `parseCompoundStatementInternal`,
+`parseStatement` and `parseExpr` as whole functions, the recursive
+flow-analysis walks, and the declaration-versus-statement routing
+decision.  The successor migrates a SMALLER decision while the
+enclosing authorities stay on the C side.
+
+**Next milestone:** `ACT-POLYC-SELFHOST-PARSER-SLICE06`.  It must
+implement exactly `SUB-001`: add the PolyC component, delegate the one
+production condition under a dedicated macro so the legacy C body is
+compiled out, produce four independently compiled generations, run
+the direct differential against the real legacy oracle, repeat the
+production causal experiment with the POLYC decision mutated, and hold
+the conservation baseline.
+
+See
+`docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04.md` and
+`evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04/`.
