@@ -1,0 +1,75 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE05
+ACT_PHASE=C2-IMPL
+EVIDENCE_KIND=real-oracle-build
+
+THE REAL LEGACY C ORACLE
+=======================
+
+THE ORACLE OBJECT
+----------------
+COMMAND=make build/slice05-ast-legacy.o
+OUTPUT:
+  cc -std=c99 -O2 -Isrc -c -o build/slice05-ast-legacy.o src/ast.c
+  SLICE05_LEGACY_ORACLE=build/slice05-ast-legacy.o (delegation OFF: the real legacy body is executed)
+BUILD_EXIT_CODE=0
+
+  The build FAILS if the object references the PolyC component:
+    "slice05-ast-legacy.o: the object references the PolyC component;
+     the delegation flag is NOT off"
+
+  The check is MECHANICAL (nm), not a claim in a document.
+
+COMMAND=nm build/slice05-ast-legacy.o | grep -i "unaryopfromtoken\|BootstrapAst"
+000000000000078c T _astUnaryOpFromToken
+
+  ORACLE_OBJECT_CONTAINS_LEGACY_DECISION=YES
+    The object defines _astUnaryOpFromToken (type T).
+  ORACLE_OBJECT_REFERENCES_POLYC_SYMBOL=NO
+    The object contains NO reference to _BootstrapAstUnaryOpFromToken.
+
+THE ORACLE DRIVER
+---------------
+COMMAND=make build/slice05-oracle-driver
+BUILD_EXIT_CODE=0
+
+  The driver contains NO mapping table: it declares the real
+  function, defines the distinguished sentinel 12345, calls the
+  real function, and prints the observed result.
+
+COMMAND=grep -c "case \|switch" tools/quality/parser-slice05-oracle-driver.c
+  ORACLE_DRIVER_HAS_DUPLICATE_MAPPING=NO
+
+THE ORACLE OUTPUT (the ten accepted tokens)
+---------------------------------------------
+COMMAND=./build/slice05-oracle-driver 816 817 773 774 43 45 126 33 38 42
+816	1	2
+817	1	3
+773	1	0
+774	1	1
+43	1	4
+45	1	5
+126	1	7
+33	1	6
+38	1	8
+42	1	9
+
+THE ORACLE OUTPUT (rejected tokens: the output is UNCHANGED)
+-----------------------------------------------------------------
+COMMAND=./build/slice05-oracle-driver 999999 32 0 -1 772 775 815 818
+999999	0	12345
+32	0	12345
+0	0	12345
+-1	0	12345
+772	0	12345
+775	0	12345
+815	0	12345
+818	0	12345
+
+THE ORACLE OUTPUT (the second distinct initial output value)
+----------------------------------------------------------
+COMMAND=./build/slice05-oracle-driver --initial=54321 45 999999
+45	1	5
+999999	0	54321
+
+  The output storage is left at the INITIAL value on failure, for
+  BOTH distinct initial values.

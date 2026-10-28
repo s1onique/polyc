@@ -1,0 +1,84 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE05
+ACT_PHASE=C2-IMPL
+EVIDENCE_KIND=production-linkage
+
+THE PRODUCTION LINKAGE
+====================
+
+THE CMAKE INTEGRATION
+--------------------
+COMMAND=grep -n "HCC_USE_SELFHOST_PARSER_AST_UNARY\|AST_UNARY_TOKEN_MAP" src/CMakeLists.txt
+801:# The dedicated selector `HCC_USE_SELFHOST_PARSER_AST_UNARY` is defined
+838:option(HCC_USE_SELFHOST_PARSER_AST_UNARY
+842:if (HCC_USE_SELFHOST_PARSER_AST_UNARY)
+843:    if (NOT AST_UNARY_TOKEN_MAP_OBJECT)
+844:        set(AST_UNARY_TOKEN_MAP_OBJECT "${CMAKE_SOURCE_DIR}/../build/parser-ast-unary-subject.o")
+857:    if (NOT AST_UNARY_TOKEN_MAP_TARGET_OBJECT_FORMAT)
+859:            set(AST_UNARY_TOKEN_MAP_TARGET_OBJECT_FORMAT "Mach-O")
+861:            set(AST_UNARY_TOKEN_MAP_TARGET_OBJECT_FORMAT "ELF")
+866:                "Configure with -DAST_UNARY_TOKEN_MAP_TARGET_OBJECT_FORMAT=<Mach-O|ELF> "
+873:    if (NOT AST_UNARY_TOKEN_MAP_NM)
+874:        set(AST_UNARY_TOKEN_MAP_NM "${CMAKE_NM}")
+877:    if (NOT AST_UNARY_TOKEN_MAP_NM)
+882:            "verified. Configure with -DAST_UNARY_TOKEN_MAP_NM=<path to nm> "
+886:    set(_aum_stamp "${AST_UNARY_TOKEN_MAP_OBJECT}.verified")
+891:    if (AST_UNARY_TOKEN_MAP_PRODUCER)
+893:            OUTPUT "${AST_UNARY_TOKEN_MAP_OBJECT}"
+894:            COMMAND "${CMAKE_COMMAND}" -E rm -f "${AST_UNARY_TOKEN_MAP_OBJECT}"
+895:            COMMAND "${AST_UNARY_TOKEN_MAP_PRODUCER}"
+896:                    --install-dir="${AST_UNARY_TOKEN_MAP_PREFIX}"
+897:                    -c "${AST_UNARY_TOKEN_MAP_SOURCE}"
+
+THE VERIFIER TARGET
+--------------------
+  add_custom_target(hcc-ast-unary-token-map-verify
+    COMMAND cmake -DAST_TOKEN_MAP_OBJECT=...
+            -DAST_TOKEN_MAP_EXPECTED_SYMBOL=BootstrapAstUnaryOpFromToken
+            -DAST_TOKEN_MAP_TARGET_OBJECT_FORMAT=...
+            -DAST_TOKEN_MAP_NM=...
+            -P src/cmake/VerifyAstTokenMapObject.cmake
+    COMMAND cmake -DAST_TOKEN_MAP_OBJECT=...
+            -DAST_TOKEN_MAP_STAMP=...
+            -P src/cmake/WriteAstTokenMapObjectStamp.cmake
+    DEPENDS ${AST_UNARY_TOKEN_MAP_OBJECT})
+
+  The verification is a custom TARGET, so its command ALWAYS runs.
+  A custom command with an OUTPUT file would be considered
+  up-to-date whenever that file exists -- the stale-stamp hazard.
+  The stamp file is a RECORD of a successful verification, never
+  the thing that decides whether a verification happens.
+
+  The verification GATES THE LINK:
+    add_dependencies(hcc hcc-ast-unary-token-map-verify)
+    set_property(TARGET hcc APPEND PROPERTY LINK_DEPENDS ...)
+
+  The production compiler is therefore never linked without a
+  verified PolyC AST-unary authority.
+
+THE VERIFIER THAT RAN DURING THE BUILD
+-------------------------------------
+COMMAND=the build log
+ACT-POLYC-SELFHOST-PARSER-SLICE04: AST_TOKEN_MAP_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapAstBinOpFromToken TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapAstBinOpFromToken DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=1584
+ACT-POLYC-SELFHOST-PARSER-SLICE04: AST_TOKEN_MAP_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapAstUnaryOpFromToken TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapAstUnaryOpFromToken DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=1128
+
+  The unary subject passes the SAME generic verifier that the
+  binary subject passes, with the unary expected symbol.  There is
+  no second, weaker verifier to drift.
+
+THE LINK
+--------
+COMMAND=grep -A 2 "target_link_libraries(hcc ${AST_UNARY_TOKEN_MAP_OBJECT})" src/CMakeLists.txt
+    target_link_libraries(hcc ${AST_UNARY_TOKEN_MAP_OBJECT})
+    message(STATUS "ACT-POLYC-SELFHOST-PARSER-SLICE05: production hcc links AST-unary PolyC component: ${AST_UNARY_TOKEN_MAP_OBJECT}")
+    message(STATUS "ACT-POLYC-SELFHOST-PARSER-SLICE05: production hcc VERIFIES the AST-unary subject (both producer and prebuilt modes); "
+
+COMMAND=target_compile_definitions(hcc PRIVATE HCC_USE_SELFHOST_PARSER_AST_UNARY)
+    target_compile_definitions(hcc PRIVATE HCC_USE_SELFHOST_PARSER_AST_UNARY)
+
+  The production compiler is compiled WITH the delegation macro and
+  links the unary subject.  The stage0 compiler is compiled WITHOUT
+  it (-DHCC_USE_SELFHOST_PARSER_AST_UNARY=OFF), which is what breaks
+  the bootstrap cycle: the stage0 compiler produces the subject, so
+  it cannot require it.
+
+PRODUCTION_LINKAGE=POLYC

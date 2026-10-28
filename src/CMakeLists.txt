@@ -793,6 +793,173 @@ if (HCC_USE_SELFHOST_PARSER_AST_BINOP)
                    "target format=${AST_TOKEN_MAP_TARGET_OBJECT_FORMAT}; nm=${AST_TOKEN_MAP_NM}")
 endif()
 
+# ACT-POLYC-SELFHOST-PARSER-SLICE05 C2 IMPL:
+# Link the qualified PolyC BootstrapAstUnaryOpFromToken component into
+# the production hcc binary and enable the AST unary-operator
+# delegation.
+#
+# The dedicated selector `HCC_USE_SELFHOST_PARSER_AST_UNARY` is defined
+# here so the production AST-unary delegation is INDEPENDENT of the
+# parser-padding selector, of the control-flow-token selector, of the
+# operator-precedence selector, of the AST BINARY-operator selector and
+# of the generic lexer `HCC_USE_SELFHOST_COMPONENTS` flag (which would
+# also require linking the lexer subjects).
+#
+# The same fail-closed discipline as the parser-padding,
+# control-flow-token, operator-precedence and AST binary-operator
+# components applies: if the producer is configured, the build graph
+# SCHEDULES the component's production and verifies the exported
+# symbol; if it is not, a missing component is a hard configure error,
+# never a silent legacy fallback.
+#
+# ACT section 7.4: BOTH producer mode and prebuilt-object mode must fail
+# closed before producing a production compiler if the selected
+# component is missing, empty, malformed, undefined-only, local-only,
+# weak-only, or multiply defined.  The verification is a custom TARGET
+# (not an OUTPUT-producing custom command), so the verification command
+# ALWAYS runs and a stale stamp can never decide that the verification
+# is unnecessary.
+#
+# THE VERIFIER IS THE SLICE04 GENERIC ONE, REUSED READ-ONLY.
+#
+# src/cmake/VerifyAstTokenMapObject.cmake is already fully
+# PARAMETERIZED: it takes the object, the expected symbol, the target
+# object format and the nm tool as inputs, and every check is driven
+# from those parameters.  The SLICE04-specific text in its messages is
+# cosmetic.  Reusing it is the ACT's stated preference ("Prefer reusing
+# SLICE04's already-qualified generic verifier when possible without
+# modifying its closed behavior"), and it means the unary subject is
+# checked by exactly the same discipline as the binary subject -- there
+# is no second, weaker verifier to drift.
+#
+# Mach-O naming is NOT hard-coded into the verification: the expected
+# symbol's object-format spelling is derived from the TARGET OBJECT
+# FORMAT, which is passed in explicitly.
+option(HCC_USE_SELFHOST_PARSER_AST_UNARY
+       "Link the AST unary-operator PolyC component into hcc and enable AST unary-operator delegation. ACT-POLYC-SELFHOST-PARSER-SLICE05."
+       ON)
+
+if (HCC_USE_SELFHOST_PARSER_AST_UNARY)
+    if (NOT AST_UNARY_TOKEN_MAP_OBJECT)
+        set(AST_UNARY_TOKEN_MAP_OBJECT "${CMAKE_SOURCE_DIR}/../build/parser-ast-unary-subject.o")
+    endif()
+
+    # ---------------------------------------------------------------------
+    # The TARGET OBJECT FORMAT and the TOOLCHAIN nm are resolved here and
+    # passed EXPLICITLY to the verifier.
+    #
+    # The format must NOT be guessed from the host: during a cross-compile
+    # the host's format is not the target's format.  CMAKE_NM is the
+    # CONFIGURED TOOLCHAIN's nm, so the target object is inspected by a
+    # tool that understands the target format.  If it is not available the
+    # build fails loudly instead of silently substituting a host nm.
+    # ---------------------------------------------------------------------
+    if (NOT AST_UNARY_TOKEN_MAP_TARGET_OBJECT_FORMAT)
+        if (APPLE)
+            set(AST_UNARY_TOKEN_MAP_TARGET_OBJECT_FORMAT "Mach-O")
+        elseif (UNIX AND NOT APPLE)
+            set(AST_UNARY_TOKEN_MAP_TARGET_OBJECT_FORMAT "ELF")
+        else()
+            message(FATAL_ERROR
+                "ACT-POLYC-SELFHOST-PARSER-SLICE05: "
+                "cannot determine the target object format for this platform. "
+                "Configure with -DAST_UNARY_TOKEN_MAP_TARGET_OBJECT_FORMAT=<Mach-O|ELF> "
+                "so the AST-unary symbol spelling can be resolved "
+                "correctly. Refusing to link the production compiler "
+                "without a verified PolyC AST-unary authority.")
+        endif()
+    endif()
+
+    if (NOT AST_UNARY_TOKEN_MAP_NM)
+        set(AST_UNARY_TOKEN_MAP_NM "${CMAKE_NM}")
+    endif()
+
+    if (NOT AST_UNARY_TOKEN_MAP_NM)
+        message(FATAL_ERROR
+            "ACT-POLYC-SELFHOST-PARSER-SLICE05: "
+            "REJECT_NM_FAILURE "
+            "no nm tool is available, so the AST-unary subject cannot be "
+            "verified. Configure with -DAST_UNARY_TOKEN_MAP_NM=<path to nm> "
+            "and re-run cmake.")
+    endif()
+
+    set(_aum_stamp "${AST_UNARY_TOKEN_MAP_OBJECT}.verified")
+
+    # ---------------------------------------------------------------------
+    # PRODUCER MODE: the build graph produces the subject itself.
+    # ---------------------------------------------------------------------
+    if (AST_UNARY_TOKEN_MAP_PRODUCER)
+        add_custom_command(
+            OUTPUT "${AST_UNARY_TOKEN_MAP_OBJECT}"
+            COMMAND "${CMAKE_COMMAND}" -E rm -f "${AST_UNARY_TOKEN_MAP_OBJECT}"
+            COMMAND "${AST_UNARY_TOKEN_MAP_PRODUCER}"
+                    --install-dir="${AST_UNARY_TOKEN_MAP_PREFIX}"
+                    -c "${AST_UNARY_TOKEN_MAP_SOURCE}"
+                    -o "${AST_UNARY_TOKEN_MAP_OBJECT}"
+            DEPENDS "${AST_UNARY_TOKEN_MAP_SOURCE}"
+            COMMENT "ACT-POLYC-SELFHOST-PARSER-SLICE05: producing AST-unary subject ${AST_UNARY_TOKEN_MAP_OBJECT}"
+            VERBATIM)
+        message(STATUS "ACT-POLYC-SELFHOST-PARSER-SLICE05: production hcc SCHEDULES AST-unary subject production: ${AST_UNARY_TOKEN_MAP_OBJECT}")
+    elseif (NOT EXISTS "${AST_UNARY_TOKEN_MAP_OBJECT}")
+        message(FATAL_ERROR
+            "ACT-POLYC-SELFHOST-PARSER-SLICE05: "
+            "REJECT_INVALID_OBJECT "
+            "the AST-unary subject ${AST_UNARY_TOKEN_MAP_OBJECT} does not "
+            "exist and no producer is configured. Produce it with "
+            "./hcc --install-dir=<prefix> -c tools/bootstrap/selfhost-parser-slice05.HC -o ${AST_UNARY_TOKEN_MAP_OBJECT}. "
+            "Or configure with -DAST_UNARY_TOKEN_MAP_PRODUCER=<stage0 hcc> to have the "
+            "build graph produce it. Refusing to link the production "
+            "compiler without a verified PolyC AST-unary authority.")
+    else()
+        message(STATUS "ACT-POLYC-SELFHOST-PARSER-SLICE05: production hcc uses a PREBUILT AST-unary subject: ${AST_UNARY_TOKEN_MAP_OBJECT}")
+    endif()
+
+    # ---------------------------------------------------------------------
+    # The single strict verification gate, shared by BOTH modes.
+    #
+    # The verification is a custom TARGET, not an OUTPUT-producing custom
+    # command.  A custom command with an OUTPUT file is considered
+    # up-to-date whenever that file exists and is newer than its
+    # dependencies -- which is exactly the stale-stamp hazard.  A custom
+    # target's command ALWAYS runs, so the verifier executes on every
+    # relevant production build and the object content is checked every
+    # time.  The stamp file is still written, but it is a RECORD of the
+    # verification (it records the object's SHA), never the thing that
+    # decides whether the verification happens.
+    # ---------------------------------------------------------------------
+    add_custom_target(hcc-ast-unary-token-map-verify
+        COMMAND "${CMAKE_COMMAND}"
+                -DAST_TOKEN_MAP_OBJECT=${AST_UNARY_TOKEN_MAP_OBJECT}
+                -DAST_TOKEN_MAP_EXPECTED_SYMBOL=BootstrapAstUnaryOpFromToken
+                -DAST_TOKEN_MAP_TARGET_OBJECT_FORMAT=${AST_UNARY_TOKEN_MAP_TARGET_OBJECT_FORMAT}
+                -DAST_TOKEN_MAP_NM=${AST_UNARY_TOKEN_MAP_NM}
+                -P "${CMAKE_SOURCE_DIR}/cmake/VerifyAstTokenMapObject.cmake"
+        COMMAND "${CMAKE_COMMAND}"
+                -DAST_TOKEN_MAP_OBJECT=${AST_UNARY_TOKEN_MAP_OBJECT}
+                -DAST_TOKEN_MAP_STAMP=${_aum_stamp}
+                -P "${CMAKE_SOURCE_DIR}/cmake/WriteAstTokenMapObjectStamp.cmake"
+        DEPENDS "${AST_UNARY_TOKEN_MAP_OBJECT}"
+        COMMENT "ACT-POLYC-SELFHOST-PARSER-SLICE05: verifying AST-unary subject ${AST_UNARY_TOKEN_MAP_OBJECT}"
+        VERBATIM
+        USES_TERMINAL)
+
+    # The verification gates the link: the production compiler is never
+    # linked without a verified PolyC AST-unary authority.
+    add_dependencies(hcc hcc-ast-unary-token-map-verify)
+
+    # The link itself must ALSO depend on the object, so the object is
+    # re-read by the linker whenever it changes.
+    set_property(TARGET hcc APPEND PROPERTY
+        LINK_DEPENDS "${AST_UNARY_TOKEN_MAP_OBJECT}")
+
+    target_compile_definitions(hcc PRIVATE HCC_USE_SELFHOST_PARSER_AST_UNARY)
+    target_link_libraries(hcc ${AST_UNARY_TOKEN_MAP_OBJECT})
+    message(STATUS "ACT-POLYC-SELFHOST-PARSER-SLICE05: production hcc links AST-unary PolyC component: ${AST_UNARY_TOKEN_MAP_OBJECT}")
+    message(STATUS "ACT-POLYC-SELFHOST-PARSER-SLICE05: production hcc VERIFIES the AST-unary subject (both producer and prebuilt modes); "
+                   "target format=${AST_UNARY_TOKEN_MAP_TARGET_OBJECT_FORMAT}; nm=${AST_UNARY_TOKEN_MAP_NM}")
+endif()
+
+
 # ACT-POLYC-BOOTSTRAP02 C2 IMPL — opt-in stage1 build that
 # links the B1 PolyC component (BootstrapScanIdent) into a
 # SEPARATE binary (hcc-bootstrap02) which uses the modified

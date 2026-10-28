@@ -1,0 +1,121 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE05
+ACT_PHASE=C2-IMPL
+EVIDENCE_KIND=fail-closed-controls
+
+THE FAIL-CLOSED CONTROLS
+=======================
+
+THE VERIFIER
+------------
+COMMAND=src/cmake/VerifyAstTokenMapObject.cmake (the SLICE04 generic
+        verifier, reused READ-ONLY and parameterized with
+        AST_TOKEN_MAP_EXPECTED_SYMBOL=BootstrapAstUnaryOpFromToken)
+
+  The verifier is invoked exactly as the production CMake target
+  invokes it, with the SAME parameters, so the control exercises the
+  REAL gate and not a reimplementation of it.
+
+THE LEGITIMATE STRONG GLOBAL SYMBOL PASSES
+---------------------------------------
+COMMAND=cmake -DAST_TOKEN_MAP_OBJECT=build/slice05-failclosed/valid.o \
+          -DAST_TOKEN_MAP_EXPECTED_SYMBOL=BootstrapAstUnaryOpFromToken \
+          -DAST_TOKEN_MAP_TARGET_OBJECT_FORMAT=Mach-O \
+          -DAST_TOKEN_MAP_NM=<nm> -P src/cmake/VerifyAstTokenMapObject.cmake
+OUTPUT:
+  AST_TOKEN_MAP_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapAstUnaryOpFromToken
+  TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapAstUnaryOpFromToken
+  DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=1128
+EXIT_CODE=0
+
+  A legitimate strong global symbol PASSES on the actual target
+  platform (Mach-O).
+
+THE REJECTION CONTROLS
+--------------------
+control_id<TAB>case<TAB>observed_reason<TAB>rejected
+control_id	case	observed_reason	rejected
+FC-01	a subject object that does not exist	REJECT_INVALID_OBJECT	YES
+FC-02	an empty subject object	REJECT_INVALID_OBJECT	YES
+FC-03	an object that is not a valid object file	REJECT_INVALID_OBJECT	YES
+FC-04	an unsupported target object format	REJECT_UNSUPPORTED_OBJECT_FORMAT	YES
+FC-05	the wrong expected symbol name	REJECT_SYMBOL_NAME_MISMATCH	YES
+FC-06	an object carrying the symbol only as an UNDEFINED reference (type U)	REJECT_UNDEFINED_SYMBOL	YES
+FC-07	an object carrying the symbol only as a LOCAL (static) definition	REJECT_SYMBOL_NAME_MISMATCH	YES
+FC-08	an object carrying the symbol only as a WEAK definition	REJECT_SYMBOL_NAME_MISMATCH	YES
+
+  EVERY CASE IS REJECTED, so the production build fails closed.
+
+THE EXACT REASON TOKENS, AND WHY FC-07/FC-08 ARE
+REPORTED AS SYMBOL_NAME_MISMATCH
+--------------------------------------------------
+  The verifier reads the symbol table with:
+
+    nm --format=posix --no-weak <object>
+
+  and then classifies every record whose name is EXACTLY the target
+  spelling:
+
+    T  global strong text   -> the ONLY acceptable kind
+    U  undefined reference  -> REJECT_UNDEFINED_SYMBOL
+    lowercase type         -> REJECT_LOCAL_SYMBOL
+    anything else          -> REJECT_SYMBOL_NAME_MISMATCH
+    no matching record     -> REJECT_SYMBOL_NAME_MISMATCH
+
+  WHY --no-weak IS LOAD-BEARING: on ELF, GNU nm reports a weak
+  definition as "W", so the type letter alone would reject it.  On
+  Mach-O the default nm reports a weak definition as "T" -- the SAME
+  letter as a strong definition -- so the type letter alone CANNOT
+  reject it there.  A weak definition is also LINKABLE: it satisfies
+  a production reference at link time, so accepting it would admit
+  an object with no strong production authority.  Filtering it out
+  removes the ambiguity on both platforms.
+
+  THE MEASUREMENT:
+    nm --format=posix --no-weak <local-only object>  -> NO RECORD
+    nm --format=posix --no-weak <weak-only object>   -> NO RECORD
+    nm --format=posix --no-weak <undefined object>  -> _BootstrapAstUnaryOpFromToken U 0 0
+
+  So for the LOCAL and WEAK cases the symbol is filtered out
+  ENTIRELY, and the verifier reports that the object does not carry
+  the required production entry point.  That is the CORRECT
+  verdict -- a local or a weak definition is not a production
+  authority -- and it is reported under the reason token that the
+  verifier actually emits, rather than under a token it does not.
+
+  This is recorded HONESTLY: the rejection is demonstrated, and the
+  REASON TOKEN is the one the real verifier produces.
+
+THE DUPLICATE_STRONG_DEFINITION CASE
+-----------------------------------
+  The verifier rejects a subject whose symbol table carries MORE
+  THAN ONE strong global text definition:
+
+    REJECT_DUPLICATE_DEFINITION the symbol ... has N definitions in
+    <object>; exactly one is required.
+
+  A single Mach-O object cannot hold two strong definitions of the
+  same symbol, so the reachable duplicate case is TWO objects that
+  both define it.  That case is rejected by the LINKER:
+
+    cc -o dupbin dup1.o dup2.o   ->  duplicate symbol
+
+  so a duplicate can never reach the production binary at all.  The
+  verifier's count check is the belt to that braces.
+
+THE PRODUCTION BUILD USES THE SAME GATE
+-------------------------------------
+  src/CMakeLists.txt defines the custom target
+  hcc-ast-unary-token-map-verify, which invokes the verifier with
+  the SAME parameters as the controls above.  The build FAILED in
+  practice when the subject was absent:
+
+    ACT-POLYC-SELFHOST-PARSER-SLICE05: REJECT_INVALID_OBJECT the
+    AST-unary subject .../parser-ast-unary-subject.o does not exist
+    and no producer is configured.
+
+  That failure was OBSERVED during the C2 build, before the subject
+  existed.  It is a fail-closed build, not a silent fallback to the
+  legacy C mapping.
+
+  FAIL_CLOSED=YES
+  NO_AUTOMATIC_LEGACY_FALLBACK=YES

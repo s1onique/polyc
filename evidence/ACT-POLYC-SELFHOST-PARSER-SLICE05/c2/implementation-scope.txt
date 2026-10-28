@@ -1,0 +1,74 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE05
+ACT_PHASE=C2-IMPL
+EVIDENCE_KIND=implementation-scope
+
+THE IMPLEMENTATION SCOPE
+=======================
+
+COMMAND=git diff --stat b7634f9afb6b530f7bac987317754ab35b8dbead
+ Makefile           | 801 ++++++++++++++++++++++++++++++++++++++++++++++++++++-
+ src/CMakeLists.txt | 167 +++++++++++
+ src/ast.c          |  51 +++-
+ 3 files changed, 1017 insertions(+), 2 deletions(-)
+
+THE NEW FILES
+---------------
+  tools/bootstrap/selfhost-parser-slice05.HC
+  tools/quality/parser-slice05-provenance-verifier.HC
+
+THE FROZEN FILES ARE UNCHANGED
+-------------------------------
+COMMAND=shasum -a 256 <file>   compared against the C0 freeze
+
+  140a1a144eea594e7232bc4ed5a43c336c5ada3efd96c791e0deae58e019f9fe  src/ast.h
+  6bc46f3be938c6fae99095d8cf0b1f07104bbf9fc1dfb248aaa3cd5dd721c5f9  src/lexer.h
+  8a8b87602b87cc5dfd8eadee597a85781207fc8316355a7c1d0e5b50585dd326  src/prslib.c
+  4e083ce339aa27a11307a3102ce77a7eaca4ea4ada2b197793d9d752f68bd213  src/lexer.c
+  23d59cc56c3b1e7281fb7e050047cef3297313c6bbf7f55b9ea1146013a153ab  src/parser.c
+  f8fc55531147761e5d72b87898ca1c44081a1b4e1a3cf91c4489178400b1c840  src/cctrl.c
+  8d96aa3a16bd5a42a25ebbe9439b402d83127693c0f490defb81665e56775aa3  src/cctrl.h
+  4a926b5068e114202e460e348f9c72d74a4036f4417211c52181606f760cb823  src/cmake/VerifyAstTokenMapObject.cmake
+  7ae56adae12962e3413e5657f95e05bc454b9ab3d4f3986757172dbbf9bb7175  src/cmake/WriteAstTokenMapObjectStamp.cmake
+  43f3b95933a6d87aca9824b0337d416abeddc24bfb25743413554be922c8f63d  tools/bootstrap/selfhost-parser-slice04.HC
+  b555b76b484edda5830abba46dbda803a12ec1834f9ab0a64763f5899f2452f3  tools/bootstrap/selfhost-parser-padding.HC
+  77199636db559024365fffc168cd191c1281593452682aab80005151e6baf196  tools/bootstrap/selfhost-parser-control-flow-token.HC
+  3e7a9cf4983e8b625ab3e004dba15b4afcaddb7c83c18f234adf89b9c8468979  tools/bootstrap/selfhost-parser-operator-precedence.HC
+  69171f79b6666f1b8b648247e6ff1d44abfe6bad8e783e9611868dbaa1731c67  tools/quality/parser-slice04-provenance-verifier.HC
+  c06487c26a4b313e8c099c8cfc8d92c711db64e007171765fd04f6bcacc5e850  tools/quality/parser-slice04-differential.HC
+  26505f6344b812cc3dd240921ab92dfb2973e1fc70ca6ea2fde75e368893c286  tools/quality/parser-slice04-fixture-integrity.HC
+  7e49dee5ebc63402a42fdcefba41042adaa2b1a71d1dfe988dc389c7c4115c80  tools/quality/parser-slice04-fixture-producer.HC
+  470ae3a3c487ecb0601b3ae319f1448137eddfe5ae28d00e4f4b24a6f7105cc6  tools/quality/parser-slice04-oracle-driver.c
+  6db3aca87babeb43dd750c7bb7da333522c910ba0e9aaae9a639da58400eae2e  tools/quality/parser-slice04-oracle-stub.c
+
+  Every hash above is IDENTICAL to the C0 freeze in
+  c0/source-freeze.tsv.  NONE of these files changed.
+
+WHAT CHANGED IN src/ast.c
+-----------------------
+  ONLY the body of astUnaryOpFromToken: the delegation branch was
+  added, and the legacy switch was moved into the #else branch.
+
+  The BINARY classifier astBinOpFromToken is BYTE-IDENTICAL to the
+  entry HEAD:
+COMMAND=git diff b7634f9afb6b530f7bac987317754ab35b8dbead -- src/ast.c
+OUTPUT:
+@@ -285,6 +285,54 @@ int astBinOpFromToken(s64 op, AstBinOp *_result) {
+@@ -296,10 +344,11 @@ int astUnaryOpFromToken(s64 op, AstUnOp *_result) {
+  The single hunk starts at line 287, which is the unary
+  classifier.  The binary classifier (lines 206..236) is untouched.
+
+WHAT CHANGED IN src/CMakeLists.txt
+----------------------------
+  ONLY a NEW BLOCK for the unary subject, mirroring the existing
+  binary block.  No existing line was modified:
+COMMAND=git diff b7634f9afb6b530f7bac987317754ab35b8dbead -- src/CMakeLists.txt | grep -c "^-[^-]"
+  (the count of removed lines; 0 means nothing was removed)
+0
+0
+
+WHAT CHANGED IN THE Makefile
+----------------------------
+  The subject variables, the production inputs, the stage0 selector,
+  the three cmake configure blocks, the production symbol check,
+  and the new SLICE05 qualification targets.  No existing rule
+  was removed.

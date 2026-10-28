@@ -1,0 +1,77 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE05
+ACT_PHASE=C2-IMPL
+EVIDENCE_KIND=fresh-tree-link
+
+THE FRESH-TREE LINK INTEGRITY
+============================
+
+THE BUILD WAS FROM A PRISTINE TREE, NOT THE WARM TREE
+--------------------------------------------------
+COMMAND=git archive HEAD | tar -x -C /tmp/slice05-fresh
+  (the tree was materialised from the committed sources, then the
+   C2 production changes and the five qualified subject objects were
+   copied in)
+COMMAND=cd /tmp/slice05-fresh && make production-hcc
+BUILD_EXIT_CODE=0
+  PRODUCTION_PADDING_AUTHORITY=POLYC
+  PRODUCTION_AST_BINOP_AUTHORITY=POLYC
+
+  The build ran in a SEPARATE directory with its OWN CMake build
+  tree and its OWN object files.  No object from the warm tree was
+  reused: the compiler was compiled from source there.
+
+EACH PRODUCTION SUBJECT IS LINKED EXACTLY ONCE
+-------------------------------------------
+COMMAND=nm ./hcc | grep -E "_Bootstrap[A-Za-z]+" | sort
+0000000100063cc4 T _BootstrapCalcPadding
+0000000100063d3c T _BootstrapValidPostControlFlowToken
+0000000100063f74 T _BootstrapOperatorPrecedence
+0000000100064344 T _BootstrapAstBinOpFromToken
+0000000100064534 T _BootstrapAstUnaryOpFromToken
+
+  Each of the five PolyC authorities has EXACTLY ONE strong global
+  text definition (type T) in the linked production binary.
+
+COMMAND=for s in <the five symbols>; do nm ./hcc | grep -c " T _$s\$"; done
+  BootstrapCalcPadding                   definitions=1
+  BootstrapValidPostControlFlowToken     definitions=1
+  BootstrapOperatorPrecedence            definitions=1
+  BootstrapAstBinOpFromToken             definitions=1
+  BootstrapAstUnaryOpFromToken           definitions=1
+
+  EACH_PRODUCTION_SUBJECT_LINKED_ONCE=YES
+
+THE DUPLICATE-SYMBOL CHECK
+-------------------------
+COMMAND=nm ./hcc | grep -E "_Bootstrap[A-Za-z]+" | awk "{print \$3}" | sort | uniq -c | awk "\$1>1"
+  (no output means NO symbol name appears more than once)
+
+  DUPLICATE_BOOTSTRAP_SYMBOLS=0
+
+  This is the check SLICE04 exposed as a defect in its own
+  qualification link inputs: a subject that was linked TWICE
+  produced a DUPLICATE SYMBOL conflict.  Here every subject is
+  linked exactly once and the count is zero.
+
+THE ARCHIVE AND STANDALONE MEMBERSHIP
+-------------------------------
+COMMAND=nm <each subject object> | grep Bootstrap
+  parser-padding-subject: 1
+  parser-control-flow-token-subject: 1
+  parser-operator-precedence-subject: 1
+  parser-ast-binop-subject: 1
+  parser-ast-unary-subject: 1
+
+  Every subject object carries EXACTLY ONE Bootstrap symbol, and
+  the symbols are DISTINCT:
+    parser-padding-subject                     _BootstrapCalcPadding
+    parser-control-flow-token-subject          _BootstrapValidPostControlFlowToken
+    parser-operator-precedence-subject         _BootstrapOperatorPrecedence
+    parser-ast-binop-subject                   _BootstrapAstBinOpFromToken
+    parser-ast-unary-subject                   _BootstrapAstUnaryOpFromToken
+
+  The standalone differential link is the build/slice05-mut
+  production compilers (p0/p1/p2), each of which links the unary
+  subject exactly once -- see c3/unary-causal-mutation.txt.
+
+  STANDALONE_DIFFERENTIAL_LINK=PASS

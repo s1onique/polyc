@@ -1,0 +1,59 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE05
+ACT_PHASE=C2-IMPL
+EVIDENCE_KIND=negative-controls
+
+THE EIGHT FIXTURE NEGATIVE CONTROLS
+==================================
+
+COMMAND=make parser-slice05-negative-controls
+OUTPUT:
+SLICE05_NEGATIVE_CONTROLS=RUN
+SLICE05_NC_01: a missing accepted token
+SLICE05_NC_01=verifier=integrity exit_code=nonzero result=PASS
+  FIXTURE_INTEGRITY_MISSING_IDS=1
+  FIXTURE_INTEGRITY_UNTESTED_ACCEPTED_TOKENS=0
+  FIXTURE_INTEGRITY_STATUS=FAIL
+SLICE05_NC_02: a duplicate fixture id
+SLICE05_NC_02=verifier=integrity exit_code=nonzero result=PASS
+  FIXTURE_INTEGRITY_DUPLICATE_IDS=1
+  FIXTURE_INTEGRITY_STATUS=FAIL
+SLICE05_NC_03: an unknown fixture id
+SLICE05_NC_03=verifier=integrity exit_code=nonzero result=PASS
+  FIXTURE_INTEGRITY_OUT_OF_RANGE_IDS=0
+  FIXTURE_INTEGRITY_STATUS=FAIL
+SLICE05_NC_04: an indented unknown row
+SLICE05_NC_04=verifier=integrity exit_code=nonzero result=PASS
+  FIXTURE_INTEGRITY_UNKNOWN_RECORDS=1
+  FIXTURE_INTEGRITY_STATUS=FAIL
+SLICE05_NC_05: INT64_MAX replaced with a 32-bit-truncated value
+SLICE05_NC_05=verifier=integrity exit_code=nonzero result=PASS
+  FIXTURE_INTEGRITY_UNTESTED_FAILURE_STORAGE_CASES=1
+  FIXTURE_INTEGRITY_STATUS=FAIL
+SLICE05_NC_06: a prefix/postfix case changed WITHOUT changing the row count
+SLICE05_NC_06=verifier=differential exit_code=nonzero result=PASS
+  SLICE05_DIFF_ORACLE_VS_EXPECTED_MISMATCH=1
+  SLICE05_DIFF_POLYC_VS_EXPECTED_MISMATCH=1
+  SLICE05_DIFF_STATUS=FAIL
+SLICE05_NC_07: a changed expected enum
+SLICE05_NC_07=verifier=differential exit_code=nonzero result=PASS
+  SLICE05_DIFF_ORACLE_VS_EXPECTED_MISMATCH=1
+  SLICE05_DIFF_POLYC_VS_EXPECTED_MISMATCH=1
+  SLICE05_DIFF_STATUS=FAIL
+SLICE05_NC_08: a failed lookup that OVERWRITES its initialized output
+SLICE05_NC_08=verifier=differential exit_code=nonzero result=PASS
+  SLICE05_DIFF_ORACLE_VS_EXPECTED_MISMATCH=1
+  SLICE05_DIFF_POLYC_VS_EXPECTED_MISMATCH=1
+  SLICE05_DIFF_STATUS=FAIL
+SLICE05_NEGATIVE_CONTROLS=PASS (8/8 mutations rejected)
+  FIXTURE_NEGATIVE_CONTROLS=PASS
+RC=0
+
+THE VERDICT
+------------
+  FIXTURE_NEGATIVE_CONTROLS=PASS (8/8)
+
+  Each control MUTATED A COPY of the fixture and ran the REAL
+  PolyC verifier against it.  A control passes only when the
+  verifier REJECTED the mutant AND reported the relevant reason.
+  A nonzero exit code alone was NOT accepted as the evidence: the
+  reason counters are shown above for every control.
