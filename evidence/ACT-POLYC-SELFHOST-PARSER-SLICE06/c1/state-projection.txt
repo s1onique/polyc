@@ -1,0 +1,124 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE06
+ACT_PHASE=C1-EVIDENCE
+EVIDENCE_KIND=state-projection
+
+THE BOUNDED HOST-STATE PROJECTION
+=================================
+
+The projection is inherited, unchanged, from the predecessor's frozen
+c2/selected-state-projection.tsv.  It is re-verified against the LIVE
+source here.
+
+  SELECTED_CANDIDATE=SUB-001
+  SELECTED_SOURCE_FILE=src/parser.c
+  SELECTED_SOURCE_START=1551
+  SELECTED_SOURCE_END=1553
+  SELECTED_SOURCE_SHA256=31dc9ae8f87d26be429a565356820d8913c9a7cbc0e37d64470049c3b5948707
+
+  PROJECTION_FIELD_COUNT=1
+  PROJECTION_SCALAR_TYPE=I64
+  PROJECTION_RESULT_TYPE=I64
+  PROJECTION_BOUNDED=YES
+  PROJECTION_POINTER_CROSSING=NONE
+  PROJECTION_CALLBACK_CROSSING=NONE
+  PROJECTION_JMP_BUF_CROSSING=NONE
+  PROJECTION_OPAQUE_GRAPH_CROSSING=NONE
+
+THE ONE FIELD
+-------------
+  field        stmt->kind
+  host_object  Ast (the statement just parsed by parseStatement)
+  access       READ
+  copied_into  kind
+  copied_type  I64
+  bounded      YES
+  owner_after  C (the C side reads it and passes the integer)
+
+NOTHING ELSE IS READ.
+
+THE LIVE PROJECTION SITE
+------------------------
+COMMAND=grep -n 'parseSwitchArmTerminates' src/parser.c
+  1517:static int parseSwitchArmTerminates(int kind)
+  1535:    return (int)BootstrapSwitchArmTerminates((long long)kind);
+  1654:        if (parseSwitchArmTerminates((int)stmt->kind)) break;
+
+The C side reads EXACTLY ONE host field -- stmt->kind -- copies it as
+an I64, passes it to the PolyC component, receives ONE I64 back, and
+acts on it by executing the `break` itself.
+
+THE DECISION MAKES NO HOST-GRAPH WRITE, NO ALLOCATION, NO CALLBACK,
+NO RECOVERY TRANSFER AND NO DIAGNOSTIC.  The single effect on the host
+is the `break` that the C side executes, which the C side would have
+executed anyway.
+
+THE PROJECTION IS THEREFORE:
+
+  C-owned source values            stmt->kind (one AstKind enum value)
+         |
+         v
+  explicit scalar/copy projection   stmt->kind -> I64 kind
+         |
+         v
+  PolyC decision                    I64 kind -> I64 terminate (0 or 1)
+         |
+         v
+  bounded result                    one bounded boolean
+         |
+         v
+  C-owned mutation/orchestration    if (terminate) break;   (the C side)
+
+NO OPAQUE POINTER CROSSES: there is no void *, no encoded pointer and
+no callback table.  THE JMP_BUF DOES NOT MOVE.
+
+THE ABI IS BOUNDED
+------------------
+  ABI=I64 BootstrapSwitchArmTerminates(I64 ast_kind) -> I64
+  INPUT_FIELDS=1
+  INPUT_TYPE=I64
+  OUTPUT_FIELDS=1
+  OUTPUT_TYPE=I64
+  OUTPUT_DOMAIN={0,1}
+  MAX_SIZE_IN=8
+  MAX_SIZE_OUT=8
+  FAILURE_SEMANTICS=NO_FAILURE_PATH
+
+The component is a TOTAL function over the I64 domain: every I64 maps
+to exactly one of {0, 1}.  There is no error return, no exception, no
+diagnostic and no recovery interaction.
+
+THE CAST CHAIN IS EXACT
+-----------------------
+The legacy C wrapper is `int(int)` and the PolyC ABI is
+`I64 -> I64`.  The chain is
+
+  (int)stmt->kind -> (long long)kind -> (long long)ast_kind -> (int)result
+
+The AstKind values are small non-negative integers and the result is a
+boolean, so every step is exact and no value is truncated.  The I64
+domain is fully covered by the component regardless, because the
+component's OWN parameter is an I64 and its comparisons are against
+the six exact enum values.
+
+THE OUT-OF-ENUM DOMAIN IS NOT TRUNCATED
+---------------------------------------
+The legacy condition does NOT range-check the kind: it compares the
+value against six constants and terminates the arm if any of them
+matches.  An out-of-enum value matches none of them, so the arm
+CONTINUES.  The PolyC component reproduces this exactly: it has NO
+range check, so the out-of-enum probes -4..0 and 300 all return 0,
+exactly as the legacy object-level oracle reports.
+
+THE OWNERSHIP AFTER THE MIGRATION
+---------------------------------
+  RECOVERY_OWNER=C
+  AST_GRAPH_OWNER=C
+  SYMBOL_TABLE_OWNER=C
+  TOKEN_STREAM_OWNER=C
+  DIAGNOSTIC_OWNER=C
+  LONGJMP_TARGET_OWNER=C
+  ERROR_MESSAGE_OWNER=C
+  TOKEN_REWIND_OWNER=C
+  ALLOCATION_OWNER=C
+  THE_BREAK_THAT_LEAVES_THE_ARM_LOOP=C
+  THE_ARM_TERMINATION_DECISION=PolyC

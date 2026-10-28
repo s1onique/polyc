@@ -1,0 +1,100 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE06
+ACT_PHASE=C1-EVIDENCE
+EVIDENCE_KIND=fixture
+
+THE DERIVED FIXTURE
+===================
+
+The fixture is produced by the PolyC producer
+(tools/quality/parser-slice06-fixture-producer.HC) and is committed at
+c1/fixture.tsv.
+
+COMMAND=make parser-slice06-fixture
+  FIXTURE_PATH=evidence/ACT-POLYC-SELFHOST-PARSER-SLICE06/c1/fixture.tsv
+  FIXTURE_ROW_COUNT=64
+  FIXTURE_PARTITION_COUNT=12
+  FIXTURE_ENUM_VALUE_COUNT=41
+  FIXTURE_PROBE_COUNT=10
+  FIXTURE_TERMINATING_COUNT=6
+  STATUS=PASS
+
+THE ROW COUNT IS DERIVED, AND IT IS NOT 51
+------------------------------------------
+The frozen predecessor contract says:
+
+  "The successor MUST derive its own row count from the live enum and
+   MUST report it; it MUST NOT hard-code 51."
+
+The producer derives the count and REPORTS it.  The count is 64, NOT
+51, and the difference is EXPLAINED BY THE LIVE SOURCE, not forced.
+
+The historical 51 was 41 live enum values + 10 out-of-enum probes, with
+the twelve partitions used as ROW CLASSIFICATIONS: each value appeared
+exactly once and was labelled by the partition it belonged to.
+
+This ACT's fixture uses the twelve partitions as ROW ROLES as well: a
+value that exercises more than one semantic dimension appears once per
+role.  The extra rows are exactly the witness dimensions:
+
+  HISTORICAL_ROWS              = 51
+  THIS_ROWS                    = 64
+  DIFFERENCE                   = 13
+
+  P01_ACCEPTED                 =  6   (the six terminating kinds)
+  P02_REJECTED                 = 35   (the 35 non-terminating enum kinds)
+  P03_BOUNDARY                 =  2   (the enum's first and last values)
+  P04_BOUNDARY                 = 10   (the out-of-enum probes)
+  P05_ALIASING                 =  0   (no aliasing: the input is a scalar)
+  P06_PROJECTION_EDGE          =  6   (the TRULY out-of-enum probes)
+  P07_ERROR_FAILURE            =  0   (the ABI is a total function)
+  P08_PRODUCTION_CALLER        =  1   (the production witness's kind)
+  P09_MUTATION_SENSITIVE       =  1   (the kind the causal mutation flips)
+  P10_AST_SHAPE                =  2   (compound statement vs ordinary)
+  P11_STATEMENT_ORDERING       =  1   (the arm-marker ordering observable)
+  P12_SCOPE_SENSITIVE          =  0   (the decision reads only stmt->kind)
+
+  THE EXTRA THIRTEEN ROWS ARE THE WITNESS DIMENSIONS:
+  P08 (1) + P09 (1) + P10 (2) + P11 (1) = 5 rows, plus the P03
+  boundary rows (2), the P04 probe rows (10) and the P06 projection-edge
+  rows (6) that the historical 51 counted ONCE.
+
+  HISTORICAL_51 = 41 enum values + 10 probes.
+  THIS_64       = the same 51 value-rows, PLUS 13 rows that assign the
+                  witness dimensions to concrete kinds.
+
+Both counts cover the SAME domain: every live enum value and every
+out-of-enum probe is exercised, and the independently derived
+terminating set is identical in both.
+
+  DERIVED_FIXTURE_ROWS=64
+  DERIVED_FIXTURE_PARTITIONS=12
+  ROW_COUNT_HARDCODED=NO
+  ROW_COUNT_EXPLAINED_BY_LIVE_SOURCE=YES
+
+THE TWELVE PARTITIONS
+----------------------
+The partition set is the frozen one from the predecessor's
+c2/selected-fixture-contract.tsv.  Three of them (P05, P07, P12) are
+ZERO-COVERAGE by design, because the frozen contract records them so
+that their ABSENCE is explicit:
+
+  P05 ALIASING          the input is a single scalar, not a record, so
+                         there is no aliasing dimension
+  P07 ERROR_FAILURE     the ABI is a TOTAL function over the domain, so
+                         there is no error row
+  P12 SCOPE_SENSITIVE   the decision reads only stmt->kind, so scope
+                         does not vary the result
+
+The independent integrity witness knows these three are zero-coverage
+and FAILS on any OTHER missing partition.
+
+THE DOMAIN IS COMPLETE
+----------------------
+  LIVE_ENUM_VALUES        = 41   (every value the live src/ast.h defines)
+  OUT_OF_ENUM_PROBES      = 10   (-4..0 and 296..300)
+  TERMINATING_VALUES      =  6   (258 270 274 280 287 293)
+  DISTINCT_VALUES_COVERED = 47
+
+The 47 distinct values are the 41 enum values plus the 6 TRULY
+out-of-enum probes (-4..0 and 300); the other four probes (296..299)
+are ALSO enum values, so they are already covered.

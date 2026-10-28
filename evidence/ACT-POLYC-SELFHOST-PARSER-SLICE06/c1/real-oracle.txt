@@ -1,0 +1,162 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE06
+ACT_PHASE=C1-EVIDENCE
+EVIDENCE_KIND=real-oracle
+
+THE OBJECT-LEVEL G0 ORACLE (THE STRONGER FORM)
+==============================================
+
+The predecessor's frozen oracle contract (c2/selected-oracle-contract.md
+section 4) required the successor to STRENGTHEN the source-bound
+extraction to the object-level form:
+
+  * compile src/parser.c with the delegation OFF and extract the
+    decision from that OBJECT, so the oracle comes from the real
+    production translation unit rather than from a copy; and
+  * verify that the delegation-ON object does NOT contain the legacy
+    condition.
+
+This file records that STRENGTHENED oracle.
+
+THE G0 OBJECT
+--------------
+COMMAND=cc -std=c99 -O2 -Isrc -c -o build/slice06-parser-legacy.o src/parser.c
+  (exit 0)
+
+This is the ACTUAL production translation unit src/parser.c, compiled
+WITHOUT HCC_USE_SELFHOST_PARSER_SWITCH_ARM, so the legacy
+arm-termination condition -- the byte-identical legacy source -- is the
+code that executes.
+
+COMMAND=nm build/slice06-parser-legacy.o | grep '_ParserLegacySwitchArmTerminatesOracle'
+  0000000000003254 T _ParserLegacySwitchArmTerminatesOracle
+
+COMMAND=nm build/slice06-parser-legacy.o | grep -c 'BootstrapSwitchArmTerminates'
+  0
+
+The object defines the legacy decision's wrapper and does NOT reference
+the PolyC component: the delegation is genuinely OFF.
+
+THE MAKEFILE RULE FAILS CLOSED ON THAT
+---------------------------------------
+The rule build/slice06-parser-legacy.o in the Makefile FAILS the build
+if the object references _BootstrapSwitchArmTerminates, so the "the
+delegation was not off" condition cannot pass silently.
+
+  SLICE06_LEGACY_ORACLE=./build/slice06-parser-legacy.o (delegation OFF:
+  the real legacy body is executed)
+
+THE G0 ORACLE DRIVER
+--------------------
+COMMAND=make build/slice06-oracle-driver
+  (exit 0)
+
+COMMAND=./build/slice06-oracle-driver
+  51 rows
+
+The driver calls the REAL legacy decision through the narrow adapter
+(tools/quality/parser-slice06-oracle-adapter.c), which calls the tiny
+wrapper that src/parser.c itself exposes adjacent to the decision
+(ParserLegacySwitchArmTerminatesOracle).  The adapter contains NO
+terminating-set table and NO decision logic.
+
+THE OBJECT-LEVEL G0 AGREES WITH THE FROZEN EXTRACTION
+------------------------------------------------------
+The frozen predecessor oracle (the C-extracted decision) was built and
+run at this tree:
+
+COMMAND=cc -std=c99 -O1 -I src -o build/slice06-oracle/legacy-sub001-oracle \
+    evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON04/c2/probes/legacy-sub001-oracle.c
+  (exit 0)
+
+COMMAND=diff <g0-object-level output> <frozen-extraction output>
+  (no output: the two files are IDENTICAL)
+
+  G0_OBJECT_LEVEL_IDENTICAL_TO_FROZEN_EXTRACTION=YES
+
+COMMAND=awk '$2==1{printf "%s ", $1} END{print ""}' <g0 output>
+  258 270 274 280 287 293
+
+  G0_ROWS=51
+  G0_TERMINATING_KINDS=258 270 274 280 287 293
+
+THE MUTANT ORACLE DIFFERS IN EXACTLY ONE ROW
+--------------------------------------------
+COMMAND=diff <g0 output> <mutant-oracle output>
+  16c16
+  < 274	1
+  ---
+  > 274	0
+
+  G0_MUTATION_CONFINED_TO_ONE_ROW=YES
+
+THE DELEGATION-ON OBJECT DOES NOT CONTAIN THE LEGACY CONDITION
+================================================================
+COMMAND=nm build/CMakeFiles/hcc.dir/parser.c.o | grep 'BootstrapSwitchArmTerminates'
+                 U _BootstrapSwitchArmTerminates
+
+The production object carries the PolyC symbol as an UNDEFINED
+reference and does NOT define it.
+
+COMMAND=otool -tV build/CMakeFiles/hcc.dir/parser.c.o | grep -A 6 '_ParserLegacySwitchArmTerminatesOracle:'
+  _ParserLegacySwitchArmTerminatesOracle:
+  00000000000031fc	stp	x29, x30, [sp, #-0x10]!
+  0000000000003200	mov	x29, sp
+  0000000000003204	sxtw	x0, w0
+  0000000000003208	bl	0x3208
+  000000000000320c	sxtw	x0, w0
+  0000000000003210	ldp	x29, x30, [sp], #0x10
+  0000000000003214	ret
+
+The production wrapper is a PURE CALL: there is NO comparison, no
+branch and no constant.  The legacy condition is compiled out.
+
+COMMAND=otool -tV build/slice06-parser-legacy.o | grep -A 14 '_ParserLegacySwitchArmTerminatesOracle:'
+  _ParserLegacySwitchArmTerminatesOracle:
+  0000000000003254	sub	w8, w0, #0x102
+  0000000000003258	cmp	w8, #0x23
+  000000000000325c	b.hi	0x3284
+  0000000000003260	mov	w9, #0x1
+  0000000000003264	lsl	x8, x9, x8
+  0000000000003268	mov	x9, #0x1001
+  000000000000326c	movk	x9, #0x2041, lsl #16
+  0000000000003270	movk	x9, #0x8, lsl #32
+  0000000000003274	tst	x8, x9
+  0000000000003278	b.eq	0x3284
+  000000000000327c	mov	w0, #0x1
+  0000000000003280	ret
+  0000000000003284	mov	x0, #0x0
+  0000000000003288	ret
+
+The G0 object contains the REAL decision: it subtracts 0x102 (=258,
+AST_GOTO, the lowest terminating value), range-checks against 0x23
+(=35 = 293-258) and tests a 64-bit BITSET for exactly the six
+terminating kinds.
+
+NOTE ON WHEN THIS WAS MEASURED
+-------------------------------
+The production object above was measured on the WORKING TREE that
+carries both the C1 oracle seam and the C2 production wiring, because
+the object-level G0 oracle and the delegated production object must
+coexist for the differential to be meaningful: a differential run
+against the delegated build would compare the PolyC component against
+itself and would be vacuous.
+
+The C2 commit carries the production wiring (the CMake selector and
+the call-site delegation).  The C1 commit carries ONLY the oracle
+seam: the decision function with its delegation `#ifdef` and the
+legacy wrapper.  With the macro UNDEFINED -- which is the C1 tree's
+state -- the C1 tree's production object still contains the LEGACY
+condition, and the C2 commit's tree does not.
+
+The C1 tree's production object is therefore NOT yet free of the
+legacy condition; the C2 commit is what retires it.  The C1 claim is
+only that the G0 ORACLE is object-level, that it agrees with the
+frozen extraction, and that the delegation mechanism (the `#ifdef`
+inside parseSwitchArmTerminates) is in place.  The production
+authority transfer is a C2 claim, verified in c2/production-delegation.txt.
+
+  LEGACY_CONDITION_IN_PRODUCTION_OBJECT=NO (measured on the combined
+                                        working tree; retired at C2)
+  LEGACY_CONDITION_IN_G0_OBJECT=YES
+  G0_ORACLE_IS_OBJECT_LEVEL=YES
+  PRODUCTION_DELEGATION_IS_LOAD_BEARING=YES (verified at C2)

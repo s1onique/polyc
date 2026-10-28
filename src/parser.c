@@ -1477,6 +1477,91 @@ void parseRaiseCaseException(Cctrl *cc, Ast *case_expr) {
     cctrlRaiseExceptionFromTo(cc, suggestion, 'c', ':', "`case` must be followed by an integer constant got - %s", exp);
 }
 
+/* ACT-POLYC-SELFHOST-PARSER-SLICE06 C2 IMPL: the switch-case ARM
+ * TERMINATION decision.
+ *
+ * The decision is the legacy condition that was inline at
+ * src/parser.c:1551..1553:
+ *
+ *   if (stmt->kind == AST_COMPOUND_STMT || stmt->kind == AST_CASE ||
+ *           stmt->kind == AST_DEFAULT || stmt->kind == AST_BREAK || stmt->kind == AST_RETURN
+ *           || stmt->kind == AST_GOTO) break;
+ *
+ * It is now a FUNCTION so that the C side and the quality oracle can
+ * both reach the SAME decision, and so that the delegation can be
+ * switched by the dedicated macro, exactly as CalcPadding does.
+ *
+ * The function reads ONE host value -- the AstKind of the statement
+ * that was just parsed -- and returns a BOOLEAN.  It does not touch
+ * the AST graph, the allocation, the diagnostics, the recovery point or
+ * the token stream.
+ *
+ * The legacy body below is the BYTE-IDENTICAL legacy condition, with
+ * the single substitution `stmt->kind` -> `kind`.  It is reachable
+ * ONLY in a build without HCC_USE_SELFHOST_PARSER_SWITCH_ARM (the G0
+ * legacy oracle object).  Production ./hcc is built with the macro
+ * defined (see src/CMakeLists.txt) and therefore always routes through
+ * BootstrapSwitchArmTerminates.
+ *
+ * The dedicated macro name (rather than the generic
+ * HCC_USE_SELFHOST_COMPONENTS) is required because that generic
+ * selector also activates the lexer delegations in src/lexer.c, which
+ * would require linking the lexer subjects too.  This migration is
+ * independent of the lexer migrations and is scoped to its own flag.
+ *
+ * The PolyC ABI is `I64 ast_kind -> I64 terminate` (scalar purity per
+ * the frozen ABI contract).  The legacy C wrapper is `int(int)`.  The
+ * cast chain `(int) -> (long long) -> (long long) -> int` is exact:
+ * the AstKind values are small non-negative integers and the result is
+ * a boolean, all of which fit in an int without loss. */
+static int parseSwitchArmTerminates(int kind)
+{
+#ifdef HCC_USE_SELFHOST_PARSER_SWITCH_ARM
+    /* ACT-POLYC-SELFHOST-PARSER-SLICE06 C2 IMPL:
+     * delegate the switch-case arm termination decision to the
+     * qualified PolyC component BootstrapSwitchArmTerminates.
+     *
+     * This adapter does NOT own the decision: the arm-termination
+     * DECISION is made by the PolyC component.  The adapter owns only
+     * the two mechanical duties the original C ABI requires:
+     *
+     *   1. argument projection  (int kind -> I64 ast_kind);
+     *   2. result conversion     (I64 -> the legacy boolean).
+     *
+     * The legacy condition is NOT evaluated before, after or alongside
+     * the delegation, and there is no shadow call and no fallback to
+     * C. */
+    extern long long BootstrapSwitchArmTerminates(long long ast_kind);
+    return (int)BootstrapSwitchArmTerminates((long long)kind);
+#else
+    /* Stage0 evidence path: the byte-identical legacy condition.
+     * Reachable only in non-HCC_USE_SELFHOST_PARSER_SWITCH_ARM builds
+     * (the differential's slice06-parser-legacy.o).  Production never
+     * executes this branch. */
+    if (kind == AST_COMPOUND_STMT || kind == AST_CASE ||
+            kind == AST_DEFAULT || kind == AST_BREAK || kind == AST_RETURN
+            || kind == AST_GOTO) return 1;
+    return 0;
+#endif
+}
+
+/* ACT-POLYC-SELFHOST-PARSER-SLICE06 C2 IMPL: tiny ABI wrapper adjacent
+ * to the arm-termination decision.  Forwards to the actual legacy
+ * decision (whose body is unchanged above).  Used by
+ * tools/quality/parser-slice06-oracle-adapter.c so the quality oracle
+ * reaches the actual legacy authority instead of duplicating the
+ * condition.  Adds zero new logic; does not modify the decision or any
+ * existing production caller.
+ *
+ * The oracle MUST come from a build in which the delegation flag is
+ * OFF, so the legacy body is the one being executed.  A differential
+ * run against the delegated build would compare the PolyC component
+ * against itself and would be vacuous. */
+long long ParserLegacySwitchArmTerminatesOracle(long long ast_kind)
+{
+    return (long long)parseSwitchArmTerminates((int)ast_kind);
+}
+
 Ast *parseCaseLabel(Cctrl *cc, Lexeme *tok) {
     if (cc->tmp_case_list == NULL) {
         cctrlRaiseException(cc,"unexpected 'case' found");

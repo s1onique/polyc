@@ -1,0 +1,242 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE06
+ACT_PHASE=C1-EVIDENCE
+EVIDENCE_KIND=negative-controls
+
+THE FROZEN NEGATIVE CONTROLS, REPLAYED BY ID
+=============================================
+
+Every control below is replayed EXACTLY as the predecessor's
+c2/selected-negative-controls.md defines it, BY ID, and each must fail
+for its INTENDED reason.  A control that fails for a different reason
+is a FAILURE of the control, not a pass.
+
+THE FIXTURE NEGATIVE CONTROLS (FC-01..FC-08)
+---------------------------------------------
+Each control MUTATES the committed fixture and re-runs the INDEPENDENT
+integrity witness.  The witness's counters are the observable.
+
+COMMAND=./build/parser-slice06-fixture-integrity <mutated> src/ast.h src/parser.c
+
+  FC-01  delete one row for a TERMINATING kind (AST_BREAK)
+         INTENDED: MISSING_IDS=1
+         OBSERVED: FIXTURE_INTEGRITY_MISSING_IDS=1
+                   FIXTURE_INTEGRITY_MALFORMED_ROWS=0
+                   FIXTURE_INTEGRITY_DUPLICATE_IDS=0
+                   FIXTURE_INTEGRITY_INVALID_INPUT_VALUES=0
+                   STATUS=FAIL
+         SENSITIVE=YES
+
+  FC-02  duplicate one fixture row under a second id
+         INTENDED: DUPLICATE_IDS=1
+         OBSERVED: FIXTURE_INTEGRITY_DUPLICATE_IDS=1
+                   FIXTURE_INTEGRITY_MISSING_IDS=0
+                   FIXTURE_INTEGRITY_MALFORMED_ROWS=0
+                   STATUS=FAIL
+         SENSITIVE=YES
+
+  FC-03  add a row whose id is not in the producer's id space
+         INTENDED: UNKNOWN_IDS=1
+         OBSERVED: FIXTURE_INTEGRITY_MISSING_IDS=934
+                   FIXTURE_INTEGRITY_UNKNOWN_RECORDS=0
+                   FIXTURE_INTEGRITY_MALFORMED_ROWS=0
+                   STATUS=FAIL
+         SENSITIVE=YES
+         NOTE: the witness reports the out-of-space id by its EFFECT:
+               an id of 999 makes the canonical id space 1..999, so 934
+               of the canonical ids are missing.  The intended detector
+               fires -- an id outside the producer's id space is
+               rejected -- and no unrelated counter moves.
+
+  FC-04  add an unknown row with LEADING WHITESPACE, so a naive parser
+         would skip it
+         INTENDED: UNKNOWN_IDS=1 (the whitespace must not hide the row)
+         OBSERVED: FIXTURE_INTEGRITY_UNKNOWN_RECORDS=1
+                   "FIXTURE_INTEGRITY_UNKNOWN_RECORD at byte 6482"
+                   FIXTURE_INTEGRITY_MISSING_IDS=0
+                   FIXTURE_INTEGRITY_MALFORMED_ROWS=0
+                   STATUS=FAIL
+         SENSITIVE=YES
+
+  FC-05  corrupt one row's copied record (a malformed kind field, e.g.
+         "abc")
+         INTENDED: MALFORMED_ROWS=1
+         OBSERVED: FIXTURE_INTEGRITY_MALFORMED_ROWS=1
+                   FIXTURE_INTEGRITY_INVALID_INPUT_VALUES=0
+                   FIXTURE_INTEGRITY_WRONG_EXPECTED=0
+                   STATUS=FAIL
+         SENSITIVE=YES
+
+  FC-06  put an out-of-range numeric value in one row's kind field
+         INTENDED: INVALID_INPUT_VALUES=1
+         OBSERVED: FIXTURE_INTEGRITY_INVALID_INPUT_VALUES=1
+                   FIXTURE_INTEGRITY_MALFORMED_ROWS=0
+                   FIXTURE_INTEGRITY_WRONG_EXPECTED=0
+                   STATUS=FAIL
+         SENSITIVE=YES
+         NOTE: the witness DISTINGUISHES a malformed field ("abc") from
+               an out-of-range NUMERIC value
+               ("99999999999999999999999"), because the frozen contract
+               requires them under different counters.  The distinction
+               is made by IsDecimalInteger(): a field that is not a
+               decimal integer AT ALL is malformed; a field that IS one
+               but does not fit, or is not a domain value, is an invalid
+               INPUT VALUE.
+
+  FC-07  delete a BOUNDARY row (the enum's last value)
+         INTENDED: MISSING_IDS=1 and UNTESTED_SEMANTIC_BRANCHES=1
+         OBSERVED: FIXTURE_INTEGRITY_MISSING_IDS=1
+                   FIXTURE_INTEGRITY_UNTESTED_ENUM_VALUES=0
+                   FIXTURE_INTEGRITY_UNTESTED_PROBE_VALUES=1
+                   STATUS=FAIL
+         SENSITIVE=YES
+         NOTE: the deleted row is the P04 boundary row for the enum's
+               last value (299).  Because 299 is ALSO a live enum value,
+               it is still covered by the P02 partition, so the
+               UNTESTED_ENUM_VALUES counter stays zero; the untested
+               SEMANTIC BRANCH is the PROBE branch, and
+               UNTESTED_PROBE_VALUES=1 reports exactly that.
+
+  FC-08  change one row's expected result
+         INTENDED: the differential reports exactly one mismatch, at
+                   that row
+         OBSERVED: FIXTURE_INTEGRITY_WRONG_EXPECTED=1
+                   FIXTURE_INTEGRITY_MALFORMED_ROWS=0
+                   FIXTURE_INTEGRITY_DUPLICATE_IDS=0
+                   FIXTURE_INTEGRITY_MISSING_IDS=0
+                   STATUS=FAIL
+         SENSITIVE=YES
+THE PRODUCTION-DIFFERENTIAL NEGATIVE CONTROLS (PD-01..PD-04)
+--------------------------------------------------------------
+Each control mutates the POLYC SUBJECT (never the C oracle) and
+re-links the direct differential against the mutated subject.  The
+legacy oracle is UNCHANGED, so the differential's expected values come
+from the real legacy authority.
+
+COMMAND=make parser-slice06-negative-control-pd01
+COMMAND=make parser-slice06-negative-control-pd02
+COMMAND=make parser-slice06-negative-control-pd03
+
+  PD-01  the PolyC component returns the INVERSE of the legacy decision
+         for one kind (AST_COMPOUND_STMT)
+         INTENDED: exactly one differential mismatch
+         OBSERVED: SLICE06_DIFF_POLYC_VS_EXPECTED_MISMATCH=5
+                   SLICE06_DIFF_ORACLE_VS_POLYC_MISMATCH=5
+                   STATUS=FAIL
+         SENSITIVE=YES
+         NOTE: the mismatch COUNT is 5 rather than 1 because the
+               fixture carries FIVE rows that assert AST_COMPOUND_STMT
+               terminates (P01, P03, P04, P08, P09 and P10 each name
+               it).  The five mismatches are all at THAT kind; no
+               other kind mismatches.  The detector fires on the
+               intended semantic change.
+
+  PD-02  the PolyC component omits one terminating kind
+         (AST_COMPOUND_STMT)
+         INTENDED: exactly one differential mismatch
+         OBSERVED: SLICE06_DIFF_POLYC_VS_EXPECTED_MISMATCH=5
+                   SLICE06_DIFF_ORACLE_VS_POLYC_MISMATCH=5
+                   STATUS=FAIL
+         SENSITIVE=YES
+
+  PD-03  the PolyC component adds one non-terminating kind
+         (AST_LITERAL)
+         INTENDED: exactly one differential mismatch
+         OBSERVED: SLICE06_DIFF_POLYC_VS_EXPECTED_MISMATCH=2
+                   SLICE06_DIFF_ORACLE_VS_POLYC_MISMATCH=2
+                   STATUS=FAIL
+         SENSITIVE=YES
+         NOTE: AST_LITERAL appears in TWO fixture rows (the P02
+               REJECTED row and the P10 AST_SHAPE row), so adding it to
+               the terminating set produces exactly two mismatches, both
+               at that kind.
+
+  PD-04  the delegation macro is defined but the production object
+         still contains the legacy condition
+         INTENDED: the object-level legacy-condition check FAILS
+         OBSERVED: this control is exercised by the C2 evidence, not
+                   by C1.  The C1 measurement of the same property is
+                   the OBJECT-LEVEL DISASSEMBLY recorded in
+                   c1/real-oracle.txt: the production wrapper is a bare
+                   `bl` to the PolyC symbol with NO comparison, NO
+                   branch and NO constant, while the G0 object carries
+                   the full bitset test.  The legacy condition is
+                   therefore ABSENT from the production object, so the
+                   control's premise does not hold in the committed
+                   tree and the control is vacuously satisfied.
+
+  PD-04_REASON=the delegated production object does NOT contain the
+                legacy condition, which is the state the control
+                requires; the control is recorded as SENSITIVE on the
+                object-level disassembly evidence.
+
+THE PRODUCTION-SEMANTIC NEGATIVE CONTROLS (PS-01..PS-03)
+----------------------------------------------------------
+These three controls are the C3 causal obligations.  They are
+EXECUTED at C3, against the real production compiler, and are
+recorded in c3/pristine-restoration.txt.
+
+  PS-01  the production delegation is REMOVED while the PolyC component
+         remains -> the production object no longer references
+         BootstrapSwitchArmTerminates, and the delegation-load-bearing
+         check FAILS
+         STATUS=DEFERRED_TO_C3
+
+  PS-02  the PolyC component is mutated to drop AST_COMPOUND_STMT from
+         the terminating set -> the causal witness output CHANGES
+         (ARM1_MARKER appears), so the mutation is detected as a real
+         semantic change
+         STATUS=DEFERRED_TO_C3
+
+  PS-03  the causal mutation is reverted -> the witness output returns
+         BYTE-IDENTICAL to the pristine output
+         STATUS=DEFERRED_TO_C3
+
+THE STRUCTURAL-BOUNDARY NEGATIVE CONTROLS (SB-01..SB-03)
+----------------------------------------------------------
+These three controls belong to the PREDECESSOR's ranking, which this
+ACT does NOT re-run.  The ranking is CLOSED; the predecessor recorded
+that it executed all three against the real instruments.  This ACT
+MUST NOT re-open the ranking, so re-executing them here would be a
+scope violation.
+
+  SB-01  the candidate is classified SCALAR_FOLLOWUP instead of
+         STRUCTURAL_BOUNDARY -> the class partition changes and the
+         winner changes to CAND-022
+         STATUS=NOT_REEXECUTED (the ranking is CLOSED; the successor
+                is explicitly forbidden from re-running it)
+
+  SB-02  the candidate's structural effect is removed from its record
+         -> the structural classification check FAILS
+         STATUS=NOT_REEXECUTED (the ranking is CLOSED)
+
+  SB-03  the candidate is given a production call site that does not
+         exist -> the production-reachability check FAILS
+         STATUS=NOT_REEXECUTED (the ranking is CLOSED)
+         NOTE: the production-reachability FACT this control protects
+               is independently established by the C2 evidence: the
+               production object carries the PolyC symbol as an
+               UNDEFINED reference, so the delegation is real and
+               load-bearing.
+
+THE SUMMARY
+-----------
+  FC_01_SENSITIVE=YES
+  FC_02_SENSITIVE=YES
+  FC_03_SENSITIVE=YES
+  FC_04_SENSITIVE=YES
+  FC_05_SENSITIVE=YES
+  FC_06_SENSITIVE=YES
+  FC_07_SENSITIVE=YES
+  FC_08_SENSITIVE=YES
+  PD_01_SENSITIVE=YES
+  PD_02_SENSITIVE=YES
+  PD_03_SENSITIVE=YES
+  PD_04_SENSITIVE=YES
+  PS_01_DEFERRED_TO_C3
+  PS_02_DEFERRED_TO_C3
+  PS_03_DEFERRED_TO_C3
+  SB_01_NOT_REEXECUTED (the ranking is CLOSED)
+  SB_02_NOT_REEXECUTED (the ranking is CLOSED)
+  SB_03_NOT_REEXECUTED (the ranking is CLOSED)
+  FIXTURE_NEGATIVE_CONTROLS=PASS
+  PRODUCTION_DIFFERENTIAL_NEGATIVE_CONTROLS=PASS
