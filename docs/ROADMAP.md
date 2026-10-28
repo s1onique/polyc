@@ -7128,3 +7128,47 @@ selection exists.
 See
 `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE06.md` and
 `evidence/ACT-POLYC-SELFHOST-PARSER-SLICE06/`.
+
+---
+
+## ACT-POLYC-SELFHOST-PARSER-SLICE06-AC11-CORRECTION01 -- CLOSE
+
+**Disposition:** `PASS_CORRECTED`.
+
+The frozen SLICE06 AC11 negative-control proof set contained 15 IDs.
+Historical evidence proved nine for their intended reasons, but FC-03
+used the wrong detector, PD-01..PD-03 reported multiple fixture rows
+for one semantic-kind mutation, PD-04 and PS-01 were classified from
+pristine evidence rather than adversely executed, and the historical
+AC11 status row omitted four of the 15 IDs.
+
+The correction executed the missing adverse experiments with real
+production objects and correction-owned PolyC verifiers.  All 15 frozen
+controls are now joined to their exact mutation, detector, exit,
+failure class, provenance, and restoration.
+
+```text
+FROZEN_AC11_CONTROL_COUNT=15
+EXECUTED_FROZEN_AC11_CONTROL_COUNT=15
+UNPROVEN_FROZEN_AC11_CONTROL_COUNT=0
+VACUOUS_AC11_PASS_COUNT=0
+PRODUCTION_SEMANTIC_DELTA=0
+CORRECTION_AC_TOTAL=28
+CORRECTION_AC_PASS=28
+CORRECTION_AC_FAIL=0
+CORRECTION_AC_UNPROVEN=0
+
+PARSER_HOST_ARCH_ASSERTIONS=376/376 over 90 test files
+GATE_FAST=PASS
+GATE_PUSH=PASS
+APPEND_ONLY=PASS
+F14=PASS
+```
+
+The historical LEXER07 and cross-target failures remain recorded
+truthfully.  This correction does not authorize SLICE07 or select
+SUB-002.
+
+See
+`docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE06-AC11-CORRECTION01.md`
+and `evidence/ACT-POLYC-SELFHOST-PARSER-SLICE06-AC11-CORRECTION01/`.
