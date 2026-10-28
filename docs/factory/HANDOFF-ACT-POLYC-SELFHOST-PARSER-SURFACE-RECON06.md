@@ -353,3 +353,66 @@ evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON06/c0/
 
 No `c1/`, `c2/`, `c3/` or `c4/` evidence tree exists, because those
 phases were not executed.
+
+---
+
+## 10. A residue observed at C4, recorded and NOT fixed in place
+
+While preparing the CLOSE, the ACT's executor attempted to build the
+repository's standalone `factory-halt-classification` tool, as EXTRA
+validation of the HALT trailer semantics.  That build fails:
+
+```text
+COMMAND=make factory-halt-classification-binary
+#   error: tools/factory/../../src/holyc-lib/memory.HC:218: error: asm: unexpected token at start of line
+#   error: tools/factory/../../src/holyc-lib/memory.HC:154: error: asm: unexpected token at start of line
+#   (and the same for lines 146, 162, 166, 173, 178, 189, 215)
+#   EXIT=2
+```
+
+This is **NOT** a gate failure and **NOT** a regression introduced by
+this ACT:
+
+* `tools/factory/factory-halt-classification.HC` is **not** wired into
+  `gate-fast` or `gate-push`.  It is a standalone tool; per
+  `AGENTS.md`, "it is NOT yet wired into `gate-fast` and emits its
+  verdict only when invoked explicitly."  Both of this ACT's REQUIRED
+  gates PASS (`gate-fast` VERDICT=PASS, exit 0; `gate-push`
+  VERDICT=PASS, exit 0, LSP 43/43).
+* `git diff 2bafd875 --stat -- src/ tools/bootstrap/` is EMPTY: the
+  production source tree is byte-identical to the entry commit.  The
+  failure is therefore pre-existing and cannot have been caused by
+  this ACT.
+* The production compiler itself is unaffected: a probe compile of
+  this ACT's own PolyC verifier SUCCEEDS in the same environment at
+  the same moment.
+* The failing construct is the inline assembly in
+  `src/holyc-lib/memory.HC`, which that tool's include chain pulls in.
+
+```text
+RESIDUE_CLASS = P2 (deferred improvement)
+RESIDUE_LOCATION = tools/factory/factory-halt-classification.HC's include chain
+                   (src/holyc-lib/memory.HC inline assembly)
+RESIDUE_IS_ON_THIS_ACTS_PRODUCTION_PATH = NO
+RESIDUE_IS_A_GATE = NO
+RESIDUE_CAUSED_BY_THIS_ACT = NO
+RESIDUE_FIXED_IN_THIS_ACT = NO (by design: it is outside the ACT's
+                                authorized scope, and the shared
+                                /tmp/holyc-asm.s race is explicitly
+                                NOT to be fixed within this ACT)
+```
+
+The HALT trailer semantics were instead validated with the repository's
+own CANONICAL checker, which is the authoritative gate for them:
+
+```text
+COMMAND=sh scripts/quality/factory-v2-commit-msg-check.sh <message>
+#   MODE=ACT
+#   ACT=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON06
+#   PHASE=CLOSE
+#   VERDICT=HALT_N06_FROZEN_OBLIGATION_UNPROVEN
+#   HALT_CLASS=GOVERNANCE
+#   BLOCKS_NEXT=NO
+#   STATUS=PASS
+#   EXIT=0
+```

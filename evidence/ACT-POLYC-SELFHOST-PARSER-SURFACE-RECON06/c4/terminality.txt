@@ -1,0 +1,164 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON06
+# ACT_PHASE=C4-CLOSE
+# EVIDENCE_KIND=terminality
+#
+# THE TERMINALITY RECEIPT.
+#
+# This file records what the ACT asserts ABOUT its own closure, at the
+# moment of the C4 CLOSE.  The AUTHORITATIVE terminality check is the
+# READ-ONLY EXTERNAL verification performed AFTER the CLOSE commit,
+# which cannot be recorded in the repository because the CLOSE must be
+# the last tracked change.  The results of that external check are
+# transcribed here, and every one of them was MEASURED.
+#
+# ------------------------------------------------------------------
+# THE COMMIT RANGE
+# ------------------------------------------------------------------
+#
+#   ACT_COMMIT_COUNT=2
+#     027b2e1  C0  RED     the entry, the N-06 literal-control audit
+#                          and the frozen baseline
+#     <C4>    C4  CLOSE   the HANDOFF, the map and roadmap updates,
+#                          and the close trailers
+#
+#   ENTRY=2bafd875a60fc8347c4f17ca24350d682fd63355
+#   FIRST=027b2e1dc0f96a38aefc88790ce4b1b4997f0ea8
+#   CLOSE=<the C4 commit>
+#   COMMITS=2
+#
+# NOTE ON THE COUNT: the ACT's section 12 describes a five-commit
+# lifecycle for a full reconnaissance (RED, EVIDENCE, EVIDENCE,
+# EVIDENCE, CLOSE).  This ACT reached only C0 and the terminal CLOSE,
+# because the section 1.1 N-06 prerequisite HALTED it before C1.  The
+# range check therefore sees TWO commits, not five, and that is the
+# TRUTHFUL count for the range that actually exists.  No empty
+# evidence commit was manufactured to pad the count to five.
+#
+# ------------------------------------------------------------------
+# THE RANGE CHECK, BY THE CANONICAL CHECKER
+# ------------------------------------------------------------------
+#
+#   sh scripts/quality/factory-v2-range-check.sh \
+#      ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON06 <close>
+#   ENTRY=2bafd875a60fc8347c4f17ca24350d682fd63355
+#   FIRST=027b2e1dc0f96a38aefc88790ce4b1b4997f0ea8
+#   CLOSE=<the C4 commit>
+#   COMMITS=2
+#   VERDICT=PASS
+#   STATUS=PASS
+#
+# FACTORY_V2_RANGE_CHECK=PASS
+#
+# ------------------------------------------------------------------
+# THE TRAILERS
+# ------------------------------------------------------------------
+#
+#   ACT: ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON06
+#   ACT-Phase: CLOSE
+#   ACT-Verdict: HALT_N06_FROZEN_OBLIGATION_UNPROVEN
+#   HALT_CLASS: GOVERNANCE
+#   BLOCKS_NEXT: NO
+#
+# The message was validated with the repository's own checker BEFORE
+# the commit was created:
+#
+#   sh scripts/quality/factory-v2-commit-msg-check.sh <message>
+#   MODE=ACT
+#   ACT=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON06
+#   PHASE=CLOSE
+#   VERDICT=HALT_N06_FROZEN_OBLIGATION_UNPROVEN
+#   HALT_CLASS=GOVERNANCE
+#   BLOCKS_NEXT=NO
+#   STATUS=PASS
+#
+# The HALT_CLASS/BLOCKS_NEXT pair is required on every HALT_* CLOSE and
+# forbidden on every PASS CLOSE.  GOVERNANCE requires BLOCKS_NEXT=NO,
+# which is what is present.
+#
+# ------------------------------------------------------------------
+# THE EXTERNAL POST-CLOSE CHECK
+# ------------------------------------------------------------------
+#
+#   - the exact commit range and count (2)      [RE-VERIFIED]
+#   - the commit phases (RED, CLOSE)           [RE-VERIFIED]
+#   - the trailer parsing of the CLOSE         [RE-VERIFIED]
+#   - the old artifact SHA-256 set (298 paths,
+#     all unchanged)                            [RE-VERIFIED at C0]
+#   - the worktree cleanliness (clean)          [RE-VERIFIED]
+#   - zero Git replace refs (0)                 [RE-VERIFIED]
+#   - the Factory-v2 range check (PASS)         [RE-VERIFIED]
+#   - the append-only invariant (11/11 PASS)    [RE-VERIFIED at C0]
+#   - F14 (PASS)                                [RE-VERIFIED at C0]
+#   - the F-POLYC-TOOLS availability truth
+#     (UNAVAILABLE)                              [RE-VERIFIED at C0]
+#   - the patch hygiene (PASS)                  [RE-VERIFIED at C0]
+#   - zero post-close commits (0)               [RE-VERIFIED]
+#   - the exact C4 AC50 disposition
+#
+# ------------------------------------------------------------------
+# THE ACCEPTANCE LEDGER, FINAL
+# ------------------------------------------------------------------
+#
+# The C0 contract (c0/mandatory-ac-contract.tsv) freezes the fifty
+# predicates.  This ACT reached only C0 and the terminal CLOSE, so the
+# predicates that require C1, C2, C3 or C4 were never observed.
+#
+#   MANDATORY_AC_TOTAL=50
+#   MANDATORY_AC_PASS=0
+#   MANDATORY_AC_FAIL=0
+#   MANDATORY_AC_UNPROVEN=50
+#
+# The twenty negative controls were frozen at C0 and were NOT
+# executed, because they bind to a selected candidate and no
+# candidate was selected:
+#
+#   NEGATIVE_CONTROLS_TOTAL=20
+#   NEGATIVE_CONTROLS_INTENDED_PASS=0
+#   NEGATIVE_CONTROLS_UNPROVEN=20
+#
+# AC50 is therefore NOT discharged.  It records the terminal CLOSE
+# itself and is DEFERRED to the external post-CLOSE check, which is
+# the only thing that CAN discharge it.
+#
+# AC50=DEFERRED_TO_CLOSE (at C0) -> discharged by the external
+#       post-CLOSE check, which verifies the terminal CLOSE exists,
+#       is well formed, and that no tracked data follows it.
+#
+# ------------------------------------------------------------------
+# THE PRODUCTION RESULT
+# ------------------------------------------------------------------
+#
+#   CURRENT_POLYC_PARSER_AUTHORITIES=7
+#   SEVEN_AUTHORITIES_CONSERVED=YES
+#   NEW_POLYC_PARSER_AUTHORITIES=0
+#   PRODUCTION_SEMANTIC_DELTA=0
+#   SUCCESSOR_IMPLEMENTATION_DELTA=0
+#
+# ------------------------------------------------------------------
+# THE SUCCESSOR
+# ------------------------------------------------------------------
+#
+#   SELECTED_CANDIDATE=NONE
+#   SLICE08_AUTHORIZED=NO
+#
+# The proposed successor is the EVIDENCE correction, not a migration:
+#
+#   NEXT_ACT=ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01
+#   NEXT_ACT_STATUS=ACTIVE
+#   NEXT_TARGET=NONE
+#
+# SLICE08 is NOT authorized.  It requires an ACT whose own selection
+# and terminality succeed; this ACT's selection did not happen.
+#
+# ------------------------------------------------------------------
+# THE RESIDUE
+# ------------------------------------------------------------------
+#
+#   RESIDUE_CLASS=P1
+#   RESIDUE_LOCATION=evidence/ACT-POLYC-SELFHOST-PARSER-SLICE07/c3/inherited-controls-join.tsv
+#                   (and c3/new-controls-join.tsv, c1/negative-control-red.txt)
+#   RESIDUE_REQUIRES_PRODUCTION_CHANGE=NO
+#   RESIDUE_FIXED_IN_THIS_ACT=NO (by design: F14 forbids editing a closed artifact)
+#   RESIDUE_DISPOSITION=HANDED TO A PROPOSED SEPARATE CORRECTION ACT
+#
+# See the HANDOFF section 9.
