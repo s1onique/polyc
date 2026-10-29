@@ -1,0 +1,143 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=pristine-c-off
+#
+# THE PRISTINE C-OFF CONFIGURATION: A REAL, LEGACY-C-AUTHORITATIVE
+# PRODUCTION COMPILER, BUILT FROM THE SAME ENTRY COMMIT.
+#
+# C-OFF is produced by an EXISTING CMake option, with NO change to
+# any tracked CMake, Makefile or C source.  That is a CONFIGURATION
+# change, which the ACT permits explicitly.
+
+=== THE CONFIGURE COMMAND ===
+
+COMMAND=cmake -S ./src -B build/corr01-c-off -G "Unix Makefiles" \
+        -DCMAKE_C_COMPILER=cc -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=<repo>/build/corr01-c-off/prefix \
+        -DHCC_ENABLE_JIT=on -DHCC_ENABLE_LLVM=OFF \
+        -DHCC_USE_SELFHOST_PARSER_PADDING=ON \
+        -DHCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN=ON \
+        -DHCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE=ON \
+        -DHCC_USE_SELFHOST_PARSER_AST_BINOP=ON \
+        -DHCC_USE_SELFHOST_PARSER_AST_UNARY=ON \
+        -DHCC_USE_SELFHOST_PARSER_SWITCH_ARM=ON \
+        -DHCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND=OFF \
+        -DHCC_RUNTIME_OUTPUT_DIRECTORY=<repo>/build/corr01-c-off/out \
+        (+ the six prebuilt PolyC subject objects and their sources)
+
+CONFIGURE_EXIT=0
+
+=== THE SELECTOR MATRIX (MEASURED) ===
+
+COMMAND=grep -E "^HCC_USE_SELFHOST" build/corr01-c-off/CMakeCache.txt
+HCC_USE_SELFHOST_PARSER_AST_BINOP:BOOL=ON
+HCC_USE_SELFHOST_PARSER_AST_UNARY:BOOL=ON
+HCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND:BOOL=OFF
+HCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN:BOOL=ON
+HCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE:BOOL=ON
+HCC_USE_SELFHOST_PARSER_PADDING:BOOL=ON
+HCC_USE_SELFHOST_PARSER_SWITCH_ARM:BOOL=ON
+
+THE OTHER SIX POLYC PARSER AUTHORITIES ARE RETAINED ON, AS THE
+ACT REQUIRES.  ONLY THE DEDICATED SELECTOR IS OFF.
+
+=== THE BUILD ===
+
+COMMAND=make -C build/corr01-c-off hcc -j2
+   [100%] Linking C executable out/hcc
+   [100%] Built target hcc
+
+COFF_BUILD_EXIT=0
+COFF_HCC=build/corr01-c-off/out/hcc
+COFF_HCC_SHA256=ec6d1866a91638c1976fdf3859ecd651a9b3ac52999edeb1fd8c0c52894d5958
+COFF_PARSER_OBJECT=build/corr01-c-off/CMakeFiles/hcc.dir/parser.c.o
+COFF_PARSER_OBJECT_SHA256=db118ef6d648bdd3ceaf9e4e3965723eeebb14e904dd90880088186d20bf4aac
+
+=== THE ABSENCE OF THE POLYC SUB-003 IMPORT (THE PROVENANCE PROOF) ===
+
+COMMAND=nm build/corr01-c-off/CMakeFiles/hcc.dir/parser.c.o | grep " U _Bootstrap"
+                 U _BootstrapCalcPadding
+                 U _BootstrapSwitchArmTerminates
+                 U _BootstrapValidPostControlFlowToken
+
+COMMAND=nm build/corr01-c-off/CMakeFiles/hcc.dir/parser.c.o | grep -c "U _BootstrapCompoundBlockAppendsStatement"
+0
+
+COMMAND=nm build/corr01-c-off/out/hcc | grep -c "_BootstrapCompoundBlockAppendsStatement"
+0
+
+--- the C-OFF executable contains NO SUB-003 symbol AT ALL: not
+    defined and not undefined.  The PolyC component is not merely
+    unused; it is ABSENT from this build. ---
+
+COFF_SUB003_IMPORT_COUNT=0
+COFF_SUB003_SYMBOL_COUNT_IN_EXECUTABLE=0
+COFF_POLYC_SUBJECT_PRESENT=NO
+
+=== THE LEGACY C DECISION, LIVE, IN THE REAL C-OFF OBJECT ===
+
+COMMAND=otool -tvV build/corr01-c-off/CMakeFiles/hcc.dir/parser.c.o \
+          | awk '/_ParserLegacyCompoundBlockAppendsOracle:/{f=1} f{print}'
+
+_ParserLegacyCompoundBlockAppendsOracle:
+0000000000003734	cmp	w0, #0x107       ; 0x107 == 263 == AST_DECL
+0000000000003738	mov	w8, #0x100       ; 0x100 == 256 == AST_GVAR
+000000000000373c	ccmp	w1, w8, #0x0, eq ; the SHORT-CIRCUITED declvar_kind test
+0000000000003740	cset	w0, ne           ; 0 (SKIP) iff both matched, else 1 (APPEND)
+0000000000003744	ret
+
+THIS IS THE SELECTED C DECISION, COMPILED INTO THE REAL PRODUCTION
+PARSER OBJECT OF THE REAL C-OFF COMPILER:
+
+  - the AST_DECL constant 263 (0x107) is compared against stmt_kind;
+  - the AST_GVAR constant 256 (0x100) is compared against declvar_kind;
+  - the COMPARISON IS SHORT-CIRCUITED (ccmp ... eq), so declvar_kind is
+    consulted ONLY when stmt_kind is already AST_DECL;
+  - the result is the frozen boolean: 0 == SKIP, non-zero == APPEND.
+
+This is the DECISION that the N-06 mutation must attack, and it is
+ACTIVE, not dormant: it is in the object that the production
+executable links.
+
+COFF_LEGACY_C_DECISION_PRESENT_IN_OBJECT=YES
+COFF_AST_DECL_CONSTANT_IN_CODE=263
+COFF_AST_GVAR_CONSTANT_IN_CODE=256
+COFF_SHORT_CIRCUIT_PRESERVED_IN_CODE=YES
+COFF_LEGACY_C_AUTHORITY=ACTIVE
+
+--- THE WITNESS, COMPILED WITH THE REAL C-OFF COMPILER ---
+
+COMMAND=build/corr01-c-off/out/hcc --install-dir=<prefix> \
+            /tmp/corr01-wt/witness-sub003.HC -o <out>
+
+COFF_WITNESS_COMPILE_EXIT=0
+COMMAND=<out>
+WITNESS_OUTPUT=13 15 2
+COFF_WITNESS_RUN_EXIT=0
+COFF_WITNESS_OUTPUT_SHA256=5d6f3a9ef366f5489097fbf3f465e21d53c22647237d4e687442cd0698b23cc9
+
+The C-OFF pristine witness output is BYTE-IDENTICAL to the C-ON
+pristine witness output and to SLICE07's recorded pristine hash
+(5d6f3a9ef366f5489097fbf3f465e21d53c22647237d4e687442cd0698b23cc9).
+This is EXPECTED and is the POINT of the two-configuration design: the
+two configurations AGREE on pristine behaviour, so any difference
+observed after the mutation is attributable to the mutation and not to
+a configuration artifact.
+
+--- THE SOURCE-BOUND FIXTURE, COMPILED WITH THE REAL C-OFF COMPILER ---
+
+COMMAND=build/corr01-c-off/out/hcc --install-dir=<prefix> \
+            /tmp/corr01-wt/fixture-sub003-classes.HC -o <out>
+
+COFF_FIXTURE_COMPILE_EXIT=0
+COMMAND=<out>
+FIXTURE_OUTPUT=7 11 21 5 2
+COFF_FIXTURE_RUN_EXIT=0
+
+THE FOUR FIXTURE CLASSES:
+  F1 = global declaration inside a compound block  ->  7   (SKIPPED)
+  F2 = local declaration inside a compound block   ->  11  (APPENDED)
+  F3 = non-declaration with no declvar            ->  21  (APPENDED)
+  F4 = irrelevant file-scope globals and statements->  5, and g_calls=2
+
+PRISTINE_C_OFF_STATUS=MEASURED

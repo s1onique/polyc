@@ -1,0 +1,89 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=source-binding
+#
+# THE BINDING OF THE SELECTED C DECISION TO EXACT LIVE SOURCE BYTES,
+# THE SELECTION MACRO, AND THE LIVE ENUM CONSTANTS.
+#
+# The ACT is explicit: "source line numbers are not stable IDs".  This
+# file therefore binds the selected decision by its EXACT SOURCE BYTES
+# (a SHA-256 over the byte range), by the FUNCTION that owns it, and by
+# the SELECTION MACRO that gates it -- not by a line number alone.
+#
+# Schema: item_id  value  evidence
+#
+item_id	value	evidence
+SELECTED_DECISION_FUNCTION	parseCompoundBlockAppendsStatement	src/parser.c (static int parseCompoundBlockAppendsStatement(int stmt_kind, int declvar_kind))
+SELECTED_DECISION_CALLER	parseCompoundStatementInternal	src/parser.c (void parseCompoundStatementInternal(Cctrl *cc, Ast *body))
+SELECTED_DECISION_WRAPPER	ParserLegacyCompoundBlockAppendsOracle	src/parser.c (long long ParserLegacyCompoundBlockAppendsOracle(long long, long long))
+SELECTION_MACRO	HCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND	src/CMakeLists.txt (option(... "ON")) and src/parser.c (#ifdef / #else / #endif)
+MACRO_DIRECTION	IFDEF=PolyC delegation / ELSE=legacy C decision	src/parser.c
+C_DECISION_SOURCE_BYTES	if (stmt_kind == AST_DECL && declvar_kind == AST_GVAR) return 0;  /  return 1;	src/parser.c legacy branch, inside the #else arm
+C_DECISION_RANGE_SHA256	60a388fac3903ccd45a8dc5e393794e300251715223e5fc9fac2ad455f10cf2d	shasum -a 256 over the two decision lines
+LEGACY_BRANCH_IS_COMPILED_OUT_IN_CON	YES	the #else arm is excluded when HCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND is defined
+HOST_PROJECTION_PRESERVED	stmt->kind == AST_DECL ? stmt->declvar->kind : 0	src/parser.c call site (the conditional projection)
+EAGER_DEREFERENCE_PRESENT	NO	the projection is CONDITIONAL; declvar->kind is read only when stmt->kind == AST_DECL
+#
+# ------------------------------------------------------------------
+# THE ENUM CONSTANTS, RE-DERIVED FROM THE LIVE src/ast.h
+# ------------------------------------------------------------------
+#
+# The historical observations were AST_DECL=263 and AST_GVAR=256.  They
+# were NOT trusted: they were re-derived by COMPILING the live header.
+#
+# COMMAND=grep -n 'AST_GVAR\s*=\|AST_DECL\s*=' src/ast.h
+#   103:    AST_GVAR          = 256,
+#   108:    AST_DECL          = 263,
+#
+# COMMAND=cc -std=c99 -Isrc -o <tmp> <tmp>.c && <tmp>
+#   AST_GVAR=256
+#   AST_DECL=263
+#
+ENUM_AST_GVAR=256
+ENUM_AST_DECL=263
+ENUM_VALUES_REDERIVED_FROM_LIVE_SOURCE=YES
+ENUM_VALUES_MATCH_HISTORICAL_OBSERVATION=YES
+#
+# ------------------------------------------------------------------
+# THE FROZEN SEMANTICS, AS BOUND TO LIVE BYTES
+# ------------------------------------------------------------------
+#
+# The frozen RECON05 selected-abi.md section 3.1 semantics:
+#
+#   if (stmt_kind == AST_DECL && declvar_kind == AST_GVAR) return 0;  /* SKIP */
+#   return 1;                                                        /* APPEND */
+#
+# The live bytes match this EXACTLY, including the short-circuit.
+#
+FROZEN_SEMANTICS_MATCHES_LIVE_BYTES=YES
+FROZEN_SHORT_CIRCUIT_PRESERVED=YES
+SKIP_RESULT_VALUE=0
+APPEND_RESULT_VALUE=1
+#
+# ------------------------------------------------------------------
+# THE SELECTOR MATRIX THE TWO CONFIGURATIONS USE
+# ------------------------------------------------------------------
+#
+# C-ON (the existing production configuration): all seven selectors ON.
+# C-OFF (the disposable legacy reference configuration): the dedicated
+# selector OFF, the other SIX PolyC parser authorities RETAINED ON.
+#
+# Both are produced by the EXISTING CMake option, with NO change to any
+# tracked CMake, Makefile or C source.  That is a CONFIGURATION change,
+# which the ACT permits explicitly.
+#
+# COMMAND=grep -E '^HCC_USE_SELFHOST' build/CMakeCache.txt      (the C-ON tree)
+#   HCC_USE_SELFHOST_PARSER_AST_BINOP:BOOL=ON
+#   HCC_USE_SELFHOST_PARSER_AST_UNARY:BOOL=ON
+#   HCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND:BOOL=ON
+#   HCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN:BOOL=ON
+#   HCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE:BOOL=ON
+#   HCC_USE_SELFHOST_PARSER_PADDING:BOOL=ON
+#   HCC_USE_SELFHOST_PARSER_SWITCH_ARM:BOOL=ON
+#
+CONFIG_C_ON=Dedicated selector ON; PolyC subject linked; legacy C predicate compiled out
+CONFIG_C_OFF=Dedicated selector OFF; other six selectors ON; legacy C predicate active
+CONFIG_C_OFF_BUILD_INTERFACE=cmake -DHCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND=OFF (existing option; no tracked build-file change)
+#
+# ------------------------------------------------------------------
+SOURCE_BINDING_STATUS=PASS

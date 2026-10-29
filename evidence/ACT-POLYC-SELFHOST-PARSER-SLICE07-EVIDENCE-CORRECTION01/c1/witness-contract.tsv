@@ -1,0 +1,75 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=witness-contract
+#
+# THE FROZEN WITNESS CONTRACT.
+#
+# The witnesses and their EXPECTED DIRECTIONS were frozen at C1, BEFORE
+# the mutant was built and BEFORE any mutant result was observed.  They
+# are NOT rewritten post hoc.
+#
+# Schema: witness_id  source  class  expected_pristine  expected_mutant
+#   detection_channel
+#
+witness_id	source	class	expected_pristine	expected_mutant	detection_channel
+W-SUB003-STATIC	evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05/c2/probes/witness-sub003-block-static.HC (the COMMITTED predecessor witness; entry point spelled I32 Main() as SLICE07 also did, because the C runtime already defines main)	a `static` declaration INSIDE a compound block; the selected C decision routes exactly this shape	WITNESS_OUTPUT=13 15 2 (compile exit 0, run exit 0)	COMPILE_REJECTED by the mutant compiler (the mutant APPENDS the global declaration, so the block's statement list gains a declaration the later statement collides with)	COMPILER_ACCEPTANCE_CHANGED
+W-SUB003-F1	a `static` declaration inside a compound block; the ONLY class the decision routes to SKIP	7	42 (the declaration is APPENDED, so the block's later statement binds the newly-appended declaration instead of the skipped one)	COMPILED_PROGRAM_SEMANTIC_OUTPUT_CHANGED
+W-SUB003-F2	a LOCAL declaration inside a compound block; the decision APPENDS it	11	11 (UNCHANGED)	UNCHANGED
+W-SUB003-F3	a NON-DECLARATION statement with no declvar at all; the decision APPENDS it and NEVER consults declvar_kind	21	21 (UNCHANGED)	UNCHANGED
+W-SUB003-F4	file-scope global declaration and a global-scope statement; these never reach the compound-block decision	5 and g_calls=2	5 and g_calls=2 (UNCHANGED)	UNCHANGED
+#
+# ------------------------------------------------------------------
+# THE FIXTURE'S FULL EXPECTED OUTPUT
+# ------------------------------------------------------------------
+#   FIXTURE_OUTPUT=<F1> <F2> <F3> <F4> <g_calls>
+#
+#   PRISTINE (both C-ON and C-OFF):  7 11 21 5 2
+#   MUTANT (C-OFF only):              42 11 21 5 2
+#
+# A mutant that changes F2, F3 or F4 has introduced an UNRELATED
+# failure and does NOT discharge N-06.  The DETECTOR requires the
+# change to be confined to the F1 class.
+#
+# ------------------------------------------------------------------
+# THE DETECTOR
+# ------------------------------------------------------------------
+#
+# The frozen detector is CAUSAL_DIRECTION_CHANGE.  It FIRES when:
+#
+#   (a) the pristine C-OFF compiler ACCEPTS and the mutant C-OFF
+#       compiler REJECTS the committed witness, OR the compiled
+#       program's output differs on the F1 class; AND
+#   (b) the F2, F3 and F4 classes are UNCHANGED; AND
+#   (c) the pristine and mutant C-OFF EXECUTABLES are DIFFERENT
+#       objects with DIFFERENT hashes (so the difference cannot be an
+#       artifact of reusing one binary); AND
+#   (d) the mutant C-OFF build EXITED 0 and produced an executable.
+#
+# A FAILURE TO BUILD IS NOT A CAUSAL WITNESS (the ACT's NC06).
+#
+# ------------------------------------------------------------------
+# THE SOURCE BOUND
+# ------------------------------------------------------------------
+#
+# The witness source is the COMMITTED RECON05 probe, verbatim except for
+# the entry-point spelling, which SLICE07 also changed for the same
+# mechanical reason and recorded.  The SEMANTIC CONTENT is the
+# predecessor's, unchanged.
+#
+# COMMAND=diff <pristine probe> <witness used>
+#   29c29
+#   < I64 main()
+#   ---
+#   > I32 Main()
+#
+# Only the entry-point line differs.  The `static I64 hidden = 7;`
+# declaration inside the compound block -- the shape the decision
+# routes -- is byte-identical.
+#
+# The FIXTURE (W-SUB003-F1..F4) is CORRECTION-OWNED and is a NEW file.
+# It does NOT modify any predecessor witness, expected data, oracle,
+# test or fixture.
+#
+WITNESS_CONTRACT_FROZEN_BEFORE_MUTANT=YES
+WITNESS_POST_HOC_REWRITE=NO
+EXPECTED_DIRECTION_SEEN_BEFORE_MUTANT=NO

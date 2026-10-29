@@ -1,0 +1,84 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=compiled-oracle-and-provenance
+#
+# THE TWO REAL COMPILERS AND THEIR PROVENANCE.
+#
+# Both are REAL production compilers, built from the SAME entry commit
+# (aa90d34193cd67ace532e743e8fd837e6237d8e3) with all non-target
+# compiler flags held equal.  Neither is a handcrafted object, and
+# neither is a reimplemented oracle.
+#
+# Schema:
+#   config  build_root  executable  executable_sha256
+#   parser_object  parser_object_sha256  subject_object_sha256
+#   selector_state  sub003_imported_by_parser_object
+#   sub003_symbol_in_executable  legacy_c_decision_in_parser_object
+#   decision_constants_in_code  build_command  build_exit
+#
+config	build_root	executable	executable_sha256	parser_object	parser_object_sha256	selector_state	sub003_imported_by_parser_object	sub003_symbol_in_executable	legacy_c_decision_in_parser_object	decision_constants_in_code	build_command	build_exit
+C-ON	build/ (the repository's production build tree)	./hcc	0d8904073be9779aa13d0e858fd8146ab097608e74e1460ad954de27364a7f5a	build/CMakeFiles/hcc.dir/parser.c.o	253d2404625c5bb2e5f0482465dae809c7d66c7360b1bb31e760f7f44c402246	ON	YES (1 undefined reference)	YES (defined)	NO (compiled out)	0x107 (AST_DECL, projection guard only) / 0x100 ABSENT	pre-existing production build (make production-hcc)	0
+C-OFF	build/corr01-c-off/	build/corr01-c-off/out/hcc	ec6d1866a91638c1976fdf3859ecd651a9b3ac52999edeb1fd8c0c52894d5958	build/corr01-c-off/CMakeFiles/hcc.dir/parser.c.o	db118ef6d648bdd3ceaf9e4e3965723eeebb14e904dd90880088186d20bf4aac	OFF	NO (0 undefined references)	NO (0 occurrences)	YES (live)	0x107 (AST_DECL) AND 0x100 (AST_GVAR)	cmake -S ./src -B build/corr01-c-off -DHCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND=OFF ... && make -C build/corr01-c-off hcc	0
+#
+# ---------------------------------------------------------------------------
+# THE PROVENANCE CHAIN
+# ---------------------------------------------------------------------------
+#
+# C-ON:
+#   1. The dedicated selector HCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND
+#      is ON in the production CMake cache.
+#   2. The production parser object IMPORTS _BootstrapCompoundBlockAppendsStatement
+#      as an undefined reference.
+#   3. The production executable DEFINES that symbol (it links the
+#      verified PolyC subject).
+#   4. The function-scoped disassembly of _parseCompoundStatementInternal
+#      contains a PURE CALL (relocation-verified) to that symbol, and
+#      ZERO comparisons against 0x100 (AST_GVAR).
+#   => C-ON is POLYC-AUTHORITATIVE for the selected decision.
+#
+# C-OFF:
+#   1. The dedicated selector is OFF in the C-OFF CMake cache; the other
+#      SIX PolyC parser authorities are ON.
+#   2. The C-OFF parser object has ZERO undefined references to the
+#      PolyC symbols beyond the other six authorities, and ZERO
+#      references to _BootstrapCompoundBlockAppendsStatement.
+#   3. The C-OFF executable contains NO occurrence of
+#      _BootstrapCompoundBlockAppendsStatement at all: the PolyC
+#      component is ABSENT from the build, not merely unused.
+#   4. The C-OFF parser object contains the legacy C decision, live,
+#      with BOTH constants (0x107 == AST_DECL, 0x100 == AST_GVAR), a
+#      short-circuited comparison, and the frozen 0/1 boolean result.
+#   => C-OFF is LEGACY-C-AUTHORITATIVE for the selected decision.
+#
+# ---------------------------------------------------------------------------
+# THE ANTI-CONTROL THIS PROVENANCE ENABLES
+# ---------------------------------------------------------------------------
+#
+# NC02 (reuse a C-ON object as the purported C-OFF oracle) is
+# REJECTED by the import count, the executable symbol count and the
+# disassembly constants, all of which are properties of the OBJECT and
+# not of a self-reported label.  A C-ON object has:
+#
+#   sub003_imported_by_parser_object = 1  (not 0)
+#   legacy_c_decision_in_parser_object = NO (not YES)
+#   AST_GVAR (0x100) in the decision = ABSENT (not present)
+#
+# so it CANNOT pass as the C-OFF oracle.
+#
+# ---------------------------------------------------------------------------
+# THE EQUAL-FLAG INVARIANT
+# ---------------------------------------------------------------------------
+#
+# The two builds differ ONLY in the dedicated selector.  Every other
+# CMake option, every compiler flag and every source file is the same.
+# The C-OFF build was configured with:
+#
+#   -DCMAKE_C_COMPILER=cc -DCMAKE_BUILD_TYPE=Release
+#   -DHCC_ENABLE_JIT=on -DHCC_ENABLE_LLVM=OFF
+#   -DHCC_RUNTIME_OUTPUT_DIRECTORY=<isolated root>
+#
+# and the six PolyC subject objects were passed as PREBUILT objects
+# (the same byte-identical objects the production build uses), so no
+# PolyC component is recompiled between the two configurations.
+#
+COMPILED_ORACLE_PROVENANCE_STATUS=PASS
