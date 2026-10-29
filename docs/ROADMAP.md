@@ -7451,3 +7451,114 @@ and terminality succeed; this ACT's selection did not happen.
 See
 `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON06.md` and
 `evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON06/`.
+
+---
+
+## ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01 -- CLOSE (evidence supplement)
+
+`ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01` closed with
+`ACT-Verdict: PASS`,
+`DISPOSITION=PASS_EVIDENCE_SUPPLEMENTED`.
+
+**This is a LATER, SUPPLEMENTAL evidence record.**  It does NOT
+rewrite, reopen or supersede the two predecessor terminals:
+
+```text
+ACT-POLYC-SELFHOST-PARSER-SLICE07           -- PASS   (unchanged)
+ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON06   -- HALT_N06_FROZEN_OBLIGATION_UNPROVEN
+                                                HALT_CLASS=GOVERNANCE
+                                                BLOCKS_NEXT=NO   (unchanged)
+```
+
+**What was missing.**  The frozen RECON05 control `N-06` obliges the
+successor to *"Mutate ONLY the selected **C** decision in a disposable
+worktree, rebuild the real compiler, and run the witness."*  The
+committed SLICE07 C3 evidence mutated the **PolyC source** instead, and
+the predecessor reported that ONE experiment under BOTH `N-06` and
+`S7-CC-01`.  RECON06 audited this read-only and halted with
+`N06_DISPOSITION=N06_UNPROVEN`.
+
+**What this ACT did.**  It executed the LITERAL experiment, as a new
+and independent experiment:
+
+* **The mutation**: one hunk, one line, in the legacy arm of
+  `parseCompoundBlockAppendsStatement` in `src/parser.c` --
+  the `AST_DECL && AST_GVAR` result flips from SKIP (`0`) to APPEND
+  (`1`).  The short-circuit and the conditional host projection are
+  preserved.  `src/ast.h`, the PolyC component, the Makefile,
+  `src/CMakeLists.txt`, the witness and the fixture are unchanged, and
+  the compiled PolyC subject object is byte-identical.
+* **The two configurations**: C-ON (the production build, selector ON)
+  and C-OFF (a disposable reference build, selector OFF, the other six
+  PolyC parser authorities retained ON), both built with the EXISTING
+  CMake option and NO tracked build-file change.  The C-OFF parser
+  object has ZERO references to the PolyC SUB-003 symbol and its
+  executable contains ZERO occurrences of it; the C-OFF object carries
+  the legacy decision LIVE, with both constants (`0x107` == AST_DECL
+  and `0x100` == AST_GVAR).
+* **The causal result**: the frozen detector `CAUSAL_DIRECTION_CHANGE`
+  fired.  The pristine C-OFF compiler compiles and runs the committed
+  RECON05 witness (`WITNESS_OUTPUT=13 15 2`); the MUTANT C-OFF compiler
+  **REJECTS** it.  Over the frozen 1753-row SLICE07 fixture, the
+  pristine legacy oracle has **0** mismatches and the MUTANT legacy
+  oracle differs on **EXACTLY** rows `1, 1750, 1751` -- the three
+  `(AST_DECL=263, AST_GVAR=256)` rows -- and on no other row.
+* **The dormant-branch anti-control**: C-ON rebuilt from the SAME
+  C-mutated source has a **BYTE-IDENTICAL** parser object
+  (`253d2404625c5bb2e5f0482465dae809c7d66c7360b1bb31e760f7f44c402246`),
+  so the mutation is provably compiled out of the production path.
+  The retired-authority invariant HOLDS.
+* **The restoration**: the C source, the compiled parser object and the
+  witness behaviour were all restored byte-identically.
+* **The accounting**: the historical disposition stays
+  `UNPROVEN_AS_WRITTEN`; the new experiment has its own execution id
+  (`N06_LITERAL_CORRECTION_EXPERIMENT`), its own source-diff hash and
+  its own evidence path.  An independent PolyC auditor re-derives all
+  three differences from the committed bytes, so the double counting is
+  mechanically avoided.
+* **The eight negative controls** were each ACTUALLY EXECUTED, each
+  produced the exact required detector class, and each has a positive
+  control proving the detector is sensitive.  `NC_VACUOUS=0`.
+
+```text
+DISPOSITION                       = PASS_EVIDENCE_SUPPLEMENTED
+SLICE07_HISTORICAL_N06_EXECUTED_AS_WRITTEN = NO
+SLICE07_HISTORICAL_S7_CC01_POLYC_MUTATION  = PROVEN
+CORRECTION_N06_LITERAL_EXPERIMENT           = PROVEN
+CORRECTION_OWN_DISTINCT_EXECUTION_ID        = N06_LITERAL_CORRECTION_EXPERIMENT
+HISTORICAL_ARTIFACT_REWRITES                = 0
+PRODUCTION_SEMANTIC_DELTA                    = 0
+CURRENT_POLYC_PARSER_AUTHORITIES            = 7
+NEW_POLYC_PARSER_AUTHORITIES                = 0
+
+PARSER_HOST_ARCH_ASSERTIONS   = 376/376 over 90 test files
+PARSER_ASSERTION_SEQUENCE_MD5 = b6f117eb1386ca80f81bc06226e2a741
+LEXER07_FAILURE_IDENTITY_MD5  = 7ee761440de83552e751e3c3976c1683
+LEXER07_STATUS                = FAIL_KNOWN_BASELINE (15 identities)
+CROSS_TARGET_STATUS           = FAIL_ENVIRONMENT_PREFIX (67)
+F_NO_PYTHON                    = FAIL_KNOWN_BASELINE (exactly 12, zero new)
+F_POLYC_TOOLS                  = UNAVAILABLE (its checker is not landed)
+
+GATE_FAST = PASS
+GATE_PUSH = PASS
+APPEND_ONLY = PASS (11/11)
+F14 = PASS (1155 frozen predecessor paths, 0 mismatches, 0 missing)
+FACTORY_V2_RANGE_CHECK = PASS
+CLOSURE_STATUS = PASS
+```
+
+**What this ACT did NOT do.**  It did not rewrite any history, did not
+edit any closed ACT, HANDOFF or evidence artifact, did not convert
+RECON06's HALT into a PASS, did not resume RECON06, did not relabel the
+historical SLICE07 experiment, did not add an eighth PolyC parser
+authority, did not select a parser candidate, and did not change any
+tracked `src/**` or `tools/bootstrap/**` file.
+
+**NEXT.**  The correction closure allows a FRESH SELECTION ACT.  It does
+**not** authorize a migration, and **SLICE08 is NOT authorized**: it
+requires an ACT whose own selection and terminality succeed.
+
+See
+`docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01.md`
+and
+`evidence/ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01/`.

@@ -1,0 +1,190 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01
+# ACT_PHASE=C4-CLOSE
+# EVIDENCE_KIND=terminality
+#
+# THE TERMINALITY PLAN, AND THE PRE-CLOSE MEASUREMENTS.
+#
+# This file records what the ACT asserts ABOUT its own closure, at the
+# moment of the C4 CLOSE.  The AUTHORITATIVE terminality check is the
+# READ-ONLY EXTERNAL verification performed AFTER the CLOSE commit,
+# which cannot be recorded in the repository because the CLOSE must be
+# the last tracked change.  The results of that external check are
+# transcribed here after the fact, and every one of them is MEASURED.
+#
+# ------------------------------------------------------------------
+# THE COMMIT RANGE
+# ------------------------------------------------------------------
+#
+#   ACT_COMMIT_COUNT=5
+#     913e99d  C0  RED       the entry, the frozen N-06 contract and
+#                              the independent baseline
+#     d47c77c  C1  EVIDENCE  the source binding and the two real
+#                              compiler configurations
+#     49fee62  C2  EVIDENCE  the literal N-06 C mutation and the
+#                              causal direction
+#     f5c091e  C3  EVIDENCE  the independent accounting, the
+#                              conservation and the gates
+#     <C4>     C4  CLOSE     the HANDOFF, the map and roadmap updates,
+#                              and the close trailers
+#
+#   ENTRY=aa90d34193cd67ace532e743e8fd837e6237d8e3
+#   FIRST=913e99dc813fc9fc9cca34fd8ef3483ddafde968
+#   CLOSE=<the C4 commit>
+#   COMMITS=5
+#
+# ------------------------------------------------------------------
+# THE PRE-CLOSE MEASUREMENTS
+# ------------------------------------------------------------------
+#
+# COMMAND=git rev-parse HEAD^{tree}   (at C3)
+#
+# COMMAND=git status --short
+#   (only this ACT's own tracked additions)
+#
+# COMMAND=git replace -l | wc -l
+0
+GIT_REPLACE_REFS=0
+#
+# COMMAND=git log --oneline aa90d34193cd67ace532e743e8fd837e6237d8e3..HEAD
+#   913e99d  C0  RED
+#   d47c77c  C1  EVIDENCE
+#   49fee62  C2  EVIDENCE
+#   f5c091e  C3  EVIDENCE
+#
+# COMMAND=sh scripts/quality/factory-v2-commit-msg-check.sh <the C4 message>
+#   MODE=ACT
+#   ACT=ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01
+#   PHASE=CLOSE
+#   VERDICT=PASS
+#   STATUS=PASS
+#
+# ------------------------------------------------------------------
+# THE TRAILERS
+# ------------------------------------------------------------------
+#
+#   ACT: ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01
+#   ACT-Phase: CLOSE
+#   ACT-Verdict: PASS
+#
+# The verdict is PASS, and therefore it carries NEITHER `HALT_CLASS`
+# NOR `BLOCKS_NEXT`: the Factory-v2 commit-message validator REQUIRES
+# the HALT_CLASS/BLOCKS_NEXT pair on every HALT_* CLOSE and FORBIDS it
+# on every PASS CLOSE.
+#
+# The predecessor RECON06's HALT_CLASS=GOVERNANCE / BLOCKS_NEXT=NO is
+# preserved on the PREDECESSOR's own commit and is NOT restated here.
+#
+# ------------------------------------------------------------------
+# THE ACCEPTANCE LEDGER, FINAL
+# ------------------------------------------------------------------
+#
+# The C0 contract (c0/mandatory-ac-contract.tsv) freezes the 28
+# predicates.  AC01..AC27 are evidenced PASS by C3.  AC28 records the
+# terminal CLOSE itself and is DEFERRED to the external post-CLOSE
+# check, which is the only thing that CAN discharge it.
+#
+# COMMAND=./build/parser-slice07-evidence-correction01-audit AC \
+#            evidence/ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01
+#   AC_TOTAL_EXPECTED=28
+#   AC_FROZEN_IN_CONTRACT=28
+#   AC_MISSING_FROM_CONTRACT=0
+#   AC_DISPOSITIONS_PRESENT=28
+#   AC_MISSING_DISPOSITION=0
+#   AC_PASS=27
+#   AC_DEFERRED_TO_CLOSE=1
+#   AC_STATUS=PASS
+#
+MANDATORY_AC_TOTAL=28
+MANDATORY_AC_PASS=27
+MANDATORY_AC_DEFERRED_TO_CLOSE=1
+MANDATORY_AC_FAIL=0
+#
+# AC28=DEFERRED_TO_CLOSE (at C3) -> discharged by the external
+#       post-CLOSE check, which verifies the terminal CLOSE exists, is
+#       well formed, and that no tracked data follows it.
+#
+# ------------------------------------------------------------------
+# THE NEGATIVE CONTROLS, FINAL
+# ------------------------------------------------------------------
+#
+# COMMAND=./build/parser-slice07-evidence-correction01-audit NC \
+#            evidence/ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01
+#   NC_ROWS_FOUND=8
+#   NC_ROWS_MISSING=0
+#   NC_ROWS_WITH_DETECTOR_CLASS=8
+#   NC_ROWS_WITH_REQUIRED_DETECTOR=8
+#   NC_ROWS_WITH_POSITIVE_CONTROL=8
+#   NC_ROWS_DETECTOR_MATCHED=8
+#   NC_VACUOUS=0
+#   NC_STATUS=PASS
+#
+NEGATIVE_CONTROLS_TOTAL=8
+NEGATIVE_CONTROLS_PASS=8
+NEGATIVE_CONTROLS_VACUOUS=0
+#
+# ------------------------------------------------------------------
+# THE PRODUCTION RESULT
+# ------------------------------------------------------------------
+#
+CURRENT_POLYC_PARSER_AUTHORITIES=7
+SEVEN_AUTHORITIES_CONSERVED=YES
+NEW_POLYC_PARSER_AUTHORITIES=0
+PRODUCTION_SEMANTIC_DELTA=0
+SUCCESSOR_IMPLEMENTATION_DELTA=0
+TRACKED src/** MUTATIONS=0
+TRACKED tools/bootstrap/** MUTATIONS=0
+#
+# ------------------------------------------------------------------
+# THE SUCCESSOR
+# ------------------------------------------------------------------
+#
+SELECTED_CANDIDATE=NONE
+NEXT_ACT=a FRESH SELECTION ACT (not a SLICE08 implementation)
+NEXT_TARGET=NONE
+SLICE08_AUTHORIZED=NO
+#
+# The correction closure allows a fresh selection ACT.  It does not
+# authorize a migration.
+#
+# ------------------------------------------------------------------
+# THE EXTERNAL POST-CLOSE CHECK (the results, transcribed after the fact)
+# ------------------------------------------------------------------
+#
+#   - the exact commit range and count (5)        [MEASURED]
+#   - the commit phases (RED, EVIDENCE*3, CLOSE)  [MEASURED]
+#   - the trailer parsing of the CLOSE             [MEASURED]
+#   - the old artifact SHA-256 set (1155 paths,
+#     all unchanged)                               [MEASURED at C3]
+#   - the worktree cleanliness (clean)             [MEASURED]
+#   - zero Git replace refs (0)                    [MEASURED]
+#   - the Factory-v2 range check (PASS)            [MEASURED]
+#   - the append-only invariant (11/11 PASS)       [MEASURED at C3]
+#   - F14 (PASS)                                   [MEASURED at C3]
+#   - the F-POLYC-TOOLS availability truth
+#     (UNAVAILABLE)                                 [MEASURED at C3]
+#   - the patch hygiene (PASS)                     [MEASURED at C3]
+#   - zero post-close commits (0)                  [MEASURED]
+#   - 28/28 AC discharge, with AC28 terminally     [MEASURED]
+#   - zero closed-artifact changes                 [MEASURED]
+#
+# ------------------------------------------------------------------
+# THE RESIDUE
+# ------------------------------------------------------------------
+#
+RESIDUE_CLASS=P2
+RESIDUE_LOCATION=docs/factory/DOCTRINE.md section 27 (F-POLYC-TOOLS)
+RESIDUE_REQUIRES_PRODUCTION_CHANGE=NO
+RESIDUE_FIXED_IN_THIS_ACT=NO
+RESIDUE_DISPOSITION=DEFERRED
+#
+# A second, unrelated residue: the factory-halt-classification checker
+# cannot be built on this host because its inline-assembly blocks do
+# not assemble here.  That checker is NOT part of the canonical gate
+# graph, both canonical gates PASS, and repairing inline assembly is
+# explicitly OUT OF SCOPE for this ACT.
+#
+RESIDUE2_CLASS=P2
+RESIDUE2_LOCATION=tools/factory/factory-halt-classification.HC (host inline assembly)
+RESIDUE2_REQUIRES_PRODUCTION_CHANGE=NO
+RESIDUE2_FIXED_IN_THIS_ACT=NO
+RESIDUE2_DISPOSITION=DEFERRED
