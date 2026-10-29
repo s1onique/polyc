@@ -1,0 +1,104 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON07
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=independent-causal-proof
+#
+# THE INDEPENDENT VERIFICATION OF THE C2 CAUSAL EXPERIMENT.
+#
+# ------------------------------------------------------------------
+# 1. THE G0 OBJECT IS REAL PRODUCTION C
+# ------------------------------------------------------------------
+# It was compiled from src/parser.c, it is the production translation
+# unit (five production parser symbols present, no main), it
+# references ZERO PolyC components, and its compiled bitset mask
+# 0x20411001 decodes to EXACTLY the five kinds of the live source
+# condition.
+#
+# A HANDWRITTEN OR POLYC-DEPENDENT SUBSTITUTE WAS BUILT AND
+# REJECTED: it has NONE of the five production symbols and DOES
+# define its own main.  That is the CC-02 detector.
+#
+# ------------------------------------------------------------------
+# 2. THE C SOURCE MUTATION AFFECTS EXACTLY THE SELECTED RANGE
+# ------------------------------------------------------------------
+# The mutation removed EXACTLY ONE arm of the five-way condition.
+# The G0 oracle differential changed EXACTLY ONE fixture row:
+# kind 274, AST_COMPOUND_STMT.  All four other single-arm mutants
+# likewise changed EXACTLY ONE row each (287, 280, 270, 258), so the
+# mutation set is bounded and every distinct decision outcome is
+# covered.
+#
+# ------------------------------------------------------------------
+# 3. THE GENUINE COMPILER REBUILD SUCCEEDS
+# ------------------------------------------------------------------
+# The mutant compiler was built with the REAL production build
+# system (cmake + make hcc) from the mutated source in an isolated
+# build root, with the seven PolyC subject objects supplied as
+# prebuilt objects.  MUT_BUILD_EXIT=0.  A FAILED build was never
+# mistaken for causality at any point: the compiler build exit, the
+# witness compile exit and the witness run exit are recorded
+# separately.
+#
+# ------------------------------------------------------------------
+# 4. THE PREDECLARED WITNESS CHANGES ON THE CORRECT CHANNEL
+# ------------------------------------------------------------------
+# The witness and its channel were declared BEFORE the mutation.
+# The channel is COMPILED_PROGRAM_SEMANTIC_OUTPUT_CHANGED.
+#   pristine  WITNESS_OUTPUT=110 155
+#   mutant    WITNESS_OUTPUT=110 177
+# The change is on the DECLARED channel, it is a whole-value change
+# of the observable result, and the AST-level difference confirms
+# the mechanism: the mutant's default arm contains ONE EXTRA
+# statement (the trailing assignment), which is EXECUTED.
+#
+# THE WRONG-CHANNEL AND WRONG-SUBJECT REJECTIONS:
+#   - A mutation of the AST_RETURN arm (m-return) changes the
+#     decision at the object level (the fixture row 270 flips) but
+#     does NOT change the compiled-program OUTPUT, because the code
+#     after a `return` is dead.  That is a DIFFERENT observable
+#     class, and it is recorded as such rather than as a pass of
+#     the output channel.
+#   - A mutation of the AST_BREAK arm (m-break) changes the fixture
+#     row 280 but the emitted EXECUTABLE differs while the printed
+#     value does not, because the `break` jumps out of the switch
+#     before the trailing statement.
+#   - The COMPOUND arm is the arm after which the trailing code is
+#     REACHABLE, and it is the one that produces the declared
+#     output change.
+# The classification vocabulary used is exactly
+# UNOBSERVED / UNREACHABLE / DUPLICATED_AUTHORITY /
+# FAILED_COMPILER_BUILD / INELIGIBLE, and each mutant is classified
+# by the CHANNEL it was observed on, not by an undocumented
+# exclusion.
+#
+# ------------------------------------------------------------------
+# 5. THE RESTORATION RESTORES EXACT SOURCE AND BEHAVIOUR
+# ------------------------------------------------------------------
+#   SOURCE   restored 2b31a791... == pristine 2b31a791...
+#   OBJECT   restored 253d2404... == the AUTHORITATIVE MAIN checkout's
+#            production parser object 253d2404...
+#   BEHAVIOUR restored WITNESS_OUTPUT=110 155 == pristine
+#
+# ------------------------------------------------------------------
+# 6. THE DECOY INSTRUCTIONS AND OBJECTS ARE REJECTED
+# ------------------------------------------------------------------
+# The mutant production object contains exactly ONE bitset site with
+# the 0x2041 mask, and it is inside _parseDefaultStatement, the
+# SELECTED function.  The already-migrated SUB-001 (case-arm)
+# decision compiles to the SAME bitset shape but lives in
+# _parseCaseLabel.  A detector that counted cmp/tst instructions
+# anywhere in the object would have misattributed the SUB-002
+# evidence.  The function-scoped attribution is therefore mandatory
+# and it is what the CC-04 control exercised.
+#
+# ------------------------------------------------------------------
+# 7. NO MUTANT ARTIFACT REACHED THE AUTHORITATIVE TREE
+# ------------------------------------------------------------------
+#   AUTHORITATIVE_MAIN_MUTATED=NO
+#   TRACKED_MAIN_SRC_PARSER_C_SHA256=2b31a7912bfbcfe538786aff17383a8282da815f0990910a652a0119f084fe17
+#   TRACKED_MAIN_PARSER_OBJECT_SHA256=253d2404625c5bb2e5f0482465dae809c7d66c7360b1bb31e760f7f44c402246
+#
+INDEPENDENT_CAUSAL_PROOF=PASS
+CAUSAL_DIRECTION_CHANGE=FIRES
+CAUSAL_OBSERVATION_CLASS=COMPILED_PROGRAM_SEMANTIC_OUTPUT_CHANGED
+MUTANT_BUILD_FAILURE_MISTAKEN_FOR_CAUSALITY=NO
+RESTORATION_BYTE_IDENTICAL=YES

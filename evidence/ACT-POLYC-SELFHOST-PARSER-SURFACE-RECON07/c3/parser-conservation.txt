@@ -1,0 +1,36 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON07
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=parser-conservation
+#
+# THE PARSER CONSERVATION RE-RUN AT C3.
+#
+# COMMAND=make unit-test
+# EXIT=0
+#
+COMMAND=grep -o 'PASSED: [0-9]*/[0-9]*' <log> | md5 -q
+   b6f117eb1386ca80f81bc06226e2a741
+#
+COMMAND=grep -o 'PASSED: [0-9]*/[0-9]*' <log> | awk -F'[/ ]' '{p+=$2;t+=$3} END{print "PASSED="p, "TOTAL="t}'
+   PASSED=376 TOTAL=376
+#
+COMMAND=grep -o 'PASSED: [0-9]*/[0-9]*' <log> | wc -l
+   90
+#
+COMMAND=grep -c 'FAILED: [0-9]*/[0-9]*' <log>
+   0
+#
+# The C3 sequence MD5 is IDENTICAL to the C0 sequence MD5, which is
+# in turn identical to the historical identity recorded by RECON05,
+# RECON06, SLICE07 and CORRECTION01.  The MD5 is a strict identity over
+# the per-test PASSED sequence, so it detects any change in the SET or
+# the ORDER of test outcomes.
+#
+PARSER_ASSERTIONS=376/376
+PARSER_ASSERTION_FILES=90
+PARSER_ASSERTION_SEQUENCE_MD5=b6f117eb1386ca80f81bc06226e2a741
+PARSER_C0_SEQUENCE_MD5=b6f117eb1386ca80f81bc06226e2a741
+PARSER_HISTORICAL_SEQUENCE_MD5=b6f117eb1386ca80f81bc06226e2a741
+PARSER_SEQUENCE_MD5_MATCH=YES
+PARSER_FAILED_FILE_COUNT=0
+NEW_PARSER_FAILURE_IDENTITIES=0
+PARSER_CONSERVATION_STATUS=PASS

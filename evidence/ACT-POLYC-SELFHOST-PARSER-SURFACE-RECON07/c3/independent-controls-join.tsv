@@ -1,0 +1,83 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON07
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=independent-controls-join
+#
+# THE INDEPENDENT JOIN OF ALL TWENTY NEGATIVE CONTROLS.
+#
+# The ACT requires EXACTLY 20 control IDs with ZERO missing, extra,
+# duplicates, vacuous, unexecuted or unrestored subjects, and that no
+# duplicated experiment be falsely represented as two independently
+# executed events.
+#
+# Schema: control_id <TAB> class <TAB> intended_detector_class
+#         <TAB> observed_detector_class <TAB> observed_output_present
+#         <TAB> positive_baseline_present <TAB> subject_specific
+#         <TAB> subject_restored <TAB> independent_verification
+#         <TAB> evidence_path
+#
+IC-01	INVENTORY	<MISSING_FUNCTION>	<MISSING_FUNCTION>	YES	YES	YES	YES	YES	c2/controls-raw.tsv
+IC-02	INVENTORY	<DUPLICATE_ID>	<DUPLICATE_ID>	YES	YES	YES	YES	YES	c2/controls-raw.tsv
+IC-03	INVENTORY	<SOURCE_HASH_MISMATCH>	<SOURCE_HASH_MISMATCH>	YES	YES	YES	YES	YES	c2/controls-raw.tsv
+IC-04	INVENTORY	<INVALID_RANGE>	<INVALID_RANGE>	YES	YES	YES	YES	YES	c2/controls-raw.tsv
+EC-01	ELIGIBILITY	<ALREADY_SELFHOSTED_CLAUSE>	<ALREADY_SELFHOSTED_CLAUSE>	YES	YES	YES	YES	YES	c2/controls-raw.tsv
+EC-02	ELIGIBILITY	<MUTABLE_HOST_STATE_DEPENDENCE>	<MUTABLE_HOST_STATE_DEPENDENCE>	YES	YES	YES	YES	YES	c2/controls-raw.tsv
+EC-03	ELIGIBILITY	<HOST_GRAPH_WRITE_CLAUSE>	<HOST_GRAPH_WRITE_CLAUSE>	YES	YES	YES	YES	YES	c2/controls-raw.tsv
+EC-04	ELIGIBILITY	<PARSER_CALLBACK_CLAUSE>	<PARSER_CALLBACK_CLAUSE>	YES	YES	YES	YES	YES	c2/controls-raw.tsv
+EC-05	ELIGIBILITY	<PRODUCTION_REACHABILITY_GATE>	<PRODUCTION_REACHABILITY_GATE>	YES	YES	YES	YES	YES	c2/controls-raw.tsv
+EC-06	ELIGIBILITY	<DELEGATION_FEASIBILITY_CLAUSE>	<DELEGATION_FEASIBILITY_CLAUSE>	YES	YES	YES	YES	YES	c2/controls-raw.tsv
+RC-01	RANKING	<ORDER_INVARIANT_AND_FORGED_ORDER_REJECTED>	<ORDER_INVARIANT_AND_FORGED_ORDER_REJECTED>	YES	YES	YES	YES	YES	c2/controls-raw.tsv
+RC-02	RANKING	<EXCLUDED_CANDIDATE_NOT_PROMOTED>	<EXCLUDED_CANDIDATE_NOT_PROMOTED>	YES	YES	YES	YES	YES	c2/controls-raw.tsv
+RC-03	RANKING	<DETERMINISTIC_NEXT_SELECTION>	<DETERMINISTIC_NEXT_SELECTION>	YES	YES	YES	YES	YES	c2/controls-raw.tsv
+RC-04	RANKING	<PREDICTED_ORDER_CHANGE>	<PREDICTED_ORDER_CHANGE>	YES	YES	YES	YES	YES	c2/controls-raw.tsv
+RC-05	RANKING	<SOURCE_IDENTITY_REJECTED>	<SOURCE_IDENTITY_REJECTED>	YES	YES	YES	YES	YES	c2/controls-raw.tsv
+CC-01	CAUSALITY	<CAUSAL_DIRECTION_CHANGE>	<CAUSAL_DIRECTION_CHANGE>	YES	YES	YES	YES	YES	c2/controls-raw.tsv
+CC-02	CAUSALITY	<PRODUCTION_OBJECT_PROVENANCE_REJECTED>	<PRODUCTION_OBJECT_PROVENANCE_REJECTED>	YES	YES	YES	YES	YES	c2/controls-raw.tsv
+CC-03	CAUSALITY	<EXACT_SEMANTIC_ROW_MISMATCH>	<EXACT_SEMANTIC_ROW_MISMATCH>	YES	YES	YES	YES	YES	c2/controls-raw.tsv
+CC-04	CAUSALITY	<FUNCTION_SCOPED_AUTHORITY_DETECTOR>	<FUNCTION_SCOPED_AUTHORITY_DETECTOR>	YES	YES	YES	YES	YES	c2/controls-raw.tsv
+PV-01	PROVENANCE	<BINARY_IDENTITY_MISMATCH>	<BINARY_IDENTITY_MISMATCH>	YES	YES	YES	YES	YES	c2/controls-raw.tsv
+#
+# ------------------------------------------------------------------
+# THE COUNTING
+# ------------------------------------------------------------------
+NEGATIVE_CONTROLS_TOTAL=20
+NEGATIVE_CONTROLS_JOINED=20
+NEGATIVE_CONTROLS_MISSING=0
+NEGATIVE_CONTROLS_EXTRA=0
+NEGATIVE_CONTROLS_DUPLICATE=0
+NEGATIVE_CONTROLS_VACUOUS=0
+NEGATIVE_CONTROLS_UNEXECUTED=0
+NEGATIVE_CONTROLS_UNRESTORED=0
+NEGATIVE_CONTROLS_PASS=20
+#
+# ------------------------------------------------------------------
+# THE NO-DUPLICATED-EXPERIMENT CHECK
+# ------------------------------------------------------------------
+# Every one of the twenty controls has a DISTINCT adverse action and
+# a DISTINCT detector invocation.  The one physical experiment that
+# could have been shared by two control IDs -- the single C-source
+# mutation of the selected decision -- is used by CC-01 ONLY, and
+# CC-04 uses a DIFFERENT experiment (the function-scoped
+# attribution of the SAME mutant's object, which is a different
+# DETECTOR over the same subject, not a second mutation).
+#
+# The two controls that were at risk of sharing an experiment -- the
+# pre-migration C mutant and the post-migration PolyC mutant -- are
+# NOT both present here.  The POST-POLYC-MUTANT control does not
+# exist in this ACT's ledger, because this ACT does NOT migrate the
+# decision and therefore CANNOT execute it.  It is frozen in
+# c2/selected-causal-contract.md for the successor.
+#
+# The successor contract's sharing rule makes an accidental double
+# discharge IMPOSSIBLE to hide: two control IDs discharging one
+# experiment MUST both say so explicitly.
+#
+# ------------------------------------------------------------------
+# THE TWO FINDINGS THAT CHANGE THE SUCCESSOR'S REQUIREMENTS
+# ------------------------------------------------------------------
+# EC-02: the canonical eligibility checker cannot detect a forged
+# fact row.  The source-bound DEPENDS detector can.
+# RC-02: the canonical ranker trusts its `eligible` column and
+# selects a forged excluded candidate.  The independent recomputer
+# does not.
+#
+INDEPENDENT_CONTROLS_STATUS=PASS

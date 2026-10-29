@@ -1,0 +1,104 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON07
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=cross-target-and-policy-residue
+#
+# THE CROSS-TARGET AND TOOL-POLICY RESIDUE, RE-MEASURED AT C3.
+#
+# ------------------------------------------------------------------
+# CROSS-TARGET
+# ------------------------------------------------------------------
+COMMAND=cd src/tests && ./test-runner --target=aarch64-apple-darwin
+#
+COMMAND=grep -c 'Failed to open file' <log>
+   67
+COMMAND=grep -c 'Failed to compile' <log>
+   67
+COMMAND=grep 'CROSS_TARGET_EXIT' <log>
+   CROSS_TARGET_EXIT=0
+#
+COMMAND=grep -o 'Failed to open file: [^"]*' <log> | sort -u
+   Failed to open file: ../../build/aarch64-apple-darwin/include/tos.HH
+#
+# There is exactly ONE distinct failure message.  The 67 failures are
+# 67 tests that all hit the same missing cross-target runtime prefix.
+# The runner exits 0 because every test failure is reported
+# individually.  This is a HISTORICAL ENVIRONMENT condition, NOT a
+# parser failure identity.  It is PRESERVED HONESTLY and is NOT
+# relabelled PASS.
+#
+CROSS_TARGET_TESTS_ATTEMPTED=67
+CROSS_TARGET_FAILED_TO_OPEN_FILE=67
+CROSS_TARGET_FAILED_TO_COMPILE=67
+CROSS_TARGET_PASSED=0
+CROSS_TARGET_DISTINCT_FAILURE_MESSAGES=1
+CROSS_TARGET_FAILURE_MESSAGE=Failed to open file: ../../build/aarch64-apple-darwin/include/tos.HH
+CROSS_TARGET_STATUS=FAIL_ENVIRONMENT_PREFIX
+NEW_CROSS_TARGET_FAILURE_IDENTITIES=0
+#
+# ------------------------------------------------------------------
+# F-NO-PYTHON
+# ------------------------------------------------------------------
+COMMAND=sh scripts/quality/factory-no-python-check.sh
+#
+   FAIL  scripts/quality/llvm-byte-memory01-test.sh  forbidden Python invocation
+   FAIL  scripts/quality/llvm-cap-table-verifier.py  forbidden Python source suffix
+   FAIL  scripts/quality/llvm-intops01-test.sh  forbidden Python invocation
+   FAIL  scripts/quality/llvm-memory01-red-test.sh  forbidden Python invocation
+   FAIL  scripts/quality/llvm-spike-test.sh  forbidden Python invocation
+   FAIL  tools/quality/bootstrap02-corpus-runner.py  forbidden Python source suffix
+   FAIL  tools/quality/bootstrap02-error-corpus.py  forbidden Python source suffix
+   FAIL  tools/quality/bootstrap03-corpus-runner.py  forbidden Python source suffix
+   FAIL  tools/quality/bootstrap03-error-corpus.py  forbidden Python source suffix
+   FAIL  tools/quality/bootstrap04-corpus-runner.py  forbidden Python source suffix
+   FAIL  tools/quality/bootstrap04-error-corpus.py  forbidden Python source suffix
+   FAIL  tools/quality/llvm-gep01-test.HC  known PolyC -> Python execution edge (callgraph inventory)
+#
+#   --- summary ---
+   POLYC_TOOLS_TRACKED_PYTHON=12
+   POLYC_TOOLS_TRACKED_INSPECTED=5698
+   POLYC_TOOLS_TRACKED_PASSES=5691
+   STATUS=FAIL
+   NO_PYTHON_EXIT=1
+#
+# EXACTLY the 12 historical violations, ZERO new.  The violation SET
+# is byte-identical to the C0 measurement.
+#
+# COMMAND=diff <c0 violation list> <c3 violation list>
+#   (no output -- IDENTICAL)
+#
+F_NO_PYTHON=FAIL
+F_NO_PYTHON_VIOLATION_COUNT=12
+F_NO_PYTHON_VIOLATIONS_MATCH_HISTORICAL_EXACTLY=YES
+F_NO_PYTHON_NEW_VIOLATIONS=0
+F_NO_PYTHON_EXIT=1
+#
+# ------------------------------------------------------------------
+# F-POLYC-TOOLS
+# ------------------------------------------------------------------
+# The authoritative checker tools/factory/factory-polyc-tools-check.HC
+# is NOT LANDED.  The AGENTS.md pointer records the CONTRACT; the gate
+# has NOT been enforced.  This ACT does NOT claim it PASSES.
+#
+COMMAND=ls tools/factory/factory-polyc-tools-check.HC
+   (no such file)
+COMMAND=ls tools/quality/factory-polyc-tools-check.HC
+   (no such file)
+COMMAND=git ls-files | grep -i "polyc-tools" | grep -v '^evidence/'
+   docs/factory/LEGACY-NON-POLYC-TOOLS.tsv
+#
+F_POLYC_TOOLS=UNAVAILABLE
+F_POLYC_TOOLS_CHECKER_LANDED=NO
+F_POLYC_TOOLS_EXIT=NOT_APPLICABLE
+#
+# ------------------------------------------------------------------
+# THE HONEST SUMMARY
+# ------------------------------------------------------------------
+# Every historical nonzero status is preserved EXACTLY and is NOT
+# relabelled PASS.  Zero new failure identities were introduced.
+#
+CROSS_TARGET_PREFIX_STATUS=FAIL_ENVIRONMENT_PREFIX
+F_NO_PYTHON_STATUS=FAIL_KNOWN_BASELINE
+F_POLYC_TOOLS_STATUS=UNAVAILABLE
+NEW_CROSS_TARGET_FAILURE_IDENTITIES=0
+NEW_F_NO_PYTHON_VIOLATIONS=0
+RESIDUE_STATUS=PRESERVED_HONESTLY

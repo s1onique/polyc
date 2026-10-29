@@ -1,0 +1,147 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON07
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=factory-invariants
+#
+# THE FACTORY INVARIANTS, RE-EXECUTED AT C3.
+#
+# ------------------------------------------------------------------
+# APPEND-ONLY
+# ------------------------------------------------------------------
+COMMAND=sh scripts/quality/factory-append-only-test.sh
+   --- summary ---
+   PASS=11
+   FAIL=0
+   STATUS=PASS
+#
+# The permanent NC1..NC11 regression suite for the append-only
+# invariant passes 11/11.  No history was rewritten, amended,
+# rebased or force-pushed by this ACT.
+#
+APPEND_ONLY=PASS
+APPEND_ONLY_EXIT=0
+#
+# ------------------------------------------------------------------
+# CLOSURE STATUS
+# ------------------------------------------------------------------
+COMMAND=sh scripts/quality/factory-closure-status-check.sh
+   DUPLICATE_PAIR_DETECTED=NO
+   MISSING_ACT_FILES=0
+   MISSING_HANDOFF_FILES=0
+   MALFORMED_HANDOFF_VERDICT=0
+   PAIR_OK=42
+   PAIR_FAIL=0
+   STATUS=PASS
+   VERDICT=PASS
+#
+CLOSURE_STATUS=PASS
+CLOSURE_STATUS_EXIT=0
+#
+# ------------------------------------------------------------------
+# THE FACTORY-v2 RANGE CHECK
+# ------------------------------------------------------------------
+# The range check for THIS ACT is performed at C4, against the
+# terminal CLOSE commit, because the range check REQUIRES a commit
+# carrying ACT-Phase: CLOSE.  At C3 the tree deliberately has no CLOSE
+# commit yet, and the checker correctly reports:
+#
+#   COMMAND=./scripts/quality/factory-v2-range-check.sh \
+#               ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON07 HEAD
+#   STATUS=FAIL
+#   REASON=CLOSE ... does not carry exactly one ACT-Phase: CLOSE (count=0)
+#
+# That is the EXPECTED and CORRECT result at C3: it proves the ACT is
+# not yet closed.  The PASS is recorded at C4 and in the external
+# post-CLOSE terminality receipt.
+#
+# The PREDECESSORS' ranges were checked at C0 and both PASS:
+#
+#   ./scripts/quality/factory-v2-range-check.sh \
+#     ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01 34c2b6b
+#     STATUS=PASS  COMMITS=5  VERDICT=PASS
+#   ./scripts/quality/factory-v2-range-check.sh \
+#     ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON06 aa90d34
+#     STATUS=PASS  COMMITS=2  VERDICT=HALT_N06_FROZEN_OBLIGATION_UNPROVEN
+#
+FACTORY_V2_RANGE_CHECK_AT_C3=DEFERRED_TO_C4 (the ACT is not yet closed)
+FACTORY_V2_PREDECESSOR_RANGE_CHECKS=PASS
+#
+# ------------------------------------------------------------------
+# F14 -- HISTORICAL TRUTH PRESERVED
+# ------------------------------------------------------------------
+# No closed ACT document, HANDOFF or evidence file was edited by this
+# ACT.  The freeze re-verification at C3 covers 1220 paths with
+# ZERO mismatches, and the RECON06 manifest re-verifies with ZERO
+# mismatches over its own 298 paths.
+#
+# RECON06's historical HALT is preserved EXACTLY:
+#   ACT-Verdict: HALT_N06_FROZEN_OBLIGATION_UNPROVEN
+#   HALT_CLASS: GOVERNANCE
+#   BLOCKS_NEXT: NO
+#
+F14=PASS
+RECON06_HISTORICAL_VERDICT=HALT_N06_FROZEN_OBLIGATION_UNPROVEN
+RECON06_HISTORICAL_ARTIFACTS_UNCHANGED=YES
+#
+# ------------------------------------------------------------------
+# THE TRACKED SCOPE
+# ------------------------------------------------------------------
+COMMAND=git diff --stat aa90d34193cd87ace532e743e8fd837e6237d8e3..HEAD
+   (only the authorized paths)
+#
+# The tracked changes of this ACT are:
+#   docs/acts/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON07.md
+#   docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON07.md
+#   docs/factory/act-handoff-map.tsv
+#   docs/ROADMAP.md
+#   evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON07/**
+#   tools/quality/parser-surface-recon07-recompute.HC
+#   Makefile   (ADDITIVE targets only)
+#
+# ZERO tracked src/** changes.
+# ZERO tracked tools/bootstrap/** changes.
+# ZERO new Python.
+# ZERO new dependencies.
+# ZERO new PolyC parser authorities.
+#
+COMMAND=git status --short
+   (clean, apart from this ACT's own authorized files)
+#
+GIT_REPLACE_REFS=0
+TRACKED_SRC_MUTATIONS=0
+TRACKED_BOOTSTRAP_MUTATIONS=0
+NEW_POLYC_PARSER_AUTHORITIES=0
+NEW_PYTHON=0
+NEW_DEPENDENCIES=0
+PRODUCTION_SEMANTIC_DELTA=0
+SUCCESSOR_IMPLEMENTATION_DELTA=0
+#
+# ------------------------------------------------------------------
+# THE NEW MAKEFILE TARGET'S DEPENDENCY GRAPH
+# ------------------------------------------------------------------
+# The new target was audited at parse time:
+#
+COMMAND=make -n parser-surface-recon07-recompute-run
+   (the recipe expands: test-prefix-install -> the .o rule -> the
+#    link rule -> the run command)
+#
+# The required OBJECT appears in the EFFECTIVE dependency graph:
+#   build/parser-surface-recon07-recompute.o
+#     <- tools/quality/parser-surface-recon07-recompute.HC ./hcc
+#        | test-prefix-install
+#   build/parser-surface-recon07-recompute
+#     <- build/parser-surface-recon07-recompute.o
+#   parser-surface-recon07-recompute-run
+#     <- build/parser-surface-recon07-recompute
+#
+# No continuation/backslash swallows a recipe.  The target was
+# EXECUTED, not merely inspected:
+#
+COMMAND=make parser-surface-recon07-recompute-run
+   ... SELECTED=SUB-002
+#   STATUS=PASS
+#   MAKE_EXIT=0
+#
+# It is a REAL run with a REAL exit status, not a no-op.
+#
+NEW_MAKEFILE_TARGET_AUDIT=PASS
+FACTORY_INVARIANTS_STATUS=PASS

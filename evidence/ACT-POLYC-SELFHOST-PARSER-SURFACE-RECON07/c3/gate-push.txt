@@ -1,0 +1,35 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON07
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=gate-push
+#
+# THE REAL gate-push, RE-EXECUTED AT C3, SERIALIZED.
+#
+COMMAND=./scripts/quality/gate-push.sh HEAD
+#
+#   CHECK=build STATUS=PASS
+#   CHECK=install STATUS=PASS
+#   CHECK=gep01 STATUS=PASS
+#   CHECK=aot STATUS=PASS
+#   CHECK=jit STATUS=PASS
+#   CHECK=lsp STATUS=PASS
+#   CHECK=diff-check STATUS=PASS
+#   VERDICT=PASS
+#
+#   GATE_PUSH_EXIT=0
+#
+# gate-push performs a FRESH BUILD in an isolated temporary root and
+# INDEPENDENTLY re-verifies that each of the seven PolyC parser
+# authorities is DEFINED exactly once as a global text symbol in its
+# subject object:
+#
+#   BootstrapValidPostControlFlowToken    DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1
+#   BootstrapOperatorPrecedence            DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1
+#   BootstrapAstBinOpFromToken             DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1
+#   BootstrapAstUnaryOpFromToken           DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1
+#   BootstrapSwitchArmTerminates           DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1
+#   BootstrapCompoundBlockAppendsStatement  DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1
+#
+# (BootstrapCalcPadding is verified by the padding object check.)
+#
+GATE_PUSH=PASS
+GATE_PUSH_EXIT=0

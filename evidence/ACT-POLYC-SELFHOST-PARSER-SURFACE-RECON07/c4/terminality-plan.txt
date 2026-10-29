@@ -1,0 +1,96 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON07
+# ACT_PHASE=C4-CLOSE
+# EVIDENCE_KIND=terminality-plan
+#
+# THE PRE-CLOSE TERMINALITY PLAN.
+#
+# THIS IS A PLAN, NOT A RECEIPT.
+#
+# The ACT requires that the post-CLOSE terminality checks be
+# PERFORMED EXTERNALLY, READ-ONLY, AFTER the terminal CLOSE commit
+# exists.  Writing a claimed after-CLOSE receipt into the tracked
+# terminal CLOSE commit is impossible (the commit's content would
+# change the commit), and creating a SIXTH commit to store it would
+# contradict the "exactly one terminal CLOSE" rule.
+#
+# Therefore the terminal commit contains THIS PLAN, and the actual
+# observations are made and reported by the executing agent AFTER
+# the CLOSE commit, outside the repository.
+#
+# ------------------------------------------------------------------
+# THE CHECKS TO BE PERFORMED EXTERNALLY, AFTER THE CLOSE COMMIT
+# ------------------------------------------------------------------
+#
+#  1. FULL FINAL HEAD AND TREE
+#     COMMAND=git rev-parse HEAD
+#     COMMAND=git rev-parse HEAD^{tree}
+#     Both MUST be recorded.
+#
+#  2. LINEAR RANGE COUNT
+#     COMMAND=git rev-list --count aa90d34193cd87ace532e743e8fd837e6237d8e3..HEAD
+#     The count MUST be 5 (C0 RED, C1 EVIDENCE, C2 IMPL, C3 EVIDENCE,
+#     C4 CLOSE).
+#
+#  3. THE EXACT CLOSE TRAILER
+#     COMMAND=git show -s --format=%B HEAD | tail -5
+#     MUST contain exactly:
+#       ACT: ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON07
+#       ACT-Phase: CLOSE
+#       ACT-Verdict: PASS
+#
+#  4. CLEAN WORKTREE
+#     COMMAND=git status --short
+#     MUST be empty.
+#
+#  5. ZERO REPLACE REFS
+#     COMMAND=git replace -l
+#     MUST be empty.
+#
+#  6. NO POST-CLOSE COMMITS
+#     The HEAD MUST BE the CLOSE commit.  Nothing may follow it.
+#
+#  7. THE FACTORY-v2 RANGE CHECK
+#     COMMAND=./scripts/quality/factory-v2-range-check.sh \
+#                 ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON07 HEAD
+#     MUST be STATUS=PASS, VERDICT=PASS, COMMITS=5.
+#
+#  8. F14 AND APPEND-ONLY
+#     COMMAND=sh scripts/quality/factory-append-only-test.sh
+#     MUST be STATUS=PASS with PASS=11.
+#     COMMAND=shasum -a 256 -c <the RECON07 freeze manifest>
+#     MUST report 1220 OK and 0 mismatches.
+#
+#  9. THE COMPLETE 50-AC LEDGER WITH AC50 POST-CLOSE
+#     The ledger is c3/mandatory-ac-status.tsv with AC49 PASS and AC50
+#     DEFERRED_TO_CLOSE.  After the CLOSE commit, the AC50
+#     disposition becomes PASS, discharged by the external check.
+#     The ledger file itself is NOT edited in a sixth commit; the
+#     post-CLOSE disposition is reported externally.
+#
+# 10. ONE INTACT HANDOFF
+#     COMMAND=ls docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON07.md
+#     The HANDOFF MUST exist, be the ACT's own, and be referenced by
+#     exactly one row of docs/factory/act-handoff-map.tsv.
+#
+# ------------------------------------------------------------------
+# WHAT MUST NOT HAPPEN
+# ------------------------------------------------------------------
+#  * NO sixth commit.
+#  * NO amend, NO rebase, NO replay, NO force-push.
+#  * NO retroactive insertion of the external receipt into the
+#    tracked terminal commit.
+#  * NO edit to any historical artifact.
+#
+# ------------------------------------------------------------------
+# THE PRE-CLOSE CHECKS THIS ACT HAS ALREADY DONE
+# ------------------------------------------------------------------
+#  * The four earlier commit trailers were each validated with
+#    ./scripts/quality/factory-v2-commit-msg-check.sh BEFORE the
+#    commit was made, and each was accepted with STATUS=PASS.
+#  * The intended CLOSE message is validated the same way, at C4,
+#    BEFORE the CLOSE commit is made.
+#  * The predecessor ranges were checked at C0 with
+#    ./scripts/quality/factory-v2-range-check.sh, and both PASS.
+#
+TERMINALITY_PLAN_STATUS=PLAN_ONLY
+POST_CLOSE_RECEIPT_LOCATION=external to the repository
