@@ -1,0 +1,144 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01
+# ACT_PHASE=C0-ENTRY
+# EVIDENCE_KIND=entry-identity
+#
+# THE ENTRY IDENTITY, THE PREDECESSOR TERMINALITY AND THE PRE-EXISTENCE
+# CHECK.  ALL MEASURED at C0.
+#
+# ------------------------------------------------------------------
+# THE ENTRY IDENTITY (F1)
+# ------------------------------------------------------------------
+#
+COMMAND=git branch --show-current
+main
+#
+COMMAND=git status --short
+(empty -- the tracked worktree was CLEAN at C0)
+#
+COMMAND=git rev-parse HEAD
+aa90d34193cd67ace532e743e8fd837e6237d8e3
+#
+COMMAND=git rev-parse HEAD^{tree}
+378790c0c93afc6b5866e1464b9b7c1cf140f0b4
+#
+COMMAND=git replace -l | wc -l
+0
+#
+# The MEASURED values EQUAL the ACT's declared Expected ENTRY_HEAD and
+# Expected ENTRY_TREE exactly.  There was NO mismatch, so no HALT
+# condition of ACT section 3 item 1 was reached.
+#
+ENTRY_HEAD=aa90d34193cd67ace532e743e8fd837e6237d8e3
+ENTRY_HEAD_EXPECTED=aa90d34193cd67ace532e743e8fd837e6237d8e3
+ENTRY_HEAD_MATCHES=YES
+ENTRY_TREE=378790c0c93afc6b5866e1464b9b7c1cf140f0b4
+ENTRY_TREE_EXPECTED=378790c0c93afc6b5866e1464b9b7c1cf140f0b4
+ENTRY_TREE_MATCHES=YES
+ENTRY_BRANCH=main
+ENTRY_WORKTREE_CLEAN=YES
+GIT_REPLACE_REFS=0
+#
+# ------------------------------------------------------------------
+# THE PREDECESSOR TERMINAL RANGE (AC02)
+# ------------------------------------------------------------------
+#
+# COMMAND=sh scripts/quality/factory-v2-range-check.sh \
+#            ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON06 \
+#            aa90d34193cd67ace532e743e8fd837e6237d8e3
+#
+#   ACT=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON06
+#   ENTRY=2bafd875a60fc8347c4f17ca24350d682fd63355
+#   FIRST=027b2e1dc0f96a38aefc88790ce4b1b4997f0ea8
+#   CLOSE=aa90d34193cd67ace532e743e8fd837e6237d8e3
+#   COMMITS=2
+#   VERDICT=HALT_N06_FROZEN_OBLIGATION_UNPROVEN
+#   STATUS=PASS
+#
+RECON06_RANGE_CHECK_EXIT=0
+RECON06_RANGE_CHECK_STATUS=PASS
+RECON06_COMMITS=2
+RECON06_VERDICT=HALT_N06_FROZEN_OBLIGATION_UNPROVEN
+#
+# COMMAND=git log -1 --format='%B' aa90d34193cd67ace532e743e8fd837e6237d8e3 | tail -6
+#
+#   ACT: ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON06
+#   ACT-Phase: CLOSE
+#   ACT-Verdict: HALT_N06_FROZEN_OBLIGATION_UNPROVEN
+#   HALT_CLASS: GOVERNANCE
+#   BLOCKS_NEXT: NO
+#
+RECON06_TRAILER_ACT=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON06
+RECON06_TRAILER_PHASE=CLOSE
+RECON06_TRAILER_VERDICT=HALT_N06_FROZEN_OBLIGATION_UNPROVEN
+RECON06_TRAILER_HALT_CLASS=GOVERNANCE
+RECON06_TRAILER_BLOCKS_NEXT=NO
+#
+# The predecessor's terminal HALT is INTACT and is NOT touched by this
+# ACT.  Its two-commit range is a FACTUAL historical range (C0 + C4);
+# it is NOT padded to the five-commit lifecycle the predecessor's ACT
+# section 12 described, because the predecessor HALTED at C0.
+#
+# COMMAND=sh scripts/quality/factory-v2-range-check.sh \
+#            ACT-POLYC-SELFHOST-PARSER-SLICE07 \
+#            2bafd875a60fc8347c4f17ca24350d682fd63355
+#
+#   ACT=ACT-POLYC-SELFHOST-PARSER-SLICE07
+#   ENTRY=1a3d2d520306f02ca08adb29c62688748e33eab8
+#   FIRST=cc1d828a79bcb29fe89425ab7515b0f9c696b845
+#   CLOSE=2bafd875a60fc8347c4f17ca24350d682fd63355
+#   COMMITS=5
+#   VERDICT=PASS
+#   STATUS=PASS
+#
+SLICE07_RANGE_CHECK_EXIT=0
+SLICE07_RANGE_CHECK_STATUS=PASS
+SLICE07_COMMITS=5
+SLICE07_VERDICT=PASS
+#
+# COMMAND=git log -1 --format='%(trailers)' 2bafd875a60fc8347c4f17ca24350d682fd63355
+#
+#   ACT: ACT-POLYC-SELFHOST-PARSER-SLICE07
+#   ACT-Phase: CLOSE
+#   ACT-Verdict: PASS
+#
+SLICE07_TRAILER_ACT=ACT-POLYC-SELFHOST-PARSER-SLICE07
+SLICE07_TRAILER_PHASE=CLOSE
+SLICE07_TRAILER_VERDICT=PASS
+#
+# ------------------------------------------------------------------
+# THE PRE-EXISTENCE CHECK (ACT section 3 item 1, last sentence)
+# ------------------------------------------------------------------
+#
+# COMMAND=ls docs/acts/ | grep -i 'EVIDENCE-CORRECTION'
+#   (no output -- the correction ACT did NOT exist)
+# COMMAND=ls docs/factory/ | grep -i 'SLICE07-EVIDENCE'
+#   (no output -- the correction HANDOFF did NOT exist)
+# COMMAND=git ls-files evidence/ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01
+#   (no output -- no correction evidence was tracked)
+#
+CORRECTION_ACT_DOC_PREEXISTED=NO
+CORRECTION_HANDOFF_PREEXISTED=NO
+CORRECTION_EVIDENCE_PREEXISTED=NO
+CORRECTION_IS_NOT_A_RESUME=YES
+#
+# ------------------------------------------------------------------
+# THE TWO-COMMIT HALT RANGE, AND WHAT THIS ACT DOES NOT DO
+# ------------------------------------------------------------------
+#
+# The predecessor RECON06 HALTED with HALT_CLASS=GOVERNANCE and
+# BLOCKS_NEXT=NO.  Per docs/factory/DOCTRINE.md section 25, a
+# GOVERNANCE/BLOCKS_NEXT=NO HALT is the documented board signal that the
+# roadmap may proceed to a same-scope successor ACT.  This ACT is that
+# successor: an EVIDENCE-HYGIENE correction, NOT a resumption of
+# RECON06 and NOT a SLICE08 implementation.
+#
+# This ACT does NOT:
+#   - convert RECON06's HALT into a PASS;
+#   - rewrite, amend, rebase, reset or force-push any history;
+#   - edit any closed ACT, HANDOFF or evidence artifact (F14);
+#   - add an eighth PolyC parser authority;
+#   - select a parser candidate;
+#   - authorize SLICE08.
+#
+# ------------------------------------------------------------------
+ENTRY_IDENTITY_STATUS=PASS

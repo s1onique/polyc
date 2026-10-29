@@ -1,0 +1,37 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01
+# ACT_PHASE=C0-ENTRY
+# EVIDENCE_KIND=negative-controls-contract
+#
+# THE EIGHT MANDATORY INDEPENDENT ADVERSE CONTROLS, FROZEN AT C0.
+#
+# These are frozen BEFORE any adverse experiment is executed.  Every NC
+# must have an ACTUAL adverse execution, an EXACT observed failure
+# class, and a pristine/restore POSITIVE CONTROL.  A PASS inferred from
+# only a pristine object is VACUOUS.
+#
+# Schema: nc_id  adverse_condition  required_detector  positive_control
+#
+nc_id	adverse_condition	required_detector	positive_control
+NC01	Omit the actual source C mutation while relabeling the build	Source-hash and scope mismatch	the mutated source hash differs from the pristine source hash
+NC02	Reuse a C-ON object as the purported C-OFF oracle	Selector/import/disassembly provenance rejection	the genuine C-OFF parser object has NO undefined reference to the PolyC SUB-003 symbol
+NC03	Reuse the same C-OFF executable for pristine and mutant	Object/executable identity and causal non-change detector	the pristine and mutant C-OFF executables have DIFFERENT hashes
+NC04	Mutate an unrelated C comparison and claim SUB-003 causality	Selected source-range/symbol and witness-subject mismatch	the mutated source range is the selected C decision's range
+NC05	Corrupt one witness expected result or input row	Fixture exact-ID/semantic mismatch	the fixture expected column is byte-identical to the committed one
+NC06	Claim a failed compiler build as changed witness behavior	Build-success precondition failure	the C-OFF mutant build exits 0 and produces an executable
+NC07	Restore C source incompletely	Byte-hash restoration rejection	the restored source hash equals the pristine source hash
+NC08	Re-label the historical PolyC C3 experiment as the new C experiment, or count it as independent C evidence	Subject + execution-ID + evidence-path join rejection	the new experiment has a distinct execution ID, a distinct source diff hash and a distinct evidence path
+#
+# ------------------------------------------------------------------
+# THE VACUITY RULE
+# ------------------------------------------------------------------
+# Each NC's raw execution record is in
+# c2/negative-controls-raw.tsv, and each is independently re-verified by
+# the PolyC auditor at C3 (c3/independent-controls-join.tsv).
+#
+# An NC that was NOT actually executed is UNPROVEN, never PASS.  An NC
+# whose observed failure class differs from its required detector is
+# FAIL, never PASS.
+#
+NEGATIVE_CONTROLS_TOTAL=8
+NEGATIVE_CONTROLS_FROZEN_AT_C0=8
+NEGATIVE_CONTROLS_EXECUTED_AT_C0=0

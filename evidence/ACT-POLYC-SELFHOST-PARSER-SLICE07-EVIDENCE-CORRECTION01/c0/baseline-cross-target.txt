@@ -1,0 +1,48 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01
+# ACT_PHASE=C0-ENTRY
+# EVIDENCE_KIND=baseline-cross-target
+#
+# THE CROSS-TARGET RUN.  THE HISTORICAL ENVIRONMENT CONDITION.
+# MEASURED FRESH at C0, SERIALIZED.
+#
+# ------------------------------------------------------------------
+COMMAND=cd src/tests && ./test-runner --target=aarch64-apple-darwin
+#
+# Every cross-target test failed with
+#   "Failed to open file: ../../build/aarch64-apple-darwin/include/tos.HH"
+#
+# ------------------------------------------------------------------
+COMMAND=grep -c 'Failed to open file' <log>
+#   67
+COMMAND=grep -c 'Failed to compile' <log>
+#   67
+COMMAND=grep 'CROSS_TARGET_EXIT' <log>
+#   CROSS_TARGET_EXIT=0
+#
+COMMAND=grep -o 'Failed to open file: [^"]*' <log> | sort -u
+#   Failed to open file: ../../build/aarch64-apple-darwin/include/tos.HH
+#
+# There is exactly ONE distinct failure message.  The 67 failures are
+# 67 tests that all hit the same missing cross-target runtime prefix.
+#
+# ------------------------------------------------------------------
+CROSS_TARGET_TESTS_ATTEMPTED=67
+CROSS_TARGET_FAILED_TO_OPEN_FILE=67
+CROSS_TARGET_FAILED_TO_COMPILE=67
+CROSS_TARGET_PASSED=0
+CROSS_TARGET_DISTINCT_FAILURE_MESSAGES=1
+CROSS_TARGET_FAILURE_MESSAGE=Failed to open file: ../../build/aarch64-apple-darwin/include/tos.HH
+#
+# The runner itself exits 0 because every test failure is reported
+# individually; the 67 "Failed to compile" lines and the 67 "Failed to
+# open file" lines are the same 67 tests.
+#
+# This is IDENTICAL on the entry tree and is a HISTORICAL ENVIRONMENT
+# condition, not a parser failure identity.  It is PRESERVED HONESTLY
+# rather than relabelled PASS, and it is NOT a new failure identity.
+# The historical 67 count is CONFIRMED by fresh measurement.
+#
+CROSS_TARGET_STATUS=FAIL_ENVIRONMENT_PREFIX
+NEW_CROSS_TARGET_FAILURE_IDENTITIES=0
+#
+BASELINE_CROSS_TARGET_STATUS=FAIL_ENVIRONMENT_PREFIX

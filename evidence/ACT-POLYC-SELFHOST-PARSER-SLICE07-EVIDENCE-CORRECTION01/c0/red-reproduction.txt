@@ -1,0 +1,139 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01
+# ACT_PHASE=C0-ENTRY
+# EVIDENCE_KIND=red-reproduction
+#
+# THE RED.  MEASURED at C0, READ-ONLY.
+#
+# THE RED IS TWO-PARTED:
+#
+#   RED-1  There is NO SLICE07-era literal C-decision mutant.  The
+#          committed SLICE07 C3 evidence says, in its own words, that the
+#          mutation was NOT in src/parser.c.
+#
+#   RED-2  The existing SLICE07 PolyC mutant CANNOT be relabeled as a
+#          literal C mutant.  The relabeling is not merely discouraged;
+#          it is mechanically UNSOUND, because the PolyC mutant does not
+#          touch the C decision at all, and because the C decision is
+#          COMPILED OUT of the production (C-ON) path, so a PolyC-source
+#          mutation is the ONLY mutation the C-ON production compiler
+#          can be sensitive to.
+#
+# Neither part is a statement about production correctness.  The
+# production result is NOT impeached (see c0/production-authorities.tsv).
+# What is impeached is the COMPLETENESS OF THE CONTROL BOOKKEEPING.
+#
+# ------------------------------------------------------------------
+# RED-1 -- THE LITERAL C MUTANT DOES NOT EXIST IN THE SLICE07 RECORD
+# ------------------------------------------------------------------
+#
+# COMMAND=grep -n 'MUTATION_SCOPE\|MUTATION_IS_IN_SRC_PARSER_C\|MUTATION_IS_IN_THE_POLYC_SOURCE' \
+#            evidence/ACT-POLYC-SELFHOST-PARSER-SLICE07/c3/causal-polyc-mutation-restoration.txt
+#
+#   MUTATION_SCOPE=tools/bootstrap/selfhost-parser-slice07.HC ONLY
+#   MUTATION_IS_IN_THE_POLYC_SOURCE=YES
+#   MUTATION_IS_IN_SRC_PARSER_C=NO
+#
+# COMMAND=grep -n 'N-06' evidence/ACT-POLYC-SELFHOST-PARSER-SLICE07/c3/inherited-controls-join.tsv
+#
+#   22:N-06	the PolyC source	Mutate ONLY the selected decision in a disposable worktree, rebuild the real compiler, and run the witness.	CAUSAL_DIRECTION_CHANGE	the mutant production compiler BUILDS and REJECTS the static witness with "ERROR: Mapping exists for 1 -> %l14 i64 local"; the pristine and restored compilers compile and run it (c3/causal-polyc-mutation-restoration.txt)	1	YES	SENSITIVE
+#
+# NOTE the frozen text says "the selected **C** decision".  The join
+# row says "the selected decision".  The word "C" was silently dropped
+# in the join.  That drop is the bookkeeping defect.
+#
+# COMMAND=grep -n 'S7-CC-01' evidence/ACT-POLYC-SELFHOST-PARSER-SLICE07/c3/new-controls-join.tsv
+#
+#   30:S7-CC-01	the PolyC source	Change PolyC predicate to admit/skip the wrong semantic class.	Successfully rebuilt mutant production hcc changes real compilation behavior, source restored	the mutant production compiler BUILDS (EXIT=0) and REJECTS the static witness with "ERROR: Mapping exists for 1 -> %l14 i64 local"; the restored compiler compiles and runs it	1	YES	SENSITIVE
+#
+# Both rows carry the SAME subject, the SAME diagnostic string and the
+# SAME evidence path.  ONE experiment, TWO control IDs.
+#
+RED1_LITERAL_C_MUTANT_EXISTS_IN_SLICE07=NO
+RED1_SLICE07_MUTATION_SCOPE=tools/bootstrap/selfhost-parser-slice07.HC ONLY
+RED1_SLICE07_MUTATION_IS_IN_SRC_PARSER_C=NO
+RED1_SLICE07_N06_JOIN_SUBJECT=the PolyC source
+RED1_SLICE07_S7CC01_JOIN_SUBJECT=the PolyC source
+RED1_SLICE07_N06_AND_S7CC01_SHARE_THE_DIAGNOSTIC=YES
+#
+# ------------------------------------------------------------------
+# RED-2 -- THE POLYC MUTANT CANNOT BE RELABELED AS A C MUTANT
+# ------------------------------------------------------------------
+#
+# RED-2a  THE C-ON PRODUCTION PATH DOES NOT CONTAIN THE C DECISION.
+#
+# The selected C decision is compiled OUT of the production path by the
+# dedicated selector.  Measured at C0 from the live production object:
+#
+# COMMAND=nm build/CMakeFiles/hcc.dir/parser.c.o | grep -q ' U _BootstrapCompoundBlockAppendsStatement' && echo IMPORTS
+#   IMPORTS
+#
+# The production parser object IMPORTS the PolyC symbol as an undefined
+# reference.  The legacy C branch is behind
+# `#ifdef HCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND` / `#else`, so
+# with the selector ON it is NOT COMPILED AT ALL.  A mutation of the
+# PolyC source therefore CANNOT be a mutation of the selected C
+# decision; and conversely, a mutation of the selected C decision CANNOT
+# affect the C-ON production path at all.  The two subjects are
+# DISJOINT.  That disjointness is the mechanical reason the
+# PolyC-source experiment is not a C-decision experiment.
+#
+# COMMAND=grep -n 'HCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND' src/parser.c
+#   1978:#ifdef HCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND
+#   1999:     * Reachable only in non-HCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND
+#
+# COMMAND=sed -n '1997,2004p' src/parser.c
+#   #else
+#       /* Stage0 evidence path: the byte-identical legacy condition.
+#        * Reachable only in non-HCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND
+#        * builds (the differential's slice07-parser-legacy.o).  Production
+#        * never executes this branch. */
+#       if (stmt_kind == AST_DECL && declvar_kind == AST_GVAR) return 0;
+#       return 1;
+#   #endif
+#
+RED2A_C_DECISION_COMPILED_OUT_OF_CON=YES
+RED2A_C_ON_PARSER_OBJECT_IMPORTS_POLYC_SYMBOL=YES
+RED2A_C_DECISION_AND_POLYC_SUBJECT_ARE_DISJOINT=YES
+#
+# RED-2b  THE RELABELING WOULD BE A FALSE CLAIM UNDER THE FROZEN
+#         CONTRACT.
+#
+# The frozen RECON05 corpus contains NO clause authorising a subject
+# substitution.  RECON06 measured this exhaustively; this ACT
+# re-confirmed the decisive facts by reading the committed artifacts
+# directly (see c0/historical-n06-reproduction.tsv).
+#
+# The frozen RED-05 successor-state column affirmatively requires that
+# "the C decision is delegated", i.e. the frozen contract expects the
+# PRODUCTION path to have no active C decision.  The literal N-06
+# experiment is therefore only satisfiable in a build in which the
+# dedicated selector is OFF -- which is exactly the C-OFF configuration
+# this ACT constructs at C1.
+#
+RED2B_FROZEN_RULE_PERMITS_SUBJECT_SUBSTITUTION=NO
+RED2B_FROZEN_RED05_REQUIRES_C_DELEGATED=YES
+RED2B_LITERAL_N06_REQUIRES_A_SELECTOR_OFF_BUILD=YES
+#
+# ------------------------------------------------------------------
+# THE RED, STATED
+# ------------------------------------------------------------------
+#
+# At the entry tree:
+#
+#   - there is NO evidence of a literal N-06 experiment (RED-1);
+#   - the existing S7-CC-01 experiment CANNOT be relabeled as one, and
+#     the relabeling is mechanically unsound (RED-2);
+#   - the frozen N-06 obligation remains DISCHARGED-ON-A-DIFFERENT-
+#     SUBJECT, i.e. UNPROVEN as written.
+#
+# Therefore this ACT has REAL WORK TO DO, and the work is bounded: build
+# the C-OFF configuration, mutate the selected C decision there, and
+# observe the causal direction.
+#
+# ------------------------------------------------------------------
+RED_REPRODUCED=YES
+RED_N06_LITERAL_EXPERIMENT_EXISTS_AT_ENTRY=NO
+RED_RELABELING_SOUND=NO
+RED_REASON=NO_LITERAL_C_MUTANT_IN_HISTORY_AND_RELABELING_IS_DISJOINT
+RED_PRODUCTION_RESULT_IMPEACHED=NO
+RED_SCOPE_OF_REMEDY=EVIDENCE_ONLY

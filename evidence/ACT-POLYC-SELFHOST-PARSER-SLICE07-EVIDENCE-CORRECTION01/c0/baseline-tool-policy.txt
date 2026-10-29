@@ -1,0 +1,77 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01
+# ACT_PHASE=C0-ENTRY
+# EVIDENCE_KIND=baseline-tool-policy
+#
+# THE TOOL-POLICY BASELINE.  MEASURED FRESH at C0, SERIALIZED.
+#
+# ------------------------------------------------------------------
+# F-NO-PYTHON
+# ------------------------------------------------------------------
+COMMAND=sh scripts/quality/factory-no-python-check.sh
+#
+#   FAIL  scripts/quality/llvm-byte-memory01-test.sh  forbidden Python invocation
+#   FAIL  scripts/quality/llvm-cap-table-verifier.py  forbidden Python source suffix
+#   FAIL  scripts/quality/llvm-intops01-test.sh  forbidden Python invocation
+#   FAIL  scripts/quality/llvm-memory01-red-test.sh  forbidden Python invocation
+#   FAIL  scripts/quality/llvm-spike-test.sh  forbidden Python invocation
+#   FAIL  tools/quality/bootstrap02-corpus-runner.py  forbidden Python source suffix
+#   FAIL  tools/quality/bootstrap02-error-corpus.py  forbidden Python source suffix
+#   FAIL  tools/quality/bootstrap03-corpus-runner.py  forbidden Python source suffix
+#   FAIL  tools/quality/bootstrap03-error-corpus.py  forbidden Python source suffix
+#   FAIL  tools/quality/bootstrap04-corpus-runner.py  forbidden Python source suffix
+#   FAIL  tools/quality/bootstrap04-error-corpus.py  forbidden Python source suffix
+#   FAIL  tools/quality/llvm-gep01-test.HC  known PolyC -> Python execution edge (callgraph inventory)
+#
+#   --- summary ---
+#   POLYC_TOOLS_TRACKED_PYTHON=12
+#   POLYC_TOOLS_TRACKED_INSPECTED=5664
+#   POLYC_TOOLS_TRACKED_PASSES=5657
+#   STATUS=FAIL
+#   NO_PYTHON_EXIT=1
+#
+# EXACTLY the 12 historical violations, ZERO new.  The status is FAIL
+# and is reported as FAIL; it is NEVER relabelled PASS.
+#
+# NOTE: the INSPECTED/PASSES counters moved from RECON06's
+# 5644/5637 to 5664/5657 because this ACT added tracked files (the
+# ACT document and the C0 evidence files).  The VIOLATION count, which
+# is the identity that matters, is unchanged at 12.
+#
+F_NO_PYTHON=FAIL
+F_NO_PYTHON_VIOLATION_COUNT=12
+F_NO_PYTHON_VIOLATIONS_MATCH_HISTORICAL_EXACTLY=YES
+F_NO_PYTHON_NEW_VIOLATIONS=0
+F_NO_PYTHON_EXIT=1
+#
+# ------------------------------------------------------------------
+# F-POLYC-TOOLS
+# ------------------------------------------------------------------
+COMMAND=ls tools/factory/factory-polyc-tools-check.HC
+#   ls: cannot access 'tools/factory/factory-polyc-tools-check.HC': No such file or directory
+#   EXIT=2
+COMMAND=ls build/factory-polyc-tools-check
+#   ls: cannot access 'build/factory-polyc-tools-check': No such file or directory
+#   EXIT=2
+#
+# The AUTHORITATIVE F-POLYC-TOOLS CHECKER IS NOT LANDED.  It is
+# reported UNAVAILABLE.  It is NEVER reported PASS, and this ACT does
+# NOT declare it PASS.
+#
+F_POLYC_TOOLS=UNAVAILABLE
+F_POLYC_TOOLS_CHECKER_LANDED=NO
+F_POLYC_TOOLS_REPORTED_AS_PASS=NO
+#
+# ------------------------------------------------------------------
+# THE SCOPE-RULE CONSEQUENCE FOR THIS ACT
+# ------------------------------------------------------------------
+# Any new substantive verifier of this ACT MUST be a PolyC .HC source
+# compiled and executed with the actual compiler.  This ACT adds NO
+# shell test logic, NO Python, and NO dependency.
+#
+# The ACT's new verifier is
+# tools/quality/parser-slice07-evidence-correction01-audit.HC
+# (PolyC), compiled with the production ./hcc.
+#
+F_POLYC_TOOLS_COMPLIANCE_FOR_THIS_ACT=POLYC_SOURCE_ONLY
+NEW_PYTHON_FILES=0
+NEW_DEPENDENCIES=0
