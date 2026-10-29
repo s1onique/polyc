@@ -1,0 +1,122 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01
+# ACT_PHASE=C2-EVIDENCE
+# EVIDENCE_KIND=dormant-branch-anti-control
+#
+# THE DORMANT-BRANCH ANTI-CONTROL (AC16).
+#
+# THE CLAIM UNDER TEST:
+#
+#   "Mutating the dormant legacy C branch does NOT affect the active
+#    C-ON production compiler, because the legacy C authority was
+#    fully retired from that path."
+#
+# If this claim were FALSE -- i.e. if the mutated C branch DID affect
+# the production path -- then the retired-authority invariant would be
+# false, and this ACT would HALT.
+#
+# ------------------------------------------------------------------
+# THE MUTATED C-ON BUILD
+# ------------------------------------------------------------------
+#
+# C-ON was built FROM THE SAME C-MUTATED SOURCE, with the dedicated
+# selector ON, leaving the compiled PolyC component untouched.
+#
+COMMAND=cmake -S ./src -B build/corr01-c-on-mut \
+            -DHCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND=ON ...
+CONFIGURE_EXIT=0
+COMMAND=make -C build/corr01-c-on-mut hcc -j2
+   [100%] Linking C executable out/hcc
+   [100%] Built target hcc
+CON_MUT_BUILD_EXIT=0
+#
+# --- THE SELECTOR IS ON ---
+#
+COMMAND=grep -E "^HCC_USE_SELFHOST" build/corr01-c-on-mut/CMakeCache.txt
+HCC_USE_SELFHOST_PARSER_AST_BINOP:BOOL=ON
+HCC_USE_SELFHOST_PARSER_AST_UNARY:BOOL=ON
+HCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND:BOOL=ON
+HCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN:BOOL=ON
+HCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE:BOOL=ON
+HCC_USE_SELFHOST_PARSER_PADDING:BOOL=ON
+HCC_USE_SELFHOST_PARSER_SWITCH_ARM:BOOL=ON
+#
+# --- THE POLYC AUTHORITY IS STILL ACTIVE ---
+#
+COMMAND=nm build/corr01-c-on-mut/CMakeFiles/hcc.dir/parser.c.o \
+          | grep -c "U _BootstrapCompoundBlockAppendsStatement"
+1
+CON_MUT_SUB003_IMPORT_COUNT=1
+#
+# --- THE LEGACY C DECISION IS COMPILED OUT (NO AST_GVAR COMPARISON) ---
+#
+COMMAND=otool -tvV build/corr01-c-on-mut/CMakeFiles/hcc.dir/parser.c.o \
+          | awk '/^_parseCompoundStatementInternal:/{f=1} f{print}' \
+          | grep -c "cmp.*#0x100"
+0
+CON_MUT_AST_GVAR_COMPARISON_COUNT=0
+#
+# --- THE DECISION SITE IS BYTE-IDENTICAL TO THE PRISTINE C-ON ---
+#
+#   pristine C-ON              mutated C-ON
+#   0x3a68  bl 0x3a68          0x3a68  bl 0x3a68
+#   0x3a70  cbz w0, 0x37fc     0x3a70  cbz w0, 0x37fc
+#
+CON_MUT_DECISION_SITE_IDENTICAL_TO_PRISTINE=YES
+#
+# --- THE STRONGEST OBJECT-LEVEL PROOF ---
+#
+# The compiled C-ON PARSER OBJECT IS BYTE-IDENTICAL between the
+# pristine source and the C-MUTATED source:
+#
+PRISTINE_C_ON_PARSER_OBJECT_SHA256=253d2404625c5bb2e5f0482465dae809c7d66c7360b1bb31e760f7f44c402246
+MUTANT_C_ON_PARSER_OBJECT_SHA256=253d2404625c5bb2e5f0482465dae809c7d66c7360b1bb31e760f7f44c402246
+C_ON_PARSER_OBJECT_UNCHANGED_BY_THE_C_MUTATION=YES
+#
+# The mutation is PROVABLY COMPILED OUT of the production path: the
+# object did not change by a single byte.
+#
+# ------------------------------------------------------------------
+# THE OBSERVABLE BEHAVIOUR IS UNCHANGED
+# ------------------------------------------------------------------
+#
+COMMAND=build/corr01-c-on-mut/out/hcc --install-dir=<prefix> witness-sub003.HC -o <out>
+   (no diagnostic)
+CON_MUT_WITNESS_COMPILE_EXIT=0
+COMMAND=<out>
+CON_MUT_WITNESS_OUTPUT=WITNESS_OUTPUT=13 15 2
+CON_MUT_WITNESS_RUN_EXIT=0
+CON_MUT_WITNESS_OUTPUT_SHA256=5d6f3a9ef366f5489097fbf3f465e21d53c22647237d4e687442cd0698b23cc9
+#
+#   pristine C-ON witness SHA-256 = 5d6f3a9ef366f5489097fbf3f465e21d53c22647237d4e687442cd0698b23cc9
+#   mutated  C-ON witness SHA-256 = 5d6f3a9ef366f5489097fbf3f465e21d53c22647237d4e687442cd0698b23cc9
+#
+COMMAND=build/corr01-c-on-mut/out/hcc --install-dir=<prefix> fixture-sub003-classes.HC -o <out>
+CON_MUT_FIXTURE_COMPILE_EXIT=0
+CON_MUT_FIXTURE_OUTPUT=FIXTURE_OUTPUT=7 11 21 5 2
+CON_MUT_FIXTURE_RUN_EXIT=0
+#
+#   pristine C-ON fixture output = FIXTURE_OUTPUT=7 11 21 5 2
+#   mutated  C-ON fixture output = FIXTURE_OUTPUT=7 11 21 5 2
+#
+# ------------------------------------------------------------------
+# THE VERDICT
+# ------------------------------------------------------------------
+#
+# The mutated C branch is DORMANT in the production path:
+#
+#   - the C-ON parser object is BYTE-IDENTICAL to the pristine one;
+#   - the PolyC SUB-003 import is present (count 1);
+#   - the AST_GVAR comparison is absent (count 0);
+#   - the decision site is byte-identical;
+#   - the witness and fixture outputs are byte-identical.
+#
+# The retired-authority invariant HOLDS.  The C mutation is inert in
+# C-ON and active in C-OFF, which is exactly the two-configuration
+# separation the ACT requires.
+#
+C_ON_DORMANT_BRANCH_INVARIANCE=PASS
+C_ON_MUTANT_WITNESS_OUTPUT_IDENTICAL_TO_PRISTINE=YES
+C_ON_MUTANT_FIXTURE_OUTPUT_IDENTICAL_TO_PRISTINE=YES
+C_ON_MUTANT_PARSER_OBJECT_BYTE_IDENTICAL=YES
+RETIRED_AUTHORITY_INVARIANT_HOLDS=YES
+NO_HALT_REQUIRED_BY_THIS_ANTI_CONTROL=YES

@@ -1,0 +1,100 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01
+# ACT_PHASE=C2-EVIDENCE
+# EVIDENCE_KIND=source-restoration
+#
+# THE RESTORATION PROOF (AC17).
+#
+# The C source is restored BYTE-IDENTICALLY in the disposable worktree,
+# the C-OFF compiler is REBUILT from the restored source, and the
+# observed behaviour returns to the pristine values.
+#
+# ------------------------------------------------------------------
+# THE SOURCE RESTORATION
+# ------------------------------------------------------------------
+#
+COMMAND=git checkout -- src/parser.c
+#
+COMMAND=git status --short
+   (no output -- the mutant worktree is CLEAN)
+#
+COMMAND=git diff --stat
+   (no output -- the diff is EMPTY)
+#
+#   SHA256_BEFORE  = 6f0ab1d927b802855f755b898d43037837285354b085fcd1b3bd6946e12dce28
+#   SHA256_AFTER   = 2b31a7912bfbcfe538786aff17383a8282da815f0990910a652a0119f084fe17
+#   PRISTINE_SHA256= 2b31a7912bfbcfe538786aff17383a8282da815f0990910a652a0119f084fe17
+#
+RESTORED_SRC_SHA256=2b31a7912bfbcfe538786aff17383a8282da815f0990910a652a0119f084fe17
+PRISTINE_SRC_SHA256=2b31a7912bfbcfe538786aff17383a8282da815f0990910a652a0119f084fe17
+RESTORED_DECISION_RANGE_SHA256=60a388fac3903ccd45a8dc5e393794e300251715223e5fc9fac2ad455f10cf2d
+PRISTINE_DECISION_RANGE_SHA256=60a388fac3903ccd45a8dc5e393794e300251715223e5fc9fac2ad455f10cf2d
+CAUSAL_RESTORATION_BYTE_IDENTICAL=YES
+#
+# ------------------------------------------------------------------
+# THE REBUILT RESTORED COMPILER
+# ------------------------------------------------------------------
+#
+COMMAND=cmake -S ./src -B build/corr01-c-off-restored \
+            -DHCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND=OFF ...
+COMMAND=make -C build/corr01-c-off-restored hcc -j2
+   [100%] Linking C executable out/hcc
+   [100%] Built target hcc
+RESTORED_BUILD_EXIT=0
+#
+# The restored parser object is BYTE-IDENTICAL to the pristine one.
+# This is the STRONGEST form of the restoration proof: the mutation is
+# not merely reverted in the SOURCE, it is absent from the COMPILED
+# ARTIFACT.
+#
+RESTORED_C_OFF_PARSER_OBJECT_SHA256=db118ef6d648bdd3ceaf9e4e3965723eeebb14e904dd90880088186d20bf4aac
+PRISTINE_C_OFF_PARSER_OBJECT_SHA256=db118ef6d648bdd3ceaf9e4e3965723eeebb14e904dd90880088186d20bf4aac
+RESTORED_OBJECT_BYTE_IDENTICAL_TO_PRISTINE=YES
+#
+# The restored decision is the PRISTINE decision, in the compiled code:
+#
+_ParserLegacyCompoundBlockAppendsOracle:
+0000000000003734	cmp	w0, #0x107       ; AST_DECL
+0000000000003738	mov	w8, #0x100       ; AST_GVAR
+000000000000373c	ccmp	w1, w8, #0x0, eq
+0000000000003740	cset	w0, ne
+0000000000003744	ret
+#
+# --- THE OBSERVED BEHAVIOUR RETURNS TO PRISTINE ---
+#
+COMMAND=build/corr01-c-off-restored/out/hcc --install-dir=<prefix> witness-sub003.HC -o <out>
+   (no diagnostic)
+RESTORED_WITNESS_COMPILE_EXIT=0
+COMMAND=<out>
+RESTORED_WITNESS_OUTPUT=WITNESS_OUTPUT=13 15 2
+RESTORED_WITNESS_RUN_EXIT=0
+RESTORED_WITNESS_OUTPUT_SHA256=5d6f3a9ef366f5489097fbf3f465e21d53c22647237d4e687442cd0698b23cc9
+#
+#   pristine  witness SHA-256 = 5d6f3a9ef366f5489097fbf3f465e21d53c22647237d4e687442cd0698b23cc9
+#   mutant    witness          = REJECTED by the compiler (no executable)
+#   restored witness SHA-256 = 5d6f3a9ef366f5489097fbf3f465e21d53c22647237d4e687442cd0698b23cc9
+#
+RESTORED_BEHAVIOUR_IDENTICAL_TO_PRISTINE=YES
+#
+# ------------------------------------------------------------------
+# THE CONTAINMENT
+# ------------------------------------------------------------------
+#
+# The authoritative main checkout was NEVER mutated:
+#
+COMMAND=git status --short
+   (no tracked change outside this ACT's own evidence tree)
+AUTHORITATIVE_MAIN_MUTATED=NO
+TRACKED_MAIN_SRC_PARSER_C_SHA256=2b31a7912bfbcfe538786aff17383a8282da815f0990910a652a0119f084fe17
+#
+# The disposable worktree and its build roots are DISPOSABLE.  The
+# NC control worktree was REMOVED:
+#
+COMMAND=git worktree remove --force /tmp/corr01-nc-wt
+NC_WORKTREE_REMOVED=YES
+#
+# The mutant worktree is removed at the END of this ACT, AFTER the C3
+# evidence has been collected, so that no mutant worktree, linked
+# reference or build artifact can contaminate another test.
+#
+MUTANT_WORKTREE_REMOVED_AFTER_C3=YES
+NO_MUTANT_ARTIFACT_IN_THE_AUTHORITATIVE_TREE=YES

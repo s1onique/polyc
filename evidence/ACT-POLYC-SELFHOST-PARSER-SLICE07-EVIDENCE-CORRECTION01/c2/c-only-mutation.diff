@@ -1,0 +1,121 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01
+# ACT_PHASE=C2-EVIDENCE
+# EVIDENCE_KIND=c-only-mutation
+#
+# THE LITERAL N-06 C-ONLY MUTATION.  EXACTLY ONE HUNK.
+#
+# THE MUTATION IS AN ADVERSARIAL POLARITY FLIP OF THE SELECTED C
+# DECISION.  The frozen semantics are:
+#
+#   if (stmt_kind == AST_DECL && declvar_kind == AST_GVAR) return 0;  /* SKIP */
+#   return 1;                                                        /* APPEND */
+#
+# The mutant makes the AST_DECL && AST_GVAR class APPEND instead of
+# SKIP.  The short-circuit, the host projection, src/ast.h, the PolyC
+# component, the witness, the fixture, the Makefile and CMakeLists.txt
+# are ALL UNCHANGED.
+#
+# ------------------------------------------------------------------
+# THE WORKTREE DISPOSITION
+# ------------------------------------------------------------------
+#
+WORKTREE_PATH=/tmp/corr01-mut-wt
+WORKTREE_BRANCH=detached
+WORKTREE_BASE=d47c77c7a340b61ef28c5fdd202e8757089bd64e
+WORKTREE_BASE_TREE=d0d6f55dc6c493d547aa6bf3d0ab34b71ff1728c
+WORKTREE_CREATED_BY=git worktree add --detach /tmp/corr01-mut-wt HEAD
+TRACKED_MAIN_WORKTREE_MUTATED=NO
+MERGED_OR_COMMITTED_THE_MUTATION=NO
+ACT_BRANCH_CREATED=NO (detached; no ceremonial branch)
+
+# ------------------------------------------------------------------
+# THE SOURCE HASHES
+# ------------------------------------------------------------------
+#
+PRISTINE_SRC_SHA256=2b31a7912bfbcfe538786aff17383a8282da815f0990910a652a0119f084fe17
+MUTATED_SRC_SHA256=6f0ab1d927b802855f755b898d43037837285354b085fcd1b3bd6946e12dce28
+PRISTINE_DECISION_RANGE_SHA256=60a388fac3903ccd45a8dc5e393794e300251715223e5fc9fac2ad455f10cf2d
+MUTATED_DECISION_RANGE_SHA256=805748fdd305eb42e0bba6adf52ecb6925a63b65ce2e3f6f6ef2ac695ac1e6f3
+
+# ------------------------------------------------------------------
+# THE SCOPE OF THE DIFF
+# ------------------------------------------------------------------
+#
+COMMAND=git diff --stat
+ src/parser.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+COMMAND=git diff -U0 -- src/parser.c | grep -c "^@@"
+ 1
+
+COMMAND=git status --short
+ M src/parser.c
+
+# EXACTLY ONE FILE, EXACTLY ONE HUNK, EXACTLY ONE LINE.  The changed
+# line is INSIDE the function parseCompoundBlockAppendsStatement, in
+# the #else (legacy) arm.
+#
+# ------------------------------------------------------------------
+# THE EXACT DIFF
+# ------------------------------------------------------------------
+#
+diff --git a/src/parser.c b/src/parser.c
+index 0033fdf..edcc497 100644
+--- a/src/parser.c
++++ b/src/parser.c
+@@ -1999,7 +1999,7 @@ static int parseCompoundBlockAppendsStatement(int stmt_kind, int declvar_kind)
+      * Reachable only in non-HCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND
+      * builds (the differential's slice07-parser-legacy.o).  Production
+      * never executes this branch. */
+-    if (stmt_kind == AST_DECL && declvar_kind == AST_GVAR) return 0;
++    if (stmt_kind == AST_DECL && declvar_kind == AST_GVAR) return 1;
+     return 1;
+ #endif
+ }
+
+# ------------------------------------------------------------------
+# THE FILES THAT MUST NOT CHANGE, AND DID NOT
+# ------------------------------------------------------------------
+#
+# Each was hashed in the mutant worktree and compared against the
+# authoritative main checkout:
+#
+#   UNCHANGED  src/ast.h
+#   UNCHANGED  tools/bootstrap/selfhost-parser-slice07.HC
+#   UNCHANGED  Makefile
+#   UNCHANGED  src/CMakeLists.txt
+#   UNCHANGED  evidence/.../RECON05/c2/probes/witness-sub003-block-static.HC
+#
+# The compiled PolyC subject object is byte-identical too:
+#   MUTATED_POLYC_SUBJECT_SHA256=e2dfbcfcb78261957fb9188916705dcc86d589e82a9d9e169f6ae8118237487c
+#   PRISTINE_POLYC_SUBJECT_SHA256=e2dfbcfcb78261957fb9188916705dcc86d589e82a9d9e169f6ae8118237487c
+#   POLYC_SUBJECT_UNCHANGED=YES
+
+MUTATION_IS_IN_THE_POLYC_SOURCE=NO
+MUTATION_IS_IN_SRC_PARSER_C=YES
+MUTATION_IS_IN_AN_ORACLE=NO (the oracle object is a COMPILE of the mutated source, not a separate edit)
+MUTATION_IS_IN_THE_FIXTURE_EXPECTED_COLUMN=NO
+MUTATION_IS_IN_AST_H=NO
+MUTATION_IS_IN_A_CMAKE_OR_MAKEFILE=NO
+MUTATION_HUNK_COUNT=1
+MUTATION_FILE_COUNT=1
+MUTATION_LINE_COUNT=1
+MUTATION_SUBJECT=the selected C decision
+MUTATION_POLARITY_FLIP=SKIP(0) -> APPEND(1) on the AST_DECL && AST_GVAR class
+
+# ------------------------------------------------------------------
+# THE DISTINCT EXECUTION IDENTITY
+# ------------------------------------------------------------------
+#
+# This experiment is NOT the historical SLICE07 experiment.  It has
+# its own execution identity.
+#
+EXECUTION_ID=N06_LITERAL_CORRECTION_EXPERIMENT
+EXECUTION_ID_SOURCE_DIFF_SHA256=6f0ab1d927b802855f755b898d43037837285354b085fcd1b3bd6946e12dce28 (the src/parser.c single-hunk diff)
+EXECUTION_ID_EVIDENCE_PATH=evidence/ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01/c2/c-only-build-and-causality.txt
+HISTORICAL_EXECUTION_ID=S7-CC-01 (SLICE07 C3, the PolyC source mutation)
+HISTORICAL_EXECUTION_ID_SOURCE_DIFF_SHA256=45295e0e2f435c29b94d0a9368f4cf253245273cdd47eafc31cca21a474d5c02 (the PolyC source)
+HISTORICAL_EXECUTION_ID_EVIDENCE_PATH=evidence/ACT-POLYC-SELFHOST-PARSER-SLICE07/c3/causal-polyc-mutation-restoration.txt
+
+THIS_EXPERIMENT_IS_NOT_THE_HISTORICAL_EXPERIMENT=YES
+THIS_EXPERIMENT_DID_NOT_RUN_DURING_SLICE07=YES

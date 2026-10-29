@@ -1,0 +1,197 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01
+# ACT_PHASE=C2-EVIDENCE
+# EVIDENCE_KIND=c-only-build-and-causality
+#
+# THE LITERAL N-06 EXPERIMENT: THE MUTATED C-OFF REAL PRODUCTION
+# COMPILER, AND THE CAUSAL DIRECTION.
+#
+# EXECUTION_ID=N06_LITERAL_CORRECTION_EXPERIMENT
+#
+# ------------------------------------------------------------------
+# STATE 1: THE MUTATED C-OFF BUILD (AC14)
+# ------------------------------------------------------------------
+#
+# The mutated C-OFF production compiler was built FROM THE MUTATED
+# TREE, with the same configuration as the pristine C-OFF build, so
+# that the ONLY difference between the two compilers is the one-line
+# C mutation.
+#
+COMMAND=cmake -S ./src -B build/corr01-c-off-mut -G "Unix Makefiles" \
+            -DCMAKE_C_COMPILER=cc -DCMAKE_BUILD_TYPE=Release \
+            -DHCC_ENABLE_JIT=on -DHCC_ENABLE_LLVM=OFF \
+            -DHCC_USE_SELFHOST_PARSER_PADDING=ON \
+            -DHCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN=ON \
+            -DHCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE=ON \
+            -DHCC_USE_SELFHOST_PARSER_AST_BINOP=ON \
+            -DHCC_USE_SELFHOST_PARSER_AST_UNARY=ON \
+            -DHCC_USE_SELFHOST_PARSER_SWITCH_ARM=ON \
+            -DHCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND=OFF \
+            -DHCC_RUNTIME_OUTPUT_DIRECTORY=<isolated root> \
+            (+ the six prebuilt PolyC subject objects)
+CONFIGURE_EXIT=0
+#
+COMMAND=make -C build/corr01-c-off-mut hcc -j2
+   [100%] Linking C executable out/hcc
+   [100%] Built target hcc
+MUT_BUILD_EXIT=0
+#
+# THE BUILD SUCCEEDED.  A failed build is NOT a successful causal
+# witness (this is the NC06 precondition).
+#
+# --- THE SELECTED C OBJECT WAS REBUILT AND RE-LINKED, AND CHANGED ---
+#
+PRISTINE_C_OFF_PARSER_OBJECT_SHA256=db118ef6d648bdd3ceaf9e4e3965723eeebb14e904dd90880088186d20bf4aac
+MUTANT_C_OFF_PARSER_OBJECT_SHA256=aa5a5d854d9d894d6b9975326fd1642d3832d2feda0db4dad23a2fcdf4e9770b
+C_OFF_PARSER_OBJECT_CHANGED=YES
+#
+PRISTINE_C_OFF_EXECUTABLE_SHA256=ec6d1866a91638c1976fdf3859ecd651a9b3ac52999edeb1fd8c0c52894d5958
+MUTANT_C_OFF_EXECUTABLE_SHA256=5f9d721bca5d3b653025cc746ecdc92e24cb789804e1954858994f574599eae2
+C_OFF_EXECUTABLE_CHANGED=YES
+#
+# --- THE MUTATION IS LIVE IN THE COMPILED OBJECT ---
+#
+COMMAND=otool -tvV build/corr01-c-off-mut/CMakeFiles/hcc.dir/parser.c.o \
+          | awk '/_ParserLegacyCompoundBlockAppendsOracle:/{f=1} f{print}'
+_ParserLegacyCompoundBlockAppendsOracle:
+0000000000003734	mov	w0, #0x1
+0000000000003738	ret
+#
+# The compiler OPTIMIZED the mutant decision to a constant TRUE: the
+# AST_DECL and AST_GVAR comparisons are gone, because the mutant can
+# never SKIP.  The mutated decision IS the code that runs.
+#
+# --- THE PROVENANCE HOLDS IN THE MUTANT (NO POLYC SUB-003 DEPENDENCY) ---
+#
+COMMAND=nm build/corr01-c-off-mut/CMakeFiles/hcc.dir/parser.c.o \
+          | grep -c "U _BootstrapCompoundBlockAppendsStatement"
+0
+COMMAND=nm build/corr01-c-off-mut/out/hcc \
+          | grep -c "_BootstrapCompoundBlockAppendsStatement"
+0
+MUTANT_C_OFF_SUB003_IMPORT_COUNT=0
+MUTANT_C_OFF_SUB003_SYMBOL_COUNT_IN_EXECUTABLE=0
+#
+# ------------------------------------------------------------------
+# STATE 2: THE CAUSAL TRIPLE (AC15)
+# ------------------------------------------------------------------
+#
+# CHANNEL A -- COMPILER ACCEPTANCE (the committed RECON05 witness)
+#
+COMMAND=build/corr01-c-off/out/hcc --install-dir=<prefix> witness-sub003.HC -o <out>
+   (no diagnostic)
+PRISTINE_WITNESS_COMPILE_EXIT=0
+COMMAND=<out>
+PRISTINE_WITNESS_OUTPUT=WITNESS_OUTPUT=13 15 2
+PRISTINE_WITNESS_RUN_EXIT=0
+PRISTINE_WITNESS_OUTPUT_SHA256=5d6f3a9ef366f5489097fbf3f465e21d53c22647237d4e687442cd0698b23cc9
+#
+COMMAND=build/corr01-c-off-mut/out/hcc --install-dir=<prefix> witness-sub003.HC -o <out>
+   ERROR: Mapping exists for 1 -> %l14 i64 local
+MUTANT_WITNESS_COMPILE_EXIT=1
+MUTANT_WITNESS_RUN=NOT_APPLICABLE (no executable was produced)
+#
+# CHANNEL B -- COMPILED-PROGRAM SEMANTIC OUTPUT (the four-class fixture)
+#
+COMMAND=build/corr01-c-off/out/hcc --install-dir=<prefix> fixture-sub003-classes.HC -o <out>
+PRISTINE_FIXTURE_COMPILE_EXIT=0
+PRISTINE_FIXTURE_OUTPUT=FIXTURE_OUTPUT=7 11 21 5 2
+PRISTINE_FIXTURE_RUN_EXIT=0
+#
+COMMAND=build/corr01-c-off-mut/out/hcc --install-dir=<prefix> fixture-sub003-classes.HC -o <out>
+   ERROR: Mapping exists for 1 -> %l3 i64 local
+MUTANT_FIXTURE_COMPILE_EXIT=1
+#
+# CHANNEL C -- EXACT-ID PER-ROW SEMANTIC DIFFERENTIAL (the frozen fixture)
+#
+# The differential compares THREE sources on EVERY row:
+#   1. the REAL legacy C oracle's observed decision;
+#   2. the PolyC component's observed decision;
+#   3. the fixture's independently derived expected value.
+#
+# The ORACLE OBJECT IS build/slice07-parser-legacy.o, which is the
+# ACTUAL production src/parser.c translation unit compiled WITHOUT
+# the delegation flag -- so, in the mutant run, the MUTATED source is
+# the code that executes.  It is NOT a reimplementation.
+#
+COMMAND=build/parser-slice07-differential-pristine \
+            evidence/ACT-POLYC-SELFHOST-PARSER-SLICE07/c1/fixture.tsv 1753
+   SLICE07_DIFF_ROWS=1753
+   SLICE07_DIFF_PASS=1753
+   SLICE07_DIFF_FAIL=0
+   SLICE07_DIFF_ORACLE_VS_EXPECTED_MISMATCH=0
+   SLICE07_DIFF_POLYC_VS_EXPECTED_MISMATCH=0
+   SLICE07_DIFF_ORACLE_VS_POLYC_MISMATCH=0
+   SLICE07_DIFF_STATUS=PASS
+PRISTINE_DIFF_EXIT=0
+#
+COMMAND=build/parser-slice07-differential-mutant \
+            evidence/ACT-POLYC-SELFHOST-PARSER-SLICE07/c1/fixture.tsv 1753
+   SLICE07_DIFF_ROWS=1753
+   SLICE07_DIFF_PASS=1750
+   SLICE07_DIFF_FAIL=3
+   SLICE07_DIFF_ORACLE_VS_EXPECTED_MISMATCH=3
+   SLICE07_DIFF_POLYC_VS_EXPECTED_MISMATCH=0
+   SLICE07_DIFF_ORACLE_VS_POLYC_MISMATCH=3
+   SLICE07_DIFF_STATUS=FAIL
+   SLICE07_DIFF_MISMATCH_ROW_ID=1 STMT_KIND=263 DECLVAR_KIND=256 EXPECTED=0 LEGACY=1 POLYC=0
+   SLICE07_DIFF_MISMATCH_ROW_ID=1750 STMT_KIND=263 DECLVAR_KIND=256 EXPECTED=0 LEGACY=1 POLYC=0
+   SLICE07_DIFF_MISMATCH_ROW_ID=1751 STMT_KIND=263 DECLVAR_KIND=256 EXPECTED=0 LEGACY=1 POLYC=0
+MUTANT_DIFF_EXIT=1
+#
+# THE CHANGED ROWS ARE EXACTLY THE THREE (AST_DECL=263, AST_GVAR=256)
+# ROWS, AND NO OTHER.  The other 1750 rows are UNCHANGED.  The POLYC
+# component still matches the expected column on EVERY row (0
+# mismatches), so the disagreement is between the MUTATED C ORACLE and
+# the frozen expectation -- which is precisely the causal claim.
+#
+MUTANT_CHANGED_ROW_IDS=1,1750,1751
+MUTANT_CHANGED_ROW_COUNT=3
+MUTANT_UNCHANGED_ROW_COUNT=1750
+MUTANT_CHANGED_ROWS_ARE_EXACTLY_THE_SELECTED_CLASS=YES
+MUTANT_POLYC_COMPONENT_MISMATCHES=0
+#
+# ------------------------------------------------------------------
+# THE CAUSAL VERDICT
+# ------------------------------------------------------------------
+#
+# The frozen detector is CAUSAL_DIRECTION_CHANGE.  All four of its
+# clauses hold:
+#
+#   (a) the pristine C-OFF compiler ACCEPTS the witness and the mutant
+#       C-OFF compiler REJECTS it, and the compiled-program
+#       differential differs on EXACTLY the selected class;  YES
+#   (b) the F2, F3 and F4 classes are UNCHANGED;                YES
+#   (c) the pristine and mutant C-OFF EXECUTABLES are DIFFERENT
+#       objects with DIFFERENT hashes;                         YES
+#   (d) the mutant C-OFF build EXITED 0 and produced an
+#       executable;                                             YES
+#
+CAUSAL_DIRECTION_CHANGE=FIRES
+CAUSAL_OBSERVATION_CLASS=COMPILER_ACCEPTANCE_CHANGED+COMPILED_PROGRAM_SEMANTIC_OUTPUT_CHANGED+EXACT_ID_ROW_SEMANTIC_MISMATCH
+CAUSAL_MUTANT_BUILD=SUCCESS
+CAUSAL_MUTANT_PRODUCTION_BUILD=SUCCESS
+CAUSAL_DISTINCT_PRODUCTION_BEHAVIOUR=YES
+CAUSAL_EXTERNAL_OBSERVABLE_EFFECT=YES
+MUTANT_BUILD_FAILURE_MISTAKEN_FOR_CAUSALITY=NO
+#
+# ------------------------------------------------------------------
+# THE DISTINCTNESS FROM THE HISTORICAL SLICE07 EXPERIMENT
+# ------------------------------------------------------------------
+#
+# The historical SLICE07 experiment mutated the POLYC SOURCE and was
+# reported under BOTH N-06 and S7-CC-01.  This experiment mutates the
+# SELECTED C DECISION and has its OWN execution identity.
+#
+# The two are DISTINCT and are NEVER represented as two SLICE07
+# experiments.
+#
+N06_LITERAL_CORRECTION_EXPERIMENT=EXECUTED
+N06_NEW_LITERAL_C_MUTANT=EXECUTED
+N06_NEW_C_ONLY_BUILD=SUCCESS
+N06_NEW_CAUSAL_DIRECTION=OBSERVED
+S7_CC01_HISTORICAL_POLYC_CAUSALITY=PRESERVED
+N06_AND_S7_CC01_HISTORICALLY_INDEPENDENT=NO
+NEW_C_MUTANT_AND_HISTORICAL_POLYC_MUTANT_INDEPENDENT=YES
+CORRECTION_N06_LITERAL_EXPERIMENT=PROVEN
+CORRECTION_OWN_DISTINCT_EXECUTION_ID=N06_LITERAL_CORRECTION_EXPERIMENT
+SLICE07_HISTORICAL_N06_EXECUTED_AS_WRITTEN=NO

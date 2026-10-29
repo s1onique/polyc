@@ -1,0 +1,42 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01
+# ACT_PHASE=C2-EVIDENCE
+# EVIDENCE_KIND=negative-controls-raw
+#
+# THE EIGHT ADVERSE CONTROLS, ACTUALLY EXECUTED.
+#
+# Every NC below has an ACTUAL adverse execution, an EXACT observed
+# failure class, and a POSITIVE CONTROL.  A PASS inferred from only a
+# pristine object is VACUOUS, and none of these rows is such a PASS.
+#
+# Schema:
+#   nc_id  adverse_condition_executed  command  observed_exit
+#   observed_detector_class  required_detector  detector_matched
+#   positive_control  positive_control_result
+#
+nc_id	adverse_condition_executed	command	observed_exit	observed_detector_class	required_detector	detector_matched	positive_control	positive_control_result
+NC01	Built a full C-OFF compiler from UNMUTATED source and relabelled it as the mutant	cmake -S ./src -B build/corr01-nc-fake-mut -DHCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND=OFF ... && make -C build/corr01-nc-fake-mut hcc	0	SOURCE_HASH_AND_SCOPE_MISMATCH: the selected decision range hash was 60a388fac3903ccd45a8dc5e393794e300251715223e5fc9fac2ad455f10cf2d, IDENTICAL to the pristine value, so there was NO C mutation; the relabelled build also produced a witness output byte-identical to pristine (5d6f3a9e...), i.e. NO causal difference	Source-hash and scope mismatch	YES	the real mutant has decision range hash 805748fdd305eb42e0bba6adf52ecb6925a63b65ce2e3f6f6ef2ac695ac1e6f3 and REJECTS the witness	SENSITIVE -- the detector distinguishes the real mutant from the relabelled pristine build
+NC02	Offered the C-ON production parser object as the purported C-OFF oracle	nm build/CMakeFiles/hcc.dir/parser.c.o | grep -c "U _BootstrapCompoundBlockAppendsStatement"	0	SELECTOR_IMPORT_DISASSEMBLY_PROVENANCE_REJECTION: the C-ON object imports the PolyC SUB-003 symbol (count 1) where the genuine C-OFF object has count 0; and the C-ON object has ZERO AST_GVAR (0x100) comparisons in _parseCompoundStatementInternal where the genuine C-OFF object has the live comparison	Selector/import/disassembly provenance rejection	YES	the genuine C-OFF object has SUB-003 import count 0, executable symbol count 0, and a live AST_DECL/AST_GVAR comparison	SENSITIVE -- a C-ON object cannot pass as the C-OFF oracle
+NC03	Offered the SAME C-OFF executable as both the pristine and the mutant oracle	shasum -a 256 build/corr01-c-off/out/hcc /tmp/corr01-mut-wt/build/corr01-c-off-mut/out/hcc	0	OBJECT_EXECUTABLE_IDENTITY_AND_CAUSAL_NON_CHANGE_DETECTOR: the two executables have DIFFERENT hashes (ec6d1866... vs 5f9d721b...) and their parser objects differ (db118ef6... vs aa5a5d85...), so they are genuinely distinct binaries; reusing one binary would have produced IDENTICAL behaviour and NO causal difference	Object/executable identity and causal non-change detector	YES	the real pristine and mutant C-OFF executables are byte-distinct and their witness outcomes DIFFER (accept vs reject)	SENSITIVE -- the detector rejects a reused binary by identity
+NC04	Mutated an UNRELATED AST_GVAR comparison in the same file (src/parser.c:762, parseVariableAssignment) and claimed SUB-003 causality	perl -pi -e 'if ($. == 762) { s/var->kind == AST_GVAR/var->kind == AST_LVAR/ }' src/parser.c	0	SELECTED_SOURCE_RANGE_SYMBOL_AND_WITNESS_SUBJECT_MISMATCH: the selected decision range hash was UNCHANGED at 60a388fac3903ccd45a8dc5e393794e300251715223e5fc9fac2ad455f10cf2d, proving the mutated comparison was NOT the selected decision; the hunk header named parseVariableAssignment, not parseCompoundBlockAppendsStatement	Selected source-range/symbol and witness-subject mismatch	YES	the real mutation's range hash is 805748fdd305eb42e0bba6adf52ecb6925a63b65ce2e3f6f6ef2ac695ac1e6f3 and its hunk header names parseCompoundBlockAppendsStatement	SENSITIVE -- the detector distinguishes the selected decision from an unrelated comparison
+NC05	Corrupted ONE expected result in the frozen fixture (row 0001, the AST_DECL/AST_GVAR row, expected 0 -> 1) and ran the PRISTINE differential against it	perl -pi -e 'if ($. == 1) { s/^0001\tP1_SKIP\t263\t256\t0\t/0001\tP1_SKIP\t263\t256\t1\t/ }' fixture.tsv && ./build/parser-slice07-differential-pristine <corrupted> 1753	1	FIXTURE_EXACT_ID_SEMANTIC_MISMATCH: the differential reported SLICE07_DIFF_MISMATCH_ROW_ID=1 STMT_KIND=263 DECLVAR_KIND=256 EXPECTED=1 LEGACY=0 POLYC=0, with ORACLE_VS_EXPECTED_MISMATCH=1 and POLYC_VS_EXPECTED_MISMATCH=1, and STATUS=FAIL	Fixture exact-ID/semantic mismatch	YES	the uncorrupted fixture against the pristine differential gives 0 mismatches and STATUS=PASS over all 1753 rows	SENSITIVE -- the detector localises the exact corrupted row ID
+NC06	Introduced a syntax error into the mutated C source and attempted the C-OFF build, then attempted to claim the resulting behaviour as a causal witness	perl -pi -e 'if ($. == 2002) { s/return 0;/return 0;\n    this_is_not_valid_c;/ }' src/parser.c && cc -std=c99 -O2 -Isrc -c -o /tmp/corr01-nc-broken.o src/parser.c	1	BUILD_SUCCESS_PRECONDITION_FAILURE: the build exited 1 with "src/parser.c:2003:5: error: use of undeclared identifier 'this_is_not_valid_c'" and produced NO object and NO executable, so there is no compiler whose behaviour could be compared	Build-success precondition failure	YES	the real mutant C-OFF build exited 0 and produced a working executable whose behaviour differs	SENSITIVE -- a failed build cannot be presented as a causal witness
+NC07	Restored the C source INCOMPLETELY (reverted everything but the mutated return value)	perl -pi -e 'if ($. == 2002) { s/return 0;/return 1;/ }' src/parser.c	0	BYTE_HASH_RESTORATION_REJECTION: the incompletely restored source hashed 6f0ab1d927b802855f755b898d43037837285354b085fcd1b3bd6946e12dce28 and the decision range hashed 805748fdd305eb42e0bba6adf52ecb6925a63b65ce2e3f6f6ef2ac695ac1e6f3, NEITHER equal to the pristine 2b31a791.../60a388fa...; git diff --stat still showed 1 file changed, 1 insertion, 1 deletion	Byte-hash restoration rejection	YES	the real restoration hashes 2b31a791.../60a388fa... and git diff is EMPTY	SENSITIVE -- the detector distinguishes a complete from an incomplete restoration
+NC08	Attempted to relabel the historical SLICE07 PolyC C3 experiment as the new C experiment, and to count it as independent C evidence	join on (subject, execution_id, evidence_path) over the historical row and the new row	0	SUBJECT_EXECUTION_ID_EVIDENCE_PATH_JOIN_REJECTION: the historical S7-CC-01 row has subject "the PolyC source", execution id "SLICE07 C3, detached worktree /tmp/slice07-wt, base 885a2a6..." and evidence path evidence/ACT-POLYC-SELFHOST-PARSER-SLICE07/c3/causal-polyc-mutation-restoration.txt, while the new row has subject "the selected C decision (src/parser.c legacy branch)", execution id N06_LITERAL_CORRECTION_EXPERIMENT and evidence path evidence/ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01/c2/c-only-build-and-causality.txt -- ALL THREE FIELDS DIFFER	Subject + execution-ID + evidence-path join rejection	YES	the new experiment has its own execution id, its own source-diff hash (6f0ab1d9... on src/parser.c) and its own evidence path	SENSITIVE -- the detector rejects the relabel and refuses the double count
+#
+# ------------------------------------------------------------------
+# THE SUMMARY
+# ------------------------------------------------------------------
+#
+NEGATIVE_CONTROLS_TOTAL=8
+NEGATIVE_CONTROLS_EXECUTED=8
+NEGATIVE_CONTROLS_DETECTOR_MATCHED=8
+NEGATIVE_CONTROLS_VACUOUS=0
+NEGATIVE_CONTROLS_WITH_POSITIVE_CONTROL=8
+NEGATIVE_CONTROLS_PASS=8
+#
+# Every NC was ACTUALLY EXECUTED as an adverse condition.  Every NC
+# produced the EXACT required detector class.  Every NC has a
+# POSITIVE CONTROL that shows the detector is SENSITIVE, i.e. that it
+# distinguishes the adverse case from the genuine case.
+#
+NEGATIVE_CONTROLS_STATUS=PASS
