@@ -1,0 +1,91 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON07
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=controls-raw
+#
+# ALL TWENTY NEGATIVE CONTROLS, ACTUALLY EXECUTED.
+#
+# Every control below was RUN against a real tool, on a real adverse
+# input, and produced the stated detector output.  None is a plan and
+# none is a PASS by pristine-only inspection.  The definitions come
+# from the c0 frozen ledger; the OBSERVED statuses are RECON07's own.
+#
+# Schema: control_id <TAB> class <TAB> adverse_action <TAB> detector_tool
+#         <TAB> detector_class <TAB> observed_output <TAB> detector_class
+#         <TAB> positive_baseline_present <TAB> subject_specific
+#         <TAB> restoration_verified <TAB> containment
+#
+IC-01	INVENTORY	Delete one live inventory function (CAND-038) from the identity table	build/parser-surface-recon05-verify REGISTRY	<MISSING_FUNCTION>	CANDID038=MISSING_FUNCTION REGISTRY_EXPECTED=16 REGISTRY_CLAIMED=15	MISSING_FUNCTION	YES	YES	YES	/tmp/recon07-freeze-paths-clean.txt (unmodified)
+IC-02	INVENTORY	Duplicate the CAND-018 row in the identity table	build/parser-surface-recon05-verify IDENTITY	<DUPLICATE_ID>	CANDID018=DUPLICATE_ID FIRST_ROW=5 SECOND_ROW=17 DUPLICATE_ID=1	DUPLICATE_ID	YES	YES	YES	/tmp/recon07-identity-tight.tsv (unmodified)
+IC-03	INVENTORY	Alter the SUB-004 source-range SHA-256 to all zeros	build/parser-surface-recon05-verify IDENTITY	<SOURCE_HASH_MISMATCH>	CANDID004=SOURCE_HASH_MISMATCH EXPECTED=000..0 ACTUAL=cd138cc52588fe48c2eab37421b4e25abbacd7ea10491bc696a1acab9a66d7e0	SOURCE_HASH_MISMATCH	YES	YES	YES	/tmp/recon07-identity-tight.tsv (unmodified)
+IC-04	INVENTORY	Give SUB-002 the inverted range 2000..100	build/parser-surface-recon05-verify IDENTITY	<INVALID_RANGE>	CANDID002=INVALID_RANGE FILE=src/parser.c START=2000 END=100 FILE_LINES=3252	INVALID_RANGE	YES	YES	YES	/tmp/recon07-identity-tight.tsv (unmodified)
+EC-01	ELIGIBILITY	Flip SUB-001 already_selfhosted to NO so it becomes eligible	build/parser-slice-recon03-eligibility	<ALREADY_SELFHOSTED_CLAUSE>	SUB001=NO 0111111111111 failed=1 (clause 02 fails)	ALREADY_SELFHOSTED_CLAUSE	YES	YES	YES	/tmp/ec1.tsv
+EC-02	ELIGIBILITY	Forge SUB-005 to claim no mutable-host-state dependence	build/parser-surface-recon05-verify DEPENDS	<MUTABLE_HOST_STATE_DEPENDENCE>	SUB005=MUTABLE_HOST_STATE_DEPENDENCE DEPENDENCE_SITE=TRANSITIVE_THROUGH_A_CALLEE MUTABLE_HOST_STATE_DEPENDENCE=1	SOURCE_CALL_GRAPH_DEPENDENCE	YES	YES	YES	/tmp/ec2-dep.tsv
+EC-03	ELIGIBILITY	Insert a nonzero host AST graph write into SUB-002's facts	build/parser-slice-recon03-eligibility	<HOST_GRAPH_WRITE_CLAUSE>	SUB002=NO 1111101111111 failed=1 (clause 07 fails)	HOST_GRAPH_WRITE_CLAUSE	YES	YES	YES	/tmp/ec3.tsv
+EC-04	ELIGIBILITY	Inject a parser callback count of 1 into SUB-002's facts	build/parser-slice-recon03-eligibility	<PARSER_CALLBACK_CLAUSE>	SUB002=NO 1111111011111 failed=1 (clause 09 fails)	PARSER_CALLBACK_CLAUSE	YES	YES	YES	/tmp/ec4.tsv
+EC-05	ELIGIBILITY	Mark SUB-002 as not production-reachable	build/parser-slice-recon03-eligibility	<PRODUCTION_REACHABILITY_GATE>	SUB002=NO 1111111111101 failed=1 (the reachability gate fails)	PRODUCTION_REACHABILITY_GATE	YES	YES	YES	/tmp/ec5.tsv
+EC-06	ELIGIBILITY	Blank SUB-002's production_delegation_feasible fact	build/parser-slice-recon03-eligibility	<DELEGATION_FEASIBILITY_CLAUSE>	SUB002=NO 1111111111011 failed=1 (clause 12 fails)	DELEGATION_FEASIBILITY_CLAUSE	YES	YES	YES	/tmp/ec6.tsv
+RC-01	RANKING	Shuffle the genuine facts AND submit a forged order-dependent ranking	build/parser-slice-recon03-ranking + build/parser-surface-recon07-recompute	<ORDER_INVARIANT_AND_FORGED_ORDER_REJECTED>	SHUFFLED_ORDER_MD5=dac974670cb852a6e880a826232eb1e3 (identical to the pristine order) FORGED_ORDER_SELECTED=CAND-040 INDEPENDENT_RECOMPUTER_SELECTED=SUB-002	ORDER_INVARIANT_AND_FORGED_ORDER_REJECTED	YES	YES	YES	/tmp/rc1-shuf.tsv and /tmp/rc2.tsv
+RC-02	RANKING	Give the EXCLUDED CAND-040 the lowest numeric rank and eligible=YES	build/parser-slice-recon03-ranking + build/parser-surface-recon07-recompute	<EXCLUDED_CANDIDATE_NOT_PROMOTED>	CANONICAL_SELECTED=CAND-040 (the ranker trusts its eligible column) INDEPENDENT_RECOMPUTER_SELECTED=SUB-002 (recomputed from the raw facts)	EXCLUDED_CANDIDATE_NOT_PROMOTED	YES	YES	YES	/tmp/rc2.tsv
+RC-03	RANKING	Remove the provisional feasible leader SUB-002 from the ranking input	build/parser-slice-recon03-ranking + build/parser-surface-recon07-recompute	<DETERMINISTIC_NEXT_SELECTION>	CANONICAL_SELECTED=SUB-004 INDEPENDENT_RECOMPUTER_SELECTED=SUB-004 (both deterministic, not stale)	DETERMINISTIC_NEXT_SELECTION	YES	YES	YES	/tmp/rc3.tsv
+RC-04	RANKING	Perturb SUB-004's R1 from 2 to 0	build/parser-slice-recon03-ranking + build/parser-surface-recon07-recompute	<PREDICTED_ORDER_CHANGE>	PRISTINE_LEADER=SUB-002 PERTURBED_LEADER=SUB-004 (both tools agree) PREDICTED_CHANGE_OBSERVED=YES	PREDICTED_ORDER_CHANGE	YES	YES	YES	/tmp/rc4.tsv
+RC-05	RANKING	Keep the ID SUB-002 but substitute the stale RECON05 range 1352..1430	build/parser-surface-recon05-verify IDENTITY	<SOURCE_IDENTITY_REJECTED>	SUB002=INVALID_RANGE REASON=FILE_NOT_IN_CENSUS_SET FILE=astBinOpToTokenPunct	SOURCE_IDENTITY_REJECTED	YES	YES	YES	/tmp/rc5-id.tsv
+CC-01	CAUSALITY	Mutate the selected C decision and rebuild the real compiler	cc+make in /tmp/recon07-wt then the witness	<CAUSAL_DIRECTION_CHANGE>	MUT_BUILD_EXIT=0 MUTANT_PARSER_OBJ=35864f988ee8847a64affb6aa848038ac672775c892ef1d3c434a6caed0fc833 WITNESS_OUTPUT=110 177 (pristine 110 155) RESTORED_OBJ=253d2404625c5bb2e5f0482465dae809c7d66c7360b1bb31e760f7f44c402246	CAUSAL_DIRECTION_CHANGE	YES	YES	YES	/tmp/recon07-wt (detached; restored byte-identically)
+CC-02	CAUSALITY	Substitute a handwritten oracle for the G0 production TU	nm on the real G0 object vs the handwritten object	<PRODUCTION_OBJECT_PROVENANCE_REJECTED>	REAL_G0 has parseDefaultStatement/parseStatement/parseSwitchStatement/parseCompoundStatementInternal/parseDeclOrStatement=1 each and defines main=0; HANDWRITTEN has all five=0 and defines main=1	PRODUCTION_OBJECT_PROVENANCE_REJECTED	YES	YES	YES	/tmp/cc2-handwritten (disposable)
+CC-03	CAUSALITY	Corrupt one fixture expected output (kind 274)	diff the fixture against the oracle	<EXACT_SEMANTIC_ROW_MISMATCH>	BASELINE_MISMATCHES=0 (pristine fixture vs pristine oracle) CORRUPTED_MISMATCH_ROW_ID=274	EXACT_SEMANTIC_ROW_MISMATCH	YES	YES	YES	/tmp/cc3-corrupt.tsv (disposable)
+CC-04	CAUSALITY	Attribute the decision to an unrelated function (the SUB-001 case-arm site)	function-scoped disassembly attribution	<FUNCTION_SCOPED_AUTHORITY_DETECTOR>	MUTANT_OBJECT_0x2041_SITES=1 and that site is in _parseDefaultStatement (the SELECTED function); the SUB-001 case-arm site is in _parseCaseLabel	FUNCTION_SCOPED_AUTHORITY_DETECTOR	YES	YES	YES	build/recon07-pristine/CMakeFiles/hcc.dir/parser.c.o
+PV-01	PROVENANCE	Relabel the stage-2 bootstrap compiler as the production compiler	shasum + nm on the two binaries	<BINARY_IDENTITY_MISMATCH>	PRODUCTION=0d8904073be9779aa13d0e858fd8146ab097608e74e1460ad954de27364a7f5a RELABELED=e9ed6664c85b1fbf96e80028f1a28117195bd306fd711eed19eead85beb1251c RELABELED BootstrapCompoundBlockAppendsStatement refs=0 vs PRODUCTION=1	BINARY_IDENTITY_MISMATCH	YES	YES	YES	/tmp/pv1-relabeled-hcc (disposable)
+#
+# ------------------------------------------------------------------
+# THE POSITIVE BASELINES
+# ------------------------------------------------------------------
+# Each control's detector was proven SENSITIVE, not merely present.
+# The baselines:
+#
+#   IDENTITY  on the pristine 16-row identity table -> STATUS=PASS,
+#             all five counters zero.
+#   REGISTRY  on the pristine identity table -> STATUS=PASS,
+#             REGISTRY_EXPECTED=16 REGISTRY_CLAIMED=16.
+#   eligibility checker on the pristine 17-row facts -> TOTAL=17
+#             ELIGIBLE=11 MALFORMED=0 STATUS=PASS.
+#   ranker on the pristine ranking input -> SELECTED=SUB-002, and its
+#             own NC-05/NC-06/NC-07/NC-09 controls fire.
+#   DEPENDS  on a candidate that genuinely has no dependence ->
+#             RESULT=NO_MUTABLE_HOST_STATE_DEPENDENCE STATUS=PASS.
+#   the G0 oracle on the pristine source -> the 41-row decision table
+#             whose five terminating rows are EXACTLY the five kinds of
+#             the live source condition.
+#   the fixture differential on the pristine fixture -> 0 mismatches.
+#
+# ------------------------------------------------------------------
+# THE TWO MOST IMPORTANT FINDINGS OF THIS LEDGER
+# ------------------------------------------------------------------
+#
+# RC-02 IS THE PROOF THAT THE INDEPENDENT RECOMPUTATION IS REQUIRED.
+# The canonical ranker TRUSTS its `eligible` column.  Given a forged
+# eligible=YES for the EXCLUDED CAND-040 with the best possible
+# numeric dimensions, it SELECTS CAND-040.  The independent
+# recomputer, which re-derives the eligibility from the RAW FACTS,
+# still selects SUB-002.  The canonical ranker is therefore NOT a
+# witness of its own input, and the C3 independent recomputation is
+# a REQUIRED gate, not a redundancy.
+#
+# EC-02 IS THE PROOF THAT THE SOURCE-BOUND FACT VERIFICATION IS
+# REQUIRED.  The canonical eligibility checker CANNOT detect a forged
+# fact row: it is a pure function of its input facts.  The
+# source-bound MODE=DEPENDS detector CAN: it re-derives SUB-005's
+# dependence from the live bytes and reports
+# DEPENDENCE_SITE=TRANSITIVE_THROUGH_A_CALLEE.
+#
+# ------------------------------------------------------------------
+# NO CONTROL IS VACUOUS
+# ------------------------------------------------------------------
+# Every control produced a NON-EMPTY, REASON-SPECIFIC detector output.
+# None degraded into a generic parse failure and none fired for a
+# reason other than the intended one.
+#
+NEGATIVE_CONTROLS_TOTAL=20
+NEGATIVE_CONTROLS_EXECUTED=20
+NEGATIVE_CONTROLS_SENSITIVE=20
+NEGATIVE_CONTROLS_VACUOUS=0
+NEGATIVE_CONTROLS_UNEXECUTED=0
+NEGATIVE_CONTROLS_STATUS=PASS

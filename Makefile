@@ -3418,6 +3418,38 @@ parser-slice07-evidence-correction01-audit-nc: build/parser-slice07-evidence-cor
 	./build/parser-slice07-evidence-correction01-audit NC \
 		evidence/ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01
 
+# ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON07 C3.
+#
+# The INDEPENDENT RECOMPUTER: it re-derives the 13 eligibility
+# clauses and the complete R0..R6 order FROM THE RAW C1 FACTS, without
+# reading the canonical checker's output, the canonical ranker's
+# output or the selected candidate ID.
+#
+# It is a SEPARATE implementation, not a copy of the canonical tools:
+# a different clause representation, a different per-clause dispatch
+# and a different sort algorithm.
+RECON07_RECOMPUTE_SRC = tools/quality/parser-surface-recon07-recompute.HC
+RECON07_RECOMPUTE_OBJ = build/parser-surface-recon07-recompute.o
+RECON07_RECOMPUTE_EXE = build/parser-surface-recon07-recompute
+
+build/parser-surface-recon07-recompute.o: $(RECON07_RECOMPUTE_SRC) ./hcc | test-prefix-install
+	./hcc --install-dir=$(TEST_PREFIX) -c $(RECON07_RECOMPUTE_SRC) -o $@
+
+build/parser-surface-recon07-recompute: $(RECON07_RECOMPUTE_OBJ)
+	cc $(RECON07_RECOMPUTE_OBJ) -L$(TEST_PREFIX)/lib -ltos -o $@
+	@if [ ! -x $@ ]; then \
+		echo "parser-surface-recon07-recompute: link failed" >&2; \
+		exit 1; \
+	fi
+
+parser-surface-recon07-recompute-selftest: build/parser-surface-recon07-recompute
+	./build/parser-surface-recon07-recompute --selftest
+
+parser-surface-recon07-recompute-run: build/parser-surface-recon07-recompute
+	./build/parser-surface-recon07-recompute \
+		evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON07/c2/canonical-eligibility-input.tsv \
+		evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON07/c2/canonical-ranking-input.tsv
+
 parser-slice07-evidence-correction01-audit-ac: build/parser-slice07-evidence-correction01-audit
 	./build/parser-slice07-evidence-correction01-audit AC \
 		evidence/ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01

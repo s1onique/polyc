@@ -1,0 +1,55 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON07
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=selected-ranking-and-exclusions
+#
+# THE COMPLETE RANKED POPULATION AND THE COMPLETE EXCLUDED SET.
+#
+# The order is the OUTPUT of the unmodified canonical R0..R6 ranker,
+# applied to the population that the unmodified canonical 13-clause
+# eligibility checker admitted.  It was independently re-derived by
+# build/parser-surface-recon07-recompute from the raw facts alone.
+#
+# Schema: candidate_id <TAB> class <TAB> rank <TAB> R0 <TAB> R1 <TAB>
+#         R2 <TAB> R3 <TAB> R4 <TAB> R5 <TAB> R6 <TAB> eligible <TAB>
+#         disposition <TAB> exclusion_reason
+SUB-002	STRUCTURAL	1	0	1	1	2	1	1	src/parser.c:1683	YES	SELECTED	-
+SUB-004	STRUCTURAL	2	0	2	1	2	2	2	src/parser.c:1773	YES	ELIGIBLE_FALLBACK	-
+CAND-018	SCALAR	3	0	2	2	2	0	0	src/prslib.c:1328	YES	ELIGIBLE_NOT_REACHED	-
+CAND-021	SCALAR	4	0	2	2	2	0	0	src/prslib.c:1352	YES	ELIGIBLE_NOT_REACHED	-
+CAND-025	SCALAR	5	0	2	3	2	0	0	src/ast.c:943	YES	ELIGIBLE_NOT_REACHED	-
+CAND-026	SCALAR	6	0	2	3	2	0	0	src/ast.c:974	YES	ELIGIBLE_NOT_REACHED	-
+CAND-036	SCALAR	7	0	2	3	2	0	0	src/ast.c:992	YES	ELIGIBLE_NOT_REACHED	-
+CAND-037	SCALAR	8	0	2	3	2	0	0	src/ast.c:2348	YES	ELIGIBLE_NOT_REACHED	-
+CAND-030	SCALAR	9	0	2	3	2	0	0	src/prsutil.c:22	YES	ELIGIBLE_NOT_REACHED	-
+CAND-022	SCALAR	10	1	2	2	2	0	0	src/prslib.c:760	YES	ELIGIBLE_NOT_REACHED	-
+CAND-023	SCALAR	11	1	2	2	2	1	1	src/prslib.c:798	YES	ELIGIBLE_NOT_REACHED	-
+#
+# ------------------------------------------------------------------
+# THE COMPLETE EXCLUDED SET (6 candidates, all checker-confirmed)
+# ------------------------------------------------------------------
+# candidate_id<TAB>class<TAB>excluded_by_clause<TAB>reason
+SUB-001	STRUCTURAL	02_already_selfhosted	The decision is owned by BootstrapSwitchArmTerminates (SLICE06); its C body is compiled out of the production object.
+SUB-003	STRUCTURAL	02_already_selfhosted	The decision is owned by BootstrapCompoundBlockAppendsStatement (SLICE07); its C body is compiled out of the production object.
+SUB-005	STRUCTURAL	11_deterministic_projection_and_12_production_delegation_feasible	TRANSITIVELY depends on the MUTABLE cc->symbol_table, cc->clsdefs and cc->uniondefs.  PROVEN mechanically: DETECTOR=MUTABLE_HOST_STATE_DEPENDENCE, DEPENDENCE_SITE=TRANSITIVE_THROUGH_A_CALLEE.
+CAND-038	SCALAR	11_deterministic_projection_and_12_production_delegation_feasible	The input is an UNBOUNDED HOST STRING and the output is a NEW HOST STRING.
+CAND-039	SCALAR	11_deterministic_projection_and_12_production_delegation_feasible	The input is a Lexeme plus the mutable host scope cc->tmp_fname and the output is a NEW HOST STRING.
+CAND-040	SCALAR	11_deterministic_projection_and_12_production_delegation_feasible	The input is an UNBOUNDED OPAQUE HOST BUFFER.
+#
+# ------------------------------------------------------------------
+# THE WHOLE-FUNCTION BLOCKERS (never candidates; recorded because the
+# ACT requires their disposition)
+# ------------------------------------------------------------------
+# SUB-006  parseCompoundStatementInternal  2043..2076  OWNS setjmp and WRITES cc->current_recovery
+# SUB-007  parseCompoundStatementInternal  2077..2186  REQUIRES nonlocal recovery and performs host graph writes
+# SUB-008  parseStatement                 1762..2034  the WHOLE-FUNCTION parser: recovery, token cursor, AST construction and the statement constructor callbacks.  Its bounded keyword-dispatch sub-decision is SUB-004 and is PRESERVED as a separate candidate.
+# SUB-009  parseExpr                      1402..1537  the WHOLE-FUNCTION expression loop
+# SUB-010  astStmtFallsThrough            2245..2464  a recursive walk over the host AST node graph
+# SUB-011  astStmtHasBreak                2220..2422  a recursive walk over the host AST node graph
+# SUB-012  astIsConstTrueCond             2212..2395  a recursive walk over the host AST node graph
+#
+# NO SUB-DECISION IS CONCEALED BY A WHOLE-FUNCTION BLOCKER.
+#
+RANKED_POPULATION=11
+EXCLUDED_POPULATION=6
+WHOLE_FUNCTION_BLOCKERS=7
+TOTAL_POPULATION=24

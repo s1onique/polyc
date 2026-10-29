@@ -1,0 +1,58 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON07
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=canonical-full-ranking
+#
+# THE OUTPUT OF THE UNMODIFIED CANONICAL R0..R6 RANKER.
+#
+# THE EXECUTABLE IS THE REPOSITORY'S UNMODIFIED CANONICAL TOOL:
+#   SOURCE tools/quality/parser-slice-recon03-ranking.HC
+#          sha256 c5861deda5901ead8dc5a59a1c5ce0f58ab331da73726f7ebb20ffbc90415a92
+#   EXECUTABLE build/parser-slice-recon03-ranking
+#          sha256 178150dd76b299a996117c0e4f0a2c2173015e72825f60c7a7e2014374a61eda
+#
+# The `eligible` column of the ranker input was taken MECHANICALLY
+# from c2/canonical-eligibility-output.tsv, never hand-authored.
+#
+# COMMAND=./build/parser-slice-recon03-ranking <ranking-input>
+# EXIT=0
+#
+# THE RANKER'S OWN BUILT-IN NEGATIVE CONTROLS, EXECUTED WITH IT
+# ------------------------------------------------------------------
+#   NC-05  an ineligible candidate with a perfect rank is rejected
+#   NC-06  the winner is unchanged under a shuffled inventory
+#   NC-07  removing the provisional leader yields a deterministic
+#          new leader, not a stale one
+#   NC-09  a controlled R0 perturbation changes the leader
+#
+TOTAL=11
+ELIGIBLE=11
+RANKED=11
+RANKED:1	SUB-002	0	1	1	2	1	1	src/parser.c:1683
+RANKED:2	SUB-004	0	2	1	2	2	2	src/parser.c:1773
+RANKED:3	CAND-018	0	2	2	2	0	0	src/prslib.c:1328
+RANKED:4	CAND-021	0	2	2	2	0	0	src/prslib.c:1352
+RANKED:5	CAND-025	0	2	3	2	0	0	src/ast.c:943
+RANKED:6	CAND-026	0	2	3	2	0	0	src/ast.c:974
+RANKED:7	CAND-036	0	2	3	2	0	0	src/ast.c:992
+RANKED:8	CAND-037	0	2	3	2	0	0	src/ast.c:2348
+RANKED:9	CAND-030	0	2	3	2	0	0	src/prsutil.c:22
+RANKED:10	CAND-022	1	2	2	2	0	0	src/prslib.c:760
+RANKED:11	CAND-023	1	2	2	2	1	1	src/prslib.c:798
+SELECTED=SUB-002
+SELECTED_R0=0
+SELECTED_R1=1
+SELECTED_R2=1
+SELECTED_R3=2
+SELECTED_R4=1
+SELECTED_R5=1
+SELECTED_R6=src/parser.c:1683
+NC-05_ineligible_perfect_rank_rejected=YES
+NC-05_winner=SUB-002
+NC-06_shuffled_inventory_winner_unchanged=YES
+NC-06_winner=SUB-002
+NC-07_winner_removed_remaining=10
+NC-07_new_winner=SUB-004
+NC-09_rival_eligible_candidates=10
+NC-09_r0_perturbation_changed_leader=YES
+NC-09_new_leader=SUB-004
+STATUS=PASS

@@ -1,0 +1,155 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON07
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=source-fixture-and-oracle
+#
+# THE G0 ORACLE, THE FIXTURE AND THE WITNESS, FOR THE SELECTED
+# CANDIDATE SUB-002 (DEFAULT_ARM_TERMINATION).
+#
+# ------------------------------------------------------------------
+# THE G0 ORACLE: A GENUINE PRODUCTION C TRANSLATION UNIT
+# ------------------------------------------------------------------
+# The G0 object is src/parser.c COMPILED FROM THE CURRENT ENTRY
+# SOURCE with the decision FACTORED OUT, exactly as the two already
+# migrated authorities do:
+#   parseSwitchArmTerminates            src/parser.c:1519
+#   parseCompoundBlockAppendsStatement  src/parser.c:1976
+#
+# The factoring is WORKTREE-ONLY.  The authoritative main checkout was
+# never modified.
+#
+# COMMAND=cc -std=c99 -O2 -Isrc -c -o build/g0/parser-legacy.o src/parser.c
+# G0_COMPILE_EXIT=0
+# G0_OBJECT_SHA256=8737313a547f20b507f4841af4056b3e9c1a51850076e01c121e5c7f3126959c
+#
+# THE PROVENANCE PROOF (the CC-02 detector, applied to the POSITIVE
+# case):
+# COMMAND=nm build/g0/parser-legacy.o | grep -c Bootstrap
+#   0
+#   (ZERO references to any PolyC component)
+# COMMAND=nm build/g0/parser-legacy.o | grep -c ' T _main'
+#   0
+#   (the production TU does not define main)
+# COMMAND=nm build/g0/parser-legacy.o | grep -c ' T _parseDefaultStatement$'
+#   1
+# COMMAND=nm build/g0/parser-legacy.o | grep -c ' T _parseStatement$'
+#   1
+# COMMAND=nm build/g0/parser-legacy.o | grep -c ' T _parseSwitchStatement$'
+#   1
+# COMMAND=nm build/g0/parser-legacy.o | grep -c ' T _parseCompoundStatementInternal$'
+#   1
+# COMMAND=nm build/g0/parser-legacy.o | grep -c ' T _parseDeclOrStatement$'
+#   1
+#   (it IS the production translation unit)
+#
+# THE COMPILED DECISION IS THE SOURCE DECISION -- PROVEN BY DECODING
+# THE COMPILED BITSET:
+# COMMAND=otool -tvV build/g0/parser-legacy.o | awk
+#              '/^_ParserLegacyDefaultArmTerminatesOracle:/{f=1} f{print}'
+#   _ParserLegacyDefaultArmTerminatesOracle:
+#   0000000000003554  sub  w8, w0, #0x102
+#   0000000000003558  cmp  w8, #0x1d
+#   000000000000355c  b.hi 0x357c
+#   0000000000003560  mov  w0, #0x1
+#   0000000000003564  lsl  w8, w0, w8
+#   0000000000003568  mov  w9, #0x1001
+#   000000000000356c  movk w9, #0x2041, lsl #16
+#   0000000000003570  tst  w8, w9
+#   0000000000003574  b.eq 0x357c
+#   0000000000003578  ret
+#
+# The mask 0x20411001 over the base 0x102 (258) covers EXACTLY:
+#   258 AST_GOTO, 270 AST_RETURN, 274 AST_COMPOUND_STMT,
+#   280 AST_BREAK, 287 AST_CASE
+# which are EXACTLY the five kinds of the live source condition at
+# src/parser.c:1683-1684.  The compiled decision IS the source
+# decision, and NOT a copy of it.
+#
+# ------------------------------------------------------------------
+# THE FIXTURE: 41 ROWS, SOURCE-DERIVED FROM THE LIVE ENUM
+# ------------------------------------------------------------------
+# The row keys are the LIVE AstKind values, parsed from src/ast.h.
+# They are NOT invented:
+#   AST_GVAR=256 AST_GOTO=258 AST_LABEL=259 AST_LVAR=261 AST_FUNC=262
+#   AST_DECL=263 AST_STRING=264 AST_FUNCALL=265 AST_LITERAL=266
+#   AST_ARRAY_INIT=267 AST_IF=268 AST_FOR=269 AST_RETURN=270
+#   AST_WHILE=271 AST_CLASS_REF=273 AST_COMPOUND_STMT=274
+#   AST_ASM_STMT=275 AST_ASM_FUNC_BIND=276 AST_ASM_FUNCALL=277
+#   AST_FUNPTR=278 AST_FUNPTR_CALL=279 AST_BREAK=280
+#   AST_CONTINUE=281 AST_DEFAULT_PARAM=282 AST_VAR_ARGS=283
+#   AST_ASM_FUNCDEF=284 AST_CAST=285 AST_FUN_PROTO=286 AST_CASE=287
+#   AST_JUMP=288 AST_EXTERN_FUNC=289 AST_DO_WHILE=290
+#   AST_PLACEHOLDER=291 AST_SWITCH=292 AST_DEFAULT=293
+#   AST_SIZEOF=294 AST_COMMENT=295 AST_BINOP=296 AST_UNOP=297
+#   AST_TRY=298 AST_THROW=299
+#
+# THE PARTITIONS:
+#
+#   POSITIVE       (5 rows)  the five terminating kinds
+#   NEGATIVE       (34 rows) the kinds that must NOT terminate
+#   BOUNDARY       (2 rows)  the kinds immediately adjacent to the
+#                            positive set in the enum:
+#                              257 (one below AST_GVAR) is absent
+#                              from the enum, so the boundary below
+#                              is 258 itself;
+#                              288 AST_JUMP is the kind immediately
+#                              above AST_CASE=287
+#   SENTINEL       (1 row)   AST_DEFAULT=293, which is DELIBERATELY
+#                            ABSENT from the SUB-002 condition
+#                            although it IS present in the migrated
+#                            SUB-001 (case-arm) condition.  That
+#                            difference is the candidate's own
+#                            distinguishing property, so it is a
+#                            POSITIVE (must-not-terminate) sentinel.
+#
+# THE OBSERVED PRISTINE DECISION TABLE (41 rows, the G0 output):
+#   258 AST_GOTO           -> 1
+#   270 AST_RETURN         -> 1
+#   274 AST_COMPOUND_STMT  -> 1
+#   280 AST_BREAK          -> 1
+#   287 AST_CASE           -> 1
+#   every other row        -> 0
+#
+# ------------------------------------------------------------------
+# THE WITNESS (PREDECLARED BEFORE THE MUTATION)
+# ------------------------------------------------------------------
+# A compound statement in the default arm, followed by a REACHABLE
+# statement:
+#
+#     switch (x) {
+#       case 1: r = 10; break;
+#       default:
+#         { r = 55; }
+#         r = 77;
+#     }
+#
+# With the CORRECT condition the default arm TERMINATES at the
+# compound statement, so `r = 77` is NOT in the arm.  With the
+# AST_COMPOUND_STMT arm removed, `r = 77` BECOMES part of the arm and
+# IS EXECUTED.
+#
+# THE OBSERVATION CHANNEL: COMPILED_PROGRAM_SEMANTIC_OUTPUT_CHANGED
+#   pristine  WITNESS_OUTPUT=110 155
+#   mutant    WITNESS_OUTPUT=110 177
+#
+# The channel was declared BEFORE the mutation was applied, and the
+# mutant's compiler BUILD exit (0) is recorded SEPARATELY from the
+# witness compile exit (0) and the witness run exit (0).  A failed
+# compiler build was NOT mistaken for causality at any point.
+#
+# ------------------------------------------------------------------
+# THE BOUNDED MUTATION SET
+# ------------------------------------------------------------------
+# Five mutants, one per terminating kind of the source condition.
+# Each removes EXACTLY ONE arm.  Each changed EXACTLY ONE fixture
+# row in the G0 oracle differential:
+#
+#   m-compound  AST_COMPOUND_STMT  row kind 274
+#   m-case      AST_CASE           row kind 287
+#   m-break     AST_BREAK          row kind 280
+#   m-return    AST_RETURN         row kind 270
+#   m-goto      AST_GOTO           row kind 258
+#
+# The set covers EVERY distinct decision outcome of the source
+# condition, so it is not a single arbitrary mutant.
+#
+SOURCE_FIXTURE_AND_ORACLE_STATUS=PASS

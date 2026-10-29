@@ -1,0 +1,73 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON07
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=selected-enums-fixture
+#
+# THE FROZEN FIXTURE FOR THE SELECTED CANDIDATE SUB-002.
+#
+# The row keys are the LIVE AstKind values parsed from src/ast.h.
+# The expected values are the OBSERVED output of the REAL production
+# C decision (the G0 oracle), NOT a hand-authored expectation.
+#
+# Schema: row_id <TAB> ast_kind <TAB> kind_name <TAB> partition
+#         <TAB> expected_terminate <TAB> provenance
+#
+row_id	ast_kind	kind_name	partition	expected_terminate	provenance
+1	256	AST_GVAR	NEGATIVE	0	LIVE src/ast.h AST_GVAR=256
+2	258	AST_GOTO	POSITIVE	1	LIVE src/ast.h AST_GOTO=258; the G0 oracle observed 1
+3	259	AST_LABEL	NEGATIVE	0	LIVE src/ast.h AST_LABEL=259
+4	261	AST_LVAR	NEGATIVE	0	LIVE src/ast.h AST_LVAR=261
+5	262	AST_FUNC	NEGATIVE	0	LIVE src/ast.h AST_FUNC=262
+6	263	AST_DECL	NEGATIVE	0	LIVE src/ast.h AST_DECL=263
+7	264	AST_STRING	NEGATIVE	0	LIVE src/ast.h AST_STRING=264
+8	265	AST_FUNCALL	NEGATIVE	0	LIVE src/ast.h AST_FUNCALL=265
+9	266	AST_LITERAL	NEGATIVE	0	LIVE src/ast.h AST_LITERAL=266
+10	267	AST_ARRAY_INIT	NEGATIVE	0	LIVE src/ast.h AST_ARRAY_INIT=267
+11	268	AST_IF	NEGATIVE	0	LIVE src/ast.h AST_IF=268
+12	269	AST_FOR	NEGATIVE	0	LIVE src/ast.h AST_FOR=269
+13	270	AST_RETURN	POSITIVE	1	LIVE src/ast.h AST_RETURN=270; the G0 oracle observed 1
+14	271	AST_WHILE	NEGATIVE	0	LIVE src/ast.h AST_WHILE=271
+15	273	AST_CLASS_REF	NEGATIVE	0	LIVE src/ast.h AST_CLASS_REF=273
+16	274	AST_COMPOUND_STMT	POSITIVE	1	LIVE src/ast.h AST_COMPOUND_STMT=274; the G0 oracle observed 1
+17	275	AST_ASM_STMT	NEGATIVE	0	LIVE src/ast.h AST_ASM_STMT=275
+18	276	AST_ASM_FUNC_BIND	NEGATIVE	0	LIVE src/ast.h AST_ASM_FUNC_BIND=276
+19	277	AST_ASM_FUNCALL	NEGATIVE	0	LIVE src/ast.h AST_ASM_FUNCALL=277
+20	278	AST_FUNPTR	NEGATIVE	0	LIVE src/ast.h AST_FUNPTR=278
+21	279	AST_FUNPTR_CALL	NEGATIVE	0	LIVE src/ast.h AST_FUNPTR_CALL=279
+22	280	AST_BREAK	POSITIVE	1	LIVE src/ast.h AST_BREAK=280; the G0 oracle observed 1
+23	281	AST_CONTINUE	NEGATIVE	0	LIVE src/ast.h AST_CONTINUE=281
+24	282	AST_DEFAULT_PARAM	NEGATIVE	0	LIVE src/ast.h AST_DEFAULT_PARAM=282
+25	283	AST_VAR_ARGS	NEGATIVE	0	LIVE src/ast.h AST_VAR_ARGS=283
+26	284	AST_ASM_FUNCDEF	NEGATIVE	0	LIVE src/ast.h AST_ASM_FUNCDEF=284
+27	285	AST_CAST	NEGATIVE	0	LIVE src/ast.h AST_CAST=285
+28	286	AST_FUN_PROTO	NEGATIVE	0	LIVE src/ast.h AST_FUN_PROTO=286
+29	287	AST_CASE	POSITIVE	1	LIVE src/ast.h AST_CASE=287; the G0 oracle observed 1
+30	288	AST_JUMP	BOUNDARY	0	LIVE src/ast.h AST_JUMP=288; the kind immediately above AST_CASE=287
+31	289	AST_EXTERN_FUNC	NEGATIVE	0	LIVE src/ast.h AST_EXTERN_FUNC=289
+32	290	AST_DO_WHILE	NEGATIVE	0	LIVE src/ast.h AST_DO_WHILE=290
+33	291	AST_PLACEHOLDER	NEGATIVE	0	LIVE src/ast.h AST_PLACEHOLDER=291
+34	292	AST_SWITCH	NEGATIVE	0	LIVE src/ast.h AST_SWITCH=292
+35	293	AST_DEFAULT	SENTINEL	0	LIVE src/ast.h AST_DEFAULT=293; DELIBERATELY absent from the SUB-002 condition although PRESENT in the migrated SUB-001 condition.  This is the candidate's distinguishing property.
+36	294	AST_SIZEOF	NEGATIVE	0	LIVE src/ast.h AST_SIZEOF=294
+37	295	AST_COMMENT	NEGATIVE	0	LIVE src/ast.h AST_COMMENT=295
+38	296	AST_BINOP	NEGATIVE	0	LIVE src/ast.h AST_BINOP=296
+39	297	AST_UNOP	NEGATIVE	0	LIVE src/ast.h AST_UNOP=297
+40	298	AST_TRY	NEGATIVE	0	LIVE src/ast.h AST_TRY=298
+41	299	AST_THROW	NEGATIVE	0	LIVE src/ast.h AST_THROW=299
+#
+# FIXTURE_ROWS=41
+# POSITIVE_ROWS=5   (258, 270, 274, 280, 287)
+# NEGATIVE_ROWS=34
+# BOUNDARY_ROWS=1   (288 AST_JUMP, immediately above the positive set)
+# SENTINEL_ROWS=1   (293 AST_DEFAULT, the SUB-001-only kind)
+#
+# THE EQUALITY RULE
+# The fixture value for a row equals the decision's output for that
+# row's ast_kind, with 1 meaning "terminate the default arm".
+# A migrated component MUST reproduce every one of the 41 values
+# EXACTLY.  There is no tolerance and no "close enough" class.
+#
+# THE UNREACHABLE / SENTINEL NOTE
+# AST_DEFAULT (293) is not merely a rare value: it is the kind the
+# ALREADY MIGRATED SUB-001 treats as terminating and SUB-002 does
+# not.  A component that accidentally implemented the SUB-001
+# semantics would produce 1 for row 35 and be caught immediately.

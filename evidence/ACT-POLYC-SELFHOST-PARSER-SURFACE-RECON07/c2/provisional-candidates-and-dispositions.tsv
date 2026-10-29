@@ -1,0 +1,84 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON07
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=provisional-candidates-and-dispositions
+#
+# THE DISPOSITION OF EVERY CANDIDATE IN THE POPULATION.
+#
+# Schema: candidate_id <TAB> class <TAB> canonical_rank <TAB> status
+#         <TAB> reason <TAB> selection_disposition
+#
+SUB-002	STRUCTURAL	1	ELIGIBLE	TESTED_CAUSALLY_AND_SELECTED	The top-ranked candidate was the FIRST eligible structural candidate in the canonical order, so it was the FIRST to be tested for causal feasibility.  It PASSED: the G0 object is a genuine production C TU, the witness is predeclared, the mutant compiler built successfully, the compiled-program semantics changed on the declared channel (155 -> 177), and the restoration was byte-identical at the SOURCE and at the PARSER OBJECT.	SELECTED
+SUB-004	STRUCTURAL	2	NOT_TESTED_NOT_REACHED	NOT REACHED.  The canonical order places it second; the first candidate passed its causal feasibility gate, so the deterministic procedure stops at the first feasible winner.  It remains ELIGIBLE and is the recorded fallback if the successor's implementation of SUB-002 fails its own gates.	NOT_SELECTED_ELIGIBLE_FALLBACK
+CAND-018	SCALAR	3	NOT_TESTED_NOT_REACHED	NOT REACHED (ranked third).	NOT_SELECTED
+CAND-021	SCALAR	4	NOT_TESTED_NOT_REACHED	NOT REACHED (ranked fourth).	NOT_SELECTED
+CAND-025	SCALAR	5	NOT_TESTED_NOT_REACHED	NOT REACHED (ranked fifth).	NOT_SELECTED
+CAND-026	SCALAR	6	NOT_TESTED_NOT_REACHED	NOT REACHED (ranked sixth).	NOT_SELECTED
+CAND-036	SCALAR	7	NOT_TESTED_NOT_REACHED	NOT REACHED (ranked seventh).	NOT_SELECTED
+CAND-037	SCALAR	8	NOT_TESTED_NOT_REACHED	NOT REACHED (ranked eighth).	NOT_SELECTED
+CAND-030	SCALAR	9	NOT_TESTED_NOT_REACHED	NOT REACHED (ranked ninth).	NOT_SELECTED
+CAND-022	SCALAR	10	NOT_TESTED_NOT_REACHED	NOT REACHED (ranked tenth).	NOT_SELECTED
+CAND-023	SCALAR	11	NOT_TESTED_NOT_REACHED	NOT REACHED (ranked eleventh).	NOT_SELECTED
+CAND-038	SCALAR	-	EXCLUDED	EXCLUDED by clause 11 (deterministic_projection=NO) and clause 12 (production_delegation_feasible=NO): the input is an UNBOUNDED HOST STRING and the output is a NEW HOST STRING.	EXCLUDED
+CAND-039	SCALAR	-	EXCLUDED	EXCLUDED by clauses 11 and 12: the input is a Lexeme plus the mutable host scope field cc->tmp_fname and the output is a NEW HOST STRING.	EXCLUDED
+CAND-040	SCALAR	-	EXCLUDED	EXCLUDED by clauses 11 and 12: the input is an UNBOUNDED OPAQUE HOST BUFFER.	EXCLUDED
+SUB-005	STRUCTURAL	-	EXCLUDED	EXCLUDED by clauses 11 and 12: the decision TRANSITIVELY depends on the MUTABLE cc->symbol_table, cc->clsdefs and cc->uniondefs.  PROVEN mechanically with DETECTOR=MUTABLE_HOST_STATE_DEPENDENCE, DEPENDENCE_SITE=TRANSITIVE_THROUGH_A_CALLEE.	EXCLUDED
+SUB-001	STRUCTURAL	-	EXCLUDED	EXCLUDED by clause 02 (already_selfhosted=YES): the decision is owned by BootstrapSwitchArmTerminates and its C body is compiled out of the production object.	EXCLUDED
+SUB-003	STRUCTURAL	-	EXCLUDED	EXCLUDED by clause 02 (already_selfhosted=YES): the decision is owned by BootstrapCompoundBlockAppendsStatement and its C body is compiled out of the production object.	EXCLUDED
+SUB-006	STRUCTURAL	-	EXCLUDED	EXCLUDED: it OWNS the setjmp and WRITES the current recovery state.  It is a whole-region blocker, not a bounded candidate.	EXCLUDED
+SUB-007	STRUCTURAL	-	EXCLUDED	EXCLUDED: the compound body loop REQUIRES nonlocal recovery and performs host graph writes.	EXCLUDED
+SUB-008	STRUCTURAL	-	EXCLUDED	EXCLUDED: the WHOLE-FUNCTION parseStatement owns the recovery interaction, drives the token cursor, constructs every Ast node and calls the statement constructor callbacks.  Its bounded KEYWORD DISPATCH sub-decision is SUB-004 and is preserved as a separate candidate.	EXCLUDED
+SUB-009	STRUCTURAL	-	EXCLUDED	EXCLUDED: the WHOLE-FUNCTION parseExpr is a recursive descent loop that builds the expression AST and calls the unary and binary-op constructors.	EXCLUDED
+SUB-010	STRUCTURAL	-	EXCLUDED	EXCLUDED: a recursive flow walk over the host AST node graph.	EXCLUDED
+SUB-011	STRUCTURAL	-	EXCLUDED	EXCLUDED: a recursive flow walk over the host AST node graph.	EXCLUDED
+SUB-012	STRUCTURAL	-	EXCLUDED	EXCLUDED: a recursive flow walk over the host AST node graph.	EXCLUDED
+#
+# ------------------------------------------------------------------
+# THE DETERMINISTIC PROCEDURE, EXECUTED IN CANONICAL ORDER
+# ------------------------------------------------------------------
+#
+# The ACT requires: "The first eligible structural candidate must be
+# tested for successful causal feasibility before proceeding to the
+# next.  On a concrete failed causal/provenance gate, record the exact
+# measured disqualification, then deterministically continue."
+#
+# THE ORDER WAS: 1 SUB-002, 2 SUB-004, 3 CAND-018, ...
+#
+# SUB-002 (rank 1) was the FIRST eligible structural candidate.  It was
+# TESTED and it PASSED every causal and provenance gate:
+#
+#   - the G0 object is the genuine production C translation unit;
+#   - the fixture is source-derived from the live AstKind enum;
+#   - the witness was predeclared BEFORE the mutation;
+#   - the mutant real compiler built successfully (exit 0);
+#   - the compiled-program semantics changed on the DECLARED channel
+#     (WITNESS_OUTPUT 110 155 -> 110 177);
+#   - the G0 oracle differential changed EXACTLY ONE fixture row
+#     (kind 274, AST_COMPOUND_STMT);
+#   - the restoration was byte-identical in the SOURCE and in the
+#     PARSER OBJECT;
+#   - the authoritative main checkout was never mutated.
+#
+# Because the FIRST candidate PASSED, the deterministic procedure
+# STOPS there and SUB-002 is the selection.  No lower-ranked
+# candidate was tested, and none is claimed to have been.
+#
+# SUB-004 (rank 2) is therefore recorded as the ELIGIBLE FALLBACK:
+# if the successor ACT's implementation of SUB-002 fails its own
+# gates, the canonical order makes SUB-004 the next candidate to
+# test.  It is NOT selected and its causal feasibility is NOT claimed.
+#
+# ------------------------------------------------------------------
+# NO CANDIDATE WAS HAND-PICKED
+# ------------------------------------------------------------------
+# The selection is the OUTPUT of:
+#   (1) the unmodified canonical 13-clause eligibility checker,
+#   (2) the unmodified canonical R0..R6 ranker,
+#   (3) the first-candidate-must-pass causal gate.
+# and it is CONFIRMED by the independent recomputer, which re-derives
+# the eligibility and the order from the raw facts alone and reaches
+# the SAME winner.
+#
+PROVISIONAL_CANDIDATE_POPULATION=24
+PROVISIONAL_ELIGIBLE=11
+PROVISIONAL_SELECTED=SUB-002
+PROVISIONAL_DISPOSITIONS_STATUS=PASS

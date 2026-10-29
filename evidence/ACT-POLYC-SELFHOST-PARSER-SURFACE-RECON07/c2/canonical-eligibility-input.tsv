@@ -1,0 +1,44 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON07
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=canonical-eligibility-input
+#
+# THE EXACT INPUT TO THE UNMODIFIED CANONICAL 13-CLAUSE ELIGIBILITY
+# CHECKER.
+#
+# This file is BYTE-IDENTICAL to c1/raw-eligibility-facts.tsv.  It is
+# reproduced here so that the C2 stage is self-contained and so that
+# the input hash can be bound independently of C1.
+#
+# THE CHECKER'S OWN SCHEMA (tools/quality/parser-slice-recon03-
+# eligibility.HC):
+#   01 candidate_id              11 requires_nonlocal_recovery
+#   02 function_name             12 host_graph_writes
+#   03 source_file               13 pointer_identity_operations
+#   04 source_start              14 parser_callback_count
+#   05 source_end                15 semantic_callback_count
+#   06 candidate_kind            16 deterministic_projection
+#   07 semantic_authority        17 production_delegation_feasible
+#   08 already_selfhosted        18 production_reachable
+#   09 r0                        19 exclusion_reason
+#   10 owns_setjmp               20 free text tail
+#
+# THERE IS NO `eligible` COLUMN.  The eligibility flag is computed by
+# the checker and CANNOT be hand-authored.
+#
+SUB-002	parseDefaultStatement	src/parser.c	1683	1684	AST_PROJECTION_PRIMITIVE	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+SUB-004	parseStatement	src/parser.c	1773	1786	TOKEN_CLASSIFIER	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-018	parseCompoundAssign	src/prslib.c	1328	1348	OPERATOR_CLASSIFIER	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-021	astBinOpToTokenPunct	src/prslib.c	1352	1375	OPERATOR_CLASSIFIER	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-022	parseCountPrintfFormatSpecs	src/prslib.c	760	792	FORMAT_SPEC_COUNTER	YES	NO	1	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-023	parseFormatArgIdx	src/prslib.c	798	810	FORMAT_FUNCTION_TABLE	YES	NO	1	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-025	astIsAssignment	src/ast.c	943	964	OPERATOR_CLASSIFIER	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-026	astIsValidPointerOp	src/ast.c	974	990	OPERATOR_CLASSIFIER	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-030	parseIsClassOrUnion	src/prsutil.c	22	25	TYPE_MODIFIER_PRIMITIVE	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-036	astIsBinCmp	src/ast.c	992	1017	OPERATOR_CLASSIFIER	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-037	astIsRangeOperator	src/ast.c	2348	2358	OPERATOR_CLASSIFIER	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-038	astNormaliseFunctionName	src/ast.c	931	941	AST_PROJECTION_PRIMITIVE	YES	NO	2	NO	NO	NO	0	0	0	0	NO	NO	YES	-
+CAND-039	createFunctionLevelGotoLabel	src/parser.c	1756	1760	AST_PROJECTION_PRIMITIVE	YES	NO	2	NO	NO	NO	0	0	0	0	NO	NO	YES	-
+CAND-040	asmTextHasReturn	src/parser.c	2293	2324	TOKEN_CLASSIFIER	YES	NO	2	NO	NO	NO	0	0	0	0	NO	NO	YES	-
+SUB-005	parseDeclOrStatement	src/parser.c	1925	1932	TOKEN_CLASSIFIER	YES	NO	2	NO	NO	NO	0	0	0	0	NO	NO	YES	TRANSITIVELY_DEPENDS_ON_MUTABLE_cc_symbol_table_clsdefs_uniondefs
+SUB-001	parseSwitchArmTerminates	src/parser.c	1519	1545	AST_PROJECTION_PRIMITIVE	NO	YES	0	NO	NO	NO	0	0	0	0	YES	YES	YES	ALREADY_SELFHOSTED_BY_BootstrapSwitchArmTerminates
+SUB-003	parseCompoundStatementInternal	src/parser.c	2177	2177	AST_PROJECTION_PRIMITIVE	NO	YES	0	NO	NO	NO	0	0	0	0	YES	YES	YES	ALREADY_SELFHOSTED_BY_BootstrapCompoundBlockAppendsStatement
