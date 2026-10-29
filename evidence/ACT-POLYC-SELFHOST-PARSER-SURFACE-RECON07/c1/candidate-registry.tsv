@@ -1,0 +1,107 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON07
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=candidate-registry
+#
+# THE COMPLETE CANDIDATE REGISTRY: EVERY SEMANTIC SUB-DECISION IN THE
+# FOUR CENSUS FILES THAT COULD CARRY A MIGRATABLE AUTHORITY.
+#
+# Schema: candidate_id <TAB> class <TAB> function <TAB> source_file
+#         <TAB> source_start <TAB> source_end <TAB> source_sha256
+#         <TAB> decision <TAB> semantic_authority <TAB> is_already_polyc
+#         <TAB> polyc_owner <TAB> status <TAB> exclusion_reason
+#         <TAB> input_projection <TAB> output_projection
+#         <TAB> host_ownership <TAB> production_reachable
+#
+# status is ELIGIBLE or EXCLUDED.  For the 17 rows that form the
+# eligibility-checker population, this column IS the canonical
+# checker's output; it was verified to agree with the checker exactly
+# (ELIGIBLE_POPULATIONS_IDENTICAL=YES, 11 = 11).  The 7 additional rows
+# (SUB-006 .. SUB-012) are whole-region blockers that were never
+# candidates; they are recorded here for completeness and are NOT in
+# the checker population.
+#
+SUB-001	STRUCTURAL	parseSwitchArmTerminates	src/parser.c	1519	1545	1e9267281e057b0cb8a6d97adb984a0668246a107d9c89696a31651a8a11a4fc	SWITCH_ARM_TERMINATION	POLYC_OWNED	NO	BootstrapSwitchArmTerminates	EXCLUDED	ALREADY_SELFHOSTED	BOUNDED	BOUNDED	BOUNDED	BOUNDED	NO
+SUB-002	STRUCTURAL	parseDefaultStatement	src/parser.c	1683	1684	a9fcb6a752a59a58eaea5bdf449cab39acf7d2d2be9d776f6a13fd968af89199	DEFAULT_ARM_TERMINATION	LEGACY_C	YES	-	ELIGIBLE	-	BOUNDED	BOUNDED	BOUNDED	BOUNDED	YES
+SUB-003	STRUCTURAL	parseCompoundStatementInternal	src/parser.c	2177	2177	340c7ff53514a2522b9f7e6d3cf758f0e674386925b93cbc48426bfa2a4e7092	COMPOUND_APPEND_SKIP	POLYC_OWNED	NO	BootstrapCompoundBlockAppendsStatement	EXCLUDED	ALREADY_SELFHOSTED	BOUNDED	BOUNDED	BOUNDED	BOUNDED	NO
+SUB-004	STRUCTURAL	parseStatement	src/parser.c	1773	1786	cd138cc52588fe48c2eab37421b4e25abbacd7ea10491bc696a1acab9a66d7e0	STATEMENT_DISPATCH	LEGACY_C	YES	-	ELIGIBLE	-	BOUNDED	BOUNDED	BOUNDED	BOUNDED	YES
+SUB-005	STRUCTURAL	parseDeclOrStatement	src/parser.c	1925	1932	75615c20b28560d21f55a331bbe69087e15cacb28c2491a6118574f5bb7ebc9f	DECL_OR_STATEMENT_ROUTING	LEGACY_C	YES	-	EXCLUDED	MUTABLE_HOST_STATE_LEAK	NOT_BOUNDED	NOT_BOUNDED	NOT_BOUNDED	NOT_BOUNDED	YES
+SUB-006	STRUCTURAL	parseCompoundStatementInternal	src/parser.c	2043	2076	408dbea6f9a50394d0903b0de3f3158635240694530ebdb60e0efc7c2dc9ba61	RECOVERY_CHECKPOINT	LEGACY_C	YES	-	EXCLUDED	OWNS_SETJMP_AND_WRITES_RECOVERY	NOT_BOUNDED	NOT_BOUNDED	NOT_BOUNDED	NOT_BOUNDED	YES
+SUB-007	STRUCTURAL	parseCompoundStatementInternal	src/parser.c	2077	2186	d19539d1c9347c562b64034eaecd0449445be6091995f5d21e0b5ae4bafa6930	COMPOUND_BODY_LOOP	LEGACY_C	YES	-	EXCLUDED	RECOVERY_AND_HOST_GRAPH_OWNERSHIP	NOT_BOUNDED	NOT_BOUNDED	NOT_BOUNDED	NOT_BOUNDED	YES
+SUB-008	STRUCTURAL	parseStatement	src/parser.c	1762	2034	09d7bb02e24e057331f9079965a0b73e7fbe862d868379da2757151c2a299bbe	WHOLE_STATEMENT_PARSER	LEGACY_C	YES	-	EXCLUDED	WHOLE_FUNCTION_RECOVERY_AND_CALLBACK_OWNERSHIP	NOT_BOUNDED	NOT_BOUNDED	NOT_BOUNDED	NOT_BOUNDED	YES
+SUB-009	STRUCTURAL	parseExpr	src/prslib.c	1402	1537	05a7838ed407ece6a831065af4a622173b95614746b9000a64032a7ce705e2d2	WHOLE_EXPRESSION_LOOP	LEGACY_C	YES	-	EXCLUDED	WHOLE_FUNCTION_RECOVERY_AND_CALLBACK_OWNERSHIP	NOT_BOUNDED	NOT_BOUNDED	NOT_BOUNDED	NOT_BOUNDED	YES
+SUB-010	STRUCTURAL	astStmtFallsThrough	src/parser.c	2245	2464	35a1dd66ccbde5c1dc3898887e55dc4a6afba7aae41226503b29f4a7e9b6a18a	CONTROL_FLOW_FALLTHROUGH	LEGACY_C	YES	-	EXCLUDED	RECURSIVE_HOST_AST_GRAPH_WALK	NOT_BOUNDED	NOT_BOUNDED	NOT_BOUNDED	NOT_BOUNDED	YES
+SUB-011	STRUCTURAL	astStmtHasBreak	src/parser.c	2220	2422	f00989821773bb8faa0a6180f8b201d2fc436d0e5eb99bc0714cb7f79695237c	CONTROL_FLOW_BREAK	LEGACY_C	YES	-	EXCLUDED	RECURSIVE_HOST_AST_GRAPH_WALK	NOT_BOUNDED	NOT_BOUNDED	NOT_BOUNDED	NOT_BOUNDED	YES
+SUB-012	STRUCTURAL	astIsConstTrueCond	src/parser.c	2212	2395	bfdae7cda23abf596e6bdf99f94e80e84c00f14b982a189b76d3bdfa521d9985	CONST_TRUE_LOOP_COND	LEGACY_C	YES	-	EXCLUDED	RECURSIVE_HOST_AST_GRAPH_WALK	NOT_BOUNDED	NOT_BOUNDED	NOT_BOUNDED	NOT_BOUNDED	YES
+CAND-018	SCALAR	parseCompoundAssign	src/prslib.c	1328	1348	4d941407ee054e207586b3a4fb645caf8917e6b43fa467b79d50a75e1b54bb43	COMPOUND_ASSIGN_CLASSIFY	LEGACY_C	YES	-	ELIGIBLE	-	BOUNDED	BOUNDED	BOUNDED	BOUNDED	YES
+CAND-021	SCALAR	astBinOpToTokenPunct	src/prslib.c	1352	1375	db92f0700f3c9dcb4e6e5360ca084ad5bdda03f2029f24510bf3ea473af6edb6	BINOP_TO_TOKEN_PUNCT	LEGACY_C	YES	-	ELIGIBLE	-	BOUNDED	BOUNDED	BOUNDED	BOUNDED	YES
+CAND-022	SCALAR	parseCountPrintfFormatSpecs	src/prslib.c	760	792	c914b0badfb9f9bd462380c5b8ae7a8bec1de82914190310472b95c67241f960	PRINTF_FORMAT_SPEC_COUNT	LEGACY_C	YES	-	ELIGIBLE	-	BOUNDED	BOUNDED	BOUNDED	BOUNDED	YES
+CAND-023	SCALAR	parseFormatArgIdx	src/prslib.c	798	810	109637a97948ce65dd27315f88d68511529ddb3db1b9af95bf43754c56ec8ab1	FORMAT_ARG_INDEX	LEGACY_C	YES	-	ELIGIBLE	-	BOUNDED	BOUNDED	BOUNDED	BOUNDED	YES
+CAND-025	SCALAR	astIsAssignment	src/ast.c	943	964	eb91d5f28f19292c3d7f7a79fbf00e5cba5d690e8b2007c1b0ffbea34b180b67	ASSIGNMENT_CLASSIFY	LEGACY_C	YES	-	ELIGIBLE	-	BOUNDED	BOUNDED	BOUNDED	BOUNDED	YES
+CAND-026	SCALAR	astIsValidPointerOp	src/ast.c	974	990	bc06b0d757538f6c00ce0e96003cf5613823e98f4c48288c727cf9ac1dd82ac5	VALID_POINTER_OP	LEGACY_C	YES	-	ELIGIBLE	-	BOUNDED	BOUNDED	BOUNDED	BOUNDED	YES
+CAND-030	SCALAR	parseIsClassOrUnion	src/prsutil.c	22	25	58957ad620fa63bf90f55f86b2d802f18de5471ef82a061c310adaa427edd839	CLASS_OR_UNION_CLASSIFY	LEGACY_C	YES	-	ELIGIBLE	-	BOUNDED	BOUNDED	BOUNDED	BOUNDED	YES
+CAND-036	SCALAR	astIsBinCmp	src/ast.c	992	1017	b4b2bbd4faa84b868781e4fd26230c6a4933d831d4373726cf5777b8d7d063b8	BIN_CMP_CLASSIFY	LEGACY_C	YES	-	ELIGIBLE	-	BOUNDED	BOUNDED	BOUNDED	BOUNDED	YES
+CAND-037	SCALAR	astIsRangeOperator	src/ast.c	2348	2358	8c1acadaa4f1ae26d27c6be491812db2d16a8dd18528cb5cf2cc81d242b24f99	RANGE_OPERATOR_CLASSIFY	LEGACY_C	YES	-	ELIGIBLE	-	BOUNDED	BOUNDED	BOUNDED	BOUNDED	YES
+CAND-038	SCALAR	astNormaliseFunctionName	src/ast.c	931	941	cc5c3afec53c9d94d59761b60b82f26629365a8c04e59791afffc11c765cb8ca	FUNCTION_NAME_NORMALISE	LEGACY_C	YES	-	EXCLUDED	UNBOUNDED_HOST_STRING_INPUT_AND_NEW_HOST_STRING_OUTPUT	NOT_BOUNDED	NOT_BOUNDED	NOT_BOUNDED	NOT_BOUNDED	YES
+CAND-039	SCALAR	createFunctionLevelGotoLabel	src/parser.c	1756	1760	98329744e7a38e9f0afd73d9459e1aad671d53c800b41a20281687fc90a16acb	GOTO_LABEL_COMPOSE	LEGACY_C	YES	-	EXCLUDED	HOST_TOKEN_AND_MUTABLE_SCOPE_IN_NEW_HOST_STRING_OUT	NOT_BOUNDED	NOT_BOUNDED	NOT_BOUNDED	NOT_BOUNDED	YES
+CAND-040	SCALAR	asmTextHasReturn	src/parser.c	2293	2324	9bf4fcbccf3f9b87135cedc1e054caf5f22c8350409e0724afed2e7b893b4d91	ASM_TEXT_HAS_RETURN	LEGACY_C	YES	-	EXCLUDED	OPAQUE_UNBOUNDED_HOST_BUFFER	NOT_BOUNDED	NOT_BOUNDED	NOT_BOUNDED	NOT_BOUNDED	YES
+#
+# ------------------------------------------------------------------
+# THE POPULATION ACCOUNTING
+# ------------------------------------------------------------------
+#   TOTAL REGISTRY ROWS                 = 24
+#     ELIGIBLE (checker-confirmed)      = 11
+#     EXCLUDED                           = 13
+#       of which in the checker          =  6
+#         SUB-001  ALREADY_SELFHOSTED
+#         SUB-003  ALREADY_SELFHOSTED
+#         SUB-005  MUTABLE_HOST_STATE_LEAK
+#         CAND-038 UNBOUNDED_HOST_STRING_INPUT
+#         CAND-039 HOST_SCOPE_AND_NEW_HOST_STRING_OUTPUT
+#         CAND-040 OPAQUE_UNBOUNDED_HOST_BUFFER
+#       whole-region blockers (never candidates) = 7
+#         SUB-006 .. SUB-012
+#
+#   ELIGIBLE = 11
+#     ELIGIBLE_STRUCTURAL =  2   (SUB-002, SUB-004)
+#     ELIGIBLE_SCALAR     =  9   (CAND-018, CAND-021, CAND-022,
+#                                  CAND-023, CAND-025, CAND-026,
+#                                  CAND-030, CAND-036, CAND-037)
+#
+# ------------------------------------------------------------------
+# NO CANDIDATE IS MISSING AND NONE IS INVENTED
+# ------------------------------------------------------------------
+#   The 12 historical scalar follow-ups are present with their REAL
+#   canonical IDs (CAND-018, 021, 022, 023, 025, 026, 030, 036, 037,
+#   038, 039, 040).  No identifier was fabricated and none was
+#   renumbered.
+#
+#   The 12 historical structural IDs are present (SUB-001 .. SUB-012).
+#
+#   The TWO functions added since the RECON05 census
+#   (parseCompoundBlockAppendsStatement and
+#   ParserLegacyCompoundBlockAppendsOracle) are NOT new candidates:
+#   they are the SLICE07 migration's own factored-out decision and its
+#   object-level legacy oracle.  The DECISION is SUB-003 (already
+#   PolyC-owned) and the ORACLE is a test-only reachability adapter,
+#   not a production semantic authority.  Neither is a new candidate,
+#   and both are classified ALREADY_SELFHOSTED / EXCLUDED above.
+#
+#   NO genuinely NEW candidate was discovered in the current source
+#   beyond the historical registry.  The census grew by exactly two
+#   functions, both of which belong to the SLICE07 migration.
+#
+# ------------------------------------------------------------------
+# THE HOST-OWNERSHIP COLUMN
+# ------------------------------------------------------------------
+#   BOUNDED  -- the decision's own projection is bounded; the host
+#               ownership (AST, token, allocation, callbacks,
+#               recovery, diagnostics) stays entirely on the C side of
+#               the seam.  This is the shape of the two already
+#               migrated decisions.
+#   NOT_BOUNDED -- the decision itself touches unbounded or mutable
+#               host state, so no bounded ABI can express it.
+#
+CANDIDATE_POPULATION=24
+ELIGIBLE_STRUCTURAL=2
+ELIGIBLE_SCALAR=9
+CANDIDATE_REGISTRY_STATUS=PASS

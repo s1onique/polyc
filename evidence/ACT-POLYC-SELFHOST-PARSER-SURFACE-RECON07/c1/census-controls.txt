@@ -1,0 +1,150 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON07
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=census-controls
+#
+# THE INVENTORY-CLASS NEGATIVE CONTROLS, ACTUALLY EXECUTED.
+#
+# The detector is the UNMODIFIED canonical PolyC verifier
+# tools/quality/parser-surface-recon05-verify.HC, used READ-ONLY.  It
+# is the repository's existing source-byte census/identity verifier.
+#
+# Each control below has:
+#   - a POSITIVE BASELINE (the pristine input must PASS),
+#   - an actual ADVERSE EXECUTION (the mutated input must FAIL),
+#   - the EXACT reason-specific detector that fired,
+#   - the exit status,
+#   - the restoration (the pristine input is unchanged on disk).
+#
+# ------------------------------------------------------------------
+# THE POSITIVE BASELINE
+# ------------------------------------------------------------------
+COMMAND=./build/parser-surface-recon05-verify IDENTITY <pristine-identity.tsv> src/parser.c src/prslib.c src/prsutil.c src/ast.c
+IDENTITY_ROWS=16
+DUPLICATE_ID=0
+INVALID_RANGE=0
+SOURCE_HASH_MISMATCH=0
+MISSING_FUNCTION=0
+OVERLAPPING_IDENTITY=0
+MALFORMED_FACT=0
+STATUS=PASS
+EXIT=0
+#
+COMMAND=./build/parser-surface-recon05-verify REGISTRY <expected-ids.txt> <pristine-identity.tsv> src/parser.c src/prslib.c src/prsutil.c src/ast.c
+REGISTRY_EXPECTED=16
+REGISTRY_CLAIMED=16
+MISSING_FUNCTION=0
+UNKNOWN_ID=0
+MALFORMED_FACT=0
+STATUS=PASS
+EXIT=0
+#
+# ------------------------------------------------------------------
+# IC-01 -- DELETE ONE LIVE INVENTORY FUNCTION
+# ------------------------------------------------------------------
+# The deleted row becomes INVISIBLE to a per-row checker, so the
+# REGISTRY SET comparison is the ONLY thing that can name the missing
+# ID.  This is exactly why MODE=REGISTRY exists.
+#
+COMMAND=./build/parser-surface-recon05-verify REGISTRY <expected-ids> <identity-minus-CAND-038> src/parser.c src/prslib.c src/prsutil.c src/ast.c
+DETECTOR=MISSING_FUNCTION
+CANDIDATE_ID=CAND-038
+REASON=THE_CANDIDATE_IS_ABSENT_FROM_THE_IDENTITY_TABLE
+REGISTRY_EXPECTED=16
+REGISTRY_CLAIMED=15
+MISSING_FUNCTION=1
+UNKNOWN_ID=0
+MALFORMED_FACT=0
+STATUS=FAIL
+EXIT=1
+#
+# ------------------------------------------------------------------
+# IC-02 -- DUPLICATE ONE FUNCTION/CANDIDATE ID
+# ------------------------------------------------------------------
+# The full 16-row identity table with the CAND-018 row appended a
+# second time.
+#
+COMMAND=./build/parser-surface-recon05-verify IDENTITY <identity-with-CAND-018-duplicated> src/parser.c src/prslib.c src/prsutil.c src/ast.c
+DETECTOR=DUPLICATE_ID
+CANDIDATE_ID=CAND-018
+FIRST_ROW=5
+SECOND_ROW=17
+IDENTITY_ROWS=17
+DUPLICATE_ID=1
+INVALID_RANGE=0
+SOURCE_HASH_MISMATCH=0
+MISSING_FUNCTION=0
+OVERLAPPING_IDENTITY=0
+MALFORMED_FACT=0
+STATUS=FAIL
+EXIT=1
+#
+# ------------------------------------------------------------------
+# IC-03 -- ALTER ONE SOURCE-RANGE SHA-256
+# ------------------------------------------------------------------
+COMMAND=./build/parser-surface-recon05-verify IDENTITY <identity-with-altered-SUB-004-hash> src/parser.c src/prslib.c src/prsutil.c src/ast.c
+DETECTOR=SOURCE_HASH_MISMATCH
+CANDIDATE_ID=SUB-004
+FILE=src/parser.c
+ACTUAL_RANGE=1773..1786
+EXPECTED_SHA256=0000000000000000000000000000000000000000000000000000000000000000
+ACTUAL_SHA256=cd138cc52588fe48c2eab37421b4e25abbacd7ea10491bc696a1acab9a66d7e0
+IDENTITY_ROWS=16
+DUPLICATE_ID=0
+INVALID_RANGE=0
+SOURCE_HASH_MISMATCH=1
+MISSING_FUNCTION=0
+OVERLAPPING_IDENTITY=0
+MALFORMED_FACT=0
+STATUS=FAIL
+EXIT=1
+#
+# ------------------------------------------------------------------
+# IC-04 -- INVALID / OUT-OF-FILE / OVERLAPPING IDENTITY RANGE
+# ------------------------------------------------------------------
+# The SUB-002 row is given a START of 2000 and an END of 100, which is
+# both INVERTED and beyond the end of the file's line count.
+#
+COMMAND=./build/parser-surface-recon05-verify IDENTITY <identity-with-SUB-002-range-2000..100> src/parser.c src/prslib.c src/prsutil.c src/ast.c
+DETECTOR=INVALID_RANGE
+CANDIDATE_ID=SUB-002
+FILE=src/parser.c
+START=2000
+END=100
+FILE_LINES=3252
+IDENTITY_ROWS=16
+DUPLICATE_ID=0
+INVALID_RANGE=1
+SOURCE_HASH_MISMATCH=0
+MISSING_FUNCTION=0
+OVERLAPPING_IDENTITY=0
+MALFORMED_FACT=0
+STATUS=FAIL
+EXIT=1
+#
+# ------------------------------------------------------------------
+# THE CONTAINMENT
+# ------------------------------------------------------------------
+#
+# Every adverse input was written to a DISPOSABLE file under /tmp.  No
+# tracked file was modified, no source file was touched, and the
+# authoritative working tree was never left in an adverse state.  The
+# pristine identity table still passes IDENTITY and REGISTRY after
+# every control.
+#
+# The detector is reason-specific in every case:
+#
+#   IC-01  MISSING_FUNCTION      names the DELETED candidate ID
+#   IC-02  DUPLICATE_ID          names the DUPLICATED candidate ID and
+#                                 the two row indices
+#   IC-03  SOURCE_HASH_MISMATCH  reports the ACTUAL range and BOTH the
+#                                 expected and the recomputed digest
+#   IC-04  INVALID_RANGE         reports the FILE, the START, the END
+#                                 and the FILE_LINES count
+#
+# None of them degraded into a generic parse failure, and none of them
+# fired for a reason other than the intended one.
+#
+CENSUS_CONTROLS_EXECUTED=4
+CENSUS_CONTROLS_SENSITIVE=4
+CENSUS_CONTROLS_VACUOUS=0
+CENSUS_CONTROLS_STATUS=PASS

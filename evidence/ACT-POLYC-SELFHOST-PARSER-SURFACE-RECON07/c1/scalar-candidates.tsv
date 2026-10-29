@@ -1,0 +1,72 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON07
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=scalar-candidates
+#
+# THE TWELVE HISTORICAL SCALAR FOLLOW-UPS, WITH THEIR REAL CANONICAL
+# IDS, RE-BOUND TO THE LIVE SOURCE.
+#
+# The IDs are the ACTUAL historical canonical IDs.  No identifier was
+# invented and no identifier was renumbered.  The RANGE and DIGEST are
+# MEASURED from the live bytes; they differ from RECON05's recorded
+# ranges for TEN of the twelve, for the reason documented in
+# c1/function-range-hashes.tsv (the census body_line convention spans
+# the function's own trailing comment block, so the RECON05 ranges
+# overlap each other and three of them contain another candidate's
+# entire body).
+#
+# The EFFECT column records the ACTUAL observable effect of each
+# decision, re-read from the live source.  A DIAGNOSTICS-ONLY candidate
+# is NOT upgraded to structural significance because it is easy to
+# migrate.
+#
+# Schema: candidate_id <TAB> function <TAB> source_file <TAB> start
+#         <TAB> end <TAB> sha256 <TAB> input_domain <TAB> output_domain
+#         <TAB> effect <TAB> class <TAB> live_call_sites
+#
+CAND-018	parseCompoundAssign	src/prslib.c	1328	1348	4d941407ee054e207586b3a4fb645caf8917e6b43fa467b79d50a75e1b54bb43	Lexeme token (tk_type + i64)	AstBinOp + found flag	SEMANTIC: classifies the compound-assignment operator that the desugaring then applies	SCALAR_FOLLOWUP	parseExpr
+CAND-021	astBinOpToTokenPunct	src/prslib.c	1352	1375	db92f0700f3c9dcb4e6e5360ca084ad5bdda03f2029f24510bf3ea473af6edb6	AstBinOp	s64 punct value	DIAGNOSTICS-ONLY: the inverse operator map used by the binary-operator diagnostic	SCALAR_FOLLOWUP	parseCreateBinaryOp
+CAND-022	parseCountPrintfFormatSpecs	src/prslib.c	760	792	c914b0badfb9f9bd462380c5b8ae7a8bec1de82914190310472b95c67241f960	const char fmt + int len	int spec count	DIAGNOSTICS-ONLY: counts format specifiers for the argument-count diagnostic	SCALAR_FOLLOWUP	parsePrintfLikeCall
+CAND-023	parseFormatArgIdx	src/prslib.c	798	810	109637a97948ce65dd27315f88d68511529ddb3db1b9af95bf43754c56ec8ab1	char fname + int len	int format arg index	DIAGNOSTICS-ONLY: locates the format argument index of a known printf-style function	SCALAR_FOLLOWUP	parsePrintfLikeCall
+CAND-025	astIsAssignment	src/ast.c	943	964	eb91d5f28f19292c3d7f7a79fbf00e5cba5d690e8b2007c1b0ffbea34b180b67	s64 op	int is-assignment	SEMANTIC: the transpiler uses it to decide a comparison rewrite	SCALAR_FOLLOWUP	src/transpiler.c
+CAND-026	astIsValidPointerOp	src/ast.c	974	990	bc06b0d757538f6c00ce0e96003cf5613823e98f4c48288c727cf9ac1dd82ac5	AstBinOp	int is-valid-pointer-op	SEMANTIC: feeds the pointer-arithmetic type check	SCALAR_FOLLOWUP	src/transpiler.c
+CAND-030	parseIsClassOrUnion	src/prsutil.c	22	25	58957ad620fa63bf90f55f86b2d802f18de5471ef82a061c310adaa427edd839	int kind	int is-class-or-union	SEMANTIC: feeds the class-field lookup paths	SCALAR_FOLLOWUP	src/parser.c src/prslib.c
+CAND-036	astIsBinCmp	src/ast.c	992	1017	b4b2bbd4faa84b868781e4fd26230c6a4933d831d4373726cf5777b8d7d063b8	s64 op	int is-bin-cmp	SEMANTIC: the transpiler uses it for the comparison rewrite	SCALAR_FOLLOWUP	src/transpiler.c
+CAND-037	astIsRangeOperator	src/ast.c	2348	2358	8c1acadaa4f1ae26d27c6be491812db2d16a8dd18528cb5cf2cc81d242b24f99	AstBinOp	int is-range-op	SEMANTIC: src/ir.c:507 and src/x86.c:1357 use it to recognise a range loop	SCALAR_FOLLOWUP	src/ir.c src/x86.c
+CAND-038	astNormaliseFunctionName	src/ast.c	931	941	cc5c3afec53c9d94d59761b60b82f26629365a8c04e59791afffc11c765cb8ca	AoStr name (HOST STRING, unbounded length)	AoStr (NEW HOST STRING)	SEMANTIC: src/transpiler.c:1512 uses it for the assembly-function name.  The input is an unbounded HOST STRING and the output is a NEW HOST STRING, so a bounded projection needs an explicit copy and lifetime contract	SCALAR_FOLLOWUP	src/transpiler.c
+CAND-039	createFunctionLevelGotoLabel	src/parser.c	1756	1760	98329744e7a38e9f0afd73d9459e1aad671d53c800b41a20281687fc90a16acb	Lexeme token + host scope	AoStr (NEW HOST STRING)	SEMANTIC: composes the function-level goto label.  The output is a NEW HOST STRING	SCALAR_FOLLOWUP	src/parser.c
+CAND-040	asmTextHasReturn	src/parser.c	2293	2324	9bf4fcbccf3f9b87135cedc1e054caf5f22c8350409e0724afed2e7b893b4d91	AoStr asm text (unbounded host buffer)	int has-return	DIAGNOSTICS-ONLY: feeds a warning; the asm body is opaque	SCALAR_FOLLOWUP	src/parser.c
+#
+# ------------------------------------------------------------------
+# THE CLASS PARTITION
+# ------------------------------------------------------------------
+# SCALAR_FOLLOWUPS_TOTAL=12
+# DIAGNOSTICS_ONLY_SCALARS=3  (CAND-021, CAND-022, CAND-040)
+# SEMANTIC_SCALARS=9
+# HOST_STRING_BOUNDARY_SCALARS=2  (CAND-038, CAND-039)
+# UNCLASSIFIED_SCALARS=0
+#
+# ------------------------------------------------------------------
+# THE LIVE CALL-SITE COUNT
+# ------------------------------------------------------------------
+# The last column counts the PRODUCTION call sites of each function in
+# src/*.c, excluding the definition itself.  Every one of the twelve
+# has AT LEAST ONE live production call site, so none of them is dead
+# code and none may be silently dropped from the population.
+#
+# ------------------------------------------------------------------
+# THE RECON05 R0 CORRECTION IS PRESERVED (AC31)
+# ------------------------------------------------------------------
+# RECON05 recorded CAND-022 with R0=1 and CAND-023 with R0=1, and the
+# RECON05 ranking rationale states for CAND-022: "the facts table
+# records R0=1 for this candidate and the ranking MUST NOT drift from
+# the eligibility fact, so R0=1 here."  That correction is a CURRENT
+# FACT of this ACT and is carried forward unchanged into
+# c1/raw-ranking-facts.tsv.  RECON04's historical ranking is NOT
+# rewritten and no new R0 semantics are guessed.
+#
+# NOTE: RECON05's rationale text for CAND-022 says "the facts table
+# records R0=1 ... so R0=1 here" while its own c1/eligibility-input-
+# facts.tsv records R0=1 for CAND-022 -- consistent.  The R0=1 for
+# CAND-022 and CAND-023 is therefore PRESERVED, and the R0 CORRECTION
+# IS NOT RE-DERIVED FROM A DIFFERENT PRIOR.
+SCALAR_CANDIDATES_STATUS=PASS

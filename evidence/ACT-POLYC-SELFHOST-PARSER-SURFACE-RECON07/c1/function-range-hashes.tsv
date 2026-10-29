@@ -1,0 +1,143 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON07
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=function-range-hashes
+#
+# THE CANDIDATE IDENTITY TABLE, BOUND TO THE LIVE SOURCE BYTES.
+#
+# Every range below was MEASURED from the live source with
+# tools/quality/parser-surface-recon05-verify.HC (used READ-ONLY):
+#
+#   MODE=RANGE    recompute the SHA-256 of an exact source line range
+#   MODE=IDENTITY validate the whole table against the live census
+#
+# COMMAND=./build/parser-surface-recon05-verify RANGE <file> <start> <end> ...
+# RANGE_TOTAL=16
+# RANGE_FAILURES=0
+# STATUS=PASS
+#
+# COMMAND=./build/parser-surface-recon05-verify IDENTITY <this-table> \
+#             src/parser.c src/prslib.c src/prsutil.c src/ast.c
+# IDENTITY_ROWS=16
+# DUPLICATE_ID=0
+# INVALID_RANGE=0
+# SOURCE_HASH_MISMATCH=0
+# MISSING_FUNCTION=0
+# OVERLAPPING_IDENTITY=0
+# MALFORMED_FACT=0
+# STATUS=PASS
+#
+# Schema: candidate_id <TAB> source_file <TAB> source_start <TAB> source_end
+#         <TAB> source_sha256 <TAB> function_name <TAB> class <TAB> decision
+#
+SUB-002	src/parser.c	1683	1684	a9fcb6a752a59a58eaea5bdf449cab39acf7d2d2be9d776f6a13fd968af89199	parseDefaultStatement	STRUCTURAL_BOUNDARY	DEFAULT_ARM_TERMINATION
+SUB-003	src/parser.c	2177	2177	340c7ff53514a2522b9f7e6d3cf758f0e674386925b93cbc48426bfa2a4e7092	parseCompoundStatementInternal	STRUCTURAL_BOUNDARY	COMPOUND_APPEND_SKIP
+SUB-004	src/parser.c	1773	1786	cd138cc52588fe48c2eab37421b4e25abbacd7ea10491bc696a1acab9a66d7e0	parseStatement	STRUCTURAL_BOUNDARY	STATEMENT_DISPATCH
+SUB-005	src/parser.c	1925	1932	75615c20b28560d21f55a331bbe69087e15cacb28c2491a6118574f5bb7ebc9f	parseDeclOrStatement	INELIGIBLE_STRUCTURAL	DECL_OR_STATEMENT_ROUTING
+CAND-018	src/prslib.c	1328	1348	4d941407ee054e207586b3a4fb645caf8917e6b43fa467b79d50a75e1b54bb43	parseCompoundAssign	SCALAR_FOLLOWUP	COMPOUND_ASSIGN_CLASSIFY
+CAND-021	src/prslib.c	1352	1375	db92f0700f3c9dcb4e6e5360ca084ad5bdda03f2029f24510bf3ea473af6edb6	astBinOpToTokenPunct	SCALAR_FOLLOWUP	BINOP_TO_TOKEN_PUNCT
+CAND-022	src/prslib.c	760	792	c914b0badfb9f9bd462380c5b8ae7a8bec1de82914190310472b95c67241f960	parseCountPrintfFormatSpecs	SCALAR_FOLLOWUP	PRINTF_FORMAT_SPEC_COUNT
+CAND-023	src/prslib.c	798	810	109637a97948ce65dd27315f88d68511529ddb3db1b9af95bf43754c56ec8ab1	parseFormatArgIdx	SCALAR_FOLLOWUP	FORMAT_ARG_INDEX
+CAND-025	src/ast.c	943	964	eb91d5f28f19292c3d7f7a79fbf00e5cba5d690e8b2007c1b0ffbea34b180b67	astIsAssignment	SCALAR_FOLLOWUP	ASSIGNMENT_CLASSIFY
+CAND-026	src/ast.c	974	990	bc06b0d757538f6c00ce0e96003cf5613823e98f4c48288c727cf9ac1dd82ac5	astIsValidPointerOp	SCALAR_FOLLOWUP	VALID_POINTER_OP
+CAND-030	src/prsutil.c	22	25	58957ad620fa63bf90f55f86b2d802f18de5471ef82a061c310adaa427edd839	parseIsClassOrUnion	SCALAR_FOLLOWUP	CLASS_OR_UNION_CLASSIFY
+CAND-036	src/ast.c	992	1017	b4b2bbd4faa84b868781e4fd26230c6a4933d831d4373726cf5777b8d7d063b8	astIsBinCmp	SCALAR_FOLLOWUP	BIN_CMP_CLASSIFY
+CAND-037	src/ast.c	2348	2358	8c1acadaa4f1ae26d27c6be491812db2d16a8dd18528cb5cf2cc81d242b24f99	astIsRangeOperator	SCALAR_FOLLOWUP	RANGE_OPERATOR_CLASSIFY
+CAND-038	src/ast.c	931	941	cc5c3afec53c9d94d59761b60b82f26629365a8c04e59791afffc11c765cb8ca	astNormaliseFunctionName	SCALAR_FOLLOWUP	FUNCTION_NAME_NORMALISE
+CAND-039	src/parser.c	1756	1760	98329744e7a38e9f0afd73d9459e1aad671d53c800b41a20281687fc90a16acb	createFunctionLevelGotoLabel	SCALAR_FOLLOWUP	GOTO_LABEL_COMPOSE
+CAND-040	src/parser.c	2293	2324	9bf4fcbccf3f9b87135cedc1e054caf5f22c8350409e0724afed2e7b893b4d91	asmTextHasReturn	SCALAR_FOLLOWUP	ASM_TEXT_HAS_RETURN
+#
+# ------------------------------------------------------------------
+# THE CORRECTION OF THE RECON05 RANGES (A REAL, MATERIAL FINDING)
+# ------------------------------------------------------------------
+#
+# RECON05's candidate ranges were recorded from the CENSUS tool's
+# `body_line`, which is the END OF THE FUNCTION'S OWN TRAILING COMMENT
+# BLOCK, not the end of the function body.  For 10 of the 12 scalar
+# candidates this makes the recorded range SPAN PAST the candidate's
+# own closing brace and INTO the next function's body.
+#
+# The consequence is that SEVEN RECON05 candidate ranges OVERLAP each
+# other, and THREE of them contain ANOTHER CANDIDATE'S ENTIRE BODY:
+#
+#   CAND-038 (astNormaliseFunctionName) 931..1018
+#       contains astIsAssignment      943..964  (IN FULL)
+#       contains astIsValidPointerOp  974..990  (IN FULL)
+#       contains astIsBinCmp          992..1017 (IN FULL)
+#       The TRUE astNormaliseFunctionName body is 931..941.
+#
+#   CAND-025 (astIsAssignment) 943..1041
+#       contains astIsValidPointerOp  974..990  (IN FULL)
+#       contains astIsBinCmp          992..1017 (IN FULL)
+#       The TRUE astIsAssignment body is 943..964.
+#
+#   CAND-018 (parseCompoundAssign) 1328..1403
+#       contains astBinOpToTokenPunct 1352..1375 (IN FULL)
+#       The TRUE parseCompoundAssign body is 1328..1348.
+#
+# The nine overlapping pairs under the RECON05 ranges were:
+#
+#   SUB-004  OVERLAPS CAND-039
+#   CAND-018 OVERLAPS CAND-021
+#   CAND-022 OVERLAPS CAND-023
+#   CAND-025 OVERLAPS CAND-026
+#   CAND-025 OVERLAPS CAND-036
+#   CAND-025 OVERLAPS CAND-038
+#   CAND-026 OVERLAPS CAND-036
+#   CAND-026 OVERLAPS CAND-038
+#   CAND-036 OVERLAPS CAND-038
+#
+# The canonical verifier does NOT detect these: its
+# OVERLAPPING_IDENTITY check only compares rows that resolve to WHOLE
+# FUNCTIONS in the live census, and these candidate ranges do not
+# (they are sub-decisions inside a larger function body).
+#
+# WHY THIS MATTERS FOR THE SELECTION: a range that contains another
+# candidate's body cannot be the source-binding for a bounded
+# ABI.  A PolyC component migrated from that range would, by
+# construction, also own the OTHER candidate's decision.  The
+# eligibility fact `host_graph_writes` and the `deterministic_projection`
+# fact would be measured over the WRONG bytes.
+#
+# RECON07 THEREFORE RECORDS THE TIGHT, FUNCTION-BODIED RANGES ABOVE.
+# The RECON05 ranges are PRESERVED UNCHANGED in the historical evidence
+# tree (F14).  This ACT does not edit any historical artifact.
+#
+# UNDER THE RECON07 TIGHT RANGES: 0 overlapping pairs.
+# ------------------------------------------------------------------
+# THE TWO FROZEN HISTORICAL RANGES THAT ARE ALREADY TIGHT
+# ------------------------------------------------------------------
+#
+#   SUB-002  src/parser.c 1683..1684
+#            The default-arm TERMINATION condition inside
+#            parseDefaultStatement (1667..1690).  The decision is the
+#            compound condition
+#                stmt->kind == AST_COMPOUND_STMT || stmt->kind == AST_CASE
+#             || stmt->kind == AST_BREAK || stmt->kind == AST_RETURN
+#             || stmt->kind == AST_GOTO
+#            over ONE bounded AstKind value.  Its range hash
+#            a9fcb6a7... is IDENTICAL to RECON05's, i.e. this decision
+#            is BYTE-UNCHANGED since the RECON05 census.
+#
+#   SUB-003  src/parser.c 2177..2177
+#            The compound-block append/skip CALL SITE inside
+#            parseCompoundStatementInternal.  ALREADY MIGRATED to PolyC
+#            as BootstrapCompoundBlockAppendsStatement; the live C
+#            decision body is compiled out of the production object.
+#
+#   SUB-004  src/parser.c 1773..1786
+#            The keyword-to-statement-constructor dispatch inside
+#            parseStatement: `if (tok->tk_type == TK_KEYWORD) { switch
+#            (tok->i64) { ... } }`.  Its range hash cd138cc5... is
+#            IDENTICAL to RECON05's, i.e. BYTE-UNCHANGED.
+#
+#   SUB-005  src/parser.c 1925..1932
+#            parseDeclOrStatement's whole body: the
+#            cctrlIsKeyword-dependent decl/statement routing.
+# ------------------------------------------------------------------
+CANDIDATE_IDENTITY_ROWS=16
+CANDIDATE_IDENTITY_OVERLAPPING_PAIRS=0
+CANDIDATE_IDENTITY_SOURCE_HASH_MISMATCHES=0
+RECON05_RANGE_OVERLAPPING_PAIRS=9
+RECON05_RANGES_CONTAINING_ANOTHER_CANDIDATE_BODY=3
+RECON07_RANGES_CORRECTED=10
+FUNCTION_RANGE_HASHES_STATUS=PASS

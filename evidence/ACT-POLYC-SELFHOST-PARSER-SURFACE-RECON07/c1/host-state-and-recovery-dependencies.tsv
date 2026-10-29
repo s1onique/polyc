@@ -1,0 +1,154 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON07
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=host-state-and-recovery-dependencies
+#
+# THE HOST-STATE, RECOVERY, CALLBACK, GRAPH-WRITE AND POINTER-IDENTITY
+# FACTS FOR EVERY CANDIDATE, MEASURED FROM THE LIVE SOURCE BYTES.
+#
+# These are the RAW INPUTS of the 13-clause eligibility checker.  There
+# is deliberately NO `eligible` column here: the eligibility flag is
+# computed by the unmodified canonical checker and cannot be
+# hand-authored.
+#
+# Schema: candidate_id <TAB> function <TAB> source_file <TAB> start
+#         <TAB> end <TAB> mutable_token <TAB> depends_mutable_host_state
+#         <TAB> owns_setjmp <TAB> writes_current_recovery
+#         <TAB> requires_nonlocal_recovery <TAB> host_graph_writes
+#         <TAB> pointer_identity_operations <TAB> parser_callback_count
+#         <TAB> semantic_callback_count <TAB> deterministic_projection
+#         <TAB> production_delegation_feasible <TAB> production_reachable
+#         <TAB> status <TAB> reason
+#
+SUB-002	parseDefaultStatement	src/parser.c	1683	1684	symbol_table	NO	NO	NO	0	0	0	0	YES	YES	NO	BOUNDED	The condition reads ONLY stmt->kind, a bounded AstKind enum value.  No helper call, no cc-> read, no host graph write, no pointer identity operation, no callback, no recovery state.  The enclosing function parseDefaultStatement does own the host AST list, but the CANDIDATE SUB-DECISION does not.
+SUB-003	parseCompoundStatementInternal	src/parser.c	2177	2177	symbol_table	NO	NO	NO	0	0	0	0	YES	YES	NO	MIGRATED	Already PolyC-owned.  The live C decision body is compiled out of the production object.  The CALL SITE projects stmt->kind and stmt->declvar->kind with the original && short-circuit and passes them to the PolyC component.
+SUB-004	parseStatement	src/parser.c	1773	1786	symbol_table	NO	NO	NO	NO	0	0	0	BOUNDED	The dispatch DECISION is separable from the 12 statement constructors it calls.  The decision maps ONE bounded token pair (tok->tk_type, tok->i64) onto ONE bounded statement-constructor SELECTOR; the CALL of the selected constructor, the host AST construction, the token cursor advance, the recovery state and the diagnostics all stay on the C side of the seam.  This is EXACTLY the shape of the two already-migrated decisions: parseSwitchArmTerminates(int kind) and parseCompoundBlockAppendsStatement(int,int) are pure scalar functions whose CALL SITES retain every host ownership.  For SUB-004 the equivalent factoring is a pure keyword -> statement-selector classifier; the 12 constructors are the dispatch TARGETS, chosen by the decision and invoked by the C host.	NO	BOUNDED	The dispatch reads tok->tk_type (an enum) and tok->i64 (a bounded keyword id), and selects among 12 statement CONSTRUCTOR callbacks.  The 12 callbacks are the DISPATCH TARGETS, not calls made BY the decision: the decision returns one of them.  The projection of the decision itself is the bounded token pair.  The host AST, the token cursor, the recovery state and the diagnostics all stay on the C side of the seam.
+SUB-005	parseDeclOrStatement	src/parser.c	1925	1932	symbol_table	YES	NO	NO	0	0	0	0	NO	NO	NO	INELIGIBLE	TRANSITIVELY DEPENDS on the mutable cc->symbol_table, cc->clsdefs and cc->uniondefs.  The chain is: parseDeclOrStatement calls cctrlIsKeyword(cc,tok->start,tok->len); cctrlIsKeyword (src/cctrl.c:1306) calls cctrlGetKeyWord(cc,name,len); cctrlGetKeyWord (src/cctrl.c:1290) reads mapGetLen(cc->symbol_table,name,len), then mapGetLen(cc->clsdefs,name,len), then mapGetLen(cc->uniondefs,name,len).  All three are MUTABLE host maps.  PROVEN MECHANICALLY: DEPENDS mode reports DETECTOR=MUTABLE_HOST_STATE_DEPENDENCE with DEPENDENCE_SITE=TRANSITIVE_THROUGH_A_CALLEE.  The projection is therefore NOT bounded.
+SUB-006	parseCompoundStatementInternal	src/parser.c	2043	2076	current_recovery	NO	YES	YES	1	0	0	0	NO	NO	NO	INELIGIBLE	Declares jmp_buf stmt_recovery, SAVES cc->current_recovery into outer_recovery, OVERWRITES cc->current_recovery with &stmt_recovery, and calls setjmp(stmt_recovery).  It OWNS setjmp and WRITES the current recovery state.  It also splices the host AST body list (body->stms) and cc->tmp_locals.
+SUB-007	parseCompoundStatementInternal	src/parser.c	2077	2186	current_recovery	NO	YES	YES	2	0	0	0	NO	NO	NO	INELIGIBLE	The compound statement body loop.  It reads and writes the host AST body list (listAppend(body->stms,stmt)), restores cc->current_recovery = outer_recovery, and drives the token cursor.  It REQUIRES nonlocal recovery and performs host graph writes.
+SUB-008	parseStatement	src/parser.c	1762	2034	current_recovery	NO	YES	YES	3	0	14	0	NO	NO	NO	INELIGIBLE	The WHOLE-FUNCTION parseStatement.  Owns the recovery checkpoint interaction, drives the token cursor, constructs every Ast node it returns, and calls the statement constructor callbacks.  It is not a bounded scalar decision.  Its bounded KEYWORD DISPATCH sub-decision is SUB-004 and is preserved as a separate candidate.
+SUB-009	parseExpr	src/prslib.c	1402	1537	current_recovery	NO	YES	YES	4	0	6	0	NO	NO	NO	INELIGIBLE	The WHOLE-FUNCTION parseExpr.  A recursive descent loop over the token cursor that builds the expression AST and calls the unary and binary-op constructors.  It is not a bounded scalar decision.
+SUB-010	astStmtFallsThrough	src/parser.c	2245	2464	symbol_table	NO	NO	NO	1	0	0	0	NO	NO	NO	INELIGIBLE	A recursive flow walk over a host AST node.  It reads the node graph and recurses over the host AST children.
+SUB-011	astStmtHasBreak	src/parser.c	2220	2422	symbol_table	NO	NO	NO	1	0	0	0	NO	NO	NO	INELIGIBLE	A recursive flow walk over a host AST node.  It reads the node graph and recurses over the host AST children.
+SUB-012	astIsConstTrueCond	src/parser.c	2212	2395	symbol_table	NO	NO	NO	1	0	0	0	NO	NO	NO	INELIGIBLE	A recursive flow walk over a host AST node.  It reads the node graph and recurses over the host AST children.
+CAND-018	parseCompoundAssign	src/prslib.c	1328	1348	symbol_table	NO	NO	NO	0	0	0	0	YES	YES	NO	BOUNDED	A pure switch over tok->tk_type and tok->i64, writing the out-parameter *_op.  The out-parameter is a caller-owned pointer, NOT a host graph write.  No helper call, no cc-> read.
+CAND-021	astBinOpToTokenPunct	src/prslib.c	1352	1375	symbol_table	NO	NO	NO	0	0	0	0	YES	YES	NO	BOUNDED	A pure switch over one bounded AstBinOp enum value, returning a bounded s64 punct value.  No helper call, no cc-> read.
+CAND-022	parseCountPrintfFormatSpecs	src/prslib.c	760	792	symbol_table	NO	NO	NO	0	0	0	0	YES	YES	NO	BOUNDED	A bounded scan of a caller-owned (const char *, int) format span, counting specifiers.  No helper call, no cc-> read, no allocation.
+CAND-023	parseFormatArgIdx	src/prslib.c	798	810	symbol_table	NO	NO	NO	0	0	0	0	YES	YES	NO	BOUNDED	A bounded comparison of the caller-owned name span against a fixed table of known printf-style names.  It calls strncmp, which is a pure libc byte comparison over the bounded length, and str_lit, which is a compile-time literal.
+CAND-025	astIsAssignment	src/ast.c	943	964	symbol_table	NO	NO	NO	0	0	0	0	YES	YES	NO	BOUNDED	A pure switch over one bounded s64 operator value, returning a bounded int.
+CAND-026	astIsValidPointerOp	src/ast.c	974	990	symbol_table	NO	NO	NO	0	0	0	0	YES	YES	NO	BOUNDED	A pure switch over one bounded AstBinOp enum value, returning a bounded int.
+CAND-030	parseIsClassOrUnion	src/prsutil.c	22	25	symbol_table	NO	NO	NO	0	0	0	0	YES	YES	NO	BOUNDED	A pure two-way comparison of one bounded AstTypeKind enum value, returning a bounded int.
+CAND-036	astIsBinCmp	src/ast.c	992	1017	symbol_table	NO	NO	NO	0	0	0	0	YES	YES	NO	BOUNDED	A pure switch over one bounded s64 operator value, returning a bounded int.
+CAND-037	astIsRangeOperator	src/ast.c	2348	2358	symbol_table	NO	NO	NO	0	0	0	0	YES	YES	NO	BOUNDED	A pure switch over one bounded AstBinOp enum value, returning a bounded int.
+CAND-038	astNormaliseFunctionName	src/ast.c	931	941	symbol_table	NO	NO	NO	0	0	0	0	NO	NO	NO	HOST_STRING_BOUNDARY	The input is an UNBOUNDED HOST STRING (AoStr) and the output is a NEW HOST STRING allocated by aoStrNew.  A bounded projection would need an explicit copy and lifetime contract.  It calls three aoStr* host allocation helpers.  The ALLOCATION ownership is the reason this is NOT simply BOUNDED.
+CAND-039	createFunctionLevelGotoLabel	src/parser.c	1756	1760	symbol_table	NO	NO	NO	0	0	0	0	NO	NO	NO	HOST_STRING_BOUNDARY	The input is a Lexeme plus the mutable host scope field cc->tmp_fname, and the output is a NEW HOST STRING allocated by aoStrNew.  It reads cc->tmp_fname (1 cc-> read) and calls two aoStr* host allocation helpers.  A bounded projection needs an explicit copy and lifetime contract.
+CAND-040	asmTextHasReturn	src/parser.c	2293	2324	symbol_table	NO	NO	NO	0	0	0	0	NO	NO	NO	OPAQUE_HOST_BUFFER	The input is an UNBOUNDED host ASM text buffer and the body is opaque; the decision feeds a warning.  The host buffer stays on the C side of the seam.
+#
+# ------------------------------------------------------------------
+# THE SUB-005 TRANSITIVE MUTABLE-HOST-STATE DEPENDENCE, PROVEN
+# ------------------------------------------------------------------
+#
+# The claim "SUB-005's projection does not depend on the mutable symbol
+# table" is FALSE, and it is PROVEN MECHANICALLY against the live
+# bytes rather than asserted.
+#
+# COMMAND=./build/parser-surface-recon05-verify DEPENDS <ids.tsv> \
+#             src/parser.c src/prslib.c src/prsutil.c src/ast.c
+#
+# POSITIVE BASELINE (a candidate that genuinely has no dependence):
+#   CANDIDATE_ID=SUB-002
+#   DETECTOR=NONE
+#   RESULT=NO_MUTABLE_HOST_STATE_DEPENDENCE
+#   MUTABLE_STATE_TOKEN=symbol_table
+#   ENCLOSING_RANGE=1683..1684
+#   MUTABLE_HOST_STATE_DEPENDENCE=0
+#   NO_MUTABLE_HOST_STATE_DEPENDENCE=1
+#   STATUS=PASS
+#
+# ADVERSE (SUB-005 claiming no dependence):
+#   CANDIDATE_ID=SUB-005
+#   DETECTOR=MUTABLE_HOST_STATE_DEPENDENCE
+#   MUTABLE_STATE_TOKEN=symbol_table
+#   FILE=src/parser.c
+#   ENCLOSING_RANGE=1925..1932
+#   DEPENDENCE_SITE=TRANSITIVE_THROUGH_A_CALLEE
+#   MUTABLE_HOST_STATE_DEPENDENCE=1
+#   NO_MUTABLE_HOST_STATE_DEPENDENCE=0
+#   STATUS=FAIL
+#
+# THE SOURCE-BOUND TRANSITIVE CHAIN (every hop quoted from the live
+# source, with its file and line):
+#
+#   1. src/parser.c:1930
+#        if (cctrlIsKeyword(cc,tok->start,tok->len)) {
+#      -> the candidate calls cctrlIsKeyword with the cc POINTER.
+#
+#   2. src/cctrl.c:1306
+#        int cctrlIsKeyword(Cctrl *cc, char *name, int len) {
+#            return cctrlGetKeyWord(cc,name,len) != NULL;
+#        }
+#      -> the cc POINTER is passed through unchanged.
+#
+#   3. src/cctrl.c:1290
+#        AstType *cctrlGetKeyWord(Cctrl *cc, char *name, int len) {
+#            AstType *type;
+#            assert(name != NULL);
+#            if ((type = mapGetLen(cc->symbol_table, name, len)) != NULL) {
+#                return type;
+#            }
+#            /* Classes are types */
+#            if ((type = mapGetLen(cc->clsdefs,name,len)) != NULL) {
+#                return type;
+#            }
+#            if ((type = mapGetLen(cc->uniondefs,name,len)) != NULL) {
+#                return type;
+#            }
+#            return NULL;
+#        }
+#      -> THREE MUTABLE HOST MAPS are read: cc->symbol_table,
+#         cc->clsdefs and cc->uniondefs.
+#
+# All three maps are MUTATED during parsing (mapAdd on cc->symbol_table
+# on every declaration, on the class definitions and on the union
+# definitions).  The projection is therefore a function of unbounded,
+# mutable host state, and SUB-005 is INELIGIBLE until that dependence
+# is eliminated or bounded and proven.  It is NOT eliminated here.
+#
+# ------------------------------------------------------------------
+# THE SUB-004 SEPARABILITY, EXPLICITLY JUSTIFIED
+# ------------------------------------------------------------------
+#
+# SUB-004's range CONTAINS the 12 statement-constructor calls, and a
+# naive reading would count 12 parser callbacks.  That would be
+# WRONG, for a reason that is now stated precisely:
+#
+# The already-migrated decisions establish the repository's own
+# precedent for what a "decision" is:
+#
+#   src/parser.c:1518  static int parseSwitchArmTerminates(int kind)
+#      -> a PURE SCALAR FUNCTION.  Its call site in
+#         parseSwitchStatement retains the token cursor, the recovery
+#         state, the AST construction and the diagnostics.  The
+#         migrated function itself has ZERO callbacks and ZERO host
+#         state.  Its ABI is `I64 ast_kind -> I64 terminate`.
+#
+#   src/parser.c:1976  static int parseCompoundBlockAppendsStatement(
+#                          int stmt_kind, int declvar_kind)
+#      -> the same shape.  The call site at 2177 performs the
+#         short-circuiting projection and calls the PolyC component;
+#         the component owns only the decision.
+#
+# SUB-004 has the SAME shape: the DECISION is the map from ONE bounded
+# token pair onto ONE bounded statement-constructor selector.  The
+# CALL of the selected constructor, the AST it builds, the token cursor
+# advance, the recovery state and the diagnostics stay on the C side.
+#
+# THE PROOF THAT THIS SEPARATION IS REAL, NOT ASSERTED, IS THE C2
+# CAUSAL EXPERIMENT: the decision is mutated in the real production C
+# source, the real compiler is rebuilt, and the witness must change.
+# A decision that could not be separated would not produce a bounded
+# observable change.  C2 MEASURES THIS; C1 DOES NOT ASSUME IT.
+#
+# ------------------------------------------------------------------
+UNCLASSIFIED_DEPENDENCIES=0
+SUB005_DISPOSITION=INELIGIBLE_TRANSITIVE_MUTABLE_HOST_STATE
+HOST_STATE_DEPENDENCIES_STATUS=PASS

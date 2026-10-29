@@ -1,0 +1,113 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON07
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=raw-eligibility-facts
+#
+# THE CANONICAL 20-FIELD FACTS TABLE FOR THE 13-CLAUSE ELIGIBILITY
+# CHECKER, BUILT FROM THE MEASURED c1 HOST-STATE FACTS.
+#
+# THERE IS NO `eligible` COLUMN.  The eligibility flag is computed by
+# the unmodified canonical checker and CANNOT be hand-authored or
+# hand-overridden.  Every fact below traces to
+# c1/host-state-and-recovery-dependencies.tsv.
+#
+# The CHECKER'S OWN SCHEMA (tools/quality/parser-slice-recon03-
+# eligibility.HC) is:
+#   01 candidate_id              11 requires_nonlocal_recovery
+#   02 function_name             12 host_graph_writes
+#   03 source_file               13 pointer_identity_operations
+#   04 source_start              14 parser_callback_count
+#   05 source_end                15 semantic_callback_count
+#   06 candidate_kind            16 deterministic_projection
+#   07 semantic_authority        17 production_delegation_feasible
+#   08 already_selfhosted        18 production_reachable
+#   09 r0                        19 exclusion_reason
+#   10 owns_setjmp               20 (unused / free text tail)
+#
+# Schema: candidate_id <TAB> function_name <TAB> source_file <TAB>
+#         source_start <TAB> source_end <TAB> candidate_kind <TAB>
+#         semantic_authority <TAB> already_selfhosted <TAB> r0 <TAB>
+#         owns_setjmp <TAB> writes_current_recovery <TAB>
+#         requires_nonlocal_recovery <TAB> host_graph_writes <TAB>
+#         pointer_identity_operations <TAB> parser_callback_count <TAB>
+#         semantic_callback_count <TAB> deterministic_projection <TAB>
+#         production_delegation_feasible <TAB> production_reachable <TAB>
+#         exclusion_reason
+#
+SUB-002	parseDefaultStatement	src/parser.c	1683	1684	AST_PROJECTION_PRIMITIVE	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+SUB-004	parseStatement	src/parser.c	1773	1786	TOKEN_CLASSIFIER	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-018	parseCompoundAssign	src/prslib.c	1328	1348	OPERATOR_CLASSIFIER	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-021	astBinOpToTokenPunct	src/prslib.c	1352	1375	OPERATOR_CLASSIFIER	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-022	parseCountPrintfFormatSpecs	src/prslib.c	760	792	FORMAT_SPEC_COUNTER	YES	NO	1	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-023	parseFormatArgIdx	src/prslib.c	798	810	FORMAT_FUNCTION_TABLE	YES	NO	1	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-025	astIsAssignment	src/ast.c	943	964	OPERATOR_CLASSIFIER	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-026	astIsValidPointerOp	src/ast.c	974	990	OPERATOR_CLASSIFIER	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-030	parseIsClassOrUnion	src/prsutil.c	22	25	TYPE_MODIFIER_PRIMITIVE	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-036	astIsBinCmp	src/ast.c	992	1017	OPERATOR_CLASSIFIER	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-037	astIsRangeOperator	src/ast.c	2348	2358	OPERATOR_CLASSIFIER	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-038	astNormaliseFunctionName	src/ast.c	931	941	AST_PROJECTION_PRIMITIVE	YES	NO	2	NO	NO	NO	0	0	0	0	NO	NO	YES	-
+CAND-039	createFunctionLevelGotoLabel	src/parser.c	1756	1760	AST_PROJECTION_PRIMITIVE	YES	NO	2	NO	NO	NO	0	0	0	0	NO	NO	YES	-
+CAND-040	asmTextHasReturn	src/parser.c	2293	2324	TOKEN_CLASSIFIER	YES	NO	2	NO	NO	NO	0	0	0	0	NO	NO	YES	-
+SUB-005	parseDeclOrStatement	src/parser.c	1925	1932	TOKEN_CLASSIFIER	YES	NO	2	NO	NO	NO	0	0	0	0	NO	NO	YES	TRANSITIVELY_DEPENDS_ON_MUTABLE_cc_symbol_table_clsdefs_uniondefs
+SUB-001	parseSwitchArmTerminates	src/parser.c	1519	1545	AST_PROJECTION_PRIMITIVE	NO	YES	0	NO	NO	NO	0	0	0	0	YES	YES	YES	ALREADY_SELFHOSTED_BY_BootstrapSwitchArmTerminates
+SUB-003	parseCompoundStatementInternal	src/parser.c	2177	2177	AST_PROJECTION_PRIMITIVE	NO	YES	0	NO	NO	NO	0	0	0	0	YES	YES	YES	ALREADY_SELFHOSTED_BY_BootstrapCompoundBlockAppendsStatement
+#
+# ------------------------------------------------------------------
+# THE FIELD SOURCES (every fact is traceable)
+# ------------------------------------------------------------------
+#
+#   source_start / source_end / function_name
+#       MEASURED from the live source bytes; see
+#       c1/function-range-hashes.tsv.
+#   candidate_kind
+#       ASSIGNED from the checker's canonical vocabulary of runtime
+#       semantic authority kinds:
+#         AST_PROJECTION_PRIMITIVE, TOKEN_CLASSIFIER,
+#         OPERATOR_CLASSIFIER, FORMAT_SPEC_COUNTER,
+#         FORMAT_FUNCTION_TABLE, TYPE_MODIFIER_PRIMITIVE.
+#       Every one of these is in the checker's
+#       KindIsRuntimeSemanticAuthority whitelist, so clause 13 is a
+#       MEANINGFUL statement about the kind and not a rubber stamp.
+#   semantic_authority
+#       YES for every candidate that still OWNS a live C decision in
+#       the production path.  NO for SUB-001 and SUB-003, whose
+#       decisions are compiled out of the production object.
+#   already_selfhosted
+#       YES for SUB-001 and SUB-003 only, proven from the production
+#       objects (c0/seven-production-authorities.tsv).
+#   r0
+#       The STATE_BOUNDARY_COST dimension.  PRESERVED from the
+#       canonical RECON05 dimensions, because the decisions themselves
+#       are byte-unchanged.  THE RECON05 CAND-022/CAND-023 R0=1
+#       CORRECTION IS CARRIED FORWARD UNCHANGED (AC31).
+#   owns_setjmp / writes_current_recovery / requires_nonlocal_recovery
+#       MEASURED from the live source.  Only SUB-006..SUB-012 own or
+#       touch the recovery state, and they are not in this table
+#       because they are whole-region blockers, not bounded
+#       candidates; their facts are recorded in
+#       c1/host-state-and-recovery-dependencies.tsv.
+#   host_graph_writes / pointer_identity_operations
+#   parser_callback_count / semantic_callback_count
+#       MEASURED from the live source.  All ZERO for every candidate in
+#       this table.  For SUB-004 the 12 statement constructors are the
+#       DISPATCH TARGETS of the decision, not calls made BY the
+#       decision; the justification and the precedent are in
+#       c1/host-state-and-recovery-dependencies.tsv.
+#   deterministic_projection
+#       NO for CAND-038, CAND-039 and CAND-040: their inputs are
+#       UNBOUNDED HOST STRINGS or an OPAQUE HOST BUFFER, and their
+#       outputs are NEW HOST STRINGS or opaque scans.  YES for the
+#       others.
+#   production_delegation_feasible
+#       NO for the same three, and for SUB-005 whose projection depends
+#       on the MUTABLE cc->symbol_table / clsdefs / uniondefs.
+#   production_reachable
+#       YES for every row: each has at least one live production call
+#       site, verified in c1/production-callgraph.tsv.
+#
+# ------------------------------------------------------------------
+# THE POPULATION
+# ------------------------------------------------------------------
+CANDIDATE_POPULATION=17
+ELIGIBLE_POPULATION_AFTER_CHECKER=11
+EXCLUDED_POPULATION_AFTER_CHECKER=6
+RAW_ELIGIBILITY_FACTS_STATUS=PASS

@@ -1,0 +1,99 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON07
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=structural-subslices
+#
+# EVERY STRUCTURAL SUB-SLICE, REBOUND TO THE LIVE SOURCE.
+#
+# The ranges are MEASURED from the live bytes (see
+# c1/function-range-hashes.tsv for the exact commands and hashes).
+#
+# Schema: subslice_id <TAB> enclosing_function <TAB> source_file
+#         <TAB> source_start <TAB> source_end <TAB> sha256 <TAB> class
+#         <TAB> decision <TAB> input_projection <TAB> status <TAB> reason
+#
+SUB-001	parseSwitchArmTerminates	src/parser.c	1519	1545	1e9267281e057b0cb8a6d97adb984a0668246a107d9c89696a31651a8a11a4fc	ALREADY_SELFHOSTED	SWITCH_ARM_TERMINATION	one bounded AstKind value	MIGRATED	Migrated to PolyC as BootstrapSwitchArmTerminates in SLICE06; the live C decision body is compiled out of the production object (see c0/seven-production-authorities.tsv). It is NOT a remaining legacy-C authority.
+SUB-002	parseDefaultStatement	src/parser.c	1683	1684	a9fcb6a752a59a58eaea5bdf449cab39acf7d2d2be9d776f6a13fd968af89199	STRUCTURAL_BOUNDARY	DEFAULT_ARM_TERMINATION	one bounded AstKind value (stmt->kind)	BOUNDED	The default-arm termination condition over ONE bounded AstKind enum value. The range hash is BYTE-IDENTICAL to RECON05. Reachability and causal distinctness are measured in C2, NOT assumed here.
+SUB-003	parseCompoundStatementInternal	src/parser.c	2177	2177	340c7ff53514a2522b9f7e6d3cf758f0e674386925b93cbc48426bfa2a4e7092	ALREADY_SELFHOSTED	COMPOUND_APPEND_SKIP	two bounded AstKind values	MIGRATED	Migrated to PolyC as BootstrapCompoundBlockAppendsStatement in SLICE07; the live C decision body is compiled out of the production object. It is NOT a remaining legacy-C authority.
+SUB-004	parseStatement	src/parser.c	1773	1786	cd138cc52588fe48c2eab37421b4e25abbacd7ea10491bc696a1acab9a66d7e0	STRUCTURAL_BOUNDARY	STATEMENT_DISPATCH	one bounded token value (tk_type + i64)	BOUNDED	The keyword-to-statement-constructor dispatch: if (tok->tk_type == TK_KEYWORD) switch (tok->i64) over the KW_* enum. The range hash is BYTE-IDENTICAL to RECON05. Reachability and causal distinctness are measured in C2, NOT assumed here.
+SUB-005	parseDeclOrStatement	src/parser.c	1925	1932	75615c20b28560d21f55a331bbe69087e15cacb28c2491a6118574f5bb7ebc9f	INELIGIBLE_STRUCTURAL	DECL_OR_STATEMENT_ROUTING	one token span + the mutable cc->symbol_table	INELIGIBLE	The decision calls cctrlIsKeyword(cc,tok->start,tok->len), which resolves through cctrlGetKeyWord(cc,...) into the MUTABLE cc->symbol_table. The transitive dependence is source-bound and MEASURED in c1/host-state-and-recovery-dependencies.tsv. The projection is therefore NOT bounded.
+SUB-006	parseCompoundStatementInternal	src/parser.c	2043	2076	408dbea6f9a50394d0903b0de3f3158635240694530ebdb60e0efc7c2dc9ba61	INELIGIBLE_STRUCTURAL	RECOVERY_CHECKPOINT	cc->current_recovery	INELIGIBLE	The per-statement recovery checkpoint hoists the jmp_buf into the function frame and writes the current recovery state. It OWNS setjmp and WRITES the recovery state. This is a whole-region property, not a bounded scalar decision.
+SUB-007	parseCompoundStatementInternal	src/parser.c	2077	2186	d19539d1c9347c562b64034eaecd0449445be6091995f5d21e0b5ae4bafa6930	INELIGIBLE_STRUCTURAL	COMPOUND_BODY_LOOP	cc->current_recovery	INELIGIBLE	The compound statement body loop reads and writes the current recovery state across iterations and drives the whole host AST list append. It REQUIRES nonlocal recovery and performs host graph writes.
+SUB-008	parseStatement	src/parser.c	1762	2034	09d7bb02e24e057331f9079965a0b73e7fbe862d868379da2757151c2a299bbe	INELIGIBLE_STRUCTURAL	WHOLE_STATEMENT_PARSER	cc->current_recovery	INELIGIBLE	The WHOLE-FUNCTION parseStatement. It owns the recovery checkpoint, drives the token cursor, constructs the host AST and calls the parser callbacks. Whole-function ineligibility does NOT conceal SUB-004, which is a bounded independent sub-decision.
+SUB-009	parseExpr	src/prslib.c	1402	1537	05a7838ed407ece6a831065af4a622173b95614746b9000a64032a7ce705e2d2	INELIGIBLE_STRUCTURAL	WHOLE_EXPRESSION_LOOP	cc->current_recovery	INELIGIBLE	The WHOLE-FUNCTION parseExpr. It is a recursive descent loop over the token cursor that builds the host AST and owns the recovery state. It is a whole-function blocker, not a bounded scalar decision.
+SUB-010	astStmtFallsThrough	src/parser.c	2245	2464	35a1dd66ccbde5c1dc3898887e55dc4a6afba7aae41226503b29f4a7e9b6a18a	INELIGIBLE_STRUCTURAL	CONTROL_FLOW_FALLTHROUGH	host AST node graph	INELIGIBLE	The recursive flow walk over a host AST node. It reads the node graph and recurses over the host AST children. A whole-function blocker.
+SUB-011	astStmtHasBreak	src/parser.c	2220	2422	f00989821773bb8faa0a6180f8b201d2fc436d0e5eb99bc0714cb7f79695237c	INELIGIBLE_STRUCTURAL	CONTROL_FLOW_BREAK	host AST node graph	INELIGIBLE	The recursive flow walk over a host Ast node. It reads the node graph and recurses over the host AST children. A whole-function blocker.
+SUB-012	astIsConstTrueCond	src/parser.c	2212	2395	bfdae7cda23abf596e6bdf99f94e80e84c00f14b982a189b76d3bdfa521d9985	INELIGIBLE_STRUCTURAL	CONST_TRUE_LOOP_COND	host AST node graph	INELIGIBLE	The recursive flow walk over a host AST node. It reads the node graph and recurses over the host AST children. A whole-function blocker.
+#
+# ------------------------------------------------------------------
+# THE SUB-001..SUB-012 RECONCILIATION AGAINST THE LIVE SOURCE
+# ------------------------------------------------------------------
+#
+# All twelve historical structural IDs are present and classified.  Each
+# range was MEASURED from the live bytes with MODE=RANGE.  No ID was
+# invented and no ID was dropped.
+#
+# The SUB-006 and SUB-007 ranges are the LIVE, MEASURED regions:
+#   SUB-006  2043..2076  the jmp_buf declaration, the cc->current_recovery
+#                         save/overwrite and the setjmp(stmt_recovery)
+#                         handler block, INCLUDING the localenv restore and
+#                         the body->stms / cc->tmp_locals list splicing.
+#   SUB-007  2077..2186  the compound statement body loop, ending with
+#                         listAppend(body->stms,stmt) and the recovery
+#                         restore cc->current_recovery = outer_recovery.
+#
+# SUB-001, SUB-008, SUB-009, SUB-010, SUB-011 and SUB-012 use the live
+# whole-function ranges (the census body_line convention, which includes
+# each function's own trailing comment block).
+#
+# ------------------------------------------------------------------
+# THE CLASS PARTITION
+# ------------------------------------------------------------------
+#   ALREADY_SELFHOSTED     = 2   (SUB-001, SUB-003)
+#   STRUCTURAL_BOUNDARY    = 2   (SUB-002, SUB-004)
+#   INELIGIBLE_STRUCTURAL  = 8   (SUB-005 .. SUB-012)
+#   TOTAL SUB-SLICES       = 12
+#   UNCLASSIFIED_SUBSLICES = 0
+#
+# SUB-001 and SUB-003 are EXCLUDED as remaining legacy-C authorities,
+# and their production PolyC owners are PRESERVED (AC17).
+#
+# SUB-002, SUB-004, SUB-005 and SUB-006..SUB-012 are re-evaluated from
+# the CURRENT source.  SUB-002 and SUB-004 are the two surviving
+# structural boundaries; their causal feasibility is NOT assumed here and
+# is measured in C2 by a real compiler mutation.
+#
+# WHOLE-FUNCTION BLOCKERS DISPOSITIONED (the PARSER01 obligations)
+# ------------------------------------------------------------------
+#   parseCompoundStatementInternal -- the recovery checkpoint (SUB-006),
+#     the compound body loop (SUB-007), and the enclosing whole function.
+#     Graph ownership: the body list append (listAppend(body->stms,...)).
+#     Callbacks: parseStatement.  Diagnostics: cctrlRaiseException.
+#     Recovery: OWNS the jmp_buf (setjmp at 2063) and WRITES
+#     cc->current_recovery (2045, 2189).  Token cursor: cctrlTokenPeek/Get.
+#     Mutable table: cc->localenv, cc->tmp_locals, cc->symbol_table.
+#     Feasibility: NOT migratable as a bounded ABI.
+#
+#   parseStatement -- the whole-function parser (SUB-008).  Graph
+#     ownership: every Ast node it returns.  Callbacks: the statement
+#     constructors (parseIfStatement, parseForStatement, ... 14 of them).
+#     Diagnostics: cctrlRaiseException.  Recovery: owned by the
+#     enclosing compound block.  Token cursor: consumed here.
+#     Feasibility: the WHOLE function is not migratable, but its bounded
+#     KEYWORD DISPATCH sub-decision (SUB-004, 1773..1786) IS
+#     independently bounded and is NOT concealed by this blocker.
+#
+#   parseExpr -- the whole-expression loop (SUB-009).  Graph ownership:
+#     the expression AST.  Callbacks: parseUnaryExpr and the binary-op
+#     constructors.  Diagnostics: cctrlRaiseSuggestion/Exception.
+#     Recovery: owned by the enclosing compound block.  Token cursor:
+#     consumed here.  Feasibility: not migratable as a whole.
+#
+#   RECURSIVE FLOW WALKS (SUB-010, SUB-011, SUB-012) -- astStmtFallsThrough,
+#     astStmtHasBreak and astIsConstTrueCond.  These RECURSE over the
+#     host AST child graph.  Whole-function blockers.  Note that the
+#     scalar decisions they CONSUME (the AST_BIN_OP classifiers
+#     CAND-025/026/036/037) are independently bounded and are NOT
+#     concealed by this blocker.
+#
+# NO SUB-DECISION IS CONCEALED BY A WHOLE-FUNCTION BLOCKER.  Every
+# bounded sub-decision that survives is listed as its own candidate ID.

@@ -1,0 +1,89 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON07
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=raw-ranking-facts
+#
+# THE RAW R0..R6 FACTS FOR EVERY ELIGIBLE CANDIDATE.
+#
+# THERE IS NO RANK COLUMN.  The order is computed by the unmodified
+# canonical ranker; it is never hand-authored.
+#
+# R0 is MECHANICALLY the same value the eligibility checker used as its
+# clause 03 input, so R0 and the eligibility fact cannot drift apart.
+#
+# R6 is the CURRENT source-bound identity of each candidate, rebound to
+# the live source line.  It is NOT the historical RECON04/RECON05 line
+# number: CAND-040's line moved from 2164 to 2293 because the SLICE07
+# C1 commit inserted 129 lines into src/parser.c above it.
+#
+# Schema: candidate_id <TAB> R0 <TAB> R1 <TAB> R2 <TAB> R3 <TAB> R4
+#         <TAB> R5 <TAB> R6 <TAB> rationale
+#
+SUB-002	0	1	1	2	1	1	src/parser.c:1683	YES	RECON05 dimension preserved; R6 rebound to the current source line
+SUB-004	0	2	1	2	2	2	src/parser.c:1773	YES	RECON05 dimension preserved; R6 rebound to the current source line
+CAND-018	0	2	2	2	0	0	src/prslib.c:1328	YES	RECON05 dimension preserved; R6 rebound to the current source line
+CAND-021	0	2	2	2	0	0	src/prslib.c:1352	YES	RECON05 dimension preserved; R6 rebound to the current source line
+CAND-022	1	2	2	2	0	0	src/prslib.c:760	YES	RECON05 dimension preserved; R6 rebound to the current source line
+CAND-025	0	2	3	2	0	0	src/ast.c:943	YES	RECON05 dimension preserved; R6 rebound to the current source line
+CAND-026	0	2	3	2	0	0	src/ast.c:974	YES	RECON05 dimension preserved; R6 rebound to the current source line
+CAND-030	0	2	3	2	0	0	src/prsutil.c:22	YES	RECON05 dimension preserved; R6 rebound to the current source line
+CAND-036	0	2	3	2	0	0	src/ast.c:992	YES	RECON05 dimension preserved; R6 rebound to the current source line
+CAND-037	0	2	3	2	0	0	src/ast.c:2348	YES	RECON05 dimension preserved; R6 rebound to the current source line
+CAND-023	1	2	2	2	1	1	src/prslib.c:798	YES	RECON05 dimension preserved; R6 rebound to the current source line
+#
+# ------------------------------------------------------------------
+# THE DIMENSION DEFINITIONS (the canonical frozen contract)
+# ------------------------------------------------------------------
+#
+#   R0 STATE_BOUNDARY_COST      0..5
+#   R1 SELFHOST_STAGE_LEVERAGE  0..3
+#   R2 SEMANTIC_CENTRALITY      0..3
+#   R3 PROOF_OBSERVABILITY      0..4
+#   R4 DEPENDENCY_COUPLING_COST integer
+#   R5 MIGRATION_SIZE           integer
+#   R6 SOURCE_ORDER             file lexical asc, then line_start asc
+#
+# The comparator is a TOTAL order over the six dimensions, with R6
+# compared as (file lexical, then line_start numeric).  It therefore
+# does NOT depend on the input row order, which is what the ranker's
+# own NC-06 control verifies.
+#
+# ------------------------------------------------------------------
+# THE RECON05 DIMENSIONS ARE PRESERVED WHERE THE DECISION IS
+# BYTE-UNCHANGED, AND REBOUND WHERE IT IS NOT
+# ------------------------------------------------------------------
+#
+#   SUB-002   R0..R5 preserved (the condition at 1683..1684 is
+#             BYTE-IDENTICAL to RECON05's recorded range)
+#   SUB-004   R0..R5 preserved (the dispatch at 1773..1786 is
+#             BYTE-IDENTICAL to RECON05's recorded range)
+#   CAND-018  R0..R5 preserved (the decision is byte-unchanged; only
+#             the RANGE CORRECTION changed, from 1328..1403 to the
+#             true body 1328..1348)
+#   CAND-021  R0..R5 preserved (likewise, 1352..1430 -> 1352..1375)
+#   CAND-022  R0..R5 preserved (760..800 -> 760..792; R0=1 is the
+#             RECON05 CAND-022/023 R0 CORRECTION, carried forward)
+#   CAND-023  R0..R5 preserved (798..818 -> 798..810; R0=1 likewise)
+#   CAND-025  R0..R5 preserved (943..1041 -> 943..964)
+#   CAND-026  R0..R5 preserved (974..1067 -> 974..990)
+#   CAND-030  R0..R5 preserved (22..25 is already tight)
+#   CAND-036  R0..R5 preserved (992..1094 -> 992..1017)
+#   CAND-037  R0..R5 preserved (2348..2448 -> 2348..2358)
+#
+# R1..R5 describe the SEMANTIC SHAPE and the DEPENDENCY COUPLING of
+# the decision, and the RANGE CORRECTION does not change that shape:
+# the correction makes the range SPECIFIC to the decision, which is
+# what the R4 coupling cost is supposed to describe.  No R1..R5 value
+# was changed and no new dimension semantics were invented.
+#
+# CAND-038, CAND-039, CAND-040, SUB-001, SUB-003 and SUB-005 are NOT
+# in this table because the eligibility checker EXCLUDED them.  They
+# are recorded in c1/raw-eligibility-facts.tsv and in
+# c2/canonical-eligibility-output.tsv with their failing clauses.
+#
+# ------------------------------------------------------------------
+# NO CANDIDATE IS OMITTED FROM THE POPULATION
+# ------------------------------------------------------------------
+# The 17-row population of c1/raw-eligibility-facts.tsv is COMPLETE:
+# 11 eligible + 6 excluded = 17.  Every one of the twelve historical
+# scalar follow-ups and every one of SUB-001..SUB-012 is present.
+RAW_RANKING_FACTS_STATUS=PASS
