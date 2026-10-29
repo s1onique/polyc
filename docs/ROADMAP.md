@@ -7562,3 +7562,201 @@ See
 `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01.md`
 and
 `evidence/ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01/`.
+
+#### ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON07 status (CLOSED PASS at this commit)
+
+A fresh successor-selection reconnaissance.  It did NOT resume RECON06
+(it halted at C0 before its census, its canonical tools, its twenty
+controls and any selection), and it did NOT inherit any of RECON06's
+unperformed stages as evidence.
+
+```text
+ACT       = ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON07
+  ENTRY   = 34c2b6b (CORRECTION01 C4: CLOSE)
+  VERDICT = PASS
+
+RECON06_HISTORICAL_VERDICT = HALT_N06_FROZEN_OBLIGATION_UNPROVEN
+RECON06_HISTORICAL_ARTIFACTS_UNCHANGED = YES
+RECON07_N06_SUPPLEMENT_VERIFIED = YES
+RECON07_N06_GATE = CORRECTED_SUPPLEMENT_VERIFIED
+SLICE07_HISTORICAL_N06_EXECUTED_AS_WRITTEN = NO
+```
+
+**The N-06 supplement, audited from RAW evidence.**  The correction's
+six required sub-facts were each read from a committed artifact rather
+than from its summary verdict: a genuine C-authoritative selector-OFF
+compiler was built; exactly one file, one hunk and one line of
+`src/parser.c` was mutated in a detached worktree; the mutant compiler
+built successfully; the witness acceptance changed on three independent
+channels; the selector-ON build was byte-identical; and the
+restoration was byte-identical.  RECON06's historical HALT is
+PRESERVED EXACTLY and was not relabelled.
+
+**The census.**  Re-derived from the source bytes: **272** live
+functions, against the historical 270.
+
+```text
+LIVE_FUNCTIONS_TOTAL       = 272
+RECON05_FUNCTIONS_ADDED     = 2
+RECON05_FUNCTIONS_REMOVED   = 0
+RECON05_FUNCTIONS_CHANGED   = 12
+RECON05_FUNCTIONS_UNCHANGED = 258
+UNCLASSIFIED_FUNCTIONS      = 0
+```
+
+Every row is explained by exactly ONE commit (the SLICE07 C1 insertion
+of 130 lines into `src/parser.c`).
+
+**A material defect in the RECON05 candidate facts was found and
+corrected in this ACT's own facts.**  The census's `body_line`
+convention includes each function's own trailing comment block, so TEN
+of the twelve RECON05 scalar candidate ranges span past their own
+closing brace.  NINE candidate range pairs OVERLAP, and THREE of the
+RECON05 ranges contain ANOTHER CANDIDATE'S ENTIRE BODY -- RECON05's
+`CAND-038` (`astNormaliseFunctionName`, 931..1018) contains
+`astIsAssignment` 943..964, `astIsValidPointerOp` 974..990 and
+`astIsBinCmp` 992..1017 in full, when the true body is 931..941.  A
+range that contains another candidate's body cannot be the
+source-binding for a bounded ABI.  RECON07 records the TIGHT,
+function-bodied ranges; the historical evidence is preserved unchanged
+(F14).
+
+**The selection.**  The UNMODIFIED canonical 13-clause eligibility
+checker admitted 11 of 17 checker-population rows; the UNMODIFIED
+canonical R0..R6 ranker ordered them; the `eligible` column was taken
+mechanically from the checker's output.  The FIRST eligible structural
+candidate was the first to be tested for causal feasibility, it PASSED,
+and the deterministic procedure stopped there.
+
+```text
+SELECTED_CANDIDATE_ID = SUB-002
+SELECTED_CLASS        = STRUCTURAL
+SELECTED_DECISION     = DEFAULT_ARM_TERMINATION
+SELECTED_SOURCE_FILE  = src/parser.c
+SELECTED_SOURCE_RANGE = 1683..1684
+SELECTED_SOURCE_SHA256= a9fcb6a752a59a58eaea5bdf449cab39acf7d2d2be9d776f6a13fd968af89199
+SELECTED_ABI          = I64 ast_kind -> I64 terminate
+SELECTED_PRODUCTION_SEAM = the single `if (...) break;` in the
+  default-arm loop of parseDefaultStatement
+SELECTED_REAL_G0_PRODUCTION_C_OBJECT = 8737313a547f20b507f4841af4056b3e9c1a51850076e01c121e5c7f3126959c
+SELECTED_PRISTINE_COMPILER_BUILD = PASS
+SELECTED_MUTANT_COMPILER_BUILD   = PASS
+SELECTED_RESTORED_COMPILER_BUILD = PASS
+SELECTED_CAUSAL_OBSERVATION_CHANNEL = COMPILED_PROGRAM_SEMANTIC_OUTPUT_CHANGED
+SELECTED_PRISTINE_WITNESS = WITNESS_OUTPUT=110 155
+SELECTED_MUTANT_WITNESS   = WITNESS_OUTPUT=110 177
+SELECTED_RESTORED_WITNESS = WITNESS_OUTPUT=110 155
+SELECTED_RESTORATION_BYTE_IDENTICAL = YES
+```
+
+The G0 oracle is the REAL production translation unit (`src/parser.c`
+compiled with the decision factored out, exactly as the seven
+already-migrated authorities are): ZERO PolyC references, no `main`,
+all five production parser symbols present, and its compiled bitset
+mask decodes to EXACTLY the five kinds of the live source condition.
+The restoration is byte-identical in the SOURCE **and** in the PARSER
+OBJECT.
+
+**The excluded set (6, all checker-confirmed).**  SUB-001 and SUB-003
+are already PolyC-owned.  SUB-005 is INELIGIBLE because its decision
+TRANSITIVELY depends on the mutable `cc->symbol_table`, `cc->clsdefs`
+and `cc->uniondefs` -- proven mechanically with
+`DETECTOR=MUTABLE_HOST_STATE_DEPENDENCE` and
+`DEPENDENCE_SITE=TRANSITIVE_THROUGH_A_CALLEE`.  CAND-038, CAND-039 and
+CAND-040 have unbounded HOST STRING or opaque HOST BUFFER inputs.
+Seven further whole-region blockers (SUB-006..SUB-012) were
+re-evaluated; no bounded sub-decision is concealed by a whole-function
+blocker.
+
+**Two findings that change what the successor must do.**
+
+* The canonical eligibility checker CANNOT detect a forged fact row:
+  it is a pure function of its input.  The defence is the
+  SOURCE-BOUND `MODE=DEPENDS` verification.
+* The canonical ranker DOES trust its `eligible` column: given a
+  forged `eligible=YES` for the already-excluded `CAND-040` with the
+  best possible numeric dimensions, it SELECTS it.  A SECOND,
+  SEPARATE PolyC implementation
+  (`tools/quality/parser-surface-recon07-recompute.HC`) re-derives the
+  eligibility and the order from the raw facts alone and still
+  selects SUB-002.  The independent recomputation is therefore a
+  REQUIRED gate, not a redundancy.
+
+```text
+CANONICAL_ROWS=17  INDEPENDENT_ROWS=17
+CANONICAL_ELIGIBLE=11  INDEPENDENT_ELIGIBLE=11
+ELIGIBILITY_MISMATCH=0  CLAUSE_DISAGREEMENTS=0
+FULL_RANKING_MISMATCH=0  WRONG_TIES=0
+MISSING_IDS=0  EXTRA_IDS=0  DUPLICATE_IDS=0
+SELECTED_ID_MISMATCH=0
+```
+
+**The twenty negative controls** were all ACTUALLY EXECUTED, each with
+a reason-specific detector, a positive baseline, an exit and a
+restoration.  None is vacuous.
+
+```text
+NEGATIVE_CONTROLS_TOTAL=20  PASS=20  MISSING=0  EXTRA=0
+DUPLICATE=0  VACUOUS=0  UNEXECUTED=0  UNRESTORED=0
+```
+
+**The successor contract** carries TWO TIME-SCOPED controls so the
+successor cannot repeat the N-06 mistake:
+`RECON07-SUB-002-PRE-C-MUTANT` (already executed by THIS ACT, as a
+CITED PRIOR EXECUTION) and `RECON07-SUB-002-POST-POLYC-MUTANT` (MUST
+be newly executed by the successor).  A third,
+`RECON07-SUB-002-SLICE08-C-OFF-C-MUTANT`, is required only if the
+successor inherits a C-mutant demand.  One experiment must not
+silently discharge two controls.
+
+```text
+FUTURE_G1_G2_G3_EXECUTED=NO
+FUTURE_G1_G2_G3_FEASIBILITY=PROVEN
+```
+
+**The conservation, honestly reported.**
+
+```text
+PARSER_ASSERTIONS=376/376 over 90 files
+PARSER_ASSERTION_SEQUENCE_MD5 = b6f117eb1386ca80f81bc06226e2a741
+LEXER07/08/09_DIRECT_DIFFS = 89/89, 45/45, 23/23
+LEXER07_FAILURE_IDENTITY_MD5  = 7ee761440de83552e751e3c3976c1683
+LEXER07_STATUS                = FAIL_KNOWN_BASELINE (15 identities)
+CROSS_TARGET_STATUS           = FAIL_ENVIRONMENT_PREFIX (67)
+F_NO_PYTHON                    = FAIL_KNOWN_BASELINE (exactly 12, zero new)
+F_POLYC_TOOLS                  = UNAVAILABLE (its checker is not landed)
+
+GATE_FAST = PASS
+GATE_PUSH = PASS
+APPEND_ONLY = PASS (11/11)
+F14 = PASS (1220 frozen predecessor paths, 0 mismatches, 0 missing)
+FACTORY_V2_RANGE_CHECK = PASS
+CLOSURE_STATUS = PASS
+MANDATORY_AC_TOTAL=50  PASS=49  DEFERRED_TO_CLOSE=1  FAIL=0  UNPROVEN=0
+```
+
+**What this ACT did NOT do.**  It did not rewrite any history, did not
+edit any closed ACT, HANDOFF or evidence artifact, did not convert
+RECON06's HALT into a PASS, did not add an eighth PolyC parser
+authority, did not migrate anything, did not change any tracked
+`src/**` or `tools/bootstrap/**` file, and did not claim the four
+generation plan as executed.
+
+**NEXT.**
+
+```text
+NEXT_ACT        = ACT-POLYC-SELFHOST-PARSER-SLICE08
+NEXT_ACT_STATUS = READY_TO_DRAFT
+NEXT_TARGET     = SUB-002
+SLICE08_IMPLEMENTED = NO
+```
+
+**SLICE08 is NOT authorized to execute or close.**  It requires its own
+ACT, its own entry identity and its own entry check.  If SLICE08's
+implementation of SUB-002 fails its own gates, the canonical order
+makes SUB-004 the next candidate to test; SUB-004 is ELIGIBLE, but its
+causal feasibility is NOT claimed by this ACT.
+
+See
+`docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON07.md` and
+`evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON07/`.
