@@ -1,0 +1,85 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON07
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=seven-production-authorities
+#
+# THE SEVEN PRODUCTION POLYC PARSER AUTHORITIES, REPROVED FROM THE
+# CURRENT OBJECTS AND THE CURRENT EXECUTABLE.
+#
+# NOT a name-only prose claim.  For each authority:
+#   (1) the SYMBOL is DEFINED exactly once in the executable;
+#   (2) the PRODUCTION CALLER OBJECT imports it (nm U);
+#   (3) the caller object does NOT define it (no T in the same object);
+#   (4) the SELECTOR is ON in the live CMake cache;
+#   (5) the RETIRED C DECISION is compiled OUT: the legacy oracle
+#       function survives as a PASS-THROUGH STUB whose body is a
+#       single `bl <next-address>` relocation into the PolyC symbol,
+#       and the decision site carries a BR26 relocation to the
+#       PolyC symbol.
+#
+# Schema: authority_id <TAB> symbol <TAB> selector <TAB> selector_state <TAB> caller_object <TAB> import_count <TAB> defined_in_caller_object <TAB> exec_def_count <TAB> legacy_c_decision_state <TAB> subject_object_sha256 <TAB> verdict
+#
+SUB-001	BootstrapSwitchArmTerminates	HCC_USE_SELFHOST_PARSER_SWITCH_ARM	ON	build/CMakeFiles/hcc.dir/parser.c.o	1	0	1	PASS_THROUGH_STUB_TO_POLYC	848866e9fea389d574b3cb3e39b54b62fc0c744fe707fcf7c4184714017467f0	PASS
+SUB-003	BootstrapCompoundBlockAppendsStatement	HCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND	ON	build/CMakeFiles/hcc.dir/parser.c.o	1	0	1	PASS_THROUGH_STUB_TO_POLYC	e2dfbcfcb78261957fb9188916705dcc86d589e82a9d9e169f6ae8118237487c	PASS
+SUB-000a	BootstrapCalcPadding	HCC_USE_SELFHOST_PARSER_PADDING	ON	build/CMakeFiles/hcc.dir/parser.c.o	1	0	1	PASS_THROUGH_STUB_TO_POLYC	187a4de9465e8dbe3c640484b05540daaad4a3267dd1543a169e3c304b02d5b1	PASS
+SUB-000b	BootstrapValidPostControlFlowToken	HCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN	ON	build/CMakeFiles/hcc.dir/parser.c.o	1	0	1	PASS_THROUGH_STUB_TO_POLYC	078f708d05474430cb3d5c6fc17c0a3d327ab81b74cb24e32512475050723018	PASS
+SUB-000c	BootstrapOperatorPrecedence	HCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE	ON	build/CMakeFiles/hcc.dir/prslib.c.o	1	0	1	PASS_THROUGH_STUB_TO_POLYC	1a932394ba209267ab3a119137f844682f1a12ceeaaca0cde4feaeaa0f8f62f8	PASS
+SUB-000d	BootstrapAstBinOpFromToken	HCC_USE_SELFHOST_PARSER_AST_BINOP	ON	build/CMakeFiles/hcc.dir/ast.c.o	1	0	1	PASS_THROUGH_STUB_TO_POLYC	6d598bc7f0b00ac47642ec06b8cceba641d55a8cfe5498e0a6a995c40f2e054d	PASS
+SUB-000e	BootstrapAstUnaryOpFromToken	HCC_USE_SELFHOST_PARSER_AST_UNARY	ON	build/CMakeFiles/hcc.dir/ast.c.o	1	0	1	PASS_THROUGH_STUB_TO_POLYC	27075194e1d3ff94703b51459cc3e5c8ea472747ea1f255a451a97f44b416e72	PASS
+#
+# THE RELOCATION COUNTS (the number of decision sites in the caller
+# object that resolve to the PolyC symbol):
+#
+COMMAND=otool -rv build/CMakeFiles/hcc.dir/parser.c.o | grep -c '_Bootstrap'
+OBJECT=build/CMakeFiles/hcc.dir/parser.c.o
+RELOCS=18
+        7 _BootstrapCalcPadding
+        2 _BootstrapCompoundBlockAppendsStatement
+        2 _BootstrapSwitchArmTerminates
+        7 _BootstrapValidPostControlFlowToken
+COMMAND=otool -rv build/CMakeFiles/hcc.dir/prslib.c.o | grep -c '_Bootstrap'
+OBJECT=build/CMakeFiles/hcc.dir/prslib.c.o
+RELOCS=2
+        2 _BootstrapOperatorPrecedence
+COMMAND=otool -rv build/CMakeFiles/hcc.dir/ast.c.o | grep -c '_Bootstrap'
+OBJECT=build/CMakeFiles/hcc.dir/ast.c.o
+RELOCS=2
+        1 _BootstrapAstBinOpFromToken
+        1 _BootstrapAstUnaryOpFromToken
+#
+# THE PASS-THROUGH STUB PROOF (the retired C decision body is ABSENT).
+# Each legacy oracle below contains ONE branch-to-next-address, which is
+# the relocation slot for the PolyC symbol; there is NO comparison,
+# NO constant load and NO branch on the decision.
+#
+LEGACY_ORACLE=ParserLegacyCalcPaddingOracle
+  _ParserLegacyCalcPaddingOracle:
+  0000000000000c84	stp	x29, x30, [sp, #-0x10]!
+  0000000000000c88	mov	x29, sp
+  0000000000000c8c	sxtw	x0, w0
+  0000000000000c90	sxtw	x1, w1
+  0000000000000c94	bl	0xc94
+  0000000000000c98	sxtw	x0, w0
+  0000000000000c9c	ldp	x29, x30, [sp], #0x10
+  0000000000000ca0	ret
+LEGACY_ORACLE=ParserLegacySwitchArmTerminatesOracle
+  _ParserLegacySwitchArmTerminatesOracle:
+  00000000000031fc	stp	x29, x30, [sp, #-0x10]!
+  0000000000003200	mov	x29, sp
+  0000000000003204	sxtw	x0, w0
+  0000000000003208	bl	0x3208
+  000000000000320c	sxtw	x0, w0
+  0000000000003210	ldp	x29, x30, [sp], #0x10
+  0000000000003214	ret
+LEGACY_ORACLE=ParserLegacyCompoundBlockAppendsOracle
+  _ParserLegacyCompoundBlockAppendsOracle:
+  0000000000003734	stp	x29, x30, [sp, #-0x10]!
+  0000000000003738	mov	x29, sp
+  000000000000373c	sxtw	x0, w0
+  0000000000003740	sxtw	x1, w1
+  0000000000003744	bl	0x3744
+  0000000000003748	sxtw	x0, w0
+  000000000000374c	ldp	x29, x30, [sp], #0x10
+  0000000000003750	ret
+#
+CURRENT_POLYC_PARSER_AUTHORITIES=7
+SEVEN_AUTHORITIES_STATUS=PASS

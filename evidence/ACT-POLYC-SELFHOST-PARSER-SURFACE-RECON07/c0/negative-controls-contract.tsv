@@ -1,0 +1,39 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON07
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=negative-controls-contract
+#
+# THE EXACTLY 20 NEGATIVE CONTROLS, FROZEN AT C0 BY THIS ACT.
+#
+# The DEFINITIONS originate in RECON06's C0 frozen ledger, but RECON06
+# executed NONE of them.  Their observed statuses are NOT inherited:
+# every control here starts as UNPROVEN and must be actually executed
+# with an adverse input, a positive baseline, an exact reason-specific
+# detector, an exit/result, a scope and a restoration/containment.
+#
+# Schema: control_id <TAB> class <TAB> adverse_action <TAB> required_detector <TAB> required_evidence
+#
+IC-01	INVENTORY	Delete one live inventory function	Missing exact source/function ID	c1/census-controls.txt, c2/controls-raw.tsv
+IC-02	INVENTORY	Duplicate one function/candidate ID	Duplicate exact ID	c1/census-controls.txt, c2/controls-raw.tsv
+IC-03	INVENTORY	Alter one source-range SHA-256	Exact source hash mismatch	c1/census-controls.txt, c2/controls-raw.tsv
+IC-04	INVENTORY	Invalid, out-of-file or overlapping identity range	Invalid range/overlap, not generic parse failure	c1/census-controls.txt, c2/controls-raw.tsv
+EC-01	ELIGIBILITY	Mark SUB-001 or SUB-003 newly eligible C authority	Already-self-hosted exclusion	c2/controls-raw.tsv
+EC-02	ELIGIBILITY	Suppress an actual transitive mutable-host-state dependence (SUB-005 or current equivalent)	Source/call-graph dependency detector	c2/controls-raw.tsv, c1/host-state-and-recovery-dependencies.tsv
+EC-03	ELIGIBILITY	Insert nonzero host AST graph write in candidate facts	Host-graph-write clause	c2/controls-raw.tsv
+EC-04	ELIGIBILITY	Inject callback or recovery ownership	Correct separate eligibility clause	c2/controls-raw.tsv
+EC-05	ELIGIBILITY	Add unreachable candidate with excellent rank	Actual reachability exclusion	c2/controls-raw.tsv
+EC-06	ELIGIBILITY	Unknown ID or missing required eligibility fact	Unknown-ID or missing-fact-specific detector	c2/controls-raw.tsv
+RC-01	RANKING	Shuffle genuine facts; then submit forged order-dependent ranking	Genuine ranker invariant; independent full-order comparator rejects forged order	c2/controls-raw.tsv, c3/independent-full-ranking-join.tsv
+RC-02	RANKING	Give an excluded candidate lowest numeric rank	Remains excluded, not promoted	c2/controls-raw.tsv
+RC-03	RANKING	Remove provisional feasible leader	Deterministic next selection or explicit NONE, not stale leader	c2/controls-raw.tsv
+RC-04	RANKING	Perturb one controlled R0..R6 dimension	Predicted complete-order change checked	c2/controls-raw.tsv
+RC-05	RANKING	Preserve ID but substitute stale source range/call site	Source identity/reachability rejection	c2/controls-raw.tsv
+CC-01	CAUSALITY	Mutate selected C decision and rebuild real compiler	Successful mutant build + changed correct witness channel	c2/controls-raw.tsv, c2/candidate-causality-raw.tsv
+CC-02	CAUSALITY	Substitute handwritten/PolyC-dependent G0 oracle	Production-object provenance rejection	c2/controls-raw.tsv, c2/source-fixture-and-oracle.txt
+CC-03	CAUSALITY	Corrupt one fixture expected output	Exact semantic row ID mismatch	c2/controls-raw.tsv
+CC-04	CAUSALITY	Put comparison instructions in unrelated function/object	Function-scoped authority detector rejects	c2/controls-raw.tsv
+PV-01	PROVENANCE	Relabel one producer compiler as another bootstrap binary	Actual binary identity/provenance rejection	c2/controls-raw.tsv, c3/independent-controls-join.tsv
+#
+# NEGATIVE_CONTROLS_TOTAL=20
+# NEGATIVE_CONTROLS_IDS=IC-01..IC-04, EC-01..EC-06, RC-01..RC-05, CC-01..CC-04, PV-01
+# CONTROLS_STARTING_STATUS=UNPROVEN (RECON06 executed none of them)
+# FROZEN_BEFORE_ANY_ADVERSE_OBSERVATION=YES

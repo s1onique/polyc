@@ -1,0 +1,46 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON07
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=baseline-parser
+#
+# THE HOST-ARCHITECTURE PARSER BASELINE.  MEASURED FRESH at C0.
+#
+# The build, the unit-test run and every gate run in this ACT were
+# executed ONE AT A TIME.  The shared assembly temporary
+# /tmp/holyc-asm.s is a known race risk (a separate, out-of-scope
+# defect); no two build/JIT/test/gate runs overlapped here.
+#
+# ------------------------------------------------------------------
+COMMAND=make unit-test
+#   (the target is: cd ./src/tests && ../../hcc --install-dir=$(TEST_PREFIX)
+#    ./run.HC -o test-runner && ./test-runner && cd ../../)
+#
+UNIT_TEST_EXIT=0
+#
+COMMAND=grep -o 'PASSED: [0-9]*/[0-9]*' <log> | md5 -q
+   b6f117eb1386ca80f81bc06226e2a741
+#
+COMMAND=grep -o 'PASSED: [0-9]*/[0-9]*' <log> |
+#          awk -F'[/ ]' '{p+=$2; t+=$3} END {print "PASSED="p, "TOTAL="t}'
+   PASSED=376 TOTAL=376
+#
+COMMAND=grep -o 'PASSED: [0-9]*/[0-9]*' <log> | wc -l
+   90
+#
+COMMAND=grep -c 'FAILED: [0-9]*/[0-9]*' <log>
+   0
+#
+# The historical identity recorded by the predecessors was
+# 376/376 over 90 files, sequence MD5
+# b6f117eb1386ca80f81bc06226e2a741.  The FRESHLY MEASURED values
+# are IDENTICAL.  The sequence MD5 is a strict identity over the
+# per-test PASSED sequence, so it detects any change in the set or
+# order of test outcomes.
+#
+PARSER_ASSERTIONS=376/376
+PARSER_ASSERTION_FILES=90
+PARSER_ASSERTION_SEQUENCE_MD5=b6f117eb1386ca80f81bc06226e2a741
+PARSER_HISTORICAL_SEQUENCE_MD5=b6f117eb1386ca80f81bc06226e2a741
+PARSER_SEQUENCE_MD5_MATCH=YES
+PARSER_FAILED_FILE_COUNT=0
+NEW_PARSER_FAILURE_IDENTITIES=0
+PARSER_BASELINE_STATUS=PASS

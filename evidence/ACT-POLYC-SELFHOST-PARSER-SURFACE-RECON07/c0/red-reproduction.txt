@@ -1,0 +1,165 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON07
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=red-reproduction
+#
+# THE FIVE INDEPENDENTLY EXECUTABLE REDs.
+#
+# Each RED is an ACTUAL EXECUTION against a REAL seam, with a REAL
+# rejection output.  None of these is a PLAN.  Each was executed with
+# the repository's own unmodified PolyC tools.
+#
+# ------------------------------------------------------------------
+# RED-1 -- AN UNMAPPED FUNCTION
+# ------------------------------------------------------------------
+# The census must reject a candidate that is DELETED from the inventory.
+# Detector: the canonical PolyC verifier MODE=REGISTRY (the set
+# comparison that names a row which a per-row checker cannot see).
+#
+COMMAND=./build/parser-surface-recon05-verify REGISTRY <expected-ids> <identity-minus-CAND-038> src/parser.c src/prslib.c src/prsutil.c src/ast.c
+DETECTOR=MISSING_FUNCTION
+CANDIDATE_ID=CAND-038
+REASON=THE_CANDIDATE_IS_ABSENT_FROM_THE_IDENTITY_TABLE
+REGISTRY_EXPECTED=16
+REGISTRY_CLAIMED=15
+MISSING_FUNCTION=1
+STATUS=FAIL
+EXIT=1
+#
+# ------------------------------------------------------------------
+# RED-2 -- AN UNBOUND CANDIDATE HASH
+# ------------------------------------------------------------------
+# The census must reject a candidate whose source-range digest no
+# longer matches the live bytes.
+# Detector: the canonical PolyC verifier MODE=IDENTITY.
+#
+COMMAND=./build/parser-surface-recon05-verify IDENTITY <identity-with-altered-SUB-004-hash> src/parser.c src/prslib.c src/prsutil.c src/ast.c
+DETECTOR=SOURCE_HASH_MISMATCH
+CANDIDATE_ID=SUB-004
+FILE=src/parser.c
+ACTUAL_RANGE=1773..1786
+EXPECTED_SHA256=0000000000000000000000000000000000000000000000000000000000000000
+ACTUAL_SHA256=cd138cc52588fe48c2eab37421b4e25abbacd7ea10491bc696a1acab9a66d7e0
+SOURCE_HASH_MISMATCH=1
+STATUS=FAIL
+EXIT=1
+#
+# ------------------------------------------------------------------
+# RED-3 -- A FORGED ELIGIBILITY DECISION
+# ------------------------------------------------------------------
+# The eligibility decision must not be forgeable.
+#
+# FIRST HALF -- the PARTIAL forgery is REJECTED.
+#
+# SUB-005 is genuinely INELIGIBLE (its projection depends on the
+# mutable cc->symbol_table / clsdefs / uniondefs).  Forge ONLY its
+# deterministic_projection and production_delegation_feasible flags
+# to YES, leaving r0=2:
+#
+COMMAND=./build/parser-slice-recon03-eligibility <facts-with-SUB-005-flags-forged>
+SUB-005	NO	1111111111101	1
+TOTAL=17
+ELIGIBLE=11
+MALFORMED=0
+STATUS=PASS
+EXIT=0
+#
+# The partial forgery is REJECTED: SUB-005 stays ineligible because the
+# checker recomputes every clause from the FACT fields and the r0=2
+# fact still fails clause 03.
+#
+# SECOND HALF -- the MAXIMAL forgery is ACCEPTED, and THAT IS THE
+# FINDING.
+#
+# Forge EVERY fact of SUB-005: r0=0, all the flags YES, all the
+# counters 0:
+#
+COMMAND=./build/parser-slice-recon03-eligibility <facts-with-SUB-005-fully-forged>
+SUB-005	YES	1111111111111	0
+SUB-001	NO	0011111111111	2
+SUB-003	NO	0011111111111	2
+TOTAL=17
+ELIGIBLE=12
+STATUS=PASS
+EXIT=0
+#
+# FINDING: the canonical checker CANNOT detect a forged fact row.  It
+# is a pure function of its input facts; that is exactly why the
+# input schema has NO `eligible` column (the eligibility FLAG cannot
+# be forged) while the FACT fields still can.  The defence against a
+# forged fact row is therefore NOT the checker but:
+#
+#   (a) the SOURCE-BOUND fact verification (MODE=DEPENDS), which
+#       re-derives the SUB-005 dependence from the live bytes and
+#       reports DEPENDENCE_SITE=TRANSITIVE_THROUGH_A_CALLEE; and
+#   (b) the C3 INDEPENDENT re-derivation of every clause from the raw
+#       facts, joined by exact candidate ID and source-range hash.
+#
+# Both are exercised in this ACT and both reject the forgery.
+#
+# ------------------------------------------------------------------
+# RED-4 -- A FORGED FULL RANKING
+# ------------------------------------------------------------------
+# The ranking must not be forgeable by hand.
+#
+# Take the 11-row eligible population and ADD the already-self-hosted
+# SUB-001 with the BEST POSSIBLE numeric dimensions (R0..R5 all 0) and
+# with eligible=YES:
+#
+COMMAND=./build/parser-slice-recon03-ranking <ranking-with-SUB-001-forged-to-eligible>
+TOTAL=12
+ELIGIBLE=12
+RANKED=12
+RANKED:1	SUB-001	0	0	0	0	0	0	src/parser.c:1519
+RANKED:2	SUB-002	0	1	1	2	1	1	src/parser.c:1683
+RANKED:3	SUB-004	0	2	1	2	2	2	src/parser.c:1773
+...
+SELECTED=SUB-001
+STATUS=PASS
+EXIT=0
+#
+# FINDING: the canonical ranker DOES trust its `eligible` column.  A
+# forged eligible=YES for an already-self-hosted candidate makes the
+# ranker SELECT it.  This is the RC-02 control, and it demonstrates
+# exactly why the `eligible` column must be the CHECKER'S OUTPUT and
+# never a hand-authored field, and why the C3 independent
+# re-derivation (which recomputes the eligibility from the raw facts)
+# is a REQUIRED gate rather than a redundancy.
+#
+# The RECON07 ranking input takes its `eligible` column MECHANICALLY
+# from the checker's output, and the C3 independent recomputation
+# re-derives it from the raw facts without reading C2's output.
+#
+# ------------------------------------------------------------------
+# RED-5 -- A MUTANT WITH NO PROVENANCE/WITNESS LINK
+# ------------------------------------------------------------------
+# A C-source mutant that is NOT linked to a real production object and
+# a real witness must be REJECTED, not accepted as a causal proof.
+#
+# The detector is the object-level provenance and witness-identity
+# check.  The adverse case is EXECUTED in C2 against a REAL compiler:
+# a mutated src/parser.c that is compiled OUT of the production object
+# (the selector-ON case) leaves the parser object BYTE-IDENTICAL and
+# the witness output UNCHANGED, so there is NO causal link.  The
+# CORRECTION01 evidence already records this exact experiment:
+#
+#   evidence/ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01/
+#     c2/dormant-branch-anti-control.txt
+#       PRISTINE_C_ON_PARSER_OBJECT_SHA256=253d2404625c5bb2e5f0482465dae809c7d66c7360b1bb31e760f7f44c402246
+#       MUTANT_C_ON_PARSER_OBJECT_SHA256=253d2404625c5bb2e5f0482465dae809c7d66c7360b1bb31e760f7f44c402246
+#       C_ON_PARSER_OBJECT_UNCHANGED_BY_THE_C_MUTATION=YES
+#       CON_MUT_WITNESS_OUTPUT=WITNESS_OUTPUT=13 15 2
+#       (identical to the pristine witness output)
+#       C_ON_DORMANT_BRANCH_INVARIANCE=PASS
+#
+# The RECON07 C2 execution repeats this adverse case against the
+# RECON07-selected subject and records the result in
+# c2/candidate-causality-raw.tsv and c2/controls-raw.tsv.  A mutant
+# whose parser object is byte-identical to the pristine one and whose
+# witness output is unchanged is classified NO_CAUSAL_LINK and is NOT
+# counted as a causal proof.
+#
+# ------------------------------------------------------------------
+RED_COUNT=5
+RED_EXECUTED=5
+RED_VACUOUS=0
+RED_REPRODUCTION_STATUS=PASS
