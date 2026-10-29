@@ -3374,6 +3374,55 @@ parser-surface-recon06-audit-selftest: build/parser-surface-recon06-audit
 	./build/parser-surface-recon06-audit --selftest
 
 
+# ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01 C3.
+#
+# The INDEPENDENT PolyC auditor for the N-06 literal C-mutation
+# correction.  It re-derives the control join and re-verifies the
+# eight negative controls and the 28 acceptance predicates from the
+# COMMITTED bytes, so that no self-reported label from the experiment
+# driver is accepted.
+#
+# It is a PolyC implementation (F-POLYC-TOOLS compliant).  The link
+# step is the same shape as the RECON06 audit's: the tool is compiled
+# with `-c` and linked against the runtime prefix, because a direct
+# `./hcc ... -o <exe>` link does not make `Main` the process entry
+# point (the C runtime already defines `main`).
+CORR01_AUDIT_SRC  = tools/quality/parser-slice07-evidence-correction01-audit.HC
+CORR01_AUDIT_OBJ  = build/parser-slice07-evidence-correction01-audit.o
+CORR01_AUDIT_EXE  = build/parser-slice07-evidence-correction01-audit
+
+build/parser-slice07-evidence-correction01-audit.o: $(CORR01_AUDIT_SRC) ./hcc | test-prefix-install
+	./hcc --install-dir=$(TEST_PREFIX) -c $(CORR01_AUDIT_SRC) -o $@
+
+build/parser-slice07-evidence-correction01-audit: $(CORR01_AUDIT_OBJ)
+	cc $(CORR01_AUDIT_OBJ) -L$(TEST_PREFIX)/lib -ltos -o $@
+	@if [ ! -x $@ ]; then \
+		echo "parser-slice07-evidence-correction01-audit: link failed" >&2; \
+		exit 1; \
+	fi
+
+parser-slice07-evidence-correction01-audit-selftest: build/parser-slice07-evidence-correction01-audit
+	./build/parser-slice07-evidence-correction01-audit SELFTEST
+
+parser-slice07-evidence-correction01-audit-verify: build/parser-slice07-evidence-correction01-audit
+	./build/parser-slice07-evidence-correction01-audit VERIFY-FREEZE \
+		evidence/ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01/c0/predecessor-freeze.tsv
+
+parser-slice07-evidence-correction01-audit-join: build/parser-slice07-evidence-correction01-audit
+	./build/parser-slice07-evidence-correction01-audit JOIN \
+		evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05 \
+		evidence/ACT-POLYC-SELFHOST-PARSER-SLICE07 \
+		evidence/ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01
+
+parser-slice07-evidence-correction01-audit-nc: build/parser-slice07-evidence-correction01-audit
+	./build/parser-slice07-evidence-correction01-audit NC \
+		evidence/ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01
+
+parser-slice07-evidence-correction01-audit-ac: build/parser-slice07-evidence-correction01-audit
+	./build/parser-slice07-evidence-correction01-audit AC \
+		evidence/ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01
+
+
 # Fixture generators (PolyC).
 build/parser-padding-gen-matrix-fixture: tools/quality/parser-padding-gen-matrix-fixture.HC ./hcc | test-prefix-install
 	./hcc --install-dir=$(TEST_PREFIX) tools/quality/parser-padding-gen-matrix-fixture.HC -o $@

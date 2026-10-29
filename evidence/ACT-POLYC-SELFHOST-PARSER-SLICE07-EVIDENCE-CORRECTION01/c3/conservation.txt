@@ -1,0 +1,210 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01
+# ACT_PHASE=C3-VERIFY
+# EVIDENCE_KIND=conservation
+#
+# THE CONSERVATION RECORD (AC21 - AC25).
+#
+# Every number below was MEASURED FRESH at C3, on the SAME tree that
+# carries this ACT's evidence.  The C0 baseline and the C3 measurement
+# are compared IDENTITY BY IDENTITY, not merely by COUNT.
+#
+# ------------------------------------------------------------------
+# AC21 -- THE PREDECESSOR ARTIFACTS ARE UNCHANGED (F14)
+# ------------------------------------------------------------------
+#
+# COMMAND=./build/parser-slice07-evidence-correction01-audit VERIFY-FREEZE \
+#            evidence/ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01/c0/predecessor-freeze.tsv
+#
+VERIFY_FREEZE_TOTAL=1155
+VERIFY_FREEZE_OK=1155
+VERIFY_FREEZE_MISSING=0
+VERIFY_FREEZE_MISMATCH=0
+VERIFY_FREEZE_STATUS=PASS
+#
+# EVERY one of the 1155 frozen selfhost-parser ACT/HANDOFF/evidence
+# paths still hashes to the value frozen at C0.  NOT ONE byte changed.
+#
+# The RECON06 298-path manifest was independently re-verified at C0
+# with 298 present, 0 missing, 0 mismatches.
+#
+PREDECESSOR_ARTIFACTS_FROZEN=1155
+PREDECESSOR_ARTIFACTS_UNCHANGED=1155
+PREDECESSOR_ARTIFACT_MISSING=0
+PREDECESSOR_ARTIFACT_HASH_MISMATCHES=0
+F14=PASS
+HISTORICAL_ARTIFACT_REWRITES=0
+#
+# ------------------------------------------------------------------
+# AC22 -- NO PRODUCTION CHANGE, AND THE SEVEN AUTHORITIES REMAIN ACTIVE
+# ------------------------------------------------------------------
+#
+# The ONLY tracked files this ACT changed are:
+#
+#   docs/acts/ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01.md  (new)
+#   docs/factory/HANDOFF-...-SLICE07-EVIDENCE-CORRECTION01.md             (new, at C4)
+#   docs/factory/act-handoff-map.tsv                                      (one row, at C4)
+#   docs/ROADMAP.md                                                       (bounded, at C4)
+#   evidence/ACT-.../SLICE07-EVIDENCE-CORRECTION01/**                     (new)
+#   tools/quality/parser-slice07-evidence-correction01-audit.HC           (new)
+#   Makefile                                                             (additive target only)
+#
+# COMMAND=git diff --stat <entry>..HEAD -- src/ tools/bootstrap/
+#   (no output -- ZERO tracked changes under src/** and
+#    tools/bootstrap/**)
+#
+TRACKED_SRC_CHANGES=0
+TRACKED_TOOLS_BOOTSTRAP_CHANGES=0
+PRODUCTION_SEMANTIC_DELTA=0
+NEW_POLYC_PARSER_AUTHORITIES=0
+#
+# The seven production authorities, re-verified at C3 from the live
+# build:
+#
+COMMAND=grep -E '^HCC_USE_SELFHOST' build/CMakeCache.txt
+HCC_USE_SELFHOST_PARSER_AST_BINOP:BOOL=ON
+HCC_USE_SELFHOST_PARSER_AST_UNARY:BOOL=ON
+HCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND:BOOL=ON
+HCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN:BOOL=ON
+HCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE:BOOL=ON
+HCC_USE_SELFHOST_PARSER_PADDING:BOOL=ON
+HCC_USE_SELFHOST_PARSER_SWITCH_ARM:BOOL=ON
+#
+COMMAND=nm build/CMakeFiles/hcc.dir/parser.c.o | grep ' U _Bootstrap'
+                 U _BootstrapCalcPadding
+                 U _BootstrapCompoundBlockAppendsStatement
+                 U _BootstrapSwitchArmTerminates
+                 U _BootstrapValidPostControlFlowToken
+#
+COMMAND=nm ./hcc | grep -c ' T _Bootstrap'
+7
+#
+CURRENT_POLYC_PARSER_AUTHORITIES=7
+SEVEN_AUTHORITIES_CONSERVED=YES
+#
+# ------------------------------------------------------------------
+# AC23 -- THE PARSER BASELINE
+# ------------------------------------------------------------------
+#
+COMMAND=make unit-test
+UNIT_TEST_EXIT=0
+#
+COMMAND=grep -o 'PASSED: [0-9]*/[0-9]*' <log> | md5 -q
+b6f117eb1386ca80f81bc06226e2a741
+#
+COMMAND=grep -o 'PASSED: [0-9]*/[0-9]*' <log> | wc -l
+90
+#
+COMMAND=grep -c 'FAILED: [0-9]*/[0-9]*' <log>
+0
+#
+PARSER_HOST_ARCH_ASSERTIONS=376/376
+PARSER_HOST_ARCH_TESTFILES=90
+PARSER_HOST_ARCH_ASSERTION_SEQUENCE_MD5=b6f117eb1386ca80f81bc06226e2a741
+PARSER_HOST_ARCH_MD5_MATCHES_C0=YES
+PARSER_HOST_ARCH_MD5_MATCHES_HISTORICAL=YES
+NEW_PARSER_FAILURE_IDENTITIES=0
+#
+# The assertion sequence is BYTE-IDENTICAL to the C0 measurement and
+# to the historical value: the per-test identity sets are equal, not
+# merely equal in COUNT.
+#
+# ------------------------------------------------------------------
+# AC24 -- THE LEXER DIFFERENTIALS AND THE EXACT LEXER07 FAILURES
+# ------------------------------------------------------------------
+#
+COMMAND=make lexer07-direct-differential lexer08-direct-differential lexer09-direct-differential
+LEXER_EXIT=0
+ACT_SELFHOST_LEXER02_DIRECT_DIFF_CASES=89
+LEXER07_DIRECT_DIFFERENTIAL=PASS
+DIRECT_DIFFERENTIAL_TOTAL=45
+DIRECT_DIFFERENTIAL_PASS=45
+DIRECT_DIFFERENTIAL_FAIL=0
+LEXER08_DIRECT_DIFFERENTIAL=PASS
+DIRECT_DIFFERENTIAL_TOTAL=23
+DIRECT_DIFFERENTIAL_PASS=23
+DIRECT_DIFFERENTIAL_FAIL=0
+LEXER09_DIRECT_DIFFERENTIAL=PASS
+#
+LEXER07_DIRECT_DIFFERENTIAL_TOTAL=89
+LEXER08_DIRECT_DIFFERENTIAL_TOTAL=45
+LEXER09_DIRECT_DIFFERENTIAL_TOTAL=23
+LEXER_DIFFERENTIALS_MATCH_C0=YES
+NEW_LEXER_FAILURE_IDENTITIES=0
+#
+COMMAND=./build/lexer07-broad-corpus-4-stage \
+#           evidence/ACT-POLYC-SELFHOST-LEXER01/c2/corpus-inventory.txt \
+#           build/corr01-c3-lexer07-broad
+TOTAL=181
+PASS_S0=166 HISTORICAL_S0=0 PASS_S1=175 PASS_S2=175 PASS_S3=175
+FAIL_S0=15 FAIL_S1=6 FAIL_S2=6 FAIL_S3=6
+BOTH_FAIL_4=6
+REGRESSION=0
+DIVERGED=0
+PASS_MISMATCH=9
+HISTORICAL_S0_FALLBACKS_USED=0
+BYTE_IDENTICAL_4=166
+BYTE_IDENTICAL_PAIRS=166/181 166/181 166/181 175/181 175/181 175/181
+PROVENANCE_SCHEMA_VALID=1
+FAILURE_SCHEMA_VALID=1
+STATUS=FAIL
+TOOL_EXIT=1
+#
+COMMAND=md5 -q build/corr01-c3-lexer07-broad/corpus-failures.tsv
+7ee761440de83552e751e3c3976c1683
+#
+COMMAND=diff build/corr01-c3-lexer07-broad/corpus-failures.tsv \
+#           build/corr01-c0-lexer07-broad/corpus-failures.tsv
+   (no output -- IDENTICAL)
+#
+# The command EXITS NONZERO.  That is the KNOWN baseline condition.
+# It is reported as FAIL, and it is NEVER relabelled PASS.
+#
+LEXER07_BROAD_CORPUS_TOTAL=181
+LEXER07_BROAD_CORPUS_FAILURE_IDENTITY_COUNT=15
+LEXER07_BROAD_CORPUS_FAILURE_IDENTITY_MD5=7ee761440de83552e751e3c3976c1683
+LEXER07_BROAD_CORPUS_FAILURE_SET_IDENTICAL_TO_C0=YES
+LEXER07_BROAD_CORPUS_REGRESSION=0
+LEXER07_BROAD_CORPUS_DIVERGED=0
+LEXER07_BROAD_CORPUS_STATUS=FAIL_KNOWN_BASELINE
+NEW_LEXER07_FAILURE_IDENTITIES=0
+#
+# ------------------------------------------------------------------
+# AC25 -- THE CROSS-TARGET, F-NO-PYTHON AND F-POLYC-TOOLS BASELINES
+# ------------------------------------------------------------------
+#
+COMMAND=cd src/tests && ./test-runner --target=aarch64-apple-darwin
+CROSS_TARGET_FAILED_TO_OPEN_FILE=67
+CROSS_TARGET_FAILED_TO_COMPILE=67
+CROSS_TARGET_DISTINCT_FAILURE_MESSAGES=1
+CROSS_TARGET_FAILURE_MESSAGE=Failed to open file: ../../build/aarch64-apple-darwin/include/tos.HH
+CROSS_TARGET_STATUS=FAIL_ENVIRONMENT_PREFIX
+NEW_CROSS_TARGET_FAILURE_IDENTITIES=0
+#
+COMMAND=sh scripts/quality/factory-no-python-check.sh
+POLYC_TOOLS_TRACKED_PYTHON=12
+STATUS=FAIL
+NO_PYTHON_EXIT=1
+F_NO_PYTHON=FAIL
+F_NO_PYTHON_VIOLATION_COUNT=12
+F_NO_PYTHON_VIOLATIONS_MATCH_HISTORICAL_EXACTLY=YES
+F_NO_PYTHON_NEW_VIOLATIONS=0
+#
+COMMAND=ls tools/factory/factory-polyc-tools-check.HC
+   ls: cannot access 'tools/factory/factory-polyc-tools-check.HC': No such file or directory
+COMMAND=ls build/factory-polyc-tools-check
+   ls: cannot access 'build/factory-polyc-tools-check': No such file or directory
+F_POLYC_TOOLS=UNAVAILABLE
+F_POLYC_TOOLS_CHECKER_LANDED=NO
+F_POLYC_TOOLS_REPORTED_AS_PASS=NO
+#
+# The INSPECTED/PASSES counters moved from RECON06's 5644/5637 to
+# 5664/5657 because this ACT added tracked files.  The VIOLATION count,
+# which is the identity that matters, is unchanged at 12.
+#
+# ------------------------------------------------------------------
+# THE SUMMARY
+# ------------------------------------------------------------------
+#
+CONSERVATION_STATUS=PASS
+NO_NEW_FAILURE_IDENTITIES=YES
+NO_RESIDUAL_STATUS_RELABELLED_AS_PASS=YES

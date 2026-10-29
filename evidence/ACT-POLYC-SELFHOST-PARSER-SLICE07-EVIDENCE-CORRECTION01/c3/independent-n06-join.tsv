@@ -1,0 +1,109 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01
+# ACT_PHASE=C3-VERIFY
+# EVIDENCE_KIND=independent-n06-join
+#
+# THE INDEPENDENT N-06 CONTROL JOIN.
+#
+# The join is produced by the CORRECTION-OWNED POLYC AUDITOR
+# (tools/quality/parser-slice07-evidence-correction01-audit.HC), which
+# re-derives every predicate from the LIVE bytes of the committed
+# artifacts.  It does NOT accept a self-reported label from the
+# experiment driver.
+#
+# Schema:
+#   control_id  frozen_subject  historical_observed_subject
+#   historical_execution_id  supplement_execution_id
+#   compiler_configuration  source_diff_hash  observed_detector
+#   historical_disposition  new_disposition  provenance_path
+#
+control_id	frozen_subject	historical_observed_subject	historical_execution_id	supplement_execution_id	compiler_configuration	source_diff_hash	observed_detector	historical_disposition	new_disposition	provenance_path
+N-06	the selected C decision (src/parser.c, SUB-003, the compound-block statement append/skip routing)	the PolyC source (tools/bootstrap/selfhost-parser-slice07.HC) -- NOT the selected C decision	SLICE07 C3, detached worktree /tmp/slice07-wt, base 885a2a6f58d5d8565af7f9a655ea2924a35c7686	N06_LITERAL_CORRECTION_EXPERIMENT	C-OFF (HCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND=OFF; the other six PolyC parser authorities retained ON)	6f0ab1d927b802855f755b898d43037837285354b085fcd1b3bd6946e12dce28 (the src/parser.c single-hunk diff; the historical PolyC source hash was 45295e0e2f435c29b94d0a9368f4cf253245273cdd47eafc31cca21a474d5c02)	CAUSAL_DIRECTION_CHANGE	UNPROVEN_AS_WRITTEN	PROVEN_BY_NEW_INDEPENDENT_EXPERIMENT	evidence/ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01/c2/c-only-build-and-causality.txt
+S7-CC-01	(a control this ACT does NOT own; the predecessor's own new control)	the PolyC source	SLICE07 C3, detached worktree /tmp/slice07-wt, base 885a2a6f58d5d8565af7f9a655ea2924a35c7686	(unchanged; this ACT did NOT re-run S7-CC-01)	C-ON (the production configuration; the delegated path)	45295e0e2f435c29b94d0a9368f4cf253245273cdd47eafc31cca21a474d5c02 (the PolyC source)	CAUSAL_DIRECTION_CHANGE (COMPILER_ACCEPTANCE_CHANGED)	PRESERVED	PRESERVED_UNCHANGED	evidence/ACT-POLYC-SELFHOST-PARSER-SLICE07/c3/causal-polyc-mutation-restoration.txt
+#
+# ---------------------------------------------------------------------------
+# THE INDEPENDENT AUDITOR'S OUTPUT (the machine-checked part)
+# ---------------------------------------------------------------------------
+#
+# COMMAND=./build/parser-slice07-evidence-correction01-audit JOIN \
+#            evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05 \
+#            evidence/ACT-POLYC-SELFHOST-PARSER-SLICE07 \
+#            evidence/ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01
+#
+JOIN_FROZEN_N06_MUTATION_TEXT_FOUND=1
+JOIN_FROZEN_N06_DETECTOR_FOUND=1
+JOIN_FROZEN_N06_MENTIONS_THE_C_DECISION=1
+JOIN_HISTORICAL_N06_ROW_FOUND=1
+JOIN_HISTORICAL_N06_SUBJECT_IS_POLYC_SOURCE=1
+JOIN_HISTORICAL_S7CC01_ROW_FOUND=1
+JOIN_HISTORICAL_S7CC01_SUBJECT_IS_POLYC_SOURCE=1
+JOIN_HISTORICAL_MUTATION_NOT_IN_SRC_PARSER_C=1
+JOIN_HISTORICAL_MUTATION_IN_POLYC_SOURCE=1
+JOIN_NEW_EXECUTION_ID_PRESENT=1
+JOIN_NEW_MUTATION_IS_IN_SRC_PARSER_C=1
+JOIN_NEW_MUTATION_HUNK_COUNT_IS_ONE=1
+JOIN_NEW_POLYC_COMPONENT_UNCHANGED=1
+JOIN_NEW_DETECTOR_FIRES=1
+JOIN_NEW_BUILD_SUCCESS=1
+JOIN_NEW_HISTORICAL_CAUSALITY_PRESERVED=1
+JOIN_NEW_HISTORICALLY_INDEPENDENT=1
+JOIN_NEW_INDEPENDENT_OF_HISTORICAL_MUTANT=1
+JOIN_SUBJECT_DIFFERS=1
+JOIN_EXECUTION_ID_DIFFERS=1
+JOIN_EVIDENCE_PATH_DIFFERS=1
+JOIN_HISTORICAL_DISPOSITION_N06_UNPROVEN_AS_WRITTEN=1
+JOIN_NEW_DISPOSITION_N06_LITERAL_CORRECTION_PROVEN=1
+JOIN_NEW_IS_DISTINCT_FROM_S7CC01=1
+JOIN_DOUBLE_COUNTING_AVOIDED=1
+JOIN_STATUS=PASS
+JOIN_EXIT=0
+#
+# ---------------------------------------------------------------------------
+# THE REQUIRED STATEMENTS, WITHOUT AMBIGUITY
+# ---------------------------------------------------------------------------
+#
+N06_FROZEN_SUBJECT=selected C decision
+N06_HISTORICAL_SUBJECT=PolyC source
+N06_HISTORICAL_DISPOSITION=UNPROVEN_AS_WRITTEN
+N06_NEW_LITERAL_C_MUTANT=EXECUTED
+N06_NEW_C_ONLY_BUILD=SUCCESS
+N06_NEW_CAUSAL_DIRECTION=OBSERVED
+S7_CC01_HISTORICAL_POLYC_CAUSALITY=PRESERVED
+N06_AND_S7_CC01_HISTORICALLY_INDEPENDENT=NO
+NEW_C_MUTANT_AND_HISTORICAL_POLYC_MUTANT_INDEPENDENT=YES
+#
+# The historical disposition is NOT revised.  The new experiment is
+# ADDITIVE: it gives N-06 evidence of its OWN, under a NEW execution
+# identity, without pretending that the historical experiment was a C
+# mutation.
+#
+SLICE07_HISTORICAL_N06_EXECUTED_AS_WRITTEN=NO
+SLICE07_HISTORICAL_S7_CC01_POLYC_MUTATION=PROVEN
+CORRECTION_N06_LITERAL_EXPERIMENT=PROVEN
+CORRECTION_OWN_DISTINCT_EXECUTION_ID=N06_LITERAL_CORRECTION_EXPERIMENT
+HISTORICAL_ARTIFACT_REWRITES=0
+PRODUCTION_SEMANTIC_DELTA=0
+#
+# ---------------------------------------------------------------------------
+# THE VACUITY EXCLUSION (AC20)
+# ---------------------------------------------------------------------------
+#
+# The new experiment is NOT vacuous:
+#
+#   - the mutated source hash DIFFERS from the pristine source hash
+#     (6f0ab1d9... vs 2b31a791...);
+#   - the selected decision RANGE hash DIFFERS
+#     (805748fd... vs 60a388fa...);
+#   - the mutated C-OFF parser object hash DIFFERS
+#     (aa5a5d85... vs db118ef6...);
+#   - the mutated C-OFF executable hash DIFFERS
+#     (5f9d721b... vs ec6d1866...);
+#   - the witness outcome DIFFERS (accept vs reject);
+#   - the exact-ID differential differs on EXACTLY 3 of 1753 rows;
+#   - the mutant build EXITED 0 and produced an executable.
+#
+# A PASS inferred from only a pristine object would show NONE of these
+# differences, and the negative controls NC01 and NC03 demonstrate
+# exactly that rejection.
+#
+VACUOUS_PASS_EXCLUDED=YES
+UNSUPPORTED_DOUBLE_COUNTING_EXCLUDED=YES

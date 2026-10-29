@@ -1,0 +1,160 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01
+# ACT_PHASE=C3-VERIFY
+# EVIDENCE_KIND=factory-invariants
+#
+# THE FACTORY-V2 INVARIANTS, RE-VERIFIED at C3.
+#
+# Every command below was ACTUALLY RUN at C3, SERIALIZED.
+#
+# ------------------------------------------------------------------
+# THE APPEND-ONLY INVARIANT
+# ------------------------------------------------------------------
+#
+COMMAND=sh scripts/quality/factory-append-only-test.sh
+   PASS  NC1  rc=0
+   PASS  NC2  rc=1
+   PASS  NC3  rc=1
+   PASS  NC4  rc=0
+   PASS  NC5  rc=1
+   PASS  NC6  rc=0
+   PASS  NC7  rc=0
+   PASS  NC8  rc=1
+   PASS  NC9  rc=1
+   PASS  NC10  rc=1
+   PASS  NC11  rc=0
+#
+#   --- summary ---
+#   PASS=11
+#   FAIL=0
+#   STATUS=PASS
+APPEND_ONLY_EXIT=0
+APPEND_ONLY=PASS
+APPEND_ONLY_SUITE_NC1_NC11=11/11
+#
+# The permanent regression suite for the append-only invariant is
+# green.  No amend, rebase, reset, squash or force-push was used by
+# this ACT.
+#
+# ------------------------------------------------------------------
+# THE FACTORY-V2 RANGE CHECKS FOR THE PREDECESSORS
+# ------------------------------------------------------------------
+#
+# The predecessor ranges are UNCHANGED.  This ACT did not add a commit
+# to either predecessor's range, and it did not resume RECON06.
+#
+COMMAND=sh scripts/quality/factory-v2-range-check.sh \
+#            ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON06 \
+#            aa90d34193cd67ace532e743e8fd837e6237d8e3
+#   ACT=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON06
+#   ENTRY=2bafd875a60fc8347c4f17ca24350d682fd63355
+#   FIRST=027b2e1dc0f96a38aefc88790ce4b1b4997f0ea8
+#   CLOSE=aa90d34193cd67ace532e743e8fd837e6237d8e3
+#   COMMITS=2
+#   VERDICT=HALT_N06_FROZEN_OBLIGATION_UNPROVEN
+#   STATUS=PASS
+#
+COMMAND=sh scripts/quality/factory-v2-range-check.sh \
+#            ACT-POLYC-SELFHOST-PARSER-SLICE07 \
+#            2bafd875a60fc8347c4f17ca24350d682fd63355
+#   ACT=ACT-POLYC-SELFHOST-PARSER-SLICE07
+#   ENTRY=1a3d2d520306f02ca08adb29c62688748e33eab8
+#   FIRST=cc1d828a79bcb29fe89425ab7515b0f9c696b845
+#   CLOSE=2bafd875a60fc8347c4f17ca24350d682fd63355
+#   COMMITS=5
+#   VERDICT=PASS
+#   STATUS=PASS
+#
+RECON06_RANGE_CHECK=PASS
+SLICE07_RANGE_CHECK=PASS
+FACTORY_V2_RANGE_CHECK=PASS
+#
+# ------------------------------------------------------------------
+# THE RECON06 HALT IS STILL LITERALLY INTACT
+# ------------------------------------------------------------------
+#
+COMMAND=git log -1 --format='%B' aa90d34193cd67ace532e743e8fd837e6237d8e3 | tail -6
+#
+#   ACT: ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON06
+#   ACT-Phase: CLOSE
+#   ACT-Verdict: HALT_N06_FROZEN_OBLIGATION_UNPROVEN
+#   HALT_CLASS: GOVERNANCE
+#   BLOCKS_NEXT: NO
+#
+RECON06_HALT_TRAILER_LITERAL=YES
+RECON06_HALT_CLASS=GOVERNANCE
+RECON06_BLOCKS_NEXT=NO
+RECON06_HALT_PRESERVED=YES
+RECON06_HALT_CONVERTED_TO_PASS=NO
+RECON06_RESUMED_BY_ADDING_COMMITS=NO
+#
+# The predecessor's HALT is NOT converted, NOT revoked and NOT
+# resumed.  The correction is ADDITIVE: it supplies the missing
+# evidence under a NEW execution identity and leaves the historical
+# record exactly as it was.
+#
+# ------------------------------------------------------------------
+# THE CLOSURE-STATUS ORACLE
+# ------------------------------------------------------------------
+#
+COMMAND=sh scripts/quality/factory-closure-status-check.sh
+#   MISSING_ACT_FILES=0
+#   MISSING_HANDOFF_FILES=0
+#   MALFORMED_HANDOFF_VERDICT=0
+#   PAIR_OK=41
+#   PAIR_FAIL=0
+#   STATUS=PASS
+#   VERDICT=PASS
+CLOSURE_STATUS_EXIT=0
+CLOSURE_STATUS=PASS
+#
+# ------------------------------------------------------------------
+# THE PATCH HYGIENE
+# ------------------------------------------------------------------
+#
+# The patch hygiene check IS the `diff-check` of gate-fast and
+# gate-push.  Both reported STATUS=PASS.
+#
+PATCH_HYGIENE=PASS
+#
+# ------------------------------------------------------------------
+# THE GIT IDENTITY
+# ------------------------------------------------------------------
+#
+COMMAND=git replace -l | wc -l
+0
+GIT_REPLACE_REFS=0
+#
+# ------------------------------------------------------------------
+# THE F-POLYC-TOOLS AVAILABILITY TRUTH
+# ------------------------------------------------------------------
+#
+COMMAND=ls tools/factory/factory-polyc-tools-check.HC
+#   ls: cannot access 'tools/factory/factory-polyc-tools-check.HC': No such file or directory
+COMMAND=ls build/factory-polyc-tools-check
+#   ls: cannot access 'build/factory-polyc-tools-check': No such file or directory
+#
+# The AUTHORITATIVE F-POLYC-TOOLS CHECKER IS NOT LANDED.  It is
+# reported UNAVAILABLE and is NEVER reported PASS.
+#
+F_POLYC_TOOLS=UNAVAILABLE
+F_POLYC_TOOLS_CHECKER_LANDED=NO
+#
+# This ACT's OWN new verifier IS a PolyC implementation:
+# tools/quality/parser-slice07-evidence-correction01-audit.HC, compiled
+# and executed with the actual production compiler.
+#
+# The `factory-halt-classification` checker could NOT be built on this
+# host: its compilation fails with "error: tools/factory/../../src/holyc-lib/memory.HC:146: error: asm: unexpected token at start of line".
+# That is the PRE-EXISTING host-architecture inline-assembly condition
+# (the aarch64 inline-assembly blocks do not assemble on this
+# x86_64/arm64 host), which this ACT explicitly EXCLUDES from scope
+# ("No unrelated ... inline assembly repair").  The checker is NOT part
+# of the canonical gate graph: neither gate-fast nor gate-push invokes
+# it, and both gates PASS.  It is reported truthfully as UNAVAILABLE
+# rather than as PASS.
+#
+FACTORY_HALT_CLASSIFICATION_CHECKER=UNAVAILABLE_HOST_ASSEMBLY
+FACTORY_HALT_CLASSIFICATION_CHECKER_IS_IN_CANONICAL_GATES=NO
+#
+# ------------------------------------------------------------------
+FACTORY_INVARIANTS_STATUS=PASS

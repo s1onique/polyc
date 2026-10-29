@@ -1,0 +1,58 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01
+# ACT_PHASE=C3-VERIFY
+# EVIDENCE_KIND=independent-controls-join
+#
+# THE INDEPENDENT NEGATIVE-CONTROLS RE-VERIFICATION (AC19, AC20).
+#
+# The PolyC auditor re-derives the negative-control facts from the
+# COMMITTED bytes.  It does NOT accept a self-reported label from the
+# experiment driver: it requires, for every control, a row, a
+# non-empty observed detector class, a non-empty required detector, a
+# positive control, and detector_matched=YES.
+#
+# COMMAND=./build/parser-slice07-evidence-correction01-audit NC \
+#            evidence/ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01
+#
+NC_TOTAL_EXPECTED=8
+NC_ROWS_FOUND=8
+NC_ROWS_MISSING=0
+NC_ROWS_WITH_DETECTOR_CLASS=8
+NC_ROWS_WITH_REQUIRED_DETECTOR=8
+NC_ROWS_WITH_POSITIVE_CONTROL=8
+NC_ROWS_DETECTOR_MATCHED=8
+NC_CONTRACT_DECLARES_EIGHT=1
+NC_CONTRACT_DECLARES_VACUITY_RULE=1
+NC_VACUOUS=0
+NC_STATUS=PASS
+NC_EXIT=0
+#
+# ---------------------------------------------------------------------------
+# THE PER-CONTROL LEDGER, WITH ITS ADVERSE EXECUTION AND POSITIVE CONTROL
+# ---------------------------------------------------------------------------
+#
+# Schema:
+#   nc_id  adverse_executed  observed_failure_class  required_detector
+#   detector_matched  positive_control_result  independent_verdict
+#
+nc_id	adverse_executed	observed_failure_class	required_detector	detector_matched	positive_control_result	independent_verdict
+NC01	A full C-OFF compiler was built from UNMUTATED source and relabelled as the mutant	SOURCE_HASH_AND_SCOPE_MISMATCH: the selected decision range hash was IDENTICAL to the pristine value, so no C mutation existed; the witness output was also byte-identical to pristine, so no causal difference existed	Source-hash and scope mismatch	YES	the real mutant has a DIFFERENT range hash and REJECTS the witness	SENSITIVE
+NC02	The C-ON production parser object was offered as the purported C-OFF oracle	SELECTOR_IMPORT_DISASSEMBLY_PROVENANCE_REJECTION: the C-ON object imports the PolyC SUB-003 symbol (count 1) where the genuine C-OFF object has count 0, and the C-ON object has ZERO AST_GVAR comparisons where the genuine C-OFF object has the live comparison	Selector/import/disassembly provenance rejection	YES	the genuine C-OFF object has SUB-003 import count 0, executable symbol count 0 and the live AST_DECL/AST_GVAR comparison	SENSITIVE
+NC03	The SAME C-OFF executable was offered as both the pristine and the mutant oracle	OBJECT_EXECUTABLE_IDENTITY_AND_CAUSAL_NON_CHANGE_DETECTOR: the two executables have DIFFERENT hashes and their parser objects differ, so they are genuinely distinct binaries; reusing one binary would have produced IDENTICAL behaviour and NO causal difference	Object/executable identity and causal non-change detector	YES	the real pristine and mutant C-OFF executables are byte-distinct and their witness outcomes DIFFER	SENSITIVE
+NC04	An UNRELATED AST_GVAR comparison in the same file (src/parser.c:762, parseVariableAssignment) was mutated and SUB-003 causality was claimed	SELECTED_SOURCE_RANGE_SYMBOL_AND_WITNESS_SUBJECT_MISMATCH: the selected decision range hash was UNCHANGED, proving the mutated comparison was NOT the selected decision; the hunk header named parseVariableAssignment, not parseCompoundBlockAppendsStatement	Selected source-range/symbol and witness-subject mismatch	YES	the real mutation's range hash DIFFERS and its hunk header names parseCompoundBlockAppendsStatement	SENSITIVE
+NC05	ONE expected result in the frozen fixture was corrupted (row 0001, the AST_DECL/AST_GVAR row, expected 0 -> 1) and the PRISTINE differential was run against it	FIXTURE_EXACT_ID_SEMANTIC_MISMATCH: the differential reported SLICE07_DIFF_MISMATCH_ROW_ID=1 STMT_KIND=263 DECLVAR_KIND=256 EXPECTED=1 LEGACY=0 POLYC=0, with ORACLE_VS_EXPECTED_MISMATCH=1 and POLYC_VS_EXPECTED_MISMATCH=1 and STATUS=FAIL	Fixture exact-ID/semantic mismatch	YES	the uncorrupted fixture against the pristine differential gives 0 mismatches and STATUS=PASS over all 1753 rows	SENSITIVE
+NC06	A syntax error was introduced into the mutated C source and the C-OFF build was attempted, and the resulting behaviour was offered as a causal witness	BUILD_SUCCESS_PRECONDITION_FAILURE: the build exited 1 with "src/parser.c:2003:5: error: use of undeclared identifier 'this_is_not_valid_c'" and produced NO object and NO executable, so there was no compiler whose behaviour could be compared	Build-success precondition failure	YES	the real mutant C-OFF build exited 0 and produced a working executable whose behaviour differs	SENSITIVE
+NC07	The C source was restored INCOMPLETELY (everything but the mutated return value was reverted)	BYTE_HASH_RESTORATION_REJECTION: the incompletely restored source hashed 6f0ab1d9... and the decision range hashed 805748fd..., NEITHER equal to the pristine 2b31a791.../60a388fa...; git diff --stat still showed 1 file changed, 1 insertion, 1 deletion	Byte-hash restoration rejection	YES	the real restoration hashes 2b31a791.../60a388fa... and git diff is EMPTY	SENSITIVE
+NC08	The historical SLICE07 PolyC C3 experiment was relabelled as the new C experiment, and counted as independent C evidence	SUBJECT_EXECUTION_ID_EVIDENCE_PATH_JOIN_REJECTION: the historical row has subject "the PolyC source", execution id "SLICE07 C3, detached worktree /tmp/slice07-wt, base 885a2a6f..." and evidence path under ACT-POLYC-SELFHOST-PARSER-SLICE07; the new row has subject "the selected C decision", execution id N06_LITERAL_CORRECTION_EXPERIMENT and evidence path under ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01 -- ALL THREE FIELDS DIFFER	Subject + execution-ID + evidence-path join rejection	YES	the new experiment has its own execution id, its own source-diff hash and its own evidence path	SENSITIVE
+#
+# ---------------------------------------------------------------------------
+# THE SUMMARY
+# ---------------------------------------------------------------------------
+#
+NEGATIVE_CONTROLS_TOTAL=8
+NEGATIVE_CONTROLS_EXECUTED=8
+NEGATIVE_CONTROLS_INDEPENDENTLY_VERIFIED=8
+NEGATIVE_CONTROLS_DETECTOR_MATCHED=8
+NEGATIVE_CONTROLS_VACUOUS=0
+NEGATIVE_CONTROLS_WITH_POSITIVE_CONTROL=8
+NEGATIVE_CONTROLS_PASS=8
+NEGATIVE_CONTROLS_STATUS=PASS

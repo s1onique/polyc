@@ -1,0 +1,51 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE07-EVIDENCE-CORRECTION01
+# ACT_PHASE=C3-VERIFY
+# EVIDENCE_KIND=gate-fast
+#
+# THE REAL SERIALIZED GATE-FAST RUN.  MEASURED at C3.
+#
+# COMMAND=make gate-fast
+#
+POLYC_GATE=fast
+CHECK=diff-check STATUS=PASS
+CHECK=shell-syntax STATUS=PASS
+CHECK=doc-invariants STATUS=PASS
+CHECK=large-file-guard STATUS=PASS
+BUILD_RUN=NO
+POLYC_GATE=factory-closure-status
+MANIFEST_ROWS=41
+MISSING_HANDOFF_FILES=0
+MALFORMED_HANDOFF_VERDICT=0
+PAIR_OK=41
+PAIR_FAIL=0
+STATUS=PASS
+VERDICT=PASS
+CHECK=factory-closure-status STATUS=PASS
+VERDICT=PASS
+GATE_FAST_EXIT=0
+#
+# ------------------------------------------------------------------
+# THE CHECKS
+# ------------------------------------------------------------------
+#
+#   diff-check      -- the PATCH HYGIENE check.  It rejects trailing
+#                      whitespace, missing final newlines, conflict
+#                      markers and other patch defects in the staged
+#                      diff.  PASS.
+#   shell-syntax    -- the shell syntax check over the staged shell
+#                      scripts under scripts/ and .githooks/.
+#                      PASS.
+#   doc-invariants  -- the documentation invariants check.  PASS.
+#   large-file-guard -- the large-file guard.  PASS.
+#
+# The factory-closure-status sub-gate verifies that every ACT document
+# has a matching HANDOFF and that every HANDOFF verdict is well
+# formed.  This ACT's own HANDOFF is added at C4; at C3 the manifest
+# still shows 41 pairs and no failure.
+#
+# The gate was run ONCE, SERIALIZED.  No build, JIT, test or gate run
+# overlapped it, because the shared /tmp/holyc-asm.s is a known race
+# risk.
+#
+OVERLAPPING_GATE_OR_BUILD_RUNS=0
+GATE_FAST=PASS
