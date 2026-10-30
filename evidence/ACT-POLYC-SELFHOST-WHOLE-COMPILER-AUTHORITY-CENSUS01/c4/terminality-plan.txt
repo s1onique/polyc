@@ -1,0 +1,40 @@
+ACT-POLYC-SELFHOST-WHOLE-COMPILER-AUTHORITY-CENSUS01 — TERMINALITY PLAN
+
+This file is a PLAN. It is committed inside the CLOSE commit and therefore
+cannot claim anything about a post-CLOSE observation; by construction the
+observation happens after this commit exists and is stored outside Git.
+
+PLANNED POST-CLOSE READ-ONLY QUALIFICATION
+
+1. Identity
+   - `git rev-parse HEAD` and `git rev-parse HEAD^{tree}` at the CLOSE commit
+   - `git branch --show-current` = main
+   - `git status --porcelain` = empty
+   - `git replace -l` = empty
+
+2. Topology
+   - exactly five ACT commits after the entry `a7f5648`
+   - trailers on each: ACT, ACT-Phase in RED/EVIDENCE/IMPL/EVIDENCE/CLOSE,
+     ACT-Verdict only on the CLOSE commit
+   - `git rev-list --count <CLOSE>..HEAD` = 0 (no post-CLOSE commit)
+
+3. Conservation
+   - `git diff --name-only <entry>..<CLOSE> -- src tools/bootstrap` = empty
+   - the 5389 frozen predecessor paths: zero changed
+   - the nine `_Bootstrap*` definitions and the ten caller imports unchanged
+
+4. Gates (re-run by the qualifier, not asserted from this plan)
+   - gate-fast on the exact CLOSE tree
+   - gate-push at a named subject that cannot be the CLOSE commit itself
+     (SHA-of-self is forbidden); the C2 commit carries the build change
+   - factory-append-only 11/11, closure-status PASS, F14 PASS
+
+5. Worktrees
+   - `git worktree list` contains only the canonical checkout
+   - no ACT-created worktree remains
+
+PLANNED RECEIPT
+
+Stored outside Git (for example /tmp) and reported as
+`EXTERNAL_TERMINALITY=PASS` only if every item above is actually observed.
+If any item fails, the report must say so and AC50 stays DEFERRED.

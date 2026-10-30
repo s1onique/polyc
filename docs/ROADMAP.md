@@ -8205,3 +8205,41 @@ SLICE10_AUTHORIZED   = NO
 
 See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE09.md` and
 `evidence/ACT-POLYC-SELFHOST-PARSER-SLICE09/`.
+
+## Self-host planning: the whole-compiler authority census
+
+The parser-only census is superseded as the planning instrument by
+`ACT-POLYC-SELFHOST-WHOLE-COMPILER-AUTHORITY-CENSUS01` (CLOSE/PASS). It
+inventoried the real link closure — 46 C translation units, nine PolyC
+subject objects, 68 link-input rows including exclusions — and counted
+2233 authority rows: 2218 C decision sites, six C mechanical adapters,
+nine PolyC authorities, two external libraries, three unresolved
+indirect-authority nodes and two not-in-target units.
+
+The typed mandatory dependency graph (95 type-representation, 14
+callback, 14 mutable-state and 12 recovery edges, with the 103 call
+edges excluded as non-mandatory) has **one** strongly connected
+component holding 19 of the 20 compiler subsystems. An independent
+Kosaraju recomputation reproduces the same 34-SCC partition.
+
+The derived forecast is M1 154/348/948, M2 159/355/961, M3 161/358/967
+and M4 201/447/1208 ACTs, with every bundle cost and milestone
+independently recomputed. `M2_BELOW_100_ACTS = NOT_SUPPORTED`: the
+optimistic perturbation still gives M2 = 162.
+
+```text
+M0_SELFHOST = ACHIEVED (nine PolyC parser decision sites)
+M1_SELFHOST = NOT ACHIEVED
+M2_SELFHOST = NOT ACHIEVED
+NEXT_ACT_CLASS = ABI_FOUNDATION
+NEXT_TARGET = NONE
+SLICE10_AUTHORIZED = NO
+```
+
+The next bounded step is the shared handle/ownership ABI for `AoStr`,
+`List`, `Map`, `Ast`, `Cctrl` and `Arena`, so that the 19-subsystem
+component can be split into verifiable sub-bundles without hiding state.
+No migration and no parser successor is authorized by the census.
+
+See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-WHOLE-COMPILER-AUTHORITY-CENSUS01.md`
+and `evidence/ACT-POLYC-SELFHOST-WHOLE-COMPILER-AUTHORITY-CENSUS01/`.
