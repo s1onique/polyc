@@ -1,0 +1,24 @@
+AB-EN-01	Tamper with a predecessor file's frozen hash	`PREDECESSOR_HASH_MISMATCH`
+AB-EN-02	Claim a dormant selector-OFF PolyC symbol is a tenth authority	`DORMANT_AUTHORITY_NOT_LINKED`
+AB-EN-03	Accept an unauthorized tracked `*-tmp.HC` path as if under the frozen predecessor glob	`PREDECESSOR_SCOPE_MISMATCH`
+AB-EN-04	Count a vendored/out-of-scope or already-migrated row as remaining C semantic work	`FORECAST_SCOPE_OR_DOUBLE_COUNT`
+AB-HD-01	Pass a null handle to an accessor requiring a live object	`NULL_HANDLE`
+AB-HD-02	Pass an `Ast` handle to a `List`-only operation	`WRONG_HANDLE_KIND`
+AB-HD-03	Release a handle, then use it	`STALE_OR_RELEASED_HANDLE`
+AB-HD-04	Reuse an index with an earlier generation token	`HANDLE_GENERATION_MISMATCH`
+AB-HD-05	Forge a raw address or arbitrary integer as a valid handle	`HANDLE_NOT_ISSUED`
+AB-HD-06	Borrow an arena-owned AST beyond its arena lifetime	`EXPIRED_BORROW_OR_ARENA`
+AB-HD-07	Reuse a handle in the wrong ownership domain/host instance	`HANDLE_DOMAIN_MISMATCH`
+AB-HD-08	Release an owned token twice	`DOUBLE_RELEASE`
+AB-HD-09	Fetch a C struct field by PolyC-side layout/offset assumption	`OPAQUE_LAYOUT_VIOLATION`
+AB-HD-10	Change signature width/ABI while keeping function name constant	`CALL_ABI_MISMATCH`
+AB-ST-01	Mutate a C-owned `List`/`Map` outside its permitted borrow/mutation scope	`MUTATION_WITHOUT_CAPABILITY`
+AB-ST-02	Out-of-range container operation that partially mutates state	`ATOMICITY_OR_RANGE_FAILURE`
+AB-ST-03	Retain a callback or operation beyond its host scope	`CALLBACK_LIFETIME_OR_REENTRANCY`
+AB-ST-04	Attempt to `longjmp` across a live PolyC frame	`CROSS_FRAME_RECOVERY_UNSAFE` (reject before execution, never actually jump)
+AB-ST-05	Silently swallow a real C host error and return success	`HOST_ERROR_NOT_PROPAGATED`
+AB-GR-01	Remove a mandatory graph edge with no ABI witness	`UNPROVEN_EDGE_CUT`
+AB-GR-02	Mark a header-only observation as a proved immutable migration-order dependency	`EDGE_EVIDENCE_OVERCLAIM`
+AB-GR-03	Hand-edit an SCC or critical-path summary after changing edges	`SCC_OR_DAG_RECOMPUTE_MISMATCH`
+AB-PV-01	Replace genuine PolyC subject with handwritten C/assembly or wrong producer object	`POLYC_PRODUCER_SUBJECT_MISMATCH`
+AB-PV-02	Run a dormant/unchanged PolyC mutant and claim production-shaped causality	`DORMANT_OR_NO_CAUSAL_DELTA`

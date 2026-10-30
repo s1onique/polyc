@@ -1,0 +1,57 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-FOUNDATION-RECON01
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=initial-abi-feasibility
+#
+# MEASURED, NOT ASSUMED. Source: c0/probe/{ffi_probe.HC,ffi_host.c,
+# sizes.HC,sizes_host.c,stale_fixture.c}. Producer: ./hcc
+# sha256 9e50565b9235ae2939b2333580b45956c3589dddc972e9f4bf6b8cbd2563d90a.
+#
+TARGET=arm64-apple-darwin (uname -m = arm64; cc = Apple clang)
+POLYC_PRODUCER=./hcc
+POLYC_PRODUCER_SHA256=9e50565b9235ae2939b2333580b45956c3589dddc972e9f4bf6b8cbd2563d90a
+POLYC_OBJECT_FORMAT=Mach-O 64-bit arm64
+LINK_MODEL=cc <polyc.o> <c_host.o> -Lbuild/test-prefix/lib -ltos -o <exe>
+#
+# 1. EXPRESSIBILITY
+#
+CALL_DIRECTION_HOST_TO_POLYC=PROVEN (ffi_host.c calls AbiProbeEcho/AbiProbeSizes/AbiProbeBool)
+CALL_DIRECTION_POLYC_TO_HOST=PROVEN (PolyC extern "c" call sites resolve to ffi_host.c symbols; link exit 0)
+TOKEN_64BIT_ROUNDTRIP=PROVEN (in 0xfedcba9876543210, out identical)
+BOOL_RETURN=PROVEN_TRUE_FALSE
+#
+# 2. DIALECT LIMITS, MEASURED
+#
+C_VOID_PARAMETER_LIST=REJECTED (error: Type `void` has not been declared)
+POSTFIX_CAST_REQUIRED=YES (p(I64), v(U8 *)); C-style (I64)p and (U8 *)v are parse errors
+SIZEOF_I64=8
+SIZEOF_BOOL=1
+SIZEOF_U8_PTR=8
+SIZEOF_I32=4
+BOOL_I64_INTERCHANGEABLE=NO (1 vs 8 bytes; all ABI values will use I64)
+POINTER_TO_I64_MECHANICALLY_WORKS=YES (round-trip matched, payload byte 3 readable)
+POINTER_TO_I64_ALLOWED_IN_ABI=NO (forbidden by design: no PolyC dereference or pointer arithmetic)
+#
+# 3. REPRESENTATION DECISION (to be confirmed by C2 object experiments)
+#
+CANDIDATE=CHECKED_INDEX_GENERATION_TOKEN (64-bit opaque token; NOT a raw pointer)
+TOKEN_FIELDS=magic[7:0] | domain[15:8] | generation[31:16] | kind[39:32] | index[47:40] | reserved[63:48]
+HOST_VALIDATES=magic, reserved, index range, slot liveness, kind, generation, domain, arena epoch
+POLYC_SEES=one I64 value and negative status codes only; no struct layout, no field offset, no pointer
+WHY_NOT_RAW_POINTER=A forged/raw address must be rejectable (HANDLE_NOT_ISSUED) without dereference; a
+  numeric I64 is not a portable pointer by assertion, and the task requires generation/domain checks.
+#
+# 4. C0 STALE-HANDLE RED
+#
+STALE_LOOKUP_STATUS=3 EXPECTED=3
+FORGED_LOOKUP_STATUS=2 EXPECTED=2
+PROCESS_EXIT=0 (no signal, no UB detector)
+#
+# 5. WHAT IS STILL UNPROVEN AT C0
+#
+REAL_AST_ACCESSOR_LINKAGE=UNPROVEN (planned C1/C2)
+REAL_LIST_MUTATION_LINKAGE=UNPROVEN (planned C1/C2)
+ARENA_EPOCH_INVALIDATION=UNPROVEN (planned C2)
+CROSS_FRAME_RECOVERY=FORBIDDEN; status-channel proof pending C2
+GRAPH_CUT_PROVEN_BY_EXECUTION=0 (no source-representative recompile yet)
+#
+C0_ABI_FEASIBILITY=EXPRESSIBLE_PENDING_C2_OBJECT_PROOF
