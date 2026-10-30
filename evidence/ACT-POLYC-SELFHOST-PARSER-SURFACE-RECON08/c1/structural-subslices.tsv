@@ -1,0 +1,57 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=structural-subslices
+#
+# THE STRUCTURAL CANDIDATE REGISTRY, RE-BOUND TO THE CURRENT SOURCE.
+#
+# Every range was MEASURED from the CURRENT live source (not copied
+# from RECON07's line numbers) and verified by TWO independent tools:
+#
+#   tools/quality/parser-surface-recon05-verify.HC IDENTITY
+#     DUPLICATE_ID=0 INVALID_RANGE=0 SOURCE_HASH_MISMATCH=0
+#     MISSING_FUNCTION=0 OVERLAPPING_IDENTITY=0 MALFORMED_FACT=0
+#   tools/quality/parser-surface-recon08-verify.HC ANCHOR
+#     ANCHOR_ROWS=23 ANCHOR_OK=23 SOURCE_HASH_MISMATCH=0
+#     INVALID_RANGE=0 MISSING_SOURCE=0
+#
+# The MUTABLE_STATE_TOKEN column is the token the candidate's decision
+# is claimed NOT to depend on; the DEPENDS mode of the recon05 tool
+# searches the LIVE source (and the host control TU transitively) for
+# it.  The DEPENDS verdicts are in c1/transitive-dependencies.tsv.
+#
+# Schema: candidate_id <TAB> function <TAB> source_file <TAB>
+#         source_start <TAB> source_end <TAB> source_sha256
+#         <TAB> mutable_state_token <TAB> depends_verdict
+#         <TAB> dependency_site <TAB> class <TAB> decision
+#         <TAB> status <TAB> reason
+#
+SUB-001	parseSwitchArmTerminates	src/parser.c	1517	1545	32d32b18c390806ad75b18c41074e19b7fbe699abca6707caa93d35a313c58d8	symbol_table	SEE_DEPENDS		STRUCTURAL	SWITCH_ARM_TERMINATION	MIGRATED	Migrated to PolyC as BootstrapSwitchArmTerminates in SLICE06. The live C decision body is compiled OUT of the production object (c0/eight-authorities-object-proof.tsv). NOT a remaining legacy-C authority.
+SUB-004	parseStatement	src/parser.c	1864	1877	cd138cc52588fe48c2eab37421b4e25abbacd7ea10491bc696a1acab9a66d7e0	symbol_table	SEE_DEPENDS		STRUCTURAL	STATEMENT_DISPATCH	ELIGIBLE_CANDIDATE	The keyword-to-statement-constructor dispatch: if (tok->tk_type == TK_KEYWORD) switch (tok->i64) over the KW_* enum. The decision maps ONE bounded token pair onto ONE bounded statement-constructor SELECTOR; the 12 constructors are the dispatch TARGETS, not calls made BY the decision. The host AST, the token cursor, the recovery state and the diagnostics stay on the C side.
+SUB-005	parseDeclOrStatement	src/parser.c	2016	2025	b507b06d9a6e0ca6d45a79e7ed409c6280f948a0ab7b5b6587ae5756ae3f618f	symbol_table	SEE_DEPENDS		STRUCTURAL	DECL_OR_STATEMENT_ROUTING	INELIGIBLE	The decision calls cctrlIsKeyword(cc,tok->start,tok->len), which resolves through cctrlGetKeyWord(cc,...) into the MUTABLE cc->symbol_table, cc->clsdefs and cc->uniondefs. The transitive dependence is source-bound and MEASURED (DETECTOR=MUTABLE_HOST_STATE_DEPENDENCE, DEPENDENCE_SITE=TRANSITIVE_THROUGH_A_CALLEE). The projection is NOT bounded.
+SUB-002	parseDefaultArmTerminates	src/parser.c	1736	1738	dc43f25e38972a986a53a1fca25568ab95c187ce65524fc5b035a62b7223bcc2	symbol_table	SEE_DEPENDS		STRUCTURAL	DEFAULT_ARM_TERMINATION	MIGRATED	Migrated to PolyC as BootstrapDefaultArmTerminates in SLICE08. The live C decision body is compiled OUT of the production object. NOT a remaining legacy-C authority.
+SUB-006	parseCompoundStatementInternal	src/parser.c	2117	2186	b74ca96b9adb5fe9e7e4f0fe2dab26bdff812b624e248324ed7cafe544cfa3cd	current_recovery	SEE_DEPENDS		STRUCTURAL	RECOVERY_CHECKPOINT	INELIGIBLE	Declares jmp_buf stmt_recovery, SAVES cc->current_recovery into outer_recovery, OVERWRITES cc->current_recovery and calls setjmp(stmt_recovery). It OWNS setjmp and WRITES the recovery state. A whole-region property, not a bounded scalar decision.
+SUB-007	parseCompoundStatementInternal	src/parser.c	2258	2291	8ee8e90cbfb6e234f8c9ea5790b3158b6ee0caa3d639027c6ef535e8890b8eb9	current_recovery	SEE_DEPENDS		STRUCTURAL	COMPOUND_BODY_LOOP	INELIGIBLE	Reads and writes the host AST body list, restores cc->current_recovery, and drives the token cursor. It REQUIRES nonlocal recovery and performs host graph writes.
+SUB-008	parseStatement	src/parser.c	1853	2141	8d6ad5cdd76199be0c4ff2b6ad339f4bdfdc481b7eb2ba9bf6a735f1af87ac3c	current_recovery	SEE_DEPENDS		STRUCTURAL	WHOLE_STATEMENT_PARSER	INELIGIBLE	The WHOLE-FUNCTION parseStatement. Owns the recovery checkpoint interaction, drives the token cursor, constructs every Ast node and calls the statement constructor callbacks. Whole-function ineligibility does NOT conceal SUB-004, which is a bounded independent sub-decision.
+SUB-009	parseExpr	src/prslib.c	1402	1537	05a7838ed407ece6a831065af4a622173b95614746b9000a64032a7ce705e2d2	current_recovery	SEE_DEPENDS		STRUCTURAL	WHOLE_EXPRESSION_LOOP	INELIGIBLE	The WHOLE-FUNCTION parseExpr. A recursive descent loop over the token cursor that builds the expression AST and owns the recovery state.
+SUB-010	astStmtFallsThrough	src/parser.c	2336	2571	79d4433e057bd04446f504ad46c1dc010e9e7c2f13dd66c2ab18dda6007c89e0	symbol_table	SEE_DEPENDS		STRUCTURAL	CONTROL_FLOW_FALLTHROUGH	INELIGIBLE	The recursive flow walk over a host Ast node. It reads the node graph and recurses over the host AST children. A whole-function blocker.
+SUB-011	astStmtHasBreak	src/parser.c	2311	2529	6b416c53e4345eb9e70bbea55ba17586e3849ad2d62335334df84ba64e20b8ea	symbol_table	SEE_DEPENDS		STRUCTURAL	CONTROL_FLOW_BREAK	INELIGIBLE	The recursive flow walk over a host Ast node. It reads the node graph and recurses over the host AST children. A whole-function blocker.
+SUB-012	astIsConstTrueCond	src/parser.c	2303	2502	6dce7f2b5cbe1246b3290fd844dfb648aeda2426b84c9960f0357290499899ae	symbol_table	SEE_DEPENDS		STRUCTURAL	CONST_TRUE_LOOP_COND	INELIGIBLE	The recursive flow walk over a host Ast node. It reads the node graph and recurses over the host AST children. A whole-function blocker.
+#
+# --- THE POPULATION ACCOUNTING ---
+#
+STRUCTURAL_ROWS=11
+ELIGIBLE_STRUCTURAL=1
+MIGRATED_STRUCTURAL=3
+INELIGIBLE_STRUCTURAL=7
+#
+# NO candidate ID was invented, renumbered or dropped.  Every historical
+# structural ID that RECON07 froze is present.  SUB-003 is recorded in
+# c1/scalar-and-new-candidates.tsv because its production site is
+# now split between the factored helper and the call site.
+#
+# The SUB-004 row is a CANDIDATE, not a verdict: it is the only
+# structural candidate whose region is BOUNDED.  Whether it is
+# SELECTED is decided in C2, by an executed real-compiler causal
+# experiment, not here.
+#
+STRUCTURAL_SUBSLICES_STATUS=PASS

@@ -1,0 +1,72 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=census-recon07-set-differences
+#
+# THE CENSUS RECONCILIATION AGAINST RECON07, BY EXPLICIT MEASURED SET
+# DIFFERENCES.
+#
+# RECON07 reported 272 live function rows.  The current census reports
+# 274.  The DIFFERENCE IS DERIVED, NOT ASSUMED: three explicit sets
+# are computed and their sizes are reported.  No total is obtained by
+# subtraction from a claimed number.
+#
+# The stable identity key is (file, function_name).  The change
+# predicate for a surviving row is (decl_line, body_line, sha256).
+#
+# --- THE POPULATION MEASUREMENTS ---
+#
+RECON07_CENSUS_ROWS=272
+RECON08_CENSUS_ROWS=274
+RECON07_SOURCE=evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON07/c1/live-functions.tsv
+RECON08_SOURCE=evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08/c1/live-function-census.tsv
+#
+# --- SET A: ADDED (present in RECON08, absent from RECON07) ---
+#
+set	count	rows
+ADDED	2	src/parser.c	ParserLegacyDefaultArmTerminatesOracle
+ADDED	2	src/parser.c	parseDefaultArmTerminates
+#
+# Both ADDED rows are the SLICE08 MIGRATION'S OWN support functions:
+# the factored-out decision and its object-level legacy oracle.  The
+# DECISION is SUB-002 (already PolyC-owned); the ORACLE is a
+# test-only reachability adapter, not a production semantic
+# authority.  NEITHER IS A NEW CANDIDATE.
+#
+ADDED_ROWS_ARE_SLICE08_SUPPORT_FUNCTIONS=YES
+ADDED_ROWS_ARE_NEW_CANDIDATES=NO
+#
+# --- SET B: REMOVED (present in RECON07, absent from RECON08) ---
+#
+set	count	rows
+REMOVED	0	(none)
+#
+REMOVED_ROWS=0
+#
+# --- SET C: CHANGED (same identity key, different change predicate) ---
+#
+set	count	note
+CHANGED	20	all in src/parser.c; shifted by the SLICE08 factoring
+#
+# Of those 20, TWO (parseToAst, parseToplevelDef) carry the SAME
+# sha256 as in RECON07: their BYTES are unchanged and only their LINE
+# NUMBERS moved.  The other 18 have a different sha256 because the
+# SLICE08 factoring edited their bodies or their line offsets.
+#
+CHANGED_ROWS_WITH_IDENTICAL_SHA256=2
+CHANGED_ROWS_WITH_DIFFERENT_SHA256=18
+CHANGED_ROWS_OUTSIDE_SRC_PARSER_C=0
+#
+# --- THE CANDIDATE-LEVEL CONSEQUENCE ---
+#
+# NO historical candidate disappeared.  NO historical candidate ID was
+# renumbered.  The line-number shift affects ONLY the src/parser.c
+# candidates, and every one of them is RE-BOUND to its CURRENT range
+# and CURRENT sha256 in this ACT's own identity table (see
+# c1/source-anchor-and-phase-hashes.tsv).  No RECON07 line number is
+# reused as if it were still current.
+#
+HISTORICAL_CANDIDATES_DISAPPEARED=0
+HISTORICAL_CANDIDATE_IDS_RENUMBERED=0
+CANDIDATE_RANGE_REBINDING_REQUIRED=YES (all src/parser.c candidates)
+#
+CENSUS_RECONCILIATION_STATUS=PASS

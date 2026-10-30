@@ -1,0 +1,100 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=independent-census-verification
+#
+# THE INDEPENDENT VERIFICATION OF THE CENSUS AND OF EVERY CANDIDATE
+# IDENTITY.
+#
+# TWO INDEPENDENT VERIFIERS, WITH DIFFERENT ALGORITHMS, AGREE ON EVERY
+# ROW:
+#
+#   A. tools/quality/parser-surface-recon05-verify.HC (READ-ONLY,
+#      UNMODIFIED).  Its CENSUS mode discovers the live functions by
+#      walking the source bytes; its IDENTITY mode recomputes each
+#      candidate's range SHA-256 from the bytes and checks the range
+#      against the LIVE FUNCTION CENSUS it computed itself.
+#
+#   B. tools/quality/parser-surface-recon08-verify.HC (this ACT's NEW
+#      PolyC verifier).  Its ANCHOR mode has its OWN SHA-256
+#      implementation and its OWN line-offset table, and recomputes
+#      each candidate's range digest from the live bytes independently
+#      of verifier A.
+#
+# Neither verifier reads the other's output.  Neither verifier's
+# eligibility or ranking output is used here: this file is about the
+# SOURCE IDENTITY only.
+#
+# --- A: THE LIVE CENSUS ---
+#
+COMMAND=./build/recon08/parser-surface-recon05-verify CENSUS \
+#             <out.tsv> src/parser.c src/prslib.c src/prsutil.c src/ast.c
+CENSUS_FILES=4
+CENSUS_FUNCTIONS=274
+STATUS=PASS
+#
+# --- B: THE CANDIDATE IDENTITY TABLE, VERIFIED BY A ---
+#
+COMMAND=./build/recon08/parser-surface-recon05-verify IDENTITY \
+#             <identity.tsv> src/parser.c src/prslib.c src/prsutil.c src/ast.c
+IDENTITY_ROWS=24
+DUPLICATE_ID=0
+INVALID_RANGE=0
+SOURCE_HASH_MISMATCH=0
+MISSING_FUNCTION=0
+OVERLAPPING_IDENTITY=0
+MALFORMED_FACT=0
+STATUS=PASS
+#
+# --- B: THE SAME TABLE, VERIFIED BY B ---
+#
+COMMAND=./build/recon08/parser-surface-recon08-verify ANCHOR \
+#             <identity.tsv> src/parser.c src/prslib.c src/prsutil.c src/ast.c
+ANCHOR_ROWS=24
+ANCHOR_OK=24
+SOURCE_HASH_MISMATCH=0
+INVALID_RANGE=0
+MISSING_SOURCE=0
+STATUS=PASS
+#
+# --- THE SET DIFFERENCES, EXPLICITLY ---
+#
+# Every candidate's SEMANTIC ANCHOR (file, function_name) must exist
+# in the live census.  The comparison is over the (file, name) key.
+#
+CHECK	COUNT	RESULT
+CENSUS_FUNCTION_ROWS	274	-
+IDENTITY_ROWS	24	-
+ANCHORS_RESOLVING_IN_THE_CENSUS	24	24
+ANCHORS_MISSING_FROM_THE_CENSUS	0	0
+#
+MISSING=0
+EXTRA=0
+DUPLICATE=0
+UNKNOWN=0
+OVERLAP=0
+OUT_OF_RANGE=0
+#
+# The 253 census functions that are NOT candidate anchors are ordinary
+# production functions that carry no separately-migratable bounded
+# decision.  Their presence is NOT a discrepancy: the census is the
+# complete live surface, and the candidate registry is the subset that
+# carries a decidable authority.
+#
+# --- THE DETECTOR SENSITIVITY, PROVEN ---
+#
+# Verifier B's ANCHOR mode is NOT VACUOUS.  A deliberately corrupted
+# identity table (one candidate's claimed digest replaced with the
+# POST-C2 digest of a DIFFERENT phase's byte range) is REJECTED:
+#
+# DETECTOR=SOURCE_HASH_MISMATCH
+# CANDIDATE_ID=SUB-001
+# FILE=src/parser.c
+# RANGE=1517..1545
+# EXPECTED_SHA256=a9a33ff1c3993560f5504582ec372c3f64573caca630e8cda32f58755bbd0fea
+# ACTUAL_SHA256=32d32b18c390806ad75b18c41074e19b7fbe699abca6707caa93d35a313c58d8
+#
+# This is the exact RED-2 condition that the canonical checker and the
+# RECON07 recomputer ACCEPT SILENTLY, and it is the reason this ACT
+# needed its own source-bound verifier.
+#
+INDEPENDENT_CENSUS_VERIFICATION_STATUS=PASS

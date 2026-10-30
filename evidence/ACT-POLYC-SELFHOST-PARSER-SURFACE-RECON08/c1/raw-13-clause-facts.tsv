@@ -1,0 +1,68 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=raw-13-clause-facts
+#
+# THE RAW 13-CLAUSE FACTS FOR THE C1 CANDIDATE POPULATION.
+#
+# These are RAW FACTS: the eligibility verdict is NOT authored here.
+# The canonical 13-clause checker and the independent PolyC verifier
+# each COMPUTE the verdict from this table.  The schema is the
+# canonical checker's own 20-field schema, so the table can be fed to
+# the unmodified canonical tool without transformation.
+#
+# THE FACTS ARE RE-DERIVED FROM THE CURRENT SOURCE.  They are NOT
+# copied from RECON07's table: RECON07's table still describes the
+# PRE-SLICE08 candidate population, in which SUB-001, SUB-002 and
+# SUB-003 were live legacy-C authorities and SUB-004 was the
+# provisional leader.  After SLICE08, SUB-001, SUB-002 and SUB-003
+# are ALREADY SELF-HOSTED, so their clause 02 bit is 0.
+#
+# Schema (the canonical checker's 20 fields):
+#   01 candidate_id          08 already_selfhosted  15 parser_callback_count
+#   02 function_name         09 r0                  16 semantic_callback_count
+#   03 source_file           10 owns_setjmp         17 deterministic_projection
+#   04 source_start          11 writes_current_recovery
+#   05 source_end            12 requires_nonlocal_recovery
+#   06 candidate_kind        13 host_graph_writes   18 production_delegation_feasible
+#   07 semantic_authority    14 pointer_identity_operations
+#                            19 production_reachable
+#                            20 exclusion_reason
+#
+SUB-001	parseSwitchArmTerminates	src/parser.c	1517	1545	AST_PROJECTION_PRIMITIVE	NO	YES	0	NO	NO	NO	0	0	0	0	YES	YES	YES	ALREADY_SELFHOSTED_BY_BootstrapSwitchArmTerminates
+SUB-002	parseDefaultArmTerminates	src/parser.c	1736	1738	AST_PROJECTION_PRIMITIVE	NO	YES	0	NO	NO	NO	0	0	0	0	YES	YES	YES	ALREADY_SELFHOSTED_BY_BootstrapDefaultArmTerminates
+SUB-003	parseCompoundBlockAppendsStatement	src/parser.c	2067	2100	AST_PROJECTION_PRIMITIVE	NO	YES	0	NO	NO	NO	0	0	0	0	YES	YES	YES	ALREADY_SELFHOSTED_BY_BootstrapCompoundBlockAppendsStatement
+SUB-004	parseStatement	src/parser.c	1864	1877	TOKEN_CLASSIFIER	YES	NO	1	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+SUB-005	parseDeclOrStatement	src/parser.c	2016	2025	TOKEN_CLASSIFIER	YES	NO	2	NO	NO	NO	0	0	0	0	NO	NO	YES	TRANSITIVELY_DEPENDS_ON_MUTABLE_cc_symbol_table_clsdefs_uniondefs
+SUB-006	parseCompoundStatementInternal	src/parser.c	2117	2186	AST_PROJECTION_PRIMITIVE	YES	NO	2	YES	YES	NO	0	0	0	0	NO	NO	YES	OWNS_SETJMP_AND_WRITES_RECOVERY
+SUB-007	parseCompoundStatementInternal	src/parser.c	2258	2291	AST_PROJECTION_PRIMITIVE	YES	NO	2	NO	YES	YES	1	0	0	0	NO	NO	YES	RECOVERY_AND_HOST_GRAPH_OWNERSHIP
+SUB-008	parseStatement	src/parser.c	1853	2141	AST_PROJECTION_PRIMITIVE	YES	NO	3	YES	YES	YES	14	0	0	0	NO	NO	YES	WHOLE_FUNCTION_RECOVERY_AND_CALLBACK_OWNERSHIP
+SUB-009	parseExpr	src/prslib.c	1402	1537	AST_PROJECTION_PRIMITIVE	YES	NO	3	NO	YES	YES	6	0	0	0	NO	NO	YES	WHOLE_FUNCTION_RECOVERY_AND_CALLBACK_OWNERSHIP
+SUB-010	astStmtFallsThrough	src/parser.c	2336	2571	AST_PROJECTION_PRIMITIVE	YES	NO	3	NO	NO	NO	0	0	0	0	NO	NO	YES	RECURSIVE_HOST_AST_GRAPH_WALK
+SUB-011	astStmtHasBreak	src/parser.c	2311	2529	AST_PROJECTION_PRIMITIVE	YES	NO	3	NO	NO	NO	0	0	0	0	NO	NO	YES	RECURSIVE_HOST_AST_GRAPH_WALK
+SUB-012	astIsConstTrueCond	src/parser.c	2303	2502	AST_PROJECTION_PRIMITIVE	YES	NO	3	NO	NO	NO	0	0	0	0	NO	NO	YES	RECURSIVE_HOST_AST_GRAPH_WALK
+CAND-018	parseCompoundAssign	src/prslib.c	1328	1348	OPERATOR_CLASSIFIER	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-021	astBinOpToTokenPunct	src/prslib.c	1352	1375	OPERATOR_CLASSIFIER	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-022	parseCountPrintfFormatSpecs	src/prslib.c	760	792	FORMAT_SPEC_COUNTER	YES	NO	1	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-023	parseFormatArgIdx	src/prslib.c	798	810	FORMAT_FUNCTION_TABLE	YES	NO	1	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-025	astIsAssignment	src/ast.c	943	964	OPERATOR_CLASSIFIER	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-026	astIsValidPointerOp	src/ast.c	974	990	OPERATOR_CLASSIFIER	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-030	parseIsClassOrUnion	src/prsutil.c	22	25	TYPE_MODIFIER_PRIMITIVE	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-036	astIsBinCmp	src/ast.c	992	1017	OPERATOR_CLASSIFIER	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-037	astIsRangeOperator	src/ast.c	2348	2358	OPERATOR_CLASSIFIER	YES	NO	0	NO	NO	NO	0	0	0	0	YES	YES	YES	-
+CAND-038	astNormaliseFunctionName	src/ast.c	931	941	AST_PROJECTION_PRIMITIVE	YES	NO	2	NO	NO	NO	0	0	0	0	NO	NO	YES	UNBOUNDED_HOST_STRING_INPUT_AND_NEW_HOST_STRING_OUTPUT
+CAND-039	createFunctionLevelGotoLabel	src/parser.c	1847	1860	AST_PROJECTION_PRIMITIVE	YES	NO	2	NO	NO	NO	0	0	0	0	NO	NO	YES	HOST_SCOPE_AND_NEW_HOST_STRING_OUTPUT
+CAND-040	asmTextHasReturn	src/parser.c	2384	2415	TOKEN_CLASSIFIER	YES	NO	2	NO	NO	NO	0	0	0	0	NO	NO	YES	OPAQUE_UNBOUNDED_HOST_BUFFER
+#
+# --- THE ACCOUNTING ---
+#
+# TOTAL=24
+# MIGRATED_ALREADY_SELFHOSTED=3
+# ELIGIBLE_CANDIDATE_ROWS=10
+# INELIGIBLE_ROWS=10
+#
+# The ELIGIBLE_CANDIDATE_ROWS count of 10 is SUB-004 plus the nine
+# scalars.  It is NOT an eligibility VERDICT: the verdict is computed
+# by the canonical checker and by the independent PolyC verifier in C2,
+# and both must agree with each other and with these raw facts.
+#
+# RAW_13_CLAUSE_FACTS_STATUS=PASS

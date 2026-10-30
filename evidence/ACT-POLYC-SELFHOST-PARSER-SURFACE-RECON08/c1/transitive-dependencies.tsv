@@ -1,0 +1,59 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=transitive-dependencies
+#
+# THE TRANSITIVE MUTABLE-HOST-STATE DEPENDENCE INVENTORY.
+#
+# The DEPENDS mode of tools/quality/parser-surface-recon05-verify.HC
+# (used READ-ONLY, UNMODIFIED) extracts the LIVE source bytes of each
+# candidate's ENCLOSING FUNCTION and searches them for the bound
+# mutable-state token.  It ALSO consults the host control TU, because
+# a decision can reach the mutable host state through a callee that
+# lives OUTSIDE the parser census set.
+#
+# COMMAND=./build/recon08/parser-surface-recon05-verify DEPENDS \
+#             <identity.tsv> src/parser.c src/prslib.c src/prsutil.c src/ast.c
+# DEPENDS_CHECKED=23
+# MUTABLE_HOST_STATE_DEPENDENCE=5
+# NO_MUTABLE_HOST_STATE_DEPENDENCE=18
+# UNBOUND_DEPENDENCY=0
+# STATUS=FAIL
+#
+# The nonzero STATUS is the EXPECTED outcome: five candidates DO
+# depend on mutable host state.  The tool's exit is the honest
+# signal, and the per-candidate verdicts are the evidence.
+#
+# Schema: candidate_id <TAB> token <TAB> verdict <TAB> site
+#         <TAB> enclosing_range <TAB> dependency_chain
+#
+SUB-005	symbol_table	MUTABLE_HOST_STATE_DEPENDENCE	TRANSITIVE_THROUGH_A_CALLEE	src/parser.c 2016..2025	parseDeclOrStatement -> cctrlIsKeyword(cc,tok->start,tok->len) -> cctrlGetKeyWord(cc,name,len) -> mapGetLen(cc->symbol_table,name,len) -> mapGetLen(cc->clsdefs,name,len) -> mapGetLen(cc->uniondefs,name,len).  All three maps are MUTABLE host maps.
+SUB-006	current_recovery	MUTABLE_HOST_STATE_DEPENDENCE	DIRECT_IN_THE_CANDIDATE_RANGE	src/parser.c 2117..2186	Declares jmp_buf stmt_recovery; SAVES cc->current_recovery into outer_recovery; OVERWRITES cc->current_recovery with &stmt_recovery; calls setjmp(stmt_recovery).  It OWNS setjmp and WRITES the recovery state.
+SUB-007	current_recovery	MUTABLE_HOST_STATE_DEPENDENCE	DIRECT_IN_THE_CANDIDATE_RANGE	src/parser.c 2258..2291	Reads and writes the host AST body list (listAppend(body->stms,stmt)); restores cc->current_recovery = outer_recovery; drives the token cursor.  REQUIRES nonlocal recovery and performs host graph writes.
+SUB-008	current_recovery	MUTABLE_HOST_STATE_DEPENDENCE	DIRECT_IN_THE_CANDIDATE_RANGE	src/parser.c 1853..2141	The WHOLE-FUNCTION parseStatement.  Owns the recovery checkpoint interaction, drives the token cursor, constructs every Ast node and calls the statement constructor callbacks.
+SUB-009	current_recovery	MUTABLE_HOST_STATE_DEPENDENCE	TRANSITIVE_THROUGH_A_CALLEE	src/prslib.c 1402..1537	The WHOLE-FUNCTION parseExpr.  A recursive descent loop over the token cursor that builds the expression AST and owns the recovery state.
+#
+# The eighteen candidates with NO mutable-host-state dependence are
+# SUB-001, SUB-002, SUB-003, SUB-004, SUB-010, SUB-011, SUB-012,
+# CAND-018, CAND-021, CAND-022, CAND-023, CAND-025, CAND-026,
+# CAND-030, CAND-036, CAND-037, CAND-038, CAND-040.
+#
+# NO_MUTABLE_HOST_STATE_DEPENDENCE DOES NOT MEAN BOUNDED.  Three of
+# those eighteen are excluded on a DIFFERENT ground: CAND-038,
+# CAND-039 and CAND-040 have an unbounded HOST STRING input and/or a
+# NEW HOST STRING output.  "The decision reads no mutable symbol
+# table" is NOT the same claim as "the decision has a bounded
+# projection", and the registry keeps them separate.
+#
+MUTABLE_HOST_STATE_DEPENDENCE_COUNT=5
+NO_MUTABLE_HOST_STATE_DEPENDENCE_COUNT=18
+UNBOUND_DEPENDENCY_COUNT=0
+#
+# SUB-005's dependence is the ONLY one that is TRANSITIVE through a
+# callee OUTSIDE the census set, and it is therefore the one that a
+# "read the visible signature" judgement would most easily miss: the
+# decision's own signature takes only a Lexeme pointer and a length.
+#
+SUB_005_REMAINS_INELIGIBLE=YES
+SUB_005_EXCLUSION_REASON=TRANSITIVELY_DEPENDS_ON_MUTABLE_cc_symbol_table_clsdefs_uniondefs
+#
+TRANSITIVE_DEPENDENCIES_STATUS=PASS

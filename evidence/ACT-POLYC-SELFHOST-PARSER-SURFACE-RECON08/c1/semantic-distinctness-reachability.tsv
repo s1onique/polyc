@@ -1,0 +1,68 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=semantic-distinctness-reachability
+#
+# REACHABILITY AND SEMANTIC DISTINCTNESS, PER CANDIDATE.
+#
+# REACHABILITY is a SOURCE-BOUND fact: the candidate's decision site
+# is inside a function that is reachable from the production parse
+# entry point.  It is NOT a claim that the candidate is a good
+# migration target.
+#
+# SEMANTIC DISTINCTNESS is a separate fact from REACHABILITY and from
+# ELIGIBILITY.  Two sites can share a boolean rule and still be
+# semantically DISTINCT decision sites: SUB-001 (the switch-case arm
+# termination) and SUB-002 (the default-arm termination) were both
+# shown by the predecessor programme to be distinct, and both were
+# migrated.  Conversely, a candidate can be reachable and eligible and
+# still be UNOBSERVABLE: a mutation to it may not change any
+# compiler output.  Observability is decided in C2 by an executed
+# real-compiler experiment, NOT here.
+#
+# Schema: candidate_id <TAB> reachable <TAB> reach_root
+#         <TAB> decision_site <TAB> distinct_from <TAB> observability
+#
+SUB-001	YES	parseToAst	parseCaseLabel	switch-arm termination vs default-arm termination	OBSERVABLE (migrated and proven in SLICE06)
+SUB-002	YES	parseToAst	parseDefaultStatement	default-arm termination vs switch-arm termination	OBSERVABLE (migrated and proven in SLICE08)
+SUB-003	YES	parseToAst	parseCompoundStatementInternal	compound-block append vs compound-body loop	OBSERVABLE (migrated and proven in SLICE07)
+SUB-004	YES	parseToAst	parseStatement	keyword-to-constructor dispatch vs the whole statement parser	TO_BE_MEASURED_IN_C2
+SUB-005	YES	parseToAst	parseDeclOrStatement	decl-or-statement routing vs the keyword dispatch	OBSERVABLE but UNBOUNDED (mutable symbol table)
+SUB-006	YES	parseToAst	parseCompoundStatementInternal	recovery checkpoint vs the compound-body loop	OBSERVABLE but UNBOUNDED (owns setjmp)
+SUB-007	YES	parseToAst	parseCompoundStatementInternal	compound-body loop vs the recovery checkpoint	OBSERVABLE but UNBOUNDED (recovery + graph writes)
+SUB-008	YES	parseToAst	parseStatement	the whole statement parser vs its keyword dispatch	OBSERVABLE but UNBOUNDED (whole function)
+SUB-009	YES	parseToAst	parseExpr	the whole expression loop vs the operator classifiers	OBSERVABLE but UNBOUNDED (whole function)
+SUB-010	YES	parseToAst	astStmtFallsThrough	control-flow fallthrough vs control-flow break	OBSERVABLE but UNBOUNDED (recursive AST walk)
+SUB-011	YES	parseToAst	astStmtHasBreak	control-flow break vs control-flow fallthrough	OBSERVABLE but UNBOUNDED (recursive AST walk)
+SUB-012	YES	parseToAst	astIsConstTrueCond	const-true loop condition vs the other flow walks	OBSERVABLE but UNBOUNDED (recursive AST walk)
+CAND-018	YES	parseExpr	parseCompoundAssign	compound-assignment classifier vs the binary-op inverse map	TO_BE_MEASURED_IN_C2
+CAND-021	YES	parseCreateBinaryOp	astBinOpToTokenPunct	binary-op inverse map vs the compound-assignment classifier	TO_BE_MEASURED_IN_C2
+CAND-022	YES	parsePrintfLikeCall	parseCountPrintfFormatSpecs	format-spec counter vs the format-argument table	TO_BE_MEASURED_IN_C2
+CAND-023	YES	parsePrintfLikeCall	parseFormatArgIdx	format-argument table vs the format-spec counter	TO_BE_MEASURED_IN_C2
+CAND-025	YES	src/transpiler.c	astIsAssignment	assignment classifier vs the valid-pointer-op classifier	TO_BE_MEASURED_IN_C2
+CAND-026	YES	src/transpiler.c	astIsValidPointerOp	valid-pointer-op classifier vs the assignment classifier	TO_BE_MEASURED_IN_C2
+CAND-030	YES	src/parser.c src/prslib.c	parseIsClassOrUnion	class-or-union classifier vs the operator classifiers	TO_BE_MEASURED_IN_C2
+CAND-036	YES	src/transpiler.c	astIsBinCmp	binary-comparison classifier vs the range-operator classifier	TO_BE_MEASURED_IN_C2
+CAND-037	YES	src/ir.c src/x86.c	astIsRangeOperator	range-operator classifier vs the binary-comparison classifier	TO_BE_MEASURED_IN_C2
+CAND-038	YES	src/transpiler.c	astNormaliseFunctionName	function-name normalisation vs the goto-label composition	OBSERVABLE but UNBOUNDED (host string in, new host string out)
+CAND-039	YES	parseStatement	createFunctionLevelGotoLabel	goto-label composition vs the function-name normalisation	OBSERVABLE but UNBOUNDED (new host string out)
+CAND-040	YES	parseStatement	asmTextHasReturn	asm-has-return vs the goto-label composition	OBSERVABLE but UNBOUNDED (opaque host buffer)
+#
+REACHABLE_ROWS=24
+OBSERVABILITY_TO_BE_MEASURED=10
+OBSERVABLE_BUT_UNBOUNDED=11
+OBSERVABLE_AND_MIGRATED=3
+#
+# THE TEN candidates whose observability is DEFERRED to C2 are
+# exactly the ten ELIGIBLE candidates: SUB-004, CAND-018, CAND-021,
+# CAND-022, CAND-023, CAND-025, CAND-026, CAND-030, CAND-036 and
+# CAND-037.  Each is REACHED BY A REAL PRODUCTION CALL PATH (not an
+# oracle wrapper and not a fixture helper), and each carries a
+# DISTINCT semantic decision.
+#
+# "REACHABLE" is deliberately NOT conflated with "worth migrating".
+# CAND-022 and CAND-023 are classified by RECON07 as
+# DIAGNOSTICS-ONLY: they feed a diagnostic, not the emitted code.
+# That is a REASON TO RANK THEM LOWER, and their R0 dimension of 1
+# already does so; it is not a reason to declare them unreachable.
+#
+SEMANTIC_DISTINCTNESS_REACHABILITY_STATUS=PASS
