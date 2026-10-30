@@ -1,0 +1,17 @@
+family	handle_class	transition	trigger	new_state	allowed_operations	observable_status_on_violation
+Ast	OPAQUE_BORROW (host-owned; no transfer)	issue	host creates real Ast* and registers in a slot	LIVE_BORROW	kind/binop/child reads; release	-
+Ast	OPAQUE_BORROW	normal use	PolyC calls accessor on live token	LIVE_BORROW	reads only	-
+Ast	OPAQUE_BORROW	release	host marks slot dead, bumps generation	RELEASED	none (token re-issue uses the same index, new generation)	STALE_OR_RELEASED_HANDLE
+Ast	OPAQUE_BORROW	arena teardown	astMemoryRelease clears the static Ast arena	EXPIRED	none	EXPIRED_BORROW_OR_ARENA
+Ast	OPAQUE_BORROW	wrong kind	Ast token passed to a List operation	LIVE_BORROW	rejected before dereference	WRONG_HANDLE_KIND
+List	OPAQUE_BORROW	forged token	integer/pointer not issued by this table	UNISSUED	rejected before dereference	HANDLE_NOT_ISSUED
+List	OPAQUE_BORROW	issue	host listNew + register	LIVE_BORROW	len/at/push/set/release	-
+List	OPAQUE_BORROW	mutate	PolyC chooses, host applies listAppend/list replacement	LIVE_BORROW	len/at/push/set	-
+List	OPAQUE_BORROW	out-of-range set	idx >= count	LIVE_BORROW (unchanged)	rejected BEFORE mutation	ATOMICITY_OR_RANGE_FAILURE
+List	OPAQUE_BORROW	host error during push	injected allocation failure	LIVE_BORROW (unchanged)	no partial append	HOST_ERROR_PROPAGATED (negative)
+List	OPAQUE_BORROW	release twice	second release of the same token	RELEASED	rejected	DOUBLE_RELEASE
+Map	NO_HANDLE_YET	-	callback-bearing MapType not yet proven	-	none	BLOCKED_PENDING_CALLBACK_CONTRACT
+AoStr	NO_HANDLE_YET	-	no selected consumer; pool recycling unproven as a borrow contract	-	none	BLOCKED_PENDING_CONSUMER
+Cctrl	NO_HANDLE_YET	-	cross-frame longjmp recovery cannot cross PolyC frames	-	none	BLOCKED_PENDING_STATUS_CHANNEL
+Arena	OPAQUE_BORROW (host-owned)	issue	host arenaNew/arenaInit	LIVE	none selected (allocation transfer unproven)	-
+Arena	OPAQUE_BORROW	clear/reset/release	host calls arenaClear/arenaReset/arenaRelease	EXPIRED	none	EXPIRED_BORROW_OR_ARENA

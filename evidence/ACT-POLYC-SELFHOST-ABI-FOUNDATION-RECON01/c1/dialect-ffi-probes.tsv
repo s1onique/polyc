@@ -1,0 +1,11 @@
+probe_id	question	source	command	measured_result	conclusion
+DF-01	Does PolyC accept a C-style (void) parameter list?	c0/probe/sizes.HC (first attempt)	./hcc --install-dir=build/test-prefix -c sizes.HC -o sizes.o	error: Type `void` has not been declared (sizes.HC:2)	USE_EMPTY_PARAMETER_LIST
+DF-02	Does PolyC accept C-style casts (I64)p / (U8 *)v?	c0/probe/sizes.HC (first attempt)	same	error: Unexpected keyword: I64 / U8 while parsing unary expression	USE_POSTFIX_CASTS p(I64), v(U8 *)
+DF-03	Does the postfix-cast dialect compile and link with a C host?	c0/probe/sizes.HC + sizes_host.c	./hcc -c sizes.HC; cc sizes.o sizes_host.o -ltos -o sizes; ./sizes	POLYC_SIZEOF_1=8, 2=1, 3=8, 4=4; PACKED=8010804	EXPRESSIBLE
+DF-04	Can a 64-bit opaque token cross C->PolyC->C unchanged?	c0/probe/ffi_probe.HC + ffi_host.c	same recipe	PROBE_ECHO_IN=0xfedcba9876543210 OUT=0xfedcba9876543210 MATCH=1	TOKEN_WIDTH_64_PROVEN
+DF-05	Can a pointer value be carried through I64 without corruption?	c0/probe/sizes.HC	./sizes	PTR_ECHO_MATCH=1; I64_TO_PTR_MATCH=1 VALUE=3	MECHANICALLY_POSSIBLE_BUT_FORBIDDEN_IN_ABI
+DF-06	Is Bool interchangeable with I64 across the ABI?	c0/probe/sizes.HC	./sizes	sizeof(Bool)=1; sizeof(I64)=8	NO; all ABI values use I64
+DF-07	Can PolyC return Bool to C correctly?	c0/probe/ffi_probe.HC + ffi_host.c	./ffi_probe	PROBE_BOOL_TRUE=1 PROBE_BOOL_FALSE=0	BOOL_RETURN_WORKS_BUT_NOT_USED_IN_ABI
+DF-08	Can a released token be rejected without a dereference?	c0/probe/stale_fixture.c + src/list.c	cc ... && ./stale_fixture	STALE_LOOKUP_STATUS=3 EXPECTED=3 REJECTED=1	STALE_REJECTION_PROVEN
+DF-09	Can a forged token be rejected?	same	same	FORGED_LOOKUP_STATUS=2 EXPECTED=2 REJECTED=1	FORGERY_REJECTION_PROVEN
+DF-10	Does PolyC permit direct struct field access through a cast pointer?	not attempted in the ABI; C0/C1 source scan	-	No PolyC tool parses or includes src C struct headers	FORBIDDEN_BY_CONTRACT (AB-HD-09); verifier source scan enforces it

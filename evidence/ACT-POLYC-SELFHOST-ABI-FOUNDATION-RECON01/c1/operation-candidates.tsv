@@ -1,0 +1,15 @@
+op_id	family	operation	candidate_abi_signature	who_decides	host_action	externally_observable	selected_for_c2
+OP-01	Ast	read node kind	I64 AbiAstKind(I64 ast)	PolyC reads, host exposes	validate token, return ast->kind (256..299) or negative status	kind value printed by host oracle	YES
+OP-02	Ast	read binop discriminator	I64 AbiAstBinOp(I64 ast)	PolyC reads	validate kind==AST_BINOP, return ast->binop	value returned to PolyC	YES
+OP-03	Ast	read child kind	I64 AbiAstChildKind(I64 ast, I64 which)	PolyC reads	validate binop, index 0/1, return child->kind	child kind	YES
+OP-04	Ast	read literal child value	I64 AbiAstChildI64(I64 ast, I64 which)	PolyC reads	validate child kind==AST_LITERAL, return child->i64	literal value	YES
+OP-05	List	read length	I64 AbiListLen(I64 list)	PolyC reads	validate kind==LIST, return listCount	length	YES
+OP-06	List	read value at index	I64 AbiListAt(I64 list, I64 idx)	PolyC reads	validate, walk to idx, return (I64)value or negative status	value	YES
+OP-07	List	append chosen by PolyC	I64 AbiListPush(I64 list, I64 value)	PolyC decides bounded append; host applies	validate kind/live/generation, listAppend, optional injected OOM	new length/value read back	YES
+OP-08	List	replace in range	I64 AbiListSet(I64 list, I64 idx, I64 value)	PolyC checks range then asks	validate, check idx<count BEFORE mutation, replace	old/new value	YES
+OP-09	AoStr	read length	I64 AbiAoStrLen(I64 s)	PolyC reads	validate kind==AOSTR, return s->len	length	NO_HANDLE_YET (no consumer selected; keep for later)
+OP-10	Map	read size / get by int key	I64 AbiMapSize(I64 m); I64 AbiMapGetI64(I64 m, I64 k)	PolyC reads	validate kind==MAP, use mapGetInt	value	NO_HANDLE_YET (key/value type object is caller-supplied; not proven)
+OP-11	Cctrl	read diagnostic count	I64 AbiCctrlDiagCount(I64 cc)	PolyC reads	validate kind==CCTRL	value	NO_HANDLE_YET (recovery semantics first)
+OP-12	Arena	allocate borrow	I64 AbiArenaAlloc(I64 arena, I64 size)	host owns arena	validate kind/epoch, bump allocate	token	NO_HANDLE_YET (allocation ownership not transferred)
+OP-13	Ast	arena epoch invalidation	I64 AbiAstEpoch(I64 ast)	host tracks epoch	compare slot epoch to current ast arena epoch; return EXPIRED_BORROW_OR_ARENA	status	YES (negative witness)
+OP-14	Ast/List	release	I64 AbiRelease(I64 handle)	host owns lifetime	mark dead, bump generation	subsequent status	YES
