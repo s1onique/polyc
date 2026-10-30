@@ -7631,3 +7631,50 @@ parser-slice08-evidence-correction01-verify-selftest: build/parser-slice08-evide
 parser-slice08-evidence-correction01-verify-join: build/parser-slice08-evidence-correction01-verify
 	./build/parser-slice08-evidence-correction01-verify JOIN \
 		evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON07 \
+
+# ==================================================================
+# ACT-POLYC-SELFHOST-WHOLE-COMPILER-AUTHORITY-CENSUS01
+#
+# The whole-compiler census verifier. It is a PolyC tool compiled by
+# the production compiler and linked against the in-tree libtos. Its
+# outputs (SCC, condensation, bundles, forecast) are written into the
+# ACT's c2 directory. Everything here is additive and census-only.
+# ==================================================================
+
+CENSUS01_DIR  = evidence/ACT-POLYC-SELFHOST-WHOLE-COMPILER-AUTHORITY-CENSUS01
+CENSUS01_C1   = $(CENSUS01_DIR)/c1
+CENSUS01_C2   = $(CENSUS01_DIR)/c2
+CENSUS01_TOOL = build/whole-compiler-census01-verify
+
+$(CENSUS01_TOOL).o: tools/quality/whole-compiler-census01-verify.HC ./hcc | test-prefix-install
+	./hcc --install-dir=$(TEST_PREFIX) -c $< -o $@
+
+$(CENSUS01_TOOL): $(CENSUS01_TOOL).o
+	cc $< -L$(TEST_PREFIX)/lib -ltos -o $@
+
+census01-selftest: $(CENSUS01_TOOL)
+	./$(CENSUS01_TOOL) SELFTEST
+
+census01-schema: $(CENSUS01_TOOL)
+	./$(CENSUS01_TOOL) SCHEMA $(CENSUS01_C1)
+
+census01-graph: $(CENSUS01_TOOL)
+	./$(CENSUS01_TOOL) GRAPH $(CENSUS01_C1) $(CENSUS01_C2)
+
+census01-forecast: $(CENSUS01_TOOL)
+	./$(CENSUS01_TOOL) FORECAST $(CENSUS01_C1) $(CENSUS01_C2)
+
+census01-controls: $(CENSUS01_TOOL)
+	@for id in WC-IC-01 WC-IC-02 WC-IC-03 WC-IC-04 WC-IC-05 WC-IC-06 \
+	           WC-AU-01 WC-AU-02 WC-AU-03 WC-AU-04 WC-AU-05 \
+	           WC-DG-01 WC-DG-02 WC-DG-03 WC-DG-04 WC-DG-05 \
+	           WC-BS-01 WC-BS-02 WC-BS-03 WC-BS-04 \
+	           WC-FC-01 WC-FC-02 WC-FC-03 WC-FC-04; do \
+	  mkdir -p build/census01-controls/$$id; \
+	  ./$(CENSUS01_TOOL) CONTROL $$id $(CENSUS01_C1) build/census01-controls/$$id \
+	    | grep '^CONTROL='; \
+	done
+
+census01-all: census01-selftest census01-schema census01-graph census01-forecast census01-controls
+
+.PHONY: census01-selftest census01-schema census01-graph census01-forecast census01-controls census01-all

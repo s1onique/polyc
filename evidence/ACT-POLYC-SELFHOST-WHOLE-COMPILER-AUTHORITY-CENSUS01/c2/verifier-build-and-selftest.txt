@@ -1,0 +1,60 @@
+# ACT_ID=ACT-POLYC-SELFHOST-WHOLE-COMPILER-AUTHORITY-CENSUS01
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=verifier-build-and-selftest
+#
+# THE NEW POLYC VERIFIER: BUILD, SELFTEST, AND PRISTINE RUN.
+#
+COMMAND=./hcc --install-dir=build/test-prefix -c tools/quality/whole-compiler-census01-verify.HC -o build/census01-verify.o
+  compiled by the production PolyC compiler (./hcc)
+COMMAND=cc build/census01-verify.o -Lbuild/test-prefix/lib -ltos -o build/whole-compiler-census01-verify
+  linked against the in-tree libtos
+VERIFIER_SHA256=0076548e6340a8fa175410099d1882adb7122ccc782cca68632413121f4ccfd6
+TOOL_SOURCE_SHA256=be1ba329920605080727114a832e9a19daae798f6acdaa27ba5ac31f8b72809d
+TOOL_SOURCE_LINES=1784
+#
+COMMAND=./build/whole-compiler-census01-verify SELFTEST
+  SELFTEST_CASES=19 SELFTEST_FAIL=0
+  SELFTEST_STATUS=PASS
+#
+COMMAND=./build/whole-compiler-census01-verify SCHEMA evidence/ACT-.../c1
+  CHECK=authorities STATUS=BEGIN
+  AUTHORITY_ROWS=2233
+  CHECK=authorities STATUS=PASS
+  CHECK=semantic-coverage STATUS=BEGIN
+  COVERAGE_ROWS=2156 ENUMERATED=243 COARSE=1006 STRAIGHT=901 ADAPTERS=6
+  CHECK=semantic-coverage STATUS=PASS
+  CHECK=graph-nodes-edges STATUS=BEGIN
+  NODES=52 EDGES=238
+  CHECK=graph-nodes-edges STATUS=PASS
+  CHECK=link-closure STATUS=BEGIN
+  LINKED_C_TUS=46 LINK_INPUT_ROWS=68
+  CHECK=link-closure STATUS=PASS
+  CHECK=dormant-polyc STATUS=BEGIN
+  DORMANT_SITES=6
+  CHECK=dormant-polyc STATUS=PASS
+  CHECK=mandatory-edges STATUS=BEGIN
+  INCLUDE_FACTS=257 MANDATORY_EDGE_CHECKS=238
+  CHECK=mandatory-edges STATUS=PASS
+  CHECK=source-range-hashes STATUS=BEGIN
+  RANGE_HASH_JOINS=2218 FUNCTIONS_RAW=2156
+  CHECK=source-range-hashes STATUS=PASS
+  CHECK=polyc-authority STATUS=BEGIN
+  POLYC_AUTHORITY_ROWS=9 OBJECT_PROOF_ROWS=9
+  CHECK=polyc-authority STATUS=PASS
+  CHECK=unknown-edges STATUS=BEGIN
+  UNKNOWN_EDGES=4
+  CHECK=unknown-edges STATUS=PASS
+  CHECK=archive-members STATUS=BEGIN
+  ARCHIVE_MEMBERS=10 NOT_EXTRACTED=1
+  CHECK=archive-members STATUS=PASS
+  SCHEMA_CHECKS=20 DETECTORS_FIRED=0
+  SCHEMA_STATUS=PASS
+  CHECK=derived-artefacts STATUS=BEGIN
+  CHECK=derived-artefacts STATUS=SKIPPED
+  CHECK=bootstrap-blockers STATUS=BEGIN
+  CHECK=bootstrap-blockers STATUS=SKIPPED
+  CHECK=allowed-glue STATUS=BEGIN
+  CHECK=allowed-glue STATUS=SKIPPED
+  OVERALL_STATUS=PASS
+#
+VERIFIER_BUILD_AND_SELFTEST_STATUS=PASS
