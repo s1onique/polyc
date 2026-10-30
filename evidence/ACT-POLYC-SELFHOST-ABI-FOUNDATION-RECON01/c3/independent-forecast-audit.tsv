@@ -1,0 +1,18 @@
+item	independent_method	value	recorded_value	agreement	note
+AUTHORITY_ROWS	awk over c1/authorities.tsv owner_class	2233	2233	PASS	2218 C + 6 adapters + 9 PolyC
+C_AUTHORITY	awk owner_class	2218	2218	PASS	-
+C_MECHANICAL_ADAPTER	awk owner_class	6	6	PASS	historical B-1 counts these as decision sites
+POLYC_AUTHORITY	awk owner_class	9	9	PASS	already migrated
+BUNDLE_SITE_SUM	awk sum of c2/migration-bundles.tsv c_decision_sites	2233	2233	PASS	arithmetic identity with all authority rows
+B2_VENDORED_ROWS	lookup SCC-3 in c1/graph-nodes.tsv	88	88	PASS	outside compiler semantic boundary
+B3_MIGRATED_ROWS	lookup SCC-4 members	9	9	PASS	already-migrated PolyC authorities
+REMAINING_SEMANTIC	2218 - 88 (adapters and PolyC already outside C_AUTHORITY)	2130	2130	PASS	B-2 and B-3 excluded
+IMPLEMENTATION_ACTS_BASE	ceil(2130/12)	178	178	PASS	FA-04 base rate
+CORRECTION_ACTS_BASE	round(178*0.44)	78	78	PASS	FA-03 base rate
+SCENARIO_TOTAL_BASE	178+78+3 selection+2 integration+3 generation+2 shared+10 bootstrap+2 ABI	278	278	PASS	FI-06
+SCENARIO_TOTAL_LOW	ceil(2130/20)=107; +27 corrections; +2+3+2+3+2+2	148	148	PASS	FI-07
+SCENARIO_TOTAL_HIGH	ceil(2130/6)=355; +231 corrections; +5+8+6+3+3+3	614	614	PASS	FI-08
+HISTORICAL_M2	preserved, not recomputed	159/355/961	159/355/961	PASS	UNQUALIFIED_FORECAST_BASELINE
+M2_BELOW_100	low extreme comparison	148 > 100	NOT_SUPPORTED	PASS	no executed evidence for under 100
+ONE_DECISION_PER_ACT	field count	5 fields for a 6-column header	MALFORMED	PASS	historical modeling debt
+CRITICAL_PATH_EQ_SUM	compare forecast columns	4/4 milestones equal	UNPROVEN	PASS	historical modeling debt

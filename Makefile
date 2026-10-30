@@ -7706,3 +7706,16 @@ abi-foundation-recon01-selftest: abi-foundation-recon01-graph-selftest abi-found
 
 .PHONY: abi-foundation-recon01-graph-selftest abi-foundation-recon01-graph \
         abi-foundation-recon01-probe abi-foundation-recon01-selftest
+
+ABI_RECON01_VERIFY = build/abi-foundation-recon01/c2/verify
+
+$(ABI_RECON01_VERIFY).o: tools/quality/abi-foundation-recon01-verify.HC ./hcc | test-prefix-install
+	./hcc --install-dir=$(TEST_PREFIX) -c $< -o $@
+
+$(ABI_RECON01_VERIFY): $(ABI_RECON01_VERIFY).o
+	cc $< -L$(TEST_PREFIX)/lib -ltos -o $@
+
+abi-foundation-recon01-verify: $(ABI_RECON01_VERIFY)
+	./$(ABI_RECON01_VERIFY) VERIFY .
+
+.PHONY: abi-foundation-recon01-verify

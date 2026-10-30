@@ -1,0 +1,681 @@
+DATE=2026-10-30T22:33:52Z
+=== unit-test ===
+cmake -S ./src \
+		-B ./build/test-prefix-install-build \
+		-G 'Unix Makefiles' \
+		-DCMAKE_C_COMPILER=gcc \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_INSTALL_PREFIX=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/test-prefix \
+		-DCMAKE_C_FLAGS='-Wextra -Wall -Wpedantic' \
+		-DHCC_ENABLE_JIT=on \
+		-DHCC_ENABLE_LLVM=OFF \
+		-DHCC_USE_SELFHOST_PARSER_PADDING=ON \
+		-DPARSER_PADDING_OBJECT=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-padding-subject.o \
+		-DPARSER_PADDING_PRODUCER=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/host-stage0/hcc \
+		-DPARSER_PADDING_SOURCE=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/tools/bootstrap/selfhost-parser-padding.HC \
+		-DPARSER_PADDING_PREFIX=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/bootstrap-prefix \
+		-DHCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN=ON \
+		-DCONTROL_FLOW_TOKEN_OBJECT=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-control-flow-token-subject.o \
+		-DCONTROL_FLOW_TOKEN_PRODUCER=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/host-stage0/hcc \
+		-DCONTROL_FLOW_TOKEN_SOURCE=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/tools/bootstrap/selfhost-parser-control-flow-token.HC \
+		-DCONTROL_FLOW_TOKEN_PREFIX=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/bootstrap-prefix \
+		-DHCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE=ON \
+		-DOPERATOR_PRECEDENCE_OBJECT=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-operator-precedence-subject.o \
+		-DOPERATOR_PRECEDENCE_PRODUCER=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/host-stage0/hcc \
+		-DOPERATOR_PRECEDENCE_SOURCE=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/tools/bootstrap/selfhost-parser-operator-precedence.HC \
+		-DOPERATOR_PRECEDENCE_PREFIX=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/bootstrap-prefix \
+		-DHCC_USE_SELFHOST_PARSER_AST_BINOP=ON \
+		-DAST_TOKEN_MAP_OBJECT=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-ast-binop-subject.o \
+		-DAST_TOKEN_MAP_PRODUCER=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/host-stage0/hcc \
+		-DAST_TOKEN_MAP_SOURCE=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/tools/bootstrap/selfhost-parser-slice04.HC \
+		-DAST_TOKEN_MAP_PREFIX=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/bootstrap-prefix \
+		-DHCC_USE_SELFHOST_PARSER_AST_UNARY=ON \
+		-DAST_UNARY_TOKEN_MAP_OBJECT=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-ast-unary-subject.o \
+		-DAST_UNARY_TOKEN_MAP_PRODUCER=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/host-stage0/hcc \
+		-DAST_UNARY_TOKEN_MAP_SOURCE=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/tools/bootstrap/selfhost-parser-slice05.HC \
+		-DAST_UNARY_TOKEN_MAP_PREFIX=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/bootstrap-prefix \
+		-DHCC_USE_SELFHOST_PARSER_SWITCH_ARM=ON \
+		-DSWITCH_ARM_TOKEN_MAP_OBJECT=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-switch-arm-subject.o \
+		-DSWITCH_ARM_TOKEN_MAP_PRODUCER=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/host-stage0/hcc \
+		-DSWITCH_ARM_TOKEN_MAP_SOURCE=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/tools/bootstrap/selfhost-parser-slice06.HC \
+		-DSWITCH_ARM_TOKEN_MAP_PREFIX=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/bootstrap-prefix \
+		-DHCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND=ON \
+		-DCOMPOUND_BLOCK_TOKEN_MAP_OBJECT=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-compound-block-subject.o \
+		-DCOMPOUND_BLOCK_TOKEN_MAP_SOURCE=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/tools/bootstrap/selfhost-parser-slice07.HC \
+		-DHCC_USE_SELFHOST_PARSER_DEFAULT_ARM_TERMINATES=ON \
+		-DDEFAULT_ARM_TERMINATES_OBJECT=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-default-arm-subject.o \
+		-DDEFAULT_ARM_TERMINATES_PRODUCER=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/host-stage0/hcc \
+		-DDEFAULT_ARM_TERMINATES_SOURCE=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/tools/bootstrap/selfhost-parser-slice08.HC \
+		-DDEFAULT_ARM_TERMINATES_PREFIX=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/bootstrap-prefix \
+		-DHCC_USE_SELFHOST_PARSER_STATEMENT_DISPATCH=ON \
+		-DSTATEMENT_DISPATCH_OBJECT=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-statement-dispatch-subject.o \
+		-DSTATEMENT_DISPATCH_PRODUCER=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/host-stage0/hcc \
+		-DSTATEMENT_DISPATCH_SOURCE=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/tools/bootstrap/selfhost-parser-statement-dispatch.HC \
+		-DSTATEMENT_DISPATCH_PREFIX=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/bootstrap-prefix
+-- The C compiler identification is AppleClang 15.0.0.15000040
+-- The CXX compiler identification is AppleClang 15.0.0.15000040
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/gcc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE
+-- ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01: production hcc SCHEDULES parser-padding subject production: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-padding-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01: production hcc links parser-padding PolyC component: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-padding-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE02: production hcc SCHEDULES control-flow-token subject production: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-control-flow-token-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE02: production hcc links control-flow-token PolyC component: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-control-flow-token-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01: production hcc VERIFIES the control-flow-token subject (both producer and prebuilt modes); target format=Mach-O; nm=/usr/bin/nm
+-- ACT-POLYC-SELFHOST-PARSER-SLICE03: production hcc SCHEDULES operator-precedence subject production: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-operator-precedence-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE03: production hcc links operator-precedence PolyC component: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-operator-precedence-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE03: production hcc VERIFIES the operator-precedence subject (both producer and prebuilt modes); target format=Mach-O; nm=/usr/bin/nm
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: production hcc SCHEDULES AST-operator subject production: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-ast-binop-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: production hcc links AST-operator PolyC component: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-ast-binop-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: production hcc VERIFIES the AST-operator subject (both producer and prebuilt modes); target format=Mach-O; nm=/usr/bin/nm
+-- ACT-POLYC-SELFHOST-PARSER-SLICE05: production hcc SCHEDULES AST-unary subject production: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-ast-unary-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE05: production hcc links AST-unary PolyC component: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-ast-unary-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE05: production hcc VERIFIES the AST-unary subject (both producer and prebuilt modes); target format=Mach-O; nm=/usr/bin/nm
+-- ACT-POLYC-SELFHOST-PARSER-SLICE06: production hcc SCHEDULES switch-arm subject production: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-switch-arm-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE06: production hcc links switch-arm PolyC component: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-switch-arm-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE06: production hcc VERIFIES the switch-arm subject (both producer and prebuilt modes); target format=Mach-O; nm=/usr/bin/nm
+-- ACT-POLYC-SELFHOST-PARSER-SLICE07: production hcc uses a PREBUILT compound-block subject: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/parser-compound-block-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE07: production hcc links compound-block PolyC component: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/parser-compound-block-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE07: production hcc VERIFIES the compound-block subject (both producer and prebuilt modes); target format=Mach-O; nm=/usr/bin/nm
+-- ACT-POLYC-SELFHOST-PARSER-SLICE08: production hcc SCHEDULES default-arm subject production: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-default-arm-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE08: production hcc links default-arm PolyC component: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-default-arm-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE08: production hcc VERIFIES the default-arm subject (both producer and prebuilt modes); target format=Mach-O; nm=/usr/bin/nm
+-- ACT-POLYC-SELFHOST-PARSER-SLICE09: production hcc SCHEDULES statement-dispatch subject production: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/parser-statement-dispatch-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE09: production hcc links statement-dispatch PolyC component: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/parser-statement-dispatch-subject.o
+-- Configuring done (1.4s)
+-- Generating done (0.1s)
+CMake Warning:
+  Manually-specified variables were not used by the project:
+
+    AST_TOKEN_MAP_PREFIX
+    COMPOUND_BLOCK_TOKEN_MAP_SOURCE
+    OPERATOR_PRECEDENCE_PREFIX
+
+
+-- Build files have been written to: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/test-prefix-install-build
+/Library/Developer/CommandLineTools/usr/bin/make -C ./build/test-prefix-install-build install
+[  1%] Building C object asm/CMakeFiles/tasm.dir/asm.c.o
+[  3%] Building C object asm/CMakeFiles/tasm.dir/asm_enc.c.o
+[  4%] Building C object asm/CMakeFiles/tasm.dir/asm_jit.c.o
+[  6%] Building C object asm/CMakeFiles/tasm.dir/dis_arm64.c.o
+[  7%] Building C object asm/CMakeFiles/tasm.dir/dis_x86_64.c.o
+[  9%] Building C object asm/CMakeFiles/tasm.dir/enc_arm64.c.o
+[ 10%] Building C object asm/CMakeFiles/tasm.dir/enc_x86_64.c.o
+[ 12%] Building C object asm/CMakeFiles/tasm.dir/target.c.o
+[ 13%] Building C object asm/CMakeFiles/tasm.dir/tasm_debug.c.o
+[ 15%] Building C object asm/CMakeFiles/tasm.dir/tasm_util.c.o
+[ 16%] Linking C static library libtasm.a
+[ 16%] Built target tasm
+[ 19%] Built target hcc-parser-padding-subject
+[ 21%] ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01: verifying control-flow-token subject /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-control-flow-token-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01: CONTROL_FLOW_TOKEN_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapValidPostControlFlowToken TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapValidPostControlFlowToken DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=1744
+[ 22%] Built target hcc-control-flow-token-verify
+[ 24%] ACT-POLYC-SELFHOST-PARSER-SLICE03: verifying operator-precedence subject /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-operator-precedence-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE03: OPERATOR_PRECEDENCE_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapOperatorPrecedence TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapOperatorPrecedence DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=2608
+[ 25%] Built target hcc-operator-precedence-verify
+[ 27%] ACT-POLYC-SELFHOST-PARSER-SLICE04: verifying AST-operator subject /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-ast-binop-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: AST_TOKEN_MAP_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapAstBinOpFromToken TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapAstBinOpFromToken DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=1584
+[ 28%] Built target hcc-ast-token-map-verify
+[ 30%] ACT-POLYC-SELFHOST-PARSER-SLICE05: verifying AST-unary subject /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-ast-unary-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: AST_TOKEN_MAP_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapAstUnaryOpFromToken TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapAstUnaryOpFromToken DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=1128
+[ 31%] Built target hcc-ast-unary-token-map-verify
+[ 33%] ACT-POLYC-SELFHOST-PARSER-SLICE06: verifying switch-arm subject /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-switch-arm-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: AST_TOKEN_MAP_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapSwitchArmTerminates TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapSwitchArmTerminates DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=920
+[ 34%] Built target hcc-switch-arm-token-map-verify
+[ 36%] ACT-POLYC-SELFHOST-PARSER-SLICE07: verifying compound-block subject /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/parser-compound-block-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: AST_TOKEN_MAP_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapCompoundBlockAppendsStatement TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapCompoundBlockAppendsStatement DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=688
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: STALE_STAMP_DETECTED the previous stamp /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/parser-compound-block-subject.o.verified recorded a DIFFERENT object content; it is rewritten with the SHA of the object that was just verified.
+[ 36%] Built target hcc-compound-block-token-map-verify
+[ 37%] ACT-POLYC-SELFHOST-PARSER-SLICE08: verifying default-arm subject /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-default-arm-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: AST_TOKEN_MAP_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapDefaultArmTerminates TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapDefaultArmTerminates DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=864
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: STALE_STAMP_DETECTED the previous stamp /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/parser-compound-block-subject.o.verified recorded a DIFFERENT object content; it is rewritten with the SHA of the object that was just verified.
+[ 39%] Built target hcc-default-arm-token-map-verify
+[ 40%] ACT-POLYC-SELFHOST-PARSER-SLICE09: verifying statement-dispatch subject /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/parser-statement-dispatch-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: AST_TOKEN_MAP_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapStatementDispatch TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapStatementDispatch DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=1432
+[ 42%] Built target hcc-statement-dispatch-token-map-verify
+[ 43%] Building C object CMakeFiles/hcc.dir/asm.c.o
+[ 45%] Building C object CMakeFiles/hcc.dir/aostr.c.o
+[ 46%] Building C object CMakeFiles/hcc.dir/arena.c.o
+[ 48%] Building C object CMakeFiles/hcc.dir/ast.c.o
+[ 50%] Building C object CMakeFiles/hcc.dir/cctrl.c.o
+[ 51%] Building C object CMakeFiles/hcc.dir/cfg-print.c.o
+[ 53%] Building C object CMakeFiles/hcc.dir/cfg.c.o
+[ 54%] Building C object CMakeFiles/hcc.dir/cli.c.o
+[ 56%] Building C object CMakeFiles/hcc.dir/containers.c.o
+[ 57%] Building C object CMakeFiles/hcc.dir/compile.c.o
+[ 59%] Building C object CMakeFiles/hcc.dir/aarch64.c.o
+/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/src/aarch64.c:307:50: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+    Ast *decl = (Ast *)mapGetLen(cc->global_env, key, key_len);
+                                                 ^~~
+/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/src/aarch64.c:309:48: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_funcs, key, key_len);
+                                               ^~~
+/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/src/aarch64.c:312:52: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_functions, key, key_len);
+                                                   ^~~
+/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/src/aarch64.c:315:49: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->global_env, key + 1, key_len - 1);
+                                                ^~~~~~~
+/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/src/aarch64.c:318:48: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_funcs, key + 1, key_len - 1);
+                                               ^~~~~~~
+/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/src/aarch64.c:321:52: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_functions, key + 1, key_len - 1);
+                                                   ^~~~~~~
+/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/src/aarch64.c:337:37: warning: comparison of integers of different signs: 'u64' (aka 'unsigned long') and 'int' [-Wsign-compare]
+                cand->asmfname->len == key_len &&
+                ~~~~~~~~~~~~~~~~~~~ ^  ~~~~~~~
+7 warnings generated.
+[ 60%] Building C object CMakeFiles/hcc.dir/ir.c.o
+/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/src/ir.c:3350:21: warning: incompatible integer to pointer conversion passing 'int' to parameter of type 'VecType *' (aka 'struct VecType *') [-Wint-conversion]
+    Vec *v = vecNew(n);
+                    ^
+/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/src/containers.h:44:22: note: passing argument to parameter 'type' here
+Vec *vecNew(VecType *type);
+                     ^
+1 warning generated.
+[ 62%] Building C object CMakeFiles/hcc.dir/ir-debug.c.o
+[ 63%] Building C object CMakeFiles/hcc.dir/ir-eval.c.o
+[ 65%] Building C object CMakeFiles/hcc.dir/ir-optimise.c.o
+[ 66%] Building C object CMakeFiles/hcc.dir/ir-regalloc.c.o
+[ 68%] Building C object CMakeFiles/hcc.dir/ir-types.c.o
+[ 69%] Building C object CMakeFiles/hcc.dir/json.c.o
+[ 71%] Building C object CMakeFiles/hcc.dir/lexer.c.o
+/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/src/lexer.c:1384:38: warning: unused parameter 'start' [-Wunused-parameter]
+                               char *start,
+                                     ^
+1 warning generated.
+[ 72%] Building C object CMakeFiles/hcc.dir/list.c.o
+[ 74%] Building C object CMakeFiles/hcc.dir/lsp.c.o
+[ 75%] Building C object CMakeFiles/hcc.dir/main.c.o
+[ 77%] Building C object CMakeFiles/hcc.dir/memory.c.o
+[ 78%] Building C object CMakeFiles/hcc.dir/mempool.c.o
+[ 80%] Building C object CMakeFiles/hcc.dir/parser.c.o
+[ 81%] Building C object CMakeFiles/hcc.dir/prsasm.c.o
+[ 83%] Building C object CMakeFiles/hcc.dir/prslib.c.o
+[ 84%] Building C object CMakeFiles/hcc.dir/prsutil.c.o
+[ 86%] Building C object CMakeFiles/hcc.dir/transpiler.c.o
+[ 87%] Building C object CMakeFiles/hcc.dir/x86.c.o
+[ 89%] Building C object CMakeFiles/hcc.dir/x86_64.c.o
+[ 90%] Building C object CMakeFiles/hcc.dir/jit-common.c.o
+[ 92%] Building C object CMakeFiles/hcc.dir/aarch64-jit.c.o
+[ 93%] Building C object CMakeFiles/hcc.dir/x86_64-jit.c.o
+[ 95%] Building C object CMakeFiles/hcc.dir/repl.c.o
+[ 96%] Building C object CMakeFiles/hcc.dir/memsafe.c.o
+[ 98%] Building C object CMakeFiles/hcc.dir/linenoise/linenoise.c.o
+[100%] Linking C executable /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/hcc
+[100%] Built target hcc
+Install the project...
+-- Install configuration: "Release"
+-- Installing: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/test-prefix/bin/hcc
+-- Up-to-date: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/test-prefix/include/tos.HH
+clang: warning: argument unused during compilation: '-shared' [-Wunused-command-line-argument]
+cc -shared -fPIC -c /tmp/holyc-asm.s -o ./all.o
+ar rcs libtos.a all.o
+ld: Undefined symbols:
+  _Errno, referenced from:
+      _MALLOC in all.o
+      _MALLOC in all.o
+      _MALLOC in all.o
+      _MALLOC in all.o
+clang: error: linker command failed with exit code 1 (use -v to see invocation)
+cc -dynamiclib -Wl,-install_name,/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/test-prefix/lib/libtos.0.0.1.dylib all.o -o libtos.dylib -lpthread -lc -lm
+[0;31mERROR: [0mFailed to execute command: 'cc -dynamiclib -Wl,-install_name,/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/test-prefix/lib/libtos.0.0.1.dylib all.o -o libtos.dylib -lpthread -lc -lm '
+CMake Warning at cmake_install.cmake:100 (message):
+  hcc -lib exited with code 1; this is expected when all.o references _Errno.
+  Continuing.
+
+
+-- Installing: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/test-prefix/lib/libtos.a
+-- Installing: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/test-prefix/lib/libtos.0.0.1.dylib
+cd ./src/tests && ../../hcc --install-dir=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/test-prefix ./run.HC -o test-runner && ./test-runner && cd ../../
+Test Assigning pointer to a pointer from a class, with brackets: [0;32mPASSED: 1/1[0;0m
+====
+Test Assigning pointer to a pointer from a class, no brackets: [0;32mPASSED: 1/1[0;0m
+====
+Test - Juggling an array MAlloc(I64 * 10): [0;32mPASSED: 4/4[0;0m
+====
+Test - Pointer to a pointer from a class: [0;32mPASSED: 1/1[0;0m
+=====
+Test - Taking the address of a local: [0;32mPASSED: 1/1[0;0m
+Test - class definition: [0;32mPASSED: 6/6[0;0m
+====
+Test - Linked list recusive definition class: [0;32mPASSED: 5/5[0;0m
+====
+Test - 'break' and 'continue' inside while and for loops: [0;32mPASSED: 4/4[0;0m
+====
+Test - Default function parameters: [0;32mPASSED: 1/1[0;0m
+====
+Test - qsort, recursion and default function params: [0;32mPASSED: 1/1[0;0m
+====
+Assignment tests:
+= test: [0;32mPASSED: 2/2[0;0m
++= test: [0;32mPASSED: 2/2[0;0m
+-= test: [0;32mPASSED: 2/2[0;0m
+*= test: [0;32mPASSED: 2/2[0;0m
+/= test: [0;32mPASSED: 2/2[0;0m
+%= test: [0;32mPASSED: 2/2[0;0m
+&= test: [0;32mPASSED: 2/2[0;0m
+|= test: [0;32mPASSED: 2/2[0;0m
+^= test: [0;32mPASSED: 2/2[0;0m
+>>= test: [0;32mPASSED: 2/2[0;0m
+<<= test: [0;32mPASSED: 2/2[0;0m
+=====
+Test - Function pointers: [0;32mPASSED: 5/5[0;0m
+====
+Test - Simple Threading:
+[0;32mPASSED: 1/1[0;0m
+====
+Test Mathematics:
+Subtraction - : [0;32mPASSED: 7/7[0;0m
+Multiplication * : [0;32mPASSED: 5/5[0;0m
+Modulo % : [0;32mPASSED: 5/5[0;0m
+Addition + : [0;32mPASSED: 5/5[0;0m
+Division / : [0;32mPASSED: 3/3[0;0m
+MATHS_SHL << : [0;32mPASSED: 3/3[0;0m
+MATHS_SHR >> : [0;32mPASSED: 3/3[0;0m
+Xor ^: [0;32mPASSED: 3/3[0;0m
+Or |: [0;32mPASSED: 3/3[0;0m
+And &: [0;32mPASSED: 3/3[0;0m
+Not ~: [0;32mPASSED: 3/3[0;0m
+=====
+Test - MemCpy, MemSet: [0;32mPASSED: 4/4[0;0m
+Test - comma separated declarators & types: [0;32mPASSED: 3/3[0;0m
+====
+Test - Variable arguments: [0;32mPASSED: 15/15[0;0m
+=====
+Test - Type casting:
+[0;32mPASSED: 9/9[0;0m
+=====
+Test - Switch statement: [0;32mPASSED: 7/7[0;0m
+Loop test suite
+Testing For Loop: [0;32mPASSED: 2/2[0;0m
+Testing while loop: [0;32mPASSED: 1/1[0;0m
+Testing do-while loop: [0;32mPASSED: 1/1[0;0m
+=====
+Testing GOTO: [0;32mPASSED: 2/2[0;0m
+=====
+Addressing: [0;32mPASSED: 2/2[0;0m
+====
+Malloced Arrays:
+[0;32mPASSED: 10/10[0;0m
+[0;32mPASSED: 2/2[0;0m
+=====
+Test: Union and class inheritance: [0;32mPASSED: 4/4[0;0m
+====
+Test Scripting: [0;32mPASSED: 4/4[0;0m
+===
+Test - Floating point arithmetic:
+[0;32mPASSED: 6/6[0;0m
+====
+Test - auto keyword: [0;32mPASSED: 2/2[0;0m
+====
+Test - Arrays & multi dimensional: [0;32mPASSED: 5/5[0;0m
+====
+Test - Preprocessor: [0;32mPASSED: 6/6[0;0m
+====
+Test - FzF fuzzy finding: [0;32mPASSED: 7/7[0;0m
+====
+Test - JSON parsing: {"hello": 10,"key": "some string","id": null,"bool2": false,"bool": true,"array": [1,30030303,430,-14]}
+[0;32mPASSED: 10/10[0;0m
+====
+Test - local static variables and global variables:
+[0;32mPASSED: 3/3[0;0m
+====
+Test - Global and static array
+[0;32mPASSED: 2/2[0;0m
+====
+Test - basic io: [0;32mPASSED: 4/4[0;0m
+====
+Test - Range loop:
+[0;32mPASSED: 7/7[0;0m
+====
+Test - sizeof(...):
+[0;32mPASSED: 8/8[0;0m
+====
+Test - Argument count errors:
+[0;32mPASSED: 7/7[0;0m
+====
+Test - try/catch/throw: [0;32mPASSED: 8/8[0;0m
+=====
+Test - Class self-reference (no forward decl): [0;32mPASSED: 2/2[0;0m
+====
+Test - Pointer relational comparisons: [0;32mPASSED: 3/3[0;0m
+====
+Test - Trailing U0 placeholder fields: [0;32mPASSED: 3/3[0;0m
+====
+warning: Incompatible types 'CArcEntry **' is not assignable to type 'CArcEntry *'
+ --> 43_compress_templeos.HC:127:11
+     |
+ 127 |          tmp1=&c->hash[tmp->basecode];
+     |              ^^^^^^^^^^^^^^^^^^^^^^^^^
+warning: Incompatible types 'CArcEntry **' is not assignable to type 'CArcEntry *'
+ --> 43_compress_templeos.HC:203:9
+     |
+ 203 |        tmp1=&c->hash[basecode];
+     |            ^^^^^^^^^^^^^^^^^^^^
+warning: Incompatible types 'CArcEntry **' is not assignable to type 'CArcEntry *'
+ --> 43_compress_templeos.HC:285:11
+     |
+ 285 |          tmp1=&c->hash[lastcode];
+     |              ^^^^^^^^^^^^^^^^^^^^
+warning: Incompatible types 'CArcCompress *' is not assignable to type 'U8 *'
+ --> 43_compress_templeos.HC:318:17
+     |
+ 318 |          c->src_buf=arc;
+     |                    ^^^^^
+Test - TempleOS LZW compress/decompress: [0;32mPASSED: 2/2[0;0m
+====
+Test - F32 (single precision) arithmetic:
+[0;32mPASSED: 8/8[0;0m
+====
+Test - Global initialisers:
+[0;32mPASSED: 3/3[0;0m
+====
+Test - alignof and struct layout:
+[0;32mPASSED: 5/5[0;0m
+====
+Test - struct by value (C ABI):
+[0;32mPASSED: 4/4[0;0m
+====
+Test - argument register overflow (stack spill):
+[0;32mPASSED: 6/6[0;0m
+====
+Test - if with initialiser (`if (init; cond)`):
+[0;32mPASSED: 9/9[0;0m
+====
+Test - float<->int conversions (all widths, signed + unsigned):
+[0;32mPASSED: 6/6[0;0m
+====
+Test - global aggregate initialisers (class/struct + arrays):
+[0;32mPASSED: 7/7[0;0m
+====
+Test - narrow signed integer reads sign-extend (all read paths):
+[0;32mPASSED: 6/6[0;0m
+====
+Test - integer compare against large (shift-12) immediates:
+[0;32mPASSED: 4/4[0;0m
+====
+Test - by-value struct/class copy and assignment:
+[0;32mPASSED: 6/6[0;0m
+====
+Test - uppercase-L global symbols (Mach-O local-label escape):
+[0;32mPASSED: 4/4[0;0m
+====
+Test - passing a global struct by value as an argument:
+[0;32mPASSED: 3/3[0;0m
+====
+Test - passing a struct field (p->field) by value:
+[0;32mPASSED: 3/3[0;0m
+====
+Testing if else
+[0;32mPASSED: 4/4[0;0m
+=====
+Test - returning a struct by value (C ABI):
+[0;32mPASSED: 7/7[0;0m
+====
+Test - &ptr[i] / &ptr[i].field on pointers to structs:
+[0;32mPASSED: 4/4[0;0m
+====
+Test - leaf fns mixing constants with register-homed params:
+[0;32mPASSED: 5/5[0;0m
+====
+ld: warning: ignoring duplicate libraries: '-lm'
+Test - #link directive (AOT): [0;32mPASSED: 3/3[0;0m
+===
+Test - #ifjit / #ifaot: [0;32mPASSED: 3/3[0;0m
+===
+Test - typeof: [0;32mPASSED: 8/8[0;0m
+===
+Test - big stack frames: [0;32mPASSED: 10/10[0;0m
+===
+Test - indirect struct return C interop: [0;32mPASSED: 3/3[0;0m
+===
+Test - class inheritance (empty derived, layout, upcast): [0;32mPASSED: 7/7[0;0m
+====
+Repro 171 (Default function pointer arguments): [0;32mPASSED: 1/1[0;0m
+====
+UNIT_TEST_EXIT=0
+=== lexer07 ===
+./hcc --install-dir=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/test-prefix \
+		-c tools/bootstrap/selfhost-lexer-scalar-literal.HC \
+		-o ./build/lexer07-scalar-literal.o
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+LEXER07_STAGE0_SCALAR_OBJECT=./build/lexer07-scalar-literal.o
+cc -std=c99 -O2 -Wall -Wextra -o ./build/lexer07-direct-differential \
+		tools/quality/lexer07-direct-differential.c \
+		./build/lexer07-scalar-literal.o ./build/lexer07-scalar-literal-oracle.o
+./build/lexer07-direct-differential
+ACT_SELFHOST_LEXER02_DIRECT_DIFF_CASES=89
+OK   dec_0 kind=1/1 end=1/1 i64=0x0/0x0 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=1/1
+OK   dec_1 kind=1/1 end=1/1 i64=0x1/0x1 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=1/1
+OK   dec_9 kind=1/1 end=1/1 i64=0x9/0x9 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=1/1
+OK   dec_10 kind=1/1 end=2/2 i64=0xa/0xa f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=2/2
+OK   dec_42 kind=1/1 end=2/2 i64=0x2a/0x2a f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=2/2
+OK   dec_123456789 kind=1/1 end=9/9 i64=0x75bcd15/0x75bcd15 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=9/9
+OK   dec_007_leading_zero kind=1/1 end=3/3 i64=0x7/0x7 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=3/3
+OK   dec_000 kind=1/1 end=3/3 i64=0x0/0x0 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=3/3
+OK   dec_1_at_cursor1 kind=1/1 end=2/2 i64=0x1/0x1 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=1/1
+OK   dec_2pow31 kind=1/1 end=10/10 i64=0x80000000/0x80000000 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=10/10
+OK   dec_max_u64 kind=1/1 end=20/20 i64=0x7fffffffffffffff/0x7fffffffffffffff f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=20/20
+OK   dec_overflow_u64 kind=1/1 end=20/20 i64=0x7fffffffffffffff/0x7fffffffffffffff f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=20/20
+OK   hex_0x0 kind=1/1 end=3/3 i64=0x0/0x0 f64=0x0000000000000000/0x0000000000000000 ishex=1/1 err=0/0 slen=3/3
+OK   hex_0x1 kind=1/1 end=3/3 i64=0x1/0x1 f64=0x0000000000000000/0x0000000000000000 ishex=1/1 err=0/0 slen=3/3
+OK   hex_0x7f kind=1/1 end=4/4 i64=0x7f/0x7f f64=0x0000000000000000/0x0000000000000000 ishex=1/1 err=0/0 slen=4/4
+OK   hex_0XFF kind=1/1 end=4/4 i64=0xff/0xff f64=0x0000000000000000/0x0000000000000000 ishex=1/1 err=0/0 slen=4/4
+OK   hex_0xdeadbeef kind=1/1 end=10/10 i64=0xdeadbeef/0xdeadbeef f64=0x0000000000000000/0x0000000000000000 ishex=1/1 err=0/0 slen=10/10
+OK   hex_0XDEADBEEF kind=1/1 end=10/10 i64=0xdeadbeef/0xdeadbeef f64=0x0000000000000000/0x0000000000000000 ishex=1/1 err=0/0 slen=10/10
+OK   hex_0xCAFEBABE kind=1/1 end=10/10 i64=0xcafebabe/0xcafebabe f64=0x0000000000000000/0x0000000000000000 ishex=1/1 err=0/0 slen=10/10
+OK   hex_0xMixedCase kind=1/1 end=8/8 i64=0xabcdef/0xabcdef f64=0x0000000000000000/0x0000000000000000 ishex=1/1 err=0/0 slen=8/8
+OK   hex_0xff_no_semi kind=1/1 end=4/4 i64=0xff/0xff f64=0x0000000000000000/0x0000000000000000 ishex=1/1 err=0/0 slen=4/4
+OK   hex_0x_op_letter kind=1/1 end=2/2 i64=0x0/0x0 f64=0x0000000000000000/0x0000000000000000 ishex=1/1 err=0/0 slen=2/2
+OK   flt_0_0 kind=2/2 end=3/3 i64=0x0/0x0 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=3/3
+OK   flt_1_0 kind=2/2 end=3/3 i64=0x0/0x0 f64=0x3ff0000000000000/0x3ff0000000000000 ishex=0/0 err=0/0 slen=3/3
+OK   flt_1_ kind=2/2 end=2/2 i64=0x0/0x0 f64=0x3ff0000000000000/0x3ff0000000000000 ishex=0/0 err=0/0 slen=2/2
+OK   flt_123_456 kind=2/2 end=7/7 i64=0x0/0x0 f64=0x405edd2f1a9fbe77/0x405edd2f1a9fbe77 ishex=0/0 err=0/0 slen=7/7
+OK   flt_1_0f32 kind=2/2 end=6/6 i64=0x0/0x0 f64=0x3ff0000000000000/0x3ff0000000000000 ishex=0/0 err=0/0 slen=6/6
+OK   flt_1_0f64 kind=2/2 end=6/6 i64=0x0/0x0 f64=0x3ff0000000000000/0x3ff0000000000000 ishex=0/0 err=0/0 slen=6/6
+OK   exp_1e2_i64 kind=1/1 end=3/3 i64=0x1/0x1 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=3/3
+OK   exp_1e_neg kind=1/1 end=2/2 i64=0x1/0x1 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=2/2
+OK   exp_1e_plus kind=1/1 end=2/2 i64=0x1/0x1 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=2/2
+OK   exp_2_5e10 kind=2/2 end=6/6 i64=0x0/0x0 f64=0x42174876e8000000/0x42174876e8000000 ishex=0/0 err=0/0 slen=6/6
+OK   exp_3_14e_neg kind=2/2 end=5/5 i64=0x0/0x0 f64=0x40091eb851eb851f/0x40091eb851eb851f ishex=0/0 err=0/0 slen=5/5
+OK   err_hex_with_dot kind=4/4 end=0/0 i64=0x0/0x0 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=1/1 slen=0/0
+OK   err_hex_with_e kind=1/1 end=4/4 i64=0xfe/0xfe f64=0x0000000000000000/0x0000000000000000 ishex=1/1 err=0/0 slen=4/4
+OK   err_two_dots kind=4/4 end=0/0 i64=0x0/0x0 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=1/1 slen=0/0
+OK   err_two_e_letters kind=4/4 end=0/0 i64=0x0/0x0 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=1/1 slen=0/0
+OK   err_two_x_letters kind=4/4 end=0/0 i64=0x0/0x0 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=1/1 slen=0/0
+OK   nz_xx123 kind=1/1 end=5/5 i64=0x7b/0x7b f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=3/3
+OK   nz_xx0xff kind=1/1 end=6/6 i64=0xff/0xff f64=0x0000000000000000/0x0000000000000000 ishex=1/1 err=0/0 slen=4/4
+OK   nz_xx1_5 kind=2/2 end=5/5 i64=0x0/0x0 f64=0x3ff8000000000000/0x3ff8000000000000 ishex=0/0 err=0/0 slen=3/3
+OK   nz_xx_a_ kind=3/3 end=5/5 i64=0x61/0x61 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=1/1
+OK   chr_a kind=3/3 end=3/3 i64=0x61/0x61 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=1/1
+OK   chr_0 kind=3/3 end=3/3 i64=0x30/0x30 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=1/1
+OK   chr_sp kind=3/3 end=3/3 i64=0x20/0x20 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=1/1
+OK   chr_tilde kind=3/3 end=3/3 i64=0x7e/0x7e f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=1/1
+OK   chr_nl kind=3/3 end=4/4 i64=0xa/0xa f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=1/1
+OK   chr_cr kind=3/3 end=4/4 i64=0xd/0xd f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=1/1
+OK   chr_tab kind=3/3 end=4/4 i64=0x9/0x9 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=1/1
+OK   chr_bsl kind=3/3 end=4/4 i64=0x5c/0x5c f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=1/1
+OK   chr_sq kind=3/3 end=4/4 i64=0x27/0x27 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=1/1
+OK   chr_dq kind=3/3 end=4/4 i64=0x22/0x22 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=1/1
+OK   chr_zero kind=3/3 end=4/4 i64=0x0/0x0 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=1/1
+OK   chr_dollar kind=3/3 end=4/4 i64=0x24/0x24 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=1/1
+OK   chr_x41 kind=3/3 end=6/6 i64=0x41/0x41 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=1/1
+OK   chr_xFF kind=3/3 end=6/6 i64=0xff/0xff f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=1/1
+OK   chr_x00 kind=3/3 end=6/6 i64=0x0/0x0 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=1/1
+OK   chr_x2A kind=3/3 end=6/6 i64=0x2a/0x2a f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=1/1
+OK   chr_ab kind=3/3 end=4/4 i64=0x6261/0x6261 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=2/2
+OK   chr_abc kind=3/3 end=5/5 i64=0x636261/0x636261 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=3/3
+OK   chr_8slots kind=3/3 end=10/10 i64=0x6867666564636261/0x6867666564636261 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=8/8
+OK   chr_a_nl_b kind=3/3 end=6/6 i64=0x620a61/0x620a61 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=3/3
+OK   chr_dq_escaped kind=3/3 end=5/5 i64=0x7822/0x7822 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=2/2
+OK   chr_sq_escaped kind=3/3 end=5/5 i64=0x7827/0x7827 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=2/2
+OK   chr_no_semi kind=3/3 end=3/3 i64=0x61/0x61 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=1/1
+OK   chr_with_semi_space kind=3/3 end=3/3 i64=0x61/0x61 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=1/1
+OK   chr_overflow kind=3/3 end=12/12 i64=0x6867666564636261/0x6867666564636261 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=3/3 slen=10/10
+OK   chr_8slots_overflow kind=3/3 end=11/11 i64=0x6867666564636261/0x6867666564636261 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=3/3 slen=9/9
+OK   chr_unterm kind=3/3 end=5/5 i64=0x636261/0x636261 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=2/2 slen=3/3
+OK   chr_unterm_at_eof kind=3/3 end=3/3 i64=0x61/0x61 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=2/2 slen=1/1
+OK   err_hex_with_dot2 kind=4/4 end=0/0 i64=0x0/0x0 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=1/1 slen=0/0
+OK   err_hex_with_e2 kind=1/1 end=4/4 i64=0xfe/0xfe f64=0x0000000000000000/0x0000000000000000 ishex=1/1 err=0/0 slen=4/4
+OK   err_two_x_letters2 kind=4/4 end=0/0 i64=0x0/0x0 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=1/1 slen=0/0
+OK   err_two_dots2 kind=4/4 end=0/0 i64=0x0/0x0 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=1/1 slen=0/0
+OK   err_trailing_dot kind=2/2 end=2/2 i64=0x0/0x0 f64=0x3ff0000000000000/0x3ff0000000000000 ishex=0/0 err=0/0 slen=2/2
+OK   err_lone_dot kind=2/2 end=1/1 i64=0x0/0x0 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=1/1
+OK   err_two_e_letters2 kind=4/4 end=0/0 i64=0x0/0x0 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=1/1 slen=0/0
+OK   err_e_no_digits kind=1/1 end=2/2 i64=0x1/0x1 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=2/2
+OK   err_e_trailing_minus kind=1/1 end=2/2 i64=0x1/0x1 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=2/2
+OK   err_char_unterm kind=3/3 end=5/5 i64=0x636261/0x636261 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=2/2 slen=3/3
+OK   err_char_overflow kind=3/3 end=12/12 i64=0x6867666564636261/0x6867666564636261 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=3/3 slen=10/10
+OK   err_char_8slots_overflow kind=3/3 end=11/11 i64=0x6867666564636261/0x6867666564636261 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=3/3 slen=9/9
+OK   err_char_unterm_eof kind=3/3 end=3/3 i64=0x61/0x61 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=2/2 slen=1/1
+OK   err_cur_on_letter kind=0/0 end=0/0 i64=0x0/0x0 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=0/0
+OK   err_cur_on_op kind=0/0 end=0/0 i64=0x0/0x0 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=0/0
+OK   err_cur_at_eof kind=0/0 end=2/2 i64=0x0/0x0 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=0/0
+OK   cur_past_end kind=0/0 end=5/5 i64=0x0/0x0 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=0/0
+OK   cur_negative kind=0/0 end=-1/-1 i64=0x0/0x0 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=0/0
+OK   cur_at_boundary kind=0/0 end=1/1 i64=0x0/0x0 f64=0x0000000000000000/0x0000000000000000 ishex=0/0 err=0/0 slen=0/0
+ACT_SELFHOST_LEXER02_DIRECT_DIFF_PASS=89
+ACT_SELFHOST_LEXER02_DIRECT_DIFF_FAIL=0
+STATUS=PASS
+LEXER07_DIRECT_DIFFERENTIAL=PASS
+EXIT=0
+=== lexer08 ===
+cc -std=c99 -O2 -o ./build/lexer08-trivia-oracle \
+		tools/quality/lexer08-trivia-oracle.c
+./build/lexer08-trivia-oracle selftest
+PASS  ws_only
+PASS  nl_only
+PASS  ws_nl_mixed
+PASS  line_comment_to_nl
+PASS  line_comment_to_eof
+PASS  block_single
+PASS  block_multi
+PASS  block_truncated
+PASS=8 FAIL=0
+./hcc --install-dir=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/test-prefix \
+		-c tools/bootstrap/selfhost-lexer-trivia.HC \
+		-o ./build/lexer08-trivia.o
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+LEXER08_STAGE0_TRIVIA_OBJECT=./build/lexer08-trivia.o
+cc -std=c99 -O2 -Wno-comment -o ./build/lexer08-direct-differential \
+		tools/quality/lexer08-direct-differential.c \
+		tools/quality/lexer08-trivia-oracle-impl.c \
+		./build/lexer08-trivia.o
+./build/lexer08-direct-differential ./build/lexer08-trivia.o
+DIRECT_DIFFERENTIAL_TOTAL=45
+DIRECT_DIFFERENTIAL_PASS=45
+DIRECT_DIFFERENTIAL_FAIL=0
+STATUS=PASS
+LEXER08_DIRECT_DIFFERENTIAL=PASS
+EXIT=0
+=== lexer09 ===
+./hcc --install-dir=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/test-prefix \
+		-c tools/bootstrap/selfhost-lexer-link.HC \
+		-o ./build/lexer09-link.o
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+LEXER09_STAGE0_LINK_OBJECT=./build/lexer09-link.o
+cc -std=c99 -O2 -Wall -Wextra -o ./build/lexer09-link-oracle \
+		tools/quality/lexer09-link-oracle.c \
+		tools/quality/lexer09-link-oracle-impl.c
+tools/quality/lexer09-link-oracle-impl.c:37:12: warning: unused function 'oracle_lex' [-Wunused-function]
+static int oracle_lex(const char *src, I64 src_len, I64 *cursor,
+           ^
+1 warning generated.
+cc -std=c99 -O2 -Wall -Wextra -o ./build/lexer09-direct-differential \
+		tools/quality/lexer09-direct-differential.c \
+		tools/quality/lexer09-link-oracle-impl.c \
+		./build/lexer09-link.o -lm
+tools/quality/lexer09-link-oracle-impl.c:37:12: warning: unused function 'oracle_lex' [-Wunused-function]
+static int oracle_lex(const char *src, I64 src_len, I64 *cursor,
+           ^
+1 warning generated.
+./build/lexer09-direct-differential
+DIRECT_DIFFERENTIAL_TOTAL=23
+DIRECT_DIFFERENTIAL_PASS=23
+DIRECT_DIFFERENTIAL_FAIL=0
+STATUS=PASS
+EXIT=0
+=== lexer07 broad ===
+TOTAL=181
+PROGRESS=20/181
+PROGRESS=40/181
+PROGRESS=60/181
+PROGRESS=80/181
+PROGRESS=100/181
+PROGRESS=120/181
+PROGRESS=140/181
+PROGRESS=160/181
+PROGRESS=180/181
+PROGRESS=181/181
+PASS_S0=166 HISTORICAL_S0=0 PASS_S1=175 PASS_S2=175 PASS_S3=175
+FAIL_S0=15 FAIL_S1=6 FAIL_S2=6 FAIL_S3=6
+BOTH_FAIL_4=6
+REGRESSION=0
+DIVERGED=0
+PASS_MISMATCH=9
+HISTORICAL_S0_FALLBACKS_USED=0
+BYTE_IDENTICAL_4=166
+BYTE_IDENTICAL_PAIRS=166/181 166/181 166/181 175/181 175/181 175/181
+PROVENANCE_SCHEMA_VALID=1
+FAILURE_SCHEMA_VALID=1
+STATUS=FAIL
+EXIT=1
+=== cross-target ===
+67
+EXIT=0
+=== f-no-python ===
+FAIL  scripts/quality/llvm-byte-memory01-test.sh  forbidden Python invocation
+FAIL  scripts/quality/llvm-cap-table-verifier.py  forbidden Python source suffix
+FAIL  scripts/quality/llvm-intops01-test.sh  forbidden Python invocation
+FAIL  scripts/quality/llvm-memory01-red-test.sh  forbidden Python invocation
+FAIL  scripts/quality/llvm-spike-test.sh  forbidden Python invocation
+FAIL  tools/quality/bootstrap02-corpus-runner.py  forbidden Python source suffix
+FAIL  tools/quality/bootstrap02-error-corpus.py  forbidden Python source suffix
+FAIL  tools/quality/bootstrap03-corpus-runner.py  forbidden Python source suffix
+FAIL  tools/quality/bootstrap03-error-corpus.py  forbidden Python source suffix
+FAIL  tools/quality/bootstrap04-corpus-runner.py  forbidden Python source suffix
+FAIL  tools/quality/bootstrap04-error-corpus.py  forbidden Python source suffix
+FAIL  tools/quality/llvm-gep01-test.HC  known PolyC -> Python execution edge (callgraph inventory)
+
+--- summary ---
+POLYC_TOOLS_TRACKED_PYTHON=12
+POLYC_TOOLS_TRACKED_INSPECTED=6069
+POLYC_TOOLS_TRACKED_PASSES=6062
+STATUS=FAIL
+EXIT=1
