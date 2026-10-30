@@ -1,0 +1,67 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE08
+ACT_PHASE=C2-IMPL
+EVIDENCE_KIND=provider-fail-closed
+#
+THE FAIL-CLOSED DISCIPLINE, DEMONSTRATED BY REAL BUILDS.
+#
+A missing, wrong or stale provider must FAIL THE BUILD, never
+silently fall back to the legacy C.
+#
+# ------------------------------------------------------------------
+# FC-1 -- THE SELECTOR IS ON, THE SUBJECT IS MISSING, NO PRODUCER
+# ------------------------------------------------------------------
+#
+COMMAND=cmake -S ./src -B /tmp/slice08-fc1 -G "Unix Makefiles" \
+           -DHCC_USE_SELFHOST_PARSER_DEFAULT_ARM_TERMINATES=ON \
+           -DDEFAULT_ARM_TERMINATES_OBJECT=/tmp/slice08-nonexistent.o
+   CONFIGURE_EXIT=1
+     ACT-POLYC-SELFHOST-PARSER-SLICE08: the default-arm subject
+     /tmp/slice08-nonexistent.o does not exist and no producer is configured.
+     Produce it with ./hcc --install-dir=<prefix> -c
+     tools/bootstrap/selfhost-parser-slice08.HC -o /tmp/slice08-nonexistent.o.
+#
+# ------------------------------------------------------------------
+# FC-2 -- THE SELECTOR IS ON, THE SUBJECT DEFINES THE WRONG SYMBOL
+# ------------------------------------------------------------------
+#
+The subject is the ALREADY MIGRATED SUB-001 object, which defines
+_BootstrapSwitchArmTerminates and NOT _BootstrapDefaultArmTerminates.
+#
+COMMAND=cmake -S ./src -B /tmp/slice08-fc2 ... -DDEFAULT_ARM_TERMINATES_OBJECT=<the SUB-001 subject>
+   CONFIGURE_EXIT=0
+COMMAND=cd /tmp/slice08-fc2 && make hcc-default-arm-token-map-verify
+   VERIFY_EXIT=1  (make[3]: *** [CMakeFiles/hcc-default-arm-token-map-verify] Error 1)
+#
+   The verifier refuses to link the production compiler without a
+   verified PolyC default-arm authority.
+#
+# ------------------------------------------------------------------
+# FC-3 -- THE SELECTOR IS ON, THE SUBJECT IS AN EMPTY OBJECT
+# ------------------------------------------------------------------
+#
+COMMAND=cd /tmp/slice08-fc3 && make hcc-default-arm-token-map-verify
+   VERIFY_EXIT=1  (make[3]: *** [CMakeFiles/hcc-default-arm-token-map-verify] Error 1)
+#
+# ------------------------------------------------------------------
+# THE OFF MODE IS A REAL C-AUTHORITATIVE PRODUCTION TU
+# ------------------------------------------------------------------
+#
+COMMAND=nm build/host-stage0/hcc | grep -c " T _BootstrapDefaultArmTerminates"
+   0
+#
+   The selector-OFF production build has NO SUB-002 PolyC symbol at
+   all: it is genuinely C-authoritative.
+#
+COMMAND=otool -tvV build/host-stage0/build/CMakeFiles/hcc.dir/parser.c.o | grep -c 0x2041
+   4
+#
+   And its parser object DOES carry the legacy five-kind mask, so
+   the legacy C condition really is the code that executes in the
+   OFF mode.
+#
+MISSING_PROVIDER_FAILS_CLOSED=YES
+WRONG_SYMBOL_PROVIDER_FAILS_CLOSED=YES
+EMPTY_PROVIDER_FAILS_CLOSED=YES
+OFF_MODE_IS_REAL_C_AUTHORITATIVE_TU=YES
+OFF_MODE_HAS_NO_SUB002_POLYC_SYMBOL=YES
+PROVIDER_FAIL_CLOSED_STATUS=PASS

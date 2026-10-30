@@ -1,0 +1,66 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE08
+ACT_PHASE=C2-IMPL
+EVIDENCE_KIND=effective-cmake-and-make-commands
+#
+THE EFFECTIVE CMAKE AND MAKE COMMANDS THAT PRODUCE THE SUBJECT AND
+THE PRODUCTION COMPILER.
+#
+# A flag merely APPEARING in CMakeLists.txt is not evidence.  These are
+# the commands that ACTUALLY ran, taken from the real build logs and
+# from the expanded build graph.
+#
+# ------------------------------------------------------------------
+# THE SUBJECT PRODUCTION (the Makefile rule)
+# ------------------------------------------------------------------
+#
+RULE=$(SLICE08_DEFAULT_ARM_OBJ): $(SLICE08_DEFAULT_ARM_SRC) $(BOOTSTRAP_STAGE0_HCC) ...
+  $(BOOTSTRAP_STAGE0_HCC) --install-dir=$(BOOTSTRAP_PREFIX_DIR) \
+      -c tools/bootstrap/selfhost-parser-slice08.HC -o build/parser-default-arm-subject.o
+  nm $@ | grep -q "_BootstrapDefaultArmTerminates"  (else the build FAILS)
+#
+COMMAND=make build/parser-default-arm-subject.o
+   SUBJECT_OBJECT_SHA256=d72cee87ccff4b5c1b801c5d1420d5267809e9214526720800010ff591cba22b
+#
+# ------------------------------------------------------------------
+# THE PRODUCTION COMPILER (the Makefile production-hcc rule)
+# ------------------------------------------------------------------
+#
+COMMAND=cmake -S ./src -B ./build -G "Unix Makefiles" ... \
+           -DHCC_USE_SELFHOST_PARSER_DEFAULT_ARM_TERMINATES=ON \
+           -DDEFAULT_ARM_TERMINATES_OBJECT=$(CURDIR)/./build/parser-default-arm-subject.o \
+           -DDEFAULT_ARM_TERMINATES_PRODUCER=$(CURDIR)/./build/host-stage0/hcc \
+           -DDEFAULT_ARM_TERMINATES_SOURCE=$(CURDIR)/tools/bootstrap/selfhost-parser-slice08.HC \
+           -DDEFAULT_ARM_TERMINATES_PREFIX=$(CURDIR)/./build/bootstrap-prefix
+   then: $(MAKE) -C ./build -j2
+#
+COMMAND=grep -oE "\-DHCC_USE_SELFHOST_PARSER_DEFAULT_ARM_TERMINATES" build/CMakeFiles/hcc.dir/flags.make | head -1
+   -DHCC_USE_SELFHOST_PARSER_DEFAULT_ARM_TERMINATES
+#
+COMMAND=grep -c "parser-default-arm-subject.o" build/CMakeFiles/hcc.dir/link.txt
+   1
+#
+COMMAND=nm ./hcc | grep -c " T _BootstrapDefaultArmTerminates$"
+   1
+#
+# ------------------------------------------------------------------
+# THE VERIFICATION TARGET
+# ------------------------------------------------------------------
+#
+COMMAND=cd build && make hcc-default-arm-token-map-verify
+   The verification runs src/cmake/VerifyAstTokenMapObject.cmake with
+   AST_TOKEN_MAP_EXPECTED_SYMBOL=BootstrapDefaultArmTerminates, the
+   TARGET OBJECT FORMAT and the TOOLCHAIN nm.
+#
+# ------------------------------------------------------------------
+# THE GENERATION COMPILATIONS
+# ------------------------------------------------------------------
+#
+COMMAND=build/host-stage0/hcc --install-dir=<prefix> -c tools/bootstrap/selfhost-parser-slice08.HC -o build/slice08-gen/g1.o
+COMMAND=./hcc --install-dir=<prefix> -c tools/bootstrap/selfhost-parser-slice08.HC -o build/slice08-gen/g2.o
+COMMAND=./build/hcc-bootstrap02 --install-dir=<prefix> -c tools/bootstrap/selfhost-parser-slice08.HC -o build/slice08-gen/g3.o
+COMMAND=cc -std=c99 -O2 -Isrc -c -o build/slice08-gen/g0.o src/parser.c
+#
+   Each generation compiles the REAL new .HC component with its OWN
+   producer.  No generation output is copied from another.
+#
+EFFECTIVE_COMMANDS_STATUS=PASS

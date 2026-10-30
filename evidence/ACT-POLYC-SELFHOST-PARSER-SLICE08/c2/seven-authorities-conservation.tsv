@@ -1,0 +1,37 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE08
+ACT_PHASE=C2-IMPL
+EVIDENCE_KIND=seven-authorities-conservation
+#
+THE SEVEN PREDECESSOR AUTHORITIES, RE-PROVED AFTER THE MIGRATION.
+#
+# Schema: authority_id <TAB> selector <TAB> symbol <TAB> executable_defined_count
+#         <TAB> provider_object <TAB> caller_object <TAB> caller_imports
+#         <TAB> caller_defines
+#
+AUTH-01	HCC_USE_SELFHOST_PARSER_PADDING	BootstrapCalcPadding	1	build/parser-padding-subject.o	build/CMakeFiles/hcc.dir/parser.c.o	1	0
+AUTH-02	HCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN	BootstrapValidPostControlFlowToken	1	build/parser-control-flow-token-subject.o	build/CMakeFiles/hcc.dir/parser.c.o	1	0
+AUTH-03	HCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE	BootstrapOperatorPrecedence	1	build/parser-operator-precedence-subject.o	build/CMakeFiles/hcc.dir/ast.c.o	0	0
+AUTH-04	HCC_USE_SELFHOST_PARSER_AST_BINOP	BootstrapAstBinOpFromToken	1	build/parser-ast-binop-subject.o	build/CMakeFiles/hcc.dir/ast.c.o	1	0
+AUTH-05	HCC_USE_SELFHOST_PARSER_AST_UNARY	BootstrapAstUnaryOpFromToken	1	build/parser-ast-unary-subject.o	build/CMakeFiles/hcc.dir/ast.c.o	1	0
+AUTH-06	HCC_USE_SELFHOST_PARSER_SWITCH_ARM	BootstrapSwitchArmTerminates	1	build/parser-switch-arm-subject.o	build/CMakeFiles/hcc.dir/parser.c.o	1	0
+AUTH-07	HCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND	BootstrapCompoundBlockAppendsStatement	1	build/parser-compound-block-subject.o	build/CMakeFiles/hcc.dir/parser.c.o	1	0
+AUTH-08	HCC_USE_SELFHOST_PARSER_DEFAULT_ARM_TERMINATES	BootstrapDefaultArmTerminates	1	build/parser-default-arm-subject.o	build/CMakeFiles/hcc.dir/parser.c.o	1	0
+#
+# THE SUB-001 DECISION SITE IS SEPARATE AND CONSERVED
+#
+   The SUB-001 (case-arm) decision lives in _parseCaseLabel and is
+   owned by BootstrapSwitchArmTerminates.  The SUB-002 (default-arm)
+   decision lives in _parseDefaultStatement and is owned by
+   BootstrapDefaultArmTerminates.  They are DIFFERENT functions,
+   DIFFERENT symbols and DIFFERENT semantics (SUB-001 terminates on
+   AST_DEFAULT 293; SUB-002 does not).
+#
+COMMAND=nm ./hcc | grep -c " T _BootstrapSwitchArmTerminates$"
+   1
+COMMAND=nm ./hcc | grep -c " T _BootstrapDefaultArmTerminates$"
+   1
+#
+CURRENT_POLYC_PARSER_AUTHORITIES=8
+PREDECESSOR_AUTHORITIES_CONSERVED=7/7
+NEW_AUTHORITY_ESTABLISHED=1
+SEVEN_AUTHORITIES_CONSERVATION_STATUS=PASS

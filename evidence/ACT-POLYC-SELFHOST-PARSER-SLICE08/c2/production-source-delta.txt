@@ -1,0 +1,151 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE08
+ACT_PHASE=C2-IMPL
+EVIDENCE_KIND=production-source-delta
+#
+THE PRODUCTION SOURCE DELTA, IN FULL.
+#
+COMMAND=git diff src/parser.c
+#
+diff --git a/src/parser.c b/src/parser.c
+index 0033fdf..5fe5819 100644
+--- a/src/parser.c
++++ b/src/parser.c
+@@ -1664,6 +1664,98 @@ Ast *parseCaseLabel(Cctrl *cc, Lexeme *tok) {
+     return case_;
+ }
+
++/* ACT-POLYC-SELFHOST-PARSER-SLICE08 C2 IMPL: the default-arm
++ * TERMINATION decision.
++ *
++ * The decision is the legacy condition that was inline at
++ * src/parser.c:1683..1684:
++ *
++ *   if (stmt->kind == AST_COMPOUND_STMT || stmt->kind == AST_CASE ||
++ *           stmt->kind == AST_BREAK || stmt->kind == AST_RETURN
++ *           || stmt->kind == AST_GOTO) break;
++ *
++ * It is now a FUNCTION so that the C side and the quality oracle can
++ * both reach the SAME decision, and so that the delegation can be
++ * switched by the dedicated macro, exactly as CalcPadding does.
++ *
++ * The function reads ONE host value -- the AstKind of the statement
++ * that was just parsed -- and returns a BOOLEAN.  It does not touch
++ * the AST graph, the allocation, the diagnostics, the recovery point or
++ * the token stream.
++ *
++ * The legacy body below is the BYTE-IDENTICAL legacy condition, with
++ * the single substitution `stmt->kind` -> `kind`.  It is reachable
++ * ONLY in a build without HCC_USE_SELFHOST_PARSER_DEFAULT_ARM_TERMINATES
++ * (the G0 legacy oracle object).  Production ./hcc is built with the
++ * macro defined (see src/CMakeLists.txt) and therefore always routes
++ * through BootstrapDefaultArmTerminates.
++ *
++ * The dedicated macro name (rather than the generic
++ * HCC_USE_SELFHOST_COMPONENTS) is required because that generic
++ * selector also activates the lexer delegations in src/lexer.c, which
++ * would require linking the lexer subjects too.  This migration is
++ * independent of the lexer migrations and is scoped to its own flag.
++ *
++ * NOTE ON THE DISTINCTNESS FROM SUB-001:
++ * the already-migrated switch-CASE-arm decision
++ * (BootstrapSwitchArmTerminates) ALSO terminates on AST_CASE, but it
++ * ALSO terminates on AST_DEFAULT, which this default-arm decision
++ * deliberately does NOT.  The two decisions therefore have DIFFERENT
++ * semantics, DIFFERENT production call sites and DIFFERENT PolyC
++ * symbols.  They are NOT interchangeable.
++ *
++ * The PolyC ABI is `I64 ast_kind -> I64 terminate` (scalar purity per
++ * the frozen ABI contract).  The legacy C wrapper is `int(int)`.  The
++ * cast chain `(int) -> (long long) -> (long long) -> int` is exact:
++ * the AstKind values are small non-negative integers and the result is
++ * a boolean, all of which fit in an int without loss. */
++static int parseDefaultArmTerminates(int kind)
++{
++#ifdef HCC_USE_SELFHOST_PARSER_DEFAULT_ARM_TERMINATES
++    /* ACT-POLYC-SELFHOST-PARSER-SLICE08 C2 IMPL:
++     * delegate the default-arm termination decision to the
++     * qualified PolyC component BootstrapDefaultArmTerminates.
++     *
++     * This adapter does NOT own the decision: the arm-termination
++     * DECISION is made by the PolyC component.  The adapter owns only
++     * the two mechanical duties the original C ABI requires:
++     *
++     *   1. argument projection  (int kind -> I64 ast_kind);
++     *   2. result conversion     (I64 -> the legacy boolean).
++     *
++     * The legacy condition is NOT evaluated before, after or alongside
++     * the delegation, and there is no shadow call and no fallback to
++     * C. */
++    extern long long BootstrapDefaultArmTerminates(long long ast_kind);
++    return (int)BootstrapDefaultArmTerminates((long long)kind);
++#else
++    /* Stage0 evidence path: the byte-identical legacy condition.
++     * Reachable only in non-HCC_USE_SELFHOST_PARSER_DEFAULT_ARM_TERMINATES
++     * builds (the differential's slice08-gen/g0.o).  Production never
++     * executes this branch. */
++    if (kind == AST_COMPOUND_STMT || kind == AST_CASE ||
++            kind == AST_BREAK || kind == AST_RETURN
++            || kind == AST_GOTO) return 1;
++    return 0;
++#endif
++}
++
++/* ACT-POLYC-SELFHOST-PARSER-SLICE08 C2 IMPL: tiny ABI wrapper adjacent
++ * to the default-arm termination decision.  Forwards to the actual
++ * legacy decision (whose body is unchanged above).  Used by the
++ * quality oracle so the oracle reaches the actual legacy authority
++ * instead of duplicating the condition.  Adds zero new logic; does not
++ * modify the decision or any existing production caller.
++ *
++ * The oracle MUST come from a build in which the delegation flag is
++ * OFF, so the legacy body is the one being executed.  A differential
++ * run against the delegated build would compare the PolyC component
++ * against itself and would be vacuous. */
++long long ParserLegacyDefaultArmTerminatesOracle(long long ast_kind)
++{
++    return (long long)parseDefaultArmTerminates((int)ast_kind);
++}
++
+ Ast *parseDefaultStatement(Cctrl *cc) {
+     cctrlTokenExpect(cc,':');
+     if (cc->tmp_default_case) {
+@@ -1680,8 +1772,7 @@ Ast *parseDefaultStatement(Cctrl *cc) {
+         if (stmt && stmt->kind != AST_CASE) {
+             listAppend(stmts,stmt);
+         }
+-        if (stmt->kind == AST_COMPOUND_STMT || stmt->kind == AST_CASE || stmt->kind == AST_BREAK || stmt->kind == AST_RETURN
+-                || stmt->kind == AST_GOTO) break;
++        if (parseDefaultArmTerminates((int)stmt->kind)) break;
+         peek = cctrlTokenPeek(cc);
+         if (tokenPunctIs(peek,'}')) break;
+     } while (1);
+#
+# THE DELTA IS EXACTLY THE FOUR AUTHORIZED CHANGES
+#
+  1. factoring the condition at the old lines 1683..1684 into the
+     named helper parseDefaultArmTerminates(int kind);
+  2. adding the #ifdef-guarded PolyC delegation arm to that helper;
+  3. adding the object-level oracle wrapper
+     ParserLegacyDefaultArmTerminatesOracle adjacent to it; and
+  4. changing the ONE call site to call the helper.
+#
+# WHAT DID NOT CHANGE
+#
+  * the do { ... } while (1) default-arm loop: UNCHANGED
+  * the parseStatement(cc) call and the token cursor: UNCHANGED
+  * the listAppend(stmts, stmt) host AST write: UNCHANGED
+  * the cctrlRaiseException diagnostics: UNCHANGED
+  * the cc->tmp_default_case / cc->localenv / cc->tmp_locals scope
+    state: UNCHANGED
+  * the recovery state: UNCHANGED
+  * every other decision in the file: UNCHANGED
+  * every other file in src/: UNCHANGED
+#
+COMMAND=git diff --stat src/
+ src/CMakeLists.txt | 154 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ src/parser.c       |  95 ++++++++++++++++++++++++++++++++-
+ 2 files changed, 247 insertions(+), 2 deletions(-)
+#
+PRODUCTION_SEMANTIC_DELTA=1
+PRODUCTION_DECISIONS_CHANGED=1 (the SUB-002 default-arm termination)
+PRODUCTION_SOURCE_DELTA_STATUS=PASS

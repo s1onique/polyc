@@ -1282,6 +1282,160 @@ if (HCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND)
                    "target format=${COMPOUND_BLOCK_TOKEN_MAP_TARGET_OBJECT_FORMAT}; nm=${COMPOUND_BLOCK_TOKEN_MAP_NM}")
 endif()
 
+# ACT-POLYC-SELFHOST-PARSER-SLICE08 C2 IMPL:
+# Link the qualified PolyC BootstrapDefaultArmTerminates component into
+# the production hcc binary and enable the default-arm termination
+# delegation.
+#
+# The dedicated selector `HCC_USE_SELFHOST_PARSER_DEFAULT_ARM_TERMINATES`
+# is defined here so the production default-arm delegation is INDEPENDENT
+# of the parser-padding selector, of the control-flow-token selector, of
+# the operator-precedence selector, of the AST BINARY-operator selector,
+# of the AST UNARY-operator selector, of the switch-arm selector, of the
+# compound-block selector and of the generic lexer
+# `HCC_USE_SELFHOST_COMPONENTS` flag (which would also require linking
+# the lexer subjects).
+#
+# The same fail-closed discipline as the seven already-migrated
+# components applies: if the producer is configured, the build graph
+# SCHEDULES the component's production and verifies the exported
+# symbol; if it is not, a missing component is a hard configure error,
+# never a silent legacy fallback.
+#
+# THE VERIFIER IS THE SLICE04 GENERIC ONE, REUSED READ-ONLY.
+#
+# src/cmake/VerifyAstTokenMapObject.cmake is already fully
+# PARAMETERIZED: it takes the object, the expected symbol, the target
+# object format and the nm tool as inputs, and every check is driven
+# from those parameters.  Reusing it means the default-arm subject is
+# checked by exactly the same discipline as the other subjects -- there
+# is no second, weaker verifier to drift.
+#
+# Mach-O naming is NOT hard-coded into the verification: the expected
+# symbol's object-format spelling is derived from the TARGET OBJECT
+# FORMAT, which is passed in explicitly.
+option(HCC_USE_SELFHOST_PARSER_DEFAULT_ARM_TERMINATES
+       "Link the default-arm-termination PolyC component into hcc and enable default-arm-termination delegation. ACT-POLYC-SELFHOST-PARSER-SLICE08."
+       ON)
+
+if (HCC_USE_SELFHOST_PARSER_DEFAULT_ARM_TERMINATES)
+    if (NOT DEFAULT_ARM_TERMINATES_OBJECT)
+        set(DEFAULT_ARM_TERMINATES_OBJECT "${CMAKE_SOURCE_DIR}/../build/parser-default-arm-subject.o")
+    endif()
+
+    # ---------------------------------------------------------------------
+    # The TARGET OBJECT FORMAT and the TOOLCHAIN nm are resolved here and
+    # passed EXPLICITLY to the verifier.
+    #
+    # The format must NOT be guessed from the host: during a cross-compile
+    # the host's format is not the target's format.  CMAKE_NM is the
+    # CONFIGURED TOOLCHAIN's nm, so the target object is inspected by a
+    # tool that understands the target format.  If it is not available the
+    # build fails loudly instead of silently substituting a host nm.
+    # ---------------------------------------------------------------------
+    if (NOT DEFAULT_ARM_TERMINATES_TARGET_OBJECT_FORMAT)
+        if (APPLE)
+            set(DEFAULT_ARM_TERMINATES_TARGET_OBJECT_FORMAT "Mach-O")
+        elseif (UNIX AND NOT APPLE)
+            set(DEFAULT_ARM_TERMINATES_TARGET_OBJECT_FORMAT "ELF")
+        else()
+            message(FATAL_ERROR
+                "ACT-POLYC-SELFHOST-PARSER-SLICE08: "
+                "cannot determine the target object format for this platform. "
+                "Configure with -DDEFAULT_ARM_TERMINATES_TARGET_OBJECT_FORMAT=<Mach-O|ELF> "
+                "so the default-arm symbol spelling can be resolved "
+                "correctly. Refusing to link the production compiler "
+                "without a verified PolyC default-arm authority.")
+        endif()
+    endif()
+
+    if (NOT DEFAULT_ARM_TERMINATES_NM)
+        if (NOT CMAKE_NM)
+            message(FATAL_ERROR
+                "ACT-POLYC-SELFHOST-PARSER-SLICE08: "
+                "CMAKE_NM is not set, so the default-arm subject cannot be "
+                "verified. Refusing to link the production compiler without "
+                "a verified PolyC default-arm authority.")
+        endif()
+        set(DEFAULT_ARM_TERMINATES_NM "${CMAKE_NM}")
+    endif()
+
+    # The PRODUCER mode: the build graph SCHEDULES the subject's
+    # production, so a missing component is a BUILD FAILURE and never a
+    # silent legacy fallback.
+    if (DEFAULT_ARM_TERMINATES_PRODUCER)
+        if (NOT DEFAULT_ARM_TERMINATES_SOURCE)
+            message(FATAL_ERROR
+                "ACT-POLYC-SELFHOST-PARSER-SLICE08: "
+                "DEFAULT_ARM_TERMINATES_PRODUCER is set but "
+                "DEFAULT_ARM_TERMINATES_SOURCE is not.")
+        endif()
+        if (NOT DEFAULT_ARM_TERMINATES_PREFIX)
+            message(FATAL_ERROR
+                "ACT-POLYC-SELFHOST-PARSER-SLICE08: "
+                "DEFAULT_ARM_TERMINATES_PRODUCER is set but "
+                "DEFAULT_ARM_TERMINATES_PREFIX is not.")
+        endif()
+        add_custom_command(
+            OUTPUT "${DEFAULT_ARM_TERMINATES_OBJECT}"
+            COMMAND "${DEFAULT_ARM_TERMINATES_PRODUCER}"
+                    "--install-dir=${DEFAULT_ARM_TERMINATES_PREFIX}"
+                    -c "${DEFAULT_ARM_TERMINATES_SOURCE}"
+                    -o "${DEFAULT_ARM_TERMINATES_OBJECT}"
+            DEPENDS "${DEFAULT_ARM_TERMINATES_SOURCE}"
+            COMMENT "ACT-POLYC-SELFHOST-PARSER-SLICE08: producing default-arm subject ${DEFAULT_ARM_TERMINATES_OBJECT}"
+            VERBATIM
+            USES_TERMINAL)
+        message(STATUS "ACT-POLYC-SELFHOST-PARSER-SLICE08: production hcc SCHEDULES default-arm subject production: ${DEFAULT_ARM_TERMINATES_OBJECT}")
+    elseif (NOT EXISTS "${DEFAULT_ARM_TERMINATES_OBJECT}")
+        message(FATAL_ERROR
+            "ACT-POLYC-SELFHOST-PARSER-SLICE08: "
+            "the default-arm subject ${DEFAULT_ARM_TERMINATES_OBJECT} does not "
+            "exist and no producer is configured. Produce it with "
+            "./hcc --install-dir=<prefix> -c tools/bootstrap/selfhost-parser-slice08.HC -o ${DEFAULT_ARM_TERMINATES_OBJECT}. "
+            "Or configure with -DDEFAULT_ARM_TERMINATES_PRODUCER=<stage0 hcc> to have the "
+            "build graph produce it.")
+    else()
+        message(STATUS "ACT-POLYC-SELFHOST-PARSER-SLICE08: production hcc uses a PREBUILT default-arm subject: ${DEFAULT_ARM_TERMINATES_OBJECT}")
+    endif()
+
+    # ---------------------------------------------------------------------
+    # The VERIFICATION is a custom TARGET, not an OUTPUT-producing custom
+    # command, so the verification command ALWAYS runs and a stale stamp
+    # can never decide that the verification is unnecessary.
+    # ---------------------------------------------------------------------
+    add_custom_target(hcc-default-arm-token-map-verify
+        COMMAND "${CMAKE_COMMAND}"
+                -DAST_TOKEN_MAP_OBJECT=${DEFAULT_ARM_TERMINATES_OBJECT}
+                -DAST_TOKEN_MAP_EXPECTED_SYMBOL=BootstrapDefaultArmTerminates
+                -DAST_TOKEN_MAP_TARGET_OBJECT_FORMAT=${DEFAULT_ARM_TERMINATES_TARGET_OBJECT_FORMAT}
+                -DAST_TOKEN_MAP_NM=${DEFAULT_ARM_TERMINATES_NM}
+                -P "${CMAKE_SOURCE_DIR}/cmake/VerifyAstTokenMapObject.cmake"
+        COMMAND "${CMAKE_COMMAND}"
+                -DAST_TOKEN_MAP_OBJECT=${DEFAULT_ARM_TERMINATES_OBJECT}
+                -DAST_TOKEN_MAP_STAMP=${_saw_stamp}
+                -P "${CMAKE_SOURCE_DIR}/cmake/WriteAstTokenMapObjectStamp.cmake"
+        DEPENDS "${DEFAULT_ARM_TERMINATES_OBJECT}"
+        COMMENT "ACT-POLYC-SELFHOST-PARSER-SLICE08: verifying default-arm subject ${DEFAULT_ARM_TERMINATES_OBJECT}"
+        VERBATIM
+        USES_TERMINAL)
+
+    # The verification gates the link: the production compiler is never
+    # linked without a verified PolyC default-arm authority.
+    add_dependencies(hcc hcc-default-arm-token-map-verify)
+
+    # The link itself must ALSO depend on the object, so the object is
+    # re-read by the linker whenever it changes.
+    set_property(TARGET hcc APPEND PROPERTY
+        LINK_DEPENDS "${DEFAULT_ARM_TERMINATES_OBJECT}")
+
+    target_compile_definitions(hcc PRIVATE HCC_USE_SELFHOST_PARSER_DEFAULT_ARM_TERMINATES)
+    target_link_libraries(hcc ${DEFAULT_ARM_TERMINATES_OBJECT})
+    message(STATUS "ACT-POLYC-SELFHOST-PARSER-SLICE08: production hcc links default-arm PolyC component: ${DEFAULT_ARM_TERMINATES_OBJECT}")
+    message(STATUS "ACT-POLYC-SELFHOST-PARSER-SLICE08: production hcc VERIFIES the default-arm subject (both producer and prebuilt modes); "
+                   "target format=${DEFAULT_ARM_TERMINATES_TARGET_OBJECT_FORMAT}; nm=${DEFAULT_ARM_TERMINATES_NM}")
+endif()
+
 
 
 

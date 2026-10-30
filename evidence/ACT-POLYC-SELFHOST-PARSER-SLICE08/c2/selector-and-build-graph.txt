@@ -1,0 +1,44 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE08
+ACT_PHASE=C2-IMPL
+EVIDENCE_KIND=selector-and-build-graph
+#
+THE DEDICATED SELECTOR AND THE BUILD GRAPH THAT CONTROLS IT.
+#
+SELECTOR=HCC_USE_SELFHOST_PARSER_DEFAULT_ARM_TERMINATES
+OBJECT_VARIABLE=DEFAULT_ARM_TERMINATES_OBJECT
+PRODUCER_VARIABLE=DEFAULT_ARM_TERMINATES_PRODUCER
+SOURCE_VARIABLE=DEFAULT_ARM_TERMINATES_SOURCE
+PREFIX_VARIABLE=DEFAULT_ARM_TERMINATES_PREFIX
+CMAKE_TARGET=hcc
+#
+# THE SELECTOR IS A DEDICATED MACRO, NOT THE GENERIC ONE
+#
+COMMAND=grep -c "HCC_USE_SELFHOST_COMPONENTS" src/CMakeLists.txt
+   14
+#
+   The generic selector activates the LEXER delegations too, which
+   would require linking the lexer subjects.  This migration is
+   independent of the lexer migrations, so it has its OWN flag.  The
+   generic flag count is UNCHANGED by this ACT.
+#
+# THE LIVE CMAKE CACHE
+#
+   DEFAULT_ARM_TERMINATES_OBJECT:UNINITIALIZED=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-default-arm-subject.o
+   DEFAULT_ARM_TERMINATES_PREFIX:UNINITIALIZED=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/bootstrap-prefix
+   DEFAULT_ARM_TERMINATES_PRODUCER:UNINITIALIZED=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/host-stage0/hcc
+   DEFAULT_ARM_TERMINATES_SOURCE:UNINITIALIZED=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/tools/bootstrap/selfhost-parser-slice08.HC
+   HCC_USE_SELFHOST_PARSER_DEFAULT_ARM_TERMINATES:BOOL=ON
+#
+# THE PRODUCTION COMPILE DEFINITION
+#
+   -DHCC_USE_SELFHOST_PARSER_DEFAULT_ARM_TERMINATES
+#
+# THE VERIFICATION TARGET GATES THE LINK
+#
+   1425:    add_dependencies(hcc hcc-default-arm-token-map-verify)
+   1430:        LINK_DEPENDS "${DEFAULT_ARM_TERMINATES_OBJECT}")
+   1433:    target_link_libraries(hcc ${DEFAULT_ARM_TERMINATES_OBJECT})
+#
+SELECTOR_IS_DEDICATED=YES
+SELECTOR_GATES_THE_LINK=YES
+SELECTOR_AND_BUILD_GRAPH_STATUS=PASS

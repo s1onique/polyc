@@ -1,0 +1,57 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE08
+ACT_PHASE=C2-IMPL
+EVIDENCE_KIND=polyc-subject-source-and-symbol
+#
+THE NEW POLYC COMPONENT AND THE SYMBOL IT EXPORTS.
+#
+SOURCE=tools/bootstrap/selfhost-parser-slice08.HC
+SOURCE_SHA256=57e8f5b0c209241c79d50beb653f525b809e8fd8a71827d9e0c7f926ae3c6f28
+SOURCE_LINES=112
+#
+THE EXPORTED SYMBOL
+#
+COMMAND=nm build/parser-default-arm-subject.o | grep Bootstrap
+   0000000000000000 T _BootstrapDefaultArmTerminates
+#
+COMMAND=nm build/parser-default-arm-subject.o | grep -c " T _BootstrapDefaultArmTerminates$"
+   1
+#
+   The subject object defines EXACTLY ONE global text symbol, named
+   _BootstrapDefaultArmTerminates (the Mach-O spelling of
+   BootstrapDefaultArmTerminates).
+#
+THE ABI
+#
+   long long BootstrapDefaultArmTerminates(long long ast_kind)
+   I64 ast_kind -> I64 terminate
+#
+THE WHOLE FIVE-KIND RULE, AS IMPLEMENTED
+#
+   9://   I64 BootstrapDefaultArmTerminates(I64 ast_kind) -> I64;
+   101:I64 BootstrapDefaultArmTerminates(I64 ast_kind)
+   103:  if (ast_kind == 274) return 1;   // AST_COMPOUND_STMT
+   104:  if (ast_kind == 287) return 1;   // AST_CASE
+   105:  if (ast_kind == 280) return 1;   // AST_BREAK
+   106:  if (ast_kind == 270) return 1;   // AST_RETURN
+   107:  if (ast_kind == 258) return 1;   // AST_GOTO
+   111:  return 0;
+#
+   The component implements the ENTIRE five-kind rule: 274, 287, 280,
+   270 and 258 terminate; EVERY other value (including AST_DEFAULT 293
+   and every out-of-enum probe) does not.  It is TOTAL over the whole
+   I64 domain and has NO range check, exactly as the legacy condition
+   has none.
+#
+THE PURITY CONSTRAINTS, AS HONOURED
+#
+   no host AST pointer        (the argument is a SCALAR)
+   no allocation              (no allocation appears in the source)
+   no global mutable state    (the component reads only its argument)
+   no callback                (no callback is taken or invoked)
+   no recovery dependency     (no recovery state is read)
+   no host string             (no string is read or produced)
+#
+POLYC_SYMBOL=BootstrapDefaultArmTerminates
+POLYC_SYMBOL_DEFINED_COUNT=1
+POLYC_SUBJECT_IMPLEMENTS_WHOLE_RULE=YES
+POLYC_SUBJECT_STATUS=PASS
