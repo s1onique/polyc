@@ -7901,3 +7901,170 @@ that takes it MUST run its own causal feasibility experiment.
 See
 `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE08.md` and
 `evidence/ACT-POLYC-SELFHOST-PARSER-SLICE08/`.
+
+---
+
+## ACT-POLYC-SELFHOST-PARSER-SLICE08-EVIDENCE-CORRECTION01 -- CLOSE
+
+**Class:** SELFHOST / PARSER / EVIDENCE-INTEGRITY / APPEND-ONLY
+**Predecessor:** `ACT-POLYC-SELFHOST-PARSER-SLICE08` (closed, `PASS`,
+left **UNCHANGED**)
+**Disposition:** `PASS_EVIDENCE_CORRECTED`
+
+This ACT reconciled two evidence-integrity defects in `SLICE08` from
+the committed bytes.  It is an **evidence-only** correction: it
+repaired no historical file, because repairing them would rewrite
+immutable evidence, and it changed **no** production source.
+
+### Defect 1 -- the inherited-control count
+
+```text
+F = 24   the RECON07 frozen obligations
+B = 23   the SLICE08 C0 inherited-controls-contract.tsv data rows
+J = 24   the SLICE08 C3 inherited-controls-join.tsv data rows
+
+F\B = {SL-EC-06}      J\B = {SL-EC-06}
+B\F = {}              J\F = {}
+B\J = {}              F\J = {}
+```
+
+`SL-EC-06` **was** frozen by RECON07 (at
+`c2/selected-negative-controls.md:33`, inside a hash-frozen
+contract) and **was** omitted from the SLICE08 C0 contract, which
+had copied the frozen set verbatim.  The C3 join restored it as a
+row but never reconciled the summary, so it asserted
+`INHERITED_CONTROLS_TOTAL=23` and `INHERITED_CONTROLS_EXTRA=0`
+against its own **24** data rows.
+
+```text
+SL_EC_06_FROZEN_STATUS=FROZEN_OMITTED_FROM_C0
+SLICE08_C3_HISTORICAL_EXTRA_IDS=SL-EC-06
+SLICE08_C3_HISTORICAL_EXTRA_CLAIM=FALSE
+```
+
+On the separate **execution** axis, `SL-EC-06` had no adverse
+execution evidence at all: it occurs in exactly one place in the
+whole SLICE08 evidence tree -- the C3 join row that makes the claim
+-- and **15 of the 24** C3 rows are self-referential in that way.
+
+The frozen obligation was discharged by **two NEW, correction-owned
+adverse executions**, never backdated: `E8-EC06-A` (the unknown-ID
+half, detected by the RECON07 independent recomputer's roster
+lookup) and `E8-EC06-B` (the missing-fact half, detected by the
+canonical 13-clause eligibility checker's field count).  Neither
+canonical detector discharges the obligation alone.
+
+### Defect 2 -- the source-range digest
+
+```text
+git show <commit>:src/parser.c | sed -n '1683,1684p' | shasum -a 256
+
+RECON07-CLOSE, RECON07-C0, SLICE08-C0, SLICE08-C1
+    175 bytes  a9fcb6a7...  THE LEGACY INLINE PREDICATE
+SLICE08-C2, SLICE08-C3, SLICE08-CLOSE
+     94 bytes  a9a33ff1...  A COMMENT FRAGMENT
+```
+
+The decision itself **moved** to `1736..1738`
+(`dc43f25e...`, 152 bytes), located by the text of the condition
+rather than by inheriting the old line numbers.  Three mutually
+distinct byte-range identities, differing in digest, in length and in
+subject.
+
+The C1 evidence file was committed **at** the C1 commit and printed
+the POST-C2 digest and the POST-C2 line numbers of a helper that did
+not exist yet.  That is a **chronology defect**, not a typo.
+
+```text
+ORIGINAL_HASH_EQUALITY_CLAIM=FALSE
+```
+
+The sub-claim that IS true: the decision did not change at C1.  The
+C1 tree carried the RECON07 pristine C source byte for byte.
+
+### What this ACT did NOT do
+
+It did **not** edit any historical evidence file, any closed ACT or
+HANDOFF, or any published commit message; it did **not** re-run or
+re-label the RECON07 pre-migration C mutation; it did **not** weaken
+any gate; it did **not** add a gate; it did **not** change any
+production source, selector or build rule; and it did **not**
+preselect a successor.
+
+### The new artifacts
+
+One bounded substantive PolyC tool,
+`tools/quality/parser-slice08-evidence-correction01-verify.HC`, with
+six modes (`FREEZE`, `JOIN`, `PROVENANCE`, `NEGATIVE`, `VERIFY`,
+`SELFTEST`), 37 of 37 self-test vectors, and **no hardcoded
+expected control-ID list and no hardcoded expected summary value**.
+It is accompanied by **ten correction-owned negative controls**, all
+of which fire their own reason-specific class.
+
+An independent witness (a POSIX `awk` program for the control
+reconciliation and a POSIX shell program over the Git objects for the
+chronology) agrees with the PolyC auditor on every number.
+
+### The five historical ACs
+
+```text
+HISTORICAL_AC_ROWS_SUPPLEMENTED=5   (AC09, AC33, AC35, AC42, AC49)
+HISTORICAL_AC_ROWS_CONTRADICTED=0
+HISTORICAL_LEDGER_EDITED=NO
+HISTORICAL_PASS_INHERITED_BLINDLY=NO
+```
+
+`AC33` and `AC35` were **not** independently discharged for
+`SL-EC-06` at the historical C3.  The production transfer is **not**
+challenged: none of the five bears on the eighth authority, the
+four-generation differential, the 41-row fixture or the
+post-migration PolyC mutation.  What was defective is the **proof
+accounting** of two evidence files.
+
+### The conservation
+
+```text
+PRODUCTION_SEMANTIC_DELTA=0
+CURRENT_POLYC_PARSER_AUTHORITIES=8
+PARSER=376/376 over 90 files, ordered MD5 b6f117eb1386ca80f81bc06226e2a741
+LEXER_DIRECT=89/89, 45/45, 23/23
+LEXER07_BROAD=FAIL (the KNOWN BASELINE, 15 identities, MD5 7ee761440de83552e751e3c3976c1683)
+CROSS_TARGET=67 environment-prefix failures (the KNOWN BASELINE)
+F_NO_PYTHON=12 known violations (the KNOWN BASELINE)
+F_POLYC_TOOLS=UNAVAILABLE
+NEW_FAILURE_IDENTITIES=0
+GATE_FAST=PASS (exit 0)
+GATE_PUSH=PASS (exit 0)
+FROZEN_PREDECESSOR_PATHS_UNCHANGED=231/231
+```
+
+Every historical nonzero status is preserved exactly and is **not**
+relabelled PASS.
+
+### The residue
+
+The SLICE08 C3 join file still asserts `TOTAL=23` and `EXTRA=0`
+against its own 24 rows, and 15 of its rows remain
+self-referential.  Both facts are historical evidence and are **not**
+repaired: F14 forbids it.  The corrected accounting lives in this
+ACT's own ledger at
+`evidence/ACT-POLYC-SELFHOST-PARSER-SLICE08-EVIDENCE-CORRECTION01/c2/correction-owned-control-ledger.tsv`.
+
+### NEXT
+
+```text
+NEXT_ACT        = ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08  (PROPOSED, not authorized)
+NEXT_TARGET     = NONE
+SLICE09_AUTHORIZED = NO
+```
+
+**No successor is preselected and SLICE09 is NOT authorized.**  The
+proposed successor is a fresh source-bound reconnaissance and
+selection after eight authorities.  This correction does **not**
+assume SUB-004, does **not** implement SLICE09, and makes neither a
+side effect.
+
+See
+`docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE08-EVIDENCE-CORRECTION01.md`
+and
+`evidence/ACT-POLYC-SELFHOST-PARSER-SLICE08-EVIDENCE-CORRECTION01/`.
