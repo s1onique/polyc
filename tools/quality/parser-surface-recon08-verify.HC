@@ -374,9 +374,11 @@ class FactRow {
   I64 r6line;
   I64 eligible;
   I64 malformed;
+  I64 has_dims;    // set when a dimension row supplied R1..R5 and R6
 };
 
 static FactRow Facts[MAX_ROWS];
+static I64 DimsSuppliedArr[1];
 // THE THREE COUNTERS BELOW ARE DECLARED AS ONE-ELEMENT ARRAYS, NOT AS
 // INITIALISED SCALARS.
 //
@@ -545,6 +547,7 @@ static I64 LoadDims(U8 *path)
   U8 *p = buf;
   U8 *end = buf + fsize;
   I64 matched = 0;
+  DimsSuppliedArr[0] = 1;
   while (p < end) {
     U8 *line_start = p;
     while (p < end && *p != '\n') p = p + 1;
@@ -561,9 +564,13 @@ static I64 LoadDims(U8 *path)
     for (I64 i = 0; i < FactCountArr[0]; i = i + 1) {
       FactRow *r = &Facts[i];
       if (!StrEq(r->id, f[0])) continue;
-      for (I64 d = 1; d <= 5; d = d + 1) r->dims[d] = ParseInt(f[d]);
+      // The dimension table's schema is
+      //   01 candidate_id  02 R0  03 R1  04 R2  05 R3  06 R4  07 R5
+      //   08 R6  09 eligible  10 rationale
+      // so R1..R5 live in fields 3..7 and R6 in field 8.
+      for (I64 d = 1; d <= 5; d = d + 1) r->dims[d] = ParseInt(f[d + 1]);
       // R6 is "<file>:<line>"; split it back into its two parts.
-      U8 *r6 = f[6];
+      U8 *r6 = f[7];
       U8 *colon = r6;
       while (*colon != 0 && *colon != ':') colon = colon + 1;
       if (*colon == ':') {
@@ -572,6 +579,7 @@ static I64 LoadDims(U8 *path)
         r->r6line = ParseInt(colon + 1);
       }
       matched = matched + 1;
+      r->has_dims = 1;
       break;
     }
   }
@@ -591,6 +599,10 @@ static I64 ComputeOrder(I64 *order)
     for (I64 i = 0; i < FactCountArr[0]; i = i + 1) {
       if (used[i]) continue;
       if (!Facts[i].eligible) continue;
+      // A candidate with NO dimension row has no R1..R5 and no R6, so
+      // it cannot be placed in the order.  It is EXCLUDED, exactly as
+      // the canonical ranker excludes it by never receiving it.
+      if (DimsSuppliedArr[0] && !Facts[i].has_dims) continue;
       if (best < 0) { best = i; continue; }
       if (CompareRows(&Facts[i], &Facts[best]) < 0) best = i;
     }
@@ -921,6 +933,299 @@ static I64 LoadCanonElig(U8 *path)
   return 0;
 }
 
+// ------------------------------------------------------------------
+// MODE=FIXTURE -- THE FIXTURE-INTEGRITY DETECTOR.
+//
+// The frozen fixture is a table of rows:
+//
+//   01 row_id  02 token_type  03 keyword_id  04 expected_selector
+//   05 constructor
+//
+// The detector compares the fixture against the frozen one, BY EXACT
+// ROW ID, and reports the FIRST differing row.  A corrupted expected
+// value is a FIXTURE_ROW_MISMATCH with the exact row.
+//
+// USAGE:
+//   build/parser-surface-recon08-verify FIXTURE <frozen.tsv> <observed.tsv>
+// ------------------------------------------------------------------
+
+static I64 ModeFixture(U8 *frozen_path, U8 *obs_path)
+{
+  I64 fsize = 0;
+  I64 osize = 0;
+  U8 *fb = FileRead(frozen_path, &fsize);
+  U8 *ob = FileRead(obs_path, &osize);
+  if (fb == NULL) { "STATUS=FAIL\nREASON=CANNOT_READ_FROZEN_FIXTURE\n"; return 1; }
+  if (ob == NULL) { "STATUS=FAIL\nREASON=CANNOT_READ_OBSERVED_FIXTURE\n"; return 1; }
+  I64 rows = 0;
+  I64 mismatches = 0;
+  // For every observed row, find the frozen row with the same ID and
+  // compare the remaining fields.
+  U8 *op = ob;
+  U8 *oend = ob + osize;
+  while (op < oend) {
+    U8 *ols = op;
+    while (op < oend && *op != '\n') op = op + 1;
+    I64 llen = op - ols;
+    if (op < oend) op = op + 1;
+    // Copy the line out before splitting it: a NUL written into the
+    // buffer would truncate the next line scan.
+    U8 *lbuf = MAlloc(llen + 1);
+    for (I64 q = 0; q < llen; q = q + 1) lbuf[q] = ols[q];
+    lbuf[llen] = 0;
+    if (llen == 0) { Free(lbuf); continue; }
+    if (lbuf[0] == '#') { Free(lbuf); continue; }
+    U8 *of[5];
+    I64 onf = SplitTabs(lbuf, of, 5);
+    if (onf < 5) { Free(lbuf); continue; }
+    rows = rows + 1;
+    // The observed row's fields are COPIED OUT: the split above
+    // replaced the line's tabs with NULs, and the frozen lookup below
+    // re-reads the observed row only through these copies.
+    U8 *ocopy[5];
+    for (I64 k = 0; k < 5; k = k + 1) {
+      I64 l = StrLen(of[k]);
+      U8 *cp = MAlloc(l + 1);
+      for (I64 q = 0; q < l; q = q + 1) cp[q] = of[k][q];
+      cp[l] = 0;
+      ocopy[k] = cp;
+    }
+    Free(lbuf);
+    // Find the frozen row with the same ID.
+    //
+    // The frozen buffer is scanned by BYTE OFFSET, using a COPY of
+    // each candidate line, so that splitting a line never writes a
+    // NUL into the buffer that the line scan is still walking.  A
+    // NUL written into the buffer would truncate the next line scan
+    // at that NUL and silently skip the following row.
+    U8 *fp = fb;
+    U8 *fend = fb + fsize;
+    U8 *fcopy[5];
+    I64 found = 0;
+    while (fp < fend) {
+      U8 *fls = fp;
+      while (fp < fend && *fp != '\n') fp = fp + 1;
+      I64 llen = fp - fls;
+      if (fp < fend) fp = fp + 1;
+      // Copy the line out before touching it.
+      U8 *lbuf = MAlloc(llen + 1);
+      for (I64 q = 0; q < llen; q = q + 1) lbuf[q] = fls[q];
+      lbuf[llen] = 0;
+      if (llen == 0) { Free(lbuf); continue; }
+      if (lbuf[0] == '#') { Free(lbuf); continue; }
+      U8 *ff[5];
+      I64 fnf = SplitTabs(lbuf, ff, 5);
+      if (fnf < 5) { Free(lbuf); continue; }
+      if (!StrEq(ff[0], ocopy[0])) { Free(lbuf); continue; }
+      for (I64 k = 0; k < 5; k = k + 1) {
+        I64 l = StrLen(ff[k]);
+        U8 *cp = MAlloc(l + 1);
+        for (I64 q = 0; q < l; q = q + 1) cp[q] = ff[k][q];
+        cp[l] = 0;
+        fcopy[k] = cp;
+      }
+      Free(lbuf);
+      found = 1;
+      break;
+    }
+    if (!found) {
+      mismatches = mismatches + 1;
+      "DETECTOR=FIXTURE_ROW_MISMATCH\nROW_ID=%s\nREASON=THE_ROW_IS_ABSENT_FROM_THE_FROZEN_FIXTURE\n", ocopy[0];
+      continue;
+    }
+    I64 same = 1;
+    for (I64 k = 1; k < 5; k = k + 1) {
+      if (!StrEq(fcopy[k], ocopy[k])) { same = 0; break; }
+    }
+    if (!same) {
+      mismatches = mismatches + 1;
+      "DETECTOR=FIXTURE_ROW_MISMATCH\nROW_ID=%s\n", ocopy[0];
+      "EXPECTED=%s %s %s %s\n", fcopy[1], fcopy[2], fcopy[3], fcopy[4];
+      "ACTUAL=%s %s %s %s\n", ocopy[1], ocopy[2], ocopy[3], ocopy[4];
+    }
+  }
+  "FIXTURE_ROWS=%d\n", rows;
+  "FIXTURE_MISMATCHES=%d\n", mismatches;
+  if (mismatches == 0) { "STATUS=PASS\n"; return 0; }
+  "STATUS=FAIL\n";
+  return 1;
+}
+
+// ------------------------------------------------------------------
+// MODE=G0 -- THE G0-PROVENANCE DETECTOR.
+//
+// A G0 oracle is GENUINE only when it is the REAL PRODUCTION
+// TRANSLATION UNIT compiled with the candidate selector OFF.
+//
+// A G0 oracle is NOT genuine when:
+//   (a) it is a HANDMADE re-implementation of the rule: it does not
+//       carry the production function-scoped relocations to the
+//       statement constructors; or
+//   (b) it IMPORTS the PolyC successor symbol: then the "legacy"
+//       oracle is not legacy at all.
+//
+// The detector works on the OBJECT FILE, so it checks the artefact
+// that would actually be linked.
+//
+// USAGE:
+//   build/parser-surface-recon08-verify G0 <object-file> <successor-symbol> <constructor-symbol> ...
+//
+// ------------------------------------------------------------------
+
+static I64 ModeG0(U8 *obj_path, U8 *succ, U8 *ctors[], I64 nctors)
+{
+  I64 osize = 0;
+  U8 *obj = FileRead(obj_path, &osize);
+  if (obj == NULL) {
+    "STATUS=FAIL\nREASON=CANNOT_READ_OBJECT\nINPUT=%s\n", obj_path;
+    return 1;
+  }
+  // Does the object IMPORT the PolyC successor symbol?
+  I64 imports_successor = 0;
+  {
+    I64 sl = StrLen(succ);
+    for (I64 i = 0; i + sl <= osize; i = i + 1) {
+      if (obj[i] != succ[0]) continue;
+      I64 same = 1;
+      for (I64 j = 1; j < sl; j = j + 1) if (obj[i + j] != succ[j]) { same = 0; break; }
+      if (same) { imports_successor = 1; break; }
+    }
+  }
+  // Does the object carry the PRODUCTION constructor relocations?
+  I64 found_ctors = 0;
+  for (I64 c = 0; c < nctors; c = c + 1) {
+    I64 sl = StrLen(ctors[c]);
+    for (I64 i = 0; i + sl <= osize; i = i + 1) {
+      if (obj[i] != ctors[c][0]) continue;
+      I64 same = 1;
+      for (I64 j = 1; j < sl; j = j + 1) if (obj[i + j] != ctors[c][j]) { same = 0; break; }
+      if (same) { found_ctors = found_ctors + 1; break; }
+    }
+  }
+  "G0_OBJECT=%s\n", obj_path;
+  "G0_IMPORTS_SUCCESSOR=%d\n", imports_successor;
+  "G0_CONSTRUCTOR_RELOCATIONS_FOUND=%d\n", found_ctors;
+  "G0_CONSTRUCTORS_EXPECTED=%d\n", nctors;
+  if (imports_successor) {
+    "DETECTOR=G0_NOT_GENUINE_C_TU\nREASON=THE_G0_OBJECT_IMPORTS_THE_POLYC_SUCCESSOR_SYMBOL\n";
+    "STATUS=FAIL\n";
+    return 1;
+  }
+  if (found_ctors < nctors) {
+    "DETECTOR=G0_NOT_GENUINE_C_TU\nREASON=THE_G0_OBJECT_IS_NOT_THE_PRODUCTION_TRANSLATION_UNIT\n";
+    "STATUS=FAIL\n";
+    return 1;
+  }
+  "STATUS=PASS\n";
+  return 0;
+}
+
+// ------------------------------------------------------------------
+// MODE=ROSTER -- THE UNKNOWN-ID DETECTOR.
+//
+// A candidate ID that is not in the FROZEN ROSTER is UNKNOWN, whether
+// it appears in the facts table, in the checker's output, or in both.
+//
+// This is the detector that the canonical checker CANNOT provide: the
+// canonical checker adjudicates ANY row it is given, so an injected
+// unknown ID is silently adjudicated as a normal candidate.  The
+// roster comparison is what makes an unknown ID detectable.
+//
+// USAGE:
+//   build/parser-surface-recon08-verify ROSTER <roster.txt> <facts.tsv>
+//   build/parser-surface-recon08-verify ROSTER <roster.txt> <facts.tsv> <checker-out.tsv>
+//
+// The roster file is one candidate ID per line; `#` starts a comment.
+// ------------------------------------------------------------------
+
+static U8 *RosterIds[MAX_ROWS];
+static I64 RosterCountArr[1];
+
+static I64 LoadRoster(U8 *path)
+{
+  I64 fsize = 0;
+  U8 *buf = FileRead(path, &fsize);
+  if (buf == NULL) return 1;
+  RosterCountArr[0] = 0;
+  U8 *p = buf;
+  U8 *end = buf + fsize;
+  while (p < end) {
+    U8 *ls = p;
+    while (p < end && *p != '\n') p = p + 1;
+    U8 *le = p;
+    if (p < end) p = p + 1;
+    if (le > ls && *(le - 1) == '\r') le = le - 1;
+    *le = 0;
+    if (*ls == 0) continue;
+    if (*ls == '#') continue;
+    if (RosterCountArr[0] >= MAX_ROWS) continue;
+    RosterIds[RosterCountArr[0]] = ls;
+    RosterCountArr[0] = RosterCountArr[0] + 1;
+  }
+  return 0;
+}
+
+static I64 InRoster(U8 *id)
+{
+  for (I64 i = 0; i < RosterCountArr[0]; i = i + 1) {
+    if (StrEq(RosterIds[i], id)) return 1;
+  }
+  return 0;
+}
+
+static I64 ModeRoster(U8 *roster_path, U8 *facts_path, U8 *canon_path)
+{
+  if (LoadRoster(roster_path)) {
+    "STATUS=FAIL\nREASON=CANNOT_READ_ROSTER\nINPUT=%s\n", roster_path;
+    return 1;
+  }
+  if (LoadFacts(facts_path)) {
+    "STATUS=FAIL\nREASON=CANNOT_READ_FACTS\nINPUT=%s\n", facts_path;
+    return 1;
+  }
+  I64 unknown_facts = 0;
+  for (I64 i = 0; i < FactCountArr[0]; i = i + 1) {
+    if (InRoster(Facts[i].id)) continue;
+    unknown_facts = unknown_facts + 1;
+    "DETECTOR=UNKNOWN_CANDIDATE_ID\nCANDIDATE_ID=%s\nSOURCE=FACTS\n", Facts[i].id;
+  }
+  I64 unknown_canon = 0;
+  if (canon_path != NULL) {
+    if (LoadCanonElig(canon_path)) {
+      "STATUS=FAIL\nREASON=CANNOT_READ_CANONICAL_ELIGIBILITY\nINPUT=%s\n", canon_path;
+      return 1;
+    }
+    for (I64 k = 0; k < CanonCountArr[0]; k = k + 1) {
+      if (InRoster(Canon[k].id)) continue;
+      unknown_canon = unknown_canon + 1;
+      "DETECTOR=UNKNOWN_CANDIDATE_ID\nCANDIDATE_ID=%s\nSOURCE=CHECKER_OUTPUT\n", Canon[k].id;
+    }
+  }
+  // A roster ID that no fact row claims is a MISSING candidate.
+  I64 missing = 0;
+  for (I64 i = 0; i < RosterCountArr[0]; i = i + 1) {
+    I64 found = 0;
+    for (I64 k = 0; k < FactCountArr[0]; k = k + 1) {
+      if (StrEq(Facts[k].id, RosterIds[i])) { found = 1; break; }
+    }
+    if (!found) {
+      missing = missing + 1;
+      "DETECTOR=MISSING_CANDIDATE_ID\nCANDIDATE_ID=%s\nSOURCE=ROSTER\n", RosterIds[i];
+    }
+  }
+  "ROSTER_COUNT=%d\n", RosterCountArr[0];
+  "FACTS_COUNT=%d\n", FactCountArr[0];
+  "UNKNOWN_CANDIDATE_ID=%d\n", unknown_facts + unknown_canon;
+  "MISSING_CANDIDATE_ID=%d\n", missing;
+  if (unknown_facts + unknown_canon + missing == 0) {
+    "STATUS=PASS\n";
+    return 0;
+  }
+  "STATUS=FAIL\n";
+  return 1;
+}
+
+
 static I64 ModeJoin(U8 *facts_path, U8 *dims_path, U8 *canon_path, U8 *ranker_path)
 {
   if (LoadFacts(facts_path)) {
@@ -1180,6 +1485,26 @@ I32 Main(I32 argc, U8 **argv)
       nfiles = nfiles + 1;
     }
     return ModeAnchor(argv[2], files, nfiles);
+  }
+  if (StrEq(mode, "FIXTURE")) {
+    if (argc < 4) { "STATUS=FAIL\nREASON=MISSING_INPUTS\n"; return 1; }
+    return ModeFixture(argv[2], argv[3]);
+  }
+  if (StrEq(mode, "G0")) {
+    if (argc < 5) { "STATUS=FAIL\nREASON=MISSING_INPUTS\n"; return 1; }
+    U8 *ctors[32];
+    I64 nctors = 0;
+    for (I64 i = 4; i < argc && nctors < 32; i = i + 1) {
+      ctors[nctors] = argv[i];
+      nctors = nctors + 1;
+    }
+    return ModeG0(argv[2], argv[3], ctors, nctors);
+  }
+  if (StrEq(mode, "ROSTER")) {
+    if (argc < 4) { "STATUS=FAIL\nREASON=MISSING_INPUTS\n"; return 1; }
+    U8 *canon = NULL;
+    if (argc > 4) canon = argv[4];
+    return ModeRoster(argv[2], argv[3], canon);
   }
   if (StrEq(mode, "JOIN")) {
     if (argc < 5) { "STATUS=FAIL\nREASON=MISSING_INPUTS\n"; return 1; }

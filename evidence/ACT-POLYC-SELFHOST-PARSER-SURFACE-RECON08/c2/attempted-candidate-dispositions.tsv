@@ -1,0 +1,59 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=attempted-candidate-dispositions
+#
+# THE DISPOSITION OF EVERY ATTEMPTED CANDIDATE, IN THE VERIFIED ORDER.
+#
+# The order was COMPUTED by the canonical ranker and, independently,
+# by the RECON08 PolyC verifier.  The two agree on every position.
+#
+# Schema: rank <TAB> candidate_id <TAB> class <TAB> decision
+#         <TAB> attempted <TAB> disposition <TAB> cause
+#
+1	SUB-004	STRUCTURAL	STATEMENT_DISPATCH	YES	QUALIFIED_AND_SELECTED	Bounded keyword-to-constructor dispatch.  Bounded scalar ABI.  A successful, causally distinctive, restored REAL-compiler experiment exists (see candidate-causal-build-and-witness.tsv).
+2	CAND-018	SCALAR	COMPOUND_ASSIGN_CLASSIFIER	NO	DEFERRED	The rank leader was qualified and selected.  The lower-ranked candidates were NOT causally attempted; they remain QUALIFIED CANDIDATES for a future ACT.
+3	CAND-021	SCALAR	BINOP_TO_PUNCT_INVERSE	NO	DEFERRED	As above.
+4	CAND-025	SCALAR	ASSIGNMENT_CLASSIFIER	NO	DEFERRED	As above.
+5	CAND-026	SCALAR	VALID_POINTER_OP_CLASSIFIER	NO	DEFERRED	As above.
+6	CAND-036	SCALAR	BIN_CMP_CLASSIFIER	NO	DEFERRED	As above.
+7	CAND-037	SCALAR	RANGE_OPERATOR_CLASSIFIER	NO	DEFERRED	As above.
+8	CAND-030	SCALAR	CLASS_OR_UNION_CLASSIFIER	NO	DEFERRED	As above.
+9	CAND-022	SCALAR	FORMAT_SPEC_COUNTER	NO	DEFERRED	As above.  RECON07 classifies it as DIAGNOSTICS-ONLY; its R0 is 1 for that reason.
+10	CAND-023	SCALAR	FORMAT_FUNCTION_TABLE	NO	DEFERRED	As above.  RECON07 classifies it as DIAGNOSTICS-ONLY; its R0 is 1 for that reason.
+#
+# --- THE NON-ATTEMPTED, ELIGIBILITY-EXCLUDED POPULATION ---
+#
+# These fourteen candidates were NOT reached in the order: the
+# canonical checker excluded them, so they were never in the ranker
+# input.  Their exclusion reasons are in selection-qualification.tsv.
+#
+candidate_id	clause_failed	cause
+SUB-001	02	Already PolyC-owned (BootstrapSwitchArmTerminates).
+SUB-002	02	Already PolyC-owned (BootstrapDefaultArmTerminates).
+SUB-003	02	Already PolyC-owned (BootstrapCompoundBlockAppendsStatement).
+SUB-005	12	Transitively depends on the mutable cc->symbol_table.
+SUB-006	04, 05, 12	Owns setjmp and writes the recovery state.
+SUB-007	05, 06, 07, 12	Nonlocal recovery and host graph writes.
+SUB-008	04, 05, 06, 07, 09, 12	The whole-function parseStatement.
+SUB-009	04, 05, 06, 07, 09, 12	The whole-function parseExpr.
+SUB-010	12	Recursive host AST graph walk.
+SUB-011	12	Recursive host AST graph walk.
+SUB-012	12	Recursive host AST graph walk.
+CAND-038	12, 13	Unbounded host string in, new host string out.
+CAND-039	12	Host scope in, new host string out.
+CAND-040	12, 13	Opaque unbounded host buffer.
+#
+# --- THE ACCOUNTING ---
+#
+CANDIDATES_IN_THE_VERIFIED_ORDER=10
+CANDIDATES_ATTEMPTED=1
+CANDIDATES_QUALIFIED=1
+CANDIDATES_ELIGIBILITY_EXCLUDED=14
+CANDIDATE_POPULATION=24
+#
+# EVERY candidate has a disposition.  NONE was silently skipped and
+# NONE was manually promoted.  The selected candidate is the rank-1
+# candidate, and it was SELECTED only because it QUALIFIED under an
+# executed real-compiler causal experiment.
+#
+ATTEMPTED_CANDIDATE_DISPOSITIONS_STATUS=PASS

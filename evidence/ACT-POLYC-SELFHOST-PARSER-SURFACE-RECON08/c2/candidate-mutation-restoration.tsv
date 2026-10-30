@@ -1,0 +1,88 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=candidate-mutation-restoration
+#
+# THE MUTATION RESTORATION PROOF.
+#
+# The mutant worktree's source was restored, the compiler was REBUILT
+# from the restored source, and the SAME frozen witnesses were re-run.
+# The restored compiler must reproduce the PRISTINE observations
+# exactly.
+#
+# ------------------------------------------------------------------
+# THE RESTORATION
+# ------------------------------------------------------------------
+#
+COMMAND=git checkout src/parser.c
+   Updated 1 path from the index
+COMMAND=shasum -a 256 src/parser.c
+   8e68487e1fd351cb888c5044cfb71871628d904dd089305d59138b2f017bee00
+ENTRY_SRC_PARSER_C_SHA256=8e68487e1fd351cb888c5044cfb71871628d904dd089305d59138b2f017bee00
+RESTORED_SOURCE_BYTE_IDENTICAL_TO_ENTRY=YES
+COMMAND=git status --short
+   (empty -- the worktree is clean)
+RESTORED_WORKTREE_CLEAN=YES
+#
+# ------------------------------------------------------------------
+# THE REBUILD
+# ------------------------------------------------------------------
+#
+COMMAND=make production-hcc
+WT_RESTORE_BUILD_EXIT=0
+RESTORED_HCC_SHA256=6be93a72f9aea8cf0099b287ee34e8504baf984f29823453641214315fcb394d
+PRISTINE_HCC_SHA256=6be93a72f9aea8cf0099b287ee34e8504baf984f29823453641214315fcb394d
+RESTORED_COMPILER_BYTE_IDENTICAL_TO_PRISTINE=YES
+RESTORED_OBJECT_SHA256=13db2f187d0213204f24b125030e828ce269e5242247324128db34b2dd5437b2
+PRISTINE_OBJECT_SHA256=13db2f187d0213204f24b125030e828ce269e5242247324128db34b2dd5437b2
+RESTORED_OBJECT_BYTE_IDENTICAL_TO_PRISTINE=YES
+#
+# ------------------------------------------------------------------
+# THE RE-RUN OF THE SAME FROZEN WITNESSES
+# ------------------------------------------------------------------
+#
+WITNESS_ID=w1
+RESTORED_ACCEPTED=YES
+RESTORED_OBJECT_SHA256=c5f0c9387bf0a1ee04ef383f7fb6b3251f9da470d4efbef44af0c470cfb7b060
+PRISTINE_OBJECT_SHA256=c5f0c9387bf0a1ee04ef383f7fb6b3251f9da470d4efbef44af0c470cfb7b060
+RESTORED_W1_MATCHES_PRISTINE=YES
+#
+WITNESS_ID=w2
+RESTORED_REJECTED=YES
+RESTORED_DIAGNOSTIC=error: Unexpected keyword `I64` while parsing if body
+PRISTINE_DIAGNOSTIC=error: Unexpected keyword `I64` while parsing if body
+RESTORED_W2_MATCHES_PRISTINE=YES
+#
+# The restored compiler reproduces BOTH the pristine acceptance and
+# the pristine DIAGNOSTIC TEXT.  The mutant's diagnostic ("while
+# parsing while loop body") is GONE.
+#
+# ------------------------------------------------------------------
+# THE ROUND TRIP, IN ONE TABLE
+# ------------------------------------------------------------------
+#
+phase	compiler_sha256	w1_object	w1_result	w2_result
+PRISTINE	6be93a72f9aea8cf0099b287ee34e8504baf984f29823453641214315fcb394d	c5f0c938...	ACCEPTED	REJECTED (if body)
+MUTANT	c353a4935290e230feefc180b77b9e27c3f4cef6e1e085d048fc670972c99277	e0e4ddc8...	ACCEPTED	REJECTED (while loop body)
+RESTORED	6be93a72f9aea8cf0099b287ee34e8504baf984f29823453641214315fcb394d	c5f0c938...	ACCEPTED	REJECTED (if body)
+#
+RESTORED_EQUALS_PRISTINE=YES
+MUTATION_ROUND_TRIP_CLOSED=YES
+#
+# ------------------------------------------------------------------
+# THE TEMPORAL SEPARATION
+# ------------------------------------------------------------------
+#
+# This experiment is a PRE-MIGRATION C MUTANT.  It was executed
+# against the LEGACY C decision, BEFORE any PolyC successor exists.
+#
+# It CANNOT and DOES NOT discharge the future POST-POLYC-MUTANT
+# control, which must be a NEW experiment against the COMPILED POLYC
+# component, executed by SLICE09, with its own source, phase,
+# selector state, producer and execution ID.
+#
+THIS_EXPERIMENT_PHASE=RECON08-C2-PRE-MIGRATION-C-MUTANT
+THIS_EXPERIMENT_SELECTOR_STATE=the eight production selectors ON; NO candidate-specific selector exists
+THIS_EXPERIMENT_SUBJECT=the LEGACY C decision in src/parser.c
+THIS_EXPERIMENT_IS_A_POST_POLYC_MUTANT=NO
+#
+MUTATION_RESTORATION_STATUS=PASS

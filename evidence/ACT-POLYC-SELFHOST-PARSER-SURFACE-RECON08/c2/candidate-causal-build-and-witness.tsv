@@ -1,0 +1,194 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=candidate-causal-build-and-witness
+#
+# THE REAL-COMPILER CAUSAL EXPERIMENT FOR THE SELECTED CANDIDATE
+# SUB-004.
+#
+# EVERY BUILD BELOW IS A REAL PRODUCTION COMPILER BUILD, in a
+# DISPOSABLE DETACHED WORKTREE, from a FRESH source tree with its own
+# object directory and its own executable.  No cached or foreign
+# subject object was used.
+#
+# ------------------------------------------------------------------
+# THE SUBJECT
+# ------------------------------------------------------------------
+#
+CANDIDATE_ID=SUB-004
+CLASS=STRUCTURAL
+DECISION=STATEMENT_DISPATCH
+FILE=src/parser.c
+FUNCTION=parseStatement
+LINE_RANGE=1864..1877
+BYTE_RANGE=the bytes of lines 1864..1877
+SOURCE_SHA256=cd138cc52588fe48c2eab37421b4e25abbacd7ea10491bc696a1acab9a66d7e0
+ENTRY_COMMIT=4e01dbac59f18223efc5d168d07d232c6c7f0c42
+ENTRY_TREE=f72d358fe3b033c350cf9a7a841be5bb3333e56e
+#
+# The DECISION is:
+#
+#     if (tok->tk_type == TK_KEYWORD) {
+#         switch (tok->i64) {
+#             case KW_IF:       return parseIfStatement(cc);
+#             ...
+#
+# It reads ONE bounded token pair (tk_type, the keyword id) and
+# selects ONE bounded statement constructor.  The 12 constructors are
+# the dispatch TARGETS, not calls made BY the decision.
+#
+# ------------------------------------------------------------------
+# THE WORKTREES
+# ------------------------------------------------------------------
+#
+PRISTINE_WORKTREE=/tmp/polyc-recon08-pristine
+MUTANT_WORKTREE=/tmp/polyc-recon08-cand
+WORKTREE_HEAD=4e01dbac59f18223efc5d168d07d232c6c7f0c42 (detached)
+WORKTREE_IS_DISPOSABLE=YES
+AUTHORITATIVE_CHECKOUT_MUTATED=NO
+#
+# ------------------------------------------------------------------
+# THE PRODUCERS
+# ------------------------------------------------------------------
+#
+COMMAND=make production-hcc        (in each worktree)
+PRISTINE_BUILD_EXIT=0
+PRISTINE_HCC_SHA256=6be93a72f9aea8cf0099b287ee34e8504baf984f29823453641214315fcb394d
+PRISTINE_OBJECT_SHA256=13db2f187d0213204f24b125030e828ce269e5242247324128db34b2dd5437b2
+PRISTINE_SRC_PARSER_C_SHA256=8e68487e1fd351cb888c5044cfb71871628d904dd089305d59138b2f017bee00
+#
+MUTANT_BUILD_EXIT=0
+MUTANT_HCC_SHA256=c353a4935290e230feefc180b77b9e27c3f4cef6e1e085d048fc670972c99277
+MUTANT_OBJECT_SHA256=0eeda678069a501ac18872a36b9e91df5e4c8dc7f56bb20980f5007e18eb6be2
+MUTANT_SRC_PARSER_C_SHA256=f4be21418bedc8d29fd7e7de221fae0c14892bdad4b6f4c5f6781241365d7591
+#
+# ------------------------------------------------------------------
+# THE MUTATION
+# ------------------------------------------------------------------
+#
+# ONE LINE, ONE TOKEN, in the SELECTED DECISION, and NOWHERE else.
+#
+COMMAND=perl -pi -e 's/^            case KW_IF:       return parseIfStatement\(cc\);$/            case KW_IF:       return parseWhileStatement(cc);/' src/parser.c
+#
+COMMAND=git diff src/parser.c
+# --- a/src/parser.c
+# +++ b/src/parser.c
+# @@ -1863,7 +1863,7 @@ Ast *parseStatement(Cctrl *cc) {
+#      }
+#      if (tok->tk_type == TK_KEYWORD) {
+#          switch (tok->i64) {
+# -            case KW_IF:       return parseIfStatement(cc);
+# +            case KW_IF:       return parseWhileStatement(cc);
+#              case KW_FOR:      return parseForStatement(cc);
+#              case KW_WHILE:    return parseWhileStatement(cc);
+#              case KW_DO:       return parseDoWhileStatement(cc);
+#
+MUTATED_LINES=1
+MUTATED_TOKENS=1
+MUTATION_IS_INSIDE_THE_SELECTED_DECISION=YES
+MUTATION_TOUCHES_ANY_OTHER_FUNCTION=NO
+#
+# ------------------------------------------------------------------
+# A PREDECLARED MUTATION CASE THAT WAS ATTEMPTED AND FAILED
+# ------------------------------------------------------------------
+#
+# The FIRST predeclared mutation shape was a CASE-LABEL change:
+#
+# -            case KW_IF:       return parseIfStatement(cc);
+# +            case KW_WHILE:    return parseIfStatement(cc);
+#
+# It did NOT build:
+#
+# COMMAND=make production-hcc
+# /tmp/polyc-recon08-cand/src/parser.c:1868:18: error: duplicate case value '40'
+# 1 error generated.
+# WT_MUTANT_BUILD_EXIT=2
+#
+# This is recorded as an ATTEMPTED MUTATION WITH AN HONEST
+# UNQUALIFIED_BUILD_FAILURE outcome.  It is NOT presented as a
+# successful experiment, and the successful experiment below is a
+# DIFFERENT, predeclared mutation case whose build DID succeed.
+#
+ATTEMPTED_MUTATION_1=case-label-change
+ATTEMPTED_MUTATION_1_BUILD=UNQUALIFIED_BUILD_FAILURE
+ATTEMPTED_MUTATION_1_REASON=duplicate case value (the switch is over a dense enum, so relabelling a case collides)
+#
+# ------------------------------------------------------------------
+# THE WITNESS FIXTURE
+# ------------------------------------------------------------------
+#
+# Two witnesses, both source-derived and both exercising the SELECTED
+# decision through the REAL production entry point.
+#
+# W1: an `if` whose body is a BLOCK.
+#     The dispatch selects parseIfStatement.  It compiles.
+#     The compiled OBJECT differs between the pristine and the mutant
+#     compiler, because the mutant's `if` became a `while` loop with
+#     loop labels.
+#
+# W2: an `if` whose body is a DECLARATION.
+#     parseIfStatement ACCEPTS a declaration body; parseWhileStatement
+#     REJECTS it through parseValidPostControlFlowToken.  The two
+#     compilers therefore emit DIFFERENT DIAGNOSTICS, and the
+#     diagnostic text names the constructor that actually ran.
+#     This witness discriminates the decision's OUTCOME, not merely
+#     its presence.
+#
+WITNESS_ID=w1
+WITNESS_DESCRIPTION=if with a block body
+WITNESS_PRISTINE=ACCEPTED
+WITNESS_PRISTINE_OBJECT_SHA256=c5f0c9387bf0a1ee04ef383f7fb6b3251f9da470d4efbef44af0c470cfb7b060
+WITNESS_MUTANT=ACCEPTED
+WITNESS_MUTANT_OBJECT_SHA256=e0e4ddc8fdbfee41c885eddc8e1c696bfcbaaf2409b6505e5b8d5ae0d4bdef47
+WITNESS_OBSERVATION_CLASS=COMPILED_OBJECT_CHANGED
+WITNESS_OBSERVATION_DETAIL=the two compiled objects have DIFFERENT sha256 digests
+#
+WITNESS_ID=w2
+WITNESS_DESCRIPTION=if with a declaration body
+WITNESS_PRISTINE=REJECTED
+WITNESS_PRISTINE_DIAGNOSTIC=error: Unexpected keyword `I64` while parsing if body
+WITNESS_MUTANT=REJECTED
+WITNESS_MUTANT_DIAGNOSTIC=error: Unexpected keyword `I64` while parsing while loop body
+WITNESS_OBSERVATION_CLASS=COMPILER_DIAGNOSTIC_CHANGED
+WITNESS_OBSERVATION_DETAIL=the diagnostic NAMES the constructor that the mutated decision selected
+#
+# ------------------------------------------------------------------
+# THE OBSERVATION
+# ------------------------------------------------------------------
+#
+CAUSAL_BUILD_STATUS=BUILT
+CAUSAL_OBSERVATION_CLASS=COMPILER_ACCEPTANCE_AND_DIAGNOSTIC_CHANGED
+CAUSAL_OBSERVATION_PRECISE=the pristine compiler rejects the `if` with a declaration body with the message "while parsing IF BODY"; the mutant compiler rejects the SAME source with the message "while parsing WHILE LOOP BODY".  The diagnostic text is produced by the two DIFFERENT statement constructors, so the mutated decision was EXECUTED, not merely present in the binary.
+#
+# The observation is DISTINCT from, and strictly stronger than, a
+# mere change in compiler ACCEPTANCE: both compilers REJECT w2, but
+# for DIFFERENT, decision-specific reasons.
+#
+# ------------------------------------------------------------------
+# THE PROOF THAT THE MUTATION WAS IN THE LINKED BINARY
+# ------------------------------------------------------------------
+#
+# The mutation was not merely in a fixture or a detached object.  The
+# FUNCTION-SCOPED RELOCATION TABLE of the production parser object
+# proves it.
+#
+# COMMAND=nm -n build/CMakeFiles/hcc.dir/parser.c.o | grep _parseStatement$
+#   0000000000001af0 T _parseStatement
+#
+# PRISTINE: the BR26 relocations INSIDE _parseStatement (0x1af0..0x3568)
+#   7500  _parseIfStatement
+#   7916  _parseWhileStatement
+#
+# MUTANT: the BR26 relocations INSIDE _parseStatement (0x1af0..0x3568)
+#   7028  _parseWhileStatement
+#
+# The relocation to _parseIfStatement is GONE in the mutant, and the
+# _parseWhileStatement relocation has MOVED from 0x1eec to 0x1b74,
+# which is exactly where the KW_IF arm now dispatches.  The mutation
+# is therefore IN THE LINKED COMPILER, AT THE DECISION SITE, AND IT
+# CHANGED WHICH CONSTRUCTOR IS CALLED.
+#
+MUTATION_IN_LINKED_BINARY=YES
+MUTATION_IS_FUNCTION_SCOPED_TO_THE_DECISION=YES
+UNRELATED_COMPARISON_CANNOT_FORGE_THIS=PASS (the relocation is to a CONSTRUCTOR symbol, and the witness's diagnostic names the constructor; an unrelated comparison instruction could not produce either)
+#
+CAUSAL_BUILD_AND_WITNESS_STATUS=PASS

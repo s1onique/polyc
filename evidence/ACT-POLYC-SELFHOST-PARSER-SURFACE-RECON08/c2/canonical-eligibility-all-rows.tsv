@@ -1,0 +1,73 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=canonical-eligibility-all-rows
+#
+# THE CANONICAL 13-CLAUSE CHECKER'S OUTPUT ON EVERY CANDIDATE,
+# INCLUDING THE INELIGIBLE AND THE ALREADY-MIGRATED ONES.
+#
+# The checker is the repository's OWN tool, used UNMODIFIED:
+#   tools/quality/parser-slice-recon03-eligibility.HC
+#   sha256 2df5554a6f6a553a06a038abfd957a5c012aea017d2eb980f967892c194946e9
+#   build/parser-slice-recon03-eligibility
+#   sha256 7653f74409f5128fae58620c46d664269fdab15b15178f5c42b4f8dea3712eaa
+#
+# COMMAND=./build/parser-slice-recon03-eligibility \
+#           evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08/c1/raw-13-clause-facts.tsv
+# EXIT=0
+#
+# Schema: candidate_id <TAB> eligible <TAB> clause01..clause13 <TAB> failed
+#
+SUB-001	NO	0011111111111	2
+SUB-002	NO	0011111111111	2
+SUB-003	NO	0011111111111	2
+SUB-004	YES	1111111111111	0
+SUB-005	NO	1111111111001	2
+SUB-006	NO	1110011111001	4
+SUB-007	NO	1111000111001	5
+SUB-008	NO	1100000111001	7
+SUB-009	NO	1101000111001	6
+SUB-010	NO	1101111111001	3
+SUB-011	NO	1101111111001	3
+SUB-012	NO	1101111111001	3
+CAND-018	YES	1111111111111	0
+CAND-021	YES	1111111111111	0
+CAND-022	YES	1111111111111	0
+CAND-023	YES	1111111111111	0
+CAND-025	YES	1111111111111	0
+CAND-026	YES	1111111111111	0
+CAND-030	YES	1111111111111	0
+CAND-036	YES	1111111111111	0
+CAND-037	YES	1111111111111	0
+CAND-038	NO	1111111111001	2
+CAND-039	NO	1111111111001	2
+CAND-040	NO	1111111111001	2
+TOTAL=24
+ELIGIBLE=10
+MALFORMED=0
+STATUS=PASS
+#
+TOTAL=24
+ELIGIBLE=10
+MALFORMED=0
+STATUS=PASS
+#
+# --- THE PER-CLAUSE EXCLUSIONS, NAMED ---
+#
+candidate_id	failed_clauses	cause
+SUB-001	02	Already PolyC-owned: BootstrapSwitchArmTerminates (SLICE06).
+SUB-002	02	Already PolyC-owned: BootstrapDefaultArmTerminates (SLICE08).
+SUB-003	02	Already PolyC-owned: BootstrapCompoundBlockAppendsStatement (SLICE07).
+SUB-005	12, 13	production_delegation_feasible=NO and the candidate kind is not a runtime semantic authority: the decision depends TRANSITIVELY on the mutable cc->symbol_table.
+SUB-006	04, 05, 12	owns_setjmp=YES, writes_current_recovery=YES, production_delegation_feasible=NO.
+SUB-007	05, 06, 07, 12	writes_current_recovery=YES, requires_nonlocal_recovery=YES, host_graph_writes=1, production_delegation_feasible=NO.
+SUB-008	04, 05, 06, 07, 09, 12	The whole-function parseStatement.
+SUB-009	04, 05, 06, 07, 09, 12	The whole-function parseExpr.
+SUB-010	04, 05, 12	The whole-function astStmtFallsThrough.
+SUB-011	04, 05, 12	The whole-function astStmtHasBreak.
+SUB-012	04, 05, 12	The whole-function astIsConstTrueCond.
+CAND-038	12, 13	production_delegation_feasible=NO and the kind is not a runtime semantic authority.
+CAND-039	12	production_delegation_feasible=NO.
+CAND-040	12, 13	production_delegation_feasible=NO and the kind is not a runtime semantic authority.
+#
+ELIGIBILITY_COVERS_ALL_CANDIDATES=YES
+CANONICAL_ELIGIBILITY_STATUS=PASS

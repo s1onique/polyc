@@ -1,0 +1,140 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=independent-polyc-recompute
+#
+# THE INDEPENDENT POLYC RECOMPUTATION, AND ITS JOIN AGAINST THE
+# CANONICAL TOOLS.
+#
+# The RECON08 verifier is a SECOND, SEPARATE implementation of the
+# same policy:
+#
+#   - it re-reads the RAW facts table, not the checker's output;
+#   - it derives each clause from the fact fields with its OWN
+#     table-driven vocabulary check, not the canonical checker's
+#     sequence of assignments;
+#   - it sorts with its OWN repeated-minimum-selection routine, not
+#     the canonical ranker's insertion sort;
+#   - it reads NOTHING from the canonical tools' outputs when it
+#     computes; the JOIN mode reads them only afterwards, to compare.
+#
+# TOOL_SOURCE=tools/quality/parser-surface-recon08-verify.HC
+# TOOL_EXECUTABLE=build/parser-surface-recon08-verify
+# BUILD_COMMAND=make build/parser-surface-recon08-verify
+# SELFTEST_COMMAND=make parser-surface-recon08-verify-selftest
+# SELFTEST_EXIT=0
+# SELFTEST_FAILURES=0
+#
+# --- THE INDEPENDENT ELIGIBILITY ---
+#
+COMMAND=./build/parser-surface-recon08-verify ELIGIBILITY \
+#           evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08/c1/raw-13-clause-facts.tsv
+#
+ELIG:SUB-001	NO	0011111111111	2
+ELIG:SUB-002	NO	0011111111111	2
+ELIG:SUB-003	NO	0011111111111	2
+ELIG:SUB-004	YES	1111111111111	0
+ELIG:SUB-005	NO	1111111111001	2
+ELIG:SUB-006	NO	1110011111001	4
+ELIG:SUB-007	NO	1111000111001	5
+ELIG:SUB-008	NO	1100000111001	7
+ELIG:SUB-009	NO	1101000111001	6
+ELIG:SUB-010	NO	1101111111001	3
+ELIG:SUB-011	NO	1101111111001	3
+ELIG:SUB-012	NO	1101111111001	3
+ELIG:CAND-018	YES	1111111111111	0
+ELIG:CAND-021	YES	1111111111111	0
+ELIG:CAND-022	YES	1111111111111	0
+ELIG:CAND-023	YES	1111111111111	0
+ELIG:CAND-025	YES	1111111111111	0
+ELIG:CAND-026	YES	1111111111111	0
+ELIG:CAND-030	YES	1111111111111	0
+ELIG:CAND-036	YES	1111111111111	0
+ELIG:CAND-037	YES	1111111111111	0
+ELIG:CAND-038	NO	1111111111001	2
+ELIG:CAND-039	NO	1111111111001	2
+ELIG:CAND-040	NO	1111111111001	2
+TOTAL=24
+ELIGIBLE=10
+MALFORMED=0
+INELIGIBLE=14
+STATUS=PASS
+#
+# --- THE INDEPENDENT RANKING ---
+#
+COMMAND=./build/parser-surface-recon08-verify RANKING \
+#           <raw-facts.tsv> <joined-ranker-input.tsv>
+#
+DIMS_MATCHED=10
+RANKED:1	SUB-004	0	2	1	2	2	2	src/parser.c:1864
+RANKED:2	CAND-018	0	2	2	2	0	0	src/prslib.c:1328
+RANKED:3	CAND-021	0	2	2	2	0	0	src/prslib.c:1352
+RANKED:4	CAND-025	0	2	3	2	0	0	src/ast.c:943
+RANKED:5	CAND-026	0	2	3	2	0	0	src/ast.c:974
+RANKED:6	CAND-036	0	2	3	2	0	0	src/ast.c:992
+RANKED:7	CAND-037	0	2	3	2	0	0	src/ast.c:2348
+RANKED:8	CAND-030	0	2	3	2	0	0	src/prsutil.c:22
+RANKED:9	CAND-022	1	2	2	2	0	0	src/prslib.c:760
+RANKED:10	CAND-023	1	2	2	2	1	1	src/prslib.c:798
+RANKED_COUNT=10
+ELIGIBLE=10
+TOTAL=24
+MALFORMED=0
+SELECTED=SUB-004
+STATUS=PASS
+#
+# --- THE JOIN AGAINST THE CANONICAL TOOLS' ACTUAL OUTPUTS ---
+#
+COMMAND=./build/parser-surface-recon08-verify JOIN \
+#           <raw-facts.tsv> <joined-ranker-input.tsv> <checker-out.tsv> <ranker-out.tsv>
+#
+DIMS_MATCHED=10
+ELIGIBILITY_MISMATCH=0
+ELIGIBILITY_UNBOUND_ID=0
+ELIGIBILITY_EXTRA_ID=0
+FULL_ORDER_MISMATCH=0
+INDEPENDENT_RANKED_COUNT=10
+INDEPENDENT_SELECTED=SUB-004
+STATUS=PASS
+#
+# --- THE ANCHOR MODE, THE SOURCE-BOUND VERIFIER ---
+#
+COMMAND=./build/parser-surface-recon08-verify ANCHOR \
+#           <identity.tsv> src/parser.c src/prslib.c src/prsutil.c src/ast.c
+#
+ANCHOR_ROWS=23
+ANCHOR_OK=23
+SOURCE_HASH_MISMATCH=0
+INVALID_RANGE=0
+MISSING_SOURCE=0
+STATUS=PASS
+#
+# --- THE ROSTER MODE, THE UNKNOWN-ID DETECTOR ---
+#
+COMMAND=./build/parser-surface-recon08-verify ROSTER <roster.txt> <facts.tsv>
+#
+ROSTER_COUNT=24
+FACTS_COUNT=24
+UNKNOWN_CANDIDATE_ID=0
+MISSING_CANDIDATE_ID=0
+STATUS=PASS
+#
+# --- THE SUMMARY ---
+#
+ELIGIBILITY_MISMATCH=0
+ELIGIBILITY_UNBOUND_ID=0
+ELIGIBILITY_EXTRA_ID=0
+FULL_ORDER_MISMATCH=0
+UNBOUND_ID=0
+MALFORMED=0
+ANCHOR_SOURCE_HASH_MISMATCH=0
+ANCHOR_INVALID_RANGE=0
+ANCHOR_MISSING_SOURCE=0
+ROSTER_UNKNOWN_CANDIDATE_ID=0
+ROSTER_MISSING_CANDIDATE_ID=0
+#
+# The verifier does NOT hardcode any candidate ID, candidate count,
+# expected verdict or expected selection.  The known-answer inputs it
+# uses are two SHA-256 vectors and six synthetic clause rows whose
+# expected values are stated in the tool's own source.
+#
+INDEPENDENT_POLYC_RECOMPUTE_STATUS=PASS

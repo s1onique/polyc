@@ -1,0 +1,76 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=selection-qualification
+#
+# THE SELECTION QUALIFICATION SUMMARY.
+#
+# THE ORDER BELOW IS THE VERIFIED ORDER.  It was COMPUTED by the
+# canonical ranker and, independently, by the RECON08 PolyC verifier;
+# the two agree on every position, on every candidate ID and on the
+# selection.
+#
+# THE SELECTION IS NOT "THE FIRST ELIGIBLE ROW".  Each candidate in
+# the order was CANDIDATE-QUALIFIED, not merely ELIGIBLE:
+#
+#   1. it is a REAL production C decision site (not an oracle
+#      wrapper, not dead code, not already delegated to PolyC, not a
+#      fixture helper);
+#   2. it is REACHED by a real production call path;
+#   3. its decision is SEMANTICALLY DISTINCT from every other
+#      candidate's;
+#   4. its projection is BOUNDED -- no AST ownership, no mutable
+#      symbol table, no callback, no recovery state, no unbounded
+#      host string;
+#   5. it has a declared, finite set of predeclared mutation/witness
+#      cases.
+#
+# A candidate that fails any of these is REJECTED with a named cause
+# and the order continues.  There is NO manual winner override.
+#
+# Schema: rank <TAB> candidate_id <TAB> eligible <TAB> qualified
+#         <TAB> disposition <TAB> cause
+#
+1	SUB-004	YES	QUALIFIED	SELECTED	One bounded keyword-to-constructor dispatch decision.  Bounded scalar ABI: (tk_type, keyword_id) -> statement-constructor SELECTOR.  The 12 constructors are the dispatch TARGETS, not calls made BY the decision.  The host AST, the token cursor, the recovery state and the diagnostics all stay on the C side.
+2	CAND-018	YES	NOT_ATTEMPTED	DEFERRED	The rank leader was qualified and selected, so the lower-ranked candidates were not causally attempted.  Their eligibility, reachability, distinctness and boundedness were all measured in C1, and they remain QUALIFIED CANDIDATES for a future ACT.
+3	CAND-021	YES	NOT_ATTEMPTED	DEFERRED	As above.
+4	CAND-025	YES	NOT_ATTEMPTED	DEFERRED	As above.
+5	CAND-026	YES	NOT_ATTEMPTED	DEFERRED	As above.
+6	CAND-036	YES	NOT_ATTEMPTED	DEFERRED	As above.
+7	CAND-037	YES	NOT_ATTEMPTED	DEFERRED	As above.
+8	CAND-030	YES	NOT_ATTEMPTED	DEFERRED	As above.
+9	CAND-022	YES	NOT_ATTEMPTED	DEFERRED	As above.  Note that RECON07 classifies this as DIAGNOSTICS-ONLY, which is why its R0 is 1.
+10	CAND-023	YES	NOT_ATTEMPTED	DEFERRED	As above.  Note that RECON07 classifies this as DIAGNOSTICS-ONLY, which is why its R0 is 1.
+#
+# --- THE HIGHER-RANKED REJECTIONS ---
+#
+# There are NO higher-ranked rejections: SUB-004 was rank 1 and it
+# QUALIFIED.  The rejections are all BELOW the selection.
+#
+# --- THE REJECTED POPULATION ---
+#
+candidate_id	clause_failed	cause
+SUB-001	02 (already_selfhosted)	Already PolyC-owned as BootstrapSwitchArmTerminates.  The live C decision body is compiled OUT of the production object.
+SUB-002	02 (already_selfhosted)	Already PolyC-owned as BootstrapDefaultArmTerminates (SLICE08).  The live C decision body is compiled OUT of the production object.
+SUB-003	02 (already_selfhosted)	Already PolyC-owned as BootstrapCompoundBlockAppendsStatement (SLICE07).
+SUB-005	12 (production_delegation_feasible) and reachability of the host state	TRANSITIVELY DEPENDS on the mutable cc->symbol_table, cc->clsdefs and cc->uniondefs through cctrlIsKeyword -> cctrlGetKeyWord -> mapGetLen.  MEASURED, not asserted: the DEPENDS mode reports DETECTOR=MUTABLE_HOST_STATE_DEPENDENCE with DEPENDENCE_SITE=TRANSITIVE_THROUGH_A_CALLEE.
+SUB-006	04 (owns_setjmp), 05 (writes_current_recovery), 12	Declares jmp_buf stmt_recovery, OVERWRITES cc->current_recovery and calls setjmp.  It OWNS setjmp and WRITES the recovery state.
+SUB-007	05 (writes_current_recovery), 06 (requires_nonlocal_recovery), 07 (host_graph_writes), 12	Reads and writes the host AST body list and the recovery state across iterations.
+SUB-008	04, 05, 06, 07, 09, 12	The WHOLE-FUNCTION parseStatement: owns the recovery checkpoint, drives the token cursor, constructs every Ast node and calls the statement constructor callbacks.
+SUB-009	04, 05, 06, 07, 09, 12	The WHOLE-FUNCTION parseExpr: a recursive descent loop over the token cursor that owns the recovery state.
+SUB-010	12	Recursive host AST graph walk.
+SUB-011	12	Recursive host AST graph walk.
+SUB-012	12	Recursive host AST graph walk.
+CAND-038	12, 13 (kind)	Unbounded HOST STRING input and a NEW HOST STRING output.
+CAND-039	12	Host scope input and a NEW HOST STRING output.
+CAND-040	12, 13 (kind)	Opaque, unbounded host buffer.
+#
+ELIGIBLE_TOTAL=10
+QUALIFIED_TOTAL=1
+REJECTED_TOTAL=14
+TOTAL_POPULATION=24
+#
+# THE SELECTION IS SUB-004, AND THE ORDER WAS COMPUTED, NOT CHOSEN.
+#
+SELECTED_CANDIDATE_ID=SUB-004
+SELECTED_RANK=1
+SELECTION_QUALIFICATION_STATUS=PASS

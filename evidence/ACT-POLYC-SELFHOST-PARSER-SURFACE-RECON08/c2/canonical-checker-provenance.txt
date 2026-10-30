@@ -1,0 +1,78 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=canonical-checker-provenance
+#
+# THE CANONICAL CHECKER AND RANKER: LOCATED, HASHED AND USED
+# UNMODIFIED.
+#
+# These are the REPOSITORY'S OWN tools.  They were NOT rewritten, NOT
+# reimplemented and NOT replaced by a "canonical"-looking substitute.
+# Their digests below are the digests the RECON07 contract froze, so
+# the tools that produced this ACT's eligibility and ranking are
+# provably the SAME tools that produced RECON07's.
+#
+# --- THE 13-CLAUSE ELIGIBILITY CHECKER ---
+#
+SOURCE_PATH=tools/quality/parser-slice-recon03-eligibility.HC
+SOURCE_SHA256=2df5554a6f6a553a06a038abfd957a5c012aea017d2eb980f967892c194946e9
+EXECUTABLE_PATH=build/parser-slice-recon03-eligibility
+EXECUTABLE_SHA256=7653f74409f5128fae58620c46d664269fdab15b15178f5c42b4f8dea3712eaa
+FROZEN_DIGEST_MATCH=YES
+BUILD_COMMAND=make parser-slice-recon03-tools
+#
+# --- THE R0..R6 RANKER ---
+#
+SOURCE_PATH=tools/quality/parser-slice-recon03-ranking.HC
+SOURCE_SHA256=c5861deda5901ead8dc5a59a1c5ce0f58ab331da73726f7ebb20ffbc90415a92
+EXECUTABLE_PATH=build/parser-slice-recon03-ranking
+EXECUTABLE_SHA256=178150dd76b299a996117c0e4f0a2c2173015e72825f60c7a7e2014374a61eda
+FROZEN_DIGEST_MATCH=YES
+BUILD_COMMAND=make parser-slice-recon03-tools
+#
+# --- THE RECON08 INDEPENDENT VERIFIER (this ACT's NEW tool) ---
+#
+SOURCE_PATH=tools/quality/parser-surface-recon08-verify.HC
+SOURCE_SHA256=31d1e56efb03c5a56df6112c3148a4fb7df0414175c4101572e377b6a529394d
+EXECUTABLE_PATH=build/parser-surface-recon08-verify
+EXECUTABLE_SHA256=4a64b77753635892f08300b788b4513c9d4f1e2586c4c123bc5b37ae139069bd
+BUILD_COMMAND=make build/parser-surface-recon08-verify
+SELFTEST_COMMAND=make parser-surface-recon08-verify-selftest
+SELFTEST_EXIT=0
+SELFTEST_FAILURES=0
+#
+# The verifier does NOT read the canonical checker's output when it
+# computes eligibility, and does NOT read the canonical ranker's order
+# when it computes the ranking.  The JOIN mode reads both AFTER the
+# fact, to compare.
+#
+# --- THE EXECUTION ---
+#
+COMMAND=./build/parser-slice-recon03-eligibility \
+#           evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08/c1/raw-13-clause-facts.tsv
+EXIT=0
+TOTAL=24
+ELIGIBLE=10
+MALFORMED=0
+STATUS=PASS
+#
+COMMAND=./build/parser-slice-recon03-ranking <joined-ranker-input.tsv>
+EXIT=0
+TOTAL=10
+ELIGIBLE=10
+RANKED=10
+SELECTED=SUB-004
+#
+# The canonical ranker's OWN built-in negative controls, executed with
+# it:
+#
+NC-05_ineligible_perfect_rank_rejected=YES
+NC-05_winner=SUB-004
+NC-06_shuffled_inventory_winner_unchanged=YES
+NC-06_winner=SUB-004
+NC-07_winner_removed_remaining=9
+NC-07_new_winner=CAND-018
+NC-09_rival_eligible_candidates=9
+NC-09_r0_perturbation_changed_leader=YES
+NC-09_new_leader=CAND-018
+#
+CANONICAL_TOOL_PROVENANCE_STATUS=PASS
