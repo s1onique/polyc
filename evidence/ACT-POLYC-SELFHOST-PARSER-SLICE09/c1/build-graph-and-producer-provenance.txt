@@ -1,0 +1,114 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE09
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=build-graph-and-producer-provenance
+#
+# THE BUILD GRAPH AND THE PRODUCER PROVENANCE PLAN.
+#
+# This is a PLAN plus the MEASURED identities that exist at C1.  The
+# subject does NOT exist yet: it is created in C2.  The G0 generation
+# is BUILT at C1, because it is the genuine legacy oracle and does
+# not depend on the subject.
+#
+# ------------------------------------------------------------------
+# THE FOUR GENERATIONS, AND THEIR PRODUCERS
+# ------------------------------------------------------------------
+#
+# The frozen contract (c2/selected-stage-provenance-and-causal-contract.md
+# section 1) requires THREE DISTINCT PolyC producer binaries plus the
+# host C compiler.  A single compiler re-run is NOT three generations.
+#
+# Schema: generation <TAB> decision_subject <TAB> producer
+#         <TAB> producer_sha256 <TAB> producer_path
+#
+GENERATION_G0	the REAL legacy C decision in src/parser.c, SUB-004 selector OFF	host C compiler	9b11ead1ca76a03d61108ad5bf2c913d6aa8daa7deb9fd28893e847e3680e5e7	/usr/bin/cc
+GENERATION_G1	the new compiled PolyC statement dispatch, selector ON	real host-stage0 PolyC compiler	302e9f3336397717f4fa4257d6147d07dd7c4b7ef967bf8455151bc43e3e1bae	./build/host-stage0/hcc
+GENERATION_G2	the new compiled PolyC statement dispatch, selector ON	the current production compiler	69beebd00b3d3e9b38f9375275af8f89da05092a323e1835f386c3c4b39d5dea	./hcc
+GENERATION_G3	the new compiled PolyC statement dispatch, selector ON	the bootstrap02 compiler	a1c9b8d6d21d4fa725255aa5b22ec79c5d618f1baa796a0e227bb430f824dd01	./build/hcc-bootstrap02
+#
+# The three PolyC producers MUST be pairwise distinct binaries.  Their
+# digests are compared at C3; the identity-collision detector is
+# S9-PV-01 (PRODUCER_IDENTITY_COLLISION).
+#
+# ------------------------------------------------------------------
+# THE BUILD COMMANDS, AS THE MAKEFILE EXECUTES THEM
+# ------------------------------------------------------------------
+G0_COMMAND	cc -std=c99 -O2 -Isrc -c -o build/slice09-gen/g0.o src/parser.c
+G1_COMMAND	$(BOOTSTRAP_STAGE0_HCC) --install-dir=$(BOOTSTRAP_PREFIX_DIR) -c tools/bootstrap/selfhost-parser-statement-dispatch.HC -o build/slice09-gen/g1.o
+G2_COMMAND	./hcc --install-dir=$(BOOTSTRAP_PREFIX_DIR) -c tools/bootstrap/selfhost-parser-statement-dispatch.HC -o build/slice09-gen/g2.o
+G3_COMMAND	./build/hcc-bootstrap02 --install-dir=$(BOOTSTRAP_PREFIX_DIR) -c tools/bootstrap/selfhost-parser-statement-dispatch.HC -o build/slice09-gen/g3.o
+#
+# The three PolyC producers are built by DIFFERENT bootstrap stages:
+# G1 is the STAGE0 compiler, which is the legacy C control and does
+# not depend on the production compiler it is about to serve; G2 is
+# the PRODUCTION compiler; G3 is the STAGE-2 compiler.
+#
+# ------------------------------------------------------------------
+# THE SUBJECT'S BUILD RULE AND ITS PREREQUISITE EDGE
+# ------------------------------------------------------------------
+SUBJECT_SOURCE	tools/bootstrap/selfhost-parser-statement-dispatch.HC
+SUBJECT_OBJECT	./build/parser-statement-dispatch-subject.o
+SUBJECT_RULE	$(SLICE09_STATEMENT_DISPATCH_OBJ): $(SLICE09_STATEMENT_DISPATCH_SRC) $(BOOTSTRAP_STAGE0_HCC) $(BOOTSTRAP_PREFIX_INC)/tos.HH
+SUBJECT_PRODUCER	$(BOOTSTRAP_STAGE0_HCC) --install-dir=$(BOOTSTRAP_PREFIX_DIR) -c $(SLICE09_STATEMENT_DISPATCH_SRC) -o $@
+SUBJECT_SYMBOL_CHECK	nm $@ | grep -q '_BootstrapStatementDispatch'
+#
+# THE VARIABLES ARE DEFINED BEFORE THE RULE THAT USES THEM.  This is
+# the ACT's section 2.2 requirement: make expands a rule's
+# PREREQUISITES when the rule is READ, so a variable defined later in
+# the file would be EMPTY at that point.
+#
+# The variables are declared in the Makefile block that this ACT
+# added, ABOVE the subject rule:
+#   SLICE09_STATEMENT_DISPATCH_SRC = tools/bootstrap/selfhost-parser-statement-dispatch.HC
+#   SLICE09_STATEMENT_DISPATCH_OBJ = ./build/parser-statement-dispatch-subject.o
+#
+VARIABLES_DEFINED_BEFORE_THE_CONSUMING_RULE	YES
+#
+# The subject object is added to PRODUCTION_HCC_INPUTS, so the
+# production binary is REBUILT when the subject changes.  Without that
+# edge, a changed subject would NOT reach the linked binary, and the
+# new authority would be a DORMANT symbol.
+#
+# ------------------------------------------------------------------
+# THE CMAKE OPTION
+# ------------------------------------------------------------------
+CMAKE_OPTION_NAME	HCC_USE_SELFHOST_PARSER_STATEMENT_DISPATCH
+CMAKE_OPTION_DEFAULT	OFF
+CMAKE_QUALIFIED_BUILD	ON
+CMAKE_OBJECT_VARIABLE	STATEMENT_DISPATCH_OBJECT
+CMAKE_PRODUCER_VARIABLE	STATEMENT_DISPATCH_PRODUCER
+CMAKE_SOURCE_VARIABLE	STATEMENT_DISPATCH_SOURCE
+CMAKE_PREFIX_VARIABLE	STATEMENT_DISPATCH_PREFIX
+CMAKE_FAIL_CLOSED_GUARD	the configure MUST FAIL when the object does not exist and no producer is configured
+#
+# The dedicated selector name (rather than the generic
+# HCC_USE_SELFHOST_COMPONENTS) is required, for the same reason the
+# three existing migrations each have their own: the generic selector
+# also activates the lexer delegations, which would require linking
+# the lexer subjects too.
+#
+# ------------------------------------------------------------------
+# THE EFFECTIVE-PREREQUISITE EXPANSION
+# ------------------------------------------------------------------
+# GNU Make's EFFECTIVE prerequisite expansion is what matters, not
+# only the recipe text.  The effective prerequisite list of the
+# production binary is checked with:
+#   make -n production-hcc | ...
+# and with:
+#   make --dry-run --print-data-base production-hcc
+#
+# The subject object MUST appear in that list.  A target that
+# silently EXCLUDES the new object is a FAILURE.
+#
+# ------------------------------------------------------------------
+# THE BUILD ISOLATION REQUIREMENT
+# ------------------------------------------------------------------
+# The shared assembly temporary /tmp/holyc-asm.s is a known race.
+# Every build, differential, unit and gate run in this ACT is
+# executed SERIALLY, one at a time, and the disposable worktrees use
+# SEPARATE output roots.
+#
+BUILD_SERIALIZATION	serial, one run at a time
+SHARED_ASM_TEMP_PATH	/tmp/holyc-asm.s
+DISPOSABLE_WORKTREE_OUTPUT_ROOTS	separate per experiment
+#
+BUILD_GRAPH_AND_PRODUCER_PROVENANCE_STATUS=PASS

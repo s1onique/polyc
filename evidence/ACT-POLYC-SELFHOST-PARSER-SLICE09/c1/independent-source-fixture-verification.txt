@@ -1,0 +1,157 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE09
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=independent-source-fixture-verification
+#
+# THE INDEPENDENT VERIFICATION OF THE FROZEN FIXTURE.
+#
+# The frozen contract (c2/selected-g0-oracle-and-fixture.md section
+# 2.2) requires TWO independent derivations that agree row for row:
+#
+#   1. a SOURCE-BOUND GENERATOR that reads the `case` labels out of
+#      src/parser.c 1864..1877;
+#   2. an INDEPENDENT ENUM WITNESS that reads the `KW_*` values out of
+#      src/lexer.h.
+#
+# The two are SEPARATE PROGRAMS with SEPARATE derivation paths:
+#
+#   tools/quality/parser-slice09-fixture-producer.HC
+#       reads its OWN transcribed arm table and writes the fixture.
+#   tools/quality/parser-slice09-fixture-integrity.HC
+#       does NOT read the producer's tables at all.  It RE-DERIVES
+#       the arms from the live src/parser.c by SCANNING for the
+#       dispatch's own `case KW_` labels, and RE-READS the keyword
+#       values from the live src/lexer.h macros.
+#
+# ------------------------------------------------------------------
+# THE POSITIVE RUN
+# ------------------------------------------------------------------
+COMMAND=./build/parser-slice09-fixture-integrity \
+#         evidence/ACT-POLYC-SELFHOST-PARSER-SLICE09/c1/frozen-dispatch-fixture.tsv \
+#         src/parser.c src/lexer.h
+   CANON_TK_KEYWORD=818
+   CANON_ARM_COUNT=15
+   FIXTURE_ROW_COUNT=21
+   FAILURES=0
+   STATUS=PASS
+EXIT=0
+#
+# The independent witness agrees with the producer on EVERY row: the
+# fifteen arms, their keyword values, their source order, their
+# selectors, the not-a-keyword-statement value, and the four
+# partitions.
+#
+# ------------------------------------------------------------------
+# THE ADVERSE RUNS: EVERY DETECTOR IS SENSITIVE
+# ------------------------------------------------------------------
+# Each adverse input was a DISPOSABLE COPY.  No committed file was
+# modified.
+#
+# --- S9-FC-01: one frozen dispatch fixture row REMOVED ---
+COMMAND=./build/parser-slice09-fixture-integrity <copy-with-row-5-removed> \
+#         src/parser.c src/lexer.h
+   DETECTOR=MISSING_FIXTURE_ID
+   ROW_ID=5
+   FAILURES=1
+   STATUS=FAIL
+#
+# --- S9-FC-02: a row ID DUPLICATED ---
+COMMAND=./build/parser-slice09-fixture-integrity <copy-with-row-5-appended> \
+#         src/parser.c src/lexer.h
+   DETECTOR=DUPLICATE_FIXTURE_ID
+   ROW_ID=5
+   FIRST_POSITION=5
+   SECOND_POSITION=22
+   FAILURES=1
+   STATUS=FAIL
+#
+# --- S9-FC-03: an UNKNOWN keyword/input row added ---
+COMMAND=./build/parser-slice09-fixture-integrity <copy-with-row-99-added> \
+#         src/parser.c src/lexer.h
+   DETECTOR=UNKNOWN_FIXTURE_ID
+   ROW_ID=99
+   REASON=OUT_OF_THE_CANONICAL_RANGE
+   DETECTOR=FIXTURE_SELECTOR_MISMATCH
+   ROW_ID=99
+   KEYWORD_ID=999
+   EXPECTED_SELECTOR=0
+   ACTUAL_SELECTOR=1
+   FAILURES=2
+   STATUS=FAIL
+EXIT=1
+#
+# The unknown row is reported by ITS OWN ID, and it is NOT
+# mis-attributed to a missing row: the witness reports NO
+# MISSING_FIXTURE_ID failure, so the missing-row count is zero.
+#
+# The adverse row triggers TWO detectors, not one: the unknown row ID
+# itself, and a selector mismatch for its own (invented) keyword id.
+# Both failures name the SAME adverse row id, 99.  The earlier C1
+# draft of this file reported FAILURES=1; the MEASURED value is 2.
+# The recorded count is corrected here to the measured one.  The
+# property that matters -- that the unknown row is not blamed on a
+# missing canonical row -- holds either way, and it is asserted by
+# the ABSENCE of MISSING_FIXTURE_ID, not by the failure count.
+#
+S9_FC_03_MISSING_FIXTURE_ID_FIRED=0
+S9_FC_03_FALSE_MISSING_ATTRIBUTION=0
+S9_FC_03_FAILURES_MEASURED	2
+S9_FC_03_BOTH_FAILURES_NAME_ROW_ID	99
+#
+# --- S9-FC-04: one recognized keyword's EXPECTED SELECTOR flipped ---
+COMMAND=./build/parser-slice09-fixture-integrity <copy-with-row-2-selector-flipped> \
+#         src/parser.c src/lexer.h
+   DETECTOR=FIXTURE_SELECTOR_MISMATCH
+   ROW_ID=2
+   KEYWORD_ID=46
+   EXPECTED_SELECTOR=1
+   ACTUAL_SELECTOR=9
+   FAILURES=1
+   STATUS=FAIL
+#
+# --- S9-FC-05a: a STALE SOURCE digest declared by the fixture ---
+COMMAND=./build/parser-slice09-fixture-integrity <copy-with-stale-declared-sha> \
+#         src/parser.c src/lexer.h
+   DETECTOR=SOURCE_OR_ENUM_PROVENANCE_MISMATCH
+   REASON=THE_FIXTURE_DECLARED_SOURCE_DIGEST_IS_NOT_THE_FROZEN_ONE
+   DECLARED_SHA256=deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef
+   FROZEN_SHA256=cd138cc52588fe48c2eab37421b4e25abbacd7ea10491bc696a1acab9a66d7e0
+   FAILURES=1
+   STATUS=FAIL
+#
+# --- S9-FC-05b: a STALE KEYWORD ENUM value declared by the fixture ---
+COMMAND=./build/parser-slice09-fixture-integrity <copy-with-stale-declared-tk> \
+#         src/parser.c src/lexer.h
+   DETECTOR=SOURCE_OR_ENUM_PROVENANCE_MISMATCH
+   REASON=THE_FIXTURE_DECLARED_TOKEN_TYPE_VALUE_IS_NOT_THE_LIVE_ONE
+   DECLARED_TK_KEYWORD=999
+   LIVE_TK_KEYWORD=818
+   FAILURES=1
+   STATUS=FAIL
+#
+# --- S9-FC-05c: a STALE KEYWORD ENUM value in the LIVE lexer ---
+# The live lexer was NOT modified: a DISPOSABLE COPY of src/lexer.h
+# was used, with one keyword value changed.
+COMMAND=./build/parser-slice09-fixture-integrity <pristine fixture> \
+#         src/parser.c <copy-of-lexer.h-with-KW_IF-changed>
+   CANON_TK_KEYWORD=818
+   DETECTOR=FIXTURE_SELECTOR_MISMATCH
+   KEYWORD_ID=46
+   FAILURES=1
+   STATUS=FAIL
+#
+# The live src/lexer.h was verified UNCHANGED afterwards:
+#   #define KW_IF           46
+#
+# ------------------------------------------------------------------
+# THE SUMMARY
+# ------------------------------------------------------------------
+S9_FC_01_DETECTED	YES	DETECTOR=MISSING_FIXTURE_ID
+S9_FC_02_DETECTED	YES	DETECTOR=DUPLICATE_FIXTURE_ID
+S9_FC_03_DETECTED	YES	DETECTOR=UNKNOWN_FIXTURE_ID
+S9_FC_04_DETECTED	YES	DETECTOR=FIXTURE_SELECTOR_MISMATCH
+S9_FC_05_DETECTED	YES	DETECTOR=SOURCE_OR_ENUM_PROVENANCE_MISMATCH
+VACUOUS_PASSES	0
+ADVERSE_INPUTS_WERE_DISPOSABLE_COPIES	YES
+COMMITTED_FILES_MODIFIED	0
+#
+INDEPENDENT_SOURCE_FIXTURE_VERIFICATION_STATUS=PASS

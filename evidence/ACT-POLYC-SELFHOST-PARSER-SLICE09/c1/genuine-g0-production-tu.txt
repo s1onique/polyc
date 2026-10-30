@@ -1,0 +1,113 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE09
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=genuine-g0-production-tu
+#
+# THE GENUINE G0 ORACLE.  IT IS THE REAL PRODUCTION TRANSLATION UNIT.
+#
+# The frozen contract (c2/selected-g0-oracle-and-fixture.md section 1)
+# requires:
+#   * the G0 is built from the REAL production src/parser.c;
+#   * the candidate selector is OFF, so the legacy switch body is the
+#     code that executes;
+#   * the G0 object imports NO PolyC successor symbol -- the build
+#     MUST FAIL if it does;
+#   * it is NOT a re-implementation: the oracle IS the production
+#     object, not a copy.
+#
+# The G0 is built in a DISPOSABLE worktree at the ENTRY commit, so
+# the live tree is never mutated by the experiment.  The object is
+# then copied into this ACT's own build directory for the
+# differential.
+#
+# ------------------------------------------------------------------
+# THE BUILD
+# ------------------------------------------------------------------
+COMMAND=cc -std=c99 -O2 -Isrc -c -o build/slice09-gen/g0.o src/parser.c
+G0_BUILD_EXIT=0
+G0_OBJECT=build/slice09-gen/g0.o
+G0_OBJECT_SHA256=8737313a547f20b507f4841af4056b3e9c1a51850076e01c121e5c7f3126959c
+G0_OBJECT_SIZE=52456
+G0_OBJECT_FORMAT=Mach-O arm64
+#
+# The source that was compiled:
+G0_SOURCE=src/parser.c
+G0_SOURCE_SHA256=8e68487e1fd351cb888c5044cfb71871628d904dd089305d59138b2f017bee00
+G0_SELECTOR_STATE=HCC_USE_SELFHOST_PARSER_STATEMENT_DISPATCH UNDEFINED (OFF)
+G0_PRODUCER=cc (the host C compiler, /usr/bin/cc)
+#
+# ------------------------------------------------------------------
+# THE FAIL-CLOSED CHECK: THE G0 MUST NOT IMPORT THE SUCCESSOR
+# ------------------------------------------------------------------
+COMMAND=nm build/slice09-gen/g0.o | grep -c '_BootstrapStatementDispatch'
+G0_IMPORTS_SUCCESSOR_COUNT=0
+#
+# The Makefile rule enforces this as a BUILD FAILURE, not a warning:
+#   "slice09-gen/g0.o: the object references the PolyC component; the
+#    delegation flag is NOT off"
+#
+# The legacy decision IS present in the G0 object, as the live
+# constructor relocations inside _parseStatement.  The G0 is built from
+# the ENTRY source, in which the dispatch is still the ORIGINAL C
+# switch: the C2 IMPL will add the selector-OFF oracle wrapper
+# (ParserLegacyStatementDispatchOracle) and the delegation branch.
+#
+# The C1 G0 therefore does NOT carry that wrapper -- it did not exist
+# yet.  Its absence is the CORRECT state for a C1 evidence object.
+# A claim that the wrapper was present in the C1 G0 would be FALSE:
+# the C1 G0 object was measured with `nm` and carries no such symbol.
+#
+COMMAND=nm build/slice09-gen/g0.o | grep -c '_ParserLegacyStatementDispatchOracle'
+G0_LEGACY_ORACLE_PRESENT=0
+G0_LEGACY_ORACLE_ABSENCE_IS_CORRECT_AT_C1=YES
+G0_LEGACY_DECISION_IS_PRESENT_AS_SOURCE=yes: the live constructor relocations inside _parseStatement
+#
+# ------------------------------------------------------------------
+# THE G0-PROVENANCE DETECTOR
+# ------------------------------------------------------------------
+# The EXISTING repository detector, used UNMODIFIED:
+#   build/parser-surface-recon08-verify G0 <object> <successor-symbol>
+#                                 <constructor-symbol> ...
+#
+COMMAND=./build/parser-surface-recon08-verify G0 \
+#         build/slice09-gen/g0.o BootstrapStatementDispatch \
+#         _parseIfStatement _parseForStatement _parseWhileStatement \
+#         _parseDoWhileStatement _parseReturnStatement _parseTryStatement \
+#         _parseThrowStatement _parseSwitchStatement _parseCaseLabel \
+#         _parseDefaultStatement _parseBreakStatement _parseContinueStatement \
+#         _prsAsm _astGoto _createFunctionLevelGotoLabel
+   G0_OBJECT=build/slice09-gen/g0.o
+   G0_IMPORTS_SUCCESSOR=0
+   G0_CONSTRUCTOR_RELOCATIONS_FOUND=15
+   G0_CONSTRUCTORS_EXPECTED=15
+   STATUS=PASS
+#
+# The constructor list is the FIFTEEN constructor routes the dispatch
+# actually reaches: the twelve simple constructors, plus prsAsm (the
+# KW_ASM route), astGoto (the KW_GOTO route) and
+# createFunctionLevelGotoLabel (the KW_GOTO route's label).
+#
+# The KW_STATIC route has no separate constructor FUNCTION: it builds
+# its AST inline, so it contributes no constructor relocation.  It is
+# covered by the fixture's P1 row, not by a relocation.
+#
+G0_CONSTRUCTOR_ROLOCATIONS_FOUND=15
+G0_CONSTRUCTORS_EXPECTED=15
+G0_PROVENANCE_STATUS=PASS
+#
+# ------------------------------------------------------------------
+# WHAT THE G0 IS NOT
+# ------------------------------------------------------------------
+# It is NOT a hand-written transcription of the switch: it is the
+# production object itself, byte-for-byte the object that the
+# production build produces for src/parser.c.
+#
+# It is NOT a copy: the object carries every production relocation of
+# the real translation unit.
+#
+# It does NOT contain the PolyC successor: the successor symbol does
+# not appear in it at all.
+#
+G0_IS_HANDMADE=NO
+G0_IS_A_COPY=NO
+G0_IMPORTS_POLYC_SUCCESSOR=NO
+G0_GENUINE_C_TU=YES

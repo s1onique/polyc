@@ -1,0 +1,88 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE09
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=fixture-partitions-and-row-hashes
+#
+# THE FROZEN FIXTURE'S PARTITIONS AND ROW HASHES.
+#
+# The row count is DERIVED, never chosen: it is the number of rows the
+# producer wrote, and the producer reports it.
+#
+FIXTURE_FILE	evidence/ACT-POLYC-SELFHOST-PARSER-SLICE09/c1/frozen-dispatch-fixture.tsv
+FIXTURE_SHA256	12decd1712912ad3bac940de8c5f6de772fd9df677ce62137b6310d13b2a687f	COMMAND=shasum -a 256 <fixture>
+FIXTURE_ROW_COUNT	21	producer-reported
+FIXTURE_ROW_ID_RANGE	1..21
+FIXTURE_ROW_IDS_ARE_DENSE	YES
+#
+# The fixture is REPRODUCIBLE: regenerating it with the producer from
+# the live source yields a byte-identical file with the same digest.
+#
+FIXTURE_REGENERATION_IS_BYTE_IDENTICAL	YES
+FIXTURE_REGENERATION_COMMAND	./build/parser-slice09-fixture-producer <out.tsv>
+FIXTURE_REGENERATED_SHA256	12decd1712912ad3bac940de8c5f6de772fd9df677ce62137b6310d13b2a687f
+#
+# The keyword UNIVERSE count was CORRECTED at C1: the producer's own
+# universe table had carried 66 values and omitted the value 2
+# (KW_UNION, whose live macro is `(1<<1)`).  The live universe is 67
+# values, measured by compiling the live src/lexer.h.  The correction
+# changed only the universe REPORT line in the fixture header; no row
+# changed, and the P2 unknown-keyword row is unchanged.
+#
+FIXTURE_UNIVERSE_COUNT	67
+FIXTURE_UNIVERSE_COUNT_CORRECTED_FROM	66
+FIXTURE_UNIVERSE_CORRECTION_CHANGED_A_ROW	NO
+FIXTURE_UNIVERSE_CORRECTION_CHANGED_ONLY		the header's universe-count line
+#
+# The four frozen partitions, with their DERIVED row counts.
+#
+PARTITION	P0-NONKEYWORD	ROWS	1	one token whose tk_type is not TK_KEYWORD
+PARTITION	P1-KEYWORD	ROWS	15	one row per `case KW_*:` arm of the dispatch
+PARTITION	P2-UNKNOWN-KEYWORD	ROWS	1	one keyword_id in the TK_KEYWORD class that is not any arm
+PARTITION	P3-EXTREME	ROWS	4	the I64 minimum and maximum in EACH of the two parameters
+PARTITION_TOTAL	4
+PARTITION_ROW_TOTAL	21
+PARTITION_ROW_TOTAL_MATCHES_FIXTURE_ROW_COUNT	YES
+#
+# Schema: partition <TAB> row_id <TAB> token_type <TAB> keyword_id
+#         <TAB> expected_selector <TAB> expected_constructor
+P0-NONKEYWORD	1	0	0	0	NONE
+P1-KEYWORD	2	818	46	1	parseIfStatement
+P1-KEYWORD	3	818	38	2	parseForStatement
+P1-KEYWORD	4	818	40	3	parseWhileStatement
+P1-KEYWORD	5	818	66	4	parseDoWhileStatement
+P1-KEYWORD	6	818	18	5	parseReturnStatement
+P1-KEYWORD	7	818	80	6	parseTryStatement
+P1-KEYWORD	8	818	82	7	parseThrowStatement
+P1-KEYWORD	9	818	20	8	parseSwitchStatement
+P1-KEYWORD	10	818	22	9	parseCaseLabel
+P1-KEYWORD	11	818	64	10	parseDefaultStatement
+P1-KEYWORD	12	818	24	11	parseBreakStatement
+P1-KEYWORD	13	818	26	12	parseContinueStatement
+P1-KEYWORD	14	818	28	13	prsAsm
+P1-KEYWORD	15	818	67	14	parseStaticStatement
+P1-KEYWORD	16	818	44	15	parseGotoStatement
+P2-UNKNOWN-KEYWORD	17	818	0	0	NONE
+P3-EXTREME	18	-9223372036854775808	0	0	NONE
+P3-EXTREME	19	9223372036854775807	0	0	NONE
+P3-EXTREME	20	818	-9223372036854775808	0	NONE
+P3-EXTREME	21	818	9223372036854775807	0	NONE
+#
+# The partition membership was VERIFIED independently by the PolyC
+# integrity witness, which re-derives the arms from the live source.
+#
+CANON_TK_KEYWORD	818
+CANON_ARM_COUNT	15
+FIXTURE_ROW_COUNT	21
+FAILURES	0
+STATUS	PASS
+#
+# The extreme rows carry the EXACT I64 extremes, rendered by an
+# exact decimal printer (the magnitude is accumulated NEGATIVE, so the
+# most negative value is representable without an intermediate
+# positive overflow):
+#
+EXTREME_MIN_TOKEN_TYPE	-9223372036854775808
+EXTREME_MAX_TOKEN_TYPE	9223372036854775807
+EXTREME_MIN_KEYWORD_ID	-9223372036854775808
+EXTREME_MAX_KEYWORD_ID	9223372036854775807
+#
+FIXTURE_PARTITIONS_AND_ROW_HASHES_STATUS=PASS

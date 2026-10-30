@@ -1,0 +1,177 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE09
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=production-witness-and-oracle
+#
+# THE REAL PRODUCTION WITNESSES AND THE ORACLE CONTRACT.
+#
+# The frozen contract (c2/selected-g0-oracle-and-fixture.md section 3)
+# defines the discriminating witness:
+#
+#   "w2 is an `if` whose body is a DECLARATION:
+#        I32 Main(I32 argc, U8 **argv)
+#        { I64 x = 1; if (x) I64 y = 2; return 0; }
+#    parseIfStatement ACCEPTS a declaration body;
+#    parseWhileStatement REJECTS it through parseValidPostControlFlowToken.
+#    So the two compilers produce DIFFERENT diagnostic text for the
+#    same source.  The message names the constructor, which makes the
+#    observation about the decision's OUTCOME rather than about the
+#    mere presence of a symbol."
+#
+# ------------------------------------------------------------------
+# THE TWO WITNESSES
+# ------------------------------------------------------------------
+#
+# --- w2: the DISCRIMINATING witness (the W-DIAG channel) ---
+#
+# It is REJECTED by the compiler, and the diagnostic NAMES the
+# constructor that ran.  This is the channel that makes the
+# dispatch's outcome observable.
+#
+W2_SOURCE=build/slice09-witness/w2.HC
+W2_SOURCE_TEXT=I32 Main(I32 argc, U8 **argv) { I64 x = 1; if (x) I64 y = 2; return 0; }
+W2_CHANNEL=W-DIAG
+W2_OUTCOME=REJECTED
+#
+COMMAND=./hcc --install-dir=build/test-prefix -c build/slice09-witness/w2.HC \
+#         -o build/slice09-witness/w2.o
+   error: Unexpected keyword `I64` while parsing if body
+    --> build/slice09-witness/w2.HC:4:10
+        |
+      4 |      if (x) I64 y = 2;
+             |             ^^^
+W2_EXIT=1
+W2_DIAGNOSTIC_KEY_PHRASE=while parsing if body
+W2_NAMES_THE_CONSTRUCTOR	YES
+W2_IS_A_DIAGNOSTIC_PRODUCING_WITNESS	YES
+#
+# The RECON08 mutation experiment showed that the MUTANT compiler
+# names the OTHER constructor:
+#   pristine -> "while parsing if body"
+#   mutant   -> "while parsing while loop body"
+#
+# The SLICE09 post-PolyC mutation MUST produce a DIFFERENT
+# diagnostic phrase, and the difference MUST be attributable to the
+# PolyC subject.  The comparison is made at C3.
+#
+# NOTE: the witness is a DIAGNOSTIC-producing witness, NOT a runtime
+# one.  The ACT's section 5.2 point 4 therefore classifies the
+# post-PolyC mutant's channel as
+# COMPILER_DIAGNOSTIC_PATH_CHANGED, not RUNTIME_OUTPUT_CHANGED.
+# The ACT forbids claiming a runtime output for a failed compilation.
+#
+# --- w1: the ACCEPTED witness (the W-OBJ channel) ---
+#
+# It is ACCEPTED, so the compiled OBJECT is produced, and its digest
+# is the observable.
+#
+# THE OUTPUT PATH MUST BE RELATIVE.  An ABSOLUTE -o path is mangled by
+# the compiler's assembler invocation into './/tmp/...' and the build
+# fails with "unable to open output file".  This was MEASURED:
+#
+#   COMMAND=./hcc --install-dir=build/test-prefix -c /tmp/slice09-witness/w1.HC \
+#           -o /tmp/slice09-witness/w1.o
+#      -> clang: error: unable to open output file './/tmp/slice09-witness/w1.o'
+#      -> exit 1
+#
+# The witness is therefore run from a build directory with a RELATIVE
+# output path.  Every witness command in this ACT uses a relative
+# output path for this reason.
+#
+W1_SOURCE=build/slice09-witness/w1.HC
+W1_SOURCE_TEXT=I32 Main(I32 argc, U8 **argv) { I64 x = 1; if (x) { I64 y = 2; } return 0; }
+W1_CHANNEL=W-OBJ
+W1_OUTCOME=ACCEPTED
+#
+COMMAND=./hcc --install-dir=build/test-prefix -c build/slice09-witness/w1.HC \
+#         -o build/slice09-witness/w1.o
+W1_EXIT=0
+W1_OBJECT=build/slice09-witness/w1.o
+W1_OBJECT_SHA256=d37592271543af9d39aeb34cb66253f75e99d4e864b593fcf94fe58b3f9b4da9
+#
+# An ABSOLUTE output path is NOT usable (measured above): the
+# compiler's assembler step prefixes it with './'.  Every witness
+# command uses a relative path.
+#
+W1_ABSOLUTE_OUTPUT_PATH_USABLE=NO
+W1_OUTPUT_PATH_MUST_BE_RELATIVE=YES
+#
+# --- w3: the RUNTIME witness (the W-RUN channel) ---
+#
+# --- w3: the RUNTIME witness (the W-RUN channel) ---
+#
+# A program whose RUNTIME OUTPUT depends on the dispatch's outcome.
+# It is used to prove that the ROUTE, not only the diagnostic, is
+# preserved.  It exercises THREE distinct keyword statement
+# constructors whose effects are jointly observable: `for`,
+# `if` and `continue` (via the loop body) and `while`.
+#
+# The expected output is derived by hand from the source, so a
+# dispatch that selected the wrong constructor would change it:
+#
+#   i = 0: acc += 0            -> acc = 0
+#   i = 1: continue            -> acc unchanged
+#   i = 2: acc += 2            -> acc = 2
+#   while (acc < 5): acc += 10 -> acc = 12, then the loop exits
+#
+W3_SOURCE=build/slice09-witness/w3.HC
+W3_CHANNEL=W-RUN
+W3_OUTCOME=ACCEPTED
+#
+COMMAND=./hcc --install-dir=build/test-prefix build/slice09-witness/w3.HC \
+#         -o build/slice09-witness/w3
+W3_EXIT=0
+COMMAND=./build/slice09-witness/w3
+W3_RUN_EXIT=0
+W3_STDOUT=ACC=12
+W3_EXPECTED_STDOUT=ACC=12
+W3_OUTPUT_MATCHES_EXPECTED=YES
+#
+# The PolyC builtin for printing is `printf` (lowercase).  `Print` is
+# NOT defined in this language: the first attempt to use it failed
+# with "Variable or function `Print` has not been defined".  The
+# witness uses `printf`.
+#
+W3_PRINT_FUNCTION	printf
+#
+# ------------------------------------------------------------------
+# THE ORACLE CONTRACT
+# ------------------------------------------------------------------
+#
+# The G0 oracle is the REAL production TU with the selector OFF.  It
+# is the source of the EXPECTED fixture values: the fixture's
+# expected selectors were derived from the source text, and the G0
+# object's behaviour is what the differential compares against.
+#
+# The oracle is NOT a hand-written C reimplementation of the rule.
+# The G0-PROVENANCE detector (an EXISTING repository tool, used
+# UNMODIFIED) proves that the oracle carries the production
+# function-scoped relocations and imports no PolyC successor symbol.
+#
+ORACLE_IS_THE_REAL_PRODUCTION_TU	YES
+ORACLE_IS_HANDMADE	NO
+ORACLE_IS_A_COPY	NO
+ORACLE_IMPORTS_THE_POLYC_SUCCESSOR	NO
+ORACLE_PROVENANCE_DETECTOR	G0_NOT_GENUINE_C_TU
+#
+# ------------------------------------------------------------------
+# THE MUTATION CONTRACT, DECLARED BEFORE THE MUTATION RUNS
+# ------------------------------------------------------------------
+#
+# The subject of the mutation is the PolyC component's decision, NOT
+# src/parser.c.
+#
+MUTATION_SUBJECT	tools/bootstrap/selfhost-parser-statement-dispatch.HC
+MUTATION_NOT_THE_LEGACY_C_SOURCE	YES
+MUTATION_SELECTOR_STATE	HCC_USE_SELFHOST_PARSER_STATEMENT_DISPATCH ON
+MUTATION_PREDECLARED_NARROW_CHANGE	one selector arm's target is changed
+MUTATION_PREDECLARED_EXPECTED_FIXTURE_EFFECT	the row for that keyword changes its expected selector
+MUTATION_PREDECLARED_EXPECTED_WITNESS_EFFECT	the w2 diagnostic phrase names the other constructor
+MUTATION_EXPECTED_CHANNEL	W-DIAG
+MUTATION_EXPECTED_CLASSIFICATION	COMPILER_DIAGNOSTIC_PATH_CHANGED
+MUTATION_RESTORATION_REQUIREMENT	the .HC source is restored byte-identically and the compiler is rebuilt
+#
+# The PRE-C mutation (RECON08-SUB-004-PRE-C-MUTANT) is a DIFFERENT
+# experiment with a DIFFERENT subject, a DIFFERENT selector state and
+# a DIFFERENT phase.  It CANNOT discharge this mutation.
+#
+PRODUCTION_WITNESS_AND_ORACLE_STATUS=PASS

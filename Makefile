@@ -6358,6 +6358,119 @@ parser-slice08-differential: build/parser-slice08-differential
 	@echo "SLICE08_DIFFERENTIAL=RUN"
 	./build/parser-slice08-differential $(SLICE08_FIXTURE) `grep -c '^[0-9][0-9][0-9][0-9]' $(SLICE08_FIXTURE)`
 # =========================================================================
+# ACT-POLYC-SELFHOST-PARSER-SLICE09
+#
+#   The C1 EVIDENCE TOOLS and the FOUR GENERATIONS.
+#
+# The VARIABLES are defined HERE, above the rules that use them: make
+# expands a rule's PREREQUISITES when the rule is read, so a variable
+# that is defined later in the file would be EMPTY at that point.
+# =========================================================================
+SLICE09_FIXTURE_PRODUCER_SRC = tools/quality/parser-slice09-fixture-producer.HC
+SLICE09_FIXTURE_PRODUCER     = build/parser-slice09-fixture-producer
+SLICE09_FIXTURE_INTEGRITY_SRC = tools/quality/parser-slice09-fixture-integrity.HC
+SLICE09_FIXTURE_INTEGRITY     = build/parser-slice09-fixture-integrity
+SLICE09_FIXTURE               = evidence/ACT-POLYC-SELFHOST-PARSER-SLICE09/c1/frozen-dispatch-fixture.tsv
+
+# The SUBJECT's own source and object.  The subject file name is the
+# one the FROZEN selected contract names:
+#   tools/bootstrap/selfhost-parser-statement-dispatch.HC
+SLICE09_STATEMENT_DISPATCH_SRC = tools/bootstrap/selfhost-parser-statement-dispatch.HC
+SLICE09_STATEMENT_DISPATCH_OBJ = ./build/parser-statement-dispatch-subject.o
+
+# The FOUR GENERATIONS.
+#
+#   G0 = the REAL legacy C authority: src/parser.c compiled WITHOUT
+#        HCC_USE_SELFHOST_PARSER_STATEMENT_DISPATCH, so the legacy
+#        switch body is the code that executes.
+#   G1 = the PolyC component compiled by the STAGE0 compiler.
+#   G2 = the PolyC component compiled by the PRODUCTION compiler (./hcc).
+#   G3 = the PolyC component compiled by the STAGE-2 compiler
+#        (./build/hcc-bootstrap02).
+#
+# Each generation is BUILT and EXECUTED INDEPENDENTLY.  No generation's
+# output is copied as a substitute for another generation's compilation.
+SLICE09_GEN_DIR = build/slice09-gen
+SLICE09_GEN_SRC = $(SLICE09_STATEMENT_DISPATCH_SRC)
+
+# The FIXTURE PRODUCER (PolyC).
+$(SLICE09_FIXTURE_PRODUCER): $(SLICE09_FIXTURE_PRODUCER_SRC) ./hcc | test-prefix-install
+	./hcc --install-dir=$(TEST_PREFIX) $(SLICE09_FIXTURE_PRODUCER_SRC) -o $@
+
+# The INDEPENDENT fixture-integrity witness (PolyC).
+$(SLICE09_FIXTURE_INTEGRITY): $(SLICE09_FIXTURE_INTEGRITY_SRC) ./hcc | test-prefix-install
+	./hcc --install-dir=$(TEST_PREFIX) $(SLICE09_FIXTURE_INTEGRITY_SRC) -o $@
+
+# The frozen fixture, regenerated from the live source.
+parser-slice09-fixture: $(SLICE09_FIXTURE_PRODUCER)
+	@mkdir -p evidence/ACT-POLYC-SELFHOST-PARSER-SLICE09/c1
+	$(SLICE09_FIXTURE_PRODUCER) $(SLICE09_FIXTURE)
+
+# The independent verification of the frozen fixture.
+parser-slice09-fixture-verify: $(SLICE09_FIXTURE_INTEGRITY) $(SLICE09_FIXTURE)
+	$(SLICE09_FIXTURE_INTEGRITY) $(SLICE09_FIXTURE) src/parser.c src/lexer.h
+
+# The G0 legacy reference: the REAL production src/parser.c with the
+# delegation OFF.  The build FAILS if the object references the PolyC
+# component, which would mean the delegation was NOT off.
+#
+# The G0 must ALSO carry the legacy constructor relocations inside
+# _parseStatement: that is what proves the legacy decision is the code
+# that is present in the object.  The check is made with the EXISTING
+# repository provenance detector (build/parser-surface-recon08-verify),
+# not with a hand-rolled symbol test, and NOT with the C2-only oracle
+# wrapper (which does not exist in the C1-era source).
+$(SLICE09_GEN_DIR)/g0.o: src/parser.c src/parser.h src/ast.h build/parser-surface-recon08-verify
+	@mkdir -p $(SLICE09_GEN_DIR)
+	@rm -f $@
+	cc -std=c99 -O2 -Isrc -c -o $@ src/parser.c
+	@if nm $@ | grep -q '_BootstrapStatementDispatch'; then \
+		echo "slice09-gen/g0.o: the object references the PolyC component; the delegation flag is NOT off" >&2; \
+		exit 1; \
+	fi
+	@./build/parser-surface-recon08-verify G0 $@ BootstrapStatementDispatch \
+		_parseIfStatement _parseForStatement _parseWhileStatement \
+		_parseDoWhileStatement _parseReturnStatement _parseTryStatement \
+		_parseThrowStatement _parseSwitchStatement _parseCaseLabel \
+		_parseDefaultStatement _parseBreakStatement _parseContinueStatement \
+		_prsAsm _astGoto _createFunctionLevelGotoLabel \
+		|| { echo "slice09-gen/g0.o: the G0 provenance detector rejected the legacy oracle" >&2; exit 1; }
+	@echo "SLICE09_GEN=g0 source=src/parser.c compiler=cc object=$@"
+
+# The G1 generation: the PolyC component compiled by the STAGE0
+# compiler.
+$(SLICE09_GEN_DIR)/g1.o: $(SLICE09_GEN_SRC) $(BOOTSTRAP_STAGE0_HCC) $(BOOTSTRAP_PREFIX_INC)/tos.HH
+	@mkdir -p $(SLICE09_GEN_DIR)
+	@rm -f $@
+	$(BOOTSTRAP_STAGE0_HCC) --install-dir=$(BOOTSTRAP_PREFIX_DIR) -c $(SLICE09_GEN_SRC) -o $@
+	@nm $@ | grep -q '_BootstrapStatementDispatch' \
+		|| { echo "slice09-gen/g1.o: the PolyC symbol is missing" >&2; exit 1; }
+	@echo "SLICE09_GEN=g1 source=$(SLICE09_GEN_SRC) compiler=$(BOOTSTRAP_STAGE0_HCC) object=$@"
+
+# The G2 generation: the PolyC component compiled by the PRODUCTION
+# compiler.
+$(SLICE09_GEN_DIR)/g2.o: $(SLICE09_GEN_SRC) ./hcc
+	@mkdir -p $(SLICE09_GEN_DIR)
+	@rm -f $@
+	./hcc --install-dir=$(BOOTSTRAP_PREFIX_DIR) -c $(SLICE09_GEN_SRC) -o $@
+	@nm $@ | grep -q '_BootstrapStatementDispatch' \
+		|| { echo "slice09-gen/g2.o: the PolyC symbol is missing" >&2; exit 1; }
+	@echo "SLICE09_GEN=g2 source=$(SLICE09_GEN_SRC) compiler=./hcc object=$@"
+
+# The G3 generation: the PolyC component compiled by the STAGE-2
+# compiler.
+$(SLICE09_GEN_DIR)/g3.o: $(SLICE09_GEN_SRC) ./build/hcc-bootstrap02
+	@mkdir -p $(SLICE09_GEN_DIR)
+	@rm -f $@
+	./build/hcc-bootstrap02 --install-dir=$(BOOTSTRAP_PREFIX_DIR) -c $(SLICE09_GEN_SRC) -o $@
+	@nm $@ | grep -q '_BootstrapStatementDispatch' \
+		|| { echo "slice09-gen/g3.o: the PolyC symbol is missing" >&2; exit 1; }
+	@echo "SLICE09_GEN=g3 source=$(SLICE09_GEN_SRC) compiler=./build/hcc-bootstrap02 object=$@"
+
+parser-slice09-generations: $(SLICE09_GEN_DIR)/g0.o $(SLICE09_GEN_DIR)/g1.o \
+                            $(SLICE09_GEN_DIR)/g2.o $(SLICE09_GEN_DIR)/g3.o
+	@echo "SLICE09_GENERATIONS=BUILT"
+# =========================================================================
 # ACT-POLYC-SELFHOST-PARSER-SLICE07
 #
 #   build/slice07-gen/g{0,1,2,3}.o -> the FOUR INDEPENDENT generations.

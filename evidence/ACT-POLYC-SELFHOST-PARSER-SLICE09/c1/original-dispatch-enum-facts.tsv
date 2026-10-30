@@ -1,0 +1,143 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE09
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=original-dispatch-enum-facts
+#
+# THE COMPLETE ORIGINAL DISPATCH AND ENUM FACTS, EXTRACTED FROM THE
+# LIVE PRODUCTION C AND THE LIVE TOKEN ENUM.
+#
+# Every value below is MEASURED from the live source at the entry
+# tree, not transcribed from the prose.
+#
+# ------------------------------------------------------------------
+# THE DISPATCH'S PHYSICAL EXTENT
+# ------------------------------------------------------------------
+# The frozen range src/parser.c:1864..1877 is the GUARD plus the
+# twelve simple constructor arms.  The SAME switch statement, inside
+# the SAME `if (tok->tk_type == TK_KEYWORD)` guard, continues with
+# three complex arms and a default arm.  The whole switch is ONE
+# decision and the mechanical C routing table must reproduce it
+# entirely, or the migration would change behaviour.
+#
+DISPATCH_GUARD_LINE	1864	if (tok->tk_type == TK_KEYWORD) {
+DISPATCH_SWITCH_LINE	1865	switch (tok->i64) {
+DISPATCH_FIRST_ARM_LINE	1866	case KW_IF:       return parseIfStatement(cc);
+DISPATCH_FROZEN_RANGE_LAST_LINE	1877	case KW_CONTINUE: return parseContinueStatement(cc);
+DISPATCH_COMPLEX_ARM_ASM_LINE	1878	case KW_ASM: {
+DISPATCH_COMPLEX_ARM_STATIC_LINE	1893	case KW_STATIC: {
+DISPATCH_COMPLEX_ARM_GOTO_LINE	1955	case KW_GOTO: {
+DISPATCH_DEFAULT_ARM_LINE	1967	default: {
+DISPATCH_SWITCH_CLOSE_LINE	1972	}
+DISPATCH_GUARD_CLOSE_LINE	1973	}
+#
+# ------------------------------------------------------------------
+# THE TOKEN-TYPE AND KEYWORD-ID ENUM FACTS
+# ------------------------------------------------------------------
+TOKEN_TYPE_CLASS	TK_KEYWORD
+TOKEN_TYPE_CLASS_VALUE	818
+TOKEN_TYPE_CLASS_LITERAL	0x332
+TOKEN_TYPE_CLASS_SOURCE	src/lexer.h:62
+TOKEN_TYPE_IS_A_DENSE_ENUM	NO	measured: TK_KEYWORD is a `#define` with a hex literal
+TOKEN_TYPE_HEX_SUPPORT_IN_VERIFIER	YES	measured: the PolyC verifier reads both decimal and hexadecimal macro values
+#
+KEYWORD_ID_DOMAIN	I64
+KEYWORD_VALUE_DOMAIN	0..90
+KEYWORD_ENUM_OWNER	C	selected-abi-and-projection.md: "The KW_* and TK_* enum values -- C -- passed by value"
+KEYWORD_VALUE_SOURCE	src/lexer.h `#define KW_*` lines
+#
+# ------------------------------------------------------------------
+# THE COMPLETE KEYWORD UNIVERSE (MEASURED)
+# ------------------------------------------------------------------
+#
+# The keyword UNIVERSE is measured by COMPILING the LIVE src/lexer.h
+# and printing every KW_* macro's value.  This is the authoritative
+# measurement, because two of the macros are written as SHIFT
+# EXPRESSIONS -- not as decimal literals:
+#
+#   #define KW_CLASS       (1<<0)   -> 1
+#   #define KW_UNION       (1<<1)   -> 2
+#
+# A textual scan of the macro VALUES therefore does NOT yield the
+# live values, and a count taken from `grep -c '^#define KW_'` counts
+# the macros, not the DISTINCT live values.  Both are measured here
+# by the real C preprocessor.
+#
+KW_UNIVERSE_MACRO_COUNT	67	measured: `grep -c '^#define KW_' src/lexer.h`
+KW_UNIVERSE_TOTAL	67	measured: the compiled enumeration prints exactly 67 KW_* macros
+KW_UNIVERSE_DISTINCT_VALUES	67	measured: the 67 printed values are pairwise distinct
+KW_UNIVERSE_MIN	0	measured: KW_U0
+KW_UNIVERSE_MAX	90	measured: KW_TYPEOF
+KW_UNIVERSE_VALUES	0,1,2,3,4,5,6,7,8,9,10,11,12,13,15,16,17,18,19,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58,60,62,64,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90	measured by compiling src/lexer.h
+KW_VALUE_DOMAIN	0..90	measured
+#
+# The two SHIFT-EXPRESSION macros, resolved by the real preprocessor:
+#
+KW_CLASS_VALUE	1	measured: (1<<0)
+KW_UNION_VALUE	2	measured: (1<<1)
+KW_U0_VALUE	0	measured
+#
+KW_DISPATCH_ARM_COUNT	15	measured: 15 `case KW_*:` labels in the dispatch
+KW_KEYWORDS_WITHOUT_AN_ARM	52	measured: 67 - 15
+KW_DUPLICATE_VALUES	0	measured: the 67 compiled values are pairwise distinct
+#
+# ------------------------------------------------------------------
+# THE COMPLETE KEYWORD -> CONSTRUCTOR MAPPING
+# ------------------------------------------------------------------
+# The keyword VALUES are the live src/lexer.h values.  The SOURCE LINE
+# is the live line of the `case` label.  The SELECTOR is the value
+# frozen at C0 (c0/selected-contract-bindings.tsv, PART 4): the
+# not-a-keyword-statement value is 0, and the constructor arms are
+# numbered 1..15 in the SOURCE ORDER of the `case` labels.
+#
+# Schema: kw_name <TAB> kw_value <TAB> source_line <TAB> selector
+#         <TAB> route <TAB> ctor_or_action <TAB> arm_kind
+KW_IF	46	1866	1	KEYWORD_STATEMENT_CONSTRUCTOR	parseIfStatement(cc)	SIMPLE
+KW_FOR	38	1867	2	KEYWORD_STATEMENT_CONSTRUCTOR	parseForStatement(cc)	SIMPLE
+KW_WHILE	40	1868	3	KEYWORD_STATEMENT_CONSTRUCTOR	parseWhileStatement(cc)	SIMPLE
+KW_DO	66	1869	4	KEYWORD_STATEMENT_CONSTRUCTOR	parseDoWhileStatement(cc)	SIMPLE
+KW_RETURN	18	1870	5	KEYWORD_STATEMENT_CONSTRUCTOR	parseReturnStatement(cc)	SIMPLE
+KW_TRY	80	1871	6	KEYWORD_STATEMENT_CONSTRUCTOR	parseTryStatement(cc)	SIMPLE
+KW_THROW	82	1872	7	KEYWORD_STATEMENT_CONSTRUCTOR	parseThrowStatement(cc)	SIMPLE
+KW_SWITCH	20	1873	8	KEYWORD_STATEMENT_CONSTRUCTOR	parseSwitchStatement(cc)	SIMPLE
+KW_CASE	22	1874	9	KEYWORD_STATEMENT_CONSTRUCTOR	parseCaseLabel(cc,tok)	SIMPLE
+KW_DEFAULT	64	1875	10	KEYWORD_STATEMENT_CONSTRUCTOR	parseDefaultStatement(cc)	SIMPLE
+KW_BREAK	24	1876	11	KEYWORD_STATEMENT_CONSTRUCTOR	parseBreakStatement(cc)	SIMPLE
+KW_CONTINUE	26	1877	12	KEYWORD_STATEMENT_CONSTRUCTOR	parseContinueStatement(cc)	SIMPLE
+KW_ASM	28	1878	13	KEYWORD_STATEMENT_CONSTRUCTOR	prsAsm(cc,1) + listAppend(cc->asm_blocks,asm_block)	COMPLEX
+KW_STATIC	67	1893	14	KEYWORD_STATEMENT_CONSTRUCTOR	the local-static declaration path (env swap, gvar_ast, mapAdd, listAppend)	COMPLEX
+KW_GOTO	44	1955	15	KEYWORD_STATEMENT_CONSTRUCTOR	createFunctionLevelGotoLabel(cc,tok) + astGoto(label) + cctrlTokenExpect(cc,';')	COMPLEX
+#
+# The `default:` arm at line 1967 is the NOT-A-RECOGNISED-KEYWORD
+# route.  It is NOT a constructor: it rewinds the token and raises
+#   "Keyword '%.*s' cannot be used in this context".
+DEFAULT_ARM	NA	1967	0	KEYWORD_STATEMENT_UNRECOGNISED	cctrlTokenRewind(cc) + cctrlRaiseException(cc,"Keyword '%.*s' cannot be used in this context",tok->len,tok->start)	FALLTHROUGH
+#
+# ------------------------------------------------------------------
+# THE ROUTES AFTER THE SWITCH -- NOT PART OF SUB-004
+# ------------------------------------------------------------------
+# These are OUTSIDE the keyword guard and are NOT part of the
+# dispatch.  They stay on the C side, unchanged.
+#
+POST_SWITCH_ROUTE_1	1975	TK_CHAR_CONST	parseFloatingCharConst(cc,tok)
+POST_SWITCH_ROUTE_2	1980	TK_STR	parseFunctionArguments(cc,"printf",6,';')
+POST_SWITCH_ROUTE_3	1987	TK_IDENT + ':'	createFunctionLevelGotoLabel + astLabel
+POST_SWITCH_ROUTE_4	1993	'{'	parseCompoundStatement(cc)
+POST_SWITCH_ROUTE_5	1998	TK_I64 / TK_F64 / ','	diagnostics
+POST_SWITCH_ROUTE_6	2009	other	parseExpr(cc,16)
+POST_SWITCH_ROUTES_ARE_NOT_SUB_004	YES
+#
+# ------------------------------------------------------------------
+# THE INVARIANTS THE MIGRATION MUST PRESERVE
+# ------------------------------------------------------------------
+# These are MEASURED from the live source, and each is an obligation
+# on the C2 implementation.
+#
+INV_1_TOK_NULL_RAISES_BEFORE_THE_DISPATCH	YES	src/parser.c:1860-1863
+INV_2_TOK_I64_READ_ONLY_UNDER_THE_TK_KEYWORD_GUARD	YES	src/parser.c:1864-1865
+INV_3_EXACTLY_ONE_TOK_I64_READ	YES	measured: one `switch (tok->i64)` in the dispatch
+INV_4_EACH_ARM_READS_TOK_FURTHER_ONLY_WHERE_THE_LEGACY_DID	YES	measured: only KW_CASE passes `tok` to parseCaseLabel
+INV_5_THE_DEFAULT_ARM_REWINDS_BEFORE_RAISING	YES	src/parser.c:1968-1970
+INV_6_NO_ARM_RETURNS_A_PREEXISTING_AST	YES	measured: every arm either calls a constructor or raises
+INV_7_NO_ARM_CONSUMES_A_DIFFERENT_NUMBER_OF_TOKENS	YES	measured: the arm bodies are unchanged
+INV_8_CALL_CARDINALITY_IS_ONE_CONSTRUCTOR_PER_ARM	YES	measured: every arm has exactly one call
+#
+ORIGINAL_DISPATCH_ENUM_FACTS_STATUS=PASS

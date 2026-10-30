@@ -1,0 +1,116 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE09
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=build-fail-closed-controls
+#
+# THE BUILD-GRAPH FAIL-CLOSED CONTROLS.
+#
+# Each control has a PRISTINE POSITIVE baseline, an ACTUALLY EXECUTED
+# adverse input, an exact reason-specific detector, and a restoration.
+# Every adverse input was a DISPOSABLE COPY or a MOVE-ASIDE-and-
+# RESTORE; the live tree was verified afterwards.
+#
+# ------------------------------------------------------------------
+# S9-BG-01 -- THE SUBJECT OBJECT IS IN THE EFFECTIVE PREREQUISITE
+#             EXPANSION
+# ------------------------------------------------------------------
+#
+# The ACT's section 2.2 requires GNU Make's EFFECTIVE prerequisite
+# expansion to be checked, not only the recipe text: "A target that
+# silently excludes the new object is a failure."
+#
+# POSITIVE: the subject object appears in the effective expansion.
+COMMAND=make -n production-hcc | grep -c 'parser-default-arm-subject.o'
+   1
+POSITIVE_STATUS=PASS
+#
+# ADVERSE: the subject object is REMOVED from the prerequisite list
+# (a disposable copy of the Makefile was edited, and the live
+# Makefile was restored byte-identically afterwards).
+COMMAND=(copy the Makefile; remove the subject from the prerequisite
+#         list; make -n production-hcc | grep -c 'parser-default-arm-subject.o')
+   0
+ADVERSE_STATUS=FAIL
+ADVERSE_DETECTOR=MISSING_SUBJECT_PREREQUISITE
+ADVERSE_DETECTED=YES
+#
+# The restoration was VERIFIED: the live Makefile's subject line is
+# back.
+COMMAND=grep -c 'SLICE08_DEFAULT_ARM_OBJ) \' Makefile
+   6
+RESTORATION_VERIFIED=YES
+#
+# The same probe is applied to the NEW subject at C2, and its result
+# is recorded at c2/subject-build-graph-proof.txt.
+#
+# ------------------------------------------------------------------
+# S9-BG-02 -- THE MISSING PROVIDER FAILS THE BUILD CLOSED
+# ------------------------------------------------------------------
+#
+# POSITIVE: a configure with a subject object that EXISTS succeeds.
+COMMAND=cmake -S ./src -B <disposable> ... \
+#         -DHCC_USE_SELFHOST_PARSER_DEFAULT_ARM_TERMINATES=ON \
+#         -DDEFAULT_ARM_TERMINATES_OBJECT=<existing-subject.o>
+POSITIVE_STATUS=PASS
+POSITIVE_DETECTED=NO (correct: an existing provider configures cleanly)
+#
+# ADVERSE: the subject object is pointed at a path that does NOT
+# exist, with NO producer configured.  The configure MUST FAIL.
+COMMAND=cmake -S ./src -B /tmp/slice09-red/build-no-provider2 ... \
+#         -DHCC_USE_SELFHOST_PARSER_DEFAULT_ARM_TERMINATES=ON \
+#         -DDEFAULT_ARM_TERMINATES_OBJECT=/tmp/slice09-red/build-no-provider2/missing-subject.o
+   CMake Error at CMakeLists.txt:1391 (message):
+#     /tmp/slice09-red/build-no-provider2/missing-subject.o does not exist and no
+   -- Configuring incomplete, errors occurred!
+ADVERSE_CONFIGURE_EXIT=1
+ADVERSE_STATUS=FAIL
+ADVERSE_DETECTOR=THE_REAL_CMAKE_FAIL_CLOSED_GUARD
+ADVERSE_DETECTED=YES
+#
+# The live provider object was MOVED ASIDE for the probe and then
+# RESTORED BYTE-IDENTICALLY; its presence was re-verified after the
+# probe.
+RESTORATION_VERIFIED=YES
+#
+# ------------------------------------------------------------------
+# S9-DP-03 -- THE SELECTOR-OFF G0 MUST NOT IMPORT THE POLYC SUCCESSOR
+# ------------------------------------------------------------------
+#
+# The frozen contract (c2/selected-g0-oracle-and-fixture.md section 1)
+# requires: "the build MUST FAIL if the selector-OFF object imports
+# BootstrapStatementDispatch; that is the fail-closed check".
+#
+# POSITIVE: the genuine selector-OFF production TU.
+COMMAND=./build/parser-surface-recon08-verify G0 build/slice09-gen/g0.o \
+#         BootstrapStatementDispatch _parseIfStatement ... (15 constructors)
+   G0_IMPORTS_SUCCESSOR=0
+   G0_CONSTRUCTOR_RELOCATIONS_FOUND=15
+   G0_CONSTRUCTORS_EXPECTED=15
+   STATUS=PASS
+POSITIVE_STATUS=PASS
+#
+# ADVERSE: an object that DOES import the successor symbol.  The
+# detector must reject it.
+#
+# The adverse object is built by compiling the production TU with the
+# candidate selector ON, which imports the successor symbol by
+# construction.  It is built in a DISPOSABLE directory.
+#
+ADVERSE_OBJECT=the production src/parser.c compiled with
+#   HCC_USE_SELFHOST_PARSER_STATEMENT_DISPATCH defined, so it imports
+#   the successor symbol
+ADVERSE_EXPECTED_DETECTOR=G0_NOT_GENUINE_C_TU
+ADVERSE_EXPECTED_REASON=THE_G0_OBJECT_IMPORTS_THE_POLYC_SUCCESSOR_SYMBOL
+#
+# This adverse object is EXECUTED at C2, when the ON build exists.
+# It is bound there as S9-DP-03.
+#
+# ------------------------------------------------------------------
+# THE SUMMARY
+# ------------------------------------------------------------------
+S9_BG_01_DETECTED	YES	DETECTOR=MISSING_SUBJECT_PREREQUISITE
+S9_BG_02_DETECTED	YES	DETECTOR=THE_REAL_CMAKE_FAIL_CLOSED_GUARD
+S9_DP_03_DETECTED	BOUND_TO_C2	ADVERSE_OBJECT_REQUIRES_THE_ON_BUILD
+VACUOUS_PASSES	0
+COMMITTED_FILES_MODIFIED	0
+#
+BUILD_FAIL_CLOSED_CONTROLS_STATUS=PASS

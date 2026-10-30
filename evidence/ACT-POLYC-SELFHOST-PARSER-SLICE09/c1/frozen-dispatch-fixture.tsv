@@ -1,0 +1,46 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE09
+ACT_PHASE=C1-EVIDENCE
+EVIDENCE_KIND=frozen-dispatch-fixture
+# THE FROZEN SOURCE-DERIVED DISPATCH FIXTURE for SUB-004.
+# CANDIDATE=SUB-004 (the statement-constructor dispatch)
+# SUBJECT=src/parser.c:1864..1877
+# SOURCE_SHA256=cd138cc52588fe48c2eab37421b4e25abbacd7ea10491bc696a1acab9a66d7e0
+#
+# Schema:
+#   fixture_id <TAB> partition <TAB> token_type <TAB>
+#   keyword_id <TAB> expected_selector <TAB>
+#   expected_constructor <TAB> rationale
+#
+# The row count is DERIVED from the live source and the
+# live enum.  It is NOT hard-coded.
+#
+# The selector encoding is the one frozen at C0:
+#   0 = STMT_NOT_A_KEYWORD_STATEMENT
+#   1..15 = STMT_<CTOR> in SOURCE ORDER of the case labels
+#
+# FIXTURE_ROW_COUNT=21
+# FIXTURE_ARM_COUNT=15
+# FIXTURE_UNIVERSE_COUNT=67
+# FIXTURE_TK_KEYWORD_VALUE=818
+#
+1	P0-NONKEYWORD	0	0	0	NONE	tk_type is not TK_KEYWORD; the guard means the dispatch is not entered
+2	P1-KEYWORD	818	46	1	parseIfStatement	the dispatch arm KW_IF selects parseIfStatement
+3	P1-KEYWORD	818	38	2	parseForStatement	the dispatch arm KW_FOR selects parseForStatement
+4	P1-KEYWORD	818	40	3	parseWhileStatement	the dispatch arm KW_WHILE selects parseWhileStatement
+5	P1-KEYWORD	818	66	4	parseDoWhileStatement	the dispatch arm KW_DO selects parseDoWhileStatement
+6	P1-KEYWORD	818	18	5	parseReturnStatement	the dispatch arm KW_RETURN selects parseReturnStatement
+7	P1-KEYWORD	818	80	6	parseTryStatement	the dispatch arm KW_TRY selects parseTryStatement
+8	P1-KEYWORD	818	82	7	parseThrowStatement	the dispatch arm KW_THROW selects parseThrowStatement
+9	P1-KEYWORD	818	20	8	parseSwitchStatement	the dispatch arm KW_SWITCH selects parseSwitchStatement
+10	P1-KEYWORD	818	22	9	parseCaseLabel	the dispatch arm KW_CASE selects parseCaseLabel
+11	P1-KEYWORD	818	64	10	parseDefaultStatement	the dispatch arm KW_DEFAULT selects parseDefaultStatement
+12	P1-KEYWORD	818	24	11	parseBreakStatement	the dispatch arm KW_BREAK selects parseBreakStatement
+13	P1-KEYWORD	818	26	12	parseContinueStatement	the dispatch arm KW_CONTINUE selects parseContinueStatement
+14	P1-KEYWORD	818	28	13	prsAsm	the dispatch arm KW_ASM selects prsAsm
+15	P1-KEYWORD	818	67	14	parseStaticStatement	the dispatch arm KW_STATIC selects parseStaticStatement
+16	P1-KEYWORD	818	44	15	parseGotoStatement	the dispatch arm KW_GOTO selects parseGotoStatement
+17	P2-UNKNOWN-KEYWORD	818	0	0	NONE	the keyword is in the TK_KEYWORD class but is not any arm of the dispatch; the default route applies
+18	P3-EXTREME	-9223372036854775808	0	0	NONE	the I64 minimum in token_type; no KW_* value equals an I64 extreme
+19	P3-EXTREME	9223372036854775807	0	0	NONE	the I64 maximum in token_type; no KW_* value equals an I64 extreme
+20	P3-EXTREME	818	-9223372036854775808	0	NONE	the I64 minimum in keyword_id; no KW_* value equals an I64 extreme
+21	P3-EXTREME	818	9223372036854775807	0	NONE	the I64 maximum in keyword_id; no KW_* value equals an I64 extreme
