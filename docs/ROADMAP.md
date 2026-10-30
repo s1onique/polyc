@@ -7760,3 +7760,144 @@ causal feasibility is NOT claimed by this ACT.
 See
 `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON07.md` and
 `evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON07/`.
+
+---
+
+## ACT-POLYC-SELFHOST-PARSER-SLICE08 -- CLOSE
+
+**Status:** CLOSED with `ACT-Verdict: PASS`.
+
+The default-arm TERMINATION decision in the PolyC parser is now owned
+by a qualified PolyC component, and the legacy C decision has been
+retired from the production path.  This is the EIGHTH
+production-authoritative PolyC parser decision, and the THIRD migrated
+bounded structural sub-slice.
+
+```text
+DEFAULT_ARM_TERMINATION_AUTHORITY = POLYC
+LEGACY_DEFAULT_ARM_C_AUTHORITY = RETIRED
+EIGHTH_POLYC_PARSER_AUTHORITY = ESTABLISHED
+
+SELECTED_CANDIDATE = SUB-002
+ORIGINAL_SOURCE_RANGE = src/parser.c:1683..1684
+ORIGINAL_SOURCE_SHA256 = a9fcb6a752a59a58eaea5bdf449cab39acf7d2d2be9d776f6a13fd968af89199
+POLYC_SYMBOL = BootstrapDefaultArmTerminates
+POLYC_ABI = I64 BootstrapDefaultArmTerminates(I64 ast_kind) -> I64
+PRODUCTION_SELECTOR = HCC_USE_SELFHOST_PARSER_DEFAULT_ARM_TERMINATES
+```
+
+**The delegation is load-bearing and the legacy decision is RETIRED.**
+The production parser object IMPORTS the PolyC symbol as an undefined
+reference and the function-scoped disassembly of
+`_parseDefaultStatement` contains a `ldrsw` scalar projection, a `bl`
+to the component and a `cbnz` on its RETURN VALUE.  The `0x2041`
+five-kind bitset mask appears ZERO times in the WHOLE production
+parser object: the legacy C predicate is not merely inactive, it is
+ABSENT.
+
+**The function-scoped attribution is mandatory and was performed.**  In
+the selector-OFF object the SAME mask appears in FOUR functions -- the
+SUB-002 oracle, the SUB-002 site, the SUB-001 oracle and the SUB-001
+site -- and the attribution separates them.  A whole-object mask count
+would have misattributed the SUB-002 evidence to the SUB-001 site.
+
+**This is a DISTINCT authority, not the SUB-001 one.**  The C0 RED-5
+experiment linked the REAL compiled SUB-001 PolyC object and evaluated
+it over the frozen 41-kind domain: it answers `1` for kind 293
+(AST_DEFAULT), where the frozen SUB-002 fixture requires `0` at row
+35.  SUB-001 terminates the `case:` arm on SIX kinds including
+AST_DEFAULT; SUB-002 terminates the `default:` arm on FIVE kinds
+excluding it.  Different semantics, different call sites, different
+symbols, different objects.
+
+**The oracle is object-level.**  The G0 reference is the ACTUAL
+production `src/parser.c` translation unit compiled WITHOUT the
+delegation macro, with the production flags; it carries no reference to
+the PolyC symbol, and the build fails if it ever does.  Its object
+digest is byte-identical to the RECON07 G0 object, so the factoring of
+the decision introduced ZERO compiled difference in the C authority.
+
+**The fixture is derived.**  41 rows over 4 partitions, derived from
+the LIVE `src/ast.h` enum and the LIVE `src/parser.c` seam, and it
+reproduces the frozen RECON07 fixture EXACTLY on (row_id, ast_kind,
+expected_terminate), kind_name and partition for all 41 rows.  The
+independent witness PARSES the live source and re-derives the
+expected set; it does not read the PolyC component and does not share
+the producer logic.
+
+**The four generations are independently produced.**  G0 is the host C
+compiler; G1, G2 and G3 are three PAIRWISE DISTINCT producer
+executables that each compiled the new component from the same source.
+All four agree row for row on all 41 rows, and all twelve ordered
+pairwise comparisons show 41 row IDs compared and ZERO value
+mismatches.
+
+**The causal direction is proved by a NEW post-migration PolyC
+mutation.**  In a detached worktree the AST_COMPOUND_STMT arm was
+removed from the compiled PolyC component; the mutant production
+compiler built successfully (exit 0), the compiled subject object
+CHANGED (so the mutation is not dormant), EXACTLY ONE fixture row
+changed (row 16, kind 274), and the predeclared witness changed on the
+declared channel `COMPILED_PROGRAM_SEMANTIC_OUTPUT_CHANGED` from
+`WITNESS_OUTPUT=110 155` to `WITNESS_OUTPUT=110 177`.  The restoration
+is byte-identical in the source AND in the object, and the witness
+recovers.  The RECON07 pre-migration C mutation is CITED as a prior
+event, NOT re-run.
+
+**The negative controls are all real.**  The 23 inherited controls
+were executed with their UNCHANGED ids and subjects against the
+UNMODIFIED canonical PolyC checkers; the 18 new S8 controls were each
+executed with an adverse edit, a reason-specific detector, a positive
+baseline and a restoration.  Four ids share ONE physical experiment
+and say so EXPLICITLY.
+
+**The conservation is exact.**  376/376 parser assertions over 90
+files with the ordered sequence MD5 unchanged; the three lexer direct
+differentials unchanged; the LEXER07 broad corpus still FAILING with
+the SAME 15 failure identities; the cross-target probe still
+FAIL_ENVIRONMENT_PREFIX with 67; F-NO-PYTHON still FAIL_KNOWN_BASELINE
+with 12; F-POLYC-TOOLS still UNAVAILABLE.  No historical nonzero
+status was relabelled PASS.
+
+```text
+DEFAULT_ARM_TERMINATION_AUTHORITY = POLYC
+CURRENT_POLYC_PARSER_AUTHORITIES = 8
+PRODUCTION_SEMANTIC_DELTA = 1
+NEW POLYC PARSER AUTHORITIES = 1
+NEW PYTHON = 0
+NEW DEPENDENCIES = 0
+CEREMONIAL BRANCH = NO
+GATE_FAST = PASS
+GATE_PUSH = PASS
+APPEND_ONLY = PASS
+CLOSURE_STATUS = PASS
+MANDATORY_AC_TOTAL=50  PASS=49  DEFERRED_TO_CLOSE=1  FAIL=0  UNPROVEN=0
+```
+
+**What this ACT did NOT do.**  It did not rewrite any history, did not
+edit any closed ACT, HANDOFF or evidence artifact, did not convert
+RECON06's HALT into a PASS, did not migrate anything beyond SUB-002,
+did not weaken any gate, and did not preselect a successor.
+
+**The eight authorities are eight DECISION SITES, not eight component
+FILES.**  Each migrated decision has its own PolyC component, its own
+exported symbol, its own production call site and its own fail-closed
+build wiring.  This is NOT whole-parser self-hosting.
+
+**NEXT.**
+
+```text
+NEXT_ACT        = NONE
+NEXT_TARGET     = NONE
+SLICE09_AUTHORIZED = NO
+```
+
+**No successor is preselected and SLICE09 is NOT authorized.**  The
+canonical fallback named by the frozen RECON07 contract is SUB-004
+(the keyword-to-statement dispatch in `parseStatement`), which is
+ELIGIBLE, but its causal feasibility is NOT claimed here: a successor
+that takes it MUST run its own causal feasibility experiment.
+
+See
+`docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE08.md` and
+`evidence/ACT-POLYC-SELFHOST-PARSER-SLICE08/`.

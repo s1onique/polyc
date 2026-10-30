@@ -1,0 +1,107 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE08
+# ACT_PHASE=C4-CLOSE
+# EVIDENCE_KIND=terminality-plan
+#
+# THE TERMINALITY PLAN.
+#
+# THIS FILE IS A PLAN, WRITTEN BEFORE THE CLOSE COMMIT.
+#
+# It is NOT a post-CLOSE receipt.  It does NOT claim that the
+# terminality has been observed.  The EXTERNAL, READ-ONLY, POST-CLOSE
+# observation that discharges AC50 does not exist yet, and it MUST NOT
+# be written into the tracked terminal commit: a receipt that claims to
+# have observed a commit that does not yet exist would be a
+# backdated observation, which is exactly what the ACT forbids.
+#
+# ---------------------------------------------------------------------------
+# WHAT THE TERMINAL COMMIT MUST BE
+# ---------------------------------------------------------------------------
+#
+#   EXACTLY ONE C4 CLOSE COMMIT, on the existing main checkout, with:
+#
+#     ACT:          ACT-POLYC-SELFHOST-PARSER-SLICE08
+#     ACT-Phase:    CLOSE
+#     ACT-Verdict:  PASS
+#
+#   and with NO sixth tracked commit after it.
+#
+#   The commit range is:
+#     C0 RED  ->  C1 EVIDENCE  ->  C2 IMPL  ->  C3 EVIDENCE  ->  C4 CLOSE
+#
+#   The commit range checker is run against that range BEFORE the
+#   commit is made, and its output is captured in the final report.
+#
+# ---------------------------------------------------------------------------
+# WHAT THE EXTERNAL POST-CLOSE OBSERVATION MUST DO
+# ---------------------------------------------------------------------------
+#
+#   It must be READ-ONLY and OUTSIDE the repository.  It must:
+#
+#   1. read the terminal commit's identity and its tree;
+#   2. read the terminal commit's trailers and verify:
+#        ACT         == ACT-POLYC-SELFHOST-PARSER-SLICE08
+#        ACT-Phase   == CLOSE
+#        ACT-Verdict == PASS
+#   3. verify the commit range:
+#        - the range contains EXACTLY FIVE ACT commits;
+#        - the phases are RED, EVIDENCE, IMPL, EVIDENCE, CLOSE;
+#        - there is NO sixth tracked commit after the CLOSE;
+#   4. verify the working tree is CLEAN and there are ZERO git replace
+#      refs;
+#   5. verify the APPEND-ONLY invariant on refs/heads/main;
+#   6. verify the CLOSURE STATUS for the ACT/HANDOFF pair;
+#   7. verify that the AC50 predicate is satisfied:
+#        ONE terminal CLOSE, the correct trailer, the correct range,
+#        and an independent external post-CLOSE terminality PASS.
+#
+#   It must NOT write anything into the repository.
+#
+# ---------------------------------------------------------------------------
+# WHAT THE OBSERVATION MUST NOT DO
+# ---------------------------------------------------------------------------
+#
+#   It must NOT be backdated into the terminal commit.
+#   It must NOT be a summary of this PLAN.
+#   It must NOT claim a SHA that the repository does not contain.
+#   It must NOT convert any historical HALT into a PASS.
+#
+# ---------------------------------------------------------------------------
+# THE RESULTING DISPOSITIONS
+# ---------------------------------------------------------------------------
+#
+#   If the external observation PASSES:
+#     AC50                = PASS
+#     MANDATORY_AC_PASS   = 50
+#     MANDATORY_AC_TOTAL  = 50
+#     VERDICT             = PASS
+#
+#   If the external observation FAILS:
+#     the terminal commit MUST NOT carry ACT-Verdict: PASS.
+#     The ACT HALTs with the exact, measured terminality failure and
+#     the evidence is preserved.  A PASS claim that the external
+#     observation does not support would be a false claim.
+#
+# ---------------------------------------------------------------------------
+# THE MEASURED STATE AT THE TIME OF THIS PLAN
+# ---------------------------------------------------------------------------
+#
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE08
+PHASE=C4-CLOSE
+PLAN_WRITTEN_BEFORE_THE_CLOSE_COMMIT=YES
+PLAN_IS_NOT_A_RECEIPT=YES
+POST_CLOSE_RECEIPT_IN_THIS_COMMIT=NO
+POST_CLOSE_RECEIPT_LOCATION=OUTSIDE THE REPOSITORY
+EXPECTED_TERMINAL_TRAILER_ACT=ACT-POLYC-SELFHOST-PARSER-SLICE08
+EXPECTED_TERMINAL_TRAILER_PHASE=CLOSE
+EXPECTED_TERMINAL_TRAILER_VERDICT=PASS
+EXPECTED_ACT_COMMIT_COUNT=5
+EXPECTED_PHASE_SEQUENCE=RED,EVIDENCE,IMPL,EVIDENCE,CLOSE
+EXPECTED_SIXTH_TRACKED_COMMIT=NO
+EXPECTED_WORKTREE_CLEAN=YES
+EXPECTED_GIT_REPLACE_REFS=0
+EXPECTED_APPEND_ONLY=PASS
+EXPECTED_CLOSURE_STATUS=PASS
+EXPECTED_AC50_DISPOSITION=PASS
+MANDATORY_AC_PASS_AT_C3=49
+MANDATORY_AC_DEFERRED_TO_CLOSE_AT_C3=1
+TERMINALITY_PLAN_STATUS=WRITTEN
