@@ -8164,3 +8164,44 @@ discharge that control with RECON08's pre-migration C experiment.
 See
 `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08.md`and
 `evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08/`.
+
+### ACT-POLYC-SELFHOST-PARSER-SLICE09 -- SUB-004 statement-constructor dispatch migrated
+
+`ACT-POLYC-SELFHOST-PARSER-SLICE09` closed with `ACT-Verdict: PASS`.  The
+production decision of which keyword-specific statement constructor to
+invoke no longer lives in `src/parser.c`: it is computed by one pure,
+total, allocation-free PolyC component,
+`tools/bootstrap/selfhost-parser-statement-dispatch.HC`, exported as
+`I64 BootstrapStatementDispatch(I64 token_type, I64 keyword_id)`.  The C
+side mechanically routes the returned selector (0 = not a keyword
+statement, 1..15 = the fifteen constructors in source order) to the
+original constructors, preserving every side effect, cursor advance,
+diagnostic, recovery and ownership behaviour.  The legacy C keyword
+comparison chain is compiled out of the selector-ON production path and
+survives only as the selector-OFF G0 oracle.
+
+This is the **ninth** active PolyC parser decision site; the eight
+predecessors are conserved.  It is **not** whole-compiler self-hosting.
+
+Evidence highlights: the frozen 21-row source-derived fixture agrees
+with all four generations (G0 = real legacy C TU, G1/G2/G3 = three
+distinct PolyC producers) on all twelve ordered pairs; a new
+post-migration PolyC-source mutation rebuilds the real compiler and
+changes the diagnostic witness, then restores byte-identically; 18
+SLICE09 controls and the 24-ID inherited roster are joined by exact ID;
+the parser suite is 376/376 with the historical sequence digest and the
+LEXER07 known-failure baseline (15 IDs) is preserved.
+
+Known separate debts remain unfixed (15 LEXER07 failure IDs, 67
+cross-target prefix cases, 12 F-NO-PYTHON violations, the unlanded
+F-POLYC-TOOLS checker, and the noted compiler/toolchain debts).
+
+```text
+SLICE09_VERDICT      = PASS
+POLYC_PARSER_SITES   = 9
+NEXT_TARGET          = NONE
+SLICE10_AUTHORIZED   = NO
+```
+
+See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE09.md` and
+`evidence/ACT-POLYC-SELFHOST-PARSER-SLICE09/`.

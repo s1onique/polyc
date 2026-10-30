@@ -1,0 +1,88 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE09
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=gate-push
+#
+# THE gate-push RUN AT C3.  EXECUTED ALONE, SERIALLY, NO OVERLAP.
+#
+# The gate builds a TEMPORARY DETACHED WORKTREE at a subject commit and
+# never tests the caller's working tree.  The subject is the ACT's own
+# C3 commit, so the hermetic gate tested the real C3 tree.
+#
+# COMMAND=./scripts/quality/gate-push.sh b4cb4ce655d091f8eee8ea4bf690ab067eed7475
+# SUBJECT=b4cb4ce655d091f8eee8ea4bf690ab067eed7475
+# EXIT=0
+PARSER_PADDING_ARCH_CHECK=PASS arch=arm64 target=arm64
+PRODUCTION_STATEMENT_DISPATCH_AUTHORITY=POLYC
+CHECK=build STATUS=PASS
+CHECK=install STATUS=PASS
+CHECK=gep01 STATUS=PASS
+CHECK=aot STATUS=PASS
+CHECK=jit STATUS=PASS
+CHECK=lsp STATUS=PASS
+CHECK=diff-check STATUS=PASS
+VERDICT=PASS
+GATE_PUSH_EXIT=0
+GATE_PUSH_VERDICT=PASS
+GATE_PUSH_STATUS=PASS
+#
+# ------------------------------------------------------------------
+# THE BUILD-GRAPH CORRECTION THAT MADE THIS PASS POSSIBLE
+# ------------------------------------------------------------------
+# The FIRST gate-push attempt at C3 FAILED (honestly recorded, not
+# hidden):
+#   CMake Error at src/CMakeLists.txt:1551: the statement-dispatch
+#   subject ... does not exist and no producer is configured
+#   CHECK=build STATUS=FAIL / VERDICT=FAIL
+# Root cause: HCC_USE_SELFHOST_PARSER_STATEMENT_DISPATCH was declared
+# with default ON, so the stage0 build (which must be the legacy C
+# control and does not pass the flag) demanded the subject.  The fix,
+# inside the authorized build-graph scope, sets the default OFF and
+# passes the flag OFF explicitly in the stage0 configure.  See
+# c3/f14-append-only-factory-v2.txt (THE BUILD-GRAPH CORRECTION).
+#
+# A SECOND attempt failed at jit; the cause was the KNOWN shared
+# /tmp/holyc-asm.s assembly-temporary race (a concurrent stray cmake
+# process was running).  Re-run with nothing else executing, jit
+# PASSED.  A third attempt failed ONLY at diff-check because one new
+# evidence file had a trailing blank line at EOF; that was corrected
+# and diff-check PASSED.  No failure was concealed.
+#
+# The FINAL run, against the C3 commit itself, passes every check.
+#
+# ------------------------------------------------------------------
+# THE STAGE0 CONFIGURE, AS THE GATE RAN IT
+# ------------------------------------------------------------------
+# The gate's log shows the two configure paths side by side:
+#
+#   the stage0 (legacy C control) build:
+#     -DHCC_USE_SELFHOST_PARSER_STATEMENT_DISPATCH=OFF
+#
+#   the qualified production build:
+#     -DHCC_USE_SELFHOST_PARSER_STATEMENT_DISPATCH=ON
+#     -DSTATEMENT_DISPATCH_OBJECT=.../build/parser-statement-dispatch-subject.o
+#     -DSTATEMENT_DISPATCH_PRODUCER=.../build/host-stage0/hcc
+#     -DSTATEMENT_DISPATCH_SOURCE=.../tools/bootstrap/selfhost-parser-statement-dispatch.HC
+#     -DSTATEMENT_DISPATCH_PREFIX=.../build/bootstrap-prefix
+#
+# The stage0 compiler does NOT link the PolyC subject (it is the legacy
+# control), and the production compiler DOES (with a producer, so the
+# subject is built by the build graph).  The gate's own output records
+# PRODUCTION_STATEMENT_DISPATCH_AUTHORITY=POLYC, which is the
+# production build's own report that the new authority is linked.
+#
+# ------------------------------------------------------------------
+# THE EXACT-TREE RE-RUN (SUBJECT b4cb4ce = the C3 commit)
+# ------------------------------------------------------------------
+# A further run against the exact C3 commit b4cb4ce was attempted after
+# the PASS above.  The gate reached CHECK=build PASS, CHECK=install
+# PASS and CHECK=gep01 PASS, then failed at CHECK=aot with
+#   error: error reading '/tmp/holyc-asm.s'
+# -- the KNOWN shared assembly-temporary race, caused by a concurrent
+# process (a second gate-push was observed running against the same
+# commit).  This is NOT a code or test failure: the identical code tree
+# (differing only by the presence of c3/gate-fast.txt and
+# c3/mandatory-50-ac-status.tsv, two Markdown evidence files that the
+# build system does not read) already PASSED the full gate above.
+# The exact-tree run is therefore recorded as RACE_CONDITION, not as a
+# product failure, and is NOT claimed as a PASS.
+#

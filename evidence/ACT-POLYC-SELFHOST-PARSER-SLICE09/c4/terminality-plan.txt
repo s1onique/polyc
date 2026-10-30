@@ -1,0 +1,72 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE09
+# ACT_PHASE=C4-CLOSE
+# EVIDENCE_KIND=terminality-plan
+#
+# STATUS: PLAN -- NOT A REPORT.
+#
+# This file describes the read-only terminality probe that is run OUTSIDE
+# the repository AGAINST THE CLOSE COMMIT AFTER it exists.  It does NOT
+# claim that the probe has already passed.  The ACT forbids the CLOSE
+# commit from containing future post-CLOSE observation results.
+#
+# AC50 remains DEFERRED_POST_CLOSE until a genuine external receipt
+# exists.  No result is invented here.
+#
+# ------------------------------------------------------------------
+# THE PROBE (read-only; no writes to the repository)
+# ------------------------------------------------------------------
+# Against the FINAL HEAD (the C4 CLOSE commit) and its tree:
+#
+#  1. IDENTITY
+#       git rev-parse HEAD 'HEAD^{tree}'
+#       git branch --show-current
+#       git status --short                      -> empty
+#       git replace -l                          -> empty
+#       git worktree list                       -> no SLICE09-created worktree
+#
+#  2. PHASE SEQUENCE AND TRAILERS
+#       exactly five forward commits:
+#         C0 RED, C1 EVIDENCE, C2 IMPL, C3 EVIDENCE, C4 CLOSE
+#       terminal trailers: ACT: ACT-POLYC-SELFHOST-PARSER-SLICE09
+#                          ACT-Phase: CLOSE
+#                          ACT-Verdict: PASS
+#       git log --format='%B' <first>^..<close> | grep the three trailers
+#
+#  3. FACTORY-V2 RANGE AND F14 AND APPEND-ONLY
+#       sh scripts/quality/factory-v2-range-check.sh \
+#          ACT-POLYC-SELFHOST-PARSER-SLICE09 <close>
+#       re-hash the c0 historical-f14-path-freeze.tsv paths (expect 0 changes)
+#       sh scripts/quality/factory-append-only-test.sh   (expect 11/11)
+#
+#  4. CLOSURE STATUS
+#       the gate-fast factory-closure-status check (expect PASS)
+#
+#  5. PRODUCTION AUTHORITY PROOF (NINE)
+#       nm build/CMakeFiles/hcc.dir/parser.c.o  -> U _BootstrapStatementDispatch
+#       nm build/CMakeFiles/hcc.dir/prslib.c.o  -> U _BootstrapOperatorPrecedence
+#       nm build/CMakeFiles/hcc.dir/ast.c.o     -> U _BootstrapAstBinOp/UnaryFromToken
+#       nm ./hcc | grep ' T _Bootstrap' | wc -l  -> 9
+#
+#  6. GATES (serial, nothing else executing; the shared /tmp/holyc-asm.s
+#     is a known race, so the two gates must not overlap)
+#       make gate-fast     -> PASS
+#       ./scripts/quality/gate-push.sh <close>  -> VERDICT=PASS
+#
+#  7. PATCH HYGIENE
+#       git diff --check
+#
+#  8. ZERO POST-CLOSE CONTINUATION
+#       HEAD is still the CLOSE commit; no commit follows it.
+#
+# The receipt is stored OUTSIDE the repository.  Only if the probe is a
+# genuine PASS may AC50 be discharged in an out-of-band report; the
+# repository is not amended to record it.
+#
+# ------------------------------------------------------------------
+# THE VERDICT AUTHORITY
+# ------------------------------------------------------------------
+# The authoritative closure verdict is the ACT-Verdict trailer of the
+# CLOSE commit, not this file and not the HANDOFF.
+#
+TERMINALITY_PLAN_STATUS=PLAN
+AC50=DEFERRED_POST_CLOSE
