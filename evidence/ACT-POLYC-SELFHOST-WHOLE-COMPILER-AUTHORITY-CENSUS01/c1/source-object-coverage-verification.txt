@@ -1,0 +1,64 @@
+# ACT_ID=ACT-POLYC-SELFHOST-WHOLE-COMPILER-AUTHORITY-CENSUS01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=source-object-coverage-verification
+#
+# THE COVERAGE CROSS-CHECK OF THE RAW CENSUS.
+# Two independent directions are joined:
+#   (A) OBJECT SIDE   nm over every linked object (definitions/imports)
+#   (B) SOURCE SIDE   a C tokenizer, filtered to the lines the REAL
+#                     PREPROCESSOR emits under the production flags
+#                     (gcc -E with the nine selectors + HCC_ENABLE_JIT).
+# The preprocessor filter keeps selector-OFF delegation bodies from being
+# counted as active; see dormant-polyc-sites.tsv.
+#
+PRODUCTION_CONFIGURATION=CFG-PROD-HCC-JIT-ON
+LINKED_C_TRANSLATION_UNITS=46
+NOT_LINKED_C_TRANSLATION_UNITS=1
+ARCHIVE_MEMBERS_LINKED=9
+ARCHIVE_MEMBERS_NOT_EXTRACTED=1
+POLYC_SUBJECT_OBJECTS=9
+LINK_INPUT_ROWS=68
+HCC_DEFINED_TEXT_SYMBOLS_GLOBAL=1244
+HCC_DEFINED_TEXT_SYMBOLS_INCLUDING_STATICS=1737
+SOURCE_FUNCTIONS=2156
+FUNCTIONS_WITH_OBJECT_SYMBOL=1598
+FUNCTIONS_SOURCE_ONLY_OR_INLINED=558
+AUTHORITY_ROWS=2233
+C_AUTHORITY_ROWS=2224
+POLYC_AUTHORITY_ROWS=9
+SWITCH_DECISION_SITES=311
+COARSE_OR_STRAIGHTLINE_DECISION_SITES=1913
+COVERAGE_ROWS=2156
+COVERAGE_ENUMERATED=243
+COVERAGE_COARSE=1006
+COVERAGE_STRAIGHTLINE=901
+COVERAGE_ADAPTER_DELEGATION_ONLY=6
+IF_SITES_INSIDE_SWITCH_FUNCTIONS_NOT_ENUMERATED=1427
+DORMANT_POLYC_CALL_SITES=6
+UNKNOWN_INDIRECT_EDGES=4
+DUPLICATE_AUTHORITY_IDS=0
+UNMATCHED_OBJECT_SYMBOLS=4
+UNMATCHED_OBJECT_SYMBOLS_ARE_HEADER_INLINE=4
+UNRESOLVED_TRANSLATION_UNITS=0
+#
+# THE UNMATCHED OBJECT-SYMBOL ROSTER
+#
+#   TU-src-aarch64-c      a64EmitCall    static inline in src/aarch64-emit.h
+#   TU-src-aarch64-c      a64EmitStore   static inline in src/aarch64-emit.h
+#   TU-src-aarch64-jit-c  a64EmitCall    static inline in src/aarch64-emit.h
+#   TU-src-aarch64-jit-c  a64EmitStore   static inline in src/aarch64-emit.h
+#
+# Header-inline bodies, not missing translation units. They are recorded
+# as OBJECT_SYMBOL_ONLY with the owning header named and are not counted
+# as compiler-TU decision sites. `ltmp` assembler labels are not
+# functions. In the reverse direction, 558 source functions have no
+# emitted symbol (static + inlined); they keep their decision-site rows
+# so that no source semantics disappear from the census.
+#
+# TARGET RECONCILIATION
+#   hcc.dir objects 36 + vendored linenoise 1 + libtasm extracted 9 + PolyC 9
+#   = 55 linked inputs, plus libm and libSystem = 57
+#   The 68-row link manifest is a superset that also records the exclusions
+#   (1 not-linked C TU, 1 not-extracted archive member, 9 PolyC, 2 external).
+#
+COVERAGE_VERIFICATION_STATUS=PASS

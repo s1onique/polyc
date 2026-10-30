@@ -1,0 +1,5 @@
+node_id	src_id	dst_id	edge_type	observed_or_inferred	evidence	state_transfer	certainty	unresolved_target_set
+U-01	SYS-CONTAINERS	UNK-callback-dispatch	CALLBACK	OBSERVED	src/containers.c:174-175,199-200,253,559 vec->type->release / value_release	CALLBACK_TARGET_FROM_STRUCT_FIELD	LOW	release/value_release implementations chosen at run time from the type object; not statically bound
+U-02	SYS-IR	UNK-format-dispatch	CALLBACK	OBSERVED	src/ir-types.c:129,155 .value_to_string designated initialisers behind a type dispatch table	FORMATTER_FUNCTION_POINTER	LOW	value_to_string resolved through the IR type table; call target set not statically enumerated
+U-03	SYS-CONTROL_SYMBOLS	UNK-recovery-longjmp	RECOVERY	OBSERVED	src/cctrl.c:965 longjmp(*cc->current_recovery,1)	NON_LOCAL_JUMP_TARGET	MEDIUM	recovery target stored in Cctrl; the set of live recovery points is dynamic
+U-04	SYS-JIT	UNK-callback-dispatch	CALLBACK	OBSERVED	src/jit-common.h:176 typedef void (*HccJitEmitPhiFn)(...)	JIT_EMIT_CALLBACK	LOW	phi emitter callback bound at run time
