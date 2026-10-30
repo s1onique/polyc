@@ -1,0 +1,1342 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-FOUNDATION-IMPLEMENT01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=g0-build-raw
+#
+# G0 = the pristine, unmodified compiler built from an isolated detached
+# worktree at the ACT entry commit. Command: make all, then
+# make test-prefix-install.
+#
+cmake -S ./src \
+		-B ./build/host-stage0/build \
+		-G 'Unix Makefiles' \
+		-DCMAKE_C_COMPILER=gcc \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DHCC_ENABLE_JIT=on \
+		-DHCC_ENABLE_LLVM=OFF \
+		-DHCC_USE_SELFHOST_PARSER_PADDING=OFF \
+		-DHCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN=OFF \
+		-DHCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE=OFF \
+		-DHCC_USE_SELFHOST_PARSER_AST_BINOP=OFF \
+		-DHCC_USE_SELFHOST_PARSER_AST_UNARY=OFF \
+		-DHCC_USE_SELFHOST_PARSER_SWITCH_ARM=OFF \
+		-DHCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND=OFF \
+		-DHCC_USE_SELFHOST_PARSER_DEFAULT_ARM_TERMINATES=OFF \
+		-DHCC_USE_SELFHOST_PARSER_STATEMENT_DISPATCH=OFF \
+		-DHCC_RUNTIME_OUTPUT_DIRECTORY=/private/tmp/abiimpl01/g0/./build/host-stage0
+-- The C compiler identification is AppleClang 15.0.0.15000040
+-- The CXX compiler identification is AppleClang 15.0.0.15000040
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/gcc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE
+-- Configuring done (0.9s)
+-- Generating done (0.0s)
+-- Build files have been written to: /tmp/abiimpl01/g0/build/host-stage0/build
+/Library/Developer/CommandLineTools/usr/bin/make -C ./build/host-stage0/build hcc -j2
+[  2%] Building C object asm/CMakeFiles/tasm.dir/asm_enc.c.o
+[  4%] Building C object asm/CMakeFiles/tasm.dir/asm.c.o
+[  6%] Building C object asm/CMakeFiles/tasm.dir/asm_jit.c.o
+[  8%] Building C object asm/CMakeFiles/tasm.dir/dis_arm64.c.o
+[ 10%] Building C object asm/CMakeFiles/tasm.dir/dis_x86_64.c.o
+[ 12%] Building C object asm/CMakeFiles/tasm.dir/enc_arm64.c.o
+[ 14%] Building C object asm/CMakeFiles/tasm.dir/enc_x86_64.c.o
+[ 16%] Building C object asm/CMakeFiles/tasm.dir/target.c.o
+[ 18%] Building C object asm/CMakeFiles/tasm.dir/tasm_debug.c.o
+[ 20%] Building C object asm/CMakeFiles/tasm.dir/tasm_util.c.o
+[ 22%] Linking C static library libtasm.a
+[ 22%] Built target tasm
+[ 24%] Building C object CMakeFiles/hcc.dir/asm.c.o
+[ 26%] Building C object CMakeFiles/hcc.dir/aostr.c.o
+[ 28%] Building C object CMakeFiles/hcc.dir/arena.c.o
+[ 30%] Building C object CMakeFiles/hcc.dir/ast.c.o
+[ 32%] Building C object CMakeFiles/hcc.dir/cctrl.c.o
+[ 34%] Building C object CMakeFiles/hcc.dir/cfg-print.c.o
+[ 36%] Building C object CMakeFiles/hcc.dir/cfg.c.o
+[ 38%] Building C object CMakeFiles/hcc.dir/cli.c.o
+[ 40%] Building C object CMakeFiles/hcc.dir/containers.c.o
+[ 42%] Building C object CMakeFiles/hcc.dir/compile.c.o
+[ 44%] Building C object CMakeFiles/hcc.dir/aarch64.c.o
+[ 46%] Building C object CMakeFiles/hcc.dir/ir.c.o
+/tmp/abiimpl01/g0/src/aarch64.c:307:50: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+    Ast *decl = (Ast *)mapGetLen(cc->global_env, key, key_len);
+                                                 ^~~
+/tmp/abiimpl01/g0/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/abiimpl01/g0/src/aarch64.c:309:48: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_funcs, key, key_len);
+                                               ^~~
+/tmp/abiimpl01/g0/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/abiimpl01/g0/src/aarch64.c:312:52: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_functions, key, key_len);
+                                                   ^~~
+/tmp/abiimpl01/g0/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/abiimpl01/g0/src/aarch64.c:315:49: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->global_env, key + 1, key_len - 1);
+                                                ^~~~~~~
+/tmp/abiimpl01/g0/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/abiimpl01/g0/src/aarch64.c:318:48: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_funcs, key + 1, key_len - 1);
+                                               ^~~~~~~
+/tmp/abiimpl01/g0/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/abiimpl01/g0/src/aarch64.c:321:52: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_functions, key + 1, key_len - 1);
+                                                   ^~~~~~~
+/tmp/abiimpl01/g0/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/abiimpl01/g0/src/ir.c:3350:21: warning: incompatible integer to pointer conversion passing 'int' to parameter of type 'VecType *' (aka 'struct VecType *') [-Wint-conversion]
+    Vec *v = vecNew(n);
+                    ^
+/tmp/abiimpl01/g0/src/containers.h:44:22: note: passing argument to parameter 'type' here
+Vec *vecNew(VecType *type);
+                     ^
+6 warnings generated.
+1 warning generated.
+[ 48%] Building C object CMakeFiles/hcc.dir/ir-eval.c.o
+[ 51%] Building C object CMakeFiles/hcc.dir/ir-debug.c.o
+[ 53%] Building C object CMakeFiles/hcc.dir/ir-optimise.c.o
+[ 55%] Building C object CMakeFiles/hcc.dir/ir-regalloc.c.o
+[ 57%] Building C object CMakeFiles/hcc.dir/ir-types.c.o
+[ 59%] Building C object CMakeFiles/hcc.dir/json.c.o
+[ 61%] Building C object CMakeFiles/hcc.dir/lexer.c.o
+[ 63%] Building C object CMakeFiles/hcc.dir/list.c.o
+[ 65%] Building C object CMakeFiles/hcc.dir/lsp.c.o
+[ 67%] Building C object CMakeFiles/hcc.dir/main.c.o
+[ 69%] Building C object CMakeFiles/hcc.dir/memory.c.o
+[ 71%] Building C object CMakeFiles/hcc.dir/mempool.c.o
+[ 73%] Building C object CMakeFiles/hcc.dir/parser.c.o
+[ 75%] Building C object CMakeFiles/hcc.dir/prsasm.c.o
+[ 77%] Building C object CMakeFiles/hcc.dir/prslib.c.o
+[ 79%] Building C object CMakeFiles/hcc.dir/prsutil.c.o
+[ 81%] Building C object CMakeFiles/hcc.dir/transpiler.c.o
+[ 83%] Building C object CMakeFiles/hcc.dir/x86.c.o
+[ 85%] Building C object CMakeFiles/hcc.dir/x86_64.c.o
+[ 87%] Building C object CMakeFiles/hcc.dir/jit-common.c.o
+[ 89%] Building C object CMakeFiles/hcc.dir/aarch64-jit.c.o
+[ 91%] Building C object CMakeFiles/hcc.dir/x86_64-jit.c.o
+[ 93%] Building C object CMakeFiles/hcc.dir/repl.c.o
+[ 95%] Building C object CMakeFiles/hcc.dir/memsafe.c.o
+[ 97%] Building C object CMakeFiles/hcc.dir/linenoise/linenoise.c.o
+[100%] Linking C executable /private/tmp/abiimpl01/g0/build/host-stage0/hcc
+[100%] Built target hcc
+BOOTSTRAP_STAGE0_BINARY=./build/host-stage0/hcc
+cp src/holyc-lib/tos.HH ./build/bootstrap-prefix/include/tos.HH
+BOOTSTRAP_PREFIX=./build/bootstrap-prefix
+./build/host-stage0/hcc \
+		--install-dir=/private/tmp/abiimpl01/g0/./build/bootstrap-prefix \
+		-c tools/bootstrap/selfhost-parser-padding.HC \
+		-o build/parser-padding-subject.o
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+PARSER_PADDING_ARCH_CHECK=PASS arch=arm64 target=arm64
+PARSER_PADDING_SUBJECT=build/parser-padding-subject.o
+PARSER_PADDING_SUBJECT_ARCH=arm64
+./build/host-stage0/hcc \
+		--install-dir=/private/tmp/abiimpl01/g0/./build/bootstrap-prefix \
+		-c tools/bootstrap/selfhost-parser-control-flow-token.HC \
+		-o build/parser-control-flow-token-subject.o
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+SLICE02_SUBJECT=build/parser-control-flow-token-subject.o
+SLICE02_SUBJECT_ARCH=arm64
+./build/host-stage0/hcc \
+		--install-dir=/private/tmp/abiimpl01/g0/./build/bootstrap-prefix \
+		-c tools/bootstrap/selfhost-parser-operator-precedence.HC \
+		-o build/parser-operator-precedence-subject.o
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+SLICE03_SUBJECT=build/parser-operator-precedence-subject.o
+SLICE03_SUBJECT_ARCH=arm64
+./build/host-stage0/hcc \
+		--install-dir=/private/tmp/abiimpl01/g0/./build/bootstrap-prefix \
+		-c tools/bootstrap/selfhost-parser-slice04.HC \
+		-o build/parser-ast-binop-subject.o
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+SLICE04_SUBJECT=build/parser-ast-binop-subject.o
+SLICE04_SUBJECT_ARCH=arm64
+./build/host-stage0/hcc \
+		--install-dir=./build/bootstrap-prefix \
+		-c tools/bootstrap/selfhost-parser-slice05.HC \
+		-o build/parser-ast-unary-subject.o
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+SLICE05_AST_UNARY_OBJECT=build/parser-ast-unary-subject.o
+./build/host-stage0/hcc \
+		--install-dir=./build/bootstrap-prefix \
+		-c tools/bootstrap/selfhost-parser-slice06.HC \
+		-o build/parser-switch-arm-subject.o
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+SLICE06_SWITCH_ARM_OBJECT=build/parser-switch-arm-subject.o
+./build/host-stage0/hcc \
+		--install-dir=./build/bootstrap-prefix \
+		-c tools/bootstrap/selfhost-parser-slice07.HC \
+		-o build/parser-compound-block-subject.o
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+SLICE07_COMPOUND_BLOCK_OBJECT=build/parser-compound-block-subject.o
+./build/host-stage0/hcc \
+		--install-dir=./build/bootstrap-prefix \
+		-c tools/bootstrap/selfhost-parser-slice08.HC \
+		-o build/parser-default-arm-subject.o
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+SLICE08_DEFAULT_ARM_OBJECT=build/parser-default-arm-subject.o
+./build/host-stage0/hcc \
+		--install-dir=./build/bootstrap-prefix \
+		-c tools/bootstrap/selfhost-parser-statement-dispatch.HC \
+		-o build/parser-statement-dispatch-subject.o
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+SLICE09_STATEMENT_DISPATCH_OBJECT=build/parser-statement-dispatch-subject.o
+cmake -S ./src \
+		-B ./build \
+		-G 'Unix Makefiles' \
+		-DCMAKE_C_COMPILER=gcc \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_INSTALL_PREFIX=/usr/local \
+		-DCMAKE_C_FLAGS='-Wextra -Wall -Wpedantic' \
+		-DCMAKE_EXPORT_COMPILE_COMMANDS=on \
+		-DHCC_ENABLE_JIT=on \
+		-DHCC_ENABLE_LLVM=OFF \
+		-DHCC_USE_SELFHOST_PARSER_PADDING=ON \
+		-DPARSER_PADDING_OBJECT=/private/tmp/abiimpl01/g0/./build/parser-padding-subject.o \
+		-DPARSER_PADDING_PRODUCER=/private/tmp/abiimpl01/g0/./build/host-stage0/hcc \
+		-DPARSER_PADDING_SOURCE=/private/tmp/abiimpl01/g0/tools/bootstrap/selfhost-parser-padding.HC \
+		-DPARSER_PADDING_PREFIX=/private/tmp/abiimpl01/g0/./build/bootstrap-prefix \
+		-DHCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN=ON \
+		-DCONTROL_FLOW_TOKEN_OBJECT=/private/tmp/abiimpl01/g0/./build/parser-control-flow-token-subject.o \
+		-DCONTROL_FLOW_TOKEN_PRODUCER=/private/tmp/abiimpl01/g0/./build/host-stage0/hcc \
+		-DCONTROL_FLOW_TOKEN_SOURCE=/private/tmp/abiimpl01/g0/tools/bootstrap/selfhost-parser-control-flow-token.HC \
+		-DCONTROL_FLOW_TOKEN_PREFIX=/private/tmp/abiimpl01/g0/./build/bootstrap-prefix \
+		-DHCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE=ON \
+		-DOPERATOR_PRECEDENCE_OBJECT=/private/tmp/abiimpl01/g0/./build/parser-operator-precedence-subject.o \
+		-DOPERATOR_PRECEDENCE_PRODUCER=/private/tmp/abiimpl01/g0/./build/host-stage0/hcc \
+		-DOPERATOR_PRECEDENCE_SOURCE=/private/tmp/abiimpl01/g0/tools/bootstrap/selfhost-parser-operator-precedence.HC \
+		-DOPERATOR_PRECEDENCE_PREFIX=/private/tmp/abiimpl01/g0/./build/bootstrap-prefix \
+		-DHCC_USE_SELFHOST_PARSER_AST_BINOP=ON \
+		-DAST_TOKEN_MAP_OBJECT=/private/tmp/abiimpl01/g0/./build/parser-ast-binop-subject.o \
+		-DAST_TOKEN_MAP_PRODUCER=/private/tmp/abiimpl01/g0/./build/host-stage0/hcc \
+		-DAST_TOKEN_MAP_SOURCE=/private/tmp/abiimpl01/g0/tools/bootstrap/selfhost-parser-slice04.HC \
+		-DAST_TOKEN_MAP_PREFIX=/private/tmp/abiimpl01/g0/./build/bootstrap-prefix \
+		-DHCC_USE_SELFHOST_PARSER_AST_UNARY=ON \
+		-DAST_UNARY_TOKEN_MAP_OBJECT=/private/tmp/abiimpl01/g0/./build/parser-ast-unary-subject.o \
+		-DAST_UNARY_TOKEN_MAP_PRODUCER=/private/tmp/abiimpl01/g0/./build/host-stage0/hcc \
+		-DAST_UNARY_TOKEN_MAP_SOURCE=/private/tmp/abiimpl01/g0/tools/bootstrap/selfhost-parser-slice05.HC \
+		-DAST_UNARY_TOKEN_MAP_PREFIX=/private/tmp/abiimpl01/g0/./build/bootstrap-prefix \
+		-DHCC_USE_SELFHOST_PARSER_SWITCH_ARM=ON \
+		-DSWITCH_ARM_TOKEN_MAP_OBJECT=/private/tmp/abiimpl01/g0/./build/parser-switch-arm-subject.o \
+		-DSWITCH_ARM_TOKEN_MAP_PRODUCER=/private/tmp/abiimpl01/g0/./build/host-stage0/hcc \
+		-DSWITCH_ARM_TOKEN_MAP_SOURCE=/private/tmp/abiimpl01/g0/tools/bootstrap/selfhost-parser-slice06.HC \
+		-DSWITCH_ARM_TOKEN_MAP_PREFIX=/private/tmp/abiimpl01/g0/./build/bootstrap-prefix \
+		-DHCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND=ON \
+		-DCOMPOUND_BLOCK_TOKEN_MAP_OBJECT=/private/tmp/abiimpl01/g0/./build/parser-compound-block-subject.o \
+		-DCOMPOUND_BLOCK_TOKEN_MAP_SOURCE=/private/tmp/abiimpl01/g0/tools/bootstrap/selfhost-parser-slice07.HC \
+		-DHCC_USE_SELFHOST_PARSER_DEFAULT_ARM_TERMINATES=ON \
+		-DDEFAULT_ARM_TERMINATES_OBJECT=/private/tmp/abiimpl01/g0/./build/parser-default-arm-subject.o \
+		-DDEFAULT_ARM_TERMINATES_PRODUCER=/private/tmp/abiimpl01/g0/./build/host-stage0/hcc \
+		-DDEFAULT_ARM_TERMINATES_SOURCE=/private/tmp/abiimpl01/g0/tools/bootstrap/selfhost-parser-slice08.HC \
+		-DDEFAULT_ARM_TERMINATES_PREFIX=/private/tmp/abiimpl01/g0/./build/bootstrap-prefix \
+		-DHCC_USE_SELFHOST_PARSER_STATEMENT_DISPATCH=ON \
+		-DSTATEMENT_DISPATCH_OBJECT=/private/tmp/abiimpl01/g0/./build/parser-statement-dispatch-subject.o \
+		-DSTATEMENT_DISPATCH_PRODUCER=/private/tmp/abiimpl01/g0/./build/host-stage0/hcc \
+		-DSTATEMENT_DISPATCH_SOURCE=/private/tmp/abiimpl01/g0/tools/bootstrap/selfhost-parser-statement-dispatch.HC \
+		-DSTATEMENT_DISPATCH_PREFIX=/private/tmp/abiimpl01/g0/./build/bootstrap-prefix \
+		-DHCC_BOOTSTRAP_EXPECTED_SHA=3b4474213efabcda30eb2d0c0610c6e23793f876896c8e21c5e18024b1ab40f6
+-- The C compiler identification is AppleClang 15.0.0.15000040
+-- The CXX compiler identification is AppleClang 15.0.0.15000040
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/gcc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE
+-- ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01: production hcc SCHEDULES parser-padding subject production: /private/tmp/abiimpl01/g0/./build/parser-padding-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01: production hcc links parser-padding PolyC component: /private/tmp/abiimpl01/g0/./build/parser-padding-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE02: production hcc SCHEDULES control-flow-token subject production: /private/tmp/abiimpl01/g0/./build/parser-control-flow-token-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE02: production hcc links control-flow-token PolyC component: /private/tmp/abiimpl01/g0/./build/parser-control-flow-token-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01: production hcc VERIFIES the control-flow-token subject (both producer and prebuilt modes); target format=Mach-O; nm=/usr/bin/nm
+-- ACT-POLYC-SELFHOST-PARSER-SLICE03: production hcc SCHEDULES operator-precedence subject production: /private/tmp/abiimpl01/g0/./build/parser-operator-precedence-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE03: production hcc links operator-precedence PolyC component: /private/tmp/abiimpl01/g0/./build/parser-operator-precedence-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE03: production hcc VERIFIES the operator-precedence subject (both producer and prebuilt modes); target format=Mach-O; nm=/usr/bin/nm
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: production hcc SCHEDULES AST-operator subject production: /private/tmp/abiimpl01/g0/./build/parser-ast-binop-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: production hcc links AST-operator PolyC component: /private/tmp/abiimpl01/g0/./build/parser-ast-binop-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: production hcc VERIFIES the AST-operator subject (both producer and prebuilt modes); target format=Mach-O; nm=/usr/bin/nm
+-- ACT-POLYC-SELFHOST-PARSER-SLICE05: production hcc SCHEDULES AST-unary subject production: /private/tmp/abiimpl01/g0/./build/parser-ast-unary-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE05: production hcc links AST-unary PolyC component: /private/tmp/abiimpl01/g0/./build/parser-ast-unary-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE05: production hcc VERIFIES the AST-unary subject (both producer and prebuilt modes); target format=Mach-O; nm=/usr/bin/nm
+-- ACT-POLYC-SELFHOST-PARSER-SLICE06: production hcc SCHEDULES switch-arm subject production: /private/tmp/abiimpl01/g0/./build/parser-switch-arm-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE06: production hcc links switch-arm PolyC component: /private/tmp/abiimpl01/g0/./build/parser-switch-arm-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE06: production hcc VERIFIES the switch-arm subject (both producer and prebuilt modes); target format=Mach-O; nm=/usr/bin/nm
+-- ACT-POLYC-SELFHOST-PARSER-SLICE07: production hcc uses a PREBUILT compound-block subject: /private/tmp/abiimpl01/g0/build/parser-compound-block-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE07: production hcc links compound-block PolyC component: /private/tmp/abiimpl01/g0/build/parser-compound-block-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE07: production hcc VERIFIES the compound-block subject (both producer and prebuilt modes); target format=Mach-O; nm=/usr/bin/nm
+-- ACT-POLYC-SELFHOST-PARSER-SLICE08: production hcc SCHEDULES default-arm subject production: /private/tmp/abiimpl01/g0/./build/parser-default-arm-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE08: production hcc links default-arm PolyC component: /private/tmp/abiimpl01/g0/./build/parser-default-arm-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE08: production hcc VERIFIES the default-arm subject (both producer and prebuilt modes); target format=Mach-O; nm=/usr/bin/nm
+-- ACT-POLYC-SELFHOST-PARSER-SLICE09: production hcc SCHEDULES statement-dispatch subject production: /private/tmp/abiimpl01/g0/build/parser-statement-dispatch-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE09: production hcc links statement-dispatch PolyC component: /private/tmp/abiimpl01/g0/build/parser-statement-dispatch-subject.o
+-- Configuring done (0.7s)
+-- Generating done (0.0s)
+CMake Warning:
+  Manually-specified variables were not used by the project:
+
+    AST_TOKEN_MAP_PREFIX
+    COMPOUND_BLOCK_TOKEN_MAP_SOURCE
+    OPERATOR_PRECEDENCE_PREFIX
+
+
+-- Build files have been written to: /tmp/abiimpl01/g0/build
+/Library/Developer/CommandLineTools/usr/bin/make -C ./build -j2
+[  1%] Building C object asm/CMakeFiles/tasm.dir/asm.c.o
+[  3%] ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01: verifying parser-padding subject
+-- ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01: parser-padding subject VERIFIED symbol=_BootstrapCalcPadding size=744
+[  4%] Built target hcc-parser-padding-subject
+[  6%] ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01: verifying control-flow-token subject /private/tmp/abiimpl01/g0/./build/parser-control-flow-token-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01: CONTROL_FLOW_TOKEN_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapValidPostControlFlowToken TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapValidPostControlFlowToken DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=1744
+[  7%] Built target hcc-control-flow-token-verify
+[  9%] Building C object asm/CMakeFiles/tasm.dir/asm_enc.c.o
+[ 10%] Building C object asm/CMakeFiles/tasm.dir/asm_jit.c.o
+[ 12%] ACT-POLYC-SELFHOST-PARSER-SLICE03: verifying operator-precedence subject /private/tmp/abiimpl01/g0/./build/parser-operator-precedence-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE03: OPERATOR_PRECEDENCE_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapOperatorPrecedence TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapOperatorPrecedence DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=2608
+[ 13%] Built target hcc-operator-precedence-verify
+[ 15%] Building C object asm/CMakeFiles/tasm.dir/dis_arm64.c.o
+[ 16%] ACT-POLYC-SELFHOST-PARSER-SLICE04: verifying AST-operator subject /private/tmp/abiimpl01/g0/./build/parser-ast-binop-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: AST_TOKEN_MAP_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapAstBinOpFromToken TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapAstBinOpFromToken DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=1584
+[ 18%] Built target hcc-ast-token-map-verify
+[ 19%] ACT-POLYC-SELFHOST-PARSER-SLICE05: verifying AST-unary subject /private/tmp/abiimpl01/g0/./build/parser-ast-unary-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: AST_TOKEN_MAP_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapAstUnaryOpFromToken TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapAstUnaryOpFromToken DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=1128
+[ 21%] Building C object asm/CMakeFiles/tasm.dir/dis_x86_64.c.o
+[ 22%] Built target hcc-ast-unary-token-map-verify
+[ 24%] Building C object asm/CMakeFiles/tasm.dir/enc_arm64.c.o
+[ 25%] Building C object asm/CMakeFiles/tasm.dir/enc_x86_64.c.o
+[ 27%] ACT-POLYC-SELFHOST-PARSER-SLICE06: verifying switch-arm subject /private/tmp/abiimpl01/g0/./build/parser-switch-arm-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: AST_TOKEN_MAP_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapSwitchArmTerminates TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapSwitchArmTerminates DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=920
+[ 28%] Built target hcc-switch-arm-token-map-verify
+[ 30%] Building C object asm/CMakeFiles/tasm.dir/target.c.o
+[ 31%] Building C object asm/CMakeFiles/tasm.dir/tasm_debug.c.o
+[ 33%] Building C object asm/CMakeFiles/tasm.dir/tasm_util.c.o
+[ 34%] ACT-POLYC-SELFHOST-PARSER-SLICE07: verifying compound-block subject /private/tmp/abiimpl01/g0/build/parser-compound-block-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: AST_TOKEN_MAP_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapCompoundBlockAppendsStatement TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapCompoundBlockAppendsStatement DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=688
+[ 36%] Linking C static library libtasm.a
+[ 36%] Built target hcc-compound-block-token-map-verify
+[ 37%] ACT-POLYC-SELFHOST-PARSER-SLICE08: verifying default-arm subject /private/tmp/abiimpl01/g0/./build/parser-default-arm-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: AST_TOKEN_MAP_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapDefaultArmTerminates TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapDefaultArmTerminates DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=864
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: STALE_STAMP_DETECTED the previous stamp /private/tmp/abiimpl01/g0/build/parser-compound-block-subject.o.verified recorded a DIFFERENT object content; it is rewritten with the SHA of the object that was just verified.
+[ 37%] Built target tasm
+[ 39%] Built target hcc-default-arm-token-map-verify
+[ 40%] ACT-POLYC-SELFHOST-PARSER-SLICE09: verifying statement-dispatch subject /private/tmp/abiimpl01/g0/build/parser-statement-dispatch-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: AST_TOKEN_MAP_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapStatementDispatch TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapStatementDispatch DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=1432
+[ 42%] Built target hcc-statement-dispatch-token-map-verify
+[ 45%] Building C object CMakeFiles/hcc.dir/asm.c.o
+[ 45%] Building C object CMakeFiles/hcc.dir/aostr.c.o
+[ 46%] Building C object CMakeFiles/hcc.dir/arena.c.o
+[ 48%] Building C object CMakeFiles/hcc.dir/ast.c.o
+[ 50%] Building C object CMakeFiles/hcc.dir/cctrl.c.o
+[ 51%] Building C object CMakeFiles/hcc.dir/cfg-print.c.o
+[ 53%] Building C object CMakeFiles/hcc.dir/cfg.c.o
+[ 54%] Building C object CMakeFiles/hcc.dir/cli.c.o
+[ 56%] Building C object CMakeFiles/hcc.dir/containers.c.o
+[ 57%] Building C object CMakeFiles/hcc.dir/compile.c.o
+[ 59%] Building C object CMakeFiles/hcc.dir/aarch64.c.o
+/tmp/abiimpl01/g0/src/aarch64.c:307:50: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+    Ast *decl = (Ast *)mapGetLen(cc->global_env, key, key_len);
+                                                 ^~~
+/tmp/abiimpl01/g0/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/abiimpl01/g0/src/aarch64.c:309:48: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_funcs, key, key_len);
+                                               ^~~
+/tmp/abiimpl01/g0/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/abiimpl01/g0/src/aarch64.c:312:52: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_functions, key, key_len);
+                                                   ^~~
+/tmp/abiimpl01/g0/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/abiimpl01/g0/src/aarch64.c:315:49: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->global_env, key + 1, key_len - 1);
+                                                ^~~~~~~
+/tmp/abiimpl01/g0/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/abiimpl01/g0/src/aarch64.c:318:48: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_funcs, key + 1, key_len - 1);
+                                               ^~~~~~~
+/tmp/abiimpl01/g0/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/abiimpl01/g0/src/aarch64.c:321:52: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_functions, key + 1, key_len - 1);
+                                                   ^~~~~~~
+/tmp/abiimpl01/g0/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+[ 60%] Building C object CMakeFiles/hcc.dir/ir.c.o
+/tmp/abiimpl01/g0/src/aarch64.c:337:37: warning: comparison of integers of different signs: 'u64' (aka 'unsigned long') and 'int' [-Wsign-compare]
+                cand->asmfname->len == key_len &&
+                ~~~~~~~~~~~~~~~~~~~ ^  ~~~~~~~
+/tmp/abiimpl01/g0/src/ir.c:3350:21: warning: incompatible integer to pointer conversion passing 'int' to parameter of type 'VecType *' (aka 'struct VecType *') [-Wint-conversion]
+    Vec *v = vecNew(n);
+                    ^
+/tmp/abiimpl01/g0/src/containers.h:44:22: note: passing argument to parameter 'type' here
+Vec *vecNew(VecType *type);
+                     ^
+7 warnings generated.
+[ 62%] Building C object CMakeFiles/hcc.dir/ir-debug.c.o
+1 warning generated.
+[ 63%] Building C object CMakeFiles/hcc.dir/ir-eval.c.o
+[ 65%] Building C object CMakeFiles/hcc.dir/ir-optimise.c.o
+[ 66%] Building C object CMakeFiles/hcc.dir/ir-regalloc.c.o
+[ 68%] Building C object CMakeFiles/hcc.dir/ir-types.c.o
+[ 69%] Building C object CMakeFiles/hcc.dir/json.c.o
+[ 71%] Building C object CMakeFiles/hcc.dir/lexer.c.o
+/tmp/abiimpl01/g0/src/lexer.c:1384:38: warning: unused parameter 'start' [-Wunused-parameter]
+                               char *start,
+                                     ^
+[ 72%] Building C object CMakeFiles/hcc.dir/list.c.o
+[ 74%] Building C object CMakeFiles/hcc.dir/lsp.c.o
+1 warning generated.
+[ 75%] Building C object CMakeFiles/hcc.dir/main.c.o
+[ 77%] Building C object CMakeFiles/hcc.dir/memory.c.o
+[ 78%] Building C object CMakeFiles/hcc.dir/mempool.c.o
+[ 80%] Building C object CMakeFiles/hcc.dir/parser.c.o
+[ 81%] Building C object CMakeFiles/hcc.dir/prsasm.c.o
+[ 83%] Building C object CMakeFiles/hcc.dir/prslib.c.o
+[ 84%] Building C object CMakeFiles/hcc.dir/prsutil.c.o
+[ 86%] Building C object CMakeFiles/hcc.dir/transpiler.c.o
+[ 87%] Building C object CMakeFiles/hcc.dir/x86.c.o
+[ 89%] Building C object CMakeFiles/hcc.dir/x86_64.c.o
+[ 90%] Building C object CMakeFiles/hcc.dir/jit-common.c.o
+[ 92%] Building C object CMakeFiles/hcc.dir/aarch64-jit.c.o
+[ 93%] Building C object CMakeFiles/hcc.dir/x86_64-jit.c.o
+[ 95%] Building C object CMakeFiles/hcc.dir/repl.c.o
+[ 96%] Building C object CMakeFiles/hcc.dir/memsafe.c.o
+[ 98%] Building C object CMakeFiles/hcc.dir/linenoise/linenoise.c.o
+[100%] Linking C executable /tmp/abiimpl01/g0/hcc
+[100%] Built target hcc
+error: write on a pipe with no reader
+error: write on a pipe with no reader
+error: write on a pipe with no reader
+error: write on a pipe with no reader
+error: write on a pipe with no reader
+error: write on a pipe with no reader
+error: write on a pipe with no reader
+error: write on a pipe with no reader
+PRODUCTION_HCC=./hcc
+PRODUCTION_PADDING_AUTHORITY=POLYC
+PRODUCTION_AST_BINOP_AUTHORITY=POLYC
+PRODUCTION_SWITCH_ARM_AUTHORITY=POLYC
+PRODUCTION_STATEMENT_DISPATCH_AUTHORITY=POLYC
+EXIT=0
+
+# --- make test-prefix-install ---
+git worktree prune
+git worktree add --detach ./build-pinned-producer/tree ffee58b81ae42a4ff094618fcaa965223a40b848
+Preparing worktree (detached HEAD ffee58b)
+HEAD is now at ffee58b ACT-POLYC-SELFHOST-LEXER04 C2 IMPL: BootstrapLinkDirective component + delegation
+cmake -S ./build-pinned-producer/tree/src \
+		-B ./build-pinned-producer/tree/build/stage0 \
+		-G 'Unix Makefiles' \
+		-DCMAKE_C_COMPILER=/usr/bin/cc \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_INSTALL_PREFIX=/usr/local \
+		-DHCC_ENABLE_JIT=on \
+		-DHCC_ENABLE_LLVM=OFF
+-- The C compiler identification is AppleClang 15.0.0.15000040
+-- The CXX compiler identification is AppleClang 15.0.0.15000040
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE
+-- Configuring done (0.9s)
+-- Generating done (0.0s)
+-- Build files have been written to: /tmp/abiimpl01/g0/build-pinned-producer/tree/build/stage0
+/Library/Developer/CommandLineTools/usr/bin/make -C ./build-pinned-producer/tree/build/stage0 hcc -j2
+[  2%] Building C object asm/CMakeFiles/tasm.dir/asm_enc.c.o
+[  4%] Building C object asm/CMakeFiles/tasm.dir/asm.c.o
+[  6%] Building C object asm/CMakeFiles/tasm.dir/asm_jit.c.o
+[  8%] Building C object asm/CMakeFiles/tasm.dir/dis_arm64.c.o
+[ 10%] Building C object asm/CMakeFiles/tasm.dir/dis_x86_64.c.o
+[ 12%] Building C object asm/CMakeFiles/tasm.dir/enc_arm64.c.o
+[ 14%] Building C object asm/CMakeFiles/tasm.dir/enc_x86_64.c.o
+[ 16%] Building C object asm/CMakeFiles/tasm.dir/target.c.o
+[ 18%] Building C object asm/CMakeFiles/tasm.dir/tasm_debug.c.o
+[ 20%] Building C object asm/CMakeFiles/tasm.dir/tasm_util.c.o
+[ 22%] Linking C static library libtasm.a
+[ 22%] Built target tasm
+[ 26%] Building C object CMakeFiles/hcc.dir/asm.c.o
+[ 26%] Building C object CMakeFiles/hcc.dir/aostr.c.o
+[ 28%] Building C object CMakeFiles/hcc.dir/arena.c.o
+[ 30%] Building C object CMakeFiles/hcc.dir/ast.c.o
+[ 32%] Building C object CMakeFiles/hcc.dir/cctrl.c.o
+[ 34%] Building C object CMakeFiles/hcc.dir/cfg-print.c.o
+[ 36%] Building C object CMakeFiles/hcc.dir/cfg.c.o
+[ 38%] Building C object CMakeFiles/hcc.dir/cli.c.o
+[ 40%] Building C object CMakeFiles/hcc.dir/containers.c.o
+[ 42%] Building C object CMakeFiles/hcc.dir/compile.c.o
+[ 44%] Building C object CMakeFiles/hcc.dir/aarch64.c.o
+[ 46%] Building C object CMakeFiles/hcc.dir/ir.c.o
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/aarch64.c:307:50: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+    Ast *decl = (Ast *)mapGetLen(cc->global_env, key, key_len);
+                                                 ^~~
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/aarch64.c:309:48: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_funcs, key, key_len);
+                                               ^~~
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/aarch64.c:312:52: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_functions, key, key_len);
+                                                   ^~~
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/aarch64.c:315:49: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->global_env, key + 1, key_len - 1);
+                                                ^~~~~~~
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/aarch64.c:318:48: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_funcs, key + 1, key_len - 1);
+                                               ^~~~~~~
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/aarch64.c:321:52: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_functions, key + 1, key_len - 1);
+                                                   ^~~~~~~
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/ir.c:3350:21: warning: incompatible integer to pointer conversion passing 'int' to parameter of type 'VecType *' (aka 'struct VecType *') [-Wint-conversion]
+    Vec *v = vecNew(n);
+                    ^
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/containers.h:44:22: note: passing argument to parameter 'type' here
+Vec *vecNew(VecType *type);
+                     ^
+1 warning generated.
+6 warnings generated.
+[ 48%] Building C object CMakeFiles/hcc.dir/ir-debug.c.o
+[ 51%] Building C object CMakeFiles/hcc.dir/ir-eval.c.o
+[ 53%] Building C object CMakeFiles/hcc.dir/ir-optimise.c.o
+[ 55%] Building C object CMakeFiles/hcc.dir/ir-regalloc.c.o
+[ 57%] Building C object CMakeFiles/hcc.dir/ir-types.c.o
+[ 59%] Building C object CMakeFiles/hcc.dir/json.c.o
+[ 61%] Building C object CMakeFiles/hcc.dir/lexer.c.o
+[ 63%] Building C object CMakeFiles/hcc.dir/list.c.o
+[ 65%] Building C object CMakeFiles/hcc.dir/lsp.c.o
+[ 67%] Building C object CMakeFiles/hcc.dir/main.c.o
+[ 69%] Building C object CMakeFiles/hcc.dir/memory.c.o
+[ 71%] Building C object CMakeFiles/hcc.dir/mempool.c.o
+[ 73%] Building C object CMakeFiles/hcc.dir/parser.c.o
+[ 75%] Building C object CMakeFiles/hcc.dir/prsasm.c.o
+[ 77%] Building C object CMakeFiles/hcc.dir/prslib.c.o
+[ 79%] Building C object CMakeFiles/hcc.dir/prsutil.c.o
+[ 81%] Building C object CMakeFiles/hcc.dir/transpiler.c.o
+[ 83%] Building C object CMakeFiles/hcc.dir/x86.c.o
+[ 85%] Building C object CMakeFiles/hcc.dir/x86_64.c.o
+[ 87%] Building C object CMakeFiles/hcc.dir/jit-common.c.o
+[ 89%] Building C object CMakeFiles/hcc.dir/aarch64-jit.c.o
+[ 91%] Building C object CMakeFiles/hcc.dir/x86_64-jit.c.o
+[ 93%] Building C object CMakeFiles/hcc.dir/repl.c.o
+[ 95%] Building C object CMakeFiles/hcc.dir/memsafe.c.o
+[ 97%] Building C object CMakeFiles/hcc.dir/linenoise/linenoise.c.o
+[100%] Linking C executable /tmp/abiimpl01/g0/build-pinned-producer/tree/build/hcc
+[100%] Built target hcc
+RUNTIME_PRODUCER_PINNED_COMMIT=ffee58b81ae42a4ff094618fcaa965223a40b848
+cp ./build-pinned-producer/tree/src/holyc-lib/tos.HH ./build-pinned-producer/tree/build/prefix/include/tos.HH
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+cmake -S ./build-pinned-producer/tree/src \
+		-B ./build-pinned-producer/tree/build/hcc-bootstrap02-build \
+		-G 'Unix Makefiles' \
+		-DCMAKE_C_COMPILER=/usr/bin/cc \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_INSTALL_PREFIX=/usr/local \
+		-DHCC_ENABLE_JIT=on \
+		-DHCC_ENABLE_LLVM=OFF \
+		-DHCC_ENABLE_BOOTSTRAP02_STAGE1=ON \
+		-DBOOTSTRAP02_IDENT_OBJECT=/private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/bootstrap02-ident.o \
+		-DBOOTSTRAP06_OPERATOR_OBJECT=/private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/bootstrap06-operator-classify.o \
+		-DLEXER07_SCALAR_OBJECT=/private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/lexer07-scalar-literal.o \
+		-DLEXER08_TRIVIA_OBJECT=/private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/lexer08-trivia.o \
+		-DLEXER09_LINK_OBJECT=/private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/lexer09-link.o
+-- The C compiler identification is AppleClang 15.0.0.15000040
+-- The CXX compiler identification is AppleClang 15.0.0.15000040
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE
+-- ACT-POLYC-SELFHOST-LEXER01-CORRECTION01: stage1 operator component linked (fail-closed): /private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/bootstrap06-operator-classify.o
+-- ACT-POLYC-SELFHOST-LEXER02: stage1 scalar literal component linked (fail-closed): /private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/lexer07-scalar-literal.o
+-- ACT-POLYC-SELFHOST-LEXER03: stage1 trivia component linked (fail-closed): /private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/lexer08-trivia.o
+-- ACT-POLYC-SELFHOST-LEXER04: stage1 link directive component linked (fail-closed): /private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/lexer09-link.o
+-- Configuring done (0.6s)
+-- Generating done (0.0s)
+-- Build files have been written to: /tmp/abiimpl01/g0/build-pinned-producer/tree/build/hcc-bootstrap02-build
+/Library/Developer/CommandLineTools/usr/bin/make -C ./build-pinned-producer/tree/build/hcc-bootstrap02-build hcc-bootstrap02 -j2
+[  4%] Building C object asm/CMakeFiles/tasm.dir/asm.c.o
+[  4%] Building C object asm/CMakeFiles/tasm.dir/asm_enc.c.o
+[  6%] Building C object asm/CMakeFiles/tasm.dir/asm_jit.c.o
+[  8%] Building C object asm/CMakeFiles/tasm.dir/dis_arm64.c.o
+[ 10%] Building C object asm/CMakeFiles/tasm.dir/dis_x86_64.c.o
+[ 12%] Building C object asm/CMakeFiles/tasm.dir/enc_arm64.c.o
+[ 14%] Building C object asm/CMakeFiles/tasm.dir/enc_x86_64.c.o
+[ 16%] Building C object asm/CMakeFiles/tasm.dir/target.c.o
+[ 18%] Building C object asm/CMakeFiles/tasm.dir/tasm_debug.c.o
+[ 20%] Building C object asm/CMakeFiles/tasm.dir/tasm_util.c.o
+[ 22%] Linking C static library libtasm.a
+[ 22%] Built target tasm
+[ 24%] Building C object CMakeFiles/hcc-bootstrap02.dir/aostr.c.o
+[ 26%] Building C object CMakeFiles/hcc-bootstrap02.dir/asm.c.o
+[ 28%] Building C object CMakeFiles/hcc-bootstrap02.dir/arena.c.o
+[ 30%] Building C object CMakeFiles/hcc-bootstrap02.dir/ast.c.o
+[ 32%] Building C object CMakeFiles/hcc-bootstrap02.dir/cctrl.c.o
+[ 34%] Building C object CMakeFiles/hcc-bootstrap02.dir/cfg-print.c.o
+[ 36%] Building C object CMakeFiles/hcc-bootstrap02.dir/cfg.c.o
+[ 38%] Building C object CMakeFiles/hcc-bootstrap02.dir/cli.c.o
+[ 40%] Building C object CMakeFiles/hcc-bootstrap02.dir/containers.c.o
+[ 42%] Building C object CMakeFiles/hcc-bootstrap02.dir/compile.c.o
+[ 44%] Building C object CMakeFiles/hcc-bootstrap02.dir/aarch64.c.o
+[ 46%] Building C object CMakeFiles/hcc-bootstrap02.dir/ir.c.o
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/aarch64.c:307:50: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+    Ast *decl = (Ast *)mapGetLen(cc->global_env, key, key_len);
+                                                 ^~~
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/aarch64.c:309:48: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_funcs, key, key_len);
+                                               ^~~
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/aarch64.c:312:52: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_functions, key, key_len);
+                                                   ^~~
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/aarch64.c:315:49: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->global_env, key + 1, key_len - 1);
+                                                ^~~~~~~
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/aarch64.c:318:48: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_funcs, key + 1, key_len - 1);
+                                               ^~~~~~~
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/aarch64.c:321:52: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_functions, key + 1, key_len - 1);
+                                                   ^~~~~~~
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/ir.c:3350:21: warning: incompatible integer to pointer conversion passing 'int' to parameter of type 'VecType *' (aka 'struct VecType *') [-Wint-conversion]
+    Vec *v = vecNew(n);
+                    ^
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/containers.h:44:22: note: passing argument to parameter 'type' here
+Vec *vecNew(VecType *type);
+                     ^
+1 warning generated.
+6 warnings generated.
+[ 48%] Building C object CMakeFiles/hcc-bootstrap02.dir/ir-debug.c.o
+[ 51%] Building C object CMakeFiles/hcc-bootstrap02.dir/ir-eval.c.o
+[ 53%] Building C object CMakeFiles/hcc-bootstrap02.dir/ir-optimise.c.o
+[ 55%] Building C object CMakeFiles/hcc-bootstrap02.dir/ir-regalloc.c.o
+[ 57%] Building C object CMakeFiles/hcc-bootstrap02.dir/ir-types.c.o
+[ 59%] Building C object CMakeFiles/hcc-bootstrap02.dir/json.c.o
+[ 61%] Building C object CMakeFiles/hcc-bootstrap02.dir/lexer.c.o
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/lexer.c:1174:12: warning: assigning to 'char *' from 'unsigned char *' converts between pointers to integer types where one is of the unique plain 'char' type and the other is not [-Wpointer-sign]
+    l->ptr = saved_ptr + out_end;
+           ^ ~~~~~~~~~~~~~~~~~~~
+[ 63%] Building C object CMakeFiles/hcc-bootstrap02.dir/list.c.o
+1 warning generated.
+[ 65%] Building C object CMakeFiles/hcc-bootstrap02.dir/lsp.c.o
+[ 67%] Building C object CMakeFiles/hcc-bootstrap02.dir/main.c.o
+[ 69%] Building C object CMakeFiles/hcc-bootstrap02.dir/memory.c.o
+[ 71%] Building C object CMakeFiles/hcc-bootstrap02.dir/mempool.c.o
+[ 73%] Building C object CMakeFiles/hcc-bootstrap02.dir/parser.c.o
+[ 75%] Building C object CMakeFiles/hcc-bootstrap02.dir/prsasm.c.o
+[ 77%] Building C object CMakeFiles/hcc-bootstrap02.dir/prslib.c.o
+[ 79%] Building C object CMakeFiles/hcc-bootstrap02.dir/prsutil.c.o
+[ 81%] Building C object CMakeFiles/hcc-bootstrap02.dir/transpiler.c.o
+[ 83%] Building C object CMakeFiles/hcc-bootstrap02.dir/x86.c.o
+[ 85%] Building C object CMakeFiles/hcc-bootstrap02.dir/x86_64.c.o
+[ 87%] Building C object CMakeFiles/hcc-bootstrap02.dir/jit-common.c.o
+[ 89%] Building C object CMakeFiles/hcc-bootstrap02.dir/aarch64-jit.c.o
+[ 91%] Building C object CMakeFiles/hcc-bootstrap02.dir/x86_64-jit.c.o
+[ 93%] Building C object CMakeFiles/hcc-bootstrap02.dir/repl.c.o
+[ 95%] Building C object CMakeFiles/hcc-bootstrap02.dir/memsafe.c.o
+[ 97%] Building C object CMakeFiles/hcc-bootstrap02.dir/linenoise/linenoise.c.o
+[100%] Linking C executable /tmp/abiimpl01/g0/build-pinned-producer/tree/build/hcc-bootstrap02
+[100%] Built target hcc-bootstrap02
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+cmake -S ./build-pinned-producer/tree/src \
+		-B ./build-pinned-producer/tree/build/hcc-bootstrap03-build \
+		-G 'Unix Makefiles' \
+		-DCMAKE_C_COMPILER=/usr/bin/cc \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_INSTALL_PREFIX=/usr/local \
+		-DHCC_ENABLE_JIT=on \
+		-DHCC_ENABLE_LLVM=OFF \
+		-DHCC_ENABLE_BOOTSTRAP02_STAGE1=ON \
+		-DHCC_ENABLE_BOOTSTRAP03_STAGE2=ON \
+		-DBOOTSTRAP02_IDENT_OBJECT=/private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/bootstrap02-ident.o \
+		-DBOOTSTRAP03_IDENT_OBJECT=/private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/bootstrap03-ident.stage1.o \
+		-DBOOTSTRAP06_OPERATOR_OBJECT=/private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/bootstrap06-operator-classify.o \
+		-DBOOTSTRAP06_OPERATOR_OBJECT_STAGE1=/private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/bootstrap06-operator-classify.stage1.o \
+		-DLEXER07_SCALAR_OBJECT=/private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/lexer07-scalar-literal.o \
+		-DLEXER07_SCALAR_OBJECT_STAGE1=/private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/lexer07-scalar-literal.stage1.o \
+		-DLEXER08_TRIVIA_OBJECT=/private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/lexer08-trivia.o \
+		-DLEXER08_TRIVIA_OBJECT_STAGE1=/private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/lexer08-trivia.stage1.o \
+		-DLEXER09_LINK_OBJECT=/private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/lexer09-link.o \
+		-DLEXER09_LINK_OBJECT_STAGE1=/private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/lexer09-link.stage1.o
+-- The C compiler identification is AppleClang 15.0.0.15000040
+-- The CXX compiler identification is AppleClang 15.0.0.15000040
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE
+-- ACT-POLYC-SELFHOST-LEXER01-CORRECTION01: stage1 operator component linked (fail-closed): /private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/bootstrap06-operator-classify.o
+-- ACT-POLYC-SELFHOST-LEXER02: stage1 scalar literal component linked (fail-closed): /private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/lexer07-scalar-literal.o
+-- ACT-POLYC-SELFHOST-LEXER03: stage1 trivia component linked (fail-closed): /private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/lexer08-trivia.o
+-- ACT-POLYC-SELFHOST-LEXER04: stage1 link directive component linked (fail-closed): /private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/lexer09-link.o
+-- ACT-POLYC-SELFHOST-LEXER01-CORRECTION01: stage2 operator component linked (fail-closed): /private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/bootstrap06-operator-classify.stage1.o
+-- ACT-POLYC-SELFHOST-LEXER02: stage2 scalar literal component linked (fail-closed): /private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/lexer07-scalar-literal.stage1.o
+-- ACT-POLYC-SELFHOST-LEXER03: stage2 trivia component linked (fail-closed): /private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/lexer08-trivia.stage1.o
+-- ACT-POLYC-SELFHOST-LEXER04: stage2 link directive component linked (fail-closed): /private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/lexer09-link.stage1.o
+-- Configuring done (0.6s)
+-- Generating done (0.0s)
+-- Build files have been written to: /tmp/abiimpl01/g0/build-pinned-producer/tree/build/hcc-bootstrap03-build
+/Library/Developer/CommandLineTools/usr/bin/make -C ./build-pinned-producer/tree/build/hcc-bootstrap03-build hcc-bootstrap03 -j2
+[  5%] Building C object asm/CMakeFiles/tasm.dir/asm_enc.c.o
+[  5%] Building C object asm/CMakeFiles/tasm.dir/asm.c.o
+[  5%] Building C object asm/CMakeFiles/tasm.dir/asm_jit.c.o
+[  7%] Building C object asm/CMakeFiles/tasm.dir/dis_arm64.c.o
+[ 10%] Building C object asm/CMakeFiles/tasm.dir/dis_x86_64.c.o
+[ 12%] Building C object asm/CMakeFiles/tasm.dir/enc_arm64.c.o
+[ 15%] Building C object asm/CMakeFiles/tasm.dir/enc_x86_64.c.o
+[ 15%] Building C object asm/CMakeFiles/tasm.dir/target.c.o
+[ 17%] Building C object asm/CMakeFiles/tasm.dir/tasm_debug.c.o
+[ 20%] Building C object asm/CMakeFiles/tasm.dir/tasm_util.c.o
+[ 23%] Linking C static library libtasm.a
+[ 23%] Built target tasm
+[ 25%] Building C object CMakeFiles/hcc-bootstrap03.dir/asm.c.o
+[ 25%] Building C object CMakeFiles/hcc-bootstrap03.dir/aostr.c.o
+[ 28%] Building C object CMakeFiles/hcc-bootstrap03.dir/arena.c.o
+[ 30%] Building C object CMakeFiles/hcc-bootstrap03.dir/ast.c.o
+[ 33%] Building C object CMakeFiles/hcc-bootstrap03.dir/cctrl.c.o
+[ 35%] Building C object CMakeFiles/hcc-bootstrap03.dir/cfg-print.c.o
+[ 35%] Building C object CMakeFiles/hcc-bootstrap03.dir/cfg.c.o
+[ 38%] Building C object CMakeFiles/hcc-bootstrap03.dir/cli.c.o
+[ 41%] Building C object CMakeFiles/hcc-bootstrap03.dir/containers.c.o
+[ 43%] Building C object CMakeFiles/hcc-bootstrap03.dir/compile.c.o
+[ 46%] Building C object CMakeFiles/hcc-bootstrap03.dir/aarch64.c.o
+[ 46%] Building C object CMakeFiles/hcc-bootstrap03.dir/ir.c.o
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/aarch64.c:307:50: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+    Ast *decl = (Ast *)mapGetLen(cc->global_env, key, key_len);
+                                                 ^~~
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/aarch64.c:309:48: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_funcs, key, key_len);
+                                               ^~~
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/aarch64.c:312:52: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_functions, key, key_len);
+                                                   ^~~
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/aarch64.c:315:49: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->global_env, key + 1, key_len - 1);
+                                                ^~~~~~~
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/aarch64.c:318:48: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_funcs, key + 1, key_len - 1);
+                                               ^~~~~~~
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/aarch64.c:321:52: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_functions, key + 1, key_len - 1);
+                                                   ^~~~~~~
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/ir.c:3350:21: warning: incompatible integer to pointer conversion passing 'int' to parameter of type 'VecType *' (aka 'struct VecType *') [-Wint-conversion]
+    Vec *v = vecNew(n);
+                    ^
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/containers.h:44:22: note: passing argument to parameter 'type' here
+Vec *vecNew(VecType *type);
+                     ^
+1 warning generated.
+6 warnings generated.
+[ 48%] Building C object CMakeFiles/hcc-bootstrap03.dir/ir-debug.c.o
+[ 51%] Building C object CMakeFiles/hcc-bootstrap03.dir/ir-eval.c.o
+[ 53%] Building C object CMakeFiles/hcc-bootstrap03.dir/ir-optimise.c.o
+[ 56%] Building C object CMakeFiles/hcc-bootstrap03.dir/ir-regalloc.c.o
+[ 56%] Building C object CMakeFiles/hcc-bootstrap03.dir/ir-types.c.o
+[ 58%] Building C object CMakeFiles/hcc-bootstrap03.dir/json.c.o
+[ 61%] Building C object CMakeFiles/hcc-bootstrap03.dir/lexer.c.o
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/lexer.c:1174:12: warning: assigning to 'char *' from 'unsigned char *' converts between pointers to integer types where one is of the unique plain 'char' type and the other is not [-Wpointer-sign]
+    l->ptr = saved_ptr + out_end;
+           ^ ~~~~~~~~~~~~~~~~~~~
+[ 64%] Building C object CMakeFiles/hcc-bootstrap03.dir/list.c.o
+[ 64%] Building C object CMakeFiles/hcc-bootstrap03.dir/lsp.c.o
+1 warning generated.
+[ 66%] Building C object CMakeFiles/hcc-bootstrap03.dir/main.c.o
+[ 69%] Building C object CMakeFiles/hcc-bootstrap03.dir/memory.c.o
+[ 71%] Building C object CMakeFiles/hcc-bootstrap03.dir/mempool.c.o
+[ 74%] Building C object CMakeFiles/hcc-bootstrap03.dir/parser.c.o
+[ 74%] Building C object CMakeFiles/hcc-bootstrap03.dir/prsasm.c.o
+[ 76%] Building C object CMakeFiles/hcc-bootstrap03.dir/prslib.c.o
+[ 79%] Building C object CMakeFiles/hcc-bootstrap03.dir/prsutil.c.o
+[ 82%] Building C object CMakeFiles/hcc-bootstrap03.dir/transpiler.c.o
+[ 84%] Building C object CMakeFiles/hcc-bootstrap03.dir/x86.c.o
+[ 84%] Building C object CMakeFiles/hcc-bootstrap03.dir/x86_64.c.o
+[ 87%] Building C object CMakeFiles/hcc-bootstrap03.dir/jit-common.c.o
+[ 89%] Building C object CMakeFiles/hcc-bootstrap03.dir/aarch64-jit.c.o
+[ 92%] Building C object CMakeFiles/hcc-bootstrap03.dir/x86_64-jit.c.o
+[ 94%] Building C object CMakeFiles/hcc-bootstrap03.dir/repl.c.o
+[ 94%] Building C object CMakeFiles/hcc-bootstrap03.dir/memsafe.c.o
+[ 97%] Building C object CMakeFiles/hcc-bootstrap03.dir/linenoise/linenoise.c.o
+[100%] Linking C executable /tmp/abiimpl01/g0/build-pinned-producer/tree/build/hcc-bootstrap03
+[100%] Built target hcc-bootstrap03
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+cmake -S ./build-pinned-producer/tree/src \
+		-B ./build-pinned-producer/tree/build/hcc-bootstrap04-build \
+		-G 'Unix Makefiles' \
+		-DCMAKE_C_COMPILER=/usr/bin/cc \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_INSTALL_PREFIX=/usr/local \
+		-DHCC_ENABLE_JIT=on \
+		-DHCC_ENABLE_LLVM=OFF \
+		-DHCC_ENABLE_BOOTSTRAP02_STAGE1=ON \
+		-DHCC_ENABLE_BOOTSTRAP03_STAGE2=ON \
+		-DHCC_ENABLE_BOOTSTRAP04_STAGE3=ON \
+		-DBOOTSTRAP02_IDENT_OBJECT=/private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/bootstrap02-ident.o \
+		-DBOOTSTRAP03_IDENT_OBJECT=/private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/bootstrap03-ident.stage1.o \
+		-DBOOTSTRAP04_IDENT_OBJECT=/private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/bootstrap04-ident.stage2.o \
+		-DBOOTSTRAP06_OPERATOR_OBJECT=/private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/bootstrap06-operator-classify.o \
+		-DBOOTSTRAP06_OPERATOR_OBJECT_STAGE1=/private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/bootstrap06-operator-classify.stage1.o \
+		-DBOOTSTRAP06_OPERATOR_OBJECT_STAGE2=/private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/bootstrap06-operator-classify.stage2.o \
+		-DLEXER07_SCALAR_OBJECT=/private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/lexer07-scalar-literal.o \
+		-DLEXER07_SCALAR_OBJECT_STAGE1=/private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/lexer07-scalar-literal.stage1.o \
+		-DLEXER07_SCALAR_OBJECT_STAGE2=/private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/lexer07-scalar-literal.stage2.o \
+		-DLEXER08_TRIVIA_OBJECT=/private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/lexer08-trivia.o \
+		-DLEXER08_TRIVIA_OBJECT_STAGE1=/private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/lexer08-trivia.stage1.o \
+		-DLEXER08_TRIVIA_OBJECT_STAGE2=/private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/lexer08-trivia.stage2.o \
+		-DLEXER09_LINK_OBJECT=/private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/lexer09-link.o \
+		-DLEXER09_LINK_OBJECT_STAGE1=/private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/lexer09-link.stage1.o \
+		-DLEXER09_LINK_OBJECT_STAGE2=/private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/lexer09-link.stage2.o
+-- The C compiler identification is AppleClang 15.0.0.15000040
+-- The CXX compiler identification is AppleClang 15.0.0.15000040
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE
+-- ACT-POLYC-SELFHOST-LEXER01-CORRECTION01: stage1 operator component linked (fail-closed): /private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/bootstrap06-operator-classify.o
+-- ACT-POLYC-SELFHOST-LEXER02: stage1 scalar literal component linked (fail-closed): /private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/lexer07-scalar-literal.o
+-- ACT-POLYC-SELFHOST-LEXER03: stage1 trivia component linked (fail-closed): /private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/lexer08-trivia.o
+-- ACT-POLYC-SELFHOST-LEXER04: stage1 link directive component linked (fail-closed): /private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/lexer09-link.o
+-- ACT-POLYC-SELFHOST-LEXER01-CORRECTION01: stage2 operator component linked (fail-closed): /private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/bootstrap06-operator-classify.stage1.o
+-- ACT-POLYC-SELFHOST-LEXER02: stage2 scalar literal component linked (fail-closed): /private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/lexer07-scalar-literal.stage1.o
+-- ACT-POLYC-SELFHOST-LEXER03: stage2 trivia component linked (fail-closed): /private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/lexer08-trivia.stage1.o
+-- ACT-POLYC-SELFHOST-LEXER04: stage2 link directive component linked (fail-closed): /private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/lexer09-link.stage1.o
+-- ACT-POLYC-SELFHOST-LEXER01-CORRECTION01: stage3 operator component linked (fail-closed): /private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/bootstrap06-operator-classify.stage2.o
+-- ACT-POLYC-SELFHOST-LEXER02: stage3 scalar literal component linked (fail-closed): /private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/lexer07-scalar-literal.stage2.o
+-- ACT-POLYC-SELFHOST-LEXER03: stage3 trivia component linked (fail-closed): /private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/lexer08-trivia.stage2.o
+-- ACT-POLYC-SELFHOST-LEXER04: stage3 link directive component linked (fail-closed): /private/tmp/abiimpl01/g0/./build-pinned-producer/tree/build/lexer09-link.stage2.o
+-- Configuring done (0.6s)
+-- Generating done (0.0s)
+-- Build files have been written to: /tmp/abiimpl01/g0/build-pinned-producer/tree/build/hcc-bootstrap04-build
+/Library/Developer/CommandLineTools/usr/bin/make -C ./build-pinned-producer/tree/build/hcc-bootstrap04-build hcc-bootstrap04 -j2
+[  3%] Building C object asm/CMakeFiles/tasm.dir/asm.c.o
+[  3%] Building C object asm/CMakeFiles/tasm.dir/asm_enc.c.o
+[  6%] Building C object asm/CMakeFiles/tasm.dir/asm_jit.c.o
+[ 10%] Building C object asm/CMakeFiles/tasm.dir/dis_arm64.c.o
+[ 10%] Building C object asm/CMakeFiles/tasm.dir/dis_x86_64.c.o
+[ 13%] Building C object asm/CMakeFiles/tasm.dir/enc_arm64.c.o
+[ 13%] Building C object asm/CMakeFiles/tasm.dir/enc_x86_64.c.o
+[ 16%] Building C object asm/CMakeFiles/tasm.dir/target.c.o
+[ 20%] Building C object asm/CMakeFiles/tasm.dir/tasm_debug.c.o
+[ 20%] Building C object asm/CMakeFiles/tasm.dir/tasm_util.c.o
+[ 23%] Linking C static library libtasm.a
+[ 23%] Built target tasm
+[ 26%] Building C object CMakeFiles/hcc-bootstrap04.dir/asm.c.o
+[ 26%] Building C object CMakeFiles/hcc-bootstrap04.dir/aostr.c.o
+[ 30%] Building C object CMakeFiles/hcc-bootstrap04.dir/arena.c.o
+[ 30%] Building C object CMakeFiles/hcc-bootstrap04.dir/ast.c.o
+[ 33%] Building C object CMakeFiles/hcc-bootstrap04.dir/cctrl.c.o
+[ 36%] Building C object CMakeFiles/hcc-bootstrap04.dir/cfg-print.c.o
+[ 36%] Building C object CMakeFiles/hcc-bootstrap04.dir/cfg.c.o
+[ 40%] Building C object CMakeFiles/hcc-bootstrap04.dir/cli.c.o
+[ 43%] Building C object CMakeFiles/hcc-bootstrap04.dir/containers.c.o
+[ 43%] Building C object CMakeFiles/hcc-bootstrap04.dir/compile.c.o
+[ 46%] Building C object CMakeFiles/hcc-bootstrap04.dir/aarch64.c.o
+[ 46%] Building C object CMakeFiles/hcc-bootstrap04.dir/ir.c.o
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/aarch64.c:307:50: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+    Ast *decl = (Ast *)mapGetLen(cc->global_env, key, key_len);
+                                                 ^~~
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/aarch64.c:309:48: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_funcs, key, key_len);
+                                               ^~~
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/aarch64.c:312:52: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_functions, key, key_len);
+                                                   ^~~
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/aarch64.c:315:49: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->global_env, key + 1, key_len - 1);
+                                                ^~~~~~~
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/aarch64.c:318:48: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_funcs, key + 1, key_len - 1);
+                                               ^~~~~~~
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/aarch64.c:321:52: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_functions, key + 1, key_len - 1);
+                                                   ^~~~~~~
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/ir.c:3350:21: warning: incompatible integer to pointer conversion passing 'int' to parameter of type 'VecType *' (aka 'struct VecType *') [-Wint-conversion]
+    Vec *v = vecNew(n);
+                    ^
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/containers.h:44:22: note: passing argument to parameter 'type' here
+Vec *vecNew(VecType *type);
+                     ^
+6 warnings generated.
+1 warning generated.
+[ 53%] Building C object CMakeFiles/hcc-bootstrap04.dir/ir-debug.c.o
+[ 53%] Building C object CMakeFiles/hcc-bootstrap04.dir/ir-eval.c.o
+[ 53%] Building C object CMakeFiles/hcc-bootstrap04.dir/ir-optimise.c.o
+[ 56%] Building C object CMakeFiles/hcc-bootstrap04.dir/ir-regalloc.c.o
+[ 56%] Building C object CMakeFiles/hcc-bootstrap04.dir/ir-types.c.o
+[ 60%] Building C object CMakeFiles/hcc-bootstrap04.dir/json.c.o
+[ 63%] Building C object CMakeFiles/hcc-bootstrap04.dir/lexer.c.o
+/tmp/abiimpl01/g0/build-pinned-producer/tree/src/lexer.c:1174:12: warning: assigning to 'char *' from 'unsigned char *' converts between pointers to integer types where one is of the unique plain 'char' type and the other is not [-Wpointer-sign]
+    l->ptr = saved_ptr + out_end;
+           ^ ~~~~~~~~~~~~~~~~~~~
+[ 63%] Building C object CMakeFiles/hcc-bootstrap04.dir/list.c.o
+1 warning generated.
+[ 66%] Building C object CMakeFiles/hcc-bootstrap04.dir/lsp.c.o
+[ 66%] Building C object CMakeFiles/hcc-bootstrap04.dir/main.c.o
+[ 70%] Building C object CMakeFiles/hcc-bootstrap04.dir/memory.c.o
+[ 73%] Building C object CMakeFiles/hcc-bootstrap04.dir/mempool.c.o
+[ 73%] Building C object CMakeFiles/hcc-bootstrap04.dir/parser.c.o
+[ 76%] Building C object CMakeFiles/hcc-bootstrap04.dir/prsasm.c.o
+[ 76%] Building C object CMakeFiles/hcc-bootstrap04.dir/prslib.c.o
+[ 80%] Building C object CMakeFiles/hcc-bootstrap04.dir/prsutil.c.o
+[ 83%] Building C object CMakeFiles/hcc-bootstrap04.dir/transpiler.c.o
+[ 83%] Building C object CMakeFiles/hcc-bootstrap04.dir/x86.c.o
+[ 86%] Building C object CMakeFiles/hcc-bootstrap04.dir/x86_64.c.o
+[ 90%] Building C object CMakeFiles/hcc-bootstrap04.dir/jit-common.c.o
+[ 90%] Building C object CMakeFiles/hcc-bootstrap04.dir/aarch64-jit.c.o
+[ 93%] Building C object CMakeFiles/hcc-bootstrap04.dir/x86_64-jit.c.o
+[ 93%] Building C object CMakeFiles/hcc-bootstrap04.dir/repl.c.o
+[ 96%] Building C object CMakeFiles/hcc-bootstrap04.dir/memsafe.c.o
+[100%] Building C object CMakeFiles/hcc-bootstrap04.dir/linenoise/linenoise.c.o
+[100%] Linking C executable /tmp/abiimpl01/g0/build-pinned-producer/tree/build/hcc-bootstrap04
+[100%] Built target hcc-bootstrap04
+RUNTIME_PRODUCER=./build/runtime-producer/hcc-bootstrap04
+RUNTIME_PRODUCER_PROVENANCE_SHA=3b4474213efabcda30eb2d0c0610c6e23793f876896c8e21c5e18024b1ab40f6
+RUNTIME_PRODUCER_PROVENANCE=PASS
+cmake -S ./src \
+		-B ./build/test-prefix-install-build \
+		-G 'Unix Makefiles' \
+		-DCMAKE_C_COMPILER=gcc \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_INSTALL_PREFIX=/private/tmp/abiimpl01/g0/build/test-prefix \
+		-DCMAKE_C_FLAGS='-Wextra -Wall -Wpedantic' \
+		-DHCC_ENABLE_JIT=on \
+		-DHCC_ENABLE_LLVM=OFF \
+		-DHCC_USE_SELFHOST_PARSER_PADDING=ON \
+		-DPARSER_PADDING_OBJECT=/private/tmp/abiimpl01/g0/./build/parser-padding-subject.o \
+		-DPARSER_PADDING_PRODUCER=/private/tmp/abiimpl01/g0/./build/host-stage0/hcc \
+		-DPARSER_PADDING_SOURCE=/private/tmp/abiimpl01/g0/tools/bootstrap/selfhost-parser-padding.HC \
+		-DPARSER_PADDING_PREFIX=/private/tmp/abiimpl01/g0/./build/bootstrap-prefix \
+		-DHCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN=ON \
+		-DCONTROL_FLOW_TOKEN_OBJECT=/private/tmp/abiimpl01/g0/./build/parser-control-flow-token-subject.o \
+		-DCONTROL_FLOW_TOKEN_PRODUCER=/private/tmp/abiimpl01/g0/./build/host-stage0/hcc \
+		-DCONTROL_FLOW_TOKEN_SOURCE=/private/tmp/abiimpl01/g0/tools/bootstrap/selfhost-parser-control-flow-token.HC \
+		-DCONTROL_FLOW_TOKEN_PREFIX=/private/tmp/abiimpl01/g0/./build/bootstrap-prefix \
+		-DHCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE=ON \
+		-DOPERATOR_PRECEDENCE_OBJECT=/private/tmp/abiimpl01/g0/./build/parser-operator-precedence-subject.o \
+		-DOPERATOR_PRECEDENCE_PRODUCER=/private/tmp/abiimpl01/g0/./build/host-stage0/hcc \
+		-DOPERATOR_PRECEDENCE_SOURCE=/private/tmp/abiimpl01/g0/tools/bootstrap/selfhost-parser-operator-precedence.HC \
+		-DOPERATOR_PRECEDENCE_PREFIX=/private/tmp/abiimpl01/g0/./build/bootstrap-prefix \
+		-DHCC_USE_SELFHOST_PARSER_AST_BINOP=ON \
+		-DAST_TOKEN_MAP_OBJECT=/private/tmp/abiimpl01/g0/./build/parser-ast-binop-subject.o \
+		-DAST_TOKEN_MAP_PRODUCER=/private/tmp/abiimpl01/g0/./build/host-stage0/hcc \
+		-DAST_TOKEN_MAP_SOURCE=/private/tmp/abiimpl01/g0/tools/bootstrap/selfhost-parser-slice04.HC \
+		-DAST_TOKEN_MAP_PREFIX=/private/tmp/abiimpl01/g0/./build/bootstrap-prefix \
+		-DHCC_USE_SELFHOST_PARSER_AST_UNARY=ON \
+		-DAST_UNARY_TOKEN_MAP_OBJECT=/private/tmp/abiimpl01/g0/./build/parser-ast-unary-subject.o \
+		-DAST_UNARY_TOKEN_MAP_PRODUCER=/private/tmp/abiimpl01/g0/./build/host-stage0/hcc \
+		-DAST_UNARY_TOKEN_MAP_SOURCE=/private/tmp/abiimpl01/g0/tools/bootstrap/selfhost-parser-slice05.HC \
+		-DAST_UNARY_TOKEN_MAP_PREFIX=/private/tmp/abiimpl01/g0/./build/bootstrap-prefix \
+		-DHCC_USE_SELFHOST_PARSER_SWITCH_ARM=ON \
+		-DSWITCH_ARM_TOKEN_MAP_OBJECT=/private/tmp/abiimpl01/g0/./build/parser-switch-arm-subject.o \
+		-DSWITCH_ARM_TOKEN_MAP_PRODUCER=/private/tmp/abiimpl01/g0/./build/host-stage0/hcc \
+		-DSWITCH_ARM_TOKEN_MAP_SOURCE=/private/tmp/abiimpl01/g0/tools/bootstrap/selfhost-parser-slice06.HC \
+		-DSWITCH_ARM_TOKEN_MAP_PREFIX=/private/tmp/abiimpl01/g0/./build/bootstrap-prefix \
+		-DHCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND=ON \
+		-DCOMPOUND_BLOCK_TOKEN_MAP_OBJECT=/private/tmp/abiimpl01/g0/./build/parser-compound-block-subject.o \
+		-DCOMPOUND_BLOCK_TOKEN_MAP_SOURCE=/private/tmp/abiimpl01/g0/tools/bootstrap/selfhost-parser-slice07.HC \
+		-DHCC_USE_SELFHOST_PARSER_DEFAULT_ARM_TERMINATES=ON \
+		-DDEFAULT_ARM_TERMINATES_OBJECT=/private/tmp/abiimpl01/g0/./build/parser-default-arm-subject.o \
+		-DDEFAULT_ARM_TERMINATES_PRODUCER=/private/tmp/abiimpl01/g0/./build/host-stage0/hcc \
+		-DDEFAULT_ARM_TERMINATES_SOURCE=/private/tmp/abiimpl01/g0/tools/bootstrap/selfhost-parser-slice08.HC \
+		-DDEFAULT_ARM_TERMINATES_PREFIX=/private/tmp/abiimpl01/g0/./build/bootstrap-prefix \
+		-DHCC_USE_SELFHOST_PARSER_STATEMENT_DISPATCH=ON \
+		-DSTATEMENT_DISPATCH_OBJECT=/private/tmp/abiimpl01/g0/./build/parser-statement-dispatch-subject.o \
+		-DSTATEMENT_DISPATCH_PRODUCER=/private/tmp/abiimpl01/g0/./build/host-stage0/hcc \
+		-DSTATEMENT_DISPATCH_SOURCE=/private/tmp/abiimpl01/g0/tools/bootstrap/selfhost-parser-statement-dispatch.HC \
+		-DSTATEMENT_DISPATCH_PREFIX=/private/tmp/abiimpl01/g0/./build/bootstrap-prefix
+-- The C compiler identification is AppleClang 15.0.0.15000040
+-- The CXX compiler identification is AppleClang 15.0.0.15000040
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/gcc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE
+-- ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01: production hcc SCHEDULES parser-padding subject production: /private/tmp/abiimpl01/g0/./build/parser-padding-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01: production hcc links parser-padding PolyC component: /private/tmp/abiimpl01/g0/./build/parser-padding-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE02: production hcc SCHEDULES control-flow-token subject production: /private/tmp/abiimpl01/g0/./build/parser-control-flow-token-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE02: production hcc links control-flow-token PolyC component: /private/tmp/abiimpl01/g0/./build/parser-control-flow-token-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01: production hcc VERIFIES the control-flow-token subject (both producer and prebuilt modes); target format=Mach-O; nm=/usr/bin/nm
+-- ACT-POLYC-SELFHOST-PARSER-SLICE03: production hcc SCHEDULES operator-precedence subject production: /private/tmp/abiimpl01/g0/./build/parser-operator-precedence-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE03: production hcc links operator-precedence PolyC component: /private/tmp/abiimpl01/g0/./build/parser-operator-precedence-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE03: production hcc VERIFIES the operator-precedence subject (both producer and prebuilt modes); target format=Mach-O; nm=/usr/bin/nm
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: production hcc SCHEDULES AST-operator subject production: /private/tmp/abiimpl01/g0/./build/parser-ast-binop-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: production hcc links AST-operator PolyC component: /private/tmp/abiimpl01/g0/./build/parser-ast-binop-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: production hcc VERIFIES the AST-operator subject (both producer and prebuilt modes); target format=Mach-O; nm=/usr/bin/nm
+-- ACT-POLYC-SELFHOST-PARSER-SLICE05: production hcc SCHEDULES AST-unary subject production: /private/tmp/abiimpl01/g0/./build/parser-ast-unary-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE05: production hcc links AST-unary PolyC component: /private/tmp/abiimpl01/g0/./build/parser-ast-unary-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE05: production hcc VERIFIES the AST-unary subject (both producer and prebuilt modes); target format=Mach-O; nm=/usr/bin/nm
+-- ACT-POLYC-SELFHOST-PARSER-SLICE06: production hcc SCHEDULES switch-arm subject production: /private/tmp/abiimpl01/g0/./build/parser-switch-arm-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE06: production hcc links switch-arm PolyC component: /private/tmp/abiimpl01/g0/./build/parser-switch-arm-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE06: production hcc VERIFIES the switch-arm subject (both producer and prebuilt modes); target format=Mach-O; nm=/usr/bin/nm
+-- ACT-POLYC-SELFHOST-PARSER-SLICE07: production hcc uses a PREBUILT compound-block subject: /private/tmp/abiimpl01/g0/build/parser-compound-block-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE07: production hcc links compound-block PolyC component: /private/tmp/abiimpl01/g0/build/parser-compound-block-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE07: production hcc VERIFIES the compound-block subject (both producer and prebuilt modes); target format=Mach-O; nm=/usr/bin/nm
+-- ACT-POLYC-SELFHOST-PARSER-SLICE08: production hcc SCHEDULES default-arm subject production: /private/tmp/abiimpl01/g0/./build/parser-default-arm-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE08: production hcc links default-arm PolyC component: /private/tmp/abiimpl01/g0/./build/parser-default-arm-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE08: production hcc VERIFIES the default-arm subject (both producer and prebuilt modes); target format=Mach-O; nm=/usr/bin/nm
+-- ACT-POLYC-SELFHOST-PARSER-SLICE09: production hcc SCHEDULES statement-dispatch subject production: /private/tmp/abiimpl01/g0/build/parser-statement-dispatch-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE09: production hcc links statement-dispatch PolyC component: /private/tmp/abiimpl01/g0/build/parser-statement-dispatch-subject.o
+-- Configuring done (0.7s)
+-- Generating done (0.0s)
+CMake Warning:
+  Manually-specified variables were not used by the project:
+
+    AST_TOKEN_MAP_PREFIX
+    COMPOUND_BLOCK_TOKEN_MAP_SOURCE
+    OPERATOR_PRECEDENCE_PREFIX
+
+
+-- Build files have been written to: /tmp/abiimpl01/g0/build/test-prefix-install-build
+/Library/Developer/CommandLineTools/usr/bin/make -C ./build/test-prefix-install-build install
+[  1%] Building C object asm/CMakeFiles/tasm.dir/asm.c.o
+[  3%] Building C object asm/CMakeFiles/tasm.dir/asm_enc.c.o
+[  4%] Building C object asm/CMakeFiles/tasm.dir/asm_jit.c.o
+[  6%] Building C object asm/CMakeFiles/tasm.dir/dis_arm64.c.o
+[  7%] Building C object asm/CMakeFiles/tasm.dir/dis_x86_64.c.o
+[  9%] Building C object asm/CMakeFiles/tasm.dir/enc_arm64.c.o
+[ 10%] Building C object asm/CMakeFiles/tasm.dir/enc_x86_64.c.o
+[ 12%] Building C object asm/CMakeFiles/tasm.dir/target.c.o
+[ 13%] Building C object asm/CMakeFiles/tasm.dir/tasm_debug.c.o
+[ 15%] Building C object asm/CMakeFiles/tasm.dir/tasm_util.c.o
+[ 16%] Linking C static library libtasm.a
+[ 16%] Built target tasm
+[ 19%] Built target hcc-parser-padding-subject
+[ 21%] ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01: verifying control-flow-token subject /private/tmp/abiimpl01/g0/./build/parser-control-flow-token-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01: CONTROL_FLOW_TOKEN_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapValidPostControlFlowToken TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapValidPostControlFlowToken DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=1744
+[ 22%] Built target hcc-control-flow-token-verify
+[ 24%] ACT-POLYC-SELFHOST-PARSER-SLICE03: verifying operator-precedence subject /private/tmp/abiimpl01/g0/./build/parser-operator-precedence-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE03: OPERATOR_PRECEDENCE_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapOperatorPrecedence TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapOperatorPrecedence DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=2608
+[ 25%] Built target hcc-operator-precedence-verify
+[ 27%] ACT-POLYC-SELFHOST-PARSER-SLICE04: verifying AST-operator subject /private/tmp/abiimpl01/g0/./build/parser-ast-binop-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: AST_TOKEN_MAP_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapAstBinOpFromToken TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapAstBinOpFromToken DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=1584
+[ 28%] Built target hcc-ast-token-map-verify
+[ 30%] ACT-POLYC-SELFHOST-PARSER-SLICE05: verifying AST-unary subject /private/tmp/abiimpl01/g0/./build/parser-ast-unary-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: AST_TOKEN_MAP_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapAstUnaryOpFromToken TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapAstUnaryOpFromToken DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=1128
+[ 31%] Built target hcc-ast-unary-token-map-verify
+[ 33%] ACT-POLYC-SELFHOST-PARSER-SLICE06: verifying switch-arm subject /private/tmp/abiimpl01/g0/./build/parser-switch-arm-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: AST_TOKEN_MAP_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapSwitchArmTerminates TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapSwitchArmTerminates DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=920
+[ 34%] Built target hcc-switch-arm-token-map-verify
+[ 36%] ACT-POLYC-SELFHOST-PARSER-SLICE07: verifying compound-block subject /private/tmp/abiimpl01/g0/build/parser-compound-block-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: AST_TOKEN_MAP_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapCompoundBlockAppendsStatement TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapCompoundBlockAppendsStatement DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=688
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: STALE_STAMP_DETECTED the previous stamp /private/tmp/abiimpl01/g0/build/parser-compound-block-subject.o.verified recorded a DIFFERENT object content; it is rewritten with the SHA of the object that was just verified.
+[ 36%] Built target hcc-compound-block-token-map-verify
+[ 37%] ACT-POLYC-SELFHOST-PARSER-SLICE08: verifying default-arm subject /private/tmp/abiimpl01/g0/./build/parser-default-arm-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: AST_TOKEN_MAP_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapDefaultArmTerminates TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapDefaultArmTerminates DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=864
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: STALE_STAMP_DETECTED the previous stamp /private/tmp/abiimpl01/g0/build/parser-compound-block-subject.o.verified recorded a DIFFERENT object content; it is rewritten with the SHA of the object that was just verified.
+[ 39%] Built target hcc-default-arm-token-map-verify
+[ 40%] ACT-POLYC-SELFHOST-PARSER-SLICE09: verifying statement-dispatch subject /private/tmp/abiimpl01/g0/build/parser-statement-dispatch-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: AST_TOKEN_MAP_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapStatementDispatch TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapStatementDispatch DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=1432
+[ 42%] Built target hcc-statement-dispatch-token-map-verify
+[ 43%] Building C object CMakeFiles/hcc.dir/asm.c.o
+[ 45%] Building C object CMakeFiles/hcc.dir/aostr.c.o
+[ 46%] Building C object CMakeFiles/hcc.dir/arena.c.o
+[ 48%] Building C object CMakeFiles/hcc.dir/ast.c.o
+[ 50%] Building C object CMakeFiles/hcc.dir/cctrl.c.o
+[ 51%] Building C object CMakeFiles/hcc.dir/cfg-print.c.o
+[ 53%] Building C object CMakeFiles/hcc.dir/cfg.c.o
+[ 54%] Building C object CMakeFiles/hcc.dir/cli.c.o
+[ 56%] Building C object CMakeFiles/hcc.dir/containers.c.o
+[ 57%] Building C object CMakeFiles/hcc.dir/compile.c.o
+[ 59%] Building C object CMakeFiles/hcc.dir/aarch64.c.o
+/tmp/abiimpl01/g0/src/aarch64.c:307:50: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+    Ast *decl = (Ast *)mapGetLen(cc->global_env, key, key_len);
+                                                 ^~~
+/tmp/abiimpl01/g0/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/abiimpl01/g0/src/aarch64.c:309:48: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_funcs, key, key_len);
+                                               ^~~
+/tmp/abiimpl01/g0/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/abiimpl01/g0/src/aarch64.c:312:52: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_functions, key, key_len);
+                                                   ^~~
+/tmp/abiimpl01/g0/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/abiimpl01/g0/src/aarch64.c:315:49: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->global_env, key + 1, key_len - 1);
+                                                ^~~~~~~
+/tmp/abiimpl01/g0/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/abiimpl01/g0/src/aarch64.c:318:48: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_funcs, key + 1, key_len - 1);
+                                               ^~~~~~~
+/tmp/abiimpl01/g0/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/abiimpl01/g0/src/aarch64.c:321:52: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_functions, key + 1, key_len - 1);
+                                                   ^~~~~~~
+/tmp/abiimpl01/g0/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/abiimpl01/g0/src/aarch64.c:337:37: warning: comparison of integers of different signs: 'u64' (aka 'unsigned long') and 'int' [-Wsign-compare]
+                cand->asmfname->len == key_len &&
+                ~~~~~~~~~~~~~~~~~~~ ^  ~~~~~~~
+7 warnings generated.
+[ 60%] Building C object CMakeFiles/hcc.dir/ir.c.o
+/tmp/abiimpl01/g0/src/ir.c:3350:21: warning: incompatible integer to pointer conversion passing 'int' to parameter of type 'VecType *' (aka 'struct VecType *') [-Wint-conversion]
+    Vec *v = vecNew(n);
+                    ^
+/tmp/abiimpl01/g0/src/containers.h:44:22: note: passing argument to parameter 'type' here
+Vec *vecNew(VecType *type);
+                     ^
+1 warning generated.
+[ 62%] Building C object CMakeFiles/hcc.dir/ir-debug.c.o
+[ 63%] Building C object CMakeFiles/hcc.dir/ir-eval.c.o
+[ 65%] Building C object CMakeFiles/hcc.dir/ir-optimise.c.o
+[ 66%] Building C object CMakeFiles/hcc.dir/ir-regalloc.c.o
+[ 68%] Building C object CMakeFiles/hcc.dir/ir-types.c.o
+[ 69%] Building C object CMakeFiles/hcc.dir/json.c.o
+[ 71%] Building C object CMakeFiles/hcc.dir/lexer.c.o
+/tmp/abiimpl01/g0/src/lexer.c:1384:38: warning: unused parameter 'start' [-Wunused-parameter]
+                               char *start,
+                                     ^
+1 warning generated.
+[ 72%] Building C object CMakeFiles/hcc.dir/list.c.o
+[ 74%] Building C object CMakeFiles/hcc.dir/lsp.c.o
+[ 75%] Building C object CMakeFiles/hcc.dir/main.c.o
+[ 77%] Building C object CMakeFiles/hcc.dir/memory.c.o
+[ 78%] Building C object CMakeFiles/hcc.dir/mempool.c.o
+[ 80%] Building C object CMakeFiles/hcc.dir/parser.c.o
+[ 81%] Building C object CMakeFiles/hcc.dir/prsasm.c.o
+[ 83%] Building C object CMakeFiles/hcc.dir/prslib.c.o
+[ 84%] Building C object CMakeFiles/hcc.dir/prsutil.c.o
+[ 86%] Building C object CMakeFiles/hcc.dir/transpiler.c.o
+[ 87%] Building C object CMakeFiles/hcc.dir/x86.c.o
+[ 89%] Building C object CMakeFiles/hcc.dir/x86_64.c.o
+[ 90%] Building C object CMakeFiles/hcc.dir/jit-common.c.o
+[ 92%] Building C object CMakeFiles/hcc.dir/aarch64-jit.c.o
+[ 93%] Building C object CMakeFiles/hcc.dir/x86_64-jit.c.o
+[ 95%] Building C object CMakeFiles/hcc.dir/repl.c.o
+[ 96%] Building C object CMakeFiles/hcc.dir/memsafe.c.o
+[ 98%] Building C object CMakeFiles/hcc.dir/linenoise/linenoise.c.o
+[100%] Linking C executable /tmp/abiimpl01/g0/build/hcc
+[100%] Built target hcc
+Install the project...
+-- Install configuration: "Release"
+-- Installing: /private/tmp/abiimpl01/g0/build/test-prefix/bin/hcc
+-- Installing: /private/tmp/abiimpl01/g0/build/test-prefix/include/tos.HH
+clang: warning: argument unused during compilation: '-shared' [-Wunused-command-line-argument]
+cc -shared -fPIC -c /tmp/holyc-asm.s -o ./all.o
+ar rcs libtos.a all.o
+ld: Undefined symbols:
+  _Errno, referenced from:
+      _MALLOC in all.o
+      _MALLOC in all.o
+      _MALLOC in all.o
+      _MALLOC in all.o
+clang: error: linker command failed with exit code 1 (use -v to see invocation)
+cc -dynamiclib -Wl,-install_name,/private/tmp/abiimpl01/g0/build/test-prefix/lib/libtos.0.0.1.dylib all.o -o libtos.dylib -lpthread -lc -lm
+[0;31mERROR: [0mFailed to execute command: 'cc -dynamiclib -Wl,-install_name,/private/tmp/abiimpl01/g0/build/test-prefix/lib/libtos.0.0.1.dylib all.o -o libtos.dylib -lpthread -lc -lm '
+CMake Warning at cmake_install.cmake:100 (message):
+  hcc -lib exited with code 1; this is expected when all.o references _Errno.
+  Continuing.
+
+
+-- Installing: /private/tmp/abiimpl01/g0/build/test-prefix/lib/libtos.a
+-- Installing: /private/tmp/abiimpl01/g0/build/test-prefix/lib/libtos.0.0.1.dylib
+EXIT=0

@@ -1,0 +1,22 @@
+item	value	measurement
+ENTRY_HEAD	315ff492c077a673c3d78ec536b2a31209a32270	git rev-parse HEAD
+SELECTED_CONSUMER_TU	src/compile.c	n/a
+TU_BLOB_SHA1	ba5468da287c9a1f04e8de8eac0231b792b75591	git hash-object src/compile.c
+TU_SHA256	07fb25024ff058b2c0dbbeaa33cd7af827650e796e7dd7e7a3176cb88101c39b	shasum -a 256 src/compile.c
+TU_LINE_COUNT	98	wc -l src/compile.c
+SELECTED_FUNCTION	compilePrintAst	grep -n 'compilePrintAst' src/compile.c
+SELECTED_FUNCTION_RANGE	src/compile.c:17-40	read of the file
+SELECTED_DECISION_RANGE	src/compile.c:31-33	read of the file
+SELECTED_DECISION_SHA256	358b20f82c9393e995318146bce8f76572fa7a6d83ad45ec3232e03bd0fc56c4	computed over lines 31..33 of src/compile.c at ENTRY_HEAD
+CALLER_OBJECT	src/main.c (main.c:541)	grep -n 'compilePrintAst' src/main.c
+CLI_FLAG	-ast	grep -n 'CLI_PRINT_AST' src/cli.c src/cli.h
+DIRECT_AST_MEMBER_ACCESSES	3 (ast->kind x3)	grep -oE 'ast->[a-zA-Z_]+' src/compile.c
+DIRECT_AST_VARIABLES	ast(3)	astderef scan over Ast-typed declarations
+AST_CONSTANT_SYMBOLS_USED	AST_FUN_PROTO AST_EXTERN_FUNC AST_ASM_FUNC_BIND	source scan
+CLOSURE_HEADERS_IMPORTING_AST_H	src/cctrl.h src/parser.h	gcc -E -H intersect the ast.h-importer set
+PP_AST_H_FRAMES_BEFORE	1	gcc -E -H src/compile.c | grep -c '"src/ast.h"'
+COMPILE_COMMANDS_ENTRY	YES	grep '"file": ".*src/compile.c"' build/compile_commands.json
+OBJECT_IN_HCC_LINK	YES (CMakeFiles/hcc.dir/compile.c.o)	grep -c 'compile.c.o' build/CMakeFiles/hcc.dir/link.txt
+G0_OBJECT_SHA256	303aa783e68a767f2ac2bab7cfad26d18bc7bf1d81f8f6d9256e84f9dc58f877	shasum -a 256 <G0>/build/CMakeFiles/hcc.dir/compile.c.o
+OBJECT_KIND_LOAD	`ldr w8,[x21]` then `sub w8,w8,#0x114`, `cmp w8,#0xd`, `mov w24,#0x2401`	otool -tvV <G0>/build/CMakeFiles/hcc.dir/compile.c.o
+OBJECT_IMPORTS	_astToString _asmGenerate _parseToAst _cctrlInitParse ...	nm -u <G0>/build/CMakeFiles/hcc.dir/compile.c.o

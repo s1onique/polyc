@@ -1,0 +1,37 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-FOUNDATION-IMPLEMENT01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=abi-measured
+#
+# Apple ARM64 C ABI facts measured on the actual target, not assumed.
+#
+COMMAND=uname -m
+arm64
+COMMAND=sw_vers -productVersion
+14.7.4
+COMMAND=xcode-select -p
+/Library/Developer/CommandLineTools
+
+COMMAND=cc -arch arm64 -I src /tmp/abiimpl01/abitgt/t.c -o /tmp/abiimpl01/abitgt/t && ./t
+sizeof_I64=8
+sizeof_s64=8
+sizeof_u8=1
+sign_extend_test=286
+neg_status=-17
+
+COMMAND=file /tmp/abiimpl01/abitgt/t
+/tmp/abiimpl01/abitgt/t: Mach-O 64-bit executable arm64
+
+COMMAND=nm -gU on the compiled PolyC subject of the C0 probe
+0000000000000094 T _AbiRedListAppendBounded
+0000000000000000 T _AbiRedShouldPrint
+0000000000000008 C argc
+0000000000000008 C argv
+
+# The single leading underscore is the Mach-O C decoration.
+# Argument passing: every parameter of every ABI function is I64, so every
+# argument occupies exactly one 64-bit general-purpose register (x0..x7);
+# the return value is 64 bits in x0.
+#
+# Bool is NOT used across the boundary. RECON01 measured Bool = 1 byte;
+# this ACT keeps that measurement as historical evidence and does not
+# put a Bool in any signature.

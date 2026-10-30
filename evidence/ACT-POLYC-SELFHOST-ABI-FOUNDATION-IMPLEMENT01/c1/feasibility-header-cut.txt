@@ -1,0 +1,102 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-FOUNDATION-IMPLEMENT01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=feasibility-header-cut
+#
+# Can the SELECTED TU (src/compile.c, edge E-TYP-0136) lose ast.h from its
+# EFFECTIVE preprocessed translation unit without hiding the header somewhere
+# else, and while the rest of the compiler still builds?
+#
+# Measured in an EXTERNAL scratch copy (/tmp/abiimpl01/feas2) of the G0 src/
+# tree. No tracked file was touched.
+#
+# Driver: /tmp/abiimpl01/cut-feas.sh (reproduced verbatim below)
+
+#!/bin/sh
+# C1 feasibility: can the selected TU's closure lose ast.h without hiding it?
+set -eu
+R=/tmp/abiimpl01/feas2
+FLAGS="-DHCC_ENABLE_JIT"
+for m in PADDING CONTROL_FLOW_TOKEN OPERATOR_PRECEDENCE AST_BINOP AST_UNARY SWITCH_ARM COMPOUND_BLOCK_APPEND DEFAULT_ARM_TERMINATES STATEMENT_DISPATCH; do
+  FLAGS="$FLAGS -DHCC_USE_SELFHOST_PARSER_$m"
+done
+pp() { /usr/bin/gcc $FLAGS '-DHCC_GIT_HASH="x"' -DINSTALL_PREFIX='"/tmp/x"' -I"$R/src/asm" -I"$R/src" -std=gnu11 -arch arm64 -E -H "$R/$1" -o /dev/null 2>&1 | grep -c 'src/ast.h' || true; }
+cc1() { /usr/bin/gcc $FLAGS '-DHCC_GIT_HASH="x"' -DINSTALL_PREFIX='"/tmp/x"' -I"$R/src/asm" -I"$R/src" -std=gnu11 -arch arm64 -O1 -c "$R/$1" -o /tmp/feas2.o 2>&1 || true; }
+
+echo "=== BASELINE (unmodified G0 src) ==="
+for tu in src/compile.c src/main.c src/prsasm.c src/lexer.c src/cctrl.c src/cfg.c src/x86_64.c src/ir-regalloc.c src/lsp.c src/prslib.c src/prsutil.c src/transpiler.c src/x86_64-jit.c src/repl.c; do
+  echo "$tu ast_h_frames=$(pp $tu)"
+done
+
+echo
+echo "=== APPLY THE HEADER CUT ==="
+cd "$R/src"
+awk '/^#include "ast.h"$/ { print "/* ACT-POLYC-SELFHOST-ABI-FOUNDATION-IMPLEMENT01 shadow: ast.h removed;"; print " * Cctrl and the prototypes below need only pointers. */"; print "typedef struct Ast Ast;"; print "typedef struct AstType AstType;"; next } { print }' cctrl.h > c && mv c cctrl.h
+awk '/^#include "ast.h"$/ { print "/* ACT-POLYC-SELFHOST-ABI-FOUNDATION-IMPLEMENT01 shadow: ast.h removed. */"; print "typedef struct Ast Ast;"; next } { print }' parser.h > c && mv c parser.h
+awk '/^#include "ir-types.h"$/ && !d { print; print "#include \"ast.h\"   /* shadow: this TU needs the AstType layout */"; d=1; next } { print }' ir-types.c > c && mv c ir-types.c
+grep -v '^#include "ast.h"$' compile.c > c && mv c compile.c
+
+echo "cctrl.h ast.h include count = $(grep -c '^#include "ast.h"$' cctrl.h || true)"
+echo "parser.h ast.h include count = $(grep -c '^#include "ast.h"$' parser.h || true)"
+echo "compile.c ast.h include count = $(grep -c '^#include "ast.h"$' compile.c || true)"
+echo "ir-types.c ast.h include count = $(grep -c '^#include "ast.h"$' ir-types.c || true)"
+
+echo
+echo "=== AFTER THE CUT ==="
+for tu in src/compile.c src/main.c src/prsasm.c src/lexer.c src/cctrl.c src/cfg.c src/x86_64.c src/ir-regalloc.c src/lsp.c src/prslib.c src/prsutil.c src/transpiler.c src/x86_64-jit.c src/repl.c; do
+  echo "$tu ast_h_frames=$(pp $tu)"
+done
+
+echo
+echo "=== WHOLE PROGRAM STILL COMPILES EXCEPT THE SELECTED DECISION ==="
+ok=0; bad=0
+cd "$R"; for f in src/*.c src/asm/*.c; do
+  case "$f" in src/llvm-backend.c|src/llvm-backend-cap.c) continue;; esac
+  if /usr/bin/gcc $FLAGS '-DHCC_GIT_HASH="x"' -DINSTALL_PREFIX='"/tmp/x"' -I"$R/src/asm" -I"$R/src" -std=gnu11 -arch arm64 -O1 -c "$R/$f" -o /tmp/feas2.o 2>/tmp/feas2.err; then ok=$((ok+1)); else bad=$((bad+1)); echo "  COMPILE_FAIL $f"; sed -n '1,3p' /tmp/feas2.err | sed 's/^/    /'; fi
+done
+echo "COMPILE_OK=$ok COMPILE_FAIL=$bad"
+
+=== OUTPUT ===
+=== BASELINE (unmodified G0 src) ===
+src/compile.c ast_h_frames=1
+src/main.c ast_h_frames=1
+src/prsasm.c ast_h_frames=1
+src/lexer.c ast_h_frames=1
+src/cctrl.c ast_h_frames=1
+src/cfg.c ast_h_frames=1
+src/x86_64.c ast_h_frames=1
+src/ir-regalloc.c ast_h_frames=1
+src/lsp.c ast_h_frames=1
+src/prslib.c ast_h_frames=1
+src/prsutil.c ast_h_frames=1
+src/transpiler.c ast_h_frames=1
+src/x86_64-jit.c ast_h_frames=1
+src/repl.c ast_h_frames=1
+
+=== APPLY THE HEADER CUT ===
+cctrl.h ast.h include count = 0
+parser.h ast.h include count = 0
+compile.c ast.h include count = 0
+ir-types.c ast.h include count = 0
+
+=== AFTER THE CUT ===
+src/compile.c ast_h_frames=0
+src/main.c ast_h_frames=1
+src/prsasm.c ast_h_frames=1
+src/lexer.c ast_h_frames=1
+src/cctrl.c ast_h_frames=1
+src/cfg.c ast_h_frames=1
+src/x86_64.c ast_h_frames=1
+src/ir-regalloc.c ast_h_frames=1
+src/lsp.c ast_h_frames=1
+src/prslib.c ast_h_frames=1
+src/prsutil.c ast_h_frames=1
+src/transpiler.c ast_h_frames=1
+src/x86_64-jit.c ast_h_frames=1
+src/repl.c ast_h_frames=1
+
+=== WHOLE PROGRAM STILL COMPILES EXCEPT THE SELECTED DECISION ===
+  COMPILE_FAIL src/compile.c
+    /tmp/abiimpl01/feas2/src/compile.c:30:16: error: incomplete definition of type 'struct Ast'
+            if (ast->kind != AST_FUN_PROTO &&
+                ~~~^
+COMPILE_OK=53 COMPILE_FAIL=1

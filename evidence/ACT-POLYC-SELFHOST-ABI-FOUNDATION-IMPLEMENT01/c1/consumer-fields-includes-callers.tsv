@@ -1,0 +1,19 @@
+class	symbol	location	direction	band	note
+AST_FIELD	Ast.kind	offset 0 of struct Ast (src/ast.h:222)	READ	PERSISTS_OPAQUE	The host reads it and returns an integer; PolyC never computes the offset. This is THE retired relation.
+AST_FIELD	Ast.type	src/ast.h:224	NOT_USED_BY_TU	n/a	src/compile.c never touches it.
+AST_FIELD	Ast.left / Ast.right / Ast.binop	.src/ast.h union	NOT_USED_BY_TU	n/a	src/compile.c never touches them.
+LIST_FIELD	List.next	.src/list.h:5	READ	RETAINED	compilePrintAst walks cc->ast_list with ->next. This is a SYS-CONTAINERS relation (E-CAL-0140), NOT the selected AST edge; it is deliberately NOT migrated by this ACT.
+LIST_FIELD	List.value	.src/list.h:7	READ (as void*, cast to Ast*)	RETAINED	Cast to Ast* is an opaque-pointer cast; no Ast layout is touched.
+CTRL_FIELD	Cctrl.ast_list	offset 0x70	READ	RETAINED	Declared in src/cctrl.h (struct Cctrl); cctrl.h still defines the Cctrl layout.
+INCLUDE	src/compile.c -> "ast.h"	.src/compile.c:6	DIRECT	RETIRED	Deleted in the shadow TU.
+INCLUDE	src/cctrl.h -> "ast.h"	.src/cctrl.h:9	TRANSITIVE (depth 2)	RETIRED	replaced by `typedef struct Ast Ast; typedef struct AstType AstType;` inside the shadow worktree only.
+INCLUDE	src/parser.h -> "ast.h"	.src/parser.h:5	TRANSITIVE (depth 2)	RETIRED	replaced by `typedef struct Ast Ast;` inside the shadow worktree only.
+INCLUDE	src/ir-types.c <- needs AstType layout	.src/ir-types.c	NEW EXPLICIT	ADDED	The only TU broken by the header cut; it now states its own dependency instead of inheriting it. One added line.
+INCLUDE	src/asm.h, src/compile.h, src/cli.h, src/config.h, src/containers.h, src/lexer.h, src/list.h, src/memory.h, src/aostr.h, src/types.h, src/util.h	.remaining closure	NO AST IMPORT	n/a	Verified by the post-change gcc -E -H measurement (0 ast.h frames).
+CALLER	main.c:541 -> compilePrintAst	.reachable	CALL	LOAD_BEARING	`if (args.print_ast) { compilePrintAst(cc); goto success; }`
+CALLER	compilePrintAst -> astToString	.src/compile.c:35	CALL	RETAINED	Receives the same Ast* as an opaque pointer; the function itself lives in src/ast.c and keeps the layout.
+CALLER	compilePrintAst -> printf	.src/compile.c:36	CALL	RETAINED	Observable sink for the differential.
+ALIAS	none	.	n/a	n/a	No alias of Ast* is created in the shadow TU.
+FALLBACK	none	.	n/a	n/a	The decision has no fallback branch: every node is printed or suppressed.
+ERROR_ESCAPE	none	.	n/a	n/a	compilePrintAst cannot fail; it has no error path and no recovery escape.
+ABI_ASSUMPTION	Ast* is a pointer-sized object pointer	.src/types.h	OPAQUE	RETAINED	Never dereferenced on the PolyC side.

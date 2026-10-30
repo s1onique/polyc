@@ -1,0 +1,32 @@
+item	value	note
+G0_WORKTREE	/tmp/abiimpl01/g0 (git worktree add --detach 315ff492c077a673c3d78ec536b2a31209a32270)	isolated; never the canonical checkout
+G0_BUILD_COMMAND	make all	"see c1/g0-build-raw.txt"
+G0_HCC_SHA256	7f5579849d5f4565f95fae2804ec5c63c7cca48a914bec868b9aa0d4da12b261	build/hcc
+G0_STAGE0_HCC_SHA256	59c502967fd8631f152e1a64a5f2c032b6fdd2e7b7097d9f115b2063ad7bf677	build/host-stage0/hcc
+G0_LIBTOS_A_SHA256	5817dacfae23bf82094dc262f5bd37e70c1c5e75ce5b52c1afcb291fe2fbaab1	build/test-prefix/lib/libtos.a
+G0_COMPILE_C_O_SHA256	303aa783e68a767f2ac2bab7cfad26d18bc7bf1d81f8f6d9256e84f9dc58f877	build/CMakeFiles/hcc.dir/compile.c.o
+G0_SUBJECT_PADDING	187a4de9465e8dbe3c640484b05540daaad4a3267dd1543a169e3c304b02d5b1	build/parser-padding-subject.o
+G0_SUBJECT_CONTROL_FLOW_TOKEN	078f708d05474430cb3d5c6fc17c0a3d327ab81b74cb24e32512475050723018	build/parser-control-flow-token-subject.o
+G0_SUBJECT_OPERATOR_PRECEDENCE	1a932394ba209267ab3a119137f844682f1a12ceeaaca0cde4feaeaa0f8f62f8	build/parser-operator-precedence-subject.o
+G0_SUBJECT_AST_BINOP	6d598bc7f0b00ac47642ec06b8cceba641d55a8cfe5498e0a6a995c40f2e054d	build/parser-ast-binop-subject.o
+G0_SUBJECT_AST_UNARY	27075194e1d3ff94703b51459cc3e5c8ea472747ea1f255a451a97f44b416e72	build/parser-ast-unary-subject.o
+G0_SUBJECT_SWITCH_ARM	848866e9fea389d574b3cb3e39b54b62fc0c744fe707fcf7c4184714017467f0	build/parser-switch-arm-subject.o
+G0_SUBJECT_COMPOUND_BLOCK	e2dfbcfcb78261957fb9188916705dcc86d589e82a9d9e169f6ae8118237487c	build/parser-compound-block-subject.o
+G0_SUBJECT_DEFAULT_ARM	d72cee87ccff4b5c1b801c5d1420d5267809e9214526720800010ff591cba22b	build/parser-default-arm-subject.o
+G0_SUBJECT_STATEMENT_DISPATCH	f9d9c05eaf9c8cb4d2821b9c2c6d59e10116eacdfc3197150855aaef693c1c3d	build/parser-statement-dispatch-subject.o
+G0_NEW_SYMBOL_PRESENT	NO (nm ./hcc | grep -cE 'AbiCpa|AbiRed' = 0)	AC17 negative proof
+G0_COMPILE_C_IMPORTS_AST_TOSTRING	YES (_astToString)	object-level proof the TU hands a real Ast* across
+G0_COMPILE_C_AST_KIND_OFFSET	0 (ldr w8,[x21])	AC13 layout-use witness
+G0_COMPILE_C_MASK	0x2401 over span 0x114..0x121 = {276,286,289}	AC13 layout-use witness
+WITNESS_1	src/tests/01_pointer_simple.HC	md5 4c31db4c078ce2f04617816442156089, 72 lines
+WITNESS_2	src/tests/12_function_pointer.HC	md5 124cfbc783679f468995eb79828b4d48, 379 lines (extern "c" decls -> suppression branch)
+WITNESS_3	src/tests/25_scripting.HC	md5 ab95356d19b3a64b9e415b14d23735bf, 75 lines (3 extern "c" decls)
+WITNESS_4	src/holyc-lib/strings.HC	md5 713c1f7724c51ec6df3bc57faf6c9239, 100 lines
+WITNESS_5	src/holyc-lib/memory.HC	md5 48bae88a2124bb25583a39d780b68ef2, 45 lines
+WITNESS_6	src/tests/04_ptr_ptr.HC	md5 1b6419855b340d69b1f28ccc144ccd20, 66 lines
+WITNESS_NEG_1	CASES/negative-01-syntax.HC (frozen at C2)	malformed source: diagnostic identity compared, not an exit code
+WITNESS_NEG_2	CASES/negative-02-missing-semicolon.HC (frozen at C2)	second distinct failure identity
+WITNESS_ALL_NODES_SUPPRESSED	CASES/only-externs.HC (frozen at C2)	all top-level nodes on the suppression branch: the dump must be exactly the header line
+BRANCH_PRINT_COVERED	WITNESS_1..6	ordinary functions/globals printed by astToString
+BRANCH_SUPPRESS_EXTERN	WITNESS_2, WITNESS_3, and every file via src/holyc-lib/tos.HH	AST_EXTERN_FUNC and AST_ASM_FUNC_BIND suppressed
+BRANCH_SUPPRESS_FUNPROTO	UNREACHABLE AT THIS CALL SITE	src/parser.c:3470 filters AST_FUN_PROTO before listAppend; recorded as a blocker, not pretended
