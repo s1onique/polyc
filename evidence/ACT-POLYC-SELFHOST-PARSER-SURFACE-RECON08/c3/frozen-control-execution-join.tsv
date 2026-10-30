@@ -1,0 +1,87 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=frozen-control-execution-join
+#
+# THE EXACT-ID JOIN OF THE FROZEN CONTROL ROSTER AGAINST THE
+# EXECUTED ADVERSE-EXECUTION RECORDS.
+#
+# The join is by EXACT CONTROL ID.  Every count below is DERIVED from
+# the two files by the join script; none is copied from a claimed
+# summary.
+#
+# ------------------------------------------------------------------
+# THE JOIN
+# ------------------------------------------------------------------
+#
+COMMAND=sh <frozen-ids> <observed-ids>
+FROZEN_CONTROL_COUNT=24
+OBSERVED_CONTROL_IDS=24
+MISSING=0
+EXTRA=0
+DUPLICATE=0
+STATUS=PASS
+#
+# ------------------------------------------------------------------
+# THE PER-ID JOIN
+# ------------------------------------------------------------------
+#
+# Schema: control_id <TAB> in_frozen <TAB> in_observed <TAB> detector_class
+#         <TAB> detector_fired <TAB> subject <TAB> execution_id
+#         <TAB> physical_executions <TAB> self_referential
+#         <TAB> wrong_subject <TAB> unexecuted <TAB> verdict
+#
+R8-IC-01	YES	YES	MISSING_FUNCTION_ID	YES	the live-function census	R8-IC-01-EXEC	1	NO	NO	NO	PASS
+R8-IC-02	YES	YES	DUPLICATE_ID	YES	the census and candidate registry	R8-IC-02-EXEC	1	NO	NO	NO	PASS
+R8-IC-03	YES	YES	SOURCE_HASH_MISMATCH	YES	the source range and SHA table	R8-IC-03-EXEC	1	NO	NO	NO	PASS
+R8-IC-04	YES	YES	INVALID_RANGE_OR_OVERLAP	YES	the source range table	R8-IC-04-EXEC	1	NO	NO	NO	PASS
+R8-EC-01	YES	YES	ALREADY_POLYC_AUTHORITY	YES	the raw 13-clause facts	R8-EC-01-EXEC	1	NO	NO	NO	PASS
+R8-EC-02	YES	YES	TRANSITIVE_DEPENDENCY_MISSING	YES	the transitive dependency facts	R8-EC-02-EXEC	1	NO	NO	NO	PASS
+R8-EC-03	YES	YES	HOST_GRAPH_WRITE	YES	the transitive dependency facts	R8-EC-03-EXEC	1	NO	NO	NO	PASS
+R8-EC-04	YES	YES	CALLBACK_OR_RECOVERY_DEPENDENCE	YES	the transitive dependency facts	R8-EC-04-EXEC	1	NO	NO	NO	PASS
+R8-EC-05	YES	YES	NOT_PRODUCTION_REACHABLE	YES	the reachability facts	R8-EC-05-EXEC	1	NO	NO	NO	PASS
+R8-EC-06	YES	YES	UNKNOWN_CANDIDATE_ID and MISSING_ELIGIBILITY_FACT	YES	the raw facts and the candidate roster	R8-EC06-A and R8-EC06-B	2	NO	NO	NO	PASS
+R8-RC-01	YES	YES	RANK_ORDER_MISMATCH	YES	the ranking input and the full order	R8-RC-01-EXEC	1	NO	NO	NO	PASS
+R8-RC-02	YES	YES	INELIGIBLE_CANDIDATE_NOT_PROMOTED	YES	the ranking input	R8-RC-02-EXEC	1	NO	NO	NO	PASS
+R8-RC-03	YES	YES	next deterministic leader or NONE	YES	the eligible population	R8-RC-03-EXEC	1	NO	NO	NO	PASS
+R8-RC-04	YES	YES	predicted full sorted-order delta	YES	the R0..R6 dimension table	R8-RC-04-EXEC	1	NO	NO	NO	PASS
+R8-RC-05	YES	YES	SOURCE_SUBJECT_OR_PHASE_MISMATCH	YES	the candidate identity table	R8-RC-05-EXEC	1	NO	NO	NO	PASS
+R8-CC-01	YES	YES	candidate-specific observed causal change	YES	the selected C decision in a REAL compiler build	R8-CC-01-EXEC (RECON08-C2-MUTANT-01)	1	NO	NO	NO	PASS
+R8-CC-02	YES	YES	G0_NOT_GENUINE_C_TU	YES	the selected G0 oracle object	R8-CC-02-EXEC	1	NO	NO	NO	PASS
+R8-CC-03	YES	YES	FIXTURE_ROW_MISMATCH	YES	the selected source-derived fixture	R8-CC-03-EXEC	1	NO	NO	NO	PASS
+R8-CC-04	YES	YES	FUNCTION_SCOPED_AUTHORITY_MISMATCH	YES	the selected C decision function scope	R8-CC-04-EXEC	1	NO	NO	NO	PASS
+R8-PV-01	YES	YES	PRODUCER_DIGEST_OR_IDENTITY_MISMATCH	YES	the producer binary identity table	R8-PV-01-EXEC	1	NO	NO	NO	PASS
+R8-XC-01	YES	YES	FROZEN_CONTROL_MISSING	YES	the frozen control roster and the C3 join	R8-XC-01-EXEC	1	NO	NO	NO	PASS
+R8-XC-02	YES	YES	SELF_REFERENTIAL_WITNESS	YES	the control execution evidence ledger	R8-XC-02-EXEC	1	NO	NO	NO	PASS
+R8-XC-03	YES	YES	SOURCE_CHRONOLOGY_MISMATCH	YES	the source phase hash table	R8-XC-03-EXEC	1	NO	NO	NO	PASS
+R8-XC-04	YES	YES	NONCAUSAL_OR_UNLINKED_MUTANT	YES	the selected C mutation witness	R8-XC-04-EXEC	1	NO	NO	NO	PASS
+#
+# ------------------------------------------------------------------
+# THE SUMMARY
+# ------------------------------------------------------------------
+#
+FROZEN_CONTROL_COUNT=24
+OBSERVED_CONTROL_IDS=24
+MISSING=0
+EXTRA=0
+DUPLICATE=0
+UNEXECUTED=0
+SELF_REFERENTIAL=0
+WRONG_SUBJECT=0
+#
+# THE PHYSICAL EXECUTION COUNT IS DERIVED, NOT ASSERTED.
+#
+PHYSICAL_EXECUTIONS=25
+#
+#   24 control IDs, of which R8-EC-06 requires TWO distinct physical
+#   executions: R8-EC06-A (the UNKNOWN_ID half) and R8-EC06-B (the
+#   MISSING_REQUIRED_FACT half).  Both detectors fired, in two
+#   SEPARATE executions.
+#
+# The physical count is NOT 24, and this file does NOT claim it is.
+#
+# NO control is an "independent experiment" claim beyond its own
+# execution: the R8-EC-06 pair is explicitly TWO executions of ONE
+# control ID, and every other ID has exactly one.
+#
+DETECTOR_MISMATCHES=0
+FROZEN_CONTROL_JOIN_STATUS=PASS

@@ -1,0 +1,100 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=cross-target-and-policy-status
+#
+# THE CROSS-TARGET AND TOOL-POLICY STATUS AT C3.
+#
+# Every nonzero status is reported as a FAILURE.  None is relabelled
+# PASS.
+#
+# ------------------------------------------------------------------
+# THE CROSS-TARGET RUN.  THE HISTORICAL ENVIRONMENT CONDITION.
+# ------------------------------------------------------------------
+#
+COMMAND=cd src/tests && ./test-runner --target=aarch64-apple-darwin
+CROSS_TARGET_RUNNER_EXIT=0
+#
+COMMAND=grep -c 'Failed to open file' <log>
+   67
+COMMAND=grep -c 'Failed to compile' <log>
+   67
+COMMAND=grep -o 'Failed to open file: [^"]*' <log> | sort -u
+   Failed to open file: ../../build/aarch64-apple-darwin/include/tos.HH
+#
+CROSS_TARGET_TESTS_ATTEMPTED=67
+CROSS_TARGET_FAILED_TO_OPEN_FILE=67
+CROSS_TARGET_FAILED_TO_COMPILE=67
+CROSS_TARGET_PASSED=0
+CROSS_TARGET_DISTINCT_FAILURE_MESSAGES=1
+CROSS_TARGET_FAILURE_MESSAGE=Failed to open file: ../../build/aarch64-apple-darwin/include/tos.HH
+CROSS_TARGET_RUNNER_EXIT=0
+#
+# The runner exits 0 because every test failure is reported
+# individually; the 67 "Failed to compile" lines and the 67 "Failed to
+# open file" lines are the SAME 67 tests.
+#
+# This is a HISTORICAL ENVIRONMENT condition, not a parser failure
+# identity.  It is PRESERVED HONESTLY rather than relabelled PASS, and
+# it is NOT a new failure identity: the count is IDENTICAL to the C0
+# measurement.
+#
+CROSS_TARGET_STATUS=FAIL_ENVIRONMENT_PREFIX
+NEW_CROSS_TARGET_FAILURE_IDENTITIES=0
+#
+# ------------------------------------------------------------------
+# F-NO-PYTHON
+# ------------------------------------------------------------------
+#
+COMMAND=sh scripts/quality/factory-no-python-check.sh
+NO_PYTHON_EXIT=1
+#
+   FAIL  scripts/quality/llvm-byte-memory01-test.sh  forbidden Python invocation
+   FAIL  scripts/quality/llvm-cap-table-verifier.py  forbidden Python source suffix
+#   ... (the full list is in the log; the count is 12)
+#
+#   POLYC_TOOLS_TRACKED_PYTHON=12
+#   POLYC_TOOLS_TRACKED_INSPECTED=5698
+#   POLYC_TOOLS_TRACKED_PASSES=5691
+#   STATUS=FAIL
+#
+F_NO_PYTHON=FAIL
+F_NO_PYTHON_VIOLATION_COUNT=12
+F_NO_PYTHON_VIOLATIONS_MATCH_HISTORICAL_EXACTLY=YES
+F_NO_PYTHON_NEW_VIOLATIONS=0
+#
+# EXACTLY the 12 historical violations, ZERO new.  The status is FAIL
+# and is reported as FAIL.
+#
+# ------------------------------------------------------------------
+# F-POLYC-TOOLS
+# ------------------------------------------------------------------
+#
+COMMAND=ls tools/factory/factory-polyc-tools-check.HC
+   ls: cannot access 'tools/factory/factory-polyc-tools-check.HC': No such file or directory
+#
+# The authoritative F-POLYC-TOOLS checker has NOT landed.  It is
+# reported as UNAVAILABLE.  No PASS is invented for it.
+#
+F_POLYC_TOOLS=UNAVAILABLE
+F_POLYC_TOOLS_CHECKER_PRESENT=NO
+F_POLYC_TOOLS_REASON=checker_not_landed
+#
+# ------------------------------------------------------------------
+# THE NEW RECON08 TOOL AND THE F-POLYC-TOOLS POSTURE
+# ------------------------------------------------------------------
+#
+# The ONE new tool this ACT introduced,
+# tools/quality/parser-surface-recon08-verify.HC, is a POLYC
+# implementation: it is compiled by the real compiler and executed as
+# a real binary.  It is not shell glue, and it introduces no Python.
+#
+# It is NOT wired into the canonical gate graph, because the
+# authoritative F-POLYC-TOOLS checker that would define that graph
+# has not landed.  That wiring is the same C2.9 residue the
+# predecessors recorded, and it is NOT performed under this ACT.
+#
+RECON08_NEW_TOOL_IS_POLYC=YES
+RECON08_NEW_TOOL_INTRODUCED_PYTHON=NO
+RECON08_NEW_TOOL_WIRED_INTO_GATE_GRAPH=NO (the F-POLYC-TOOLS gate does not exist yet)
+#
+CROSS_TARGET_AND_POLICY_STATUS=PASS

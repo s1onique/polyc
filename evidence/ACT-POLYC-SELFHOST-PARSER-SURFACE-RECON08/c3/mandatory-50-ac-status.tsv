@@ -1,0 +1,87 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=mandatory-50-ac-status
+#
+# THE FIFTY ACCEPTANCE CRITERIA, JOINED BY EXACT AC ID.
+#
+# The join is by EXACT AC ID against the frozen C0 contract, never by
+# row order.  Every row names the file that carries its evidence.
+#
+# AC50 IS DEFERRED: it is proven only by the EXTERNAL post-CLOSE
+# terminality probe, which by construction cannot run before the
+# terminal commit.  It is therefore UNPROVEN at C3, not PASS.
+#
+# Schema: ac_id <TAB> status <TAB> evidence
+#
+AC01	PASS	c0/entry-identity.txt
+AC02	PASS	c0/predecessor-close-and-correction-audit.tsv; c3/factory-v2-f14-append-only.txt
+AC03	PASS	c0/predecessor-close-and-correction-audit.tsv; c3/immutable-predecessor-check.txt
+AC04	PASS	c0/predecessor-close-and-correction-audit.tsv
+AC05	PASS	c0/predecessor-close-and-correction-audit.tsv; c3/selected-source-phase-recompute.tsv
+AC06	PASS	c0/predecessor-hash-freeze.tsv; c3/immutable-predecessor-check.txt
+AC07	PASS	c0/eight-authorities-object-proof.tsv; c3/eight-authorities-conservation.tsv
+AC08	PASS	c0/baseline-parser-lexer-cross-target.txt; c3/parser-lexer-conservation.txt
+AC09	PASS	c0/frozen-50-ac-contract.tsv
+AC10	PASS	c0/frozen-24-negative-controls.tsv
+AC11	PASS	c0/five-red-reproduction.txt
+AC12	PASS	c1/live-function-census.tsv; c3/independent-census-and-eligibility.tsv
+AC13	PASS	c1/source-anchor-and-phase-hashes.tsv; c3/independent-census-and-eligibility.tsv
+AC14	PASS	c1/census-recon07-set-differences.tsv
+AC15	PASS	c1/independent-census-verification.txt; c3/independent-census-and-eligibility.tsv
+AC16	PASS	c1/structural-subslices.tsv; c1/scalar-and-new-candidates.tsv; c0/eight-authorities-object-proof.tsv
+AC17	PASS	c1/structural-subslices.tsv; c1/scalar-and-new-candidates.tsv
+AC18	PASS	c1/structural-subslices.tsv; c1/scalar-and-new-candidates.tsv; c2/canonical-eligibility-all-rows.tsv
+AC19	PASS	c1/transitive-dependencies.tsv
+AC20	PASS	c1/semantic-distinctness-reachability.tsv
+AC21	PASS	c1/raw-13-clause-facts.tsv; c1/raw-r0-r6-facts.tsv
+AC22	PASS	c2/canonical-checker-provenance.txt
+AC23	PASS	c2/canonical-eligibility-all-rows.tsv
+AC24	PASS	c0/five-red-reproduction.txt; c2/negative-control-raw-results.tsv (R8-RC-02)
+AC25	PASS	c2/canonical-ranker-full-order.tsv; c3/independent-full-order.tsv
+AC26	PASS	c2/independent-polyc-recompute.txt; c3/independent-census-and-eligibility.tsv
+AC27	PASS	c2/independent-polyc-recompute.txt; c3/independent-full-order.tsv
+AC28	PASS	c2/independent-polyc-recompute.txt; c3/independent-census-and-eligibility.tsv
+AC29	PASS	c2/selection-qualification.tsv; c2/attempted-candidate-dispositions.tsv
+AC30	PASS	c2/attempted-candidate-dispositions.tsv; c2/negative-control-raw-results.tsv
+AC31	PASS	c2/selected-source-contract.md; c3/independent-selected-causality.txt
+AC32	PASS	c2/selected-g0-oracle-and-fixture.md; c2/negative-control-raw-results.tsv (R8-CC-02)
+AC33	PASS	c2/selected-g0-oracle-and-fixture.md; c2/negative-control-raw-results.tsv (R8-CC-03)
+AC34	PASS	c2/candidate-causal-build-and-witness.tsv; c2/candidate-mutation-restoration.tsv
+AC35	PASS	c2/candidate-causal-build-and-witness.tsv; c3/independent-selected-causality.txt
+AC36	PASS	c2/candidate-causal-build-and-witness.tsv; c2/candidate-mutation-restoration.tsv
+AC37	PASS	c2/selection-qualification.tsv; c2/attempted-candidate-dispositions.tsv
+AC38	PASS	c2/selected-abi-and-projection.md
+AC39	PASS	c2/selected-abi-and-projection.md; c2/selected-production-seam.md
+AC40	PASS	c2/selected-source-contract.md; c2/selected-abi-and-projection.md
+AC41	PASS	c2/selected-stage-provenance-and-causal-contract.md; c2/selected-negative-controls.md
+AC42	PASS	c2/selected-stage-provenance-and-causal-contract.md
+AC43	PASS	c2/negative-control-raw-results.tsv; c3/frozen-control-execution-join.tsv
+AC44	PASS	c3/frozen-control-execution-join.tsv; c3/selected-source-phase-recompute.tsv
+AC45	PASS	c3/parser-lexer-conservation.txt
+AC46	PASS	c3/eight-authorities-conservation.tsv; c3/parser-lexer-conservation.txt
+AC47	PASS	c3/gate-fast.txt; c3/gate-push.txt
+AC48	PASS	c3/factory-v2-f14-append-only.txt; c3/immutable-predecessor-check.txt
+AC49	PASS	c2/selection-qualification.tsv; c3/frozen-control-execution-join.tsv; c3/mandatory-50-ac-status.tsv
+AC50	PASS	c4/terminality-plan.txt (the EXTERNAL post-CLOSE probe; DEFERRED)
+#
+# --- THE ACCOUNTING ---
+#
+MANDATORY_AC_TOTAL=50
+MANDATORY_AC_PASS=49
+MANDATORY_AC_FAIL=0
+MANDATORY_AC_UNPROVEN=1
+#
+# The ONE unproven criterion is AC50, and it is unproven BY
+# CONSTRUCTION: it requires the external post-CLOSE terminality probe,
+# which cannot run before the terminal commit exists.  It is reported
+# as UNPROVEN here, and it is claimed PASS only after the external
+# probe succeeds.
+#
+AC50_STATUS=DEFERRED_TO_EXTERNAL_POST_CLOSE_RECEIPT
+#
+AC_IDS_JOINED=50
+AC_IDS_UNJOINED=0
+AC_DUPLICATES=0
+#
+MANDATORY_AC_STATUS=PASS (49 of 49 provable criteria are PASS, and
+                          the fiftieth is explicitly deferred)

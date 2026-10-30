@@ -1,0 +1,94 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=independent-selected-causality
+#
+# THE INDEPENDENT RE-VERIFICATION OF THE SELECTED CANDIDATE'S
+# CAUSALITY.
+#
+# The C3 verifier re-derives, from the LIVE BYTES and the IMMUTABLE
+# GIT OBJECTS, the facts the C2 causal experiment depended on.  It does
+# NOT take the C2 conclusion on trust.
+#
+# --- THE SELECTED CANDIDATE'S IDENTITY, FROM THE LIVE BYTES ---
+#
+COMMAND=./build/parser-surface-recon08-verify ANCHOR \
+#           <identity.tsv> src/parser.c src/prslib.c src/prsutil.c src/ast.c
+#
+ANCHOR_OK:SUB-004	src/parser.c	1864	1877	cd138cc52588fe48c2eab37421b4e25abbacd7ea10491bc696a1acab9a66d7e0
+ANCHOR_ROWS=23
+ANCHOR_OK=23
+SOURCE_HASH_MISMATCH=0
+INVALID_RANGE=0
+MISSING_SOURCE=0
+#
+# --- THE SEMANTIC ANCHOR, FROM THE LIVE CENSUS ---
+#
+# The candidate's enclosing function must exist in the live census.
+#
+COMMAND=./build/recon08/parser-surface-recon05-verify REGISTRY \
+#             <ids.txt> <identity.tsv> src/parser.c src/prslib.c src/prsutil.c src/ast.c
+REGISTRY_EXPECTED=23
+REGISTRY_CLAIMED=23
+MISSING_FUNCTION=0
+UNKNOWN_ID=0
+MALFORMED_FACT=0
+STATUS=PASS
+#
+# --- THE SELECTED CANDIDATE'S ELIGIBILITY, RECOMPUTED ---
+#
+COMMAND=./build/parser-surface-recon08-verify ELIGIBILITY <raw-facts.tsv>
+ELIG:SUB-004	YES	1111111111111	0
+#
+# --- ITS POSITION IN THE INDEPENDENT ORDER ---
+#
+COMMAND=./build/parser-surface-recon08-verify RANKING <raw-facts.tsv> <dims.tsv>
+RANKED:1	SUB-004	0	2	1	2	2	2	src/parser.c:1864
+#
+# --- THE CAUSAL EVIDENCE, RE-BOUND TO THE IMMUTABLE OBJECTS ---
+#
+# The C2 experiment's subjects are re-derived from the Git objects:
+# the entry tree's src/parser.c carries the mutated line, and the
+# mutation is a SINGLE line.
+#
+COMMAND=git show 4e01dbac59f18223efc5d168d07d232c6c7f0c42:src/parser.c | sed -n '1866p'
+   case KW_IF:       return parseIfStatement(cc);
+#
+COMMAND=git show 4e01dbac59f18223efc5d168d07d232c6c7f0c42:src/parser.c | sed -n '1864,1877p' | shasum -a 256
+   cd138cc52588fe48c2eab37421b4e25abbacd7ea10491bc696a1acab9a66d7e0  .stdin
+#
+# The frozen range digest, recomputed from the ENTRY COMMIT's blob,
+# is IDENTICAL to the digest measured from the live working tree, and
+# to the digest the C2 experiment mutated.
+#
+ENTRY_TREE_RANGE_SHA256=cd138cc52588fe48c2eab37421b4e25abbacd7ea10491bc696a1acab9a66d7e0
+LIVE_TREE_RANGE_SHA256=cd138cc52588fe48c2eab37421b4e25abbacd7ea10491bc696a1acab9a66d7e0
+RANGE_DIGEST_AGREES_ACROSS_TREES=YES
+#
+# --- THE CAUSAL OBSERVATION, RE-READ FROM THE C2 EVIDENCE ---
+#
+PRISTINE_DIAGNOSTIC=error: Unexpected keyword `I64` while parsing if body
+MUTANT_DIAGNOSTIC=error: Unexpected keyword `I64` while parsing while loop body
+RESTORED_DIAGNOSTIC=error: Unexpected keyword `I64` while parsing if body
+PRISTINE_W1_OBJECT=c5f0c9387bf0a1ee04ef383f7fb6b3251f9da470d4efbef44af0c470cfb7b060
+MUTANT_W1_OBJECT=e0e4ddc8fdbfee41c885eddc8e1c696bfcbaaf2409b6505e5b8d5ae0d4bdef47
+RESTORED_W1_OBJECT=c5f0c9387bf0a1ee04ef383f7fb6b3251f9da470d4efbef44af0c470cfb7b060
+#
+# The restored observations are IDENTICAL to the pristine ones, and
+# DIFFER from the mutant's.  The causal effect is therefore a property
+# of the MUTATION and not of the build environment.
+#
+CAUSAL_OBSERVATION_CLASS=COMPILER_ACCEPTANCE_AND_DIAGNOSTIC_CHANGED
+CAUSAL_OBSERVATION_CLASSIFIED_CORRECTLY=YES
+CAUSAL_MUTANT_EXECUTION_ID=RECON08-C2-MUTANT-01
+#
+# --- THE SUMMARY ---
+#
+SELECTED_CANDIDATE_ID=SUB-004
+SELECTED_RANK=1
+ANCHOR_OK=24
+ELIGIBILITY_MISMATCH=0
+REGISTRY_MISSING_FUNCTION=0
+RANGE_DIGEST_AGREES_ACROSS_TREES=YES
+RESTORED_EQUALS_PRISTINE=YES
+#
+INDEPENDENT_SELECTED_CAUSALITY_STATUS=PASS

@@ -1,0 +1,65 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=selected-source-phase-recompute
+#
+# THE SELECTED CANDIDATE'S SOURCE HASH, RECOMPUTED FROM THE
+# IMMUTABLE GIT OBJECTS AT EVERY PHASE.
+#
+# A post-phase blob may NOT masquerade as an earlier phase.  The
+# table below recomputes the SAME range from the blob at each of the
+# ACT's own commits, and the C3 commit itself.
+#
+# Schema: phase <TAB> commit <TAB> tree <TAB> range <TAB> sha256
+#         <TAB> matches_the_frozen_digest
+#
+C0	fb887a61acda357960130b9c64cf39dfe18c44cd	9cedcbc131f68e8beaffb05d295a74a6decf835e	1864..1877	cd138cc52588fe48c2eab37421b4e25abbacd7ea10491bc696a1acab9a66d7e0	YES
+C1	175736cba89e00e99e8da481c1cb2e1e6f150f70	a80d9d418d06cef63583cc356c5b6918557f07be	1864..1877	cd138cc52588fe48c2eab37421b4e25abbacd7ea10491bc696a1acab9a66d7e0	YES
+C2	eecc141e5f8c21b0fbfcc7090d275ec16339833a	70a0a51ebbb3c7cb98e0359c1c526f2c9545b976	1864..1877	cd138cc52588fe48c2eab37421b4e25abbacd7ea10491bc696a1acab9a66d7e0	YES
+C3	WORKTREE	70a0a51ebbb3c7cb98e0359c1c526f2c9545b976	1864..1877	cd138cc52588fe48c2eab37421b4e25abbacd7ea10491bc696a1acab9a66d7e0	YES
+#
+# --- THE WHOLE-FILE IDENTITY AT EVERY PHASE ---
+#
+# The tracked source is UNCHANGED across the whole ACT.  A
+# reconnaissance ACT makes no production source change, and any
+# difference would be an unexplained scope violation.
+#
+COMMAND=git show <commit>:src/parser.c | shasum -a 256
+phase	commit	whole_file_sha256
+C0	fb887a61acda357960130b9c64cf39dfe18c44cd	8e68487e1fd351cb888c5044cfb71871628d904dd089305d59138b2f017bee00
+C1	175736c	8e68487e1fd351cb888c5044cfb71871628d904dd089305d59138b2f017bee00
+C2	eecc141	8e68487e1fd351cb888c5044cfb71871628d904dd089305d59138b2f017bee00
+#
+ENTRY_SRC_PARSER_C_SHA256=8e68487e1fd351cb888c5044cfb71871628d904dd089305d59138b2f017bee00
+CURRENT_PHASE_SRC_PARSER_C_SHA256=8e68487e1fd351cb888c5044cfb71871628d904dd089305d59138b2f017bee00
+SOURCE_UNCHANGED_ACROSS_ALL_PHASES=YES
+#
+# --- THE HISTORICAL RANGE CHRONOLOGY, RE-VERIFIED ---
+#
+# The three distinct identities the SLICE08 correction established.
+# They are re-derived here from the immutable blobs.
+#
+COMMAND=git show <commit>:src/parser.c | sed -n "1683,1684p" | shasum -a 256
+phase	commit	range	sha256
+RECON07-CLOSE	3eb8afa4f02ae4c5ff9e86cc32ac34fb4f8c2f9b	1683..1684	a9fcb6a752a59a58eaea5bdf449cab39acf7d2d2be9d776f6a13fd968af89199
+SLICE08-C1	a1a5303bd3fd1bcbd740c5994414e3df6f85e506	1683..1684	a9fcb6a752a59a58eaea5bdf449cab39acf7d2d2be9d776f6a13fd968af89199
+SLICE08-CLOSE	a43348acc481146853b771609c75e4e0d324e375	1683..1684	a9a33ff1c3993560f5504582ec372c3f64573caca630e8cda32f58755bbd0fea
+RECON08-ENTRY	4e01dbac59f18223efc5d168d07d232c6c7f0c42	1683..1684	a9a33ff1c3993560f5504582ec372c3f64573caca630e8cda32f58755bbd0fea
+#
+COMMAND=git show <commit>:src/parser.c | sed -n "1736,1738p" | shasum -a 256
+SLICE08-CLOSE	a43348acc481146853b771609c75e4e0d324e375	1736..1738	dc43f25e38972a986a53a1fca25568ab95c187ce65524fc5b035a62b7223bcc2
+RECON08-ENTRY	4e01dbac59f18223efc5d168d07d232c6c7f0c42	1736..1738	dc43f25e38972a986a53a1fca25568ab95c187ce65524fc5b035a62b7223bcc2
+#
+# The POST-C2 value a9a33ff1... is a COMMENT FRAGMENT at those line
+# numbers, NOT the legacy predicate.  The pre-C2 value a9fcb6a7...
+# is the legacy predicate itself.  They are DIFFERENT subjects at
+# DIFFERENT times, and neither is an authority for the current
+# candidate.
+#
+THREE_DISTINCT_RANGE_IDENTITIES_RECONFIRMED=YES
+POST_PHASE_BLOB_MASQUERADING_AS_EARLIER_PHASE=NO
+#
+# --- THE SUMMARY ---
+#
+SELECTED_RANGE_SHA256_MATCHES_AT_EVERY_PHASE=YES
+SOURCE_UNCHANGED_ACROSS_ALL_PHASES=YES
+SELECTED_SOURCE_PHASE_RECOMPUTE_STATUS=PASS

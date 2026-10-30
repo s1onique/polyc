@@ -1,0 +1,89 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=eight-authorities-conservation
+#
+# THE EIGHT PRODUCTION POLYC PARSER AUTHORITIES, REPROVED AT C3.
+#
+# This is NOT a symbols-only count.  For EACH authority:
+#   (1) the SYMBOL is DEFINED exactly once in the linked executable;
+#   (2) the PRODUCTION CALLER OBJECT imports it (nm: one U);
+#   (3) the caller object does NOT define it (no T in the same object);
+#   (4) the SELECTOR is ON in the live CMake cache;
+#   (5) the decision site carries REAL RELOCATIONS to the PolyC symbol;
+#   (6) the legacy oracle survives as a PASS-THROUGH STUB.
+#
+# Schema: authority_id <TAB> symbol <TAB> selector <TAB> selector_state
+#         <TAB> caller_object <TAB> exec_def_count <TAB> import_count
+#         <TAB> defined_in_caller_object <TAB> decision_relocs
+#         <TAB> legacy_c_decision_state <TAB> subject_object_sha256
+#         <TAB> verdict
+#
+SUB-001	BootstrapSwitchArmTerminates	HCC_USE_SELFHOST_PARSER_SWITCH_ARM	ON	build/CMakeFiles/hcc.dir/parser.c.o	1	1	0	2	PASS_THROUGH_STUB_TO_POLYC	13db2f187d0213204f24b125030e828ce269e5242247324128db34b2dd5437b2	PASS
+SUB-003	BootstrapCompoundBlockAppendsStatement	HCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND	ON	build/CMakeFiles/hcc.dir/parser.c.o	1	1	0	2	PASS_THROUGH_STUB_TO_POLYC	13db2f187d0213204f24b125030e828ce269e5242247324128db34b2dd5437b2	PASS
+SUB-000a	BootstrapCalcPadding	HCC_USE_SELFHOST_PARSER_PADDING	ON	build/CMakeFiles/hcc.dir/parser.c.o	1	1	0	7	PASS_THROUGH_STUB_TO_POLYC	13db2f187d0213204f24b125030e828ce269e5242247324128db34b2dd5437b2	PASS
+SUB-000b	BootstrapValidPostControlFlowToken	HCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN	ON	build/CMakeFiles/hcc.dir/parser.c.o	1	1	0	7	PASS_THROUGH_STUB_TO_POLYC	13db2f187d0213204f24b125030e828ce269e5242247324128db34b2dd5437b2	PASS
+SUB-002	BootstrapDefaultArmTerminates	HCC_USE_SELFHOST_PARSER_DEFAULT_ARM_TERMINATES	ON	build/CMakeFiles/hcc.dir/parser.c.o	1	1	0	2	PASS_THROUGH_STUB_TO_POLYC	13db2f187d0213204f24b125030e828ce269e5242247324128db34b2dd5437b2	PASS
+SUB-000c	BootstrapOperatorPrecedence	HCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE	ON	build/CMakeFiles/hcc.dir/prslib.c.o	1	1	0	2	PASS_THROUGH_STUB_TO_POLYC	b8172eda93c7001d5df9029c1c6a66c5c1f8db9a12acf596d407d6439f5bca99	PASS
+SUB-000d	BootstrapAstBinOpFromToken	HCC_USE_SELFHOST_PARSER_AST_BINOP	ON	build/CMakeFiles/hcc.dir/ast.c.o	1	1	0	1	PASS_THROUGH_STUB_TO_POLYC	64776d8ba33bb860e320cdcd9ac6550593592565221f24c1d8f3815e3e51ec8c	PASS
+SUB-000e	BootstrapAstUnaryOpFromToken	HCC_USE_SELFHOST_PARSER_AST_UNARY	ON	build/CMakeFiles/hcc.dir/ast.c.o	1	1	0	1	PASS_THROUGH_STUB_TO_POLYC	64776d8ba33bb860e320cdcd9ac6550593592565221f24c1d8f3815e3e51ec8c	PASS
+#
+# --- THE RELOCATION TOTALS ---
+#
+COMMAND=otool -rv build/CMakeFiles/hcc.dir/parser.c.o | grep -c '_Bootstrap'
+OBJECT=build/CMakeFiles/hcc.dir/parser.c.o
+RELOCS=20
+        7 _BootstrapCalcPadding
+        2 _BootstrapCompoundBlockAppendsStatement
+        2 _BootstrapDefaultArmTerminates
+        2 _BootstrapSwitchArmTerminates
+        7 _BootstrapValidPostControlFlowToken
+COMMAND=otool -rv build/CMakeFiles/hcc.dir/prslib.c.o | grep -c '_Bootstrap'
+OBJECT=build/CMakeFiles/hcc.dir/prslib.c.o
+RELOCS=2
+        2 _BootstrapOperatorPrecedence
+COMMAND=otool -rv build/CMakeFiles/hcc.dir/ast.c.o | grep -c '_Bootstrap'
+OBJECT=build/CMakeFiles/hcc.dir/ast.c.o
+RELOCS=2
+        1 _BootstrapAstBinOpFromToken
+        1 _BootstrapAstUnaryOpFromToken
+#
+# --- THE RETIRED C DECISIONS ARE COMPILED OUT ---
+#
+# Each legacy oracle body below is a SINGLE branch-to-next-address,
+# which is the relocation slot for the PolyC symbol.  There is NO
+# comparison, NO constant load and NO branch on the decision.
+#
+LEGACY_ORACLE=ParserLegacyCalcPaddingOracle
+LEGACY_ORACLE_BRANCH_INSTRUCTIONS=1
+LEGACY_ORACLE_COMPARISON_INSTRUCTIONS=0
+LEGACY_ORACLE=ParserLegacySwitchArmTerminatesOracle
+LEGACY_ORACLE_BRANCH_INSTRUCTIONS=1
+LEGACY_ORACLE_COMPARISON_INSTRUCTIONS=0
+LEGACY_ORACLE=ParserLegacyCompoundBlockAppendsOracle
+LEGACY_ORACLE_BRANCH_INSTRUCTIONS=1
+LEGACY_ORACLE_COMPARISON_INSTRUCTIONS=0
+LEGACY_ORACLE=ParserLegacyDefaultArmTerminatesOracle
+LEGACY_ORACLE_BRANCH_INSTRUCTIONS=1
+LEGACY_ORACLE_COMPARISON_INSTRUCTIONS=0
+#
+# --- THE LINKED EXECUTABLE ---
+#
+COMMAND=shasum -a 256 build/hcc
+HCC_EXECUTABLE_SHA256=893481b9de2ee734dd4e7169017519042b2a41986110b4e91a8f6a85c8c6408c
+LINKED_EXEC_DEFINES_ALL_EIGHT=YES
+#
+# --- THE SOURCE IDENTITIES AT C3 ---
+#
+# The tracked source is UNCHANGED from the entry tree: a reconnaissance
+# ACT makes no production source change.
+#
+CURRENT_PHASE_SOURCE_SHA256_parser_c=8e68487e1fd351cb888c5044cfb71871628d904dd089305d59138b2f017bee00
+CURRENT_PHASE_SOURCE_SHA256_prslib_c=8a8b87602b87cc5dfd8eadee597a85781207fc8316355a7c1d0e5b50585dd326
+CURRENT_PHASE_SOURCE_SHA256_prsutil_c=d1ee0e5115e0608d0a89a22122d11bf4f06fab8eacc03027a9c9944e72265ad8
+CURRENT_PHASE_SOURCE_SHA256_ast_c=c03ca6d4ea6ce79f4faf982318130c06acf7067450b3bcadd50ca782881e1ad6
+CURRENT_PHASE_SOURCE_SHA256_ast_h=140a1a144eea594e7232bc4ed5a43c336c5ada3efd96c791e0deae58e019f9fe
+ENTRY_SOURCE_EQUALS_CURRENT_PHASE_SOURCE=YES
+#
+PRODUCTION_SEMANTIC_DELTA=0
+CURRENT_POLYC_PARSER_AUTHORITIES=8
+EIGHT_AUTHORITIES_CONSERVATION_STATUS=PASS

@@ -1,0 +1,70 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=immutable-predecessor-check
+#
+# THE COMPLETE FROZEN PREDECESSOR SET, RE-VERIFIED AT C3.
+#
+# The freeze is the one taken at C0 in
+# c0/predecessor-hash-freeze.tsv.  It covers EVERY path of every
+# closed predecessor's ACT document, HANDOFF and evidence tree.
+#
+# TWO INDEPENDENT METHODS, over the WHOLE set, not a sample:
+#
+#   A. the Git blob id of each path at HEAD, compared with the frozen
+#      blob id;
+#   B. the SHA-256 of each blob's CONTENT, recomputed and compared
+#      with the frozen digest.
+#
+# --- METHOD A: THE BLOB IDS ---
+#
+COMMAND=git rev-parse HEAD:<path>   (for each of the frozen paths)
+FREEZE_PATHS=575
+FREEZE_BLOB_MISSING=0
+FREEZE_BLOB_MISMATCH=0
+#
+# --- METHOD B: THE CONTENT DIGESTS ---
+#
+COMMAND=git cat-file blob <blob> | shasum -a 256   (for each of the frozen paths)
+FREEZE_PATHS_CHECKED=575
+FREEZE_SHA256_MISMATCH=0
+#
+# --- THE SUMMARY ---
+#
+FROZEN_PREDECESSOR_PATHS=575
+FROZEN_PREDECESSOR_PATHS_VERIFIED_BY_BLOB_ID=575
+FROZEN_PREDECESSOR_PATHS_VERIFIED_BY_CONTENT_SHA256=575
+FROZEN_PREDECESSOR_MISSING=0
+FROZEN_PREDECESSOR_HASH_MISMATCHES=0
+FROZEN_PREDECESSOR_BLOB_ID_DIFFERENCES=0
+#
+# The count is DERIVED from the freeze file's own rows.  It is not
+# the 231 of the SLICE08 correction, nor the 5,201 of SLICE08's own
+# C0: this ACT froze its OWN set, at ITS OWN entry, over the ACTs it
+# actually depends on.
+#
+# --- THE HISTORICAL HALT IS STILL PRESERVED ---
+#
+COMMAND=grep -nE 'HALT_REASON|HALT_CLASS|BLOCKS_NEXT' \
+#           docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON06.md
+   51:HALT_REASON     = HALT_N06_FROZEN_OBLIGATION_UNPROVEN
+   52:HALT_CLASS      = GOVERNANCE
+   53:BLOCKS_NEXT     = NO
+RECON06_HALT_REASON=HALT_N06_FROZEN_OBLIGATION_UNPROVEN
+RECON06_HALT_CLASS=GOVERNANCE
+RECON06_BLOCKS_NEXT=NO
+RECON06_HALT_PRESERVED_VERBATIM=YES
+#
+# --- THE HISTORICAL SELF-REFERENTIAL ROWS ARE STILL HISTORICAL ---
+#
+COMMAND=awk -F'\t' '!/^#/ && NF>1 && $NF ~ /inherited-controls-join\.tsv$/ {c++} END {print c+0}' \
+#           evidence/ACT-POLYC-SELFHOST-PARSER-SLICE08/c3/inherited-controls-join.tsv
+   15
+HISTORICAL_SLICE08_SELF_REFERENTIAL_ROWS=15
+HISTORICAL_ROWS_REWRITTEN=NO
+#
+# The fifteen historical self-referential rows are HISTORICAL
+# EVIDENCE.  They are NOT repaired here: F14 forbids mutating a closed
+# predecessor's evidence.  RECON08's own C3 join binds every one of
+# its 24 rows to an INDEPENDENT provenance instead.
+#
+IMMUTABLE_PREDECESSOR_STATUS=PASS

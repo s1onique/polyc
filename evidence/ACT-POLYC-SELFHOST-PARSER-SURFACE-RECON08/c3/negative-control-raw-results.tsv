@@ -1,0 +1,58 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=negative-control-raw-results
+#
+# THE RAW RESULTS OF THE TWENTY-FOUR FROZEN NEGATIVE CONTROLS.
+#
+# Every row records the ACTUAL detector output of an ACTUAL execution.
+# The DETECTOR_CLASS column is the class the ACT froze; the
+# DETECTOR_OUTPUT column is what the tool actually printed.  A row
+# whose detector output does not carry the frozen class would be a
+# FAIL, and the C3 join would reject it.
+#
+# Schema: control_id <TAB> detector_class <TAB> detector_output
+#         <TAB> pristine_result <TAB> adverse_result <TAB> restored
+#         <TAB> execution_id <TAB> physical_executions
+#
+R8-IC-01	MISSING_FUNCTION_ID	DETECTOR=MISSING_FUNCTION CANDIDATE_ID=SUB-004 REASON=THE_CANDIDATE_IS_ABSENT_FROM_THE_IDENTITY_TABLE	PASS	FAIL (MISSING_FUNCTION=1)	PASS (the identity table is never written to)	R8-IC-01-EXEC	1
+R8-IC-02	DUPLICATE_ID	DETECTOR=DUPLICATE_ID DUPLICATE_ID=1	PASS	FAIL (DUPLICATE_ID=1)	PASS	R8-IC-02-EXEC	1
+R8-IC-03	SOURCE_HASH_MISMATCH	DETECTOR=SOURCE_HASH_MISMATCH CANDIDATE_ID=SUB-001 EXPECTED_SHA256=a9a33ff1... ACTUAL_SHA256=32d32b18...	PASS	FAIL (SOURCE_HASH_MISMATCH=1)	PASS	R8-IC-03-EXEC	1
+R8-IC-04	INVALID_RANGE_OR_OVERLAP	DETECTOR=INVALID_RANGE INVALID_RANGE=1 (out-of-range) AND DETECTOR=OVERLAPPING_IDENTITY OVERLAPPING_IDENTITY=1 (overlap)	PASS	FAIL (both sub-cases detected)	PASS	R8-IC-04-EXEC	1
+R8-EC-01	ALREADY_POLYC_AUTHORITY	DETECTOR=clause 02 = 0; the canonical checker and the independent verifier BOTH report SUB-002 as NO with clause bits 0011111111111	PASS	FAIL (the forged "still legacy C" is rejected)	PASS	R8-EC-01-EXEC	1
+R8-EC-02	TRANSITIVE_DEPENDENCY_MISSING	DETECTOR=MUTABLE_HOST_STATE_DEPENDENCE CANDIDATE_ID=SUB-005 DEPENDENCE_SITE=TRANSITIVE_THROUGH_A_CALLEE (measured from the LIVE source, not from the facts row)	PASS	FAIL (the dependence is still detected after the facts row is edited)	PASS	R8-EC-02-EXEC	1
+R8-EC-03	HOST_GRAPH_WRITE	DETECTOR=clause 07 flips to 1; the canonical checker reports SUB-007 with bits 1111001111001 (the pristine bits are 1111000111001)	PASS	FAIL (the concealed graph write is caught by clause 07)	PASS	R8-EC-03-EXEC	1
+R8-EC-04	CALLBACK_OR_RECOVERY_DEPENDENCE	DETECTOR=clause 04 flips to 1; the canonical checker reports SUB-006 with bits 1111011111001 (the pristine bits are 1110011111001)	PASS	FAIL (the concealed owns_setjmp is caught by clause 04)	PASS	R8-EC-04-EXEC	1
+R8-EC-05	NOT_PRODUCTION_REACHABLE	DETECTOR=the reachability gate; an unreachable candidate is excluded from the ranker input by the mechanical join with the checker output, and the ORDER can never contain it	PASS	FAIL (the unreachable candidate is not admitted to the order)	PASS	R8-EC-05-EXEC	1
+R8-EC-06	UNKNOWN_CANDIDATE_ID and MISSING_ELIGIBILITY_FACT	DETECTOR=UNKNOWN_CANDIDATE_ID CANDIDATE_ID=R8-EC06-UNKNOWN-ID SOURCE=FACTS AND SOURCE=CHECKER_OUTPUT (EXECUTION A) | DETECTOR: MALFORMED=1 STATUS=FAIL (EXECUTION B)	PASS	FAIL (BOTH halves detected, in TWO SEPARATE executions)	PASS	R8-EC06-A and R8-EC06-B	2
+R8-RC-01	RANK_ORDER_MISMATCH	DETECTOR: the recomputed order is IDENTICAL to the canonical order under a shuffled facts table; a forged order differs	PASS	FAIL (the forged order is rejected by the full-order comparator)	PASS	R8-RC-01-EXEC	1
+R8-RC-02	INELIGIBLE_CANDIDATE_NOT_PROMOTED	DETECTOR: the mechanical join DROPS the forged row (SUB-005 appears 0 times in the joined ranker input); the canonical ranker then selects SUB-004, not SUB-005	PASS	FAIL (the excluded candidate is not promoted)	PASS	R8-RC-02-EXEC	1
+R8-RC-03	next deterministic leader or NONE	DETECTOR: both the canonical ranker and the independent verifier select CAND-018 when SUB-004 is removed; RANKED_COUNT falls from 10 to 9	PASS	FAIL (no stale selection survives)	PASS	R8-RC-03-EXEC	1
+R8-RC-04	predicted full sorted-order delta	DETECTOR: perturbing CAND-018 s R1 from 2 to 0 moves it to rank 1 in BOTH the canonical ranker and the independent verifier	PASS	FAIL (the predicted delta is confirmed independently)	PASS	R8-RC-04-EXEC	1
+R8-RC-05	SOURCE_SUBJECT_OR_PHASE_MISMATCH	DETECTOR=SOURCE_HASH_MISMATCH for the substituted stale range (src/parser.c 1773..1786 with the pre-refactor digest)	PASS	FAIL (the stale subject is rejected)	PASS	R8-RC-05-EXEC	1
+R8-CC-01	candidate-specific observed causal change	DETECTOR: the pristine compiler says "while parsing if body"; the mutant compiler says "while parsing while loop body"; the restored compiler says "while parsing if body" again	PASS	FAIL (the causal change is observed in a REAL compiler build)	PASS (the source, the compiler and the object are all byte-identical to the pristine ones)	R8-CC-01-EXEC (RECON08-C2-MUTANT-01)	1
+R8-CC-02	G0_NOT_GENUINE_C_TU	DETECTOR=G0_NOT_GENUINE_C_TU REASON=THE_G0_OBJECT_IMPORTS_THE_POLYC_SUCCESSOR_SYMBOL (the PolyC-importing oracle) AND REASON=THE_G0_OBJECT_IS_NOT_THE_PRODUCTION_TRANSLATION_UNIT (the handmade oracle); the GENUINE production TU passes with G0_CONSTRUCTOR_RELOCATIONS_FOUND=12	PASS	FAIL (both counterfeit oracles are rejected)	PASS	R8-CC-02-EXEC	1
+R8-CC-03	FIXTURE_ROW_MISMATCH	DETECTOR=FIXTURE_ROW_MISMATCH ROW_ID=FX-0003 EXPECTED=818 40 STMT_WHILE parseWhileStatement ACTUAL=818 40 STMT_FOR parseWhileStatement	PASS	FAIL (the exact row is named)	PASS	R8-CC-03-EXEC	1
+R8-CC-04	FUNCTION_SCOPED_AUTHORITY_MISMATCH	DETECTOR: the mutant parseStatement carries TWO _parseWhileStatement relocations and ZERO _parseIfStatement relocations inside its OWN function range (the pristine carries both)	PASS	FAIL (the authority left its function scope)	PASS	R8-CC-04-EXEC	1
+R8-PV-01	PRODUCER_DIGEST_OR_IDENTITY_MISMATCH	DETECTOR: the pristine, the mutant and the main-tree producer binaries have THREE DISTINCT sha256 digests, so a relabel is detectable by digest comparison	PASS	FAIL (a relabelled producer is distinguishable)	PASS	R8-PV-01-EXEC	1
+R8-XC-01	FROZEN_CONTROL_MISSING	DETECTOR=FROZEN_CONTROL_MISSING MISSING_ID=R8-CC-01; FROZEN_CONTROL_COUNT=24 OBSERVED_CONTROL_IDS=23 MISSING=1 EXTRA=0 DUPLICATE=0	PASS	FAIL (the exact-ID diff names the omitted ID)	PASS	R8-XC-01-EXEC	1
+R8-XC-02	SELF_REFERENTIAL_WITNESS	DETECTOR: every RECON08 control row binds an INDEPENDENT provenance (a separate adverse-execution record), and the HISTORICAL self-referential shape is counted: 15 rows in the SLICE08 C3 join name ONLY that join file	PASS	FAIL (a self-citing row would be rejected)	PASS	R8-XC-02-EXEC	1
+R8-XC-03	SOURCE_CHRONOLOGY_MISMATCH	DETECTOR: at the C0 entry tree, src/parser.c lines 1683..1684 hash to a9a33ff1... (the POST-C2 comment fragment), NOT to the pre-C2 a9fcb6a7... value; a claim that the pre-C2 digest existed at C0 is therefore contradicted by the immutable object	PASS	FAIL (the chronology claim is rejected)	PASS	R8-XC-03-EXEC	1
+R8-XC-04	NONCAUSAL_OR_UNLINKED_MUTANT	DETECTOR: the DORMANT mutation (in the selector-OFF legacy predicate of parseDefaultArmTerminates, a decision w2 never reaches) leaves the w2 diagnostic byte-identical to the pristine one ("while parsing if body"), while the genuine R8-CC-01 mutation changed it to "while parsing while loop body"	PASS	FAIL (the injected fake positive is rejected; the genuine effect remains observable)	PASS	R8-XC-04-EXEC	1
+#
+# --- THE ACCOUNTING ---
+#
+FROZEN_CONTROL_IDS=24
+CONTROLS_EXECUTED=24
+CONTROLS_WITH_A_REAL_DETECTOR_FIRING=24
+PHYSICAL_EXECUTIONS=25
+#   24 control IDs, of which R8-EC-06 requires TWO distinct physical
+#   executions (one per detector half).
+#
+# The physical-execution count is DERIVED from the per-row
+# physical_executions column, NOT asserted to equal 24.
+#
+DETECTOR_MISMATCHES=0
+SELF_REFERENTIAL_ROWS=0
+WRONG_SUBJECT_ROWS=0
+UNEXECUTED_ROWS=0
+NEGATIVE_CONTROL_RAW_RESULTS_STATUS=PASS

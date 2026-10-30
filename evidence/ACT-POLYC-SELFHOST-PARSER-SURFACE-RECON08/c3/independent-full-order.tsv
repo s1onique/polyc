@@ -1,0 +1,61 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=independent-full-order
+#
+# THE INDEPENDENT RECOMPUTATION OF THE COMPLETE R0..R6 ORDER.
+#
+# The C3 verifier recomputes the order from the FROZEN C1 raw facts
+# and the dimension table, with its OWN selection-sort routine, reading
+# NOTHING from the canonical ranker's output.
+#
+# COMMAND=./build/parser-surface-recon08-verify RANKING \
+#           <raw-facts.tsv> <joined-ranker-input.tsv>
+#
+DIMS_MATCHED=10
+RANKED:1	SUB-004	0	2	1	2	2	2	src/parser.c:1864
+RANKED:2	CAND-018	0	2	2	2	0	0	src/prslib.c:1328
+RANKED:3	CAND-021	0	2	2	2	0	0	src/prslib.c:1352
+RANKED:4	CAND-025	0	2	3	2	0	0	src/ast.c:943
+RANKED:5	CAND-026	0	2	3	2	0	0	src/ast.c:974
+RANKED:6	CAND-036	0	2	3	2	0	0	src/ast.c:992
+RANKED:7	CAND-037	0	2	3	2	0	0	src/ast.c:2348
+RANKED:8	CAND-030	0	2	3	2	0	0	src/prsutil.c:22
+RANKED:9	CAND-022	1	2	2	2	0	0	src/prslib.c:760
+RANKED:10	CAND-023	1	2	2	2	1	1	src/prslib.c:798
+RANKED_COUNT=10
+ELIGIBLE=10
+TOTAL=24
+MALFORMED=0
+SELECTED=SUB-004
+STATUS=PASS
+#
+# --- THE POSITION-BY-POSITION COMPARISON WITH THE CANONICAL ORDER ---
+#
+# position	canonical	independent	agree
+1	SUB-004	SUB-004	YES
+2	CAND-018	CAND-018	YES
+3	CAND-021	CAND-021	YES
+4	CAND-025	CAND-025	YES
+5	CAND-026	CAND-026	YES
+6	CAND-036	CAND-036	YES
+7	CAND-037	CAND-037	YES
+8	CAND-030	CAND-030	YES
+9	CAND-022	CAND-022	YES
+10	CAND-023	CAND-023	YES
+#
+# --- THE SUMMARY ---
+#
+POSITIONS_COMPARED=10
+POSITIONS_AGREEING=10
+FULL_ORDER_MISMATCH=0
+#
+# There are NO TIES in the eligible population: every candidate's
+# (R0..R5, R6) tuple is distinct, so the order is TOTAL and
+# deterministic.  The tie-break by candidate ID is implemented but was
+# not needed here.
+#
+# The order is a DERIVED OUTPUT.  It is unchanged under a genuine
+# permutation of the input facts (R8-RC-01), and it changes exactly
+# as predicted under a controlled dimension perturbation (R8-RC-04).
+#
+INDEPENDENT_FULL_ORDER_STATUS=PASS
