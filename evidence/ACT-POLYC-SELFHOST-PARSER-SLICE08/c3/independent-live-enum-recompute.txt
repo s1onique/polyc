@@ -1,0 +1,97 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE08
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=independent-live-enum-recompute
+#
+THE INDEPENDENT RE-EXTRACTION OF THE LIVE ENUMS AND THE RULE.
+#
+# C3 does NOT take the expected semantics from the C2 PolyC
+# fixture PASS labels.  It re-derives them from the LIVE source,
+# through a DIFFERENT path, and re-checks every row against that
+# derivation.
+#
+# PATH 1 -- COMPILING THE LIVE HEADER (a C program)
+#
+COMMAND=cc -std=c99 -Isrc -o /tmp/slice08-enum /tmp/slice08-enum.c
+   (a C program that includes the LIVE src/ast.h and prints every
+    AstKind enumerator)
+COMMAND=/tmp/slice08-enum | wc -l
+   41
+#
+# PATH 2 -- PARSING THE LIVE SOURCE TEXT (the PolyC witness)
+#
+COMMAND=build/parser-slice08-fixture-integrity <fixture> src/ast.h src/parser.c
+   FIXTURE_INTEGRITY_LIVE_ENUM_COUNT=41
+   FIXTURE_INTEGRITY_LIVE_TERMINATING_COUNT=5
+#
+#   The witness PARSES the AstKind enum region of src/ast.h and the
+#   seam helper of src/parser.c.  It does NOT read the PolyC
+#   component and does NOT share the fixture producer logic.
+#
+# PATH 3 -- DECODING THE COMPILED MASK (the REAL G0 object)
+#
+COMMAND=otool -tvV build/slice08-gen/g0.o
+   movk x9, #0x2041, lsl #16
+   mov  x9, #0x1001
+#
+   The mask 0x20411001 over base 258 decodes to EXACTLY:
+     kind=258
+     kind=270
+     kind=274
+     kind=280
+     kind=287
+#
+# THE THREE PATHS AGREE
+#
+#   The five terminating kinds {258, 270, 274, 280, 287} are the
+#   same set in all three independent extractions, and they are the
+#   same set as the five kinds of the LIVE SOURCE CONDITION at
+#   src/parser.c:1683..1684.
+#
+# THE FULL 41-VALUE ENUM, FROM THE COMPILED HEADER
+#
+#   AST_GVAR=256
+#   AST_GOTO=258
+#   AST_LABEL=259
+#   AST_LVAR=261
+#   AST_FUNC=262
+#   AST_DECL=263
+#   AST_STRING=264
+#   AST_FUNCALL=265
+#   AST_LITERAL=266
+#   AST_ARRAY_INIT=267
+#   AST_IF=268
+#   AST_FOR=269
+#   AST_RETURN=270
+#   AST_WHILE=271
+#   AST_CLASS_REF=273
+#   AST_COMPOUND_STMT=274
+#   AST_ASM_STMT=275
+#   AST_ASM_FUNC_BIND=276
+#   AST_ASM_FUNCALL=277
+#   AST_FUNPTR=278
+#   AST_FUNPTR_CALL=279
+#   AST_BREAK=280
+#   AST_CONTINUE=281
+#   AST_DEFAULT_PARAM=282
+#   AST_VAR_ARGS=283
+#   AST_ASM_FUNCDEF=284
+#   AST_CAST=285
+#   AST_FUN_PROTO=286
+#   AST_CASE=287
+#   AST_JUMP=288
+#   AST_EXTERN_FUNC=289
+#   AST_DO_WHILE=290
+#   AST_PLACEHOLDER=291
+#   AST_SWITCH=292
+#   AST_DEFAULT=293
+#   AST_SIZEOF=294
+#   AST_COMMENT=295
+#   AST_BINOP=296
+#   AST_UNOP=297
+#   AST_TRY=298
+#   AST_THROW=299
+#
+LIVE_ENUM_COUNT=41
+LIVE_TERMINATING_COUNT=5
+THREE_PATHS_AGREE=YES
+INDEPENDENT_LIVE_ENUM_RECOMPUTE_STATUS=PASS

@@ -1,0 +1,74 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE08
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=new-controls-join
+#
+THE INDEPENDENT JOIN OF ALL EIGHTEEN NEW S8 NEGATIVE CONTROLS.
+#
+# Schema: control_id <TAB> class <TAB> subject <TAB> phase
+#         <TAB> adverse_edit <TAB> intended_detector_class
+#         <TAB> observed_detector_class <TAB> observed_output_present
+#         <TAB> positive_baseline_present <TAB> subject_specific
+#         <TAB> subject_restored <TAB> independent_verification
+#         <TAB> evidence_path
+#
+S8-FC-01	FIXTURE	the frozen 41-row fixture	SLICE08	Delete one of the frozen 41 fixture IDs	Missing exact row ID, not generic count	Missing exact row ID	YES	YES	YES	YES	YES	c3/new-controls-join.tsv
+S8-FC-02	FIXTURE	the frozen 41-row fixture	SLICE08	Duplicate a fixture row ID	Duplicate exact ID	Duplicate exact ID	YES	YES	YES	YES	YES	c3/new-controls-join.tsv
+S8-FC-03	FIXTURE	the frozen 41-row fixture	SLICE08	Inject unknown fixture ID	Unknown ID with no false missing/duplicate attribution	Unknown kind with no false missing/duplicate attribution	YES	YES	YES	YES	YES	c3/new-controls-join.tsv
+S8-FC-04	FIXTURE	the frozen 41-row fixture	SLICE08	Flip expected result on one five-kind positive row	G0/PolyC exact-row mismatch	Exact row ID mismatch (row 16, kind 274)	YES	YES	YES	YES	YES	c3/new-controls-join.tsv
+S8-FC-05	FIXTURE	the live source/enum provenance	SLICE08	Change source-bound enum value/source digest	Source/enum provenance mismatch	Source/enum provenance mismatch (rows 22 and 23)	YES	YES	YES	YES	YES	c3/new-controls-join.tsv
+S8-SA-01	SUBJECT_AUTHORITY	the active default-arm termination decision	SLICE08	Selector ON but legacy C predicate still drives termination	Function-scoped duplicate-C-authority rejection	Function-scoped duplicate-C-authority rejection	YES	YES	YES	YES	YES	c3/function-scoped-authority-audit.txt
+S8-SA-02	SUBJECT_AUTHORITY	the SUB-002 caller in src/parser.c	SLICE08	PolyC symbol linked but unused by SUB-002 caller	Real call/relocation/load-bearing check rejects	Real call/relocation/load-bearing check rejects	YES	YES	YES	YES	YES	c3/function-scoped-authority-audit.txt
+S8-SA-03	SUBJECT_AUTHORITY	the G0 oracle object	SLICE08	Selector OFF but new PolyC subject still used as G0	C-only G0 provenance rejection	C-only G0 provenance rejection	YES	YES	YES	YES	YES	c3/function-scoped-authority-audit.txt
+S8-SA-04	SUBJECT_AUTHORITY	the SUB-002 authority identity	SLICE08	Reuse SUB-001 subject as if separately proven SUB-002	Distinct source/caller/mutation identity rejection	Distinct source/caller/mutation identity rejection	YES	YES	YES	YES	YES	c3/function-scoped-authority-audit.txt
+S8-SA-05	SUBJECT_AUTHORITY	the SUB-002 PolyC function	SLICE08	Flip one frozen five-kind outcome in the SUB-002 PolyC function	Semantic row and real compiler witness change on intended channel	Semantic row 16 and witness 110 155 -> 110 177	YES	YES	YES	YES	YES	c3/post-polyc-mutation-and-restoration.txt
+S8-PV-01	PROVENANCE	the G1 producer binary	SLICE08	Relabel G1 binary/object as G2	Actual compiler SHA/provenance mismatch	Actual compiler SHA/provenance mismatch	YES	YES	YES	YES	YES	c3/generation-provenance.tsv
+S8-PV-02	PROVENANCE	the G2 and G3 producer binaries	SLICE08	Relabel G2 as G3 or reuse one binary	Distinct producer identity check fails	Distinct producer identity check fails	YES	YES	YES	YES	YES	c3/generation-provenance.tsv
+S8-PV-03	PROVENANCE	the production link graph	SLICE08	Link wrong symbol or omit provider subject	Real production build/link fails closed	Real production build/link fails closed (FC-2 and FC-3)	YES	YES	YES	YES	YES	c2/provider-fail-closed.txt
+S8-PV-04	PROVENANCE	the function-scoped attribution	SLICE08	Insert unrelated cmp/tst outside selected function	Function-scoped evidence rejects decoy	Function-scoped evidence rejects decoy	YES	YES	YES	YES	YES	c3/function-scoped-authority-audit.txt
+S8-PV-05	PROVENANCE	the generation fixture join	SLICE08	Alter one stage fixture result or delete generation ID	Exact row/generation join mismatch	Exact row/generation join mismatch (row 16)	YES	YES	YES	YES	YES	c3/g0-g3-41-row-differential.tsv
+S8-CC-01	CAUSALITY	the SUB-002 PolyC predicate in the actual production	SLICE08	Mutate only PolyC predicate in actual production	Successful mutant compiler build plus correct causal observation	Successful mutant build (exit 0) plus the correct causal observation	YES	YES	YES	YES	YES	c3/post-polyc-mutation-and-restoration.txt
+S8-CC-02	CAUSALITY	the post-migration PolyC mutant execution identity	SLICE08	Attempt to credit RECON07 C mutant as new S8 PolyC mutant	Subject/time/execution-ID join rejection	Subject/time/execution-ID join rejection	YES	YES	YES	YES	YES	c3/pre-c-mutant-citation.txt
+S8-CC-03	CAUSALITY	the post-migration PolyC mutant restoration	SLICE08	Fail to restore one PolyC source byte or leave mutant object linked	Source/object/witness restoration rejection	Source/object/witness restoration rejection	YES	YES	YES	YES	YES	c3/post-polyc-mutation-and-restoration.txt
+#
+# ------------------------------------------------------------------
+# THE SHARED-EXECUTION DECLARATION
+# ------------------------------------------------------------------
+#
+# S8-SA-05, S8-CC-01 and the frozen control ID
+# RECON07-SUB-002-POST-POLYC-MUTANT all act on the SAME physical
+# mutation experiment: the m-compound arm removal in the SUB-002
+# PolyC component, executed in the detached worktree
+# /tmp/slice08-wt.
+#
+#   SHARED_EXECUTION_ID=RECON07-SUB-002-POST-POLYC-MUTANT
+#
+# These three rows SHARE that experiment.  They are NOT three
+# independent experiments and they are NOT counted as three.  The
+# number of INDEPENDENT physical experiments behind these rows is
+# ONE.
+#
+# This is the arrangement the frozen contract requires to be
+# stated EXPLICITLY (c2/selected-causal-contract.md:127-141).
+#
+# S8-CC-02 is the NEGATIVE of that arrangement: it verifies that
+# the RECON07 pre-migration C event is NOT credited as the S8
+# post-migration PolyC event.
+#
+# S8-CC-03 is the RESTORATION half of the same experiment, and it
+# says so.
+#
+# ------------------------------------------------------------------
+# THE COUNTING
+# ------------------------------------------------------------------
+#
+NEW_S8_CONTROLS_TOTAL=18
+NEW_S8_CONTROLS_JOINED=18
+NEW_S8_CONTROLS_MISSING=0
+NEW_S8_CONTROLS_EXTRA=0
+NEW_S8_CONTROLS_DUPLICATE=0
+NEW_S8_CONTROLS_VACUOUS=0
+NEW_S8_CONTROLS_UNEXECUTED=0
+NEW_S8_CONTROLS_UNRESTORED=0
+NEW_S8_CONTROLS_PASS=18
+NEW_S8_INDEPENDENT_EXPERIMENTS=1 (the shared POST-POLYC mutation)
+NEW_S8_CONTROLS_STATUS=PASS

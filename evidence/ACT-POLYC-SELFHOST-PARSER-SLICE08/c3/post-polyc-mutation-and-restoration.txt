@@ -1,0 +1,137 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE08
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=post-polyc-mutation-and-restoration
+#
+THE POST-MIGRATION POLYC-SOURCE MUTATION, IN A DETACHED WORKTREE.
+#
+# THIS IS A NEW EXPERIMENT ON THE POST-MIGRATION SUBJECT.  It is NOT
+# the RECON07 pre-migration C mutation: the subject here is the
+# COMPILED POLYC COMPONENT tools/bootstrap/selfhost-parser-slice08.HC,
+# not the C decision in src/parser.c.  The RECON07 pre-migration event
+# is CITED as a prior, in c3/pre-c-mutant-citation.txt.
+#
+EXECUTION_ID=RECON07-SUB-002-POST-POLYC-MUTANT
+SHARED_EXECUTION_IDS=RECON07-SUB-002-POST-POLYC-MUTANT, SL-CC-05, S8-CC-01, S8-SA-05
+#
+# THE WORKTREE
+#
+COMMAND=git worktree add --detach /tmp/slice08-wt HEAD
+   (a DETACHED worktree at the C2 commit; the authoritative main
+    checkout was NEVER modified)
+#
+# ------------------------------------------------------------------
+# STATE 1 -- THE MUTANT
+# ------------------------------------------------------------------
+#
+# THE MUTATION: ONE hunk, ONE line, in the POLYC COMPONENT.
+#   -  if (ast_kind == 274) return 1;   // AST_COMPOUND_STMT
+#   +  // MUTANT: the AST_COMPOUND_STMT arm is REMOVED.
+#
+# The mutant removes the m-compound arm, which is the FIRST member
+# of the frozen RECON07 bounded mutation set
+# (c2/selected-negative-controls.md:72-76).
+#
+MUTANT_SRC_SHA256=a876e42f2fddb3b01bf2eac8c598aa63b5d77f2a00dc0096585fd5e6bfc00b03
+PRISTINE_SRC_SHA256=57e8f5b0c209241c79d50beb653f525b809e8fd8a71827d9e0c7f926ae3c6f28
+#
+# THE MUTANT COMPILER BUILD (the REAL production build system)
+#
+COMMAND=cd /tmp/slice08-wt && make production-hcc
+   MUT_BUILD_EXIT=0
+#
+   The mutant production compiler was built by the REAL production
+   build system (cmake + make hcc) from the mutated PolyC source in
+   an isolated worktree.  A FAILED build was never mistaken for
+   causality: the compiler build exit, the witness compile exit and
+   the witness run exit are recorded SEPARATELY.
+#
+MUTANT_HCC_SHA256=c1eb38a07032bcc4a1f20ec54993b668d768cb61c3f7dc88c4c51c7ec3062baf
+MUTANT_POLYC_SUBJECT_OBJECT_SHA256=42cd7950be5bcd6e2b7bea6f31d670a64eeee0b64ec0188da284d5cd3cdb76ad
+PRISTINE_POLYC_SUBJECT_OBJECT_SHA256=d72cee87ccff4b5c1b801c5d1420d5267809e9214526720800010ff591cba22b
+#
+   The compiled PolyC subject object CHANGED.  The mutation is NOT
+   dormant: the new object is actually linked and actually called.
+#
+COMMAND=nm /tmp/slice08-wt/hcc | grep -c " T _BootstrapDefaultArmTerminates"
+   1
+#
+# THE WITNESS, ON THE DECLARED CHANNEL
+#
+COMMAND=cd /tmp/slice08-wt && ./hcc --install-dir=<prefix> <witness>.HC -o build/slice08-witness-mutant
+   MUTANT_WITNESS_COMPILE_EXIT=0
+COMMAND=./build/slice08-witness-mutant
+   MUTANT_WITNESS_OUTPUT=WITNESS_OUTPUT=110 177
+   MUTANT_WITNESS_RUN_EXIT=0
+#
+   The channel is COMPILED_PROGRAM_SEMANTIC_OUTPUT_CHANGED, and the
+   observed value is EXACTLY the frozen RECON07 expectation for the
+   m-compound mutant (c2/selected-causal-contract.md:158).
+#
+# THE FIXTURE ROW THAT CHANGED
+#
+COMMAND=cc -o build/slice08-rowprobe <probe>.c build/parser-default-arm-subject.o && ./build/slice08-rowprobe
+   ROW_MISMATCH id=16 kind=274 MUTANT=0 EXPECTED=1
+   MUTANT_ROWS_CHANGED=1
+#
+   EXACTLY ONE fixture row changed, and it is EXACTLY the row the
+   frozen RECON07 bounded mutation set predicts for m-compound:
+   row 16, kind 274, AST_COMPOUND_STMT.
+#
+# ------------------------------------------------------------------
+# STATE 2 -- THE PRISTINE
+# ------------------------------------------------------------------
+#
+PRISTINE_POLYC_SRC_SHA256=57e8f5b0c209241c79d50beb653f525b809e8fd8a71827d9e0c7f926ae3c6f28
+PRISTINE_POLYC_SUBJECT_OBJECT_SHA256=d72cee87ccff4b5c1b801c5d1420d5267809e9214526720800010ff591cba22b
+   PRISTINE_BUILD_EXIT=0
+   PRISTINE_WITNESS_COMPILE_EXIT=0
+   PRISTINE_WITNESS_OUTPUT=WITNESS_OUTPUT=110 155
+   PRISTINE_WITNESS_RUN_EXIT=0
+#
+# ------------------------------------------------------------------
+# STATE 3 -- THE RESTORATION
+# ------------------------------------------------------------------
+#
+COMMAND=cd /tmp/slice08-wt && git checkout -- tools/bootstrap/selfhost-parser-slice08.HC
+RESTORED_POLYC_SRC_SHA256=57e8f5b0c209241c79d50beb653f525b809e8fd8a71827d9e0c7f926ae3c6f28
+RESTORED_POLYC_SUBJECT_OBJECT_SHA256=d72cee87ccff4b5c1b801c5d1420d5267809e9214526720800010ff591cba22b
+   RESTORED_BUILD_EXIT=0
+   RESTORED_WITNESS_COMPILE_EXIT=0
+   RESTORED_WITNESS_OUTPUT=WITNESS_OUTPUT=110 155
+   RESTORED_WITNESS_RUN_EXIT=0
+#
+CAUSAL_RESTORATION_BYTE_IDENTICAL=YES
+#
+#   The restoration is byte-identical in the SOURCE and in the
+#   COMPILED OBJECT, and the witness output RECOVERS.
+#
+# ------------------------------------------------------------------
+# THE SUB-001 AUTHORITY IS NOT AFFECTED
+# ------------------------------------------------------------------
+#
+   The mutation touched ONLY the SUB-002 PolyC component.  The
+   SUB-001 authority (BootstrapSwitchArmTerminates) is a DIFFERENT
+   source file, a DIFFERENT object and a DIFFERENT symbol, so the
+   mutation cannot have changed it.  The C0 RED-5 probe already
+   demonstrated the two components have DIFFERENT semantics: the
+   SUB-001 object answers 1 for kind 293 and the SUB-002 answer is 0.
+#
+# ------------------------------------------------------------------
+# THE MUTANT WORKTREE IS DISPOSED
+# ------------------------------------------------------------------
+#
+COMMAND=git worktree remove /tmp/slice08-wt
+   (the mutant is NEVER present in the authoritative main checkout)
+#
+MUT_BUILD_EXIT=0
+MUTANT_WITNESS_COMPILE_EXIT=0
+MUTANT_WITNESS_RUN_EXIT=0
+MUTANT_WITNESS_OUTPUT=WITNESS_OUTPUT=110 177
+PRISTINE_WITNESS_OUTPUT=WITNESS_OUTPUT=110 155
+RESTORED_WITNESS_OUTPUT=WITNESS_OUTPUT=110 155
+MUTANT_FIXTURE_ROWS_CHANGED=1
+MUTANT_FIXTURE_ROW_ID=16
+MUTANT_FIXTURE_ROW_KIND=274
+CAUSAL_OBSERVATION_CHANNEL=COMPILED_PROGRAM_SEMANTIC_OUTPUT_CHANGED
+SOURCE_AND_OBJECT_RESTORATION_IDENTICAL=YES
+POST_POLYC_MUTANT_STATUS=PASS

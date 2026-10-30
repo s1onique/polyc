@@ -1,0 +1,30 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE08
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=gate-push
+#
+THE gate-push GATE, ACTUALLY EXECUTED AGAINST THE MIGRATED TREE.
+#
+COMMAND=./scripts/quality/gate-push.sh HEAD
+   EXIT=0
+   CHECK=aot STATUS=PASS
+   CHECK=build STATUS=PASS
+   CHECK=diff-check STATUS=PASS
+   CHECK=gep01 STATUS=PASS
+   CHECK=install STATUS=PASS
+   CHECK=jit STATUS=PASS
+   CHECK=lsp STATUS=PASS
+#
+# The gate-push hermetic prefix builds hcc with a disposable local
+# prefix compiled into it, installs hcc/tos.HH/libtos into that
+# prefix, and then runs the AOT, JIT, LSP, GEP01, install and
+# diff-check stages against it.  The AOT stage IS the parser unit
+# test, so the 376/376 conservation is re-verified INSIDE the gate.
+#
+# The gate-push hermetic prefix and the aarch64 cross-compile probe
+# each build their own tree in an isolated sandbox, so the shared
+# /tmp/holyc-asm.s is never contended by an overlapping run.  All
+# runs in this ACT are SERIALIZED.
+#
+GATE_PUSH=PASS
+GATE_PUSH_EXIT=0
+GATE_PUSH_STATUS=PASS

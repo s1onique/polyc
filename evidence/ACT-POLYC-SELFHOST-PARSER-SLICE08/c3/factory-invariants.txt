@@ -1,0 +1,124 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE08
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=factory-invariants
+#
+THE FACTORY INVARIANTS, CHECKED AT C3.
+#
+# ------------------------------------------------------------------
+# THE APPEND-ONLY INVARIANT
+# ------------------------------------------------------------------
+#
+COMMAND=./scripts/quality/factory-append-only-test.sh
+     PASS  NC1  rc=0
+     PASS  NC2  rc=1
+     PASS  NC3  rc=1
+     PASS  NC4  rc=0
+     PASS  NC5  rc=1
+     PASS  NC6  rc=0
+     PASS  NC7  rc=0
+     PASS  NC8  rc=1
+     PASS  NC9  rc=1
+     PASS  NC10  rc=1
+     PASS  NC11  rc=0
+   PASS=11
+   FAIL=0
+   STATUS=PASS
+#
+APPEND_ONLY=PASS
+#
+# ------------------------------------------------------------------
+# THE FACTORY-v2 COMMIT-MESSAGE GRAMMAR
+# ------------------------------------------------------------------
+#
+COMMAND=sh scripts/quality/factory-v2-commit-msg-check.sh <the C3 message>
+   MODE=ACT  ACT=ACT-POLYC-SELFHOST-PARSER-SLICE08  PHASE=EVIDENCE  STATUS=PASS
+#
+# ------------------------------------------------------------------
+# THE CLOSURE STATUS
+# ------------------------------------------------------------------
+#
+COMMAND=./scripts/quality/factory-closure-status-check.sh
+   DUPLICATE_PAIR_DETECTED=NO
+   MISSING_ACT_FILES=0
+   MISSING_HANDOFF_FILES=0
+   MALFORMED_HANDOFF_VERDICT=0
+   PAIR_OK=43
+   PAIR_FAIL=0
+   STATUS=PASS
+   VERDICT=PASS
+#
+# ------------------------------------------------------------------
+# THE PATCH HYGIENE
+# ------------------------------------------------------------------
+#
+COMMAND=git diff --check HEAD~1..HEAD
+   (no output -- no whitespace error)
+#
+# ------------------------------------------------------------------
+# THE SCOPE OF CHANGE
+# ------------------------------------------------------------------
+#
+COMMAND=git diff --stat HEAD~3..HEAD
+    Makefile                                           |  244 +-
+    docs/acts/ACT-POLYC-SELFHOST-PARSER-SLICE08.md     |  411 ++
+    .../c0/baseline-cross-target.txt                   |   31 +
+    .../c0/baseline-gates.txt                          |   47 +
+    .../c0/baseline-lexer.txt                          |   30 +
+    .../c0/baseline-lexer07.txt                        |   56 +
+    .../c0/baseline-parser.txt                         |   30 +
+    .../c0/baseline-tool-policy.txt                    |   67 +
+    .../c0/entry-identity.txt                          |   35 +
+    .../c0/inherited-controls-contract.tsv             |   80 +
+    .../c0/mandatory-ac-contract.tsv                   |   64 +
+    .../c0/new-controls-contract.tsv                   |   67 +
+    .../c0/predecessor-close-verification.txt          |   49 +
+    .../c0/predecessor-freeze.tsv                      | 5238 ++++++++++++++++++++
+    .../c0/red-reproduction.txt                        |  174 +
+    .../c0/selected-contract-bindings.tsv              |   64 +
+    .../c0/selected-contract-hashes-verification.tsv   |   36 +
+    .../c0/seven-production-authorities.tsv            |   33 +
+    .../c1/build-prerequisite-preflight.txt            |   48 +
+    .../c1/c-only-g0-production-object.txt             |   66 +
+    .../c1/independent-fixture-verification.txt        |   54 +
+    .../c1/live-enums-and-rule.tsv                     |   86 +
+    .../c1/selected-source-and-abi.txt                 |   64 +
+    .../c1/source-bound-fixture-summary.tsv            |   49 +
+    .../c1/source-bound-fixture.tsv                    |   59 +
+    .../c1/stage-compiler-provenance-plan.tsv          |   46 +
+    .../c1/witness-and-observation-contract.txt        |   62 +
+    .../c2/effective-cmake-and-make-commands.txt       |   66 +
+    .../c2/fixture-first-green.txt                     |  101 +
+    .../c2/object-import-export-linkage.txt            |   66 +
+    .../c2/polyc-subject-source-and-symbol.txt         |   57 +
+    .../c2/production-function-disassembly.txt         |  111 +
+    .../c2/production-source-delta.txt                 |  151 +
+    .../c2/provider-fail-closed.txt                    |   67 +
+    .../c2/selector-and-build-graph.txt                |   44 +
+    .../c2/seven-authorities-conservation.tsv          |   37 +
+    src/CMakeLists.txt                                 |  154 +
+    src/parser.c                                       |   95 +-
+    tools/bootstrap/selfhost-parser-slice08.HC         |  112 +
+    tools/quality/parser-slice08-differential.HC       |  320 ++
+    tools/quality/parser-slice08-fixture-integrity.HC  |  674 +++
+    tools/quality/parser-slice08-fixture-producer.HC   |  354 ++
+    tools/quality/parser-slice08-oracle-adapter.c      |   46 +
+    tools/quality/parser-slice08-oracle-stub.c         |   22 +
+    44 files changed, 9764 insertions(+), 3 deletions(-)
+#
+   The tracked production paths changed are EXACTLY the authorized
+   ones: src/parser.c and src/CMakeLists.txt.  Makefile is the
+   build graph.  Everything else is this ACT own evidence and
+   documents.
+#
+TRACKED src/ MUTATIONS=2 (src/parser.c, src/CMakeLists.txt)
+TRACKED tools/bootstrap/ MUTATIONS=1 (the NEW component)
+TRACKED tools/quality/ MUTATIONS=5 (the NEW verifiers)
+NEW POLYC PARSER AUTHORITIES=1
+NEW PYTHON=0
+NEW DEPENDENCIES=0
+CEREMONIAL BRANCH=NO
+GATE WEAKENED=NO
+HISTORICAL ARTIFACT MODIFIED=NO
+PRODUCTION_SEMANTIC_DELTA=1 (the SUB-002 decision only)
+#
+FACTORY_INVARIANTS_STATUS=PASS

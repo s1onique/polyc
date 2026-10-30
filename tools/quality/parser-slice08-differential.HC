@@ -154,6 +154,15 @@ I32 Main(I32 argc, U8 **argv)
   I64 missing_row_ids = 0;
   I64 max_id = 0;
   I64 dump_rows = 0;
+  // The per-row dump is enabled by a THIRD argument of the form "-no"
+  // (the NEW-CASES/row form).  It is the SAME comparison layer and the
+  // SAME fixture; the dump only ADDS the per-row record, so a dumped run
+  // is not a different experiment.
+  if (argc >= 4) {
+    if (argv[3][0] == 45 && argv[3][1] == 110 && argv[3][2] == 111 && argv[3][3] == 0) {
+      dump_rows = 1;
+    }
+  }
   I64 seen_n = 0;
   I64 seen[MAX_IDS];
 

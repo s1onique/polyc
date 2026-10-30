@@ -1,0 +1,127 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE08
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=function-scoped-authority-audit
+#
+THE FUNCTION-SCOPED AUTHORITY AUDIT.
+#
+# The audit attributes the decision to a FUNCTION, never to a bare
+# cmp/tst count anywhere in the object.  The SUB-001 and SUB-002
+# decisions compile to the SAME bitset SHAPE, so a detector that
+# counted instructions across the object would MISATTRIBUTE the
+# SUB-002 evidence to the SUB-001 site.
+#
+# ------------------------------------------------------------------
+# THE PRODUCTION OBJECT (selector ON)
+# ------------------------------------------------------------------
+#
+COMMAND=nm -u build/CMakeFiles/hcc.dir/parser.c.o | grep BootstrapDefaultArmTerminates
+   _BootstrapDefaultArmTerminates
+#
+COMMAND=otool -rv build/CMakeFiles/hcc.dir/parser.c.o | grep BootstrapDefaultArmTerminates
+   00003544 True  long   True   BR26    False     _BootstrapDefaultArmTerminates
+   000034cc True  long   True   BR26    False     _BootstrapDefaultArmTerminates
+#
+COMMAND=nm build/CMakeFiles/hcc.dir/parser.c.o | grep " T _Bootstrap"
+   (no output -- the consumer DEFINES no PolyC symbol)
+#
+# THE SELECTED FUNCTION, IN FULL
+#
+   _parseDefaultStatement:
+   00000000000034dc	stp	x22, x21, [sp, #-0x30]!
+   00000000000034e0	stp	x20, x19, [sp, #0x10]
+   00000000000034e4	stp	x29, x30, [sp, #0x20]
+   00000000000034e8	add	x29, sp, #0x20
+   00000000000034ec	mov	x19, x0
+   00000000000034f0	mov	w1, #0x3a
+   00000000000034f4	bl	0x34f4
+   00000000000034f8	ldr	x8, [x19, #0xb0]
+   00000000000034fc	cbnz	x8, 0x3574
+   0000000000003500	bl	0x3500
+   0000000000003504	mov	x20, x0
+   0000000000003508	bl	0x3508
+   000000000000350c	mov	x1, x20
+   0000000000003510	bl	0x3510
+   0000000000003514	str	x0, [x19, #0xb0]
+   0000000000003518	mov	x0, x19
+   000000000000351c	bl	0x351c
+   0000000000003520	mov	x21, x0
+   0000000000003524	cbz	x0, 0x3540
+   0000000000003528	ldr	w8, [x21]
+   000000000000352c	cmp	w8, #0x11f
+   0000000000003530	b.eq	0x3540
+   0000000000003534	mov	x0, x20
+   0000000000003538	mov	x1, x21
+   000000000000353c	bl	0x353c
+   0000000000003540	ldrsw	x0, [x21]
+   0000000000003544	bl	0x3544
+   0000000000003548	cbnz	w0, 0x3560
+   000000000000354c	mov	x0, x19
+   0000000000003550	bl	0x3550
+   0000000000003554	mov	w1, #0x7d
+   0000000000003558	bl	0x3558
+   000000000000355c	cbz	w0, 0x3518
+   0000000000003560	ldr	x0, [x19, #0xb0]
+   0000000000003564	ldp	x29, x30, [sp, #0x20]
+   0000000000003568	ldp	x20, x19, [sp, #0x10]
+   000000000000356c	ldp	x22, x21, [sp], #0x30
+   0000000000003570	ret
+   0000000000003574	adrp	x1, 0 ; 0x3000
+   0000000000003578	add	x1, x1, #0x0
+   000000000000357c	mov	x0, x19
+   0000000000003580	bl	0x3580
+   _parseSwitchStatement:
+#
+# THE 0x2041 MASK, ATTRIBUTED BY FUNCTION
+#
+COMMAND=otool -tvV build/CMakeFiles/hcc.dir/parser.c.o | awk <fn> | grep 0x2041
+#
+#   In the PRODUCTION (selector ON) object the mask appears
+   ZERO times: the legacy five-kind predicate is COMPILED OUT of
+   the ENTIRE production parser object.  There is no parallel C
+   authority and no decorative leftover.
+#
+# THE SELECTOR-OFF OBJECT, FOR CONTRAST
+#
+COMMAND=otool -tvV build/slice08-gen/g0.o | awk <fn> | grep 0x2041
+   MASK IN FUNCTION: _ParserLegacyDefaultArmTerminatesOracle:
+   MASK IN FUNCTION: _ParserLegacySwitchArmTerminatesOracle:
+   MASK IN FUNCTION: _parseCaseLabel:
+   MASK IN FUNCTION: _parseDefaultStatement:
+#
+#   The SAME mask appears in FOUR functions there, and the
+#   function-scoped attribution SEPARATES them:
+#     _ParserLegacyDefaultArmTerminatesOracle  (the SUB-002 oracle)
+#     _parseDefaultStatement                   (the SUB-002 site)
+#     _ParserLegacySwitchArmTerminatesOracle   (the SUB-001 oracle)
+#     _parseCaseLabel                          (the SUB-001 site)
+#
+#   This is exactly why the attribution MUST be function-scoped: a
+#   whole-object mask count would have attributed the SUB-002
+#   evidence to the SUB-001 site.
+#
+# THE G0 PROVENANCE (the SL-CC-02 / S8-SA-03 detector)
+#
+G0_BOOTSTRAP_REFERENCES=0
+G0_DEFINES_MAIN=0
+G0_DEFINES_LEGACY_ORACLE=1
+#
+# ------------------------------------------------------------------
+# THE TWO AUTHORITIES ARE SEPARATE
+# ------------------------------------------------------------------
+#
+COMMAND=nm build/parser-switch-arm-subject.o | grep -c " T _BootstrapDefaultArmTerminates"
+   0
+COMMAND=nm build/parser-default-arm-subject.o | grep -c " T _BootstrapSwitchArmTerminates"
+   0
+#
+#   Each subject defines ONLY its own symbol.  The SUB-001 and
+#   SUB-002 subjects are DIFFERENT FILES with DIFFERENT OBJECTS,
+#   DIFFERENT SYMBOLS and DIFFERENT SEMANTICS (the SUB-001 object
+#   answers 1 for kind 293; the SUB-002 answer is 0).
+#
+LEGACY_C_PREDICATE_RETIRED_FROM_PRODUCTION=YES
+POLYC_RESULT_DIRECTLY_DETERMINES_THE_BRANCH=YES
+FUNCTION_SCOPED_ATTRIBUTION_PERFORMED=YES
+G0_IS_C_AUTHORITATIVE=YES
+SUB001_SUB002_AUTHORITIES_ARE_SEPARATE=YES
+FUNCTION_SCOPED_AUTHORITY_AUDIT_STATUS=PASS

@@ -1,0 +1,73 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE08
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=immutable-predecessor-check
+#
+THE IMMUTABLE PREDECESSOR CHECK, RE-RUN AT C3.
+#
+# The C0 freeze manifest (5201 paths) is RE-VERIFIED against the
+# CURRENT tree, byte for byte, by TWO independent hashers.  A single
+# changed or missing path would be a violation of F14 and of the
+# append-only invariant.
+#
+# ------------------------------------------------------------------
+# THE ORIGINAL C0 FREEZE, RE-VERIFIED
+# ------------------------------------------------------------------
+#
+COMMAND=shasum -a 256 -c <the C0 freeze manifest>
+   EXIT=0
+   OK=5201
+   FAILED=0
+#
+#   The C0 freeze manifest covers every tracked docs/acts document,
+#   every tracked docs/factory/HANDOFF document and every tracked
+#   evidence/ file of every CLOSED predecessor ACT, including the
+#   RECON07 selection, the prior corrections and the RECON06 HALT.
+#
+# ------------------------------------------------------------------
+# THE FULL LIVE-TREE FREEZE, RE-TAKEN
+# ------------------------------------------------------------------
+#
+COMMAND=./build/parser-surface-recon06-audit FREEZE <paths> <out>
+   FREEZE_PATHS_HASHED=5202
+   FREEZE_PATHS_MISSING=0
+   FREEZE_STATUS=PASS
+#
+COMMAND=shasum -a 256 -c <the live manifest>
+   SHASUM_EXIT=0
+   OK=5202
+   FAILED=0
+#
+#   The count grew from 5201 to 5202 because THIS ACT added its own
+#   c1 and c2 evidence directories.  The count is MEASURED, not
+#   assumed, and the ORIGINAL 5201 paths are all byte-identical.
+#
+# ------------------------------------------------------------------
+# THE RECON07 CONTRACT ARTIFACTS ARE UNTOUCHED
+# ------------------------------------------------------------------
+#
+COMMAND=shasum -a 256 -c <the RECON07 selected-contract-hashes manifest>
+   OK=21
+   MISMATCH=0
+#
+# ------------------------------------------------------------------
+# THE RECON06 HALT IS PRESERVED EXACTLY
+# ------------------------------------------------------------------
+#
+COMMAND=git log -1 --format=%B aa90d34
+   ACT: ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON06
+   ACT-Phase: CLOSE
+   ACT-Verdict: HALT_N06_FROZEN_OBLIGATION_UNPROVEN
+   -> The RECON06 governance HALT is UNCHANGED.  It was NOT
+      relabelled, and its historical verdict was NOT reused as this
+      ACT's evidence.
+#
+FROZEN_PREDECESSOR_PATHS=5201
+FROZEN_PREDECESSOR_PATHS_UNCHANGED=5201
+FROZEN_PREDECESSOR_MISSING=0
+FROZEN_PREDECESSOR_MISMATCHES=0
+LIVE_FREEZE_PATHS=5202
+LIVE_FREEZE_MISSING=0
+RECON07_CONTRACT_ARTIFACTS_UNCHANGED=YES
+RECON06_HALT_PRESERVED=YES
+HISTORICAL_ARTIFACTS_MODIFIED=0
+IMMUTABLE_PREDECESSOR_CHECK_STATUS=PASS

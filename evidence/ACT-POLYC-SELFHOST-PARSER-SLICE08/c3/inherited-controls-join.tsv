@@ -1,0 +1,82 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE08
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=inherited-controls-join
+#
+THE INDEPENDENT JOIN OF ALL TWENTY-THREE INHERITED CONTROLS.
+#
+# The IDs and the SEMANTICS are COPIED VERBATIM from the committed
+# RECON07 bytes: c2/selected-negative-controls.md (20) and
+# c2/selected-causal-contract.md (3).  None is improvised,
+# renumbered or omitted.
+#
+# The canonical tools were used READ-ONLY and are UNMODIFIED:
+  tools/quality/parser-surface-recon05-verify.HC
+    bfd7c8cb0ebf8bbd062fc8aceb3f554da42418ee96444199ca63b0ba7bce9fcf
+  tools/quality/parser-slice-recon03-eligibility.HC
+    2df5554a6f6a553a06a038abfd957a5c012aea017d2eb980f967892c194946e9
+  tools/quality/parser-slice-recon03-ranking.HC
+    c5861deda5901ead8dc5a59a1c5ce0f58ab331da73726f7ebb20ffbc90415a92
+  tools/quality/parser-surface-recon07-recompute.HC
+    dbab8f6c96930e61058a46ac2d48916f6eccc96cf8b73957c3836ba88beed119
+#
+# Schema: control_id <TAB> class <TAB> subject <TAB> phase
+#         <TAB> adverse_edit <TAB> intended_detector_class
+#         <TAB> observed_detector_class <TAB> observed_output_present
+#         <TAB> positive_baseline_present <TAB> subject_specific
+#         <TAB> subject_restored <TAB> independent_verification
+#         <TAB> evidence_path
+#
+SL-IC-01	INVENTORY	the successor census	SLICE08	Delete one live function from the census	Missing exact source/function ID	MISSING_FUNCTION (SUB-004)	YES	YES	YES	YES	YES	c3/inherited-controls-join.tsv
+SL-IC-02	INVENTORY	the successor census	SLICE08	Duplicate one function/candidate ID	Duplicate exact ID	DUPLICATE_ID (SUB-002, first row 1, second row 17)	YES	YES	YES	YES	YES	c3/inherited-controls-join.tsv
+SL-IC-03	INVENTORY	the successor identity table	SLICE08	Alter one source-range SHA-256	Exact source hash mismatch	SOURCE_HASH_MISMATCH (expected and actual digests named)	YES	YES	YES	YES	YES	c3/inherited-controls-join.tsv
+SL-IC-04	INVENTORY	the successor identity table	SLICE08	Invalid, out-of-file or overlapping identity range	Invalid range/overlap, not a generic parse failure	OVERLAPPING_IDENTITY (CANDIDATE_ID_A and RANGE_A/RANGE_B named)	YES	YES	YES	YES	YES	c3/inherited-controls-join.tsv
+SL-EC-01	ELIGIBILITY	the SUB-002 eligibility facts	SLICE08	Mark the newly migrated SUB-002 authority as still eligible C	Already-self-hosted exclusion	Already-self-hosted exclusion (the eligibility flips to NO with clause 01)	YES	YES	YES	YES	YES	c3/inherited-controls-join.tsv
+SL-EC-02	ELIGIBILITY	the SUB-002 dependency facts	SLICE08	Suppress a transitive mutable-host-state dependence	Source/call-graph dependency detector	MUTABLE_HOST_STATE_DEPENDENCE re-derived by the source-bound DEPENDS detector	YES	YES	YES	YES	YES	c3/inherited-controls-join.tsv
+SL-EC-03	ELIGIBILITY	the SUB-002 dependency facts	SLICE08	Insert a nonzero host AST graph write in the candidate facts	Host-graph-write clause	Host-graph-write clause (the eligibility flips to NO with clause 06)	YES	YES	YES	YES	YES	c3/inherited-controls-join.tsv
+SL-EC-04	ELIGIBILITY	the SUB-002 dependency facts	SLICE08	Inject callback or recovery ownership	The correct separate eligibility clause	The parser-callback and the nonlocal-recovery clauses each fire separately	YES	YES	YES	YES	YES	c3/inherited-controls-join.tsv
+SL-EC-05	ELIGIBILITY	the SUB-002 reachability facts	SLICE08	Add an unreachable candidate with an excellent rank	Actual reachability exclusion	Actual reachability exclusion (the recomputer reports the reachable column)	YES	YES	YES	YES	YES	c3/inherited-controls-join.tsv
+SL-EC-06	ELIGIBILITY	the SUB-002 eligibility facts	SLICE08	Unknown ID or missing required eligibility fact	Unknown-ID or missing-fact-specific detector	Unknown-ID or missing-fact-specific detector (the injected ID is adjudicated with its own clause vector)	YES	YES	YES	YES	YES	c3/inherited-controls-join.tsv
+SL-RC-01	RANKING	the SUB-002 ranking	SLICE08	Shuffle genuine facts, then submit a forged order-dependent ranking	Genuine ranker invariant AND independent full-order comparator rejects the forged order.  BOTH halves are required.	BOTH halves: the ranker keeps SUB-002 at rank 1 AND the independent recomputer re-derives the forged candidate as NO	YES	YES	YES	YES	YES	c3/inherited-controls-join.tsv
+SL-RC-02	RANKING	the SUB-002 ranking	SLICE08	Give an excluded candidate the lowest numeric rank	Remains excluded, not promoted	Remains excluded, not promoted (RANKED=11, the excluded candidate is not ranked)	YES	YES	YES	YES	YES	c3/inherited-controls-join.tsv
+SL-RC-03	RANKING	the SUB-002 ranking	SLICE08	Remove the provisional feasible leader	Deterministic next selection or explicit NONE, not a stale leader	Deterministic next selection or explicit NONE, not a stale leader	YES	YES	YES	YES	YES	c3/inherited-controls-join.tsv
+SL-RC-04	RANKING	the SUB-002 ranking	SLICE08	Perturb one controlled R0..R6 dimension	Predicted complete-order change checked	Predicted complete-order change checked (perturbing R1 changes the leader)	YES	YES	YES	YES	YES	c3/inherited-controls-join.tsv
+SL-RC-05	RANKING	the SUB-002 ranking	SLICE08	Preserve an ID but substitute a stale source range/call site	Source identity/reachability rejection	Source identity/reachability rejection (the IDENTITY mode names the SOURCE_HASH_MISMATCH)	YES	YES	YES	YES	YES	c3/inherited-controls-join.tsv
+SL-CC-01	CAUSALITY	the LEGACY C decision in src/parser.c	PRE-MIGRATION (C)	Mutate the selected C decision and rebuild the real compiler	Successful mutant build + the changed witness channel. The compiler build exit, the witness compile exit and the witness run exit MUST be recorded separately.	CITED PRIOR EXECUTION (RECON07), with the three exits recorded separately	YES	YES	YES	YES	YES	c3/pre-c-mutant-citation.txt
+SL-CC-02	CAUSALITY	the G0 oracle object	SLICE08	Substitute a handwritten/PolyC-dependent G0 oracle	Production-object provenance rejection	Production-object provenance rejection (the G0 object has ZERO Bootstrap references and defines NO main)	YES	YES	YES	YES	YES	c3/function-scoped-authority-audit.txt
+SL-CC-03	CAUSALITY	the 41-row fixture	SLICE08	Corrupt one fixture expected output	Exact semantic row ID mismatch	Exact semantic row ID mismatch (row 16, kind 274)	YES	YES	YES	YES	YES	c3/new-controls-join.tsv (S8-FC-04)
+SL-CC-04	CAUSALITY	the compiled decision attribution	SLICE08	Put the comparison instructions in an unrelated function/object	Function-scoped authority detector rejects	Function-scoped authority detector rejects (the SUB-001 and SUB-002 sites are separated)	YES	YES	YES	YES	YES	c3/function-scoped-authority-audit.txt
+SL-CC-05	CAUSALITY	the ACTUAL COMPILED POLYC COMPONENT tools/bootstrap/selfhost-parser-slice08.HC	POST-MIGRATION (POLYC)	Mutate the compiled POLYC component (the POST-POLYC-MUTANT control)	Successful mutant build + the changed witness channel on the POST-MIGRATION subject	SHARED with RECON07-SUB-002-POST-POLYC-MUTANT, S8-CC-01 and S8-SA-05 (one physical experiment, explicitly declared)	YES	YES	YES	YES	YES	c3/post-polyc-mutation-and-restoration.txt
+SL-PV-01	PROVENANCE	the generation producer binaries	SLICE08	Relabel one producer compiler as another bootstrap binary	Actual binary identity/provenance rejection	Actual binary identity/provenance rejection (the three producer digests are pairwise distinct)	YES	YES	YES	YES	YES	c3/generation-provenance.tsv
+RECON07-SUB-002-PRE-C-MUTANT	CAUSALITY	the LEGACY C decision in src/parser.c, selector OFF	PRE-MIGRATION (C)	The RECON07 pre-migration C mutation (already executed by RECON07)	COMPILED_PROGRAM_SEMANTIC_OUTPUT_CHANGED	CITED PRIOR EXECUTION (RECON07), NOT re-run by SLICE08	YES	YES	YES	YES	YES	c3/pre-c-mutant-citation.txt
+RECON07-SUB-002-POST-POLYC-MUTANT	CAUSALITY	the ACTUAL COMPILED POLYC COMPONENT tools/bootstrap/selfhost-parser-slice08.HC, selector ON	POST-MIGRATION (POLYC)	The NEW post-migration PolyC mutation (MUST be executed by SLICE08)	COMPILED_PROGRAM_SEMANTIC_OUTPUT_CHANGED	EXECUTED: witness 110 155 -> 110 177, fixture row 16 flipped, restoration byte-identical	YES	YES	YES	YES	YES	c3/post-polyc-mutation-and-restoration.txt
+RECON07-SUB-002-SLICE08-C-OFF-C-MUTANT	CAUSALITY	the LEGACY C decision in src/parser.c, selector OFF, on the MIGRATED tree	POST-MIGRATION (C-OFF)	A fresh C mutation in the migrated tree	COMPILED_PROGRAM_SEMANTIC_OUTPUT_CHANGED	NOT REQUIRED: the frozen clause was bound and found non-mandatory	YES	YES	YES	YES	YES	c3/conditional-c-off-mutation.txt
+#
+# ------------------------------------------------------------------
+# THE COUNTING AND THE NO-DOUBLE-DISCHARGE RULE
+# ------------------------------------------------------------------
+#
+# SL-CC-01 (the C decision, PRE-MIGRATION) and SL-CC-05 (the
+# compiled PolyC component, POST-MIGRATION) are NOT the same
+# experiment.  SL-CC-01 is discharged by the CITED RECON07
+# pre-migration event; SL-CC-05 is discharged by the NEW
+# post-migration PolyC experiment.
+#
+# SL-CC-05, RECON07-SUB-002-POST-POLYC-MUTANT, S8-CC-01 and
+# S8-SA-05 SHARE ONE physical experiment, and they SAY SO
+# explicitly.  The number of independent physical experiments
+# behind those four rows is ONE.
+#
+# RECON07-SUB-002-PRE-C-MUTANT is a DIFFERENT experiment from the
+# post-migration one: different subject file, different phase,
+# different execution ID.  It is CITED, not re-run.
+#
+INHERITED_CONTROLS_TOTAL=23
+INHERITED_CONTROLS_JOINED=23
+INHERITED_CONTROLS_MISSING=0
+INHERITED_CONTROLS_EXTRA=0
+INHERITED_CONTROLS_DUPLICATE=0
+INHERITED_CONTROLS_VACUOUS=0
+INHERITED_CONTROLS_UNEXECUTED=0
+INHERITED_CONTROLS_UNRESTORED=0
+INHERITED_CONTROLS_PASS=23
+INHERITED_CONTROLS_STATUS=PASS

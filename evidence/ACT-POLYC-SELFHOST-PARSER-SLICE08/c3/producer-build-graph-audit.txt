@@ -1,0 +1,58 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE08
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=producer-build-graph-audit
+#
+THE PRODUCER AND BUILD-GRAPH AUDIT.
+#
+# ------------------------------------------------------------------
+# THE PRODUCTION COMPILER ACTUALLY LINKS THE SUBJECT
+# ------------------------------------------------------------------
+#
+COMMAND=grep -c 'parser-default-arm-subject.o' build/CMakeFiles/hcc.dir/link.txt
+   1
+COMMAND=nm ./hcc | grep -c ' T _BootstrapDefaultArmTerminates$'
+   1
+COMMAND=nm build/CMakeFiles/hcc.dir/parser.c.o | grep -c ' T _Bootstrap'
+   0
+COMMAND=nm -u build/CMakeFiles/hcc.dir/parser.c.o | grep -c '_BootstrapDefaultArmTerminates'
+   1
+#
+# ------------------------------------------------------------------
+# THE SELECTOR IS A DEDICATED MACRO
+# ------------------------------------------------------------------
+#
+COMMAND=grep -c 'HCC_USE_SELFHOST_PARSER_DEFAULT_ARM_TERMINATES' build/CMakeFiles/hcc.dir/flags.make
+   1
+COMMAND=grep 'DEFAULT_ARM' build/CMakeCache.txt
+   DEFAULT_ARM_TERMINATES_OBJECT:UNINITIALIZED=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-default-arm-subject.o
+   DEFAULT_ARM_TERMINATES_PREFIX:UNINITIALIZED=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/bootstrap-prefix
+   DEFAULT_ARM_TERMINATES_PRODUCER:UNINITIALIZED=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/host-stage0/hcc
+   DEFAULT_ARM_TERMINATES_SOURCE:UNINITIALIZED=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/tools/bootstrap/selfhost-parser-slice08.HC
+   HCC_USE_SELFHOST_PARSER_DEFAULT_ARM_TERMINATES:BOOL=ON
+#
+# ------------------------------------------------------------------
+# THE STAGE0 BUILD TURNS THE SELECTOR OFF
+# ------------------------------------------------------------------
+#
+COMMAND=nm build/host-stage0/hcc | grep -c ' T _BootstrapDefaultArmTerminates'
+   0
+#
+   The stage0 compiler is the LEGACY control that PRODUCES the
+   subject.  It must not itself require the subject, or the build
+   graph would cycle.  Its OFF state is therefore MANDATORY.
+#
+# ------------------------------------------------------------------
+# THE GENERIC LEXER SELECTOR IS UNTOUCHED
+# ------------------------------------------------------------------
+#
+COMMAND=git diff --stat src/lexer.c
+   (empty -- the lexer is untouched)
+#
+PRODUCTION_LINK_INCLUDES_THE_SUBJECT=YES
+EXECUTABLE_DEFINES_THE_SYMBOL=YES
+CONSUMER_OBJECT_DEFINES_NO_POLYC_SYMBOL=YES
+CONSUMER_OBJECT_IMPORTS_THE_SYMBOL=YES
+SELECTOR_REACHES_THE_COMPILE_LINE=YES
+STAGE0_SELECTOR_OFF=YES
+LEXER_UNTOUCHED=YES
+PRODUCER_BUILD_GRAPH_AUDIT_STATUS=PASS
