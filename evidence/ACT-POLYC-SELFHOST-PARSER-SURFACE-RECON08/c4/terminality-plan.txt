@@ -1,0 +1,99 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08
+# ACT_PHASE=C4-CLOSE
+# EVIDENCE_KIND=terminality-plan
+#
+# THIS IS A PLAN.  IT IS NOT A REPORT OF CHECKS THAT HAVE ALREADY
+# RUN.
+#
+# The external post-CLOSE terminality probe is the ONLY thing that
+# can discharge AC50, and it CANNOT run before the terminal CLOSE
+# commit exists.  Everything below is a description of what will be
+# executed AFTER that commit, and of what its receipt must bind.
+#
+# ------------------------------------------------------------------
+# WHEN IT RUNS
+# ------------------------------------------------------------------
+#
+# AFTER the terminal CLOSE commit is created, and from OUTSIDE the
+# repository's committed content.  The receipt is written to an
+# operator-controlled temporary file OUTSIDE the repository working
+# tree, so that the probe's own output never becomes a tracked file
+# and no commit after the CLOSE is ever needed.
+#
+# ------------------------------------------------------------------
+# WHAT IT CHECKS, AND WHAT ITS RECEIPT MUST BIND
+# ------------------------------------------------------------------
+#
+# CHECK                                     RECEIPT BINDS
+# 1. HEAD is the terminal CLOSE commit       the exact HEAD sha
+# 2. HEAD^{tree} is the CLOSE tree           the exact tree sha
+# 3. the branch is main                      the branch name
+# 4. the working tree is clean              the empty status output
+# 5. the index is clean                     the empty diff --cached output
+# 6. git replace -l is empty                the replace-ref count
+# 7. there is no extra worktree             the worktree list
+# 8. the ACT range is exactly five commits  the commit count and the
+#                                            per-commit phase
+# 9. the CLOSE carries ACT, ACT-Phase:CLOSE  the parsed trailers
+#    and exactly one ACT-Verdict: PASS
+# 10. no commit AFTER the CLOSE carries     the post-CLOSE scan
+#     this ACT's id
+# 11. the frozen predecessor paths still    the path count, the
+#     match by blob id and by content sha256  mismatch counts
+# 12. Factory-v2 range check passes         the checker's exit and
+#                                            its VERDICT line
+# 13. the closure-status check passes       the checker's exit and
+#                                            its STATUS line
+# 14. the append-only suite passes          the per-check roster and
+#                                            the PASS count
+# 15. the eight PolyC parser authorities    the per-authority symbol,
+#     are still eight                        import and relocation
+#                                            counts
+# 16. gate-fast and gate-push pass          their exits and verdicts
+# 17. the production source is unchanged    the source whole-file
+#                                            sha256 against the entry
+#                                            digest
+#
+# ------------------------------------------------------------------
+# THE PASS CONDITION
+# ------------------------------------------------------------------
+#
+# Every check above must PASS.  If any check fails, AC50 is FAIL and
+# the ACT's honest disposition is a terminality failure -- NOT a
+# silent post-CLOSE fix, and NOT a retroactive edit of the CLOSE
+# commit.
+#
+# The receipt must bind:
+#
+#   - the HEAD sha and the tree sha it observed;
+#   - the ACT id, the phase and the verdict it parsed;
+#   - the per-check exit codes and verdicts;
+#   - the counts it derived (paths, authorities, commits);
+#   - the wall-clock fact that it ran AFTER the CLOSE commit existed.
+#
+# A receipt that does not bind the HEAD sha is not a receipt.
+#
+# ------------------------------------------------------------------
+# WHAT THIS PLAN DOES NOT CLAIM
+# ------------------------------------------------------------------
+#
+# It does not claim the probe has run.  It does not claim AC50 is
+# PASS.  AC50 is UNPROVEN until the receipt exists and is bound to
+# the terminal commit's exact identity.
+#
+# ------------------------------------------------------------------
+# THE ACT50 LEDGER POSITION
+# ------------------------------------------------------------------
+#
+# At C3 the ledger carries:
+#
+#   MANDATORY_AC_TOTAL    = 50
+#   MANDATORY_AC_PASS     = 49
+#   MANDATORY_AC_FAIL     = 0
+#   MANDATORY_AC_UNPROVEN = 1   (AC50)
+#
+# The AC50 row becomes PASS only when the external probe succeeds and
+# its receipt binds the terminal commit's identity.
+#
+TERMINALITY_PLAN_STATUS=PLAN_ONLY
+AC50_AT_C3=UNPROVEN

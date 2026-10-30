@@ -8068,3 +8068,99 @@ See
 `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE08-EVIDENCE-CORRECTION01.md`
 and
 `evidence/ACT-POLYC-SELFHOST-PARSER-SLICE08-EVIDENCE-CORRECTION01/`.
+
+---
+
+## ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08
+
+`ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08` closed `PASS`.  It was a
+fresh, source-bound reconnaissance and selection after **eight**
+production-authoritative compiled PolyC parser decision sites.  It
+migrated nothing.
+
+```text
+SELECTED_CANDIDATE_ID = SUB-004
+SELECTED_DECISION     = STATEMENT_DISPATCH
+SELECTED_SOURCE_FILE  = src/parser.c
+SELECTED_SOURCE_RANGE = 1864..1877
+SELECTED_SOURCE_SHA256= cd138cc52588fe48c2eab37421b4e25abbacd7ea10491bc696a1acab9a66d7e0
+SELECTED_ABI          = I64 token_type, I64 keyword_id -> I64 statement_selector
+PRODUCTION_SEMANTIC_DELTA = 0
+```
+
+The selection is a **computed** output: the repository's own
+unmodified canonical ranker and this ACT's new independent PolyC
+verifier agree on every one of the ten eligible positions, and both
+select `SUB-004`.  `SUB-002`, RECON07's leader, is now already
+PolyC-owned and is excluded by clause 02.
+
+The decision was qualified by an **executed real-compiler experiment**:
+one line and one token were mutated in a disposable detached
+worktree, the real production compiler was rebuilt, and the frozen
+witness showed the pristine compiler saying *"while parsing if body"*
+while the mutant said *"while parsing while loop body"*.  The
+function-scoped relocation table proves the mutation was in the linked
+binary at the decision site, and the restoration was byte-exact.
+
+### The conservation
+
+```text
+PARSER_ASSERTIONS            = 376/376 over 90 files
+PARSER_ASSERTION_SEQUENCE_MD5= b6f117eb1386ca80f81bc06226e2a741
+LEXER_DIRECT                 = 89/89, 45/45, 23/23
+LEXER07_STATUS               = FAIL_KNOWN_BASELINE (15 identities, MD5 7ee761440de83552e751e3c3976c1683)
+CROSS_TARGET_STATUS          = FAIL_ENVIRONMENT_PREFIX (67 historical)
+F_NO_PYTHON                  = FAIL_KNOWN_BASELINE (12 historical, 0 new)
+F_POLYC_TOOLS                = UNAVAILABLE
+POLYC_PARSER_AUTHORITIES     = 8
+PRODUCTION_SEMANTIC_DELTA    = 0
+NEW_FAILURE_IDENTITIES       = 0
+GATE_FAST                    = PASS (exit 0)
+GATE_PUSH                    = PASS (exit 0)
+APPEND_ONLY                  = PASS (11/11)
+FROZEN_PREDECESSOR_PATHS     = 575, 0 mismatches
+NEGATIVE_CONTROLS            = 24/24 control IDs, 25 physical executions
+MANDATORY_AC                 = 49 PASS, 0 FAIL, 1 UNPROVEN (AC50, deferred to the external post-CLOSE probe)
+```
+
+Every historical nonzero status is preserved exactly and is **not**
+relabelled PASS.
+
+### Two real gaps the ACT found, and one real compiler defect
+
+The canonical 13-clause checker and the RECON07 recomputer have **no
+source-range hash column at all**, so a stale phase hash is silently
+accepted; and the canonical ranker **trusts** its `eligible` column,
+so a forged flag promotes an excluded candidate to rank 1.  RECON08
+built its own source-bound PolyC verifier
+(`tools/quality/parser-surface-recon08-verify.HC`) and joins the
+ranker's `eligible` column mechanically from the checker's actual
+output.  Neither gap is repaired in the canonical tools.
+
+Building the verifier also exposed a **previously undocumented
+compiler defect**: a file-scope `static` **scalar** global **with an
+initialiser** is placed at the storage slot that `Main`'s `argc`
+parameter occupies, so `argc` reads back as the global's value and
+`argv` reads back as NULL.  It is measured and recorded, and **not**
+fixed here.
+
+### NEXT
+
+```text
+NEXT_ACT        = ACT-POLYC-SELFHOST-PARSER-SLICE09
+NEXT_TARGET     = SUB-004
+SLICE09_AUTHORIZED = NO
+```
+
+**SLICE09 is NOT implemented and NOT authorized by this ACT.**  It may
+be opened only after RECON08's committed PASS CLOSE and a successful
+external post-CLOSE terminality probe.  SLICE09 must implement the
+successor behind a dedicated OFF-by-default selector, build the
+genuine G0 oracle from the real production TU, produce three distinct
+compiler generations, and execute a **new** POST-POLYC-MUTANT
+experiment against the compiled PolyC component.  It must **not**
+discharge that control with RECON08's pre-migration C experiment.
+
+See
+`docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08.md`and
+`evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08/`.
