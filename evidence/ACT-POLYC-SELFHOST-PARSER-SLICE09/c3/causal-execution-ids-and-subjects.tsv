@@ -1,0 +1,126 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE09
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=causal-execution-ids-and-subjects
+#
+# THE THREE CAUSAL EXPERIMENTS AND THEIR DISTINCTNESS.
+#
+# The frozen contract
+# (evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08/c2/
+#  selected-stage-provenance-and-causal-contract.md section 2) defines
+# THREE DIFFERENT EXPERIMENTS.  "None of them may be relabelled as
+# another."
+#
+# The FROZEN IDs are used verbatim.  They are not renamed.
+#
+# Schema: control_id <TAB> phase <TAB> subject_path <TAB> selector_state
+#         <TAB> producer <TAB> execution_id <TAB> executed_by_this_act
+#         <TAB> outcome_channel <TAB> status
+#
+RECON08-SUB-004-PRE-C-MUTANT	RECON08-C2-PRE-MIGRATION-C-MUTANT	src/parser.c, the legacy C decision, lines 1864..1877	the eight production selectors ON; no candidate-specific selector exists	the real hcc, built in a disposable detached worktree at the entry commit	RECON08-C2-MUTANT-01	NO -- HISTORICAL, CITED NOT RERUN	W-DIAG and W-OBJ	EXECUTED_BY_RECON08
+RECON08-SUB-004-POST-POLYC-MUTANT	RECON08-C2-FUTURE-POST-MIGRATION	the compiled PolyC component, tools/bootstrap/selfhost-parser-statement-dispatch.HC	HCC_USE_SELFHOST_PARSER_STATEMENT_DISPATCH ON	a PolyC-built compiler generation (G2, the production compiler)	RECON08-SUB-004-POST-POLYC-MUTANT	YES -- EXECUTED IN THIS ACT	W-DIAG and W-RUN	EXECUTED
+RECON08-SUB-004-C-OFF-C-MUTANT	RECON08-C2-FUTURE-C-OFF	the legacy C decision, in a build with the candidate selector OFF	HCC_USE_SELFHOST_PARSER_STATEMENT_DISPATCH OFF	not applicable	not applicable	NO -- NOT REQUIRED BY THE FROZEN CONTRACT	W-OBJ	NOT_EXECUTED_NOT_REQUIRED
+RECON08-SUB-004-G0-ORACLE	RECON08-C2-PRE-MIGRATION-G0	the real production TU, selector OFF	candidate selector OFF	the host C compiler	RECON08-SUB-004-G0-ORACLE	YES -- EXECUTED IN THIS ACT (the G0 generation)	W-OBJ	G0_PROVENANCE_PASS
+#
+# ------------------------------------------------------------------
+# THE THREE-WAY PROVENANCE DISTINCTNESS
+# ------------------------------------------------------------------
+#
+# The frozen contract requires the join to RECORD the distinctness
+# rather than assume it: "No two of these share a subject, a selector
+# state and a phase."
+#
+# Schema: control_id <TAB> subject <TAB> selector_state <TAB> phase
+#         <TAB> producer <TAB> distinct_from_all_others
+#
+RECON08-SUB-004-PRE-C-MUTANT	legacy C source (src/parser.c)	no candidate selector	RECON08-C2-PRE-MIGRATION-C-MUTANT	the real hcc	YES
+RECON08-SUB-004-POST-POLYC-MUTANT	compiled PolyC component	candidate selector ON	RECON08-C2-FUTURE-POST-MIGRATION	the production compiler	YES
+RECON08-SUB-004-C-OFF-C-MUTANT	legacy C source (src/parser.c)	candidate selector OFF	RECON08-C2-FUTURE-C-OFF	not applicable	YES
+RECON08-SUB-004-G0-ORACLE	the real production TU	candidate selector OFF	RECON08-C2-PRE-MIGRATION-G0	the host C compiler	YES
+#
+# THE SUBJECT, SELECTOR, PHASE AND PRODUCER TRIPLE IS DISTINCT FOR
+# ALL FOUR ROWS.  The C-OFF row differs from the PRE-C row in the
+# SELECTOR STATE and in the PHASE; the G0 row differs from the C-OFF
+# row in the PHASE and in the PRODUCER.
+#
+# ------------------------------------------------------------------
+# THE PRE-C MUTANT IS CITED, NOT RERUN
+# ------------------------------------------------------------------
+#
+# The RECON08 pre-migration C mutation is NOT re-executed by this ACT.
+# Its identity and result are CITED from the predecessor's committed
+# evidence:
+#
+#   evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08/c2/
+#     candidate-mutation-restoration.tsv
+#
+# The frozen result: the pristine compiler says "while parsing if
+# body"; the mutant says "while parsing while loop body"; the restored
+# compiler says "while parsing if body" again.
+#
+PRE_C_MUTANT_RERUN_IN_THIS_ACT=NO
+PRE_C_MUTANT_EVIDENCE_SOURCE=evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08/c2/candidate-mutation-restoration.tsv
+PRE_C_MUTANT_CITED_AS=pre-migration evidence only
+#
+# THE RECON08 PRE-C MUTANT CANNOT DISCHARGE THE POST-POLYC CONTROL.
+# The two experiments have DIFFERENT SUBJECTS (legacy C source vs the
+# compiled PolyC component), DIFFERENT SELECTOR STATES, DIFFERENT
+# PRODUCERS and DIFFERENT PHASES.
+#
+PRE_C_MUTANT_DISCHARGES_POST_POLYC=NO
+#
+# ------------------------------------------------------------------
+# THE C-OFF-C MUTANT IS NOT REQUIRED
+# ------------------------------------------------------------------
+#
+# The frozen contract states its status as OPTIONAL: "it is demanded
+# only if the frozen successor contract requires a selector-OFF C
+# mutation as well".  The frozen successor contract
+# (selected-stage-provenance-and-causal-contract.md) requires the
+# POST-POLYC MUTANT and the G0 ORACLE; it does NOT demand the C-OFF-C
+# mutation.  Therefore it is NOT executed and NOT claimed.
+#
+# The G0 oracle, which the contract DOES require, IS executed: it is
+# the G0 generation of the four-generation differential, and it passes
+# the RECON08 G0-provenance detector.
+#
+C_OFF_C_MUTANT_EXECUTED=NO
+C_OFF_C_MUTANT_REQUIRED_BY_FROZEN_CONTRACT=NO
+C_OFF_C_MUTANT_STATUS=NOT_EXECUTED_NOT_REQUIRED
+#
+# ------------------------------------------------------------------
+# THE POST-POLYC MUTANT IS THE ONE THIS ACT EXECUTED
+# ------------------------------------------------------------------
+#
+# Its full record is in
+# c3/post-polyc-mutation-pristine-mutant-restored.tsv.
+#
+POST_POLYC_MUTANT_EXECUTED=YES
+POST_POLYC_MUTANT_PHYSICAL_EXECUTIONS=1
+POST_POLYC_MUTANT_SUBJECT=tools/bootstrap/selfhost-parser-statement-dispatch.HC
+POST_POLYC_MUTANT_SELECTOR_STATE=ON
+POST_POLYC_MUTANT_PRODUCER=the real production compiler (./hcc), rebuilt in an isolated detached worktree
+POST_POLYC_MUTANT_CHANNEL=W-DIAG and W-RUN
+POST_POLYC_MUTANT_CLASSIFICATION=COMPILER_DIAGNOSTIC_PATH_CHANGED
+POST_POLYC_MUTANT_RESTORATION_BYTE_IDENTICAL=YES
+#
+# ------------------------------------------------------------------
+# THE CONTROL-ROSTER CONSEQUENCE
+# ------------------------------------------------------------------
+#
+# S9-CC-01 is the positive sensitivity check of THIS ONE physical
+# experiment.  It SHARES the execution ID.  It is NOT a second
+# experiment.
+#
+S9_CC_01_SHARED_EXECUTION_ID=RECON08-SUB-004-POST-POLYC-MUTANT
+S9_CC_01_IS_AN_INDEPENDENT_EXPERIMENT=NO
+#
+# S9-CC-02 (counting the RECON08 C mutation as a new PolyC mutation)
+# is refuted by this file's subject/selector/phase/producer table: the
+# PRE-C row's subject is src/parser.c, its selector state carries no
+# candidate selector, and its phase is the pre-migration phase.  None
+# of those match the POST-POLYC row.
+#
+S9_CC_02_DETECTOR=WRONG_SUBJECT_OR_EXECUTION_ID
+S9_CC_02_FIRED=YES
+#
+CAUSAL_EXECUTION_IDS_AND_SUBJECTS_STATUS=PASS

@@ -168,6 +168,7 @@ $(BOOTSTRAP_STAGE0_HCC): $(BOOTSTRAP_STAGE0_SOURCES)
 		-DHCC_USE_SELFHOST_PARSER_SWITCH_ARM=OFF \
 		-DHCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND=OFF \
 		-DHCC_USE_SELFHOST_PARSER_DEFAULT_ARM_TERMINATES=OFF \
+		-DHCC_USE_SELFHOST_PARSER_STATEMENT_DISPATCH=OFF \
 		-DHCC_RUNTIME_OUTPUT_DIRECTORY=$(CURDIR)/$(BOOTSTRAP_STAGE0_DIR)
 	$(MAKE) -C $(BOOTSTRAP_STAGE0_BUILD) hcc -j2
 	@if [ ! -x "$(BOOTSTRAP_STAGE0_HCC)" ]; then \
@@ -6529,6 +6530,104 @@ $(SLICE09_GEN_DIR)/g3.o: $(SLICE09_GEN_SRC) ./build/hcc-bootstrap02
 parser-slice09-generations: $(SLICE09_GEN_DIR)/g0.o $(SLICE09_GEN_DIR)/g1.o \
                             $(SLICE09_GEN_DIR)/g2.o $(SLICE09_GEN_DIR)/g3.o
 	@echo "SLICE09_GENERATIONS=BUILT"
+
+# -------------------------------------------------------------------------
+# ACT-POLYC-SELFHOST-PARSER-SLICE09: the FOUR-GENERATION DIFFERENTIAL.
+#
+# The comparison layer (PolyC) is BYTE-IDENTICAL across the four
+# builds.  Only the linked DECISION OBJECT differs:
+#
+#   diff-g0  links the legacy C oracle object (src/parser.c with the
+#            candidate selector OFF) -- THE ORACLE ITSELF;
+#   diff-g1  links the stage0-built PolyC object, TOGETHER WITH the
+#            legacy oracle object, so the PolyC decision is compared
+#            against the REAL legacy decision;
+#   diff-g2  the same, with the production-built PolyC object;
+#   diff-g3  the same, with the bootstrap02-built PolyC object.
+#
+# Linking the legacy oracle object TOGETHER WITH a PolyC generation is
+# what makes the G1/G2/G3 runs compare two REAL authorities rather
+# than a program against itself.
+# -------------------------------------------------------------------------
+SLICE09_DIFF_SRC       = tools/quality/parser-slice09-differential.HC
+SLICE09_DIFF_OBJ       = build/parser-slice09-differential.o
+SLICE09_UNDER_TEST_SRC = tools/quality/parser-slice09-under-test-stub.c
+SLICE09_UNDER_TEST_OBJ = build/parser-slice09-under-test-stub.o
+SLICE09_LEGACY_STUB_OBJ = build/parser-slice09-legacy-stub.o
+SLICE09_ORACLE_STUB_SRC = tools/quality/parser-slice09-oracle-stub.c
+SLICE09_ORACLE_STUB_OBJ = build/parser-slice09-oracle-stub.o
+SLICE09_ORACLE_TRANSITIVE_OBJS = $(filter-out $(HCC_OBJ_DIR)/main.c.o $(HCC_OBJ_DIR)/parser.c.o, \
+    $(wildcard $(HCC_OBJ_DIR)/*.c.o $(HCC_OBJ_DIR)/linenoise/*.c.o))
+
+# The comparison layer (PolyC).
+build/parser-slice09-differential.o: $(SLICE09_DIFF_SRC) ./hcc | test-prefix-install
+	./hcc --install-dir=$(TEST_PREFIX) -c $(SLICE09_DIFF_SRC) -o $@
+	@if [ ! -f $@ ]; then \
+		echo "parser-slice09-differential.o: build failed" >&2; \
+		exit 1; \
+	fi
+
+# The UNDER-TEST stub for the PolyC generations: it renames the
+# component's exported symbol to the single name the comparison layer
+# calls.  It contains no decision logic.
+build/parser-slice09-under-test-stub.o: $(SLICE09_UNDER_TEST_SRC)
+	cc -std=c99 -O2 -Isrc -c -o $@ $(SLICE09_UNDER_TEST_SRC)
+
+# The UNDER-TEST stub for the legacy oracle: it renames the wrapper
+# src/parser.c exposes adjacent to the decision.
+build/parser-slice09-legacy-stub.o: $(SLICE09_UNDER_TEST_SRC)
+	cc -std=c99 -O2 -Isrc -DSLICE09_UNDER_TEST_IS_LEGACY_ORACLE -c -o $@ $(SLICE09_UNDER_TEST_SRC)
+
+# The is_terminal stub: the single-line global the production objects
+# transitively reference.
+build/parser-slice09-oracle-stub.o: $(SLICE09_ORACLE_STUB_SRC)
+	cc -std=c99 -O2 -Isrc -c -o $@ $(SLICE09_ORACLE_STUB_SRC)
+
+# The G0 differential: the legacy C oracle IS the object under test.
+define SLICE09_GEN_DIFF_LEGACY
+	@rm -f $(SLICE09_GEN_DIR)/diff-$1
+	cc -o $(SLICE09_GEN_DIR)/diff-$1 $(SLICE09_DIFF_OBJ) $(SLICE09_GEN_DIR)/$1.o \
+		$(SLICE09_LEGACY_STUB_OBJ) $(SLICE09_ORACLE_STUB_OBJ) \
+		$(SLICE09_ORACLE_TRANSITIVE_OBJS) \
+		$(PARSER_PADDING_OBJ) $(SLICE02_CFT_OBJ) $(SLICE03_OP_OBJ) \
+		$(SLICE04_AST_BINOP_OBJ) $(SLICE05_AST_UNARY_OBJ) \
+		$(SLICE06_SWITCH_ARM_OBJ) $(SLICE07_COMPOUND_BLOCK_OBJ) \
+		$(SLICE08_DEFAULT_ARM_OBJ) \
+		$(TASM_LIB) -L$(TEST_PREFIX)/lib -ltos -lm -lpthread -ldl \
+		-Wl,-undefined,dynamic_lookup
+	@./$(SLICE09_GEN_DIR)/diff-$1 $(SLICE09_FIXTURE) `grep -c '^[0-9]' $(SLICE09_FIXTURE)`
+endef
+
+# The G1/G2/G3 differentials: the PolyC generation AND the real legacy
+# oracle are linked together, so the generation is compared against
+# the legacy authority.
+define SLICE09_GEN_DIFF_POLY
+	@rm -f $(SLICE09_GEN_DIR)/diff-$1
+	cc -o $(SLICE09_GEN_DIR)/diff-$1 $(SLICE09_DIFF_OBJ) $(SLICE09_GEN_DIR)/$1.o \
+		$(SLICE09_GEN_DIR)/g0.o $(SLICE09_UNDER_TEST_OBJ) $(SLICE09_ORACLE_STUB_OBJ) \
+		$(SLICE09_ORACLE_TRANSITIVE_OBJS) \
+		$(PARSER_PADDING_OBJ) $(SLICE02_CFT_OBJ) $(SLICE03_OP_OBJ) \
+		$(SLICE04_AST_BINOP_OBJ) $(SLICE05_AST_UNARY_OBJ) \
+		$(SLICE06_SWITCH_ARM_OBJ) $(SLICE07_COMPOUND_BLOCK_OBJ) \
+		$(SLICE08_DEFAULT_ARM_OBJ) \
+		$(TASM_LIB) -L$(TEST_PREFIX)/lib -ltos -lm -lpthread -ldl \
+		-Wl,-undefined,dynamic_lookup
+	@./$(SLICE09_GEN_DIR)/diff-$1 $(SLICE09_FIXTURE) `grep -c '^[0-9]' $(SLICE09_FIXTURE)`
+endef
+
+$(SLICE09_GEN_DIR)/diff-g0: $(SLICE09_DIFF_OBJ) $(SLICE09_GEN_DIR)/g0.o $(SLICE09_LEGACY_STUB_OBJ) $(SLICE09_ORACLE_STUB_OBJ) $(SLICE09_ORACLE_TRANSITIVE_OBJS)
+	$(call SLICE09_GEN_DIFF_LEGACY,g0)
+$(SLICE09_GEN_DIR)/diff-g1: $(SLICE09_DIFF_OBJ) $(SLICE09_GEN_DIR)/g1.o $(SLICE09_GEN_DIR)/g0.o $(SLICE09_UNDER_TEST_OBJ) $(SLICE09_ORACLE_STUB_OBJ) $(SLICE09_ORACLE_TRANSITIVE_OBJS)
+	$(call SLICE09_GEN_DIFF_POLY,g1)
+$(SLICE09_GEN_DIR)/diff-g2: $(SLICE09_DIFF_OBJ) $(SLICE09_GEN_DIR)/g2.o $(SLICE09_GEN_DIR)/g0.o $(SLICE09_UNDER_TEST_OBJ) $(SLICE09_ORACLE_STUB_OBJ) $(SLICE09_ORACLE_TRANSITIVE_OBJS)
+	$(call SLICE09_GEN_DIFF_POLY,g2)
+$(SLICE09_GEN_DIR)/diff-g3: $(SLICE09_DIFF_OBJ) $(SLICE09_GEN_DIR)/g3.o $(SLICE09_GEN_DIR)/g0.o $(SLICE09_UNDER_TEST_OBJ) $(SLICE09_ORACLE_STUB_OBJ) $(SLICE09_ORACLE_TRANSITIVE_OBJS)
+	$(call SLICE09_GEN_DIFF_POLY,g3)
+
+parser-slice09-differentials: $(SLICE09_GEN_DIR)/diff-g0 $(SLICE09_GEN_DIR)/diff-g1 \
+                             $(SLICE09_GEN_DIR)/diff-g2 $(SLICE09_GEN_DIR)/diff-g3
+	@echo "SLICE09_DIFFERENTIALS=RUN"
+
 # =========================================================================
 # ACT-POLYC-SELFHOST-PARSER-SLICE07
 #

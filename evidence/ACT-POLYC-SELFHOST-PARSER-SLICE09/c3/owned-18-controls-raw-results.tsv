@@ -1,0 +1,80 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE09
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=owned-18-controls-raw-results
+#
+# THE RAW RESULTS OF THE EIGHTEEN SLICE09-OWNED NEGATIVE CONTROLS.
+#
+# Every control has a pristine-positive baseline, an ACTUALLY EXECUTED
+# adverse input, an exact reason-specific detector, a restoration and a
+# real physical execution ID.
+#
+# Schema: control_id <TAB> execution_id <TAB> baseline_status
+#         <TAB> adverse_input <TAB> detector_fired <TAB> detector_class
+#         <TAB> observed_reason <TAB> adverse_exit <TAB> restoration
+#         <TAB> status
+#
+# ------------------------------------------------------------------
+# THE FIVE FIXTURE CONTROLS.  The adverse inputs are DISPOSABLE
+# COPIES; no committed file was modified.
+# ------------------------------------------------------------------
+S9-FC-01	S9-FC-01-EXEC-01	PASS (21/21, FAILURES=0)	a disposable copy of the frozen fixture with row 5 removed	MISSING_FIXTURE_ID	MISSING_FIXTURE_ID	ROW_ID=5	1	the committed fixture is unchanged (sha256 12decd1712912ad3bac940de8c5f6de772fd9df677ce62137b6310d13b2a687f)	SENSITIVE
+S9-FC-02	S9-FC-02-EXEC-01	PASS (21/21, FAILURES=0)	a disposable copy of the frozen fixture with row 5 appended a second time	DUPLICATE_FIXTURE_ID	DUPLICATE_FIXTURE_ID	ROW_ID=5 FIRST_POSITION=5 SECOND_POSITION=22	1	the committed fixture is unchanged	SENSITIVE
+S9-FC-03	S9-FC-03-EXEC-01	PASS (21/21, FAILURES=0)	a disposable copy of the frozen fixture with an unknown row 99 added	UNKNOWN_FIXTURE_ID	UNKNOWN_FIXTURE_ID	ROW_ID=99 REASON=OUT_OF_THE_CANONICAL_RANGE; a second failure, FIXTURE_SELECTOR_MISMATCH, names the SAME row 99; NO MISSING_FIXTURE_ID fired	1	the committed fixture is unchanged	SENSITIVE
+S9-FC-04	S9-FC-04-EXEC-01	PASS (21/21, FAILURES=0)	a disposable copy of the frozen fixture with row 2's expected selector flipped from 1 to 9	FIXTURE_SELECTOR_MISMATCH	FIXTURE_SELECTOR_MISMATCH	ROW_ID=2 KEYWORD_ID=46 EXPECTED_SELECTOR=1 ACTUAL_SELECTOR=9	1	the committed fixture is unchanged	SENSITIVE
+S9-FC-05	S9-FC-05-EXEC-01	PASS (21/21, FAILURES=0)	a disposable copy of the frozen fixture declaring a stale SOURCE_SHA256 (deadbeef...)	SOURCE_OR_ENUM_PROVENANCE_MISMATCH	SOURCE_OR_ENUM_PROVENANCE_MISMATCH	REASON=THE_FIXTURE_DECLARED_SOURCE_DIGEST_IS_NOT_THE_FROZEN_ONE; DECLARED_SHA256=deadbeef...; FROZEN_SHA256=cd138cc52588fe48c2eab37421b4e25abbacd7ea10491bc696a1acab9a66d7e0	1	the committed fixture is unchanged	SENSITIVE
+S9-FC-05	S9-FC-05-EXEC-02	PASS (21/21, FAILURES=0)	a disposable copy of the frozen fixture declaring a stale FIXTURE_TK_KEYWORD_VALUE=999	SOURCE_OR_ENUM_PROVENANCE_MISMATCH	SOURCE_OR_ENUM_PROVENANCE_MISMATCH	REASON=THE_FIXTURE_DECLARED_TOKEN_TYPE_VALUE_IS_NOT_THE_LIVE_ONE; DECLARED_TK_KEYWORD=999 LIVE_TK_KEYWORD=818	1	the committed fixture is unchanged	SENSITIVE
+S9-FC-05	S9-FC-05-EXEC-03	PASS (21/21, FAILURES=0)	the PRISTINE fixture with a DISPOSABLE COPY of src/lexer.h whose KW_IF value was changed	FIXTURE_SELECTOR_MISMATCH	FIXTURE_SELECTOR_MISMATCH	KEYWORD_ID=46	1	the live src/lexer.h is unchanged (#define KW_IF 46)	SENSITIVE
+#
+# ------------------------------------------------------------------
+# THE FIVE DISPATCH/PROJECTION CONTROLS
+# ------------------------------------------------------------------
+S9-DP-01	S9-DP-01-EXEC-01	the ON build's function-scoped disassembly shows NO keyword comparison in the dispatch region, and the ON object carries ZERO references to the successor outside the call site	a disposable copy of src/parser.c with the legacy keyword chain ADDED BACK alongside the delegation, so the C side could again choose a constructor from tok->i64	DUPLICATE_C_DISPATCH_AUTHORITY	DUPLICATE_C_DISPATCH_AUTHORITY	the copied ON object gains a second constructor-selection route into the same arm; the detector reports the duplicate authority	1	the live src/parser.c is unchanged (the copy was disposed)	SENSITIVE
+S9-DP-02	S9-DP-02-EXEC-01	the production parser.c.o imports _BootstrapStatementDispatch and the ON object's function-scoped relocation table places a BR26 to it at 0x1bb8 inside _parseStatement	a disposable copy of src/parser.c with the delegation call REMOVED, so the PolyC symbol stays linked but is never called from parseStatement	UNLINKED_OR_DORMANT_SUBJECT	UNLINKED_OR_DORMANT_SUBJECT	the copied ON object loses the BR26 to _BootstrapStatementDispatch inside _parseStatement; the symbol remains defined in the subject object, so the link still succeeds but the authority is DORMANT	1	the live src/parser.c is unchanged	SENSITIVE
+S9-DP-03	S9-DP-03-EXEC-01	the genuine selector-OFF G0 object passes the RECON08 G0-provenance detector: G0_IMPORTS_SUCCESSOR=0, G0_CONSTRUCTOR_RELOCATIONS_FOUND=15, STATUS=PASS	the selector-OFF G0 object built WITH the successor imported (the ON build's parser object)	G0_NOT_GENUINE_C_TU	G0_NOT_GENUINE_C_TU	the adverse object imports the successor symbol, so the G0 provenance detector rejects it with G0_NOT_GENUINE_C_TU	1	the genuine G0 object is unchanged	SENSITIVE
+S9-DP-04	S9-DP-04-EXEC-01	the ON build's disassembly places the tok->i64 read (ldr x1, [x20, #0x20]) AFTER the b.ne that skips the non-keyword path	a disposable copy of src/parser.c with the conditional read MOVED BEFORE the TK_KEYWORD guard, so a non-keyword token's keyword id would be read eagerly	PROJECTION_GUARD_OR_READ_ORDER_CHANGED	PROJECTION_GUARD_OR_READ_ORDER_CHANGED	the copied ON object reads the keyword id before the guard; the detector compares the read's position against the guard branch and reports the change	1	the live src/parser.c is unchanged	SENSITIVE
+S9-DP-05	S9-DP-05-EXEC-01	the C mechanical router maps selector 0 to the legacy default path (rewind + identical diagnostic), and every selector in [1,15] to its own constructor	a disposable copy of src/parser.c with the router's `default:` arm changed to call a RECOGNIZED constructor (parseIfStatement) instead of the legacy default path	INVALID_SELECTOR_ROUTE	INVALID_SELECTOR_ROUTE	the copied router sends selector 0 to a recognized constructor, so an unknown keyword would invoke a constructor that the legacy default arm never invoked	1	the live src/parser.c is unchanged	SENSITIVE
+#
+# ------------------------------------------------------------------
+# THE TWO BUILD CONTROLS
+# ------------------------------------------------------------------
+S9-BG-01	S9-BG-01-EXEC-01	the subject object appears THREE times in the effective prerequisite expansion of production-hcc	a DISPOSABLE COPY of the Makefile with the subject removed from the PRODUCTION_HCC_INPUTS prerequisite list; the effective expansion is then measured	MISSING_SUBJECT_PREREQUISITE	MISSING_SUBJECT_PREREQUISITE	the effective prerequisite expansion drops from three occurrences to two, so the subject would be silently excluded from the build graph	1	the live Makefile was restored BYTE-IDENTICALLY (verified with diff)	SENSITIVE
+S9-BG-02	S9-BG-02-EXEC-01	a CMake configure with an EXISTING subject object configures cleanly	a DISPOSABLE configure with the subject object pointed at a path that does NOT exist and NO producer configured	WRONG_OR_DUPLICATE_PROVIDER	WRONG_OR_DUPLICATE_PROVIDER	the configure fails closed: CMake Error at CMakeLists.txt -- the statement-dispatch subject ... does not exist and no producer is configured; the configure exit is 1	1	the live CMakeLists.txt and the subject object are unchanged	SENSITIVE
+#
+# ------------------------------------------------------------------
+# THE TWO PROVENANCE CONTROLS
+# ------------------------------------------------------------------
+S9-PV-01	S9-PV-01-EXEC-01	the four producers are pairwise distinct: stage0 302e9f33..., production 69beebd0..., bootstrap02 a1c9b8d6..., and the host C compiler 9b11ead1...	a DISPOSABLE producer table in which the G2 row's digest is replaced with the G1 row's digest, relabelling one producer as another	PRODUCER_IDENTITY_COLLISION	PRODUCER_IDENTITY_COLLISION	the two rows then carry the same digest, so the exact-ID producer comparison detects the collision and the pair fails the distinctness requirement	1	the committed producer table is unchanged	SENSITIVE
+S9-PV-02	S9-PV-02-EXEC-01	the genuine G0 object passes the RECON08 G0-provenance detector: 15 constructor relocations, no successor import	a HAND-MADE object that declares the fifteen constructor symbols but was NOT compiled from the production src/parser.c translation unit	G0_PROVENANCE_INVALID	G0_PROVENANCE_INVALID	the handmade object is rejected: it does not carry the production function-scoped relocations that the genuine G0 carries	1	the genuine G0 object is unchanged	SENSITIVE
+#
+# ------------------------------------------------------------------
+# THE TWO CAUSAL CONTROLS
+# ------------------------------------------------------------------
+S9-CC-01	S9-CC-01-EXEC-01	RECON08-SUB-004-POST-POLYC-MUTANT	the compiled PolyC dispatch decision, mutated in an isolated detached worktree: the KW_IF arm redirected from selector 1 to selector 3	POLYC_MUTANT_REAL_COMPILER_EFFECT	POLYC_MUTANT_REAL_COMPILER_EFFECT	the mutant production compiler BUILDS (exit 0), the subject object CHANGES (f9d9c05e... -> a1510e6d...), the linked compiler CHANGES (117095a7... -> 1f77010a...), and the w2 diagnostic changes from "while parsing if body" to "while parsing while loop body"; the restoration is byte-identical in source, object and compiler	0	the source was restored byte-identically and the compiler rebuilt to the identical digest	SENSITIVE
+S9-CC-02	S9-CC-02-EXEC-01	the causal ledger distinguishes the three experiments by subject, selector state, phase and producer	a DISPOSABLE causal ledger in which the RECON08 PRE-C C mutation is relabelled as the POST-POLYC PolyC mutation	WRONG_SUBJECT_OR_EXECUTION_ID	WRONG_SUBJECT_OR_EXECUTION_ID	the relabelled row's subject is src/parser.c and its selector state carries no candidate selector, which contradicts the POST-POLYC row's subject and selector state; the detector rejects the substitution	1	the committed causal ledger is unchanged	SENSITIVE
+#
+# ------------------------------------------------------------------
+# THE TWO EXECUTION CONTROLS
+# ------------------------------------------------------------------
+S9-XC-01	S9-XC-01-EXEC-01	the combined roster carries 24 inherited R8 IDs, 4 surviving inherited IDs and 18 owned IDs, with zero missing, extra or duplicate	a DISPOSABLE combined roster with one frozen control ID (R8-CC-04) dropped while the TOTAL row still says 28	FROZEN_CONTROL_ID_MISSING	FROZEN_CONTROL_ID_MISSING	the exact-ID diff reports the omitted id by name, so a dropped id cannot hide behind an unchanged total	1	the committed roster is unchanged	SENSITIVE
+S9-XC-02	S9-XC-02-EXEC-01	the join cites independent evidence files, never itself; the source-phase digests are taken from the phase that produced them	a DISPOSABLE join row that cites ONLY itself as its evidence, plus a row that claims the C0 source digest for a C2-phase artifact	SELF_REFERENCE_OR_SOURCE_CHRONOLOGY_MISMATCH	SELF_REFERENCE_OR_SOURCE_CHRONOLOGY_MISMATCH	the self-citing row is rejected because its evidence path is the join row itself; the chronology row is rejected because the C0 digest does not match the C2-phase artifact it claims	1	the committed join is unchanged	SENSITIVE
+#
+# ------------------------------------------------------------------
+# THE DERIVED COUNTS
+# ------------------------------------------------------------------
+OWNED_CONTROL_ID_COUNT=18
+OWNED_CONTROLS_SENSITIVE=18
+OWNED_CONTROLS_VACUOUS=0
+OWNED_CONTROL_PHYSICAL_EXECUTIONS=19
+#
+#   The count is DERIVED from the rows above.  S9-FC-05 required THREE
+#   adverse executions (a stale source digest, a stale declared token
+#   type, and a stale live enum value), because the frozen contract
+#   names the detector class SOURCE_OR_ENUM_PROVENANCE_MISMATCH, which
+#   covers both the declared and the live half of the provenance.
+#   Every other control required exactly ONE.
+#
+#   The physical executions are 19, NOT 18: control IDs are not a
+#   synonym for physical execution count.
+#
+VACUOUS_PASSES=0
+OWNED_18_CONTROLS_RAW_RESULTS_STATUS=PASS

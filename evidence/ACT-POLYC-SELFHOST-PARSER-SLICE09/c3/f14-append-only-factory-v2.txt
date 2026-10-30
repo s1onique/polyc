@@ -1,0 +1,105 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE09
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=f14-append-only-factory-v2
+#
+# THE FACTORY INVARIANTS AT C3.  MEASURED, NOT ASSERTED.
+#
+# ==================================================================
+# F14 -- THE WHOLE PREDECESSOR FREEZE
+# ==================================================================
+# The freeze is c0/historical-f14-path-freeze.tsv, derived at the entry
+# commit ba9cb884.  Every frozen path is re-hashed at the C3 tree and
+# compared against the ENTRY blob SHA and SHA-256.
+#
+# COMMAND=<for each MATCH row: git hash-object P; shasum -a 256 P;
+#          compare with the entry blob and sha256>
+FROZEN_ROWS=575
+FROZEN_ROWS_CHANGED=0
+FROZEN_ROWS_MISSING=0
+RECON06_HALT_DOC_PRESERVED=YES
+RECON06_HALT_EVIDENCE_C0_PRESERVED=YES
+RECON06_HALT_EVIDENCE_C4_PRESERVED=YES
+SLICE08_CORRECTION01_DOC_PRESERVED=YES
+SLICE08_CORRECTION01_HANDOFF_PRESERVED=YES
+SLICE08_CORRECTION01_EVIDENCE_PRESERVED=YES
+F14_STATUS=PASS
+#
+# ==================================================================
+# THE APPEND-ONLY SUITE
+# ==================================================================
+# COMMAND=sh scripts/quality/factory-append-only-test.sh
+APPEND_ONLY_SUITE_PASS=11
+APPEND_ONLY_SUITE_FAIL=0
+APPEND_ONLY_SUITE_STATUS=PASS
+APPEND_ONLY_STATUS=PASS
+#
+# ==================================================================
+# THE FACTORY-V2 RANGE CHECKER (ON THE PREDECESSOR RECON08)
+# ==================================================================
+# COMMAND=sh scripts/quality/factory-v2-range-check.sh \
+#         ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08 ba9cb884
+    ACT=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08
+    ENTRY=4e01dbac59f18223efc5d168d07d232c6c7f0c42
+    FIRST=fb887a61acda357960130b9c64cf39dfe18c44cd
+    CLOSE=ba9cb884cebd2eabe17b53d6125849e180758b01
+    COMMITS=5
+    VERDICT=PASS
+    STATUS=PASS
+RANGE_CHECK_EXIT=0
+FACTORY_V2_RANGE_CHECK_ON_PREDECESSOR=PASS
+#
+# The SLICE09 range itself is checked at C4, because a range check needs
+# the terminal CLOSE commit.  The C0/C1/C2 commits already carry the
+# canonical ACT-Phase trailers (RED / EVIDENCE / IMPL).
+#
+# ==================================================================
+# CLOSURE STATUS (VIA GATE-FAST)
+# ==================================================================
+CLOSURE_STATUS_AT_C3=PASS   # see c3/gate-fast.txt
+#
+# ==================================================================
+# GIT REPLACE REFS AND PATCH HYGIENE
+# ==================================================================
+GIT_REPLACE_REFS=0
+# COMMAND=git diff --check
+DIFF_CHECK=PASS
+DIFF_CHECK_CLEAN=YES
+#
+# ==================================================================
+# SOURCE SCOPE
+# ==================================================================
+# The tracked modifications are exactly the authorized build-graph files:
+# COMMAND=git status --short | grep -v '^??'
+    M Makefile
+    M src/CMakeLists.txt
+#   (src/parser.c was modified and committed in C2.)
+#
+# The untracked additions are the ACT's own evidence and PolyC/C tools:
+    ?? evidence/ACT-POLYC-SELFHOST-PARSER-SLICE09/c3
+    ?? tools/quality/parser-slice09-*
+#
+UNAPPROVED_TRACKED_PATHS=0
+SOURCE_SCOPE_STATUS=PASS
+#
+# ==================================================================
+# THE BUILD-GRAPH CORRECTION MADE AT C3
+# ==================================================================
+#   The hermetic gate-push build exposed a real defect: the dedicated
+#   option HCC_USE_SELFHOST_PARSER_STATEMENT_DISPATCH was declared with
+#   default ON, so the stage0 build (which must be the legacy C control
+#   and does not pass the flag) demanded the PolyC subject object and a
+#   FRESH build failed at configure time.
+#
+#   The fix is inside the authorized build-graph scope:
+#     * src/CMakeLists.txt: the option default is now OFF, as the ACT
+#       requires ("dedicated option default OFF, production ON").
+#     * Makefile: the stage0 configure now passes
+#       -DHCC_USE_SELFHOST_PARSER_STATEMENT_DISPATCH=OFF explicitly,
+#       mirroring the other selectors.
+#
+#   The qualified production target still passes the selector ON with a
+#   producer, so the subject is still built and linked for production.
+#   The fail-closed configure path (option ON with no producer and no
+#   prebuilt subject) is retained and is exercised by S9-BG-01/S9-BG-02.
+#
+FACTORY_V2_F14_APPEND_ONLY_STATUS=PASS

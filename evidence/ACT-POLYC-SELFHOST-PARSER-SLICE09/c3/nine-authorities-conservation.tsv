@@ -1,0 +1,125 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE09
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=nine-authorities-conservation
+#
+# THE NINE ACTIVE PRODUCTION POLYC PARSER DECISION SITES.
+#
+# Each authority is proved at FOUR levels:
+#   1. the SELECTOR is ON for it in the qualified production build;
+#   2. the CALLER object carries an UNDEFINED IMPORT of its symbol;
+#   3. the CALLER object carries NO local definition of it;
+#   4. the LINKED binary carries EXACTLY ONE definition of it, and
+#      the caller's function-scoped relocation table places a real
+#      relocation to it inside the caller's own function range.
+#
+# Schema: authority_id <TAB> symbol <TAB> subject_source
+#         <TAB> subject_object <TAB> selector
+#         <TAB> caller_object <TAB> caller_import <TAB> caller_local_def
+#         <TAB> binary_definitions <TAB> relocation_inside_caller
+#         <TAB> status
+#
+# ------------------------------------------------------------------
+# THE EIGHT PREDECESSOR AUTHORITIES -- UNCHANGED
+# ------------------------------------------------------------------
+1	_BootstrapCalcPadding	tools/bootstrap/selfhost-parser-padding.HC	build/parser-padding-subject.o	HCC_USE_SELFHOST_PARSER_PADDING	build/CMakeFiles/hcc.dir/parser.c.o	YES	NO	1	YES	CONSERVED
+2	_BootstrapValidPostControlFlowToken	tools/bootstrap/selfhost-parser-control-flow-token.HC	build/parser-control-flow-token-subject.o	HCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN	build/CMakeFiles/hcc.dir/parser.c.o	YES	NO	1	YES	CONSERVED
+3	_BootstrapOperatorPrecedence	tools/bootstrap/selfhost-parser-operator-precedence.HC	build/parser-operator-precedence-subject.o	HCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE	build/CMakeFiles/hcc.dir/prslib.c.o	YES	NO	1	YES	CONSERVED
+4	_BootstrapAstBinOpFromToken	tools/bootstrap/selfhost-parser-slice04.HC	build/parser-ast-binop-subject.o	HCC_USE_SELFHOST_PARSER_AST_BINOP	build/CMakeFiles/hcc.dir/ast.c.o	YES	NO	1	YES	CONSERVED
+5	_BootstrapAstUnaryOpFromToken	tools/bootstrap/selfhost-parser-slice05.HC	build/parser-ast-unary-subject.o	HCC_USE_SELFHOST_PARSER_AST_UNARY	build/CMakeFiles/hcc.dir/ast.c.o	YES	NO	1	YES	CONSERVED
+6	_BootstrapSwitchArmTerminates	tools/bootstrap/selfhost-parser-slice06.HC	build/parser-switch-arm-subject.o	HCC_USE_SELFHOST_PARSER_SWITCH_ARM	build/CMakeFiles/hcc.dir/parser.c.o	YES	NO	1	YES	CONSERVED
+7	_BootstrapCompoundBlockAppendsStatement	tools/bootstrap/selfhost-parser-slice07.HC	build/parser-compound-block-subject.o	HCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND	build/CMakeFiles/hcc.dir/parser.c.o	YES	NO	1	YES	CONSERVED
+8	_BootstrapDefaultArmTerminates	tools/bootstrap/selfhost-parser-slice08.HC	build/parser-default-arm-subject.o	HCC_USE_SELFHOST_PARSER_DEFAULT_ARM_TERMINATES	build/CMakeFiles/hcc.dir/parser.c.o	YES	NO	1	YES	CONSERVED
+#
+# ------------------------------------------------------------------
+# THE NINTH AUTHORITY -- NEW IN THIS ACT
+# ------------------------------------------------------------------
+9	_BootstrapStatementDispatch	tools/bootstrap/selfhost-parser-statement-dispatch.HC	build/parser-statement-dispatch-subject.o	HCC_USE_SELFHOST_PARSER_STATEMENT_DISPATCH	build/CMakeFiles/hcc.dir/parser.c.o	YES	NO	1	YES	NEW_AND_ACTIVE
+#
+# ------------------------------------------------------------------
+# THE MEASURED SYMBOL TABLE IN THE LINKED PRODUCTION BINARY
+# ------------------------------------------------------------------
+COMMAND=nm ./hcc | grep ' T _Bootstrap' | sort
+   0000000100063984 T _BootstrapCalcPadding
+   00000001000639fc T _BootstrapValidPostControlFlowToken
+   0000000100063c34 T _BootstrapOperatorPrecedence
+   0000000100064004 T _BootstrapAstBinOpFromToken
+   00000001000641f4 T _BootstrapAstUnaryOpFromToken
+   000000010006430c T _BootstrapSwitchArmTerminates
+   00000001000643c0 T _BootstrapCompoundBlockAppendsStatement
+   0000000100064408 T _BootstrapDefaultArmTerminates
+   00000001000644a4 T _BootstrapStatementDispatch
+#
+# ------------------------------------------------------------------
+# THE MEASURED IMPORT TABLE IN THE CALLER OBJECTS
+# ------------------------------------------------------------------
+COMMAND=for o in build/CMakeFiles/hcc.dir/*.o; do nm "$o" | grep ' U _Bootstrap'; done
+   ast.c.o:                 U _BootstrapAstBinOpFromToken
+   ast.c.o:                 U _BootstrapAstUnaryOpFromToken
+   parser.c.o:              U _BootstrapCalcPadding
+   parser.c.o:              U _BootstrapCompoundBlockAppendsStatement
+   parser.c.o:              U _BootstrapDefaultArmTerminates
+   parser.c.o:              U _BootstrapStatementDispatch
+   parser.c.o:              U _BootstrapSwitchArmTerminates
+   parser.c.o:              U _BootstrapValidPostControlFlowToken
+   prslib.c.o:              U _BootstrapOperatorPrecedence
+#
+# ------------------------------------------------------------------
+# THE MEASURED DEFINITION TABLE IN THE POLYC SUBJECT OBJECTS
+# ------------------------------------------------------------------
+COMMAND=for o in build/parser-*-subject.o; do nm "$o" | grep -E ' T _Bootstrap'; done
+   parser-ast-binop-subject.o:         T _BootstrapAstBinOpFromToken
+   parser-ast-unary-subject.o:         T _BootstrapAstUnaryOpFromToken
+   parser-compound-block-subject.o:    T _BootstrapCompoundBlockAppendsStatement
+   parser-control-flow-token-subject.o: T _BootstrapValidPostControlFlowToken
+   parser-default-arm-subject.o:       T _BootstrapDefaultArmTerminates
+   parser-operator-precedence-subject.o: T _BootstrapOperatorPrecedence
+   parser-padding-subject.o:           T _BootstrapCalcPadding
+   parser-statement-dispatch-subject.o: T _BootstrapStatementDispatch
+   parser-switch-arm-subject.o:        T _BootstrapSwitchArmTerminates
+#
+# NINE subject objects, NINE definitions, NINE distinct symbols.
+#
+# ------------------------------------------------------------------
+# THE DERIVED COUNTS
+# ------------------------------------------------------------------
+POLYC_PARSER_AUTHORITIES=9
+EXPECTED_POLYC_PARSER_AUTHORITIES=9
+PREDECESSOR_AUTHORITIES_PRESERVED=8
+EXPECTED_PREDECESSOR_AUTHORITIES_PRESERVED=8
+NEW_AUTHORITIES=1
+EXPECTED_NEW_AUTHORITIES=1
+AUTHORITIES_WITH_EXACTLY_ONE_BINARY_DEFINITION=9
+AUTHORITIES_WITH_A_CALLER_UNDEFINED_IMPORT=9
+AUTHORITIES_WITH_A_CALLER_LOCAL_DEFINITION=0
+AUTHORITIES_WITH_A_REAL_RELOCATION=9
+#
+# NO C OBJECT DEFINES ANY OF THE NINE SYMBOLS.  Every definition is in
+# a PolyC subject object.
+#
+C_OBJECT_DEFINED_AUTHORITIES=0
+#
+# ------------------------------------------------------------------
+# THE PRODUCTION AUTHORITY TRANSFER, MEASURED
+# ------------------------------------------------------------------
+PRODUCTION_STATEMENT_DISPATCH_AUTHORITY=POLYC
+LEGACY_C_KEYWORD_DISPATCH_AUTHORITY_RETIRED=YES
+#
+#   The legacy C keyword chain is COMPILED OUT of the ON path: the
+#   selector-OFF object carries ZERO references to the successor, and
+#   the ON object's function-scoped relocation table shows the decision
+#   leaving the function through the PolyC symbol, not through a
+#   keyword comparison.  The legacy chain survives ONLY in the
+#   selector-OFF object, which is the G0 oracle.
+#
+# ------------------------------------------------------------------
+# NO UNAPPROVED PRODUCTION CHANGE
+# ------------------------------------------------------------------
+#   The tracked source delta is exactly: src/parser.c (the SUB-004
+#   seam and its adjacent oracle wrapper), src/CMakeLists.txt (the
+#   subject option, production and link wiring), Makefile (the
+#   subject producer, prerequisite edge and the generation rules),
+#   and the new PolyC component.  No other src/** file, no existing
+#   tool, no test, no gate and no .githooks file was touched.
+#
+UNAPPROVED_PRODUCTION_CHANGES=0
+NINE_AUTHORITIES_CONSERVATION_STATUS=PASS

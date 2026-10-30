@@ -1,0 +1,73 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE09
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=g0-g3-producer-and-object-provenance
+#
+# THE FOUR GENERATIONS: THEIR PRODUCERS, THEIR OBJECTS AND THEIR
+# DISTINCTNESS.
+#
+# The frozen contract
+# (evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08/c2/
+#  selected-stage-provenance-and-causal-contract.md section 1) requires
+# THREE DISTINCT PolyC producer binaries plus the host C compiler:
+# "A single compiler re-run is not three generations."
+#
+# Schema: generation <TAB> decision_subject <TAB> producer_path
+#         <TAB> producer_sha256 <TAB> object_path <TAB> object_sha256
+#         <TAB> object_format <TAB> object_symbol
+#
+G0	the REAL legacy C decision in src/parser.c, SUB-004 selector OFF	/usr/bin/cc	9b11ead1ca76a03d61108ad5bf2c913d6aa8daa7deb9fd28893e847e3680e5e7	build/slice09-gen/g0.o	5df41d012d9602bf21d563d4bc173c2c225fcfadc72c4b50b60a808edc75ed15	Mach-O 64-bit object arm64	_ParserLegacyStatementDispatchOracle
+G1	the new compiled PolyC statement dispatch, selector ON	./build/host-stage0/hcc	4264610a6286f603503a69ad57411910fe4207db9eade6915be675a38444fd02	build/slice09-gen/g1.o	f9d9c05eaf9c8cb4d2821b9c2c6d59e10116eacdfc3197150855aaef693c1c3d	Mach-O 64-bit object arm64	_BootstrapStatementDispatch
+G2	the new compiled PolyC statement dispatch, selector ON	./hcc	9e50565b9235ae2939b2333580b45956c3589dddc972e9f4bf6b8cbd2563d90a	build/slice09-gen/g2.o	f9d9c05eaf9c8cb4d2821b9c2c6d59e10116eacdfc3197150855aaef693c1c3d	Mach-O 64-bit object arm64	_BootstrapStatementDispatch
+G3	the new compiled PolyC statement dispatch, selector ON	./build/hcc-bootstrap02	95bedab684bbb2ec1dfb464456be6de4c36e89313421476fd0f7f2f0389dc2cc	build/slice09-gen/g3.o	f9d9c05eaf9c8cb4d2821b9c2c6d59e10116eacdfc3197150855aaef693c1c3d	Mach-O 64-bit object arm64	_BootstrapStatementDispatch
+#
+# THE PRODUCER DISTINCTNESS.  The three PolyC producers are pairwise
+# distinct binaries, bound by their on-disk digests:
+#
+PRODUCER_COUNT=4
+POLYC_PRODUCER_COUNT=3
+THREE_POLYC_PRODUCERS_PAIRWISE_DISTINCT=YES
+G1_PRODUCER_SHA256=4264610a6286f603503a69ad57411910fe4207db9eade6915be675a38444fd02
+G2_PRODUCER_SHA256=9e50565b9235ae2939b2333580b45956c3589dddc972e9f4bf6b8cbd2563d90a
+G3_PRODUCER_SHA256=95bedab684bbb2ec1dfb464456be6de4c36e89313421476fd0f7f2f0389dc2cc
+G1_PRODUCER_DIFFERS_FROM_G2=YES
+G1_PRODUCER_DIFFERS_FROM_G3=YES
+G2_PRODUCER_DIFFERS_FROM_G3=YES
+G0_PRODUCER_IS_THE_HOST_C_COMPILER=YES
+#
+# The three PolyC producers come from DIFFERENT bootstrap stages:
+# G1 is the STAGE0 compiler (the legacy C control, which does not
+# depend on the production compiler it serves), G2 is the PRODUCTION
+# compiler, G3 is the STAGE-2 bootstrap02 compiler.
+#
+G1_STAGE=stage0 (the legacy C control)
+G2_STAGE=production (./hcc)
+G3_STAGE=stage2 (./build/hcc-bootstrap02)
+#
+# The G1/G2/G3 objects may be BYTE-IDENTICAL when the compilation is
+# deterministic.  That does NOT collapse the generations: the PRODUCER
+# EXECUTABLES are distinct, and each generation is a separate
+# compilation by a separate producer.
+#
+# The G0 object is the REAL production translation unit.  The RECON08
+# G0-provenance detector, used unmodified, finds all fifteen
+# constructor relocations in it and reports that it imports no
+# successor symbol.
+#
+G0_PROVENANCE_DETECTOR=build/parser-surface-recon08-verify G0
+G0_IMPORTS_SUCCESSOR=0
+G0_CONSTRUCTOR_RELOCATIONS_FOUND=15
+G0_CONSTRUCTORS_EXPECTED=15
+G0_PROVENANCE_STATUS=PASS
+G0_IS_HANDMADE=NO
+G0_IS_A_COPY=NO
+#
+# THE COMPARISON LAYER IS BYTE-IDENTICAL ACROSS THE FOUR RUNS.
+#
+# The differential's PolyC object is compiled ONCE and linked into all
+# four executables.  Only the linked DECISION OBJECT differs, so a
+# difference between two runs can only come from the decision.
+#
+DIFFERENTIAL_OBJECT=build/parser-slice09-differential.o
+DIFFERENTIAL_OBJECT_IS_SHARED_BY_ALL_FOUR=YES
+#
+G0_G3_PRODUCER_AND_OBJECT_PROVENANCE_STATUS=PASS

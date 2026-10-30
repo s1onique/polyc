@@ -1,0 +1,85 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE09
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=all-12-ordered-comparisons
+#
+# ALL TWELVE ORDERED GENERATION PAIRS.
+#
+# The frozen contract requires "all twelve ordered pairs of the four
+# generations on the frozen fixture, plus the anti-self-reference and
+# provenance controls."
+#
+# Each pair is compared with `diff` over the per-row records of the
+# two generations.  A disagreement is counted from the diff's '<' lines.
+# The comparison is ORDERED: G0->G1 and G1->G0 are separate rows.
+#
+# Schema: from_gen <TAB> to_gen <TAB> rows_compared
+#         <TAB> disagreements <TAB> row_id_order_identical
+#         <TAB> input_pair_identical <TAB> expected_identical
+#         <TAB> observed_identical <TAB> status
+#
+G0	G1	21	0	YES	YES	YES	YES	PASS
+G0	G2	21	0	YES	YES	YES	YES	PASS
+G0	G3	21	0	YES	YES	YES	YES	PASS
+G1	G0	21	0	YES	YES	YES	YES	PASS
+G1	G2	21	0	YES	YES	YES	YES	PASS
+G1	G3	21	0	YES	YES	YES	YES	PASS
+G2	G0	21	0	YES	YES	YES	YES	PASS
+G2	G1	21	0	YES	YES	YES	YES	PASS
+G2	G3	21	0	YES	YES	YES	YES	PASS
+G3	G0	21	0	YES	YES	YES	YES	PASS
+G3	G1	21	0	YES	YES	YES	YES	PASS
+G3	G2	21	0	YES	YES	YES	YES	PASS
+#
+# ------------------------------------------------------------------
+# THE COUNTS ARE DERIVED, NOT ASSERTED
+# ------------------------------------------------------------------
+ORDERED_PAIR_COUNT=12
+EXPECTED_ORDERED_PAIR_COUNT=12
+PAIRS_WITH_FULL_ROW_COVERAGE=12
+PAIRS_WITH_FULL_ROW_COVERAGE_EXPECTED=12
+TOTAL_DISAGREEMENTS=0
+PAIRS_WITH_ZERO_DISAGREEMENTS=12
+#
+# The row count in every pair is 21, which is the fixture's own row
+# count.  No pair compared a truncated row set.
+#
+MIN_ROWS_COMPARED_IN_ANY_PAIR=21
+MAX_ROWS_COMPARED_IN_ANY_PAIR=21
+ROWS_COMPARED_IDENTICAL_IN_ALL_PAIRS=YES
+#
+# ------------------------------------------------------------------
+# WHAT EACH COLUMN MEANS
+# ------------------------------------------------------------------
+# row_id_order_identical  the two runs present the rows in the SAME
+#                         ORDER and with the SAME row ids.
+# input_pair_identical    the (token_type, keyword_id) pair of every
+#                         row is the same in both runs.
+# expected_identical      the expected selector of every row is the
+#                         same in both runs -- it comes from the
+#                         fixture, which is shared.
+# observed_identical      the OBSERVED selector of every row is the
+#                         same in both runs -- this is the actual
+#                         equality claim.
+#
+# A pair that agreed only on the expected column would be vacuous;
+# the observed column is the one that carries the authority claim.
+#
+# ------------------------------------------------------------------
+# THE ANTI-SELF-REFERENCE PROPERTY
+# ------------------------------------------------------------------
+# The four runs are NOT four copies of one run:
+#
+#   * G0 executes the REAL legacy C chain (src/parser.c with the
+#     candidate selector OFF), a DIFFERENT language, a DIFFERENT
+#     producer and a DIFFERENT object from the three PolyC runs.
+#   * G1, G2 and G3 each execute a SEPARATE COMPILATION of the PolyC
+#     component by a DIFFERENT producer binary.
+#   * The comparison layer is the same object, so the equality is not
+#     an artefact of the comparison code.
+#
+# The RECON08 producer-identity control (R8-PV-01) requires a
+# relabelled producer to be rejected; the SLICE09-owned equivalent is
+# S9-PV-01, and the producer digests are recorded in
+# c3/g0-g3-producer-and-object-provenance.tsv.
+#
+ALL_12_ORDERED_COMPARISONS_STATUS=PASS

@@ -1,0 +1,71 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE09
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=independent-source-and-fixture-recompute
+#
+# THE INDEPENDENT RECOMPUTE OF THE FIXTURE FROM THE SOURCE AND THE ENUM.
+#
+# The witness is tools/quality/parser-slice09-fixture-integrity.HC,
+# compiled to build/parser-slice09-fixture-integrity by ./hcc.  It is a
+# DIFFERENT implementation path from the fixture PRODUCER
+# (tools/quality/parser-slice09-fixture-producer.HC): the producer
+# writes the rows; the integrity witness re-derives the canonical
+# mapping from the source text and the lexer enum and compares.
+#
+# The source it must be given is the ENTRY-TREE source, because the
+# frozen range src/parser.c:1864..1877 is the decision that was
+# MIGRATED.  The post-migration live parser.c no longer carries the
+# keyword comparison chain.
+#
+# COMMAND=git show ba9cb884cebd2eabe17b53d6125849e180758b01:src/parser.c > /tmp/s9-entry-parser.c
+# COMMAND=shasum -a 256 /tmp/s9-entry-parser.c
+    8e68487e1fd351cb888c5044cfb71871628d904dd089305d59138b2f017bee00
+#    (matches c0/selected-contract-bindings.tsv CURRENT_SRC_PARSER_C_SHA256)
+#
+# COMMAND=./build/parser-slice09-fixture-integrity \
+#         evidence/ACT-POLYC-SELFHOST-PARSER-SLICE09/c1/frozen-dispatch-fixture.tsv \
+#         /tmp/s9-entry-parser.c src/lexer.h
+   CANON_TK_KEYWORD=818
+   CANON_ARM_COUNT=15
+   FIXTURE_ROW_COUNT=21
+   FAILURES=0
+   STATUS=PASS
+#   EXIT=0
+#
+# ------------------------------------------------------------------
+# NEGATIVE CHECK -- THE SAME WITNESS ON THE MIGRATED LIVE SOURCE
+# ------------------------------------------------------------------
+# Running the SAME witness against the MIGRATED live src/parser.c
+# returns CANON_ARM_COUNT=0 and 30 failures, because the keyword
+# comparison chain is no longer present in the live tree.  This is
+# recorded so that the choice of the entry-tree source is an explicit,
+# measured decision rather than a silent one.  The fixture was NOT
+# derived from the migrated tree and must not be verified against it.
+#
+# COMMAND=./build/parser-slice09-fixture-integrity ... src/parser.c src/lexer.h
+   CANON_ARM_COUNT=0
+   FAILURES=30
+   STATUS=FAIL
+#
+# ------------------------------------------------------------------
+# THE FIXTURE IDENTITY
+# ------------------------------------------------------------------
+# COMMAND=shasum -a 256 evidence/ACT-POLYC-SELFHOST-PARSER-SLICE09/c1/frozen-dispatch-fixture.tsv
+    12decd1712912ad3bac940de8c5f6de772fd9df677ce62137b6310d13b2a687f
+FIXTURE_SHA256=12decd1712912ad3bac940de8c5f6de772fd9df677ce62137b6310d13b2a687f
+FIXTURE_ROW_COUNT=21
+FIXTURE_ARM_COUNT=15
+FIXTURE_PARTITIONS=4
+#   P0-NONKEYWORD 1, P1-KEYWORD 15, P2-UNKNOWN-KEYWORD 1, P3-EXTREME 4
+#   (the partitions are counted from the fixture's own partition column)
+#
+# ------------------------------------------------------------------
+# THE CORRUPTION CONTROLS RE-EXECUTED AGAINST THIS WITNESS (C3)
+# ------------------------------------------------------------------
+# S9-FC-01 remove row 5   -> DETECTOR=MISSING_FIXTURE_ID ROW_ID=5
+# S9-FC-02 duplicate row 5 -> DETECTOR=DUPLICATE_FIXTURE_ID ROW_ID=5
+# S9-FC-04 flip row 2      -> DETECTOR=FIXTURE_SELECTOR_MISMATCH ROW_ID=2
+#                             EXPECTED_SELECTOR=1
+# These are the same executions recorded in owned-18-controls-raw-results.tsv;
+# they are cited here as independent confirmation of the witness's sensitivity.
+#
+INDEPENDENT_SOURCE_AND_FIXTURE_RECOMPUTE_STATUS=PASS

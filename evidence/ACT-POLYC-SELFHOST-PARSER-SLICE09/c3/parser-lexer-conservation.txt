@@ -1,0 +1,83 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE09
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=parser-lexer-conservation
+#
+# THE CONSERVATION, MEASURED FRESH AT C3.  Serialized -- the shared
+# /tmp/holyc-asm.s assembly temporary is a known race, so no two build
+# or test runs overlapped.
+#
+# ==================================================================
+# THE PARSER UNIT SUITE
+# ==================================================================
+# COMMAND=make unit-test
+UNIT_TEST_EXIT=0
+# COMMAND=grep -o 'PASSED: [0-9]*/[0-9]*' <log> |
+#          awk -F'[/ ]' '{p+=$2; t+=$3} END {print "PASSED="p, "TOTAL="t}'
+    PASSED=376 TOTAL=376
+# COMMAND=grep -o 'PASSED: [0-9]*/[0-9]*' <log> | wc -l
+    90
+# COMMAND=grep -o 'PASSED: [0-9]*/[0-9]*' <log> | md5 -q
+    b6f117eb1386ca80f81bc06226e2a741
+# COMMAND=grep -c 'FAILED: [0-9]*/[0-9]*' <log>
+    0
+PARSER_ASSERTIONS=376/376
+PARSER_ASSERTION_FILES=90
+PARSER_ASSERTION_SEQUENCE_MD5=b6f117eb1386ca80f81bc06226e2a741
+PARSER_BASELINE_MATCHES_HISTORICAL_IDENTITY=YES
+NEW_PARSER_FAILURE_IDENTITIES=0
+#
+# ==================================================================
+# THE THREE LEXER DIRECT DIFFERENTIALS
+# ==================================================================
+# COMMAND=make lexer07-direct-differential
+    ACT_SELFHOST_LEXER02_DIRECT_DIFF_PASS=89
+    ACT_SELFHOST_LEXER02_DIRECT_DIFF_FAIL=0
+    STATUS=PASS
+LEXER07_DIRECT_DIFFERENTIAL=89/89 PASS
+# COMMAND=make lexer08-direct-differential
+    DIRECT_DIFFERENTIAL_TOTAL=45
+    DIRECT_DIFFERENTIAL_PASS=45
+    DIRECT_DIFFERENTIAL_FAIL=0
+    STATUS=PASS
+LEXER08_DIRECT_DIFFERENTIAL=45/45 PASS
+# COMMAND=make lexer09-direct-differential
+    DIRECT_DIFFERENTIAL_TOTAL=23
+    DIRECT_DIFFERENTIAL_PASS=23
+    DIRECT_DIFFERENTIAL_FAIL=0
+    STATUS=PASS
+LEXER09_DIRECT_DIFFERENTIAL=23/23 PASS
+NEW_LEXER_FAILURE_IDENTITIES=0
+#
+# ==================================================================
+# THE LEXER07 BROAD CORPUS -- KNOWN FAIL BASELINE PRESERVED
+# ==================================================================
+# COMMAND=./build/lexer07-broad-corpus-4-stage \
+#           evidence/ACT-POLYC-SELFHOST-LEXER01/c2/corpus-inventory.txt \
+#           build/slice09-c3-lexer07-broad
+    TOTAL=181
+    PASS_S0=166 HISTORICAL_S0=0 PASS_S1=175 PASS_S2=175 PASS_S3=175
+    FAIL_S0=15 FAIL_S1=6 FAIL_S2=6 FAIL_S3=6
+    BOTH_FAIL_4=6
+    REGRESSION=0
+    DIVERGED=0
+    PASS_MISMATCH=9
+    HISTORICAL_S0_FALLBACKS_USED=0
+    BYTE_IDENTICAL_4=166
+    PROVENANCE_SCHEMA_VALID=1
+    FAILURE_SCHEMA_VALID=1
+    STATUS=FAIL
+    TOOL_EXIT=1
+# COMMAND=md5 -q build/slice09-c3-lexer07-broad/corpus-failures.tsv
+    7ee761440de83552e751e3c3976c1683
+LEXER07_FAILURE_IDENTITY_MD5=7ee761440de83552e751e3c3976c1683
+LEXER07_HISTORICAL_FAILURE_IDENTITY_MD5=7ee761440de83552e751e3c3976c1683
+LEXER07_FAILURE_IDENTITY_COUNT=15
+LEXER07_STATUS=FAIL_KNOWN_BASELINE
+REGRESSION=0
+DIVERGED=0
+NEW_LEXER07_FAILURE_IDENTITIES=0
+#
+#   The status is FAIL and is NEVER relabelled PASS.  The failure
+#   IDENTITY set (md5) is unchanged, not merely unchanged in count.
+#
+PARSER_LEXER_CONSERVATION_STATUS=PASS

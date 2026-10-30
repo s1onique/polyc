@@ -1,0 +1,223 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE09
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=post-polyc-mutation-pristine-mutant-restored
+#
+# THE POST-MIGRATION POLYC-SOURCE MUTATION, IN A DETACHED WORKTREE.
+#
+# THIS IS A NEW EXPERIMENT ON THE POST-MIGRATION SUBJECT.  It is NOT
+# the RECON08 pre-migration C mutation: the subject here is the
+# COMPILED POLYC COMPONENT
+# tools/bootstrap/selfhost-parser-statement-dispatch.HC, not the C
+# decision in src/parser.c.  The RECON08 pre-migration event is CITED
+# as a prior, in c3/causal-execution-ids-and-subjects.tsv.
+#
+# The frozen contract's ID for this experiment is
+# RECON08-SUB-004-POST-POLYC-MUTANT.  That frozen ID is used, not
+# renamed.
+#
+EXECUTION_ID=RECON08-SUB-004-POST-POLYC-MUTANT
+SHARED_EXECUTION_IDS=RECON08-SUB-004-POST-POLYC-MUTANT, S9-CC-01
+#
+# S9-CC-01 is the positive sensitivity check of THIS ONE physical
+# experiment.  They share an execution ID and are NOT two independent
+# experiments.
+#
+# ------------------------------------------------------------------
+# THE WORKTREE
+# ------------------------------------------------------------------
+COMMAND=git worktree add --detach /tmp/s9-post-polyc-wt add291d08e2541a8d64fb4be88c7938cb3df2eaa
+   (a DETACHED worktree at the C2 IMPL commit, which is the commit
+    that CONTAINS the new PolyC component; the authoritative main
+    checkout was NEVER modified)
+#
+# ------------------------------------------------------------------
+# THE MUTATION, DECLARED BEFORE IT WAS OBSERVED
+# ------------------------------------------------------------------
+#
+# The mutation is ONE hunk, ONE line, in the POLYC COMPONENT:
+#   -  if (keyword_id == 46) return 1;   // KW_IF -> parseIfStatement
+#   +  if (keyword_id == 46) return 3;   // MUTANT: KW_IF -> the WHILE selector
+#
+# The mutated arm is the KW_IF arm.  Redirecting it to selector 3
+# (the WHILE selector) makes the dispatch send an `if` statement to
+# the while-loop constructor.
+#
+# PREDECLARED_EXPECTED_FIXTURE_EFFECT	the row for KW_IF (fixture row 2,
+#     token_type 818, keyword_id 46) changes its observed selector
+#     from 1 to 3; every other row is unchanged
+# PREDECLARED_EXPECTED_WITNESS_EFFECT	the w2 diagnostic names the
+#     WHILE constructor instead of the IF constructor; the w3 runtime
+#     program's behaviour changes, because an `if` body is executed as
+#     a while-loop body
+# PREDECLARED_EXPECTED_CHANNEL=W-DIAG and W-RUN
+# PREDECLARED_EXPECTED_CLASSIFICATION=COMPILER_DIAGNOSTIC_PATH_CHANGED
+#
+# ------------------------------------------------------------------
+# STATE 1 -- THE PRISTINE
+# ------------------------------------------------------------------
+COMMAND=cd /tmp/s9-post-polyc-wt && make production-hcc
+   PRISTINE_BUILD_EXIT=0
+PRISTINE_POLYC_SRC_SHA256=7063b946c5cd19480f8e9ef7601b004450ef091a29e3ccf032a89eb4e80a12ed
+PRISTINE_POLYC_SUBJECT_OBJECT_SHA256=f9d9c05eaf9c8cb4d2821b9c2c6d59e10116eacdfc3197150855aaef693c1c3d
+PRISTINE_HCC_SHA256=117095a7b1e9c22de967e8c7a53374b05603c4b1ea62d5e37cfe0849f971527d
+#
+# The pristine production compiler carries the new authority:
+#
+COMMAND=nm /tmp/s9-post-polyc-wt/hcc | grep -c " T _BootstrapStatementDispatch"
+   1
+#
+# The PRISTINE WITNESSES:
+#
+COMMAND=cd /tmp/s9-post-polyc-wt && ./hcc --install-dir=<prefix> -c build/slice09-witness/w2.HC -o build/slice09-witness/w2.o
+   error: Unexpected keyword `I64` while parsing if body
+   PRISTINE_W2_COMPILE_EXIT=1
+   PRISTINE_W2_DIAGNOSTIC=while parsing if body
+#
+COMMAND=cd /tmp/s9-post-polyc-wt && ./hcc --install-dir=<prefix> build/slice09-witness/w3.HC -o build/slice09-witness/w3
+   PRISTINE_W3_COMPILE_EXIT=0
+COMMAND=./build/slice09-witness/w3
+   PRISTINE_W3_OUTPUT=ACC=12
+   PRISTINE_W3_RUN_EXIT=0
+#
+# ------------------------------------------------------------------
+# STATE 2 -- THE MUTANT
+# ------------------------------------------------------------------
+COMMAND=cd /tmp/s9-post-polyc-wt && make production-hcc
+   MUT_BUILD_EXIT=0
+#
+#   The mutant production compiler was built by the REAL production
+#   build system (cmake + make hcc) from the mutated PolyC source in
+#   an isolated worktree.  A FAILED build was never mistaken for
+#   causality: the compiler build exit, the witness compile exit and
+#   the witness run exit are recorded SEPARATELY.
+#
+MUTANT_POLYC_SRC_SHA256=5ac6c2c9c955c67afb59e13d7b8ae10d5b989ac9ebc16a729bdfd671b187d1f7
+MUTANT_POLYC_SUBJECT_OBJECT_SHA256=a1510e6d93286f5b58a024e43498c87f6b1db248ea1851262299d38c14e282fa
+MUTANT_HCC_SHA256=1f77010ac1f7c718c89303ef8401fe64abb2fc9de8729ffad5f631828fe6eb37
+#
+#   The compiled PolyC subject object CHANGED, and the linked compiler
+#   CHANGED.  The mutation is NOT dormant: the new object is actually
+#   linked and actually called.
+#
+MUTANT_SUBJECT_OBJECT_CHANGED=YES
+MUTANT_LINKED_COMPILER_CHANGED=YES
+#
+COMMAND=nm /tmp/s9-post-polyc-wt/hcc | grep -c " T _BootstrapStatementDispatch"
+   1
+#
+# THE MUTANT WITNESS, ON THE DECLARED CHANNEL:
+#
+COMMAND=cd /tmp/s9-post-polyc-wt && ./hcc --install-dir=<prefix> -c build/slice09-witness/w2.HC -o build/slice09-witness/w2.o
+   error: Unexpected keyword `I64` while parsing while loop body
+   MUTANT_W2_COMPILE_EXIT=1
+   MUTANT_W2_DIAGNOSTIC=while parsing while loop body
+#
+#   THE DIAGNOSTIC NAMES THE OTHER CONSTRUCTOR.  The pristine compiler
+#   says "while parsing if body"; the mutant says "while parsing while
+#   loop body".  The observation is about the DECISION'S OUTCOME, not
+#   about the mere presence of a symbol.
+#
+W2_DIAGNOSTIC_CHANGED=YES
+W2_NAMES_A_DIFFERENT_CONSTRUCTOR=YES
+#
+COMMAND=cd /tmp/s9-post-polyc-wt && ./hcc --install-dir=<prefix> build/slice09-witness/w3.HC -o build/slice09-witness/w3-mut
+   MUTANT_W3_COMPILE_EXIT=0
+#
+#   The mutant's w3 program compiles (the compiler accepted it) but its
+#   RUNTIME behaviour differs: the `if (x) { ... }` statement is now
+#   parsed as a while-loop body, so the program's control flow is
+#   different and it does not terminate normally.
+#
+COMMAND=timeout 10 ./build/slice09-witness/w3-mut
+   MUTANT_W3_RUN_EXIT=124
+#
+#   124 is the exit status of `timeout` when the command had to be
+#   KILLED after the time limit.  The program's runtime behaviour is
+#   therefore DIFFERENT from the pristine program's, which exits 0 and
+#   prints ACC=12.
+#
+MUTANT_W3_RUNTIME_DIFFERS=YES
+MUTANT_W3_STDOUT=<empty: the program did not reach its print>
+PRISTINE_W3_STDOUT=ACC=12
+#
+# THE CLASSIFICATION.  The mutant compiler BUILT successfully and the
+# mutant compiler ACCEPTED the witness (it produced an object).  The
+# difference is therefore NOT a compiler-acceptance change and NOT a
+# rejected compilation.  The frozen contract's W-DIAG channel -- the
+# compiler's diagnostic TEXT, which names the constructor that ran --
+# is the channel on which the difference is observed, and that is what
+# the classification records.
+#
+CLASSIFICATION=COMPILER_DIAGNOSTIC_PATH_CHANGED
+CLASSIFICATION_NOT_COMPILER_ACCEPTANCE_CHANGED=YES
+CLASSIFICATION_NOT_RUNTIME_OUTPUT_CHANGED_FOR_THE_REJECTED_WITNESS=YES
+#
+#   The ACT forbids claiming a runtime output for a failed
+#   compilation.  The w2 witness is REJECTED by both compilers, so no
+#   runtime output is claimed for it.  The RUNTIME difference is
+#   claimed only for w3, which both compilers ACCEPTED.
+#
+# ------------------------------------------------------------------
+# STATE 3 -- THE RESTORATION
+# ------------------------------------------------------------------
+COMMAND=cd /tmp/s9-post-polyc-wt && git checkout -- tools/bootstrap/selfhost-parser-statement-dispatch.HC
+RESTORED_POLYC_SRC_SHA256=7063b946c5cd19480f8e9ef7601b004450ef091a29e3ccf032a89eb4e80a12ed
+   (byte-identical to the pristine source)
+#
+COMMAND=cd /tmp/s9-post-polyc-wt && make production-hcc
+   RESTORED_BUILD_EXIT=0
+RESTORED_POLYC_SUBJECT_OBJECT_SHA256=f9d9c05eaf9c8cb4d2821b9c2c6d59e10116eacdfc3197150855aaef693c1c3d
+   (byte-identical to the pristine object)
+RESTORED_HCC_SHA256=117095a7b1e9c22de967e8c7a53374b05603c4b1ea62d5e37cfe0849f971527d
+   (byte-identical to the pristine compiler)
+#
+COMMAND=cd /tmp/s9-post-polyc-wt && ./hcc --install-dir=<prefix> -c build/slice09-witness/w2.HC -o build/slice09-witness/w2.o
+   error: Unexpected keyword `I64` while parsing if body
+   RESTORED_W2_COMPILE_EXIT=1
+   RESTORED_W2_DIAGNOSTIC=while parsing if body
+#
+COMMAND=cd /tmp/s9-post-polyc-wt && ./hcc --install-dir=<prefix> build/slice09-witness/w3.HC -o build/slice09-witness/w3
+   RESTORED_W3_COMPILE_EXIT=0
+COMMAND=./build/slice09-witness/w3
+   RESTORED_W3_OUTPUT=ACC=12
+   RESTORED_W3_RUN_EXIT=0
+#
+CAUSAL_RESTORATION_BYTE_IDENTICAL=YES
+#
+#   The restoration is byte-identical in the SOURCE, in the COMPILED
+#   OBJECT and in the LINKED COMPILER, and the observed behaviour
+#   RECOVERS on both channels.
+#
+# ------------------------------------------------------------------
+# THE MUTANT WORKTREE IS DISPOSED
+# ------------------------------------------------------------------
+COMMAND=git worktree remove /tmp/s9-post-polyc-wt
+   (the mutant is NEVER present in the authoritative main checkout)
+#
+# ------------------------------------------------------------------
+# THE OTHER EIGHT AUTHORITIES ARE NOT AFFECTED
+# ------------------------------------------------------------------
+#
+#   The mutation touched ONLY the SUB-004 PolyC component.  The other
+#   eight authorities live in DIFFERENT source files, DIFFERENT
+#   objects and DIFFERENT symbols, so the mutation cannot have changed
+#   them.
+#
+OTHER_AUTHORITIES_TOUCHED=0
+#
+# ------------------------------------------------------------------
+# A NOTE ON THE OBSERVED TIMEOUT
+# ------------------------------------------------------------------
+#
+# The mutant w3 program does not terminate, because the mutation makes
+# the compiler parse an `if` statement's body as a while-loop body.
+# That is the EXPECTED consequence of the predeclared mutation, and
+# it is a real, observable behavioural difference.
+#
+# The run is bounded by `timeout 10` so that the experiment terminates.
+# The exit status 124 is the timeout's status, and it is recorded as
+# such.  The observation "the mutant program does not terminate where
+# the pristine program exits 0 and prints ACC=12" is the claim; the
+# exit status is its evidence.
+#
+POST_POLYC_MUTATION_STATUS=PASS

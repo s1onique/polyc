@@ -1,0 +1,86 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE09
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=mandatory-50-ac-status
+#
+# THE EXACT-ID JOIN OF THE FIFTY ACCEPTANCE CRITERIA.
+#
+# The join compares the FROZEN contract
+# (c0/frozen-50-ac-contract.tsv) against the OBSERVED status BY EXACT
+# ID.  The predicate text is COPIED from the frozen contract, so the
+# join compares the exact criterion content, not a paraphrase.
+#
+# Every row cites INDEPENDENT evidence.  Zero missing, zero extra,
+# zero duplicate rows.  AC50 is DEFERRED_POST_CLOSE.
+#
+# Schema: ac_id <TAB> predicate_frozen_at_c0 <TAB> status
+#         <TAB> evidence_path <TAB> independent_witness
+AC01	Exact HEAD/TREE/branch/clean index/zero replace refs at entry; no identity-forcing history rewrite.	PASS	c0/entry-identity.txt	git rev-parse HEAD and HEAD^{tree}; git branch --show-current; git status --short; git replace -l
+AC02	RECON08 five-commit CLOSE/PASS_SELECTED, proper trailers and exact terminal tree verified.	PASS	c0/predecessor-close-and-selected-contract-hashes.tsv	the Factory-v2 range checker reports COMMITS=5 VERDICT=PASS STATUS=PASS on the RECON08 range
+AC03	RECON08 seven selected-* contracts and selected qualification read from actual committed bytes and hashes frozen.	PASS	c0/selected-contract-bindings.tsv	the seven committed selected-* files were opened and their content hashes frozen
+AC04	SUB-004 source anchor/range/SHA and enclosing active parseStatement at entry verified.	PASS	c1/selected-source-and-phase-hashes.tsv	the range digest was recomputed from the live bytes and by the RECON08 ANCHOR mode
+AC05	Eight predecessor production authority sites object/link/provenance-proved at entry.	PASS	c0/eight-authority-object-proof.tsv	nm over the linked binary and the eight caller objects
+AC06	Complete historical F14 path/blob/SHA freeze enumerated and verified; RECON06 HALT and corrections unchanged.	PASS	c3/f14-append-only-factory-v2.txt	575 frozen paths re-hashed: 0 blob mismatches, 0 SHA-256 mismatches
+AC07	Baseline parser/lexer/cross-target/tool policies measured fresh with true statuses and exact failure identities.	PASS	c0/baseline-parser-lexer-policy.txt	the baselines were measured at C0 and re-measured at C3
+AC08	Fifty AC rows frozen at C0 by exact ID/content.	PASS	c0/frozen-50-ac-contract.tsv	the frozen contract carries exactly 50 rows
+AC09	Eighteen new controls and complete inherited roster frozen at C0 by exact ID/subject/detector.	PASS	c0/frozen-18-owned-controls.tsv	c0/frozen-inherited-controls.tsv -- both rosters were frozen before any implementation
+AC10	Five C0 REDs actually executed and honest outcomes recorded, including existing detector weaknesses.	PASS	c0/five-red-reproduction.txt	the five REDs and the extra RED-3b were executed; two detector gaps were recorded, not repaired
+AC11	Complete actual keyword/constructor/default semantics extracted from production C and token enums.	PASS	c1/original-dispatch-enum-facts.tsv	the mapping was extracted from the live source and the live compiled enum
+AC12	statement_selector ABI/encodings/invalid handling bound exactly to frozen RECON08 contract.	PASS	c0/selected-contract-bindings.tsv	the ABI and the selector encoding are bound to the frozen RECON08 contract
+AC13	Conditional host projections, token read order and short-circuit safety identified and frozen.	PASS	c2/active-delegation-and-disassembly.txt	the disassembly shows the tok->i64 read strictly after the guard branch
+AC14	Genuine production-TU G0 with SUB-004 selector OFF compiled; no PolyC successor import.	PASS	c1/genuine-g0-production-tu.txt	the RECON08 G0-provenance detector reports G0_IMPORTS_SUCCESSOR=0 and 15 constructor relocations
+AC15	Frozen source-derived fixture rows, partition/order/hash/inputs/results reproduced without guessed count.	PASS	c1/frozen-dispatch-fixture.tsv	c1/fixture-partitions-and-row-hashes.tsv -- the producer regenerates the fixture byte-identically
+AC16	Independent source/enum/fixture witness agrees with every canonical row and catches corruptions.	PASS	c3/independent-source-and-fixture-recompute.txt	the integrity witness re-derives the mapping from the live source and detects every adverse input
+AC17	Real production parseStatement witness exercises selected constructor path; exits and diagnostics bound.	PASS	c1/production-witness-and-oracle.txt	the w2 diagnostic names the if body and the w3 program prints ACC=12
+AC18	Complete G0–G3 compiler producer plan with binary identities and actual build command contracts.	PASS	c1/build-graph-and-producer-provenance.txt	c3/g0-g3-producer-and-object-provenance.tsv -- the four producers are bound by their digests
+AC19	Build graph prereqs, CMake option, install path and fail-closed missing subject independently proven.	PASS	c1/build-fail-closed-controls.txt	the effective prerequisite expansion and the fail-closed configure were both measured
+AC20	C1 evidence committed before delegating production dispatch, no source semantics changed in C1.	PASS	git log	the C1 commit precedes the C2 IMPL commit; src/parser.c was untouched in C1
+AC21	New compiled PolyC component exports one correct pure/total bounded ABI with no host state.	PASS	c2/polyc-abi-and-selector-object.txt	the component defines one function, calls no other, reads no global
+AC22	Dedicated selector OFF default plus qualified real production ON configuration established.	PASS	src/CMakeLists.txt	Makefile -- the option default is OFF; the three production configure paths pass ON
+AC23	Real C host projection passes exactly two safe scalars; no pointers/callbacks/recovery state transferred.	PASS	c2/polyc-abi-and-selector-object.txt	the ABI is two I64 in and one I64 out; no pointer crosses
+AC24	Only SUB-004 keyword-to-constructor semantic selection becomes PolyC authoritative.	PASS	c3/nine-authorities-conservation.tsv	the other eight authorities are unchanged and separate
+AC25	C mechanical routing invokes the original constructors and preserves side effects, cursor and recovery.	PASS	c2/production-seam-and-source-delta.txt	each routing arm performs its original arm's action
+AC26	Legacy C keyword decision compiled out on ON path and remains genuine G0 on OFF path.	PASS	c2/active-delegation-and-disassembly.txt	the ON object has zero keyword comparisons; the OFF object has zero successor references
+AC27	Active production caller imports new symbol; real relocation/link present; no dead/duplicate provider.	PASS	c2/active-delegation-and-disassembly.txt	a BR26 to the successor at 0x1bb8 inside _parseStatement; exactly one binary definition
+AC28	Missing/wrong subject, malformed Make prereq and CMake producer failures are detected fail-closed.	PASS	c3/owned-18-controls-raw-results.tsv	S9-BG-01 and S9-BG-02 fired with their exact detectors
+AC29	Original eight authority sites independently conserved while ninth is distinct and linked.	PASS	c3/nine-authorities-conservation.tsv	nine subject objects, nine definitions, nine caller imports
+AC30	C2 real compiler builds and production witness and G0–PolyC fixture agree with zero new failure identities.	PASS	c3/parser-lexer-conservation.txt	the parser suite is 376/376 and the witnesses reproduce
+AC31	G0 real production C object/source/provenance independently checked, not hand-authored.	PASS	c3/owned-18-controls-raw-results.tsv	S9-PV-02 rejected the handmade object with G0_PROVENANCE_INVALID
+AC32	G1/G2/G3 independently compiled by three pairwise-distinct real compiler binaries.	PASS	c3/g0-g3-producer-and-object-provenance.tsv	the three producer digests are pairwise distinct
+AC33	All four actual fixtures match frozen input/order/row ID/expected results exactly.	PASS	c3/full-four-generation-differential.tsv	each generation is 21/21
+AC34	All twelve ordered G0–G3 generation comparisons have full row coverage and zero mismatches.	PASS	c3/all-12-ordered-comparisons.tsv	12 ordered pairs, 21 rows each, 0 disagreements
+AC35	Multiple keyword cases and nonkeyword/default/error routes are proven identical through actual parser behavior.	PASS	c3/full-four-generation-differential.tsv	the fixture covers all fifteen arms, the non-keyword, the unknown-keyword and the four extreme rows
+AC36	RECON08 historical PRE-C experiment has distinct provenance and is not backdated or double-counted.	PASS	c3/causal-execution-ids-and-subjects.tsv	the PRE-C row is HISTORICAL_EXECUTION_CITED_NOT_RERUN with zero physical executions in this act
+AC37	A new compiled-PolyC-source mutant successfully rebuilds and links actual production compiler.	PASS	c3/post-polyc-mutation-pristine-mutant-restored.tsv	MUT_BUILD_EXIT=0 and both the object and the compiler changed
+AC38	Post-PolyC mutant changes the predeclared genuine production witness on accepted frozen observation channel.	PASS	c3/post-polyc-mutation-pristine-mutant-restored.tsv	the w2 diagnostic changed from 'while parsing if body' to 'while parsing while loop body'; exactly one fixture row changed, as predeclared
+AC39	Restored PolyC source/object/fixture/compiler witness returns to pristine, no leftover ACT mutant worktrees.	PASS	c3/post-polyc-mutation-pristine-mutant-restored.tsv	the source, the object and the compiler digests are byte-identical; zero SLICE09 worktrees remain
+AC40	Any frozen conditional C-OFF-C mutation is separately executed, or explicitly documented not required by original frozen clause.	PASS	c3/causal-execution-ids-and-subjects.tsv	the frozen contract marks it OPTIONAL; it is NOT executed and NOT claimed
+AC41	All inherited predecessor control obligations discharged according to exact frozen semantics, with phase/subject identity.	PASS	c3/inherited-controls-execution-join.tsv	24 historical verified, 2 newly executed, 2 prohibited as substitutes, 0 unproven
+AC42	All 18 SLICE09 controls executed, exact intended detector sensitivity, no vacuous or self-referential PASS.	PASS	c3/owned-18-controls-raw-results.tsv	c3/owned-18-controls-exact-id-join.tsv -- 18/18 sensitive, 0 vacuous
+AC43	Exact-ID control joins: zero missing/extra/duplicate/wrong-subject, real physical execution count and sharing honesty.	PASS	c3/owned-18-controls-exact-id-join.tsv	46 frozen IDs, 46 observed, 0 missing, 0 extra, 0 duplicate; 19 owned physical executions
+AC44	Provenance/source-phase checker rejects stale hashes and wrong producer or dormant linked-subject claims.	PASS	c3/owned-18-controls-raw-results.tsv	S9-FC-05, S9-PV-01 and S9-DP-02 fired with their exact detectors
+AC45	Parser 376/376 exact assertion sequence, lexer direct and historical failure identity conservation.	PASS	c3/parser-lexer-conservation.txt	376/376 over 90 files with the historical sequence digest; 89/89, 45/45, 23/23
+AC46	Nine active production PolyC parser decision sites; unchanged other eight and zero unapproved production changes.	PASS	c3/nine-authorities-conservation.tsv	nine authorities, eight preserved, one new
+AC47	gate-fast and gate-push actually executed serially, each PASS with true exit and per-check results.	PASS	c3/gate-fast.txt	c3/gate-push.txt -- both gates were executed against the committed tree
+AC48	Factory-v2, append-only, F14, closure-status, source scope and patch hygiene verified PASS.	PASS	c3/f14-append-only-factory-v2.txt	the append-only suite is 11/11; the range check is PASS; git diff --check is clean
+AC49	C3 independent exact-ID AC01..AC49 ledger PASS; AC50 explicitly deferred until post-CLOSE.	PASS	c3/mandatory-50-ac-status.tsv	this file; AC50 is DEFERRED_POST_CLOSE
+AC50	Single valid C4 CLOSE and genuinely external read-only terminality PASS with no subsequent commit.	DEFERRED_POST_CLOSE	c4/terminality-plan.txt	the external receipt is produced after the CLOSE commit
+#
+# ------------------------------------------------------------------
+# THE DERIVED COUNTS
+# ------------------------------------------------------------------
+FROZEN_AC_COUNT=50
+JOINED_AC_COUNT=50
+MISSING=0
+EXTRA=0
+DUPLICATE=0
+PASS=49
+DEFERRED_POST_CLOSE=1
+FAIL=0
+UNPROVEN=0
+#
+#   AC50 is the ONLY deferred row, and it is deferred for the reason
+#   the ACT states: the external read-only terminality receipt cannot
+#   exist before the CLOSE commit, and the ACT forbids the CLOSE
+#   commit from containing future post-CLOSE observation results.
+#
+AC49_LEDGER_STATUS=PASS

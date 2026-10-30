@@ -1452,7 +1452,7 @@ endif()
 # selected-abi-and-projection.md section 4).
 option(HCC_USE_SELFHOST_PARSER_STATEMENT_DISPATCH
        "Link the statement-constructor dispatch PolyC component into hcc and enable statement-dispatch delegation. ACT-POLYC-SELFHOST-PARSER-SLICE09."
-       ON)
+       OFF)
 
 if (HCC_USE_SELFHOST_PARSER_STATEMENT_DISPATCH)
     if (NOT STATEMENT_DISPATCH_OBJECT)

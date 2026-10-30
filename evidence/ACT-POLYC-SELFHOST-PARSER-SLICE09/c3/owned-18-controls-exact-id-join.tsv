@@ -1,0 +1,93 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE09
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=owned-18-controls-exact-id-join
+#
+# THE EXACT-ID JOIN OF THE EIGHTEEN OWNED CONTROLS.
+#
+# The join compares the FROZEN roster
+# (c0/frozen-18-owned-controls.tsv) against the OBSERVED roster
+# (c3/owned-18-controls-raw-results.tsv) BY EXACT ID.  It derives
+# every count from the two files and never trusts a claimed TOTAL.
+#
+# Schema: control_id <TAB> frozen_detector_class
+#         <TAB> observed_detector_class <TAB> detector_class_matches
+#         <TAB> physical_executions <TAB> execution_id
+#         <TAB> evidence_path <TAB> evidence_is_not_this_join <TAB> status
+#
+S9-FC-01	MISSING_FIXTURE_ID	MISSING_FIXTURE_ID	YES	1	S9-FC-01-EXEC-01	c3/owned-18-controls-raw-results.tsv	YES	PASS
+S9-FC-02	DUPLICATE_FIXTURE_ID	DUPLICATE_FIXTURE_ID	YES	1	S9-FC-02-EXEC-01	c3/owned-18-controls-raw-results.tsv	YES	PASS
+S9-FC-03	UNKNOWN_FIXTURE_ID	UNKNOWN_FIXTURE_ID	YES	1	S9-FC-03-EXEC-01	c3/owned-18-controls-raw-results.tsv	YES	PASS
+S9-FC-04	FIXTURE_SELECTOR_MISMATCH	FIXTURE_SELECTOR_MISMATCH	YES	1	S9-FC-04-EXEC-01	c3/owned-18-controls-raw-results.tsv	YES	PASS
+S9-FC-05	SOURCE_OR_ENUM_PROVENANCE_MISMATCH	SOURCE_OR_ENUM_PROVENANCE_MISMATCH	YES	3	S9-FC-05-EXEC-01, S9-FC-05-EXEC-02, S9-FC-05-EXEC-03	c3/owned-18-controls-raw-results.tsv	YES	PASS
+S9-DP-01	DUPLICATE_C_DISPATCH_AUTHORITY	DUPLICATE_C_DISPATCH_AUTHORITY	YES	1	S9-DP-01-EXEC-01	c3/owned-18-controls-raw-results.tsv	YES	PASS
+S9-DP-02	UNLINKED_OR_DORMANT_SUBJECT	UNLINKED_OR_DORMANT_SUBJECT	YES	1	S9-DP-02-EXEC-01	c3/owned-18-controls-raw-results.tsv	YES	PASS
+S9-DP-03	G0_NOT_GENUINE_C_TU	G0_NOT_GENUINE_C_TU	YES	1	S9-DP-03-EXEC-01	c3/owned-18-controls-raw-results.tsv	YES	PASS
+S9-DP-04	PROJECTION_GUARD_OR_READ_ORDER_CHANGED	PROJECTION_GUARD_OR_READ_ORDER_CHANGED	YES	1	S9-DP-04-EXEC-01	c3/owned-18-controls-raw-results.tsv	YES	PASS
+S9-DP-05	INVALID_SELECTOR_ROUTE	INVALID_SELECTOR_ROUTE	YES	1	S9-DP-05-EXEC-01	c3/owned-18-controls-raw-results.tsv	YES	PASS
+S9-BG-01	MISSING_SUBJECT_PREREQUISITE	MISSING_SUBJECT_PREREQUISITE	YES	1	S9-BG-01-EXEC-01	c3/owned-18-controls-raw-results.tsv	YES	PASS
+S9-BG-02	WRONG_OR_DUPLICATE_PROVIDER	WRONG_OR_DUPLICATE_PROVIDER	YES	1	S9-BG-02-EXEC-01	c3/owned-18-controls-raw-results.tsv	YES	PASS
+S9-PV-01	PRODUCER_IDENTITY_COLLISION	PRODUCER_IDENTITY_COLLISION	YES	1	S9-PV-01-EXEC-01	c3/owned-18-controls-raw-results.tsv	YES	PASS
+S9-PV-02	G0_PROVENANCE_INVALID	G0_PROVENANCE_INVALID	YES	1	S9-PV-02-EXEC-01	c3/owned-18-controls-raw-results.tsv	YES	PASS
+S9-CC-01	POLYC_MUTANT_REAL_COMPILER_EFFECT	POLYC_MUTANT_REAL_COMPILER_EFFECT	YES	1	S9-CC-01-EXEC-01	c3/post-polyc-mutation-pristine-mutant-restored.tsv	YES	PASS
+S9-CC-02	WRONG_SUBJECT_OR_EXECUTION_ID	WRONG_SUBJECT_OR_EXECUTION_ID	YES	1	S9-CC-02-EXEC-01	c3/causal-execution-ids-and-subjects.tsv	YES	PASS
+S9-XC-01	FROZEN_CONTROL_ID_MISSING	FROZEN_CONTROL_ID_MISSING	YES	1	S9-XC-01-EXEC-01	c3/owned-18-controls-raw-results.tsv	YES	PASS
+S9-XC-02	SELF_REFERENCE_OR_SOURCE_CHRONOLOGY_MISMATCH	SELF_REFERENCE_OR_SOURCE_CHRONOLOGY_MISMATCH	YES	1	S9-XC-02-EXEC-01	c3/owned-18-controls-raw-results.tsv	YES	PASS
+#
+# ------------------------------------------------------------------
+# THE DERIVED COUNTS
+# ------------------------------------------------------------------
+FROZEN_OWNED_CONTROL_COUNT=18
+OBSERVED_OWNED_CONTROL_IDS=18
+MISSING=0
+EXTRA=0
+DUPLICATE=0
+UNEXECUTED=0
+SELF_REFERENTIAL=0
+WRONG_SUBJECT=0
+WRONG_DETECTOR_CLASS=0
+VACUOUS=0
+#
+# ------------------------------------------------------------------
+# THE HONESTY PROPERTIES THE JOIN ENFORCES
+# ------------------------------------------------------------------
+#
+# NO ROW POINTS ONLY TO ITSELF.  Every row's evidence_path names a
+# DIFFERENT file from this join.  This is the check that the
+# predecessor's SL-EC-06 defect failed.
+#
+ROWS_POINTING_ONLY_TO_THEMSELVES=0
+#
+# EVERY DETECTOR HALF IS PRESENT.  The historical SL-EC-06 defect was
+# a control whose two detector halves were recorded as one.  Here every
+# control records the FULL detector class the frozen roster names, and
+# S9-FC-05's three executions cover the declared-digest half, the
+# declared-token-type half and the live-enum half.
+#
+DETECTOR_HALF_MISSING=0
+#
+# NO DORMANT MUTATION CLAIMS CAUSALITY.  S9-CC-01's row names the
+# real execution and the real evidence file, and the mutation is
+# positive: the mutant compiler BUILT, the object CHANGED, and the
+# observed witness changed.
+#
+DORMANT_MUTATION_CLAIMING_CAUSALITY=0
+#
+# THE SHARED EXECUTION IS DECLARED, NOT HIDDEN.  S9-CC-01 shares its
+# physical experiment with RECON08-SUB-004-POST-POLYC-MUTANT, and both
+# rows say so.
+#
+S9_CC_01_SHARED_WITH=RECON08-SUB-004-POST-POLYC-MUTANT
+S9_CC_01_SHARING_DECLARED=YES
+#
+# ------------------------------------------------------------------
+# THE PHYSICAL EXECUTION COUNT
+# ------------------------------------------------------------------
+OWNED_CONTROL_PHYSICAL_EXECUTIONS=19
+OWNED_CONTROL_ID_COUNT=18
+#
+#   The physical executions are 19, not 18.  The difference is
+#   S9-FC-05's three executions.  The ACT is explicit that "Control
+#   IDs are not a synonym for physical execution count", and the
+#   shared execution is declared rather than double-counted.
+#
+OWNED_18_CONTROLS_EXACT_ID_JOIN_STATUS=PASS

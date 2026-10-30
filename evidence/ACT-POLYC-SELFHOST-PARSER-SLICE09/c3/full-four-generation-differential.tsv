@@ -1,0 +1,103 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE09
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=full-four-generation-differential
+#
+# THE FULL FIXTURE, RUN UNDER EACH OF THE FOUR GENERATIONS.
+#
+# The comparison layer is the SAME PolyC object in all four runs.  Only
+# the linked decision object differs, so any difference between two runs
+# can only come from the decision.
+#
+# The fixture is the frozen source-derived fixture:
+#   evidence/ACT-POLYC-SELFHOST-PARSER-SLICE09/c1/frozen-dispatch-fixture.tsv
+#   sha256 12decd1712912ad3bac940de8c5f6de772fd9df677ce62137b6310d13b2a687f
+#   21 rows in 4 partitions
+#
+# COMMAND=./build/slice09-gen/diff-<g> \
+#           evidence/ACT-POLYC-SELFHOST-PARSER-SLICE09/c1/frozen-dispatch-fixture.tsv 21
+#
+# ------------------------------------------------------------------
+# THE FOUR SUMMARY RUNS
+# ------------------------------------------------------------------
+generation	rows	pass	fail	selector_mismatch	invalid_selector	malformed_rows	field_parse_errors	duplicate_ids	out_of_range_ids	missing_row_ids	truncated_rows	max_id	status
+G0	21	21	0	0	0	0	0	0	0	0	0	21	PASS
+G1	21	21	0	0	0	0	0	0	0	0	0	21	PASS
+G2	21	21	0	0	0	0	0	0	0	0	0	21	PASS
+G3	21	21	0	0	0	0	0	0	0	0	0	21	PASS
+#
+# EVERY GENERATION AGREES WITH THE INDEPENDENTLY DERIVED FIXTURE ON
+# EVERY ROW.
+#
+# ------------------------------------------------------------------
+# THE PER-ROW RECORDS
+#
+# Schema: fixture_id <TAB> token_type <TAB> keyword_id
+#         <TAB> expected_selector <TAB> observed_selector
+#
+# The observed column is IDENTICAL in all four generations.  The rows
+# are the four frozen partitions:
+#
+#   P0-NONKEYWORD       1 row
+#   P1-KEYWORD         15 rows (one per dispatch arm)
+#   P2-UNKNOWN-KEYWORD  1 row
+#   P3-EXTREME          4 rows
+#
+1	0	0	0	0
+2	818	46	1	1
+3	818	38	2	2
+4	818	40	3	3
+5	818	66	4	4
+6	818	18	5	5
+7	818	80	6	6
+8	818	82	7	7
+9	818	20	8	8
+10	818	22	9	9
+11	818	64	10	10
+12	818	24	11	11
+13	818	26	12	12
+14	818	28	13	13
+15	818	67	14	14
+16	818	44	15	15
+17	818	0	0	0
+18	-9223372036854775808	0	0	0
+19	9223372036854775807	0	0	0
+20	818	-9223372036854775808	0	0
+21	818	9223372036854775807	0	0
+#
+# The observed column above is the SINGLE column shared by G0, G1, G2
+# and G3.  It was captured with the differential's per-row dump
+# (a THIRD argument of the form "-no"), which is the SAME comparison
+# layer and the SAME fixture as the summary run -- the dump only ADDS
+# the per-row record.
+#
+# COMMAND=./build/slice09-gen/diff-<g> <fixture> 21 -no
+#
+# ------------------------------------------------------------------
+# THE FIXTURE IS VERIFIED AGAINST THE LIVE SOURCE, NOT ONLY AGAINST
+# THE GENERATIONS
+#
+# The fixture's expected values were re-derived from the live
+# src/parser.c and the live src/lexer.h by the INDEPENDENT PolyC
+# witness, which does NOT read the producer's tables:
+#
+COMMAND=./build/parser-slice09-fixture-integrity \
+#         evidence/ACT-POLYC-SELFHOST-PARSER-SLICE09/c1/frozen-dispatch-fixture.tsv \
+#         /tmp/s9-entry-parser.c src/lexer.h
+#   The entry-tree source is used: git show ba9cb884:src/parser.c has
+#   sha256 8e68487e1fd351cb888c5044cfb71871628d904dd089305d59138b2f017bee00.
+#   The post-migration live parser.c no longer carries the keyword
+#   comparison chain; verifying against it would test the wrong tree.
+   CANON_TK_KEYWORD=818
+   CANON_ARM_COUNT=15
+   FIXTURE_ROW_COUNT=21
+   FAILURES=0
+   STATUS=PASS
+#
+# So the chain is: the LIVE SOURCE -> the fixture (two independent
+# derivations, in agreement) -> the four generations (all four agree
+# row for row).  No generation is compared only against another
+# generation.
+#
+FIXTURE_VERIFIED_AGAINST_LIVE_SOURCE=YES
+GENERATIONS_COMPARED_ONLY_TO_EACH_OTHER=NO
+FULL_FOUR_GENERATION_DIFFERENTIAL_STATUS=PASS
