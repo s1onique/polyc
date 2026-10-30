@@ -1,0 +1,125 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE09
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=baseline-gates-and-policies
+#
+# THE TOOL-POLICY, GATE AND FACTORY-INVARIANT BASELINE.  MEASURED
+# FRESH AT C0, SERIALIZED.
+#
+# ------------------------------------------------------------------
+# F-NO-PYTHON
+# ------------------------------------------------------------------
+COMMAND=sh scripts/quality/factory-no-python-check.sh
+#
+   FAIL  scripts/quality/llvm-byte-memory01-test.sh  forbidden Python invocation
+   FAIL  scripts/quality/llvm-cap-table-verifier.py  forbidden Python source suffix
+   FAIL  scripts/quality/llvm-intops01-test.sh  forbidden Python invocation
+   FAIL  scripts/quality/llvm-memory01-red-test.sh  forbidden Python invocation
+   FAIL  scripts/quality/llvm-spike-test.sh  forbidden Python invocation
+   FAIL  tools/quality/bootstrap02-corpus-runner.py  forbidden Python source suffix
+   FAIL  tools/quality/bootstrap02-error-corpus.py  forbidden Python source suffix
+   FAIL  tools/quality/bootstrap03-corpus-runner.py  forbidden Python source suffix
+   FAIL  tools/quality/bootstrap03-error-corpus.py  forbidden Python source suffix
+   FAIL  tools/quality/bootstrap04-corpus-runner.py  forbidden Python source suffix
+   FAIL  tools/quality/bootstrap04-error-corpus.py  forbidden Python source suffix
+   FAIL  tools/quality/llvm-gep01-test.HC  known PolyC -> Python execution edge (callgraph inventory)
+#
+#   --- summary ---
+#   POLYC_TOOLS_TRACKED_PYTHON=12
+#   POLYC_TOOLS_TRACKED_INSPECTED=5914
+#   POLYC_TOOLS_TRACKED_PASSES=5907
+#   STATUS=FAIL
+#
+# EXACTLY the 12 historical violations, ZERO new.  The status is FAIL
+# and is reported as FAIL; it is NEVER relabelled PASS.
+#
+F_NO_PYTHON=FAIL
+F_NO_PYTHON_VIOLATION_COUNT=12
+F_NO_PYTHON_VIOLATIONS_MATCH_HISTORICAL_EXACTLY=YES
+F_NO_PYTHON_NEW_VIOLATIONS=0
+F_NO_PYTHON_EXIT=1
+#
+# ------------------------------------------------------------------
+# F-POLYC-TOOLS
+# ------------------------------------------------------------------
+COMMAND=ls tools/factory/factory-polyc-tools-check.HC
+   ls: cannot access 'tools/factory/factory-polyc-tools-check.HC': No such file or directory
+#
+# The authoritative F-POLYC-TOOLS checker has NOT landed.  Per
+# AGENTS.md it is "NOT YET LANDED".  It is reported as UNAVAILABLE.
+# No PASS is invented for it.
+#
+F_POLYC_TOOLS=UNAVAILABLE
+F_POLYC_TOOLS_CHECKER_PRESENT=NO
+F_POLYC_TOOLS_REASON=checker_not_landed
+#
+# ------------------------------------------------------------------
+# GATE-FAST
+# ------------------------------------------------------------------
+COMMAND=make gate-fast
+GATE_FAST_EXIT=0
+   CHECK=diff-check STATUS=PASS
+   CHECK=shell-syntax STATUS=PASS
+   CHECK=doc-invariants STATUS=PASS
+   CHECK=large-file-guard STATUS=PASS
+   BUILD_RUN=NO
+   POLYC_GATE=factory-closure-status
+   MANIFEST_ROWS=46
+   MISSING_HANDOFF_FILES=0
+   MALFORMED_HANDOFF_VERDICT=0
+   PAIR_OK=46
+   PAIR_FAIL=0
+   STATUS=PASS
+   VERDICT=PASS
+   CHECK=factory-closure-status STATUS=PASS
+   VERDICT=PASS
+GATE_FAST_VERDICT=PASS
+#
+# ------------------------------------------------------------------
+# GATE-PUSH
+# ------------------------------------------------------------------
+COMMAND=make gate-push
+GATE_PUSH_EXIT=0
+   PARSER_PADDING_ARCH_CHECK=PASS arch=arm64 target=arm64
+   CHECK=build STATUS=PASS
+   CHECK=install STATUS=PASS
+   CHECK=gep01 STATUS=PASS
+   CHECK=aot STATUS=PASS
+   CHECK=jit STATUS=PASS
+   CHECK=lsp STATUS=PASS
+   CHECK=diff-check STATUS=PASS
+   VERDICT=PASS
+GATE_PUSH_VERDICT=PASS
+#
+# ------------------------------------------------------------------
+# THE FACTORY-V2 RANGE CHECKER, ON THE PREDECESSOR
+# ------------------------------------------------------------------
+COMMAND=sh scripts/quality/factory-v2-range-check.sh \
+#         ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08 ba9cb88
+   ACT=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08
+   ENTRY=4e01dbac59f18223efc5d168d07d232c6c7f0c42
+   FIRST=fb887a61acda357960130b9c64cf39dfe18c44cd
+   CLOSE=ba9cb884cebd2eabe17b53d6125849e180758b01
+   COMMITS=5
+   VERDICT=PASS
+   STATUS=PASS
+RANGE_CHECK_EXIT=0
+#
+# ------------------------------------------------------------------
+# THE APPEND-ONLY SUITE
+# ------------------------------------------------------------------
+COMMAND=sh scripts/quality/factory-append-only-test.sh
+   PASS=11 FAIL=0 STATUS=PASS
+APPEND_ONLY_SUITE_PASS=11
+APPEND_ONLY_SUITE_FAIL=0
+APPEND_ONLY_SUITE_STATUS=PASS
+#
+# ------------------------------------------------------------------
+# THE FACTORY-V2 / F14 / APPEND-ONLY / CLOSURE-STATUS SUMMARY
+# ------------------------------------------------------------------
+FACTORY_V2_AT_ENTRY=PASS
+F14_AT_ENTRY=PASS
+APPEND_ONLY_AT_ENTRY=PASS
+CLOSURE_STATUS_AT_ENTRY=PASS
+GIT_REPLACE_REFS_AT_ENTRY=0
+#
+TOOL_POLICY_GATES_BASELINE_STATUS=PASS

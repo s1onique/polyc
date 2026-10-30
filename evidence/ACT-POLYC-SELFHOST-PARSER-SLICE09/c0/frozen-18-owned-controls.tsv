@@ -1,0 +1,61 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE09
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=frozen-18-owned-controls
+#
+# THE EIGHTEEN SLICE09-OWNED NEGATIVE CONTROLS.  FROZEN AT C0, BEFORE
+# ANY IMPLEMENTATION AND BEFORE ANY GREEN RESULT IS PRESENTED.
+#
+# Each control has a pristine-positive baseline, an ACTUALLY EXECUTED
+# adverse input, an exact reason-specific detector, a restoration and
+# a real physical execution ID.  The IDs are DISJOINT from the
+# inherited RECON08 namespace (R8-*).
+#
+# Schema: control_id <TAB> class <TAB> phase <TAB> subject
+#         <TAB> adverse_action <TAB> required_detector_class
+#         <TAB> required_physical_executions <TAB> restoration_required
+S9-FC-01	FIXTURE	C3	the frozen dispatch fixture	Remove one frozen dispatch fixture row	MISSING_FIXTURE_ID	1	byte-identical fixture restored
+S9-FC-02	FIXTURE	C3	the frozen dispatch fixture	Duplicate a row ID	DUPLICATE_FIXTURE_ID	1	byte-identical fixture restored
+S9-FC-03	FIXTURE	C3	the frozen dispatch fixture	Add unknown keyword/input row not in frozen fixture	UNKNOWN_FIXTURE_ID	1	byte-identical fixture restored
+S9-FC-04	FIXTURE	C3	the frozen dispatch fixture	Flip one recognized keyword's expected selector	FIXTURE_SELECTOR_MISMATCH	1	byte-identical fixture restored
+S9-FC-05	PROVENANCE	C3	the fixture source/enum provenance	Substitute stale source/phase hash or keyword enum value	SOURCE_OR_ENUM_PROVENANCE_MISMATCH	1	byte-identical fixture restored
+S9-DP-01	DISPATCH	C2	the ON production parseStatement	C branch on raw keyword still selects constructor when ON	DUPLICATE_C_DISPATCH_AUTHORITY	1	byte-identical source restored
+S9-DP-02	DISPATCH	C2	the ON production parseStatement	PolyC symbol linked but production parseStatement never calls it	UNLINKED_OR_DORMANT_SUBJECT	1	byte-identical source restored
+S9-DP-03	DISPATCH	C1	the selector-OFF G0 object	Selector OFF G0 imports PolyC successor	G0_NOT_GENUINE_C_TU	1	byte-identical object restored
+S9-DP-04	PROJECTION	C2	the ON production parseStatement	Non-keyword token causes eager unsafe keyword-ID read	PROJECTION_GUARD_OR_READ_ORDER_CHANGED	1	byte-identical source restored
+S9-DP-05	DISPATCH	C2	the C mechanical router	Unknown selector routes to arbitrary recognized constructor	INVALID_SELECTOR_ROUTE	1	byte-identical source restored
+S9-BG-01	BUILD	C1/C2	the Make prerequisite graph	Remove new subject object from Make prerequisite graph	MISSING_SUBJECT_PREREQUISITE	1	byte-identical Makefile restored
+S9-BG-02	BUILD	C1/C2	the CMake producer wiring	Duplicate/wrong provider or malformed link target	WRONG_OR_DUPLICATE_PROVIDER	1	byte-identical CMakeLists restored
+S9-PV-01	PROVENANCE	C3	the generation producer table	Reuse same producer binary under multiple G labels	PRODUCER_IDENTITY_COLLISION	1	byte-identical table restored
+S9-PV-02	PROVENANCE	C3	the G0 oracle object	Replace real C G0 with handmade/relabelled object	G0_PROVENANCE_INVALID	1	byte-identical object restored
+S9-CC-01	CAUSAL	C3	the compiled PolyC dispatch decision	Newly mutate compiled PolyC dispatch decision	POLYC_MUTANT_REAL_COMPILER_EFFECT	1	source byte-restored and recompiled
+S9-CC-02	CAUSAL	C3	the causal execution ledger	Count RECON08 C mutation as new PolyC mutation	WRONG_SUBJECT_OR_EXECUTION_ID	1	byte-identical ledger restored
+S9-XC-01	EXECUTION	C3	the combined control roster	Drop one frozen inherited/control ID while preserving totals	FROZEN_CONTROL_ID_MISSING	1	byte-identical roster restored
+S9-XC-02	EXECUTION	C3	the control join and source chronology	Supply self-citing join or claim wrong phase's source SHA	SELF_REFERENCE_OR_SOURCE_CHRONOLOGY_MISMATCH	1	byte-identical join restored
+#
+FROZEN_OWNED_CONTROL_COUNT=18
+FROZEN_OWNED_CONTROL_IDS=S9-FC-01..05,S9-DP-01..05,S9-BG-01..02,S9-PV-01..02,S9-CC-01..02,S9-XC-01..02
+FROZEN_OWNED_CONTROL_DUPLICATES=0
+FROZEN_OWNED_CONTROL_NAMESPACE_DISJOINT_FROM_R8=YES
+#
+# NOTE ON S9-CC-01: it is the POSITIVE sensitivity check of the ONE new
+# real PolyC mutation from ACT section 5.2.  It is NOT an assertion-only
+# replay.  If it legitimately shares that physical experiment with
+# another obligation, the SAME execution ID is reported and they are
+# NOT called independent experiments.  If a frozen control forbids
+# sharing, the experiment is executed separately or the ACT HALTs.
+S9-CC-01_SHARING_RULE	the same physical execution may be shared with the section 5.2 mutation; the SAME execution ID is reported; sharing is NOT claimed as independence
+#
+# NOTE ON S9-DP-01: the ON build must NOT have a C branch that selects
+# the constructor from the raw keyword.  The detector is a
+# function-scoped disassembly/relocation check, not a string search.
+S9-DP-01_DETECTOR_METHOD	function-scoped relocation/disassembly of _parseStatement in the ON production object
+#
+# NOTE ON S9-FC-01..05: the fixture integrity witness must reject a
+# MISSING row ID, a DUPLICATE row ID, an UNKNOWN row ID, a flipped
+# EXPECTED SELECTOR and a stale SOURCE/ENUM PROVENANCE hash, and must
+# NOT mis-attribute a missing row to the wrong ID.
+S9-FC-03_NO_FALSE_MISSING_ATTRIBUTION=YES
+#
+FROZEN_OWNED_CONTROLS_BEFORE_ANY_EXECUTION=YES
+A_FROZEN_CONTROL_IS_NOT_AN_EXECUTED_RESULT=YES
+FROZEN_OWNED_CONTROLS_STATUS=PASS

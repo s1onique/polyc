@@ -1,0 +1,345 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE09
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=selected-contract-bindings
+#
+# THE BINDING OF THE ACTUAL RECON08 SELECTED CONTRACTS TO THE ACTUAL
+# LIVE SOURCE.  EVERY VALUE BELOW IS MEASURED, NOT ASSERTED.
+#
+# ==================================================================
+# PART 1 -- THE SUBJECT IDENTITY
+# ==================================================================
+#
+# Schema: field <TAB> value <TAB> measurement
+SUBJECT_CANDIDATE_ID	SUB-004	c2/selection-qualification.tsv: SELECTED_CANDIDATE_ID
+SUBJECT_SOURCE_FILE	src/parser.c	c2/selected-source-contract.md FIELD=FILE
+SUBJECT_FUNCTION	parseStatement	c2/selected-source-contract.md FIELD=FUNCTION
+SUBJECT_LINE_RANGE	1864..1877	c2/selected-source-contract.md FIELD=LINE_RANGE
+SUBJECT_SOURCE_SHA256	cd138cc52588fe48c2eab37421b4e25abbacd7ea10491bc696a1acab9a66d7e0	COMMAND=sed -n '1864,1877p' src/parser.c | shasum -a 256
+SUBJECT_SOURCE_SHA256_MATCHES_FROZEN_CONTRACT	YES	measured value equals c2/selected-source-contract.md SOURCE_SHA256
+SUBJECT_SEMANTIC_ANCHOR	switch (tok->i64) over the KW_* keyword enum, inside the if (tok->tk_type == TK_KEYWORD) guard, in parseStatement	c2/selected-source-contract.md FIELD=SEMANTIC_ANCHOR
+SUBJECT_CLASS	STRUCTURAL	c2/selected-source-contract.md FIELD=CLASS
+SUBJECT_DECISION	STATEMENT_DISPATCH	c2/selected-source-contract.md FIELD=DECISION
+#
+# The byte range is the 14 LINES 1864..1877 inclusive of trailing
+# newlines.  Line 1864 is the `if (tok->tk_type == TK_KEYWORD) {`
+# guard and line 1877 is the `case KW_CONTINUE:` arm.  The digest is
+# recomputed from the LIVE bytes at the entry tree and MATCHES.
+SUBJECT_RANGE_FIRST_LINE	1864	if (tok->tk_type == TK_KEYWORD) {
+SUBJECT_RANGE_LAST_LINE	1877	case KW_CONTINUE: return parseContinueStatement(cc);
+#
+# The current parser file digest at the entry tree:
+COMMAND=shasum -a 256 src/parser.c
+CURRENT_SRC_PARSER_C_SHA256	8e68487e1fd351cb888c5044cfb71871628d904dd089305d59138b2f017bee00	measured
+CURRENT_SRC_PARSER_C_SHA256_MATCHES_FROZEN_ENTRY	YES	c2/selected-source-contract.md ENTRY_SRC_PARSER_C_SHA256
+#
+# ==================================================================
+# PART 2 -- THE COMPLETE ORIGINAL KEYWORD -> CONSTRUCTOR MAPPING
+# ==================================================================
+#
+# Extracted from the LIVE src/parser.c by reading the switch arms.
+# The keyword NUMERIC values are read from the LIVE src/lexer.h
+# `#define KW_*` lines.  The token-type constant is read from the
+# LIVE src/lexer.h `#define TK_KEYWORD`.
+#
+# IMPORTANT SCOPE FACT, MEASURED: the frozen range 1864..1877 ends at
+# the KW_CONTINUE arm.  The dispatch CONTINUES past the frozen range
+# with three further keyword arms (KW_ASM at 1878, KW_STATIC at 1893,
+# KW_GOTO at 1955) and a `default:` arm at 1967.  The whole `switch`
+# statement spans lines 1865..1972, inside the `if (tok->tk_type ==
+# TK_KEYWORD)` guard that spans 1864..1973.
+#
+# The frozen contract's own words: "The successor decides among the
+# statement constructors.  The exact set of arms is fixed by the
+# frozen source range src/parser.c 1864..1877".  The frozen range is
+# the twelve simple constructor arms.  The three complex arms and the
+# default arm are part of the SAME switch statement and MUST be
+# accounted for, because the C side's mechanical routing table has to
+# reproduce the ENTIRE legacy decision or the migration would change
+# behaviour.  They are therefore INCLUDED, with their real route.
+#
+# Schema: kw_name <TAB> kw_value <TAB> source_line <TAB> route <TAB> ctor_or_action <TAB> arm_kind
+KW_IF	46	1866	KEYWORD_STATEMENT_CONSTRUCTOR	parseIfStatement(cc)	SIMPLE
+KW_FOR	38	1867	KEYWORD_STATEMENT_CONSTRUCTOR	parseForStatement(cc)	SIMPLE
+KW_WHILE	40	1868	KEYWORD_STATEMENT_CONSTRUCTOR	parseWhileStatement(cc)	SIMPLE
+KW_DO	66	1869	KEYWORD_STATEMENT_CONSTRUCTOR	parseDoWhileStatement(cc)	SIMPLE
+KW_RETURN	18	1870	KEYWORD_STATEMENT_CONSTRUCTOR	parseReturnStatement(cc)	SIMPLE
+KW_TRY	80	1871	KEYWORD_STATEMENT_CONSTRUCTOR	parseTryStatement(cc)	SIMPLE
+KW_THROW	82	1872	KEYWORD_STATEMENT_CONSTRUCTOR	parseThrowStatement(cc)	SIMPLE
+KW_SWITCH	20	1873	KEYWORD_STATEMENT_CONSTRUCTOR	parseSwitchStatement(cc)	SIMPLE
+KW_CASE	22	1874	KEYWORD_STATEMENT_CONSTRUCTOR	parseCaseLabel(cc,tok)	SIMPLE
+KW_DEFAULT	64	1875	KEYWORD_STATEMENT_CONSTRUCTOR	parseDefaultStatement(cc)	SIMPLE
+KW_BREAK	24	1876	KEYWORD_STATEMENT_CONSTRUCTOR	parseBreakStatement(cc)	SIMPLE
+KW_CONTINUE	26	1877	KEYWORD_STATEMENT_CONSTRUCTOR	parseContinueStatement(cc)	SIMPLE
+KW_ASM	28	1878	KEYWORD_STATEMENT_CONSTRUCTOR	prsAsm(cc,1) + listAppend(cc->asm_blocks,...)	COMPLEX
+KW_STATIC	67	1893	KEYWORD_STATEMENT_CONSTRUCTOR	local-static declaration path	COMPLEX
+KW_GOTO	44	1955	KEYWORD_STATEMENT_CONSTRUCTOR	createFunctionLevelGotoLabel + astGoto	COMPLEX
+#
+# The `default:` arm at line 1967 is the NOT-A-RECOGNISED-KEYWORD route:
+# it rewinds the token and raises
+#   "Keyword '%.*s' cannot be used in this context".
+# It is NOT a constructor.  It is the fall-through route.
+DEFAULT_ARM	NA	1967	KEYWORD_STATEMENT_UNRECOGNISED	cctrlTokenRewind(cc) + cctrlRaiseException(cc,"Keyword '%.*s' cannot be used in this context",tok->len,tok->start)	FALLTHROUGH
+#
+# Every arm's ORIGINAL route is a constructor invocation.  There is NO
+# arm that "returns an existing AST" and NO arm that "defers to the
+# existing unhandled-token behaviour" other than the default arm,
+# which raises the keyword diagnostic.  The routes AFTER the switch
+# (the TK_CHAR_CONST, TK_STR, TK_IDENT-label, '{', TK_I64, TK_F64,
+# ',' and the final parseExpr path) are OUTSIDE the keyword guard and
+# are NOT part of SUB-004.  They stay on the C side unchanged.
+#
+# ==================================================================
+# PART 3 -- THE TOKEN-TYPE AND KEYWORD-ID ENUM FACTS
+# ==================================================================
+#
+TOKEN_TYPE_CLASS	TK_KEYWORD	COMMAND=grep -n 'define TK_KEYWORD' src/lexer.h
+TOKEN_TYPE_CLASS_VALUE	0x332 (=818)	src/lexer.h:62
+TOKEN_TYPE_IS_A_DENSE_ENUM	NO	measured: TK_KEYWORD is a `#define` with a hex literal, not an enum member
+KEYWORD_ID_DOMAIN	I64	dense small non-negative integers, values 0..90
+KEYWORD_ENUM_OWNER	C	selected-abi-and-projection.md: "The KW_* and TK_* enum values -- C -- passed by value"
+KEYWORD_VALUE_SOURCE	src/lexer.h `#define KW_*` lines
+DUPLICATE_KEYWORD_ALIASES	0	measured: each KW_* macro has a distinct numeric value
+#
+# The complete KW_* universe, measured from src/lexer.h.  Every one of
+# these is a legal `keyword_id` input.  Only the 15 listed in PART 2
+# are dispatch arms; every other value takes the DEFAULT route.
+#
+KW_UNIVERSE_TOTAL	62	measured: `grep -c '^#define KW_' src/lexer.h`
+KW_UNIVERSE_VALUES	0,1,3,4,5,6,7,8,9,10,11,12,13,15,16,17,18,19,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58,60,62,64,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90	measured
+KW_DISPATCH_ARM_COUNT	15	measured: 15 `case KW_*:` labels in the switch
+KW_KEYWORDS_WITHOUT_AN_ARM	47	measured: 62 - 15
+#
+# ==================================================================
+# PART 4 -- THE STATEMENT_SELECTOR ENCODING
+# ==================================================================
+#
+# The frozen contract defines the ABI and the SEMANTICS of the
+# selector but does NOT assign numeric codes to the selector values.
+# selected-abi-and-projection.md names the selector values only as
+# "STMT_IF", "STMT_FOR", ... in the illustrative C projection, and
+# requires:
+#   "a keyword_id that is not a keyword maps to the 'not-a-keyword-
+#    statement' selector"
+# and
+#   "The ABI is total: every (token_type, keyword_id) pair maps to a
+#    value.  There is no failure sentinel and no error return."
+#
+# The numeric encoding is therefore DERIVED, not invented: this ACT
+# assigns a dense, explicit, source-bound encoding and RECORDS it in
+# this table.  The SEMANTIC CONTRACT (which keyword selects which
+# constructor, and that a non-dispatch keyword selects the
+# not-a-keyword-statement selector) is taken verbatim from the frozen
+# contract and is NOT changed.
+#
+# Encoding rule (declared here, frozen at C0, enforced by the
+# fixture and by all four generations):
+#   STMT_NOT_A_KEYWORD_STATEMENT = 0
+#   STMT_<CONSTRUCTOR>            = 1..N, in the SOURCE ORDER of the
+#                                    `case` labels, so the encoding is
+#                                    derived from the source order and
+#                                    not from an enum ordering.
+#
+# The set of selector values is bounded by the 15 dispatch arms plus
+# the one not-a-keyword-statement value: 16 values in total.  Every
+# one of them is DEFINED, so the component has no undefined behaviour
+# on any input (selected-abi-and-projection.md section 5).
+#
+# Schema: selector_name <TAB> selector_value <TAB> source_line <TAB> constructor
+STMT_NOT_A_KEYWORD_STATEMENT	0	NA	NA (the "not a keyword statement" selector; no constructor)
+STMT_IF	1	1866	parseIfStatement(cc)
+STMT_FOR	2	1867	parseForStatement(cc)
+STMT_WHILE	3	1868	parseWhileStatement(cc)
+STMT_DO	4	1869	parseDoWhileStatement(cc)
+STMT_RETURN	5	1870	parseReturnStatement(cc)
+STMT_TRY	6	1871	parseTryStatement(cc)
+STMT_THROW	7	1872	parseThrowStatement(cc)
+STMT_SWITCH	8	1873	parseSwitchStatement(cc)
+STMT_CASE	9	1874	parseCaseLabel(cc,tok)
+STMT_DEFAULT	10	1875	parseDefaultStatement(cc)
+STMT_BREAK	11	1876	parseBreakStatement(cc)
+STMT_CONTINUE	12	1877	parseContinueStatement(cc)
+STMT_ASM	13	1878	prsAsm(cc,1) + listAppend(cc->asm_blocks,...)
+STMT_STATIC	14	1893	local-static declaration path
+STMT_GOTO	15	1955	createFunctionLevelGotoLabel + astGoto
+#
+# The "not a keyword statement" selector (value 0) is the ROUTE for:
+#   * a token whose tk_type is not TK_KEYWORD (the C guard means the
+#     dispatch is not entered at all in production);
+#   * a keyword_id that is in the TK_KEYWORD class but is not any arm
+#     of the dispatch (the `default:` route);
+#   * any out-of-enum value, including the I64 extremes.
+#
+# NOTE ON THE default: ARM: the legacy `default:` arm RAISES the
+# keyword diagnostic "Keyword '%.*s' cannot be used in this context".
+# The mechanical C router therefore routes selector value 0 to the
+# LEGACY DEFAULT PATH, which performs the identical cctrlTokenRewind
+# and the identical cctrlRaiseException.  It does NOT call an
+# arbitrary constructor, and it does NOT silently fall through to the
+# post-switch statement paths.
+#
+SELECTOR_ENCODING_DECLARED_BY	ACT-POLYC-SELFHOST-PARSER-SLICE09 C0
+SELECTOR_ENCODING_DERIVED_FROM	the SOURCE ORDER of the `case KW_*:` labels in src/parser.c
+SELECTOR_ENCODING_MATCHES_FROZEN_SEMANTICS	YES	frozen semantics: which keyword selects which constructor, and the not-a-keyword-statement value
+SELECTOR_ENCODING_IS_A_NEW_AUTHORIZATION	NO	the frozen ABI (I64 in, I64 out, total, no failure sentinel) is unchanged
+SELECTOR_VALUE_COUNT	16	15 arms + 1 not-a-keyword-statement
+INVALID_SELECTOR_VALUES	none: every value in [0,15] is defined; values outside [0,15] are NOT producible by the total component
+#
+# ==================================================================
+# PART 5 -- THE POLYC EXPORT, LINK NAMING AND PROJECTION
+# ==================================================================
+POLYC_ABI	I64 BootstrapStatementDispatch(I64 token_type, I64 keyword_id) -> I64 statement_selector	selected-abi-and-projection.md section 1
+POLYC_SYMBOL	BootstrapStatementDispatch	selected-abi-and-projection.md
+POLYC_LINK_NAME	_BootstrapStatementDispatch	measured: the PolyC compiler emits a leading underscore on this platform (as for _BootstrapDefaultArmTerminates)
+SELECTOR_NAME	HCC_USE_SELFHOST_PARSER_STATEMENT_DISPATCH	selected-abi-and-projection.md section 4
+SELECTOR_DEFAULT	OFF	selected-abi-and-projection.md section 4
+QUALIFIED_PRODUCTION_BUILD_SELECTOR	ON	ACT section 0.1
+#
+# The FROZEN subject file name.  The frozen contract names it
+# explicitly:
+#   "Subject file | tools/bootstrap/selfhost-parser-statement-dispatch.HC"
+#
+# This ACT's section 2.1 lists tools/bootstrap/selfhost-parser-slice09.HC
+# as the permitted path and says: "Filename of subject must agree
+# with committed selected contract or bind exact permitted equivalent
+# at C0."  The committed selected contract names
+# tools/bootstrap/selfhost-parser-statement-dispatch.HC.  The two
+# candidates are byte-identical in ROLE but differ in NAME.  This ACT
+# BINDS THE FROZEN NAME as the exact permitted equivalent, because
+# the frozen contract is the higher authority in the ACT's own
+# binding hierarchy ("Actual Git objects and executed observations >
+# frozen RECON08 c2/selected-* contracts > this ACT").
+SUBJECT_FILE_FROZEN_CONTRACT	tools/bootstrap/selfhost-parser-statement-dispatch.HC	c2/selected-abi-and-projection.md section 4
+SUBJECT_FILE_THIS_ACTS_PERMITTED_PATH	tools/bootstrap/selfhost-parser-slice09.HC	ACT section 2.1
+SUBJECT_FILE_BINDING	tools/bootstrap/selfhost-parser-statement-dispatch.HC	the committed frozen selected contract's exact name wins over this ACT's illustrative path
+SUBJECT_FILE_BINDING_JUSTIFICATION	ACT section 2.1 permits binding the exact permitted equivalent at C0; the frozen contract is the higher authority
+LEGACY_ORACLE_NAME	ParserLegacyStatementDispatchOracle	c2/selected-abi-and-projection.md section 4 and c2/selected-production-seam.md section 3
+LEGACY_ORACLE_REACHABILITY	reachable ONLY in a selector-OFF build	c2/selected-abi-and-projection.md section 4
+FAIL_CLOSED_POSTURE	the C side must NOT fall back to the legacy switch when the selector is ON	c2/selected-abi-and-projection.md section 4
+#
+# The host projection, exactly as the frozen contract requires.
+HOST_PROJECTION_TOK_TYPE	tok->tk_type	read on the C side, passed by value
+HOST_PROJECTION_KEYWORD_ID	tok->i64	read on the C side, passed by value
+CONDITIONAL_READ_PRESERVED	tok->i64 is read ONLY when tok->tk_type == TK_KEYWORD	selected-abi-and-projection.md section 2
+GUARD_STAYS_ON_C	TK_KEYWORD test stays on the C side; it is the guard, not the decision	selected-abi-and-projection.md section 2
+NULL_GUARD_PRESERVED	parseStatement raises on tok == NULL BEFORE the dispatch	selected-abi-and-projection.md section 2
+POINTERS_CROSSING_THE_SEAM	NONE	selected-abi-and-projection.md section 3
+EVALUATION_ORDER	the guard test, then exactly one read of tok->i64, then exactly one call, then the mechanical route	derived from the live source
+RETURN_PATH_SEMANTICS	the selector value selects the mechanical C route; every route returns an Ast* exactly as the legacy arm did	derived from the live source
+OWNERSHIP_ALLOCATION	all Ast allocation stays on the C side	selected-abi-and-projection.md section 3
+#
+# The three already-migrated decisions, for the distinctness record:
+EXISTING_MIGRATED_SYMBOL_1	BootstrapSwitchArmTerminates	SLICE06
+EXISTING_MIGRATED_SYMBOL_2	BootstrapCompoundBlockAppendsStatement	SLICE07
+EXISTING_MIGRATED_SYMBOL_3	BootstrapDefaultArmTerminates	SLICE08
+#
+# ==================================================================
+# PART 6 -- THE G0 ORACLE, THE FIXTURE AND THE WITNESS
+# ==================================================================
+G0_ORACLE_REQUIREMENT	the real src/parser.c translation unit, compiled with the candidate selector OFF	c2/selected-g0-oracle-and-fixture.md section 1
+G0_NOT_A_REIMPLEMENTATION	the oracle is the production object, not a copy	c2/selected-g0-oracle-and-fixture.md section 1
+G0_FAIL_CLOSED_CHECK	the build MUST FAIL if the selector-OFF object imports BootstrapStatementDispatch	c2/selected-g0-oracle-and-fixture.md section 1
+G0_PROVENANCE_DETECTOR	G0_NOT_GENUINE_C_TU	c2/selected-negative-controls.md section 3 (R8-CC-02)
+#
+FIXTURE_PARTITION_P0_NONKEYWORD	1 row: a token whose tk_type is not TK_KEYWORD	c2/selected-g0-oracle-and-fixture.md section 2.1
+FIXTURE_PARTITION_P1_KEYWORD	one row per KW_* arm in the frozen range	c2/selected-g0-oracle-and-fixture.md section 2.1
+FIXTURE_PARTITION_P2_UNKNOWN_KEYWORD	1 row: a keyword_id in the TK_KEYWORD class that is not any arm of the dispatch	c2/selected-g0-oracle-and-fixture.md section 2.1
+FIXTURE_PARTITION_P3_EXTREME	2 rows: I64 extremes (minimum and maximum) in each of the two parameters	c2/selected-g0-oracle-and-fixture.md section 2.1
+FIXTURE_EXPECTED_P0	not-a-keyword-statement value	c2/selected-g0-oracle-and-fixture.md section 2.2
+FIXTURE_EXPECTED_P1	the constructor that the corresponding `case` label names, read from the source text	c2/selected-g0-oracle-and-fixture.md section 2.2
+FIXTURE_EXPECTED_P2	not-a-keyword-statement value	c2/selected-g0-oracle-and-fixture.md section 2.2
+FIXTURE_EXPECTED_P3	not-a-keyword-statement value	c2/selected-g0-oracle-and-fixture.md section 2.2
+FIXTURE_DERIVATION	source-bound generator reading the `case` labels out of src/parser.c 1864..1877, checked against an independent enum witness reading the KW_* values out of src/lexer.h	c2/selected-g0-oracle-and-fixture.md section 2.2
+FIXTURE_ROW_COUNT	NOT GUESSED: derived from the source at C1 and recorded as a measured value	c2/selected-g0-oracle-and-fixture.md section 4
+#
+WITNESS_CHANNEL_W_OBJ	the compiled object's sha256, for the ACCEPT/REJECT outcome	c2/selected-g0-oracle-and-fixture.md section 2.3
+WITNESS_CHANNEL_W_DIAG	the compiler's diagnostic TEXT, which names the constructor that ran	c2/selected-g0-oracle-and-fixture.md section 2.3
+WITNESS_CHANNEL_W_RUN	the runtime output of a compiled witness program	c2/selected-g0-oracle-and-fixture.md section 2.3
+WITNESS_DISCRIMINATING	w2: an `if` whose body is a DECLARATION; parseIfStatement accepts it, parseWhileStatement rejects it	c2/selected-g0-oracle-and-fixture.md section 3
+WITNESS_W2_SOURCE	I32 Main(I32 argc, U8 **argv) { I64 x = 1; if (x) I64 y = 2; return 0; }	c2/selected-g0-oracle-and-fixture.md section 3
+#
+# ==================================================================
+# PART 7 -- THE THREE DISTINCT CAUSAL EXPERIMENTS
+# ==================================================================
+#
+# The frozen IDs are used verbatim.  They are NOT renamed.
+#
+CONTROL_ID_1	RECON08-SUB-004-PRE-C-MUTANT	EXECUTED by RECON08 (historical)
+CONTROL_ID_1_PHASE	RECON08-C2-PRE-MIGRATION-C-MUTANT	c2/selected-stage-provenance-and-causal-contract.md section 2.1
+CONTROL_ID_1_SUBJECT	src/parser.c, the legacy C decision, lines 1864..1877	c2/selected-stage-provenance-and-causal-contract.md section 2.1
+CONTROL_ID_1_SELECTOR_STATE	the eight production selectors ON; NO candidate-specific selector exists	c2/selected-stage-provenance-and-causal-contract.md section 2.1
+CONTROL_ID_1_EXECUTION_ID	RECON08-C2-MUTANT-01	c2/selected-stage-provenance-and-causal-contract.md section 2.1
+CONTROL_ID_1_OUTCOME_CHANNEL	W-DIAG and W-OBJ	c2/selected-stage-provenance-and-causal-contract.md section 2.1
+CONTROL_ID_1_SHARING_RULE	may be cited by SLICE09 as the pre-migration evidence ONLY	c2/selected-stage-provenance-and-causal-contract.md section 2.1
+#
+CONTROL_ID_2	RECON08-SUB-004-POST-POLYC-MUTANT	NOT EXECUTED; MANDATORY FOR SLICE09
+CONTROL_ID_2_PHASE	RECON08-C2-FUTURE-POST-MIGRATION	c2/selected-stage-provenance-and-causal-contract.md section 2.2
+CONTROL_ID_2_SUBJECT	the compiled PolyC component, NOT src/parser.c	c2/selected-stage-provenance-and-causal-contract.md section 2.2
+CONTROL_ID_2_SELECTOR_STATE	HCC_USE_SELFHOST_PARSER_STATEMENT_DISPATCH ON	c2/selected-stage-provenance-and-causal-contract.md section 2.2
+CONTROL_ID_2_PRODUCER	a PolyC-built compiler generation (G1, G2 or G3)	c2/selected-stage-provenance-and-causal-contract.md section 2.2
+CONTROL_ID_2_EXECUTION_ID	assigned by SLICE09; it MUST differ from every RECON08 execution ID	c2/selected-stage-provenance-and-causal-contract.md section 2.2
+CONTROL_ID_2_OUTCOME_CHANNEL	W-DIAG / W-OBJ / W-RUN	c2/selected-stage-provenance-and-causal-contract.md section 2.2
+CONTROL_ID_2_RESTORATION	the PolyC component's source is restored and the compiler rebuilt	c2/selected-stage-provenance-and-causal-contract.md section 2.2
+CONTROL_ID_2_PROHIBITION	the RECON08 pre-migration C mutant CANNOT discharge this control	c2/selected-stage-provenance-and-causal-contract.md section 2.2
+#
+CONTROL_ID_3	RECON08-SUB-004-C-OFF-C-MUTANT	NOT EXECUTED; CONDITIONAL
+CONTROL_ID_3_STATUS	OPTIONAL: demanded only if the frozen successor contract requires a selector-OFF C mutation as well	c2/selected-stage-provenance-and-causal-contract.md section 2.3
+CONTROL_ID_3_SUBJECT	the legacy C decision, in a build with the candidate selector OFF	c2/selected-stage-provenance-and-causal-contract.md section 2.3
+CONTROL_ID_3_SELECTOR_STATE	HCC_USE_SELFHOST_PARSER_STATEMENT_DISPATCH OFF	c2/selected-stage-provenance-and-causal-contract.md section 2.3
+CONTROL_ID_3_NOTE	if it is not demanded, it is NOT executed and it is NOT claimed	c2/selected-stage-provenance-and-causal-contract.md section 2.3
+CONTROL_ID_3_DEMANDED_BY_FROZEN_CONTRACT	NO	the frozen successor contract does NOT demand a selector-OFF C mutation; it is explicitly OPTIONAL
+#
+CONTROL_ID_4	RECON08-SUB-004-G0-ORACLE	NOT EXECUTED; SLICE09 OWNS IT
+CONTROL_ID_4_PHASE	RECON08-C2-PRE-MIGRATION-G0	c2/selected-stage-provenance-and-causal-contract.md section 3
+CONTROL_ID_4_SUBJECT	the real production TU, selector OFF	c2/selected-stage-provenance-and-causal-contract.md section 3
+#
+PRODUCER_IDENTITY_REQUIREMENT	any producer binary must be bound by its sha256; "this is generation G2" must be dischargeable by comparing that digest with the recorded generation table	c2/selected-stage-provenance-and-causal-contract.md section 4
+PRODUCER_DIGEST_MISMATCH_DETECTOR	PRODUCER_DIGEST_OR_IDENTITY_MISMATCH (control R8-PV-01)	c2/selected-stage-provenance-and-causal-contract.md section 4
+#
+# ==================================================================
+# PART 8 -- THE FOUR GENERATION PLAN
+# ==================================================================
+GENERATION_G0	the genuine C oracle: the real production src/parser.c compiled with the candidate selector OFF	c2/selected-stage-provenance-and-causal-contract.md section 1
+GENERATION_G1	the first PolyC-built compiler generation, with the selector ON	c2/selected-stage-provenance-and-causal-contract.md section 1
+GENERATION_G2	a second, independently built PolyC generation	c2/selected-stage-provenance-and-causal-contract.md section 1
+GENERATION_G3	a third, independently built PolyC generation	c2/selected-stage-provenance-and-causal-contract.md section 1
+GENERATION_DISTINCTNESS_REQUIREMENT	three separately built compilers with three distinct producer digests; a single compiler re-run is NOT three generations	c2/selected-stage-provenance-and-causal-contract.md section 1
+GENERATION_PAIR_COUNT	12 ordered pairs	c2/selected-stage-provenance-and-causal-contract.md section 1
+#
+# ==================================================================
+# PART 9 -- THE INHERITED CONTROL ROSTER
+# ==================================================================
+INHERITED_CONTROL_COUNT	24	derived from c0/frozen-24-negative-controls.tsv rows
+INHERITED_PHYSICAL_EXECUTION_COUNT	25	derived from the required_physical_executions column (R8-EC-06 requires 2)
+INHERITED_ROSTER_SOURCE	evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08/c0/frozen-24-negative-controls.tsv
+INHERITED_JOIN_SOURCE	evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08/c3/frozen-control-execution-join.tsv
+#
+# The four controls that SURVIVE INTO SLICE09, per
+# c2/selected-negative-controls.md section 4:
+SURVIVING_CONTROL_POST_POLYC_MUTANT	RECON08-SUB-004-POST-POLYC-MUTANT	the subject is the compiled PolyC component
+SURVIVING_CONTROL_G0_ORACLE	RECON08-SUB-004-G0-ORACLE	the G0 oracle requires the successor to exist
+SURVIVING_CONTROL_C_OFF_C_MUTANT	RECON08-SUB-004-C-OFF-C-MUTANT	conditional
+SURVIVING_CONTROL_GENERATIONS	the G1/G2/G3 provenance and the 12 ordered pairs	the three future generations do not exist yet
+#
+# The PROHIBITION, verbatim:
+#   "The RECON08 pre-migration C mutant CANNOT discharge any of them.
+#    They have different subjects, different selector states, different
+#    producers and different phases."
+INHERITED_PRE_C_MUTANT_CANNOT_DISCHARGE	YES
+#
+# The classification rule this ACT uses, taken from
+# c2/selected-negative-controls.md sections 3, 4 and 5:
+#   * R8-CC-01..R8-CC-04 were executed by RECON08 against SUB-004
+#     itself and are HISTORICAL_RECON08_PROOF_TO_VERIFY.
+#   * The four surviving controls above are MUST_EXECUTE_IN_SLICE09.
+#   * The other sixteen are HISTORICAL_RECON08_PROOF_TO_VERIFY.
+#   * No inherited control may be PROHIBITED_SUBSTITUTION for a
+#     SLICE09 obligation: the inherited C mutation is prohibited from
+#     discharging the post-PolyC mutation.
+#
+# ==================================================================
+# PART 10 -- THE HASHED FREEZE
+# ==================================================================
+FROZEN_CONTRACT_HASHES_RECOMPUTED_AT_C0	YES
+FROZEN_CONTRACT_HASHES_TO_RECOMPARE_AT_C3	YES
+FROZEN_CONTRACT_HASHES_TO_RECOMPARE_AFTER_CLOSE	YES
+SELECTED_CONTRACT_BINDINGS_STATUS=PASS

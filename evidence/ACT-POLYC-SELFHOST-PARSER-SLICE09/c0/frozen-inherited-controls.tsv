@@ -1,0 +1,106 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE09
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=frozen-inherited-controls
+#
+# THE INHERITED RECON08 CONTROL ROSTER, WITH ITS EXACT IDs AND ITS
+# SLICE09 CLASSIFICATION.
+#
+# The roster is derived from the committed file
+#   evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08/c0/frozen-24-negative-controls.tsv
+# (sha256 56e7a57eb0005d43cf9d863930a279f9ed25097c52a1aa4429269b605b408571)
+# and from the joined execution ledger
+#   evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08/c3/frozen-control-execution-join.tsv
+# (sha256 3af05c912f473a7bac52cfe2f47d4dbb5c25e7c953a03c4cdee297e6710f825e).
+#
+# The COUNT is derived from the rows, not asserted: 24 IDs, 25
+# physical executions (R8-EC-06 requires 2).
+#
+# CLASSIFICATION (ACT section 1.4 and
+# c2/selected-negative-controls.md sections 3, 4 and 5):
+#
+#   HISTORICAL_RECON08_PROOF_TO_VERIFY
+#       The control was executed by RECON08 against SUB-004 itself.
+#       SLICE09 must VERIFY the historical evidence, not re-assert it.
+#
+#   MUST_EXECUTE_IN_SLICE09
+#       The control's subject does not exist yet in SLICE09, or the
+#       frozen successor contract assigns it to SLICE09.
+#
+#   PROHIBITED_SUBSTITUTION
+#       The control may NOT be used to discharge a SLICE09 obligation
+#       with a different subject, selector state, producer or phase.
+#
+# Schema: control_id <TAB> class <TAB> required_detector_class
+#         <TAB> required_physical_executions <TAB> historical_exec_id
+#         <TAB> slice09_disposition <TAB> binding_subject
+R8-IC-01	INVENTORY	MISSING_FUNCTION_ID	1	RECON08-C1-IC-01	HISTORICAL_RECON08_PROOF_TO_VERIFY	the live-function census
+R8-IC-02	INVENTORY	DUPLICATE_ID	1	RECON08-C1-IC-02	HISTORICAL_RECON08_PROOF_TO_VERIFY	the census and candidate registry
+R8-IC-03	IDENTITY	SOURCE_HASH_MISMATCH	1	RECON08-C1-IC-03	HISTORICAL_RECON08_PROOF_TO_VERIFY	the source range and SHA table
+R8-IC-04	IDENTITY	INVALID_RANGE_OR_OVERLAP	1	RECON08-C1-IC-04	HISTORICAL_RECON08_PROOF_TO_VERIFY	the source range table
+R8-EC-01	ELIGIBILITY	ALREADY_POLYC_AUTHORITY	1	RECON08-C1-EC-01	HISTORICAL_RECON08_PROOF_TO_VERIFY	the raw 13-clause facts
+R8-EC-02	ELIGIBILITY	TRANSITIVE_DEPENDENCY_MISSING	1	RECON08-C1-EC-02	HISTORICAL_RECON08_PROOF_TO_VERIFY	the transitive dependency facts
+R8-EC-03	ELIGIBILITY	HOST_GRAPH_WRITE	1	RECON08-C1-EC-03	HISTORICAL_RECON08_PROOF_TO_VERIFY	the transitive dependency facts
+R8-EC-04	ELIGIBILITY	CALLBACK_OR_RECOVERY_DEPENDENCE	1	RECON08-C1-EC-04	HISTORICAL_RECON08_PROOF_TO_VERIFY	the transitive dependency facts
+R8-EC-05	ELIGIBILITY	NOT_PRODUCTION_REACHABLE	1	RECON08-C1-EC-05	HISTORICAL_RECON08_PROOF_TO_VERIFY	the reachability facts
+R8-EC-06	ELIGIBILITY	UNKNOWN_CANDIDATE_ID and MISSING_ELIGIBILITY_FACT	2	RECON08-C1-EC-06a, RECON08-C1-EC-06b	HISTORICAL_RECON08_PROOF_TO_VERIFY	the raw facts and the candidate roster
+R8-RC-01	RANKING	RANK_ORDER_MISMATCH	1	RECON08-C2-RC-01	HISTORICAL_RECON08_PROOF_TO_VERIFY	the ranking input and the full order
+R8-RC-02	RANKING	INELIGIBLE_CANDIDATE_NOT_PROMOTED	1	RECON08-C2-RC-02	HISTORICAL_RECON08_PROOF_TO_VERIFY	the ranking input
+R8-RC-03	RANKING	Next deterministic qualified leader or NONE	1	RECON08-C2-RC-03	HISTORICAL_RECON08_PROOF_TO_VERIFY	the eligible population
+R8-RC-04	RANKING	Predicted full sorted-order delta	1	RECON08-C2-RC-04	HISTORICAL_RECON08_PROOF_TO_VERIFY	the R0..R6 dimension table
+R8-RC-05	PROVENANCE	SOURCE_SUBJECT_OR_PHASE_MISMATCH	1	RECON08-C2-RC-05	HISTORICAL_RECON08_PROOF_TO_VERIFY	the candidate identity table
+R8-CC-01	CAUSAL	Successful compiler build plus candidate-specific observed causal change	1	RECON08-C2-MUTANT-01	PROHIBITED_SUBSTITUTION	the selected C decision in a real compiler build -- it CANNOT discharge RECON08-SUB-004-POST-POLYC-MUTANT
+R8-CC-02	CAUSAL	G0_NOT_GENUINE_C_TU	1	RECON08-C2-CC-02	HISTORICAL_RECON08_PROOF_TO_VERIFY	the selected G0 oracle object
+R8-CC-03	CAUSAL	FIXTURE_ROW_MISMATCH with exact row	1	RECON08-C2-CC-03	HISTORICAL_RECON08_PROOF_TO_VERIFY	the selected source-derived fixture
+R8-CC-04	CAUSAL	FUNCTION_SCOPED_AUTHORITY_MISMATCH	1	RECON08-C2-CC-04	HISTORICAL_RECON08_PROOF_TO_VERIFY	the selected C decision function scope
+R8-PV-01	PROVENANCE	PRODUCER_DIGEST_OR_IDENTITY_MISMATCH	1	RECON08-C2-PV-01	HISTORICAL_RECON08_PROOF_TO_VERIFY	the producer binary identity table
+R8-XC-01	EXECUTION	FROZEN_CONTROL_MISSING, exact-ID diff	1	RECON08-C3-XC-01	HISTORICAL_RECON08_PROOF_TO_VERIFY	the frozen control roster and the C3 join
+R8-XC-02	EXECUTION	SELF_REFERENTIAL_WITNESS	1	RECON08-C3-XC-02	HISTORICAL_RECON08_PROOF_TO_VERIFY	the control execution evidence ledger
+R8-XC-03	EXECUTION	SOURCE_CHRONOLOGY_MISMATCH	1	RECON08-C3-XC-03	HISTORICAL_RECON08_PROOF_TO_VERIFY	the source phase hash table
+R8-XC-04	EXECUTION	NONCAUSAL_OR_UNLINKED_MUTANT despite fixture changes	1	RECON08-C3-XC-04	HISTORICAL_RECON08_PROOF_TO_VERIFY	the selected C mutation witness
+#
+# --- THE FOUR SURVIVING CONTROLS THAT SLICE09 OWNS ---
+# c2/selected-negative-controls.md section 4: "These four are
+# SLICE09's to execute, because they concern the PolyC component,
+# which does not exist yet".
+#
+RECON08-SUB-004-PRE-C-MUTANT	CAUSAL	historical pre-migration C mutation	1	RECON08-C2-MUTANT-01	PROHIBITED_SUBSTITUTION	legacy C source; selector: no candidate selector; phase RECON08-C2-PRE-MIGRATION-C-MUTANT -- HISTORICAL_EXECUTION_CITED_NOT_RERUN
+RECON08-SUB-004-POST-POLYC-MUTANT	CAUSAL	POLYC_MUTANT_REAL_COMPILER_EFFECT	1	TO_BE_ASSIGNED_BY_SLICE09	MUST_EXECUTE_IN_SLICE09	the compiled PolyC component; selector ON; phase RECON08-C2-FUTURE-POST-MIGRATION
+RECON08-SUB-004-C-OFF-C-MUTANT	CAUSAL	not demanded by the frozen contract	0	NA	NOT_REQUIRED_BY_FROZEN_CONTRACT	legacy C source; selector OFF; phase RECON08-C2-FUTURE-C-OFF -- the frozen contract marks it OPTIONAL
+RECON08-SUB-004-G0-ORACLE	CAUSAL	G0_PROVENANCE_VALID	1	TO_BE_ASSIGNED_BY_SLICE09	MUST_EXECUTE_IN_SLICE09	the real production TU, selector OFF; phase RECON08-C2-PRE-MIGRATION-G0
+#
+# The G1/G2/G3 provenance and the 12 ordered pairs are likewise
+# SLICE09's to execute, because the three generations do not exist yet.
+GENERATION-PROVENANCE-G1-G2-G3	PROVENANCE	PRODUCER_IDENTITY_COLLISION	1	TO_BE_ASSIGNED_BY_SLICE09	MUST_EXECUTE_IN_SLICE09	the three future PolyC generations
+GENERATION-12-ORDERED-PAIRS	DIFFERENTIAL	GENERATION_DIFFERENTIAL_MISMATCH	1	TO_BE_ASSIGNED_BY_SLICE09	MUST_EXECUTE_IN_SLICE09	the four-generation fixture differential
+#
+# --- THE DERIVED COUNTS ---
+#
+# The 24 inherited R8-* IDs are exactly the RECON08 roster.  The four
+# surviving SUB-004 controls and the two generation controls are
+# RECON08-owned IDs in the sense that they are NAMED by the frozen
+# successor contract, but their SUBJECTS belong to SLICE09.
+#
+INHERITED_R8_CONTROL_ID_COUNT	24
+INHERITED_R8_REQUIRED_PHYSICAL_EXECUTIONS	25
+INHERITED_R8_CLASS_HISTORICAL_RECON08_PROOF_TO_VERIFY	21
+INHERITED_R8_CLASS_PROHIBITED_SUBSTITUTION	3
+INHERITED_R8_CLASS_MUST_EXECUTE_IN_SLICE09	0
+INHERITED_SURVIVING_SUB004_CONTROL_COUNT	4
+INHERITED_SURVIVING_MUST_EXECUTE_IN_SLICE09	2
+INHERITED_SURVIVING_PROHIBITED_SUBSTITUTION	1
+INHERITED_SURVIVING_NOT_REQUIRED_BY_FROZEN_CONTRACT	1
+INHERITED_GENERATION_CONTROL_COUNT	2
+INHERITED_GENERATION_MUST_EXECUTE_IN_SLICE09	2
+INHERITED_UNKNOWN_IDS=0
+INHERITED_MISSING_IDS=0
+INHERITED_EXTRA_IDS=0
+INHERITED_DUPLICATE_IDS=0
+#
+# THE PROHIBITION, quoted from
+# c2/selected-stage-provenance-and-causal-contract.md section 2.2:
+#   "The RECON08 pre-migration C mutant CANNOT discharge this control.
+#    The two experiments have different subjects (legacy C source vs
+#    compiled PolyC component), different selector states, different
+#    producers and different phases."
+#
+INHERITED_CONTROL_ROSTER_STATUS=PASS

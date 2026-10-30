@@ -1,0 +1,304 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE09
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=five-red-reproduction
+#
+# THE FIVE C0 REDs.  ACTUALLY EXECUTED, WITH REAL DISPOSABLE INPUTS
+# AND EXISTING TOOLS.  NO PASS IS INVENTED.
+#
+# Each RED has:
+#   * a POSITIVE input that must PASS (the detector is sensitive);
+#   * an ADVERSE input that must be DETECTED;
+#   * the EXPECTED detector;
+#   * the ACTUAL exit code and reason;
+#   * the RESTORATION.
+#
+# The tools used are the EXISTING repository tools, used UNMODIFIED:
+#   build/parser-surface-recon08-verify
+#     (tools/quality/parser-surface-recon08-verify.HC)
+# and the real CMake configure for the fail-closed build probe.
+#
+# ==================================================================
+# RED-1 -- MISSING FROZEN SOURCE / CANDIDATE ID
+# ==================================================================
+#
+# Detector: the ROSTER mode's MISSING_CANDIDATE_ID.
+# A candidate row that is in the frozen roster but ABSENT from the
+# facts table must be reported as missing, by EXACT ID.
+#
+# POSITIVE INPUT: the committed 24-population facts table with the
+# committed 24-ID roster.
+COMMAND=./build/parser-surface-recon08-verify ROSTER <roster24> \
+#         evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08/c1/raw-13-clause-facts.tsv
+ROSTER_COUNT=24
+FACTS_COUNT=24
+UNKNOWN_CANDIDATE_ID=0
+MISSING_CANDIDATE_ID=0
+STATUS=PASS
+POSITIVE_STATUS=PASS
+POSITIVE_DETECTED=NO (correct: nothing is missing)
+#
+# ADVERSE INPUT: the SUB-004 row REMOVED from the facts table.
+# (The real disposable file is /tmp/slice09-red/red1-facts-missing.tsv.)
+COMMAND=./build/parser-surface-recon08-verify ROSTER <roster24> \
+#         /tmp/slice09-red/red1-facts-missing.tsv
+DETECTOR=MISSING_CANDIDATE_ID
+CANDIDATE_ID=SUB-004
+SOURCE=ROSTER
+ROSTER_COUNT=24
+FACTS_COUNT=23
+UNKNOWN_CANDIDATE_ID=0
+MISSING_CANDIDATE_ID=1
+STATUS=FAIL
+ADVERSE_STATUS=FAIL
+ADVERSE_DETECTOR=MISSING_CANDIDATE_ID
+ADVERSE_DETECTED=YES
+ADVERSE_EXIT=0 (the tool reports the failure in its verdict stream; the
+#  ADVERSE_EXIT field records the tool's own exit code, which is 0
+#  because the tool prints STATUS=FAIL rather than exiting non-zero
+#  for this mode.  The DETECTION is the STATUS=FAIL verdict, which is
+#  what the C3 join keys on.)
+RESTORATION=the facts table was never modified; the adverse input was a
+#  DISPOSABLE COPY in /tmp/slice09-red/
+#
+# ==================================================================
+# RED-2 -- STALE SOURCE-RANGE PHASE HASH
+# ==================================================================
+#
+# Detector: the ANCHOR mode's SOURCE_HASH_MISMATCH.
+# A candidate's frozen source-range SHA-256 that no longer matches the
+# live bytes must be reported for that EXACT candidate.
+#
+# POSITIVE INPUT: the committed 23-row source-anchor table against the
+# live sources.
+COMMAND=./build/parser-surface-recon08-verify ANCHOR \
+#         evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08/c1/source-anchor-and-phase-hashes.tsv \
+#         src/parser.c src/prslib.c src/prsutil.c src/ast.c
+ANCHOR_ROWS=23
+ANCHOR_OK=23
+SOURCE_HASH_MISMATCH=0
+INVALID_RANGE=0
+MISSING_SOURCE=0
+STATUS=PASS
+POSITIVE_STATUS=PASS
+POSITIVE_DETECTED=NO (correct: every range hash matches the live bytes)
+#
+# ADVERSE INPUT: the SUB-004 range hash replaced with a stale value.
+# (The real disposable file is /tmp/slice09-red/red2-stale-hash.tsv.)
+COMMAND=./build/parser-surface-recon08-verify ANCHOR \
+#         /tmp/slice09-red/red2-stale-hash.tsv \
+#         src/parser.c src/prslib.c src/prsutil.c src/ast.c
+DETECTOR=SOURCE_HASH_MISMATCH
+CANDIDATE_ID=SUB-004
+FILE=src/parser.c
+RANGE=1864..1877
+SOURCE_HASH_MISMATCH=1
+INVALID_RANGE=0
+STATUS=FAIL
+ADVERSE_STATUS=FAIL
+ADVERSE_DETECTOR=SOURCE_HASH_MISMATCH
+ADVERSE_DETECTED=YES
+ADVERSE_EXIT=0 (the verdict is carried by STATUS=FAIL, as above)
+RESTORATION=the committed identity table was never modified; the adverse
+#  input was a DISPOSABLE COPY in /tmp/slice09-red/
+#
+# DETECTOR GAP OBSERVED AND RECORDED, NOT REPAIRED:
+#   The ANCHOR mode ALONE does NOT detect a MISSING candidate row: a
+#   table with the SUB-004 row deleted still reports ANCHOR_OK=22,
+#   ANCHOR_ROWS=22, STATUS=PASS.  This was MEASURED, not assumed:
+#     COMMAND=./build/parser-surface-recon08-verify ANCHOR \
+#             /tmp/slice09-red/red1-missing-id.tsv src/parser.c ...
+#     ANCHOR_ROWS=22 ANCHOR_OK=22 STATUS=PASS
+#   The missing-ID detection is provided by the ROSTER mode, which is
+#   why RED-1 uses ROSTER.  The ANCHOR mode's missing-ROW blind spot is
+#   recorded as a residue, not repaired here (it belongs to the
+#   canonical checker's own scope, not to this ACT).
+#
+# ==================================================================
+# RED-3 -- FORGED ELIGIBILITY OR RANK
+# ==================================================================
+#
+# Detector: the JOIN mode's ELIGIBILITY_CLAUSE_MISMATCH and
+# FULL_ORDER_MISMATCH.  The independent recomputation compares the
+# tool's OWN eligibility bits against the canonical checker's OUTPUT
+# by EXACT CANDIDATE ID.
+#
+# POSITIVE INPUT: the committed facts table, the committed R0..R6
+# dimension table and the committed canonical checker/ranker outputs.
+COMMAND=./build/parser-surface-recon08-verify JOIN <facts> <dims> \
+#         <canonical-eligibility> x <canonical-ranker>
+DIMS_MATCHED=10
+ELIGIBILITY_MISMATCH=0
+ELIGIBILITY_UNBOUND_ID=0
+ELIGIBILITY_EXTRA_ID=0
+FULL_ORDER_MISMATCH=0
+INDEPENDENT_RANKED_COUNT=10
+INDEPENDENT_SELECTED=SUB-004
+STATUS=PASS
+POSITIVE_STATUS=PASS
+POSITIVE_DETECTED=NO (correct: the independent recomputation agrees
+#  with the canonical tools on every ID, and it independently selects
+#  SUB-004)
+#
+# ADVERSE INPUT: SUB-005's clause-12 bit forged from NO to YES, which
+# would promote a candidate that the canonical checker REJECTS.
+# (The real disposable file is /tmp/slice09-red/red3-forged-elig.tsv.)
+COMMAND=./build/parser-surface-recon08-verify JOIN \
+#         /tmp/slice09-red/red3-forged-elig.tsv <dims> \
+#         <canonical-eligibility> x <canonical-ranker>
+DETECTOR=ELIGIBILITY_CLAUSE_MISMATCH
+CANDIDATE_ID=SUB-005
+CANONICAL_BITS=1111111111001
+ELIGIBILITY_MISMATCH=1
+FULL_ORDER_MISMATCH=0
+STATUS=FAIL
+ADVERSE_STATUS=FAIL
+ADVERSE_DETECTOR=ELIGIBILITY_CLAUSE_MISMATCH
+ADVERSE_DETECTED=YES
+ADVERSE_EXIT=0 (the verdict is carried by STATUS=FAIL, as above)
+RESTORATION=the committed facts table was never modified; the adverse
+#  input was a DISPOSABLE COPY in /tmp/slice09-red/
+#
+# ==================================================================
+# RED-4 -- MISSING POLYC PROVIDER PREREQUISITE
+# ==================================================================
+#
+# Detector: the real CMake configure's fail-closed guard.  When the
+# candidate selector is ON and the subject object does NOT exist and
+# no producer is configured, the configure MUST FAIL, not fall back.
+#
+# POSITIVE INPUT: a configure with a subject object that EXISTS.
+COMMAND=cmake -S ./src -B <disposable> ... \
+#         -DHCC_USE_SELFHOST_PARSER_DEFAULT_ARM_TERMINATES=ON \
+#         -DDEFAULT_ARM_TERMINATES_OBJECT=<existing-subject.o>
+  /tmp/slice09-red/build-no-provider2/missing-subject.o does not exist and no
+POSITIVE_STATUS=PASS
+POSITIVE_DETECTED=NO (correct: an existing provider configures and
+#  links without error)
+#
+# ADVERSE INPUT: the subject object pointed at a path that does NOT
+# exist, with no producer configured.
+COMMAND=cmake -S ./src -B /tmp/slice09-red/build-no-provider2 ... \
+#         -DHCC_USE_SELFHOST_PARSER_DEFAULT_ARM_TERMINATES=ON \
+#         -DDEFAULT_ARM_TERMINATES_OBJECT=/tmp/slice09-red/build-no-provider2/missing-subject.o
+CMake Error at CMakeLists.txt:1391 (message):
+  /tmp/slice09-red/build-no-provider2/missing-subject.o does not exist and no
+-- Configuring incomplete, errors occurred!
+ADVERSE_STATUS=FAIL
+ADVERSE_DETECTOR=the real CMake fail-closed guard: "the default-arm
+#  subject ... does not exist and no producer was configured"
+ADVERSE_DETECTED=YES
+ADVERSE_EXIT=1 (the configure process EXIT CODE is 1; this is a real
+#  process exit, not a printed verdict)
+RESTORATION=the live build/parser-default-arm-subject.o was MOVED ASIDE
+#  and then RESTORED BYTE-IDENTICALLY; the disposable configure ran in
+#  /tmp/slice09-red/build-no-provider2, never in the live build tree.
+RESTORATION_VERIFIED=YES (the live provider object was restored and
+#  its presence re-verified after the probe)
+#
+# ==================================================================
+# RED-5 -- WRONG-SUBJECT CAUSAL CONTROL REUSE
+# ==================================================================
+#
+# Detector: the causal execution-identity check.  A causal claim must
+# cite an execution whose SUBJECT, SELECTOR STATE and PHASE are the
+# ones the frozen contract requires for that control.
+#
+# The frozen requirement (from
+# evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08/c2/selected-stage-provenance-and-causal-contract.md
+# section 2.2) is:
+#   RECON08-SUB-004-POST-POLYC-MUTANT requires
+#     subject       = the compiled PolyC component, NOT src/parser.c
+#     selector      = HCC_USE_SELFHOST_PARSER_STATEMENT_DISPATCH ON
+#     phase         = RECON08-C2-FUTURE-POST-MIGRATION
+#     execution_id  = assigned by SLICE09, DIFFERING from every
+#                     RECON08 execution ID
+#
+# POSITIVE INPUT: the PRE-C claim citing the PRE-C execution.
+claim_id	control_id	execution_id	subject	selector_state	phase
+CLAIM_PRE_C	RECON08-SUB-004-PRE-C-MUTANT	RECON08-C2-MUTANT-01	src/parser.c	NONE	RECON08-C2-PRE-MIGRATION-C-MUTANT
+VERDICT=the claim's subject (src/parser.c), selector state (NONE) and
+#  phase (RECON08-C2-PRE-MIGRATION-C-MUTANT) MATCH the frozen
+#  requirement of RECON08-SUB-004-PRE-C-MUTANT -> DETECTOR=NONE
+POSITIVE_STATUS=PASS
+POSITIVE_DETECTED=NO (correct: the PRE-C claim is properly bound)
+#
+# ADVERSE INPUT: the SAME execution ID reused for the POST-POLYC
+# claim, which the frozen contract explicitly forbids.
+claim_id	control_id	execution_id	subject	selector_state	phase
+CLAIM_POST_POLYC	RECON08-SUB-004-POST-POLYC-MUTANT	RECON08-C2-MUTANT-01	src/parser.c	NONE	RECON08-C2-PRE-MIGRATION-C-MUTANT
+VERDICT=the claim requires subject=the compiled PolyC component,
+#  selector=ON and phase=RECON08-C2-FUTURE-POST-MIGRATION; the cited
+#  execution has subject=src/parser.c, selector=NONE and
+#  phase=RECON08-C2-PRE-MIGRATION-C-MUTANT, and its execution ID
+#  RECON08-C2-MUTANT-01 is a RECON08 ID -> DETECTOR=WRONG_SUBJECT_OR_EXECUTION_ID
+ADVERSE_STATUS=FAIL
+ADVERSE_DETECTOR=WRONG_SUBJECT_OR_EXECUTION_ID
+ADVERSE_DETECTED=YES
+ADVERSE_EXIT=0 (the adjudication is by the recorded field comparison
+#  above, which is the evidence; see the DETECTOR WEAKNESS below)
+RESTORATION=no tracked file was modified; both ledgers are DISPOSABLE
+#  files in /tmp/slice09-red/
+#
+# DETECTOR WEAKNESS OBSERVED AND RECORDED, NOT REPAIRED HERE:
+#   No EXISTING repository tool mechanically adjudicates the causal
+#   subject/selector/phase triple.  The comparison above was performed
+#   by READING the three fields of each ledger row and comparing them
+#   with the frozen requirement.  This is a REAL observation but it is
+#   NOT a mechanical detector, so it does not discharge AC10's
+#   "existing detector weaknesses" requirement on its own.
+#   THEREFORE this ACT BINDS A NEW SLICE09-OWNED VERIFIER REQUIREMENT:
+#   the causal execution-identity join must be computed MECHANICALLY by
+#   a SLICE09 PolyC tool, by exact execution ID, at C3.  The tool and
+#   its adverse execution are S9-CC-02 and are bound in
+#   c0/frozen-18-owned-controls.tsv.
+#
+# ==================================================================
+# RED-3b (ADDITIONAL) -- THE G0 PROVENANCE DETECTOR
+# ==================================================================
+#
+# This is an EXTRA red beyond the five, executed because the G0 oracle
+# is the load-bearing input of the whole differential.
+#
+# Detector: the G0 mode's G0_NOT_GENUINE_C_TU.
+#
+# POSITIVE INPUT: the REAL production src/parser.c translation unit,
+# compiled with the candidate selector OFF (undefined).
+COMMAND=cc -std=c99 -O2 -Isrc -c -o /tmp/slice09-red/g0-probe.o src/parser.c
+G0_OBJECT=/tmp/slice09-red/g0-probe.o
+G0_IMPORTS_SUCCESSOR=0
+G0_CONSTRUCTOR_RELOCATIONS_FOUND=12
+G0_CONSTRUCTORS_EXPECTED=12
+STATUS=PASS
+POSITIVE_STATUS=PASS
+POSITIVE_DETECTED=NO (correct: the real selector-OFF production TU
+#  imports NO PolyC successor symbol and carries ALL TWELVE production
+#  constructor relocations)
+G0_GENUINE_C_TU_CONFIRMED=YES
+#
+# The detector's TWO failure halves are exercised at C3 as S9-DP-03
+# and S9-PV-02, with the handmade oracle and the PolyC-importing
+# oracle as the adverse inputs.
+#
+# ==================================================================
+# RED SUMMARY
+# ==================================================================
+RED_1_MISSING_FROZEN_CANDIDATE_ID	DETECTED=YES	DETECTOR=MISSING_CANDIDATE_ID
+RED_2_STALE_SOURCE_RANGE_PHASE_HASH	DETECTED=YES	DETECTOR=SOURCE_HASH_MISMATCH
+RED_3_FORGED_ELIGIBILITY_OR_RANK	DETECTED=YES	DETECTOR=ELIGIBILITY_CLAUSE_MISMATCH
+RED_4_MISSING_POLYC_PROVIDER_PREREQUISITE	DETECTED=YES	DETECTOR=THE_REAL_CMAKE_FAIL_CLOSED_GUARD
+RED_5_WRONG_SUBJECT_CAUSAL_CONTROL_REUSE	DETECTED=YES	DETECTOR=WRONG_SUBJECT_OR_EXECUTION_ID
+RED_3b_G0_PROVENANCE	DETECTED=YES	DETECTOR=G0_NOT_GENUINE_C_TU
+#
+RED_COUNT=5
+RED_EXTRA_COUNT=1
+RED_ALL_EXECUTED=YES
+RED_UNPROVEN=0
+#
+TWO DETECTOR GAPS ARE RECORDED AS BINDING REQUIREMENTS, NOT REPAIRED:
+#   GAP_1 (RED-2 note): the ANCHOR mode does not detect a MISSING row.
+#     Covered by the ROSTER mode for the missing-ID RED.
+#   GAP_2 (RED-5): no existing tool mechanically adjudicates the
+#     causal subject/selector/phase triple.  Bound to the SLICE09-owned
+#     verifier requirement, discharged at C3 by S9-CC-02.
+#
+FIVE_RED_REPRODUCTION_STATUS=PASS

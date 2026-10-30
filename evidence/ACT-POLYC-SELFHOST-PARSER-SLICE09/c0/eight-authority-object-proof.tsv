@@ -1,0 +1,107 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE09
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=eight-authority-object-proof
+#
+# THE EIGHT PREDECESSOR PRODUCTION POLYC PARSER AUTHORITIES, PROVED AT
+# THE ENTRY TREE AT THE OBJECT AND LINK LEVEL.
+#
+# Five independent properties are proved for EACH authority:
+#   1. exactly ONE definition in the linked executable (nm ./hcc);
+#   2. the caller object carries an UNDEFINED import (nm, ' U ');
+#   3. NO object in the hcc target carries a LOCAL definition;
+#   4. a REAL relocation to the symbol exists inside the caller's OWN
+#      function address range (function-scoped, not a string search);
+#   5. the legacy C decision survives only as a PASS-THROUGH ORACLE
+#      (a stub), so the C decision is not a second semantic authority.
+#
+# The function-scoped relocation scope is computed by
+#   tools/quality/parser-slice09-reloc-scope.sh
+# which joins the sorted symbol table's function range with the
+# relocation table by address.  It is the substrate for S9-DP-01,
+# S9-DP-02 and S9-CC-01.
+#
+# Schema: authority_id <TAB> symbol <TAB> caller_object
+#         <TAB> defs_in_linked_hcc <TAB> caller_import <TAB> local_defs
+#         <TAB> scope_fn <TAB> scope_relocs <TAB> legacy_oracle <TAB> status
+AUTHORITY_01	BootstrapCalcPadding	build/CMakeFiles/hcc.dir/parser.c.o	1	1	0	_CalcPadding	1	_ParserLegacyCalcPaddingOracle	ACTIVE
+AUTHORITY_02	BootstrapValidPostControlFlowToken	build/CMakeFiles/hcc.dir/parser.c.o	1	1	0	_parseValidPostControlFlowToken	1	NA (the decision function is the caller itself)	ACTIVE
+AUTHORITY_03	BootstrapOperatorPrecedence	build/CMakeFiles/hcc.dir/prslib.c.o	1	1	0	_parseExpr	1	NA (the decision function is the caller itself)	ACTIVE
+AUTHORITY_04	BootstrapAstBinOpFromToken	build/CMakeFiles/hcc.dir/ast.c.o	1	1	0	_astBinOpFromToken	1	NA (the decision function is the caller itself)	ACTIVE
+AUTHORITY_05	BootstrapAstUnaryOpFromToken	build/CMakeFiles/hcc.dir/ast.c.o	1	1	0	_astUnaryOpFromToken	1	NA (the decision function is the caller itself)	ACTIVE
+AUTHORITY_06	BootstrapSwitchArmTerminates	build/CMakeFiles/hcc.dir/parser.c.o	1	1	0	_parseCaseLabel	1	_ParserLegacySwitchArmTerminatesOracle	ACTIVE
+AUTHORITY_07	BootstrapCompoundBlockAppendsStatement	build/CMakeFiles/hcc.dir/parser.c.o	1	1	0	_parseCompoundStatementInternal	1	_ParserLegacyCompoundBlockAppendsOracle	ACTIVE
+AUTHORITY_08	BootstrapDefaultArmTerminates	build/CMakeFiles/hcc.dir/parser.c.o	1	1	0	_parseDefaultStatement	1	_ParserLegacyDefaultArmTerminatesOracle	ACTIVE
+#
+# --- THE ADDITIONAL CALL SITES, ALL PROVED BY REAL RELOCATION ---
+#
+# BootstrapCalcPadding is also called from _parseClassOffsets (3 sites),
+# _parseUnionOffsets (1 site) and _parseClassOrUnionFields (1 site).
+# BootstrapValidPostControlFlowToken is also called from _parseIfStatement
+# (3 sites), _parseForStatement (1), _parseWhileStatement (1) and
+# _parseDoWhileStatement (1).
+#
+CALLCALC_PADDING_EXTRA_CALLERS	_parseClassOffsets:3 _parseUnionOffsets:1 _parseClassOrUnionFields:1
+CALLVALID_POST_CONTROL_FLOW_EXTRA_CALLERS	_parseIfStatement:3 _parseForStatement:1 _parseWhileStatement:1 _parseDoWhileStatement:1
+#
+# --- THE LINKED EXECUTABLE'S DEFINITIONS ---
+#
+# COMMAND=nm ./hcc | grep -E ' T _Bootstrap' | sort
+#   0000000100063a1c T _BootstrapCalcPadding
+#   0000000100063a94 T _BootstrapValidPostControlFlowToken
+#   0000000100063ccc T _BootstrapOperatorPrecedence
+#   000000010006409c T _BootstrapAstBinOpFromToken
+#   000000010006428c T _BootstrapAstUnaryOpFromToken
+#   00000001000643a4 T _BootstrapSwitchArmTerminates
+#   0000000100064458 T _BootstrapCompoundBlockAppendsStatement
+#   00000001000644a0 T _BootstrapDefaultArmTerminates
+#
+LINKED_HCC_BOOTSTRAP_DEFINITION_COUNT	8
+LINKED_HCC_BOOTSTRAP_DUPLICATE_DEFINITIONS	0
+#
+# --- THE ACTIVE SELECTORS ---
+#
+# Each authority has its own dedicated selector.  All eight are ON in
+# the qualified production build.
+#
+SELECTOR_01	HCC_USE_SELFHOST_PARSER_PADDING	ON
+SELECTOR_02	HCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN	ON
+SELECTOR_03	HCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE	ON
+SELECTOR_04	HCC_USE_SELFHOST_PARSER_AST_BINOP	ON
+SELECTOR_05	HCC_USE_SELFHOST_PARSER_AST_UNARY	ON
+SELECTOR_06	HCC_USE_SELFHOST_PARSER_SWITCH_ARM	ON
+SELECTOR_07	HCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND	ON
+SELECTOR_08	HCC_USE_SELFHOST_PARSER_DEFAULT_ARM_TERMINATES	ON
+SELECTOR_09	HCC_USE_SELFHOST_PARSER_STATEMENT_DISPATCH	OFF at entry (this ACT turns it ON)
+#
+# The stage0 build turns all eight OFF; that is what makes the G0
+# oracle genuine for the new subject.
+#
+STAGE0_SELECTORS_OFF_COUNT	8
+#
+# --- THE BASELINE THAT S9-DP-01 WILL COMPARE AGAINST ---
+#
+# The twelve statement constructors that the SUB-004 dispatch targets,
+# as REAL relocations inside _parseStatement's own address range:
+#
+BASELINE_PARSE_STATEMENT_SCOPE	ARM64_RELOC_BRANCH26 _parseBreakStatement 1
+BASELINE_PARSE_STATEMENT_SCOPE	ARM64_RELOC_BRANCH26 _parseContinueStatement 1
+BASELINE_PARSE_STATEMENT_SCOPE	ARM64_RELOC_BRANCH26 _parseDefaultStatement 1
+BASELINE_PARSE_STATEMENT_SCOPE	ARM64_RELOC_BRANCH26 _parseDoWhileStatement 1
+BASELINE_PARSE_STATEMENT_SCOPE	ARM64_RELOC_BRANCH26 _parseForStatement 1
+BASELINE_PARSE_STATEMENT_SCOPE	ARM64_RELOC_BRANCH26 _parseIfStatement 1
+BASELINE_PARSE_STATEMENT_SCOPE	ARM64_RELOC_BRANCH26 _parseReturnStatement 1
+BASELINE_PARSE_STATEMENT_SCOPE	ARM64_RELOC_BRANCH26 _parseSwitchStatement 1
+BASELINE_PARSE_STATEMENT_SCOPE	ARM64_RELOC_BRANCH26 _parseThrowStatement 1
+BASELINE_PARSE_STATEMENT_SCOPE	ARM64_RELOC_BRANCH26 _parseTryStatement 1
+BASELINE_PARSE_STATEMENT_SCOPE	ARM64_RELOC_BRANCH26 _parseWhileStatement 1
+#
+BASELINE_PARSE_STATEMENT_CONSTRUCTOR_RELOC_COUNT	11
+# (parseCaseLabel is also in scope; it is listed separately because the
+#  simple constructor list above is the 11 that the "return parseXxx(cc)"
+#  form reaches.  The full scope, including _parseCaseLabel, is
+#  recorded in the C2 and C3 authority proofs.)
+BASELINE_PARSE_STATEMENT_HAS_CASE_LABEL	YES
+#
+EIGHT_AUTHORITY_COUNT	8
+EIGHT_AUTHORITY_ALL_ACTIVE	YES
+EIGHT_AUTHORITY_OBJECT_PROOF_STATUS=PASS

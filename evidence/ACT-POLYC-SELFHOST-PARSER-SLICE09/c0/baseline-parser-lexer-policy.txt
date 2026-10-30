@@ -1,0 +1,165 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE09
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=baseline-parser-lexer-policy
+#
+# THE PARSER / LEXER / CROSS-TARGET / TOOL-POLICY BASELINE.
+# MEASURED FRESH AT C0, ONE RUN AT A TIME.
+#
+# The shared assembly temporary /tmp/holyc-asm.s is a KNOWN RACE RISK
+# (a separate, out-of-scope defect).  Every build, differential, unit
+# and gate run below was executed SERIALLY.  No two of them overlapped.
+#
+# ------------------------------------------------------------------
+# THE HOST-ARCHITECTURE PARSER BASELINE
+# ------------------------------------------------------------------
+COMMAND=make unit-test
+UNIT_TEST_EXIT=0
+#
+COMMAND=grep -o 'PASSED: [0-9]*/[0-9]*' <log> | md5 -q
+    b6f117eb1386ca80f81bc06226e2a741
+COMMAND=grep -o 'PASSED: [0-9]*/[0-9]*' <log> |
+#          awk -F'[/ ]' '{p+=$2; t+=$3} END {print "PASSED="p, "TOTAL="t}'
+    PASSED=376 TOTAL=376
+COMMAND=grep -o 'PASSED: [0-9]*/[0-9]*' <log> | wc -l
+    90
+COMMAND=grep -c 'FAILED: [0-9]*/[0-9]*' <log>
+    0
+#
+PARSER_ASSERTIONS=376/376
+PARSER_ASSERTION_FILES=90
+PARSER_ASSERTION_SEQUENCE_MD5=b6f117eb1386ca80f81bc06226e2a741
+PARSER_BASELINE_MATCHES_HISTORICAL_IDENTITY=YES
+NEW_PARSER_FAILURE_IDENTITIES=0
+#
+# ------------------------------------------------------------------
+# THE LEXER DIRECT DIFFERENTIALS.  RUN SERIALLY, ONE AT A TIME.
+# ------------------------------------------------------------------
+COMMAND=make lexer07-direct-differential
+LEXER07_DIRECT_DIFFERENTIAL_EXIT=0
+   ACT_SELFHOST_LEXER02_DIRECT_DIFF_CASES=89
+   ACT_SELFHOST_LEXER02_DIRECT_DIFF_PASS=89
+   ACT_SELFHOST_LEXER02_DIRECT_DIFF_FAIL=0
+   STATUS=PASS
+#
+COMMAND=make lexer08-direct-differential
+LEXER08_DIRECT_DIFFERENTIAL_EXIT=0
+   DIRECT_DIFFERENTIAL_TOTAL=45
+   DIRECT_DIFFERENTIAL_PASS=45
+   DIRECT_DIFFERENTIAL_FAIL=0
+   STATUS=PASS
+#
+COMMAND=make lexer09-direct-differential
+LEXER09_DIRECT_DIFFERENTIAL_EXIT=0
+   DIRECT_DIFFERENTIAL_TOTAL=23
+   DIRECT_DIFFERENTIAL_PASS=23
+   DIRECT_DIFFERENTIAL_FAIL=0
+   STATUS=PASS
+#
+LEXER07_DIRECT_DIFFERENTIAL_TOTAL=89
+LEXER07_DIRECT_DIFFERENTIAL_PASS=89
+LEXER07_DIRECT_DIFFERENTIAL_FAIL=0
+LEXER07_DIRECT_DIFFERENTIAL_STATUS=PASS
+LEXER08_DIRECT_DIFFERENTIAL_TOTAL=45
+LEXER08_DIRECT_DIFFERENTIAL_PASS=45
+LEXER08_DIRECT_DIFFERENTIAL_FAIL=0
+LEXER08_DIRECT_DIFFERENTIAL_STATUS=PASS
+LEXER09_DIRECT_DIFFERENTIAL_TOTAL=23
+LEXER09_DIRECT_DIFFERENTIAL_PASS=23
+LEXER09_DIRECT_DIFFERENTIAL_FAIL=0
+LEXER09_DIRECT_DIFFERENTIAL_STATUS=PASS
+NEW_LEXER_FAILURE_IDENTITIES=0
+#
+# ------------------------------------------------------------------
+# THE LEXER07 BROAD CORPUS.  THE KNOWN BASELINE.
+# ------------------------------------------------------------------
+# The tool was invoked DIRECTLY with an ACT-owned output directory so
+# that the failure-identity file could be hashed without overwriting
+# any predecessor's artifact.
+#
+COMMAND=./build/lexer07-broad-corpus-4-stage \
+#           evidence/ACT-POLYC-SELFHOST-LEXER01/c2/corpus-inventory.txt \
+#           build/slice09-c0-lexer07-broad
+   TOTAL=181
+   PASS_S0=166 HISTORICAL_S0=0 PASS_S1=175 PASS_S2=175 PASS_S3=175
+   FAIL_S0=15 FAIL_S1=6 FAIL_S2=6 FAIL_S3=6
+   BOTH_FAIL_4=6
+   REGRESSION=0
+   DIVERGED=0
+   PASS_MISMATCH=9
+   HISTORICAL_S0_FALLBACKS_USED=0
+   BYTE_IDENTICAL_4=166
+   BYTE_IDENTICAL_PAIRS=166/181 166/181 166/181 175/181 175/181 175/181
+   PROVENANCE_SCHEMA_VALID=1
+   FAILURE_SCHEMA_VALID=1
+   STATUS=FAIL
+   TOOL_EXIT=1
+#
+COMMAND=md5 -q build/slice09-c0-lexer07-broad/corpus-failures.tsv
+   7ee761440de83552e751e3c3976c1683
+#
+# The MD5 is IDENTICAL to the one recorded by RECON06, by SLICE07, by
+# RECON07, by RECON04 and by RECON08.  The failure IDENTITY SET is
+# unchanged, not merely unchanged in COUNT.
+#
+LEXER07_FAILURE_IDENTITY_MD5=7ee761440de83552e751e3c3976c1683
+LEXER07_HISTORICAL_FAILURE_IDENTITY_MD5=7ee761440de83552e751e3c3976c1683
+LEXER07_FAILURE_IDENTITY_COUNT=15
+LEXER07_STATUS=FAIL_KNOWN_BASELINE
+NEW_LEXER07_FAILURE_IDENTITIES=0
+#
+# ------------------------------------------------------------------
+# THE CROSS-TARGET RUN.  THE HISTORICAL ENVIRONMENT CONDITION.
+# ------------------------------------------------------------------
+COMMAND=cd src/tests && ./test-runner --target=aarch64-apple-darwin
+# Every cross-target test failed with
+#   "Failed to open file: ../../build/aarch64-apple-darwin/include/tos.HH"
+#
+COMMAND=grep -c 'Failed to open file' <log>
+   67
+COMMAND=grep -c 'Failed to compile' <log>
+   67
+COMMAND=grep -o 'Failed to open file: [^"]*' <log> | sort -u
+   Failed to open file: ../../build/aarch64-apple-darwin/include/tos.HH
+#
+# There is exactly ONE distinct failure message.  The 67 failures are
+# 67 tests that all hit the same missing cross-target runtime prefix.
+# The runner itself exits 0 because every test failure is reported
+# individually; the 67 "Failed to compile" lines and the 67 "Failed to
+# open file" lines are the same 67 tests.
+#
+CROSS_TARGET_TESTS_ATTEMPTED=67
+CROSS_TARGET_FAILED_TO_OPEN_FILE=67
+CROSS_TARGET_FAILED_TO_COMPILE=67
+CROSS_TARGET_PASSED=0
+CROSS_TARGET_DISTINCT_FAILURE_MESSAGES=1
+CROSS_TARGET_FAILURE_MESSAGE=Failed to open file: ../../build/aarch64-apple-darwin/include/tos.HH
+CROSS_TARGET_RUNNER_EXIT=0
+#
+# This is a HISTORICAL ENVIRONMENT condition, not a parser failure
+# identity.  It is PRESERVED HONESTLY rather than relabelled PASS.
+#
+CROSS_TARGET_STATUS=FAIL_ENVIRONMENT_PREFIX
+NEW_CROSS_TARGET_FAILURE_IDENTITIES=0
+#
+# ------------------------------------------------------------------
+# THE KNOWN SEPARATE DEBTS.  NOT REPAIRED HERE.
+# ------------------------------------------------------------------
+# These are recorded as separate debts, NOT as permission to modify
+# them inside this ACT.
+#
+DEBT_01	15 historical LEXER07 failure IDs	NOT REPAIRED HERE
+DEBT_02	67 cross-target missing-prefix cases	NOT REPAIRED HERE
+DEBT_03	12 F-NO-PYTHON violations	NOT REPAIRED HERE
+DEBT_04	the F-POLYC-TOOLS checker is not landed	NOT REPAIRED HERE
+DEBT_05	the SLICE06 stale CMake producer	NOT REPAIRED HERE
+DEBT_06	the shared /tmp/holyc-asm.s assembly temporary race	NOT REPAIRED HERE
+DEBT_07	the initialized static global / Main(argc) storage collision	NOT REPAIRED HERE
+DEBT_08	the pointer-valued ternary OOM lead	NOT REPAIRED HERE
+DEBT_09	the canonical checker's source-hash omission	NOT REPAIRED HERE
+DEBT_10	the canonical ranker trusting its eligibility column	NOT REPAIRED HERE
+DEBT_11	the historical SLICE08 self-referential control rows	NOT REPAIRED HERE
+#
+# NEW MALFORMED POLYC TERNARY CONSTRUCTS ARE AVOIDED in this ACT's new
+# tools.  The DEBT_08 pattern is not reproduced.
+#
+PARSER_LEXER_CROSS_TARGET_BASELINE_STATUS=PASS
