@@ -1,0 +1,149 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE08-EVIDENCE-CORRECTION01
+ACT_PHASE=C0-RED
+EVIDENCE_KIND=baseline-cross-target-policy-gates
+#
+# THE CROSS-TARGET PROBE, THE TOOL-POLICY CHECKERS AND THE TWO
+# PRODUCER GATES, ALL MEASURED AT THE CORRECTION ENTRY.
+#
+# Every historical nonzero status is preserved EXACTLY and is
+# NOT relabelled PASS.  Zero new failure identities.
+#
+## --- THE CROSS-TARGET PROBE ---
+#
+# The runner exits 0 because every test failure is reported
+# individually.  This is a HISTORICAL ENVIRONMENT condition, NOT
+# a parser failure identity.  It is PRESERVED HONESTLY.
+#
+COMMAND=cd src/tests && ./test-runner --target=aarch64-apple-darwin
+   CROSS_TARGET_EXIT=0
+COMMAND=grep -c "Failed to open file" <log>
+   67
+COMMAND=grep -c "Failed to compile" <log>
+   67
+COMMAND=grep -o "Failed to open file: [^\"]*" <log> | sort -u
+   Failed to open file: ../../build/aarch64-apple-darwin/include/tos.HH
+#
+CROSS_TARGET_TESTS_ATTEMPTED=67
+CROSS_TARGET_FAILED_TO_OPEN_FILE=67
+CROSS_TARGET_FAILED_TO_COMPILE=67
+CROSS_TARGET_PASSED=0
+CROSS_TARGET_DISTINCT_FAILURE_MESSAGES=1
+CROSS_TARGET_FAILURE_MESSAGE=Failed to open file: ../../build/aarch64-apple-darwin/include/tos.HH
+CROSS_TARGET_STATUS=FAIL_ENVIRONMENT_PREFIX
+NEW_CROSS_TARGET_FAILURE_IDENTITIES=0
+#
+## --- F-NO-PYTHON ---
+#
+COMMAND=sh scripts/quality/factory-no-python-check.sh
+   NO_PYTHON_EXIT=1
+#   FAIL  scripts/quality/llvm-byte-memory01-test.sh  forbidden Python invocation
+#   FAIL  scripts/quality/llvm-cap-table-verifier.py  forbidden Python source suffix
+#   FAIL  scripts/quality/llvm-intops01-test.sh  forbidden Python invocation
+#   FAIL  scripts/quality/llvm-memory01-red-test.sh  forbidden Python invocation
+#   FAIL  scripts/quality/llvm-spike-test.sh  forbidden Python invocation
+#   FAIL  tools/quality/bootstrap02-corpus-runner.py  forbidden Python source suffix
+#   FAIL  tools/quality/bootstrap02-error-corpus.py  forbidden Python source suffix
+#   FAIL  tools/quality/bootstrap03-corpus-runner.py  forbidden Python source suffix
+#   FAIL  tools/quality/bootstrap03-error-corpus.py  forbidden Python source suffix
+#   FAIL  tools/quality/bootstrap04-corpus-runner.py  forbidden Python source suffix
+#   FAIL  tools/quality/bootstrap04-error-corpus.py  forbidden Python source suffix
+#   FAIL  tools/quality/llvm-gep01-test.HC  known PolyC -> Python execution edge (callgraph inventory)
+#   STATUS=FAIL
+#
+#   --- summary --
+#   POLYC_TOOLS_TRACKED_PYTHON=12
+#   POLYC_TOOLS_TRACKED_INSPECTED=5824
+#   POLYC_TOOLS_TRACKED_PASSES=5817
+#   STATUS=FAIL
+#
+F_NO_PYTHON=FAIL
+F_NO_PYTHON_VIOLATION_COUNT=12
+F_NO_PYTHON_VIOLATIONS_MATCH_HISTORICAL_EXACTLY=YES
+F_NO_PYTHON_NEW_VIOLATIONS=0
+F_NO_PYTHON_EXIT=1
+#
+## --- F-POLYC-TOOLS ---
+#
+# The authoritative checker tools/factory/factory-polyc-tools-check.HC
+# is NOT LANDED.  The AGENTS.md pointer records the CONTRACT; the
+# gate has NOT been enforced.  This ACT does NOT claim it PASSES.
+#
+COMMAND=ls tools/factory/factory-polyc-tools-check.HC
+   (no such file)
+COMMAND=ls tools/quality/factory-polyc-tools-check.HC
+   (no such file)
+F_POLYC_TOOLS=UNAVAILABLE
+F_POLYC_TOOLS_CHECKER_LANDED=NO
+F_POLYC_TOOLS_EXIT=NOT_APPLICABLE
+#
+## --- THE PRODUCER GATES (EXECUTED SERIALLY) ---
+#
+# A named gate is only evidence if it actually ran against the
+# relevant subject commit/tree.  Both gates ACTUALLY EXECUTED
+# against HEAD = a43348a (tree b4447a6).
+#
+# ------------------------------------------------------------------
+# gate-fast
+# ------------------------------------------------------------------
+COMMAND=./scripts/quality/gate-fast.sh
+   EXIT=0
+   CHECK=diff-check STATUS=PASS
+   CHECK=shell-syntax STATUS=PASS
+   CHECK=doc-invariants STATUS=PASS
+   CHECK=large-file-guard STATUS=PASS
+   CHECK=factory-closure-status STATUS=PASS
+   MANIFEST_ROWS=44
+   MISSING_HANDOFF_FILES=0
+   MALFORMED_HANDOFF_VERDICT=0
+   PAIR_OK=44
+   PAIR_FAIL=0
+   VERDICT=PASS
+#
+# ------------------------------------------------------------------
+# gate-push
+# ------------------------------------------------------------------
+COMMAND=./scripts/quality/gate-push.sh HEAD
+   EXIT=0
+   CHECK=build STATUS=PASS
+   CHECK=install STATUS=PASS
+   CHECK=gep01 STATUS=PASS
+   CHECK=aot STATUS=PASS
+   CHECK=jit STATUS=PASS
+   CHECK=lsp STATUS=PASS
+   CHECK=diff-check STATUS=PASS
+   STATUS=PASS
+#   The eight production authorities are all re-proved by the
+#   gate, including the eighth one:
+#   ACT-POLYC-SELFHOST-PARSER-SLICE04: AST_TOKEN_MAP_OBJECT_STATUS=PASS
+#     EXPECTED_SYMBOL=BootstrapDefaultArmTerminates
+#     TARGET_OBJECT_FORMAT=Mach-O
+#     TARGET_SYMBOL=_BootstrapDefaultArmTerminates
+#     DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1
+#     OBJECT_SIZE=864
+#
+# The gate-push hermetic prefix and the aarch64 cross-compile
+# probe each build their own tree in an isolated sandbox; the
+# shared /tmp/holyc-asm.s is therefore never contended by an
+# overlapping run.  All runs in this ACT are SERIALIZED.
+#
+GATE_FAST=PASS
+GATE_FAST_EXIT=0
+GATE_PUSH=PASS
+GATE_PUSH_EXIT=0
+GATES_EXECUTED_SERIALLY=YES
+GATES_STATUS=PASS
+#
+## --- THE HONEST SUMMARY ---
+#
+# Every historical nonzero status is preserved EXACTLY and is NOT
+# relabelled PASS.  Zero new failure identities were introduced.
+#
+PARSER_STATUS=PASS (376/376, 90 files, MD5 b6f117eb1386ca80f81bc06226e2a741)
+LEXER_DIRECT_STATUS=PASS (89/89, 45/45, 23/23)
+LEXER07_BROAD_STATUS=FAIL_KNOWN_BASELINE (15 identities, MD5 7ee761440de83552e751e3c3976c1683)
+CROSS_TARGET_PREFIX_STATUS=FAIL_ENVIRONMENT_PREFIX (67)
+F_NO_PYTHON_STATUS=FAIL_KNOWN_BASELINE (12)
+F_POLYC_TOOLS_STATUS=UNAVAILABLE
+NEW_CROSS_TARGET_FAILURE_IDENTITIES=0
+NEW_F_NO_PYTHON_VIOLATIONS=0
+RESIDUE_STATUS=PRESERVED_HONESTLY

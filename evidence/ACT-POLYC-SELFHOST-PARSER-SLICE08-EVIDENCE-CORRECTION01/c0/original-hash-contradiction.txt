@@ -1,0 +1,114 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE08-EVIDENCE-CORRECTION01
+ACT_PHASE=C0-RED
+EVIDENCE_KIND=original-hash-contradiction
+#
+# THE SOURCE-HASH CONTRADICTION, REPRODUCED FROM COMMITTED BYTES.
+#
+# BOTH COMPLETE SHA-256 STRINGS AND BOTH QUOTED COMMANDS ARE
+# PRESERVED VERBATIM.  The chronology is reconstructed from Git
+# OBJECT READS, not from the working tree and not from prose.
+#
+## --- THE TWO CLAIMED VALUES, VERBATIM ---
+#
+ORIGINAL_C1_PRINTED_SHA256=a9a33ff1c3993560f5504582ec372c3f64573caca630e8cda32f58755bbd0fea
+FROZEN_RECON07_SOURCE_SHA256=a9fcb6a752a59a58eaea5bdf449cab39acf7d2d2be9d776f6a13fd968af89199
+SHA_STRINGS_EQUAL=NO
+BYTE_LENGTH_EQUAL=NO (94 vs 175)
+#
+## --- THE QUOTED COMMANDS, VERBATIM FROM THE C1 FILE ---
+#
+# From evidence/ACT-POLYC-SELFHOST-PARSER-SLICE08/c1/selected-source-and-abi.txt
+# (blob 8195bfc4914e80b46dbbcf6c64124fcf06553c9e), as committed at C1.
+#
+COMMAND_1=awk "NR>=1683 && NR<=1684" src/parser.c | shasum -a 256
+COMMAND_1_CLAIMED_OUTPUT=a9a33ff1c3993560f5504582ec372c3f64573caca630e8cda32f58755bbd0fea
+COMMAND_2=grep -n "parseDefaultStatement\|parseDefaultArmTerminates" src/parser.c
+COMMAND_2_CLAIMED_OUTPUT=1712:static int parseDefaultArmTerminates(int kind)
+COMMAND_2_CLAIMED_OUTPUT=1754:long long ParserLegacyDefaultArmTerminatesOracle(long long ast_kind)
+COMMAND_2_CLAIMED_OUTPUT=1759:Ast *parseDefaultStatement(Cctrl *cc) {
+COMMAND_2_CLAIMED_OUTPUT=1775:        if (parseDefaultArmTerminates((int)stmt->kind)) break;
+#
+## --- THE VERBATIM EQUALITY ASSERTION ---
+#
+#   -> IDENTICAL.  The range is UNCHANGED at the entry commit.
+EQUALITY_ASSERTION_AS_WRITTEN=IDENTICAL
+EQUALITY_ASSERTION_IS_TRUE=NO
+#
+## --- THE SAME FILE ALSO CONTRADICTS ITSELF INTERNALLY ---
+#
+# The prose body reports a9a33ff1..., but the KEY=VALUE summary
+# of the SAME file reports the RECON07 value and asserts a match:
+SELECTED_SOURCE_SHA256=a9fcb6a752a59a58eaea5bdf449cab39acf7d2d2be9d776f6a13fd968af89199
+SELECTED_SOURCE_RANGE=1683..1684
+SELECTED_SOURCE_RANGE_MATCH=YES
+SELECTED_SOURCE_AND_ABI_STATUS=PASS
+INTERNAL_SELF_CONTRADICTION=YES (body says a9a33ff1, summary says a9fcb6a7 MATCH=YES)
+#
+## --- THE RECONSTRUCTION: EVERY COMMIT OF THE CHAIN ---
+#
+# Command per row:
+#   git show <commit>:src/parser.c | sed -n "1683,1684p" | shasum -a 256
+#
+commit	tree	range	bytes	sha256	semantic_subject
+3eb8afa4f02ae4c5ff9e86cc32ac34fb4f8c2f9b	24655e17d83e82957bc9a8330bf0487c13b05028	1683..1684	175	a9fcb6a752a59a58eaea5bdf449cab39acf7d2d2be9d776f6a13fd968af89199	THE LEGACY INLINE PREDICATE (RECON07 CLOSE)
+31b23e2e6f74f17b77bc87e681fcb5d5240da349	feaa5b1f07ab6260d925440886e244d6b5b9cdff	1683..1684	175	a9fcb6a752a59a58eaea5bdf449cab39acf7d2d2be9d776f6a13fd968af89199	THE LEGACY INLINE PREDICATE (RECON07 C0)
+331a073d33ba1027d89b0d80fd340e2c6968b93d	e90d974c497b82d8e697d6070ccbd211234613f5	1683..1684	175	a9fcb6a752a59a58eaea5bdf449cab39acf7d2d2be9d776f6a13fd968af89199	THE LEGACY INLINE PREDICATE (SLICE08 C0)
+a1a5303bd3fd1bcbd740c5994414e3df6f85e506	5b3c8b9c7548ebe088d9881e0318efe48640091d	1683..1684	175	a9fcb6a752a59a58eaea5bdf449cab39acf7d2d2be9d776f6a13fd968af89199	THE LEGACY INLINE PREDICATE (SLICE08 C1)
+c923f657618686cca7946f2b106ae9b77b276f3b	c91aade07b80903ecdf26349d8357a85d2ab5e70	1683..1684	94	a9a33ff1c3993560f5504582ec372c3f64573caca630e8cda32f58755bbd0fea	A COMMENT FRAGMENT (post-refactor; NOT the decision) (SLICE08 C2)
+b2188b5c126766b69df67ff4b4da4b6706e84510	61cc4ae2101525172b6ed7b6e7efefa7310f4d2b	1683..1684	94	a9a33ff1c3993560f5504582ec372c3f64573caca630e8cda32f58755bbd0fea	A COMMENT FRAGMENT (post-refactor; NOT the decision) (SLICE08 C3)
+a43348acc481146853b771609c75e4e0d324e375	b4447a6bf8adbfc177ad7991dc7593833ad224f9	1683..1684	94	a9a33ff1c3993560f5504582ec372c3f64573caca630e8cda32f58755bbd0fea	A COMMENT FRAGMENT (post-refactor; NOT the decision) (SLICE08 CLOSE)
+#
+## --- THE CHRONOLOGY DEFECT: WHAT EXISTED AT THE C1 COMMIT ---
+#
+# The C1 evidence file was committed at a1a5303 (blob
+# 8195bfc4914e80b46dbbcf6c64124fcf06553c9e).  Its quoted
+# grep output names four line numbers.  We test each against the
+# ACTUAL C1 COMMIT TREE, not against the working tree.
+#
+COMMAND=git show a1a5303:src/parser.c | grep -n "parseDefaultArmTerminates"
+   (no output; grep exit status 1)
+PARSE_DEFAULT_ARM_TERMINATES_PRESENT_AT_C1=NO
+COMMAND=git show a1a5303:src/parser.c | grep -n "ParserLegacyDefaultArmTerminatesOracle"
+   (no output; grep exit status 1)
+PARSER_LEGACY_ORACLE_PRESENT_AT_C1=NO
+COMMAND=git show a1a5303:src/parser.c | grep -n "parseDefaultStatement"
+   1667:Ast *parseDefaultStatement(Cctrl *cc) {
+   1784:            case KW_DEFAULT:  return parseDefaultStatement(cc);
+PARSE_DEFAULT_STATEMENT_LINE_AT_C1=1667
+C1_FILE_CLAIMED_PARSE_DEFAULT_STATEMENT_LINE=1759
+C1_FILE_CLAIMED_PARSE_DEFAULT_STATEMENT_LINE_MATCHES_C1_TREE=NO
+#
+COMMAND=git show a1a5303:src/parser.c | sed -n "1683,1684p"
+        if (stmt->kind == AST_COMPOUND_STMT || stmt->kind == AST_CASE || stmt->kind == AST_BREA
+                || stmt->kind == AST_GOTO) break;
+AT_C1_RANGE_1683_1684_IS=THE LEGACY INLINE PREDICATE
+AT_C1_RANGE_1683_1684_SHA256=a9fcb6a752a59a58eaea5bdf449cab39acf7d2d2be9d776f6a13fd968af89199
+C1_FILE_CLAIMED_RANGE_1683_1684_SHA256=a9a33ff1c3993560f5504582ec372c3f64573caca630e8cda32f58755bbd0fea
+C1_FILE_CLAIMED_HASH_EXISTED_AT_C1_COMMIT=NO
+#
+## --- WHERE a9a33ff1 ACTUALLY FIRST EXISTS ---
+#
+COMMAND=git log --oneline -S"parseDefaultArmTerminates" -- src/parser.c
+   c923f65 ACT-POLYC-SELFHOST-PARSER-SLICE08 C2: IMPL -- ...
+HELPER_FIRST_EXISTS_AT=c923f657618686cca7946f2b106ae9b77b276f3b (SLICE08 C2 IMPL)
+C1_COMMIT_PRECEDES_HELPER_INTRODUCTION=YES
+#
+COMMAND=git show a1a5303:src/parser.c | shasum -a 256  (whole file at C1)
+2b31a7912bfbcfe538786aff17383a8282da815f0990910a652a0119f084fe17  -
+COMMAND=git show c923f65:src/parser.c | shasum -a 256  (whole file at C2)
+8e68487e1fd351cb888c5044cfb71871628d904dd089305d59138b2f017bee00  -
+SRC_PARSER_C_CHANGED_ONLY_AT_C2=YES
+#
+## --- THE CLASSIFICATION ---
+#
+# The C1 file describes a source state that DID NOT EXIST at the
+# C1 commit: the helper, the oracle wrapper, the delegated call
+# site and the post-refactor line numbers were all introduced by
+# the C2 IMPL commit, which is AFTER the C1 commit.
+#
+DEFECT_CLASS=CHRONOLOGY_DEFECT (not a typographical mismatch)
+DEFECT_DETAIL=The C1 evidence file reports a SHA-256 and a grep result
+DEFECT_DETAIL_2=that belong to the post-C2 tree, while asserting
+DEFECT_DETAIL_3="The range is UNCHANGED at the entry commit".
+ORIGINAL_HASH_EQUALITY_CLAIM=FALSE
+ORIGINAL_C1_CHRONOLOGY_CLAIM=FALSE

@@ -1,0 +1,104 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE08-EVIDENCE-CORRECTION01
+ACT_PHASE=C0-RED
+EVIDENCE_KIND=baseline-parser-and-lexer
+#
+# THE FRESH PARSER AND LEXER BASELINES, MEASURED AT THE
+# CORRECTION ENTRY COMMIT a43348a (tree b4447a6).
+#
+# Each value is the output of a real command run NOW, not a
+# copy of a predecessor summary.  Every historical nonzero
+# status is preserved EXACTLY and is NOT relabelled PASS.
+#
+## --- THE PARSER BASELINE ---
+#
+COMMAND=make unit-test
+   EXIT=0
+COMMAND=grep -o "PASSED: [0-9]*/[0-9]*" <log> | md5 -q
+   b6f117eb1386ca80f81bc06226e2a741
+COMMAND=grep -o "PASSED: [0-9]*/[0-9]*" <log> | awk -F"[/ ]" "{p+=\$2;t+=\$3} END{print \"PASSED=\"p, \"TOTAL=\"t}"
+   PASSED=376 TOTAL=376
+COMMAND=grep -o "PASSED: [0-9]*/[0-9]*" <log> | wc -l
+   90
+COMMAND=grep -c "FAILED: [0-9]*/[0-9]*" <log>
+   0
+#
+PARSER_ASSERTIONS=376/376
+PARSER_ASSERTION_FILES=90
+PARSER_ASSERTION_SEQUENCE_MD5=b6f117eb1386ca80f81bc06226e2a741
+PARSER_HISTORICAL_SEQUENCE_MD5=b6f117eb1386ca80f81bc06226e2a741
+PARSER_SEQUENCE_MD5_MATCH=YES
+PARSER_FAILED_FILE_COUNT=0
+NEW_PARSER_FAILURE_IDENTITIES=0
+PARSER_CONSERVATION_STATUS=PASS
+#
+## --- THE THREE DIRECT LEXER DIFFERENTIALS ---
+#
+COMMAND=make lexer07-direct-differential
+   ACT_SELFHOST_LEXER02_DIRECT_DIFF_CASES=89
+   ACT_SELFHOST_LEXER02_DIRECT_DIFF_PASS=89
+   ACT_SELFHOST_LEXER02_DIRECT_DIFF_FAIL=0
+   LEXER07_DIRECT_DIFFERENTIAL=89/89
+   EXIT=0
+COMMAND=make lexer08-direct-differential
+   DIRECT_DIFFERENTIAL_TOTAL=45
+   DIRECT_DIFFERENTIAL_PASS=45
+   DIRECT_DIFFERENTIAL_FAIL=0
+   LEXER08_DIRECT_DIFFERENTIAL=45/45
+   EXIT=0
+COMMAND=make lexer09-direct-differential
+   DIRECT_DIFFERENTIAL_TOTAL=23
+   DIRECT_DIFFERENTIAL_PASS=23
+   DIRECT_DIFFERENTIAL_FAIL=0
+   LEXER09_DIRECT_DIFFERENTIAL=23/23
+   EXIT=0
+#
+LEXER07_DIRECT_DIFFERENTIAL_STATUS=PASS
+LEXER08_DIRECT_DIFFERENTIAL_STATUS=PASS
+LEXER09_DIRECT_DIFFERENTIAL_STATUS=PASS
+NEW_LEXER_DIRECT_FAILURE_IDENTITIES=0
+#
+## --- THE LEXER07 BROAD CORPUS (KNOWN FAILING BASELINE) ---
+#
+# This suite STILL FAILS.  It is NOT reported as PASS.  The
+# status is the KNOWN BASELINE and it is preserved honestly.
+#
+COMMAND=./build/lexer07-broad-corpus-4-stage \
+           evidence/ACT-POLYC-SELFHOST-LEXER01/c2/corpus-inventory.txt \
+           build/e8c01-lexer07-broad
+   TOOL_EXIT=1
+TOTAL=181
+PASS_S0=166 HISTORICAL_S0=0 PASS_S1=175 PASS_S2=175 PASS_S3=175
+FAIL_S0=15 FAIL_S1=6 FAIL_S2=6 FAIL_S3=6
+BOTH_FAIL_4=6
+REGRESSION=0
+DIVERGED=0
+PASS_MISMATCH=9
+BYTE_IDENTICAL_4=166
+STATUS=FAIL
+COMMAND=md5 -q build/e8c01-lexer07-broad/corpus-failures.tsv
+   7ee761440de83552e751e3c3976c1683
+#
+# THE 15 HISTORICAL FAILURE IDENTITIES, REPRODUCED VERBATIM:
+#
+#   source	stage	rc	failure_class
+#   src/holyc-lib/all.HC	stage0-current	1	NO_FALLBACK
+#   src/holyc-lib/bitvec.HC	ALL	1	ALL_FAIL
+#   src/holyc-lib/builtins.HC	ALL	1	ALL_FAIL
+#   src/holyc-lib/coroutines.HC	ALL	1	ALL_FAIL
+#   src/holyc-lib/date.HC	stage0-current	1	NO_FALLBACK
+#   src/holyc-lib/hashtable.HC	stage0-current	1	NO_FALLBACK
+#   src/holyc-lib/io.HC	stage0-current	1	NO_FALLBACK
+#   src/holyc-lib/list.HC	stage0-current	1	NO_FALLBACK
+#   src/holyc-lib/memory.HC	stage0-current	1	NO_FALLBACK
+#   src/holyc-lib/strings.HC	stage0-current	1	NO_FALLBACK
+#   src/holyc-lib/threads.HC	stage0-current	1	NO_FALLBACK
+#   src/holyc-lib/tooling.HC	stage0-current	1	NO_FALLBACK
+#   src/tests/32_sql.HC	ALL	1	ALL_FAIL
+#   src/tests/llvm-spike/neg_asm.HC	ALL	1	ALL_FAIL
+#   src/tests/llvm-spike/neg_f64.HC	ALL	1	ALL_FAIL
+#
+LEXER07_FAILURE_IDENTITY_MD5=7ee761440de83552e751e3c3976c1683
+LEXER07_FAILURE_IDENTITY_COUNT=15
+LEXER07_HISTORICAL_STATUS=FAIL_KNOWN_BASELINE
+NEW_LEXER07_FAILURE_IDENTITIES=0
+LEXER07_CONSERVATION_STATUS=PASS

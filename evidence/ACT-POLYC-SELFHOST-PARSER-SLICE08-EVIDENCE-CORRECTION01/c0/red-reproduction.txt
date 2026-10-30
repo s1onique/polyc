@@ -1,0 +1,147 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE08-EVIDENCE-CORRECTION01
+ACT_PHASE=C0-RED
+EVIDENCE_KIND=red-reproduction
+#
+# THE FIVE CORRECTION REDs.  Each is an ACTUAL OBSERVED
+# FAILURE OF THE HISTORICAL CLAIM, demonstrated with
+# read-only committed-byte comparisons.
+#
+# The correction PolyC auditor is built only at C2.  NO RED
+# below claims to have executed it.  Every RED here is
+# reproducible with plain read-only Git and text operations.
+#
+## --- RED-1: THE JOIN ACCEPTS AN EXTRA CONTROL ID ---
+#
+# The SLICE08 C3 inherited-controls-join.tsv contains a data
+# row for SL-EC-06, which is NOT in the SLICE08 C0 frozen
+# inherited-controls-contract.tsv, and the SAME file claims
+# INHERITED_CONTROLS_EXTRA=0 and INHERITED_CONTROLS_TOTAL=23.
+#
+COMMAND=awk -F"	" "NF==13 {print \$1}" evidence/ACT-POLYC-SELFHOST-PARSER-SLICE08/c3/inherited-controls-join.tsv | sort -u > J.ids
+COMMAND=awk -F"	" "NF==7 {print \$1}" evidence/ACT-POLYC-SELFHOST-PARSER-SLICE08/c0/inherited-controls-contract.tsv | sort -u > B.ids
+COMMAND=comm -13 B.ids J.ids
+   SL-EC-06
+J_MINUS_B=SL-EC-06
+J_MINUS_B_COUNT=1
+OBSERVED=THE JOIN ACCEPTED ONE CONTROL ID THAT IS NOT IN THE FROZEN C0 CONTRACT
+DETECTOR=EXTRA_ID (the historical join did not fire it)
+STATUS=FAIL
+#
+## --- RED-2: THE CLAIMED COUNT CONTRADICTS THE ACTUAL ROWS ---
+#
+COMMAND=awk -F"	" "NF==13 && \$1 !~ /^#/ {n++} END{print n}" evidence/ACT-POLYC-SELFHOST-PARSER-SLICE08/c3/inherited-controls-join.tsv
+   24
+COMMAND=grep "^INHERITED_CONTROLS_TOTAL=" evidence/ACT-POLYC-SELFHOST-PARSER-SLICE08/c3/inherited-controls-join.tsv
+   INHERITED_CONTROLS_TOTAL=23
+COMMAND=grep "^INHERITED_CONTROLS_EXTRA=" evidence/ACT-POLYC-SELFHOST-PARSER-SLICE08/c3/inherited-controls-join.tsv
+   INHERITED_CONTROLS_EXTRA=0
+ACTUAL_DATA_ROWS=24
+CLAIMED_TOTAL=23
+CLAIMED_EXTRA=0
+OBSERVED=THE SUMMARY BLOCK UNDERSTATES ITS OWN DATA ROWS BY EXACTLY ONE
+DETECTOR=CLAIMED_COUNT_CONTRADICTS_ROWS (the historical join did not fire it)
+STATUS=FAIL
+#
+## --- RED-3: TWO UNEQUAL SHA-256 VALUES ARE ASSERTED IDENTICAL ---
+#
+COMMAND=grep -n "IDENTICAL" evidence/ACT-POLYC-SELFHOST-PARSER-SLICE08/c1/selected-source-and-abi.txt
+   12:   -> IDENTICAL.  The range is UNCHANGED at the entry commit.
+COMMAND=grep "^SELECTED_SOURCE_SHA256=" evidence/ACT-POLYC-SELFHOST-PARSER-SLICE08/c1/selected-source-and-abi.txt
+   SELECTED_SOURCE_SHA256=a9fcb6a752a59a58eaea5bdf449cab39acf7d2d2be9d776f6a13fd968af89199
+COMMAND=grep "^SELECTED_SOURCE_RANGE_MATCH=" evidence/ACT-POLYC-SELFHOST-PARSER-SLICE08/c1/selected-source-and-abi.txt
+   SELECTED_SOURCE_RANGE_MATCH=YES
+PRINTED_BODY_SHA256=a9a33ff1c3993560f5504582ec372c3f64573caca630e8cda32f58755bbd0fea
+SUMMARY_LINE_SHA256=a9fcb6a752a59a58eaea5bdf449cab39acf7d2d2be9d776f6a13fd968af89199
+THE_TWO_STRINGS_ARE_UNEQUAL=YES
+EQUALITY_ASSERTED=IDENTICAL (and SELECTED_SOURCE_RANGE_MATCH=YES)
+OBSERVED=THE FILE ASSERTS EQUALITY BETWEEN TWO UNEQUAL DIGESTS AND
+OBSERVED_2=CONTRADICTS ITSELF (body digest vs summary digest)
+DETECTOR=FALSE_HASH_EQUALITY (the historical checker did not fire it)
+STATUS=FAIL
+#
+## --- RED-4: A WRONG PHASE/RANGE CAN BE MISTAKEN FOR ENTRY-SOURCE IDENTITY ---
+#
+# The C1 file says "The range is UNCHANGED at the entry commit"
+# and "RE-DERIVED FROM THIS ACT OWN TREE".  We test the range
+# against the ACTUAL C1 COMMIT TREE, not the working tree.
+#
+COMMAND=git show a1a5303:src/parser.c | sed -n "1683,1684p" | shasum -a 256
+   a9fcb6a752a59a58eaea5bdf449cab39acf7d2d2be9d776f6a13fd968af89199  -
+COMMAND=git show c923f65:src/parser.c | sed -n "1683,1684p" | shasum -a 256
+   a9a33ff1c3993560f5504582ec372c3f64573caca630e8cda32f58755bbd0fea  -
+COMMAND=git show a1a5303:src/parser.c | grep -c parseDefaultArmTerminates
+   0
+C1_TREE_RANGE_1683_1684_SHA256=a9fcb6a752a59a58eaea5bdf449cab39acf7d2d2be9d776f6a13fd968af89199
+C2_TREE_RANGE_1683_1684_SHA256=a9a33ff1c3993560f5504582ec372c3f64573caca630e8cda32f58755bbd0fea
+SAME_NUMBERED_RANGE_HAS_DIFFERENT_IDENTITY_ACROSS_PHASES=YES
+C1_FILE_REPORTED_SHA256_MATCHES_C1_TREE=NO
+C1_FILE_REPORTED_SHA256_MATCHES_C2_TREE=YES
+OBSERVED=THE C1 FILE REPORTS THE POST-C2 IDENTITY OF A SAME-NUMBERED LINE
+OBSERVED_2=RANGE WHILE ASSERTING ENTRY-COMMIT IDENTITY; THE SUBJECT IT
+OBSERVED_3=DESCRIBES (the helper, the oracle, the delegated call site) DID
+OBSERVED_4=NOT EXIST AT THE C1 COMMIT AT ALL.
+DETECTOR=SOURCE_TREE_OR_RANGE_IDENTITY_MISMATCH
+STATUS=FAIL
+#
+## --- RED-5: A FABRICATED CROSS-PHASE EXECUTION CREDIT CAN MASQUERADE AS AN INDEPENDENT CONTROL ---
+#
+# The C3 join row for SL-EC-06 claims observed_output_present=YES,
+# positive_baseline_present=YES, subject_specific=YES,
+# subject_restored=YES, independent_verification=YES.
+# We ask: does ANY adverse execution for SL-EC-06 exist in the
+# committed SLICE08 evidence, with a command, an exit and an object?
+#
+COMMAND=grep -rn "SL-EC-06" evidence/ACT-POLYC-SELFHOST-PARSER-SLICE08/
+   evidence/ACT-POLYC-SELFHOST-PARSER-SLICE08//c3/inherited-controls-join.tsv:38:SL-EC-06  ELIGIBILITY ...
+SL_EC_06_OCCURRENCES_IN_ALL_SLICE08_EVIDENCE=1
+SL_EC_06_OCCURRENCE_LOCATIONS=c3/inherited-controls-join.tsv ONLY (the file that makes the claim)
+THE_ROW_EVIDENCE_PATH_FIELD=c3/inherited-controls-join.tsv (SELF-REFERENTIAL)
+ANY_EXTERNAL_ADVERSE_EXECUTION_RECORD=NO
+ANY_COMMAND_EXIT_OBJECT_BOUND_TO_SL_EC_06=NO
+COMMAND=grep -cE "^S8-EC-" evidence/ACT-POLYC-SELFHOST-PARSER-SLICE08/c0/new-controls-contract.tsv
+   0
+SLICE08_NEW_ELIGIBILITY_CLASS_CONTROLS=0
+OBSERVED=A ROW THAT ASSERTS FIVE POSITIVE OBSERVATION FLAGS WITH NO
+OBSERVED_2=EXTERNAL EXECUTION EVIDENCE PASSES AS A PASSED INDEPENDENT
+OBSERVED_3=CONTROL; THE ASSERTED-ONLY ROW IS NOT DISTINGUISHED FROM
+OBSERVED_4=AN EXECUTED ONE, AND NO S8-* CONTROL EXERCISES THE
+OBSERVED_5=ELIGIBILITY SUBJECT AT ALL.
+DETECTOR=UNPROVEN_EXECUTION_PROVENANCE
+STATUS=FAIL
+#
+## --- THE FIVE REDs, SUMMARISED ---
+#
+# RED-1  EXTRA_ID                        the join accepted an ID outside the frozen C0 contract
+# RED-2  CLAIMED_COUNT_CONTRADICTS_ROWS  the summary understates its own data rows
+# RED-3  FALSE_HASH_EQUALITY              two unequal digests asserted IDENTICAL
+# RED-4  SOURCE_TREE_OR_RANGE_IDENTITY_MISMATCH  a post-C2 range labelled as entry identity
+# RED-5  UNPROVEN_EXECUTION_PROVENANCE   an assertion-only row passes as an independent control
+#
+REDS_EXECUTED=5
+REDS_FAILED_AS_EXPECTED=5
+REDS_PLANNED_ONLY=0
+RED_STATUS=FAIL
+#
+## --- LEADS DISPROVEN, RECORDED EXPLICITLY ---
+#
+# The ACT requires that a disproven lead be recorded rather than
+# a RED be faked.  One candidate reading was tested and
+# DISPROVEN at C0:
+#
+# CANDIDATE_LEAD=SL-EC-06 is a SUPPLEMENTAL control invented by SLICE08
+# CANDIDATE_LEAD_DISPROVEN_BY=RECON07 c2/selected-negative-controls.md:33
+#   | SL-EC-06 | Unknown ID or missing required eligibility fact |
+#   Unknown-ID or missing-fact-specific detector |
+#   The ID IS IN THE RECON07 FROZEN CONTRACT.  It is NOT supplemental.
+#
+CANDIDATE_LEAD_2=the two SHA-256 strings are a harmless typo
+# CANDIDATE_LEAD_2_DISPROVEN_BY=the two digests are both REPRODUCIBLE, at
+#   DIFFERENT commits, over DIFFERENT byte ranges of DIFFERENT LENGTHS
+#   (175 vs 94 bytes), with DIFFERENT semantic subjects.
+#   A typo cannot be reproducible at a specific tree.
+#
+CANDIDATE_LEAD_3=SL-EC-06 was discharged by S8-FC-03 ("Inject unknown fixture ID")
+# CANDIDATE_LEAD_3_DISPROVEN_BY=subject and detector differ: SL-EC-06 is
+#   bound to "the SUB-002 ELIGIBILITY FACTS" with an eligibility
+#   detector; S8-FC-03 targets "the frozen 41-row FIXTURE".
+#   There are ZERO S8-EC-* controls in SLICE08.

@@ -1,0 +1,30 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE08-EVIDENCE-CORRECTION01
+ACT_PHASE=C0-RED
+EVIDENCE_KIND=frozen-10-negative-controls
+#
+# THE TEN CORRECTION-OWNED NEGATIVE CONTROLS, FROZEN AT C0 BEFORE
+# ANY ADVERSE OBSERVATION, in the disjoint E8-NC-* namespace.
+#
+# Each requires a pristine PASS -> targeted adverse FAIL -> restored
+# PASS sequence on a DISPOSABLE COPY of the frozen input.  The
+# historical committed artifacts are NEVER modified.
+#
+# Schema: control_id <TAB> subject <TAB> injected_defect <TAB>
+#         expected_failure_class <TAB> command_type <TAB> witness_provenance
+#
+E8-NC-01	J (the C3 join row set)	Add one ID to J that is absent from B	EXTRA_ID with that exact ID	auditor JOIN over a disposable copy of the frozen J bytes	c3/inherited-controls-join.tsv blob, copied to a temp path
+E8-NC-02	J (the C3 join row set)	Delete one expected B ID from J	MISSING_ID with that exact ID	auditor JOIN over a disposable copy of the frozen J bytes	c3/inherited-controls-join.tsv blob, copied to a temp path
+E8-NC-03	J (the C3 join row set)	Duplicate one J row ID	DUPLICATE_ID	auditor JOIN over a disposable copy of the frozen J bytes	c3/inherited-controls-join.tsv blob, copied to a temp path
+E8-NC-04	J (the C3 join row set)	Keep the ID, alter the subject or the phase	SUBJECT_OR_PHASE_MISMATCH	auditor JOIN over a disposable copy of the frozen J bytes	c3/inherited-controls-join.tsv blob, copied to a temp path
+E8-NC-05	J (the C3 join row set)	Keep the ID, alter the frozen detector or the adverse action	FROZEN_SEMANTICS_MISMATCH	auditor JOIN over a disposable copy of the frozen J bytes	c3/inherited-controls-join.tsv blob, copied to a temp path
+E8-NC-06	J (the C3 summary block)	Change the summary JOINED/EXTRA without changing the rows	CLAIMED_COUNT_CONTRADICTS_ROWS	auditor JOIN over a disposable copy of the frozen J bytes	c3/inherited-controls-join.tsv blob, copied to a temp path
+E8-NC-07	the C1 source-range claim	Supply two unequal SHA-256 values with an IDENTICAL assertion	FALSE_HASH_EQUALITY	auditor PROVENANCE over a disposable copy of the frozen C1 bytes	c1/selected-source-and-abi.txt blob, copied to a temp path
+E8-NC-08	the C1 source-range claim	Relabel a post-C2 range as the pre-C2 original range	SOURCE_TREE_OR_RANGE_IDENTITY_MISMATCH	auditor PROVENANCE over a disposable copy of the frozen C1 bytes	c1/selected-source-and-abi.txt blob, copied to a temp path
+E8-NC-09	the control provenance ledger	Backdate a C3 experiment to an unexecuted C0 obligation	UNPROVEN_EXECUTION_PROVENANCE	auditor JOIN over a disposable copy of the frozen ledger bytes	c3/inherited-controls-join.tsv blob, copied to a temp path
+E8-NC-10	the frozen predecessor set	Tamper a source digest, drop a frozen predecessor path, or truncate evidence	IMMUTABILITY_OR_TRUNCATION_FAILURE	auditor FREEZE over a disposable copy of the frozen manifest bytes	c0/predecessor-close-and-freeze.tsv blob, copied to a temp path
+#
+CORRECTION_CONTROL_COUNT=10
+CORRECTION_CONTROL_ID_RANGE=E8-NC-01..E8-NC-10
+CONTROL_NAMESPACE=DISJOINT from SL-IC-*/SL-EC-*/SL-RC-*/SL-CC-*/SL-PV-*/S8-*
+FROZEN_AT_PHASE=C0-RED (before any adverse observation)
+FROZEN_CONTRACT_STATUS=PASS
