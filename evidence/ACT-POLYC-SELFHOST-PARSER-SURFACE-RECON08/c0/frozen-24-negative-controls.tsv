@@ -1,0 +1,53 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=frozen-24-negative-controls
+#
+# THE TWENTY-FOUR FROZEN EXECUTABLE NEGATIVE CONTROLS.
+#
+# Frozen at C0, BEFORE any conclusion was reached.  The ID set, the
+# adverse action, the required reason-specific detector class, the
+# subject, the phase and the restoration requirement are immutable.
+#
+# A FROZEN DEFINITION IS NOT AN EXECUTED RESULT.  The C3 join is by
+# EXACT CONTROL ID and must record a PHYSICAL EXECUTION ID for each.
+#
+# Schema: control_id <TAB> class <TAB> phase <TAB> subject
+#         <TAB> adverse_action <TAB> required_detector_class
+#         <TAB> required_physical_executions <TAB> restoration_required
+#         <TAB> provenance
+#
+R8-IC-01	INVENTORY	C1	the live-function census	Delete a live function from the census	MISSING_FUNCTION_ID	1	byte-identical census restored	ACT §8
+R8-IC-02	INVENTORY	C1	the census and candidate registry	Duplicate a source/function/candidate ID	DUPLICATE_ID	1	byte-identical restored	ACT §8
+R8-IC-03	IDENTITY	C1	the source range and SHA table	Change one source range SHA-256	SOURCE_HASH_MISMATCH	1	byte-identical restored	ACT §8
+R8-IC-04	IDENTITY	C1	the source range table	Use out-of-range or overlapping semantic boundary	INVALID_RANGE_OR_OVERLAP	1	byte-identical restored	ACT §8
+R8-EC-01	ELIGIBILITY	C1	the raw 13-clause facts	Falsely classify an already-migrated authority as active legacy C	ALREADY_POLYC_AUTHORITY	1	byte-identical restored	ACT §8
+R8-EC-02	ELIGIBILITY	C1	the transitive dependency facts	Remove an actual transitive mutable-host-state dependence	TRANSITIVE_DEPENDENCY_MISSING	1	byte-identical restored	ACT §8
+R8-EC-03	ELIGIBILITY	C1	the transitive dependency facts	Conceal a candidate host AST graph write	HOST_GRAPH_WRITE	1	byte-identical restored	ACT §8
+R8-EC-04	ELIGIBILITY	C1	the transitive dependency facts	Conceal required callback/recovery ownership	CALLBACK_OR_RECOVERY_DEPENDENCE	1	byte-identical restored	ACT §8
+R8-EC-05	ELIGIBILITY	C1	the reachability facts	Mark an unreachable candidate high-ranked	NOT_PRODUCTION_REACHABLE	1	byte-identical restored	ACT §8
+R8-EC-06	ELIGIBILITY	C1	the raw facts and the candidate roster	Inject one unknown candidate ID and separately remove one required eligibility fact	UNKNOWN_CANDIDATE_ID and MISSING_ELIGIBILITY_FACT	2	byte-identical restored	ACT §8
+R8-RC-01	RANKING	C2	the ranking input and the full order	Shuffle facts, then forge order-dependent output	RANK_ORDER_MISMATCH	1	byte-identical restored	ACT §8
+R8-RC-02	RANKING	C2	the ranking input	Give an excluded candidate an artificially best score	INELIGIBLE_CANDIDATE_NOT_PROMOTED	1	byte-identical restored	ACT §8
+R8-RC-03	RANKING	C2	the eligible population	Remove provisional leader	Next deterministic qualified leader or NONE, never stale selection	1	byte-identical restored	ACT §8
+R8-RC-04	RANKING	C2	the R0..R6 dimension table	Perturb one R0..R6 dimension	Predicted full sorted-order delta, independent recomputation	1	byte-identical restored	ACT §8
+R8-RC-05	PROVENANCE	C2	the candidate identity table	Keep candidate ID, substitute stale phase/range/call site	SOURCE_SUBJECT_OR_PHASE_MISMATCH	1	byte-identical restored	ACT §8
+R8-CC-01	CAUSAL	C2	the selected C decision in a real compiler build	Mutate selected C decision, build actual compiler, run witness	Successful compiler build plus candidate-specific observed causal change	1	source byte-restored and recompiled	ACT §8
+R8-CC-02	CAUSAL	C2	the selected G0 oracle object	Supply handmade or PolyC-importing G0 oracle	G0_NOT_GENUINE_C_TU	1	byte-identical restored	ACT §8
+R8-CC-03	CAUSAL	C2	the selected source-derived fixture	Corrupt one source-derived fixture expectation	FIXTURE_ROW_MISMATCH with exact row	1	byte-identical restored	ACT §8
+R8-CC-04	CAUSAL	C2	the selected C decision function scope	Move target comparison into unrelated function	FUNCTION_SCOPED_AUTHORITY_MISMATCH	1	byte-identical restored	ACT §8
+R8-PV-01	PROVENANCE	C2	the producer binary identity table	Relabel one producer binary as different compiler generation	PRODUCER_DIGEST_OR_IDENTITY_MISMATCH	1	byte-identical restored	ACT §8
+R8-XC-01	EXECUTION	C3	the frozen control roster and the C3 join	Omit one frozen control ID but keep TOTAL/PASS unchanged	FROZEN_CONTROL_MISSING, exact-ID diff	1	byte-identical restored	ACT §8
+R8-XC-02	EXECUTION	C3	the control execution evidence ledger	Point execution evidence only to its own JOIN row	SELF_REFERENTIAL_WITNESS, reject claimed adverse execution	1	byte-identical restored	ACT §8
+R8-XC-03	EXECUTION	C3	the source phase hash table	Claim post-phase source hash existed at C0/C1	SOURCE_CHRONOLOGY_MISMATCH from immutable Git objects	1	byte-identical restored	ACT §8
+R8-XC-04	EXECUTION	C3	the selected C mutation witness	Replace linked selected C mutation with a dormant/unreachable mutation	NONCAUSAL_OR_UNLINKED_MUTANT despite fixture changes	1	byte-identical restored	ACT §8
+#
+FROZEN_CONTROL_COUNT=24
+FROZEN_CONTROL_ID_SET=R8-IC-01..04, R8-EC-01..06, R8-RC-01..05, R8-CC-01..04, R8-PV-01, R8-XC-01..04
+FROZEN_CONTROL_DUPLICATES=0
+TOTAL_REQUIRED_PHYSICAL_EXECUTIONS=25
+#   24 control IDs, of which R8-EC-06 requires TWO distinct
+#   physical executions (one per detector half).
+#
+FROZEN_BEFORE_ANY_EXECUTION=YES
+A_FROZEN_DEFINITION_IS_NOT_AN_EXECUTED_RESULT=YES
+NEGATIVE_CONTROL_CONTRACT_STATUS=PASS

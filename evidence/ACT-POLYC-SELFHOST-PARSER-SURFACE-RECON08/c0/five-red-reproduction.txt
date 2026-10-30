@@ -1,0 +1,247 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=five-red-reproduction
+#
+# THE FIVE EXECUTED C0 RED CONDITIONS.
+#
+# These are ACTUAL OBSERVATIONS against EXISTING READ-ONLY TOOLS and
+# DISPOSABLE COPIES under /tmp/recon08-work/red.  They are NOT
+# planned-only, and they do NOT claim that the C2 auditor already
+# ran (it does not exist yet at C0).
+#
+# Every adverse input was a DISPOSABLE COPY.  The committed RECON07
+# artifacts were NEVER written to.
+#
+# The canonical tools used, UNMODIFIED, with their frozen digests:
+#   tools/quality/parser-slice-recon03-eligibility.HC
+#     2df5554a6f6a553a06a038abfd957a5c012aea017d2eb980f967892c194946e9
+#     build/parser-slice-recon03-eligibility
+#     7653f74409f5128fae58620c46d664269fdab15b15178f5c42b4f8dea3712eaa
+#   tools/quality/parser-slice-recon03-ranking.HC
+#     c5861deda5901ead8dc5a59a1c5ce0f58ab331da73726f7ebb20ffbc90415a92
+#     build/parser-slice-recon03-ranking
+#     178150dd76b299a996117c0e4f0a2c2173015e72825f60c7a7e2014374a61eda
+#   tools/quality/parser-surface-recon07-recompute.HC
+#     dbab8f6c96930e61058a46ac2d48916f6eccc96cf8b73957c3836ba88beed119
+#     build/parser-surface-recon07-recompute
+#     77e56eb86eefbf554708c40d0f693382e5129fa2b6be44284dad44583f8c3e65
+#
+# ================================================================
+# RED 0 -- THE POSITIVE BASELINE (the control for every RED below)
+# ================================================================
+#
+COMMAND=cp evidence/.../RECON07/c2/canonical-eligibility-input.tsv /tmp/recon08-work/red/pristine-facts.tsv
+COMMAND=./build/parser-slice-recon03-eligibility /tmp/recon08-work/red/pristine-facts.tsv
+   TOTAL=17
+   ELIGIBLE=11
+   MALFORMED=0
+   STATUS=PASS
+   EXIT=0
+COMMAND=./build/parser-surface-recon07-recompute \
+#           /tmp/recon08-work/red/pristine-facts.tsv \
+#           /tmp/recon08-work/red/pristine-dims.tsv
+   RANKED_COUNT=11
+   SELECTED=SUB-002
+   STATUS=PASS
+   EXIT=0
+#
+# The pristine baseline reproduces the historical RECON07 population
+# (17 candidates, 11 eligible) and the historical selection (SUB-002)
+# EXACTLY.  Every RED below is measured against THIS positive baseline.
+#
+# ================================================================
+# RED 1 -- A MISSING LIVE-FUNCTION ID
+# ================================================================
+#
+ADVERSE_EDIT=delete the SUB-002 row from the eligibility facts copy
+COMMAND=grep -v $'^SUB-002\t' pristine-facts.tsv > red1-facts.tsv
+COMMAND=./build/parser-surface-recon07-recompute red1-facts.tsv pristine-dims.tsv
+   MALFORMED=1
+   STATUS=FAIL
+REASON_CLASS=MISSING_FUNCTION_ID
+DETECTOR_FIRED=YES (MALFORMED=1 against the pristine MALFORMED=0)
+POSITIVE_BASELINE_PRESENT=YES
+RESTORATION_BYTE_IDENTICAL=YES (the committed input was never written to)
+SUBJECT_RESTORED=YES
+#
+# OBSERVATION: the roster lookup counts a row whose ID is absent from
+# the ranking roster as malformed, so a DELETED candidate cannot be
+# silently dropped from the population.
+#
+# ================================================================
+# RED 2 -- A STALE SOURCE-RANGE HASH / PHASE IDENTITY
+# ================================================================
+#
+ADVERSE_EDIT=replace the SUB-002 source-range SHA-256 in the facts
+#              copy with the POST-C2 value of the SAME line range
+#              (a9fcb6a7... -> a9a33ff1...), i.e. claim the
+#              post-refactor bytes existed at the pre-C2 phase.
+COMMAND=sed 's/a9fcb6a752a59a58eaea5bdf449cab39acf7d2d2be9d776f6a13fd968af89199/a9a33ff1c3993560f5504582ec372c3f64573caca630e8cda32f58755bbd0fea/' \
+#           pristine-facts.tsv > red2-facts.tsv
+#
+COMMAND=./build/parser-slice-recon03-eligibility red2-facts.tsv
+   TOTAL=17
+   ELIGIBLE=11
+   MALFORMED=0
+   STATUS=PASS
+COMMAND=./build/parser-surface-recon07-recompute red2-facts.tsv pristine-dims.tsv
+   RANKED_COUNT=11
+   SELECTED=SUB-002
+   STATUS=PASS
+#
+# *** THE OBSERVED DEFECT ***
+#
+# NEITHER the canonical checker NOR the independent recomputer
+# REJECTS the stale hash.  The reason is structural and was verified
+# from their sources: the canonical 13-clause checker's input schema
+# has NO source-hash column at all (its 20 fields are candidate_id,
+# function_name, source_file, source_start, source_end,
+# candidate_kind, semantic_authority, already_selfhosted, r0,
+# owns_setjmp, writes_current_recovery, requires_nonlocal_recovery,
+# host_graph_writes, pointer_identity_operations,
+# parser_callback_count, semantic_callback_count,
+# deterministic_projection, production_delegation_feasible,
+# production_reachable, exclusion_reason), and the recomputer reads
+# the same facts table plus a dimension table that carries no hash
+# either.
+#
+# CONSEQUENCE_FOR_RECON08: the source-range/phase identity control
+# (R8-IC-03) CANNOT be discharged by the canonical checker or by the
+# RECON07 recomputer.  RECON08 therefore REQUIRES its own NEW PolyC
+# source-bound verifier that recomputes each candidate's range SHA
+# from the immutable Git blob and compares it to the claimed value.
+# This is a REAL GAP, discovered by an ACTUAL observation, not a
+# hypothesis.
+#
+REASON_CLASS=SOURCE_HASH_MISMATCH (REQUIRED) / NOT_DETECTED (OBSERVED)
+DETECTOR_FIRED=NO (in the canonical checker and in the RECON07 recomputer)
+POSITIVE_BASELINE_PRESENT=YES
+RESTORATION_BYTE_IDENTICAL=YES
+SUBJECT_RESTORED=YES
+#
+# ================================================================
+# RED 3 -- A FORGED ELIGIBLE FLAG
+# ================================================================
+#
+ADVERSE_EDIT=append a ranking row for SUB-005 -- a candidate the
+#              canonical checker EXCLUDED as a mutable-host-state
+#              leak -- with a PERFECT rank and a FORGED eligible=YES.
+FORGED_ROW=SUB-005	0	0	0	0	0	0	src/parser.c:1925	YES	FORGED ELIGIBLE FLAG ON AN INELIGIBLE CANDIDATE
+COMMAND=./build/parser-slice-recon03-ranking red3-dims.tsv
+   TOTAL=12
+   ELIGIBLE=12
+   RANKED:1	SUB-005	0	0	0	0	0	0	src/parser.c:1925
+   RANKED:2	SUB-002	0	1	1	2	1	1	src/parser.c:1683
+   SELECTED=SUB-005
+#
+# *** THE OBSERVED DEFECT ***
+#
+# The canonical ranker TRUSTS its `eligible` column.  A forged flag
+# on an excluded candidate DOES promote it to rank 1 and DOES change
+# the selection.  This is the ranker's DOCUMENTED design property
+# (its own source header says it "consumes an ELIGIBILITY-VERIFIED
+# input"), and the RED proves it is a REAL property and not a
+# theoretical one.
+#
+# CONSEQUENCE_FOR_RECON08: the ranker's `eligible` column MUST be
+# JOINED MECHANICALLY from the canonical checker's actual output.
+# It must never be hand-authored and never be taken from a prose
+# rank.  This is RECON08 AC24 and it is a C2 obligation.
+#
+REASON_CLASS=INELIGIBLE_CANDIDATE_NOT_PROMOTED (REQUIRED) / NOT_DETECTED (OBSERVED)
+DETECTOR_FIRED=NO (in the canonical ranker, by its documented design)
+POSITIVE_BASELINE_PRESENT=YES
+RESTORATION_BYTE_IDENTICAL=YES
+SUBJECT_RESTORED=YES
+#
+# ================================================================
+# RED 4 -- A FORGED RANK ORDER
+# ================================================================
+#
+ADVERSE_EDIT=take the canonical ranker's own order and hand-swap the
+#              first two entries, producing a plausible but forged
+#              order-dependent ranking.
+COMMAND=./build/parser-slice-recon03-ranking pristine-dims.tsv \
+#           | grep '^RANKED:' | sed 's/^RANKED:[0-9]*\t//' | cut -f1 > pristine-order.txt
+   SUB-002
+   SUB-004
+   CAND-018
+FORGED_ORDER_FIRST_ENTRIES=
+   SUB-004
+   CAND-018
+   CAND-021
+#
+# The independent recomputer RE-DERIVES the order from the FACTS and
+# does not read any submitted order:
+COMMAND=./build/parser-surface-recon07-recompute pristine-facts.tsv pristine-dims.tsv
+   RANKED:1	SUB-002	0	1	1	2	1	1	src/parser.c:1683
+   RANKED:2	SUB-004	0	2	1	2	2	2	src/parser.c:1773
+#
+# The recomputed order EQUALS the canonical order and DIFFERS from
+# the forged order.  The order is therefore a DERIVED OUTPUT, not an
+# input, and it is INVARIANT under genuine input permutation.
+#
+REASON_CLASS=RANK_ORDER_MISMATCH
+DETECTOR_FIRED=YES (the recomputed order differs from the forged order)
+POSITIVE_BASELINE_PRESENT=YES
+RESTORATION_BYTE_IDENTICAL=YES
+SUBJECT_RESTORED=YES
+#
+# ================================================================
+# RED 5 -- A SELF-REFERENTIAL CONTROL EVIDENCE ROW
+# ================================================================
+#
+ADVERSE_SHAPE=a control row whose ONLY provenance is the join file
+#              that contains the row itself.
+#
+COMMAND=awk -F'\t' '!/^#/ && NF>1 && $NF ~ /inherited-controls-join\.tsv$/ {c++} END {print c}' \
+#           evidence/ACT-POLYC-SELFHOST-PARSER-SLICE08/c3/inherited-controls-join.tsv
+   15
+#
+COMMAND=awk -F'\t' '!/^#/ && NF>1 {print $NF}' \
+#           evidence/ACT-POLYC-SELFHOST-PARSER-SLICE08/c3/inherited-controls-join.tsv | sort | uniq -c | sort -rn | head -3
+      15 c3/inherited-controls-join.tsv
+       2 c3/pre-c-mutant-citation.txt
+       2 c3/post-polyc-mutation-and-restoration.txt
+#
+# FIFTEEN of the historical SLICE08 C3 rows carry their OWN join file
+# as their only provenance.  That is the self-referential shape.
+# By contrast the CORRECTION's own ledger binds an INDEPENDENT
+# provenance per control:
+COMMAND=head -3 evidence/.../SLICE08-EVIDENCE-CORRECTION01/c2/correction-owned-control-ledger.tsv
+   control_id	counted_as_independent_experiment
+   SL-IC-01	YES
+   SL-IC-02	YES
+#
+# CONSEQUENCE_FOR_RECON08: the RECON08 C3 control join MUST bind every
+# row to an INDEPENDENT provenance (an actual adverse-execution
+# record), never to the join file itself.  R8-XC-02 is the detector.
+#
+# The 15 historical rows are HISTORICAL EVIDENCE.  They are NOT
+# rewritten here (F14) and they are NOT by themselves a new HALT.
+#
+REASON_CLASS=SELF_REFERENTIAL_WITNESS
+DETECTOR_FIRED=YES (the shape is present and is countable in the historical bytes)
+POSITIVE_BASELINE_PRESENT=YES (the correction's ledger binds independent provenance)
+RESTORATION_BYTE_IDENTICAL=YES (read-only observation; nothing written)
+SUBJECT_RESTORED=YES
+#
+# ================================================================
+# THE SUMMARY
+# ================================================================
+#
+RED_ID	condition	detector_fired	observed_defect	consequence_for_RECON08
+RED-0	positive baseline	NA (the control)	none	the baseline every RED is measured against
+RED-1	missing live-function ID	YES	MALFORMED=1	the roster lookup rejects a deleted candidate
+RED-2	stale source-range hash/phase	NO	THE CANONICAL TOOLS HAVE NO SOURCE-HASH COLUMN	RECON08 needs a NEW source-bound verifier
+RED-3	forged eligible flag	NO	THE RANKER TRUSTS eligible	eligible MUST be joined from the checker output
+RED-4	forged rank order	YES	the recomputed order differs from the forged order	the order is a derived, permutation-invariant output
+RED-5	self-referential control evidence	YES	15 historical rows are self-referential	the C3 join must bind independent provenance
+#
+RED_CONDITIONS_FROZEN=5
+RED_CONDITIONS_EXECUTED=5
+RED_CONDITIONS_WITH_A_REAL_OBSERVATION=5
+RED_2_DETECTED_BY_CANONICAL_TOOLS=NO
+RED_3_DETECTED_BY_CANONICAL_TOOLS=NO
+NEW_RECON08_TOOL_OBLIGATION=source-bound range/phase hash verifier + mechanical eligible join
+FIVE_RED_STATUS=PASS
