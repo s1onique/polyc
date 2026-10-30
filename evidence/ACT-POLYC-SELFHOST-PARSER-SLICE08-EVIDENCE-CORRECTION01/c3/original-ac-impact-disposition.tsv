@@ -1,0 +1,53 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE08-EVIDENCE-CORRECTION01
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=original-ac-impact-disposition
+#
+# THE TRUTHFUL DISPOSITION OF THE HISTORICAL SLICE08
+# ACCEPTANCE CRITERIA WHOSE PROOF ACCOUNTING THIS
+# CORRECTION SUPPLEMENTS.
+#
+# The historical ledger is NOT edited and its PASS is NOT
+# inherited blindly.  Each row below states what the
+# historical evidence actually establishes, and what this
+# correction adds.
+#
+## --- THE HISTORICAL LEDGER, READ FROM THE COMMITTED FILE ---
+#
+# evidence/ACT-POLYC-SELFHOST-PARSER-SLICE08/c3/mandatory-ac-status.tsv
+#
+ac_id	historical_status	historical_evidence
+AC09	PASS	c0/selected-contract-bindings.tsv, c1/selected-source-and-abi.txt, c1/live-enums-and-rule.tsv
+AC33	PASS	c3/inherited-controls-join.tsv
+AC35	PASS	c3/inherited-controls-join.tsv, c3/new-controls-join.tsv
+AC42	PASS	c3/generation-provenance.tsv, c3/inherited-controls-join.tsv, c3/new-controls-join.tsv
+AC49	PASS	c3/mandatory-ac-status.tsv
+AC50	DEFERRED_TO_CLOSE	c4/terminality-plan.txt (the external post-CLOSE read-only receipt remains outside the repository)
+#
+## --- THE DISPOSITION ---
+#
+ac_id	historical_claim	what_the_historical_evidence_establishes	what_this_correction_adds	correction_disposition
+AC09	the entry source-range binding is re-derived and IDENTICAL	the C1 file PRINTS a9a33ff1... and asserts it is IDENTICAL to the frozen a9fcb6a7..., which is FALSE; at the C1 commit the range held the legacy predicate a9fcb6a7.../175 bytes and the helper did not exist	an independent Git-object recompute of the whole five-commit chain, the three mutually distinct byte-range identities, the moved predicate at 1736..1738, and the C1 chronology defect	SUPPLEMENTED_BY_THIS_CORRECTION (the historical claim is FALSE as written; the underlying entry identity IS unchanged)
+AC33	all RECON07 frozen successor controls executed/verified by unchanged IDs and subjects	23 of the 24 frozen obligations were in the C0 contract; SL-EC-06 had NO adverse execution evidence, its only occurrence in the whole SLICE08 evidence tree being the C3 join row that makes the claim	two NEW correction-owned adverse executions (E8-EC06-A, E8-EC06-B) discharging both halves of the frozen SL-EC-06 obligation, plus the independent three-way reconciliation	SUPPLEMENTED_BY_THIS_CORRECTION (the historical claim was not independently discharged for SL-EC-06)
+AC35	no vacuous control, double-discharge, wrong-subject or forged prior event	15 of the 24 C3 rows are SELF-REFERENTIAL: they assert five positive observation flags while binding no external command, exit, object or baseline	two independent implementations of the reconciliation, the per-row provenance binding that classifies every row, and the explicit shared-execution and cited-prior accounting	SUPPLEMENTED_BY_THIS_CORRECTION (the historical evidence did not distinguish an assertion-only row from an executed one)
+AC42	all generation/object/caller/provenance and subject/phase/execution-ID joins independently checked	the inherited-control join was NOT independently checked against the frozen contract: the contract itself was missing an ID and the summary block was never reconciled against the rows	the PolyC auditor, the independent awk recomputation, the field-by-field subject/phase/detector comparison and the two new adverse executions	SUPPLEMENTED_BY_THIS_CORRECTION
+AC49	exactly 49 ACs independently evidenced PASS at C3	the ledger records PASS, but the AC09/AC33/AC35/AC42 rows rest on the two defective evidence files	this correction supplies the corrected, independently recomputed accounting for every one of the 24 inherited control IDs and for the source-range provenance	SUPPLEMENTED_BY_THIS_CORRECTION (the ledger is not edited; its PASS is not inherited blindly)
+AC50	one terminal CLOSE and an external post-CLOSE terminality PASS	the historical terminality was closed and its external receipt is outside the repository, as designed	the SLICE08 CLOSE is left UNCHANGED and its verdict stays PASS_UNCHANGED; this correction runs its OWN external post-CLOSE terminality check after its OWN terminal CLOSE	NOT_APPLICABLE_TO_SLICE08 (it is this correction own obligation, discharged at this ACTs C4)
+#
+## --- THE SUMMARY ---
+#
+# The five historical ACs whose proof accounting this
+# correction SUPPLEMENTS: AC09, AC33, AC35, AC42, AC49.
+#
+HISTORICAL_AC_ROWS_SUPPLEMENTED=5
+HISTORICAL_AC_ROWS_NOT_SUPPLEMENTED=44 (unaffected by either defect)
+HISTORICAL_AC_ROWS_CONTRADICTED=0
+#
+THE PRODUCTION TRANSFER IS NOT CHALLENGED: none of these
+# five ACs bears on the eighth production authority, the
+# four-generation differential, the 41-row fixture or the
+# post-migration PolyC mutation.  What was defective is the
+# PROOF ACCOUNTING of two evidence files.
+#
+HISTORICAL_LEDGER_EDITED=NO
+HISTORICAL_PASS_INHERITED_BLINDLY=NO
+ORIGINAL_AC_IMPACT_DISPOSITION_STATUS=PASS

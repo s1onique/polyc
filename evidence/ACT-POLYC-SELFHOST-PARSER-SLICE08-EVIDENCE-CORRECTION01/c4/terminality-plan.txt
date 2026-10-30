@@ -1,0 +1,100 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE08-EVIDENCE-CORRECTION01
+ACT_PHASE=C4-CLOSE
+EVIDENCE_KIND=terminality-plan
+#
+# THE PRE-COMMIT TERMINALITY PLAN.
+#
+# This file is a PLAN.  It is written BEFORE the terminal CLOSE
+# commit and it records what the EXTERNAL, READ-ONLY, POST-CLOSE
+# check will verify.  It is NOT a claim that the check has already
+# passed: the check cannot run before the commit it inspects.
+#
+# THE PLAN, NOT THE RESULT, IS THE SUBJECT OF THIS FILE.
+#
+# ==================================================================
+# THE TERMINAL CLOSE COMMIT
+# ==================================================================
+#
+# There is exactly ONE terminal CLOSE commit.  It carries:
+#
+#   ACT: ACT-POLYC-SELFHOST-PARSER-SLICE08-EVIDENCE-CORRECTION01
+#   ACT-Phase: CLOSE
+#   ACT-Verdict: PASS
+#
+# It carries the HANDOFF, the single additive act-handoff-map.tsv
+# row and the bounded ROADMAP.md disposition.
+#
+# ==================================================================
+# THE EXTERNAL POST-CLOSE CHECK
+# ==================================================================
+#
+# After the CLOSE commit exists, an EXTERNAL read-only check runs.
+# Its receipt is stored OUTSIDE the repository, so that:
+#
+#   1. the terminal commit is genuinely terminal, with nothing
+#      appended after it;
+#   2. the receipt is not a self-referential claim inside the very
+#      commit it would describe;
+#   3. a FAILED external check cannot be hidden by appending a
+#      stealth post-CLOSE commit.
+#
+# The check is READ-ONLY and verifies:
+#
+#   1. HEAD is the terminal CLOSE commit, and its tree matches the
+#      tree recorded by the CLOSE.
+#   2. The phase range is exactly: C0 (RED), C1 (EVIDENCE),
+#      C2 (IMPL), C3 (EVIDENCE), C4 (CLOSE) -- four commits before
+#      the terminal one, five in total.
+#   3. Every phase trailer is exactly as the Factory-v2 grammar
+#      requires, and the CLOSE carries exactly one ACT-Verdict.
+#   4. The worktree is clean and the index is empty.
+#   5. There are ZERO Git replace refs.
+#   6. There are NO commits after the terminal CLOSE.
+#   7. All 231 frozen predecessor paths are byte-unchanged.
+#   8. F14 holds: no prior ACT, HANDOFF, evidence directory or
+#      closed commit was modified.
+#   9. The append-only invariant holds.
+#  10. The production semantic delta is 0: no src/**, no
+#      tools/bootstrap/**, no test, no CMake/Make rule changed.
+#  11. The gate state is PASS for both gate-fast and gate-push.
+#
+# The receipt is written to a path OUTSIDE the repository tree.
+#
+# CAC28 IS DISCHARGED ONLY BY THAT EXTERNAL CHECK.  Until it runs
+# and passes, CAC28 is DEFERRED_TO_CLOSE, which is exactly how the
+# frozen contract records it at C3.
+#
+# ==================================================================
+# THE HISTORY
+# ==================================================================
+#
+# The SLICE08 CLOSE is NEVER changed.  Its verdict stays PASS, its
+# tree stays b4447a6bf8adbfc177ad7991dc7593833ad224f9 and its
+# trailers stay exactly as they were committed.
+#
+# The historical SLICE08 CLOSE is:
+#
+#   SLICE08_HISTORICAL_CLOSE_VERDICT=PASS_UNCHANGED
+#
+# ==================================================================
+# THE DISPOSITION
+#
+# The disposition is recorded in the HANDOFF, and the ACT-Verdict
+# trailer is the authority.  The disposition vocabulary is:
+#
+#   PASS_EVIDENCE_CORRECTED
+#
+# with the reasoning:
+#
+#   - every frozen obligation is independently discharged;
+#   - both inconsistencies are explained exactly;
+#   - the correction supplies truthful NEW reconciliations;
+#   - no claim is made that the C0 or C3 historical files were
+#     fixed, because they were not and must not be.
+#
+# The NEXT target is NONE.  The proposed successor is
+# ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08, but this ACT neither
+# authorizes it nor implements any part of it.
+#
+# NEXT_TARGET=NONE
+# SLICE09_AUTHORIZED=NO

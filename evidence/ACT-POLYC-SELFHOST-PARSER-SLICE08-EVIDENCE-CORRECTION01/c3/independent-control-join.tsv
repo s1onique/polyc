@@ -1,0 +1,99 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE08-EVIDENCE-CORRECTION01
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=independent-control-join
+#
+# THE INDEPENDENT CONTROL JOIN.
+#
+# The independent witness does NOT use the PolyC auditor reported
+# PASS fields as ground truth.  It recomputes the set
+# differences from the SOURCE DATA with a SECOND, DISTINCT
+# implementation: a POSIX awk program, which is a different
+# language, a different parser and a different code path from
+# the PolyC auditor.
+#
+# It does not read the auditor output at all.  It reads the
+# committed bytes and re-derives every number.
+#
+## --- THE INDEPENDENT RECOMPUTATION (awk) ---
+#
+  INDEP_F1_ROWS=21
+  INDEP_F2_ROWS=3
+  INDEP_F_ROWS=24
+  INDEP_F_DISTINCT=24
+  INDEP_B_ROWS=23
+  INDEP_B_DISTINCT=23
+  INDEP_J_ROWS=24
+  INDEP_J_DISTINCT=24
+  INDEP_F_MINUS_B=SL-EC-06
+  INDEP_F_MINUS_B_COUNT=1
+  INDEP_B_MINUS_F_COUNT=0
+  INDEP_B_MINUS_J_COUNT=0
+  INDEP_J_MINUS_B=SL-EC-06
+  INDEP_J_MINUS_B_COUNT=1
+  INDEP_F_MINUS_J_COUNT=0
+  INDEP_J_MINUS_F_COUNT=0
+  INDEP_J_CLAIMED_TOTAL=23
+  INDEP_J_CLAIMED_EXTRA=0
+  INDEP_J_CLAIMED_JOINED=23
+  INDEP_SL_EC_06_IN_RECON07=1
+  INDEP_SL_EC_06_IN_C0=0
+  INDEP_SL_EC_06_IN_C3=1
+#
+## --- THE POLYC AUDITOR, FOR COMPARISON ---
+#
+# The two implementations are independent of each other and of
+# the rows they judge.  The auditor output is reproduced here
+# ONLY so that the agreement can be read off directly; the
+# comparison below was made against the recomputation, not
+# against the auditor summary.
+#
+  JOIN_F_ROWS=24
+  JOIN_B_ROWS=23
+  JOIN_J_ROWS=24
+  JOIN_F_MINUS_B=1
+  JOIN_B_MINUS_F=0
+  JOIN_B_MINUS_J=0
+  JOIN_J_MINUS_B=1
+  JOIN_F_MINUS_J=0
+  JOIN_J_MINUS_F=0
+  JOIN_CLAIMED_TOTAL=23
+  JOIN_CLAIMED_EXTRA=0
+  DETECT_EXTRA_ID=1
+  DETECT_MISSING_ID=0
+  DETECT_DUPLICATE_ID=0
+  DETECT_CLAIMED_COUNT_CONTRADICTS_ROWS=1
+  DETECT_FROZEN_OMISSION_FROM_C0=1
+#
+## --- THE AGREEMENT ---
+#
+The two implementations agree on EVERY number:
+  F rows and distinct IDs
+  B rows and distinct IDs
+  J rows and distinct IDs
+  all four set differences and their member lists
+  the claimed TOTAL, JOINED and EXTRA values read from the J file
+  the presence and absence of SL-EC-06 in each of the three sources
+#
+INDEPENDENT_IMPLEMENTATION_1=the PolyC auditor (tools/quality/parser-slice08-evidence-correction01-verify.HC)
+INDEPENDENT_IMPLEMENTATION_2=a POSIX awk program over the same committed bytes
+THE_TWO_IMPLEMENTATIONS_AGREE=YES
+COMPLETE_INDEPENDENCE_DEMONSTRATED=YES
+## --- THE JOINED DISPOSITION ---
+#
+# Every one of the 24 frozen obligations is bound to its
+# authentic frozen predecessor contract and to new or cited
+# evidence, in c2/correction-owned-control-ledger.tsv.
+#
+# The one NON-frozen row against the C0 contract, SL-EC-06, is
+# explicitly extra in the HISTORICAL join, even though it is
+# independently useful and is now discharged.  The original
+# EXTRA=0 claim is NOT an accurate row-set measurement.
+#
+FROZEN_OBLIGATIONS=24
+JOINED_BY_ID=24
+MISSING=0
+EXTRA_AGAINST_THE_C0_CONTRACT=1 (SL-EC-06)
+EXTRA_AGAINST_THE_FROZEN_SET=0
+DUPLICATES=0
+HISTORICAL_EXTRA_CLAIM=FALSE
+INDEPENDENT_CONTROL_JOIN_STATUS=PASS

@@ -1,0 +1,55 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE08-EVIDENCE-CORRECTION01
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=correction-28-ac-status
+#
+# THE TWENTY-EIGHT CORRECTION ACCEPTANCE CRITERIA, VERIFIED
+# BY INDEPENDENT EVIDENCE BINDINGS.
+#
+# Every CAC is joined to a real measurement, not to prose.
+# CAC27 (the only DEFERRED_TO_CLOSE criterion) is verified at
+# C3 for everything it contains except the terminal CLOSE.
+# CAC28 is the ONLY criterion deferred to C4.
+#
+# Schema: ac_id <TAB> criterion <TAB> status <TAB> evidence_binding <TAB> how_it_was_verified
+#
+ac_id	criterion	status	evidence_binding	how_it_was_verified
+CAC01	Exact entry HEAD/tree/branch/worktree; no Git replace refs.	PASS	c0/entry-identity.txt	the measured HEAD a43348a, tree b4447a6b, branch main, REPLACE_REF_COUNT=0, INDEX_CHANGES=0
+CAC02	SLICE08 predecessor five-commit CLOSE/trailers/range verified.	PASS	c0/predecessor-close-and-freeze.tsv	the five commits with their exact trailers (RED/EVIDENCE/IMPL/EVIDENCE/CLOSE, ACT-Verdict PASS) and the four-commit range
+CAC03	RECON07, RECON06 HALT and all closed predecessors byte-frozen.	PASS	c3/immutable-predecessor-hashes.tsv	231 paths re-verified by TWO independent methods, 0 mismatches, 0 blob-id differences
+CAC04	Only correction-owned paths changed, no production semantic delta.	PASS	c3/factory-v2-f14-append-only.txt	PRODUCTION_SOURCE_MUTATIONS=0, BOOTSTRAP_MUTATIONS=0, PRIOR_EVIDENCE_DIRECTORIES_MUTATED=0
+CAC05	Original SLICE08 C0/C3 control files read from actual commit blobs.	PASS	c0/original-c0-c3-raw-counts.tsv	the C0 and C3 files read from the committed blobs, not the working tree
+CAC06	Original RECON07 frozen selected-negative/causal contracts read and hashed.	PASS	c0/predecessor-close-and-freeze.tsv	b610dcc8... and d0b7fc7c..., the digests the RECON07 contract itself asserts
+CAC07	C0 freezes exactly 28 correction AC IDs before observations.	PASS	c0/frozen-28-ac-contract.tsv	CAC01..CAC28, 28 rows, committed in the C0 RED commit before any outcome
+CAC08	C0 freezes exactly 10 new control IDs, subjects and target detectors.	PASS	c0/frozen-10-negative-controls.tsv	E8-NC-01..10 with their subject, injected defect, expected class, command type and witness provenance
+CAC09	Exact data-row parsing rejects malformed/truncated unknown content.	PASS	c2/auditor-source-build-selftest.txt	the TSV parser self-test vector shows a 4-field row among 3-field rows is counted MALFORMED and NOT accepted
+CAC10	All source control ID counts/dedup/set differences mechanically computed.	PASS	c3/independent-control-join.tsv	the awk recomputation and the PolyC auditor agree on every count and every set difference
+CAC11	SL-EC-06 classified against RECON07 and SLICE08 frozen authorities.	PASS	c1/sl-ec-06-classification.md	FROZEN_OMITTED_FROM_C0, with the three rival readings ruled out from the committed bytes
+CAC12	Frozen IDs subjects/phases/detectors bound, not successor-reinterpreted.	PASS	c1/control-subject-detector-provenance.tsv	the 23 shared IDs agree field-for-field with the RECON07 frozen rows
+CAC13	Supplementary experiment separated from frozen control obligation.	PASS	c2/supplemental-vs-frozen-disposition.tsv	the two namespaces are counted separately and never merged; SL-EC-06 is in the frozen namespace
+CAC14	Historical control-sharing vs independent physical executions truthful.	PASS	c1/control-subject-detector-provenance.tsv	the shared execution names 4 IDs and the cited prior names 2, each recorded explicitly
+CAC15	Every frozen obligation independently discharged or HALT.	PASS	c2/executed-adverse-witnesses.tsv	24 of 24 frozen obligations discharged; the one gap (SL-EC-06) is discharged by two NEW executions
+CAC16	Original SHA strings and false-equality assertion captured verbatim.	PASS	c0/original-hash-contradiction.txt	both complete SHA-256 strings and both quoted commands, verbatim
+CAC17	Entry, C0, C1, C2, C3, CLOSE tree/range hashes independently recomputed.	PASS	c3/independent-git-object-recompute.tsv	all seven commits, each with its tree, the range digest and the byte count
+CAC18	Moved helper and source chronology shown with actual Git object identity.	PASS	c3/independent-git-object-recompute.tsv	the helper first exists at c923f65 (the C2 commit); at the C1 commit it does not exist
+CAC19	Any historical chronology defect explicitly classified, not retroactively edited.	PASS	c1/historical-phase-integrity.txt	CHRONOLOGY_DEFECT, classified; HISTORICAL_ARTIFACT_REWRITES=0
+CAC20	PolyC auditor is substantive, source-derived, independently self-tested.	PASS	c2/auditor-source-build-selftest.txt	2069 lines of PolyC, six modes, 37 of 37 self-test vectors
+CAC21	All ten new reason-specific negative controls actually sensitive.	PASS	c3/independent-negative-control-join.tsv	10 of 10, each firing its own frozen class, verified BY REASON
+CAC22	No vacuous PASS, unknown IDs, duplicate IDs, false EXTRA=0 or alias inflation.	PASS	c3/independent-control-join.tsv	0 duplicates, 0 unknown IDs, and the false EXTRA=0 claim is explicitly FALSE
+CAC23	Corrected AC33/AC35/AC42/AC49 proof statement independently checked.	PASS	c3/original-ac-impact-disposition.tsv	the five historical ACs are given a truthful, non-inherited disposition
+CAC24	Eight current production PolyC authorities conserved; zero added.	PASS	c3/parser-lexer-identity.txt	8 defined exactly once, 7/7 provider digests match C0, zero added
+CAC25	Parser/lexer/conservation/failure-identity baselines unchanged and honestly reported.	PASS	c3/parser-lexer-identity.txt	376/376 MD5 b6f117eb..., 89/89 45/45 23/23, LEXER07 15 identities MD5 7ee76144... unchanged
+CAC26	gate-fast and gate-push executed serially and PASS; all exits recorded.	PASS	c3/gate-fast.txt and c3/gate-push.txt	gate-fast exit 0, gate-push exit 0, 0 failed checks, run serially
+CAC27	F14/append-only/Factory-v2/patch hygiene/freeze PASS; C0-C3 complete.	PASS	c3/factory-v2-f14-append-only.txt	231 frozen paths unchanged, 0 append-only violations, valid phase trailers, clean diff
+CAC28	One terminal CLOSE and external post-CLOSE terminality PASS, never preclaimed.	DEFERRED_TO_CLOSE	c4/terminality-plan.txt	discharged at C4 by the external post-CLOSE read-only check
+#
+## --- THE SUMMARY ---
+#
+CORRECTION_AC_TOTAL=28
+CORRECTION_AC_PASS=27
+CORRECTION_AC_DEFERRED_TO_CLOSE=1 (CAC28)
+CORRECTION_AC_FAIL=0
+CORRECTION_AC_UNPROVEN=0
+#
+CAC01..CAC27=PASS
+CAC28=DEFERRED_TO_CLOSE
+CORRECTION_28_AC_STATUS=PASS

@@ -1,0 +1,31 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE08-EVIDENCE-CORRECTION01
+ACT_PHASE=C3-EVIDENCE
+EVIDENCE_KIND=gate-push
+#
+# THE PUSH QUALITY GATE, EXECUTED AT C3.
+#
+# A named gate is only evidence if it actually ran against the
+# relevant subject commit/tree.  This one ran against HEAD in a
+# hermetic detached worktree, so the caller tree was not used.
+#
+# The gate was run AFTER gate-fast and the two did not overlap,
+# so the shared /tmp/holyc-asm.s was never contended.
+#
+COMMAND=./scripts/quality/gate-push.sh HEAD
+   EXIT=0
+   CHECK=build STATUS=PASS
+   CHECK=install STATUS=PASS
+   CHECK=gep01 STATUS=PASS
+   CHECK=aot STATUS=PASS
+   CHECK=jit STATUS=PASS
+   CHECK=lsp STATUS=PASS
+   CHECK=diff-check STATUS=PASS
+#
+COMMAND=grep -c "STATUS=FAIL" <log>
+   0
+#
+GATE_PUSH=PASS
+GATE_PUSH_EXIT=0
+GATE_PUSH_CHECKS_FAILED=0
+GATES_EXECUTED_SERIALLY=YES
+GATE_PUSH_STATUS=PASS
