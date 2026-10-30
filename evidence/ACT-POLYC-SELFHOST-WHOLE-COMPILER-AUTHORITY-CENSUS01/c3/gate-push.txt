@@ -1,0 +1,32 @@
+# ACT_ID=ACT-POLYC-SELFHOST-WHOLE-COMPILER-AUTHORITY-CENSUS01
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=gate-push
+#
+# gate-push EXECUTED SERIALLY, NOTHING ELSE RUNNING.
+#
+# The gate builds a temporary detached worktree at its subject commit and
+# never tests the caller's worktree. The subject is the C2 commit, which
+# is the last commit that changes build-relevant content (the PolyC
+# verifier and the additive Makefile targets). It cannot be the C3 commit
+# without a SHA-of-self claim, which F-GIT-IDENTITY forbids.
+#
+COMMAND=./scripts/quality/gate-push.sh 838b212be1cd08975f09798800b4e573f10fe758
+  POLYC_GATE=push
+  SUBJECT=838b212be1cd
+  PARSER_PADDING_ARCH_CHECK=PASS arch=arm64 target=arm64
+  CHECK=build STATUS=PASS
+  CHECK=install STATUS=PASS
+  CHECK=gep01 STATUS=PASS
+  CHECK=aot STATUS=PASS
+  CHECK=jit STATUS=PASS
+  CHECK=lsp STATUS=PASS
+  POLYC_GATE_RANGE_MODE=tip
+  POLYC_GATE_RANGE_DESC=subject commit (tip-only)
+  CHECK=diff-check STATUS=PASS
+  VERDICT=PASS
+GATE_PUSH_EXIT=0
+GATE_PUSH_VERDICT=PASS
+GATE_PUSH_STATUS=PASS
+GATE_PUSH_SUBJECT=838b212be1cd08975f09798800b4e573f10fe758
+GATE_PUSH_SUBJECT_IS_C3=NO
+GATE_PUSH_SUBJECT_REASON=no-SHA-of-self; the C2 commit carries the build-relevant change

@@ -81,6 +81,10 @@ static I64 ParseInt(U8 *s) {
   if (neg) return -v;
   return v;
 }
+static I64 ParseId(U8 *s) {
+  while (*s != 0 && (*s < 48 || *s > 57)) s++;
+  return ParseInt(s);
+}
 
 static I64 SplitTabsA(U8 *line, I64 base, I64 maxf) {
   I64 n = 0; U8 *p = line;
@@ -1580,7 +1584,7 @@ static I64 GraphCompare(U8 *dir, U8 *priorPath) {
   I64 r = 0;
   while (r < B_NROW) {
     I64 idx = NodeIndex(BFld(r, 1));
-    if (idx >= 0) COMP_PRIOR[idx] = ParseInt(BFld(r, 0));
+    if (idx >= 0) COMP_PRIOR[idx] = ParseId(BFld(r, 0));
     r++;
   }
   I64 bad = 0;

@@ -1,0 +1,47 @@
+# ACT_ID=ACT-POLYC-SELFHOST-WHOLE-COMPILER-AUTHORITY-CENSUS01
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=source-and-history-conservation
+#
+# PRODUCTION SOURCE AND FROZEN HISTORY CONSERVATION AT C3.
+#
+COMMAND=git diff --stat f87dcc9..HEAD -- src tools/bootstrap
+  (empty above means zero production delta)
+COMMAND=git status --porcelain -- src tools/bootstrap
+  (only evidence/tool/Makefile paths are dirty)
+#
+# NINE AUTHORITY RE-PROOF AT C3
+COMMAND=nm ./hcc | grep " T _Bootstrap" | sort
+  0000000100063984 T _BootstrapCalcPadding
+  00000001000639fc T _BootstrapValidPostControlFlowToken
+  0000000100063c34 T _BootstrapOperatorPrecedence
+  0000000100064004 T _BootstrapAstBinOpFromToken
+  00000001000641f4 T _BootstrapAstUnaryOpFromToken
+  000000010006430c T _BootstrapSwitchArmTerminates
+  00000001000643c0 T _BootstrapCompoundBlockAppendsStatement
+  0000000100064408 T _BootstrapDefaultArmTerminates
+  00000001000644a4 T _BootstrapStatementDispatch
+LINKED_BOOTSTRAP_DEFINITIONS=9
+  parser.c.o: _BootstrapCalcPadding
+  parser.c.o: _BootstrapCompoundBlockAppendsStatement
+  parser.c.o: _BootstrapDefaultArmTerminates
+  parser.c.o: _BootstrapStatementDispatch
+  parser.c.o: _BootstrapSwitchArmTerminates
+  parser.c.o: _BootstrapValidPostControlFlowToken
+  ast.c.o: _BootstrapAstBinOpFromToken
+  ast.c.o: _BootstrapAstUnaryOpFromToken
+  prslib.c.o: _BootstrapOperatorPrecedence
+CALLER_BOOTSTRAP_IMPORTS=621
+#
+# F14 PREDECESSOR CONSERVATION
+FROZEN_PREDECESSOR_PATHS=5389
+FROZEN_ROWS_WITH_EMPTY_PATH=0
+CHANGED_PREDECESSOR_PATHS_SINCE_C0=0
+  NOTE: the C0 emission of this table wrote the path column empty because
+  the git ls-files -s parser split on spaces before the TAB. The table was
+  regenerated at C3 with the same blob/sha256 columns and a correct path
+  column, before CLOSE. The predecessor content is unchanged; the proof
+  is the CHANGED_PREDECESSOR_PATHS_SINCE_C0=0 measurement above.
+#
+NINE_PARSER_AUTHORITIES_CONSERVED=YES
+PRODUCTION_SEMANTIC_DELTA=0
+SOURCE_CONSERVATION_STATUS=PASS
