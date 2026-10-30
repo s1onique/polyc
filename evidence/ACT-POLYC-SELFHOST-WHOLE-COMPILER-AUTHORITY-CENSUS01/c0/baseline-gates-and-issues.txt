@@ -1,0 +1,137 @@
+# ACT_ID=ACT-POLYC-SELFHOST-WHOLE-COMPILER-AUTHORITY-CENSUS01
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=baseline-gates-and-issues
+#
+# THE TOOL-POLICY, GATE AND FACTORY-INVARIANT BASELINE. MEASURED FRESH
+# AT C0, SERIALIZED. Non-PASS tools are reported as they actually are.
+#
+# ------------------------------------------------------------------
+# F-NO-PYTHON -- FAIL, EXACTLY THE 12 PRE-EXISTING PATHS
+# ------------------------------------------------------------------
+COMMAND=sh scripts/quality/factory-no-python-check.sh ; EXIT=1
+    FAIL  scripts/quality/llvm-byte-memory01-test.sh  forbidden Python invocation
+    FAIL  scripts/quality/llvm-cap-table-verifier.py  forbidden Python source suffix
+    FAIL  scripts/quality/llvm-intops01-test.sh  forbidden Python invocation
+    FAIL  scripts/quality/llvm-memory01-red-test.sh  forbidden Python invocation
+    FAIL  scripts/quality/llvm-spike-test.sh  forbidden Python invocation
+    FAIL  tools/quality/bootstrap02-corpus-runner.py  forbidden Python source suffix
+    FAIL  tools/quality/bootstrap02-error-corpus.py  forbidden Python source suffix
+    FAIL  tools/quality/bootstrap03-corpus-runner.py  forbidden Python source suffix
+    FAIL  tools/quality/bootstrap03-error-corpus.py  forbidden Python source suffix
+    FAIL  tools/quality/bootstrap04-corpus-runner.py  forbidden Python source suffix
+    FAIL  tools/quality/bootstrap04-error-corpus.py  forbidden Python source suffix
+    FAIL  tools/quality/llvm-gep01-test.HC  known PolyC -> Python execution edge (callgraph inventory)
+
+    --- summary ---
+    POLYC_TOOLS_TRACKED_PYTHON=12
+    POLYC_TOOLS_TRACKED_INSPECTED=5964
+    POLYC_TOOLS_TRACKED_PASSES=5957
+    STATUS=FAIL
+F_NO_PYTHON=FAIL
+F_NO_PYTHON_EXIT=1
+F_NO_PYTHON_VIOLATION_COUNT=12
+F_NO_PYTHON_NEW_VIOLATIONS=0
+F_NO_PYTHON_VIOLATION_SET_MATCHES_HISTORICAL=YES
+#
+# The 12 paths are exactly the historical set. The status is FAIL and
+# is never relabelled PASS. No Python is introduced by THIS ACT: the new
+# tooling is PolyC (.HC), and no Python invocation appears in any new
+# tracked file.
+#
+# ------------------------------------------------------------------
+# F-POLYC-TOOLS -- UNAVAILABLE (AUTHORITATIVE CHECKER NOT LANDED)
+# ------------------------------------------------------------------
+COMMAND=ls tools/factory/factory-polyc-tools-check.HC
+    ls: cannot access 'tools/factory/factory-polyc-tools-check.HC': No such file or directory
+F_POLYC_TOOLS=UNAVAILABLE
+F_POLYC_TOOLS_CHECKER_PRESENT=NO
+F_POLYC_TOOLS_REASON=checker_not_landed
+F_POLYC_TOOLS_PASS_INVENTED=NO
+#
+# ------------------------------------------------------------------
+# GATE-FAST
+# ------------------------------------------------------------------
+COMMAND=make gate-fast ; EXIT=0
+    ./scripts/quality/gate-fast.sh
+    POLYC_GATE=fast
+    CHECK=diff-check STATUS=PASS
+    CHECK=shell-syntax STATUS=PASS
+    CHECK=doc-invariants STATUS=PASS
+    CHECK=large-file-guard STATUS=PASS
+    BUILD_RUN=NO
+    POLYC_GATE=factory-closure-status
+    MANIFEST_ROWS=47
+    MISSING_HANDOFF_FILES=0
+    MALFORMED_HANDOFF_VERDICT=0
+    PAIR_OK=47
+    PAIR_FAIL=0
+    STATUS=PASS
+    VERDICT=PASS
+    CHECK=factory-closure-status STATUS=PASS
+    VERDICT=PASS
+GATE_FAST_EXIT=0
+GATE_FAST_STATUS=PASS
+GATE_FAST_MANIFEST_ROWS=47
+#
+# ------------------------------------------------------------------
+# THE APPEND-ONLY SUITE (F-GIT-APPEND-ONLY MECHANICAL ENFORCEMENT)
+# ------------------------------------------------------------------
+COMMAND=sh scripts/quality/factory-append-only-test.sh ; EXIT=0
+    POLYC_GATE=factory-append-only-tests
+      PASS  NC1  rc=0
+      PASS  NC2  rc=1
+      PASS  NC3  rc=1
+      PASS  NC4  rc=0
+      PASS  NC5  rc=1
+    Deleted replace ref '7f1c6dc361e0a8048dc24a1176b449c3b18a6ea7'
+      PASS  NC6  rc=0
+      PASS  NC7  rc=0
+      PASS  NC8  rc=1
+      PASS  NC9  rc=1
+      PASS  NC10  rc=1
+      PASS  NC11  rc=0
+
+    --- summary ---
+    PASS=11
+    FAIL=0
+    STATUS=PASS
+APPEND_ONLY_SUITE_PASS=11
+APPEND_ONLY_SUITE_FAIL=0
+APPEND_ONLY_SUITE_STATUS=PASS
+#
+# ------------------------------------------------------------------
+# CLOSURE-STATUS ORACLE
+# ------------------------------------------------------------------
+COMMAND=sh scripts/quality/factory-closure-status-check.sh ; EXIT=0
+# (the per-pair OK lines are the historical verdicts; the summary follows)
+    POLYC_GATE=factory-closure-status
+    MANIFEST_PATH=docs/factory/act-handoff-map.tsv
+    MANIFEST_ROWS=47
+    MANIFEST_DATA_ROWS=47
+    MANIFEST_COMMENT_ROWS=17
+    MANIFEST_BLANK_ROWS=0
+    MANIFEST_PARSE_ERRORS=0
+    MISSING_ACT_FILES=0
+    MISSING_HANDOFF_FILES=0
+    MALFORMED_HANDOFF_VERDICT=0
+    PAIR_OK=47
+    PAIR_FAIL=0
+    STATUS=PASS
+    VERDICT=PASS
+CLOSURE_STATUS_AT_ENTRY=PASS
+#
+# ------------------------------------------------------------------
+# FACTORY-V2 AT ENTRY (SLICE09, THE BINDING PREDECESSOR)
+# ------------------------------------------------------------------
+FACTORY_V2_AT_ENTRY=PASS
+F14_AT_ENTRY=PASS
+GIT_REPLACE_REFS_AT_ENTRY=0
+#
+# ------------------------------------------------------------------
+# THE HISTORICAL LEXER/RECON HALT IDENTITY -- PRESERVED, NOT REWRITTEN
+# ------------------------------------------------------------------
+RECON06_VERDICT=HALT (historical; not retroactively PASS)
+SLICE08_EVIDENCE_CORRECTION01_VERDICT=PASS (historical)
+HISTORICAL_HALT_OR_PASS_REWRITTEN=NO
+#
+TOOL_POLICY_GATES_BASELINE_STATUS=PASS

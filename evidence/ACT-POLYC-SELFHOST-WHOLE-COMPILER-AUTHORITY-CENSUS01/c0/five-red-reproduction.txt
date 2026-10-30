@@ -1,0 +1,171 @@
+# ACT_ID=ACT-POLYC-SELFHOST-WHOLE-COMPILER-AUTHORITY-CENSUS01
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=five-red-reproduction
+#
+# FIVE RED OBSERVATIONS AGAINST THE ACTUAL TREE.
+# Each is a MEASURED observation from this checkout, not an assertion.
+# Where a hypothesized defect did not reproduce as stated, the actual
+# observation is recorded instead and the RED rests on the actual fact.
+#
+# ==================================================================
+# RED-1  THE EXISTING CENSUS IS PARSER-ONLY, AND THE PRODUCTION
+#        LINK CLOSURE CONTAINS NON-PARSER COMPILER OBJECTS.
+# ==================================================================
+#
+# MEASURED (predecessor evidence, opened read-only):
+#   evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08/c1/
+#     live-function-census.tsv  -> CENSUS_FILES=4 CENSUS_FUNCTIONS=274
+#   The four files are src/parser.c, src/prslib.c, src/prsutil.c, src/ast.c.
+#
+# MEASURED (this tree):
+#   production hcc link inputs (build/CMakeFiles/hcc.dir/link.txt):
+#     36 C objects + 1 vendored C object (linenoise) + 9 PolyC subject
+#     objects + static archive build/asm/libtasm.a
+#   archive members actually pulled into the link: 9 of 10
+#     (dis_x86_64.c.o has NO symbol referenced by hcc -> NOT_IN_TARGET)
+#   linked C translation units: 46
+#   PolyC subject translation units: 9
+#   defined text symbols in ./hcc: 1244
+#
+# RED: 4 of 46 linked C TUs are covered by the existing census. The
+# production compiler contains, among others, x86.c (68 defined text
+# symbols), cctrl.c (63), ir.c (34), ctrl/IR/codegen/object/backend
+# machinery that the parser-only census does not see at all.
+#
+PARSER_ONLY_CENSUS_FILES=4
+LINKED_C_TRANSLATION_UNITS=46
+LINKED_POLYC_TRANSLATION_UNITS=9
+ARCHIVE_MEMBERS_PRESENT=10
+ARCHIVE_MEMBERS_LINKED=9
+ARCHIVE_MEMBERS_NOT_IN_TARGET=dis_x86_64.c.o
+HCC_DEFINED_TEXT_SYMBOLS=1244
+PARSER_ONLY_CENSUS_CAPTURES_LINKED_NONPARSER_OBJECTS=NO
+RED_1_STATUS=REPRODUCED
+#
+# ==================================================================
+# RED-2  NINE MIGRATED DECISIONS ARE NOT NINE MIGRATED FUNCTIONS.
+# ==================================================================
+#
+# MEASURED: the nine PolyC decisions are reached through NINE distinct
+# C functions, of which every one is a tiny routing/adaptation function:
+    CalcPadding  src/parser.c:430
+    parseValidPostControlFlowToken  src/parser.c:832
+    parseSwitchArmTerminates  src/parser.c:1517
+    parseDefaultArmTerminates  src/parser.c:1712
+    parseStatementDispatchSelector  src/parser.c:1890
+    parseCompoundBlockAppendsStatement  src/parser.c:2206
+    astBinOpFromToken  src/ast.c:206
+    astUnaryOpFromToken  src/ast.c:287
+    parseGetPriority  src/prslib.c:1139
+#
+# MEASURED: each of the nine C functions still CONTAINS C code and still
+# owns its surrounding semantics. Example, src/parser.c:430..460
+# (CalcPadding) -- under the production selector it routes to the PolyC
+# component, and the C body is compiled out; under the stage0 control it
+# owns the arithmetic. That is a DECISION SITE transfer, not a FUNCTION
+# transfer.
+#
+# MEASURED: 9 decision sites over 1244 defined text symbols is 9/1244
+# of the binary's functions. Counting it as "nine functions migrated"
+# both overstates the migrated function fraction (9/1244 = 0.72%) and
+# understates the remaining decision sites inside those same functions.
+# The two units are NOT interchangeable, and no completion percentage
+# may mix them.
+#
+POLYC_PARSER_DECISION_SITES=9
+DISTINCT_C_FUNCTIONS_HOSTING_THEM=9
+HCC_DEFINED_TEXT_SYMBOLS=1244
+DECISION_SITE_FRACTION=0.0072
+FUNCTION_FRACTION_IF_MISCOUNTED=0.0072
+UNITS_ARE_INTERCHANGEABLE=NO
+RED_2_STATUS=REPRODUCED
+#
+# ==================================================================
+# RED-3  AN UNBOUND INDIRECT EDGE CANNOT BE CLASSIFIED AS RESOLVED.
+# ==================================================================
+#
+# MEASURED in the live source of the linked closure:
+#   src/ast.h:589            typedef int (*AstClassFieldCb)(...)
+#   src/jit-common.h:176     typedef void (*HccJitEmitPhiFn)(...)
+#   src/containers.c:174-175 if (vec->type->release) vec->type->release(...)
+#   src/containers.c:253     int (*free_value)(void *) = vec->type->release;
+#   src/containers.c:559     if (set->type->value_release) ...
+#   src/ir-types.c:129,155   .value_to_string = (AoStr *(*)(void *))...
+#   src/cctrl.c:965          longjmp(*cc->current_recovery, 1);
+#
+# The callee identity of these sites is NOT statically determined by any
+# object-level symbol table: the target is loaded from a struct field at
+# run time. A call graph that omits them and then claims closure is
+# unsound. They are REACHABLE decisions (release/formatting/emit/error
+# recovery dispatch) whose target set is drawn from the linked objects.
+#
+    src/ast.h:589:typedef int (*AstClassFieldCb)(AoStr *field_name, AstType *field, void *ud);
+    src/jit-common.h:176:typedef void (*HccJitEmitPhiFn)(void *ud, IrInstr *phi, IrPair *match);
+    containers.c indirect-release sites: 7
+INDIRECT_CALL_TYPEDEFS=2
+INDIRECT_DISPATCH_SITES_RECORDED=8
+STATIC_TARGET_SET_FOR_INDIRECT_SITES=NOT_AVAILABLE
+CLAIMING_CLOSURE_WITHOUT_THEM=UNSOUND
+RED_3_STATUS=REPRODUCED
+#
+# ==================================================================
+# RED-4  A POLYC-COMPILED OBJECT IS NOT EVIDENCE OF PRODUCTION AUTHORITY.
+# ==================================================================
+#
+# MEASURED: PolyC-produced objects in this tree that carry Bootstrap*
+# symbols which are NOT defined in the linked production ./hcc:
+    _BootstrapScanScalarLiteral  linked_definitions_in_hcc=0
+    _BootstrapClassifyOperator  linked_definitions_in_hcc=0
+    build/lexer07-scalar-literal.o: 0000000000000c58 T _BootstrapScanScalarLiteral
+    build/bootstrap06-operator-classify.o: 000000000000031c T _BootstrapClassifyOperator
+#
+# A compiled PolyC object therefore proves only that the PolyC compiler
+# can compile the component. Production authority additionally requires
+# an ON selector, a caller import, a link edge and a caller relocation --
+# exactly the five properties the nine-authority proof measures.
+#
+DORMANT_POLYC_OBJECTS_OBSERVED=2
+SYMBOL_EXISTENCE_IMPLIES_AUTHORITY=NO
+RED_4_STATUS=REPRODUCED
+#
+# ==================================================================
+# RED-5  A BELOW-100-ACT FORECAST HAS NO DERIVATION FROM A BUNDLE BASIS.
+# ==================================================================
+#
+# MEASURED historical cost of the nine parser decision transfers:
+#   9 implementation ACTs (PADDING-DELEGATE01, SLICE02..SLICE09)
+# + 4 correction ACTs (SLICE03-CORRECTION01, SLICE06-AC11-CORRECTION01,
+#                      SLICE07-EVIDENCE-CORRECTION01,
+#                      SLICE08-EVIDENCE-CORRECTION01)
+#   18 further selection/reconnaissance ACTs (SLICE-RECON01..03,
+#   SURFACE-RECON04..08, PADDING01 family, etc.) precede and surround
+#   them; they are NOT attributable per decision.
+#
+#   measured implementation+correction ACTs per transferred decision
+#   = (9 + 4) / 9 = 1.44 ACT/decision at the most favorable (parser,
+#   scalar, pure) end of the scale.
+#
+# MEASURED size of what remains: the whole-compiler census is produced
+# in C1; the parser-only 274-function census already shows that 9
+# decisions are a small corner of one subsystem. A bare proportionality
+# from 1.44 ACT/decision cannot support ANY number, because the
+# remaining decisions are entangled (AST ownership, mutable symbols,
+# callbacks, recovery, target state) and bundles -- not decisions -- are
+# the correct cost unit.
+#
+# RED: the assertion "fewer than 100 additional ACTs suffices for M2"
+# is presented WITHOUT a bundle roster, WITHOUT per-bundle ABI/state
+# work, and WITHOUT a critical path. It is therefore not a forecast but
+# an unsupported number. This ACT's C2 derives the bundle roster and
+# the forecast; the verdict is computed, never pre-fixed.
+#
+PARSER_DECISIONS_TRANSFERRED=9
+IMPLEMENTATION_ACTS=9
+CORRECTION_ACTS=4
+MEASURED_ACTS_PER_DECISION=1.44
+SELECTION_AND_RECON_ACTS_NOT_ATTRIBUTABLE=18
+BELOW_100_CLAIM_HAS_BUNDLE_BASIS=NO
+BELOW_100_CLAIM_HAS_CRITICAL_PATH=NO
+RED_5_STATUS=REPRODUCED_AS_AN_UNSUBSTANTIATED_CLAIM
+#
+FIVE_RED_REPRODUCTION_STATUS=PASS
