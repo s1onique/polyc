@@ -1,0 +1,57 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-FOUNDATION-IMPLEMENT01
+# ACT_PHASE=C4-CLOSE
+# EVIDENCE_KIND=terminality-plan
+#
+# THIS FILE IS A PLAN, NOT A RECEIPT. No observation below is claimed as
+# performed by the CLOSE commit: a commit cannot measure itself (DOCTRINE 22,
+# F-GIT-IDENTITY). The real receipt is produced AFTER the CLOSE commit, from a
+# read-only shell, and stored OUTSIDE this repository.
+#
+# The CLOSE commit carries: this plan, the HANDOFF, one act-handoff-map.tsv
+# row, one bounded docs/ROADMAP.md section, and the gate-push transcript that
+# was measured at the C3 commit (c4/gate-push.txt).
+#
+# ----------------------------------------------------------------------
+# 1. THE POST-CLOSE COMMANDS (run from OUTSIDE the repo, read-only)
+# ----------------------------------------------------------------------
+#   git -C <repo> rev-parse HEAD                       -> FINAL_HEAD
+#   git -C <repo> rev-parse HEAD^{tree}                -> FINAL_TREE
+#   git -C <repo> branch --show-current                -> main
+#   git -C <repo> status --porcelain                   -> empty
+#   git -C <repo> replace -l | wc -l                   -> 0
+#   git -C <repo> rev-list --count <FINAL_HEAD>..main  -> 0 (no post-CLOSE commits)
+#   git -C <repo> worktree list                        -> no ACT-owned worktree
+#   sh scripts/quality/factory-v2-range-check.sh \
+#        ACT-POLYC-SELFHOST-ABI-FOUNDATION-IMPLEMENT01 <FINAL_HEAD>
+#                                                      -> COMMITS=5 VERDICT=PASS
+#   sh scripts/quality/factory-closure-status-check.sh  -> STATUS=PASS
+#   sh scripts/quality/factory-append-only-test.sh      -> 11/11 PASS
+#   sh scripts/quality/gate-fast.sh                     -> VERDICT=PASS
+#   sh scripts/quality/gate-push.sh <FINAL_HEAD>        -> PASS
+#   git -C <repo> log --format=%B -1                    -> ACT-Verdict: PASS trailer
+#
+# ----------------------------------------------------------------------
+# 2. THE ACT-OWNED WORKTREE REMOVAL (must be done BEFORE the CLOSE commit)
+# ----------------------------------------------------------------------
+#   git worktree remove --force /tmp/abiimpl01/g0
+#   git worktree remove --force /tmp/abiimpl01/g1
+#   git worktree prune
+# The pre-existing worktrees created by EARLIER ACTs (slice08, build-pinned-
+# producer) are NOT this ACT's residue and are recorded unchanged in
+# c0/entry-identity.txt.
+#
+# ----------------------------------------------------------------------
+# 3. EXPECTED OUTCOME
+# ----------------------------------------------------------------------
+#   EXTERNAL_TERMINALITY = PASS  -> AC50 becomes PASS in the external receipt
+#   EXTERNAL_TERMINALITY = FAIL  -> HALT_TERMINALITY is recorded in the
+#                                  external receipt only; NO second CLOSE commit
+#                                  and NO post-CLOSE source change is permitted.
+#
+# ----------------------------------------------------------------------
+# 4. WHAT THIS PLAN DELIBERATELY DOES NOT CONTAIN
+# ----------------------------------------------------------------------
+#   - no SHA of the CLOSE commit;
+#   - no pre-filled PASS for AC50;
+#   - no claim that gate-push was run against the CLOSE tree (it was run at the
+#     C3 commit, which is recorded honestly in c3/mandatory-50-ac-status.tsv).

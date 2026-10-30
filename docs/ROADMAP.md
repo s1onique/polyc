@@ -8295,3 +8295,67 @@ SELFHOST_M2_ACHIEVED = NO
 
 See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-ABI-FOUNDATION-RECON01.md` and
 `evidence/ACT-POLYC-SELFHOST-ABI-FOUNDATION-RECON01/`.
+
+## ABI foundation implementation: one source-representative edge retired in a shadow compiler (ACT-POLYC-SELFHOST-ABI-FOUNDATION-IMPLEMENT01)
+
+The ABI foundation moved from "expressible in a fixture" to "proven on a real
+compiler consumer", without changing a single production byte.
+
+In an isolated, disposable, detached worktree at the entry commit a complete
+shadow compiler was built from a fresh stage0, the nine unmodified parser
+subjects and one new experimental PolyC subject. Inside it, the real consumer
+`src/compile.c` no longer reads `Ast.kind`: the node-visibility decision of the
+`-ast` dump is made by a component compiled from PolyC source
+(`AbiCpaShouldPrintAst`) through one checked opaque handle, and the only
+dereference of the `Ast` object happens in a mechanical C host adapter.
+
+The retired relation is exactly the one the CENSUS01/RECON01 graph recorded:
+
+```text
+EDGE                 E-TYP-0136  SYS-COMPILE_DRIVER -> SYS-AST  TYPE_REPRESENTATION
+GRANULARITY          per translation unit ("src/compile.c requires the Ast layout")
+BEFORE               effective TU: 1 src/ast.h frame, 3 Ast.kind reads,
+                     object encodes the kinds as the immediate mask 0x2401
+AFTER                effective TU: 0 src/ast.h frames, 0 Ast member accesses,
+                     object calls the PolyC decision three times
+OTHER 13 CANDIDATES  each still contains the Ast layout -- no cut is over-claimed
+```
+
+The accounting stays honest and separate:
+
+```text
+PRODUCTION_GRAPH    52 nodes, 135 mandatory edges, PRODUCTION_CUT_COUNT = 0
+SHADOW_GRAPH        134 edges, SHADOW_CUT_PROVEN_BY_EXECUTION = 1 (E-TYP-0136)
+SCC (either graph)  34 SCCs, largest 19 -- unchanged, and none is assumed to shrink
+```
+
+Equivalence is measured, not asserted: G0 and G1 produce identical stdout,
+stderr, exit codes and diagnostic text on nine frozen witnesses (two of them
+malformed sources), and the shadow compiler itself runs the whole parser suite at
+376/376 over 90 files with the historical assertion-sequence MD5. Two causal
+channels were executed and both restorations returned source, object and binary
+digests to byte identity: removing one clause from the PolyC source makes the
+linked compiler emit ~500 previously suppressed nodes per case, and reporting a
+wrong kind from the C accessor (with the PolyC object unchanged) collapses the
+dump to its header line.
+
+ABI v1 is reused unchanged, with a narrow additive v1.1 delta: fail-closed
+generation retirement (no 16-bit wrap, `-17 SLOT_RETIRED`), two new negative
+statuses, measured Apple ARM64 facts, a provably disjoint decision/status split
+and no `setjmp`/`longjmp` surface at all. A measured trap is recorded for future
+consumers: every valid handle is a *negative* `I64`, so a handle must never be
+tested with `< 0`.
+
+```text
+M0_SELFHOST = ACHIEVED (nine PolyC parser decision sites; unchanged)
+M1_SELFHOST = NOT ACHIEVED
+M2_SELFHOST = NOT ACHIEVED
+NEW_PRODUCTION_AUTHORITIES = 0   PRODUCTION_SEMANTIC_DELTA = 0
+NEXT_ACT_CLASS = ABI_FOUNDATION_PRODUCTION_DELEGATE (separate authorization only)
+NEXT_TARGET = NONE
+SLICE10_AUTHORIZED = NO
+SELFHOST_M2_ACHIEVED = NO
+```
+
+See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-ABI-FOUNDATION-IMPLEMENT01.md` and
+`evidence/ACT-POLYC-SELFHOST-ABI-FOUNDATION-IMPLEMENT01/`.
