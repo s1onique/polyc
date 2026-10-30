@@ -1,0 +1,174 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE08
+ACT_PHASE=C0-RED
+EVIDENCE_KIND=red-reproduction
+#
+# THE FIVE INDEPENDENTLY EXECUTED C0 REDs.
+#
+# Each RED is an ACTUAL EXECUTION against a REAL seam, with a REAL
+# rejection output.  None of these is a PLAN.  Each was executed
+# BEFORE any production source was changed.
+#
+# ------------------------------------------------------------------
+# RED-1 -- THE SELECTED POLYC SYMBOL IS ABSENT
+# ------------------------------------------------------------------
+# The new SUB-002 PolyC authority does not exist yet.  Every one of
+# its artifacts is measurably absent.
+#
+COMMAND=ls tools/bootstrap/selfhost-parser-slice08.HC
+   ls: cannot access "tools/bootstrap/selfhost-parser-slice08.HC": No such file or directory
+COMMAND=nm ./hcc | grep -c BootstrapDefaultArmTerminates
+   0
+COMMAND=nm -u build/CMakeFiles/hcc.dir/parser.c.o | grep -c BootstrapDefaultArmTerminates
+   0
+COMMAND=grep -c HCC_USE_SELFHOST_PARSER_DEFAULT_ARM_TERMINATES build/CMakeCache.txt
+   0
+COMMAND=grep -c DEFAULT_ARM_TERMINATES Makefile
+   0
+COMMAND=grep -c "BootstrapDefaultArmTerminates\|parseDefaultArmTerminates" src/parser.c
+   0
+#
+DETECTOR=MISSING_POLYC_SYMBOL
+SUBJECT_SYMBOL=BootstrapDefaultArmTerminates
+SUBJECT_SOURCE=tools/bootstrap/selfhost-parser-slice08.HC
+SUBJECT_FILE_ABSENT=YES
+EXECUTABLE_SYMBOL_ABSENT=YES
+PARSER_OBJECT_IMPORT_ABSENT=YES
+SELECTOR_ABSENT_FROM_CMAKE_CACHE=YES
+SELECTOR_ABSENT_FROM_MAKEFILE=YES
+CALL_SITE_ABSENT=YES
+STATUS=FAIL
+#
+DETECTOR=MISSING_SUBJECT_AUTHORITY
+SELECTOR_ON_TARGET_OBJECT_ABSENT=YES
+SELECTOR_ON_SYMBOL_ABSENT=YES
+SELECTOR_ON_RELOCATION_ABSENT=YES
+SELECTOR_TYPE=UNINITIALIZED (NOT CONSUMED)
+REASON=THE_SELECTOR_IS_INERT_AND_THE_BUILD_DOES_NOT_FAIL_CLOSED
+STATUS=FAIL
+#
+# ------------------------------------------------------------------
+# RED-2 -- PRODUCTION SELECTOR ON CANNOT HAVE A GENUINE RELOCATION
+# ------------------------------------------------------------------
+# The selector is passed to CMake, but no option() declares it, so
+# it lands in the cache as an UNCONSUMED variable and the build
+# silently produces NO SUB-002 authority at all.  This is the
+# fail-closed defect the migration must fix.
+#
+COMMAND=cmake -S ./src -B /tmp/slice08-red2-build -G "Unix Makefiles" \
+           -DCMAKE_C_COMPILER=/usr/bin/cc -DCMAKE_BUILD_TYPE=Release \
+           -DHCC_ENABLE_JIT=off -DHCC_ENABLE_LLVM=OFF \
+           -DHCC_USE_SELFHOST_PARSER_DEFAULT_ARM_TERMINATES=ON
+   CONFIGURE_EXIT=0
+#
+COMMAND=grep DEFAULT_ARM /tmp/slice08-red2-build/CMakeCache.txt
+   HCC_USE_SELFHOST_PARSER_DEFAULT_ARM_TERMINATES:UNINITIALIZED=ON
+#
+The ":UNINITIALIZED" type is CMake own marker for a variable that
+was passed on the command line but NEVER option()d and therefore
+NEVER consumed by any rule.
+#
+# ------------------------------------------------------------------
+# RED-3 -- PRE-C AND POST-POLYC SUBJECTS CANNOT BE SWAPPED
+# ------------------------------------------------------------------
+# The two time-scoped causal controls have DIFFERENT subjects in
+# DIFFERENT languages in DIFFERENT files.  Neither experiment can
+# ever be presented as the other.
+#
+PRE-C subject (the LEGACY C decision):
+COMMAND=awk "NR>=1683 && NR<=1684" src/parser.c | shasum -a 256
+   a9fcb6a752a59a58eaea5bdf449cab39acf7d2d2be9d776f6a13fd968af89199  -
+   (identical to the frozen RECON07 selected-source SHA-256)
+#
+POST-POLYC subject (the compiled PolyC component):
+COMMAND=ls tools/bootstrap/selfhost-parser-slice08.HC
+   ls: cannot access "tools/bootstrap/selfhost-parser-slice08.HC": No such file or directory
+#
+PRE_C_FILE=src/parser.c
+PRE_C_RANGE=1683..1684
+POST_POLYC_FILE=tools/bootstrap/selfhost-parser-slice08.HC
+POST_POLYC_RANGE=1..N (a NEW file)
+#
+A src/parser.c mutation can NEVER change the PolyC subject, and a
+PolyC mutation can NEVER change the C bytes.  The two byte ranges
+are DISJOINT by construction.
+#
+DETECTOR=SUBJECT_SUBSTITUTION_IMPOSSIBLE
+STATUS=FAIL
+#
+# ------------------------------------------------------------------
+# RED-4 -- THE G1/G2/G3 ACTUAL NEW SUBJECT OBJECTS ARE ABSENT
+# ------------------------------------------------------------------
+# No generation object exists, so no four-generation differential
+# can be run and no producer independence can be demonstrated.
+#
+COMMAND=ls build/slice08-gen/g0.o
+   ls: cannot access "build/slice08-gen/g0.o": No such file or directory
+COMMAND=ls build/slice08-gen/g1.o
+   ls: cannot access "build/slice08-gen/g1.o": No such file or directory
+COMMAND=ls build/slice08-gen/g2.o
+   ls: cannot access "build/slice08-gen/g2.o": No such file or directory
+COMMAND=ls build/slice08-gen/g3.o
+   ls: cannot access "build/slice08-gen/g3.o": No such file or directory
+COMMAND=ls -d build/slice08-gen
+   ls: cannot access "build/slice08-gen": No such file or directory
+#
+DETECTOR=MISSING_GENERATION_OBJECTS
+GENERATIONS_BUILT=0/4
+STATUS=FAIL
+#
+COMMAND=grep -c "option(HCC_USE_SELFHOST_PARSER_DEFAULT_ARM_TERMINATES" src/CMakeLists.txt
+   0
+COMMAND=grep -c HCC_USE_SELFHOST_PARSER_DEFAULT_ARM_TERMINATES src/CMakeLists.txt
+   0
+#
+#
+# ------------------------------------------------------------------
+# RED-5 -- THE CURRENT POLYC SOURCE CANNOT SATISFY THE 41-ROW
+#          DIFFERENTIAL
+# ------------------------------------------------------------------
+# This is proven BY EXECUTION, not by assertion.  The only existing
+# PolyC parser authority with a comparable shape is SUB-001
+# (BootstrapSwitchArmTerminates), whose terminating set has SIX
+# kinds INCLUDING AST_DEFAULT=293.  The frozen SUB-002 fixture
+# requires 293 to be a NEGATIVE (row 35, expected 0).
+#
+COMMAND=grep -n "return 1" tools/bootstrap/selfhost-parser-slice06.HC
+   85:  if (ast_kind == 274) return 1;   // AST_COMPOUND_STMT
+   86:  if (ast_kind == 287) return 1;   // AST_CASE
+   87:  if (ast_kind == 293) return 1;   // AST_DEFAULT
+   88:  if (ast_kind == 280) return 1;   // AST_BREAK
+   89:  if (ast_kind == 270) return 1;   // AST_RETURN
+   90:  if (ast_kind == 258) return 1;   // AST_GOTO
+#
+The probe links the REAL compiled SUB-001 PolyC object
+(build/parser-switch-arm-subject.o) and evaluates it over the
+frozen 41-kind domain against the frozen SUB-002 expectations.
+#
+COMMAND=cc -o /tmp/slice08-red5-probe /tmp/slice08-red5-probe.c build/parser-switch-arm-subject.o
+COMMAND=/tmp/slice08-red5-probe
+   ROW_MISMATCH id=35 kind=293 SUB001=1 SUB002_EXPECTED=0
+   SUB001_VS_FROZEN_SUB002_FIXTURE_MISMATCHES=1
+   PROBE_EXIT=1
+#
+DETECTOR=EXACT_ROW_SEMANTIC_MISMATCH
+MISMATCH_ROW_ID=35
+MISMATCH_AST_KIND=293
+MISMATCH_KIND_NAME=AST_DEFAULT
+MISMATCH_COUNT=1
+PROBE_EXIT=1
+STATUS=FAIL
+#
+# ------------------------------------------------------------------
+# THE FIVE REDs, SUMMARISED
+# ------------------------------------------------------------------
+#
+RED-1  MISSING_POLYC_SYMBOL              the authority does not exist
+RED-2  MISSING_SUBJECT_AUTHORITY         the selector is inert
+RED-3  SUBJECT_SUBSTITUTION_IMPOSSIBLE   the two causal subjects are disjoint
+RED-4  MISSING_GENERATION_OBJECTS        no generation object exists
+RED-5  EXACT_ROW_SEMANTIC_MISMATCH       the existing PolyC source is wrong at row 35
+#
+REDS_EXECUTED=5
+REDS_FAILED_AS_EXPECTED=5
+REDS_PLANNED_ONLY=0
+RED_STATUS=FAIL

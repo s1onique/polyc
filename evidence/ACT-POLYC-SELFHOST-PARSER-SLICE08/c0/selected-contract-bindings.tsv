@@ -1,0 +1,64 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE08
+ACT_PHASE=C0-RED
+EVIDENCE_KIND=selected-contract-bindings
+#
+# THE SOURCE-BOUND NAMING MAP.  Every name in this table is read
+# from the ACTUAL committed RECON07 c2/selected-* bytes or from the
+# LIVE source at the entry commit.  Nothing is invented.
+#
+# Schema: key <TAB> value <TAB> provenance
+#
+selected_candidate_id	SUB-002	c2/selected-source-and-identity.md:4
+selected_class	STRUCTURAL	c2/selected-source-and-identity.md:5
+selected_decision	DEFAULT_ARM_TERMINATION	c2/selected-source-and-identity.md:6
+selected_source_file	src/parser.c	c2/selected-source-and-identity.md:7
+selected_source_range	1683..1684	c2/selected-source-and-identity.md:8
+selected_source_sha256	a9fcb6a752a59a58eaea5bdf449cab39acf7d2d2be9d776f6a13fd968af89199	c2/selected-source-and-identity.md:9
+selected_enclosing_function	parseDefaultStatement	c2/selected-source-and-identity.md:10
+selected_enclosing_function_range	1667..1690	c2/selected-source-and-identity.md:11
+selected_caller	parseSwitchStatement	c2/selected-source-and-identity.md:12
+selected_caller_line	1692	c2/selected-source-and-identity.md:14
+selected_call_path	parseCompoundStatementInternal -> parseStatement -> (KW_DEFAULT arm) -> parseDefaultStatement	c2/selected-source-and-identity.md:15
+selected_rank	1	c2/selected-source-and-identity.md:16
+frozen_abi	I64 ast_kind -> I64 terminate	c2/selected-abi.md:8
+polyc_component	long long BootstrapDefaultArmTerminates(long long ast_kind)	c2/selected-abi.md:6
+legacy_c_wrapper	static int parseDefaultArmTerminates(int kind)	c2/selected-abi.md:7
+polyc_exported_symbol_c	BootstrapDefaultArmTerminates	c2/selected-abi.md:6
+polyc_exported_symbol_macho	_BootstrapDefaultArmTerminates	c2/selected-generation-and-provenance.md:65
+selected_selector	HCC_USE_SELFHOST_PARSER_DEFAULT_ARM_TERMINATES	c2/selected-production-seam.md:76
+object_variable	DEFAULT_ARM_TERMINATES_OBJECT	c2/selected-generation-and-provenance.md:49
+producer_variable	DEFAULT_ARM_TERMINATES_PRODUCER	c2/selected-generation-and-provenance.md:50
+source_variable	DEFAULT_ARM_TERMINATES_SOURCE	c2/selected-generation-and-provenance.md:51
+prefix_variable	DEFAULT_ARM_TERMINATES_PREFIX	c2/selected-generation-and-provenance.md:52
+cmake_target	hcc	c2/selected-generation-and-provenance.md:53
+g0_oracle_symbol_c	ParserLegacyDefaultArmTerminatesOracle	c2/selected-real-c-oracle.md:10
+g0_oracle_symbol_macho	_ParserLegacyDefaultArmTerminatesOracle	c2/selected-real-c-oracle.md:10
+g0_producer	cc -std=c99 -O2 -Isrc -c -o <obj> src/parser.c	c2/selected-real-c-oracle.md:8
+g0_polync_references_required	0	c2/selected-real-c-oracle.md:11
+g0_defines_main_required	0	c2/selected-real-c-oracle.md:12
+g0_required_production_symbols	_parseDefaultStatement _parseStatement _parseSwitchStatement _parseCompoundStatementInternal _parseDeclOrStatement	c2/selected-real-c-oracle.md:27-36
+witness_channel	COMPILED_PROGRAM_SEMANTIC_OUTPUT_CHANGED	c2/selected-causal-contract.md:148
+witness_expected_pristine	WITNESS_OUTPUT=110 155	c2/selected-causal-contract.md:157
+witness_expected_mutant	WITNESS_OUTPUT=110 177	c2/selected-causal-contract.md:158
+pre_c_mutant_execution_id	RECON07-SUB-002-PRE-C-MUTANT	c2/selected-causal-contract.md:46
+post_polyc_mutant_execution_id	RECON07-SUB-002-POST-POLYC-MUTANT	c2/selected-causal-contract.md:80
+c_off_c_mutant_execution_id	RECON07-SUB-002-SLICE08-C-OFF-C-MUTANT	c2/selected-causal-contract.md:103
+pre_c_mutant_state	ALREADY_EXECUTED_BY_RECON07_CITE_ONLY	c2/selected-causal-contract.md:41
+post_polyc_mutant_state	NOT_YET_EXECUTED_MUST_BE_EXECUTED_BY_SUCCESSOR	c2/selected-causal-contract.md:94
+c_off_c_mutant_state	REQUIRED_ONLY_IF_SUCCESSOR_FROZEN_CONTRACT_DEMANDS_A_C_MUTANT	c2/selected-causal-contract.md:121
+bounded_mutation_set	m-compound row16 274 m-case row29 287 m-break row22 280 m-return row13 270 m-goto row2 258	c2/selected-negative-controls.md:72-76
+production_semantic_delta_target	1	c2/selected-conservation-contract.md:60
+subject_source_path_new	tools/bootstrap/selfhost-parser-slice08.HC	this ACT; RECON07 names it tools/bootstrap/<the successor SUB-002 component>.HC and the repository convention is selfhost-parser-sliceNN.HC
+subject_object_path_new	build/parser-default-arm-subject.o	this ACT; repository convention build/parser-<decision>-subject.o
+quality_tool_prefix_new	tools/quality/parser-slice08-*	ACT section 1.4
+g0_gen_dir_new	build/slice08-gen	this ACT; repository convention build/sliceNN-gen
+c_only_fallback	the #else arm of parseDefaultArmTerminates is the byte-identical legacy C condition; reachable ONLY with the selector OFF	c2/selected-production-seam.md:36-40
+allowed_target_paths	src/parser.c src/CMakeLists.txt Makefile tools/bootstrap/selfhost-parser-slice08.HC tools/quality/parser-slice08-*.HC docs/acts/ACT-POLYC-SELFHOST-PARSER-SLICE08.md docs/factory/HANDOFF-ACT-POLYC-SELFHOST-PARSER-SLICE08.md docs/factory/act-handoff-map.tsv docs/ROADMAP.md evidence/ACT-POLYC-SELFHOST-PARSER-SLICE08/**	c2/selected-scope-and-ownership.md:5-14
+forbidden_paths	src/ast.c src/prslib.c src/prsutil.c src/cctrl.c src/lexer.c src/transpiler.c src/ir.c src/x86.c any other tools/quality/** any other tools/bootstrap/** any historical evidence/ any closed ACT or HANDOFF .githooks/**	c2/selected-scope-and-ownership.md:19-33
+#
+# THE MEASURED LIVE BINDING AT THE ENTRY COMMITT
+#
+live_range_sha256	a9fcb6a752a59a58eaea5bdf449cab39acf7d2d2be9d776f6a13fd968af89199	awk NR>=1683 && NR<=1684 src/parser.c | shasum -a 256
+live_range_sha256_matches_frozen	YES	compared with c2/selected-source-and-identity.md:9
+#
+BINDINGS_COUNT=40

@@ -1,0 +1,80 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE08
+ACT_PHASE=C0-RED
+EVIDENCE_KIND=inherited-controls-contract
+#
+# THE INHERITED NEGATIVE CONTROLS.  These are the controls the
+# RECON07 predecessor froze FOR THE SUCCESSOR, in the committed
+# file c2/selected-negative-controls.md, PLUS the three
+# time-scoped causal controls in c2/selected-causal-contract.md.
+#
+# Their IDs and their SEMANTICS are COPIED VERBATIM from those
+# committed bytes.  None is improvised, renumbered or omitted.
+#
+# Schema: control_id <TAB> class <TAB> phase <TAB> subject
+#         <TAB> adverse_action <TAB> required_detector <TAB> provenance
+#
+SL-IC-01	INVENTORY	SLICE08	the successor census	Delete one live function from the census	Missing exact source/function ID	c2/selected-negative-controls.md:19
+SL-IC-02	INVENTORY	SLICE08	the successor census	Duplicate one function/candidate ID	Duplicate exact ID	c2/selected-negative-controls.md:20
+SL-IC-03	INVENTORY	SLICE08	the successor identity table	Alter one source-range SHA-256	Exact source hash mismatch	c2/selected-negative-controls.md:21
+SL-IC-04	INVENTORY	SLICE08	the successor identity table	Invalid, out-of-file or overlapping identity range	Invalid range/overlap, not a generic parse failure	c2/selected-negative-controls.md:22
+SL-EC-01	ELIGIBILITY	SLICE08	the SUB-002 eligibility facts	Mark the newly migrated SUB-002 authority as still eligible C	Already-self-hosted exclusion	c2/selected-negative-controls.md:28
+SL-EC-02	ELIGIBILITY	SLICE08	the SUB-002 dependency facts	Suppress a transitive mutable-host-state dependence	Source/call-graph dependency detector	c2/selected-negative-controls.md:29
+SL-EC-03	ELIGIBILITY	SLICE08	the SUB-002 dependency facts	Insert a nonzero host AST graph write in the candidate facts	Host-graph-write clause	c2/selected-negative-controls.md:30
+SL-EC-04	ELIGIBILITY	SLICE08	the SUB-002 dependency facts	Inject callback or recovery ownership	The correct separate eligibility clause	c2/selected-negative-controls.md:31
+SL-EC-05	ELIGIBILITY	SLICE08	the SUB-002 reachability facts	Add an unreachable candidate with an excellent rank	Actual reachability exclusion	c2/selected-negative-controls.md:32
+SL-RC-01	RANKING	SLICE08	the SUB-002 ranking	Shuffle genuine facts, then submit a forged order-dependent ranking	Genuine ranker invariant AND independent full-order comparator rejects the forged order.  BOTH halves are required.	c2/selected-negative-controls.md:39
+SL-RC-02	RANKING	SLICE08	the SUB-002 ranking	Give an excluded candidate the lowest numeric rank	Remains excluded, not promoted	c2/selected-negative-controls.md:40
+SL-RC-03	RANKING	SLICE08	the SUB-002 ranking	Remove the provisional feasible leader	Deterministic next selection or explicit NONE, not a stale leader	c2/selected-negative-controls.md:41
+SL-RC-04	RANKING	SLICE08	the SUB-002 ranking	Perturb one controlled R0..R6 dimension	Predicted complete-order change checked	c2/selected-negative-controls.md:42
+SL-RC-05	RANKING	SLICE08	the SUB-002 ranking	Preserve an ID but substitute a stale source range/call site	Source identity/reachability rejection	c2/selected-negative-controls.md:43
+SL-CC-01	CAUSALITY	PRE-MIGRATION (C)	the LEGACY C decision in src/parser.c	Mutate the selected C decision and rebuild the real compiler	Successful mutant build + the changed witness channel. The compiler build exit, the witness compile exit and the witness run exit MUST be recorded separately.	c2/selected-negative-controls.md:49
+SL-CC-02	CAUSALITY	SLICE08	the G0 oracle object	Substitute a handwritten/PolyC-dependent G0 oracle	Production-object provenance rejection	c2/selected-negative-controls.md:50
+SL-CC-03	CAUSALITY	SLICE08	the 41-row fixture	Corrupt one fixture expected output	Exact semantic row ID mismatch	c2/selected-negative-controls.md:51
+SL-CC-04	CAUSALITY	SLICE08	the compiled decision attribution	Put the comparison instructions in an unrelated function/object	Function-scoped authority detector rejects	c2/selected-negative-controls.md:52
+SL-CC-05	CAUSALITY	POST-MIGRATION (POLYC)	the ACTUAL COMPILED POLYC COMPONENT tools/bootstrap/selfhost-parser-slice08.HC	Mutate the compiled POLYC component (the POST-POLYC-MUTANT control)	Successful mutant build + the changed witness channel on the POST-MIGRATION subject	c2/selected-negative-controls.md:53
+SL-PV-01	PROVENANCE	SLICE08	the generation producer binaries	Relabel one producer compiler as another bootstrap binary	Actual binary identity/provenance rejection	c2/selected-negative-controls.md:63
+RECON07-SUB-002-PRE-C-MUTANT	CAUSALITY	PRE-MIGRATION (C)	the LEGACY C decision in src/parser.c, selector OFF	The RECON07 pre-migration C mutation (already executed by RECON07)	COMPILED_PROGRAM_SEMANTIC_OUTPUT_CHANGED	c2/selected-causal-contract.md:15-56
+RECON07-SUB-002-POST-POLYC-MUTANT	CAUSALITY	POST-MIGRATION (POLYC)	the ACTUAL COMPILED POLYC COMPONENT tools/bootstrap/selfhost-parser-slice08.HC, selector ON	The NEW post-migration PolyC mutation (MUST be executed by SLICE08)	COMPILED_PROGRAM_SEMANTIC_OUTPUT_CHANGED	c2/selected-causal-contract.md:64-94
+RECON07-SUB-002-SLICE08-C-OFF-C-MUTANT	CAUSALITY	POST-MIGRATION (C-OFF)	the LEGACY C decision in src/parser.c, selector OFF, on the MIGRATED tree	A fresh C mutation in the migrated tree	COMPILED_PROGRAM_SEMANTIC_OUTPUT_CHANGED	c2/selected-causal-contract.md:98-125
+#
+# THE SL-CC-01 AND SL-CC-05 SEPARATION, FROZEN BY RECON07
+#
+#   SL-CC-01 subject = the C decision               phase = PRE-MIGRATION
+#   SL-CC-05 subject = the compiled PolyC component  phase = POST-MIGRATION
+#
+#   They MUST NOT BE THE SAME EXPERIMENT.  See
+#   c2/selected-negative-controls.md:55-57.
+#
+# THE SL-CC-05 / POST-POLYC-MUTANT IDENTITY
+#
+#   RECON07 froze the POST-POLYC-MUTANT obligation under the control
+#   ID RECON07-SUB-002-POST-POLYC-MUTANT (c2/selected-causal-contract.md:67)
+#   AND expressed the same subject under the inventory ID SL-CC-05
+#   (c2/selected-negative-controls.md:53).  These are TWO VIEWS OF
+#   ONE OBLIGATION, NOT TWO INDEPENDENT EXPERIMENTS: the frozen
+#   contract says the POST-POLYC-MUTANT "MUST NOT be satisfied by the
+#   PRE-C-MUTANT experiment, by the G0 legacy oracle, or by any
+#   inference from them" (c2/selected-causal-contract.md:85-89).
+#   SLICE08 therefore executes ONE physical post-migration PolyC
+#   mutation experiment and reports it under BOTH IDs with an
+#   EXPLICIT shared-execution statement naming the single
+#   execution ID.  This is the sharing arrangement that
+#   c2/selected-causal-contract.md:127-141 REQUIRES to be stated
+#   explicitly.  It is NOT counted as two independent experiments.
+#
+# THE C-OFF C-MUTANT CONDITIONALITY
+#
+#   c2/selected-causal-contract.md:121-125: "This control is REQUIRED
+#   ONLY IF the successor own frozen contract demands a C mutant
+#   during SLICE08."  Whether it is MANDATED is decided at C3 by
+#   binding the clause; the conclusion is recorded in
+#   c3/conditional-c-off-mutation.txt.
+#
+INHERITED_CONTROLS_TOTAL=23
+INHERITED_CONTROLS_INVENTORY=4
+INHERITED_CONTROLS_ELIGIBILITY=6
+INHERITED_CONTROLS_RANKING=5
+INHERITED_CONTROLS_CAUSALITY=6
+INHERITED_CONTROLS_PROVENANCE=1
+INHERITED_CONTROLS_CAUSAL_CONTRACT=3
+INHERITED_CONTROLS_STATUS=FROZEN

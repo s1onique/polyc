@@ -1,0 +1,67 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE08
+ACT_PHASE=C0-RED
+EVIDENCE_KIND=new-controls-contract
+#
+# THE EIGHTEEN NEW SLICE08-SPECIFIC NEGATIVE CONTROLS.
+#
+# These are ADDITIONAL to the 23 inherited ones, in a DISJOINT S8-*
+# namespace.  They are FROZEN HERE, BEFORE any adverse observation,
+# so they cannot be invented after a favourable outcome.
+#
+# They are NOT asserted as already executed.  Each one requires:
+#   control_id, frozen subject and phase, positive baseline, exact
+#   adverse edit/input, command/exit, target compiler/object hashes,
+#   expected detector, observed failure reason, actual
+#   observable/row IDs, cleanup/restoration and independent re-check.
+#
+# Schema: control_id <TAB> class <TAB> subject <TAB> phase
+#         <TAB> adverse_experiment <TAB> exact_detector_obligation
+#
+S8-FC-01	FIXTURE	the frozen 41-row fixture	SLICE08	Delete one of the frozen 41 fixture IDs	Missing exact row ID, not generic count
+S8-FC-02	FIXTURE	the frozen 41-row fixture	SLICE08	Duplicate a fixture row ID	Duplicate exact ID
+S8-FC-03	FIXTURE	the frozen 41-row fixture	SLICE08	Inject unknown fixture ID	Unknown ID with no false missing/duplicate attribution
+S8-FC-04	FIXTURE	the frozen 41-row fixture	SLICE08	Flip expected result on one five-kind positive row	G0/PolyC exact-row mismatch
+S8-FC-05	FIXTURE	the live source/enum provenance	SLICE08	Change source-bound enum value/source digest	Source/enum provenance mismatch
+S8-SA-01	SUBJECT_AUTHORITY	the active default-arm termination decision	SLICE08	Selector ON but legacy C predicate still drives termination	Function-scoped duplicate-C-authority rejection
+S8-SA-02	SUBJECT_AUTHORITY	the SUB-002 caller in src/parser.c	SLICE08	PolyC symbol linked but unused by SUB-002 caller	Real call/relocation/load-bearing check rejects
+S8-SA-03	SUBJECT_AUTHORITY	the G0 oracle object	SLICE08	Selector OFF but new PolyC subject still used as G0	C-only G0 provenance rejection
+S8-SA-04	SUBJECT_AUTHORITY	the SUB-002 authority identity	SLICE08	Reuse SUB-001 subject as if separately proven SUB-002	Distinct source/caller/mutation identity rejection
+S8-SA-05	SUBJECT_AUTHORITY	the SUB-002 PolyC function	SLICE08	Flip one frozen five-kind outcome in the SUB-002 PolyC function	Semantic row and real compiler witness change on intended channel
+S8-PV-01	PROVENANCE	the G1 producer binary	SLICE08	Relabel G1 binary/object as G2	Actual compiler SHA/provenance mismatch
+S8-PV-02	PROVENANCE	the G2 and G3 producer binaries	SLICE08	Relabel G2 as G3 or reuse one binary	Distinct producer identity check fails
+S8-PV-03	PROVENANCE	the production link graph	SLICE08	Link wrong symbol or omit provider subject	Real production build/link fails closed
+S8-PV-04	PROVENANCE	the function-scoped attribution	SLICE08	Insert unrelated cmp/tst outside selected function	Function-scoped evidence rejects decoy
+S8-PV-05	PROVENANCE	the generation fixture join	SLICE08	Alter one stage fixture result or delete generation ID	Exact row/generation join mismatch
+S8-CC-01	CAUSALITY	the SUB-002 PolyC predicate in the actual production	SLICE08	Mutate only PolyC predicate in actual production	Successful mutant compiler build plus correct causal observation
+S8-CC-02	CAUSALITY	the post-migration PolyC mutant execution identity	SLICE08	Attempt to credit RECON07 C mutant as new S8 PolyC mutant	Subject/time/execution-ID join rejection
+S8-CC-03	CAUSALITY	the post-migration PolyC mutant restoration	SLICE08	Fail to restore one PolyC source byte or leave mutant object linked	Source/object/witness restoration rejection
+#
+# ------------------------------------------------------------------
+# THE SHARED-EXECUTION RULES, DECLARED IN ADVANCE
+# ------------------------------------------------------------------
+#
+# S8-SA-05 and S8-CC-01 BOTH act on the SUB-002 PolyC predicate and
+# MAY therefore reference the SAME physical mutant.  If they do,
+# BOTH rows MUST state that they SHARE that experiment, name the
+# shared execution ID, and MUST NOT claim experiment independence.
+# This is the arrangement c2/selected-causal-contract.md:127-141
+# requires to be stated explicitly.  The number of INDEPENDENT
+# experiments is counted separately from the number of control IDs.
+#
+# S8-CC-02 is the NEGATIVE of that arrangement: it verifies that the
+# RECON07 pre-migration C mutant is NOT credited as the S8
+# post-migration PolyC mutant.
+#
+# S8-CC-03 is the RESTORATION half of the mutant experiment: it is
+# verified against the SAME experiment as S8-CC-01, and says so.
+#
+# ------------------------------------------------------------------
+# THE COUNT
+# ------------------------------------------------------------------
+#
+NEW_S8_CONTROLS_TOTAL=18
+NEW_S8_CONTROLS_FIXTURE=5
+NEW_S8_CONTROLS_SUBJECT_AUTHORITY=5
+NEW_S8_CONTROLS_PROVENANCE=5
+NEW_S8_CONTROLS_CAUSALITY=3
+NEW_S8_CONTROLS_STATUS=FROZEN
