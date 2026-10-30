@@ -1,0 +1,70 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE08-EVIDENCE-CORRECTION01
+ACT_PHASE=C2-IMPL
+EVIDENCE_KIND=supplemental-vs-frozen-disposition
+#
+# THE SEPARATION OF THE SUPPLEMENTAL EXPERIMENT FROM THE
+# FROZEN CONTROL OBLIGATION.
+#
+# A supplemental experiment is NOT a frozen obligation, and a
+# frozen obligation is NOT discharged by a supplemental row.
+# This file records which is which, for every inherited ID.
+#
+## --- THE TWO NAMESPACES ---
+#
+NAMESPACE=HISTORICAL_ORIGINAL
+  the 24 RECON07 frozen obligations and the historical SLICE08
+  C3 join, exactly as SLICE08 closed them
+  the SLICE08 C3 join contains 24 rows
+  the SLICE08 C0 contract contains 23 rows
+  the 24 frozen obligations and the 24 join rows are the SAME set
+  the SLICE08 C3 summary claims 23
+  the SLICE08 C3 summary claims EXTRA=0
+  the measured row-set extra against the C0 contract is 1 (SL-EC-06)
+#
+NAMESPACE=CORRECTION_SUPPLEMENTAL
+  the correction-owned dispositions in
+  c2/correction-owned-control-ledger.tsv
+  2 NEW physical experiments (E8-EC06-A, E8-EC06-B)
+  10 correction-owned negative controls (E8-NC-01..10)
+  the two namespaces are NEVER merged and NEVER summed
+#
+## --- THE ONE ID THAT MOVED BETWEEN THEM ---
+#
+ID=SL-EC-06
+IN_FROZEN_NAMESPACE=YES (RECON07 froze it at selected-negative-controls.md:33)
+IN_THE_SLICE08_C0_CONTRACT=NO
+IN_THE_SLICE08_C3_JOIN=YES
+IN_THE_SUPPLEMENTAL_NAMESPACE=NO
+WHY=it is NOT supplemental: it was frozen by RECON07 before
+WHY_2=SLICE08 began, and the SLICE08 C0 contract copied the
+WHY_3=RECON07 frozen set verbatim.  Its ABSENCE from the C0
+WHY_4=contract is an OMISSION in the copy, not a new control.
+DISPOSITION=the obligation is carried forward and discharged by
+DISPOSITION_2=TWO NEW CORRECTION-OWNED EXPERIMENTS, reported under
+DISPOSITION_3=their own execution IDs, and NEVER backdated.
+#
+## --- THE ONE THAT REALLY IS SUPPLEMENTAL ---
+#
+# Nothing in the SLICE08 C3 inherited join is supplemental: every
+# one of its 24 IDs is a RECON07 frozen obligation.  The
+# supplementary material in SLICE08 is the SEPARATE S8-* control
+# set (18 controls in a disjoint namespace), which this
+# correction does not reclassify.
+SLICE08_S8_CONTROL_COUNT=18
+S8_NAMESPACE_IS_DISJOINT_FROM_THE_FROZEN_IDS=YES
+S8_CONTROLS_RECLASSIFIED_BY_THIS_CORRECTION=NO
+#
+## --- THE COUNTING RULE ---
+#
+# The historical join reported 23 joined and 0 extra.  The
+# corrected accounting, recomputed from the rows, is:
+#
+FROZEN_OBLIGATIONS=24
+JOINED_BY_ID=24
+MISSING=0
+EXTRA_AGAINST_THE_C0_CONTRACT=1 (SL-EC-06, a C0 omission)
+EXTRA_AGAINST_THE_FROZEN_SET=0
+DUPLICATES=0
+HISTORICAL_EXTRA_CLAIM=FALSE (as a row-set measurement against the C0 contract)
+SUPPLEMENTAL_NAMESPACE_MERGED_WITH_FROZEN=NEVER
+SUPPLEMENTAL_VS_FROZEN_DISPOSITION_STATUS=PASS

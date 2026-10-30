@@ -1,0 +1,66 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE08-EVIDENCE-CORRECTION01
+ACT_PHASE=C2-IMPL
+EVIDENCE_KIND=auditor-source-build-selftest
+#
+# THE INDEPENDENT POLYC PROOF AUDITOR: ITS SOURCE, ITS BUILD
+# AND ITS SELF-TEST.
+#
+# F-POLYC-TOOLS: the auditor is a PolyC implementation.  There is
+# no shell glue in it.
+#
+## --- THE SOURCE ---
+#
+SOURCE_PATH=tools/quality/parser-slice08-evidence-correction01-verify.HC
+SOURCE_LINES=2069
+SOURCE_SHA256=7b283bd20fee03d060b8d8db50547cc55f171a480e8ccf461decc0960966f79b
+#
+The auditor derives every decisive fact BY PARSING the bytes of
+# the committed artifacts.  There is NO hardcoded expected control-ID
+# list and NO hardcoded expected summary value anywhere in it.
+# The control identifiers it names (E8-NC-01..10) are the frozen
+# CONTRACT identifiers, not a transcription of the historical rows.
+#
+## --- THE BUILD ---
+#
+COMMAND=make build/parser-slice08-evidence-correction01-verify
+   BUILD_EXIT=0
+   ./hcc --install-dir=$(TEST_PREFIX) -c tools/quality/parser-slice08-evidence-correction01-verify.HC -o build/parser-slice08-evidence-correction01-verify.o
+   cc build/parser-slice08-evidence-correction01-verify.o -L$(TEST_PREFIX)/lib -ltos -o build/parser-slice08-evidence-correction01-verify
+#
+AUDITOR_BINARY_SHA256=fdd99a967ecd3d99a1eefca0b96fddb29fe6aaea0198c7e68c92b8696c414055
+DIGEST_TOOL_SHA256=1f4c09976f0746e7e920a875f8300b156cc9a78fd28a065ae32b24c57963d6d5
+#
+# The auditor computes file digests by invoking the REPOSITORY
+# OWN PolyC SHA-256 tool (build/lexer07-sha256) through the
+# process-spawn surface, so it does not carry a second digest
+# implementation and does not share one with the artifacts it judges.
+#
+## --- THE SELF-TEST ---
+#
+COMMAND=./build/parser-slice08-evidence-correction01-verify SELFTEST
+   SELFTEST_PASS=37
+   SELFTEST_FAIL=0
+   SELFTEST_STATUS=PASS
+   STATUS=PASS
+   SELFTEST_EXIT=0
+#
+# The self-test vectors are hand-computed known answers: the
+# string helpers, the field and line splitters, the summary-line
+# classifier, the ID set, the TSV parser (including its rejection of
+# a malformed row), the markdown-table parser, the control-id
+# assignment parser, the KEY=VALUE lookup, and the digest against
+# the FIPS 180-4 "abc" and empty-string vectors.
+#
+## --- THE SIX MODES ---
+#
+MODE=FREEZE      re-verify the correction predecessor freeze manifest
+MODE=JOIN        re-derive the three-way control-ID reconciliation
+MODE=PROVENANCE  check the C1 source-range equality assertion
+MODE=NEGATIVE    run the ten correction-owned negative controls
+MODE=VERIFY      the combined verification
+MODE=SELFTEST    the known-answer vectors
+#
+AUDITOR_MODES=6
+AUDITOR_IS_SUBSTANTIVE=YES
+AUDITOR_IS_SOURCE_DERIVED=YES
+AUDITOR_SELFTEST_STATUS=PASS

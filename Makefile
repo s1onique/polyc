@@ -7307,3 +7307,30 @@ parser-slice05-generation-pairs: $(SLICE05_OBS_DIR)/g0-hcc.bin $(SLICE05_OBS_DIR
 	 done; done
 	@echo "  THE FROZEN OBSERVATION OUTPUT (every generation):"; \
 	 cat $(SLICE05_OBS_DIR)/semantic-g0.txt | sed 's/^/    /'
+
+# ACT-POLYC-SELFHOST-PARSER-SLICE08-EVIDENCE-CORRECTION01 C2 IMPL: the
+# independent PolyC correction proof auditor.  Same build shape as the
+# SLICE07 correction auditor: compiled with -c and linked against the
+# runtime prefix, because a direct ./hcc ... -o <exe> link does not
+# make Main the process entry point (the C runtime already defines
+# main).
+E8C01_VERIFY_SRC  = tools/quality/parser-slice08-evidence-correction01-verify.HC
+E8C01_VERIFY_OBJ  = build/parser-slice08-evidence-correction01-verify.o
+E8C01_VERIFY_EXE  = build/parser-slice08-evidence-correction01-verify
+
+build/parser-slice08-evidence-correction01-verify.o: $(E8C01_VERIFY_SRC) ./hcc | test-prefix-install
+	./hcc --install-dir=$(TEST_PREFIX) -c $(E8C01_VERIFY_SRC) -o $@
+
+build/parser-slice08-evidence-correction01-verify: $(E8C01_VERIFY_OBJ) build/lexer07-sha256
+	cc $(E8C01_VERIFY_OBJ) -L$(TEST_PREFIX)/lib -ltos -o $@
+	@if [ ! -x $@ ]; then \
+		echo "parser-slice08-evidence-correction01-verify: link failed" >&2; \
+		exit 1; \
+	fi
+
+parser-slice08-evidence-correction01-verify-selftest: build/parser-slice08-evidence-correction01-verify
+	./build/parser-slice08-evidence-correction01-verify SELFTEST
+
+parser-slice08-evidence-correction01-verify-join: build/parser-slice08-evidence-correction01-verify
+	./build/parser-slice08-evidence-correction01-verify JOIN \
+		evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON07 \

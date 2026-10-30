@@ -1,0 +1,120 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE08-EVIDENCE-CORRECTION01
+ACT_PHASE=C2-IMPL
+EVIDENCE_KIND=executed-adverse-witnesses
+#
+# THE NEW, CORRECTION-OWNED ADVERSE EXECUTIONS.
+#
+# These are NEW experiments performed by THIS ACT.  They are
+# NOT backdated to SLICE08 C0 or C3.  The historical SLICE08
+# evidence never executed them.
+#
+# Every input is a DISPOSABLE COPY under /tmp/e8c01-ec06.  The
+# committed RECON07 artifacts are never written to.
+#
+## --- THE CANONICAL TOOLS, UNMODIFIED ---
+#
+TOOL=build/parser-slice-recon03-eligibility (the canonical 13-clause checker)
+  source   tools/quality/parser-slice-recon03-eligibility.HC
+  sha256   2df5554a6f6a553a06a038abfd957a5c012aea017d2eb980f967892c194946e9
+  exe      build/parser-slice-recon03-eligibility
+  sha256   7653f74409f5128fae58620c46d664269fdab15b15178f5c42b4f8dea3712eaa
+  FROZEN_DIGEST_MATCH=YES (both are the digests the RECON07 contract asserts)
+TOOL=build/parser-surface-recon07-recompute (the independent recomputer)
+  source   tools/quality/parser-surface-recon07-recompute.HC
+  sha256   dbab8f6c96930e61058a46ac2d48916f6eccc96cf8b73957c3836ba88beed119
+  exe      build/parser-surface-recon07-recompute
+  sha256   77e56eb86eefbf554708c40d0f693382e5129fa2b6be44284dad44583f8c3e65
+  FROZEN_DIGEST_MATCH=YES (both are the digests the RECON07 contract asserts)
+#
+## --- THE FROZEN SL-EC-06 OBLIGATION ---
+#
+#   subject   = the SUB-002 eligibility facts
+#   adverse   = Unknown ID or missing required eligibility fact
+#   detector  = Unknown-ID or missing-fact-specific detector
+#
+source: evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON07/c2/selected-negative-controls.md:33
+sha256: b610dcc87abc554b82457d19bca2f7809e93755168eacd3a531534f8d66ae62a
+#
+## --- THE TWO ADVERSE EXECUTIONS ---
+#
+# The frozen obligation has TWO halves, and each half needs its
+# own detector.  Neither half was executed by SLICE08.
+#
+# ------------------------------------------------------------------
+# EXECUTION E8-EC06-A -- THE UNKNOWN-ID HALF
+# ------------------------------------------------------------------
+#
+SUBJECT=the SUB-002 eligibility facts and their ranking dimensions
+EXECUTION_ID=E8-EC06-A
+DETECTOR=UNKNOWN_ID (the recomputer roster lookup)
+DETECTOR_SOURCE=tools/quality/parser-surface-recon07-recompute.HC, the row lookup that counts a row whose ID is not in the roster as malformed
+ADVERSE_EDIT=inject one ranking row whose candidate_id is not in the roster
+INJECTED_ID=E8-EC06-UNKNOWN-ID
+INJECTED_ROW=E8-EC06-UNKNOWN-ID<TAB>0<TAB>1<TAB>1<TAB>2<TAB>1<TAB>1<TAB>src/parser.c:1683<TAB>YES<TAB>injected unknown candidate id
+COMMAND=./build/parser-surface-recon07-recompute <pristine-facts> /tmp/e8c01-ec06/rank-unknown-id.tsv
+PRISTINE_MALFORMED=0
+PRISTINE_STATUS=PASS
+PRISTINE_EXIT=0
+ADVERSE_MALFORMED=1
+ADVERSE_STATUS=FAIL
+ADVERSE_EXIT=1
+POSITIVE_BASELINE_PRESENT=YES
+DETECTOR_FIRED=YES (MALFORMED=1 against the pristine MALFORMED=0)
+DETECTOR_IS_SPECIFIC=YES (the only change is the injected unknown ID)
+RESTORATION_BYTE_IDENTICAL=YES (the committed ranking input is never written to)
+SUBJECT_RESTORED=YES
+E8_EC06_A_STATUS=PASS
+#
+# ------------------------------------------------------------------
+# EXECUTION E8-EC06-B -- THE MISSING-FACT HALF
+# ------------------------------------------------------------------
+#
+SUBJECT=the SUB-002 eligibility facts
+EXECUTION_ID=E8-EC06-B
+DETECTOR=MISSING_REQUIRED_FACT (the checker row parser)
+DETECTOR_SOURCE=tools/quality/parser-slice-recon03-eligibility.HC, the field-count check that counts a row with too few fields as malformed
+ADVERSE_EDIT=drop the semantic_authority fact from the SUB-002 eligibility row, so the row carries one field too few
+MUTATED_ROW=SUB-002<TAB>parseDefaultStatement<TAB>src/parser.c<TAB>1683<TAB>1684<TAB>AST_PROJECTION_PRIMITIVE<TAB>NO<TAB>0<TAB>NO<TAB>NO<TAB>NO<TAB>0<TAB>0<TAB>0<TAB>0<TAB>YES<TAB>YES<TAB>YES<TAB>-
+COMMAND=./build/parser-slice-recon03-eligibility /tmp/e8c01-ec06/missing-fact.tsv
+PRISTINE_MALFORMED=0
+PRISTINE_STATUS=PASS
+PRISTINE_EXIT=0
+ADVERSE_MALFORMED=1
+ADVERSE_STATUS=FAIL
+ADVERSE_EXIT=1
+POSITIVE_BASELINE_PRESENT=YES
+DETECTOR_FIRED=YES (MALFORMED=1 against the pristine MALFORMED=0)
+DETECTOR_IS_SPECIFIC=YES (the only change is the dropped fact)
+RESTORATION_BYTE_IDENTICAL=YES (the committed eligibility input is never written to)
+SUBJECT_RESTORED=YES
+E8_EC06_B_STATUS=PASS
+#
+## --- WHAT EACH TOOL DOES AND DOES NOT DETECT ---
+#
+# This is recorded because it is a fact about the frozen
+# detector, not an opinion about it:
+#
+#   the eligibility CHECKER rejects a row with a MISSING fact
+#   (MALFORMED=1) but it does NOT reject an UNKNOWN id:
+#     it adjudicates any row it is given, and it adjudicated the
+#     injected E8-EC06-UNKNOWN-ID row as ELIGIBLE with all
+#     thirteen clauses holding.
+#
+#   the RECON07 RECOMPUTER rejects a row with an UNKNOWN id
+#   (MALFORMED=1) because it looks the id up in the roster
+#   built from the facts file.
+#
+# The frozen detector is "Unknown-ID OR missing-fact-specific, echo # detector", so the two canonical detectors TOGETHER discharge the
+# frozen obligation.  Neither alone discharges it.
+#
+E8_EC06_UNKNOWN_ID_DETECTED_BY=the RECON07 independent recomputer (roster lookup)
+E8_EC06_MISSING_FACT_DETECTED_BY=the canonical 13-clause eligibility checker (field count)
+E8_EC06_NEITHER_ALONE_IS_SUFFICIENT=YES
+#
+## --- THE SUMMARY ---
+#
+CORRECTION_OWNED_ADVERSE_EXECUTIONS=2
+BOTH_HALVES_OF_THE_FROZEN_SL_EC_06_DISCHARGED=YES
+HISTORICAL_BACKDATING=NONE
+PRODUCTION_SEMANTIC_DELTA=0
+EXECUTED_ADVERSE_WITNESSES_STATUS=PASS
