@@ -8243,3 +8243,55 @@ No migration and no parser successor is authorized by the census.
 
 See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-WHOLE-COMPILER-AUTHORITY-CENSUS01.md`
 and `evidence/ACT-POLYC-SELFHOST-WHOLE-COMPILER-AUTHORITY-CENSUS01/`.
+
+## ABI foundation reconnaissance (ACT-POLYC-SELFHOST-ABI-FOUNDATION-RECON01)
+
+A bounded, non-production ABI experiment now exists. A PolyC object compiled
+by the real `./hcc` called a C host over genuine `Ast`/`AstType` and `List`
+objects through opaque 64-bit checked tokens, matched an independent C-only
+oracle (`17025`), mutated a real list with before/after observation, refused
+an out-of-bound append atomically, propagated a host error without changing
+state, and rejected null / wrong-kind / stale / earlier-generation / forged /
+wrong-domain / arena-expired / double-release handles. A causal PolyC-source
+mutation changed the linked result and restoring the source reproduced the
+object byte-identically.
+
+The chosen representation is a checked index+generation+domain token in one
+`I64`; the C host validates magic, index, kind, generation, domain and the
+Ast-arena epoch before dereferencing. PolyC never sees a pointer, a struct
+layout or a field offset. `Map`, `AoStr`, `Cctrl` and Arena allocation remain
+`NO_HANDLE_YET`; callback retention and cross-frame recovery are blocked by
+real C semantics (`longjmp` at `src/cctrl.c:965`).
+
+The counterfactual is deliberately conservative:
+
+```text
+GRAPH_NODES 52 · MANDATORY_EDGES 135 · SCC 34 (largest 19)
+CUT_PROVEN_BY_EXECUTION 0 · CUT_CANDIDATE_NOT_PROVEN 14 · NOT_CUT 121
+SCC_AFTER_PROVEN_CUTS 34 (largest 19) · SCC_UNCHANGED
+```
+
+No production subsystem was recompiled against the interface, so no mandatory
+edge is claimed as cut. All 95 `TYPE_REPRESENTATION` mandatory rows are
+header-inclusion layout coupling, not proved migration-order constraints.
+
+The CENSUS01 forecast remains a historical, unqualified baseline
+(`M2 159/355/961`). Excluding the vendored line editor, the six mechanical
+adapters and the nine already-migrated PolyC authorities leaves 2130 C
+semantic rows and a scenario range of 148..614 ACTs; `M2_BELOW_100` is
+`NOT_SUPPORTED`. CENSUS01 scope/forecast debt (two tracked `*-tmp.HC` paths
+outside its glob, a malformed scenario row, critical-path=sum) is recorded
+for a separate bounded correction, not rewritten here.
+
+```text
+M0_SELFHOST = ACHIEVED (nine PolyC parser decision sites)
+M1_SELFHOST = NOT ACHIEVED
+M2_SELFHOST = NOT ACHIEVED
+NEXT_ACT_CLASS = ABI_FOUNDATION_IMPLEMENT
+NEXT_TARGET = NONE
+SLICE10_AUTHORIZED = NO
+SELFHOST_M2_ACHIEVED = NO
+```
+
+See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-ABI-FOUNDATION-RECON01.md` and
+`evidence/ACT-POLYC-SELFHOST-ABI-FOUNDATION-RECON01/`.

@@ -1,0 +1,29 @@
+# ACT-POLYC-SELFHOST-ABI-FOUNDATION-RECON01 C4 TERMINALITY PLAN
+#
+# This is a PLAN, not a post-CLOSE receipt. It is committed with the CLOSE
+# because the receipt can only be produced AFTER the CLOSE commit exists.
+#
+# The external, read-only check runs after CLOSE and its receipt is stored
+# OUTSIDE the repository (no file may claim the SHA of the commit that
+# contains it; DOCTRINE section 22).
+#
+# Checks the external receipt must perform:
+#   1. HEAD equals the CLOSE commit; HEAD^{tree} recorded.
+#   2. Five linear commits for this ACT, phases RED, EVIDENCE, IMPL,
+#      EVIDENCE, CLOSE; factory-v2-range-check.sh STATUS=PASS.
+#   3. CLOSE carries ACT, ACT-Phase: CLOSE, ACT-Verdict: PASS; no other
+#      commit carries ACT-Verdict.
+#   4. git status --porcelain is empty; git replace -l is empty.
+#   5. No ACT-created worktree remains (pre-existing worktrees are not
+#      this ACT's).
+#   6. nm ./hcc shows exactly nine T _Bootstrap* definitions.
+#   7. Frozen predecessor paths: only Makefile differs (authorized), 0
+#      production paths differ; predecessor-freeze-recomputed.tsv matches
+#      c0/predecessor-freeze.tsv.
+#   8. closure-status PASS with the new pair present.
+#   9. gate-push PASS at the recorded subject (or a fresh run).
+#  10. AC50 becomes PASS only when all of the above are observed; before
+#      that it stays DEFERRED and VERDICT must not claim otherwise.
+#
+# If any check fails: report HALT_TERMINALITY. Do not amend, reset or add a
+# second CLOSE.
