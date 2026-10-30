@@ -1,0 +1,129 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE09
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=production-seam-and-source-delta
+#
+# THE PRODUCTION SEAM AND THE SOURCE DELTA.
+#
+# ------------------------------------------------------------------
+# THE C-SIDE DELTA, IN THREE PIECES
+# ------------------------------------------------------------------
+#
+# (1) A NEW ADAPTER, parseStatementDispatchSelector, adjacent to
+#     parseStatement.  It owns ONLY the two mechanical duties:
+#     argument projection and result conversion.  It does NOT own the
+#     decision.
+#
+# (2) THE ROUTING TABLE inside parseStatement: the `switch (tok->i64)`
+#     over the KW_* labels became a `switch (stmt_sel)` over the
+#     SELECTOR values.  Each arm performs exactly the action the
+#     original keyword arm performed.
+#
+# (3) A TINY ORACLE WRAPPER, ParserLegacyStatementDispatchOracle,
+#     adjacent to the decision, so the quality oracle reaches the
+#     actual legacy authority instead of duplicating the rule.
+#
+# EVERYTHING ELSE IS UNCHANGED: the token, the cursor, the Cctrl and
+# its symbol table, the constructors, every Ast allocation, the
+# recovery state, every diagnostic, the scope mapping, the callback
+# tables and the post-switch statement paths.
+#
+# ------------------------------------------------------------------
+# THE FROZEN RANGE, AND WHAT HAPPENED TO IT
+# ------------------------------------------------------------------
+#
+# The frozen range src/parser.c:1864..1877 carried the guard and the
+# twelve simple constructor arms.  It is DISPLACED, because the
+# dispatch now lives in a mechanical routing table rather than in a
+# keyword comparison chain.  The semantic decision did not move: it
+# moved into the PolyC component.
+#
+# The frozen range's DIGEST is still the identity of the decision that
+# was migrated.  It is NOT re-asserted as a live line range, because
+# the live lines no longer carry that text.  The C1 phase measured the
+# range at the entry tree and verified it against the RECON08 ANCHOR
+# mode; this phase records the NEW phase-specific identities.
+#
+FROZEN_RANGE=src/parser.c:1864..1877
+FROZEN_RANGE_SHA256=cd138cc52588fe48c2eab37421b4e25abbacd7ea10491bc696a1acab9a66d7e0
+FROZEN_RANGE_STILL_LIVE_AT_THIS_LINE_RANGE=NO
+FROZEN_RANGE_MOVED=BECAUSE_THE_KEYWORD_COMPARISON_CHAIN_BECAME_A_SELECTOR_ROUTING_TABLE
+FROZEN_RANGE_DIGEST_RECOMPUTED_AT_C1=YES
+#
+# The live source identity at the C2 phase:
+#
+C2_HEAD_TREE_IDENTITY=see c2/subject-build-graph-proof.txt
+CURRENT_SRC_PARSER_C_SHA256=<measured below>
+#
+# ------------------------------------------------------------------
+# THE SEMANTIC ANCHOR AT THE C2 PHASE
+# ------------------------------------------------------------------
+#
+# The decision is still the `switch` inside the `if (tok->tk_type ==
+# TK_KEYWORD)` guard, inside parseStatement.  What changed is the
+# EXPRESSION being switched on: the selector value, not the keyword.
+#
+SEMANTIC_ANCHOR_C2=the switch (stmt_sel) over the selector values, inside the if (tok->tk_type == TK_KEYWORD) guard, in parseStatement
+THE_GUARD_IS_UNCHANGED=YES
+THE_POST_SWITCH_PATHS_ARE_UNCHANGED=YES
+#
+# ------------------------------------------------------------------
+# THE CONDITIONAL READ AND ITS ORDER
+# ------------------------------------------------------------------
+#
+# The ACT requires the conditional read to be preserved exactly, and
+# the short-circuit to be real: `tok->i64` must NOT be read for a
+# non-keyword token.
+#
+# In the ON build the disassembly shows:
+#
+#   cmp  w8, #0x332        <- the TK_KEYWORD guard
+#   b.ne <not-keyword>     <- the branch AWAY, taken for a non-keyword
+#   ldr  x1, [x20, #0x20]  <- the tok->i64 read, ONLY on this path
+#   bl   <BootstrapStatementDispatch>
+#
+# The `ldr` is AFTER the `b.ne`, so the keyword id is read only when
+# the token is a keyword.  This is the SAME order as the original
+# source's `switch (tok->i64)`.
+#
+CONDITIONAL_READ_ORDER_PRESERVED=YES
+NON_KEYWORD_TOKEN_DOES_NOT_READ_THE_KEYWORD_ID=YES
+#
+# The rule the ACT calls the memory-safety-only host projection.  It
+# is a GUARD, not a second semantic decision: no C code chooses a
+# constructor from tok->i64 in the ON build.
+#
+# ------------------------------------------------------------------
+# THE LEGACY ORACLE AND ITS REACHABILITY
+# ------------------------------------------------------------------
+#
+# ParserLegacyStatementDispatchOracle forwards to
+# parseStatementDispatchSelector, which in a selector-OFF build is
+# the legacy keyword comparison chain.  In the selector-ON build the
+# same function forwards to the PolyC component.
+#
+# The oracle is the G0's reach path into the legacy authority.  It is
+# reached ONLY from a selector-OFF build.
+#
+LEGACY_ORACLE_SYMBOL=ParserLegacyStatementDispatchOracle
+LEGACY_ORACLE_REACHABLE_IN_PRODUCTION_ON_BUILD=NO
+LEGACY_ORACLE_REACHABLE_IN_SELECTOR_OFF_BUILD=YES
+#
+# ------------------------------------------------------------------
+# THE FAIL-CLOSED POSTURE
+# ------------------------------------------------------------------
+#
+# When the selector is ON, the C side MUST NOT evaluate the legacy
+# switch and MUST NOT fall back to it.  That is enforced by the
+# PREPROCESSOR, not by a runtime test: the legacy chain exists only
+# in the #else arm, which is not compiled at all when the macro is
+# defined.
+#
+LEGACY_CHAIN_COMPILED_OUT_IN_ON_BUILD=YES
+NO_RUNTIME_FALLBACK_TO_THE_LEGACY_CHAIN=YES
+FAIL_CLOSED_POSTURE=MECHANICAL
+#
+# The selector-OFF build DOES compile the legacy chain and does NOT
+# import the PolyC symbol.  Both halves are measured in
+# c2/active-delegation-and-disassembly.txt.
+#
+PRODUCTION_SEAM_AND_SOURCE_DELTA_STATUS=PASS

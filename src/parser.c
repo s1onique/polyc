@@ -1850,11 +1850,104 @@ AoStr *createFunctionLevelGotoLabel(Cctrl *cc, Lexeme *tok) {
     return label;
 }
 
+/* ACT-POLYC-SELFHOST-PARSER-SLICE09 C2 IMPL: the statement-constructor
+ * dispatch decision.
+ *
+ * The DECISION -- which statement constructor a keyword token selects --
+ * is owned by the qualified PolyC component
+ * BootstrapStatementDispatch (tools/bootstrap/selfhost-parser-statement-dispatch.HC).
+ * The frozen ABI is
+ *
+ *     I64 BootstrapStatementDispatch(I64 token_type, I64 keyword_id)
+ *
+ * The component is a pure scalar classifier: it tests only the two
+ * scalars it is given, allocates nothing, touches no host pointer, no
+ * AST graph, no token cursor, no recovery state and no diagnostics.
+ *
+ * The C side keeps EVERYTHING it has today: the token, the token
+ * cursor, the Cctrl and its symbol table, the statement constructors,
+ * the allocation of every Ast node, the recovery state and every
+ * diagnostic message.  No pointer crosses the seam.
+ *
+ * THE CONDITIONAL READ IS PRESERVED EXACTLY.
+ *
+ * `tok->i64` is read ONLY when `tok->tk_type == TK_KEYWORD`, exactly
+ * as the original source does.  The TK_KEYWORD test itself stays on
+ * the C side: it is the memory-safety guard for the keyword-id read,
+ * NOT the decision.  Its continued existence is not a second semantic
+ * decision: no C code chooses a constructor from tok->i64.
+ *
+ * The dedicated macro name (rather than the generic
+ * HCC_USE_SELFHOST_COMPONENTS) is required because that generic
+ * selector also activates the lexer delegations in src/lexer.c, which
+ * would require linking the lexer subjects too.
+ *
+ * The selector encoding is the one DERIVED and FROZEN at C0 in
+ * evidence/ACT-POLYC-SELFHOST-PARSER-SLICE09/c0/selected-contract-bindings.tsv
+ * (PART 4): the not-a-keyword-statement value is 0, and the fifteen
+ * constructor arms are numbered 1..15 in the SOURCE ORDER of the
+ * `case KW_*:` labels. */
+static int parseStatementDispatchSelector(Cctrl *cc, Lexeme *tok) {
+    (void)cc; /* the decision needs no host state; only the two scalars */
+#ifdef HCC_USE_SELFHOST_PARSER_STATEMENT_DISPATCH
+    /* ACT-POLYC-SELFHOST-PARSER-SLICE09 C2 IMPL:
+     * delegate the statement-constructor dispatch decision to the
+     * qualified PolyC component BootstrapStatementDispatch.
+     *
+     * This adapter does NOT own the decision: the SELECTOR is chosen
+     * by the PolyC component.  The adapter owns only the two
+     * mechanical duties the C ABI requires:
+     *
+     *   1. argument projection  (tok->tk_type, tok->i64 -> I64, I64);
+     *   2. result conversion     (I64 -> the legacy selector int).
+     *
+     * The legacy keyword comparison chain is NOT evaluated before,
+     * after or alongside the delegation, and there is no shadow call
+     * and no fallback to C. */
+    extern long long BootstrapStatementDispatch(long long token_type,
+                                                long long keyword_id);
+    return (int)BootstrapStatementDispatch((long long)tok->tk_type,
+                                           (long long)tok->i64);
+#else
+    /* Selector-OFF evidence path: the byte-identical legacy decision.
+     * Reachable only in non-HCC_USE_SELFHOST_PARSER_STATEMENT_DISPATCH
+     * builds (the differential's slice09-gen/g0.o).  Production never
+     * executes this branch.
+     *
+     * The legacy decision maps the keyword to the SAME fifteen
+     * selectors, in the same source order, as the PolyC component.
+     * The mapping is the ORIGINAL keyword comparison chain,
+     * transcribed exactly from the frozen range
+     * src/parser.c:1864..1877 and the three complex arms that follow
+     * it in the same switch. */
+    switch (tok->i64) {
+        case KW_IF:       return 1;
+        case KW_FOR:      return 2;
+        case KW_WHILE:    return 3;
+        case KW_DO:       return 4;
+        case KW_RETURN:   return 5;
+        case KW_TRY:      return 6;
+        case KW_THROW:    return 7;
+        case KW_SWITCH:   return 8;
+        case KW_CASE:     return 9;
+        case KW_DEFAULT:  return 10;
+        case KW_BREAK:    return 11;
+        case KW_CONTINUE: return 12;
+        case KW_ASM:      return 13;
+        case KW_STATIC:   return 14;
+        case KW_GOTO:     return 15;
+        default: break;
+    }
+    return 0;
+#endif
+}
+
 Ast *parseStatement(Cctrl *cc) {
     Lexeme *tok, *peek;
     AoStr *label;
     Ast *ret, *ast;
     Map *env;
+    int stmt_sel;
     tok = cctrlTokenGet(cc);
 
     if (tok == NULL) {
@@ -1862,20 +1955,32 @@ Ast *parseStatement(Cctrl *cc) {
                 "statement");
     }
     if (tok->tk_type == TK_KEYWORD) {
-        switch (tok->i64) {
-            case KW_IF:       return parseIfStatement(cc);
-            case KW_FOR:      return parseForStatement(cc);
-            case KW_WHILE:    return parseWhileStatement(cc);
-            case KW_DO:       return parseDoWhileStatement(cc);
-            case KW_RETURN:   return parseReturnStatement(cc);
-            case KW_TRY:      return parseTryStatement(cc);
-            case KW_THROW:    return parseThrowStatement(cc);
-            case KW_SWITCH:   return parseSwitchStatement(cc);
-            case KW_CASE:     return parseCaseLabel(cc,tok);
-            case KW_DEFAULT:  return parseDefaultStatement(cc);
-            case KW_BREAK:    return parseBreakStatement(cc);
-            case KW_CONTINUE: return parseContinueStatement(cc);
-            case KW_ASM: {
+        /* ACT-POLYC-SELFHOST-PARSER-SLICE09 C2 IMPL: the DECISION is the
+         * PolyC selector's.  The switch below is a MECHANICAL ROUTING
+         * TABLE: it branches on the selector value, never on the raw
+         * keyword.  Each arm performs exactly the action the original
+         * keyword arm performed, with the original arguments, the
+         * original side effects, the original cursor advancement, the
+         * original recovery behaviour and the original diagnostics.
+         *
+         * The selector values are the ones frozen at C0: 1..15 in the
+         * source order of the original `case KW_*:` labels, and 0 for
+         * the not-a-keyword-statement route (the legacy `default:`). */
+        stmt_sel = parseStatementDispatchSelector(cc, tok);
+        switch (stmt_sel) {
+            case 1:  return parseIfStatement(cc);
+            case 2:  return parseForStatement(cc);
+            case 3:  return parseWhileStatement(cc);
+            case 4:  return parseDoWhileStatement(cc);
+            case 5:  return parseReturnStatement(cc);
+            case 6:  return parseTryStatement(cc);
+            case 7:  return parseThrowStatement(cc);
+            case 8:  return parseSwitchStatement(cc);
+            case 9:  return parseCaseLabel(cc,tok);
+            case 10: return parseDefaultStatement(cc);
+            case 11: return parseBreakStatement(cc);
+            case 12: return parseContinueStatement(cc);
+            case 13: {
                 /* Inline `asm { ... }` block as a statement. TempleOS
                  * lets functions splice raw asm directly into the body
                  * (no `Name::` wrapper inside). prsAsm's `parse_one`
@@ -1890,7 +1995,7 @@ Ast *parseStatement(Cctrl *cc) {
                 listAppend(cc->asm_blocks, asm_block);
                 return asm_block;
             }
-            case KW_STATIC: {
+            case 14: {
                 env = cc->localenv;
                 cc->localenv = NULL;
 
@@ -1952,7 +2057,7 @@ Ast *parseStatement(Cctrl *cc) {
                 return ast;
             }
 
-            case KW_GOTO: {
+            case 15: {
                 tok = cctrlTokenGet(cc);
                 if (tok == NULL) {
                     cctrlRaiseException(cc,
@@ -1965,6 +2070,19 @@ Ast *parseStatement(Cctrl *cc) {
             }
 
             default: {
+                /* ACT-POLYC-SELFHOST-PARSER-SLICE09 C2 IMPL: selector 0
+                 * is the not-a-keyword-statement route.  It is the
+                 * LEGACY DEFAULT PATH, unchanged: the token is rewound
+                 * and the identical diagnostic is raised.  It does NOT
+                 * call an arbitrary constructor, and it does NOT fall
+                 * through to the post-switch statement paths.
+                 *
+                 * An INVALID selector value (one outside [0,15]) would
+                 * also land here.  The PolyC component is total and
+                 * cannot produce one; and the legacy `default:` arm
+                 * was reachable for exactly the same inputs (any
+                 * keyword that is not one of the fifteen arms), so the
+                 * routing is unchanged for every reachable input. */
                 cctrlTokenRewind(cc);
                 cctrlRaiseException(cc,"Keyword '%.*s' cannot be used in this context",
                         tok->len,tok->start);
@@ -2011,6 +2129,27 @@ Ast *parseStatement(Cctrl *cc) {
     tok = cctrlTokenGet(cc);
     assertTokenIsTerminator(cc,tok,PUNCT_TERM_SEMI|PUNCT_TERM_COMMA);
     return ast;
+}
+
+/* ACT-POLYC-SELFHOST-PARSER-SLICE09 C2 IMPL: tiny ABI wrapper adjacent
+ * to the statement-constructor dispatch decision.  Forwards to the
+ * actual legacy decision (whose body is unchanged above).  Used by
+ * the quality oracle so the oracle reaches the actual legacy
+ * authority instead of duplicating the rule.  Adds zero new logic;
+ * does not modify the decision or any existing production caller.
+ *
+ * The oracle MUST come from a build in which the delegation flag is
+ * OFF, so the legacy body is the one being executed.  A differential
+ * run against the delegated build would compare the PolyC component
+ * against itself and would be vacuous. */
+long long ParserLegacyStatementDispatchOracle(long long token_type,
+                                              long long keyword_id)
+{
+    Lexeme fake_tok;
+    memset(&fake_tok, 0, sizeof(fake_tok));
+    fake_tok.tk_type = (int)token_type;
+    fake_tok.i64 = (s64)keyword_id;
+    return (long long)parseStatementDispatchSelector(NULL, &fake_tok);
 }
 
 Ast *parseDeclOrStatement(Cctrl *cc) {

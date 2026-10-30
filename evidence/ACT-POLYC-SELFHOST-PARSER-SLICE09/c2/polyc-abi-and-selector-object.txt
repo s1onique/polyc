@@ -1,0 +1,108 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE09
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=polyc-abi-and-selector-object
+#
+# THE POLYC COMPONENT, ITS ABI AND ITS OBJECT.
+#
+# ------------------------------------------------------------------
+# THE SUBJECT SOURCE
+# ------------------------------------------------------------------
+SUBJECT_SOURCE=tools/bootstrap/selfhost-parser-statement-dispatch.HC
+SUBJECT_SOURCE_SHA256=7063b946c5cd19480f8e9ef7601b004450ef091a29e3ccf032a89eb4e80a12ed
+#
+# The file name is the one the FROZEN selected contract names
+# (evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08/c2/
+# selected-abi-and-projection.md section 4: "Subject file |
+# tools/bootstrap/selfhost-parser-statement-dispatch.HC").
+#
+SUBJECT_NAME_MATCHES_FROZEN_CONTRACT=YES
+#
+# ------------------------------------------------------------------
+# THE ABI
+# ------------------------------------------------------------------
+POLYC_SYMBOL=BootstrapStatementDispatch
+POLYC_LINK_NAME=_BootstrapStatementDispatch
+POLYC_ABI=I64 BootstrapStatementDispatch(I64 token_type, I64 keyword_id) -> I64 statement_selector
+ABI_TOKEN_TYPE_SOURCE=tok->tk_type
+ABI_KEYWORD_ID_SOURCE=tok->i64
+ABI_IS_TOTAL=YES
+ABI_FAILURE_SENTINEL=NONE
+ABI_RETURNS_A_BOUNDED_ENUM=YES
+#
+# The exported symbol, measured with nm on the compiled subject:
+COMMAND=nm build/parser-statement-dispatch-subject.o | grep '_BootstrapStatementDispatch'
+   0000000000000000 T _BootstrapStatementDispatch
+SUBJECT_OBJECT=build/parser-statement-dispatch-subject.o
+SUBJECT_OBJECT_SHA256=f9d9c05eaf9c8cb4d2821b9c2c6d59e10116eacdfc3197150855aaef693c1c3d
+SUBJECT_OBJECT_FORMAT=Mach-O 64-bit object arm64
+#
+# The subject is compiled by the STAGE0 compiler (the legacy C control),
+# so the component does not depend on the production compiler it is
+# about to serve:
+#
+COMMAND=./build/host-stage0/hcc --install-dir=build/bootstrap-prefix \
+#         -c tools/bootstrap/selfhost-parser-statement-dispatch.HC \
+#         -o build/parser-statement-dispatch-subject.o
+#
+# ------------------------------------------------------------------
+# THE PURITY CONSTRAINTS, CHECKED
+# ------------------------------------------------------------------
+POINTS_CROSSING_THE_SEAM=0
+NO_POINTER_ARGUMENTS=YES
+NO_CALLBACK_ARGUMENTS=YES
+NO_AST_GRAPH_ACCESS=YES
+NO_TOKEN_CURSOR_ACCESS=YES
+NO_RECOVERY_STATE_ACCESS=YES
+NO_ALLOCATION_IN_THE_COMPONENT=YES
+NO_GLOBAL_MUTABLE_STATE=YES
+COMPONENT_TESTS_ONLY_TWO_SCALARS=YES
+#
+# The component's ENTIRE body is the two-scalar comparison chain and
+# the total fallback.  It reads no global and calls no function:
+#
+COMMAND=grep -cE '^[^/]*[A-Za-z_]+\(' tools/bootstrap/selfhost-parser-statement-dispatch.HC
+   1
+# (the one match is the BootstrapStatementDispatch definition itself)
+#
+COMPONENT_CALLS_NO_OTHER_FUNCTION=YES
+#
+# ------------------------------------------------------------------
+# THE SELECTOR ENCODING, AS IMPLEMENTED
+# ------------------------------------------------------------------
+# The encoding is the one DERIVED and FROZEN at C0
+# (c0/selected-contract-bindings.tsv PART 4).  It is source-bound:
+# the fifteen arms are numbered in the SOURCE ORDER of the `case KW_*:`
+# labels, NOT in the numeric order of the KW_* enum values.
+#
+SELECTOR_NOT_A_KEYWORD_STATEMENT=0
+SELECTOR_IF=1
+SELECTOR_FOR=2
+SELECTOR_WHILE=3
+SELECTOR_DO=4
+SELECTOR_RETURN=5
+SELECTOR_TRY=6
+SELECTOR_THROW=7
+SELECTOR_SWITCH=8
+SELECTOR_CASE=9
+SELECTOR_DEFAULT=10
+SELECTOR_BREAK=11
+SELECTOR_CONTINUE=12
+SELECTOR_ASM=13
+SELECTOR_STATIC=14
+SELECTOR_GOTO=15
+SELECTOR_VALUE_COUNT=16
+SELECTOR_RANGE=0..15
+#
+# The keyword VALUES the component compares against are the LIVE
+# src/lexer.h values, resolved by compiling the live header:
+#
+COMPILED_KEYWORD_VALUES	KW_IF=46 KW_FOR=38 KW_WHILE=40 KW_DO=66 \
+    KW_RETURN=18 KW_TRY=80 KW_THROW=82 KW_SWITCH=20 KW_CASE=22 \
+    KW_DEFAULT=64 KW_BREAK=24 KW_CONTINUE=26 KW_ASM=28 KW_STATIC=67 \
+    KW_GOTO=44
+COMPILED_TK_KEYWORD=818
+#
+# The component's own source agrees with the compiled values, arm for
+# arm.  The comparison is done independently in c2/exact-fixture-g0-polyc-join.tsv.
+#
+POLYC_ABI_AND_SELECTOR_OBJECT_STATUS=PASS

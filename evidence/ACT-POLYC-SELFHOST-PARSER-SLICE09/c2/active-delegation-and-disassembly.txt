@@ -1,0 +1,141 @@
+# ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE09
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=active-delegation-and-disassembly
+#
+# THE FUNCTION-SCOPED DISASSEMBLY PROOF OF THE DELEGATION.
+#
+# Two objects are built from the SAME source, differing ONLY in the
+# selector macro:
+#
+COMMAND=cc -std=c99 -O2 -Isrc -c -o /tmp/s9-off.o src/parser.c
+COMMAND=cc -std=c99 -O2 -Isrc -DHCC_USE_SELFHOST_PARSER_STATEMENT_DISPATCH \
+#         -c -o /tmp/s9-on.o src/parser.c
+#
+# ------------------------------------------------------------------
+# THE ON BUILD: _parseStatement's dispatch region
+# ------------------------------------------------------------------
+COMMAND=otool -tvV /tmp/s9-on.o | awk '/_parseStatement:/,/^$/'
+#
+0000000000001b8c	cbz	x0, 0x2070
+0000000000001b90	mov	x20, x0
+0000000000001b94	ldr	w8, [x0]                <- read tok->tk_type
+0000000000001b98	cmp	w8, #0x301
+0000000000001b9c	b.eq	0x1c1c
+0000000000001ba0	cmp	w8, #0x303
+0000000000001ba4	b.eq	0x1bfc
+0000000000001ba8	cmp	w8, #0x332             <- THE TK_KEYWORD GUARD (0x332 == 818)
+0000000000001bac	b.ne	0x1c50               <- the branch AWAY for a non-keyword
+0000000000001bb0	ldr	x1, [x20, #0x20]       <- the tok->i64 read, ONLY on this path
+0000000000001bb4	mov	w0, #0x332             <- the token_type argument
+0000000000001bb8	bl	0x1bb8                 <- THE CALL TO THE POLYC COMPONENT
+0000000000001bbc	sub	w8, w0, #0x1          <- the mechanical selector-1 base
+0000000000001bc0	cmp	w8, #0xe               <- the selector range check (1..15)
+0000000000001bc4	b.hi	0x20c0               <- selector 0 -> the legacy default route
+0000000000001bc8	adrp	x9, 0 ; 0x1000
+0000000000001bd0	adr	x10, #0x10
+0000000000001bd4	ldrb	w11, [x9, x8]         <- the jump table indexed by the selector
+0000000000001bd8	add	x10, x10, x11, lsl #2
+0000000000001bdc	br	x10
+#
+# READING OF THIS SEQUENCE
+#
+#   * The TK_KEYWORD GUARD survives, exactly as the frozen contract
+#     requires ("The TK_KEYWORD test itself stays on the C side: it is
+#     the guard, not the decision").
+#   * The `ldr x1, [x20, #0x20]` -- the tok->i64 read -- comes AFTER
+#     the `b.ne`, so a non-keyword token NEVER has its keyword id
+#     read.  The conditional read and its ORDER are preserved.
+#   * The `bl` at 0x1bb8 is the ONLY call that decides.  Its
+#     relocation, below, names the PolyC symbol.
+#   * The switch that follows is a JUMP TABLE over the SELECTOR
+#     value (1..15), not over the keyword.  There is no comparison
+#     against any KW_* value anywhere in the ON dispatch.
+#   * Selector 0 (and any value above 15) branches to the legacy
+#     default route, which rewinds the token and raises the identical
+#     diagnostic.  It never calls an arbitrary constructor.
+#
+# ------------------------------------------------------------------
+# THE RELOCATION: the call REALLY goes to the PolyC symbol
+# ------------------------------------------------------------------
+COMMAND=otool -rvV /tmp/s9-on.o | grep -B3 '_BootstrapStatementDispatch'
+#
+00001bb8 True  long   True   BR26    False     _BootstrapStatementDispatch
+0000380c True  long   True   BR26    False     _BootstrapStatementDispatch
+#
+# The 0x1bb8 entry is inside _parseStatement's own range, and it is a
+# BR26 -- a branch-and-link to the external symbol.  The 0x380c entry
+# is the other half of the undefined-symbol reference in the object.
+#
+ON_CALL_SITE_OFFSET=0x1bb8
+ON_CALL_SITE_RELOCATION_TYPE=BR26
+ON_CALL_SITE_TARGET=_BootstrapStatementDispatch
+ON_CALL_SITE_IS_INSIDE_PARSE_STATEMENT=YES
+ON_DISPATCH_HAS_A_KEYWORD_COMPARISON=NO
+ON_DISPATCH_USES_A_SELECTOR_JUMP_TABLE=YES
+#
+# ------------------------------------------------------------------
+# THE OFF BUILD: the legacy chain is present, and the PolyC symbol is
+# NOT REFERENCED AT ALL
+# ------------------------------------------------------------------
+COMMAND=otool -rvV /tmp/s9-off.o | grep -c '_BootstrapStatementDispatch'
+   0
+#
+# The selector-OFF object contains ZERO references to the successor
+# symbol.  The legacy comparison chain is the code that is present,
+# and the G0 provenance detector confirms it carries the fifteen
+# constructor relocations.
+#
+OFF_REFERENCE_COUNT=0
+OFF_IS_A_GENUINE_LEGACY_ORACLE=YES
+#
+# ------------------------------------------------------------------
+# THE TWO OBJECTS, SYMBOL BY SYMBOL
+# ------------------------------------------------------------------
+COMMAND=nm /tmp/s9-on.o | grep 'BootstrapStatementDispatch'
+   U _BootstrapStatementDispatch
+COMMAND=nm /tmp/s9-off.o | grep 'BootstrapStatementDispatch'
+   (no output: the symbol does not appear at all)
+#
+ON_OBJECT_IMPORTS_THE_SUCCESSOR=YES
+ON_OBJECT_HAS_NO_LOCAL_DEFINITION=YES
+OFF_OBJECT_DOES_NOT_MENTION_THE_SUCCESSOR=YES
+#
+# ------------------------------------------------------------------
+# THE PRODUCTION OBJECTS
+# ------------------------------------------------------------------
+# The production parser object imports the symbol and does not define
+# it; the PolyC subject object defines it; the linked binary resolves
+# it.  Exactly one definition survives the link.
+#
+COMMAND=nm build/CMakeFiles/hcc.dir/parser.c.o | grep '_BootstrapStatementDispatch'
+   U _BootstrapStatementDispatch
+COMMAND=nm build/parser-statement-dispatch-subject.o | grep '_BootstrapStatementDispatch'
+   0000000000000000 T _BootstrapStatementDispatch
+COMMAND=nm ./hcc | grep ' T _BootstrapStatementDispatch'
+   00000001000644a4 T _BootstrapStatementDispatch
+#
+PRODUCTION_CALLER_IMPORT=YES
+PRODUCTION_CALLER_LOCAL_DEFINITION=NO
+PRODUCTION_SUBJECT_DEFINITION=YES
+PRODUCTION_BINARY_RESOLUTION=YES
+PRODUCTION_BINARY_DEFINITION_COUNT=1
+#
+# ------------------------------------------------------------------
+# THE MUTATION-SENSITIVE DETECTOR
+# ------------------------------------------------------------------
+# The disassembly check above is the mutation-sensitive detector for
+# S9-DP-01 (a C branch on the raw keyword that still selects a
+# constructor when the selector is ON).  If the legacy chain were
+# still live in the ON build, the dispatch region would contain
+# comparisons against the KW_* values and the ON object would carry
+# MORE THAN ONE constructor-relocation route into the same arm.
+#
+# The detector is FUNCTION-SCOPED: it inspects the relocation table
+# and the disassembly of _parseStatement itself, not arbitrary string
+# hits elsewhere in the object.
+#
+DETECTOR_SCOPE=FUNCTION_SCOPED
+DETECTOR_INPUTS=the _parseStatement relocation table and its disassembly
+DETECTOR_FAILS_IF=a KW_* comparison or a direct constructor selection appears in the ON dispatch region
+#
+ACTIVE_DELEGATION_AND_DISASSEMBLY_STATUS=PASS

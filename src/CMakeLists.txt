@@ -1437,6 +1437,163 @@ if (HCC_USE_SELFHOST_PARSER_DEFAULT_ARM_TERMINATES)
 endif()
 
 
+# ACT-POLYC-SELFHOST-PARSER-SLICE09 C2 IMPL -- the statement-constructor
+# dispatch delegation.
+#
+# The dedicated selector `HCC_USE_SELFHOST_PARSER_STATEMENT_DISPATCH` is
+# used rather than the generic `HCC_USE_SELFHOST_COMPONENTS`, because
+# that generic selector also activates the lexer delegations, which
+# would require linking the lexer subjects too.  This migration is
+# independent of the lexer migrations and is scoped to its own flag.
+#
+# The subject is `tools/bootstrap/selfhost-parser-statement-dispatch.HC`,
+# the file the FROZEN selected contract names
+# (evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08/c2/
+# selected-abi-and-projection.md section 4).
+option(HCC_USE_SELFHOST_PARSER_STATEMENT_DISPATCH
+       "Link the statement-constructor dispatch PolyC component into hcc and enable statement-dispatch delegation. ACT-POLYC-SELFHOST-PARSER-SLICE09."
+       ON)
+
+if (HCC_USE_SELFHOST_PARSER_STATEMENT_DISPATCH)
+    if (NOT STATEMENT_DISPATCH_OBJECT)
+        set(STATEMENT_DISPATCH_OBJECT "${CMAKE_SOURCE_DIR}/../build/parser-statement-dispatch-subject.o")
+    endif()
+
+    # ---------------------------------------------------------------------
+    # The TARGET OBJECT FORMAT and the TOOLCHAIN nm are resolved here and
+    # passed EXPLICITLY to the verifier.
+    #
+    # The format must NOT be guessed from the host: during a cross-compile
+    # the host's format is not the target's format.  CMAKE_NM is the
+    # CONFIGURED TOOLCHAIN's nm, so the target object is inspected by a
+    # tool that understands the target format.  If it is not available the
+    # build fails loudly instead of silently substituting a host nm.
+    # ---------------------------------------------------------------------
+    if (NOT STATEMENT_DISPATCH_TARGET_OBJECT_FORMAT)
+        if (APPLE)
+            set(STATEMENT_DISPATCH_TARGET_OBJECT_FORMAT "Mach-O")
+        elseif (UNIX AND NOT APPLE)
+            set(STATEMENT_DISPATCH_TARGET_OBJECT_FORMAT "ELF")
+        else()
+            message(FATAL_ERROR
+                "ACT-POLYC-SELFHOST-PARSER-SLICE09: "
+                "Configure with -DSTATEMENT_DISPATCH_TARGET_OBJECT_FORMAT=<Mach-O|ELF> "
+                "so the statement-dispatch symbol spelling can be resolved "
+                "without a verified PolyC statement-dispatch authority.")
+        endif()
+    endif()
+
+    if (NOT STATEMENT_DISPATCH_NM)
+        if (NOT CMAKE_NM)
+            message(FATAL_ERROR
+                "ACT-POLYC-SELFHOST-PARSER-SLICE09: "
+                "CMAKE_NM is not set, so the statement-dispatch subject cannot be "
+                "a verified PolyC statement-dispatch authority.")
+        endif()
+        set(STATEMENT_DISPATCH_NM "${CMAKE_NM}")
+    endif()
+
+    # ---------------------------------------------------------------------
+    # The subject PRODUCTION.
+    #
+    # If a producer is configured, the build graph PRODUCES the subject
+    # from the PolyC source and then verifies the exported symbol.  If
+    # no producer is configured, a PREBUILT subject is accepted only
+    # when it already exists; a missing subject is a hard configure
+    # error, never a silent fallback to the legacy C body.
+    # ---------------------------------------------------------------------
+    # The OUTPUT path is NORMALISED for the same reason as the prefix:
+    # the compiler prepends "./" to the output path, so an output path
+    # that already contains a "./" segment would become malformed.
+    string(REPLACE "/./" "/" STATEMENT_DISPATCH_OBJECT
+        "${STATEMENT_DISPATCH_OBJECT}")
+    set(_saw_stamp "${STATEMENT_DISPATCH_OBJECT}.verified")
+
+    # The bootstrap prefix holds the canonical headers the stage0
+    # compiler resolves against.  It is header-only: no runtime archive
+    # is required to compile the statement-dispatch subject.
+    #
+    # The prefix is NORMALISED: the compiler resolves the header path by
+    # APPENDING to the prefix string, so a prefix containing a "./"
+    # segment produces a malformed header path.
+    if (NOT STATEMENT_DISPATCH_PREFIX)
+        set(STATEMENT_DISPATCH_PREFIX "${CMAKE_SOURCE_DIR}/../build/bootstrap-prefix")
+    endif()
+    string(REPLACE "/./" "/" STATEMENT_DISPATCH_PREFIX
+        "${STATEMENT_DISPATCH_PREFIX}")
+
+    if (STATEMENT_DISPATCH_PRODUCER)
+        if (NOT STATEMENT_DISPATCH_SOURCE)
+            message(FATAL_ERROR
+                "ACT-POLYC-SELFHOST-PARSER-SLICE09: "
+                "STATEMENT_DISPATCH_PRODUCER is set but "
+                "STATEMENT_DISPATCH_SOURCE is not.")
+        endif()
+        if (NOT STATEMENT_DISPATCH_PREFIX)
+            message(FATAL_ERROR
+                "ACT-POLYC-SELFHOST-PARSER-SLICE09: "
+                "STATEMENT_DISPATCH_PRODUCER is set but "
+                "STATEMENT_DISPATCH_PREFIX is not.")
+        endif()
+        add_custom_command(
+            OUTPUT "${STATEMENT_DISPATCH_OBJECT}"
+            COMMAND "${CMAKE_COMMAND}" -E rm -f "${STATEMENT_DISPATCH_OBJECT}"
+            COMMAND "${STATEMENT_DISPATCH_PRODUCER}"
+                    --install-dir=${STATEMENT_DISPATCH_PREFIX}
+                    -c "${STATEMENT_DISPATCH_SOURCE}"
+                    -o "${STATEMENT_DISPATCH_OBJECT}"
+            DEPENDS "${STATEMENT_DISPATCH_SOURCE}"
+            COMMENT "ACT-POLYC-SELFHOST-PARSER-SLICE09: producing statement-dispatch subject ${STATEMENT_DISPATCH_OBJECT}"
+            VERBATIM
+            USES_TERMINAL)
+        message(STATUS "ACT-POLYC-SELFHOST-PARSER-SLICE09: production hcc SCHEDULES statement-dispatch subject production: ${STATEMENT_DISPATCH_OBJECT}")
+    elseif (NOT EXISTS "${STATEMENT_DISPATCH_OBJECT}")
+        message(FATAL_ERROR
+            "ACT-POLYC-SELFHOST-PARSER-SLICE09: "
+            "the statement-dispatch subject ${STATEMENT_DISPATCH_OBJECT} does not "
+            "exist and no producer is configured. Produce it with "
+            "./hcc --install-dir=<prefix> -c tools/bootstrap/selfhost-parser-statement-dispatch.HC -o ${STATEMENT_DISPATCH_OBJECT}. "
+            "Or configure with -DSTATEMENT_DISPATCH_PRODUCER=<stage0 hcc> to have the "
+            "build graph produce it.")
+    else()
+        message(STATUS "ACT-POLYC-SELFHOST-PARSER-SLICE09: production hcc uses a PREBUILT statement-dispatch subject: ${STATEMENT_DISPATCH_OBJECT}")
+    endif()
+
+    # ---------------------------------------------------------------------
+    # The VERIFICATION is a custom TARGET, not an OUTPUT-producing custom
+    # command, so the verification command ALWAYS runs and a stale stamp
+    # can never decide that the verification is unnecessary.
+    # ---------------------------------------------------------------------
+    add_custom_target(hcc-statement-dispatch-token-map-verify
+        COMMAND "${CMAKE_COMMAND}"
+                -DAST_TOKEN_MAP_OBJECT=${STATEMENT_DISPATCH_OBJECT}
+                -DAST_TOKEN_MAP_EXPECTED_SYMBOL=BootstrapStatementDispatch
+                -DAST_TOKEN_MAP_TARGET_OBJECT_FORMAT=${STATEMENT_DISPATCH_TARGET_OBJECT_FORMAT}
+                -DAST_TOKEN_MAP_NM=${STATEMENT_DISPATCH_NM}
+                -P "${CMAKE_SOURCE_DIR}/cmake/VerifyAstTokenMapObject.cmake"
+        COMMAND "${CMAKE_COMMAND}"
+                -DAST_TOKEN_MAP_OBJECT=${STATEMENT_DISPATCH_OBJECT}
+                -DAST_TOKEN_MAP_STAMP=${_saw_stamp}
+                -P "${CMAKE_SOURCE_DIR}/cmake/WriteAstTokenMapObjectStamp.cmake"
+        DEPENDS "${STATEMENT_DISPATCH_OBJECT}"
+        COMMENT "ACT-POLYC-SELFHOST-PARSER-SLICE09: verifying statement-dispatch subject ${STATEMENT_DISPATCH_OBJECT}"
+        VERBATIM
+        USES_TERMINAL)
+
+    # The verification gates the link: the production compiler is never
+    # linked without a verified PolyC statement-dispatch authority.
+    add_dependencies(hcc hcc-statement-dispatch-token-map-verify)
+
+    # The link itself must ALSO depend on the object, so the object is
+    # re-read by the linker whenever it changes.
+    set_property(TARGET hcc APPEND PROPERTY
+        LINK_DEPENDS "${STATEMENT_DISPATCH_OBJECT}")
+
+    target_compile_definitions(hcc PRIVATE HCC_USE_SELFHOST_PARSER_STATEMENT_DISPATCH)
+    target_link_libraries(hcc ${STATEMENT_DISPATCH_OBJECT})
+    message(STATUS "ACT-POLYC-SELFHOST-PARSER-SLICE09: production hcc links statement-dispatch PolyC component: ${STATEMENT_DISPATCH_OBJECT}")
+endif()
+
 
 
 # ACT-POLYC-BOOTSTRAP02 C2 IMPL — opt-in stage1 build that

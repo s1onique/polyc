@@ -118,6 +118,22 @@ SLICE07_COMPOUND_BLOCK_OBJ = ./build/parser-compound-block-subject.o
 SLICE08_DEFAULT_ARM_SRC = tools/bootstrap/selfhost-parser-slice08.HC
 SLICE08_DEFAULT_ARM_OBJ = ./build/parser-default-arm-subject.o
 
+# ACT-POLYC-SELFHOST-PARSER-SLICE09: the statement-constructor dispatch
+# subject.
+#
+# The VARIABLES are defined HERE, next to the SLICE08 ones, for the
+# SAME reason: the `$(PRODUCTION_HCC)` rule's PREREQUISITE list is
+# expanded when the rule is READ, and a variable defined later in the
+# file would be EMPTY at that point -- which would silently drop the
+# subject from the build graph and leave the new authority DORMANT.
+#
+# The subject's FILE NAME is the one the FROZEN selected contract
+# names (evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON08/c2/
+# selected-abi-and-projection.md section 4):
+#   tools/bootstrap/selfhost-parser-statement-dispatch.HC
+SLICE09_STATEMENT_DISPATCH_SRC = tools/bootstrap/selfhost-parser-statement-dispatch.HC
+SLICE09_STATEMENT_DISPATCH_OBJ = ./build/parser-statement-dispatch-subject.o
+
 # The stage0 compiler's own sources. A change to any of them must
 # invalidate the stage0 compiler, which in turn invalidates the
 # padding subject.
@@ -582,6 +598,7 @@ PRODUCTION_HCC = ./hcc
 PRODUCTION_HCC_INPUTS = $(PARSER_PADDING_OBJ) $(SLICE02_CFT_OBJ) $(SLICE03_OP_OBJ) \
 	$(SLICE04_AST_BINOP_OBJ) $(SLICE05_AST_UNARY_OBJ) $(SLICE06_SWITCH_ARM_OBJ) \
 	$(SLICE07_COMPOUND_BLOCK_OBJ) $(SLICE08_DEFAULT_ARM_OBJ) \
+	$(SLICE09_STATEMENT_DISPATCH_OBJ) \
 	$(wildcard src/*.c src/asm/*.c) \
 	$(wildcard src/*.h src/asm/*.h) \
 	$(wildcard src/CMakeLists.txt src/asm/CMakeLists.txt) \
@@ -636,6 +653,11 @@ $(PRODUCTION_HCC): $(PRODUCTION_HCC_INPUTS)
 		-DDEFAULT_ARM_TERMINATES_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
 		-DDEFAULT_ARM_TERMINATES_SOURCE=$(CURDIR)/$(SLICE08_DEFAULT_ARM_SRC) \
 		-DDEFAULT_ARM_TERMINATES_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_PARSER_STATEMENT_DISPATCH=ON \
+		-DSTATEMENT_DISPATCH_OBJECT=$(CURDIR)/$(SLICE09_STATEMENT_DISPATCH_OBJ) \
+		-DSTATEMENT_DISPATCH_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DSTATEMENT_DISPATCH_SOURCE=$(CURDIR)/$(SLICE09_STATEMENT_DISPATCH_SRC) \
+		-DSTATEMENT_DISPATCH_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
 		-DHCC_BOOTSTRAP_EXPECTED_SHA=$(LIBTOS_BOOTSTRAP_EXPECTED_SHA)
 	$(MAKE) -C ./build -j2
 	@if [ ! -x ./hcc ]; then \
@@ -656,10 +678,13 @@ $(PRODUCTION_HCC): $(PRODUCTION_HCC_INPUTS)
 		|| { echo "production-hcc: symbol _BootstrapAstUnaryOpFromToken not linked into ./hcc" >&2; exit 1; }
 	@nm ./hcc | grep -q '_BootstrapSwitchArmTerminates' \
 		|| { echo "production-hcc: symbol _BootstrapSwitchArmTerminates not linked into ./hcc" >&2; exit 1; }
+	@nm ./hcc | grep -q '_BootstrapStatementDispatch' \
+		|| { echo "production-hcc: symbol _BootstrapStatementDispatch not linked into ./hcc" >&2; exit 1; }
 	@echo "PRODUCTION_HCC=./hcc"
 	@echo "PRODUCTION_PADDING_AUTHORITY=POLYC"
 	@echo "PRODUCTION_AST_BINOP_AUTHORITY=POLYC"
 	@echo "PRODUCTION_SWITCH_ARM_AUTHORITY=POLYC"
+	@echo "PRODUCTION_STATEMENT_DISPATCH_AUTHORITY=POLYC"
 
 production-hcc: $(PRODUCTION_HCC)
 
@@ -722,6 +747,11 @@ llvm-all: $(PARSER_PADDING_OBJ)
 		-DDEFAULT_ARM_TERMINATES_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
 		-DDEFAULT_ARM_TERMINATES_SOURCE=$(CURDIR)/$(SLICE08_DEFAULT_ARM_SRC) \
 		-DDEFAULT_ARM_TERMINATES_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_PARSER_STATEMENT_DISPATCH=ON \
+		-DSTATEMENT_DISPATCH_OBJECT=$(CURDIR)/$(SLICE09_STATEMENT_DISPATCH_OBJ) \
+		-DSTATEMENT_DISPATCH_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DSTATEMENT_DISPATCH_SOURCE=$(CURDIR)/$(SLICE09_STATEMENT_DISPATCH_SRC) \
+		-DSTATEMENT_DISPATCH_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
 		-DHCC_BOOTSTRAP_EXPECTED_SHA=$(LIBTOS_BOOTSTRAP_EXPECTED_SHA)
 	$(MAKE) -C ./build/llvm -j2
 	@if [ ! -x ./hcc ]; then \
@@ -856,7 +886,12 @@ test-prefix-install: production-hcc runtime-producer
 		-DDEFAULT_ARM_TERMINATES_OBJECT=$(CURDIR)/$(SLICE08_DEFAULT_ARM_OBJ) \
 		-DDEFAULT_ARM_TERMINATES_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
 		-DDEFAULT_ARM_TERMINATES_SOURCE=$(CURDIR)/$(SLICE08_DEFAULT_ARM_SRC) \
-		-DDEFAULT_ARM_TERMINATES_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR)
+		-DDEFAULT_ARM_TERMINATES_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_PARSER_STATEMENT_DISPATCH=ON \
+		-DSTATEMENT_DISPATCH_OBJECT=$(CURDIR)/$(SLICE09_STATEMENT_DISPATCH_OBJ) \
+		-DSTATEMENT_DISPATCH_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DSTATEMENT_DISPATCH_SOURCE=$(CURDIR)/$(SLICE09_STATEMENT_DISPATCH_SRC) \
+		-DSTATEMENT_DISPATCH_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR)
 	$(MAKE) -C ./build/test-prefix-install-build install
 	@if [ ! -f $(TEST_PREFIX)/lib/libtos.a ] || \
 	    [ ! -f $(TEST_PREFIX)/lib/libtos.0.0.1.dylib ] || \
@@ -6392,6 +6427,30 @@ SLICE09_STATEMENT_DISPATCH_OBJ = ./build/parser-statement-dispatch-subject.o
 # output is copied as a substitute for another generation's compilation.
 SLICE09_GEN_DIR = build/slice09-gen
 SLICE09_GEN_SRC = $(SLICE09_STATEMENT_DISPATCH_SRC)
+
+# =========================================================================
+# The QUALIFIED SUBJECT OBJECT.
+#
+# The subject is compiled by the STAGE0 compiler (the legacy C control),
+# so that the component does not depend on the production compiler that
+# it is about to serve.
+#
+# The rule FAILS CLOSED: if the object is not produced, or if it does
+# not carry the PolyC symbol, the build stops.  There is no silent
+# fallback to a hand-written C subject.
+# =========================================================================
+$(SLICE09_STATEMENT_DISPATCH_OBJ): $(SLICE09_STATEMENT_DISPATCH_SRC) $(BOOTSTRAP_STAGE0_HCC) $(BOOTSTRAP_PREFIX_INC)/tos.HH
+	@rm -f $@
+	$(BOOTSTRAP_STAGE0_HCC) \
+		--install-dir=$(BOOTSTRAP_PREFIX_DIR) \
+		-c $(SLICE09_STATEMENT_DISPATCH_SRC) \
+		-o $@
+	@if [ ! -f $@ ]; then \
+		echo "parser-statement-dispatch-subject: object not produced" >&2; exit 1; \
+	fi
+	@nm $@ | grep -q '_BootstrapStatementDispatch' \
+		|| { echo "parser-statement-dispatch-subject: symbol _BootstrapStatementDispatch not found in object" >&2; exit 1; }
+	@echo "SLICE09_STATEMENT_DISPATCH_OBJECT=$@"
 
 # The FIXTURE PRODUCER (PolyC).
 $(SLICE09_FIXTURE_PRODUCER): $(SLICE09_FIXTURE_PRODUCER_SRC) ./hcc | test-prefix-install
