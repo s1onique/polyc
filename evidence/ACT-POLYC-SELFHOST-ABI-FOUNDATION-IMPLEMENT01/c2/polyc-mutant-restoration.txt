@@ -1,0 +1,51 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-FOUNDATION-IMPLEMENT01
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=polyc-mutant-restoration
+#
+# CAUSAL CHANNEL (a): a POLYC-SOURCE mutation that is rebuilt and RELINKED
+# into the real shadow compiler must change an actual selected witness.
+#
+=== baseline (G1) ===
+07772883708db588f8d18dbe07455b2104deae95ec90f51aec92fc3a21faf54b  tools/experimental/compile-print-ast-decision.HC
+f5dfc1644b4f133a4bfa972e4988231b5eb3ed77ad52a7617093798c8a04d799  build/compile-print-ast-decision-subject.o
+9a4e43bbf595bb15da7cb1b409b07e8bd7269e102383d24aaabe6efa87c36210  ./hcc
+b33d87ac05594db7e3f01f41fb9e4e81c1357fff8b179462f7ca460abafcb146  src/abi-cpa-host.c
+23a9940c7a53c4c1d61b54fb82daae1624163b8160e878738270eda06676353d  build/CMakeFiles/hcc.dir/abi-cpa-host.c.o
+
+=== mutation applied ===
+FILE=tools/experimental/compile-print-ast-decision.HC
+CHANGE=the line `  if (kind == ABI_AST_EXTERN_FUNC)   return 0;` is replaced by
+       `  /* MUTANT: the AST_EXTERN_FUNC suppression is deliberately removed. */`
+COMMAND=make cpa-subject ; make all INSTALL_PREFIX=/tmp/abiimpl01/g1/build/test-prefix
+
+=== mutant identities ===
+SUBJECT_SOURCE_SHA256=c6044c518467fb966830e82709b423e9c2e844cb4e13fdf4d51d9bfc2f65d53f
+SUBJECT_OBJECT_SHA256=2066089a44e902e29d6eedffb2a65bcfd5ab2fba05591ce6d0d33b028702b088
+SHADOW_HCC_SHA256=cf92dd8dfcdb9414c2301930643dc5da2cde7827d97b52decf09fd168a4b8a71
+HOST_OBJECT_SHA256=23a9940c7a53c4c1d61b54fb82daae1624163b8160e878738270eda06676353d (UNCHANGED)
+
+=== WITNESS UNDER THE MUTANT (pristine G1 prints only the suppressed set) ===
+case                                   mutant_lines  mutant_extern_lines  mutant_stdout_md5
+src/tests/01_pointer_simple.HC         1079          499                  89ab44afa5047444298b911c108767c6
+src/tests/12_function_pointer.HC       1392          502                  4788977b936c998eed653e2d550cece2
+src/tests/25_scripting.HC              1098          507                  ade6505c36bd4d36c929980d2e33901b
+src/tests/04_ptr_ptr.HC                1073          499                  313381cd2297f80ae34237207f7845c9
+CASES/only-externs.HC                  1026          505                  90953242577e937979e6441722ded7dd
+
+Reference (pristine G1) for the same cases: 72 / 379 / 75 / 66 / 6 lines
+and ZERO <extern_function> lines. The <extern_function> class is produced
+only by the tos.HH `_extern` bindings and by the corpus `extern "c"`
+declarations, so the mutant flips exactly the branch it removed.
+
+=== restoration ===
+COMMAND=cp <pristine subject> tools/experimental/compile-print-ast-decision.HC ; make all
+07772883708db588f8d18dbe07455b2104deae95ec90f51aec92fc3a21faf54b  tools/experimental/compile-print-ast-decision.HC
+f5dfc1644b4f133a4bfa972e4988231b5eb3ed77ad52a7617093798c8a04d799  build/compile-print-ast-decision-subject.o
+9a4e43bbf595bb15da7cb1b409b07e8bd7269e102383d24aaabe6efa87c36210  ./hcc
+b33d87ac05594db7e3f01f41fb9e4e81c1357fff8b179462f7ca460abafcb146  src/abi-cpa-host.c
+23a9940c7a53c4c1d61b54fb82daae1624163b8160e878738270eda06676353d  build/CMakeFiles/hcc.dir/abi-cpa-host.c.o
+
+RESTORATION_BYTE_IDENTICAL=YES (source, subject object and shadow hcc all match the baseline)
+RESTORATION_BEHAVIOUR=9/9 MATCH against G0 (see g0-vs-g1-differential.tsv)
+
+VERDICT=POLYC_MUTANT_CAUSAL_PASS

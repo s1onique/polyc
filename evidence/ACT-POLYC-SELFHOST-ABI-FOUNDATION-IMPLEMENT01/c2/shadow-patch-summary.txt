@@ -1,0 +1,62 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-FOUNDATION-IMPLEMENT01
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=shadow-patch-summary
+#
+# Human-readable summary of the change set in shadow-patch.diff.
+#
+  diff --git a/Makefile b/Makefile
+  --- a/Makefile
+  +++ b/Makefile
+  @@ -596,6 +596,13 @@ parser-padding-subject: $(PARSER_PADDING_OBJ)
+  @@ -605,6 +612,13 @@ PRODUCTION_HCC_INPUTS = $(PARSER_PADDING_OBJ) $(SLICE02_CFT_OBJ) $(SLICE03_OP_OB
+  @@ -7719,3 +7733,38 @@ abi-foundation-recon01-verify: $(ABI_RECON01_VERIFY)
+  diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+  --- a/src/CMakeLists.txt
+  +++ b/src/CMakeLists.txt
+  @@ -64,6 +64,9 @@ add_compile_definitions(HCC_GIT_HASH="${HCC_GIT_HASH}")
+  @@ -200,6 +203,37 @@ endif()
+  diff --git a/src/abi-cpa-host.c b/src/abi-cpa-host.c
+  new file mode 100644
+  --- /dev/null
+  +++ b/src/abi-cpa-host.c
+  @@ -0,0 +1,184 @@
+  diff --git a/src/abi-cpa-host.h b/src/abi-cpa-host.h
+  new file mode 100644
+  --- /dev/null
+  +++ b/src/abi-cpa-host.h
+  @@ -0,0 +1,59 @@
+  diff --git a/src/cctrl.h b/src/cctrl.h
+  --- a/src/cctrl.h
+  +++ b/src/cctrl.h
+  @@ -6,7 +6,12 @@
+  diff --git a/src/compile.c b/src/compile.c
+  --- a/src/compile.c
+  +++ b/src/compile.c
+  @@ -3,7 +3,6 @@
+  @@ -14,6 +13,34 @@
+  @@ -28,13 +55,31 @@ void compilePrintAst(Cctrl *cc) {
+  diff --git a/src/ir-types.c b/src/ir-types.c
+  --- a/src/ir-types.c
+  +++ b/src/ir-types.c
+  @@ -4,6 +4,9 @@
+  diff --git a/src/parser.h b/src/parser.h
+  --- a/src/parser.h
+  +++ b/src/parser.h
+  @@ -2,7 +2,9 @@
+  diff --git a/tools/experimental/compile-print-ast-decision.HC b/tools/experimental/compile-print-ast-decision.HC
+  new file mode 100644
+  --- /dev/null
+  +++ b/tools/experimental/compile-print-ast-decision.HC
+  @@ -0,0 +1,40 @@
+
+# Per-file changed-line counts:
+ Makefile                                         |  49 ++++++
+ src/CMakeLists.txt                               |  34 +++++
+ src/abi-cpa-host.c                               | 184 +++++++++++++++++++++++
+ src/abi-cpa-host.h                               |  59 ++++++++
+ src/cctrl.h                                      |   7 +-
+ src/compile.c                                    |  49 +++++-
+ src/ir-types.c                                   |   3 +
+ src/parser.h                                     |   4 +-
+ tools/experimental/compile-print-ast-decision.HC |  40 +++++
+ 9 files changed, 425 insertions(+), 4 deletions(-)

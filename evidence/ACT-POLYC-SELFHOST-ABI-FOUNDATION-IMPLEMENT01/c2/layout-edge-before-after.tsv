@@ -1,0 +1,42 @@
+property	G0_before	G1_after	verdict
+effective_ast_h_frames_in_compile.c_TU	1	0	RETIRED
+compile.c_source_has_include_ast_h	1	0 (only inside #else of HCC_USE_SELFHOST_ABI_CPA)	RETIRED_IN_THE_BUILT_CONFIG
+compile.c_source_ast_member_accesses	3 (ast->kind x3)	0	RETIRED
+consumer_object_kind_load	ldr w8,[x21] (Ast.kind at +0)	ABSENT	RETIRED
+consumer_object_kind_mask	mov w24,#0x2401 over span 0x114..0x121	ABSENT	RETIRED
+consumer_object_polyc_calls	0	3 (_AbiCpaIssueAst,_AbiCpaShouldPrintAst,_AbiCpaRetireAst)	INTRODUCED
+consumer_object_imports_astToString	YES	YES	CONSERVED (opaque pointer only)
+polyc_subject_defines_decision	NO	YES (_AbiCpaShouldPrintAst T)	INTRODUCED
+polyc_subject_computes_ast_offset	NO	NO	CONSERVED_ABSENT
+other_candidate_TUs_still_contain_ast_h	13/13	13/13	NO_OVER_CLAIM
+whole_program_compiles	YES	YES	CONSERVED
+
+# effective project header closure of src/compile.c
+# BEFORE: src/aostr.h
+src/asm.h
+src/ast.h
+src/cctrl.h
+src/cli.h
+src/compile.h
+src/config.h
+src/containers.h
+src/lexer.h
+src/list.h
+src/memory.h
+src/parser.h
+src/types.h
+src/util.h
+# AFTER : src/abi-cpa-host.h
+src/aostr.h
+src/asm.h
+src/cctrl.h
+src/cli.h
+src/compile.h
+src/config.h
+src/containers.h
+src/lexer.h
+src/list.h
+src/memory.h
+src/parser.h
+src/types.h
+src/util.h

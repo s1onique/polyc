@@ -1,0 +1,56 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-FOUNDATION-IMPLEMENT01
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=host-mutant-restoration
+#
+# CAUSAL CHANNEL (b): a C HOST-ACCESSOR mutation with the POLYC SOURCE
+# UNTOUCHED must produce the specified semantic change. This proves the
+# decision really is driven by host data delivered through the PolyC
+# component, and that the harness is sensitive to the host side for its own
+# reason.
+#
+# === baseline (G1) ===
+# (pristine hashes, see c2/shadow-source-and-object-manifest.tsv)
+07772883708db588f8d18dbe07455b2104deae95ec90f51aec92fc3a21faf54b  tools/experimental/compile-print-ast-decision.HC
+f5dfc1644b4f133a4bfa972e4988231b5eb3ed77ad52a7617093798c8a04d799  build/compile-print-ast-decision-subject.o
+9a4e43bbf595bb15da7cb1b409b07e8bd7269e102383d24aaabe6efa87c36210  ./hcc
+b33d87ac05594db7e3f01f41fb9e4e81c1357fff8b179462f7ca460abafcb146  src/abi-cpa-host.c
+23a9940c7a53c4c1d61b54fb82daae1624163b8160e878738270eda06676353d  build/CMakeFiles/hcc.dir/abi-cpa-host.c.o
+
+# === mutation applied ===
+FILE=src/abi-cpa-host.c
+CHANGE=inside AbiCpaAstKind(), the statement
+         return (s64)((Ast *)s->obj)->kind;
+       is replaced by
+         /* HOST MUTANT: report a wrong kind so the PolyC decision is fed bad data. */
+         return (s64)286;   /* AST_FUN_PROTO */
+COMMAND=make all INSTALL_PREFIX=/tmp/abiimpl01/g1/build/test-prefix
+
+# === mutant identities ===
+SUBJECT_SOURCE_SHA256=07772883708db588f8d18dbe07455b2104deae95ec90f51aec92fc3a21faf54b  (UNCHANGED)
+SUBJECT_OBJECT_SHA256=f5dfc1644b4f133a4bfa972e4988231b5eb3ed77ad52a7617093798c8a04d799  (UNCHANGED)
+HOST_SOURCE_SHA256=9f7ae2600690b62bf4c327252d6973b0d3f2e547aa8768c2ff7b0e5c0f0d9fba
+HOST_OBJECT_SHA256=383a17f7ba42351b0f4ea81a972acb71cf15e4e648f45c4360cc006eea0f5e6f
+SHADOW_HCC_SHA256=e27810a388c24f2266ea274ac31358a51e25c649032f6829aa8ff67649440f8d
+
+# === WITNESS UNDER THE HOST MUTANT ===
+case                            lines  stdout_md5
+CASES/only-externs.HC               0  8cb2e8d2a45b368b216dde9f7c77b924
+src/tests/01_pointer_simple.HC      0  8cb2e8d2a45b368b216dde9f7c77b924
+src/tests/04_ptr_ptr.HC             0  8cb2e8d2a45b368b216dde9f7c77b924
+
+The dump collapses to the single header line "AST: " because every node now
+reports kind 286 (AST_FUN_PROTO) and the compiled PolyC component suppresses
+it. The PolyC object digest is UNCHANGED, so the observed change can only have
+come from the host accessor.
+
+# === restoration ===
+COMMAND=cp <pristine host source> src/abi-cpa-host.c ; make all
+9a4e43bbf595bb15da7cb1b409b07e8bd7269e102383d24aaabe6efa87c36210  ./hcc
+b33d87ac05594db7e3f01f41fb9e4e81c1357fff8b179462f7ca460abafcb146  src/abi-cpa-host.c
+23a9940c7a53c4c1d61b54fb82daae1624163b8160e878738270eda06676353d  build/CMakeFiles/hcc.dir/abi-cpa-host.c.o
+f5dfc1644b4f133a4bfa972e4988231b5eb3ed77ad52a7617093798c8a04d799  build/compile-print-ast-decision-subject.o
+
+RESTORATION_BYTE_IDENTICAL=YES
+RESTORATION_BEHAVIOUR=9/9 MATCH against G0 (see c2/g0-vs-g1-differential.tsv)
+
+VERDICT=HOST_MUTANT_CAUSAL_PASS

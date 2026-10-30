@@ -1,0 +1,52 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-FOUNDATION-IMPLEMENT01
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=abi-handle-safety-raw
+#
+# Standalone ABI safety probe: src/abi-cpa-host.c compiled WITH
+# -DABI_CPA_TEST_HOOKS, plus the compiled PolyC subject, plus the
+# production ast/list/aostr/containers/arena/memory objects, plus an
+# independent C oracle. No fixture mirrors a production struct.
+#
+COMMAND=build/abi-safety/abi_safety
+
+ABI_VERSION=1
+PRISTINE kind=266 kind_read=266 decide=1 oracle=1 MATCH
+PRISTINE kind=296 kind_read=296 decide=1 oracle=1 MATCH
+PRISTINE kind=286 kind_read=286 decide=0 oracle=0 MATCH
+PRISTINE kind=289 kind_read=289 decide=0 oracle=0 MATCH
+PRISTINE kind=276 kind_read=276 decide=0 oracle=0 MATCH
+PRISTINE kind=256 kind_read=256 decide=1 oracle=1 MATCH
+CHECK null_handle                                    got=-1 want=-1 OK
+CHECK forged_token                                   got=-5 want=-5 OK
+CHECK wrong_kind_token                               got=-2 want=-2 OK
+CHECK stale_token                                    got=-3 want=-3 OK
+ARENA before=266 CHECK expired_after_arena_teardown                   got=-8 want=-8 OK
+WRAP t1=-4549197469790961318 t2=-4549197465496125094 replay=-17 fresh=-4549196370279333542 aliased=0
+CHECK generation_wrap_fail_closed                    got=-17 want=-17 OK
+CHECK generation_wrap_no_alias                       got=0 want=0 OK
+CAPACITY slots=64
+CHECK capacity_exhaustion                            got=-15 want=-15 OK
+CHECK domain_mismatch                                got=-6 want=-6 OK
+SIGNED error=-5 decision=0 kind=286
+CHECK decision_non_negative                          got=1 want=1 OK
+CHECK error_negative                                 got=1 want=1 OK
+CHECK kind_above_status_range                        got=1 want=1 OK
+ABI_SAFETY_STATUS=PASS
+
+=== AI-18: the COMPILER build exposes no mutation entry point ===
+COMMAND=nm -gU build/CMakeFiles/hcc.dir/abi-cpa-host.c.o
+0000000000000000 T _AbiAbiVersion
+0000000000000174 T _AbiCpaAstKind
+0000000000000008 T _AbiCpaIssueAst
+00000000000000b8 T _AbiCpaRetireAst
+
+There is no AbiCpa*Push / Set / Grant / Alloc / Mutate symbol. Unauthorized
+mutation is not merely rejected at run time: the capability does not exist.
+
+=== AI-19: no nonlocal recovery surface ===
+setjmp/longjmp in build/abi-safety/abi_safety : 0
+setjmp/longjmp in G1 hcc                      : 2
+setjmp/longjmp in G0 hcc                      : 2
+
+The probe has none. Both compiler binaries have two, identical to G0
+(pre-existing lsp/repl recovery); this ACT introduced none.

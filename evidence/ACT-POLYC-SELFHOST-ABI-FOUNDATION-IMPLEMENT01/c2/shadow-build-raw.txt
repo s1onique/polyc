@@ -1,0 +1,116 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-FOUNDATION-IMPLEMENT01
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=shadow-build-raw
+#
+# G1 = the isolated shadow compiler built in the disposable detached
+# worktree /tmp/abiimpl01/g1 at ENTRY_HEAD 315ff492c077a673c3d78ec536b2a31209a32270
+# with the 9-file shadow patch applied.
+#
+=== G-1..G-5 effective build-graph assertions ===
+COMMAND=grep -n abi-cpa-host src/CMakeLists.txt
+69:    abi-cpa-host.c
+COMMAND=grep -n COMPILE_PRINT_AST_DECISION src/CMakeLists.txt
+222:    if (NOT COMPILE_PRINT_AST_DECISION_OBJECT)
+223:        set(COMPILE_PRINT_AST_DECISION_OBJECT "${CMAKE_SOURCE_DIR}/../build/compile-print-ast-decision-subject.o")
+225:    if (NOT EXISTS "${COMPILE_PRINT_AST_DECISION_OBJECT}")
+228:            "${COMPILE_PRINT_AST_DECISION_OBJECT}. Build it with `make cpa-subject`.")
+230:    target_link_libraries(hcc "${COMPILE_PRINT_AST_DECISION_OBJECT}")
+231:    message(STATUS "ABI-IMPLEMENT01 shadow: linking compiled PolyC decision ${COMPILE_PRINT_AST_DECISION_OBJECT}")
+COMMAND=grep -n CPA_OBJ Makefile (must appear BEFORE the $(PRODUCTION_HCC) rule)
+605:CPA_OBJ = ./build/compile-print-ast-decision-subject.o
+620:PRODUCTION_HCC_INPUTS += $(CPA_OBJ)
+622:$(PRODUCTION_HCC): $(PRODUCTION_HCC_INPUTS)
+7749:$(CPA_OBJ): $(CPA_SRC) $(BOOTSTRAP_STAGE0_HCC) $(BOOTSTRAP_PREFIX_INC)/tos.HH
+7767:cpa-subject: $(CPA_OBJ)
+COMMAND=make -n all (graph inspection only, NOT a build)
+  -> re-runs the cmake configure because $(CPA_OBJ) is a newer declared input
+COMMAND=stat ordering of compile.c.o vs src/compile.c
+-rw-r--r-- 1 chistyakov wheel 2976 Oct 31 02:22 /tmp/abiimpl01/g1/build/CMakeFiles/hcc.dir/compile.c.o
+-rw-r--r-- 1 chistyakov wheel 4319 Oct 31 02:22 /tmp/abiimpl01/g1/src/compile.c
+COMMAND=grep of build/CMakeFiles/hcc.dir/link.txt
+      1 abi-cpa-host.c.o
+      1 compile-print-ast-decision-subject.o
+      1 compile.c.o
+COMMAND=nm ./hcc | grep AbiCpa (G-6: defined in the shadow compiler)
+0000000100003558 T _AbiCpaAstKind
+00000001000033ec T _AbiCpaIssueAst
+000000010000349c T _AbiCpaRetireAst
+0000000100064540 T _AbiCpaShouldPrintAst
+COMMAND=nm -u build/CMakeFiles/hcc.dir/compile.c.o | grep AbiCpa (G-7: imported by the consumer)
+_AbiCpaIssueAst
+_AbiCpaRetireAst
+_AbiCpaShouldPrintAst
+COMMAND=nm ./hcc | grep -c " T _Bootstrap" (G-8: nine authorities still present)
+9
+
+=== the selected function in the shadow compiler ===
+_compilePrintAst:
+0000000000000000	stp	x24, x23, [sp, #-0x40]!
+0000000000000004	stp	x22, x21, [sp, #0x10]
+0000000000000008	stp	x20, x19, [sp, #0x20]
+000000000000000c	stp	x29, x30, [sp, #0x30]
+0000000000000010	add	x29, sp, #0x30
+0000000000000014	mov	x19, x0
+0000000000000018	adrp	x0, 0 ; 0x0
+000000000000001c	add	x0, x0, #0x0
+0000000000000020	bl	0x20
+0000000000000024	ldr	x8, [x19, #0x70]
+0000000000000028	ldr	x24, [x8]
+000000000000002c	cmp	x24, x8
+0000000000000030	b.eq	0x94
+0000000000000034	adrp	x20, 0 ; 0x0
+0000000000000038	add	x20, x20, #0x0
+000000000000003c	b	0x50
+0000000000000040	ldr	x24, [x24]
+0000000000000044	ldr	x8, [x19, #0x70]
+0000000000000048	cmp	x24, x8
+000000000000004c	b.eq	0x94
+0000000000000050	ldr	x21, [x24, #0x10]
+0000000000000054	cbnz	x21, 0x60
+0000000000000058	mov	x0, x20
+000000000000005c	bl	0x5c
+0000000000000060	mov	x0, x21
+0000000000000064	bl	0x64
+0000000000000068	mov	x22, x0
+000000000000006c	bl	0x6c
+0000000000000070	mov	x23, x0
+0000000000000074	mov	x0, x22
+0000000000000078	bl	0x78
+000000000000007c	cmp	x23, #0x1
+0000000000000080	b.lt	0x40
+0000000000000084	mov	x0, x21
+0000000000000088	bl	0x88
+000000000000008c	bl	0x8c
+0000000000000090	b	0x40
+0000000000000094	ldp	x29, x30, [sp, #0x30]
+0000000000000098	ldp	x20, x19, [sp, #0x20]
+000000000000009c	ldp	x22, x21, [sp, #0x10]
+00000000000000a0	ldp	x24, x23, [sp], #0x40
+00000000000000a4	ret
+_compileToAsm:
+
+# =====================================================================
+# A REAL BUILD-GRAPH DEFECT FOUND AND FIXED DURING C2
+# =====================================================================
+#
+# The first shadow Makefile block placed `PRODUCTION_HCC_INPUTS += $(CPA_OBJ)`
+# at the END of the file, after the `$(PRODUCTION_HCC): $(PRODUCTION_HCC_INPUTS)`
+# rule. GNU Make expands a rule prerequisites while the makefile is READ, so
+# the appended prerequisite had NO effect on the effective build graph:
+# the subject object was rebuilt, `make all` reported
+#   make: Nothing to be done for "all".
+# and the shadow binary silently stayed stale.
+#
+# This was caught by inspecting the effective graph (`make -n all` produced no
+# reconfigure) and by comparing object and binary digests, exactly as the ACT
+# requires. The fix moved the variable and the `+=` BEFORE the rule:
+#
+  604:CPA_SRC = tools/experimental/compile-print-ast-decision.HC
+  605:CPA_OBJ = ./build/compile-print-ast-decision-subject.o
+  ...  PRODUCTION_HCC_INPUTS = ...  (existing definition)
+  ...  PRODUCTION_HCC_INPUTS += $(CPA_OBJ)
+  616:$(PRODUCTION_HCC): $(PRODUCTION_HCC_INPUTS)
+#
+# After the fix, changing only the PolyC subject forced a reconfigure and a
+# relink, and the shadow hcc digest changed accordingly
+# (9a4e43bb... -> cf92dd8d... for the PolyC mutant).

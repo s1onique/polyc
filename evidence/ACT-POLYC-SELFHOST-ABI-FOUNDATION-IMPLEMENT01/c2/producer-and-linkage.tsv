@@ -1,0 +1,26 @@
+item	value	measurement
+WORKTREE	/tmp/abiimpl01/g1	git worktree add --detach 315ff492c077a673c3d78ec536b2a31209a32270
+BASE_COMMIT	315ff492c077a673c3d78ec536b2a31209a32270	git -C /tmp/abiimpl01/g1 rev-parse HEAD
+POLYC_SUBJECT_SOURCE	tools/experimental/compile-print-ast-decision.HC	n/a
+POLYC_SUBJECT_SOURCE_SHA256	07772883708db588f8d18dbe07455b2104deae95ec90f51aec92fc3a21faf54b	shasum -a 256 (pristine, post-restoration)
+POLYC_SUBJECT_OBJECT	build/compile-print-ast-decision-subject.o	n/a
+POLYC_SUBJECT_OBJECT_SHA256	f5dfc1644b4f133a4bfa972e4988231b5eb3ed77ad52a7617093798c8a04d799	shasum -a 256
+POLYC_SUBJECT_PRODUCER	build/host-stage0/hcc	the same digest-bound stage0 producer as the nine production parser subjects
+POLYC_SUBJECT_PRODUCER_SHA256	0e4fe8ff3b6dda63c1e073573cf859cb209305382f7e2267fa073d031a8b2e1a	shasum -a 256 build/host-stage0/hcc
+POLYC_SUBJECT_PRODUCER_COMMAND	build/host-stage0/hcc --install-dir=<worktree>/build/bootstrap-prefix -c tools/experimental/compile-print-ast-decision.HC -o build/compile-print-ast-decision-subject.o	make cpa-subject
+POLYC_SUBJECT_ARCH	arm64	file -b on the object
+POLYC_SUBJECT_DEFINES	_AbiCpaShouldPrintAst (T)	nm -gU on the object
+POLYC_SUBJECT_IMPORTS	_AbiCpaAstKind (U)	nm -u on the object
+HOST_ADAPTER_SOURCE	src/abi-cpa-host.c	n/a
+HOST_ADAPTER_SOURCE_SHA256	b33d87ac05594db7e3f01f41fb9e4e81c1357fff8b179462f7ca460abafcb146	shasum -a 256
+HOST_ADAPTER_OBJECT_SHA256	23a9940c7a53c4c1d61b54fb82daae1624163b8160e878738270eda06676353d	shasum -a 256 build/CMakeFiles/hcc.dir/abi-cpa-host.c.o
+HOST_ADAPTER_EXPORTS	_AbiAbiVersion _AbiCpaAstKind _AbiCpaIssueAst _AbiCpaRetireAst	nm -gU (no fixture hooks in the compiler build)
+CONSUMER_OBJECT_SHA256	274601325afd65aef95ec15cb61384fd4563508ee80204e9cb3bde20693cc979	shasum -a 256 build/CMakeFiles/hcc.dir/compile.c.o
+SHADOW_HCC	/tmp/abiimpl01/g1/hcc	n/a
+SHADOW_HCC_SHA256	9a4e43bbf595bb15da7cb1b409b07e8bd7269e102383d24aaabe6efa87c36210	shasum -a 256
+SHADOW_LIBTOS_A_SHA256	d88c7f6bf2afcd9eb314887d7ee7862e3c539ad81d8a4961a30c0c2acc7e27d0	shasum -a 256 build/test-prefix/lib/libtos.a
+LINK_INPUTS_PRESENT	compile.c.o:1 abi-cpa-host.c.o:1 compile-print-ast-decision-subject.o:1	grep -o over build/CMakeFiles/hcc.dir/link.txt
+POLYC_SYMBOL_DEFINED_AT	0x100064580 (same region as the nine _Bootstrap* subjects)	nm ./hcc
+NINE_AUTHORITIES_PRESENT	9	nm ./hcc | grep -c ' T _Bootstrap'
+SETJMP_LONGJMP_G0	2	nm -u G0 hcc
+SETJMP_LONGJMP_G1	2	nm -u G1 hcc (conserved, not introduced)
