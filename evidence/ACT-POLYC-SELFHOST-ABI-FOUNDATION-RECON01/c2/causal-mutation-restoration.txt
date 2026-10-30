@@ -1,0 +1,50 @@
+# CAUSAL POLYC-SOURCE MUTATION AND RESTORATION
+MUTATION=lv * 1000 + rv  ->  lv * 100 + rv (only the selected AST classification behaviour changed)
+SOURCE_ORIGINAL_SHA256=ca2f3e6f8f7baa47cbcd4cf6b1027b1bebc9c36f31d6b1a8b00639072e7873c1
+SOURCE_MUTANT_SHA256=3d77a1de2f086ec74fa0e9531809c5c3ee44b6ba71ab8017c7af253d43b55625
+OBJECT_ORIGINAL_SHA256=d414acdc6532021ba1ff69ed41e46fba38fca5853f9a948242917d496b92743a
+OBJECT_MUTANT_SHA256=e16723c59555127ca8deace031bf1bda16de15ff65f8f57b5c410508da054117
+OBJECT_RESTORED_SHA256=d414acdc6532021ba1ff69ed41e46fba38fca5853f9a948242917d496b92743a
+SOURCE_AFTER_RESTORATION_SHA256=ca2f3e6f8f7baa47cbcd4cf6b1027b1bebc9c36f31d6b1a8b00639072e7873c1
+--- mutant run ---
+PRISTINE_AST_TOKEN=-4549197469790961318
+PRISTINE_AST_RESULT=1725 ORACLE=17025
+CHECK ast_classify_matches_oracle      got=1725 want=17025 FAIL
+CHECK literal_class                    got=100 want=100 OK
+PRISTINE_LIST_TOKEN=-4549195266472738470
+CHECK list_grant                       got=0 want=0 OK
+PRISTINE_LIST_APPEND=4
+CHECK list_append_result               got=4 want=4 OK
+CHECK list_append_count                got=4 want=4 OK
+CHECK list_append_value                got=40 want=40 OK
+PRISTINE_LIST_REPLACE=99
+CHECK list_replace_result              got=99 want=99 OK
+CHECK list_replace_value               got=99 want=99 OK
+CHECK list_replace_count               got=4 want=4 OK
+PRISTINE_LIST_BOUNDED_REFUSAL=-10
+CHECK bounded_append_refused           got=-10 want=-10 OK
+CHECK bounded_append_atomic            got=4 want=4 OK
+PRISTINE_STATUS=FAIL
+MUTANT_EXIT=1
+--- restored pristine run ---
+PRISTINE_AST_TOKEN=-4549197469790961318
+PRISTINE_AST_RESULT=17025 ORACLE=17025
+CHECK ast_classify_matches_oracle      got=17025 want=17025 OK
+CHECK literal_class                    got=100 want=100 OK
+PRISTINE_LIST_TOKEN=-4549195266472738470
+CHECK list_grant                       got=0 want=0 OK
+PRISTINE_LIST_APPEND=4
+CHECK list_append_result               got=4 want=4 OK
+CHECK list_append_count                got=4 want=4 OK
+CHECK list_append_value                got=40 want=40 OK
+PRISTINE_LIST_REPLACE=99
+CHECK list_replace_result              got=99 want=99 OK
+CHECK list_replace_value               got=99 want=99 OK
+CHECK list_replace_count               got=4 want=4 OK
+PRISTINE_LIST_BOUNDED_REFUSAL=-10
+CHECK bounded_append_refused           got=-10 want=-10 OK
+CHECK bounded_append_atomic            got=4 want=4 OK
+PRISTINE_STATUS=PASS
+PRISTINE_EXIT=0
+--- byte identity of two restored runs ---
+RESTORED_RUN_BYTE_IDENTICAL=YES

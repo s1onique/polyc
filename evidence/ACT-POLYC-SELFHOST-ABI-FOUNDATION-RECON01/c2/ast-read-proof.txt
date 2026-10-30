@@ -1,0 +1,27 @@
+# AST READ PROOF
+COMMAND=./hcc --install-dir=build/test-prefix -c evidence/.../abi_probe.HC -o build/.../abi_probe.o
+COMMAND=cc -c abi_host.c abi_main.c abi_oracle.c (real src via cc -c src/{ast,list,aostr,containers,arena,memory}.c)
+COMMAND=cc -Wl,-dead_strip ... -ltos -o abi_probe_bin
+COMMAND=./abi_probe_bin
+--- raw output ---
+PRISTINE_AST_TOKEN=-4549197469790961318
+PRISTINE_AST_RESULT=17025 ORACLE=17025
+CHECK ast_classify_matches_oracle      got=17025 want=17025 OK
+CHECK literal_class                    got=100 want=100 OK
+PRISTINE_LIST_TOKEN=-4549195266472738470
+CHECK list_grant                       got=0 want=0 OK
+PRISTINE_LIST_APPEND=4
+CHECK list_append_result               got=4 want=4 OK
+CHECK list_append_count                got=4 want=4 OK
+CHECK list_append_value                got=40 want=40 OK
+PRISTINE_LIST_REPLACE=99
+CHECK list_replace_result              got=99 want=99 OK
+CHECK list_replace_value               got=99 want=99 OK
+CHECK list_replace_count               got=4 want=4 OK
+PRISTINE_LIST_BOUNDED_REFUSAL=-10
+CHECK bounded_append_refused           got=-10 want=-10 OK
+CHECK bounded_append_atomic            got=4 want=4 OK
+PRISTINE_STATUS=PASS
+PRISTINE_EXIT=0
+--- oracle ---
+The C-only oracle reads Ast->kind/binop/left/right->i64 directly (abi_oracle.c) and does not use the handle layer.

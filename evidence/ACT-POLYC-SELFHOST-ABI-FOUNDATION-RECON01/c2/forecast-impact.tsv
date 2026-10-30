@@ -1,0 +1,12 @@
+row_id	scenario	unit_count	basis	act_projection	status	note
+FI-01	HISTORICAL_CENSUS01_M2	355	preserved verbatim from CENSUS01 c2/forecast.tsv	159/355/961	HISTORICAL_UNQUALIFIED_BASELINE	not recomputed as truth; known defects AUD-03..AUD-07
+FI-02	REMAINING_C_SEMANTIC_SITES	2130	2218 C_AUTHORITY minus 88 vendored line-editor rows; the 6 adapters and 9 PolyC authorities are already excluded from C_AUTHORITY	-	DERIVED_FROM_ROWS	B-2 and B-3 excluded by definition of remaining semantic work
+FI-03	B-1_SEMANTIC_ONLY	2130	CENSUS01 B-1 2136 minus its 6 C_MECHANICAL_ADAPTER rows	-	DERIVED_FROM_ROWS	the adapter subtraction is this ACT's correction of the historical bundle arithmetic
+FI-04	B-2_VENDORED	0	88 rows are SYS-VENDORED_LINE_EDITOR, outside the compiler semantic boundary	-	EXCLUDED	historical 88 retained in FI-01
+FI-05	B-3_ALREADY_MIGRATED	0	9 rows are the active PC-Bootstrap* PolyC components	-	EXCLUDED	historical 5 ACTs retained in FI-01
+FI-06	NO_PROVED_CUTS_BASE	2130	12 sites/ACT (historical FA-04 base), 44% correction rate (FA-03), 3 selection + 2 integration + 3 generation + 3 shared + 0 bootstrap? bootstrap remains 10	~278	SCENARIO_CONDITIONAL	ceil(2130/12)=178 implementation, 78 corrections, 3 selection, 2 integration, 3 generation, 2 shared, 10 bootstrap, 2 ABI
+FI-07	NO_PROVED_CUTS_LOW	2130	20 sites/ACT, 25% corrections, ABI 2, bootstrap 3, harness 2	~148	SCENARIO_CONDITIONAL	optimistic extreme; still above 100
+FI-08	NO_PROVED_CUTS_HIGH	2130	6 sites/ACT, 65% corrections, ABI 5, bootstrap 8, harness 6	~614	SCENARIO_CONDITIONAL	pessimistic extreme
+FI-09	WITH_PROVED_CUTS	2130	proved cuts = 0; therefore identical to FI-06..FI-08	~278 (same)	SCENARIO_CONDITIONAL	a cut could only reduce integration risk, not site count; no cut exists
+FI-10	NEW_M2_ESTIMATE	-	the site->ACT mapping is itself unvalidated by any executed bundle	UNPROVEN	UNPROVEN	a bounded range of 148..614 is reported, not a point forecast
+FI-11	M2_BELOW_100	-	low extreme 148 > 100 under the recorded assumptions	NOT_SUPPORTED	NOT_SUPPORTED	no executed evidence supports an under-100 claim

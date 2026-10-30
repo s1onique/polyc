@@ -1,0 +1,15 @@
+function	role	return_type	return_width_bits	params	calling_convention	error_discipline	negative_operations
+AbiAbiVersion	version probe	I64	64	(empty)	SysV arm64 C ABI	returns 1	none
+AbiAstKind	AST accessor	I64	64	I64 ast	SysV arm64 C ABI	>=0 node kind (256..299); <0 status	null/wrong-kind/stale/expired token
+AbiAstBinOp	AST accessor	I64	64	I64 ast	SysV arm64 C ABI	>=0 AstBinOp; <0 status	wrong node kind; invalid token
+AbiAstChildKind	AST accessor	I64	64	I64 ast, I64 which	SysV arm64 C ABI	>=0 AstKind; <0 status	which not in {0,1}; null child; invalid token
+AbiAstChildI64	AST accessor	I64	64	I64 ast, I64 which	SysV arm64 C ABI	>=0 literal; <0 status	child not AST_LITERAL; invalid token
+AbiListLen	List accessor	I64	64	I64 list	SysV arm64 C ABI	>=0 count; <0 status	invalid token/kind
+AbiListAt	List accessor	I64	64	I64 list, I64 index	SysV arm64 C ABI	>=0 value; <0 status	out-of-range; invalid token
+AbiListPush	List mutator	I64	64	I64 list, I64 value	SysV arm64 C ABI	0 on success; <0 status	no mutation capability; injected host error; invalid token
+AbiListSet	List mutator	I64	64	I64 list, I64 index, I64 value	SysV arm64 C ABI	0 on success; <0 status	range checked before write; no capability; invalid token
+AbiRelease	lifetime	I64	64	I64 handle	SysV arm64 C ABI	0 on success; <0 status	null; double release; wrong generation; invalid token
+AbiRetainCallback	forbidden op	I64	64	I64 handle, I64 fn	SysV arm64 C ABI	always negative	callback retention unsupported in v1
+AbiProbeAstClassify	PolyC entry	I64	64	I64 ast	SysV arm64 C ABI	decision value; <0 host status propagated	no error swallowing
+AbiProbeListAppend	PolyC entry	I64	64	I64 list, I64 value, I64 limit	SysV arm64 C ABI	new length; <0 host status propagated	bound refusal is atomic
+AbiProbeListReplace	PolyC entry	I64	64	I64 list, I64 index, I64 value	SysV arm64 C ABI	new value; <0 host status propagated	range checked before write

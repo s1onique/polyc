@@ -7678,3 +7678,31 @@ census01-controls: $(CENSUS01_TOOL)
 census01-all: census01-selftest census01-schema census01-graph census01-forecast census01-controls
 
 .PHONY: census01-selftest census01-schema census01-graph census01-forecast census01-controls census01-all
+
+# ACT-POLYC-SELFHOST-ABI-FOUNDATION-RECON01: isolated, additive targets.
+# No production selector, source list or CMake input is touched.
+ABI_RECON01_DIR   = evidence/ACT-POLYC-SELFHOST-ABI-FOUNDATION-RECON01
+ABI_RECON01_C1    = evidence/ACT-POLYC-SELFHOST-WHOLE-COMPILER-AUTHORITY-CENSUS01/c1
+ABI_RECON01_SCC   = evidence/ACT-POLYC-SELFHOST-WHOLE-COMPILER-AUTHORITY-CENSUS01/c2/scc-members.tsv
+ABI_RECON01_GRAPH = build/abi-foundation-recon01/c2/graph
+
+$(ABI_RECON01_GRAPH).o: tools/quality/abi-foundation-recon01-graph.HC ./hcc | test-prefix-install
+	./hcc --install-dir=$(TEST_PREFIX) -c $< -o $@
+
+$(ABI_RECON01_GRAPH): $(ABI_RECON01_GRAPH).o
+	cc $< -L$(TEST_PREFIX)/lib -ltos -o $@
+
+abi-foundation-recon01-graph-selftest: $(ABI_RECON01_GRAPH)
+	./$(ABI_RECON01_GRAPH) SELFTEST
+
+abi-foundation-recon01-graph: $(ABI_RECON01_GRAPH)
+	./$(ABI_RECON01_GRAPH) GRAPH $(ABI_RECON01_C1) \
+	  $(ABI_RECON01_DIR)/c2/graph-cut-ledger.tsv $(ABI_RECON01_SCC)
+
+abi-foundation-recon01-probe:
+	sh $(ABI_RECON01_DIR)/c2/probe/run.sh
+
+abi-foundation-recon01-selftest: abi-foundation-recon01-graph-selftest abi-foundation-recon01-probe
+
+.PHONY: abi-foundation-recon01-graph-selftest abi-foundation-recon01-graph \
+        abi-foundation-recon01-probe abi-foundation-recon01-selftest
