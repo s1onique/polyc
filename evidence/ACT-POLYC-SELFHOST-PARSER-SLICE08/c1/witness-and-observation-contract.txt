@@ -1,0 +1,62 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE08
+ACT_PHASE=C1-EVIDENCE
+EVIDENCE_KIND=witness-and-observation-contract
+#
+THE REAL WITNESS, ON THE FROZEN OBSERVATION CHANNEL.
+#
+The witness and its channel are the ones FROZEN by
+ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON07 in
+c2/selected-causal-contract.md:145-158 and restated verbatim in
+c2/source-fixture-and-oracle.txt:113-137.
+#
+CHANNEL=COMPILED_PROGRAM_SEMANTIC_OUTPUT_CHANGED
+DECLARED_BEFORE=the mutation is applied
+#
+# THE WITNESS PROGRAM (the default-arm compound-statement witness)
+#
+#   A compound statement in the default arm, followed by a REACHABLE
+#   statement.  With the CORRECT condition the default arm TERMINATES
+#   at the compound statement, so the trailing statement is NOT in the
+#   arm.  With the AST_COMPOUND_STMT arm removed, the trailing statement
+#   BECOMES part of the default arm and IS EXECUTED.
+#
+#   The witness prints TWO observable values: the FIRST is assigned
+#   INSIDE the compound statement and is reached in BOTH
+#   configurations; the SECOND is the value of a variable that the
+#   trailing statement overwrites, so it is 155 when the trailing
+#   statement is NOT executed and 177 when it IS.
+#
+# THE PRISTINE MEASUREMENT
+#
+COMMAND=./hcc --install-dir=<prefix> <witness>.HC -o build/slice08-witness-pristine
+   WITNESS_COMPILE_EXIT=0
+COMMAND=./build/slice08-witness-pristine
+   WITNESS_OUTPUT=110 155
+   WITNESS_RUN_EXIT=0
+   WITNESS_BINARY_SHA256=b8720b114f7464ffe005c8f5a8b8b201cc77b8bb39b781f2751d47cfbb3d9205
+#
+#   The measured PRISTINE output is EXACTLY the frozen expectation
+#   WITNESS_OUTPUT=110 155.  The channel is therefore bound.
+#
+# THE PRODUCTION COMPILER THAT PRODUCED IT
+#
+   PRODUCTION_HCC_SHA256=ce796fc5275aa96fe7cec3271804a879b0c422ebfb2c922227b68cb387b8cb65
+   PRODUCTION_PARSER_OBJECT_SHA256=13db2f187d0213204f24b125030e828ce269e5242247324128db34b2dd5437b2
+   POLYC_SUBJECT_SRC_SHA256=57e8f5b0c209241c79d50beb653f525b809e8fd8a71827d9e0c7f926ae3c6f28
+   POLYC_SUBJECT_OBJECT_SHA256=d72cee87ccff4b5c1b801c5d1420d5267809e9214526720800010ff591cba22b
+#
+# THE THREE EXITS ARE RECORDED SEPARATELY
+#
+   COMPILER_BUILD_EXIT   (the real production compiler build)
+   WITNESS_COMPILE_EXIT  (the witness compilation)
+   WITNESS_RUN_EXIT      (the witness execution)
+#
+#   A witness COMPILE FAILURE after a SUCCESSFUL compiler rebuild would
+#   be a COMPILER_ACCEPTANCE_CHANGED observation and MUST NOT be
+#   mislabeled as a runtime output change.
+#
+EXPECTED_PRISTINE_OUTPUT=WITNESS_OUTPUT=110 155
+EXPECTED_MUTANT_OUTPUT=WITNESS_OUTPUT=110 177
+PRISTINE_WITNESS_OUTPUT=WITNESS_OUTPUT=110 155
+WITNESS_CHANNEL_BOUND=YES
+WITNESS_CONTRACT_STATUS=PASS

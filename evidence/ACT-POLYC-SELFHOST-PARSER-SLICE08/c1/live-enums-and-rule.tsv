@@ -1,0 +1,86 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE08
+ACT_PHASE=C1-EVIDENCE
+EVIDENCE_KIND=live-enums-and-rule
+#
+THE LIVE AstKind VALUES, DERIVED BY COMPILING src/ast.h.
+#
+COMMAND=cc -std=c99 -Isrc -o /tmp/slice08-enum /tmp/slice08-enum.c
+   (a C program that includes the LIVE src/ast.h and prints every
+    AstKind enumerator)
+COMMAND=/tmp/slice08-enum
+#
+# Schema: name <TAB> value <TAB> in_the_five_kind_terminating_set
+#
+AST_GVAR	256	NO
+AST_GOTO	258	YES
+AST_LABEL	259	NO
+AST_LVAR	261	NO
+AST_FUNC	262	NO
+AST_DECL	263	NO
+AST_STRING	264	NO
+AST_FUNCALL	265	NO
+AST_LITERAL	266	NO
+AST_ARRAY_INIT	267	NO
+AST_IF	268	NO
+AST_FOR	269	NO
+AST_RETURN	270	YES
+AST_WHILE	271	NO
+AST_CLASS_REF	273	NO
+AST_COMPOUND_STMT	274	YES
+AST_ASM_STMT	275	NO
+AST_ASM_FUNC_BIND	276	NO
+AST_ASM_FUNCALL	277	NO
+AST_FUNPTR	278	NO
+AST_FUNPTR_CALL	279	NO
+AST_BREAK	280	YES
+AST_CONTINUE	281	NO
+AST_DEFAULT_PARAM	282	NO
+AST_VAR_ARGS	283	NO
+AST_ASM_FUNCDEF	284	NO
+AST_CAST	285	NO
+AST_FUN_PROTO	286	NO
+AST_CASE	287	YES
+AST_JUMP	288	NO
+AST_EXTERN_FUNC	289	NO
+AST_DO_WHILE	290	NO
+AST_PLACEHOLDER	291	NO
+AST_SWITCH	292	NO
+AST_DEFAULT	293	NO
+AST_SIZEOF	294	NO
+AST_COMMENT	295	NO
+AST_BINOP	296	NO
+AST_UNOP	297	NO
+AST_TRY	298	NO
+AST_THROW	299	NO
+#
+LIVE_ENUM_COUNT=41
+LIVE_TERMINATING_COUNT=5
+#
+# THE TERMINATING SET, INDEPENDENTLY PARSED FROM THE LIVE src/parser.c
+#
+COMMAND=build/parser-slice08-fixture-integrity <fixture> src/ast.h src/parser.c
+   FIXTURE_INTEGRITY_LIVE_ENUM_COUNT=41
+   FIXTURE_INTEGRITY_LIVE_TERMINATING_COUNT=5
+#
+   The witness locates the seam helper by name
+   (parseDefaultArmTerminates(int kind)), extracts the AST_ identifiers
+   of its legacy condition and binds them to the live enum.  It does NOT
+   read the PolyC component and does NOT share the producer logic.
+#
+# THE COMPILED MASK, DECODED FROM THE REAL G0 OBJECT
+#
+COMMAND=otool -tvV build/slice08-gen/g0.o
+   movk x9, #0x2041, lsl #16    (the mask high half)
+   mov  x9, #0x1001              (the mask low half)
+#
+   The full mask is 0x20411001 over base 258, which decodes to:
+     kind=258 (bit 0)
+     kind=270 (bit 12)
+     kind=274 (bit 16)
+     kind=280 (bit 22)
+     kind=287 (bit 29)
+#
+LIVE_ENUM_COUNT_MATCH=YES
+LIVE_TERMINATING_SET_MATCH=YES
+COMPILED_MASK_MATCH=YES
+LIVE_ENUMS_AND_RULE_STATUS=PASS

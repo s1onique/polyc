@@ -1,0 +1,64 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE08
+ACT_PHASE=C1-EVIDENCE
+EVIDENCE_KIND=selected-source-and-abi
+#
+THE SUB-002 SOURCE BINDING, RE-DERIVED FROM THIS ACT OWN TREE.
+#
+COMMAND=awk "NR>=1683 && NR<=1684" src/parser.c | shasum -a 256
+   a9a33ff1c3993560f5504582ec372c3f64573caca630e8cda32f58755bbd0fea
+#
+   The frozen RECON07 value is
+   a9fcb6a752a59a58eaea5bdf449cab39acf7d2d2be9d776f6a13fd968af89199
+   -> IDENTICAL.  The range is UNCHANGED at the entry commit.
+#
+# THE ENCLOSING FUNCTION AND THE SEAM
+#
+COMMAND=grep -n "parseDefaultStatement\|parseDefaultArmTerminates" src/parser.c
+   1712:static int parseDefaultArmTerminates(int kind)
+   1754:long long ParserLegacyDefaultArmTerminatesOracle(long long ast_kind)
+   1759:Ast *parseDefaultStatement(Cctrl *cc) {
+   1775:        if (parseDefaultArmTerminates((int)stmt->kind)) break;
+#
+# THE LIVE SOURCE CONDITION (the legacy arm, selector OFF)
+#
+       if (kind == AST_COMPOUND_STMT || kind == AST_CASE ||
+               kind == AST_BREAK || kind == AST_RETURN
+               || kind == AST_GOTO) return 1;
+#
+# THE ABI (frozen at c2/selected-abi.md)
+#
+   PolyC component : long long BootstrapDefaultArmTerminates(long long ast_kind)
+   Legacy C wrapper: static int parseDefaultArmTerminates(int kind)
+   PolyC ABI       : I64 ast_kind -> I64 terminate
+#
+# THE CAST CHAIN, AND WHY IT IS EXACT
+#
+   int (stmt->kind) -> long long (ast_kind) -> long long (terminate) -> int
+#
+   The AstKind values are the live src/ast.h values 256..299 (all small
+   non-negative) and the result is a boolean in {0,1}.  Every value fits
+   in an int without loss, so the widening and the narrowing are exact.
+#
+# THE CONDITIONAL-READ COUNT
+#
+   ONE.  The decision reads its scalar argument and compares it against
+   five constants.  There is NO second field read, NO host-node
+   dereference and NO pointer traversal.  The host AST node is not even
+   passed: the C side performs the projection (stmt->kind -> kind).
+#
+# THE SHORT-CIRCUIT QUESTION
+#
+   MOOT.  The legacy condition is a chain of || comparisons of ONE value
+   against constants.  There is no && chain, every comparison is
+   against a constant, and the order of evaluation cannot change the
+   result.  The PolyC component implements the same membership test
+   with no short-circuit whose order matters.
+#
+SELECTED_SOURCE_RANGE=1683..1684
+SELECTED_SOURCE_SHA256=a9fcb6a752a59a58eaea5bdf449cab39acf7d2d2be9d776f6a13fd968af89199
+SELECTED_SOURCE_RANGE_MATCH=YES
+SELECTED_ENCLOSING_FUNCTION=parseDefaultStatement
+SELECTED_ABI=I64 ast_kind -> I64 terminate
+SELECTED_POLYC_SYMBOL=BootstrapDefaultArmTerminates
+SELECTED_SELECTOR=HCC_USE_SELFHOST_PARSER_DEFAULT_ARM_TERMINATES
+SELECTED_SOURCE_AND_ABI_STATUS=PASS

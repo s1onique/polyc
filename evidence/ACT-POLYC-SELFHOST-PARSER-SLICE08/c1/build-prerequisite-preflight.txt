@@ -1,0 +1,48 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE08
+ACT_PHASE=C1-EVIDENCE
+EVIDENCE_KIND=build-prerequisite-preflight
+#
+THE EFFECTIVE BUILD-GRAPH PREFLIGHT.
+#
+GNU Make expands a rule PREREQUISITE list when the rule is READ.
+A variable defined AFTER the consuming rule would therefore be EMPTY
+at that point, and the subject would be SILENTLY DROPPED from the
+build graph.  This ACT therefore proves the EFFECTIVE graph, not
+the textual presence of a variable.
+#
+COMMAND=touch src/parser.c && make -n ./hcc
+#
+# THE SLICE08 SUBJECT IS A REAL PREREQUISITE
+#
+           -c tools/bootstrap/selfhost-parser-slice08.HC \
+           -DDEFAULT_ARM_TERMINATES_SOURCE=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/tools/bootstrap/selfhost-parser-slice08.HC \
+#
+# THE FOUR WIRING ARGUMENTS REACH THE CMAKE CONFIGURE
+#
+           -DDEFAULT_ARM_TERMINATES_OBJECT=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-default-arm-subject.o \
+           -DDEFAULT_ARM_TERMINATES_PRODUCER=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/host-stage0/hcc \
+           -DDEFAULT_ARM_TERMINATES_SOURCE=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/tools/bootstrap/selfhost-parser-slice08.HC \
+           -DDEFAULT_ARM_TERMINATES_PREFIX=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/bootstrap-prefix \
+#
+# THE SELECTOR REACHES THE ACTUAL COMPILE LINE
+#
+   -DHCC_USE_SELFHOST_PARSER_DEFAULT_ARM_TERMINATES
+#
+   The compile line for src/parser.c carries
+   -DHCC_USE_SELFHOST_PARSER_DEFAULT_ARM_TERMINATES, so the delegated
+   arm is the one that compiles.
+#
+# THE STAGE0 BUILD TURNS THE SELECTOR OFF
+#
+           -DHCC_USE_SELFHOST_PARSER_DEFAULT_ARM_TERMINATES=OFF \
+#
+   The stage0 compiler is the LEGACY control that produces the PolyC
+   subject.  It must not itself require the subject, or the build
+   graph would cycle.  The OFF state is therefore MANDATORY and is
+   proven present.
+#
+SUBJECT_IN_EFFECTIVE_PREREQUISITE_GRAPH=YES
+WIRING_ARGUMENTS_REACH_CMAKE=YES
+SELECTOR_REACHES_THE_COMPILE_LINE=YES
+STAGE0_SELECTOR_OFF=YES
+BUILD_PREREQUISITE_PREFLIGHT_STATUS=PASS

@@ -1,0 +1,49 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE08
+ACT_PHASE=C1-EVIDENCE
+EVIDENCE_KIND=source-bound-fixture
+#
+THE 41-ROW SOURCE-BOUND FIXTURE, DERIVED FROM THE LIVE SOURCE.
+#
+The fixture itself is a TRACKED file:
+  evidence/ACT-POLYC-SELFHOST-PARSER-SLICE08/c1/source-bound-fixture.tsv
+  SOURCE_BOUND_FIXTURE_SHA256=592a56ec1ea2bc06a707abb98d9873035c9cecc8756a87f23b3d244bc36bcf7a
+  SOURCE_BOUND_FIXTURE_ROWS=41
+#
+# THE EXACT EQUIVALENCE WITH THE FROZEN RECON07 FIXTURE
+#
+COMMAND=awk -F"\t" "{print \$1\"\\t\"\$2\"\\t\"\$5}" <recon07 selected-enums-fixture.tsv> > frozen.tsv
+COMMAND=awk -F"\t" "{printf \"%d\\t%s\\t%s\\n\", \$1, \$3, \$4}" <source-bound-fixture.tsv> > derived.tsv
+COMMAND=diff frozen.tsv derived.tsv
+   (no output -- IDENTICAL)
+#
+#   The DERIVED fixture reproduces the FROZEN RECON07 fixture EXACTLY
+#   on (row_id, ast_kind, expected_terminate) for all 41 rows, and on
+#   the kind_name column and the partition column for all 41 rows.
+#
+# THE PARTITION COUNTS
+#
+         1 BOUNDARY
+        34 NEGATIVE
+         5 POSITIVE
+         1 SENTINEL
+#
+# THE FIVE POSITIVE ROWS
+#
+   row 0002  kind 258  AST_GOTO  expected 1
+   row 0013  kind 270  AST_RETURN  expected 1
+   row 0016  kind 274  AST_COMPOUND_STMT  expected 1
+   row 0022  kind 280  AST_BREAK  expected 1
+   row 0029  kind 287  AST_CASE  expected 1
+#
+# THE BOUNDARY AND SENTINEL ROWS
+#
+   row 0030  kind 288  AST_JUMP  partition BOUNDARY  expected 0
+   row 0035  kind 293  AST_DEFAULT  partition SENTINEL  expected 0
+#
+FIXTURE_ROWS=41
+FIXTURE_POSITIVE_ROWS=5
+FIXTURE_NEGATIVE_ROWS=34
+FIXTURE_BOUNDARY_ROWS=1
+FIXTURE_SENTINEL_ROWS=1
+FIXTURE_MATCHES_FROZEN_RECON07=YES
+FIXTURE_STATUS=PASS
