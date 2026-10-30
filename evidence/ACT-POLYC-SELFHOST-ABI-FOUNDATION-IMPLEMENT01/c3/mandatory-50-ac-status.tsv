@@ -1,0 +1,51 @@
+ac_id	status	evidence	independent_check
+AC01	PASS	c0/entry-identity.txt	verifier V01a; git rev-parse
+AC02	PASS	c0/entry-identity.txt (factory-v2-range-check.sh output)	re-run of the range validator
+AC03	PASS	c0/predecessor-freeze.tsv	c3 control AI-01 (60 files rehashed, 0 mismatches)
+AC04	PASS	c0/production-nine-authorities.tsv	c3 control AI-05; nm ./hcc = 9 Bootstrap, 0 Abi
+AC05	PASS	c0/original-135-edges.tsv + c0/recon01-14-candidates.tsv	c3 control AI-02/AI-22; verifier V12a/V15
+AC06	PASS	c0/baselines.txt + c3/baselines.txt	two independent measurement rounds
+AC07	PASS	c0/five-reds.tsv	c0/red-1-object.txt; c0/red-probe-raw.txt
+AC08	PASS	c0/frozen-50-ac.tsv + c0/frozen-24-controls.tsv	verifier V13/V14
+AC09	PASS	c0/selection-policy.md	c3 control AI-04 (frozen at C1, absent at C0)
+AC10	PASS	c0/baselines.txt (CENSUS01 residue block)	c3 control AI-06
+AC11	PASS	c1/candidate-eligibility-and-ranking.tsv	verifier V15 (14 retained)
+AC12	PASS	c1/selected-consumer-edge.md	verifier V12d (exact edge id and endpoints)
+AC13	PASS	c1/selected-source-provenance.tsv + c0/red-1-object.txt	verifier V01b/V10/V11
+AC14	PASS	c1/consumer-fields-includes-callers.tsv	c3 control AI-11
+AC15	PASS	c1/ownership-recovery-contract.md	c3 control AI-19
+AC16	PASS	c1/frozen-g0-and-witnesses.tsv + c1/g0-build-raw.txt	independent rebuild in a separate worktree
+AC17	PASS	c1/frozen-g0-and-witnesses.tsv (G0_NEW_SYMBOL_PRESENT=NO)	c3 control AI-05
+AC18	PASS	c1/frozen-g0-and-witnesses.tsv (WITNESS_1..6 + NEG_1..2)	verifier V16 (9/9 MATCH)
+AC19	PASS	c1/abi-measured.txt	independent sizeof/nm measurement
+AC20	PASS	c1/abi-v1-compatibility-and-v11-delta.md	verifier V17a/V17b
+AC21	PASS	c1/token-saturation-and-signed-results-plan.md + c2/abi-handle-safety-raw.txt	c3 control AI-13/AI-14
+AC22	PASS	c2/abi-handle-safety-raw.txt (WRAP, CAPACITY)	c3 control AI-15/AI-16
+AC23	PASS	c2/abi-handle-safety-raw.txt (SIGNED)	c3 control AI-17
+AC24	PASS	c1/ownership-recovery-contract.md + c2/abi-handle-safety-raw.txt	c3 control AI-18 (no mutation symbol exists)
+AC25	PASS	c1/ownership-recovery-contract.md + c2/abi-handle-safety-raw.txt	c3 control AI-19
+AC26	PASS	c2/producer-and-linkage.tsv	verifier V07a/V07b/V10
+AC27	PASS	c2/layout-edge-before-after.tsv	verifier V01b/V04
+AC28	PASS	c2/shadow-build-raw.txt + c2/producer-and-linkage.tsv	verifier V09a/V09b
+AC29	PASS	c2/shadow-build-raw.txt (disassembly) + c2/producer-and-linkage.tsv	verifier V08/V09a
+AC30	PASS	c2/layout-edge-before-after.tsv	verifier V04/V04b
+AC31	PASS	c2/layout-edge-before-after.tsv	verifier V04 + c3 control AI-10
+AC32	PASS	c2/graph-production-shadow.tsv	verifier V12a..V12d
+AC33	PASS	c2/g0-vs-g1-differential.tsv + c2/shadow-unit-test.txt	verifier V16; 376/376 by G1
+AC34	PASS	c2/abi-handle-safety-raw.txt	c3 control AI-13..AI-19
+AC35	PASS	c2/polyc-mutant-restoration.txt	c3 control AI-20
+AC36	PASS	c2/host-mutant-restoration.txt	c3 control AI-21
+AC37	PASS	c2/polyc-mutant-restoration.txt + c2/host-mutant-restoration.txt	byte-identical digests recorded
+AC38	PASS	c2/shadow-source-and-object-manifest.tsv	c3/independent-object-and-source-recompute.tsv (13/13 MATCH)
+AC39	PASS	c2/graph-production-shadow.tsv (PRODUCTION_CUT_COUNT=0)	c3 control AI-24
+AC40	PASS	c2/graph-production-shadow.tsv (SHADOW_CUT_PROVEN_BY_EXECUTION=1)	verifier V12c
+AC41	PASS	c3/independent-graph-and-scc-recompute.tsv (Kosaraju)	agrees with the C2 closure implementation: 34/19 both graphs
+AC42	PASS	c3/negative-controls-raw.tsv	24 executed rows
+AC43	PASS	c3/frozen-control-execution-join.tsv	24 rows, 24 PASS, 0 detector mismatch
+AC44	PASS	c3/baselines.txt	376/376, 90 files, MD5 b6f117eb...
+AC45	PASS	c3/baselines.txt	89/89, 45/45, 23/23, LEXER07 MD5 7ee76144...
+AC46	PASS	c3/baselines.txt	cross-target 67, F-NO-PYTHON 12, F-POLYC-TOOLS UNAVAILABLE
+AC47	PASS	c3/source-and-history-conservation.txt	src/ 0 files, tools/bootstrap 0 files, predecessor 0 files
+AC48	PASS	c3/gate-fast.txt + c3/factory-v2-f14-append-only.txt + c4/gate-push.txt	gate-push runs at the C3 commit and is recorded in c4/ because a commit cannot measure itself
+AC49	PASS	c3/mandatory-50-ac-status.tsv (this file)	independent recomputation in c3/*; HANDOFF bounded
+AC50	DEFERRED	external read-only post-CLOSE receipt (outside the repository)	c4/terminality-plan.txt is a plan only

@@ -7719,3 +7719,37 @@ abi-foundation-recon01-verify: $(ABI_RECON01_VERIFY)
 	./$(ABI_RECON01_VERIFY) VERIFY .
 
 .PHONY: abi-foundation-recon01-verify
+
+# =====================================================================
+# ACT-POLYC-SELFHOST-ABI-FOUNDATION-IMPLEMENT01 (additive only).
+#
+# The independent PolyC verifier for the source-representative ABI
+# migration. It shares no code with the C2 producer: it re-reads the real
+# bytes, re-runs the real preprocessor/nm commands and compares its own
+# measurements against the recorded evidence.
+#
+#   make abi-foundation-implement01-verify        # build only
+#   make abi-foundation-implement01-check         # build + run
+#
+# The shadow root defaults to the disposable worktree used by the ACT and
+# can be overridden:  make abi-foundation-implement01-check ABI01_SHADOW=...
+# =====================================================================
+ABI01_SHADOW ?= /tmp/abiimpl01/g1
+ABI01_EVIDENCE ?= evidence/ACT-POLYC-SELFHOST-ABI-FOUNDATION-IMPLEMENT01
+ABI01_VERIFY_BIN = ./build/abi-foundation-implement01-verify
+
+abi-foundation-implement01-verify: $(ABI01_VERIFY_BIN)
+
+$(ABI01_VERIFY_BIN): tools/quality/abi-foundation-implement01-verify.HC
+	./hcc --install-dir=./build/test-prefix \
+		tools/quality/abi-foundation-implement01-verify.HC \
+		-o $(ABI01_VERIFY_BIN)
+	@if [ ! -x "$(ABI01_VERIFY_BIN)" ]; then \
+		echo "abi-foundation-implement01-verify: build failed" >&2; \
+		exit 1; \
+	fi
+
+abi-foundation-implement01-check: $(ABI01_VERIFY_BIN)
+	@mkdir -p build
+	@printf '%s\n%s\n' "$(ABI01_SHADOW)" "$(ABI01_EVIDENCE)" > build/abi01-verify-inputs.txt
+	$(ABI01_VERIFY_BIN)

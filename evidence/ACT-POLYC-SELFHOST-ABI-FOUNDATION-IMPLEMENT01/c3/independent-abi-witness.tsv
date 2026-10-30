@@ -1,0 +1,46 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-FOUNDATION-IMPLEMENT01
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=independent-abi-witness
+#
+# The standalone ABI safety probe is re-executed by C3 and its raw
+# statuses are joined to the frozen detector classes. The probe binary is
+# the C2 artifact; the INTERPRETATION below is recomputed here.
+#
+detector_class	probe_check	expected	observed	verdict
+WRONG_KIND_OR_UNISSUED_HANDLE	null_handle	-1	got=-1	PASS
+WRONG_KIND_OR_UNISSUED_HANDLE	forged_token	-5	got=-5	PASS
+WRONG_KIND_OR_UNISSUED_HANDLE	wrong_kind_token	-2	got=-2	PASS
+WRONG_KIND_OR_UNISSUED_HANDLE	stale_token	-3	got=-3	PASS
+EXPIRED_ARENA_BORROW	expired_after_arena_teardown	-8	got=-8	PASS
+GENERATION_WRAP_ALIAS	generation_wrap_fail_closed	-17	got=-17	PASS
+GENERATION_WRAP_ALIAS	generation_wrap_no_alias	0	got=0	PASS
+TOKEN_EXHAUSTION_UNSAFE	capacity_exhaustion	-15	got=-15	PASS
+TOKEN_EXHAUSTION_UNSAFE	domain_mismatch	-6	got=-6	PASS
+SIGNED_DATA_STATUS_COLLISION	decision_non_negative	1	got=1	PASS
+SIGNED_DATA_STATUS_COLLISION	error_negative	1	got=1	PASS
+SIGNED_DATA_STATUS_COLLISION	kind_above_status_range	1	got=1	PASS
+#
+# Raw probe transcript:
+#   ABI_VERSION=1
+#   PRISTINE kind=266 kind_read=266 decide=1 oracle=1 MATCH
+#   PRISTINE kind=296 kind_read=296 decide=1 oracle=1 MATCH
+#   PRISTINE kind=286 kind_read=286 decide=0 oracle=0 MATCH
+#   PRISTINE kind=289 kind_read=289 decide=0 oracle=0 MATCH
+#   PRISTINE kind=276 kind_read=276 decide=0 oracle=0 MATCH
+#   PRISTINE kind=256 kind_read=256 decide=1 oracle=1 MATCH
+#   CHECK null_handle                                    got=-1 want=-1 OK
+#   CHECK forged_token                                   got=-5 want=-5 OK
+#   CHECK wrong_kind_token                               got=-2 want=-2 OK
+#   CHECK stale_token                                    got=-3 want=-3 OK
+#   ARENA before=266 CHECK expired_after_arena_teardown                   got=-8 want=-8 OK
+#   WRAP t1=-4549197469790961318 t2=-4549197465496125094 replay=-17 fresh=-4549196370279333542 aliased=0
+#   CHECK generation_wrap_fail_closed                    got=-17 want=-17 OK
+#   CHECK generation_wrap_no_alias                       got=0 want=0 OK
+#   CAPACITY slots=64
+#   CHECK capacity_exhaustion                            got=-15 want=-15 OK
+#   CHECK domain_mismatch                                got=-6 want=-6 OK
+#   SIGNED error=-5 decision=0 kind=286
+#   CHECK decision_non_negative                          got=1 want=1 OK
+#   CHECK error_negative                                 got=1 want=1 OK
+#   CHECK kind_above_status_range                        got=1 want=1 OK
+#   ABI_SAFETY_STATUS=PASS

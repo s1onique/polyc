@@ -1,0 +1,43 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-FOUNDATION-IMPLEMENT01
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=factory-v2-f14-append-only
+#
+COMMAND=sh scripts/quality/factory-apppend-only-test.sh   (see below, exact name)
+COMMAND=sh scripts/quality/factory-append-only-test.sh
+EXIT=0
+POLYC_GATE=factory-append-only-tests
+  PASS  NC1  rc=0
+  PASS  NC2  rc=1
+  PASS  NC3  rc=1
+  PASS  NC4  rc=0
+  PASS  NC5  rc=1
+Deleted replace ref '77af8e289a0bc22756a39ddf6e19e092a750bc45'
+  PASS  NC6  rc=0
+  PASS  NC7  rc=0
+  PASS  NC8  rc=1
+  PASS  NC9  rc=1
+  PASS  NC10  rc=1
+  PASS  NC11  rc=0
+
+--- summary ---
+PASS=11
+FAIL=0
+STATUS=PASS
+
+--- Factory-v2 commit-message validation of the C0/C1/C2 messages ---
+COMMAND=sh scripts/quality/factory-v2-commit-msg-check.sh <msg>  -> STATUS=PASS for C0 (RED), C1 (EVIDENCE), C2 (IMPL)
+
+--- Factory-v2 range validation (OPEN ACT, still in progress) ---
+The range validator only accepts a CLOSE commit; at C3 the ACT is not closed,
+so this is recorded as NOT_APPLICABLE_YET and is re-run at C4.
+
+--- F14: historical artifacts are immutable ---
+COMMAND=git diff --name-only 315ff492..HEAD -- evidence/ACT-POLYC-SELFHOST-ABI-FOUNDATION-RECON01 docs/acts/ACT-POLYC-SELFHOST-ABI-FOUNDATION-RECON01.md docs/factory/HANDOFF-ACT-POLYC-SELFHOST-ABI-FOUNDATION-RECON01.md
+F14_PREDECESSOR_FILES_CHANGED=0
+
+--- F-POLYC-TOOLS compliance of the new tracked tool ---
+The new verifier is tools/quality/abi-foundation-implement01-verify.HC (PolyC).
+The Makefile additions are two targets and three variables (<=50 LOC of glue).
+No Python was added anywhere.
+
+FACTORY_V2=PASS  F14=PASS  APPEND_ONLY=PASS(11/11)

@@ -1,0 +1,54 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-FOUNDATION-IMPLEMENT01
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=baselines
+#
+# Fresh C3 re-measurement on the AUTHORITATIVE main tree, after C2. Serialized
+# throughout: the shared /tmp/holyc-asm.s assembly temporary is a known race and
+# no two runs overlapped. Raw transcript: c3/baselines-raw.txt. Shadow-root
+# activity is separate and is recorded under c2/.
+#
+# COMMAND=make unit-test                         EXIT=0
+PARSER_ASSERTION_FILES=90
+PARSER_ASSERTIONS=376/376
+PARSER_PASSED=376 PARSER_FAILED=0
+PARSER_ASSERTION_SEQUENCE_MD5=b6f117eb1386ca80f81bc06226e2a741
+PARSER_MATCHES_HISTORICAL_IDENTITY=YES
+NEW_PARSER_FAILURE_IDENTITIES=0
+#
+# COMMAND=make lexer07-direct-differential       EXIT=0
+ACT_SELFHOST_LEXER02_DIRECT_DIFF_PASS=89 FAIL=0
+LEXER07_DIRECT_DIFFERENTIAL=89/89
+# COMMAND=make lexer08-direct-differential       EXIT=0
+DIRECT_DIFFERENTIAL_TOTAL=45 PASS=45 FAIL=0
+LEXER08_DIRECT_DIFFERENTIAL=45/45
+# COMMAND=make lexer09-direct-differential       EXIT=0
+DIRECT_DIFFERENTIAL_TOTAL=23 PASS=23 FAIL=0
+LEXER09_DIRECT_DIFFERENTIAL=23/23
+NEW_LEXER_FAILURE_IDENTITIES=0
+#
+# COMMAND=make lexer07-broad-corpus-4-stage       EXIT=2 (known FAIL baseline)
+TOTAL=181
+PASS_S0=166 PASS_S1=175 PASS_S2=175 PASS_S3=175
+FAIL_S0=15 FAIL_S1=6 FAIL_S2=6 FAIL_S3=6
+REGRESSION=0 DIVERGED=0 STATUS=FAIL
+# COMMAND=md5 -q build/lexer07-c01-out/corpus-failures.tsv
+7ee761440de83552e751e3c3976c1683
+LEXER07_FAILURE_IDENTITY_MD5=7ee761440de83552e751e3c3976c1683
+LEXER07_FAILURE_ROWS=16 LEXER07_FAILURE_IDENTITIES=15
+LEXER07_STATUS=FAIL_KNOWN_BASELINE
+LEXER07_HISTORICAL_IDENTITY=UNCHANGED
+#
+# COMMAND=cd src/tests && ./test-runner --target=aarch64-apple-darwin | grep -c 'Failed to open file'
+67
+CROSS_TARGET_PREFIX_STATUS=FAIL_ENVIRONMENT_PREFIX
+CROSS_TARGET_PREFIX_COUNT=67
+#
+# COMMAND=sh scripts/quality/factory-no-python-check.sh     EXIT=1
+POLYC_TOOLS_TRACKED_PYTHON=12
+POLYC_TOOLS_TRACKED_INSPECTED=6133
+POLYC_TOOLS_TRACKED_PASSES=6126
+STATUS=FAIL
+F_NO_PYTHON=FAIL (exactly the 12 historical violations; zero new)
+F_POLYC_TOOLS=UNAVAILABLE (authoritative checker tools/factory/factory-polyc-tools-check.HC still not landed)
+#
+BASELINE_STATUS=PASS (every measured baseline reproduces its historical identity)
