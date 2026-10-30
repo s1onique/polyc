@@ -1,0 +1,86 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE08-EVIDENCE-CORRECTION01
+ACT_PHASE=C1-EVIDENCE
+EVIDENCE_KIND=entry-vs-moved-source-range-hashes
+#
+# THE THREE DISTINCT BYTE-RANGE IDENTITIES, COMPUTED
+# SEPARATELY.  They are different subjects and are NOT
+# interchangeable, however similar the line numbers look.
+#
+## --- IDENTITY 1: THE ORIGINAL INLINE PREDICATE ---
+#
+This is the RECON07 frozen subject.  It is the frozen
+# obligation, and it is what the C1 file CLAIMED to re-derive.
+#
+RANGE=1683..1684
+FILE=src/parser.c
+PHASES_PRESENT=RECON07-CLOSE, RECON07-C0, SLICE08-C0, SLICE08-C1
+SHA256=a9fcb6a752a59a58eaea5bdf449cab39acf7d2d2be9d776f6a13fd968af89199
+BYTES=175
+SUBJECT=THE LEGACY INLINE PREDICATE (stmt->kind chain)
+SEMANTIC_IDENTITY=THE SELECTED SUB-002 DECISION
+REPRODUCIBLE_AT=C0 and C1 with the exact RECON07 value
+#
+## --- IDENTITY 2: THE POST-REFACTOR COMMENT FRAGMENT ---
+#
+This is what the C1 file actually printed.  It is a COMMENT
+# inside the helper block, not the decision.
+#
+RANGE=1683..1684
+FILE=src/parser.c
+PHASES_PRESENT=SLICE08-C2, SLICE08-C3, SLICE08-CLOSE
+SHA256=a9a33ff1c3993560f5504582ec372c3f64573caca630e8cda32f58755bbd0fea
+BYTES=94
+SUBJECT=A COMMENT FRAGMENT ("* the AST graph, the allocation, the diagnostics, the recovery point or" / "* the token stream.")
+SEMANTIC_IDENTITY=NOT A DECISION; NO BEHAVIOURAL MEANING
+FIRST_TREE_IN_WHICH_IT_EXISTS=c923f657618686cca7946f2b106ae9b77b276f3b (SLICE08 C2 IMPL)
+#
+## --- IDENTITY 3: THE MOVED LEGACY PREDICATE ---
+#
+This is the actual post-refactor location of the SAME decision
+# under the selector-OFF arm, with the single substitution
+# stmt->kind -> kind.
+#
+RANGE=1736..1738
+FILE=src/parser.c
+PHASES_PRESENT=SLICE08-C2, SLICE08-C3, SLICE08-CLOSE
+SHA256=dc43f25e38972a986a53a1fca25568ab95c187ce65524fc5b035a62b7223bcc2
+BYTES=156
+SUBJECT=THE MOVED LEGACY PREDICATE, selector-OFF #else arm (kind == AST_*)
+SEMANTIC_IDENTITY=THE SELECTED SUB-002 DECISION, RELOCATED
+FIRST_TREE_IN_WHICH_IT_EXISTS=c923f657618686cca7946f2b106ae9b77b276f3b (SLICE08 C2 IMPL)
+#
+## --- THE THREE IDENTITIES ARE MUTUALLY DISTINCT ---
+#
+# All three differ in digest AND in byte length AND in subject:
+#
+identity	range	sha256	bytes	subject
+1_ORIGINAL_INLINE_PREDICATE	1683..1684	a9fcb6a752a59a58eaea5bdf449cab39acf7d2d2be9d776f6a13fd968af89199	175	THE DECISION (inline)
+2_POST_REFACTOR_COMMENT	1683..1684	a9a33ff1c3993560f5504582ec372c3f64573caca630e8cda32f58755bbd0fea	94	NOT A DECISION (comment)
+3_MOVED_LEGACY_PREDICATE	1736..1738	dc43f25e38972a986a53a1fca25568ab95c187ce65524fc5b035a62b7223bcc2	156	THE DECISION (moved, selector-OFF arm)
+#
+IDENTITY_1_EQUALS_IDENTITY_2=NO
+IDENTITY_1_EQUALS_IDENTITY_3=NO (the decision MOVED; the bytes changed by the stmt->kind -> kind substitution)
+IDENTITY_2_EQUALS_IDENTITY_3=NO
+#
+## --- THE TRUTHFUL RESTATEMENT OF THE C1 CLAIM ---
+#
+# The C1 file asserted:
+#   "The range is UNCHANGED at the entry commit"  and  "-> IDENTICAL".
+#
+# The truthful statement is:
+#
+#   The FROZEN RECON07 RANGE 1683..1684 HELD THE LEGACY INLINE
+#   PREDICATE, digest a9fcb6a7..., 175 bytes, AT THE ENTRY
+#   COMMIT, AT SLICE08 C0 AND AT SLICE08 C1.  That identity is
+#   UNCHANGED.  The C1 file, however, PRINTED a9a33ff1...,
+#   which is the digest of the SAME LINE NUMBERS in the POST-C2
+#   tree, where they hold a COMMENT FRAGMENT.  The two digests
+#   are not identical, and the C1 file did not reproduce its own
+#   claimed command at the C1 commit.
+#
+ENTRY_RANGE_IDENTITY_UNCHANGED=YES (a9fcb6a7... at entry, C0 and C1)
+ORIGINAL_HASH_EQUALITY_CLAIM=FALSE
+ORIGINAL_C1_PRINTED_SHA256=a9a33ff1c3993560f5504582ec372c3f64573caca630e8cda32f58755bbd0fea
+FROZEN_RECON07_SOURCE_SHA256=a9fcb6a752a59a58eaea5bdf449cab39acf7d2d2be9d776f6a13fd968af89199
+CORRECTED_C1_SOURCE_RANGE_DIGEST=a9fcb6a752a59a58eaea5bdf449cab39acf7d2d2be9d776f6a13fd968af89199
+CORRECTED_C1_SOURCE_RANGE=1683..1684 (at the C1 commit a1a5303)

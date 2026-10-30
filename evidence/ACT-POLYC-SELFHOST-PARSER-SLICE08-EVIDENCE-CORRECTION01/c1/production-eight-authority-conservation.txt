@@ -1,0 +1,69 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE08-EVIDENCE-CORRECTION01
+ACT_PHASE=C1-EVIDENCE
+EVIDENCE_KIND=production-eight-authority-conservation
+#
+# THE EIGHT PRODUCTION POLYC PARSER AUTHORITIES, RE-PROVED
+# READ-ONLY FROM THE CURRENT TREE AT THE CORRECTION ENTRY.
+#
+# No source is mutated and no build is re-run for this check; the
+# objects and the executable in the tree are read as they are.
+#
+## --- THE EIGHT AUTHORITIES ---
+#
+authority_id	selector	polyc_symbol	executable_defined_count	provider_object	provider_object_sha256	caller_object	caller_imports	caller_defines
+AUTH-01	HCC_USE_SELFHOST_PARSER_PADDING	BootstrapCalcPadding	1	build/parser-padding-subject.o	187a4de9465e8dbe3c640484b05540daaad4a3267dd1543a169e3c304b02d5b1	build/CMakeFiles/hcc.dir/parser.c.o	1	0
+AUTH-02	HCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN	BootstrapValidPostControlFlowToken	1	build/parser-control-flow-token-subject.o	078f708d05474430cb3d5c6fc17c0a3d327ab81b74cb24e32512475050723018	build/CMakeFiles/hcc.dir/parser.c.o	1	0
+AUTH-03	HCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE	BootstrapOperatorPrecedence	1	build/parser-operator-precedence-subject.o	1a932394ba209267ab3a119137f844682f1a12ceeaaca0cde4feaeaa0f8f62f8	build/CMakeFiles/hcc.dir/ast.c.o	0	0
+AUTH-04	HCC_USE_SELFHOST_PARSER_AST_BINOP	BootstrapAstBinOpFromToken	1	build/parser-ast-binop-subject.o	6d598bc7f0b00ac47642ec06b8cceba641d55a8cfe5498e0a6a995c40f2e054d	build/CMakeFiles/hcc.dir/ast.c.o	1	0
+AUTH-05	HCC_USE_SELFHOST_PARSER_AST_UNARY	BootstrapAstUnaryOpFromToken	1	build/parser-ast-unary-subject.o	27075194e1d3ff94703b51459cc3e5c8ea472747ea1f255a451a97f44b416e72	build/CMakeFiles/hcc.dir/ast.c.o	1	0
+AUTH-06	HCC_USE_SELFHOST_PARSER_SWITCH_ARM	BootstrapSwitchArmTerminates	1	build/parser-switch-arm-subject.o	848866e9fea389d574b3cb3e39b54b62fc0c744fe707fcf7c4184714017467f0	build/CMakeFiles/hcc.dir/parser.c.o	1	0
+AUTH-07	HCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND	BootstrapCompoundBlockAppendsStatement	1	build/parser-compound-block-subject.o	e2dfbcfcb78261957fb9188916705dcc86d589e82a9d9e169f6ae8118237487c	build/CMakeFiles/hcc.dir/parser.c.o	1	0
+AUTH-08	HCC_USE_SELFHOST_PARSER_DEFAULT_ARM_TERMINATES	BootstrapDefaultArmTerminates	1	build/parser-default-arm-subject.o	d72cee87ccff4b5c1b801c5d1420d5267809e9214526720800010ff591cba22b	build/CMakeFiles/hcc.dir/parser.c.o	1	0
+#
+## --- THE MEASUREMENTS ---
+#
+COMMAND=nm ./hcc | grep -c " T _BootstrapDefaultArmTerminates$"
+   1
+COMMAND=nm ./hcc | grep -c " T _BootstrapSwitchArmTerminates$"
+   1
+COMMAND=nm -u build/CMakeFiles/hcc.dir/parser.c.o | grep -E "_Bootstrap(CalcPadding|ValidPostControlFlowToken|SwitchArmTerminates|CompoundBlockAppendsStatement|DefaultArmTerminates)$"
+   _BootstrapCalcPadding
+   _BootstrapCompoundBlockAppendsStatement
+   _BootstrapDefaultArmTerminates
+   _BootstrapSwitchArmTerminates
+   _BootstrapValidPostControlFlowToken
+COMMAND=nm -u build/CMakeFiles/hcc.dir/ast.c.o | grep -E "_Bootstrap(AstBinOpFromToken|AstUnaryOpFromToken)$"
+   _BootstrapAstBinOpFromToken
+   _BootstrapAstUnaryOpFromToken
+COMMAND=nm build/CMakeFiles/hcc.dir/parser.c.o | grep -cE " T _Bootstrap"
+   0
+COMMAND=nm build/CMakeFiles/hcc.dir/ast.c.o | grep -cE " T _Bootstrap"
+   0
+#
+## --- THE OBJECT DIGESTS, COMPARED WITH THE FROZEN C0 MANIFEST ---
+#
+# The seven predecessor provider object digests are IDENTICAL to
+# the SLICE08 C0 frozen manifest (c0/seven-production-authorities.tsv).
+# The eighth, the default-arm subject, is the SLICE08 C2 object.
+#
+PREDECESSOR_PROVIDER_OBJECT_DIGESTS_MATCH_C0=7/7
+DEFAULT_ARM_SUBJECT_OBJECT_SHA256=d72cee87ccff4b5c1b801c5d1420d5267809e9214526720800010ff591cba22b
+DEFAULT_ARM_SUBJECT_MATCHES_SLICE08_C2_PRISTINE=YES
+#
+## --- THE SUMMARY ---
+#
+CURRENT_POLYC_PARSER_AUTHORITIES=8
+ALL_DEFINED_EXACTLY_ONCE=YES
+ALL_CALLER_IMPORTS_AND_DOES_NOT_DEFINE=YES
+ZERO_ADDED_BY_THIS_CORRECTION=YES
+PRODUCTION_SEMANTIC_DELTA=0
+EIGHT_AUTHORITIES_CONSERVATION_STATUS=PASS
+#
+## --- THE BootstrapDefaultArmTerminates EVIDENCE IS PRESERVED ---
+#
+# This ACT does NOT re-run, re-label or re-interpret the eighth
+# authority.  It only re-proves that the symbol and its caller
+# relocation are still exactly as SLICE08 closed them.
+#
+BOOTSTRAP_DEFAULT_ARM_TERMINATES_PRESERVED=YES
+BOOTSTRAP_DEFAULT_ARM_TERMINATES_REEXECUTED_BY_THIS_ACT=NO

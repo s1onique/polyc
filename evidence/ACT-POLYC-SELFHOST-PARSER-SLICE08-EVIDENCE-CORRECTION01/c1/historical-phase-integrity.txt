@@ -1,0 +1,201 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE08-EVIDENCE-CORRECTION01
+ACT_PHASE=C1-EVIDENCE
+EVIDENCE_KIND=historical-phase-integrity
+#
+# THE HISTORICAL PHASE INTEGRITY OF THE TWO DISPUTED CLAIMS.
+#
+# This file CLASSIFIES the historical defects.  It does not EDIT the
+# historical files.  Every historical artifact remains byte-identical
+# and F14 is preserved.
+#
+# ==================================================================
+# DEFECT 1 -- THE C1 SOURCE-RANGE CLAIM
+# ==================================================================
+#
+# WHAT THE C1 FILE CLAIMED (verbatim, at the C1 commit a1a5303,
+# blob 8195bfc4914e80b46dbbcf6c64124fcf06553c9e):
+#
+#   COMMAND=awk "NR>=1683 && NR<=1684" src/parser.c | shasum -a 256
+#      a9a33ff1c3993560f5504582ec372c3f64573caca630e8cda32f58755bbd0fea
+#
+#      The frozen RECON07 value is
+#      a9fcb6a752a59a58eaea5bdf449cab39acf7d2d2be9d776f6a13fd968af89199
+#      -> IDENTICAL.  The range is UNCHANGED at the entry commit.
+#
+#   COMMAND=grep -n "parseDefaultStatement\|parseDefaultArmTerminates" src/parser.c
+#      1712:static int parseDefaultArmTerminates(int kind)
+#      1754:long long ParserLegacyDefaultArmTerminatesOracle(long long ast_kind)
+#      1759:Ast *parseDefaultStatement(Cctrl *cc) {
+#      1775:        if (parseDefaultArmTerminates((int)stmt->kind)) break;
+#
+# --- WHAT WAS ACTUALLY TRUE AT THE C1 COMMIT ---
+#
+# COMMAND=git show a1a5303:src/parser.c | sed -n "1683,1684p" | shasum -a 256
+#    a9fcb6a752a59a58eaea5bdf449cab39acf7d2d2be9d776f6a13fd968af89199  -
+#    -> the range held THE LEGACY INLINE PREDICATE, 175 bytes
+#
+# COMMAND=git show a1a5303:src/parser.c | grep -c parseDefaultArmTerminates
+#    0
+# COMMAND=git show a1a5303:src/parser.c | grep -c ParserLegacyDefaultArmTerminatesOracle
+#    0
+# COMMAND=git show a1a5303:src/parser.c | grep -n parseDefaultStatement
+#    1667:Ast *parseDefaultStatement(Cctrl *cc) {
+#    1784:            case KW_DEFAULT:  return parseDefaultStatement(cc);
+#    -> the claimed line 1759 was NOT the function definition at C1;
+#       the function definition was at 1667
+#
+# COMMAND=git log --oneline -S"parseDefaultArmTerminates" -- src/parser.c
+#    c923f65 ACT-POLYC-SELFHOST-PARSER-SLICE08 C2: IMPL -- ...
+#    -> the helper was FIRST introduced by the C2 IMPL commit, which
+#       is AFTER the C1 commit
+#
+# --- THE CLASSIFICATION ---
+#
+# The C1 file describes a source state that DID NOT EXIST at the C1
+# commit.  Its printed digest, its printed grep output and its printed
+# line numbers all belong to the POST-C2 tree.  The helper, the
+# oracle wrapper, the delegated call site and the shifted line
+# numbers were all introduced by c923f65.
+#
+# This is therefore a CHRONOLOGY DEFECT, not a typographical
+# mismatch: the file claims to "RE-DERIVE" the binding "FROM THIS ACT
+# OWN TREE" but reports the binding of a LATER tree.
+#
+# --- THE SUB-CLAIM THAT IS TRUE ---
+#
+# It is NOT true that the decision changed at C1.  The frozen RECON07
+# range 1683..1684 held the legacy inline predicate, digest
+# a9fcb6a7..., 175 bytes, at the entry commit, at SLICE08 C0 AND at
+# SLICE08 C1.  The C1 tree carried the RECON07 pristine C source
+# byte for byte:
+#
+# COMMAND=git show a1a5303:src/parser.c | shasum -a 256
+#    2b31a7912bfbcfe538786aff17383a8282da815f0990910a652a0119f084fe17  -
+#    -> EXACTLY the RECON07 frozen
+#       REC07_PRE_C_MUTANT_SOURCE_SHA256_PRISTINE
+#       =2b31a7912bfbcfe538786aff17383a8282da815f0990910a652a0119f084fe17
+#
+# So the defect is confined to WHICH digest the C1 file PRINTED and
+# WHAT it asserted about it, not to a change in the decision.
+#
+# --- THE INTERNAL SELF-CONTRADICTION ---
+#
+# The same file also contradicts ITSELF:
+#
+#   body      : a9a33ff1c3993560f5504582ec372c3f64573caca630e8cda32f58755bbd0fea
+#   summary   : SELECTED_SOURCE_SHA256=a9fcb6a752a59a58eaea5bdf449cab39acf7d2d2be9d776f6a13fd968af89199
+#   summary   : SELECTED_SOURCE_RANGE=1683..1684
+#   summary   : SELECTED_SOURCE_RANGE_MATCH=YES
+#   summary   : SELECTED_SOURCE_AND_ABI_STATUS=PASS
+#
+# The body and the summary name DIFFERENT digests and the summary
+# asserts they MATCH.  A reader checking only the KEY=VALUE summary
+# would see a correct binding; a reader checking the body would see
+# an incorrect one.  Neither is a faithful report of the C1 tree.
+#
+# --- THE CORRECTION ---
+#
+# ORIGINAL_HASH_EQUALITY_CLAIM=FALSE
+# ORIGINAL_C1_CHRONOLOGY_CLAIM=FALSE
+# CORRECTED_C1_SOURCE_RANGE=1683..1684 (at the C1 commit a1a5303)
+# CORRECTED_C1_SOURCE_RANGE_DIGEST=a9fcb6a752a59a58eaea5bdf449cab39acf7d2d2be9d776f6a13fd968af89199
+# CORRECTED_C1_SOURCE_RANGE_BYTES=175
+# CORRECTED_C1_SOURCE_RANGE_SUBJECT=THE LEGACY INLINE PREDICATE
+# ORIGINAL_C1_PRINTED_SHA256=a9a33ff1c3993560f5504582ec372c3f64573caca630e8cda32f58755bbd0fea
+# ORIGINAL_C1_PRINTED_SHA256_SUBJECT=A COMMENT FRAGMENT IN THE POST-C2 TREE
+# FROZEN_RECON07_SOURCE_SHA256=a9fcb6a752a59a58eaea5bdf449cab39acf7d2d2be9d776f6a13fd968af89199
+# HISTORICAL_C1_FILE_AMENDED=NO
+# HISTORICAL_C1_FILE_BLOB_AT_C1_AND_CLOSE=8195bfc4914e80b46dbbcf6c64124fcf06553c9e (identical)
+#
+# ==================================================================
+# DEFECT 2 -- THE INHERITED-CONTROL COUNT
+# ==================================================================
+#
+# WHAT THE C3 JOIN FILE CLAIMED:
+#
+#   INHERITED_CONTROLS_TOTAL=23
+#   INHERITED_CONTROLS_JOINED=23
+#   INHERITED_CONTROLS_EXTRA=0
+#   INHERITED_CONTROLS_PASS=23
+#   INHERITED_CONTROLS_STATUS=PASS
+#
+# WHAT WAS ACTUALLY IN THE FILE:
+#
+#   24 data rows with the 13-column schema
+#   24 distinct control IDs
+#   0 duplicate IDs
+#
+# THE RECON07 FROZEN SET:
+#
+#   24 obligations (21 in selected-negative-controls.md, 3 in
+#   selected-causal-contract.md)
+#
+# THE SLICE08 C0 CONTRACT:
+#
+#   23 rows.  SL-EC-06 is ABSENT, although RECON07 froze it at
+#   c2/selected-negative-controls.md:33.
+#
+# THE THREE-WAY ARITHMETIC:
+#
+#   F\B = {SL-EC-06}
+#   B\F = {}
+#   B\J = {}
+#   J\B = {SL-EC-06}
+#   F\J = {}
+#   J\F = {}
+#
+# --- THE CLASSIFICATION ---
+#
+# The C0 contract omitted one genuinely-frozen obligation.  The C3
+# join restored it as a row, but never updated the summary block, and
+# therefore declared EXTRA=0 when the true row-set extra against the
+# C0 contract is exactly 1.
+#
+# The historical EXTRA=0 claim is FALSE AS A ROW-SET MEASUREMENT.
+# This correction does not repair the historical file; it records the
+# truth and recomputes the summary from the rows.
+#
+# The 23 IDs that C0 and C3 share agree field-for-field with the
+# RECON07 frozen rows (subject, phase, adverse edit, detector).  The
+# ONLY divergence is the PRESENCE of SL-EC-06.
+#
+# --- THE EXECUTION-STATUS AXIS (SEPARATE FROM THE FROZEN STATUS) ---
+#
+# SL-EC-06 occurs in EXACTLY ONE place in the whole SLICE08 evidence
+# tree: the C3 join row that makes the claim.  Its evidence_path
+# field points at that same file.  It therefore binds no command, no
+# exit status, no object digest, no positive baseline and no
+# restoration record.  Its ORIGINAL execution status is UNPROVEN.
+#
+# 15 of the 24 C3 rows are self-referential in the same way.  Their
+# five positive flags (observed_output_present, positive_baseline_
+# present, subject_specific, subject_restored, independent_
+# verification) are ASSERTIONS, not bindings.
+#
+# --- THE CORRECTION ---
+#
+# SL_EC_06_FROZEN_STATUS=FROZEN_OMITTED_FROM_C0
+# SL_EC_06_ORIGINAL_EXECUTION_STATUS=ORIGINAL_UNPROVEN
+# SL_EC_06_ORIGINAL_JOIN_STATUS=ORIGINAL_EXTRAROW_NOT_FROZEN
+# SLICE08_C3_HISTORICAL_EXTRA_IDS=SL-EC-06
+# SLICE08_C3_HISTORICAL_EXTRA_COUNT=1
+# HISTORICAL_C3_EXTRA_CLAIM=FALSE (as a row-set measurement against the C0 contract)
+# HISTORICAL_C3_FILE_AMENDED=NO
+#
+# ==================================================================
+# THE HONEST SUMMARY
+# ==================================================================
+#
+# The SLICE08 production transfer is NOT challenged by any of this.
+# The eighth authority, the four-generation differential, the 41-row
+# fixture and the post-migration PolyC mutation are unaffected.
+# What is defective is the PROOF ACCOUNTING of two evidence files:
+# one control ID was dropped from the C0 contract and then silently
+# restored, and one source digest was printed from a tree that did
+# not yet exist.
+#
+# The production semantic delta of this correction is 0.
+#
+# HISTORICAL_ARTIFACT_REWRITES=0
+# PRODUCTION_SEMANTIC_DELTA=0
+# NEXT_TARGET=NONE

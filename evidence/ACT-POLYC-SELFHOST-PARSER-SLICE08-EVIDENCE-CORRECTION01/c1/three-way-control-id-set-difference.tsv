@@ -1,0 +1,109 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE08-EVIDENCE-CORRECTION01
+ACT_PHASE=C1-EVIDENCE
+EVIDENCE_KIND=three-way-control-id-set-difference
+#
+# THE THREE-WAY ID RECONCILIATION, WITH ACTUAL COUNTS.
+#
+# F = the RECON07 frozen obligations (F_NEGCTRL + F_CAUSAL)
+# B = the SLICE08 C0 frozen inherited-controls-contract.tsv
+# J = the SLICE08 C3 inherited-controls-join.tsv
+#
+# Every count is DERIVED from the bytes.  No count is copied
+# from a claimed summary, and no expected ID list is hardcoded.
+#
+## --- PER-SOURCE COUNTS ---
+#
+source	path	expected_cols	row_count	distinct_id_count	duplicate_ids	unparsable_rows
+F_NEGCTRL	evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON07/c2/selected-negative-controls.md	3	21	21	0	0
+F_CAUSAL	evidence/ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON07/c2/selected-causal-contract.md	1	3	3	0	0
+F	(union of the two RECON07 sources)	-	24	24	0	0
+B	evidence/ACT-POLYC-SELFHOST-PARSER-SLICE08/c0/inherited-controls-contract.tsv	7	23	23	0	0
+J	evidence/ACT-POLYC-SELFHOST-PARSER-SLICE08/c3/inherited-controls-join.tsv	13	24	24	0	0
+#
+## --- THE SET DIFFERENCES ---
+#
+set	definition	count	ids
+F_minus_B	in RECON07 frozen, ABSENT from the SLICE08 C0 contract	1	SL-EC-06
+B_minus_F	in the SLICE08 C0 contract, ABSENT from RECON07 frozen	0
+B_minus_J	in the SLICE08 C0 contract, ABSENT from the SLICE08 C3 join	0
+J_minus_B	in the SLICE08 C3 join, ABSENT from the SLICE08 C0 contract	1	SL-EC-06
+F_minus_J	in RECON07 frozen, ABSENT from the SLICE08 C3 join	0
+J_minus_F	in the SLICE08 C3 join, ABSENT from RECON07 frozen	0
+#
+F_minus_B_EQUALS_J_minus_B=YES (the same single ID)
+F_EQUALS_J=YES (every ID in the C3 join is a RECON07 frozen obligation)
+#
+## --- THE PER-ID MEMBERSHIP TABLE ---
+#
+# DERIVED, not asserted: an ID is marked F/B/J only if the
+# byte-parsed row set contains it.
+#
+control_id	in_F	in_B	in_J	frozen_source
+RECON07-SUB-002-POST-POLYC-MUTANT	Y	Y	Y	RECON07-c2/selected-causal-contract.md
+RECON07-SUB-002-PRE-C-MUTANT	Y	Y	Y	RECON07-c2/selected-causal-contract.md
+RECON07-SUB-002-SLICE08-C-OFF-C-MUTANT	Y	Y	Y	RECON07-c2/selected-causal-contract.md
+SL-CC-01	Y	Y	Y	RECON07-c2/selected-negative-controls.md
+SL-CC-02	Y	Y	Y	RECON07-c2/selected-negative-controls.md
+SL-CC-03	Y	Y	Y	RECON07-c2/selected-negative-controls.md
+SL-CC-04	Y	Y	Y	RECON07-c2/selected-negative-controls.md
+SL-CC-05	Y	Y	Y	RECON07-c2/selected-negative-controls.md
+SL-EC-01	Y	Y	Y	RECON07-c2/selected-negative-controls.md
+SL-EC-02	Y	Y	Y	RECON07-c2/selected-negative-controls.md
+SL-EC-03	Y	Y	Y	RECON07-c2/selected-negative-controls.md
+SL-EC-04	Y	Y	Y	RECON07-c2/selected-negative-controls.md
+SL-EC-05	Y	Y	Y	RECON07-c2/selected-negative-controls.md
+SL-EC-06	Y	N	Y	RECON07-c2/selected-negative-controls.md
+SL-IC-01	Y	Y	Y	RECON07-c2/selected-negative-controls.md
+SL-IC-02	Y	Y	Y	RECON07-c2/selected-negative-controls.md
+SL-IC-03	Y	Y	Y	RECON07-c2/selected-negative-controls.md
+SL-IC-04	Y	Y	Y	RECON07-c2/selected-negative-controls.md
+SL-PV-01	Y	Y	Y	RECON07-c2/selected-negative-controls.md
+SL-RC-01	Y	Y	Y	RECON07-c2/selected-negative-controls.md
+SL-RC-02	Y	Y	Y	RECON07-c2/selected-negative-controls.md
+SL-RC-03	Y	Y	Y	RECON07-c2/selected-negative-controls.md
+SL-RC-04	Y	Y	Y	RECON07-c2/selected-negative-controls.md
+SL-RC-05	Y	Y	Y	RECON07-c2/selected-negative-controls.md
+#
+F_ID_COUNT=24
+B_ID_COUNT=23
+J_ID_COUNT=24
+THE_ONLY_ID_WHERE_B_AND_J_DIFFER=SL-EC-06
+ID_DUPLICATES_ANYWHERE=0
+#
+## --- THE FIELD-LEVEL CONTENT COMPARISON ON THE SHARED IDs ---
+#
+# For the 23 IDs in both B and J, the subject, the phase, the
+# adverse edit and the detector are compared FIELD BY FIELD
+# against the RECON07 frozen row, not row-against-row.
+#
+control_id	adverse_edit_B	adverse_edit_RECON07	subject_match	detector_match	phase_match
+RECON07-SUB-002-POST-POLYC-MUTANT	The NEW post-migration PolyC mutation (MUST be executed by SLICE08)	(time-scoped causal control; see selected-causal-contract.md)	RECON07-MATCH	RECON07-MATCH	RECON07-MATCH
+RECON07-SUB-002-PRE-C-MUTANT	The RECON07 pre-migration C mutation (already executed by RECON07)	(time-scoped causal control; see selected-causal-contract.md)	RECON07-MATCH	RECON07-MATCH	RECON07-MATCH
+RECON07-SUB-002-SLICE08-C-OFF-C-MUTANT	A fresh C mutation in the migrated tree	(time-scoped causal control; see selected-causal-contract.md)	RECON07-MATCH	RECON07-MATCH	RECON07-MATCH
+SL-CC-01	Mutate the selected C decision and rebuild the real compiler	Mutate the selected C decision and rebuild the real compiler	RECON07-MATCH	RECON07-MATCH	RECON07-MATCH
+SL-CC-02	Substitute a handwritten/PolyC-dependent G0 oracle	Substitute a handwritten/PolyC-dependent G0 oracle	RECON07-MATCH	RECON07-MATCH	RECON07-MATCH
+SL-CC-03	Corrupt one fixture expected output	Corrupt one fixture expected output	RECON07-MATCH	RECON07-MATCH	RECON07-MATCH
+SL-CC-04	Put the comparison instructions in an unrelated function/object	Put the comparison instructions in an unrelated function/object	RECON07-MATCH	RECON07-MATCH	RECON07-MATCH
+SL-CC-05	Mutate the compiled POLYC component (the POST-POLYC-MUTANT control)	Mutate the compiled POLYC component (the POST-POLYC-MUTANT control)	RECON07-MATCH	RECON07-MATCH	RECON07-MATCH
+SL-EC-01	Mark the newly migrated SUB-002 authority as still eligible C	Mark the newly migrated SUB-002 authority as still eligible C	RECON07-MATCH	RECON07-MATCH	RECON07-MATCH
+SL-EC-02	Suppress a transitive mutable-host-state dependence	Suppress a transitive mutable-host-state dependence	RECON07-MATCH	RECON07-MATCH	RECON07-MATCH
+SL-EC-03	Insert a nonzero host AST graph write in the candidate facts	Insert a nonzero host AST graph write in the candidate facts	RECON07-MATCH	RECON07-MATCH	RECON07-MATCH
+SL-EC-04	Inject callback or recovery ownership	Inject callback or recovery ownership	RECON07-MATCH	RECON07-MATCH	RECON07-MATCH
+SL-EC-05	Add an unreachable candidate with an excellent rank	Add an unreachable candidate with an excellent rank	RECON07-MATCH	RECON07-MATCH	RECON07-MATCH
+SL-IC-01	Delete one live function from the census	Delete one live function from the census	RECON07-MATCH	RECON07-MATCH	RECON07-MATCH
+SL-IC-02	Duplicate one function/candidate ID	Duplicate one function/candidate ID	RECON07-MATCH	RECON07-MATCH	RECON07-MATCH
+SL-IC-03	Alter one source-range SHA-256	Alter one source-range SHA-256	RECON07-MATCH	RECON07-MATCH	RECON07-MATCH
+SL-IC-04	Invalid, out-of-file or overlapping identity range	Invalid, out-of-file or overlapping identity range	RECON07-MATCH	RECON07-MATCH	RECON07-MATCH
+SL-PV-01	Relabel one producer compiler as another bootstrap binary	Relabel one producer compiler as another bootstrap binary	RECON07-MATCH	RECON07-MATCH	RECON07-MATCH
+SL-RC-01	Shuffle genuine facts, then submit a forged order-dependent ranking	Shuffle genuine facts, then submit a forged order-dependent ranking	RECON07-MATCH	RECON07-MATCH	RECON07-MATCH
+SL-RC-02	Give an excluded candidate the lowest numeric rank	Give an excluded candidate the lowest numeric rank	RECON07-MATCH	RECON07-MATCH	RECON07-MATCH
+SL-RC-03	Remove the provisional feasible leader	Remove the provisional feasible leader	RECON07-MATCH	RECON07-MATCH	RECON07-MATCH
+SL-RC-04	Perturb one controlled R0..R6 dimension	Perturb one controlled R0..R6 dimension	RECON07-MATCH	RECON07-MATCH	RECON07-MATCH
+SL-RC-05	Preserve an ID but substitute a stale source range/call site	Preserve an ID but substitute a stale source range/call site	RECON07-MATCH	RECON07-MATCH	RECON07-MATCH
+#
+SHARED_IDS_B_AND_J=23
+SUBJECT_OR_PHASE_MISMATCHES=0
+ADVERSE_EDIT_OR_DETECTOR_MISMATCHES=0
+NOTE=the 23 shared IDs are the SAME 23 that RECON07 froze and that
+NOTE=the SLICE08 C0 contract copied verbatim; SL-EC-06 is the ONLY
+NOTE=ID whose presence differs between the three sets.

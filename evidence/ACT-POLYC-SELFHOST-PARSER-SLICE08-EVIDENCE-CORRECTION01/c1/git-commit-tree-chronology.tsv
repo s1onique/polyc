@@ -1,0 +1,63 @@
+ACT_ID=ACT-POLYC-SELFHOST-PARSER-SLICE08-EVIDENCE-CORRECTION01
+ACT_PHASE=C1-EVIDENCE
+EVIDENCE_KIND=git-commit-tree-chronology
+#
+# THE FIVE-COMMIT SLICE08 CHAIN, WITH EACH COMMIT tree AND
+# THE SHA-256 OF src/parser.c LINES 1683..1684 AT THAT TREE.
+#
+# Every hash is recomputed from the IMMUTABLE Git object at the
+# named commit, never from the working tree.
+#
+# Schema: phase <TAB> commit <TAB> tree <TAB> range <TAB> bytes
+#         <TAB> sha256 <TAB> semantic_subject <TAB> range_finding_method
+#
+RECON07-CLOSE	3eb8afa4f02ae4c5ff9e86cc32ac34fb4f8c2f9b	24655e17d83e82957bc9a8330bf0487c13b05028	1683..1684	175	a9fcb6a752a59a58eaea5bdf449cab39acf7d2d2be9d776f6a13fd968af89199	THE LEGACY INLINE PREDICATE (stmt->kind chain)	git show <commit>:src/parser.c | sed -n "1683,1684p" | shasum -a 256
+RECON07-C0	31b23e2e6f74f17b77bc87e681fcb5d5240da349	feaa5b1f07ab6260d925440886e244d6b5b9cdff	1683..1684	175	a9fcb6a752a59a58eaea5bdf449cab39acf7d2d2be9d776f6a13fd968af89199	THE LEGACY INLINE PREDICATE (stmt->kind chain)	git show <commit>:src/parser.c | sed -n "1683,1684p" | shasum -a 256
+SLICE08-C0	331a073d33ba1027d89b0d80fd340e2c6968b93d	e90d974c497b82d8e697d6070ccbd211234613f5	1683..1684	175	a9fcb6a752a59a58eaea5bdf449cab39acf7d2d2be9d776f6a13fd968af89199	THE LEGACY INLINE PREDICATE (stmt->kind chain)	git show <commit>:src/parser.c | sed -n "1683,1684p" | shasum -a 256
+SLICE08-C1	a1a5303bd3fd1bcbd740c5994414e3df6f85e506	5b3c8b9c7548ebe088d9881e0318efe48640091d	1683..1684	175	a9fcb6a752a59a58eaea5bdf449cab39acf7d2d2be9d776f6a13fd968af89199	THE LEGACY INLINE PREDICATE (stmt->kind chain)	git show <commit>:src/parser.c | sed -n "1683,1684p" | shasum -a 256
+SLICE08-C2	c923f657618686cca7946f2b106ae9b77b276f3b	c91aade07b80903ecdf26349d8357a85d2ab5e70	1683..1684	94	a9a33ff1c3993560f5504582ec372c3f64573caca630e8cda32f58755bbd0fea	A COMMENT FRAGMENT ("* the AST graph, the allocation, ..."); NOT THE DECISION	git show <commit>:src/parser.c | sed -n "1683,1684p" | shasum -a 256
+SLICE08-C3	b2188b5c126766b69df67ff4b4da4b6706e84510	61cc4ae2101525172b6ed7b6e7efefa7310f4d2b	1683..1684	94	a9a33ff1c3993560f5504582ec372c3f64573caca630e8cda32f58755bbd0fea	A COMMENT FRAGMENT; NOT THE DECISION	git show <commit>:src/parser.c | sed -n "1683,1684p" | shasum -a 256
+SLICE08-CLOSE	a43348acc481146853b771609c75e4e0d324e375	b4447a6bf8adbfc177ad7991dc7593833ad224f9	1683..1684	94	a9a33ff1c3993560f5504582ec372c3f64573caca630e8cda32f58755bbd0fea	A COMMENT FRAGMENT; NOT THE DECISION	git show <commit>:src/parser.c | sed -n "1683,1684p" | shasum -a 256
+#
+## --- THE SEMANTICALLY CORRESPONDING, ACTUAL SUBJECT RANGES ---
+#
+# These are DIFFERENT byte-range identities from the 1683..1684
+# numbers.  A line number is not a subject.
+#
+phase	commit	range	bytes	sha256	semantic_subject
+SLICE08-C2	c923f657618686cca7946f2b106ae9b77b276f3b	1736..1738	156	dc43f25e38972a986a53a1fca25568ab95c187ce65524fc5b035a62b7223bcc2	THE MOVED LEGACY PREDICATE, selector-OFF #else arm (kind == AST_*)	git show <commit>:src/parser.c | sed -n "1736,1738p" | shasum -a 256
+SLICE08-CLOSE	a43348acc481146853b771609c75e4e0d324e375	1736..1738	156	dc43f25e38972a986a53a1fca25568ab95c187ce65524fc5b035a62b7223bcc2	THE MOVED LEGACY PREDICATE, selector-OFF #else arm (kind == AST_*)	git show <commit>:src/parser.c | sed -n "1736,1738p" | shasum -a 256
+#
+## --- THE FUNCTION BOUNDARIES, LOCATED BY SOURCE TEXT ---
+#
+# The helper and the call site are located by their TEXT, not by
+# inherited line numbers.
+#
+item	present_at_C1_a1a5303	present_at_C2_c923f65	present_at_CLOSE_a43348a	line_at_C2	line_at_CLOSE
+static int parseDefaultArmTerminates(int kind)	NO	YES	YES	1712	1712
+long long ParserLegacyDefaultArmTerminatesOracle(long long ast_kind)	NO	YES	YES	1754	1754
+Ast *parseDefaultStatement(Cctrl *cc) {	YES	YES	YES	1759	1759
+if (parseDefaultArmTerminates((int)stmt->kind)) break;	NO	YES	YES	1775	1775
+#
+## --- THE WHOLE-FILE IDENTITY OF src/parser.c ---
+#
+commit	sha256_of_whole_src_parser_c
+a1a5303bd3fd1bcbd740c5994414e3df6f85e506	2b31a7912bfbcfe538786aff17383a8282da815f0990910a652a0119f084fe17
+c923f657618686cca7946f2b106ae9b77b276f3b	8e68487e1fd351cb888c5044cfb71871628d904dd089305d59138b2f017bee00
+#
+# CORROBORATION: the C1 tree whole-file digest 2b31a791... is
+# EXACTLY the RECON07 frozen value
+#   REC07_PRE_C_MUTANT_SOURCE_SHA256_PRISTINE=2b31a7912bfbcfe538786aff17383a8282da815f0990910a652a0119f084fe17
+# from c2/selected-causal-contract.md:48.  The C1 tree therefore
+# carried the RECON07 pristine C source, byte for byte.
+SRC_PARSER_C_UNCHANGED_FROM_RECON07_THROUGH_C1=YES
+SRC_PARSER_C_CHANGED_ONLY_AT=C2 (c923f65)
+#
+## --- THE WHOLE-FILE DIGEST OF THE C1 EVIDENCE FILE ITSELF ---
+#
+COMMAND=git rev-parse a1a5303:evidence/ACT-POLYC-SELFHOST-PARSER-SLICE08/c1/selected-source-and-abi.txt
+   8195bfc4914e80b46dbbcf6c64124fcf06553c9e
+COMMAND=git rev-parse a43348a:evidence/ACT-POLYC-SELFHOST-PARSER-SLICE08/c1/selected-source-and-abi.txt
+   8195bfc4914e80b46dbbcf6c64124fcf06553c9e
+C1_EVIDENCE_BLOB_IDENTICAL_AT_C1_AND_CLOSE=YES
+THE_C1_FILE_WAS_NOT_AMENDED_AFTER_C1=YES
