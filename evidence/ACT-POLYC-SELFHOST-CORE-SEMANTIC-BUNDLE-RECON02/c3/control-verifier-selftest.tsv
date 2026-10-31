@@ -1,0 +1,14 @@
+selftest_id	adverse_mutation	expected_rejection_reason	actual_reason	selftest_result
+ST-01	delete an NC row	ROW_COUNT	ROW_COUNT 23	PASS
+ST-02	duplicate an NC row	DUPLICATE_ID	DUPLICATE_ID	PASS
+ST-03	substitute an unknown NC id	UNKNOWN_ID	UNKNOWN_ID	PASS
+ST-04	blank the executor id of a PASS row	MISSING_FIELD	MISSING_FIELD	PASS
+ST-05	change a required detector reason	WRONG_REASON	WRONG_REASON	PASS
+ST-06	swap two executor ids	SWAPPED_EXECUTOR_ID	SWAPPED_EXECUTOR_ID	PASS
+ST-07	no mutation (the unmutated ledger)	OK	OK	PASS
+
+SELFTEST_CASES=7
+SELFTEST_PASS=7
+SELFTEST_FAIL=0
+SELFTEST_IS_NOOP=FALSE (every adversarial case is rejected with its OWN reason)
+TRANSCRIPT=c3/probes/control-verifier-selftest.out
