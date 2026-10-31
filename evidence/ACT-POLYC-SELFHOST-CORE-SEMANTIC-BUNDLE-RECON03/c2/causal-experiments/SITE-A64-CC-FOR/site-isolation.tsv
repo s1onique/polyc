@@ -1,0 +1,17 @@
+# ACT_ID=ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=causal-experiment-site-isolation
+#
+# THE ISOLATION ANTI-CONTROL FOR SITE-A64-CC-FOR.
+#
+# For each site, the OTHER sites' witnesses were run against
+# THIS site's mutant compiler. A witness that CHANGED under a
+# mutation of a DIFFERENT site would mean the two sites are not
+# separately attributable.
+#
+SITE_ID=SITE-A64-CC-FOR
+MUTANT_EXECUTION_ID=EXEC-A64-CC-FOR-MUTANT
+control_witness_id	control_witness_output_under_this_mutation	control_witness_output_pristine	control_changed	verdict
+W-A64-CC-INV	LT_OK	LT_OK	NO	ISOLATED (the INV site is unaffected by a mutation of the FOR site)
+W-A64-CSET	CMP_BAD	CMP_OK	YES	NOT_ISOLATED -- and this is EXPECTED and DOCUMENTED: the aarch64EmitCSet site and the aarch64CcFor site SHARE the aarch64CcFor table, so a mutation of aarch64CcFor changes the suffix that aarch64EmitCSet emits. The two sites are therefore NOT independently separable by the CSET witness. The ISOLATION control for this site is W-A64-CC-INV, which IS unaffected.
+SITE_ISOLATION_VERDICT=PASS_WITH_DOCUMENTED_COUPLING

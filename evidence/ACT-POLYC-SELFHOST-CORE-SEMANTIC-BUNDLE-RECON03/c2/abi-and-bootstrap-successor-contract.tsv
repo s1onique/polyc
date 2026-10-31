@@ -1,0 +1,91 @@
+# ACT_ID=ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=abi-and-bootstrap-successor-contract
+#
+# THE ABI AND THE BOOTSTRAP SUCCESSOR CONTRACT, IN MACHINE-READABLE FORM.
+# The prose contract is c2/selected-bundle-contract.md; this file is its
+# bindable summary.
+#
+abi_element	name	statement
+abi_name	ABI-A64-CMP-CC-1	the successor's ABI name
+abi_version	1	the successor's ABI version
+target_abi	aarch64 (Apple arm64 and Linux arm64)	the target ABI the contract covers; x86_64 is a DIFFERENT target ABI and is NOT covered
+endianness	little	the target's endianness
+word_width	64	the target's word width
+export	AbiA64CmpCcFor(I64 comparison_kind)	U8 *; the TRUE-side condition-code suffix; a BORROWED immutable literal; NULL on an out-of-domain kind
+export	AbiA64CmpCcInvFor(I64 comparison_kind)	U8 *; the FALSE-side (inverse) condition-code suffix; a BORROWED immutable literal; NULL on an out-of-domain kind
+export	AbiA64CmpCcEmitCSet(I64 comparison_kind, I64 is_float)	U0; the Boolean materialisation of a comparison result
+input_domain	IrCmpKind x {float=0,int=1}	the complete source-derived input domain: IR_CMP_INVALID=-1, EQ=0, NE=1, LT=2, LE=3, GT=4, GE=5, ULT=6, ULE=7, UGT=8, UGE=9, OEQ=10, ONE=11, OLT=12, OLE=13, OGT=14, OGE=15, UNO=16, ORD=17
+status_domain	a POINTER that is NULL on failure	the ONLY failure signal is a NULL pointer; a NEGATIVE NUMERIC STATUS IS NEVER USED, so the legitimate zero discriminant IR_CMP_EQ==0 can never be confused with a failure
+data_domain	eq ne lt le gt ge lo ls hi hs (integer); eq ne mi ls gt ge (float)	the closed set of suffixes the tables produce
+zero_handling	IR_CMP_EQ is the implicit zero of IrCmpKind and is a LIVE input	the zero discriminant is a legitimate value; the NULL failure signal exists precisely so that the zero never has to double as a failure marker
+unknown_input	TOTAL; an out-of-domain kind returns NULL and the host panics explicitly	the functions never read out of bounds and never loop; there is no silent default
+ownership	no allocation crosses the seam	the suffix is a static literal; the host borrows it for one formatting call; the host owns its assembly buffer
+aliasing	none	the suffix is not writable through the returned pointer
+callback_surface	NONE	no function pointer, no callback table, no void* crosses the seam
+recovery_crossing	NONE	no setjmp/longjmp, no unbounded recursive recovery transfer, no exception-like escape; a panic is a host process termination
+mutable_host_state	NONE	no site writes mutable host or global state; only the host's own assembly buffer is written, and the host sequences it
+double_evaluation	NONE	every argument is a copied scalar, evaluated once
+#
+producer_stage	stage	producer	output
+G0	0	/usr/bin/gcc (46 C translation units)	build/host-stage0/hcc
+G0	0	build/host-stage0/hcc (tools/bootstrap/<new-component>.HC)	build/<new-subject>.o
+G1	1	the G0 subject compiled by build/host-stage0/hcc	a BYTE-IDENTICAL subject object
+G2	2	the G1 compiler	a BYTE-IDENTICAL subject object
+G3	3	the G2 compiler	a BYTE-IDENTICAL subject object
+#
+required_differential_comparison	requirement
+1	G0 subject == G1 subject (byte identity of the .o)
+2	G0 subject == G2 subject
+3	G0 subject == G3 subject
+4	G1 compiler produces the same ASSEMBLY as G0 on the G0 fixture set
+5	G2 compiler produces the same ASSEMBLY as G0 on the G0 fixture set
+6	G3 compiler produces the same ASSEMBLY as G0 on the G0 fixture set
+7	G1 compiler produces the same OBJECT as G0 on the G0 fixture set
+8	G2 compiler produces the same OBJECT as G0 on the G0 fixture set
+9	G3 compiler produces the same OBJECT as G0 on the G0 fixture set
+10	G1..G3 executables produce the same PROGRAM OUTPUT as G0
+11	G1..G3 executables produce the same EXIT STATUS as G0
+12	the legacy C oracle (selector-OFF) and the PolyC subject agree on every fixture case
+DIFFERENTIAL_COMPARISONS_REQUIRED=12
+DIFFERENTIAL_COMPARISONS_EXECUTED_BY_THIS_ACT=0 (they are REQUIRED of the successor, NOT executed here, and NOT claimed to pass)
+#
+fixture_partition	content
+VALID	every named IrCmpKind in the signed-integer domain and in the float domain
+INVALID	IR_CMP_INVALID (-1) and every value outside the enum's range
+BOUNDARY	IR_CMP_EQ (the implicit zero), IR_CMP_EQ-1, IR_CMP_ORD (the maximum) and IR_CMP_ORD+1
+FALLBACK	the out-of-domain kind, which must produce the explicit panic rather than a silent default
+ZERO_DISCRIMINANT	IR_CMP_EQ used as a discriminant, proving the zero is a legitimate live value
+FIXTURE_PARSER_MUST_BE_INDEPENDENT=YES (the fixture generator parses the live src/ir-types.h and must not share the table under test)
+#
+per_site_post_migration_requirement	requirement
+SITE-A64-CC-FOR	a post-migration PolyC mutation must reproduce the recorded transition (cset x0, lt -> cset x0, ge; LT_OK -> LT_BAD), and the legacy C body must be shown DORMANT in the selector-ON build
+SITE-A64-CC-INV	a post-migration PolyC mutation must reproduce the recorded transition (b.ge -> b.lt; LT_OK -> LT_BAD), and the legacy C body must be shown DORMANT in the selector-ON build
+SITE-A64-CSET	a post-migration PolyC mutation must reproduce the recorded transition (cset x0, lt/gt -> cset x0, ne/ne; GT_OK -> GT_BAD), and the legacy C body must be shown DORMANT in the selector-ON build
+#
+permitted_production_path	change
+tools/bootstrap/<new-component>.HC	NEW: the PolyC component
+src/aarch64.c	MODIFIED: the three sites become calls into the component
+src/CMakeLists.txt	MODIFIED: the component's object is added to the link
+Makefile	MODIFIED: the component's subject rule is added
+FORBIDDEN	src/x86_64.c, src/asm/**, and every canonical gate
+#
+build_prerequisite	requirement
+component_symbol_must_exist_before_link	YES: a missing symbol MUST fail the link, never silently fall back to the C body
+component_object_is_a_make_prerequisite_of_production_hcc	YES
+prerequisite_expansion_at_rule_read_time	YES: a late-defined variable can silently drop the subject from the build graph
+production_link_verifies_the_component_symbol	YES: the same way the existing nine parser authorities are verified
+COMPILER_INVOCATIONS_MUST_BE_SERIALIZED	YES: the /tmp/holyc-asm.s shared-scratch race is OPEN
+PARALLEL_MAKE_OBJECT_RACE_IS_OPEN	YES: the observed make -j object race is OPEN and is NOT fixed by this ACT
+#
+assessment	value
+estimated_workload	BASE
+remaining_blockers	the /tmp/holyc-asm.s race; the parallel make -j object race; F-POLYC-TOOLS has no landed checker; the ARM64 indexed-byte-load defect; NONE of these is in this bundle's path
+graph_impact	POTENTIAL_ONLY
+potential_edge_count	3
+proven_cut_count	0
+E_MUT_0137_STATUS	UNSUPPORTED_WITNESS (not weighted)
+m1_impact	REAL AND DEMONSTRATED (each of the three sites was shown by a physical C-source mutation to change the emitted assembly and the compiled program's behaviour)
+m2_impact	NOT DEMONSTRATED (the M2 producer is ABSENT: no PolyC-authored compiler source set exists)
+selfhost_m2_achieved	NO
+slice10_authorized	NO

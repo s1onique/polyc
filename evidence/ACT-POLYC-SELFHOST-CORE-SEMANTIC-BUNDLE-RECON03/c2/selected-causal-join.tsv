@@ -1,0 +1,25 @@
+# ACT_ID=ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=selected-causal-join
+#
+# THE SOURCE / OBJECT / WITNESS / EXECUTION JOIN FOR THE
+# SELECTED BUNDLE. Every row is a physically separate
+# experiment with its own execution id.
+#
+site_id	execution_id	subject_symbol	source_sha256	witness_id	witness_source_sha256	pristine_observation	mutated_observation	restored_observation	causal_verdict
+SITE-A64-CC-FOR	EXEC-A64-CC-FOR-MUTANT	aarch64CcFor	d91fa7734c5a07a8ee27dc7cfa2a1cc8967cb774853408ea7ccaa9d61fa56e85	W-A64-CC-FOR	07ce6a4c86977542452f29788d5a394c7641d429fa892ca5af659eb158ec343f	cset x0, lt ; LT_OK	cset x0, ge ; LT_BAD	cset x0, lt ; LT_OK	PASS
+SITE-A64-CC-INV	EXEC-A64-CC-INV-MUTANT	aarch64CcInvFor	b86af825901d3a3dff60d2cfcc18e329701221d0adca514641e3434e813ee86f	W-A64-CC-INV	777e314f0db3a628bbc4d238951ebdf5fefc7caaa37de7ef3bbb875b918f8972	b.ge ; LT_OK	b.lt ; LT_BAD	b.ge ; LT_OK	PASS
+SITE-A64-CSET	EXEC-A64-CSET-MUTANT	aarch64EmitCSet	adaf48f374bd7b47e9bc5f1670e0be5ac8227d01bb2270dfea5ae9892db29e91	W-A64-CSET	2c9f2a8cd3169ef5fbff1dfb9e351e919b2bc1cafbfe520249542a6266d20c35	cset x0, lt ; cset x0, gt ; CMP_OK ; GT_OK	cset x0, ne ; cset x0, ne ; CMP_OK ; GT_BAD	cset x0, lt ; cset x0, gt ; CMP_OK ; GT_OK	PASS
+
+# THE JOIN, ASSERTED.
+SELECTED_MEMBER_COUNT=3
+PHYSICAL_EXPERIMENTS_EXECUTED=3
+DISTINCT_EXECUTION_IDS=3
+SHARED_EXECUTION_DOUBLE_COUNT=NO
+MEMBER_COUNT_EQUALS_PROVEN_CAUSAL_EXPERIMENTS=YES (3 == 3, as clause R2 requires at C2)
+EVERY_MUTANT_BUILT_SUCCESSFULLY=YES (BUILD_RC=0 for all three)
+EVERY_MUTANT_RESTORED=YES (the source SHA-256 returned to the pristine value and every witness returned to its pristine observation)
+DIAGNOSTIC_ONLY_MUTANTS=0
+DORMANT_MUTANTS=0 (every mutant changed the emitted assembly AND the compiled program's output)
+UNQUALIFIED_BUILD_FAILURES=0
+SELECTED_BUNDLE_CAUSALLY_QUALIFIED=YES

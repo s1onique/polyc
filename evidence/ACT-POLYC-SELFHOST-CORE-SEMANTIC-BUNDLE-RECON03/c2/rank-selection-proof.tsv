@@ -1,0 +1,75 @@
+# ACT_ID=ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=rank-selection-proof
+#
+# THE SELECTION PROOF: the rank-1 bundle, the agreement between
+# the two independent computations, and the forged-flag control.
+#
+SELECTION_STAGE=PROVISIONAL (the causal qualification at C2 has not yet
+  run; this record freezes the SELECTION IDENTITY and the contract,
+  not a PASS successor)
+
+PRIMARY_ELIGIBILITY_COMMAND=build/core-semantic-bundle-recon03-eligibility check c1/core-candidates.tsv c1/core-sites.tsv c1/eligibility-input-facts.tsv c2/eligibility-output.tsv c2/eligibility-site-facts.tsv
+PRIMARY_ELIGIBILITY_VERDICT=4 eligible of 6 candidates
+PRIMARY_RANK_COMMAND=build/core-semantic-bundle-recon03-rank rank c2/eligibility-output.tsv c1/core-candidates.tsv c2/eligibility-site-facts.tsv c2/ranked-candidates.tsv
+PRIMARY_RANK_VERDICT=RANK1=CAND-CMP-CC-A64
+
+INDEPENDENT_RECOMPUTE_COMMAND=build/core-semantic-bundle-recon03-independent recompute c1/core-candidates.tsv c1/core-sites.tsv c1/eligibility-input-facts.tsv c2/independent-eligibility.tsv c2/independent-rank.tsv
+INDEPENDENT_RECOMPUTE_VERDICT=4 eligible of 6 candidates
+INDEPENDENT_COMPARISON_COMMAND=build/core-semantic-bundle-recon03-independent compare c2/independent-eligibility.tsv c2/eligibility-output.tsv c2/independent-rank.tsv c2/ranked-candidates.tsv
+
+# THE JOIN, BY EXACT CANDIDATE ID (never by row position).
+INDEPENDENT_CANDIDATES=6
+PRIMARY_CANDIDATES=6
+MISSING_IDS=0
+DUPLICATE_IDS=0
+RANK_ORDER_MISMATCHES=0
+ELIGIBILITY_INDEPENDENT_MISMATCHES=0
+RANK_INDEPENDENT_MISMATCHES=0
+JOIN_RESULT=EXACT_AGREEMENT
+
+# THE INDEPENDENCE IS STRUCTURAL, NOT A CLAIM.
+#
+# The two implementations differ in their data model (the primary
+# uses one shared row type; the independent uses one struct per
+# roster), in their parsing (the primary uses a FieldAt helper; the
+# independent uses a hand-rolled CutField and a line scanner), in
+# their clause accumulation (the primary uses a clause list; the
+# independent uses a failure bit mask), in their ordering route (the
+# primary uses an insertion sort; the independent uses a selection
+# sort) and in their file inventory (the independent reads NO
+# file that the primary wrote). The independent recomputation NEVER
+# reads the primary checker's eligible column; it rederives every
+# eligibility decision from the C1 source facts.
+
+# THE FORGED-FLAG CONTROL (NC11).
+#
+# An ISOLATED COPY of the primary checker's output was forged so that
+# the EXCLUDED candidate CAND-CMP-CC-BOTH carried eligible=YES.
+# The primary ranker, which by contract consumes the checker's
+# eligible column mechanically, DID promote the forged candidate to
+# rank 1 -- that is the documented behaviour of the join, and it is
+# exactly why the independent recomputation exists.
+#
+# The independent recomputation, which rederives eligibility from the
+# C1 source facts and never reads the forged column, REJECTED the
+# forgery: the candidate remained excluded with its own E16 clause.
+#
+NC11_FORGED_CANDIDATE=CAND-CMP-CC-BOTH
+NC11_FORGED_ELIGIBLE_COLUMN=YES
+NC11_PRIMARY_RANKER_ELIGIBLE_BUNDLES=5 (the forgery IS visible to the primary ranker)
+NC11_PRIMARY_RANKER_RANK1=CAND-CMP-CC-BOTH (the forgery DID corrupt the primary ranker)
+NC11_INDEPENDENT_RECOMPUTE_ELIGIBLE_BUNDLES=4 (the forgery did NOT reach the independent computation)
+NC11_INDEPENDENT_RECOMPUTE_VERDICT_FOR_FORGED_CANDIDATE=NO E16 (the candidate stayed excluded)
+NC11_RESULT=THE_FORGED_ELIGIBLE_FLAG_DID_NOT_PROMOTE_THE_CANDIDATE
+
+# THE PROVISIONAL SELECTION.
+#
+SELECTED_BUNDLE_ID=CAND-CMP-CC-A64
+SELECTED_MEMBER_IDS=SITE-A64-CC-FOR;SITE-A64-CC-INV;SITE-A64-CSET
+SELECTED_MEMBER_COUNT=3
+SELECTED_FAMILY=AARCH64_COMPARISON_CONDITION_CODE
+SELECTED_NAMED_INVARIANT=AARCH64_COMPARISON_CONDITION_CODE_AND_BOOLEAN_MATERIALISATION: the same IrCmpKind family maps to one AArch64 condition suffix, its inverse, and the cset materialisation
+SELECTED_ABI_SHAPE=BOUNDED_SCALAR_OUT
+SELECTION_IS_PROVISIONAL=YES (the three C2 causal experiments have not yet run)
+SELECTION_DUE_TO_CONVENIENCE=NO (the rank-1 candidate was taken; no runner-up was preferred)

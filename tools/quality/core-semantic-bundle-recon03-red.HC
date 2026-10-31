@@ -652,7 +652,7 @@ public U0 Red5Graph(U8 *path)
 // Dispatch.
 // ---------------------------------------------------------------------------
 
-public U0 Main(I64 argc, I8 **argv)
+public I32 Main(I64 argc, U8 **argv)
 {
   if (argc < 2) {
     Write(1,"FINAL=FAIL\n",11);
@@ -678,27 +678,27 @@ public U0 Main(I64 argc, I8 **argv)
     U8 hex[65];
     if (!ShaSelfTest(hex)) RedFail("SHA256_SELFTEST_FAILED");
     Red1Attribution(argv[2], argv[3]);
-    return;
+    return 0;
   }
   if (StrCmp(mode, "red2-history") == 0) {
     if (argc < 3) { Write(1,"REASON=USAGE\n",13); Exit(2); }
     Red2History(argv[2]);
-    return;
+    return 0;
   }
   if (StrCmp(mode, "red3-migrated") == 0) {
     if (argc < 4) { Write(1,"REASON=USAGE\n",13); Exit(2); }
     Red3Migrated(argv[2], argv[3]);
-    return;
+    return 0;
   }
   if (StrCmp(mode, "red4-semantic") == 0) {
     if (argc < 3) { Write(1,"REASON=USAGE\n",13); Exit(2); }
     Red4Semantic(argv[2]);
-    return;
+    return 0;
   }
   if (StrCmp(mode, "red5-graph") == 0) {
     if (argc < 3) { Write(1,"REASON=USAGE\n",13); Exit(2); }
     Red5Graph(argv[2]);
-    return;
+    return 0;
   }
 
   Write(1,"FINAL=FAIL\n",11);

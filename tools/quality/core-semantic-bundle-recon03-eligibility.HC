@@ -923,7 +923,7 @@ public U0 CheckMode(U8 *cands_path, U8 *sites_path, U8 *facts_path, U8 *cand_out
 // Dispatch.
 // ---------------------------------------------------------------------------
 
-public U0 Main(I64 argc, I8 **argv)
+public I32 Main(I64 argc, U8 **argv)
 {
   if (argc < 2) {
     ESay("FINAL=FAIL\nREASON=USAGE\n");
@@ -934,14 +934,15 @@ public U0 Main(I64 argc, I8 **argv)
   if (StrCmp(mode, "check") == 0) {
     if (argc < 7) { ESay("FINAL=FAIL\nREASON=USAGE\n"); Exit(2); }
     CheckMode(argv[2], argv[3], argv[4], argv[5], argv[6]);
-    return;
+    return 0;
   }
   if (StrCmp(mode, "selftest") == 0) {
     if (argc < 4) { ESay("FINAL=FAIL\nREASON=USAGE\n"); Exit(2); }
     SelftestMode(argv[2], argv[3], argv[4]);
-    return;
+    return 0;
   }
 
   ESay("FINAL=FAIL\nREASON=UNKNOWN_MODE\n");
   Exit(2);
+  return 0;
 }
