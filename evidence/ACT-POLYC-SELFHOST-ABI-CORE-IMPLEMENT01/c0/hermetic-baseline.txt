@@ -1,0 +1,43 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=hermetic-baseline
+#
+# A FRESH, ISOLATED production compiler was configured and built in a
+# clean build root with every PolyC selector explicitly ON, so the
+# baseline is measured from a FRESH TREE (AGENTS.md F9), not from the
+# warm ./build directory.
+#
+FRESH_BUILD_ROOT=/tmp/polyc-aci01-c0-prod
+FRESH_CONFIGURE_RC=0
+FRESH_BUILD_RC=0
+FRESH_PRODUCTION_BINARY=/tmp/hcc
+FRESH_PRODUCTION_BINARY_SHA256=db92032f0233bf201aa5aff7eb9da95080ce1681288f26ae84f439b72cf2f2ca
+FRESH_PRODUCTION_ABI_CPA_HOST_OBJECT=CMakeFiles/hcc.dir/abi-cpa-host.c.o (compiled and linked)
+#
+# The CANONICAL hermetic install (the repository's own target) was run
+# with an isolated prefix:
+COMMAND=make test-prefix-install INSTALL_PREFIX=/tmp/polyc-aci01-c0-prefix TEST_PREFIX=/tmp/polyc-aci01-c0-prefix
+TEST_PREFIX_INSTALL_RC=0
+INSTALLED_PREFIX_BIN=/tmp/polyc-aci01-c0-prefix/bin/hcc
+INSTALLED_PREFIX_BIN_SHA256=1a7ac0fb255f96f221c2323baa30052c55be2a171a16f7b4b3c4053b772c98b0
+INSTALLED_PREFIX_LIB=libtos.a libtos.0.0.1.dylib libtos.dylib(symlink)
+INSTALLED_PREFIX_INCLUDE=tos.HH
+#
+# The stage0 producer (selector OFF by design) is the digest-bound
+# producer of the PolyC subjects:
+STAGE0_BINARY=build/host-stage0/hcc
+STAGE0_BINARY_SHA256=d01d28314fa74153088ac0bdbb10e7bf35a6537dfe15ebc669e15c0186ea1047
+STAGE0_POLYC_AUTHORITY_SYMBOLS=0
+#
+# The unit-test runner was built and run from the SAME hermetic prefix:
+COMMAND=make INSTALL_PREFIX=/tmp/polyc-aci01-c0-prefix TEST_PREFIX=/tmp/polyc-aci01-c0-prefix unit-test
+UNIT_TEST_RC=0
+UNIT_TEST_RUNNER=src/tests/test-runner (built by ../../hcc --install-dir=/tmp/polyc-aci01-c0-prefix ./run.HC -o test-runner)
+#
+# KNOWN ENVIRONMENT CONDITION (not introduced by this ACT):
+# The canonical install hcc -lib step cannot link libtos.dylib on
+# this host because all.o references _Errno. src/CMakeLists.txt
+# documents this as expected and continues, producing libtos.a and
+# libtos.0.0.1.dylib successfully. Recorded honestly; it is NOT
+# relabelled PASS and it is NOT a semantic regression.
+INSTALL_KNOWN_ERRNO_DYLIB_CONDITION=YES
