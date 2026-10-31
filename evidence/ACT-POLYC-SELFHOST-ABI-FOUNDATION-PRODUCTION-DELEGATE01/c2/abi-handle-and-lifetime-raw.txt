@@ -1,0 +1,164 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-FOUNDATION-PRODUCTION-DELEGATE01
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=abi-handle-and-lifetime
+#
+# The handle encoding, read from the COMMITTED source bytes.
+#   src/abi-cpa-host.c  AbiCpaEncode():
+#     ((u64)ABI_CPA_RESERVED << 48) | ((u64)(idx + 1) << 40) |
+#     ((u64)kind << 32) | ((u64)gen << 16) | ((u64)domain << 8) |
+#     (u64)ABI_CPA_MAGIC
+#   with ABI_CPA_RESERVED = 0xC0DE and ABI_CPA_MAGIC = 0x5A.
+#
+# A VALID handle therefore has 0xC0DE in bits 48..63, so as a signed I64 it
+# is NEGATIVE. Neither the host nor the compiled PolyC subject may sign-test
+# a handle; only the RESULT of AbiCpaAstKind is sign-tested, and that
+# result domain {256..299} is provably disjoint from the status domain
+# {-17..-1}.
+#
+# Slot table bounds and the fail-closed policy, read from the source:
+# 18: * (-ABI_SLOT_RETIRED). A slot is usable for at most 65535 issue/release
+# 22: * fails closed with -ABI_OUT_OF_MEMORY: the caller MUST surface that as an
+# 34:#define ABI_CPA_MAX_SLOTS 64
+# 51:static AbiCpaSlot g_cpa_slots[ABI_CPA_MAX_SLOTS];
+# 80:    if (idx1 == 0 || idx1 > ABI_CPA_MAX_SLOTS) return -ABI_HANDLE_NOT_ISSUED;
+# 90:    if (s->retired) return -ABI_SLOT_RETIRED;
+# 109:    while (i < ABI_CPA_MAX_SLOTS && (g_cpa_slots[i].live || g_cpa_slots[i].retired)) i++;
+# 112:    if (i >= ABI_CPA_MAX_SLOTS) return -ABI_OUT_OF_MEMORY;
+# 117:    if ((u32)s->generation + 1u > 0xffffu) {
+# 121:        return -ABI_SLOT_RETIRED;
+# 157:    if (idx1 == 0 || idx1 > ABI_CPA_MAX_SLOTS) return -ABI_HANDLE_NOT_ISSUED;
+# 166:    if (s->retired) return -ABI_SLOT_RETIRED;
+# 175:    if ((u32)s->generation + 1u > 0xffffu) {
+#
+# The retirement path, read from the source:
+# static s64 AbiCpaReleaseInternal(s64 handle);
+# void AbiCpaRetireAst(s64 handle) { (void)AbiCpaReleaseInternal(handle); }
+#
+# s64 AbiCpaAstKind(s64 ast) {
+#     AbiCpaSlot *s = NULL;
+#     s64 rc = AbiCpaLookup(ast, ABI_CPA_KIND_AST, &s);
+#     if (rc != ABI_OK) return rc;
+#     /* MECHANICAL READ ONLY: the host reports the kind value. It does not
+#      * classify it, does not compare it against any threshold and does not
+#      * decide whether the node is printed. */
+#     return (s64)((Ast *)s->obj)->kind;
+# }
+# static s64 AbiCpaReleaseInternal(s64 handle) {
+#     u64 t;
+#     u32 idx1, idx;
+#     AbiCpaSlot *s;
+#     u8 tok_domain;
+#     u16 tok_gen;
+#
+#     if (handle == 0) return -ABI_NULL_HANDLE;
+#     t = (u64)handle;
+#     if ((u8)(t & 0xffu) != ABI_CPA_MAGIC) return -ABI_HANDLE_NOT_ISSUED;
+#
+#     idx1 = (u32)((t >> 40) & 0xffu);
+#     if (idx1 == 0 || idx1 > ABI_CPA_MAX_SLOTS) return -ABI_HANDLE_NOT_ISSUED;
+#     idx = idx1 - 1;
+#
+#     tok_domain = (u8)((t >> 8) & 0xffu);
+#     tok_gen    = (u16)((t >> 16) & 0xffffu);
+#
+#     s = &g_cpa_slots[idx];
+#     if (tok_domain != g_cpa_domain || s->domain != g_cpa_domain)
+#         return -ABI_HANDLE_DOMAIN_MISMATCH;
+#     if (s->retired) return -ABI_SLOT_RETIRED;
+#     if (!s->live) return -ABI_DOUBLE_RELEASE;
+#     if (tok_gen != s->generation) return -ABI_HANDLE_GENERATION_MISMATCH;
+#
+#     s->live = 0;
+#     s->obj = NULL;
+#     /* The generation counter is advanced so that a stale token can never
+#      * alias this slot again. It is never wrapped to a previously valid
+#      * value: the slot is retired once the counter would overflow. */
+#     if ((u32)s->generation + 1u > 0xffffu) {
+#         s->retired = 1;
+#         s->generation = 0xffffu;
+#     } else {
+#         s->generation = (u16)((u32)s->generation + 1u);
+#     }
+#     return ABI_OK;
+# }
+#
+# The borrow discipline in the consumer, read from the source:
+# #ifdef HCC_USE_SELFHOST_ABI_CPA
+#
+# #include "abi-cpa-host.h"
+#
+# /* Declared here because this TU deliberately no longer includes "ast.h".
+#  * astToString takes the Ast as an opaque pointer and lives in src/ast.c, which
+#  * still owns the layout. */
+# extern char *astToString(Ast *ast);
+#
+# #else
+#
+# #include "ast.h"
+#
+# #endif
+# #ifdef HCC_USE_SELFHOST_ABI_CPA
+#         /* The node-visibility decision, made by compiled PolyC. The host
+#          * owns the token table and the only dereference of the Ast object;
+#          * this TU decides nothing about kinds. `should_print` is 0 or 1 on
+#          * success and a negative status when the host refused the handle; a
+#          * refusal is reported as a compiler error rather than being
+#          * silently swallowed. */
+#         {
+#             s64 handle = AbiCpaIssueAst(ast);
+#             s64 should_print = AbiCpaShouldPrintAst(handle);
+#             AbiCpaRetireAst(handle);
+#             if (should_print < 0) {
+#                 /* FAIL CLOSED: the host refused the borrow. This is an ABI
+#                  * failure, not a node to be skipped, so the compiler reports
+#                  * it and stops. It is never silently swallowed. */
+#                 loggerPanic("Cannot decide AST visibility: ABI status %ld\n",
+#                             (long)should_print);
+#             }
+#             if (should_print > 0) {
+#                 tmp = astToString(ast);
+#                 printf("%s\n", tmp);
+#             }
+#         }
+# #else
+#         if (ast->kind != AST_FUN_PROTO &&
+#             ast->kind != AST_EXTERN_FUNC &&
+#             ast->kind != AST_ASM_FUNC_BIND)
+#         {
+#             tmp = astToString(ast);
+#             printf("%s\n", tmp);
+#         }
+# #endif
+#
+# STATUS DOMAINS, as committed in src/abi-cpa-host.h:
+# 17:#define ABI_CPA_HOST_H
+# 22:#define ABI_OK                              0
+# 23:#define ABI_NULL_HANDLE                     1
+# 24:#define ABI_WRONG_HANDLE_KIND               2
+# 25:#define ABI_STALE_OR_RELEASED_HANDLE        3
+# 26:#define ABI_HANDLE_GENERATION_MISMATCH      4
+# 27:#define ABI_HANDLE_NOT_ISSUED               5
+# 28:#define ABI_HANDLE_DOMAIN_MISMATCH          6
+# 29:#define ABI_DOUBLE_RELEASE                  7
+# 30:#define ABI_EXPIRED_BORROW_OR_ARENA         8
+# 31:#define ABI_MUTATION_WITHOUT_CAPABILITY     9
+# 32:#define ABI_ATOMICITY_OR_RANGE_FAILURE     10
+# 33:#define ABI_CALLBACK_LIFETIME_OR_REENTRANCY 11
+# 34:#define ABI_CROSS_FRAME_RECOVERY_UNSAFE    12
+# 35:#define ABI_HOST_ERROR                     14
+# 36:#define ABI_OUT_OF_MEMORY                  15
+# 37:#define ABI_TOKEN_DOMAIN_EXHAUSTED         16
+# 38:#define ABI_SLOT_RETIRED                   17
+# 40:#define ABI_CPA_VERSION 1
+#
+# CROSS-FRAME RECOVERY: the host contains no setjmp/longjmp and the
+# compiled PolyC subject contains none either. The subject object imports
+# only _AbiCpaAstKind:
+# COMMAND=nm -u build/selfhost-abi-cpa-subject.o
+# _AbiCpaAstKind
+# COMMAND=nm -u build/CMakeFiles/hcc.dir/abi-cpa-host.c.o | grep -cE "setjmp|longjmp"
+# 0
+# COMMAND=nm -u hcc | grep -cE "_setjmp|_longjmp"
+# 2
+#   (the count is the PRE-EXISTING compiler recovery surface, conserved
+#    from the G0 oracle; the ABI host itself imports neither)

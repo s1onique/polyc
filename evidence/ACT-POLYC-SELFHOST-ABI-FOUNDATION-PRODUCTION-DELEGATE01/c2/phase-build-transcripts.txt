@@ -1,0 +1,62 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-FOUNDATION-PRODUCTION-DELEGATE01
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=phase-build-transcripts
+#
+# All compiler activity was SERIALIZED: the shared /tmp/holyc-asm.s
+# assembly temporary is a known race (recorded, not repaired).
+#
+# ============================================================
+# PRODUCTION ON BUILD
+# ============================================================
+# COMMAND=rm -f hcc
+# COMMAND=make INSTALL_PREFIX=$PWD/build/gate-prefix TEST_PREFIX=$PWD/build/gate-prefix production-hcc
+# EXIT=0
+#   PRODUCTION_HCC=./hcc
+#   PRODUCTION_PADDING_AUTHORITY=POLYC
+#   PRODUCTION_AST_BINOP_AUTHORITY=POLYC
+#   PRODUCTION_SWITCH_ARM_AUTHORITY=POLYC
+#   PRODUCTION_STATEMENT_DISPATCH_AUTHORITY=POLYC
+#
+# ============================================================
+# PRODUCTION ON PARSER SUITE (hermetic prefix)
+# ============================================================
+# COMMAND=make INSTALL_PREFIX=$PWD/build/gate-prefix TEST_PREFIX=$PWD/build/gate-prefix unit-test
+# EXIT=0
+#   PASSED=376 TOTAL=376  over 90 files
+#   PASSED: [0-9]*/[0-9]* sequence md5 = b6f117eb1386ca80f81bc06226e2a741
+#   FAILED: 0   Failed to open file: 0
+#
+# ============================================================
+# G0 C-ONLY ORACLE BUILD (the UNMODIFIED entry tree)
+# ============================================================
+# COMMAND=make INSTALL_PREFIX=$PWD/build/gate-prefix TEST_PREFIX=$PWD/build/gate-prefix production-hcc
+# EXIT=0
+#   ./hcc --version reports binary: <prefix>/hcc
+#
+# ============================================================
+# G0 C-ONLY ORACLE PARSER SUITE (same hermetic method)
+# ============================================================
+# COMMAND=make INSTALL_PREFIX=$PWD/build/gate-prefix TEST_PREFIX=$PWD/build/gate-prefix unit-test
+# EXIT=0
+#   PASSED=376 TOTAL=376  over 90 files
+#   PASSED: [0-9]*/[0-9]* sequence md5 = b6f117eb1386ca80f81bc06226e2a741
+#   FAILED: 0   Failed to open file: 0
+#   => the G0 and G1 parser-suite identities are IDENTICAL
+#
+# ============================================================
+# C-OFF ORACLE BUILD (the C2 source with the selector forced OFF)
+# ============================================================
+# COMMAND=make INSTALL_PREFIX=$PWD/build/gate-prefix TEST_PREFIX=$PWD/build/gate-prefix production-hcc
+# EXIT=0
+#   PRODUCTION_HCC=./hcc
+#   PRODUCTION_PADDING_AUTHORITY=POLYC
+#   PRODUCTION_AST_BINOP_AUTHORITY=POLYC
+#   PRODUCTION_SWITCH_ARM_AUTHORITY=POLYC
+#   PRODUCTION_STATEMENT_DISPATCH_AUTHORITY=POLYC
+#   nm ./hcc | grep -c AbiCpa                => 0
+#   nm -u compile.c.o | grep -c AbiCpa        => 0
+#   otool -tvV compile.c.o | grep -c 0x2401   => 1   (the legacy C predicate is live)
+#   nm ./hcc | grep -c " T _Bootstrap"        => 9
+#   shasum -a 256 compile.c.o => 303aa783e68a767f2ac2bab7cfad26d18bc7bf1d81f8f6d9256e84f9dc58f877
+#   => byte-identical to the ENTRY tree compile.c.o: the C-OFF oracle
+#      preserves the legacy behavior exactly.

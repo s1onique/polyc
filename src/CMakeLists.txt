@@ -198,7 +198,94 @@ if (HCC_ENABLE_LLVM)
     list(APPEND HEADERS llvm-backend-cap.h)
 endif()
 
+# ACT-POLYC-SELFHOST-ABI-FOUNDATION-PRODUCTION-DELEGATE01:
+#
+# The production migration of the top-level AST visibility decision.
+# The compiled PolyC component (tools/bootstrap/selfhost-abi-compile-print-ast.HC)
+# owns the decision; the C host (src/abi-cpa-host.c) owns the opaque handle
+# table and the only dereference of the Ast object.
+#
+# The dedicated selector `HCC_USE_SELFHOST_ABI_CPA` is used, and it is
+# INDEPENDENT of the nine existing parser selectors: coupling a tenth
+# authority to `HCC_USE_SELFHOST_COMPONENTS` or to
+# `HCC_USE_SELFHOST_PARSER_PADDING` would make the nine-authority
+# accounting ambiguous.
+#
+# Configurations:
+#   OFF -> the legacy C predicate stays active in src/compile.c, and the
+#          host TU is NOT even compiled, so the selector-OFF build contains
+#          no trace of the new ABI machinery and stays a genuinely
+#          independent C oracle.
+#   ON  -> the compiled PolyC decision is authoritative and the legacy C
+#          predicate is compiled out. A missing subject is a HARD configure
+#          error; there is no path on which the production compiler
+#          silently falls back to the C predicate while claiming the PolyC
+#          authority.
+#
+# Default: OFF, so a bare `cmake -S ./src -B ./build` never depends on a
+# subject object that may not exist. The production ./hcc turns it ON
+# explicitly from the Makefile, which also SCHEDULES the subject's
+# production.
+#
+# This block is placed BEFORE `add_executable(hcc ${SOURCES} ...)` because it
+# appends the host translation unit to SOURCES.
+option(HCC_USE_SELFHOST_ABI_CPA
+       "Link the compiled PolyC AST-visibility decision into hcc and enable the production AST-visibility delegation. ACT-POLYC-SELFHOST-ABI-FOUNDATION-PRODUCTION-DELEGATE01."
+       OFF)
+
+if (HCC_USE_SELFHOST_ABI_CPA)
+    # The opaque-handle C host adapter for the compiled PolyC AST-visibility
+    # decision.
+    list(APPEND SOURCES abi-cpa-host.c)
+endif()
+
 add_executable(hcc ${SOURCES} ${HEADERS})
+
+if (HCC_USE_SELFHOST_ABI_CPA)
+    if (NOT ABI_CPA_OBJECT)
+        set(ABI_CPA_OBJECT "${CMAKE_SOURCE_DIR}/../build/selfhost-abi-cpa-subject.o")
+    endif()
+    # Same fail-closed contract as the parser-padding subject: if a producer
+    # is declared, CMake SCHEDULES the subject's production; if not, the
+    # object must already exist and a missing object is a hard configure
+    # error naming the exact command. In BOTH cases the object is REQUIRED.
+    if (ABI_CPA_PRODUCER)
+        if (NOT EXISTS "${ABI_CPA_PRODUCER}")
+            message(FATAL_ERROR
+                "ACT-POLYC-SELFHOST-ABI-FOUNDATION-PRODUCTION-DELEGATE01: the declared "
+                "ABI CPA producer does not exist: ${ABI_CPA_PRODUCER}. "
+                "The production hcc CANNOT be built without a real PolyC producer.")
+        endif()
+        get_filename_component(_cpa_source_dir "${ABI_CPA_SOURCE}" DIRECTORY)
+        get_filename_component(_cpa_object_dir "${ABI_CPA_OBJECT}" DIRECTORY)
+        add_custom_command(
+            OUTPUT "${ABI_CPA_OBJECT}"
+            COMMAND "${CMAKE_COMMAND}" -E make_directory "${_cpa_object_dir}"
+            COMMAND "${ABI_CPA_PRODUCER}"
+                    --install-dir=${ABI_CPA_PREFIX}
+                    -c "${ABI_CPA_SOURCE}"
+                    -o "${ABI_CPA_OBJECT}"
+            DEPENDS "${ABI_CPA_SOURCE}" "${ABI_CPA_PRODUCER}"
+            WORKING_DIRECTORY "${_cpa_source_dir}"
+            COMMENT "ACT-POLYC-SELFHOST-ABI-FOUNDATION-PRODUCTION-DELEGATE01: producing the compiled PolyC AST-visibility subject ${ABI_CPA_OBJECT}"
+            VERBATIM)
+        add_custom_target(hcc-abi-cpa-subject DEPENDS "${ABI_CPA_OBJECT}")
+        add_dependencies(hcc hcc-abi-cpa-subject)
+        message(STATUS "ACT-POLYC-SELFHOST-ABI-FOUNDATION-PRODUCTION-DELEGATE01: production hcc SCHEDULES the PolyC AST-visibility subject: ${ABI_CPA_OBJECT}")
+    elseif (NOT EXISTS "${ABI_CPA_OBJECT}")
+        message(FATAL_ERROR
+            "ACT-POLYC-SELFHOST-ABI-FOUNDATION-PRODUCTION-DELEGATE01: required compiled "
+            "PolyC AST-visibility subject missing at ${ABI_CPA_OBJECT}. "
+            "Build it with the stage0 hcc: "
+            "./hcc --install-dir=<prefix> -c tools/bootstrap/selfhost-abi-compile-print-ast.HC -o ${ABI_CPA_OBJECT}. "
+            "Or configure with -DABI_CPA_PRODUCER=<stage0 hcc> to have the build graph produce it.")
+    endif()
+    target_compile_definitions(hcc PRIVATE HCC_USE_SELFHOST_ABI_CPA)
+    target_link_libraries(hcc "${ABI_CPA_OBJECT}")
+    message(STATUS "ACT-POLYC-SELFHOST-ABI-FOUNDATION-PRODUCTION-DELEGATE01: production hcc links the compiled PolyC AST-visibility decision: ${ABI_CPA_OBJECT}")
+else()
+    message(STATUS "ACT-POLYC-SELFHOST-ABI-FOUNDATION-PRODUCTION-DELEGATE01: selector OFF, the legacy C AST-visibility predicate is active and no PolyC subject is linked")
+endif()
 
 # ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01 C2 IMPL:
 # Link the qualified PolyC BootstrapCalcPadding component into the

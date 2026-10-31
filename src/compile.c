@@ -3,7 +3,6 @@
 #include <string.h>
 
 #include "aostr.h"
-#include "ast.h"
 #include "cctrl.h"
 #include "cli.h"
 #include "compile.h"
@@ -13,6 +12,34 @@
 #include "list.h"
 #include "parser.h"
 #include "util.h"
+
+/* ACT-POLYC-SELFHOST-ABI-FOUNDATION-PRODUCTION-DELEGATE01
+ *
+ * This translation unit used to include "ast.h" and to decide, inline, which
+ * top-level nodes the -ast dump prints. That decision is now made by a
+ * component compiled from PolyC source (`AbiCpaShouldPrintAst`), and this TU
+ * sees `Ast` only as a forward-declared opaque type (see src/cctrl.h).
+ *
+ * The selector mirrors the nine existing parser authorities: the compiled
+ * PolyC decision is authoritative whenever HCC_USE_SELFHOST_ABI_CPA is defined,
+ * which is exactly the configuration the production ./hcc is built with. In a
+ * bootstrap stage0 build, or in an explicit selector-OFF build, the legacy
+ * inline predicate stays as an honest, independent C oracle -- exactly like
+ * the legacy C bodies of the nine parser assistants. */
+#ifdef HCC_USE_SELFHOST_ABI_CPA
+
+#include "abi-cpa-host.h"
+
+/* Declared here because this TU deliberately no longer includes "ast.h".
+ * astToString takes the Ast as an opaque pointer and lives in src/ast.c, which
+ * still owns the layout. */
+extern char *astToString(Ast *ast);
+
+#else
+
+#include "ast.h"
+
+#endif
 
 void compilePrintAst(Cctrl *cc) {
     List *it;
@@ -28,13 +55,38 @@ void compilePrintAst(Cctrl *cc) {
             printf("here\n");
         }
 
+#ifdef HCC_USE_SELFHOST_ABI_CPA
+        /* The node-visibility decision, made by compiled PolyC. The host
+         * owns the token table and the only dereference of the Ast object;
+         * this TU decides nothing about kinds. `should_print` is 0 or 1 on
+         * success and a negative status when the host refused the handle; a
+         * refusal is reported as a compiler error rather than being
+         * silently swallowed. */
+        {
+            s64 handle = AbiCpaIssueAst(ast);
+            s64 should_print = AbiCpaShouldPrintAst(handle);
+            AbiCpaRetireAst(handle);
+            if (should_print < 0) {
+                /* FAIL CLOSED: the host refused the borrow. This is an ABI
+                 * failure, not a node to be skipped, so the compiler reports
+                 * it and stops. It is never silently swallowed. */
+                loggerPanic("Cannot decide AST visibility: ABI status %ld\n",
+                            (long)should_print);
+            }
+            if (should_print > 0) {
+                tmp = astToString(ast);
+                printf("%s\n", tmp);
+            }
+        }
+#else
         if (ast->kind != AST_FUN_PROTO &&
-            ast->kind != AST_EXTERN_FUNC && 
+            ast->kind != AST_EXTERN_FUNC &&
             ast->kind != AST_ASM_FUNC_BIND)
         {
             tmp = astToString(ast);
             printf("%s\n", tmp);
         }
+#endif
         it = it->next;
     }
 }

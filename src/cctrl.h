@@ -6,7 +6,12 @@
 #include <sys/types.h>
 
 #include "aostr.h"
-#include "ast.h"
+/* ACT-POLYC-SELFHOST-ABI-FOUNDATION-PRODUCTION-DELEGATE01: "ast.h" removed.
+ * Cctrl and every prototype below need only pointers to Ast/AstType, so a
+ * forward declaration is sufficient. Translation units that genuinely need
+ * the layout include "ast.h" themselves. */
+typedef struct Ast Ast;
+typedef struct AstType AstType;
 #include "cli.h"
 #include "config.h"
 #include "containers.h"

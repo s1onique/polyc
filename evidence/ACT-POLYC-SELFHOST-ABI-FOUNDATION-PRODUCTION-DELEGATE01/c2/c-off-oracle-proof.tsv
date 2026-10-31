@@ -1,0 +1,15 @@
+property	observed	method
+COFF_WORKTREE	/tmp/pd01/coff	git worktree add --detach; the C2 source changes copied in; the selector forced OFF at the three configure sites
+COFF_SELECTOR	OFF	nm ./hcc | grep -c AbiCpa => 0
+COFF_BINARY_CPA_SYMBOL_COUNT	0	nm ./hcc | grep -c AbiCpa
+COFF_COMPILE_C_O_CPA_IMPORTS	0	nm -u build/CMakeFiles/hcc.dir/compile.c.o | grep -c AbiCpa
+COFF_HOST_NOT_LINKED	YES	grep -c abi-cpa-host build/CMakeFiles/hcc.dir/link.txt => 0
+COFF_LEGACY_C_PREDICATE_ACTIVE	YES	otool -tvV compile.c.o | grep -c 0x2401 => 1
+COFF_LEGACY_MASK_COUNT	1	otool -tvV compile.c.o | grep -c 0x2401
+COFF_AST_H_FRAMES	1	gcc -E -H -Isrc src/compile.c | grep -c ast.h
+COFF_DIRECT_AST_READS	3	gcc -E -Isrc src/compile.c | grep -c ast->
+COFF_NINE_AUTHORITIES	9	nm ./hcc | grep -c " T _Bootstrap"
+COFF_HCC_SHA256	a5b0981f1843a259ea9fe6a4872d8ec9ef4b0d74ad32967b7b17885ebfafde3c	shasum -a 256 hcc
+COFF_STAGE0_SHA256	58de384a4e34c96d7a51f3f2a609150561247422aa8d4d0cc91875cda9aaadfa	shasum -a 256 build/host-stage0/hcc
+COFF_COMPILE_C_O_SHA256	303aa783e68a767f2ac2bab7cfad26d18bc7bf1d81f8f6d9256e84f9dc58f877	shasum -a 256 build/CMakeFiles/hcc.dir/compile.c.o
+C_OFF_ORACLE_LIVE	YES	a real compiler that builds, runs, and matches the reference behavior on 9/9 witnesses

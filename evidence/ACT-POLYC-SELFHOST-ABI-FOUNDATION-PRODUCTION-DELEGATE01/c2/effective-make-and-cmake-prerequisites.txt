@@ -1,0 +1,53 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-FOUNDATION-PRODUCTION-DELEGATE01
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=effective-prerequisites
+#
+# The effective build graph is proven by OBSERVING make SCHEDULE the work,
+# not by reading the += text. This is the RED-5 hazard made mechanical.
+#
+# --- 1. the subject variables are declared BEFORE the consuming rule ---
+# COMMAND=grep -n "ABI_CPA_SRC =\|ABI_CPA_OBJ =\|^\$(PRODUCTION_HCC):" Makefile
+154:ABI_CPA_SRC = tools/bootstrap/selfhost-abi-compile-print-ast.HC
+155:ABI_CPA_OBJ = ./build/selfhost-abi-cpa-subject.o
+662:$(PRODUCTION_HCC): $(PRODUCTION_HCC_INPUTS)
+#
+# --- 2. the subject is an EFFECTIVE prerequisite of ./hcc ---
+# Removing the subject makes make schedule its production with the correct
+# stage0 producer command (the object was moved aside, make -n run, and the
+# object restored):
+# COMMAND=make -n production-hcc   (with build/selfhost-abi-cpa-subject.o absent)
+#   rm -f build/selfhost-abi-cpa-subject.o
+#   ./build/host-stage0/hcc --install-dir=.../build/bootstrap-prefix \
+#       -c tools/bootstrap/selfhost-abi-compile-print-ast.HC \
+#       -o build/selfhost-abi-cpa-subject.o
+#   if [ ! -f "build/selfhost-abi-cpa-subject.o" ]; then ... exit 1; fi
+#   nm build/selfhost-abi-cpa-subject.o | grep -q _AbiCpaShouldPrintAst ...
+#
+# --- 3. a PolyC SOURCE mutation forces a subject rebuild (no stale object) ---
+# COMMAND=touch tools/bootstrap/selfhost-abi-compile-print-ast.HC ; make -n production-hcc | grep -c selfhost-abi-compile-print-ast.HC
+#   3   (>0 = the source mutation schedules the subject rebuild)
+# The source was restored byte-identically afterwards; its sha256 is
+#   0ab058a6a66933f2d676b8ef9e4b3d8f2c3779a1d9f44a6d43062f48e863b4ea
+#
+# --- 4. the CMake side also SCHEDULES the subject ---
+# COMMAND=grep -c hcc-abi-cpa-subject build/CMakeFiles/Makefile2
+21
+#
+# --- 5. the selector at every configure site ---
+# COMMAND=grep -n "HCC_USE_SELFHOST_ABI_CPA=" Makefile
+192:		-DHCC_USE_SELFHOST_ABI_CPA=OFF \
+716:		-DHCC_USE_SELFHOST_ABI_CPA=ON \
+815:		-DHCC_USE_SELFHOST_ABI_CPA=ON \
+960:		-DHCC_USE_SELFHOST_ABI_CPA=ON \
+#   1 x OFF  -> the stage0 bootstrap compiler (it produces the subjects, so it
+#                must not depend on one: that would be a bootstrap cycle)
+#   3 x ON   -> production-hcc, llvm-all and test-prefix-install, which all
+#                build the production compiler and must agree with it
+#
+# --- 6. the generated CMake link contains the subject in the ON build ---
+# COMMAND=grep -c selfhost-abi-cpa-subject build/CMakeFiles/hcc.dir/link.txt
+1
+#
+# --- 7. the C-OFF build links NEITHER the host NOR the subject ---
+# COMMAND=grep -c "abi-cpa-host\|selfhost-abi-cpa" /tmp/pd01/coff/build/CMakeFiles/hcc.dir/link.txt
+0

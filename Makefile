@@ -134,6 +134,26 @@ SLICE08_DEFAULT_ARM_OBJ = ./build/parser-default-arm-subject.o
 SLICE09_STATEMENT_DISPATCH_SRC = tools/bootstrap/selfhost-parser-statement-dispatch.HC
 SLICE09_STATEMENT_DISPATCH_OBJ = ./build/parser-statement-dispatch-subject.o
 
+# ACT-POLYC-SELFHOST-ABI-FOUNDATION-PRODUCTION-DELEGATE01.
+#
+# The compiled PolyC AST-visibility decision subject and its PolyC source.
+#
+# The VARIABLES are defined HERE, next to the SLICE09 ones, for the SAME
+# reason: the PRODUCTION_HCC rule PREREQUISITE list is expanded when the
+# rule is READ, and a variable defined later in the file would be EMPTY
+# at that point -- which would silently drop the subject from the build
+# graph and leave the new authority DORMANT.
+#
+# This exact hazard was reproduced with an exact detector at C0: a
+# prerequisite variable declared AFTER the consuming rule is silently
+# dropped, and a build with a MISSING input then exits 0.
+#   evidence/ACT-POLYC-SELFHOST-ABI-FOUNDATION-PRODUCTION-DELEGATE01/c0/red-4-and-red-5.txt
+#
+# The subject PolyC source is the frozen IMPLEMENT01 shadow decision,
+# moved verbatim to its production-authorized path.
+ABI_CPA_SRC = tools/bootstrap/selfhost-abi-compile-print-ast.HC
+ABI_CPA_OBJ = ./build/selfhost-abi-cpa-subject.o
+
 # The stage0 compiler's own sources. A change to any of them must
 # invalidate the stage0 compiler, which in turn invalidates the
 # padding subject.
@@ -169,6 +189,7 @@ $(BOOTSTRAP_STAGE0_HCC): $(BOOTSTRAP_STAGE0_SOURCES)
 		-DHCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND=OFF \
 		-DHCC_USE_SELFHOST_PARSER_DEFAULT_ARM_TERMINATES=OFF \
 		-DHCC_USE_SELFHOST_PARSER_STATEMENT_DISPATCH=OFF \
+		-DHCC_USE_SELFHOST_ABI_CPA=OFF \
 		-DHCC_RUNTIME_OUTPUT_DIRECTORY=$(CURDIR)/$(BOOTSTRAP_STAGE0_DIR)
 	$(MAKE) -C $(BOOTSTRAP_STAGE0_BUILD) hcc -j2
 	@if [ ! -x "$(BOOTSTRAP_STAGE0_HCC)" ]; then \
@@ -580,6 +601,38 @@ $(PARSER_PADDING_OBJ): $(PARSER_PADDING_SRC) $(BOOTSTRAP_STAGE0_HCC) $(BOOTSTRAP
 
 parser-padding-subject: $(PARSER_PADDING_OBJ)
 
+# ACT-POLYC-SELFHOST-ABI-FOUNDATION-PRODUCTION-DELEGATE01 C2 IMPL.
+#
+# The compiled PolyC AST-visibility decision subject.
+#
+# It is produced by the SAME digest-bound stage0 producer that builds the
+# nine existing production parser subjects, from real PolyC source, and it
+# is linked into the production ./hcc by src/CMakeLists.txt.
+#
+# The object is verified for its exported symbol AND its architecture. A
+# wrong-architecture object is REJECTED, never linked. A producer that
+# exits 0 without producing the object is a hard error, never a silent
+# fallback to the legacy C predicate.
+$(ABI_CPA_OBJ): $(ABI_CPA_SRC) $(BOOTSTRAP_STAGE0_HCC) $(BOOTSTRAP_PREFIX_INC)/tos.HH
+	@rm -f $@
+	$(BOOTSTRAP_STAGE0_HCC) \
+		--install-dir=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-c $(ABI_CPA_SRC) \
+		-o $@
+	@if [ ! -f "$@" ]; then \
+		echo "abi-cpa-subject: $@ not produced by the stage0 compiler" >&2; \
+		exit 1; \
+	fi
+	@nm $@ | grep -q '_AbiCpaShouldPrintAst' \
+		|| { echo "abi-cpa-subject: symbol _AbiCpaShouldPrintAst not found in $@" >&2; exit 1; }
+	@if nm -u $@ | grep -q '_AbiCpaAstKind'; then \
+		echo "abi-cpa-subject: subject imports _AbiCpaAstKind (expected)"; \
+	fi
+	@echo "ABI_CPA_SUBJECT=$@"
+	@echo "ABI_CPA_SUBJECT_ARCH=$$(file -b "$@" | sed -e 's/.*object //')"
+
+abi-cpa-subject: $(ABI_CPA_OBJ)
+
 # The production compiler.
 #
 # The CMake configure is handed the DECLARED producer of the padding
@@ -600,6 +653,7 @@ PRODUCTION_HCC_INPUTS = $(PARSER_PADDING_OBJ) $(SLICE02_CFT_OBJ) $(SLICE03_OP_OB
 	$(SLICE04_AST_BINOP_OBJ) $(SLICE05_AST_UNARY_OBJ) $(SLICE06_SWITCH_ARM_OBJ) \
 	$(SLICE07_COMPOUND_BLOCK_OBJ) $(SLICE08_DEFAULT_ARM_OBJ) \
 	$(SLICE09_STATEMENT_DISPATCH_OBJ) \
+	$(ABI_CPA_OBJ) \
 	$(wildcard src/*.c src/asm/*.c) \
 	$(wildcard src/*.h src/asm/*.h) \
 	$(wildcard src/CMakeLists.txt src/asm/CMakeLists.txt) \
@@ -659,6 +713,11 @@ $(PRODUCTION_HCC): $(PRODUCTION_HCC_INPUTS)
 		-DSTATEMENT_DISPATCH_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
 		-DSTATEMENT_DISPATCH_SOURCE=$(CURDIR)/$(SLICE09_STATEMENT_DISPATCH_SRC) \
 		-DSTATEMENT_DISPATCH_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_ABI_CPA=ON \
+		-DABI_CPA_OBJECT=$(CURDIR)/$(ABI_CPA_OBJ) \
+		-DABI_CPA_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DABI_CPA_SOURCE=$(CURDIR)/$(ABI_CPA_SRC) \
+		-DABI_CPA_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR)
 		-DHCC_BOOTSTRAP_EXPECTED_SHA=$(LIBTOS_BOOTSTRAP_EXPECTED_SHA)
 	$(MAKE) -C ./build -j2
 	@if [ ! -x ./hcc ]; then \
@@ -753,6 +812,11 @@ llvm-all: $(PARSER_PADDING_OBJ)
 		-DSTATEMENT_DISPATCH_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
 		-DSTATEMENT_DISPATCH_SOURCE=$(CURDIR)/$(SLICE09_STATEMENT_DISPATCH_SRC) \
 		-DSTATEMENT_DISPATCH_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_ABI_CPA=ON \
+		-DABI_CPA_OBJECT=$(CURDIR)/$(ABI_CPA_OBJ) \
+		-DABI_CPA_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DABI_CPA_SOURCE=$(CURDIR)/$(ABI_CPA_SRC) \
+		-DABI_CPA_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR)
 		-DHCC_BOOTSTRAP_EXPECTED_SHA=$(LIBTOS_BOOTSTRAP_EXPECTED_SHA)
 	$(MAKE) -C ./build/llvm -j2
 	@if [ ! -x ./hcc ]; then \
@@ -893,6 +957,11 @@ test-prefix-install: production-hcc runtime-producer
 		-DSTATEMENT_DISPATCH_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
 		-DSTATEMENT_DISPATCH_SOURCE=$(CURDIR)/$(SLICE09_STATEMENT_DISPATCH_SRC) \
 		-DSTATEMENT_DISPATCH_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR)
+		-DHCC_USE_SELFHOST_ABI_CPA=ON \
+		-DABI_CPA_OBJECT=$(CURDIR)/$(ABI_CPA_OBJ) \
+		-DABI_CPA_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DABI_CPA_SOURCE=$(CURDIR)/$(ABI_CPA_SRC) \
+		-DABI_CPA_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR)
 	$(MAKE) -C ./build/test-prefix-install-build install
 	@if [ ! -f $(TEST_PREFIX)/lib/libtos.a ] || \
 	    [ ! -f $(TEST_PREFIX)/lib/libtos.0.0.1.dylib ] || \

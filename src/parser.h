@@ -2,7 +2,9 @@
 #define PARSER_H
 
 #include "list.h"
-#include "ast.h"
+/* ACT-POLYC-SELFHOST-ABI-FOUNDATION-PRODUCTION-DELEGATE01: "ast.h" removed;
+ * this header needs only a pointer to Ast. */
+typedef struct Ast Ast;
 #include "cctrl.h"
 
 #define PUNCT_TERM_COMMA  (1<<0) // ';'

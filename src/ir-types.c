@@ -4,6 +4,9 @@
 
 #include "arena.h"
 #include "ir-types.h"
+#include "ast.h"   /* ACT-POLYC-SELFHOST-ABI-FOUNDATION-PRODUCTION-DELEGATE01: */
+                    /* this TU reads AstType members, so it states the */
+                    /* dependency it used to inherit from cctrl.h. */
 #include "ir-debug.h"
 #include "util.h"
 

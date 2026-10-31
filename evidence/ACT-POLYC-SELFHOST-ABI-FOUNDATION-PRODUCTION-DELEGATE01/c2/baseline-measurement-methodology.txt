@@ -1,0 +1,60 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-FOUNDATION-PRODUCTION-DELEGATE01
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=baseline-measurement-methodology
+#
+# FINDING: the C0 parser baseline was measured with the WRONG install
+# prefix, and the 67 "Failed to open file" failures are a PRE-EXISTING
+# ENVIRONMENTAL condition, NOT a regression from this ACT.
+#
+# ROOT CAUSE
+#
+# hcc resolves its builtin header ONLY from <install_dir>/include/tos.HH
+#   src/compile.c:124  AoStr *builtin_path = aoStrPrintf("%s/include/tos.HH", args->install_dir);
+# and install_dir defaults to the COMPILE-TIME INSTALL_PREFIX:
+#   src/main.c:38-39   #ifndef INSTALL_PREFIX / #define INSTALL_PREFIX "/usr/local"
+#   src/CMakeLists.txt:39  add_definitions(-DINSTALL_PREFIX="${CMAKE_INSTALL_PREFIX}")
+#
+# The test harness src/tests/run.HC invokes the compiler in HOST mode
+# WITHOUT --install-dir:
+#   src/tests/run.HC:14   len = snprintf(buffer, sizeof(buffer), "../../hcc %s", filename);
+# so the host-mode suite needs the compiled-in prefix to contain tos.HH.
+#
+# On this machine /usr/local/include does not exist, so a `make unit-test
+# run WITHOUT an explicit INSTALL_PREFIX yields 67 "Failed to open file:
+# /usr/local/include/tos.HH" failures and ZERO assertions. That is the SAME 67
+# count that the historical baseline records as CROSS_TARGET_PREFIX_COUNT=67.
+#
+# gate-push is immune because it builds with an explicit prefix:
+#   scripts/quality/gate-push.sh:270
+#     run_check build sh -c "make clean && HCC_ENABLE_LLVM=ON make INSTALL_PREFIX='$gate_prefix'"
+# so the freshly compiled ./hcc has the gate prefix compiled IN as its
+# default install_dir, and the runner's ../../hcc resolves tos.HH there.
+#
+# EVIDENCE THAT THIS ACT INTRODUCED NO NEW FAILURE
+#
+# The G0 oracle is the UNMODIFIED entry tree, freshly built, with zero
+# changes from this ACT. Its unit-test failure set is IDENTICAL to the
+# production-ON failure set:
+#   G0  fails: 67
+#   PROD fails: 67
+#   diff of the two sorted failure-name lists: EMPTY
+#   => FAILURE_IDENTITIES_IDENTICAL, zero new failure identity.
+#
+# The 67 names are exactly the historical CROSS_TARGET prefix set, so the
+# correct reading is: the C0 measurement of 376/376 was taken through a
+# STALE src/tests/test-runner binary (built before this session, with a
+# different environment) rather than through a freshly built runner.
+#
+# CORRECTION APPLIED FROM C2 ONWARD
+#
+# Every parser-suite measurement in this ACT is taken the way gate-push
+# takes it: with an explicit hermetic prefix compiled into the compiler,
+# so the measurement is reproducible and hermetic:
+#   make INSTALL_PREFIX=<prefix> TEST_PREFIX=<prefix> production-hcc
+#   make INSTALL_PREFIX=<prefix> TEST_PREFIX=<prefix> unit-test
+# The G0 and G1 numbers are then compared under the SAME method.
+#
+# NOTE: this is a METHODOLOGY correction to how the baseline is measured,
+# NOT a change to any historical evidence file and NOT a change to the
+# test harness. src/tests/run.HC and src/tests/run_shared.HC are untouched
+# by this ACT (verified with git diff).
