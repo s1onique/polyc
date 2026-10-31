@@ -1,0 +1,52 @@
+# ACT_ID=ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=five-red-observations
+#
+# THE FIVE INDEPENDENT REDs, EXECUTED PRISTINE -> ADVERSE ->
+# RESTORED, AGAINST REAL ENTRY INPUTS.
+#
+# The detector is the ACT-LOCAL PolyC tool
+#   tools/quality/core-semantic-bundle-recon03-red.HC
+# built as build/core-semantic-bundle-recon03-red by the
+# production compiler ./hcc.
+#
+# The controls run on ISOLATED COPIES of records under /tmp. The
+# canonical history is NEVER mutated.
+#
+# The detector's own SHA-256 is validated against the NIST
+# FIPS 180-4 vectors BEFORE any digest is trusted, so a detector
+# that hashes wrongly cannot certify a wrong attribution.
+#
+SHA_SELFTEST_COMMAND=build/core-semantic-bundle-recon03-red sha-selftest
+SHA_SELFTEST_RESULT=FINAL=OK (the empty-string, "abc" and the 56-byte padding-boundary vectors all match)
+SHA_SELFTEST_NIST_ABC=ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad
+SHA_SELFTEST_NIST_EMPTY=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+SHA_SELFTEST_NIST_56BYTE=248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1
+#
+red_id	execution_id	detector_mode	pristine_input	pristine_result	adverse_input	adverse_result	adverse_reason	restored_result	verdict
+RED-1	EXEC-RED1-ATTRIBUTION	red1-attribution	the recorded M-POLYC-RO digest f0599f79900cf406415283a9742c2b3d794c03f107e7a959ce021db91b916615 against the committed subject	the same recorded digest bound to the RANGE claim (the historical misattribution)	FINAL=FAIL	MUTANT_SOURCE_OBJECT_MISATTRIBUTION	FINAL=OK (the correction's RO digest 5bfe5b60... is accepted, the pointer digest f0599f79... is rejected)	PASS
+RED-2	EXEC-RED2-HISTORY	red2-history	the real post-close-ancestry-and-commit-scope.tsv	FINAL=OK	an isolated copy whose descendant row touches src/x86_64.c	FINAL=FAIL	UNAUTHORIZED_POST_CLOSE_SOURCE_CHANGE	FINAL=OK	PASS
+RED-2B	EXEC-RED2-CONFLATION	red2-history	the real post-close-ancestry-and-commit-scope.tsv	FINAL=OK	an isolated copy that reports POST_CLOSE_ALL_COMMITS=0 while carrying a descendant row	FINAL=FAIL	POST_CLOSE_COUNT_CONFLATION	FINAL=OK	PASS
+RED-3	EXEC-RED3-MIGRATED	red3-migrated	a distinct candidate symbol	FINAL=OK	an already PolyC-owned authority offered as a new C authority	FINAL=FAIL	ALREADY_MIGRATED_EXCLUSION	FINAL=OK	PASS
+RED-4	EXEC-RED4-SEMANTIC	red4-semantic	a ledger whose witnesses carry real semantic channels	FINAL=OK	a witness whose channel is DIAGNOSTIC_ONLY	FINAL=FAIL	NON_SEMANTIC_OR_VACUOUS_WITNESS	FINAL=OK	PASS
+RED-4B	EXEC-RED4-NONDISCRIMINATING	red4-semantic	a ledger whose witnesses are discriminating	FINAL=OK	a witness that is not discriminating	FINAL=FAIL	NON_SEMANTIC_OR_VACUOUS_WITNESS	FINAL=OK	PASS
+RED-5	EXEC-RED5-GRAPH	red5-graph	the single historically proven cut E-TYP-0136	FINAL=OK	a cut whose basis is an ABI_SKETCH	FINAL=FAIL	UNPROVEN_GRAPH_CUT	FINAL=OK	PASS
+RED-5B	EXEC-RED5-E-MUT-0137	red5-graph	the single historically proven cut E-TYP-0136	FINAL=OK	the unsupported edge E-MUT-0137 claimed as a proven cut	FINAL=FAIL	UNPROVEN_GRAPH_CUT	FINAL=OK	PASS
+#
+# THE DIGEST-IDENTITY FACTS THAT RED-1 ESTABLISHES.
+# These are the tool's OWN printed recomputations, not a re-typed
+# record.
+RED1_RO_MUTANT_SHA256=5bfe5b6048374a9e12c48aa13b3e66beb764d7b14b97813c761c486926161da9
+RED1_PO_MUTANT_SHA256=f0599f79900cf406415283a9742c2b3d794c03f107e7a959ce021db91b916615
+RED1_RECORDED_M_POLYC_RO=f0599f79900cf406415283a9742c2b3d794c03f107e7a959ce021db91b916615
+RED1_RECORDED_EQUALS_RO_MUTANT=NO
+RED1_RECORDED_EQUALS_PO_MUTANT=YES
+RED1_CONCLUSION=The recorded M-POLYC-RO physically mutated AbiCoreIsValidPointerOperator (the POINTER site), not the RANGE site.
+#
+FIVE_REDS_EXECUTED=5
+FIVE_REDS_ALL_SENSITIVE=YES
+FIVE_REDS_VACUOUS=NO (every adverse state produced the detector's OWN named reason, not a generic parse error)
+RED_CONTROLS_REASON_CLASSES_OBSERVED=MUTANT_SOURCE_OBJECT_MISATTRIBUTION,UNAUTHORIZED_POST_CLOSE_SOURCE_CHANGE,POST_CLOSE_COUNT_CONFLATION,ALREADY_MIGRATED_EXCLUSION,NON_SEMANTIC_OR_VACUOUS_WITNESS,UNPROVEN_GRAPH_CUT
+DISTINCT_REASON_CLASSES=6
+PRODUCTION_SEMANTIC_DELTA=0
+NEW_PRODUCTION_AUTHORITIES=0

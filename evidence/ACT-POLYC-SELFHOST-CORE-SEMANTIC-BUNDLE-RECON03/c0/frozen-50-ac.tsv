@@ -1,0 +1,62 @@
+# ACT_ID=ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=frozen-50-ac
+#
+# THE 50 MANDATORY ACCEPTANCE CRITERIA, FROZEN AT C0.
+# These predicates are BINDING and this table is COMPLETE.
+# Each criterion must be joined by its EXACT id with a concrete
+# independent witness; a count-only check is not a witness.
+#
+# Status vocabulary: PASS | FAIL | NOT_RUN | UNPROVEN | DEFERRED
+#
+ac_id	phase	binding_acceptance_predicate	evidence_path	independent_checker
+AC01	C0	Exact expected HEAD/tree/branch, clean index, zero replace refs and worktree ownership	c0/entry-identity.txt	git rev-parse / git status --porcelain / git replace -l re-run
+AC02	C0	Full ancestor chain and C4 CLOSE identity derived from actual Git objects; five phase commits proven	c0/post-close-ancestry-and-commit-scope.tsv	git log over the frozen 5-commit range
+AC03	C0	All-vs-ACT post-CLOSE descendant counts distinguished; every ordinary descendant classified and scoped	c0/post-close-ancestry-and-commit-scope.tsv	git rev-list --count vs ACT-trailer count
+AC04	C0	Local origin/main ancestry (if present) and no push/network/history rewrite established	c0/post-close-ancestry-and-commit-scope.tsv	git merge-base --is-ancestor origin/main HEAD
+AC05	C0	Full predecessor frozen-path SHA-256 manifest established; all closed ACT and evidence identities bound	c0/predecessor-f14-freeze.tsv	sha256 of every frozen path recomputed from HEAD
+AC06	C0	Original M-POLYC-RO physically pointer-site, historical 12/13 count retained	c0/correction-inclusive-predecessor-proof.tsv	the independent digest-identity recomputation
+AC07	C0	New correction-owned RO source/object/executable/discriminator proof independently bound and 13/13 inclusive	c0/correction-inclusive-predecessor-proof.tsv	the independent digest-identity recomputation
+AC08	C0	13 live PolyC authority sites link/caller census fresh; no lost or invented sites	c0/existing-authorities.tsv	nm over the fresh production object graph and ./hcc
+AC09	C0	Fresh parser/lexer/historical non-green baseline with actual test runner/prefix provenance	c0/baseline-parser.txt and c0/baseline-non-green.txt	the unit-test runner output and the prefix contents
+AC10	C0	50 AC, 24 NC, 16 eligibility predicates, five independent REDs frozen and executed without vacuity	c0/frozen-50-ac.tsv and c0/frozen-24-nc.tsv and c0/frozen-16-eligibility.tsv and c0/five-red-observations.tsv	the RED detector transcript
+AC11	C1	Production-linked core TU/object/symbol closure enumerated; scope and explicit exclusions recorded	c1/linked-tu-and-symbol-census.tsv	the link-reachability measurement over the fresh build
+AC12	C1	Each unmigrated C authority site carries actual source OID, byte range, SHA-256 and link reachability	c1/core-sites.tsv	source_range_sha256 recomputed from the frozen blob
+AC13	C1	Current PolyC authorities, source functions, C semantic sites and graph edges remain disjoint accounting units	c1/core-authorities.tsv	the classification partition check
+AC14	C1	Complete typed core dependency graph with each included edge backed by source/object evidence	c1/core-dependencies.tsv	the dependency join against the object/link map
+AC15	C1	E-MUT-0137 re-audited and not falsely credited as a supported cut	c1/core-dependencies.tsv	the committed edge-mut-0137 audit
+AC16	C1	All relevant source-derived type/operator/enum values, including zero-valued implicit enumerators, verified	c1/source-enum-and-abi-facts.tsv	an independent read of the live src headers
+AC17	C1	Candidates enumerated as coherent bundles of 2-6 distinct sites; all exclusions and dependencies named	c1/core-candidates.tsv and c1/candidate-exclusions.tsv	the membership set check
+AC18	C1	Each considered site's semantic class and production impact channels independently classified	c1/core-sites.tsv	the per-site channel classification
+AC19	C1	Ownership, lifetime, aliasing, callback, recovery and mutation-order surfaces source-derived	c1/ownership-recovery-witnesses.tsv	the ownership witness join
+AC20	C1	Candidate ABI domains/status and out-param semantics defined without undocumented pointer transfer	c1/source-enum-and-abi-facts.tsv	the ABI domain derivation
+AC21	C1	Existing bootstrap producers, actual compiler generation paths and M1/M2 dependency evidence recorded	c1/bootstrap-path.tsv	the build-graph read
+AC22	C1	Source witnesses and discriminating future mutation plans separately identified for each candidate member	c1/core-candidates.tsv	the per-member witness plan
+AC23	C1	Eligibility E01..E16 facts and reason-specific failures fully populated, zero UNKNOWN silently coerced eligible	c1/eligibility-input-facts.tsv	the eligibility checker
+AC24	C1	Ranking rubric R0..R6 and raw source facts frozen before final selection	c1/ranking-contract.md	the ranker
+AC25	C1	No speculative graph cut/SCC improvement or fake M2 achievement reported	c1/core-dependencies.tsv	the graph ledger check
+AC26	C2	ACT-local PolyC eligibility checker compiled and independently selftested with live source facts	c2/eligibility-output.tsv	the ACT-local PolyC checker
+AC27	C2	Ranker consumes only eligible IDs mechanically joined from authoritative eligibility checker output	c2/ranked-candidates.tsv	the checker/ranker join
+AC28	C2	Independent PolyC recomputation reconstructs all eligibility decisions without reading first eligible column	c2/independent-eligibility.tsv	the independent PolyC recomputer
+AC29	C2	Independent rank order matches every eligible position and all source-derived scores	c2/independent-rank.tsv	the independent PolyC ranker
+AC30	C2	Exactly one rank-1 coherent bundle selected, or reason-backed HALT with full candidate ledger	c2/rank-selection-proof.tsv	the rank join
+AC31	C2	Selected bundle member count 2-6; source ranges and one-to-one stable site identifiers frozen	c2/selected-bundle-members.tsv	the membership set check
+AC32	C2	One real C-only whole-compiler pristine oracle established for every selected site	c2/causal-experiments/<SITE_ID>/source-and-build.tsv	the per-site build rows
+AC33	C2	Distinct real full-compiler C mutation rebuild completed successfully for each selected site	c2/causal-experiments/<SITE_ID>/source-and-build.tsv	the per-site build rows
+AC34	C2	Actual applied C diff/source and changed linked object proven for each site; no intended-diff substitution	c2/causal-experiments/<SITE_ID>/applied-diff-and-hashes.tsv	the applied-bytes read-back
+AC35	C2	Each site independently changes compiler acceptance, IR/assembly/object or compiled-program behavior	c2/causal-experiments/<SITE_ID>/witness-and-restoration.tsv	the per-site witness rows
+AC36	C2	Adjacent-site mutant/witness anti-controls prove independent attribution for every member	c2/causal-experiments/<SITE_ID>/site-isolation.tsv	the per-site isolation rows
+AC37	C2	Every mutant/restored source and compiled-object provenance recorded; deterministic limitations honest	c2/selected-causal-join.tsv	the source/object provenance join
+AC38	C2	Selected ABI contract explicitly covers host projection, status/data, ownership, recovery and target ABI	c2/abi-and-bootstrap-successor-contract.tsv	the contract read-back
+AC39	C2	Future G0/G1/G2/G3 producers, source-derived fixture partitions, per-site post-migration PolyC mutations specified	c2/abi-and-bootstrap-successor-contract.tsv	the contract read-back
+AC40	C2	Exactly one source-hashed successor contract produced, no implementation or new authority/cut introduced	c2/selected-bundle-contract.md	the contract digest
+AC41	C3	Independent verifier re-reads Git/source/object/witness evidence rather than echoing summary PASS values	c3/independent-source-and-object-audit.tsv	the independent PolyC verifier
+AC42	C3	All 24 negative controls executed with pristine-adverse-restored and correct distinct reasons	c3/negative-controls-executed.tsv	the control transcript
+AC43	C3	Checker anti-selftests reject missing/duplicate/unknown IDs, false PASS, swapped attributions	c3/verifier-selftests.tsv	the anti-selftest transcript
+AC44	C3	Independent AC/NC/eligibility/selection joins complete, 0 missing/duplicate/extra IDs	c3/full-50-ac-ledger.tsv	the exact-id join
+AC45	C3	13 current authorities and historical-vs-correction-inclusive proof attribution conserved	c3/graph-and-authority-conservation.tsv	the authority census re-run
+AC46	C3	Parser/lexer baselines and known non-green failure-ID sets conserved, zero new failures	c3/conservation-parser-lexer.txt and c3/historic-non-green.txt	the baseline re-measurement
+AC47	C3	Production graph unchanged 52/134/34/19, sole historical cut E-TYP-0136; E-MUT-0137 unsupported	c3/graph-and-authority-conservation.tsv	the graph ledger check
+AC48	C3	gate-fast, serialized gate-push, append-only, F14, patch hygiene and scope restrictions PASS	c3/gates-and-factory.txt and c3/scope-and-f14.txt	the canonical gate scripts
+AC49	C3	AC01..AC49 supported at C3; handoff/roadmap/map and post-CLOSE plan ready, AC50 correctly DEFERRED	c3/full-50-ac-ledger.tsv	the exact-id join
+AC50	External post-CLOSE	External read-only terminality receipt after unique C4 CLOSE binds final HEAD/tree, five ACT commits, ACs/controls, F14, exact source contract, gates, zero post-CLOSE ACT commits; no backdated PASS	c4/terminality-plan.txt (the PLAN only)	the external read-only receipt, outside the repository

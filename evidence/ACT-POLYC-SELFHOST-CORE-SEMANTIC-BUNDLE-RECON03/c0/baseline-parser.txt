@@ -1,0 +1,48 @@
+# ACT_ID=ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=baseline-parser
+#
+# FRESHLY MEASURED at the frozen entry tree, with an ISOLATED and
+# POPULATED install/test prefix. The prefix was really built by the
+# recipe's own test-prefix-install prerequisite: a real tos.HH and a
+# real libtos exist under the prefix. A wrapper exit status alone was
+# NOT accepted as evidence.
+#
+COMMAND=make INSTALL_PREFIX=/tmp/recon03/mp-prefix TEST_PREFIX=/tmp/recon03/mp-prefix unit-test
+UNIT_TEST_RC=0
+ASSERTIONS_PASSED=376
+ASSERTIONS_TOTAL=376
+TEST_BLOCKS=90
+FAILED_LINES=0
+COMPILE_FAILURES=0
+#
+# The assertion-sequence identity check: the MD5 over the ORDERED
+# sequence of "PASSED: p/t" lines. It is sensitive to ORDER and to
+# the per-test counts, not merely to the total.
+COMMAND=grep -o "PASSED: [0-9]*/[0-9]*" <unit-test.log> | md5 -q
+md5=b6f117eb1386ca80f81bc06226e2a741
+#
+PARSER_HOST_ARCH_ASSERTIONS=376/376
+PARSER_HOST_ARCH_TESTFILES=90
+PARSER_HOST_ARCH_FAILURE_IDENTITIES=0
+PARSER_HOST_ARCH_ASSERTION_SEQUENCE_MD5=b6f117eb1386ca80f81bc06226e2a741
+PARSER_HOST_ARCH_MD5_MATCHES_HISTORICAL=YES
+NEW_PARSER_FAILURE_IDENTITIES=0
+PARSER_CONSERVATION_STATUS=PASS
+#
+# The runner identity, so the number is bound to a real runner.
+PARSER_RUNNER_SOURCE=src/tests/run.HC
+PARSER_RUNNER_COMPILER=the freshly built production compiler ./hcc (selector ON)
+PARSER_RUNNER_PREFIX=/tmp/recon03/mp-prefix
+PARSER_RUNNER_IDENTITY=the 90 "PASSED:" blocks are the runner's OWN per-test output, not a summary declaration
+#
+# The prefix is PROVEN populated:
+PREFIX_INCLUDE_TOS_HH=PRESENT
+PREFIX_LIB_Libtos_a=PRESENT
+PREFIX_LIB_Libtos_dylib=PRESENT
+#
+# The raw log lives OUTSIDE the repository.
+RAW_LOG_PATH=/tmp/recon03/unit-test.log
+RAW_LOG_SHA256=85df0a51c44ab3999728d7031d598de5edc6d83ba5d042b463a2d7d1b4234d31
+RAW_LOG_BYTES=31595
+RAW_LOG_PRODUCER=make unit-test (recipe) via the production compiler ./hcc
