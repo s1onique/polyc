@@ -1,0 +1,28 @@
+# ACT_ID=ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON02-CORRECTION01
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=cardinality-defect
+#
+# THE DEFECT, REPRODUCED AT THE ENTRY WITH THE REPOSITORY'S OWN TOOLS.
+#
+# COMMAND 1: the canonical Cardinality-1 recipe from docs/factory/DOCTRINE.md
+#   git log --all-match --grep='^ACT: ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON02$' --grep='^ACT-Phase: CLOSE$' --oneline | wc -l
+# OUTPUT: EXPECTED 1 CLOSE COMMIT FOR ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON02, GOT 2
+
+# COMMAND 2: the range checker against the INTENDED terminal CLOSE
+#   sh scripts/quality/factory-v2-range-check.sh ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON02 2f1db0e3672e79d317e91ccec3ff9c0244dd5fc4
+# OUTPUT:
+#   STATUS=FAIL
+#   REASON=commit 8e078b7ff6e3a6b0a6d8b92e210eaaa5db73dc10 after CLOSE still carries ACT: ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON02; ACT must not continue past CLOSE
+#
+# COMMAND 3: the range checker against the SECOND CLOSE
+#   sh scripts/quality/factory-v2-range-check.sh ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON02 8e078b7ff6e3a6b0a6d8b92e210eaaa5db73dc10
+# OUTPUT:
+#   STATUS=FAIL
+#   REASON=expected exactly 1 CLOSE commit in range, found 2
+
+CARDINALITY_EXPECTED=1
+CARDINALITY_ACTUAL=2
+
+CARDINALITY_DEFECT_REPRODUCED=YES
+REMOVABLE_IN_PLACE=NO (the append-only invariant makes every commit after baf5dbd77cf89330699685dffd932c54031c815c immutable)
+REPAIR_MECHANISM=forward-only CORRECTION ACT with ACT-Supersedes and ACT-Corrected-Verdict
