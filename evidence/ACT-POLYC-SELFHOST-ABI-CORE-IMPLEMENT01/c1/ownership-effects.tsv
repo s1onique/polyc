@@ -1,0 +1,25 @@
+site_id	state_or_effect	owner_before	owner_after	polyc_touches_it	note
+SITE-COMPOUND-ASSIGN	the Lexeme token object (tok->tk_type, tok->i64)	C (src/lexer.c)	C (src/lexer.c)	NO (C copies the two scalars before the call)	the subject never receives a Lexeme*
+SITE-COMPOUND-ASSIGN	the token cursor / Cctrl state	C (src/cctrl.c)	C (src/cctrl.c)	NO	unchanged
+SITE-COMPOUND-ASSIGN	the deconstructed_compound_op out-parameter cell	C (src/prslib.c parseExpr stack)	C (src/prslib.c parseExpr stack)	YES (one scalar store, only on success)	the cell is a host-owned I64; the subject writes one I64 into it and never reads host layout through it
+SITE-COMPOUND-ASSIGN	the compound_assign boolean decision	C (src/prslib.c)	PolyC subject (selector ON) / C (selector OFF)	YES (the decision)	this is the authority being transferred
+SITE-COMPOUND-ASSIGN	AST construction for the compound assignment	C (src/prslib.c / src/ast.c)	C (src/prslib.c / src/ast.c)	NO	the C side still applies compound_assign and builds the AST
+SITE-COMPOUND-ASSIGN	type checking of the compound assignment	C (src/ast.c)	C (src/ast.c)	NO	unchanged
+SITE-COMPOUND-ASSIGN	diagnostics (cctrlRaiseException etc.)	C (src/cctrl.c)	C (src/cctrl.c)	NO	unchanged
+SITE-COMPOUND-ASSIGN	recovery (cctrl exception frames)	C (src/cctrl.c)	C (src/cctrl.c)	NO	no nonlocal recovery crosses the PolyC frame
+SITE-COMPOUND-ASSIGN	memory / arena allocation	C (src/memory.c, src/arena.h)	C (src/memory.c, src/arena.h)	NO	unchanged
+SITE-VALID-POINTER-OP	the AstBinOp operator value	C (src/ast.h enum)	C (src/ast.h enum)	NO (the value is copied as a scalar)	the subject receives the numeric value, not an Ast
+SITE-VALID-POINTER-OP	the pointer-validity decision	C (src/ast.c astIsValidPointerOp)	PolyC subject (selector ON) / C (selector OFF)	YES (the decision)	this is the authority being transferred
+SITE-VALID-POINTER-OP	the type-error path in astGetResultType	C (src/ast.c)	C (src/ast.c)	NO	the C caller still takes the goto error branch
+SITE-VALID-POINTER-OP	AST ownership and the type result	C (src/ast.c)	C (src/ast.c)	NO	unchanged
+SITE-VALID-POINTER-OP	diagnostics	C (src/cctrl.c)	C (src/cctrl.c)	NO	unchanged
+SITE-VALID-POINTER-OP	recovery	C (src/cctrl.c)	C (src/cctrl.c)	NO	unchanged
+SITE-VALID-POINTER-OP	memory / arena allocation	C (src/memory.c)	C (src/memory.c)	NO	unchanged
+SITE-RANGE-OPERATOR	the AstBinOp operator value	C (src/ast.h enum)	C (src/ast.h enum)	NO (the value is copied as a scalar)	the subject receives the numeric value, not an Ast
+SITE-RANGE-OPERATOR	the range-operator decision	C (src/ast.c astIsRangeOperator)	PolyC subject (selector ON) / C (selector OFF)	YES (the decision)	this is the authority being transferred
+SITE-RANGE-OPERATOR	the Ast nodes ast->binop / ast->left->binop read by the callers	C (src/ir.c, src/x86.c)	C (src/ir.c, src/x86.c)	NO	the C callers still read the Ast
+SITE-RANGE-OPERATOR	IR range lowering (src/ir.c:507,509)	C (src/ir.c)	C (src/ir.c)	NO	unchanged
+SITE-RANGE-OPERATOR	native code generation (src/x86.c:1357,1359)	C (src/x86.c)	C (src/x86.c)	NO	unchanged
+SITE-RANGE-OPERATOR	diagnostics	C (src/cctrl.c)	C (src/cctrl.c)	NO	unchanged
+SITE-RANGE-OPERATOR	recovery	C (src/cctrl.c)	C (src/cctrl.c)	NO	unchanged
+SITE-RANGE-OPERATOR	memory / arena allocation	C (src/memory.c)	C (src/memory.c)	NO	unchanged

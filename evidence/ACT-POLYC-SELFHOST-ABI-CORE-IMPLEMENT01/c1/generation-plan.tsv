@@ -1,0 +1,11 @@
+generation	producer_path	producer_role	producer_sha256	subject_source	subject_object	oracle_kind	selector_state	distinctness_note
+G0	tools/quality/core-operator-implement01-g0-oracle.c (compiled by the host cc)	GENUINE C-ONLY ORACLE: a verbatim copy of the three original C predicates, compiled from C sources alone	459d0e3fd27b7d707030de61f45dd401ae2eeab960e00f63470f68be989af507	n/a (C source)	n/a	C_ONLY_ORACLE	selector OFF (the original C predicates are active in the oracle itself)	the G0 oracle contains NO PolyC symbol and does not link the subject: AC14 / NC-09
+G1	build/host-stage0/hcc	the entry-frozen stage0 producer; it builds the ten existing production subjects	d01d28314fa74153088ac0bdbb10e7bf35a6537dfe15ebc669e15c0186ea1047	tools/bootstrap/selfhost-core-operator.HC	build/core-operator-subject-g1.o	POLYC_SUBJECT	selector ON in the production build	distinct executable digest from G2 and G3
+G2	build/hcc	the real production compiler of the current tree	0e8de65a456330e054c8dc0c163e4c837842c311f5ca466d5d9ff6f81d4e48b4	tools/bootstrap/selfhost-core-operator.HC	build/core-operator-subject-g2.o	POLYC_SUBJECT	selector ON in the production build	distinct executable digest from G1 and G3
+G3	build/hcc-bootstrap04	the stage3 compiler of the live generation graph	cfab406ba1db37bb53b3b5d39eae70d0afe9abadabe0551caa8da2990c725f19	tools/bootstrap/selfhost-core-operator.HC	build/core-operator-subject-g3.o	POLYC_SUBJECT	selector ON in the production build	distinct executable digest from G1 and G2
+
+PRODUCER_DIGEST_DISTINCTNESS_G1_G2_G3=YES
+PRODUCER_DIGEST_DISTINCTNESS_G0=YES
+PRODUCER_BINARY_LIST_AND_DIGESTS=see the table above
+SUBJECT_OBJECT_DETERMINISM=the subject object MAY be byte-identical across G1/G2/G3: deterministic compilation is compatible with the ACT. The INDEPENDENCE property is carried by the PRODUCER EXECUTABLE digests, which are pairwise distinct.
+ADDITIONAL_PRODUCERS_AVAILABLE=build/hcc-bootstrap02, build/hcc-bootstrap03, build/runtime-producer/hcc-bootstrap04 (all verified able to compile the subject)

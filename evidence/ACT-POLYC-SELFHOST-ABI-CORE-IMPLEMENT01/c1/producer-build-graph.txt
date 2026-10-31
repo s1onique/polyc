@@ -1,0 +1,112 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=producer-build-graph
+#
+# THE EFFECTIVE BUILD GRAPH, BEFORE IMPLEMENTATION.
+#
+# 1. STAGE0 -- selector OFF by explicit configuration
+# ===================================================
+#
+# The stage0 compiler is the LEGACY control that produces the PolyC
+# subjects. It MUST compile with every PolyC selector OFF, or the
+# graph would cycle (stage0 would need the object it produces).
+#
+#   RULE=Makefile target 'bootstrap-stage0'
+#   CONFIGURING_FLAGS=every HCC_USE_SELFHOST_* selector is OFF
+#   STAGE0_SELECTORS_OFF=-DHCC_USE_SELFHOST_PARSER_PADDING=OFF
+#   STAGE0_SELECTORS_OFF=-DHCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN=OFF
+#   STAGE0_SELECTORS_OFF=-DHCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE=OFF
+#   STAGE0_SELECTORS_OFF=-DHCC_USE_SELFHOST_PARSER_AST_BINOP=OFF
+#   STAGE0_SELECTORS_OFF=-DHCC_USE_SELFHOST_PARSER_AST_UNARY=OFF
+#   STAGE0_SELECTORS_OFF=-DHCC_USE_SELFHOST_PARSER_SWITCH_ARM=OFF
+#   STAGE0_SELECTORS_OFF=-DHCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND=OFF
+#   STAGE0_SELECTORS_OFF=-DHCC_USE_SELFHOST_PARSER_DEFAULT_ARM_TERMINATES=OFF
+#   STAGE0_SELECTORS_OFF=-DHCC_USE_SELFHOST_PARSER_STATEMENT_DISPATCH=OFF
+#   STAGE0_SELECTORS_OFF=-DHCC_USE_SELFHOST_ABI_CPA=OFF
+#   STAGE0_SELECTORS_OFF=-DHCC_USE_SELFHOST_CORE_OPERATOR_CLASSIFY=OFF  (TO BE ADDED IN C2)
+#   STAGE0_POLYC_AUTHORITY_SYMBOLS=0  (MEASURED)
+#   STAGE0_OUTPUT=build/host-stage0/hcc
+#
+# 2. THE NEW SUBJECT RULE
+# =========================
+#
+# The subject rule MUST declare its variables BEFORE the consuming
+# rule, because GNU Make expands ordinary prerequisites when the rule
+# is READ. A variable declared later expands to EMPTY and the subject
+# silently leaves the build graph (RED-05).
+#
+#   VARIABLE_CORE_OPERATOR_SRC  = tools/bootstrap/selfhost-core-operator.HC
+#   VARIABLE_CORE_OPERATOR_OBJ  = ./build/core-operator-subject.o
+#   PLACEMENT                   = immediately after the ABI_CPA_SRC/ABI_CPA_OBJ block
+#   RULE                        = $(CORE_OPERATOR_OBJ): $(CORE_OPERATOR_SRC) $(BOOTSTRAP_STAGE0_HCC) $(BOOTSTRAP_PREFIX_INC)/tos.HH
+#   PRODUCER                    = $(BOOTSTRAP_STAGE0_HCC) --install-dir=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) -c $(CORE_OPERATOR_SRC) -o $@
+#   SYMBOL_CHECK                = nm $@ must contain _AbiCoreClassifyCompoundAssign,
+#                                _AbiCoreIsValidPointerOperator and _AbiCoreIsRangeOperator;
+#                                a missing symbol is a HARD error, never a silent fallback
+#   ARCH_CHECK                  = the object's architecture must match the host
+#
+# 3. THE PRODUCTION CONSUMER
+# =============================
+#
+#   PRODUCTION_HCC_INPUTS must gain $(CORE_OPERATOR_OBJ) so that a
+#   change to the subject source or to the stage0 producer invalidates
+#   the production binary.
+#
+#   CURRENT_PRODUCTION_HCC_INPUTS=the ten existing subjects + the src wildcards
+#   AFTER_C2_PRODUCTION_HCC_INPUTS=the ten existing subjects + $(CORE_OPERATOR_OBJ) + the src wildcards
+#   NO_DEPENDENCY_CYCLE=the subject depends on the stage0 compiler; the production
+#                        compiler depends on the subject; the stage0 compiler does
+#                        NOT depend on the subject (it is built with the selector OFF)
+#
+# 4. THE CMAKE SIDE
+# ================
+#
+#   OPTION=HCC_USE_SELFHOST_CORE_OPERATOR_CLASSIFY (default OFF)
+#   ON  -> the legacy C decisions are COMPILED OUT of src/prslib.c and src/ast.c
+#         and the subject object is LINKED into hcc exactly once
+#   OFF -> the legacy C decisions stay active and the subject is NOT linked;
+#         the resulting binary is a genuine independent C oracle
+#   FAIL_CLOSED=if the subject object is missing and no producer is declared,
+#               the CONFIGURE step is a hard FATAL_ERROR naming the exact command
+#   SCHEDULING=if a producer IS declared, CMake SCHEDULES the subject's
+#               production as a custom command with an explicit DEPENDS on the
+#               source and the producer, and add_dependencies ties it to hcc
+#   ONE_LINK=target_link_libraries(hcc "${CORE_OPERATOR_OBJECT}") exactly once
+#
+# 5. THE FAIL-CLOSED MAKEFILE CORRECTION
+# =====================================
+#
+# The test-prefix-install recipe's cmake invocation is currently
+# TRUNCATED by a missing trailing backslash (see c1/strict-build-negative.txt).
+# The -D flags after the truncation never reach cmake, so the selector is
+# silently OFF in that build. The C2 correction must:
+#   (a) restore the line continuation so the cmake invocation is ONE command;
+#   (b) make the recipe abort on a nonzero cmake status and not run the
+#       subsequent $(MAKE) if the configure failed;
+#   (c) add an isolated negative test proving a broken -D argument or a
+#       missing subject path yields a NONZERO FATAL status.
+#
+# The correction is bounded to the Makefile's build wiring and is
+# required for the new selector to be trustworthy: without it the new
+# authority would be silently OFF in the test-prefix build.
+#
+# 6. THE MEASURED EFFECTIVE PREREQUISITE EXPANSION (CURRENT ENTRY)
+# ==============================================================
+#
+#   PRODUCTION_HCC_INPUTS (current, verbatim from the Makefile):
+#   PRODUCTION_HCC_INPUTS = $(PARSER_PADDING_OBJ) $(SLICE02_CFT_OBJ) $(SLICE03_OP_OBJ) <CONTINUED>
+#   	$(SLICE04_AST_BINOP_OBJ) $(SLICE05_AST_UNARY_OBJ) $(SLICE06_SWITCH_ARM_OBJ) <CONTINUED>
+#   	$(SLICE07_COMPOUND_BLOCK_OBJ) $(SLICE08_DEFAULT_ARM_OBJ) <CONTINUED>
+#   	$(SLICE09_STATEMENT_DISPATCH_OBJ) <CONTINUED>
+#   	$(ABI_CPA_OBJ) <CONTINUED>
+#   	$(wildcard src/*.c src/asm/*.c) <CONTINUED>
+#   	$(wildcard src/*.h src/asm/*.h) <CONTINUED>
+#   	$(wildcard src/CMakeLists.txt src/asm/CMakeLists.txt) <CONTINUED>
+#   	$(wildcard src/cmake/*.cmake)
+#
+#
+#   The ten existing subject variables are all declared BEFORE the
+#   PRODUCTION_HCC_INPUTS line (ABI_CPA_OBJ at line 155; the
+#   PRODUCTION_HCC_INPUTS block later in the file), so none of them
+#   expands to empty. The new CORE_OPERATOR_OBJ MUST follow the same
+#   rule (RED-05).

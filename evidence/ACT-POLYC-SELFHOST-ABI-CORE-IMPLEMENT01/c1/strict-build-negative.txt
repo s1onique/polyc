@@ -1,0 +1,121 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=strict-build-negative
+#
+# THE LIVE EXIT-127 HAZARD, DIAGNOSED FROM THE CURRENT ENTRY
+# ============================================================
+#
+# The test-prefix-install recipe of the Makefile ends its cmake
+# invocation with:
+#
+#     -DSTATEMENT_DISPATCH_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR)   <-- NO trailing backslash
+#     -DHCC_USE_SELFHOST_ABI_CPA=ON \
+#     -DABI_CPA_OBJECT=... \
+#     -DABI_CPA_PRODUCER=... \
+#     -DABI_CPA_SOURCE=... \
+#     -DABI_CPA_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR)
+#     $(MAKE) -C ./build/test-prefix-install-build install
+#
+# The missing backslash TERMINATES the shell command at the
+# -DSTATEMENT_DISPATCH_PREFIX line. The five following lines are
+# then executed by /bin/sh as a SEPARATE command whose first word
+# is '-DHCC_USE_SELFHOST_ABI_CPA=ON'. The shell cannot run it and
+# returns 127. The recipe has no 'set -e' and the Makefile has no
+# '- ignore-error' prefix on THIS recipe, so make reports
+#
+#     make: [test-prefix-install] Error 127 (ignored)
+#
+# and CONTINUES. The consequence is silent and severe: the
+# -DHCC_USE_SELFHOST_ABI_CPA=ON and the four -DABI_CPA_* flags NEVER
+# REACH CMAKE, so the test-prefix compiler is built with the CPA
+# authority OFF while the recipe text claims it is ON.
+#
+MEASURED_EFFECT_1_CMAKE_CACHE=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/test-prefix-install-build/CMakeCache.txt
+MEASURED_EFFECT_1_CACHE_LINE=HCC_USE_SELFHOST_ABI_CPA:BOOL=OFF
+MEASURED_EFFECT_1_EXPECTED=HCC_USE_SELFHOST_ABI_CPA:BOOL=ON
+MEASURED_EFFECT_2_INSTALLED_BINARY=/tmp/polyc-aci01-c0-prefix/bin/hcc
+MEASURED_EFFECT_2_ABI_CPA_SYMBOL_COUNT=0
+MEASURED_EFFECT_2_EXPECTED_ABI_CPA_SYMBOL_COUNT=1
+MEASURED_EFFECT_3_MAIN_BUILD_CACHE=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/CMakeCache.txt
+MEASURED_EFFECT_3_CACHE_LINE=HCC_USE_SELFHOST_ABI_CPA:BOOL=ON
+#
+# The defect is therefore LIVE at the current entry, not historical.
+#
+# THE EXACT DETECTOR
+# ===================
+#
+#   tools/quality/core-operator-implement01-strict-build.sh
+#
+# It (a) locates the recipe and proves the truncation structurally,
+# (b) proves the shell-level 127 with the EXACT command line, and
+# (c) proves that a STRICT build refuses the same condition.
+#
+# THE REQUIRED CORRECTION
+# =====================
+#
+# The Makefile's test-prefix-install recipe must be made FAIL-CLOSED
+# for this class of failure. The bounded correction is:
+#
+#   1. Restore the missing line continuation so that the whole cmake
+#      invocation is ONE shell command and every -D flag reaches
+#      cmake;
+#   2. Make the recipe fail closed: the cmake invocation must abort
+#      the recipe on a nonzero status, and the subsequent
+#      $(MAKE) must not run if the configure failed;
+#   3. Add an ISOLATED NEGATIVE TEST that removes/breaks a necessary
+#      cmake -D argument or the subject path and demonstrates a
+#      NONZERO FATAL status. No '- ignore-error' recipe prefix, no
+#      '|| true', no false-green shell pipeline and no success based
+#      on later output is permitted.
+#
+# THE NEGATIVE TEST IS EXECUTED IN C1 AND ITS RESULT IS RECORDED IN
+# c1/strict-build-negative.txt (below).
+#
+# STATUS OF THE CORRECTION AT C1
+# ================================
+#
+# The correction is a BOUNDED BUILD-WIRING correction inside the
+# Makefile, which is in this ACT's permitted scope. It is applied in
+# C2 IMPL together with the new subject wiring, and its fail-closed
+# property is PROVEN by an isolated negative test that must produce
+# a nonzero fatal status.
+#
+# C1 establishes that the hazard is LIVE, that the current build
+# silently loses the selector, and that the correction is required
+# and bounded. The predecessor's own C0 evidence is NOT rewritten.
+
+# THE EXECUTED NEGATIVE PROBES AT C1
+# ===================================
+#
+# COMMAND=sh tools/quality/core-operator-implement01-strict-build.sh negative
+#
+# PROBE_A_MALFORMED_D_ARGUMENT_RC=1
+# PROBE_A=FAIL_CLOSED
+#   A malformed cmake -D argument already fails closed: cmake rejects it
+#   and the configure exits nonzero.
+#
+# PROBE_B_MISSING_SUBJECT_RC=0
+# PROBE_B=NOT_FAIL_CLOSED
+# PROBE_B_NAMES_THE_SUBJECT=YES
+#   MEASURED, AND THIS IS A REAL GAP, NOT A PASS.
+#   At the entry there is NO
+#   HCC_USE_SELFHOST_CORE_OPERATOR_CLASSIFY option, so cmake treats
+#   -DCORE_OPERATOR_OBJECT=... as an UNUSED variable and warns about it
+#   instead of failing. A missing subject therefore does NOT stop the
+#   configure. C2 must add the option AND the fail-closed missing-subject
+#   check, and must then re-run this probe and record
+#   PROBE_B=FAIL_CLOSED.
+#
+# PROBE_D_TRUNCATED_TAIL_RC=127
+# PROBE_D=FAIL_CLOSED
+#   The exact truncated command line returns shell status 127, which a
+#   strict build refuses. This is the mechanism of the ignored error.
+#
+# CMAKE_FLAG_TRUNCATION=YES
+#   The live recipe truncation, confirmed structurally at C1.
+#
+# IGNORED_ERROR_RECIPE_LINES=NONE
+#   The test-prefix-install recipe itself does not use a '-' ignored-error
+#   prefix. The error was tolerated because the recipe's shell command
+#   ended EARLY (with status 127) and the NEXT line was a separate,
+#   successful command.

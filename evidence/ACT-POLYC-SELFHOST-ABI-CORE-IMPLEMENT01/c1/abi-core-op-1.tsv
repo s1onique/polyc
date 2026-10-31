@@ -1,0 +1,24 @@
+field	SITE-COMPOUND-ASSIGN	SITE-VALID-POINTER-OP	SITE-RANGE-OPERATOR
+operation_id	ABI-CORE-OP-1-CA	ABI-CORE-OP-1-PO	ABI-CORE-OP-1-RO
+polyc_exported_symbol	AbiCoreClassifyCompoundAssign	AbiCoreIsValidPointerOperator	AbiCoreIsRangeOperator
+source_site	src/prslib.c:1328..1348 parseCompoundAssign	src/ast.c:974..990 astIsValidPointerOp	src/ast.c:2348..2358 astIsRangeOperator
+source_range_sha256	4d941407ee054e207586b3a4fb645caf8917e6b43fa467b79d50a75e1b54bb43	bc06b0d757538f6c00ce0e96003cf5613823e98f4c48288c727cf9ac1dd82ac5	8c1acadaa4f1ae26d27c6be491812db2d16a8dd18528cb5cf2cc81d242b24f99
+input_count	2	1	1
+input_1_type	I64 token_type (numeric TK_ token type)	I64 binary_operator (numeric AstBinOp)	I64 binary_operator (numeric AstBinOp)
+input_2_type	I64 token_value (numeric TK_ token value)	-	-
+input_1_source_domain	src/lexer.h TK_* (50 defined token values; TK_PUNCT=809, TK_IDENT=768)	src/ast.h AstBinOp (29 members, 0..28)	src/ast.h AstBinOp (29 members, 0..28)
+input_2_source_domain	src/lexer.h TK_* compound-assignment tokens (10 values 786..802)	-	-
+input_extraction_order	token_type first, then token_value; token_type is tested FIRST and the token_value is NOT read when token_type != TK_PUNCT (short-circuit preserved from the C original)	binary_operator only	binary_operator only
+return_type	I64	I64	I64
+legal_result_domain	1 = is a compound assignment and *out_operator was written with the AstBinOp value; 0 = is NOT a compound assignment and *out_operator was NOT written	1 = the operator is valid for pointer arithmetic; 0 = it is not	1 = the operator is a relational range operator; 0 = it is not
+status_domain	negative I64 (reserved, never produced: the subject is TOTAL over the whole I64 domain)	negative I64 (reserved, never produced: the subject is TOTAL over the whole I64 domain)	negative I64 (reserved, never produced: the subject is TOTAL over the whole I64 domain)
+status_result_separation	PROVEN DISJOINT: the legal result domain is {0,1} and the status domain is the negative integers. The AstBinOp operator value is NEVER the return value; it travels in the out-parameter, so the AST_BIN_OP_MUL==0 collision with the "not a compound assignment" result 0 cannot occur.	PROVEN DISJOINT: the legal result domain is {0,1} and the status domain is the negative integers.	PROVEN DISJOINT: the legal result domain is {0,1} and the status domain is the negative integers.
+out_parameter	I64 *out_operator : a HOST-owned scalar cell. The subject writes ONE I64 into it ONLY on success. The subject never casts it to any host structure and never reads host layout through it.	none	none
+out_parameter_write_policy	written only when the return value is 1; never written when the return value is 0 or negative (matches the original C, which writes *_op only on success)	n/a	n/a
+normalization	none: the token_type and token_value are compared as the exact numeric source values	none: the binary_operator is compared as the exact numeric AstBinOp value	none: the binary_operator is compared as the exact numeric AstBinOp value
+invalid_input_behavior	a token_type other than TK_PUNCT returns 0 (not a compound assignment) and does not write the out-parameter; a TK_PUNCT token_value that is not one of the ten compound-assignment tokens returns 0 and does not write the out-parameter. A token_value outside the whole token domain is also 0. There is NO error status: the original C has no failure mode, and the projection must not invent one.	a binary_operator outside the AstBinOp enum returns 0 (not valid). There is NO error status.	a binary_operator outside the AstBinOp enum returns 0 (not a range operator). There is NO error status.
+c_wrapper	src/prslib.c parseCompoundAssign (selector OFF keeps the original C body; selector ON calls the subject)	src/ast.c astIsValidPointerOp (selector OFF keeps the original C body; selector ON calls the subject)	src/ast.c astIsRangeOperator (selector OFF keeps the original C body; selector ON calls the subject)
+host_object_dependencies	none: the subject is linked as one object and needs no other object	none	none
+permitted_side_effects	one scalar store into the caller-provided out-parameter cell, only on success	none (pure function of one scalar)	none (pure function of one scalar)
+forbidden	no raw Lexeme*, Ast*, List*, Map*, Cctrl*, Arena* or pointer-bitcast handle; no allocation; no callback; no setjmp/longjmp; no global mutable state; no diagnostics; no recovery	same	same
+dispatcher_shape	THREE SEPARATE EXPORTED FUNCTIONS IN ONE SUBJECT OBJECT. A shared dispatcher is permitted by the ACT only with disjoint operation discriminants, but it would make the CA out-parameter write conditional on a dispatcher branch and would weaken per-site mutation isolation (ACT 0.1.3). One object, three functions: each site is individually countable, individually testable and individually mutable, and the object is linked exactly once.	same	same

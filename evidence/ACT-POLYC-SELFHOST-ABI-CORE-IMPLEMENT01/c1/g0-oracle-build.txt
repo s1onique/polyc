@@ -1,0 +1,37 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=g0-oracle-build
+#
+# THE GENUINE G0 ORACLE IS BUILT FROM C SOURCES ALONE.
+# It is a verbatim copy of the three original C predicates taken from
+# the frozen source ranges. It contains NO PolyC symbol, does not
+# include any PolyC header and does not link the new subject.
+#
+SOURCE=tools/quality/core-operator-implement01-g0-oracle.c
+SOURCE_SHA256=f0346753d9a4fbf31ee5f9a007b10149a836184f7940cbeda969093e3b8ddb11
+COMMAND=cc -std=c99 -O2 -Wall -Wextra -o g0-oracle tools/quality/core-operator-implement01-g0-oracle.c
+COMPILE_RC=0
+ORACLE_BINARY_SHA256=459d0e3fd27b7d707030de61f45dd401ae2eeab960e00f63470f68be989af507
+ORACLE_BINARY_OBJECT_FORMAT=Mach-O 64-bit executable arm64
+
+# FORBIDDEN POLYC SYMBOL SCAN (AC14 / NC-09)
+# The oracle must contain NO reference to any of the three new subject
+# symbols and no PolyC header.
+G0_POLYC_SYMBOL_REFERENCES=0
+G0_SOURCE_POLYC_SYMBOL_MENTIONS=0
+G0_SOURCE_POLYC_HEADER_INCLUDES=0
+G0_SOURCE_C_INCLUDE_COUNT=3
+
+# THE ORACLE'S PREDICATES ARE VERBATIM COPIES
+# SITE-COMPOUND-ASSIGN  src/prslib.c:1328..1348  -> oracle_parseCompoundAssign
+# SITE-VALID-POINTER-OP src/ast.c:974..990        -> oracle_astIsValidPointerOp
+# SITE-RANGE-OPERATOR  src/ast.c:2348..2358      -> oracle_astIsRangeOperator
+
+# SPOT CHECK against the live production object
+ORACLE[CA 809 793]=CA 809 793 1 3 0
+ORACLE[CA 809 786]=CA 809 786 1 5 0
+ORACLE[CA 768 793]=CA 768 793 0 0 0
+ORACLE[PO 4]=PO 4 1
+ORACLE[PO 0]=PO 0 0
+ORACLE[RO 7]=RO 7 1
+ORACLE[RO 3]=RO 3 0
