@@ -1,0 +1,70 @@
+# ACT_ID=ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON02-CORRECTION01
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=gates-and-factory
+#
+# THE CANONICAL FACTORY GATES, RUN ON THIS TREE, SERIALLY.
+#
+# GATE_FAST_COMMAND=sh scripts/quality/gate-fast.sh
+# GATE_FAST_STATUS=PASS
+# GATE_FAST_RC=0
+# GATE_FAST_CHECKS=diff-check, shell-syntax, doc-invariants, large-file-guard, factory-closure-status
+# FACTORY_CLOSURE_PAIR_OK=55
+# FACTORY_CLOSURE_PAIR_FAIL=0
+#
+# GATE_PUSH_COMMAND=sh scripts/quality/gate-push.sh HEAD
+# GATE_PUSH_STATUS=PASS
+# GATE_PUSH_RC=0
+# GATE_PUSH_CHECKS=build, install, gep01, aot, jit, lsp, diff-check
+#
+# AN OBSERVED CONCURRENCY HAZARD, RECORDED AND NOT "FIXED" HERE
+#
+# A FIRST gate-push run on this tree FAILED with
+#   CHECK=aot STATUS=FAIL
+#   REASON=aot emitted test-failure markers despite zero exit status
+# and the underlying cause was visible in the log:
+#   clang: error: no such file or directory: '/tmp/holyc-asm.s'
+#   ERROR: Failed to execute command: 'cc -L... /tmp/holyc-asm.s ...'
+#   Failed to compile: 11_assignment.HC
+#   Failed to compile: 58_struct_return.HC
+#
+# The cause was that a `make unit-test` run was executing CONCURRENTLY with
+# the gate-push AOT test, and both compiler invocations share the single
+# global temporary file /tmp/holyc-asm.s. One deleted it while the other
+# was using it.
+#
+# This is the known assembly-temporary race that the ACTs explicitly
+# exclude from scope ("Do not fix the assembly-temp race inside this
+# reconnaissance" and "no parallel compiler invocations sharing
+# /tmp/holyc-asm.s"). It is an execution-discipline defect of this run,
+# NOT a product defect and NOT a regression: the re-run, executed SERIALLY
+# with no other compiler invocation in flight, PASSES.
+#
+# It is recorded here as residue for a separately authorized ACT.
+#
+# APPEND_ONLY_COMMAND=sh scripts/quality/factory-append-only-test.sh
+# APPEND_ONLY_STATUS=PASS
+# APPEND_ONLY_PASS=11
+# APPEND_ONLY_FAIL=0
+#
+# F14_COMMAND=the frozen predecessor manifest re-verified path by path
+# F14_STATUS=PASS
+# F14_FROZEN_PREDECESSOR_PATHS=5790
+# F14_MISMATCHES=0
+#
+# F_NO_PYTHON_COMMAND=sh scripts/quality/factory-no-python-check.sh
+# F_NO_PYTHON_STATUS=FAIL_KNOWN_BASELINE
+# F_NO_PYTHON_HISTORICAL_VIOLATIONS=12
+# F_NO_PYTHON_NEW_VIOLATIONS=0
+#
+# F_POLYC_TOOLS=UNAVAILABLE (the checker has not landed in this tree)
+#
+# PATCH_HYGIENE_STATUS=PASS
+# PATCH_HYGIENE_NOTE=every file changed by this ACT is inside its authorized
+# PATCH_HYGIENE_NOTE=path list; see c3/scope-and-patch-hygiene.txt for the
+# PATCH_HYGIENE_NOTE=per-file classification.
+#
+# THE KNOWN NON-GREEN BASELINES ARE NOT RELABELLED
+# LEXER07_BROAD_STATUS=FAIL_KNOWN_BASELINE (15 failure identities, MD5 7ee761440de83552e751e3c3976c1683)
+# CROSS_TARGET_PREFIX_STATUS=FAIL_ENVIRONMENT_PREFIX (67)
+# F_NO_PYTHON_STATUS=FAIL_KNOWN_BASELINE (12 historical, 0 new)
+# F_POLYC_TOOLS_STATUS=UNAVAILABLE
