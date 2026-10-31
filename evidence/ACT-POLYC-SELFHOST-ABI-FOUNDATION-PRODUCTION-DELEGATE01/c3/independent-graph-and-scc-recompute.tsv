@@ -1,0 +1,62 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-FOUNDATION-PRODUCTION-DELEGATE01
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=independent-graph-and-scc-recompute
+#
+# INDEPENDENT recomputation from the ORIGINAL edge IDs, by TWO distinct
+# algorithms, over the FULL 52-node table.
+#
+# ALGORITHM 1: Kosaraju (two-pass DFS).                c3/scc-kosaraju.awk
+# ALGORITHM 2: transitive closure + mutual-reachability. c3/scc-closure.awk
+#
+# Neither implementation subtracts a count: both consume the original
+# individual edge IDs and compute the partition from scratch.
+#
+# --- the original 135-edge ledger ---
+# COMMAND=tail -n +2 c0/original-graph-135.tsv | awk -F"\t" "{print \$1\"\\t\"\$2\"\\t\"\$3}"
+#   135 edges
+#
+# --- the 52-node table (from the frozen CENSUS01 ledger) ---
+#   52 nodes
+#
+# ===== ALGORITHM 1: KOSARAJU =====
+# BASE (135 edges):
+# COMMAND=awk -f c3/scc-kosaraju.awk nodes52.txt edges135.tsv
+#   SCC_COUNT 34
+#   LARGEST_SCC 19
+#   NODE_COUNT 52
+#   (this EXACTLY reproduces the predecessor frozen baseline: 34 SCCs, largest 19)
+# AFTER THE PROVEN CUT (134 edges):
+#   SCC_COUNT 34
+#   LARGEST_SCC 19
+#   NODE_COUNT 52
+#
+# ===== ALGORITHM 2: TRANSITIVE CLOSURE =====
+# BASE (135 edges):
+#   SCC_COUNT 34
+#   LARGEST_SCC 19
+#   NODE_COUNT 52
+# AFTER THE PROVEN CUT (134 edges):
+#   SCC_COUNT 34
+#   LARGEST_SCC 19
+#   NODE_COUNT 52
+#
+# ===== THE TWO ALGORITHMS AGREE =====
+# ACTIVE_PRODUCTION_GRAPH_NODES          = 52
+# ACTIVE_PRODUCTION_GRAPH_MANDATORY_EDGES = 134   (135 minus the ONE proven cut)
+# PRODUCTION_PROVEN_CUT_IDS              = {E-TYP-0136}
+# PRODUCTION_PROVEN_CUT_COUNT            = 1
+# C_OFF_ORACLE_GRAPH_EDGES              = 135   (configuration-scoped: the
+#                                            selector-OFF build still carries
+#                                            the legacy C predicate, so the
+#                                            edge is present there)
+# HISTORICAL_SHADOW_CUT                 = 1     (not an additional production cut)
+# SCC_PRODUCTION_BASE                   = 34 SCCs, largest 19
+# SCC_PRODUCTION_AFTER_CUT              = 34 SCCs, largest 19
+# SCC_PARTITION_CHANGED_BY_THE_CUT     = NO
+# E-MUT-0137                           = NOT_CUT / WITNESS_QUALITY_DISPUTED
+#   (it is a different edge with a different witness; this ACT neither claims
+#    it nor repairs it, and the disputed historical claim is left as it was)
+#
+# NO_OTHER_EDGE_LOST: the 134-edge set is the original 135-ID set minus
+# exactly E-TYP-0136, and every other edge keeps its ORIGINAL ID, endpoints,
+# type, config ID and witness.

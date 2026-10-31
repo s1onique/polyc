@@ -170,13 +170,18 @@ static s64 AbiCpaReleaseInternal(s64 handle) {
     s->live = 0;
     s->obj = NULL;
     /* The generation counter is advanced so that a stale token can never
-     * alias this slot again. It is never wrapped to a previously valid
-     * value: the slot is retired once the counter would overflow. */
-    if ((u32)s->generation + 1u > 0xffffu) {
-        s->retired = 1;
-        s->generation = 0xffffu;
-    } else {
+     * alias this slot again.
+     *
+     * It is NEVER wrapped to a previously valid value. When the counter
+     * would overflow, the slot is left at its maximum and the NEXT issue
+     * on this slot observes the overflow and fails closed with
+     * -ABI_SLOT_RETIRED (see AbiCpaIssueAst). Retiring the slot HERE would
+     * abandon it instead of failing the caller, and the overflow would then
+     * never be reported at all. */
+    if ((u32)s->generation + 1u <= 0xffffu) {
         s->generation = (u16)((u32)s->generation + 1u);
+    } else {
+        s->generation = 0xffffu;
     }
     return ABI_OK;
 }

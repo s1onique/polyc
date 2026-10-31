@@ -1,0 +1,57 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-FOUNDATION-PRODUCTION-DELEGATE01
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=polyc-mutation-restoration
+#
+# EXECUTION_ID=PD-C3-M1
+# ISOLATED_BUILD_ROOT=/tmp/pd01/m1   (a detached worktree at the C2 commit)
+#
+# The mutation is applied to the NEW PRODUCTION PolyC source
+# (tools/bootstrap/selfhost-abi-compile-print-ast.HC), NOT to the
+# predecessor's shadow source. The host accessor, the nine other subjects
+# and the C consumer are NOT touched.
+#
+# MUTATION: the AST_EXTERN_FUNC visibility classification is changed
+#   -  if (kind == ABI_AST_EXTERN_FUNC)   return 0;
+#   +  if (kind == ABI_AST_EXTERN_FUNC)   return 1;
+#
+# WITNESS: the ACT-owned c1/cases/only-externs.HC real -ast output.
+#
+# --- PRISTINE ---
+# POLYC_SOURCE_SHA256      = 0ab058a6a66933f2d676b8ef9e4b3d8f2c3779a1d9f44a6d43062f48e863b4ea
+# POLYC_SUBJECT_SHA256     = f5dfc1644b4f133a4bfa972e4988231b5eb3ed77ad52a7617093798c8a04d799
+# HOST_OBJECT_SHA256       = 62c70a6afa639fee96a1e3f02f10ac1b1d216831e83964441d9fa40e3a9e2c52
+# OTHER_SUBJECT_SHA256     = 187a4de9465e8dbe3c640484b05540daaad4a3267dd1543a169e3c304b02d5b1  (the padding subject)
+# PRODUCTION_HCC_SHA256    = 678cabf0f528b183a9486ff36cdacdc1f1e836405f34d1e88e79e974a7b65f24
+# WITNESS_STDOUT_MD5       = b6681f1ad1db7f9d5fd41f1fb53a80f9
+# WITNESS_STDOUT_LINES     = 7
+#
+# --- MUTATED ---
+# POLYC_SOURCE_SHA256      = 34d51b53d8fee78f93fbedb98969538f113116f0bcf11f0f94121602ba458b41
+# POLYC_SUBJECT_SHA256     = 3ff2a2db96aa6e51764d59f9c3a2a8bdae2394c6418f913a15136b6423af306a
+# HOST_OBJECT_SHA256       = 62c70a6afa639fee96a1e3f02f10ac1b1d216831e83964441d9fa40e3a9e2c52
+# OTHER_SUBJECT_SHA256     = 187a4de9465e8dbe3c640484b05540daaad4a3267dd1543a169e3c304b02d5b1
+# PRODUCTION_HCC_SHA256    = 9629e5ee4c8994813f8de378c3dce14dcba2b795de18b56bd23c45b9a7f61dca
+# WITNESS_STDOUT_MD5       = a3c6d18b26e711fb8d374904b0404305
+# WITNESS_STDOUT_LINES     = 1026
+#
+# --- CAUSAL VERDICT ---
+# SUBJECT_DIGEST_CHANGED   = YES   (the mutation reaches the compiled PolyC object)
+# HOST_OBJECT_UNCHANGED    = YES   (the host adapter is not affected)
+# OTHER_SUBJECT_UNCHANGED  = YES   (the nine other authorities are not affected)
+# WITNESS_CHANGED          = YES   (7 lines -> 1026 lines: the extern_function
+#                                  nodes are no longer suppressed)
+#
+# --- RESTORED ---
+# POLYC_SOURCE_SHA256      = 0ab058a6a66933f2d676b8ef9e4b3d8f2c3779a1d9f44a6d43062f48e863b4ea
+# POLYC_SUBJECT_SHA256     = f5dfc1644b4f133a4bfa972e4988231b5eb3ed77ad52a7617093798c8a04d799
+# PRODUCTION_HCC_SHA256    = 678cabf0f528b183a9486ff36cdacdc1f1e836405f34d1e88e79e974a7b65f24
+# WITNESS_STDOUT_MD5       = b6681f1ad1db7f9d5fd41f1fb53a80f9
+#
+# SRC_BYTE_IDENTICAL         = YES
+# SUBJECT_BYTE_IDENTICAL     = YES
+# HCC_BYTE_IDENTICAL         = YES
+# WITNESS_RESTORED_IDENTICAL = YES
+#
+# CAUSAL_CHANNEL_PROVEN = YES
+# NOTE: this execution ID is distinct from IMPLEMENT01's historical
+# experiments; it is a NEW experiment on the NEW production source.

@@ -1,0 +1,24 @@
+property	observed	method
+ON_EFFECTIVE_AST_H_FRAMES	0	gcc -E -H -Isrc -DHCC_USE_SELFHOST_ABI_CPA src/compile.c | grep -c ast.h
+ON_DIRECT_AST_MEMBER_READS	0	gcc -E -Isrc -DHCC_USE_SELFHOST_ABI_CPA src/compile.c | grep -c "ast->"
+OFF_EFFECTIVE_AST_H_FRAMES	1	gcc -E -H -Isrc src/compile.c | grep -c ast.h
+OFF_DIRECT_AST_MEMBER_READS	3	gcc -E -Isrc src/compile.c | grep -c "ast->"
+ON_LEGACY_MASK_COUNT	0	otool -tvV compile.c.o | grep -c 0x2401
+OFF_LEGACY_MASK_COUNT	1	otool -tvV compile.c.o | grep -c 0x2401 (the C-OFF oracle)
+ON_CONSUMER_CPA_IMPORTS	_AbiCpaIssueAst _AbiCpaRetireAst _AbiCpaShouldPrintAst 	nm -u compile.c.o | grep AbiCpa
+OFF_CONSUMER_CPA_IMPORTS	0	nm -u compile.c.o | grep -c AbiCpa
+ON_BINARY_PARSER_AUTHORITIES	9	nm ./hcc | grep -c " T _Bootstrap"
+ON_BINARY_CPA_DECISION_AUTHORITIES	1	nm ./hcc | grep -c " T _AbiCpaShouldPrintAst" (the ONE new DECISION authority)
+ON_BINARY_CPA_HOST_FUNCTIONS	3	nm ./hcc | grep -c " T _AbiCpa" minus the decision; these are MECHANICAL, not authorities
+ON_TOTAL_POLYC_AUTHORITIES	10	9 parser decision objects + 1 non-parser CPA DECISION
+ON_TOTAL_POLYC_SYMBOLS_IN_BINARY	13	all _Bootstrap and _AbiCpa* symbols; the AUTHORITY count is NOT this number
+AUTHORITY_COUNTING_RULE	COUNT DECISIONS, NOT SYMBOLS	_AbiCpaIssueAst/_AbiCpaAstKind/_AbiCpaRetireAst/_AbiAbiVersion are mechanical host plumbing, NOT decision authorities
+ON_CPA_CLASS	NON_PARSER_CPA_DECISION	a top-level AST visibility predicate, not a parser decision
+NINE_PRIOR_AUTHORITIES_PRESERVED	YES	all nine _Bootstrap symbols are defined with distinct addresses
+OFF_BINARY_CPA_SYMBOLS	0	nm ./hcc | grep -c AbiCpa (the C-OFF oracle)
+HOST_HAS_NO_VISIBILITY_DECISION	YES	src/abi-cpa-host.c contains no AST_* comparison and no kind threshold
+HOST_AST_KIND_COMPARISONS	0	grep -c "AST_" src/abi-cpa-host.c
+POLYC_SUBJECT_CONTAINS_THE_RULE	YES	tools/bootstrap/selfhost-abi-compile-print-ast.HC compares the three kinds
+POLYC_SUBJECT_RULE_LINES	6	grep -c "ABI_AST_" tools/bootstrap/selfhost-abi-compile-print-ast.HC
+HEADER_CUT_AFFECTED_TUS	1	src/ir-types.c only, measured at C1 in a disposable probe tree
+IR_TYPES_INCLUDES_AST_H	YES	src/ir-types.c now states the AstType dependency it used to inherit

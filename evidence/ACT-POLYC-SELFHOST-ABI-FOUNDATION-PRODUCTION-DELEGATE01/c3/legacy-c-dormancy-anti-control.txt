@@ -1,0 +1,68 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-FOUNDATION-PRODUCTION-DELEGATE01
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=legacy-c-dormancy-anti-control
+#
+# EXECUTION_ID=PD-C3-M3
+# ISOLATED_BUILD_ROOT_C_OFF=/tmp/pd01/m3-off
+# ISOLATED_BUILD_ROOT_ON=/tmp/pd01/m3-on
+#
+# The SAME mutation is applied to two trees:
+#   C-OFF  the C2 source with the selector forced OFF
+#   ON     the C2 source with the selector ON (the production configuration)
+#
+# MUTATION: the legacy C decision loses its AST_EXTERN_FUNC comparison, and
+# the mutant is marked with an explicit anti-control comment. Only the
+# legacy C decision inside the selector-OFF branch of src/compile.c changes.
+#
+#   -            ast->kind != AST_EXTERN_FUNC &&
+#                ast->kind != AST_ASM_FUNC_BIND)
+#   +            ast->kind != AST_ASM_FUNC_BIND)
+#                /* M3 ANTI-CONTROL: the legacy C decision is mutated */
+#
+# EXPECTED
+#   C-OFF  -> the mutation IS active: the object changes and a causal
+#             witness changes.
+#   ON     -> the mutation is INERT: the mutated source is compiled OUT, so
+#             the ON compile.c.o is byte-identical to its pristine value and
+#             a causal witness is unchanged.
+#
+# If the ON object changed, the legacy C decision would NOT be dormant and
+# this ACT's central claim would fail.
+#
+# ------------------------------------------------------------------ C-OFF
+COFF_COMPILE_C_O_BEFORE = 303aa783e68a767f2ac2bab7cfad26d18bc7bf1d81f8f6d9256e84f9dc58f877
+COFF_HCC_BEFORE         = 04260daa683f778c42645171ad9efad5bd92071fb3cd054d54f8f4a15f594b8a
+COFF_WITNESS_BEFORE     = b6681f1ad1db7f9d5fd41f1fb53a80f9   (7 lines)
+#
+COFF_COMPILE_C_O_MUTATED = b15cdde70177dcb0fad4921dcc3b18e652762ef1007e03d2183ca0d6b4f9686a
+COFF_HCC_MUTATED         = 83a193014433001d17ae7e6a5f3b5481545e2d770a9786b293b82eae9a72d011
+COFF_WITNESS_MUTATED     = a3c6d18b26e711fb8d374904b0404305   (1026 lines)
+#
+COFF_OBJECT_CHANGED   = YES
+COFF_WITNESS_CHANGED  = YES
+#
+# -------------------------------------------------------------------- ON
+ON_COMPILE_C_O_BEFORE = 78409b97e208e76999a086dbfc3f2349809617e735311c2e06bb268a69f48f23
+ON_HCC_BEFORE         = 5e2430804145bd5b2ece19e7e921b090dd136f9e4b79f3b32d4699f01d74309b
+ON_WITNESS_BEFORE     = b6681f1ad1db7f9d5fd41f1fb53a80f9   (7 lines)
+#
+ON_COMPILE_C_O_MUTATED = 78409b97e208e76999a086dbfc3f2349809617e735311c2e06bb268a69f48f23
+ON_HCC_MUTATED         = 5e2430804145bd5b2ece19e7e921b090dd136f9e4b79f3b32d4699f01d74309b
+ON_WITNESS_MUTATED     = b6681f1ad1db7f9d5fd41f1fb53a80f9   (7 lines)
+#
+ON_OBJECT_BYTE_IDENTICAL = YES   (the mutated source is compiled OUT)
+ON_WITNESS_UNCHANGED     = YES   (production behaviour is unaffected)
+#
+# ---------------------------------------------------------------- RESTORED
+ON_COMPILE_C_O_RESTORED = 78409b97e208e76999a086dbfc3f2349809617e735311c2e06bb268a69f48f23
+ON_HCC_RESTORED         = 5e2430804145bd5b2ece19e7e921b090dd136f9e4b79f3b32d4699f01d74309b
+ON_WITNESS_RESTORED     = b6681f1ad1db7f9d5fd41f1fb53a80f9
+#
+# LEGACY_RETIREMENT_PROVEN = YES
+#
+# The legacy C decision is a LIVE, LOAD-BEARING fallback in the selector-OFF
+# build and is COMPLETELY ABSENT from the production ON build. Both facts
+# are measured, not inferred.
+#
+# NOTE: this execution ID is distinct from IMPLEMENT01's historical
+# experiments; it is a NEW experiment on the NEW production tree.

@@ -1,0 +1,87 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-FOUNDATION-PRODUCTION-DELEGATE01
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=source-history-and-f14-conservation
+#
+# --- F14: no historical evidence is rewritten ---
+# COMMAND=git diff --name-only <ENTRY_HEAD>..HEAD -- evidence/ACT-POLYC-SELFHOST-ABI-FOUNDATION-IMPLEMENT01
+#   (empty: the predecessor namespace is untouched)
+# COMMAND=git diff --name-only <ENTRY_HEAD>..HEAD -- evidence/ACT-POLYC-SELFHOST-WHOLE-COMPILER-AUTHORITY-CENSUS01
+#   (empty: the census namespace is untouched)
+# COMMAND=git diff --name-only <ENTRY_HEAD>..HEAD -- evidence/ACT-POLYC-SELFHOST-ABI-FOUNDATION-RECON01
+#   (empty: the RECON01 namespace is untouched)
+#
+# --- THE TRACKED FILES CHANGED BY THIS ACT ---
+# COMMAND=git diff --name-status <ENTRY_HEAD>..HEAD
+#   M	Makefile
+#   M	src/CMakeLists.txt
+#   A	src/abi-cpa-host.c
+#   A	src/abi-cpa-host.h
+#   M	src/cctrl.h
+#   M	src/compile.c
+#   M	src/ir-types.c
+#   M	src/parser.h
+#   A	tools/bootstrap/selfhost-abi-compile-print-ast.HC
+#
+# The production source change set is exactly:
+#   src/compile.c      the ON branch delegates the decision; the OFF branch
+#                      keeps the legacy C predicate as an honest oracle
+#   src/cctrl.h        ast.h -> forward declarations of Ast/AstType
+#   src/parser.h       ast.h -> forward declaration of Ast
+#   src/ir-types.c     the MEASURED breakage repair: this TU reads AstType
+#                      members and now states the dependency it used to
+#                      inherit from cctrl.h
+#   src/abi-cpa-host.c the new C host (NEW FILE)
+#   src/abi-cpa-host.h the new ABI header (NEW FILE)
+#   src/CMakeLists.txt the dedicated selector, the ON-only host TU and the
+#                      fail-closed subject contract
+#   Makefile           the subject producer rule, the effective prerequisite
+#                      and the selector at every configure site
+#   tools/bootstrap/selfhost-abi-compile-print-ast.HC  the NEW production
+#                      PolyC decision component (NEW FILE)
+#
+# NOTHING ELSE under src/ or tools/bootstrap/ changed. In particular:
+#   src/ast.h                changed_files=0
+#   src/ast.c                changed_files=0
+#   src/parser.c             changed_files=0
+#   src/lexer.c              changed_files=0
+#   src/list.c               changed_files=0
+#   src/arena.c              changed_files=0
+#   src/memory.c             changed_files=0
+#   src/main.c               changed_files=0
+#   src/ir.c                 changed_files=0
+#   src/x86_64.c             changed_files=0
+#   src/transpiler.c         changed_files=0
+#   src/lsp.c                changed_files=0
+#   src/repl.c               changed_files=0
+#   src/prsasm.c             changed_files=0
+#   src/prslib.c             changed_files=0
+#   src/prsutil.c            changed_files=0
+#   src/cfg.c                changed_files=0
+#
+# The nine existing PolyC parser subjects and their selectors are
+# untouched:
+#   tools/bootstrap/selfhost-parser-padding.HC                     changed_files=0
+#   tools/bootstrap/selfhost-parser-control-flow-token.HC          changed_files=0
+#   tools/bootstrap/selfhost-parser-operator-precedence.HC         changed_files=0
+#   tools/bootstrap/selfhost-parser-slice04.HC                     changed_files=0
+#   tools/bootstrap/selfhost-parser-slice05.HC                     changed_files=0
+#   tools/bootstrap/selfhost-parser-slice06.HC                     changed_files=0
+#   tools/bootstrap/selfhost-parser-slice07.HC                     changed_files=0
+#   tools/bootstrap/selfhost-parser-slice08.HC                     changed_files=0
+#   tools/bootstrap/selfhost-parser-statement-dispatch.HC          changed_files=0
+#
+# The nine subject OBJECTS in the production build are byte-identical to
+# the predecessor's frozen digests:
+#   parser-padding-subject               187a4de9465e8dbe3c640484b05540daaad4a3267dd1543a169e3c304b02d5b1
+#   parser-control-flow-token-subject    078f708d05474430cb3d5c6fc17c0a3d327ab81b74cb24e32512475050723018
+#   parser-operator-precedence-subject   1a932394ba209267ab3a119137f844682f1a12ceeaaca0cde4feaeaa0f8f62f8
+#   parser-ast-binop-subject             6d598bc7f0b00ac47642ec06b8cceba641d55a8cfe5498e0a6a995c40f2e054d
+#   parser-ast-unary-subject             27075194e1d3ff94703b51459cc3e5c8ea472747ea1f255a451a97f44b416e72
+#   parser-switch-arm-subject            848866e9fea389d574b3cb3e39b54b62fc0c744fe707fcf7c4184714017467f0
+#   parser-compound-block-subject        e2dfbcfcb78261957fb9188916705dcc86d589e82a9d9e169f6ae8118237487c
+#   parser-default-arm-subject           d72cee87ccff4b5c1b801c5d1420d5267809e9214526720800010ff591cba22b
+#   parser-statement-dispatch-subject    f9d9c05eaf9c8cb4d2821b9c2c6d59e10116eacdfc3197150855aaef693c1c3d
+#
+# --- the test harness is untouched ---
+# COMMAND=git diff --name-only <ENTRY_HEAD>..HEAD -- src/tests tests
+#   (empty)
