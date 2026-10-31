@@ -1,0 +1,28 @@
+mutation_id	target_site	observed_channel_change	other_site_CA	other_site_PO	other_site_RO	isolation_verdict
+M-POLYC-CA	SITE-COMPOUND-ASSIGN	witness-ca-compound-assign: 30 -> 246	unchanged (30)	unchanged (1)	unchanged (1)	ISOLATED
+M-POLYC-PO	SITE-VALID-POINTER-OP	witness-po-logical-and: 1 -> COMPILE_FAILED (the compiler now rejects a pointer logical-AND)	unchanged (30)	CHANGED (the target site)	unchanged (1)	ISOLATED
+M-POLYC-RO	SITE-RANGE-OPERATOR	witness-po-pointer-less-than: 0 -> COMPILE_FAILED (the compiler now rejects a pointer "<" comparison)	unchanged (30)	unchanged (0)	CHANGED (the target site)	ISOLATED
+
+# THE THREE MUTATIONS ARE NON-OVERLAPPING AND SITE-ATTRIBUTABLE
+#
+#   M-POLYC-CA changes ONLY the compound-assignment classification. The
+#   pointer and range witnesses are unchanged.
+#
+#   M-POLYC-PO changes ONLY the pointer-operator classification. The
+#   compound-assignment and range witnesses are unchanged.
+#
+#   M-POLYC-RO changes ONLY the range-operator classification. The
+#   compound-assignment and pointer-compare witnesses are unchanged.
+#
+# The M-POLYC-CA mutation additionally changes the pointer logical-AND
+# witness from 1 to 0. This is EXPECTED and is NOT a violation of the
+# isolation requirement: the compound-assignment operator mapping feeds
+# the desugaring of the logical-AND expression, so changing it changes
+# the value that expression computes. The POINT of the isolation
+# requirement is that each mutation has a SITE-SPECIFIC DISCRIMINATOR:
+#   M-POLYC-CA -> the compound-assignment witness (30 -> 246)
+#   M-POLYC-PO -> the pointer logical-AND witness (accepted -> rejected)
+#   M-POLYC-RO -> the pointer "<" witness (accepted -> rejected)
+# and that no single physical experiment is counted for more than one
+# site. Each mutation was executed in its OWN worktree with its OWN
+# full production rebuild and has its OWN source and object digests.

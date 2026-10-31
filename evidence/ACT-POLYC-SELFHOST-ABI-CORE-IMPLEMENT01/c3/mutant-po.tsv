@@ -1,0 +1,28 @@
+mutation_id	M-POLYC-PO
+site_id	SITE-VALID-POINTER-OP
+polyc_symbol	_AbiCoreIsValidPointerOperator
+execution_id	EXEC-M-POLYC-PO
+worktree	/tmp/aci01-mut-wt/SITE-VALID-POINTER-OP (disposable detached worktree at the C2 commit)
+mutation	the AST_BIN_OP_LOG_AND (16) case removed, so a pointer logical-AND is no longer a valid pointer operation
+pristine_source_sha256	e184603ff45f3482d99c5af84a960b15a44673d01924f89aa48f6ba0e5eedbd3
+mutant_source_sha256	f61d7ea0b50aabedc6db9377909f16c16dfac9dac33767477a73be563278a4b4
+pristine_subject_object_sha256	b9a76fe8a23b38468e78b67ed428226592fa270347674299c1be1be57f4de756
+mutant_subject_object_sha256	af566dfb6f184898942ae5138c4f2662b259a33d259ce0807612d1544854b58a
+mutant_compiler_rebuilt	YES (the FULL production compiler was rebuilt; MAKE_RC=0)
+mutant_subject_actually_linked	YES
+semantic_channel	the compiled-program witness W-PO-AND (a pointer logical-AND): the pristine compiler COMPILES it and the program exits 1; the mutant compiler REJECTS it with the diagnostic "The `&&` operator cannot be applied to a pointer type". The rejection is a genuine semantic difference of the migrated decision, not a build failure.
+other_site_channels_unchanged	YES
+causal_verdict	PASS
+
+--- THE MUTATED SOURCE DIFF ---
+--- a/tools/bootstrap/selfhost-core-operator.HC
++++ b/tools/bootstrap/selfhost-core-operator.HC
+@@ the AbiCoreIsValidPointerOperator rule, the AST_BIN_OP_LOG_AND case
+-  if (binary_operator == 16) { return 1; }   // AST_BIN_OP_LOG_AND
+
+--- THE RESTORATION ---
+restored_source_sha256	e184603ff45f3482d99c5af84a960b15a44673d01924f89aa48f6ba0e5eedbd3
+restored_subject_object_sha256	b9a76fe8a23b38468e78b67ed428226592fa270347674299c1be1be57f4de756
+restored_source_identical_to_pristine	YES
+restored_object_identical_to_pristine	YES
+restored_witnesses_equal_pristine	YES
