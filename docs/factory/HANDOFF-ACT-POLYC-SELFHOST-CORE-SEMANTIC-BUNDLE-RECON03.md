@@ -165,7 +165,10 @@ restoration and the OBSERVED SEMANTICS are both exact.
 
 One contract, frozen and source-hashed:
 `evidence/ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03/c2/selected-bundle-contract.md`
-(SHA-256 `adcbcab6a4d2f41a9ecfc86c247bfce8d289bd38bf0c95655559b83adafb708b`).
+(SHA-256 `77e2a0d5168f02b9f8b550319e60ea32dc6a9f59064a4f54fd2b209ae735f681`,
+published separately in `c2/selected-bundle-contract.sha256`).
+The digest is published separately because a file cannot contain its
+own digest: inserting it would change it.
 
 Its ABI is `ABI-A64-CMP-CC-1`, three exports, a bounded scalar
 projection, and a **NULL-pointer** failure signal — deliberately NOT a

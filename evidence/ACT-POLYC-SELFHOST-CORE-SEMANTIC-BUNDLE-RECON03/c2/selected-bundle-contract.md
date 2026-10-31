@@ -279,7 +279,15 @@ ACT added.
 ## 10. The hashes this contract freezes
 
 ```text
-CONTRACT_SHA256     = adcbcab6a4d2f41a9ecfc86c247bfce8d289bd38bf0c95655559b83adafb708b
+CONTRACT_SHA256     = NOT IN THIS FILE.
+                      A file cannot contain its own digest: inserting
+                      the digest changes the digest. The digest of this
+                      contract is published in the SEPARATE file
+                      c2/selected-bundle-contract.sha256, which is what
+                      the successor binds to. That file is computed
+                      over THIS file's bytes exactly as they stand, and
+                      it is re-derived independently at C3 and again by
+                      the external terminality audit.
 ```
 
 The successor MUST bind to this contract's SHA-256 and to the three
