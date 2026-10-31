@@ -1,0 +1,74 @@
+# THE PRODUCER AND LINK PROVENANCE.
+#
+# Every artifact in the causal chain is bound to its producer, its
+# command and its exit status. The chain is:
+#
+#   src/holyc-lib/tos.HH
+#        -> build/bootstrap-prefix/include/tos.HH   (the header-only prefix)
+#        -> build/host-stage0/hcc                   (the LEGACY C compiler: the SUBJECT's producer)
+#        -> build/core-operator-subject.o           (the PolyC subject object)
+#        -> ./hcc                                   (the production compiler)
+#        -> the compiled witness program
+#
+artifact	producer_command	producer_binary_sha256	artifact_sha256	artifact_size	link_provenance
+build/bootstrap-prefix/include/tos.HH	make bootstrap-prefix (cp src/holyc-lib/tos.HH)	n/a	a5c9aefb34a338e17d5efc07639c7dffbce5df95cd020e1fb6b111982bb83b60	(headers only)	the canonical header the subject is compiled against
+build/host-stage0/hcc	make bootstrap-stage0 (cmake + make -C build/host-stage0 hcc)	n/a (the compiler builds itself from src/*.c)	272eff4e5a5307e5ff118147629c13591f93e4b8d236dfaf62bee56f1be15196	741568	selector OFF; 0 PolyC subject symbols; the ORIGINAL C predicates live
+build/core-operator-subject.o	./build/host-stage0/hcc --install-dir=./build/bootstrap-prefix -c tools/bootstrap/selfhost-core-operator.HC -o build/core-operator-subject.o	272eff4e5a5307e5ff118147629c13591f93e4b8d236dfaf62bee56f1be15196	b9a76fe8a23b38468e78b67ed428226592fa270347674299c1be1be57f4de756	2232	THE SUBJECT. Defines _AbiCoreClassifyCompoundAssign, _AbiCoreIsValidPointerOperator, _AbiCoreIsRangeOperator. The Makefile rule FAILS CLOSED if the object is missing or any of the three symbols is absent.
+./hcc	make production-hcc (cmake -S ./src -B ./build with -DHCC_USE_SELFHOST_CORE_OPERATOR_CLASSIFY=ON and -DCORE_OPERATOR_OBJECT=$(CURDIR)/build/core-operator-subject.o)	n/a (the C sources)	7de8b078ea07a01f002652cd28897babb55f9a23d234f800924b1124aca179c4	(whole compiler)	links build/core-operator-subject.o exactly once; 3 PolyC subject symbols present; src/ast.c's astIsRangeOperator is a thin wrapper whose only call is _AbiCoreIsRangeOperator
+the compiled witness	<hcc> --install-dir=<prefix> <witness>.HC -o <witness>.bin	7de8b078ea07a01f002652cd28897babb55f9a23d234f800924b1124aca179c4	(per witness, recorded in c2/)	(per witness)	produced by the production compiler above; linked against the isolated prefix's libtos
+
+# THE SUBJECT OBJECT IS THE SAME OBJECT FOR ALL THREE SITES.
+#
+# The three core-operator decisions live in ONE compiled PolyC subject,
+# so there is ONE subject object, not three. A change to any one of
+# the three functions changes this ONE object.
+subject_object_count	1
+subject_object_sha256	b9a76fe8a23b38468e78b67ed428226592fa270347674299c1be1be57f4de756
+subject_object_sha256_matches_historical_pristine_record	YES -- the fresh independent build reproduces the historical pristine subject object digest BIT-IDENTICALLY, which corroborates that the build environment is equivalent for the subject
+subject_object_exported_symbols	_AbiCoreClassifyCompoundAssign, _AbiCoreIsValidPointerOperator, _AbiCoreIsRangeOperator
+
+# THE CALLER OBJECTS.
+#
+# The caller object for the RO decision is src/ast.c's object. It
+# carries an UNDEFINED reference to the PolyC subject, which is the
+# relocation that makes the delegation live. The caller object is
+# EXPECTED TO BE BYTE-IDENTICAL between the pristine and the RO mutant
+# builds, because the mutation is in the SUBJECT, not in the caller.
+# That is stated in advance so that a byte-identical caller object is
+# not mistaken for a missing link.
+caller_object_path	build/CMakeFiles/hcc.dir/ast.c.o
+caller_relocation_ro	U _AbiCoreIsRangeOperator (an UNDEFINED symbol: the call leaves this object and goes to the subject)
+caller_relocation_po	U _AbiCoreIsValidPointerOperator
+caller_object_expected_identical_between_pristine_and_mutant	YES (the mutation changes only the subject; the caller's relocations are unchanged)
+caller_object_expected_identical_is_not_evidence_of_a_missing_link	CONFIRMED -- the link is proven by the LINKED BINARY's symbol table and by the delegation disassembly, not by the caller object's digest
+
+# THE EXPECTED FAILURE MODE, DECLARED IN ADVANCE.
+#
+# If the subject object were missing, stale or unchanged, the build
+# would fail closed in two places:
+#   1. the Makefile's CORE_OPERATOR_OBJ rule removes the object, rebuilds
+#      it, and fails if the object is absent or if any of the three
+#      symbols is missing;
+#   2. the CMake configuration declares the subject's producer and
+#      object, so a missing subject without a declared producer is a
+#      hard configure error rather than a silent fallback to the
+#      legacy C rule.
+#
+# A build that "succeeds" but leaves the subject object unchanged is
+# therefore a HALT (HALT_RO_MUTANT_BUILD), not a PASS.
+expected_failure_mode_unchanged_subject	HALT_RO_MUTANT_BUILD (the build's own digests are compared against the pristine's)
+expected_failure_mode_missing_subject	the Makefile rule fails closed (exit 1) and the build stops
+expected_failure_mode_failed_link	the Makefile rule fails closed (exit 1) and the build stops
+no_silent_fallback	CONFIRMED (F6)
+
+# THE PARALLEL-BUILD HAZARD, RECORDED.
+#
+# `make production-hcc -j2` was observed to FAIL on this host with
+# "symbol _BootstrapCalcPadding not found in build/parser-padding-subject.o",
+# because two rules write the same object path concurrently. The
+# SERIAL build succeeds. Every build in this ACT is therefore serial.
+# This is a PRE-EXISTING build-graph hazard, unrelated to this ACT,
+# and is recorded as residue rather than repaired here.
+parallel_build_observed_failure	YES (make production-hcc -j2 -> the subject-symbol check failed on a racing object)
+serial_build_result	SUCCESS
+all_builds_in_this_act	serial

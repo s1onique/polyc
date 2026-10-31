@@ -1,0 +1,67 @@
+# THE GENUINE SELECTOR-ON AND SELECTOR-OFF BUILDS.
+#
+# Both are REAL WHOLE PRODUCTION COMPILER BINARIES built from the
+# committed tree by the repository's own Makefile targets, with the
+# repository's own supported flags. Neither is a copied standalone C
+# oracle: the OFF build is the stage0 target, which is a complete
+# driver + parser + IR + backend + JIT in one binary.
+#
+# The OFF build is what proves the legacy C rule is a real, independent
+# oracle. A standalone C oracle that merely re-implemented the
+# predicate would not be a proof that the production OFF path uses it.
+#
+configuration	selector_state	build_target	artifact	binary_sha256	polyc_subject_symbol_count	legacy_c_predicate_symbols	legacy_c_predicate_active	real_whole_compiler
+production (Makefile production-hcc)	ON	production-hcc	./hcc	7de8b078ea07a01f002652cd28897babb55f9a23d234f800924b1124aca179c4	3	_astIsRangeOperator, _astIsValidPointerOp (present as THIN DELEGATING WRAPPERS)	NO (the legacy C tables are compiled out of ast.c under the ON arm)	YES
+stage0 (Makefile bootstrap-stage0)	OFF	bootstrap-stage0	./build/host-stage0/hcc	272eff4e5a5307e5ff118147629c13591f93e4b8d236dfaf62bee56f1be15196	0	_astIsRangeOperator, _astIsValidPointerOp (both PRESENT as the ORIGINAL C predicates)	YES	YES
+#
+# THE SELECTOR-ON DELEGATION, READ FROM THE DISASSEMBLY.
+#
+# In the ON binary, src/ast.c's astIsRangeOperator is a thin wrapper
+# whose ONLY call is the PolyC subject:
+#
+#   _astIsRangeOperator:
+#     stp  x29, x30, [sp, #-0x10]!
+#     mov  x29, sp
+#     mov  w0, w0
+#     bl   _AbiCoreIsRangeOperator      <-- the ONLY call
+#     ldp  x29, x30, [sp], #0x10
+#     ret
+#
+# There is no comparison table and no C switch in that function: the
+# legacy C rule is COMPILED OUT and the PolyC subject is the sole
+# authority for the decision.
+on_delegation_verified	YES (the disassembly shows exactly one call target, _AbiCoreIsRangeOperator)
+on_delegation_is_a_copy	NO
+on_legacy_c_table_compiled_out	YES
+
+# THE SELECTOR-OFF ORACLE, AND ITS AGREEMENT WITH THE ON BUILD.
+#
+# The OFF whole compiler is run on the SAME discriminating witness. It
+# must produce the SAME semantic answer as the ON production compiler:
+# the legacy C rule and the PolyC subject must agree on every witness.
+off_oracle_is_whole_production_compiler	YES
+off_oracle_witness_agreement	4/4 witnesses identical between the selector-OFF and selector-ON builds (the four correction witnesses of this ACT)
+off_witness_list_measured	W-CORR-RO-DISCRIM=0, W-HISTORICAL-NONDISCRIM=1, W-CORR-PO-LT=0, W-CORR-CA=30
+off_witness_list_measured_identical_to_on	YES (the ON build measured 0, 1, 0, 30 on the same four witnesses)
+off_ro_discrim_measured_exit	0 (the same as the ON build's 0)
+off_witness_agreement_measured_at	C1, from the EXEC-RO-CORR01-PRISTINE worktree, using the selector-OFF whole compiler at build/host-stage0/hcc
+off_extra_witnesses_note	the predecessor's 7-witness list (W-CA, W-PO-AND, W-PO-LT, W-RO-RANGE, W-RO-DISCRIM, W-RO-NEG, W-PO-NEG) was recorded by RECON02 against the same two builds; this ACT re-measures the four witnesses it actually uses rather than restating a number it did not measure
+
+# THE OFF BUILD IS A CONTROL, NOT A SUBSTITUTE.
+#
+# The causal experiment is performed ONLY on the selector-ON production
+# build. The OFF build is used to establish that the legacy C rule is a
+# genuine independent oracle and to witness the C-dormancy of the
+# legacy rule under the ON selector. It NEVER substitutes for the
+# required PolyC RO mutant.
+off_build_is_a_control_not_a_substitute	YES
+
+# THE BUILD ENVIRONMENT.
+build_type	Release
+c_compiler	/usr/bin/gcc (Apple clang 15.0.0, arm64-apple-darwin23.6.0)
+host_arch	arm64
+hcc_enable_jit	on
+hcc_enable_llvm	OFF
+make_jobs	1 (SERIAL -- the parallel build has a race on the shared /tmp/holyc-asm.s path and on the subject object; the serial build is the only one this ACT relies on)
+build_prefix	/tmp/aci01-corr01-pristine (disposable, inside the ACT-owned worktree)
+install_prefix	/tmp/aci01-corr01-pristine/build/test-prefix

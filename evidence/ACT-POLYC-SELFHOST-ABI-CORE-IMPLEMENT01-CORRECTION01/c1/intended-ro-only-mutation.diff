@@ -1,0 +1,48 @@
+--- a/tools/bootstrap/selfhost-core-operator.HC
++++ b/tools/bootstrap/selfhost-core-operator.HC
+@@ the AbiCoreIsRangeOperator rule, the AST_BIN_OP_LT case (line 240)
+-  if (binary_operator == 7)  { return 1; }   // AST_BIN_OP_LT
+
+# THE INTENDED MUTATION, FROZEN AT C1.
+#
+# ONE line is removed, and ONLY from AbiCoreIsRangeOperator. The
+# pointer function's own AST_BIN_OP_LT line (line 206) is a DIFFERENT
+# line with DIFFERENT bytes and is NOT touched: the two functions
+# recognise AST_BIN_OP_LT for DIFFERENT reasons, and the whole point of
+# this correction is that the historical experiment confused them.
+#
+# The mutation is applied BY LINE CONTENT WITHIN A BOUNDED RANGE, not
+# by a global search/replace: the patch must change the byte range
+# 8408..8720 and no other byte range of the file.
+#
+# The resulting recognised RO set is {AST_BIN_OP_GE (10),
+# AST_BIN_OP_GT (9), AST_BIN_OP_LE (8)} -- exactly one named operator
+# membership changes, and every other case is preserved.
+#
+# The syntax remains valid: the function keeps its signature, its
+# brace structure, its `return 0;` default and its closing brace.
+#
+# AFTER_MUTATION_RO_FUNCTION_CONTENT
+# I64 AbiCoreIsRangeOperator(I64 binary_operator)
+# {
+#   if (binary_operator == 10) { return 1; }   // AST_BIN_OP_GE
+#   if (binary_operator == 9)  { return 1; }   // AST_BIN_OP_GT
+#   if (binary_operator == 8)  { return 1; }   // AST_BIN_OP_LE
+#
+#   return 0;
+# }
+#
+# THE PO FUNCTION'S AST_BIN_OP_LT LINE, WHICH MUST REMAIN BYTE-IDENTICAL:
+#   if (binary_operator == 7)  { return 1; }   // AST_BIN_OP_LT
+# (inside AbiCoreIsValidPointerOperator, line 206)
+#
+# THE DETECTOR THAT PROVES THE MUTATION IS RO-ONLY:
+#   1. every changed byte lies inside the RO function's range;
+#   2. exactly one named operator membership changes (AST_BIN_OP_LT);
+#   3. the PO function's byte range is byte-identical to the pristine;
+#   4. the CA function's byte range is byte-identical to the pristine;
+#   5. no other byte of the file changed.
+#
+# The detector is applied to the ACTUAL APPLIED BYTES in the detached
+# worktree, not to this intended diff. See c2/applied-ro-mutation.diff
+# and c2/applied-ro-source-hashes.tsv for the measured result.

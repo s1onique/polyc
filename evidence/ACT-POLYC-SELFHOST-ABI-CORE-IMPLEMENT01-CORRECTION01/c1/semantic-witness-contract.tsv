@@ -1,0 +1,75 @@
+# THE SEMANTIC WITNESS CONTRACT, FROZEN AT C1.
+#
+# Every witness is a REAL COMPILED PROGRAM, not a fixture value. Each
+# row records the witness id, its actual executable source syntax, the
+# result channel, the DISCRIMINATING POWER it is expected to have, and
+# the exit status MEASURED on the freshly built pristine production
+# compiler (EXEC-RO-CORR01-PRISTINE).
+#
+# The pristine column is a MEASUREMENT, not a prediction: it was
+# obtained by compiling and running each witness with the production
+# compiler built from the frozen entry in a disposable detached
+# worktree.
+#
+witness_id	source_syntax	result_channel	expected_under_RO_mutation	pristine_exit_measured	discriminating_power
+W-CORR-RO-DISCRIM	I64 Main() { I64 a = 5; I64 b = 1; I64 c = 3; if (a < b < c) { return 1; } return 0; }	the process exit status	1 (the range lowering no longer applies, so the expression is left-associated and evaluates to TRUE)	0	THE DISCRIMINATOR: this is the only witness whose outcome changes under an RO-site mutation
+W-CORR-PO-LT	I64 Main() { I64 x = 1; I64 y = 2; I64 *p = &x; I64 *q = &y; if (p < q) { return 1; } return 0; }	the process exit status	UNCHANGED (0): the PO function is untouched by an RO-site mutation	0	the PO site's OWN discriminator: it must change under a PO-site mutation and must NOT change under an RO-site mutation
+W-CORR-CA	I64 Main() { I64 x = 10; x += 20; return x; }	the process exit status (the returned value)	UNCHANGED (30): the compound-assignment mapping is untouched	30	the CA site's OWN discriminator: it must change under a CA-site mutation and must NOT change under an RO-site mutation
+W-HISTORICAL-NONDISCRIM	I64 Main() { I64 a = 1; I64 b = 2; I64 c = 3; if (a < b < c) { return 1; } return 0; }	the process exit status	UNCHANGED (1): for this input BOTH readings are TRUE, so the two lowerings agree	1	NOT DISCRIMINATING FOR RO -- this is the historical witness, retained to show explicitly that it cannot prove RO causality
+
+# WHY W-HISTORICAL-NONDISCRIM IS INSUFFICIENT.
+#
+#   range lowering : (1 < 2) && (2 < 3) = TRUE  = 1
+#   left-assoc     : (1 < 2) < 3       = TRUE  = 1
+#
+# Both readings agree, so the exit status is 1 whether or not the range
+# lowering applies. The historical experiment's RO channel could
+# therefore not have been produced by an RO-site mutation at all --
+# which is consistent with the digest-identity finding that it was a
+# PO-site mutation, and is INDEPENDENTLY consistent with it.
+#
+historical_witness_insufficient_for_RO	YES
+
+# THE DISCRIMINATION LOGIC OF W-CORR-RO-DISCRIM.
+#
+#   range lowering : (5 < 1) && (1 < 3) = FALSE && TRUE = FALSE = 0
+#   left-assoc     : (5 < 1) < 3       = FALSE < 3       = TRUE  = 1
+#
+# The two readings disagree, so the exit status separates them.
+#
+discriminating_input	5 < 1 < 3
+discriminating_pristine_reading	0 (range lowering applies)
+discriminating_mutant_reading	1 (left-associated)
+discriminates	YES
+
+# THE PO ANTI-CONTROL'S EXPECTED BEHAVIOUR.
+#
+# Under EXEC-PO-CORR01-ANTI (the pointer-site LT membership removed):
+#   W-CORR-RO-DISCRIM : exit 0 (UNCHANGED -- the RO function is intact)
+#   W-CORR-PO-LT      : the compiler REJECTS the program (a pointer "less-than"
+#                       is no longer a valid pointer operation), so the
+#                       witness is COMPILE_FAILED rather than an exit status
+#   W-CORR-CA         : exit 30 (UNCHANGED)
+#
+po_anti_control_ro_witness_expected_exit	0
+po_anti_control_po_witness_expected	COMPILE_FAILED
+po_anti_control_ca_witness_expected_exit	30
+
+# THE MEASUREMENT PROCEDURE, AS ACTUALLY EXECUTED.
+#
+#   1. compile:  <hcc> --install-dir=<prefix> <witness>.HC -o <witness>.bin
+#                (run from the witness directory, because the compiler
+#                resolves its output relative to the current directory)
+#   2. run:      ./<witness>.bin   -> the process exit status
+#   3. assembly: <hcc> --install-dir=<prefix> -S <witness>.HC -o <witness>.s
+#                -> the independent lowering witness
+#
+# The compiler's own stdout/stderr for each step is retained beside
+# the result, so that a COMPILE_FAILED is distinguishable from a
+# compiler crash.
+#
+compile_command	<hcc> --install-dir=<prefix> <witness>.HC -o <witness>.bin
+run_command	./<witness>.bin
+assembly_command	<hcc> --install-dir=<prefix> -S <witness>.HC -o <witness>.s
+result_channel	process exit status
+compile_failure_encoding	COMPILE_FAILED (the program was never produced)

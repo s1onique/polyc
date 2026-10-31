@@ -1,0 +1,51 @@
+# THE SOURCE OWNERSHIP AND THE ABI, AS FROZEN AT C1.
+#
+# The correction changes ONE function in ONE file. This table records
+# what owns the decision, what the ABI is, and exactly which bytes the
+# mutation is allowed to touch.
+#
+item	value
+owner_file	tools/bootstrap/selfhost-core-operator.HC
+owner_blob_oid	41f6b4c506424479d7301709fd44ca424a4edced
+owner_source_sha256	e184603ff45f3482d99c5af84a960b15a44673d01924f89aa48f6ba0e5eedbd3
+owner_function	AbiCoreIsRangeOperator
+owner_symbol	_AbiCoreIsRangeOperator
+owner_function_byte_range	8408..8720
+owner_function_line_range	235..243
+mutation_allowed_byte_range	8408..8720 (the RO function's range, and NOTHING else)
+mutation_allowed_line_range	235..243
+mutation_line	240
+mutation_line_text	  if (binary_operator == 7)  { return 1; }   // AST_BIN_OP_LT
+bytes_changed_by_the_mutation	exactly one line (47 bytes including the newline): the AST_BIN_OP_LT case line of AbiCoreIsRangeOperator
+operator_memberships_changed	exactly one: AST_BIN_OP_LT is no longer recognised as a range operator
+operator_memberships_preserved	AST_BIN_OP_GE (10), AST_BIN_OP_GT (9), AST_BIN_OP_LE (8), and the default `return 0;`
+functions_that_must_be_byte_identical	AbiCoreIsValidPointerOperator (7150..7852), AbiCoreClassifyCompoundAssign (its own range)
+functions_that_must_be_byte_identical_verified_by	an independent byte comparison of the applied source against the pristine source, per function range (c2/applied-ro-source-hashes.tsv)
+
+# THE ABI (ABI-CORE-OP-1), AS IT STANDS.
+abi_header	src/abi-core-op-1.h
+abi_shape	scalar-only; three separately testable functions; no allocation, no callback, no recovery, no global mutable state
+abi_function_1	AbiCoreClassifyCompoundAssign(I64 token_type, I64 token_value, I64 *out_operator) -- the ONLY function with an out-parameter
+abi_function_2	AbiCoreIsValidPointerOperator(I64 binary_operator) -- pure predicate
+abi_function_3	AbiCoreIsRangeOperator(I64 binary_operator) -- pure predicate; THE MUTATION TARGET
+abi_status_semantics	preserved: AbiCoreIsRangeOperator has NO status channel and NO out-parameter, so removing one of its comparison cases cannot change any status or out-parameter behaviour
+abi_data_domain	preserved: the function still returns 1 for the three preserved operators and 0 for everything else; no return value outside {0,1}
+abi_enum_domain	preserved: AST_BIN_OP_LT keeps its numeric value 7 in src/ast.h; only the SUBJECT's recognition of it as a range operator changes
+abi_caller_contracts	preserved: src/ast.c's astIsRangeOperator still returns int and still delegates to the subject under the ON selector
+abi_callers_outside_the_translation_unit	preserved: src/ir.c:507,509 and src/x86.c:1357,1359 reach the decision through the same delegation
+abi_extension	NO
+new_abi	NO
+abi_status_data_collision	NO
+abi_signature_change	NO
+
+# THE OWNERSHIP QUESTION THAT THE HISTORICAL EXPERIMENT GOT WRONG.
+#
+# The historical M-POLYC-RO record names the RO symbol but its digests
+# belong to the PO function. The correction's mutation detector
+# therefore proves ownership by BYTES, not by the LABEL of the
+# experiment: it reads the applied source, locates each of the three
+# functions' ranges in the applied bytes, and shows that ONLY the RO
+# range differs from the pristine.
+ownership_proof_method	byte-range comparison of the applied source against the pristine source, per function
+ownership_proof_not_by_label	YES
+historical_experiment_ownership_by_label	WRONG (the label said RO; the bytes said PO)

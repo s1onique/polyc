@@ -1,0 +1,53 @@
+# THE ACTUAL SOURCE SITE IDENTITY, BOUND TO THE COMMITTED C0 BLOB.
+#
+# The subject source is read from the C0 commit's Git blob, NOT from a
+# working copy, so the identity is bound to the committed bytes.
+#
+# Blob: 790fe1699ebdf3adce549146e9c2e89ab63c1624:tools/bootstrap/selfhost-core-operator.HC
+# OID:  41f6b4c506424479d7301709fd44ca424a4edced
+# SHA-256: e184603ff45f3482d99c5af84a960b15a44673d01924f89aa48f6ba0e5eedbd3
+#
+item	value
+subject_source_path	tools/bootstrap/selfhost-core-operator.HC
+subject_blob_oid	41f6b4c506424479d7301709fd44ca424a4edced
+subject_source_sha256	e184603ff45f3482d99c5af84a960b15a44673d01924f89aa48f6ba0e5eedbd3
+subject_source_sha256_matches_historical_pristine_record	YES
+subject_source_lines	243
+subject_source_bytes	8721
+
+# THE THREE CORE-OPERATOR FUNCTIONS, EACH BOUND SEPARATELY.
+#
+# The byte ranges are the ranges the PolyC verifier itself derives
+# (FuncRange), and they are DISJOINT. The line ranges are the
+# corresponding 1-based line numbers in the same committed blob.
+#
+function	symbol	byte_range	line_range	disjoint_from_ro	notes
+SITE-COMPOUND-ASSIGN	_AbiCoreClassifyCompoundAssign	(its own range, see the applied-source comparison in c2/)	134..199	YES	the CA site; its TK_ADD_EQU mapping is the historical M-POLYC-CA subject
+SITE-VALID-POINTER-OP	_AbiCoreIsValidPointerOperator	7150..7852	202..216	YES	the PO site; the historical M-POLYC-RO ACTUALLY mutated this one
+SITE-RANGE-OPERATOR	_AbiCoreIsRangeOperator	8408..8720	235..243	(the reference)	the RO site; the correction's own experiment targets this one
+
+# THE DISJOINTNESS PROOF.
+ro_start	8408
+ro_end	8720
+po_start	7150
+po_end	7852
+ranges_disjoint	YES (po_end 7852 <= ro_start 8408; the gap is 556 bytes)
+both_reference_AST_BIN_OP_LT	YES (the RO function recognises it as a RANGE operator; the PO function recognises it as a valid POINTER operator -- this is exactly why the historical misattribution was possible and why site isolation must be proven by EXECUTION, not by inspection)
+
+# THE MUTATION TARGET, EXACTLY.
+target_function	AbiCoreIsRangeOperator
+target_line	240
+target_line_text	  if (binary_operator == 7)  { return 1; }   // AST_BIN_OP_LT
+target_case	AST_BIN_OP_LT (numeric value 7)
+mutation_shape	the single `if (binary_operator == 7) { return 1; }   // AST_BIN_OP_LT` line is REMOVED from AbiCoreIsRangeOperator; every other case, the function's signature, its ABI and its callers are untouched
+global_search_replace_used	NO
+pointer_function_touched	NO
+compound_function_touched	NO
+
+# THE PRODUCTION CALLER, READ FROM THE COMMITTED C SOURCE.
+caller_source	src/ast.c
+caller_function	astIsRangeOperator
+caller_selector_arm	#ifdef HCC_USE_SELFHOST_CORE_OPERATOR_CLASSIFY
+caller_selector_on_line	return (int)AbiCoreIsRangeOperator((s64)op);
+caller_selector_off_body	the original C switch over AST_BIN_OP_GE / GT / LE / LT, which is COMPILED OUT when the selector is ON
+production_callers_outside_the_translation_unit	src/ir.c:507,509 and src/x86.c:1357,1359 (per the subject's own documentation)

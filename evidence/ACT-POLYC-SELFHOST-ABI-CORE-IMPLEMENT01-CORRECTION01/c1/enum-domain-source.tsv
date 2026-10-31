@@ -1,0 +1,64 @@
+# THE ENUM DOMAIN, DERIVED FROM THE LIVE src/ast.h AT THE FROZEN ENTRY.
+#
+# The values are read from the COMMITTED source, including the IMPLICIT
+# first enumerator (AST_BIN_OP_MUL == 0). The subject's own literal
+# values are cross-checked against these, so a silent divergence
+# between the C enum and the PolyC subject would be visible.
+#
+# The derivation is by an INDEPENDENT POSIX route over the committed
+# bytes (the enumerator list in the `typedef enum AstBinOp` block),
+# not by trusting the subject's comments.
+#
+enum_name	numeric_value	source_comment	used_by_AbiCoreIsRangeOperator	used_by_AbiCoreIsValidPointerOperator
+AST_BIN_OP_MUL	0	a * b	NO	NO
+AST_BIN_OP_DIV	1	a / b	NO	NO
+AST_BIN_OP_MOD	2	a % b	NO	NO
+AST_BIN_OP_ADD	3	a + b	NO	YES
+AST_BIN_OP_SUB	4	a - b	NO	YES
+AST_BIN_OP_SHL	5	a << b	NO	NO
+AST_BIN_OP_SHR	6	a >> b	NO	NO
+AST_BIN_OP_LT	7	a <  b	YES	YES
+AST_BIN_OP_LE	8	a <= b	YES	YES
+AST_BIN_OP_GT	9	a >  b	YES	YES
+AST_BIN_OP_GE	10	a >= b	YES	YES
+AST_BIN_OP_EQ	11	a == b	NO	YES
+AST_BIN_OP_NE	12	a != b	NO	YES
+AST_BIN_OP_BIT_AND	13	a &  b	NO	NO
+AST_BIN_OP_BIT_XOR	14	a ^  b	NO	NO
+AST_BIN_OP_BIT_OR	15	a |  b	NO	NO
+AST_BIN_OP_LOG_AND	16	a && b	NO	YES
+AST_BIN_OP_LOG_OR	17	a || b	NO	YES
+AST_BIN_OP_ASSIGN	18	a  =  b	NO	NO
+AST_BIN_OP_ADD_ASSIGN	19	a += b	NO	NO
+AST_BIN_OP_SUB_ASSIGN	20	a -= b	NO	NO
+AST_BIN_OP_MUL_ASSIGN	21	a *= b	NO	NO
+AST_BIN_OP_DIV_ASSIGN	22	a /= b	NO	NO
+AST_BIN_OP_MOD_ASSIGN	23	a %= b	NO	NO
+AST_BIN_OP_SHL_ASSIGN	24	a <<= b	NO	NO
+AST_BIN_OP_SHR_ASSIGN	25	a >>= b	NO	NO
+AST_BIN_OP_AND_ASSIGN	26	a &= b	NO	NO
+AST_BIN_OP_XOR_ASSIGN	27	a ^= b	NO	NO
+AST_BIN_OP_OR_ASSIGN	28	a |= b	NO	NO
+
+# THE MUTATED VALUE.
+AST_BIN_OP_LT_numeric_value	7
+AST_BIN_OP_LT_subject_literal_in_RO_function	7
+AST_BIN_OP_LT_subject_literal_in_PO_function	7
+AST_BIN_OP_LT_source_and_subject_agree	YES
+AST_BIN_OP_MUL_numeric_value	0 (IMPLICIT -- the first enumerator, with no explicit initialiser)
+AST_BIN_OP_MUL_status_data_collision	NO -- AST_BIN_OP_MUL is a binary-operator discriminant, not an ABI status or out-parameter value; the ABI-CORE-OP-1 status domain is a separate scalar, so removing one RO case cannot collide with it.
+
+# THE ABI-CORE-OP-1 CONTRACT, AS IT STANDS IN THE COMMITTED SOURCE.
+abi_header	src/abi-core-op-1.h
+abi_status_out_parameter_semantics	preserved: the correction removes one `if` line from a pure predicate function that has NO out-parameter and NO status channel; the CA function's out-parameter semantics (the TK_ADD_EQU mapping) are untouched
+abi_functions	AbiCoreClassifyCompoundAssign, AbiCoreIsValidPointerOperator, AbiCoreIsRangeOperator
+abi_callers	src/prslib.c (CA), src/ast.c (PO and RO)
+abi_signature_change	NO
+abi_status_domain_change	NO
+abi_data_domain_change	NO
+
+# THE ENUM SOURCE IDENTITY.
+enum_source_path	src/ast.h
+enum_source_sha256_at_entry	(see the F14 freeze in c0/predecessor-f14-freeze.tsv for src/ast.h's recorded digest)
+enum_derivation_route	an independent POSIX route over the committed `typedef enum AstBinOp { ... }` block, counting the enumerators from the first
+enum_domain_size	29
