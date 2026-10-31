@@ -8440,3 +8440,35 @@ SELFHOST_M2_ACHIEVED = NO
 
 See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-ABI-FOUNDATION-PRODUCTION-DELEGATE01.md`
 and `evidence/ACT-POLYC-SELFHOST-ABI-FOUNDATION-PRODUCTION-DELEGATE01/`.
+
+#### ACT-POLYC-SELFHOST-CORE-SEMANTIC-CONSUMER-RECON01
+
+The core semantic consumer reconnaissance selected one source-derived bundle
+for a future, separately authorized implementation:
+`BUNDLE-OPERATOR-CORE-01`, comprising the compound-assignment classifier,
+the valid-pointer-operator classifier, and the range-operator classifier.
+The deterministic R0-R6 rank selected it without a preselected source ID.
+A rebuilt real production compiler proved the compound-assignment site is
+causally load-bearing: changing only its `TK_ADD_EQU` mapping changed a
+compiled program's result from 30 to 246, and byte-exact source/object/witness
+restoration returned it to 30.
+
+The proposed `ABI-CORE-OP-1` is scalar-only and exposes no raw AST or
+container layout. No production source or authority changed. The production
+graph remains 52 nodes, 134 mandatory edges, one proven cut (`E-TYP-0136`),
+34 SCCs, and largest SCC 19. `E-MUT-0137` is recorded as an unsupported
+historical witness, with its actual cctrl/parser consumption kept as an
+alternative scenario rather than a new cut.
+
+```text
+SELECTED_BUNDLE = BUNDLE-OPERATOR-CORE-01
+PRODUCTION_SEMANTIC_DELTA = 0
+NEW_PRODUCTION_AUTHORITIES = 0
+NEW_PRODUCTION_GRAPH_CUTS = 0
+NEXT_ACT_CLASS = ABI_CORE_IMPLEMENT
+SLICE10_AUTHORIZED = NO
+SELFHOST_M2_ACHIEVED = NO
+```
+
+See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-CORE-SEMANTIC-CONSUMER-RECON01.md`
+and `evidence/ACT-POLYC-SELFHOST-CORE-SEMANTIC-CONSUMER-RECON01/`.
