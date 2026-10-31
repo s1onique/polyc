@@ -1,0 +1,101 @@
+# THE CAUSAL RESULT: THE SAME WITNESS SET, ACROSS THE FOUR EXECUTIONS.
+#
+# Every cell below is a MEASURED process exit status of a REAL COMPILED
+# PROGRAM, produced by a REAL freshly built selector-ON production
+# compiler in its own disposable detached worktree.
+#
+# The witness source text is IDENTICAL in every execution: the witness
+# runner writes the same four programs in every case. Only the compiler
+# differs.
+#
+witness_id	pristine_exit	ro_mutant_exit	restored_exit	po_anti_exit	changed_by_the_RO_mutation	discriminating_for_RO
+W-CORR-RO-DISCRIM	0	1	0	0	YES (0 -> 1)	YES -- THIS IS THE DISCRIMINATOR
+W-CORR-PO-LT	0	0	0	COMPILE_FAILED	NO	NO (it is the PO site's discriminator)
+W-CORR-CA	30	30	30	30	NO	NO (it is the CA site's discriminator)
+W-HISTORICAL-NONDISCRIM	1	1	1	1	NO	NO -- the historical witness cannot distinguish the two lowerings
+
+# THE REQUIRED MEASURED DISCRIMINATOR.
+witness_id	W-CORR-RO-DISCRIM
+pristine_exit	0
+ro_mutant_exit	1
+restored_exit	0
+required_transition	0 -> 1
+observed_transition	0 -> 1
+transition_observed	YES
+po_anti_exit	0 (the RO site is INTACT under the PO anti-control: the discriminator is SITE-SPECIFIC)
+ca_witness_unchanged	YES (30 -> 30 -> 30)
+po_witness_unchanged_under_the_RO_mutation	YES (0 -> 0 -> 0)
+
+# THE ASSEMBLY WITNESS, INDEPENDENT OF THE EXIT STATUS.
+#
+# The emitted assembly of the DISCRIMINATING witness is compared
+# structurally. The pristine emission contains the range-lowering
+# SHORT-CIRCUIT block; the mutant emission does not.
+#
+# The pristine emission contains:
+#     cmp  x0, #0
+#     b.eq .LIRBRP0_E0        <-- the short-circuit branch
+#     ...
+#     .LIRBRP0_E0:
+#     mov  x0, xzr           <-- the short-circuit FALSE value
+#     ...
+#     cmp  x0, x1
+#     cset x0, lt            <-- the relational comparison
+#     ...
+#     cmp  x0, #0
+#     b.eq .LIRBB0_6
+#
+# The mutant emission contains NONE of that sequence: the whole
+# range-lowering block is gone and the expression is evaluated
+# left-associated.
+#
+metric	pristine	ro_mutant	restored	changed
+asm_sha256_w_ro_discrim	fb191c40ce4dc90ba293b60a85bcf86e8664928f241ff3431175aa447a3841d2	effd6f5d884db16a31b22652928f59c2ad44f41e6697d4d75d55ef38c6bd9fe4	30cb23baa77c47ea7dc72146e0ecf53d08a19fac916bc91e5d0878e0052ef973	YES
+asm_bytes	904	574	904	YES
+asm_lines	50	31	50	YES
+asm_branch_instructions	5	2	5	YES
+asm_compare_instructions	3	1	3	YES
+asm_function_labels	7	4	7	YES
+short_circuit_block_present	YES	NO	YES	YES
+
+# WHY THE RESTORED ASSEMBLY'S SHA DIFFERS FROM THE PRISTINE ONE.
+#
+# The restored and the pristine COMPILERS are different binaries: the
+# compiler embeds its own git hash in the emitted assembly's `.ident`
+# line, and the pristine worktree was built at commit 790fe169 while
+# the restored worktree was built at 9c3ec108. The SEMANTIC content is
+# identical -- every structural metric matches exactly -- and the
+# witness's exit status matches exactly. The SHA difference is fully
+# EXPLAINED by the embedded commit hash.
+#
+# This is an ENVIRONMENT-EXPLAINED difference, and it is NOT labelled
+# byte-identical.
+restored_vs_pristine_assembly_sha_differs	YES
+restored_vs_pristine_assembly_difference_cause	the embedded git hash in the `.ident` line (790fe169 vs 9c3ec108)
+restored_vs_pristine_assembly_structural_metrics_identical	YES (bytes, lines, branches, compares and labels all match)
+restored_vs_pristine_witness_exit_identical	YES (0)
+restored_vs_pristine_assembly_label	ENVIRONMENT_EXPLAINED (not byte-identical)
+
+# THE SAME EXPLANATION FOR THE RESTORED PRODUCTION BINARY.
+#
+# The production compiler embeds its own git hash into its bytes (the
+# subject's own documentation says so), so two builds of the SAME
+# source at DIFFERENT commits are different binaries. The SUBJECT
+# OBJECT, which does not embed a commit hash, IS byte-identical.
+#
+restored_subject_object_sha256	b9a76fe8a23b38468e78b67ed428226592fa270347674299c1be1be57f4de756
+pristine_subject_object_sha256	b9a76fe8a23b38468e78b67ed428226592fa270347674299c1be1be57f4de756
+restored_subject_object_byte_identical	YES
+restored_production_binary_sha256	bca62dbb532645dac2aeace4cc2f20bffc08c5c30eeaa79ed7047cd7fda27677
+pristine_production_binary_sha256	7de8b078ea07a01f002652cd28897babb55f9a23d234f800924b1124aca179c4
+restored_production_binary_byte_identical	NO
+restored_production_binary_difference_cause	the embedded git hash (790fe169 vs 9c3ec108) and the absolute build path, both recorded in the compiler's own bytes
+restored_production_binary_label	ENVIRONMENT_EXPLAINED (not byte-identical)
+
+# THE SITE ISOLATION, IN ONE LINE.
+#
+# The RO mutation changes the RO witness and NOTHING ELSE. The PO
+# mutation changes the PO witness and NOTHING ELSE. Each site has its
+# OWN physical experiment with its OWN execution id, its OWN source
+# digest and its OWN object digest.
+site_isolation_proved	YES

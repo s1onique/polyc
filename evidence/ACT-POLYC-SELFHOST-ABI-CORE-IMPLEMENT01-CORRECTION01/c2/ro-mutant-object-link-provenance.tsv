@@ -1,0 +1,78 @@
+# EXEC-RO-CORR01-MUTANT: THE MUTANT OBJECT AND THE LINK PROVENANCE.
+#
+item	value
+execution_id	EXEC-RO-CORR01-MUTANT
+worktree	/tmp/aci01-corr01-ro-mutant
+worktree_commit	9c3ec1080616b44bfd5240c42f7306b86c1e4f91
+build_command	make production-hcc   (SERIAL)
+build_exit_status	0
+install_command	make test-prefix-install
+install_exit_status	0
+compile_succeeded	YES
+
+# THE APPLIED SOURCE.
+source_sha256	5bfe5b6048374a9e12c48aa13b3e66beb764d7b14b97813c761c486926161da9
+source_bytes	8659
+source_differs_from_pristine	YES
+source_diff_sha256	(the SHA-256 of the recorded git diff --binary; see applied-ro-mutation.diff)
+
+# THE SUBJECT OBJECT: IT MUST BE DIFFERENT.
+subject_object_path	build/core-operator-subject.o
+subject_object_sha256	c73e734dc6b735bd738fd2e3f5735f10b577d5048730d586d2892b153ca77eff
+subject_object_bytes	(measured at the mutant build)
+pristine_subject_object_sha256	b9a76fe8a23b38468e78b67ed428226592fa270347674299c1be1be57f4de756
+subject_object_differs_from_pristine	YES
+subject_object_is_stale_or_unchanged	NO
+subject_object_exported_symbols	_AbiCoreClassifyCompoundAssign, _AbiCoreIsValidPointerOperator, _AbiCoreIsRangeOperator (all three still exported: the mutation removed a comparison, not a function)
+
+# THE LINKED PRODUCTION EXECUTABLE: IT MUST BE DIFFERENT.
+production_compiler_path	./hcc
+production_compiler_sha256	00f0b4f25ac9590a039e5d69b72c4a05314d0b8d95b2aece6687a132e4a3123b
+pristine_production_compiler_sha256	7de8b078ea07a01f002652cd28897babb55f9a23d234f800924b1124aca179c4
+production_compiler_differs_from_pristine	YES
+production_compiler_subject_symbols	_AbiCoreClassifyCompoundAssign, _AbiCoreIsValidPointerOperator, _AbiCoreIsRangeOperator (all three present in the LINKED binary)
+
+# THE CALLER OBJECT: IT IS EXPECTED TO BE BYTE-IDENTICAL, AND THAT IS
+# NOT A MISSING LINK.
+#
+# The mutation is in the SUBJECT. The caller's relocations are
+# unchanged, so the caller's object is expected to be byte-identical
+# between the pristine and the mutant builds. The link is proven by
+# the LINKED BINARY and by the delegation disassembly, NOT by the
+# caller object's digest.
+caller_object_path	build/CMakeFiles/hcc.dir/ast.c.o
+caller_relocation_to_the_subject	U _AbiCoreIsRangeOperator (the relocation is still live)
+caller_object_expected_identical	YES
+caller_object_identity_is_not_the_link_proof	CONFIRMED
+link_is_live	YES (the linked binary exports _AbiCoreIsRangeOperator and the caller's relocation resolves to it)
+
+# THE MUTANT'S STAGE0 PRODUCER.
+subject_producer_sha256	78ef89978ad5d7a62fe405f46dcd54abd295e4e8931ff985e4bff2d531008b31
+subject_producer_differs_from_pristine	YES (the absolute build path is embedded in the binary; the producer's SOURCE is identical)
+subject_producer_difference_cause	the absolute worktree path /tmp/aci01-corr01-ro-mutant vs /tmp/aci01-corr01-pristine, embedded in the compiler's bytes
+
+# THE SEMANTIC DISCRIMINATOR.
+discriminating_witness	W-CORR-RO-DISCRIM
+pristine_exit	0
+mutant_exit	1
+required_transition	0 -> 1
+observed_transition	0 -> 1
+transition_observed	YES
+short_circuit_block_lost_in_the_emitted_assembly	YES (the pristine emission has the .LIRBRP0_E0 short-circuit branch, the `cset x0, lt` comparison and a second `cmp x0, #0` / `b.eq`; the mutant emission has NONE of them: 5 branches / 3 compares / 7 labels became 2 branches / 1 compare / 4 labels)
+assembly_change_is_independent_of_the_exit_status	YES (the assembly is a separate artifact of the same compiler, compared structurally, without relying on a fixed label or a copied string)
+
+# THE CONTROLS UNDER THE RO MUTATION.
+po_witness_exit_under_the_ro_mutation	0 (UNCHANGED from the pristine 0)
+ca_witness_exit_under_the_ro_mutation	30 (UNCHANGED from the pristine 30)
+historical_nondiscrim_witness_exit_under_the_ro_mutation	1 (UNCHANGED from the pristine 1)
+only_the_ro_site_changed	YES
+
+# THE CORROBORATION WITH THE PREDECESSOR'S OWN REFERENCE TABLE.
+#
+# The mutation's subject object digest is BIT-IDENTICAL to the digest
+# the ACT's own reference table records for RECON02's independent
+# exploratory RO mutant object. That is a cross-check, not the proof:
+# the proof is the measured 0 -> 1 transition and the assembly change
+# in THIS execution.
+object_digest_matches_recon02_exploratory_ro_mutant_object	YES (c73e734dc6b735bd738fd2e3f5735f10b577d5048730d586d2892b153ca77eff)
+object_digest_is_a_hardcoded_expected_value	NO (it was measured from THIS build)

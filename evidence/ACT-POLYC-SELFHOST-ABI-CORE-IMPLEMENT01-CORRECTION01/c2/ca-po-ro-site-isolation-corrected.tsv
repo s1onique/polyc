@@ -1,0 +1,57 @@
+# THE CORRECTED SITE-ISOLATION LEDGER.
+#
+# This is a NEW, correction-owned ledger. It does NOT replace, edit or
+# correct the historical
+# evidence/ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01/c3/site-isolation.tsv,
+# which is FALSE AS WRITTEN and is left byte-for-byte unchanged.
+#
+# Each site is bound to its OWN physical experiment, with its OWN
+# execution id, its OWN source digest, its OWN object digest and its
+# OWN witness. No physical experiment is counted for more than one
+# site, and no two sites share an execution id.
+#
+# THE HISTORICAL LEDGER'S DEFECT, stated explicitly:
+#   The historical c3/site-isolation.tsv records, for M-POLYC-RO:
+#     observed_channel_change = "witness-po-pointer-less-than: 0 ->
+#       COMPILE_FAILED (the compiler now rejects a pointer `<`
+#       comparison)"
+#   A POINTER witness cannot be changed by a RANGE-site mutation. The
+#   ledger's own text then claims "M-POLYC-RO changes ONLY the
+#   range-operator classification ... the pointer-compare witnesses
+#   are unchanged", which contradicts its own channel column. The
+#   historical ledger is therefore internally inconsistent and false
+#   as written.
+#
+site_id	polyc_symbol	execution_id	source_sha256	object_sha256	witness_id	pristine_exit	mutant_exit	restored_exit	other_site_CA	other_site_PO	other_site_RO	isolation_verdict
+SITE-COMPOUND-ASSIGN	_AbiCoreClassifyCompoundAssign	M-POLYC-CA (historical)	cea1ca063884dd5ebf4019110cd36816ae4950cc8fef9ceb2621a2f126cfdae1	035ce7e1eadac216709147c474254df41208428f5b3989d270a3e95176c39155	W-CA	30	246	30	unchanged (30)	unchanged (1)	unchanged (0)	ISOLATED (historical; the source digest is reproduced bit-identically at C0)
+SITE-VALID-POINTER-OP	_AbiCoreIsValidPointerOperator	M-POLYC-PO (historical)	f61d7ea0b50aabedc6db9377909f16c16dfac9dac33767477a73be563278a4b4	af566dfb6f184898942ae5138c4f2662b259a33d259ce0807612d1544854b58a	W-PO-AND	1	COMPILE_FAILED	1	unchanged (30)	CHANGED (the target site)	unchanged (0)	ISOLATED (historical; the source digest is reproduced bit-identically at C0)
+SITE-VALID-POINTER-OP	_AbiCoreIsValidPointerOperator	EXEC-PO-CORR01-ANTI (correction-owned adverse control)	f0599f79900cf406415283a9742c2b3d794c03f107e7a959ce021db91b916615	2d6a1394dffa8b513af092971338692e113cbf893c4d52a0b554afda9d58c1f8	W-CORR-PO-LT	0	COMPILE_FAILED	0	unchanged (30)	CHANGED (the target site)	unchanged (0)	ISOLATED (this correction's distinct adverse control; it does NOT count as a second RO experiment)
+SITE-RANGE-OPERATOR	_AbiCoreIsRangeOperator	EXEC-RO-CORR01-MUTANT (correction-owned causal experiment)	5bfe5b6048374a9e12c48aa13b3e66beb764d7b14b97813c761c486926161da9	c73e734dc6b735bd738fd2e3f5735f10b577d5048730d586d2892b153ca77eff	W-CORR-RO-DISCRIM	0	1	0	unchanged (30)	unchanged (0)	CHANGED (the target site)	ISOLATED (this correction's OWN physical experiment for AUTH-13)
+
+# THE THREE POINTS THIS LEDGER ESTABLISHES.
+#
+#   1. AUTH-13 / SITE-RANGE-OPERATOR NOW HAS ITS OWN EXECUTED PHYSICAL
+#      EXPERIMENT: EXEC-RO-CORR01-MUTANT, with its own source digest
+#      5bfe5b60..., its own object digest c73e734d..., its own
+#      discriminating witness W-CORR-RO-DISCRIM, and the measured
+#      transition 0 -> 1 -> 0.
+#
+#   2. NO PHYSICAL EXPERIMENT IS COUNTED FOR TWO SITES. The four
+#      execution ids are distinct, the three source digests are
+#      distinct, and the three object digests are distinct.
+#
+#   3. THE HISTORICAL LEDGER REMAINS FALSE AS WRITTEN AND UNCHANGED.
+#      It is not edited, not deleted and not annotated; this ledger
+#      states the defect instead.
+#
+historical_ledger_path	evidence/ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01/c3/site-isolation.tsv
+historical_ledger_state	FALSE AS WRITTEN, UNCHANGED
+historical_ledger_edited	NO
+historical_ledger_deleted	NO
+historical_ledger_annotated	NO
+distinct_execution_ids	4 (M-POLYC-CA, M-POLYC-PO, EXEC-PO-CORR01-ANTI, EXEC-RO-CORR01-MUTANT)
+distinct_source_digests	4
+distinct_object_digests	4
+one_experiment_counted_for_two_sites	NO
+historical_m_poly_ro_reused_as_a_substitute	NO
+recon02_halt_transformed_into_a_pass	NO

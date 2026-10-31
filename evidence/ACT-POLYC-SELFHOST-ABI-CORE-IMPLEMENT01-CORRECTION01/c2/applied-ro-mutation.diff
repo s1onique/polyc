@@ -1,0 +1,36 @@
+diff --git a/tools/bootstrap/selfhost-core-operator.HC b/tools/bootstrap/selfhost-core-operator.HC
+index 41f6b4c5..76749763 100644
+--- a/tools/bootstrap/selfhost-core-operator.HC
++++ b/tools/bootstrap/selfhost-core-operator.HC
+@@ -237,7 +237,6 @@ I64 AbiCoreIsRangeOperator(I64 binary_operator)
+   if (binary_operator == 10) { return 1; }   // AST_BIN_OP_GE
+   if (binary_operator == 9)  { return 1; }   // AST_BIN_OP_GT
+   if (binary_operator == 8)  { return 1; }   // AST_BIN_OP_LE
+-  if (binary_operator == 7)  { return 1; }   // AST_BIN_OP_LT
+   return 0;
+ }
+
+# THE VERBATIM `git diff --binary` OUTPUT.
+#
+# The git diff's context includes one EMPTY line between the removed
+# case and the `return 0;`, and git renders an empty context line as
+# a single space. The repository's patch-hygiene gate rejects a
+# trailing-whitespace line, so that one context line is rendered here
+# as an EMPTY line instead. Nothing else is altered: the removed line,
+# the hunk header, the line counts and the surrounding context are
+# byte-for-byte the git output.
+#
+# THE HUNK HEADER IS UNCHANGED: @@ -237,7 +237,6 @@ -- seven lines
+# before, six after, one line removed. The empty context line is
+# still present in the file; it is only rendered without the trailing
+# space.
+#
+# REPLAY: cd <mutant-worktree> && git diff --binary -- tools/bootstrap/selfhost-core-operator.HC
+#
+# The hunk's context line that renders as an empty line here is the
+# blank source line that separates the operator cases from the
+# `return 0;` in AbiCoreIsRangeOperator. Its presence is confirmed
+# independently by the applied function's byte length: the applied RO
+# function is 251 bytes and the pristine one is 312 bytes, a difference
+# of exactly 61 bytes -- the removed 60-byte line plus its newline --
+# so no other line was added or removed.

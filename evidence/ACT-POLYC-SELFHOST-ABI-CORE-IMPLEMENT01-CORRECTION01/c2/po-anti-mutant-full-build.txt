@@ -1,0 +1,44 @@
+# EXEC-PO-CORR01-ANTI: THE FULL REAL PRODUCTION BUILD OF THE ADVERSE
+# CONTROL.
+#
+# A SECOND, DISTINCT physical build. The pointer site's AST_BIN_OP_LT
+# case is removed and the ENTIRE production compiler is rebuilt with
+# the selector ON, with the SAME recipe and the SAME effective flags.
+#
+command	make production-hcc
+jobs	1 (SERIAL)
+worktree	/tmp/aci01-corr01-po-ant
+worktree_commit	9c3ec1080616b44bfd5240c42f7306b86c1e4f91
+build_exit_status	0
+production_compiler_produced	YES (./hcc)
+install_command	make test-prefix-install
+install_exit_status	0
+prefix_populated	YES
+
+# THE APPLIED SOURCE AND THE OBJECT.
+source_sha256	f0599f79900cf406415283a9742c2b3d794c03f107e7a959ce021db91b916615
+subject_object_sha256	2d6a1394dffa8b513af092971338692e113cbf893c4d52a0b554afda9d58c1f8
+production_compiler_sha256	634c9482df3866fd0d964b2a4b4b53e9730e7a66f9151eee76e16504379ef4a4
+subject_symbol_gate_passed	YES
+subject_object_changed_from_pristine	YES
+production_compiler_changed_from_pristine	YES
+
+# THE DISTINCTNESS FROM THE OTHER THREE EXECUTIONS.
+distinct_from_pristine_source	YES
+distinct_from_pristine_object	YES
+distinct_from_pristine_production_compiler	YES
+distinct_from_the_ro_mutant_source	YES
+distinct_from_the_ro_mutant_object	YES
+distinct_from_the_ro_mutant_production_compiler	YES
+distinct_execution_id	YES
+
+# THE RO DELEGATION IS STILL LIVE IN THE ANTI-CONTROL, because the
+# anti-control mutates the POINTER function, not the range function.
+production_compiler_exports_the_ro_symbol	YES
+caller_object_relocation	U _AbiCoreIsRangeOperator
+legacy_c_rule_compiled_out_under_ON	YES
+
+# THE RAW BUILD LOG.
+raw_build_log_location	/tmp/aci01-corr01-poant-build.log (outside the repository)
+replay_command	cd /tmp/aci01-corr01-po-ant && make production-hcc
+retention_limitation	/tmp may be reclaimed; the digests, the exit status and the witness results are the committed evidence

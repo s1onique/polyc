@@ -1,0 +1,59 @@
+# THE APPLIED RO MUTATION: SOURCE HASHES AND THE PER-FUNCTION PROOF.
+#
+# The mutation was applied in the disposable detached worktree
+# /tmp/aci01-corr01-ro-mutant at the frozen commit, by a RANGE-CHECKED
+# edit that removes exactly ONE line and only inside the RO function's
+# byte range. The proof below reads the APPLIED BYTES, not the
+# intended patch.
+#
+item	value
+execution_id	EXEC-RO-CORR01-MUTANT
+worktree	/tmp/aci01-corr01-ro-mutant
+worktree_commit	9c3ec1080616b44bfd5240c42f7306b86c1e4f91
+mutation_target_function	AbiCoreIsRangeOperator
+mutation_target_line_number	240
+mutation_target_byte_range	8644..8705
+mutation_target_content	  if (binary_operator == 7)  { return 1; }   // AST_BIN_OP_LT
+mutation_mechanism	a range-checked single-line removal: the line is located by its byte offset WITHIN the RO range, and the file's other AST_BIN_OP_LT lines (a documentation comment, the PO function's own case line, and a C transcription comment) are outside the range and untouched
+global_search_replace_used	NO
+lines_removed	1
+bytes_removed	61 (the line plus its newline)
+
+# THE SOURCE DIGESTS.
+pristine_source_sha256	e184603ff45f3482d99c5af84a960b15a44673d01924f89aa48f6ba0e5eedbd3
+pristine_source_bytes	8721
+applied_source_sha256	5bfe5b6048374a9e12c48aa13b3e66beb764d7b14b97813c761c486926161da9
+applied_source_bytes	8659
+applied_source_differs_from_pristine	YES
+applied_source_sha256_matches_the_independently_recomputed_RO_mutation_digest	YES (the C0 verifier computed 5bfe5b6048374a9e12c48aa13b3e66beb764d7b14b97813c761c486926161da9 for the pristine source with the RO function's AST_BIN_OP_LT case removed -- before the mutation was applied)
+applied_source_sha256_matches_the_historical_M_POLYC_RO_digest	NO (and it must not: the historical digest is f0599f79900cf406415283a9742c2b3d794c03f107e7a959ce021db91b916615, which is the PO mutation)
+
+# THE PER-FUNCTION PROOF, READ FROM THE APPLIED BYTES.
+#
+# Each function's byte range is extracted from the applied source and
+# from the pristine source independently, and the two digests are
+# compared.
+#
+function	byte_range	pristine_function_sha256	applied_function_sha256	identical	expected
+AbiCoreIsValidPointerOperator	7150..7852 (pristine)	6eaffb876466fa8e1453b612c8bd67e954cda694af639efad1373daf4c430be8	6eaffb876466fa8e1453b612c8bd67e954cda694af639efad1373daf4c430be8	YES	IDENTICAL (the pointer function is untouched)
+AbiCoreClassifyCompoundAssign	its own range	412c52ec03d8159c3fa02f244406cbdfe38437223d39a515c6400e9ca0b178ee	412c52ec03d8159c3fa02f244406cbdfe38437223d39a515c6400e9ca0b178ee	YES	IDENTICAL (the compound-assignment function is untouched)
+AbiCoreIsRangeOperator	8408..8720 (pristine; 312 bytes)	b4fecc89750e8267971b86e43bed48c3c4fa979b99e6e4cca0a14a13c01daaa0	33d606a9f21dfc1f3544a4f6eb3f67cbfc41c00a6c8454d422027dc348fe41d1	NO	CHANGED (exactly one membership removed; the applied RO function is 251 bytes, i.e. 61 bytes shorter -- exactly the removed line and its newline)
+
+# THE OPERATOR MEMBERSHIP DELTA, READ FROM THE APPLIED BYTES.
+operator_memberships_before	AST_BIN_OP_GE (10), AST_BIN_OP_GT (9), AST_BIN_OP_LE (8), AST_BIN_OP_LT (7)
+operator_memberships_after	AST_BIN_OP_GE (10), AST_BIN_OP_GT (9), AST_BIN_OP_LE (8)
+operator_memberships_removed	exactly one: AST_BIN_OP_LT
+operator_memberships_added	none
+exactly_one_named_membership_changed	YES
+default_return_preserved	YES (the function still ends with `return 0;`)
+syntax_valid	YES (the function keeps its signature, its brace structure and its closing brace; the FULL production compiler compiled it successfully)
+abi_preserved	YES (no signature change, no status channel, no out-parameter, the return domain is still {0,1})
+
+# THE PROOF THAT NO OTHER BYTE OF THE FILE CHANGED.
+#
+# The whole-file digest changed, and the git diff --binary shows exactly
+# one removed line inside the RO function's hunk. The per-function
+# comparison above shows the other two functions are byte-identical.
+# Together these bound the change to the RO function's range.
+no_other_bytes_changed	YES
+git_diff_binary_recorded	evidence/ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01-CORRECTION01/c2/applied-ro-mutation.diff

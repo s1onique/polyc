@@ -1,0 +1,89 @@
+# EXEC-PO-CORR01-ANTI: THE DISTINCT ADVERSE CONTROL.
+#
+# A SECOND, INDEPENDENT physical mutation, in its own disposable
+# detached worktree, that removes the AST_BIN_OP_LT case from
+# AbiCoreIsValidPointerOperator -- the POINTER site, NOT the range
+# site. Its purpose is to prove that the discriminator is
+# SITE-SPECIFIC: it must NOT move the RO discriminating witness, and it
+# MUST move the PO witness.
+#
+# It does NOT count as a second RO experiment, and it does NOT
+# substitute for EXEC-RO-CORR01-MUTANT.
+#
+item	value
+execution_id	EXEC-PO-CORR01-ANTI
+worktree	/tmp/aci01-corr01-po-ant
+worktree_commit	9c3ec1080616b44bfd5240c42f7306b86c1e4f91
+mutation_target_function	AbiCoreIsValidPointerOperator
+mutation_target_line_number	206
+mutation_target_byte_range	7333..7394
+mutation_mechanism	the same range-checked single-line removal, applied to the PO range (7150..7852) instead of the RO range
+build_command	make production-hcc   (SERIAL)
+build_exit_status	0
+install_exit_status	0
+compile_succeeded	YES
+
+# THE APPLIED SOURCE.
+source_sha256	f0599f79900cf406415283a9742c2b3d794c03f107e7a959ce021db91b916615
+source_bytes	8659
+source_differs_from_pristine	YES
+source_differs_from_the_ro_mutant_source	YES (5bfe5b60... vs f0599f79...)
+
+# THE SUBJECT OBJECT.
+subject_object_sha256	2d6a1394dffa8b513af092971338692e113cbf893c4d52a0b554afda9d58c1f8
+pristine_subject_object_sha256	b9a76fe8a23b38468e78b67ed428226592fa270347674299c1be1be57f4de756
+ro_mutant_subject_object_sha256	c73e734dc6b735bd738fd2e3f5735f10b577d5048730d586d2892b153ca77eff
+subject_object_differs_from_pristine	YES
+subject_object_differs_from_the_ro_mutant	YES
+production_compiler_sha256	634c9482df3866fd0d964b2a4b4b53e9730e7a66f9151eee76e16504379ef4a4
+production_compiler_differs_from_pristine	YES
+production_compiler_differs_from_the_ro_mutant	YES
+
+# THE WITNESS RESULTS.
+witness_id	pristine_exit	po_anti_exit	changed_by_the_PO_mutation	expected
+W-CORR-RO-DISCRIM	0	0	NO	UNCHANGED -- the RO site is INTACT, so the discriminator does NOT move
+W-HISTORICAL-NONDISCRIM	1	1	NO	UNCHANGED
+W-CORR-PO-LT	0	COMPILE_FAILED	YES	CHANGED -- the pointer site no longer recognises "less-than" as a valid pointer operation
+W-CORR-CA	30	30	NO	UNCHANGED
+
+# THE REJECTION DIAGNOSTIC, RECORDED VERBATIM.
+#
+# The PO witness is REJECTED BY THE COMPILER'S OWN TYPE CHECKING, which
+# consumes the classifier's answer. This is a genuine semantic
+# difference of the migrated decision, NOT a build failure: the
+# compiler build exited 0 and every other witness compiled and ran.
+#
+po_witness_compile_status	COMPILE_FAILED
+po_witness_diagnostic	error: The `<` operator cannot be applied to a pointer type with a local variable of pointer type
+po_witness_is_a_build_failure	NO (the compiler build exited 0; the other three witnesses compiled and ran normally)
+
+# THE ASSEMBLY, FOR THE RO WITNESS, IS UNCHANGED IN SHAPE.
+metric	pristine	po_anti	changed
+asm_branch_instructions_w_ro_discrim	5	5	NO
+asm_compare_instructions_w_ro_discrim	3	3	NO
+asm_function_labels_w_ro_discrim	7	7	NO
+asm_bytes_w_ro_discrim	904	904	NO
+asm_sha256_w_ro_discrim	fb191c40ce4dc90ba293b60a85bcf86e8664928f241ff3431175aa447a3841d2	30cb23baa77c47ea7dc72146e0ecf53d08a19fac916bc91e5d0878e0052ef973	(the SHA differs only because of the embedded git hash in the `.ident` line)
+
+# THE DECISIVE CORROBORATION.
+#
+# The PO anti-control's SOURCE digest is BIT-IDENTICAL to the
+# historical M-POLYC-RO recorded source digest, and its OBJECT digest
+# is BIT-IDENTICAL to the historical M-POLYC-RO recorded object digest.
+#
+# This is an INDEPENDENT reproduction, from the opposite direction, of
+# the historical finding: the predecessor's "M-POLYC-RO" experiment is
+# physically reproduced here as a POINTER-site mutation. It CONFIRMS
+# the historical defect and it is NOT a substitute for the RO
+# experiment.
+#
+historical_m_poly_ro_recorded_source_sha256	f0599f79900cf406415283a9742c2b3d794c03f107e7a959ce021db91b916615
+po_anti_source_sha256	f0599f79900cf406415283a9742c2b3d794c03f107e7a959ce021db91b916615
+source_digests_bit_identical	YES
+historical_m_poly_ro_recorded_object_sha256	2d6a1394dffa8b513af092971338692e113cbf893c4d52a0b554afda9d58c1f8
+po_anti_object_sha256	2d6a1394dffa8b513af092971338692e113cbf893c4d52a0b554afda9d58c1f8
+object_digests_bit_identical	YES
+the_historical_defect_is_independently_reproduced	YES
+the_historical_record_is_rewritten	NO
+this_is_a_second_ro_experiment	NO
+execution_ids_are_distinct	YES

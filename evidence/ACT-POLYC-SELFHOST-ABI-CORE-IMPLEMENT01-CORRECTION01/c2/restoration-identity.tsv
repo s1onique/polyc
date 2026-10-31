@@ -1,0 +1,77 @@
+# EXEC-RO-CORR01-RESTORED: THE RESTORATION IDENTITY.
+#
+# The restoration is a SEPARATE physical execution: a fresh detached
+# worktree at the same frozen commit, with no mutation, built with the
+# SAME recipe, and the same witness set.
+#
+item	value
+execution_id	EXEC-RO-CORR01-RESTORED
+worktree	/tmp/aci01-corr01-restored
+worktree_commit	9c3ec1080616b44bfd5240c42f7306b86c1e4f91
+worktree_tracked_state	CLEAN (git status --short is empty: the restoration worktree carries no mutation at all)
+build_command	make production-hcc   (SERIAL)
+build_exit_status	0
+install_exit_status	0
+
+# THE SOURCE.
+source_sha256	e184603ff45f3482d99c5af84a960b15a44673d01924f89aa48f6ba0e5eedbd3
+pristine_source_sha256	e184603ff45f3482d99c5af84a960b15a44673d01924f89aa48f6ba0e5eedbd3
+source_restoration	BYTE_IDENTICAL
+source_bytes	8721
+
+# THE SUBJECT OBJECT: IT IS BYTE-IDENTICAL.
+#
+# The subject object does not embed a commit hash or an absolute path,
+# so it IS byte-identical between the pristine and the restored builds.
+# This is a MEASURED identity, not an assumption.
+#
+subject_object_sha256	b9a76fe8a23b38468e78b67ed428226592fa270347674299c1be1be57f4de756
+pristine_subject_object_sha256	b9a76fe8a23b38468e78b67ed428226592fa270347674299c1be1be57f4de756
+object_restoration	BYTE_IDENTICAL
+object_identity_demonstrated	YES
+
+# THE PRODUCTION COMPILER: IT IS NOT BYTE-IDENTICAL, AND THE DIFFERENCE
+# IS EXPLAINED, NOT ASSUMED.
+#
+# The production compiler embeds its own git hash in its bytes (the
+# subject's own documentation states this) and its absolute build
+# path. The pristine worktree was built at commit 790fe169 under
+# /tmp/aci01-corr01-pristine; the restored worktree was built at
+# 9c3ec108 under /tmp/aci01-corr01-restored. Those two facts fully
+# account for the difference.
+#
+production_compiler_sha256	bca62dbb532645dac2aeace4cc2f20bffc08c5c30eeaa79ed7047cd7fda27677
+pristine_production_compiler_sha256	7de8b078ea07a01f002652cd28897babb55f9a23d234f800924b1124aca179c4
+production_compiler_restoration	ENVIRONMENT_EXPLAINED
+production_compiler_difference_causes	(a) the embedded git hash 790fe169 vs 9c3ec108; (b) the absolute build path /tmp/aci01-corr01-pristine vs /tmp/aci01-corr01-restored
+production_compiler_difference_cause_recorded	YES
+production_compiler_claimed_byte_identical	NO
+production_compiler_semantically_equivalent	YES (the same three subject symbols are exported, the same delegation is present, and every witness's outcome and every witness's assembly structure match)
+
+# THE STAGE0 PRODUCER.
+subject_producer_sha256	78ef89978ad5d7a62fe405f46dcd54abd295e4e8931ff985e4bff2d531008b31
+pristine_subject_producer_sha256	272eff4e5a5307e5ff118147629c13591f93e4b8d236dfaf62bee56f1be15196
+subject_producer_restoration	ENVIRONMENT_EXPLAINED (the absolute build path is embedded; the producer's source is identical)
+subject_producer_claimed_byte_identical	NO
+
+# THE WITNESSES: THE PRISTINE OUTCOMES COME BACK.
+witness_id	pristine_exit	restored_exit	restored
+W-CORR-RO-DISCRIM	0	0	YES
+W-HISTORICAL-NONDISCRIM	1	1	YES
+W-CORR-PO-LT	0	0	YES
+W-CORR-CA	30	30	YES
+all_witnesses_restored	YES
+
+# THE ASSEMBLY STRUCTURE COMES BACK.
+metric	pristine	restored	restored
+asm_branch_instructions_w_ro_discrim	5	5	YES
+asm_compare_instructions_w_ro_discrim	3	3	YES
+asm_function_labels_w_ro_discrim	7	7	YES
+asm_bytes_w_ro_discrim	904	904	YES
+asm_sha256_w_ro_discrim	fb191c40ce4dc90ba293b60a85bcf86e8664928f241ff3431175aa447a3841d2	30cb23baa77c47ea7dc72146e0ecf53d08a19fac916bc91e5d0878e0052ef973	STRUCTURALLY (the SHA differs only in the embedded `.ident` commit hash)
+
+# THE AUTHORITATIVE CHECKOUT IS UNTOUCHED.
+authoritative_checkout_tracked_tree_untouched	YES (verified at C3)
+authoritative_checkout_working_index_untouched	YES (verified at C3)
+act_owned_mutant_worktrees_removed	(verified at C3, after the artifacts are recorded)
+other_users_worktrees_removed	NO (the pre-existing slice08-wt and pinned-producer worktrees are left alone)

@@ -1,0 +1,51 @@
+# THE SOURCE / OBJECT / WITNESS / EXECUTION JOIN.
+#
+# This is the machine-checkable core of the correction. It is read by
+# the PolyC verifier's `join` mode, which rejects:
+#   * a site whose subject symbol does not match the site;
+#   * a duplicated execution id, source digest or object digest;
+#   * an RO row whose witness is not W-CORR-RO-DISCRIM;
+#   * an RO row whose exits are not 0 -> 1 -> 0;
+#   * a PO row whose witness IS the RO discriminator;
+#   * a row whose verdict is not PASS.
+#
+# The column order is the verifier's expected order:
+#   site_id | execution_id | subject_symbol | source_sha256 |
+#   object_sha256 | witness_id | pristine_exit | mutant_exit |
+#   restored_exit | causal_verdict
+#
+site_id	execution_id	subject_symbol	source_sha256	object_sha256	witness_id	pristine_exit	mutant_exit	restored_exit	causal_verdict
+SITE-COMPOUND-ASSIGN	M-POLYC-CA	_AbiCoreClassifyCompoundAssign	cea1ca063884dd5ebf4019110cd36816ae4950cc8fef9ceb2621a2f126cfdae1	035ce7e1eadac216709147c474254df41208428f5b3989d270a3e95176c39155	W-CA	30	246	30	PASS
+SITE-VALID-POINTER-OP	EXEC-PO-CORR01-ANTI	_AbiCoreIsValidPointerOperator	f0599f79900cf406415283a9742c2b3d794c03f107e7a959ce021db91b916615	2d6a1394dffa8b513af092971338692e113cbf893c4d52a0b554afda9d58c1f8	W-CORR-PO-LT	0	COMPILE_FAILED	0	PASS
+SITE-RANGE-OPERATOR	EXEC-RO-CORR01-MUTANT	_AbiCoreIsRangeOperator	5bfe5b6048374a9e12c48aa13b3e66beb764d7b14b97813c761c486926161da9	c73e734dc6b735bd738fd2e3f5735f10b577d5048730d586d2892b153ca77eff	W-CORR-RO-DISCRIM	0	1	0	PASS
+
+# THE JOIN THAT MATTERS MOST, SPELLED OUT.
+#
+#   AUTH-13
+#     <-> SITE-RANGE-OPERATOR
+#     <-> _AbiCoreIsRangeOperator
+#     <-> EXEC-RO-CORR01-MUTANT
+#     <-> W-CORR-RO-DISCRIM
+#
+# Every link in that chain is bound to a MEASURED artifact:
+#   * AUTH-13 is the census id for _AbiCoreIsRangeOperator;
+#   * the site's function range is 8408..8720 in the committed blob;
+#   * EXEC-RO-CORR01-MUTANT is the physical execution id of the
+#     correction's own RO-site mutation;
+#   * W-CORR-RO-DISCRIM is the witness whose exit status changed
+#     0 -> 1 -> 0 across the pristine, mutant and restored builds.
+#
+# THE PREDECESSOR'S MISLABELLED EXPERIMENT IS EXPLICITLY REJECTED AS A
+# SUBSTITUTE:
+historical_m_poly_ro_accepted_as_a_substitute_for_execution_ro_corr01_mutant	NO
+historical_m_poly_ro_rejection_reason	its recorded digests belong to the POINTER site (reproduced bit-identically by EXEC-PO-CORR01-ANTI), so it is a PO experiment and not an RO experiment
+
+# THE EXECUTION ID INVENTORY.
+EXEC-M-POLYC-CA	historical	the compound-assignment site (M-POLYC-CA)
+EXEC-M-POLYC-PO	historical	the pointer site (M-POLYC-PO)
+EXEC-RO-CORR01-PRISTINE	correction-owned	the pristine baseline build and witness set
+EXEC-RO-CORR01-MUTANT	correction-owned	THE causal experiment for AUTH-13
+EXEC-PO-CORR01-ANTI	correction-owned	the distinct adverse control (a PO-site mutation)
+EXEC-RO-CORR01-RESTORED	correction-owned	the restoration
+distinct_execution_ids	6
+historical_execution_id_reused	NO

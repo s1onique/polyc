@@ -1,0 +1,70 @@
+# EXEC-RO-CORR01-MUTANT: THE FULL REAL PRODUCTION BUILD.
+#
+# The ENTIRE production compiler was rebuilt with the selector ON, in
+# the mutant worktree, with the SAME recipe and the SAME effective
+# flags as the pristine build. The build's exit status was 0.
+#
+# The build is a FULL rebuild, not an incremental one: the mutant
+# worktree started with no build directory at all.
+#
+command	make production-hcc
+jobs	1 (SERIAL)
+worktree	/tmp/aci01-corr01-ro-mutant
+worktree_commit	9c3ec1080616b44bfd5240c42f7306b86c1e4f91
+build_exit_status	0
+production_compiler_produced	YES (./hcc)
+install_command	make test-prefix-install
+install_exit_status	0
+prefix_populated	YES (include/tos.HH, lib/libtos.a, lib/libtos.0.0.1.dylib, lib/libtos.dylib)
+
+# THE BUILD'S OWN SUBJECT-SYMBOL GATE DID NOT FIRE.
+#
+# The Makefile's CORE_OPERATOR_OBJ rule fails closed if the subject
+# object is missing or if any of the three exported symbols is absent.
+# The build reached the production compiler, so the subject object was
+# produced with all three symbols.
+subject_symbol_gate_passed	YES
+subject_symbols	_AbiCoreClassifyCompoundAssign, _AbiCoreIsValidPointerOperator, _AbiCoreIsRangeOperator
+
+# THE SUBJECT OBJECT CHANGED.
+subject_object_sha256	c73e734dc6b735bd738fd2e3f5735f10b577d5048730d586d2892b153ca77eff
+pristine_subject_object_sha256	b9a76fe8a23b38468e78b67ed428226592fa270347674299c1be1be57f4de756
+subject_object_changed	YES
+subject_object_stale_or_unchanged	NO
+
+# THE LINKED PRODUCTION EXECUTABLE CHANGED.
+production_compiler_sha256	00f0b4f25ac9590a039e5d69b72c4a05314d0b8d95b2aece6687a132e4a3123b
+pristine_production_compiler_sha256	7de8b078ea07a01f002652cd28897babb55f9a23d234f800924b1124aca179c4
+production_compiler_changed	YES
+
+# THE RO DELEGATION IS STILL LIVE IN THE MUTANT.
+production_compiler_exports_the_ro_symbol	YES (_AbiCoreIsRangeOperator, at 0x100063988)
+caller_object_relocation	U _AbiCoreIsRangeOperator
+legacy_c_rule_compiled_out_under_ON	YES
+no_silent_fallback_to_the_legacy_c_rule	CONFIRMED (F6: the build's own gate fails closed, and the linked binary's symbols prove the subject is the authority)
+
+# THE BUILD LOG'S TAIL.
+#
+#   PRODUCTION_HCC=./hcc
+#   PRODUCTION_PADDING_AUTHORITY=POLYC
+#   PRODUCTION_AST_BINOP_AUTHORITY=POLYC
+#   PRODUCTION_SWITCH_ARM_AUTHORITY=POLYC
+#   PRODUCTION_STATEMENT_DISPATCH_AUTHORITY=POLYC
+#
+# The "error: write on a pipe with no reader" lines are the known
+# benign noise of the repository's build when a pipe consumer closes
+# early; they are present in the PRISTINE build log as well and do not
+# affect the exit status.
+#
+build_log_tail_noise	"error: write on a pipe with no reader" (also present in the pristine build; benign; the exit status is 0)
+
+# THE RAW BUILD LOG.
+#
+# The full build log lives outside the repository, because it is
+# megabytes of compiler output. Its identity and a replay command are
+# recorded here so that an auditor can reproduce it.
+#
+raw_build_log_location	/tmp/aci01-corr01-romutant-build.log (outside the repository, in the disposable worktree's environment)
+raw_build_log_sha256	(see the C3 gates-and-factory.txt for the recorded digest of every retained raw log)
+replay_command	cd /tmp/aci01-corr01-ro-mutant && make production-hcc
+retention_limitation	/tmp may be reclaimed; the digest, the exit status, the artifact digests and the witness results above are the committed evidence

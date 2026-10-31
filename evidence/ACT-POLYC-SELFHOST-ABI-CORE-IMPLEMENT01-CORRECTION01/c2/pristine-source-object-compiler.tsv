@@ -1,0 +1,75 @@
+# EXEC-RO-CORR01-PRISTINE: THE PRISTINE SOURCE, OBJECT AND COMPILER.
+#
+# A FRESH selector-ON production compiler build, in a disposable
+# detached worktree at the frozen commit, with its own build and
+# install prefixes. No object from any earlier build directory is
+# used, and the build's exit status was 0.
+#
+item	value
+execution_id	EXEC-RO-CORR01-PRISTINE
+worktree	/tmp/aci01-corr01-pristine
+worktree_commit	790fe1699ebdf3adce549146e9c2e89ab63c1624
+build_command	make production-hcc   (SERIAL)
+build_exit_status	0
+install_command	make test-prefix-install
+install_exit_status	0
+install_prefix	/tmp/aci01-corr01-pristine/build/test-prefix
+prefix_populated	YES (include/tos.HH, lib/libtos.a, lib/libtos.0.0.1.dylib, lib/libtos.dylib)
+
+# THE SOURCE.
+source_path	tools/bootstrap/selfhost-core-operator.HC
+source_blob_oid	41f6b4c506424479d7301709fd44ca424a4edced
+source_sha256	e184603ff45f3482d99c5af84a960b15a44673d01924f89aa48f6ba0e5eedbd3
+source_bytes	8721
+source_is_the_unmutated_committed_tree	YES (git status --short in the worktree is empty)
+
+# THE SUBJECT OBJECT.
+subject_object_path	build/core-operator-subject.o
+subject_object_sha256	b9a76fe8a23b38468e78b67ed428226592fa270347674299c1be1be57f4de756
+subject_object_bytes	2232
+subject_object_exported_symbols	_AbiCoreClassifyCompoundAssign, _AbiCoreIsValidPointerOperator, _AbiCoreIsRangeOperator
+subject_object_sha256_matches_the_historical_pristine_record	YES -- the fresh independent build reproduces the historical pristine subject object digest BIT-IDENTICALLY, which corroborates that the build environment is equivalent for the subject
+
+# THE PRODUCERS.
+subject_producer	build/host-stage0/hcc (the legacy C compiler; the SUBJECT's producer)
+subject_producer_sha256	272eff4e5a5307e5ff118147629c13591f93e4b8d236dfaf62bee56f1be15196
+subject_producer_command	./build/host-stage0/hcc --install-dir=./build/bootstrap-prefix -c tools/bootstrap/selfhost-core-operator.HC -o build/core-operator-subject.o
+header_prefix_sha256	a5c9aefb34a338e17d5efc07639c7dffbce5df95cd020e1fb6b111982bb83b60 (build/bootstrap-prefix/include/tos.HH)
+
+# THE PRODUCTION COMPILER.
+production_compiler_path	./hcc
+production_compiler_sha256	7de8b078ea07a01f002652cd28897babb55f9a23d234f800924b1124aca179c4
+production_compiler_selector	HCC_USE_SELFHOST_CORE_OPERATOR_CLASSIFY=ON
+production_compiler_polyc_subject_symbol_count	3
+production_compiler_subject_symbols	_AbiCoreClassifyCompoundAssign, _AbiCoreIsValidPointerOperator, _AbiCoreIsRangeOperator
+
+# THE LINK MAP: FROM THE CALLER OBJECT TO THE SUBJECT.
+caller_object_path	build/CMakeFiles/hcc.dir/ast.c.o
+caller_relocation_to_the_subject	U _AbiCoreIsRangeOperator  (an UNDEFINED symbol: the call leaves the caller object and resolves to the subject)
+caller_relocation_po	U _AbiCoreIsValidPointerOperator
+caller_object_pristine_sha256	(the caller object is unchanged by the subject mutation, as declared in c1/producer-and-link-provenance.tsv)
+link_is_live	YES -- proven by the LINKED BINARY's symbol table (the three subject symbols are present) and by the delegation disassembly (astIsRangeOperator's only call is `bl _AbiCoreIsRangeOperator`)
+legacy_c_rule_compiled_out_under_ON	YES
+
+# THE OBJECT AND LINK MAP IS FULL AND NON-EMPTY.
+subject_object_present	YES
+subject_object_nonempty	YES (2232 bytes)
+production_compiler_present	YES
+production_compiler_nonempty	YES
+link_map_nonempty	YES (three exported subject symbols, three caller relocations)
+subject_object_linked_exactly_once	YES (the Makefile links $(CORE_OPERATOR_OBJ) exactly once into the production compiler)
+
+# THE PRISTINE WITNESS RESULTS.
+witness_id	pristine_exit	assembly_sha256
+W-CORR-RO-DISCRIM	0	fb191c40ce4dc90ba293b60a85bcf86e8664928f241ff3431175aa447a3841d2
+W-HISTORICAL-NONDISCRIM	1	c0991d7f2f6691ea10c6e8c83880078a5c8ef1ef5025679c26cbb174e0580c62
+W-CORR-PO-LT	0	9ee593137f222883a0cc8c9c40b98984f467d03f726fde1800f3546c8591da54
+W-CORR-CA	30	5e1118c72307eb050efb6b532e919d9bc022ce5d0f4792d6bdb55baed10ecf92
+
+# THE SELECTOR-OFF ORACLE, BUILT IN THE SAME WORKTREE.
+selector_off_artifact	build/host-stage0/hcc
+selector_off_sha256	272eff4e5a5307e5ff118147629c13591f93e4b8d236dfaf62bee56f1be15196
+selector_off_polyc_subject_symbol_count	0
+selector_off_legacy_c_predicates	_astIsRangeOperator (T), _astIsValidPointerOp (T) -- both PRESENT as the original C predicates
+selector_off_is_a_whole_production_compiler	YES
+selector_off_witness_agreement	4/4 identical to the selector-ON build (0, 1, 0, 30)
