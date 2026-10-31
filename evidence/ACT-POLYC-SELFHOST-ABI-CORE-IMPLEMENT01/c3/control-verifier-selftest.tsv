@@ -1,0 +1,16 @@
+selftest_id	mutation_of_the_control_ledger	detector	expected_result	measured_result	status
+ST-01	deleted one control row	the ledger row count must be exactly 24	REJECTED	REJECTED (23 rows)	PASS
+ST-02	changed one control ID	the exact-ID set join must detect the missing ID	REJECTED	REJECTED (NC-08 absent)	PASS
+ST-03	substituted one mutated source hash (the NC-19 reason class)	the reason-class join must detect the substitution	REJECTED	REJECTED	PASS
+ST-04	fabricated a PASS line for a rejected control	the join must require the measured REJECTED status	REJECTED	REJECTED	PASS
+ST-05	misbound a physical experiment ID to a different site	the exact-ID set join must detect the duplicate	REJECTED	REJECTED (23 unique IDs)	PASS
+ST-06	suppressed one prerequisite object	the subject-provenance detector must reject the missing object	REJECTED	REJECTED (SUBJECT_MISSING)	PASS
+
+NOTE=The verifier selftests attack the CONTROL LEDGER itself. A bare tally
+NOTE=of 24 without an independent exact-ID equality is a failure, so each
+NOTE=selftest breaks the ledger in a specific way and requires the join
+NOTE=verifier to REJECT it for the intended reason.
+NOTE=All six selftests were executed against disposable copies; the
+NOTE=committed ledger and the repository state are unchanged.
+SELFTEST_COUNT=6
+SELFTEST_PASS=6

@@ -151,7 +151,7 @@ while read -r kind x y z st extra; do
       fi
       npo=$((npo + 1))
       fid=$(printf 'PO-%04d' "$npo")
-      row="$fid	SITE-VALID-POINTER-OP	$AST_BLOB	$PO_SHA	binary_operator	$x	-	$z	0	$part	YES	$G0_SHA	W-PO-$fid"
+      row="$fid	SITE-VALID-POINTER-OP	$AST_BLOB	$PO_SHA	binary_operator	$x	-	$y	0	$part	YES	$G0_SHA	W-PO-$fid"
       printf '%s\n' "$row" >> "$PO_OUT"; printf '%s\n' "$row" >> "$ALL_OUT"
       ;;
     RO)
@@ -161,7 +161,7 @@ while read -r kind x y z st extra; do
       fi
       nro=$((nro + 1))
       fid=$(printf 'RO-%04d' "$nro")
-      row="$fid	SITE-RANGE-OPERATOR	$AST_BLOB	$RO_SHA	binary_operator	$x	-	$z	0	$part	YES	$G0_SHA	W-RO-$fid"
+      row="$fid	SITE-RANGE-OPERATOR	$AST_BLOB	$RO_SHA	binary_operator	$x	-	$y	0	$part	YES	$G0_SHA	W-RO-$fid"
       printf '%s\n' "$row" >> "$RO_OUT"; printf '%s\n' "$row" >> "$ALL_OUT"
       ;;
   esac

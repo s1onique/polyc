@@ -1,0 +1,32 @@
+mutation_id	site_id	pristine_source_sha256	restored_source_sha256	source_identical	pristine_subject_sha256	restored_subject_sha256	object_identical	restored_witness_ca	restored_witness_ro	restored_witness_po_pointer	restored_witness_po_and	restored_witness_po_negative	semantic_identical	verdict
+M-POLYC-CA	SITE-COMPOUND-ASSIGN	e184603ff45f3482d99c5af84a960b15a44673d01924f89aa48f6ba0e5eedbd3	e184603ff45f3482d99c5af84a960b15a44673d01924f89aa48f6ba0e5eedbd3	YES	b9a76fe8a23b38468e78b67ed428226592fa270347674299c1be1be57f4de756	b9a76fe8a23b38468e78b67ed428226592fa270347674299c1be1be57f4de756	YES	30	1	0	1	REJECTED	YES	PASS
+M-POLYC-PO	SITE-VALID-POINTER-OP	e184603ff45f3482d99c5af84a960b15a44673d01924f89aa48f6ba0e5eedbd3	e184603ff45f3482d99c5af84a960b15a44673d01924f89aa48f6ba0e5eedbd3	YES	b9a76fe8a23b38468e78b67ed428226592fa270347674299c1be1be57f4de756	b9a76fe8a23b38468e78b67ed428226592fa270347674299c1be1be57f4de756	YES	30	1	0	1	REJECTED	YES	PASS
+M-POLYC-RO	SITE-RANGE-OPERATOR	e184603ff45f3482d99c5af84a960b15a44673d01924f89aa48f6ba0e5eedbd3	e184603ff45f3482d99c5af84a960b15a44673d01924f89aa48f6ba0e5eedbd3	YES	b9a76fe8a23b38468e78b67ed428226592fa270347674299c1be1be57f4de756	b9a76fe8a23b38468e78b67ed428226592fa270347674299c1be1be57f4de756	YES	30	1	0	1	REJECTED	YES	PASS
+
+# THE RESTORED WITNESS VALUES ARE THE PRISTINE PRODUCTION VALUES
+#   witness-ca-compound-assign     pristine=30  restored=30
+#   witness-ro-range               pristine=1   restored=1
+#   witness-po-pointer-compare     pristine=0   restored=0
+#   witness-po-logical-and         pristine=1   restored=1
+#   witness-po-negative-multiply   pristine=REJECTED  restored=REJECTED
+
+# EVERY mutation was executed in a DISPOSABLE DETACHED WORKTREE
+# (/tmp/aci01-mut-wt/{CA,PO,RO}), never on the authoritative main
+# checkout. The mutation worktrees were restored with
+#   git checkout -- tools/bootstrap/selfhost-core-operator.HC
+# and the subject object was REBUILT, not copied.
+
+# THE THREE MUTATIONS ARE DISTINCT PHYSICAL EXPERIMENTS
+#   M-POLYC-CA  execution_id=EXEC-M-POLYC-CA  source=...cea1ca06...  object=...035ce7e1...
+#   M-POLYC-PO  execution_id=EXEC-M-POLYC-PO  source=...f61d7ea0...  object=...af566dfb...
+#   M-POLYC-RO  execution_id=EXEC-M-POLYC-RO  source=...f0599f79...  object=...2d6a1394...
+# Each has its OWN source digest and its OWN object digest, and each was
+# executed in its OWN worktree with its OWN full production rebuild.
+# No single physical experiment is reported under more than one ID.
+
+# THE PREDECESSOR'S HISTORICAL C MUTATION IS NOT ONE OF THESE
+#   CSCR01-M1 (ACT-POLYC-SELFHOST-CORE-SEMANTIC-CONSUMER-RECON01, C2) is a
+#   C-SOURCE experiment on src/prslib.c for SITE-COMPOUND-ASSIGN ONLY,
+#   with the witness 30 -> 246 -> 30. It is preserved as HISTORICAL
+#   C-side evidence and is NOT counted as, backdated to, or represented
+#   by M-POLYC-CA, M-POLYC-PO or M-POLYC-RO.

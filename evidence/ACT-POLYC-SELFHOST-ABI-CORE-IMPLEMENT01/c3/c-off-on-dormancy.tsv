@@ -1,0 +1,44 @@
+control_id	site_id	legacy_c_mutation	selector_off_witness_before	selector_off_witness_after	selector_off_changed	selector_on_witness_before	selector_on_witness_after	selector_on_changed	c_rule_is_live_off	c_rule_is_dormant_on	verdict
+C-OFF-CA	SITE-COMPOUND-ASSIGN	the legacy C rule: case TK_ADD_EQU maps to AST_BIN_OP_SUB instead of AST_BIN_OP_ADD	30	246	YES	30	30	NO	YES	YES	PASS
+C-OFF-PO	SITE-VALID-POINTER-OP	the legacy C rule: the AST_BIN_OP_LOG_AND case is removed	1	COMPILE_FAILED	YES	1	1	NO	YES	YES	PASS
+C-OFF-RO	SITE-RANGE-OPERATOR	the legacy C rule: the AST_BIN_OP_LT case is removed	0	COMPILE_FAILED	YES	0	0	NO	YES	YES	PASS
+# HOW EACH CONTROL WAS EXECUTED
+#
+# For EACH control the SAME mutated C source tree was built TWICE:
+#
+#   selector-OFF build: the legacy C predicate is the ACTIVE authority
+#   selector-ON  build: the legacy C predicate is COMPILED OUT and the
+#                    compiled PolyC subject is the active authority
+#
+# THE WITNESS PROGRAMS
+#   C-OFF-CA  witness-ca-compound-assign   (x += 20; the returned value)
+#   C-OFF-PO  witness-po-logical-and       (p && q)
+#   C-OFF-RO  witness-po-pointer-less-than  (p < q)
+#
+# A "COMPILE_FAILED" witness value means the COMPILER REJECTED the witness
+# program. That IS a semantic difference of the migrated decision, because
+# the rejection comes from the compiler's own type checking, which consumes
+# the classifier's answer. It is NOT a build failure of the compiler itself:
+# every one of these compiler builds exited 0.
+#
+# THE DORMANCY CONCLUSION, which is the point of these controls:
+#
+#   For EVERY one of the three legacy C rules:
+#     - the selector-OFF build's behaviour CHANGES when the legacy C rule
+#       is mutated  =>  the legacy C rule is LIVE when the selector is OFF;
+#     - the selector-ON build's behaviour DOES NOT CHANGE AT ALL when the
+#       same legacy C rule is mutated  =>  the legacy C rule is DORMANT in
+#       the production ON build.
+#
+# The selector-ON witnesses of all three controls are IDENTICAL to the
+# pristine production compiler's witnesses.
+#
+# THE PRODUCTION ON BUILD WAS REBUILT FROM THE MUTATED C SOURCE
+#   C-OFF-CA_ON_CONFIGURE_RC=0
+#   C-OFF-CA_ON_BUILD_RC=0
+#   C-OFF-PO_ON_CONFIGURE_RC=0
+#   C-OFF-PO_ON_BUILD_RC=0
+#   C-OFF-RO_ON_CONFIGURE_RC=0
+#   C-OFF-RO_ON_BUILD_RC=0
+# (a compiler BUILD FAILURE would NOT have counted as a semantic
+#  difference: NC-21)

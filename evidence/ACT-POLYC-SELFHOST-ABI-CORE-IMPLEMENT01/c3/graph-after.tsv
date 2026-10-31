@@ -1,0 +1,30 @@
+metric	value	method
+PRODUCTION_GRAPH_NODES	52	PolyC verifier transitive closure over the CENSUS01 c1/graph-nodes.tsv
+HISTORICAL_GRAPH_ROWS	135	the frozen predecessor baseline-graph.tsv row count
+PRODUCTION_PROVEN_CUT_COUNT	1	CUT_PROVEN_BY_EXECUTION in the cut ledger
+PRODUCTION_ACTIVE_MANDATORY_EDGES	134	135 historical rows minus the one proven cut
+NEW_PROVEN_CUTS	0	the three transferred decisions are SCALAR operator classifications; they retire no typed layout, mutable-state, callback or recovery edge
+SCC_COUNT	34	PolyC verifier transitive-closure SCC partition
+SCC_LARGEST	19	PolyC verifier transitive-closure SCC partition
+SCC_BEFORE_COUNT	34	the C0 baseline
+SCC_BEFORE_LARGEST	19	the C0 baseline
+GRAPH_RECOMPUTE_STATUS	PASS	PolyC verifier self-consistency
+GRAPH_BEFORE_NODES	52	C0 baseline
+GRAPH_BEFORE_ACTIVE_MANDATORY_EDGES	134	C0 baseline
+GRAPH_AFTER_NODES	52	C3 recomputation
+GRAPH_AFTER_ACTIVE_MANDATORY_EDGES	134	C3 recomputation
+GRAPH_DELTA	NONE	the graph is unchanged
+SELFHOST_M2	NOT_ACHIEVED	no M1/M2 milestone is claimed
+SLICE10	NOT_AUTHORIZED	no slice is authorized
+NEXT_TARGET	NONE	no successor is preselected
+
+# WHAT THIS ACT DID AND DID NOT DO TO THE GRAPH
+#
+# The three transferred decisions are SCALAR operator classifications.
+# They do not retire a typed layout, a mutable-state, a callback or a
+# recovery edge, so no historical edge id changes status. The recomputed
+# graph is identical to the C0 baseline: 52 nodes, 134 active mandatory
+# edges, 34 SCCs, largest 19, one proven cut (E-TYP-0136).
+#
+# A truthful NEW_PROVEN_CUTS=0 is reported. No graph cut, no SCC
+# reduction and no lower M2 estimate is claimed.

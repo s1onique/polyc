@@ -1,0 +1,28 @@
+mutation_id	M-POLYC-RO
+site_id	SITE-RANGE-OPERATOR
+polyc_symbol	_AbiCoreIsRangeOperator
+execution_id	EXEC-M-POLYC-RO
+worktree	/tmp/aci01-mut-wt/SITE-RANGE-OPERATOR (disposable detached worktree at the C2 commit)
+mutation	the AST_BIN_OP_LT (7) case removed, so "<" is no longer classified as a range operator
+pristine_source_sha256	e184603ff45f3482d99c5af84a960b15a44673d01924f89aa48f6ba0e5eedbd3
+mutant_source_sha256	f0599f79900cf406415283a9742c2b3d794c03f107e7a959ce021db91b916615
+pristine_subject_object_sha256	b9a76fe8a23b38468e78b67ed428226592fa270347674299c1be1be57f4de756
+mutant_subject_object_sha256	2d6a1394dffa8b513af092971338692e113cbf893c4d52a0b554afda9d58c1f8
+mutant_compiler_rebuilt	YES (the FULL production compiler was rebuilt; MAKE_RC=0)
+mutant_subject_actually_linked	YES
+semantic_channel	the compiled-program witness W-PO-LT (a pointer "<" comparison, which uses AST_BIN_OP_LT, one of the four range operators): the pristine compiler COMPILES it and the program exits 0; the mutant compiler REJECTS it with the diagnostic "The `<` operator cannot be applied to a pointer type". The rejection is a genuine semantic difference of the migrated decision, not a build failure.
+other_site_channels_unchanged	YES
+causal_verdict	PASS
+
+--- THE MUTATED SOURCE DIFF ---
+--- a/tools/bootstrap/selfhost-core-operator.HC
++++ b/tools/bootstrap/selfhost-core-operator.HC
+@@ the AbiCoreIsRangeOperator rule, the AST_BIN_OP_LT case
+-  if (binary_operator == 7)  { return 1; }   // AST_BIN_OP_LT
+
+--- THE RESTORATION ---
+restored_source_sha256	e184603ff45f3482d99c5af84a960b15a44673d01924f89aa48f6ba0e5eedbd3
+restored_subject_object_sha256	b9a76fe8a23b38468e78b67ed428226592fa270347674299c1be1be57f4de756
+restored_source_identical_to_pristine	YES
+restored_object_identical_to_pristine	YES
+restored_witnesses_equal_pristine	YES

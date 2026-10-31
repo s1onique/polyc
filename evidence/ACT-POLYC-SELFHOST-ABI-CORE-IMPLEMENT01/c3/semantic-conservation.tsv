@@ -1,0 +1,16 @@
+witness_id	site_id	selector_on_exit	selector_off_exit	pristine_entry_exit	equal	note
+W-CA	SITE-COMPOUND-ASSIGN	30	30	30	YES	the compound-assignment decision: the returned value is 30, matching the predecessor C0 baseline
+W-RO	SITE-RANGE-OPERATOR	1	1	1	YES	the chained relational range lowering: the program exits 1
+W-RO-NEG	SITE-RANGE-OPERATOR	1	1	1	YES	the negative companion: a chained non-range operator
+W-PO	SITE-VALID-POINTER-OP	0	0	0	YES	a valid pointer comparison
+W-PO-AND	SITE-VALID-POINTER-OP	1	1	1	YES	a valid pointer logical-AND
+W-PO-LT	SITE-VALID-POINTER-OP	0	0	0	YES	a pointer "<" comparison, which also exercises AST_BIN_OP_LT
+
+# THE PO NEGATIVE WITNESS: the compiler must REJECT it
+W-PO-NEG	ON_PRODUCED_BINARY=NO
+W-PO-NEG	OFF_PRODUCED_BINARY=NO
+
+SEMANTIC_CONSERVATION_STATUS=PASS
+NOTE=Every witness is a REAL COMPILED PROGRAM whose RESULT is compared
+NOTE=between the migrated production compiler (selector ON) and the
+NOTE=independent C oracle compiler (selector OFF).
