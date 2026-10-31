@@ -8641,3 +8641,81 @@ append-only correction that executes a real range-site mutation with a
 
 See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON02-CORRECTION01.md`
 and `evidence/ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON02-CORRECTION01/`.
+
+## ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01-CORRECTION01 — PASS (PASS_EVIDENCE_SUPPLEMENTED)
+
+The thirteenth structurally active PolyC decision authority,
+`AUTH-13 / SITE-RANGE-OPERATOR / _AbiCoreIsRangeOperator`, now has its
+own executed causal experiment.
+
+**The historical defect is NOT rewritten.** The predecessor's
+`M-POLYC-RO` experiment physically mutated
+`AbiCoreIsValidPointerOperator`; that record, its digests and its
+`site-isolation.tsv` are false as written and are left byte-for-byte
+unchanged. The historical RO causality remains
+`UNPROVEN_AS_RECORDED`. The RECON02 terminal verdict
+`HALT_PREDECESSOR_PROOF_INCOMPLETE` and its forward-only correction's
+`PASS` are both carried forward unchanged.
+
+**What is new** is a separate, independently attributable execution
+under its own id `EXEC-RO-CORR01-MUTANT`: the `AST_BIN_OP_LT` case is
+removed from `AbiCoreIsRangeOperator` by a range-checked single-line
+edit in a disposable detached worktree, the applied bytes are read
+back and proven confined to the range, the whole selector-ON
+production compiler is rebuilt from scratch, and the discriminating
+chained-range witness `5 < 1 < 3` moves from exit **0** to exit
+**1** and back to **0** on restoration. The pointer and
+compound-assignment witnesses do not move, and the emitted assembly
+loses the range-lowering short-circuit block (5 branches / 3 compares
+/ 7 labels → 2 / 1 / 4), so the lowering change is witnessed
+independently of the exit status.
+
+A distinct adverse control, `EXEC-PO-CORR01-ANTI`, mutates the POINTER
+site in its own worktree and its own rebuild. It moves the pointer
+witness to a compiler rejection while leaving the discriminating RO
+witness at exit 0, which proves the discriminator is site-specific.
+Its source and object digests are bit-identical to the historical
+`M-POLYC-RO` digests, independently reproducing the historical
+misattribution from the opposite direction.
+
+```text
+HISTORICAL_M_POLYC_RO_ACTUAL_SUBJECT = AbiCoreIsValidPointerOperator (unchanged)
+HISTORICAL_RO_CAUSAL                 = UNPROVEN_AS_RECORDED (unchanged)
+CORRECTION_RO_ACTUAL_SUBJECT         = AbiCoreIsRangeOperator
+CORRECTION_RO_EXECUTION_ID           = EXEC-RO-CORR01-MUTANT
+CORRECTION_RO_CAUSAL                 = PROVEN
+WITNESS_RO_PRISTINE_EXIT / MUTANT / RESTORED = 0 / 1 / 0
+PRODUCTION_AUTHORITIES_STRUCTURAL    = 13
+HISTORICAL_AUTHORITIES_WITH_CAUSAL_PROOF = 12 (at the IMPLEMENT01 close)
+CORRECTION_INCLUSIVE_AUTHORITIES_WITH_CAUSAL_PROOF = 13
+NEW_PRODUCTION_AUTHORITIES           = 0
+PRODUCTION_SEMANTIC_DELTA            = 0
+NEW_PROVEN_GRAPH_CUTS                = 0
+GRAPH = 52 nodes / 134 active mandatory edges / 34 SCC / largest 19
+        (the sole historic cut E-TYP-0136; E-MUT-0137 remains NOT_CUT)
+SELFHOST_M2_ACHIEVED = NO
+SELECTED_BUNDLE_ID = NONE
+SLICE10_AUTHORIZED = NO
+```
+
+Every baseline is conserved: parser 376/376 over 90 blocks with MD5
+`b6f117eb1386ca80f81bc06226e2a741`, lexer direct 89/89, 45/45 and
+23/23, the broad LEXER07 corpus at 181 cases with the 15 historical
+S0 failures and MD5 `7ee761440de83552e751e3c3976c1683`, and F-NO-PYTHON
+at 12 historical violations with 0 new. gate-fast, gate-push and the
+append-only suite (11/11) pass; the F14 freeze covers 6434 paths with
+0 mismatches; all 12 reason-sensitive negative controls fire for
+their own named reason.
+
+**Note the distinction, which is not cosmetic.** It is *not* true that
+thirteen of thirteen authorities had causal backing at the
+IMPLEMENT01 close. It *is* true that, after this correction's own
+executed experiment, thirteen of thirteen do.
+
+The proposed next step is `ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03`,
+a **fresh** selection ACT that must perform a fresh source/object
+census: RECON02 halted before its C1, so no selected bundle was ever
+inherited and there is none to carry forward.
+
+See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01-CORRECTION01.md`
+and `evidence/ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01-CORRECTION01/`.
