@@ -1,0 +1,114 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-FOUNDATION-PRODUCTION-DELEGATE01
+# ACT_PHASE=C4-CLOSE
+# EVIDENCE_KIND=terminality-plan
+#
+# WHAT THIS FILE IS, AND WHAT IT IS NOT
+#
+# This is a PLAN. It describes the read-only checks that will be run AFTER
+# the terminal CLOSE commit exists, outside the repository, to decide AC50.
+#
+# It is NOT a receipt. No observation that depends on the CLOSE commit
+# existing can be recorded here, because this file is committed BY the CLOSE
+# commit. Writing such an observation here would be a fabrication: the
+# repository would then contain a claim about a commit that did not exist
+# when the claim was written.
+#
+# The genuine receipt is produced outside the repository, after the CLOSE
+# commit, and is reported to the requester. This ACT claims nothing about
+# its result until that receipt exists.
+#
+# ---------------------------------------------------------------------
+# THE TERMINAL CLOSE
+# ---------------------------------------------------------------------
+#
+# Exactly ONE terminal CLOSE commit, with these exact trailers:
+#
+#   ACT: ACT-POLYC-SELFHOST-ABI-FOUNDATION-PRODUCTION-DELEGATE01
+#   ACT-Phase: CLOSE
+#   ACT-Verdict: PASS
+#
+# It is the FIFTH forward commit of this ACT's range and the LAST tracked
+# change. The range is:
+#
+#   1d9f0e0646e603861d761c9af6343396fb738b88  (the entry, IMPLEMENT01 CLOSE)
+#   .. 5 forward commits, the last one being this CLOSE
+#
+# No sixth commit is created. If a post-CLOSE check fails, the repository's
+# real Factory HALT / correction doctrine applies: a NEW corrective ACT, not
+# an amendment, a rebase or a history rewrite of this CLOSE.
+#
+# ---------------------------------------------------------------------
+# THE EXTERNAL POST-CLOSE RECEIPT (run after the CLOSE commit exists)
+# ---------------------------------------------------------------------
+#
+# All of these are READ-ONLY with respect to the repository, except where a
+# build is required, and a build is written into a TEMPORARY directory
+# outside the working tree.
+#
+#  1. IDENTITY
+#     git rev-parse HEAD                       -> the CLOSE commit
+#     git rev-parse HEAD^{tree}                -> the CLOSE tree
+#     git branch --show-current                -> main
+#     git status --porcelain                   -> EMPTY (clean tree)
+#     git replace -l | wc -l                  -> 0
+#
+#  2. RANGE AND TERMINALITY
+#     git rev-list --count <ENTRY>..HEAD       -> 5
+#     git log --format='%(trailers)' <ENTRY>..HEAD
+#         -> exactly one ACT-Verdict: PASS, on the last commit
+#         -> the phases are RED, EVIDENCE, IMPL, EVIDENCE, CLOSE
+#
+#  3. F14 / CONSERVATION
+#     git diff --name-only <ENTRY>..HEAD -- evidence/ACT-POLYC-SELFHOST-ABI-FOUNDATION-IMPLEMENT01
+#         -> EMPTY
+#     git diff --name-only <ENTRY>..HEAD -- evidence/ACT-POLYC-SELFHOST-ABI-FOUNDATION-RECON01
+#         -> EMPTY
+#     git diff --name-only <ENTRY>..HEAD -- evidence/ACT-POLYC-SELFHOST-WHOLE-COMPILER-AUTHORITY-CENSUS01
+#         -> EMPTY
+#     git diff --name-only <ENTRY>..HEAD -- src/tests tests
+#         -> EMPTY
+#
+#  4. APPEND-ONLY
+#     sh scripts/quality/factory-append-only-test.sh   -> 11/11 PASS
+#     the local pre-push hook's three graph-property checks are satisfied:
+#     no replace refs, no ref deletion, no non-fast-forward update
+#
+#  5. THE EFFECTIVE ON COMPILER
+#     built in a temporary directory OUTSIDE the working tree:
+#       make INSTALL_PREFIX=<tmp>/prefix TEST_PREFIX=<tmp>/prefix production-hcc
+#     then:
+#       nm <tmp>/hcc | grep -c " T _Bootstrap"                  -> 9
+#       nm <tmp>/hcc | grep -c " T _AbiCpaShouldPrintAst"       -> 1
+#       nm -u <tmp>/build/CMakeFiles/hcc.dir/compile.c.o | grep -c AbiCpa -> 3
+#       otool -tvV <tmp>/build/CMakeFiles/hcc.dir/compile.c.o | grep -c 0x2401 -> 0
+#       gcc -E -H -Isrc -DHCC_USE_SELFHOST_ABI_CPA src/compile.c | grep -c ast.h -> 0
+#
+#  6. THE C-OFF ORACLE
+#     built in a temporary directory OUTSIDE the working tree with the
+#     selector forced OFF:
+#       nm <tmp>/hcc | grep -c AbiCpa                            -> 0
+#       grep -c "abi-cpa-host\|selfhost-abi-cpa" <tmp>/build/CMakeFiles/hcc.dir/link.txt -> 0
+#       otool -tvV <tmp>/build/CMakeFiles/hcc.dir/compile.c.o | grep -c 0x2401 -> 1
+#
+#  7. THE PRODUCTION CUT
+#     the source/object witness for E-TYP-0136 is re-measured from the
+#     CLOSE tree: 0 ast.h frames, 0 direct Ast member reads, 0 legacy mask
+#     occurrences in the ON object.
+#
+#  8. GATE-PUSH
+#     sh scripts/quality/gate-push.sh HEAD   -> VERDICT=PASS, all seven checks
+#     (this is the expensive check; it builds a temporary detached worktree)
+#
+#  9. THE ACCEPTANCE LEDGER
+#     AC50 becomes PASS only if items 1 through 8 all hold. If any of them
+#     fails, AC50 is FAIL and the ACT does not close cleanly.
+#
+# ---------------------------------------------------------------------
+# WHAT IS NOT CLAIMED
+# ---------------------------------------------------------------------
+#
+# * No SHA of the CLOSE commit is written anywhere in the repository, by
+#   this ACT or by any artifact it commits. Git's content-addressed object
+#   model makes such a self-reference structurally impossible.
+# * No post-CLOSE observation is pre-recorded.
+# * No M2 self-hosting claim, no SLICE10 authorization and no next target.

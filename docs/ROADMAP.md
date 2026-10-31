@@ -8359,3 +8359,84 @@ SELFHOST_M2_ACHIEVED = NO
 
 See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-ABI-FOUNDATION-IMPLEMENT01.md` and
 `evidence/ACT-POLYC-SELFHOST-ABI-FOUNDATION-IMPLEMENT01/`.
+
+---
+
+## ACT-POLYC-SELFHOST-ABI-FOUNDATION-PRODUCTION-DELEGATE01 — the first PRODUCTION authority transfer
+
+The ABI recipe that `ACT-POLYC-SELFHOST-ABI-FOUNDATION-IMPLEMENT01` proved in a
+shadow compiler is now used in the **production** compiler. The top-level AST
+visibility decision of the `-ast` dump — "print this node, or suppress it by
+kind?" — is owned by a genuinely compiled PolyC component,
+`tools/bootstrap/selfhost-abi-compile-print-ast.HC`, whose compiled object has
+the same digest the predecessor froze for the shadow subject, so the proven
+component was reused verbatim.
+
+The production ON translation unit of `src/compile.c` now has **zero**
+`src/ast.h` frames and **zero** direct `Ast` member reads, and the compiled
+object contains **zero** occurrences of the legacy `0x2401` kind mask. C keeps
+the AST layout, the opaque handle table, the only dereference of the node,
+iteration, `astToString`, printing and diagnostics; the new C host contains
+zero `AST_` comparisons and exposes no mutation capability.
+
+The selector-disabled build remains a **real, independent** C oracle, not a
+fixture: no CPA symbol in its binary, neither the host nor the subject in its
+link line, the legacy predicate active, and a `compile.c.o` byte-identical to
+the entry tree's.
+
+The accounting stays honest and separate:
+
+```text
+PRODUCTION_GRAPH    52 nodes, 134 mandatory edges, PRODUCTION_CUT_COUNT = 1
+PROVEN_CUT          E-TYP-0136 (SYS-COMPILE_DRIVER -> SYS-AST, TYPE_REPRESENTATION)
+C_OFF_ORACLE_GRAPH  135 edges (configuration-scoped: the legacy C predicate is
+                    still there)
+SCC (either graph)  34 SCCs, largest 19 -- unchanged, and none is assumed to shrink
+```
+
+The partition is recomputed from the original individual edge IDs by two
+independent algorithms (Kosaraju and a transitive-closure partition), both of
+which reproduce the predecessor's frozen baseline exactly; no count was
+subtracted to obtain them.
+
+Equivalence is measured across FOUR compiler generations with THREE distinct
+producer executables: the selector-OFF entry tree, a stage0-produced subject,
+a production-produced subject and a bootstrap-generation-produced subject. All
+four agree on nine frozen witnesses (two of them malformed sources, whose
+diagnostic identities are compared rather than an exit code), so all twelve
+ordered generation pairs agree, and the production compiler runs the whole
+parser suite at 376/376 over 90 files with the historical assertion-sequence
+MD5 `b6f117eb1386ca80f81bc06226e2a741`.
+
+Three causal channels were executed with new execution IDs and restored
+byte-identically: mutating the PolyC predicate changes the witness, mutating
+the C host accessor changes the witness, and mutating the legacy C predicate
+changes the selector-OFF build while leaving the production object
+**byte-identical**. That last result is what proves the legacy decision is
+dormant in production rather than merely unreferenced.
+
+Two findings changed the work and are recorded rather than hidden. First, the
+C0 parser baseline had been measured through a stale test-runner binary: the
+host-mode runner invokes the compiler without `--install-dir`, so it needs the
+compile-time install prefix, and `/usr/local/include` does not exist on this
+host. The unmodified entry tree reproduces exactly the same 67 failures with
+identical failure identities, so this ACT introduced no new failure; every
+measurement from C2 onward uses the hermetic prefix method `gate-push` itself
+uses, under which the entry tree reproduces 376/376. Second, the adverse
+controls found a real defect in the new host — the generation counter's
+fail-closed path was unreachable — which is now fixed and proved by a control
+that observes exactly `-17` at the overflow with zero aliases.
+
+```text
+M0_SELFHOST = ACHIEVED (nine PolyC parser decision sites; unchanged)
+M1_SELFHOST = NOT ACHIEVED
+M2_SELFHOST = NOT ACHIEVED
+NEW_PRODUCTION_AUTHORITIES = 1   (one NON-PARSER CPA decision; 9 parser + 1 = 10 total)
+PRODUCTION_SEMANTIC_DELTA = 0
+NEXT_TARGET = NONE
+SLICE10_AUTHORIZED = NO
+SELFHOST_M2_ACHIEVED = NO
+```
+
+See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-ABI-FOUNDATION-PRODUCTION-DELEGATE01.md`
+and `evidence/ACT-POLYC-SELFHOST-ABI-FOUNDATION-PRODUCTION-DELEGATE01/`.
