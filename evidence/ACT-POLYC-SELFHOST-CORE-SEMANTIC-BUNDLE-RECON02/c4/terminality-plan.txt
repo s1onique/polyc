@@ -1,0 +1,106 @@
+# ACT_ID=ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON02
+# ACT_PHASE=C4-CLOSE
+# EVIDENCE_KIND=terminality-plan
+#
+# THIS IS A PLAN, NOT AN EXTERNAL RECEIPT.
+#
+# The external read-only receipt is produced AFTER the terminal CLOSE
+# commit exists, by a reader outside the repository, and is stored under an
+# untracked path outside the repository. Nothing in this file can stand in
+# for that receipt, and no PASS may be inferred from this file.
+#
+# THIS ACT DOES NOT REACH PASS.
+#
+# The ACT halted at its own C0 predecessor-proof gate (ACT 1.2: "If
+# unproven, stop with HALT_PREDECESSOR_PROOF_INCOMPLETE"; ACT 8/C0: "If
+# predecessor proof fails, terminal HALT without selecting a successor").
+# The terminal verdict is HALT_PREDECESSOR_PROOF_INCOMPLETE with
+# HALT_CLASS=GOVERNANCE and BLOCKS_NEXT=NO.
+#
+# -------------------------------------------------------------------------
+# WHAT THE EXTERNAL RECEIPT MUST BIND (for a HALT closure)
+# -------------------------------------------------------------------------
+#
+#   1. The exact terminal HEAD commit sha of the ACT's 5-commit range and
+#      the exact tree sha of that commit, read from `git rev-parse`.
+#   2. The exact 5-commit range and the trailer of each commit:
+#        commit 1  ACT-Phase: RED        no ACT-Verdict
+#        commit 2  ACT-Phase: EVIDENCE   no ACT-Verdict
+#        commit 3  ACT-Phase: EVIDENCE   no ACT-Verdict
+#        commit 4  ACT-Phase: CLOSE      ACT-Verdict: HALT_PREDECESSOR_PROOF_INCOMPLETE
+#                                   HALT_CLASS: GOVERNANCE
+#                                   BLOCKS_NEXT: NO
+#      (the phase count follows the ACT's own 8-phase contract: C0 RED,
+#       C1 EVIDENCE, C2 IMPL, C3 EVIDENCE, C4 CLOSE; because the ACT
+#       halted at C0, the C1/C2/C3 phases were NOT entered and the
+#       terminal CLOSE is reached directly from C0, which the ACT's
+#       phase contract permits for a C0 HALT.)
+#   3. The final gate identities, read-only:
+#        gate-fast   STATUS=PASS
+#        gate-push   STATUS=PASS
+#        append-only STATUS=PASS (11/11)
+#        F14         STATUS=PASS (5790/5790 frozen paths unchanged)
+#   4. The conservation identities:
+#        parser            376/376 over 90 files
+#                         MD5 b6f117eb1386ca80f81bc06226e2a741
+#        lexer07/08/09     89/89, 45/45, 23/23
+#        lexer07 broad     FAIL_KNOWN_BASELINE, 15 identities
+#                         MD5 7ee761440de83552e751e3c3976c1683
+#        graph             52 nodes / 134 active mandatory edges / 1 cut
+#        authorities       13 structurally active, 12 with causal evidence
+#   5. The explicit NEGATIVE assertions the receipt must confirm:
+#        NEW_PRODUCTION_AUTHORITIES      = 0
+#        PRODUCTION_SEMANTIC_DELTA       = 0
+#        NEW_PROVEN_GRAPH_CUTS          = 0
+#        SELECTED_BUNDLE_ID             = NONE
+#        SELFHOST_M2_ACHIEVED            = NO
+#        SLICE10_AUTHORIZED              = NO
+#   6. The F14 path freeze re-verified path by path against the terminal
+#      commit, with 0 mismatches.
+#
+# -------------------------------------------------------------------------
+# THE BOUNDED CORRECTION THAT MUST PRECEDE ANY SUCCESSOR
+# -------------------------------------------------------------------------
+#
+# The defect is in the PREDECESSOR'S EVIDENCE, not in production. A
+# separately authorized append-only correction ACT must:
+#
+#   a. execute a REAL range-site mutation (remove AST_BIN_OP_LT from
+#      AbiCoreIsRangeOperator) in a disposable detached worktree, rebuild
+#      the FULL production compiler, and capture the changed subject
+#      object digest and a DISCRIMINATING compiled-program witness;
+#   b. record the discriminating witness, not a non-discriminating one.
+#      The predecessor's witness (1 < 2 < 3) is NOT discriminating: both
+#      the range lowering and the default left-associative lowering agree
+#      for that input. A witness such as 5 < 1 < 3 IS discriminating.
+#   c. record the source digest of the mutation actually applied, and
+#      verify it against the compiled object, so that a recorded diff can
+#      never again disagree with the compiled artefact;
+#   d. record the corrected site-isolation table, in which the RO row
+#      names the RO site and the PO row names the PO site, with each
+#      mutation's own source and object digest and its own execution id;
+#   e. leave the predecessor's committed evidence UNTOUCHED (F14). The
+#      correction lives in a new <original-id>-CORRECTION01/ directory.
+#
+# Until that correction exists, any successor ACT that relies on a
+# complete 13-authority causal baseline is relying on a premise that is
+# not established.
+#
+# -------------------------------------------------------------------------
+# WHAT REMAINS POSSIBLE WITHOUT THE CORRECTION
+# -------------------------------------------------------------------------
+#
+# A successor MAY be opened that does NOT depend on the range site's
+# causal backing, because the production range semantics are mechanically
+# GREEN and independently re-proved by this ACT:
+#
+#   - the selector-ON and selector-OFF compilers agree on all 8 witnesses,
+#     including the discriminating chained-range witness;
+#   - a true range-site mutation flips the discriminating witness from 0
+#     to 1, while a pointer-site mutation leaves it at 0.
+#
+# Per F-MECHANICAL-BLOCKING (docs/factory/DOCTRINE.md 25), the predecessor
+# mis-attribution is a historical evidence hygiene defect and is therefore
+# NON_BLOCKING_GOVERNANCE_RESIDUE: BLOCKS_NEXT=NO records exactly that.
+# The successor must not silently treat the range site as proven; it must
+# either re-prove it itself or cite this ACT's discriminating witness.

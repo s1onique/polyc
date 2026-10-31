@@ -97,6 +97,73 @@ Per §1.2 of this ACT, an unproven predecessor RO proof requires
 evidence correction. §9 forbids writing that correction experiment under
 this reconnaissance, and F14 forbids editing predecessor evidence.
 
+## 0.4 C3/C4 outcome recorded during execution
+
+The C0 gate failed, so the C1/C2 phases were never entered. The terminal
+disposition is therefore a **HALT**, not a selection.
+
+```text
+VERDICT                     = HALT_PREDECESSOR_PROOF_INCOMPLETE
+HALT_CLASS                  = GOVERNANCE
+BLOCKS_NEXT                 = NO
+SELECTED_BUNDLE_ID          = NONE
+NEW_PRODUCTION_AUTHORITIES  = 0
+PRODUCTION_SEMANTIC_DELTA   = 0
+NEW_PROVEN_GRAPH_CUTS       = 0
+ACCEPTANCE CRITERIA         = 20 PASS / 3 FAIL / 26 NOT_RUN / 1 DEFERRED
+ADVERSE CONTROLS            = 8/24 executed and reason-specifically sensitive
+```
+
+The `BLOCKS_NEXT = NO` classification is not a relaxation of the ACT's
+gate. It is the doctrine-required classification of the finding itself:
+per `docs/factory/DOCTRINE.md` §25 (F-MECHANICAL-BLOCKING), a historical
+evidence hygiene defect is `NON_BLOCKING_GOVERNANCE_RESIDUE` unless a
+mechanically demonstrable blocking predicate (B1–B5) applies.
+
+None of B1–B5 applies here, and the ACT measured why:
+
+- B1 does not apply: `gate-fast` and `gate-push` both PASS on this tree.
+- B2 does not apply: the production compiler has no reproducible semantic
+  defect. The selector-ON and selector-OFF compilers agree on all eight
+  witnesses, including the discriminating chained-range witness.
+- B3 does not apply: no safety, integrity, corruption or security
+  invariant is violated.
+- B4 does not apply: no production change is requested or needed.
+- B5 does not apply: the capability this ACT needed — the ability to
+  determine which production decision sites are live and C-authoritative
+  — is present and was exercised; the missing item is a predecessor's
+  *recorded evidence*, not a capability.
+
+The ACT's own §1.2 and §8/C0 nevertheless bind: an unproven predecessor
+RO proof is a terminal HALT without a successor. The ACT halts; the
+doctrine records that the halt does not block the roadmap.
+
+## 0.5 Why the range site is not a dead site
+
+The audit distinguishes a **missing-evidence** defect from a **dead-site**
+defect, and the distinction is measured, not asserted.
+
+A discriminating chained-range witness separates the two sites cleanly:
+
+| Witness | pristine (ON) | selector OFF (stage0 C) | RO mutation | PO mutation |
+|---|---|---|---|---|
+| `5 < 1 < 3` (discriminating) | EXIT=0 | EXIT=0 | **EXIT=1** | EXIT=0 |
+| `1 < 2 < 3` (the predecessor's witness) | EXIT=1 | EXIT=1 | EXIT=1 | EXIT=1 |
+
+The predecessor's witness is not discriminating because both the range
+lowering `(a<b) && (b<c)` and the default left-associative lowering
+`(a<b) < c` agree for `1 < 2 < 3`. For `5 < 1 < 3` they disagree:
+`(5<1) && (1<3)` is false while `(5<1) < 3` is `0 < 3`, i.e. true.
+
+The emitted assembly differs as well: the pristine compiler lowers the
+chained range to a short-circuit AND with a separate `.LIRBRP0_E0` branch
+block, while the range mutant emits the plain left-associative comparison
+and never evaluates the third operand.
+
+A successor MAY therefore rely on the production range semantics, but MUST
+NOT cite the predecessor's range experiment as its proof. It must either
+re-prove the site with a discriminating witness or cite this ACT's.
+
 ## 1. C0 entry gate — proof before ranking
 
 ### 1.1 Identity and publication boundary

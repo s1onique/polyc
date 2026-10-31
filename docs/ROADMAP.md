@@ -8539,3 +8539,58 @@ NEXT_TARGET = NONE
 
 See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01.md` and
 `evidence/ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01/`.
+
+#### ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON02 status (CLOSED HALT at C0)
+
+The core-semantic bundle reconnaissance did **not** select a successor. Its
+C0 predecessor-proof gate failed, so the ACT halted there by its own
+contract (`HALT_PREDECESSOR_PROOF_INCOMPLETE`, `HALT_CLASS = GOVERNANCE`,
+`BLOCKS_NEXT = NO`).
+
+The independent audit recomputed the predecessor's three core-operator
+mutations in disposable detached worktrees with full production rebuilds.
+The pristine subject object digest and the `M-POLYC-CA` / `M-POLYC-PO`
+source and object digests were reproduced **bit-identically**, and so was
+the recorded `M-POLYC-RO` source and object digest — but the `M-POLYC-RO`
+digests are the digests of a mutation that removes `AST_BIN_OP_LT` from
+`AbiCoreIsValidPointerOperator`, **not** from `AbiCoreIsRangeOperator`.
+
+The predecessor's `M-POLYC-RO` therefore physically mutated
+SITE-VALID-POINTER-OP. SITE-RANGE-OPERATOR has no executed causal
+experiment in the predecessor, and the predecessor's recorded
+site-isolation row for that experiment is false as written.
+
+The range site itself is genuinely live and load-bearing: a **discriminating**
+chained-range witness (`5 < 1 < 3`) flips the program's exit status from 0
+to 1 under a real range-site mutation and stays at 0 under the
+pointer-site mutation. The predecessor's own witness (`1 < 2 < 3`) is not
+discriminating, because both lowerings agree for that input.
+
+```text
+PRODUCTION_POLYC_AUTHORITIES = 13 structurally active, 12 with causal evidence
+PREDECESSOR_RO_PROOF = UNPROVEN_AS_RECORDED
+VERDICT = HALT_PREDECESSOR_PROOF_INCOMPLETE
+HALT_CLASS = GOVERNANCE
+BLOCKS_NEXT = NO
+NEW_PRODUCTION_AUTHORITIES = 0
+PRODUCTION_SEMANTIC_DELTA = 0
+NEW_PRODUCTION_GRAPH_CUTS = 0
+GRAPH = 52 nodes / 134 active mandatory edges / 1 proven cut (E-TYP-0136)
+PARSER = 376/376 over 90 files, MD5 b6f117eb1386ca80f81bc06226e2a741
+SELECTED_BUNDLE_ID = NONE
+SELFHOST_M2_ACHIEVED = NO
+SLICE10_AUTHORIZED = NO
+NEXT_TARGET = NONE
+```
+
+The defect is a historical evidence hygiene defect, not a production
+defect, so it does not block the roadmap. The proposed next step is a
+bounded append-only correction ACT,
+`ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01-CORRECTION01`, that executes a
+real range-site mutation with a discriminating witness and corrects the
+site-isolation table without touching the predecessor's committed bytes.
+A separate successor may perform the bundle selection without treating
+the range site's causal backing as established.
+
+See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON02.md`
+and `evidence/ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON02/`.
