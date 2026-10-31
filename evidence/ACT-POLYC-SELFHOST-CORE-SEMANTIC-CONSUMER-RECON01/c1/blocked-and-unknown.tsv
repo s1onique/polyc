@@ -1,0 +1,13 @@
+site_or_blocker_id	source_path	function_or_site	classification	reason
+SUB-004	 src/parser.c	parseStatement whole function	BLOCKED_WHOLE_FUNCTION	Already PolyC-owned statement dispatch; surrounding whole-function parser remains C
+SUB-005	src/parser.c	parseDeclOrStatement routing	BLOCKED_WHOLE_FUNCTION	Depends on mutable symbol tables and host routing
+SUB-006	src/parser.c	recovery checkpoint	BLOCKED_RECOVERY	Owns setjmp and recovery state
+SUB-007	src/parser.c	compound body loop	BLOCKED_GRAPH_AND_RECOVERY	Mutates host AST list and owns recovery
+SUB-008	src/parser.c	whole statement parser	BLOCKED_WHOLE_FUNCTION	Whole parser boundary
+SUB-009	src/prslib.c	whole expression parser	BLOCKED_WHOLE_FUNCTION	Whole parser boundary
+SUB-010	src/parser.c	astStmtFallsThrough	BLOCKED_RECURSIVE_WALK	Unbounded host AST traversal
+SUB-011	src/parser.c	astStmtHasBreak	BLOCKED_RECURSIVE_WALK	Unbounded host AST traversal
+SUB-012	src/parser.c	astIsConstTrueCond	BLOCKED_RECURSIVE_WALK	Unbounded host AST traversal
+UNK-callback-dispatch	UNKNOWN	callback dispatch	UNKNOWN	Historical census could not bind
+UNK-format-dispatch	UNKNOWN	format dispatch	UNKNOWN	Historical census could not bind
+UNK-recovery-longjmp	UNKNOWN	recovery jump	UNKNOWN	Historical census could not bind
