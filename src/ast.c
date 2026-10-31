@@ -13,6 +13,12 @@
 #include "lexer.h"
 #include "util.h"
 
+#ifdef HCC_USE_SELFHOST_CORE_OPERATOR_CLASSIFY
+/* ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01: the scalar ABI of the compiled
+ * PolyC core-operator subject. It declares three functions and no layout. */
+#include "abi-core-op-1.h"
+#endif
+
 static Arena ast_arena;
 static Arena ast_type_arena;
 static int ast_arena_init = 0;
@@ -972,6 +978,19 @@ int astTypeIsArray(AstType *type) {
 }
 
 int astIsValidPointerOp(AstBinOp op) {
+#ifdef HCC_USE_SELFHOST_CORE_OPERATOR_CLASSIFY
+    /* ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01.
+     *
+     * The decision is made EXCLUSIVELY by the compiled PolyC subject
+     * (tools/bootstrap/selfhost-core-operator.HC). The legacy C comparison
+     * table below is COMPILED OUT of this translation unit when the
+     * selector is ON: there is no active C copy of this decision.
+     *
+     * The subject receives ONLY the numeric operator value. It never sees
+     * an Ast, an AstType or any other host layout.
+     */
+    return (int)AbiCoreIsValidPointerOperator((s64)op);
+#else
     switch (op) {
         case AST_BIN_OP_SUB:
         case AST_BIN_OP_ADD:
@@ -987,6 +1006,7 @@ int astIsValidPointerOp(AstBinOp op) {
         default:
             return 0;
     }
+#endif
 }
 
 int astIsBinCmp(s64 op) {
@@ -2346,6 +2366,20 @@ char *astKindToString(AstKind kind) {
 }
 
 int astIsRangeOperator(AstBinOp op) {
+#ifdef HCC_USE_SELFHOST_CORE_OPERATOR_CLASSIFY
+    /* ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01.
+     *
+     * The decision is made EXCLUSIVELY by the compiled PolyC subject
+     * (tools/bootstrap/selfhost-core-operator.HC). The legacy C comparison
+     * table below is COMPILED OUT of this translation unit when the
+     * selector is ON: there is no active C copy of this decision.
+     *
+     * This site has PRODUCTION CALLERS OUTSIDE this translation unit
+     * (src/ir.c:507,509 and src/x86.c:1357,1359); they reach this
+     * function, which now delegates.
+     */
+    return (int)AbiCoreIsRangeOperator((s64)op);
+#else
     switch (op) {
         case AST_BIN_OP_GE:
         case AST_BIN_OP_GT:
@@ -2355,6 +2389,7 @@ int astIsRangeOperator(AstBinOp op) {
         default:
             return 0;
     }
+#endif
 }
 
 const char *astUnOpKindToString(AstUnOp op) {

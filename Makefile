@@ -154,6 +154,21 @@ SLICE09_STATEMENT_DISPATCH_OBJ = ./build/parser-statement-dispatch-subject.o
 ABI_CPA_SRC = tools/bootstrap/selfhost-abi-compile-print-ast.HC
 ABI_CPA_OBJ = ./build/selfhost-abi-cpa-subject.o
 
+# ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01.
+#
+# The compiled PolyC core-operator subject and its PolyC source.
+#
+# The VARIABLES are defined HERE, next to the ABI_CPA ones, for the SAME
+# reason: the PRODUCTION_HCC rule PREREQUISITE list is expanded when the
+# rule is READ, and a variable defined later in the file would be EMPTY
+# at that point -- which would silently drop the subject from the build
+# graph and leave the new authority DORMANT.
+#
+# The subject PolyC source is the ONE coherent component that owns the
+# three selected core-operator classifications of BUNDLE-OPERATOR-CORE-01.
+CORE_OPERATOR_SRC = tools/bootstrap/selfhost-core-operator.HC
+CORE_OPERATOR_OBJ = ./build/core-operator-subject.o
+
 # The stage0 compiler's own sources. A change to any of them must
 # invalidate the stage0 compiler, which in turn invalidates the
 # padding subject.
@@ -190,6 +205,7 @@ $(BOOTSTRAP_STAGE0_HCC): $(BOOTSTRAP_STAGE0_SOURCES)
 		-DHCC_USE_SELFHOST_PARSER_DEFAULT_ARM_TERMINATES=OFF \
 		-DHCC_USE_SELFHOST_PARSER_STATEMENT_DISPATCH=OFF \
 		-DHCC_USE_SELFHOST_ABI_CPA=OFF \
+		-DHCC_USE_SELFHOST_CORE_OPERATOR_CLASSIFY=OFF \
 		-DHCC_RUNTIME_OUTPUT_DIRECTORY=$(CURDIR)/$(BOOTSTRAP_STAGE0_DIR)
 	$(MAKE) -C $(BOOTSTRAP_STAGE0_BUILD) hcc -j2
 	@if [ ! -x "$(BOOTSTRAP_STAGE0_HCC)" ]; then \
@@ -633,6 +649,41 @@ $(ABI_CPA_OBJ): $(ABI_CPA_SRC) $(BOOTSTRAP_STAGE0_HCC) $(BOOTSTRAP_PREFIX_INC)/t
 
 abi-cpa-subject: $(ABI_CPA_OBJ)
 
+# ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01 C2 IMPL.
+#
+# The compiled PolyC core-operator subject.
+#
+# It is produced by the SAME digest-bound stage0 producer that builds the
+# ten existing production subjects, from real PolyC source, and it is
+# linked into the production ./hcc by src/CMakeLists.txt.
+#
+# The object is verified for ALL THREE of its exported symbols AND its
+# architecture. A missing symbol or a wrong-architecture object is
+# REJECTED, never linked. A producer that exits 0 without producing the
+# object is a hard error, never a silent fallback to the legacy C
+# predicate.
+$(CORE_OPERATOR_OBJ): $(CORE_OPERATOR_SRC) $(BOOTSTRAP_STAGE0_HCC) $(BOOTSTRAP_PREFIX_INC)/tos.HH
+	@rm -f $@
+	$(BOOTSTRAP_STAGE0_HCC) \
+		--install-dir=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-c $(CORE_OPERATOR_SRC) \
+		-o $@
+	@if [ ! -f "$@" ]; then \
+		echo "core-operator-subject: $@ not produced by the stage0 compiler" >&2; \
+		exit 1; \
+	fi
+	@nm $@ | grep -q '_AbiCoreClassifyCompoundAssign' \
+		|| { echo "core-operator-subject: symbol _AbiCoreClassifyCompoundAssign not found in $@" >&2; exit 1; }
+	@nm $@ | grep -q '_AbiCoreIsValidPointerOperator' \
+		|| { echo "core-operator-subject: symbol _AbiCoreIsValidPointerOperator not found in $@" >&2; exit 1; }
+	@nm $@ | grep -q '_AbiCoreIsRangeOperator' \
+		|| { echo "core-operator-subject: symbol _AbiCoreIsRangeOperator not found in $@" >&2; exit 1; }
+	@echo "CORE_OPERATOR_SUBJECT=$@"
+	@echo "CORE_OPERATOR_SUBJECT_ARCH=$$(file -b "$@" | sed -e 's/.*object //')"
+	@echo "CORE_OPERATOR_SUBJECT_SHA256=$$(shasum -a 256 "$@" | cut -d' ' -f1)"
+
+core-operator-subject: $(CORE_OPERATOR_OBJ)
+
 # The production compiler.
 #
 # The CMake configure is handed the DECLARED producer of the padding
@@ -654,6 +705,7 @@ PRODUCTION_HCC_INPUTS = $(PARSER_PADDING_OBJ) $(SLICE02_CFT_OBJ) $(SLICE03_OP_OB
 	$(SLICE07_COMPOUND_BLOCK_OBJ) $(SLICE08_DEFAULT_ARM_OBJ) \
 	$(SLICE09_STATEMENT_DISPATCH_OBJ) \
 	$(ABI_CPA_OBJ) \
+	$(CORE_OPERATOR_OBJ) \
 	$(wildcard src/*.c src/asm/*.c) \
 	$(wildcard src/*.h src/asm/*.h) \
 	$(wildcard src/CMakeLists.txt src/asm/CMakeLists.txt) \
@@ -717,7 +769,12 @@ $(PRODUCTION_HCC): $(PRODUCTION_HCC_INPUTS)
 		-DABI_CPA_OBJECT=$(CURDIR)/$(ABI_CPA_OBJ) \
 		-DABI_CPA_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
 		-DABI_CPA_SOURCE=$(CURDIR)/$(ABI_CPA_SRC) \
-		-DABI_CPA_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR)
+		-DABI_CPA_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_CORE_OPERATOR_CLASSIFY=ON \
+		-DCORE_OPERATOR_OBJECT=$(CURDIR)/$(CORE_OPERATOR_OBJ) \
+		-DCORE_OPERATOR_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DCORE_OPERATOR_SOURCE=$(CURDIR)/$(CORE_OPERATOR_SRC) \
+		-DCORE_OPERATOR_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
 		-DHCC_BOOTSTRAP_EXPECTED_SHA=$(LIBTOS_BOOTSTRAP_EXPECTED_SHA)
 	$(MAKE) -C ./build -j2
 	@if [ ! -x ./hcc ]; then \
@@ -816,7 +873,12 @@ llvm-all: $(PARSER_PADDING_OBJ)
 		-DABI_CPA_OBJECT=$(CURDIR)/$(ABI_CPA_OBJ) \
 		-DABI_CPA_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
 		-DABI_CPA_SOURCE=$(CURDIR)/$(ABI_CPA_SRC) \
-		-DABI_CPA_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR)
+		-DABI_CPA_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_CORE_OPERATOR_CLASSIFY=ON \
+		-DCORE_OPERATOR_OBJECT=$(CURDIR)/$(CORE_OPERATOR_OBJ) \
+		-DCORE_OPERATOR_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DCORE_OPERATOR_SOURCE=$(CURDIR)/$(CORE_OPERATOR_SRC) \
+		-DCORE_OPERATOR_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
 		-DHCC_BOOTSTRAP_EXPECTED_SHA=$(LIBTOS_BOOTSTRAP_EXPECTED_SHA)
 	$(MAKE) -C ./build/llvm -j2
 	@if [ ! -x ./hcc ]; then \
@@ -956,12 +1018,42 @@ test-prefix-install: production-hcc runtime-producer
 		-DSTATEMENT_DISPATCH_OBJECT=$(CURDIR)/$(SLICE09_STATEMENT_DISPATCH_OBJ) \
 		-DSTATEMENT_DISPATCH_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
 		-DSTATEMENT_DISPATCH_SOURCE=$(CURDIR)/$(SLICE09_STATEMENT_DISPATCH_SRC) \
-		-DSTATEMENT_DISPATCH_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR)
+		-DSTATEMENT_DISPATCH_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
 		-DHCC_USE_SELFHOST_ABI_CPA=ON \
 		-DABI_CPA_OBJECT=$(CURDIR)/$(ABI_CPA_OBJ) \
 		-DABI_CPA_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
 		-DABI_CPA_SOURCE=$(CURDIR)/$(ABI_CPA_SRC) \
-		-DABI_CPA_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR)
+		-DABI_CPA_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_CORE_OPERATOR_CLASSIFY=ON \
+		-DCORE_OPERATOR_OBJECT=$(CURDIR)/$(CORE_OPERATOR_OBJ) \
+		-DCORE_OPERATOR_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DCORE_OPERATOR_SOURCE=$(CURDIR)/$(CORE_OPERATOR_SRC) \
+		-DCORE_OPERATOR_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR)
+	@# ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01: FAIL-CLOSED CONFIGURATION CHECK.
+	@#
+	@# The recipe's cmake invocation is ONE shell command: every -D flag
+	@# above reaches cmake. That is verified HERE, not assumed. If a
+	@# continuation is ever lost again, the configure would silently fall
+	@# back to the default selector state and the test-prefix compiler
+	@# would claim a PolyC authority it does not have. This check turns
+	@# that class of failure from SILENT into FATAL.
+	@#
+	@# The historical form of this defect was a missing line continuation
+	@# that made the shell run the trailing -D flags as a separate
+	@# command (status 127, reported by make as "Error 127 (ignored)"),
+	@# so the -DABI_CPA_* and -DHCC_USE_SELFHOST_* flags never reached
+	@# cmake at all. See
+	@# evidence/ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01/c1/strict-build-negative.txt
+	@if ! grep -qx 'HCC_USE_SELFHOST_ABI_CPA:BOOL=ON' $(CURDIR)/build/test-prefix-install-build/CMakeCache.txt; then \
+		echo "test-prefix-install: FAIL-CLOSED, the configure did not enable the ABI_CPA selector" >&2; \
+		echo "test-prefix-install: a cmake -D flag was lost; the configure is NOT in the requested state" >&2; \
+		exit 1; \
+	fi
+	@if ! grep -qx 'HCC_USE_SELFHOST_CORE_OPERATOR_CLASSIFY:BOOL=ON' $(CURDIR)/build/test-prefix-install-build/CMakeCache.txt; then \
+		echo "test-prefix-install: FAIL-CLOSED, the configure did not enable the core-operator selector" >&2; \
+		echo "test-prefix-install: a cmake -D flag was lost; the configure is NOT in the requested state" >&2; \
+		exit 1; \
+	fi
 	$(MAKE) -C ./build/test-prefix-install-build install
 	@if [ ! -f $(TEST_PREFIX)/lib/libtos.a ] || \
 	    [ ! -f $(TEST_PREFIX)/lib/libtos.0.0.1.dylib ] || \

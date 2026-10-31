@@ -1,0 +1,24 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=c2-immediate-oracle-equivalence
+#
+# The IMMEDIATE C0-oracle vs migrated-compiler comparison required by
+# the ACT C2 step 4: the three frozen fixture populations and the real
+# compiled-program witnesses are compared BEFORE C3.
+#
+witness\tselector_on_exit\tselector_off_exit\tequal\tnote
+W-CA	30	30	YES	the compound-assignment decision (pristine value 30, matching the predecessor baseline)
+W-RO	1	1	YES	the chained relational range lowering
+W-RO-NEG	1	1	YES	the negative companion: a chained non-range operator
+W-PO	0	0	YES	a valid pointer comparison
+
+# THE PO NEGATIVE WITNESS (the compiler must REJECT it)
+ON_PRODUCED_BINARY=NO
+1
+OFF_PRODUCED_BINARY=NO
+1
+
+# THE FIXTURE POPULATION: the migrated compiler's classifier against the
+# independent G0 C oracle.
+FIXTURE_ROWS=146
+(the full G0/G1/G2/G3 differential is performed in C3)

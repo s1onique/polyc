@@ -1,0 +1,13 @@
+responsibility	owner_before	owner_after	polyc_touches_it	evidence
+token objects (Lexeme)	C (src/lexer.c)	C (src/lexer.c)	NO	src/prslib.c copies tok->tk_type and tok->i64 into scalars before the call
+AST representation and graph mutation	C (src/ast.c)	C (src/ast.c)	NO	the subject never receives an Ast*
+type checking	C (src/ast.c astGetResultType)	C (src/ast.c astGetResultType)	NO	the caller still takes its own goto error branch
+IR lowering	C (src/ir.c)	C (src/ir.c)	NO	src/ir.c:507,509 still read ast->binop and call astIsRangeOperator
+code generation	C (src/x86.c)	C (src/x86.c)	NO	src/x86.c:1357,1359 unchanged
+allocation	C (src/memory.c, src/arena.h)	C (src/memory.c, src/arena.h)	NO	the subject allocates nothing
+diagnostics	C (src/cctrl.c)	C (src/cctrl.c)	NO	the subject emits no diagnostic
+recovery	C (src/cctrl.c)	C (src/cctrl.c)	NO	no nonlocal recovery crosses the PolyC frame
+the compound-assignment DECISION	C (src/prslib.c)	PolyC subject	YES (this is the transfer)	AC24
+the pointer-operator DECISION	C (src/ast.c)	PolyC subject	YES (this is the transfer)	AC25
+the range-operator DECISION	C (src/ast.c)	PolyC subject	YES (this is the transfer)	AC26
+the out-parameter cell (deconstructed_compound_op)	C (src/prslib.c parseExpr stack)	C (src/prslib.c parseExpr stack)	YES (one scalar store, only on success)	the subject writes ONE s64 into a host-owned cell

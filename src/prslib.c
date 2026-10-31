@@ -14,6 +14,12 @@
 #include "prslib.h"
 #include "util.h"
 
+#ifdef HCC_USE_SELFHOST_CORE_OPERATOR_CLASSIFY
+/* ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01: the scalar ABI of the compiled
+ * PolyC core-operator subject. It declares three functions and no layout. */
+#include "abi-core-op-1.h"
+#endif
+
 static AstType *parseArrayDimensionsInternal(Cctrl *cc, AstType *base_type);
 Ast *parseSubscriptExpr(Cctrl *cc, Ast *ast);
 
@@ -1326,6 +1332,28 @@ Ast *parseGetClassField(Cctrl *cc, Ast *cls) {
 }
 
 static int parseCompoundAssign(Lexeme *tok, AstBinOp *_op) {
+#ifdef HCC_USE_SELFHOST_CORE_OPERATOR_CLASSIFY
+    /* ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01.
+     *
+     * The decision is made EXCLUSIVELY by the compiled PolyC subject
+     * (tools/bootstrap/selfhost-core-operator.HC). The legacy C comparison
+     * table below is COMPILED OUT of this translation unit when the
+     * selector is ON: there is no active C copy of this decision.
+     *
+     * The token_type and token_value are COPIED into scalars before the
+     * call: the subject never receives the Lexeme*. The subject writes
+     * *_op ONLY when it returns 1, exactly as the original C did.
+     */
+    s64 op_value = 0;
+    s64 is_compound = AbiCoreClassifyCompoundAssign((s64)tok->tk_type,
+                                                    (s64)tok->i64,
+                                                    &op_value);
+    if (is_compound == 1) {
+        *_op = (AstBinOp)op_value;
+        return 1;
+    }
+    return 0;
+#else
     if (tok->tk_type != TK_PUNCT) {
         return 0;
     }
@@ -1345,6 +1373,7 @@ static int parseCompoundAssign(Lexeme *tok, AstBinOp *_op) {
     }
 
     return 0;
+#endif
 }
 
 /* Inverse of astBinOpFromToken. Returns the source token punct value

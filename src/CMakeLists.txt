@@ -287,6 +287,100 @@ else()
     message(STATUS "ACT-POLYC-SELFHOST-ABI-FOUNDATION-PRODUCTION-DELEGATE01: selector OFF, the legacy C AST-visibility predicate is active and no PolyC subject is linked")
 endif()
 
+# ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01:
+#
+# The production migration of the THREE selected core-operator
+# classifications of BUNDLE-OPERATOR-CORE-01:
+#
+#   SITE-COMPOUND-ASSIGN   src/prslib.c  parseCompoundAssign
+#   SITE-VALID-POINTER-OP  src/ast.c     astIsValidPointerOp
+#   SITE-RANGE-OPERATOR    src/ast.c     astIsRangeOperator
+#
+# The compiled PolyC component (tools/bootstrap/selfhost-core-operator.HC)
+# owns the decisions; the C side keeps every other responsibility (token
+# objects, AST construction, type checking, IR lowering, code generation,
+# allocation, diagnostics and recovery).
+#
+# The dedicated selector `HCC_USE_SELFHOST_CORE_OPERATOR_CLASSIFY` is
+# used, and it is INDEPENDENT of the ten existing authorities: coupling an
+# eleventh authority to `HCC_USE_SELFHOST_COMPONENTS` or to any
+# `HCC_USE_SELFHOST_PARSER_*` selector would make the authority accounting
+# ambiguous.
+#
+# Configurations:
+#   OFF -> the legacy C predicates stay active in src/prslib.c and
+#          src/ast.c, and the subject is NOT linked, so the resulting
+#          binary is a genuinely independent C oracle.
+#   ON  -> the compiled PolyC decisions are authoritative and the legacy C
+#          comparison tables are COMPILED OUT of the two translation
+#          units. A missing subject is a HARD configure error; there is no
+#          path on which the production compiler silently falls back to the
+#          C predicate while claiming the PolyC authority.
+#
+# Default: OFF, so a bare `cmake -S ./src -B ./build` never depends on a
+# subject object that may not exist. The production ./hcc turns it ON
+# explicitly from the Makefile, which also SCHEDULES the subject's
+# production.
+#
+# This block is placed AFTER `add_executable(hcc ${SOURCES} ...)` because it
+# links an already-declared target.
+option(HCC_USE_SELFHOST_CORE_OPERATOR_CLASSIFY
+       "Link the compiled PolyC core-operator classifications into hcc and enable the production core-operator delegation. ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01."
+       OFF)
+
+if (HCC_USE_SELFHOST_CORE_OPERATOR_CLASSIFY)
+    if (NOT CORE_OPERATOR_OBJECT)
+        set(CORE_OPERATOR_OBJECT "${CMAKE_SOURCE_DIR}/../build/core-operator-subject.o")
+    endif()
+    # Same fail-closed contract as the CPA and parser-padding subjects: if a
+    # producer is declared, CMake SCHEDULES the subject's production; if
+    # not, the object must already exist and a missing object is a hard
+    # configure error naming the exact command. In BOTH cases the object is
+    # REQUIRED -- there is no silent fallback to the C predicate.
+    if (CORE_OPERATOR_PRODUCER)
+        if (NOT EXISTS "${CORE_OPERATOR_PRODUCER}")
+            message(FATAL_ERROR
+                "ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01: the declared "
+                "core-operator producer does not exist: ${CORE_OPERATOR_PRODUCER}. "
+                "The production hcc CANNOT be built without a real PolyC producer.")
+        endif()
+        if (NOT EXISTS "${CORE_OPERATOR_SOURCE}")
+            message(FATAL_ERROR
+                "ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01: the declared "
+                "core-operator SOURCE does not exist: ${CORE_OPERATOR_SOURCE}. "
+                "The production hcc CANNOT be built without the real PolyC source.")
+        endif()
+        get_filename_component(_core_source_dir "${CORE_OPERATOR_SOURCE}" DIRECTORY)
+        get_filename_component(_core_object_dir "${CORE_OPERATOR_OBJECT}" DIRECTORY)
+        add_custom_command(
+            OUTPUT "${CORE_OPERATOR_OBJECT}"
+            COMMAND "${CMAKE_COMMAND}" -E make_directory "${_core_object_dir}"
+            COMMAND "${CORE_OPERATOR_PRODUCER}"
+                    --install-dir=${CORE_OPERATOR_PREFIX}
+                    -c "${CORE_OPERATOR_SOURCE}"
+                    -o "${CORE_OPERATOR_OBJECT}"
+            DEPENDS "${CORE_OPERATOR_SOURCE}" "${CORE_OPERATOR_PRODUCER}"
+            WORKING_DIRECTORY "${_core_source_dir}"
+            COMMENT "ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01: producing the compiled PolyC core-operator subject ${CORE_OPERATOR_OBJECT}"
+            VERBATIM)
+        add_custom_target(hcc-core-operator-subject DEPENDS "${CORE_OPERATOR_OBJECT}")
+        add_dependencies(hcc hcc-core-operator-subject)
+        message(STATUS "ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01: production hcc SCHEDULES the PolyC core-operator subject: ${CORE_OPERATOR_OBJECT}")
+    elseif (NOT EXISTS "${CORE_OPERATOR_OBJECT}")
+        message(FATAL_ERROR
+            "ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01: required compiled "
+            "PolyC core-operator subject missing at ${CORE_OPERATOR_OBJECT}. "
+            "Build it with the stage0 hcc: "
+            "./hcc --install-dir=<prefix> -c tools/bootstrap/selfhost-core-operator.HC -o ${CORE_OPERATOR_OBJECT}. "
+            "Or configure with -DCORE_OPERATOR_PRODUCER=<stage0 hcc> to have the build graph produce it.")
+    endif()
+    target_compile_definitions(hcc PRIVATE HCC_USE_SELFHOST_CORE_OPERATOR_CLASSIFY)
+    target_link_libraries(hcc "${CORE_OPERATOR_OBJECT}")
+    message(STATUS "ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01: production hcc links the compiled PolyC core-operator decisions: ${CORE_OPERATOR_OBJECT}")
+else()
+    message(STATUS "ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01: selector OFF, the legacy C core-operator predicates are active and no PolyC subject is linked")
+endif()
+
 # ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01 C2 IMPL:
 # Link the qualified PolyC BootstrapCalcPadding component into the
 # production hcc binary so the parser delegates padding calculation
