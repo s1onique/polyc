@@ -8594,3 +8594,50 @@ the range site's causal backing as established.
 
 See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON02.md`
 and `evidence/ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON02/`.
+
+#### ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON02-CORRECTION01 status (CLOSED PASS)
+
+The core-semantic bundle reconnaissance closed at
+`HALT_PREDECESSOR_PROOF_INCOMPLETE`: its predecessor-proof audit proved
+that the predecessor's `M-POLYC-RO` experiment physically mutated
+`AbiCoreIsValidPointerOperator` rather than `AbiCoreIsRangeOperator`, so
+SITE-RANGE-OPERATOR has no executed causal experiment in the predecessor.
+
+That reconnaissance's own closure bookkeeping was defective: its ACT id
+carried **two** CLOSE commits where the Cardinality-1 closure-identity
+invariant requires exactly one. The duplicate arose from an unnecessary
+follow-up commit that restated a file whose committed form was already
+correct. The defect is unremovable in place, because every commit after
+the append-only start point is immutable.
+
+It is repaired forward-only, with the repository's own mechanism: this
+ACT's CLOSE carries `ACT-Supersedes` and `ACT-Corrected-Verdict`, and it
+is the single CLOSE for its own ACT id. The direct precedent is
+`ACT-POLYC-SELFHOST-PARSER-SLICE03-CORRECTION01`, whose recorded defect
+D5 is "the historical range has six commits, not the specified five".
+
+**The technical verdict is carried forward unchanged.** Nothing in the
+predecessor's finding is softened: SITE-RANGE-OPERATOR still has no
+executed causal experiment, the thirteenth authority is still unbacked by
+a causal experiment, and no successor bundle was selected.
+
+```text
+PREDECESSOR_VERDICT = HALT_PREDECESSOR_PROOF_INCOMPLETE (unchanged)
+PREDECESSOR_RO_PROOF = UNPROVEN_AS_RECORDED (unchanged)
+PRODUCTION_POLYC_AUTHORITIES = 13 structurally active, 12 with causal evidence
+SELECTED_BUNDLE_ID = NONE
+NEW_PRODUCTION_AUTHORITIES = 0
+PRODUCTION_SEMANTIC_DELTA = 0
+NEW_PROVEN_GRAPH_CUTS = 0
+GRAPH = 52 nodes / 134 active mandatory edges / 1 proven cut (E-TYP-0136)
+SELFHOST_M2_ACHIEVED = NO
+SLICE10_AUTHORIZED = NO
+```
+
+The proposed next step is unchanged:
+`ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01-CORRECTION01`, the bounded
+append-only correction that executes a real range-site mutation with a
+**discriminating** compiled-program witness.
+
+See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON02-CORRECTION01.md`
+and `evidence/ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON02-CORRECTION01/`.
