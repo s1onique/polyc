@@ -1,0 +1,27 @@
+./hcc --install-dir=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/test-prefix \
+		-c tools/bootstrap/selfhost-lexer-link.HC \
+		-o ./build/lexer09-link.o
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+LEXER09_STAGE0_LINK_OBJECT=./build/lexer09-link.o
+cc -std=c99 -O2 -Wall -Wextra -o ./build/lexer09-link-oracle \
+		tools/quality/lexer09-link-oracle.c \
+		tools/quality/lexer09-link-oracle-impl.c
+tools/quality/lexer09-link-oracle-impl.c:37:12: warning: unused function 'oracle_lex' [-Wunused-function]
+static int oracle_lex(const char *src, I64 src_len, I64 *cursor,
+           ^
+1 warning generated.
+cc -std=c99 -O2 -Wall -Wextra -o ./build/lexer09-direct-differential \
+		tools/quality/lexer09-direct-differential.c \
+		tools/quality/lexer09-link-oracle-impl.c \
+		./build/lexer09-link.o -lm
+tools/quality/lexer09-link-oracle-impl.c:37:12: warning: unused function 'oracle_lex' [-Wunused-function]
+static int oracle_lex(const char *src, I64 src_len, I64 *cursor,
+           ^
+1 warning generated.
+./build/lexer09-direct-differential
+DIRECT_DIFFERENTIAL_TOTAL=23
+DIRECT_DIFFERENTIAL_PASS=23
+DIRECT_DIFFERENTIAL_FAIL=0
+STATUS=PASS
