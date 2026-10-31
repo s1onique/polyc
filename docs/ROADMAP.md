@@ -8719,3 +8719,70 @@ inherited and there is none to carry forward.
 
 See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01-CORRECTION01.md`
 and `evidence/ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01-CORRECTION01/`.
+
+## ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03 (PASS / PASS_SELECTED_CORE_BUNDLE)
+
+A fresh, production-linked core census and a physically causal
+selection of ONE coherent multi-site bundle of core compiler semantics
+for a later implementation ACT. This ACT supersedes nothing: RECON02's
+technical HALT and its forward-only cardinality correction are carried
+forward unchanged.
+
+```text
+SELECTED_BUNDLE_ID       = CAND-CMP-CC-A64
+SELECTED_MEMBER_COUNT   = 3
+  SITE-A64-CC-FOR   src/aarch64.c 35517..36576  aarch64CcFor
+  SITE-A64-CC-INV   src/aarch64.c 36577..37495  aarch64CcInvFor
+  SITE-A64-CSET     src/aarch64.c 37566..37719  aarch64EmitCSet
+SELECTED_ABI            = ABI-A64-CMP-CC-1 (bounded scalars; the
+                         failure signal is a NULL pointer, NOT a
+                         negative numeric status, because IR_CMP_EQ
+                         is the legitimate zero of IrCmpKind)
+NEXT_ABI_CONTRACT       = ABI-A64-CMP-CC-1, frozen in
+                         evidence/ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03/c2/selected-bundle-contract.md
+CANDIDATES_TOTAL       = 6
+ELIGIBLE_BUNDLES       = 4
+EXCLUDED               = CAND-TYPE-FULL (E06), CAND-CMP-CC-BOTH (E16)
+ELIGIBILITY_INDEPENDENT_MISMATCHES = 0
+RANK_INDEPENDENT_MISMATCHES       = 0
+CAUSAL_MEMBER_EXPERIMENTS_QUALIFIED = 3/3
+```
+
+Every member was qualified by its own physically separate C-source
+mutation of a real, whole production compiler: each changed one line
+of one function, was confined to that function's byte range, was
+rebuilt from scratch, and changed BOTH the emitted assembly and the
+compiled program's behaviour. The isolation anti-controls are recorded
+honestly, including the one genuine coupling between
+`aarch64EmitCSet` and `aarch64CcFor`.
+
+```text
+PRODUCTION_AUTHORITIES  = 13 (conserved; 12 at the IMPLEMENT01 close,
+                       13 correction-inclusive)
+NEW_PRODUCTION_AUTHORITIES = 0
+PRODUCTION_SEMANTIC_DELTA  = 0
+GRAPH = 52 nodes / 134 active mandatory edges / 34 SCC / largest 19
+        (the sole historic cut E-TYP-0136; E-MUT-0137 remains
+        NOT_CUT and is not weighted)
+GRAPH_IMPACT_OF_THIS_BUNDLE = POTENTIAL_ONLY (3 edges); NO cut is
+                       claimed by a planned ABI
+SELFHOST_M2_ACHIEVED = NO  (the M2 producer is ABSENT: no
+                       PolyC-authored compiler source set exists)
+SLICE10_AUTHORIZED = NO
+```
+
+The proposed next ACT is
+`ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02`, which is NOT
+authorized by this ACT and must re-verify the frozen contract rather
+than assume it.
+
+Every baseline is conserved: parser 376/376 over 90 blocks with MD5
+`b6f117eb1386ca80f81bc06226e2a741`, lexer direct 89/89, 45/45 and
+23/23, the broad LEXER07 corpus at 181 cases with the 15 historical
+S0 failures and MD5 `7ee761440de83552e751e3c3976c1683`, and F-NO-PYTHON
+at 12 historical violations with 0 new. gate-fast, gate-push and the
+append-only suite (11/11) pass; the F14 freeze covers 12367 paths with
+0 mismatches; all 24 negative controls fire for their own named reason.
+
+See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03.md`
+and `evidence/ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03/`.

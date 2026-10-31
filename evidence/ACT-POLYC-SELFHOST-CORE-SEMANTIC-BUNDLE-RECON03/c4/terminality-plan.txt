@@ -1,0 +1,94 @@
+# ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03 -- C4 TERMINALITY PLAN
+
+Factory-Version: 2
+Phase: C4 (CLOSE)
+Evidence kind: PLAN
+
+**THIS FILE IS A PLAN, NOT AN OBSERVED RESULT AND NOT A RECEIPT.**
+
+It states what an EXTERNAL, READ-ONLY terminality audit must check
+after the unique C4 CLOSE commit exists. It records no check outcome,
+because at the moment it is written the CLOSE commit does not yet
+exist and no terminality audit has been run.
+
+The ACT's own acceptance criterion AC50 is DEFERRED at C3 and remains
+DEFERRED in the committed C3 ledger. AC50 can only become PASS from an
+external receipt that is bound to the EXACT C4 HEAD and TREE and that
+lives OUTSIDE the repository. It must never be backdated into the C3
+or CLOSE commits.
+
+## What the external audit must check, and how
+
+The audit runs AFTER the CLOSE commit, against the CLOSE commit's own
+tree, and writes its receipt OUTSIDE the repository. It must be
+read-only with respect to the repository: it may read the Git objects,
+the working tree and the committed evidence, and it must not modify
+the checkout, create a commit, or write into the repository.
+
+```text
+CHECK  WHAT IT MUST BIND
+  1   the terminal HEAD is the C4 CLOSE commit of
+      ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03
+  2   the terminal TREE is the TREE of that commit
+  3   the ACT's range is ENTRY..CLOSE with exactly FIVE commits
+  4   the five phases are RED, EVIDENCE, IMPL, EVIDENCE, CLOSE
+  5   there is exactly ONE CLOSE commit in the range
+  6   the CLOSE is the LAST commit of the range
+  7   the CLOSE carries exactly ONE ACT-Verdict and it is PASS
+  8   the CLOSE carries exactly ONE ACT-Phase and it is CLOSE
+  9   the CLOSE carries NO HALT_CLASS and NO BLOCKS_NEXT
+ 10   there are ZERO commits after the CLOSE that carry this ACT id
+ 11   the F14 freeze still matches, outside this ACT's own two
+      authorized paths
+ 12   the 50 acceptance criteria join by exact id: 49 PASS and
+      AC50 PASS, with 0 missing, 0 duplicate and 0 extra ids
+ 13   the 24 negative controls join by exact id with 0 missing,
+      0 duplicate and 0 extra ids
+ 14   the selected bundle contract's SHA-256 is the one frozen at C2
+      and re-verified at C3
+ 15   each of the three selected sites has its own distinct physical
+      execution id, its own applied-diff digest and its own
+      discriminating witness transition
+ 16   gate-fast PASS, gate-push PASS and the append-only suite 11/11
+      against the terminal tree
+ 17   zero replace refs and a clean working tree
+ 18   every changed path is inside this ACT's authorized list
+ 19   the production source is untouched: 0 production semantic delta,
+      0 new production authorities and 0 new proven graph cuts
+```
+
+## Where the receipt must live
+
+```text
+RECEIPT_PATH   = outside the repository, e.g.
+                 /tmp/recon03-terminality-receipt/terminal-receipt.txt
+RECEIPT_BINDING= the exact HEAD SHA and the exact TREE SHA of the
+                 C4 CLOSE commit
+RECEIPT_RULE   = the receipt is immutable once written and is never
+                 backdated into any commit of this ACT
+```
+
+## The disposition this ACT may claim at C4
+
+```text
+SELECTED_BUNDLE_ID       = CAND-CMP-CC-A64
+SELECTED_MEMBER_COUNT   = 3
+DISPOSITION             = PASS_SELECTED_CORE_BUNDLE
+PRODUCTION_SEMANTIC_DELTA = 0
+NEW_PRODUCTION_AUTHORITIES = 0
+NEW_PROVEN_GRAPH_CUTS   = 0
+SELFHOST_M2_ACHIEVED    = NO
+SLICE10_AUTHORIZED      = NO
+```
+
+The disposition is the ACT's own; the receipt is the INDEPENDENT
+confirmation of it. Neither substitutes for the other.
+
+## What is explicitly NOT claimed
+
+- No second CLOSE commit is created to store a terminality receipt.
+- No ACT commit is created after the CLOSE.
+- No AC50 PASS is written into the C3 or CLOSE commits.
+- No SHA of a commit that contains this file is claimed here. The
+  receipt binds to the CLOSE commit by querying Git, not by reading a
+  digest out of a document.
