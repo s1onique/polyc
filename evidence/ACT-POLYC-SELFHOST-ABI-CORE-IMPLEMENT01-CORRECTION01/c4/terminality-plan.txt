@@ -99,6 +99,100 @@
 #
 # --- WHAT THIS PLAN DOES NOT CLAIM ---
 #
+# --- WHAT THE RECEIPT ACTUALLY SAID ---
+#
+# The external verifier was run AFTER the CLOSE commit, against the
+# terminal tree, and wrote its receipt OUTSIDE the repository. Its
+# complete output is recorded here so that the receipt's substance is
+# auditable from the repository even though the receipt FILE lives
+# outside it.
+#
+# The receipt's binding identity:
+#
+#   RECEIPT_PATH=/tmp/aci01-corr01-receipt/terminal-receipt.txt
+#   RECEIPT_SHA256=7cd01f087f5b0daf5caccfd6f7a240373645a995ed4b8488faf0e8b3f276a635
+#   RECEIPT_CREATED_OUTSIDE_THE_REPOSITORY=YES
+#
+#   HEAD=7f2e14d0231404a1b9af32f47ce81bb50b812fa1
+#   TREE=de84398f91dd3f0c0319cb74ca0bd4520aacfff6
+#   ENTRY_COMMIT=30432271ab1f56079be3a33dbddc415392b5034e
+#
+# EVERY CHECK IN THE RECEIPT:
+#
+#   CHECK  TERMINAL_HEAD_IS_THE_CLOSE_COMMIT              PASS
+#   CHECK  RANGE_HAS_FIVE_COMMITS                          PASS  (5)
+#   CHECK  RANGE_PHASES_ARE_RED_EVIDENCE_IMPL_EVIDENCE_CLOSE PASS  (RED,EVIDENCE,IMPL,EVIDENCE,CLOSE)
+#   CHECK  EXACTLY_ONE_CLOSE_COMMIT                         PASS  (1)
+#   CHECK  THE_CLOSE_IS_THE_LAST_COMMIT                    PASS
+#   CHECK  CLOSE_CARRIES_EXACTLY_ONE_ACT_VERDICT            PASS  (1)
+#   CHECK  CLOSE_VERDICT_IS_PASS                            PASS
+#   CHECK  NO_COMMITS_AFTER_THE_CLOSE                       PASS  (0)
+#   CHECK  F14_FROZEN_PATH_COUNT                            PASS  (6434)
+#   CHECK  F14_MISMATCHES_OUTSIDE_THE_AUTHORIZED_PATHS      PASS  (0)
+#   CHECK  CORRECTION_RO_SOURCE_SHA256                      PASS
+#   CHECK  CORRECTION_RO_OBJECT_SHA256                      PASS
+#   CHECK  STRUCTURAL_AUTHORITIES                           PASS  (13)
+#   CHECK  HISTORICAL_CAUSAL_AUTHORITIES                    PASS  (12)
+#   CHECK  CORRECTION_INCLUSIVE_CAUSAL_AUTHORITIES          PASS  (13)
+#   CHECK  GRAPH_NODES                                       PASS  (52)
+#   CHECK  GRAPH_ACTIVE_EDGES                               PASS  (134)
+#   CHECK  GRAPH_PROVEN_CUTS                                PASS  (1)
+#   CHECK  GRAPH_PROVEN_CUT_ID                              PASS  (E-TYP-0136)
+#   CHECK  E_MUT_0137_REMAINS_NOT_CUT                       PASS  (NOT_CUT)
+#   CHECK  NEW_PROVEN_GRAPH_CUTS                            PASS  (0)
+#   CHECK  NEGATIVE_CONTROL_COUNT                           PASS  (12)
+#   CHECK  NEGATIVE_CONTROLS_ALL_FIRED                      PASS  (12)
+#   CHECK  ACCEPTANCE_CRITERIA_PASS_AT_C3                   PASS  (27)
+#   CHECK  HISTORICAL_RO_CAUSAL_REMAINS_UNPROVEN_AS_RECORDED PASS
+#   CHECK  REPLACE_REFS                                     PASS  (0)
+#   CHECK  WORKING_TREE_CLEAN                                PASS  (0)
+#   CHECK  CHANGED_PATHS_ALL_INSIDE_THE_AUTHORIZED_LIST     PASS  (0)
+#   CHECK  PRODUCTION_SOURCE_UNTOUCHED                       PASS  (0)
+#
+#   VERDICT=PASS
+#   FAILED_CHECKS=0
+#
+# The F14 check reports the two paths this ACT is authorized to
+# change (the ROADMAP append and the act-handoff-map row) as EXEMPT,
+# because the freeze was taken before them; every OTHER frozen path
+# -- every closed predecessor artifact -- matches byte for byte.
+#
+#   F14_ACT_AUTHORIZED_PATHS_EXEMPT=2
+#   F14_CHANGED_PATHS= NONE
+#
+# The final gates, re-run against the TERMINAL tree after the CLOSE:
+#
+#   gate-fast               RC=0  VERDICT=PASS
+#   gate-push               RC=0  VERDICT=PASS
+#   factory-append-only-test RC=0  PASS=11 FAIL=0
+#
+# --- THE OUTCOME ---
+#
+#   AC28 = PASS
+#   The terminal disposition is PASS_EVIDENCE_SUPPLEMENTED.
+#
+# The receipt was created AFTER the CLOSE commit and was never
+# backdated into the C3 or CLOSE commits. No commit was created after
+# the CLOSE, so the Cardinality-1 closure identity holds and this ACT
+# has exactly one CLOSE.
+#
 receipt_exists_at_c4	NO
 ac28_is_pass_at_c4	NO
 the_terminal_disposition_is_known_at_c4	NO
+
+# --- THE OUTCOME, AFTER THE RECEIPT ---
+#
+# The lines above describe the PLAN as it stood at C4. The receipt
+# was then produced and the OUTCOME is recorded here.
+#
+RECEIPT_PRODUCED_AFTER_THE_CLOSE	YES
+RECEIPT_PATH	/tmp/aci01-corr01-receipt/terminal-receipt.txt
+RECEIPT_SHA256	7cd01f087f5b0daf5caccfd6f7a240373645a995ed4b8488faf0e8b3f276a635
+RECEIPT_VERDICT	PASS
+RECEIPT_FAILED_CHECKS	0
+RECEIPT_BOUND_HEAD	7f2e14d0231404a1b9af32f47ce81bb50b812fa1
+RECEIPT_BOUND_TREE	de84398f91dd3f0c0319cb74ca0bd4520aacfff6
+POST_CLOSE_COMMITS	0
+AC28	PASS
+TERMINAL_DISPOSITION	PASS_EVIDENCE_SUPPLEMENTED
+MANDATORY_AC	28/28 (27 PASS measured at C3 plus AC28 PASS from the external receipt)
