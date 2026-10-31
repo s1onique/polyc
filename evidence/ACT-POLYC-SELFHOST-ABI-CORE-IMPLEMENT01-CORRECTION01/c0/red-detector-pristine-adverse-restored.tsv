@@ -1,0 +1,51 @@
+# THE RED DETECTOR SENSITIVITY PROOF (pristine -> adverse -> restored).
+#
+# The detector is
+#   build/abi-core-implement01-correction01-verify historical-ro
+# which RECOMPUTES the candidate mutations from the COMMITTED pristine
+# subject source and compares digests. It never reads the recorded
+# claim's conclusion; it only compares its own recomputation with the
+# recorded digest.
+#
+# The ADVERSE state substitutes the RECORDED DIGEST with the digest of
+# the RO mutation, i.e. the record now CLAIMS that the historical
+# experiment mutated the range site. That is exactly the shape of an
+# intended .diff substituted for the actual compiled bytes (NC04), and
+# it is the claim the correction exists to refute (NC03).
+#
+# The evidence trees are ISOLATED COPIES under /tmp; the authoritative
+# checkout is never modified.
+#
+# Command:
+#   /tmp/aci01-corr01-red-detector.sh <verifier> /tmp/aci01-corr01-redwork
+#
+state	FINAL	REASON	RC	expected
+PRISTINE	OK	NONE	0	SILENT: the committed record is the PO mutation, which the recomputation reproduces
+ADVERSE	FAIL	HISTORICAL_MUTATION_SUBJECT_MISMATCH	1	FIRED for the named reason: the claim that the historical experiment mutated the RO function is refuted by digest identity
+RESTORED	OK	NONE	0	SILENT again after restoration
+
+# THE DETECTOR IS NOT VACUOUS.
+#
+# A detector that merely echoed the record would have stayed green on
+# the ADVERSE state. It did not: it fired with its own reason token.
+# The ADVERSE reason is DISTINCT from the NC03/NC04 tokens, which is
+# correct: the detector's own reason names the specific class
+# (the recorded digest does not belong to the RO function), while NC03
+# and NC04 are the control labels under which the substitution is
+# exercised.
+#
+detector_vacuous	NO
+detector_fired_on_adverse	YES
+detector_silent_on_pristine	YES
+detector_silent_after_restored	YES
+detector_reason_is_distinct	YES
+
+# THE VERIFIER'S OWN DIGEST IMPLEMENTATION IS VALIDATED FIRST.
+#
+# A verifier that hashes wrongly could certify a wrong digest, so the
+# digest implementation is checked against the NIST vector and against
+# `shasum -a 256` BEFORE any conclusion is drawn.
+#
+sha_selfcheck_vector	"abc" -> ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad (NIST)
+sha_selfcheck_subject	tools/bootstrap/selfhost-core-operator.HC -> e184603ff45f3482d99c5af84a960b15a44673d01924f89aa48f6ba0e5eedbd3 (matches shasum -a 256)
+sha_selfcheck_status	PASS

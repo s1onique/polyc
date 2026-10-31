@@ -1,0 +1,70 @@
+# THE INDEPENDENT RECONSTRUCTION OF THE HISTORICAL M-POLYC-RO ATTRIBUTION.
+#
+# Method: DIGEST IDENTITY, never inference. The verifier
+# tools/quality/abi-core-implement01-correction01-verify.HC (mode
+# `historical-ro`) takes the recorded M-POLYC-RO mutant source digest
+# out of the CLOSED predecessor evidence, removes the AST_BIN_OP_LT case
+# line from each candidate function IN TURN in the COMMITTED pristine
+# subject source, and re-hashes the WHOLE file. Whichever candidate
+# reproduces the recorded digest identifies the function the recorded
+# experiment physically mutated.
+#
+# The verifier's own SHA-256 was validated FIRST against the NIST test
+# vector ("abc" -> ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad)
+# and against `shasum -a 256` on the real subject file, so that a
+# verifier that hashes wrongly cannot certify a wrong digest.
+#
+# Command:
+#   CORR01_PRISTINE_SOURCE=tools/bootstrap/selfhost-core-operator.HC \
+#     build/abi-core-implement01-correction01-verify historical-ro \
+#     evidence/ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01
+#
+item	value
+verifier_source	tools/quality/abi-core-implement01-correction01-verify.HC
+verifier_sha256_selfcheck_abc	ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad (matches the NIST vector)
+verifier_sha256_selfcheck_subject	e184603ff45f3482d99c5af84a960b15a44673d01924f89aa48f6ba0e5eedbd3 (matches shasum -a 256)
+
+pristine_subject_path	tools/bootstrap/selfhost-core-operator.HC
+pristine_subject_sha256	e184603ff45f3482d99c5af84a960b15a44673d01924f89aa48f6ba0e5eedbd3
+pristine_subject_sha256_matches_historical_record	YES (the historical mutant-ro.tsv records this exact pristine digest)
+
+ro_function_signature	I64 AbiCoreIsRangeOperator(I64 binary_operator)
+ro_function_byte_range	8408..8720
+po_function_signature	I64 AbiCoreIsValidPointerOperator(I64 binary_operator)
+po_function_byte_range	7150..7852
+function_ranges_disjoint	YES (po_end 7852 <= ro_start 8408)
+
+# THE TWO CANDIDATE MUTATIONS, RE-COMPUTED INDEPENDENTLY.
+ro_file_without_lt_sha256	5bfe5b6048374a9e12c48aa13b3e66beb764d7b14b97813c761c486926161da9
+po_file_without_lt_sha256	f0599f79900cf406415283a9742c2b3d794c03f107e7a959ce021db91b916615
+
+# THE RECORDED HISTORICAL DIGEST.
+recorded_m_poly_ro_source_sha256	f0599f79900cf406415283a9742c2b3d794c03f107e7a959ce021db91b916615
+recorded_matches_ro_function	NO
+recorded_matches_po_function	YES
+
+# THE CONCLUSION.
+historical_m_poly_ro_actual_subject	AbiCoreIsValidPointerOperator
+historical_m_poly_ro_executed_on_ro	NO
+historical_ro_causal	UNPROVEN_AS_RECORDED
+site_range_operator_had_executed_causal_experiment	NO
+
+# WHY THE HISTORICAL RECORD LOOKED RIGHT AND WAS NOT.
+#
+# The predecessor's c3/mutation-diffs/M-POLYC-RO.diff describes the
+# INTENDED mutation (removing the AST_BIN_OP_LT case from the
+# AbiCoreIsRangeOperator rule). That diff is a TRANSCRIPTION of intent.
+# The recorded source and object digests are the digests of a DIFFERENT
+# physical mutation. The predecessor's own c3/site-isolation.tsv even
+# records the RO channel as "witness-po-pointer-less-than", i.e. a
+# POINTER witness -- the misbinding was visible in the record itself.
+historical_diff_file	evidence/ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01/c3/mutation-diffs/M-POLYC-RO.diff
+historical_diff_describes	AbiCoreIsRangeOperator, the AST_BIN_OP_LT case
+historical_diff_was_the_compiled_source	NO
+historical_site_isolation_row_for_ro	observed_channel_change = witness-po-pointer-less-than (a POINTER witness)
+
+# THE HISTORICAL DIGESTS ARE PRESERVED BIT-FOR-BIT. NOTHING IS REWRITTEN.
+historical_record_mutated	NO
+historical_record_deleted	NO
+historical_record_renamed	NO
+historical_verdict_changed	NO (the IMPLEMENT01 CLOSE verdict PASS and the RECON02 HALT are both carried forward unchanged)

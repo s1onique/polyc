@@ -1,0 +1,35 @@
+# THE PHYSICAL-EXECUTION JOIN FOR THE HISTORICAL EXPERIMENTS.
+#
+# The join is by EXACT PHYSICAL EXECUTION ID, never by label. The
+# historical record's own labels are recorded alongside the ids so that
+# the misattribution is visible as a LABEL/EXECUTION disagreement.
+#
+# Columns:
+#   recorded_label | recorded_site | recorded_symbol | recorded_exec_id |
+#   reproduced_actual_subject | recorded_src_sha256 | reproduced_src_sha256 |
+#   src_match | recorded_obj_sha256 | obj_corroboration | attribution
+#
+recorded_label	recorded_site	recorded_symbol	recorded_exec_id	reproduced_actual_subject	recorded_src_sha256	reproduced_src_sha256	src_match	recorded_obj_sha256	obj_corroboration	attribution
+M-POLYC-CA	SITE-COMPOUND-ASSIGN	_AbiCoreClassifyCompoundAssign	EXEC-M-POLYC-CA	AbiCoreClassifyCompoundAssign	cea1ca063884dd5ebf4019110cd36816ae4950cc8fef9ceb2621a2f126cfdae1	cea1ca063884dd5ebf4019110cd36816ae4950cc8fef9ceb2621a2f126cfdae1	YES	035ce7e1eadac216709147c474254df41208428f5b3989d270a3e95176c39155	NOT_RE_EXECUTED_AT_C0 (source-level identity is sufficient and unique)	CONSISTENT
+M-POLYC-PO	SITE-VALID-POINTER-OP	_AbiCoreIsValidPointerOperator	EXEC-M-POLYC-PO	AbiCoreIsValidPointerOperator	f61d7ea0b50aabedc6db9377909f16c16dfac9dac33767477a73be563278a4b4	f61d7ea0b50aabedc6db9377909f16c16dfac9dac33767477a73be563278a4b4	YES	af566dfb6f184898942ae5138c4f2662b259a33d259ce0807612d1544854b58a	NOT_RE_EXECUTED_AT_C0 (source-level identity is sufficient and unique)	CONSISTENT
+M-POLYC-RO	SITE-RANGE-OPERATOR	_AbiCoreIsRangeOperator	EXEC-M-POLYC-RO	AbiCoreIsValidPointerOperator	f0599f79900cf406415283a9742c2b3d794c03f107e7a959ce021db91b916615	f0599f79900cf406415283a9742c2b3d794c03f107e7a959ce021db91b916615	YES (the recorded digest IS the PO mutation)	2d6a1394dffa8b513af092971338692e113cbf893c4d52a0b554afda9d58c1f8	NOT_RE_EXECUTED_AT_C0 (the source identity already decides the attribution)	MISATTRIBUTED
+
+# WHY THE ROW ABOVE IS DECISIVE.
+#
+# The recorded M-POLYC-RO SOURCE digest f0599f79900cf406415283a9742c2b3d794c03f107e7a959ce021db91b916615
+# is bit-identical to the digest this ACT independently computes by
+# removing the AST_BIN_OP_LT case from AbiCoreIsValidPointerOperator,
+# and is NOT equal to the digest computed by removing that case from
+# AbiCoreIsRangeOperator. A single digest cannot belong to two
+# different byte strings, so the recorded experiment physically
+# mutated the POINTER site.
+#
+# This ACT does NOT re-execute the historical experiments. It executes
+# a NEW, correction-owned experiment with a NEW execution id
+# (EXEC-RO-CORR01-MUTANT) on the range site. The historical row above
+# is a LABEL-DEFECT record, not a substitute experiment.
+
+# THE CORRECTION-OWNED EXPERIMENT IDS (reserved at C0, bound in C2).
+EXEC-RO-CORR01-PRISTINE	EXEC-RO-CORR01-MUTANT	EXEC-PO-CORR01-ANTI	EXEC-RO-CORR01-RESTORED
+historical_execution_id_reused	NO
+correction_execution_ids_are_unique	YES

@@ -1,0 +1,63 @@
+ACT_ID=ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01-CORRECTION01
+PHASE=C0-RED
+EVIDENCE_KIND=entry-identity
+
+# THE ENTRY IDENTITY, MEASURED (F1: identity before mutation).
+BRANCH=main
+HEAD=30432271ab1f56079be3a33dbddc415392b5034e
+TREE=2d7793da3ed5df495e18198c920d6abd90629217
+EXPECTED_HEAD=30432271ab1f56079be3a33dbddc415392b5034e
+EXPECTED_TREE=2d7793da3ed5df495e18198c920d6abd90629217
+HEAD_MATCHES=YES
+TREE_MATCHES=YES
+BRANCH_MATCHES=YES
+
+# The tracked working tree and the index were CLEAN at entry. The
+# untracked set was distinguished separately: the build outputs
+# (build/, hcc, build-pinned-producer/) are gitignored build
+# artifacts, not source, and no untracked SOURCE file existed.
+TRACKED_STATUS_SHORT=<empty>
+INDEX_STATUS_SHORT=<empty>
+UNTRACKED_NON_IGNORED=<none>
+UNTRACKED_IGNORED_BUILD_ARTIFACTS=present (build/, hcc, build-pinned-producer/) -- build outputs, not source
+
+# Replace refs must be EMPTY: a replace ref would silently change what
+# a Git object means and would invalidate every digest comparison.
+REPLACE_REFS=0
+GIT_REPLACE_L_OUTPUT=<empty>
+
+# No ACT-OWNED worktree existed at entry. The pre-existing worktrees
+# belong to OTHER activities and are NOT this ACT's to remove:
+#   /private/tmp/slice08-wt                                     (not ACT-owned)
+#   /private/tmp/slice08-wt/build-pinned-producer/tree          (not ACT-owned)
+#   <repo>/build-pinned-producer/tree                           (not ACT-owned)
+ACT_OWNED_WORKTREES_AT_ENTRY=0
+PREEXISTING_NON_ACT_WORKTREES=3 (slice08-wt and the pinned-producer trees)
+
+# The remote-tracking ref origin/main LAGS the local main. Ancestry was
+# verified WITHOUT networking (the remote-tracking ref is present
+# locally); no fetch, pull or push was performed.
+ORIGIN_MAIN=c05a028276ac3eff3976c113c16b220c7de1331a
+ORIGIN_MAIN_IS_ANCESTOR_OF_HEAD=YES
+UNPUBLISHED_LOCAL_COMMITS=14 (the local main is ahead of origin/main; this chain is intentionally unpublished)
+
+# The ACT-owned detached worktrees used by the C2 experiments are
+# created and removed by THIS ACT only:
+#   /tmp/aci01-corr01-pristine   (EXEC-RO-CORR01-PRISTINE)
+#   /tmp/aci01-corr01-ro-mutant  (EXEC-RO-CORR01-MUTANT)
+#   /tmp/aci01-corr01-po-ant     (EXEC-PO-CORR01-ANTI)
+#   /tmp/aci01-corr01-restored   (EXEC-RO-CORR01-RESTORED)
+ACT_WORKTREE_ROOT=/tmp/aci01-corr01-*
+
+# F9 (fresh-tree evidence outranks warm-tree evidence): the C2
+# experiments each perform a FRESH selector-ON production build in
+# their own disposable worktree with an independent build prefix. No
+# stale object from a previous build directory is used, and a build
+# that cannot be reproduced cleanly is a HALT, not a fallback.
+FRESH_BUILD_REQUIRED=YES
+
+# F6 (no silent fallback): the selector-ON build is the ONLY build
+# used for the causal experiments. A missing subject object, a failed
+# link or an unchanged object is a HALT_RO_BUILD_OR_LINK_PROVENANCE_FAILURE,
+# never a silent fallback to the legacy C rule.
+NO_SILENT_FALLBACK=YES

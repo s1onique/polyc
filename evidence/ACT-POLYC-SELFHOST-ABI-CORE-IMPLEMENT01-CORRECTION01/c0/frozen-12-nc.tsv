@@ -1,0 +1,45 @@
+# THE TWELVE MANDATORY NEGATIVE CONTROLS, FROZEN AT C0.
+#
+# Each control has a REASON-SPECIFIC rejecting detector. Every control
+# must be:
+#   * SILENT on the genuine pristine state,
+#   * FIRED on the specified adverse input, for the NAMED reason and
+#     no other,
+#   * SILENT again after restoration.
+#
+# An always-green detector is prohibited. The detector's own
+# anti-selftests (deleted id, duplicated id, unknown id, forged PASS,
+# wrong reason, swapped executor id) are recorded at c3/.
+#
+# For document/ledger mutation controls, isolated copies of the
+# evidence tree suffice. For actual SEMANTIC attribution controls, the
+# FULL REAL COMPILER is used: the adverse state is a real rebuilt
+# production compiler, not a stub.
+#
+# id	adverse_condition	required_rejecting_detector	detector_class	execution_surface	execution_id	frozen_at
+NC01	Replace correction entry HEAD/tree with predecessor or wrong tree	ENTRY_IDENTITY_MISMATCH	identity	git rev-parse / git cat-file over the frozen entry	NC01-ENTRY-IDENTITY	C0
+NC02	Change one closed predecessor evidence byte or freeze-path digest	F14_PREDECESSOR_TAMPER	freeze	git cat-file + sha256 over the frozen paths	NC02-F14-TAMPER	C0
+NC03	Claim historical M-POLYC-RO mutated the RO function	HISTORICAL_MUTATION_SUBJECT_MISMATCH	attribution	build/abi-core-implement01-correction01-verify historical-ro	NC03-HISTORICAL-SUBJECT	C0
+NC04	Present intended .diff instead of actual compiled mutant source	APPLIED_SOURCE_DIFF_PROVENANCE_FAILURE	provenance	the applied source's SHA-256 is recomputed and compared with the applied bytes' digest; a .diff file has no source digest	NC04-DIFF-PROVENANCE	C0
+NC05	Apply LT mutation in AbiCoreIsValidPointerOperator instead of RO	RO_WRONG_FUNCTION_MUTATED	site	the applied source's per-function byte comparison: the PO function must be byte-identical to the pristine and the RO function must differ	NC05-WRONG-FUNCTION	C0
+NC06	Accept an unlinked, stale or failed subject/full-compiler build	RO_BUILD_OR_LINK_PROVENANCE_FAILURE	build	the subject object's SHA-256 must differ from the pristine AND nm over the linked binary must show the RO symbol AND the build exit status must be 0	NC06-BUILD-LINK	C0
+NC07	Substitute nondiscriminating 1 < 2 < 3 as sole witness	RO_SEMANTIC_WITNESS_NONDISCRIMINATING	witness	the witness's own pristine/mutant exit statuses: 1 < 2 < 3 does not change under an RO mutation, so the detector sees no change	NC07-NONDISCRIMINATING	C0
+NC08	Accept pointer-site witness change as range-site proof	SITE_ISOLATION_OR_WITNESS_MISBIND	isolation	the join checker: the RO row's witness must be W-CORR-RO-DISCRIM and the PO row's witness must not be	NC08-WITNESS-MISBIND	C0
+NC09	Reuse one execution ID for both RO and PO mutant	DUPLICATE_PHYSICAL_EXECUTION_ID	identity	the join checker: every execution id must be distinct	NC09-DUPLICATE-EXEC-ID	C0
+NC10	Forge PASS without pristine/mutant/restored object or exit matrix	CAUSAL_RESTORATION_OR_EVIDENCE_MISSING	causal	the join checker: the RO row must carry 0/1/0 exits and a PASS verdict AND the restoration file must exist	NC10-FORGED-PASS	C0
+NC11	Claim 14th authority, new graph cut or historical 13/13 evidence	AUTHORITY_OR_HISTORICAL_OVERCLAIM	conservation	the authority census: the structural count must be 13, the historical causal count must be 12, and the graph must be 52/134/34/19 with the sole historic E-TYP-0136 cut	NC11-AUTHORITY-OVERCLAIM	C0
+NC12	Omit control/AC ID, relabel known FAIL, or claim external receipt before CLOSE	LEDGER_OR_TERMINALITY_FALSE_PASS	ledger	the ledger checker: exactly 28 AC ids and exactly 12 NC ids, no duplicates, and no PASS row without an evidence path	NC12-LEDGER-TERMINALITY	C0
+
+# THE CONTROL CHECKER'S OWN ANTI-SELFTESTS (frozen here, executed at C3).
+#
+# The ledger checker is itself tested against a missing id, a duplicated
+# id, an unknown id, a forged PASS, a wrong reason and a swapped
+# executor id. Each must produce a DISTINCT reason, so that a control
+# that fires for the wrong reason is itself caught.
+SELFTEST_ID	expected_distinct_reason
+SELFTEST-DELETE-ID	LEDGER_OR_TERMINALITY_FALSE_PASS
+SELFTEST-DUPLICATE-ID	LEDGER_OR_TERMINALITY_FALSE_PASS
+SELFTEST-UNKNOWN-ID	LEDGER_OR_TERMINALITY_FALSE_PASS
+SELFTEST-FORGED-PASS	LEDGER_OR_TERMINALITY_FALSE_PASS
+SELFTEST-WRONG-REASON	DISTINCT from the control's own reason
+SELFTEST-SWAPPED-EXECUTOR-ID	DUPLICATE_PHYSICAL_EXECUTION_ID or SITE_ISOLATION_OR_WITNESS_MISBIND

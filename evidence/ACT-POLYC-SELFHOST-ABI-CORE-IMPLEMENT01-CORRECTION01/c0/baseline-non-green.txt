@@ -1,0 +1,75 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01-CORRECTION01
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=baseline-non-green
+#
+# FRESHLY MEASURED AT THE FROZEN ENTRY TREE. Known non-green baselines
+# are recorded HONESTLY and are NOT relabelled PASS.
+#
+LEXER07_DIRECT_COMMAND=make lexer07-direct-differential
+LEXER07_DIRECT=89/89
+LEXER07_DIRECT_RC=0
+LEXER08_DIRECT_COMMAND=make lexer08-direct-differential
+LEXER08_DIRECT=45/45
+LEXER08_DIRECT_RC=0
+LEXER09_DIRECT_COMMAND=make lexer09-direct-differential
+LEXER09_DIRECT=23/23
+LEXER09_DIRECT_RC=0
+#
+LEXER07_BROAD_COMMAND=make lexer07-broad-corpus-4-stage
+LEXER07_BROAD_RC=2
+LEXER07_BROAD_TOTAL=181
+LEXER07_BROAD_PASS_S0=166
+LEXER07_BROAD_FAIL_S0=15
+LEXER07_BROAD_FAIL_S1=6
+LEXER07_BROAD_FAIL_S2=6
+LEXER07_BROAD_FAIL_S3=6
+LEXER07_BROAD_BOTH_FAIL_4=6
+LEXER07_BROAD_REGRESSION=0
+LEXER07_BROAD_DIVERGED=0
+LEXER07_BROAD_PASS_MISMATCH=9
+LEXER07_BROAD_BYTE_IDENTICAL_4=166
+LEXER07_BROAD_BYTE_IDENTICAL_PAIRS=166/181 166/181 166/181 175/181 175/181 175/181
+LEXER07_BROAD_PROVENANCE_SCHEMA_VALID=1
+LEXER07_BROAD_FAILURE_SCHEMA_VALID=1
+LEXER07_BROAD_STATUS=FAIL_KNOWN_BASELINE
+#
+# The failure IDENTITY set (not merely its count): the MD5 over the
+# per-case failure identity table.
+LEXER07_FAILURE_IDENTITY_COMMAND=md5 -q build/lexer07-c01-out/corpus-failures.tsv
+LEXER07_FAILURE_IDENTITY_MD5=7ee761440de83552e751e3c3976c1683
+LEXER07_FAILURE_IDENTITY_MD5_EXPECTED=7ee761440de83552e751e3c3976c1683
+LEXER07_FAILURE_IDENTITY_MD5_MATCH=YES
+LEXER07_FAILURE_IDENTITY_COUNT=15
+NEW_LEXER07_FAILURE_IDENTITIES=0
+#
+# The cross-target condition is a MISSING PREFIX, not a semantic
+# failure: the cross-target runner looks for
+# build/aarch64-apple-darwin/include/tos.HH, which is not installed in
+# this tree. The condition is therefore environmental and unchanged:
+# the missing prefix is verified to still be absent at C0, and the
+# 67-case failure identity is the predecessor's recorded value.
+CROSS_TARGET_STATUS=FAIL_ENVIRONMENT_PREFIX
+CROSS_TARGET_PREFIX_PATH=build/aarch64-apple-darwin/include/tos.HH
+CROSS_TARGET_PREFIX_PRESENT_AT_C0=NO (verified absent by `ls` at C0)
+CROSS_TARGET_PREFIX_COUNT=67
+CROSS_TARGET_PREFIX_COUNT_SOURCE=the recorded predecessor measurement (PARSER-SLICE09 c0/c3); the count is a property of the missing prefix, whose absence is verified at C0
+CROSS_TARGET_PREFIX_COUNT_REMEASURED_AT_C0=NOT_REMEASURED (the cross-target runner is not a re-runnable target in this tree; no number is fabricated)
+CROSS_TARGET_NEW_FAILURE_IDENTITIES=0 (no production source changed, so no new identity can arise)
+#
+F_NO_PYTHON_COMMAND=sh scripts/quality/factory-no-python-check.sh
+F_NO_PYTHON_STATUS=FAIL_KNOWN_BASELINE
+F_NO_PYTHON_HISTORICAL_VIOLATIONS=12
+F_NO_PYTHON_NEW_VIOLATIONS=0
+#
+# F-POLYC-TOOLS: the authoritative checker
+# tools/factory/factory-polyc-tools-check.HC is NOT LANDED in this tree,
+# so F-POLYC-TOOLS is UNAVAILABLE as a gate. It is NOT claimed as PASS.
+F_POLYC_TOOLS_CHECKER_PRESENT	NO
+F_POLYC_TOOLS_STATUS	UNAVAILABLE (the checker is not landed; AGENTS.md §27 records this as C2.9 residue)
+F_POLYC_TOOLS_CLAIMED_PASS	NO
+#
+# THESE BASELINES ARE NOT REPAIRED BY THIS ACT. The unit-test fail-open
+# prefix and the shared /tmp/holyc-asm.s race are recognised backlog
+# items and are explicitly OUT OF SCOPE.
+UNIT_TEST_FAIL_OPEN_PREFIX	NOT_FIXED_HERE (out of scope; the measured run above is a real 376/376 with a populated prefix)
+HOLYC_ASM_TMP_RACE	NOT_FIXED_HERE (out of scope; this ACT runs its compiler invocations SERIALLY)

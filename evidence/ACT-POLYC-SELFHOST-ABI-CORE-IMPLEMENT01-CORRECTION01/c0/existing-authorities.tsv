@@ -1,0 +1,49 @@
+# THE EXISTING STRUCTURALLY ACTIVE POLYC DECISION AUTHORITIES.
+#
+# Each authority is a PolyC function compiled into a production object
+# and reached by exactly one production caller. The census is read from
+# the COMMITTED source at the frozen entry, and the production
+# selector-ON build confirms that each symbol is defined exactly once
+# and imported by exactly one caller object (see c2/).
+#
+# The HISTORICAL_CAUSAL_BACKING column is the state at the
+# IMPLEMENT01 CLOSE. It is 12 of 13, NOT 13 of 13.
+#
+# authority_id	symbol	classification	subject_source	production_caller	historical_causal_experiment	historical_causal_backing	note
+AUTH-01	_BootstrapCalcPadding	PARSER_DECISION	tools/bootstrap/selfhost-parser-padding.HC	src/parser.c	(the predecessor CSCR chain)	YES	CONSISTENT
+AUTH-02	_BootstrapValidPostControlFlowToken	PARSER_DECISION	tools/bootstrap/selfhost-parser-control-flow-token.HC	src/parser.c	(the predecessor CSCR chain)	YES	CONSISTENT
+AUTH-03	_BootstrapOperatorPrecedence	PARSER_DECISION	tools/bootstrap/selfhost-parser-operator-precedence.HC	src/prslib.c	(the predecessor CSCR chain)	YES	CONSISTENT
+AUTH-04	_BootstrapAstBinOpFromToken	PARSER_DECISION	tools/bootstrap/selfhost-parser-slice04.HC	src/ast.c	(the predecessor CSCR chain)	YES	CONSISTENT
+AUTH-05	_BootstrapAstUnaryOpFromToken	PARSER_DECISION	tools/bootstrap/selfhost-parser-slice05.HC	src/ast.c	(the predecessor CSCR chain)	YES	CONSISTENT
+AUTH-06	_BootstrapSwitchArmTerminates	PARSER_DECISION	tools/bootstrap/selfhost-parser-slice06.HC	src/parser.c	(the predecessor CSCR chain)	YES	CONSISTENT
+AUTH-07	_BootstrapCompoundBlockAppendsStatement	PARSER_DECISION	tools/bootstrap/selfhost-parser-slice07.HC	src/parser.c	(the predecessor CSCR chain)	YES	CONSISTENT
+AUTH-08	_BootstrapDefaultArmTerminates	PARSER_DECISION	tools/bootstrap/selfhost-parser-slice08.HC	src/parser.c	(the predecessor CSCR chain)	YES	CONSISTENT
+AUTH-09	_BootstrapStatementDispatch	PARSER_DECISION	tools/bootstrap/selfhost-parser-statement-dispatch.HC	src/parser.c	(the predecessor CSCR chain)	YES	CONSISTENT
+AUTH-10	_AbiCpaShouldPrintAst	NON_PARSER_CPA_DECISION	tools/bootstrap/selfhost-abi-compile-print-ast.HC	src/compile.c	(the predecessor CSCR chain)	YES	CONSISTENT
+AUTH-11	_AbiCoreClassifyCompoundAssign	NEW_CORE_OPERATOR_DECISION	tools/bootstrap/selfhost-core-operator.HC	src/prslib.c	M-POLYC-CA	YES	CONFIRMED (source digest reproduced bit-identically at C0)
+AUTH-12	_AbiCoreIsValidPointerOperator	NEW_CORE_OPERATOR_DECISION	tools/bootstrap/selfhost-core-operator.HC	src/ast.c	M-POLYC-PO	YES	CONFIRMED (source digest reproduced bit-identically at C0)
+AUTH-13	_AbiCoreIsRangeOperator	NEW_CORE_OPERATOR_DECISION	tools/bootstrap/selfhost-core-operator.HC	src/ast.c	(none -- the recorded M-POLYC-RO physically mutated AUTH-12)	NO	MISSING_CAUSAL_EVIDENCE: this site is STRUCTURALLY LIVE but has NO executed causal experiment of its own.
+
+# THE CENSUS AT C0.
+#
+# The counting is deliberately NOT "13 of 13". The count of 13 is the
+# STRUCTURAL census: 13 decision sites are structurally reachable and
+# active in the freshly built production compiler. The count of 12 is
+# the CAUSAL census at the IMPLEMENT01 close: 12 of the 13 have their
+# OWN executed causal experiment.
+#
+# AUTH-13 is genuinely LIVE (the discriminating chained-range witness
+# proves it), so this is a MISSING EVIDENCE defect, not a dead site.
+PRODUCTION_POLYC_AUTHORITIES_STRUCTURALLY_ACTIVE	13
+PRODUCTION_POLYC_AUTHORITIES_WITH_CAUSAL_EVIDENCE_AT_IMPLEMENT01_CLOSE	12
+PRODUCTION_POLYC_AUTHORITIES_WITHOUT_CAUSAL_EVIDENCE_AT_IMPLEMENT01_CLOSE	1
+BASELINE_13_AUTHORITY_CLAIM	PARTIALLY_UNPROVEN (the count 13 is structurally verified; the per-site causal backing of AUTH-13 is NOT)
+HISTORICAL_CAUSAL_BACKING	12/13
+CORRECTION_INCLUSIVE_CAUSAL_BACKING	(12 at C0; 13 only after the correction-owned experiment in c2/ succeeds)
+NEW_PRODUCTION_AUTHORITIES	0
+PRODUCTION_SEMANTIC_DELTA	0
+NEW_PROVEN_GRAPH_CUTS	0
+PRODUCTION_GRAPH	52_NODES_134_EDGES_34_SCC_LARGEST_19
+SELFHOST_M2_ACHIEVED	NO
+SELECTED_BUNDLE_ID	NONE
+SLICE10_AUTHORIZED	NO
