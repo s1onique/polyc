@@ -8472,3 +8472,70 @@ SELFHOST_M2_ACHIEVED = NO
 
 See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-CORE-SEMANTIC-CONSUMER-RECON01.md`
 and `evidence/ACT-POLYC-SELFHOST-CORE-SEMANTIC-CONSUMER-RECON01/`.
+
+---
+
+## ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01 — three core-operator authorities transferred
+
+The frozen `BUNDLE-OPERATOR-CORE-01` selected by
+ACT-POLYC-SELFHOST-CORE-SEMANTIC-CONSUMER-RECON01 has been IMPLEMENTED.
+One compiled PolyC subject
+(`tools/bootstrap/selfhost-core-operator.HC`) now owns the operator
+classification of all three selected production sites:
+
+```text
+SITE-COMPOUND-ASSIGN   src/prslib.c  parseCompoundAssign
+SITE-VALID-POINTER-OP  src/ast.c     astIsValidPointerOp
+SITE-RANGE-OPERATOR    src/ast.c     astIsRangeOperator
+```
+
+The scalar ABI is `ABI-CORE-OP-1`: three exported functions, no raw AST or
+container layout, a proven-disjoint result/status domain, and one
+host-owned scalar out-parameter for the compound-assignment operator.
+The C side keeps token objects, AST construction and graph mutation, type
+checking, IR lowering, code generation, allocation, diagnostics and
+recovery.
+
+In the selector-ON production build the legacy C comparison tables are
+COMPILED OUT of `src/prslib.c` and `src/ast.c`: the migrated functions are
+pure tail calls to the PolyC symbols. The selector-OFF build remains a
+genuine independent C oracle with no subject symbol at all.
+
+The three transfers are proven separately, not by a symbol count. Each has
+its own executed PolyC-source mutation in its own disposable worktree with
+its own full production rebuild, its own source digest and its own subject
+object digest:
+
+```text
+M-POLYC-CA  W-CA    30 -> 246                       (the compound-assignment witness changes)
+M-POLYC-PO  W-PO-AND  accepted -> rejected          (a pointer logical-AND is now rejected)
+M-POLYC-RO  W-PO-LT  accepted -> rejected          (a pointer "<" is now rejected)
+```
+
+The legacy C rules were separately shown to be LIVE when the selector is
+OFF and DORMANT when it is ON.
+
+All twelve ordered G0/G1/G2/G3 comparisons agree over the 146-row
+source-bound fixture population with zero mismatches; the comparator is
+itself proven sensitive. All 24 adverse controls are reason-specifically
+sensitive through pristine, adverse and restored executions, and the six
+verifier selftests attack the control ledger itself.
+
+A live build-wiring defect that the predecessor had recorded as an ignored
+exit 127 was diagnosed exactly and corrected: the `test-prefix-install`
+recipe's cmake invocation was truncated by a missing line continuation, so
+the selector flags never reached cmake and the test-prefix compiler was
+silently built with the authority OFF. The recipe is now fail-closed.
+
+```text
+PRODUCTION_POLYC_AUTHORITIES = 13 (9 parser + 1 CPA + 3 core-operator)
+PRODUCTION_SEMANTIC_DELTA = 3 transferred operator decisions
+NEW_PRODUCTION_GRAPH_CUTS = 0
+GRAPH = 52 nodes / 134 active mandatory edges / 34 SCCs / largest 19
+SELFHOST_M2_ACHIEVED = NO
+SLICE10_AUTHORIZED = NO
+NEXT_TARGET = NONE
+```
+
+See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01.md` and
+`evidence/ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01/`.
