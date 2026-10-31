@@ -1,0 +1,54 @@
+# ACT_ID=ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=graph-and-authority-conservation
+#
+# THE PRODUCTION GRAPH AND THE AUTHORITY SET, RE-MEASURED AT C3
+# AND COMPARED WITH THE FROZEN BASELINE.
+#
+metric	baseline	c3_measured	verdict
+PRODUCTION_GRAPH_NODES	52	52	CONSERVED
+PRODUCTION_ACTIVE_MANDATORY_EDGES	134	134	CONSERVED
+PRODUCTION_SCC_COUNT	34	34	CONSERVED
+PRODUCTION_SCC_LARGEST	19	19	CONSERVED
+PRODUCTION_PROVEN_CUT_COUNT	1	1	CONSERVED
+PRODUCTION_PROVEN_CUT_EDGE_ID	E-TYP-0136	E-TYP-0136	CONSERVED
+NEW_PROVEN_GRAPH_CUTS	0	0	CONSERVED
+E_MUT_0137_STATUS	UNSUPPORTED_WITNESS	UNSUPPORTED_WITNESS	CONSERVED
+POLYC_AUTHORITIES_STRUCTURALLY_ACTIVE	13	13	CONSERVED
+POLYC_AUTHORITIES_CAUSALLY_BACKED_CORRECTION_INCLUSIVE	13	13	CONSERVED
+POLYC_AUTHORITIES_CAUSALLY_BACKED_AT_IMPLEMENT01_CLOSE	12	12	CONSERVED (the historical figure is NOT rewritten)
+NEW_PRODUCTION_AUTHORITIES	0	0	CONSERVED
+PRODUCTION_SEMANTIC_DELTA	0	0	CONSERVED
+SELFHOST_M2_ACHIEVED	NO	NO	CONSERVED
+SLICE10_AUTHORIZED	NO	NO	CONSERVED
+#
+# THE AUTHORITY CENSUS, RE-RUN OVER THE PRODUCTION OBJECT GRAPH AT
+# C3. Each PolyC authority is DEFINED in its own PolyC subject object
+# (the subject objects are NOT part of the hcc.dir object set: they
+# are compiled by the production ./hcc and linked in as separate
+# objects), is IMPORTED by exactly one production caller object, and
+# is present in the LINKED ./hcc. The measurement is over the link
+# line, so the subject objects are counted too.
+#
+authority_id	symbol	defined_in	imported_by_count	in_linked_hcc
+AUTH-01	_BootstrapCalcPadding	build/parser-padding-subject.o	1	YES
+AUTH-02	_BootstrapValidPostControlFlowToken	build/parser-control-flow-token-subject.o	1	YES
+AUTH-03	_BootstrapOperatorPrecedence	build/parser-operator-precedence-subject.o	1	YES
+AUTH-04	_BootstrapAstBinOpFromToken	build/parser-ast-binop-subject.o	1	YES
+AUTH-05	_BootstrapAstUnaryOpFromToken	build/parser-ast-unary-subject.o	1	YES
+AUTH-06	_BootstrapSwitchArmTerminates	build/parser-switch-arm-subject.o	1	YES
+AUTH-07	_BootstrapCompoundBlockAppendsStatement	build/parser-compound-block-subject.o	1	YES
+AUTH-08	_BootstrapDefaultArmTerminates	build/parser-default-arm-subject.o	1	YES
+AUTH-09	_BootstrapStatementDispatch	build/parser-statement-dispatch-subject.o	1	YES
+AUTH-10	_AbiCpaShouldPrintAst	build/selfhost-abi-cpa-subject.o	1	YES
+AUTH-11	_AbiCoreClassifyCompoundAssign	build/core-operator-subject.o	1	YES
+AUTH-12	_AbiCoreIsValidPointerOperator	build/core-operator-subject.o	1	YES
+AUTH-13	_AbiCoreIsRangeOperator	build/core-operator-subject.o	1	YES
+#
+# THE THREE NEWLY SELECTED SITES ARE C-AUTHORITATIVE AND LIVE. They
+# are NOT PolyC authorities: this ACT migrated nothing.
+#
+site_id	symbol	polyc_authority	in_linked_hcc	causally_qualified
+SITE-A64-CC-FOR	aarch64CcFor	NO	YES	YES (EXEC-A64-CC-FOR-MUTANT)
+SITE-A64-CC-INV	aarch64CcInvFor	NO	YES	YES (EXEC-A64-CC-INV-MUTANT)
+SITE-A64-CSET	aarch64EmitCSet	NO	YES	YES (EXEC-A64-CSET-MUTANT)

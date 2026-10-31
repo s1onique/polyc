@@ -1,0 +1,52 @@
+# ACT_ID=ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=independent-source-and-object-audit
+#
+# THE INDEPENDENT RE-DERIVATION. Nothing here echoes a
+# summary PASS value: every fact is re-derived from the Git objects,
+# from the production object graph or from the C1 source facts.
+#
+# TWO INDEPENDENT TECHNIQUES WERE USED, as the ACT requires:
+#
+#  (a) a NEW PolyC source-driven verifier (the ACT-local
+#      independent recomputation) that rederives the eligibility
+#      and the complete rank order from the C1 source facts
+#      without reading the primary checker's output;
+#  (b) a READ-ONLY Git/POSIX re-extraction that re-derives the
+#      source ranges, the object symbol/caller facts, the causal
+#      mutations and the full ranked list from the Git objects and
+#      the committed evidence, WITHOUT reading the PolyC
+#      verifier's decision summaries.
+#
+# The eligibility and rank recomputation is discharged by (a), the
+# PolyC one, which is what the ACT requires; (b) is a genuine
+# second route, not a POSIX substitute for it.
+#
+audit_item	primary_value	independent_value	agree	source_of_the_independent_value
+CANDIDATE_COUNT	6	6	YES	read from c1/core-candidates.tsv by the read-only route
+ELIGIBLE_BUNDLE_COUNT	4	4	YES	recomputed by the PolyC independent implementation from c1/eligibility-input-facts.tsv and c1/core-sites.tsv
+ELIGIBILITY_MISMATCHES	0	0	YES	the PolyC independent comparison join
+RANK_ORDER	CAND-CMP-CC-A64,CAND-CMP-CC-X86,CAND-TYPE-CLASS,CAND-TYPE-MAP,CAND-TYPE-FULL,CAND-CMP-CC-BOTH	CAND-CMP-CC-A64,CAND-CMP-CC-X86,CAND-TYPE-CLASS,CAND-TYPE-MAP,CAND-TYPE-FULL,CAND-CMP-CC-BOTH	YES	recomputed independently by the PolyC implementation
+RANK_ORDER_MISMATCHES	0	0	YES	the PolyC independent comparison
+EXCLUDED_CANDIDATES	CAND-TYPE-FULL(E06),CAND-CMP-CC-BOTH(E16)	CAND-TYPE-FULL(E06),CAND-CMP-CC-BOTH(E16)	YES	both implementations
+SELECTED_BUNDLE_ID	CAND-CMP-CC-A64	CAND-CMP-CC-A64	YES	both implementations
+SELECTED_MEMBER_COUNT	3	3	YES	both implementations
+R0_MAX	1	1	YES	both implementations; the M2 producer is ABSENT so R0=2 is unavailable
+R5_SELECTED	0	0	YES	both implementations; every selected member has zero host-state writes, zero recovery crossings and zero pointer dereferences
+#
+# THE SOURCE RE-EXTRACTION, RE-DONE BY THE READ-ONLY ROUTE.
+#
+site_id	source_range	source_sha256	object_reachable	witness_discriminates
+SITE-A64-CC-FOR	src/aarch64.c 35517..36576	d22a99b3c85f82f12754582b63ecc0e5429b6ac3dbdff21ff2a960d4b538ccdc	YES (build/CMakeFiles/hcc.dir/aarch64.c.o is on the link line)	YES (cset x0, lt -> cset x0, ge; LT_OK -> LT_BAD)
+SITE-A64-CC-INV	src/aarch64.c 36577..37495	5b08df7b9752fd70d8391a300e5d6c9f943be67779f7e75102b788eec7b5d343	YES	YES (b.ge -> b.lt; LT_OK -> LT_BAD)
+SITE-A64-CSET	src/aarch64.c 37566..37719	8a1f2573c7eeb598816edcd96830cdd695b733f6ad12c47f859ea46575cec540	YES	YES (cset suffix change; GT_OK -> GT_BAD)
+#
+# THE C1 SOURCE FACTS RE-EXTRACTED FROM THE GIT OBJECTS.
+#
+site_id	git_blob_oid	byte_range	source_sha256
+SITE-A64-CC-FOR	6a53ac8f2e320aa8b0f7fc23ea9bd90be0334229	35517..36576	d22a99b3c85f82f12754582b63ecc0e5429b6ac3dbdff21ff2a960d4b538ccdc
+SITE-A64-CC-INV	6a53ac8f2e320aa8b0f7fc23ea9bd90be0334229	36577..37495	5b08df7b9752fd70d8391a300e5d6c9f943be67779f7e75102b788eec7b5d343
+SITE-A64-CSET	6a53ac8f2e320aa8b0f7fc23ea9bd90be0334229	37566..37719	8a1f2573c7eeb598816edcd96830cdd695b733f6ad12c47f859ea46575cec540
+#
+INDEPENDENT_AUDIT_VERDICT=AGREE
+SUMMARY_PASS_VALUES_ECHOED=NO

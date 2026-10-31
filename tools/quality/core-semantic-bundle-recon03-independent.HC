@@ -870,6 +870,82 @@ public U0 CompareMode(U8 *ielig_path, U8 *pelig_path, U8 *irank_path, U8 *prank_
       if (!SameStr(iorder[i], porder[i])) order_mismatch++;
     }
   }
+  // The RANK NUMBER column must also agree with the row position: a
+  // swapped pair whose numbers were left in place is a different
+  // defect from a renumbered table, and both must be caught.
+  {
+    U8 irows[NCAND * 64];
+    U8 prows[NCAND * 64];
+    I64 ni = 0;
+    I64 np = 0;
+    from = 0;
+    while (from < ir) {
+      le = 0;
+      I64 ls = ScanLine(irank, ir, from, &le);
+      if (le - ls >= 5 && irank[ls]=='C' && irank[ls+1]=='A' && irank[ls+2]=='N') {
+        if (ni < NCAND) { CutField(irank, ls, le, 0, irows + ni * 64, 64); ni++; }
+      }
+      from = le + 1;
+    }
+    from = 0;
+    while (from < pr) {
+      le = 0;
+      I64 ls = ScanLine(prank, pr, from, &le);
+      if (le - ls >= 5 && prank[ls]=='C' && prank[ls+1]=='A' && prank[ls+2]=='N') {
+        if (np < NCAND) { CutField(prank, ls, le, 0, prows + np * 64, 64); np++; }
+      }
+      from = le + 1;
+    }
+    // The RANK NUMBER -> CANDIDATE ID mapping must be IDENTICAL in
+    // the two tables. A swapped pair breaks the mapping even when the
+    // row positions and the numbers look fine, so the mapping is
+    // compared by RANK NUMBER and not by position.
+    {
+      U8 imap[NCAND * 64];    // rank number -> candidate id (independent)
+      U8 pmap[NCAND * 64];    // rank number -> candidate id (primary)
+      I64 nim = 0;
+      I64 npm = 0;
+      from = 0;
+      while (from < ir) {
+        le = 0;
+        I64 ls = ScanLine(irank, ir, from, &le);
+        if (le - ls >= 5 && irank[ls] >= '0' && irank[ls] <= '9') {
+          U8 num[16];
+          U8 idb[48];
+          CutField(irank, ls, le, 0, num, 16);
+          CutField(irank, ls, le, 1, idb, 48);
+          I64 n = ToNum(num);
+          if (n >= 1 && n <= NCAND && nim < NCAND) {
+            for (I64 j = 0; j < 64; j++) imap[(n-1) * 64 + j] = idb[j];
+            nim++;
+          }
+        }
+        from = le + 1;
+      }
+      from = 0;
+      while (from < pr) {
+        le = 0;
+        I64 ls = ScanLine(prank, pr, from, &le);
+        if (le - ls >= 5 && prank[ls] >= '0' && prank[ls] <= '9') {
+          U8 num[16];
+          U8 idb[48];
+          CutField(prank, ls, le, 0, num, 16);
+          CutField(prank, ls, le, 1, idb, 48);
+          I64 n = ToNum(num);
+          if (n >= 1 && n <= NCAND && npm < NCAND) {
+            for (I64 j = 0; j < 64; j++) pmap[(n-1) * 64 + j] = idb[j];
+            npm++;
+          }
+        }
+        from = le + 1;
+      }
+      I64 ncmp = nim;
+      if (npm < ncmp) ncmp = npm;
+      for (I64 i = 0; i < ncmp; i++) {
+        if (!SameStr(imap + i * 64, pmap + i * 64)) order_mismatch++;
+      }
+    }
+  }
 
   Say("INDEPENDENT_CANDIDATES=");
   SayNum(n_ielig);

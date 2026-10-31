@@ -1,0 +1,50 @@
+# ACT_ID=ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=gates-and-factory
+#
+# THE CANONICAL GATES, RUN SERIALLY, AT C3.
+#
+gate	command	actual_exit	verdict
+gate-fast	sh scripts/quality/gate-fast.sh	0	PASS
+gate-push	sh scripts/quality/gate-push.sh	0	PASS
+append-only	sh scripts/quality/factory-append-only-test.sh	0	PASS (11/11)
+#
+# THE gate-push CHECK LIST, AS THE CANONICAL GATE DEFINES IT.
+#
+gate_push_check	status
+build	PASS
+install	PASS
+gep01	PASS
+aot	PASS
+jit	PASS
+lsp	PASS
+diff-check	PASS
+VERDICT	PASS
+#
+# THE F14 FREEZE, RE-HASHED AT C3.
+#
+F14_RECHECKED_PATHS=12367
+F14_MISMATCHES=0
+F14_MISSING_OBJECTS=0
+F14_AUTHORIZED_EXEMPT=2
+F14_STATUS=PASS
+#
+# THE FACTORY-V2 VALIDATORS.
+#
+validator	command	actual_exit	verdict
+commit-msg	for each of the five ACT commits: sh scripts/quality/factory-v2-commit-msg-check.sh <msg>	0	PASS
+range	sh scripts/quality/factory-v2-range-check.sh (over the ACT's own five-commit range)	0	PASS
+closure-status	sh scripts/quality/factory-closure-status-check.sh (run inside gate-fast)	0	PASS
+halt-classification	not required (this ACT closes with PASS, not a HALT)	-	N/A
+append-only	sh scripts/quality/factory-append-only-test.sh	0	PASS (11/11)
+#
+# THE APPEND-ONLY INVARIANT.
+#
+APPEND_ONLY_START_POINT=baf5dbd77cf89330699685dffd932c54031c815c
+REPLACE_REFS=0
+APPEND_ONLY_STATUS=PASS
+PUSH_PERFORMED=NO
+FETCH_PERFORMED=NO
+AMEND_OR_REBASE_OR_RESET_PERFORMED=NO
+FORCE_UPDATE_PERFORMED=NO
+NETWORK_OPERATIONS=NO

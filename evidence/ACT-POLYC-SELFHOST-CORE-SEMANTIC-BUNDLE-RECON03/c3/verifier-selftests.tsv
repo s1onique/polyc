@@ -1,0 +1,38 @@
+# ACT_ID=ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=verifier-selftests
+#
+# THE VERIFIERS' OWN ANTI-SELFTESTS. Each verifier is run
+# against ISOLATED adverse copies of its inputs and must reject
+# each adverse shape with its OWN reason.
+#
+selftest_id	execution_id	verifier	adverse_shape	expected_reason	observed_reason	verdict
+ST-01	EXEC-ST-01	eligibility checker	an already PolyC-owned authority is offered as a C candidate (c_authoritative becomes NO)	E01	E01	PASS
+ST-02	EXEC-ST-02	eligibility checker	a dormant site (zero importers) is offered as a candidate	E03	E03	PASS
+ST-03	EXEC-ST-03	eligibility checker	a non-discriminating witness is claimed	E05	E05	PASS
+ST-04	EXEC-ST-04	eligibility checker	a recovery-frame crossing is claimed	E10	E10	PASS
+ST-05	EXEC-ST-05	eligibility checker	a two-target ABI projection is offered as a bounded implementation	E16	E16	PASS
+ST-06	EXEC-ST-06	eligibility checker	an unknown member site id is introduced	E03	E03	PASS
+ST-07	EXEC-ST-07	eligibility checker	a single-site bundle violates the 2..6 cardinality	E02	E02	PASS
+ST-08	EXEC-ST-08	eligibility checker	a member dereferences a caller-owned pointer	E08	E08	PASS
+ST-09	EXEC-ST-09	independent recomputation	the two rank tables disagree on the rank-number -> candidate-id mapping	RANK_ORDER_MISMATCH	RANK_ORDER_MISMATCH	PASS
+ST-10	EXEC-ST-10	independent recomputation	a missing candidate id in one of the two tables	MISSING_CANDIDATE_ID	MISSING_CANDIDATE_ID	PASS
+ST-11	EXEC-ST-11	independent recomputation	a duplicated candidate id in one of the two tables	DUPLICATE_ID	DUPLICATE_ID	PASS
+ST-12	EXEC-ST-12	RED detector	a post-CLOSE commit is claimed to have changed compiler source	UNAUTHORIZED_POST_CLOSE_SOURCE_CHANGE	UNAUTHORIZED_POST_CLOSE_SOURCE_CHANGE	PASS
+ST-13	EXEC-ST-13	RED detector	the all-commit count is conflated with the ACT-trailer count	POST_CLOSE_COUNT_CONFLATION	POST_CLOSE_COUNT_CONFLATION	PASS
+ST-14	EXEC-ST-14	RED detector	a witness is claimed that carries no real semantic channel	NON_SEMANTIC_OR_VACUOUS_WITNESS	NON_SEMANTIC_OR_VACUOUS_WITNESS	PASS
+ST-15	EXEC-ST-15	RED detector	a graph cut is claimed from an unimplemented ABI sketch	UNPROVEN_GRAPH_CUT	UNPROVEN_GRAPH_CUT	PASS
+ST-16	EXEC-ST-16	RED detector	the unsupported edge E-MUT-0137 is claimed as a proven cut	UNPROVEN_GRAPH_CUT	UNPROVEN_GRAPH_CUT	PASS
+ST-17	EXEC-ST-17	RED detector	the historical M-POLYC-RO digest is bound to the range site	MUTANT_SOURCE_OBJECT_MISATTRIBUTION	MUTANT_SOURCE_OBJECT_MISATTRIBUTION	PASS
+ST-18	EXEC-ST-18	RED detector	an already PolyC-owned authority is offered as a C candidate	ALREADY_MIGRATED_EXCLUSION	ALREADY_MIGRATED_EXCLUSION	PASS
+#
+# EVERY ADVERSE SHAPE PRODUCED ITS OWN REASON AND NOT A
+# GENERIC PARSE ERROR.
+#
+SELFTESTS_TOTAL=18
+SELFTESTS_CAUGHT=18
+SELFTESTS_MISSED=0
+SELFTESTS_FIRED_FOR_OWN_REASON=18
+SELFTESTS_VACUOUS=0
+PRISTINE_STATE_STILL_ACCEPTED=YES (the eligibility checker's own selftest reports PRISTINE_ELIGIBLE=4 and the independent comparison reports FINAL=OK on the genuine tables)
+BYTE_IDENTICAL_RECORD_RESTORATION=DEMONSTRATED (the eligibility checker's selftest mutates in-memory copies only; the canonical records were never written)
