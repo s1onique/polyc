@@ -1,0 +1,63 @@
+# ACT_ID=ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON02-CORRECTION01
+# ACT_PHASE=C4-CLOSE
+# EVIDENCE_KIND=terminality-plan
+#
+# THIS IS A PLAN, NOT AN EXTERNAL RECEIPT.
+#
+# The external read-only receipt is produced AFTER the terminal CLOSE
+# commit exists, by a reader outside the repository, and is stored under an
+# untracked path outside the repository.
+#
+# WHAT THE EXTERNAL RECEIPT MUST BIND
+#
+#   1. The exact terminal HEAD commit sha and tree sha of this ACT.
+#   2. This ACT's exact commit range and the trailer of each commit:
+#        commit 1  ACT-Phase: RED
+#        commit 2  ACT-Phase: EVIDENCE
+#        commit 3  ACT-Phase: IMPL
+#        commit 4  ACT-Phase: EVIDENCE
+#        commit 5  ACT-Phase: CLOSE
+#                   ACT-Verdict: PASS
+#                   ACT-Supersedes: ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON02
+#                   ACT-Corrected-Verdict: HALT_PREDECESSOR_PROOF_INCOMPLETE
+#   3. The corrected closure identity: exactly ONE CLOSE commit for
+#      ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON02-CORRECTION01, and
+#      it is the last commit of its own range.
+#   4. The predecessor's identity as recorded in
+#      c4/terminal-closure-identity.tsv, including the two immutable CLOSE
+#      commits and the fact that their trees are identical.
+#   5. The final gate identities, read-only:
+#        gate-fast   STATUS=PASS
+#        gate-push   STATUS=PASS
+#        append-only STATUS=PASS (11/11)
+#        F14         STATUS=PASS (5790/5790, 0 mismatches)
+#   6. The conservation identities:
+#        parser          376/376 over 90 files
+#                       MD5 b6f117eb1386ca80f81bc06226e2a741
+#        lexer07/08/09   89/89, 45/45, 23/23
+#        lexer07 broad   FAIL_KNOWN_BASELINE, 15 identities
+#                       MD5 7ee761440de83552e751e3c3976c1683
+#        graph           52 nodes / 134 active mandatory edges / 1 cut
+#        authorities     13 structurally active, 12 with causal evidence
+#   7. The explicit NEGATIVE assertions:
+#        NEW_PRODUCTION_AUTHORITIES = 0
+#        PRODUCTION_SEMANTIC_DELTA  = 0
+#        NEW_PROVEN_GRAPH_CUTS     = 0
+#        SELECTED_BUNDLE_ID        = NONE
+#        SELFHOST_M2_ACHIEVED       = NO
+#        SLICE10_AUTHORIZED         = NO
+#        PREDECESSOR_RO_PROOF       = UNPROVEN_AS_RECORDED (unchanged)
+#   8. The F14 path freeze re-verified path by path, with 0 mismatches.
+#
+# RECEIPT_VERDICT_EXPECTED=PASS
+#
+# NOTE ON THE PRECEDENT'S RESIDUE
+#
+# The predecessor's cardinality defect is NOT erased by this ACT; it is
+# explained and carried forward. The canonical Cardinality-1 recipe will
+# still report GOT 2 for the predecessor's ACT id. That is the truthful
+# state of an append-only history in which the duplicate commit is
+# immutable. The mechanism used to carry the verdict forward is the
+# repository's own forward-only supersession, whose direct precedent is
+# ACT-POLYC-SELFHOST-PARSER-SLICE03-CORRECTION01 (defect D5: "the
+# historical range has six commits, not the specified five").
