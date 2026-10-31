@@ -1,0 +1,104 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01
+# ACT_PHASE=C4-CLOSE
+# EVIDENCE_KIND=terminality-plan
+#
+# THIS FILE CONTAINS ONLY THE FUTURE EXTERNAL CHECKS.
+#
+# It deliberately contains NO CLOSE SHA, NO external terminality receipt and
+# NO AC50 PASS. Those are produced AFTER the CLOSE commit, from OUTSIDE the
+# repository, and are recorded outside the tracked history. A prewritten
+# terminality claim would be a false claim (NC-24).
+#
+# THE CHECKS, TO BE RUN FROM OUTSIDE THE REPOSITORY AGAINST THE ACTUAL
+# NEW CLOSE HEAD
+# =====================================================================
+#
+# 1. REPOSITORY IDENTITY
+#    - the worktree and the index are clean (no tracked modification);
+#    - `git replace -l` is empty (no replace refs);
+#    - the branch is main;
+#    - the HEAD is the ACT's single terminal CLOSE commit.
+#
+# 2. FACTORY-V2 RANGE AND TRAILERS
+#    - `sh scripts/quality/factory-v2-range-check.sh
+#       ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01 <CLOSE-SHA>` exits 0;
+#    - the derived COMMITS count is exactly 5;
+#    - the derived phase order is RED, EVIDENCE, IMPL, EVIDENCE, CLOSE;
+#    - there is exactly one CLOSE and it is the last commit of the range;
+#    - the CLOSE carries ACT=ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01,
+#      ACT-Phase=CLOSE and exactly one ACT-Verdict;
+#    - no commit after the CLOSE carries this ACT id;
+#    - every commit message in the range passes
+#      `sh scripts/quality/factory-v2-commit-msg-check.sh`.
+#
+# 3. APPEND-ONLY
+#    - `sh scripts/quality/factory-append-only-test.sh` reports PASS=11
+#      and FAIL=0;
+#    - the ACT's five commits are a fast-forward extension of the
+#      predecessor's CLOSE: the predecessor's CLOSE is an ancestor of the
+#      first ACT commit, and no history rewrite occurred.
+#
+# 4. FROZEN PREDECESSOR (F14)
+#    - every path in
+#      `evidence/ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01/c0/predecessor-freeze.tsv`
+#      still hashes to its recorded SHA-256;
+#    - the predecessor's ACT, HANDOFF and evidence directory are untouched.
+#
+# 5. NEW SUBJECT PROVENANCE
+#    - `tools/bootstrap/selfhost-core-operator.HC` exists and hashes to the
+#      value recorded in `c2/polyc-subject-build.txt`;
+#    - `build/core-operator-subject.o` exports all three symbols
+#      `_AbiCoreClassifyCompoundAssign`, `_AbiCoreIsValidPointerOperator`
+#      and `_AbiCoreIsRangeOperator`, exactly once each;
+#    - the production binary defines each of them exactly once;
+#    - the production link line contains the subject object exactly once.
+#
+# 6. THIRTEEN PROVEN AUTHORITIES
+#    - the compiled PolyC auditor
+#      (`tools/quality/core-operator-implement01-verify.HC`, AUTHORITY mode)
+#      reports PROD_DEF=1 and CALLER_IMPORT=1 for all three sites and
+#      OFF_DEF=0 for all three;
+#    - `c3/authority-ledger.tsv` reports
+#      PRODUCTION_POLYC_AUTHORITIES_TOTAL=13 with all ten predecessor
+#      authorities conserved;
+#    - `c3/predecessor-authorities.tsv` reports
+#      PREDECESSOR_AUTHORITIES_CONSERVED=10.
+#
+# 7. ACTUAL GRAPH RECOMPUTATION
+#    - the PolyC graph verifier recomputes 52 nodes, 134 active mandatory
+#      edges, 34 SCCs and largest 19, with NEW_PROVEN_CUTS=0;
+#    - the recomputation agrees with `c3/graph-after.tsv`.
+#
+# 8. GATES ON THE ACTUAL CLOSE HEAD
+#    - `sh scripts/quality/gate-fast.sh` reports PASS;
+#    - `sh scripts/quality/gate-push.sh` reports PASS on a FRESH tree
+#      (build, install, gep01, aot, jit, lsp, diff-check);
+#    - the parser suite is 376/376 over 90 files with the assertion-sequence
+#      MD5 b6f117eb1386ca80f81bc06226e2a741;
+#    - the three lexer differentials are 89/89, 45/45 and 23/23;
+#    - the known non-green baselines remain non-green (LEXER07_BROAD
+#      FAIL_KNOWN_BASELINE with 15 failure identities and MD5
+#      7ee761440de83552e751e3c3976c1683, CROSS_TARGET_PREFIX
+#      FAIL_ENVIRONMENT_PREFIX with 67, F_NO_PYTHON FAIL_KNOWN_BASELINE with
+#      12 historical and 0 new);
+#    - `sh scripts/quality/factory-closure-status-check.sh` reports PASS.
+#
+# 9. ACCEPTANCE LEDGER
+#    - `c3/ac01-ac49-ledger.tsv` reports AC_COUNT=50, PASS_COUNT=49,
+#      DEFERRED_COUNT=1 (AC50), FAIL_COUNT=0, UNPROVEN_COUNT=0,
+#      NOT_RUN_COUNT=0, AC_IDS_UNIQUE=0 and EVIDENCE_PATHS_PRESENT=49;
+#    - `c3/negative-control-join.tsv` reports CONTROL_COUNT=24 and
+#      SENSITIVE_COUNT=24;
+#    - `c3/control-verifier-selftest.tsv` reports six PASS selftests.
+#
+# 10. SCOPE
+#    - the tracked diff of the five commits touches ONLY the authorized
+#      paths listed in the ACT's section 2;
+#    - no existing test file was modified;
+#    - no previously closed ACT, HANDOFF or evidence file was modified;
+#    - no dependency was added and no Python was introduced.
+#
+# 11. THE RECEIPT
+#    - the executor records the ACTUAL CLOSE SHA and TREE, and the result
+#      of every check above, in a receipt kept OUTSIDE the repository;
+#    - AC50 is discharged by that receipt and ONLY by that receipt.
