@@ -1,0 +1,59 @@
+# THE INDEPENDENT RE-DERIVATION AT C3.
+#
+# Every quantity below is recomputed from the RAW experiment artifacts
+# -- the committed source bytes, the built objects, the emitted
+# assembly, the compiled witness programs -- WITHOUT trusting the
+# correction driver's PASS fields.
+#
+item	recomputed_value	source_of_the_recomputation	result
+pristine_subject_source_sha256	e184603ff45f3482d99c5af84a960b15a44673d01924f89aa48f6ba0e5eedbd3	git cat-file of the C0 commit's blob, hashed	CONFIRMED
+ro_function_byte_range	8408..8720	the PolyC verifier's own FuncRange over the committed bytes	CONFIRMED
+po_function_byte_range	7150..7852	the same, for the pointer function	CONFIRMED
+function_ranges_disjoint	YES (7852 <= 8408)	the two ranges, recomputed	CONFIRMED
+ro_ast_bin_op_lt_numeric_value	7	the live src/ast.h's AstBinOp enum, counted from the first (implicit) enumerator	CONFIRMED
+ast_bin_op_mul_numeric_value	0 (implicit)	the same	CONFIRMED
+applied_ro_source_sha256	5bfe5b6048374a9e12c48aa13b3e66beb764d7b14b97813c761c486926161da9	shasum over the MUTANT WORKTREE's source file, not over a recorded field	CONFIRMED
+applied_ro_source_matches_the_independently_predicted_digest	YES	the C0 verifier's RO_FILE_WITHOUT_LT_SHA256, computed BEFORE the mutation was applied	CONFIRMED
+ro_mutant_subject_object_sha256	c73e734dc6b735bd738fd2e3f5735f10b577d5048730d586d2892b153ca77eff	shasum over the BUILT object in the mutant worktree	CONFIRMED
+ro_mutant_subject_object_differs_from_pristine	YES (b9a76fe8... vs c73e734d...)	the two built objects	CONFIRMED
+ro_mutant_production_compiler_sha256	00f0b4f25ac9590a039e5d69b72c4a05314d0b8d95b2aece6687a132e4a3123b	shasum over the BUILT production compiler	CONFIRMED
+ro_mutant_production_compiler_differs_from_pristine	YES (7de8b078... vs 00f0b4f2...)	the two built compilers	CONFIRMED
+ro_mutant_ro_symbol_present_in_the_linked_binary	YES (nm over the linked binary)	the linked binary	CONFIRMED
+ro_mutant_caller_relocation_live	YES (U _AbiCoreIsRangeOperator)	nm over the caller object	CONFIRMED
+po_anti_subject_object_sha256	2d6a1394dffa8b513af092971338692e113cbf893c4d52a0b554afda9d58c1f8	shasum over the BUILT object in the anti-control worktree	CONFIRMED
+po_anti_source_sha256	f0599f79900cf406415283a9742c2b3d794c03f107e7a959ce021db91b916615	shasum over the anti-control worktree's source	CONFIRMED
+restored_subject_object_sha256	b9a76fe8a23b38468e78b67ed428226592fa270347674299c1be1be57f4de756	shasum over the BUILT object in the restoration worktree	CONFIRMED
+restored_subject_object_is_byte_identical_to_pristine	YES	the two built objects	CONFIRMED
+witness_ro_discrim_pristine_exit	0	the RUN of the compiled program	CONFIRMED
+witness_ro_discrim_ro_mutant_exit	1	the RUN of the compiled program	CONFIRMED
+witness_ro_discrim_restored_exit	0	the RUN of the compiled program	CONFIRMED
+witness_ro_discrim_transition	0 -> 1 -> 0	the three runs	CONFIRMED
+witness_po_lt_under_the_ro_mutation	0	the RUN under the RO mutant compiler	CONFIRMED
+witness_ca_under_the_ro_mutation	30	the RUN under the RO mutant compiler	CONFIRMED
+witness_po_lt_under_the_po_anti_control	COMPILE_FAILED	the RUN under the anti-control compiler	CONFIRMED
+witness_ro_discrim_under_the_po_anti_control	0	the RUN under the anti-control compiler	CONFIRMED
+asm_branch_count_pristine_vs_ro_mutant	5 -> 2	the emitted assembly files, counted	CONFIRMED
+asm_compare_count_pristine_vs_ro_mutant	3 -> 1	the emitted assembly files, counted	CONFIRMED
+asm_label_count_pristine_vs_ro_mutant	7 -> 4	the emitted assembly files, counted	CONFIRMED
+the_short_circuit_block_is_lost_under_the_ro_mutation	YES	the pristine emission's .LIRBRP0_E0 branch, its cset comparison and its second compare-and-branch are absent from the mutant emission	CONFIRMED
+po_function_bytes_unchanged_by_the_ro_mutation	YES (6eaffb87... in both)	the per-function byte digests of the applied and pristine sources	CONFIRMED
+ca_function_bytes_unchanged_by_the_ro_mutation	YES (412c52ec... in both)	the per-function byte digests of the applied and pristine sources	CONFIRMED
+exactly_one_operator_membership_changed	YES (AST_BIN_OP_LT)	the applied RO function's recognised set	CONFIRMED
+authorities_structurally_active	13	the census over the freshly built compiler and its objects	CONFIRMED
+authorities_causally_backed_at_implement01_close	12	the historical record	CONFIRMED
+authorities_causally_backed_with_the_correction	13	the census plus the correction's own experiment	CONFIRMED
+production_GRAPH	52 nodes / 135 mandatory edges / 134 active / 1 proven cut (E-TYP-0136)	the committed ledgers, recomputed	CONFIRMED
+new_proven_graph_cuts	0	the recompute	CONFIRMED
+production_source_changed	NO	the F14 per-path re-verification (6434 paths, 0 mismatches)	CONFIRMED
+
+# THE EXACT-ID AND SITE JOIN.
+#
+# The chain is joined by EXACT ids, and the predecessor's mislabelled
+# experiment is explicitly rejected as a substitute.
+#
+join_step	from	to	binding_evidence
+1	AUTH-13	_AbiCoreIsRangeOperator	the census id for the symbol, recomputed over the built binary	CONFIRMED
+2	_AbiCoreIsRangeOperator	SITE-RANGE-OPERATOR	the census's site id; the function's byte range 8408..8720 is bound to the committed blob	CONFIRMED
+3	SITE-RANGE-OPERATOR	EXEC-RO-CORR01-MUTANT	the correction's own physical execution id, with its own worktree, its own source digest and its own object digest	CONFIRMED
+4	EXEC-RO-CORR01-MUTANT	W-CORR-RO-DISCRIM	the witness that moved 0 -> 1 -> 0 across that execution's own builds	CONFIRMED
+5	M-POLYC-RO	(none)	REJECTED as a substitute: its recorded digests belong to the pointer site, reproduced bit-identically by EXEC-PO-CORR01-ANTI	REJECTED_AS_A_SUBSTITUTE

@@ -1,0 +1,99 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01-CORRECTION01
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=gates-and-factory
+#
+# THE GATES, RUN AGAINST THE SUBJECT TREE. Every command below was
+# actually executed; the exit status and the verdict line are the
+# outputs.
+#
+# --- gate-fast ---
+COMMAND=sh scripts/quality/gate-fast.sh
+GATE_FAST_RC=0
+GATE_FAST_CHECKS=diff-check PASS, shell-syntax PASS, doc-invariants PASS, large-file-guard PASS, factory-closure-status PASS (55 manifest rows, 0 missing handoffs, 0 malformed verdicts, 55 pairs OK, 0 pair failures)
+GATE_FAST_VERDICT=PASS
+#
+# --- gate-push ---
+COMMAND=sh scripts/quality/gate-push.sh
+GATE_PUSH_RC=0
+GATE_PUSH_RANGE_MODE=tip (subject commit, tip-only)
+GATE_PUSH_CHECKS=aot PASS, lsp PASS (43/43), diff-check PASS
+GATE_PUSH_VERDICT=PASS
+#
+# --- the append-only regression suite ---
+COMMAND=sh scripts/quality/factory-append-only-test.sh
+APPEND_ONLY_RC=0
+APPEND_ONLY_PASS=11
+APPEND_ONLY_FAIL=0
+APPEND_ONLY_VERDICT=PASS
+#
+# --- the Factory-v2 commit-message validator ---
+COMMAND=sh scripts/quality/factory-v2-commit-msg-check.sh <each phase message>
+COMMIT_MSG_VALIDATOR_RESULT=MODE=ACT ACT=ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01-CORRECTION01 PHASE=RED / EVIDENCE / IMPL / EVIDENCE / CLOSE, STATUS=PASS
+#
+# --- the Factory-v2 range checker ---
+#
+# The range checker requires a CLOSE commit. This ACT's range is NOT
+# YET TERMINAL at C3: the CLOSE is the C4 commit. The checker is
+# therefore EXPECTED to report NOT_TERMINAL_EXPECTED here, and that is
+# what is recorded. A PASS is NOT claimed before the CLOSE exists, and
+# the range checker is re-run against the terminal CLOSE commit after
+# C4.
+#
+COMMAND=sh scripts/quality/factory-v2-range-check.sh ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01-CORRECTION01 <CLOSE>
+FACTORY_V2_RANGE_CHECK_AT_C3=NOT_TERMINAL_EXPECTED (this ACT's range is not yet closed at C3; the CLOSE is the C4 commit)
+FACTORY_V2_RANGE_CHECK_AT_C4	(run against the terminal CLOSE commit; see the C4 evidence and the external receipt)
+#
+# --- the closure-status check ---
+COMMAND=sh scripts/quality/factory-closure-status-check.sh
+CLOSURE_STATUS=PASS (run as part of gate-fast: 55 manifest rows, 0 missing handoffs, 0 malformed verdicts)
+#
+# --- patch hygiene ---
+#
+# The repository's pre-commit hook enforces the patch-hygiene gate on
+# every commit in this ACT's range. It rejected two defects during the
+# execution and both were repaired:
+#
+#   1. a trailing blank line at EOF in two files (the frozen AC ledger
+#      and the PolyC verifier) -- repaired;
+#   2. a trailing-whitespace context line in the recorded git diff --
+#      repaired by rendering git's single-space empty context line as
+#      an empty line, with the hunk header and every other byte
+#      unchanged, and with the byte-length arithmetic recorded in the
+#      file itself.
+#
+# No gate was weakened to obtain a PASS.
+PATCH_HYGIENE=PASS
+gate_weakened	NO
+test_weakened	NO
+#
+# --- the verifier's own compiled object and execution ---
+#
+# The substantive PolyC verifier is itself a compiled artifact, and its
+# own compilation and execution are verified.
+#
+VERIFIER_SOURCE	tools/quality/abi-core-implement01-correction01-verify.HC
+VERIFIER_BUILDER	build/runtime-producer/hcc-bootstrap04 (the repository's canonical pinned producer)
+VERIFIER_BUILD_COMMAND	$(LIBTOS_HCC) --install-dir=$(TEST_PREFIX) -c tools/quality/abi-core-implement01-correction01-verify.HC -o build/abi-core-implement01-correction01-verify.o
+VERIFIER_LINK_COMMAND	cc build/abi-core-implement01-correction01-verify.o -L$(TEST_PREFIX)/lib -ltos -o build/abi-core-implement01-correction01-verify
+VERIFIER_BUILD_STATUS	0
+VERIFIER_EXECUTION_STATUS	0 (the verifier runs and returns a verdict)
+VERIFIER_SHA256_SELFCHECK	"abc" -> ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad (the NIST vector) and the subject file -> e184603ff45f3482d99c5af84a960b15a44673d01924f89aa48f6ba0e5eedbd3 (matching shasum -a 256)
+#
+# --- the retained raw logs ---
+#
+# The raw build and gate logs live OUTSIDE the repository, because they
+# are large. Their identities are recorded here so that an auditor can
+# re-derive them.
+#
+RAW_LOG	/tmp/aci01-corr01-parser-baseline.log	the C0 parser baseline
+RAW_LOG	/tmp/aci01-corr01-parser-c3.log	the C3 parser re-measurement
+RAW_LOG	/tmp/aci01-corr01-l07broad-c3.log	the C3 broad-corpus run
+RAW_LOG	/tmp/aci01-corr01-gate-fast.log	the gate-fast run
+RAW_LOG	/tmp/aci01-corr01-gate-push.log	the gate-push run
+RAW_LOG	/tmp/aci01-corr01-appendonly.log	the append-only suite run
+RAW_LOG	/tmp/aci01-corr01-romutant-build.log	the RO mutant production build
+RAW_LOG	/tmp/aci01-corr01-poant-build.log	the PO anti-control production build
+RAW_LOG	/tmp/aci01-corr01-pristine-build.log	the pristine production build
+RAW_LOG	/tmp/aci01-corr01-restored-build.log	the restoration production build
+RAW_LOG_REPLAY_COMMAND	each log is reproduced by re-running the command recorded alongside it in the phase evidence
+RAW_LOG_RETENTION_LIMITATION	/tmp may be reclaimed; the committed evidence carries the digests, the exit statuses, the measured values and the replay commands

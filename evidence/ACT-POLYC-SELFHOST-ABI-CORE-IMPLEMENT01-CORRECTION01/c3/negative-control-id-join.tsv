@@ -1,0 +1,27 @@
+# THE NEGATIVE-CONTROL ID JOIN.
+#
+# The join is by EXACT CONTROL ID, and every control's execution id is
+# distinct. The join also records WHICH physical surface each control
+# exercised, so that a document-only control is never mistaken for a
+# full-compiler control.
+#
+control_id	frozen_required_reason	observed_reason	control_execution_id	distinct_execution_id	physical_surface	semantic_attribution_uses_the_real_compiler	reason_matches_the_frozen_contract
+NC01	ENTRY_IDENTITY_MISMATCH	ENTRY_IDENTITY_MISMATCH	NC01-ENTRY-IDENTITY	YES	the Git object database (git rev-parse)	NO	YES
+NC02	F14_PREDECESSOR_TAMPER	F14_PREDECESSOR_TAMPER	NC02-F14-TAMPER	YES	the committed files, re-hashed per path	NO	YES
+NC03	HISTORICAL_MUTATION_SUBJECT_MISMATCH	HISTORICAL_MUTATION_SUBJECT_MISMATCH	NC03-HISTORICAL-SUBJECT	YES	an isolated evidence copy, through the historical-ro detector	NO	YES
+NC04	APPLIED_SOURCE_DIFF_PROVENANCE_FAILURE	APPLIED_SOURCE_DIFF_PROVENANCE_FAILURE	NC04-DIFF-PROVENANCE	YES	the applied source's recomputed digest against the recorded one	NO	YES
+NC05	RO_WRONG_FUNCTION_MUTATED	RO_WRONG_FUNCTION_MUTATED	NC05-WRONG-FUNCTION	YES	the REAL applied source bytes of the RO mutant and of the PO anti-control	YES	YES
+NC06	RO_BUILD_OR_LINK_PROVENANCE_FAILURE	RO_BUILD_OR_LINK_PROVENANCE_FAILURE	NC06-BUILD-LINK	YES	the REAL build exit status, the REAL built subject object and the REAL linked binary	YES	YES
+NC07	RO_SEMANTIC_WITNESS_NONDISCRIMINATING	RO_SEMANTIC_WITNESS_NONDISCRIMINATING	NC07-NONDISCRIMINATING	YES	the REAL compiled programs' exit statuses	YES	YES
+NC08	SITE_ISOLATION_OR_WITNESS_MISBIND	SITE_ISOLATION_OR_WITNESS_MISBIND	NC08-WITNESS-MISBIND	YES	the join checker over a mutated copy of the REAL join table	YES	YES
+NC09	DUPLICATE_PHYSICAL_EXECUTION_ID	DUPLICATE_PHYSICAL_EXECUTION_ID	NC09-DUPLICATE-EXEC-ID	YES	the join checker over a mutated copy of the REAL join table	YES	YES
+NC10	CAUSAL_RESTORATION_OR_EVIDENCE_MISSING	CAUSAL_RESTORATION_OR_EVIDENCE_MISSING	NC10-FORGED-PASS	YES	the join checker over a mutated copy of the REAL join table	YES	YES
+NC11	AUTHORITY_OR_HISTORICAL_OVERCLAIM	AUTHORITY_OR_HISTORICAL_OVERCLAIM	NC11-AUTHORITY-OVERCLAIM	YES	the REAL authority census over the freshly built compiler	YES	YES
+NC12	LEDGER_OR_TERMINALITY_FALSE_PASS	LEDGER_OR_TERMINALITY_FALSE_PASS	NC12-LEDGER-TERMINALITY	YES	the REAL acceptance ledger with one id omitted	NO	YES
+
+# THE SUMMARY.
+controls	12
+controls_whose_reason_matches_the_frozen_contract	12
+distinct_control_execution_ids	12
+controls_using_the_real_compiler	7 (NC05, NC06, NC07, NC08, NC09, NC10, NC11)
+controls_using_isolated_document_copies	5 (NC01, NC02, NC03, NC04, NC12)

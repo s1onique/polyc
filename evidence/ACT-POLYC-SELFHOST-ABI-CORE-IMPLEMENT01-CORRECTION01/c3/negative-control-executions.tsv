@@ -1,0 +1,50 @@
+# THE TWELVE NEGATIVE CONTROLS, EXECUTED.
+#
+# Every control FIRES for its OWN NAMED REASON on the adverse input,
+# and every detector is SILENT on the genuine state. The harness is
+# /tmp/aci01-corr01-nc-controls.sh; the verifier it drives is
+# tools/quality/abi-core-implement01-correction01-verify.HC.
+#
+# The document/ledger controls (NC01, NC02, NC03, NC04, NC11, NC12)
+# operate on ISOLATED COPIES of the evidence tree. The SEMANTIC
+# attribution controls (NC05, NC06, NC07, NC08, NC09, NC10) operate on
+# the REAL compiler artifacts the C2 experiments produced: the adverse
+# state is a real rebuilt production compiler, not a stub.
+#
+id	adverse_condition	expected_reason	actual_reason	rc	detector	execution_surface	execution_id	verdict
+NC01	the correction entry HEAD/tree is replaced with the predecessor's tree	ENTRY_IDENTITY_MISMATCH	ENTRY_IDENTITY_MISMATCH	1	the entry-identity detector	git rev-parse HEAD^{tree} against the frozen expected tree	NC01-ENTRY-IDENTITY	FIRED_FOR_THE_NAMED_REASON
+NC02	one closed predecessor evidence byte or its freeze-path digest is changed	F14_PREDECESSOR_TAMPER	F14_PREDECESSOR_TAMPER	1	the F14 freeze detector	sha256 of the frozen path against the F14 manifest	NC02-F14-TAMPER	FIRED_FOR_THE_NAMED_REASON
+NC03	the historical M-POLYC-RO record is changed to claim the RO function was mutated	HISTORICAL_MUTATION_SUBJECT_MISMATCH	HISTORICAL_MUTATION_SUBJECT_MISMATCH	1	the historical-ro detector	the historical-ro detector, over an isolated evidence copy	NC03-HISTORICAL-SUBJECT	FIRED_FOR_THE_NAMED_REASON
+NC04	an intended .diff is presented in place of the actual compiled mutant source	APPLIED_SOURCE_DIFF_PROVENANCE_FAILURE	APPLIED_SOURCE_DIFF_PROVENANCE_FAILURE	1	the applied-source provenance detector	the applied source's own recomputed digest against the recorded one	NC04-DIFF-PROVENANCE	FIRED_FOR_THE_NAMED_REASON
+NC05	the LT mutation is applied in AbiCoreIsValidPointerOperator instead of the range function	RO_WRONG_FUNCTION_MUTATED	RO_WRONG_FUNCTION_MUTATED	1	the per-function byte comparison	the applied source's PO function bytes against the pristine's	NC05-WRONG-FUNCTION	FIRED_FOR_THE_NAMED_REASON
+NC06	a stale or unlinked subject object is presented as the mutant's	RO_BUILD_OR_LINK_PROVENANCE_FAILURE	RO_BUILD_OR_LINK_PROVENANCE_FAILURE	1	the build-and-link provenance detector	the build exit status, the subject object's digest and the linked binary's symbols	NC06-BUILD-LINK	FIRED_FOR_THE_NAMED_REASON
+NC07	the nondiscriminating 1 < 2 < 3 witness is offered as the sole witness	RO_SEMANTIC_WITNESS_NONDISCRIMINATING	RO_SEMANTIC_WITNESS_NONDISCRIMINATING	1	the witness-discrimination detector	the witness's own pristine and mutant exit statuses	NC07-NONDISCRIMINATING	FIRED_FOR_THE_NAMED_REASON
+NC08	a pointer-site witness change is offered as the range-site proof	SITE_ISOLATION_OR_WITNESS_MISBIND	SITE_ISOLATION_OR_WITNESS_MISBIND	1	the join checker's site/witness rule	the join checker, over a mutated copy of the join table	NC08-WITNESS-MISBIND	FIRED_FOR_THE_NAMED_REASON
+NC09	one execution id is reused for both the RO and the PO mutant	DUPLICATE_PHYSICAL_EXECUTION_ID	DUPLICATE_PHYSICAL_EXECUTION_ID	1	the join checker's distinct-execution-id rule	the join checker's distinct-execution-id rule	NC09-DUPLICATE-EXEC-ID	FIRED_FOR_THE_NAMED_REASON
+NC10	a PASS is claimed without the pristine/mutant/restored exit matrix	CAUSAL_RESTORATION_OR_EVIDENCE_MISSING	CAUSAL_RESTORATION_OR_EVIDENCE_MISSING	1	the join checker's RO exit-transition rule	the join checker's RO exit-transition rule	NC10-FORGED-PASS	FIRED_FOR_THE_NAMED_REASON
+NC11	a 14th authority, a new graph cut or a historical 13/13 causal claim is made	AUTHORITY_OR_HISTORICAL_OVERCLAIM	AUTHORITY_OR_HISTORICAL_OVERCLAIM	1	the authority census detector	the authority census against the frozen 13/12 counts	NC11-AUTHORITY-OVERCLAIM	FIRED_FOR_THE_NAMED_REASON
+NC12	an acceptance or control id is omitted, or an external receipt is claimed before CLOSE	LEDGER_OR_TERMINALITY_FALSE_PASS	LEDGER_OR_TERMINALITY_FALSE_PASS	1	the ledger checker's exact-id-set rule	the ledger checker's exact-id-set rule	NC12-LEDGER-TERMINALITY	FIRED_FOR_THE_NAMED_REASON
+
+# THE SUMMARY.
+controls_total	12
+controls_fired_for_the_named_reason	12
+controls_fired_for_a_different_reason	0
+controls_not_fired	0
+controls_reusing_an_execution_id	0 (each control has its own execution id)
+distinct_control_execution_ids	12
+always_green_detector	NO
+
+# WHY EACH CONTROL IS NOT VACUOUS.
+#
+# A detector that never fires would satisfy "the control passes" just
+# as well as a detector that fires for the wrong reason. Every control
+# above was observed to FIRE, with the exact reason named in the
+# frozen contract, on its adverse input. In addition, every detector
+# is SILENT on the genuine state:
+#
+#   * the join checker returns FINAL=OK on the genuine join table;
+#   * the historical-ro detector returns FINAL=OK on the committed
+#     predecessor evidence;
+#   * the ledger checker returns FINAL=OK on a well-formed ledger.
+#
+detector_silent_on_genuine_state	YES (recorded in c3/verifier-selftests.tsv)

@@ -1,0 +1,84 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01-CORRECTION01
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=scope-and-patch-hygiene
+#
+# THE SCOPE: EVERY CHANGED PATH IS INSIDE THE AUTHORIZED LIST.
+#
+# The authorized list is:
+#   docs/acts/ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01-CORRECTION01.md
+#   docs/factory/HANDOFF-ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01-CORRECTION01.md
+#   docs/factory/act-handoff-map.tsv            (exactly one append row)
+#   docs/ROADMAP.md                             (bounded append only)
+#   evidence/ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01-CORRECTION01/**
+#   tools/quality/abi-core-implement01-correction01-*.HC
+#
+# The check is PER PATH, against the frozen entry, and it is a
+# MEASUREMENT rather than a declaration.
+#
+COMMAND=git diff --name-only 30432271ab1f56079be3a33dbddc415392b5034e..HEAD
+#
+# The paths that exist at C3 are exactly:
+#   docs/acts/ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01-CORRECTION01.md
+#   evidence/ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01-CORRECTION01/c0/**
+#   evidence/ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01-CORRECTION01/c1/**
+#   evidence/ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01-CORRECTION01/c2/**
+#   evidence/ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01-CORRECTION01/c3/**
+#   tools/quality/abi-core-implement01-correction01-verify.HC
+#
+# (the HANDOFF, the map row and the ROADMAP append are added in C4 and
+# are recorded there.)
+#
+changed_paths_inside_the_authorized_list	ALL
+changed_paths_outside_the_authorized_list	0
+production_source_changed	NO
+src_changed	NO
+tools_bootstrap_changed	NO
+existing_tests_changed	NO
+makefile_changed	NO
+cmake_changed	NO
+canonical_verifier_or_gate_changed	NO
+prior_act_or_handoff_changed	NO
+closed_evidence_changed	NO
+roadmap_changed_at_c3	NO (the bounded append is a C4 artifact)
+act_handoff_map_changed_at_c3	NO (the one append row is a C4 artifact)
+#
+# THE AUTHORITATIVE CHECKOUT WAS NEVER MUTATED.
+#
+# Every mutation lived in a disposable detached worktree. The
+# authoritative checkout's tracked tree is byte-identical to the frozen
+# entry for every path outside the authorized list, and the working
+# index is clean.
+#
+authoritative_checkout_tracked_tree_untouched	YES (the F14 per-path re-verification found 0 mismatches over 6434 frozen paths)
+authoritative_checkout_working_index_clean	YES
+authoritative_checkout_head_moved_by_this_act	YES -- the ACT's own five commits, which is the authorized lifecycle
+#
+# THE ACT-OWNED WORKTREES.
+#
+# The four disposable worktrees this ACT created are removed after
+# their artifacts are recorded. The pre-existing worktrees belong to
+# other activities and are NOT touched.
+#
+ACT_OWNED_WORKTREES_CREATED	4 (/tmp/aci01-corr01-pristine, /tmp/aci01-corr01-ro-mutant, /tmp/aci01-corr01-po-ant, /tmp/aci01-corr01-restored)
+ACT_OWNED_WORKTREES_REMOVED	4 (at the end of C3, with `git worktree remove --force` followed by `git worktree prune`)
+PREEXISTING_NON_ACT_WORKTREES_REMOVED	0 (the slice08-wt tree and the pinned-producer trees are left alone)
+#
+# THE PATCH HYGIENE.
+#
+# The repository's pre-commit hook enforces the patch-hygiene gate on
+# every commit. It rejected two defects during this execution and both
+# were repaired; no gate was weakened.
+#
+patch_hygiene_rejection_1	a trailing blank line at EOF in the frozen AC ledger and in the PolyC verifier -- repaired
+patch_hygiene_rejection_2	a trailing-whitespace context line in the recorded git diff -- repaired by rendering git's single-space empty context line as an empty line, with the hunk header and every other byte unchanged and the byte-length arithmetic recorded in the file itself
+gate_weakened	NO
+test_weakened	NO
+evidence_edited_after_its_commit	NO
+#
+# NO FORBIDDEN ARTEFACTS ARE COMMITTED.
+#
+committed_python_files	0
+committed_generated_binaries	0
+committed_machine_local_paths_as_source	NO (the machine-local paths appear only inside evidence prose, where they are the REPLAY INSTRUCTIONS and the retention notes, not as a source dependency)
+committed_external_evidence_logs	0
+new_dependencies	0

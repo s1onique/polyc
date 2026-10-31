@@ -1,0 +1,104 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01-CORRECTION01
+# ACT_PHASE=C4-CLOSE
+# EVIDENCE_KIND=terminality-plan
+#
+# THIS IS A PLAN, NOT A RECEIPT.
+#
+# It describes what the C4 CLOSE commit will contain and what the
+# EXTERNAL read-only verifier will check AFTER the CLOSE exists. The
+# receipt itself is created OUTSIDE the repository, after C4, and is
+# never backdated into C3 or CLOSE. Nothing in this file asserts that
+# the receipt exists.
+#
+# --- WHAT C4 WILL CONTAIN ---
+#
+# Exactly ONE terminal commit, carrying exactly these trailers:
+#
+#   ACT: ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01-CORRECTION01
+#   ACT-Phase: CLOSE
+#   ACT-Verdict: PASS
+#
+# The commit's content is:
+#   * docs/acts/ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01-CORRECTION01.md
+#     (the authorization artifact, created at C0 and unchanged since)
+#   * docs/factory/HANDOFF-ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01-CORRECTION01.md
+#     (the terminal handoff)
+#   * docs/factory/act-handoff-map.tsv
+#     (EXACTLY ONE appended row)
+#   * docs/ROADMAP.md
+#     (ONE bounded append)
+#   * evidence/ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01-CORRECTION01/c4/**
+#     (the terminality plan and whatever else the CLOSE commits)
+#
+# NO second CLOSE is created to store terminal checks. If a terminal
+# check must be recorded, it is recorded BEFORE the CLOSE commit, in
+# the C3 evidence, or in the external receipt after it.
+#
+# --- WHAT THE EXTERNAL READ-ONLY VERIFIER WILL CHECK ---
+#
+# The verifier runs against the repository AFTER the CLOSE commit and
+# writes its receipt OUTSIDE the repository. It checks:
+#
+#   1. IDENTITY: the terminal HEAD and the terminal TREE, bound to the
+#      receipt.
+#   2. THE FIVE PHASES: the ACT's range contains exactly five commits,
+#      with ACT-Phase RED, EVIDENCE, IMPL, EVIDENCE, CLOSE, in that
+#      order, and no other commit carrying this ACT id.
+#   3. SINGLE CLOSE: exactly one commit in the range carries
+#      ACT-Phase: CLOSE, and it is the last commit of the range.
+#   4. THE TRAILERS: the CLOSE carries exactly one ACT-Verdict, and
+#      it is PASS.
+#   5. NO POST-CLOSE COMMITS: no commit after the CLOSE carries this
+#      ACT id.
+#   6. THE F14 MANIFEST: every path in the C0 freeze is re-hashed and
+#      matched, and every path changed since the entry is inside the
+#      authorized list.
+#   7. THE CORRECTED EXPERIMENT: the correction's own execution ids
+#      and their source, object and witness digests are present in the
+#      committed evidence and are mutually consistent, and the
+#      historical M-POLYC-RO digests are still the PO mutation's.
+#   8. THE CONSERVATION: the authority census is 13 structural / 12
+#      historical causal / 13 correction-inclusive, and the graph is
+#      52 nodes / 135 mandatory edges / 134 active / 1 proven cut.
+#   9. THE FINAL GATES: gate-fast and gate-push are run against the
+#      terminal tree.
+#  10. THE WORKTREE AND REPLACE STATE: the working tree is clean and
+#      there are no replace refs.
+#
+# --- WHAT THE RECEIPT WILL CONTAIN ---
+#
+# The receipt binds:
+#   * the terminal HEAD SHA and the terminal TREE SHA;
+#   * the five commit SHAs with their ACT-Phase trailers;
+#   * the F14 path count and the mismatch count;
+#   * the corrected execution ids with their source, object and
+#     witness digests;
+#   * the conservation counts;
+#   * the final gate verdicts;
+#   * the count of commits after the CLOSE (which must be 0 commits
+#     carrying this ACT id).
+#
+# --- THE ORDERING, AND WHY IT MATTERS ---
+#
+#   C3 EVIDENCE  ->  the acceptance ledger at its honest maximum
+#                   (27 PASS, 1 DEFERRED) and the gates against the
+#                   subject tree.
+#   C4 CLOSE     ->  the terminal commit.
+#   AFTER C4      ->  the external verifier runs and writes the
+#                   receipt outside the repository.
+#   THEN          ->  AC28 becomes PASS, and only then is the
+#                   terminal disposition PASS_EVIDENCE_SUPPLEMENTED
+#                   reported.
+#
+# If the external verifier finds any defect, the outcome is a HALT
+# with the measured reason. It is NOT repaired by a follow-up commit
+# under this ACT id, because a second CLOSE would break the
+# Cardinality-1 closure identity -- the very defect that
+# ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON02-CORRECTION01 had to
+# repair forward-only.
+#
+# --- WHAT THIS PLAN DOES NOT CLAIM ---
+#
+receipt_exists_at_c4	NO
+ac28_is_pass_at_c4	NO
+the_terminal_disposition_is_known_at_c4	NO

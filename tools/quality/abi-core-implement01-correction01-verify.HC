@@ -602,6 +602,11 @@ public U0 ModeJoin(U8 *join_path)
         else VFail("UNKNOWN_SITE_ID");
 
         if (StrEq(site,"SITE-RANGE-OPERATOR")) {
+          // The exit matrix must be PRESENT before it can be judged.
+          // A MISSING exit is a different defect from a WRONG exit,
+          // and the two must have distinct reasons.
+          if (StrLen(pexit) == 0 || StrLen(mexit) == 0 || StrLen(rexit) == 0)
+            VFail("CAUSAL_RESTORATION_OR_EVIDENCE_MISSING");
           // The RO discriminator MUST change 0 -> 1 -> 0.
           if (!StrEq(pexit,"0") || !StrEq(mexit,"1") || !StrEq(rexit,"0"))
             VFail("RO_SEMANTIC_WITNESS_NONDISCRIMINATING");

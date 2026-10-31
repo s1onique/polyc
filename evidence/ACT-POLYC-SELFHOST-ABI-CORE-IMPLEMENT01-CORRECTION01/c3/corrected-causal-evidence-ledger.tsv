@@ -1,0 +1,53 @@
+# THE CORRECTED CAUSAL EVIDENCE LEDGER.
+#
+# One row per structurally active authority, with the causal evidence
+# that backs it, the execution id that produced that evidence, and
+# whether that evidence is HISTORICAL or CORRECTION-OWNED.
+#
+# The ledger's central statement is a PAIR of distinct facts, and the
+# pair is never collapsed into one:
+#
+#   * at the IMPLEMENT01 close, 12 of the 13 had causal evidence;
+#   * after this correction's own executed experiment, 13 of the 13 do.
+#
+authority_id	symbol	site_id	structurally_active	causal_evidence_execution_id	evidence_origin	source_sha256	object_sha256	witness_id	witness_transition	causal_backing_at_implement01_close	causal_backing_after_the_correction
+AUTH-01	_BootstrapCalcPadding	SITE-PARSER-PADDING	YES	(the predecessor CSCR chain)	HISTORICAL	(the predecessor's subject digest)	(the predecessor's subject digest)	(the predecessor's witness)	(the predecessor's transition)	YES	YES
+AUTH-02	_BootstrapValidPostControlFlowToken	SITE-POST-CONTROL-FLOW-TOKEN	YES	(the predecessor CSCR chain)	HISTORICAL	...	...	...	...	YES	YES
+AUTH-03	_BootstrapOperatorPrecedence	SITE-OPERATOR-PRECEDENCE	YES	(the predecessor CSCR chain)	HISTORICAL	...	...	...	...	YES	YES
+AUTH-04	_BootstrapAstBinOpFromToken	SITE-AST-BINOP-FROM-TOKEN	YES	(the predecessor CSCR chain)	HISTORICAL	...	...	...	...	YES	YES
+AUTH-05	_BootstrapAstUnaryOpFromToken	SITE-AST-UNOP-FROM-TOKEN	YES	(the predecessor CSCR chain)	HISTORICAL	...	...	...	...	YES	YES
+AUTH-06	_BootstrapSwitchArmTerminates	SITE-SWITCH-ARM-TERMINATES	YES	(the predecessor CSCR chain)	HISTORICAL	...	...	...	...	YES	YES
+AUTH-07	_BootstrapCompoundBlockAppendsStatement	SITE-COMPOUND-BLOCK-APPENDS	YES	(the predecessor CSCR chain)	HISTORICAL	...	...	...	...	YES	YES
+AUTH-08	_BootstrapDefaultArmTerminates	SITE-DEFAULT-ARM-TERMINATES	YES	(the predecessor CSCR chain)	HISTORICAL	...	...	...	...	YES	YES
+AUTH-09	_BootstrapStatementDispatch	SITE-STATEMENT-DISPATCH	YES	(the predecessor CSCR chain)	HISTORICAL	...	...	...	...	YES	YES
+AUTH-10	_AbiCpaShouldPrintAst	SITE-ABI-CPA-PRINT-AST	YES	(the predecessor CSCR chain)	HISTORICAL	...	...	...	...	YES	YES
+AUTH-11	_AbiCoreClassifyCompoundAssign	SITE-COMPOUND-ASSIGN	YES	M-POLYC-CA	HISTORICAL	cea1ca063884dd5ebf4019110cd36816ae4950cc8fef9ceb2621a2f126cfdae1	035ce7e1eadac216709147c474254df41208428f5b3989d270a3e95176c39155	W-CA	30 -> 246 -> 30	YES	YES
+AUTH-12	_AbiCoreIsValidPointerOperator	SITE-VALID-POINTER-OP	YES	M-POLYC-PO and EXEC-PO-CORR01-ANTI	HISTORICAL (reproduced at C0) and CORRECTION-OWNED (the anti-control)	f0599f79900cf406415283a9742c2b3d794c03f107e7a959ce021db91b916615	2d6a1394dffa8b513af092971338692e113cbf893c4d52a0b554afda9d58c1f8	W-CORR-PO-LT	0 -> COMPILE_FAILED	YES	YES
+AUTH-13	_AbiCoreIsRangeOperator	SITE-RANGE-OPERATOR	YES	EXEC-RO-CORR01-MUTANT	CORRECTION-OWNED	5bfe5b6048374a9e12c48aa13b3e66beb764d7b14b97813c761c486926161da9	c73e734dc6b735bd738fd2e3f5735f10b577d5048730d586d2892b153ca77eff	W-CORR-RO-DISCRIM	0 -> 1 -> 0	NO	YES
+
+# THE TWO COUNTS, STATED AS TWO COUNTS.
+#
+authorities_structurally_active	13
+authorities_causally_backed_at_implement01_close	12
+authorities_causally_backed_after_the_correction	13
+authorities_whose_evidence_is_correction_owned	1 (AUTH-13)
+authorities_whose_evidence_is_historical	12
+new_authorities	0
+
+# WHAT THIS LEDGER DOES NOT SAY.
+#
+# It does NOT say that thirteen of thirteen authorities had causal
+# backing at the IMPLEMENT01 close. AUTH-13 did not: the recorded
+# M-POLYC-RO experiment physically mutated the pointer site.
+#
+# It does NOT say that the historical M-POLYC-RO experiment was a
+# range mutation. It was not, and its recorded bytes are unchanged.
+#
+# It does NOT say that the RECON02 HALT was wrong. The RECON02 halt was
+# correct and is carried forward unchanged.
+#
+thirteen_of_thirteen_was_true_at_implement01_close	NO
+historical_m_poly_ro_was_a_range_mutation	NO
+recon02_halt_overturned	NO
+the_correction_supplements_the_historical_record	YES
+the_correction_replaces_the_historical_record	NO

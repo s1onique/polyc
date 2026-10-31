@@ -1,0 +1,31 @@
+# THE VERIFIER'S OWN ANTI-SELFTESTS.
+#
+# A control checker that cannot detect its own tampering is not a
+# checker. The ledger checker and the join checker are each exercised
+# against a missing id, a duplicated id, an unknown id, a forged PASS,
+# a wrong reason and a swapped executor id, and each must produce a
+# DISTINCT reason.
+#
+selftest_id	adverse_input	expected_reason	actual_reason	rc	result
+SELFTEST-GENUINE-JOIN	the genuine join table	FINAL=OK	FINAL=OK	0	SILENT on the genuine state
+SELFTEST-GENUINE-HISTORICAL	the committed predecessor evidence	FINAL=OK	FINAL=OK	0	SILENT on the genuine state
+SELFTEST-GENUINE-LEDGER	a well-formed 28-AC / 12-NC ledger pair	FINAL=OK	FINAL=OK	0	SILENT on the genuine state
+SELFTEST-MISSING-ID	the acceptance ledger with one id omitted	LEDGER_OR_TERMINALITY_FALSE_PASS	LEDGER_OR_TERMINALITY_FALSE_PASS	1	FIRED
+SELFTEST-DUPLICATE-ID	the acceptance ledger with one id duplicated	LEDGER_OR_TERMINALITY_FALSE_PASS	LEDGER_OR_TERMINALITY_FALSE_PASS	1	FIRED
+SELFTEST-UNKNOWN-ID	the acceptance ledger with an id outside the frozen set (AC29 for a 28-id set)	LEDGER_OR_TERMINALITY_FALSE_PASS	LEDGER_OR_TERMINALITY_FALSE_PASS	1	FIRED -- this is the selftest that caught a COUNT-ONLY check: a checker that counted rows would have accepted AC29 in place of a missing AC01, so the checker now validates the exact id SET, not merely its size
+SELFTEST-FORGED-PASS	the acceptance ledger with a PASS row that carries no evidence path	LEDGER_OR_TERMINALITY_FALSE_PASS	LEDGER_OR_TERMINALITY_FALSE_PASS	1	FIRED
+SELFTEST-MISSING-EXIT-MATRIX	the join table with the RO row's mutant exit erased	CAUSAL_RESTORATION_OR_EVIDENCE_MISSING	CAUSAL_RESTORATION_OR_EVIDENCE_MISSING	1	FIRED -- this selftest caught a REASON COLLISION: an erased exit and a wrong exit both used to be reported as RO_SEMANTIC_WITNESS_NONDISCRIMINATING, so the checker now distinguishes a MISSING matrix from a WRONG one
+SELFTEST-WRONG-EXIT-TRANSITION	the join table with the RO row's mutant exit changed from 1 to 0	RO_SEMANTIC_WITNESS_NONDISCRIMINATING	RO_SEMANTIC_WITNESS_NONDISCRIMINATING	1	FIRED, and with a reason DISTINCT from the missing-matrix case
+SELFTEST-SWAPPED-EXECUTOR-ID	the join table with the PO row's execution id set to the RO row's	DUPLICATE_PHYSICAL_EXECUTION_ID	DUPLICATE_PHYSICAL_EXECUTION_ID	1	FIRED
+SELFTEST-SWAPPED-WITNESS	the join table with the PO row's witness set to the RO discriminator	SITE_ISOLATION_OR_WITNESS_MISBIND	SITE_ISOLATION_OR_WITNESS_MISBIND	1	FIRED
+SELFTEST-WRONG-SITE-SYMBOL	the join table with the RO row's subject symbol set to the PO symbol	SITE_ISOLATION_OR_WITNESS_MISBIND	SITE_ISOLATION_OR_WITNESS_MISBIND	1	FIRED
+SELFTEST-UNKNOWN-SITE-ID	the join table with an unknown site id	UNKNOWN_SITE_ID	UNKNOWN_SITE_ID	1	FIRED
+SELFTEST-VERIFIER-DIGEST	the verifier's own SHA-256 against the NIST "abc" vector and against shasum on the subject file	the exact expected digests	the exact expected digests	0	CONFIRMED -- a verifier that hashed wrongly could certify a wrong digest
+
+# THE SUMMARY.
+selftests_total	13
+selftests_silent_on_the_genuine_state	3
+selftests_fired_on_the_adverse_input	10
+selftests_that_caught_a_real_defect_in_the_checker	2 (SELFTEST-UNKNOWN-ID caught a count-only id check; SELFTEST-MISSING-EXIT-MATRIX caught a reason collision between a missing and a wrong exit matrix)
+distinct_reasons_produced	ENTRY_IDENTITY_MISMATCH, F14_PREDECESSOR_TAMPER, HISTORICAL_MUTATION_SUBJECT_MISMATCH, APPLIED_SOURCE_DIFF_PROVENANCE_FAILURE, RO_WRONG_FUNCTION_MUTATED, RO_BUILD_OR_LINK_PROVENANCE_FAILURE, RO_SEMANTIC_WITNESS_NONDISCRIMINATING, SITE_ISOLATION_OR_WITNESS_MISBIND, DUPLICATE_PHYSICAL_EXECUTION_ID, CAUSAL_RESTORATION_OR_EVIDENCE_MISSING, AUTHORITY_OR_HISTORICAL_OVERCLAIM, LEDGER_OR_TERMINALITY_FALSE_PASS, UNKNOWN_SITE_ID
+verifier_is_vacuous	NO
